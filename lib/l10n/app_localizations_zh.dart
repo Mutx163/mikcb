@@ -10601,6 +10601,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveExpandedDetailGroupTitle => '展开详情';
 
   @override
+  String get liveExpandedDetailSubtitle => '长按拖动调整顺序，开关控制是否显示';
+
+  @override
+  String get liveExpandedDetailHint =>
+      '「进度」只在课中显示；Android 16 且课中带进度条时展开态由系统绘制，本设置不生效';
+
+  @override
+  String get liveExpandedDetailReorderHandleLabel => '拖动排序';
+
+  @override
+  String get liveExpandedDetailMoveUpAction => '上移';
+
+  @override
+  String get liveExpandedDetailMoveDownAction => '下移';
+
+  @override
   String get liveExpandedDetailHiddenCaption => '已隐藏';
 
   @override
@@ -10644,6 +10660,80 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get fontPreviewSample => '永 Aa Bb 0123 — 课表预览';
+
+  @override
+  String get liveIslandExpandedPreviewTitle => '展开态预览';
+
+  @override
+  String get liveIslandExpandedPreviewCaption =>
+      'Android 16 课中带进度条时，展开态由系统绘制，本设置不生效';
+
+  @override
+  String get liveIslandExpandedPreviewEmptyHint => '已隐藏全部详情行，展开后只显示标题与摘要';
+
+  @override
+  String get liveIslandPreviewSampleTeacher => '张老师';
+
+  @override
+  String get liveIslandPreviewSampleNextClass => '大学物理';
+
+  @override
+  String get liveIslandPreviewSampleNote => '带教材与习题册';
+
+  @override
+  String liveIslandPreviewTitleBeforeClass(String course) {
+    return '即将上课: $course';
+  }
+
+  @override
+  String liveIslandPreviewTitleBeforeEnd(String course) {
+    return '下课提醒: $course';
+  }
+
+  @override
+  String liveExpandedDetailLineShortName(String value) {
+    return '简称: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineProgressNext(String value) {
+    return '下一节点: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineProgressFinal(String value) {
+    return '整节下课: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineStatus(String value) {
+    return '状态: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineTime(String value) {
+    return '时间: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineLocation(String value) {
+    return '地点: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineTeacher(String value) {
+    return '教师: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineNext(String value) {
+    return '下一节: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineNote(String value) {
+    return '备注: $value';
+  }
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -21287,6 +21377,22 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveExpandedDetailGroupTitle => '展開詳情';
 
   @override
+  String get liveExpandedDetailSubtitle => '長按拖動調整順序，開關控制係咪顯示';
+
+  @override
+  String get liveExpandedDetailHint =>
+      '「進度」只在課中顯示；Android 16 且課中帶進度條時展開態由系統繪製，本設定唔生效';
+
+  @override
+  String get liveExpandedDetailReorderHandleLabel => '拖動排序';
+
+  @override
+  String get liveExpandedDetailMoveUpAction => '上移';
+
+  @override
+  String get liveExpandedDetailMoveDownAction => '下移';
+
+  @override
   String get liveExpandedDetailHiddenCaption => '已隱藏';
 
   @override
@@ -21330,6 +21436,80 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get fontPreviewSample => '永 Aa Bb 0123 — 課表預覽';
+
+  @override
+  String get liveIslandExpandedPreviewTitle => '展開狀態預覽';
+
+  @override
+  String get liveIslandExpandedPreviewCaption =>
+      'Android 16 課中帶進度條時，展開狀態由系統繪製，本設定不生效';
+
+  @override
+  String get liveIslandExpandedPreviewEmptyHint => '已隱藏全部詳情行，展開後只顯示標題與摘要';
+
+  @override
+  String get liveIslandPreviewSampleTeacher => '張老師';
+
+  @override
+  String get liveIslandPreviewSampleNextClass => '大學物理';
+
+  @override
+  String get liveIslandPreviewSampleNote => '帶教材與習題冊';
+
+  @override
+  String liveIslandPreviewTitleBeforeClass(String course) {
+    return '即將上課: $course';
+  }
+
+  @override
+  String liveIslandPreviewTitleBeforeEnd(String course) {
+    return '下課提醒: $course';
+  }
+
+  @override
+  String liveExpandedDetailLineShortName(String value) {
+    return '簡稱: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineProgressNext(String value) {
+    return '下一節點: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineProgressFinal(String value) {
+    return '整節下課: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineStatus(String value) {
+    return '狀態: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineTime(String value) {
+    return '時間: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineLocation(String value) {
+    return '地點: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineTeacher(String value) {
+    return '教師: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineNext(String value) {
+    return '下一節: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineNote(String value) {
+    return '備註: $value';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -31973,6 +32153,22 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveExpandedDetailGroupTitle => '展開詳情';
 
   @override
+  String get liveExpandedDetailSubtitle => '長按拖動調整順序，開關控制是否顯示';
+
+  @override
+  String get liveExpandedDetailHint =>
+      '「進度」只在課中顯示；Android 16 且課中帶進度條時展開態由系統繪製，本設定不生效';
+
+  @override
+  String get liveExpandedDetailReorderHandleLabel => '拖動排序';
+
+  @override
+  String get liveExpandedDetailMoveUpAction => '上移';
+
+  @override
+  String get liveExpandedDetailMoveDownAction => '下移';
+
+  @override
   String get liveExpandedDetailHiddenCaption => '已隱藏';
 
   @override
@@ -32016,4 +32212,78 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get fontPreviewSample => '永 Aa Bb 0123 — 課表預覽';
+
+  @override
+  String get liveIslandExpandedPreviewTitle => '展開狀態預覽';
+
+  @override
+  String get liveIslandExpandedPreviewCaption =>
+      'Android 16 課中帶進度條時，展開狀態由系統繪製，本設定不生效';
+
+  @override
+  String get liveIslandExpandedPreviewEmptyHint => '已隱藏全部詳情行，展開後只顯示標題與摘要';
+
+  @override
+  String get liveIslandPreviewSampleTeacher => '張老師';
+
+  @override
+  String get liveIslandPreviewSampleNextClass => '大學物理';
+
+  @override
+  String get liveIslandPreviewSampleNote => '帶教材與習題冊';
+
+  @override
+  String liveIslandPreviewTitleBeforeClass(String course) {
+    return '即將上課: $course';
+  }
+
+  @override
+  String liveIslandPreviewTitleBeforeEnd(String course) {
+    return '下課提醒: $course';
+  }
+
+  @override
+  String liveExpandedDetailLineShortName(String value) {
+    return '簡稱: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineProgressNext(String value) {
+    return '下一節點: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineProgressFinal(String value) {
+    return '整節下課: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineStatus(String value) {
+    return '狀態: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineTime(String value) {
+    return '時間: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineLocation(String value) {
+    return '地點: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineTeacher(String value) {
+    return '教師: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineNext(String value) {
+    return '下一節: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineNote(String value) {
+    return '備註: $value';
+  }
 }

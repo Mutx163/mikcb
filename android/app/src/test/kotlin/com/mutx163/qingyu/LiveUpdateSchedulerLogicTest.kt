@@ -9,26 +9,48 @@ import java.util.Calendar
 import java.util.TimeZone
 
 class LiveUpdateSchedulerLogicTest {
+    /** 通过内部顺序常量断言，避免测试里再抄一份顺序。 */
+    private fun expandedDetailDefaultOrder(): List<String> = EXPANDED_DETAIL_DEFAULT_ORDER
+
     @Test
-    fun parseExpandedDetailFieldsNullMeansShowAll() {
-        assertNull(parseExpandedDetailFields(null))
-        assertNull(parseExpandedDetailFields("not-a-list"))
+    fun parseExpandedDetailFieldsMissingKeyFallsBackToHistoricalOrder() {
+        // 未读快照（老用户/老 APK/Java 侧）没有这个 key：必须回到加自定义之前
+        // 的历史顺序，否则课中超级岛展开态会被换成提升态顺序（多出阶段行、
+        // 进度变状态行），即 issue 里「展开态长得和之前不一样」。
+        assertEquals(expandedDetailDefaultOrder(), parseExpandedDetailFields(null))
+        assertEquals(expandedDetailDefaultOrder(), parseExpandedDetailFields("not-a-list"))
     }
 
     @Test
     fun parseExpandedDetailFieldsEmptyListMeansHideAll() {
+        // 显式空数组 = 用户把每一项都关了，保持空列表（全隐藏）。
         assertEquals(emptyList<String>(), parseExpandedDetailFields(emptyList<String>()))
     }
 
     @Test
     fun parseExpandedDetailFieldsKeepsOrderAndDropsBlank() {
         assertEquals(
-            listOf("note", "teacher", "location"),
+            listOf("note", "teacher", "location", "stage", "shortName", "progress", "status", "time", "next"),
             parseExpandedDetailFields(listOf("note", "", "teacher", "location")),
         )
         assertEquals(
-            listOf("stage", "next"),
-            parseExpandedDetailFields(listOf("stage", "next")),
+            expandedDetailDefaultOrder(),
+            parseExpandedDetailFields(listOf("stage", "shortName", "progress", "status", "time", "location", "teacher", "next", "note")),
+        )
+    }
+
+    @Test
+    fun parseExpandedDetailFieldsRepairsPartialList() {
+        // 传输被截断/新增字段的场景：用户顺序保留，缺的字段按默认顺序补齐，
+        // 不至于整块详情凭空消失。
+        assertEquals(
+            listOf("note", "stage", "shortName", "progress", "status", "time", "location", "teacher", "next"),
+            parseExpandedDetailFields(listOf("note", "stage")),
+        )
+        // 未知 key 丢弃、重复 key 去重。
+        assertEquals(
+            expandedDetailDefaultOrder(),
+            parseExpandedDetailFields(listOf("bogus", "note", "note", "stage", "shortName", "progress", "status", "time", "location", "teacher", "next")),
         )
     }
 

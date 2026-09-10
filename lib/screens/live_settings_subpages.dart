@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:path_provider/path_provider.dart';
@@ -762,10 +763,24 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       HyperosSectionLabel(text: l10n.liveExpandedDetailGroupTitle),
       HyperosListGroup(
         children: [
-          ..._buildExpandedDetailRows(display, l10n),
+          HyperosListTile(
+            title: l10n.liveExpandedDetailSubtitle,
+            subtitle: l10n.liveExpandedDetailHint,
+          ),
         ],
       ),
-      if (display.expandedDetailFields != null) ...[const HyperosSectionGap(),
+      const HyperosSectionGap(),
+      _ExpandedDetailGroup(
+        display: display,
+        l10n: l10n,
+        onToggle: (field) => _toggleExpandedDetailField(display, field),
+        onReorder: (oldIndex, newIndex) =>
+            _reorderExpandedDetailField(display, oldIndex, newIndex),
+        onMoveUp: (field) => _moveExpandedDetailFieldBy(display, field, -1),
+        onMoveDown: (field) => _moveExpandedDetailFieldBy(display, field, 1),
+      ),
+      if (display.expandedDetailFields != null) ...[
+        const HyperosSectionGap(),
         HyperosListGroup(
           children: [
             HyperosActionTile(
@@ -779,9 +794,20 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           ],
         ),
       ],
+      const HyperosSectionGap(),
+      HyperosSectionLabel(text: l10n.liveIslandExpandedPreviewTitle),
+      LiveIslandExpandedPreviewCard(
+        display: _followBeforeClass ? _draft.beforeClassDisplaySettings : display,
+        forDuringEnd: widget.forDuringEnd,
+        followBeforeClass: _followBeforeClass,
+        endSecondsCountdownThresholdSeconds:
+            _draft.liveEndSecondsCountdownThreshold,
+      ),
     ];
     return HyperosSubpage(
-      onBack: () => Navigator.pop(context),
+      // 排序后待落盘的状态已在 dispose 补写；maybePop 同时兼容
+      // 返回键与系统返回手势。
+      onBack: () => Navigator.maybePop(context),
       title: Text(widget.title),
       child: HyperosListView(
         children: [
@@ -860,41 +886,24 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           ? List.of(LiveExpandedDetailField.values)
           : List.of(display.expandedDetailFields!);
 
-  List<Widget> _buildExpandedDetailRows(
+  /// [ReorderableListView] 的落位回调：把 [oldIndex] 处的字段挪到 [newIndex]。
+  ///
+  /// 拖拽回调给的是「插入位」而非目标下标，往下拖时要减一，否则每拖一次都会
+  /// 多挪一格。
+  void _reorderExpandedDetailField(
     LiveDisplaySettings display,
-    AppLocalizations l10n,
+    int oldIndex,
+    int newIndex,
   ) {
-    final enabledList = _expandedFieldWorkOrder(display);
-    final disabledList = <LiveExpandedDetailField>[
-      for (final field in LiveExpandedDetailField.values)
-        if (!enabledList.contains(field)) field,
-    ];
-    final allFields = [...enabledList, ...disabledList];
-    final hasHiddenSection = disabledList.isNotEmpty;
-    final rows = <Widget>[];
-    for (var i = 0; i < allFields.length; i++) {
-      if (hasHiddenSection && i == enabledList.length) {
-        rows.add(_HiddenFieldsCaption(title: l10n.liveExpandedDetailHiddenCaption));
-      }
-      final field = allFields[i];
-      rows.add(
-        _ExpandedDetailFieldRow(
-          key: ValueKey(field),
-          title: liveExpandedDetailFieldLabel(l10n, field),
-          enabled: i < enabledList.length,
-          canMoveUp: i > 0 && i < enabledList.length,
-          canMoveDown: i < enabledList.length - 1,
-          onToggle: (_) => _toggleExpandedDetailField(display, field),
-          onMoveUp: i > 0 && i < enabledList.length
-              ? () => _moveExpandedDetailField(display, i, -1)
-              : null,
-          onMoveDown: i < enabledList.length - 1
-              ? () => _moveExpandedDetailField(display, i, 1)
-              : null,
-        ),
-      );
-    }
-    return rows;
+    final work = _expandedFieldWorkOrder(display);
+    if (oldIndex < 0 || oldIndex >= work.length) return;
+    final target = (newIndex > oldIndex ? newIndex - 1 : newIndex).clamp(
+      0,
+      work.length - 1,
+    );
+    if (target == oldIndex) return;
+    work.insert(target, work.removeAt(oldIndex));
+    _updateDisplay(display.copyWith(expandedDetailFields: work));
   }
 
   void _toggleExpandedDetailField(
@@ -910,16 +919,20 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     _updateDisplay(display.copyWith(expandedDetailFields: work));
   }
 
-  void _moveExpandedDetailField(
+  /// 无障碍「上移 / 下移」：把某个字段在已显示顺序里挪一格。
+  ///
+  /// 手柄在 TalkBack 下不好拖，补这组自定义动作；边界处由 [delta] 越界返回。
+  void _moveExpandedDetailFieldBy(
     LiveDisplaySettings display,
-    int index,
+    LiveExpandedDetailField field,
     int delta,
   ) {
     final work = _expandedFieldWorkOrder(display);
+    final index = work.indexOf(field);
+    if (index < 0) return;
     final target = index + delta;
     if (target < 0 || target >= work.length) return;
-    final field = work.removeAt(index);
-    work.insert(target, field);
+    work.insert(target, work.removeAt(index));
     _updateDisplay(display.copyWith(expandedDetailFields: work));
   }
 
@@ -1356,20 +1369,124 @@ Color _parseColor(String hexColor) {
   return parseHexColorOrFallback(hexColor, fallback: const Color(0xFF2563EB));
 }
 
-/// 展开详情字段列表中「已隐藏」区块的标题行。
-class _HiddenFieldsCaption extends StatelessWidget {
-  const _HiddenFieldsCaption({required this.title});
+/// 展开详情分组：已显示区可拖拽排序（HyperosListGroup 卡片 + 拖动手柄），
+/// 已隐藏区排在后面、只有开关没有手柄。
+///
+/// 与「首页八宫格编辑器」同一套交互语言，不再用行首上/下箭头——箭头按钮
+/// 既不像本项目控件，也让人分不清哪些行能拖。
+class _ExpandedDetailGroup extends StatelessWidget {
+  const _ExpandedDetailGroup({
+    required this.display,
+    required this.l10n,
+    required this.onToggle,
+    required this.onReorder,
+    required this.onMoveUp,
+    required this.onMoveDown,
+  });
 
-  final String title;
+  final LiveDisplaySettings display;
+  final AppLocalizations l10n;
+  final ValueChanged<LiveExpandedDetailField> onToggle;
+  final void Function(int oldIndex, int newIndex) onReorder;
+  final ValueChanged<LiveExpandedDetailField> onMoveUp;
+  final ValueChanged<LiveExpandedDetailField> onMoveDown;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: hyperosRowPadding(context),
-      child: SizedBox(
-        height: HyperosTokens.listRowMinHeight,
-        child: Align(
-          alignment: Alignment.centerLeft,
+    final enabledList = _enabledFields;
+    final hiddenList = _hiddenFields(enabledList);
+
+    return HyperosListGroup(
+      children: [
+        if (enabledList.isNotEmpty)
+          ReorderableListView.builder(
+            key: const ValueKey('expanded-detail-enabled'),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            itemCount: enabledList.length,
+            onReorderItem: onReorder,
+            proxyDecorator: (child, index, animation) {
+              return AnimatedBuilder(
+                animation: animation,
+                builder: (context, _) {
+                  final elevation = Tween<double>(
+                    begin: 0,
+                    end: 6,
+                  ).animate(animation);
+                  return Material(
+                    elevation: elevation.value,
+                    borderRadius: BorderRadius.circular(16),
+                    color: HyperosColors.card(context),
+                    child: child,
+                  );
+                },
+              );
+            },
+            itemBuilder: (context, index) {
+              final field = enabledList[index];
+              return _ExpandedDetailFieldRow(
+                key: ValueKey(field),
+                index: index,
+                title: liveExpandedDetailFieldLabel(l10n, field),
+                enabled: true,
+                reorderable: true,
+                handleLabel: l10n.liveExpandedDetailReorderHandleLabel,
+                moveUpLabel: l10n.liveExpandedDetailMoveUpAction,
+                moveDownLabel: l10n.liveExpandedDetailMoveDownAction,
+                canMoveUp: index > 0,
+                canMoveDown: index < enabledList.length - 1,
+                onMoveUp: () => onMoveUp(field),
+                onMoveDown: () => onMoveDown(field),
+                onToggle: () => onToggle(field),
+              );
+            },
+          ),
+        if (hiddenList.isNotEmpty) ...[
+          _HiddenFieldsCaption(
+            title: l10n.liveExpandedDetailHiddenCaption,
+            showDivider: true,
+          ),
+          for (final field in hiddenList)
+            _ExpandedDetailFieldRow(
+              key: ValueKey(field),
+              title: liveExpandedDetailFieldLabel(l10n, field),
+              enabled: false,
+              onToggle: () => onToggle(field),
+            ),
+        ],
+      ],
+    );
+  }
+
+  List<LiveExpandedDetailField> get _enabledFields =>
+      display.expandedDetailFields == null
+          ? List.of(LiveExpandedDetailField.values)
+          : List.of(display.expandedDetailFields!);
+
+  List<LiveExpandedDetailField> _hiddenFields(
+    List<LiveExpandedDetailField> enabledFields,
+  ) => [
+    for (final field in LiveExpandedDetailField.values)
+      if (!enabledFields.contains(field)) field,
+  ];
+}
+
+/// 展开详情字段列表中「已隐藏」区块的标题行。
+class _HiddenFieldsCaption extends StatelessWidget {
+  const _HiddenFieldsCaption({required this.title, this.showDivider = false});
+
+  final String title;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (showDivider) const HyperosInsetDivider(indent: 0),
+        hyperosListRowShell(
+          padding: hyperosRowPadding(context),
           child: Text(
             title,
             style: HyperosTypography.listDetail(context).copyWith(
@@ -1377,96 +1494,118 @@ class _HiddenFieldsCaption extends StatelessWidget {
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
 
-/// 展开详情字段的一行：上下箭头调整顺序 + 标题 + 显示开关。
+/// 展开详情字段的一行：拖动手柄 + 标题 + 显示开关。
+///
+/// 行首不再是上/下箭头按钮（不像本项目控件且不好用），改为与首页八宫格
+/// 编辑器一致的拖动手柄；隐藏区的行没有手柄，靠开关重新加回已显示区。
 class _ExpandedDetailFieldRow extends StatelessWidget {
   const _ExpandedDetailFieldRow({
     super.key,
     required this.title,
     required this.enabled,
     required this.onToggle,
+    this.index,
+    this.reorderable = false,
+    this.handleLabel,
+    this.moveUpLabel,
+    this.moveDownLabel,
     this.canMoveUp = false,
     this.canMoveDown = false,
     this.onMoveUp,
     this.onMoveDown,
   });
 
+  /// 已显示区在 [ReorderableListView] 中的下标；隐藏区为 null。
+  final int? index;
   final String title;
   final bool enabled;
+  final VoidCallback onToggle;
+  final bool reorderable;
+  final String? handleLabel;
+
+  /// 长按排序的无障碍开关：手柄本身在 TalkBack 下不好拖，补一组
+  /// 「上移 / 下移」自定义动作（不开可视按钮，避免又回到箭头矩阵）。
+  final String? moveUpLabel;
+  final String? moveDownLabel;
   final bool canMoveUp;
   final bool canMoveDown;
-  final ValueChanged<bool> onToggle;
   final VoidCallback? onMoveUp;
   final VoidCallback? onMoveDown;
 
   @override
   Widget build(BuildContext context) {
     final primary = HyperosColors.primaryText(context);
-    final secondary = HyperosColors.secondaryText(context);
-    final arrowColor = enabled ? secondary : secondary.withValues(alpha: 0.35);
-    return Padding(
+    final titleStyle = HyperosTypography.listTitle(context).copyWith(
+      color: enabled ? primary : primary.withValues(alpha: 0.45),
+    );
+
+    final row = hyperosListRowShell(
       padding: hyperosRowPadding(context),
-      child: SizedBox(
-        height: HyperosTokens.listRowMinHeight,
-        child: Row(
-          children: [
-            _ReorderArrowButton(
-              icon: Icons.keyboard_arrow_up_rounded,
-              enabled: canMoveUp,
-              color: arrowColor,
-              onTap: onMoveUp,
-            ),
-            _ReorderArrowButton(
-              icon: Icons.keyboard_arrow_down_rounded,
-              enabled: canMoveDown,
-              color: arrowColor,
-              onTap: onMoveDown,
-            ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: HyperosTypography.listTitle(context).copyWith(
-                  color: enabled ? primary : primary.withValues(alpha: 0.45),
+      child: Row(
+        children: [
+          if (reorderable && index != null) ...[
+            SizedBox(
+              width: HyperosTokens.listRowMinHeight,
+              child: Center(
+                child: ReorderableDragStartListener(
+                  index: index!,
+                  child: Semantics(
+                    label: handleLabel,
+                    child: Icon(
+                      Icons.drag_indicator_rounded,
+                      size: 20,
+                      color: HyperosColors.secondaryText(context),
+                    ),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(width: HyperosTokens.rowContentGap),
-            HyperosSwitch(value: enabled, onChanged: onToggle),
+            const SizedBox(width: 4),
           ],
-        ),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: titleStyle,
+            ),
+          ),
+          // 与 HyperosSwitchTile 一致：整行是唯一开关目标，避免行与开关
+          // 在同一处触点上抢手势。
+
+          AbsorbPointer(
+            child: HyperosSwitch(value: enabled, onChanged: (_) => onToggle()),
+          ),
+        ],
       ),
     );
-  }
-}
 
-class _ReorderArrowButton extends StatelessWidget {
-  const _ReorderArrowButton({
-    required this.icon,
-    required this.enabled,
-    required this.color,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final bool enabled;
-  final Color color;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: enabled ? onTap : null,
-      visualDensity: VisualDensity.compact,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      constraints: const BoxConstraints(minWidth: 32, minHeight: 36),
-      icon: Icon(icon, size: 20, color: color),
+    final pressable = HyperosPressableRow(
+      onTap: onToggle,
+      backgroundColor: HyperosColors.card(context),
+      highlightColor: HyperosColors.rowHighlight(context),
+      child: row,
+    );
+    final upLabel = moveUpLabel;
+    final downLabel = moveDownLabel;
+    final actions = <CustomSemanticsAction, VoidCallback>{};
+    if (enabled && canMoveUp && onMoveUp != null && upLabel != null) {
+      actions[CustomSemanticsAction(label: upLabel)] = onMoveUp!;
+    }
+    if (enabled && canMoveDown && onMoveDown != null && downLabel != null) {
+      actions[CustomSemanticsAction(label: downLabel)] = onMoveDown!;
+    }
+    if (actions.isEmpty) {
+      return pressable;
+    }
+    return Semantics(
+      customSemanticsActions: actions,
+      child: pressable,
     );
   }
 }
