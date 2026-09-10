@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/ui/background/builtin_wallpaper.dart';
 import 'package:university_timetable/utils/home_page_background.dart';
 
 /// Generates a [width]x[height] PNG: top [topLightFraction] rows white,
@@ -203,5 +205,40 @@ void main() {
     );
 
     expect(background.computeLuminance(), greaterThan(0.5));
+  });
+
+  group('内置壁纸亮度采样路径', () {
+    testWidgets('内置预设只释放一次位图 handle', (tester) async {
+      // 回归锚定 dart:ui painting.dart 中 Image.dispose 的断言：
+      // 曾经 _averageBandLuminances 在内部 dispose 传入的 handle，而
+      // _sampleBuiltInWallpaperLuminanceBands 又在 finally 里 dispose 同一个
+      // handle —— 同一个 handle 被释放两次。debug（asserts 开）直接抛
+      // _AssertionError；release 下第二次 dispose 时 _handles 已空，会再调用
+      // 一次 _image.dispose()，即 native Image::dispose 双重释放。
+      //
+      // 所有权修复对所有预设同一条路径，这里只锚定 1 个预设；全尺寸渲染
+      // 必须跑在 runAsync 真实异步区，否则 toImage/toByteData 会卡死。
+      const wallpaper = BuiltInWallpaper.lavaDark;
+      final settings = TimetableSettings.defaults().copyWith(
+        homePageBuiltInWallpaper: wallpaper.value,
+      );
+      // 自证确实落在内置分支上，否则用例会静默退化成图片路径而失效。
+      expect(
+        resolveHomePageBackdropImagePath(settings),
+        isNull,
+        reason: '默认设置不应带自选图片路径',
+      );
+      expect(resolveBuiltInWallpaper(settings), wallpaper);
+
+      final bands = await tester.runAsync(
+        () => sampleHomePageBackdropLuminanceBands(
+          settings,
+          viewportSize: const Size(41, 67),
+        ),
+      );
+      expect(bands, isNotNull, reason: '${wallpaper.value} 应能采样出亮度带');
+      expect(bands!.top, inInclusiveRange(0.0, 1.0));
+      expect(bands.body, inInclusiveRange(0.0, 1.0));
+    });
   });
 }

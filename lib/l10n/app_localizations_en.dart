@@ -3449,49 +3449,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homePageBuiltInWallpaperSubtitle =>
-      'Code-rendered animated gradient backdrop — no storage, no network; fills the home page as soon as you pick it';
+      'No storage needed — fills the home page';
 
   @override
   String get homePageBuiltInWallpaperNone => 'None';
 
   @override
-  String get homePageBuiltInWallpaperOg => 'Classic lava · Dark';
+  String get homePageBuiltInWallpaperOg => 'Classic lava';
 
   @override
-  String get homePageBuiltInWallpaperLavaDark => 'Lava orange · Dark';
+  String get homePageBuiltInWallpaperLavaDark => 'Lava orange';
 
   @override
-  String get homePageBuiltInWallpaperLavaLight => 'Peach cream · Light';
+  String get homePageBuiltInWallpaperLavaLight => 'Peach cream';
 
   @override
-  String get homePageBuiltInWallpaperDark1 => 'Deep flame · Dark';
+  String get homePageBuiltInWallpaperDark1 => 'Deep flame';
 
   @override
-  String get homePageBuiltInWallpaperLight2 => 'Sage green · Light';
+  String get homePageBuiltInWallpaperLight2 => 'Sage green';
 
   @override
-  String get homePageBuiltInWallpaperLight3 => 'Warm earth · Light';
+  String get homePageBuiltInWallpaperLight3 => 'Warm earth';
 
   @override
-  String get homePageBuiltInWallpaperEmberTeal => 'Ember teal · Dark';
+  String get homePageBuiltInWallpaperEmberTeal => 'Ember teal';
 
   @override
   String get homePageWallpaperSourceTitle => 'Wallpaper source';
 
   @override
   String get homePageWallpaperSourceSubtitle =>
-      'A chosen image takes priority; clearing it falls back to the built-in wallpaper';
+      'Image wins; clearing falls back to built-in';
 
   @override
   String get homePageBuiltInWallpaperCredits =>
-      'Built-in wallpapers are based on bokeh-lava-gradient (MIT)';
+      'Based on bokeh-lava-gradient (MIT)';
 
   @override
   String get homePageWallpaperTitle => 'Background image';
 
   @override
   String get homePageWallpaperSubtitle =>
-      'One full-screen image. Checked regions below show it through; others use the page color';
+      'Full-screen image; pick regions below';
 
   @override
   String get homePageBackdropFollowsWeekPagerTitle =>
@@ -3499,14 +3499,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homePageBackdropFollowsWeekPagerSubtitle =>
-      'When swiping between weeks, the background image moves with the timetable page';
+      'Background moves with the page';
 
   @override
   String get homePageBackgroundScopeTitle => 'Background display area';
 
   @override
   String get homePageBackgroundScopeSubtitle =>
-      'Top to bottom: choose which regions show the image; others use the page color';
+      'Checked regions show the image; rest use page color';
 
   @override
   String get homePageBackgroundScopeStatusBar => 'Status bar';

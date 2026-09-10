@@ -13,6 +13,7 @@ import 'dart:ui'
 import 'package:flutter/material.dart';
 
 import '../models/timetable_settings.dart';
+import '../ui/background/bokeh_lava_gradient.dart';
 import '../ui/background/builtin_wallpaper.dart';
 import 'hex_color.dart';
 
@@ -342,6 +343,11 @@ Widget homePageBackdropLayer({required TimetableSettings settings}) {
 }
 
 /// Full-bleed backdrop image for embedding inside a week page.
+///
+/// 自选图片仍返回 [Image]；内置壁纸返回动画 [BokehLavaGradient]（光斑漂移）。
+/// 亮度采样与预模糊玻璃继续走 [BuiltInWallpaperImage] 静态位图，与此显示层解耦。
+/// [BokehLavaGradient.debugDisableAnimationForced] 打开时（widget 集成测试）
+/// 回落到静态 Image，避免模糊绘制拖垮假异步环境。
 Widget? homePageBackdropImageWidget({required TimetableSettings settings}) {
   final path = resolveHomePageBackdropImagePath(settings);
   final provider = homePageBackdropProvider(settings);
@@ -351,6 +357,14 @@ Widget? homePageBackdropImageWidget({required TimetableSettings settings}) {
   // 横向壁纸在 cover 下水平溢出，用用户拖选的对齐值决定显示哪一段。
   // 内置壁纸由代码生成，没有可拖动的裁剪窗口，固定居中。
   final isBuiltIn = path == null || path.isEmpty;
+  if (isBuiltIn &&
+      provider is BuiltInWallpaperImage &&
+      !BokehLavaGradient.debugDisableAnimationForced) {
+    return BokehLavaGradient(
+      key: ValueKey(homePageBackdropKey(settings)),
+      wallpaper: provider.wallpaper,
+    );
+  }
   final alignX = isBuiltIn
       ? 0.0
       : settings.homePageWallpaperAlignX.clamp(-1.0, 1.0);
@@ -787,12 +801,19 @@ sampleHomePageWallpaperLuminanceBands(
     if (image == null) {
       return null;
     }
-    return _averageBandLuminances(
-      image,
-      viewportSize: viewportSize,
-      alignX: alignX,
-      alignY: alignY,
-    );
+    try {
+      // Must await: releasing the handle in `finally` while
+      // [_averageBandLuminances] is still suspended inside
+      // `image.toByteData()` would be a use-after-dispose.
+      return await _averageBandLuminances(
+        image,
+        viewportSize: viewportSize,
+        alignX: alignX,
+        alignY: alignY,
+      );
+    } finally {
+      image.dispose();
+    }
   } catch (error, stackTrace) {
     debugPrint(
       'sampleHomePageWallpaperLuminanceBands failed: $error\n$stackTrace',
@@ -831,6 +852,16 @@ Float64List _buildSrgbLinearizeLut() {
   return lut;
 }
 
+/// 按 cover 裁剪从 [image] 采样三条亮度带（top / weekday / body）。
+///
+/// **所有权契约**：本函数只读 [image]，**不** dispose 它 —— 调用方创建、
+/// 调用方释放，与 [sampleBuiltInWallpaperTopLuminance] 同款约定。
+///
+/// 早期版本在此函数内部 dispose 传入的 handle，而内置壁纸调用方同时又在
+/// `finally` 里 dispose 同一个 handle，于是同一个 handle 被释放两次，命中
+/// `dart:ui/painting.dart` 中 `Image.dispose` 的断言（debug 直接崩；release
+/// 下会经 `_handles.isEmpty` 再次调用 `_image.dispose()`，触碰 native
+/// `Image::dispose` 双重释放）。两条调用路径必须共用同一条所有权规则。
 Future<({double top, double weekday, double body})?> _averageBandLuminances(
   ui.Image image, {
   Size? viewportSize,
@@ -839,12 +870,10 @@ Future<({double top, double weekday, double body})?> _averageBandLuminances(
 }) async {
   final byteData = await image.toByteData();
   if (byteData == null) {
-    image.dispose();
     return null;
   }
   final width = image.width;
   final height = image.height;
-  image.dispose();
   if (width <= 0 || height <= 0) {
     return null;
   }

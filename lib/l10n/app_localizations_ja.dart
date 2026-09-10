@@ -3304,64 +3304,58 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePageBuiltInWallpaperTitle => '内蔵壁紙';
 
   @override
-  String get homePageBuiltInWallpaperSubtitle =>
-      'コードで描画するグラデーション背景。ストレージも通信も不要で、選ぶとすぐにホームへ反映されます';
+  String get homePageBuiltInWallpaperSubtitle => 'ストレージ不要。選ぶとホームいっぱい';
 
   @override
   String get homePageBuiltInWallpaperNone => '使用しない';
 
   @override
-  String get homePageBuiltInWallpaperOg => 'クラシックラヴァ・ダーク';
+  String get homePageBuiltInWallpaperOg => 'クラシックラヴァ';
 
   @override
-  String get homePageBuiltInWallpaperLavaDark => 'ラバオレンジ・ダーク';
+  String get homePageBuiltInWallpaperLavaDark => 'ラバオレンジ';
 
   @override
-  String get homePageBuiltInWallpaperLavaLight => 'ピーチクリーム・ライト';
+  String get homePageBuiltInWallpaperLavaLight => 'ピーチクリーム';
 
   @override
-  String get homePageBuiltInWallpaperDark1 => 'ディープフレーム・ダーク';
+  String get homePageBuiltInWallpaperDark1 => 'ディープフレーム';
 
   @override
-  String get homePageBuiltInWallpaperLight2 => 'セージグリーン・ライト';
+  String get homePageBuiltInWallpaperLight2 => 'セージグリーン';
 
   @override
-  String get homePageBuiltInWallpaperLight3 => 'ウォームアース・ライト';
+  String get homePageBuiltInWallpaperLight3 => 'ウォームアース';
 
   @override
-  String get homePageBuiltInWallpaperEmberTeal => 'エンバーティール・ダーク';
+  String get homePageBuiltInWallpaperEmberTeal => 'エンバーティール';
 
   @override
   String get homePageWallpaperSourceTitle => '壁紙のソース';
 
   @override
-  String get homePageWallpaperSourceSubtitle =>
-      '選択した画像が優先されます。画像を消去すると内蔵壁紙に戻ります';
+  String get homePageWallpaperSourceSubtitle => '画像優先。消すと内蔵に戻る';
 
   @override
-  String get homePageBuiltInWallpaperCredits =>
-      '内蔵壁紙は bokeh-lava-gradient（MIT）を基にしています';
+  String get homePageBuiltInWallpaperCredits => 'bokeh-lava-gradient（MIT）ベース';
 
   @override
   String get homePageWallpaperTitle => '背景画像';
 
   @override
-  String get homePageWallpaperSubtitle =>
-      '全画面に1枚の画像を敷きます。下の領域のチェックで透ける範囲を決め、チェックしていない領域は時間割の背景色のままです';
+  String get homePageWallpaperSubtitle => '全面背景。下で領域を選ぶ';
 
   @override
   String get homePageBackdropFollowsWeekPagerTitle => '背景を週送りに追従';
 
   @override
-  String get homePageBackdropFollowsWeekPagerSubtitle =>
-      '左右で週を切り替えるとき、背景画像が時間割ページと一緒に移動します';
+  String get homePageBackdropFollowsWeekPagerSubtitle => '背景がページと一緒に動く';
 
   @override
   String get homePageBackgroundScopeTitle => '背景の表示領域';
 
   @override
-  String get homePageBackgroundScopeSubtitle =>
-      '上から順に各領域で背景画像を透けるかどうかを制御します。チェックしていない領域は時間割の背景色のままです';
+  String get homePageBackgroundScopeSubtitle => 'チェックした領域のみ背景を表示';
 
   @override
   String get homePageBackgroundScopeStatusBar => 'ステータスバー';

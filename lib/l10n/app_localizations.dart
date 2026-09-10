@@ -6012,7 +6012,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePageBuiltInWallpaperSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'代码渲染的动态渐变底图，不占存储、无需联网；选择后立即铺满首页'**
+  /// **'不占存储，选中即铺满首页'**
   String get homePageBuiltInWallpaperSubtitle;
 
   /// No description provided for @homePageBuiltInWallpaperNone.
@@ -6024,43 +6024,43 @@ abstract class AppLocalizations {
   /// No description provided for @homePageBuiltInWallpaperOg.
   ///
   /// In zh, this message translates to:
-  /// **'经典熔岩 · 深色'**
+  /// **'经典熔岩'**
   String get homePageBuiltInWallpaperOg;
 
   /// No description provided for @homePageBuiltInWallpaperLavaDark.
   ///
   /// In zh, this message translates to:
-  /// **'熔岩橙 · 深色'**
+  /// **'熔岩橙'**
   String get homePageBuiltInWallpaperLavaDark;
 
   /// No description provided for @homePageBuiltInWallpaperLavaLight.
   ///
   /// In zh, this message translates to:
-  /// **'蜜桃奶油 · 浅色'**
+  /// **'蜜桃奶油'**
   String get homePageBuiltInWallpaperLavaLight;
 
   /// No description provided for @homePageBuiltInWallpaperDark1.
   ///
   /// In zh, this message translates to:
-  /// **'深焰赤橙 · 深色'**
+  /// **'深焰赤橙'**
   String get homePageBuiltInWallpaperDark1;
 
   /// No description provided for @homePageBuiltInWallpaperLight2.
   ///
   /// In zh, this message translates to:
-  /// **'鼠尾草绿 · 浅色'**
+  /// **'鼠尾草绿'**
   String get homePageBuiltInWallpaperLight2;
 
   /// No description provided for @homePageBuiltInWallpaperLight3.
   ///
   /// In zh, this message translates to:
-  /// **'大地暖棕 · 浅色'**
+  /// **'大地暖棕'**
   String get homePageBuiltInWallpaperLight3;
 
   /// No description provided for @homePageBuiltInWallpaperEmberTeal.
   ///
   /// In zh, this message translates to:
-  /// **'青绿余烬 · 深色'**
+  /// **'青绿余烬'**
   String get homePageBuiltInWallpaperEmberTeal;
 
   /// No description provided for @homePageWallpaperSourceTitle.
@@ -6072,13 +6072,13 @@ abstract class AppLocalizations {
   /// No description provided for @homePageWallpaperSourceSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'自选图片优先于内置壁纸；清除图片后自动回退到内置壁纸'**
+  /// **'自选图片优先；清除后回退内置'**
   String get homePageWallpaperSourceSubtitle;
 
   /// No description provided for @homePageBuiltInWallpaperCredits.
   ///
   /// In zh, this message translates to:
-  /// **'内置壁纸基于 bokeh-lava-gradient（MIT）实现'**
+  /// **'基于 bokeh-lava-gradient（MIT）'**
   String get homePageBuiltInWallpaperCredits;
 
   /// No description provided for @homePageWallpaperTitle.
@@ -6090,7 +6090,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePageWallpaperSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'全屏铺底一张图；勾选下方区域决定透出范围，未勾选区域仍显示课表背景色'**
+  /// **'全屏铺底；下方勾选透出区域'**
   String get homePageWallpaperSubtitle;
 
   /// No description provided for @homePageBackdropFollowsWeekPagerTitle.
@@ -6102,7 +6102,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePageBackdropFollowsWeekPagerSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'左右切换周次时，背景图与课表页面一起移动'**
+  /// **'切周时背景与课表一起移动'**
   String get homePageBackdropFollowsWeekPagerSubtitle;
 
   /// No description provided for @homePageBackgroundScopeTitle.
@@ -6114,7 +6114,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePageBackgroundScopeSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'从上到下依次控制各区域是否透出背景图；未勾选区域仍显示课表背景色'**
+  /// **'勾选的区域透出背景，其余显示课表底色'**
   String get homePageBackgroundScopeSubtitle;
 
   /// No description provided for @homePageBackgroundScopeStatusBar.

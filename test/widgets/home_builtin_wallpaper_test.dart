@@ -15,6 +15,7 @@ import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
+import 'package:university_timetable/ui/background/bokeh_lava_gradient.dart';
 import 'package:university_timetable/ui/background/builtin_wallpaper.dart';
 import 'package:university_timetable/utils/home_page_background.dart';
 
@@ -40,10 +41,10 @@ void _seedInitializedPrefs(TimetableSettings settings) {
 
 /// 交替真实异步与 pump，让「渲染位图 → 采样亮度 → setState」链跑完。
 Future<void> _settleAsyncChain(WidgetTester tester, {int rounds = 6}) async {
+  Future<void> waitHundredMs() =>
+      Future<void>.delayed(const Duration(milliseconds: 100));
   for (var i = 0; i < rounds; i++) {
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 100)),
-    );
+    await tester.runAsync(waitHundredMs);
     await tester.pump();
   }
   await tester.pump(const Duration(milliseconds: 400));
@@ -56,7 +57,7 @@ Future<void> _pumpHome(
 }) async {
   _seedInitializedPrefs(settings);
   final provider = TimetableProvider(autoInitialize: false);
-  await tester.runAsync(() => provider.initialize());
+  await tester.runAsync(provider.initialize);
   await tester.binding.setSurfaceSize(const Size(400, 800));
   await tester.pumpWidget(
     ChangeNotifierProvider.value(
@@ -83,18 +84,40 @@ Future<void> _pumpHome(
   await tester.pump();
   await _settleAsyncChain(tester);
 
-  // 有背景时首页背景层必须画出 Image（内置壁纸位图）；无背景时不应出现
-  // 背景 Image（只有主题兜底色）。
-  final images = find.byType(Image).evaluate().length;
+  // 有背景时首页背景层必须画出内置壁纸（动画 BokehLavaGradient 或位图
+  // Image）；无背景时两者都不应出现（只有主题兜底色）。
+  final hasAnimated = find.byType(BokehLavaGradient).evaluate().isNotEmpty;
+  final hasStatic =
+      find
+          .byWidgetPredicate(
+            (w) => w is Image && w.image is BuiltInWallpaperImage,
+          )
+          .evaluate()
+          .isNotEmpty;
   if (expectBackdrop) {
-    expect(images, greaterThan(0), reason: '内置壁纸应作为背景 Image 渲染');
+    expect(
+      hasAnimated || hasStatic,
+      isTrue,
+      reason: '内置壁纸应以 BokehLavaGradient 动画或静态位图渲染',
+    );
   } else {
-    expect(images, 0, reason: '无背景时不应渲染背景 Image');
+    expect(hasAnimated, isFalse, reason: '无背景时不应渲染内置壁纸动画');
+    expect(hasStatic, isFalse, reason: '无背景时不应渲染内置壁纸位图');
   }
   expect(tester.takeException(), isNull);
 }
 
 void main() {
+  setUp(() {
+    // TimetableScreen + Ticker 与 runAsync 假时钟会死锁；本用例只断言
+    // 背景层是否出现，不需要真实漂移。
+    BokehLavaGradient.debugDisableAnimationForced = true;
+  });
+
+  tearDown(() {
+    BokehLavaGradient.debugDisableAnimationForced = false;
+  });
+
   testWidgets('选中内置壁纸后首页把它当作背景（无磁盘文件）', (tester) async {
     final settings = TimetableSettings.defaults().copyWith(
       homePageBuiltInWallpaper: BuiltInWallpaper.lavaDark.value,

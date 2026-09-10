@@ -417,11 +417,6 @@ class _TimetablePageSettingsScreenState
             l10n.homePageBuiltInWallpaperTitle,
             style: HyperosTypography.listTitle(context),
           ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.homePageBuiltInWallpaperSubtitle,
-            style: HyperosTypography.listDetail(context),
-          ),
           const SizedBox(height: 12),
           SizedBox(
             height: 116,
@@ -472,11 +467,6 @@ class _TimetablePageSettingsScreenState
                 );
               },
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.homePageBuiltInWallpaperCredits,
-            style: HyperosTypography.listDetail(context),
           ),
         ],
       ),

@@ -3320,64 +3320,58 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homePageBuiltInWallpaperTitle => '내장 배경화면';
 
   @override
-  String get homePageBuiltInWallpaperSubtitle =>
-      '코드로 그리는 그라데이션 배경. 저장 공간과 네트워크가 필요 없고, 선택하면 바로 홈에 적용됩니다';
+  String get homePageBuiltInWallpaperSubtitle => '저장 공간 없음. 고르면 홈 전체';
 
   @override
   String get homePageBuiltInWallpaperNone => '사용 안 함';
 
   @override
-  String get homePageBuiltInWallpaperOg => '클래식 라바 · 다크';
+  String get homePageBuiltInWallpaperOg => '클래식 라바';
 
   @override
-  String get homePageBuiltInWallpaperLavaDark => '라바 오렌지 · 다크';
+  String get homePageBuiltInWallpaperLavaDark => '라바 오렌지';
 
   @override
-  String get homePageBuiltInWallpaperLavaLight => '피치 크림 · 라이트';
+  String get homePageBuiltInWallpaperLavaLight => '피치 크림';
 
   @override
-  String get homePageBuiltInWallpaperDark1 => '딥 플레임 · 다크';
+  String get homePageBuiltInWallpaperDark1 => '딥 플레임';
 
   @override
-  String get homePageBuiltInWallpaperLight2 => '세이지 그린 · 라이트';
+  String get homePageBuiltInWallpaperLight2 => '세이지 그린';
 
   @override
-  String get homePageBuiltInWallpaperLight3 => '웜 어스 · 라이트';
+  String get homePageBuiltInWallpaperLight3 => '웜 어스';
 
   @override
-  String get homePageBuiltInWallpaperEmberTeal => '엠버 틸 · 다크';
+  String get homePageBuiltInWallpaperEmberTeal => '엠버 틸';
 
   @override
   String get homePageWallpaperSourceTitle => '배경화면 소스';
 
   @override
-  String get homePageWallpaperSourceSubtitle =>
-      '선택한 이미지가 우선이며, 이미지를 지우면 내장 배경화면으로 돌아갑니다';
+  String get homePageWallpaperSourceSubtitle => '이미지 우선. 지우면 내장으로';
 
   @override
-  String get homePageBuiltInWallpaperCredits =>
-      '내장 배경화면은 bokeh-lava-gradient(MIT)를 기반으로 합니다';
+  String get homePageBuiltInWallpaperCredits => 'bokeh-lava-gradient(MIT) 기반';
 
   @override
   String get homePageWallpaperTitle => '배경 이미지';
 
   @override
-  String get homePageWallpaperSubtitle =>
-      '전체 화면에 이미지 하나를 깔아 줍니다. 아래 영역을 선택해 비치는 범위를 정하며, 선택하지 않은 영역은 시간표 배경색이 유지됩니다';
+  String get homePageWallpaperSubtitle => '전체 배경. 아래서 영역 선택';
 
   @override
   String get homePageBackdropFollowsWeekPagerTitle => '배경이 주차 스와이프를 따라감';
 
   @override
-  String get homePageBackdropFollowsWeekPagerSubtitle =>
-      '좌우로 주차를 전환할 때 배경 이미지가 시간표 페이지와 함께 움직입니다';
+  String get homePageBackdropFollowsWeekPagerSubtitle => '배경이 페이지와 함께 이동';
 
   @override
   String get homePageBackgroundScopeTitle => '배경 표시 영역';
 
   @override
-  String get homePageBackgroundScopeSubtitle =>
-      '위에서부터 각 영역의 배경 이미지 노출 여부를 제어합니다. 선택하지 않은 영역은 시간표 배경색이 유지됩니다';
+  String get homePageBackgroundScopeSubtitle => '선택한 영역만 배경 표시';
 
   @override
   String get homePageBackgroundScopeStatusBar => '상태 표시줄';

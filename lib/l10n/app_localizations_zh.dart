@@ -3249,61 +3249,58 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageBuiltInWallpaperTitle => '内置壁纸';
 
   @override
-  String get homePageBuiltInWallpaperSubtitle =>
-      '代码渲染的动态渐变底图，不占存储、无需联网；选择后立即铺满首页';
+  String get homePageBuiltInWallpaperSubtitle => '不占存储，选中即铺满首页';
 
   @override
   String get homePageBuiltInWallpaperNone => '不使用';
 
   @override
-  String get homePageBuiltInWallpaperOg => '经典熔岩 · 深色';
+  String get homePageBuiltInWallpaperOg => '经典熔岩';
 
   @override
-  String get homePageBuiltInWallpaperLavaDark => '熔岩橙 · 深色';
+  String get homePageBuiltInWallpaperLavaDark => '熔岩橙';
 
   @override
-  String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油 · 浅色';
+  String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油';
 
   @override
-  String get homePageBuiltInWallpaperDark1 => '深焰赤橙 · 深色';
+  String get homePageBuiltInWallpaperDark1 => '深焰赤橙';
 
   @override
-  String get homePageBuiltInWallpaperLight2 => '鼠尾草绿 · 浅色';
+  String get homePageBuiltInWallpaperLight2 => '鼠尾草绿';
 
   @override
-  String get homePageBuiltInWallpaperLight3 => '大地暖棕 · 浅色';
+  String get homePageBuiltInWallpaperLight3 => '大地暖棕';
 
   @override
-  String get homePageBuiltInWallpaperEmberTeal => '青绿余烬 · 深色';
+  String get homePageBuiltInWallpaperEmberTeal => '青绿余烬';
 
   @override
   String get homePageWallpaperSourceTitle => '壁纸来源';
 
   @override
-  String get homePageWallpaperSourceSubtitle => '自选图片优先于内置壁纸；清除图片后自动回退到内置壁纸';
+  String get homePageWallpaperSourceSubtitle => '自选图片优先；清除后回退内置';
 
   @override
-  String get homePageBuiltInWallpaperCredits =>
-      '内置壁纸基于 bokeh-lava-gradient（MIT）实现';
+  String get homePageBuiltInWallpaperCredits => '基于 bokeh-lava-gradient（MIT）';
 
   @override
   String get homePageWallpaperTitle => '背景图片';
 
   @override
-  String get homePageWallpaperSubtitle => '全屏铺底一张图；勾选下方区域决定透出范围，未勾选区域仍显示课表背景色';
+  String get homePageWallpaperSubtitle => '全屏铺底；下方勾选透出区域';
 
   @override
   String get homePageBackdropFollowsWeekPagerTitle => '背景随周次滑动';
 
   @override
-  String get homePageBackdropFollowsWeekPagerSubtitle => '左右切换周次时，背景图与课表页面一起移动';
+  String get homePageBackdropFollowsWeekPagerSubtitle => '切周时背景与课表一起移动';
 
   @override
   String get homePageBackgroundScopeTitle => '背景显示区域';
 
   @override
-  String get homePageBackgroundScopeSubtitle =>
-      '从上到下依次控制各区域是否透出背景图；未勾选区域仍显示课表背景色';
+  String get homePageBackgroundScopeSubtitle => '勾选的区域透出背景，其余显示课表底色';
 
   @override
   String get homePageBackgroundScopeStatusBar => '状态栏';
@@ -13865,61 +13862,58 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homePageBuiltInWallpaperTitle => '內建壁紙';
 
   @override
-  String get homePageBuiltInWallpaperSubtitle =>
-      '由程式繪製嘅漸變底圖，唔佔儲存空間、唔需要網絡；揀咗即刻鋪滿首頁';
+  String get homePageBuiltInWallpaperSubtitle => '唔佔儲存，揀咗即鋪滿首頁';
 
   @override
   String get homePageBuiltInWallpaperNone => '唔使用';
 
   @override
-  String get homePageBuiltInWallpaperOg => '經典熔岩 · 深色';
+  String get homePageBuiltInWallpaperOg => '經典熔岩';
 
   @override
-  String get homePageBuiltInWallpaperLavaDark => '熔岩橙 · 深色';
+  String get homePageBuiltInWallpaperLavaDark => '熔岩橙';
 
   @override
-  String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油 · 淺色';
+  String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油';
 
   @override
-  String get homePageBuiltInWallpaperDark1 => '深焰赤橙 · 深色';
+  String get homePageBuiltInWallpaperDark1 => '深焰赤橙';
 
   @override
-  String get homePageBuiltInWallpaperLight2 => '鼠尾草綠 · 淺色';
+  String get homePageBuiltInWallpaperLight2 => '鼠尾草綠';
 
   @override
-  String get homePageBuiltInWallpaperLight3 => '大地暖棕 · 淺色';
+  String get homePageBuiltInWallpaperLight3 => '大地暖棕';
 
   @override
-  String get homePageBuiltInWallpaperEmberTeal => '青綠餘燼 · 深色';
+  String get homePageBuiltInWallpaperEmberTeal => '青綠餘燼';
 
   @override
   String get homePageWallpaperSourceTitle => '壁紙來源';
 
   @override
-  String get homePageWallpaperSourceSubtitle => '自選圖片優先於內建壁紙；清除圖片後會自動回退到內建壁紙';
+  String get homePageWallpaperSourceSubtitle => '自選圖片優先；清除後回退內建';
 
   @override
-  String get homePageBuiltInWallpaperCredits =>
-      '內建壁紙基於 bokeh-lava-gradient（MIT）實作';
+  String get homePageBuiltInWallpaperCredits => '基於 bokeh-lava-gradient（MIT）';
 
   @override
   String get homePageWallpaperTitle => '背景圖片';
 
   @override
-  String get homePageWallpaperSubtitle => '全螢幕鋪底一張圖；勾選下方區域決定透出範圍，未勾選區域仍顯示課表背景色';
+  String get homePageWallpaperSubtitle => '全屏鋪底；下方勾選透出區域';
 
   @override
   String get homePageBackdropFollowsWeekPagerTitle => '背景隨週次滑動';
 
   @override
-  String get homePageBackdropFollowsWeekPagerSubtitle => '左右切換週次時，背景圖與課表頁面一起移動';
+  String get homePageBackdropFollowsWeekPagerSubtitle => '切週時背景同課表一齊移動';
 
   @override
   String get homePageBackgroundScopeTitle => '背景顯示區域';
 
   @override
-  String get homePageBackgroundScopeSubtitle =>
-      '從上到下依序控制各區域是否透出背景圖；未勾選區域仍顯示課表背景色';
+  String get homePageBackgroundScopeSubtitle => '勾選嘅區域透出背景，其餘顯示課表底色';
 
   @override
   String get homePageBackgroundScopeStatusBar => '狀態列';
@@ -24524,61 +24518,58 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homePageBuiltInWallpaperTitle => '內建桌布';
 
   @override
-  String get homePageBuiltInWallpaperSubtitle =>
-      '由程式繪製的漸層底圖，不佔儲存空間、無需網路；選取後立即鋪滿首頁';
+  String get homePageBuiltInWallpaperSubtitle => '不佔儲存，選取即鋪滿首頁';
 
   @override
   String get homePageBuiltInWallpaperNone => '不使用';
 
   @override
-  String get homePageBuiltInWallpaperOg => '經典熔岩 · 深色';
+  String get homePageBuiltInWallpaperOg => '經典熔岩';
 
   @override
-  String get homePageBuiltInWallpaperLavaDark => '熔岩橙 · 深色';
+  String get homePageBuiltInWallpaperLavaDark => '熔岩橙';
 
   @override
-  String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油 · 淺色';
+  String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油';
 
   @override
-  String get homePageBuiltInWallpaperDark1 => '深焰赤橙 · 深色';
+  String get homePageBuiltInWallpaperDark1 => '深焰赤橙';
 
   @override
-  String get homePageBuiltInWallpaperLight2 => '鼠尾草綠 · 淺色';
+  String get homePageBuiltInWallpaperLight2 => '鼠尾草綠';
 
   @override
-  String get homePageBuiltInWallpaperLight3 => '大地暖棕 · 淺色';
+  String get homePageBuiltInWallpaperLight3 => '大地暖棕';
 
   @override
-  String get homePageBuiltInWallpaperEmberTeal => '青綠餘燼 · 深色';
+  String get homePageBuiltInWallpaperEmberTeal => '青綠餘燼';
 
   @override
   String get homePageWallpaperSourceTitle => '桌布來源';
 
   @override
-  String get homePageWallpaperSourceSubtitle => '自選圖片優先於內建桌布；清除圖片後會自動回退到內建桌布';
+  String get homePageWallpaperSourceSubtitle => '自選圖片優先；清除後回退內建';
 
   @override
-  String get homePageBuiltInWallpaperCredits =>
-      '內建桌布基於 bokeh-lava-gradient（MIT）實作';
+  String get homePageBuiltInWallpaperCredits => '基於 bokeh-lava-gradient（MIT）';
 
   @override
   String get homePageWallpaperTitle => '背景圖片';
 
   @override
-  String get homePageWallpaperSubtitle => '全螢幕鋪底一張圖；勾選下方區域決定透出範圍，未勾選區域仍顯示課表背景色';
+  String get homePageWallpaperSubtitle => '全屏鋪底；下方勾選透出區域';
 
   @override
   String get homePageBackdropFollowsWeekPagerTitle => '背景隨週次滑動';
 
   @override
-  String get homePageBackdropFollowsWeekPagerSubtitle => '左右切換週次時，背景圖與課表頁面一起移動';
+  String get homePageBackdropFollowsWeekPagerSubtitle => '切週時背景與課表一起移動';
 
   @override
   String get homePageBackgroundScopeTitle => '背景顯示區域';
 
   @override
-  String get homePageBackgroundScopeSubtitle =>
-      '從上到下依序控制各區域是否透出背景圖；未勾選區域仍顯示課表背景色';
+  String get homePageBackgroundScopeSubtitle => '勾選的區域透出背景，其餘顯示課表底色';
 
   @override
   String get homePageBackgroundScopeStatusBar => '狀態列';
