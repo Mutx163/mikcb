@@ -10145,6 +10145,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedGlassModeLiquid => '리퀴드 글래스';
 
   @override
+  String get frostedGlassModeSoft => '소프트 글래스';
+
+  @override
   String get frostedGlassModeGaussian => '가우시안 블러';
 
   @override
@@ -10699,6 +10702,21 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get glassDockCustomizeSectionTitle => '하단 내비게이션';
+
+  @override
+  String get glassDockStyleLabel => '독 재질';
+
+  @override
+  String get glassDockStyleLiquid => '리퀴드 글래스';
+
+  @override
+  String get glassDockStyleSoft => '소프트 글래스';
+
+  @override
+  String get glassDockStyleLiquidSubtitle => '굴절 유리, 더 풍부한 질감(전력 소모 약간 높음)';
+
+  @override
+  String get glassDockStyleSoftSubtitle => '부드러운 프로스트 캡슐, 더 가볍고 효율적';
 
   @override
   String get glassDockCustomizeTitle => '독 버튼 사용자 지정';

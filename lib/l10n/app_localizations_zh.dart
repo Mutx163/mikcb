@@ -9817,6 +9817,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get frostedGlassModeLiquid => '液态玻璃';
 
   @override
+  String get frostedGlassModeSoft => '柔光玻璃';
+
+  @override
   String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
@@ -10365,6 +10368,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get glassDockCustomizeSectionTitle => '底部导航栏';
+
+  @override
+  String get glassDockStyleLabel => '底栏材质';
+
+  @override
+  String get glassDockStyleLiquid => '液态玻璃';
+
+  @override
+  String get glassDockStyleSoft => '柔光玻璃';
+
+  @override
+  String get glassDockStyleLiquidSubtitle => '折射玻璃，质感更强（功耗略高）';
+
+  @override
+  String get glassDockStyleSoftSubtitle => '雾面柔光胶囊，更轻更省电';
 
   @override
   String get glassDockCustomizeTitle => '自定义底栏按钮';
@@ -20485,6 +20503,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get frostedGlassModeLiquid => '液態玻璃';
 
   @override
+  String get frostedGlassModeSoft => '柔光玻璃';
+
+  @override
   String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
@@ -21033,6 +21054,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get glassDockCustomizeSectionTitle => '底部導覽列';
+
+  @override
+  String get glassDockStyleLabel => '底欄材質';
+
+  @override
+  String get glassDockStyleLiquid => '液態玻璃';
+
+  @override
+  String get glassDockStyleSoft => '柔光玻璃';
+
+  @override
+  String get glassDockStyleLiquidSubtitle => '折射玻璃，質感更強（功耗略高）';
+
+  @override
+  String get glassDockStyleSoftSubtitle => '霧面柔光膠囊，更輕更省電';
 
   @override
   String get glassDockCustomizeTitle => '自訂底欄按鈕';
@@ -31153,6 +31189,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get frostedGlassModeLiquid => '液態玻璃';
 
   @override
+  String get frostedGlassModeSoft => '柔光玻璃';
+
+  @override
   String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
@@ -31701,6 +31740,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get glassDockCustomizeSectionTitle => '底部導覽列';
+
+  @override
+  String get glassDockStyleLabel => '底欄材質';
+
+  @override
+  String get glassDockStyleLiquid => '液態玻璃';
+
+  @override
+  String get glassDockStyleSoft => '柔光玻璃';
+
+  @override
+  String get glassDockStyleLiquidSubtitle => '折射玻璃，質感更強（功耗略高）';
+
+  @override
+  String get glassDockStyleSoftSubtitle => '霧面柔光膠囊，更輕更省電';
 
   @override
   String get glassDockCustomizeTitle => '自訂底欄按鈕';

@@ -17,6 +17,7 @@ import 'hyperos_widgets.dart';
 import '../../widgets/miuix_date_picker_sheet.dart';
 import 'frosted/liquid_glass_degradation.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart';
+import 'soft_glass/soft_glass_surface.dart';
 
 /// Row padding for [HyperosSelectTile] (and similar chevron rows).
 ///
@@ -575,6 +576,12 @@ class HyperosSelectPopupGlass extends StatelessWidget {
   /// 共享捕获，此参数对它无额外影响。
   final bool useAncestorGroupCapture;
 
+  /// 当前外观下弹窗是否走柔光玻璃面（Hyper-PiliPlus SoftGlass 风格）。
+  static bool softSurfaceActive(BuildContext context) {
+    final appearance = FrostedAppearanceScope.of(context);
+    return appearance.glassMode == FrostedGlassMode.softGlass;
+  }
+
   /// 当前外观下弹窗是否走液态玻璃面（与 [build] 分支同一口径，供调用方
   /// 判断是否需要准备共享组捕获垫层）。
   static bool liquidSurfaceActive(BuildContext context) {
@@ -598,7 +605,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     if (opaqueSurface) {
       return true;
     }
-    if (liquidSurfaceActive(context)) {
+    if (liquidSurfaceActive(context) || softSurfaceActive(context)) {
       return false;
     }
     return !HyperosBlurredHeader.backdropBlurEnabled(context);
@@ -608,6 +615,19 @@ class HyperosSelectPopupGlass extends StatelessWidget {
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(cornerRadius);
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+
+    // Soft glass (global): milky frost panel for anchored popups.
+    if (softSurfaceActive(context)) {
+      return HyperosFrostedPanelScope(
+        child: SoftGlassSurface(
+          borderRadius: borderRadius,
+          blurEnabled: useBlur,
+          blurSigma: 28,
+          enableShadows: false,
+          child: child,
+        ),
+      );
+    }
 
     // Liquid glass owns its own blur/refraction and must not be gated by the
     // platform BackdropFilter capability. Otherwise anchored popups become

@@ -32,21 +32,32 @@ void main() {
 
     test('开模糊 + 液态模式 → 液态玻璃', () {
       expect(
-        glassModeChoiceOf(
-          settings(mode: FrostedGlassMode.liquidGlass),
-        ),
+        glassModeChoiceOf(settings(mode: FrostedGlassMode.liquidGlass)),
         GlassModeChoice.liquidGlass,
       );
     });
 
     test('开模糊 + 存量 frosted / gaussian → 高斯模糊', () {
-      expect(
-        glassModeChoiceOf(settings()),
-        GlassModeChoice.gaussian,
-      );
+      expect(glassModeChoiceOf(settings()), GlassModeChoice.gaussian);
       expect(
         glassModeChoiceOf(settings(mode: FrostedGlassMode.gaussian)),
         GlassModeChoice.gaussian,
+      );
+    });
+
+    test('开模糊 + 柔光模式 → 柔光玻璃', () {
+      expect(
+        glassModeChoiceOf(settings(mode: FrostedGlassMode.softGlass)),
+        GlassModeChoice.softGlass,
+      );
+    });
+
+    test('模糊关 + 柔光模式（存量混搭）仍推导为实体卡片', () {
+      expect(
+        glassModeChoiceOf(
+          settings(blurEnabled: false, mode: FrostedGlassMode.softGlass),
+        ),
+        GlassModeChoice.solid,
       );
     });
   });
@@ -70,6 +81,16 @@ void main() {
       expect(result.frostedGlassMode, FrostedGlassMode.gaussian);
     });
 
+    test('柔光玻璃：开模糊 + softGlass 模式，并同步底栏为柔光', () {
+      final result = applyGlassModeChoice(
+        settings(blurEnabled: false),
+        GlassModeChoice.softGlass,
+      );
+      expect(result.frostedBlurEnabled, isTrue);
+      expect(result.frostedGlassMode, FrostedGlassMode.softGlass);
+      expect(result.glassDockStyle, DockGlassStyle.soft);
+    });
+
     test('液态玻璃：开模糊 + liquidGlass 模式', () {
       final result = applyGlassModeChoice(
         settings(blurEnabled: false),
@@ -79,12 +100,14 @@ void main() {
       expect(result.frostedGlassMode, FrostedGlassMode.liquidGlass);
     });
 
-    test('三档往返切换后状态自洽', () {
+    test('四档往返切换后状态自洽', () {
       var s = settings(mode: FrostedGlassMode.liquidGlass);
       s = applyGlassModeChoice(s, GlassModeChoice.solid);
       expect(glassModeChoiceOf(s), GlassModeChoice.solid);
       s = applyGlassModeChoice(s, GlassModeChoice.gaussian);
       expect(glassModeChoiceOf(s), GlassModeChoice.gaussian);
+      s = applyGlassModeChoice(s, GlassModeChoice.softGlass);
+      expect(glassModeChoiceOf(s), GlassModeChoice.softGlass);
       s = applyGlassModeChoice(s, GlassModeChoice.liquidGlass);
       expect(glassModeChoiceOf(s), GlassModeChoice.liquidGlass);
       s = applyGlassModeChoice(s, GlassModeChoice.solid);
@@ -98,6 +121,10 @@ void main() {
       FrostedGlassMode.frosted,
     );
     expect(FrostedGlassModeX.fromValue('gaussian'), FrostedGlassMode.gaussian);
+    expect(
+      FrostedGlassModeX.fromValue('softGlass'),
+      FrostedGlassMode.softGlass,
+    );
     expect(FrostedGlassModeX.fromValue(null), FrostedGlassMode.frosted);
   });
 }

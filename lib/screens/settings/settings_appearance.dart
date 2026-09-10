@@ -309,6 +309,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   items: {
                     l10n.frostedGlassModeSolid: GlassModeChoice.solid,
                     l10n.frostedGlassModeGaussian: GlassModeChoice.gaussian,
+                    l10n.frostedGlassModeSoft: GlassModeChoice.softGlass,
                     l10n.frostedGlassModeLiquid: GlassModeChoice.liquidGlass,
                   },
                   value: glassModeChoiceOf(_draft),
@@ -351,11 +352,11 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                     },
                   ),
                 // 高斯模糊档(开模糊 + 非液态)露出强度/亮度滑杆。按
-                // 「开模糊且非液态」判定而非 == gaussian：存量 frosted
-                // 默认档用户现在同样落在这一档，需要能看到滑杆。
+                // 「开模糊且非液态/非柔光」判定而非 == gaussian：存量
+                // frosted 默认档用户现在同样落在这一档，需要能看到滑杆。
                 if (_draft.frostedBlurEnabled &&
-                    _draft.frostedGlassMode !=
-                        FrostedGlassMode.liquidGlass) ...[
+                    _draft.frostedGlassMode != FrostedGlassMode.liquidGlass &&
+                    _draft.frostedGlassMode != FrostedGlassMode.softGlass) ...[
                   HyperosSliderTile(
                     title: l10n.frostedSheetBlurLabel,
                     value: _draft.frostedSheetBlurSigma,

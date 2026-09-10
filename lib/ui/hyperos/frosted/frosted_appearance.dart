@@ -40,6 +40,10 @@ enum FrostedGlassMode {
   /// Liquid-glass refraction (depth-based real-time shader).
   liquidGlass,
 
+  /// 柔光玻璃（Hyper-PiliPlus SoftGlass 风格）：雾面胶囊 + 双影 + 边缘
+  /// 高光。与液态折射解耦——不依赖 RuntimeShader，Blur + 蒙层即可。
+  softGlass,
+
   /// 设置页「高斯模糊」档的存储标记：渲染与 [frosted] 同一链路，仅用于
   /// 标记用户显式选择过该档。
   gaussian,

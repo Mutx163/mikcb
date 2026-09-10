@@ -108,6 +108,23 @@ class _HomeNavigationSettingsScreenState
               title: l10n.glassDockCustomizeSectionTitle,
               child: HyperosListGroup(
                 children: [
+                  // 底栏材质：液态折射（GlassTabBar）↔ 柔光雾面
+                  // （Hyper-PiliPlus SoftGlass 形态），自由切换。
+                  HyperosSelectTile<DockGlassStyle>(
+                    label: l10n.glassDockStyleLabel,
+                    subtitle: switch (_draft.glassDockStyle) {
+                      DockGlassStyle.liquid => l10n.glassDockStyleLiquidSubtitle,
+                      DockGlassStyle.soft => l10n.glassDockStyleSoftSubtitle,
+                    },
+                    items: {
+                      l10n.glassDockStyleLiquid: DockGlassStyle.liquid,
+                      l10n.glassDockStyleSoft: DockGlassStyle.soft,
+                    },
+                    value: _draft.glassDockStyle,
+                    onChanged: (value) {
+                      _updateDraft(_draft.copyWith(glassDockStyle: value));
+                    },
+                  ),
                   HyperosSwitchTile(
                     title: l10n.glassDockShowAddButtonTitle,
                     subtitle: l10n.glassDockShowAddButtonSubtitle,

@@ -10398,6 +10398,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frostedGlassModeLiquid => 'Liquid Glass';
 
   @override
+  String get frostedGlassModeSoft => 'Soft Glass';
+
+  @override
   String get frostedGlassModeGaussian => 'Gaussian Blur';
 
   @override
@@ -10970,6 +10973,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get glassDockCustomizeSectionTitle => 'Bottom dock';
+
+  @override
+  String get glassDockStyleLabel => 'Dock material';
+
+  @override
+  String get glassDockStyleLiquid => 'Liquid glass';
+
+  @override
+  String get glassDockStyleSoft => 'Soft glass';
+
+  @override
+  String get glassDockStyleLiquidSubtitle =>
+      'Refractive glass, richer feel (slightly higher power)';
+
+  @override
+  String get glassDockStyleSoftSubtitle =>
+      'Soft frosted capsule, lighter and more efficient';
 
   @override
   String get glassDockCustomizeTitle => 'Customize dock buttons';

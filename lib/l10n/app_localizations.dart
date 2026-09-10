@@ -17773,6 +17773,12 @@ abstract class AppLocalizations {
   /// **'液态玻璃'**
   String get frostedGlassModeLiquid;
 
+  /// No description provided for @frostedGlassModeSoft.
+  ///
+  /// In zh, this message translates to:
+  /// **'柔光玻璃'**
+  String get frostedGlassModeSoft;
+
   /// No description provided for @frostedGlassModeGaussian.
   ///
   /// In zh, this message translates to:
@@ -18858,6 +18864,36 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'底部导航栏'**
   String get glassDockCustomizeSectionTitle;
+
+  /// No description provided for @glassDockStyleLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'底栏材质'**
+  String get glassDockStyleLabel;
+
+  /// No description provided for @glassDockStyleLiquid.
+  ///
+  /// In zh, this message translates to:
+  /// **'液态玻璃'**
+  String get glassDockStyleLiquid;
+
+  /// No description provided for @glassDockStyleSoft.
+  ///
+  /// In zh, this message translates to:
+  /// **'柔光玻璃'**
+  String get glassDockStyleSoft;
+
+  /// No description provided for @glassDockStyleLiquidSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'折射玻璃，质感更强（功耗略高）'**
+  String get glassDockStyleLiquidSubtitle;
+
+  /// No description provided for @glassDockStyleSoftSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'雾面柔光胶囊，更轻更省电'**
+  String get glassDockStyleSoftSubtitle;
 
   /// No description provided for @glassDockCustomizeTitle.
   ///

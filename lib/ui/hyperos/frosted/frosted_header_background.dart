@@ -15,6 +15,12 @@ bool _isLiquidSheetPanel(BuildContext context) {
       a.liquidGlassSheetDialogEnabled;
 }
 
+bool _isSoftSheetPanel(BuildContext context) {
+  final scope = FrostedAppearanceScope.maybeOf(context);
+  if (scope == null) return false;
+  return scope.appearance.glassMode == FrostedGlassMode.softGlass;
+}
+
 /// Frosted top bar: progressive blur + tint scrim (via [InspireHeaderBlur]).
 ///
 /// [blurStyle] 只切换过渡形态，两档都走 `inspire_blur`：
@@ -123,6 +129,18 @@ class HyperosFrostedSurface extends StatelessWidget {
     final inLiquidPanel =
         _isLiquidSheetPanel(context) && HyperosFrostedPanelScope.of(context);
     if (inLiquidPanel) {
+      final resolvedTint =
+          tint ?? HyperosBlurredHeader.nestedLiquidTileTintColor(context);
+      return ClipRRect(
+        borderRadius: borderRadius,
+        child: ColoredBox(color: resolvedTint, child: content),
+      );
+    }
+
+    // Soft glass panel: parent already owns blur — nested tiles only wash.
+    final inSoftPanel =
+        _isSoftSheetPanel(context) && HyperosFrostedPanelScope.of(context);
+    if (inSoftPanel) {
       final resolvedTint =
           tint ?? HyperosBlurredHeader.nestedLiquidTileTintColor(context);
       return ClipRRect(

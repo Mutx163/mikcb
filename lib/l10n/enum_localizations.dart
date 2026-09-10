@@ -286,6 +286,7 @@ String frostedGlassModeLabel(AppLocalizations l10n, FrostedGlassMode mode) =>
     switch (mode) {
       FrostedGlassMode.frosted => l10n.frostedGlassModeFrosted,
       FrostedGlassMode.liquidGlass => l10n.frostedGlassModeLiquid,
+      FrostedGlassMode.softGlass => l10n.frostedGlassModeSoft,
       FrostedGlassMode.gaussian => l10n.frostedGlassModeGaussian,
     };
 

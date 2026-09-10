@@ -10102,6 +10102,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get frostedGlassModeLiquid => 'リキッドガラス';
 
   @override
+  String get frostedGlassModeSoft => 'ソフトガラス';
+
+  @override
   String get frostedGlassModeGaussian => 'ガウスぼかし';
 
   @override
@@ -10656,6 +10659,21 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get glassDockCustomizeSectionTitle => '下部ナビゲーション';
+
+  @override
+  String get glassDockStyleLabel => 'ドック素材';
+
+  @override
+  String get glassDockStyleLiquid => 'リキッドガラス';
+
+  @override
+  String get glassDockStyleSoft => 'ソフトガラス';
+
+  @override
+  String get glassDockStyleLiquidSubtitle => '屈折ガラスで質感重視（電力はやや増）';
+
+  @override
+  String get glassDockStyleSoftSubtitle => 'やわらかフロストカプセルで軽量・省電力';
 
   @override
   String get glassDockCustomizeTitle => 'ドックボタンをカスタマイズ';

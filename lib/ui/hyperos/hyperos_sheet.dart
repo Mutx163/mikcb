@@ -7,6 +7,7 @@ import 'hyperos_tokens.dart';
 import 'frosted/liquid_glass_degradation.dart';
 import 'hyperos_widgets.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart';
+import 'soft_glass/soft_glass_surface.dart';
 
 /// Extra height painted below an edge-flush glass sheet's bottom edge so the
 /// liquid-glass specular fringe along the straight bottom side lands outside
@@ -267,6 +268,20 @@ class HyperosSheetFrame extends StatelessWidget {
   }) {
     final appearance = FrostedAppearanceScope.of(context);
 
+    // Soft glass (Hyper-PiliPlus style): milky frost + soft shadow optics.
+    // Owns its blur — not gated by platform BackdropFilter capability alone
+    // (same rationale as liquid glass: soft is a product mode, not a fallback).
+    if (appearance.glassMode == FrostedGlassMode.softGlass) {
+      return SoftGlassSurface(
+        borderRadius: borderRadius,
+        blurEnabled: HyperosBlurredHeader.backdropBlurEnabled(context),
+        // 大面板用比底栏更强的雾面（参考 Hyper-PiliPlus BottomSheet 配方）。
+        blurSigma: 32,
+        enableShadows: false,
+        child: const SizedBox.expand(),
+      );
+    }
+
     // Liquid glass mode: real-time refraction shader panel. Checked before
     // the gaussian blur gate because liquid glass carries its own blur —
     // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
@@ -317,6 +332,19 @@ class HyperosSheetFrame extends StatelessWidget {
     required Widget content,
   }) {
     final appearance = FrostedAppearanceScope.of(context);
+
+    // Soft glass panel: same material as [_buildFrostedBackground].
+    if (appearance.glassMode == FrostedGlassMode.softGlass) {
+      return HyperosFrostedPanelScope(
+        child: SoftGlassSurface(
+          borderRadius: borderRadius,
+          blurEnabled: HyperosBlurredHeader.backdropBlurEnabled(context),
+          blurSigma: 32,
+          enableShadows: false,
+          child: content,
+        ),
+      );
+    }
 
     // Liquid glass mode: real-time refraction shader panel. Checked before
     // the gaussian blur gate because liquid glass carries its own blur —
