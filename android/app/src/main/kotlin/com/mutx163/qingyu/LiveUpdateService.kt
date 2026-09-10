@@ -1214,6 +1214,36 @@ class LiveUpdateService : Service() {
             brand.contains("poco")
     }
 
+    /**
+     * 设备是否具备承载「左侧自定义图标位」的系统能力。
+     *
+     * 两条承载路径：
+     * 1. 小米系：超级岛左侧槽位由 miui.focus.param 与 smallIcon 共同驱动；
+     * 2. 原生 Live Updates（Android 16 / SDK 36，OPPO ColorOS 15+ 等）：
+     *    胶囊左侧同样取通知 smallIcon，只要系统放行 promoted 即可展示自定义位图。
+     *
+     * 注意：这里只判断「系统是否可能承载」，最终能否上岛仍由
+     * canPostPromotedNotifications() / hasPromotableCharacteristics() 等运行时条件决定。
+     */
+    private fun supportsIslandLabelImage(): Boolean {
+        if (isXiaomiFamilyDevice()) {
+            return true
+        }
+        return Build.VERSION.SDK_INT >= 36 && canPostPromotedNotificationsCompat(this)
+    }
+
+    /**
+     * 原生 Live Updates（非小米）的岛左侧槽位比小米窄，位图过宽会被系统裁切。
+     * 这里给出按承载方区分的位图宽度上限。
+     */
+    private fun islandLabelMaxWidthDp(includeAppIcon: Boolean): Float {
+        if (isXiaomiFamilyDevice()) {
+            return if (includeAppIcon) 132f else 112f
+        }
+        // 原生岛槽位紧凑，收敛到约 72dp，避免课程名被硬裁。
+        return if (includeAppIcon) 96f else 72f
+    }
+
     private fun dp(value: Float): Float =
         TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, resources.displayMetrics)
 
@@ -1221,7 +1251,7 @@ class LiveUpdateService : Service() {
         TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, value, resources.displayMetrics)
 
     private fun resolveIslandLabelBitmap(text: String): Bitmap? {
-        if (!enableMiuiIslandLabelImage || !isXiaomiFamilyDevice() || text.isBlank()) {
+        if (!enableMiuiIslandLabelImage || !supportsIslandLabelImage() || text.isBlank()) {
             return null
         }
 
@@ -1293,7 +1323,7 @@ class LiveUpdateService : Service() {
         val iconGapDp = if (includeAppIcon) 3f else 0f
         val horizontalPaddingDp = if (includeAppIcon) 3f else 0.75f
         val verticalPaddingDp = 0.5f
-        val maxWidthDp = if (includeAppIcon) 132f else 112f
+        val maxWidthDp = islandLabelMaxWidthDp(includeAppIcon)
         val maxTextWidthPx = dp(
             maxWidthDp - horizontalPaddingDp * 2f - iconSizeDp - iconGapDp
         ).coerceAtLeast(dp(28f))
@@ -1830,7 +1860,13 @@ class LiveUpdateService : Service() {
             ).filterNotNull().joinToString(" ")
             else -> nameToUse
         }
-        val miuiIslandLabelBitmap = resolveIslandLabelBitmap(miuiIslandLabelText)
+        // 左侧自定义图标位仅在「确实要上岛/吸附胶囊」时才注入：
+        // 普通状态栏通知沿用系统矢量小图标，避免宽位图在状态栏被硬裁成怪图。
+        val miuiIslandLabelBitmap = if (shouldPromote) {
+            resolveIslandLabelBitmap(miuiIslandLabelText)
+        } else {
+            null
+        }
 
         val stageTitle = when (stage) {
             "beforeClass" -> getString(R.string.stage_before_class)
@@ -1970,7 +2006,6 @@ class LiveUpdateService : Service() {
                 .filter { it.isNotBlank() }
                 .joinToString(" · ")
         }
-            
         val miuiFocusHintText = if (
             liveShouldMirrorStatusIntoMiuiFocusHint(
                 sdkInt = Build.VERSION.SDK_INT,

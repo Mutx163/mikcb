@@ -125,6 +125,16 @@ android {
             }
         }
     }
+
+    // JVM 单测（:app:testProdDebugUnitTest）默认让 android.jar 的每个方法抛
+    // "Method ... not mocked"。CourseWidgetAccent 的 relativeLuminance/rgbToHsl
+    // 直接调用 android.graphics.Color.red/green/blue/argb —— 这几个是纯静态位
+    // 运算重载，returnDefaultValues 下返回值与真机一致，测试才有意义。不开这个
+    // 开关时 CourseWidgetAccentTest 的 8 例必然全红（实测 2026-09-10）。
+    // 注意：只会让「未 mock 的 android 方法」返回默认值，不会掩盖被测逻辑本身的失败。
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
 }
 
 flutter {

@@ -1,6 +1,5 @@
 package com.mutx163.qingyu
 
-import android.graphics.Color
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -157,17 +156,17 @@ object CourseWidgetAccent {
                 ((value + 0.055) / 1.055).pow(2.4)
             }
         }
-        return 0.2126 * channel(Color.red(argb)) +
-            0.7152 * channel(Color.green(argb)) +
-            0.0722 * channel(Color.blue(argb))
+        return 0.2126 * channel(redOf(argb)) +
+            0.7152 * channel(greenOf(argb)) +
+            0.0722 * channel(blueOf(argb))
     }
 
     internal data class Hsl(val hue: Double, val saturation: Double, val lightness: Double)
 
     internal fun rgbToHsl(argb: Int): Hsl {
-        val r = Color.red(argb) / 255.0
-        val g = Color.green(argb) / 255.0
-        val b = Color.blue(argb) / 255.0
+        val r = redOf(argb) / 255.0
+        val g = greenOf(argb) / 255.0
+        val b = blueOf(argb) / 255.0
         val max = maxOf(r, g, b)
         val min = minOf(r, g, b)
         val lightness = (max + min) / 2.0
@@ -193,7 +192,7 @@ object CourseWidgetAccent {
         val l = lightness.coerceIn(0.0, 1.0)
         if (s <= 0.0) {
             val v = (l * 255).roundToInt().coerceIn(0, 255)
-            return Color.argb(255, v, v, v)
+            return argbOf(255, v, v, v)
         }
         val q = if (l < 0.5) l * (1 + s) else l + s - l * s
         val p = 2 * l - q
@@ -212,7 +211,7 @@ object CourseWidgetAccent {
         val r = channel(h + 1.0 / 3.0)
         val g = channel(h)
         val b = channel(h - 1.0 / 3.0)
-        return Color.argb(
+        return argbOf(
             255,
             (r * 255).roundToInt().coerceIn(0, 255),
             (g * 255).roundToInt().coerceIn(0, 255),
@@ -222,6 +221,27 @@ object CourseWidgetAccent {
 
     private fun argbOf(hue: Double, saturation: Double, lightness: Double): Int =
         hslToArgb(hue, saturation, lightness)
+
+    /**
+     * 纯 Kotlin 实现的 android.graphics.Color 位运算等价物。
+     *
+     * 原来的 Color.red/green/blue/argb 在 AGP 的 JVM 单测里会抛
+     * "Method ... not mocked."；打开 unitTests.returnDefaultValues 后
+     * 虽然不抛了，但全部返回 0 —— relativeLuminance/rgbToHsl 拿到的通道
+     * 恒为 0，算出的对比度是垃圾值，CourseWidgetAccentTest 仍会大面积红。
+     *
+     * 这几个方法本就只是无副作用的静态位运算，不需要真实 Android 运行时，
+     * 因此在 Kotlin 内直接实现，单测与真机走同一条公式，行为完全一致。
+     */
+    private fun redOf(argb: Int): Int = (argb shr 16) and 0xFF
+
+    private fun greenOf(argb: Int): Int = (argb shr 8) and 0xFF
+
+    private fun blueOf(argb: Int): Int = argb and 0xFF
+
+    /** 等价于 android.graphics.Color.argb(alpha, red, green, blue)。 */
+    private fun argbOf(alpha: Int, red: Int, green: Int, blue: Int): Int =
+        (alpha shl 24) or (red shl 16) or (green shl 8) or blue
 
     /** 二分反解：给定色相/饱和度，求相对亮度为 [targetY] 时的 L（Y 对 L 单调）。 */
     internal fun solveLightnessForLuminance(
