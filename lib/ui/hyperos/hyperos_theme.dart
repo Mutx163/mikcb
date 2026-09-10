@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../utils/theme_seed_accent.dart';
+import '../app_fonts.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_radius.dart';
 import 'hyperos_tokens.dart';
@@ -448,18 +449,44 @@ abstract final class HyperosColors {
       // 的系统对比度遮罩，避免透明导航条被强制加半透明灰色 scrim。
       systemNavigationBarColor: Colors.transparent,
       systemNavigationBarDividerColor: Colors.transparent,
-      systemNavigationBarIconBrightness:
-          light ? Brightness.dark : Brightness.light,
+      systemNavigationBarIconBrightness: light
+          ? Brightness.dark
+          : Brightness.light,
       systemNavigationBarContrastEnforced: false,
     );
   }
 }
 
 abstract final class HyperosTypography {
+  /// 把设计稿字重/字体族接到全局 [AppFontScope]。
+  ///
+  /// 硬编码 TextStyle 不会自动继承 Theme 的字重覆盖；不接 scope 时，
+  /// 用户调「字重」滑杆大标题与列表标题纹丝不动（或被反向补偿变细）。
+  static TextStyle _raw(
+    BuildContext context, {
+    required double fontSize,
+    required FontWeight fontWeight,
+    Color? color,
+    double? height,
+    List<FontFeature>? fontFeatures,
+  }) {
+    final scope = AppFontScope.maybeOf(context);
+    final weight = scope?.resolveWeight(fontWeight.value) ?? fontWeight.value;
+    final style = TextStyle(
+      fontSize: fontSize,
+      fontWeight: FontWeight(weight),
+      color: color,
+      height: height,
+      fontFeatures: fontFeatures,
+    );
+    return scope?.fontSpec.applyTo(style) ?? style;
+  }
+
   /// Canonical settings title — list rows, card headers, page/sheet/dialog titles.
   /// 全站统一 w400，与首页设置一致；字号与颜色承担层级，避免二级页“全加粗”。
   static TextStyle title(BuildContext context) {
-    return TextStyle(
+    return _raw(
+      context,
       fontSize: HyperosTokens.titleSize,
       fontWeight: FontWeight.w400,
       color: HyperosColors.primaryText(context),
@@ -474,7 +501,8 @@ abstract final class HyperosTypography {
   /// Explicit [height] keeps multi-line Chinese captions from stacking too
   /// tightly (system default metrics are often cramped under CJK fonts).
   static TextStyle listDetail(BuildContext context) {
-    return TextStyle(
+    return _raw(
+      context,
       fontSize: HyperosTokens.listDetailSize,
       fontWeight: FontWeight.w400,
       height: 1.4,
@@ -484,7 +512,8 @@ abstract final class HyperosTypography {
 
   /// Miuix preference category caption above list groups (e.g. 预设主题).
   static TextStyle sectionLabel(BuildContext context) {
-    return TextStyle(
+    return _raw(
+      context,
       fontSize: HyperosTokens.sectionLabelSize,
       fontWeight: FontWeight.w400,
       height: 1.3,
@@ -494,7 +523,8 @@ abstract final class HyperosTypography {
 
   /// Footnote under list groups (muted secondary ink).
   static TextStyle sectionDescription(BuildContext context) {
-    return TextStyle(
+    return _raw(
+      context,
       fontSize: HyperosTokens.sectionDescriptionSize,
       fontWeight: FontWeight.w400,
       height: 1.5,
@@ -511,7 +541,8 @@ abstract final class HyperosTypography {
 
   /// Summary card secondary line (Miuix footnote + summary ink).
   static TextStyle summarySubtitle(BuildContext context) {
-    return TextStyle(
+    return _raw(
+      context,
       fontSize: HyperosMiuixTypography.footnote1,
       fontWeight: FontWeight.w400,
       height: 1.4,
@@ -524,7 +555,8 @@ abstract final class HyperosTypography {
   /// 统计页三张头部卡片的大数字统一走这里，避免各处 copyWith(fontSize: 24)
   /// 各自定义字重。等宽数字（tabular figures）保证多位数变化时位宽稳定。
   static TextStyle metricLarge(BuildContext context) {
-    return TextStyle(
+    return _raw(
+      context,
       fontSize: 24,
       fontWeight: FontWeight.w500,
       height: 1,
@@ -535,7 +567,8 @@ abstract final class HyperosTypography {
 
   /// Secondary metric level (18px, e.g. semester progress “%”/“剩余 X 节”).
   static TextStyle metricMedium(BuildContext context) {
-    return TextStyle(
+    return _raw(
+      context,
       fontSize: 18,
       fontWeight: FontWeight.w500,
       height: 1.1,
@@ -546,7 +579,8 @@ abstract final class HyperosTypography {
 
   /// Metric label under a big number (footnote2 / w400).
   static TextStyle metricCaption(BuildContext context) {
-    return TextStyle(
+    return _raw(
+      context,
       fontSize: HyperosMiuixTypography.footnote2,
       fontWeight: FontWeight.w400,
       height: 1.4,
@@ -616,12 +650,7 @@ abstract final class HyperosTheme {
     return roundedShape(HyperosTokens.controlRadius, side: side);
   }
 
-  static CardTheme cardStyle(
-    BuildContext context, {
-    required Color cardColor,
-  }) {
-    return CardTheme(
-      color: cardColor,
-    );
+  static CardTheme cardStyle(BuildContext context, {required Color cardColor}) {
+    return CardTheme(color: cardColor);
   }
 }

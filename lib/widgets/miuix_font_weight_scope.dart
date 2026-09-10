@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_miuix/miuix.dart';
 
-import '../models/timetable_settings.dart';
+import '../ui/app_fonts.dart';
 import '../utils/theme_seed_accent.dart';
 
 /// 读取 Android 系统字体粗细增量（`Configuration.fontWeightAdjustment`）。
@@ -37,12 +37,15 @@ abstract final class SystemFontWeightService {
 /// [MediaQueryData.boldText]，据此为子树提供一个"已按角色分级平移字重"的
 /// [MiuixTheme]，并屏蔽 Flutter 框架对 [Text] 的统一加粗，避免盖掉分级结果。
 /// 用户在外观设置中指定的全局字重会作为相对 w400 的偏移，与系统增量相加。
+/// 同时通过 [AppFontScope] 把「用户字重 / 系统增量 / 字体族」下发给硬编码
+/// HyperOS 文本样式（大标题、HyperosTypography），避免它们反向扣减或漏接。
 /// 配色与亮度在没有显式 Miuix 主题时跟随外层 Material 主题，避免深色模式
 /// 回退到 flutter_miuix 的浅色默认值。
 class MiuixFontWeightScope extends StatefulWidget {
   const MiuixFontWeightScope({
     required this.child,
     this.userFontWeight,
+    this.fontSpec,
     super.key,
   });
 
@@ -50,6 +53,9 @@ class MiuixFontWeightScope extends StatefulWidget {
 
   /// 用户全局字重（100–900）。null / [kAppFontWeightDefault] 表示不叠加。
   final int? userFontWeight;
+
+  /// 用户选定的字体族；缺省为系统默认。
+  final AppFontSpec? fontSpec;
 
   @override
   State<MiuixFontWeightScope> createState() => _MiuixFontWeightScopeState();
@@ -130,6 +136,18 @@ class _MiuixFontWeightScopeState extends State<MiuixFontWeightScope>
         );
       }
     }
+
+    // 把「用户字重 / 系统增量 / 字体族」下发给硬编码 HyperOS 文本。
+    // 旧实现只把合并后的 delta 塞进 MiuixTheme.fontWeightAdjustment，
+    // 大标题却用 `400 - fontWeightAdjustment` 反向补偿，用户调粗时大标题
+    // 反而变细（接反）。AppFontScope 把两者拆开，resolveWeight 才能
+    // 用户非默认时绝对覆盖、默认时只减系统增量。
+    child = AppFontScope(
+      userFontWeight: userWeight,
+      systemFontWeightDelta: systemDelta,
+      fontSpec: widget.fontSpec ?? const AppFontSpec(),
+      child: child,
+    );
 
     return MiuixTheme(data: data, child: child);
   }

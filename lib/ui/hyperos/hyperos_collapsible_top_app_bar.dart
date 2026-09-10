@@ -9,6 +9,7 @@ import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
+import '../app_fonts.dart';
 
 /// Defaults for [HyperosCollapsibleTopAppBar], aligned with
 /// [HyperosMiuixTopAppBar] (Miuix `TopAppBarDefaults`).
@@ -1009,37 +1010,50 @@ class _HyperosCollapsibleTopAppBarState
     });
   }
 
-  /// Compensates for [MiuixFontWeightScope]'s font weight adjustment.
-  /// When the system has a non-zero fontWeightAdjustment, hardcoded w400/w500
-  /// raw [TextStyle]s get the system delta applied on top and appear bold,
-  /// while MiuixTheme-based text styles are already compensated.  Reading the
-  /// adjustment from [MiuixTheme] and subtracting it keeps the titles visually
-  /// consistent with the rest of the page.
-  int get _fontWeightDelta =>
-      MiuixTheme.maybeOf(context)?.fontWeightAdjustment ?? 0;
+  /// 把设计稿字重/字体族接到 [AppFontScope]。
+  ///
+  /// 旧实现读 [MiuixThemeData.fontWeightAdjustment] 并做 `400 - delta`，
+  /// 在用户全局字重并入该字段后会**接反**：调粗滑杆时大标题反而变细。
+  /// 现在用户非默认时绝对覆盖；默认时只减系统增量（保留原补偿）。
+  TextStyle _titleStyle({
+    required double fontSize,
+    required int designWeight,
+    required Color color,
+    required double height,
+  }) {
+    final scope = AppFontScope.maybeOf(context);
+    final weight = scope?.resolveWeight(designWeight) ?? designWeight;
+    final style = TextStyle(
+      fontSize: fontSize,
+      fontWeight: FontWeight(weight),
+      color: color,
+      height: height,
+    );
+    return scope?.fontSpec.applyTo(style) ?? style;
+  }
 
   TextStyle _largeTitleStyle(Color color) {
-    return TextStyle(
+    return _titleStyle(
       fontSize: HyperosCollapsibleTopAppBarDefaults.largeTitleFontSize,
-      fontWeight: FontWeight((400 - _fontWeightDelta).clamp(100, 900)),
+      designWeight: 400,
       color: color,
       height: 1.2,
     );
   }
 
   TextStyle _smallTitleStyle(Color color) {
-    return TextStyle(
+    return _titleStyle(
       fontSize: HyperosCollapsibleTopAppBarDefaults.smallTitleFontSize,
-      fontWeight: FontWeight((500 - _fontWeightDelta).clamp(100, 900)),
+      designWeight: 500,
       color: color,
       height: 1.2,
     );
   }
 
   TextStyle _subtitleStyle(Color color) {
-    return TextStyle(
+    return _titleStyle(
       fontSize: HyperosCollapsibleTopAppBarDefaults.subtitleFontSize,
-      fontWeight: FontWeight((400 - _fontWeightDelta).clamp(100, 900)),
+      designWeight: 400,
       color: color,
       height: 1.3,
     );
@@ -1065,10 +1079,14 @@ class _HyperosCollapsibleTopAppBarState
 
     if (_measuredTitle != widget.title) {
       _measuredTitle = widget.title;
+      // TextPainter 默认 scale=1，不走 ambient MediaQuery；用户字号缩放时
+      // 量高会偏小，折叠高度算错，所以显式传入 textScaler。
+      final textScaler = MediaQuery.textScalerOf(context);
       final largePainter = TextPainter(
         text: TextSpan(text: widget.title, style: largeTitleStyle),
         textDirection: TextDirection.ltr,
         maxLines: 1,
+        textScaler: textScaler,
       )..layout();
       _largeTitleTextHeight = largePainter.height;
       largePainter.dispose();
@@ -1077,6 +1095,7 @@ class _HyperosCollapsibleTopAppBarState
         text: TextSpan(text: widget.title, style: smallTitleStyle),
         textDirection: TextDirection.ltr,
         maxLines: 1,
+        textScaler: textScaler,
       )..layout();
       _smallTitleTextHeight = smallPainter.height;
       _smallTitleTextWidth = smallPainter.width;
@@ -1177,20 +1196,21 @@ class _HyperosCollapsibleTopAppBarState
           HyperosColors.secondaryText(context),
           largeFadeT,
         )!;
-        final largeTitleMaxWidth =
-            math.max(0, contentWidth - largeLeft - widget.titlePadding)
-                .toDouble();
-        final smallTitleMaxWidth =
-            math.max(0, contentWidth - smallLeft - actionsWidth).toDouble();
+        final largeTitleMaxWidth = math
+            .max(0, contentWidth - largeLeft - widget.titlePadding)
+            .toDouble();
+        final smallTitleMaxWidth = math
+            .max(0, contentWidth - smallLeft - actionsWidth)
+            .toDouble();
 
         // Subtitle rides with the large title (same layer, same clipping).
         final currentSubtitleTop = hasSubtitle
             ? _largeTitleTextHeight + 2.0 + effectiveOffset
             : 0.0;
         final currentSubtitleLeft = largeLeft;
-        final currentSubtitleMaxWidth =
-            math.max(0, contentWidth - currentSubtitleLeft - widget.titlePadding)
-                .toDouble();
+        final currentSubtitleMaxWidth = math
+            .max(0, contentWidth - currentSubtitleLeft - widget.titlePadding)
+            .toDouble();
 
         final smallTitleBottomForLayout =
             verticalCenter + _smallTitleTextHeight / 2;
@@ -1337,9 +1357,7 @@ class _HyperosCollapsibleTopAppBarState
         mainAxisSize: MainAxisSize.min,
         children: [
           ConstrainedBox(
-            constraints: const BoxConstraints(
-              
-            ),
+            constraints: const BoxConstraints(),
             child: Padding(
               key: _largeTitleKey,
               padding: EdgeInsets.symmetric(horizontal: widget.titlePadding),

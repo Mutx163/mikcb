@@ -551,6 +551,7 @@ class MyApp extends StatelessWidget {
                                     .platformViewUnsafeDepthNotifier,
                                 child: MiuixFontWeightScope(
                                   userFontWeight: settings.appFontWeight,
+                                  fontSpec: settings.appFontMode.fontSpec,
                                   child: appRoot,
                                 ),
                               ),
