@@ -6144,13 +6144,13 @@ abstract class AppLocalizations {
   /// No description provided for @homePageBackgroundScopeChrome.
   ///
   /// In zh, this message translates to:
-  /// **'顶栏区域'**
+  /// **'顶栏壁纸'**
   String get homePageBackgroundScopeChrome;
 
   /// No description provided for @homePageBackgroundScopeChromeSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'状态栏、顶栏与信息栏一并透出壁纸'**
+  /// **''**
   String get homePageBackgroundScopeChromeSubtitle;
 
   /// No description provided for @homePageHeaderBlurTitle.
@@ -6162,7 +6162,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePageHeaderBlurSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'状态栏、顶栏与信息栏的玻璃带；关闭后直接透出壁纸'**
+  /// **''**
   String get homePageHeaderBlurSubtitle;
 
   /// No description provided for @homePageWeekdayBarBlurTitle.
@@ -6186,7 +6186,7 @@ abstract class AppLocalizations {
   /// No description provided for @chromeGlassMaterialSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'渐进 / 高斯只作用于顶栏玻璃带，液态玻璃与外观页全局模式联动'**
+  /// **''**
   String get chromeGlassMaterialSubtitle;
 
   /// No description provided for @chromeGlassMaterialProgressive.
@@ -6210,7 +6210,7 @@ abstract class AppLocalizations {
   /// No description provided for @chromeGlassMaterialHint.
   ///
   /// In zh, this message translates to:
-  /// **'渐进模糊上浓下淡；高斯整带均匀；液态玻璃带折射高光，需高性能设备'**
+  /// **''**
   String get chromeGlassMaterialHint;
 
   /// No description provided for @homePagePickImageAction.

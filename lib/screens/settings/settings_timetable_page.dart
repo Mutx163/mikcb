@@ -285,10 +285,9 @@ class _TimetablePageSettingsScreenState
                   );
                 },
               ),
-              // 状态栏 / 顶栏 / 信息栏合并为一条「顶栏区域」；课表区域单列。
+              // 壁纸透出范围：顶栏 / 课表两条开关。
               HyperosSwitchTile(
                 title: l10n.homePageBackgroundScopeChrome,
-                subtitle: l10n.homePageBackgroundScopeChromeSubtitle,
                 value: _chromeWallpaperEnabled,
                 onChanged: _setChromeWallpaperEnabled,
               ),
@@ -303,17 +302,15 @@ class _TimetablePageSettingsScreenState
                   value,
                 ),
               ),
-              // 顶栏玻璃：状态栏 + 标题栏 + 信息栏一条开关；材质三选一。
+              // 顶栏玻璃：开关 + 材质三选一。
               HyperosSwitchTile(
                 title: l10n.homePageHeaderBlurTitle,
-                subtitle: l10n.homePageHeaderBlurSubtitle,
                 value: _chromeGlassEnabled,
                 onChanged: _setChromeGlassEnabled,
               ),
-              if (_chromeGlassEnabled) ...[
+              if (_chromeGlassEnabled)
                 HyperosSelectTile<ChromeGlassMaterial>(
                   label: l10n.chromeGlassMaterialLabel,
-                  subtitle: l10n.chromeGlassMaterialSubtitle,
                   items: {
                     l10n.chromeGlassMaterialProgressive:
                         ChromeGlassMaterial.progressive,
@@ -327,14 +324,6 @@ class _TimetablePageSettingsScreenState
                     _updateDraft(applyChromeGlassMaterial(_draft, value));
                   },
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: Text(
-                    l10n.chromeGlassMaterialHint,
-                    style: HyperosTypography.sectionDescription(context),
-                  ),
-                ),
-              ],
             ],
           ),
         ],

@@ -3521,18 +3521,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePageBackgroundScopeHeader => 'Top bar';
 
   @override
-  String get homePageBackgroundScopeChrome => 'Top chrome area';
+  String get homePageBackgroundScopeChrome => 'Top wallpaper';
 
   @override
-  String get homePageBackgroundScopeChromeSubtitle =>
-      'Status bar, top bar, and info bar all show the wallpaper';
+  String get homePageBackgroundScopeChromeSubtitle => '';
 
   @override
   String get homePageHeaderBlurTitle => 'Top bar glass';
 
   @override
-  String get homePageHeaderBlurSubtitle =>
-      'Glass band for the status bar, top bar, and info bar; when off, the wallpaper shows through';
+  String get homePageHeaderBlurSubtitle => '';
 
   @override
   String get homePageWeekdayBarBlurTitle => 'Info bar glass';
@@ -3545,8 +3543,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chromeGlassMaterialLabel => 'Glass material';
 
   @override
-  String get chromeGlassMaterialSubtitle =>
-      'Progressive / Gaussian apply only to the top glass band; Liquid Glass follows the global mode in Appearance';
+  String get chromeGlassMaterialSubtitle => '';
 
   @override
   String get chromeGlassMaterialProgressive => 'Progressive blur';
@@ -3558,8 +3555,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chromeGlassMaterialLiquid => 'Liquid Glass';
 
   @override
-  String get chromeGlassMaterialHint =>
-      'Progressive fades top-heavy to clear; Gaussian is even; Liquid Glass adds refraction and needs a high-end device';
+  String get chromeGlassMaterialHint => '';
 
   @override
   String get homePagePickImageAction => 'Choose image';

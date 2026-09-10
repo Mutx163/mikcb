@@ -3318,16 +3318,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageBackgroundScopeHeader => '顶栏';
 
   @override
-  String get homePageBackgroundScopeChrome => '顶栏区域';
+  String get homePageBackgroundScopeChrome => '顶栏壁纸';
 
   @override
-  String get homePageBackgroundScopeChromeSubtitle => '状态栏、顶栏与信息栏一并透出壁纸';
+  String get homePageBackgroundScopeChromeSubtitle => '';
 
   @override
   String get homePageHeaderBlurTitle => '顶栏玻璃';
 
   @override
-  String get homePageHeaderBlurSubtitle => '状态栏、顶栏与信息栏的玻璃带；关闭后直接透出壁纸';
+  String get homePageHeaderBlurSubtitle => '';
 
   @override
   String get homePageWeekdayBarBlurTitle => '信息栏玻璃';
@@ -3339,7 +3339,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chromeGlassMaterialLabel => '玻璃材质';
 
   @override
-  String get chromeGlassMaterialSubtitle => '渐进 / 高斯只作用于顶栏玻璃带，液态玻璃与外观页全局模式联动';
+  String get chromeGlassMaterialSubtitle => '';
 
   @override
   String get chromeGlassMaterialProgressive => '渐进模糊';
@@ -3351,7 +3351,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chromeGlassMaterialLiquid => '液态玻璃';
 
   @override
-  String get chromeGlassMaterialHint => '渐进模糊上浓下淡；高斯整带均匀；液态玻璃带折射高光，需高性能设备';
+  String get chromeGlassMaterialHint => '';
 
   @override
   String get homePagePickImageAction => '选择图片';
@@ -13934,16 +13934,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homePageBackgroundScopeHeader => '頂欄';
 
   @override
-  String get homePageBackgroundScopeChrome => '頂欄區域';
+  String get homePageBackgroundScopeChrome => '頂欄壁紙';
 
   @override
-  String get homePageBackgroundScopeChromeSubtitle => '狀態列、頂欄與資訊欄一併透出壁紙';
+  String get homePageBackgroundScopeChromeSubtitle => '';
 
   @override
   String get homePageHeaderBlurTitle => '頂欄玻璃';
 
   @override
-  String get homePageHeaderBlurSubtitle => '狀態列、頂欄與資訊欄的玻璃帶；關閉後直接透出壁紙';
+  String get homePageHeaderBlurSubtitle => '';
 
   @override
   String get homePageWeekdayBarBlurTitle => '資訊欄玻璃';
@@ -13955,7 +13955,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get chromeGlassMaterialLabel => '玻璃材質';
 
   @override
-  String get chromeGlassMaterialSubtitle => '漸進／高斯只作用於頂欄玻璃帶，液態玻璃與外觀頁全域模式聯動';
+  String get chromeGlassMaterialSubtitle => '';
 
   @override
   String get chromeGlassMaterialProgressive => '漸進模糊';
@@ -13967,7 +13967,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get chromeGlassMaterialLiquid => '液態玻璃';
 
   @override
-  String get chromeGlassMaterialHint => '漸進模糊上濃下淡；高斯整帶均勻；液態玻璃帶折射高光，需高效能裝置';
+  String get chromeGlassMaterialHint => '';
 
   @override
   String get homePagePickImageAction => '選擇圖片';
@@ -24593,16 +24593,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homePageBackgroundScopeHeader => '頂欄';
 
   @override
-  String get homePageBackgroundScopeChrome => '頂欄區域';
+  String get homePageBackgroundScopeChrome => '頂欄壁紙';
 
   @override
-  String get homePageBackgroundScopeChromeSubtitle => '狀態列、頂欄與資訊欄一併透出壁紙';
+  String get homePageBackgroundScopeChromeSubtitle => '';
 
   @override
   String get homePageHeaderBlurTitle => '頂欄玻璃';
 
   @override
-  String get homePageHeaderBlurSubtitle => '狀態列、頂欄與資訊欄的玻璃帶；關閉後直接透出壁紙';
+  String get homePageHeaderBlurSubtitle => '';
 
   @override
   String get homePageWeekdayBarBlurTitle => '資訊欄玻璃';
@@ -24614,7 +24614,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get chromeGlassMaterialLabel => '玻璃材質';
 
   @override
-  String get chromeGlassMaterialSubtitle => '漸進／高斯只作用於頂欄玻璃帶，液態玻璃與外觀頁全域模式聯動';
+  String get chromeGlassMaterialSubtitle => '';
 
   @override
   String get chromeGlassMaterialProgressive => '漸進模糊';
@@ -24626,7 +24626,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get chromeGlassMaterialLiquid => '液態玻璃';
 
   @override
-  String get chromeGlassMaterialHint => '漸進模糊上濃下淡；高斯整帶均勻；液態玻璃帶折射高光，需高效能裝置';
+  String get chromeGlassMaterialHint => '';
 
   @override
   String get homePagePickImageAction => '選擇圖片';

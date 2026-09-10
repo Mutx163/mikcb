@@ -3392,18 +3392,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homePageBackgroundScopeHeader => '상단 바';
 
   @override
-  String get homePageBackgroundScopeChrome => '상단 크롬 영역';
+  String get homePageBackgroundScopeChrome => '상단 배경화면';
 
   @override
-  String get homePageBackgroundScopeChromeSubtitle =>
-      '상태 표시줄·상단 바·정보 바에 배경화면을 표시';
+  String get homePageBackgroundScopeChromeSubtitle => '';
 
   @override
   String get homePageHeaderBlurTitle => '상단 바 유리';
 
   @override
-  String get homePageHeaderBlurSubtitle =>
-      '상태 표시줄·상단 바·정보 바의 유리 띠. 끄면 배경화면이 비쳐 보입니다';
+  String get homePageHeaderBlurSubtitle => '';
 
   @override
   String get homePageWeekdayBarBlurTitle => '정보 바 유리';
@@ -3416,8 +3414,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get chromeGlassMaterialLabel => '유리 소재';
 
   @override
-  String get chromeGlassMaterialSubtitle =>
-      '점진/가우스는 상단 유리 띠에만 적용. 액체 유리는 외관의 전역 모드와 연동';
+  String get chromeGlassMaterialSubtitle => '';
 
   @override
   String get chromeGlassMaterialProgressive => '점진 블러';
@@ -3429,8 +3426,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get chromeGlassMaterialLiquid => '액체 유리';
 
   @override
-  String get chromeGlassMaterialHint =>
-      '점진은 위가 진하고 아래가 맑음, 가우스는 균일, 액체 유리는 굴절 하이라이트(고성능 기기 필요)';
+  String get chromeGlassMaterialHint => '';
 
   @override
   String get homePagePickImageAction => '이미지 선택';

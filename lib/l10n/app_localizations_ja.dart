@@ -3376,18 +3376,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePageBackgroundScopeHeader => 'トップバー';
 
   @override
-  String get homePageBackgroundScopeChrome => '上部クローム領域';
+  String get homePageBackgroundScopeChrome => '上部壁紙';
 
   @override
-  String get homePageBackgroundScopeChromeSubtitle =>
-      'ステータスバー・トップバー・情報バーに壁紙を表示';
+  String get homePageBackgroundScopeChromeSubtitle => '';
 
   @override
   String get homePageHeaderBlurTitle => 'トップバーガラス';
 
   @override
-  String get homePageHeaderBlurSubtitle =>
-      'ステータスバー・トップバー・情報バーのガラス帯。オフにすると壁紙が透けます';
+  String get homePageHeaderBlurSubtitle => '';
 
   @override
   String get homePageWeekdayBarBlurTitle => '情報バーガラス';
@@ -3400,8 +3398,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get chromeGlassMaterialLabel => 'ガラス素材';
 
   @override
-  String get chromeGlassMaterialSubtitle =>
-      'プログレッシブ／ガウスは上部ガラス帯のみ。リキッドガラスは外観のグローバルモードに連動';
+  String get chromeGlassMaterialSubtitle => '';
 
   @override
   String get chromeGlassMaterialProgressive => 'プログレッシブぼかし';
@@ -3413,8 +3410,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get chromeGlassMaterialLiquid => 'リキッドガラス';
 
   @override
-  String get chromeGlassMaterialHint =>
-      'プログレッシブは上濃下淡、ガウスは均一、リキッドガラスは屈折ハイライト（高性能端末向け）';
+  String get chromeGlassMaterialHint => '';
 
   @override
   String get homePagePickImageAction => '画像を選択';
