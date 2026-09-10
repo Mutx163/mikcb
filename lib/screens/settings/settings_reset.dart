@@ -99,7 +99,6 @@ TimetableSettings applySettingsReset(
       themeSeedColor: d.themeSeedColor,
       frostedGlassMode: d.frostedGlassMode,
       frostedBlurEnabled: d.frostedBlurEnabled,
-      headerBlurStyle: d.headerBlurStyle,
       frostedSheetBlurSigma: d.frostedSheetBlurSigma,
       frostedSheetTintAlpha: d.frostedSheetTintAlpha,
       frostedSheetBarrierAlpha: d.frostedSheetBarrierAlpha,

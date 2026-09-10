@@ -305,7 +305,6 @@ class HyperosSheetFrame extends StatelessWidget {
       borderRadius: borderRadius,
       child: FrostedHeaderBackground(
         blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-        blurStyle: HyperosBlurredHeader.headerBlurStyleOf(context),
         tint: tint,
         child: const SizedBox.expand(),
       ),
@@ -362,7 +361,6 @@ class HyperosSheetFrame extends StatelessWidget {
         borderRadius: borderRadius,
         child: FrostedHeaderBackground(
           blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-          blurStyle: HyperosBlurredHeader.headerBlurStyleOf(context),
           tint: tint,
           child: content,
         ),

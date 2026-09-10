@@ -6467,9 +6467,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get guidePersonalizeVisualEffectSolid => 'ソリッドカード';
 
   @override
-  String get guideVisualEffectProgressiveDesc => 'ヘッダーを上ほど濃くぼかし、境界を滑らかに';
-
-  @override
   String get guideVisualEffectGaussianDesc => '背景をリアルタイムにぼかし、透明感と奥行きを演出';
 
   @override
@@ -10063,9 +10060,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get frostedGlassModeLabel => 'ガラスモード';
-
-  @override
-  String get frostedGlassModeProgressive => 'プログレッシブぼかし';
 
   @override
   String get liquidGlassScopeSectionTitle => 'リキッドガラスの適用範囲';

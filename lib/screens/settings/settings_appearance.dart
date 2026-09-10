@@ -253,8 +253,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   label: l10n.frostedGlassModeLabel,
                   items: {
                     l10n.frostedGlassModeSolid: GlassModeChoice.solid,
-                    l10n.frostedGlassModeProgressive:
-                        GlassModeChoice.progressive,
                     l10n.frostedGlassModeGaussian: GlassModeChoice.gaussian,
                     l10n.frostedGlassModeLiquid: GlassModeChoice.liquidGlass,
                   },
