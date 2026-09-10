@@ -354,21 +354,24 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
             true;
     // 顶栏规范：深色模式使用纯不透明深色（不做任何模糊/玻璃）。
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final useBlur = !isDark &&
-        HyperosBlurredHeader.backdropBlurEnabled(context) &&
-        routeBlur &&
-        underHeader;
+    // Keep the GPU blur layer mounted whenever the platform can frost — not
+    // only after content tucks under the band. Mounting Inspire.backdropBlur
+    // on the first under-header frame hitched the small-title join. Frost and
+    // route-blur only swap the tint (opaque page color ↔ frosted scrim);
+    // route transitions still hide the frost visually via [routeBlur].
+    final blurCapable = !isDark &&
+        HyperosBlurredHeader.backdropBlurEnabled(context);
     final atRestColor =
         scope?.headerBackgroundColor ??
         HyperosColors.scaffoldBackground(context);
-    final tint = useBlur
+    final tint = (blurCapable && routeBlur && underHeader)
         ? HyperosBlurredHeader.tintColor(context, withBlur: true)
         : atRestColor;
 
     // 顶栏统一走高斯模糊路径：即使全局开启液态玻璃，顶栏也不用折射 shader，
     // 避免标题文字下方的液态观感与正文/弹窗不一致。
     return HyperosFrostedHeaderShell(
-      blurEnabled: useBlur,
+      blurEnabled: blurCapable,
       tint: tint,
       child: child,
     );

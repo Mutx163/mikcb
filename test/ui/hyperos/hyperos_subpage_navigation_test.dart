@@ -534,6 +534,55 @@ void main() {
     );
   });
 
+  testWidgets('header blur shell stays mounted across frost flip', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      TestApp(
+        home: HyperosSubpage(
+          onBack: () {},
+          title: const Text('Settings'),
+          child: HyperosListView(
+            children: List.generate(
+              20,
+              (index) => HyperosListTile(
+                icon: Icons.settings_outlined,
+                title: 'Item $index',
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await pumpBlurSettleFrames(tester);
+    await tester.pump();
+
+    // Frost off: the blur shell is already in the tree so the first
+    // under-header frame only swaps tint (no Inspire.backdropBlur mount hitch).
+    // Desktop test hosts have liveBlurSupported=false so blurEnabled stays
+    // false there; only the shell's presence is portable.
+    expect(find.byType(FrostedHeaderBackground), findsOneWidget);
+
+    final scrollable = find.descendant(
+      of: find.byType(HyperosListView),
+      matching: find.byType(Scrollable),
+    );
+    await tester.drag(scrollable, const Offset(0, -120));
+    await tester.pump();
+
+    expect(
+      tester
+          .widget<HyperosBlurredHeaderScope>(
+            find.byType(HyperosBlurredHeaderScope),
+          )
+          .contentUnderHeader,
+      isTrue,
+    );
+    // Shell stays in the tree across the frost flip — not remounted.
+    expect(find.byType(FrostedHeaderBackground), findsOneWidget);
+  });
+
   testWidgets('HyperosSubpage headerExtension shares frosted header shell', (
     WidgetTester tester,
   ) async {
