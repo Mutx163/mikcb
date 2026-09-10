@@ -51,8 +51,9 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 渐进档衬底在底边保留的不透明度比例。
   ///
   /// 均匀 tint 会把 inspire 模糊的「上浓下淡」抹平成一整条半透明；渐进
-  /// 档必须让衬底也随方向衰减，底边只留足够读字的对比度。
-  static const progressiveTintBottomScale = 0.28;
+  /// 档必须让衬底也随方向衰减。底边取 0：玻璃带与课表之间不得出现
+  /// 可见切边，完全靠顶区对比度保证状态栏/标题可读。
+  static const progressiveTintBottomScale = 0.0;
 
   /// 设备是否支持 shader filter（Inspire Blur 的兜底条件）。
   static bool get _shaderFilterSupported => ImageFilter.isShaderFilterSupported;
@@ -71,11 +72,9 @@ class InspireHeaderBlur extends StatelessWidget {
   }) {
     return switch (style) {
       // 渐进档：模糊自顶边满强度向下衰减到 0。
-      // extent 略大于 1，让「完全清晰」落在带底之外，玻璃带内部不会出现
-      // 一段死平的零模糊区。
+      // 默认 extent=1：完全清晰正好落在带底，与课表衔接处无残留模糊切边。
       HeaderBlurStyle.inspire => InspireBlurConfig.topToBottom(
         sigma: sigma,
-        extent: 1.15,
       ),
       // 高斯档：整带均匀强度，仅底边一小段渐隐收边。
       HeaderBlurStyle.gaussian => InspireBlurConfig.topToBottom(
