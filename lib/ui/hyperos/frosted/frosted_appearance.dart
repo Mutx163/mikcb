@@ -12,6 +12,9 @@ const kDefaultFrostedSheetBarrierAlpha = 0.20;
 /// 顶栏玻璃带的默认模糊材质：渐进模糊（inspire_blur）。
 const kDefaultHeaderBlurStyle = HeaderBlurStyle.inspire;
 
+/// 首页顶栏默认材质键：渐进模糊。子页顶栏不读此字段、永不走液态。
+const kDefaultHomeChromeGlassMaterial = 'progressive';
+
 /// 液态玻璃作用范围默认值（外观与配色页可逐表面开关）。
 ///
 /// 全局玻璃模式为「液态玻璃」时，各表面家族是否跟随折射材质；关闭的
@@ -61,6 +64,7 @@ class FrostedAppearance {
     this.blurEnabled = kDefaultFrostedBlurEnabled,
     this.glassMode = FrostedGlassMode.frosted,
     this.headerBlurStyle = kDefaultHeaderBlurStyle,
+    this.homeChromeGlassMaterial = kDefaultHomeChromeGlassMaterial,
     this.liquidGlassTuning,
     this.liquidGlassPopupEnabled = kDefaultLiquidGlassPopupEnabled,
     this.liquidGlassSelectSheetEnabled = kDefaultLiquidGlassSelectSheetEnabled,
@@ -89,11 +93,15 @@ class FrostedAppearance {
   /// Global backdrop blur master switch.
   final bool blurEnabled;
 
-  /// 顶栏玻璃带（首页玻璃带 + 子页顶栏）的模糊材质风格。
+  /// 顶栏玻璃带的模糊材质风格（渐进 / 高斯）。
   ///
-  /// 只影响顶栏：卡片、弹窗等表面仍按 [glassMode] 渲染。两档都由
-  /// inspire_blur 的渐进模糊实现，见 `lib/ui/hyperos/inspire/`。
+  /// 子页顶栏只读此字段，永不走液态。卡片、弹窗等表面仍按 [glassMode]。
   final HeaderBlurStyle headerBlurStyle;
+
+  /// 首页顶栏玻璃带材质键：`progressive` / `gaussian` / `liquid`。
+  ///
+  /// 与 [glassMode] 解耦；选液态只影响首页玻璃带。
+  final String homeChromeGlassMaterial;
 
   /// Glass surface rendering mode.
   final FrostedGlassMode glassMode;
@@ -125,6 +133,7 @@ class FrostedAppearance {
       other is FrostedAppearance &&
           blurEnabled == other.blurEnabled &&
           headerBlurStyle == other.headerBlurStyle &&
+          homeChromeGlassMaterial == other.homeChromeGlassMaterial &&
           sheetBlurSigma == other.sheetBlurSigma &&
           sheetTintAlpha == other.sheetTintAlpha &&
           sheetBarrierAlpha == other.sheetBarrierAlpha &&
@@ -144,6 +153,7 @@ class FrostedAppearance {
   int get hashCode => Object.hash(
     blurEnabled,
     headerBlurStyle,
+    homeChromeGlassMaterial,
     sheetBlurSigma,
     sheetTintAlpha,
     sheetBarrierAlpha,

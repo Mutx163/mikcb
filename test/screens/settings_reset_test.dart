@@ -30,6 +30,7 @@ void main() {
       homePageBackgroundScope: 15,
       homePageHeaderBlurEnabled: true,
       headerBlurStyle: HeaderBlurStyle.gaussian,
+      homeChromeGlassMaterial: 'liquid',
       weekdayBarFontColorLight: '#222222',
       homePageWallpaperPath: '/tmp/wallpaper.png',
       // 外观
@@ -148,6 +149,7 @@ void main() {
       defaults.homePageHeaderBlurEnabled,
     );
     expect(result.headerBlurStyle, defaults.headerBlurStyle);
+    expect(result.homeChromeGlassMaterial, defaults.homeChromeGlassMaterial);
     expect(
       result.liquidGlassHomeChromeEnabled,
       defaults.liquidGlassHomeChromeEnabled,

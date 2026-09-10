@@ -70,8 +70,10 @@ abstract final class HomeStartupVisualPrimer {
             settings.courseCardSurfaceStyle == CourseCardSurfaceStyle.gaussian,
         // 与首页玻璃带消费点同判：家族开关关闭时按磨砂 sigma 预热，
         // 否则预热位图和首帧实际材质不一致。
-        liquidGlassChrome: appearance.glassMode == FrostedGlassMode.liquidGlass &&
-            appearance.liquidGlassHomeChromeEnabled,
+        liquidGlassChrome:
+            appearance.homeChromeGlassMaterial == 'liquid' ||
+            (appearance.glassMode == FrostedGlassMode.liquidGlass &&
+                appearance.liquidGlassHomeChromeEnabled),
         sheetBlurSigma: appearance.sheetBlurSigma,
         liquidGlassTunedBlur: appearance.liquidGlassTuning?.blur,
       );

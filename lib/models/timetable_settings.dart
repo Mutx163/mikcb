@@ -1451,6 +1451,7 @@ class TimetableSettings {
     liquidGlassHomeChromeEnabled: liquidGlassHomeChromeEnabled,
     liquidGlassDockEnabled: liquidGlassDockEnabled,
     liquidGlassPickerButtonsEnabled: liquidGlassPickerButtonsEnabled,
+    homeChromeGlassMaterial: homeChromeGlassMaterial,
   );
 
   final bool linkCourseCardColors; // 标题和详情颜色是否关联
@@ -1477,6 +1478,12 @@ class TimetableSettings {
   /// 顶栏玻璃带使用的模糊材质风格（高斯模糊 / Inspire 渐进模糊）。
   /// 默认 [HeaderBlurStyle.inspire]。
   final HeaderBlurStyle headerBlurStyle;
+
+  /// 首页顶栏玻璃带材质：`progressive` / `gaussian` / `liquid`。
+  ///
+  /// 与全局 [frostedGlassMode] 解耦——选液态只影响首页玻璃带，不改
+  /// 弹窗与设置页材质。子页顶栏永不走液态。
+  final String homeChromeGlassMaterial;
   final bool homePageTimeColumnBlurEnabled;
   final bool homePageBackdropFollowsWeekPager;
   final List<SavedTheme> savedThemes; // 保存的主题列表
@@ -1661,6 +1668,7 @@ class TimetableSettings {
     this.homePageHeaderBlurEnabled = true,
     this.homePageWeekdayBarBlurEnabled = true,
     this.headerBlurStyle = HeaderBlurStyle.inspire,
+    this.homeChromeGlassMaterial = 'progressive',
     this.homePageTimeColumnBlurEnabled = false,
     this.homePageBackdropFollowsWeekPager = true,
     this.savedThemes = const [],
@@ -1878,6 +1886,7 @@ class TimetableSettings {
       'homePageHeaderBlurEnabled': homePageHeaderBlurEnabled,
       'homePageWeekdayBarBlurEnabled': homePageWeekdayBarBlurEnabled,
       'headerBlurStyle': headerBlurStyle.value,
+      'homeChromeGlassMaterial': homeChromeGlassMaterial,
       'homePageTimeColumnBlurEnabled': homePageTimeColumnBlurEnabled,
       'homePageBackdropFollowsWeekPager': homePageBackdropFollowsWeekPager,
       'savedThemes': savedThemes.map((t) => t.toJson()).toList(),
@@ -2337,6 +2346,8 @@ class TimetableSettings {
       headerBlurStyle: HeaderBlurStyleX.fromValue(
         json['headerBlurStyle'] as String?,
       ),
+      homeChromeGlassMaterial:
+          json['homeChromeGlassMaterial'] as String? ?? 'progressive',
       homePageTimeColumnBlurEnabled:
           json['homePageTimeColumnBlurEnabled'] as bool? ?? false,
       homePageBackdropFollowsWeekPager:
@@ -2556,6 +2567,7 @@ class TimetableSettings {
     bool? homePageHeaderBlurEnabled,
     bool? homePageWeekdayBarBlurEnabled,
     HeaderBlurStyle? headerBlurStyle,
+    String? homeChromeGlassMaterial,
     bool? homePageTimeColumnBlurEnabled,
     bool? homePageBackdropFollowsWeekPager,
     List<SavedTheme>? savedThemes,
@@ -2915,6 +2927,8 @@ class TimetableSettings {
       homePageWeekdayBarBlurEnabled:
           homePageWeekdayBarBlurEnabled ?? this.homePageWeekdayBarBlurEnabled,
       headerBlurStyle: headerBlurStyle ?? this.headerBlurStyle,
+      homeChromeGlassMaterial:
+          homeChromeGlassMaterial ?? this.homeChromeGlassMaterial,
       homePageTimeColumnBlurEnabled:
           homePageTimeColumnBlurEnabled ?? this.homePageTimeColumnBlurEnabled,
       homePageBackdropFollowsWeekPager:

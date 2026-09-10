@@ -59,37 +59,50 @@ void main() {
           ChromeGlassMaterial.progressive);
     });
 
-    test('高斯档：headerBlurStyle=gaussian 且首页液态关', () {
+    test('高斯档：写 homeChromeGlassMaterial，不动全局 glassMode', () {
       final s = applyChromeGlassMaterial(
         TimetableSettings.defaults(),
         ChromeGlassMaterial.gaussian,
       );
       expect(chromeGlassMaterialOf(s), ChromeGlassMaterial.gaussian);
+      expect(s.homeChromeGlassMaterial, 'gaussian');
       expect(s.headerBlurStyle, HeaderBlurStyle.gaussian);
-      expect(s.liquidGlassHomeChromeEnabled, isFalse);
+      expect(s.frostedGlassMode, FrostedGlassMode.frosted);
     });
 
     test('渐进档：清掉首页液态，不动全局 glassMode', () {
       final base = TimetableSettings.defaults().copyWith(
-        frostedGlassMode: FrostedGlassMode.liquidGlass,
+        frostedGlassMode: FrostedGlassMode.gaussian,
         liquidGlassHomeChromeEnabled: true,
+        homeChromeGlassMaterial: 'liquid',
       );
       final s = applyChromeGlassMaterial(base, ChromeGlassMaterial.progressive);
       expect(chromeGlassMaterialOf(s), ChromeGlassMaterial.progressive);
+      expect(s.homeChromeGlassMaterial, 'progressive');
       expect(s.headerBlurStyle, HeaderBlurStyle.inspire);
       expect(s.liquidGlassHomeChromeEnabled, isFalse);
-      expect(s.frostedGlassMode, FrostedGlassMode.liquidGlass);
+      expect(s.frostedGlassMode, FrostedGlassMode.gaussian);
     });
 
-    test('液态档：打开全局液态 + 首页液态开关', () {
+    test('液态档：只改首页材质键，不动全局 glassMode', () {
       final s = applyChromeGlassMaterial(
-        TimetableSettings.defaults().copyWith(frostedBlurEnabled: false),
+        TimetableSettings.defaults(),
         ChromeGlassMaterial.liquid,
       );
       expect(chromeGlassMaterialOf(s), ChromeGlassMaterial.liquid);
-      expect(s.frostedGlassMode, FrostedGlassMode.liquidGlass);
+      expect(s.homeChromeGlassMaterial, 'liquid');
+      expect(s.frostedGlassMode, FrostedGlassMode.frosted);
       expect(s.liquidGlassHomeChromeEnabled, isTrue);
-      expect(s.frostedBlurEnabled, isTrue);
+    });
+
+    test('存量无新键时从旧字段推导', () {
+      final legacy = TimetableSettings.defaults().copyWith(
+        frostedGlassMode: FrostedGlassMode.liquidGlass,
+        liquidGlassHomeChromeEnabled: true,
+        // 模拟无 homeChromeGlassMaterial 键的旧档：用非法值触发兜底。
+        homeChromeGlassMaterial: '',
+      );
+      expect(chromeGlassMaterialOf(legacy), ChromeGlassMaterial.liquid);
     });
   });
 }

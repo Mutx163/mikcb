@@ -48,47 +48,51 @@ TimetableSettings applyGlassModeChoice(
   ),
 };
 
-/// 课表壁纸区「顶栏玻璃材质」三档（与全局玻璃模式解耦）。
+/// 课表壁纸区「顶栏玻璃材质」三档（与全局玻璃模式完全解耦）。
 ///
 /// - [progressive]：首页玻璃带用 inspire 渐进模糊（上浓下淡）。
 /// - [gaussian]：首页玻璃带用 inspire 均匀高斯观感。
-/// - [liquid]：首页玻璃带走液态玻璃折射面。
-///
-/// 渐进 / 高斯只关「首页玻璃带」的液态开关，不改全局 glassMode——
-/// 弹窗、坞等仍跟外观页的玻璃模式走。
+/// - [liquid]：首页玻璃带走液态玻璃折射面。**仅首页**——子页顶栏与
+///   弹窗不读 [homeChromeGlassMaterial]，永不被此档带动。
 enum ChromeGlassMaterial { progressive, gaussian, liquid }
 
-/// 从设置推导首页玻璃带材质。
+/// 存量数据：无 `homeChromeGlassMaterial` 时从旧字段推导。
 ChromeGlassMaterial chromeGlassMaterialOf(TimetableSettings settings) {
-  if (settings.liquidGlassHomeChromeEnabled &&
-      settings.frostedGlassMode == FrostedGlassMode.liquidGlass) {
-    return ChromeGlassMaterial.liquid;
-  }
-  return settings.headerBlurStyle == HeaderBlurStyle.gaussian
-      ? ChromeGlassMaterial.gaussian
-      : ChromeGlassMaterial.progressive;
+  return switch (settings.homeChromeGlassMaterial) {
+    'liquid' => ChromeGlassMaterial.liquid,
+    'gaussian' => ChromeGlassMaterial.gaussian,
+    'progressive' => ChromeGlassMaterial.progressive,
+    // 兜底：旧数据无新键时沿用 headerBlurStyle / 全局液态启发式。
+    _ =>
+      settings.liquidGlassHomeChromeEnabled &&
+          settings.frostedGlassMode == FrostedGlassMode.liquidGlass
+          ? ChromeGlassMaterial.liquid
+          : settings.headerBlurStyle == HeaderBlurStyle.gaussian
+          ? ChromeGlassMaterial.gaussian
+          : ChromeGlassMaterial.progressive,
+  };
 }
 
 /// 写回首页玻璃带材质。
 ///
-/// 液态档需要全局 glassMode 为液态（渲染入口仍按 glassMode ×
-/// liquidGlassHomeChromeEnabled 判定），故一并打开；渐进 / 高斯只关
-/// 首页液态开关，不动全局模式。
+/// 只写 `homeChromeGlassMaterial` + `headerBlurStyle`，**不改**全局
+/// `frostedGlassMode`——设置页弹窗/Sheet 材质跟外观页走。
 TimetableSettings applyChromeGlassMaterial(
   TimetableSettings settings,
   ChromeGlassMaterial material,
 ) => switch (material) {
   ChromeGlassMaterial.progressive => settings.copyWith(
+    homeChromeGlassMaterial: 'progressive',
     headerBlurStyle: HeaderBlurStyle.inspire,
     liquidGlassHomeChromeEnabled: false,
   ),
   ChromeGlassMaterial.gaussian => settings.copyWith(
+    homeChromeGlassMaterial: 'gaussian',
     headerBlurStyle: HeaderBlurStyle.gaussian,
     liquidGlassHomeChromeEnabled: false,
   ),
   ChromeGlassMaterial.liquid => settings.copyWith(
-    frostedBlurEnabled: true,
-    frostedGlassMode: FrostedGlassMode.liquidGlass,
+    homeChromeGlassMaterial: 'liquid',
     liquidGlassHomeChromeEnabled: true,
   ),
 };

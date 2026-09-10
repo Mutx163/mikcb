@@ -583,8 +583,9 @@ class _TimetableScreenState extends State<TimetableScreen>
               backdropBlurOn && cardStyle == CourseCardSurfaceStyle.gaussian,
           // 预模糊位图服务的是首页玻璃带/摘要卡，跟随「首页玻璃带」开关。
           liquidGlassChrome:
-              dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
-              dockAppearance.liquidGlassHomeChromeEnabled,
+              dockAppearance.homeChromeGlassMaterial == 'liquid' ||
+              (dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
+                  dockAppearance.liquidGlassHomeChromeEnabled),
           sheetBlurSigma: HyperosBlurredHeader.blurSigmaOf(context),
           liquidGlassTunedBlur:
               (dockAppearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
@@ -599,7 +600,8 @@ class _TimetableScreenState extends State<TimetableScreen>
             fit: StackFit.expand,
             children: [
             if (hasBackdrop)
-              followsWeekPager
+              // 内置壁纸是程序生成的动画，克隆多页只会多起 Ticker，不随周次滑动。
+              (followsWeekPager && resolveBuiltInWallpaper(settings) == null)
                   ? HomePageSlidingBackdropLayer(
                       controller: _weekPageController,
                       pageCount: settings.semesterWeekCount,

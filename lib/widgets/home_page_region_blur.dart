@@ -70,6 +70,7 @@ int homePageChromeSettleFrameCount({
   required bool weekdayBarBlurEnabled,
   required FrostedGlassMode glassMode,
   bool homeChromeLiquidGlassEnabled = true,
+  String homeChromeGlassMaterial = kDefaultHomeChromeGlassMaterial,
 }) {
   if (!hasBackdrop || !frostedBlurEnabled) {
     return 0;
@@ -77,9 +78,11 @@ int homePageChromeSettleFrameCount({
   if (!headerBlurEnabled && !weekdayBarBlurEnabled) {
     return 0;
   }
-  // 「液态玻璃作用范围 → 首页玻璃带」关闭时按高斯磨砂结算。
-  final chromeIsLiquid = glassMode == FrostedGlassMode.liquidGlass &&
-      homeChromeLiquidGlassEnabled;
+  // 与 HomePageChromeGlassFill 同判：首页材质键 liquid，或全局液态 + 家族开关。
+  final chromeIsLiquid =
+      homeChromeGlassMaterial == 'liquid' ||
+      glassMode == FrostedGlassMode.liquidGlass &&
+          homeChromeLiquidGlassEnabled;
   return chromeIsLiquid ? 2 : 1;
 }
 
@@ -268,10 +271,8 @@ class HomePageChromeGlassFill extends StatelessWidget {
   static Color standInWashColor(BuildContext context) {
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
     final appearance = FrostedAppearanceScope.of(context);
-    // 与 [HomePageChromeGlassFill.build] 同判：家族开关关 → 磨砂洗色。
-    if (useBlur &&
-        appearance.glassMode == FrostedGlassMode.liquidGlass &&
-        appearance.liquidGlassHomeChromeEnabled) {
+    // 与 [HomePageChromeGlassFill.build] 同判：仅首页材质键为 liquid。
+    if (useBlur && _homeChromeUsesLiquid(appearance)) {
       return HyperosLiquidGlassSurface.settingsForRole(
         role: HyperosLiquidGlassRole.header,
         brightness: Theme.of(context).brightness,
@@ -284,15 +285,22 @@ class HomePageChromeGlassFill extends StatelessWidget {
     );
   }
 
+  /// 首页玻璃带是否走液态。
+  ///
+  /// 主路径：独立材质键 `liquid`（仅首页，不改全局 glassMode）。
+  /// 兼容：外观页全局液态 + 「首页玻璃带」作用范围开。
+  static bool _homeChromeUsesLiquid(FrostedAppearance appearance) {
+    return appearance.homeChromeGlassMaterial == 'liquid' ||
+        (appearance.glassMode == FrostedGlassMode.liquidGlass &&
+            appearance.liquidGlassHomeChromeEnabled);
+  }
+
   @override
   Widget build(BuildContext context) {
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
     final appearance = FrostedAppearanceScope.of(context);
-    // 「液态玻璃作用范围 → 首页玻璃带」关闭时回退磨砂材质。
-    final useLiquidGlass =
-        useBlur &&
-        appearance.glassMode == FrostedGlassMode.liquidGlass &&
-        appearance.liquidGlassHomeChromeEnabled;
+    // 仅首页玻璃带材质键为 liquid 时走折射；子页顶栏不经此入口。
+    final useLiquidGlass = useBlur && _homeChromeUsesLiquid(appearance);
 
     const fill = SizedBox.expand();
 
