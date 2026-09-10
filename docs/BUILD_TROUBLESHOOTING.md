@@ -131,6 +131,54 @@ Gradle build daemon disappeared unexpectedly
 
 本项目已在 `android/gradle.properties` 中降低 Gradle JVM 内存占用、限制 worker 数量并禁用长期驻留 daemon，以减少 Windows 本地调试时 daemon 崩溃概率。
 
+## CNB 门禁一直红：根组织「云原生构建-CPU」配额耗尽
+
+现象：CNB 上 push / PR 的 CI 检查**长期**报 error，但耗时只有 8~12 秒，
+日志末尾固定为：
+
+```text
+Pipeline prepare error: Root Group's events CPU core-hours are insufficient
+for pre-freezing(Freezing time:5.00 min, equivalent to 0.67 core-hours).
+根组织的云原生构建-CPU配额已不够预冻结(冻结时间：5.00 min，折合0.67核时)
+```
+
+这不是代码问题，也不是 `.cnb.yml` 配置问题：失败发生在 **Prepare 阶段**，
+Stage 列表里 `analyze` / `unit-test` 全是 `skipped`。因为根组织（Mutx163）的
+「云原生构建-CPU」免费额度（160 核时/月）已耗尽。
+
+### 怎么确认
+
+用同一分钟内并发的几条流水线做对照（`cnb build get-build-logs --repo Mutx163/qingyukb`）：
+
+| 时间 (UTC) | 事件 | 分支 | 结果 | 耗时 |
+|---|---|---|---|---|
+| 09:32:38 | `push` | auto/fix-header-frost-25aa | error | 8868ms |
+| 09:32:45 | `pull_request` | auto/fix-header-frost-25aa | error | 11730ms |
+| 09:32:55 | `pull_request.comment@npc` | auto/fix-header-frost-25aa | 正常拉起 | — |
+
+同一分支、同一分钟：门禁两条全红，NPC 那条正常。说明两个桶互不相通：
+
+- `push` / `pull_request` / `tag_push` → **云原生构建-CPU**（160 核时/月）← 已耗尽
+- `issue.comment@npc` / `pull_request.comment@npc` → **云原生开发-CPU**（1600 核时/月）← 仍可用
+
+### 计费粒度
+
+平台按 **5 分钟步长预冻结**核时：8 核流水线每次冻结 `8 × (5/60) = 0.67 核时`，
+**即使流水线什么都没跑就失败也照扣**。所以失败重试本身也在烧配额，不要反复重跑。
+
+### 处理办法
+
+1. **提额**（唯一治本）：联系根组织管理员提升「云原生构建-CPU」配额。
+2. **等刷新**：额度按自然月刷新。
+3. **不要再降 `cpus`**：降核换不来配额恢复，反而会让 `gradle-jvm-tests` 因
+   `runner 内存 = cpus × 2GiB` 不足而被 OOM killer 杀掉（见 `.cnb.yml` 顶部注释）。
+4. 额度恢复前，PR 的红色检查项可以按「基础设施故障」处理，不影响代码评审。
+
+### 不要做的事
+
+- 不要为这个失败改业务代码——失败的 Stage 一个都没跑。
+- 不要反复重推触发 CI，每次重试都会再冻结 0.67 核时。
+
 ## 如何查看调试记录
 
 mikcb 是 Flutter Android 应用，日志分散在 IDE 调试控制台、Debug Console+ 持久化文件和 `adb logcat` 中。按症状选择来源，避免在错误的地方找堆栈。

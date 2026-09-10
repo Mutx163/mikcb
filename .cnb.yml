@@ -152,6 +152,27 @@
 # 3. v* 标签 → 构建发布 APK 并挂到 Release
 # ═════════════════════════════════════════════════════════════
 "$":
+  # ── 门禁长期不可用：根组织「云原生构建-CPU」配额耗尽（2026-09-03 起）──
+  # 自 2026-09-03 11:42 起，本仓库所有 push / pull_request / tag_push 流水线
+  # 都在 Prepare 阶段直接 error，报错固定为：
+  #   Root Group's events CPU core-hours are insufficient for pre-freezing
+  #   (Freezing time:5.00 min, equivalent to 0.67 core-hours)
+  # 即根组织 Mutx163 的「云原生构建-CPU」免费额度（160 核时/月）已耗尽。
+  # 这是**账号级配额**，`.cnb.yml` 里再怎么省规格都救不回来，只能由根组织
+  # 管理员提额，或等额度按自然月刷新。
+  #
+  # 实测对照（2026-09-10 同一分钟并发，`cnb build get-build-logs`）：
+  #   09:32:38 push         auto/fix-header-frost-25aa  error 8868ms   ← 构建桶
+  #   09:32:45 pull_request auto/fix-header-frost-25aa  error 11730ms  ← 构建桶
+  #   09:32:55 pull_request.comment@npc 同一分支        正常拉起        ← 开发桶
+  # NPC 走「云原生开发-CPU」（1600 核时/月），与门禁**不共用配额桶**，
+  # 因此 NPC 任务照跑，但 PR 状态检查会一直红 —— 这不是代码问题。
+  #
+  # 计费粒度：平台按 5 分钟步长预冻结（8cpus → 0.67 核时/次），一条空流水线
+  # 失败也要扣满 0.67 核时；这就是 09-01 以来 200+ 条 error 的主因。
+  # 结论：先向根组织管理员申请提升「云原生构建-CPU」；配额恢复前不要靠降
+  # cpus 省配额（见上文 runner 注释：降核会让 gradle-jvm-tests OOM）。
+
   # ── @NPC 事件（issue/PR 评论里 @NPC 触发）──────────────────
   # 重要：NPC 与 push/PR **不共用配额桶**。按 docs /zh/build/npc.md「计费口径」，
   # NPC 视作开发场景，消耗「云原生开发-CPU」（免费 1600 核时/月）；push/PR 门禁
