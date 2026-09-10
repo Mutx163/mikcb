@@ -609,6 +609,10 @@ abstract final class HyperosMiuixDropdown {
   static const popupExtraLeadingWidth =
       HyperosMiuixSpec.preferenceTitleSize * 4;
 
+  /// 弹层圆角（MiuiX 下拉弹窗规范）。
+  ///
+  /// 这是**形状**规范，实底 / 液态 / 柔光三种材质共用，不随材质变化——
+  /// 改这里会让所有材质的弹层一起变形。材质只管雾面、底色、透镜，不管形状。
   static const popupCornerRadius = 20.0;
   static const popupElevation = 6.0;
   static const popupVerticalGap = 2.0;

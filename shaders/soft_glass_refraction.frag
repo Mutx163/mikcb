@@ -32,19 +32,25 @@
 //   0,  1  → u_size       引擎写入（纹理尺寸），勿设
 //   2,  3  → u_geom       控件左上角（物理像素）
 //   4,  5  → u_geom       控件尺寸（物理像素）
-//   6,  7  → u_lens       折射带宽度 / 最大位移，均按控件高度取比例
-//   8,  9  → u_optics     色散偏移比例 / 噪声系数
+//   6,  7  → u_lens       折射带宽度 / 最大位移（**绝对物理像素**）
+//   8,  9  → u_optics     色散偏移（**绝对物理像素**）/ 噪声系数
 //   10, 11 → u_view       视图尺寸（物理像素），仅用于判断纹理是否已裁到控件
+//   12     → u_corner     圆角半径（物理像素）
 //
-// 之所以把折射参数表达成「占高比例」而不是像素：本 shader 只在 54dp 药丸与
-// 56dp 圆钮这类小尺寸表面启用，几何全部可由 u_geom 推出，无需传入 dpr。
+// 折射参数一律用**绝对物理像素**：上游 `GlassRefractionSpec` 就是 18dp / 18dp /
+// 1dp 这样的绝对值，与控件尺寸无关。早先按「占控件高度的比例」表达（18/54），
+// 只对 54dp 药丸成立——同一组比例套到大面板上会算出巨大的透镜，于是当时被迫加了
+// 「面板不挂透镜」的尺寸闸门。改成绝对像素后，药丸、圆钮、弹层、面板都能挂同一套
+// 透镜，闸门自然撤掉；代价是每次出滤镜要带上 devicePixelRatio（Dart 侧换算）。
+//
 // 所有取值在 shader 内 clamp，即便 uniform 下标发生错位也不会渲染出灾难性结果。
 
 uniform vec2 u_size;   // 引擎写入：backdrop 快照纹理尺寸（物理像素）
 uniform vec4 u_geom;   // xy = 控件左上角，zw = 控件尺寸（物理像素）
-uniform vec2 u_lens;   // x = 折射带宽占高比例，y = 最大位移占高比例
-uniform vec2 u_optics; // x = 色散偏移占高比例，y = 噪声系数
+uniform vec2 u_lens;   // x = 折射带宽（物理像素），y = 最大位移（物理像素）
+uniform vec2 u_optics; // x = 色散偏移（物理像素），y = 噪声系数
 uniform vec2 u_view;   // 视图尺寸（物理像素）
+uniform float u_corner; // 圆角半径（物理像素）
 
 uniform sampler2D u_texture;
 
@@ -83,8 +89,9 @@ void main() {
   vec2 local = frag - u_geom.xy;
   vec2 p = local - halfSize;
 
-  // 柔光玻璃面在 UI 上一律是胶囊/圆角形，几何按胶囊处理：半径取短边一半。
-  float radius = min(halfSize.x, halfSize.y);
+  // 圆角半径由 Dart 侧按实际形状传入（胶囊给短边一半，面板给它的 borderRadius），
+  // 这里再夹一次：半径超过短边一半会让 SDF 翻转。
+  float radius = clamp(u_corner, 0.0, min(halfSize.x, halfSize.y));
   float edgeDistance = -sdRoundRect(p, halfSize, radius);
 
   // 形状遮罩，1 物理像素抗锯齿。形状外直接输出透明——不是黑。
@@ -94,9 +101,11 @@ void main() {
     return;
   }
 
-  float band = clamp(u_lens.x, 0.0, 0.5) * size.y;
-  float amount = clamp(u_lens.y, 0.0, 0.5) * size.y;
-  float chroma = clamp(u_optics.x, 0.0, 0.05) * size.y;
+  // 绝对物理像素；clamp 只是防御（带/位移不该超过短边一半，色散不该超过 32px）。
+  float limit = min(halfSize.x, halfSize.y);
+  float band = clamp(u_lens.x, 0.0, limit);
+  float amount = clamp(u_lens.y, 0.0, limit);
+  float chroma = clamp(u_optics.x, 0.0, 32.0);
   float noise = clamp(u_optics.y, 0.0, 0.2);
 
   // 0 = 远离边缘，1 = 贴住边缘。smoothstep 化让折弯集中在近边一带。

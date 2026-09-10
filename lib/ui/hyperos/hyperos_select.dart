@@ -622,7 +622,10 @@ class HyperosSelectPopupGlass extends StatelessWidget {
         child: SoftGlassSurface(
           borderRadius: borderRadius,
           blurEnabled: useBlur,
-          blurSigma: 28,
+          // 对话框配方（上游 `DeadlinerGlassRecipes.dialog`）：radius 92 →
+          // σ ≈ 53.6、圆角 40dp、底色倍率 1.0，并保留折射透镜。此前沿用底栏
+          // 配方（σ 13.78 + 无透镜），弹层看起来就是一块实心白卡。
+          recipe: SoftGlassRecipe.dialog,
           enableShadows: false,
           child: child,
         ),

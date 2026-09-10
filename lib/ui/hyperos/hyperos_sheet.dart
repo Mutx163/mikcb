@@ -275,8 +275,9 @@ class HyperosSheetFrame extends StatelessWidget {
       return SoftGlassSurface(
         borderRadius: borderRadius,
         blurEnabled: HyperosBlurredHeader.backdropBlurEnabled(context),
-        // 大面板用比底栏更强的雾面（参考 Hyper-PiliPlus BottomSheet 配方）。
-        blurSigma: 32,
+        // 大面板用比底栏厚得多的雾面：dialog 配方 σ ≈ 53.6（上游 BottomSheet
+        // 是 σ ≈ 107，见 SoftGlassRecipe.bottomSheet，性能未确认前不挂）。
+        recipe: SoftGlassRecipe.dialog,
         enableShadows: false,
         child: const SizedBox.expand(),
       );
@@ -339,7 +340,8 @@ class HyperosSheetFrame extends StatelessWidget {
         child: SoftGlassSurface(
           borderRadius: borderRadius,
           blurEnabled: HyperosBlurredHeader.backdropBlurEnabled(context),
-          blurSigma: 32,
+          // 同上：面板走 dialog 配方（σ ≈ 53.6 + 透镜）。
+          recipe: SoftGlassRecipe.dialog,
           enableShadows: false,
           child: content,
         ),

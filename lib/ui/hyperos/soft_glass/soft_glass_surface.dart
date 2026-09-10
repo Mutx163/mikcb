@@ -54,11 +54,9 @@ abstract final class SoftGlassTokens {
   static const double radiusToSigmaScale = 0.57735;
   static const double radiusToSigmaBias = 0.5;
 
-  /// Flutter 的 `BackdropFilter` 是真高斯，成本随 sigma 上升；原版走降采样
-  /// 金字塔模糊，面板能开到 radius 720。这里封一个现实中付得起的上限。
-  static const double maximumBlurSigma = 48;
-
   /// 柔光底栏默认高斯 sigma：92 × 0.25 = radius 23 → sigma ≈ 13.78。
+  ///
+  /// 仅作无配方时的兜底；实际取值走 [SoftGlassRecipe]（底栏 / 底部面板 / 对话框三套）。
   static const double defaultBlurSigma =
       baseBlurRadius * floatingNavigationRadiusMultiplier * radiusToSigmaScale +
       radiusToSigmaBias;
@@ -94,7 +92,10 @@ abstract final class SoftGlassTokens {
   // ---------------------------------------------------------------------
 
   static const double navigationTintAlpha = 0.75;
-  static const double tintAlphaMultiplier = 0.90;
+
+  /// 底栏（浮空导航）配方的不透明度倍率 —— 上游 `FloatingNavigation` 的
+  /// `tintAlphaMultiplier = 0.90`。面板 / 对话框配方是 `1.0`，见 [SoftGlassRecipe]。
+  static const double navigationTintAlphaMultiplier = 0.90;
 
   /// 亮色底灰度（glassTintLightGray）→ 252。
   static const double tintLightGray = 0.99;
@@ -102,9 +103,10 @@ abstract final class SoftGlassTokens {
   /// 暗色底灰度（glassTintDarkGray）→ 31。
   static const double tintDarkGray = 0.12;
 
-  /// 有效底色不透明度 = navigationTintAlpha × tintAlphaMultiplier ≈ 0.675，
+  /// 底栏有效底色不透明度 = [navigationTintAlpha] × 0.90 ≈ 0.675，
   /// **明暗同值**（此前亮色误用了旧版 V2 的 0.72）。
-  static const double tintAlpha = navigationTintAlpha * tintAlphaMultiplier;
+  static const double tintAlpha =
+      navigationTintAlpha * navigationTintAlphaMultiplier;
 
   /// 模糊总开关关闭时的底色不透明度。
   ///
@@ -124,17 +126,25 @@ abstract final class SoftGlassTokens {
         null => Theme.of(context).brightness == Brightness.dark,
       };
 
-  /// 底色：灰度取自 glassTintLightGray / glassTintDarkGray，明暗各一值。
+  /// 底色：灰度取自 glassTintLightGray / glassTintDarkGray，明暗各一值；
+  /// 不透明度 = [navigationTintAlpha] × [tintAlphaMultiplier]（配方决定后者）。
   static Color tint(
     BuildContext context, {
     required bool blurEnabled,
     SoftGlassPolarity? polarity,
+    double tintAlphaMultiplier = 1,
   }) {
     final gray = _dark(context, polarity) ? tintDarkGray : tintLightGray;
     final channel = (gray * 255).round();
-    return Color.fromARGB(255, channel, channel, channel).withValues(
-      alpha: blurEnabled ? tintAlpha : tintAlphaNoBlur,
-    );
+    final alpha = blurEnabled
+        ? (navigationTintAlpha * tintAlphaMultiplier).clamp(0.0, 1.0)
+        : tintAlphaNoBlur;
+    return Color.fromARGB(
+      255,
+      channel,
+      channel,
+      channel,
+    ).withValues(alpha: alpha);
   }
 
   /// 指示器填充：暗色白 13% / 亮色黑 7.5%。
@@ -171,6 +181,64 @@ abstract final class SoftGlassTokens {
   }) => edgeAlphaOf(_dark(context, polarity));
 }
 
+/// 柔光玻璃配方 —— 直译上游 `DeadlinerGlassRecipes` 的三套。
+///
+/// 上游对「浮空导航 / 底部面板 / 对话框」用三套不同配方：底栏只借一点雾
+/// （radius 23dp、tint ×0.90），对话框是更厚的一层（radius 92dp、tint ×1.0、
+/// 圆角 40dp）。此前我们把底栏那套用到了所有面，弹层因此像一块实心白卡——
+/// 「厚玻璃」的观感来自**折射透镜 + 大半径雾面**，而不是底色的透明度：
+/// 对话框配方的底色其实比底栏**更实**（0.75 vs 0.675）。
+///
+/// 上游最终半径 = `baseBlurRadius(92) × radiusMultiplier × 0.25`（软玻璃调校
+/// 默认值），下表已折算成 dp 绝对值；sigma 再按 `radius × 0.57735 + 0.5`
+/// 换算成 Flutter `BackdropFilter` 吃的参数（见 [blurSigma]）。
+class SoftGlassRecipe {
+  const SoftGlassRecipe({
+    required this.blurRadiusDp,
+    this.tintAlphaMultiplier = 1,
+    this.cornerRadiusDp,
+  });
+
+  /// Compose `RenderEffect.createBlurEffect` 的 radius（dp 绝对值）。
+  final double blurRadiusDp;
+
+  /// 底色不透明度倍率 —— 上游 `GlassBlurSpec.tintAlphaMultiplier`。
+  final double tintAlphaMultiplier;
+
+  /// 面板自带圆角（dp）。null = 沿用调用方给的形状（底栏是胶囊、面板用各自的
+  /// borderRadius），不覆盖。
+  final double? cornerRadiusDp;
+
+  /// 折算成 Flutter `BackdropFilter` 的 sigma。
+  double get blurSigma =>
+      blurRadiusDp * SoftGlassTokens.radiusToSigmaScale +
+      SoftGlassTokens.radiusToSigmaBias;
+
+  /// 浮空导航（底栏、浮钮）：92 × 0.25 = radius 23 → σ ≈ 13.78。
+  static const SoftGlassRecipe floatingNavigation = SoftGlassRecipe(
+    blurRadiusDp:
+        SoftGlassTokens.baseBlurRadius *
+        SoftGlassTokens.floatingNavigationRadiusMultiplier,
+    tintAlphaMultiplier: SoftGlassTokens.navigationTintAlphaMultiplier,
+  );
+
+  /// 对话框 / 弹层：92 × 1 = radius 92 → σ ≈ 53.6，圆角 40dp，底色倍率 1.0。
+  static const SoftGlassRecipe dialog = SoftGlassRecipe(
+    blurRadiusDp: SoftGlassTokens.baseBlurRadius,
+    cornerRadiusDp: 40,
+  );
+
+  /// 底部面板 / 抽屉：92 × 2 = radius 184 → σ ≈ 106.7，圆角 36dp。
+  ///
+  /// ⚠️ Flutter 的 `BackdropFilter` 是真高斯，σ ≈ 107 在整屏面板上明显比
+  /// σ 54 贵。上游走的是降采样金字塔模糊，付得起；这里先留作可选配方，
+  /// 未在设备上确认性能前不要直接挂到大面板上。
+  static const SoftGlassRecipe bottomSheet = SoftGlassRecipe(
+    blurRadiusDp: SoftGlassTokens.baseBlurRadius * 2,
+    cornerRadiusDp: 36,
+  );
+}
+
 /// 柔光亮暗极性。
 enum SoftGlassPolarity { light, dark }
 
@@ -203,6 +271,7 @@ class SoftGlassSurface extends StatelessWidget {
     this.enableShadows = true,
     this.enableEdgeHighlight = true,
     this.enableRefraction = true,
+    this.recipe = SoftGlassRecipe.floatingNavigation,
   });
 
   final Widget child;
@@ -215,11 +284,25 @@ class SoftGlassSurface extends StatelessWidget {
   final bool enableShadows;
   final bool enableEdgeHighlight;
 
-  /// 是否允许走折射 shader。大面板请传 false。
+  /// 是否允许走折射 shader。默认允许——折射透镜现在是绝对 dp 参数，
+  /// 任意尺寸都成立；只有明确不想要的场景才传 false。
   final bool enableRefraction;
 
-  BorderRadius get _radius =>
-      borderRadius ?? const BorderRadius.all(Radius.circular(999));
+  /// 材质配方：决定雾面半径、底色倍率与自带圆角。见 [SoftGlassRecipe]。
+  final SoftGlassRecipe recipe;
+
+  /// 形状：显式 [borderRadius] 优先，其次配方自带圆角，最后兜底胶囊。
+  BorderRadius get _radius {
+    final explicit = borderRadius;
+    if (explicit != null) {
+      return explicit;
+    }
+    final recipeRadius = recipe.cornerRadiusDp;
+    if (recipeRadius != null) {
+      return BorderRadius.all(Radius.circular(recipeRadius));
+    }
+    return const BorderRadius.all(Radius.circular(999));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -231,8 +314,9 @@ class SoftGlassSurface extends StatelessWidget {
           context,
           blurEnabled: blurEnabled,
           polarity: polarity,
+          tintAlphaMultiplier: recipe.tintAlphaMultiplier,
         );
-    final sigma = blurSigma ?? SoftGlassTokens.defaultBlurSigma;
+    final sigma = blurSigma ?? recipe.blurSigma;
     final edgeAlpha = SoftGlassTokens.edgeAlphaOf(isDark) * alpha;
     final resolvedRadius = _radius;
 
@@ -243,6 +327,7 @@ class SoftGlassSurface extends StatelessWidget {
           glassLayer = _SoftGlassBackdrop(
             blurSigma: sigma,
             enableRefraction: enableRefraction,
+            cornerRadius: resolvedRadius.topLeft.x,
             child: const SizedBox.expand(),
           );
         }
@@ -385,11 +470,15 @@ class _SoftGlassBackdrop extends StatefulWidget {
   const _SoftGlassBackdrop({
     required this.blurSigma,
     required this.enableRefraction,
+    required this.cornerRadius,
     required this.child,
   });
 
   final double blurSigma;
   final bool enableRefraction;
+
+  /// 实际形状的圆角半径（逻辑像素）。胶囊传 999 也行——渲染侧会夹到短边一半。
+  final double cornerRadius;
   final Widget child;
 
   @override
@@ -453,6 +542,7 @@ class _SoftGlassBackdropState extends State<_SoftGlassBackdrop> {
       lens: _lens,
       devicePixelRatio: view.devicePixelRatio,
       viewSize: view.physicalSize,
+      cornerRadius: widget.cornerRadius,
       child: widget.child,
     );
   }
@@ -464,6 +554,7 @@ class _SoftGlassBackdropHost extends SingleChildRenderObjectWidget {
     required this.lens,
     required this.devicePixelRatio,
     required this.viewSize,
+    required this.cornerRadius,
     required super.child,
   });
 
@@ -472,6 +563,9 @@ class _SoftGlassBackdropHost extends SingleChildRenderObjectWidget {
   final double devicePixelRatio;
   final Size viewSize;
 
+  /// 实际形状的圆角半径（逻辑像素）。
+  final double cornerRadius;
+
   @override
   _RenderSoftGlassBackdrop createRenderObject(BuildContext context) =>
       _RenderSoftGlassBackdrop(
@@ -479,6 +573,7 @@ class _SoftGlassBackdropHost extends SingleChildRenderObjectWidget {
         lens, // 折射透镜，可为 null（回退纯高斯）
         devicePixelRatio, // 设备像素比
         viewSize, // 视图物理尺寸
+        cornerRadius, // 圆角半径（逻辑像素）
       );
 
   @override
@@ -490,7 +585,8 @@ class _SoftGlassBackdropHost extends SingleChildRenderObjectWidget {
       ..blurSigma = blurSigma
       ..lens = lens
       ..devicePixelRatio = devicePixelRatio
-      ..viewSize = viewSize;
+      ..viewSize = viewSize
+      ..cornerRadius = cornerRadius;
   }
 }
 
@@ -500,12 +596,14 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
     this._lens,
     this._devicePixelRatio,
     this._viewSize,
+    this._cornerRadius,
   );
 
   double _blurSigma;
   SoftGlassRefractionLens? _lens;
   double _devicePixelRatio;
   Size _viewSize;
+  double _cornerRadius;
 
   ui.ImageFilter? _cachedFilter;
   SoftGlassRefractionLens? _cachedLens;
@@ -557,6 +655,15 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
     markNeedsPaint();
   }
 
+  double get cornerRadius => _cornerRadius;
+  set cornerRadius(double value) {
+    if (_cornerRadius == value) {
+      return;
+    }
+    _cornerRadius = value;
+    markNeedsPaint();
+  }
+
   @override
   void paint(PaintingContext context, Offset offset) {
     if (child == null) {
@@ -589,7 +696,12 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
     // backdrop 通道。引擎侧对此有专门的单测（ComposeBackdropRuntimeOuterBlurInner）。
     final result = refracted
         ? ui.ImageFilter.compose(
-            outer: lens.filterFor(geometry, viewSize),
+            outer: lens.filterFor(
+              geometry,
+              viewSize,
+              devicePixelRatio: _devicePixelRatio,
+              cornerRadiusPx: _cornerRadiusPx(),
+            ),
             inner: blur,
           )
         : blur;
@@ -601,12 +713,22 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
     return result;
   }
 
+  /// 圆角半径（物理像素）。胶囊传 999 也能用——这里夹到短边一半，即胶囊半径；
+  /// 面板传自己的 borderRadius。shader 里还会再夹一次。
+  double _cornerRadiusPx() {
+    final limit = size.isEmpty ? 0.0 : size.shortestSide * 0.5;
+    return (_cornerRadius <= 0 || _cornerRadius > limit ? limit : _cornerRadius) *
+        _devicePixelRatio;
+  }
+
   /// 控件在整屏 backdrop 快照里的矩形，物理像素。
   ///
   /// 旋转或非等比缩放时返回 null：折射 SDF 是轴对齐的，那种情形几何必然失真，
   /// 退回纯高斯比画一个歪掉的透镜更稳妥。
+  ///
+  /// 注：折射透镜改用绝对 dp 参数后**不再限制高度**——任意尺寸都挂同一套透镜。
   Rect? _geometryInPhysicalPixels() {
-    if (size.isEmpty || size.height > SoftGlassRefraction.maxSurfaceHeight) {
+    if (size.isEmpty) {
       return null;
     }
     final transform = getTransformTo(null);

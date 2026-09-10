@@ -18,21 +18,26 @@ abstract final class SoftGlassRefraction {
 
   static const String assetKey = 'shaders/soft_glass_refraction.frag';
 
-  /// 折射位移带宽度占控件高度的比例：原版 refraction_height 18dp，
-  /// 作用面为 54dp 药丸 / 56dp 圆钮，取 18/54。
-  static const double bandFraction = 18 / 54;
+  // ---------------------------------------------------------------------
+  // 光学参数：一律 **dp 绝对值**（上游 `GlassRefractionSpec` 同口径）
+  // ---------------------------------------------------------------------
+  //
+  // 早先按「占控件高度的比例」（18/54）表达，只对 54dp 药丸成立——同一组比例
+  // 套到大面板上会算出巨大的透镜，于是当时被迫加了「面板不挂透镜」的尺寸闸门。
+  // 改成绝对值后，药丸、圆钮、弹层、面板共用同一套透镜，闸门随之撤掉。
+  // 出滤镜时按 devicePixelRatio 折成物理像素（shader 全程用物理像素）。
 
-  /// 最大折射位移占控件高度的比例：原版 refraction_amount 18dp。
-  static const double amountFraction = 18 / 54;
+  /// 折射带宽度（dp）—— 上游 `GlassRefractionSpec.height`。
+  static const double refractionHeightDp = 18;
 
-  /// 色散偏移占控件高度的比例：原版 chromatic_aberration 1dp。
-  static const double chromaticFraction = 1 / 54;
+  /// 最大折射位移（dp）—— 上游 `GlassRefractionSpec.amount`。
+  static const double refractionAmountDp = 18;
+
+  /// 色散偏移（dp）—— 上游 `GlassRefractionSpec.chromaticAberration`。
+  static const double chromaticAberrationDp = 1;
 
   /// 噪声系数：原版 noiseCoefficient。
   static const double noiseCoefficient = 0.095;
-
-  /// 折射 shader 只用于这类小尺寸浮层；大面板一律走高斯（见 [maxSurfaceHeight]）。
-  static const double maxSurfaceHeight = 72;
 
   static ui.FragmentProgram? _program;
   static Future<void>? _loading;
@@ -71,32 +76,40 @@ abstract final class SoftGlassRefraction {
 
 /// 单块玻璃面的折射透镜：持有一个独占的 [ui.FragmentShader]，按实测几何出滤镜。
 class SoftGlassRefractionLens {
-  SoftGlassRefractionLens._(this._shader) {
-    // 常量参数只设一次。下标 0/1 是 u_size，由引擎按绑定纹理尺寸写入，这里
-    // **不能**设；几何（下标 2–5）每次出滤镜时按实测值刷新。
-    _shader
-      ..setFloat(6, SoftGlassRefraction.bandFraction)
-      ..setFloat(7, SoftGlassRefraction.amountFraction)
-      ..setFloat(8, SoftGlassRefraction.chromaticFraction)
-      ..setFloat(9, SoftGlassRefraction.noiseCoefficient);
-  }
+  SoftGlassRefractionLens._(this._shader);
 
   final ui.FragmentShader _shader;
   bool _disposed = false;
 
-  /// 按控件在 backdrop 快照中的矩形（物理像素）出滤镜。
+  /// 按控件在 backdrop 快照中的矩形出滤镜。
   ///
-  /// [geometry] 必须是**全局逻辑坐标 × devicePixelRatio**：引擎给 shader 的
-  /// `FlutterFragCoord()` 落在 backdrop 快照纹理空间里，而该快照是整屏范围的。
-  ui.ImageFilter filterFor(Rect geometry, ui.Size viewSize) {
+  /// 几何量一律是**物理像素**：
+  /// * [geometry]：控件矩形，取全局逻辑坐标 × devicePixelRatio；
+  /// * [viewSize]：视图物理尺寸（判断引擎给的是整屏快照还是已裁到控件）；
+  /// * [cornerRadiusPx]：实际形状的圆角半径，胶囊传短边一半。shader 内部会再
+  ///   夹一次上限，这里不必自己夹。
+  ///
+  /// 下标 0/1 是 `u_size`，由引擎按绑定纹理尺寸写入，这里**不能**设。
+  ui.ImageFilter filterFor(
+    Rect geometry,
+    ui.Size viewSize, {
+    required double devicePixelRatio,
+    required double cornerRadiusPx,
+  }) {
     assert(!_disposed, 'SoftGlassRefractionLens 已释放，不能继续出滤镜');
+    final dpr = devicePixelRatio;
     _shader
       ..setFloat(2, geometry.left)
       ..setFloat(3, geometry.top)
       ..setFloat(4, geometry.width)
       ..setFloat(5, geometry.height)
+      ..setFloat(6, SoftGlassRefraction.refractionHeightDp * dpr)
+      ..setFloat(7, SoftGlassRefraction.refractionAmountDp * dpr)
+      ..setFloat(8, SoftGlassRefraction.chromaticAberrationDp * dpr)
+      ..setFloat(9, SoftGlassRefraction.noiseCoefficient)
       ..setFloat(10, viewSize.width)
-      ..setFloat(11, viewSize.height);
+      ..setFloat(11, viewSize.height)
+      ..setFloat(12, cornerRadiusPx);
     return ui.ImageFilter.shader(_shader);
   }
 
