@@ -373,6 +373,11 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
     return HyperosFrostedHeaderShell(
       blurEnabled: blurCapable,
       tint: tint,
+      // 无内容压在带下时衬底必须铺满整条带。折叠顶栏的模糊层常驻，而
+      // inspire 档衬底底边渐隐到全透明，会留出一条透明窗口——内容还没
+      // 真正压到带底时就被糊进这条窗口，随后衬底整条切进来，读作
+      // 「内容快插到标题栏时顿一下」。见 [InspireHeaderBlur.opaqueAtRest]。
+      opaqueAtRest: !underHeader,
       child: child,
     );
   }

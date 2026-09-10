@@ -29,6 +29,7 @@ class FrostedHeaderBackground extends StatelessWidget {
     this.blurEnabled = true,
     this.blurSigma = HyperosBlurredHeader.blurSigma,
     this.blurStyle = HeaderBlurStyle.gaussian,
+    this.opaqueAtRest = false,
     super.key,
   });
 
@@ -38,6 +39,11 @@ class FrostedHeaderBackground extends StatelessWidget {
   final double blurSigma;
   final HeaderBlurStyle blurStyle;
 
+  /// See [InspireHeaderBlur.opaqueAtRest]. Only the subpage top-bar shell
+  /// turns this on — sheets and cards are not under the collapsible band and
+  /// keep their progressive bottom fade.
+  final bool opaqueAtRest;
+
   @override
   Widget build(BuildContext context) {
     return InspireHeaderBlur(
@@ -45,6 +51,7 @@ class FrostedHeaderBackground extends StatelessWidget {
       blurEnabled: blurEnabled,
       blurSigma: blurSigma,
       style: blurStyle,
+      opaqueAtRest: opaqueAtRest,
       child: child,
     );
   }
@@ -56,12 +63,16 @@ class HyperosFrostedHeaderShell extends StatelessWidget {
     required this.child,
     this.blurEnabled = true,
     this.tint,
+    this.opaqueAtRest = false,
     super.key,
   });
 
   final Widget child;
   final bool blurEnabled;
   final Color? tint;
+
+  /// See [InspireHeaderBlur.opaqueAtRest].
+  final bool opaqueAtRest;
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +86,9 @@ class HyperosFrostedHeaderShell extends StatelessWidget {
       blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
       blurStyle: HyperosBlurredHeader.headerBlurStyleOf(context),
       tint: resolvedTint,
+      // 常驻模糊 + 无内容压带时必须整条不透明，否则衬底底边渐隐会露出
+      // 一截已经糊进来的内容（见 [InspireHeaderBlur.opaqueAtRest]）。
+      opaqueAtRest: opaqueAtRest,
       child: child,
     );
   }
