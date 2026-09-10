@@ -2006,7 +2006,6 @@ class LiveUpdateService : Service() {
                 .filter { it.isNotBlank() }
                 .joinToString(" · ")
         }
-            
         val miuiFocusHintText = if (
             liveShouldMirrorStatusIntoMiuiFocusHint(
                 sdkInt = Build.VERSION.SDK_INT,
