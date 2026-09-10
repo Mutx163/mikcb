@@ -48,6 +48,12 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 与内容之间出现硬切边。
   static const gaussianFadeExtent = 0.12;
 
+  /// 渐进档衬底在底边保留的不透明度比例。
+  ///
+  /// 均匀 tint 会把 inspire 模糊的「上浓下淡」抹平成一整条半透明；渐进
+  /// 档必须让衬底也随方向衰减，底边只留足够读字的对比度。
+  static const progressiveTintBottomScale = 0.28;
+
   /// 设备是否支持 shader filter（Inspire Blur 的兜底条件）。
   static bool get _shaderFilterSupported => ImageFilter.isShaderFilterSupported;
 
@@ -80,6 +86,34 @@ class InspireHeaderBlur extends StatelessWidget {
     };
   }
 
+  /// 渐进档衬底：随方向上浓下淡，与模糊强度梯度对齐。
+  ///
+  /// 高斯档保持均匀 [tint]。渐进档若继续盖一层整幅半透明色，观感会退化
+  /// 成「一致的半透明条」，完全看不出 iOS 式的顶浓底清。
+  Widget _tintLayer() {
+    final base = switch (style) {
+      HeaderBlurStyle.gaussian => null,
+      HeaderBlurStyle.inspire => tint,
+    };
+    if (base == null) {
+      return Positioned.fill(child: ColoredBox(color: tint));
+    }
+    final bottom = base.withValues(
+      alpha: base.a * progressiveTintBottomScale,
+    );
+    return Positioned.fill(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [base, bottom],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final useBlur = blurEnabled && canRender(context);
@@ -98,8 +132,8 @@ class InspireHeaderBlur extends StatelessWidget {
                 ),
               ),
             ),
-          // 衬底色始终画在模糊之上：模糊把壁纸压成色块，衬底负责对比度。
-          Positioned.fill(child: ColoredBox(color: tint)),
+          // 衬底画在模糊之上：模糊负责「糊」，衬底负责可读对比度。
+          _tintLayer(),
           child,
         ],
       ),
