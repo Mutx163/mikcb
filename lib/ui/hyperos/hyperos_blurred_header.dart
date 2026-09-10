@@ -66,7 +66,7 @@ class HyperosBlurredHeaderScope extends InheritedWidget {
   }
 
   static bool contentUnderHeaderOf(BuildContext context) {
-    return maybeOf(context)?.contentUnderHeader ?? false;
+    return HyperosHeaderUnderContentScope.of(context);
   }
 
   static Color? headerBackgroundColorOf(BuildContext context) {
@@ -75,10 +75,42 @@ class HyperosBlurredHeaderScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(HyperosBlurredHeaderScope oldWidget) {
+    // contentUnderHeader is intentionally omitted: it lives in
+    // [HyperosHeaderUnderContentScope]. Notifying this scope for frost flips
+    // rebuilt every list body that only depends on the top inset
+    // ([insetOf]) and read as a hitch when content first tucked under the bar.
     return contentTopInset != oldWidget.contentTopInset ||
         blurEnabled != oldWidget.blurEnabled ||
-        contentUnderHeader != oldWidget.contentUnderHeader ||
         headerBackgroundColor != oldWidget.headerBackgroundColor;
+  }
+}
+
+/// Frost flag only, split out of [HyperosBlurredHeaderScope].
+///
+/// List bodies depend on the parent scope for [HyperosBlurredHeaderScope.insetOf]
+/// and must not rebuild when `contentUnderHeader` flips. Header chrome and
+/// scroll-revealed titles subscribe here instead.
+class HyperosHeaderUnderContentScope extends InheritedWidget {
+  const HyperosHeaderUnderContentScope({
+    required this.contentUnderHeader,
+    required super.child,
+    super.key,
+  });
+
+  final bool contentUnderHeader;
+
+  static bool of(BuildContext context) {
+    return context
+            .dependOnInheritedWidgetOfExactType<
+              HyperosHeaderUnderContentScope
+            >()
+            ?.contentUnderHeader ??
+        false;
+  }
+
+  @override
+  bool updateShouldNotify(HyperosHeaderUnderContentScope oldWidget) {
+    return contentUnderHeader != oldWidget.contentUnderHeader;
   }
 }
 
@@ -310,7 +342,16 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final scope = HyperosBlurredHeaderScope.maybeOf(context);
     final routeBlur = scope?.blurEnabled ?? true;
-    final underHeader = scope?.contentUnderHeader ?? true;
+    // Prefer the frost-only nested scope; fall back to the parent field, then
+    // true so bare showcase usages without a page scope keep the old default.
+    final underHeader =
+        context
+                .dependOnInheritedWidgetOfExactType<
+                  HyperosHeaderUnderContentScope
+                >()
+                ?.contentUnderHeader ??
+            scope?.contentUnderHeader ??
+            true;
     // 顶栏规范：深色模式使用纯不透明深色（不做任何模糊/玻璃）。
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final useBlur = !isDark &&

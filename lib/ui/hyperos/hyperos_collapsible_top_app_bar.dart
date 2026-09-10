@@ -1224,18 +1224,20 @@ class _HyperosCollapsibleTopAppBarState
                       Positioned(
                         left: largeLeft,
                         top: largeTitleTop,
-                        child: Opacity(
-                          opacity: largeOpacity,
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: largeTitleMaxWidth,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: largeTitleMaxWidth,
+                          ),
+                          child: Text(
+                            largeTitleText,
+                            // Color alpha instead of [Opacity]: text fade does
+                            // not need a saveLayer, and Opacity on every
+                            // collapse pixel was a mid-scroll cost.
+                            style: largeTitleStyle.copyWith(
+                              color: largeInk.withValues(alpha: largeOpacity),
                             ),
-                            child: Text(
-                              largeTitleText,
-                              style: largeTitleStyle.copyWith(color: largeInk),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ),
@@ -1243,18 +1245,17 @@ class _HyperosCollapsibleTopAppBarState
                         Positioned(
                           left: currentSubtitleLeft,
                           top: currentSubtitleTop,
-                          child: Opacity(
-                            opacity: largeOpacity,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxWidth: currentSubtitleMaxWidth,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: currentSubtitleMaxWidth,
+                            ),
+                            child: Text(
+                              widget.subtitle,
+                              style: _subtitleStyle(
+                                subtitleColor.withValues(alpha: largeOpacity),
                               ),
-                              child: Text(
-                                widget.subtitle,
-                                style: _subtitleStyle(subtitleColor),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ),
@@ -1272,27 +1273,27 @@ class _HyperosCollapsibleTopAppBarState
                   color: backgroundColor,
                   child: Stack(
                     children: [
-                      if (smallOpacity > 0.001)
-                        Positioned(
-                          left: smallLeft,
-                          top: smallTitleTop + smallTitleRise,
-                          child: Opacity(
-                            opacity: smallOpacity,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxWidth: smallTitleMaxWidth,
-                              ),
-                              child: Text(
-                                widget.title,
-                                style: smallTitleStyle.copyWith(
-                                  color: titleColor,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                      // Always mounted: inserting the Text the frame opacity
+                      // crosses 0.001 caused a mid-gesture layout hitch when
+                      // the large title switched to the small one. Color alpha
+                      // handles the fade without a saveLayer.
+                      Positioned(
+                        left: smallLeft,
+                        top: smallTitleTop + smallTitleRise,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: smallTitleMaxWidth,
+                          ),
+                          child: Text(
+                            widget.title,
+                            style: smallTitleStyle.copyWith(
+                              color: titleColor.withValues(alpha: smallOpacity),
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                      ),
                       if (widget.navigationIcon != null)
                         Positioned(
                           left: widget.navigationIconPadding,

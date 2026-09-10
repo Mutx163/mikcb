@@ -63,7 +63,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
-    expect(find.text('Appearance settings'), findsOneWidget);
+    // Collapsible headers keep the large and small titles mounted together;
+    // the small title sits at zero alpha until the large one collapses.
+    expect(find.text('Appearance settings'), findsWidgets);
     expect(find.text('Dark mode'), findsOneWidget);
 
     await pumpBlurSettleFrames(tester);
@@ -448,9 +450,11 @@ void main() {
       );
     }
 
-    expect(homeBlurScope(), findsOneWidget);
+    // Large + small titles share one scope; the ancestor finder can list it
+    // once per matching Text, so take the unique set.
+    expect(homeBlurScope().evaluate().map((e) => e.widget).toSet(), hasLength(1));
     expect(
-      tester.widget<HyperosBlurredHeaderScope>(homeBlurScope()).blurEnabled,
+      tester.widgetList<HyperosBlurredHeaderScope>(homeBlurScope()).first.blurEnabled,
       isTrue,
     );
 
@@ -460,9 +464,9 @@ void main() {
     Navigator.of(tester.element(find.text('Dark mode'))).pop();
     await tester.pumpAndSettle();
 
-    expect(homeBlurScope(), findsOneWidget);
+    expect(homeBlurScope().evaluate().map((e) => e.widget).toSet(), hasLength(1));
     expect(
-      tester.widget<HyperosBlurredHeaderScope>(homeBlurScope()).blurEnabled,
+      tester.widgetList<HyperosBlurredHeaderScope>(homeBlurScope()).first.blurEnabled,
       isTrue,
     );
   });

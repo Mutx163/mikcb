@@ -565,12 +565,18 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     required Color headerBackgroundColor,
     required Widget child,
   }) {
+    // contentUnderHeader lives in a nested scope so frost flips do not
+    // notify every list that only depends on contentTopInset (see
+    // HyperosBlurredHeaderScope.updateShouldNotify).
     return HyperosBlurredHeaderScope(
       contentTopInset: contentTopInset,
       blurEnabled: routeBlurEnabled,
       contentUnderHeader: _headerFrost.contentUnderHeader,
       headerBackgroundColor: headerBackgroundColor,
-      child: child,
+      child: HyperosHeaderUnderContentScope(
+        contentUnderHeader: _headerFrost.contentUnderHeader,
+        child: child,
+      ),
     );
   }
 
