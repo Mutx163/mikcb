@@ -3702,7 +3702,6 @@ class TimetableProvider with ChangeNotifier {
       });
     }
 
-    // backdrop key 同时覆盖图片路径与内置预设
     final previousBackdropKey = homePageBackdropKey(_settings);
     final semesterStartChanged =
         settings.semesterStartDate != _settings.semesterStartDate;
