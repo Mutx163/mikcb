@@ -10614,6 +10614,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveExpandedDetailFieldNote => '备注';
+
+  @override
+  String get fontWeightLabel => '字重';
+
+  @override
+  String get fontSizeLabel => '字号';
+
+  @override
+  String get fontSizeDefault => '默认';
+
+  @override
+  String get fontPreviewSample => '永 Aa Bb 0123 — 课表预览';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -21270,6 +21282,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveExpandedDetailFieldNote => '備註';
+
+  @override
+  String get fontWeightLabel => '字重';
+
+  @override
+  String get fontSizeLabel => '字號';
+
+  @override
+  String get fontSizeDefault => '預設';
+
+  @override
+  String get fontPreviewSample => '永 Aa Bb 0123 — 課表預覽';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -31926,4 +31950,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveExpandedDetailFieldNote => '備註';
+
+  @override
+  String get fontWeightLabel => '字重';
+
+  @override
+  String get fontSizeLabel => '字級';
+
+  @override
+  String get fontSizeDefault => '預設';
+
+  @override
+  String get fontPreviewSample => '永 Aa Bb 0123 — 課表預覽';
 }

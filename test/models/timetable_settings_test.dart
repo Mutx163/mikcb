@@ -27,6 +27,9 @@ void main() {
     expect(settings.widgetHeightAdjustment, -11);
     expect(settings.widgetCornerRadius, 22);
     expect(settings.appThemeMode, AppThemeMode.system);
+    expect(settings.appFontMode, AppFontMode.system);
+    expect(settings.appFontWeight, kAppFontWeightDefault);
+    expect(settings.appTextScale, kAppTextScaleDefault);
     expect(settings.homeTitleStyle, HomeTitleStyle.classic);
     expect(
       settings.timetableBackToCurrentWeekButtonStyle,
@@ -444,6 +447,30 @@ void main() {
     );
   });
 
+  test('global font weight and text scale survive json round trip', () {
+    final settings = TimetableSettings.defaults().copyWith(
+      appFontWeight: 350,
+      appTextScale: 1.25,
+    );
+    final restored = TimetableSettings.fromJson(settings.toJson());
+    expect(restored.appFontWeight, 350);
+    expect(restored.appTextScale, 1.25);
+
+    // 老档案缺字段 → 默认 w400 / 1.0。
+    final legacy = TimetableSettings.fromJson(<String, dynamic>{});
+    expect(legacy.appFontWeight, kAppFontWeightDefault);
+    expect(legacy.appTextScale, kAppTextScaleDefault);
+
+    // 越界值钳到合法区间。
+    final clamped = TimetableSettings.fromJson({
+      ...TimetableSettings.defaults().toJson(),
+      'appFontWeight': 9999,
+      'appTextScale': 9.9,
+    });
+    expect(clamped.appFontWeight, kAppFontWeightMax);
+    expect(clamped.appTextScale, kAppTextScaleMax);
+  });
+
   test('legacy spacing mode migrates to numeric card gap', () {
     final restored = TimetableSettings.fromJson({
       ...TimetableSettings.defaults().toJson(),
@@ -461,12 +488,18 @@ void main() {
     });
 
     // 半透明并入实体卡片；玻璃 / 液态玻璃并入高斯模糊。
-    expect(restore('translucent').courseCardSurfaceStyle,
-        CourseCardSurfaceStyle.solid);
-    expect(restore('glass').courseCardSurfaceStyle,
-        CourseCardSurfaceStyle.gaussian);
-    expect(restore('liquidGlass').courseCardSurfaceStyle,
-        CourseCardSurfaceStyle.gaussian);
+    expect(
+      restore('translucent').courseCardSurfaceStyle,
+      CourseCardSurfaceStyle.solid,
+    );
+    expect(
+      restore('glass').courseCardSurfaceStyle,
+      CourseCardSurfaceStyle.gaussian,
+    );
+    expect(
+      restore('liquidGlass').courseCardSurfaceStyle,
+      CourseCardSurfaceStyle.gaussian,
+    );
   });
 
   test('gaussian course-card style survives json round trip', () {
@@ -1055,20 +1088,17 @@ void main() {
 
     test('missing json keys fall back to shipped defaults', () {
       final restored = TimetableSettings.fromJson(
-        TimetableSettings.defaults().toJson()
-          ..remove('glassDockShowWeekTab'),
+        TimetableSettings.defaults().toJson()..remove('glassDockShowWeekTab'),
       );
       expect(restored.glassDockShowWeekTab, isTrue);
 
       final restored2 = TimetableSettings.fromJson(
-        TimetableSettings.defaults().toJson()
-          ..remove('glassDockButtonEntryId'),
+        TimetableSettings.defaults().toJson()..remove('glassDockButtonEntryId'),
       );
       expect(restored2.glassDockButtonEntryId, 'addCourse');
 
       final restored3 = TimetableSettings.fromJson(
-        TimetableSettings.defaults().toJson()
-          ..remove('glassDockShowAddButton'),
+        TimetableSettings.defaults().toJson()..remove('glassDockShowAddButton'),
       );
       expect(restored3.glassDockShowAddButton, isFalse);
     });
@@ -1088,16 +1118,31 @@ void main() {
 
     test('fromJson heals divergent detail colors while linked', () {
       final settings = TimetableSettings.fromJson(dirtyJson(link: true));
-      expect(settings.courseCardDetailColorLight, settings.courseCardTitleColorLight);
-      expect(settings.courseCardDetailColorDark, settings.courseCardTitleColorDark);
+      expect(
+        settings.courseCardDetailColorLight,
+        settings.courseCardTitleColorLight,
+      );
+      expect(
+        settings.courseCardDetailColorDark,
+        settings.courseCardTitleColorDark,
+      );
     });
 
-    test('fromJson defaults to linked and heals legacy data without the key', () {
-      final settings = TimetableSettings.fromJson(dirtyJson(link: null));
-      expect(settings.linkCourseCardColors, isTrue);
-      expect(settings.courseCardDetailColorLight, settings.courseCardTitleColorLight);
-      expect(settings.courseCardDetailColorDark, settings.courseCardTitleColorDark);
-    });
+    test(
+      'fromJson defaults to linked and heals legacy data without the key',
+      () {
+        final settings = TimetableSettings.fromJson(dirtyJson(link: null));
+        expect(settings.linkCourseCardColors, isTrue);
+        expect(
+          settings.courseCardDetailColorLight,
+          settings.courseCardTitleColorLight,
+        );
+        expect(
+          settings.courseCardDetailColorDark,
+          settings.courseCardTitleColorDark,
+        );
+      },
+    );
 
     test('fromJson keeps explicit detail colors in independent mode', () {
       final settings = TimetableSettings.fromJson(dirtyJson(link: false));
@@ -1128,17 +1173,23 @@ void main() {
       );
       expect(dirty.linkCourseCardColors, isTrue);
       final healed = dirty.copyWith();
-      expect(healed.courseCardDetailColorLight, healed.courseCardTitleColorLight);
+      expect(
+        healed.courseCardDetailColorLight,
+        healed.courseCardTitleColorLight,
+      );
       expect(healed.courseCardDetailColorDark, healed.courseCardTitleColorDark);
     });
 
-    test('copyWith syncs the detail color when the title changes while linked', () {
-      final changed = TimetableSettings.defaults().copyWith(
-        courseCardTitleColorLight: '#0D47A1',
-      );
-      expect(changed.courseCardTitleColorLight, '#0D47A1');
-      expect(changed.courseCardDetailColorLight, '#0D47A1');
-    });
+    test(
+      'copyWith syncs the detail color when the title changes while linked',
+      () {
+        final changed = TimetableSettings.defaults().copyWith(
+          courseCardTitleColorLight: '#0D47A1',
+        );
+        expect(changed.courseCardTitleColorLight, '#0D47A1');
+        expect(changed.courseCardDetailColorLight, '#0D47A1');
+      },
+    );
 
     test('copyWith keeps user-picked detail colors in independent mode', () {
       final base = TimetableSettings.defaults().copyWith(
@@ -1203,22 +1254,20 @@ void main() {
         liveDuringEndExpandedDetailFields: const <String>[],
         liveDuringEndFollowBeforeClass: false,
       );
-      expect(
-        settings.beforeClassDisplaySettings.expandedDetailFields,
-        [
-          LiveExpandedDetailField.note,
-          LiveExpandedDetailField.teacher,
-          LiveExpandedDetailField.location,
-        ],
-      );
+      expect(settings.beforeClassDisplaySettings.expandedDetailFields, [
+        LiveExpandedDetailField.note,
+        LiveExpandedDetailField.teacher,
+        LiveExpandedDetailField.location,
+      ]);
       // 空列表 = 全部隐藏，且不被归一化为 null。
-      expect(
-        settings.duringEndDisplaySettings.expandedDetailFields,
-        isEmpty,
-      );
+      expect(settings.duringEndDisplaySettings.expandedDetailFields, isEmpty);
 
       final restored = TimetableSettings.fromJson(settings.toJson());
-      expect(restored.liveExpandedDetailFields, ['note', 'teacher', 'location']);
+      expect(restored.liveExpandedDetailFields, [
+        'note',
+        'teacher',
+        'location',
+      ]);
       expect(restored.liveDuringEndExpandedDetailFields, isEmpty);
       expect(
         restored.beforeClassDisplaySettings.expandedDetailFields,
@@ -1231,22 +1280,16 @@ void main() {
         liveExpandedDetailFields: const ['time', 'teacher'],
         liveDuringEndFollowBeforeClass: false,
       );
-      expect(
-        settings.duringEndDisplaySettings.expandedDetailFields,
-        [
-          LiveExpandedDetailField.time,
-          LiveExpandedDetailField.teacher,
-        ],
-      );
+      expect(settings.duringEndDisplaySettings.expandedDetailFields, [
+        LiveExpandedDetailField.time,
+        LiveExpandedDetailField.teacher,
+      ]);
       // 跟随开关打开时整组使用 beforeClass 展开字段
       final following = settings.copyWith(liveDuringEndFollowBeforeClass: true);
-      expect(
-        following.duringEndDisplaySettings.expandedDetailFields,
-        [
-          LiveExpandedDetailField.time,
-          LiveExpandedDetailField.teacher,
-        ],
-      );
+      expect(following.duringEndDisplaySettings.expandedDetailFields, [
+        LiveExpandedDetailField.time,
+        LiveExpandedDetailField.teacher,
+      ]);
     });
 
     test('live expanded detail fields reset clears to null', () {

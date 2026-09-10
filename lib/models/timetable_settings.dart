@@ -9,13 +9,7 @@ enum AppUpdateDownloadSource { original, mirror }
 
 enum AppUpdateDownloadChannel { pgyer, github, gitcode }
 
-enum AppUpdateMirrorPreset {
-  ghfast,
-  ghLlkk,
-  ghProxyCom,
-  ghproxyNet,
-  custom,
-}
+enum AppUpdateMirrorPreset { ghfast, ghLlkk, ghProxyCom, ghproxyNet, custom }
 
 enum WidgetBackgroundStyle { glass, solid, gradient }
 
@@ -32,6 +26,31 @@ enum AppFontMode {
   serif,
   songti,
   monospace,
+}
+
+/// 默认全局字重（Material w400）。等于该值时不覆盖 Theme / Miuix 字重。
+const int kAppFontWeightDefault = 400;
+const int kAppFontWeightMin = 100;
+const int kAppFontWeightMax = 900;
+const int kAppFontWeightDivisions = 16;
+
+/// 默认全局字号缩放。等于 1.0 时跟随系统 textScaler。
+const double kAppTextScaleDefault = 1;
+const double kAppTextScaleMin = 0.85;
+const double kAppTextScaleMax = 1.6;
+const int kAppTextScaleDivisions = 15;
+
+/// 把用户字重钳到合法区间，并归一非法/缺失值为默认。
+int normalizeAppFontWeight(num? value) {
+  if (value == null) return kAppFontWeightDefault;
+  return value.round().clamp(kAppFontWeightMin, kAppFontWeightMax);
+}
+
+/// 把用户字号缩放钳到合法区间，并归一非法/缺失值为默认。
+double normalizeAppTextScale(num? value) {
+  if (value == null) return kAppTextScaleDefault;
+  final clamped = value.toDouble().clamp(kAppTextScaleMin, kAppTextScaleMax);
+  return double.parse(clamped.toStringAsFixed(2));
 }
 
 enum ForuiTheme {
@@ -114,6 +133,24 @@ enum TimetableHomeViewMode { week, day }
 /// 首页导航形态：经典形态保持原样；玻璃坞形态在底部提供液态玻璃
 /// 药丸导航，滑动/点击即可切换周课表、日课表与设置。
 enum HomeNavigationForm { classic, glassDock }
+
+/// 玻璃坞底栏材质：液态折射（现有 GlassTabBar）或柔光雾面
+/// （移植 Hyper-PiliPlus SoftGlass 的胶囊底栏）。
+enum DockGlassStyle { liquid, soft }
+
+extension DockGlassStyleX on DockGlassStyle {
+  String get value => switch (this) {
+    DockGlassStyle.liquid => 'liquid',
+    DockGlassStyle.soft => 'soft',
+  };
+
+  static DockGlassStyle fromValue(String? value) {
+    return DockGlassStyle.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => DockGlassStyle.liquid,
+    );
+  }
+}
 
 /// 首页右上角「更多」菜单形态：
 /// - [list] 锚定在按钮下方的列表弹窗（当前设计）；
@@ -1217,7 +1254,6 @@ class TimetableSettings {
   static const double defaultFrostedSheetBarrierAlpha = 0.20;
   static const bool defaultFrostedBlurEnabled = true;
 
-
   /// 液态玻璃作用范围默认值：下拉选择小弹窗开；对话式全屏选择面板关
   /// （大面积折射长列表默认保持磨砂）；其余家族维持既有行为（开）。
   static const bool defaultLiquidGlassPopupEnabled = true;
@@ -1270,10 +1306,19 @@ class TimetableSettings {
   final LiveCountdownTextStyle widgetCountdownTextStyle;
   final AppThemeMode appThemeMode;
   final AppFontMode appFontMode;
+
+  /// 全局字重（100–900）。默认 400 不覆盖 Theme/Miuix 字重。
+  final int appFontWeight;
+
+  /// 全局字号缩放（0.85–1.6）。默认 1.0 跟随系统 textScaler。
+  final double appTextScale;
   final String appLocaleTag;
   final HomeTitleStyle homeTitleStyle;
   final TimetableHomeViewMode timetableHomeViewMode;
   final HomeNavigationForm homeNavigationForm;
+
+  /// 玻璃坞底栏材质：液态折射 / 柔光雾面（Hyper-PiliPlus 风格）。
+  final DockGlassStyle glassDockStyle;
 
   /// 首页右上角「更多」菜单形态（列表弹窗 / 八宫格瓷贴）。
   final HomeMenuStyle homeMenuStyle;
@@ -1529,10 +1574,13 @@ class TimetableSettings {
     this.widgetCountdownTextStyle = LiveCountdownTextStyle.smart,
     this.appThemeMode = AppThemeMode.system,
     this.appFontMode = AppFontMode.system,
+    this.appFontWeight = 400,
+    this.appTextScale = 1.0,
     this.appLocaleTag = '',
     this.homeTitleStyle = HomeTitleStyle.classic,
     this.timetableHomeViewMode = TimetableHomeViewMode.week,
     this.homeNavigationForm = HomeNavigationForm.classic,
+    this.glassDockStyle = DockGlassStyle.liquid,
     this.homeMenuStyle = HomeMenuStyle.list,
     this.homeGridMenuActions = const <String>[],
     this.glassDockActions = HomeDockMenu.defaultActions,
@@ -1733,10 +1781,13 @@ class TimetableSettings {
       'widgetCountdownTextStyle': widgetCountdownTextStyle.value,
       'appThemeMode': appThemeMode.value,
       'appFontMode': appFontMode.value,
+      'appFontWeight': appFontWeight,
+      'appTextScale': appTextScale,
       'appLocaleTag': appLocaleTag,
       'homeTitleStyle': homeTitleStyle.value,
       'timetableHomeViewMode': timetableHomeViewMode.value,
       'homeNavigationForm': homeNavigationForm.value,
+      'glassDockStyle': glassDockStyle.value,
       'homeMenuStyle': homeMenuStyle.value,
       'homeGridMenuActions': homeGridMenuActions,
       'glassDockActions': glassDockActions,
@@ -2016,6 +2067,8 @@ class TimetableSettings {
       ),
       appThemeMode: AppThemeModeX.fromValue(json['appThemeMode'] as String?),
       appFontMode: AppFontModeX.fromValue(json['appFontMode'] as String?),
+      appFontWeight: normalizeAppFontWeight(json['appFontWeight'] as num?),
+      appTextScale: normalizeAppTextScale(json['appTextScale'] as num?),
       appLocaleTag: _normalizeAppLocaleTag(
         json['appLocaleTag'] as String? ?? json['appLocaleMode'] as String?,
       ),
@@ -2027,6 +2080,9 @@ class TimetableSettings {
       ),
       homeNavigationForm: HomeNavigationFormX.fromValue(
         json['homeNavigationForm'] as String?,
+      ),
+      glassDockStyle: DockGlassStyleX.fromValue(
+        json['glassDockStyle'] as String?,
       ),
       homeMenuStyle: HomeMenuStyleX.fromValue(json['homeMenuStyle'] as String?),
       glassDockActions: HomeDockMenu.normalize(
@@ -2212,10 +2268,12 @@ class TimetableSettings {
       liveDuringEndMiuiIslandExpandedIconPath:
           json['liveDuringEndMiuiIslandExpandedIconPath'] as String? ??
           json['liveMiuiIslandExpandedIconPath'] as String?,
-      liveExpandedDetailFields: _safeStringList(json['liveExpandedDetailFields']),
+      liveExpandedDetailFields: _safeStringList(
+        json['liveExpandedDetailFields'],
+      ),
       liveDuringEndExpandedDetailFields:
           _safeStringList(json['liveDuringEndExpandedDetailFields']) ??
-              _safeStringList(json['liveExpandedDetailFields']),
+          _safeStringList(json['liveExpandedDetailFields']),
       liveShowBeforeClassMinutes:
           (json['liveShowBeforeClassMinutes'] as num?)?.toInt() ?? 20,
       liveClassReminderStartMinutes:
@@ -2239,8 +2297,7 @@ class TimetableSettings {
       homePageBackgroundImagePath:
           json['homePageBackgroundImagePath'] as String?,
       homePageWallpaperPath: json['homePageWallpaperPath'] as String?,
-      homePageBuiltInWallpaper:
-          json['homePageBuiltInWallpaper'] as String?,
+      homePageBuiltInWallpaper: json['homePageBuiltInWallpaper'] as String?,
       homePageWallpaperAlignX:
           (json['homePageWallpaperAlignX'] as num?)?.toDouble() ?? 0,
       homePageWallpaperAlignY:
@@ -2426,10 +2483,13 @@ class TimetableSettings {
     LiveCountdownTextStyle? widgetCountdownTextStyle,
     AppThemeMode? appThemeMode,
     AppFontMode? appFontMode,
+    int? appFontWeight,
+    double? appTextScale,
     String? appLocaleTag,
     HomeTitleStyle? homeTitleStyle,
     TimetableHomeViewMode? timetableHomeViewMode,
     HomeNavigationForm? homeNavigationForm,
+    DockGlassStyle? glassDockStyle,
     HomeMenuStyle? homeMenuStyle,
     List<String>? homeGridMenuActions,
     List<String>? glassDockActions,
@@ -2649,11 +2709,14 @@ class TimetableSettings {
           widgetCountdownTextStyle ?? this.widgetCountdownTextStyle,
       appThemeMode: appThemeMode ?? this.appThemeMode,
       appFontMode: appFontMode ?? this.appFontMode,
+      appFontWeight: appFontWeight ?? this.appFontWeight,
+      appTextScale: appTextScale ?? this.appTextScale,
       appLocaleTag: _normalizeAppLocaleTag(appLocaleTag ?? this.appLocaleTag),
       homeTitleStyle: homeTitleStyle ?? this.homeTitleStyle,
       timetableHomeViewMode:
           timetableHomeViewMode ?? this.timetableHomeViewMode,
       homeNavigationForm: homeNavigationForm ?? this.homeNavigationForm,
+      glassDockStyle: glassDockStyle ?? this.glassDockStyle,
       homeMenuStyle: homeMenuStyle ?? this.homeMenuStyle,
       // 写入也过一遍归一：钉住项不因调用方疏漏而丢失（解析路径同）。
       homeGridMenuActions: homeGridMenuActions == null
@@ -3002,8 +3065,9 @@ class TimetableSettings {
     miuiIslandLabelLogoCornerRadius: liveMiuiIslandLabelLogoCornerRadius,
     miuiIslandExpandedIconMode: liveMiuiIslandExpandedIconMode,
     miuiIslandExpandedIconPath: liveMiuiIslandExpandedIconPath,
-    expandedDetailFields:
-        parseLiveExpandedDetailFields(liveExpandedDetailFields),
+    expandedDetailFields: parseLiveExpandedDetailFields(
+      liveExpandedDetailFields,
+    ),
   );
 
   LiveDisplaySettings get duringEndDisplaySettings =>
@@ -3070,8 +3134,9 @@ class TimetableSettings {
       liveMiuiIslandExpandedIconPath: settings.miuiIslandExpandedIconPath,
       clearLiveMiuiIslandExpandedIconPath: clearExpandedIconPath,
       clearLiveExpandedDetailFields: clearExpandedDetailFields,
-      liveExpandedDetailFields:
-          encodeLiveExpandedDetailFields(settings.expandedDetailFields),
+      liveExpandedDetailFields: encodeLiveExpandedDetailFields(
+        settings.expandedDetailFields,
+      ),
     );
   }
 
@@ -3112,8 +3177,9 @@ class TimetableSettings {
           settings.miuiIslandExpandedIconPath,
       clearLiveDuringEndMiuiIslandExpandedIconPath: clearExpandedIconPath,
       clearLiveDuringEndExpandedDetailFields: clearExpandedDetailFields,
-      liveDuringEndExpandedDetailFields:
-          encodeLiveExpandedDetailFields(settings.expandedDetailFields),
+      liveDuringEndExpandedDetailFields: encodeLiveExpandedDetailFields(
+        settings.expandedDetailFields,
+      ),
     );
   }
 

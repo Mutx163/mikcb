@@ -6262,6 +6262,9 @@
   "liveExpandedDetailFieldLocation": "Location",
   "liveExpandedDetailFieldTeacher": "Teacher",
   "liveExpandedDetailFieldNext": "Next class",
-  "liveExpandedDetailFieldNote": "Notes"
+  "liveExpandedDetailFieldNote": "Notes",
+  "fontWeightLabel": "Font weight",
+  "fontSizeLabel": "Font size",
+  "fontSizeDefault": "Default",
+  "fontPreviewSample": "Aa Bb 0123 — timetable preview"
 }
-

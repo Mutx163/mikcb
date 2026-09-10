@@ -2,6 +2,19 @@ import 'package:flutter/widgets.dart';
 
 import '../models/timetable_settings.dart';
 
+export '../models/timetable_settings.dart'
+    show
+        kAppFontWeightDefault,
+        kAppFontWeightDivisions,
+        kAppFontWeightMax,
+        kAppFontWeightMin,
+        kAppTextScaleDefault,
+        kAppTextScaleDivisions,
+        kAppTextScaleMax,
+        kAppTextScaleMin,
+        normalizeAppFontWeight,
+        normalizeAppTextScale;
+
 /// Resolved font family for [AppFontMode], including CJK fallbacks.
 class AppFontSpec {
   const AppFontSpec({this.fontFamily, this.fontFamilyFallback = const []});

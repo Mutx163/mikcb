@@ -6311,6 +6311,15 @@
   "liveExpandedDetailFieldLocation": "地点",
   "liveExpandedDetailFieldTeacher": "老师",
   "liveExpandedDetailFieldNext": "下节课",
-  "liveExpandedDetailFieldNote": "备注"
+  "liveExpandedDetailFieldNote": "备注",
+  "fontWeightLabel": "字重",
+  "fontSizeLabel": "字号",
+  "fontSizeDefault": "默认",
+  "fontPreviewSample": "永 Aa Bb 0123 — 课表预览",
+  "@fontWeightLabel": {
+    "description": "全局应用字重滑杆标题"
+  },
+  "@fontSizeLabel": {
+    "description": "全局字号缩放滑杆标题"
+  }
 }
-

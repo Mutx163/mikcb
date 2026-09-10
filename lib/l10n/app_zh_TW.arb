@@ -6259,6 +6259,9 @@
   "liveExpandedDetailFieldLocation": "地點",
   "liveExpandedDetailFieldTeacher": "老師",
   "liveExpandedDetailFieldNext": "下節課",
-  "liveExpandedDetailFieldNote": "備註"
+  "liveExpandedDetailFieldNote": "備註",
+  "fontWeightLabel": "字重",
+  "fontSizeLabel": "字級",
+  "fontSizeDefault": "預設",
+  "fontPreviewSample": "永 Aa Bb 0123 — 課表預覽"
 }
-

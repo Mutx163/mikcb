@@ -64,6 +64,7 @@ ThemeMode _themeModeFromSettings(AppThemeMode mode) {
 ThemeData _appThemeData(
   Brightness brightness, {
   required AppFontSpec fontSpec,
+  int fontWeight = kAppFontWeightDefault,
   String? themeSeedHex,
 }) {
   // 主题色接入：seed 可读时播种 Material colorScheme——`colorScheme.primary`
@@ -72,7 +73,7 @@ ThemeData _appThemeData(
   // seed 缺失或不可解析时不播种，保持既有默认值（测试与启动早期路径不变）；
   // 浅色模式亮黄也可播种（所见即所得）。
   final seedAccent = resolveThemeSeedAccent(themeSeedHex, brightness);
-  final theme = ThemeData(
+  var theme = ThemeData(
     brightness: brightness,
     useMaterial3: true,
     pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
@@ -89,14 +90,42 @@ ThemeData _appThemeData(
           ),
   );
   final fontFamily = fontSpec.fontFamily;
-  if (fontFamily == null || fontFamily.isEmpty) {
-    return theme;
-  }
-  return theme.copyWith(
-    textTheme: theme.textTheme.apply(
+  var textTheme = theme.textTheme;
+  if (fontFamily != null && fontFamily.isNotEmpty) {
+    textTheme = textTheme.apply(
       fontFamily: fontFamily,
       fontFamilyFallback: fontSpec.fontFamilyFallback,
-    ),
+    );
+  }
+  if (fontWeight != kAppFontWeightDefault) {
+    textTheme = _applyTextThemeFontWeight(textTheme, FontWeight(fontWeight));
+  }
+  if (textTheme != theme.textTheme) {
+    theme = theme.copyWith(textTheme: textTheme);
+  }
+  return theme;
+}
+
+/// 把用户全局字重写到整套 Material TextTheme（各角色保留原字号）。
+TextTheme _applyTextThemeFontWeight(TextTheme textTheme, FontWeight weight) {
+  TextStyle apply(TextStyle? style) =>
+      (style ?? const TextStyle()).copyWith(fontWeight: weight);
+  return TextTheme(
+    displayLarge: apply(textTheme.displayLarge),
+    displayMedium: apply(textTheme.displayMedium),
+    displaySmall: apply(textTheme.displaySmall),
+    headlineLarge: apply(textTheme.headlineLarge),
+    headlineMedium: apply(textTheme.headlineMedium),
+    headlineSmall: apply(textTheme.headlineSmall),
+    titleLarge: apply(textTheme.titleLarge),
+    titleMedium: apply(textTheme.titleMedium),
+    titleSmall: apply(textTheme.titleSmall),
+    bodyLarge: apply(textTheme.bodyLarge),
+    bodyMedium: apply(textTheme.bodyMedium),
+    bodySmall: apply(textTheme.bodySmall),
+    labelLarge: apply(textTheme.labelLarge),
+    labelMedium: apply(textTheme.labelMedium),
+    labelSmall: apply(textTheme.labelSmall),
   );
 }
 
@@ -178,10 +207,12 @@ void _releaseFirstFrame({required bool forced}) {
   }
   if (forced) {
     debugPrint('[boot] first-frame watchdog fired: forcing allowFirstFrame');
-    unawaited(AppLogService.instance.error(
-      'first_frame_watchdog',
-      '启动首帧超时未放行，看门狗已强制放行',
-    ));
+    unawaited(
+      AppLogService.instance.error(
+        'first_frame_watchdog',
+        '启动首帧超时未放行，看门狗已强制放行',
+      ),
+    );
   }
 }
 
@@ -332,23 +363,31 @@ Future<void> main() async {
       );
       // 玻璃 shader 预热放到启动画面展示期间并行跑（失败只记日志不阻断，
       // 玻璃按未预热降级，绝不能因此卡死换页）。
-      _glassShadersWarm = LiquidGlassWidgets.initialize()
-          .catchError((Object error, StackTrace stackTrace) {
-        unawaited(AppLogService.instance.error(
-          'liquid_glass_warmup_failed',
-          '玻璃 shader 预热失败：$error',
-          error: error,
-          stackTrace: stackTrace,
-        ));
+      _glassShadersWarm = LiquidGlassWidgets.initialize().catchError((
+        Object error,
+        StackTrace stackTrace,
+      ) {
+        unawaited(
+          AppLogService.instance.error(
+            'liquid_glass_warmup_failed',
+            '玻璃 shader 预热失败：$error',
+            error: error,
+            stackTrace: stackTrace,
+          ),
+        );
       });
-      _inspireBlurShadersWarm = Inspire.warmUp()
-          .catchError((Object error, StackTrace stackTrace) {
-        unawaited(AppLogService.instance.error(
-          'inspire_blur_warmup_failed',
-          'Inspire Blur shader warmup failed: $error',
-          error: error,
-          stackTrace: stackTrace,
-        ));
+      _inspireBlurShadersWarm = Inspire.warmUp().catchError((
+        Object error,
+        StackTrace stackTrace,
+      ) {
+        unawaited(
+          AppLogService.instance.error(
+            'inspire_blur_warmup_failed',
+            'Inspire Blur shader warmup failed: $error',
+            error: error,
+            stackTrace: stackTrace,
+          ),
+        );
       });
       unawaited(_warmUpAfterFirstFrame(packageInfo));
     },
@@ -421,6 +460,8 @@ class MyApp extends StatelessWidget {
             TimetableProvider,
             ({
               AppFontMode fontMode,
+              int fontWeight,
+              double textScale,
               AppThemeMode themeMode,
               String localeTag,
               String? themeSeed,
@@ -428,6 +469,8 @@ class MyApp extends StatelessWidget {
           >(
             selector: (_, p) => (
               fontMode: p.settings.appFontMode,
+              fontWeight: p.settings.appFontWeight,
+              textScale: p.settings.appTextScale,
               themeMode: p.settings.appThemeMode,
               localeTag: p.settings.appLocaleTag,
               themeSeed: p.settings.themeSeedColor,
@@ -453,11 +496,13 @@ class MyApp extends StatelessWidget {
                 theme: _appThemeData(
                   Brightness.light,
                   fontSpec: fontSpec,
+                  fontWeight: settings.fontWeight,
                   themeSeedHex: settings.themeSeed,
                 ),
                 darkTheme: _appThemeData(
                   Brightness.dark,
                   fontSpec: fontSpec,
+                  fontWeight: settings.fontWeight,
                   themeSeedHex: settings.themeSeed,
                 ),
                 // Android VIEW deep links (mikcb-debug://...) are also delivered
@@ -474,6 +519,17 @@ class MyApp extends StatelessWidget {
                 builder: (context, child) {
                   final settings = context.watch<TimetableProvider>().settings;
                   final frostedAppearance = settings.frostedAppearance;
+                  // 用户字号：默认 1.0 时完全跟随系统 textScaler；非默认时
+                  // 用绝对缩放覆盖（与 Hyper-PiliPlus 一致，范围 0.85–1.6）。
+                  Widget appRoot = child!;
+                  if (settings.appTextScale != kAppTextScaleDefault) {
+                    appRoot = MediaQuery(
+                      data: MediaQuery.of(context).copyWith(
+                        textScaler: TextScaler.linear(settings.appTextScale),
+                      ),
+                      child: appRoot,
+                    );
+                  }
                   return BlackBoxOverlayHost(
                     child: HyperosMotionHost(
                       child: FrostedAppearanceScope(
@@ -493,7 +549,10 @@ class MyApp extends StatelessWidget {
                               body: LiquidGlassDegradationScope(
                                 notifier: LiquidGlassDegradation
                                     .platformViewUnsafeDepthNotifier,
-                                child: MiuixFontWeightScope(child: child!),
+                                child: MiuixFontWeightScope(
+                                  userFontWeight: settings.appFontWeight,
+                                  child: appRoot,
+                                ),
                               ),
                             ),
                           ),
@@ -1214,8 +1273,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     }
     try {
       final outcome = await WidgetLaunchRouter.handle(context);
-      if (!mounted ||
-          outcome != WidgetLaunchOutcome.bindingMissing) {
+      if (!mounted || outcome != WidgetLaunchOutcome.bindingMissing) {
         return;
       }
       showAppToast(

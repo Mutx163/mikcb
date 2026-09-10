@@ -19319,6 +19319,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'备注'**
   String get liveExpandedDetailFieldNote;
+
+  /// 全局应用字重滑杆标题
+  ///
+  /// In zh, this message translates to:
+  /// **'字重'**
+  String get fontWeightLabel;
+
+  /// 全局字号缩放滑杆标题
+  ///
+  /// In zh, this message translates to:
+  /// **'字号'**
+  String get fontSizeLabel;
+
+  /// No description provided for @fontSizeDefault.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认'**
+  String get fontSizeDefault;
+
+  /// No description provided for @fontPreviewSample.
+  ///
+  /// In zh, this message translates to:
+  /// **'永 Aa Bb 0123 — 课表预览'**
+  String get fontPreviewSample;
 }
 
 class _AppLocalizationsDelegate

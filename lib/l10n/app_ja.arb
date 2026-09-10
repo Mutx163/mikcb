@@ -6258,5 +6258,9 @@
   "liveExpandedDetailFieldLocation": "場所",
   "liveExpandedDetailFieldTeacher": "先生",
   "liveExpandedDetailFieldNext": "次の授業",
-  "liveExpandedDetailFieldNote": "メモ"
+  "liveExpandedDetailFieldNote": "メモ",
+  "fontWeightLabel": "フォントの太さ",
+  "fontSizeLabel": "文字サイズ",
+  "fontSizeDefault": "デフォルト",
+  "fontPreviewSample": "Aa Bb 0123 — 時間割プレビュー"
 }

@@ -6258,5 +6258,9 @@
   "liveExpandedDetailFieldLocation": "장소",
   "liveExpandedDetailFieldTeacher": "선생님",
   "liveExpandedDetailFieldNext": "다음 수업",
-  "liveExpandedDetailFieldNote": "메모"
+  "liveExpandedDetailFieldNote": "메모",
+  "fontWeightLabel": "글꼴 굵기",
+  "fontSizeLabel": "글꼴 크기",
+  "fontSizeDefault": "기본값",
+  "fontPreviewSample": "Aa Bb 0123 — 시간표 미리보기"
 }

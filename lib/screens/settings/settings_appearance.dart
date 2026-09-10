@@ -195,6 +195,61 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 );
               },
             ),
+            // 全局字重 / 字号：对齐 Hyper-PiliPlus 的连续滑杆（w100–w900、
+            // 0.85–1.6），默认 w400 / 1.0 时不覆盖 Theme 与系统 textScaler。
+            HyperosSliderTile(
+              title: l10n.fontWeightLabel,
+              value: _draft.appFontWeight.toDouble(),
+              min: kAppFontWeightMin.toDouble(),
+              max: kAppFontWeightMax.toDouble(),
+              divisions: kAppFontWeightDivisions,
+              valueLabel: 'w${_draft.appFontWeight}',
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(appFontWeight: value.toInt()),
+                  debounce: true,
+                );
+              },
+            ),
+            HyperosSliderTile(
+              title: l10n.fontSizeLabel,
+              value: _draft.appTextScale,
+              min: kAppTextScaleMin,
+              max: kAppTextScaleMax,
+              divisions: kAppTextScaleDivisions,
+              valueLabel: _draft.appTextScale == kAppTextScaleDefault
+                  ? l10n.fontSizeDefault
+                  : _draft.appTextScale.toStringAsFixed(2),
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(appTextScale: normalizeAppTextScale(value)),
+                  debounce: true,
+                );
+              },
+            ),
+            // 实时预览：所见即所得地反馈字体族 + 字重 + 字号。
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: HyperosColors.surfaceContainer(
+                    context,
+                  ).withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(12),
+                width: double.infinity,
+                child: Text(
+                  l10n.fontPreviewSample,
+                  style: _draft.appFontMode.fontSpec.applyTo(
+                    TextStyle(
+                      fontSize: 16 * _draft.appTextScale,
+                      fontWeight: FontWeight(_draft.appFontWeight),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

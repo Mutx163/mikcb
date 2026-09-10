@@ -11229,4 +11229,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveExpandedDetailFieldNote => 'Notes';
+
+  @override
+  String get fontWeightLabel => 'Font weight';
+
+  @override
+  String get fontSizeLabel => 'Font size';
+
+  @override
+  String get fontSizeDefault => 'Default';
+
+  @override
+  String get fontPreviewSample => 'Aa Bb 0123 — timetable preview';
 }

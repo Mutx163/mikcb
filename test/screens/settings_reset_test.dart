@@ -35,6 +35,9 @@ void main() {
       homePageWallpaperPath: '/tmp/wallpaper.png',
       // 外观
       appThemeMode: AppThemeMode.dark,
+      appFontMode: AppFontMode.serif,
+      appFontWeight: 700,
+      appTextScale: 1.3,
       themeSeedColor: '#FF0000',
       frostedBlurEnabled: false,
       frostedSheetBlurSigma: 20,
@@ -173,6 +176,9 @@ void main() {
     );
 
     expect(result.appThemeMode, defaults.appThemeMode);
+    expect(result.appFontMode, defaults.appFontMode);
+    expect(result.appFontWeight, defaults.appFontWeight);
+    expect(result.appTextScale, defaults.appTextScale);
     expect(result.themeSeedColor, defaults.themeSeedColor);
     expect(result.frostedBlurEnabled, defaults.frostedBlurEnabled);
     expect(result.frostedSheetBlurSigma, defaults.frostedSheetBlurSigma);
@@ -211,6 +217,8 @@ void main() {
     // 外观字段不被导航页连带重置。
     final dirty = dirtySettings();
     expect(result.appThemeMode, dirty.appThemeMode);
+    expect(result.appFontWeight, dirty.appFontWeight);
+    expect(result.appTextScale, dirty.appTextScale);
     expect(result.themeSeedColor, dirty.themeSeedColor);
     expect(result.frostedSheetBlurSigma, dirty.frostedSheetBlurSigma);
     expect(result.courseCardFontSize, dirty.courseCardFontSize);

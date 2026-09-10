@@ -10907,4 +10907,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveExpandedDetailFieldNote => 'メモ';
+
+  @override
+  String get fontWeightLabel => 'フォントの太さ';
+
+  @override
+  String get fontSizeLabel => '文字サイズ';
+
+  @override
+  String get fontSizeDefault => 'デフォルト';
+
+  @override
+  String get fontPreviewSample => 'Aa Bb 0123 — 時間割プレビュー';
 }

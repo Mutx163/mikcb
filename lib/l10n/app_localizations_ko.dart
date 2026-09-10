@@ -10951,4 +10951,16 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveExpandedDetailFieldNote => '메모';
+
+  @override
+  String get fontWeightLabel => '글꼴 굵기';
+
+  @override
+  String get fontSizeLabel => '글꼴 크기';
+
+  @override
+  String get fontSizeDefault => '기본값';
+
+  @override
+  String get fontPreviewSample => 'Aa Bb 0123 — 시간표 미리보기';
 }
