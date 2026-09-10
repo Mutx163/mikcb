@@ -3311,10 +3311,22 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePageBuiltInWallpaperNone => '使用しない';
 
   @override
+  String get homePageBuiltInWallpaperOg => 'クラシックラヴァ・ダーク';
+
+  @override
   String get homePageBuiltInWallpaperLavaDark => 'ラバオレンジ・ダーク';
 
   @override
   String get homePageBuiltInWallpaperLavaLight => 'ピーチクリーム・ライト';
+
+  @override
+  String get homePageBuiltInWallpaperDark1 => 'ディープフレーム・ダーク';
+
+  @override
+  String get homePageBuiltInWallpaperLight2 => 'セージグリーン・ライト';
+
+  @override
+  String get homePageBuiltInWallpaperLight3 => 'ウォームアース・ライト';
 
   @override
   String get homePageBuiltInWallpaperEmberTeal => 'エンバーティール・ダーク';
@@ -3364,11 +3376,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePageBackgroundScopeHeader => 'トップバー';
 
   @override
+  String get homePageBackgroundScopeChrome => '上部クローム領域';
+
+  @override
+  String get homePageBackgroundScopeChromeSubtitle =>
+      'ステータスバー・トップバー・情報バーに壁紙を表示';
+
+  @override
   String get homePageHeaderBlurTitle => 'トップバーガラス';
 
   @override
   String get homePageHeaderBlurSubtitle =>
-      'ガラス素材は外観のガラスモードに従います。オフのままではトップバー（ステータスバー含む）に壁紙を直接表示します';
+      'ステータスバー・トップバー・情報バーのガラス帯。オフにすると壁紙が透けます';
 
   @override
   String get homePageWeekdayBarBlurTitle => '情報バーガラス';
@@ -3376,6 +3395,26 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get homePageWeekdayBarBlurSubtitle =>
       'ガラス素材は外観のガラスモードに従います。オフのままでは情報バーに壁紙を直接表示します';
+
+  @override
+  String get chromeGlassMaterialLabel => 'ガラス素材';
+
+  @override
+  String get chromeGlassMaterialSubtitle =>
+      'プログレッシブ／ガウスは上部ガラス帯のみ。リキッドガラスは外観のグローバルモードに連動';
+
+  @override
+  String get chromeGlassMaterialProgressive => 'プログレッシブぼかし';
+
+  @override
+  String get chromeGlassMaterialGaussian => 'ガウスぼかし';
+
+  @override
+  String get chromeGlassMaterialLiquid => 'リキッドガラス';
+
+  @override
+  String get chromeGlassMaterialHint =>
+      'プログレッシブは上濃下淡、ガウスは均一、リキッドガラスは屈折ハイライト（高性能端末向け）';
 
   @override
   String get homePagePickImageAction => '画像を選択';

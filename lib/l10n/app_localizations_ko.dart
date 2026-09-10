@@ -3327,10 +3327,22 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homePageBuiltInWallpaperNone => '사용 안 함';
 
   @override
+  String get homePageBuiltInWallpaperOg => '클래식 라바 · 다크';
+
+  @override
   String get homePageBuiltInWallpaperLavaDark => '라바 오렌지 · 다크';
 
   @override
   String get homePageBuiltInWallpaperLavaLight => '피치 크림 · 라이트';
+
+  @override
+  String get homePageBuiltInWallpaperDark1 => '딥 플레임 · 다크';
+
+  @override
+  String get homePageBuiltInWallpaperLight2 => '세이지 그린 · 라이트';
+
+  @override
+  String get homePageBuiltInWallpaperLight3 => '웜 어스 · 라이트';
 
   @override
   String get homePageBuiltInWallpaperEmberTeal => '엠버 틸 · 다크';
@@ -3380,11 +3392,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homePageBackgroundScopeHeader => '상단 바';
 
   @override
+  String get homePageBackgroundScopeChrome => '상단 크롬 영역';
+
+  @override
+  String get homePageBackgroundScopeChromeSubtitle =>
+      '상태 표시줄·상단 바·정보 바에 배경화면을 표시';
+
+  @override
   String get homePageHeaderBlurTitle => '상단 바 유리';
 
   @override
   String get homePageHeaderBlurSubtitle =>
-      '유리 소재는 외관의 유리 모드를 따릅니다. 끄면 상단 바(상태 표시줄 포함)에 배경화면이 그대로 표시됩니다';
+      '상태 표시줄·상단 바·정보 바의 유리 띠. 끄면 배경화면이 비쳐 보입니다';
 
   @override
   String get homePageWeekdayBarBlurTitle => '정보 바 유리';
@@ -3392,6 +3411,26 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get homePageWeekdayBarBlurSubtitle =>
       '유리 소재는 외관의 유리 모드를 따릅니다. 끄면 정보 바에 배경화면이 그대로 표시됩니다';
+
+  @override
+  String get chromeGlassMaterialLabel => '유리 소재';
+
+  @override
+  String get chromeGlassMaterialSubtitle =>
+      '점진/가우스는 상단 유리 띠에만 적용. 액체 유리는 외관의 전역 모드와 연동';
+
+  @override
+  String get chromeGlassMaterialProgressive => '점진 블러';
+
+  @override
+  String get chromeGlassMaterialGaussian => '가우시안 블러';
+
+  @override
+  String get chromeGlassMaterialLiquid => '액체 유리';
+
+  @override
+  String get chromeGlassMaterialHint =>
+      '점진은 위가 진하고 아래가 맑음, 가우스는 균일, 액체 유리는 굴절 하이라이트(고성능 기기 필요)';
 
   @override
   String get homePagePickImageAction => '이미지 선택';

@@ -3256,10 +3256,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageBuiltInWallpaperNone => '不使用';
 
   @override
+  String get homePageBuiltInWallpaperOg => '经典熔岩 · 深色';
+
+  @override
   String get homePageBuiltInWallpaperLavaDark => '熔岩橙 · 深色';
 
   @override
   String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油 · 浅色';
+
+  @override
+  String get homePageBuiltInWallpaperDark1 => '深焰赤橙 · 深色';
+
+  @override
+  String get homePageBuiltInWallpaperLight2 => '鼠尾草绿 · 浅色';
+
+  @override
+  String get homePageBuiltInWallpaperLight3 => '大地暖棕 · 浅色';
 
   @override
   String get homePageBuiltInWallpaperEmberTeal => '青绿余烬 · 深色';
@@ -3306,16 +3318,40 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageBackgroundScopeHeader => '顶栏';
 
   @override
+  String get homePageBackgroundScopeChrome => '顶栏区域';
+
+  @override
+  String get homePageBackgroundScopeChromeSubtitle => '状态栏、顶栏与信息栏一并透出壁纸';
+
+  @override
   String get homePageHeaderBlurTitle => '顶栏玻璃';
 
   @override
-  String get homePageHeaderBlurSubtitle => '玻璃材质跟随外观的玻璃模式；关闭后顶栏直接透出壁纸（含状态栏）';
+  String get homePageHeaderBlurSubtitle => '状态栏、顶栏与信息栏的玻璃带；关闭后直接透出壁纸';
 
   @override
   String get homePageWeekdayBarBlurTitle => '信息栏玻璃';
 
   @override
   String get homePageWeekdayBarBlurSubtitle => '玻璃材质跟随外观的玻璃模式；关闭后信息栏直接透出壁纸';
+
+  @override
+  String get chromeGlassMaterialLabel => '玻璃材质';
+
+  @override
+  String get chromeGlassMaterialSubtitle => '渐进 / 高斯只作用于顶栏玻璃带，液态玻璃与外观页全局模式联动';
+
+  @override
+  String get chromeGlassMaterialProgressive => '渐进模糊';
+
+  @override
+  String get chromeGlassMaterialGaussian => '高斯模糊';
+
+  @override
+  String get chromeGlassMaterialLiquid => '液态玻璃';
+
+  @override
+  String get chromeGlassMaterialHint => '渐进模糊上浓下淡；高斯整带均匀；液态玻璃带折射高光，需高性能设备';
 
   @override
   String get homePagePickImageAction => '选择图片';
@@ -13836,10 +13872,22 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homePageBuiltInWallpaperNone => '唔使用';
 
   @override
+  String get homePageBuiltInWallpaperOg => '經典熔岩 · 深色';
+
+  @override
   String get homePageBuiltInWallpaperLavaDark => '熔岩橙 · 深色';
 
   @override
   String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油 · 淺色';
+
+  @override
+  String get homePageBuiltInWallpaperDark1 => '深焰赤橙 · 深色';
+
+  @override
+  String get homePageBuiltInWallpaperLight2 => '鼠尾草綠 · 淺色';
+
+  @override
+  String get homePageBuiltInWallpaperLight3 => '大地暖棕 · 淺色';
 
   @override
   String get homePageBuiltInWallpaperEmberTeal => '青綠餘燼 · 深色';
@@ -13886,16 +13934,40 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homePageBackgroundScopeHeader => '頂欄';
 
   @override
+  String get homePageBackgroundScopeChrome => '頂欄區域';
+
+  @override
+  String get homePageBackgroundScopeChromeSubtitle => '狀態列、頂欄與資訊欄一併透出壁紙';
+
+  @override
   String get homePageHeaderBlurTitle => '頂欄玻璃';
 
   @override
-  String get homePageHeaderBlurSubtitle => '玻璃材質跟隨外觀的玻璃模式；關閉後頂欄直接透出壁紙（含狀態列）';
+  String get homePageHeaderBlurSubtitle => '狀態列、頂欄與資訊欄的玻璃帶；關閉後直接透出壁紙';
 
   @override
   String get homePageWeekdayBarBlurTitle => '資訊欄玻璃';
 
   @override
   String get homePageWeekdayBarBlurSubtitle => '玻璃材質跟隨外觀的玻璃模式；關閉後資訊欄直接透出壁紙';
+
+  @override
+  String get chromeGlassMaterialLabel => '玻璃材質';
+
+  @override
+  String get chromeGlassMaterialSubtitle => '漸進／高斯只作用於頂欄玻璃帶，液態玻璃與外觀頁全域模式聯動';
+
+  @override
+  String get chromeGlassMaterialProgressive => '漸進模糊';
+
+  @override
+  String get chromeGlassMaterialGaussian => '高斯模糊';
+
+  @override
+  String get chromeGlassMaterialLiquid => '液態玻璃';
+
+  @override
+  String get chromeGlassMaterialHint => '漸進模糊上濃下淡；高斯整帶均勻；液態玻璃帶折射高光，需高效能裝置';
 
   @override
   String get homePagePickImageAction => '選擇圖片';
@@ -24459,10 +24531,22 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homePageBuiltInWallpaperNone => '不使用';
 
   @override
+  String get homePageBuiltInWallpaperOg => '經典熔岩 · 深色';
+
+  @override
   String get homePageBuiltInWallpaperLavaDark => '熔岩橙 · 深色';
 
   @override
   String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油 · 淺色';
+
+  @override
+  String get homePageBuiltInWallpaperDark1 => '深焰赤橙 · 深色';
+
+  @override
+  String get homePageBuiltInWallpaperLight2 => '鼠尾草綠 · 淺色';
+
+  @override
+  String get homePageBuiltInWallpaperLight3 => '大地暖棕 · 淺色';
 
   @override
   String get homePageBuiltInWallpaperEmberTeal => '青綠餘燼 · 深色';
@@ -24509,16 +24593,40 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homePageBackgroundScopeHeader => '頂欄';
 
   @override
+  String get homePageBackgroundScopeChrome => '頂欄區域';
+
+  @override
+  String get homePageBackgroundScopeChromeSubtitle => '狀態列、頂欄與資訊欄一併透出壁紙';
+
+  @override
   String get homePageHeaderBlurTitle => '頂欄玻璃';
 
   @override
-  String get homePageHeaderBlurSubtitle => '玻璃材質跟隨外觀的玻璃模式；關閉後頂欄直接透出壁紙（含狀態列）';
+  String get homePageHeaderBlurSubtitle => '狀態列、頂欄與資訊欄的玻璃帶；關閉後直接透出壁紙';
 
   @override
   String get homePageWeekdayBarBlurTitle => '資訊欄玻璃';
 
   @override
   String get homePageWeekdayBarBlurSubtitle => '玻璃材質跟隨外觀的玻璃模式；關閉後資訊欄直接透出壁紙';
+
+  @override
+  String get chromeGlassMaterialLabel => '玻璃材質';
+
+  @override
+  String get chromeGlassMaterialSubtitle => '漸進／高斯只作用於頂欄玻璃帶，液態玻璃與外觀頁全域模式聯動';
+
+  @override
+  String get chromeGlassMaterialProgressive => '漸進模糊';
+
+  @override
+  String get chromeGlassMaterialGaussian => '高斯模糊';
+
+  @override
+  String get chromeGlassMaterialLiquid => '液態玻璃';
+
+  @override
+  String get chromeGlassMaterialHint => '漸進模糊上濃下淡；高斯整帶均勻；液態玻璃帶折射高光，需高效能裝置';
 
   @override
   String get homePagePickImageAction => '選擇圖片';

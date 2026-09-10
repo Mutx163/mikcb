@@ -1,5 +1,6 @@
 import '../ui/hyperos/frosted/frosted_appearance.dart';
 
+import 'header_blur_style.dart';
 import 'timetable_settings.dart';
 
 /// 玻璃模式三档选择（设置页「玻璃模式」与引导页「视觉效果」共用的映射
@@ -44,5 +45,50 @@ TimetableSettings applyGlassModeChoice(
   GlassModeChoice.liquidGlass => settings.copyWith(
     frostedBlurEnabled: true,
     frostedGlassMode: FrostedGlassMode.liquidGlass,
+  ),
+};
+
+/// 课表壁纸区「顶栏玻璃材质」三档（与全局玻璃模式解耦）。
+///
+/// - [progressive]：首页玻璃带用 inspire 渐进模糊（上浓下淡）。
+/// - [gaussian]：首页玻璃带用 inspire 均匀高斯观感。
+/// - [liquid]：首页玻璃带走液态玻璃折射面。
+///
+/// 渐进 / 高斯只关「首页玻璃带」的液态开关，不改全局 glassMode——
+/// 弹窗、坞等仍跟外观页的玻璃模式走。
+enum ChromeGlassMaterial { progressive, gaussian, liquid }
+
+/// 从设置推导首页玻璃带材质。
+ChromeGlassMaterial chromeGlassMaterialOf(TimetableSettings settings) {
+  if (settings.liquidGlassHomeChromeEnabled &&
+      settings.frostedGlassMode == FrostedGlassMode.liquidGlass) {
+    return ChromeGlassMaterial.liquid;
+  }
+  return settings.headerBlurStyle == HeaderBlurStyle.gaussian
+      ? ChromeGlassMaterial.gaussian
+      : ChromeGlassMaterial.progressive;
+}
+
+/// 写回首页玻璃带材质。
+///
+/// 液态档需要全局 glassMode 为液态（渲染入口仍按 glassMode ×
+/// liquidGlassHomeChromeEnabled 判定），故一并打开；渐进 / 高斯只关
+/// 首页液态开关，不动全局模式。
+TimetableSettings applyChromeGlassMaterial(
+  TimetableSettings settings,
+  ChromeGlassMaterial material,
+) => switch (material) {
+  ChromeGlassMaterial.progressive => settings.copyWith(
+    headerBlurStyle: HeaderBlurStyle.inspire,
+    liquidGlassHomeChromeEnabled: false,
+  ),
+  ChromeGlassMaterial.gaussian => settings.copyWith(
+    headerBlurStyle: HeaderBlurStyle.gaussian,
+    liquidGlassHomeChromeEnabled: false,
+  ),
+  ChromeGlassMaterial.liquid => settings.copyWith(
+    frostedBlurEnabled: true,
+    frostedGlassMode: FrostedGlassMode.liquidGlass,
+    liquidGlassHomeChromeEnabled: true,
   ),
 };

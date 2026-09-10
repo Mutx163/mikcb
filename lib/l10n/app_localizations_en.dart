@@ -3455,10 +3455,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePageBuiltInWallpaperNone => 'None';
 
   @override
+  String get homePageBuiltInWallpaperOg => 'Classic lava · Dark';
+
+  @override
   String get homePageBuiltInWallpaperLavaDark => 'Lava orange · Dark';
 
   @override
   String get homePageBuiltInWallpaperLavaLight => 'Peach cream · Light';
+
+  @override
+  String get homePageBuiltInWallpaperDark1 => 'Deep flame · Dark';
+
+  @override
+  String get homePageBuiltInWallpaperLight2 => 'Sage green · Light';
+
+  @override
+  String get homePageBuiltInWallpaperLight3 => 'Warm earth · Light';
 
   @override
   String get homePageBuiltInWallpaperEmberTeal => 'Ember teal · Dark';
@@ -3509,11 +3521,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePageBackgroundScopeHeader => 'Top bar';
 
   @override
+  String get homePageBackgroundScopeChrome => 'Top chrome area';
+
+  @override
+  String get homePageBackgroundScopeChromeSubtitle =>
+      'Status bar, top bar, and info bar all show the wallpaper';
+
+  @override
   String get homePageHeaderBlurTitle => 'Top bar glass';
 
   @override
   String get homePageHeaderBlurSubtitle =>
-      'Glass material follows the glass mode in Appearance; when off, the top bar shows the wallpaper directly (status bar included)';
+      'Glass band for the status bar, top bar, and info bar; when off, the wallpaper shows through';
 
   @override
   String get homePageWeekdayBarBlurTitle => 'Info bar glass';
@@ -3521,6 +3540,26 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get homePageWeekdayBarBlurSubtitle =>
       'Glass material follows the glass mode in Appearance; when off, the info bar shows the wallpaper directly';
+
+  @override
+  String get chromeGlassMaterialLabel => 'Glass material';
+
+  @override
+  String get chromeGlassMaterialSubtitle =>
+      'Progressive / Gaussian apply only to the top glass band; Liquid Glass follows the global mode in Appearance';
+
+  @override
+  String get chromeGlassMaterialProgressive => 'Progressive blur';
+
+  @override
+  String get chromeGlassMaterialGaussian => 'Gaussian blur';
+
+  @override
+  String get chromeGlassMaterialLiquid => 'Liquid Glass';
+
+  @override
+  String get chromeGlassMaterialHint =>
+      'Progressive fades top-heavy to clear; Gaussian is even; Liquid Glass adds refraction and needs a high-end device';
 
   @override
   String get homePagePickImageAction => 'Choose image';

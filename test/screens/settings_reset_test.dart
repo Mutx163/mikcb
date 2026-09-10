@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
@@ -28,6 +29,7 @@ void main() {
       timetablePageBackgroundColor: '#ABCDEF',
       homePageBackgroundScope: 15,
       homePageHeaderBlurEnabled: true,
+      headerBlurStyle: HeaderBlurStyle.gaussian,
       weekdayBarFontColorLight: '#222222',
       homePageWallpaperPath: '/tmp/wallpaper.png',
       // 外观
@@ -144,6 +146,11 @@ void main() {
     expect(
       result.homePageHeaderBlurEnabled,
       defaults.homePageHeaderBlurEnabled,
+    );
+    expect(result.headerBlurStyle, defaults.headerBlurStyle);
+    expect(
+      result.liquidGlassHomeChromeEnabled,
+      defaults.liquidGlassHomeChromeEnabled,
     );
     expect(result.weekdayBarFontColorLight, defaults.weekdayBarFontColorLight);
     // 壁纸文件路径必须一并清掉，否则「恢复默认」后背景还在。

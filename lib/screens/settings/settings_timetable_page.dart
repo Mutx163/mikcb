@@ -285,38 +285,12 @@ class _TimetablePageSettingsScreenState
                   );
                 },
               ),
+              // 状态栏 / 顶栏 / 信息栏合并为一条「顶栏区域」；课表区域单列。
               HyperosSwitchTile(
-                title: l10n.homePageBackgroundScopeStatusBar,
-                value: HomePageBackgroundScope.includes(
-                  _draft.homePageBackgroundScope,
-                  HomePageBackgroundScope.statusBar,
-                ),
-                onChanged: (value) => _toggleBackgroundScope(
-                  HomePageBackgroundScope.statusBar,
-                  value,
-                ),
-              ),
-              HyperosSwitchTile(
-                title: l10n.homePageBackgroundScopeHeader,
-                value: HomePageBackgroundScope.includes(
-                  _draft.homePageBackgroundScope,
-                  HomePageBackgroundScope.header,
-                ),
-                onChanged: (value) => _toggleBackgroundScope(
-                  HomePageBackgroundScope.header,
-                  value,
-                ),
-              ),
-              HyperosSwitchTile(
-                title: l10n.homePageBackgroundScopeWeekdayBar,
-                value: HomePageBackgroundScope.includes(
-                  _draft.homePageBackgroundScope,
-                  HomePageBackgroundScope.weekdayBar,
-                ),
-                onChanged: (value) => _toggleBackgroundScope(
-                  HomePageBackgroundScope.weekdayBar,
-                  value,
-                ),
+                title: l10n.homePageBackgroundScopeChrome,
+                subtitle: l10n.homePageBackgroundScopeChromeSubtitle,
+                value: _chromeWallpaperEnabled,
+                onChanged: _setChromeWallpaperEnabled,
               ),
               HyperosSwitchTile(
                 title: l10n.homePageBackgroundScopeTimetable,
@@ -329,51 +303,34 @@ class _TimetablePageSettingsScreenState
                   value,
                 ),
               ),
-              // 两个「玻璃」开关只决定铬带是否铺玻璃（材质跟随外观的
-              // 玻璃模式：高斯磨砂/液态玻璃/实体卡片下半透明底），不再
-              // 自称「高斯模糊」——那会把全局玻璃模式与区域开关搅成
-              // 矛盾组合。关闭 = 该区域直接透出壁纸（无玻璃）。
+              // 顶栏玻璃：状态栏 + 标题栏 + 信息栏一条开关；材质三选一。
               HyperosSwitchTile(
                 title: l10n.homePageHeaderBlurTitle,
                 subtitle: l10n.homePageHeaderBlurSubtitle,
-                value: _draft.homePageHeaderBlurEnabled,
-                onChanged: (value) {
-                  _updateDraft(
-                    _draft.copyWith(homePageHeaderBlurEnabled: value),
-                  );
-                },
+                value: _chromeGlassEnabled,
+                onChanged: _setChromeGlassEnabled,
               ),
-              HyperosSwitchTile(
-                title: l10n.homePageWeekdayBarBlurTitle,
-                subtitle: l10n.homePageWeekdayBarBlurSubtitle,
-                value: _draft.homePageWeekdayBarBlurEnabled,
-                onChanged: (value) {
-                  _updateDraft(
-                    _draft.copyWith(homePageWeekdayBarBlurEnabled: value),
-                  );
-                },
-              ),
-              // 顶栏模糊风格：两档都由 inspire_blur 的渐进模糊实现，只在
-              // 「均匀强度（经典高斯观感）」与「自顶边向下衰减」之间切换。
-              // 只铺玻璃带时才有意义，玻璃带全关时隐藏，避免无效果的选项。
-              if (_draft.homePageHeaderBlurEnabled ||
-                  _draft.homePageWeekdayBarBlurEnabled) ...[
-                HyperosSelectTile<HeaderBlurStyle>(
-                  label: l10n.headerBlurStyleLabel,
-                  subtitle: l10n.headerBlurStyleSubtitle,
+              if (_chromeGlassEnabled) ...[
+                HyperosSelectTile<ChromeGlassMaterial>(
+                  label: l10n.chromeGlassMaterialLabel,
+                  subtitle: l10n.chromeGlassMaterialSubtitle,
                   items: {
-                    l10n.headerBlurStyleInspire: HeaderBlurStyle.inspire,
-                    l10n.headerBlurStyleGaussian: HeaderBlurStyle.gaussian,
+                    l10n.chromeGlassMaterialProgressive:
+                        ChromeGlassMaterial.progressive,
+                    l10n.chromeGlassMaterialGaussian:
+                        ChromeGlassMaterial.gaussian,
+                    l10n.chromeGlassMaterialLiquid:
+                        ChromeGlassMaterial.liquid,
                   },
-                  value: _draft.headerBlurStyle,
+                  value: chromeGlassMaterialOf(_draft),
                   onChanged: (value) {
-                    _updateDraft(_draft.copyWith(headerBlurStyle: value));
+                    _updateDraft(applyChromeGlassMaterial(_draft, value));
                   },
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: Text(
-                    l10n.headerBlurStyleHint,
+                    l10n.chromeGlassMaterialHint,
                     style: HyperosTypography.sectionDescription(context),
                   ),
                 ),
@@ -394,6 +351,40 @@ class _TimetablePageSettingsScreenState
       ),
       _ => const SizedBox.shrink(),
     };
+  }
+
+  /// 壁纸「顶栏区域」= 状态栏 | 顶栏 | 信息栏 三位合一。
+  static const int _chromeWallpaperScopeMask =
+      HomePageBackgroundScope.statusBar |
+      HomePageBackgroundScope.header |
+      HomePageBackgroundScope.weekdayBar;
+
+  bool get _chromeWallpaperEnabled =>
+      (_draft.homePageBackgroundScope & _chromeWallpaperScopeMask) ==
+      _chromeWallpaperScopeMask;
+
+  void _setChromeWallpaperEnabled(bool enabled) {
+    _updateDraft(
+      _draft.copyWith(
+        homePageBackgroundScope: enabled
+            ? _draft.homePageBackgroundScope | _chromeWallpaperScopeMask
+            : _draft.homePageBackgroundScope & ~_chromeWallpaperScopeMask,
+      ),
+    );
+  }
+
+  /// 顶栏玻璃开关：状态栏 + 标题栏 + 信息栏玻璃带同开同关。
+  bool get _chromeGlassEnabled =>
+      _draft.homePageHeaderBlurEnabled ||
+      _draft.homePageWeekdayBarBlurEnabled;
+
+  void _setChromeGlassEnabled(bool enabled) {
+    _updateDraft(
+      _draft.copyWith(
+        homePageHeaderBlurEnabled: enabled,
+        homePageWeekdayBarBlurEnabled: enabled,
+      ),
+    );
   }
 
   void _toggleBackgroundScope(int scope, bool enabled) {
@@ -420,8 +411,12 @@ class _TimetablePageSettingsScreenState
     final selected = resolveBuiltInWallpaper(_draft);
     final options = <(BuiltInWallpaper?, String)>[
       (null, l10n.homePageBuiltInWallpaperNone),
+      (BuiltInWallpaper.og, l10n.homePageBuiltInWallpaperOg),
       (BuiltInWallpaper.lavaDark, l10n.homePageBuiltInWallpaperLavaDark),
       (BuiltInWallpaper.lavaLight, l10n.homePageBuiltInWallpaperLavaLight),
+      (BuiltInWallpaper.dark1, l10n.homePageBuiltInWallpaperDark1),
+      (BuiltInWallpaper.light2, l10n.homePageBuiltInWallpaperLight2),
+      (BuiltInWallpaper.light3, l10n.homePageBuiltInWallpaperLight3),
       (BuiltInWallpaper.emberTeal, l10n.homePageBuiltInWallpaperEmberTeal),
     ];
     return Padding(
@@ -741,7 +736,12 @@ class _BuiltInWallpaperOption extends StatelessWidget {
                             color: HyperosColors.secondaryText(context),
                           ),
                         )
-                      : BokehLavaGradient(wallpaper: wallpaper!),
+                      : BokehLavaGradient(
+                          wallpaper: wallpaper!,
+                          // 列表里多张缩略图同屏；静态首帧与首页动画同 seed，
+                          // 避免同时起多个 Ticker 耗电。
+                          animate: false,
+                        ),
                 ),
               ),
             ),

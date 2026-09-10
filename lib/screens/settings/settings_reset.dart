@@ -77,6 +77,8 @@ TimetableSettings applySettingsReset(
       homePageBackgroundScope: d.homePageBackgroundScope,
       homePageHeaderBlurEnabled: d.homePageHeaderBlurEnabled,
       homePageWeekdayBarBlurEnabled: d.homePageWeekdayBarBlurEnabled,
+      headerBlurStyle: d.headerBlurStyle,
+      liquidGlassHomeChromeEnabled: d.liquidGlassHomeChromeEnabled,
       weekdayBarFontColorLight: d.weekdayBarFontColorLight,
       weekdayBarFontColorDark: d.weekdayBarFontColorDark,
       weekdayBarAccentColorLight: d.weekdayBarAccentColorLight,

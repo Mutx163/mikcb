@@ -15,7 +15,6 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/glass_mode_choice.dart';
-import '../models/header_blur_style.dart';
 import '../models/holiday_entry.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
