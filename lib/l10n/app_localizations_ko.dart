@@ -6501,6 +6501,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guidePersonalizeVisualEffectSolid => '솔리드 카드';
 
   @override
+  String get guideVisualEffectProgressiveDesc => '헤더 상단을 더 강하게 흐리게 하여 경계를 매끄럽게';
+
+  @override
   String get guideVisualEffectGaussianDesc => '배경에 실시간 가우시안 블러로 깊이감 있는 투명 효과';
 
   @override
@@ -10102,6 +10105,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get frostedGlassModeLabel => '유리 모드';
+
+  @override
+  String get frostedGlassModeProgressive => '점진 블러';
 
   @override
   String get liquidGlassScopeSectionTitle => '액체 유리 적용 범위';

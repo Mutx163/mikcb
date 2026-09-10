@@ -11615,6 +11615,12 @@ abstract class AppLocalizations {
   /// **'实体卡片'**
   String get guidePersonalizeVisualEffectSolid;
 
+  /// No description provided for @guideVisualEffectProgressiveDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'顶栏上浓下淡渐进模糊，衔接课表更顺'**
+  String get guideVisualEffectProgressiveDesc;
+
   /// No description provided for @guideVisualEffectGaussianDesc.
   ///
   /// In zh, this message translates to:
@@ -17682,6 +17688,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'玻璃模式'**
   String get frostedGlassModeLabel;
+
+  /// No description provided for @frostedGlassModeProgressive.
+  ///
+  /// In zh, this message translates to:
+  /// **'渐进模糊'**
+  String get frostedGlassModeProgressive;
 
   /// No description provided for @liquidGlassScopeSectionTitle.
   ///

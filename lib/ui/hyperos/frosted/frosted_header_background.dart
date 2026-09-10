@@ -129,6 +129,7 @@ class HyperosFrostedSurface extends StatelessWidget {
       child: FrostedHeaderBackground(
         blurEnabled: useBlur,
         blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
+        blurStyle: HyperosBlurredHeader.headerBlurStyleOf(context),
         tint: resolvedTint,
         child: content,
       ),

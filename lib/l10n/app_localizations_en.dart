@@ -6723,6 +6723,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guidePersonalizeVisualEffectSolid => 'Solid cards';
 
   @override
+  String get guideVisualEffectProgressiveDesc =>
+      'Progressive header blur, stronger at top for a seamless edge';
+
+  @override
   String get guideVisualEffectGaussianDesc =>
       'Live gaussian blur behind surfaces — layered and translucent';
 
@@ -10345,6 +10349,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frostedGlassModeLabel => 'Glass Mode';
+
+  @override
+  String get frostedGlassModeProgressive => 'Progressive blur';
 
   @override
   String get liquidGlassScopeSectionTitle => 'Liquid Glass Surfaces';

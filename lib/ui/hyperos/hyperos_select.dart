@@ -7,6 +7,7 @@ import 'package:flutter/physics.dart';
 
 import 'package:flutter/services.dart';
 
+import '../../models/header_blur_style.dart';
 import 'hyperos_blurred_header.dart';
 import 'hyperos_controls.dart';
 import 'hyperos_miuix_spec.dart';
@@ -696,11 +697,25 @@ class HyperosSelectPopupGlass extends StatelessWidget {
       return HyperosSolidPopupSurface(cornerRadius: cornerRadius, child: child);
     }
 
-    // Frosted / gaussian / translucent: use the same sigma and tint as every
-    // HyperosSheetFrame. The selected glass mode changes the shared modal
-    // material, not the visual identity of one popup versus another.
+    // Frosted / gaussian / translucent: same sigma + tint as every
+    // HyperosSheetFrame. Progressive style switches the blur pipeline to
+    // inspire (top-heavy fade); gaussian keeps the grouped uniform blur so
+    // the undimmed BackdropGroup capture still feeds the popup.
     final sigma = HyperosBlurredHeader.blurSigmaOf(context);
     final tint = HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
+    final blurStyle = HyperosBlurredHeader.headerBlurStyleOf(context);
+
+    if (blurStyle == HeaderBlurStyle.inspire) {
+      return ClipRRect(
+        borderRadius: borderRadius,
+        child: FrostedHeaderBackground(
+          blurSigma: sigma,
+          blurStyle: HeaderBlurStyle.inspire,
+          tint: tint,
+          child: child,
+        ),
+      );
+    }
 
     return ClipRRect(
       borderRadius: borderRadius,

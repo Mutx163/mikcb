@@ -6359,6 +6359,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guidePersonalizeVisualEffectSolid => '实体卡片';
 
   @override
+  String get guideVisualEffectProgressiveDesc => '顶栏上浓下淡渐进模糊，衔接课表更顺';
+
+  @override
   String get guideVisualEffectGaussianDesc => '背景实时高斯模糊，通透有层次';
 
   @override
@@ -9773,6 +9776,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';
+
+  @override
+  String get frostedGlassModeProgressive => '渐进模糊';
 
   @override
   String get liquidGlassScopeSectionTitle => '液态玻璃作用范围';
@@ -16974,6 +16980,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guidePersonalizeVisualEffectSolid => '實體卡片';
 
   @override
+  String get guideVisualEffectProgressiveDesc => '頂欄上濃下淡漸進模糊，銜接課表更順';
+
+  @override
   String get guideVisualEffectGaussianDesc => '背景即時高斯模糊，通透有層次';
 
   @override
@@ -20432,6 +20441,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';
+
+  @override
+  String get frostedGlassModeProgressive => '漸進模糊';
 
   @override
   String get liquidGlassScopeSectionTitle => '液態玻璃作用範圍';
@@ -27633,6 +27645,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guidePersonalizeVisualEffectSolid => '實體卡片';
 
   @override
+  String get guideVisualEffectProgressiveDesc => '頂欄上濃下淡漸進模糊，銜接課表更順';
+
+  @override
   String get guideVisualEffectGaussianDesc => '背景即時高斯模糊，通透有層次';
 
   @override
@@ -31091,6 +31106,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';
+
+  @override
+  String get frostedGlassModeProgressive => '漸進模糊';
 
   @override
   String get liquidGlassScopeSectionTitle => '液態玻璃作用範圍';

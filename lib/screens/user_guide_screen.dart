@@ -7,6 +7,7 @@ import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../models/header_blur_style.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/hex_color.dart';
@@ -787,18 +788,29 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     _applyForuiTheme(theme);
   }
 
-  /// 视觉效果三档与设置字段的映射（与设置页玻璃模式三档同语义）：
+  /// 视觉效果与设置字段的映射（与设置页玻璃模式同语义）：
+  /// - 渐进模糊 → 开模糊 + 非液态 + inspire；
   /// - 高斯模糊 → 开模糊 + gaussian 模式；
   /// - 液态玻璃 → 开模糊 + liquidGlass 模式；
   /// - 实体卡片 → 关闭模糊总开关并把玻璃模式归位 frosted（所有表面
   ///   回落实体卡片；液态面不受模糊总开关约束，必须显式脱离液态档）。
   void _applyVisualEffect(_GuideVisualEffect effect) {
     switch (effect) {
+      case _GuideVisualEffect.progressive:
+        _updateSettings(
+          _currentSettings.copyWith(
+            frostedBlurEnabled: true,
+            frostedGlassMode: FrostedGlassMode.gaussian,
+            headerBlurStyle: HeaderBlurStyle.inspire,
+            liquidGlassHomeChromeEnabled: false,
+          ),
+        );
       case _GuideVisualEffect.gaussian:
         _updateSettings(
           _currentSettings.copyWith(
             frostedBlurEnabled: true,
             frostedGlassMode: FrostedGlassMode.gaussian,
+            headerBlurStyle: HeaderBlurStyle.gaussian,
           ),
         );
       case _GuideVisualEffect.liquidGlass:
@@ -1146,9 +1158,10 @@ class _PermissionItem {
 
 /// 引导页「视觉效果」三档选择。与设置字段的映射见
 /// [_UserGuideScreenState._applyVisualEffect]。
-enum _GuideVisualEffect { gaussian, liquidGlass, solid }
+enum _GuideVisualEffect { progressive, gaussian, liquidGlass, solid }
 
 const List<_GuideVisualEffect> _guideVisualEffectOptions = <_GuideVisualEffect>[
+  _GuideVisualEffect.progressive,
   _GuideVisualEffect.gaussian,
   _GuideVisualEffect.liquidGlass,
   _GuideVisualEffect.solid,
@@ -1160,13 +1173,16 @@ _GuideVisualEffect _guideVisualEffectOf(TimetableSettings settings) {
   if (settings.frostedGlassMode == FrostedGlassMode.liquidGlass) {
     return _GuideVisualEffect.liquidGlass;
   }
-  return _GuideVisualEffect.gaussian;
+  return settings.headerBlurStyle == HeaderBlurStyle.inspire
+      ? _GuideVisualEffect.progressive
+      : _GuideVisualEffect.gaussian;
 }
 
 String _guideVisualEffectLabel(
   AppLocalizations l10n,
   _GuideVisualEffect effect,
 ) => switch (effect) {
+  _GuideVisualEffect.progressive => l10n.frostedGlassModeProgressive,
   _GuideVisualEffect.gaussian => l10n.frostedGlassModeGaussian,
   _GuideVisualEffect.liquidGlass => l10n.frostedGlassModeLiquid,
   _GuideVisualEffect.solid => l10n.guidePersonalizeVisualEffectSolid,
@@ -1176,6 +1192,7 @@ String _guideVisualEffectDescription(
   AppLocalizations l10n,
   _GuideVisualEffect effect,
 ) => switch (effect) {
+  _GuideVisualEffect.progressive => l10n.guideVisualEffectProgressiveDesc,
   _GuideVisualEffect.gaussian => l10n.guideVisualEffectGaussianDesc,
   _GuideVisualEffect.liquidGlass => l10n.guideVisualEffectLiquidDesc,
   _GuideVisualEffect.solid => l10n.guideVisualEffectSolidDesc,

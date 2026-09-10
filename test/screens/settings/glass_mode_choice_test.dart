@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/glass_mode_choice.dart';
+import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 
@@ -7,10 +8,12 @@ void main() {
   TimetableSettings settings({
     bool blurEnabled = true,
     FrostedGlassMode mode = FrostedGlassMode.frosted,
+    HeaderBlurStyle headerBlurStyle = HeaderBlurStyle.gaussian,
   }) => TimetableSettings(
     sections: const [],
     frostedBlurEnabled: blurEnabled,
     frostedGlassMode: mode,
+    headerBlurStyle: headerBlurStyle,
   );
 
   group('glassModeChoiceOf', () {
@@ -39,7 +42,16 @@ void main() {
       );
     });
 
-    test('开模糊 + 存量 frosted / gaussian → 高斯模糊', () {
+    test('开模糊 + 非液态 + headerBlurStyle=inspire → 渐进模糊', () {
+      expect(
+        glassModeChoiceOf(
+          settings(headerBlurStyle: HeaderBlurStyle.inspire),
+        ),
+        GlassModeChoice.progressive,
+      );
+    });
+
+    test('开模糊 + 存量 frosted / gaussian + headerBlurStyle=gaussian → 高斯模糊', () {
       expect(
         glassModeChoiceOf(settings()),
         GlassModeChoice.gaussian,
@@ -61,13 +73,25 @@ void main() {
       expect(result.frostedGlassMode, FrostedGlassMode.frosted);
     });
 
-    test('高斯模糊：开模糊 + gaussian 模式', () {
+    test('渐进模糊：开模糊 + 非液态 + inspire', () {
+      final result = applyGlassModeChoice(
+        settings(blurEnabled: false),
+        GlassModeChoice.progressive,
+      );
+      expect(result.frostedBlurEnabled, isTrue);
+      expect(result.frostedGlassMode, FrostedGlassMode.gaussian);
+      expect(result.headerBlurStyle, HeaderBlurStyle.inspire);
+      expect(result.liquidGlassHomeChromeEnabled, isFalse);
+    });
+
+    test('高斯模糊：开模糊 + gaussian 模式 + headerBlurStyle=gaussian', () {
       final result = applyGlassModeChoice(
         settings(blurEnabled: false),
         GlassModeChoice.gaussian,
       );
       expect(result.frostedBlurEnabled, isTrue);
       expect(result.frostedGlassMode, FrostedGlassMode.gaussian);
+      expect(result.headerBlurStyle, HeaderBlurStyle.gaussian);
     });
 
     test('液态玻璃：开模糊 + liquidGlass 模式', () {
@@ -79,10 +103,12 @@ void main() {
       expect(result.frostedGlassMode, FrostedGlassMode.liquidGlass);
     });
 
-    test('三档往返切换后状态自洽', () {
+    test('四档往返切换后状态自洽', () {
       var s = settings(mode: FrostedGlassMode.liquidGlass);
       s = applyGlassModeChoice(s, GlassModeChoice.solid);
       expect(glassModeChoiceOf(s), GlassModeChoice.solid);
+      s = applyGlassModeChoice(s, GlassModeChoice.progressive);
+      expect(glassModeChoiceOf(s), GlassModeChoice.progressive);
       s = applyGlassModeChoice(s, GlassModeChoice.gaussian);
       expect(glassModeChoiceOf(s), GlassModeChoice.gaussian);
       s = applyGlassModeChoice(s, GlassModeChoice.liquidGlass);
