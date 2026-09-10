@@ -90,7 +90,7 @@ HomePageBackgroundVisual homePageRegionChromeVisual({
   required int region,
   required bool chromeBlurEnabled,
 }) {
-  if (chromeBlurEnabled && hasHomePageBackdropImage(settings)) {
+  if (chromeBlurEnabled && hasHomePageBackdrop(settings)) {
     return const HomePageBackgroundVisual(color: Colors.transparent);
   }
   return resolveHomePageRegionBackground(

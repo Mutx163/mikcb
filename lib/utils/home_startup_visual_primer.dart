@@ -51,12 +51,17 @@ abstract final class HomeStartupVisualPrimer {
   /// 预热首页首帧全部视觉资产。永不抛出。
   static Future<void> prime(TimetableSettings settings) async {
     try {
-      final path = resolveHomePageBackdropImagePath(settings);
+      // 背景身份键：图片壁纸为路径，内置壁纸为 `builtin:<预设>`；
+      // 与首页的采样缓存 key 同源，保证首帧取到的就是预热结果。
+      final path = homePageBackdropKey(settings);
       if (path == null || path.isEmpty) {
         return;
       }
-      if (!File(path).existsSync()) {
-        return;
+      final filePath = resolveHomePageBackdropImagePath(settings);
+      if (filePath != null && filePath.isNotEmpty) {
+        if (!File(filePath).existsSync()) {
+          return;
+        }
       }
       final devicePixelRatio = _devicePixelRatio();
       final appearance = settings.frostedAppearance;
@@ -72,7 +77,10 @@ abstract final class HomeStartupVisualPrimer {
       );
 
       // 亮度带单独 await：避免用列表下标对齐可选的预模糊任务。
-      final bandsFuture = sampleHomePageWallpaperLuminanceBands(path);
+      final bandsFuture = sampleHomePageBackdropLuminanceBands(
+        settings,
+        viewportSize: _viewportSize(),
+      );
       final jobs = <Future<Object?>>[
         // 全尺寸壁纸进 ImageCache：首页背景 Image 首帧即有像素。
         precacheHomePageBackdropImage(settings).then((_) => null),
@@ -100,6 +108,16 @@ abstract final class HomeStartupVisualPrimer {
       // 预热是纯优化：任何失败都不能挡住首帧放行。
       debugPrint('HomeStartupVisualPrimer.prime failed: $error\n$stackTrace');
     }
+  }
+
+  /// 首页视口尺寸；预热与首页用同一份采样窗口（内置壁纸的 cover 裁剪
+  /// 依赖它），拿不到时退回空尺寸（整图采样）。
+  static Size? _viewportSize() {
+    final views = ui.PlatformDispatcher.instance.views;
+    if (views.isEmpty) {
+      return null;
+    }
+    return views.first.physicalSize / views.first.devicePixelRatio;
   }
 
   static double _devicePixelRatio() {

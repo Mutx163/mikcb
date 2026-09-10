@@ -478,7 +478,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         final glassDockForm =
             settings.homeNavigationForm == HomeNavigationForm.glassDock;
         final viewportSize = MediaQuery.sizeOf(context);
-        final hasBackdrop = hasHomePageBackdropImage(settings);
+        final hasBackdrop = hasHomePageBackdrop(settings);
         final statusBarShowsBackdrop = homePageRegionShowsBackdrop(
           settings,
           HomePageBackgroundScope.statusBar,
@@ -770,7 +770,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 // pager is locked, so drive repaints from the day agenda pager
                 // and treat the wallpaper as screen-fixed (it never follows
                 // the day swipe).
-                wallpaperPath: resolveHomePageBackdropImagePath(settings),
+                wallpaperPath: homePageBackdropKey(settings),
                 blurSigma: homePreblurSigma,
                 pageController: _isDayView
                     ? _ensureDayViewPageController(settings)
@@ -1683,7 +1683,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     final bands = HomeStartupVisualPrimer.seededBandsFor(
-      resolveHomePageBackdropImagePath(settings),
+      homePageBackdropKey(settings),
     );
     if (bands == null) {
       return;
@@ -1697,7 +1697,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     TimetableSettings settings, {
     required Size viewportSize,
   }) {
-    final path = resolveHomePageBackdropImagePath(settings);
+    // 内置壁纸没有磁盘文件，统一用「背景身份键」做采样缓存 key：
+    // 图片壁纸即路径，内置壁纸为 `builtin:<预设>`。
+    final path = homePageBackdropKey(settings);
     if (path == null || path.isEmpty) {
       if (_wallpaperTopLuminance != null ||
           _wallpaperWeekdayLuminance != null ||
@@ -1743,7 +1745,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             return;
           }
           _ensureWallpaperLuminanceForPath(
-            path,
+            settings,
             viewportSize: viewportSize,
             alignX: settings.homePageWallpaperAlignX,
             alignY: settings.homePageWallpaperAlignY,
@@ -1770,7 +1772,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _ensureWallpaperLuminanceForPath(
-    String path, {
+    TimetableSettings settings, {
     required Size viewportSize,
     required double alignX,
     required double alignY,
@@ -1785,7 +1787,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 风格混用（部分在 setState 外、部分在内）会让后续维护者难以判断
     // 哪些赋值会触发重绘，容易漏包导致 UI 与状态脱节。
     _wallpaperLuminanceRequestedKey = key;
-    final fileExists = File(path).existsSync();
+    // 内置壁纸没有磁盘文件（键为 `builtin:<预设>`），一律视为「存在」；
+    // 图片壁纸仍按路径探测，文件丢失时清空亮度采样。
+    final filePath = resolveHomePageBackdropImagePath(settings);
+    final fileExists = filePath == null || filePath.isEmpty
+        ? true
+        : File(filePath).existsSync();
     if (!mounted || _wallpaperLuminanceRequestedKey != key) {
       return;
     }
@@ -1810,7 +1817,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       _wallpaperLuminanceSampleKey = key;
     });
     await _loadWallpaperLuminance(
-      path,
+      settings,
       viewportSize: viewportSize,
       alignX: alignX,
       alignY: alignY,
@@ -1819,14 +1826,14 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _loadWallpaperLuminance(
-    String path, {
+    TimetableSettings settings, {
     required Size viewportSize,
     required double alignX,
     required double alignY,
     required String key,
   }) async {
-    final bands = await sampleHomePageWallpaperLuminanceBands(
-      path,
+    final bands = await sampleHomePageBackdropLuminanceBands(
+      settings,
       viewportSize: viewportSize,
       alignX: alignX,
       alignY: alignY,
@@ -1870,7 +1877,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (!hasHomePageBackdropImage(settings)) {
+    if (!hasHomePageBackdrop(settings)) {
       return;
     }
     final configuredHex = isDark
@@ -1894,7 +1901,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     final signature =
-        '$configuredHex|${resolveHomePageBackdropImagePath(settings) ?? ''}|'
+        '$configuredHex|${homePageBackdropKey(settings) ?? ''}|'
         '$isDark';
     if (_weekdayInkWarnedSignature == signature) {
       return;
@@ -2082,7 +2089,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasBackdrop = hasHomePageBackdropImage(settings);
+    final hasBackdrop = hasHomePageBackdrop(settings);
     // Opaque/no-wallpaper chrome still needs a separator, but a full 1dp
     // ThemeData outline lands as a dark multi-physical-pixel band on dense
     // Android screens. Keep the wallpaper path's existing border untouched
@@ -2781,7 +2788,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // Frosted glass when a wallpaper is behind the grid, otherwise the solid
     // Miuix card above. Keep the blur cheap: single BackdropFilter on the pill
     // only, not the whole page.
-    final hasBackdrop = hasHomePageBackdropImage(
+    final hasBackdrop = hasHomePageBackdrop(
       context.read<TimetableProvider>().settings,
     );
     final decoratedPill = hasBackdrop
@@ -3142,7 +3149,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     int week,
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasBackdrop = hasHomePageBackdropImage(settings);
+    final hasBackdrop = hasHomePageBackdrop(settings);
     // Day view keeps the same weekday chrome as the week view: the panel below
     // now shows the wallpaper, so an opaque non-blurred bar would read as a
     // seam across the top of the glass.
@@ -3878,7 +3885,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         : Icons.arrow_back_rounded;
 
     final isDark = theme.brightness == Brightness.dark;
-    final hasBackdrop = hasHomePageBackdropImage(settings);
+    final hasBackdrop = hasHomePageBackdrop(settings);
     final backdropBlurOn =
         hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context);
     // 顶栏/信息栏开着玻璃时，摘要卡与顶部铬玻璃带同材质、同墨色极性。
@@ -4457,7 +4464,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }) {
     final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasBackdrop = hasHomePageBackdropImage(settings);
+    final hasBackdrop = hasHomePageBackdrop(settings);
     final colorScheme = Theme.of(context).colorScheme;
     // Same wallpaper auto-contrast as weekday / time-axis chrome: default ink
     // flips black↔white over dark photos; user-custom hex is kept as-is. The
@@ -5961,7 +5968,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (settings == null) {
       return Colors.white;
     }
-    final glassOverWallpaper = hasHomePageBackdropImage(settings) &&
+    final glassOverWallpaper = hasHomePageBackdrop(settings) &&
         settings.courseCardSurfaceStyle == CourseCardSurfaceStyle.gaussian;
     if (!glassOverWallpaper) {
       return Colors.white;
@@ -7924,7 +7931,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     TimetableSettings settings,
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasBackdrop = hasHomePageBackdropImage(settings);
+    final hasBackdrop = hasHomePageBackdrop(settings);
     // Same wallpaper auto-contrast as weekday ink; user-custom time-axis hex
     // is never replaced. The time column spans the body band (not the
     // status/title strip), so judge from the card-region sample.
@@ -8030,7 +8037,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // dark over light) instead of the theme's onSurface color.
     final provider = context.read<TimetableProvider>();
     final settings = provider.settings;
-    final hasBackdrop = hasHomePageBackdropImage(settings);
+    final hasBackdrop = hasHomePageBackdrop(settings);
     final headerShowsBackdrop = homePageRegionShowsBackdrop(
       settings,
       HomePageBackgroundScope.header,

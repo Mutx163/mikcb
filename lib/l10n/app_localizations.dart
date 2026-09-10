@@ -6003,6 +6003,61 @@ abstract class AppLocalizations {
   /// **'在「图片」模式下，作用于下方勾选的显示区域'**
   String get homePageBackgroundImageSubtitle;
 
+
+  /// No description provided for @homePageBuiltInWallpaperTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'内置壁纸'**
+  String get homePageBuiltInWallpaperTitle;
+
+  /// No description provided for @homePageBuiltInWallpaperSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'代码渲染的动态渐变底图，不占存储、无需联网；选择后立即铺满首页'**
+  String get homePageBuiltInWallpaperSubtitle;
+
+  /// No description provided for @homePageBuiltInWallpaperNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'不使用'**
+  String get homePageBuiltInWallpaperNone;
+
+  /// No description provided for @homePageBuiltInWallpaperLavaDark.
+  ///
+  /// In zh, this message translates to:
+  /// **'熔岩橙 · 深色'**
+  String get homePageBuiltInWallpaperLavaDark;
+
+  /// No description provided for @homePageBuiltInWallpaperLavaLight.
+  ///
+  /// In zh, this message translates to:
+  /// **'蜜桃奶油 · 浅色'**
+  String get homePageBuiltInWallpaperLavaLight;
+
+  /// No description provided for @homePageBuiltInWallpaperEmberTeal.
+  ///
+  /// In zh, this message translates to:
+  /// **'青绿余烬 · 深色'**
+  String get homePageBuiltInWallpaperEmberTeal;
+
+  /// No description provided for @homePageWallpaperSourceTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'壁纸来源'**
+  String get homePageWallpaperSourceTitle;
+
+  /// No description provided for @homePageWallpaperSourceSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自选图片优先于内置壁纸；清除图片后自动回退到内置壁纸'**
+  String get homePageWallpaperSourceSubtitle;
+
+  /// No description provided for @homePageBuiltInWallpaperCredits.
+  ///
+  /// In zh, this message translates to:
+  /// **'内置壁纸基于 bokeh-lava-gradient（MIT）实现'**
+  String get homePageBuiltInWallpaperCredits;
+
   /// No description provided for @homePageWallpaperTitle.
   ///
   /// In zh, this message translates to:

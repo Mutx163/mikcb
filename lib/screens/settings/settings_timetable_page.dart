@@ -245,6 +245,7 @@ class _TimetablePageSettingsScreenState
                   },
                 ),
               ),
+              _buildBuiltInWallpaperTile(context, l10n: l10n),
               _buildHomePageImageTile(
                 context,
                 l10n: l10n,
@@ -382,6 +383,97 @@ class _TimetablePageSettingsScreenState
     );
   }
 
+  /// 内置壁纸选择行：横向预设卡片 + 「不使用」。
+  ///
+  /// 内置壁纸是代码渲染的渐变底图（无文件、无网络），与自选图片共用同一套
+  /// 渲染 / 亮度采样 / 预模糊玻璃管线；用户自选图片优先，清除图片后自动
+  /// 回退到这里选中的预设。
+  Widget _buildBuiltInWallpaperTile(
+    BuildContext context, {
+    required AppLocalizations l10n,
+  }) {
+    final selected = resolveBuiltInWallpaper(_draft);
+    final options = <(BuiltInWallpaper?, String)>[
+      (null, l10n.homePageBuiltInWallpaperNone),
+      (BuiltInWallpaper.lavaDark, l10n.homePageBuiltInWallpaperLavaDark),
+      (BuiltInWallpaper.lavaLight, l10n.homePageBuiltInWallpaperLavaLight),
+      (BuiltInWallpaper.emberTeal, l10n.homePageBuiltInWallpaperEmberTeal),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.homePageBuiltInWallpaperTitle,
+            style: HyperosTypography.listTitle(context),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.homePageBuiltInWallpaperSubtitle,
+            style: HyperosTypography.listDetail(context),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 116,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: options.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                final (wallpaper, label) = options[index];
+                return _BuiltInWallpaperOption(
+                  label: label,
+                  wallpaper: wallpaper,
+                  selected: selected == wallpaper,
+                  onTap: () {
+                    // 内置壁纸与自选图片互斥：切到内置（或「不使用」）时
+                    // 一并清掉图片路径，否则图片会一直压在壁纸上。
+                    final stalePath = resolveHomePageBackdropImagePath(_draft);
+                    if (stalePath != null && stalePath.isNotEmpty) {
+                      evictHomePageImageCache(stalePath);
+                      PreblurredWallpaperCache.instance.evict(stalePath);
+                      unawaited(
+                        deleteManagedImage(
+                          stalePath,
+                          directoryName: 'home_page_wallpaper',
+                          filePrefix: 'wallpaper',
+                        ).then(
+                          (_) => invalidateHomePageBackdropFileExists(
+                            stalePath,
+                          ),
+                        ),
+                      );
+                    }
+                    PreblurredWallpaperCache.instance.evict(
+                      homePageBackdropKey(_draft),
+                    );
+                    _updateDraft(
+                      _draft.copyWith(
+                        homePageBuiltInWallpaper: wallpaper?.value,
+                        clearHomePageBuiltInWallpaper: wallpaper == null,
+                        clearHomePageWallpaperPath: true,
+                        clearHomePageBackgroundImagePath: true,
+                        // 内置壁纸没有可拖动的裁剪窗口，位置固定居中。
+                        homePageWallpaperAlignX: 0,
+                        homePageWallpaperAlignY: 0,
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.homePageBuiltInWallpaperCredits,
+            style: HyperosTypography.listDetail(context),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHomePageImageTile(
     BuildContext context, {
     required AppLocalizations l10n,
@@ -447,6 +539,8 @@ class _TimetablePageSettingsScreenState
     invalidateHomePageBackdropFileExists(draftPath);
     invalidateHomePageBackdropFileExists(targetPath);
     PreblurredWallpaperCache.instance.evict(draftPath);
+    // 自选图片会顶掉内置壁纸的预模糊位图，两份都要失效。
+    PreblurredWallpaperCache.instance.evict(homePageBackdropKey(_draft));
     _updateDraft(
       _draft.copyWith(
         homePageWallpaperPath: targetPath,
@@ -572,5 +666,78 @@ class _TimetablePageSettingsScreenState
       });
       return;
     }
+  }
+}
+
+/// 内置壁纸预览卡：选中态描边 + 勾选角标。
+class _BuiltInWallpaperOption extends StatelessWidget {
+  const _BuiltInWallpaperOption({
+    required this.label,
+    required this.wallpaper,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final BuiltInWallpaper? wallpaper;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = HyperosColors.primary(context);
+    return SizedBox(
+      width: 78,
+      child: MiuixPressable(
+        onPressed: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: selected ? primary : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+                padding: const EdgeInsets.all(2),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  child: wallpaper == null
+                      ? ColoredBox(
+                          color: HyperosColors.secondaryBackground(context),
+                          child: Icon(
+                            Icons.block_rounded,
+                            size: 22,
+                            color: HyperosColors.mutedForeground(context),
+                          ),
+                        )
+                      : BokehLavaGradient(wallpaper: wallpaper!),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                height: 1.2,
+                color: selected
+                    ? primary
+                    : HyperosColors.mutedForeground(context),
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

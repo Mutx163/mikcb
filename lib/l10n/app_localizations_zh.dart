@@ -3246,6 +3246,33 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageBackgroundImageSubtitle => '在「图片」模式下，作用于下方勾选的显示区域';
 
   @override
+  String get homePageBuiltInWallpaperTitle => '内置壁纸';
+
+  @override
+  String get homePageBuiltInWallpaperSubtitle => '代码渲染的动态渐变底图，不占存储、无需联网；选择后立即铺满首页';
+
+  @override
+  String get homePageBuiltInWallpaperNone => '不使用';
+
+  @override
+  String get homePageBuiltInWallpaperLavaDark => '熔岩橙 · 深色';
+
+  @override
+  String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油 · 浅色';
+
+  @override
+  String get homePageBuiltInWallpaperEmberTeal => '青绿余烬 · 深色';
+
+  @override
+  String get homePageWallpaperSourceTitle => '壁纸来源';
+
+  @override
+  String get homePageWallpaperSourceSubtitle => '自选图片优先于内置壁纸；清除图片后自动回退到内置壁纸';
+
+  @override
+  String get homePageBuiltInWallpaperCredits => '内置壁纸基于 bokeh-lava-gradient（MIT）实现';
+
+  @override
   String get homePageWallpaperTitle => '背景图片';
 
   @override
@@ -13780,6 +13807,33 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homePageBackgroundImageSubtitle => '在「圖片」模式下，套用於下方勾選的顯示區域';
+
+  @override
+  String get homePageBuiltInWallpaperTitle => '內建桌布';
+
+  @override
+  String get homePageBuiltInWallpaperSubtitle => '由程式繪製的漸層底圖，不佔儲存空間、無需網路；選取後立即鋪滿首頁';
+
+  @override
+  String get homePageBuiltInWallpaperNone => '不使用';
+
+  @override
+  String get homePageBuiltInWallpaperLavaDark => '熔岩橙 · 深色';
+
+  @override
+  String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油 · 淺色';
+
+  @override
+  String get homePageBuiltInWallpaperEmberTeal => '青綠餘燼 · 深色';
+
+  @override
+  String get homePageWallpaperSourceTitle => '桌布來源';
+
+  @override
+  String get homePageWallpaperSourceSubtitle => '自選圖片優先於內建桌布；清除圖片後會自動回退到內建桌布';
+
+  @override
+  String get homePageBuiltInWallpaperCredits => '內建桌布基於 bokeh-lava-gradient（MIT）實作';
 
   @override
   String get homePageWallpaperTitle => '背景圖片';
@@ -24359,6 +24413,33 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homePageBackgroundImageSubtitle => '在「圖片」模式下，套用於下方勾選的顯示區域';
+
+  @override
+  String get homePageBuiltInWallpaperTitle => '內建桌布';
+
+  @override
+  String get homePageBuiltInWallpaperSubtitle => '由程式繪製的漸層底圖，不佔儲存空間、無需網路；選取後立即鋪滿首頁';
+
+  @override
+  String get homePageBuiltInWallpaperNone => '不使用';
+
+  @override
+  String get homePageBuiltInWallpaperLavaDark => '熔岩橙 · 深色';
+
+  @override
+  String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油 · 淺色';
+
+  @override
+  String get homePageBuiltInWallpaperEmberTeal => '青綠餘燼 · 深色';
+
+  @override
+  String get homePageWallpaperSourceTitle => '桌布來源';
+
+  @override
+  String get homePageWallpaperSourceSubtitle => '自選圖片優先於內建桌布；清除圖片後會自動回退到內建桌布';
+
+  @override
+  String get homePageBuiltInWallpaperCredits => '內建桌布基於 bokeh-lava-gradient（MIT）實作';
 
   @override
   String get homePageWallpaperTitle => '背景圖片';

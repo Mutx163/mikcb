@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
+import '../ui/background/builtin_wallpaper.dart';
 import '../utils/home_page_background.dart';
 
 /// Identity of a cached pre-blurred wallpaper.
@@ -184,8 +185,34 @@ class PreblurredWallpaperCache {
     }
   }
 
+  /// 背景身份键（图片路径或 `builtin:<预设>`）→ 位图提供者。
+  ///
+  /// 内置壁纸没有磁盘文件，这里统一把键翻译成 ImageProvider，让预模糊
+  /// 缓存与图片壁纸走同一条解码 + 模糊路径。
+  ImageProvider? _providerFor(String key, int decodeWidth) {
+    if (key.startsWith(kBuiltInWallpaperKeyPrefix)) {
+      final wallpaper = BuiltInWallpaper.fromValue(
+        key.substring(kBuiltInWallpaperKeyPrefix.length),
+      );
+      if (wallpaper == null) {
+        return null;
+      }
+      return ResizeImage(
+        BuiltInWallpaperImage(wallpaper),
+        width: decodeWidth,
+      );
+    }
+    if (!File(key).existsSync()) {
+      return null;
+    }
+    return ResizeImage(FileImage(File(key)), width: decodeWidth);
+  }
+
   Future<ui.Image?> _decode(String path, int decodeWidth) async {
-    final provider = ResizeImage(FileImage(File(path)), width: decodeWidth);
+    final provider = _providerFor(path, decodeWidth);
+    if (provider == null) {
+      return null;
+    }
     final stream = provider.resolve(ImageConfiguration.empty);
     final completer = Completer<ui.Image>();
     late ImageStreamListener listener;

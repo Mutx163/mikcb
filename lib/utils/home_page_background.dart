@@ -13,6 +13,7 @@ import 'dart:ui'
 import 'package:flutter/material.dart';
 
 import '../models/timetable_settings.dart';
+import '../ui/background/builtin_wallpaper.dart';
 import 'hex_color.dart';
 
 class HomePageBackgroundVisual {
@@ -92,9 +93,7 @@ ImageProvider? homePageBackdropImageProvider(String? path) {
 
 /// Warm the image cache so the home backdrop appears on the first frame.
 Future<void> precacheHomePageBackdropImage(TimetableSettings settings) async {
-  final provider = homePageBackdropImageProvider(
-    resolveHomePageBackdropImagePath(settings),
-  );
+  final provider = homePageBackdropProvider(settings);
   if (provider == null) {
     return;
   }
@@ -208,6 +207,53 @@ bool hasHomePageBackdropImage(TimetableSettings settings) {
       null;
 }
 
+/// 当前设置选中的内置壁纸；未选择时返回 null。
+BuiltInWallpaper? resolveBuiltInWallpaper(TimetableSettings settings) =>
+    BuiltInWallpaper.fromValue(settings.homePageBuiltInWallpaper);
+
+/// 当前生效的首页背景图提供者（用户自选图片优先，其次内置壁纸）。
+///
+/// 内置壁纸由代码渲染成位图，因此与图片壁纸共用同一套渲染、亮度采样与
+/// 预模糊玻璃管线；区别只在像素来源。
+ImageProvider? homePageBackdropProvider(TimetableSettings settings) {
+  final key = homePageBackdropKey(settings);
+  if (key == null) {
+    return null;
+  }
+  if (key.startsWith(kBuiltInWallpaperKeyPrefix)) {
+    final builtIn = BuiltInWallpaper.fromValue(
+      key.substring(kBuiltInWallpaperKeyPrefix.length),
+    );
+    return builtIn == null ? null : BuiltInWallpaperImage(builtIn);
+  }
+  return homePageBackdropImageProvider(key);
+}
+
+/// 首页是否有可用的背景（自选图片或内置壁纸）。
+///
+/// 替代只看文件的 [hasHomePageBackdropImage]：内置壁纸没有磁盘文件，
+/// 但同样要参与玻璃、墨色与背景区域判定。
+///
+/// 自选图片文件丢失时（重装 / 清除数据 / 跨设备同步只带回 JSON）不视为
+/// 有背景，自动回退到内置壁纸——否则首页会停在一条失效路径上什么都不画。
+bool hasHomePageBackdrop(TimetableSettings settings) {
+  return homePageBackdropKey(settings) != null;
+}
+
+/// 背景身份键：用于亮度采样/预模糊缓存的幂等去重。
+///
+/// 图片壁纸返回路径，内置壁纸返回 `builtin:<预设>`，无背景返回 null。
+/// 图片文件不存在时按「无图片」处理并回退内置壁纸，与
+/// [hasHomePageBackdrop] / [homePageBackdropProvider] 保持同一口径。
+String? homePageBackdropKey(TimetableSettings settings) {
+  final path = resolveHomePageBackdropImagePath(settings);
+  if (path != null && path.isNotEmpty && _homePageFileExistsSync(path)) {
+    return path;
+  }
+  final builtIn = resolveBuiltInWallpaper(settings);
+  return builtIn == null ? null : builtInWallpaperKey(builtIn);
+}
+
 /// Result of pre-resolving the home page's wallpaper backdrop before first
 /// paint, so chrome frost does not flash a stale/blank capture.
 class HomePageVisualReadiness {
@@ -231,14 +277,14 @@ class HomePageVisualReadiness {
 Future<HomePageVisualReadiness> prepareHomePageVisualReadiness(
   TimetableSettings settings,
 ) async {
-  if (!hasHomePageBackdropImage(settings)) {
+  if (!hasHomePageBackdrop(settings)) {
     return HomePageVisualReadiness.empty;
   }
   return const HomePageVisualReadiness(hasBackdrop: true);
 }
 
 bool homePageRegionShowsBackdrop(TimetableSettings settings, int region) {
-  if (!hasHomePageBackdropImage(settings)) {
+  if (!hasHomePageBackdrop(settings)) {
     return false;
   }
   return HomePageBackgroundScope.includes(
@@ -266,7 +312,7 @@ HomePageBackgroundVisual resolveHomePageRegionBackground({
     return HomePageBackgroundVisual(color: baseColor);
   }
 
-  if (hasHomePageBackdropImage(settings)) {
+  if (hasHomePageBackdrop(settings)) {
     return const HomePageBackgroundVisual(color: Colors.transparent);
   }
 
@@ -298,15 +344,21 @@ Widget homePageBackdropLayer({required TimetableSettings settings}) {
 /// Full-bleed backdrop image for embedding inside a week page.
 Widget? homePageBackdropImageWidget({required TimetableSettings settings}) {
   final path = resolveHomePageBackdropImagePath(settings);
-  final provider = homePageBackdropImageProvider(path);
+  final provider = homePageBackdropProvider(settings);
   if (provider == null) {
     return null;
   }
   // 横向壁纸在 cover 下水平溢出，用用户拖选的对齐值决定显示哪一段。
-  final alignX = settings.homePageWallpaperAlignX.clamp(-1.0, 1.0);
-  final alignY = settings.homePageWallpaperAlignY.clamp(-1.0, 1.0);
+  // 内置壁纸由代码生成，没有可拖动的裁剪窗口，固定居中。
+  final isBuiltIn = path == null || path.isEmpty;
+  final alignX = isBuiltIn
+      ? 0.0
+      : settings.homePageWallpaperAlignX.clamp(-1.0, 1.0);
+  final alignY = isBuiltIn
+      ? 0.0
+      : settings.homePageWallpaperAlignY.clamp(-1.0, 1.0);
   return Image(
-    key: ValueKey(path),
+    key: ValueKey(homePageBackdropKey(settings)),
     image: provider,
     fit: BoxFit.cover,
     gaplessPlayback: true,
@@ -645,6 +697,67 @@ Future<ui.Image?> _decodeHomePageWallpaperSample(String path) async {
   } finally {
     codec.dispose();
   }
+}
+
+/// 内置壁纸的亮度带（按预设 + 视口缓存，避免每次进入首页重复渲染位图）。
+final Map<String, ({double top, double weekday, double body})>
+_builtInLuminanceCache = {};
+
+Future<({double top, double weekday, double body})?>
+_sampleBuiltInWallpaperLuminanceBands(
+  String key,
+  BuiltInWallpaper wallpaper, {
+  Size? viewportSize,
+}) async {
+  // 缓存键带上视口：不同尺寸下 cover 裁剪的条带不同，不能共用一份采样。
+  final cacheKey = viewportSize == null
+      ? key
+      : '$key|${viewportSize.width}x${viewportSize.height}';
+  final cached = _builtInLuminanceCache[cacheKey];
+  if (cached != null) {
+    return cached;
+  }
+  final image = await renderBuiltInWallpaperImage(wallpaper);
+  try {
+    final bands = await _averageBandLuminances(
+      image,
+      viewportSize: viewportSize,
+    );
+    if (bands != null) {
+      _builtInLuminanceCache[cacheKey] = bands;
+    }
+    return bands;
+  } finally {
+    image.dispose();
+  }
+}
+
+/// 背景亮度带入口：自选图片读文件，内置壁纸渲染位图，两者同口径。
+Future<({double top, double weekday, double body})?>
+sampleHomePageBackdropLuminanceBands(
+  TimetableSettings settings, {
+  Size? viewportSize,
+  double alignX = 0,
+  double alignY = 0,
+}) {
+  final path = resolveHomePageBackdropImagePath(settings);
+  if (path != null && path.isNotEmpty) {
+    return sampleHomePageWallpaperLuminanceBands(
+      path,
+      viewportSize: viewportSize,
+      alignX: alignX,
+      alignY: alignY,
+    );
+  }
+  final builtIn = resolveBuiltInWallpaper(settings);
+  if (builtIn == null) {
+    return Future<({double top, double weekday, double body})?>.value();
+  }
+  return _sampleBuiltInWallpaperLuminanceBands(
+    builtInWallpaperKey(builtIn),
+    builtIn,
+    viewportSize: viewportSize,
+  );
 }
 
 /// Top-band + weekday-band + card-region WCAG luminance of a wallpaper file, from one decode.

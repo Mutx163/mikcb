@@ -3702,7 +3702,7 @@ class TimetableProvider with ChangeNotifier {
       });
     }
 
-    final previousBackdropPath = resolveHomePageBackdropImagePath(_settings);
+    final previousBackdropKey = homePageBackdropKey(_settings); // 图片路径/内置预设
     final semesterStartChanged =
         settings.semesterStartDate != _settings.semesterStartDate;
     _settings = _normalizeSettingsWithTimeScheme(settings);
@@ -3721,7 +3721,7 @@ class TimetableProvider with ChangeNotifier {
     unawaited(_syncNativeRuntimePreferences());
     _lastLiveSnapshotSignature = null;
     _currentLiveCourseId = null;
-    if (resolveHomePageBackdropImagePath(_settings) != previousBackdropPath) {
+    if (homePageBackdropKey(_settings) != previousBackdropKey) {
       await precacheHomePageBackdropImage(_settings);
     }
     notifyListeners();

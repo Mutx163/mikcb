@@ -25,6 +25,15 @@
 - `fl_chart` — MIT
 - 其余见 `pubspec.lock` 与各 package 的 LICENSE
 
+## 内联移植的第三方代码（源码内）
+
+| 组件 | 用途 | 许可 / 说明 |
+|------|------|-------------|
+| [bokeh-lava-gradient](https://github.com/keepYaoung/bokeh-lava-gradient) | 内置壁纸的光斑渐变绘制思路与调色板 | MIT，© keepYaoung / tommy / joon shin。按「静态位图」需求重写于 `lib/ui/background/bokeh_lava_gradient.dart` 与 `lib/ui/background/builtin_wallpaper.dart`，未引入 git 依赖 |
+
+> 该移植去掉了原包的逐帧动画与低分辨率模糊缓冲，改为一次性渲染静态位图，
+> 以便复用本仓库「壁纸文件 → 亮度采样 → 预模糊玻璃」的既有管线。
+
 ## Bundled 前端资源（局域网 Web 编辑）
 
 局域网 Web 控制台使用自研 shadcn/ui 风格静态 CSS（`assets/lan_edit/lan-timetable.css`），不再捆绑 Tabler Core。

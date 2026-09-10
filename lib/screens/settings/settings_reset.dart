@@ -83,9 +83,11 @@ TimetableSettings applySettingsReset(
       weekdayBarAccentColorDark: d.weekdayBarAccentColorDark,
       timeAxisFontColorLight: d.timeAxisFontColorLight,
       timeAxisFontColorDark: d.timeAxisFontColorDark,
-      // 壁纸文件路径一并清空，否则「恢复默认」后背景仍在。
+      // 壁纸文件路径一并清空，否则「恢复默认」后背景仍在；内置壁纸同样
+      // 回到「不使用」，保证恢复默认后首页真的没有背景。
       clearHomePageWallpaperPath: true,
       clearHomePageBackgroundImagePath: true,
+      clearHomePageBuiltInWallpaper: true,
     ),
     // 外观页瘦身后的范围：主题模式 / 字体 / 主题种子色与玻璃质感。
     SettingsResetScope.appearance => current.copyWith(

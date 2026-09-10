@@ -59,7 +59,9 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
   /// samples; without them the preview falls back to theme brightness and can
   /// paint the opposite ink or wash — visibly unlike the home page.
   void _sampleLuminance({Size? viewportSize}) {
-    final path = resolveHomePageBackdropImagePath(widget.settings);
+    // 背景身份键：图片路径或内置壁纸预设；内置壁纸同样参与墨色采样，
+    // 保证设置页预览与首页 chrome 极性一致。
+    final path = homePageBackdropKey(widget.settings);
     if (path == null || path.isEmpty) {
       _sampledKey = null;
       _topLuminance = null;
@@ -80,8 +82,8 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
     }
     _sampledKey = key;
     unawaited(
-      sampleHomePageWallpaperLuminanceBands(
-        path,
+      sampleHomePageBackdropLuminanceBands(
+        widget.settings,
         viewportSize: viewport,
         alignX: widget.settings.homePageWallpaperAlignX,
         alignY: widget.settings.homePageWallpaperAlignY,
@@ -345,7 +347,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final darkFallback = colorScheme.surface;
     final hasBackdrop =
-        applyHomePageBackdrop && hasHomePageBackdropImage(settings);
+        applyHomePageBackdrop && hasHomePageBackdrop(settings);
     final backgroundColor = isDark
         ? colorScheme.surface
         : parseHexColorOrFallback(
@@ -636,7 +638,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasBackdropForBorder = hasHomePageBackdropImage(settings);
+    final hasBackdropForBorder = hasHomePageBackdrop(settings);
     final subtleBorder = hasBackdropForBorder
         ? context.theme.colors.border
         : HyperosColors.dividerLine(context);
