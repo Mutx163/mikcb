@@ -802,6 +802,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         followBeforeClass: _followBeforeClass,
         endSecondsCountdownThresholdSeconds:
             _draft.liveEndSecondsCountdownThreshold,
+        promoteDuringClass: _draft.livePromoteDuringClass,
       ),
     ];
     return HyperosSubpage(

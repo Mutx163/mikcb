@@ -209,6 +209,7 @@ void main() {
     WidgetTester tester, {
     required LiveDisplaySettings displayConfig,
     bool forDuringEnd = false,
+    bool promoteDuringClass = true,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -225,6 +226,7 @@ void main() {
             child: LiveIslandExpandedPreviewCard(
               display: displayConfig,
               forDuringEnd: forDuringEnd,
+              promoteDuringClass: promoteDuringClass,
             ),
           ),
         ),
@@ -249,9 +251,10 @@ void main() {
     await pumpExpandedPreview(tester, displayConfig: display());
 
     // 默认顺序 progress, status, time, location, teacher, shortName, next, note
-    // 课前没有进度块，因此进度行不出现；状态、时间、地点、教师、简称、
-    // 下节课、备注按序出现。
-    expect(find.textContaining('状态: '), findsOneWidget);
+    // 课前没有进度块 → 进度行不出现；课前恒定提升 → status 行被原生
+    // detailStatusText 的 `&& !shouldPromote` 吞掉，同样不出现（状态改由
+    // 正文 promotedContentText 首项承载）。
+    expect(find.textContaining('状态: '), findsNothing);
     expect(find.text('时间: 08:00 - 08:45'), findsOneWidget);
     expect(find.text('地点: 三教-401'), findsOneWidget);
     expect(find.text('教师: 张老师'), findsOneWidget);
@@ -281,7 +284,7 @@ void main() {
     expect(noteY, lessThan(locY));
   });
 
-  testWidgets('展开态预览：阶段行渲染为裸阶段词，无「状态:」前缀', (tester) async {
+  testWidgets('展开态预览：提升态不渲染阶段行', (tester) async {
     await pumpExpandedPreview(
       tester,
       displayConfig: display(expandedDetailFields: const [
@@ -289,9 +292,33 @@ void main() {
       ]),
     );
 
-    expect(find.text('即将上课'), findsOneWidget,
-        reason: '原生 stage 行取 stageTitle，不带 detail_status 前缀');
-    expect(find.textContaining('状态: 即将上课'), findsNothing);
+    // 课前恒定提升 → promotedExpandedDetailText 的 stageTitle 传 null，
+    // 阶段信息由标题「即将上课: 高等数学」承载，详情区不该再有一行。
+    expect(find.text('即将上课: 高等数学'), findsOneWidget);
+    expect(find.text('即将上课'), findsNothing);
+    expect(find.text('已隐藏全部详情行，展开后只显示标题与摘要'), findsOneWidget);
+  });
+
+  testWidgets('展开态预览：关掉课中提升通知后阶段与状态行回归', (tester) async {
+    await pumpExpandedPreview(
+      tester,
+      displayConfig: display(
+        showCountdown: false,
+        expandedDetailFields: const [
+          LiveExpandedDetailField.stage,
+          LiveExpandedDetailField.status,
+        ],
+      ),
+      forDuringEnd: true,
+      promoteDuringClass: false,
+    );
+
+    // 课中关掉提升 → 走非提升态 expandedDetailText，stageTitle 与 status 都出；
+    // 关掉倒计时是为了避开「课中带进度块时 status 让位给进度行」的另一条规则。
+    // 下课提醒恒提升，那张卡片仍然不出这两行。
+    expect(find.text('状态: 上课中'), findsOneWidget);
+    expect(find.text('上课中'), findsWidgets);
+    expect(find.text('下课提醒'), findsOneWidget);
   });
 
   testWidgets('展开态预览：空列表 = 全部隐藏，只显示提示', (tester) async {

@@ -10942,7 +10942,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveExpandedDetailHint =>
-      '「진행」은 수업 중에만 표시됩니다. Android 16 수업 중에는 펼친 화면을 시스템이 그리므로 이 설정이 적용되지 않습니다.';
+      '「진행」은 수업 중에만 표시됩니다. 슈퍼 아일랜드 펼친 화면에서 「단계」와 「상태」는 이미 제목과 요약에 포함되므로 별도 줄로 표시되지 않습니다. Android 16 수업 중에는 펼친 화면을 시스템이 그리므로 이 설정이 적용되지 않습니다.';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '순서 변경';

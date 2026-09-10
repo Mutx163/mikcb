@@ -10605,7 +10605,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveExpandedDetailHint =>
-      '「进度」只在课中显示；Android 16 且课中带进度条时展开态由系统绘制，本设置不生效';
+      '「进度」只在课中显示；超级岛展开态下「阶段」「状态」已由标题与摘要承载，不会再单独成行；Android 16 且课中带进度条时展开态由系统绘制，本设置不生效';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '拖动排序';
@@ -21381,7 +21381,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveExpandedDetailHint =>
-      '「進度」只在課中顯示；Android 16 且課中帶進度條時展開態由系統繪製，本設定唔生效';
+      '「進度」只在課中顯示；超級島展開態下「階段」「狀態」已由標題同摘要承載，唔會再獨立成行；Android 16 且課中帶進度條時展開態由系統繪製，本設定唔生效';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '拖動排序';
@@ -32157,7 +32157,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveExpandedDetailHint =>
-      '「進度」只在課中顯示；Android 16 且課中帶進度條時展開態由系統繪製，本設定不生效';
+      '「進度」只在課中顯示；超級島展開態下「階段」「狀態」已由標題與摘要承載，不會再獨立成行；Android 16 且課中帶進度條時展開態由系統繪製，本設定不生效';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '拖動排序';

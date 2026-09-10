@@ -11222,7 +11222,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveExpandedDetailHint =>
-      'Progress only appears during class. On Android 16 during class the expanded view is drawn by the system and ignores this setting.';
+      'Progress only appears during class. In the super-island expanded view, Stage and Status are already carried by the title and the summary, so they are not rendered as separate lines. On Android 16 during class the expanded view is drawn by the system and ignores this setting.';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => 'Reorder';

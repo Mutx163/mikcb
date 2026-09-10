@@ -19299,7 +19299,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveExpandedDetailHint.
   ///
   /// In zh, this message translates to:
-  /// **'「进度」只在课中显示；Android 16 且课中带进度条时展开态由系统绘制，本设置不生效'**
+  /// **'「进度」只在课中显示；超级岛展开态下「阶段」「状态」已由标题与摘要承载，不会再单独成行；Android 16 且课中带进度条时展开态由系统绘制，本设置不生效'**
   String get liveExpandedDetailHint;
 
   /// No description provided for @liveExpandedDetailReorderHandleLabel.

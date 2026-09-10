@@ -421,12 +421,20 @@ class LiveIslandExpandedPreviewCard extends StatefulWidget {
     required this.forDuringEnd,
     this.followBeforeClass = false,
     this.endSecondsCountdownThresholdSeconds = 60,
+    this.promoteDuringClass = true,
   });
 
   final LiveDisplaySettings display;
   final bool forDuringEnd;
   final bool followBeforeClass;
   final int endSecondsCountdownThresholdSeconds;
+
+  /// 课中「提升通知」开关（livePromoteDuringClass）。
+  ///
+  /// 课前/下课提醒原生恒定 shouldPromote=true，课中才看这个开关；关掉后课中
+  /// 走非提升态 `expandedDetailText`，`stage` 与 `status` 两行又会出现。
+  /// 因此预览必须带上它，否则关掉开关后预览又会失真。
+  final bool promoteDuringClass;
 
   @override
   State<LiveIslandExpandedPreviewCard> createState() =>
@@ -503,7 +511,7 @@ class _LiveIslandExpandedPreviewCardState
               ),
             ),
           _ExpandedNotificationCard(
-            title: _title(l10n, stages[index], d),
+            title: _title(l10n, stages[index]),
             summary: _summaryLine(l10n, stages[index], d),
             detailLines: _detailLines(l10n, stages[index], d),
             emptyHint: l10n.liveIslandExpandedPreviewEmptyHint,
@@ -515,18 +523,24 @@ class _LiveIslandExpandedPreviewCardState
     );
   }
 
-  String _sampleCourseName(AppLocalizations l10n, LiveDisplaySettings d) =>
-      d.useShortName
-          ? l10n.liveIslandPreviewSampleCourseShort
-          : l10n.liveIslandPreviewSampleCourse;
+  /// `notificationTitle` 用的课程名。
+  ///
+  /// 原生 title 由 `shortCourseName` 拼出，而 `shortCourseName` 只做「超过 8 字
+  /// 截断 + `..`」，**不看 useShortNameInIsland**（简称只进岛内文本 / A 区
+  /// islandName）。所以这里不能用 `_islandCourseName` 那套简称逻辑，否则开了
+  /// 「简称」后预览标题会变成「高数」而真机仍是「高等数学」。
+  /// 课程名超过 8 字时同样要截断，保持与原生逐字一致。
+  String _titleCourseName(AppLocalizations l10n) {
+    final course = l10n.liveIslandPreviewSampleCourse;
+    return course.length > 8 ? '${course.substring(0, 8)}..' : course;
+  }
 
   /// `notificationTitle`：课前/下课提醒带阶段前缀，课中只有课程名。
   String _title(
     AppLocalizations l10n,
     _PreviewStage stage,
-    LiveDisplaySettings d,
   ) {
-    final course = _sampleCourseName(l10n, d);
+    final course = _titleCourseName(l10n);
     return switch (stage) {
       _PreviewStage.beforeClass =>
         l10n.liveIslandPreviewTitleBeforeClass(course),
@@ -604,10 +618,22 @@ class _LiveIslandExpandedPreviewCardState
   /// 08:00-08:45，三个阶段的展开卡片都用同一个时间串。
   String _timeRangeText() => '08:00 - 08:45';
 
+  /// 原生 `shouldPromote`：课前与下课提醒恒定提升，课中看「提升通知」开关。
+  bool _isPromoted(_PreviewStage stage) =>
+      stage == _PreviewStage.duringClass ? widget.promoteDuringClass : true;
+
   /// 展开详情行：与原生 `expandedDetailLineList` 同一份字段语义。
   ///
   /// 展示顺序 = 用户配置顺序（未配置 → 原生默认顺序）；每条字段都有格式化
   /// 前缀（`简称: `、`状态: ` 等），值空缺时跳过——这与原生一致。
+  ///
+  /// **提升态（超级岛展开）会吞掉 `stage` / `status` 两行**：
+  /// * `promotedExpandedDetailText` 给 stage 传的是 `null`，所以阶段行不出——
+  ///   阶段信息由标题「即将上课: <课程名>」承载；
+  /// * `detailStatusText` 带 `&& !shouldPromote`，提升时恒为 null，所以状态行
+  ///   不出——状态信息由正文 `promotedContentText` 首项承载。
+  /// 两者都只在非提升态（关闭「提升通知」的课中状态栏通知展开）才显示，
+  /// 预览同样按提升与否决定，不再为了「让开关可见」而画实际不存在的行。
   List<String> _detailLines(
     AppLocalizations l10n,
     _PreviewStage stage,
@@ -624,14 +650,16 @@ class _LiveIslandExpandedPreviewCardState
           LiveExpandedDetailField.nextCourse,
           LiveExpandedDetailField.note,
         ];
+    final promoted = _isPromoted(stage);
     final lines = <String>[];
     for (final field in order) {
       switch (field) {
         case LiveExpandedDetailField.stage:
-          // 阶段行：原生取 stageTitle（无 detail_status 前缀），提升路径
-          // （promotedExpandedDetailText）传 null 因而跳过；课中档是否提升由
-          // 「提升通知」开关决定，这里按设置意图渲染，保证开关可见。
-          lines.add(_stageWord(l10n, stage));
+          // 阶段行：原生取 stageTitle（无 detail_status 前缀），提升路径传
+          // null 因而跳过。
+          if (!promoted) {
+            lines.add(_stageWord(l10n, stage));
+          }
         case LiveExpandedDetailField.shortName:
           lines.add(l10n.liveExpandedDetailLineShortName(
             l10n.liveIslandPreviewSampleCourseShort,
@@ -653,11 +681,11 @@ class _LiveIslandExpandedPreviewCardState
             ));
           }
         case LiveExpandedDetailField.status:
-          // 原生 detailStatusText：课中且带进度块时为 null（状态已在正文/进度
-          // 行体现），其余情况才是 visibleStatusText。
+          // 原生 detailStatusText = visibleStatusText.isNotBlank() &&
+          // !shouldPromote，且课中带进度块时为 null（状态已在正文/进度行体现）。
           final hasProgressBlock =
               stage == _PreviewStage.duringClass && d.showCountdown;
-          if (!hasProgressBlock) {
+          if (!promoted && !hasProgressBlock) {
             final status = _expandedStatusText(l10n, stage, d);
             if (status.isNotEmpty) {
               lines.add(l10n.liveExpandedDetailLineStatus(status));
@@ -666,11 +694,13 @@ class _LiveIslandExpandedPreviewCardState
         case LiveExpandedDetailField.time:
           lines.add(l10n.liveExpandedDetailLineTime(_timeRangeText()));
         case LiveExpandedDetailField.location:
-          if (d.showLocation) {
-            lines.add(l10n.liveExpandedDetailLineLocation(
-              l10n.liveIslandPreviewSampleLocation,
-            ));
-          }
+          // 展开态的 location 字段独立于折叠态「显示地点」开关：原生
+          // expandedDetailLineList 只判断 `location.isNotBlank()`，不看
+          // showLocationInIsland（设计文档 §10.3）。此处不能再套 showLocation，
+          // 否则折叠态关掉地点时预览会少一行、实际展开却照旧显示。
+          lines.add(l10n.liveExpandedDetailLineLocation(
+            l10n.liveIslandPreviewSampleLocation,
+          ));
         case LiveExpandedDetailField.teacher:
           lines.add(l10n.liveExpandedDetailLineTeacher(
             l10n.liveIslandPreviewSampleTeacher,

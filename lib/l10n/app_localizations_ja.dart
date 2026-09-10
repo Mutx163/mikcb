@@ -10898,7 +10898,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveExpandedDetailHint =>
-      '「進捗」は授業中のみ表示されます。Android 16 の授業中は展開表示をシステムが描画するため、この設定は反映されません。';
+      '「進捗」は授業中のみ表示されます。スーパーアイランドの展開表示では「段階」「状態」はタイトルと概要に含まれるため、単独の行としては表示されません。Android 16 の授業中は展開表示をシステムが描画するため、この設定は反映されません。';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '並べ替え';

@@ -1762,6 +1762,13 @@ class LiveUpdateService : Service() {
      * 展开通知的详情行构建器：按 [order] 逐个字段输出已格式化的行。
      * [order] 由调用方在 [expandedDetailFields] 为空时补默认顺序传入；
      * 字段值空缺时自动跳过，空的 order 即「全部隐藏」。
+     *
+     * 每行都套上字段名前缀（`简称:` / `状态:` / `时间:` / `地点:` / `教师:` /
+     * `下一节:` / `备注:` / `下一节点:` / `整节下课:`），与设置页「展开态预览」
+     * `liveExpandedDetailLine*` 文案一一对应。**只有 stage 行例外**：它取
+     * 阶段词原文（即将上课 / 上课中 / 下课提醒），历史如此，预览同规则。
+     *
+     * 注意：[R.string.label_location] 是地点，[R.string.detail_location] 不存在。
      */
     private fun expandedDetailLineList(
         order: List<String>,
@@ -1781,19 +1788,37 @@ class LiveUpdateService : Service() {
         for (key in order) {
             when (key) {
                 "stage" -> stageTitle?.takeIf { it.isNotBlank() }?.let(lines::add)
-                "shortName" -> shortNameLabel?.takeIf { it.isNotBlank() }?.let(lines::add)
+                "shortName" -> shortNameLabel?.takeIf { it.isNotBlank() }?.let {
+                    lines.add(getString(R.string.detail_short_name, it))
+                }
                 "progress" -> {
                     if (showProgressBlock) {
-                        progressNextText?.takeIf { it.isNotBlank() }?.let(lines::add)
-                        progressFinalText?.takeIf { it.isNotBlank() }?.let(lines::add)
+                        progressNextText?.takeIf { it.isNotBlank() }?.let {
+                            lines.add(getString(R.string.detail_next_milestone, it))
+                        }
+                        progressFinalText?.takeIf { it.isNotBlank() }?.let {
+                            lines.add(getString(R.string.detail_final_dismiss, it))
+                        }
                     }
                 }
-                "status" -> statusText?.takeIf { it.isNotBlank() }?.let(lines::add)
-                "time" -> timeRangeText.takeIf { it.isNotBlank() }?.let(lines::add)
-                "location" -> locationText.takeIf { it.isNotBlank() }?.let(lines::add)
-                "teacher" -> teacherText.takeIf { it.isNotBlank() }?.let(lines::add)
-                "next" -> nextText.takeIf { it.isNotBlank() }?.let(lines::add)
-                "note" -> noteText.takeIf { it.isNotBlank() }?.let(lines::add)
+                "status" -> statusText?.takeIf { it.isNotBlank() }?.let {
+                    lines.add(getString(R.string.detail_status, it))
+                }
+                "time" -> timeRangeText.takeIf { it.isNotBlank() }?.let {
+                    lines.add(getString(R.string.detail_time, it))
+                }
+                "location" -> locationText.takeIf { it.isNotBlank() }?.let {
+                    lines.add(getString(R.string.label_location, it))
+                }
+                "teacher" -> teacherText.takeIf { it.isNotBlank() }?.let {
+                    lines.add(getString(R.string.detail_teacher, it))
+                }
+                "next" -> nextText.takeIf { it.isNotBlank() }?.let {
+                    lines.add(getString(R.string.detail_next_course, it))
+                }
+                "note" -> noteText.takeIf { it.isNotBlank() }?.let {
+                    lines.add(getString(R.string.detail_note, it))
+                }
             }
         }
         return lines

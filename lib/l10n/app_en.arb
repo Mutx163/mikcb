@@ -6259,7 +6259,7 @@
   "classAlarmDetailSeparator": "; ",
   "liveExpandedDetailGroupTitle": "Expanded details",
   "liveExpandedDetailSubtitle": "Drag to reorder, use the switch to show or hide",
-  "liveExpandedDetailHint": "Progress only appears during class. On Android 16 during class the expanded view is drawn by the system and ignores this setting.",
+  "liveExpandedDetailHint": "Progress only appears during class. In the super-island expanded view, Stage and Status are already carried by the title and the summary, so they are not rendered as separate lines. On Android 16 during class the expanded view is drawn by the system and ignores this setting.",
   "liveExpandedDetailReorderHandleLabel": "Reorder",
   "liveExpandedDetailMoveUpAction": "Move up",
   "liveExpandedDetailMoveDownAction": "Move down",

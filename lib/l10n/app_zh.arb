@@ -6308,7 +6308,7 @@
   "classAlarmDetailSeparator": "；",
   "liveExpandedDetailGroupTitle": "展开详情",
   "liveExpandedDetailSubtitle": "长按拖动调整顺序，开关控制是否显示",
-  "liveExpandedDetailHint": "「进度」只在课中显示；Android 16 且课中带进度条时展开态由系统绘制，本设置不生效",
+  "liveExpandedDetailHint": "「进度」只在课中显示；超级岛展开态下「阶段」「状态」已由标题与摘要承载，不会再单独成行；Android 16 且课中带进度条时展开态由系统绘制，本设置不生效",
   "liveExpandedDetailReorderHandleLabel": "拖动排序",
   "liveExpandedDetailMoveUpAction": "上移",
   "liveExpandedDetailMoveDownAction": "下移",
