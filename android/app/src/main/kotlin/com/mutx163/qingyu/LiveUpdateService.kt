@@ -1760,8 +1760,8 @@ class LiveUpdateService : Service() {
 
     /**
      * 展开通知的详情行构建器：按 [order] 逐个字段输出已格式化的行。
-     * order 为 null 时由调用方传入默认顺序（保持历史行为）；字段值空缺时自动跳过。
-     * 空的 order 即「全部隐藏」。
+     * [order] 由调用方在 [expandedDetailFields] 为空时补默认顺序传入；
+     * 字段值空缺时自动跳过，空的 order 即「全部隐藏」。
      */
     private fun expandedDetailLineList(
         order: List<String>,
@@ -1824,6 +1824,25 @@ class LiveUpdateService : Service() {
             null
         }
     }
+
+    /**
+     * 展开详情默认行序兜底（非提升态）。
+     *
+     * [expandedDetailFields] 正常情况下由 scheduler 的 parseExpandedDetailFields
+     * 给出（含默认顺序补齐），为 null 只可能是异常/旧路径：此时回退历史固定
+     * 顺序，保证展开态与加自定义功能之前完全一致。
+     * 改这里必须同步 LiveUpdateScheduler.EXPANDED_DETAIL_DEFAULT_ORDER。
+     */
+    private val expandedDetailDefaultOrder = listOf(
+        "stage", "shortName", "progress", "status",
+        "time", "location", "teacher", "next", "note",
+    )
+
+    /** 提升态（超级岛展开）默认行序兜底，语义同上但历史默认无 stage 首行。 */
+    private val promotedExpandedDetailDefaultOrder = listOf(
+        "progress", "status", "time", "location",
+        "teacher", "shortName", "next", "note",
+    )
 
     private fun buildNotification(remainingText: String): Notification {
         val now = System.currentTimeMillis()
@@ -1935,10 +1954,7 @@ class LiveUpdateService : Service() {
         }
 
         val expandedDetailText = buildString {
-            val order = expandedDetailFields ?: listOf(
-                "stage", "shortName", "progress", "status",
-                "time", "location", "teacher", "next", "note",
-            )
+            val order = expandedDetailFields ?: expandedDetailDefaultOrder
             append(
                 expandedDetailLineList(
                     order = order,
@@ -1972,10 +1988,7 @@ class LiveUpdateService : Service() {
             ).filterNotNull().joinToString(" · ")
         }
         val promotedExpandedDetailText = buildString {
-            val order = expandedDetailFields ?: listOf(
-                "progress", "status", "time", "location",
-                "teacher", "shortName", "next", "note",
-            )
+            val order = expandedDetailFields ?: promotedExpandedDetailDefaultOrder
             append(
                 expandedDetailLineList(
                     order = order,

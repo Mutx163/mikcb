@@ -30,6 +30,7 @@ void main() {
     MiuiIslandLabelStyle miuiIslandLabelStyle = MiuiIslandLabelStyle.textOnly,
     MiuiIslandLabelContent miuiIslandLabelContent =
         MiuiIslandLabelContent.courseNameAndLocation,
+    List<LiveExpandedDetailField>? expandedDetailFields,
   }) {
     return LiveDisplaySettings(
       showCourseName: showCourseName,
@@ -53,6 +54,7 @@ void main() {
       miuiIslandLabelLogoCornerRadius: 2,
       miuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.appIcon,
       miuiIslandExpandedIconPath: null,
+      expandedDetailFields: expandedDetailFields,
     );
   }
 
@@ -199,5 +201,152 @@ void main() {
       findsOneWidget,
       reason: '左图不参与 islandCriticalText 拼接，右侧文本保持不变',
     );
+  });
+
+  // --- 展开态预览 ---------------------------------------------------------
+
+  Future<void> pumpExpandedPreview(
+    WidgetTester tester, {
+    required LiveDisplaySettings displayConfig,
+    bool forDuringEnd = false,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('zh'),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: LiveIslandExpandedPreviewCard(
+              display: displayConfig,
+              forDuringEnd: forDuringEnd,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+  }
+
+  testWidgets('展开态预览：课前标题带阶段前缀，正文含状态与时间', (tester) async {
+    await pumpExpandedPreview(tester, displayConfig: display());
+
+    expect(find.text('即将上课: 高等数学'), findsOneWidget,
+        reason: '原生 title_before_class 会拼上课程名');
+    expect(
+      textMatching(RegExp(r'^距上课\d+分钟 · 08:00 - 08:45 · 三教-401 · 张老师$')),
+      findsOneWidget,
+      reason: 'promotedContentText = 状态 · 时间 · 地点 · 教师',
+    );
+  });
+
+  testWidgets('展开态预览：默认顺序渲染原生默认详情行', (tester) async {
+    await pumpExpandedPreview(tester, displayConfig: display());
+
+    // 默认顺序 progress, status, time, location, teacher, shortName, next, note
+    // 课前没有进度块，因此进度行不出现；状态、时间、地点、教师、简称、
+    // 下节课、备注按序出现。
+    expect(find.textContaining('状态: '), findsOneWidget);
+    expect(find.text('时间: 08:00 - 08:45'), findsOneWidget);
+    expect(find.text('地点: 三教-401'), findsOneWidget);
+    expect(find.text('教师: 张老师'), findsOneWidget);
+    expect(find.text('简称: 高数'), findsOneWidget);
+    expect(find.text('下一节: 大学物理'), findsOneWidget);
+    expect(find.text('备注: 带教材与习题册'), findsOneWidget);
+  });
+
+  testWidgets('展开态预览：自定义顺序按用户设置排列', (tester) async {
+    await pumpExpandedPreview(
+      tester,
+      displayConfig: display(expandedDetailFields: const [
+        LiveExpandedDetailField.note,
+        LiveExpandedDetailField.location,
+      ]),
+    );
+
+    expect(find.text('备注: 带教材与习题册'), findsOneWidget);
+    expect(find.text('地点: 三教-401'), findsOneWidget);
+    expect(find.textContaining('教师: '), findsNothing,
+        reason: '未启用的字段不渲染');
+    expect(find.textContaining('下一节: '), findsNothing);
+
+    // 顺序断言：备注在地点之前
+    final noteY = tester.getTopLeft(find.text('备注: 带教材与习题册')).dy;
+    final locY = tester.getTopLeft(find.text('地点: 三教-401')).dy;
+    expect(noteY, lessThan(locY));
+  });
+
+  testWidgets('展开态预览：阶段行渲染为裸阶段词，无「状态:」前缀', (tester) async {
+    await pumpExpandedPreview(
+      tester,
+      displayConfig: display(expandedDetailFields: const [
+        LiveExpandedDetailField.stage,
+      ]),
+    );
+
+    expect(find.text('即将上课'), findsOneWidget,
+        reason: '原生 stage 行取 stageTitle，不带 detail_status 前缀');
+    expect(find.textContaining('状态: 即将上课'), findsNothing);
+  });
+
+  testWidgets('展开态预览：空列表 = 全部隐藏，只显示提示', (tester) async {
+    await pumpExpandedPreview(
+      tester,
+      displayConfig: display(expandedDetailFields: const []),
+    );
+
+    expect(find.text('已隐藏全部详情行，展开后只显示标题与摘要'), findsOneWidget);
+    expect(find.textContaining('时间: '), findsNothing);
+    expect(find.textContaining('地点: '), findsNothing);
+  });
+
+  testWidgets('展开态预览：课中带进度块时出进度行并隐藏状态行', (tester) async {
+    await pumpExpandedPreview(
+      tester,
+      displayConfig: display(),
+      forDuringEnd: true,
+    );
+
+    // 两个阶段（课中 / 下课提醒）各一张卡片
+    expect(find.text('上课中'), findsOneWidget);
+    expect(find.text('下课提醒'), findsOneWidget);
+    // 课中卡片有进度块
+    expect(find.textContaining('下一节点: '), findsOneWidget);
+    expect(find.textContaining('整节下课: '), findsOneWidget);
+    // 课中标题不带前缀，下课提醒标题带前缀
+    expect(find.text('高等数学'), findsOneWidget);
+    expect(find.text('下课提醒: 高等数学'), findsOneWidget);
+  });
+
+  testWidgets('展开态预览：跟随课前设置时展示说明徽标', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('zh'),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: LiveIslandExpandedPreviewCard(
+              display: display(),
+              forDuringEnd: true,
+              followBeforeClass: true,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('正在跟随“课前提醒显示”设置，调整课前提醒即可生效'), findsOneWidget);
   });
 }

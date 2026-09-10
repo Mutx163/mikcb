@@ -1249,6 +1249,26 @@ void main() {
       );
     });
 
+    test('expanded detail field enum order matches native default order', () {
+      // 模型枚举顺序就是「未设置」时原生使用、设置页展示的默认行序。
+      // 原生 LiveUpdateScheduler.EXPANDED_DETAIL_DEFAULT_ORDER 必须逐字一致，
+      // 否则用户首次进设置页看到的顺序与真机展开态不符。
+      expect(
+        LiveExpandedDetailField.values.map((f) => f.value).toList(),
+        const [
+          'stage',
+          'shortName',
+          'progress',
+          'status',
+          'time',
+          'location',
+          'teacher',
+          'next',
+          'note',
+        ],
+      );
+    });
+
     test('live expanded detail fields reset clears to null', () {
       final customized = TimetableSettings.defaults().copyWith(
         liveExpandedDetailFields: const ['note'],

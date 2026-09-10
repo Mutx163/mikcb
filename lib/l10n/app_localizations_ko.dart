@@ -2590,6 +2590,79 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveIslandPreviewSampleLocation => '3동-401';
 
   @override
+  String get liveIslandExpandedPreviewTitle => '확장 상태 미리보기';
+
+  @override
+  String get liveIslandExpandedPreviewCaption => 'Android 16에서 수업 중 진행 표시줄이 표시되면 확장 상태는 시스템이 그리므로 이 설정이 적용되지 않습니다';
+
+  @override
+  String get liveIslandExpandedPreviewEmptyHint => '세부 행을 모두 숨겼습니다. 확장해도 제목과 요약만 표시됩니다';
+
+  @override
+  String get liveIslandPreviewSampleTeacher => '장 선생님';
+
+  @override
+  String get liveIslandPreviewSampleNextClass => '대학 물리';
+
+  @override
+  String get liveIslandPreviewSampleNote => '교재와 문제집 지참';
+
+  @override
+  String liveIslandPreviewTitleBeforeClass(String course) {
+    return '곧 수업: $course';
+  }
+
+  @override
+  String liveIslandPreviewTitleBeforeEnd(String course) {
+    return '종료 알림: $course';
+  }
+
+  @override
+  String liveExpandedDetailLineShortName(String value) {
+    return '약칭: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineProgressNext(String value) {
+    return '다음 지점: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineProgressFinal(String value) {
+    return '수업 종료: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineStatus(String value) {
+    return '상태: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineTime(String value) {
+    return '시간: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineLocation(String value) {
+    return '장소: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineTeacher(String value) {
+    return '선생님: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineNext(String value) {
+    return '다음 수업: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineNote(String value) {
+    return '메모: $value';
+  }
+
+  @override
   String get beforeClassQuickActionTitle => '수업 전 빠른 작업';
 
   @override
@@ -10918,6 +10991,21 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveExpandedDetailGroupTitle => '펼침 상세';
+
+  @override
+  String get liveExpandedDetailMoveUpAction => '위로 이동';
+
+  @override
+  String get liveExpandedDetailMoveDownAction => '아래로 이동';
+
+  @override
+  String get liveExpandedDetailSubtitle => '길게 눌러 순서 변경, 스위치로 표시 여부 전환';
+
+  @override
+  String get liveExpandedDetailHint => '「진행」은 수업 중에만 표시됩니다. Android 16 수업 중에는 펼친 화면을 시스템이 그리므로 이 설정이 적용되지 않습니다.';
+
+  @override
+  String get liveExpandedDetailReorderHandleLabel => '순서 변경';
 
   @override
   String get liveExpandedDetailHiddenCaption => '숨김';

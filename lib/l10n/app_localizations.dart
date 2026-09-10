@@ -4720,6 +4720,109 @@ abstract class AppLocalizations {
   /// **'三教-401'**
   String get liveIslandPreviewSampleLocation;
 
+  /// No description provided for @liveIslandExpandedPreviewTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开态预览'**
+  String get liveIslandExpandedPreviewTitle;
+
+  /// No description provided for @liveIslandExpandedPreviewCaption.
+  ///
+  /// In zh, this message translates to:
+  /// **'Android 16 课中带进度条时，展开态由系统绘制，本设置不生效'**
+  String get liveIslandExpandedPreviewCaption;
+
+  /// No description provided for @liveIslandExpandedPreviewEmptyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'已隐藏全部详情行，展开后只显示标题与摘要'**
+  String get liveIslandExpandedPreviewEmptyHint;
+
+  /// No description provided for @liveIslandPreviewSampleTeacher.
+  ///
+  /// In zh, this message translates to:
+  /// **'张老师'**
+  String get liveIslandPreviewSampleTeacher;
+
+  /// No description provided for @liveIslandPreviewSampleNextClass.
+  ///
+  /// In zh, this message translates to:
+  /// **'大学物理'**
+  String get liveIslandPreviewSampleNextClass;
+
+  /// No description provided for @liveIslandPreviewSampleNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'带教材与习题册'**
+  String get liveIslandPreviewSampleNote;
+
+  /// No description provided for @liveIslandPreviewTitleBeforeClass.
+  ///
+  /// In zh, this message translates to:
+  /// **'即将上课: {course}'**
+  String liveIslandPreviewTitleBeforeClass(String course);
+
+  /// No description provided for @liveIslandPreviewTitleBeforeEnd.
+  ///
+  /// In zh, this message translates to:
+  /// **'下课提醒: {course}'**
+  String liveIslandPreviewTitleBeforeEnd(String course);
+
+  /// No description provided for @liveExpandedDetailLineShortName.
+  ///
+  /// In zh, this message translates to:
+  /// **'简称: {value}'**
+  String liveExpandedDetailLineShortName(String value);
+
+  /// No description provided for @liveExpandedDetailLineProgressNext.
+  ///
+  /// In zh, this message translates to:
+  /// **'下一节点: {value}'**
+  String liveExpandedDetailLineProgressNext(String value);
+
+  /// No description provided for @liveExpandedDetailLineProgressFinal.
+  ///
+  /// In zh, this message translates to:
+  /// **'整节下课: {value}'**
+  String liveExpandedDetailLineProgressFinal(String value);
+
+  /// No description provided for @liveExpandedDetailLineStatus.
+  ///
+  /// In zh, this message translates to:
+  /// **'状态: {value}'**
+  String liveExpandedDetailLineStatus(String value);
+
+  /// No description provided for @liveExpandedDetailLineTime.
+  ///
+  /// In zh, this message translates to:
+  /// **'时间: {value}'**
+  String liveExpandedDetailLineTime(String value);
+
+  /// No description provided for @liveExpandedDetailLineLocation.
+  ///
+  /// In zh, this message translates to:
+  /// **'地点: {value}'**
+  String liveExpandedDetailLineLocation(String value);
+
+  /// No description provided for @liveExpandedDetailLineTeacher.
+  ///
+  /// In zh, this message translates to:
+  /// **'教师: {value}'**
+  String liveExpandedDetailLineTeacher(String value);
+
+  /// No description provided for @liveExpandedDetailLineNext.
+  ///
+  /// In zh, this message translates to:
+  /// **'下一节: {value}'**
+  String liveExpandedDetailLineNext(String value);
+
+  /// No description provided for @liveExpandedDetailLineNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'备注: {value}'**
+  String liveExpandedDetailLineNote(String value);
+
+
   /// No description provided for @beforeClassQuickActionTitle.
   ///
   /// In zh, this message translates to:
@@ -19259,6 +19362,36 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'已隐藏'**
   String get liveExpandedDetailHiddenCaption;
+
+  /// No description provided for @liveExpandedDetailMoveUpAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'上移'**
+  String get liveExpandedDetailMoveUpAction;
+
+  /// No description provided for @liveExpandedDetailMoveDownAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'下移'**
+  String get liveExpandedDetailMoveDownAction;
+
+  /// No description provided for @liveExpandedDetailSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'长按拖动调整顺序，开关控制是否显示'**
+  String get liveExpandedDetailSubtitle;
+
+  /// No description provided for @liveExpandedDetailHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'「进度」只在课中显示；Android 16 且课中带进度条时展开态由系统绘制，本设置不生效'**
+  String get liveExpandedDetailHint;
+
+  /// No description provided for @liveExpandedDetailReorderHandleLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'拖动排序'**
+  String get liveExpandedDetailReorderHandleLabel;
 
   /// No description provided for @resetExpandedDetailDefaultAction.
   ///
