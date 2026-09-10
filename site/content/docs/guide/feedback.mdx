@@ -1,0 +1,60 @@
+---
+title: 反馈渠道
+description: Bug 反馈、功能建议、学校适配需求的提交入口与提问模板。
+---
+
+反馈渠道按类型分。**选对地方能明显加快处理速度。**
+
+## 先做两件事
+
+1. 查一遍[故障排查](/docs/guide/troubleshooting)和[常见问题](/docs/guide/faq)，多数问题已有现成答案
+2. 确认应用版本与系统版本，后续描述会用到
+
+## 渠道一览
+
+| 类型 | 去哪 | 说明 |
+| --- | --- | --- |
+| Bug / 崩溃 | [mikcb Issues](https://github.com/Mutx163/mikcb/issues) | 应用本体问题 |
+| 学校教务适配 | [qingyu_warehouse Issues](https://github.com/Mutx163/qingyu_warehouse/issues) | 新增学校、适配失效 |
+| 文档错误 | [mikcb Issues](https://github.com/Mutx163/mikcb/issues) | 标注「文档」 |
+| 预发布体验 | [蒲公英](https://www.pgyer.com/qingyu) | 新功能尝鲜 |
+| 打赏支持 | 应用内「关于 → 请喝咖啡」 | 非反馈渠道 |
+
+<Callout type="warn">
+  **不要在公开 Issue 中粘贴教务账号、密码、WebDAV 凭据或含个人信息的日志。** 需要提供日志时，先自行删掉敏感字段。
+</Callout>
+
+## 提问模板
+
+Bug 反馈建议带上这几项，能省一轮来回：
+
+<Steps>
+<Step>
+**应用版本**：设置 → 关于，或安装包文件名。
+</Step>
+<Step>
+**设备与系统**：机型 + Android / HyperOS 版本。
+</Step>
+<Step>
+**复现步骤**：从打开应用到出问题的完整路径。
+</Step>
+<Step>
+**预期与实际**：你期待什么，实际发生了什么。
+</Step>
+<Step>
+**日志 / 截图**：应用内可导出日志，注意脱敏。
+</Step>
+</Steps>
+
+学校适配需求则带上：学校名称、教务系统入口地址、登录页面截图（**不要带账号信息**）。
+
+## 提交之后
+
+- Issue 是公开的，处理进度可直接在页面上看到
+- 适配类需求取决于教务系统复杂度，不保证时间
+- 复现困难的问题，维护者可能追问更多信息，请留意回复
+
+## 相关
+
+- 想自己动手修，见[参与贡献](/docs/dev/contributing)
+- 想给自己的学校做适配，见[AI 适配教务](/docs/dev/jiaowu-adapter)

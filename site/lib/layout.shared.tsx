@@ -1,11 +1,7 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
+import { siteConfig } from './site';
 
-export const siteConfig = {
-  name: '轻屿课表文档',
-  description: '轻屿课表的使用手册与开发者文档',
-  githubUrl: 'https://github.com/Mutx163/mikcb',
-  websiteUrl: 'https://163366.xyz',
-};
+export { siteConfig };
 
 export function baseOptions(): BaseLayoutProps {
   return {
@@ -21,6 +17,14 @@ export function baseOptions(): BaseLayoutProps {
       {
         text: '开发者',
         url: '/docs/dev/architecture',
+      },
+      {
+        text: '常见问题',
+        url: '/docs/guide/faq',
+      },
+      {
+        text: '更新日志',
+        url: '/docs/guide/changelog',
       },
       {
         text: '官网与下载',
