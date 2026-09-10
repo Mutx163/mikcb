@@ -16,7 +16,7 @@ import '../utils/hex_color.dart';
 /// 右侧是整条 islandCriticalText（课程名 + 地点 + 状态）。也就是说——「显示
 /// 内容」那组开关（课程名 / 简称 / 地点 / 倒计时 / 阶段文字 / 前缀）控制的是
 /// **右侧文本**，左侧图标位只由下面的实验性图片开关（小米岛左侧文字图标）和
-/// 机型能力决定。展开态不在此预览范围内。
+/// 机型能力决定。展开态的详情行由下方的 [LiveIslandExpandedPreviewCard] 负责。
 ///
 /// 与原生 `MainActivity.kt` 的对应关系。真机摘要态胶囊的文本来自提升通知的
 /// shortCriticalText，即 islandCriticalText 的组合规则：
@@ -74,6 +74,26 @@ class LiveIslandPreviewCard extends StatefulWidget {
 }
 
 enum _PreviewStage { beforeClass, duringClass, beforeEnd }
+
+/// 阶段词：即将上课 / 上课中 / 下课提醒（对应原生 stage_* 字符串）。
+String _stageWord(AppLocalizations l10n, _PreviewStage stage) {
+  switch (stage) {
+    case _PreviewStage.beforeClass:
+      return l10n.liveIslandPreviewStageBeforeClass;
+    case _PreviewStage.duringClass:
+      return l10n.liveIslandPreviewStageInClass;
+    case _PreviewStage.beforeEnd:
+      return l10n.liveIslandPreviewStageBeforeEnd;
+  }
+}
+
+/// 对应原生 ic_upcoming / ic_course / ic_countdown 三枚白色矢量图标的
+/// 最接近的 Material 字形。
+IconData _stageSmallIconData(_PreviewStage stage) => switch (stage) {
+      _PreviewStage.beforeClass => Icons.access_time,
+      _PreviewStage.duringClass => Icons.import_contacts,
+      _PreviewStage.beforeEnd => Icons.check_circle_outline,
+    };
 
 class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
   static const _pillColor = Color(0xFF060608);
@@ -272,14 +292,7 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     );
   }
 
-  /// 对应原生 ic_upcoming / ic_course / ic_countdown 三枚白色矢量图标的
-  /// 最接近的 Material 字形。
-  IconData _stageSmallIconData(_PreviewStage stage) => switch (stage) {
-        _PreviewStage.beforeClass => Icons.access_time,
-        _PreviewStage.duringClass => Icons.import_contacts,
-        _PreviewStage.beforeEnd => Icons.check_circle_outline,
-      };
-
+  /// 应用图标圆角位图（对应原生 buildRoundedLauncherIcon）。
   Widget _appIconImage(double size) => ClipRRect(
         borderRadius: BorderRadius.circular(size * 0.24),
         child: Image.asset(
@@ -319,17 +332,6 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
 
   // --- Right status line (ports of MainActivity.kt rules) -----------------
 
-  String _stageWord(AppLocalizations l10n, _PreviewStage stage) {
-    switch (stage) {
-      case _PreviewStage.beforeClass:
-        return l10n.liveIslandPreviewStageBeforeClass;
-      case _PreviewStage.duringClass:
-        return l10n.liveIslandPreviewStageInClass;
-      case _PreviewStage.beforeEnd:
-        return l10n.liveIslandPreviewStageBeforeEnd;
-    }
-  }
-
   /// islandCriticalStatusText：课中且显示倒计时时 = criticalTimeText，
   /// 其余情况 = visibleStatusText。
   String _statusLine(
@@ -362,7 +364,7 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     switch (stage) {
       case _PreviewStage.beforeClass:
         // 原生课前格式化使用固定的 60s smart 阈值。
-        return _untilStart(
+        return _islandUntilClassStart(
           l10n,
           d,
           _beforeWindow.start.difference(DateTime.now()),
@@ -374,7 +376,7 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
         // 这里仅为完整性保留同一回退语义。
         return l10n.liveIslandPreviewStageInClass;
       case _PreviewStage.beforeEnd:
-        return _untilEnd(
+        return _islandUntilClassEnd(
           l10n,
           d,
           _endWindow.end.difference(DateTime.now()),
@@ -390,108 +392,400 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
   /// 课中时间模式在这里同为整节剩余。
   String _duringClassCriticalTime(LiveDisplaySettings d) {
     final remaining = _endWindow.end.difference(DateTime.now());
-    return _formatDuration(remaining, d.countdownTextStyle, 60);
+    return _formatIslandCountdown(remaining, d.countdownTextStyle, 60);
   }
 
-  String _untilStart(
+}
+
+/// 展开态预览卡片：模拟提升通知被展开后的真实排版。
+///
+/// 还原原生 `LiveUpdateService.buildNotification()` 的展开内容：
+/// * 标题 = `notificationTitle`：课前 = `即将上课: <课程名>`，下课提醒 =
+///   `下课提醒: <课程名>`，课中 = 课程名；非提升路径标题为空，这里只画提升态；
+/// * 正文 = `promotedContentText` = `[visibleStatusText, timeRangeText,
+///   visibleLocation, teacher]` 过滤空白后以 ` · ` 拼接；
+/// * 详情行 = `promotedExpandedDetailText`，由 `expandedDetailFields`（未设置时
+///   用原生默认顺序 `progress, status, time, location, teacher, shortName,
+///   next, note`）逐字段拼行；空列表 = 全部隐藏。
+///
+/// 也就是说设置页里拖动排序 / 开关的正是这套详情行——摘要态胶囊看不到它们，
+/// 只有展开后才可见，所以必须给一张展开态预览，否则用户改完设置屏幕上毫无反馈。
+///
+/// 平台限制：Android 16（SDK 36）在课中带进度条时使用系统进度展开样式
+/// （`usesProgressExpandedStyle`），此时系统自己画展开界面，`expandedDetailText`
+/// 不会生效；卡片顶部会按需展示这条说明。
+class LiveIslandExpandedPreviewCard extends StatefulWidget {
+  const LiveIslandExpandedPreviewCard({
+    super.key,
+    required this.display,
+    required this.forDuringEnd,
+    this.followBeforeClass = false,
+    this.endSecondsCountdownThresholdSeconds = 60,
+  });
+
+  final LiveDisplaySettings display;
+  final bool forDuringEnd;
+  final bool followBeforeClass;
+  final int endSecondsCountdownThresholdSeconds;
+
+  @override
+  State<LiveIslandExpandedPreviewCard> createState() =>
+      _LiveIslandExpandedPreviewCardState();
+}
+
+class _LiveIslandExpandedPreviewCardState
+    extends State<LiveIslandExpandedPreviewCard> {
+  late final DateTime _anchor = DateTime.now();
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  ({DateTime start, DateTime end}) get _beforeWindow {
+    final start = _anchor.add(const Duration(minutes: 12, seconds: 37));
+    return (start: start, end: start.add(const Duration(minutes: 45)));
+  }
+
+  ({DateTime start, DateTime end}) get _endWindow {
+    final start = _anchor.subtract(const Duration(minutes: 41, seconds: 40));
+    return (start: start, end: start.add(const Duration(minutes: 45)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final d = widget.display;
+    final stages = widget.forDuringEnd
+        ? const [_PreviewStage.duringClass, _PreviewStage.beforeEnd]
+        : const [_PreviewStage.beforeClass];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (widget.followBeforeClass)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    l10n.liveIslandPreviewFollowBadge,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        for (var index = 0; index < stages.length; index++) ...[
+          if (stages.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                _stageWord(l10n, stages[index]),
+                style: HyperosTypography.listDetail(context),
+              ),
+            ),
+          _ExpandedNotificationCard(
+            title: _title(l10n, stages[index], d),
+            summary: _summaryLine(l10n, stages[index], d),
+            detailLines: _detailLines(l10n, stages[index], d),
+            emptyHint: l10n.liveIslandExpandedPreviewEmptyHint,
+            platformCaption: l10n.liveIslandExpandedPreviewCaption,
+          ),
+          if (index != stages.length - 1) const SizedBox(height: 12),
+        ],
+      ],
+    );
+  }
+
+  String _sampleCourseName(AppLocalizations l10n, LiveDisplaySettings d) =>
+      d.useShortName
+          ? l10n.liveIslandPreviewSampleCourseShort
+          : l10n.liveIslandPreviewSampleCourse;
+
+  /// `notificationTitle`：课前/下课提醒带阶段前缀，课中只有课程名。
+  String _title(
     AppLocalizations l10n,
+    _PreviewStage stage,
     LiveDisplaySettings d,
-    Duration remaining,
-    int thresholdSeconds,
   ) {
-    final text =
-        _formatDuration(remaining, d.countdownTextStyle, thresholdSeconds);
-    return d.hidePrefixText
-        ? text
-        : l10n.liveIslandPreviewUntilClassStart(text);
+    final course = _sampleCourseName(l10n, d);
+    return switch (stage) {
+      _PreviewStage.beforeClass =>
+        l10n.liveIslandPreviewTitleBeforeClass(course),
+      _PreviewStage.beforeEnd =>
+        l10n.liveIslandPreviewTitleBeforeEnd(course),
+      _PreviewStage.duringClass => course,
+    };
   }
 
-  String _untilEnd(
+  /// `promotedContentText`：课中带进度块时 = 倒计时 · 地点，其余 =
+  /// `visibleStatusText · timeRangeText · 地点 · 教师`，逐项过滤空白。
+  String _summaryLine(
     AppLocalizations l10n,
+    _PreviewStage stage,
     LiveDisplaySettings d,
-    Duration remaining,
-    int thresholdSeconds,
   ) {
-    final text =
-        _formatDuration(remaining, d.countdownTextStyle, thresholdSeconds);
-    return d.hidePrefixText ? text : l10n.liveIslandPreviewUntilClassEnd(text);
+    // 原生 promotedContentText：
+    // * (课中 || 临近下课) && classProgress != null → compactDisplayText · 地点；
+    // * 其余 → visibleStatusText · timeRangeText · 地点 · 教师。
+    // 课中带进度块时正文只留倒计时与地点；示例课的字面值相同。
+    final hasProgressBlock =
+        stage == _PreviewStage.duringClass && d.showCountdown;
+    final parts = hasProgressBlock
+        ? <String>[
+            _formatIslandCountdown(
+              _endWindow.end.difference(DateTime.now()),
+              d.countdownTextStyle,
+              60,
+            ),
+            if (d.showLocation) l10n.liveIslandPreviewSampleLocation,
+          ]
+        : <String>[
+            _expandedStatusText(l10n, stage, d),
+            _timeRangeText(),
+            if (d.showLocation) l10n.liveIslandPreviewSampleLocation,
+            l10n.liveIslandPreviewSampleTeacher,
+          ];
+    return parts.where((part) => part.isNotEmpty).join(' · ');
   }
 
-  // --- Countdown formatter (port of CountdownFormat.kt) -------------------
-
-  String _formatDuration(
-    Duration duration,
-    LiveCountdownTextStyle style,
-    int thresholdSeconds,
+  /// 课中且显示倒计时 = 裸倒计时；其余 = `visibleStatusText`。
+  String _expandedStatusText(
+    AppLocalizations l10n,
+    _PreviewStage stage,
+    LiveDisplaySettings d,
   ) {
-    final millis = duration.inMilliseconds;
-    final totalSeconds = millis <= 0 ? 0 : millis ~/ 1000;
-    switch (style) {
-      case LiveCountdownTextStyle.smartMinS:
-        return _smart(totalSeconds, thresholdSeconds, 'min', 's');
-      case LiveCountdownTextStyle.minuteSecondCn:
-        return _minuteSecond(totalSeconds, '分钟', '秒');
-      case LiveCountdownTextStyle.minuteSecondColon:
-        final minutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
-        final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
-        return '$minutes:$seconds';
-      case LiveCountdownTextStyle.minuteSecondMinS:
-        return _minuteSecond(totalSeconds, 'min', 's');
-      case LiveCountdownTextStyle.minuteSecondMinSlashS:
-        return _minuteSecond(totalSeconds, 'min/', 's');
-      case LiveCountdownTextStyle.minuteOnlyCn:
-        return '${_minutesFloor(totalSeconds)}分钟';
-      case LiveCountdownTextStyle.minuteOnlyMin:
-        return '${_minutesFloor(totalSeconds)}min';
-      case LiveCountdownTextStyle.minuteOnlySlash:
-        return '${_minutesFloor(totalSeconds)}/min';
-      case LiveCountdownTextStyle.secondOnlyCn:
-        return '$totalSeconds秒';
-      case LiveCountdownTextStyle.secondOnlyShort:
-        // 相邻字面量拼接：'59s'，避免 's' 并入标识符触发插值花括号 lint。
-        return '$totalSeconds' 's';
-      case LiveCountdownTextStyle.secondOnlySlash:
-        return '$totalSeconds/s';
-      case LiveCountdownTextStyle.smart:
-        return _smart(totalSeconds, thresholdSeconds, '分钟', '秒');
+    if (!d.showCountdown) {
+      return d.showStageText ? _stageWord(l10n, stage) : '';
+    }
+    switch (stage) {
+      case _PreviewStage.beforeClass:
+        return _islandUntilClassStart(
+          l10n,
+          d,
+          _beforeWindow.start.difference(DateTime.now()),
+          60,
+        );
+      case _PreviewStage.duringClass:
+        return _formatIslandCountdown(
+          _endWindow.end.difference(DateTime.now()),
+          d.countdownTextStyle,
+          60,
+        );
+      case _PreviewStage.beforeEnd:
+        return _islandUntilClassEnd(
+          l10n,
+          d,
+          _endWindow.end.difference(DateTime.now()),
+          widget.endSecondsCountdownThresholdSeconds,
+        );
     }
   }
 
-  String _smart(
-    int totalSeconds,
-    int thresholdSeconds,
-    String minuteSuffix,
-    String secondSuffix,
+  /// 原生 `timeRangeText`：`"$startTimeText - $endTimeText"`。示例课统一
+  /// 08:00-08:45，三个阶段的展开卡片都用同一个时间串。
+  String _timeRangeText() => '08:00 - 08:45';
+
+  /// 展开详情行：与原生 `expandedDetailLineList` 同一份字段语义。
+  ///
+  /// 展示顺序 = 用户配置顺序（未配置 → 原生默认顺序）；每条字段都有格式化
+  /// 前缀（`简称: `、`状态: ` 等），值空缺时跳过——这与原生一致。
+  List<String> _detailLines(
+    AppLocalizations l10n,
+    _PreviewStage stage,
+    LiveDisplaySettings d,
   ) {
-    if (totalSeconds <= thresholdSeconds) {
-      return '$totalSeconds$secondSuffix';
+    final order = d.expandedDetailFields ??
+        const [
+          LiveExpandedDetailField.progress,
+          LiveExpandedDetailField.status,
+          LiveExpandedDetailField.time,
+          LiveExpandedDetailField.location,
+          LiveExpandedDetailField.teacher,
+          LiveExpandedDetailField.shortName,
+          LiveExpandedDetailField.nextCourse,
+          LiveExpandedDetailField.note,
+        ];
+    final lines = <String>[];
+    for (final field in order) {
+      switch (field) {
+        case LiveExpandedDetailField.stage:
+          // 阶段行：原生取 stageTitle（无 detail_status 前缀），提升路径
+          // （promotedExpandedDetailText）传 null 因而跳过；课中档是否提升由
+          // 「提升通知」开关决定，这里按设置意图渲染，保证开关可见。
+          lines.add(_stageWord(l10n, stage));
+        case LiveExpandedDetailField.shortName:
+          lines.add(l10n.liveExpandedDetailLineShortName(
+            l10n.liveIslandPreviewSampleCourseShort,
+          ));
+        case LiveExpandedDetailField.progress:
+          // 原生 showProgressBlock = (课中 || 临近下课) && classProgress != null
+          // && showCountdown；beforeEnd 阶段 classProgress == null，因此只有
+          // 课中且显示倒计时时才出进度行。
+          if (stage == _PreviewStage.duringClass && d.showCountdown) {
+            lines.add(l10n.liveExpandedDetailLineProgressNext(
+              l10n.liveIslandPreviewStageBeforeEnd,
+            ));
+            lines.add(l10n.liveExpandedDetailLineProgressFinal(
+              _formatIslandCountdown(
+                _endWindow.end.difference(DateTime.now()),
+                d.countdownTextStyle,
+                60,
+              ),
+            ));
+          }
+        case LiveExpandedDetailField.status:
+          // 原生 detailStatusText：课中且带进度块时为 null（状态已在正文/进度
+          // 行体现），其余情况才是 visibleStatusText。
+          final hasProgressBlock =
+              stage == _PreviewStage.duringClass && d.showCountdown;
+          if (!hasProgressBlock) {
+            final status = _expandedStatusText(l10n, stage, d);
+            if (status.isNotEmpty) {
+              lines.add(l10n.liveExpandedDetailLineStatus(status));
+            }
+          }
+        case LiveExpandedDetailField.time:
+          lines.add(l10n.liveExpandedDetailLineTime(_timeRangeText()));
+        case LiveExpandedDetailField.location:
+          if (d.showLocation) {
+            lines.add(l10n.liveExpandedDetailLineLocation(
+              l10n.liveIslandPreviewSampleLocation,
+            ));
+          }
+        case LiveExpandedDetailField.teacher:
+          lines.add(l10n.liveExpandedDetailLineTeacher(
+            l10n.liveIslandPreviewSampleTeacher,
+          ));
+        case LiveExpandedDetailField.nextCourse:
+          lines.add(l10n.liveExpandedDetailLineNext(
+            l10n.liveIslandPreviewSampleNextClass,
+          ));
+        case LiveExpandedDetailField.note:
+          lines.add(l10n.liveExpandedDetailLineNote(
+            l10n.liveIslandPreviewSampleNote,
+          ));
+      }
     }
-    if (totalSeconds > 120) {
-      return '${(totalSeconds ~/ 60).clamp(1, 1 << 30)}$minuteSuffix';
-    }
-    if (totalSeconds > 60) {
-      return '${((totalSeconds + 59) ~/ 60).clamp(1, 1 << 30)}$minuteSuffix';
-    }
-    return '$totalSeconds$secondSuffix';
+    return lines;
   }
+}
 
-  String _minuteSecond(int totalSeconds, String minuteSuffix, String secondSuffix) {
-    final minutes = totalSeconds ~/ 60;
-    final seconds = totalSeconds % 60;
-    if (minutes > 0 && seconds > 0) {
-      return '$minutes$minuteSuffix$seconds$secondSuffix';
-    }
-    if (minutes > 0) {
-      // Kotlin 对 min/ 变体去掉尾部斜杠。
-      final trimmed = minuteSuffix.endsWith('/')
-          ? minuteSuffix.substring(0, minuteSuffix.length - 1)
-          : minuteSuffix;
-      return '$minutes$trimmed';
-    }
-    return '$seconds$secondSuffix';
+/// 提升通知展开后的卡片观感：圆角深色卡片 + 标题 + 正文 + 分隔线 + 详情行。
+class _ExpandedNotificationCard extends StatelessWidget {
+  const _ExpandedNotificationCard({
+    required this.title,
+    required this.summary,
+    required this.detailLines,
+    required this.emptyHint,
+    required this.platformCaption,
+  });
+
+  final String title;
+  final String summary;
+  final List<String> detailLines;
+  final String emptyHint;
+  final String platformCaption;
+
+  static const _cardColor = Color(0xFF101114);
+  static const _detailColor = Color(0xFFB9BDC4);
+  static const _captionColor = Color(0xFF8A8F98);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (summary.isNotEmpty) ...[
+            const SizedBox(height: 5),
+            Text(
+              summary,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: _detailColor,
+                fontSize: 12,
+                height: 1.35,
+              ),
+            ),
+          ],
+          if (detailLines.isEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              emptyHint,
+              style: const TextStyle(
+                color: _captionColor,
+                fontSize: 11,
+                height: 1.35,
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 10),
+            Divider(height: 1, color: Colors.white.withValues(alpha: 0.08)),
+            const SizedBox(height: 10),
+            for (final line in detailLines)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  line,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _detailColor,
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            platformCaption,
+            style: const TextStyle(
+              color: _captionColor,
+              fontSize: 10,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
+    );
   }
-
-  int _minutesFloor(int totalSeconds) => (totalSeconds ~/ 60).clamp(1, 1 << 30);
 }
 
 // --- Mock widgets（HyperOS 超级岛观感，深色、与主题无关） --------------------
@@ -585,3 +879,107 @@ class _CameraHole extends StatelessWidget {
     );
   }
 }
+
+/// 原生 `computeRemainingText` + 前缀拼接：距上课 / 距下课。
+String _islandUntilClassStart(
+  AppLocalizations l10n,
+  LiveDisplaySettings d,
+  Duration remaining,
+  int thresholdSeconds,
+) {
+  final text =
+      _formatIslandCountdown(remaining, d.countdownTextStyle, thresholdSeconds);
+  return d.hidePrefixText ? text : l10n.liveIslandPreviewUntilClassStart(text);
+}
+
+String _islandUntilClassEnd(
+  AppLocalizations l10n,
+  LiveDisplaySettings d,
+  Duration remaining,
+  int thresholdSeconds,
+) {
+  final text =
+      _formatIslandCountdown(remaining, d.countdownTextStyle, thresholdSeconds);
+  return d.hidePrefixText ? text : l10n.liveIslandPreviewUntilClassEnd(text);
+}
+
+// --- Countdown formatter (port of CountdownFormat.kt) -------------------
+
+String _formatIslandCountdown(
+  Duration duration,
+  LiveCountdownTextStyle style,
+  int thresholdSeconds,
+) {
+  final millis = duration.inMilliseconds;
+  final totalSeconds = millis <= 0 ? 0 : millis ~/ 1000;
+  switch (style) {
+    case LiveCountdownTextStyle.smartMinS:
+      return _islandCountdownSmart(totalSeconds, thresholdSeconds, 'min', 's');
+    case LiveCountdownTextStyle.minuteSecondCn:
+      return _islandCountdownMinuteSecond(totalSeconds, '分钟', '秒');
+    case LiveCountdownTextStyle.minuteSecondColon:
+      final minutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
+      final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
+      return '$minutes:$seconds';
+    case LiveCountdownTextStyle.minuteSecondMinS:
+      return _islandCountdownMinuteSecond(totalSeconds, 'min', 's');
+    case LiveCountdownTextStyle.minuteSecondMinSlashS:
+      return _islandCountdownMinuteSecond(totalSeconds, 'min/', 's');
+    case LiveCountdownTextStyle.minuteOnlyCn:
+      return '${_islandCountdownMinutesFloor(totalSeconds)}分钟';
+    case LiveCountdownTextStyle.minuteOnlyMin:
+      return '${_islandCountdownMinutesFloor(totalSeconds)}min';
+    case LiveCountdownTextStyle.minuteOnlySlash:
+      return '${_islandCountdownMinutesFloor(totalSeconds)}/min';
+    case LiveCountdownTextStyle.secondOnlyCn:
+      return '$totalSeconds秒';
+    case LiveCountdownTextStyle.secondOnlyShort:
+      // 相邻字面量拼接：'59s'，避免 's' 并入标识符触发插值花括号 lint。
+      return '$totalSeconds' 's';
+    case LiveCountdownTextStyle.secondOnlySlash:
+      return '$totalSeconds/s';
+    case LiveCountdownTextStyle.smart:
+      return _islandCountdownSmart(totalSeconds, thresholdSeconds, '分钟', '秒');
+  }
+}
+
+String _islandCountdownSmart(
+  int totalSeconds,
+  int thresholdSeconds,
+  String minuteSuffix,
+  String secondSuffix,
+) {
+  if (totalSeconds <= thresholdSeconds) {
+    return '$totalSeconds$secondSuffix';
+  }
+  if (totalSeconds > 120) {
+    return '${(totalSeconds ~/ 60).clamp(1, 1 << 30)}$minuteSuffix';
+  }
+  if (totalSeconds > 60) {
+    return '${((totalSeconds + 59) ~/ 60).clamp(1, 1 << 30)}$minuteSuffix';
+  }
+  return '$totalSeconds$secondSuffix';
+}
+
+String _islandCountdownMinuteSecond(
+  int totalSeconds,
+  String minuteSuffix,
+  String secondSuffix,
+) {
+  final minutes = totalSeconds ~/ 60;
+  final seconds = totalSeconds % 60;
+  if (minutes > 0 && seconds > 0) {
+    return '$minutes$minuteSuffix$seconds$secondSuffix';
+  }
+  if (minutes > 0) {
+    // Kotlin 对 min/ 变体去掉尾部斜杠。
+    final trimmed = minuteSuffix.endsWith('/')
+        ? minuteSuffix.substring(0, minuteSuffix.length - 1)
+        : minuteSuffix;
+    return '$minutes$trimmed';
+  }
+  return '$seconds$secondSuffix';
+}
+
+int _islandCountdownMinutesFloor(int totalSeconds) =>
+    (totalSeconds ~/ 60).clamp(1, 1 << 30);

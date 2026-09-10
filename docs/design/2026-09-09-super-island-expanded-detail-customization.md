@@ -118,9 +118,21 @@ lib/l10n/app_zh.arb（+ zh_TW/zh_HK/en/ja/ko）新增：
 - 九个字段标题 keys：liveExpandedDetailFieldStage / ShortName / Progress / Status / Time / Location / Teacher / Next / Note
 - 无 liveExpandedDetailGroupSubtitle（实施时未用副标题键）
 
-### 5.4 预览组件（可选加分）
+### 5.4 预览组件
 
-live_island_preview.dart:19 现注释明确「展开态不在此预览范围内」——首期可**不加**预览（与现状一致），二期补「展开态文本预览」。
+live_island_preview.dart 原有注释明确「展开态不在此预览范围内」，摘要态胶囊看不到详情行，
+用户调完设置屏幕上毫无反馈。**现已补齐**：
+
+- `LiveIslandExpandedPreviewCard`：模拟提升通知展开后的排版——标题
+  （`即将上课: <课程名>` / `下课提醒: <课程名>` / 课中裸课程名）、正文
+  （`promotedContentText`）、分隔线、按 `expandedDetailFields` 顺序渲染的详情行；
+- 未配置 = 原生默认顺序 `progress, status, time, location, teacher, shortName,
+  next, note`；空列表 = 全部隐藏，卡片内显示「已隐藏全部详情行」提示；
+- 课中带进度块时渲染 `下一节点` / `整节下课` 两行，并跳过 `status` 行
+  （原生 `detailStatusText` 在该情形为 null）；`stage` 行按原生非提升路径渲染；
+- 卡片底部固定展示平台限制说明（Android 16 课中进度态由系统绘制、本设置不生效），
+  把原先只存在于设计文档的限制暴露给用户；
+- 设置页「展开详情」组下方接入该预览，跟随课前设置时同样展示说明徽标。
 
 ## 6. 向后兼容
 
@@ -164,7 +176,7 @@ live_island_preview.dart:19 现注释明确「展开态不在此预览范围内�
 ## 10. 实施结论（2026-09-09）
 
 1. 显隐 + 排序一期一并完成（上/下移 + 隐藏分组 + 恢复默认）。
-2. 未做「展开详情预览」（与 live_island_preview 现状一致，二期可选）。
+2. 「展开详情预览」已于迭代中补齐（见 §5.4），摘要态 + 展开态两张预览同时在设置页可见。
 3. 展开态 location 独立开关，不跟随折叠态 showLocation（与方案 §3 现状一致）。
 4. Kotlin 空文本兜底未额外实现：全关后 setBigContentTitle 仍显示阶段标题。
 5. 定向验证：flutter analyze 0 issues；timetable_settings_test 53 例全过（含新增 4 例序列化/双档/重置）；LiveUpdateSchedulerLogicTest 含 parseExpandedDetailFields 3 例。

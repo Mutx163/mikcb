@@ -2577,6 +2577,79 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveIslandPreviewSampleLocation => '3号館-401';
 
   @override
+  String get liveIslandExpandedPreviewTitle => '展開状態プレビュー';
+
+  @override
+  String get liveIslandExpandedPreviewCaption => 'Android 16 の授業中に進捗バーが出る場合、展開状態はシステムが描画するためこの設定は反映されません';
+
+  @override
+  String get liveIslandExpandedPreviewEmptyHint => '詳細行をすべて非表示にしています。展開してもタイトルと概要のみ表示されます';
+
+  @override
+  String get liveIslandPreviewSampleTeacher => '張先生';
+
+  @override
+  String get liveIslandPreviewSampleNextClass => '大学物理';
+
+  @override
+  String get liveIslandPreviewSampleNote => '教科書と問題集を持参';
+
+  @override
+  String liveIslandPreviewTitleBeforeClass(String course) {
+    return 'まもなく授業: $course';
+  }
+
+  @override
+  String liveIslandPreviewTitleBeforeEnd(String course) {
+    return '終了のお知らせ: $course';
+  }
+
+  @override
+  String liveExpandedDetailLineShortName(String value) {
+    return '略称: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineProgressNext(String value) {
+    return '次の区切り: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineProgressFinal(String value) {
+    return '授業終了: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineStatus(String value) {
+    return '状態: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineTime(String value) {
+    return '時間: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineLocation(String value) {
+    return '場所: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineTeacher(String value) {
+    return '先生: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineNext(String value) {
+    return '次の授業: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineNote(String value) {
+    return 'メモ: $value';
+  }
+
+  @override
   String get beforeClassQuickActionTitle => '授業前クイックアクション';
 
   @override

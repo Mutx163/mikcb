@@ -791,6 +791,15 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           ],
         ),
       ],
+      const HyperosSectionGap(),
+      HyperosSectionLabel(text: l10n.liveIslandExpandedPreviewTitle),
+      LiveIslandExpandedPreviewCard(
+        display: _followBeforeClass ? _draft.beforeClassDisplaySettings : display,
+        forDuringEnd: widget.forDuringEnd,
+        followBeforeClass: _followBeforeClass,
+        endSecondsCountdownThresholdSeconds:
+            _draft.liveEndSecondsCountdownThreshold,
+      ),
     ];
     return HyperosSubpage(
       // 排序后待落盘的状态已在 dispose 补写；maybePop 同时兼容

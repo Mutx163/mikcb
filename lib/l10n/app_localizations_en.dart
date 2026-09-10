@@ -2688,6 +2688,79 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveIslandPreviewSampleLocation => 'Bldg 3-401';
 
   @override
+  String get liveIslandExpandedPreviewTitle => 'Expanded preview';
+
+  @override
+  String get liveIslandExpandedPreviewCaption => 'On Android 16 the expanded view is system-drawn while an in-class progress bar is shown; this setting does not apply';
+
+  @override
+  String get liveIslandExpandedPreviewEmptyHint => 'All detail rows are hidden; the expanded view only shows the title and summary';
+
+  @override
+  String get liveIslandPreviewSampleTeacher => 'Mr. Zhang';
+
+  @override
+  String get liveIslandPreviewSampleNextClass => 'Physics';
+
+  @override
+  String get liveIslandPreviewSampleNote => 'Bring textbook and workbook';
+
+  @override
+  String liveIslandPreviewTitleBeforeClass(String course) {
+    return 'Before class: $course';
+  }
+
+  @override
+  String liveIslandPreviewTitleBeforeEnd(String course) {
+    return 'Before end: $course';
+  }
+
+  @override
+  String liveExpandedDetailLineShortName(String value) {
+    return 'Short name: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineProgressNext(String value) {
+    return 'Next milestone: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineProgressFinal(String value) {
+    return 'Class ends: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineStatus(String value) {
+    return 'Status: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineTime(String value) {
+    return 'Time: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineLocation(String value) {
+    return 'Location: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineTeacher(String value) {
+    return 'Teacher: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineNext(String value) {
+    return 'Next: $value';
+  }
+
+  @override
+  String liveExpandedDetailLineNote(String value) {
+    return 'Note: $value';
+  }
+
+  @override
   String get beforeClassQuickActionTitle => 'Before-class Quick Action';
 
   @override
