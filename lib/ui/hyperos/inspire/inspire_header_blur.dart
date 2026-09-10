@@ -27,6 +27,7 @@ class InspireHeaderBlur extends StatelessWidget {
     this.blurEnabled = true,
     this.style = HeaderBlurStyle.inspire,
     this.blurSigma = HyperosBlurredHeader.blurSigma,
+    this.opaqueAtRest = false,
     super.key,
   });
 
@@ -41,6 +42,17 @@ class InspireHeaderBlur extends StatelessWidget {
 
   /// 模糊强度上限（对应 `InspireBlurConfig` 的 sigma）。
   final double blurSigma;
+
+  /// 无内容压在带下时，是否把衬底铺满整条带（不向下渐隐）。
+  ///
+  /// 可折叠顶栏的模糊层是常驻挂载的（见 [HyperosFrostedHeaderShell]），
+  /// 而 [HeaderBlurStyle.inspire] 的衬底会在底边渐隐到全透明。两者叠加会
+  /// 留出一条「透明窗口」：内容还没真正压到带底、`contentUnderHeader`
+  /// 仍为 false 时，模糊采样已把即将进入带内的内容糊进这条窗口——于是
+  /// 内容先以一层无衬底的虚影出现，衬底随后才整条切进来，读起来就是
+  /// 「内容快插到标题栏时顿一下」。顶上这一档后，常驻模糊在无内容时被
+  /// 不透明衬底完全盖住，翻转点只剩一次衬底切换。
+  final bool opaqueAtRest;
 
   /// 高斯档底边渐隐收边所占的玻璃带比例。
   ///
@@ -90,10 +102,8 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 高斯档保持均匀 [tint]。渐进档若继续盖一层整幅半透明色，观感会退化
   /// 成「一致的半透明条」，完全看不出 iOS 式的顶浓底清。
   Widget _tintLayer() {
-    final base = switch (style) {
-      HeaderBlurStyle.gaussian => null,
-      HeaderBlurStyle.inspire => tint,
-    };
+    final useGradient = style == HeaderBlurStyle.inspire && !opaqueAtRest;
+    final base = useGradient ? tint : null;
     if (base == null) {
       return Positioned.fill(child: ColoredBox(color: tint));
     }
