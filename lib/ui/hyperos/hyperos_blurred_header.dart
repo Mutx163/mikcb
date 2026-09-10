@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import '../../models/header_blur_style.dart';
 import 'frosted/frosted_appearance.dart';
 import 'frosted/frosted_header_background.dart';
 import 'frosted/liquid_glass_degradation.dart';
@@ -142,6 +143,14 @@ abstract final class HyperosBlurredHeader {
 
   static double blurSigmaOf(BuildContext context) {
     return _appearanceOf(context).sheetBlurSigma;
+  }
+
+  /// 顶栏玻璃带使用的模糊材质风格（高斯模糊 / Inspire 渐进模糊）。
+  ///
+  /// 顶栏统一走 inspire_blur 的渐进模糊渲染；本档位只切换过渡形态，
+  /// 子页顶栏外壳与首页玻璃带共用同一取值。
+  static HeaderBlurStyle headerBlurStyleOf(BuildContext context) {
+    return _appearanceOf(context).headerBlurStyle;
   }
 
   static double sheetBarrierAlphaOf(BuildContext context) {

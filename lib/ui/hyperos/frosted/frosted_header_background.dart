@@ -1,9 +1,9 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 
+import '../../../models/header_blur_style.dart';
 import '../hyperos_blurred_header.dart';
 import '../hyperos_sheet.dart';
+import '../inspire/inspire_header_blur.dart';
 import 'liquid_glass_degradation.dart';
 
 bool _isLiquidSheetPanel(BuildContext context) {
@@ -15,13 +15,20 @@ bool _isLiquidSheetPanel(BuildContext context) {
       a.liquidGlassSheetDialogEnabled;
 }
 
-/// Frosted top bar: Flutter [BackdropFilter] blur + tint scrim.
+/// Frosted top bar: progressive blur + tint scrim (via [InspireHeaderBlur]).
+///
+/// [blurStyle] 只切换过渡形态，两档都走 `inspire_blur`：
+/// - [HeaderBlurStyle.gaussian]：整带均匀强度 + 底边渐隐收边
+/// - [HeaderBlurStyle.inspire]：自顶边向下连续衰减
+///
+/// 首页玻璃带与子页顶栏外壳共用此入口，统一跟随用户设置。
 class FrostedHeaderBackground extends StatelessWidget {
   const FrostedHeaderBackground({
     required this.tint,
     required this.child,
     this.blurEnabled = true,
     this.blurSigma = HyperosBlurredHeader.blurSigma,
+    this.blurStyle = HeaderBlurStyle.gaussian,
     super.key,
   });
 
@@ -29,34 +36,16 @@ class FrostedHeaderBackground extends StatelessWidget {
   final Widget child;
   final bool blurEnabled;
   final double blurSigma;
+  final HeaderBlurStyle blurStyle;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRect(
-      child: Stack(
-        fit: StackFit.passthrough,
-        children: [
-          Positioned.fill(
-            child: blurEnabled
-                ? Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      BackdropFilter(
-                        filter: ImageFilter.blur(
-                          sigmaX: blurSigma,
-                          sigmaY: blurSigma,
-                          tileMode: TileMode.clamp,
-                        ),
-                        child: const SizedBox.expand(),
-                      ),
-                      ColoredBox(color: tint),
-                    ],
-                  )
-                : ColoredBox(color: tint),
-          ),
-          child,
-        ],
-      ),
+    return InspireHeaderBlur(
+      tint: tint,
+      blurEnabled: blurEnabled,
+      blurSigma: blurSigma,
+      style: blurStyle,
+      child: child,
     );
   }
 }
@@ -84,6 +73,7 @@ class HyperosFrostedHeaderShell extends StatelessWidget {
     return FrostedHeaderBackground(
       blurEnabled: useBlur,
       blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
+      blurStyle: HyperosBlurredHeader.headerBlurStyleOf(context),
       tint: resolvedTint,
       child: child,
     );

@@ -3304,7 +3304,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePageBuiltInWallpaperTitle => '内蔵壁紙';
 
   @override
-  String get homePageBuiltInWallpaperSubtitle => 'コードで描画するグラデーション背景。ストレージも通信も不要で、選ぶとすぐにホームへ反映されます';
+  String get homePageBuiltInWallpaperSubtitle =>
+      'コードで描画するグラデーション背景。ストレージも通信も不要で、選ぶとすぐにホームへ反映されます';
 
   @override
   String get homePageBuiltInWallpaperNone => '使用しない';
@@ -3322,10 +3323,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePageWallpaperSourceTitle => '壁紙のソース';
 
   @override
-  String get homePageWallpaperSourceSubtitle => '選択した画像が優先されます。画像を消去すると内蔵壁紙に戻ります';
+  String get homePageWallpaperSourceSubtitle =>
+      '選択した画像が優先されます。画像を消去すると内蔵壁紙に戻ります';
 
   @override
-  String get homePageBuiltInWallpaperCredits => '内蔵壁紙は bokeh-lava-gradient（MIT）を基にしています';
+  String get homePageBuiltInWallpaperCredits =>
+      '内蔵壁紙は bokeh-lava-gradient（MIT）を基にしています';
 
   @override
   String get homePageWallpaperTitle => '背景画像';
@@ -10002,6 +10005,23 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get scheduleDateRuleNote =>
       'Location match takes priority over date rules.';
+
+  @override
+  String get headerBlurStyleLabel => 'トップバーのぼかしスタイル';
+
+  @override
+  String get headerBlurStyleGaussian => 'ガウスぼかし';
+
+  @override
+  String get headerBlurStyleInspire => 'プログレッシブぼかし';
+
+  @override
+  String get headerBlurStyleSubtitle =>
+      'プログレッシブぼかしは上端が強く、下端で完全にクリアになります（Inspire Blur）';
+
+  @override
+  String get headerBlurStyleHint =>
+      'プログレッシブぼかしにはカスタムシェーダー対応（Impeller）が必要です。非対応の場合はトップバーは単色の下地のみ表示されます';
 
   @override
   String get frostedGlassModeLabel => 'ガラスモード';

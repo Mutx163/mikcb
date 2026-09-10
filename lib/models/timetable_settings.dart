@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
+import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
 import 'package:university_timetable/models/class_reminder.dart';
@@ -1442,6 +1443,7 @@ class TimetableSettings {
     sheetBarrierAlpha: frostedSheetBarrierAlpha,
     blurEnabled: frostedBlurEnabled,
     glassMode: frostedGlassMode,
+    headerBlurStyle: headerBlurStyle,
     liquidGlassTuning: liquidGlassTuning,
     liquidGlassPopupEnabled: liquidGlassPopupEnabled,
     liquidGlassSelectSheetEnabled: liquidGlassSelectSheetEnabled,
@@ -1471,6 +1473,10 @@ class TimetableSettings {
   final LiquidGlassTuning? liquidGlassTuning;
   final bool homePageHeaderBlurEnabled;
   final bool homePageWeekdayBarBlurEnabled;
+
+  /// 顶栏玻璃带使用的模糊材质风格（高斯模糊 / Inspire 渐进模糊）。
+  /// 默认 [HeaderBlurStyle.inspire]。
+  final HeaderBlurStyle headerBlurStyle;
   final bool homePageTimeColumnBlurEnabled;
   final bool homePageBackdropFollowsWeekPager;
   final List<SavedTheme> savedThemes; // 保存的主题列表
@@ -1654,6 +1660,7 @@ class TimetableSettings {
     this.liquidGlassTuning,
     this.homePageHeaderBlurEnabled = true,
     this.homePageWeekdayBarBlurEnabled = true,
+    this.headerBlurStyle = HeaderBlurStyle.inspire,
     this.homePageTimeColumnBlurEnabled = false,
     this.homePageBackdropFollowsWeekPager = true,
     this.savedThemes = const [],
@@ -1870,6 +1877,7 @@ class TimetableSettings {
         'liquidGlassTuning': liquidGlassTuning!.toJson(),
       'homePageHeaderBlurEnabled': homePageHeaderBlurEnabled,
       'homePageWeekdayBarBlurEnabled': homePageWeekdayBarBlurEnabled,
+      'headerBlurStyle': headerBlurStyle.value,
       'homePageTimeColumnBlurEnabled': homePageTimeColumnBlurEnabled,
       'homePageBackdropFollowsWeekPager': homePageBackdropFollowsWeekPager,
       'savedThemes': savedThemes.map((t) => t.toJson()).toList(),
@@ -2326,6 +2334,9 @@ class TimetableSettings {
           json['homePageHeaderBlurEnabled'] as bool? ?? true,
       homePageWeekdayBarBlurEnabled:
           json['homePageWeekdayBarBlurEnabled'] as bool? ?? true,
+      headerBlurStyle: HeaderBlurStyleX.fromValue(
+        json['headerBlurStyle'] as String?,
+      ),
       homePageTimeColumnBlurEnabled:
           json['homePageTimeColumnBlurEnabled'] as bool? ?? false,
       homePageBackdropFollowsWeekPager:
@@ -2544,6 +2555,7 @@ class TimetableSettings {
     LiquidGlassTuning? liquidGlassTuning,
     bool? homePageHeaderBlurEnabled,
     bool? homePageWeekdayBarBlurEnabled,
+    HeaderBlurStyle? headerBlurStyle,
     bool? homePageTimeColumnBlurEnabled,
     bool? homePageBackdropFollowsWeekPager,
     List<SavedTheme>? savedThemes,
@@ -2902,6 +2914,7 @@ class TimetableSettings {
           homePageHeaderBlurEnabled ?? this.homePageHeaderBlurEnabled,
       homePageWeekdayBarBlurEnabled:
           homePageWeekdayBarBlurEnabled ?? this.homePageWeekdayBarBlurEnabled,
+      headerBlurStyle: headerBlurStyle ?? this.headerBlurStyle,
       homePageTimeColumnBlurEnabled:
           homePageTimeColumnBlurEnabled ?? this.homePageTimeColumnBlurEnabled,
       homePageBackdropFollowsWeekPager:

@@ -3448,7 +3448,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePageBuiltInWallpaperTitle => 'Built-in wallpaper';
 
   @override
-  String get homePageBuiltInWallpaperSubtitle => 'Code-rendered animated gradient backdrop — no storage, no network; fills the home page as soon as you pick it';
+  String get homePageBuiltInWallpaperSubtitle =>
+      'Code-rendered animated gradient backdrop — no storage, no network; fills the home page as soon as you pick it';
 
   @override
   String get homePageBuiltInWallpaperNone => 'None';
@@ -3466,10 +3467,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePageWallpaperSourceTitle => 'Wallpaper source';
 
   @override
-  String get homePageWallpaperSourceSubtitle => 'A chosen image takes priority; clearing it falls back to the built-in wallpaper';
+  String get homePageWallpaperSourceSubtitle =>
+      'A chosen image takes priority; clearing it falls back to the built-in wallpaper';
 
   @override
-  String get homePageBuiltInWallpaperCredits => 'Built-in wallpapers are based on bokeh-lava-gradient (MIT)';
+  String get homePageBuiltInWallpaperCredits =>
+      'Built-in wallpapers are based on bokeh-lava-gradient (MIT)';
 
   @override
   String get homePageWallpaperTitle => 'Background image';
@@ -10287,6 +10290,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get scheduleDateRuleNote =>
       'Location match takes priority over date rules.';
+
+  @override
+  String get headerBlurStyleLabel => 'Top bar blur style';
+
+  @override
+  String get headerBlurStyleGaussian => 'Gaussian blur';
+
+  @override
+  String get headerBlurStyleInspire => 'Progressive blur';
+
+  @override
+  String get headerBlurStyleSubtitle =>
+      'Progressive blur fades from strong at the top to fully clear near the content (Inspire Blur)';
+
+  @override
+  String get headerBlurStyleHint =>
+      'Progressive blur needs a device with custom shader support (Impeller); otherwise the top bar keeps only a solid tint';
 
   @override
   String get frostedGlassModeLabel => 'Glass Mode';

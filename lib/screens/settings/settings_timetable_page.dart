@@ -353,6 +353,31 @@ class _TimetablePageSettingsScreenState
                   );
                 },
               ),
+              // 顶栏模糊风格：两档都由 inspire_blur 的渐进模糊实现，只在
+              // 「均匀强度（经典高斯观感）」与「自顶边向下衰减」之间切换。
+              // 只铺玻璃带时才有意义，玻璃带全关时隐藏，避免无效果的选项。
+              if (_draft.homePageHeaderBlurEnabled ||
+                  _draft.homePageWeekdayBarBlurEnabled) ...[
+                HyperosSelectTile<HeaderBlurStyle>(
+                  label: l10n.headerBlurStyleLabel,
+                  subtitle: l10n.headerBlurStyleSubtitle,
+                  items: {
+                    l10n.headerBlurStyleInspire: HeaderBlurStyle.inspire,
+                    l10n.headerBlurStyleGaussian: HeaderBlurStyle.gaussian,
+                  },
+                  value: _draft.headerBlurStyle,
+                  onChanged: (value) {
+                    _updateDraft(_draft.copyWith(headerBlurStyle: value));
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Text(
+                    l10n.headerBlurStyleHint,
+                    style: HyperosTypography.sectionDescription(context),
+                  ),
+                ),
+              ],
             ],
           ),
         ],
@@ -709,11 +734,11 @@ class _BuiltInWallpaperOption extends StatelessWidget {
                   borderRadius: BorderRadius.circular(11),
                   child: wallpaper == null
                       ? ColoredBox(
-                          color: HyperosColors.secondaryBackground(context),
+                          color: HyperosColors.surfaceContainer(context),
                           child: Icon(
                             Icons.block_rounded,
                             size: 22,
-                            color: HyperosColors.mutedForeground(context),
+                            color: HyperosColors.secondaryText(context),
                           ),
                         )
                       : BokehLavaGradient(wallpaper: wallpaper!),
@@ -731,7 +756,7 @@ class _BuiltInWallpaperOption extends StatelessWidget {
                 height: 1.2,
                 color: selected
                     ? primary
-                    : HyperosColors.mutedForeground(context),
+                    : HyperosColors.secondaryText(context),
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
               ),
             ),

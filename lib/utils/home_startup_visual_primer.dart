@@ -112,7 +112,7 @@ abstract final class HomeStartupVisualPrimer {
 
   /// 首页视口尺寸；预热与首页用同一份采样窗口（内置壁纸的 cover 裁剪
   /// 依赖它），拿不到时退回空尺寸（整图采样）。
-  static Size? _viewportSize() {
+  static ui.Size? _viewportSize() {
     final views = ui.PlatformDispatcher.instance.views;
     if (views.isEmpty) {
       return null;

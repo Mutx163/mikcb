@@ -309,6 +309,7 @@ class HomePageChromeGlassFill extends StatelessWidget {
     final frost = FrostedHeaderBackground(
       blurEnabled: useBlur,
       blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
+      blurStyle: HyperosBlurredHeader.headerBlurStyleOf(context),
       tint: HyperosBlurredHeader.homePageRegionTintColor(
         context,
         withBlur: useBlur,

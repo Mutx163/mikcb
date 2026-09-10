@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:inspire_blur/inspire_blur.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
@@ -160,6 +161,12 @@ final Completer<void> _firstFrameReleased = Completer<void>();
 /// 启动白屏的大头）。首页换入前由启动流程 await 收口，保证首页玻璃首帧
 /// 依旧无占位闪烁；失败已被 catchError 吞掉，await 恒完成。
 Future<void> _glassShadersWarm = Future.value();
+
+/// inspire_blur 顶栏渐进模糊的 shader 预热。
+///
+/// 与玻璃 shader 一样放在启动画面期间并行跑：失败只记日志不阻断，
+/// 顶栏按未预热降级（首帧略掉帧），绝不因此卡死换页。
+Future<void> _inspireBlurShadersWarm = Future.value();
 
 void _releaseFirstFrame({required bool forced}) {
   if (_firstFrameReleased.isCompleted) return;
@@ -330,6 +337,15 @@ Future<void> main() async {
         unawaited(AppLogService.instance.error(
           'liquid_glass_warmup_failed',
           '玻璃 shader 预热失败：$error',
+          error: error,
+          stackTrace: stackTrace,
+        ));
+      });
+      _inspireBlurShadersWarm = Inspire.warmUp()
+          .catchError((Object error, StackTrace stackTrace) {
+        unawaited(AppLogService.instance.error(
+          'inspire_blur_warmup_failed',
+          'Inspire Blur shader warmup failed: $error',
           error: error,
           stackTrace: stackTrace,
         ));
@@ -714,6 +730,8 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         await HomeStartupVisualPrimer.prime(provider.settings);
         // 收口玻璃预热：启动画面期间并行，首页换入前必须完成。
         await _glassShadersWarm;
+        // 顶栏渐进模糊 shader：与玻璃同源收口，避免首页顶栏首帧掉帧。
+        await _inspireBlurShadersWarm;
         _revealHomeOnce();
         unawaited(AppLogService.instance.updatePrivacyAccepted(true));
         unawaited(UmengAnalyticsService.initializeIfNeeded());
@@ -756,6 +774,8 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       await HomeStartupVisualPrimer.prime(provider.settings);
       // 收口玻璃预热：启动画面期间并行，首页换入前必须完成。
       await _glassShadersWarm;
+      // 顶栏渐进模糊 shader：与玻璃同源收口，避免首页顶栏首帧掉帧。
+      await _inspireBlurShadersWarm;
       _revealHomeOnce();
       unawaited(_cloudSyncCoordinator.maybePullRemote());
       final legacyPackage = await legacyPackageFuture;

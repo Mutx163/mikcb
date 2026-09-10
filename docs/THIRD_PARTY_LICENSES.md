@@ -23,6 +23,7 @@
 - `http` — BSD-3-Clause
 - `webview_flutter` — BSD-3-Clause
 - `fl_chart` — MIT
+- `inspire_blur` — MIT（顶栏渐进模糊 shader）
 - 其余见 `pubspec.lock` 与各 package 的 LICENSE
 
 ## 内联移植的第三方代码（源码内）
@@ -57,4 +58,4 @@
 
 ## 更新
 
-发版时若新增重大第三方依赖，应更新本文件。Last updated: 2026-08-27.
+发版时若新增重大第三方依赖，应更新本文件。Last updated: 2026-09-10.

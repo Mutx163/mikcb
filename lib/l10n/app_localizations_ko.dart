@@ -3320,7 +3320,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homePageBuiltInWallpaperTitle => '내장 배경화면';
 
   @override
-  String get homePageBuiltInWallpaperSubtitle => '코드로 그리는 그라데이션 배경. 저장 공간과 네트워크가 필요 없고, 선택하면 바로 홈에 적용됩니다';
+  String get homePageBuiltInWallpaperSubtitle =>
+      '코드로 그리는 그라데이션 배경. 저장 공간과 네트워크가 필요 없고, 선택하면 바로 홈에 적용됩니다';
 
   @override
   String get homePageBuiltInWallpaperNone => '사용 안 함';
@@ -3338,10 +3339,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homePageWallpaperSourceTitle => '배경화면 소스';
 
   @override
-  String get homePageWallpaperSourceSubtitle => '선택한 이미지가 우선이며, 이미지를 지우면 내장 배경화면으로 돌아갑니다';
+  String get homePageWallpaperSourceSubtitle =>
+      '선택한 이미지가 우선이며, 이미지를 지우면 내장 배경화면으로 돌아갑니다';
 
   @override
-  String get homePageBuiltInWallpaperCredits => '내장 배경화면은 bokeh-lava-gradient(MIT)를 기반으로 합니다';
+  String get homePageBuiltInWallpaperCredits =>
+      '내장 배경화면은 bokeh-lava-gradient(MIT)를 기반으로 합니다';
 
   @override
   String get homePageWallpaperTitle => '배경 이미지';
@@ -10044,6 +10047,23 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get scheduleDateRuleNote =>
       'Location match takes priority over date rules.';
+
+  @override
+  String get headerBlurStyleLabel => '상단 바 블러 스타일';
+
+  @override
+  String get headerBlurStyleGaussian => '가우시안 블러';
+
+  @override
+  String get headerBlurStyleInspire => '점진 블러';
+
+  @override
+  String get headerBlurStyleSubtitle =>
+      '점진 블러는 위쪽은 강하고 아래쪽은 완전히 선명합니다 (Inspire Blur)';
+
+  @override
+  String get headerBlurStyleHint =>
+      '점진 블러는 사용자 정의 셰이더(Impeller) 지원 기기가 필요하며, 미지원 시 상단 바는 단색 배경만 표시됩니다';
 
   @override
   String get frostedGlassModeLabel => '유리 모드';

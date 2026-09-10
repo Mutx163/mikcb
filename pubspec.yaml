@@ -52,6 +52,9 @@ dependencies:
   fountain_codes: ^1.0.0
   mobile_scanner: ^7.4.0
   image_picker: ^1.2.3
+  # 顶栏渐进模糊（Inspire Blur）：自定义 GPU shader 的变量模糊，
+  # 用于顶栏玻璃带「上浓下淡」的渐进过渡（见 lib/ui/hyperos/inspire/）。
+  inspire_blur: ^0.4.1
 
 dev_dependencies:
   flutter_test:

@@ -3249,7 +3249,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageBuiltInWallpaperTitle => '内置壁纸';
 
   @override
-  String get homePageBuiltInWallpaperSubtitle => '代码渲染的动态渐变底图，不占存储、无需联网；选择后立即铺满首页';
+  String get homePageBuiltInWallpaperSubtitle =>
+      '代码渲染的动态渐变底图，不占存储、无需联网；选择后立即铺满首页';
 
   @override
   String get homePageBuiltInWallpaperNone => '不使用';
@@ -3270,7 +3271,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageWallpaperSourceSubtitle => '自选图片优先于内置壁纸；清除图片后自动回退到内置壁纸';
 
   @override
-  String get homePageBuiltInWallpaperCredits => '内置壁纸基于 bokeh-lava-gradient（MIT）实现';
+  String get homePageBuiltInWallpaperCredits =>
+      '内置壁纸基于 bokeh-lava-gradient（MIT）实现';
 
   @override
   String get homePageWallpaperTitle => '背景图片';
@@ -9719,6 +9721,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleDateRuleNote => '地点匹配优先于日期规则。';
 
   @override
+  String get headerBlurStyleLabel => '顶栏模糊风格';
+
+  @override
+  String get headerBlurStyleGaussian => '高斯模糊';
+
+  @override
+  String get headerBlurStyleInspire => '渐进模糊';
+
+  @override
+  String get headerBlurStyleSubtitle => '渐进模糊让顶栏上浓下淡、贴近内容处完全清晰（Inspire Blur）';
+
+  @override
+  String get headerBlurStyleHint => '渐进模糊需要支持自定义着色器的设备（Impeller），不满足时顶栏只保留纯色衬底';
+
+  @override
   String get frostedGlassModeLabel => '玻璃模式';
 
   @override
@@ -13809,13 +13826,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homePageBackgroundImageSubtitle => '在「圖片」模式下，套用於下方勾選的顯示區域';
 
   @override
-  String get homePageBuiltInWallpaperTitle => '內建桌布';
+  String get homePageBuiltInWallpaperTitle => '內建壁紙';
 
   @override
-  String get homePageBuiltInWallpaperSubtitle => '由程式繪製的漸層底圖，不佔儲存空間、無需網路；選取後立即鋪滿首頁';
+  String get homePageBuiltInWallpaperSubtitle =>
+      '由程式繪製嘅漸變底圖，唔佔儲存空間、唔需要網絡；揀咗即刻鋪滿首頁';
 
   @override
-  String get homePageBuiltInWallpaperNone => '不使用';
+  String get homePageBuiltInWallpaperNone => '唔使用';
 
   @override
   String get homePageBuiltInWallpaperLavaDark => '熔岩橙 · 深色';
@@ -13827,13 +13845,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homePageBuiltInWallpaperEmberTeal => '青綠餘燼 · 深色';
 
   @override
-  String get homePageWallpaperSourceTitle => '桌布來源';
+  String get homePageWallpaperSourceTitle => '壁紙來源';
 
   @override
-  String get homePageWallpaperSourceSubtitle => '自選圖片優先於內建桌布；清除圖片後會自動回退到內建桌布';
+  String get homePageWallpaperSourceSubtitle => '自選圖片優先於內建壁紙；清除圖片後會自動回退到內建壁紙';
 
   @override
-  String get homePageBuiltInWallpaperCredits => '內建桌布基於 bokeh-lava-gradient（MIT）實作';
+  String get homePageBuiltInWallpaperCredits =>
+      '內建壁紙基於 bokeh-lava-gradient（MIT）實作';
 
   @override
   String get homePageWallpaperTitle => '背景圖片';
@@ -20325,6 +20344,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get scheduleDateRuleNote => '地點匹配優先於日期規則。';
 
   @override
+  String get headerBlurStyleLabel => '頂欄模糊風格';
+
+  @override
+  String get headerBlurStyleGaussian => '高斯模糊';
+
+  @override
+  String get headerBlurStyleInspire => '漸進模糊';
+
+  @override
+  String get headerBlurStyleSubtitle => '漸進模糊讓頂欄上濃下淡、貼近內容處完全清晰（Inspire Blur）';
+
+  @override
+  String get headerBlurStyleHint => '漸進模糊需要支援自訂著色器的裝置（Impeller），不支援時頂欄只保留純色襯底';
+
+  @override
   String get frostedGlassModeLabel => '玻璃模式';
 
   @override
@@ -24418,7 +24452,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homePageBuiltInWallpaperTitle => '內建桌布';
 
   @override
-  String get homePageBuiltInWallpaperSubtitle => '由程式繪製的漸層底圖，不佔儲存空間、無需網路；選取後立即鋪滿首頁';
+  String get homePageBuiltInWallpaperSubtitle =>
+      '由程式繪製的漸層底圖，不佔儲存空間、無需網路；選取後立即鋪滿首頁';
 
   @override
   String get homePageBuiltInWallpaperNone => '不使用';
@@ -24439,7 +24474,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homePageWallpaperSourceSubtitle => '自選圖片優先於內建桌布；清除圖片後會自動回退到內建桌布';
 
   @override
-  String get homePageBuiltInWallpaperCredits => '內建桌布基於 bokeh-lava-gradient（MIT）實作';
+  String get homePageBuiltInWallpaperCredits =>
+      '內建桌布基於 bokeh-lava-gradient（MIT）實作';
 
   @override
   String get homePageWallpaperTitle => '背景圖片';
@@ -30929,6 +30965,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get scheduleDateRuleNote => '地點匹配優先於日期規則。';
+
+  @override
+  String get headerBlurStyleLabel => '頂欄模糊風格';
+
+  @override
+  String get headerBlurStyleGaussian => '高斯模糊';
+
+  @override
+  String get headerBlurStyleInspire => '漸進模糊';
+
+  @override
+  String get headerBlurStyleSubtitle => '漸進模糊讓頂欄上濃下淡、貼近內容處完全清晰（Inspire Blur）';
+
+  @override
+  String get headerBlurStyleHint => '漸進模糊需要支援自訂著色器的裝置（Impeller），不支援時頂欄只保留純色襯底';
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';

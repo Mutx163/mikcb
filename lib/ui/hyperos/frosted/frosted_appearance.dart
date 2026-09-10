@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../models/header_blur_style.dart';
 import '../../../models/liquid_glass_tuning.dart';
 
 /// Default frosted-glass tuning (aligned with app timetable defaults).
@@ -7,6 +8,9 @@ const kDefaultFrostedBlurEnabled = true;
 const kDefaultFrostedSheetBlurSigma = 15.0;
 const kDefaultFrostedSheetTintAlpha = 0.70;
 const kDefaultFrostedSheetBarrierAlpha = 0.20;
+
+/// 顶栏玻璃带的默认模糊材质：渐进模糊（inspire_blur）。
+const kDefaultHeaderBlurStyle = HeaderBlurStyle.inspire;
 
 /// 液态玻璃作用范围默认值（外观与配色页可逐表面开关）。
 ///
@@ -56,6 +60,7 @@ class FrostedAppearance {
     required this.sheetBarrierAlpha,
     this.blurEnabled = kDefaultFrostedBlurEnabled,
     this.glassMode = FrostedGlassMode.frosted,
+    this.headerBlurStyle = kDefaultHeaderBlurStyle,
     this.liquidGlassTuning,
     this.liquidGlassPopupEnabled = kDefaultLiquidGlassPopupEnabled,
     this.liquidGlassSelectSheetEnabled = kDefaultLiquidGlassSelectSheetEnabled,
@@ -83,6 +88,12 @@ class FrostedAppearance {
 
   /// Global backdrop blur master switch.
   final bool blurEnabled;
+
+  /// 顶栏玻璃带（首页玻璃带 + 子页顶栏）的模糊材质风格。
+  ///
+  /// 只影响顶栏：卡片、弹窗等表面仍按 [glassMode] 渲染。两档都由
+  /// inspire_blur 的渐进模糊实现，见 `lib/ui/hyperos/inspire/`。
+  final HeaderBlurStyle headerBlurStyle;
 
   /// Glass surface rendering mode.
   final FrostedGlassMode glassMode;
@@ -113,6 +124,7 @@ class FrostedAppearance {
       identical(this, other) ||
       other is FrostedAppearance &&
           blurEnabled == other.blurEnabled &&
+          headerBlurStyle == other.headerBlurStyle &&
           sheetBlurSigma == other.sheetBlurSigma &&
           sheetTintAlpha == other.sheetTintAlpha &&
           sheetBarrierAlpha == other.sheetBarrierAlpha &&
@@ -131,6 +143,7 @@ class FrostedAppearance {
   @override
   int get hashCode => Object.hash(
     blurEnabled,
+    headerBlurStyle,
     sheetBlurSigma,
     sheetTintAlpha,
     sheetBarrierAlpha,

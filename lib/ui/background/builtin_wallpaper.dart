@@ -194,8 +194,7 @@ Future<ui.Image> renderBuiltInWallpaperImage(
   final layer = layerRecorder.endRecording();
   // 光斑层整体高斯模糊 → bokeh。sigma 与 [BokehLavaGradient] 同源（短边 ×
   // blurStrength），保证设置页缩略图与首页位图是同一张画面。
-  canvas.drawPicture(
-    layer,
+  canvas.saveLayer(
     Offset.zero & size,
     Paint()
       ..imageFilter = ui.ImageFilter.blur(
@@ -204,6 +203,8 @@ Future<ui.Image> renderBuiltInWallpaperImage(
         tileMode: TileMode.decal,
       ),
   );
+  canvas.drawPicture(layer);
+  canvas.restore();
   layer.dispose();
 
   final picture = recorder.endRecording();
@@ -275,7 +276,7 @@ Future<double?> sampleBuiltInWallpaperTopLuminance(
     var total = 0.0;
     var count = 0;
     // 顶部 9% 条带，与图片壁纸的 top band 同义。
-    final fromRow = 0;
+    const fromRow = 0;
     final toRow = math.max(1, (height * 0.09).ceil());
     for (var row = fromRow; row < toRow; row++) {
       final rowOffset = row * width * 4;

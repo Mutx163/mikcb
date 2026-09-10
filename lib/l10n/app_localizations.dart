@@ -6003,7 +6003,6 @@ abstract class AppLocalizations {
   /// **'在「图片」模式下，作用于下方勾选的显示区域'**
   String get homePageBackgroundImageSubtitle;
 
-
   /// No description provided for @homePageBuiltInWallpaperTitle.
   ///
   /// In zh, this message translates to:
@@ -17575,6 +17574,36 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'地点匹配优先于日期规则。'**
   String get scheduleDateRuleNote;
+
+  /// No description provided for @headerBlurStyleLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'顶栏模糊风格'**
+  String get headerBlurStyleLabel;
+
+  /// No description provided for @headerBlurStyleGaussian.
+  ///
+  /// In zh, this message translates to:
+  /// **'高斯模糊'**
+  String get headerBlurStyleGaussian;
+
+  /// No description provided for @headerBlurStyleInspire.
+  ///
+  /// In zh, this message translates to:
+  /// **'渐进模糊'**
+  String get headerBlurStyleInspire;
+
+  /// No description provided for @headerBlurStyleSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'渐进模糊让顶栏上浓下淡、贴近内容处完全清晰（Inspire Blur）'**
+  String get headerBlurStyleSubtitle;
+
+  /// No description provided for @headerBlurStyleHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'渐进模糊需要支持自定义着色器的设备（Impeller），不满足时顶栏只保留纯色衬底'**
+  String get headerBlurStyleHint;
 
   /// No description provided for @frostedGlassModeLabel.
   ///
