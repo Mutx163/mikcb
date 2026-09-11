@@ -568,6 +568,19 @@ class _HyperosHeaderTextButton extends StatelessWidget {
       );
     }
 
+    // 「液态玻璃作用范围 → 壁纸选点按钮」关闭 → 实体卡片（不再降级磨砂）。
+    if (LiquidGlassDegradation.familyFallsBackToSolid(
+      context,
+      liquidGlassFamilyEnabled: appearance.liquidGlassPickerButtonsEnabled,
+    )) {
+      return Material(
+        color: HyperosColors.surfaceContainer(context),
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: content,
+      );
+    }
+
     // 高斯模糊路径（经典磨砂/高斯模糊/半透明共用）：模糊强度跟随设置；
     // 关闭模糊或系统降级时 FrostedHeaderBackground 自动只画衬底。
     // 描边保留，保证纯衬底状态下按钮轮廓仍然可辨。

@@ -3570,6 +3570,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePageImageNotSelected => 'Not selected';
 
   @override
+  String get homePageWallpaperRecentTitle => 'Recently used';
+
+  @override
+  String get homePageWallpaperRecentSubtitle =>
+      'Tap to switch back, up to 10 kept';
+
+  @override
+  String get homePageWallpaperRecentImageLabel => 'Photo';
+
+  @override
   String get wallpaperPositionPickerTitle => 'Adjust wallpaper position';
 
   @override
@@ -10347,7 +10357,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frostedGlassModeLabel => 'Glass Mode';
 
   @override
-  String get liquidGlassScopeSectionTitle => 'Liquid Glass Surfaces';
+  String get liquidGlassScopeSectionTitle =>
+      'Liquid Glass Surfaces (off = solid card)';
 
   @override
   String get liquidGlassScopePopupTitle => 'Dropdown popups';
@@ -10361,7 +10372,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liquidGlassScopeSelectSheetSubtitle =>
-      'Long-list selection dialogs such as Preset Themes and Fonts; frosted by default';
+      'Long-list selection dialogs such as Preset Themes and Fonts; turning it off switches to the solid card';
 
   @override
   String get liquidGlassScopeSheetDialogTitle => 'Sheets & dialogs';

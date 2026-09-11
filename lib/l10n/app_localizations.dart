@@ -6237,6 +6237,24 @@ abstract class AppLocalizations {
   /// **'未选择'**
   String get homePageImageNotSelected;
 
+  /// No description provided for @homePageWallpaperRecentTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'最近使用'**
+  String get homePageWallpaperRecentTitle;
+
+  /// No description provided for @homePageWallpaperRecentSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'点按即可切回，最多保留 10 张'**
+  String get homePageWallpaperRecentSubtitle;
+
+  /// No description provided for @homePageWallpaperRecentImageLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'照片'**
+  String get homePageWallpaperRecentImageLabel;
+
   /// No description provided for @wallpaperPositionPickerTitle.
   ///
   /// In zh, this message translates to:
@@ -17686,7 +17704,7 @@ abstract class AppLocalizations {
   /// No description provided for @liquidGlassScopeSectionTitle.
   ///
   /// In zh, this message translates to:
-  /// **'液态玻璃作用范围'**
+  /// **'液态玻璃作用范围（关闭即改为实体卡片）'**
   String get liquidGlassScopeSectionTitle;
 
   /// No description provided for @liquidGlassScopePopupTitle.
@@ -17710,7 +17728,7 @@ abstract class AppLocalizations {
   /// No description provided for @liquidGlassScopeSelectSheetSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'预设主题、字体等长列表选择弹窗，默认保持磨砂'**
+  /// **'预设主题、字体等长列表选择弹窗；关闭后改为实体卡片'**
   String get liquidGlassScopeSelectSheetSubtitle;
 
   /// No description provided for @liquidGlassScopeSheetDialogTitle.

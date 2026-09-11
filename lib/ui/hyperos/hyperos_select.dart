@@ -595,9 +595,10 @@ class HyperosSelectPopupGlass extends StatelessWidget {
   ///
   /// 判定与 [build] 的材质分支同序：调用方强制实底（WebView 场景）→
   /// 实底；液态玻璃激活 → 液态面（自带模糊，不受 blur 总开关约束）；
-  /// 否则 blur 总开关关闭或系统降级 → 实底。调用方（如列表弹窗的墨色
-  /// 选择）据此把「为透明玻璃准备的壁纸感知墨色」重置为主题墨——实底
-  /// 不再透出壁纸，浅色实底上的白墨不可读。
+  /// 否则 blur 总开关关闭、系统降级、或「液态玻璃作用范围」关闭本家族
+  /// → 实底。调用方（如列表弹窗的墨色选择）据此把「为透明玻璃准备的
+  /// 壁纸感知墨色」重置为主题墨——实底不再透出壁纸，浅色实底上的白墨
+  /// 不可读。
   static bool solidSurfaceActive(
     BuildContext context, {
     bool opaqueSurface = false,
@@ -608,6 +609,13 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     if (liquidSurfaceActive(context) || softSurfaceActive(context)) {
       return false;
     }
+    if (LiquidGlassDegradation.familyFallsBackToSolid(
+      context,
+      liquidGlassFamilyEnabled:
+          FrostedAppearanceScope.of(context).liquidGlassPopupEnabled,
+    )) {
+      return true;
+    }
     return !HyperosBlurredHeader.backdropBlurEnabled(context);
   }
 
@@ -615,6 +623,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(cornerRadius);
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+    final appearance = FrostedAppearanceScope.of(context);
 
     // Soft glass (global): milky frost panel for anchored popups.
     if (softSurfaceActive(context)) {
@@ -714,8 +723,18 @@ class HyperosSelectPopupGlass extends StatelessWidget {
       );
     }
 
-    // Blur disabled → solid opaque surface.
-    if (!useBlur) {
+    // Blur disabled, 或「液态玻璃作用范围 → 下拉选择弹窗」关闭
+    // → solid opaque surface.
+    //
+    // 家族关闭时不再降级为磨砂：磨砂走实时 BackdropFilter，入场动画
+    // （弹簧缩放 + 揭示裁切）期间采不到稳定背景，面板会整段渲染为透明，
+    // 动画结束才「啪」地出现——读起来就是弹窗没有动画。实体卡片不依赖
+    // 背景采样，动画全程正常。
+    if (!useBlur ||
+        LiquidGlassDegradation.familyFallsBackToSolid(
+          context,
+          liquidGlassFamilyEnabled: appearance.liquidGlassPopupEnabled,
+        )) {
       return HyperosSolidPopupSurface(cornerRadius: cornerRadius, child: child);
     }
 

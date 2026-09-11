@@ -288,7 +288,13 @@ class HyperosSheetFrame extends StatelessWidget {
     // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
     // would make the frame a solid gray slab on desktop/web while the nested
     // tiles keep rendering liquid glass.
-    // 「液态玻璃作用范围」对应家族开关关闭时，整框回退磨砂/实底材质。
+    // 「液态玻璃作用范围」家族开关：全局液态 + 该家族关闭 → 实体卡片
+    // （不再降级为高斯磨砂，见 [LiquidGlassDegradation.familyFallsBackToSolid]）。
+    final familySolid = LiquidGlassDegradation.familyFallsBackToSolid(
+      context,
+      liquidGlassFamilyEnabled: _liquidGlassAllowed(appearance),
+    );
+
     if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
         _liquidGlassAllowed(appearance) &&
         !LiquidGlassDegradation.shouldDegrade(context)) {
@@ -304,8 +310,8 @@ class HyperosSheetFrame extends StatelessWidget {
 
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
 
-    // Blur off → solid opaque panel (no translucent scrim over the page).
-    if (!useBlur) {
+    // Blur off or family-disabled → solid opaque panel (no translucent scrim).
+    if (!useBlur || familySolid) {
       return Material(
         color: HyperosColors.surfaceContainer(context),
         borderRadius: borderRadius,
@@ -353,7 +359,12 @@ class HyperosSheetFrame extends StatelessWidget {
     // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
     // would make the frame a solid gray slab on desktop/web while nested
     // tiles keep rendering liquid glass.
-    // 「液态玻璃作用范围」对应家族开关关闭时，整框回退磨砂/实底材质。
+    // 同 [_buildFrostedBackground]：家族关闭 → 实体卡片。
+    final familySolid = LiquidGlassDegradation.familyFallsBackToSolid(
+      context,
+      liquidGlassFamilyEnabled: _liquidGlassAllowed(appearance),
+    );
+
     if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
         _liquidGlassAllowed(appearance) &&
         !LiquidGlassDegradation.shouldDegrade(context)) {
@@ -371,8 +382,8 @@ class HyperosSheetFrame extends StatelessWidget {
 
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
 
-    // Blur off → solid opaque panel (no translucent scrim over the page).
-    if (!useBlur) {
+    // Blur off or family-disabled → solid opaque panel.
+    if (!useBlur || familySolid) {
       return HyperosFrostedPanelScope(
         child: Material(
           color: HyperosColors.surfaceContainer(context),

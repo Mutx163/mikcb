@@ -3419,6 +3419,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePageImageNotSelected => '未選択';
 
   @override
+  String get homePageWallpaperRecentTitle => '最近使った壁紙';
+
+  @override
+  String get homePageWallpaperRecentSubtitle => 'タップで切替、最大 10 枚まで保持';
+
+  @override
+  String get homePageWallpaperRecentImageLabel => '写真';
+
+  @override
   String get wallpaperPositionPickerTitle => '壁紙の表示位置を調整';
 
   @override
@@ -10056,7 +10065,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get frostedGlassModeLabel => 'ガラスモード';
 
   @override
-  String get liquidGlassScopeSectionTitle => 'リキッドガラスの適用範囲';
+  String get liquidGlassScopeSectionTitle => 'リキッドガラスの適用範囲（オフ＝ソリッドカード）';
 
   @override
   String get liquidGlassScopePopupTitle => 'プルダウンポップアップ';
@@ -10069,7 +10078,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liquidGlassScopeSelectSheetSubtitle =>
-      'プリセットテーマやフォントなど長いリストの選択ダイアログ。既定はすりガラス';
+      'プリセットテーマやフォントなど長いリストの選択ダイアログ。オフにするとソリッドカードになります';
 
   @override
   String get liquidGlassScopeSheetDialogTitle => 'シートとダイアログ';

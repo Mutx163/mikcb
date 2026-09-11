@@ -3435,6 +3435,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homePageImageNotSelected => '선택 안 됨';
 
   @override
+  String get homePageWallpaperRecentTitle => '최근 사용';
+
+  @override
+  String get homePageWallpaperRecentSubtitle => '탭하면 바로 전환, 최대 10장 보관';
+
+  @override
+  String get homePageWallpaperRecentImageLabel => '사진';
+
+  @override
   String get wallpaperPositionPickerTitle => '배경화면 표시 위치 조정';
 
   @override
@@ -10098,7 +10107,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedGlassModeLabel => '유리 모드';
 
   @override
-  String get liquidGlassScopeSectionTitle => '액체 유리 적용 범위';
+  String get liquidGlassScopeSectionTitle => '액체 유리 적용 범위 (끄면 솔리드 카드)';
 
   @override
   String get liquidGlassScopePopupTitle => '드롭다운 팝업';
@@ -10111,7 +10120,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liquidGlassScopeSelectSheetSubtitle =>
-      '프리셋 테마, 글꼴 등 긴 목록 선택 대화상자. 기본은 블러 유지';
+      '프리셋 테마, 글꼴 등 긴 목록 선택 대화상자. 끄면 솔리드 카드로 바뀝니다';
 
   @override
   String get liquidGlassScopeSheetDialogTitle => '시트 및 대화상자';

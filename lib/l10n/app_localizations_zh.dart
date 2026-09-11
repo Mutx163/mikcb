@@ -3363,6 +3363,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageImageNotSelected => '未选择';
 
   @override
+  String get homePageWallpaperRecentTitle => '最近使用';
+
+  @override
+  String get homePageWallpaperRecentSubtitle => '点按即可切回，最多保留 10 张';
+
+  @override
+  String get homePageWallpaperRecentImageLabel => '照片';
+
+  @override
   String get wallpaperPositionPickerTitle => '调整壁纸显示位置';
 
   @override
@@ -9772,7 +9781,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get frostedGlassModeLabel => '玻璃模式';
 
   @override
-  String get liquidGlassScopeSectionTitle => '液态玻璃作用范围';
+  String get liquidGlassScopeSectionTitle => '液态玻璃作用范围（关闭即改为实体卡片）';
 
   @override
   String get liquidGlassScopePopupTitle => '下拉选择弹窗';
@@ -9784,7 +9793,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liquidGlassScopeSelectSheetTitle => '全屏选择面板';
 
   @override
-  String get liquidGlassScopeSelectSheetSubtitle => '预设主题、字体等长列表选择弹窗，默认保持磨砂';
+  String get liquidGlassScopeSelectSheetSubtitle => '预设主题、字体等长列表选择弹窗；关闭后改为实体卡片';
 
   @override
   String get liquidGlassScopeSheetDialogTitle => '弹窗与对话框';
@@ -14094,6 +14103,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homePageImageNotSelected => '未選擇';
+
+  @override
+  String get homePageWallpaperRecentTitle => '最近使用';
+
+  @override
+  String get homePageWallpaperRecentSubtitle => '撳一下即切返，最多保留 10 張';
+
+  @override
+  String get homePageWallpaperRecentImageLabel => '相片';
 
   @override
   String get wallpaperPositionPickerTitle => '調整桌布顯示位置';
@@ -20548,7 +20566,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get frostedGlassModeLabel => '玻璃模式';
 
   @override
-  String get liquidGlassScopeSectionTitle => '液態玻璃作用範圍';
+  String get liquidGlassScopeSectionTitle => '液態玻璃作用範圍（關閉即改為實體卡片）';
 
   @override
   String get liquidGlassScopePopupTitle => '下拉選擇彈窗';
@@ -20560,7 +20578,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liquidGlassScopeSelectSheetTitle => '全螢幕選擇面板';
 
   @override
-  String get liquidGlassScopeSelectSheetSubtitle => '預設主題、字體等長列表選擇彈窗，預設保持磨砂';
+  String get liquidGlassScopeSelectSheetSubtitle => '預設主題、字體等長列表選擇彈窗；關閉後改為實體卡片';
 
   @override
   String get liquidGlassScopeSheetDialogTitle => '彈窗與對話框';
@@ -24870,6 +24888,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homePageImageNotSelected => '未選擇';
+
+  @override
+  String get homePageWallpaperRecentTitle => '最近使用';
+
+  @override
+  String get homePageWallpaperRecentSubtitle => '點按即可切回，最多保留 10 張';
+
+  @override
+  String get homePageWallpaperRecentImageLabel => '照片';
 
   @override
   String get wallpaperPositionPickerTitle => '調整桌布顯示位置';
@@ -31324,7 +31351,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get frostedGlassModeLabel => '玻璃模式';
 
   @override
-  String get liquidGlassScopeSectionTitle => '液態玻璃作用範圍';
+  String get liquidGlassScopeSectionTitle => '液態玻璃作用範圍（關閉即改為實體卡片）';
 
   @override
   String get liquidGlassScopePopupTitle => '下拉選擇彈窗';
@@ -31336,7 +31363,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liquidGlassScopeSelectSheetTitle => '全螢幕選擇面板';
 
   @override
-  String get liquidGlassScopeSelectSheetSubtitle => '預設主題、字體等長列表選擇彈窗，預設保持磨砂';
+  String get liquidGlassScopeSelectSheetSubtitle => '預設主題、字體等長列表選擇彈窗；關閉後改為實體卡片';
 
   @override
   String get liquidGlassScopeSheetDialogTitle => '彈窗與對話框';
