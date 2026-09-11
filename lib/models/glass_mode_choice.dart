@@ -62,6 +62,23 @@ TimetableSettings applyGlassModeChoice(
   ),
 };
 
+/// 写回「顶栏模糊风格」独立行（渐进模糊 / 高斯模糊）。
+///
+/// 该行从「玻璃材质」里拆回来后与后者的渐进/高斯两档语义重叠，所以这里
+/// **同步**写 `homeChromeGlassMaterial`：否则用户先选「玻璃材质 = 渐进模糊」
+/// 再改「模糊风格 = 高斯模糊」，材质行会仍显示「渐进模糊」，与实际渲染的
+/// 衰减风格自相矛盾。液态档走折射面、不看 [HeaderBlurStyle]，这里一并关掉
+/// 首页液态开关（与 [ChromeGlassMaterial.progressive] 同款收尾）。
+TimetableSettings applyChromeBlurStyle(
+  TimetableSettings settings,
+  HeaderBlurStyle style,
+) => settings.copyWith(
+  headerBlurStyle: style,
+  homeChromeGlassMaterial: style == HeaderBlurStyle.gaussian
+      ? 'gaussian'
+      : 'progressive',
+  liquidGlassHomeChromeEnabled: false,
+);
 /// 课表壁纸区「顶栏玻璃材质」三档（与全局玻璃模式完全解耦）。
 ///
 /// - [progressive]：首页玻璃带用 inspire 渐进模糊（上浓下淡）。

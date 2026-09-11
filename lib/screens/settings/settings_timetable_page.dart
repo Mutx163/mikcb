@@ -319,6 +319,31 @@ class _TimetablePageSettingsScreenState
                     _updateDraft(applyChromeGlassMaterial(_draft, value));
                   },
                 ),
+              // 顶栏模糊风格：独立一行（渐进模糊 / 高斯模糊），从「玻璃材质」
+              // 里拆回。选「液态玻璃」时折射面不看衰减风格，该行随之隐藏——
+              // 不隐藏会留一个改了没效果的选项。与材质行双向同步，见
+              // [applyChromeBlurStyle]。
+              if (_chromeGlassEnabled && !_chromeLiquidGlassEnabled) ...[
+                HyperosSelectTile<HeaderBlurStyle>(
+                  label: l10n.headerBlurStyleLabel,
+                  subtitle: l10n.headerBlurStyleSubtitle,
+                  items: {
+                    l10n.headerBlurStyleInspire: HeaderBlurStyle.inspire,
+                    l10n.headerBlurStyleGaussian: HeaderBlurStyle.gaussian,
+                  },
+                  value: _draft.headerBlurStyle,
+                  onChanged: (value) {
+                    _updateDraft(applyChromeBlurStyle(_draft, value));
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Text(
+                    l10n.headerBlurStyleHint,
+                    style: HyperosTypography.sectionDescription(context),
+                  ),
+                ),
+              ],
             ],
           ),
         ],
@@ -361,6 +386,11 @@ class _TimetablePageSettingsScreenState
   bool get _chromeGlassEnabled =>
       _draft.homePageHeaderBlurEnabled ||
       _draft.homePageWeekdayBarBlurEnabled;
+
+  /// 首页玻璃带是否走液态：液态折射面不看模糊衰减风格，「顶栏模糊风格」
+  /// 行在这种状态下没有效果，隐藏而不是留一个改了不生效的选项。
+  bool get _chromeLiquidGlassEnabled =>
+      chromeGlassMaterialOf(_draft) == ChromeGlassMaterial.liquid;
 
   void _setChromeGlassEnabled(bool enabled) {
     _updateDraft(

@@ -105,4 +105,68 @@ void main() {
       expect(chromeGlassMaterialOf(legacy), ChromeGlassMaterial.liquid);
     });
   });
+
+  group('顶栏模糊风格独立行：applyChromeBlurStyle', () {
+    test('渐进档：写风格并同步材质键，材质行不会显示成高斯', () {
+      final s = applyChromeBlurStyle(
+        TimetableSettings.defaults().copyWith(
+          homeChromeGlassMaterial: 'gaussian',
+          headerBlurStyle: HeaderBlurStyle.gaussian,
+        ),
+        HeaderBlurStyle.inspire,
+      );
+
+      expect(s.headerBlurStyle, HeaderBlurStyle.inspire);
+      expect(s.homeChromeGlassMaterial, 'progressive');
+      expect(chromeGlassMaterialOf(s), ChromeGlassMaterial.progressive);
+    });
+
+    test('高斯档：写风格并同步材质键', () {
+      final s = applyChromeBlurStyle(
+        TimetableSettings.defaults(),
+        HeaderBlurStyle.gaussian,
+      );
+
+      expect(s.headerBlurStyle, HeaderBlurStyle.gaussian);
+      expect(s.homeChromeGlassMaterial, 'gaussian');
+      expect(chromeGlassMaterialOf(s), ChromeGlassMaterial.gaussian);
+    });
+
+    test('从液态切回风格档：材质行不再停在液态玻璃', () {
+      final liquid = applyChromeGlassMaterial(
+        TimetableSettings.defaults(),
+        ChromeGlassMaterial.liquid,
+      );
+      expect(chromeGlassMaterialOf(liquid), ChromeGlassMaterial.liquid);
+
+      final s = applyChromeBlurStyle(liquid, HeaderBlurStyle.inspire);
+
+      expect(s.homeChromeGlassMaterial, 'progressive');
+      expect(s.liquidGlassHomeChromeEnabled, isFalse);
+      expect(chromeGlassMaterialOf(s), ChromeGlassMaterial.progressive);
+    });
+
+    test('两行往返切换后状态自洽（材质行与风格行不打架）', () {
+      var s = TimetableSettings.defaults();
+      // 材质行选高斯 → 风格行跟着显示高斯。
+      s = applyChromeGlassMaterial(s, ChromeGlassMaterial.gaussian);
+      expect(s.headerBlurStyle, HeaderBlurStyle.gaussian);
+      // 风格行改渐进 → 材质行跟着回到渐进。
+      s = applyChromeBlurStyle(s, HeaderBlurStyle.inspire);
+      expect(chromeGlassMaterialOf(s), ChromeGlassMaterial.progressive);
+      expect(s.headerBlurStyle, HeaderBlurStyle.inspire);
+      // 材质行选液态 → 风格行隐藏，风格值原样保留。
+      s = applyChromeGlassMaterial(s, ChromeGlassMaterial.liquid);
+      expect(chromeGlassMaterialOf(s), ChromeGlassMaterial.liquid);
+      expect(s.headerBlurStyle, HeaderBlurStyle.inspire);
+    });
+
+    test('不改全局玻璃模式（只动首页玻璃带）', () {
+      final base = TimetableSettings.defaults().copyWith(
+        frostedGlassMode: FrostedGlassMode.softGlass,
+      );
+      final s = applyChromeBlurStyle(base, HeaderBlurStyle.gaussian);
+      expect(s.frostedGlassMode, FrostedGlassMode.softGlass);
+    });
+  });
 }
