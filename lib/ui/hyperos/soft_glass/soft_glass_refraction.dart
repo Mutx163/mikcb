@@ -36,6 +36,23 @@ abstract final class SoftGlassRefraction {
   /// 色散偏移（dp）—— 上游 `GlassRefractionSpec.chromaticAberration`。
   static const double chromaticAberrationDp = 1;
 
+  /// 厚度感（0..1）—— 上游 `GlassRefractionSpec.depthEffect`（默认 0.60）。
+  ///
+  /// 法线里「径向」分量的权重：0 = 纯边缘法线（薄片），越大越像一块有厚度的
+  /// 实心玻璃（折射方向从中心向外倾斜）。**此前这一项整条链路都缺**，透镜只剩
+  /// 边缘法线，宽矩形弹窗上折射方向与上游差出接近 90°，是「看着跟高斯一样」的
+  /// 主因之一。上游 `normalized()` 把它夹在 0..0.60。
+  static const double depthEffect = 0.60;
+
+  /// rim 高光强度 —— 上游 `GlassEdgeOpticsSpec.highlightAlpha`（默认 0.95）。
+  ///
+  /// 与 Dart 侧 `_SoftGlassEdgePainter` 的 0.5dp 描边是**两层**：这里是画在
+  /// 折射结果之上的方向性 rim（左上亮、右下暗），那里是整圈的渐变描边。
+  static const double edgeHighlightAlpha = 0.95;
+
+  /// rim 高光灰度 —— 上游 `GlassEdgeOpticsSpec.highlightGray`（默认 1 = 纯白）。
+  static const double edgeHighlightGray = 1;
+
   /// 噪声系数：原版 noiseCoefficient。
   static const double noiseCoefficient = 0.095;
 
@@ -88,6 +105,9 @@ class SoftGlassRefractionLens {
   /// * [viewSize]：视图物理尺寸（判断引擎给的是整屏快照还是已裁到控件）；
   /// * [cornerRadiusPx]：实际形状的圆角半径，胶囊传短边一半。shader 内部会再
   ///   夹一次上限，这里不必自己夹。
+  /// * [edgeHighlightAlpha]：**已按明暗折减**的 rim 高光强度（暗色为亮色的
+  ///   `darkHighlightMultiplier` 倍）。折减放在 Dart 侧算，是因为明暗只有
+  ///   `BuildContext` 知道，shader 拿不到。
   ///
   /// 下标 0/1 是 `u_size`，由引擎按绑定纹理尺寸写入，这里**不能**设。
   ui.ImageFilter filterFor(
@@ -95,6 +115,7 @@ class SoftGlassRefractionLens {
     ui.Size viewSize, {
     required double devicePixelRatio,
     required double cornerRadiusPx,
+    required double edgeHighlightAlpha,
   }) {
     assert(!_disposed, 'SoftGlassRefractionLens 已释放，不能继续出滤镜');
     final dpr = devicePixelRatio;
@@ -109,7 +130,10 @@ class SoftGlassRefractionLens {
       ..setFloat(9, SoftGlassRefraction.noiseCoefficient)
       ..setFloat(10, viewSize.width)
       ..setFloat(11, viewSize.height)
-      ..setFloat(12, cornerRadiusPx);
+      ..setFloat(12, cornerRadiusPx)
+      ..setFloat(13, SoftGlassRefraction.depthEffect)
+      ..setFloat(14, edgeHighlightAlpha.clamp(0.0, 1.0))
+      ..setFloat(15, SoftGlassRefraction.edgeHighlightGray);
     return ui.ImageFilter.shader(_shader);
   }
 

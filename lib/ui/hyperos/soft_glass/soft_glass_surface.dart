@@ -61,10 +61,16 @@ abstract final class SoftGlassTokens {
       baseBlurRadius * floatingNavigationRadiusMultiplier * radiusToSigmaScale +
       radiusToSigmaBias;
 
-  /// 后置柔化（GlassLayeringSpec.postRefractionBlurRadius）。
+  /// 后置柔化（上游 `GlassLayeringSpec.postRefractionBlurRadius`）。
   ///
-  /// 原版在折射之后再过一道 0.5dp 高斯。0.5dp 折算 sigma ≈ 1.4px，肉眼不可辨，
-  /// 为省掉一个额外的 BackdropFilter 通道未予实现。
+  /// 上游在折射之后再过一道极小的高斯：`Dialog` 0.75dp、`BottomSheet` 1dp、
+  /// 其余默认 0.5dp，作用是削掉球面透镜在贴边处的采样硬边。
+  ///
+  /// **本项目有意不实现**：0.5dp 在 2x 屏折算 σ ≈ 1.1px、3x 屏 ≈ 1.6px，
+  /// 而 Flutter 侧要多付一次 `ImageFilter.compose`（或者一个额外的 BackdropFilter
+  /// 通道）才能叠上去；更要紧的是它会把 [SoftGlassRefraction] 那层刚压锐的
+  /// 边缘折射重新糊开——而「折射看着不像折射」正是柔光玻璃此刻要解决的问题。
+  /// 若将来在设备上确认贴边出现采样硬边，再把这条补上。
   static const double postRefractionBlurDp = 0.5;
 
   // ---------------------------------------------------------------------
@@ -93,8 +99,11 @@ abstract final class SoftGlassTokens {
 
   static const double navigationTintAlpha = 0.75;
 
-  /// 底栏（浮空导航）配方的不透明度倍率 —— 上游 `FloatingNavigation` 的
-  /// `tintAlphaMultiplier = 0.90`。面板 / 对话框配方是 `1.0`，见 [SoftGlassRecipe]。
+  /// 底色不透明度倍率 —— 上游 `AdvancedMaterialFineTuning`
+  /// 的 `glassTintAlphaMultiplier`（默认 0.90）。**底栏 / 对话框 / 底部面板
+  /// 三套配方共用同一个值**：上游 `DeadlinerGlassRecipes` 三者的
+  /// `GlassBlurSpec.tintAlphaMultiplier` 字面值并不相同（0.90 / 1f / 1f），但
+  /// 工厂函数会再乘一次 tuning 值，结果一律 0.90。详见 [SoftGlassRecipe] 类注释。
   static const double navigationTintAlphaMultiplier = 0.90;
 
   /// 亮色底灰度（glassTintLightGray）→ 252。
@@ -103,16 +112,17 @@ abstract final class SoftGlassTokens {
   /// 暗色底灰度（glassTintDarkGray）→ 31。
   static const double tintDarkGray = 0.12;
 
-  /// 底栏有效底色不透明度 = [navigationTintAlpha] × 0.90 ≈ 0.675，
-  /// **明暗同值**（此前亮色误用了旧版 V2 的 0.72）。
+  /// 有效底色不透明度 = [navigationTintAlpha] × [navigationTintAlphaMultiplier]
+  /// ≈ 0.675，**明暗同值、三套配方同值**（此前亮色误用了旧版 V2 的 0.72）。
   static const double tintAlpha =
       navigationTintAlpha * navigationTintAlphaMultiplier;
 
   /// 模糊总开关关闭时的底色不透明度。
   ///
-  /// 原版权威值是 0.92 × 0.90 = 0.828，但那会让「模糊关闭」的弹窗透出底下的
-  /// 课表；本项目约定「模糊关闭即实底」（见 HyperosBlurredHeader.sheetTintColor），
-  /// 故此处保留高不透明度，属**有意偏离**。
+  /// 上游 `SoftGlassSurface` 在材质未启用（`advancedMaterial.enabled == false`）
+  /// 时写死 0.92；本项目约定「模糊关闭即实底」（见
+  /// HyperosBlurredHeader.sheetTintColor），故这里收紧到 0.90，属**有意偏离**：
+  /// 既不能透出底下的课表，又要保住玻璃面的层级。
   static const double tintAlphaNoBlur = 0.90;
 
   // ---------------------------------------------------------------------
@@ -127,7 +137,7 @@ abstract final class SoftGlassTokens {
       };
 
   /// 底色：灰度取自 glassTintLightGray / glassTintDarkGray，明暗各一值；
-  /// 不透明度 = [navigationTintAlpha] × [tintAlphaMultiplier]（配方决定后者）。
+  /// 不透明度 = [navigationTintAlpha] × [navigationTintAlphaMultiplier]。
   static Color tint(
     BuildContext context, {
     required bool blurEnabled,
@@ -184,14 +194,26 @@ abstract final class SoftGlassTokens {
 /// 柔光玻璃配方 —— 直译上游 `DeadlinerGlassRecipes` 的三套。
 ///
 /// 上游对「浮空导航 / 底部面板 / 对话框」用三套不同配方：底栏只借一点雾
-/// （radius 23dp、tint ×0.90），对话框是更厚的一层（radius 92dp、tint ×1.0、
-/// 圆角 40dp）。此前我们把底栏那套用到了所有面，弹层因此像一块实心白卡——
-/// 「厚玻璃」的观感来自**折射透镜 + 大半径雾面**，而不是底色的透明度：
-/// 对话框配方的底色其实比底栏**更实**（0.75 vs 0.675）。
+/// （radius 23dp），对话框与底部面板是更厚的一层（radius 92dp / 184dp，圆角
+/// 40dp / 36dp）。此前我们把底栏那套用到了所有面，弹层因此像一块实心白卡——
+/// 「厚玻璃」的观感来自**折射透镜 + 大半径雾面**，而不是底色的透明度。
 ///
-/// 上游最终半径 = `baseBlurRadius(92) × radiusMultiplier × 0.25`（软玻璃调校
-/// 默认值），下表已折算成 dp 绝对值；sigma 再按 `radius × 0.57735 + 0.5`
-/// 换算成 Flutter `BackdropFilter` 吃的参数（见 [blurSigma]）。
+/// ⚠️ **tint 倍率三套配方最终都是 0.90，不要被上游 `GlassBlurSpec` 的字面值骗了**
+/// —— 上游 `DeadlinerGlassRecipes` 里 `FloatingNavigation.blur.tintAlphaMultiplier`
+/// 是 0.90、`Dialog` / `BottomSheet` 是 1f，但工厂函数会再处理一次：
+/// `floatingNavigation()` 用 `tuning.glassTintAlphaMultiplier` **直接覆盖**，
+/// `dialog()` / `bottomSheet()` 则 `× tuning.glassTintAlphaMultiplier` ——
+/// 默认 0.90，于是三者殊途同归，底色不透明度一律 = `navigationTintAlpha(0.75)
+/// × 0.90 = 0.675`。
+///
+/// 本文件此前把 `Dialog.blur.tintAlphaMultiplier = 1f` 当成了最终倍率，对话框
+/// 底色因此偏实（0.75 而非 0.675）。**层级越实，底下的模糊与折射越看不见** ——
+/// 这一处偏差本身就是「弹层看着和高斯模糊一个样」的成因之一。
+///
+/// 上游最终半径 = `baseBlurRadius(92) × recipe.radiusMultiplier ×
+/// tuning.glassBlurRadiusMultiplier(0.25)`（软玻璃调校默认值），下表已折算成 dp
+/// 绝对值；sigma 再按 `radius × 0.57735 + 0.5` 换算成 Flutter `BackdropFilter`
+/// 吃的参数（见 [blurSigma]）。
 class SoftGlassRecipe {
   const SoftGlassRecipe({
     required this.blurRadiusDp,
@@ -222,9 +244,10 @@ class SoftGlassRecipe {
     tintAlphaMultiplier: SoftGlassTokens.navigationTintAlphaMultiplier,
   );
 
-  /// 对话框 / 弹层：92 × 1 = radius 92 → σ ≈ 53.6，圆角 40dp，底色倍率 1.0。
+  /// 对话框 / 弹层：92 × 1 = radius 92 → σ ≈ 53.6，圆角 40dp，底色倍率 0.90。
   static const SoftGlassRecipe dialog = SoftGlassRecipe(
     blurRadiusDp: SoftGlassTokens.baseBlurRadius,
+    tintAlphaMultiplier: SoftGlassTokens.navigationTintAlphaMultiplier,
     cornerRadiusDp: 40,
   );
 
@@ -235,6 +258,7 @@ class SoftGlassRecipe {
   /// 未在设备上确认性能前不要直接挂到大面板上。
   static const SoftGlassRecipe bottomSheet = SoftGlassRecipe(
     blurRadiusDp: SoftGlassTokens.baseBlurRadius * 2,
+    tintAlphaMultiplier: SoftGlassTokens.navigationTintAlphaMultiplier,
     cornerRadiusDp: 36,
   );
 }
@@ -328,6 +352,9 @@ class SoftGlassSurface extends StatelessWidget {
             blurSigma: sigma,
             enableRefraction: enableRefraction,
             cornerRadius: resolvedRadius.topLeft.x,
+            // rim 高光强度（未乘 materialAlpha）：shader 内的边缘高光与
+            // 底下的折射同属一层，明暗折减在 Dart 侧算好再下发。
+            edgeHighlightAlpha: SoftGlassTokens.edgeAlphaOf(isDark),
             child: const SizedBox.expand(),
           );
         }
@@ -471,6 +498,7 @@ class _SoftGlassBackdrop extends StatefulWidget {
     required this.blurSigma,
     required this.enableRefraction,
     required this.cornerRadius,
+    required this.edgeHighlightAlpha,
     required this.child,
   });
 
@@ -479,6 +507,9 @@ class _SoftGlassBackdrop extends StatefulWidget {
 
   /// 实际形状的圆角半径（逻辑像素）。胶囊传 999 也行——渲染侧会夹到短边一半。
   final double cornerRadius;
+
+  /// 已按明暗折减的 rim 高光强度，直接进 shader。
+  final double edgeHighlightAlpha;
   final Widget child;
 
   @override
@@ -543,6 +574,7 @@ class _SoftGlassBackdropState extends State<_SoftGlassBackdrop> {
       devicePixelRatio: view.devicePixelRatio,
       viewSize: view.physicalSize,
       cornerRadius: widget.cornerRadius,
+      edgeHighlightAlpha: widget.edgeHighlightAlpha,
       child: widget.child,
     );
   }
@@ -555,6 +587,7 @@ class _SoftGlassBackdropHost extends SingleChildRenderObjectWidget {
     required this.devicePixelRatio,
     required this.viewSize,
     required this.cornerRadius,
+    required this.edgeHighlightAlpha,
     required super.child,
   });
 
@@ -566,6 +599,9 @@ class _SoftGlassBackdropHost extends SingleChildRenderObjectWidget {
   /// 实际形状的圆角半径（逻辑像素）。
   final double cornerRadius;
 
+  /// 已按明暗折减的 rim 高光强度。
+  final double edgeHighlightAlpha;
+
   @override
   _RenderSoftGlassBackdrop createRenderObject(BuildContext context) =>
       _RenderSoftGlassBackdrop(
@@ -574,6 +610,7 @@ class _SoftGlassBackdropHost extends SingleChildRenderObjectWidget {
         devicePixelRatio, // 设备像素比
         viewSize, // 视图物理尺寸
         cornerRadius, // 圆角半径（逻辑像素）
+        edgeHighlightAlpha, // rim 高光强度
       );
 
   @override
@@ -586,7 +623,8 @@ class _SoftGlassBackdropHost extends SingleChildRenderObjectWidget {
       ..lens = lens
       ..devicePixelRatio = devicePixelRatio
       ..viewSize = viewSize
-      ..cornerRadius = cornerRadius;
+      ..cornerRadius = cornerRadius
+      ..edgeHighlightAlpha = edgeHighlightAlpha;
   }
 }
 
@@ -597,6 +635,7 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
     this._devicePixelRatio,
     this._viewSize,
     this._cornerRadius,
+    this._edgeHighlightAlpha,
   );
 
   double _blurSigma;
@@ -604,11 +643,13 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
   double _devicePixelRatio;
   Size _viewSize;
   double _cornerRadius;
+  double _edgeHighlightAlpha;
 
   ui.ImageFilter? _cachedFilter;
   SoftGlassRefractionLens? _cachedLens;
   Rect? _cachedGeometry;
   double? _cachedSigma;
+  double? _cachedHighlight;
 
   @override
   BackdropFilterLayer? get layer => super.layer as BackdropFilterLayer?;
@@ -664,6 +705,15 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
     markNeedsPaint();
   }
 
+  double get edgeHighlightAlpha => _edgeHighlightAlpha;
+  set edgeHighlightAlpha(double value) {
+    if (_edgeHighlightAlpha == value) {
+      return;
+    }
+    _edgeHighlightAlpha = value;
+    markNeedsPaint();
+  }
+
   @override
   void paint(PaintingContext context, Offset offset) {
     if (child == null) {
@@ -686,7 +736,8 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
     if (_cachedFilter != null &&
         identical(_cachedLens, refracted ? lens : null) &&
         _cachedGeometry == geometry &&
-        _cachedSigma == blurSigma) {
+        _cachedSigma == blurSigma &&
+        _cachedHighlight == edgeHighlightAlpha) {
       return _cachedFilter!;
     }
 
@@ -701,6 +752,7 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
               viewSize,
               devicePixelRatio: _devicePixelRatio,
               cornerRadiusPx: _cornerRadiusPx(),
+              edgeHighlightAlpha: edgeHighlightAlpha,
             ),
             inner: blur,
           )
@@ -709,6 +761,7 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
     _cachedLens = refracted ? lens : null;
     _cachedGeometry = geometry;
     _cachedSigma = blurSigma;
+    _cachedHighlight = edgeHighlightAlpha;
     _cachedFilter = result;
     return result;
   }
