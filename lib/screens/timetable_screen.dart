@@ -176,6 +176,16 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 一键还原；确认满意后可删除 false 分支与本开关。
   static const bool _kStockDockGlass = true;
 
+  /// 柔光玻璃表面的极性阈值：壁纸亮度低于此值才用深灰玻璃 + 白墨，
+  /// 否则乳白玻璃 + 黑墨（面板极性与墨色同源，见 [SoftGlassTokens.tint]
+  /// 与 [SoftGlassPolarity]）。
+  ///
+  /// 柔光药丸与柔光圆钮**必须共用这一个判据**——两者在同一行并列（居中
+  /// 药丸 + 右侧圆钮），各自一套阈值时 0.35..0.45 亮度区间的壁纸上会一深
+  /// 一浅，读作「两块不同的玻璃」。阈值取 0.35 而非通用 chrome 的 0.45，
+  /// 是柔光材质的偏保守取向：中等亮度壁纸配深灰玻璃像一块塑料。
+  static const double _kSoftGlassDarkLuminance = 0.35;
+
   late final PageController _weekPageController;
   late final AnimationController _dayViewExpandController;
 
@@ -6713,10 +6723,17 @@ class _TimetableScreenState extends State<TimetableScreen>
                 final lum = _dockInlinePageId != null ? null : _wallpaperBodyLuminance; // 内嵌页表态只看主题
                 final isDarkTheme =
                     Theme.of(context).brightness == Brightness.dark;
+                final isSoftDock = dockStyle == DockGlassStyle.soft;
+                // 通用底栏墨色判据（chrome 阈值 0.45）。
                 final inkIsLight = (lum != null ? lum < 0.45 : isDarkTheme);
                 // 柔光面与墨色同源：暗壁纸 → 深灰玻璃 + 白墨；亮壁纸 → 乳白 + 黑墨。
-                final ink = dockStyle == DockGlassStyle.soft
-                    ? (inkIsLight
+                // 极性阈值必须与柔光药丸同源（[_kSoftGlassDarkLuminance]）：
+                // 药丸与圆钮在同一行并列，各自一套阈值会一深一浅。
+                final softInkIsLight = lum != null
+                    ? lum < _kSoftGlassDarkLuminance
+                    : isDarkTheme;
+                final ink = isSoftDock
+                    ? (softInkIsLight
                         ? Colors.white.withValues(alpha: 0.92)
                         : Colors.black.withValues(alpha: 0.80))
                     : (inkIsLight
@@ -6740,8 +6757,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                           l10n: l10n,
                           settings: dockBtnSettings,
                           quality: dockBtnQuality,
-                          softGlass: dockStyle == DockGlassStyle.soft,
-                          softDark: inkIsLight,
+                          softGlass: isSoftDock,
+                          softDark: softInkIsLight,
                         ),
                       ],
                     ],
@@ -6803,10 +6820,11 @@ class _TimetableScreenState extends State<TimetableScreen>
     //
     // 布局用 Stacked（图标上、文字下）：5 槽 + maxWidth 272 时 Horizontal
     // 会把「日课表」挤成一个字。极性：仅明确暗壁纸才用深灰玻璃，中等
-    // 亮度壁纸走乳白+黑墨（截图里浅橄榄壁纸配黑玻璃像一块塑料）。
+    // 亮度壁纸走乳白+黑墨（截图里浅橄榄壁纸配黑玻璃像一块塑料）。阈值与
+    // 右侧柔光圆钮共用 [_kSoftGlassDarkLuminance]（同一行两块玻璃同极）。
     if (settings.glassDockStyle == DockGlassStyle.soft) {
       final softDark = wallpaperLuminance != null
-          ? wallpaperLuminance < 0.35
+          ? wallpaperLuminance < _kSoftGlassDarkLuminance
           : isDark;
       return SoftGlassTabBar(
         tabs: [
@@ -8108,7 +8126,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   Future<void> _showTopActionsSheet() async {
     // The anchored menu floats over the wallpaper; give its rows the same
     // wallpaper-aware ink as the home chrome (white over dark wallpaper,
-    // dark over light) instead of the theme's onSurface color.
+    // dark over light). Only the wallpaper-transparent panels honour it —
+    // the list popup drops it on solid / soft-glass surfaces, whose polarity
+    // follows the app theme rather than the wallpaper.
     final provider = context.read<TimetableProvider>();
     final settings = provider.settings;
     final hasBackdrop = hasHomePageBackdrop(settings);

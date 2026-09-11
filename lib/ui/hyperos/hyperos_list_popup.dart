@@ -152,6 +152,11 @@ Future<T?> showHyperosListPopup<T>({
   required BuildContext context,
   required RelativeRect? position,
   required List<HyperosPopupMenuItem<T>> items,
+
+  /// Wallpaper-aware row ink for panels that show the wallpaper through
+  /// (anchored popups over the home wallpaper). Dropped on panels that do
+  /// not — solid and soft-glass surfaces — see
+  /// [_HyperosListPopupBody.foregroundColor].
   Color? foregroundColor,
 
   /// Use a solid opaque surface instead of sampled glass. Glass popups read
@@ -203,9 +208,14 @@ class _HyperosListPopupBody<T> extends StatefulWidget {
   /// Overrides the row label/icon color (e.g. wallpaper-aware chrome ink on
   /// the home screen); falls back to [HyperosColors.onSurface].
   ///
-  /// Ignored on solid surfaces (blur off / degradation / [opaqueSurface]):
-  /// the wallpaper no longer shows through, so wallpaper-aware ink (white
-  /// on a light panel) would be unreadable — rows use the theme ink instead.
+  /// Ignored when the panel does not show the wallpaper through:
+  /// * solid surfaces (blur off / degradation / [opaqueSurface]) — wallpaper
+  ///   ink (white on a light panel) would be unreadable;
+  /// * soft-glass surfaces ([SoftGlassSurface]) — the panel is a milky / dark
+  ///   wash whose polarity follows the app theme, not the wallpaper, so
+  ///   wallpaper-aware ink reads against the wrong polarity there too.
+  ///
+  /// Rows use the theme ink instead in both cases.
   final Color? foregroundColor;
 
   /// Solid surface instead of sampled glass (see [showHyperosListPopup]).
@@ -566,18 +576,27 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     const margin = 12.0;
     const cornerRadius = HyperosMiuixDropdown.popupCornerRadius;
 
-    // 实底面板（blur 总开关关 / 系统降级 / WebView 强制实底）不再透出
-    // 壁纸，调用方为透明玻璃准备的壁纸感知墨色（如首页按壁纸亮度翻出
-    // 的白墨）写在浅色实底上不可读（白字白板，用户只剩角标可见）——
-    // 统一回退 null，行走内置的主题墨色兜底。判定与面板材质分支同序，
-    // 见 [HyperosSelectPopupGlass.solidSurfaceActive]。
-    final Color? effectiveForeground =
-        HyperosSelectPopupGlass.solidSurfaceActive(
+    // 面板底色是否仍以壁纸为主要来源。两类面板不是：
+    //
+    // * **实底面**（blur 总开关关 / 系统降级 / WebView 强制实底）不再透出
+    //   壁纸，调用方为透明玻璃准备的壁纸感知墨色（如首页按壁纸亮度翻出
+    //   的白墨）写在浅色实底上不可读（白字白板，用户只剩角标可见）；
+    // * **柔光玻璃面**（[SoftGlassSurface]，乳白 / 深灰罩面）的底色由 app
+    //   主题明暗决定（见 `SoftGlassTokens.tint`，亮色 252@67.5% / 暗色
+    //   31@67.5%），与壁纸亮度无关——深色壁纸 + 亮色主题下，壁纸感知的
+    //   白墨会直接打在乳白罩面上（反之暗色主题 + 浅色壁纸是深墨打深灰面）。
+    //
+    // 两类都回退 null，行走内置的主题墨色兜底（与面板极性同源）。面板材质
+    // 分支见 [HyperosSelectPopupGlass.build]。
+    final panelUsesWallpaperBackdrop =
+        !HyperosSelectPopupGlass.solidSurfaceActive(
           context,
           opaqueSurface: widget.opaqueSurface,
-        )
-        ? null
-        : widget.foregroundColor;
+        ) &&
+        !HyperosSelectPopupGlass.softSurfaceActive(context);
+    final Color? effectiveForeground = panelUsesWallpaperBackdrop
+        ? widget.foregroundColor
+        : null;
 
     // Resolve anchor position from RelativeRect.
     final anchorLeft = widget.position.left;

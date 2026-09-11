@@ -77,6 +77,10 @@ Future<String?> showHomeTopMenuSheet(
   required bool hasAvailableUpdate,
   required List<HomeMenuEntry> entries,
   required GlobalKey anchorKey,
+
+  /// 壁纸感知墨色（深壁纸 → 白墨）。仅在弹窗面板透出壁纸时生效：实底面
+  /// （模糊关闭 / 系统降级）与柔光玻璃面（乳白 / 深灰罩面，极性随 app
+  /// 主题）会自动回退主题墨色，避免白墨打在乳白罩面上不可读。
   Color? foregroundColor,
 }) {
   final l10n = AppLocalizations.of(context)!;
