@@ -4,17 +4,18 @@
 // https://github.com/keepYaoung/bokeh-lava-gradient
 //
 // 与原包的对齐与差异：
-//   - 保留 Ticker 逐帧动画：光斑在模糊层下缓慢漂移（原版低分辨率模糊、
-//     fps 节流、后台/被遮挡暂停全部保留）。
+//   - 保留低分辨率模糊缓冲与「后台 / 被遮挡即暂停」，但驱动方式由 Ticker
+//     改为 Timer：Ticker 每 vsync 都请求一帧，节流拦不住出帧，首页静置也会
+//     把设备钉在屏幕刷新率上（详见 [BokehLavaGradient.targetFps]）。
 //   - 随机分布改为按 [BuiltInWallpaperSpec.seed] 播种，首帧与静态位图
 //     （亮度采样 / 预模糊玻璃）完全一致；之后自由漂移。
 // 原 MIT 许可与版权信息见 docs/THIRD_PARTY_LICENSES.md。
 
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
 import 'builtin_wallpaper.dart';
 
@@ -22,26 +23,29 @@ import 'builtin_wallpaper.dart';
 ///
 /// 首页玻璃与墨色极性仍采样 [BuiltInWallpaperImage] 静态位图（单帧成本低、
 /// 缓存友好）；本 Widget 只负责可见像素的漂移。[animate] 为 false 时只画
-/// 静态首帧（与位图同 seed），供设置页多缩略图避免同时起多个 Ticker。
+/// 静态首帧（与位图同 seed），供设置页多缩略图避免同时起多个动画。
 ///
-/// Widget 测试里 Ticker 会与 `tester.runAsync` 假时钟死锁；集成测试请把
-/// [debugDisableAnimationForced] 设为 true。
+/// Widget 测试里活动的动画计时器会与 `tester.runAsync` 的假时钟互等死锁；
+/// 集成测试请把 [debugDisableAnimationForced] 设为 true。
 class BokehLavaGradient extends StatefulWidget {
   const BokehLavaGradient({
     super.key,
     required this.wallpaper,
     this.animate = true,
     this.lowResFactor = 0.45,
-    this.targetFps = 30,
+    this.targetFps = 15,
     this.child,
   });
 
-  /// 测试用：强制所有实例不启 Ticker（集成测试与 runAsync 混用时防死锁）。
+  /// 测试用：强制所有实例不启动画（集成测试与 runAsync 混用时防死锁）。
   static bool debugDisableAnimationForced = false;
+
+  /// 测试用：累计实际推进的帧数（节拍与启停的观测点）。
+  static int debugTickCount = 0;
 
   final BuiltInWallpaper wallpaper;
 
-  /// 是否启动 Ticker 漂移；false 时只画播种首帧。
+  /// 是否启动漂移动画；false 时只画播种首帧。
   final bool animate;
 
   /// 模糊缓冲分辨率因子（0–1）。约 0.45 时观感与全分辨率几乎一致
@@ -50,92 +54,134 @@ class BokehLavaGradient extends StatefulWidget {
 
   /// 目标帧率。
   ///
-  /// 光斑漂移只有 6~26 px/s，20 帧就够用；取 30 是因为它同时是 60 / 90 / 120Hz
-  /// 的公约数，三种常见刷新率都能精确命中目标间隔（累积式节流见
-  /// [FrameThrottle]）。20fps 在 90Hz 屏上只能稳定跑到 18fps（5 帧推一次）。
+  /// 光斑是**大半径 + 重模糊**的色块，漂移又只有几 px/s，帧率只影响「多久
+  /// 采一次样」，不影响轨迹（[Stopwatch] 实测 dt，掉帧不改变漂移速度）。
+  ///
+  /// 取 15 而不是 30/60：节拍由 [Timer.periodic] 提供，**每次节拍只请求一帧**。
+  /// 早先的实现用 `Ticker`（每帧回调 + 累积式节流）——节流只压住了重绘次数，
+  /// 压不住「每 vsync 都请求一帧」：首页静置时设备仍以屏幕刷新率
+  /// （实测 60~96 fps）持续出帧，壁纸下方的每块柔光玻璃都要重做一次
+  /// backdrop 采样 + 模糊 + 折射，SurfaceFlinger 单核占用 44%、机身 5 分钟
+  /// 升到 44℃。改成 Timer 后两帧之间没有任何已排程的帧，渲染管线可以真正
+  /// 空闲（实测要求见 test/utils/bokeh_lava_gradient_test.dart 的节拍用例）。
   final int targetFps;
 
   final Widget? child;
-
-  bool get _startsTicker => animate && !debugDisableAnimationForced;
 
   @override
   State<BokehLavaGradient> createState() => _BokehLavaGradientState();
 }
 
 class _BokehLavaGradientState extends State<BokehLavaGradient>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  Ticker? _ticker;
+    with WidgetsBindingObserver {
+  Timer? _timer;
   late _BlobField _field;
   final ValueNotifier<int> _repaint = ValueNotifier<int>(0);
-  late FrameThrottle _throttle = FrameThrottle(widget.targetFps);
+
+  /// 真实经过时间：dt 取实测值而不是标称节拍，掉帧只影响采样密度、
+  /// 不改变漂移速度（轨迹与节拍解耦，与旧 Ticker 实现同口径）。
+  final Stopwatch _clock = Stopwatch();
+  double _lastSeconds = 0;
+
+  /// 由 [TickerMode] 决定：本页被别的路由覆盖时宿主会关掉它的动画。
+  bool _tickerModeEnabled = true;
+
+  /// 由 App 生命周期决定：后台不推进、也不请求帧。
+  bool _appActive = true;
+
+  Duration get _interval =>
+      Duration(microseconds: (1000000 / widget.targetFps).round());
+
+  bool get _shouldAnimate =>
+      widget.animate &&
+      !BokehLavaGradient.debugDisableAnimationForced &&
+      _tickerModeEnabled &&
+      _appActive;
 
   @override
   void initState() {
     super.initState();
-    final spec = builtInWallpaperSpec(widget.wallpaper);
-    _field = _BlobField(spec, widget.lowResFactor);
-    if (widget._startsTicker) {
-      WidgetsBinding.instance.addObserver(this);
-      _ticker = createTicker(_onTick)..start();
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    _appActive = lifecycle == null || lifecycle == AppLifecycleState.resumed;
+    _field = _BlobField(
+      builtInWallpaperSpec(widget.wallpaper),
+      widget.lowResFactor,
+    );
+    // 观察者常驻：定时器只在「可见 + 前台」时存在，回到前台这一步必须由
+    // observer 唤起，所以不能在停表时顺手把 observer 摘掉。
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // TickerMode 原先由 createTicker 隐式遵守；换 Timer 后必须显式读写。
+    _tickerModeEnabled = TickerMode.valuesOf(context).enabled;
+    _syncTimer();
+  }
+
+  void _syncTimer() {
+    if (_shouldAnimate) {
+      _startTimer();
+    } else {
+      _stopTimer();
     }
   }
 
-  void _onTick(Duration elapsed) {
-    final dt = _throttle.tick(elapsed);
-    if (dt == null) {
+  void _startTimer() {
+    if (_timer != null) {
       return;
     }
+    _clock.start();
+    _lastSeconds = _clock.elapsedMicroseconds / 1000000.0;
+    _timer = Timer.periodic(_interval, _onTick);
+  }
+
+  void _stopTimer() {
+    _timer?.cancel();
+    _timer = null;
+    _clock.stop();
+  }
+
+  void _onTick(Timer _) {
+    final now = _clock.elapsedMicroseconds / 1000000.0;
+    final dt = now - _lastSeconds;
+    if (dt <= 0) {
+      return;
+    }
+    _lastSeconds = now;
     _field.tick(dt);
     _repaint.value++;
+    BokehLavaGradient.debugTickCount++;
   }
 
   @override
   void didUpdateWidget(covariant BokehLavaGradient old) {
     super.didUpdateWidget(old);
-    if (widget.targetFps != old.targetFps) {
-      _throttle = FrameThrottle(widget.targetFps);
-    }
     if (widget.wallpaper != old.wallpaper ||
         widget.lowResFactor != old.lowResFactor) {
-      final spec = builtInWallpaperSpec(widget.wallpaper);
-      _field = _BlobField(spec, widget.lowResFactor);
-      _throttle.reset();
+      _field = _BlobField(
+        builtInWallpaperSpec(widget.wallpaper),
+        widget.lowResFactor,
+      );
     }
-    if (widget.animate != old.animate) {
-      if (widget.animate) {
-        WidgetsBinding.instance.addObserver(this);
-        _ticker = createTicker(_onTick)..start();
-      } else {
-        _ticker?.dispose();
-        _ticker = null;
-        WidgetsBinding.instance.removeObserver(this);
-        _throttle.reset();
-      }
+    if (widget.animate != old.animate || widget.targetFps != old.targetFps) {
+      // 节拍间隔在建定时器时就固定了，改目标帧率必须重建。
+      _stopTimer();
+      _syncTimer();
     }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final ticker = _ticker;
-    if (ticker == null) {
-      return;
-    }
-    final active = state == AppLifecycleState.resumed;
-    if (active && !ticker.isActive) {
-      _throttle.reset();
-      ticker.start();
-    } else if (!active && ticker.isActive) {
-      ticker.stop();
-    }
+    _appActive = state == AppLifecycleState.resumed;
+    _syncTimer();
   }
 
   @override
   void dispose() {
-    if (_ticker != null) {
-      WidgetsBinding.instance.removeObserver(this);
-    }
-    _ticker?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _stopTimer();
     _repaint.dispose();
     super.dispose();
   }
@@ -365,78 +411,5 @@ class _BlobField {
         b.vy = -b.vy;
       }
     }
-  }
-}
-
-/// 把不规则的 Ticker 回调聚合成稳定的目标帧节拍。
-///
-/// 三条关键约定，都是踩过的坑：
-///
-/// 1. **阈值必须是整数微秒。** `Duration.inMicroseconds` 是整数，若拿
-///    `1000000 / targetFps` 的 double（33333.333…）当阈值，恰好等于 33333µs
-///    的那一帧会被判成「还没到间隔」而整帧丢弃、时间累积到下一帧 ——
-///    60Hz 屏稳定退化成 33/50ms 交替（实际 20fps），120Hz 屏在 33/42ms
-///    之间来回跳。
-/// 2. **用累积判定，而不是单帧 dt 与阈值比大小**，并留出 [toleranceUs] 的
-///    提前量吸收引擎时间戳抖动。两者缺一都会让节拍塌到下一档。
-/// 3. 返回的 dt 始终是**真实经过的时间**，所以节流只影响重绘节拍、不影响
-///    光斑轨迹；真的掉帧时它自然就大。
-///
-/// 另：起始判定用显式的 [_hasBaseline] 而非 `_last == Duration.zero` 哨兵 ——
-/// 后者在 Ticker 首次回调恰好为 0 时会把标称步长走两次。
-@visibleForTesting
-class FrameThrottle {
-  FrameThrottle(this.targetFps);
-
-  final int targetFps;
-
-  /// 结算阈值上的提前量。
-  ///
-  /// Ticker 的 `elapsed` 来自引擎时间戳，并不是精确的 1/hz，会有几百微秒的
-  /// 抖动。若严格要求累积量 ≥ 目标间隔才结算，抖动会让相当一部分本该
-  /// 「2 帧一推」的节拍被推迟到「3 帧一推」—— 实测 60Hz ±300µs 抖动下平均
-  /// 间隔从 33.3ms 掉到 40.1ms（约 25fps）。留 2ms 提前量即可吸收这类抖动，
-  /// 而它远小于任何常见刷新率的单帧间隔（240Hz 也有 4.17ms），不会误触发到
-  /// 更短的节拍上。
-  static const int toleranceUs = 2000;
-
-  Duration _last = Duration.zero;
-  int _pendingUs = 0;
-  bool _hasBaseline = false;
-
-  /// 目标帧间隔（整数微秒）。
-  int get intervalUs => (1000000 / targetFps).round();
-
-  /// 触发结算的累积量下限。
-  int get _thresholdUs => intervalUs - toleranceUs;
-
-  /// 喂入一次 Ticker 回调。
-  ///
-  /// 返回本次应当推进的秒数；`null` 表示这一帧还不到目标间隔，不推进也不重绘。
-  /// 返回值始终是**真实经过的时间**，所以光斑轨迹不会因节流而漂移。
-  double? tick(Duration elapsed) {
-    if (!_hasBaseline) {
-      // 起始帧（首次启动、resume、换壁纸后的第一帧）：走一个标称步长，
-      // 不把暂停期间的真实时长灌进来。
-      _hasBaseline = true;
-      _last = elapsed;
-      _pendingUs = 0;
-      return 1 / targetFps;
-    }
-    _pendingUs += (elapsed - _last).inMicroseconds;
-    _last = elapsed;
-    if (_pendingUs < _thresholdUs) {
-      return null;
-    }
-    final dt = _pendingUs / 1000000.0;
-    _pendingUs = 0;
-    return dt;
-  }
-
-  /// 重置时间基准：下一次 [tick] 会重新走起始分支。
-  void reset() {
-    _last = Duration.zero;
-    _pendingUs = 0;
-    _hasBaseline = false;
   }
 }
