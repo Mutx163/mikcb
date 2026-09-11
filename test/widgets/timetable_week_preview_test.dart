@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/storage_service.dart';
+import 'package:university_timetable/ui/background/builtin_wallpaper.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/widgets/course_grid_surface_host.dart';
 import 'package:university_timetable/widgets/home_page_region_blur.dart';
@@ -90,7 +91,11 @@ void main() {
   });
 
   group('glass hosting matches the home grid', () {
-    testWidgets('gaussian grid gets a shared BackdropGroup', (tester) async {
+    // 无壁纸时「高斯模糊」没有可采样的磨砂来源，预览与首页一样回退实体卡，
+    // 也就没有必要再包一层 BackdropGroup。
+    testWidgets('gaussian without a wallpaper falls back to solid', (
+      tester,
+    ) async {
       await pumpPreview(
         tester,
         settings: TimetableSettings.defaults().copyWith(
@@ -99,7 +104,37 @@ void main() {
       );
 
       expect(find.byType(CourseGridSurfaceHost), findsOneWidget);
-      expect(find.byType(BackdropGroup), findsAtLeastNWidgets(1));
+      // 只检查课程卡宿主子树：预览其余玻璃带（标题/星期栏）自带
+      // BackdropGroup，与课程卡是否回退实体卡无关。
+      expect(
+        find.descendant(
+          of: find.byType(CourseGridSurfaceHost),
+          matching: find.byType(BackdropGroup),
+        ),
+        findsNothing,
+        reason: 'no wallpaper -> nothing to blur, cards render solid',
+      );
+    });
+
+    testWidgets('gaussian over a wallpaper gets the shared BackdropGroup', (
+      tester,
+    ) async {
+      await pumpPreview(
+        tester,
+        settings: TimetableSettings.defaults().copyWith(
+          homePageBuiltInWallpaper: BuiltInWallpaper.og.value,
+          courseCardSurfaceStyle: CourseCardSurfaceStyle.gaussian,
+        ),
+      );
+
+      expect(find.byType(CourseGridSurfaceHost), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(CourseGridSurfaceHost),
+          matching: find.byType(BackdropGroup),
+        ),
+        findsAtLeastNWidgets(1),
+      );
     });
 
     for (final style in [CourseCardSurfaceStyle.solid]) {
@@ -112,6 +147,13 @@ void main() {
         );
 
         expect(find.byType(CourseGridSurfaceHost), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(CourseGridSurfaceHost),
+            matching: find.byType(BackdropGroup),
+          ),
+          findsNothing,
+        );
       });
     }
   });
@@ -147,8 +189,9 @@ void main() {
         ..writeAsBytesSync(bytes!.buffer.asUint8List());
     }
 
-    testWidgets('isolated weekday strip caps glass thickness and keeps edge',
-        (tester) async {
+    testWidgets('isolated weekday strip caps glass thickness and keeps edge', (
+      tester,
+    ) async {
       final wallpaper = (await tester.runAsync(writeOpaqueWallpaper))!;
       await pumpPreview(
         tester,

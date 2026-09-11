@@ -219,8 +219,9 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     // proportionally so the edge highlight stays a thin sheen while the
     // interior remains real liquid refraction — not flat gaussian blur.
     // Combined bands (~84dp) keep full thickness like the home sheet.
-    final double? bandMaxThickness =
-        height <= 52 ? (height * 0.28).clamp(8.0, 14.0) : null;
+    final double? bandMaxThickness = height <= 52
+        ? (height * 0.28).clamp(8.0, 14.0)
+        : null;
     return [
       Positioned(
         top: top,
@@ -346,8 +347,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final darkFallback = colorScheme.surface;
-    final hasBackdrop =
-        applyHomePageBackdrop && hasHomePageBackdrop(settings);
+    final hasBackdrop = applyHomePageBackdrop && hasHomePageBackdrop(settings);
     final backgroundColor = isDark
         ? colorScheme.surface
         : parseHexColorOrFallback(
@@ -935,7 +935,8 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
               ),
               compactVerticalPadding: sectionHeight < 64 ? 4 : 6,
               compactOuterInset: cardInset,
-              surfaceStyle: settings.courseCardSurfaceStyle,
+              // Preview mirrors the home grid: no wallpaper -> solid cards.
+              surfaceStyle: effectiveCourseCardSurfaceStyle(settings),
               // 玻璃档自动黑白判定的壁纸带亮度；实体卡忽略。
               wallpaperLuminance:
                   wallpaperBodyLuminance ?? wallpaperTopLuminance,

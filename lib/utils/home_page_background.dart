@@ -89,7 +89,10 @@ ImageProvider? homePageBackdropImageProvider(String? path) {
   if (!_homePageFileExistsSync(path)) {
     return null;
   }
-  return ResizeImage(FileImage(File(path)), width: homePageBackdropDecodeWidth());
+  return ResizeImage(
+    FileImage(File(path)),
+    width: homePageBackdropDecodeWidth(),
+  );
 }
 
 /// Warm the image cache so the home backdrop appears on the first frame.
@@ -253,6 +256,24 @@ String? homePageBackdropKey(TimetableSettings settings) {
   }
   final builtIn = resolveBuiltInWallpaper(settings);
   return builtIn == null ? null : builtInWallpaperKey(builtIn);
+}
+
+/// 课程卡片实际生效的表面样式。
+///
+/// 未设置壁纸（自选图片与内置壁纸都没有）时，「高斯模糊」没有可采样的
+/// 磨砂背景，卡片统一降级为实体卡片渲染；设置了壁纸后才恢复用户选择的
+/// [TimetableSettings.courseCardSurfaceStyle]（默认实体／高斯模糊），用户“设了壁纸后还要实体
+/// 卡片”的切换选择始终保留。
+///
+/// 首页、日课表与设置页预览都走这一口径，避免无壁纸页把高斯卡片渲染成
+/// 一团没有来源的透明水洗色。
+CourseCardSurfaceStyle effectiveCourseCardSurfaceStyle(
+  TimetableSettings settings,
+) {
+  if (!hasHomePageBackdrop(settings)) {
+    return CourseCardSurfaceStyle.solid;
+  }
+  return settings.courseCardSurfaceStyle;
 }
 
 /// Result of pre-resolving the home page's wallpaper backdrop before first

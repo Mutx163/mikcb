@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/timetable_settings.dart';
+import '../utils/home_page_background.dart';
 
 /// Provides the shared backdrop group required by gaussian course cards.
 ///
@@ -19,7 +20,10 @@ class CourseGridSurfaceHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return settings.courseCardSurfaceStyle == CourseCardSurfaceStyle.gaussian
+    // No wallpaper -> no gaussian cards, hence no shared backdrop capture
+    // (mirrors effectiveCourseCardSurfaceStyle used by the cards themselves).
+    return effectiveCourseCardSurfaceStyle(settings) ==
+            CourseCardSurfaceStyle.gaussian
         ? BackdropGroup(child: child)
         : child;
   }
