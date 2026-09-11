@@ -1,11 +1,13 @@
-// 顶栏玻璃两行的可发现性回归。
+// 顶栏玻璃行的可发现性回归。
 //
-// 「顶栏模糊风格」（渐进 / 高斯）曾在 ded4b7e5 被并进「玻璃材质」三选一，
-// 结果页面上再也找不到一行叫这个名字的开关。拆回独立行后这里锁死三件事：
-// 1. 玻璃开启时两行同时可见（可发现性）；
-// 2. 「玻璃材质 = 液态玻璃」时风格行隐藏 —— 折射面不看衰减风格，
-//    留着就是一个改了不生效的选项；
-// 3. 顶栏玻璃总开关关闭时两行都不渲染。
+// 历史：ded4b7e5 把「顶栏模糊风格」（渐进 / 高斯）并进「玻璃材质」三选一，
+// 页面上再也找不到一行叫这个名字的开关；随后拆回独立行，但两行都写同一组
+// 字段、互相打架。现在收敛成**一行**：
+//
+// 1. 基础材质（实体 / 高斯）→ 只渲染「顶栏模糊风格」一行；
+// 2. 全局高级材质（柔光 / 液态）+ 作用范围开 → 折射 / 雾面不看衰减风格，
+//    该行隐藏，不留一个改了不生效的选项；
+// 3. 顶栏玻璃总开关关闭时该行不渲染。
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -103,41 +105,40 @@ void main() {
         .setMockMethodCallHandler(liveChannel, null);
   });
 
-  testWidgets('顶栏玻璃开启时同时提供「玻璃材质」与「顶栏模糊风格」', (tester) async {
+  testWidgets('基础材质（高斯）下只渲染「顶栏模糊风格」一行', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(TimetableSettings.defaults());
 
     await _openTimetablePageSettings(tester);
-    await _scrollTo(tester, find.text('玻璃材质'));
+    await _scrollTo(tester, find.text('顶栏模糊风格'));
 
-    expect(find.text('玻璃材质'), findsOneWidget);
-    // 这就是之前「找不到」的那一行：必须有独立行，而不是只在材质档位里。
     expect(find.text('顶栏模糊风格'), findsOneWidget);
-    // 默认渐进档：两行都显示「渐进模糊」为当前值。
-    expect(find.text('渐进模糊'), findsNWidgets(2));
+    // 独立材质三选一已下线：材质由全局选择器 + 作用范围决定。
+    expect(find.text('玻璃材质'), findsNothing);
+    expect(find.text('渐进模糊'), findsOneWidget);
   });
 
-  testWidgets('玻璃材质选液态玻璃时「顶栏模糊风格」行隐藏', (tester) async {
+  testWidgets('全局柔光 + 首页玻璃带作用范围开 → 风格行隐藏', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(
       TimetableSettings.defaults().copyWith(
-        homeChromeGlassMaterial: 'liquid',
+        frostedGlassMode: FrostedGlassMode.softGlass,
         liquidGlassHomeChromeEnabled: true,
       ),
     );
 
     await _openTimetablePageSettings(tester);
-    await _scrollTo(tester, find.text('玻璃材质'));
+    await _scrollTo(tester, find.text('顶栏玻璃'));
 
-    expect(find.text('玻璃材质'), findsOneWidget);
-    expect(find.text('液态玻璃'), findsOneWidget);
-    // 折射面不看衰减风格，不留无效选项。
+    expect(find.text('顶栏玻璃'), findsOneWidget);
+    // 雾面 / 折射不看衰减风格，不留无效选项。
     expect(find.text('顶栏模糊风格'), findsNothing);
+    expect(find.text('玻璃材质'), findsNothing);
   });
 
-  testWidgets('顶栏玻璃总开关关闭时两行都不渲染', (tester) async {
+  testWidgets('顶栏玻璃总开关关闭时风格行不渲染', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(
@@ -151,7 +152,7 @@ void main() {
     await _scrollTo(tester, find.text('顶栏玻璃'));
 
     expect(find.text('顶栏玻璃'), findsOneWidget);
-    expect(find.text('玻璃材质'), findsNothing);
     expect(find.text('顶栏模糊风格'), findsNothing);
+    expect(find.text('玻璃材质'), findsNothing);
   });
 }

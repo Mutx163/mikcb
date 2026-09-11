@@ -50,6 +50,7 @@ class _AdvancedMaterialSettingsScreenState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<TimetableProvider>();
+    final mode = _draft.frostedGlassMode;
 
     return FrostedAppearanceScope(
       appearance: _draft.frostedAppearance,
@@ -58,272 +59,333 @@ class _AdvancedMaterialSettingsScreenState
         title: Text(l10n.advancedMaterialTitle),
         child: HyperosListView(
           children: [
-            HyperosSectionLabel(text: l10n.frostedSheetSectionTitle),
-            HyperosListGroup(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: FrostedSheetSettingsPreview(
-                    provider: provider,
-                    settings: _draft,
-                    week: provider.currentWeek,
-                    blurSigma: _draft.frostedSheetBlurSigma,
-                    tintAlpha: _draft.frostedSheetTintAlpha,
-                    barrierAlpha: _draft.frostedSheetBarrierAlpha,
-                    blurEnabled: _draft.frostedBlurEnabled,
-                    glassMode: _draft.frostedGlassMode,
-                    liquidGlassTuning: _draft.liquidGlassTuning,
-                    onOpenDemoSheet: () =>
-                        showFrostedSheetSettingsDemo(context),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  child: Text(
-                    l10n.frostedLiquidGlassHint,
-                    style: HyperosTypography.sectionDescription(context),
-                  ),
-                ),
-                HyperosSelectTile<LiquidGlassPreset>(
-                  label: l10n.liquidGlassPresetLabel,
-                  items: {
-                    for (final preset in LiquidGlassPreset.values)
-                      liquidGlassPresetLabel(l10n, preset): preset,
-                  },
-                  value: _draft.liquidGlassPreset,
-                  onChanged: (preset) {
-                    if (preset == LiquidGlassPreset.custom) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          liquidGlassPreset: LiquidGlassPreset.custom,
-                        ),
-                      );
-                      return;
-                    }
-                    _updateDraft(
-                      _draft.copyWith(
-                        liquidGlassPreset: preset,
-                        liquidGlassTuning: preset.recommendedTuning,
-                      ),
-                    );
-                  },
-                ),
-if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
+            // 折射参数仅液态有意义；柔光只共用下方的作用范围。
+            if (mode == FrostedGlassMode.liquidGlass) ...[
+              HyperosSectionLabel(text: l10n.frostedSheetSectionTitle),
+              HyperosListGroup(
+                children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    padding: const EdgeInsets.all(16),
+                    child: FrostedSheetSettingsPreview(
+                      provider: provider,
+                      settings: _draft,
+                      week: provider.currentWeek,
+                      blurSigma: _draft.frostedSheetBlurSigma,
+                      tintAlpha: _draft.frostedSheetTintAlpha,
+                      barrierAlpha: _draft.frostedSheetBarrierAlpha,
+                      blurEnabled: _draft.frostedBlurEnabled,
+                      glassMode: _draft.frostedGlassMode,
+                      liquidGlassTuning: _draft.liquidGlassTuning,
+                      onOpenDemoSheet: () =>
+                          showFrostedSheetSettingsDemo(context),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     child: Text(
-                      l10n.liquidGlassCustomExpandedTitle,
+                      l10n.frostedLiquidGlassHint,
                       style: HyperosTypography.sectionDescription(context),
                     ),
                   ),
-                  HyperosSliderTile(
-                    title: l10n.liquidGlassThicknessLabel,
-                    value: _draft.liquidGlassTuning!.thickness,
-                    max: LiquidGlassTuning.maxThickness,
-                    divisions: 40,
-                    valueLabel: _draft.liquidGlassTuning!.thickness
-                        .toStringAsFixed(0),
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
-                            thickness: value,
-                          ),
-                        ),
-                        debounce: true,
-                      );
+                  HyperosSelectTile<LiquidGlassPreset>(
+                    label: l10n.liquidGlassPresetLabel,
+                    items: {
+                      for (final preset in LiquidGlassPreset.values)
+                        liquidGlassPresetLabel(l10n, preset): preset,
                     },
-                  ),
-                  HyperosSliderTile(
-                    title: l10n.liquidGlassBlurLabel,
-                    value: _draft.liquidGlassTuning!.blur,
-                    max: LiquidGlassTuning.maxBlur,
-                    divisions: 24,
-                    valueLabel: _draft.liquidGlassTuning!.blur.toStringAsFixed(
-                      0,
-                    ),
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
-                            blur: value,
-                          ),
-                        ),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                  HyperosSliderTile(
-                    title: l10n.liquidGlassTintLabel,
-                    value: _draft.liquidGlassTuning!.tintAlpha,
-                    max: LiquidGlassTuning.maxTintAlpha,
-                    divisions: 55,
-                    valueLabel:
-                        '${(_draft.liquidGlassTuning!.tintAlpha * 100).round()}%',
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
-                            tintAlpha: value,
-                          ),
-                        ),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                  HyperosSliderTile(
-                    title: l10n.liquidGlassLightIntensityLabel,
-                    value: _draft.liquidGlassTuning!.lightIntensity,
-                    max: LiquidGlassTuning.maxLightIntensity,
-                    divisions: 40,
-                    valueLabel: _draft.liquidGlassTuning!.lightIntensity
-                        .toStringAsFixed(2),
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
-                            lightIntensity: value,
-                          ),
-                        ),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                  HyperosSliderTile(
-                    title: l10n.liquidGlassAmbientStrengthLabel,
-                    value: _draft.liquidGlassTuning!.ambientStrength,
-                    divisions: 20,
-                    valueLabel: _draft.liquidGlassTuning!.ambientStrength
-                        .toStringAsFixed(2),
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
-                            ambientStrength: value,
-                          ),
-                        ),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                  HyperosSliderTile(
-                    title: l10n.liquidGlassRefractiveIndexLabel,
-                    value: _draft.liquidGlassTuning!.refractiveIndex,
-                    min: LiquidGlassTuning.minRefractiveIndex,
-                    max: LiquidGlassTuning.maxRefractiveIndex,
-                    divisions: 50,
-                    valueLabel: _draft.liquidGlassTuning!.refractiveIndex
-                        .toStringAsFixed(2),
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
-                            refractiveIndex: value,
-                          ),
-                        ),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                  HyperosSliderTile(
-                    title: l10n.liquidGlassSaturationLabel,
-                    value: _draft.liquidGlassTuning!.saturation,
-                    min: LiquidGlassTuning.minSaturation,
-                    max: LiquidGlassTuning.maxSaturation,
-                    divisions: 30,
-                    valueLabel: _draft.liquidGlassTuning!.saturation
-                        .toStringAsFixed(2),
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
-                            saturation: value,
-                          ),
-                        ),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                  HyperosSliderTile(
-                    title: l10n.liquidGlassChromaticAberrationLabel,
-                    value: _draft.liquidGlassTuning!.chromaticAberration,
-                    max: LiquidGlassTuning.maxChromaticAberration,
-                    divisions: 24,
-                    valueLabel: _draft.liquidGlassTuning!.chromaticAberration
-                        .toStringAsFixed(3),
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
-                            chromaticAberration: value,
-                          ),
-                        ),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                  HyperosSliderTile(
-                    title: l10n.liquidGlassLightAngleLabel,
-                    value: _draft.liquidGlassTuning!.lightAngleDegrees,
-                    max: LiquidGlassTuning.maxLightAngleDegrees,
-                    divisions: 72,
-                    valueLabel:
-                        '${_draft.liquidGlassTuning!.lightAngleDegrees.round()}°',
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
-                            lightAngleDegrees: value,
-                          ),
-                        ),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                  HyperosSliderTile(
-                    title: l10n.liquidGlassVisibilityLabel,
-                    value: _draft.liquidGlassTuning!.visibility,
-                    divisions: 20,
-                    valueLabel:
-                        '${(_draft.liquidGlassTuning!.visibility * 100).round()}%',
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          liquidGlassPreset: LiquidGlassPreset.custom,
-                          liquidGlassTuning: _draft.liquidGlassTuning!.copyWith(
-                            visibility: value,
-                          ),
-                        ),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                    child: HyperosButton(
-                      label: l10n.liquidGlassResetAction,
-                      variant: HyperosButtonVariant.secondary,
-                      expand: true,
-                      onPressed: () {
+                    value: _draft.liquidGlassPreset,
+                    onChanged: (preset) {
+                      if (preset == LiquidGlassPreset.custom) {
                         _updateDraft(
                           _draft.copyWith(
-                            liquidGlassPreset: LiquidGlassPreset.standard,
-                            liquidGlassTuning: LiquidGlassTuning.defaults,
+                            liquidGlassPreset: LiquidGlassPreset.custom,
                           ),
+                        );
+                        return;
+                      }
+                      _updateDraft(
+                        _draft.copyWith(
+                          liquidGlassPreset: preset,
+                          liquidGlassTuning: preset.recommendedTuning,
+                        ),
+                      );
+                    },
+                  ),
+                  if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      child: Text(
+                        l10n.liquidGlassCustomExpandedTitle,
+                        style: HyperosTypography.sectionDescription(context),
+                      ),
+                    ),
+                    HyperosSliderTile(
+                      title: l10n.liquidGlassThicknessLabel,
+                      value: _draft.liquidGlassTuning!.thickness,
+                      max: LiquidGlassTuning.maxThickness,
+                      divisions: 40,
+                      valueLabel: _draft.liquidGlassTuning!.thickness
+                          .toStringAsFixed(0),
+                      onChanged: (value) {
+                        _updateDraft(
+                          _draft.copyWith(
+                            liquidGlassPreset: LiquidGlassPreset.custom,
+                            liquidGlassTuning: _draft.liquidGlassTuning!
+                                .copyWith(thickness: value),
+                          ),
+                          debounce: true,
                         );
                       },
                     ),
-                  ),
+                    HyperosSliderTile(
+                      title: l10n.liquidGlassBlurLabel,
+                      value: _draft.liquidGlassTuning!.blur,
+                      max: LiquidGlassTuning.maxBlur,
+                      divisions: 24,
+                      valueLabel: _draft.liquidGlassTuning!.blur
+                          .toStringAsFixed(0),
+                      onChanged: (value) {
+                        _updateDraft(
+                          _draft.copyWith(
+                            liquidGlassPreset: LiquidGlassPreset.custom,
+                            liquidGlassTuning: _draft.liquidGlassTuning!
+                                .copyWith(blur: value),
+                          ),
+                          debounce: true,
+                        );
+                      },
+                    ),
+                    HyperosSliderTile(
+                      title: l10n.liquidGlassTintLabel,
+                      value: _draft.liquidGlassTuning!.tintAlpha,
+                      max: LiquidGlassTuning.maxTintAlpha,
+                      divisions: 55,
+                      valueLabel:
+                          '${(_draft.liquidGlassTuning!.tintAlpha * 100).round()}%',
+                      onChanged: (value) {
+                        _updateDraft(
+                          _draft.copyWith(
+                            liquidGlassPreset: LiquidGlassPreset.custom,
+                            liquidGlassTuning: _draft.liquidGlassTuning!
+                                .copyWith(tintAlpha: value),
+                          ),
+                          debounce: true,
+                        );
+                      },
+                    ),
+                    HyperosSliderTile(
+                      title: l10n.liquidGlassLightIntensityLabel,
+                      value: _draft.liquidGlassTuning!.lightIntensity,
+                      max: LiquidGlassTuning.maxLightIntensity,
+                      divisions: 40,
+                      valueLabel: _draft.liquidGlassTuning!.lightIntensity
+                          .toStringAsFixed(2),
+                      onChanged: (value) {
+                        _updateDraft(
+                          _draft.copyWith(
+                            liquidGlassPreset: LiquidGlassPreset.custom,
+                            liquidGlassTuning: _draft.liquidGlassTuning!
+                                .copyWith(lightIntensity: value),
+                          ),
+                          debounce: true,
+                        );
+                      },
+                    ),
+                    HyperosSliderTile(
+                      title: l10n.liquidGlassAmbientStrengthLabel,
+                      value: _draft.liquidGlassTuning!.ambientStrength,
+                      divisions: 20,
+                      valueLabel: _draft.liquidGlassTuning!.ambientStrength
+                          .toStringAsFixed(2),
+                      onChanged: (value) {
+                        _updateDraft(
+                          _draft.copyWith(
+                            liquidGlassPreset: LiquidGlassPreset.custom,
+                            liquidGlassTuning: _draft.liquidGlassTuning!
+                                .copyWith(ambientStrength: value),
+                          ),
+                          debounce: true,
+                        );
+                      },
+                    ),
+                    HyperosSliderTile(
+                      title: l10n.liquidGlassRefractiveIndexLabel,
+                      value: _draft.liquidGlassTuning!.refractiveIndex,
+                      min: LiquidGlassTuning.minRefractiveIndex,
+                      max: LiquidGlassTuning.maxRefractiveIndex,
+                      divisions: 50,
+                      valueLabel: _draft.liquidGlassTuning!.refractiveIndex
+                          .toStringAsFixed(2),
+                      onChanged: (value) {
+                        _updateDraft(
+                          _draft.copyWith(
+                            liquidGlassPreset: LiquidGlassPreset.custom,
+                            liquidGlassTuning: _draft.liquidGlassTuning!
+                                .copyWith(refractiveIndex: value),
+                          ),
+                          debounce: true,
+                        );
+                      },
+                    ),
+                    HyperosSliderTile(
+                      title: l10n.liquidGlassSaturationLabel,
+                      value: _draft.liquidGlassTuning!.saturation,
+                      min: LiquidGlassTuning.minSaturation,
+                      max: LiquidGlassTuning.maxSaturation,
+                      divisions: 30,
+                      valueLabel: _draft.liquidGlassTuning!.saturation
+                          .toStringAsFixed(2),
+                      onChanged: (value) {
+                        _updateDraft(
+                          _draft.copyWith(
+                            liquidGlassPreset: LiquidGlassPreset.custom,
+                            liquidGlassTuning: _draft.liquidGlassTuning!
+                                .copyWith(saturation: value),
+                          ),
+                          debounce: true,
+                        );
+                      },
+                    ),
+                    HyperosSliderTile(
+                      title: l10n.liquidGlassChromaticAberrationLabel,
+                      value: _draft.liquidGlassTuning!.chromaticAberration,
+                      max: LiquidGlassTuning.maxChromaticAberration,
+                      divisions: 24,
+                      valueLabel: _draft.liquidGlassTuning!.chromaticAberration
+                          .toStringAsFixed(3),
+                      onChanged: (value) {
+                        _updateDraft(
+                          _draft.copyWith(
+                            liquidGlassPreset: LiquidGlassPreset.custom,
+                            liquidGlassTuning: _draft.liquidGlassTuning!
+                                .copyWith(chromaticAberration: value),
+                          ),
+                          debounce: true,
+                        );
+                      },
+                    ),
+                    HyperosSliderTile(
+                      title: l10n.liquidGlassLightAngleLabel,
+                      value: _draft.liquidGlassTuning!.lightAngleDegrees,
+                      max: LiquidGlassTuning.maxLightAngleDegrees,
+                      divisions: 72,
+                      valueLabel:
+                          '${_draft.liquidGlassTuning!.lightAngleDegrees.round()}°',
+                      onChanged: (value) {
+                        _updateDraft(
+                          _draft.copyWith(
+                            liquidGlassPreset: LiquidGlassPreset.custom,
+                            liquidGlassTuning: _draft.liquidGlassTuning!
+                                .copyWith(lightAngleDegrees: value),
+                          ),
+                          debounce: true,
+                        );
+                      },
+                    ),
+                    HyperosSliderTile(
+                      title: l10n.liquidGlassVisibilityLabel,
+                      value: _draft.liquidGlassTuning!.visibility,
+                      divisions: 20,
+                      valueLabel:
+                          '${(_draft.liquidGlassTuning!.visibility * 100).round()}%',
+                      onChanged: (value) {
+                        _updateDraft(
+                          _draft.copyWith(
+                            liquidGlassPreset: LiquidGlassPreset.custom,
+                            liquidGlassTuning: _draft.liquidGlassTuning!
+                                .copyWith(visibility: value),
+                          ),
+                          debounce: true,
+                        );
+                      },
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                      child: HyperosButton(
+                        label: l10n.liquidGlassResetAction,
+                        variant: HyperosButtonVariant.secondary,
+                        expand: true,
+                        onPressed: () {
+                          _updateDraft(
+                            _draft.copyWith(
+                              liquidGlassPreset: LiquidGlassPreset.standard,
+                              liquidGlassTuning: LiquidGlassTuning.defaults,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ],
+              ),
+            ],
+            // 高级材质作用范围：逐表面家族开关。开 = 该表面用
+            // 当前全局高级材质（柔光 / 液态）；关 = 该表面回落
+            // **实体卡片**（不降级为高斯，见
+            // [LiquidGlassDegradation.familyFallsBackToSolid]）。
+            HyperosSectionLabel(text: l10n.liquidGlassScopeSectionTitle),
+            HyperosListGroup(
+              children: [
+                HyperosSwitchTile(
+                  title: l10n.liquidGlassScopePopupTitle,
+                  subtitle: l10n.liquidGlassScopePopupSubtitle,
+                  value: _draft.liquidGlassPopupEnabled,
+                  onChanged: (value) {
+                    _updateDraft(
+                      _draft.copyWith(liquidGlassPopupEnabled: value),
+                    );
+                  },
+                ),
+                HyperosSwitchTile(
+                  title: l10n.liquidGlassScopeSelectSheetTitle,
+                  subtitle: l10n.liquidGlassScopeSelectSheetSubtitle,
+                  value: _draft.liquidGlassSelectSheetEnabled,
+                  onChanged: (value) {
+                    _updateDraft(
+                      _draft.copyWith(liquidGlassSelectSheetEnabled: value),
+                    );
+                  },
+                ),
+                HyperosSwitchTile(
+                  title: l10n.liquidGlassScopeSheetDialogTitle,
+                  subtitle: l10n.liquidGlassScopeSheetDialogSubtitle,
+                  value: _draft.liquidGlassSheetDialogEnabled,
+                  onChanged: (value) {
+                    _updateDraft(
+                      _draft.copyWith(liquidGlassSheetDialogEnabled: value),
+                    );
+                  },
+                ),
+                HyperosSwitchTile(
+                  title: l10n.liquidGlassScopeHomeChromeTitle,
+                  subtitle: l10n.liquidGlassScopeHomeChromeSubtitle,
+                  value: _draft.liquidGlassHomeChromeEnabled,
+                  onChanged: (value) {
+                    _updateDraft(
+                      _draft.copyWith(liquidGlassHomeChromeEnabled: value),
+                    );
+                  },
+                ),
+                HyperosSwitchTile(
+                  title: l10n.liquidGlassScopeDockTitle,
+                  subtitle: l10n.liquidGlassScopeDockSubtitle,
+                  value: _draft.liquidGlassDockEnabled,
+                  onChanged: (value) {
+                    _updateDraft(
+                      _draft.copyWith(liquidGlassDockEnabled: value),
+                    );
+                  },
+                ),
+                HyperosSwitchTile(
+                  title: l10n.liquidGlassScopePickerButtonsTitle,
+                  subtitle: l10n.liquidGlassScopePickerButtonsSubtitle,
+                  value: _draft.liquidGlassPickerButtonsEnabled,
+                  onChanged: (value) {
+                    _updateDraft(
+                      _draft.copyWith(liquidGlassPickerButtonsEnabled: value),
+                    );
+                  },
+                ),
               ],
             ),
             const HyperosSectionGap(),

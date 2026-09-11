@@ -81,14 +81,13 @@ void main() {
       expect(result.frostedGlassMode, FrostedGlassMode.gaussian);
     });
 
-    test('柔光玻璃：开模糊 + softGlass 模式，并同步底栏为柔光', () {
+    test('柔光玻璃：开模糊 + softGlass 模式（底栏自动跟随，无需另写）', () {
       final result = applyGlassModeChoice(
         settings(blurEnabled: false),
         GlassModeChoice.softGlass,
       );
       expect(result.frostedBlurEnabled, isTrue);
       expect(result.frostedGlassMode, FrostedGlassMode.softGlass);
-      expect(result.glassDockStyle, DockGlassStyle.soft);
     });
 
     test('液态玻璃：开模糊 + liquidGlass 模式', () {

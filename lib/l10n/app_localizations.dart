@@ -6177,35 +6177,11 @@ abstract class AppLocalizations {
   /// **'玻璃材质跟随外观的玻璃模式；关闭后信息栏直接透出壁纸'**
   String get homePageWeekdayBarBlurSubtitle;
 
-  /// No description provided for @chromeGlassMaterialLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'玻璃材质'**
-  String get chromeGlassMaterialLabel;
-
   /// No description provided for @chromeGlassMaterialSubtitle.
   ///
   /// In zh, this message translates to:
   /// **''**
   String get chromeGlassMaterialSubtitle;
-
-  /// No description provided for @chromeGlassMaterialProgressive.
-  ///
-  /// In zh, this message translates to:
-  /// **'渐进模糊'**
-  String get chromeGlassMaterialProgressive;
-
-  /// No description provided for @chromeGlassMaterialGaussian.
-  ///
-  /// In zh, this message translates to:
-  /// **'高斯模糊'**
-  String get chromeGlassMaterialGaussian;
-
-  /// No description provided for @chromeGlassMaterialLiquid.
-  ///
-  /// In zh, this message translates to:
-  /// **'液态玻璃'**
-  String get chromeGlassMaterialLiquid;
 
   /// No description provided for @chromeGlassMaterialHint.
   ///
@@ -11638,6 +11614,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'背景实时高斯模糊，通透有层次'**
   String get guideVisualEffectGaussianDesc;
+
+  /// No description provided for @guideVisualEffectSoftDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'雾面柔光玻璃，轻盈细腻（比液态更省电）'**
+  String get guideVisualEffectSoftDesc;
 
   /// No description provided for @guideVisualEffectLiquidDesc.
   ///
@@ -18882,36 +18864,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'底部导航栏'**
   String get glassDockCustomizeSectionTitle;
-
-  /// No description provided for @glassDockStyleLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'底栏材质'**
-  String get glassDockStyleLabel;
-
-  /// No description provided for @glassDockStyleLiquid.
-  ///
-  /// In zh, this message translates to:
-  /// **'液态玻璃'**
-  String get glassDockStyleLiquid;
-
-  /// No description provided for @glassDockStyleSoft.
-  ///
-  /// In zh, this message translates to:
-  /// **'柔光玻璃'**
-  String get glassDockStyleSoft;
-
-  /// No description provided for @glassDockStyleLiquidSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'折射玻璃，质感更强（功耗略高）'**
-  String get glassDockStyleLiquidSubtitle;
-
-  /// No description provided for @glassDockStyleSoftSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'雾面柔光胶囊，更轻更省电'**
-  String get glassDockStyleSoftSubtitle;
 
   /// No description provided for @glassDockCustomizeTitle.
   ///

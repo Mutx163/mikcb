@@ -546,10 +546,35 @@ class _HyperosHeaderTextButton extends StatelessWidget {
       wallpaperTopLuminance: surfaceLuminance,
     );
 
-    // 「液态玻璃作用范围 → 壁纸选点按钮」关闭时回退磨砂材质。
-    if (blurEnabled &&
-        appearance.glassMode == FrostedGlassMode.liquidGlass &&
-        appearance.liquidGlassPickerButtonsEnabled) {
+    // 高级材质面自带模糊，不受「模糊」总开关约束（与弹窗同理）；
+    // 柔光与液态同为高级材质、共用「作用范围 → 壁纸选点按钮」开关。
+    final advancedMode = appearance.liquidGlassPickerButtonsEnabled
+        ? appearance.glassMode
+        : null;
+
+    // 柔光玻璃：与弹窗 / 底栏同一套雾面材质。
+    if (isAdvancedGlassMode(advancedMode) &&
+        advancedMode == FrostedGlassMode.softGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context)) {
+      return SoftGlassSurface(
+        borderRadius: radius,
+        blurEnabled: blurEnabled,
+        enableShadows: false,
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: [
+            Positioned.fill(
+              child: IgnorePointer(child: ColoredBox(color: wash)),
+            ),
+            content,
+          ],
+        ),
+      );
+    }
+
+    // 液态玻璃：折射 shader 与弹窗/首页顶部完全同参。
+    if (advancedMode == FrostedGlassMode.liquidGlass &&
+        !LiquidGlassDegradation.shouldDegrade(context)) {
       // 液态玻璃：折射 shader 与弹窗/首页顶部完全同参。液态玻璃自带
       // 边缘高光，不再叠加描边；衬底压在玻璃上保证文字对比度
       // （与课程玻璃卡片叠课程色 tint 同一做法）。
@@ -571,7 +596,7 @@ class _HyperosHeaderTextButton extends StatelessWidget {
     // 「液态玻璃作用范围 → 壁纸选点按钮」关闭 → 实体卡片（不再降级磨砂）。
     if (LiquidGlassDegradation.familyFallsBackToSolid(
       context,
-      liquidGlassFamilyEnabled: appearance.liquidGlassPickerButtonsEnabled,
+      advancedFamilyEnabled: appearance.liquidGlassPickerButtonsEnabled,
     )) {
       return Material(
         color: HyperosColors.surfaceContainer(context),

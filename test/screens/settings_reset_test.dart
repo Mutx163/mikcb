@@ -54,7 +54,6 @@ void main() {
       liquidGlassPickerButtonsEnabled: false,
       // 首页与导航（自外观页拆出的独立恢复作用域）
       homeNavigationForm: HomeNavigationForm.glassDock,
-      glassDockStyle: DockGlassStyle.soft,
       homeTitleStyle: HomeTitleStyle.brand,
       glassDockActions: const ['week', 'settings', 'statistics'],
       glassDockShowAddButton: true,
@@ -218,7 +217,6 @@ void main() {
     );
 
     expect(result.homeNavigationForm, defaults.homeNavigationForm);
-    expect(result.glassDockStyle, defaults.glassDockStyle);
     expect(result.glassDockActions, defaults.glassDockActions);
     expect(result.glassDockShowAddButton, defaults.glassDockShowAddButton);
     expect(result.glassDockButtonEntryId, defaults.glassDockButtonEntryId);

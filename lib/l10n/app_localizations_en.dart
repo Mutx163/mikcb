@@ -3540,19 +3540,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Glass material follows the glass mode in Appearance; when off, the info bar shows the wallpaper directly';
 
   @override
-  String get chromeGlassMaterialLabel => 'Glass material';
-
-  @override
   String get chromeGlassMaterialSubtitle => '';
-
-  @override
-  String get chromeGlassMaterialProgressive => 'Progressive blur';
-
-  @override
-  String get chromeGlassMaterialGaussian => 'Gaussian blur';
-
-  @override
-  String get chromeGlassMaterialLiquid => 'Liquid Glass';
 
   @override
   String get chromeGlassMaterialHint => '';
@@ -6735,6 +6723,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get guideVisualEffectGaussianDesc =>
       'Live gaussian blur behind surfaces — layered and translucent';
+
+  @override
+  String get guideVisualEffectSoftDesc =>
+      'Soft frosted glass — light and refined, cheaper than liquid';
 
   @override
   String get guideVisualEffectLiquidDesc =>
@@ -10984,23 +10976,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get glassDockCustomizeSectionTitle => 'Bottom dock';
-
-  @override
-  String get glassDockStyleLabel => 'Dock material';
-
-  @override
-  String get glassDockStyleLiquid => 'Liquid glass';
-
-  @override
-  String get glassDockStyleSoft => 'Soft glass';
-
-  @override
-  String get glassDockStyleLiquidSubtitle =>
-      'Refractive glass, richer feel (slightly higher power)';
-
-  @override
-  String get glassDockStyleSoftSubtitle =>
-      'Soft frosted capsule, lighter and more efficient';
 
   @override
   String get glassDockCustomizeTitle => 'Customize dock buttons';

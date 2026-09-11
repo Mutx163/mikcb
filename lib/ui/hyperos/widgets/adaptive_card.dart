@@ -94,7 +94,9 @@ class HyperosAdaptiveCard extends StatelessWidget {
       return HyperosColors.card(context);
     }
     final appearance = FrostedAppearanceScope.of(context);
-    if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
+    // 柔光与液态同为高级材质，面板内嵌套 tile 用同一种透明水洗色；
+    // 只认液态会让柔光面板里的卡片变成死白块。
+    if (isAdvancedGlassMode(appearance.glassMode) &&
         !LiquidGlassDegradation.shouldDegrade(context)) {
       return HyperosBlurredHeader.nestedLiquidTileTintColor(context);
     }

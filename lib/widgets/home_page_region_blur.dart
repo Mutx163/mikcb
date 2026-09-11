@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos_blurred_header.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
+import '../ui/hyperos/soft_glass/soft_glass_surface.dart';
 import '../utils/home_page_background.dart';
 
 // Course chrome tests reference the glass mode through this library.
@@ -58,11 +59,38 @@ bool homePageHasAnyChromeBlur(
       settings.homePageWeekdayBarBlurEnabled;
 }
 
+/// 首页玻璃带应使用的高级材质（柔光 / 液态）；null = 走「顶栏模糊风格」
+/// 的基础磨砂（渐进 / 高斯）。
+///
+/// 主路径：全局材质为高级材质 + 「作用范围 → 首页玻璃带」开 → **跟随全局**，
+/// 与弹窗 / 底栏同一份材质，避免「两种玻璃同屏」。
+///
+/// 旧版本「玻璃材质」独立三档已下线；存量里写死 `liquid` 的用户在
+/// `TimetableSettings.fromJson` 里被**上提为全局液态**（观感不变，同时消除第二个轴），
+/// 因此这里不再保留任何 legacy 分支。
+FrostedGlassMode? homeChromeAdvancedModeOf({
+  required FrostedGlassMode glassMode,
+  required bool homeChromeScopeEnabled,
+}) {
+  if (isAdvancedGlassMode(glassMode) && homeChromeScopeEnabled) {
+    return glassMode;
+  }
+  return null;
+}
+
+/// [homeChromeAdvancedModeOf] 的 [FrostedAppearance] 便捷入口。
+FrostedGlassMode? homeChromeAdvancedGlassMode(FrostedAppearance appearance) =>
+    homeChromeAdvancedModeOf(
+      glassMode: appearance.glassMode,
+      homeChromeScopeEnabled: appearance.liquidGlassHomeChromeEnabled,
+    );
+
 /// Number of frames the home chrome glass needs to settle after a wallpaper
 /// swap so the backdrop capture is stable before showing the frost.
 ///
 /// Zero when nothing frosted paints (no backdrop, global blur off, or both
-/// chrome bands off). Gaussian settles in one frame; liquid glass needs two.
+/// chrome bands off). Basic frost settles in one frame; advanced material
+/// (liquid / soft glass) needs two.
 int homePageChromeSettleFrameCount({
   required bool hasBackdrop,
   required bool frostedBlurEnabled,
@@ -70,7 +98,6 @@ int homePageChromeSettleFrameCount({
   required bool weekdayBarBlurEnabled,
   required FrostedGlassMode glassMode,
   bool homeChromeLiquidGlassEnabled = true,
-  String homeChromeGlassMaterial = kDefaultHomeChromeGlassMaterial,
 }) {
   if (!hasBackdrop || !frostedBlurEnabled) {
     return 0;
@@ -78,12 +105,15 @@ int homePageChromeSettleFrameCount({
   if (!headerBlurEnabled && !weekdayBarBlurEnabled) {
     return 0;
   }
-  // 与 HomePageChromeGlassFill 同判：首页材质键 liquid，或全局液态 + 家族开关。
-  final chromeIsLiquid =
-      homeChromeGlassMaterial == 'liquid' ||
-      glassMode == FrostedGlassMode.liquidGlass &&
-          homeChromeLiquidGlassEnabled;
-  return chromeIsLiquid ? 2 : 1;
+  // 与 HomePageChromeGlassFill 同判：走高级材质（柔光 / 液态）需两帧稳定，
+  // 基础磨砂一帧。
+  final chromeUsesAdvanced =
+      homeChromeAdvancedModeOf(
+        glassMode: glassMode,
+        homeChromeScopeEnabled: homeChromeLiquidGlassEnabled,
+      ) !=
+      null;
+  return chromeUsesAdvanced ? 2 : 1;
 }
 
 HomePageBackgroundVisual homePageRegionChromeVisual({
@@ -271,8 +301,19 @@ class HomePageChromeGlassFill extends StatelessWidget {
   static Color standInWashColor(BuildContext context) {
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
     final appearance = FrostedAppearanceScope.of(context);
-    // 与 [HomePageChromeGlassFill.build] 同判：仅首页材质键为 liquid。
-    if (useBlur && _homeChromeUsesLiquid(appearance)) {
+    // 与 [HomePageChromeGlassFill.build] 同判。
+    final advancedMode = useBlur
+        ? homeChromeAdvancedGlassMode(appearance)
+        : null;
+    if (advancedMode == FrostedGlassMode.softGlass) {
+      return SoftGlassTokens.tint(
+        context,
+        blurEnabled: useBlur,
+        tintAlphaMultiplier:
+            SoftGlassRecipe.floatingNavigation.tintAlphaMultiplier,
+      );
+    }
+    if (advancedMode == FrostedGlassMode.liquidGlass) {
       return HyperosLiquidGlassSurface.settingsForRole(
         role: HyperosLiquidGlassRole.header,
         brightness: Theme.of(context).brightness,
@@ -285,26 +326,30 @@ class HomePageChromeGlassFill extends StatelessWidget {
     );
   }
 
-  /// 首页玻璃带是否走液态。
-  ///
-  /// 主路径：独立材质键 `liquid`（仅首页，不改全局 glassMode）。
-  /// 兼容：外观页全局液态 + 「首页玻璃带」作用范围开。
-  static bool _homeChromeUsesLiquid(FrostedAppearance appearance) {
-    return appearance.homeChromeGlassMaterial == 'liquid' ||
-        (appearance.glassMode == FrostedGlassMode.liquidGlass &&
-            appearance.liquidGlassHomeChromeEnabled);
-  }
-
   @override
   Widget build(BuildContext context) {
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
     final appearance = FrostedAppearanceScope.of(context);
-    // 仅首页玻璃带材质键为 liquid 时走折射；子页顶栏不经此入口。
-    final useLiquidGlass = useBlur && _homeChromeUsesLiquid(appearance);
+    // 仅首页玻璃带走高级材质时走高级面；子页顶栏不经此入口。
+    final advancedMode = useBlur
+        ? homeChromeAdvancedGlassMode(appearance)
+        : null;
 
     const fill = SizedBox.expand();
 
-    if (useLiquidGlass) {
+    // 柔光：与弹窗 / 底栏同一套雾面材质。玻璃带是窄条，走
+    // [SoftGlassSurface] 的默认轻配方 [SoftGlassRecipe.floatingNavigation]
+    // （σ ≈ 13.78）；dialog 配方（σ ≈ 53.6）在整条通栏上过重且更贵。
+    if (advancedMode == FrostedGlassMode.softGlass) {
+      return SoftGlassSurface(
+        borderRadius: BorderRadius.circular(borderRadius),
+        blurEnabled: useBlur,
+        enableShadows: false,
+        child: fill,
+      );
+    }
+
+    if (advancedMode == FrostedGlassMode.liquidGlass) {
       return HyperosLiquidGlassSurface(
         role: HyperosLiquidGlassRole.header,
         borderRadius: borderRadius,

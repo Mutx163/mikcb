@@ -48,29 +48,20 @@ void main() {
     });
   });
 
-  group('DockGlassStyle', () {
-    test('defaults to liquid', () {
-      expect(
-        TimetableSettings.defaults().glassDockStyle,
-        DockGlassStyle.liquid,
-      );
+  group('底栏材质：独立开关已下线', () {
+    // 底栏材质现在跟随「全局材质 + 作用范围 → 玻璃坞导航」，
+    // 不再有独立的 glassDockStyle 字段；带旧键的存量 JSON 必须能正常读取
+    // （旧键被忽略，不走迁移分支，因为迁移只针对首页玻璃带的 liquid 键）。
+    test('存量 JSON 里的 glassDockStyle 键被忽略且不报错', () {
+      final json = TimetableSettings.defaults().toJson()
+        ..['glassDockStyle'] = 'soft';
+      final restored = TimetableSettings.fromJson(json);
+      expect(restored.homeNavigationForm, HomeNavigationForm.classic);
     });
 
-    test('round-trips soft through json', () {
-      final settings = TimetableSettings.defaults().copyWith(
-        glassDockStyle: DockGlassStyle.soft,
-      );
-      final restored = TimetableSettings.fromJsonString(
-        settings.toJsonString(),
-      );
-      expect(restored.glassDockStyle, DockGlassStyle.soft);
-    });
-
-    test('fromValue falls back to liquid for unknown values', () {
-      expect(DockGlassStyleX.fromValue(null), DockGlassStyle.liquid);
-      expect(DockGlassStyleX.fromValue('unknown'), DockGlassStyle.liquid);
-      expect(DockGlassStyleX.fromValue('soft'), DockGlassStyle.soft);
-      expect(DockGlassStyleX.fromValue('liquid'), DockGlassStyle.liquid);
+    test('toJson 不再写出 glassDockStyle 键', () {
+      final json = TimetableSettings.defaults().toJson();
+      expect(json.containsKey('glassDockStyle'), isFalse);
     });
   });
 }

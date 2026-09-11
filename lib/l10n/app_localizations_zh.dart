@@ -3333,19 +3333,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageWeekdayBarBlurSubtitle => '玻璃材质跟随外观的玻璃模式；关闭后信息栏直接透出壁纸';
 
   @override
-  String get chromeGlassMaterialLabel => '玻璃材质';
-
-  @override
   String get chromeGlassMaterialSubtitle => '';
-
-  @override
-  String get chromeGlassMaterialProgressive => '渐进模糊';
-
-  @override
-  String get chromeGlassMaterialGaussian => '高斯模糊';
-
-  @override
-  String get chromeGlassMaterialLiquid => '液态玻璃';
 
   @override
   String get chromeGlassMaterialHint => '';
@@ -6366,6 +6354,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get guideVisualEffectGaussianDesc => '背景实时高斯模糊，通透有层次';
+
+  @override
+  String get guideVisualEffectSoftDesc => '雾面柔光玻璃，轻盈细腻（比液态更省电）';
 
   @override
   String get guideVisualEffectLiquidDesc => '液态玻璃折射，更具质感（功耗略高）';
@@ -10379,21 +10370,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get glassDockCustomizeSectionTitle => '底部导航栏';
 
   @override
-  String get glassDockStyleLabel => '底栏材质';
-
-  @override
-  String get glassDockStyleLiquid => '液态玻璃';
-
-  @override
-  String get glassDockStyleSoft => '柔光玻璃';
-
-  @override
-  String get glassDockStyleLiquidSubtitle => '折射玻璃，质感更强（功耗略高）';
-
-  @override
-  String get glassDockStyleSoftSubtitle => '雾面柔光胶囊，更轻更省电';
-
-  @override
   String get glassDockCustomizeTitle => '自定义底栏按钮';
 
   @override
@@ -14075,19 +14051,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homePageWeekdayBarBlurSubtitle => '玻璃材質跟隨外觀的玻璃模式；關閉後資訊欄直接透出壁紙';
 
   @override
-  String get chromeGlassMaterialLabel => '玻璃材質';
-
-  @override
   String get chromeGlassMaterialSubtitle => '';
-
-  @override
-  String get chromeGlassMaterialProgressive => '漸進模糊';
-
-  @override
-  String get chromeGlassMaterialGaussian => '高斯模糊';
-
-  @override
-  String get chromeGlassMaterialLiquid => '液態玻璃';
 
   @override
   String get chromeGlassMaterialHint => '';
@@ -17107,6 +17071,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get guideVisualEffectGaussianDesc => '背景即時高斯模糊，通透有層次';
+
+  @override
+  String get guideVisualEffectSoftDesc => '霧面柔光玻璃，輕盈細膩（比液態更省電）';
 
   @override
   String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感（功耗略高）';
@@ -21164,21 +21131,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get glassDockCustomizeSectionTitle => '底部導覽列';
 
   @override
-  String get glassDockStyleLabel => '底欄材質';
-
-  @override
-  String get glassDockStyleLiquid => '液態玻璃';
-
-  @override
-  String get glassDockStyleSoft => '柔光玻璃';
-
-  @override
-  String get glassDockStyleLiquidSubtitle => '折射玻璃，質感更強（功耗略高）';
-
-  @override
-  String get glassDockStyleSoftSubtitle => '霧面柔光膠囊，更輕更省電';
-
-  @override
   String get glassDockCustomizeTitle => '自訂底欄按鈕';
 
   @override
@@ -24860,19 +24812,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homePageWeekdayBarBlurSubtitle => '玻璃材質跟隨外觀的玻璃模式；關閉後資訊欄直接透出壁紙';
 
   @override
-  String get chromeGlassMaterialLabel => '玻璃材質';
-
-  @override
   String get chromeGlassMaterialSubtitle => '';
-
-  @override
-  String get chromeGlassMaterialProgressive => '漸進模糊';
-
-  @override
-  String get chromeGlassMaterialGaussian => '高斯模糊';
-
-  @override
-  String get chromeGlassMaterialLiquid => '液態玻璃';
 
   @override
   String get chromeGlassMaterialHint => '';
@@ -27892,6 +27832,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get guideVisualEffectGaussianDesc => '背景即時高斯模糊，通透有層次';
+
+  @override
+  String get guideVisualEffectSoftDesc => '霧面柔光玻璃，輕盈細膩（比液態更省電）';
 
   @override
   String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感（功耗略高）';
@@ -31947,21 +31890,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get glassDockCustomizeSectionTitle => '底部導覽列';
-
-  @override
-  String get glassDockStyleLabel => '底欄材質';
-
-  @override
-  String get glassDockStyleLiquid => '液態玻璃';
-
-  @override
-  String get glassDockStyleSoft => '柔光玻璃';
-
-  @override
-  String get glassDockStyleLiquidSubtitle => '折射玻璃，質感更強（功耗略高）';
-
-  @override
-  String get glassDockStyleSoftSubtitle => '霧面柔光膠囊，更輕更省電';
 
   @override
   String get glassDockCustomizeTitle => '自訂底欄按鈕';

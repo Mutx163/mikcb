@@ -297,33 +297,20 @@ class _TimetablePageSettingsScreenState
                   value,
                 ),
               ),
-              // 顶栏玻璃：开关 + 材质三选一。
+              // 顶栏玻璃：开关 + 模糊风格两选一。
+              //
+              // 原「玻璃材质」三选一（渐进 / 高斯 / 液态）已下线：液态与
+              // 柔光现在由**全局材质**+ 「作用范围 → 首页玻璃带」推导，
+              // 与弹窗 / 底栏同一份材质，不再需要第二个材质选择器。
               HyperosSwitchTile(
                 title: l10n.homePageHeaderBlurTitle,
                 value: _chromeGlassEnabled,
                 onChanged: _setChromeGlassEnabled,
               ),
-              if (_chromeGlassEnabled)
-                HyperosSelectTile<ChromeGlassMaterial>(
-                  label: l10n.chromeGlassMaterialLabel,
-                  items: {
-                    l10n.chromeGlassMaterialProgressive:
-                        ChromeGlassMaterial.progressive,
-                    l10n.chromeGlassMaterialGaussian:
-                        ChromeGlassMaterial.gaussian,
-                    l10n.chromeGlassMaterialLiquid:
-                        ChromeGlassMaterial.liquid,
-                  },
-                  value: chromeGlassMaterialOf(_draft),
-                  onChanged: (value) {
-                    _updateDraft(applyChromeGlassMaterial(_draft, value));
-                  },
-                ),
-              // 顶栏模糊风格：独立一行（渐进模糊 / 高斯模糊），从「玻璃材质」
-              // 里拆回。选「液态玻璃」时折射面不看衰减风格，该行随之隐藏——
-              // 不隐藏会留一个改了没效果的选项。与材质行双向同步，见
-              // [applyChromeBlurStyle]。
-              if (_chromeGlassEnabled && !_chromeLiquidGlassEnabled) ...[
+              // 模糊风格（渐进模糊 / 高斯模糊）：仅在玻璃带走**基础磨砂**
+              // 时有效。全局高级材质 + 作用范围开时折射 / 雾面不看衰减
+              // 风格，该行隐藏——不留一个改了没效果的选项。
+              if (_chromeGlassEnabled && !_chromeUsesAdvancedMaterial) ...[
                 HyperosSelectTile<HeaderBlurStyle>(
                   label: l10n.headerBlurStyleLabel,
                   subtitle: l10n.headerBlurStyleSubtitle,
@@ -387,10 +374,15 @@ class _TimetablePageSettingsScreenState
       _draft.homePageHeaderBlurEnabled ||
       _draft.homePageWeekdayBarBlurEnabled;
 
-  /// 首页玻璃带是否走液态：液态折射面不看模糊衰减风格，「顶栏模糊风格」
-  /// 行在这种状态下没有效果，隐藏而不是留一个改了不生效的选项。
-  bool get _chromeLiquidGlassEnabled =>
-      chromeGlassMaterialOf(_draft) == ChromeGlassMaterial.liquid;
+  /// 首页玻璃带是否走高级材质（柔光 / 液态）：这两种材质自带
+  /// 模糊与边缘光学，不看模糊衰减风格，「顶栏模糊风格」行在这种
+  /// 状态下没有效果，隐藏而不是留一个改了不生效的选项。
+  bool get _chromeUsesAdvancedMaterial =>
+      homeChromeAdvancedModeOf(
+        glassMode: _draft.frostedGlassMode,
+        homeChromeScopeEnabled: _draft.liquidGlassHomeChromeEnabled,
+      ) !=
+      null;
 
   void _setChromeGlassEnabled(bool enabled) {
     _updateDraft(

@@ -66,6 +66,13 @@ import 'about_screen.dart';
 import 'course_import_screen.dart';
 import 'timetable_profiles_screen.dart';
 
+/// 玻璃坞底栏实际生效的材质。
+///
+/// 由**全局材质**+ 「作用范围 → 玻璃坞导航」推导（见
+/// [_TimetableScreenState._resolveDockMaterial]），不再有独立的「底栏材质」开关——
+/// 否则会出现「全局高斯 + 底栏柔光」这类两种玻璃同屏的组合。
+enum _DockMaterial { soft, liquid, frosted, solid }
+
 class TimetableScreen extends StatefulWidget {
   final bool enableUpdateCheck;
   final bool enableProgressTimer;
@@ -167,15 +174,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// baseIndicatorSettings（轻微透镜弯曲）、pinch 0.4、expansion 水平12/
   /// 垂直8、质量自适应；右侧浮钮与药丸显式共用这份官方底栏材质——
   /// 包「原版」下两者不传参时内部默认各不相同，会呈现玻璃断层。
-  /// 此前自定义的「拉满折射拖拽透镜」在纯色/浅色壁纸上呈四周折射、
-  /// 中间全透明的「甜甜圈」观感，故整体回退原版供对比。
-  ///
-  /// false = 旧的 mikcb 自定义调校（sheetSettingsFor 跟随「液态玻璃调
-  /// 校」+ dragLensSettings 拉满折射 + pinch 1.0 + premium/minimal 强制
-  /// 档 + 浮钮与药丸统一材质）。用户若不满意原版观感，改回 false 即可
-  /// 一键还原；确认满意后可删除 false 分支与本开关。
-  static const bool _kStockDockGlass = true;
-
   /// 柔光玻璃表面的极性阈值：壁纸亮度低于此值才用深灰玻璃 + 白墨，
   /// 否则乳白玻璃 + 黑墨（面板极性与墨色同源，见 [SoftGlassTokens.tint]
   /// 与 [SoftGlassPolarity]）。
@@ -6697,6 +6695,38 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 玻璃坞形态：把底部液态玻璃药丸导航叠加到页面之上。
   ///
+  /// 玻璃坞当前应使用的材质。
+  ///
+  /// 由**全局材质**（外观与配色 → 材质）+ 「作用范围 → 玻璃坞导航」推导：
+  ///
+  /// - 实体卡片（模糊总开关关）→ [_DockMaterial.solid]；
+  /// - 高斯模糊 → [_DockMaterial.frosted]；
+  /// - 柔光玻璃 + 作用范围开 → [_DockMaterial.soft]；
+  /// - 液态玻璃 + 作用范围开 → [_DockMaterial.liquid]；
+  /// - 高级材质但该家族作用范围关（或系统降级）→ [_DockMaterial.solid]。
+  ///
+  /// 底栏不再有独立的「底栏材质」开关：同一份全局材质驱动所有表面，用户
+  /// 不必在两个地方对齐同一种玻璃（历史上「全局高斯 + 底栏柔光」这类组合
+  /// 就是把开关拆到两处造成的）。
+  /// 高级材质关闭时统一走实体卡片而非降低一档磨砂：磨砂的实时
+  /// BackdropFilter 在坞的滑入/合并动画期间采不到稳定背景，药丸会整段
+  /// 透明（见 [LiquidGlassDegradation.familyFallsBackToSolid]）。
+  _DockMaterial _resolveDockMaterial(BuildContext context) {
+    final appearance = FrostedAppearanceScope.of(context);
+    final familySolid = LiquidGlassDegradation.familyFallsBackToSolid(
+      context,
+      advancedFamilyEnabled: appearance.liquidGlassDockEnabled,
+    );
+    if (isAdvancedGlassMode(appearance.glassMode) && !familySolid) {
+      return appearance.glassMode == FrostedGlassMode.softGlass
+          ? _DockMaterial.soft
+          : _DockMaterial.liquid;
+    }
+    return HyperosBlurredHeader.backdropBlurEnabled(context)
+        ? _DockMaterial.frosted
+        : _DockMaterial.solid;
+  }
+
   /// 经典形态直接返回原内容，行为与之前完全一致。
   Widget _wrapWithGlassDock(
     Widget child, {
@@ -6707,50 +6737,34 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (!glassDockForm) {
       return child;
     }
-    // 浮钮与药丸显式同源材质：stock 实验态传包官方底栏默认，
-    // 自定义态走 sheetSettingsFor / frosted 回退（与 bar 内部一致）。
-    // 柔光底栏下圆钮改走 SoftGlassSurface，与药丸同一套雾面材质。
+    // 浮钮与药丸显式同源材质：两者都由同一份全局材质推导
+    // （[_resolveDockMaterial]），避免出现圆钮与药丸两种玻璃的断层。
+    // 柔光路径不用液态 settings，改走 SoftGlassSurface。
     LiquidGlassSettings? dockBtnSettings;
     GlassQuality? dockBtnQuality;
-    final dockStyle = settings.glassDockStyle;
-    if (dockStyle == DockGlassStyle.soft) {
-      // 柔光路径不用液态 settings。
-    } else if (_kStockDockGlass) {
+    final dockMaterial = _resolveDockMaterial(context);
+    final dockAppearance = FrostedAppearanceScope.of(context);
+    if (dockMaterial == _DockMaterial.soft) {
+      // 柔光圆钮走 SoftGlassSurface（见 _buildDockMergeSlot）。
+    } else if (dockMaterial == _DockMaterial.liquid) {
       dockBtnSettings = MikcbLiquidGlassTokens.stockBottomBarGlass;
       dockBtnQuality = null; // 包原版自适应质量
-    } else {
-      final dockAppearance = FrostedAppearanceScope.of(context);
-      // 「液态玻璃作用范围 → 玻璃坞导航」关闭时圆钮同样走**实体卡片**
-      // （见 dockFallsBackToSolid 处的说明）。
-      final dockUseLiquidGlass =
-          dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
-          dockAppearance.liquidGlassDockEnabled &&
-          !LiquidGlassDegradation.shouldDegrade(context);
-      final dockBtnSolid = LiquidGlassDegradation.familyFallsBackToSolid(
-        context,
-        liquidGlassFamilyEnabled: dockAppearance.liquidGlassDockEnabled,
+    } else if (dockMaterial == _DockMaterial.frosted) {
+      dockBtnSettings = LiquidGlassSettings(
+        blur: dockAppearance.sheetBlurSigma,
+        glassColor: HyperosBlurredHeader.sheetTintColor(
+          context,
+          withBlur: true,
+        ),
       );
-      final dockIsDark = Theme.of(context).brightness == Brightness.dark;
-      dockBtnSettings = dockUseLiquidGlass
-          ? MikcbLiquidGlassTokens.sheetSettingsFor(
-              dockIsDark ? Brightness.dark : Brightness.light,
-              tuning: dockAppearance.liquidGlassTuning,
-            )
-          : dockBtnSolid
-          ? LiquidGlassSettings(
-              blur: 0,
-              glassColor: HyperosColors.surfaceContainer(context),
-            )
-          : LiquidGlassSettings(
-              blur: dockAppearance.sheetBlurSigma,
-              glassColor: HyperosBlurredHeader.sheetTintColor(
-                context,
-                withBlur: true,
-              ),
-            );
-      dockBtnQuality = dockUseLiquidGlass
-          ? MikcbLiquidGlassTokens.defaultQuality
-          : GlassQuality.minimal;
+      dockBtnQuality = GlassQuality.minimal;
+    } else {
+      // 实体卡片：零模糊、不透明底。
+      dockBtnSettings = LiquidGlassSettings(
+        blur: 0,
+        glassColor: HyperosColors.surfaceContainer(context),
+      );
+      dockBtnQuality = GlassQuality.minimal;
     }
     return Stack(
       fit: StackFit.expand,
@@ -6772,7 +6786,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                     : _wallpaperBodyLuminance; // 内嵌页表态只看主题
                 final isDarkTheme =
                     Theme.of(context).brightness == Brightness.dark;
-                final isSoftDock = dockStyle == DockGlassStyle.soft;
+                final isSoftDock = dockMaterial == _DockMaterial.soft;
                 // 通用底栏墨色判据（chrome 阈值 0.45）。
                 final inkIsLight = (lum != null ? lum < 0.45 : isDarkTheme);
                 // 柔光面与墨色同源：暗壁纸 → 深灰玻璃 + 白墨；亮壁纸 → 乳白 + 黑墨。
@@ -6850,36 +6864,23 @@ class _TimetableScreenState extends State<TimetableScreen>
         : (isDark && wallpaperLuminance != null && wallpaperLuminance >= 0.45
               ? Colors.black.withValues(alpha: 0.80)
               : colorScheme.primary);
-    // 底栏材质（[_kStockDockGlass]=true 时下面全部走包原版默认，此段
-    // 仅在实验关闭时参与计算）：
-    // - 跟随「高级材质」设置（与弹窗/顶部/卡片统一）：液态玻璃用
-    //   sheetSettingsFor（跟随「液态玻璃调校」）+ premium 完整折射；
-    // - 标准/高斯：退化为高斯模糊药丸（blur/tint 与弹窗 frosted 一致）。
+    // 底栏材质：由**全局材质** + 「作用范围 → 玻璃坞导航」推导
+    // （[_resolveDockMaterial]），与弹窗 / 顶部 / 卡片同一份材质，不再有独立的
+    // 「底栏材质」开关。
     final appearance = FrostedAppearanceScope.of(context);
-    // 「液态玻璃作用范围 → 玻璃坞导航」关闭时底栏走**实体卡片**药丸
-    // （不再降级磨砂：磨砂的实时 BackdropFilter 在坞的滑入/合并动画期间
-    // 采不到稳定背景，药丸会整段透明）。
-    final useLiquidGlass =
-        !_kStockDockGlass &&
-        appearance.glassMode == FrostedGlassMode.liquidGlass &&
-        appearance.liquidGlassDockEnabled &&
-        !LiquidGlassDegradation.shouldDegrade(context);
-    final dockFallsBackToSolid = LiquidGlassDegradation.familyFallsBackToSolid(
-      context,
-      liquidGlassFamilyEnabled: appearance.liquidGlassDockEnabled,
-    );
+    final dockMaterial = _resolveDockMaterial(context);
     // 实体药丸的底：与主题卡面同色、不含模糊。
     final solidDockFill = HyperosColors.surfaceContainer(context);
     // 动态入口列表：底栏最多 5 槽，用户在「首页与导航」自由编排
     // （'day'/'week' 视图动作 + 目录任意条目，含设置页）。
     final dockIds = resolveGlassDockActionIds(settings);
-    // 柔光玻璃底栏（Hyper-PiliPlus SoftGlass 形态）：与液态折射自由切换。
+    // 柔光玻璃底栏（Hyper-PiliPlus SoftGlass 形态）：全局材质为柔光时自动切入。
     //
     // 布局用 Stacked（图标上、文字下）：5 槽 + maxWidth 272 时 Horizontal
     // 会把「日课表」挤成一个字。极性：仅明确暗壁纸才用深灰玻璃，中等
     // 亮度壁纸走乳白+黑墨（截图里浅橄榄壁纸配黑玻璃像一块塑料）。阈值与
     // 右侧柔光圆钮共用 [_kSoftGlassDarkLuminance]（同一行两块玻璃同极）。
-    if (settings.glassDockStyle == DockGlassStyle.soft) {
+    if (dockMaterial == _DockMaterial.soft) {
       final softDark = wallpaperLuminance != null
           ? wallpaperLuminance < _kSoftGlassDarkLuminance
           : isDark;
@@ -6907,32 +6908,28 @@ class _TimetableScreenState extends State<TimetableScreen>
       // 独立圆钮改由坞层「水滴合并槽」渲染（见 _wrapWithGlassDock）：
       // 整颗按钮滑入药丸并被圆形裁切，运动与遮罩都贴合药丸端帽弧度。
       barHeight: 56,
-      settings: _kStockDockGlass
-          ? MikcbLiquidGlassTokens.stockBottomBarGlass
-          : (useLiquidGlass
-                ? MikcbLiquidGlassTokens.sheetSettingsFor(
-                    isDark ? Brightness.dark : Brightness.light,
-                    tuning: appearance.liquidGlassTuning,
-                  )
-                : dockFallsBackToSolid
-                // 实体卡片：零模糊、不透明底。
-                ? LiquidGlassSettings(blur: 0, glassColor: solidDockFill)
-                : LiquidGlassSettings(
-                    blur: appearance.sheetBlurSigma,
-                    glassColor: HyperosBlurredHeader.sheetTintColor(
-                      context,
-                      withBlur: true,
-                    ),
-                  )),
-      indicatorSettings: _kStockDockGlass
+      settings: switch (dockMaterial) {
+        // 液态：包原版底栏材质，与右侧圆钮同参。
+        _DockMaterial.liquid => MikcbLiquidGlassTokens.stockBottomBarGlass,
+        // 基础高斯：高斯模糊药丸（blur/tint 与弹窗 frosted 一致）。
+        _DockMaterial.frosted => LiquidGlassSettings(
+          blur: appearance.sheetBlurSigma,
+          glassColor: HyperosBlurredHeader.sheetTintColor(
+            context,
+            withBlur: true,
+          ),
+        ),
+        // 实体卡片：零模糊、不透明底。
+        _DockMaterial.solid => LiquidGlassSettings(
+          blur: 0,
+          glassColor: solidDockFill,
+        ),
+        // 柔光已在上方提前返回 SoftGlassTabBar，不会到这里。
+        _DockMaterial.soft => MikcbLiquidGlassTokens.stockBottomBarGlass,
+      },
+      quality: dockMaterial == _DockMaterial.liquid
           ? null
-          : (useLiquidGlass ? MikcbLiquidGlassTokens.dragLensSettings : null),
-      indicatorPinchStrength: useLiquidGlass ? 1.0 : 0.4,
-      quality: _kStockDockGlass
-          ? null
-          : (useLiquidGlass
-                ? MikcbLiquidGlassTokens.defaultQuality
-                : GlassQuality.minimal),
+          : GlassQuality.minimal,
       iconSize: 22,
       labelFontSize: 10,
       horizontalPadding: 6,

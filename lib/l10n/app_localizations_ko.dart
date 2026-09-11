@@ -3405,19 +3405,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '유리 소재는 외관의 유리 모드를 따릅니다. 끄면 정보 바에 배경화면이 그대로 표시됩니다';
 
   @override
-  String get chromeGlassMaterialLabel => '유리 소재';
-
-  @override
   String get chromeGlassMaterialSubtitle => '';
-
-  @override
-  String get chromeGlassMaterialProgressive => '점진 블러';
-
-  @override
-  String get chromeGlassMaterialGaussian => '가우시안 블러';
-
-  @override
-  String get chromeGlassMaterialLiquid => '액체 유리';
 
   @override
   String get chromeGlassMaterialHint => '';
@@ -6505,6 +6493,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get guideVisualEffectGaussianDesc => '배경에 실시간 가우시안 블러로 깊이감 있는 투명 효과';
+
+  @override
+  String get guideVisualEffectSoftDesc => '부드러운 프로스트 유리. 가볍고 정교하며 리퀴드보다 효율적';
 
   @override
   String get guideVisualEffectLiquidDesc => '리퀴드 글래스 굴절로 질감을 더함 (배터리 소모 약간 증가)';
@@ -10711,21 +10702,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get glassDockCustomizeSectionTitle => '하단 내비게이션';
-
-  @override
-  String get glassDockStyleLabel => '독 재질';
-
-  @override
-  String get glassDockStyleLiquid => '리퀴드 글래스';
-
-  @override
-  String get glassDockStyleSoft => '소프트 글래스';
-
-  @override
-  String get glassDockStyleLiquidSubtitle => '굴절 유리, 더 풍부한 질감(전력 소모 약간 높음)';
-
-  @override
-  String get glassDockStyleSoftSubtitle => '부드러운 프로스트 캡슐, 더 가볍고 효율적';
 
   @override
   String get glassDockCustomizeTitle => '독 버튼 사용자 지정';

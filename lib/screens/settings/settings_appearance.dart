@@ -333,7 +333,9 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                         showFrostedSheetSettingsDemo(context),
                   ),
                 ),
-                if (_draft.frostedGlassMode == FrostedGlassMode.liquidGlass)
+                // 高级材质（柔光 / 液态）才需要进一步调校：液态有折射
+                // 参数，两者共用同一组「作用范围」开关。
+                if (isAdvancedGlassMode(_draft.frostedGlassMode))
                   HyperosListTile(
                     title: l10n.advancedMaterialTitle,
                     details: l10n.advancedMaterialEntrySubtitle,
@@ -388,79 +390,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               ],
             ),
           ),
-          // 液态玻璃作用范围：全局模式为液态玻璃时，允许逐表面家族关闭
-          // 折射材质（关闭的家族回退高斯磨砂；模糊总开关关时回落实底）。
-          // 默认：下拉选择弹窗开、全屏选择面板关、其余家族开。
-          if (_draft.frostedGlassMode == FrostedGlassMode.liquidGlass) ...[
-            const HyperosSectionGap(),
-            HyperosSettingsBlock(
-              title: l10n.liquidGlassScopeSectionTitle,
-              child: HyperosListGroup(
-                children: [
-                  HyperosSwitchTile(
-                    title: l10n.liquidGlassScopePopupTitle,
-                    subtitle: l10n.liquidGlassScopePopupSubtitle,
-                    value: _draft.liquidGlassPopupEnabled,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(liquidGlassPopupEnabled: value),
-                      );
-                    },
-                  ),
-                  HyperosSwitchTile(
-                    title: l10n.liquidGlassScopeSelectSheetTitle,
-                    subtitle: l10n.liquidGlassScopeSelectSheetSubtitle,
-                    value: _draft.liquidGlassSelectSheetEnabled,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(liquidGlassSelectSheetEnabled: value),
-                      );
-                    },
-                  ),
-                  HyperosSwitchTile(
-                    title: l10n.liquidGlassScopeSheetDialogTitle,
-                    subtitle: l10n.liquidGlassScopeSheetDialogSubtitle,
-                    value: _draft.liquidGlassSheetDialogEnabled,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(liquidGlassSheetDialogEnabled: value),
-                      );
-                    },
-                  ),
-                  HyperosSwitchTile(
-                    title: l10n.liquidGlassScopeHomeChromeTitle,
-                    subtitle: l10n.liquidGlassScopeHomeChromeSubtitle,
-                    value: _draft.liquidGlassHomeChromeEnabled,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(liquidGlassHomeChromeEnabled: value),
-                      );
-                    },
-                  ),
-                  HyperosSwitchTile(
-                    title: l10n.liquidGlassScopeDockTitle,
-                    subtitle: l10n.liquidGlassScopeDockSubtitle,
-                    value: _draft.liquidGlassDockEnabled,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(liquidGlassDockEnabled: value),
-                      );
-                    },
-                  ),
-                  HyperosSwitchTile(
-                    title: l10n.liquidGlassScopePickerButtonsTitle,
-                    subtitle: l10n.liquidGlassScopePickerButtonsSubtitle,
-                    value: _draft.liquidGlassPickerButtonsEnabled,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(liquidGlassPickerButtonsEnabled: value),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
       4 => _SettingsResetTile(

@@ -122,7 +122,6 @@ TimetableSettings applySettingsReset(
     // 必须纳入恢复路径，否则切玻璃坞后新用户永远看不到圆钮。
     SettingsResetScope.homeNavigation => current.copyWith(
       homeNavigationForm: d.homeNavigationForm,
-      glassDockStyle: d.glassDockStyle,
       glassDockActions: d.glassDockActions,
       glassDockShowAddButton: d.glassDockShowAddButton,
       glassDockButtonEntryId: d.glassDockButtonEntryId,

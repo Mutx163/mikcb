@@ -267,11 +267,25 @@ class HyperosSheetFrame extends StatelessWidget {
     required BorderRadius borderRadius,
   }) {
     final appearance = FrostedAppearanceScope.of(context);
+    final mode = appearance.glassMode;
+
+    // 「高级材质作用范围」家族开关：全局高级材质（柔光 / 液态）
+    // + 该家族关闭 → 实体卡片（不再降级为高斯磨砂，见
+    // [LiquidGlassDegradation.familyFallsBackToSolid]）。
+    //
+    // **必须在材质分支之前求值**：柔光与液态同为高级材质、共用同一
+    // 组开关，柔光分支若排在前面会把开关整个绕过去（历史 bug）。
+    final familySolid = LiquidGlassDegradation.familyFallsBackToSolid(
+      context,
+      advancedFamilyEnabled: _liquidGlassAllowed(appearance),
+    );
+    // 高级材质面自带模糊，不受平台 BackdropFilter 能力与「模糊」总
+    // 开关约束（与液态同理：高级材质是产品档位，不是兜底材质）。
+    final useAdvancedMaterial =
+        isAdvancedGlassMode(mode) && !familySolid;
 
     // Soft glass (Hyper-PiliPlus style): milky frost + soft shadow optics.
-    // Owns its blur — not gated by platform BackdropFilter capability alone
-    // (same rationale as liquid glass: soft is a product mode, not a fallback).
-    if (appearance.glassMode == FrostedGlassMode.softGlass) {
+    if (useAdvancedMaterial && mode == FrostedGlassMode.softGlass) {
       return SoftGlassSurface(
         borderRadius: borderRadius,
         blurEnabled: HyperosBlurredHeader.backdropBlurEnabled(context),
@@ -288,16 +302,7 @@ class HyperosSheetFrame extends StatelessWidget {
     // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
     // would make the frame a solid gray slab on desktop/web while the nested
     // tiles keep rendering liquid glass.
-    // 「液态玻璃作用范围」家族开关：全局液态 + 该家族关闭 → 实体卡片
-    // （不再降级为高斯磨砂，见 [LiquidGlassDegradation.familyFallsBackToSolid]）。
-    final familySolid = LiquidGlassDegradation.familyFallsBackToSolid(
-      context,
-      liquidGlassFamilyEnabled: _liquidGlassAllowed(appearance),
-    );
-
-    if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
-        _liquidGlassAllowed(appearance) &&
-        !LiquidGlassDegradation.shouldDegrade(context)) {
+    if (useAdvancedMaterial && mode == FrostedGlassMode.liquidGlass) {
       return HyperosLiquidGlassSurface(
         role: liquidGlassRole,
         borderRadius: borderRadius.topLeft.x,
@@ -339,9 +344,19 @@ class HyperosSheetFrame extends StatelessWidget {
     required Widget content,
   }) {
     final appearance = FrostedAppearanceScope.of(context);
+    final mode = appearance.glassMode;
+
+    // 同 [_buildFrostedBackground]：先算家族判定，再分派高级材质，
+    // 保证柔光与液态同样受「作用范围」开关约束。
+    final familySolid = LiquidGlassDegradation.familyFallsBackToSolid(
+      context,
+      advancedFamilyEnabled: _liquidGlassAllowed(appearance),
+    );
+    final useAdvancedMaterial =
+        isAdvancedGlassMode(mode) && !familySolid;
 
     // Soft glass panel: same material as [_buildFrostedBackground].
-    if (appearance.glassMode == FrostedGlassMode.softGlass) {
+    if (useAdvancedMaterial && mode == FrostedGlassMode.softGlass) {
       return HyperosFrostedPanelScope(
         child: SoftGlassSurface(
           borderRadius: borderRadius,
@@ -359,15 +374,7 @@ class HyperosSheetFrame extends StatelessWidget {
     // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
     // would make the frame a solid gray slab on desktop/web while nested
     // tiles keep rendering liquid glass.
-    // 同 [_buildFrostedBackground]：家族关闭 → 实体卡片。
-    final familySolid = LiquidGlassDegradation.familyFallsBackToSolid(
-      context,
-      liquidGlassFamilyEnabled: _liquidGlassAllowed(appearance),
-    );
-
-    if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
-        _liquidGlassAllowed(appearance) &&
-        !LiquidGlassDegradation.shouldDegrade(context)) {
+    if (useAdvancedMaterial && mode == FrostedGlassMode.liquidGlass) {
       return HyperosFrostedPanelScope(
         child: HyperosLiquidGlassSurface(
           role: liquidGlassRole,

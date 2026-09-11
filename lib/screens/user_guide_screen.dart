@@ -7,6 +7,7 @@ import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../models/glass_mode_choice.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/hex_color.dart';
@@ -787,35 +788,20 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     _applyForuiTheme(theme);
   }
 
-  /// 视觉效果三档与设置字段的映射（与设置页玻璃模式三档同语义）：
-  /// - 高斯模糊 → 开模糊 + gaussian 模式；
-  /// - 液态玻璃 → 开模糊 + liquidGlass 模式；
-  /// - 实体卡片 → 关闭模糊总开关并把玻璃模式归位 frosted（所有表面
-  ///   回落实体卡片；液态面不受模糊总开关约束，必须显式脱离液态档）。
+  /// 视觉效果档位与设置字段的映射。
+  ///
+  /// 委派给 [applyGlassModeChoice]（设置页「材质」四档的唯一写入口），
+  /// 避免引导页与设置页各自维护一套映射、日后再漂移。
+  /// 两者档位对应：gaussian / softGlass / liquidGlass / solid。
   void _applyVisualEffect(_GuideVisualEffect effect) {
-    switch (effect) {
-      case _GuideVisualEffect.gaussian:
-        _updateSettings(
-          _currentSettings.copyWith(
-            frostedBlurEnabled: true,
-            frostedGlassMode: FrostedGlassMode.gaussian,
-          ),
-        );
-      case _GuideVisualEffect.liquidGlass:
-        _updateSettings(
-          _currentSettings.copyWith(
-            frostedBlurEnabled: true,
-            frostedGlassMode: FrostedGlassMode.liquidGlass,
-          ),
-        );
-      case _GuideVisualEffect.solid:
-        _updateSettings(
-          _currentSettings.copyWith(
-            frostedBlurEnabled: false,
-            frostedGlassMode: FrostedGlassMode.frosted,
-          ),
-        );
-    }
+    _updateSettings(
+      applyGlassModeChoice(_currentSettings, switch (effect) {
+        _GuideVisualEffect.gaussian => GlassModeChoice.gaussian,
+        _GuideVisualEffect.softGlass => GlassModeChoice.softGlass,
+        _GuideVisualEffect.liquidGlass => GlassModeChoice.liquidGlass,
+        _GuideVisualEffect.solid => GlassModeChoice.solid,
+      }),
+    );
   }
 
   Widget _buildTipsPage(AppLocalizations l10n) {
@@ -1144,23 +1130,28 @@ class _PermissionItem {
   });
 }
 
-/// 引导页「视觉效果」三档选择。与设置字段的映射见
-/// [_UserGuideScreenState._applyVisualEffect]。
-enum _GuideVisualEffect { gaussian, liquidGlass, solid }
+/// 引导页「视觉效果」四档选择，与设置页「材质」四档同一套
+/// 映射（[GlassModeChoice] / [applyGlassModeChoice] 是唯一写入口）。
+enum _GuideVisualEffect { gaussian, softGlass, liquidGlass, solid }
 
 const List<_GuideVisualEffect> _guideVisualEffectOptions = <_GuideVisualEffect>[
   _GuideVisualEffect.gaussian,
+  _GuideVisualEffect.softGlass,
   _GuideVisualEffect.liquidGlass,
   _GuideVisualEffect.solid,
 ];
 
-/// 从当前设置推导引导页视觉效果选中项（模糊关 → 实体卡片）。
+/// 从当前设置推导引导页视觉效果选中项。
+///
+/// 早先只认高斯 / 液态 / 实体三档，全局选「柔光玻璃」时会错误地
+/// 把「高斯模糊」显示为选中——引导页与实际材质不一致。
 _GuideVisualEffect _guideVisualEffectOf(TimetableSettings settings) {
   if (!settings.frostedBlurEnabled) return _GuideVisualEffect.solid;
-  if (settings.frostedGlassMode == FrostedGlassMode.liquidGlass) {
-    return _GuideVisualEffect.liquidGlass;
-  }
-  return _GuideVisualEffect.gaussian;
+  return switch (settings.frostedGlassMode) {
+    FrostedGlassMode.liquidGlass => _GuideVisualEffect.liquidGlass,
+    FrostedGlassMode.softGlass => _GuideVisualEffect.softGlass,
+    _ => _GuideVisualEffect.gaussian,
+  };
 }
 
 String _guideVisualEffectLabel(
@@ -1168,6 +1159,7 @@ String _guideVisualEffectLabel(
   _GuideVisualEffect effect,
 ) => switch (effect) {
   _GuideVisualEffect.gaussian => l10n.frostedGlassModeGaussian,
+  _GuideVisualEffect.softGlass => l10n.frostedGlassModeSoft,
   _GuideVisualEffect.liquidGlass => l10n.frostedGlassModeLiquid,
   _GuideVisualEffect.solid => l10n.guidePersonalizeVisualEffectSolid,
 };
@@ -1177,6 +1169,7 @@ String _guideVisualEffectDescription(
   _GuideVisualEffect effect,
 ) => switch (effect) {
   _GuideVisualEffect.gaussian => l10n.guideVisualEffectGaussianDesc,
+  _GuideVisualEffect.softGlass => l10n.guideVisualEffectSoftDesc,
   _GuideVisualEffect.liquidGlass => l10n.guideVisualEffectLiquidDesc,
   _GuideVisualEffect.solid => l10n.guideVisualEffectSolidDesc,
 };

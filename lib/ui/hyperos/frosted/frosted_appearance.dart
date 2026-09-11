@@ -60,6 +60,15 @@ extension FrostedGlassModeX on FrostedGlassMode {
   }
 }
 
+/// 是否为「高级材质」档位（柔光玻璃 / 液态玻璃）。
+///
+/// 高级材质共享同一组「作用范围」开关（见
+/// [LiquidGlassDegradation.familyFallsBackToSolid]），也才会驱动首页玻璃带与玻璃坞
+/// 脱离基础模糊档。实体卡片与高斯模糊是基础材质，不受开关约束。
+bool isAdvancedGlassMode(FrostedGlassMode? mode) =>
+    mode == FrostedGlassMode.liquidGlass ||
+    mode == FrostedGlassMode.softGlass;
+
 class FrostedAppearance {
   const FrostedAppearance({
     required this.sheetBlurSigma,

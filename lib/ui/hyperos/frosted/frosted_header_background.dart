@@ -15,10 +15,15 @@ bool _isLiquidSheetPanel(BuildContext context) {
       a.liquidGlassSheetDialogEnabled;
 }
 
+/// 柔光面板内的嵌套 tile：与 [_isLiquidSheetPanel] 同口径（同为高级材质，
+/// 受同一组「作用范围 → 弹窗与对话框」开关与系统降级约束）。
 bool _isSoftSheetPanel(BuildContext context) {
+  if (LiquidGlassDegradation.shouldDegrade(context)) return false;
   final scope = FrostedAppearanceScope.maybeOf(context);
   if (scope == null) return false;
-  return scope.appearance.glassMode == FrostedGlassMode.softGlass;
+  final a = scope.appearance;
+  return a.glassMode == FrostedGlassMode.softGlass &&
+      a.liquidGlassSheetDialogEnabled;
 }
 
 /// Frosted top bar: progressive blur + tint scrim (via [InspireHeaderBlur]).

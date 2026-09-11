@@ -577,9 +577,16 @@ class HyperosSelectPopupGlass extends StatelessWidget {
   final bool useAncestorGroupCapture;
 
   /// 当前外观下弹窗是否走柔光玻璃面（Hyper-PiliPlus SoftGlass 风格）。
+  ///
+  /// 与 [liquidSurfaceActive] 同口径：柔光与液态同为高级材质，受**同一组**
+  /// 「作用范围」开关约束。关闭时落入 [solidSurfaceActive]的实底分支
+  /// （不降级为高斯）。此前该判定只看全局档位，全局柔光时
+  /// 六个作用范围开关全部失效（历史 bug）。
   static bool softSurfaceActive(BuildContext context) {
     final appearance = FrostedAppearanceScope.of(context);
-    return appearance.glassMode == FrostedGlassMode.softGlass;
+    return appearance.glassMode == FrostedGlassMode.softGlass &&
+        appearance.liquidGlassPopupEnabled &&
+        !LiquidGlassDegradation.shouldDegrade(context);
   }
 
   /// 当前外观下弹窗是否走液态玻璃面（与 [build] 分支同一口径，供调用方
@@ -611,7 +618,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     }
     if (LiquidGlassDegradation.familyFallsBackToSolid(
       context,
-      liquidGlassFamilyEnabled:
+      advancedFamilyEnabled:
           FrostedAppearanceScope.of(context).liquidGlassPopupEnabled,
     )) {
       return true;
@@ -733,7 +740,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     if (!useBlur ||
         LiquidGlassDegradation.familyFallsBackToSolid(
           context,
-          liquidGlassFamilyEnabled: appearance.liquidGlassPopupEnabled,
+          advancedFamilyEnabled: appearance.liquidGlassPopupEnabled,
         )) {
       return HyperosSolidPopupSurface(cornerRadius: cornerRadius, child: child);
     }

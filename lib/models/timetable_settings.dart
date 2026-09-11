@@ -135,24 +135,6 @@ enum TimetableHomeViewMode { week, day }
 /// 药丸导航，滑动/点击即可切换周课表、日课表与设置。
 enum HomeNavigationForm { classic, glassDock }
 
-/// 玻璃坞底栏材质：液态折射（现有 GlassTabBar）或柔光雾面
-/// （移植 Hyper-PiliPlus SoftGlass 的胶囊底栏）。
-enum DockGlassStyle { liquid, soft }
-
-extension DockGlassStyleX on DockGlassStyle {
-  String get value => switch (this) {
-    DockGlassStyle.liquid => 'liquid',
-    DockGlassStyle.soft => 'soft',
-  };
-
-  static DockGlassStyle fromValue(String? value) {
-    return DockGlassStyle.values.firstWhere(
-      (item) => item.value == value,
-      orElse: () => DockGlassStyle.liquid,
-    );
-  }
-}
-
 /// 首页右上角「更多」菜单形态：
 /// - [list] 锚定在按钮下方的列表弹窗（当前设计）；
 /// - [grid] 底部弹出的八宫格图标瓷贴（v2.0.5.5 已发布版本的样式）。
@@ -1318,9 +1300,6 @@ class TimetableSettings {
   final TimetableHomeViewMode timetableHomeViewMode;
   final HomeNavigationForm homeNavigationForm;
 
-  /// 玻璃坞底栏材质：液态折射 / 柔光雾面（Hyper-PiliPlus 风格）。
-  final DockGlassStyle glassDockStyle;
-
   /// 首页右上角「更多」菜单形态（列表弹窗 / 八宫格瓷贴）。
   final HomeMenuStyle homeMenuStyle;
 
@@ -1588,7 +1567,6 @@ class TimetableSettings {
     this.homeTitleStyle = HomeTitleStyle.classic,
     this.timetableHomeViewMode = TimetableHomeViewMode.week,
     this.homeNavigationForm = HomeNavigationForm.classic,
-    this.glassDockStyle = DockGlassStyle.liquid,
     this.homeMenuStyle = HomeMenuStyle.list,
     this.homeGridMenuActions = const <String>[],
     this.glassDockActions = HomeDockMenu.defaultActions,
@@ -1796,7 +1774,6 @@ class TimetableSettings {
       'homeTitleStyle': homeTitleStyle.value,
       'timetableHomeViewMode': timetableHomeViewMode.value,
       'homeNavigationForm': homeNavigationForm.value,
-      'glassDockStyle': glassDockStyle.value,
       'homeMenuStyle': homeMenuStyle.value,
       'homeGridMenuActions': homeGridMenuActions,
       'glassDockActions': glassDockActions,
@@ -1964,6 +1941,10 @@ class TimetableSettings {
     // 联动开时详情字色回填为标题字色，规则与 copyWith 的联动回填一致：
     // 旧版本数据 / 主题备份可能残留「联动开、详情色不同」的脏状态（白标题
     // +黑简介混色卡的根源）；独立模式（联动关）保留用户显式选择。
+    // 存量迁移判定（详见下方 frostedGlassMode 处）。
+    final legacyChromeLiquid =
+        (json['homeChromeGlassMaterial'] as String?) == 'liquid' &&
+        (json['frostedBlurEnabled'] as bool? ?? defaultFrostedBlurEnabled);
     final linkedCardTextColors = json['linkCourseCardColors'] as bool? ?? true;
     final parsedTitleColorLight =
         json['courseCardTitleColorLight'] as String? ??
@@ -2093,9 +2074,8 @@ class TimetableSettings {
       homeNavigationForm: HomeNavigationFormX.fromValue(
         json['homeNavigationForm'] as String?,
       ),
-      glassDockStyle: DockGlassStyleX.fromValue(
-        json['glassDockStyle'] as String?,
-      ),
+      // 旧键 `glassDockStyle` 已废弃：底栏材质现在跟随全局
+      // 材质 + 「作用范围 → 玻璃坞导航」，读取时直接忽略。
       homeMenuStyle: HomeMenuStyleX.fromValue(json['homeMenuStyle'] as String?),
       glassDockActions: HomeDockMenu.normalize(
         (json['glassDockActions'] as List<Object?>?) ??
@@ -2379,9 +2359,16 @@ class TimetableSettings {
           defaultFrostedSheetBarrierAlpha,
       frostedBlurEnabled:
           json['frostedBlurEnabled'] as bool? ?? defaultFrostedBlurEnabled,
-      frostedGlassMode: FrostedGlassModeX.fromValue(
-        json['frostedGlassMode'] as String?,
-      ),
+      // 存量迁移：旧版「玻璃材质」独立三档里写死 `liquid` 的用户，
+      // 其首页玻璃带在旧模型下走折射。新模型只有「全局材质 +
+      // 作用范围」一个轴，这里把这份选择**上提为全局液态**并打开
+      // 首页玻璃带作用范围（观感不变），消除第二个材质轴。
+      // 模糊总开关关掉时不上提：那是「实体卡片」档，适用所有表面。
+      frostedGlassMode: legacyChromeLiquid
+          ? FrostedGlassMode.liquidGlass
+          : FrostedGlassModeX.fromValue(
+              json['frostedGlassMode'] as String?,
+            ),
       liquidGlassPopupEnabled:
           json['liquidGlassPopupEnabled'] as bool? ??
           defaultLiquidGlassPopupEnabled,
@@ -2391,9 +2378,10 @@ class TimetableSettings {
       liquidGlassSheetDialogEnabled:
           json['liquidGlassSheetDialogEnabled'] as bool? ??
           defaultLiquidGlassSheetDialogEnabled,
-      liquidGlassHomeChromeEnabled:
-          json['liquidGlassHomeChromeEnabled'] as bool? ??
-          defaultLiquidGlassHomeChromeEnabled,
+      liquidGlassHomeChromeEnabled: legacyChromeLiquid
+          ? true
+          : json['liquidGlassHomeChromeEnabled'] as bool? ??
+                defaultLiquidGlassHomeChromeEnabled,
       liquidGlassDockEnabled:
           json['liquidGlassDockEnabled'] as bool? ??
           defaultLiquidGlassDockEnabled,
@@ -2418,8 +2406,10 @@ class TimetableSettings {
       headerBlurStyle: HeaderBlurStyleX.fromValue(
         json['headerBlurStyle'] as String?,
       ),
-      homeChromeGlassMaterial:
-          json['homeChromeGlassMaterial'] as String? ?? 'progressive',
+      // 迁移后不再保留 `liquid`：材质由全局选择器单独管。
+      homeChromeGlassMaterial: legacyChromeLiquid
+          ? 'progressive'
+          : json['homeChromeGlassMaterial'] as String? ?? 'progressive',
       homePageTimeColumnBlurEnabled:
           json['homePageTimeColumnBlurEnabled'] as bool? ?? false,
       homePageBackdropFollowsWeekPager:
@@ -2504,7 +2494,6 @@ class TimetableSettings {
     HomeTitleStyle? homeTitleStyle,
     TimetableHomeViewMode? timetableHomeViewMode,
     HomeNavigationForm? homeNavigationForm,
-    DockGlassStyle? glassDockStyle,
     HomeMenuStyle? homeMenuStyle,
     List<String>? homeGridMenuActions,
     List<String>? glassDockActions,
@@ -2733,7 +2722,6 @@ class TimetableSettings {
       timetableHomeViewMode:
           timetableHomeViewMode ?? this.timetableHomeViewMode,
       homeNavigationForm: homeNavigationForm ?? this.homeNavigationForm,
-      glassDockStyle: glassDockStyle ?? this.glassDockStyle,
       homeMenuStyle: homeMenuStyle ?? this.homeMenuStyle,
       // 写入也过一遍归一：钉住项不因调用方疏漏而丢失（解析路径同）。
       homeGridMenuActions: homeGridMenuActions == null

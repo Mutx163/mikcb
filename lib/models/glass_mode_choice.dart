@@ -33,9 +33,8 @@ GlassModeChoice glassModeChoiceOf(TimetableSettings settings) {
 /// 液态面自带模糊、不受模糊总开关约束，不归位会出现「选了实体卡片，
 /// 弹窗仍是液态」的残留。高斯 / 柔光 / 液态玻璃档均保证模糊开启。
 ///
-/// 底栏：选柔光 → 底栏柔光；选回高斯/液态/实体 → 底栏回液态路径
-/// （GlassTabBar），否则用户切全局材质时底栏一直卡在 SoftGlassTabBar，
-/// 和高斯观感分不开。
+/// 底栏不再由这里写入独立材质：底栏材质现在**跟随全局**
+/// （见 `_buildGlassDockBar`），不再会出现「全局高斯 + 底栏柔光」这类脱钩。
 TimetableSettings applyGlassModeChoice(
   TimetableSettings settings,
   GlassModeChoice choice,
@@ -43,32 +42,29 @@ TimetableSettings applyGlassModeChoice(
   GlassModeChoice.solid => settings.copyWith(
     frostedBlurEnabled: false,
     frostedGlassMode: FrostedGlassMode.frosted,
-    glassDockStyle: DockGlassStyle.liquid,
   ),
   GlassModeChoice.gaussian => settings.copyWith(
     frostedBlurEnabled: true,
     frostedGlassMode: FrostedGlassMode.gaussian,
-    glassDockStyle: DockGlassStyle.liquid,
   ),
   GlassModeChoice.softGlass => settings.copyWith(
     frostedBlurEnabled: true,
     frostedGlassMode: FrostedGlassMode.softGlass,
-    glassDockStyle: DockGlassStyle.soft,
   ),
   GlassModeChoice.liquidGlass => settings.copyWith(
     frostedBlurEnabled: true,
     frostedGlassMode: FrostedGlassMode.liquidGlass,
-    glassDockStyle: DockGlassStyle.liquid,
   ),
 };
 
-/// 写回「顶栏模糊风格」独立行（渐进模糊 / 高斯模糊）。
+/// 写回「顶栏模糊风格」（渐进模糊 / 高斯模糊）。
 ///
-/// 该行从「玻璃材质」里拆回来后与后者的渐进/高斯两档语义重叠，所以这里
-/// **同步**写 `homeChromeGlassMaterial`：否则用户先选「玻璃材质 = 渐进模糊」
-/// 再改「模糊风格 = 高斯模糊」，材质行会仍显示「渐进模糊」，与实际渲染的
-/// 衰减风格自相矛盾。液态档走折射面、不看 [HeaderBlurStyle]，这里一并关掉
-/// 首页液态开关（与 [ChromeGlassMaterial.progressive] 同款收尾）。
+/// 同步写 `homeChromeGlassMaterial`（渐进 → progressive、高斯 → gaussian），
+/// 保持存量字段与实际衰减风格一致。
+///
+/// **不再**关掉 `liquidGlassHomeChromeEnabled`：该开关现在是「首页玻璃带跟随
+/// 全局高级材质」的作用范围开关，改模糊风格与它无关；原先一并关掉
+/// 会把用户的柔光 / 液态顶栏静默降级成基础磨砂。
 TimetableSettings applyChromeBlurStyle(
   TimetableSettings settings,
   HeaderBlurStyle style,
@@ -77,53 +73,5 @@ TimetableSettings applyChromeBlurStyle(
   homeChromeGlassMaterial: style == HeaderBlurStyle.gaussian
       ? 'gaussian'
       : 'progressive',
-  liquidGlassHomeChromeEnabled: false,
 );
-/// 课表壁纸区「顶栏玻璃材质」三档（与全局玻璃模式完全解耦）。
-///
-/// - [progressive]：首页玻璃带用 inspire 渐进模糊（上浓下淡）。
-/// - [gaussian]：首页玻璃带用 inspire 均匀高斯观感。
-/// - [liquid]：首页玻璃带走液态玻璃折射面。**仅首页**——子页顶栏与
-///   弹窗不读 [homeChromeGlassMaterial]，永不被此档带动。
-enum ChromeGlassMaterial { progressive, gaussian, liquid }
 
-/// 存量数据：无 `homeChromeGlassMaterial` 时从旧字段推导。
-ChromeGlassMaterial chromeGlassMaterialOf(TimetableSettings settings) {
-  return switch (settings.homeChromeGlassMaterial) {
-    'liquid' => ChromeGlassMaterial.liquid,
-    'gaussian' => ChromeGlassMaterial.gaussian,
-    'progressive' => ChromeGlassMaterial.progressive,
-    // 兜底：旧数据无新键时沿用 headerBlurStyle / 全局液态启发式。
-    _ =>
-      settings.liquidGlassHomeChromeEnabled &&
-              settings.frostedGlassMode == FrostedGlassMode.liquidGlass
-          ? ChromeGlassMaterial.liquid
-          : settings.headerBlurStyle == HeaderBlurStyle.gaussian
-          ? ChromeGlassMaterial.gaussian
-          : ChromeGlassMaterial.progressive,
-  };
-}
-
-/// 写回首页玻璃带材质。
-///
-/// 只写 `homeChromeGlassMaterial` + `headerBlurStyle`，**不改**全局
-/// `frostedGlassMode`——设置页弹窗/Sheet 材质跟外观页走。
-TimetableSettings applyChromeGlassMaterial(
-  TimetableSettings settings,
-  ChromeGlassMaterial material,
-) => switch (material) {
-  ChromeGlassMaterial.progressive => settings.copyWith(
-    homeChromeGlassMaterial: 'progressive',
-    headerBlurStyle: HeaderBlurStyle.inspire,
-    liquidGlassHomeChromeEnabled: false,
-  ),
-  ChromeGlassMaterial.gaussian => settings.copyWith(
-    homeChromeGlassMaterial: 'gaussian',
-    headerBlurStyle: HeaderBlurStyle.gaussian,
-    liquidGlassHomeChromeEnabled: false,
-  ),
-  ChromeGlassMaterial.liquid => settings.copyWith(
-    homeChromeGlassMaterial: 'liquid',
-    liquidGlassHomeChromeEnabled: true,
-  ),
-};

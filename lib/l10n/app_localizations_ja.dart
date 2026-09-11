@@ -3389,19 +3389,7 @@ class AppLocalizationsJa extends AppLocalizations {
       'ガラス素材は外観のガラスモードに従います。オフのままでは情報バーに壁紙を直接表示します';
 
   @override
-  String get chromeGlassMaterialLabel => 'ガラス素材';
-
-  @override
   String get chromeGlassMaterialSubtitle => '';
-
-  @override
-  String get chromeGlassMaterialProgressive => 'プログレッシブぼかし';
-
-  @override
-  String get chromeGlassMaterialGaussian => 'ガウスぼかし';
-
-  @override
-  String get chromeGlassMaterialLiquid => 'リキッドガラス';
 
   @override
   String get chromeGlassMaterialHint => '';
@@ -6471,6 +6459,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get guideVisualEffectGaussianDesc => '背景をリアルタイムにぼかし、透明感と奥行きを演出';
+
+  @override
+  String get guideVisualEffectSoftDesc => 'やわらかなフロストガラス。軽く繊細で、リキッドより省電力';
 
   @override
   String get guideVisualEffectLiquidDesc => 'リキッドグラスの屈折で質感をプラス（消費電力やや増）';
@@ -10668,21 +10659,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get glassDockCustomizeSectionTitle => '下部ナビゲーション';
-
-  @override
-  String get glassDockStyleLabel => 'ドック素材';
-
-  @override
-  String get glassDockStyleLiquid => 'リキッドガラス';
-
-  @override
-  String get glassDockStyleSoft => 'ソフトガラス';
-
-  @override
-  String get glassDockStyleLiquidSubtitle => '屈折ガラスで質感重視（電力はやや増）';
-
-  @override
-  String get glassDockStyleSoftSubtitle => 'やわらかフロストカプセルで軽量・省電力';
 
   @override
   String get glassDockCustomizeTitle => 'ドックボタンをカスタマイズ';
