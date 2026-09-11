@@ -390,7 +390,28 @@ class SoftGlassSurface extends StatelessWidget {
             //    → loose，Stack 尺寸跟随内容，绝不能撑到约束上限，否则
             //      小内容弹窗会变成一整屏。
             fit: constraints.isTight ? StackFit.expand : StackFit.loose,
-            children: [...layers, child],
+            children: [
+              ...layers,
+              // 宽度下限必须透传给内容 —— 材质容器不得改写内容的布局语义。
+              //
+              // 非紧约束时 Stack 走 `StackFit.loose`，给非定位子项的约束是
+              // `0..maxWidth`：父约束的 `minWidth` 在这里被松掉了。锚定选择弹窗
+              // 那类「外层 `ConstrainedBox(minWidth)` + 内层 `IntrinsicWidth` +
+              // `Column(stretch)`」的排版会因此收缩到内容固有宽度——`stretch`
+              // 撑不动、行内 `Expanded` 无处可撑，选中的勾从贴容器右边变成
+              // 紧跟文字。实测（test/ui/hyperos/soft_glass_constraint_test.dart）：
+              // 同样 `minWidth: 200` 下普通容器内容宽 200、此处仅 85。
+              //
+              // 只补 `minWidth`，不碰 `maxWidth`：高度仍由内容决定，小内容弹窗
+              // 不会被撑成一整屏。
+              if (constraints.isTight)
+                child
+              else
+                ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: constraints.minWidth),
+                  child: child,
+                ),
+            ],
           ),
         );
 
