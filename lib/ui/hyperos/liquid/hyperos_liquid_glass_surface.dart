@@ -292,7 +292,9 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
       // sharedLayer: inherit settings from the ancestor LiquidGlassLayer
       // (the explicit value is a placeholder in grouped mode).
       settings: useShared ? const LiquidGlassSettings() : settings,
-      quality: useMinimal ? GlassQuality.minimal : GlassQuality.premium,
+      quality: useMinimal
+          ? GlassQuality.minimal
+          : MikcbLiquidGlassTokens.defaultQuality,
       useOwnLayer: !useShared,
       clipBehavior: clipBehavior,
       clipExpansion: clipExpansion,

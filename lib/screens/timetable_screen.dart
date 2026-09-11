@@ -6703,8 +6703,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                 withBlur: true,
               ),
             );
-      dockBtnQuality =
-          dockUseLiquidGlass ? GlassQuality.premium : GlassQuality.minimal;
+      dockBtnQuality = dockUseLiquidGlass
+          ? MikcbLiquidGlassTokens.defaultQuality
+          : GlassQuality.minimal;
     }
     return Stack(
       fit: StackFit.expand,
@@ -6873,7 +6874,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       indicatorPinchStrength: useLiquidGlass ? 1.0 : 0.4,
       quality: _kStockDockGlass
           ? null
-          : (useLiquidGlass ? GlassQuality.premium : GlassQuality.minimal),
+          : (useLiquidGlass
+                ? MikcbLiquidGlassTokens.defaultQuality
+                : GlassQuality.minimal),
       iconSize: 22,
       labelFontSize: 10,
       horizontalPadding: 6,
@@ -7173,7 +7176,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       theme.brightness,
                       tuning: dockAppearance.liquidGlassTuning,
                     ),
-                    quality: GlassQuality.premium,
+                    quality: MikcbLiquidGlassTokens.defaultQuality,
                     // 崩溃修复：此钮挂在无任何 LiquidGlassLayer 祖先的裸 Stack 上，
                     // premium + 默认 useOwnLayer:false 会触发 LiquidGlassBlendGroup
                     // 的 renderLink != null 断言。显式自带层；isStationary 与

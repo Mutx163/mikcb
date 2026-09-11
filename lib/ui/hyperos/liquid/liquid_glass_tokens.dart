@@ -13,6 +13,23 @@ import '../hyperos_tokens.dart';
 ///
 /// Kept separate from HyperOS solid surfaces so gaussian blur tuning stays untouched.
 abstract final class MikcbLiquidGlassTokens {
+  /// 本项目所有液态玻璃统一使用的渲染质量档。
+  ///
+  /// 此前每一处调用点都各自写死 [GlassQuality.premium]——那是「自定义着色器 +
+  /// 逐帧纹理抓取」的最高档。包文档对 premium 的适用面写得很明确：
+  /// 更高画质（镜面高光 + 色散），但**计算量更大**，且在**可滚动布局里可能
+  /// 渲染不正确**；持续动画有超出 GPU 预算的风险。
+  ///
+  /// 真机实测（Redmi K80 Ultra / 天玑 9400 / 120Hz）：切到液态玻璃后首页
+  /// 掉到 60fps、滑动卡死——正是 premium 的代价，因为底栏药丸 + 圆钮 +
+  /// 返回本周钮会**各建一个 LiquidGlassLayer**，每帧各自抓取一次全屏纹理
+  /// 再做折射。
+  ///
+  /// [GlassQuality.standard] 是包方**推荐的默认档**：轻量片元着色器，
+  /// 文档标称「比 BackdropFilter 快 5~10 倍」，观感优于 BackdropFilter，
+  /// 且明确支持滚动场景。省电与流畅都从这里来，而不是把玻璃换成纯色。
+  static const GlassQuality defaultQuality = GlassQuality.standard;
+
   /// Single liquid-glass material for every surface.
   ///
   /// 与 GlassTabBar 内部默认（kBottomBarGlassDefaults，iOS 26 Apple
