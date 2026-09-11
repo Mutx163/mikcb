@@ -77,9 +77,37 @@ class AppFontScope extends InheritedWidget {
   /// - 用户设定了非默认字重：整页绝对覆盖（与 Material `TextTheme` 一致）。
   /// - 用户未改：保留设计角色层级；若系统有粗体增量，对硬编码样式做
   ///   与原先大标题相同的补偿（减去系统增量，避免被再叠一层加粗）。
+  ///
+  /// 适合「层级靠字号/颜色表达」的文本（HyperosTypography 全站都是 w400，
+  /// 覆盖不会丢层级）。层级本身靠字重表达的文本（课程卡片标题粗、详情常规）
+  /// 必须改用 [resolveShiftedWeight]，否则会被压成同一档。
   int resolveWeight(int designWeight) {
     if (userFontWeight != kAppFontWeightDefault) {
       return userFontWeight.clamp(kAppFontWeightMin, kAppFontWeightMax);
+    }
+    return (designWeight - systemFontWeightDelta).clamp(
+      kAppFontWeightMin,
+      kAppFontWeightMax,
+    );
+  }
+
+  /// 把设计稿字重按用户字重**整体平移**，保留角色之间的层级差。
+  ///
+  /// 课卡这类文本的层级就是字重本身（标题 w700 / 详情 w400），绝对覆盖会让
+  /// 标题与详情变成同一档、卡片失去主次。这里改为平移：
+  ///
+  /// - 用户设了非默认字重：每个角色都加上 `用户字重 - w400`，w700 标题与
+  ///   w400 详情同步变粗/变细，差值保留。
+  /// - 用户未改：只做系统粗体增量补偿，与 [resolveWeight] 同口径。
+  ///
+  /// 平移结果同样钳制在 w100–w900：用户滑到极值（如 w900）时角色差值会
+  /// 因上下限收敛，这是有意的（不能超出字体可用的字重范围）。
+  int resolveShiftedWeight(int designWeight) {
+    if (userFontWeight != kAppFontWeightDefault) {
+      return (designWeight + userFontWeight - kAppFontWeightDefault).clamp(
+        kAppFontWeightMin,
+        kAppFontWeightMax,
+      );
     }
     return (designWeight - systemFontWeightDelta).clamp(
       kAppFontWeightMin,

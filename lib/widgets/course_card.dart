@@ -5,8 +5,25 @@ import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../utils/course_color_palette.dart';
 import '../utils/hex_color.dart';
+import '../ui/app_fonts.dart';
 import '../ui/hyperos/hyperos_theme.dart';
 import 'course_surface.dart';
+
+/// 课卡文本的设计字重。
+///
+/// 课卡的主次完全靠字重表达（标题粗、详情常规），因此不能像
+/// [HyperosTypography] 那样被全局字重绝对覆盖——那会把标题和详情压成同一
+/// 档，卡片失去层级。改用 [AppFontScope.resolveShiftedWeight] 整体平移：
+/// 用户调粗时两者同步变粗，差值保留。
+const int _kCourseCardTitleWeight = 700;
+const int _kCourseCardDetailWeight = 400;
+
+/// 把课卡的设计字重解析成运行时字重；无 scope（单测/预览）时原样返回。
+int _courseCardWeight(BuildContext context, int designWeight) =>
+    AppFontScope.maybeOf(
+      context,
+    )?.resolveShiftedWeight(designWeight) ??
+    designWeight;
 
 class CourseCard extends StatelessWidget {
   final Course course;
@@ -158,7 +175,12 @@ class CourseCard extends StatelessWidget {
                         course.name,
                         style: TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight(
+                            _courseCardWeight(
+                              context,
+                              _kCourseCardTitleWeight,
+                            ),
+                          ),
                           color: titleColor,
                         ),
                         textAlign: titleTextAlign,
@@ -183,7 +205,16 @@ class CourseCard extends StatelessWidget {
                               course.startSection,
                               course.endSection,
                             ),
-                            style: TextStyle(fontSize: 12, color: titleColor),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight(
+                                _courseCardWeight(
+                                  context,
+                                  _kCourseCardDetailWeight,
+                                ),
+                              ),
+                              color: titleColor,
+                            ),
                           ),
                         ),
                       ),
@@ -523,7 +554,7 @@ class CourseCard extends StatelessWidget {
     );
   }
 
-  Widget _buildBadge(String text, {Color? color}) {
+  Widget _buildBadge(BuildContext context, String text, {Color? color}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
@@ -539,9 +570,11 @@ class CourseCard extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 9,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight(
+            _courseCardWeight(context, _kCourseCardTitleWeight),
+          ),
           color: Colors.white,
         ),
       ),
@@ -562,16 +595,24 @@ class CourseCard extends StatelessWidget {
     }
     if (showHoliday && l10n != null) {
       badges.add(
-        _buildBadge(l10n.holidayBadgeLabel, color: Colors.orange.shade700),
+        _buildBadge(
+          context,
+          l10n.holidayBadgeLabel,
+          color: Colors.orange.shade700,
+        ),
       );
     }
     if (showSuspended && l10n != null) {
       badges.add(
-        _buildBadge(l10n.suspendedBadgeLabel, color: Colors.red.shade700),
+        _buildBadge(
+          context,
+          l10n.suspendedBadgeLabel,
+          color: Colors.red.shade700,
+        ),
       );
     }
     if (customBadgeText != null) {
-      badges.add(_buildBadge(customBadgeText));
+      badges.add(_buildBadge(context, customBadgeText));
     }
     if (badges.isEmpty) return const SizedBox.shrink();
     if (badges.length == 1) return badges.first;
@@ -589,18 +630,26 @@ class CourseCard extends StatelessWidget {
   List<Widget> _buildDetailLines(BuildContext context, Color detailColor) {
     final lines = <Widget>[];
     if (showTeacher && course.teacher.trim().isNotEmpty) {
-      lines.add(_buildDetailRow(Icons.person, course.teacher, detailColor));
+      lines.add(
+        _buildDetailRow(context, Icons.person, course.teacher, detailColor),
+      );
     }
     if (showLocation && course.location.trim().isNotEmpty) {
       if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
       lines.add(
-        _buildDetailRow(Icons.location_on, course.location, detailColor),
+        _buildDetailRow(
+          context,
+          Icons.location_on,
+          course.location,
+          detailColor,
+        ),
       );
     }
     if (showTime) {
       if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
       lines.add(
         _buildDetailRow(
+          context,
           Icons.access_time,
           _buildTimeText(context, isCompact: false),
           detailColor,
@@ -611,6 +660,7 @@ class CourseCard extends StatelessWidget {
       if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
       lines.add(
         _buildDetailRow(
+          context,
           Icons.date_range_rounded,
           _buildWeekText(context),
           detailColor,
@@ -621,6 +671,7 @@ class CourseCard extends StatelessWidget {
       if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
       lines.add(
         _buildDetailRow(
+          context,
           Icons.notes_rounded,
           course.description!.trim(),
           detailColor,
@@ -630,7 +681,12 @@ class CourseCard extends StatelessWidget {
     return lines;
   }
 
-  Widget _buildDetailRow(IconData icon, String text, Color detailColor) {
+  Widget _buildDetailRow(
+    BuildContext context,
+    IconData icon,
+    String text,
+    Color detailColor,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -639,7 +695,14 @@ class CourseCard extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: TextStyle(fontSize: 13, color: detailColor, height: 1.15),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight(
+                _courseCardWeight(context, _kCourseCardDetailWeight),
+              ),
+              color: detailColor,
+              height: 1.15,
+            ),
             softWrap: true,
           ),
         ),
@@ -653,6 +716,14 @@ class CourseCard extends StatelessWidget {
     Color detailColor,
   ) {
     final l10n = AppLocalizations.of(context)!;
+    // 网格卡的字号小、行距紧，层级只能靠字重区分：标题与详情各自按角色
+    // 平移用户全局字重，不能压成同一档。
+    final titleWeight = FontWeight(
+      _courseCardWeight(context, _kCourseCardTitleWeight),
+    );
+    final detailWeight = FontWeight(
+      _courseCardWeight(context, _kCourseCardDetailWeight),
+    );
     final lines = <_CompactTextLine>[];
     if (compactOverlineText?.trim().isNotEmpty ?? false) {
       lines.add(
@@ -661,6 +732,7 @@ class CourseCard extends StatelessWidget {
           flex: 1,
           style: TextStyle(
             fontSize: (compactSubtitleFontSize - 1).clamp(6.0, 12.0),
+            fontWeight: detailWeight,
             color: detailColor,
             height: 1.05,
           ),
@@ -674,7 +746,7 @@ class CourseCard extends StatelessWidget {
           flex: 4,
           style: TextStyle(
             fontSize: compactTitleFontSize,
-            fontWeight: FontWeight.bold,
+            fontWeight: titleWeight,
             color: titleColor,
             height: 1.15,
           ),
@@ -688,6 +760,7 @@ class CourseCard extends StatelessWidget {
           flex: 2,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
+            fontWeight: detailWeight,
             color: detailColor,
             height: 1.1,
           ),
@@ -701,6 +774,7 @@ class CourseCard extends StatelessWidget {
           flex: 2,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
+            fontWeight: detailWeight,
             color: detailColor,
             height: 1.1,
           ),
@@ -716,6 +790,7 @@ class CourseCard extends StatelessWidget {
           flex: 2,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
+            fontWeight: detailWeight,
             color: detailColor,
             height: 1.1,
           ),
@@ -727,6 +802,7 @@ class CourseCard extends StatelessWidget {
           flex: 2,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
+            fontWeight: detailWeight,
             color: detailColor,
             height: 1.1,
           ),
@@ -740,6 +816,7 @@ class CourseCard extends StatelessWidget {
           flex: 2,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
+            fontWeight: detailWeight,
             color: detailColor,
             height: 1.1,
           ),
@@ -753,6 +830,7 @@ class CourseCard extends StatelessWidget {
           flex: 3,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
+            fontWeight: detailWeight,
             color: detailColor,
             height: 1.1,
           ),
@@ -766,7 +844,7 @@ class CourseCard extends StatelessWidget {
               flex: 1,
               style: TextStyle(
                 fontSize: compactTitleFontSize,
-                fontWeight: FontWeight.bold,
+                fontWeight: titleWeight,
                 color: titleColor,
                 height: 1.15,
               ),
