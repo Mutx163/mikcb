@@ -427,7 +427,11 @@ Future<ui.Image> renderBuiltInWallpaperImage(
       ..imageFilter = ui.ImageFilter.blur(
         sigmaX: shortest * spec.blurStrength,
         sigmaY: shortest * spec.blurStrength,
-        tileMode: TileMode.decal,
+        // clamp 而非 decal：光斑渐变会一路铺到画布边界，decal 把界外当透明，
+        // 模糊后四周会留一圈渐隐并透出底色。必须与动画层
+        // （BokehLavaGradient 的 ImageFiltered）严格同口径 —— 首帧与这份
+        // 位图是「同构」承诺，亮度采样与预模糊玻璃都建立在这个不变量上。
+        tileMode: TileMode.clamp,
       ),
   );
   canvas.drawPicture(layer);
