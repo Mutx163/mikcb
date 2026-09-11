@@ -258,16 +258,10 @@ class _TimetablePageSettingsScreenState
                     : _pickHomePageBackdropImage,
                 onClear: () {
                   final stalePath = resolveHomePageBackdropImagePath(_draft);
-                  evictHomePageImageCache(stalePath);
-                  PreblurredWallpaperCache.instance.evict(stalePath);
-                  // 壁纸文件一并删除，避免文档目录积累孤儿图片。
-                  unawaited(
-                    deleteManagedImage(
-                      stalePath,
-                      directoryName: 'home_page_wallpaper',
-                      filePrefix: 'wallpaper',
-                    ).then((_) => invalidateHomePageBackdropFileExists(stalePath)),
-                  );
+                  _evictBackdropCaches(stalePath);
+                  // 文件不再被当前背景引用，但多半还在「最近使用」里：改由
+                  // 历史淘汰（挤出上限 / 恢复默认）负责删除。若在这里直接删，
+                  // 用户从历史切回时只会拿到一条死路径。
                   _updateDraft(
                     _draft.copyWith(
                       clearHomePageWallpaperPath: true,
@@ -276,6 +270,7 @@ class _TimetablePageSettingsScreenState
                   );
                 },
               ),
+              _buildRecentWallpaperTile(context, l10n: l10n),
               HyperosSwitchTile(
                 title: l10n.homePageBackdropFollowsWeekPagerTitle,
                 value: _draft.homePageBackdropFollowsWeekPager,
@@ -388,6 +383,226 @@ class _TimetablePageSettingsScreenState
     );
   }
 
+  /// 内置壁纸的全部选项（含「不使用」），顺序与设置页展示顺序一致。
+  static List<(BuiltInWallpaper?, String)> _builtInWallpaperOptions(
+    AppLocalizations l10n,
+  ) => [
+    (null, l10n.homePageBuiltInWallpaperNone),
+    (BuiltInWallpaper.og, l10n.homePageBuiltInWallpaperOg),
+    (BuiltInWallpaper.lavaDark, l10n.homePageBuiltInWallpaperLavaDark),
+    (BuiltInWallpaper.lavaLight, l10n.homePageBuiltInWallpaperLavaLight),
+    (BuiltInWallpaper.dark1, l10n.homePageBuiltInWallpaperDark1),
+    (BuiltInWallpaper.light2, l10n.homePageBuiltInWallpaperLight2),
+    (BuiltInWallpaper.light3, l10n.homePageBuiltInWallpaperLight3),
+    (BuiltInWallpaper.emberTeal, l10n.homePageBuiltInWallpaperEmberTeal),
+  ];
+
+  /// 内置预设的本地化名称；null 为「不使用」。
+  static String _builtInWallpaperLabel(
+    AppLocalizations l10n,
+    BuiltInWallpaper? wallpaper,
+  ) {
+    for (final (candidate, label) in _builtInWallpaperOptions(l10n)) {
+      if (candidate == wallpaper) {
+        return label;
+      }
+    }
+    return '';
+  }
+
+  /// 失效一张背景的缓存：图片缓存、文件存在性 memo 与预模糊位图。
+  ///
+  /// [key] 是背景身份键（图片路径或 builtin:<预设>）；图片路径才会去动
+  /// 图片缓存，内置键只清预模糊位图。null / 空串安全跳过（无背景）。
+  void _evictBackdropCaches(String? key) {
+    if (key == null || key.isEmpty) {
+      return;
+    }
+    if (!key.startsWith(kBuiltInWallpaperKeyPrefix)) {
+      evictHomePageImageCache(key);
+      invalidateHomePageBackdropFileExists(key);
+    }
+    PreblurredWallpaperCache.instance.evict(key);
+  }
+
+  /// 当前生效背景对应的历史条目；没有背景时返回 null。
+  ///
+  /// 图片壁纸带上当前的对齐值（切回时要还原裁剪位置），内置壁纸没有裁剪
+  /// 窗口，对齐固定 0。
+  WallpaperHistoryEntry? _currentBackdropEntry() {
+    final key = homePageBackdropKey(_draft);
+    if (key == null) {
+      return null;
+    }
+    final isBuiltIn = key.startsWith(kBuiltInWallpaperKeyPrefix);
+    return WallpaperHistoryEntry(
+      key: key,
+      alignX: isBuiltIn ? 0 : _draft.homePageWallpaperAlignX,
+      alignY: isBuiltIn ? 0 : _draft.homePageWallpaperAlignY,
+    );
+  }
+
+  /// 把 [entries]（按「旧 → 新」顺序）补记进「最近使用」，返回带新历史的设置。
+  ///
+  /// 被挤出上限的图片文件已不再被任何历史条目引用，异步删除释放空间；
+  /// 删除失败不阻断主流程（deleteManagedImage 自身吞掉异常）。
+  TimetableSettings _rememberBackdrops(
+    TimetableSettings next,
+    List<WallpaperHistoryEntry> entries,
+  ) {
+    if (entries.isEmpty) {
+      return next;
+    }
+    final result = rememberWallpaperHistoryBatch(
+      history: next.wallpaperHistory,
+      entries: entries,
+    );
+    unawaited(deleteEvictedWallpaperFiles(result.evictedPaths));
+    return next.copyWith(wallpaperHistory: result.history);
+  }
+
+  /// 应用一次背景切换的收尾：缓存失效 + 补记「最近使用」+ 落盘。
+  ///
+  /// [next] 已带好背景字段（路径 / 内置预设 / 对齐）；[remembered] 是按
+  /// 「旧 → 新」顺序要补记的条目。背景身份没变（只挪裁剪位置）时不动缓存：
+  /// 预模糊位图只按路径缓存，与对齐无关。
+  void _applyBackdropChange(
+    TimetableSettings next, {
+    List<WallpaperHistoryEntry> remembered = const [],
+  }) {
+    final previousKey = homePageBackdropKey(_draft);
+    final nextKey = homePageBackdropKey(next);
+    if (previousKey != nextKey) {
+      _evictBackdropCaches(previousKey);
+      _evictBackdropCaches(nextKey);
+    }
+    _updateDraft(_rememberBackdrops(next, remembered));
+  }
+
+  /// 选中一张内置预设；null 表示「不使用」。
+  ///
+  /// 内置壁纸与自选图片互斥：切到内置（或「不使用」）时一并清掉图片路径，
+  /// 否则图片会一直压在壁纸上。被换下的那张图片不会被删除——它会留在
+  /// 「最近使用」里，用户随时能切回去。
+  void _selectBuiltInWallpaper(BuiltInWallpaper? wallpaper) {
+    final previous = _currentBackdropEntry();
+    _applyBackdropChange(
+      _draft.copyWith(
+        homePageBuiltInWallpaper: wallpaper?.value,
+        clearHomePageBuiltInWallpaper: wallpaper == null,
+        clearHomePageWallpaperPath: true,
+        clearHomePageBackgroundImagePath: true,
+        // 内置壁纸没有可拖动的裁剪窗口，位置固定居中。
+        homePageWallpaperAlignX: 0,
+        homePageWallpaperAlignY: 0,
+      ),
+      remembered: [
+        ?previous,
+        if (wallpaper != null)
+          WallpaperHistoryEntry(key: builtInWallpaperKey(wallpaper)),
+      ],
+    );
+  }
+
+  /// 切回「最近使用」里的某一条背景。
+  ///
+  /// 图片条目恢复当时的裁剪位置；文件已丢失 / 预设已下线的条目不可用，
+  /// 直接忽略（下一次重建时它也不会再出现在列表里）。
+  void _selectBackdropEntry(WallpaperHistoryEntry entry) {
+    final next = settingsWithWallpaperHistoryEntry(_draft, entry);
+    if (next == null) {
+      return;
+    }
+    final previous = _currentBackdropEntry();
+    _applyBackdropChange(
+      next,
+      remembered: [
+        ?previous,
+        WallpaperHistoryEntry(
+          key: entry.key,
+          alignX: entry.alignX,
+          alignY: entry.alignY,
+        ),
+      ],
+    );
+  }
+
+  /// 「最近使用」缩略图条：可一键切回最近设置过的 10 张壁纸。
+  ///
+  /// 列表 = 已持久化的历史（最新在前）中当前可用者；历史还是空的老用户，
+  /// 把当前生效的那一张补在最前，一进设置页就能看到自己正用着什么。
+  Widget _buildRecentWallpaperTile(
+    BuildContext context, {
+    required AppLocalizations l10n,
+  }) {
+    final currentKey = homePageBackdropKey(_draft);
+    final entries = <WallpaperHistoryEntry>[
+      if (currentKey != null &&
+          !_draft.wallpaperHistory.any((entry) => entry.key == currentKey))
+        WallpaperHistoryEntry(
+          key: currentKey,
+          alignX: _draft.homePageWallpaperAlignX,
+          alignY: _draft.homePageWallpaperAlignY,
+        ),
+      ...availableWallpaperHistory(_draft.wallpaperHistory),
+    ];
+    if (entries.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final selectedKey = currentKey;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.homePageWallpaperRecentTitle,
+            style: HyperosTypography.listTitle(context),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.homePageWallpaperRecentSubtitle,
+            style: HyperosTypography.listDetail(context),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 116,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: entries.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                final entry = entries[index];
+                final builtIn = builtInWallpaperOfHistoryEntry(entry);
+                return _WallpaperThumbnailCard(
+                  label: builtIn != null
+                      ? _builtInWallpaperLabel(l10n, builtIn)
+                      : l10n.homePageWallpaperRecentImageLabel,
+                  selected: entry.key == selectedKey,
+                  onTap: () => _selectBackdropEntry(entry),
+                  thumbnail: builtIn != null
+                      ? BokehLavaGradient(
+                          wallpaper: builtIn,
+                          // 同屏多张缩略图：静态首帧即可，避免多 Ticker。
+                          animate: false,
+                        )
+                      : Image.file(
+                          File(entry.key),
+                          fit: BoxFit.cover,
+                          cacheWidth: 240,
+                          // 列表构建后文件被删/损坏时不崩帧。
+                          errorBuilder: (context, error, stackTrace) =>
+                              const SizedBox.shrink(),
+                        ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 内置壁纸选择行：横向预设卡片 + 「不使用」。
   ///
   /// 内置壁纸是代码渲染的渐变底图（无文件、无网络），与自选图片共用同一套
@@ -398,16 +613,7 @@ class _TimetablePageSettingsScreenState
     required AppLocalizations l10n,
   }) {
     final selected = resolveBuiltInWallpaper(_draft);
-    final options = <(BuiltInWallpaper?, String)>[
-      (null, l10n.homePageBuiltInWallpaperNone),
-      (BuiltInWallpaper.og, l10n.homePageBuiltInWallpaperOg),
-      (BuiltInWallpaper.lavaDark, l10n.homePageBuiltInWallpaperLavaDark),
-      (BuiltInWallpaper.lavaLight, l10n.homePageBuiltInWallpaperLavaLight),
-      (BuiltInWallpaper.dark1, l10n.homePageBuiltInWallpaperDark1),
-      (BuiltInWallpaper.light2, l10n.homePageBuiltInWallpaperLight2),
-      (BuiltInWallpaper.light3, l10n.homePageBuiltInWallpaperLight3),
-      (BuiltInWallpaper.emberTeal, l10n.homePageBuiltInWallpaperEmberTeal),
-    ];
+    final options = _builtInWallpaperOptions(l10n);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
@@ -430,40 +636,7 @@ class _TimetablePageSettingsScreenState
                   label: label,
                   wallpaper: wallpaper,
                   selected: selected == wallpaper,
-                  onTap: () {
-                    // 内置壁纸与自选图片互斥：切到内置（或「不使用」）时
-                    // 一并清掉图片路径，否则图片会一直压在壁纸上。
-                    final stalePath = resolveHomePageBackdropImagePath(_draft);
-                    if (stalePath != null && stalePath.isNotEmpty) {
-                      evictHomePageImageCache(stalePath);
-                      PreblurredWallpaperCache.instance.evict(stalePath);
-                      unawaited(
-                        deleteManagedImage(
-                          stalePath,
-                          directoryName: 'home_page_wallpaper',
-                          filePrefix: 'wallpaper',
-                        ).then(
-                          (_) => invalidateHomePageBackdropFileExists(
-                            stalePath,
-                          ),
-                        ),
-                      );
-                    }
-                    PreblurredWallpaperCache.instance.evict(
-                      homePageBackdropKey(_draft),
-                    );
-                    _updateDraft(
-                      _draft.copyWith(
-                        homePageBuiltInWallpaper: wallpaper?.value,
-                        clearHomePageBuiltInWallpaper: wallpaper == null,
-                        clearHomePageWallpaperPath: true,
-                        clearHomePageBackgroundImagePath: true,
-                        // 内置壁纸没有可拖动的裁剪窗口，位置固定居中。
-                        homePageWallpaperAlignX: 0,
-                        homePageWallpaperAlignY: 0,
-                      ),
-                    );
-                  },
+                  onTap: () => _selectBuiltInWallpaper(wallpaper),
                 );
               },
             ),
@@ -521,30 +694,27 @@ class _TimetablePageSettingsScreenState
     );
   }
 
-  Future<void> _pickHomePageBackdropImage({
-    bool cleanupArtifacts = true,
-  }) async {
+  Future<void> _pickHomePageBackdropImage() async {
     final targetPath = await pickAndStoreManagedImage(
-      directoryName: 'home_page_wallpaper',
-      filePrefix: 'wallpaper',
-      cleanupArtifacts: cleanupArtifacts,
+      directoryName: kHomePageWallpaperDirectoryName,
+      filePrefix: kHomePageWallpaperFilePrefix,
+      // 「最近使用」要留住前几张壁纸，不能再沿用「选新图就删光本目录」
+      // 的清理模式；淘汰交给历史上限（kMaxWallpaperHistoryEntries）。
+      cleanupArtifacts: false,
     );
     if (!mounted || targetPath == null) {
       return;
     }
-    final draftPath = resolveHomePageBackdropImagePath(_draft);
-    evictHomePageImageCache(draftPath);
-    // 新壁纸文件刚落地：刷新存在性 memo，避免首页沿用旧路径的缓存结果。
-    invalidateHomePageBackdropFileExists(draftPath);
-    invalidateHomePageBackdropFileExists(targetPath);
-    PreblurredWallpaperCache.instance.evict(draftPath);
-    // 自选图片会顶掉内置壁纸的预模糊位图，两份都要失效。
-    PreblurredWallpaperCache.instance.evict(homePageBackdropKey(_draft));
-    _updateDraft(
+    final previous = _currentBackdropEntry();
+    _applyBackdropChange(
       _draft.copyWith(
         homePageWallpaperPath: targetPath,
         clearHomePageBackgroundImagePath: true,
       ),
+      remembered: [
+        ?previous,
+        WallpaperHistoryEntry(key: targetPath),
+      ],
     );
   }
 
@@ -559,9 +729,7 @@ class _TimetablePageSettingsScreenState
     // JSON 不带文件等）：此时进入位置编辑页会在读取图片时抛
     // PathNotFoundException。改为清掉失效路径，直接走重新选图流程。
     if (!File(existingPath).existsSync()) {
-      evictHomePageImageCache(existingPath);
-      invalidateHomePageBackdropFileExists(existingPath);
-      PreblurredWallpaperCache.instance.evict(existingPath);
+      _evictBackdropCaches(existingPath);
       if (!mounted) {
         return;
       }
@@ -603,29 +771,25 @@ class _TimetablePageSettingsScreenState
       }
       return;
     }
-    final pathChanged = result.path != existingPath;
-    evictHomePageImageCache(existingPath);
-    PreblurredWallpaperCache.instance.evict(existingPath);
-    if (pathChanged) {
-      evictHomePageImageCache(result.path);
-      PreblurredWallpaperCache.instance.evict(result.path);
-    }
-    _updateDraft(
+    final previous = _currentBackdropEntry();
+    _applyBackdropChange(
       _draft.copyWith(
         homePageWallpaperPath: result.path,
         homePageWallpaperAlignX: result.alignX,
         homePageWallpaperAlignY: result.alignY,
         clearHomePageBackgroundImagePath: true,
       ),
+      remembered: [
+        ?previous,
+        WallpaperHistoryEntry(
+          key: result.path,
+          alignX: result.alignX,
+          alignY: result.alignY,
+        ),
+      ],
     );
-    if (pathChanged) {
-      // 旧壁纸文件已不再使用，删除释放空间。
-      final oldFile = File(existingPath);
-      if (oldFile.existsSync()) {
-        await oldFile.delete();
-      }
-      invalidateHomePageBackdropFileExists(existingPath);
-    }
+    // 被换下的旧图不再删除：它在「最近使用」里留档，用户可以随时切回，
+    // 只有被挤出上限（或恢复默认）时才真正落盘删除。
   }
 
   void _updateDraft(TimetableSettings next, {bool debounce = false}) {
@@ -684,6 +848,48 @@ class _BuiltInWallpaperOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final wallpaper = this.wallpaper;
+    return _WallpaperThumbnailCard(
+      label: label,
+      selected: selected,
+      onTap: onTap,
+      thumbnail: wallpaper == null
+          ? ColoredBox(
+              color: HyperosColors.surfaceContainer(context),
+              child: Icon(
+                Icons.block_rounded,
+                size: 22,
+                color: HyperosColors.secondaryText(context),
+              ),
+            )
+          : BokehLavaGradient(
+              wallpaper: wallpaper,
+              // 列表里多张缩略图同屏；静态首帧与首页动画同 seed，
+              // 避免同时起多个 Ticker 耗电。
+              animate: false,
+            ),
+    );
+  }
+}
+
+/// 壁纸缩略图卡（内置预设与「最近使用」共用）：78 宽，选中态描边 + 高亮标签。
+class _WallpaperThumbnailCard extends StatelessWidget {
+  const _WallpaperThumbnailCard({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    required this.thumbnail,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  /// 缩略图本体；调用方负责铺满（卡内已套 ClipRRect 圆角）。
+  final Widget thumbnail;
+
+  @override
+  Widget build(BuildContext context) {
     final primary = HyperosColors.primary(context);
     return SizedBox(
       width: 78,
@@ -706,21 +912,7 @@ class _BuiltInWallpaperOption extends StatelessWidget {
                 padding: const EdgeInsets.all(2),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(11),
-                  child: wallpaper == null
-                      ? ColoredBox(
-                          color: HyperosColors.surfaceContainer(context),
-                          child: Icon(
-                            Icons.block_rounded,
-                            size: 22,
-                            color: HyperosColors.secondaryText(context),
-                          ),
-                        )
-                      : BokehLavaGradient(
-                          wallpaper: wallpaper!,
-                          // 列表里多张缩略图同屏；静态首帧与首页动画同 seed，
-                          // 避免同时起多个 Ticker 耗电。
-                          animate: false,
-                        ),
+                  child: thumbnail,
                 ),
               ),
             ),

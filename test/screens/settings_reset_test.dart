@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/models/wallpaper_history.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
 
@@ -33,6 +34,10 @@ void main() {
       homeChromeGlassMaterial: 'liquid',
       weekdayBarFontColorLight: '#222222',
       homePageWallpaperPath: '/tmp/wallpaper.png',
+      wallpaperHistory: const [
+        WallpaperHistoryEntry(key: '/tmp/wallpaper.png'),
+        WallpaperHistoryEntry(key: 'builtin:og'),
+      ],
       // 外观
       appThemeMode: AppThemeMode.dark,
       appFontMode: AppFontMode.serif,
@@ -126,6 +131,8 @@ void main() {
     );
     expect(result.appThemeMode, dirty.appThemeMode);
     expect(result.widgetShowLocation, dirty.widgetShowLocation);
+    // 其他页的恢复默认不许碰壁纸历史。
+    expect(result.wallpaperHistory, dirty.wallpaperHistory);
     expectUntouchedEssentials(result);
   });
 
@@ -162,6 +169,8 @@ void main() {
     // 壁纸文件路径必须一并清掉，否则「恢复默认」后背景还在。
     expect(result.homePageWallpaperPath, isNull);
     expect(result.homePageBackgroundImagePath, isNull);
+    // 「最近使用」同属这一页：历史清空后历史里的图片才允许被删除。
+    expect(result.wallpaperHistory, isEmpty);
 
     final dirty = dirtySettings();
     expect(result.courseCardFontSize, dirty.courseCardFontSize);

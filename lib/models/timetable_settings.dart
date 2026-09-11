@@ -4,6 +4,7 @@ import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
 import 'package:university_timetable/models/class_reminder.dart';
+import 'package:university_timetable/models/wallpaper_history.dart';
 
 enum AppUpdateDownloadSource { original, mirror }
 
@@ -1449,6 +1450,13 @@ class TimetableSettings {
   /// 壁纸在页面内的垂直对齐（-1 靠上 … 0 居中 … 1 靠下），用于长图壁纸
   /// 拖动选择显示区域；cover 下高度未溢出时该值不产生位移。
   final double homePageWallpaperAlignY;
+
+  /// 首页壁纸「最近使用」历史，最新在前，最多 10 条。
+  ///
+  /// 记录用户设置过的每一张壁纸：自选图片与内置预设共用同一条列表，条目 key
+  /// 与首页背景身份键同口径（见 utils/wallpaper_history.dart）。图片条目对应
+  /// 的文件会保留在文档目录，只有被挤出列表时才删除。
+  final List<WallpaperHistoryEntry> wallpaperHistory;
   final int homePageBackgroundScope;
   final bool timetableUseUnifiedCardColor;
   final String timetableUnifiedCardColor;
@@ -1673,6 +1681,7 @@ class TimetableSettings {
     this.homePageBuiltInWallpaper,
     this.homePageWallpaperAlignX = 0,
     this.homePageWallpaperAlignY = 0,
+    this.wallpaperHistory = const [],
     this.homePageBackgroundScope = HomePageBackgroundScope.defaultValue,
     this.timetableUseUnifiedCardColor = false,
     this.timetableUnifiedCardColor = '#2563EB',
@@ -1894,6 +1903,9 @@ class TimetableSettings {
         'homePageBuiltInWallpaper': homePageBuiltInWallpaper,
       'homePageWallpaperAlignX': homePageWallpaperAlignX,
       'homePageWallpaperAlignY': homePageWallpaperAlignY,
+      'wallpaperHistory': [
+        for (final entry in wallpaperHistory) entry.toJson(),
+      ],
       'homePageBackgroundScope': homePageBackgroundScope,
       'timetableUseUnifiedCardColor': timetableUseUnifiedCardColor,
       'timetableUnifiedCardColor': timetableUnifiedCardColor,
@@ -2302,6 +2314,9 @@ class TimetableSettings {
           (json['homePageWallpaperAlignX'] as num?)?.toDouble() ?? 0,
       homePageWallpaperAlignY:
           (json['homePageWallpaperAlignY'] as num?)?.toDouble() ?? 0,
+      wallpaperHistory: WallpaperHistoryEntry.listFromJson(
+        json['wallpaperHistory'],
+      ),
       homePageBackgroundScope:
           (json['homePageBackgroundScope'] as num?)?.toInt() ??
           HomePageBackgroundScope.defaultValue,
@@ -2585,6 +2600,8 @@ class TimetableSettings {
     bool clearHomePageBuiltInWallpaper = false,
     double? homePageWallpaperAlignX,
     double? homePageWallpaperAlignY,
+    List<WallpaperHistoryEntry>? wallpaperHistory,
+    bool clearWallpaperHistory = false,
     int? homePageBackgroundScope,
     bool? timetableUseUnifiedCardColor,
     String? timetableUnifiedCardColor,
@@ -2914,6 +2931,9 @@ class TimetableSettings {
           homePageWallpaperAlignX ?? this.homePageWallpaperAlignX,
       homePageWallpaperAlignY:
           homePageWallpaperAlignY ?? this.homePageWallpaperAlignY,
+      wallpaperHistory: clearWallpaperHistory
+          ? const []
+          : wallpaperHistory ?? this.wallpaperHistory,
       homePageBackgroundScope:
           homePageBackgroundScope ?? this.homePageBackgroundScope,
       timetableUseUnifiedCardColor:

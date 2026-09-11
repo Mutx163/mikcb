@@ -91,6 +91,9 @@ TimetableSettings applySettingsReset(
       clearHomePageWallpaperPath: true,
       clearHomePageBackgroundImagePath: true,
       clearHomePageBuiltInWallpaper: true,
+      // 「最近使用」也清空：历史里的图片文件随之下线，由调用方删除
+      // （见 _SettingsResetTile._confirm），否则会留下一批没人引用的图。
+      clearWallpaperHistory: true,
     ),
     // 外观页瘦身后的范围：主题模式 / 字体 / 主题种子色与玻璃质感。
     SettingsResetScope.appearance => current.copyWith(
@@ -193,19 +196,22 @@ class _SettingsResetTile extends StatelessWidget {
     if (confirmed != true || !context.mounted) {
       return;
     }
-    // 课表页 scope 会清掉壁纸路径：先留底旧文件，落盘后删除，
-    // 避免文档目录积累孤儿图片。
-    final staleBackdropPath = scope == SettingsResetScope.timetablePage
-        ? resolveHomePageBackdropImagePath(provider.settings)
-        : null;
+    // 课表页 scope 会清掉壁纸路径与整条「最近使用」：先把所有即将失去引用的
+    // 图片留底，落盘后统一删除，避免文档目录积累孤儿图片。
+    final staleBackdropPaths = <String>[];
+    if (scope == SettingsResetScope.timetablePage) {
+      final currentPath = resolveHomePageBackdropImagePath(provider.settings);
+      if (currentPath != null && currentPath.isNotEmpty) {
+        staleBackdropPaths.add(currentPath);
+      }
+      for (final entry in provider.settings.wallpaperHistory) {
+        if (!isBuiltInWallpaperHistoryEntry(entry)) {
+          staleBackdropPaths.add(entry.key);
+        }
+      }
+    }
     onReset(applySettingsReset(provider.settings, scope));
-    unawaited(
-      deleteManagedImage(
-        staleBackdropPath,
-        directoryName: 'home_page_wallpaper',
-        filePrefix: 'wallpaper',
-      ).then((_) => invalidateHomePageBackdropFileExists(staleBackdropPath)),
-    );
+    unawaited(deleteEvictedWallpaperFiles(staleBackdropPaths));
     if (!context.mounted) {
       return;
     }

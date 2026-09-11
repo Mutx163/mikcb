@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/models/wallpaper_history.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
 
 void main() {
@@ -538,6 +539,48 @@ void main() {
 
     expect(restored.appUpdateMirrorPreset, AppUpdateMirrorPreset.custom.value);
     expect(restored.appUpdateMirrorUrlPrefix, 'https://mirror.example.com/');
+  });
+
+  test('wallpaper history survives json round trip', () {
+    final settings = TimetableSettings.defaults().copyWith(
+      wallpaperHistory: const [
+        WallpaperHistoryEntry(key: 'builtin:og', usedAt: 10),
+        WallpaperHistoryEntry(
+          key: '/data/wallpaper_1.png',
+          alignX: 0.5,
+          alignY: -0.25,
+          usedAt: 9,
+        ),
+      ],
+    );
+
+    final restored = TimetableSettings.fromJson(settings.toJson());
+
+    expect(restored.wallpaperHistory, settings.wallpaperHistory);
+  });
+
+  test('wallpaper history keeps good entries out of dirty json', () {
+    final restored = TimetableSettings.fromJson({
+      ...TimetableSettings.defaults().toJson(),
+      'wallpaperHistory': [
+        {'key': 'builtin:og'},
+        null,
+        {'nope': 1},
+      ],
+    });
+
+    expect(restored.wallpaperHistory.length, 1);
+    expect(restored.wallpaperHistory.single.key, 'builtin:og');
+  });
+
+  test('clearing wallpaper history drops every entry', () {
+    final settings = TimetableSettings.defaults().copyWith(
+      wallpaperHistory: const [WallpaperHistoryEntry(key: 'builtin:og')],
+    );
+
+    final cleared = settings.copyWith(clearWallpaperHistory: true);
+
+    expect(cleared.wallpaperHistory, isEmpty);
   });
 
   group('ThemeConfig', () {
