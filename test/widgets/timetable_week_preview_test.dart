@@ -116,7 +116,7 @@ void main() {
       );
     });
 
-    testWidgets('gaussian over a wallpaper gets the shared BackdropGroup', (
+    testWidgets('gaussian over a wallpaper: host mirrors the cards (no group on VM)', (
       tester,
     ) async {
       await pumpPreview(
@@ -128,12 +128,19 @@ void main() {
       );
 
       expect(find.byType(CourseGridSurfaceHost), findsOneWidget);
+      // 宿主与课程卡同判（卡片高斯档已按运行时模糊能力回退实体）：
+      // 测试环境（VM）liveBlurSupported 恒 false → 管线不可用 → 卡片实体
+      // 渲染，宿主不包 BackdropGroup，与首页网格口径一致。
+      // 「真机管线可用时高斯+壁纸应包 Group」这半边契约由
+      // effectiveCourseCardSurfaceStyle(gaussianBlurAvailable:) 单测钉住，
+      // VM 无法复现真实模糊能力，观感由真机验收兜底。
       expect(
         find.descendant(
           of: find.byType(CourseGridSurfaceHost),
           matching: find.byType(BackdropGroup),
         ),
-        findsAtLeastNWidgets(1),
+        findsNothing,
+        reason: '模糊管线不可用时高斯卡回退实体，无需共享背景捕获',
       );
     });
 
