@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-11T06:31:43+00:00",
+  "updatedAt": "2026-09-12T06:18:57+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 206,
-    "schools": 201,
+    "total": 207,
+    "schools": 202,
     "generic": 5
   },
   "schools": [
@@ -1227,6 +1227,13 @@
       "category": "school"
     },
     {
+      "id": "XZHMU",
+      "name": "徐州医科大学",
+      "initial": "X",
+      "resourceFolder": "XZHMU",
+      "category": "school"
+    },
+    {
       "id": "XZIT",
       "name": "徐州工程学院",
       "initial": "X",
@@ -1347,7 +1354,7 @@
     },
     {
       "id": "CUG",
-      "name": "中国地质大学（武汉）",
+      "name": "中国地质大学(武汉)",
       "initial": "Z",
       "resourceFolder": "CUG",
       "category": "school"
