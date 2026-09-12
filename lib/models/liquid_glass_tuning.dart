@@ -66,6 +66,11 @@ extension LiquidGlassPresetX on LiquidGlassPreset {
 /// Defaults match the package README medium-glass example for the three
 /// primary knobs, with remaining fields at [LiquidGlassSettings] defaults
 /// (`lightIntensity` 0.5, `ambientStrength` 0, `saturation` 1.5, …).
+///
+/// 唯一的例外是 `edgeAbsorption` / `fresnelStrength`：这两个量**不是**用户
+/// 参数，而是由 [thickness] 折算出来的可见光学量（见
+/// [visibleThicknessOptics]）——当前全 app 跑 standard 渲染档，厚度在那里
+/// 只剩不可辨的边缘 rim，必须靠这两个通道把「厚度」重新变成看得见的调节。
 class LiquidGlassTuning {
   const LiquidGlassTuning({
     this.thickness = defaultThickness,
@@ -86,6 +91,9 @@ class LiquidGlassTuning {
   static const presetStandard = defaults;
 
   /// High transparency — only thickness / blur / tint vary.
+  ///
+  /// 注意 thickness 24 低于枢轴 30：standard 档下这会**降低**边缘高光
+  /// （比标准档更「薄片」），与它「清澈」的定位一致。
   static const presetClear = LiquidGlassTuning(
     thickness: 24,
     blur: 2,
@@ -154,7 +162,40 @@ class LiquidGlassTuning {
   static const double minVisibility = 0;
   static const double maxVisibility = 1;
 
+  // --- 厚度 → 可见光学量映射（standard 档补偿）---
+  // 当前全 app 统一跑 GlassQuality.standard（MikcbLiquidGlassTokens.defaultQuality），
+  // 包内走 lightweight_glass.frag，而它的折射位移只在 PATH A（拿到了背景纹理、
+  // uBackgroundSize.x > 1）里执行；本项目从未安装 LiquidGlassScope / 传
+  // backgroundKey，故恒走 PATH B——thickness 在那里只剩「边缘 rim 透明度
+  // ±0.3」，肉眼基本不可辨，滑杆 0..40 拉满观感不变（真机症状：「透明高斯
+  // 模糊、没有玻璃效果」）。
+  //
+  // 修法：把归一化厚度同时映射到 PATH B 里真正生效的两个光学量，让「厚度」
+  // 重新有连续的可见反馈，而不必退回 premium（那一档曾把首页拖到 60fps）：
+  //   edgeAbsorption  —— 边缘光吸收，弧面越厚边缘越沉（厚度存在感）
+  //   fresnelStrength —— 掠射角边缘高光，浅色模式下 rimFade≈0.08 压不住它，
+  //                      是浅色/深色都看得见的通道
+  // 两个量在 premium 档同样会被消费，映射在两种档位下都成立。
+  //
+  // 关键：默认厚度 30/40 是**枢轴点**，此处两个量恰好等于 LiquidGlassSettings
+  // 的构造默认（0.0 / 1.0），因此出厂默认观感与历史版本逐字段一致；只有用户
+  // 主动偏离默认厚度才会看到补偿。
+
+  /// 枢轴厚度占比 = [defaultThickness] / [maxThickness]（30 / 40）。
+  static const double thicknessPivotFraction = 0.75;
+
+  /// 达到 [maxThickness] 时的边缘光吸收上限（包文档推荐 0.10–0.20 物理厚度区间）。
+  static const double maxThicknessEdgeAbsorption = 0.20;
+
+  /// 达到 [maxThickness] 时掠射角边缘高光的放大倍率。
+  static const double maxThicknessFresnelBoost = 0.6;
+
   /// Glass surface thickness — higher = stronger refraction.
+  ///
+  /// 同时驱动两个渲染档的可见反馈：
+  /// - premium / 拿到背景纹理的档：直接就是几何厚度 = 折射位移；
+  /// - standard 档（当前）：折射位移不执行，改由 [visibleThicknessOptics]
+  ///   折算的边缘吸收与掠射高光承载，默认厚度 30 为枢轴（观感不变）。
   final double thickness;
 
   /// Frost blur of the glass surface.
@@ -240,11 +281,47 @@ class LiquidGlassTuning {
     );
   }
 
+  /// 把当前厚度折算成 standard 档真正可见的两个光学量。
+  ///
+  /// 见 [thicknessPivotFraction] 一节的说明。口径按**有效厚度**
+  /// （[thickness] × [visibility]）计算，与包内
+  /// `effectiveThickness` 同源，因此「可见性」拉低时厚度观感一起变薄，
+  /// 两个滑杆不会互相矛盾。
+  ///
+  /// 返回值恒在包内 clamp 窗口内（absorption 0..1、fresnel 0..4），
+  /// 且对有效厚度单调不减：
+  /// - 0  → absorption 0.0 / fresnel 0.0（完全无边缘，纸片感）
+  /// - 30（默认，枢轴）→ 0.0 / 1.0（= 包构造默认，出厂观感不变）
+  /// - 40（上限）→ [maxThicknessEdgeAbsorption] / 1 + [maxThicknessFresnelBoost]
+  ({double edgeAbsorption, double fresnelStrength}) visibleThicknessOptics() {
+    final double effective = (thickness * visibility).clamp(
+      minThickness,
+      maxThickness,
+    );
+    final double fraction = (effective / maxThickness).clamp(0.0, 1.0);
+    // 枢轴以上：越厚越沉越亮。
+    final double thicker = ((fraction - thicknessPivotFraction) /
+            (1 - thicknessPivotFraction))
+        .clamp(0.0, 1.0);
+    // 枢轴以下：越薄越平，0 厚度时边缘高光完全消失。
+    final double thinner =
+        ((thicknessPivotFraction - fraction) / thicknessPivotFraction)
+            .clamp(0.0, 1.0);
+    return (
+      edgeAbsorption: maxThicknessEdgeAbsorption * thicker,
+      fresnelStrength: 1.0 +
+          maxThicknessFresnelBoost * thicker -
+          thinner,
+    );
+  }
+
   /// Builds official [LiquidGlassSettings] for sheet / dialog panels.
   LiquidGlassSettings toSheetSettings({required Brightness brightness}) {
     final tint = brightness == Brightness.dark
         ? Colors.white.withValues(alpha: (tintAlpha * 0.85).clamp(0.0, 1.0))
         : Colors.white.withValues(alpha: tintAlpha.clamp(0.0, 1.0));
+    // 厚度在 standard 档不驱动折射，改由边缘吸收 / 掠射高光承载可见反馈。
+    final optics = visibleThicknessOptics();
     return LiquidGlassSettings(
       thickness: thickness,
       blur: blur,
@@ -256,6 +333,8 @@ class LiquidGlassTuning {
       chromaticAberration: chromaticAberration,
       lightAngle: lightAngleDegrees * math.pi / 180.0,
       visibility: visibility,
+      edgeAbsorption: optics.edgeAbsorption,
+      fresnelStrength: optics.fresnelStrength,
     );
   }
 
