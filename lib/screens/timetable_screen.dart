@@ -6788,7 +6788,13 @@ class _TimetableScreenState extends State<TimetableScreen>
                     Theme.of(context).brightness == Brightness.dark;
                 final isSoftDock = dockMaterial == _DockMaterial.soft;
                 // 通用底栏墨色判据（chrome 阈值 0.45）。
-                final inkIsLight = (lum != null ? lum < 0.45 : isDarkTheme);
+                // 实体卡片档的药丸/圆钮是不透明**主题色**面（浅色主题≈纯白），
+                // 墨色极性必须跟主题走；半透明材质（液态/磨砂/柔光）的面 =
+                // 壁纸 + 玻璃，继续按壁纸亮度判——否则浅色主题 + 暗壁纸会
+                // 出现白底白字。
+                final inkIsLight = dockMaterial == _DockMaterial.solid
+                    ? isDarkTheme
+                    : (lum != null ? lum < 0.45 : isDarkTheme);
                 // 柔光面与墨色同源：暗壁纸 → 深灰玻璃 + 白墨；亮壁纸 → 乳白 + 黑墨。
                 // 极性阈值必须与柔光药丸同源（[_kSoftGlassDarkLuminance]）：
                 // 药丸与圆钮在同一行并列，各自一套阈值会一深一浅。
@@ -6845,15 +6851,21 @@ class _TimetableScreenState extends State<TimetableScreen>
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
+    final appearance = FrostedAppearanceScope.of(context);
+    final dockMaterial = _resolveDockMaterial(context);
     // 底栏文字极性分派：课表态跟随壁纸亮度（表面 = 壁纸 + 白玻璃）；
     // 内嵌页表态底栏浮在纯色页面上，只看主题——否则白底设置页会沿用
     // 暗壁纸的浅色墨，白字看不见（自动反色失效的根因）。
+    // 实体卡片档例外：药丸是不透明主题色面（浅色主题≈纯白），墨色必须
+    // 跟主题走，按壁纸亮度翻白会在暗壁纸上得到白底白字。
     final wallpaperLuminance = _dockInlinePageId != null
         ? null
         : _wallpaperBodyLuminance;
-    final barUsesLightInk = wallpaperLuminance != null
-        ? wallpaperLuminance < 0.45
-        : isDark;
+    final barUsesLightInk = dockMaterial == _DockMaterial.solid
+        ? isDark
+        : (wallpaperLuminance != null
+              ? wallpaperLuminance < 0.45
+              : isDark);
     final unselectedColor = barUsesLightInk
         ? Colors.white.withValues(alpha: 0.62)
         : Colors.black.withValues(alpha: 0.48);
@@ -6865,10 +6877,8 @@ class _TimetableScreenState extends State<TimetableScreen>
               ? Colors.black.withValues(alpha: 0.80)
               : colorScheme.primary);
     // 底栏材质：由**全局材质** + 「作用范围 → 玻璃坞导航」推导
-    // （[_resolveDockMaterial]），与弹窗 / 顶部 / 卡片同一份材质，不再有独立的
-    // 「底栏材质」开关。
-    final appearance = FrostedAppearanceScope.of(context);
-    final dockMaterial = _resolveDockMaterial(context);
+    // （[_resolveDockMaterial]，函数开头已解析），与弹窗 / 顶部 / 卡片同一份
+    // 材质，不再有独立的「底栏材质」开关。
     // 实体药丸的底：与主题卡面同色、不含模糊。
     final solidDockFill = HyperosColors.surfaceContainer(context);
     // 动态入口列表：底栏最多 5 槽，用户在「首页与导航」自由编排
