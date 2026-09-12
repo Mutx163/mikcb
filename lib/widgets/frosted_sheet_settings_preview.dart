@@ -7,6 +7,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
+import '../ui/hyperos/liquid/liquid_glass_tokens.dart';
 import 'timetable_week_preview.dart';
 
 /// Live + interactive frosted sheet preview for appearance settings.
@@ -57,6 +58,10 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
   /// Clamp the preview display only: slider ranges, the saved tuning and the
   /// real home page are untouched. Values at or below the dense preset pass
   /// through unchanged, so the preview stays 1:1 for every stock preset.
+  ///
+  /// 色散额外固定到 [MikcbLiquidGlassTokens.previewChromaticAberration]：
+  /// 预览框是小尺寸面板，而玻璃的边缘形态学是按大面板标定的，同一个色散
+  /// 值在小框上会读成「彩虹描边」而不是玻璃的边。真机表面不受此处影响。
   static LiquidGlassTuning? previewSafeTuning(LiquidGlassTuning? tuning) {
     if (tuning == null) {
       return null;
@@ -70,6 +75,8 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
         LiquidGlassTuning.minBlur,
         LiquidGlassTuning.presetDense.blur,
       ),
+      chromaticAberration:
+          MikcbLiquidGlassTokens.previewChromaticAberration,
     );
   }
 
@@ -121,6 +128,7 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
                 maxVisibleSections: 2,
                 includeAppHeader: true,
                 heightBudget: _previewHeight,
+                isSettingsPreview: true,
               ),
             ),
           ),

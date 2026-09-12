@@ -8,6 +8,7 @@ import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_tokens.dart';
 import 'package:university_timetable/widgets/frosted_sheet_settings_preview.dart';
 import 'package:university_timetable/widgets/home_page_region_blur.dart';
 
@@ -54,11 +55,34 @@ void main() {
       expect(safe.blur, 5);
     });
 
-    test('keeps the dense preset itself intact', () {
+    test('keeps the dense preset intact apart from the preview-only 色散', () {
       final safe = FrostedSheetSettingsPreview.previewSafeTuning(
         LiquidGlassTuning.presetDense,
       )!;
-      expect(safe, LiquidGlassTuning.presetDense);
+      // 预览是小尺寸面板：玻璃边缘形态学按大面板标定，同一个色散值在小框
+      // 上会读成「彩虹描边」。预览固定削到 previewChromaticAberration，
+      // 厚度/blur 等其余维度仍原样穿透（见下面各例）。
+      expect(
+        safe.chromaticAberration,
+        MikcbLiquidGlassTokens.previewChromaticAberration,
+      );
+      expect(
+        safe,
+        LiquidGlassTuning.presetDense.copyWith(
+          chromaticAberration: MikcbLiquidGlassTokens.previewChromaticAberration,
+        ),
+      );
+    });
+
+    test('a custom tuning reaches the preview with the same 色散 cap', () {
+      final safe = FrostedSheetSettingsPreview.previewSafeTuning(
+        const LiquidGlassTuning(thickness: 30, chromaticAberration: 0.12),
+      )!;
+      expect(
+        safe.chromaticAberration,
+        MikcbLiquidGlassTokens.previewChromaticAberration,
+      );
+      expect(safe.thickness, 30);
     });
 
     test('clamps from a mid-range tuning only up to the ceiling', () {

@@ -136,7 +136,12 @@ class LiquidGlassTuning {
   // 不一致（首次保存前后观感跳变）。取上限值本身，行为可预期。
   static const double defaultRefractiveIndex = 1.5;
   static const double defaultSaturation = 0.7;
-  static const double defaultChromaticAberration = 0.3;
+  // 默认色差与滑杆上限对齐（原 0.3 超出上限 0.12 → 真机表现为玻璃边缘
+  // 一条彩虹描边）。成因与上面 refractiveIndex 那次同型：构造默认落在
+  // 自己的滑杆区间外，UI 显示与内存默认脱节，且用户把滑杆拖到最左也关不
+  // 干净（clamp 到 0.12 仍有 1.4dp 级 RGB 分离）。取上限值本身：既保留
+  // iOS 26 药丸的色散手感，又让滑杆两端都能真正到达。
+  static const double defaultChromaticAberration = 0.12;
   static const double defaultLightAngleDegrees = 135; // 0.75 * pi rad（官方默认，左上光源）
   static const double defaultVisibility = 1;
 

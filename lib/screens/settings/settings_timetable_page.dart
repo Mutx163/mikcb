@@ -77,6 +77,7 @@ class _TimetablePageSettingsScreenState
                     settings: _draft,
                     week: provider.currentWeek,
                     maxVisibleSections: _draft.sectionCount,
+                    isSettingsPreview: true,
                   ),
                 ),
               ),

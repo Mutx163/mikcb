@@ -38,9 +38,13 @@ void main() {
       // 对齐，clamp 后无漂移），刻意不再跟随包内底栏默认的 1.59。
       expect(settings.refractiveIndex, 1.5);
       expect(settings.saturation, barGlassDefaults.saturation);
+      // 项目默认色差同样从包内底栏的 0.3 收敛为滑杆上限 0.12：0.3 换算到
+      // 轻量着色器是 3.5dp 级的边缘 RGB 分离，真机读作「一条彩虹描边」，
+      // 且滑杆最左只能到 0.12——用户关不干净。与 refractiveIndex 同型处理。
+      expect(settings.chromaticAberration, 0.12);
       expect(
         settings.chromaticAberration,
-        barGlassDefaults.chromaticAberration,
+        LiquidGlassTuning.maxChromaticAberration,
       );
       expect(settings.visibility, barGlassDefaults.visibility);
       expect(settings.lightAngle, closeTo(barGlassDefaults.lightAngle, 1e-9));
@@ -62,13 +66,23 @@ void main() {
       );
       expect(tokensSettings.lightIntensity, barGlassDefaults.lightIntensity);
       expect(tokensSettings.ambientStrength, barGlassDefaults.ambientStrength);
-      expect(tokensSettings.refractiveIndex, barGlassDefaults.refractiveIndex);
       expect(tokensSettings.saturation, barGlassDefaults.saturation);
+      expect(tokensSettings.lightAngle, closeTo(barGlassDefaults.lightAngle, 1e-9));
+      // 与包内底栏默认的两处**有意**差异：折射率收敛到滑杆上限 1.5（1.59
+      // clamp 后会漂移），色散收敛到滑杆上限 0.12（0.3 在轻量着色器里是
+      // 3.5dp 级 RGB 分离，真机读作边缘彩虹描边，且滑杆关不干净）。
+      // 这条兜底常量与 LiquidGlassTuning.defaults 必须同步，否则「没进过
+      // 高级材质页」的用户拿不到同样的观感。
+      expect(tokensSettings.refractiveIndex, 1.5);
+      expect(tokensSettings.chromaticAberration, 0.12);
       expect(
         tokensSettings.chromaticAberration,
-        barGlassDefaults.chromaticAberration,
+        LiquidGlassTuning.defaults.chromaticAberration,
       );
-      expect(tokensSettings.lightAngle, closeTo(barGlassDefaults.lightAngle, 1e-9));
+      expect(
+        tokensSettings.refractiveIndex,
+        LiquidGlassTuning.defaults.refractiveIndex,
+      );
     });
   });
 
@@ -79,6 +93,38 @@ void main() {
   /// LiquidGlassScope，恒走 PATH B——thickness 在那里只剩不可辨的边缘 rim，
   /// 滑杆 0..40 拉满观感不变。修法是把厚度折算成 PATH B 真正生效的
   /// edgeAbsorption / fresnelStrength。下面把这条链钉住。
+  /// 「色差」默认值越界：滑杆上限 0.12，构造默认却是 0.3（实测真机观感 =
+  /// 玻璃边缘一条彩虹描边）。0.3 × edgeInfluence × 0.006 换算成像素是
+  /// 3.5dp 级的 RGB 分离，远超 iOS 26 药丸的 0.15 量级；而滑杆最左只能拖到
+  /// 0.12（1.4dp）——用户想关小也关不干净。成因与 refractiveIndex 那次
+  /// （1.59 → 1.5）完全同型：构造默认超出自己的滑杆上限，UI 与内存默认脱节。
+  group('chromatic aberration default sits inside its own slider range', () {
+    test('default never exceeds maxChromaticAberration', () {
+      expect(
+        LiquidGlassTuning.defaultChromaticAberration,
+        lessThanOrEqualTo(LiquidGlassTuning.maxChromaticAberration),
+      );
+      expect(
+        LiquidGlassTuning.maxChromaticAberration,
+        LiquidGlassTuning.defaultChromaticAberration,
+      );
+    });
+
+    test('every shipped preset also stays inside the slider range', () {
+      for (final tuning in [
+        LiquidGlassTuning.presetClear,
+        LiquidGlassTuning.presetLight,
+        LiquidGlassTuning.presetStandard,
+        LiquidGlassTuning.presetDense,
+      ]) {
+        expect(
+          tuning.chromaticAberration,
+          lessThanOrEqualTo(LiquidGlassTuning.maxChromaticAberration),
+        );
+      }
+    });
+  });
+
   group('thickness drives visible optics in the standard tier', () {
     double absorptionFor(double thickness) => LiquidGlassTuning(
       thickness: thickness,

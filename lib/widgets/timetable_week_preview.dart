@@ -9,6 +9,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
+import '../ui/hyperos/liquid/liquid_glass_tokens.dart';
 import 'home_page_region_blur.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
@@ -27,6 +28,7 @@ class TimetableWeekPreview extends StatefulWidget {
     this.includeAppHeader = false,
     this.applyHomePageBackdrop = true,
     this.heightBudget,
+    this.isSettingsPreview = false,
   });
 
   final TimetableProvider provider;
@@ -36,6 +38,16 @@ class TimetableWeekPreview extends StatefulWidget {
   final bool includeAppHeader;
   final bool applyHomePageBackdrop;
   final double? heightBudget;
+
+  /// 设置页的缩略预览（而非真机通栏）。
+  ///
+  /// 玻璃的边缘形态学里有若干**绝对 dp** 的定标（premium 侧的
+  /// `thicknessScale = clamp(40·dprScale / thickness, 1, 4)`、轻量侧的
+  /// `edgeZone = 10`），它们是按大面板标定、随厚度**反向**变化的：
+  /// 一块 260×280 的小卡片套同一份参数，边缘带占比过半，读作「一圈描边」
+  /// 而不是玻璃的边。预览在这里主动封顶厚度，让缩略图只呈现材质与色调；
+  /// 真机通栏不置此位，拿到的仍是用户完整调参。
+  final bool isSettingsPreview;
 
   @override
   State<TimetableWeekPreview> createState() => _TimetableWeekPreviewState();
@@ -135,6 +147,7 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
           includeAppHeader: widget.includeAppHeader,
           applyHomePageBackdrop: widget.applyHomePageBackdrop,
           heightBudget: widget.heightBudget,
+          isSettingsPreview: widget.isSettingsPreview,
           wallpaperTopLuminance: _topLuminance,
           wallpaperWeekdayLuminance: _weekdayLuminance,
           wallpaperBodyLuminance: _bodyLuminance,
@@ -153,6 +166,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     required this.includeAppHeader,
     required this.applyHomePageBackdrop,
     required this.heightBudget,
+    required this.isSettingsPreview,
     required this.wallpaperTopLuminance,
     required this.wallpaperWeekdayLuminance,
     required this.wallpaperBodyLuminance,
@@ -165,6 +179,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
   final bool includeAppHeader;
   final bool applyHomePageBackdrop;
   final double? heightBudget;
+  final bool isSettingsPreview;
 
   /// Top-band wallpaper luminance from [_TimetableWeekPreviewState]'s sample
   /// (null while sampling / no wallpaper).
@@ -219,9 +234,12 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     // proportionally so the edge highlight stays a thin sheen while the
     // interior remains real liquid refraction — not flat gaussian blur.
     // Combined bands (~84dp) keep full thickness like the home sheet.
+    final double? previewCap = isSettingsPreview
+        ? MikcbLiquidGlassTokens.previewEdgeThicknessCap
+        : null;
     final double? bandMaxThickness = height <= 52
         ? (height * 0.28).clamp(8.0, 14.0)
-        : null;
+        : previewCap;
     return [
       Positioned(
         top: top,

@@ -80,6 +80,7 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
                     settings: _draft,
                     week: provider.currentWeek,
                     maxVisibleSections: _draft.sectionCount,
+                    isSettingsPreview: true,
                   ),
                 ),
               ),
