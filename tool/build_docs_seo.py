@@ -29,7 +29,7 @@ TOPIC_PAGES = (
         "slug": "android-timetable",
         "title": "Android 课表 App - 轻屿课表免费开源课程表",
         "description": "轻屿课表是一款免费开源的 Android 课表 App，支持教务导入、ICS、AI 识图、课程提醒、桌面小组件、情侣课表和本地数据管理。",
-        "label": "Android 课表 / ANDROID TIMETABLE",
+        "label": "Android 课表",
         "heading": "一款把课程信息装进 Android 的课表 App",
         "lead": "轻屿课表面向大学生设计：把每周课程、上课提醒、考试安排和桌面查看集中在一个免费、无广告、无需注册的 Android 应用里。课程数据默认保存在本地，并提供备份与同步能力。",
         "sections": (
@@ -43,7 +43,7 @@ TOPIC_PAGES = (
         "slug": "hyperos-timetable",
         "title": "HyperOS 超级岛课表 - 轻屿课表课程提醒",
         "description": "轻屿课表 HyperOS 超级岛课表功能介绍：课前、课中、下课状态联动，支持下一节课、地点、倒计时和快捷操作。",
-        "label": "HyperOS 超级岛 / HYPEROS ISLAND",
+        "label": "HyperOS 超级岛",
         "heading": "让下一节课出现在 HyperOS 超级岛",
         "lead": "轻屿课表把课表状态与 HyperOS 系统体验连接起来：课前看到课程和地点，课中保持状态，临近下课继续承接下一节课。你不必反复打开课表 App，也能知道接下来要去哪里。",
         "sections": (
@@ -57,7 +57,7 @@ TOPIC_PAGES = (
         "slug": "course-import",
         "title": "大学课表导入 - 轻屿课表教务系统、ICS 与 AI 识图",
         "description": "轻屿课表支持大学教务系统网页登录导入、ICS 文件、AI 识图和表格模板导入，快速建立 Android 课程表。",
-        "label": "课表导入 / COURSE IMPORT",
+        "label": "课表导入",
         "heading": "大学课表怎么导入？轻屿课表提供四种方式",
         "lead": "新学期不想手动录入每一节课，可以根据学校和手上的课表资料选择导入方式。已适配学校优先使用教务网页登录，暂未适配的学校也可以使用 ICS、AI 识图或表格模板。",
         "sections": (
@@ -72,7 +72,7 @@ TOPIC_PAGES = (
         "slug": "webdav-timetable-sync",
         "title": "WebDAV 课表同步与备份 - 轻屿课表多设备同步",
         "description": "轻屿课表 WebDAV 课表同步支持坚果云或自建 WebDAV 服务，在手机、平板之间同步课表、设置和历史快照。",
-        "label": "WebDAV 同步 / WEBDAV SYNC",
+        "label": "WebDAV 同步",
         "heading": "用 WebDAV 同步课表，也保留自己的数据",
         "lead": "轻屿课表支持将课表与设置同步到坚果云或自建 WebDAV 服务。你可以在手机、平板之间保持课表一致，也可以查看历史快照，在误修改后按条恢复或删除。",
         "sections": (
@@ -425,7 +425,7 @@ def render_school_page(payload: dict[str, Any]) -> str:
     content = f"""
 <section class="section-shell seo-article">
   {breadcrumb("./", "已适配学校")}
-  <p class="section-label">教务导入 / SCHOOL IMPORT</p>
+  <p class="section-label">教务导入</p>
   <h1>轻屿课表已适配学校与教务导入</h1>
   <p class="seo-lead">轻屿课表支持在 Android App 内选择「导入课程表 → 教务系统导入」，登录学校教务系统后直接同步课程。当前共有 <strong>{school_count} 所高校</strong>、<strong>{generic_count} 套通用教务适配</strong>，共 {total} 条导入入口。</p>
   <div class="seo-stat-grid"><div><strong>{school_count}</strong><span>所高校</span></div><div><strong>{generic_count}</strong><span>套通用适配</span></div><div><strong>{total}</strong><span>条入口</span></div></div>
@@ -477,7 +477,7 @@ def render_release_index(feed: dict[str, Any]) -> str:
     content = f"""
 <section class="section-shell seo-article">
   {breadcrumb("../", "更新日志")}
-  <p class="section-label">更新日志 / CHANGELOG</p>
+  <p class="section-label">更新日志</p>
   <h1>轻屿课表版本更新日志</h1>
   <p class="seo-lead">这里汇总轻屿课表 Android App 的公开版本更新，包括 HyperOS 超级岛、课程提醒、教务导入、WebDAV 云同步、桌面小组件和课表管理优化。安装包和完整 Release 讨论仍以 <a href="https://github.com/Mutx163/mikcb/releases" target="_blank" rel="noreferrer">GitHub Releases</a> 为准。</p>
   <div class="seo-grid">{"".join(cards)}</div>
@@ -526,7 +526,7 @@ def render_release_detail(item: dict[str, Any]) -> str:
     content = f"""
 <section class="section-shell seo-article">
   {breadcrumb("../", "更新日志")}
-  <p class="section-label">{body(text(item.get("channelLabel"), "版本"))} / RELEASE</p>
+  <p class="section-label">{body(text(item.get("channelLabel"), "版本"))}</p>
   <h1>轻屿课表 {body(title)} 更新日志</h1>
   <p class="seo-release-meta">发布时间：{body(published or "未标注")} · Android 课表 App · HyperOS / 教务导入 / 课程提醒</p>
   <p class="seo-lead">{body(description)}</p>

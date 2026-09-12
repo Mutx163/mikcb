@@ -286,12 +286,14 @@ main {
 
 .primary-cta {
   color: #fff;
-  background: var(--blue);
+  /* 白字需 ≥4.5:1：#3482ff 只有 3.63:1，故按钮底色单独用更深的蓝；
+     --blue 仍保留给文字/图标等 3:1 门槛的场景。 */
+  background: #2563eb;
   box-shadow: 0 16px 30px rgba(52, 130, 255, 0.22);
 }
 
 .primary-cta:hover {
-  background: var(--blue-hover);
+  background: #1d4ed8;
 }
 
 .secondary-cta {
@@ -1153,12 +1155,13 @@ main {
 .seo-page .seo-nav-cta {
   padding: 11px 22px;
   font-size: 0.95rem;
-  background: linear-gradient(120deg, var(--blue), #2dd4bf);
+  /* 与 home.css 的 --cta-from/--cta-to 同色：白字全段 ≥5:1 */
+  background: linear-gradient(120deg, #2563eb, #0f766e);
   box-shadow: 0 8px 30px rgba(52, 130, 255, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .seo-page .seo-nav-cta:hover {
-  background: linear-gradient(120deg, var(--blue-hover), #40e0cc);
+  background: linear-gradient(120deg, #1d4ed8, #115e59);
   box-shadow: 0 14px 40px rgba(52, 130, 255, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 

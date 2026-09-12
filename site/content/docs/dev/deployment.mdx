@@ -59,6 +59,27 @@ npx serve site/out
 | 环境变量 `NODE_VERSION` | `22` |
 
 仓库根不是 Node 项目，因此命令里必须先 `cd site`。
+
+**已知问题：`__next.*` 预取载荷 404（Cloudflare Pages 路径匹配差异）**
+
+Next.js 静态导出会把 RSC 预取载荷落盘为带字面 `$` 的目录嵌套形式：
+
+```text
+site/out/docs/guide/quick-start/__next.docs/$oc$slug/__PAGE__.txt   # 200
+```
+
+而客户端预取请求用的是点号压平形式，Cloudflare Pages 静态文件匹配不到：
+
+```text
+GET /docs/guide/quick-start/__next.docs.$oc$slug.__PAGE__.txt       # 404
+```
+
+影响：软导航本身正常（导航请求 `<路径>/index.txt` 返回 200），
+控制台每次预取多出一条 404，预取失效回退为按需拉取。
+
+修复：仓库内 `site/public/_redirects` 已把点号形式重写到真实落盘路径，
+构建时会被 Next 复制进 `out/`。修改后需在 Pages 上重新构建才生效。
+本地可用 `python3 -m http.server --directory site/out` 复现两条路径的 404/200 差异。
 </Step>
 <Step>
 部署完成后，在 Pages 项目的自定义域中添加 `docs.163366.xyz`，按提示完成 DNS。

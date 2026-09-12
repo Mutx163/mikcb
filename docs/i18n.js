@@ -287,7 +287,7 @@
       '<path d="M12 3a14 14 0 0 0 0 18"/>' +
       "</svg>" +
       '<span class="lang-switcher-label"></span>' +
-      '<svg class="lang-switcher-caret" viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg>';
+      '<svg class="lang-switcher-caret" viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg>';
 
     const menu = document.createElement("ul");
     menu.className = "lang-switcher-menu";

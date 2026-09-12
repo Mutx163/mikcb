@@ -18,6 +18,10 @@
   --text-soft: rgba(226, 232, 244, 0.72);
   --text-faint: rgba(226, 232, 244, 0.55);
   --blue: #3482ff;
+  /* 按钮填充专用深色端：白字在 #2563eb→#0f766e 全段 ≥5.17:1（WCAG AA）。
+     原 #3482ff→#2dd4bf 最差处仅 1.86:1，白字在青端几乎不可读。 */
+  --cta-from: #2563eb;
+  --cta-to: #0f766e;
   --blue-soft: #8ab8ff;
   --link: #7ab4ff;
   --teal: #2dd4bf;
@@ -63,11 +67,14 @@ body {
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  overflow-x: hidden;
 }
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* 用 clip 而非 hidden：hidden 会在 html 上创建滚动容器并破坏后代 sticky，
+     同时 hidden 会让 body 变成滚动容器；clip 不创建滚动容器，照样裁掉
+     marquee 轨道的横向溢出。 */
+  overflow-x: clip;
 }
 
 :focus-visible {
@@ -296,7 +303,7 @@ button {
 
 .cta-primary {
   color: #fff;
-  background: linear-gradient(120deg, var(--blue), var(--teal));
+  background: linear-gradient(120deg, var(--cta-from), var(--cta-to));
   box-shadow: 0 8px 30px rgba(52, 130, 255, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
@@ -674,31 +681,12 @@ button {
   perspective: 1400px;
 }
 
-.phone-glow {
-  position: absolute;
-  inset: 8% 12%;
-  background: radial-gradient(circle, rgba(52, 130, 255, 0.32), rgba(45, 212, 191, 0.12) 55%, transparent 75%);
-  filter: blur(56px);
-  z-index: 0;
-}
-
 .phone {
   position: relative;
   z-index: 1;
   width: min(320px, 82vw);
   transform-style: preserve-3d;
   transition: transform 0.3s ease-out;
-  animation: phone-float 7s ease-in-out infinite;
-}
-
-@keyframes phone-float {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-  50% {
-    translate: 0 -14px;
-  }
 }
 
 .phone-frame {
@@ -1904,7 +1892,7 @@ button {
 }
 
 .release-channel-tab.is-active {
-  background: linear-gradient(120deg, #3482ff, #2fb8d6);
+  background: linear-gradient(120deg, var(--cta-from), var(--cta-to));
   color: #fff;
 }
 
@@ -2582,7 +2570,6 @@ button {
   }
 
   .aurora,
-  .phone,
   .float-card,
   .marquee-track,
   .pulse-dot::after,

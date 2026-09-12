@@ -1,0 +1,14 @@
+# Cloudflare Pages 重写规则（Next.js 静态导出的 RSC 预取载荷）
+#
+# 实测（2026-09-12，线上 docs.163366.xyz）：
+#   导出产物落盘为目录嵌套形式（字面 $）：
+#     /docs/guide/quick-start/__next.docs/$oc$slug/__PAGE__.txt   → 200 text/plain
+#   而客户端预取请求用的是点号压平形式：
+#     /docs/guide/quick-start/__next.docs.$oc$slug.__PAGE__.txt   → 404 (text/html)
+#   导航本体（<path>/index.txt）→ 200，软导航正常工作；
+#   404 只发生在预取请求上，表现为控制台一条 404 + 一次无效预取。
+#
+# 下面把点号形式重写到真实落盘路径。规则只匹配 __next. 前缀，
+# 不会影响任何正常路由；规则写错时 Pages 会忽略该行，不会破坏站点。
+/docs/*/__next.docs.$oc$slug.__PAGE__.txt  /docs/:splat/__next.docs/$oc$slug/__PAGE__.txt  200
+/__next.!KGhvbWUp.__PAGE__.txt  /__next.!KGhvbWUp/__PAGE__.txt  200
