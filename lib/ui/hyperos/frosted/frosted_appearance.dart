@@ -13,8 +13,8 @@ const kDefaultFrostedSheetBarrierAlpha = 0.20;
 /// 顶栏玻璃带的默认模糊材质：渐进模糊（inspire_blur）。
 const kDefaultHeaderBlurStyle = HeaderBlurStyle.inspire;
 
-/// 首页顶栏默认材质键：渐进模糊。子页顶栏不读此字段、永不走液态。
-const kDefaultHomeChromeGlassMaterial = 'progressive';
+/// 首页顶栏玻璃带默认材质：渐进磨砂。独立自由选择，不随全局玻璃模式。
+const kDefaultHomeBandGlassMaterial = 'progressive';
 
 /// 液态玻璃作用范围默认值（外观与配色页可逐表面开关）。
 ///
@@ -25,7 +25,6 @@ const kDefaultHomeChromeGlassMaterial = 'progressive';
 const kDefaultLiquidGlassPopupEnabled = true;
 const kDefaultLiquidGlassSelectSheetEnabled = false;
 const kDefaultLiquidGlassSheetDialogEnabled = true;
-const kDefaultLiquidGlassHomeChromeEnabled = true;
 const kDefaultLiquidGlassDockEnabled = true;
 const kDefaultLiquidGlassPickerButtonsEnabled = true;
 
@@ -77,15 +76,13 @@ class FrostedAppearance {
     required this.sheetBarrierAlpha,
     this.blurEnabled = kDefaultFrostedBlurEnabled,
     this.glassMode = FrostedGlassMode.frosted,
-    this.headerBlurStyle = kDefaultHeaderBlurStyle,
     this.subpageHeaderBlurStyle = kDefaultHeaderBlurStyle,
-    this.homeChromeGlassMaterial = kDefaultHomeChromeGlassMaterial,
+    this.homeBandGlassMaterial = kDefaultHomeBandGlassMaterial,
     this.liquidGlassTuning,
     this.softGlassTuning = SoftGlassTuning.defaults,
     this.liquidGlassPopupEnabled = kDefaultLiquidGlassPopupEnabled,
     this.liquidGlassSelectSheetEnabled = kDefaultLiquidGlassSelectSheetEnabled,
     this.liquidGlassSheetDialogEnabled = kDefaultLiquidGlassSheetDialogEnabled,
-    this.liquidGlassHomeChromeEnabled = kDefaultLiquidGlassHomeChromeEnabled,
     this.liquidGlassDockEnabled = kDefaultLiquidGlassDockEnabled,
     this.liquidGlassPickerButtonsEnabled =
         kDefaultLiquidGlassPickerButtonsEnabled,
@@ -109,23 +106,18 @@ class FrostedAppearance {
   /// Global backdrop blur master switch.
   final bool blurEnabled;
 
-  /// 首页顶栏玻璃带的模糊材质风格（渐进 / 高斯）。
-  ///
-  /// 只驱动首页玻璃带（标题栏与星期栏）；子页顶栏读
-  /// [subpageHeaderBlurStyle]。首页走液态材质时不看此风格；柔光下风格
-  /// 决定雾面模糊的衰减形态。
-  final HeaderBlurStyle headerBlurStyle;
-
   /// 子页顶栏（设置等 HyperosSubpage 页）的模糊材质风格（渐进 / 高斯）。
   ///
-  /// 与首页 [headerBlurStyle] 相互独立：子页顶栏永不走液态，此风格始终
-  /// 生效。
+  /// 独立于首页玻璃带材质（[homeBandGlassMaterial]）：子页顶栏永不走高级
+  /// 材质，此风格始终生效。
   final HeaderBlurStyle subpageHeaderBlurStyle;
 
-  /// 首页顶栏玻璃带材质键：`progressive` / `gaussian` / `liquid`。
+  /// 首页顶栏玻璃带材质，独立自由选择（2026-09-12）：`progressive` /
+  /// `gaussian` / `soft` / `liquid` / `solid`。
   ///
-  /// 与 [glassMode] 解耦；选液态只影响首页玻璃带。
-  final String homeChromeGlassMaterial;
+  /// 不跟随 [glassMode] 或「作用范围」开关——柔光/液态只作用弹窗、玻璃坞
+  /// 等其他表面，顶栏选什么渲染什么。
+  final String homeBandGlassMaterial;
 
   /// Glass surface rendering mode.
   final FrostedGlassMode glassMode;
@@ -146,9 +138,6 @@ class FrostedAppearance {
   /// 液态玻璃作用范围：底部弹窗与对话框（showHyperosSheet 系材质）。
   final bool liquidGlassSheetDialogEnabled;
 
-  /// 液态玻璃作用范围：首页玻璃带（标题栏与星期栏的玻璃背景）。
-  final bool liquidGlassHomeChromeEnabled;
-
   /// 液态玻璃作用范围：玻璃坞导航（底部悬浮药丸与加课圆钮）。
   final bool liquidGlassDockEnabled;
 
@@ -160,9 +149,8 @@ class FrostedAppearance {
       identical(this, other) ||
       other is FrostedAppearance &&
           blurEnabled == other.blurEnabled &&
-          headerBlurStyle == other.headerBlurStyle &&
           subpageHeaderBlurStyle == other.subpageHeaderBlurStyle &&
-          homeChromeGlassMaterial == other.homeChromeGlassMaterial &&
+          homeBandGlassMaterial == other.homeBandGlassMaterial &&
           sheetBlurSigma == other.sheetBlurSigma &&
           sheetTintAlpha == other.sheetTintAlpha &&
           sheetBarrierAlpha == other.sheetBarrierAlpha &&
@@ -174,7 +162,6 @@ class FrostedAppearance {
               other.liquidGlassSelectSheetEnabled &&
           liquidGlassSheetDialogEnabled ==
               other.liquidGlassSheetDialogEnabled &&
-          liquidGlassHomeChromeEnabled == other.liquidGlassHomeChromeEnabled &&
           liquidGlassDockEnabled == other.liquidGlassDockEnabled &&
           liquidGlassPickerButtonsEnabled ==
               other.liquidGlassPickerButtonsEnabled;
@@ -182,9 +169,8 @@ class FrostedAppearance {
   @override
   int get hashCode => Object.hash(
     blurEnabled,
-    headerBlurStyle,
     subpageHeaderBlurStyle,
-    homeChromeGlassMaterial,
+    homeBandGlassMaterial,
     sheetBlurSigma,
     sheetTintAlpha,
     sheetBarrierAlpha,
@@ -194,7 +180,6 @@ class FrostedAppearance {
     liquidGlassPopupEnabled,
     liquidGlassSelectSheetEnabled,
     liquidGlassSheetDialogEnabled,
-    liquidGlassHomeChromeEnabled,
     liquidGlassDockEnabled,
     liquidGlassPickerButtonsEnabled,
   );

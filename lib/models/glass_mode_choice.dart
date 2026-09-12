@@ -57,28 +57,20 @@ TimetableSettings applyGlassModeChoice(
   ),
 };
 
-/// 写回「顶栏模糊风格」（渐进模糊 / 高斯模糊）。
+/// 写回「首页顶栏玻璃带材质」（独立自由选择，2026-09-12：渐进磨砂 / 高斯
+/// 磨砂 / 柔光 / 液态 / 实体）。
 ///
-/// 同步写 `homeChromeGlassMaterial`（渐进 → progressive、高斯 → gaussian），
-/// 保持存量字段与实际衰减风格一致。
-///
-/// **不再**关掉 `liquidGlassHomeChromeEnabled`：该开关现在是「首页玻璃带跟随
-/// 全局高级材质」的作用范围开关，改模糊风格与它无关；原先一并关掉
-/// 会把用户的柔光 / 液态顶栏静默降级成基础磨砂。
-TimetableSettings applyChromeBlurStyle(
+/// 顶栏材质不再跟随全局玻璃模式或「作用范围」开关；柔光/液态只通过各自
+/// 的范围开关作用于弹窗、玻璃坞等其他表面。
+TimetableSettings applyHomeBandGlassMaterial(
   TimetableSettings settings,
-  HeaderBlurStyle style,
-) => settings.copyWith(
-  headerBlurStyle: style,
-  homeChromeGlassMaterial: style == HeaderBlurStyle.gaussian
-      ? 'gaussian'
-      : 'progressive',
-);
+  String material,
+) => settings.copyWith(homeBandGlassMaterial: material);
 
 /// 写回「子页顶栏模糊风格」（渐进模糊 / 高斯模糊）。
 ///
-/// 子页顶栏（设置等 HyperosSubpage 页）与首页玻璃带相互独立，不涉及
-/// homeChromeGlassMaterial 同步，也不受首页「高级材质」作用范围影响。
+/// 子页顶栏（设置等 HyperosSubpage 页）与首页玻璃带材质相互独立；子页
+/// 永不走高级材质，此风格始终生效。
 TimetableSettings applySubpageChromeBlurStyle(
   TimetableSettings settings,
   HeaderBlurStyle style,

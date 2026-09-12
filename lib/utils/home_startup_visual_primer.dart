@@ -5,7 +5,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 
 import '../models/timetable_settings.dart';
-import '../ui/hyperos/frosted/frosted_appearance.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
 import 'home_page_background.dart';
 
@@ -68,12 +67,9 @@ abstract final class HomeStartupVisualPrimer {
       final sigma = resolveHomePreblurSigma(
         gaussianCardsDrive:
             settings.courseCardSurfaceStyle == CourseCardSurfaceStyle.gaussian,
-        // 与首页玻璃带消费点同判：家族开关关闭时按磨砂 sigma 预热，
+        // 与首页玻璃带消费点同判：顶栏材质为液态时按折射预热，
         // 否则预热位图和首帧实际材质不一致。
-        liquidGlassChrome:
-            appearance.homeChromeGlassMaterial == 'liquid' ||
-            (appearance.glassMode == FrostedGlassMode.liquidGlass &&
-                appearance.liquidGlassHomeChromeEnabled),
+        liquidGlassChrome: appearance.homeBandGlassMaterial == 'liquid',
         sheetBlurSigma: appearance.sheetBlurSigma,
         liquidGlassTunedBlur: appearance.liquidGlassTuning?.blur,
       );

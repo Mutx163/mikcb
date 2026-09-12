@@ -1243,9 +1243,29 @@ class TimetableSettings {
   static const bool defaultLiquidGlassPopupEnabled = true;
   static const bool defaultLiquidGlassSelectSheetEnabled = false;
   static const bool defaultLiquidGlassSheetDialogEnabled = true;
+
+  /// 旧版「作用范围 → 首页玻璃带」开关的默认值。该开关已随顶栏材质自由
+  /// 选择下线（2026-09-12），常量仅用于读取旧存档做迁移判定。
   static const bool defaultLiquidGlassHomeChromeEnabled = true;
   static const bool defaultLiquidGlassDockEnabled = true;
   static const bool defaultLiquidGlassPickerButtonsEnabled = true;
+
+  /// 首页顶栏玻璃带材质：`progressive` / `gaussian` / `soft` / `liquid` /
+  /// `solid`（渐进磨砂 / 高斯磨砂 / 柔光 / 液态 / 实体）。
+  static const String defaultHomeBandGlassMaterial = 'progressive';
+  static const List<String> homeBandGlassMaterialValues = [
+    'progressive',
+    'gaussian',
+    'soft',
+    'liquid',
+    'solid',
+  ];
+
+  /// 非法值兜底到默认渐进档。
+  static String sanitizeHomeBandGlassMaterial(String? value) =>
+      homeBandGlassMaterialValues.contains(value)
+      ? value!
+      : defaultHomeBandGlassMaterial;
   static const double defaultPageTransitionSpeed = 1;
   static const double minPageTransitionSpeed = 0.5;
   static const double maxPageTransitionSpeed = 2.5;
@@ -1476,17 +1496,15 @@ class TimetableSettings {
     sheetBarrierAlpha: frostedSheetBarrierAlpha,
     blurEnabled: frostedBlurEnabled,
     glassMode: frostedGlassMode,
-    headerBlurStyle: headerBlurStyle,
     subpageHeaderBlurStyle: subpageHeaderBlurStyle,
     liquidGlassTuning: liquidGlassTuning,
     softGlassTuning: softGlassTuning ?? SoftGlassTuning.defaults,
     liquidGlassPopupEnabled: liquidGlassPopupEnabled,
     liquidGlassSelectSheetEnabled: liquidGlassSelectSheetEnabled,
     liquidGlassSheetDialogEnabled: liquidGlassSheetDialogEnabled,
-    liquidGlassHomeChromeEnabled: liquidGlassHomeChromeEnabled,
     liquidGlassDockEnabled: liquidGlassDockEnabled,
     liquidGlassPickerButtonsEnabled: liquidGlassPickerButtonsEnabled,
-    homeChromeGlassMaterial: homeChromeGlassMaterial,
+    homeBandGlassMaterial: homeBandGlassMaterial,
   );
 
   final bool linkCourseCardColors; // 标题和详情颜色是否关联
@@ -1501,7 +1519,6 @@ class TimetableSettings {
   final bool liquidGlassPopupEnabled;
   final bool liquidGlassSelectSheetEnabled;
   final bool liquidGlassSheetDialogEnabled;
-  final bool liquidGlassHomeChromeEnabled;
   final bool liquidGlassDockEnabled;
   final bool liquidGlassPickerButtonsEnabled;
   final CourseCardSurfaceStyle courseCardSurfaceStyle;
@@ -1515,22 +1532,19 @@ class TimetableSettings {
   final bool homePageHeaderBlurEnabled;
   final bool homePageWeekdayBarBlurEnabled;
 
-  /// 首页顶栏玻璃带使用的模糊材质风格（高斯模糊 / Inspire 渐进模糊）。
-  /// 默认 [HeaderBlurStyle.inspire]。只驱动首页玻璃带；子页顶栏读
-  /// [subpageHeaderBlurStyle]。首页走液态材质时不看此风格；柔光下风格
-  /// 决定雾面模糊的衰减形态（渐进 = 上浓下淡）。
-  final HeaderBlurStyle headerBlurStyle;
-
-  /// 子页顶栏（设置等 HyperosSubpage 页）的模糊材质风格，与首页
-  /// [headerBlurStyle] 相互独立。默认 [HeaderBlurStyle.inspire]；子页
-  /// 顶栏永不走液态，此风格始终生效。
+  /// 子页顶栏（设置等 HyperosSubpage 页）的模糊材质风格，独立于首页
+  /// 玻璃带材质。默认 [HeaderBlurStyle.inspire]；子页顶栏永不走液态，
+  /// 此风格始终生效。
   final HeaderBlurStyle subpageHeaderBlurStyle;
 
-  /// 首页顶栏玻璃带材质：`progressive` / `gaussian` / `liquid`。
+  /// 首页顶栏玻璃带材质，**独立自由选择**（用户 2026-09-12 拍板）：
+  /// `progressive`（渐进磨砂）/ `gaussian`（高斯磨砂）/ `soft`（柔光）/
+  /// `liquid`（液态）/ `solid`（实体）。
   ///
-  /// 与全局 [frostedGlassMode] 解耦——选液态只影响首页玻璃带，不改
-  /// 弹窗与设置页材质。子页顶栏永不走液态。
-  final String homeChromeGlassMaterial;
+  /// 不再跟随全局 [frostedGlassMode] 或「作用范围」开关——柔光/液态只
+  /// 作用弹窗、玻璃坞等其他表面；顶栏选什么渲染什么。子页顶栏永不吃
+  /// 这里的高级材质（见 [subpageHeaderBlurStyle]）。
+  final String homeBandGlassMaterial;
   final bool homePageTimeColumnBlurEnabled;
   final bool homePageBackdropFollowsWeekPager;
   final List<SavedTheme> savedThemes; // 保存的主题列表
@@ -1708,7 +1722,6 @@ class TimetableSettings {
     this.liquidGlassPopupEnabled = defaultLiquidGlassPopupEnabled,
     this.liquidGlassSelectSheetEnabled = defaultLiquidGlassSelectSheetEnabled,
     this.liquidGlassSheetDialogEnabled = defaultLiquidGlassSheetDialogEnabled,
-    this.liquidGlassHomeChromeEnabled = defaultLiquidGlassHomeChromeEnabled,
     this.liquidGlassDockEnabled = defaultLiquidGlassDockEnabled,
     this.liquidGlassPickerButtonsEnabled =
         defaultLiquidGlassPickerButtonsEnabled,
@@ -1719,9 +1732,8 @@ class TimetableSettings {
     this.softGlassTuning,
     this.homePageHeaderBlurEnabled = true,
     this.homePageWeekdayBarBlurEnabled = true,
-    this.headerBlurStyle = HeaderBlurStyle.inspire,
     this.subpageHeaderBlurStyle = HeaderBlurStyle.inspire,
-    this.homeChromeGlassMaterial = 'progressive',
+    this.homeBandGlassMaterial = defaultHomeBandGlassMaterial,
     this.homePageTimeColumnBlurEnabled = false,
     this.homePageBackdropFollowsWeekPager = true,
     this.savedThemes = const [],
@@ -1901,7 +1913,7 @@ class TimetableSettings {
       'wallpaperHistory': [
         for (final entry in wallpaperHistory) entry.toJson(),
       ],
-      'homePageBackgroundScope': homePageBackgroundScope,
+      // homePageBackgroundScope 已下线（壁纸整体透出），不再写入。
       'timetableUseUnifiedCardColor': timetableUseUnifiedCardColor,
       'timetableUnifiedCardColor': timetableUnifiedCardColor,
       'appUpdateDownloadSource': appUpdateDownloadSource,
@@ -1934,7 +1946,6 @@ class TimetableSettings {
       'liquidGlassPopupEnabled': liquidGlassPopupEnabled,
       'liquidGlassSelectSheetEnabled': liquidGlassSelectSheetEnabled,
       'liquidGlassSheetDialogEnabled': liquidGlassSheetDialogEnabled,
-      'liquidGlassHomeChromeEnabled': liquidGlassHomeChromeEnabled,
       'liquidGlassDockEnabled': liquidGlassDockEnabled,
       'liquidGlassPickerButtonsEnabled': liquidGlassPickerButtonsEnabled,
       'courseCardSurfaceStyle': courseCardSurfaceStyle.value,
@@ -1946,9 +1957,8 @@ class TimetableSettings {
         'softGlassTuning': softGlassTuning!.toJson(),
       'homePageHeaderBlurEnabled': homePageHeaderBlurEnabled,
       'homePageWeekdayBarBlurEnabled': homePageWeekdayBarBlurEnabled,
-      'headerBlurStyle': headerBlurStyle.value,
       'subpageHeaderBlurStyle': subpageHeaderBlurStyle.value,
-      'homeChromeGlassMaterial': homeChromeGlassMaterial,
+      'homeBandGlassMaterial': homeBandGlassMaterial,
       'homePageTimeColumnBlurEnabled': homePageTimeColumnBlurEnabled,
       'homePageBackdropFollowsWeekPager': homePageBackdropFollowsWeekPager,
       'savedThemes': savedThemes.map((t) => t.toJson()).toList(),
@@ -1967,6 +1977,32 @@ class TimetableSettings {
     final legacyChromeLiquid =
         (json['homeChromeGlassMaterial'] as String?) == 'liquid' &&
         (json['frostedBlurEnabled'] as bool? ?? defaultFrostedBlurEnabled);
+    // 全局材质档（legacyChromeLiquid 上提为液态，见下方 frostedGlassMode）。
+    final resolvedFrostedGlassMode = legacyChromeLiquid
+        ? FrostedGlassMode.liquidGlass
+        : FrostedGlassModeX.fromValue(json['frostedGlassMode'] as String?);
+    // 首页顶栏材质迁移（旧轴 → 独立自由选择，2026-09-12）：
+    // - 旧「独立三档写死 liquid」→ 上提全局液态的同时顶栏取液态（观感不变）；
+    // - 旧「作用范围 → 首页玻璃带」开且全局为柔光/液态 → 顶栏跟随该高级材质；
+    // - 其余 → 旧 homeChromeGlassMaterial 镜像（与 headerBlurStyle 同步写）
+    //   映射为磨砂两档。
+    String legacyHomeBandGlassMaterial;
+    if (legacyChromeLiquid) {
+      legacyHomeBandGlassMaterial = 'liquid';
+    } else if ((json['liquidGlassHomeChromeEnabled'] as bool? ??
+            defaultLiquidGlassHomeChromeEnabled) &&
+        (resolvedFrostedGlassMode == FrostedGlassMode.liquidGlass ||
+            resolvedFrostedGlassMode == FrostedGlassMode.softGlass)) {
+      legacyHomeBandGlassMaterial =
+          resolvedFrostedGlassMode == FrostedGlassMode.liquidGlass
+          ? 'liquid'
+          : 'soft';
+    } else {
+      legacyHomeBandGlassMaterial =
+          (json['homeChromeGlassMaterial'] as String?) == 'gaussian'
+          ? 'gaussian'
+          : 'progressive';
+    }
     final linkedCardTextColors = json['linkCourseCardColors'] as bool? ?? true;
     final parsedTitleColorLight =
         json['courseCardTitleColorLight'] as String? ??
@@ -2319,9 +2355,11 @@ class TimetableSettings {
       wallpaperHistory: WallpaperHistoryEntry.listFromJson(
         json['wallpaperHistory'],
       ),
-      homePageBackgroundScope:
-          (json['homePageBackgroundScope'] as num?)?.toInt() ??
-          HomePageBackgroundScope.defaultValue,
+      // 「壁纸透出范围」「顶栏玻璃」开关已下线（2026-09-12）：三个字段固
+      // 化为默认值（壁纸整体透出、玻璃带常开），不再读取旧存档里的用户值
+      // ——那三个 UI 入口已删，保留旧值只会变成不可修改的隐藏状态。
+      // ignore: avoid_redundant_argument_values -- 故意写死默认值（下线旧开关）。
+      homePageBackgroundScope: HomePageBackgroundScope.defaultValue,
       timetableUseUnifiedCardColor:
           json['timetableUseUnifiedCardColor'] as bool? ?? false,
       timetableUnifiedCardColor:
@@ -2400,10 +2438,6 @@ class TimetableSettings {
       liquidGlassSheetDialogEnabled:
           json['liquidGlassSheetDialogEnabled'] as bool? ??
           defaultLiquidGlassSheetDialogEnabled,
-      liquidGlassHomeChromeEnabled: legacyChromeLiquid
-          ? true
-          : json['liquidGlassHomeChromeEnabled'] as bool? ??
-                defaultLiquidGlassHomeChromeEnabled,
       liquidGlassDockEnabled:
           json['liquidGlassDockEnabled'] as bool? ??
           defaultLiquidGlassDockEnabled,
@@ -2429,22 +2463,22 @@ class TimetableSettings {
               json['softGlassTuning'] as Map<String, dynamic>,
             )
           : null,
-      homePageHeaderBlurEnabled:
-          json['homePageHeaderBlurEnabled'] as bool? ?? true,
-      homePageWeekdayBarBlurEnabled:
-          json['homePageWeekdayBarBlurEnabled'] as bool? ?? true,
-      headerBlurStyle: HeaderBlurStyleX.fromValue(
-        json['headerBlurStyle'] as String?,
-      ),
+      // 两个玻璃带显示开关已下线（顶栏玻璃归外观页材质五档），恒为开。
+      // ignore: avoid_redundant_argument_values -- 故意写死默认值（下线旧开关）。
+      homePageHeaderBlurEnabled: true,
+      // ignore: avoid_redundant_argument_values -- 故意写死默认值（下线旧开关）。
+      homePageWeekdayBarBlurEnabled: true,
       // 存量迁移：独立字段出现前子页顶栏跟随 headerBlurStyle，缺失时沿
       // 旧值，保证升级后子页顶栏观感不变。
       subpageHeaderBlurStyle: HeaderBlurStyleX.fromValue(
         (json['subpageHeaderBlurStyle'] ?? json['headerBlurStyle']) as String?,
       ),
-      // 迁移后不再保留 `liquid`：材质由全局选择器单独管。
-      homeChromeGlassMaterial: legacyChromeLiquid
-          ? 'progressive'
-          : json['homeChromeGlassMaterial'] as String? ?? 'progressive',
+      // 首页顶栏材质：独立自由选择（2026-09-12）。新键缺失时按旧轴迁移
+      //（见上方 legacyHomeBandGlassMaterial），非法值兜底渐进档。
+      homeBandGlassMaterial: sanitizeHomeBandGlassMaterial(
+        (json['homeBandGlassMaterial'] as String?) ??
+            legacyHomeBandGlassMaterial,
+      ),
       homePageTimeColumnBlurEnabled:
           json['homePageTimeColumnBlurEnabled'] as bool? ?? false,
       homePageBackdropFollowsWeekPager:
@@ -2659,7 +2693,6 @@ class TimetableSettings {
     bool? liquidGlassPopupEnabled,
     bool? liquidGlassSelectSheetEnabled,
     bool? liquidGlassSheetDialogEnabled,
-    bool? liquidGlassHomeChromeEnabled,
     bool? liquidGlassDockEnabled,
     bool? liquidGlassPickerButtonsEnabled,
     CourseCardSurfaceStyle? courseCardSurfaceStyle,
@@ -2669,9 +2702,8 @@ class TimetableSettings {
     SoftGlassTuning? softGlassTuning,
     bool? homePageHeaderBlurEnabled,
     bool? homePageWeekdayBarBlurEnabled,
-    HeaderBlurStyle? headerBlurStyle,
     HeaderBlurStyle? subpageHeaderBlurStyle,
-    String? homeChromeGlassMaterial,
+    String? homeBandGlassMaterial,
     bool? homePageTimeColumnBlurEnabled,
     bool? homePageBackdropFollowsWeekPager,
     List<SavedTheme>? savedThemes,
@@ -3020,8 +3052,6 @@ class TimetableSettings {
           liquidGlassSelectSheetEnabled ?? this.liquidGlassSelectSheetEnabled,
       liquidGlassSheetDialogEnabled:
           liquidGlassSheetDialogEnabled ?? this.liquidGlassSheetDialogEnabled,
-      liquidGlassHomeChromeEnabled:
-          liquidGlassHomeChromeEnabled ?? this.liquidGlassHomeChromeEnabled,
       liquidGlassDockEnabled:
           liquidGlassDockEnabled ?? this.liquidGlassDockEnabled,
       liquidGlassPickerButtonsEnabled:
@@ -3037,11 +3067,9 @@ class TimetableSettings {
           homePageHeaderBlurEnabled ?? this.homePageHeaderBlurEnabled,
       homePageWeekdayBarBlurEnabled:
           homePageWeekdayBarBlurEnabled ?? this.homePageWeekdayBarBlurEnabled,
-      headerBlurStyle: headerBlurStyle ?? this.headerBlurStyle,
       subpageHeaderBlurStyle:
           subpageHeaderBlurStyle ?? this.subpageHeaderBlurStyle,
-      homeChromeGlassMaterial:
-          homeChromeGlassMaterial ?? this.homeChromeGlassMaterial,
+      homeBandGlassMaterial: homeBandGlassMaterial ?? this.homeBandGlassMaterial,
       homePageTimeColumnBlurEnabled:
           homePageTimeColumnBlurEnabled ?? this.homePageTimeColumnBlurEnabled,
       homePageBackdropFollowsWeekPager:

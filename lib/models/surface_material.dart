@@ -60,27 +60,34 @@ SurfaceMaterial _advancedSurfaceMaterial(
 
 /// 首页玻璃带（标题栏 + 星期栏共用一条带）。
 ///
-/// 「顶栏玻璃」关 → 不渲染；模糊总开关关 → 实体衬底（高级材质也不上，
-/// 见 home_page_region_blur 的 `useBlur ? advanced : null` 门）；全局高级
-/// 材质 + 「作用范围 → 首页玻璃带」开 → 跟随全局；否则按顶栏模糊风格。
+/// 材质独立自由选择（2026-09-12）：`progressive` / `gaussian` / `soft` /
+/// `liquid` / `solid`，与全局玻璃模式和「作用范围」开关无关。「顶栏玻璃」
+/// 关 → 不渲染；柔光/液态沿用模糊总开关的 useBlur 门（关或系统降级 → 实
+/// 体衬底，与渲染侧 build 同口径）。
 SurfaceMaterial homeBandSurfaceMaterial(TimetableSettings s) {
   if (!s.homePageHeaderBlurEnabled) {
     return SurfaceMaterial.off;
   }
-  if (!s.frostedBlurEnabled) {
-    return SurfaceMaterial.solid;
+  switch (s.homeBandGlassMaterial) {
+    case 'liquid':
+    case 'soft':
+      if (!s.frostedBlurEnabled) {
+        return SurfaceMaterial.solid;
+      }
+      return s.homeBandGlassMaterial == 'liquid'
+          ? SurfaceMaterial.liquidGlass
+          : SurfaceMaterial.softGlass;
+    case 'gaussian':
+      return s.frostedBlurEnabled
+          ? SurfaceMaterial.frostGaussian
+          : SurfaceMaterial.solid;
+    case 'solid':
+      return SurfaceMaterial.solid;
+    default:
+      return s.frostedBlurEnabled
+          ? SurfaceMaterial.frostProgressive
+          : SurfaceMaterial.solid;
   }
-  if (s.liquidGlassHomeChromeEnabled) {
-    if (s.frostedGlassMode == FrostedGlassMode.softGlass) {
-      return SurfaceMaterial.softGlass;
-    }
-    if (s.frostedGlassMode == FrostedGlassMode.liquidGlass) {
-      return SurfaceMaterial.liquidGlass;
-    }
-  }
-  return s.headerBlurStyle == HeaderBlurStyle.gaussian
-      ? SurfaceMaterial.frostGaussian
-      : SurfaceMaterial.frostProgressive;
 }
 
 /// 子页顶栏（设置等 HyperosSubpage 外壳）。永不走高级材质，风格始终生效。

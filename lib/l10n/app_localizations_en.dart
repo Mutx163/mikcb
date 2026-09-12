@@ -3512,22 +3512,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePageBackgroundScopeStatusBar => 'Status bar';
 
   @override
-  String get homePageBackgroundScopeTimetable => 'Timetable area';
-
-  @override
   String get homePageBackgroundScopeWeekdayBar => 'Info bar';
 
   @override
   String get homePageBackgroundScopeHeader => 'Top bar';
-
-  @override
-  String get homePageBackgroundScopeChrome => 'Top wallpaper';
-
-  @override
-  String get homePageBackgroundScopeChromeSubtitle => '';
-
-  @override
-  String get homePageHeaderBlurTitle => 'Top bar glass';
 
   @override
   String get homePageHeaderBlurSubtitle => '';
@@ -10329,17 +10317,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Location match takes priority over date rules.';
 
   @override
-  String get headerBlurStyleLabel => 'Home top bar blur style';
+  String get homeBandGlassMaterialLabel => 'Home top bar glass';
 
   @override
   String get headerBlurStyleGaussian => 'Gaussian blur';
 
   @override
   String get headerBlurStyleInspire => 'Progressive blur';
-
-  @override
-  String get headerBlurStyleSubtitle =>
-      'Progressive fades toward the content; Gaussian is uniform';
 
   @override
   String get subpageHeaderBlurStyleLabel => 'Subpage top bar blur style';
@@ -10421,10 +10405,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liquidGlassScopeHomeChromeTitle => 'Home chrome glass';
-
-  @override
-  String get liquidGlassScopeHomeChromeSubtitle =>
-      'Glass band behind the title bar and weekday bar';
 
   @override
   String get liquidGlassScopeDockTitle => 'Glass dock navigation';

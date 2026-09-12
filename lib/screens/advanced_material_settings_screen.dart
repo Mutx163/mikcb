@@ -507,16 +507,8 @@ class _AdvancedMaterialSettingsScreenState
                     );
                   },
                 ),
-                HyperosSwitchTile(
-                  title: l10n.liquidGlassScopeHomeChromeTitle,
-                  subtitle: l10n.liquidGlassScopeHomeChromeSubtitle,
-                  value: _draft.liquidGlassHomeChromeEnabled,
-                  onChanged: (value) {
-                    _updateDraft(
-                      _draft.copyWith(liquidGlassHomeChromeEnabled: value),
-                    );
-                  },
-                ),
+                // 「首页玻璃带」开关已下线（2026-09-12）：首页顶栏材质独立
+                // 自由选择（外观与配色页「首页顶栏玻璃」五档），不再跟随全局。
                 HyperosSwitchTile(
                   title: l10n.liquidGlassScopeDockTitle,
                   subtitle: l10n.liquidGlassScopeDockSubtitle,

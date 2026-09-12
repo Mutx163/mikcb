@@ -54,12 +54,6 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 不透明衬底完全盖住，翻转点只剩一次衬底切换。
   final bool opaqueAtRest;
 
-  /// 高斯档底边渐隐收边所占的玻璃带比例。
-  ///
-  /// 取值很小：整条带子保持均匀强度，只在最下方一小段收边，避免玻璃带
-  /// 与内容之间出现硬切边。
-  static const gaussianFadeExtent = 0.12;
-
   /// 渐进档衬底在底边保留的不透明度比例。
   ///
   /// 均匀 tint 会把 inspire 模糊的「上浓下淡」抹平成一整条半透明；渐进
@@ -78,6 +72,13 @@ class InspireHeaderBlur extends StatelessWidget {
     return HyperosBlurredHeader.backdropBlurEnabled(context);
   }
 
+  /// 高斯档：整带均匀强度。
+  ///
+  /// ⚠️ 必须用 [UniformDistribution]：包的 `extent` 语义是「模糊从顶边衰减
+  /// 到 0 的位置（占带宽比例）」，不是「底边收边宽度」——曾把 0.12 当收边
+  /// 区传入，结果整条带只有顶部 12% 有模糊、下面全清晰（2026-09-12 真机
+  /// 「全局柔光 + 子页高斯 = 顶栏全透明」的根因）。渐隐收边如需保留，应改
+  /// 用带自定义 stops 的渐变分布，而不是缩 extent。
   static InspireBlurConfig configFor(
     HeaderBlurStyle style, {
     required double sigma,
@@ -88,11 +89,10 @@ class InspireHeaderBlur extends StatelessWidget {
       HeaderBlurStyle.inspire => InspireBlurConfig.topToBottom(
         sigma: sigma,
       ),
-      // 高斯档：整带均匀强度，仅底边一小段渐隐收边。
-      HeaderBlurStyle.gaussian => InspireBlurConfig.topToBottom(
+      // 高斯档：整带均匀模糊。
+      HeaderBlurStyle.gaussian => InspireBlurConfig(
+        distribution: const UniformDistribution(),
         sigma: sigma,
-        extent: gaussianFadeExtent,
-        fadeCurve: Curves.easeInOutSine,
       ),
     };
   }

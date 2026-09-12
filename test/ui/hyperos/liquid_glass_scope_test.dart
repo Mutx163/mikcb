@@ -12,7 +12,10 @@ import '../../helpers_test_app.dart';
 /// 默认约定（外观与配色 → 磨砂玻璃）：
 /// - 下拉选择弹窗（玻璃模式等设置行的小气泡）→ 开；
 /// - 全屏选择面板（预设主题/字体等长列表弹窗）→ 关；
-/// - 弹窗与对话框 / 首页玻璃带 / 玻璃坞导航 → 维持既有行为（开）。
+/// - 弹窗与对话框 / 玻璃坞导航 → 维持既有行为（开）。
+///
+/// 「首页玻璃带」开关已退役（2026-09-12）：首页顶栏材质独立自由五档
+/// （homeBandGlassMaterial），不再属于作用范围开关组。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -20,7 +23,6 @@ void main() {
     bool popup = true,
     bool selectSheet = false,
     bool sheetDialog = true,
-    bool homeChrome = true,
     bool dock = true,
     bool pickerButtons = true,
   }) {
@@ -30,7 +32,6 @@ void main() {
       liquidGlassPopupEnabled: popup,
       liquidGlassSelectSheetEnabled: selectSheet,
       liquidGlassSheetDialogEnabled: sheetDialog,
-      liquidGlassHomeChromeEnabled: homeChrome,
       liquidGlassDockEnabled: dock,
       liquidGlassPickerButtonsEnabled: pickerButtons,
     );
@@ -43,18 +44,16 @@ void main() {
       expect(d.liquidGlassPopupEnabled, isTrue);
       expect(d.liquidGlassSelectSheetEnabled, isFalse);
       expect(d.liquidGlassSheetDialogEnabled, isTrue);
-      expect(d.liquidGlassHomeChromeEnabled, isTrue);
       expect(d.liquidGlassDockEnabled, isTrue);
       expect(d.liquidGlassPickerButtonsEnabled, isTrue);
     });
 
-    test('frostedAppearance 映射六个开关', () {
+    test('frostedAppearance 映射五个开关', () {
       final a = liquidAppearance(dock: false);
       expect(a.glassMode, FrostedGlassMode.liquidGlass);
       expect(a.liquidGlassPopupEnabled, isTrue);
       expect(a.liquidGlassSelectSheetEnabled, isFalse);
       expect(a.liquidGlassSheetDialogEnabled, isTrue);
-      expect(a.liquidGlassHomeChromeEnabled, isTrue);
       expect(a.liquidGlassDockEnabled, isFalse);
       expect(a.liquidGlassPickerButtonsEnabled, isTrue);
     });
@@ -64,7 +63,6 @@ void main() {
         liquidGlassPopupEnabled: false,
         liquidGlassSelectSheetEnabled: true,
         liquidGlassSheetDialogEnabled: false,
-        liquidGlassHomeChromeEnabled: false,
         liquidGlassDockEnabled: false,
         liquidGlassPickerButtonsEnabled: false,
       );
@@ -72,7 +70,6 @@ void main() {
       expect(restored.liquidGlassPopupEnabled, isFalse);
       expect(restored.liquidGlassSelectSheetEnabled, isTrue);
       expect(restored.liquidGlassSheetDialogEnabled, isFalse);
-      expect(restored.liquidGlassHomeChromeEnabled, isFalse);
       expect(restored.liquidGlassDockEnabled, isFalse);
       expect(restored.liquidGlassPickerButtonsEnabled, isFalse);
 
@@ -80,7 +77,6 @@ void main() {
       expect(legacy.liquidGlassPopupEnabled, isTrue);
       expect(legacy.liquidGlassSelectSheetEnabled, isFalse);
       expect(legacy.liquidGlassSheetDialogEnabled, isTrue);
-      expect(legacy.liquidGlassHomeChromeEnabled, isTrue);
       expect(legacy.liquidGlassDockEnabled, isTrue);
       expect(legacy.liquidGlassPickerButtonsEnabled, isTrue);
     });
@@ -90,7 +86,6 @@ void main() {
         liquidGlassPopupEnabled: false,
         liquidGlassSelectSheetEnabled: true,
         liquidGlassSheetDialogEnabled: false,
-        liquidGlassHomeChromeEnabled: false,
         liquidGlassDockEnabled: false,
         liquidGlassPickerButtonsEnabled: false,
       );
@@ -98,7 +93,6 @@ void main() {
       expect(reset.liquidGlassPopupEnabled, isTrue);
       expect(reset.liquidGlassSelectSheetEnabled, isFalse);
       expect(reset.liquidGlassSheetDialogEnabled, isTrue);
-      expect(reset.liquidGlassHomeChromeEnabled, isTrue);
       expect(reset.liquidGlassDockEnabled, isTrue);
       expect(reset.liquidGlassPickerButtonsEnabled, isTrue);
     });

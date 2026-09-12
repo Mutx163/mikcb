@@ -1,187 +1,163 @@
+// 首页顶栏玻璃带材质（独立自由选择）与子页顶栏模糊风格：模型层口径。
+//
+// 历史：2026-09-12 拍板首页顶栏材质自由五档（渐进磨砂 / 高斯磨砂 / 柔光 /
+// 液态 / 实体），不再跟随全局玻璃模式或「作用范围 → 首页玻璃带」开关。
+// 旧轴（headerBlurStyle + homeChromeGlassMaterial 镜像 + 首页玻璃带范围开
+// 关）在 fromJson 里迁移到新字段 homeBandGlassMaterial，观感逐条不变。
+// 子页顶栏永不走高级材质，仍用 HeaderBlurStyle 两档（渐进 / 高斯）。
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/glass_mode_choice.dart';
 import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
-import 'package:university_timetable/widgets/home_page_region_blur.dart'
-    show homeChromeAdvancedModeOf;
 
 void main() {
-  group('顶栏模糊风格：模型层', () {
-    test('默认值为渐进模糊档', () {
-      expect(TimetableSettings.defaults().headerBlurStyle,
-          HeaderBlurStyle.inspire);
-      expect(FrostedAppearance.defaults.headerBlurStyle,
-          HeaderBlurStyle.inspire);
-    });
-
-    test('缺键 / 未知值回退渐进模糊', () {
-      expect(HeaderBlurStyleX.fromValue(null), HeaderBlurStyle.inspire);
-      expect(HeaderBlurStyleX.fromValue('nope'), HeaderBlurStyle.inspire);
-      expect(HeaderBlurStyleX.fromValue('gaussian'), HeaderBlurStyle.gaussian);
-      expect(HeaderBlurStyleX.fromValue('inspire'), HeaderBlurStyle.inspire);
-      final legacy = TimetableSettings.fromJson(const {'sections': []});
-      expect(legacy.headerBlurStyle, HeaderBlurStyle.inspire);
-    });
-
-    test('JSON 往返保留档位', () {
-      final custom = TimetableSettings.defaults().copyWith(
-        headerBlurStyle: HeaderBlurStyle.gaussian,
+  group('首页顶栏玻璃带材质：独立自由选择', () {
+    test('默认值为渐进磨砂档', () {
+      expect(
+        TimetableSettings.defaults().homeBandGlassMaterial,
+        'progressive',
       );
-      final restored = TimetableSettings.fromJson(custom.toJson());
-      expect(restored.headerBlurStyle, HeaderBlurStyle.gaussian);
+      expect(FrostedAppearance.defaults.homeBandGlassMaterial, 'progressive');
     });
 
-    test('frostedAppearance 映射顶栏模糊风格', () {
-      final settings = TimetableSettings.defaults().copyWith(
-        headerBlurStyle: HeaderBlurStyle.gaussian,
+    test('非法值兜底渐进档', () {
+      expect(
+        TimetableSettings.sanitizeHomeBandGlassMaterial(null),
+        'progressive',
       );
       expect(
-        settings.frostedAppearance.headerBlurStyle,
-        HeaderBlurStyle.gaussian,
+        TimetableSettings.sanitizeHomeBandGlassMaterial('nope'),
+        'progressive',
       );
+      expect(
+        TimetableSettings.sanitizeHomeBandGlassMaterial('gaussian'),
+        'gaussian',
+      );
+      expect(
+        TimetableSettings.sanitizeHomeBandGlassMaterial('solid'),
+        'solid',
+      );
+      final legacy = TimetableSettings.fromJson(const {'sections': []});
+      expect(legacy.homeBandGlassMaterial, 'progressive');
     });
 
-    test('FrostedAppearance 相等性包含顶栏模糊风格', () {
+    test('JSON 往返保留材质档（五档逐一）', () {
+      for (final material in TimetableSettings.homeBandGlassMaterialValues) {
+        final custom = TimetableSettings.defaults().copyWith(
+          homeBandGlassMaterial: material,
+        );
+        final restored = TimetableSettings.fromJson(custom.toJson());
+        expect(restored.homeBandGlassMaterial, material, reason: material);
+      }
+    });
+
+    test('frostedAppearance 映射顶栏材质', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        homeBandGlassMaterial: 'liquid',
+      );
+      expect(settings.frostedAppearance.homeBandGlassMaterial, 'liquid');
+    });
+
+    test('FrostedAppearance 相等性包含顶栏材质', () {
       const a = FrostedAppearance.defaults;
       final b = FrostedAppearance(
         sheetBlurSigma: a.sheetBlurSigma,
         sheetTintAlpha: a.sheetTintAlpha,
         sheetBarrierAlpha: a.sheetBarrierAlpha,
-        headerBlurStyle: HeaderBlurStyle.gaussian,
+        homeBandGlassMaterial: 'liquid',
       );
       expect(a == b, isFalse);
       expect(a.hashCode == b.hashCode, isFalse);
     });
-  });
 
-  group('首页玻璃带材质：跟随全局高级材质 + 作用范围', () {
-    test('基础材质（实体/高斯）→ 不走高级材质面', () {
-      expect(
-        homeChromeAdvancedModeOf(
-          glassMode: FrostedGlassMode.frosted,
-          homeChromeScopeEnabled: true,
-        ),
-        isNull,
-      );
-      expect(
-        homeChromeAdvancedModeOf(
-          glassMode: FrostedGlassMode.gaussian,
-          homeChromeScopeEnabled: true,
-        ),
-        isNull,
-      );
-    });
-
-    test('液态 + 作用范围开 → 液态；关 → 基础磨砂', () {
-      expect(
-        homeChromeAdvancedModeOf(
-          glassMode: FrostedGlassMode.liquidGlass,
-          homeChromeScopeEnabled: true,
-        ),
-        FrostedGlassMode.liquidGlass,
-      );
-      expect(
-        homeChromeAdvancedModeOf(
-          glassMode: FrostedGlassMode.liquidGlass,
-          homeChromeScopeEnabled: false,
-        ),
-        isNull,
-      );
-    });
-
-    test('柔光与液态同口径（历史 bug：柔光完全读不到作用范围）', () {
-      expect(
-        homeChromeAdvancedModeOf(
-          glassMode: FrostedGlassMode.softGlass,
-          homeChromeScopeEnabled: true,
-        ),
-        FrostedGlassMode.softGlass,
-      );
-      expect(
-        homeChromeAdvancedModeOf(
-          glassMode: FrostedGlassMode.softGlass,
-          homeChromeScopeEnabled: false,
-        ),
-        isNull,
-      );
-    });
-  });
-
-  group('顶栏模糊风格：applyChromeBlurStyle', () {
-    test('渐进档：写风格并同步存量材质键', () {
-      final s = applyChromeBlurStyle(
-        TimetableSettings.defaults().copyWith(
-          homeChromeGlassMaterial: 'gaussian',
-          headerBlurStyle: HeaderBlurStyle.gaussian,
-        ),
-        HeaderBlurStyle.inspire,
-      );
-
-      expect(s.headerBlurStyle, HeaderBlurStyle.inspire);
-      expect(s.homeChromeGlassMaterial, 'progressive');
-    });
-
-    test('高斯档：写风格并同步存量材质键', () {
-      final s = applyChromeBlurStyle(
-        TimetableSettings.defaults(),
-        HeaderBlurStyle.gaussian,
-      );
-
-      expect(s.headerBlurStyle, HeaderBlurStyle.gaussian);
-      expect(s.homeChromeGlassMaterial, 'gaussian');
-    });
-
-    test('不再静默关掉首页玻璃带的高级材质作用范围', () {
-      final base = TimetableSettings.defaults().copyWith(
-        frostedGlassMode: FrostedGlassMode.softGlass,
-        liquidGlassHomeChromeEnabled: true,
-      );
-      final s = applyChromeBlurStyle(base, HeaderBlurStyle.gaussian);
-      expect(s.liquidGlassHomeChromeEnabled, isTrue);
-      expect(
-        homeChromeAdvancedModeOf(
-          glassMode: s.frostedGlassMode,
-          homeChromeScopeEnabled: s.liquidGlassHomeChromeEnabled,
-        ),
-        FrostedGlassMode.softGlass,
-      );
-    });
-
-    test('不改全局材质（只动首页玻璃带的衰减风格）', () {
+    test('applyHomeBandGlassMaterial 只动顶栏材质，不碰全局', () {
       final base = TimetableSettings.defaults().copyWith(
         frostedGlassMode: FrostedGlassMode.softGlass,
       );
-      final s = applyChromeBlurStyle(base, HeaderBlurStyle.gaussian);
+      final s = applyHomeBandGlassMaterial(base, 'gaussian');
+      expect(s.homeBandGlassMaterial, 'gaussian');
       expect(s.frostedGlassMode, FrostedGlassMode.softGlass);
     });
   });
 
-  group('存量迁移：独立材质键 liquid 上提为全局液态', () {
-    test('有 liquid 键 + 模糊开 → 全局液态 + 首页玻璃带作用范围开', () {
-      final json = TimetableSettings.defaults().copyWith(
-        homeChromeGlassMaterial: 'liquid',
-      ).toJson();
+  group('顶栏材质迁移：旧轴 → homeBandGlassMaterial', () {
+    test('旧「独立三档 liquid」+ 模糊开 → 上提全局液态 + 顶栏液态（观感不变）', () {
+      final json = TimetableSettings.defaults().toJson()
+        ..remove('homeBandGlassMaterial')
+        ..['homeChromeGlassMaterial'] = 'liquid';
       final restored = TimetableSettings.fromJson(json);
 
       expect(restored.frostedGlassMode, FrostedGlassMode.liquidGlass);
-      expect(restored.liquidGlassHomeChromeEnabled, isTrue);
-      expect(restored.homeChromeGlassMaterial, 'progressive');
+      expect(restored.homeBandGlassMaterial, 'liquid');
     });
 
-    test('模糊总开关关（实体卡片档）时不提升，保持实录', () {
-      final json = TimetableSettings.defaults().copyWith(
-        frostedBlurEnabled: false,
-        homeChromeGlassMaterial: 'liquid',
-      ).toJson();
+    test('旧 liquid + 模糊关（实体卡片档）不提升，顶栏回渐进磨砂', () {
+      final json = TimetableSettings.defaults().toJson()
+        ..remove('homeBandGlassMaterial')
+        ..['homeChromeGlassMaterial'] = 'liquid'
+        ..['frostedBlurEnabled'] = false;
       final restored = TimetableSettings.fromJson(json);
 
       expect(restored.frostedBlurEnabled, isFalse);
       expect(restored.frostedGlassMode, isNot(FrostedGlassMode.liquidGlass));
+      expect(restored.homeBandGlassMaterial, 'progressive');
+    });
+
+    test('全局柔光 + 旧范围开 → 顶栏柔光；范围关 → 按旧镜像磨砂', () {
+      final scopeOn = TimetableSettings.defaults()
+          .copyWith(frostedGlassMode: FrostedGlassMode.softGlass)
+          .toJson()
+        ..remove('homeBandGlassMaterial')
+        ..['liquidGlassHomeChromeEnabled'] = true;
+      expect(
+        TimetableSettings.fromJson(scopeOn).homeBandGlassMaterial,
+        'soft',
+      );
+
+      final scopeOff = Map<String, dynamic>.from(scopeOn)
+        ..['liquidGlassHomeChromeEnabled'] = false;
+      expect(
+        TimetableSettings.fromJson(scopeOff).homeBandGlassMaterial,
+        'progressive',
+      );
+    });
+
+    test('全局液态 + 旧范围开 → 顶栏液态', () {
+      final json = TimetableSettings.defaults()
+          .copyWith(frostedGlassMode: FrostedGlassMode.liquidGlass)
+          .toJson()
+        ..remove('homeBandGlassMaterial')
+        ..['liquidGlassHomeChromeEnabled'] = true;
+      expect(
+        TimetableSettings.fromJson(json).homeBandGlassMaterial,
+        'liquid',
+      );
+    });
+
+    test('旧镜像高斯（headerBlurStyle=高斯 时代）→ 顶栏高斯磨砂', () {
+      final json = TimetableSettings.defaults().toJson()
+        ..remove('homeBandGlassMaterial')
+        ..['homeChromeGlassMaterial'] = 'gaussian';
+      expect(
+        TimetableSettings.fromJson(json).homeBandGlassMaterial,
+        'gaussian',
+      );
+    });
+
+    test('新键优先于旧轴，不被迁移覆盖', () {
+      final json = TimetableSettings.defaults()
+          .copyWith(homeBandGlassMaterial: 'soft')
+          .toJson()
+        ..['homeChromeGlassMaterial'] = 'liquid'
+        ..['liquidGlassHomeChromeEnabled'] = true
+        ..['frostedGlassMode'] = 'liquid';
+      final restored = TimetableSettings.fromJson(json);
+      expect(restored.homeBandGlassMaterial, 'soft');
     });
   });
 
-  group('子页顶栏模糊风格：与首页相互独立', () {
+  group('子页顶栏模糊风格：与首页材质相互独立', () {
     test('默认值为渐进模糊档', () {
       expect(TimetableSettings.defaults().subpageHeaderBlurStyle,
           HeaderBlurStyle.inspire);
@@ -190,10 +166,10 @@ void main() {
     });
 
     test('存量迁移：JSON 缺新键时沿旧 headerBlurStyle，观感不变', () {
-      final legacy = TimetableSettings.defaults().copyWith(
-        headerBlurStyle: HeaderBlurStyle.gaussian,
-      );
-      final json = legacy.toJson()..remove('subpageHeaderBlurStyle');
+      final json = TimetableSettings.defaults().toJson()
+        ..remove('subpageHeaderBlurStyle')
+        ..remove('homeBandGlassMaterial')
+        ..['headerBlurStyle'] = 'gaussian';
       final restored = TimetableSettings.fromJson(json);
 
       expect(restored.subpageHeaderBlurStyle, HeaderBlurStyle.gaussian);
@@ -201,12 +177,12 @@ void main() {
 
     test('新键存在时不被旧键覆盖，JSON 往返保留', () {
       final custom = TimetableSettings.defaults().copyWith(
-        headerBlurStyle: HeaderBlurStyle.gaussian,
+        homeBandGlassMaterial: 'gaussian',
         subpageHeaderBlurStyle: HeaderBlurStyle.inspire,
       );
       final restored = TimetableSettings.fromJson(custom.toJson());
 
-      expect(restored.headerBlurStyle, HeaderBlurStyle.gaussian);
+      expect(restored.homeBandGlassMaterial, 'gaussian');
       expect(restored.subpageHeaderBlurStyle, HeaderBlurStyle.inspire);
     });
 
@@ -220,18 +196,16 @@ void main() {
       );
     });
 
-    test('applySubpageChromeBlurStyle 只动子页字段，不碰首页风格与材质键', () {
+    test('applySubpageChromeBlurStyle 只动子页字段，不碰首页材质', () {
       final s = applySubpageChromeBlurStyle(
         TimetableSettings.defaults().copyWith(
-          headerBlurStyle: HeaderBlurStyle.gaussian,
-          homeChromeGlassMaterial: 'gaussian',
+          homeBandGlassMaterial: 'liquid',
         ),
         HeaderBlurStyle.inspire,
       );
 
       expect(s.subpageHeaderBlurStyle, HeaderBlurStyle.inspire);
-      expect(s.headerBlurStyle, HeaderBlurStyle.gaussian);
-      expect(s.homeChromeGlassMaterial, 'gaussian');
+      expect(s.homeBandGlassMaterial, 'liquid');
     });
   });
 }

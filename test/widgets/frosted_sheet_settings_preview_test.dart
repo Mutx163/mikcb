@@ -280,13 +280,13 @@ void main() {
     );
   });
 
-  group('preview scope mirrors the settings blur styles', () {
-    testWidgets('scope carries settings.headerBlurStyle / subpageHeaderBlurStyle', (
+  group('preview scope mirrors the settings band material', () {
+    testWidgets('scope carries settings.homeBandGlassMaterial / subpageHeaderBlurStyle', (
       tester,
     ) async {
       SharedPreferences.setMockInitialValues({});
       final settings = TimetableSettings.defaults().copyWith(
-        headerBlurStyle: HeaderBlurStyle.gaussian,
+        homeBandGlassMaterial: 'gaussian',
         subpageHeaderBlurStyle: HeaderBlurStyle.inspire,
       );
       final provider = await createInitializedTestProvider(tester);
@@ -309,13 +309,13 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // 回归背景（2026-09-12）：scope 漏传两档模糊风格时，预览里的首页
-      // 玻璃带（HomePageChromeGlassFill → headerBlurStyleOf）永远按默认
-      // 渐进档渲染，与真实首页不符。
+      // 回归背景（2026-09-12）：scope 漏传顶栏材质/子页风格时，预览里的
+      // 首页玻璃带（HomePageChromeGlassFill）永远按默认渐进档渲染，与真
+      // 实首页不符。
       final scope = tester.widget<FrostedAppearanceScope>(
         find.byType(FrostedAppearanceScope),
       );
-      expect(scope.appearance.headerBlurStyle, HeaderBlurStyle.gaussian);
+      expect(scope.appearance.homeBandGlassMaterial, 'gaussian');
       expect(
         scope.appearance.subpageHeaderBlurStyle,
         HeaderBlurStyle.inspire,

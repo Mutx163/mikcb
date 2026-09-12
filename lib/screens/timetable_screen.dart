@@ -596,10 +596,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           gaussianCardsDrive:
               backdropBlurOn && cardStyle == CourseCardSurfaceStyle.gaussian,
           // 预模糊位图服务的是首页玻璃带/摘要卡，跟随「首页玻璃带」开关。
-          liquidGlassChrome:
-              dockAppearance.homeChromeGlassMaterial == 'liquid' ||
-              (dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
-                  dockAppearance.liquidGlassHomeChromeEnabled),
+          liquidGlassChrome: dockAppearance.homeBandGlassMaterial == 'liquid',
           sheetBlurSigma: HyperosBlurredHeader.blurSigmaOf(context),
           liquidGlassTunedBlur:
               (dockAppearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)

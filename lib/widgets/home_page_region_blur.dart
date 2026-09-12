@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/header_blur_style.dart';
 import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos_blurred_header.dart';
-import '../ui/hyperos/inspire/inspire_header_blur.dart';
+import '../ui/hyperos/hyperos_theme.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import '../ui/hyperos/soft_glass/soft_glass_surface.dart';
 import '../utils/home_page_background.dart';
@@ -61,31 +61,10 @@ bool homePageHasAnyChromeBlur(
       settings.homePageWeekdayBarBlurEnabled;
 }
 
-/// 首页玻璃带应使用的高级材质（柔光 / 液态）；null = 走「顶栏模糊风格」
-/// 的基础磨砂（渐进 / 高斯）。
-///
-/// 主路径：全局材质为高级材质 + 「作用范围 → 首页玻璃带」开 → **跟随全局**，
-/// 与弹窗 / 底栏同一份材质，避免「两种玻璃同屏」。
-///
-/// 旧版本「玻璃材质」独立三档已下线；存量里写死 `liquid` 的用户在
-/// `TimetableSettings.fromJson` 里被**上提为全局液态**（观感不变，同时消除第二个轴），
-/// 因此这里不再保留任何 legacy 分支。
-FrostedGlassMode? homeChromeAdvancedModeOf({
-  required FrostedGlassMode glassMode,
-  required bool homeChromeScopeEnabled,
-}) {
-  if (isAdvancedGlassMode(glassMode) && homeChromeScopeEnabled) {
-    return glassMode;
-  }
-  return null;
-}
-
-/// [homeChromeAdvancedModeOf] 的 [FrostedAppearance] 便捷入口。
-FrostedGlassMode? homeChromeAdvancedGlassMode(FrostedAppearance appearance) =>
-    homeChromeAdvancedModeOf(
-      glassMode: appearance.glassMode,
-      homeChromeScopeEnabled: appearance.liquidGlassHomeChromeEnabled,
-    );
+/// 首页顶栏材质是否为高级材质（柔光 / 液态）——两者自带模糊，壁纸预模糊
+/// 需要按折射/雾面参数预热，玻璃带渲染也需要额外一帧稳定。
+bool homeBandUsesAdvancedGlass(String material) =>
+    material == 'soft' || material == 'liquid';
 
 /// Number of frames the home chrome glass needs to settle after a wallpaper
 /// swap so the backdrop capture is stable before showing the frost.
@@ -98,8 +77,7 @@ int homePageChromeSettleFrameCount({
   required bool frostedBlurEnabled,
   required bool headerBlurEnabled,
   required bool weekdayBarBlurEnabled,
-  required FrostedGlassMode glassMode,
-  bool homeChromeLiquidGlassEnabled = true,
+  required String homeBandGlassMaterial,
 }) {
   if (!hasBackdrop || !frostedBlurEnabled) {
     return 0;
@@ -109,13 +87,7 @@ int homePageChromeSettleFrameCount({
   }
   // 与 HomePageChromeGlassFill 同判：走高级材质（柔光 / 液态）需两帧稳定，
   // 基础磨砂一帧。
-  final chromeUsesAdvanced =
-      homeChromeAdvancedModeOf(
-        glassMode: glassMode,
-        homeChromeScopeEnabled: homeChromeLiquidGlassEnabled,
-      ) !=
-      null;
-  return chromeUsesAdvanced ? 2 : 1;
+  return homeBandUsesAdvancedGlass(homeBandGlassMaterial) ? 2 : 1;
 }
 
 HomePageBackgroundVisual homePageRegionChromeVisual({
@@ -302,12 +274,10 @@ class HomePageChromeGlassFill extends StatelessWidget {
   /// legibility scrim any more, so neither does the stand-in.
   static Color standInWashColor(BuildContext context) {
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+    // 与 [HomePageChromeGlassFill.build] 同判：柔光/液态仅在模糊可用时上带。
+    final material = HyperosBlurredHeader.homeBandGlassMaterialOf(context);
     final appearance = FrostedAppearanceScope.of(context);
-    // 与 [HomePageChromeGlassFill.build] 同判。
-    final advancedMode = useBlur
-        ? homeChromeAdvancedGlassMode(appearance)
-        : null;
-    if (advancedMode == FrostedGlassMode.softGlass) {
+    if (material == 'soft' && useBlur) {
       // 底色倍率 = 配方倍率 × 用户调参（与 SoftGlassSurface 的 fill 同口径）。
       return SoftGlassTokens.tint(
         context,
@@ -317,7 +287,7 @@ class HomePageChromeGlassFill extends StatelessWidget {
             appearance.softGlassTuning.tintAlphaMultiplier,
       );
     }
-    if (advancedMode == FrostedGlassMode.liquidGlass) {
+    if (material == 'liquid' && useBlur) {
       return HyperosLiquidGlassSurface.settingsForRole(
         role: HyperosLiquidGlassRole.header,
         brightness: Theme.of(context).brightness,
@@ -333,124 +303,80 @@ class HomePageChromeGlassFill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-    final appearance = FrostedAppearanceScope.of(context);
-    // 仅首页玻璃带走高级材质时走高级面；子页顶栏不经此入口。
-    final advancedMode = useBlur
-        ? homeChromeAdvancedGlassMode(appearance)
-        : null;
-
+    // 首页顶栏材质独立自由选择（2026-09-12）：渐进磨砂 / 高斯磨砂 / 柔光 /
+    // 液态 / 实体，与全局玻璃模式及「作用范围」开关无关。柔光/液态自带模
+    // 糊，但沿用 useBlur 门：模糊总开关关闭或系统降级时回落实底衬底，与旧
+    // 高级材质路径的降级口径一致。
+    final material = HyperosBlurredHeader.homeBandGlassMaterialOf(context);
     const fill = SizedBox.expand();
 
-    // 柔光：与弹窗 / 底栏同一套雾面材质。玻璃带是窄条，走
-    // [SoftGlassRecipe.floatingNavigation] 轻配方（σ ≈ 13.78）；dialog 配方
-    // （σ ≈ 53.6）在整条通栏上过重且更贵。顶栏模糊风格（2026-09-12 起柔光
-    // 也跟随）在 [SoftGlassHomeBand] 内分派：渐进 = inspire 可变模糊层叠，
-    // 高斯 = 原生雾面。分派独立成 widget，便于不依赖模糊总开关的环境直接
-    // 测试（VM 下 useBlur 恒为 false，柔光分支从这里不可达）。
-    if (advancedMode == FrostedGlassMode.softGlass) {
-      return SoftGlassHomeBand(
-        blurStyle: HyperosBlurredHeader.headerBlurStyleOf(context),
-        blurEnabled: useBlur,
-        borderRadius: BorderRadius.circular(borderRadius),
-      );
-    }
-
-    if (advancedMode == FrostedGlassMode.liquidGlass) {
-      return HyperosLiquidGlassSurface(
-        role: HyperosLiquidGlassRole.header,
-        borderRadius: borderRadius,
-        useAncestorBackdropGroup: useAncestorBackdropGroup,
-        maxThickness: maxThickness,
-        child: fill,
-      );
-    }
-
-    final frost = FrostedHeaderBackground(
-      blurEnabled: useBlur,
-      blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-      blurStyle: HyperosBlurredHeader.headerBlurStyleOf(context),
-      tint: HyperosBlurredHeader.homePageRegionTintColor(
-        context,
-        withBlur: useBlur,
-      ),
-      child: fill,
-    );
-    if (borderRadius <= 0) {
-      return frost;
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: frost,
-    );
-  }
-}
-
-/// 柔光首页玻璃带：顶栏模糊风格在柔光材质下的实现。
-///
-/// 渐进档 = inspire 可变模糊（上浓下淡），**雾面底色同频衰减**（柔光雾面
-/// 色交给 [InspireHeaderBlur] 的渐进衬底画：顶边全雾、底边全清，与磨砂渐
-/// 进同口径）；高斯档 = 原生 [SoftGlassSurface]（均匀雾）。
-///
-/// 为什么层叠且渐进档要关掉 [SoftGlassSurface] 内部模糊：inspire 可变模糊
-/// 是 widget 级渲染（自带几何测量与 backdrop pass），进不了 SoftGlassSurface
-/// 的 `ImageFilter.compose`；而若让 SoftGlassSurface 继续出它自己的均匀高
-/// 斯，双层模糊会把可变衰减重新抹平（底边被均匀 σ 再糊一遍），雾面若再
-/// 叠一层均匀底色也会把底边的「清」盖回去——两者都会退化回「均匀柔光」。
-/// 所以渐进档里 SoftGlassSurface 只负责边缘高光。代价：组合带不带折射透
-/// 镜（衰减到 0 的底边套透镜剖面本就失真）。
-class SoftGlassHomeBand extends StatelessWidget {
-  const SoftGlassHomeBand({
-    required this.blurStyle,
-    required this.blurEnabled,
-    this.borderRadius = BorderRadius.zero,
-    super.key,
-  });
-
-  /// 顶栏模糊风格（渐进 / 高斯），从 [HyperosBlurredHeader.headerBlurStyleOf]
-  /// 读入；渐进档启用可变模糊层叠，高斯档走原生雾面。
-  final HeaderBlurStyle blurStyle;
-
-  /// 模糊总开关（调用方已并入 liveBlurSupported 等判定）。
-  final bool blurEnabled;
-
-  final BorderRadius borderRadius;
-
-  @override
-  Widget build(BuildContext context) {
-    final tuning = FrostedAppearanceScope.of(context).softGlassTuning;
-    final fog = SoftGlassTokens.tint(
-      context,
-      blurEnabled: blurEnabled,
-      tintAlphaMultiplier:
-          SoftGlassRecipe.floatingNavigation.tintAlphaMultiplier *
-          tuning.tintAlphaMultiplier,
-    );
-    if (blurStyle == HeaderBlurStyle.inspire) {
-      return InspireHeaderBlur(
-        // 柔光雾面跟随模糊衰减：InspireHeaderBlur 的渐进衬底顶边全雾、
-        // 底边全清（progressiveTintBottomScale = 0），正合「上浓下淡」。
-        tint: fog,
-        blurEnabled: blurEnabled,
-        blurSigma: SoftGlassRecipe.floatingNavigation.blurSigmaWithMultiplier(
-          tuning.blurRadiusMultiplier,
-        ),
-        style: blurStyle,
-        child: SoftGlassSurface(
+    switch (material) {
+      case 'liquid' when useBlur:
+        return HyperosLiquidGlassSurface(
+          role: HyperosLiquidGlassRole.header,
           borderRadius: borderRadius,
-          // 只出边缘高光：内部均匀高斯与雾面都不可再叠（见类注释）。
-          blurEnabled: false,
+          useAncestorBackdropGroup: useAncestorBackdropGroup,
+          maxThickness: maxThickness,
+          child: fill,
+        );
+      case 'soft' when useBlur:
+        // 柔光：与弹窗 / 底栏同一套雾面材质。玻璃带是窄条，走
+        // [SoftGlassRecipe.floatingNavigation] 轻配方（σ ≈ 13.78）；dialog
+        // 配方（σ ≈ 53.6）在整条通栏上过重且更贵。
+        return SoftGlassSurface(
+          borderRadius: BorderRadius.circular(borderRadius),
           enableShadows: false,
-          tint: Colors.transparent,
-          child: const SizedBox.expand(),
-        ),
-      );
+          child: fill,
+        );
+      case 'gaussian':
+      case 'progressive':
+        final frost = FrostedHeaderBackground(
+          blurEnabled: useBlur,
+          blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
+          blurStyle: material == 'gaussian'
+              ? HeaderBlurStyle.gaussian
+              : HeaderBlurStyle.inspire,
+          tint: HyperosBlurredHeader.homePageRegionTintColor(
+            context,
+            withBlur: useBlur,
+          ),
+          child: fill,
+        );
+        if (borderRadius <= 0) {
+          return frost;
+        }
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: frost,
+        );
+      case 'solid':
+        // 实体档：用户显式选择的不透明顶栏——页面底色实心条，完全遮住
+        // 壁纸。与 default 分支的「淡色衬底」是两回事：那是不模糊时的降
+        // 级态水洗（半透明），这不是。
+        final solid = ColoredBox(
+          color: HyperosColors.scaffoldBackground(context),
+          child: fill,
+        );
+        if (borderRadius <= 0) {
+          return solid;
+        }
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: solid,
+        );
+      default:
+        // 柔光/液态在模糊总开关关闭（或系统降级）时的回落：保留既有口径
+        // 的淡色半透明衬底（「模糊关=只剩纯色衬底」）。
+        return FrostedHeaderBackground(
+          blurEnabled: false,
+          blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
+          tint: HyperosBlurredHeader.homePageRegionTintColor(
+            context,
+            withBlur: false,
+          ),
+          child: fill,
+        );
     }
-    return SoftGlassSurface(
-      borderRadius: borderRadius,
-      blurEnabled: blurEnabled,
-      enableShadows: false,
-      child: const SizedBox.expand(),
-    );
   }
 }
 

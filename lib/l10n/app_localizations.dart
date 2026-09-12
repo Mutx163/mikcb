@@ -6123,12 +6123,6 @@ abstract class AppLocalizations {
   /// **'状态栏'**
   String get homePageBackgroundScopeStatusBar;
 
-  /// No description provided for @homePageBackgroundScopeTimetable.
-  ///
-  /// In zh, this message translates to:
-  /// **'课表区域'**
-  String get homePageBackgroundScopeTimetable;
-
   /// No description provided for @homePageBackgroundScopeWeekdayBar.
   ///
   /// In zh, this message translates to:
@@ -6140,24 +6134,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'顶栏'**
   String get homePageBackgroundScopeHeader;
-
-  /// No description provided for @homePageBackgroundScopeChrome.
-  ///
-  /// In zh, this message translates to:
-  /// **'顶栏壁纸'**
-  String get homePageBackgroundScopeChrome;
-
-  /// No description provided for @homePageBackgroundScopeChromeSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **''**
-  String get homePageBackgroundScopeChromeSubtitle;
-
-  /// No description provided for @homePageHeaderBlurTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'顶栏玻璃'**
-  String get homePageHeaderBlurTitle;
 
   /// No description provided for @homePageHeaderBlurSubtitle.
   ///
@@ -17647,11 +17623,11 @@ abstract class AppLocalizations {
   /// **'地点匹配优先于日期规则。'**
   String get scheduleDateRuleNote;
 
-  /// No description provided for @headerBlurStyleLabel.
+  /// No description provided for @homeBandGlassMaterialLabel.
   ///
   /// In zh, this message translates to:
-  /// **'首页顶栏模糊风格'**
-  String get headerBlurStyleLabel;
+  /// **'首页顶栏玻璃'**
+  String get homeBandGlassMaterialLabel;
 
   /// No description provided for @headerBlurStyleGaussian.
   ///
@@ -17664,12 +17640,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'渐进模糊'**
   String get headerBlurStyleInspire;
-
-  /// No description provided for @headerBlurStyleSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'渐进模糊上浓下淡，高斯模糊整带均匀'**
-  String get headerBlurStyleSubtitle;
 
   /// No description provided for @subpageHeaderBlurStyleLabel.
   ///
@@ -17820,12 +17790,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'首页玻璃带'**
   String get liquidGlassScopeHomeChromeTitle;
-
-  /// No description provided for @liquidGlassScopeHomeChromeSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'标题栏与星期栏的玻璃背景带'**
-  String get liquidGlassScopeHomeChromeSubtitle;
 
   /// No description provided for @liquidGlassScopeDockTitle.
   ///

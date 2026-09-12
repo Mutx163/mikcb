@@ -6,16 +6,17 @@ import '../ui/hyperos/frosted/frosted_appearance.dart' show FrostedGlassMode;
 
 /// 「质感方案」预设：一键把一组材质轴写穿成推荐的搭配。
 ///
-/// 用户 2026-09-12 拍板前的现状是 4 条调整路线 × 9 个轴（全局玻璃模式、
-/// 6 个作用范围开关、两档顶栏风格、卡片表面、各调参滑杆），想要某个整体
-/// 观感要到 3 个页面逐项拨。预设是**纯增量层**：写穿既有字段、不锁定、
-/// 不新增持久化字段——[texturePresetOf] 每次按「当前值 vs 预设声明字段集」
-/// 派生显示，应用后用户改任何一项即回落「自定义」。
+/// 用户 2026-09-12 拍板前的现状是 4 条调整路线 × 多个轴（全局玻璃模式、
+/// 5 个作用范围开关、子页顶栏风格、首页顶栏材质、卡片表面、各调参滑杆），
+/// 想要某个整体观感要到 3 个页面逐项拨。预设是**纯增量层**：写穿既有字段、
+/// 不锁定、不新增持久化字段——[texturePresetOf] 每次按「当前值 vs 预设声明
+/// 字段集」派生显示，应用后用户改任何一项即回落「自定义」。
 ///
 /// 边界（既有拍板，全部保留）：
-/// - 首页 / 子页顶栏风格两轴独立，预设只写初值不合并；
-/// - 单一全局材质轴 + 作用范围开关的结构不变（不恢复每表面独立材质）；
-/// - 底栏材质跟随全局；子页顶栏永不走液态；
+/// - 首页顶栏材质（五档自由选）与子页顶栏风格独立，预设只写初值不合并；
+/// - 单一全局材质轴 + 作用范围开关的结构不变（不恢复每表面独立材质，
+///   首页顶栏是唯一的例外，2026-09-12 拍板）；
+/// - 子页顶栏永不走液态；
 /// - 不碰壁纸、字色等非材质字段。
 enum TexturePreset {
   /// 经典磨砂——出厂默认档：全局高斯 + 现行默认作用范围 + 渐进/渐进 +
@@ -52,13 +53,11 @@ TimetableSettings applyTexturePreset(
         TimetableSettings.defaultLiquidGlassSelectSheetEnabled,
     liquidGlassSheetDialogEnabled:
         TimetableSettings.defaultLiquidGlassSheetDialogEnabled,
-    liquidGlassHomeChromeEnabled:
-        TimetableSettings.defaultLiquidGlassHomeChromeEnabled,
     liquidGlassDockEnabled: TimetableSettings.defaultLiquidGlassDockEnabled,
     liquidGlassPickerButtonsEnabled:
         TimetableSettings.defaultLiquidGlassPickerButtonsEnabled,
-    headerBlurStyle: HeaderBlurStyle.inspire,
     subpageHeaderBlurStyle: HeaderBlurStyle.inspire,
+    homeBandGlassMaterial: TimetableSettings.defaultHomeBandGlassMaterial,
     courseCardSurfaceStyle: CourseCardSurfaceStyle.solid,
   ),
   TexturePreset.fullLiquid => settings.copyWith(
@@ -67,11 +66,11 @@ TimetableSettings applyTexturePreset(
     liquidGlassPopupEnabled: true,
     liquidGlassSelectSheetEnabled: true,
     liquidGlassSheetDialogEnabled: true,
-    liquidGlassHomeChromeEnabled: true,
     liquidGlassDockEnabled: true,
     liquidGlassPickerButtonsEnabled: true,
     liquidGlassPreset: LiquidGlassPreset.standard,
     liquidGlassTuning: LiquidGlassPreset.standard.recommendedTuning,
+    homeBandGlassMaterial: 'liquid',
     courseCardSurfaceStyle: CourseCardSurfaceStyle.gaussian,
   ),
   TexturePreset.softMist => settings.copyWith(
@@ -80,16 +79,17 @@ TimetableSettings applyTexturePreset(
     liquidGlassPopupEnabled: true,
     liquidGlassSelectSheetEnabled: false,
     liquidGlassSheetDialogEnabled: true,
-    liquidGlassHomeChromeEnabled: true,
     liquidGlassDockEnabled: false,
     liquidGlassPickerButtonsEnabled: false,
     softGlassPreset: SoftGlassPreset.standard,
     softGlassTuning: SoftGlassPreset.standard.recommendedTuning,
+    homeBandGlassMaterial: 'soft',
     courseCardSurfaceStyle: CourseCardSurfaceStyle.solid,
   ),
   TexturePreset.minimalSolid => settings.copyWith(
     frostedBlurEnabled: false,
     frostedGlassMode: FrostedGlassMode.frosted,
+    homeBandGlassMaterial: 'solid',
     courseCardSurfaceStyle: CourseCardSurfaceStyle.solid,
   ),
 };
@@ -110,47 +110,48 @@ TexturePreset? texturePresetOf(TimetableSettings s) {
       s.liquidGlassPopupEnabled == d.liquidGlassPopupEnabled &&
       s.liquidGlassSelectSheetEnabled == d.liquidGlassSelectSheetEnabled &&
       s.liquidGlassSheetDialogEnabled == d.liquidGlassSheetDialogEnabled &&
-      s.liquidGlassHomeChromeEnabled == d.liquidGlassHomeChromeEnabled &&
       s.liquidGlassDockEnabled == d.liquidGlassDockEnabled &&
       s.liquidGlassPickerButtonsEnabled ==
           d.liquidGlassPickerButtonsEnabled &&
-      s.headerBlurStyle == HeaderBlurStyle.inspire &&
       s.subpageHeaderBlurStyle == HeaderBlurStyle.inspire &&
+      s.homeBandGlassMaterial == TimetableSettings.defaultHomeBandGlassMaterial &&
       s.courseCardSurfaceStyle == CourseCardSurfaceStyle.solid) {
     return TexturePreset.classicFrost;
   }
-  // 全液态：全局液态 + 六范围全开 + 标准预设（调参须与标准一致）+ 高斯卡。
+  // 全液态：全局液态 + 五范围全开 + 顶栏液态 + 标准预设（调参须与标准
+  // 一致）+ 高斯卡。
   if (s.frostedBlurEnabled &&
       s.frostedGlassMode == FrostedGlassMode.liquidGlass &&
       s.liquidGlassPopupEnabled &&
       s.liquidGlassSelectSheetEnabled &&
       s.liquidGlassSheetDialogEnabled &&
-      s.liquidGlassHomeChromeEnabled &&
       s.liquidGlassDockEnabled &&
       s.liquidGlassPickerButtonsEnabled &&
       s.liquidGlassPreset == LiquidGlassPreset.standard &&
       s.liquidGlassTuning == LiquidGlassPreset.standard.recommendedTuning &&
+      s.homeBandGlassMaterial == 'liquid' &&
       s.courseCardSurfaceStyle == CourseCardSurfaceStyle.gaussian) {
     return TexturePreset.fullLiquid;
   }
-  // 轻雾柔光：全局柔光 + 弹窗/对话框/首页玻璃带走柔光、坞/面板/按钮保持
-  // 磨砂 + 柔光标准预设 + 实体卡。
+  // 轻雾柔光：全局柔光 + 弹窗/对话框走柔光、坞/面板/按钮保持磨砂 + 顶栏
+  // 柔光 + 柔光标准预设 + 实体卡。
   if (s.frostedBlurEnabled &&
       s.frostedGlassMode == FrostedGlassMode.softGlass &&
       s.liquidGlassPopupEnabled &&
       !s.liquidGlassSelectSheetEnabled &&
       s.liquidGlassSheetDialogEnabled &&
-      s.liquidGlassHomeChromeEnabled &&
       !s.liquidGlassDockEnabled &&
       !s.liquidGlassPickerButtonsEnabled &&
       s.softGlassPreset == SoftGlassPreset.standard &&
       s.softGlassTuning == SoftGlassPreset.standard.recommendedTuning &&
+      s.homeBandGlassMaterial == 'soft' &&
       s.courseCardSurfaceStyle == CourseCardSurfaceStyle.solid) {
     return TexturePreset.softMist;
   }
-  // 极简实体：模糊关 + 经典磨砂模式 + 实体卡。只看这三个字段。
+  // 极简实体：模糊关 + 经典磨砂模式 + 顶栏实体 + 实体卡。
   if (!s.frostedBlurEnabled &&
       s.frostedGlassMode == FrostedGlassMode.frosted &&
+      s.homeBandGlassMaterial == 'solid' &&
       s.courseCardSurfaceStyle == CourseCardSurfaceStyle.solid) {
     return TexturePreset.minimalSolid;
   }

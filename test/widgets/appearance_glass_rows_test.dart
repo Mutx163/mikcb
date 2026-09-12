@@ -14,7 +14,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
@@ -105,7 +104,7 @@ void main() {
         .setMockMethodCallHandler(liveChannel, null);
   });
 
-  testWidgets('默认设置下两行风格恒常显示，附人话提示语', (tester) async {
+  testWidgets('默认设置下顶栏材质行与子页风格行恒常显示', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(TimetableSettings.defaults());
@@ -117,12 +116,11 @@ void main() {
     expect(find.text('质感方案'), findsOneWidget);
     expect(find.text('经典磨砂'), findsWidgets);
 
-    await _scrollTo(tester, find.text('首页顶栏模糊风格'));
-    expect(find.text('首页顶栏模糊风格'), findsOneWidget);
+    // 首页顶栏玻璃（材质自由五档，默认渐进磨砂）+ 子页顶栏风格两档。
+    await _scrollTo(tester, find.text('首页顶栏玻璃'));
+    expect(find.text('首页顶栏玻璃'), findsOneWidget);
     expect(find.text('子页顶栏模糊风格'), findsOneWidget);
-    // 两行当前值都是渐进模糊。
     expect(find.text('渐进模糊'), findsWidgets);
-    // 长提示语已按「改设计而非写文案」拍板删除；液态例外由置灰自解释。
 
     // 「各表面当前材质」地图卡存在，含表面行，且右侧材质值真实渲染
     // （HyperosListTile.details 只在可点行画，曾把整卡打成灰色空行）。
@@ -132,7 +130,7 @@ void main() {
     expect(find.text('实体'), findsWidgets);
   });
 
-  testWidgets('全局柔光下两行仍常显（不回归条件隐藏）', (tester) async {
+  testWidgets('全局柔光下顶栏材质行仍常显、恒可用（不回归条件限制）', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(
@@ -142,71 +140,50 @@ void main() {
     );
 
     await _openAppearanceSettings(tester);
-    await _scrollTo(tester, find.text('首页顶栏模糊风格'));
+    await _scrollTo(tester, find.text('首页顶栏玻璃'));
 
-    expect(find.text('首页顶栏模糊风格'), findsOneWidget);
+    // 材质自由选择后不存在任何「暂不可用」状态：行恒可用。
+    expect(
+      tester
+          .widget<HyperosSelectTile<String>>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is HyperosSelectTile<String> &&
+                  widget.label == '首页顶栏玻璃',
+            ),
+          )
+          .enabled,
+      isTrue,
+    );
     expect(find.text('子页顶栏模糊风格'), findsOneWidget);
   });
 
-  testWidgets('液态 + 首页玻璃带范围开：首页行置灰自解释，子页行不受影响', (
-    tester,
-  ) async {
+  testWidgets('全局液态下顶栏可选液态玻璃且行恒可用（自由选择回归钉）', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(
       TimetableSettings.defaults().copyWith(
         frostedGlassMode: FrostedGlassMode.liquidGlass,
-        liquidGlassHomeChromeEnabled: true,
+        homeBandGlassMaterial: 'liquid',
       ),
     );
 
     await _openAppearanceSettings(tester);
-    await _scrollTo(tester, find.text('首页顶栏模糊风格'));
+    await _scrollTo(tester, find.text('首页顶栏玻璃'));
 
-    Finder rowByLabel(String label) => find.byWidgetPredicate(
-      (widget) => widget is HyperosSelectTile<HeaderBlurStyle> && widget.label == label,
-    );
-
-    // 长提示语的替代设计：液态例外不再用文案解释，首页行直接置灰禁用
-    // （行仍常驻页面，不违反「不做条件隐藏」拍板）；子页永不走液态，
-    // 恒可用。切回高斯/柔光（或关首页玻璃带范围）即恢复可用。
     expect(
-      tester.widget<HyperosSelectTile<HeaderBlurStyle>>(
-        rowByLabel('首页顶栏模糊风格'),
-      ).enabled,
-      isFalse,
-    );
-    expect(
-      tester.widget<HyperosSelectTile<HeaderBlurStyle>>(
-        rowByLabel('子页顶栏模糊风格'),
-      ).enabled,
+      tester
+          .widget<HyperosSelectTile<String>>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is HyperosSelectTile<String> &&
+                  widget.label == '首页顶栏玻璃',
+            ),
+          )
+          .enabled,
       isTrue,
     );
-  });
-
-  testWidgets('液态但首页玻璃带范围关：首页风格仍生效，行不禁用', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(800, 1200));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    _seedPrefs(
-      TimetableSettings.defaults().copyWith(
-        frostedGlassMode: FrostedGlassMode.liquidGlass,
-        liquidGlassHomeChromeEnabled: false,
-      ),
-    );
-
-    await _openAppearanceSettings(tester);
-    await _scrollTo(tester, find.text('首页顶栏模糊风格'));
-
-    // 范围关时液态回退基础磨砂，风格参与渲染 → 行保持可用。
-    expect(
-      tester.widget<HyperosSelectTile<HeaderBlurStyle>>(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is HyperosSelectTile<HeaderBlurStyle> &&
-              widget.label == '首页顶栏模糊风格',
-        ),
-      ).enabled,
-      isTrue,
-    );
+    // 当前值如实显示为液态玻璃，与地图卡口径一致。
+    expect(find.text('液态玻璃'), findsWidgets);
   });
 }

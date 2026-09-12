@@ -30,8 +30,8 @@ void main() {
       timetablePageBackgroundColor: '#ABCDEF',
       homePageBackgroundScope: 15,
       homePageHeaderBlurEnabled: true,
-      headerBlurStyle: HeaderBlurStyle.gaussian,
-      homeChromeGlassMaterial: 'liquid',
+      subpageHeaderBlurStyle: HeaderBlurStyle.gaussian,
+      homeBandGlassMaterial: 'liquid',
       weekdayBarFontColorLight: '#222222',
       homePageWallpaperPath: '/tmp/wallpaper.png',
       wallpaperHistory: const [
@@ -49,7 +49,6 @@ void main() {
       liquidGlassPopupEnabled: false,
       liquidGlassSelectSheetEnabled: true,
       liquidGlassSheetDialogEnabled: false,
-      liquidGlassHomeChromeEnabled: false,
       liquidGlassDockEnabled: false,
       liquidGlassPickerButtonsEnabled: false,
       // 首页与导航（自外观页拆出的独立恢复作用域）
@@ -158,12 +157,8 @@ void main() {
       result.homePageHeaderBlurEnabled,
       defaults.homePageHeaderBlurEnabled,
     );
-    expect(result.headerBlurStyle, defaults.headerBlurStyle);
-    expect(result.homeChromeGlassMaterial, defaults.homeChromeGlassMaterial);
-    expect(
-      result.liquidGlassHomeChromeEnabled,
-      defaults.liquidGlassHomeChromeEnabled,
-    );
+    expect(result.subpageHeaderBlurStyle, defaults.subpageHeaderBlurStyle);
+    expect(result.homeBandGlassMaterial, defaults.homeBandGlassMaterial);
     expect(result.weekdayBarFontColorLight, defaults.weekdayBarFontColorLight);
     // 壁纸文件路径必须一并清掉，否则「恢复默认」后背景还在。
     expect(result.homePageWallpaperPath, isNull);
@@ -195,7 +190,6 @@ void main() {
     expect(result.liquidGlassPopupEnabled, isTrue);
     expect(result.liquidGlassSelectSheetEnabled, isFalse);
     expect(result.liquidGlassSheetDialogEnabled, isTrue);
-    expect(result.liquidGlassHomeChromeEnabled, isTrue);
     expect(result.liquidGlassDockEnabled, isTrue);
     expect(result.liquidGlassPickerButtonsEnabled, isTrue);
 

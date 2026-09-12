@@ -3377,22 +3377,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homePageBackgroundScopeStatusBar => '상태 표시줄';
 
   @override
-  String get homePageBackgroundScopeTimetable => '시간표 영역';
-
-  @override
   String get homePageBackgroundScopeWeekdayBar => '정보 바';
 
   @override
   String get homePageBackgroundScopeHeader => '상단 바';
-
-  @override
-  String get homePageBackgroundScopeChrome => '상단 배경화면';
-
-  @override
-  String get homePageBackgroundScopeChromeSubtitle => '';
-
-  @override
-  String get homePageHeaderBlurTitle => '상단 바 유리';
 
   @override
   String get homePageHeaderBlurSubtitle => '';
@@ -10078,16 +10066,13 @@ class AppLocalizationsKo extends AppLocalizations {
       'Location match takes priority over date rules.';
 
   @override
-  String get headerBlurStyleLabel => '홈 상단 바 블러 스타일';
+  String get homeBandGlassMaterialLabel => '홈 상단 바 유리';
 
   @override
   String get headerBlurStyleGaussian => '가우시안 블러';
 
   @override
   String get headerBlurStyleInspire => '점진 블러';
-
-  @override
-  String get headerBlurStyleSubtitle => '프로그레시브는 위에서 연해지고, 가우시안은 균일합니다';
 
   @override
   String get subpageHeaderBlurStyleLabel => '하위 페이지 상단 바 블러 스타일';
@@ -10165,9 +10150,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liquidGlassScopeHomeChromeTitle => '홈 유리 밴드';
-
-  @override
-  String get liquidGlassScopeHomeChromeSubtitle => '제목 표시줄과 요일 표시줄의 유리 배경';
 
   @override
   String get liquidGlassScopeDockTitle => '글래스 독 내비게이션';

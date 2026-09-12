@@ -280,30 +280,9 @@ class _TimetablePageSettingsScreenState
                   );
                 },
               ),
-              // 壁纸透出范围：顶栏 / 课表两条开关。
-              HyperosSwitchTile(
-                title: l10n.homePageBackgroundScopeChrome,
-                value: _chromeWallpaperEnabled,
-                onChanged: _setChromeWallpaperEnabled,
-              ),
-              HyperosSwitchTile(
-                title: l10n.homePageBackgroundScopeTimetable,
-                value: HomePageBackgroundScope.includes(
-                  _draft.homePageBackgroundScope,
-                  HomePageBackgroundScope.timetable,
-                ),
-                onChanged: (value) => _toggleBackgroundScope(
-                  HomePageBackgroundScope.timetable,
-                  value,
-                ),
-              ),
-              // 顶栏玻璃总开关。风格两行（渐进 / 高斯）在「外观与配色」页
-              // ——它们是材质选择，不随壁纸区走；此处只留带子的显示开关。
-              HyperosSwitchTile(
-                title: l10n.homePageHeaderBlurTitle,
-                value: _chromeGlassEnabled,
-                onChanged: _setChromeGlassEnabled,
-              ),
+              // 「壁纸透出范围」与「顶栏玻璃」开关已下线（2026-09-12）：
+              // 壁纸有就整体透出；顶栏玻璃归「外观与配色 → 首页顶栏玻璃」
+              // 材质五档（不想要玻璃选实体），此处不再保留重复入口。
             ],
           ),
         ],
@@ -320,52 +299,6 @@ class _TimetablePageSettingsScreenState
       ),
       _ => const SizedBox.shrink(),
     };
-  }
-
-  /// 壁纸「顶栏区域」= 状态栏 | 顶栏 | 信息栏 三位合一。
-  static const int _chromeWallpaperScopeMask =
-      HomePageBackgroundScope.statusBar |
-      HomePageBackgroundScope.header |
-      HomePageBackgroundScope.weekdayBar;
-
-  bool get _chromeWallpaperEnabled =>
-      (_draft.homePageBackgroundScope & _chromeWallpaperScopeMask) ==
-      _chromeWallpaperScopeMask;
-
-  void _setChromeWallpaperEnabled(bool enabled) {
-    _updateDraft(
-      _draft.copyWith(
-        homePageBackgroundScope: enabled
-            ? _draft.homePageBackgroundScope | _chromeWallpaperScopeMask
-            : _draft.homePageBackgroundScope & ~_chromeWallpaperScopeMask,
-      ),
-    );
-  }
-
-  /// 顶栏玻璃开关：状态栏 + 标题栏 + 信息栏玻璃带同开同关。
-  bool get _chromeGlassEnabled =>
-      _draft.homePageHeaderBlurEnabled ||
-      _draft.homePageWeekdayBarBlurEnabled;
-
-  void _setChromeGlassEnabled(bool enabled) {
-    _updateDraft(
-      _draft.copyWith(
-        homePageHeaderBlurEnabled: enabled,
-        homePageWeekdayBarBlurEnabled: enabled,
-      ),
-    );
-  }
-
-  void _toggleBackgroundScope(int scope, bool enabled) {
-    _updateDraft(
-      _draft.copyWith(
-        homePageBackgroundScope: HomePageBackgroundScope.toggle(
-          _draft.homePageBackgroundScope,
-          scope,
-          enabled: enabled,
-        ),
-      ),
-    );
   }
 
   /// 内置壁纸的全部选项（含「不使用」），顺序与设置页展示顺序一致。

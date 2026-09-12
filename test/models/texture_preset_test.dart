@@ -49,14 +49,14 @@ void main() {
     });
 
     test('「极简实体」不因不可达轴的杂值误判为自定义', () {
-      // 实体档下作用范围 / 调参 / 风格不可达：残留任意值仍应命中。
+      // 实体档下作用范围 / 调参 / 子页风格不可达：残留任意值仍应命中。
       final noisy = applyTexturePreset(
         TimetableSettings.defaults(),
         TexturePreset.minimalSolid,
       ).copyWith(
         liquidGlassPopupEnabled: false,
         liquidGlassDockEnabled: false,
-        headerBlurStyle: HeaderBlurStyle.gaussian,
+        subpageHeaderBlurStyle: HeaderBlurStyle.gaussian,
         softGlassPreset: SoftGlassPreset.dense,
         liquidGlassTuning: LiquidGlassTuning.presetDense,
       );
@@ -91,26 +91,26 @@ void main() {
       expect(applied.courseCardSurfaceStyle, CourseCardSurfaceStyle.solid);
     });
 
-    test('全液态：六范围全开 + 液态标准预设 + 高斯卡，不碰顶栏风格与磨砂滑杆', () {
+    test('全液态：五范围全开 + 顶栏液态 + 液态标准预设 + 高斯卡，不碰子页风格与磨砂滑杆', () {
       final base = TimetableSettings.defaults().copyWith(
         frostedSheetBlurSigma: 20,
-        headerBlurStyle: HeaderBlurStyle.gaussian,
+        subpageHeaderBlurStyle: HeaderBlurStyle.gaussian,
       );
       final applied = applyTexturePreset(base, TexturePreset.fullLiquid);
       expect(applied.frostedGlassMode, FrostedGlassMode.liquidGlass);
       expect(applied.liquidGlassPopupEnabled, isTrue);
       expect(applied.liquidGlassSelectSheetEnabled, isTrue);
       expect(applied.liquidGlassSheetDialogEnabled, isTrue);
-      expect(applied.liquidGlassHomeChromeEnabled, isTrue);
       expect(applied.liquidGlassDockEnabled, isTrue);
       expect(applied.liquidGlassPickerButtonsEnabled, isTrue);
       expect(applied.liquidGlassPreset, LiquidGlassPreset.standard);
       expect(applied.liquidGlassTuning,
           LiquidGlassPreset.standard.recommendedTuning);
+      expect(applied.homeBandGlassMaterial, 'liquid');
       expect(applied.courseCardSurfaceStyle, CourseCardSurfaceStyle.gaussian);
       // 未声明的轴原样保留。
       expect(applied.frostedSheetBlurSigma, 20);
-      expect(applied.headerBlurStyle, HeaderBlurStyle.gaussian);
+      expect(applied.subpageHeaderBlurStyle, HeaderBlurStyle.gaussian);
     });
 
     test('轻雾柔光：坞/面板/按钮保持磨砂，柔光标准预设 + 实体卡', () {
@@ -122,22 +122,23 @@ void main() {
       expect(applied.liquidGlassPopupEnabled, isTrue);
       expect(applied.liquidGlassSelectSheetEnabled, isFalse);
       expect(applied.liquidGlassSheetDialogEnabled, isTrue);
-      expect(applied.liquidGlassHomeChromeEnabled, isTrue);
       expect(applied.liquidGlassDockEnabled, isFalse);
       expect(applied.liquidGlassPickerButtonsEnabled, isFalse);
       expect(applied.softGlassPreset, SoftGlassPreset.standard);
       expect(applied.softGlassTuning,
           SoftGlassPreset.standard.recommendedTuning);
+      expect(applied.homeBandGlassMaterial, 'soft');
       expect(applied.courseCardSurfaceStyle, CourseCardSurfaceStyle.solid);
     });
 
-    test('极简实体：模糊关 + 磨砂模式 + 实体卡，作用范围原样保留', () {
+    test('极简实体：模糊关 + 磨砂模式 + 顶栏实体 + 实体卡，作用范围原样保留', () {
       final applied = applyTexturePreset(
         TimetableSettings.defaults().copyWith(liquidGlassDockEnabled: false),
         TexturePreset.minimalSolid,
       );
       expect(applied.frostedBlurEnabled, isFalse);
       expect(applied.frostedGlassMode, FrostedGlassMode.frosted);
+      expect(applied.homeBandGlassMaterial, 'solid');
       expect(applied.courseCardSurfaceStyle, CourseCardSurfaceStyle.solid);
       // 未声明的轴原样保留。
       expect(applied.liquidGlassDockEnabled, isFalse);

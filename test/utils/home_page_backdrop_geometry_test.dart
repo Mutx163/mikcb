@@ -41,7 +41,7 @@ void main() {
           frostedBlurEnabled: true,
           headerBlurEnabled: true,
           weekdayBarBlurEnabled: false,
-          glassMode: FrostedGlassMode.gaussian,
+          homeBandGlassMaterial: 'progressive',
         ),
         0,
       );
@@ -51,7 +51,7 @@ void main() {
           frostedBlurEnabled: false,
           headerBlurEnabled: true,
           weekdayBarBlurEnabled: true,
-          glassMode: FrostedGlassMode.liquidGlass,
+          homeBandGlassMaterial: 'progressive',
         ),
         0,
       );
@@ -64,20 +64,20 @@ void main() {
           frostedBlurEnabled: true,
           headerBlurEnabled: false,
           weekdayBarBlurEnabled: false,
-          glassMode: FrostedGlassMode.gaussian,
+          homeBandGlassMaterial: 'progressive',
         ),
         0,
       );
     });
 
-    test('gaussian needs one settle frame; liquid needs two', () {
+    test('frost needs one settle frame; advanced band needs two', () {
       expect(
         homePageChromeSettleFrameCount(
           hasBackdrop: true,
           frostedBlurEnabled: true,
           headerBlurEnabled: true,
           weekdayBarBlurEnabled: false,
-          glassMode: FrostedGlassMode.gaussian,
+          homeBandGlassMaterial: 'progressive',
         ),
         1,
       );
@@ -87,7 +87,7 @@ void main() {
           frostedBlurEnabled: true,
           headerBlurEnabled: false,
           weekdayBarBlurEnabled: true,
-          glassMode: FrostedGlassMode.liquidGlass,
+          homeBandGlassMaterial: 'liquid',
         ),
         2,
       );

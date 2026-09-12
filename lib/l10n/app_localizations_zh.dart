@@ -3306,22 +3306,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageBackgroundScopeStatusBar => '状态栏';
 
   @override
-  String get homePageBackgroundScopeTimetable => '课表区域';
-
-  @override
   String get homePageBackgroundScopeWeekdayBar => '信息栏';
 
   @override
   String get homePageBackgroundScopeHeader => '顶栏';
-
-  @override
-  String get homePageBackgroundScopeChrome => '顶栏壁纸';
-
-  @override
-  String get homePageBackgroundScopeChromeSubtitle => '';
-
-  @override
-  String get homePageHeaderBlurTitle => '顶栏玻璃';
 
   @override
   String get homePageHeaderBlurSubtitle => '';
@@ -9754,16 +9742,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleDateRuleNote => '地点匹配优先于日期规则。';
 
   @override
-  String get headerBlurStyleLabel => '首页顶栏模糊风格';
+  String get homeBandGlassMaterialLabel => '首页顶栏玻璃';
 
   @override
   String get headerBlurStyleGaussian => '高斯模糊';
 
   @override
   String get headerBlurStyleInspire => '渐进模糊';
-
-  @override
-  String get headerBlurStyleSubtitle => '渐进模糊上浓下淡，高斯模糊整带均匀';
 
   @override
   String get subpageHeaderBlurStyleLabel => '子页顶栏模糊风格';
@@ -9840,9 +9825,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liquidGlassScopeHomeChromeTitle => '首页玻璃带';
-
-  @override
-  String get liquidGlassScopeHomeChromeSubtitle => '标题栏与星期栏的玻璃背景带';
 
   @override
   String get liquidGlassScopeDockTitle => '玻璃坞导航';
@@ -14125,22 +14107,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homePageBackgroundScopeStatusBar => '狀態列';
 
   @override
-  String get homePageBackgroundScopeTimetable => '課表區域';
-
-  @override
   String get homePageBackgroundScopeWeekdayBar => '資訊欄';
 
   @override
   String get homePageBackgroundScopeHeader => '頂欄';
-
-  @override
-  String get homePageBackgroundScopeChrome => '頂欄壁紙';
-
-  @override
-  String get homePageBackgroundScopeChromeSubtitle => '';
-
-  @override
-  String get homePageHeaderBlurTitle => '頂欄玻璃';
 
   @override
   String get homePageHeaderBlurSubtitle => '';
@@ -20616,16 +20586,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get scheduleDateRuleNote => '地點匹配優先於日期規則。';
 
   @override
-  String get headerBlurStyleLabel => '首頁頂欄模糊風格';
+  String get homeBandGlassMaterialLabel => '首頁頂欄玻璃';
 
   @override
   String get headerBlurStyleGaussian => '高斯模糊';
 
   @override
   String get headerBlurStyleInspire => '漸進模糊';
-
-  @override
-  String get headerBlurStyleSubtitle => '漸進模糊上濃下淡，高斯模糊整帶均勻';
 
   @override
   String get subpageHeaderBlurStyleLabel => '子頁頂欄模糊風格';
@@ -20702,9 +20669,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liquidGlassScopeHomeChromeTitle => '首頁玻璃帶';
-
-  @override
-  String get liquidGlassScopeHomeChromeSubtitle => '標題列與星期列的玻璃背景帶';
 
   @override
   String get liquidGlassScopeDockTitle => '玻璃塢導航';
@@ -24987,22 +24951,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homePageBackgroundScopeStatusBar => '狀態列';
 
   @override
-  String get homePageBackgroundScopeTimetable => '課表區域';
-
-  @override
   String get homePageBackgroundScopeWeekdayBar => '資訊欄';
 
   @override
   String get homePageBackgroundScopeHeader => '頂欄';
-
-  @override
-  String get homePageBackgroundScopeChrome => '頂欄壁紙';
-
-  @override
-  String get homePageBackgroundScopeChromeSubtitle => '';
-
-  @override
-  String get homePageHeaderBlurTitle => '頂欄玻璃';
 
   @override
   String get homePageHeaderBlurSubtitle => '';
@@ -31478,16 +31430,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get scheduleDateRuleNote => '地點匹配優先於日期規則。';
 
   @override
-  String get headerBlurStyleLabel => '首頁頂欄模糊風格';
+  String get homeBandGlassMaterialLabel => '首頁頂欄玻璃';
 
   @override
   String get headerBlurStyleGaussian => '高斯模糊';
 
   @override
   String get headerBlurStyleInspire => '漸進模糊';
-
-  @override
-  String get headerBlurStyleSubtitle => '漸進模糊上濃下淡，高斯模糊整帶均勻';
 
   @override
   String get subpageHeaderBlurStyleLabel => '子頁頂欄模糊風格';
@@ -31564,9 +31513,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liquidGlassScopeHomeChromeTitle => '首頁玻璃帶';
-
-  @override
-  String get liquidGlassScopeHomeChromeSubtitle => '標題列與星期列的玻璃背景帶';
 
   @override
   String get liquidGlassScopeDockTitle => '玻璃塢導航';

@@ -3361,22 +3361,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePageBackgroundScopeStatusBar => 'ステータスバー';
 
   @override
-  String get homePageBackgroundScopeTimetable => '時間割エリア';
-
-  @override
   String get homePageBackgroundScopeWeekdayBar => '情報バー';
 
   @override
   String get homePageBackgroundScopeHeader => 'トップバー';
-
-  @override
-  String get homePageBackgroundScopeChrome => '上部壁紙';
-
-  @override
-  String get homePageBackgroundScopeChromeSubtitle => '';
-
-  @override
-  String get homePageHeaderBlurTitle => 'トップバーガラス';
 
   @override
   String get homePageHeaderBlurSubtitle => '';
@@ -10036,16 +10024,13 @@ class AppLocalizationsJa extends AppLocalizations {
       'Location match takes priority over date rules.';
 
   @override
-  String get headerBlurStyleLabel => 'ホーム上部バーのぼかしスタイル';
+  String get homeBandGlassMaterialLabel => 'ホーム上部バーのガラス';
 
   @override
   String get headerBlurStyleGaussian => 'ガウスぼかし';
 
   @override
   String get headerBlurStyleInspire => 'プログレッシブぼかし';
-
-  @override
-  String get headerBlurStyleSubtitle => 'プログレッシブは上から徐々に薄く、ガウスは全帯均一';
 
   @override
   String get subpageHeaderBlurStyleLabel => 'サブページ上部バーのぼかしスタイル';
@@ -10123,9 +10108,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liquidGlassScopeHomeChromeTitle => 'ホームのガラス帯';
-
-  @override
-  String get liquidGlassScopeHomeChromeSubtitle => 'タイトルバーと曜日バーのガラス背景';
 
   @override
   String get liquidGlassScopeDockTitle => 'ガラスドック操作';
