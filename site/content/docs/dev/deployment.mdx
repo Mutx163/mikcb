@@ -88,6 +88,21 @@ GET /docs/guide/quick-start/__next.docs.$oc$slug.__PAGE__.txt       # 404
 
 之后主分支上对 `site/` 的推送会自动触发重新构建与发布。
 
+## 上线检查清单（换域名 / 长期间未部署后逐条核对）
+
+2026-09 换域名（`mutx.ccwu.cc` → `163366.xyz`）时踩过的坑，逐条对应一个真实故障：
+
+| 检查项 | 怎么查 | 出现过的问题 |
+| --- | --- | --- |
+| 文档站是否真的重新构建过 | `curl -s https://docs.163366.xyz/ \| grep canonical` | 源码已加 canonical/sitemap/llms.txt，但 Pages 仍是旧构建，全部 404 |
+| 文档站 sitemap 可达 | `curl -sI https://docs.163366.xyz/sitemap.xml` | 构建过期时为 404，24 篇文档页对搜索引擎零入口 |
+| 旧域名 301 是否一步到 https | `curl -sI https://mutx.ccwu.cc/ \| grep -i location` | 曾一度跳到 `http://163366.xyz/`（明文中间跳），应为 `https://` 直达 |
+| `www` 是否解析 | `getent hosts www.163366.xyz` | 无记录（NXDOMAIN）。若 GSC 属性建在 `www` 上，站点地图永远读不到 |
+| 站点地图能否被读 | `curl -s https://163366.xyz/sitemap.xml \| python3 -c 'import xml.dom.minidom,sys;xml.dom.minidom.parseString(sys.stdin.read());print("ok")'` | 文件本身一直合法，问题在 GSC 侧属性状态 |
+
+**换域名后必做**：GSC 里对应重新验证属性（旧验证随域名失效）、重新提交站点地图、
+核对属性是「网域」还是「网址前缀」且与 301 目标一致。
+
 ## 维护本站时的已知坑
 
 改这个站之前建议先读一遍，都是实际踩过的：

@@ -79,7 +79,30 @@
     return null;
   }
 
+  /**
+   * 读取 URL 上的 ?lang= / ?locale= 参数。
+   *
+   * 这是给搜索引擎用的：有了显式语言 URL，才能：
+   *   1) 让爬虫**不执行 JS 也能**通过 hreflang 知道每种语言的地址；
+   *   2) 把「语言」变成可索引、可分享、可回链的地址，而不是只存在 localStorage 里。
+   * 优先于 localStorage 与浏览器语言——用户在地址栏明确指定的语言理应最高优先。
+   */
+  function readLocaleFromUrl() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const raw = params.get("lang") || params.get("locale");
+      return matchSupportedLocale(raw);
+    } catch {
+      return null;
+    }
+  }
+
   function detectLocale() {
+    const fromUrl = readLocaleFromUrl();
+    if (fromUrl) {
+      return fromUrl;
+    }
+
     try {
       const stored = window.localStorage?.getItem(STORAGE_KEY);
       const fromStore = matchSupportedLocale(stored);
@@ -170,8 +193,79 @@
     applyAttributes(element);
   }
 
+  /**
+   * 把 hreflang 写进 <head>：每个受支持语言一条 alternate，外加一条 x-default。
+   *
+   * 标准写法是这些 <link> 直接出现在静态 HTML 里；本站在生成阶段就已静态写入
+   * （见各 HTML 的 <link rel="alternate" hreflang>），这里只是在语言切换后
+   * 保证与当前状态一致，并为动态注入的页面兜底。
+   */
+  function syncHreflang() {
+    const head = document.head;
+    if (!head) {
+      return;
+    }
+    // 清掉全部 hreflang（含静态写入的那些）再重建，保证每个语言只有一条，
+    // 避免「静态 + 运行时」两套同时存在被读成重复声明。
+    head
+      .querySelectorAll('link[rel="alternate"][hreflang]')
+      .forEach((node) => node.remove());
+
+    const base = window.location.origin + window.location.pathname;
+    const frag = document.createDocumentFragment();
+    SUPPORTED.forEach((locale) => {
+      const link = document.createElement("link");
+      link.setAttribute("rel", "alternate");
+      link.setAttribute("hreflang", locale.htmlLang);
+      link.setAttribute("href", `${base}?lang=${locale.id}`);
+      link.setAttribute("data-i18n-hreflang", "1");
+      frag.appendChild(link);
+    });
+    const xDefault = document.createElement("link");
+    xDefault.setAttribute("rel", "alternate");
+    xDefault.setAttribute("hreflang", "x-default");
+    xDefault.setAttribute("href", base);
+    xDefault.setAttribute("data-i18n-hreflang", "1");
+    frag.appendChild(xDefault);
+    head.appendChild(frag);
+  }
+
+  /**
+   * 把 ?lang= 同步进地址栏，并让 canonical 指向「当前语言自己」。
+   *
+   * 两点必须同时满足，否则 hreflang 不生效：
+   *   1) hreflang 指向的地址要能打开（靠 ?lang= 参数）；
+   *   2) 那个地址的 canonical 要**自指**——如果它仍然 canonical 到无参数主页，
+   *      Google 会判定它们是同一页，进而忽略整组 hreflang。
+   * 默认语言（zh-CN）保持 canonical 为无参数的原地址，避免自家两个地址互斗。
+   */
+  function syncUrl(localeId) {
+    try {
+      const url = new URL(window.location.href);
+      if (localeId === DEFAULT_LOCALE) {
+        url.searchParams.delete("lang");
+        url.searchParams.delete("locale");
+      } else {
+        url.searchParams.set("lang", localeId);
+        url.searchParams.delete("locale");
+      }
+      const next = url.toString();
+      if (next !== window.location.href) {
+        window.history.replaceState(null, "", next);
+      }
+
+      const canonical = document.querySelector('link[rel="canonical"]');
+      if (canonical) {
+        canonical.setAttribute("href", next);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   function applyDocument() {
     document.documentElement.lang = getLocaleMeta(currentLocale).htmlLang;
+    syncHreflang();
 
     const titleEl = document.querySelector("title[data-i18n]");
     if (titleEl) {
@@ -225,6 +319,7 @@
       } catch {
         /* ignore */
       }
+      syncUrl(currentLocale);
     }
     applyDocument();
     changeListeners.forEach((listener) => {
@@ -398,6 +493,10 @@
       console.warn("[i18n] failed to load catalogs", error);
       return;
     }
+
+    // 带 ?lang= 打开时，立刻让 canonical 自指当前语言地址；
+    // 否则该页仍然 canonical 到无参数版本，hreflang 会被判定为同一页而忽略。
+    syncUrl(currentLocale);
 
     mountSwitcher();
     applyDocument();

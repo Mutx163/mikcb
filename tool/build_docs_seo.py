@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 from collections import defaultdict
 from datetime import datetime
 from html import escape
@@ -21,6 +22,39 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 BASE_URL = "https://163366.xyz"
 TOPIC_LASTMOD = "2026-08-19"
+# 文档站（site/ → docs.163366.xyz）与主站是两个属性，但同一份 sitemap 里
+# 一并声明，能显著加快内页发现——文档站自身没有 sitemap 入口时可作兜底。
+DOCS_BASE_URL = "https://docs.163366.xyz"
+
+# 文档站页面（相对 site/content/docs 的 slug，不含扩展名）。
+# 与 site/app/sitemap.ts 生成的列表保持一致；文档站一旦有自己的 /sitemap.xml，
+# 这里的重复声明也无害——同一 URL 出现在多份 sitemap 是允许的。
+DOCS_PAGE_SLUGS = (
+    "index",
+    "dev/architecture",
+    "dev/contributing",
+    "dev/deployment",
+    "dev/jiaowu-adapter",
+    "guide/about",
+    "guide/changelog",
+    "guide/courses",
+    "guide/customize",
+    "guide/faq",
+    "guide/feedback",
+    "guide/glossary",
+    "guide/import",
+    "guide/interface",
+    "guide/organize",
+    "guide/privacy",
+    "guide/quick-start",
+    "guide/recipes",
+    "guide/settings-reference",
+    "guide/statistics",
+    "guide/super-island",
+    "guide/sync-backup",
+    "guide/troubleshooting",
+    "guide/widget",
+)
 RELEASE_TYPES = ("新增", "优化", "修复", "调整", "测试", "移除", "更新")
 
 TOPIC_PAGES = (
@@ -559,19 +593,47 @@ def write_text(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8", newline="\n")
 
 
+def page_lastmod(rel_path: str, fallback: str = TOPIC_LASTMOD) -> str:
+    """按 git 提交日期取页面真实最后修改时间。
+
+    站点地图里的 lastmod 是抓取优先级信号：写死成同一天会让所有页面看起来
+    「从未更新」，Google 就不愿意重抓。可用 git 时取该文件最后一次提交日期；
+    取不到（浅克隆、无 git）时回退到 fallback。
+    """
+    try:
+        out = subprocess.run(
+            ["git", "log", "-1", "--format=%cs", "--", rel_path],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        value = out.stdout.strip()
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            return value
+    except Exception:
+        pass
+    return fallback
+
+
 def build_sitemap(feed: dict[str, Any], schools: dict[str, Any]) -> str:
     entries: list[tuple[str, str]] = [
-        (f"{BASE_URL}/", TOPIC_LASTMOD),
+        (f"{BASE_URL}/", page_lastmod("docs/index.html")),
         (f"{BASE_URL}/schools.html", date_only(schools.get("updatedAt"))),
         (f"{BASE_URL}/releases/", date_only(feed.get("generatedAt"))),
-        (f"{BASE_URL}/hyperos-timetable.html", TOPIC_LASTMOD),
-        (f"{BASE_URL}/course-import.html", TOPIC_LASTMOD),
-        (f"{BASE_URL}/webdav-timetable-sync.html", TOPIC_LASTMOD),
-        (f"{BASE_URL}/android-timetable.html", TOPIC_LASTMOD),
-        (f"{BASE_URL}/privacy.html", TOPIC_LASTMOD),
-        (f"{BASE_URL}/terms.html", TOPIC_LASTMOD),
-        (f"{BASE_URL}/contributing.html", TOPIC_LASTMOD),
+        (f"{BASE_URL}/hyperos-timetable.html", page_lastmod("docs/hyperos-timetable.html")),
+        (f"{BASE_URL}/course-import.html", page_lastmod("docs/course-import.html")),
+        (f"{BASE_URL}/webdav-timetable-sync.html", page_lastmod("docs/webdav-timetable-sync.html")),
+        (f"{BASE_URL}/android-timetable.html", page_lastmod("docs/android-timetable.html")),
+        (f"{BASE_URL}/privacy.html", page_lastmod("docs/privacy.html")),
+        (f"{BASE_URL}/terms.html", page_lastmod("docs/terms.html")),
+        (f"{BASE_URL}/contributing.html", page_lastmod("docs/contributing.html")),
     ]
+    for slug in DOCS_PAGE_SLUGS:
+        rel = f"site/content/docs/{slug}.mdx"
+        # index.mdx 对应 /docs/ 本身，不是 /docs/index/（会 404）
+        path = "/docs/" if slug == "index" else f"/docs/{slug}/"
+        entries.append((f"{DOCS_BASE_URL}{path}", page_lastmod(rel, TOPIC_LASTMOD)))
     for item in feed.get("releases", []):
         if isinstance(item, dict) and text(item.get("version")):
             entries.append((release_item_url(item["version"]), date_only(item.get("publishedAt"))))
