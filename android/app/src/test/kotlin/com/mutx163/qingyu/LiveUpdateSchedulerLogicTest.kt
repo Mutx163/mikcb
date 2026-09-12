@@ -47,9 +47,11 @@ class LiveUpdateSchedulerLogicTest {
             listOf("note", "stage", "shortName", "progress", "status", "time", "location", "teacher", "next"),
             parseExpandedDetailFields(listOf("note", "stage")),
         )
-        // 未知 key 丢弃、重复 key 去重。
+        // 未知 key 丢弃、重复 key 去重（保留首次出现位置，用户顺序不被重排——
+        // b85b15a7 定稿的补齐语义；note 在输入里排最前故保持在最前，与上一条
+        // 断言的补全结果同序）。
         assertEquals(
-            expandedDetailDefaultOrder(),
+            listOf("note", "stage", "shortName", "progress", "status", "time", "location", "teacher", "next"),
             parseExpandedDetailFields(listOf("bogus", "note", "note", "stage", "shortName", "progress", "status", "time", "location", "teacher", "next")),
         )
     }
