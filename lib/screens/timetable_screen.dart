@@ -158,6 +158,18 @@ class _DayPagerFlickRescuePhysics extends PageScrollPhysics {
 
 class _TimetableScreenState extends State<TimetableScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
+  /// 液态玻璃的折射取样边界（本页整屏内容）。
+  ///
+  /// 包内 lightweight_glass.frag 的折射位移在 PATH A，守卫是
+  /// `uBackgroundSize.x > 1.0`——只有传了 backgroundKey、真的抓到纹理才成立。
+  /// 边界挂在 **BackdropGroup 之内、玻璃带之前**：捕获到的正是「壁纸 + 未压
+  /// 暗内容」这一层，既不带玻璃自身（否则自采样反馈），也带上了壁纸与课表
+  /// 卡片（顶栏下面的课表正好是折射内容）。优先级说明：这个 key 只服务
+  /// **顶栏玻璃带**，二级子卡的整页快照仍走 PopupPageCaptureScope（外层）。
+  final GlobalKey _chromeRefractionKey = GlobalKey(
+    debugLabel: 'chrome-refraction-source',
+  );
+
   static const int _minWeek = 1;
   static const double _weekDayHeaderHeight = 40;
   static const double _homeTitleHorizontalNudge = 4;
@@ -610,21 +622,40 @@ class _TimetableScreenState extends State<TimetableScreen>
           child: Stack(
             fit: StackFit.expand,
             children: [
-              if (hasBackdrop)
-                // 内置壁纸是程序生成的动画，克隆多页只会多起 Ticker，不随周次滑动。
-                (followsWeekPager && resolveBuiltInWallpaper(settings) == null)
-                    ? HomePageSlidingBackdropLayer(
-                        controller: _weekPageController,
-                        pageCount: settings.semesterWeekCount,
-                        settings: settings,
-                      )
-                    : homePageBackdropLayer(settings: settings),
-              if (hasBackdrop && !statusBarShowsBackdrop)
-                HomePageStatusBarBackdropMask(color: pageBackgroundColor),
-              // 组内首个 grouped filter：缓存未压暗的全屏壁纸供玻璃带采样，
-              // 与预览的 UndimmedBackdropCapture 同款、同相对位置。
-              if (continuousChromeBlur)
-                const Positioned.fill(child: UndimmedBackdropCapture()),
+              // 折射取样边界只包住「壁纸 + 未压暗缓存」：顺序不可调——
+              // UndimmedBackdropCapture 是组内首个 grouped filter，必须在边界
+              // **内部**；玻璃带必须在边界**外部**，否则捕获到自己（反馈）。
+              Positioned.fill(
+                child: RepaintBoundary(
+                  key: _chromeRefractionKey,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (hasBackdrop)
+                        // 内置壁纸是程序生成的动画，克隆多页只会多起 Ticker，
+                        // 不随周次滑动。
+                        (followsWeekPager &&
+                                resolveBuiltInWallpaper(settings) == null)
+                            ? HomePageSlidingBackdropLayer(
+                                controller: _weekPageController,
+                                pageCount: settings.semesterWeekCount,
+                                settings: settings,
+                              )
+                            : homePageBackdropLayer(settings: settings),
+                      if (hasBackdrop && !statusBarShowsBackdrop)
+                        HomePageStatusBarBackdropMask(
+                          color: pageBackgroundColor,
+                        ),
+                      // 组内首个 grouped filter：缓存未压暗的全屏壁纸供玻璃带
+                      // 采样，与预览的 UndimmedBackdropCapture 同款、同相对位置。
+                      if (continuousChromeBlur)
+                        const Positioned.fill(
+                          child: UndimmedBackdropCapture(),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
               // Single continuous glass for title + weekday (no time-column blur).
               // Stays fixed above the sliding wallpaper so chrome text stays sharp
               // while the photo moves as one continuous sheet.
@@ -634,6 +665,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   weekdayBarBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
                   includeStatusBar: statusBarShowsBackdrop,
                   weekdayBarHeight: _weekDayHeaderHeight,
+                  backgroundKey: _chromeRefractionKey,
                 ),
               HyperosRootPage(
                 overlayHeader: false,

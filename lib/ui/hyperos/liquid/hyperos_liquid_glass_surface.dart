@@ -5,6 +5,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -150,6 +151,7 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
     /// where needed.
     this.useAncestorBackdropGroup = false,
     this.maxThickness,
+    this.backgroundKey,
     super.key,
   });
 
@@ -170,6 +172,20 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
 
   /// 折射厚度缩放（0..1），见构造参数文档。null = 不缩放。
   final double? thicknessFactor;
+
+  /// 折射取样边界的 [RepaintBoundary] key（宿主页面的整页捕获边界）。
+  ///
+  /// **这是「有没有折射」的唯一开关。** 包内 lightweight_glass.frag 的折射
+  /// 位移写在 PATH A，而 PATH A 的守卫是 `uBackgroundSize.x > 1.0`——只有
+  /// 传了 backgroundKey、真正抓到了背景纹理才成立；否则走 PATH B，折射位移
+  /// 整段不执行，玻璃只剩「一圈 rim/fresnel 描边」。
+  ///
+  /// 而 `AdaptiveGlass`（本项目其余所有液态表面的入口）**从不传**
+  /// backgroundKey，所以凡经它渲染的表面在 standard 档下恒定零折射。要让
+  /// 折射真正出现，必须绕开 AdaptiveGlass、直接走
+  /// `LightweightLiquidGlass(backgroundKey: …)`——见
+  /// [_HyperosLiquidGlassSurfaceState._buildRefractingSurface]。
+  final GlobalKey? backgroundKey;
 
   /// Whether this device can run real liquid-glass refraction shaders.
   ///
@@ -207,6 +223,27 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
     }
     return settings;
   }
+
+  /// 是否走「真折射通道」（[LightweightLiquidGlass] + backgroundKey）。
+  ///
+  /// 纯决策函数，便于在无 GPU 的测试环境里钉住行为（widget 测试里
+  /// `ImageFilter.isShaderFilterSupported` 为 false，渲染路径会被强制降级，
+  /// 直接把这条判定塞在 build 里就没法稳定断言）。
+  ///
+  /// 三个必要条件，缺一即回落到 AdaptiveGlass：
+  /// - 有宿主捕获边界（没有它 PATH A 永远不成立，折射位移无从执行）；
+  /// - 非共享组（共享组靠祖先 LiquidGlassLayer 提供设置，直用会丢参数）；
+  /// - 非降级（`fake` 角色或设备不支持 shader filter 时本就不该折射）。
+  @visibleForTesting
+  static bool usesRefractingPath({
+    required GlobalKey? backgroundKey,
+    required bool useShared,
+    required bool useMinimal,
+  }) {
+    return backgroundKey != null && !useShared && !useMinimal;
+  }
+
+
 
   @override
   State<HyperosLiquidGlassSurface> createState() =>
@@ -286,6 +323,36 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
     final clipExpansion = role == HyperosLiquidGlassRole.modal
         ? const EdgeInsets.all(12)
         : EdgeInsets.zero;
+
+    // ---- 真折射通道 -------------------------------------------------------
+    // 给了宿主捕获边界（且非降级、非共享组）时，绕开 AdaptiveGlass 直接走
+    // 公开的 LightweightLiquidGlass：只有它接受 backgroundKey，进而让
+    // lightweight_glass.frag 进入 PATH A——折射位移、边缘色散、背景饱和度
+    // 那一整条链路才会执行。经 AdaptiveGlass 的表面恒为 PATH B，折射为零，
+    // 真机上只剩一圈 rim/fresnel 描边（用户口径：「一个颜色不一样的圈圈包
+    // 边」）。
+    //
+    // 安全性：LightweightLiquidGlass 不再依赖祖先 LiquidGlassLayer
+    // （0.30.2 #214 修掉了「无 layer 时 LiquidGlassBlendGroup 崩」），因此
+    // 顶栏带这种挂在裸 Stack 上的表面可以安全直用。渲染质量仍是 standard
+    // （轻量片元着色器），不引入 premium 的逐帧全屏纹理抓取，性能口径不变。
+    final GlobalKey? captureKey = widget.backgroundKey;
+    if (HyperosLiquidGlassSurface.usesRefractingPath(
+      backgroundKey: captureKey,
+      useShared: useShared,
+      useMinimal: useMinimal,
+    )) {
+      return ClipPath(
+        clipBehavior: clipBehavior,
+        clipper: ShapeBorderClipper(shape: shape),
+        child: LightweightLiquidGlass(
+          shape: shape,
+          settings: settings,
+          backgroundKey: captureKey,
+          child: surfacedChild,
+        ),
+      );
+    }
 
     return AdaptiveGlass(
       shape: shape,

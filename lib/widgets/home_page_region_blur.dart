@@ -151,6 +151,7 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
     required this.weekdayBarBlurEnabled,
     required this.includeStatusBar,
     required this.weekdayBarHeight,
+    this.backgroundKey,
     super.key,
   });
 
@@ -158,6 +159,9 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
   final bool weekdayBarBlurEnabled;
   final bool includeStatusBar;
   final double weekdayBarHeight;
+
+  /// 宿主页面的整页捕获边界；液态档下让顶栏玻璃真正折射壁纸/课表。
+  final GlobalKey? backgroundKey;
 
   bool get _hasAnyBand => headerBlurEnabled || weekdayBarBlurEnabled;
 
@@ -183,7 +187,7 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
       left: 0,
       right: 0,
       height: layout.height,
-      child: const IgnorePointer(
+      child: IgnorePointer(
         child: ClipRect(
           child: Stack(
             fit: StackFit.expand,
@@ -200,7 +204,9 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
                 left: -homePageChromeGlassEdgeOverdraw,
                 right: -homePageChromeGlassEdgeOverdraw,
                 bottom: 0,
-                child: HomePageChromeGlassFill(),
+                child: HomePageChromeGlassFill(
+                  backgroundKey: backgroundKey,
+                ),
               ),
             ],
           ),
@@ -222,8 +228,16 @@ class HomePageChromeGlassFill extends StatelessWidget {
     this.borderRadius = 0,
     this.useAncestorBackdropGroup = false,
     this.maxThickness,
+    this.backgroundKey,
     super.key,
   });
+
+  /// 宿主页面的整页捕获边界（[PopupPageCaptureScope] 的 RepaintBoundary）。
+  ///
+  /// 透传给液态表面后，玻璃着色器进入 PATH A、真正做折射位移；不传则恒
+  /// 走 PATH B（零折射，只剩边缘描边）。见
+  /// [HyperosLiquidGlassSurface.backgroundKey]。
+  final GlobalKey? backgroundKey;
 
   /// Sample the nearest [BackdropGroup]'s full-size backdrop instead of the
   /// band's own clipped bounds.
@@ -317,6 +331,7 @@ class HomePageChromeGlassFill extends StatelessWidget {
           borderRadius: borderRadius,
           useAncestorBackdropGroup: useAncestorBackdropGroup,
           maxThickness: maxThickness,
+          backgroundKey: backgroundKey,
           child: fill,
         );
       case 'soft' when useBlur:
