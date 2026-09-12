@@ -509,10 +509,33 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
     );
   }
 
-  /// 「各表面当前材质」地图的只读行。
+  /// 「各表面当前材质」地图的只读行：左表面名（主题墨色）、右材质值（次级
+  /// 墨色）。不用 [HyperosListTile]——它的 details 只在可点行渲染，纯展示
+  /// 行会把标题打到 45% 透明度且不画值（2026-09-12 真机灰色卡回归）。
   Widget _surfaceMaterialTile(String title, SurfaceMaterial material) {
     final l10n = AppLocalizations.of(context)!;
-    return HyperosListTile(title: title, details: _surfaceMaterialLabel(l10n, material));
+    return hyperosListRowShell(
+      padding: hyperosRowPadding(context),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: HyperosTypography.listTitle(context),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: HyperosTokens.rowContentGap),
+          Text(
+            _surfaceMaterialLabel(l10n, material),
+            style: HyperosTypography.listDetail(context).copyWith(
+              color: HyperosColors.secondaryText(context),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _applyTexturePreset(TexturePreset preset) async {

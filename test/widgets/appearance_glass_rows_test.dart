@@ -124,10 +124,12 @@ void main() {
     // 提示语按「玻璃模式」措辞（人话口径），不再是「基础磨砂」黑话。
     expect(find.textContaining('改回『高斯模糊』'), findsOneWidget);
 
-    // 「各表面当前材质」地图卡存在，含表面行。
+    // 「各表面当前材质」地图卡存在，含表面行，且右侧材质值真实渲染
+    // （HyperosListTile.details 只在可点行画，曾把整卡打成灰色空行）。
     await _scrollTo(tester, find.text('各表面当前材质'));
     expect(find.text('首页玻璃带'), findsWidgets);
     expect(find.text('课程卡片'), findsWidgets);
+    expect(find.text('实体'), findsWidgets);
   });
 
   testWidgets('全局柔光下两行仍常显（不回归条件隐藏）', (tester) async {
