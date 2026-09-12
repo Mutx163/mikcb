@@ -10342,10 +10342,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Progressive fades toward the content; Gaussian is uniform';
 
   @override
-  String get headerBlurStyleHint =>
-      'Not used while the glass mode is Liquid glass; switch back to Gaussian blur or Soft glass to apply it.';
-
-  @override
   String get subpageHeaderBlurStyleLabel => 'Subpage top bar blur style';
 
   @override

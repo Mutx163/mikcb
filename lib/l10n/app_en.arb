@@ -5956,7 +5956,6 @@
   "headerBlurStyleGaussian": "Gaussian blur",
   "headerBlurStyleInspire": "Progressive blur",
   "headerBlurStyleSubtitle": "Progressive fades toward the content; Gaussian is uniform",
-  "headerBlurStyleHint": "Not used while the glass mode is Liquid glass; switch back to Gaussian blur or Soft glass to apply it.",
   "subpageHeaderBlurStyleLabel": "Subpage top bar blur style",
   "texturePresetLabel": "Texture preset",
   "texturePresetSubtitle": "Apply a whole material setup in one tap; every option stays adjustable afterwards",

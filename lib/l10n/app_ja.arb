@@ -5708,7 +5708,6 @@
   "headerBlurStyleGaussian": "ガウスぼかし",
   "headerBlurStyleInspire": "プログレッシブぼかし",
   "headerBlurStyleSubtitle": "プログレッシブは上から徐々に薄く、ガウスは全帯均一",
-  "headerBlurStyleHint": "ガラスモードが「リキッドガラス」の間は使われず、「ガウスぼかし」や「ソフトガラス」に戻すと適用されます。",
   "subpageHeaderBlurStyleLabel": "サブページ上部バーのぼかしスタイル",
   "texturePresetLabel": "質感プリセット",
   "texturePresetSubtitle": "素材の組み合わせをまとめて適用。後から個別に調整できます",

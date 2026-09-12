@@ -17671,12 +17671,6 @@ abstract class AppLocalizations {
   /// **'渐进模糊上浓下淡，高斯模糊整带均匀'**
   String get headerBlurStyleSubtitle;
 
-  /// No description provided for @headerBlurStyleHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'玻璃模式选『液态玻璃』时，首页顶栏不用这里的风格；改回『高斯模糊』或『柔光玻璃』后生效。'**
-  String get headerBlurStyleHint;
-
   /// No description provided for @subpageHeaderBlurStyleLabel.
   ///
   /// In zh, this message translates to:

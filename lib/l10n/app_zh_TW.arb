@@ -5706,7 +5706,6 @@
   "headerBlurStyleGaussian": "高斯模糊",
   "headerBlurStyleInspire": "漸進模糊",
   "headerBlurStyleSubtitle": "漸進模糊上濃下淡，高斯模糊整帶均勻",
-  "headerBlurStyleHint": "玻璃模式選『液態玻璃』時，首頁頂欄不用這裡的風格；改回『高斯模糊』或『柔光玻璃』後生效。",
   "subpageHeaderBlurStyleLabel": "子頁頂欄模糊風格",
   "texturePresetLabel": "質感方案",
   "texturePresetSubtitle": "一鍵套用整套材質搭配，應用後仍可逐項調整",

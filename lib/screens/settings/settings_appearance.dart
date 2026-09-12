@@ -411,13 +411,16 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 ],
                 // 顶栏模糊风格两行（渐进 / 高斯）从「课表页面」迁入：材质
                 // 选择归外观页，课表页面只留顶栏玻璃显示开关。两行恒常
-                // 显示，不做任何条件隐藏（用户 2026-09-12 拍板：选项永远
-                // 留在页面上）。磨砂与柔光下改了立即生效（柔光下风格决定
-                // 雾面模糊的衰减形态）；全局液态 + 作用范围开时顶栏跟随
-                // 液态而不看风格，只记住选择，切回即恢复，由提示语说明。
+                // 显示（用户 2026-09-12 拍板：选项永远留在页面上，不做条
+                // 件隐藏）；磨砂与柔光下立即生效（柔光下风格决定雾面模糊
+                // 的衰减形态）。全局液态 + 作用范围开时顶栏跟随液态、风
+                // 格暂不参与渲染——同日拍板「长描述不可接受，改设计而非
+                // 写文案」：该状态下首页行**置灰禁用**自解释（行仍常驻，
+                // 不算条件隐藏），不再配提示语。
                 HyperosSelectTile<HeaderBlurStyle>(
                   label: l10n.headerBlurStyleLabel,
                   subtitle: l10n.headerBlurStyleSubtitle,
+                  enabled: !_homeBandIgnoresBlurStyle,
                   items: {
                     l10n.headerBlurStyleInspire: HeaderBlurStyle.inspire,
                     l10n.headerBlurStyleGaussian: HeaderBlurStyle.gaussian,
@@ -427,7 +430,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                     _updateDraft(applyChromeBlurStyle(_draft, value));
                   },
                 ),
-                // 子页顶栏（设置等页）与首页玻璃带相互独立，各选各的风格。
+                // 子页顶栏（设置等页）与首页玻璃带相互独立，各选各的风格；
+                // 子页永不走高级材质，此行无任何生效条件。
                 HyperosSelectTile<HeaderBlurStyle>(
                   label: l10n.subpageHeaderBlurStyleLabel,
                   items: {
@@ -439,16 +443,10 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                     _updateDraft(applySubpageChromeBlurStyle(_draft, value));
                   },
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: Text(
-                    l10n.headerBlurStyleHint,
-                    style: HyperosTypography.sectionDescription(context),
-                  ),
-                ),
               ],
             ),
           ),
+          const HyperosSectionGap(),
           // 「各表面当前材质」地图：与渲染侧门控同口径的只读推导（2026-
           // 09-12），回答「哪个表面现在是什么材质、为什么」。行名复用作用
           // 范围开关的既有文案（同物同名），不含依设备实时状态定的系统降级。
@@ -508,6 +506,14 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
       children: [const HyperosSectionGap(), section],
     );
   }
+
+  /// 首页玻璃带当前是否忽略顶栏模糊风格：全局液态 + 「作用范围 → 首页
+  /// 玻璃带」开时顶栏跟随液态材质。此状态下首页风格行**置灰自解释**（设
+  /// 计取代长描述，2026-09-12 拍板）。柔光跟随风格；范围关时液态也回退磨
+  /// 砂、风格生效，因此都不禁用。
+  bool get _homeBandIgnoresBlurStyle =>
+      _draft.frostedGlassMode == FrostedGlassMode.liquidGlass &&
+      _draft.liquidGlassHomeChromeEnabled;
 
   /// 「各表面当前材质」地图的只读行：左表面名（主题墨色）、右材质值（次级
   /// 墨色）。不用 [HyperosListTile]——它的 details 只在可点行渲染，纯展示

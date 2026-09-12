@@ -9766,10 +9766,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get headerBlurStyleSubtitle => '渐进模糊上浓下淡，高斯模糊整带均匀';
 
   @override
-  String get headerBlurStyleHint =>
-      '玻璃模式选『液态玻璃』时，首页顶栏不用这里的风格；改回『高斯模糊』或『柔光玻璃』后生效。';
-
-  @override
   String get subpageHeaderBlurStyleLabel => '子页顶栏模糊风格';
 
   @override
@@ -20632,10 +20628,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get headerBlurStyleSubtitle => '漸進模糊上濃下淡，高斯模糊整帶均勻';
 
   @override
-  String get headerBlurStyleHint =>
-      '玻璃模式選『液態玻璃』時，首頁頂欄不用這裡的風格；改回『高斯模糊』或『柔光玻璃』後生效。';
-
-  @override
   String get subpageHeaderBlurStyleLabel => '子頁頂欄模糊風格';
 
   @override
@@ -31496,10 +31488,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get headerBlurStyleSubtitle => '漸進模糊上濃下淡，高斯模糊整帶均勻';
-
-  @override
-  String get headerBlurStyleHint =>
-      '玻璃模式選『液態玻璃』時，首頁頂欄不用這裡的風格；改回『高斯模糊』或『柔光玻璃』後生效。';
 
   @override
   String get subpageHeaderBlurStyleLabel => '子頁頂欄模糊風格';
