@@ -122,7 +122,7 @@ void main() {
     // 两行当前值都是渐进模糊。
     expect(find.text('渐进模糊'), findsWidgets);
     // 提示语按「玻璃模式」措辞（人话口径），不再是「基础磨砂」黑话。
-    expect(find.textContaining('改回『高斯模糊』后生效'), findsOneWidget);
+    expect(find.textContaining('改回『高斯模糊』'), findsOneWidget);
 
     // 「各表面当前材质」地图卡存在，含表面行。
     await _scrollTo(tester, find.text('各表面当前材质'));

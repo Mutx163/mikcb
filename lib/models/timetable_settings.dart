@@ -1517,7 +1517,8 @@ class TimetableSettings {
 
   /// 首页顶栏玻璃带使用的模糊材质风格（高斯模糊 / Inspire 渐进模糊）。
   /// 默认 [HeaderBlurStyle.inspire]。只驱动首页玻璃带；子页顶栏读
-  /// [subpageHeaderBlurStyle]。
+  /// [subpageHeaderBlurStyle]。首页走液态材质时不看此风格；柔光下风格
+  /// 决定雾面模糊的衰减形态（渐进 = 上浓下淡）。
   final HeaderBlurStyle headerBlurStyle;
 
   /// 子页顶栏（设置等 HyperosSubpage 页）的模糊材质风格，与首页

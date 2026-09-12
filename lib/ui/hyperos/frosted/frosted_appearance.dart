@@ -112,7 +112,8 @@ class FrostedAppearance {
   /// 首页顶栏玻璃带的模糊材质风格（渐进 / 高斯）。
   ///
   /// 只驱动首页玻璃带（标题栏与星期栏）；子页顶栏读
-  /// [subpageHeaderBlurStyle]。首页走柔光 / 液态材质时不看此风格。
+  /// [subpageHeaderBlurStyle]。首页走液态材质时不看此风格；柔光下风格
+  /// 决定雾面模糊的衰减形态。
   final HeaderBlurStyle headerBlurStyle;
 
   /// 子页顶栏（设置等 HyperosSubpage 页）的模糊材质风格（渐进 / 高斯）。

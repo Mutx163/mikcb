@@ -412,9 +412,9 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 // 顶栏模糊风格两行（渐进 / 高斯）从「课表页面」迁入：材质
                 // 选择归外观页，课表页面只留顶栏玻璃显示开关。两行恒常
                 // 显示，不做任何条件隐藏（用户 2026-09-12 拍板：选项永远
-                // 留在页面上）。首页走基础磨砂时改了立即生效；全局高级
-                // 材质 + 作用范围开时跟随柔光 / 液态而不看风格，只记住
-                // 选择，切回即恢复，由提示语说明这一层。
+                // 留在页面上）。磨砂与柔光下改了立即生效（柔光下风格决定
+                // 雾面模糊的衰减形态）；全局液态 + 作用范围开时顶栏跟随
+                // 液态而不看风格，只记住选择，切回即恢复，由提示语说明。
                 HyperosSelectTile<HeaderBlurStyle>(
                   label: l10n.headerBlurStyleLabel,
                   subtitle: l10n.headerBlurStyleSubtitle,

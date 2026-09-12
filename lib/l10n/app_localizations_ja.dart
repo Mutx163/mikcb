@@ -10049,7 +10049,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get headerBlurStyleHint =>
-      'ガラスモードが「ソフトガラス」「リキッドガラス」の間は使われず、「ガウスぼかし」に戻すと適用されます。';
+      'ガラスモードが「リキッドガラス」の間は使われず、「ガウスぼかし」や「ソフトガラス」に戻すと適用されます。';
 
   @override
   String get subpageHeaderBlurStyleLabel => 'サブページ上部バーのぼかしスタイル';

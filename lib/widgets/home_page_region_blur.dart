@@ -2,8 +2,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../models/header_blur_style.dart';
 import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos_blurred_header.dart';
+import '../ui/hyperos/inspire/inspire_header_blur.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import '../ui/hyperos/soft_glass/soft_glass_surface.dart';
 import '../utils/home_page_background.dart';
@@ -340,14 +342,16 @@ class HomePageChromeGlassFill extends StatelessWidget {
     const fill = SizedBox.expand();
 
     // 柔光：与弹窗 / 底栏同一套雾面材质。玻璃带是窄条，走
-    // [SoftGlassSurface] 的默认轻配方 [SoftGlassRecipe.floatingNavigation]
-    // （σ ≈ 13.78）；dialog 配方（σ ≈ 53.6）在整条通栏上过重且更贵。
+    // [SoftGlassRecipe.floatingNavigation] 轻配方（σ ≈ 13.78）；dialog 配方
+    // （σ ≈ 53.6）在整条通栏上过重且更贵。顶栏模糊风格（2026-09-12 起柔光
+    // 也跟随）在 [SoftGlassHomeBand] 内分派：渐进 = inspire 可变模糊层叠，
+    // 高斯 = 原生雾面。分派独立成 widget，便于不依赖模糊总开关的环境直接
+    // 测试（VM 下 useBlur 恒为 false，柔光分支从这里不可达）。
     if (advancedMode == FrostedGlassMode.softGlass) {
-      return SoftGlassSurface(
-        borderRadius: BorderRadius.circular(borderRadius),
+      return SoftGlassHomeBand(
+        blurStyle: HyperosBlurredHeader.headerBlurStyleOf(context),
         blurEnabled: useBlur,
-        enableShadows: false,
-        child: fill,
+        borderRadius: BorderRadius.circular(borderRadius),
       );
     }
 
@@ -377,6 +381,71 @@ class HomePageChromeGlassFill extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: frost,
+    );
+  }
+}
+
+/// 柔光首页玻璃带：顶栏模糊风格在柔光材质下的实现。
+///
+/// 渐进档 = inspire 可变模糊（上浓下淡）层叠在柔光雾面之下；高斯档 =
+/// 原生 [SoftGlassSurface]（均匀雾）。层叠而非合成：inspire 的可变模糊是
+/// widget 级渲染（自带几何测量与 backdrop pass），进不了 SoftGlassSurface
+/// 的 `ImageFilter.compose`。代价：渐进组合带不带折射透镜——衰减到 0 的
+/// 底边再套透镜剖面本就失真。shader 不支持时 inspire 层自动退场，剩下的
+/// 就是柔光原生回退路径，降级自然成立。
+class SoftGlassHomeBand extends StatelessWidget {
+  const SoftGlassHomeBand({
+    required this.blurStyle,
+    required this.blurEnabled,
+    this.borderRadius = BorderRadius.zero,
+    super.key,
+  });
+
+  /// 顶栏模糊风格（渐进 / 高斯），从 [HyperosBlurredHeader.headerBlurStyleOf]
+  /// 读入；渐进档启用可变模糊层叠，高斯档走原生雾面。
+  final HeaderBlurStyle blurStyle;
+
+  /// 模糊总开关（调用方已并入 liveBlurSupported 等判定）。
+  final bool blurEnabled;
+
+  final BorderRadius borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    final tuning = FrostedAppearanceScope.of(context).softGlassTuning;
+    if (blurStyle == HeaderBlurStyle.inspire) {
+      return InspireHeaderBlur(
+        // 雾面底色由 SoftGlassSurface 负责（柔光语义是均匀雾，不吃
+        // InspireHeaderBlur 的渐进衬底），这里传全透明把它跳过。
+        tint: Colors.transparent,
+        blurEnabled: blurEnabled,
+        blurSigma: SoftGlassRecipe.floatingNavigation.blurSigmaWithMultiplier(
+          tuning.blurRadiusMultiplier,
+        ),
+        style: blurStyle,
+        child: SoftGlassSurface(
+          borderRadius: borderRadius,
+          blurEnabled: blurEnabled,
+          enableShadows: false,
+          // 显式按「模糊开」的层级给底色：传参 blurEnabled:false 会触发
+          // SoftGlassSurface 内部的实底 tintAlphaNoBlur，不是本组合要的
+          // 雾面层级；shader 不支持时模糊层退场，此色自动切到实底档。
+          tint: SoftGlassTokens.tint(
+            context,
+            blurEnabled: blurEnabled,
+            tintAlphaMultiplier:
+                SoftGlassRecipe.floatingNavigation.tintAlphaMultiplier *
+                tuning.tintAlphaMultiplier,
+          ),
+          child: const SizedBox.expand(),
+        ),
+      );
+    }
+    return SoftGlassSurface(
+      borderRadius: borderRadius,
+      blurEnabled: blurEnabled,
+      enableShadows: false,
+      child: const SizedBox.expand(),
     );
   }
 }

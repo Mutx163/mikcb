@@ -10091,7 +10091,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get headerBlurStyleHint =>
-      '글래스 모드가 \'소프트 글래스\'나 \'리퀴드 글래스\'일 때는 사용되지 않으며, \'가우시안 블러\'로 되돌리면 적용됩니다.';
+      '글래스 모드가 \'리퀴드 글래스\'일 때는 사용되지 않으며, \'가우시안 블러\'나 \'소프트 글래스\'로 되돌리면 적용됩니다.';
 
   @override
   String get subpageHeaderBlurStyleLabel => '하위 페이지 상단 바 블러 스타일';

@@ -9767,7 +9767,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get headerBlurStyleHint =>
-      '玻璃模式选『柔光玻璃』或『液态玻璃』时，首页顶栏不用这里的风格；改回『高斯模糊』后生效。';
+      '玻璃模式选『液态玻璃』时，首页顶栏不用这里的风格；改回『高斯模糊』或『柔光玻璃』后生效。';
 
   @override
   String get subpageHeaderBlurStyleLabel => '子页顶栏模糊风格';
@@ -20633,7 +20633,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get headerBlurStyleHint =>
-      '玻璃模式選『柔光玻璃』或『液態玻璃』時，首頁頂欄不用這裡的風格；改回『高斯模糊』後生效。';
+      '玻璃模式選『液態玻璃』時，首頁頂欄不用這裡的風格；改回『高斯模糊』或『柔光玻璃』後生效。';
 
   @override
   String get subpageHeaderBlurStyleLabel => '子頁頂欄模糊風格';
@@ -31499,7 +31499,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get headerBlurStyleHint =>
-      '玻璃模式選『柔光玻璃』或『液態玻璃』時，首頁頂欄不用這裡的風格；改回『高斯模糊』後生效。';
+      '玻璃模式選『液態玻璃』時，首頁頂欄不用這裡的風格；改回『高斯模糊』或『柔光玻璃』後生效。';
 
   @override
   String get subpageHeaderBlurStyleLabel => '子頁頂欄模糊風格';
