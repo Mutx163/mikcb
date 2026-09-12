@@ -155,3 +155,20 @@ AGENTS.md
 .tmp_*.txt
 .review_*.diff
 *.stackdump
+
+# 一次性 scratch 脚本（CJK 棘轮对照等，用完即弃）
+.py
+.burst/
+
+# skill 安装包与解包缓存
+.skill/
+*.skill
+
+# Cloudflare wrangler CLI 本地缓存
+.wrangler/
+
+# 内部工作流程文档（代码评审 / 验收清单 / 会话交接 / 推广文案，仅本地不入库）
+CODE_REVIEW_*.md
+近期改动验收清单*.md
+xhs_*.md
+docs/WSL-DSH-*.md
