@@ -115,6 +115,11 @@ TimetableSettings applySettingsReset(
       liquidGlassHomeChromeEnabled: d.liquidGlassHomeChromeEnabled,
       liquidGlassDockEnabled: d.liquidGlassDockEnabled,
       liquidGlassPickerButtonsEnabled: d.liquidGlassPickerButtonsEnabled,
+      // 预设是非空枚举，reset 能落回 standard；tuning 与 liquidGlassTuning
+      // 同为可空 + copyWith 吞 null 的既有口径（reset 后保留现值），不在此处
+      // 单独发明清除位。
+      softGlassPreset: d.softGlassPreset,
+      softGlassTuning: d.softGlassTuning,
     ),
     // 已删除 UI 的字段（设置 Tab、右上角菜单形态、内容避让布局、
     // 日/周布尔开关——已被 glassDockActions 取代）不纳入任何 scope。

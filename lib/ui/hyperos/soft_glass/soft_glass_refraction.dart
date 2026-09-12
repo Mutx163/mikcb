@@ -108,6 +108,10 @@ class SoftGlassRefractionLens {
   /// * [edgeHighlightAlpha]：**已按明暗折减**的 rim 高光强度（暗色为亮色的
   ///   `darkHighlightMultiplier` 倍）。折减放在 Dart 侧算，是因为明暗只有
   ///   `BuildContext` 知道，shader 拿不到。
+  /// * [refractionHeightDp] / [refractionAmountDp] / [chromaticAberrationDp] /
+  ///   [depthEffect]：用户可调光学参数（设置页「高级材质 → 柔光玻璃」），
+  ///   缺省值与 `SoftGlassTuning.defaults` 对应字段一致（test/models/
+  ///   soft_glass_tuning_test.dart 守卫漂移）。
   ///
   /// 下标 0/1 是 `u_size`，由引擎按绑定纹理尺寸写入，这里**不能**设。
   ui.ImageFilter filterFor(
@@ -116,6 +120,10 @@ class SoftGlassRefractionLens {
     required double devicePixelRatio,
     required double cornerRadiusPx,
     required double edgeHighlightAlpha,
+    double refractionHeightDp = SoftGlassRefraction.refractionHeightDp,
+    double refractionAmountDp = SoftGlassRefraction.refractionAmountDp,
+    double chromaticAberrationDp = SoftGlassRefraction.chromaticAberrationDp,
+    double depthEffect = SoftGlassRefraction.depthEffect,
   }) {
     assert(!_disposed, 'SoftGlassRefractionLens 已释放，不能继续出滤镜');
     final dpr = devicePixelRatio;
@@ -124,14 +132,14 @@ class SoftGlassRefractionLens {
       ..setFloat(3, geometry.top)
       ..setFloat(4, geometry.width)
       ..setFloat(5, geometry.height)
-      ..setFloat(6, SoftGlassRefraction.refractionHeightDp * dpr)
-      ..setFloat(7, SoftGlassRefraction.refractionAmountDp * dpr)
-      ..setFloat(8, SoftGlassRefraction.chromaticAberrationDp * dpr)
+      ..setFloat(6, refractionHeightDp * dpr)
+      ..setFloat(7, refractionAmountDp * dpr)
+      ..setFloat(8, chromaticAberrationDp * dpr)
       ..setFloat(9, SoftGlassRefraction.noiseCoefficient)
       ..setFloat(10, viewSize.width)
       ..setFloat(11, viewSize.height)
       ..setFloat(12, cornerRadiusPx)
-      ..setFloat(13, SoftGlassRefraction.depthEffect)
+      ..setFloat(13, depthEffect)
       ..setFloat(14, edgeHighlightAlpha.clamp(0.0, 1.0))
       ..setFloat(15, SoftGlassRefraction.edgeHighlightGray);
     return ui.ImageFilter.shader(_shader);

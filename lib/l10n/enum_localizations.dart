@@ -1,6 +1,7 @@
 import '../models/course.dart';
 import '../models/exam.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
+import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import '../models/timetable_settings.dart';
 import '../utils/widget_course_accent.dart';
@@ -299,6 +300,17 @@ String liquidGlassPresetLabel(
   LiquidGlassPreset.standard => l10n.liquidGlassPresetStandard,
   LiquidGlassPreset.dense => l10n.liquidGlassPresetDense,
   LiquidGlassPreset.custom => l10n.liquidGlassPresetCustom,
+};
+
+String softGlassPresetLabel(
+  AppLocalizations l10n,
+  SoftGlassPreset preset,
+) => switch (preset) {
+  SoftGlassPreset.clear => l10n.softGlassPresetClear,
+  SoftGlassPreset.light => l10n.softGlassPresetLight,
+  SoftGlassPreset.standard => l10n.softGlassPresetStandard,
+  SoftGlassPreset.dense => l10n.softGlassPresetDense,
+  SoftGlassPreset.custom => l10n.softGlassPresetCustom,
 };
 
 String courseCardSurfaceStyleLabel(

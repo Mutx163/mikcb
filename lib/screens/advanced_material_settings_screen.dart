@@ -6,13 +6,14 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 
 import '../models/liquid_glass_tuning.dart';
+import '../models/soft_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/app_toast.dart';
 import '../widgets/frosted_sheet_settings_preview.dart';
 
-/// 液态玻璃精细参数：从外观主路径下沉，避免刷屏。
+/// 高级材质精细参数（液态 / 柔光）：从外观主路径下沉，避免刷屏。
 class AdvancedMaterialSettingsScreen extends StatefulWidget {
   const AdvancedMaterialSettingsScreen({super.key});
 
@@ -59,7 +60,8 @@ class _AdvancedMaterialSettingsScreenState
         title: Text(l10n.advancedMaterialTitle),
         child: HyperosListView(
           children: [
-            // 折射参数仅液态有意义；柔光只共用下方的作用范围。
+            // 折射 / 雾面参数各档各自有意义：液态调折射管线，柔光调
+            // 雾面倍率与折射透镜；作用范围开关两组共用。
             if (mode == FrostedGlassMode.liquidGlass) ...[
               HyperosSectionLabel(text: l10n.frostedSheetSectionTitle),
               HyperosListGroup(
@@ -319,6 +321,155 @@ class _AdvancedMaterialSettingsScreenState
                 ],
               ),
             ],
+            // 柔光玻璃：与液态同构的 预设 + 自定义参数，雾面/底色按
+            // 表面配方整体缩放（倍率），折射/色散为绝对 dp。
+            if (mode == FrostedGlassMode.softGlass) ...[
+              HyperosSectionLabel(text: l10n.frostedSheetSectionTitle),
+              Builder(
+                builder: (context) {
+                  final softTuning =
+                      _draft.softGlassTuning ?? SoftGlassTuning.defaults;
+                  String pct(double value) =>
+                      '${(value * 100).round()}%';
+                  return HyperosListGroup(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: FrostedSheetSettingsPreview(
+                          provider: provider,
+                          settings: _draft,
+                          week: provider.currentWeek,
+                          blurSigma: _draft.frostedSheetBlurSigma,
+                          tintAlpha: _draft.frostedSheetTintAlpha,
+                          barrierAlpha: _draft.frostedSheetBarrierAlpha,
+                          blurEnabled: _draft.frostedBlurEnabled,
+                          glassMode: _draft.frostedGlassMode,
+                          liquidGlassTuning: _draft.liquidGlassTuning,
+                          softGlassTuning: softTuning,
+                          onOpenDemoSheet: () =>
+                              showFrostedSheetSettingsDemo(context),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: Text(
+                          l10n.softGlassHint,
+                          style: HyperosTypography.sectionDescription(context),
+                        ),
+                      ),
+                      HyperosSelectTile<SoftGlassPreset>(
+                        label: l10n.softGlassPresetLabel,
+                        items: {
+                          for (final preset in SoftGlassPreset.values)
+                            softGlassPresetLabel(l10n, preset): preset,
+                        },
+                        value: _draft.softGlassPreset,
+                        onChanged: (preset) {
+                          if (preset == SoftGlassPreset.custom) {
+                            _updateDraft(
+                              _draft.copyWith(
+                                softGlassPreset: SoftGlassPreset.custom,
+                              ),
+                            );
+                            return;
+                          }
+                          _updateDraft(
+                            _draft.copyWith(
+                              softGlassPreset: preset,
+                              softGlassTuning: preset.recommendedTuning,
+                            ),
+                          );
+                        },
+                      ),
+                      if (_draft.softGlassPreset == SoftGlassPreset.custom) ...[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          child: Text(
+                            l10n.softGlassCustomExpandedTitle,
+                            style: HyperosTypography.sectionDescription(context),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.softGlassBlurLabel,
+                          value: softTuning.blurRadiusMultiplier,
+                          max: SoftGlassTuning.maxBlurRadiusMultiplier,
+                          divisions: 15,
+                          valueLabel: pct(softTuning.blurRadiusMultiplier),
+                          onChanged: (value) => _updateSoftTuning(
+                            (t) => t.copyWith(blurRadiusMultiplier: value),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.softGlassTintLabel,
+                          value: softTuning.tintAlphaMultiplier,
+                          max: SoftGlassTuning.maxTintAlphaMultiplier,
+                          divisions: 40,
+                          valueLabel: pct(softTuning.tintAlphaMultiplier),
+                          onChanged: (value) => _updateSoftTuning(
+                            (t) => t.copyWith(tintAlphaMultiplier: value),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.softGlassRefractionLabel,
+                          value: softTuning.refraction,
+                          max: SoftGlassTuning.maxRefraction,
+                          divisions: 30,
+                          valueLabel: softTuning.refraction.toStringAsFixed(0),
+                          onChanged: (value) => _updateSoftTuning(
+                            (t) => t.copyWith(refraction: value),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.softGlassDepthLabel,
+                          value: softTuning.depthEffect,
+                          divisions: 20,
+                          valueLabel: softTuning.depthEffect.toStringAsFixed(2),
+                          onChanged: (value) => _updateSoftTuning(
+                            (t) => t.copyWith(depthEffect: value),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.softGlassChromaticAberrationLabel,
+                          value: softTuning.chromaticAberration,
+                          max: SoftGlassTuning.maxChromaticAberration,
+                          divisions: 30,
+                          valueLabel: softTuning.chromaticAberration
+                              .toStringAsFixed(1),
+                          onChanged: (value) => _updateSoftTuning(
+                            (t) => t.copyWith(chromaticAberration: value),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.softGlassEdgeHighlightLabel,
+                          value: softTuning.edgeHighlight,
+                          divisions: 20,
+                          valueLabel: pct(softTuning.edgeHighlight),
+                          onChanged: (value) => _updateSoftTuning(
+                            (t) => t.copyWith(edgeHighlight: value),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                          child: HyperosButton(
+                            label: l10n.softGlassResetAction,
+                            variant: HyperosButtonVariant.secondary,
+                            expand: true,
+                            onPressed: () {
+                              _updateDraft(
+                                _draft.copyWith(
+                                  softGlassPreset: SoftGlassPreset.standard,
+                                  softGlassTuning: SoftGlassTuning.defaults,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ],
             // 高级材质作用范围：逐表面家族开关。开 = 该表面用
             // 当前全局高级材质（柔光 / 液态）；关 = 该表面回落
             // **实体卡片**（不降级为高斯，见
@@ -408,6 +559,21 @@ class _AdvancedMaterialSettingsScreenState
       return;
     }
     _enqueuePersist(next);
+  }
+
+  /// 柔光滑杆统一写入口：任意滑杆拖动都落 [SoftGlassPreset.custom]，
+  /// 拖动防抖（与液态滑杆一致）。
+  void _updateSoftTuning(
+    SoftGlassTuning Function(SoftGlassTuning tuning) transform,
+  ) {
+    final base = _draft.softGlassTuning ?? SoftGlassTuning.defaults;
+    _updateDraft(
+      _draft.copyWith(
+        softGlassPreset: SoftGlassPreset.custom,
+        softGlassTuning: transform(base),
+      ),
+      debounce: true,
+    );
   }
 
   void _enqueuePersist(TimetableSettings next) {

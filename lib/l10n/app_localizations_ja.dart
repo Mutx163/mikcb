@@ -10117,7 +10117,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get advancedMaterialTitle => '高度なマテリアル';
 
   @override
-  String get advancedMaterialEntrySubtitle => 'リキッドガラスのパラメータ調整';
+  String get advancedMaterialEntrySubtitle => 'ソフト / リキッドガラスのパラメータ調整';
 
   @override
   String get liquidGlassPresetLabel => 'リキッドガラスプリセット';
@@ -10199,6 +10199,51 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liquidGlassResetAction => 'デフォルトに戻す';
+
+  @override
+  String get softGlassHint => 'ソフトグラスは高性能デバイスを必要とせず、変更はすぐに反映されます';
+
+  @override
+  String get softGlassPresetLabel => 'ソフトグラスのプリセット';
+
+  @override
+  String get softGlassPresetClear => 'クリア';
+
+  @override
+  String get softGlassPresetLight => '軽霧';
+
+  @override
+  String get softGlassPresetStandard => '標準';
+
+  @override
+  String get softGlassPresetDense => '濃霧';
+
+  @override
+  String get softGlassPresetCustom => 'カスタム';
+
+  @override
+  String get softGlassCustomExpandedTitle => 'カスタムパラメータ';
+
+  @override
+  String get softGlassBlurLabel => '曇りの強さ';
+
+  @override
+  String get softGlassTintLabel => '色被りの濃さ';
+
+  @override
+  String get softGlassRefractionLabel => '屈折の強さ';
+
+  @override
+  String get softGlassDepthLabel => '厚み';
+
+  @override
+  String get softGlassChromaticAberrationLabel => '色収差';
+
+  @override
+  String get softGlassEdgeHighlightLabel => 'エッジの光沢';
+
+  @override
+  String get softGlassResetAction => 'デフォルトに戻す';
 
   @override
   String get diagnosticsEntryTitle => '診断';

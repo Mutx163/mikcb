@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
+import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
 import 'package:university_timetable/models/class_reminder.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
@@ -1477,6 +1478,7 @@ class TimetableSettings {
     glassMode: frostedGlassMode,
     headerBlurStyle: headerBlurStyle,
     liquidGlassTuning: liquidGlassTuning,
+    softGlassTuning: softGlassTuning ?? SoftGlassTuning.defaults,
     liquidGlassPopupEnabled: liquidGlassPopupEnabled,
     liquidGlassSelectSheetEnabled: liquidGlassSelectSheetEnabled,
     liquidGlassSheetDialogEnabled: liquidGlassSheetDialogEnabled,
@@ -1504,6 +1506,11 @@ class TimetableSettings {
   final CourseCardSurfaceStyle courseCardSurfaceStyle;
   final LiquidGlassPreset liquidGlassPreset;
   final LiquidGlassTuning? liquidGlassTuning;
+
+  /// 柔光玻璃预设与自定义参数（[softGlassTuning] 为 null 时渲染回落
+  /// [SoftGlassTuning.defaults]；[frostedAppearance] 已代为回落）。
+  final SoftGlassPreset softGlassPreset;
+  final SoftGlassTuning? softGlassTuning;
   final bool homePageHeaderBlurEnabled;
   final bool homePageWeekdayBarBlurEnabled;
 
@@ -1700,6 +1707,8 @@ class TimetableSettings {
     this.courseCardSurfaceStyle = CourseCardSurfaceStyle.solid,
     this.liquidGlassPreset = LiquidGlassPreset.standard,
     this.liquidGlassTuning,
+    this.softGlassPreset = SoftGlassPreset.standard,
+    this.softGlassTuning,
     this.homePageHeaderBlurEnabled = true,
     this.homePageWeekdayBarBlurEnabled = true,
     this.headerBlurStyle = HeaderBlurStyle.inspire,
@@ -1923,6 +1932,9 @@ class TimetableSettings {
       'liquidGlassPreset': liquidGlassPreset.value,
       if (liquidGlassTuning != null)
         'liquidGlassTuning': liquidGlassTuning!.toJson(),
+      'softGlassPreset': softGlassPreset.value,
+      if (softGlassTuning != null)
+        'softGlassTuning': softGlassTuning!.toJson(),
       'homePageHeaderBlurEnabled': homePageHeaderBlurEnabled,
       'homePageWeekdayBarBlurEnabled': homePageWeekdayBarBlurEnabled,
       'headerBlurStyle': headerBlurStyle.value,
@@ -2399,6 +2411,14 @@ class TimetableSettings {
               json['liquidGlassTuning'] as Map<String, dynamic>,
             )
           : null,
+      softGlassPreset: SoftGlassPresetX.fromValue(
+        json['softGlassPreset'] as String?,
+      ),
+      softGlassTuning: json['softGlassTuning'] != null
+          ? SoftGlassTuning.fromJson(
+              json['softGlassTuning'] as Map<String, dynamic>,
+            )
+          : null,
       homePageHeaderBlurEnabled:
           json['homePageHeaderBlurEnabled'] as bool? ?? true,
       homePageWeekdayBarBlurEnabled:
@@ -2630,6 +2650,8 @@ class TimetableSettings {
     CourseCardSurfaceStyle? courseCardSurfaceStyle,
     LiquidGlassPreset? liquidGlassPreset,
     LiquidGlassTuning? liquidGlassTuning,
+    SoftGlassPreset? softGlassPreset,
+    SoftGlassTuning? softGlassTuning,
     bool? homePageHeaderBlurEnabled,
     bool? homePageWeekdayBarBlurEnabled,
     HeaderBlurStyle? headerBlurStyle,
@@ -2993,6 +3015,8 @@ class TimetableSettings {
           courseCardSurfaceStyle ?? this.courseCardSurfaceStyle,
       liquidGlassPreset: liquidGlassPreset ?? this.liquidGlassPreset,
       liquidGlassTuning: liquidGlassTuning ?? this.liquidGlassTuning,
+      softGlassPreset: softGlassPreset ?? this.softGlassPreset,
+      softGlassTuning: softGlassTuning ?? this.softGlassTuning,
       homePageHeaderBlurEnabled:
           homePageHeaderBlurEnabled ?? this.homePageHeaderBlurEnabled,
       homePageWeekdayBarBlurEnabled:

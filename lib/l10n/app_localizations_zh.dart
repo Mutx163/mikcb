@@ -9832,7 +9832,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get advancedMaterialTitle => '高级材质';
 
   @override
-  String get advancedMaterialEntrySubtitle => '液态玻璃参数微调';
+  String get advancedMaterialEntrySubtitle => '柔光 / 液态玻璃参数微调';
 
   @override
   String get liquidGlassPresetLabel => '液态玻璃预设';
@@ -9914,6 +9914,51 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liquidGlassResetAction => '恢复默认';
+
+  @override
+  String get softGlassHint => '柔光玻璃不依赖高性能设备，参数实时生效';
+
+  @override
+  String get softGlassPresetLabel => '柔光玻璃预设';
+
+  @override
+  String get softGlassPresetClear => '清透';
+
+  @override
+  String get softGlassPresetLight => '轻盈';
+
+  @override
+  String get softGlassPresetStandard => '标准';
+
+  @override
+  String get softGlassPresetDense => '浓雾';
+
+  @override
+  String get softGlassPresetCustom => '自定义';
+
+  @override
+  String get softGlassCustomExpandedTitle => '自定义参数';
+
+  @override
+  String get softGlassBlurLabel => '雾面强度';
+
+  @override
+  String get softGlassTintLabel => '底色浓度';
+
+  @override
+  String get softGlassRefractionLabel => '折射强度';
+
+  @override
+  String get softGlassDepthLabel => '厚度感';
+
+  @override
+  String get softGlassChromaticAberrationLabel => '色散';
+
+  @override
+  String get softGlassEdgeHighlightLabel => '边缘高光';
+
+  @override
+  String get softGlassResetAction => '恢复默认';
 
   @override
   String get diagnosticsEntryTitle => '诊断';
@@ -20593,7 +20638,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get advancedMaterialTitle => '進階材質';
 
   @override
-  String get advancedMaterialEntrySubtitle => '液態玻璃參數微調';
+  String get advancedMaterialEntrySubtitle => '柔光 / 液態玻璃參數微調';
 
   @override
   String get liquidGlassPresetLabel => '液態玻璃預設';
@@ -20675,6 +20720,51 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liquidGlassResetAction => '還原預設';
+
+  @override
+  String get softGlassHint => '柔光玻璃不依賴高效能裝置，參數即時生效';
+
+  @override
+  String get softGlassPresetLabel => '柔光玻璃預設';
+
+  @override
+  String get softGlassPresetClear => '清透';
+
+  @override
+  String get softGlassPresetLight => '輕盈';
+
+  @override
+  String get softGlassPresetStandard => '標準';
+
+  @override
+  String get softGlassPresetDense => '濃霧';
+
+  @override
+  String get softGlassPresetCustom => '自訂';
+
+  @override
+  String get softGlassCustomExpandedTitle => '自訂參數';
+
+  @override
+  String get softGlassBlurLabel => '霧面強度';
+
+  @override
+  String get softGlassTintLabel => '底色濃度';
+
+  @override
+  String get softGlassRefractionLabel => '折射強度';
+
+  @override
+  String get softGlassDepthLabel => '厚度感';
+
+  @override
+  String get softGlassChromaticAberrationLabel => '色散';
+
+  @override
+  String get softGlassEdgeHighlightLabel => '邊緣高光';
+
+  @override
+  String get softGlassResetAction => '還原預設';
 
   @override
   String get diagnosticsEntryTitle => '診斷';
@@ -31354,7 +31444,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get advancedMaterialTitle => '進階材質';
 
   @override
-  String get advancedMaterialEntrySubtitle => '液態玻璃參數微調';
+  String get advancedMaterialEntrySubtitle => '柔光 / 液態玻璃參數微調';
 
   @override
   String get liquidGlassPresetLabel => '液態玻璃預設';
@@ -31436,6 +31526,51 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liquidGlassResetAction => '還原預設';
+
+  @override
+  String get softGlassHint => '柔光玻璃不依賴高效能裝置，參數即時生效';
+
+  @override
+  String get softGlassPresetLabel => '柔光玻璃預設';
+
+  @override
+  String get softGlassPresetClear => '清透';
+
+  @override
+  String get softGlassPresetLight => '輕盈';
+
+  @override
+  String get softGlassPresetStandard => '標準';
+
+  @override
+  String get softGlassPresetDense => '濃霧';
+
+  @override
+  String get softGlassPresetCustom => '自訂';
+
+  @override
+  String get softGlassCustomExpandedTitle => '自訂參數';
+
+  @override
+  String get softGlassBlurLabel => '霧面強度';
+
+  @override
+  String get softGlassTintLabel => '底色濃度';
+
+  @override
+  String get softGlassRefractionLabel => '折射強度';
+
+  @override
+  String get softGlassDepthLabel => '厚度感';
+
+  @override
+  String get softGlassChromaticAberrationLabel => '色散';
+
+  @override
+  String get softGlassEdgeHighlightLabel => '邊緣高光';
+
+  @override
+  String get softGlassResetAction => '還原預設';
 
   @override
   String get diagnosticsEntryTitle => '診斷';

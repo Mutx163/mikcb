@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
+import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/timetable_settings.dart';
@@ -21,11 +22,15 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
     required this.onOpenDemoSheet,
     required this.glassMode,
     this.liquidGlassTuning,
+    this.softGlassTuning = SoftGlassTuning.defaults,
     super.key,
   });
 
   final FrostedGlassMode glassMode;
   final LiquidGlassTuning? liquidGlassTuning;
+
+  /// 柔光滑杆草稿（非空缺省，直接进预览 appearance）。
+  final SoftGlassTuning softGlassTuning;
   final TimetableProvider provider;
   final TimetableSettings settings;
   final int week;
@@ -79,6 +84,7 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
       blurEnabled: blurEnabled,
       glassMode: glassMode,
       liquidGlassTuning: previewSafeTuning(liquidGlassTuning),
+      softGlassTuning: softGlassTuning,
       liquidGlassPopupEnabled: settings.liquidGlassPopupEnabled,
       liquidGlassSelectSheetEnabled: settings.liquidGlassSelectSheetEnabled,
       liquidGlassSheetDialogEnabled: settings.liquidGlassSheetDialogEnabled,

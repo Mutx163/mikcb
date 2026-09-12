@@ -329,6 +329,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                     blurEnabled: _draft.frostedBlurEnabled,
                     glassMode: _draft.frostedGlassMode,
                     liquidGlassTuning: _draft.liquidGlassTuning,
+                    softGlassTuning:
+                        _draft.softGlassTuning ?? SoftGlassTuning.defaults,
                     onOpenDemoSheet: () =>
                         showFrostedSheetSettingsDemo(context),
                   ),

@@ -10160,7 +10160,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get advancedMaterialTitle => '고급 재질';
 
   @override
-  String get advancedMaterialEntrySubtitle => '리퀴드 글래스 매개변수 미세 조정';
+  String get advancedMaterialEntrySubtitle => '소프트 / 리퀴드 글래스 매개변수 미세 조정';
 
   @override
   String get liquidGlassPresetLabel => '리퀴드 글래스 프리셋';
@@ -10242,6 +10242,51 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liquidGlassResetAction => '기본값으로 초기화';
+
+  @override
+  String get softGlassHint => '소프트 글래스는 고성능 기기가 필요하지 않으며, 변경 사항이 즉시 적용됩니다';
+
+  @override
+  String get softGlassPresetLabel => '소프트 글래스 프리셋';
+
+  @override
+  String get softGlassPresetClear => '투명';
+
+  @override
+  String get softGlassPresetLight => '옅은 안개';
+
+  @override
+  String get softGlassPresetStandard => '표준';
+
+  @override
+  String get softGlassPresetDense => '짙은 안개';
+
+  @override
+  String get softGlassPresetCustom => '사용자 지정';
+
+  @override
+  String get softGlassCustomExpandedTitle => '사용자 지정 매개변수';
+
+  @override
+  String get softGlassBlurLabel => '흐림 강도';
+
+  @override
+  String get softGlassTintLabel => '색조 농도';
+
+  @override
+  String get softGlassRefractionLabel => '굴절 강도';
+
+  @override
+  String get softGlassDepthLabel => '두께감';
+
+  @override
+  String get softGlassChromaticAberrationLabel => '색수차';
+
+  @override
+  String get softGlassEdgeHighlightLabel => '가장자리 하이라이트';
+
+  @override
+  String get softGlassResetAction => '기본값으로 초기화';
 
   @override
   String get diagnosticsEntryTitle => '진단';

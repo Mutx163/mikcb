@@ -17806,7 +17806,7 @@ abstract class AppLocalizations {
   /// No description provided for @advancedMaterialEntrySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'液态玻璃参数微调'**
+  /// **'柔光 / 液态玻璃参数微调'**
   String get advancedMaterialEntrySubtitle;
 
   /// No description provided for @liquidGlassPresetLabel.
@@ -17970,6 +17970,96 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'恢复默认'**
   String get liquidGlassResetAction;
+
+  /// No description provided for @softGlassHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'柔光玻璃不依赖高性能设备，参数实时生效'**
+  String get softGlassHint;
+
+  /// No description provided for @softGlassPresetLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'柔光玻璃预设'**
+  String get softGlassPresetLabel;
+
+  /// No description provided for @softGlassPresetClear.
+  ///
+  /// In zh, this message translates to:
+  /// **'清透'**
+  String get softGlassPresetClear;
+
+  /// No description provided for @softGlassPresetLight.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻盈'**
+  String get softGlassPresetLight;
+
+  /// No description provided for @softGlassPresetStandard.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准'**
+  String get softGlassPresetStandard;
+
+  /// No description provided for @softGlassPresetDense.
+  ///
+  /// In zh, this message translates to:
+  /// **'浓雾'**
+  String get softGlassPresetDense;
+
+  /// No description provided for @softGlassPresetCustom.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义'**
+  String get softGlassPresetCustom;
+
+  /// No description provided for @softGlassCustomExpandedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义参数'**
+  String get softGlassCustomExpandedTitle;
+
+  /// No description provided for @softGlassBlurLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'雾面强度'**
+  String get softGlassBlurLabel;
+
+  /// No description provided for @softGlassTintLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'底色浓度'**
+  String get softGlassTintLabel;
+
+  /// No description provided for @softGlassRefractionLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'折射强度'**
+  String get softGlassRefractionLabel;
+
+  /// No description provided for @softGlassDepthLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'厚度感'**
+  String get softGlassDepthLabel;
+
+  /// No description provided for @softGlassChromaticAberrationLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'色散'**
+  String get softGlassChromaticAberrationLabel;
+
+  /// No description provided for @softGlassEdgeHighlightLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'边缘高光'**
+  String get softGlassEdgeHighlightLabel;
+
+  /// No description provided for @softGlassResetAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复默认'**
+  String get softGlassResetAction;
 
   /// No description provided for @diagnosticsEntryTitle.
   ///

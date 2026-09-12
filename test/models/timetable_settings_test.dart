@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
@@ -470,6 +471,34 @@ void main() {
     });
     expect(clamped.appFontWeight, kAppFontWeightMax);
     expect(clamped.appTextScale, kAppTextScaleMax);
+  });
+
+  test('soft glass preset and tuning survive json round trip', () {
+    final settings = TimetableSettings.defaults().copyWith(
+      softGlassPreset: SoftGlassPreset.dense,
+      softGlassTuning: SoftGlassTuning.presetDense,
+    );
+    final restored = TimetableSettings.fromJson(settings.toJson());
+    expect(restored.softGlassPreset, SoftGlassPreset.dense);
+    expect(restored.softGlassTuning, SoftGlassTuning.presetDense);
+
+    // 老档案缺字段 → 标准档 + null tuning（appearance 回落 defaults）。
+    final legacy = TimetableSettings.fromJson(<String, dynamic>{});
+    expect(legacy.softGlassPreset, SoftGlassPreset.standard);
+    expect(legacy.softGlassTuning, isNull);
+    expect(
+      legacy.frostedAppearance.softGlassTuning,
+      SoftGlassTuning.defaults,
+    );
+
+    // 非法档位回落 standard，越界参数被 clamp。
+    final clamped = TimetableSettings.fromJson({
+      ...TimetableSettings.defaults().toJson(),
+      'softGlassPreset': 'nope',
+      'softGlassTuning': {'refraction': 999},
+    });
+    expect(clamped.softGlassPreset, SoftGlassPreset.standard);
+    expect(clamped.softGlassTuning!.refraction, SoftGlassTuning.maxRefraction);
   });
 
   test('legacy spacing mode migrates to numeric card gap', () {

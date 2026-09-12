@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart'
     show BackdropFilterLayer, PaintingContext, RenderProxyBox;
 
+import '../../../models/soft_glass_tuning.dart';
+import '../frosted/frosted_appearance.dart';
 import 'soft_glass_refraction.dart';
 
 /// 柔光玻璃 token —— 数值直译 Hyper-PiliPlus（Deadliner）的
@@ -232,8 +234,12 @@ class SoftGlassRecipe {
   final double? cornerRadiusDp;
 
   /// 折算成 Flutter `BackdropFilter` 的 sigma。
-  double get blurSigma =>
-      blurRadiusDp * SoftGlassTokens.radiusToSigmaScale +
+  double get blurSigma => blurSigmaWithMultiplier(1);
+
+  /// 按用户倍率（SoftGlassTuning.blurRadiusMultiplier）缩放配方半径后
+  /// 折算 sigma，保持 radius → sigma 换算单点维护。
+  double blurSigmaWithMultiplier(double multiplier) =>
+      blurRadiusDp * multiplier * SoftGlassTokens.radiusToSigmaScale +
       SoftGlassTokens.radiusToSigmaBias;
 
   /// 浮空导航（底栏、浮钮）：92 × 0.25 = radius 23 → σ ≈ 13.78。
@@ -296,6 +302,7 @@ class SoftGlassSurface extends StatelessWidget {
     this.enableEdgeHighlight = true,
     this.enableRefraction = true,
     this.recipe = SoftGlassRecipe.floatingNavigation,
+    this.tuning,
   });
 
   final Widget child;
@@ -315,6 +322,10 @@ class SoftGlassSurface extends StatelessWidget {
   /// 材质配方：决定雾面半径、底色倍率与自带圆角。见 [SoftGlassRecipe]。
   final SoftGlassRecipe recipe;
 
+  /// 用户调参（设置页「高级材质 → 柔光玻璃」）。null = 从
+  /// [FrostedAppearanceScope] 读全局设置；测试/特殊面可显式覆盖。
+  final SoftGlassTuning? tuning;
+
   /// 形状：显式 [borderRadius] 优先，其次配方自带圆角，最后兜底胶囊。
   BorderRadius get _radius {
     final explicit = borderRadius;
@@ -332,16 +343,23 @@ class SoftGlassSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final alpha = materialAlpha.clamp(0.0, 1.0);
     final isDark = SoftGlassTokens._dark(context, polarity);
+    final tuning =
+        this.tuning ?? FrostedAppearanceScope.of(context).softGlassTuning;
     final fill =
         tint ??
         SoftGlassTokens.tint(
           context,
           blurEnabled: blurEnabled,
           polarity: polarity,
-          tintAlphaMultiplier: recipe.tintAlphaMultiplier,
+          tintAlphaMultiplier:
+              recipe.tintAlphaMultiplier * tuning.tintAlphaMultiplier,
         );
-    final sigma = blurSigma ?? recipe.blurSigma;
-    final edgeAlpha = SoftGlassTokens.edgeAlphaOf(isDark) * alpha;
+    // 雾面半径 = 配方半径 × 用户倍率，再按 radius → sigma 换算；配方层级
+    // （面板厚于底栏）由倍率整体缩放保留。
+    final sigma =
+        blurSigma ?? recipe.blurSigmaWithMultiplier(tuning.blurRadiusMultiplier);
+    final edgeAlpha =
+        SoftGlassTokens.edgeAlphaOf(isDark) * alpha * tuning.edgeHighlight;
     final resolvedRadius = _radius;
 
     return LayoutBuilder(
@@ -352,9 +370,11 @@ class SoftGlassSurface extends StatelessWidget {
             blurSigma: sigma,
             enableRefraction: enableRefraction,
             cornerRadius: resolvedRadius.topLeft.x,
+            tuning: tuning,
             // rim 高光强度（未乘 materialAlpha）：shader 内的边缘高光与
             // 底下的折射同属一层，明暗折减在 Dart 侧算好再下发。
-            edgeHighlightAlpha: SoftGlassTokens.edgeAlphaOf(isDark),
+            edgeHighlightAlpha:
+                SoftGlassTokens.edgeAlphaOf(isDark) * tuning.edgeHighlight,
             child: const SizedBox.expand(),
           );
         }
@@ -520,6 +540,7 @@ class _SoftGlassBackdrop extends StatefulWidget {
     required this.enableRefraction,
     required this.cornerRadius,
     required this.edgeHighlightAlpha,
+    required this.tuning,
     required this.child,
   });
 
@@ -531,6 +552,9 @@ class _SoftGlassBackdrop extends StatefulWidget {
 
   /// 已按明暗折减的 rim 高光强度，直接进 shader。
   final double edgeHighlightAlpha;
+
+  /// 用户调参（折射 / 色散 / 厚度感）。
+  final SoftGlassTuning tuning;
   final Widget child;
 
   @override
@@ -596,6 +620,7 @@ class _SoftGlassBackdropState extends State<_SoftGlassBackdrop> {
       viewSize: view.physicalSize,
       cornerRadius: widget.cornerRadius,
       edgeHighlightAlpha: widget.edgeHighlightAlpha,
+      tuning: widget.tuning,
       child: widget.child,
     );
   }
@@ -609,6 +634,7 @@ class _SoftGlassBackdropHost extends SingleChildRenderObjectWidget {
     required this.viewSize,
     required this.cornerRadius,
     required this.edgeHighlightAlpha,
+    required this.tuning,
     required super.child,
   });
 
@@ -623,6 +649,9 @@ class _SoftGlassBackdropHost extends SingleChildRenderObjectWidget {
   /// 已按明暗折减的 rim 高光强度。
   final double edgeHighlightAlpha;
 
+  /// 用户调参。
+  final SoftGlassTuning tuning;
+
   @override
   _RenderSoftGlassBackdrop createRenderObject(BuildContext context) =>
       _RenderSoftGlassBackdrop(
@@ -632,6 +661,7 @@ class _SoftGlassBackdropHost extends SingleChildRenderObjectWidget {
         viewSize, // 视图物理尺寸
         cornerRadius, // 圆角半径（逻辑像素）
         edgeHighlightAlpha, // rim 高光强度
+        tuning, // 用户调参
       );
 
   @override
@@ -645,7 +675,8 @@ class _SoftGlassBackdropHost extends SingleChildRenderObjectWidget {
       ..devicePixelRatio = devicePixelRatio
       ..viewSize = viewSize
       ..cornerRadius = cornerRadius
-      ..edgeHighlightAlpha = edgeHighlightAlpha;
+      ..edgeHighlightAlpha = edgeHighlightAlpha
+      ..tuning = tuning;
   }
 }
 
@@ -657,6 +688,7 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
     this._viewSize,
     this._cornerRadius,
     this._edgeHighlightAlpha,
+    this._tuning,
   );
 
   double _blurSigma;
@@ -665,12 +697,14 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
   Size _viewSize;
   double _cornerRadius;
   double _edgeHighlightAlpha;
+  SoftGlassTuning _tuning;
 
   ui.ImageFilter? _cachedFilter;
   SoftGlassRefractionLens? _cachedLens;
   Rect? _cachedGeometry;
   double? _cachedSigma;
   double? _cachedHighlight;
+  SoftGlassTuning? _cachedTuning;
 
   @override
   BackdropFilterLayer? get layer => super.layer as BackdropFilterLayer?;
@@ -735,6 +769,15 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
     markNeedsPaint();
   }
 
+  SoftGlassTuning get tuning => _tuning;
+  set tuning(SoftGlassTuning value) {
+    if (_tuning == value) {
+      return;
+    }
+    _tuning = value;
+    markNeedsPaint();
+  }
+
   @override
   void paint(PaintingContext context, Offset offset) {
     if (child == null) {
@@ -758,7 +801,8 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
         identical(_cachedLens, refracted ? lens : null) &&
         _cachedGeometry == geometry &&
         _cachedSigma == blurSigma &&
-        _cachedHighlight == edgeHighlightAlpha) {
+        _cachedHighlight == edgeHighlightAlpha &&
+        _cachedTuning == tuning) {
       return _cachedFilter!;
     }
 
@@ -774,6 +818,12 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
               devicePixelRatio: _devicePixelRatio,
               cornerRadiusPx: _cornerRadiusPx(),
               edgeHighlightAlpha: edgeHighlightAlpha,
+              // 带宽度与位移共用 tuning.refraction：两者默认同值（上游
+              // GlassRefractionSpec 18/18），同步缩放可保持透镜剖面形状。
+              refractionHeightDp: tuning.refraction,
+              refractionAmountDp: tuning.refraction,
+              chromaticAberrationDp: tuning.chromaticAberration,
+              depthEffect: tuning.depthEffect,
             ),
             inner: blur,
           )
@@ -783,6 +833,7 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
     _cachedGeometry = geometry;
     _cachedSigma = blurSigma;
     _cachedHighlight = edgeHighlightAlpha;
+    _cachedTuning = tuning;
     _cachedFilter = result;
     return result;
   }

@@ -306,11 +306,13 @@ class HomePageChromeGlassFill extends StatelessWidget {
         ? homeChromeAdvancedGlassMode(appearance)
         : null;
     if (advancedMode == FrostedGlassMode.softGlass) {
+      // 底色倍率 = 配方倍率 × 用户调参（与 SoftGlassSurface 的 fill 同口径）。
       return SoftGlassTokens.tint(
         context,
         blurEnabled: useBlur,
         tintAlphaMultiplier:
-            SoftGlassRecipe.floatingNavigation.tintAlphaMultiplier,
+            SoftGlassRecipe.floatingNavigation.tintAlphaMultiplier *
+            appearance.softGlassTuning.tintAlphaMultiplier,
       );
     }
     if (advancedMode == FrostedGlassMode.liquidGlass) {

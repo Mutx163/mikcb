@@ -10417,7 +10417,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get advancedMaterialTitle => 'Advanced Material';
 
   @override
-  String get advancedMaterialEntrySubtitle => 'Liquid glass parameter tuning';
+  String get advancedMaterialEntrySubtitle =>
+      'Soft / liquid glass parameter tuning';
 
   @override
   String get liquidGlassPresetLabel => 'Liquid Glass Preset';
@@ -10499,6 +10500,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liquidGlassResetAction => 'Reset to Default';
+
+  @override
+  String get softGlassHint =>
+      'Soft glass needs no high-end device; changes apply live';
+
+  @override
+  String get softGlassPresetLabel => 'Soft glass preset';
+
+  @override
+  String get softGlassPresetClear => 'Clear';
+
+  @override
+  String get softGlassPresetLight => 'Light Mist';
+
+  @override
+  String get softGlassPresetStandard => 'Standard';
+
+  @override
+  String get softGlassPresetDense => 'Dense Fog';
+
+  @override
+  String get softGlassPresetCustom => 'Custom';
+
+  @override
+  String get softGlassCustomExpandedTitle => 'Custom parameters';
+
+  @override
+  String get softGlassBlurLabel => 'Frost strength';
+
+  @override
+  String get softGlassTintLabel => 'Tint opacity';
+
+  @override
+  String get softGlassRefractionLabel => 'Refraction';
+
+  @override
+  String get softGlassDepthLabel => 'Thickness';
+
+  @override
+  String get softGlassChromaticAberrationLabel => 'Chromatic aberration';
+
+  @override
+  String get softGlassEdgeHighlightLabel => 'Edge highlight';
+
+  @override
+  String get softGlassResetAction => 'Reset to Default';
 
   @override
   String get diagnosticsEntryTitle => 'Diagnostics';

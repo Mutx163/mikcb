@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../models/header_blur_style.dart';
 import '../../../models/liquid_glass_tuning.dart';
+import '../../../models/soft_glass_tuning.dart';
 
 /// Default frosted-glass tuning (aligned with app timetable defaults).
 const kDefaultFrostedBlurEnabled = true;
@@ -79,6 +80,7 @@ class FrostedAppearance {
     this.headerBlurStyle = kDefaultHeaderBlurStyle,
     this.homeChromeGlassMaterial = kDefaultHomeChromeGlassMaterial,
     this.liquidGlassTuning,
+    this.softGlassTuning = SoftGlassTuning.defaults,
     this.liquidGlassPopupEnabled = kDefaultLiquidGlassPopupEnabled,
     this.liquidGlassSelectSheetEnabled = kDefaultLiquidGlassSelectSheetEnabled,
     this.liquidGlassSheetDialogEnabled = kDefaultLiquidGlassSheetDialogEnabled,
@@ -122,6 +124,10 @@ class FrostedAppearance {
   /// Optional liquid-glass tuning (used when [glassMode] is [FrostedGlassMode.liquidGlass]).
   final LiquidGlassTuning? liquidGlassTuning;
 
+  /// 柔光玻璃参数（[glassMode] 为 [FrostedGlassMode.softGlass] 时生效）。
+  /// 非空缺省即默认档，柔光任何后端都能画，无需可空判空。
+  final SoftGlassTuning softGlassTuning;
+
   /// 液态玻璃作用范围：锚定下拉选择小弹窗（玻璃模式等设置行弹出的气泡）。
   final bool liquidGlassPopupEnabled;
 
@@ -152,6 +158,7 @@ class FrostedAppearance {
           sheetBarrierAlpha == other.sheetBarrierAlpha &&
           glassMode == other.glassMode &&
           liquidGlassTuning == other.liquidGlassTuning &&
+          softGlassTuning == other.softGlassTuning &&
           liquidGlassPopupEnabled == other.liquidGlassPopupEnabled &&
           liquidGlassSelectSheetEnabled ==
               other.liquidGlassSelectSheetEnabled &&
@@ -172,6 +179,7 @@ class FrostedAppearance {
     sheetBarrierAlpha,
     glassMode,
     liquidGlassTuning,
+    softGlassTuning,
     liquidGlassPopupEnabled,
     liquidGlassSelectSheetEnabled,
     liquidGlassSheetDialogEnabled,
