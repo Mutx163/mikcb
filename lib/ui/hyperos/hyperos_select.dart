@@ -9,7 +9,7 @@ import 'package:flutter/services.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_controls.dart';
-import 'hyperos_list_popup.dart' show PopupPageCaptureData;
+import 'hyperos_popup_page_capture.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_sheet.dart';
 import 'hyperos_theme.dart';
