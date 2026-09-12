@@ -61,6 +61,8 @@ lib/services/warehouse_repository_service.dart:4
 lib/services/webdav_sync_service.dart:1
 lib/utils/course_color_palette.dart:19
 lib/utils/locale_utils.dart:4
+lib/ui/hyperos/soft_glass/soft_glass_refraction.dart:1
+lib/ui/hyperos/soft_glass/soft_glass_surface.dart:7
 lib/widgets/app_startup_splash.dart:1
 lib/widgets/class_reminder_sheet.dart:2
 lib/widgets/live_island_preview.dart:4
