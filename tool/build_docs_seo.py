@@ -306,7 +306,12 @@ def document(
     <meta name="twitter:title" content="{attr(title)}" />
     <meta name="twitter:description" content="{attr(description)}" />
     <link rel="canonical" href="{attr(canonical)}" />
-    <link rel="icon" href="{prefix}app-icon.png" type="image/png" />
+    <link rel="icon" href="{prefix}favicon.ico" sizes="48x48" />
+    <link rel="icon" href="{prefix}favicon-48.png" type="image/png" sizes="48x48" />
+    <link rel="icon" href="{prefix}favicon-96.png" type="image/png" sizes="96x96" />
+    <link rel="icon" href="{prefix}favicon-144.png" type="image/png" sizes="144x144" />
+    <link rel="icon" href="{prefix}favicon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="{prefix}apple-touch-icon.png" sizes="180x180" />
     <link rel="stylesheet" href="{prefix}styles.css" />
     <script type="application/ld+json">{json_ld(structured_data)}</script>
     <script>

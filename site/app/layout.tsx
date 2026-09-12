@@ -46,8 +46,15 @@ export const metadata: Metadata = {
     follow: true,
   },
   icons: {
-    icon: '/favicon.ico',
-    apple: '/app-icon.png',
+    // 48 的整数倍是 Google 图标的硬性要求；app-icon.png（512、129KB）只留给 OG/分享图。
+    icon: [
+      { url: '/favicon.ico', sizes: '48x48' },
+      { url: '/favicon-48.png', type: 'image/png', sizes: '48x48' },
+      { url: '/favicon-96.png', type: 'image/png', sizes: '96x96' },
+      { url: '/favicon-144.png', type: 'image/png', sizes: '144x144' },
+      { url: '/favicon-192.png', type: 'image/png', sizes: '192x192' },
+    ],
+    apple: { url: '/apple-touch-icon.png', sizes: '180x180' },
   },
 };
 
