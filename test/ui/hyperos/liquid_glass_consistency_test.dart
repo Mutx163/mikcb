@@ -135,8 +135,7 @@ void main() {
   /// backgroundKey，恒走 PATH B——折射为零，真机只剩一圈 rim/fresnel 描边。
   /// 传了宿主捕获边界时必须改走 LightweightLiquidGlass 才真的会折射。
   group('refraction requires a host capture boundary', () {
-    test('a capture boundary is the single gate', () {
-      // 有边界 + 非共享 + 非降级 → 才走真折射。
+    test('a capture boundary is the single gate', () {      // 有边界 + 非共享 + 非降级 → 才走真折射。
       expect(
         HyperosLiquidGlassSurface.usesRefractingPath(
           backgroundKey: GlobalKey(),
@@ -190,7 +189,12 @@ void main() {
       expect(find.byType(LightweightLiquidGlass), findsNothing);
     });
 
-    testWidgets('a backgroundKey switches to the refracting path', (
+    // 名字写实：widget 测试环境里 ImageFilter.isShaderFilterSupported 恒为
+    // false，useMinimal 必然成立，所以这里**不会**看到切到折射通道（断言
+    // 故意钉住「未显式传 key 时仍走 AdaptiveGlass」）。真折射通道的判定由
+    // 上面的纯函数用例 usesRefractingPath 覆盖，那条才与渲染环境无关。
+    testWidgets('no backgroundKey keeps the AdaptiveGlass path even with a '
+        'host boundary nearby', (
       tester,
     ) async {
       final boundary = GlobalKey();

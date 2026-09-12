@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
+import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_tokens.dart';
 
 /// GlassTabBar 内部默认（kBottomBarGlassDefaults）——iOS 26 Apple News /
@@ -126,12 +127,44 @@ void main() {
   });
 
   group('thickness drives visible optics in the standard tier', () {
-    double absorptionFor(double thickness) => LiquidGlassTuning(
-      thickness: thickness,
-    ).toSheetSettings(brightness: Brightness.light).edgeAbsorption;
-    double fresnelFor(double thickness) => LiquidGlassTuning(
-      thickness: thickness,
-    ).toSheetSettings(brightness: Brightness.light).fresnelStrength;
+    // 厚度补偿已从 toSheetSettings 移到表面层：PATH A（真折射）由
+    // HyperosLiquidGlassSurface.withThicknessOptics 清零补偿，PATH B 由
+    // withoutThicknessOptics 按生效厚度写入。此处直接钉这两个纯函数，
+    // 不再经由 toSheetSettings（它现在与本补偿无关）。
+    LiquidGlassSettings pathB(double thickness) =>
+        HyperosLiquidGlassSurface.withoutThicknessOptics(
+          const LiquidGlassSettings(),
+          LiquidGlassTuning(thickness: thickness),
+        );
+    double absorptionFor(double thickness) =>
+        pathB(thickness).edgeAbsorption;
+    double fresnelFor(double thickness) => pathB(thickness).fresnelStrength;
+
+    test('PATH A drops the compensation: no double counting', () {
+      // 真折射通道下 thickness 本身就驱动折射位移（shader 里
+      // edgeOffset = surfaceNormal * edgeInfluence * uThickness * 0.5），
+      // 再叠 edgeAbsorption / fresnelStrength 就是双重计数。
+      final pathA = HyperosLiquidGlassSurface.withThicknessOptics(
+        LiquidGlassTuning(thickness: 40).toSheetSettings(
+          brightness: Brightness.light,
+        ),
+        const LiquidGlassTuning(thickness: 40),
+      );
+      expect(pathA.edgeAbsorption, 0.0);
+      expect(pathA.fresnelStrength, 1.0);
+      // 厚度本身必须保留（折射位移靠它）。
+      expect(pathA.thickness, 40);
+    });
+
+    test('toSheetSettings itself no longer bakes in the compensation', () {
+      // 契约：补偿是**渲染路径**的信息，不属于模型层。若此处又出现非零值，
+      // PATH A 表面就会双重计数。
+      final sheet = const LiquidGlassTuning(thickness: 40).toSheetSettings(
+        brightness: Brightness.light,
+      );
+      expect(sheet.edgeAbsorption, 0.0);
+      expect(sheet.fresnelStrength, 1.0);
+    });
 
     test('default thickness is the pivot: package defaults, zero drift', () {
       expect(LiquidGlassTuning.defaultThickness, 30);
@@ -229,7 +262,13 @@ void main() {
         tuning.toCourseCardSettings(brightness: Brightness.dark),
         sheet,
       );
-      expect(sheet.edgeAbsorption, greaterThan(0));
+      // 三个角色共用同一份基础设置；厚度补偿由表面层按渲染路径追加，
+      // 三者路径相同时结果也必然相同。
+      expect(
+        HyperosLiquidGlassSurface.withoutThicknessOptics(sheet, tuning)
+            .edgeAbsorption,
+        greaterThan(0),
+      );
     });
   });
 }

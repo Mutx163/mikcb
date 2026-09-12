@@ -62,6 +62,11 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
   /// 色散额外固定到 [MikcbLiquidGlassTokens.previewChromaticAberration]：
   /// 预览框是小尺寸面板，而玻璃的边缘形态学是按大面板标定的，同一个色散
   /// 值在小框上会读成「彩虹描边」而不是玻璃的边。真机表面不受此处影响。
+  ///
+  /// ⚠️ 由此产生一处**有意的所见非所得**：预览固定 0.03，而真机用的是
+  /// 用户实际调参（默认为上限 0.12，是预览的 4 倍）。原因是小框会把色散
+  /// 放大成伪影，两者无法同时满足；已知且接受。若日后要消除这处背离，
+  /// 应改预览框的尺寸/标定，而不是把这里的值提到与真机一致。
   static LiquidGlassTuning? previewSafeTuning(LiquidGlassTuning? tuning) {
     if (tuning == null) {
       return null;
