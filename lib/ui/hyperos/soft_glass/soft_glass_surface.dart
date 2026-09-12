@@ -563,11 +563,24 @@ class _SoftGlassBackdrop extends StatefulWidget {
 
 class _SoftGlassBackdropState extends State<_SoftGlassBackdrop> {
   SoftGlassRefractionLens? _lens;
+  ModalRoute<dynamic>? _route;
 
   @override
   void initState() {
     super.initState();
     _syncLens();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (identical(route, _route)) {
+      return;
+    }
+    _route?.animation?.removeStatusListener(_onRouteSettled);
+    _route = route;
+    route?.animation?.addStatusListener(_onRouteSettled);
   }
 
   @override
@@ -580,9 +593,29 @@ class _SoftGlassBackdropState extends State<_SoftGlassBackdrop> {
 
   @override
   void dispose() {
+    _route?.animation?.removeStatusListener(_onRouteSettled);
+    _route = null;
     _lens?.dispose();
     _lens = null;
     super.dispose();
+  }
+
+  /// 路由转场（HyperosPageRoute 的滑入 shell：不透明底 + 圆角 saveLayer）
+  /// 结束的那一刻，引擎的 backdrop 采样才恢复稳定（同问题记录见
+  /// LiquidGlassDegradation.familyFallsBackToSolid 注释一：动画期间
+  /// BackdropFilter 采不到稳定背景，整段动画渲染为透明）。转场里建出的
+  /// 滤镜对象被 _resolveFilter 缓存后，settle 时几何/sigma/tuning 均未变
+  /// → 缓存命中 → 坏滤镜一直复用，玻璃面停在透明（外观页预览顶栏尤甚，
+  /// 页面静止后不再有任何重绘）。settle 必须清一次缓存强制重建。
+  void _onRouteSettled(AnimationStatus status) {
+    if (status != AnimationStatus.completed &&
+        status != AnimationStatus.dismissed) {
+      return;
+    }
+    final renderObject = context.findRenderObject();
+    if (renderObject is _RenderSoftGlassBackdrop) {
+      renderObject.invalidateFilterCache();
+    }
   }
 
   void _syncLens() {
@@ -835,7 +868,24 @@ class _RenderSoftGlassBackdrop extends RenderProxyBox {
     _cachedHighlight = edgeHighlightAlpha;
     _cachedTuning = tuning;
     _cachedFilter = result;
+    _filterBuilds++;
     return result;
+  }
+
+  /// 滤镜重建次数（每次缓存未命中 +1）。测试用观测点：路由 settle 后
+  /// 应 +1（见 [_SoftGlassBackdropState._onRouteSettled]）。
+  @visibleForTesting
+  int get debugFilterBuilds => _filterBuilds;
+  int _filterBuilds = 0;
+
+  /// 清空滤镜缓存并重画。转场 settle 时由 state 调用：动画期间引擎的
+  /// backdrop 采样不稳定，彼时建出的滤镜必须废弃重建。
+  void invalidateFilterCache() {
+    if (_cachedFilter == null) {
+      return;
+    }
+    _cachedFilter = null;
+    markNeedsPaint();
   }
 
   /// 圆角半径（物理像素）。胶囊传 999 也能用——这里夹到短边一半，即胶囊半径；
