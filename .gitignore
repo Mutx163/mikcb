@@ -84,6 +84,10 @@ node_modules/
 tmp/
 local/
 
+# 根目录下的本地录制素材（宣传视频等，单文件十几 MB，不入库）。
+# 只匹配仓库根，不影响 site/ 等需要入库的素材目录。
+/*.mp4
+
 # 审查输出
 reviews/
 .adversarial-review/
@@ -157,7 +161,11 @@ AGENTS.md
 *.stackdump
 
 # 一次性 scratch 脚本（CJK 棘轮对照等，用完即弃）
-.py
+#
+# 只忽略**仓库根**下的 .py：
+#   - 写成 `.py` 只匹配字面名 ".py"，等于没生效（写错了）；
+#   - 写成 `*.py` 会把 tool/ 下 16 个已跟踪的正式脚本的**新增**文件一起吞掉。
+/*.py
 .burst/
 
 # skill 安装包与解包缓存
@@ -168,6 +176,10 @@ AGENTS.md
 .wrangler/
 
 # 内部工作流程文档（代码评审 / 验收清单 / 会话交接 / 推广文案，仅本地不入库）
+#
+# ⚠️ gitignore 对**已跟踪**文件无效：CODE_REVIEW_2026-08-30.md 早已入库，本规则
+# 拦不住它。要真正下线需 `git rm --cached CODE_REVIEW_2026-08-30.md` 并单独确认
+# （会从仓库删除该文件，可能是他人的存档，故不在此自动处理）。
 CODE_REVIEW_*.md
 近期改动验收清单*.md
 xhs_*.md
