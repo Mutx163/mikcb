@@ -14,7 +14,6 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/data_transfer_screen.dart';
 import 'package:university_timetable/screens/ics_export_screen.dart';
-import 'package:university_timetable/services/ics_export_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../helpers_test_app.dart';
@@ -251,7 +250,10 @@ void main() {
     });
 
     /// 2026-03-02（周一，第 1 周）设为法定假期；该课表只有这一节课。
-    _HolidayTimetableProvider holidayProvider() => _HolidayTimetableProvider(
+    /// 返回类型必须声明为 TimetableProvider：ChangeNotifierProvider.value
+    /// 按声明类型注册，子类声明会让屏幕里的 context.read<TimetableProvider>
+    /// 抛 ProviderNotFoundException（与 _testProvider() 同理）。
+    TimetableProvider holidayProvider() => _HolidayTimetableProvider(
       _testProfile(),
       HolidayData(
         year: 2026,
@@ -283,7 +285,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('ics-export-share')));
+      // 分享按钮在默认测试面视口之外，直接 tap 会打偏（hit-test 警告）；
+      // 与「passes generated ICS data」用例同款先 ensureVisible 再 tap。
+      final shareButton = find.byKey(const Key('ics-export-share'));
+      await tester.ensureVisible(shareButton);
+      await tester.tap(shareButton);
       await tester.pumpAndSettle();
 
       expect(shareCalls, 1, reason: '默认不过滤，假期当天的课程照常导出');
@@ -306,9 +312,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(toggleKey));
+      // 开关与分享按钮都在视口外，逐个 ensureVisible 再 tap（同上）。
+      final toggle = find.byKey(toggleKey);
+      await tester.ensureVisible(toggle);
+      await tester.tap(toggle);
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('ics-export-share')));
+      final shareButton = find.byKey(const Key('ics-export-share'));
+      await tester.ensureVisible(shareButton);
+      await tester.tap(shareButton);
       await tester.pumpAndSettle();
 
       expect(shareCalls, 0, reason: '全部课程都被假期过滤掉后不应分享空日历');

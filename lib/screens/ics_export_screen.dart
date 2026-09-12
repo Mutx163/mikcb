@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
-import '../models/holiday_entry.dart';
 import '../models/timetable_profile.dart';
 import '../providers/timetable_provider.dart';
 import '../services/ics_export_service.dart';
