@@ -103,16 +103,29 @@ void main() {  testWidgets('子页顶栏外壳读 subpageHeaderBlurStyleOf', (te
       await tester.pump();
     }
 
-    testWidgets('渐进档：inspire 可变模糊层叠在柔光面之下', (tester) async {
+    testWidgets('渐进档：可变模糊 + 渐进雾面，内层不再叠模糊与雾', (tester) async {
       await pumpBand(tester, HeaderBlurStyle.inspire);
 
-      // 组合结构：InspireHeaderBlur（可变模糊 + 全透明衬底）包住
-      // SoftGlassSurface（雾面底色 + 边缘高光）。
+      // 组合契约（2026-09-12 首页「还是均匀柔光」回归）：
+      // - 雾面底色交给 InspireHeaderBlur 的渐进衬底（顶边全雾、底边全清），
+      //   颜色 = 柔光浮空导航配方的雾面色；
+      // - SoftGlassSurface 只出边缘高光——它若再出内部均匀高斯，双层模糊
+      //   会把可变衰减抹平（底边被均匀 σ 重糊）；若再叠均匀雾面，底边的
+      //   「清」也被盖回去，两者都会退化回均匀柔光。
+      final context = tester.element(find.byType(InspireHeaderBlur));
+      final expectedFog = SoftGlassTokens.tint(
+        context,
+        blurEnabled: true,
+        tintAlphaMultiplier:
+            SoftGlassRecipe.floatingNavigation.tintAlphaMultiplier *
+            SoftGlassTuning.defaults.tintAlphaMultiplier,
+      );
       final inspire = tester.widget<InspireHeaderBlur>(
         find.byType(InspireHeaderBlur),
       );
       expect(inspire.style, HeaderBlurStyle.inspire);
-      expect(inspire.tint, Colors.transparent);
+      expect(inspire.tint, expectedFog);
+      expect(inspire.tint, isNot(Colors.transparent));
       // σ 取柔光浮空导航配方（× 用户倍率），不是磨砂 sheetBlurSigma。
       expect(
         inspire.blurSigma,
@@ -123,9 +136,9 @@ void main() {  testWidgets('子页顶栏外壳读 subpageHeaderBlurStyleOf', (te
       final soft = tester.widget<SoftGlassSurface>(
         find.byType(SoftGlassSurface),
       );
-      // blurEnabled 直通：VM 下 canRender=false 只是不画模糊层，字段如实。
-      expect(soft.blurEnabled, isTrue);
-      expect(soft.tint, isNotNull); // 显式雾面底色，不吃实底档兜底。
+      // 内层禁止任何模糊与雾面（防双层模糊回归）。
+      expect(soft.blurEnabled, isFalse);
+      expect(soft.tint, Colors.transparent);
     });
 
     testWidgets('高斯档：原生 SoftGlassSurface，无可变模糊层', (tester) async {

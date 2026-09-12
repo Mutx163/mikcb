@@ -387,12 +387,17 @@ class HomePageChromeGlassFill extends StatelessWidget {
 
 /// 柔光首页玻璃带：顶栏模糊风格在柔光材质下的实现。
 ///
-/// 渐进档 = inspire 可变模糊（上浓下淡）层叠在柔光雾面之下；高斯档 =
-/// 原生 [SoftGlassSurface]（均匀雾）。层叠而非合成：inspire 的可变模糊是
-/// widget 级渲染（自带几何测量与 backdrop pass），进不了 SoftGlassSurface
-/// 的 `ImageFilter.compose`。代价：渐进组合带不带折射透镜——衰减到 0 的
-/// 底边再套透镜剖面本就失真。shader 不支持时 inspire 层自动退场，剩下的
-/// 就是柔光原生回退路径，降级自然成立。
+/// 渐进档 = inspire 可变模糊（上浓下淡），**雾面底色同频衰减**（柔光雾面
+/// 色交给 [InspireHeaderBlur] 的渐进衬底画：顶边全雾、底边全清，与磨砂渐
+/// 进同口径）；高斯档 = 原生 [SoftGlassSurface]（均匀雾）。
+///
+/// 为什么层叠且渐进档要关掉 [SoftGlassSurface] 内部模糊：inspire 可变模糊
+/// 是 widget 级渲染（自带几何测量与 backdrop pass），进不了 SoftGlassSurface
+/// 的 `ImageFilter.compose`；而若让 SoftGlassSurface 继续出它自己的均匀高
+/// 斯，双层模糊会把可变衰减重新抹平（底边被均匀 σ 再糊一遍），雾面若再
+/// 叠一层均匀底色也会把底边的「清」盖回去——两者都会退化回「均匀柔光」。
+/// 所以渐进档里 SoftGlassSurface 只负责边缘高光。代价：组合带不带折射透
+/// 镜（衰减到 0 的底边套透镜剖面本就失真）。
 class SoftGlassHomeBand extends StatelessWidget {
   const SoftGlassHomeBand({
     required this.blurStyle,
@@ -413,11 +418,18 @@ class SoftGlassHomeBand extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tuning = FrostedAppearanceScope.of(context).softGlassTuning;
+    final fog = SoftGlassTokens.tint(
+      context,
+      blurEnabled: blurEnabled,
+      tintAlphaMultiplier:
+          SoftGlassRecipe.floatingNavigation.tintAlphaMultiplier *
+          tuning.tintAlphaMultiplier,
+    );
     if (blurStyle == HeaderBlurStyle.inspire) {
       return InspireHeaderBlur(
-        // 雾面底色由 SoftGlassSurface 负责（柔光语义是均匀雾，不吃
-        // InspireHeaderBlur 的渐进衬底），这里传全透明把它跳过。
-        tint: Colors.transparent,
+        // 柔光雾面跟随模糊衰减：InspireHeaderBlur 的渐进衬底顶边全雾、
+        // 底边全清（progressiveTintBottomScale = 0），正合「上浓下淡」。
+        tint: fog,
         blurEnabled: blurEnabled,
         blurSigma: SoftGlassRecipe.floatingNavigation.blurSigmaWithMultiplier(
           tuning.blurRadiusMultiplier,
@@ -425,18 +437,10 @@ class SoftGlassHomeBand extends StatelessWidget {
         style: blurStyle,
         child: SoftGlassSurface(
           borderRadius: borderRadius,
-          blurEnabled: blurEnabled,
+          // 只出边缘高光：内部均匀高斯与雾面都不可再叠（见类注释）。
+          blurEnabled: false,
           enableShadows: false,
-          // 显式按「模糊开」的层级给底色：传参 blurEnabled:false 会触发
-          // SoftGlassSurface 内部的实底 tintAlphaNoBlur，不是本组合要的
-          // 雾面层级；shader 不支持时模糊层退场，此色自动切到实底档。
-          tint: SoftGlassTokens.tint(
-            context,
-            blurEnabled: blurEnabled,
-            tintAlphaMultiplier:
-                SoftGlassRecipe.floatingNavigation.tintAlphaMultiplier *
-                tuning.tintAlphaMultiplier,
-          ),
+          tint: Colors.transparent,
           child: const SizedBox.expand(),
         ),
       );
