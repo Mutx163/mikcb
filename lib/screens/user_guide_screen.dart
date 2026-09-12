@@ -675,6 +675,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                   title: l10n.homeMenuStyleList,
                   summary: l10n.homeMenuStyleListSubtitle,
                   selected: settings.homeMenuStyle == HomeMenuStyle.list,
+                  // showDivider 画在该行下方：画在首行才是两选项之间。
+                  showDivider: true,
                   onTap: () => _updateSettings(
                     _currentSettings.copyWith(
                       homeMenuStyle: HomeMenuStyle.list,
@@ -686,7 +688,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                   title: l10n.homeMenuStyleGrid,
                   summary: l10n.homeMenuStyleGridSubtitle,
                   selected: settings.homeMenuStyle == HomeMenuStyle.grid,
-                  showDivider: true,
                   onTap: () => _updateSettings(
                     _currentSettings.copyWith(
                       homeMenuStyle: HomeMenuStyle.grid,
@@ -709,7 +710,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                     title: _guideVisualEffectLabel(l10n, effect),
                     summary: _guideVisualEffectDescription(l10n, effect),
                     selected: currentEffect == effect,
-                    showDivider: index > 0,
+                    // showDivider 画在该行下方：末行不画，否则四档只有
+                    // 三条线且最后一条悬在卡片底边。
+                    showDivider: index < _guideVisualEffectOptions.length - 1,
                     onTap: () => _applyVisualEffect(effect),
                   ),
               ],
