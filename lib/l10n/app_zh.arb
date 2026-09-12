@@ -5995,7 +5995,7 @@
   "headerBlurStyleGaussian": "高斯模糊",
   "headerBlurStyleInspire": "渐进模糊",
   "headerBlurStyleSubtitle": "渐进模糊让顶栏上浓下淡、贴近内容处完全清晰（Inspire Blur）",
-  "headerBlurStyleHint": "渐进模糊需要支持自定义着色器的设备（Impeller），不满足时顶栏只保留纯色衬底",
+  "headerBlurStyleHint": "渐进模糊需要支持自定义着色器的设备（Impeller），不满足时顶栏只保留纯色衬底；顶栏跟随柔光 / 液态材质时不看此风格，切回基础磨砂后生效",
   "frostedGlassModeLabel": "玻璃模式",
   "liquidGlassScopeSectionTitle": "液态玻璃作用范围（关闭即改为实体卡片）",
   "liquidGlassScopePopupTitle": "下拉选择弹窗",

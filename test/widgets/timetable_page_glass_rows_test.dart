@@ -1,13 +1,11 @@
 // 顶栏玻璃行的可发现性回归。
 //
 // 历史：ded4b7e5 把「顶栏模糊风格」（渐进 / 高斯）并进「玻璃材质」三选一，
-// 页面上再也找不到一行叫这个名字的开关；随后拆回独立行，但两行都写同一组
-// 字段、互相打架。现在收敛成**一行**：
-//
-// 1. 基础材质（实体 / 高斯）→ 只渲染「顶栏模糊风格」一行；
-// 2. 全局高级材质（柔光 / 液态）+ 作用范围开 → 折射 / 雾面不看衰减风格，
-//    该行隐藏，不留一个改了不生效的选项；
-// 3. 顶栏玻璃总开关关闭时该行不渲染。
+// 页面上再也找不到一行叫这个名字的开关；随后拆回独立行，但一度按「改了
+// 不生效就隐藏」的口径在高级材质 / 玻璃总关时把行藏掉，用户仍然找不到
+// （2026-09-12 反馈）。最终口径：**该行恒常显示，不做任何条件隐藏**——
+// 顶栏走基础磨砂时立即生效；跟随柔光 / 液态材质时只记住选择，切回基础
+// 磨砂即恢复（由提示语说明）。
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -119,7 +117,7 @@ void main() {
     expect(find.text('渐进模糊'), findsOneWidget);
   });
 
-  testWidgets('全局柔光 + 首页玻璃带作用范围开 → 风格行隐藏', (tester) async {
+  testWidgets('全局柔光 + 首页玻璃带作用范围开 → 风格行仍常显', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(
@@ -133,12 +131,13 @@ void main() {
     await _scrollTo(tester, find.text('顶栏玻璃'));
 
     expect(find.text('顶栏玻璃'), findsOneWidget);
-    // 雾面 / 折射不看衰减风格，不留无效选项。
-    expect(find.text('顶栏模糊风格'), findsNothing);
+    // 恒常显示：高级材质下只是暂不参与渲染，选择仍可改、仍被记住。
+    expect(find.text('顶栏模糊风格'), findsOneWidget);
+    expect(find.text('渐进模糊'), findsOneWidget);
     expect(find.text('玻璃材质'), findsNothing);
   });
 
-  testWidgets('顶栏玻璃总开关关闭时风格行不渲染', (tester) async {
+  testWidgets('顶栏玻璃总开关关闭时风格行仍常显', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(
@@ -152,7 +151,8 @@ void main() {
     await _scrollTo(tester, find.text('顶栏玻璃'));
 
     expect(find.text('顶栏玻璃'), findsOneWidget);
-    expect(find.text('顶栏模糊风格'), findsNothing);
+    // 恒常显示：玻璃总关时该行不隐藏，只等开关重新打开后再生效。
+    expect(find.text('顶栏模糊风格'), findsOneWidget);
     expect(find.text('玻璃材质'), findsNothing);
   });
 }

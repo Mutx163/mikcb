@@ -9766,7 +9766,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get headerBlurStyleSubtitle => '渐进模糊让顶栏上浓下淡、贴近内容处完全清晰（Inspire Blur）';
 
   @override
-  String get headerBlurStyleHint => '渐进模糊需要支持自定义着色器的设备（Impeller），不满足时顶栏只保留纯色衬底';
+  String get headerBlurStyleHint =>
+      '渐进模糊需要支持自定义着色器的设备（Impeller），不满足时顶栏只保留纯色衬底；顶栏跟随柔光 / 液态材质时不看此风格，切回基础磨砂后生效';
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';
@@ -20572,7 +20573,8 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get headerBlurStyleSubtitle => '漸進模糊讓頂欄上濃下淡、貼近內容處完全清晰（Inspire Blur）';
 
   @override
-  String get headerBlurStyleHint => '漸進模糊需要支援自訂著色器的裝置（Impeller），不支援時頂欄只保留純色襯底';
+  String get headerBlurStyleHint =>
+      '漸進模糊需要支援自訂著色器的裝置（Impeller），不支援時頂欄只保留純色襯底；頂欄跟隨柔光 / 液態材質時不套用此風格，切回基礎磨砂後生效';
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';
@@ -31378,7 +31380,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get headerBlurStyleSubtitle => '漸進模糊讓頂欄上濃下淡、貼近內容處完全清晰（Inspire Blur）';
 
   @override
-  String get headerBlurStyleHint => '漸進模糊需要支援自訂著色器的裝置（Impeller），不支援時頂欄只保留純色襯底';
+  String get headerBlurStyleHint =>
+      '漸進模糊需要支援自訂著色器的裝置（Impeller），不支援時頂欄只保留純色襯底；頂欄跟隨柔光 / 液態材質時不套用此風格，切回基礎磨砂後生效';
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';

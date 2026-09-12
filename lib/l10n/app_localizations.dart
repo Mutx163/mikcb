@@ -17674,7 +17674,7 @@ abstract class AppLocalizations {
   /// No description provided for @headerBlurStyleHint.
   ///
   /// In zh, this message translates to:
-  /// **'渐进模糊需要支持自定义着色器的设备（Impeller），不满足时顶栏只保留纯色衬底'**
+  /// **'渐进模糊需要支持自定义着色器的设备（Impeller），不满足时顶栏只保留纯色衬底；顶栏跟随柔光 / 液态材质时不看此风格，切回基础磨砂后生效'**
   String get headerBlurStyleHint;
 
   /// No description provided for @frostedGlassModeLabel.

@@ -10092,7 +10092,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get headerBlurStyleHint =>
-      '점진 블러는 사용자 정의 셰이더(Impeller) 지원 기기가 필요하며, 미지원 시 상단 바는 단색 배경만 표시됩니다';
+      '점진 블러는 사용자 정의 셰이더(Impeller) 지원 기기가 필요하며, 미지원 시 상단 바는 단색 배경만 표시됩니다. 상단 바가 소프트 / 리퀴드 글래스 소재를 따르는 동안에는 이 스타일이 적용되지 않으며, 기본 블러로 되돌리면 다시 적용됩니다';
 
   @override
   String get frostedGlassModeLabel => '유리 모드';

@@ -5708,7 +5708,7 @@
   "headerBlurStyleGaussian": "ガウスぼかし",
   "headerBlurStyleInspire": "プログレッシブぼかし",
   "headerBlurStyleSubtitle": "プログレッシブぼかしは上端が強く、下端で完全にクリアになります（Inspire Blur）",
-  "headerBlurStyleHint": "プログレッシブぼかしにはカスタムシェーダー対応（Impeller）が必要です。非対応の場合はトップバーは単色の下地のみ表示されます",
+  "headerBlurStyleHint": "プログレッシブぼかしにはカスタムシェーダー対応（Impeller）が必要です。非対応の場合はトップバーは単色の下地のみ表示されます。トップバーがソフト / リキッドガラス素材に従っている間はこのスタイルは適用されず、基本のすりガラスに戻すと再度有効になります",
   "frostedGlassModeLabel": "ガラスモード",
   "liquidGlassScopeSectionTitle": "リキッドガラスの適用範囲（オフ＝ソリッドカード）",
   "liquidGlassScopePopupTitle": "プルダウンポップアップ",

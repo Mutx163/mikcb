@@ -10343,7 +10343,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get headerBlurStyleHint =>
-      'Progressive blur needs a device with custom shader support (Impeller); otherwise the top bar keeps only a solid tint';
+      'Progressive blur needs a device with custom shader support (Impeller); otherwise the top bar keeps only a solid tint. While the top bar follows the soft / liquid glass material this style is not applied; it takes effect again once the top bar falls back to the basic frost';
 
   @override
   String get frostedGlassModeLabel => 'Glass Mode';

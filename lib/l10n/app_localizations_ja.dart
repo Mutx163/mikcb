@@ -10050,7 +10050,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get headerBlurStyleHint =>
-      'プログレッシブぼかしにはカスタムシェーダー対応（Impeller）が必要です。非対応の場合はトップバーは単色の下地のみ表示されます';
+      'プログレッシブぼかしにはカスタムシェーダー対応（Impeller）が必要です。非対応の場合はトップバーは単色の下地のみ表示されます。トップバーがソフト / リキッドガラス素材に従っている間はこのスタイルは適用されず、基本のすりガラスに戻すと再度有効になります';
 
   @override
   String get frostedGlassModeLabel => 'ガラスモード';

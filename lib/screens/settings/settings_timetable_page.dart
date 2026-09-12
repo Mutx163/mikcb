@@ -307,30 +307,30 @@ class _TimetablePageSettingsScreenState
                 value: _chromeGlassEnabled,
                 onChanged: _setChromeGlassEnabled,
               ),
-              // 模糊风格（渐进模糊 / 高斯模糊）：仅在玻璃带走**基础磨砂**
-              // 时有效。全局高级材质 + 作用范围开时折射 / 雾面不看衰减
-              // 风格，该行隐藏——不留一个改了没效果的选项。
-              if (_chromeGlassEnabled && !_chromeUsesAdvancedMaterial) ...[
-                HyperosSelectTile<HeaderBlurStyle>(
-                  label: l10n.headerBlurStyleLabel,
-                  subtitle: l10n.headerBlurStyleSubtitle,
-                  items: {
-                    l10n.headerBlurStyleInspire: HeaderBlurStyle.inspire,
-                    l10n.headerBlurStyleGaussian: HeaderBlurStyle.gaussian,
-                  },
-                  value: _draft.headerBlurStyle,
-                  onChanged: (value) {
-                    _updateDraft(applyChromeBlurStyle(_draft, value));
-                  },
+              // 模糊风格（渐进模糊 / 高斯模糊）恒常显示，不做任何条件
+              // 隐藏（用户 2026-09-12 拍板：选项永远留在页面上）。顶栏走
+              // 基础磨砂时改了立即生效；全局高级材质 + 作用范围开时顶栏
+              // 跟随柔光 / 液态而不看衰减风格，这里只记住选择，切回基础
+              // 磨砂即恢复，由提示语说明这一层。
+              HyperosSelectTile<HeaderBlurStyle>(
+                label: l10n.headerBlurStyleLabel,
+                subtitle: l10n.headerBlurStyleSubtitle,
+                items: {
+                  l10n.headerBlurStyleInspire: HeaderBlurStyle.inspire,
+                  l10n.headerBlurStyleGaussian: HeaderBlurStyle.gaussian,
+                },
+                value: _draft.headerBlurStyle,
+                onChanged: (value) {
+                  _updateDraft(applyChromeBlurStyle(_draft, value));
+                },
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Text(
+                  l10n.headerBlurStyleHint,
+                  style: HyperosTypography.sectionDescription(context),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: Text(
-                    l10n.headerBlurStyleHint,
-                    style: HyperosTypography.sectionDescription(context),
-                  ),
-                ),
-              ],
+              ),
             ],
           ),
         ],
@@ -373,16 +373,6 @@ class _TimetablePageSettingsScreenState
   bool get _chromeGlassEnabled =>
       _draft.homePageHeaderBlurEnabled ||
       _draft.homePageWeekdayBarBlurEnabled;
-
-  /// 首页玻璃带是否走高级材质（柔光 / 液态）：这两种材质自带
-  /// 模糊与边缘光学，不看模糊衰减风格，「顶栏模糊风格」行在这种
-  /// 状态下没有效果，隐藏而不是留一个改了不生效的选项。
-  bool get _chromeUsesAdvancedMaterial =>
-      homeChromeAdvancedModeOf(
-        glassMode: _draft.frostedGlassMode,
-        homeChromeScopeEnabled: _draft.liquidGlassHomeChromeEnabled,
-      ) !=
-      null;
 
   void _setChromeGlassEnabled(bool enabled) {
     _updateDraft(

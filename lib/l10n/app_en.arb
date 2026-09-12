@@ -5956,7 +5956,7 @@
   "headerBlurStyleGaussian": "Gaussian blur",
   "headerBlurStyleInspire": "Progressive blur",
   "headerBlurStyleSubtitle": "Progressive blur fades from strong at the top to fully clear near the content (Inspire Blur)",
-  "headerBlurStyleHint": "Progressive blur needs a device with custom shader support (Impeller); otherwise the top bar keeps only a solid tint",
+  "headerBlurStyleHint": "Progressive blur needs a device with custom shader support (Impeller); otherwise the top bar keeps only a solid tint. While the top bar follows the soft / liquid glass material this style is not applied; it takes effect again once the top bar falls back to the basic frost",
   "frostedGlassModeLabel": "Glass Mode",
   "liquidGlassScopeSectionTitle": "Liquid Glass Surfaces (off = solid card)",
   "liquidGlassScopePopupTitle": "Dropdown popups",
