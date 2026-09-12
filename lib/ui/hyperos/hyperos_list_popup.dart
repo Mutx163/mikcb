@@ -819,6 +819,11 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                               )
                             : HyperosSelectPopupGlass(
                                 cornerRadius: cornerRadius,
+                                // 折射取样源 = 宿主页面捕获边界（弹窗挂在
+                                // Navigator 覆盖层上，边界只包首页 ⇒ 采到的
+                                // 是遮罩之下的页面，不含弹窗自身）。不传则
+                                // 玻璃恒走 PATH B，只剩一圈 rim/fresnel。
+                                backgroundKey: widget.pageBoundaryKey,
                                 child: dimmedPanelChild,
                               ),
                       ),
@@ -958,6 +963,8 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                             // 玻璃面是标准组件（与一级同链路的 live 采样），
                             // 透出的就是背后首页本身。
                             useAncestorGroupCapture: true,
+                            // 二级子卡同样接真折射通道（见主面板处的说明）。
+                            backgroundKey: widget.pageBoundaryKey,
                             // 折射厚度随揭示进度生长（t: 0.12→1）：子卡浮
                             // 在主面板文字行上方，满厚度下顶缘折射会把上方
                             // 行的文字镜像进卡内顶带，且揭示期间面板正等比

@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_controls.dart';
+import 'hyperos_list_popup.dart' show PopupPageCaptureData;
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_sheet.dart';
 import 'hyperos_theme.dart';
@@ -546,6 +547,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     this.pageCapture,
     this.pageAlignedOrigin,
     this.thicknessFactor,
+    this.backgroundKey,
   });
 
   final double cornerRadius;
@@ -565,6 +567,12 @@ class HyperosSelectPopupGlass extends StatelessWidget {
   /// 镜像随揭示减弱直至压暗接管，消除「字体反射」闪动。null/1 = 完整
   /// 厚度。
   final double? thicknessFactor;
+
+  /// 折射取样源（宿主页面捕获边界）。非空时液态面走真折射通道
+  /// （PATH A）；为空则恒走 PATH B，玻璃只剩一圈 rim/fresnel 描边。
+  /// 由调用方决定：列表弹窗传宿主页边界；独立下拉选择弹窗未提供时为
+  /// null（保持原自适应路径）。
+  final GlobalKey? backgroundKey;
 
   /// 浮在同一块玻璃面之上的弹层（如列表弹窗的二级子卡）置 true。
   ///
@@ -659,6 +667,13 @@ class HyperosSelectPopupGlass extends StatelessWidget {
       // 提升）。
       final pageCapture = this.pageCapture;
       final pageAlignedOrigin = this.pageAlignedOrigin;
+      // 折射取样源：弹窗场景下 = 宿主页面的整页捕获边界（弹窗本体挂在
+      // Navigator 覆盖层上，而 [PopupPageCaptureScope] 只包住首页 => 捕获
+      // 到的正好是**遮罩之下的页面**，不含弹窗自身，天然无自采样反馈）。
+      // 传下去后玻璃走 PATH A、真正做折射位移；不传则恒走 PATH B，只画
+      // 一圈 rim/fresnel——即用户报的「菜单上有个圈圈」。
+      final popupRefractionKey =
+          backgroundKey ?? PopupPageCaptureData.maybeOf(context)?.boundaryKey;
       // 页面快照可用 → 垫一层不透明快照（页面+遮罩，与一级的取样源同
       // 亮度）挡住主面板玻璃，玻璃面用标准组件 live 采样垫底输出：
       // 模糊 pass、折射、tint/whiten/rim 全部与一级弹窗同一链路，玻璃
@@ -686,6 +701,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
               useAncestorBackdropGroup: true,
               instantUnderlay: true,
               thicknessFactor: thicknessFactor,
+              backgroundKey: popupRefractionKey,
               child: child,
             ),
           ],
@@ -698,6 +714,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
         useAncestorBackdropGroup: true,
         instantUnderlay: true,
         thicknessFactor: thicknessFactor,
+        backgroundKey: popupRefractionKey,
         child: child,
       );
       if (!useAncestorGroupCapture) {

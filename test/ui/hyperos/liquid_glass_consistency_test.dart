@@ -223,6 +223,75 @@ void main() {
       expect(find.byType(AdaptiveGlass), findsOneWidget);
     });
 
+    testWidgets('popup glass forwards the host boundary as refraction source', (
+      tester,
+    ) async {
+      final boundary = GlobalKey();
+      await tester.pumpWidget(
+        TestApp(
+          home: Center(
+            child: RepaintBoundary(
+              key: boundary,
+              child: const SizedBox(
+                width: 200,
+                height: 120,
+                child: HyperosSelectPopupGlass(
+                  cornerRadius: 20,
+                  child: SizedBox.expand(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // 调用方（列表弹窗）必须把宿主边界传进来，否则玻璃又回落到 PATH B
+      // ——真机表现就是「菜单上只有一个圈圈，没有折射」。
+      expect(
+        tester
+            .widget<HyperosSelectPopupGlass>(
+              find.byType(HyperosSelectPopupGlass),
+            )
+            .backgroundKey,
+        isNull,
+      );
+    });
+
+    testWidgets('popup glass carries a forwarded boundary key', (
+      tester,
+    ) async {
+      final boundary = GlobalKey();
+      await tester.pumpWidget(
+        TestApp(
+          home: Center(
+            child: RepaintBoundary(
+              key: boundary,
+              child: SizedBox(
+                width: 200,
+                height: 120,
+                child: HyperosSelectPopupGlass(
+                  cornerRadius: 20,
+                  backgroundKey: boundary,
+                  child: const SizedBox.expand(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        tester
+            .widget<HyperosSelectPopupGlass>(
+              find.byType(HyperosSelectPopupGlass),
+            )
+            .backgroundKey,
+        boundary,
+      );
+    });
+
     testWidgets('an explicit backgroundKey is carried by the widget', (
       tester,
     ) async {
