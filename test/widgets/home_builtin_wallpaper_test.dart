@@ -3,6 +3,7 @@
 // 内置壁纸由代码渲染成位图，没有磁盘文件，因此必须与图片壁纸共用同一套
 // 背景判定（hasHomePageBackdrop）、亮度采样与玻璃管线；这里锁死「选中内置
 // 壁纸后首页真的把它当作背景」，避免后续有人把判定退回只查文件。
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -39,17 +40,13 @@ void _seedInitializedPrefs(TimetableSettings settings) {
   });
 }
 
-/// 交替真实异步与 pump，让「渲染位图 → 采样亮度 → setState」链跑完。
-Future<void> _settleAsyncChain(WidgetTester tester, {int rounds = 6}) async {
-  Future<void> waitHundredMs() =>
-      Future<void>.delayed(const Duration(milliseconds: 100));
-  for (var i = 0; i < rounds; i++) {
-    await tester.runAsync(waitHundredMs);
-    await tester.pump();
-  }
-  await tester.pump(const Duration(milliseconds: 400));
-}
-
+/// 泵几帧让首页完成首帧构建与后台初始化的 setState 落地。
+///
+/// **刻意不用 `tester.runAsync`**：TimetableScreen 的 Ticker 与 runAsync
+/// 假时钟会互相等待，历史上表现为整用例挂满 10 分钟超时（同款注释见
+/// timetable_home_card_fallback_test）。本文件断言的「背景层存在/不存在」
+/// 是构建期属性（BokehLavaGradient / 内置位图 Image 是否在树上），无需
+/// 真实异步管线收敛。
 Future<void> _pumpHome(
   WidgetTester tester,
   TimetableSettings settings, {
@@ -57,7 +54,7 @@ Future<void> _pumpHome(
 }) async {
   _seedInitializedPrefs(settings);
   final provider = TimetableProvider(autoInitialize: false);
-  await tester.runAsync(provider.initialize);
+  unawaited(provider.initialize());
   await tester.binding.setSurfaceSize(const Size(400, 800));
   await tester.pumpWidget(
     ChangeNotifierProvider.value(
@@ -81,8 +78,9 @@ Future<void> _pumpHome(
       ),
     ),
   );
-  await tester.pump();
-  await _settleAsyncChain(tester);
+  for (var i = 0; i < 3; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
 
   // 有背景时首页背景层必须画出内置壁纸（动画 BokehLavaGradient 或位图
   // Image）；无背景时两者都不应出现（只有主题兜底色）。
