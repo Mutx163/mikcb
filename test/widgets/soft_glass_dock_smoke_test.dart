@@ -8,6 +8,7 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_theme.dart';
 import 'package:university_timetable/ui/hyperos/soft_glass/soft_glass_tab_bar.dart';
 
 /// 底栏材质跟随**全局材质**（不再有独立的「底栏材质」开关），
@@ -76,5 +77,22 @@ void main() {
     await pumpDock(tester, FrostedGlassMode.liquidGlass);
     expect(find.byType(GlassTabBar), findsOneWidget);
     expect(find.byType(SoftGlassTabBar), findsNothing);
+  });
+
+  testWidgets('全局基础档 → 底栏实体药丸 + 主题墨色', (tester) async {
+    // 基础档（实体/高斯）不受作用范围开关约束；VM 上无模糊能力，
+    // 高斯档落到实体药丸——正对应全局实体卡片档在真机上的材质。
+    await pumpDock(tester, FrostedGlassMode.frosted);
+    final bar = tester.widget<GlassTabBar>(find.byType(GlassTabBar));
+    // 实体药丸：零模糊、不透明主题卡面（浅色主题 ≈ 纯白）。
+    expect(bar.settings, isNotNull);
+    expect(bar.settings!.blur, 0);
+    final barContext = tester.element(find.byType(GlassTabBar));
+    expect(
+      bar.settings!.glassColor,
+      HyperosColors.surfaceContainer(barContext),
+    );
+    // 墨色跟主题（浅色主题 = 深墨），不跟壁纸亮度——暗壁纸下不再白底白字。
+    expect(bar.unselectedLabelColor, Colors.black.withValues(alpha: 0.48));
   });
 }
