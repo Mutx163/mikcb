@@ -10055,6 +10055,52 @@ class AppLocalizationsJa extends AppLocalizations {
   String get subpageHeaderBlurStyleLabel => 'サブページ上部バーのぼかしスタイル';
 
   @override
+  String get texturePresetLabel => '質感プリセット';
+
+  @override
+  String get texturePresetSubtitle => '素材の組み合わせをまとめて適用。後から個別に調整できます';
+
+  @override
+  String get texturePresetClassicFrost => 'クラシックなすりガラス';
+
+  @override
+  String get texturePresetFullLiquid => '全面リキッドガラス';
+
+  @override
+  String get texturePresetSoftMist => 'ソフトな霧';
+
+  @override
+  String get texturePresetMinimalSolid => 'ソリッドのみ';
+
+  @override
+  String get texturePresetCustom => 'カスタム';
+
+  @override
+  String get texturePresetApplyTitle => '質感プリセットを適用';
+
+  @override
+  String get texturePresetApplyBody =>
+      'ガラスモード・適用範囲スイッチ・上部バーのスタイル・カード表面などの設定を上書きします。壁紙と文字色は変わりません。';
+
+  @override
+  String get surfaceMaterialSectionTitle => '表面ごとの現在の素材';
+
+  @override
+  String get surfaceSubpageHeader => 'サブページの上部バー';
+
+  @override
+  String get surfaceCourseCard => '時間割カード';
+
+  @override
+  String get materialStateOff => 'オフ';
+
+  @override
+  String get materialStateSolid => 'ソリッド';
+
+  @override
+  String get materialStateFrost => 'すりガラス';
+
+  @override
   String get frostedGlassModeLabel => 'ガラスモード';
 
   @override

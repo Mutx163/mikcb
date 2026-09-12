@@ -10097,6 +10097,52 @@ class AppLocalizationsKo extends AppLocalizations {
   String get subpageHeaderBlurStyleLabel => '하위 페이지 상단 바 블러 스타일';
 
   @override
+  String get texturePresetLabel => '질감 프리셋';
+
+  @override
+  String get texturePresetSubtitle => '재질 조합을 한 번에 적용하고, 이후에 항목별로 조정할 수 있습니다';
+
+  @override
+  String get texturePresetClassicFrost => '클래식 블러';
+
+  @override
+  String get texturePresetFullLiquid => '전체 리퀴드 글래스';
+
+  @override
+  String get texturePresetSoftMist => '부드러운 안개';
+
+  @override
+  String get texturePresetMinimalSolid => '솔리드만';
+
+  @override
+  String get texturePresetCustom => '사용자 지정';
+
+  @override
+  String get texturePresetApplyTitle => '질감 프리셋 적용';
+
+  @override
+  String get texturePresetApplyBody =>
+      '유리 모드, 적용 범위 스위치, 상단 바 스타일, 카드 표면 등 재질 설정을 덮어씁니다. 배경화면과 글자색은 그대로입니다.';
+
+  @override
+  String get surfaceMaterialSectionTitle => '표면별 현재 재질';
+
+  @override
+  String get surfaceSubpageHeader => '하위 페이지 상단 바';
+
+  @override
+  String get surfaceCourseCard => '시간표 카드';
+
+  @override
+  String get materialStateOff => '꺼짐';
+
+  @override
+  String get materialStateSolid => '솔리드';
+
+  @override
+  String get materialStateFrost => '블러';
+
+  @override
   String get frostedGlassModeLabel => '유리 모드';
 
   @override

@@ -17683,6 +17683,96 @@ abstract class AppLocalizations {
   /// **'子页顶栏模糊风格'**
   String get subpageHeaderBlurStyleLabel;
 
+  /// No description provided for @texturePresetLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'质感方案'**
+  String get texturePresetLabel;
+
+  /// No description provided for @texturePresetSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'一键套用整套材质搭配，应用后仍可逐项调整'**
+  String get texturePresetSubtitle;
+
+  /// No description provided for @texturePresetClassicFrost.
+  ///
+  /// In zh, this message translates to:
+  /// **'经典磨砂'**
+  String get texturePresetClassicFrost;
+
+  /// No description provided for @texturePresetFullLiquid.
+  ///
+  /// In zh, this message translates to:
+  /// **'全液态'**
+  String get texturePresetFullLiquid;
+
+  /// No description provided for @texturePresetSoftMist.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻雾柔光'**
+  String get texturePresetSoftMist;
+
+  /// No description provided for @texturePresetMinimalSolid.
+  ///
+  /// In zh, this message translates to:
+  /// **'极简实体'**
+  String get texturePresetMinimalSolid;
+
+  /// No description provided for @texturePresetCustom.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义'**
+  String get texturePresetCustom;
+
+  /// No description provided for @texturePresetApplyTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用质感方案'**
+  String get texturePresetApplyTitle;
+
+  /// No description provided for @texturePresetApplyBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'将覆盖玻璃模式、作用范围开关、顶栏风格、卡片表面等材质设置；壁纸和字色不受影响。'**
+  String get texturePresetApplyBody;
+
+  /// No description provided for @surfaceMaterialSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'各表面当前材质'**
+  String get surfaceMaterialSectionTitle;
+
+  /// No description provided for @surfaceSubpageHeader.
+  ///
+  /// In zh, this message translates to:
+  /// **'子页顶栏'**
+  String get surfaceSubpageHeader;
+
+  /// No description provided for @surfaceCourseCard.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程卡片'**
+  String get surfaceCourseCard;
+
+  /// No description provided for @materialStateOff.
+  ///
+  /// In zh, this message translates to:
+  /// **'已关闭'**
+  String get materialStateOff;
+
+  /// No description provided for @materialStateSolid.
+  ///
+  /// In zh, this message translates to:
+  /// **'实体'**
+  String get materialStateSolid;
+
+  /// No description provided for @materialStateFrost.
+  ///
+  /// In zh, this message translates to:
+  /// **'磨砂玻璃'**
+  String get materialStateFrost;
+
   /// No description provided for @frostedGlassModeLabel.
   ///
   /// In zh, this message translates to:

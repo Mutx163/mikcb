@@ -9773,6 +9773,52 @@ class AppLocalizationsZh extends AppLocalizations {
   String get subpageHeaderBlurStyleLabel => '子页顶栏模糊风格';
 
   @override
+  String get texturePresetLabel => '质感方案';
+
+  @override
+  String get texturePresetSubtitle => '一键套用整套材质搭配，应用后仍可逐项调整';
+
+  @override
+  String get texturePresetClassicFrost => '经典磨砂';
+
+  @override
+  String get texturePresetFullLiquid => '全液态';
+
+  @override
+  String get texturePresetSoftMist => '轻雾柔光';
+
+  @override
+  String get texturePresetMinimalSolid => '极简实体';
+
+  @override
+  String get texturePresetCustom => '自定义';
+
+  @override
+  String get texturePresetApplyTitle => '应用质感方案';
+
+  @override
+  String get texturePresetApplyBody =>
+      '将覆盖玻璃模式、作用范围开关、顶栏风格、卡片表面等材质设置；壁纸和字色不受影响。';
+
+  @override
+  String get surfaceMaterialSectionTitle => '各表面当前材质';
+
+  @override
+  String get surfaceSubpageHeader => '子页顶栏';
+
+  @override
+  String get surfaceCourseCard => '课程卡片';
+
+  @override
+  String get materialStateOff => '已关闭';
+
+  @override
+  String get materialStateSolid => '实体';
+
+  @override
+  String get materialStateFrost => '磨砂玻璃';
+
+  @override
   String get frostedGlassModeLabel => '玻璃模式';
 
   @override
@@ -20593,6 +20639,52 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get subpageHeaderBlurStyleLabel => '子頁頂欄模糊風格';
 
   @override
+  String get texturePresetLabel => '質感方案';
+
+  @override
+  String get texturePresetSubtitle => '一鍵套用整套材質搭配，應用後仍可逐項調整';
+
+  @override
+  String get texturePresetClassicFrost => '經典磨砂';
+
+  @override
+  String get texturePresetFullLiquid => '全液態';
+
+  @override
+  String get texturePresetSoftMist => '輕霧柔光';
+
+  @override
+  String get texturePresetMinimalSolid => '極簡實體';
+
+  @override
+  String get texturePresetCustom => '自定義';
+
+  @override
+  String get texturePresetApplyTitle => '套用質感方案';
+
+  @override
+  String get texturePresetApplyBody =>
+      '將覆蓋玻璃模式、作用範圍開關、頂欄風格、卡片表面等材質設定；桌布和字色不受影響。';
+
+  @override
+  String get surfaceMaterialSectionTitle => '各表面當前材質';
+
+  @override
+  String get surfaceSubpageHeader => '子頁頂欄';
+
+  @override
+  String get surfaceCourseCard => '課程卡片';
+
+  @override
+  String get materialStateOff => '已關閉';
+
+  @override
+  String get materialStateSolid => '實體';
+
+  @override
+  String get materialStateFrost => '磨砂玻璃';
+
+  @override
   String get frostedGlassModeLabel => '玻璃模式';
 
   @override
@@ -31411,6 +31503,52 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get subpageHeaderBlurStyleLabel => '子頁頂欄模糊風格';
+
+  @override
+  String get texturePresetLabel => '質感方案';
+
+  @override
+  String get texturePresetSubtitle => '一鍵套用整套材質搭配，應用後仍可逐項調整';
+
+  @override
+  String get texturePresetClassicFrost => '經典磨砂';
+
+  @override
+  String get texturePresetFullLiquid => '全液態';
+
+  @override
+  String get texturePresetSoftMist => '輕霧柔光';
+
+  @override
+  String get texturePresetMinimalSolid => '極簡實體';
+
+  @override
+  String get texturePresetCustom => '自定義';
+
+  @override
+  String get texturePresetApplyTitle => '套用質感方案';
+
+  @override
+  String get texturePresetApplyBody =>
+      '將覆蓋玻璃模式、作用範圍開關、頂欄風格、卡片表面等材質設定；桌布和字色不受影響。';
+
+  @override
+  String get surfaceMaterialSectionTitle => '各表面當前材質';
+
+  @override
+  String get surfaceSubpageHeader => '子頁頂欄';
+
+  @override
+  String get surfaceCourseCard => '課程卡片';
+
+  @override
+  String get materialStateOff => '已關閉';
+
+  @override
+  String get materialStateSolid => '實體';
+
+  @override
+  String get materialStateFrost => '磨砂玻璃';
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';

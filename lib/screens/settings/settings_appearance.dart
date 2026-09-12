@@ -299,6 +299,26 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
             title: l10n.frostedSheetSectionTitle,
             child: HyperosListGroup(
               children: [
+                // 「质感方案」：一键写穿一组推荐的材质搭配（2026-09-12）。
+                // 纯增量层——只改既有字段、不锁定、不落盘新字段：当前命中
+                // 哪个方案由 texturePresetOf 派生，应用后手动改任何一项即
+                // 回落「自定义」。写穿前经确认弹层说明覆盖范围。
+                HyperosSelectTile<TexturePreset?>(
+                  label: l10n.texturePresetLabel,
+                  subtitle: l10n.texturePresetSubtitle,
+                  items: {
+                    l10n.texturePresetClassicFrost: TexturePreset.classicFrost,
+                    l10n.texturePresetFullLiquid: TexturePreset.fullLiquid,
+                    l10n.texturePresetSoftMist: TexturePreset.softMist,
+                    l10n.texturePresetMinimalSolid: TexturePreset.minimalSolid,
+                    l10n.texturePresetCustom: null,
+                  },
+                  value: texturePresetOf(_draft),
+                  onChanged: (preset) {
+                    if (preset == null) return;
+                    _applyTexturePreset(preset);
+                  },
+                ),
                 // 玻璃模式三档，与引导页「视觉效果」同一映射（见
                 // [glassModeChoiceOf] / [applyGlassModeChoice]）：此前
                 // 经典磨砂/高斯模糊/半透明三档渲染链路完全相同，只有
@@ -429,6 +449,48 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               ],
             ),
           ),
+          // 「各表面当前材质」地图：与渲染侧门控同口径的只读推导（2026-
+          // 09-12），回答「哪个表面现在是什么材质、为什么」。行名复用作用
+          // 范围开关的既有文案（同物同名），不含依设备实时状态定的系统降级。
+          HyperosSettingsBlock(
+            title: l10n.surfaceMaterialSectionTitle,
+            child: HyperosListGroup(
+              children: [
+                _surfaceMaterialTile(
+                  l10n.liquidGlassScopeHomeChromeTitle,
+                  homeBandSurfaceMaterial(_draft),
+                ),
+                _surfaceMaterialTile(
+                  l10n.surfaceSubpageHeader,
+                  subpageHeaderSurfaceMaterial(_draft),
+                ),
+                _surfaceMaterialTile(
+                  l10n.liquidGlassScopeDockTitle,
+                  dockSurfaceMaterial(_draft),
+                ),
+                _surfaceMaterialTile(
+                  l10n.liquidGlassScopeSheetDialogTitle,
+                  sheetDialogSurfaceMaterial(_draft),
+                ),
+                _surfaceMaterialTile(
+                  l10n.liquidGlassScopeSelectSheetTitle,
+                  selectSheetSurfaceMaterial(_draft),
+                ),
+                _surfaceMaterialTile(
+                  l10n.liquidGlassScopePopupTitle,
+                  popupSurfaceMaterial(_draft),
+                ),
+                _surfaceMaterialTile(
+                  l10n.liquidGlassScopePickerButtonsTitle,
+                  pickerButtonsSurfaceMaterial(_draft),
+                ),
+                _surfaceMaterialTile(
+                  l10n.surfaceCourseCard,
+                  courseCardSurfaceMaterial(_draft),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
       4 => _SettingsResetTile(
@@ -445,6 +507,27 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [const HyperosSectionGap(), section],
     );
+  }
+
+  /// 「各表面当前材质」地图的只读行。
+  Widget _surfaceMaterialTile(String title, SurfaceMaterial material) {
+    final l10n = AppLocalizations.of(context)!;
+    return HyperosListTile(title: title, details: _surfaceMaterialLabel(l10n, material));
+  }
+
+  Future<void> _applyTexturePreset(TexturePreset preset) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showHyperosConfirmDialog(
+      context: context,
+      title: l10n.texturePresetApplyTitle,
+      message: l10n.texturePresetApplyBody,
+      cancelLabel: l10n.cancelAction,
+      confirmLabel: l10n.confirmAction,
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    _updateDraft(applyTexturePreset(_draft, preset));
   }
 
   void _updateDraft(TimetableSettings next, {bool debounce = false}) {
@@ -907,5 +990,18 @@ class _HomeTitleStylePreview extends StatelessWidget {
     );
   }
 }
+
+/// 「各表面当前材质」的展示文案。渐进 / 高斯、柔光 / 液态复用既有选项名
+/// （同物同名），只补「已关闭 / 实体 / 磨砂玻璃」三个状态词。
+String _surfaceMaterialLabel(AppLocalizations l10n, SurfaceMaterial material) =>
+    switch (material) {
+      SurfaceMaterial.off => l10n.materialStateOff,
+      SurfaceMaterial.solid => l10n.materialStateSolid,
+      SurfaceMaterial.frost => l10n.materialStateFrost,
+      SurfaceMaterial.frostProgressive => l10n.headerBlurStyleInspire,
+      SurfaceMaterial.frostGaussian => l10n.headerBlurStyleGaussian,
+      SurfaceMaterial.softGlass => l10n.frostedGlassModeSoft,
+      SurfaceMaterial.liquidGlass => l10n.frostedGlassModeLiquid,
+    };
 
 /// Public factory for debug deep-link navigation (debug builds only).

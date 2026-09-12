@@ -10349,6 +10349,53 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subpageHeaderBlurStyleLabel => 'Subpage top bar blur style';
 
   @override
+  String get texturePresetLabel => 'Texture preset';
+
+  @override
+  String get texturePresetSubtitle =>
+      'Apply a whole material setup in one tap; every option stays adjustable afterwards';
+
+  @override
+  String get texturePresetClassicFrost => 'Classic frost';
+
+  @override
+  String get texturePresetFullLiquid => 'Full liquid glass';
+
+  @override
+  String get texturePresetSoftMist => 'Soft mist';
+
+  @override
+  String get texturePresetMinimalSolid => 'Minimal solid';
+
+  @override
+  String get texturePresetCustom => 'Custom';
+
+  @override
+  String get texturePresetApplyTitle => 'Apply texture preset';
+
+  @override
+  String get texturePresetApplyBody =>
+      'This overwrites the glass mode, scope switches, top bar styles and card surface. Wallpaper and text colors are untouched.';
+
+  @override
+  String get surfaceMaterialSectionTitle => 'Current material per surface';
+
+  @override
+  String get surfaceSubpageHeader => 'Subpage top bar';
+
+  @override
+  String get surfaceCourseCard => 'Course cards';
+
+  @override
+  String get materialStateOff => 'Off';
+
+  @override
+  String get materialStateSolid => 'Solid';
+
+  @override
+  String get materialStateFrost => 'Frosted';
+
+  @override
   String get frostedGlassModeLabel => 'Glass Mode';
 
   @override
