@@ -149,6 +149,11 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
     /// Kept for API compatibility; backdrop-group sampling of the undimmed
     /// page is handled by [UndimmedBackdropCapture] / [UndimmedBackdropLayer]
     /// where needed.
+    ///
+    /// 注意：自玻璃引擎切换（cc98db3a）起已是**死参数**——本组件只存储、
+    /// 从不读取，传 true 不会有任何行为差异（真实采样完全由
+    /// liquid_glass_widgets 内部决定）。保留仅因调用点众多、删除需同步
+    /// 五处调用与两处测试断言，收益不足。新代码不要据此做任何决策。
     this.useAncestorBackdropGroup = false,
     this.maxThickness,
     this.backgroundKey,
@@ -163,6 +168,8 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
   final bool instantUnderlay;
   final bool contentLegibilityFill;
   final HyperosLiquidGlassLayerMode? layerMode;
+
+  /// 死参数（见构造处说明）：只存储不读取。
   final bool useAncestorBackdropGroup;
 
   /// Caps effective [LiquidGlassSettings.thickness] so a narrow isolated
@@ -183,8 +190,11 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
   /// 而 `AdaptiveGlass`（本项目其余所有液态表面的入口）**从不传**
   /// backgroundKey，所以凡经它渲染的表面在 standard 档下恒定零折射。要让
   /// 折射真正出现，必须绕开 AdaptiveGlass、直接走
-  /// `LightweightLiquidGlass(backgroundKey: …)`——见
-  /// [_HyperosLiquidGlassSurfaceState._buildRefractingSurface]。
+  /// `LightweightLiquidGlass(backgroundKey: …)`——见本文件的 build 内
+  /// 「真折射通道」分支（[usesRefractingPath] 判定）。
+  ///
+  /// 注意：走这条通道时不再经过 `AdaptiveGlass`，因此它顺带提供的
+  /// 浅色模式外投影由本组件自行补回（[_wrapRefractingDecorations]）。
   final GlobalKey? backgroundKey;
 
   /// Whether this device can run real liquid-glass refraction shaders.
@@ -282,6 +292,24 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
       tuning: tuning,
       glassColor: glassColor,
     );
+
+    // ---- 渲染路径判定（必须先于 settings 调整）--------------------------
+    // 这条判定同时决定「厚度怎么补偿」：PATH A 下 thickness 本身就驱动真实
+    // 折射位移，再叠一层可见光学量就是双重计数（详见 [withThicknessOptics]）。
+    final resolvedLayerMode =
+        widget.layerMode ?? HyperosLiquidGlassSurface.defaultLayerModeFor(role);
+    final useShared =
+        resolvedLayerMode == HyperosLiquidGlassLayerMode.sharedLayer;
+    final useMinimal =
+        resolvedLayerMode == HyperosLiquidGlassLayerMode.fake ||
+        !HyperosLiquidGlassSurface.supportsRealRefraction;
+    final GlobalKey? captureKey = widget.backgroundKey;
+    final refracts = HyperosLiquidGlassSurface.usesRefractingPath(
+      backgroundKey: captureKey,
+      useShared: useShared,
+      useMinimal: useMinimal,
+    );
+
     final cap = widget.maxThickness;
     if (cap != null && cap > 0 && settings.thickness > cap) {
       settings = settings.copyWith(thickness: math.min(settings.thickness, cap));
@@ -296,6 +324,21 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
       );
     }
 
+    // 生效厚度（含 cap 与入场缩放的衰减）回写光学补偿：两条路的可见反馈
+    // 都按用户最终看到的厚度计算，而不是原始滑杆值。
+    var tuned = tuning ?? LiquidGlassTuning.defaults;
+    if (settings.thickness != tuned.thickness) {
+      tuned = tuned.copyWith(
+        thickness: settings.thickness.clamp(
+          LiquidGlassTuning.minThickness,
+          LiquidGlassTuning.maxThickness,
+        ),
+      );
+    }
+    settings = refracts
+        ? withThicknessOptics(settings, tuned)
+        : withoutThicknessOptics(settings, tuned);
+
     final glassChild = contentLegibilityFill
         ? _wrapChildForLegibility(
             role: role,
@@ -306,14 +349,6 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
         : child;
 
     final surfacedChild = glassChild;
-
-    final resolvedLayerMode =
-        widget.layerMode ?? HyperosLiquidGlassSurface.defaultLayerModeFor(role);
-    final useShared =
-        resolvedLayerMode == HyperosLiquidGlassLayerMode.sharedLayer;
-    final useMinimal =
-        resolvedLayerMode == HyperosLiquidGlassLayerMode.fake ||
-        !HyperosLiquidGlassSurface.supportsRealRefraction;
 
     // 弹出面板以弹簧缩放入场（0.15→1、ratio 0.82 必有过冲 ~1.1%）：过冲
     // 帧把玻璃纹理放大到超出 RepaintBoundary 的布局边界，Impeller 在纹理
@@ -336,13 +371,8 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
     // （0.30.2 #214 修掉了「无 layer 时 LiquidGlassBlendGroup 崩」），因此
     // 顶栏带这种挂在裸 Stack 上的表面可以安全直用。渲染质量仍是 standard
     // （轻量片元着色器），不引入 premium 的逐帧全屏纹理抓取，性能口径不变。
-    final GlobalKey? captureKey = widget.backgroundKey;
-    if (HyperosLiquidGlassSurface.usesRefractingPath(
-      backgroundKey: captureKey,
-      useShared: useShared,
-      useMinimal: useMinimal,
-    )) {
-      return ClipPath(
+    if (refracts) {
+      final refracting = ClipPath(
         clipBehavior: clipBehavior,
         clipper: ShapeBorderClipper(shape: shape),
         child: LightweightLiquidGlass(
@@ -351,6 +381,12 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
           backgroundKey: captureKey,
           child: surfacedChild,
         ),
+      );
+      return _wrapRefractingDecorations(
+        context: context,
+        shape: shape,
+        settings: settings,
+        glass: refracting,
       );
     }
 
@@ -366,6 +402,116 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
       clipBehavior: clipBehavior,
       clipExpansion: clipExpansion,
       child: surfacedChild,
+    );
+  }
+
+  /// 补回绕开 `AdaptiveGlass` 后失去的装饰层（浅色模式外投影）。
+  ///
+  /// 经 `AdaptiveGlass` 的表面会额外套 `_wrapWithBacker` +
+  /// `_wrapWithLightModeShadow`：本项目 `sheetSettings` 没有 `backerColor`
+  /// （alpha 0 即无操作），但 `effectiveShadow` 默认非空（`shadowElevation
+  /// = 1.0`）。直连 `LightweightLiquidGlass` 后这层没了，后果分两类：
+  ///
+  /// - 平边形状（顶栏带，圆角 0）：包内 `_isFlatEdge` 本就会跳过投影，
+  ///   拆掉后**无差异**；
+  /// - 带圆角的板面（弹窗 / 二级子卡）：浅色模式下**丢了外投影**，面板
+  ///   读作「贴平在页面上」。
+  ///
+  /// 实现与包内同款：投影画在玻璃**之上**，再用反向形状裁剪把玻璃内部挖
+  /// 空（[PathFillType.evenOdd]），只让投影落在玻璃外侧——否则玻璃会模糊
+  /// 自己的投影，糊出一圈脏边。深色模式与平边形状直接短路，与包内一致。
+  static Widget _wrapRefractingDecorations({
+    required BuildContext context,
+    required LiquidShape shape,
+    required LiquidGlassSettings settings,
+    required Widget glass,
+  }) {
+    if (GlassTheme.brightnessOf(context) == Brightness.dark) return glass;
+    if (shape is LiquidRoundedRectangle && shape.borderRadius == 0) {
+      return glass;
+    }
+    if (shape is LiquidRoundedSuperellipse && shape.borderRadius == 0) {
+      return glass;
+    }
+    final shadows = settings.effectiveShadow;
+    if (shadows.isEmpty) return glass;
+    final borderRadius = switch (shape) {
+      LiquidRoundedRectangle(:final borderRadius) => BorderRadius.circular(
+        borderRadius,
+      ),
+      LiquidRoundedSuperellipse(:final borderRadius) => BorderRadius.circular(
+        borderRadius,
+      ),
+      _ => null,
+    };
+    return Stack(
+      fit: StackFit.passthrough,
+      clipBehavior: Clip.none,
+      children: [
+        glass,
+        Positioned.fill(
+          child: IgnorePointer(
+            child: ClipPath(
+              clipBehavior: Clip.antiAlias,
+              clipper: _InverseLiquidShapeClipper(shape),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: borderRadius,
+                  boxShadow: shadows,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 把 [settings] 的**厚度能否被看见**交代清楚，按渲染路径二选一。
+  ///
+  /// 包内 lightweight_glass.frag 的折射位移只在 PATH A（拿到背景纹理、
+  /// `uBackgroundSize.x > 1`）执行；PATH B 下 thickness 只影响 ~11dp 边界
+  /// 带内的 rim，肉眼不可辨。而全 app 曾长期恒走 PATH B，于是
+  /// `LiquidGlassTuning.visibleThicknessOptics()` 把厚度折算成 PATH B 真正
+  /// 生效的 edgeAbsorption / fresnelStrength。
+  ///
+  /// 接通真折射通道（backgroundKey）后出现新问题：PATH A 下 thickness 本身
+  /// 就驱动折射位移，再叠这两个量就是**双重计数**（用户拉高厚度会同时得到
+  /// 真实折射 + 边缘变沉 + 边缘变亮）；而且 `tuning == null` 的兜底档拿不到
+  /// 折算，两条路的厚度观感会分叉。
+  ///
+  /// 所以在此显式化：
+  /// - [withThicknessOptics]：PATH A —— 只保留厚度本身的真实折射，去掉
+  ///   折算量。
+  /// - [withoutThicknessOptics]：PATH B —— 把折算量按生效厚度算出来。
+  ///
+  /// 两者都是**幂等**的，且厚度默认值 30 下折算结果恰好等于包构造默认
+  /// （edgeAbsorption 0 / fresnelStrength 1），因此默认观感不变。
+  ///
+  /// 注意 [tuning] 必须携带**生效厚度**（已含 cap 与入场缩放）；调用方
+  /// 负责在传参前把 `tuning.thickness` 对齐到 `settings.thickness`，否则
+  /// 入场动画期间的补偿量与折射位移量会脱钩。
+  @visibleForTesting
+  static LiquidGlassSettings withThicknessOptics(
+    LiquidGlassSettings settings,
+    LiquidGlassTuning tuning,
+  ) {
+    return settings.copyWith(
+      edgeAbsorption: 0.0,
+      fresnelStrength: 1.0,
+    );
+  }
+
+  /// 见 [withThicknessOptics] 的说明。PATH B 把厚度折算成可见光学量。
+  @visibleForTesting
+  static LiquidGlassSettings withoutThicknessOptics(
+    LiquidGlassSettings settings,
+    LiquidGlassTuning tuning,
+  ) {
+    final optics = tuning.visibleThicknessOptics();
+    return settings.copyWith(
+      edgeAbsorption: optics.edgeAbsorption,
+      fresnelStrength: optics.fresnelStrength,
     );
   }
 
@@ -407,5 +553,27 @@ class _HyperosLiquidGlassSurfaceState extends State<HyperosLiquidGlassSurface> {
       ],
     );
   }
+}
 
+/// 反向形状裁剪：保留 [shape] **之外**的区域，用来把玻璃的外投影挖到玻璃
+/// 外侧。与包内 `_InverseShapeClipper` 同款实现（包未导出该类）：外扩矩形
+/// 减掉形状本体，按 [PathFillType.evenOdd] 取差集，避开 Impeller 上不稳的
+/// CPU 布尔路径运算。外扩 50dp 足以覆盖包内默认投影的最大模糊半径。
+class _InverseLiquidShapeClipper extends CustomClipper<Path> {
+  const _InverseLiquidShapeClipper(this.shape);
+
+  final LiquidShape shape;
+
+  @override
+  Path getClip(Size size) {
+    final rect = Offset.zero & size;
+    return Path()
+      ..addRect(rect.inflate(50.0))
+      ..addPath(shape.getOuterPath(rect), Offset.zero)
+      ..fillType = PathFillType.evenOdd;
+  }
+
+  @override
+  bool shouldReclip(_InverseLiquidShapeClipper oldClipper) =>
+      oldClipper.shape != shape;
 }
