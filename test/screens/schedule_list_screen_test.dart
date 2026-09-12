@@ -55,7 +55,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('日程安排'), findsOneWidget);
+
+    // 4c1703ed 起折叠顶栏的小标题常驻挂载（大标题在场时以 alpha 0 渐隐），
+    // find.text 会同时命中大标题与常驻小标题——断言放宽为「存在即可」。
+    expect(find.text('日程安排'), findsWidgets);
     expect(find.text('暂无日程'), findsOneWidget);
     expect(find.text('添加日程'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -112,7 +115,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('日程安排'), findsOneWidget);
+
+    // 4c1703ed 起折叠顶栏的小标题常驻挂载（大标题在场时以 alpha 0 渐隐），
+    // find.text 会同时命中大标题与常驻小标题——断言放宽为「存在即可」。
+    expect(find.text('日程安排'), findsWidgets);
     expect(find.text('即将到来'), findsOneWidget);
     expect(find.text('已过期'), findsOneWidget);
     expect(find.text('已暂停'), findsOneWidget);

@@ -41,7 +41,10 @@ void main() {
     await tester.pumpWidget(const TestApp(home: OpenSourceLicensesScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('开源许可'), findsOneWidget);
+
+    // 4c1703ed 起折叠顶栏的小标题常驻挂载（大标题在场时以 alpha 0 渐隐），
+    // find.text 会同时命中大标题与常驻小标题——断言放宽为「存在即可」。
+    expect(find.text('开源许可'), findsWidgets);
     expect(find.text('许可说明'), findsOneWidget);
     expect(find.text('demo_package'), findsOneWidget);
     expect(find.text('another_package'), findsOneWidget);
