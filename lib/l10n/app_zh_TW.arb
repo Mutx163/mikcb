@@ -5706,7 +5706,7 @@
   "headerBlurStyleGaussian": "高斯模糊",
   "headerBlurStyleInspire": "漸進模糊",
   "headerBlurStyleSubtitle": "漸進模糊上濃下淡，高斯模糊整帶均勻",
-  "headerBlurStyleHint": "首頁頂欄用柔光 / 液態材質時暫不生效，切回基礎磨砂後恢復",
+  "headerBlurStyleHint": "玻璃模式選『柔光玻璃』或『液態玻璃』時，首頁頂欄不用這裡的風格；改回『高斯模糊』後生效。",
   "subpageHeaderBlurStyleLabel": "子頁頂欄模糊風格",
   "frostedGlassModeLabel": "玻璃模式",
   "liquidGlassScopeSectionTitle": "液態玻璃作用範圍（關閉即改為實體卡片）",

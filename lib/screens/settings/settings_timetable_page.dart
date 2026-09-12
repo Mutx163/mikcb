@@ -297,51 +297,12 @@ class _TimetablePageSettingsScreenState
                   value,
                 ),
               ),
-              // 顶栏玻璃：开关 + 模糊风格两选一。
-              //
-              // 原「玻璃材质」三选一（渐进 / 高斯 / 液态）已下线：液态与
-              // 柔光现在由**全局材质**+ 「作用范围 → 首页玻璃带」推导，
-              // 与弹窗 / 底栏同一份材质，不再需要第二个材质选择器。
+              // 顶栏玻璃总开关。风格两行（渐进 / 高斯）在「外观与配色」页
+              // ——它们是材质选择，不随壁纸区走；此处只留带子的显示开关。
               HyperosSwitchTile(
                 title: l10n.homePageHeaderBlurTitle,
                 value: _chromeGlassEnabled,
                 onChanged: _setChromeGlassEnabled,
-              ),
-              // 模糊风格（渐进模糊 / 高斯模糊）恒常显示，不做任何条件
-              // 隐藏（用户 2026-09-12 拍板：选项永远留在页面上）。顶栏走
-              // 基础磨砂时改了立即生效；全局高级材质 + 作用范围开时顶栏
-              // 跟随柔光 / 液态而不看衰减风格，这里只记住选择，切回基础
-              // 磨砂即恢复，由提示语说明这一层。
-              HyperosSelectTile<HeaderBlurStyle>(
-                label: l10n.headerBlurStyleLabel,
-                subtitle: l10n.headerBlurStyleSubtitle,
-                items: {
-                  l10n.headerBlurStyleInspire: HeaderBlurStyle.inspire,
-                  l10n.headerBlurStyleGaussian: HeaderBlurStyle.gaussian,
-                },
-                value: _draft.headerBlurStyle,
-                onChanged: (value) {
-                  _updateDraft(applyChromeBlurStyle(_draft, value));
-                },
-              ),
-              // 子页顶栏（设置等页）与首页玻璃带相互独立，各选各的风格。
-              HyperosSelectTile<HeaderBlurStyle>(
-                label: l10n.subpageHeaderBlurStyleLabel,
-                items: {
-                  l10n.headerBlurStyleInspire: HeaderBlurStyle.inspire,
-                  l10n.headerBlurStyleGaussian: HeaderBlurStyle.gaussian,
-                },
-                value: _draft.subpageHeaderBlurStyle,
-                onChanged: (value) {
-                  _updateDraft(applySubpageChromeBlurStyle(_draft, value));
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Text(
-                  l10n.headerBlurStyleHint,
-                  style: HyperosTypography.sectionDescription(context),
-                ),
               ),
             ],
           ),

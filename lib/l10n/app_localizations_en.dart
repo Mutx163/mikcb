@@ -10343,7 +10343,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get headerBlurStyleHint =>
-      'Not applied while the home top bar uses soft or liquid glass; takes effect after switching back to basic frost';
+      'Not used while the glass mode is Soft or Liquid glass; switch the glass mode back to Gaussian blur to apply it.';
 
   @override
   String get subpageHeaderBlurStyleLabel => 'Subpage top bar blur style';

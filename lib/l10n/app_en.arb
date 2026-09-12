@@ -5956,7 +5956,7 @@
   "headerBlurStyleGaussian": "Gaussian blur",
   "headerBlurStyleInspire": "Progressive blur",
   "headerBlurStyleSubtitle": "Progressive fades toward the content; Gaussian is uniform",
-  "headerBlurStyleHint": "Not applied while the home top bar uses soft or liquid glass; takes effect after switching back to basic frost",
+  "headerBlurStyleHint": "Not used while the glass mode is Soft or Liquid glass; switch the glass mode back to Gaussian blur to apply it.",
   "subpageHeaderBlurStyleLabel": "Subpage top bar blur style",
   "frostedGlassModeLabel": "Glass Mode",
   "liquidGlassScopeSectionTitle": "Liquid Glass Surfaces (off = solid card)",

@@ -5708,7 +5708,7 @@
   "headerBlurStyleGaussian": "가우시안 블러",
   "headerBlurStyleInspire": "점진 블러",
   "headerBlurStyleSubtitle": "프로그레시브는 위에서 연해지고, 가우시안은 균일합니다",
-  "headerBlurStyleHint": "홈 상단 바가 소프트 / 리퀴드 글래스일 때는 적용되지 않으며, 기본 블러로 돌아가면 적용됩니다",
+  "headerBlurStyleHint": "글래스 모드가 '소프트 글래스'나 '리퀴드 글래스'일 때는 사용되지 않으며, '가우시안 블러'로 되돌리면 적용됩니다.",
   "subpageHeaderBlurStyleLabel": "하위 페이지 상단 바 블러 스타일",
   "frostedGlassModeLabel": "유리 모드",
   "liquidGlassScopeSectionTitle": "액체 유리 적용 범위 (끄면 솔리드 카드)",

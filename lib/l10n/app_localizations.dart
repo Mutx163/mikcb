@@ -17674,7 +17674,7 @@ abstract class AppLocalizations {
   /// No description provided for @headerBlurStyleHint.
   ///
   /// In zh, this message translates to:
-  /// **'首页顶栏走柔光 / 液态材质时暂不生效，切回基础磨砂后恢复'**
+  /// **'玻璃模式选『柔光玻璃』或『液态玻璃』时，首页顶栏不用这里的风格；改回『高斯模糊』后生效。'**
   String get headerBlurStyleHint;
 
   /// No description provided for @subpageHeaderBlurStyleLabel.

@@ -1,11 +1,12 @@
-// 顶栏玻璃行的可发现性回归。
+// 顶栏模糊风格两行的可发现性回归（现居「外观与配色」页玻璃模式组）。
 //
 // 历史：ded4b7e5 把「顶栏模糊风格」（渐进 / 高斯）并进「玻璃材质」三选一，
 // 页面上再也找不到一行叫这个名字的开关；随后拆回独立行，但一度按「改了
 // 不生效就隐藏」的口径在高级材质 / 玻璃总关时把行藏掉，用户仍然找不到
-// （2026-09-12 反馈）。最终口径：**该行恒常显示，不做任何条件隐藏**——
-// 顶栏走基础磨砂时立即生效；跟随柔光 / 液态材质时只记住选择，切回基础
-// 磨砂即恢复（由提示语说明）。
+// （2026-09-12 反馈）。最终口径：**两行恒常显示，不做任何条件隐藏**。
+// 2026-09-12 二次反馈：材质选择放在「课表页面」页属于放错位置，两行迁入
+// 「外观与配色」玻璃模式组（课表页面只留顶栏玻璃显示开关），提示语同步
+// 改为按「玻璃模式」措辞的人话；本文件随之钉住外观页的常驻两行。
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -44,8 +45,8 @@ void _seedPrefs(TimetableSettings settings) {
 Finder _scrollableUnder(Finder host) =>
     find.descendant(of: host, matching: find.byType(Scrollable)).first;
 
-/// 进入「设置 → 课表页面」子页。
-Future<void> _openTimetablePageSettings(WidgetTester tester) async {
+/// 进入「设置 → 外观与配色」子页。
+Future<void> _openAppearanceSettings(WidgetTester tester) async {
   final provider = await createInitializedTestProvider(tester);
   await tester.pumpWidget(
     ChangeNotifierProvider.value(
@@ -58,22 +59,22 @@ Future<void> _openTimetablePageSettings(WidgetTester tester) async {
 
   final homeList = find.byType(HyperosListView).first;
   await tester.scrollUntilVisible(
-    find.text('课表页面'),
+    find.text('外观与配色'),
     200,
     scrollable: _scrollableUnder(homeList),
   );
-  await tester.tap(find.text('课表页面'));
+  await tester.tap(find.text('外观与配色'));
   await tester.pumpAndSettle();
 }
 
-/// 子页的下半屏编辑器列表（上半屏是预览，不是 HyperosListView）。
-Finder _editorList() => find.byType(HyperosListView).last;
+/// 外观子页整页是一条 HyperosListView（分节渲染）。
+Finder _appearanceList() => find.byType(HyperosListView).last;
 
 Future<void> _scrollTo(WidgetTester tester, Finder target) async {
   await tester.scrollUntilVisible(
     target,
     200,
-    scrollable: _scrollableUnder(_editorList()),
+    scrollable: _scrollableUnder(_appearanceList()),
   );
   await tester.pumpAndSettle();
 }
@@ -103,61 +104,35 @@ void main() {
         .setMockMethodCallHandler(liveChannel, null);
   });
 
-  testWidgets('基础材质（高斯）下渲染首页/子页两行模糊风格', (tester) async {
+  testWidgets('默认设置下两行风格恒常显示，附人话提示语', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(TimetableSettings.defaults());
 
-    await _openTimetablePageSettings(tester);
+    await _openAppearanceSettings(tester);
     await _scrollTo(tester, find.text('首页顶栏模糊风格'));
 
-    // 首页玻璃带与子页顶栏相互独立，各有一行风格选择。
     expect(find.text('首页顶栏模糊风格'), findsOneWidget);
     expect(find.text('子页顶栏模糊风格'), findsOneWidget);
-    // 独立材质三选一已下线：材质由全局选择器 + 作用范围决定。
-    expect(find.text('玻璃材质'), findsNothing);
     // 两行当前值都是渐进模糊。
     expect(find.text('渐进模糊'), findsWidgets);
+    // 提示语按「玻璃模式」措辞（人话口径），不再是「基础磨砂」黑话。
+    expect(find.textContaining('改回『高斯模糊』后生效'), findsOneWidget);
   });
 
-  testWidgets('全局柔光 + 首页玻璃带作用范围开 → 风格行仍常显', (tester) async {
+  testWidgets('全局柔光下两行仍常显（不回归条件隐藏）', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(
       TimetableSettings.defaults().copyWith(
         frostedGlassMode: FrostedGlassMode.softGlass,
-        liquidGlassHomeChromeEnabled: true,
       ),
     );
 
-    await _openTimetablePageSettings(tester);
-    await _scrollTo(tester, find.text('顶栏玻璃'));
+    await _openAppearanceSettings(tester);
+    await _scrollTo(tester, find.text('首页顶栏模糊风格'));
 
-    expect(find.text('顶栏玻璃'), findsOneWidget);
-    // 恒常显示：高级材质下只是暂不参与渲染，选择仍可改、仍被记住。
     expect(find.text('首页顶栏模糊风格'), findsOneWidget);
     expect(find.text('子页顶栏模糊风格'), findsOneWidget);
-    expect(find.text('渐进模糊'), findsWidgets);
-    expect(find.text('玻璃材质'), findsNothing);
-  });
-
-  testWidgets('顶栏玻璃总开关关闭时风格行仍常显', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(800, 1200));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    _seedPrefs(
-      TimetableSettings.defaults().copyWith(
-        homePageHeaderBlurEnabled: false,
-        homePageWeekdayBarBlurEnabled: false,
-      ),
-    );
-
-    await _openTimetablePageSettings(tester);
-    await _scrollTo(tester, find.text('顶栏玻璃'));
-
-    expect(find.text('顶栏玻璃'), findsOneWidget);
-    // 恒常显示：玻璃总关时该行不隐藏，只等开关重新打开后再生效。
-    expect(find.text('首页顶栏模糊风格'), findsOneWidget);
-    expect(find.text('子页顶栏模糊风格'), findsOneWidget);
-    expect(find.text('玻璃材质'), findsNothing);
   });
 }

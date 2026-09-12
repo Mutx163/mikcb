@@ -10048,7 +10048,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get headerBlurStyleSubtitle => 'プログレッシブは上から徐々に薄く、ガウスは全帯均一';
 
   @override
-  String get headerBlurStyleHint => 'ホーム上部バーがソフト / リキッドガラスの間は無効、基本のすりガラスに戻すと有効';
+  String get headerBlurStyleHint =>
+      'ガラスモードが「ソフトガラス」「リキッドガラス」の間は使われず、「ガウスぼかし」に戻すと適用されます。';
 
   @override
   String get subpageHeaderBlurStyleLabel => 'サブページ上部バーのぼかしスタイル';
