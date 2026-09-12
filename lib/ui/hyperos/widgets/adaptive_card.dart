@@ -96,13 +96,21 @@ class HyperosAdaptiveCard extends StatelessWidget {
     final appearance = FrostedAppearanceScope.of(context);
     // 柔光与液态同为高级材质，面板内嵌套 tile 用同一种透明水洗色；
     // 只认液态会让柔光面板里的卡片变成死白块。
+    // 「作用范围→弹窗」关（或系统降级）时父面板已按 HyperosSheetFrame 的
+    // solid 分支回退**纯白实体卡片**：高级 tile 的白色水洗会隐形，
+    // withBlur:true 的水洗同样叠白底不可读，两个分支都与面板同源回退到
+    // withBlur:false 的中性水洗。
     if (isAdvancedGlassMode(appearance.glassMode) &&
+        appearance.liquidGlassSheetDialogEnabled &&
         !LiquidGlassDegradation.shouldDegrade(context)) {
       return HyperosBlurredHeader.nestedLiquidTileTintColor(context);
     }
+    final panelFellBackSolid = isAdvancedGlassMode(appearance.glassMode);
     return HyperosBlurredHeader.nestedSurfaceTintColor(
       context,
-      withBlur: HyperosBlurredHeader.backdropBlurEnabled(context),
+      withBlur:
+          HyperosBlurredHeader.backdropBlurEnabled(context) &&
+          !panelFellBackSolid,
     );
   }
 }

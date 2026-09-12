@@ -157,9 +157,26 @@ class HyperosFrostedSurface extends StatelessWidget {
     final useBlur =
         HyperosBlurredHeader.backdropBlurEnabled(context) &&
         (blurEnabled ?? true);
+    // 与面板材质同步：高级材质（柔光/液态）+「作用范围→弹窗」关（或系统
+    // 降级）时，父面板已按 HyperosSheetFrame 的 solid 分支回退**纯白实体
+    // 卡片**；白色水洗叠白底会让嵌套 tile 整个隐形（只剩文字）。改走
+    // withBlur:false 的中性水洗（亮色黑 5% / 暗色白 10%），与实体面板同框。
+    // 只作用于 sheet 面板内（PanelScope 标记）；面板外的菜单/井保持原判。
+    final scope = FrostedAppearanceScope.maybeOf(context);
+    final sheetPanelFellBackSolid =
+        scope != null &&
+        HyperosFrostedPanelScope.of(context) &&
+        LiquidGlassDegradation.familyFallsBackToSolid(
+          context,
+          advancedFamilyEnabled:
+              scope.appearance.liquidGlassSheetDialogEnabled,
+        );
     final resolvedTint =
         tint ??
-        HyperosBlurredHeader.nestedSurfaceTintColor(context, withBlur: useBlur);
+        HyperosBlurredHeader.nestedSurfaceTintColor(
+          context,
+          withBlur: useBlur && !sheetPanelFellBackSolid,
+        );
 
     return ClipRRect(
       borderRadius: borderRadius,
