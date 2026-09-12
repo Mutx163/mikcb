@@ -10078,7 +10078,7 @@ class AppLocalizationsKo extends AppLocalizations {
       'Location match takes priority over date rules.';
 
   @override
-  String get headerBlurStyleLabel => '상단 바 블러 스타일';
+  String get headerBlurStyleLabel => '홈 상단 바 블러 스타일';
 
   @override
   String get headerBlurStyleGaussian => '가우시안 블러';
@@ -10087,12 +10087,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get headerBlurStyleInspire => '점진 블러';
 
   @override
-  String get headerBlurStyleSubtitle =>
-      '점진 블러는 위쪽은 강하고 아래쪽은 완전히 선명합니다 (Inspire Blur)';
+  String get headerBlurStyleSubtitle => '프로그레시브는 위에서 연해지고, 가우시안은 균일합니다';
 
   @override
   String get headerBlurStyleHint =>
-      '점진 블러는 사용자 정의 셰이더(Impeller) 지원 기기가 필요하며, 미지원 시 상단 바는 단색 배경만 표시됩니다. 상단 바가 소프트 / 리퀴드 글래스 소재를 따르는 동안에는 이 스타일이 적용되지 않으며, 기본 블러로 되돌리면 다시 적용됩니다';
+      '홈 상단 바가 소프트 / 리퀴드 글래스일 때는 적용되지 않으며, 기본 블러로 돌아가면 적용됩니다';
+
+  @override
+  String get subpageHeaderBlurStyleLabel => '하위 페이지 상단 바 블러 스타일';
 
   @override
   String get frostedGlassModeLabel => '유리 모드';

@@ -324,6 +324,18 @@ class _TimetablePageSettingsScreenState
                   _updateDraft(applyChromeBlurStyle(_draft, value));
                 },
               ),
+              // 子页顶栏（设置等页）与首页玻璃带相互独立，各选各的风格。
+              HyperosSelectTile<HeaderBlurStyle>(
+                label: l10n.subpageHeaderBlurStyleLabel,
+                items: {
+                  l10n.headerBlurStyleInspire: HeaderBlurStyle.inspire,
+                  l10n.headerBlurStyleGaussian: HeaderBlurStyle.gaussian,
+                },
+                value: _draft.subpageHeaderBlurStyle,
+                onChanged: (value) {
+                  _updateDraft(applySubpageChromeBlurStyle(_draft, value));
+                },
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Text(

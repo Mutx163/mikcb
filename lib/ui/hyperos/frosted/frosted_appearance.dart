@@ -78,6 +78,7 @@ class FrostedAppearance {
     this.blurEnabled = kDefaultFrostedBlurEnabled,
     this.glassMode = FrostedGlassMode.frosted,
     this.headerBlurStyle = kDefaultHeaderBlurStyle,
+    this.subpageHeaderBlurStyle = kDefaultHeaderBlurStyle,
     this.homeChromeGlassMaterial = kDefaultHomeChromeGlassMaterial,
     this.liquidGlassTuning,
     this.softGlassTuning = SoftGlassTuning.defaults,
@@ -108,10 +109,17 @@ class FrostedAppearance {
   /// Global backdrop blur master switch.
   final bool blurEnabled;
 
-  /// 顶栏玻璃带的模糊材质风格（渐进 / 高斯）。
+  /// 首页顶栏玻璃带的模糊材质风格（渐进 / 高斯）。
   ///
-  /// 子页顶栏只读此字段，永不走液态。卡片、弹窗等表面仍按 [glassMode]。
+  /// 只驱动首页玻璃带（标题栏与星期栏）；子页顶栏读
+  /// [subpageHeaderBlurStyle]。首页走柔光 / 液态材质时不看此风格。
   final HeaderBlurStyle headerBlurStyle;
+
+  /// 子页顶栏（设置等 HyperosSubpage 页）的模糊材质风格（渐进 / 高斯）。
+  ///
+  /// 与首页 [headerBlurStyle] 相互独立：子页顶栏永不走液态，此风格始终
+  /// 生效。
+  final HeaderBlurStyle subpageHeaderBlurStyle;
 
   /// 首页顶栏玻璃带材质键：`progressive` / `gaussian` / `liquid`。
   ///
@@ -152,6 +160,7 @@ class FrostedAppearance {
       other is FrostedAppearance &&
           blurEnabled == other.blurEnabled &&
           headerBlurStyle == other.headerBlurStyle &&
+          subpageHeaderBlurStyle == other.subpageHeaderBlurStyle &&
           homeChromeGlassMaterial == other.homeChromeGlassMaterial &&
           sheetBlurSigma == other.sheetBlurSigma &&
           sheetTintAlpha == other.sheetTintAlpha &&
@@ -173,6 +182,7 @@ class FrostedAppearance {
   int get hashCode => Object.hash(
     blurEnabled,
     headerBlurStyle,
+    subpageHeaderBlurStyle,
     homeChromeGlassMaterial,
     sheetBlurSigma,
     sheetTintAlpha,

@@ -95,7 +95,7 @@ class HyperosFrostedHeaderShell extends StatelessWidget {
     return FrostedHeaderBackground(
       blurEnabled: useBlur,
       blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-      blurStyle: HyperosBlurredHeader.headerBlurStyleOf(context),
+      blurStyle: HyperosBlurredHeader.subpageHeaderBlurStyleOf(context),
       tint: resolvedTint,
       // 常驻模糊 + 无内容压带时必须整条不透明，否则衬底底边渐隐会露出
       // 一截已经糊进来的内容（见 [InspireHeaderBlur.opaqueAtRest]）。

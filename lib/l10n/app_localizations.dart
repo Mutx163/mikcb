@@ -17650,7 +17650,7 @@ abstract class AppLocalizations {
   /// No description provided for @headerBlurStyleLabel.
   ///
   /// In zh, this message translates to:
-  /// **'顶栏模糊风格'**
+  /// **'首页顶栏模糊风格'**
   String get headerBlurStyleLabel;
 
   /// No description provided for @headerBlurStyleGaussian.
@@ -17668,14 +17668,20 @@ abstract class AppLocalizations {
   /// No description provided for @headerBlurStyleSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'渐进模糊让顶栏上浓下淡、贴近内容处完全清晰（Inspire Blur）'**
+  /// **'渐进模糊上浓下淡，高斯模糊整带均匀'**
   String get headerBlurStyleSubtitle;
 
   /// No description provided for @headerBlurStyleHint.
   ///
   /// In zh, this message translates to:
-  /// **'渐进模糊需要支持自定义着色器的设备（Impeller），不满足时顶栏只保留纯色衬底；顶栏跟随柔光 / 液态材质时不看此风格，切回基础磨砂后生效'**
+  /// **'首页顶栏走柔光 / 液态材质时暂不生效，切回基础磨砂后恢复'**
   String get headerBlurStyleHint;
+
+  /// No description provided for @subpageHeaderBlurStyleLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'子页顶栏模糊风格'**
+  String get subpageHeaderBlurStyleLabel;
 
   /// No description provided for @frostedGlassModeLabel.
   ///

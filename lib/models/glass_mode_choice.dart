@@ -75,3 +75,12 @@ TimetableSettings applyChromeBlurStyle(
       : 'progressive',
 );
 
+/// 写回「子页顶栏模糊风格」（渐进模糊 / 高斯模糊）。
+///
+/// 子页顶栏（设置等 HyperosSubpage 页）与首页玻璃带相互独立，不涉及
+/// homeChromeGlassMaterial 同步，也不受首页「高级材质」作用范围影响。
+TimetableSettings applySubpageChromeBlurStyle(
+  TimetableSettings settings,
+  HeaderBlurStyle style,
+) => settings.copyWith(subpageHeaderBlurStyle: style);
+

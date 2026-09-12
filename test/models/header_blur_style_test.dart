@@ -180,4 +180,58 @@ void main() {
       expect(restored.frostedGlassMode, isNot(FrostedGlassMode.liquidGlass));
     });
   });
+
+  group('子页顶栏模糊风格：与首页相互独立', () {
+    test('默认值为渐进模糊档', () {
+      expect(TimetableSettings.defaults().subpageHeaderBlurStyle,
+          HeaderBlurStyle.inspire);
+      expect(FrostedAppearance.defaults.subpageHeaderBlurStyle,
+          HeaderBlurStyle.inspire);
+    });
+
+    test('存量迁移：JSON 缺新键时沿旧 headerBlurStyle，观感不变', () {
+      final legacy = TimetableSettings.defaults().copyWith(
+        headerBlurStyle: HeaderBlurStyle.gaussian,
+      );
+      final json = legacy.toJson()..remove('subpageHeaderBlurStyle');
+      final restored = TimetableSettings.fromJson(json);
+
+      expect(restored.subpageHeaderBlurStyle, HeaderBlurStyle.gaussian);
+    });
+
+    test('新键存在时不被旧键覆盖，JSON 往返保留', () {
+      final custom = TimetableSettings.defaults().copyWith(
+        headerBlurStyle: HeaderBlurStyle.gaussian,
+        subpageHeaderBlurStyle: HeaderBlurStyle.inspire,
+      );
+      final restored = TimetableSettings.fromJson(custom.toJson());
+
+      expect(restored.headerBlurStyle, HeaderBlurStyle.gaussian);
+      expect(restored.subpageHeaderBlurStyle, HeaderBlurStyle.inspire);
+    });
+
+    test('frostedAppearance 映射子页模糊风格', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        subpageHeaderBlurStyle: HeaderBlurStyle.gaussian,
+      );
+      expect(
+        settings.frostedAppearance.subpageHeaderBlurStyle,
+        HeaderBlurStyle.gaussian,
+      );
+    });
+
+    test('applySubpageChromeBlurStyle 只动子页字段，不碰首页风格与材质键', () {
+      final s = applySubpageChromeBlurStyle(
+        TimetableSettings.defaults().copyWith(
+          headerBlurStyle: HeaderBlurStyle.gaussian,
+          homeChromeGlassMaterial: 'gaussian',
+        ),
+        HeaderBlurStyle.inspire,
+      );
+
+      expect(s.subpageHeaderBlurStyle, HeaderBlurStyle.inspire);
+      expect(s.headerBlurStyle, HeaderBlurStyle.gaussian);
+      expect(s.homeChromeGlassMaterial, 'gaussian');
+    });
+  });
 }

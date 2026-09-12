@@ -177,12 +177,20 @@ abstract final class HyperosBlurredHeader {
     return _appearanceOf(context).sheetBlurSigma;
   }
 
-  /// 顶栏玻璃带使用的模糊材质风格（高斯模糊 / Inspire 渐进模糊）。
+  /// 首页顶栏玻璃带的模糊材质风格（高斯模糊 / Inspire 渐进模糊）。
   ///
-  /// 顶栏统一走 inspire_blur 的渐进模糊渲染；本档位只切换过渡形态，
-  /// 子页顶栏外壳与首页玻璃带共用同一取值。
+  /// 只驱动首页玻璃带（home_page_region_blur）；子页顶栏外壳读
+  /// [subpageHeaderBlurStyleOf]。
   static HeaderBlurStyle headerBlurStyleOf(BuildContext context) {
     return _appearanceOf(context).headerBlurStyle;
+  }
+
+  /// 子页顶栏（设置等 HyperosSubpage 页）的模糊材质风格。
+  ///
+  /// 与首页 [headerBlurStyleOf] 相互独立，子页顶栏永不走液态，此风格
+  /// 始终生效。
+  static HeaderBlurStyle subpageHeaderBlurStyleOf(BuildContext context) {
+    return _appearanceOf(context).subpageHeaderBlurStyle;
   }
 
   static double sheetBarrierAlphaOf(BuildContext context) {

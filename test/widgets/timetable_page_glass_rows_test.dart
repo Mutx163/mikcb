@@ -103,18 +103,21 @@ void main() {
         .setMockMethodCallHandler(liveChannel, null);
   });
 
-  testWidgets('基础材质（高斯）下只渲染「顶栏模糊风格」一行', (tester) async {
+  testWidgets('基础材质（高斯）下渲染首页/子页两行模糊风格', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(TimetableSettings.defaults());
 
     await _openTimetablePageSettings(tester);
-    await _scrollTo(tester, find.text('顶栏模糊风格'));
+    await _scrollTo(tester, find.text('首页顶栏模糊风格'));
 
-    expect(find.text('顶栏模糊风格'), findsOneWidget);
+    // 首页玻璃带与子页顶栏相互独立，各有一行风格选择。
+    expect(find.text('首页顶栏模糊风格'), findsOneWidget);
+    expect(find.text('子页顶栏模糊风格'), findsOneWidget);
     // 独立材质三选一已下线：材质由全局选择器 + 作用范围决定。
     expect(find.text('玻璃材质'), findsNothing);
-    expect(find.text('渐进模糊'), findsOneWidget);
+    // 两行当前值都是渐进模糊。
+    expect(find.text('渐进模糊'), findsWidgets);
   });
 
   testWidgets('全局柔光 + 首页玻璃带作用范围开 → 风格行仍常显', (tester) async {
@@ -132,8 +135,9 @@ void main() {
 
     expect(find.text('顶栏玻璃'), findsOneWidget);
     // 恒常显示：高级材质下只是暂不参与渲染，选择仍可改、仍被记住。
-    expect(find.text('顶栏模糊风格'), findsOneWidget);
-    expect(find.text('渐进模糊'), findsOneWidget);
+    expect(find.text('首页顶栏模糊风格'), findsOneWidget);
+    expect(find.text('子页顶栏模糊风格'), findsOneWidget);
+    expect(find.text('渐进模糊'), findsWidgets);
     expect(find.text('玻璃材质'), findsNothing);
   });
 
@@ -152,7 +156,8 @@ void main() {
 
     expect(find.text('顶栏玻璃'), findsOneWidget);
     // 恒常显示：玻璃总关时该行不隐藏，只等开关重新打开后再生效。
-    expect(find.text('顶栏模糊风格'), findsOneWidget);
+    expect(find.text('首页顶栏模糊风格'), findsOneWidget);
+    expect(find.text('子页顶栏模糊风格'), findsOneWidget);
     expect(find.text('玻璃材质'), findsNothing);
   });
 }

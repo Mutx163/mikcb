@@ -10036,7 +10036,7 @@ class AppLocalizationsJa extends AppLocalizations {
       'Location match takes priority over date rules.';
 
   @override
-  String get headerBlurStyleLabel => 'トップバーのぼかしスタイル';
+  String get headerBlurStyleLabel => 'ホーム上部バーのぼかしスタイル';
 
   @override
   String get headerBlurStyleGaussian => 'ガウスぼかし';
@@ -10045,12 +10045,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get headerBlurStyleInspire => 'プログレッシブぼかし';
 
   @override
-  String get headerBlurStyleSubtitle =>
-      'プログレッシブぼかしは上端が強く、下端で完全にクリアになります（Inspire Blur）';
+  String get headerBlurStyleSubtitle => 'プログレッシブは上から徐々に薄く、ガウスは全帯均一';
 
   @override
-  String get headerBlurStyleHint =>
-      'プログレッシブぼかしにはカスタムシェーダー対応（Impeller）が必要です。非対応の場合はトップバーは単色の下地のみ表示されます。トップバーがソフト / リキッドガラス素材に従っている間はこのスタイルは適用されず、基本のすりガラスに戻すと再度有効になります';
+  String get headerBlurStyleHint => 'ホーム上部バーがソフト / リキッドガラスの間は無効、基本のすりガラスに戻すと有効';
+
+  @override
+  String get subpageHeaderBlurStyleLabel => 'サブページ上部バーのぼかしスタイル';
 
   @override
   String get frostedGlassModeLabel => 'ガラスモード';

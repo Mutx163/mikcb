@@ -10329,7 +10329,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Location match takes priority over date rules.';
 
   @override
-  String get headerBlurStyleLabel => 'Top bar blur style';
+  String get headerBlurStyleLabel => 'Home top bar blur style';
 
   @override
   String get headerBlurStyleGaussian => 'Gaussian blur';
@@ -10339,11 +10339,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get headerBlurStyleSubtitle =>
-      'Progressive blur fades from strong at the top to fully clear near the content (Inspire Blur)';
+      'Progressive fades toward the content; Gaussian is uniform';
 
   @override
   String get headerBlurStyleHint =>
-      'Progressive blur needs a device with custom shader support (Impeller); otherwise the top bar keeps only a solid tint. While the top bar follows the soft / liquid glass material this style is not applied; it takes effect again once the top bar falls back to the basic frost';
+      'Not applied while the home top bar uses soft or liquid glass; takes effect after switching back to basic frost';
+
+  @override
+  String get subpageHeaderBlurStyleLabel => 'Subpage top bar blur style';
 
   @override
   String get frostedGlassModeLabel => 'Glass Mode';

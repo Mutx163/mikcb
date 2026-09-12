@@ -1477,6 +1477,7 @@ class TimetableSettings {
     blurEnabled: frostedBlurEnabled,
     glassMode: frostedGlassMode,
     headerBlurStyle: headerBlurStyle,
+    subpageHeaderBlurStyle: subpageHeaderBlurStyle,
     liquidGlassTuning: liquidGlassTuning,
     softGlassTuning: softGlassTuning ?? SoftGlassTuning.defaults,
     liquidGlassPopupEnabled: liquidGlassPopupEnabled,
@@ -1514,9 +1515,15 @@ class TimetableSettings {
   final bool homePageHeaderBlurEnabled;
   final bool homePageWeekdayBarBlurEnabled;
 
-  /// 顶栏玻璃带使用的模糊材质风格（高斯模糊 / Inspire 渐进模糊）。
-  /// 默认 [HeaderBlurStyle.inspire]。
+  /// 首页顶栏玻璃带使用的模糊材质风格（高斯模糊 / Inspire 渐进模糊）。
+  /// 默认 [HeaderBlurStyle.inspire]。只驱动首页玻璃带；子页顶栏读
+  /// [subpageHeaderBlurStyle]。
   final HeaderBlurStyle headerBlurStyle;
+
+  /// 子页顶栏（设置等 HyperosSubpage 页）的模糊材质风格，与首页
+  /// [headerBlurStyle] 相互独立。默认 [HeaderBlurStyle.inspire]；子页
+  /// 顶栏永不走液态，此风格始终生效。
+  final HeaderBlurStyle subpageHeaderBlurStyle;
 
   /// 首页顶栏玻璃带材质：`progressive` / `gaussian` / `liquid`。
   ///
@@ -1712,6 +1719,7 @@ class TimetableSettings {
     this.homePageHeaderBlurEnabled = true,
     this.homePageWeekdayBarBlurEnabled = true,
     this.headerBlurStyle = HeaderBlurStyle.inspire,
+    this.subpageHeaderBlurStyle = HeaderBlurStyle.inspire,
     this.homeChromeGlassMaterial = 'progressive',
     this.homePageTimeColumnBlurEnabled = false,
     this.homePageBackdropFollowsWeekPager = true,
@@ -1938,6 +1946,7 @@ class TimetableSettings {
       'homePageHeaderBlurEnabled': homePageHeaderBlurEnabled,
       'homePageWeekdayBarBlurEnabled': homePageWeekdayBarBlurEnabled,
       'headerBlurStyle': headerBlurStyle.value,
+      'subpageHeaderBlurStyle': subpageHeaderBlurStyle.value,
       'homeChromeGlassMaterial': homeChromeGlassMaterial,
       'homePageTimeColumnBlurEnabled': homePageTimeColumnBlurEnabled,
       'homePageBackdropFollowsWeekPager': homePageBackdropFollowsWeekPager,
@@ -2426,6 +2435,11 @@ class TimetableSettings {
       headerBlurStyle: HeaderBlurStyleX.fromValue(
         json['headerBlurStyle'] as String?,
       ),
+      // 存量迁移：独立字段出现前子页顶栏跟随 headerBlurStyle，缺失时沿
+      // 旧值，保证升级后子页顶栏观感不变。
+      subpageHeaderBlurStyle: HeaderBlurStyleX.fromValue(
+        (json['subpageHeaderBlurStyle'] ?? json['headerBlurStyle']) as String?,
+      ),
       // 迁移后不再保留 `liquid`：材质由全局选择器单独管。
       homeChromeGlassMaterial: legacyChromeLiquid
           ? 'progressive'
@@ -2655,6 +2669,7 @@ class TimetableSettings {
     bool? homePageHeaderBlurEnabled,
     bool? homePageWeekdayBarBlurEnabled,
     HeaderBlurStyle? headerBlurStyle,
+    HeaderBlurStyle? subpageHeaderBlurStyle,
     String? homeChromeGlassMaterial,
     bool? homePageTimeColumnBlurEnabled,
     bool? homePageBackdropFollowsWeekPager,
@@ -3022,6 +3037,8 @@ class TimetableSettings {
       homePageWeekdayBarBlurEnabled:
           homePageWeekdayBarBlurEnabled ?? this.homePageWeekdayBarBlurEnabled,
       headerBlurStyle: headerBlurStyle ?? this.headerBlurStyle,
+      subpageHeaderBlurStyle:
+          subpageHeaderBlurStyle ?? this.subpageHeaderBlurStyle,
       homeChromeGlassMaterial:
           homeChromeGlassMaterial ?? this.homeChromeGlassMaterial,
       homePageTimeColumnBlurEnabled:

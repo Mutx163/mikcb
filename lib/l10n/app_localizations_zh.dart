@@ -9754,7 +9754,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleDateRuleNote => '地点匹配优先于日期规则。';
 
   @override
-  String get headerBlurStyleLabel => '顶栏模糊风格';
+  String get headerBlurStyleLabel => '首页顶栏模糊风格';
 
   @override
   String get headerBlurStyleGaussian => '高斯模糊';
@@ -9763,11 +9763,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get headerBlurStyleInspire => '渐进模糊';
 
   @override
-  String get headerBlurStyleSubtitle => '渐进模糊让顶栏上浓下淡、贴近内容处完全清晰（Inspire Blur）';
+  String get headerBlurStyleSubtitle => '渐进模糊上浓下淡，高斯模糊整带均匀';
 
   @override
-  String get headerBlurStyleHint =>
-      '渐进模糊需要支持自定义着色器的设备（Impeller），不满足时顶栏只保留纯色衬底；顶栏跟随柔光 / 液态材质时不看此风格，切回基础磨砂后生效';
+  String get headerBlurStyleHint => '首页顶栏走柔光 / 液态材质时暂不生效，切回基础磨砂后恢复';
+
+  @override
+  String get subpageHeaderBlurStyleLabel => '子页顶栏模糊风格';
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';
@@ -20571,7 +20573,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get scheduleDateRuleNote => '地點匹配優先於日期規則。';
 
   @override
-  String get headerBlurStyleLabel => '頂欄模糊風格';
+  String get headerBlurStyleLabel => '首頁頂欄模糊風格';
 
   @override
   String get headerBlurStyleGaussian => '高斯模糊';
@@ -20580,11 +20582,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get headerBlurStyleInspire => '漸進模糊';
 
   @override
-  String get headerBlurStyleSubtitle => '漸進模糊讓頂欄上濃下淡、貼近內容處完全清晰（Inspire Blur）';
+  String get headerBlurStyleSubtitle => '漸進模糊上濃下淡，高斯模糊整帶均勻';
 
   @override
-  String get headerBlurStyleHint =>
-      '漸進模糊需要支援自訂著色器的裝置（Impeller），不支援時頂欄只保留純色襯底；頂欄跟隨柔光 / 液態材質時不套用此風格，切回基礎磨砂後生效';
+  String get headerBlurStyleHint => '首頁頂欄用柔光 / 液態材質時暫不生效，切回基礎磨砂後恢復';
+
+  @override
+  String get subpageHeaderBlurStyleLabel => '子頁頂欄模糊風格';
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';
@@ -31388,7 +31392,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get scheduleDateRuleNote => '地點匹配優先於日期規則。';
 
   @override
-  String get headerBlurStyleLabel => '頂欄模糊風格';
+  String get headerBlurStyleLabel => '首頁頂欄模糊風格';
 
   @override
   String get headerBlurStyleGaussian => '高斯模糊';
@@ -31397,11 +31401,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get headerBlurStyleInspire => '漸進模糊';
 
   @override
-  String get headerBlurStyleSubtitle => '漸進模糊讓頂欄上濃下淡、貼近內容處完全清晰（Inspire Blur）';
+  String get headerBlurStyleSubtitle => '漸進模糊上濃下淡，高斯模糊整帶均勻';
 
   @override
-  String get headerBlurStyleHint =>
-      '漸進模糊需要支援自訂著色器的裝置（Impeller），不支援時頂欄只保留純色襯底；頂欄跟隨柔光 / 液態材質時不套用此風格，切回基礎磨砂後生效';
+  String get headerBlurStyleHint => '首頁頂欄用柔光 / 液態材質時暫不生效，切回基礎磨砂後恢復';
+
+  @override
+  String get subpageHeaderBlurStyleLabel => '子頁頂欄模糊風格';
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';
