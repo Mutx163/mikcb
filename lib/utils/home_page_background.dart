@@ -265,12 +265,19 @@ String? homePageBackdropKey(TimetableSettings settings) {
 /// [TimetableSettings.courseCardSurfaceStyle]（默认实体／高斯模糊），用户“设了壁纸后还要实体
 /// 卡片”的切换选择始终保留。
 ///
+/// [gaussianBlurAvailable] 为 false（模糊总开关关 = 全局材质「实体卡片」，
+/// 或系统降级）时同样回落实体卡：高斯档寄生在全局模糊管线上，管线关闭
+/// 后只剩裸 tint 过壁纸，读作透明卡片；且 [CourseCard] 的墨色规则
+/// （玻璃档自动黑白 / 实体档对比度守卫）按这里的返回值分派，墨与面必须
+/// 同源切换。默认 true 保持纯函数调用方（测试、预览）的原有行为。
+///
 /// 首页、日课表与设置页预览都走这一口径，避免无壁纸页把高斯卡片渲染成
 /// 一团没有来源的透明水洗色。
 CourseCardSurfaceStyle effectiveCourseCardSurfaceStyle(
-  TimetableSettings settings,
-) {
-  if (!hasHomePageBackdrop(settings)) {
+  TimetableSettings settings, {
+  bool gaussianBlurAvailable = true,
+}) {
+  if (!hasHomePageBackdrop(settings) || !gaussianBlurAvailable) {
     return CourseCardSurfaceStyle.solid;
   }
   return settings.courseCardSurfaceStyle;

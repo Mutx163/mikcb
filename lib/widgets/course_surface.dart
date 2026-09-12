@@ -117,6 +117,13 @@ class CourseSurface extends StatelessWidget {
 
   Widget _buildGaussian(BuildContext context, BorderRadius radius) {
     final blurEnabled = HyperosBlurredHeader.backdropBlurEnabled(context);
+    // 模糊管线不可用（全局材质「实体卡片」= 模糊总开关关，或系统降级）时
+    // 高斯档没有可采样背景：裸 tint 过壁纸读作透明卡片，必须回退实体卡面。
+    // 调用方应已通过 effectiveCourseCardSurfaceStyle(gaussianBlurAvailable:)
+    // 把墨色规则一并切到实体口径，这里是渲染层的最后防线。
+    if (!blurEnabled) {
+      return _buildSolid(radius);
+    }
     final tint = color.withValues(alpha: _scaledAlpha(frostedFillAlpha));
     // Prefer the pre-blurred wallpaper fill when available: frost stays
     // identical while pages slide (no live BackdropFilter) and it keeps

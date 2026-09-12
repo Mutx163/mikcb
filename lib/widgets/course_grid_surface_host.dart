@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/timetable_settings.dart';
+import '../ui/hyperos/hyperos_blurred_header.dart';
 import '../utils/home_page_background.dart';
 
 /// Provides the shared backdrop group required by gaussian course cards.
@@ -20,10 +21,16 @@ class CourseGridSurfaceHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // No wallpaper -> no gaussian cards, hence no shared backdrop capture
-    // (mirrors effectiveCourseCardSurfaceStyle used by the cards themselves).
-    return effectiveCourseCardSurfaceStyle(settings) ==
-            CourseCardSurfaceStyle.gaussian
+    // No wallpaper or no blur pipeline (global solid / degraded) -> no
+    // gaussian cards, hence no shared backdrop capture (mirrors
+    // effectiveCourseCardSurfaceStyle used by the cards themselves).
+    return effectiveCourseCardSurfaceStyle(
+          settings,
+          gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
+            context,
+          ),
+        ) ==
+        CourseCardSurfaceStyle.gaussian
         ? BackdropGroup(child: child)
         : child;
   }

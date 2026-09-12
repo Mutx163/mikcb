@@ -76,5 +76,36 @@ void main() {
         CourseCardSurfaceStyle.gaussian,
       );
     });
+
+    test(
+      'blur pipeline unavailable: gaussian falls back to solid even with wallpaper',
+      () {
+        // 全局材质「实体卡片」= 模糊总开关关（或系统降级）：高斯档寄生在
+        // 全局模糊管线上，管线关闭后只剩裸 tint 过壁纸（读作透明卡片），
+        // 必须随管线一起回落实体卡，墨色规则同源切换。
+        final settings = TimetableSettings.defaults().copyWith(
+          homePageBuiltInWallpaper: BuiltInWallpaper.og.value,
+          courseCardSurfaceStyle: CourseCardSurfaceStyle.gaussian,
+        );
+        expect(
+          effectiveCourseCardSurfaceStyle(
+            settings,
+            gaussianBlurAvailable: false,
+          ),
+          CourseCardSurfaceStyle.solid,
+        );
+      },
+    );
+
+    test('blur pipeline unavailable: solid stays solid', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        homePageBuiltInWallpaper: BuiltInWallpaper.og.value,
+        courseCardSurfaceStyle: CourseCardSurfaceStyle.solid,
+      );
+      expect(
+        effectiveCourseCardSurfaceStyle(settings, gaussianBlurAvailable: false),
+        CourseCardSurfaceStyle.solid,
+      );
+    });
   });
 }

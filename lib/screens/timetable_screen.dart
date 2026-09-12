@@ -567,14 +567,18 @@ class _TimetableScreenState extends State<TimetableScreen>
           settings,
           hasBackdrop: hasBackdrop,
         );
-        // Cards fall back to a plain translucent tint when blur is off, so
-        // building the pre-blurred bitmap would decode and Gaussian-blur the
-        // whole wallpaper for nothing.
+        // Cards fall back to solid when blur is off, so building the
+        // pre-blurred bitmap would decode and Gaussian-blur the whole
+        // wallpaper for nothing.
         final backdropBlurOn =
             hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context);
-        // No wallpaper -> nothing to blur, cards render solid
-        // regardless of what the surface-style switch is set to.
-        final cardStyle = effectiveCourseCardSurfaceStyle(settings);
+        // No wallpaper or no blur pipeline (global solid / degraded) ->
+        // cards render solid regardless of what the surface-style switch is
+        // set to; ink rules follow the same resolution.
+        final cardStyle = effectiveCourseCardSurfaceStyle(
+          settings,
+          gaussianBlurAvailable: backdropBlurOn,
+        );
         // Gaussian cards sample the cached bitmap instead of a live
         // BackdropFilter while the day-view shell is animating.
         final useCoursePreblur =
@@ -3932,7 +3936,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     final useChromeGlass =
         matchesChromeBand ||
         (backdropBlurOn &&
-            effectiveCourseCardSurfaceStyle(settings) ==
+            effectiveCourseCardSurfaceStyle(
+                  settings,
+                  gaussianBlurAvailable: backdropBlurOn,
+                ) ==
                 CourseCardSurfaceStyle.gaussian);
     // Ink: 与顶部玻璃带同材质时沿用壁纸亮度自动黑白；否则卡面就是主题底色
     // （或亮磨砂），墨色必须跟主题走 —— 按原始壁纸亮度翻白会让白墨落在
@@ -4686,9 +4693,15 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
     return CourseSurface(
       key: key,
-      // Effective style: without a wallpaper the gaussian look has no source
-      // to sample, so every agenda card falls back to solid.
-      style: effectiveCourseCardSurfaceStyle(settings),
+      // Effective style: without a wallpaper or without the blur pipeline
+      // (global solid / degraded) the gaussian look has no source to sample,
+      // so every agenda card falls back to solid.
+      style: effectiveCourseCardSurfaceStyle(
+        settings,
+        gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
+          context,
+        ),
+      ),
       color: color,
       borderRadius: radius,
       opacityScale: opacityScale,
@@ -5094,8 +5107,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     // Over glass the elapsed-progress fill has to stay see-through, or that
     // part of the card turns into a flat opaque block and the frost disappears.
     final progressFill =
-        effectiveCourseCardSurfaceStyle(settings) ==
-            CourseCardSurfaceStyle.solid
+        effectiveCourseCardSurfaceStyle(
+          settings,
+          gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
+            context,
+          ),
+        ) ==
+        CourseCardSurfaceStyle.solid
         ? progressInfo.fillColor
         : progressInfo.fillColor.withValues(alpha: 0.55);
 
@@ -5650,8 +5668,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     final isCrossDay = item.endDate.isAfter(item.startDate);
     // See _buildCurrentDayAgendaCard: the fill must stay see-through on glass.
     final progressFill =
-        effectiveCourseCardSurfaceStyle(settings) ==
-            CourseCardSurfaceStyle.solid
+        effectiveCourseCardSurfaceStyle(
+          settings,
+          gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
+            context,
+          ),
+        ) ==
+        CourseCardSurfaceStyle.solid
         ? progressInfo.fillColor
         : progressInfo.fillColor.withValues(alpha: 0.55);
 
@@ -5981,7 +6004,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     final showsWallpaper =
         settings != null &&
         courseCardSurfaceShowsWallpaper(
-          effectiveCourseCardSurfaceStyle(settings),
+          effectiveCourseCardSurfaceStyle(
+            settings,
+            gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
+              context,
+            ),
+          ),
         );
     final foregroundColor = customInk == null
         ? _dayAgendaAutoInk(fillColor, settings: settings)
@@ -6011,7 +6039,12 @@ class _TimetableScreenState extends State<TimetableScreen>
       return Colors.white;
     }
     final glassOverWallpaper =
-        effectiveCourseCardSurfaceStyle(settings) ==
+        effectiveCourseCardSurfaceStyle(
+          settings,
+          gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
+            context,
+          ),
+        ) ==
         CourseCardSurfaceStyle.gaussian;
     if (!glassOverWallpaper) {
       return Colors.white;
@@ -6171,8 +6204,14 @@ class _TimetableScreenState extends State<TimetableScreen>
               ),
               compactVerticalPadding: sectionHeight < 64 ? 4 : 6,
               compactOuterInset: cardInset,
-              // 无壁纸时统一实体卡（高斯没有可采样背景）；有壁纸才按设置。
-              surfaceStyle: effectiveCourseCardSurfaceStyle(settings),
+              // 无壁纸或模糊管线不可用（全局实体/系统降级）时统一实体卡
+              // （高斯没有可采样背景）；有壁纸且管线可用才按设置。
+              surfaceStyle: effectiveCourseCardSurfaceStyle(
+                settings,
+                gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
+                  context,
+                ),
+              ),
               // wallpaperLuminance 供玻璃档自动黑白判定；实体卡忽略。
               wallpaperLuminance:
                   _wallpaperBodyLuminance ?? _wallpaperTopLuminance,

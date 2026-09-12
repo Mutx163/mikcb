@@ -935,8 +935,14 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
               ),
               compactVerticalPadding: sectionHeight < 64 ? 4 : 6,
               compactOuterInset: cardInset,
-              // Preview mirrors the home grid: no wallpaper -> solid cards.
-              surfaceStyle: effectiveCourseCardSurfaceStyle(settings),
+              // Preview mirrors the home grid: no wallpaper or no blur
+              // pipeline (global solid / degraded) -> solid cards.
+              surfaceStyle: effectiveCourseCardSurfaceStyle(
+                settings,
+                gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
+                  context,
+                ),
+              ),
               // 玻璃档自动黑白判定的壁纸带亮度；实体卡忽略。
               wallpaperLuminance:
                   wallpaperBodyLuminance ?? wallpaperTopLuminance,
