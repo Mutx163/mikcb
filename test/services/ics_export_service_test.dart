@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/holiday_entry.dart';
 import 'package:university_timetable/models/exam.dart';
 import 'package:university_timetable/models/schedule_item.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
@@ -43,6 +44,7 @@ void main() {
       IcsExportEventType.exam,
       IcsExportEventType.scheduleItem,
     },
+    IcsHolidayFilter? holidayFilter,
     DateTime? generatedAt,
   }) {
     return service.build(
@@ -50,6 +52,7 @@ void main() {
       fromDate: fromDate ?? DateTime(2026, 3),
       toDate: toDate ?? DateTime(2026, 4, 30),
       eventTypes: eventTypes,
+      holidayFilter: holidayFilter,
       generatedAt: generatedAt ?? DateTime.utc(2026, 4, 1, 12, 34, 56),
     );
   }
@@ -313,6 +316,152 @@ void main() {
       expect(result.content, endsWith('END:VCALENDAR\r\n'));
       expect(result.content, isNot(contains('BEGIN:VEVENT')));
     }
+  });
+
+  group('节假日课程过滤', () {
+    // 2026-03-02 是周一（第 1 周）。第 1 周周一/周二各一节课。
+    TimetableProfile twoCourses() => profileWith(
+      courses: [
+        _course(id: 'mon', name: '周一课'),
+        _course(
+          id: 'tue',
+          name: '周二课',
+          dayOfWeek: DateTime.tuesday,
+        ),
+      ],
+    );
+
+    HolidayData holidays(List<HolidayEntry> entries) =>
+        HolidayData(year: 2026, version: 1, entries: entries);
+
+    IcsHolidayFilter filterWith(
+      HolidayData? data, {
+      bool overrideEnabled = false,
+      bool markingEnabled = true,
+    }) => IcsHolidayFilter(
+      data: data,
+      overrideEnabled: overrideEnabled,
+      markingEnabled: markingEnabled,
+    );
+
+    test('未传过滤器时维持旧行为（假期课程照常导出）', () {
+      final result = buildExport(twoCourses());
+      expect(result.eventCount, 2);
+    });
+
+    test('跳过落在法定假期上的课程，其余保留', () {
+      final result = buildExport(
+        twoCourses(),
+        holidayFilter: filterWith(
+          holidays([
+            HolidayEntry(
+              date: DateTime(2026, 3, 2),
+              name: '国庆节',
+              type: HolidayType.vacation,
+            ),
+          ]),
+        ),
+      );
+
+      expect(result.eventCount, 1);
+      expect(result.content, contains('周二课'));
+      expect(result.content, isNot(contains('周一课')));
+    });
+
+    test('调休上班日必须保留课程（与首页同一优先级）', () {
+      final result = buildExport(
+        twoCourses(),
+        holidayFilter: filterWith(
+          holidays([
+            HolidayEntry(
+              date: DateTime(2026, 3, 2),
+              name: '调休上班',
+              type: HolidayType.adjustedWorkday,
+            ),
+          ]),
+        ),
+      );
+
+      expect(result.eventCount, 2);
+      expect(result.content, contains('周一课'));
+    });
+
+    test('调休休息日（工作日放假）同样跳过', () {
+      final result = buildExport(
+        twoCourses(),
+        holidayFilter: filterWith(
+          holidays([
+            HolidayEntry(
+              date: DateTime(2026, 3, 2),
+              name: '调休休息',
+              type: HolidayType.adjustedRestday,
+            ),
+          ]),
+        ),
+      );
+
+      expect(result.eventCount, 1);
+      expect(result.content, isNot(contains('周一课')));
+    });
+
+    test('假期标记总开关关闭时不跳过任何课程', () {
+      final result = buildExport(
+        twoCourses(),
+        holidayFilter: filterWith(
+          holidays([
+            HolidayEntry(
+              date: DateTime(2026, 3, 2),
+              name: '国庆节',
+              type: HolidayType.vacation,
+            ),
+          ]),
+          markingEnabled: false,
+        ),
+      );
+
+      expect(result.eventCount, 2);
+    });
+
+    test('假期数据缺失时按无假期处理（不误删）', () {
+      final result = buildExport(
+        twoCourses(),
+        holidayFilter: filterWith(null),
+      );
+
+      expect(result.eventCount, 2);
+    });
+
+    test('只过滤课程：考试与日程落在同一天也照常导出', () {
+      final profile = profileWith(
+        courses: [_course(id: 'mon', name: '周一课')],
+        exams: [_exam(name: '期中考试', date: DateTime(2026, 3, 2))],
+        scheduleItems: [
+          _scheduleItem(
+            id: 'talk',
+            title: '讲座',
+            startDate: DateTime(2026, 3, 2),
+            endDate: DateTime(2026, 3, 2),
+          ),
+        ],
+      );
+      final result = buildExport(
+        profile,
+        holidayFilter: filterWith(
+          holidays([
+            HolidayEntry(
+              date: DateTime(2026, 3, 2),
+              name: '国庆节',
+              type: HolidayType.vacation,
+            ),
+          ]),
+        ),
+      );
+
+      expect(result.eventCount, 2);
+      expect(result.content, contains('期中考试'));
+      expect(result.content, contains('讲座'));
+      expect(result.content, isNot(contains('周一课')));
+    });
   });
 }
 

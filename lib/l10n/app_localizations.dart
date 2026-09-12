@@ -18757,6 +18757,24 @@ abstract class AppLocalizations {
   /// **'日程'**
   String get icsExportSchedules;
 
+  /// No description provided for @icsExportSkipHolidayCourses.
+  ///
+  /// In zh, this message translates to:
+  /// **'跳过节假日课程'**
+  String get icsExportSkipHolidayCourses;
+
+  /// No description provided for @icsExportSkipHolidayCoursesSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'不导出落在法定假期与调休休息日的课程；调休上班日照常导出'**
+  String get icsExportSkipHolidayCoursesSubtitle;
+
+  /// No description provided for @icsExportSkipHolidayCoursesOn.
+  ///
+  /// In zh, this message translates to:
+  /// **'已跳过节假日课程'**
+  String get icsExportSkipHolidayCoursesOn;
+
   /// No description provided for @icsExportButton.
   ///
   /// In zh, this message translates to:

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
+import '../models/holiday_entry.dart';
 import '../models/timetable_profile.dart';
 import '../providers/timetable_provider.dart';
 import '../services/ics_export_service.dart';
@@ -33,6 +34,11 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
   Set<IcsExportEventKind> _eventKinds = Set<IcsExportEventKind>.of(
     IcsExportEventKind.all,
   );
+
+  /// 导出时是否排除落在节假日上的**课程**事件。
+  ///
+  /// 默认关闭（保持历史行为）；只影响课程，考试与自定义日程照常导出。
+  bool _skipHolidayCourses = false;
 
   @override
   void initState() {
@@ -132,6 +138,20 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
                 kind: IcsExportEventKind.scheduleItem,
                 title: l10n.icsExportSchedules,
               ),
+              // 节假日过滤只对课程有意义：没勾课程时不展示，
+              // 避免留一个改了不生效的开关。
+              if (_eventKinds.contains(IcsExportEventKind.course))
+                HyperosSwitchTile(
+                  key: const Key('ics-export-skip-holiday-courses'),
+                  title: l10n.icsExportSkipHolidayCourses,
+                  subtitle: l10n.icsExportSkipHolidayCoursesSubtitle,
+                  value: _skipHolidayCourses,
+                  onChanged: (value) {
+                    setState(() {
+                      _skipHolidayCourses = value;
+                    });
+                  },
+                ),
             ],
           ),
           const HyperosSectionGap(),
@@ -257,6 +277,12 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
           '${l10n.icsExportTypesTitle}: ${selectedTypes.isEmpty ? '-' : selectedTypes.join(', ')}',
           style: HyperosTypography.listDetail(context),
         ),
+        if (_skipHolidayCourses &&
+            _eventKinds.contains(IcsExportEventKind.course))
+          Text(
+            l10n.icsExportSkipHolidayCoursesOn,
+            style: HyperosTypography.listDetail(context),
+          ),
         if (_eventKinds.contains(IcsExportEventKind.course) &&
             profile?.settings.semesterStartDate == null) ...[
           const SizedBox(height: 8),
@@ -343,6 +369,17 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
         fromDate: _fromDate,
         toDate: _toDate,
         eventKinds: _eventKinds,
+        // 只在用户勾选且本次导出含课程时生效；判定口径与
+        // 首页 provider.isHoliday 同源（同一 HolidayResolver + 同一组设置）。
+        holidayFilter:
+            _skipHolidayCourses &&
+                _eventKinds.contains(IcsExportEventKind.course)
+            ? IcsHolidayFilter(
+                data: provider.holidayData,
+                overrideEnabled: provider.settings.holidayOverrideEnabled,
+                markingEnabled: provider.settings.enableHolidayMarking,
+              )
+            : null,
         generatedAt: DateTime.now(),
       );
       if (!mounted) {

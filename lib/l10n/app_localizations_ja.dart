@@ -10604,6 +10604,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get icsExportSchedules => '予定';
 
   @override
+  String get icsExportSkipHolidayCourses => '祝日の授業を除外';
+
+  @override
+  String get icsExportSkipHolidayCoursesSubtitle =>
+      '祝日と振替休日の授業を出力しません（振替出勤日は出力します）';
+
+  @override
+  String get icsExportSkipHolidayCoursesOn => '祝日の授業を除外しました';
+
+  @override
   String get icsExportButton => 'エクスポートして共有';
 
   @override

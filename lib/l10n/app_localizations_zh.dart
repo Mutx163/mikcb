@@ -10315,6 +10315,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get icsExportSchedules => '日程';
 
   @override
+  String get icsExportSkipHolidayCourses => '跳过节假日课程';
+
+  @override
+  String get icsExportSkipHolidayCoursesSubtitle =>
+      '不导出落在法定假期与调休休息日的课程；调休上班日照常导出';
+
+  @override
+  String get icsExportSkipHolidayCoursesOn => '已跳过节假日课程';
+
+  @override
   String get icsExportButton => '导出并分享';
 
   @override
@@ -21122,6 +21132,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get icsExportSchedules => '日程';
 
   @override
+  String get icsExportSkipHolidayCourses => '跳過節假日課程';
+
+  @override
+  String get icsExportSkipHolidayCoursesSubtitle =>
+      '不匯出落在法定假期與調休休息日的課程；調休上班日照常匯出';
+
+  @override
+  String get icsExportSkipHolidayCoursesOn => '已跳過節假日課程';
+
+  @override
   String get icsExportButton => '匯出並分享';
 
   @override
@@ -31927,6 +31947,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get icsExportSchedules => '日程';
+
+  @override
+  String get icsExportSkipHolidayCourses => '跳過節假日課程';
+
+  @override
+  String get icsExportSkipHolidayCoursesSubtitle =>
+      '不匯出落在法定假期與調休休息日的課程；調休上班日照常匯出';
+
+  @override
+  String get icsExportSkipHolidayCoursesOn => '已跳過節假日課程';
 
   @override
   String get icsExportButton => '匯出並分享';

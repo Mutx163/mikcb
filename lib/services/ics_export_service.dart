@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
+import '../domain/holiday_resolver.dart';
+import '../models/holiday_entry.dart';
 import '../models/schedule_item.dart';
 import '../models/timetable_profile.dart';
 
@@ -28,12 +30,48 @@ enum IcsExportEventKind {
 typedef IcsExportEventType = IcsExportEventKind;
 typedef IcsExportKind = IcsExportEventKind;
 
+/// 节假日过滤配置（纯值，无 Flutter / IO 依赖）。
+///
+/// 判定口径与首页一致，直接走
+/// [HolidayResolver.isHoliday]（调休上班日优先，其次是假期覆盖模式，
+/// 再看假期标记开关），避免导出与界面出现不一致。
+///
+/// 为 null 时不过滤（保持旧行为）。
+class IcsHolidayFilter {
+  const IcsHolidayFilter({
+    required this.data,
+    required this.overrideEnabled,
+    required this.markingEnabled,
+  });
+
+  /// 当前已加载的节假日数据；缺失视为无假期。
+  final HolidayData? data;
+
+  /// 假期覆盖模式（开启后除调休上班日外全部视为假期）。
+  final bool overrideEnabled;
+
+  /// 假期标记总开关。
+  final bool markingEnabled;
+
+  /// 指定日期是否应隐藏课程。
+  bool hidesCoursesOn(DateTime date) => HolidayResolver.isHoliday(
+    date,
+    data: data,
+    overrideEnabled: overrideEnabled,
+    markingEnabled: markingEnabled,
+  );
+}
+
 /// Immutable input for one ICS export operation.
 class IcsExportRequest {
   final TimetableProfile profile;
   final DateTime fromDate;
   final DateTime toDate;
   final Set<IcsExportEventKind> eventKinds;
+
+  /// 节假日过滤：非 null 且启用时，落在“应隐藏课程”的
+  /// 日期上的**课程**事件不写入日历（考试/日程不受影响）。
+  final IcsHolidayFilter? holidayFilter;
   final DateTime? generatedAt;
 
   IcsExportRequest({
@@ -43,6 +81,7 @@ class IcsExportRequest {
     Iterable<IcsExportEventKind>? eventKinds,
     Iterable<IcsExportEventKind>? eventTypes,
     Iterable<IcsExportEventKind>? types,
+    this.holidayFilter,
     this.generatedAt,
   }) : fromDate = _dateOnly(fromDate),
        toDate = _dateOnly(toDate),
@@ -87,6 +126,10 @@ class IcsExportResult {
 }
 
 /// Serializes profile data into a deterministic, single-occurrence ICS file.
+///
+/// 可选的 [IcsExportRequest.holidayFilter] 会把落在节假日（该日应隐藏课程）上的
+/// **课程**事件排除；考试与自定义日程不受影响——它们本就是用户
+/// 显式安排的，“假期停课”不适用于考试日。
 ///
 /// This class deliberately has no provider, UI, file-system, or sharing
 /// dependency. The optional clock is only used when a request does not supply
@@ -147,6 +190,7 @@ class IcsExportService {
     Iterable<IcsExportEventKind>? eventKinds,
     Iterable<IcsExportEventKind>? eventTypes,
     Iterable<IcsExportEventKind>? types,
+    IcsHolidayFilter? holidayFilter,
     DateTime? generatedAt,
   }) {
     return generate(
@@ -157,6 +201,7 @@ class IcsExportService {
         eventKinds: eventKinds,
         eventTypes: eventTypes,
         types: types,
+        holidayFilter: holidayFilter,
         generatedAt: generatedAt,
       ),
     );
@@ -196,6 +241,11 @@ class IcsExportService {
           ((week - 1) * 7) + dayOfWeek - 1,
         );
         if (!_isInRange(occurrenceDate, request.fromDate, request.toDate)) {
+          continue;
+        }
+        // 节假日过滤：仅对**课程**生效，且只在用户勾选时。
+        // 判定走与首页同一个 HolidayResolver，调休上班日依然保留课程。
+        if (request.holidayFilter?.hidesCoursesOn(occurrenceDate) ?? false) {
           continue;
         }
 

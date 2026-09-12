@@ -10915,6 +10915,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icsExportSchedules => 'Schedules';
 
   @override
+  String get icsExportSkipHolidayCourses => 'Skip holiday classes';
+
+  @override
+  String get icsExportSkipHolidayCoursesSubtitle =>
+      'Leave out classes that fall on public holidays and adjusted rest days; adjusted workdays are still exported';
+
+  @override
+  String get icsExportSkipHolidayCoursesOn => 'Holiday classes skipped';
+
+  @override
   String get icsExportButton => 'Export and share';
 
   @override

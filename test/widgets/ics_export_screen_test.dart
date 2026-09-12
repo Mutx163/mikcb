@@ -7,12 +7,14 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/holiday_entry.dart';
 import 'package:university_timetable/models/time_scheme.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/data_transfer_screen.dart';
 import 'package:university_timetable/screens/ics_export_screen.dart';
+import 'package:university_timetable/services/ics_export_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../helpers_test_app.dart';
@@ -194,6 +196,125 @@ void main() {
     final widget = tester.widget<HyperosButton>(button);
     expect(widget.onPressed, isNull);
   });
+
+  group('跳过节假日课程开关', () {
+    const toggleKey = Key('ics-export-skip-holiday-courses');
+
+    Future<void> pumpScreen(
+      WidgetTester tester, {
+      required TimetableProvider provider,
+    }) async {
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: provider,
+          child: const TestApp(home: IcsExportScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('默认关闭，且勾选课程时可见', (tester) async {
+      await pumpScreen(tester, provider: _testProvider());
+
+      expect(find.byKey(toggleKey), findsOneWidget);
+      expect(find.text('跳过节假日课程'), findsOneWidget);
+      final tile = tester.widget<HyperosSwitchTile>(
+        find.byKey(toggleKey),
+      );
+      expect(tile.value, isFalse, reason: '默认不改变导出结果');
+    });
+
+    testWidgets('取消勾选「课程」后该开关隐藏（改了不生效的选项不保留）', (
+      tester,
+    ) async {
+      await pumpScreen(tester, provider: _testProvider());
+      expect(find.byKey(toggleKey), findsOneWidget);
+
+      await tester.tap(find.text('课程'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(toggleKey), findsNothing);
+    });
+
+    testWidgets('打开开关后摘要出现「已跳过节假日课程」', (tester) async {
+      await pumpScreen(tester, provider: _testProvider());
+      expect(find.text('已跳过节假日课程'), findsNothing);
+
+      await tester.tap(find.byKey(toggleKey));
+      await tester.pumpAndSettle();
+
+      final tile = tester.widget<HyperosSwitchTile>(
+        find.byKey(toggleKey),
+      );
+      expect(tile.value, isTrue);
+      expect(find.text('已跳过节假日课程'), findsOneWidget);
+    });
+
+    /// 2026-03-02（周一，第 1 周）设为法定假期；该课表只有这一节课。
+    _HolidayTimetableProvider holidayProvider() => _HolidayTimetableProvider(
+      _testProfile(),
+      HolidayData(
+        year: 2026,
+        version: 1,
+        entries: [
+          HolidayEntry(
+            date: DateTime(2026, 3, 2),
+            name: '国庆节',
+            type: HolidayType.vacation,
+          ),
+        ],
+      ),
+    );
+
+    testWidgets('关闭时照常导出假期当天的课程', (tester) async {
+      var shareCalls = 0;
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: holidayProvider(),
+          child: TestApp(
+            home: IcsExportScreen(
+              shareCallback: (_) async {
+                shareCalls++;
+                return const ShareResult('shared', ShareResultStatus.success);
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('ics-export-share')));
+      await tester.pumpAndSettle();
+
+      expect(shareCalls, 1, reason: '默认不过滤，假期当天的课程照常导出');
+    });
+
+    testWidgets('开启后假期当天无事件可导出，不会调起分享', (tester) async {
+      var shareCalls = 0;
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: holidayProvider(),
+          child: TestApp(
+            home: IcsExportScreen(
+              shareCallback: (_) async {
+                shareCalls++;
+                return const ShareResult('shared', ShareResultStatus.success);
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(toggleKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ics-export-share')));
+      await tester.pumpAndSettle();
+
+      expect(shareCalls, 0, reason: '全部课程都被假期过滤掉后不应分享空日历');
+      expect(find.text('所选日期范围内没有日历事件'), findsOneWidget);
+    });
+  });
 }
 
 TimeScheme _testScheme() {
@@ -213,6 +334,16 @@ class _FakeTimetableProviderWithSchemes extends _FakeTimetableProvider {
 
   @override
   List<TimeScheme> get timeSchemes => [_testScheme()];
+}
+
+/// 带节假日数据的假 provider，供“跳过节假日课程”用例使用。
+class _HolidayTimetableProvider extends _FakeTimetableProvider {
+  _HolidayTimetableProvider(super.profile, this._data);
+
+  final HolidayData _data;
+
+  @override
+  HolidayData? get holidayData => _data;
 }
 
 TimetableProfile _testProfile() {
@@ -259,4 +390,8 @@ class _FakeTimetableProvider extends TimetableProvider {
 
   @override
   TimetableProfile? get activeProfile => _profile;
+
+  /// 节假日数据：默认空（无假期）；子类可覆盖。
+  @override
+  HolidayData? get holidayData => null;
 }

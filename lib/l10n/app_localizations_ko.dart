@@ -10647,6 +10647,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get icsExportSchedules => '일정';
 
   @override
+  String get icsExportSkipHolidayCourses => '공휴일 수업 제외';
+
+  @override
+  String get icsExportSkipHolidayCoursesSubtitle =>
+      '공휴일과 대체 휴일의 수업은 내보내지 않습니다(대체 근무일은 그대로 내보냄)';
+
+  @override
+  String get icsExportSkipHolidayCoursesOn => '공휴일 수업을 제외했습니다';
+
+  @override
   String get icsExportButton => '내보내고 공유';
 
   @override
