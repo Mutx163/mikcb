@@ -90,6 +90,10 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
       liquidGlassSheetDialogEnabled: settings.liquidGlassSheetDialogEnabled,
       liquidGlassHomeChromeEnabled: settings.liquidGlassHomeChromeEnabled,
       homeChromeGlassMaterial: settings.homeChromeGlassMaterial,
+      // 预览里的首页玻璃带（HomePageChromeGlassFill）经 scope 读这两档风
+      // 格；缺省会让预览带永远渲染默认渐进档，与真实首页不符。
+      headerBlurStyle: settings.headerBlurStyle,
+      subpageHeaderBlurStyle: settings.subpageHeaderBlurStyle,
       liquidGlassDockEnabled: settings.liquidGlassDockEnabled,
       liquidGlassPickerButtonsEnabled: settings.liquidGlassPickerButtonsEnabled,
     );

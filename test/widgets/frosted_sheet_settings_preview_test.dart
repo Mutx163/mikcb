@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
@@ -277,5 +278,48 @@ void main() {
         expect(fill.useAncestorBackdropGroup, isFalse);
       },
     );
+  });
+
+  group('preview scope mirrors the settings blur styles', () {
+    testWidgets('scope carries settings.headerBlurStyle / subpageHeaderBlurStyle', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = TimetableSettings.defaults().copyWith(
+        headerBlurStyle: HeaderBlurStyle.gaussian,
+        subpageHeaderBlurStyle: HeaderBlurStyle.inspire,
+      );
+      final provider = await createInitializedTestProvider(tester);
+
+      await tester.pumpWidget(
+        TestApp(
+          home: FrostedSheetSettingsPreview(
+            provider: provider,
+            settings: settings,
+            week: 1,
+            blurSigma: 15,
+            tintAlpha: 0.5,
+            barrierAlpha: 0.2,
+            blurEnabled: true,
+            glassMode: FrostedGlassMode.gaussian,
+            onOpenDemoSheet: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // 回归背景（2026-09-12）：scope 漏传两档模糊风格时，预览里的首页
+      // 玻璃带（HomePageChromeGlassFill → headerBlurStyleOf）永远按默认
+      // 渐进档渲染，与真实首页不符。
+      final scope = tester.widget<FrostedAppearanceScope>(
+        find.byType(FrostedAppearanceScope),
+      );
+      expect(scope.appearance.headerBlurStyle, HeaderBlurStyle.gaussian);
+      expect(
+        scope.appearance.subpageHeaderBlurStyle,
+        HeaderBlurStyle.inspire,
+      );
+    });
   });
 }
