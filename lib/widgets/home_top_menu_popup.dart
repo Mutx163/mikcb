@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/os4_glass_backdrop.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
 
 /// 主 / 二级面板共用的尺寸约束。
@@ -111,58 +112,62 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
     final l10n = AppLocalizations.of(context)!;
     final entries = widget.entries;
 
-    return Stack(
-      children: [
-        MiuixGlassTransformPopup(
-          show: widget.show,
-          anchor: widget.anchor,
-          anchorContent: widget.anchorContent,
-          backdrop: widget.backdrop,
-          // 宽度见 [_popupSizing]（收到旧实现的下界原宽 200）。
-          sizing: _popupSizing,
-          // 刻意**不用** `stacked`：它的语义是"二级展开时一级面板收缩/变暗"，
-          // 收起时要靠包内 `MiuixGlassMotion.secondaryPopup(false)` 弹簧把一级
-          // 弹回原位 —— 那条回弹在真机上读起来就是"圈/描边回收很慢"，而这组
-          // 弹簧与 `transformMaterial(80ms)+delay(50ms)+threshold(.0015)` 都在包内、
-          // **没有对外参数**可调。故保持 stacked=false：二级直接浮出/收起，
-          // 一级面板全程不移动，也就没有需要回收的形变。
-          //（想要包内那套"一级让位"观感时，把这一行放开即可。）
-          // stacked: _secondaryOpen,
-          onDismissRequest: _close,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var index = 0; index < entries.length; index++) ...[
-                if (index > 0 &&
-                    entries[index].category != entries[index - 1].category)
-                  const SizedBox(height: 8),
-                _row(entries[index], l10n),
-              ],
-            ],
-          ),
-        ),
-        if (_secondaryBounds != null)
-          MiuixGlassSecondaryPopup(
-            show: _secondaryOpen,
-            anchorBounds: _secondaryBounds,
-            // 二级共享一级菜单的材质（上游 materialAnchor 语义）。
-            materialAnchor: widget.anchor,
+    // 外层手势隔离：弹层自带的滚动视图不该继承首页的橡皮筋物理，也不该把滚动
+    // 通知冒泡回首页（首页同样有整页滚动监听）。
+    return HyperosGlassPopupScrollGuard(
+      child: Stack(
+        children: [
+          MiuixGlassTransformPopup(
+            show: widget.show,
+            anchor: widget.anchor,
+            anchorContent: widget.anchorContent,
             backdrop: widget.backdrop,
-            // 与一级面板**同一份**宽度约束，两块才对得齐。
+            // 宽度见 [_popupSizing]（收到旧实现的下界原宽 200）。
             sizing: _popupSizing,
-            onDismissRequest: _closeSecondary,
+            // 刻意**不用** `stacked`：它的语义是"二级展开时一级面板收缩/变暗"，
+            // 收起时要靠包内 `MiuixGlassMotion.secondaryPopup(false)` 弹簧把一级
+            // 弹回原位 —— 那条回弹在真机上读起来就是"圈/描边回收很慢"，而这组
+            // 弹簧与 `transformMaterial(80ms)+delay(50ms)+threshold(.0015)` 都在包内、
+            // **没有对外参数**可调。故保持 stacked=false：二级直接浮出/收起，
+            // 一级面板全程不移动，也就没有需要回收的形变。
+            //（想要包内那套"一级让位"观感时，把这一行放开即可。）
+            // stacked: _secondaryOpen,
+            onDismissRequest: _close,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                for (final child in kAddCourseSubmenu(l10n))
-                  MiuixGlassPopupItem(
-                    text: child.label,
-                    onPressed: () => _select(child.value),
-                  ),
+                for (var index = 0; index < entries.length; index++) ...[
+                  if (index > 0 &&
+                      entries[index].category != entries[index - 1].category)
+                    const SizedBox(height: 8),
+                  _row(entries[index], l10n),
+                ],
               ],
             ),
           ),
-      ],
+          if (_secondaryBounds != null)
+            MiuixGlassSecondaryPopup(
+              show: _secondaryOpen,
+              anchorBounds: _secondaryBounds,
+              // 二级共享一级菜单的材质（上游 materialAnchor 语义）。
+              materialAnchor: widget.anchor,
+              backdrop: widget.backdrop,
+              // 与一级面板**同一份**宽度约束，两块才对得齐。
+              sizing: _popupSizing,
+              onDismissRequest: _closeSecondary,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final child in kAddCourseSubmenu(l10n))
+                    MiuixGlassPopupItem(
+                      text: child.label,
+                      onPressed: () => _select(child.value),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -192,10 +197,7 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
               },
             ),
           )
-        : MiuixGlassPopupItem(
-            text: label,
-            onPressed: () => _select(entry.id),
-          );
+        : MiuixGlassPopupItem(text: label, onPressed: () => _select(entry.id));
 
     if (entry.id != kUpdateEntryId || !widget.hasAvailableUpdate) {
       return item;

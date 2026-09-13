@@ -19,6 +19,7 @@ export 'hyperos_miuix_spec.dart';
 export 'hyperos_navigation.dart';
 export 'hyperos_navigation_bar.dart';
 export 'hyperos_number_picker.dart';
+export 'os4_glass_backdrop.dart';
 export 'hyperos_overscroll.dart';
 export 'hyperos_overlay_header.dart';
 export 'hyperos_page.dart';
