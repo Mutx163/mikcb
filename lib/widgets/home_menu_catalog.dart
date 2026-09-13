@@ -17,9 +17,7 @@ export 'home_top_menu.dart'
         kAddCourseSubmenu,
         kAddCourseSubmenuCourseId,
         kAddCourseSubmenuScheduleId,
-        kAddCourseSubmenuExamId,
-        kAddCourseSubmenuParentId,
-        kUpdateEntryId;
+        kAddCourseSubmenuExamId;
 
 // 拆分迁移的内嵌页注册表与导航壳：原样再导出，所有既有 import
 // home_menu_catalog.dart 的调用方（timetable_screen 等）无须改动。

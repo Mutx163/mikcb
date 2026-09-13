@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../../helpers_test_app.dart';
 
-/// 锚定弹层与宿主页之间的滚动手势 / 通知隔离。
+/// OS4 玻璃弹层与宿主页之间的滚动手势 / 通知隔离。
 ///
-/// 回归背景：上游 `GlassPopupPresenter` 用 `OverlayPortal` 把弹层画到 Overlay，
-/// 而 overlay child 在**元素树**上仍挂在调用处 —— 它会继承宿主页的
+/// 上游 `GlassPopupPresenter` 自带一个 `SingleChildScrollView` 包住弹层内容，而
+/// `OverlayPortal` 的 overlay child 在元素树上仍挂在调用处：它会继承宿主页的
 /// `HyperosScrollBehavior`（`AlwaysScrollableScrollPhysics` + 橡皮筋，内容没超高
-/// 也能拖），发出的 `ScrollNotification` 也会冒泡回宿主页，被页面的滚动监听当成
-/// "页面在滚"来驱动大标题收起，可页面其实没滚。
-///
-/// 2026-09-14：`HyperosSelectTile` 已改走 [showHyperosSelectPopup]
-/// （`showGeneralDialog` 按需弹出，元素树在 Navigator 的 Overlay 下、不在宿主页
-/// 子树里），本用例继续守住「弹层里的列表不该接管手势、通知不冒泡到宿主页、
-/// 页面大标题不动」这三条。
+/// 也能拖），它发出的 `ScrollNotification` 也会冒泡回宿主页，被页面的滚动监听
+/// 当成"页面在滚"来驱动大标题收起 —— 但页面其实没滚，状态对不上。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -55,22 +51,20 @@ void main() {
 
     await tester.tap(find.text('卡片外观'));
     await tester.pumpAndSettle();
-    expect(find.byType(HyperosSelectPopupGlass), findsOneWidget);
+    expect(find.byType(MiuixGlassDropdownPopup), findsOneWidget);
 
     final popupPosition = tester
         .state<ScrollableState>(
           find
               .descendant(
-                of: find.byType(HyperosSelectPopupGlass),
+                of: find.byType(MiuixGlassDropdownPopup),
                 matching: find.byType(Scrollable),
               )
               .first,
         )
         .position;
-    // 只有两条、放得下：这个滚动视图不该继承页面的
-    // AlwaysScrollableScrollPhysics（那个会让内容没超高也能拖动）。
-    // 物理必须是弹层自己的 Clamping —— 下面再验拖动后 pixels 不离开 0。
-    expect(popupPosition.physics, isNot(isA<AlwaysScrollableScrollPhysics>()));
+    // 只有两条、放得下：这个滚动视图不该接管手势（页面的 AlwaysScrollable 会）。
+    expect(popupPosition.physics.shouldAcceptUserOffset(popupPosition), isFalse);
 
     leaked = 0;
     final gesture = await tester.startGesture(

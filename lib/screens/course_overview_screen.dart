@@ -22,6 +22,11 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
   _SortMode _sortMode = _SortMode.added;
   final GlobalKey _sortActionKey = GlobalKey();
 
+  /// 「排序」选择弹层的常驻状态。上游 OS4 弹层的契约是「常驻挂载 + 切 show」，
+  /// 所以由宿主持有 show 与锚定矩形，而不是 await 一个路由的返回值。
+  bool _sortPopupOpen = false;
+  Rect? _sortAnchorRect;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -90,6 +95,23 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
             ),
         ),
         ),
+        // 「排序」选择弹层：常驻挂载、由 _sortPopupOpen 切 show。
+        HyperosSelectPopup<_SortMode>(
+          show: _sortPopupOpen,
+          anchorRect: _sortAnchorRect ?? Rect.zero,
+          currentValue: _sortMode,
+          items: {
+            l10n.sortByAdded: _SortMode.added,
+            l10n.sortByName: _SortMode.name,
+            l10n.sortBySchedule: _SortMode.schedule,
+          },
+          onSelected: _onSortSelected,
+          onDismiss: () {
+            if (_sortPopupOpen) {
+              setState(() => _sortPopupOpen = false);
+            }
+          },
+        ),
       ],
     );
   }
@@ -128,26 +150,22 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
 
   /// 打开「排序」选择弹层。
   ///
-  /// 走 [showHyperosSelectPopup]：按需弹出的路由，材质由
-  /// [HyperosSelectPopupGlass] 按全局玻璃档位分派 —— 与设置行的值选择气泡、
-  /// 首页「更多」菜单同一条链路。此前用的是常驻挂载的上游 OS4 弹层
-  /// （`HyperosSelectPopup`），全局液态/柔光档下它的材质不跟随，与其它表面断层。
-  Future<void> _showSortPopup() async {
-    final l10n = AppLocalizations.of(context)!;
-    final selected = await showHyperosSelectPopup<_SortMode>(
-      context: context,
-      anchorRect: hyperosSelectPopupAnchorRect(context, _sortActionKey),
-      items: {
-        l10n.sortByAdded: _SortMode.added,
-        l10n.sortByName: _SortMode.name,
-        l10n.sortBySchedule: _SortMode.schedule,
-      },
-      currentValue: _sortMode,
-    );
-    if (!mounted || selected == null || selected == _sortMode) {
-      return;
-    }
-    setState(() => _sortMode = selected);
+  /// 2026-09-13：选择弹层改用上游 OS4 锚定弹层后，必须按上游契约
+  /// 「**常驻挂载 + 切 show**」使用 —— 弹层**不自己 pop 任何路由**。
+  /// 上一版把它塞进 `showGeneralDialog` 且 show 恒 true，导致弹层内部关闭记账
+  /// 与路由栈错位：点条目会 pop 掉宿主页、点空白也关不掉，故改为本形态。
+  void _showSortPopup() {
+    setState(() {
+      _sortAnchorRect = hyperosSelectPopupAnchorRect(context, _sortActionKey);
+      _sortPopupOpen = true;
+    });
+  }
+
+  void _onSortSelected(_SortMode mode) {
+    setState(() {
+      _sortMode = mode;
+      _sortPopupOpen = false;
+    });
   }
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {

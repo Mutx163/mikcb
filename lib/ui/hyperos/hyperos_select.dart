@@ -301,10 +301,6 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
           radius: HyperosMiuixDropdown.popupCornerRadius,
           child: SingleChildScrollView(
             controller: _scrollController,
-            // 内容放得下就不该接管手势：默认物理会继承 `HyperosScrollBehavior`
-            // 的 `AlwaysScrollableScrollPhysics`，两条选项的短列表也能被拖得来回晃
-            // （上游弹层靠 `HyperosGlassPopupScrollGuard` 解决同一问题）。
-            physics: const ClampingScrollPhysics(),
             child: IntrinsicWidth(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -694,14 +690,6 @@ class HyperosSolidPopupSurface extends StatelessWidget {
   }
 }
 
-/// ⚠️ **生产已停用**（2026-09-14）：锚定选择气泡统一走 [showHyperosSelectPopup]
-/// （自研链路，材质由 [HyperosSelectPopupGlass] 按全局玻璃档位分派）。
-///
-/// 停用原因：本组件用上游 OS4 弹层（`MiuixGlassDropdownPopup`），只有
-/// `softGlassPopupVisualsFor` 在**柔光档**覆盖材质，全局「液态玻璃」档下它仍是
-/// OS4 玻璃 —— 与设置行 / 课程总览排序气泡本应统一的材质断层。保留本文件仅供
-/// 历史对照与既有测试。
-///
 /// 选择弹窗（**常驻挂载 + 切 `show`**，上游 OS4 弹层的契约）。
 ///
 /// 上游源码注释写明了这条契约：
@@ -1090,6 +1078,79 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
   final _anchorKey = GlobalKey();
   bool _menuOpen = false;
 
+  /// OS4 玻璃弹层：**常驻挂载 + 切 `show`**（上游契约），锚点矩形在展开时定格。
+  bool _os4Open = false;
+  Rect? _os4AnchorRect;
+
+  /// 已 acquire 的页级采样源宿主。弹层展开期间持有；手指按下即预热，抬手后
+  /// 若并未展开则立刻归还，避免页级捕获空转。
+  HyperosGlassBackdropScope? _heldCapture;
+
+  /// 本行是否走 OS4 玻璃弹层。三类调用点继续走旧弹层：
+  /// - 选项多到要用底部 sheet（`showHyperosSelectSheet`）；
+  /// - 逐项自定义字号（字体预览）—— 上游 `MiuixGlassPopupItem` 不支持覆盖文字样式；
+  /// - 所在页面没有页级采样源宿主（如单测里的裸 `HyperosSelectTile`）。
+  HyperosGlassBackdropScope? _os4ScopeFor(BuildContext context) {
+    if (widget.useSheetForPopup ||
+        widget.items.length > widget.sheetItemThreshold ||
+        widget.itemTitleStyleBuilder != null) {
+      return null;
+    }
+    return HyperosGlassBackdropScope.maybeOf(context);
+  }
+
+  void _holdCapture(HyperosGlassBackdropScope scope) {
+    if (identical(_heldCapture, scope)) return;
+    _heldCapture?.release();
+    _heldCapture = scope;
+    scope.acquire();
+  }
+
+  void _dropCapture() {
+    _heldCapture?.release();
+    _heldCapture = null;
+  }
+
+  /// 手指按下就开启页级捕获：图层快照在帧末录制，早一拍预热可保证弹层首帧
+  /// 已经采得到背景（否则展开的第一帧只有材质底色）。
+  void _prewarmCapture(BuildContext context) {
+    if (_menuOpen || !widget.enabled || widget.onChanged == null) return;
+    final scope = _os4ScopeFor(context);
+    if (scope != null) {
+      _holdCapture(scope);
+    }
+  }
+
+  /// 抬手/取消：没真展开就归还预热。
+  void _settleCapture() {
+    if (!_os4Open) {
+      _dropCapture();
+    }
+  }
+
+  void _closeOs4() {
+    if (!_os4Open) return;
+    setState(() {
+      _os4Open = false;
+      _menuOpen = false;
+    });
+    _dropCapture();
+  }
+
+  void _onOs4Selected(T value) {
+    final changed = value != widget.value;
+    _closeOs4();
+    if (changed) {
+      widget.onChanged?.call(value);
+    }
+  }
+
+  @override
+  void dispose() {
+    _dropCapture();
+    super.dispose();
+  }
+
   Future<void> _openSelector(BuildContext context) async {
     if (_menuOpen || !widget.enabled || widget.onChanged == null) {
       return;
@@ -1100,7 +1161,19 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
         widget.useSheetForPopup ||
         widget.items.length > widget.sheetItemThreshold ||
         anchorRect == null;
+    final os4Scope = useSheet ? null : _os4ScopeFor(context);
 
+    if (os4Scope != null) {
+      _holdCapture(os4Scope);
+      setState(() {
+        _menuOpen = true;
+        _os4Open = true;
+        _os4AnchorRect = anchorRect;
+      });
+      return;
+    }
+
+    _dropCapture();
     setState(() => _menuOpen = true);
 
     T? selected;
@@ -1233,9 +1306,35 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
       child: row,
     );
 
-    // 锚定气泡按需弹出（[showHyperosSelectPopup] → `showGeneralDialog`），
-    // 画在 Overlay 上，与本行同层不挂常驻弹层。
-    return pressable;
+    final os4Scope = _os4ScopeFor(context);
+    if (os4Scope == null) {
+      // 没有页级采样源（或本行本就走 sheet / 需要逐项字号）：保持原样，连弹层
+      // 都不挂载。
+      return pressable;
+    }
+
+    // OS4 弹层经 OverlayPortal 画到 rootOverlay，自身零尺寸，所以与行同层放
+    // Stack 不会改变行本身的布局（Stack 只把约束放松给非定位子节点，行内部
+    // 的 Row 仍按 mainAxisSize.max 撑满）。
+    return Stack(
+      children: [
+        Listener(
+          onPointerDown: (_) => _prewarmCapture(context),
+          onPointerUp: (_) => _settleCapture(),
+          onPointerCancel: (_) => _settleCapture(),
+          child: pressable,
+        ),
+        HyperosSelectPopup<T>(
+          show: _os4Open,
+          anchorRect: _os4AnchorRect ?? Rect.zero,
+          items: widget.items,
+          currentValue: widget.value,
+          onSelected: _onOs4Selected,
+          onDismiss: _closeOs4,
+          itemPrefixBuilder: widget.itemPrefixBuilder,
+        ),
+      ],
+    );
   }
 }
 

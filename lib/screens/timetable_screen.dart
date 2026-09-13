@@ -54,6 +54,7 @@ import '../widgets/course_surface.dart';
 import '../widgets/course_grid_surface_host.dart';
 import '../widgets/home_menu_catalog.dart';
 import '../widgets/home_top_menu.dart';
+import '../widgets/home_top_menu_popup.dart';
 import '../widgets/home_update_prompt.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
 import '../widgets/profile_quick_switch_sheet.dart';
@@ -219,16 +220,22 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// Anchor for the top-right "more" menu popup (positioned below this key).
   final GlobalKey _topMenuButtonKey = GlobalKey();
 
-  /// 首页整屏的玻璃采样源。
-  ///
-  /// 列表态菜单（[showHyperosListPopup]）不在首页子树里（弹层经
-  /// `showGeneralDialog` 画在路由之上，页面级 `HyperosGlassBackdropScope`
-  /// 读不到），只能按 `HyperosGlassBackdropRegistry` 取"注册表栈顶"那一屏的
-  /// 采样源。首页**自持**控制器（而不是让宿主自建）正是为了让栈顶这一屏就是
-  /// 首页：玻璃坞里被盖住的内嵌页也会注册，若用宿主自建的控制器，菜单可能采到
-  /// 一屏不绘制的页面（快照为空 → 菜单透明）。
+  /// 首页「更多」菜单（列表形态）改用上游 flutter_miuix 1.2.0 的 HyperOS 4
+  /// 玻璃弹层后的持有物。按上游约定：锚点与材质捕获容器由宿主创建并持有
+  ///（[MiuixGlassPopupAnchor.dispose] 在 [dispose] 里释放）；弹层是
+  /// 「常驻挂载 + 切 show」的声明式组件，故用 [_homeMenuOpen] 控制显隐。
+  final MiuixGlassPopupAnchor _homeMenuAnchor = MiuixGlassPopupAnchor();
+
+  /// 首页整屏的玻璃采样源。首页自持（而不是让宿主自建）有两个原因：
+  /// 1. 首页右上角菜单与首页内容不在同一棵子树里（菜单要在捕获之外，防反馈采样），
+  ///    菜单必须拿到**首页这一屏**的 backdrop，而不是"注册表栈顶"（玻璃坞里被盖住的
+  ///    内嵌页也会注册，栈顶可能是一屏不绘制的页面 → 快照为空 → 菜单透明）；
+  /// 2. 「更多」按钮按下即 `acquire` 预热录帧，抬手打开菜单时快照已就绪，
+  ///    弹层首帧就有玻璃（否则展开头一两帧是透明轮廓）。
   final HyperosGlassBackdropController _homeGlass =
       HyperosGlassBackdropController();
+  bool _homeGlassHeld = false;
+  bool _homeMenuOpen = false;
   final AppUpdateService _updateService = AppUpdateService();
   final SupportCreatorService _supportCreatorService = SupportCreatorService();
   final HomeUpdatePromptController _updatePromptController =
@@ -456,6 +463,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       controller.dispose();
     }
     _pendingDayViewControllerDisposals.clear();
+    _homeMenuAnchor.dispose();
     _homeGlass.dispose();
     super.dispose();
   }
@@ -701,12 +709,24 @@ class _TimetableScreenState extends State<TimetableScreen>
                         );
                       },
                     ),
-                  // [_topMenuButtonKey] 是两种菜单形态共用的锚点：八宫格形态
-                  // 据此在原位置弹底部弹层；列表形态由
-                  // [hyperosPopupPositionBelow] 量出按钮矩形，弹层定位到它下方。
-                  KeyedSubtree(
-                  key: _topMenuButtonKey,
-                  child: FHeaderAction(
+                  // 上游形变弹层要求把锚点绑在触发控件上（[MiuixGlassAnchor]
+                  // 负责挂它自己的 GlobalKey）；[_topMenuButtonKey] 仍保留，
+                  // 供「八宫格」形态在原位置弹出底部弹层用。
+                  // 按下即预热首页采样源：图层快照帧末录制，抬手打开菜单时
+                  // 已就绪，弹层首帧就是玻璃而不是透明轮廓。
+                  Listener(
+                    onPointerDown: (_) => _prewarmHomeGlass(),
+                    onPointerUp: (_) {
+                      if (!_homeMenuOpen) _releaseHomeGlass();
+                    },
+                    onPointerCancel: (_) {
+                      if (!_homeMenuOpen) _releaseHomeGlass();
+                    },
+                    child: MiuixGlassAnchor(
+                    anchor: _homeMenuAnchor,
+                    child: KeyedSubtree(
+                    key: _topMenuButtonKey,
+                    child: FHeaderAction(
                       icon: Stack(
                         clipBehavior: Clip.none,
                         children: [
@@ -739,6 +759,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                       semanticsLabel: l10n.moreTooltip,
                       onPress: _showTopActionsSheet,
                     ),
+                  ),
+                  ),
                   ),
                 ],
                 child: Padding(
@@ -8281,74 +8303,72 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 首页主体 + 顶栏「更多」弹层。
   ///
   /// 首页整屏都包在 [HyperosGlassBackdropHost] 里：玻璃坞 / 首页玻璃带 / 分区
-  /// 玻璃 / 弹层都从它取的采样源渲染玻璃；宿主同时注册进
-  /// [HyperosGlassBackdropRegistry]，于是压在首页之上的弹层也能采到首页画面
-  /// （路由之上的弹层看不到首页的 InheritedWidget）。
+  /// 玻璃 / 弹层都从它取的采样源渲染 OS4 玻璃；宿主同时注册进
+  /// [HyperosGlassBackdropRegistry]，于是压在首页之上的 sheet / dialog 里的玻璃
+  /// 也能采到首页画面（modal 路由看不到首页的 InheritedWidget）。
   ///
-  /// 列表态菜单改为按需弹出的路由后，捕获顺序不再需要手工安排：弹层画在
-  /// Overlay 上，天然落在捕获子树之外（上游要求「捕获子树不含玻璃自身」）。
+  /// 弹层放在宿主**之外**：宿主捕获的是「弹层之下的页面」，正是上游玻璃材质要
+  /// 采样的背景，捕获子树不能含玻璃自身（防反馈采样）。弹层内部经 OverlayPortal
+  /// 渲染到 Overlay，所以这里的次序只影响它继承到的主题。
   Widget _wrapHomeWithTopMenu(
     Widget content, {
     required TimetableSettings settings,
   }) {
-    // 列表态菜单已改为 [showHyperosListPopup]（按需弹出的路由，材质走
-    // [HyperosSelectPopupGlass] 的全局档位分派），不再是「常驻挂载 + 切 show」
-    // 的声明式弹层 —— 这里只剩采样源宿主本身。
-    return HyperosGlassBackdropHost(controller: _homeGlass, child: content);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        HyperosGlassBackdropHost(controller: _homeGlass, child: content),
+        HomeTopMenuPopup(
+          show: _homeMenuOpen,
+          backdrop: _homeGlass.backdrop,
+          anchor: _homeMenuAnchor,
+          // 形变动效要从按钮位置长出来，故传入按钮内容的**副本**（不含
+          // GlobalKey，避免与真实按钮抢同一个 key）。
+          anchorContent: const Icon(Icons.more_vert_rounded),
+          entries: resolveHomeGridMenuEntries(settings),
+          hasAvailableUpdate: _hasAvailableUpdate,
+          onDismissRequest: () {
+            if (_homeMenuOpen) {
+              setState(() => _homeMenuOpen = false);
+            }
+            _releaseHomeGlass();
+          },
+          onSelected: _dispatchTopMenuSelection,
+        ),
+      ],
+    );
   }
 
-  /// 列表态菜单的行模型：目录条目（[HomeMenuEntry]）→ [HyperosPopupMenuItem]。
-  ///
-  /// 三条映射，与旧的上游弹层实现一一对应：
-  /// - 分类变化 → [HyperosPopupMenuItem.gapBefore]（原 `SizedBox(height: 8)`）；
-  /// - 「添加」→ [HyperosPopupMenuItem.children]（二级子卡，父行只作展开开关）；
-  /// - 「更新」且有待更新 → [HyperosPopupMenuItem.trailing]（点状角标）。
-  List<HyperosPopupMenuItem<String>> _listMenuItems(
-    TimetableSettings settings,
-    AppLocalizations l10n,
-  ) {
-    final entries = resolveHomeGridMenuEntries(settings);
-    return [
-      for (var index = 0; index < entries.length; index++)
-        HyperosPopupMenuItem<String>(
-          label: entries[index].title(l10n),
-          value: entries[index].id,
-          gapBefore:
-              index > 0 &&
-              entries[index].category != entries[index - 1].category,
-          children: entries[index].id == kAddCourseSubmenuParentId
-              ? kAddCourseSubmenu(l10n)
-              : const [],
-          trailing: entries[index].id == kUpdateEntryId && _hasAvailableUpdate
-              ? const MiuixBadge()
-              : null,
-        ),
-    ];
+  /// 「更多」按钮按下即预热：图层快照在帧末录制，早一拍才能保证菜单首帧有玻璃。
+  void _prewarmHomeGlass() {
+    if (_homeGlassHeld) return;
+    _homeGlassHeld = true;
+    _homeGlass.acquire();
+  }
+
+  /// 抬手未展开 / 菜单关闭后归还录帧请求（配对 [acquire]，避免首页一直录帧）。
+  void _releaseHomeGlass() {
+    if (!_homeGlassHeld) return;
+    _homeGlassHeld = false;
+    _homeGlass.release();
   }
 
   Future<void> _showTopActionsSheet() async {
     final provider = context.read<TimetableProvider>();
     final settings = provider.settings;
-    final l10n = AppLocalizations.of(context)!;
 
     // 菜单形态由设置分流：「八宫格」是 v2.0.5.5 已发布版本的底部弹层；
-    // 「列表」走 [showHyperosListPopup] 这条自研锚定弹层（材质由
-    // [HyperosSelectPopupGlass] 按全局玻璃档位分派：液态 → 液态折射、
-    // 柔光 → OS4 玻璃、高斯 → 磨砂、降级 → 实底）。两种形态共享同一份
-    // 自定义排列（homeGridMenuActions），统一以入口 id 回传，再经
-    // _dispatchTopMenuSelection 分发到全应用任意二级页面/功能。
+    // 「列表」自 2026-09-13 起改用上游 flutter_miuix OS4 玻璃弹层
+    // （HomeTopMenuPopup：形变动效 + 不再逐帧重采整页组捕获）。两种形态
+    // 共享同一份自定义排列（homeGridMenuActions），统一以入口 id 回传，
+    // 再经 _dispatchTopMenuSelection 分发到全应用任意二级页面/功能。
     if (settings.homeMenuStyle != HomeMenuStyle.grid) {
-      final selectedId = await showHyperosListPopup<String>(
-        context: context,
-        position: hyperosPopupPositionBelow(context, _topMenuButtonKey),
-        items: _listMenuItems(settings, l10n),
-      );
-      if (selectedId == null) {
-        return;
-      }
-      await _dispatchTopMenuSelection(selectedId);
+      _prewarmHomeGlass();
+      setState(() => _homeMenuOpen = true);
       return;
     }
+    // 八宫格是底部弹层，不吃首页采样源：抬手即归还预热。
+    _releaseHomeGlass();
 
     final selectedId = await showHomeTopGridMenuSheet(
       context,
@@ -8362,7 +8382,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     await _dispatchTopMenuSelection(selectedId);
   }
 
-  /// 顶栏菜单选中项分发：八宫格与列表两种形态共用入口。
+  /// 顶栏菜单选中项分发：八宫格与列表（OS4 玻璃弹层）两种形态共用入口。
   Future<void> _dispatchTopMenuSelection(String selectedId) async {
     if (!mounted) {
       return;
