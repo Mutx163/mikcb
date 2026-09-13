@@ -119,7 +119,12 @@ class HyperosGlassBackdropController extends ChangeNotifier {
 
   /// 页内玻璃挂载：选/建一块采样区，并绑定它自己的采样源。
   void acquireZone(RenderBox box, HyperosZoneBackdrop backdrop) {
-    final wasEmpty = !capturing;
+    // 宿主已释放（dispose 早于子节点 detach 的路径：热重载、非常规移除、
+    // 测试里先 dispose 控制器再拆树）：不能再登记，也**不该通知** —— 对已释放的
+    // `ChangeNotifier` 通知会命中 "used after being disposed" 断言。
+    if (_disposed) return;
+    // 本次是否**新开**了一块采样区（而不是并进已有的那块）。
+    var openedZone = false;
     // attach 阶段还没布局，rect 往往取不到：先登记成员，位置在录帧时按成员现算
     //（与 globalOffset 同源），所以这里不依赖 rect。
     final rect = _globalRectOf(box);
@@ -153,15 +158,31 @@ class HyperosGlassBackdropController extends ChangeNotifier {
       } else {
         target = HyperosGlassBackdropZone();
         _zones.add(target);
+        openedZone = true;
       }
     }
     target.members[backdrop] = box;
     backdrop.bind(target);
-    if (wasEmpty && capturing) notifyListeners();
+    // 判据同 [acquire]：不能只看 `capturing` 有没有从 false 变 true。页内通常
+    // **已经**有一块玻璃（如设置页预览卡里的玻璃带）让 `capturing` 为 true，
+    // 这时新挂载的玻璃会开出**新的**采样区；旧判据 `wasEmpty && capturing` 一次
+    // 通知都不发 → 捕获节点没有任何理由重绘 → 这块新区的 `snapshot` 恒为 null
+    // → 上游 `MiuixGlass.paint` 走「无背景兜底」分支画 `fill`（252 灰 @ 0.675，
+    // 再被 mask 削到 ~0.32）→ 面板成了半透明空壳，底下的字像素级清晰地透出来。
+    // 真机现象就是柔光档「打开预览面板」的弹窗看着透明（2026-09-13）。
+    // 新块必须单独要一帧。
+    if (openedZone) notifyListeners();
   }
 
   /// 页内玻璃卸载。
   void releaseZone(RenderBox box, HyperosZoneBackdrop backdrop) {
+    // 宿主已释放（dispose 早于子节点 detach）：zone 的图已随宿主 dispose() 一起
+    // 释放，这里只摘掉待改判队列里的登记，**不通知** —— 对已释放的
+    // `ChangeNotifier` 通知会命中 "used after being disposed" 断言。
+    if (_disposed) {
+      _deferredMerge.remove(backdrop);
+      return;
+    }
     // 已卸载的成员不该再占着待改判队列（否则每帧都要为它白算一次矩形）。
     _deferredMerge.remove(backdrop);
     for (final zone in List<HyperosGlassBackdropZone>.of(_zones)) {
@@ -179,6 +200,8 @@ class HyperosGlassBackdropController extends ChangeNotifier {
 
   /// 弹层（拿不到自己背后矩形的那类）挂载 / 展开时调用。
   void acquire() {
+    // 同 [acquireZone]：宿主已释放就不再受理，更不通知。
+    if (_disposed) return;
     final hadPlain = wantsPlainBackdrop;
     _plainConsumers++;
     // 判据是「要不要整层背景」这一位有没有翻转，而不是 `capturing` 有没有从
@@ -190,6 +213,7 @@ class HyperosGlassBackdropController extends ChangeNotifier {
 
   /// 弹层卸载 / 关闭时调用。
   void release() {
+    if (_disposed) return;
     if (_plainConsumers == 0) return;
     _plainConsumers--;
     if (!capturing) notifyListeners();

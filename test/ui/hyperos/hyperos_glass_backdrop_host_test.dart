@@ -53,6 +53,66 @@ void main() {
     expect(controller.capturing, isFalse);
   });
 
+  testWidgets('新开一块采样区必须单独要一帧，否则新玻璃永远拿不到快照', (tester) async {
+    // 真机回归（2026-09-13）：高级材质页「打开预览面板」→ 柔光档弹窗是一层
+    // 无模糊的半透明白，底下的字像素级清晰地透出来（面板整体看着"透明"）。
+    //
+    // 根因：该页**已经**有一块页内玻璃（预览卡里的玻璃带）让 `capturing` 为 true，
+    // 弹窗面板随后在屏底登记出**第二块**采样区（两块相距 > `_joinGap`，不会归并）。
+    // 此时 `acquireZone` 的判据 `wasEmpty && capturing` 不成立 → 一次通知都不发
+    // → 捕获节点没有任何理由重绘 → 这块新区的 `snapshot` 恒为 null → 上游
+    // `MiuixGlass.paint` 走「无背景兜底」分支画 `fill`（252 灰 @ 0.675，再被
+    // mask 削到 ~0.32）→ 半透明空壳。
+    //
+    // 这与 `acquire()` 在 `6ea782a6` 修掉的是同一条判据毛病，只是那条在整层路径
+    // 上、这条在分区路径上。
+    final controller = HyperosGlassBackdropController();
+    addTearDown(controller.dispose);
+    var notifications = 0;
+    controller.addListener(() => notifications++);
+
+    await tester.pumpWidget(
+      hostWith(
+        controller: controller,
+        child: const Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              child: SizedBox(key: Key('near'), width: 200, height: 120),
+            ),
+            // 与第一块相距远超 `_joinGap`（2 × sampleMargin = 192），
+            // 保证它单独成块，而不是并进已有那块。
+            Positioned(
+              left: 0,
+              top: 900,
+              child: SizedBox(key: Key('far'), width: 200, height: 120),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final nearBox = tester.renderObject<RenderBox>(find.byKey(const Key('near')));
+    final farBox = tester.renderObject<RenderBox>(find.byKey(const Key('far')));
+
+    controller.acquireZone(nearBox, HyperosZoneBackdrop());
+    expect(notifications, 1, reason: '第一块玻璃开启录帧 → 必须通知一帧');
+    expect(controller.zones, hasLength(1));
+
+    await tester.pump();
+    await tester.pump();
+
+    final before = notifications;
+    controller.acquireZone(farBox, HyperosZoneBackdrop());
+    expect(controller.zones, hasLength(2), reason: '两块相距够远，应各成一块');
+    expect(
+      notifications,
+      greaterThan(before),
+      reason: '新开了一块采样区，捕获节点必须重绘一次，否则这块区永远没有快照',
+    );
+  });
+
   testWidgets('玻璃在构建期 acquire 不再触发 setState during build', (tester) async {
     // 真机回归：首页内容在构建期连续重建（分页/滚动中）时，采样源开关被
     // 通知 → 若标记重建不在当前构建链上的祖先，会抛
