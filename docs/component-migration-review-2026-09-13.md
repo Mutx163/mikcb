@@ -185,6 +185,33 @@ return HyperosGlassBackdropScope(
 `Stack([Capture(child: 背景层), 前景玻璃])` 形态，先只让首页顶栏带走一遍验证是否可感知，
 再决定是否做页面分层。注意：`fb1c72fc` 的分块裁剪**没有**解决这一条（它只改"录多大"）。
 
+> **已可执行地证实（2026-09-13 22:12）。** `test/ui/hyperos/hyperos_glass_backdrop_host_test.dart`
+> 新增用例「捕获子树不含玻璃自身（上游契约，防反馈采样）」，断言
+> `find.descendant(of: HyperosLayerBackdropCapture, matching: HyperosGlassBackdropReporter)`
+> 为 `findsNothing`。**临时去掉 `skip` 后实测失败**：
+>
+> ```
+> Expected: no matching candidates
+>   Actual: _DescendantWidgetFinder:<Found 1 widget with type "HyperosGlassBackdropReporter">
+> ```
+>
+> 于是"页内玻璃落在捕获子树内"不再是读代码得出的推断，而是可复现的断言。
+> 用例现以 `skip`（挂在 `group` 上以携带理由）留在套件里，**修好分层后去掉 `skip`
+> 即成为守卫**。之所以用 `skip` 而不是"断言当前错误行为"，是因为后者会变成我在 §2
+> 批评的那种「给出假信号的测试」—— 这里宁可让它显式地"待修"。
+
+> **最小修复路径（未执行，需先真机确认可感知）**
+> 1. 页面分层：把"玻璃之下的内容"与"玻璃层"拆成两棵子树，
+>    `Stack([Capture(child: 背景层), 玻璃层])`，玻璃层移到捕获之外。
+> 2. ⚠️ 玻璃层一旦离开 `HyperosGlassBackdropScope`，`resolve()` 会走
+>    `Registry.active` 兜底（`hyperos_glass_backdrop_host.dart:227-228`）；
+>    需确认宿主注册（`didChangeDependencies`）早于玻璃构建，否则玻璃会绑到**别的屏**。
+> 3. 页内卡片（region glass）若仍留在背景层里，反馈依旧存在 ——
+>    分层要按"这块玻璃背后是什么"逐层拆，不是一刀切。
+> 4. 验证顺序：先只让首页顶栏带走第 1 步，真机对比拖影；确认可感知再推广。
+> 5. **未执行的理由**：`timetable_screen.dart` 是 8000+ 行且刚被并发改动（移除内置壁纸），
+>    在拿到真机反馈前重构其渲染层次，风险大于收益。
+
 ---
 
 ## 5. 【D】生命周期与边界（P2，修起来都不贵）
@@ -290,7 +317,7 @@ if (_zones.length >= _maxZones) {
 | §5-D1 stale 兜底 | ✅ 并发 Agent 同时在做 | `disposed` 标记 + 注册表跳过僵尸条目 |
 | §3 B-3 描边口径 | ✅ 并发 Agent 同时在做 | `defaultEdgeHighlight` 0.95 → 1 |
 | §1 那条 info | ✅ 并发 Agent 同时在做 | 移除冗余实参 |
-| §4 C 反馈采样 | ⏸ 未做 | 需真机确认是否可感知，再决定是否动架构 |
+| §4 C 反馈采样 | ⚠️ 证据已落地，修复待定 | 契约断言已可执行（`skip` 用例，去掉 `skip` 即失败）；修法需真机确认后再动架构 |
 | §5-D2 zone 溢出 | ✅ 已做（`d0355e86`） | 满员按「并集膨胀最小」选块 + 首次录帧改判；实测原为常态路径而非边角 |
 
 **A 项的执行比原建议更进了一步。** 原建议是"删 7 个用例"，但核查发现

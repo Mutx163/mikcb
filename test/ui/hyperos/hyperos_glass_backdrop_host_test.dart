@@ -318,4 +318,53 @@ void main() {
       );
     }
   });
+
+  // 上游 `MiuixGlass` 契约（flutter_miuix 1.2.0 miuix_glass.dart:54）：
+  //   "必须放在 backdrop 捕获子树之外，防止反馈采样。"
+  // 本项目 os4_glass_backdrop.dart:13-14 也把这条抄了一遍。
+  //
+  // 但 HyperosGlassBackdropHost 的捕获节点包住了整个 widget.child，而页内玻璃
+  // （顶栏带 / 玻璃坞 / 标签栏 / 卡片）就在 child 里 —— 玻璃既是采样者又是被采
+  // 内容，采到的快照含它自己上一帧的渲染结果。弹层被正确地放在宿主之外
+  // （timetable_screen.dart 的 Stack 第二子项），说明规则被理解了，只是没同步
+  // 到页内玻璃。
+  //
+  // 修法是页面分层（背景层 / 玻璃层），属于架构改动，且是否在真机上可感知尚未
+  // 验证 —— 详见 docs/component-migration-review-2026-09-13.md §4。
+  // 修好之后去掉下面 group 的 skip，这条即成为守卫。
+  group('捕获子树不含玻璃自身（上游契约，防反馈采样）', () {
+    testWidgets('页内玻璃的采样登记节点应在捕获子树之外', (tester) async {
+      final controller = HyperosGlassBackdropController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        hostWith(
+          controller: controller,
+          child: const Stack(
+            children: <Widget>[
+              SizedBox.expand(),
+              Center(
+                child: SizedBox(
+                  width: 200,
+                  height: 60,
+                  child: SoftGlassSurface(child: SizedBox.expand()),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // 去掉 skip 后实测：Found 1 widget with type "HyperosGlassBackdropReporter"
+      // —— 页内玻璃确实落在捕获子树内，故当前为已知缺陷。
+      expect(
+        find.descendant(
+          of: find.byType(HyperosLayerBackdropCapture),
+          matching: find.byType(HyperosGlassBackdropReporter),
+        ),
+        findsNothing,
+        reason: '玻璃的采样登记节点落在捕获子树内 = 玻璃采到自己，违反上游契约',
+      );
+    });
+  }, skip: 'P0 已知缺陷：页内玻璃仍在捕获子树内（反馈采样），修法见审核报告 §4。');
 }
