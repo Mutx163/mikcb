@@ -222,6 +222,16 @@ if (_zones.length >= _maxZones) {
 **建议**：溢出时按 union 距离选最近的块；或加一条 debug 断言 / 日志，
 让"真的发生了溢出"可见（目前是静默降级）。
 
+> **已修复（`d0355e86`）。** 补测试时发现这条比报告写的更严重：我原以为是"边角情况"，
+> 实测确认 `acquireZone` 发生在 **attach 阶段、那时还没布局**，
+> `_globalRectOf` 恒为 `null` —— 所以"按矩形就近选块"在**首次挂载时根本量不到依据**，
+> `_zones.last` 兜底是**常态路径**。新增用例在改前实测该块采样矩形高 **2332**
+> （整屏 2600），确实是整屏级。
+> 修法：满员且有矩形时按「并集膨胀最小」选块；量不到矩形时先临时并入最后一块
+> 保证它有采样源，记入 `_deferredMerge`，在**首次录帧前**调用
+> `resolveDeferredMerges()` 改判（那时已布局，量得到远近）。
+> 改判需先把自己从原块排除，否则原地增量恒为 0、永远选回原块。
+
 ### D-3 scope 不建立依赖 + 玻璃只在两处重绑
 
 - `HyperosGlassBackdropScope.maybeOf` 用 `getInheritedWidgetOfExactType`（**不建立依赖**）；
@@ -281,7 +291,7 @@ if (_zones.length >= _maxZones) {
 | §3 B-3 描边口径 | ✅ 并发 Agent 同时在做 | `defaultEdgeHighlight` 0.95 → 1 |
 | §1 那条 info | ✅ 并发 Agent 同时在做 | 移除冗余实参 |
 | §4 C 反馈采样 | ⏸ 未做 | 需真机确认是否可感知，再决定是否动架构 |
-| §5-D2 zone 溢出 | ⏸ 未做 | 该文件正被并发 Agent 编辑，避免踩踏 |
+| §5-D2 zone 溢出 | ✅ 已做（`d0355e86`） | 满员按「并集膨胀最小」选块 + 首次录帧改判；实测原为常态路径而非边角 |
 
 **A 项的执行比原建议更进了一步。** 原建议是"删 7 个用例"，但核查发现
 `HomeTopMenuPopup` 的二级面板（`MiuixGlassSecondaryPopup`）在 `test/` 里
