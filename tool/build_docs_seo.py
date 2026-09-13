@@ -13,6 +13,7 @@ import argparse
 import json
 import re
 import subprocess
+import sys
 from collections import defaultdict
 from datetime import datetime
 from html import escape
@@ -571,6 +572,10 @@ def page_lastmod(rel_path: str, fallback: str = TOPIC_LASTMOD) -> str:
     站点地图里的 lastmod 是抓取优先级信号：写死成同一天会让所有页面看起来
     「从未更新」，Google 就不愿意重抓。可用 git 时取该文件最后一次提交日期；
     取不到（浅克隆、无 git）时回退到 fallback。
+
+    回退**必定打告警**（stderr）：静默退回一个硬编码日期，恰好复现本函数要治
+    的病灶——只是从「肉眼可见的错」变成「查不出来的错」。CI 的 checkout 带
+    `fetch-depth: 0`，git 必定可用，所以这条告警一旦在流水线里出现就是真问题。
     """
     try:
         out = subprocess.run(
@@ -581,10 +586,20 @@ def page_lastmod(rel_path: str, fallback: str = TOPIC_LASTMOD) -> str:
             timeout=10,
         )
         value = out.stdout.strip()
-        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        if out.returncode == 0 and re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
             return value
-    except Exception:
-        pass
+        reason = f"git log 退出码 {out.returncode}，stdout={value!r}"
+    except FileNotFoundError:
+        reason = "找不到 git 可执行文件"
+    except subprocess.TimeoutExpired:
+        reason = "git log 超时（10s）"
+    except Exception as exc:  # 回退必须覆盖任何异常，但不能静默
+        reason = f"{type(exc).__name__}: {exc}"
+    print(
+        f"[build_docs_seo] 警告：{rel_path} 取不到 git 提交日期"
+        f"（{reason}），lastmod 回退为硬编码 {fallback}",
+        file=sys.stderr,
+    )
     return fallback
 
 

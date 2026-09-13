@@ -35,16 +35,22 @@ fail() { printf '%sX %s%s\n' "$C_RED" "$1" "$C_OFF"; exit 1; }
 info() { printf '%s==> %s%s\n' "$C_CYN" "$1" "$C_OFF"; }
 
 # ---- [0/4] 前置检查 -------------------------------------------------------
-branch="$(git branch --show-current)"
+# 本脚本刻意不加 `set -e`（推送流程里多数命令由 `|| fail` 显式守卫，且 -e 会在
+# 一些良性非零返回上误杀）。但**未守卫的命令替换**必须补上守卫：一旦
+# `git rev-parse` / `git rev-list --count` 失败，变量会变成空串，而
+# `[ "" -gt 0 ]` 会报 "integer expression expected" 并被当作假——脚本就会掉进
+# 「本地与 GitHub main 一致」分支然后继续推送。这正是 2026-09-07 静默丢提交
+# 的同类故障面，不能留。
+branch="$(git branch --show-current)" || fail "git branch --show-current 失败，当前不在 git 仓库？"
 [ "$branch" = "main" ] || fail "当前分支 ${branch}，本流程只处理 main"
-head_sha="$(git rev-parse HEAD)"
-dirty="$(git status --porcelain | wc -l | tr -d ' ')"
+head_sha="$(git rev-parse HEAD)" || fail "git rev-parse HEAD 失败，仓库可能损坏"
+dirty="$(git status --porcelain | wc -l | tr -d ' ')" || fail "git status 失败"
 
 # ---- [1/4] 先拉取：以 GitHub 为唯一真源 ------------------------------------
 info "[1/4] 先拉取：git fetch origin main"
 git fetch origin main || fail "git fetch origin main 失败，请检查网络（WSL 侧代理见 scripts/wsl-env.sh）"
-behind="$(git rev-list --count main..origin/main)"
-ahead="$(git rev-list --count origin/main..main)"
+behind="$(git rev-list --count main..origin/main)" || fail "git rev-list（behind）失败，拒绝在未知落后量下推送"
+ahead="$(git rev-list --count origin/main..main)" || fail "git rev-list（ahead）失败，拒绝在未知领先量下推送"
 
 if [ "$behind" -gt 0 ]; then
   printf '%s本地落后 %s 个提交（领先 %s 个），rebase 到 origin/main%s\n' "$C_YEL" "$behind" "$ahead" "$C_OFF"

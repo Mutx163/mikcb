@@ -77,8 +77,11 @@ wsl_env_doctor() {
   _pc="$_repo/.dart_tool/package_config.json"
   if [ -f "$_pc" ]; then
     # 注意：grep -c 无匹配时既输出 0 又返回 1，不能接 `|| echo 0`，否则变量会变成两行
+    # WSL 侧缓存根目录：优先 PUB_CACHE（本脚本上方已设），否则 $HOME/.pub-cache。
+    # 不要硬编码 /home/mutx —— 换用户会误报「✅ 指向 Windows」。
+    _pub_cache="${PUB_CACHE:-$HOME/.pub-cache}"
     _win=$(grep -c 'file:///[A-Za-z]:/' "$_pc" 2>/dev/null || true)
-    _nix=$(grep -c 'file:///opt/flutter\|file:///home/mutx/.pub-cache' "$_pc" 2>/dev/null || true)
+    _nix=$(grep -c "file:///opt/flutter\\|file://${_pub_cache}" "$_pc" 2>/dev/null || true)
     _win=${_win:-0}
     _nix=${_nix:-0}
     echo "  Windows 侧路径 $_win 条；WSL 侧路径 $_nix 条"
@@ -100,9 +103,18 @@ wsl_env_doctor() {
   echo "=== 诊断结束 ==="
 }
 
-case "${1:-}" in
-  --doctor|-d) shift; wsl_env_apply; wsl_env_doctor "$@"; ;;
-  --help|-h)   sed -n '2,20p' "$0"; ;;
-  --)          shift; wsl_env_apply; "$@"; ;;
-  *)           wsl_env_apply; ;;
-esac
+# 仅在**被执行**时解析命令行参数。被 `source` 时绝不能读 $1/$@/$0——那属于
+# 调用方（例如某个脚本自己的位置参数），会被误当成本脚本的 `--doctor` / `--`
+# 而执行意外命令；`--help` 的 $0 也会指向调用方的 shell 名而非本文件。
+# 判据：被执行时 BASH_SOURCE[0] 与 $0 相同；被 source 时 $0 是外层 shell。
+if [ "${BASH_SOURCE[0]:-$0}" = "$0" ]; then
+  case "${1:-}" in
+    --doctor|-d) shift; wsl_env_apply; wsl_env_doctor "$@"; ;;
+    --help|-h)   sed -n '2,20p' "${BASH_SOURCE[0]}"; ;;
+    --)          shift; wsl_env_apply; "$@"; ;;
+    *)           wsl_env_apply; ;;
+  esac
+else
+  # source 用法：只修好当前 shell 的环境。
+  wsl_env_apply
+fi
