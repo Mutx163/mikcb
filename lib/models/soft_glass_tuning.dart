@@ -1,12 +1,17 @@
-/// 柔光玻璃的用户可调参数（`lib/ui/hyperos/soft_glass/` 渲染链路消费）。
+/// 柔光玻璃的用户可调参数（`SoftGlassSurface` 消费，作用到 flutter_miuix 的
+/// OS4 玻璃材质上）。
 ///
 /// 与 [LiquidGlassTuning]（液态玻璃）同构：预设枚举 + 自定义参数对象，
 /// 设置页「高级材质」在柔光档下露出同一套 预设选择 + 滑杆 的 UI。
 ///
 /// 雾面与底色用**倍率**表达：材质只有一个配方（`SoftGlassRecipe.standard`，
-/// 上游默认 radius 92 → σ ≈ 53.6），档位的粗细完全由这里的倍率决定。
-/// 折射/色散是上游 `GlassRefractionSpec` 的绝对 dp 口径，厚度感与边缘高光是
-/// 0..1 权重。
+/// 上游默认 radius 92 → σ ≈ 53.6），档位的粗细完全由这里的倍率决定，最终写到
+/// 上游 `MiuixGlassMaterial.blurRadius`；底色倍率缩放上游颜色层不透明度；
+/// 边缘高光作用于上游 OS4 描边的三处高光。
+///
+/// 自研折射链路（`SoftGlassRefraction` shader）已删除，历史上存过的
+/// refraction / depthEffect / chromaticAberration 字段在 [SoftGlassTuning.fromJson]
+/// 里被忽略（旧备份导入不会报错）。
 ///
 /// **档位阶梯的绝对量（改动前先看这张表）**：
 /// | 档位 | 倍率 | radius | sigma |
@@ -17,13 +22,7 @@
 /// | 浓雾 dense | 1.6 | 147.2 | ≈ 85.5 |
 /// | 滑杆上限 | 2.7 | 248.4 | ≈ 144.0 |
 ///
-/// 上限 2.7 = 上游 radius 天花板 256 ÷ 基准 92（≈2.78）向下取余量；此前滑杆
-/// 上限是 3.0，在旧基线（radius 23）下没越界，换成标准基线后 3.0 × 92 = 276
-/// 就超过了 256，故随档位重测一并收紧。
-///
-/// 默认值 = 当前渲染链路的硬编码常量（`SoftGlassRefraction` /
-/// `SoftGlassTokens`），保证接入调参前后默认观感逐像素一致；test/models/
-/// soft_glass_tuning_test.dart 有字段级守卫，两边漂移会直接红。
+/// 上限 2.7 = 上游 radius 天花板 256 ÷ 基准 92（≈2.78）向下取余量。
 enum SoftGlassPreset {
   /// 清透 — 薄雾淡底色，最接近裸壁纸。
   clear,
@@ -80,9 +79,6 @@ class SoftGlassTuning {
   const SoftGlassTuning({
     this.blurRadiusMultiplier = defaultBlurRadiusMultiplier,
     this.tintAlphaMultiplier = defaultTintAlphaMultiplier,
-    this.refraction = defaultRefraction,
-    this.depthEffect = defaultDepthEffect,
-    this.chromaticAberration = defaultChromaticAberration,
     this.edgeHighlight = defaultEdgeHighlight,
   });
 
@@ -95,9 +91,6 @@ class SoftGlassTuning {
   static const presetClear = SoftGlassTuning(
     blurRadiusMultiplier: 0.6,
     tintAlphaMultiplier: 0.55,
-    refraction: 14,
-    depthEffect: 0.5,
-    chromaticAberration: 0.6,
     edgeHighlight: 0.8,
   );
 
@@ -105,9 +98,6 @@ class SoftGlassTuning {
   static const presetLight = SoftGlassTuning(
     blurRadiusMultiplier: 0.8,
     tintAlphaMultiplier: 0.75,
-    refraction: 16,
-    depthEffect: 0.55,
-    chromaticAberration: 0.8,
     edgeHighlight: 0.9,
   );
 
@@ -115,9 +105,6 @@ class SoftGlassTuning {
   static const presetDense = SoftGlassTuning(
     blurRadiusMultiplier: 1.6,
     tintAlphaMultiplier: 1.3,
-    refraction: 22,
-    depthEffect: 0.7,
-    chromaticAberration: 1.2,
     edgeHighlight: 1,
   );
 
@@ -137,17 +124,7 @@ class SoftGlassTuning {
   static const double defaultBlurRadiusMultiplier = 1;
   static const double defaultTintAlphaMultiplier = 1;
 
-  /// 折射带宽度与最大位移（dp，两者共用一值——上游两者同为 18dp，
-  /// 透镜剖面在任意带宽下形状一致）。
-  static const double defaultRefraction = 18;
-
-  /// 厚度感：法线里径向分量的权重（shader 内 clamp 0..1）。
-  static const double defaultDepthEffect = 0.60;
-
-  /// 色散偏移（dp）。
-  static const double defaultChromaticAberration = 1;
-
-  /// rim 高光强度（暗色另有 0.20 折减，见 SoftGlassTokens.edgeAlphaOf）。
+  /// rim 高光强度（作用于上游 OS4 描边的三处高光）。
   static const double defaultEdgeHighlight = 0.95;
 
   // --- 滑杆范围 ---
@@ -161,47 +138,26 @@ class SoftGlassTuning {
   static const double maxBlurRadiusMultiplier = 2.7;
   static const double minTintAlphaMultiplier = 0;
   static const double maxTintAlphaMultiplier = 2;
-  static const double minRefraction = 0;
-  static const double maxRefraction = 30;
-  static const double minDepthEffect = 0;
-  static const double maxDepthEffect = 1;
-  static const double minChromaticAberration = 0;
-  static const double maxChromaticAberration = 3;
   static const double minEdgeHighlight = 0;
   static const double maxEdgeHighlight = 1;
 
-  /// 雾面半径倍率（0 = 无模糊纯底色，1 = 当前默认，3 = 最厚）。
+  /// 雾面半径倍率（0 = 无模糊纯底色，1 = 配方半径原样）。
   final double blurRadiusMultiplier;
 
   /// 底色不透明度倍率（作用于各表面配方的最终底色 alpha 之上）。
   final double tintAlphaMultiplier;
 
-  /// 折射带宽度 / 最大位移（dp，绝对值）。
-  final double refraction;
-
-  /// 厚度感：折射法线的径向权重，越大越像实心厚玻璃。
-  final double depthEffect;
-
-  /// 边缘色散偏移（dp）。
-  final double chromaticAberration;
-
-  /// rim 高光强度（shader 方向性高光 + Dart 0.5dp 描边共用）。
+  /// rim 高光强度（作用于上游 OS4 描边的三处高光）。
   final double edgeHighlight;
 
   SoftGlassTuning copyWith({
     double? blurRadiusMultiplier,
     double? tintAlphaMultiplier,
-    double? refraction,
-    double? depthEffect,
-    double? chromaticAberration,
     double? edgeHighlight,
   }) {
     return SoftGlassTuning(
       blurRadiusMultiplier: blurRadiusMultiplier ?? this.blurRadiusMultiplier,
       tintAlphaMultiplier: tintAlphaMultiplier ?? this.tintAlphaMultiplier,
-      refraction: refraction ?? this.refraction,
-      depthEffect: depthEffect ?? this.depthEffect,
-      chromaticAberration: chromaticAberration ?? this.chromaticAberration,
       edgeHighlight: edgeHighlight ?? this.edgeHighlight,
     );
   }
@@ -216,12 +172,6 @@ class SoftGlassTuning {
         minTintAlphaMultiplier,
         maxTintAlphaMultiplier,
       ),
-      refraction: refraction.clamp(minRefraction, maxRefraction),
-      depthEffect: depthEffect.clamp(minDepthEffect, maxDepthEffect),
-      chromaticAberration: chromaticAberration.clamp(
-        minChromaticAberration,
-        maxChromaticAberration,
-      ),
       edgeHighlight: edgeHighlight.clamp(minEdgeHighlight, maxEdgeHighlight),
     );
   }
@@ -229,9 +179,6 @@ class SoftGlassTuning {
   Map<String, dynamic> toJson() => {
     'blurRadiusMultiplier': blurRadiusMultiplier,
     'tintAlphaMultiplier': tintAlphaMultiplier,
-    'refraction': refraction,
-    'depthEffect': depthEffect,
-    'chromaticAberration': chromaticAberration,
     'edgeHighlight': edgeHighlight,
   };
 
@@ -246,12 +193,6 @@ class SoftGlassTuning {
       tintAlphaMultiplier:
           (json['tintAlphaMultiplier'] as num?)?.toDouble() ??
           defaultTintAlphaMultiplier,
-      refraction: (json['refraction'] as num?)?.toDouble() ?? defaultRefraction,
-      depthEffect:
-          (json['depthEffect'] as num?)?.toDouble() ?? defaultDepthEffect,
-      chromaticAberration:
-          (json['chromaticAberration'] as num?)?.toDouble() ??
-          defaultChromaticAberration,
       edgeHighlight:
           (json['edgeHighlight'] as num?)?.toDouble() ?? defaultEdgeHighlight,
     ).clamped();
@@ -263,18 +204,9 @@ class SoftGlassTuning {
       other is SoftGlassTuning &&
           blurRadiusMultiplier == other.blurRadiusMultiplier &&
           tintAlphaMultiplier == other.tintAlphaMultiplier &&
-          refraction == other.refraction &&
-          depthEffect == other.depthEffect &&
-          chromaticAberration == other.chromaticAberration &&
           edgeHighlight == other.edgeHighlight;
 
   @override
-  int get hashCode => Object.hash(
-    blurRadiusMultiplier,
-    tintAlphaMultiplier,
-    refraction,
-    depthEffect,
-    chromaticAberration,
-    edgeHighlight,
-  );
+  int get hashCode =>
+      Object.hash(blurRadiusMultiplier, tintAlphaMultiplier, edgeHighlight);
 }

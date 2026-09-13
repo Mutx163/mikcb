@@ -323,8 +323,8 @@ class _AdvancedMaterialSettingsScreenState
                 ],
               ),
             ],
-            // 柔光玻璃：与液态同构的 预设 + 自定义参数，雾面/底色按
-            // 表面配方整体缩放（倍率），折射/色散为绝对 dp。
+            // 柔光玻璃：与液态同构的 预设 + 自定义参数。自研折射链路删除后
+            // 只剩「雾面 / 底色 / 边缘高光」三项，直接作用到上游 OS4 玻璃材质。
             if (mode == FrostedGlassMode.softGlass) ...[
               HyperosSectionLabel(text: l10n.frostedSheetSectionTitle),
               Builder(
@@ -412,36 +412,6 @@ class _AdvancedMaterialSettingsScreenState
                           valueLabel: pct(softTuning.tintAlphaMultiplier),
                           onChanged: (value) => _updateSoftTuning(
                             (t) => t.copyWith(tintAlphaMultiplier: value),
-                          ),
-                        ),
-                        HyperosSliderTile(
-                          title: l10n.softGlassRefractionLabel,
-                          value: softTuning.refraction,
-                          max: SoftGlassTuning.maxRefraction,
-                          divisions: 30,
-                          valueLabel: softTuning.refraction.toStringAsFixed(0),
-                          onChanged: (value) => _updateSoftTuning(
-                            (t) => t.copyWith(refraction: value),
-                          ),
-                        ),
-                        HyperosSliderTile(
-                          title: l10n.softGlassDepthLabel,
-                          value: softTuning.depthEffect,
-                          divisions: 20,
-                          valueLabel: softTuning.depthEffect.toStringAsFixed(2),
-                          onChanged: (value) => _updateSoftTuning(
-                            (t) => t.copyWith(depthEffect: value),
-                          ),
-                        ),
-                        HyperosSliderTile(
-                          title: l10n.softGlassChromaticAberrationLabel,
-                          value: softTuning.chromaticAberration,
-                          max: SoftGlassTuning.maxChromaticAberration,
-                          divisions: 30,
-                          valueLabel: softTuning.chromaticAberration
-                              .toStringAsFixed(1),
-                          onChanged: (value) => _updateSoftTuning(
-                            (t) => t.copyWith(chromaticAberration: value),
                           ),
                         ),
                         HyperosSliderTile(

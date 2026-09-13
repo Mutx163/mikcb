@@ -1,32 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/soft_glass_tuning.dart';
-import 'package:university_timetable/ui/hyperos/soft_glass/soft_glass_refraction.dart';
 import 'package:university_timetable/ui/hyperos/soft_glass/soft_glass_surface.dart';
 
 void main() {
-  group('SoftGlassTuning defaults stay in sync with render tokens', () {
-    test('optical defaults match SoftGlassRefraction constants', () {
-      // 模型默认值是渲染链路硬编码常量的「用户可调镜像」，两边漂移会让
-      // 「标准」预设与接入调参前的默认观感不一致。
-      expect(SoftGlassTuning.defaultRefraction,
-          SoftGlassRefraction.refractionHeightDp);
-      expect(SoftGlassTuning.defaultRefraction,
-          SoftGlassRefraction.refractionAmountDp);
-      expect(
-        SoftGlassTuning.defaultChromaticAberration,
-        SoftGlassRefraction.chromaticAberrationDp,
-      );
-      expect(SoftGlassTuning.defaultDepthEffect, SoftGlassRefraction.depthEffect);
+  group('SoftGlassTuning defaults', () {
+    test('blur/tint multipliers default to identity (1.0)', () {
+      // 倍率 1 = 配方半径与底色不缩放，直接落到上游 OS4 材质。
+      expect(SoftGlassTuning.defaults.blurRadiusMultiplier, 1);
+      expect(SoftGlassTuning.defaults.tintAlphaMultiplier, 1);
+    });
+
+    test('edge highlight default matches render token', () {
       expect(
         SoftGlassTuning.defaultEdgeHighlight,
         SoftGlassTokens.edgeHighlightAlpha,
       );
-    });
-
-    test('blur/tint multipliers default to identity (1.0)', () {
-      // 倍率 1 = 接入调参前的行为（配方半径与底色不缩放）。
-      expect(SoftGlassTuning.defaults.blurRadiusMultiplier, 1);
-      expect(SoftGlassTuning.defaults.tintAlphaMultiplier, 1);
     });
   });
 
@@ -44,17 +32,14 @@ void main() {
     test('unknown tuning resolves to custom', () {
       expect(
         SoftGlassTuning.matchPreset(
-          SoftGlassTuning.defaults.copyWith(refraction: 3),
+          SoftGlassTuning.defaults.copyWith(blurRadiusMultiplier: 1.23),
         ),
         SoftGlassPreset.custom,
       );
     });
 
     test('fromValue falls back to standard on unknown value', () {
-      expect(
-        SoftGlassPresetX.fromValue('nope'),
-        SoftGlassPreset.standard,
-      );
+      expect(SoftGlassPresetX.fromValue('nope'), SoftGlassPreset.standard);
       expect(SoftGlassPreset.custom.value, 'custom');
     });
 
@@ -75,36 +60,41 @@ void main() {
 
     test('null json falls back to defaults', () {
       expect(SoftGlassTuning.fromJson(null), SoftGlassTuning.defaults);
-      expect(
-        SoftGlassTuning.fromJson(const {}),
-        SoftGlassTuning.defaults,
-      );
+      expect(SoftGlassTuning.fromJson(const {}), SoftGlassTuning.defaults);
+    });
+
+    test('legacy refraction-era fields are ignored, not fatal', () {
+      // 自研折射链路删除后，旧备份/旧设置里仍可能带着 refraction /
+      // depthEffect / chromaticAberration，解析必须继续可用。
+      final legacy = SoftGlassTuning.fromJson(const {
+        'blurRadiusMultiplier': 1.5,
+        'refraction': 999,
+        'depthEffect': 7,
+        'chromaticAberration': -1,
+      });
+      expect(legacy.blurRadiusMultiplier, 1.5);
+      expect(legacy.tintAlphaMultiplier, 1);
+      expect(legacy.edgeHighlight, SoftGlassTuning.defaultEdgeHighlight);
     });
 
     test('out-of-range json values are clamped', () {
       final clamped = SoftGlassTuning.fromJson(const {
         'blurRadiusMultiplier': 99,
         'tintAlphaMultiplier': -3,
-        'refraction': 500,
-        'depthEffect': 7,
-        'chromaticAberration': -1,
         'edgeHighlight': 2,
       });
-      expect(clamped.blurRadiusMultiplier,
-          SoftGlassTuning.maxBlurRadiusMultiplier);
-      expect(clamped.tintAlphaMultiplier,
-          SoftGlassTuning.minTintAlphaMultiplier);
-      expect(clamped.refraction, SoftGlassTuning.maxRefraction);
-      expect(clamped.depthEffect, SoftGlassTuning.maxDepthEffect);
-      expect(clamped.chromaticAberration,
-          SoftGlassTuning.minChromaticAberration);
+      expect(
+        clamped.blurRadiusMultiplier,
+        SoftGlassTuning.maxBlurRadiusMultiplier,
+      );
+      expect(clamped.tintAlphaMultiplier, SoftGlassTuning.minTintAlphaMultiplier);
       expect(clamped.edgeHighlight, SoftGlassTuning.maxEdgeHighlight);
     });
 
     test('copyWith only overrides given fields', () {
       final tuning = SoftGlassTuning.defaults.copyWith(edgeHighlight: 0.5);
       expect(tuning.edgeHighlight, 0.5);
-      expect(tuning.refraction, SoftGlassTuning.defaultRefraction);
+      expect(tuning.blurRadiusMultiplier, 1);
     });
   });
 }

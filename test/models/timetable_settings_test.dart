@@ -495,10 +495,17 @@ void main() {
     final clamped = TimetableSettings.fromJson({
       ...TimetableSettings.defaults().toJson(),
       'softGlassPreset': 'nope',
-      'softGlassTuning': {'refraction': 999},
+      // 旧备份里的折射字段已随自研折射链路删除：解析时忽略，不再报错/越界。
+      'softGlassTuning': {
+        'blurRadiusMultiplier': 99,
+        'refraction': 999,
+      },
     });
     expect(clamped.softGlassPreset, SoftGlassPreset.standard);
-    expect(clamped.softGlassTuning!.refraction, SoftGlassTuning.maxRefraction);
+    expect(
+      clamped.softGlassTuning!.blurRadiusMultiplier,
+      SoftGlassTuning.maxBlurRadiusMultiplier,
+    );
   });
 
   test('legacy spacing mode migrates to numeric card gap', () {
