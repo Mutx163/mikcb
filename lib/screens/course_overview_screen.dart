@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/ui/hyperos/os4_glass_backdrop.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:provider/provider.dart';
@@ -31,7 +33,12 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
     final sorted = _sortGroups(List.of(groups));
     final conflictScheduleCount = conflictMap.length;
 
-    return HyperosSubpage(
+    // 本页的「排序」选择器已改用上游 OS4 锚定弹层，弹层玻璃要从「宿主页内容」
+    // 取背景快照才能有模糊/材质（上游要求捕获子树不含玻璃自身，防反馈采样；
+    // 弹层走 showGeneralDialog，天然在这层捕获之外）。
+    return MiuixLayerBackdropCapture(
+      backdrop: os4GlassBackdrop,
+      child: HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.courseOverviewTitle),
       suffixes: [
@@ -81,7 +88,7 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
                 ),
               ],
             ),
-    );
+    ));
   }
 
   void _openConflictDetail(BuildContext context) {
