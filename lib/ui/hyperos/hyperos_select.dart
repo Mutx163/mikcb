@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
+import 'package:flutter_miuix/miuix.dart';
 
 import 'package:flutter/services.dart';
 
@@ -13,6 +14,7 @@ import 'hyperos_sheet.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
+import 'os4_glass_backdrop.dart';
 import '../../widgets/miuix_date_picker_sheet.dart';
 import 'frosted/liquid_glass_degradation.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart';
@@ -685,6 +687,90 @@ class HyperosSolidPopupSurface extends StatelessWidget {
     );
   }
 }
+
+/// 选择弹窗（**常驻挂载 + 切 `show`**，上游 OS4 弹层的契约）。
+///
+/// 上游源码注释写明了这条契约：
+/// > 保持组件挂载并切换 show，让退出动画完成后自动清除弹层和返回记录。
+///
+/// 所以它**不能**塞进 `showGeneralDialog` 路由里用（上一版这么做，导致
+/// 弹层内部关闭记账与路由栈错位：点条目会 pop 掉宿主页、点空白也关不掉）。
+/// 正确形态与 [HomeTopMenuPopup] 一致：宿主页持有 `show`，弹层常驻在自己的
+/// 页面树里，位置由 [anchorRect] 给出，结果只经 [onSelected] 回调回落 ——
+/// 弹层**不自己 pop 任何路由**。
+///
+/// 玻璃需要宿主页包一层
+/// `MiuixLayerBackdropCapture(backdrop: os4GlassBackdrop, child: 页面内容)`
+/// 才有背景可采样（上游要求捕获子树不含玻璃自身，因此弹层必须放在捕获**之外**，
+/// 见 `os4_glass_backdrop.dart`）；没包时上游降级为纯色轮廓，不会报错。
+class HyperosSelectPopup<T> extends StatelessWidget {
+  const HyperosSelectPopup({
+    super.key,
+    required this.show,
+    required this.anchorRect,
+    required this.items,
+    required this.currentValue,
+    required this.onSelected,
+    required this.onDismiss,
+    this.itemPrefixBuilder,
+  });
+
+  /// 是否展开。
+  final bool show;
+
+  /// 锚定矩形（按下触发控件时用 `hyperosSelectPopupAnchorRect` 取）。
+  final Rect anchorRect;
+
+  final Map<String, T> items;
+  final T? currentValue;
+
+  /// 选中回调：宿主在此应用结果并自行把 [show] 置回 false。
+  final ValueChanged<T> onSelected;
+
+  /// 点空白 / 系统返回等关闭请求：宿主把 [show] 置回 false。
+  final VoidCallback onDismiss;
+
+  final Widget? Function(T value)? itemPrefixBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return MiuixGlassDropdownPopup(
+      show: show,
+      anchorBounds: anchorRect,
+      backdrop: os4GlassBackdrop,
+      sizing: _os4SelectSizing,
+      onDismissRequest: onDismiss,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final entry in items.entries)
+            MiuixGlassPopupItem(
+              text: entry.key,
+              selected: entry.value == currentValue,
+              icon: itemPrefixBuilder?.call(entry.value),
+              onPressed: () => onSelected(entry.value),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 选择弹层的尺寸约束：复刻旧实现那套公式（`HyperosMiuixDropdown`）。
+///
+/// 选择器标签比首页菜单长（"按添加时间排序"这类），所以上限保留旧公式的 372；
+/// 上游布局会再用屏幕边界做一次 `min` 收敛
+///（`popup_layout.dart`：`maxWidth = min(sizing.maxWidth, bounds.width)`），
+/// 因此这里不必自己夹屏幕宽。下界不写：上游默认 `minWidth = 200`，与旧公式
+/// `132 + popupExtraLeadingWidth` 恰好相同。
+const _os4SelectSizing = MiuixGlassPopupSizing(
+  maxWidth:
+      HyperosMiuixDropdown.maxItemTextWidth +
+      HyperosMiuixDropdown.popupExtraLeadingWidth +
+      HyperosMiuixDropdown.insideHorizontalPadding * 2 +
+      HyperosMiuixDropdown.checkIconSize +
+      28,
+);
 
 /// Opens a HyperOS dialog-style bottom sheet for longer single-choice lists.
 Future<T?> showHyperosSelectSheet<T>({

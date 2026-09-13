@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/ui/hyperos/os4_glass_backdrop.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +23,11 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
   _SortMode _sortMode = _SortMode.added;
   final GlobalKey _sortActionKey = GlobalKey();
 
+  /// 「排序」选择弹层的常驻状态。上游 OS4 弹层的契约是「常驻挂载 + 切 show」，
+  /// 所以由宿主持有 show 与锚定矩形，而不是 await 一个路由的返回值。
+  bool _sortPopupOpen = false;
+  Rect? _sortAnchorRect;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -31,7 +38,13 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
     final sorted = _sortGroups(List.of(groups));
     final conflictScheduleCount = conflictMap.length;
 
-    return HyperosSubpage(
+    return Stack(
+      children: [
+        // 弹层玻璃要从「宿主页内容」采样，故页面内容包一层捕获；
+        // **弹层留在捕获之外**（上游要求捕获子树不含玻璃自身，防反馈采样）。
+        MiuixLayerBackdropCapture(
+          backdrop: os4GlassBackdrop,
+          child: HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.courseOverviewTitle),
       suffixes: [
@@ -81,6 +94,26 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
                 ),
               ],
             ),
+        ),
+        ),
+        // 「排序」选择弹层：常驻挂载、由 _sortPopupOpen 切 show。
+        HyperosSelectPopup<_SortMode>(
+          show: _sortPopupOpen,
+          anchorRect: _sortAnchorRect ?? Rect.zero,
+          currentValue: _sortMode,
+          items: {
+            l10n.sortByAdded: _SortMode.added,
+            l10n.sortByName: _SortMode.name,
+            l10n.sortBySchedule: _SortMode.schedule,
+          },
+          onSelected: _onSortSelected,
+          onDismiss: () {
+            if (_sortPopupOpen) {
+              setState(() => _sortPopupOpen = false);
+            }
+          },
+        ),
+      ],
     );
   }
 
@@ -116,22 +149,24 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
     return groups;
   }
 
-  Future<void> _showSortPopup() async {
-    final l10n = AppLocalizations.of(context)!;
-    final selected = await showHyperosSelectPopup<_SortMode>(
-      context: context,
-      anchorRect: hyperosSelectPopupAnchorRect(context, _sortActionKey),
-      currentValue: _sortMode,
-      items: {
-        l10n.sortByAdded: _SortMode.added,
-        l10n.sortByName: _SortMode.name,
-        l10n.sortBySchedule: _SortMode.schedule,
-      },
-    );
-    if (selected == null || !mounted) {
-      return;
-    }
-    setState(() => _sortMode = selected);
+  /// 打开「排序」选择弹层。
+  ///
+  /// 2026-09-13：选择弹层改用上游 OS4 锚定弹层后，必须按上游契约
+  /// 「**常驻挂载 + 切 show**」使用 —— 弹层**不自己 pop 任何路由**。
+  /// 上一版把它塞进 `showGeneralDialog` 且 show 恒 true，导致弹层内部关闭记账
+  /// 与路由栈错位：点条目会 pop 掉宿主页、点空白也关不掉，故改为本形态。
+  void _showSortPopup() {
+    setState(() {
+      _sortAnchorRect = hyperosSelectPopupAnchorRect(context, _sortActionKey);
+      _sortPopupOpen = true;
+    });
+  }
+
+  void _onSortSelected(_SortMode mode) {
+    setState(() {
+      _sortMode = mode;
+      _sortPopupOpen = false;
+    });
   }
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
