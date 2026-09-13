@@ -16,10 +16,10 @@ void main() {
     });
 
     test('缺少可选字段时回到默认值', () {
-      final entry = WallpaperHistoryEntry.fromJson({'key': 'builtin:og'});
+      final entry = WallpaperHistoryEntry.fromJson({'key': '/data/a.png'});
 
       expect(entry, isNotNull);
-      expect(entry!.key, 'builtin:og');
+      expect(entry!.key, '/data/a.png');
       expect(entry.alignX, 0);
       expect(entry.alignY, 0);
       expect(entry.usedAt, 0);

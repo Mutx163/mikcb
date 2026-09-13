@@ -50,8 +50,8 @@ abstract final class HomeStartupVisualPrimer {
   /// 预热首页首帧全部视觉资产。永不抛出。
   static Future<void> prime(TimetableSettings settings) async {
     try {
-      // 背景身份键：图片壁纸为路径，内置壁纸为 `builtin:<预设>`；
-      // 与首页的采样缓存 key 同源，保证首帧取到的就是预热结果。
+      // 背景身份键即背景图绝对路径，与首页的采样缓存 key 同源，
+      // 保证首帧取到的就是预热结果。
       final path = homePageBackdropKey(settings);
       if (path == null || path.isEmpty) {
         return;

@@ -54,7 +54,8 @@ void main() {
   });
 
   testWidgets('玻璃在构建期 acquire 不再触发 setState during build', (tester) async {
-    // 真机回归：首页内容每帧重建（开内置壁纸）时，采样源开关被通知 →
+    // 真机回归：首页内容在构建期连续重建（分页/滚动中）时，采样源开关被
+    // 通知 → 若标记重建不在当前构建链上的祖先，会抛
     // 若标记重建不在当前构建链上的祖先，会抛
     // "setState() or markNeedsBuild() called during build"。开关只重绘捕获节点。
     final controller = HyperosGlassBackdropController();

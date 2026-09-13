@@ -246,7 +246,6 @@ class _TimetablePageSettingsScreenState
                   },
                 ),
               ),
-              _buildBuiltInWallpaperTile(context, l10n: l10n),
               _buildHomePageImageTile(
                 context,
                 l10n: l10n,
@@ -302,62 +301,30 @@ class _TimetablePageSettingsScreenState
     };
   }
 
-  /// 内置壁纸的全部选项（含「不使用」），顺序与设置页展示顺序一致。
-  static List<(BuiltInWallpaper?, String)> _builtInWallpaperOptions(
-    AppLocalizations l10n,
-  ) => [
-    (null, l10n.homePageBuiltInWallpaperNone),
-    (BuiltInWallpaper.og, l10n.homePageBuiltInWallpaperOg),
-    (BuiltInWallpaper.lavaDark, l10n.homePageBuiltInWallpaperLavaDark),
-    (BuiltInWallpaper.lavaLight, l10n.homePageBuiltInWallpaperLavaLight),
-    (BuiltInWallpaper.dark1, l10n.homePageBuiltInWallpaperDark1),
-    (BuiltInWallpaper.light2, l10n.homePageBuiltInWallpaperLight2),
-    (BuiltInWallpaper.light3, l10n.homePageBuiltInWallpaperLight3),
-    (BuiltInWallpaper.emberTeal, l10n.homePageBuiltInWallpaperEmberTeal),
-  ];
-
-  /// 内置预设的本地化名称；null 为「不使用」。
-  static String _builtInWallpaperLabel(
-    AppLocalizations l10n,
-    BuiltInWallpaper? wallpaper,
-  ) {
-    for (final (candidate, label) in _builtInWallpaperOptions(l10n)) {
-      if (candidate == wallpaper) {
-        return label;
-      }
-    }
-    return '';
-  }
-
   /// 失效一张背景的缓存：图片缓存、文件存在性 memo 与预模糊位图。
   ///
-  /// [key] 是背景身份键（图片路径或 builtin:<预设>）；图片路径才会去动
-  /// 图片缓存，内置键只清预模糊位图。null / 空串安全跳过（无背景）。
+  /// [key] 是背景图绝对路径；null / 空串安全跳过（无背景）。
   void _evictBackdropCaches(String? key) {
     if (key == null || key.isEmpty) {
       return;
     }
-    if (!key.startsWith(kBuiltInWallpaperKeyPrefix)) {
-      evictHomePageImageCache(key);
-      invalidateHomePageBackdropFileExists(key);
-    }
+    evictHomePageImageCache(key);
+    invalidateHomePageBackdropFileExists(key);
     PreblurredWallpaperCache.instance.evict(key);
   }
 
   /// 当前生效背景对应的历史条目；没有背景时返回 null。
   ///
-  /// 图片壁纸带上当前的对齐值（切回时要还原裁剪位置），内置壁纸没有裁剪
-  /// 窗口，对齐固定 0。
+  /// 带上当前的对齐值，切回时要还原当时的裁剪位置。
   WallpaperHistoryEntry? _currentBackdropEntry() {
     final key = homePageBackdropKey(_draft);
     if (key == null) {
       return null;
     }
-    final isBuiltIn = key.startsWith(kBuiltInWallpaperKeyPrefix);
     return WallpaperHistoryEntry(
       key: key,
-      alignX: isBuiltIn ? 0 : _draft.homePageWallpaperAlignX,
-      alignY: isBuiltIn ? 0 : _draft.homePageWallpaperAlignY,
+      alignX: _draft.homePageWallpaperAlignX,
+      alignY: _draft.homePageWallpaperAlignY,
     );
   }
 
@@ -396,31 +363,6 @@ class _TimetablePageSettingsScreenState
       _evictBackdropCaches(nextKey);
     }
     _updateDraft(_rememberBackdrops(next, remembered));
-  }
-
-  /// 选中一张内置预设；null 表示「不使用」。
-  ///
-  /// 内置壁纸与自选图片互斥：切到内置（或「不使用」）时一并清掉图片路径，
-  /// 否则图片会一直压在壁纸上。被换下的那张图片不会被删除——它会留在
-  /// 「最近使用」里，用户随时能切回去。
-  void _selectBuiltInWallpaper(BuiltInWallpaper? wallpaper) {
-    final previous = _currentBackdropEntry();
-    _applyBackdropChange(
-      _draft.copyWith(
-        homePageBuiltInWallpaper: wallpaper?.value,
-        clearHomePageBuiltInWallpaper: wallpaper == null,
-        clearHomePageWallpaperPath: true,
-        clearHomePageBackgroundImagePath: true,
-        // 内置壁纸没有可拖动的裁剪窗口，位置固定居中。
-        homePageWallpaperAlignX: 0,
-        homePageWallpaperAlignY: 0,
-      ),
-      remembered: [
-        ?previous,
-        if (wallpaper != null)
-          WallpaperHistoryEntry(key: builtInWallpaperKey(wallpaper)),
-      ],
-    );
   }
 
   /// 切回「最近使用」里的某一条背景。
@@ -492,72 +434,18 @@ class _TimetablePageSettingsScreenState
               separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
                 final entry = entries[index];
-                final builtIn = builtInWallpaperOfHistoryEntry(entry);
                 return _WallpaperThumbnailCard(
-                  label: builtIn != null
-                      ? _builtInWallpaperLabel(l10n, builtIn)
-                      : l10n.homePageWallpaperRecentImageLabel,
+                  label: l10n.homePageWallpaperRecentImageLabel,
                   selected: entry.key == selectedKey,
                   onTap: () => _selectBackdropEntry(entry),
-                  thumbnail: builtIn != null
-                      // 缩略图直接用静态位图：与首页同一 ImageProvider，
-                      // 同一预设只渲染一次、由 ImageCache 复用。
-                      ? Image(
-                          image: BuiltInWallpaperImage(builtIn),
-                          fit: BoxFit.cover,
-                          gaplessPlayback: true,
-                        )
-                      : Image.file(
-                          File(entry.key),
-                          fit: BoxFit.cover,
-                          cacheWidth: 240,
-                          // 列表构建后文件被删/损坏时不崩帧。
-                          errorBuilder: (context, error, stackTrace) =>
-                              const SizedBox.shrink(),
-                        ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 内置壁纸选择行：横向预设卡片 + 「不使用」。
-  ///
-  /// 内置壁纸是代码渲染的渐变底图（无文件、无网络），与自选图片共用同一套
-  /// 渲染 / 亮度采样 / 预模糊玻璃管线；用户自选图片优先，清除图片后自动
-  /// 回退到这里选中的预设。
-  Widget _buildBuiltInWallpaperTile(
-    BuildContext context, {
-    required AppLocalizations l10n,
-  }) {
-    final selected = resolveBuiltInWallpaper(_draft);
-    final options = _builtInWallpaperOptions(l10n);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.homePageBuiltInWallpaperTitle,
-            style: HyperosTypography.listTitle(context),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 116,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: options.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (context, index) {
-                final (wallpaper, label) = options[index];
-                return _BuiltInWallpaperOption(
-                  label: label,
-                  wallpaper: wallpaper,
-                  selected: selected == wallpaper,
-                  onTap: () => _selectBuiltInWallpaper(wallpaper),
+                  thumbnail: Image.file(
+                    File(entry.key),
+                    fit: BoxFit.cover,
+                    cacheWidth: 240,
+                    // 列表构建后文件被删/损坏时不崩帧。
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox.shrink(),
+                  ),
                 );
               },
             ),
@@ -753,47 +641,7 @@ class _TimetablePageSettingsScreenState
   }
 }
 
-/// 内置壁纸预览卡：选中态描边 + 勾选角标。
-class _BuiltInWallpaperOption extends StatelessWidget {
-  const _BuiltInWallpaperOption({
-    required this.label,
-    required this.wallpaper,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final BuiltInWallpaper? wallpaper;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final wallpaper = this.wallpaper;
-    return _WallpaperThumbnailCard(
-      label: label,
-      selected: selected,
-      onTap: onTap,
-      thumbnail: wallpaper == null
-          ? ColoredBox(
-              color: HyperosColors.surfaceContainer(context),
-              child: Icon(
-                Icons.block_rounded,
-                size: 22,
-                color: HyperosColors.secondaryText(context),
-              ),
-            )
-          // 缩略图直接用静态位图（与首页同一 ImageProvider，缓存复用）。
-          : Image(
-              image: BuiltInWallpaperImage(wallpaper),
-              fit: BoxFit.cover,
-              gaplessPlayback: true,
-            ),
-    );
-  }
-}
-
-/// 壁纸缩略图卡（内置预设与「最近使用」共用）：78 宽，选中态描边 + 高亮标签。
+/// 壁纸缩略图卡（「最近使用」条）：78 宽，选中态描边 + 高亮标签。
 class _WallpaperThumbnailCard extends StatelessWidget {
   const _WallpaperThumbnailCard({
     required this.label,

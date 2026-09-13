@@ -3246,45 +3246,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageBackgroundImageSubtitle => '在「图片」模式下，作用于下方勾选的显示区域';
 
   @override
-  String get homePageBuiltInWallpaperTitle => '内置壁纸';
-
-  @override
-  String get homePageBuiltInWallpaperSubtitle => '不占存储，选中即铺满首页';
-
-  @override
-  String get homePageBuiltInWallpaperNone => '不使用';
-
-  @override
-  String get homePageBuiltInWallpaperOg => '经典熔岩';
-
-  @override
-  String get homePageBuiltInWallpaperLavaDark => '熔岩橙';
-
-  @override
-  String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油';
-
-  @override
-  String get homePageBuiltInWallpaperDark1 => '深焰赤橙';
-
-  @override
-  String get homePageBuiltInWallpaperLight2 => '鼠尾草绿';
-
-  @override
-  String get homePageBuiltInWallpaperLight3 => '大地暖棕';
-
-  @override
-  String get homePageBuiltInWallpaperEmberTeal => '青绿余烬';
-
-  @override
-  String get homePageWallpaperSourceTitle => '壁纸来源';
-
-  @override
-  String get homePageWallpaperSourceSubtitle => '自选图片优先；清除后回退内置';
-
-  @override
-  String get homePageBuiltInWallpaperCredits => '基于 bokeh-lava-gradient（MIT）';
-
-  @override
   String get homePageWallpaperTitle => '背景图片';
 
   @override
@@ -14081,45 +14042,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homePageBackgroundImageSubtitle => '在「圖片」模式下，套用於下方勾選的顯示區域';
-
-  @override
-  String get homePageBuiltInWallpaperTitle => '內建壁紙';
-
-  @override
-  String get homePageBuiltInWallpaperSubtitle => '唔佔儲存，揀咗即鋪滿首頁';
-
-  @override
-  String get homePageBuiltInWallpaperNone => '唔使用';
-
-  @override
-  String get homePageBuiltInWallpaperOg => '經典熔岩';
-
-  @override
-  String get homePageBuiltInWallpaperLavaDark => '熔岩橙';
-
-  @override
-  String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油';
-
-  @override
-  String get homePageBuiltInWallpaperDark1 => '深焰赤橙';
-
-  @override
-  String get homePageBuiltInWallpaperLight2 => '鼠尾草綠';
-
-  @override
-  String get homePageBuiltInWallpaperLight3 => '大地暖棕';
-
-  @override
-  String get homePageBuiltInWallpaperEmberTeal => '青綠餘燼';
-
-  @override
-  String get homePageWallpaperSourceTitle => '壁紙來源';
-
-  @override
-  String get homePageWallpaperSourceSubtitle => '自選圖片優先；清除後回退內建';
-
-  @override
-  String get homePageBuiltInWallpaperCredits => '基於 bokeh-lava-gradient（MIT）';
 
   @override
   String get homePageWallpaperTitle => '背景圖片';
@@ -24961,45 +24883,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homePageBackgroundImageSubtitle => '在「圖片」模式下，套用於下方勾選的顯示區域';
-
-  @override
-  String get homePageBuiltInWallpaperTitle => '內建桌布';
-
-  @override
-  String get homePageBuiltInWallpaperSubtitle => '不佔儲存，選取即鋪滿首頁';
-
-  @override
-  String get homePageBuiltInWallpaperNone => '不使用';
-
-  @override
-  String get homePageBuiltInWallpaperOg => '經典熔岩';
-
-  @override
-  String get homePageBuiltInWallpaperLavaDark => '熔岩橙';
-
-  @override
-  String get homePageBuiltInWallpaperLavaLight => '蜜桃奶油';
-
-  @override
-  String get homePageBuiltInWallpaperDark1 => '深焰赤橙';
-
-  @override
-  String get homePageBuiltInWallpaperLight2 => '鼠尾草綠';
-
-  @override
-  String get homePageBuiltInWallpaperLight3 => '大地暖棕';
-
-  @override
-  String get homePageBuiltInWallpaperEmberTeal => '青綠餘燼';
-
-  @override
-  String get homePageWallpaperSourceTitle => '桌布來源';
-
-  @override
-  String get homePageWallpaperSourceSubtitle => '自選圖片優先；清除後回退內建';
-
-  @override
-  String get homePageBuiltInWallpaperCredits => '基於 bokeh-lava-gradient（MIT）';
 
   @override
   String get homePageWallpaperTitle => '背景圖片';

@@ -580,7 +580,7 @@ void main() {
   test('wallpaper history survives json round trip', () {
     final settings = TimetableSettings.defaults().copyWith(
       wallpaperHistory: const [
-        WallpaperHistoryEntry(key: 'builtin:og', usedAt: 10),
+        WallpaperHistoryEntry(key: '/data/a.png', usedAt: 10),
         WallpaperHistoryEntry(
           key: '/data/wallpaper_1.png',
           alignX: 0.5,
@@ -599,19 +599,19 @@ void main() {
     final restored = TimetableSettings.fromJson({
       ...TimetableSettings.defaults().toJson(),
       'wallpaperHistory': [
-        {'key': 'builtin:og'},
+        {'key': '/data/a.png'},
         null,
         {'nope': 1},
       ],
     });
 
     expect(restored.wallpaperHistory.length, 1);
-    expect(restored.wallpaperHistory.single.key, 'builtin:og');
+    expect(restored.wallpaperHistory.single.key, '/data/a.png');
   });
 
   test('clearing wallpaper history drops every entry', () {
     final settings = TimetableSettings.defaults().copyWith(
-      wallpaperHistory: const [WallpaperHistoryEntry(key: 'builtin:og')],
+      wallpaperHistory: const [WallpaperHistoryEntry(key: '/data/a.png')],
     );
 
     final cleared = settings.copyWith(clearWallpaperHistory: true);

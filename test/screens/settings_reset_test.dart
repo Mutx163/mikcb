@@ -36,7 +36,7 @@ void main() {
       homePageWallpaperPath: '/tmp/wallpaper.png',
       wallpaperHistory: const [
         WallpaperHistoryEntry(key: '/tmp/wallpaper.png'),
-        WallpaperHistoryEntry(key: 'builtin:og'),
+        WallpaperHistoryEntry(key: '/tmp/wallpaper_2.png'),
       ],
       // 外观
       appThemeMode: AppThemeMode.dark,

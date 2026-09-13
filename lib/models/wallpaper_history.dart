@@ -7,9 +7,10 @@ import 'package:flutter/foundation.dart';
 /// 并经云同步 / 备份携带；脏条目在 [listFromJson] 内逐条丢弃，绝不因为
 /// 单个坏值炸掉整个设置。
 ///
-/// [key] 是**背景身份键**，与 [homePageBackdropKey] 同一口径：
-/// 自选图片为文件绝对路径，内置壁纸为 builtin:<预设>。模型层只当它是
-/// 不透明字符串，不理解前缀含义（保持对 ui 层零依赖）。
+/// [key] 是**背景身份键**，与 [homePageBackdropKey] 同一口径：自选图片为
+/// 文件绝对路径。历史里可能残留已下线内置壁纸（2026-09-13 移除）的
+/// `builtin:<预设>` 键；模型层只当它是不透明字符串，不理解前缀含义
+/// （保持对 ui 层零依赖），条目是否可用由 `utils/wallpaper_history.dart` 判定。
 @immutable
 class WallpaperHistoryEntry {
   const WallpaperHistoryEntry({
@@ -19,13 +20,13 @@ class WallpaperHistoryEntry {
     this.usedAt = 0,
   });
 
-  /// 背景身份键：图片壁纸为文件绝对路径，内置壁纸为 \`builtin:<预设>\`。
+  /// 背景身份键：背景图片的文件绝对路径。
   final String key;
 
-  /// 使用该壁纸时的水平对齐（-1..1）；内置壁纸没有裁剪窗口，恒为 0。
+  /// 使用该壁纸时的水平对齐（-1..1）。
   final double alignX;
 
-  /// 使用该壁纸时的垂直对齐（-1..1）；内置壁纸没有裁剪窗口，恒为 0。
+  /// 使用该壁纸时的垂直对齐（-1..1）。
   final double alignY;
 
   /// 最近一次使用时间（epoch 毫秒），用于排序与「最近」语义。

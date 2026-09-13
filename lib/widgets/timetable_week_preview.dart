@@ -71,8 +71,7 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
   /// samples; without them the preview falls back to theme brightness and can
   /// paint the opposite ink or wash — visibly unlike the home page.
   void _sampleLuminance({Size? viewportSize}) {
-    // 背景身份键：图片路径或内置壁纸预设；内置壁纸同样参与墨色采样，
-    // 保证设置页预览与首页 chrome 极性一致。
+    // 背景身份键即背景图绝对路径，保证设置页预览与首页 chrome 极性一致。
     final path = homePageBackdropKey(widget.settings);
     if (path == null || path.isEmpty) {
       _sampledKey = null;

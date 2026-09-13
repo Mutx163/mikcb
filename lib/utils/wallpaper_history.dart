@@ -1,6 +1,5 @@
 import '../models/timetable_settings.dart';
 import '../models/wallpaper_history.dart';
-import '../ui/background/builtin_wallpaper.dart';
 import 'home_page_background.dart';
 import 'managed_image_storage.dart';
 
@@ -14,9 +13,16 @@ const int kMaxWallpaperHistoryEntries = 10;
 const String kHomePageWallpaperDirectoryName = 'home_page_wallpaper';
 const String kHomePageWallpaperFilePrefix = 'wallpaper';
 
-/// 条目是否是内置壁纸（背景身份键以 builtin: 开头）。
-bool isBuiltInWallpaperHistoryEntry(WallpaperHistoryEntry entry) =>
-    entry.key.startsWith(kBuiltInWallpaperKeyPrefix);
+/// 已下线的「内置壁纸」预设在历史里的键前缀（`builtin:<预设>`）。
+///
+/// 内置壁纸功能已整体移除（2026-09-13），但老用户的持久化历史里可能仍留着
+/// 这类条目。它们没有磁盘文件，一律视为不可用：展示时过滤、淘汰清理时跳过，
+/// 用户下次切换壁纸后自然被顶出历史。
+const String kLegacyBuiltInWallpaperKeyPrefix = 'builtin:';
+
+/// 条目是否来自已下线的内置壁纸（无文件、不可用）。
+bool isLegacyBuiltInWallpaperEntry(WallpaperHistoryEntry entry) =>
+    entry.key.startsWith(kLegacyBuiltInWallpaperKeyPrefix);
 
 /// 一次历史写入的结果。
 class WallpaperHistoryPushResult {
@@ -28,7 +34,7 @@ class WallpaperHistoryPushResult {
   /// 去重置顶并按上限裁剪后的新历史（最新在前）。
   final List<WallpaperHistoryEntry> history;
 
-  /// 被挤出上限、需要顺手删除文件的图片路径；内置壁纸无文件，不入表。
+  /// 被挤出上限、需要顺手删除文件的图片路径；遗留的内置壁纸条目无文件，不入表。
   final List<String> evictedPaths;
 }
 
@@ -65,30 +71,20 @@ WallpaperHistoryPushResult pushWallpaperHistory({
   final kept = next.take(kMaxWallpaperHistoryEntries).toList(growable: false);
   final evictedPaths = <String>[
     for (final entry in next.skip(kMaxWallpaperHistoryEntries))
-      if (!isBuiltInWallpaperHistoryEntry(entry)) entry.key,
+      if (!isLegacyBuiltInWallpaperEntry(entry)) entry.key,
   ];
   return WallpaperHistoryPushResult(history: kept, evictedPaths: evictedPaths);
 }
 
-/// 条目当前是否可用：内置预设必须仍是合法预设，图片文件必须还在。
+/// 条目当前是否可用：背景图片文件必须还在。
 ///
 /// 图片存在性走 [homePageImageProvider]，与首页共用同一份按路径记忆的结果，
 /// 因此每帧过滤整个历史也不会反复摸盘。
 bool wallpaperHistoryEntryAvailable(WallpaperHistoryEntry entry) {
-  if (isBuiltInWallpaperHistoryEntry(entry)) {
-    return builtInWallpaperOfHistoryEntry(entry) != null;
+  if (isLegacyBuiltInWallpaperEntry(entry)) {
+    return false;
   }
   return homePageImageProvider(entry.key) != null;
-}
-
-/// 把内置壁纸条目还原成预设枚举；图片条目或非法预设返回 null。
-BuiltInWallpaper? builtInWallpaperOfHistoryEntry(WallpaperHistoryEntry entry) {
-  if (!isBuiltInWallpaperHistoryEntry(entry)) {
-    return null;
-  }
-  return BuiltInWallpaper.fromValue(
-    entry.key.substring(kBuiltInWallpaperKeyPrefix.length),
-  );
 }
 
 /// 过滤掉文件已丢失 / 预设已下线的条目，保持原有先后顺序。
@@ -103,27 +99,14 @@ List<WallpaperHistoryEntry> availableWallpaperHistory(
 
 /// 把历史条目套用到设置上；条目不可用时返回 null（调用方按无效处理）。
 ///
-/// - 内置条目：与点击内置预设卡完全同款——清掉图片路径（图片优先级更高，
-///   不清就永远看不到内置底图），对齐归零。
-/// - 图片条目：恢复当时的对齐值；**不清**内置壁纸，保留「清除图片后回退到
-///   内置预设」这一既有语义。
-/// 不修改历史本身，置顶由 [pushWallpaperHistory] 负责。
+/// 恢复该图被选用时的裁剪对齐值。不修改历史本身，置顶由
+/// [pushWallpaperHistory] 负责。
 TimetableSettings? settingsWithWallpaperHistoryEntry(
   TimetableSettings settings,
   WallpaperHistoryEntry entry,
 ) {
-  if (isBuiltInWallpaperHistoryEntry(entry)) {
-    final wallpaper = builtInWallpaperOfHistoryEntry(entry);
-    if (wallpaper == null) {
-      return null;
-    }
-    return settings.copyWith(
-      homePageBuiltInWallpaper: wallpaper.value,
-      clearHomePageWallpaperPath: true,
-      clearHomePageBackgroundImagePath: true,
-      homePageWallpaperAlignX: 0,
-      homePageWallpaperAlignY: 0,
-    );
+  if (isLegacyBuiltInWallpaperEntry(entry)) {
+    return null;
   }
   if (homePageImageProvider(entry.key) == null) {
     return null;
@@ -180,11 +163,11 @@ WallpaperHistoryPushResult rememberWallpaperHistoryBatch({
 
 /// 删除被历史淘汰的图片壁纸文件。
 ///
-/// 内置条目的 key 不是文件路径，直接跳过；[deleteManagedImage] 自身也带
-/// 「必须在本目录且前缀匹配」的双保险，越界路径静默忽略。
+/// 遗留的「内置壁纸」键不是文件路径，直接跳过；[deleteManagedImage] 自身
+/// 也带「必须在本目录且前缀匹配」的双保险，越界路径静默忽略。
 Future<void> deleteEvictedWallpaperFiles(Iterable<String> paths) async {
   for (final path in paths) {
-    if (path.isEmpty || path.startsWith(kBuiltInWallpaperKeyPrefix)) {
+    if (path.isEmpty || path.startsWith(kLegacyBuiltInWallpaperKeyPrefix)) {
       continue;
     }
     await deleteManagedImage(

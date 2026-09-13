@@ -1437,13 +1437,6 @@ class TimetableSettings {
   final String? homePageBackgroundImagePath;
   final String? homePageWallpaperPath;
 
-  /// 内置壁纸主键（[BuiltInWallpaper.value]），null 表示不使用内置壁纸。
-  ///
-  /// 只存主键字符串、不 import UI 层枚举：模型层保持对 widgets/ui 零依赖
-  /// （与 HomeGridMenu 同一约定）。用户自选图片优先——[homePageWallpaperPath]
-  /// 有值时内置壁纸不参与渲染，清除图片后自动回退到内置壁纸。
-  final String? homePageBuiltInWallpaper;
-
   /// 壁纸在页面内的水平对齐（-1 靠左 … 0 居中 … 1 靠右），用于横向壁纸
   /// 拖动选择显示区域；竖屏壁纸下 cover 不会水平溢出，该值不产生位移。
   final double homePageWallpaperAlignX;
@@ -1694,7 +1687,6 @@ class TimetableSettings {
     this.homePageBackgroundFill = HomePageBackgroundFill.color,
     this.homePageBackgroundImagePath,
     this.homePageWallpaperPath,
-    this.homePageBuiltInWallpaper,
     this.homePageWallpaperAlignX = 0,
     this.homePageWallpaperAlignY = 0,
     this.wallpaperHistory = const [],
@@ -1917,8 +1909,6 @@ class TimetableSettings {
         'homePageBackgroundImagePath': homePageBackgroundImagePath,
       if (homePageWallpaperPath != null)
         'homePageWallpaperPath': homePageWallpaperPath,
-      if (homePageBuiltInWallpaper != null)
-        'homePageBuiltInWallpaper': homePageBuiltInWallpaper,
       'homePageWallpaperAlignX': homePageWallpaperAlignX,
       'homePageWallpaperAlignY': homePageWallpaperAlignY,
       'wallpaperHistory': [
@@ -2361,7 +2351,6 @@ class TimetableSettings {
       homePageBackgroundImagePath:
           json['homePageBackgroundImagePath'] as String?,
       homePageWallpaperPath: json['homePageWallpaperPath'] as String?,
-      homePageBuiltInWallpaper: json['homePageBuiltInWallpaper'] as String?,
       homePageWallpaperAlignX:
           (json['homePageWallpaperAlignX'] as num?)?.toDouble() ?? 0,
       homePageWallpaperAlignY:
@@ -2676,8 +2665,6 @@ class TimetableSettings {
     bool clearHomePageBackgroundImagePath = false,
     String? homePageWallpaperPath,
     bool clearHomePageWallpaperPath = false,
-    String? homePageBuiltInWallpaper,
-    bool clearHomePageBuiltInWallpaper = false,
     double? homePageWallpaperAlignX,
     double? homePageWallpaperAlignY,
     List<WallpaperHistoryEntry>? wallpaperHistory,
@@ -3006,9 +2993,6 @@ class TimetableSettings {
       homePageWallpaperPath: clearHomePageWallpaperPath
           ? null
           : homePageWallpaperPath ?? this.homePageWallpaperPath,
-      homePageBuiltInWallpaper: clearHomePageBuiltInWallpaper
-          ? null
-          : homePageBuiltInWallpaper ?? this.homePageBuiltInWallpaper,
       homePageWallpaperAlignX:
           homePageWallpaperAlignX ?? this.homePageWallpaperAlignX,
       homePageWallpaperAlignY:

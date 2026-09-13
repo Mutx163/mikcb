@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/storage_service.dart';
-import 'package:university_timetable/ui/background/builtin_wallpaper.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/widgets/course_grid_surface_host.dart';
 import 'package:university_timetable/widgets/home_page_region_blur.dart';
@@ -119,10 +118,14 @@ void main() {
     testWidgets('gaussian over a wallpaper: host mirrors the cards (no group on VM)', (
       tester,
     ) async {
+      final dir = Directory.systemTemp.createTempSync('week_preview_wallpaper');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final file = File('${dir.path}${Platform.pathSeparator}wall.png')
+        ..writeAsBytesSync([1, 2, 3, 4]);
       await pumpPreview(
         tester,
         settings: TimetableSettings.defaults().copyWith(
-          homePageBuiltInWallpaper: BuiltInWallpaper.og.value,
+          homePageWallpaperPath: file.path,
           courseCardSurfaceStyle: CourseCardSurfaceStyle.gaussian,
         ),
       );

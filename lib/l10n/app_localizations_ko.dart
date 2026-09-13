@@ -3317,45 +3317,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '\'이미지\' 모드에서 아래에서 선택한 표시 영역에 적용됩니다';
 
   @override
-  String get homePageBuiltInWallpaperTitle => '내장 배경화면';
-
-  @override
-  String get homePageBuiltInWallpaperSubtitle => '저장 공간 없음. 고르면 홈 전체';
-
-  @override
-  String get homePageBuiltInWallpaperNone => '사용 안 함';
-
-  @override
-  String get homePageBuiltInWallpaperOg => '클래식 라바';
-
-  @override
-  String get homePageBuiltInWallpaperLavaDark => '라바 오렌지';
-
-  @override
-  String get homePageBuiltInWallpaperLavaLight => '피치 크림';
-
-  @override
-  String get homePageBuiltInWallpaperDark1 => '딥 플레임';
-
-  @override
-  String get homePageBuiltInWallpaperLight2 => '세이지 그린';
-
-  @override
-  String get homePageBuiltInWallpaperLight3 => '웜 어스';
-
-  @override
-  String get homePageBuiltInWallpaperEmberTeal => '엠버 틸';
-
-  @override
-  String get homePageWallpaperSourceTitle => '배경화면 소스';
-
-  @override
-  String get homePageWallpaperSourceSubtitle => '이미지 우선. 지우면 내장으로';
-
-  @override
-  String get homePageBuiltInWallpaperCredits => 'bokeh-lava-gradient(MIT) 기반';
-
-  @override
   String get homePageWallpaperTitle => '배경 이미지';
 
   @override

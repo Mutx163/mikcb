@@ -42,7 +42,6 @@ import '../widgets/home_top_menu.dart';
 import '../widgets/wallpaper_position_picker_sheet.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
 import '../ui/app_fonts.dart';
-import '../ui/background/builtin_wallpaper.dart';
 import '../ui/debug/debug.dart';
 import '../widgets/frosted_sheet_settings_preview.dart';
 import '../ui/hyperos/hyperos.dart';

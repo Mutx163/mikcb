@@ -13,7 +13,6 @@ import 'dart:ui'
 import 'package:flutter/material.dart';
 
 import '../models/timetable_settings.dart';
-import '../ui/background/builtin_wallpaper.dart';
 import 'hex_color.dart';
 
 class HomePageBackgroundVisual {
@@ -210,51 +209,30 @@ bool hasHomePageBackdropImage(TimetableSettings settings) {
       null;
 }
 
-/// 当前设置选中的内置壁纸；未选择时返回 null。
-BuiltInWallpaper? resolveBuiltInWallpaper(TimetableSettings settings) =>
-    BuiltInWallpaper.fromValue(settings.homePageBuiltInWallpaper);
-
-/// 当前生效的首页背景图提供者（用户自选图片优先，其次内置壁纸）。
-///
-/// 内置壁纸由代码渲染成位图，因此与图片壁纸共用同一套渲染、亮度采样与
-/// 预模糊玻璃管线；区别只在像素来源。
+/// 当前生效的首页背景图提供者；无背景或文件缺失时返回 null。
 ImageProvider? homePageBackdropProvider(TimetableSettings settings) {
   final key = homePageBackdropKey(settings);
-  if (key == null) {
-    return null;
-  }
-  if (key.startsWith(kBuiltInWallpaperKeyPrefix)) {
-    final builtIn = BuiltInWallpaper.fromValue(
-      key.substring(kBuiltInWallpaperKeyPrefix.length),
-    );
-    return builtIn == null ? null : BuiltInWallpaperImage(builtIn);
-  }
-  return homePageBackdropImageProvider(key);
+  return key == null ? null : homePageBackdropImageProvider(key);
 }
 
-/// 首页是否有可用的背景（自选图片或内置壁纸）。
+/// 首页是否有可用的背景（自选图片存在且可读）。
 ///
-/// 替代只看文件的 [hasHomePageBackdropImage]：内置壁纸没有磁盘文件，
-/// 但同样要参与玻璃、墨色与背景区域判定。
-///
-/// 自选图片文件丢失时（重装 / 清除数据 / 跨设备同步只带回 JSON）不视为
-/// 有背景，自动回退到内置壁纸——否则首页会停在一条失效路径上什么都不画。
+/// 背景文件丢失时（重装 / 清除数据 / 跨设备同步只带回 JSON）视为无背景，
+/// 首页回退到纯色底，而不是停在一条失效路径上什么都不画。
 bool hasHomePageBackdrop(TimetableSettings settings) {
   return homePageBackdropKey(settings) != null;
 }
 
 /// 背景身份键：用于亮度采样/预模糊缓存的幂等去重。
 ///
-/// 图片壁纸返回路径，内置壁纸返回 `builtin:<预设>`，无背景返回 null。
-/// 图片文件不存在时按「无图片」处理并回退内置壁纸，与
+/// 返回可用的背景图片路径；无背景或文件不存在时返回 null，与
 /// [hasHomePageBackdrop] / [homePageBackdropProvider] 保持同一口径。
 String? homePageBackdropKey(TimetableSettings settings) {
   final path = resolveHomePageBackdropImagePath(settings);
   if (path != null && path.isNotEmpty && _homePageFileExistsSync(path)) {
     return path;
   }
-  final builtIn = resolveBuiltInWallpaper(settings);
-  return builtIn == null ? null : builtInWallpaperKey(builtIn);
+  return null;
 }
 
 /// 课程卡片实际生效的表面样式。
@@ -371,28 +349,18 @@ Widget homePageBackdropLayer({required TimetableSettings settings}) {
 
 /// Full-bleed backdrop image for embedding inside a week page.
 ///
-/// 自选图片与内置壁纸**都**返回静态 [Image]。
-///
-/// 内置壁纸原先走 `BokehLavaGradient` 的光斑漂移动画，2026-09-13 整体移除：
-/// 它每 tick 都会改写玻璃的 backdrop，使首页每块玻璃跟着重做一次
-/// 采样 + 模糊 + 折射；真机实测动态壁纸下**静置也以 15.2fps 持续空转**，
-/// 换成静态后静置降到 0fps、滚动跟手感明显变好。亮度采样与预模糊玻璃一直
-/// 走 [BuiltInWallpaperImage] 静态位图，移除后显示层与采样层彻底同源。
+/// 背景图始终是静态 [Image]：内置壁纸（光斑漂移动画）已于 2026-09-13 整体
+/// 移除，图片壁纸不存在动画路径。动态壁纸每 tick 都会改写玻璃的 backdrop，
+/// 使首页每块玻璃跟着重做一次采样 + 模糊 + 折射，真机实测静置也以 15.2fps
+/// 持续空转；静态壁纸下静置降到 0fps、滚动跟手感明显变好。
 Widget? homePageBackdropImageWidget({required TimetableSettings settings}) {
-  final path = resolveHomePageBackdropImagePath(settings);
   final provider = homePageBackdropProvider(settings);
   if (provider == null) {
     return null;
   }
   // 横向壁纸在 cover 下水平溢出，用用户拖选的对齐值决定显示哪一段。
-  // 内置壁纸由代码生成，没有可拖动的裁剪窗口，固定居中。
-  final isBuiltIn = path == null || path.isEmpty;
-  final alignX = isBuiltIn
-      ? 0.0
-      : settings.homePageWallpaperAlignX.clamp(-1.0, 1.0);
-  final alignY = isBuiltIn
-      ? 0.0
-      : settings.homePageWallpaperAlignY.clamp(-1.0, 1.0);
+  final alignX = settings.homePageWallpaperAlignX.clamp(-1.0, 1.0);
+  final alignY = settings.homePageWallpaperAlignY.clamp(-1.0, 1.0);
   return Image(
     key: ValueKey(homePageBackdropKey(settings)),
     image: provider,
@@ -735,40 +703,9 @@ Future<ui.Image?> _decodeHomePageWallpaperSample(String path) async {
   }
 }
 
-/// 内置壁纸的亮度带（按预设 + 视口缓存，避免每次进入首页重复渲染位图）。
-final Map<String, ({double top, double weekday, double body})>
-_builtInLuminanceCache = {};
-
-Future<({double top, double weekday, double body})?>
-_sampleBuiltInWallpaperLuminanceBands(
-  String key,
-  BuiltInWallpaper wallpaper, {
-  Size? viewportSize,
-}) async {
-  // 缓存键带上视口：不同尺寸下 cover 裁剪的条带不同，不能共用一份采样。
-  final cacheKey = viewportSize == null
-      ? key
-      : '$key|${viewportSize.width}x${viewportSize.height}';
-  final cached = _builtInLuminanceCache[cacheKey];
-  if (cached != null) {
-    return cached;
-  }
-  final image = await renderBuiltInWallpaperImage(wallpaper);
-  try {
-    final bands = await _averageBandLuminances(
-      image,
-      viewportSize: viewportSize,
-    );
-    if (bands != null) {
-      _builtInLuminanceCache[cacheKey] = bands;
-    }
-    return bands;
-  } finally {
-    image.dispose();
-  }
-}
-
-/// 背景亮度带入口：自选图片读文件，内置壁纸渲染位图，两者同口径。
+/// 背景亮度带入口：读取当前背景图的 top / weekday / body 三条亮度带。
+///
+/// 无背景时返回 null（由 [sampleHomePageWallpaperLuminanceBands] 处理空路径）。
 Future<({double top, double weekday, double body})?>
 sampleHomePageBackdropLuminanceBands(
   TimetableSettings settings, {
@@ -776,23 +713,11 @@ sampleHomePageBackdropLuminanceBands(
   double alignX = 0,
   double alignY = 0,
 }) {
-  final path = resolveHomePageBackdropImagePath(settings);
-  if (path != null && path.isNotEmpty) {
-    return sampleHomePageWallpaperLuminanceBands(
-      path,
-      viewportSize: viewportSize,
-      alignX: alignX,
-      alignY: alignY,
-    );
-  }
-  final builtIn = resolveBuiltInWallpaper(settings);
-  if (builtIn == null) {
-    return Future<({double top, double weekday, double body})?>.value();
-  }
-  return _sampleBuiltInWallpaperLuminanceBands(
-    builtInWallpaperKey(builtIn),
-    builtIn,
+  return sampleHomePageWallpaperLuminanceBands(
+    resolveHomePageBackdropImagePath(settings),
     viewportSize: viewportSize,
+    alignX: alignX,
+    alignY: alignY,
   );
 }
 
@@ -877,13 +802,13 @@ Float64List _buildSrgbLinearizeLut() {
 /// 按 cover 裁剪从 [image] 采样三条亮度带（top / weekday / body）。
 ///
 /// **所有权契约**：本函数只读 [image]，**不** dispose 它 —— 调用方创建、
-/// 调用方释放，与 [sampleBuiltInWallpaperTopLuminance] 同款约定。
+/// 调用方释放。
 ///
-/// 早期版本在此函数内部 dispose 传入的 handle，而内置壁纸调用方同时又在
-/// `finally` 里 dispose 同一个 handle，于是同一个 handle 被释放两次，命中
-/// `dart:ui/painting.dart` 中 `Image.dispose` 的断言（debug 直接崩；release
-/// 下会经 `_handles.isEmpty` 再次调用 `_image.dispose()`，触碰 native
-/// `Image::dispose` 双重释放）。两条调用路径必须共用同一条所有权规则。
+/// 历史教训：早期版本在此函数内部 dispose 传入的 handle，而另一个调用方
+/// 同时又在 `finally` 里 dispose 同一个 handle，于是同一个 handle 被释放
+/// 两次，命中 `dart:ui/painting.dart` 中 `Image.dispose` 的断言（debug 直接
+/// 崩；release 下会经 `_handles.isEmpty` 再次调用 `_image.dispose()`，触碰
+/// native `Image::dispose` 双重释放）。所有调用路径必须共用同一条所有权规则。
 Future<({double top, double weekday, double body})?> _averageBandLuminances(
   ui.Image image, {
   Size? viewportSize,

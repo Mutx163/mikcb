@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
-import '../ui/background/builtin_wallpaper.dart';
 import '../utils/home_page_background.dart';
 
 /// Identity of a cached pre-blurred wallpaper.
@@ -185,23 +184,11 @@ class PreblurredWallpaperCache {
     }
   }
 
-  /// 背景身份键（图片路径或 `builtin:<预设>`）→ 位图提供者。
+  /// 背景图路径 → 解码用位图提供者；文件不存在时返回 null。
   ///
-  /// 内置壁纸没有磁盘文件，这里统一把键翻译成 ImageProvider，让预模糊
-  /// 缓存与图片壁纸走同一条解码 + 模糊路径。
+  /// 内置壁纸（代码渲染、无磁盘文件）已于 2026-09-13 随该功能整体移除，
+  /// 这里只剩图片壁纸一条解码路径。
   ImageProvider? _providerFor(String key, int decodeWidth) {
-    if (key.startsWith(kBuiltInWallpaperKeyPrefix)) {
-      final wallpaper = BuiltInWallpaper.fromValue(
-        key.substring(kBuiltInWallpaperKeyPrefix.length),
-      );
-      if (wallpaper == null) {
-        return null;
-      }
-      return ResizeImage(
-        BuiltInWallpaperImage(wallpaper),
-        width: decodeWidth,
-      );
-    }
     if (!File(key).existsSync()) {
       return null;
     }

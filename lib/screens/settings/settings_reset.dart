@@ -85,11 +85,10 @@ TimetableSettings applySettingsReset(
       weekdayBarAccentColorDark: d.weekdayBarAccentColorDark,
       timeAxisFontColorLight: d.timeAxisFontColorLight,
       timeAxisFontColorDark: d.timeAxisFontColorDark,
-      // 壁纸文件路径一并清空，否则「恢复默认」后背景仍在；内置壁纸同样
-      // 回到「不使用」，保证恢复默认后首页真的没有背景。
+      // 壁纸文件路径一并清空，否则「恢复默认」后背景仍在，
+      // 保证恢复默认后首页真的没有背景。
       clearHomePageWallpaperPath: true,
       clearHomePageBackgroundImagePath: true,
-      clearHomePageBuiltInWallpaper: true,
       // 「最近使用」也清空：历史里的图片文件随之下线，由调用方删除
       // （见 _SettingsResetTile._confirm），否则会留下一批没人引用的图。
       clearWallpaperHistory: true,
@@ -209,7 +208,7 @@ class _SettingsResetTile extends StatelessWidget {
         staleBackdropPaths.add(currentPath);
       }
       for (final entry in provider.settings.wallpaperHistory) {
-        if (!isBuiltInWallpaperHistoryEntry(entry)) {
+        if (!isLegacyBuiltInWallpaperEntry(entry)) {
           staleBackdropPaths.add(entry.key);
         }
       }

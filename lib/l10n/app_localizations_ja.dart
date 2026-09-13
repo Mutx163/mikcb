@@ -3301,45 +3301,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePageBackgroundImageSubtitle => '「画像」モードでは、下で選択した表示領域に適用されます';
 
   @override
-  String get homePageBuiltInWallpaperTitle => '内蔵壁紙';
-
-  @override
-  String get homePageBuiltInWallpaperSubtitle => 'ストレージ不要。選ぶとホームいっぱい';
-
-  @override
-  String get homePageBuiltInWallpaperNone => '使用しない';
-
-  @override
-  String get homePageBuiltInWallpaperOg => 'クラシックラヴァ';
-
-  @override
-  String get homePageBuiltInWallpaperLavaDark => 'ラバオレンジ';
-
-  @override
-  String get homePageBuiltInWallpaperLavaLight => 'ピーチクリーム';
-
-  @override
-  String get homePageBuiltInWallpaperDark1 => 'ディープフレーム';
-
-  @override
-  String get homePageBuiltInWallpaperLight2 => 'セージグリーン';
-
-  @override
-  String get homePageBuiltInWallpaperLight3 => 'ウォームアース';
-
-  @override
-  String get homePageBuiltInWallpaperEmberTeal => 'エンバーティール';
-
-  @override
-  String get homePageWallpaperSourceTitle => '壁紙のソース';
-
-  @override
-  String get homePageWallpaperSourceSubtitle => '画像優先。消すと内蔵に戻る';
-
-  @override
-  String get homePageBuiltInWallpaperCredits => 'bokeh-lava-gradient（MIT）ベース';
-
-  @override
   String get homePageWallpaperTitle => '背景画像';
 
   @override

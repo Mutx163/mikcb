@@ -3445,48 +3445,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'In image mode, applies to the display regions selected below';
 
   @override
-  String get homePageBuiltInWallpaperTitle => 'Built-in wallpaper';
-
-  @override
-  String get homePageBuiltInWallpaperSubtitle =>
-      'No storage needed — fills the home page';
-
-  @override
-  String get homePageBuiltInWallpaperNone => 'None';
-
-  @override
-  String get homePageBuiltInWallpaperOg => 'Classic lava';
-
-  @override
-  String get homePageBuiltInWallpaperLavaDark => 'Lava orange';
-
-  @override
-  String get homePageBuiltInWallpaperLavaLight => 'Peach cream';
-
-  @override
-  String get homePageBuiltInWallpaperDark1 => 'Deep flame';
-
-  @override
-  String get homePageBuiltInWallpaperLight2 => 'Sage green';
-
-  @override
-  String get homePageBuiltInWallpaperLight3 => 'Warm earth';
-
-  @override
-  String get homePageBuiltInWallpaperEmberTeal => 'Ember teal';
-
-  @override
-  String get homePageWallpaperSourceTitle => 'Wallpaper source';
-
-  @override
-  String get homePageWallpaperSourceSubtitle =>
-      'Image wins; clearing falls back to built-in';
-
-  @override
-  String get homePageBuiltInWallpaperCredits =>
-      'Based on bokeh-lava-gradient (MIT)';
-
-  @override
   String get homePageWallpaperTitle => 'Background image';
 
   @override

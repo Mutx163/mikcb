@@ -635,10 +635,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                   fit: StackFit.expand,
                   children: [
                     if (hasBackdrop)
-                      // 内置壁纸是程序生成的动画，克隆多页只会多起 Ticker，
-                      // 不随周次滑动。
-                      (followsWeekPager &&
-                              resolveBuiltInWallpaper(settings) == null)
+                      // 背景随周次滑动时，克隆多页共用同一张壁纸。
+                      followsWeekPager
                           ? HomePageSlidingBackdropLayer(
                               controller: _weekPageController,
                               pageCount: settings.semesterWeekCount,
@@ -1790,8 +1788,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     TimetableSettings settings, {
     required Size viewportSize,
   }) {
-    // 内置壁纸没有磁盘文件，统一用「背景身份键」做采样缓存 key：
-    // 图片壁纸即路径，内置壁纸为 `builtin:<预设>`。
+    // 统一用「背景身份键」（背景图绝对路径）做采样缓存 key。
     final path = homePageBackdropKey(settings);
     if (path == null || path.isEmpty) {
       if (_wallpaperTopLuminance != null ||
@@ -1880,8 +1877,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 风格混用（部分在 setState 外、部分在内）会让后续维护者难以判断
     // 哪些赋值会触发重绘，容易漏包导致 UI 与状态脱节。
     _wallpaperLuminanceRequestedKey = key;
-    // 内置壁纸没有磁盘文件（键为 `builtin:<预设>`），一律视为「存在」；
-    // 图片壁纸仍按路径探测，文件丢失时清空亮度采样。
+    // 背景图文件丢失时清空亮度采样，让顶栏/星期栏墨色回落到主题默认。
     final filePath = resolveHomePageBackdropImagePath(settings);
     final fileExists = filePath == null || filePath.isEmpty
         ? true

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
-import 'package:university_timetable/ui/background/builtin_wallpaper.dart';
 import 'package:university_timetable/utils/wallpaper_history.dart';
 
 void main() {
@@ -67,9 +66,11 @@ void main() {
       expect(result.evictedPaths, ['/img/0.png']);
     });
 
-    test('被挤出的内置条目没有文件可删', () {
+    test('被挤出的遗留内置壁纸条目没有文件可删', () {
+      // 内置壁纸功能已移除，但老数据里的 `builtin:` 键仍会随历史迁移；
+      // 它们没有磁盘文件，被挤出时不得进待删清单。
       var history = <WallpaperHistoryEntry>[
-        WallpaperHistoryEntry(key: builtInWallpaperKey(BuiltInWallpaper.og)),
+        const WallpaperHistoryEntry(key: 'builtin:og'),
       ];
       for (var i = 0; i < kMaxWallpaperHistoryEntries - 1; i++) {
         history = pushWallpaperHistory(history: history, key: '/img/$i.png').history;
@@ -79,9 +80,7 @@ void main() {
 
       expect(result.history.length, kMaxWallpaperHistoryEntries);
       expect(
-        result.history.any(
-          (entry) => entry.key == builtInWallpaperKey(BuiltInWallpaper.og),
-        ),
+        result.history.any((entry) => entry.key == 'builtin:og'),
         isFalse,
       );
       expect(result.evictedPaths, isEmpty);
@@ -159,50 +158,27 @@ void main() {
   });
 
   group('availableWallpaperHistory', () {
-    test('剔除文件已丢失的图片条目，保留合法内置预设', () {
+    test('剔除文件已丢失的条目与遗留的内置壁纸键', () {
       final existing = createTempWallpaper('a.png');
       final history = [
         WallpaperHistoryEntry(key: existing),
         const WallpaperHistoryEntry(key: '/definitely/missing.png'),
-        WallpaperHistoryEntry(key: builtInWallpaperKey(BuiltInWallpaper.og)),
+        const WallpaperHistoryEntry(key: 'builtin:og'),
         const WallpaperHistoryEntry(key: 'builtin:nope'),
       ];
 
       final available = availableWallpaperHistory(history);
 
-      expect(available.map((entry) => entry.key), [
-        existing,
-        builtInWallpaperKey(BuiltInWallpaper.og),
-      ]);
+      expect(available.map((entry) => entry.key), [existing]);
     });
   });
 
   group('settingsWithWallpaperHistoryEntry', () {
-    test('内置条目清掉图片路径并把对齐归零', () {
+    test('图片条目恢复路径与当时的对齐', () {
+      final path = createTempWallpaper('b.png');
       final settings = TimetableSettings.defaults().copyWith(
         homePageWallpaperPath: '/tmp/legacy.png',
         homePageWallpaperAlignX: 0.8,
-        homePageWallpaperAlignY: -0.4,
-      );
-
-      final next = settingsWithWallpaperHistoryEntry(
-        settings,
-        WallpaperHistoryEntry(
-          key: builtInWallpaperKey(BuiltInWallpaper.lavaDark),
-        ),
-      );
-
-      expect(next, isNotNull);
-      expect(next!.homePageBuiltInWallpaper, BuiltInWallpaper.lavaDark.value);
-      expect(next.homePageWallpaperPath, isNull);
-      expect(next.homePageWallpaperAlignX, 0);
-      expect(next.homePageWallpaperAlignY, 0);
-    });
-
-    test('图片条目恢复路径与当时的对齐，且保留内置回退', () {
-      final path = createTempWallpaper('b.png');
-      final settings = TimetableSettings.defaults().copyWith(
-        homePageBuiltInWallpaper: BuiltInWallpaper.og.value,
       );
 
       final next = settingsWithWallpaperHistoryEntry(
@@ -214,7 +190,6 @@ void main() {
       expect(next!.homePageWallpaperPath, path);
       expect(next.homePageWallpaperAlignX, 0.3);
       expect(next.homePageWallpaperAlignY, -0.7);
-      expect(next.homePageBuiltInWallpaper, BuiltInWallpaper.og.value);
     });
 
     test('条目不可用时返回 null', () {
@@ -236,11 +211,8 @@ void main() {
   });
 
   group('deleteEvictedWallpaperFiles', () {
-    test('空路径与内置条目安全跳过', () async {
-      await deleteEvictedWallpaperFiles([
-        '',
-        builtInWallpaperKey(BuiltInWallpaper.emberTeal),
-      ]);
+    test('空路径与遗留内置壁纸键安全跳过', () async {
+      await deleteEvictedWallpaperFiles(['', 'builtin:ember_teal']);
     });
   });
 }
