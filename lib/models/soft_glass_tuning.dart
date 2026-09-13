@@ -3,10 +3,23 @@
 /// 与 [LiquidGlassTuning]（液态玻璃）同构：预设枚举 + 自定义参数对象，
 /// 设置页「高级材质」在柔光档下露出同一套 预设选择 + 滑杆 的 UI。
 ///
-/// 雾面与底色用**倍率**表达：柔光的模糊半径按表面配方分层（底栏 σ≈13.8 /
-/// 弹窗 σ≈53.6，见 `SoftGlassRecipe`），绝对值会把轻配方一并拉爆；倍率保持
-/// 「面板永远比底栏厚一层」的层级关系，只整体缩放。折射/色散是上游
-/// `GlassRefractionSpec` 的绝对 dp 口径，厚度感与边缘高光是 0..1 权重。
+/// 雾面与底色用**倍率**表达：材质只有一个配方（`SoftGlassRecipe.standard`，
+/// 上游默认 radius 92 → σ ≈ 53.6），档位的粗细完全由这里的倍率决定。
+/// 折射/色散是上游 `GlassRefractionSpec` 的绝对 dp 口径，厚度感与边缘高光是
+/// 0..1 权重。
+///
+/// **档位阶梯的绝对量（改动前先看这张表）**：
+/// | 档位 | 倍率 | radius | sigma |
+/// |---|---|---|---|
+/// | 清透 clear | 0.6 | 55.2 | ≈ 32.4 |
+/// | 轻盈 light | 0.8 | 73.6 | ≈ 43.0 |
+/// | **标准 standard** | 1.0 | 92 | ≈ 53.6 |
+/// | 浓雾 dense | 1.6 | 147.2 | ≈ 85.5 |
+/// | 滑杆上限 | 2.7 | 248.4 | ≈ 144.0 |
+///
+/// 上限 2.7 = 上游 radius 天花板 256 ÷ 基准 92（≈2.78）向下取余量；此前滑杆
+/// 上限是 3.0，在旧基线（radius 23）下没越界，换成标准基线后 3.0 × 92 = 276
+/// 就超过了 256，故随档位重测一并收紧。
 ///
 /// 默认值 = 当前渲染链路的硬编码常量（`SoftGlassRefraction` /
 /// `SoftGlassTokens`），保证接入调参前后默认观感逐像素一致；test/models/
@@ -139,7 +152,13 @@ class SoftGlassTuning {
 
   // --- 滑杆范围 ---
   static const double minBlurRadiusMultiplier = 0;
-  static const double maxBlurRadiusMultiplier = 3;
+
+  /// 滑杆上限。上游 radius 天花板 256 ÷ 材质基准 92（≈2.78），取 2.7 留余量：
+  /// 拉满 = radius 248.4 → σ ≈ 144，仍在上游允许的半径内。
+  ///
+  /// 此前是 3.0——那是「轻盈档基线（radius 23）」时代的旧值，换成标准基线后
+  /// 会算出 radius 276 > 256，越界，故随本轮档位重测收紧。
+  static const double maxBlurRadiusMultiplier = 2.7;
   static const double minTintAlphaMultiplier = 0;
   static const double maxTintAlphaMultiplier = 2;
   static const double minRefraction = 0;

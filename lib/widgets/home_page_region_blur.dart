@@ -283,7 +283,7 @@ class HomePageChromeGlassFill extends StatelessWidget {
         context,
         blurEnabled: useBlur,
         tintAlphaMultiplier:
-            SoftGlassRecipe.floatingNavigation.tintAlphaMultiplier *
+            SoftGlassRecipe.standard.tintAlphaMultiplier *
             appearance.softGlassTuning.tintAlphaMultiplier,
       );
     }

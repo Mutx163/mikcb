@@ -42,9 +42,6 @@ abstract final class SoftGlassTokens {
   /// 全局模糊半径基准（AdvancedMaterialTuning.DefaultBlurRadius）。
   static const double baseBlurRadius = 92;
 
-  /// 浮空导航的 radiusMultiplier。
-  static const double floatingNavigationRadiusMultiplier = 0.25;
-
   /// Miuix textureBlur 的半径上限。
   static const double maximumBlurRadius = 256;
 
@@ -52,16 +49,29 @@ abstract final class SoftGlassTokens {
   /// （与 BlurMaskFilter 同一套系数）：sigma = radius × 0.57735 + 0.5。
   ///
   /// 必须做这层换算：原版的 92 是 *radius*，Flutter `BackdropFilter` 吃的是
-  /// *sigma*，直接把 23 当 sigma 用会明显糊过头。
+  /// *sigma*，直接把 92 当 sigma 用会明显糊过头。
   static const double radiusToSigmaScale = 0.57735;
   static const double radiusToSigmaBias = 0.5;
 
-  /// 柔光底栏默认高斯 sigma：92 × 0.25 = radius 23 → sigma ≈ 13.78。
+  /// 柔光玻璃材质基准高斯 sigma：radius 92（上游默认 / 标准档）
+  /// → sigma ≈ 53.62。
   ///
-  /// 仅作无配方时的兜底；实际取值走 [SoftGlassRecipe]（底栏 / 底部面板 / 对话框三套）。
+  /// 仅作无配方时的兜底；实际取值走 [SoftGlassRecipe]（全 app 唯一配方）
+  /// 再乘用户的档位倍率。
+  ///
+  /// **档位阶梯（同一基线的绝对 sigma，供改数值时对照）**：
+  /// | 档位 | radius (= 92 × 倍率) | sigma |
+  /// |---|---|---|
+  /// | 清透 clear (×0.6) | 55.2 | ≈ 32.4 |
+  /// | 轻盈 light (×0.8) | 73.6 | ≈ 43.0 |
+  /// | **标准 standard (×1.0)** | **92** | **≈ 53.6** |
+  /// | 浓雾 dense (×1.6) | 147.2 | ≈ 85.5 |
+  /// | 滑杆上限 (×2.7) | 248.4 | ≈ 144.0 |
+  ///
+  /// 上限 2.7 不是随手取的：上游 radius 天花板 256 ÷ 基准 92 ≈ 2.78，
+  /// 取 2.7 留余量，保证拉满也不越过 [maximumBlurRadius]。
   static const double defaultBlurSigma =
-      baseBlurRadius * floatingNavigationRadiusMultiplier * radiusToSigmaScale +
-      radiusToSigmaBias;
+      baseBlurRadius * radiusToSigmaScale + radiusToSigmaBias;
 
   /// 后置柔化（上游 `GlassLayeringSpec.postRefractionBlurRadius`）。
   ///
@@ -246,16 +256,19 @@ class SoftGlassRecipe {
   /// 选择弹层全都用它，雾度、底色、圆角来源只有这一处。
   ///
   /// 铁律同液态玻璃：一个材质只有一种观感。历史上这里并存过
-  /// [dialog]（σ ≈ 53.6）与 [bottomSheet]（σ ≈ 107）两套按尺寸分派的配方，
+  /// `dialog`（σ ≈ 53.6）与 `bottomSheet`（σ ≈ 107）两套按尺寸分派的配方，
   /// 于是同一个「柔光玻璃」在顶栏和弹层是两种雾度——用户口径「是柔光玻璃
   /// 就全部显示一样」。
   ///
-  /// 若真机要整体改雾度，只改这一个常量的半径倍率（或用户在
-  /// `SoftGlassTuning.blurRadiusMultiplier` 里整体缩放），不要再按表面分别挂。
-  static const SoftGlassRecipe floatingNavigation = SoftGlassRecipe(
-    blurRadiusDp:
-        SoftGlassTokens.baseBlurRadius *
-        SoftGlassTokens.floatingNavigationRadiusMultiplier,
+  /// 档位选择：材质基线取**标准档**（radius = 上游默认 92 → σ ≈ 53.6），
+  /// 而不是曾经的「轻盈档」（92 × 0.25 → σ ≈ 13.8）。档位的粗细由用户在
+  /// 设置页选（`SoftGlassTuning.blurRadiusMultiplier`，清透/轻盈/标准/浓雾），
+  /// **不再由表面决定**——表面只有这一个配方。
+  ///
+  /// 若真机要整体改雾度，改 [SoftGlassTokens.baseBlurRadius] 一个数
+  /// （档位阶梯会随之整体平移，见 [SoftGlassTokens.defaultBlurSigma] 的对照表）。
+  static const SoftGlassRecipe standard = SoftGlassRecipe(
+    blurRadiusDp: SoftGlassTokens.baseBlurRadius,
     tintAlphaMultiplier: SoftGlassTokens.navigationTintAlphaMultiplier,
   );
 }
@@ -267,7 +280,7 @@ enum SoftGlassPolarity { light, dark }
 ///
 /// 渲染分两条路径，观感以「折射路径」为准：
 ///
-/// * **折射路径**（Impeller + shader 装载成功 + 控件高度 ≤ 72dp）
+/// * **折射路径**（Impeller + shader 装载成功 + [enableRefraction] 为真）
 ///   `compose(outer: 折射 shader, inner: 高斯)` 压在一个 backdrod 层上，
 ///   再叠底色与边缘高光。与原版 `glassOpticalBackdrop` 同构：先高斯，再折射，
 ///   再叠底与描边。
@@ -292,7 +305,7 @@ class SoftGlassSurface extends StatelessWidget {
     this.enableShadows = true,
     this.enableEdgeHighlight = true,
     this.enableRefraction = true,
-    this.recipe = SoftGlassRecipe.floatingNavigation,
+    this.recipe = SoftGlassRecipe.standard,
     this.tuning,
   });
 
