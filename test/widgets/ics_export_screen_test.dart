@@ -325,6 +325,54 @@ void main() {
       expect(shareCalls, 0, reason: '全部课程都被假期过滤掉后不应分享空日历');
       expect(find.text('所选日期范围内没有日历事件'), findsOneWidget);
     });
+
+    testWidgets('测试用「假期状态覆盖」开关开启时不得清空导出（导出忽略该调试开关）', (
+      tester,
+    ) async {
+      // 「诊断 → 实时 → 假期状态覆盖」是**测试**开关：HolidayResolver 在它
+      // 开启时把除调休上班日外的每一天都判为假期。若导出继承它，用户测试后
+      // 忘了关就会导出一份空日历，且摘要只说「已跳过节假日课程」。
+      // 声明类型必须是 TimetableProvider：ChangeNotifierProvider.value 按
+      // **声明类型**注册，写成子类会让屏幕里的 read<TimetableProvider>() 抛
+      // ProviderNotFoundException（与 holidayProvider() 同款，见其注释）。
+      final TimetableProvider overrideProvider = _HolidayTimetableProvider(
+        _testProfile(),
+        const HolidayData(year: 2026, version: 1, entries: []),
+        settingsOverride: TimetableSettings.defaults().copyWith(
+          holidayOverrideEnabled: true,
+        ),
+      );
+      var shareCalls = 0;
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: overrideProvider,
+          child: TestApp(
+            home: IcsExportScreen(
+              shareCallback: (_) async {
+                shareCalls++;
+                return const ShareResult('shared', ShareResultStatus.success);
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final toggle = find.byKey(toggleKey);
+      await tester.ensureVisible(toggle);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      final shareButton = find.byKey(const Key('ics-export-share'));
+      await tester.ensureVisible(shareButton);
+      await tester.tap(shareButton);
+      await tester.pumpAndSettle();
+
+      expect(
+        shareCalls,
+        1,
+        reason: '覆盖开关是调试模拟，导出必须忽略它——否则日历会一节课都不剩',
+      );
+    });
   });
 }
 
@@ -349,12 +397,21 @@ class _FakeTimetableProviderWithSchemes extends _FakeTimetableProvider {
 
 /// 带节假日数据的假 provider，供“跳过节假日课程”用例使用。
 class _HolidayTimetableProvider extends _FakeTimetableProvider {
-  _HolidayTimetableProvider(super.profile, this._data);
+  _HolidayTimetableProvider(super.profile, this._data, {this.settingsOverride});
 
   final HolidayData _data;
 
+  /// 覆盖 [TimetableProvider.settings] 用。注意：基类的 `settings` 是它自己的
+  /// 私有 `_settings` 字段，**不是** `activeProfile.settings`，所以想在一个假
+  /// provider 上打开「假期状态覆盖」这类设置，只能覆盖这个 getter——只改
+  /// profile 里的 settings 是无效的（用例会静默变成空断言）。
+  final TimetableSettings? settingsOverride;
+
   @override
   HolidayData? get holidayData => _data;
+
+  @override
+  TimetableSettings get settings => settingsOverride ?? super.settings;
 }
 
 TimetableProfile _testProfile() {

@@ -368,14 +368,22 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
         fromDate: _fromDate,
         toDate: _toDate,
         eventKinds: _eventKinds,
-        // 只在用户勾选且本次导出含课程时生效；判定口径与
-        // 首页 provider.isHoliday 同源（同一 HolidayResolver + 同一组设置）。
+        // 只在用户勾选且本次导出含课程时生效；判定与首页同源（同一
+        // HolidayResolver + 同一份假期数据 + 同一个「假期标记」开关）。
+        //
+        // ⚠️ **不消费** holidayOverrideEnabled：那是「诊断 → 实时」里的
+        // **测试开关**，文案自述「开启后模拟假期状态，用于测试提醒和小组件
+        // 是否正确隐藏课程」。而 HolidayResolver 在它开启时的语义是「除调休
+        // 上班日外**每一天**都是假期」——一旦被导出继承，用户在测试后忘了关，
+        // 导出的日历会**一节课都不剩**，而摘要仍只说「已跳过节假日课程」，
+        // 没有任何提示。日历导出是面向真实学期的用户产物，不该复现调试模拟：
+        // 这里固定传 false，只保留用户真实的假期数据与标记开关。
         holidayFilter:
             _skipHolidayCourses &&
                 _eventKinds.contains(IcsExportEventKind.course)
             ? IcsHolidayFilter(
                 data: provider.holidayData,
-                overrideEnabled: provider.settings.holidayOverrideEnabled,
+                overrideEnabled: false,
                 markingEnabled: provider.settings.enableHolidayMarking,
               )
             : null,
