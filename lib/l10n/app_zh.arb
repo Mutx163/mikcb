@@ -6382,5 +6382,17 @@
   "@liveExpandedDetailLineLocation": {"placeholders": {"value": {"type": "String"}}},
   "@liveExpandedDetailLineTeacher": {"placeholders": {"value": {"type": "String"}}},
   "@liveExpandedDetailLineNext": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineNote": {"placeholders": {"value": {"type": "String"}}}
+  "@liveExpandedDetailLineNote": {"placeholders": {"value": {"type": "String"}}},
+  "progressiveBlurPresetLabel": "渐进模糊预设",
+  "progressiveBlurHint": "渐进模糊自顶边向下衰减；参数实时生效",
+  "progressiveBlurPresetClear": "清透",
+  "progressiveBlurPresetLight": "轻盈",
+  "progressiveBlurPresetStandard": "标准",
+  "progressiveBlurPresetDense": "浓雾",
+  "progressiveBlurPresetCustom": "自定义",
+  "progressiveBlurCustomExpandedTitle": "自定义参数",
+  "progressiveBlurSigmaLabel": "模糊强度",
+  "progressiveBlurExtentLabel": "渐变延伸",
+  "progressiveBlurTintBottomLabel": "底边衬底",
+  "progressiveBlurResetAction": "恢复默认"
 }

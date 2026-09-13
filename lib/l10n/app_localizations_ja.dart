@@ -11094,4 +11094,40 @@ class AppLocalizationsJa extends AppLocalizations {
   String liveExpandedDetailLineNote(String value) {
     return 'メモ: $value';
   }
+
+  @override
+  String get progressiveBlurPresetLabel => 'プログレッシブぼかしプリセット';
+
+  @override
+  String get progressiveBlurHint => 'プログレッシブぼかしは上端から下へ減衰します。変更は即時反映されます';
+
+  @override
+  String get progressiveBlurPresetClear => 'クリア';
+
+  @override
+  String get progressiveBlurPresetLight => 'ライト';
+
+  @override
+  String get progressiveBlurPresetStandard => '標準';
+
+  @override
+  String get progressiveBlurPresetDense => '濃霧';
+
+  @override
+  String get progressiveBlurPresetCustom => 'カスタム';
+
+  @override
+  String get progressiveBlurCustomExpandedTitle => 'カスタムパラメータ';
+
+  @override
+  String get progressiveBlurSigmaLabel => 'ぼかしの強さ';
+
+  @override
+  String get progressiveBlurExtentLabel => 'グラデーションの範囲';
+
+  @override
+  String get progressiveBlurTintBottomLabel => '下端の下地';
+
+  @override
+  String get progressiveBlurResetAction => '既定値に戻す';
 }

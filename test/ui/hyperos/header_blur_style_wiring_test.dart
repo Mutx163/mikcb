@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inspire_blur/inspire_blur.dart';
 import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
+import 'package:university_timetable/models/progressive_blur_tuning.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_header_background.dart';
 import 'package:university_timetable/ui/hyperos/inspire/inspire_header_blur.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_theme.dart';
@@ -116,15 +117,57 @@ void main() {
     test('高斯 = UniformDistribution；渐进 = 渐变衰减', () {
       final gaussian = InspireHeaderBlur.configFor(
         HeaderBlurStyle.gaussian,
-        sigma: 15,
+        gaussianSigma: 15,
+        tuning: ProgressiveBlurTuning.defaults,
       );
       final progressive = InspireHeaderBlur.configFor(
         HeaderBlurStyle.inspire,
-        sigma: 15,
+        gaussianSigma: 15,
+        tuning: ProgressiveBlurTuning.defaults,
       );
       expect(gaussian.distribution, isA<UniformDistribution>());
       expect(progressive.distribution, isNot(isA<UniformDistribution>()));
       // 高斯整带等强：sigma 如实进入配置。
+      expect(gaussian.effectiveSigmaX, 15);
+    });
+
+    test('渐进档吃自己的档位：sigma 与 extent 都来自 tuning', () {
+      const tuning = ProgressiveBlurTuning(sigma: 24, extent: 0.6);
+      final progressive = InspireHeaderBlur.configFor(
+        HeaderBlurStyle.inspire,
+        gaussianSigma: 15,
+        tuning: tuning,
+      );
+      // 渐进档不再读全局高斯 sigma（15），而是档位自己的 24。
+      expect(progressive.effectiveSigmaX, 24);
+      // extent = 渐变里「模糊衰减到 0」所在的带宽比例：0.6 表示带宽 60%
+      // 处就已收干（1.0 = 正好落在带底，即默认档）。
+      double fadeEndStop(InspireBlurConfig config) {
+        final dist = config.distribution as DirectionalDistribution;
+        for (var i = 0; i < dist.stops.length; i++) {
+          if (dist.values[i] <= 0) return dist.stops[i];
+        }
+        return 1;
+      }
+
+      expect(progressive.distribution, isA<DirectionalDistribution>());
+      expect(fadeEndStop(progressive), closeTo(0.6, 1e-9));
+      expect(
+        fadeEndStop(
+          InspireHeaderBlur.configFor(
+            HeaderBlurStyle.inspire,
+            gaussianSigma: 15,
+            tuning: ProgressiveBlurTuning.defaults,
+          ),
+        ),
+        closeTo(ProgressiveBlurTuning.defaultExtent, 1e-9),
+      );
+      // 高斯档不受 tuning 影响：仍是全局模糊强度。
+      final gaussian = InspireHeaderBlur.configFor(
+        HeaderBlurStyle.gaussian,
+        gaussianSigma: 15,
+        tuning: tuning,
+      );
       expect(gaussian.effectiveSigmaX, 15);
     });
   });

@@ -1,6 +1,7 @@
 import '../models/course.dart';
 import '../models/exam.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
+import 'package:university_timetable/models/progressive_blur_tuning.dart';
 import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import '../models/timetable_settings.dart';
@@ -311,6 +312,17 @@ String softGlassPresetLabel(
   SoftGlassPreset.standard => l10n.softGlassPresetStandard,
   SoftGlassPreset.dense => l10n.softGlassPresetDense,
   SoftGlassPreset.custom => l10n.softGlassPresetCustom,
+};
+
+String progressiveBlurPresetLabel(
+  AppLocalizations l10n,
+  ProgressiveBlurPreset preset,
+) => switch (preset) {
+  ProgressiveBlurPreset.clear => l10n.progressiveBlurPresetClear,
+  ProgressiveBlurPreset.light => l10n.progressiveBlurPresetLight,
+  ProgressiveBlurPreset.standard => l10n.progressiveBlurPresetStandard,
+  ProgressiveBlurPreset.dense => l10n.progressiveBlurPresetDense,
+  ProgressiveBlurPreset.custom => l10n.progressiveBlurPresetCustom,
 };
 
 String courseCardSurfaceStyleLabel(

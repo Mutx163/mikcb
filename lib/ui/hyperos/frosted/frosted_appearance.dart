@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../models/header_blur_style.dart';
 import '../../../models/liquid_glass_tuning.dart';
+import '../../../models/progressive_blur_tuning.dart';
 import '../../../models/soft_glass_tuning.dart';
 
 /// Default frosted-glass tuning (aligned with app timetable defaults).
@@ -80,6 +81,7 @@ class FrostedAppearance {
     this.homeBandGlassMaterial = kDefaultHomeBandGlassMaterial,
     this.liquidGlassTuning,
     this.softGlassTuning = SoftGlassTuning.defaults,
+    this.progressiveBlurTuning = ProgressiveBlurTuning.defaults,
     this.liquidGlassPopupEnabled = kDefaultLiquidGlassPopupEnabled,
     this.liquidGlassSelectSheetEnabled = kDefaultLiquidGlassSelectSheetEnabled,
     this.liquidGlassSheetDialogEnabled = kDefaultLiquidGlassSheetDialogEnabled,
@@ -129,6 +131,10 @@ class FrostedAppearance {
   /// 非空缺省即默认档，柔光任何后端都能画，无需可空判空。
   final SoftGlassTuning softGlassTuning;
 
+  /// 渐进（渐变）模糊参数——顶栏玻璃带走 `progressive` 材质 / 子页顶栏走
+  /// `inspire` 风格时生效。非空缺省即标准档（与接入调参前的常量一致）。
+  final ProgressiveBlurTuning progressiveBlurTuning;
+
   /// 液态玻璃作用范围：锚定下拉选择小弹窗（玻璃模式等设置行弹出的气泡）。
   final bool liquidGlassPopupEnabled;
 
@@ -157,6 +163,7 @@ class FrostedAppearance {
           glassMode == other.glassMode &&
           liquidGlassTuning == other.liquidGlassTuning &&
           softGlassTuning == other.softGlassTuning &&
+          progressiveBlurTuning == other.progressiveBlurTuning &&
           liquidGlassPopupEnabled == other.liquidGlassPopupEnabled &&
           liquidGlassSelectSheetEnabled ==
               other.liquidGlassSelectSheetEnabled &&
@@ -177,6 +184,7 @@ class FrostedAppearance {
     glassMode,
     liquidGlassTuning,
     softGlassTuning,
+    progressiveBlurTuning,
     liquidGlassPopupEnabled,
     liquidGlassSelectSheetEnabled,
     liquidGlassSheetDialogEnabled,

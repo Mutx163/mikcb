@@ -17,6 +17,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/glass_mode_choice.dart';
 import '../models/header_blur_style.dart';
 import '../models/holiday_entry.dart';
+import '../models/progressive_blur_tuning.dart';
 import '../models/soft_glass_tuning.dart';
 import '../models/surface_material.dart';
 import '../models/texture_preset.dart';

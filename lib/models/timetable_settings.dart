@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
+import 'package:university_timetable/models/progressive_blur_tuning.dart';
 import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
 import 'package:university_timetable/models/class_reminder.dart';
@@ -1499,6 +1500,8 @@ class TimetableSettings {
     subpageHeaderBlurStyle: subpageHeaderBlurStyle,
     liquidGlassTuning: liquidGlassTuning,
     softGlassTuning: softGlassTuning ?? SoftGlassTuning.defaults,
+    progressiveBlurTuning:
+        progressiveBlurTuning ?? ProgressiveBlurTuning.defaults,
     liquidGlassPopupEnabled: liquidGlassPopupEnabled,
     liquidGlassSelectSheetEnabled: liquidGlassSelectSheetEnabled,
     liquidGlassSheetDialogEnabled: liquidGlassSheetDialogEnabled,
@@ -1528,6 +1531,12 @@ class TimetableSettings {
   /// 柔光玻璃预设与自定义参数（[softGlassTuning] 为 null 时渲染回落
   /// [SoftGlassTuning.defaults]；[frostedAppearance] 已代为回落）。
   final SoftGlassPreset softGlassPreset;
+
+  /// 渐进（渐变）模糊预设与自定义参数（[progressiveBlurTuning] 为 null 时
+  /// 渲染回落 [ProgressiveBlurTuning.defaults]）。口径与柔光/液态完全一致：
+  /// 预设是非空枚举（reset 能落回 standard），参数对象可空。
+  final ProgressiveBlurPreset progressiveBlurPreset;
+  final ProgressiveBlurTuning? progressiveBlurTuning;
   final SoftGlassTuning? softGlassTuning;
   final bool homePageHeaderBlurEnabled;
   final bool homePageWeekdayBarBlurEnabled;
@@ -1729,6 +1738,8 @@ class TimetableSettings {
     this.liquidGlassPreset = LiquidGlassPreset.standard,
     this.liquidGlassTuning,
     this.softGlassPreset = SoftGlassPreset.standard,
+    this.progressiveBlurPreset = ProgressiveBlurPreset.standard,
+    this.progressiveBlurTuning,
     this.softGlassTuning,
     this.homePageHeaderBlurEnabled = true,
     this.homePageWeekdayBarBlurEnabled = true,
@@ -1953,6 +1964,9 @@ class TimetableSettings {
       if (liquidGlassTuning != null)
         'liquidGlassTuning': liquidGlassTuning!.toJson(),
       'softGlassPreset': softGlassPreset.value,
+      'progressiveBlurPreset': progressiveBlurPreset.value,
+      if (progressiveBlurTuning != null)
+        'progressiveBlurTuning': progressiveBlurTuning!.toJson(),
       if (softGlassTuning != null)
         'softGlassTuning': softGlassTuning!.toJson(),
       'homePageHeaderBlurEnabled': homePageHeaderBlurEnabled,
@@ -2458,6 +2472,14 @@ class TimetableSettings {
       softGlassPreset: SoftGlassPresetX.fromValue(
         json['softGlassPreset'] as String?,
       ),
+      progressiveBlurPreset: ProgressiveBlurPresetX.fromValue(
+        json['progressiveBlurPreset'] as String?,
+      ),
+      progressiveBlurTuning: json['progressiveBlurTuning'] != null
+          ? ProgressiveBlurTuning.fromJson(
+              json['progressiveBlurTuning'] as Map<String, dynamic>,
+            )
+          : null,
       softGlassTuning: json['softGlassTuning'] != null
           ? SoftGlassTuning.fromJson(
               json['softGlassTuning'] as Map<String, dynamic>,
@@ -2699,6 +2721,8 @@ class TimetableSettings {
     LiquidGlassPreset? liquidGlassPreset,
     LiquidGlassTuning? liquidGlassTuning,
     SoftGlassPreset? softGlassPreset,
+    ProgressiveBlurPreset? progressiveBlurPreset,
+    ProgressiveBlurTuning? progressiveBlurTuning,
     SoftGlassTuning? softGlassTuning,
     bool? homePageHeaderBlurEnabled,
     bool? homePageWeekdayBarBlurEnabled,
@@ -3062,6 +3086,10 @@ class TimetableSettings {
       liquidGlassPreset: liquidGlassPreset ?? this.liquidGlassPreset,
       liquidGlassTuning: liquidGlassTuning ?? this.liquidGlassTuning,
       softGlassPreset: softGlassPreset ?? this.softGlassPreset,
+      progressiveBlurPreset:
+          progressiveBlurPreset ?? this.progressiveBlurPreset,
+      progressiveBlurTuning:
+          progressiveBlurTuning ?? this.progressiveBlurTuning,
       softGlassTuning: softGlassTuning ?? this.softGlassTuning,
       homePageHeaderBlurEnabled:
           homePageHeaderBlurEnabled ?? this.homePageHeaderBlurEnabled,

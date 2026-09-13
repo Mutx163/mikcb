@@ -19643,6 +19643,78 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'备注: {value}'**
   String liveExpandedDetailLineNote(String value);
+
+  /// No description provided for @progressiveBlurPresetLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'渐进模糊预设'**
+  String get progressiveBlurPresetLabel;
+
+  /// No description provided for @progressiveBlurHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'渐进模糊自顶边向下衰减；参数实时生效'**
+  String get progressiveBlurHint;
+
+  /// No description provided for @progressiveBlurPresetClear.
+  ///
+  /// In zh, this message translates to:
+  /// **'清透'**
+  String get progressiveBlurPresetClear;
+
+  /// No description provided for @progressiveBlurPresetLight.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻盈'**
+  String get progressiveBlurPresetLight;
+
+  /// No description provided for @progressiveBlurPresetStandard.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准'**
+  String get progressiveBlurPresetStandard;
+
+  /// No description provided for @progressiveBlurPresetDense.
+  ///
+  /// In zh, this message translates to:
+  /// **'浓雾'**
+  String get progressiveBlurPresetDense;
+
+  /// No description provided for @progressiveBlurPresetCustom.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义'**
+  String get progressiveBlurPresetCustom;
+
+  /// No description provided for @progressiveBlurCustomExpandedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义参数'**
+  String get progressiveBlurCustomExpandedTitle;
+
+  /// No description provided for @progressiveBlurSigmaLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'模糊强度'**
+  String get progressiveBlurSigmaLabel;
+
+  /// No description provided for @progressiveBlurExtentLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'渐变延伸'**
+  String get progressiveBlurExtentLabel;
+
+  /// No description provided for @progressiveBlurTintBottomLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'底边衬底'**
+  String get progressiveBlurTintBottomLabel;
+
+  /// No description provided for @progressiveBlurResetAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复默认'**
+  String get progressiveBlurResetAction;
 }
 
 class _AppLocalizationsDelegate

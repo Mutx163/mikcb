@@ -6323,5 +6323,17 @@
   "@liveExpandedDetailLineLocation": {"placeholders": {"value": {"type": "String"}}},
   "@liveExpandedDetailLineTeacher": {"placeholders": {"value": {"type": "String"}}},
   "@liveExpandedDetailLineNext": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineNote": {"placeholders": {"value": {"type": "String"}}}
+  "@liveExpandedDetailLineNote": {"placeholders": {"value": {"type": "String"}}},
+  "progressiveBlurPresetLabel": "プログレッシブぼかしプリセット",
+  "progressiveBlurHint": "プログレッシブぼかしは上端から下へ減衰します。変更は即時反映されます",
+  "progressiveBlurPresetClear": "クリア",
+  "progressiveBlurPresetLight": "ライト",
+  "progressiveBlurPresetStandard": "標準",
+  "progressiveBlurPresetDense": "濃霧",
+  "progressiveBlurPresetCustom": "カスタム",
+  "progressiveBlurCustomExpandedTitle": "カスタムパラメータ",
+  "progressiveBlurSigmaLabel": "ぼかしの強さ",
+  "progressiveBlurExtentLabel": "グラデーションの範囲",
+  "progressiveBlurTintBottomLabel": "下端の下地",
+  "progressiveBlurResetAction": "既定値に戻す"
 }

@@ -11138,4 +11138,41 @@ class AppLocalizationsKo extends AppLocalizations {
   String liveExpandedDetailLineNote(String value) {
     return '메모: $value';
   }
+
+  @override
+  String get progressiveBlurPresetLabel => '점진 블러 프리셋';
+
+  @override
+  String get progressiveBlurHint =>
+      '점진 블러는 위쪽 가장자리에서 아래로 감쇠합니다. 변경 사항은 즉시 적용됩니다';
+
+  @override
+  String get progressiveBlurPresetClear => '맑음';
+
+  @override
+  String get progressiveBlurPresetLight => '가벼움';
+
+  @override
+  String get progressiveBlurPresetStandard => '표준';
+
+  @override
+  String get progressiveBlurPresetDense => '짙은 안개';
+
+  @override
+  String get progressiveBlurPresetCustom => '사용자 지정';
+
+  @override
+  String get progressiveBlurCustomExpandedTitle => '사용자 지정 매개변수';
+
+  @override
+  String get progressiveBlurSigmaLabel => '블러 강도';
+
+  @override
+  String get progressiveBlurExtentLabel => '그라데이션 범위';
+
+  @override
+  String get progressiveBlurTintBottomLabel => '하단 배경';
+
+  @override
+  String get progressiveBlurResetAction => '기본값으로 복원';
 }

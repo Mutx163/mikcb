@@ -6323,5 +6323,17 @@
   "@liveExpandedDetailLineLocation": {"placeholders": {"value": {"type": "String"}}},
   "@liveExpandedDetailLineTeacher": {"placeholders": {"value": {"type": "String"}}},
   "@liveExpandedDetailLineNext": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineNote": {"placeholders": {"value": {"type": "String"}}}
+  "@liveExpandedDetailLineNote": {"placeholders": {"value": {"type": "String"}}},
+  "progressiveBlurPresetLabel": "점진 블러 프리셋",
+  "progressiveBlurHint": "점진 블러는 위쪽 가장자리에서 아래로 감쇠합니다. 변경 사항은 즉시 적용됩니다",
+  "progressiveBlurPresetClear": "맑음",
+  "progressiveBlurPresetLight": "가벼움",
+  "progressiveBlurPresetStandard": "표준",
+  "progressiveBlurPresetDense": "짙은 안개",
+  "progressiveBlurPresetCustom": "사용자 지정",
+  "progressiveBlurCustomExpandedTitle": "사용자 지정 매개변수",
+  "progressiveBlurSigmaLabel": "블러 강도",
+  "progressiveBlurExtentLabel": "그라데이션 범위",
+  "progressiveBlurTintBottomLabel": "하단 배경",
+  "progressiveBlurResetAction": "기본값으로 복원"
 }

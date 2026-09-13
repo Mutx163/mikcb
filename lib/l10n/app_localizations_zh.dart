@@ -10802,6 +10802,42 @@ class AppLocalizationsZh extends AppLocalizations {
   String liveExpandedDetailLineNote(String value) {
     return '备注: $value';
   }
+
+  @override
+  String get progressiveBlurPresetLabel => '渐进模糊预设';
+
+  @override
+  String get progressiveBlurHint => '渐进模糊自顶边向下衰减；参数实时生效';
+
+  @override
+  String get progressiveBlurPresetClear => '清透';
+
+  @override
+  String get progressiveBlurPresetLight => '轻盈';
+
+  @override
+  String get progressiveBlurPresetStandard => '标准';
+
+  @override
+  String get progressiveBlurPresetDense => '浓雾';
+
+  @override
+  String get progressiveBlurPresetCustom => '自定义';
+
+  @override
+  String get progressiveBlurCustomExpandedTitle => '自定义参数';
+
+  @override
+  String get progressiveBlurSigmaLabel => '模糊强度';
+
+  @override
+  String get progressiveBlurExtentLabel => '渐变延伸';
+
+  @override
+  String get progressiveBlurTintBottomLabel => '底边衬底';
+
+  @override
+  String get progressiveBlurResetAction => '恢复默认';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -21646,6 +21682,42 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String liveExpandedDetailLineNote(String value) {
     return '備註: $value';
   }
+
+  @override
+  String get progressiveBlurPresetLabel => '漸進模糊預設';
+
+  @override
+  String get progressiveBlurHint => '漸進模糊自頂邊向下衰減；參數即時生效';
+
+  @override
+  String get progressiveBlurPresetClear => '清透';
+
+  @override
+  String get progressiveBlurPresetLight => '輕盈';
+
+  @override
+  String get progressiveBlurPresetStandard => '標準';
+
+  @override
+  String get progressiveBlurPresetDense => '濃霧';
+
+  @override
+  String get progressiveBlurPresetCustom => '自訂';
+
+  @override
+  String get progressiveBlurCustomExpandedTitle => '自訂參數';
+
+  @override
+  String get progressiveBlurSigmaLabel => '模糊強度';
+
+  @override
+  String get progressiveBlurExtentLabel => '漸變延伸';
+
+  @override
+  String get progressiveBlurTintBottomLabel => '底邊襯底';
+
+  @override
+  String get progressiveBlurResetAction => '恢復預設';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -32490,4 +32562,40 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String liveExpandedDetailLineNote(String value) {
     return '備註: $value';
   }
+
+  @override
+  String get progressiveBlurPresetLabel => '漸進模糊預設';
+
+  @override
+  String get progressiveBlurHint => '漸進模糊自頂邊向下衰減；參數即時生效';
+
+  @override
+  String get progressiveBlurPresetClear => '清透';
+
+  @override
+  String get progressiveBlurPresetLight => '輕盈';
+
+  @override
+  String get progressiveBlurPresetStandard => '標準';
+
+  @override
+  String get progressiveBlurPresetDense => '濃霧';
+
+  @override
+  String get progressiveBlurPresetCustom => '自訂';
+
+  @override
+  String get progressiveBlurCustomExpandedTitle => '自訂參數';
+
+  @override
+  String get progressiveBlurSigmaLabel => '模糊強度';
+
+  @override
+  String get progressiveBlurExtentLabel => '漸變延伸';
+
+  @override
+  String get progressiveBlurTintBottomLabel => '底邊襯底';
+
+  @override
+  String get progressiveBlurResetAction => '恢復預設';
 }

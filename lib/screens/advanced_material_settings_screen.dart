@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 
+import '../models/header_blur_style.dart';
 import '../models/liquid_glass_tuning.dart';
+import '../models/progressive_blur_tuning.dart';
 import '../models/soft_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
@@ -346,6 +348,9 @@ class _AdvancedMaterialSettingsScreenState
                           glassMode: _draft.frostedGlassMode,
                           liquidGlassTuning: _draft.liquidGlassTuning,
                           softGlassTuning: softTuning,
+                          progressiveBlurTuning:
+                              _draft.progressiveBlurTuning ??
+                              ProgressiveBlurTuning.defaults,
                           onOpenDemoSheet: () =>
                               showFrostedSheetSettingsDemo(context),
                         ),
@@ -470,6 +475,116 @@ class _AdvancedMaterialSettingsScreenState
                 },
               ),
             ],
+            // 渐进（渐变）模糊：顶栏玻璃带的 progressive 材质 / 子页顶栏的
+            // inspire 风格共用这一套档位。它不是「高级材质」（任何后端都能画、
+            // 不受作用范围开关约束），因此在作用范围段之外单独成段。
+            if (_usesProgressiveBlur) ...[
+              HyperosSectionLabel(text: l10n.headerBlurStyleInspire),
+              Builder(
+                builder: (context) {
+                  final tuning =
+                      _draft.progressiveBlurTuning ??
+                      ProgressiveBlurTuning.defaults;
+                  String num(double value, int digits) =>
+                      value.toStringAsFixed(digits);
+                  return HyperosListGroup(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: Text(
+                          l10n.progressiveBlurHint,
+                          style: HyperosTypography.sectionDescription(context),
+                        ),
+                      ),
+                      HyperosSelectTile<ProgressiveBlurPreset>(
+                        label: l10n.progressiveBlurPresetLabel,
+                        items: {
+                          for (final preset in ProgressiveBlurPreset.values)
+                            progressiveBlurPresetLabel(l10n, preset): preset,
+                        },
+                        value: _draft.progressiveBlurPreset,
+                        onChanged: (preset) {
+                          if (preset == ProgressiveBlurPreset.custom) {
+                            _updateDraft(
+                              _draft.copyWith(
+                                progressiveBlurPreset:
+                                    ProgressiveBlurPreset.custom,
+                              ),
+                            );
+                            return;
+                          }
+                          _updateDraft(
+                            _draft.copyWith(
+                              progressiveBlurPreset: preset,
+                              progressiveBlurTuning: preset.recommendedTuning,
+                            ),
+                          );
+                        },
+                      ),
+                      if (_draft.progressiveBlurPreset ==
+                          ProgressiveBlurPreset.custom) ...[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          child: Text(
+                            l10n.progressiveBlurCustomExpandedTitle,
+                            style: HyperosTypography.sectionDescription(context),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.progressiveBlurSigmaLabel,
+                          value: tuning.sigma,
+                          max: ProgressiveBlurTuning.maxSigma,
+                          divisions: 40,
+                          valueLabel: num(tuning.sigma, 0),
+                          onChanged: (value) => _updateProgressiveTuning(
+                            (t) => t.copyWith(sigma: value),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.progressiveBlurExtentLabel,
+                          value: tuning.extent,
+                          min: ProgressiveBlurTuning.minExtent,
+                          max: ProgressiveBlurTuning.maxExtent,
+                          divisions: 24,
+                          valueLabel: num(tuning.extent, 2),
+                          onChanged: (value) => _updateProgressiveTuning(
+                            (t) => t.copyWith(extent: value),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.progressiveBlurTintBottomLabel,
+                          value: tuning.tintBottomScale,
+                          max: ProgressiveBlurTuning.maxTintBottomScale,
+                          divisions: 12,
+                          valueLabel: num(tuning.tintBottomScale, 2),
+                          onChanged: (value) => _updateProgressiveTuning(
+                            (t) => t.copyWith(tintBottomScale: value),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                          child: HyperosButton(
+                            label: l10n.progressiveBlurResetAction,
+                            variant: HyperosButtonVariant.secondary,
+                            expand: true,
+                            onPressed: () {
+                              _updateDraft(
+                                _draft.copyWith(
+                                  progressiveBlurPreset:
+                                      ProgressiveBlurPreset.standard,
+                                  progressiveBlurTuning:
+                                      ProgressiveBlurTuning.defaults,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ],
             // 高级材质作用范围：逐表面家族开关。开 = 该表面用
             // 当前全局高级材质（柔光 / 液态）；关 = 该表面回落
             // **实体卡片**（不降级为高斯，见
@@ -551,6 +666,28 @@ class _AdvancedMaterialSettingsScreenState
       return;
     }
     _enqueuePersist(next);
+  }
+
+  /// 当前草稿是否在用渐进（渐变）模糊：首页玻璃带选 progressive，或子页顶栏
+  /// 走 inspire 风格。命中才在设置页露出档位段，避免给用不上的用户加噪音。
+  bool get _usesProgressiveBlur =>
+      _draft.homeBandGlassMaterial == 'progressive' ||
+      _draft.subpageHeaderBlurStyle == HeaderBlurStyle.inspire;
+
+  /// 渐进模糊滑杆统一写入口：任意滑杆拖动都落
+  /// [ProgressiveBlurPreset.custom]，拖动防抖（与液态/柔光一致）。
+  void _updateProgressiveTuning(
+    ProgressiveBlurTuning Function(ProgressiveBlurTuning tuning) transform,
+  ) {
+    final base =
+        _draft.progressiveBlurTuning ?? ProgressiveBlurTuning.defaults;
+    _updateDraft(
+      _draft.copyWith(
+        progressiveBlurPreset: ProgressiveBlurPreset.custom,
+        progressiveBlurTuning: transform(base),
+      ),
+      debounce: true,
+    );
   }
 
   /// 柔光滑杆统一写入口：任意滑杆拖动都落 [SoftGlassPreset.custom]，

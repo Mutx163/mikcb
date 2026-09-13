@@ -11422,4 +11422,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String liveExpandedDetailLineNote(String value) {
     return 'Note: $value';
   }
+
+  @override
+  String get progressiveBlurPresetLabel => 'Progressive blur preset';
+
+  @override
+  String get progressiveBlurHint =>
+      'Progressive blur fades from the top edge downward; changes apply instantly';
+
+  @override
+  String get progressiveBlurPresetClear => 'Clear';
+
+  @override
+  String get progressiveBlurPresetLight => 'Light';
+
+  @override
+  String get progressiveBlurPresetStandard => 'Standard';
+
+  @override
+  String get progressiveBlurPresetDense => 'Dense';
+
+  @override
+  String get progressiveBlurPresetCustom => 'Custom';
+
+  @override
+  String get progressiveBlurCustomExpandedTitle => 'Custom parameters';
+
+  @override
+  String get progressiveBlurSigmaLabel => 'Blur strength';
+
+  @override
+  String get progressiveBlurExtentLabel => 'Gradient extent';
+
+  @override
+  String get progressiveBlurTintBottomLabel => 'Bottom tint';
+
+  @override
+  String get progressiveBlurResetAction => 'Reset to defaults';
 }

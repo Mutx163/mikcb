@@ -6324,5 +6324,17 @@
   "@liveExpandedDetailLineLocation": {"placeholders": {"value": {"type": "String"}}},
   "@liveExpandedDetailLineTeacher": {"placeholders": {"value": {"type": "String"}}},
   "@liveExpandedDetailLineNext": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineNote": {"placeholders": {"value": {"type": "String"}}}
+  "@liveExpandedDetailLineNote": {"placeholders": {"value": {"type": "String"}}},
+  "progressiveBlurPresetLabel": "漸進模糊預設",
+  "progressiveBlurHint": "漸進模糊自頂邊向下衰減；參數即時生效",
+  "progressiveBlurPresetClear": "清透",
+  "progressiveBlurPresetLight": "輕盈",
+  "progressiveBlurPresetStandard": "標準",
+  "progressiveBlurPresetDense": "濃霧",
+  "progressiveBlurPresetCustom": "自訂",
+  "progressiveBlurCustomExpandedTitle": "自訂參數",
+  "progressiveBlurSigmaLabel": "模糊強度",
+  "progressiveBlurExtentLabel": "漸變延伸",
+  "progressiveBlurTintBottomLabel": "底邊襯底",
+  "progressiveBlurResetAction": "恢復預設"
 }

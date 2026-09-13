@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:inspire_blur/inspire_blur.dart';
 
 import '../../../models/header_blur_style.dart';
+import '../../../models/progressive_blur_tuning.dart';
 import '../hyperos_blurred_header.dart';
 
 /// 顶栏玻璃带的渐进模糊实现（基于 `inspire_blur`）。
@@ -27,6 +28,7 @@ class InspireHeaderBlur extends StatelessWidget {
     this.blurEnabled = true,
     this.style = HeaderBlurStyle.inspire,
     this.blurSigma = HyperosBlurredHeader.blurSigma,
+    this.tuning,
     this.opaqueAtRest = false,
     super.key,
   });
@@ -40,8 +42,16 @@ class InspireHeaderBlur extends StatelessWidget {
   final bool blurEnabled;
   final HeaderBlurStyle style;
 
-  /// 模糊强度上限（对应 `InspireBlurConfig` 的 sigma）。
+  /// 高斯档的模糊强度上限（`InspireBlurConfig` 的 sigma）。
+  ///
+  /// **只服务 [HeaderBlurStyle.gaussian]**：高斯是基础模糊材质，粗细由全局
+  /// 「模糊强度」滑杆（`FrostedAppearance.sheetBlurSigma`）决定。渐进档改用
+  /// 它自己的档位 [tuning]，两者互不干扰。
   final double blurSigma;
+
+  /// 渐进档参数（预设 + 自定义）。null = 读 [FrostedAppearanceScope] 里的
+  /// 全局设置（与柔光/液态调参同一口径：调用方只在预览等场景显式覆盖）。
+  final ProgressiveBlurTuning? tuning;
 
   /// 无内容压在带下时，是否把衬底铺满整条带（不向下渐隐）。
   ///
@@ -54,12 +64,14 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 不透明衬底完全盖住，翻转点只剩一次衬底切换。
   final bool opaqueAtRest;
 
-  /// 渐进档衬底在底边保留的不透明度比例。
+  /// 渐进档衬底在底边保留的不透明度比例（默认值 = 接入调参前的常量；
+  /// 实际取值见 [ProgressiveBlurTuning.tintBottomScale]）。
   ///
   /// 均匀 tint 会把 inspire 模糊的「上浓下淡」抹平成一整条半透明；渐进
   /// 档必须让衬底也随方向衰减。底边取 0：玻璃带与课表之间不得出现
   /// 可见切边，完全靠顶区对比度保证状态栏/标题可读。
-  static const progressiveTintBottomScale = 0.0;
+  static const progressiveTintBottomScale =
+      ProgressiveBlurTuning.defaultTintBottomScale;
 
   /// 设备是否支持 shader filter（Inspire Blur 的兜底条件）。
   static bool get _shaderFilterSupported => ImageFilter.isShaderFilterSupported;
@@ -79,36 +91,46 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 区传入，结果整条带只有顶部 12% 有模糊、下面全清晰（2026-09-12 真机
   /// 「全局柔光 + 子页高斯 = 顶栏全透明」的根因）。渐隐收边如需保留，应改
   /// 用带自定义 stops 的渐变分布，而不是缩 extent。
+  ///
+  /// 纯函数便于测试：渐进档的 sigma / extent 全部来自 [tuning]，高斯档
+  /// 用 [gaussianSigma]（全局「模糊强度」滑杆）并整带均匀。
   static InspireBlurConfig configFor(
     HeaderBlurStyle style, {
-    required double sigma,
+    required double gaussianSigma,
+    required ProgressiveBlurTuning tuning,
   }) {
     return switch (style) {
-      // 渐进档：模糊自顶边满强度向下衰减到 0。
-      // 默认 extent=1：完全清晰正好落在带底，与课表衔接处无残留模糊切边。
+      // 渐进档：模糊自顶边满强度向下按 extent 衰减到 0。
+      // tuning.extent = 1（预设「标准」的默认）：完全清晰正好落在带底，
+      // 与课表衔接处无残留模糊切边。
       HeaderBlurStyle.inspire => InspireBlurConfig.topToBottom(
-        sigma: sigma,
+        sigma: tuning.sigma,
+        extent: tuning.extent,
       ),
-      // 高斯档：整带均匀模糊。
+      // 高斯档：整带均匀模糊，粗细走全局模糊强度。
       HeaderBlurStyle.gaussian => InspireBlurConfig(
         distribution: const UniformDistribution(),
-        sigma: sigma,
+        sigma: gaussianSigma,
       ),
     };
   }
+
+  /// 当前生效的渐进档参数：显式 [tuning] 优先，否则读全局设置。
+  ProgressiveBlurTuning resolveTuning(BuildContext context) =>
+      tuning ?? FrostedAppearanceScope.of(context).progressiveBlurTuning;
 
   /// 渐进档衬底：随方向上浓下淡，与模糊强度梯度对齐。
   ///
   /// 高斯档保持均匀 [tint]。渐进档若继续盖一层整幅半透明色，观感会退化
   /// 成「一致的半透明条」，完全看不出 iOS 式的顶浓底清。
-  Widget _tintLayer() {
+  Widget _tintLayer(ProgressiveBlurTuning tuning) {
     final useGradient = style == HeaderBlurStyle.inspire && !opaqueAtRest;
     final base = useGradient ? tint : null;
     if (base == null) {
       return Positioned.fill(child: ColoredBox(color: tint));
     }
     final bottom = base.withValues(
-      alpha: base.a * progressiveTintBottomScale,
+      alpha: base.a * tuning.tintBottomScale,
     );
     return Positioned.fill(
       child: DecoratedBox(
@@ -126,6 +148,7 @@ class InspireHeaderBlur extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final useBlur = blurEnabled && canRender(context);
+    final tuning = resolveTuning(context);
 
     return ClipRect(
       child: Stack(
@@ -135,14 +158,18 @@ class InspireHeaderBlur extends StatelessWidget {
             Positioned.fill(
               child: IgnorePointer(
                 child: Inspire.backdropBlur(
-                  config: configFor(style, sigma: blurSigma),
+                  config: configFor(
+                    style,
+                    gaussianSigma: blurSigma,
+                    tuning: tuning,
+                  ),
                   // 顶栏不参与手势，无需截获指针；自身已经裁剪在带内。
                   child: const SizedBox.expand(),
                 ),
               ),
             ),
           // 衬底画在模糊之上：模糊负责「糊」，衬底负责可读对比度。
-          _tintLayer(),
+          _tintLayer(tuning),
           child,
         ],
       ),

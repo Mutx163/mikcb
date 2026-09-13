@@ -118,6 +118,8 @@ TimetableSettings applySettingsReset(
       // 单独发明清除位。
       softGlassPreset: d.softGlassPreset,
       softGlassTuning: d.softGlassTuning,
+      progressiveBlurPreset: d.progressiveBlurPreset,
+      progressiveBlurTuning: d.progressiveBlurTuning,
     ),
     // 已删除 UI 的字段（设置 Tab、右上角菜单形态、内容避让布局、
     // 日/周布尔开关——已被 glassDockActions 取代）不纳入任何 scope。

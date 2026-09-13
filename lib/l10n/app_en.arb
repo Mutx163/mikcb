@@ -6327,5 +6327,17 @@
   "@liveExpandedDetailLineLocation": {"placeholders": {"value": {"type": "String"}}},
   "@liveExpandedDetailLineTeacher": {"placeholders": {"value": {"type": "String"}}},
   "@liveExpandedDetailLineNext": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineNote": {"placeholders": {"value": {"type": "String"}}}
+  "@liveExpandedDetailLineNote": {"placeholders": {"value": {"type": "String"}}},
+  "progressiveBlurPresetLabel": "Progressive blur preset",
+  "progressiveBlurHint": "Progressive blur fades from the top edge downward; changes apply instantly",
+  "progressiveBlurPresetClear": "Clear",
+  "progressiveBlurPresetLight": "Light",
+  "progressiveBlurPresetStandard": "Standard",
+  "progressiveBlurPresetDense": "Dense",
+  "progressiveBlurPresetCustom": "Custom",
+  "progressiveBlurCustomExpandedTitle": "Custom parameters",
+  "progressiveBlurSigmaLabel": "Blur strength",
+  "progressiveBlurExtentLabel": "Gradient extent",
+  "progressiveBlurTintBottomLabel": "Bottom tint",
+  "progressiveBlurResetAction": "Reset to defaults"
 }
