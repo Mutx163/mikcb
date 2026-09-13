@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
@@ -321,7 +322,11 @@ void main() {
       expect(find.text('Option A'), findsOneWidget);
     });
 
-    testWidgets('showHyperosSelectPopup builds an undimmed capture group', (
+    // 2026-09-13：选择小弹窗改用上游 flutter_miuix 的 OS4 锚定下拉弹层
+    //（`MiuixGlassDropdownPopup`），不再走本仓库那套
+    // `BackdropGroup + UndimmedBackdropCapture` 的液态玻璃采样结构，
+    // 因此断言换成"上游弹层已挂上、条目正常渲染"。
+    testWidgets('showHyperosSelectPopup mounts the upstream OS4 dropdown', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -347,8 +352,7 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(BackdropGroup), findsOneWidget);
-      expect(find.byType(UndimmedBackdropCapture), findsOneWidget);
+      expect(find.byType(MiuixGlassDropdownPopup), findsOneWidget);
       expect(find.text('Option A'), findsOneWidget);
     });
   });

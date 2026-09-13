@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
@@ -170,9 +171,12 @@ void main() {
       );
     }
 
-    testWidgets('玻璃模式选择小弹窗：默认跟随液态玻璃', (tester) async {
+    // 2026-09-13：选择小弹窗已改用上游 OS4 锚定下拉弹层，材质与动效都由上游
+    // 负责，**不再参与本仓库的液态玻璃作用范围**；这里改为断言上游弹层已挂上。
+    testWidgets('玻璃模式选择小弹窗：已改用上游 OS4 弹层，不再走本仓库液态玻璃', (tester) async {
       await openSelectPopup(tester, appearanceValue: liquidAppearance());
-      expect(find.byType(HyperosLiquidGlassSurface), findsOneWidget);
+      expect(find.byType(MiuixGlassDropdownPopup), findsOneWidget);
+      expect(find.byType(HyperosLiquidGlassSurface), findsNothing);
     });
 
     testWidgets('玻璃模式选择小弹窗：开关关闭回退磨砂', (tester) async {

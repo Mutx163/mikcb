@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
+import 'package:flutter_miuix/miuix.dart';
 
 import 'package:flutter/services.dart';
 
@@ -13,6 +13,7 @@ import 'hyperos_sheet.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
+import 'os4_glass_backdrop.dart';
 import '../../widgets/miuix_date_picker_sheet.dart';
 import 'frosted/liquid_glass_degradation.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart';
@@ -107,6 +108,8 @@ Future<T?> showHyperosSelectPopup<T>({
   required Rect? anchorRect,
   required Map<String, T> items,
   required T? currentValue,
+  /// 保留入参以免破坏既有调用点，但**上游弹层没有标题样式钩子**，
+  /// 该参数已不再参与渲染（全仓调用点均未依赖它的效果）。
   TextStyle? Function(T value)? itemTitleStyleBuilder,
   Widget? Function(T value)? itemPrefixBuilder,
 }) async {
@@ -131,7 +134,6 @@ Future<T?> showHyperosSelectPopup<T>({
           anchorRect: anchorRect,
           entries: entries,
           currentValue: currentValue,
-          itemTitleStyleBuilder: itemTitleStyleBuilder,
           itemPrefixBuilder: itemPrefixBuilder,
         ),
       );
@@ -139,276 +141,79 @@ Future<T?> showHyperosSelectPopup<T>({
   );
 }
 
-class _HyperosSelectPopupBody<T> extends StatefulWidget {
+/// 选择弹框的宿主：把上游 OS4 锚定下拉弹层（`MiuixGlassDropdownPopup`）
+/// 挂进调用方的 `showGeneralDialog` 路由里。
+///
+/// 换实现要点：
+/// - **动效 / 定位 / 玻璃全部交给上游**：`anchorBounds` 直接吃我们签名里已有的
+///   `anchorRect`；滚动条由 presenter 自己包（`popup_presenter.dart:374`），
+///   所以这里只给一个 `Column`，**不要再套滚动视图**（会变成双层滚动）。
+/// - 选中与关闭：条目点击走既有的 `_hyperosSelectCommitPopupValue`（触感 +
+///   延时后 pop 整个路由，保持原手感）；点遮罩由 `onDismissRequest` pop 掉，
+///   返回 null 与原语义一致。
+/// - `itemTitleStyleBuilder` 上游无对应入参 → 不再参与渲染（全仓两个真实
+///   调用点都没用它，无功能损失）。
+/// - 玻璃折射依赖**宿主页**包一层
+///   `MiuixLayerBackdropCapture(backdrop: os4GlassBackdrop, child: 页面内容)`；
+///   没包时上游自我降级为纯色轮廓，不报错。
+class _HyperosSelectPopupBody<T> extends StatelessWidget {
   const _HyperosSelectPopupBody({
     required this.anchorRect,
     required this.entries,
     required this.currentValue,
-    required this.itemTitleStyleBuilder,
     this.itemPrefixBuilder,
   });
 
   final Rect anchorRect;
   final List<MapEntry<String, T>> entries;
   final T? currentValue;
-  final TextStyle? Function(T value)? itemTitleStyleBuilder;
   final Widget? Function(T value)? itemPrefixBuilder;
 
   @override
-  State<_HyperosSelectPopupBody<T>> createState() =>
-      _HyperosSelectPopupBodyState<T>();
-}
-
-/// Miuix spring spec for popup fraction (scale + reveal) animation.
-/// Matches `MiuixListPopupDefaults.fractionAnimationSpec`.
-final _popupSpringDesc = SpringDescription.withDampingRatio(
-  mass: 1,
-  stiffness: 362.5,
-  ratio: 0.82,
-);
-
-class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
-    with TickerProviderStateMixin {
-  final _scrollController = ScrollController();
-  final _itemKeys = <int, GlobalKey>{};
-
-  /// Spring-driven fraction (0→1) for scale + reveal clip.
-  late final AnimationController _fraction = AnimationController.unbounded(
-    vsync: this,
-  );
-
-  /// Tween-driven alpha for content fade-in.
-  late final AnimationController _alpha = AnimationController(
-    vsync: this,
-    value: 0,
-  );
-
-  /// Visual selection while the popup is open. Starts as [currentValue] and
-  /// moves to the tapped option immediately so blue title + checkmark update
-  /// together with the press fill before the route is popped.
-  late T? _displayedValue = widget.currentValue;
-  bool _isCommitting = false;
-
-  int? get _selectedIndex {
-    for (var i = 0; i < widget.entries.length; i++) {
-      if (widget.entries[i].value == _displayedValue) return i;
-    }
-    return null;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // Enter animation: spring fraction + tween alpha (miuix ListPopup spec).
-    _fraction.animateWith(
-      SpringSimulation(
-        _popupSpringDesc,
-        0,
-        1,
-        0,
-        tolerance: const Tolerance(distance: 0.0001, velocity: 0.0001),
-      ),
-    );
-    _alpha.animateTo(
-      1,
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.fastOutSlowIn,
-    );
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    _fraction.dispose();
-    _alpha.dispose();
-    super.dispose();
-  }
-
-  void _scrollToSelected() {
-    final index = _selectedIndex;
-    if (index == null || !_scrollController.hasClients) return;
-    final key = _itemKeys[index];
-    final context = key?.currentContext;
-    if (context == null) return;
-    Scrollable.ensureVisible(
-      context,
-      alignment: 0.5,
-      duration: const Duration(milliseconds: 160),
-      curve: Curves.easeOut,
-    );
-  }
-
-  void _onOptionTapped(T value) {
-    if (_isCommitting) {
-      return;
-    }
-    HapticFeedback.selectionClick();
-    setState(() {
-      _isCommitting = true;
-      _displayedValue = value;
-    });
-    unawaited(_hyperosSelectCommitPopupValue(context, value));
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final screen = MediaQuery.sizeOf(context);
-    const margin = 12.0;
-    final safeTop = MediaQuery.paddingOf(context).top + margin;
-    final safeBottom =
-        screen.height - MediaQuery.paddingOf(context).bottom - margin;
-    final estimatedHeight = hyperosSelectPopupEstimatedHeight(
-      widget.entries.length,
-    );
-    final layout = hyperosSelectPopupLayout(
-      anchorRect: widget.anchorRect,
-      estimatedPopupHeight: estimatedHeight,
-      screenHeight: screen.height,
-      safeTop: safeTop,
-      safeBottom: safeBottom,
-    );
-
-    // Right edge of popup aligns with anchor row (HyperOS anchored dropdown).
-    final anchorRight = widget.anchorRect.right.clamp(
-      margin,
-      screen.width - margin,
-    );
-
-    // Determine popup position relative to anchor for transform origin.
-    final showBelow = layout.top >= widget.anchorRect.bottom;
-    // Right-aligned popup: transform origin at top-right (or bottom-right).
-    final localOriginY = showBelow ? 0.0 : 1.0;
-
-    final popupChild = ConstrainedBox(
-      constraints: BoxConstraints(
-        minWidth: 132 + HyperosMiuixDropdown.popupExtraLeadingWidth,
-        maxWidth: (screen.width - margin * 2).clamp(
-          132.0 + HyperosMiuixDropdown.popupExtraLeadingWidth,
-          HyperosMiuixDropdown.maxItemTextWidth +
-              HyperosMiuixDropdown.popupExtraLeadingWidth +
-              HyperosMiuixDropdown.insideHorizontalPadding * 2 +
-              HyperosMiuixDropdown.checkIconSize +
-              28,
-        ),
-        maxHeight: layout.maxHeight,
-      ),
-      child: HyperosSelectPopupGlass(
-        cornerRadius: HyperosMiuixDropdown.popupCornerRadius,
-        child: HyperosSurfaceRadiusScope(
-          radius: HyperosMiuixDropdown.popupCornerRadius,
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            child: IntrinsicWidth(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < widget.entries.length; i++)
-                    Builder(
-                      builder: (tileContext) {
-                        _itemKeys[i] = GlobalKey();
-                        final entry = widget.entries[i];
-                        final isSelected = entry.value == _displayedValue;
-                        return KeyedSubtree(
-                          key: _itemKeys[i],
-                          child: HyperosListTileScope(
-                            isFirst: i == 0,
-                            isLast: i == widget.entries.length - 1,
-                            child: HyperosChoiceTile(
-                              title: entry.key,
-                              selected: isSelected,
-                              highlightSelectedText: true,
-                              variant: HyperosChoiceVariant.popup,
-                              isFirstInPopup: i == 0,
-                              isLastInPopup: i == widget.entries.length - 1,
-                              titleStyle: widget.itemTitleStyleBuilder?.call(
-                                entry.value,
-                              ),
-                              prefix: widget.itemPrefixBuilder?.call(
-                                entry.value,
-                              ),
-                              forceHighlighted: _isCommitting && isSelected,
-                              onTap: _isCommitting
-                                  ? () {}
-                                  : () => _onOptionTapped(entry.value),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    // BackdropGroup boundary: grouped filters in the popup glass sample the
-    // backdrop captured HERE (the undimmed page). The dim ColoredBox below is
-    // inside the group, so it darkens the screen without ever entering the
-    // glass's blur/refraction input — no geometric hole-punching needed.
-    return BackdropGroup(
-      child: Stack(
-        fit: StackFit.expand,
+    return MiuixGlassDropdownPopup(
+      // 生命周期由外层 showGeneralDialog 路由决定：这里常驻"已展开"，
+      // 关闭靠 pop 掉整个路由。上游弹层内部用 OverlayPortal 自绘，而路由
+      // 过渡时长本来就是 0（见 showHyperosSelectPopup），动效全在弹层自己身上。
+      show: true,
+      anchorBounds: anchorRect,
+      backdrop: os4GlassBackdrop,
+      sizing: _selectPopupSizing,
+      onDismissRequest: () => Navigator.of(context).pop(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Positioned.fill(child: UndimmedBackdropCapture()),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => Navigator.of(context).pop(),
-            child: AnimatedBuilder(
-              animation: _alpha,
-              builder: (context, _) {
-                final base = HyperosBlurredHeader.modalBarrierColor(context);
-                return ColoredBox(
-                  color: base.withValues(
-                    alpha: base.a * _alpha.value.clamp(0.0, 1.0),
-                  ),
-                );
+          for (final entry in entries)
+            MiuixGlassPopupItem(
+              text: entry.key,
+              selected: entry.value == currentValue,
+              icon: itemPrefixBuilder?.call(entry.value),
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                unawaited(_hyperosSelectCommitPopupValue(context, entry.value));
               },
             ),
-          ),
-          Positioned(
-            top: layout.top,
-            right: screen.width - anchorRight,
-            child: AnimatedBuilder(
-              animation: _fraction,
-              builder: (context, _) {
-                final fraction = _fraction.value.clamp(0.0, 1.0);
-                final scale = 0.15 + 0.85 * fraction;
-                // No Opacity here: an Opacity layer (opacity < 1) isolates the
-                // popup into an offscreen layer, so the glass BackdropFilter /
-                // liquid shader samples an empty backdrop and renders fully
-                // transparent until the fade ends (then snaps to blur). Scale +
-                // clip reveal carry the entrance while the glass stays live.
-                return Transform.scale(
-                  scale: scale,
-                  alignment: Alignment(1, localOriginY * 2 - 1),
-                  child: ClipPath(
-                    clipper: SelectPopupRevealClipper(
-                      progress: fraction,
-                      showBelow: showBelow,
-                      cornerRadius: HyperosMiuixDropdown.popupCornerRadius,
-                    ),
-                    child: popupChild,
-                  ),
-                );
-              },
-            ),
-          ),
         ],
       ),
     );
   }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _scrollToSelected();
-    });
-  }
 }
+
+/// 选择弹框的尺寸约束：复刻换实现前那套公式（`HyperosMiuixDropdown`）。
+///
+/// 与首页菜单（收到 200）不同，选择器的标签更长（"按添加时间排序"这类），
+/// 所以上限保留旧公式的 372；上游布局会再用屏幕边界做一次 `min` 收敛
+///（`popup_layout.dart` 里 `maxWidth = min(sizing.maxWidth, bounds.width)`），
+/// 因此这里不必自己夹屏幕宽。下界不写：上游默认 `minWidth = 200`，与旧公式
+/// `132 + popupExtraLeadingWidth` 恰好相同。
+const _selectPopupSizing = MiuixGlassPopupSizing(
+  maxWidth:
+      HyperosMiuixDropdown.maxItemTextWidth +
+      HyperosMiuixDropdown.popupExtraLeadingWidth +
+      HyperosMiuixDropdown.insideHorizontalPadding * 2 +
+      HyperosMiuixDropdown.checkIconSize +
+      28,
+);
 
 /// Squircle-ish reveal clipper for select popup enter animation.
 ///
