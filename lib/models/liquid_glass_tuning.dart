@@ -167,20 +167,20 @@ class LiquidGlassTuning {
   static const double minVisibility = 0;
   static const double maxVisibility = 1;
 
-  // --- 厚度 → 可见光学量映射（standard 档补偿）---
-  // 当前全 app 统一跑 GlassQuality.standard（MikcbLiquidGlassTokens.defaultQuality），
-  // 包内走 lightweight_glass.frag，而它的折射位移只在 PATH A（拿到了背景纹理、
-  // uBackgroundSize.x > 1）里执行；本项目从未安装 LiquidGlassScope / 传
-  // backgroundKey，故恒走 PATH B——thickness 在那里只剩「边缘 rim 透明度
-  // ±0.3」，肉眼基本不可辨，滑杆 0..40 拉满观感不变（真机症状：「透明高斯
-  // 模糊、没有玻璃效果」）。
+  // --- 厚度 → 可见光学量映射（降级档补偿）---
+  // 全 app 统一跑 MikcbLiquidGlassTokens.defaultQuality = premium：厚度本身就
+  // 驱动真实折射位移，这条映射**不生效**（HyperosLiquidGlassSurface 走
+  // withThicknessOptics 把它清零，避免双重计数）。
   //
-  // 修法：把归一化厚度同时映射到 PATH B 里真正生效的两个光学量，让「厚度」
-  // 重新有连续的可见反馈，而不必退回 premium（那一档曾把首页拖到 60fps）：
+  // 它只为**引擎降级**兜底：设备不支持 shader filter 或 `fake` 预览层时包内退到
+  // lightweight_glass.frag，那条路 thickness 只剩「边缘 rim 透明度 ±0.3」，
+  // 肉眼基本不可辨，滑杆 0..40 拉满观感不变（真机症状：「透明高斯模糊、没有
+  // 玻璃效果」）。把归一化厚度映射到那两个真正生效的光学量，让降级路径上的
+  // 「厚度」也有连续可见反馈：
   //   edgeAbsorption  —— 边缘光吸收，弧面越厚边缘越沉（厚度存在感）
   //   fresnelStrength —— 掠射角边缘高光，浅色模式下 rimFade≈0.08 压不住它，
   //                      是浅色/深色都看得见的通道
-  // 两个量在 premium 档同样会被消费，映射在两种档位下都成立。
+  // 分派依据只有「引擎能不能实时折射」，全 app 一致。
   //
   // 关键：默认厚度 30/40 是**枢轴点**，此处两个量恰好等于 LiquidGlassSettings
   // 的构造默认（0.0 / 1.0），因此出厂默认观感与历史版本逐字段一致；只有用户

@@ -253,7 +253,8 @@ class HyperosLiquidGlassSurface extends StatefulWidget {
     return settings.copyWith(edgeAbsorption: 0, fresnelStrength: 1);
   }
 
-  /// 见 [withThicknessOptics] 的说明。PATH B 把厚度折算成可见光学量。
+  /// 见 [withThicknessOptics] 的说明。引擎降级（包内轻量片元着色器）时，
+  /// 把厚度折算成那里真正生效的可见光学量。
   @visibleForTesting
   static LiquidGlassSettings withoutThicknessOptics(
     LiquidGlassSettings settings,
