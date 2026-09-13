@@ -104,8 +104,21 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
           anchor: widget.anchor,
           anchorContent: widget.anchorContent,
           backdrop: widget.backdrop,
-          // 二级展开时一级面板走"堆叠"形态（与系统一致）。
-          stacked: _secondaryOpen,
+          // 宽度：换实现后菜单明显变宽。核对过两边公式——`minWidth` 其实一样
+          //（旧实现 `132 + popupExtraLeadingWidth` 恰好 = 上游默认 200），所以
+          // 差别出在**上限与行内容**：上游默认 `maxWidth: 288`，而新条目
+          //（`MiuixGlassPopupItem` 的文字样式 + 箭头/内边距）本身比旧条目宽，
+          // 于是面板被顶到接近上限。这里把上限收到 240（旧实现的实际观感宽度
+          // 落在 200~240 这一段），标签都是 4~6 字，不会被截断。
+          sizing: const MiuixGlassPopupSizing(maxWidth: 240),
+          // 刻意**不用** `stacked`：它的语义是"二级展开时一级面板收缩/变暗"，
+          // 收起时要靠包内 `MiuixGlassMotion.secondaryPopup(false)` 弹簧把一级
+          // 弹回原位 —— 那条回弹在真机上读起来就是"圈/描边回收很慢"，而这组
+          // 弹簧与 `transformMaterial(80ms)+delay(50ms)+threshold(.0015)` 都在包内、
+          // **没有对外参数**可调。故保持 stacked=false：二级直接浮出/收起，
+          // 一级面板全程不移动，也就没有需要回收的形变。
+          //（想要包内那套"一级让位"观感时，把这一行放开即可。）
+          // stacked: _secondaryOpen,
           onDismissRequest: _close,
           child: Column(
             mainAxisSize: MainAxisSize.min,
