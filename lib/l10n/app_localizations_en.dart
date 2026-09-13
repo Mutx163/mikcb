@@ -11455,7 +11455,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get progressiveBlurExtentLabel => 'Gradient extent';
 
   @override
-  String get progressiveBlurTintBottomLabel => 'Bottom tint';
+  String get progressiveBlurTintBottomLabel => 'Lower tint';
 
   @override
   String get progressiveBlurResetAction => 'Reset to defaults';

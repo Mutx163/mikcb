@@ -11126,7 +11126,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get progressiveBlurExtentLabel => 'グラデーションの範囲';
 
   @override
-  String get progressiveBlurTintBottomLabel => '下端の下地';
+  String get progressiveBlurTintBottomLabel => '下半分の下地';
 
   @override
   String get progressiveBlurResetAction => '既定値に戻す';

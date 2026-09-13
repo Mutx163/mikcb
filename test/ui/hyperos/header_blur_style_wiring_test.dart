@@ -131,6 +131,30 @@ void main() {
       expect(gaussian.effectiveSigmaX, 15);
     });
 
+    test('衬底渐变在带底恒为全透明（不留横向硬边）', () {
+      // 回归钉：带底必须收敛到 alpha 0，否则玻璃带与下方内容的交界处会切出
+      // 一条横向边。默认（0）退化成两段，与接入调参前逐像素一致。
+      const top = Color(0x99FFFFFF);
+      final flat = InspireHeaderBlur.tintGradient(top, 0);
+      expect(flat.colors.length, 2);
+      expect(flat.colors.first, top);
+      expect(flat.colors.last.a, 0);
+
+      for (final scale in [0.0, 0.18, 0.6]) {
+        final gradient = InspireHeaderBlur.tintGradient(top, scale);
+        expect(gradient.colors.last.a, 0, reason: 'scale=$scale 带底必须透明');
+        if (scale <= 0) {
+          // 默认档不加中间 stop，就是接入调参前那条两端渐变。
+          expect(gradient.stops, isNull);
+          continue;
+        }
+        // 中间 stop 才体现「下半段更压得住」，末段仍收敛到全透明。
+        expect(gradient.colors[1].a, closeTo(top.a * scale, 1e-6));
+        expect(gradient.stops!.last, 1);
+        expect(gradient.stops![1], lessThan(1));
+      }
+    });
+
     test('渐进档吃自己的档位：sigma 与 extent 都来自 tuning', () {
       const tuning = ProgressiveBlurTuning(sigma: 24, extent: 0.6);
       final progressive = InspireHeaderBlur.configFor(

@@ -6335,6 +6335,6 @@
   "progressiveBlurCustomExpandedTitle": "自訂參數",
   "progressiveBlurSigmaLabel": "模糊強度",
   "progressiveBlurExtentLabel": "漸變延伸",
-  "progressiveBlurTintBottomLabel": "底邊襯底",
+  "progressiveBlurTintBottomLabel": "下部襯底",
   "progressiveBlurResetAction": "恢復預設"
 }

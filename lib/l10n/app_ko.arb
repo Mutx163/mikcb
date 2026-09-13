@@ -6334,6 +6334,6 @@
   "progressiveBlurCustomExpandedTitle": "사용자 지정 매개변수",
   "progressiveBlurSigmaLabel": "블러 강도",
   "progressiveBlurExtentLabel": "그라데이션 범위",
-  "progressiveBlurTintBottomLabel": "하단 배경",
+  "progressiveBlurTintBottomLabel": "하단부 배경",
   "progressiveBlurResetAction": "기본값으로 복원"
 }

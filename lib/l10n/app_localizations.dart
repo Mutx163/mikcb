@@ -19707,7 +19707,7 @@ abstract class AppLocalizations {
   /// No description provided for @progressiveBlurTintBottomLabel.
   ///
   /// In zh, this message translates to:
-  /// **'底边衬底'**
+  /// **'下部衬底'**
   String get progressiveBlurTintBottomLabel;
 
   /// No description provided for @progressiveBlurResetAction.

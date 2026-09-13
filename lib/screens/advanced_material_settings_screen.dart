@@ -544,7 +544,8 @@ class _AdvancedMaterialSettingsScreenState
                           title: l10n.progressiveBlurExtentLabel,
                           value: tuning.extent,
                           min: ProgressiveBlurTuning.minExtent,
-                          max: ProgressiveBlurTuning.maxExtent,
+                          // 上限就是滑杆默认的 1：延伸 >1 会在带底留残留模糊，
+                          // 与下方清晰内容硬切出一条横向边。
                           divisions: 24,
                           valueLabel: num(tuning.extent, 2),
                           onChanged: (value) => _updateProgressiveTuning(

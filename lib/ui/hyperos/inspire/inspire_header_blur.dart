@@ -119,27 +119,47 @@ class InspireHeaderBlur extends StatelessWidget {
   ProgressiveBlurTuning resolveTuning(BuildContext context) =>
       tuning ?? FrostedAppearanceScope.of(context).progressiveBlurTuning;
 
-  /// 渐进档衬底：随方向上浓下淡，与模糊强度梯度对齐。
+  /// 渐进档衬底渐变：顶边满浓度，沿方向衰减，**带底恒为全透明**。
+  ///
+  /// 带底必须是 0：玻璃带外面是清晰内容，衬底只要在交界处还不是透明，就会
+  /// 切出一条横向硬边（真机口径「最浓状态下底部出现一条横向」）。所以
+  /// [ProgressiveBlurTuning.tintBottomScale] 只抬高下半段的浓度（多一个中间
+  /// stop），末段一律收敛到 0——任何取值都只在带内加雾，不带边。
+  ///
+  /// [bottomScale] = 0（默认）时退化成 [top, 透明] 两段，与接入调参前的观感
+  /// 逐像素一致。
+  @visibleForTesting
+  static LinearGradient tintGradient(Color top, double bottomScale) {
+    final transparent = top.withValues(alpha: 0);
+    if (bottomScale <= 0) {
+      return LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [top, transparent],
+      );
+    }
+    final mid = top.withValues(alpha: top.a * bottomScale);
+    return LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [top, mid, transparent],
+      stops: const [0, 0.75, 1],
+    );
+  }
+
+  /// 渐进档衬底：随方向上浓下淡，与模糊强度梯度对齐；带底恒为透明。
   ///
   /// 高斯档保持均匀 [tint]。渐进档若继续盖一层整幅半透明色，观感会退化
   /// 成「一致的半透明条」，完全看不出 iOS 式的顶浓底清。
   Widget _tintLayer(ProgressiveBlurTuning tuning) {
     final useGradient = style == HeaderBlurStyle.inspire && !opaqueAtRest;
-    final base = useGradient ? tint : null;
-    if (base == null) {
+    if (!useGradient) {
       return Positioned.fill(child: ColoredBox(color: tint));
     }
-    final bottom = base.withValues(
-      alpha: base.a * tuning.tintBottomScale,
-    );
     return Positioned.fill(
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [base, bottom],
-          ),
+          gradient: tintGradient(tint, tuning.tintBottomScale),
         ),
       ),
     );

@@ -6393,6 +6393,6 @@
   "progressiveBlurCustomExpandedTitle": "自定义参数",
   "progressiveBlurSigmaLabel": "模糊强度",
   "progressiveBlurExtentLabel": "渐变延伸",
-  "progressiveBlurTintBottomLabel": "底边衬底",
+  "progressiveBlurTintBottomLabel": "下部衬底",
   "progressiveBlurResetAction": "恢复默认"
 }

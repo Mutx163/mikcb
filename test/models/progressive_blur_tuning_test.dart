@@ -59,6 +59,31 @@ void main() {
       );
     });
 
+    test('no preset leaves a tint at the band bottom', () {
+      // 回归钉：衬底在带底只要不是全透明，就会切出一条横向硬边——浓雾档
+      // 曾给 0.18，真机口径「最浓状态下底部出现一条横向」。
+      for (final preset in ProgressiveBlurPresetX.builtIns) {
+        expect(
+          preset.recommendedTuning.tintBottomScale,
+          0,
+          reason: '$preset 不得在带底留残余衬底',
+        );
+      }
+      // 自定义档同样不允许越过「带底全透明」这条线（渲染侧另有兜底）。
+      expect(ProgressiveBlurTuning.maxTintBottomScale, greaterThan(0));
+    });
+
+    test('extent can never leave blur at the band bottom', () {
+      // >1 表示到带底仍有残留模糊，而带外是清晰内容——交界处硬切又是横向边。
+      expect(ProgressiveBlurTuning.maxExtent, 1);
+      for (final preset in ProgressiveBlurPresetX.builtIns) {
+        expect(
+          preset.recommendedTuning.extent,
+          lessThanOrEqualTo(ProgressiveBlurTuning.maxExtent),
+        );
+      }
+    });
+
     test('preset ladder is ordered clear < light < standard < dense', () {
       double sigmaOf(ProgressiveBlurPreset preset) =>
           preset.recommendedTuning.sigma;

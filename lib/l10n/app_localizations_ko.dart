@@ -11171,7 +11171,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get progressiveBlurExtentLabel => '그라데이션 범위';
 
   @override
-  String get progressiveBlurTintBottomLabel => '하단 배경';
+  String get progressiveBlurTintBottomLabel => '하단부 배경';
 
   @override
   String get progressiveBlurResetAction => '기본값으로 복원';

@@ -10834,7 +10834,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get progressiveBlurExtentLabel => '渐变延伸';
 
   @override
-  String get progressiveBlurTintBottomLabel => '底边衬底';
+  String get progressiveBlurTintBottomLabel => '下部衬底';
 
   @override
   String get progressiveBlurResetAction => '恢复默认';
@@ -21714,7 +21714,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get progressiveBlurExtentLabel => '漸變延伸';
 
   @override
-  String get progressiveBlurTintBottomLabel => '底邊襯底';
+  String get progressiveBlurTintBottomLabel => '下部襯底';
 
   @override
   String get progressiveBlurResetAction => '恢復預設';
@@ -32594,7 +32594,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get progressiveBlurExtentLabel => '漸變延伸';
 
   @override
-  String get progressiveBlurTintBottomLabel => '底邊襯底';
+  String get progressiveBlurTintBottomLabel => '下部襯底';
 
   @override
   String get progressiveBlurResetAction => '恢復預設';

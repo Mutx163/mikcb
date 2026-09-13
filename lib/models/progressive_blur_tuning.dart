@@ -90,11 +90,12 @@ class ProgressiveBlurTuning {
     extent: 0.85,
   );
 
-  /// 浓雾 — 更厚，并在底边留一点衬底压住衔接处。
-  static const presetDense = ProgressiveBlurTuning(
-    sigma: 22,
-    tintBottomScale: 0.18,
-  );
+  /// 浓雾 — 更厚的雾面。
+  ///
+  /// **档位一律不留底边衬底**（[tintBottomScale] 保持 0）：衬底在带底只要不是
+  /// 全透明，就会在「玻璃带 / 下方内容」交界处切出一条横向硬边——浓雾档曾给
+  /// 0.18，真机口径「最浓状态下底部出现一条横向」。档位只调浓度与延伸。
+  static const presetDense = ProgressiveBlurTuning(sigma: 22);
 
   /// 按参数反查内置预设，不匹配任意一档即为 [ProgressiveBlurPreset.custom]。
   static ProgressiveBlurPreset matchPreset(ProgressiveBlurTuning tuning) {
@@ -115,7 +116,10 @@ class ProgressiveBlurTuning {
   /// 渐变延伸：1 = 完全清晰正好落在带底。
   static const double defaultExtent = 1;
 
-  /// 底边衬底保留比例：0 = 完全渐隐，不出现切边。
+  /// 下部衬底浓度：0 = 完全不额外加衬底（默认）。
+  ///
+  /// 注意它与「底边残留」不是一回事：衬底层永远在带底渐隐到全透明（见
+  /// `InspireHeaderBlur.tintGradient`），所以任意取值都不会切出横向硬边。
   static const double defaultTintBottomScale = 0;
 
   // --- 滑杆范围 ---
@@ -124,7 +128,12 @@ class ProgressiveBlurTuning {
   static const double minSigma = 0;
   static const double maxSigma = 40;
   static const double minExtent = 0.3;
-  static const double maxExtent = 1.5;
+
+  /// 渐变延伸上限就是 1：模糊必须在带底之前彻底衰减到 0。
+  ///
+  /// >1 表示到带底仍有残留模糊，而带子外面是清晰内容——两者在交界处硬切，
+  /// 又是一条横向边。真机口径「要渐渐消失，自然」，故上限锁死 1。
+  static const double maxExtent = 1;
   static const double minTintBottomScale = 0;
   static const double maxTintBottomScale = 0.6;
 
@@ -134,7 +143,8 @@ class ProgressiveBlurTuning {
   /// 渐变延伸（模糊自顶边衰减到 0 的位置占带宽比例）。
   final double extent;
 
-  /// 衬底在底边保留的不透明度比例。
+  /// 下部衬底浓度（0..0.6）：让玻璃带下半段更压得住内容。衬底层始终在带底
+  /// 渐隐到全透明，因此它只影响「下半段多压一点」，不会在带底留边。
   final double tintBottomScale;
 
   ProgressiveBlurTuning copyWith({

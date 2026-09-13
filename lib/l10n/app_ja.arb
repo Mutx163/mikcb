@@ -6334,6 +6334,6 @@
   "progressiveBlurCustomExpandedTitle": "カスタムパラメータ",
   "progressiveBlurSigmaLabel": "ぼかしの強さ",
   "progressiveBlurExtentLabel": "グラデーションの範囲",
-  "progressiveBlurTintBottomLabel": "下端の下地",
+  "progressiveBlurTintBottomLabel": "下半分の下地",
   "progressiveBlurResetAction": "既定値に戻す"
 }

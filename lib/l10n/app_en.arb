@@ -6338,6 +6338,6 @@
   "progressiveBlurCustomExpandedTitle": "Custom parameters",
   "progressiveBlurSigmaLabel": "Blur strength",
   "progressiveBlurExtentLabel": "Gradient extent",
-  "progressiveBlurTintBottomLabel": "Bottom tint",
+  "progressiveBlurTintBottomLabel": "Lower tint",
   "progressiveBlurResetAction": "Reset to defaults"
 }
