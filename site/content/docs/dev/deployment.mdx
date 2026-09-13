@@ -118,21 +118,32 @@ site/out/docs/guide/quick-start/__next.docs/$oc$slug/__PAGE__.txt
 GET /docs/guide/quick-start/__next.docs.$oc$slug.__PAGE__.txt
 ```
 
-`site/public/_redirects` 把点号形式以 200 重写到嵌套形式。
+`site/public/_redirects` 里有两条把点号形式 200 重写到嵌套形式的规则。
 
-> ⚠️ **这条规则的前提尚未确认，部署后必须复测。**
-> 2026-09-13 在线上（当时仍是旧构建、`_redirects` 未上线）实测：**两种形式
-> 都返回 404** —— 既复现不出「嵌套 200」，也复现不出「点号 404」。既然前提
-> 对不上，就不能假设重写一定有益：若目标路径不存在，200 重写反而会把一个
-> 本来可用的 URL 变成 404。另外该规则的通配符 `/docs/*/…` 覆盖不到
-> `docs/__next.docs.$oc$slug/__PAGE__.txt`（中间没有路径段），`_not-found`
-> 也没有规则；规则里还硬编码了 Next 内部段名（`$oc$slug`、`!KGhvbWUp`），
-> 升级 Next 会静默失效。
+> ⚠️ **已复测：这两条规则是空转的，修不了这个 404**（2026-09-13，新构建上线后实测）。
 >
-> 复测方法（部署后逐条 `curl -sI`）：`/docs/guide/quick-start/__next.docs.$oc$slug.__PAGE__.txt`
-> 与 `/docs/guide/quick-start/__next.docs/$oc$slug/__PAGE__.txt`，确认前者由
-> 404 变 200 且后者仍可用。本地可用
-> `python3 -m http.server --directory site/out` 对比两条路径。
+> | 请求 | 结果 |
+> | --- | --- |
+> | `/docs/guide/quick-start/__next.docs.txt` | **200** ✅ |
+> | `/docs/guide/quick-start/index.txt` | **200** ✅ |
+> | `…/__next.docs/$oc$slug/__PAGE__.txt`（字面 `$`） | **404** ❌ |
+> | `…/__next.docs/%24oc%24slug/__PAGE__.txt`（百分号编码） | **404** ❌ |
+> | `…/__next.docs.$oc$slug.__PAGE__.txt`（点号压平） | **404** ❌ |
+> | `/__next.!KGhvbWUp/__PAGE__.txt` | **404** ❌ |
+>
+> 关键事实：**那个 `$oc$slug/__PAGE__.txt` 文件确实在构建产物里**（`site/out/…`
+> 下能直接找到），但 **Cloudflare 不服务 `$oc$slug/` 这条路径**。所以规则把一个
+> 404 重写成另一个 404，不可能生效。原注释里「嵌套形式 → 200」很可能是本地
+> `python3 -m http.server --directory site/out` 测出来的——本地文件服务器不介意
+> `$`，Cloudflare 介意。
+>
+> 影响面很小：软导航正常（走 `index.txt` / `__next.*.txt`，都是 200），只是控制台
+> 多一条预取 404、预取退化为按需拉取。
+>
+> 要真正修掉只有两条路（都未做）：a) 用 Pages Function + `ASSETS` 绑定自己做
+> 点号形式→`$` 路径的映射（不再指望静态服务器命中）；b) 向 Next / Cloudflare
+> 反馈「`$` 目录名在 Pages 静态资源上 404」。**别再往 `_redirects` 里加规则**——
+> 重写目标本身不可达。
 </Step>
 <Step>
 部署完成后，在 Pages 项目的自定义域中添加 `docs.163366.xyz`，按提示完成 DNS。
