@@ -35,8 +35,12 @@ abstract final class SoftGlassTokens {
   // 模糊（AdvancedMaterialTuning.DefaultBlurRadius + GlassBlurSpec）
   // ---------------------------------------------------------------------
 
-  /// 全局模糊半径基准（AdvancedMaterialTuning.DefaultBlurRadius）。
-  static const double baseBlurRadius = 92;
+  /// 全局模糊半径基准 = 上游弹层材质 `MiuixGlassMaterials.popupViewGlass` 的
+  /// `blurRadius`（60）—— 首页右上角菜单与选择弹层用的就是这一份材质，柔光玻璃
+  /// 与它们同参。
+  ///
+  /// （历史值 92 是 Hyper-PiliPlus 自研链路的口径，随自研折射链路一起退场。）
+  static const double baseBlurRadius = 60;
 
   /// Miuix textureBlur 的半径上限。
   static const double maximumBlurRadius = 256;
@@ -44,28 +48,27 @@ abstract final class SoftGlassTokens {
   /// Android `RenderEffect.createBlurEffect` 的 radius → Gaussian sigma 换算
   /// （与 BlurMaskFilter 同一套系数）：sigma = radius × 0.57735 + 0.5。
   ///
-  /// 必须做这层换算：原版的 92 是 *radius*，Flutter `BackdropFilter` 吃的是
-  /// *sigma*，直接把 92 当 sigma 用会明显糊过头。
+  /// 上游 radius 是 Android `RenderEffect` 的口径，旧自研链路换算成 Flutter
+  /// `BackdropFilter` 的 sigma 时用这套系数；保留供文档 / 兜底对照。
   static const double radiusToSigmaScale = 0.57735;
   static const double radiusToSigmaBias = 0.5;
 
-  /// 柔光玻璃材质基准高斯 sigma：radius 92（上游默认 / 标准档）
-  /// → sigma ≈ 53.62。
+  /// 柔光玻璃材质基准高斯 sigma：radius 60（上游弹层材质 / 标准档）
+  /// → sigma ≈ 35.14。
   ///
   /// 仅作无配方时的兜底；实际取值走 [SoftGlassRecipe]（全 app 唯一配方）
-  /// 再乘用户的档位倍率。
+  /// 再乘用户的档位倍率，最终写到上游材质的 `blurRadius`。
   ///
-  /// **档位阶梯（同一基线的绝对 sigma，供改数值时对照）**：
-  /// | 档位 | radius (= 92 × 倍率) | sigma |
-  /// |---|---|---|
-  /// | 清透 clear (×0.6) | 55.2 | ≈ 32.4 |
-  /// | 轻盈 light (×0.8) | 73.6 | ≈ 43.0 |
-  /// | **标准 standard (×1.0)** | **92** | **≈ 53.6** |
-  /// | 浓雾 dense (×1.6) | 147.2 | ≈ 85.5 |
-  /// | 滑杆上限 (×2.7) | 248.4 | ≈ 144.0 |
+  /// **档位阶梯（同一基线的绝对半径，供改数值时对照）**：
+  /// | 档位 | radius (= 60 × 倍率) |
+  /// |---|---|
+  /// | 清透 clear (×0.6) | 36 |
+  /// | 轻盈 light (×0.8) | 48 |
+  /// | **标准 standard (×1.0)** | **60**（= 菜单 / 选择弹层同款） |
+  /// | 浓雾 dense (×1.6) | 96 |
+  /// | 滑杆上限 (×2.7) | 162 |
   ///
-  /// 上限 2.7 不是随手取的：上游 radius 天花板 256 ÷ 基准 92 ≈ 2.78，
-  /// 取 2.7 留余量，保证拉满也不越过 [maximumBlurRadius]。
+  /// 滑杆上限 2.7 是 UI 档位选择（162 仍远低于 [maximumBlurRadius]）。
   static const double defaultBlurSigma =
       baseBlurRadius * radiusToSigmaScale + radiusToSigmaBias;
 
@@ -213,10 +216,9 @@ abstract final class SoftGlassTokens {
 /// 底色因此偏实（0.75 而非 0.675）。**层级越实，底下的模糊与折射越看不见** ——
 /// 这一处偏差本身就是「弹层看着和高斯模糊一个样」的成因之一。
 ///
-/// 上游最终半径 = `baseBlurRadius(92) × recipe.radiusMultiplier ×
-/// tuning.glassBlurRadiusMultiplier(0.25)`（软玻璃调校默认值），下表已折算成 dp
-/// 绝对值；sigma 再按 `radius × 0.57735 + 0.5` 换算成 Flutter `BackdropFilter`
-/// 吃的参数（见 [blurSigma]）。
+/// 现在柔光玻璃交回上游材质：配方半径由 [SoftGlassTokens.baseBlurRadius]（= 上游
+/// `popupViewGlass.blurRadius`）给出，再乘用户档位倍率（[SoftGlassTuning]），写成
+/// 上游 `MiuixGlassMaterial.blurRadius`。
 class SoftGlassRecipe {
   const SoftGlassRecipe({
     required this.blurRadiusDp,
@@ -234,7 +236,7 @@ class SoftGlassRecipe {
   /// borderRadius），不覆盖。
   final double? cornerRadiusDp;
 
-  /// 折算成 Flutter `BackdropFilter` 的 sigma。
+  /// 折算成 Flutter `BackdropFilter` 的 sigma（自研链路时代的对照口径）。
   double get blurSigma => blurSigmaWithMultiplier(1);
 
   /// 按用户倍率（SoftGlassTuning.blurRadiusMultiplier）缩放配方半径后
@@ -246,14 +248,13 @@ class SoftGlassRecipe {
   /// 全 app 柔光玻璃**唯一**的配方：底栏 / 浮钮 / 顶栏带 / 弹窗 / 面板 /
   /// 选择弹层全都用它，雾度、底色、圆角来源只有这一处。
   ///
-  /// 铁律同液态玻璃：一个材质只有一种观感。历史上这里并存过
-  /// `dialog`（σ ≈ 53.6）与 `bottomSheet`（σ ≈ 107）两套按尺寸分派的配方，
-  /// 于是同一个「柔光玻璃」在顶栏和弹层是两种雾度——用户口径「是柔光玻璃
+  /// 铁律同液态玻璃：一个材质只有一种观感。历史上这里并存过多套按尺寸分派的
+  /// 配方，于是同一个「柔光玻璃」在顶栏和弹层是两种雾度——用户口径「是柔光玻璃
   /// 就全部显示一样」。
   ///
-  /// 档位选择：材质基线取**标准档**（radius = 上游默认 92 → σ ≈ 53.6），
-  /// 而不是曾经的「轻盈档」（92 × 0.25 → σ ≈ 13.8）。档位的粗细由用户在
-  /// 设置页选（`SoftGlassTuning.blurRadiusMultiplier`，清透/轻盈/标准/浓雾），
+  /// 档位选择：基线就是**首页菜单 / 选择弹层那份上游材质**（`popupViewGlass`，
+  /// radius 60），档位的粗细由用户在设置页选
+  /// （`SoftGlassTuning.blurRadiusMultiplier`，清透/轻盈/标准/浓雾），
   /// **不再由表面决定**——表面只有这一个配方。
   ///
   /// 若真机要整体改雾度，改 [SoftGlassTokens.baseBlurRadius] 一个数
@@ -284,7 +285,9 @@ enum SoftGlassPolarity { light, dark }
 ///   折射 shader，玻璃面也能靠镜面边缘立住——这一步与背景内容无关，是
 ///   「看起来像玻璃」的最低成本来源。
 /// 柔光玻璃表面 —— **全 app 玻璃统一材质**：直接渲染 flutter_miuix 的 OS4 玻璃
-/// （[MiuixGlass]），与首页右上角菜单、选择弹层用的是同一套材质与 shader。
+/// （[MiuixGlass]），材质与首页右上角菜单、选择弹层**同一份**
+/// （`MiuixGlassMaterials.popupViewGlass` + `MiuixGlassStyles.forTheme` +
+/// `MiuixGlassStrokes.forTheme` + 菜单同档的 `shading: false`）。
 ///
 /// 历史：这里曾经是 Hyper-PiliPlus「柔光玻璃」的自研实现 —— 自绘折射 shader +
 /// 双影边缘 + 自己录制 backdrop。那条链路已整体删除，本类只保留原来的**入参
@@ -311,7 +314,7 @@ class SoftGlassSurface extends StatefulWidget {
     this.blurSigma,
     this.enableShadows = true,
     this.enableEdgeHighlight = true,
-    this.enableRefraction = true,
+    this.enableRefraction = false,
     this.recipe = SoftGlassRecipe.standard,
     this.tuning,
   });
@@ -330,7 +333,9 @@ class SoftGlassSurface extends StatefulWidget {
   final bool enableShadows;
   final bool enableEdgeHighlight;
 
-  /// true = 上游「仿生折射」档（bionic 折射材质），false = 栏 / 菜单的普通材质。
+  /// true = 上游「仿生折射」档（bionic GlassToken）；false（默认）= OS4 栏 / 菜单的
+  /// MaterialToken —— 首页右上角菜单与选择弹层用的就是 false 这一档，所以柔光玻璃
+  /// 默认同档。
   final bool enableRefraction;
 
   /// 材质配方：决定雾面半径、底色倍率与自带圆角。见 [SoftGlassRecipe]。
@@ -403,12 +408,13 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
       backdrop: widget.blurEnabled ? _controller?.backdrop : null,
       style: MiuixGlassStyles.forTheme(isDark),
       material: _tunedMaterial(
-        MiuixGlassMaterials.puredThinGlass(isDark),
+        MiuixGlassMaterials.popupViewGlass(isDark),
         tuning,
       ),
       shape: MiuixGlassShape(borderRadius: widget._radius),
       alpha: widget.materialAlpha.clamp(0.0, 1.0),
       fill: widget.tint,
+      // 菜单 / 选择弹层同档：栏与菜单 MaterialToken（shading: false）。
       shading: widget.enableRefraction,
       stroke: widget.enableEdgeHighlight
           ? _scaledStroke(
@@ -416,7 +422,7 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
               tuning.edgeHighlight,
             )
           : null,
-      shadow: widget.enableShadows ? MiuixGlassShadows.regular : null,
+      shadow: widget.enableShadows ? MiuixGlassShadows.floating : null,
       child: widget.child,
     );
   }

@@ -52,9 +52,14 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('默认档位 = 配方半径原样交给上游材质', (tester) async {
+  testWidgets('默认档位 = 上游弹层材质原样（与首页菜单 / 选择弹层同款）', (tester) async {
     await pumpSurface(tester);
     final material = glassOf(tester).material!;
+    // 基线就是菜单用的 popupViewGlass：同半径、同颜色层。
+    expect(
+      material.blurRadius,
+      MiuixGlassMaterials.popupViewGlassLight.blurRadius,
+    );
     expect(material.blurRadius, SoftGlassRecipe.standard.blurRadiusDp);
     // 底色倍率默认 1：颜色层不透明度与上游预设一致。
     expect(
@@ -104,5 +109,10 @@ void main() {
   testWidgets('模糊关闭时不接采样源（上游走纯色轮廓兜底）', (tester) async {
     await pumpSurface(tester, blurEnabled: false);
     expect(glassOf(tester).backdrop, isNull);
+  });
+
+  testWidgets('与菜单同档：栏与菜单 MaterialToken（shading 关）', (tester) async {
+    await pumpSurface(tester);
+    expect(glassOf(tester).shading, isFalse);
   });
 }

@@ -5,24 +5,22 @@
 /// 设置页「高级材质」在柔光档下露出同一套 预设选择 + 滑杆 的 UI。
 ///
 /// 雾面与底色用**倍率**表达：材质只有一个配方（`SoftGlassRecipe.standard`，
-/// 上游默认 radius 92 → σ ≈ 53.6），档位的粗细完全由这里的倍率决定，最终写到
-/// 上游 `MiuixGlassMaterial.blurRadius`；底色倍率缩放上游颜色层不透明度；
-/// 边缘高光作用于上游 OS4 描边的三处高光。
+/// 基线 = 首页菜单 / 选择弹层那份上游材质 `popupViewGlass`，radius 60），档位的
+/// 粗细完全由这里的倍率决定，最终写到上游 `MiuixGlassMaterial.blurRadius`；
+/// 底色倍率缩放上游颜色层不透明度；边缘高光作用于上游 OS4 描边的三处高光。
 ///
 /// 自研折射链路（`SoftGlassRefraction` shader）已删除，历史上存过的
 /// refraction / depthEffect / chromaticAberration 字段在 [SoftGlassTuning.fromJson]
 /// 里被忽略（旧备份导入不会报错）。
 ///
 /// **档位阶梯的绝对量（改动前先看这张表）**：
-/// | 档位 | 倍率 | radius | sigma |
-/// |---|---|---|---|
-/// | 清透 clear | 0.6 | 55.2 | ≈ 32.4 |
-/// | 轻盈 light | 0.8 | 73.6 | ≈ 43.0 |
-/// | **标准 standard** | 1.0 | 92 | ≈ 53.6 |
-/// | 浓雾 dense | 1.6 | 147.2 | ≈ 85.5 |
-/// | 滑杆上限 | 2.7 | 248.4 | ≈ 144.0 |
-///
-/// 上限 2.7 = 上游 radius 天花板 256 ÷ 基准 92（≈2.78）向下取余量。
+/// | 档位 | 倍率 | radius |
+/// |---|---|---|
+/// | 清透 clear | 0.6 | 36 |
+/// | 轻盈 light | 0.8 | 48 |
+/// | **标准 standard** | 1.0 | 60（= 菜单 / 选择弹层同款） |
+/// | 浓雾 dense | 1.6 | 96 |
+/// | 滑杆上限 | 2.7 | 162 |
 enum SoftGlassPreset {
   /// 清透 — 薄雾淡底色，最接近裸壁纸。
   clear,
@@ -120,7 +118,7 @@ class SoftGlassTuning {
 
   // --- 默认值（= 渲染链路硬编码常量，漂移会被测试拦下） ---
 
-  /// 雾面半径倍率：各表面配方（底栏 / 弹窗）blurRadiusDp 的整体缩放。
+  /// 雾面半径倍率：上游玻璃材质 blurRadius 的整体缩放（1 = 菜单同款）。
   static const double defaultBlurRadiusMultiplier = 1;
   static const double defaultTintAlphaMultiplier = 1;
 
@@ -130,11 +128,7 @@ class SoftGlassTuning {
   // --- 滑杆范围 ---
   static const double minBlurRadiusMultiplier = 0;
 
-  /// 滑杆上限。上游 radius 天花板 256 ÷ 材质基准 92（≈2.78），取 2.7 留余量：
-  /// 拉满 = radius 248.4 → σ ≈ 144，仍在上游允许的半径内。
-  ///
-  /// 此前是 3.0——那是「轻盈档基线（radius 23）」时代的旧值，换成标准基线后
-  /// 会算出 radius 276 > 256，越界，故随本轮档位重测收紧。
+  /// 滑杆上限：拉满 = 材质基线 60 × 2.7 = radius 162，远低于上游半径天花板 256。
   static const double maxBlurRadiusMultiplier = 2.7;
   static const double minTintAlphaMultiplier = 0;
   static const double maxTintAlphaMultiplier = 2;
