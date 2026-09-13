@@ -263,6 +263,75 @@ void main() {
     expect(image.height, lessThan((800 * dpr * 0.6).round()));
   });
 
+  testWidgets('采样快照按上游模糊源同档录制，不按 dpr 整屏出图', (tester) async {
+    // 归因：上游 MiuixGlass.prepare 拿到快照后先 `canvas.scale((dpr/4).clamp(.5,1.0))`
+    // 才做高斯模糊 —— 按 dpr 录的像素有 15/16 从未进入最终画面，只抬高离屏峰值。
+    // 弹层那条路尤其贵：它拿不到"自己背后那块"矩形，只能整层录，
+    // 2.75x 的 1280×2772 是 26.8M 像素 ≈ 107MB／帧（真机实测每次打开弹层瞬时
+    // 分配 100~140MB、快速连开 RSS 峰值 1.01GB）。
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final controller = HyperosGlassBackdropController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      hostWith(
+        controller: controller,
+        child: const Stack(
+          children: <Widget>[
+            SizedBox.expand(),
+            Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: 200,
+                height: 60,
+                child: SoftGlassSurface(child: SizedBox.expand()),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // 弹层打开：请求整层背景。
+    controller.acquire();
+    for (var i = 0; i < 3; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+
+    final dpr = tester.view.devicePixelRatio;
+    final expected = (dpr / 4).clamp(.5, 1.0);
+
+    // 窄带与整层都必须走同一个比例。
+    expect(controller.zones, isNotEmpty);
+    expect(
+      controller.zones.first.pixelRatio,
+      closeTo(expected, 1e-9),
+      reason: '窄带快照按上游模糊源同档录',
+    );
+
+    final plain = controller.plainBackdrop;
+    expect(plain.snapshot, isNotNull, reason: '弹层要背景时当帧末应有整层快照');
+    expect(
+      plain.pixelRatio,
+      closeTo(expected, 1e-9),
+      reason: '整层快照按上游模糊源同档录，不是 dpr',
+    );
+    // 关键等价性：上游用 `image.width / backdrop.pixelRatio` 还原逻辑宽度，
+    // 两边同时缩小 → 上游看到的逻辑尺寸不变（采样不错位）。
+    expect(
+      plain.snapshot!.width / plain.pixelRatio,
+      closeTo(400, 1.0),
+      reason: '还原出的逻辑宽度仍等于屏宽',
+    );
+    expect(
+      plain.snapshot!.width,
+      lessThan(400 * dpr),
+      reason: '不再按 dpr 出整屏像素',
+    );
+  });
+
   testWidgets('分块满员时并入「最近」的一块，不把采样矩形撑成整屏高', (tester) async {
     // 回归背景：分块上限 4。超出时旧实现取 `_zones.last` —— 那是"最后创建的"，
     // 不是"最近的"。第 5 块玻璃若离它隔了整屏，并进去会把该块的采样矩形撑到接近

@@ -179,9 +179,13 @@ class HyperosGlassBackdropController extends ChangeNotifier {
 
   /// 弹层（拿不到自己背后矩形的那类）挂载 / 展开时调用。
   void acquire() {
-    final wasEmpty = !capturing;
+    final hadPlain = wantsPlainBackdrop;
     _plainConsumers++;
-    if (wasEmpty && capturing) notifyListeners();
+    // 判据是「要不要整层背景」这一位有没有翻转，而不是 `capturing` 有没有从
+    // false 变 true：页内玻璃通常已经让 `capturing` 为 true，那时新开弹层不会
+    // 触发任何重绘，本帧就轮不到录整层图 —— 弹层玻璃拿到的是 null / 上一张
+    // 快照，上游于是走"纯色轮廓"那条降级分支（实底）。
+    if (!hadPlain) notifyListeners();
   }
 
   /// 弹层卸载 / 关闭时调用。
@@ -531,8 +535,15 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
   /// 这里刻意不 `markNeedsBuild`：玻璃表面是在自己的 `didChangeDependencies`
   /// （构建期）里 acquire 的，此刻标脏一个不在当前构建链上的祖先会抛
   /// `setState() called during build`；而录帧本来就只是绘制行为。
+  ///
+  /// 同时清掉 [_notifiedSinceCapture]：那个标志的语义是「这一帧是被上一次录帧的
+  /// 通知带出来的」，而「采样需求本身变了」（开合弹层、玻璃上下线）恰恰相反 ——
+  /// 这一帧**必须**录，否则弹层打开时整层图会停在上一张、甚至一张都没有。自激
+  /// 循环走的是 backdrop 的通知、不经过这里，所以重置它不会削弱那道守卫。
   void _onDemandChanged() {
-    if (attached) markNeedsPaint();
+    if (!attached) return;
+    _notifiedSinceCapture = false;
+    markNeedsPaint();
   }
 
   double _devicePixelRatio;
@@ -601,7 +612,10 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
   void _capture() {
     final offsetLayer = layer;
     if (offsetLayer is! OffsetLayer) return;
-    final dpr = _devicePixelRatio;
+    // 采样比例与上游模糊源同档（见 [_samplePixelRatio]）：上游拿到快照后一律
+    // 缩到 `(dpr / 4).clamp(.5, 1.0)` 才开始模糊，多录的像素只抬高每帧的离屏
+    // 目标，进不了最终画面。
+    final ratio = _samplePixelRatio(_devicePixelRatio);
     final mine = Offset.zero & size;
     var wrote = false;
     // 先改判"满员时量不到位置"的成员：录帧时已布局，才量得到矩形、才谈得上远近。
@@ -616,27 +630,46 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
         globalToLocal(global.bottomRight),
       ).intersect(mine);
       if (target.isEmpty) continue;
-      final image = offsetLayer.toImageSync(target, pixelRatio: dpr);
-      zone.update(image, localToGlobal(target.topLeft), dpr);
+      final image = offsetLayer.toImageSync(target, pixelRatio: ratio);
+      zone.update(image, localToGlobal(target.topLeft), ratio);
       wrote = true;
       for (final backdrop in zone.members.keys) {
         backdrop.zoneUpdated();
       }
     }
     // 另有弹层（Overlay 里的面板，拿不到自己背后的矩形）在要背景时，补一张整层图。
-    // 只在弹层打开期间发生，页内玻璃仍按窄带录。
+    // 只在弹层打开期间发生，页内玻璃仍按窄带录。整层是这里最大的一笔：2.75x 的
+    // 1280×2772 = 26.8M 像素，按 dpr 录 ≈ 107MB／帧（真机实测每次打开弹层瞬时分配
+    // 100~140MB、快速连开 RSS 峰值 1.01GB），按 [ratio] 录 ≈ 6.7MB。
     if (_controller.wantsPlainBackdrop) {
-      final image = offsetLayer.toImageSync(mine, pixelRatio: dpr);
+      final image = offsetLayer.toImageSync(mine, pixelRatio: ratio);
       _controller.plainBackdrop.updateSnapshot(
         image,
         localToGlobal(Offset.zero),
-        dpr,
+        ratio,
       );
       wrote = true;
     }
     if (wrote) _notifiedSinceCapture = true;
   }
 }
+
+/// 玻璃采样快照的录制比例：与上游模糊源同档 `(dpr / 4).clamp(.5, 1.0)`。
+///
+/// 上游 `MiuixGlass.prepare`（`flutter_miuix` 1.2.0，`miuix_glass.dart`）里先取
+/// `final ratio = (dpr / 4).clamp(.5, 1.0)`，把快照 `canvas.scale(ratio)` 之后才做
+/// 高斯模糊 —— 喂给它的像素超过这个分辨率**没有任何视觉贡献**，只把离屏目标
+/// 放大到用不上的尺寸：
+///
+/// * 2.75x 的 1280×2772 整屏 = 26.8M 像素 ≈ **107MB**，弹层打开期间每帧一次；
+/// * 按同一比例录制后同一张图 ≈ **6.7MB**（16 倍），而且 `drawImageRect` 从
+///   "缩小"变成 1:1，少一次重采样 —— 上游侧看到的逻辑尺寸与像素内容都不变
+///   （上游用 `image.width / backdrop.pixelRatio` 还原逻辑宽度，两者同时改，
+///   比值不变）。
+///
+/// 下限 0.5 与上游保持一致，避免低 dpr 设备录出过小的图。
+double _samplePixelRatio(double devicePixelRatio) =>
+    (devicePixelRatio / 4).clamp(.5, 1.0);
 
 /// 给屏级捕获报告"玻璃自己占哪一块"的透明包装。
 ///
