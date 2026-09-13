@@ -4,6 +4,10 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.HapticFeedbackConstants
+import android.view.Surface
+import android.view.SurfaceControl
+import android.view.SurfaceHolder
+import android.view.SurfaceView
 import android.Manifest
 import android.app.ActivityManager
 import android.app.AlarmManager
@@ -154,41 +158,29 @@ class MainActivity : FlutterActivity() {
         applyPeakRefreshRate()
     }
 
+    /** 屏幕支持的最高刷新率（Hz）；取不到返回 0。 */
+    @Suppress("DEPRECATION")
+    private fun peakRefreshRate(): Float {
+        val modes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // API 30+：Activity.getDisplay()
+            display?.supportedModes
+        } else {
+            windowManager.defaultDisplay?.supportedModes
+        }
+        return modes?.maxOfOrNull { it.refreshRate } ?: 0f
+    }
+
     /**
-     * 让系统按屏幕**最高刷新率**给本应用出帧。
+     * 第一层（窗口级）：在窗口上声明 `preferredRefreshRate`。
      *
-     * 背景：Flutter 引擎从不调用 Android 的 `Surface.setFrameRate()`（本机 Flutter
-     * 3.44.8 的 Android embedding 源码里 grep 该调用为 **0 处**），所以本应用的窗口在
-     * `dumpsys SurfaceFlinger` 里一直是
-     * `requestedFrameRate = {0.00 Hz, FrameRateCompatibility::Default, NoPreference}`。
-     * 在「高刷要应用自己申请」的 ROM（MIUI / HyperOS、OnePlus 等）上，NoPreference 的
-     * 第三方应用会被按 60Hz 出帧。
-     *
-     * 2026-09-13 于 Redmi K80 Ultra（120Hz 屏；**非 LTPO**——所有 display mode 的
-     * `vrrConfig` 均为 N/A）实测：
-     *   - 本应用连续滑动设置页 ≈ **63 fps**，且 raster 峰值仅 34%、main 16%、
-     *     BLAST 丢帧 0 —— 并非跑不动，而是**没拿到高刷**；
-     *   - 同一块屏上 MIUI 桌面滑动 ≈ **115 fps**。
-     * 上游问题：flutter/flutter#160952（P2，2023-01 起未修）。
-     *
-     * 这里只做最小修正：在窗口上声明 `preferredRefreshRate` = 屏幕支持的最高档，
-     * 具体档位交给系统挑；用户把系统「峰值刷新率」调成 120 时系统会自动夹到 120
-     * （本机可选模式：60 / 90 / 120 / 144）。
-     *
-     * 注意：这是窗口级提示，个别 ROM 仍可能忽略；若实测无效，下一步是在
-     * API 29+ 上用 `SurfaceView.surfaceControl` + `SurfaceControl.Transaction.setFrameRate()`
-     * 直接向 SurfaceFlinger 投票。
+     * 这一层在真机上**确实被 SurfaceFlinger 记下了**（实测窗口层
+     * `requestedFrameRate: {144.00 Hz}`），但**不足以改变出帧率** —— 见
+     * [watchFlutterSurfaceFrameRate] 的说明。保留它：部分 ROM 只认窗口级提示。
      */
     @Suppress("DEPRECATION")
     private fun applyPeakRefreshRate() {
         try {
-            val modes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                // API 30+：Activity.getDisplay()
-                display?.supportedModes
-            } else {
-                windowManager.defaultDisplay?.supportedModes
-            }
-            val peak = modes?.maxOfOrNull { it.refreshRate } ?: 0f
+            val peak = peakRefreshRate()
             if (peak <= 0f || window.attributes.preferredRefreshRate == peak) {
                 return
             }
@@ -199,9 +191,99 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    /**
+     * 第二层（**真正起作用的那一层**）：把帧率申请投到 Flutter 自己的
+     * `SurfaceView` 的 `SurfaceControl` 上。
+     *
+     * 根因：Flutter 引擎从不调用 Android 的 `Surface.setFrameRate()`（本机 Flutter
+     * 3.44.8 的 Android embedding 源码里 grep 该调用为 **0 处**），所以承载 Flutter
+     * 画面的那层恒为 `requestedFrameRate = {0.00 Hz, NoPreference}`。在「高刷要应用
+     * 自己申请」的 ROM（MIUI / HyperOS、OnePlus 等）上，这样的层会被按 60Hz 出帧。
+     * 上游问题：flutter/flutter#160952（P2，2023-01 起未修）。
+     *
+     * 2026-09-13 于 Redmi K80 Ultra（120Hz 屏；**非 LTPO**——所有 display mode 的
+     * `vrrConfig` 均为 N/A）实测：
+     *   - 本应用连续滑动设置页 ≈ **63 fps**，且 raster 峰值仅 34%、main 16%、
+     *     BLAST 丢帧 0 —— 并非跑不动，而是**没拿到高刷**；
+     *   - 同一块屏上 MIUI 桌面（系统应用）滑动 ≈ **115 fps**。
+     *
+     * 为什么必须打在这一层：`dumpsys SurfaceFlinger` 的层树显示，窗口级申请落在
+     * 窗口容器层，而**承载 Flutter 画面的是它下面那条链路**——
+     *   ActivityRecord#…  →  c4c14e0 …MainActivity#… {144.00 Hz}   ← 窗口级（我设的）
+     *                        └─ …MainActivity#… {0.00 Hz NoPreference}  ← 应用自己的层
+     *                            └─ SurfaceView[…](BLAST)#…              ← 真正画帧的层
+     * 应用自己的层仍是 NoPreference，SurfaceFlinger 按它执行，于是出帧率依旧 ≈60fps
+     * （实测：加窗口级申请前 63.0 fps、之后 60.9 fps，无变化）。
+     *
+     * API：`SurfaceView.getSurfaceControl()` = API 29；`SurfaceControl.Transaction()` =
+     * API 29；`setFrameRate(sc, float, int)` = API 31；4 参重载 = API 33。以上均已用本机
+     * android-34/35/36 的 android.jar 逐条 javap 核实。帧率取屏幕支持的最高档，
+     * **由系统按用户设置的峰值刷新率夹取**（本机用户峰值=120，可选模式 60/90/120/144）。
+     */
+    private fun watchFlutterSurfaceFrameRate(view: SurfaceView) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            return
+        }
+        try {
+            // SurfaceControl 随 surface 重建，所以创建/变化时都要重新投一次。
+            view.holder.addCallback(object : SurfaceHolder.Callback {
+                override fun surfaceCreated(holder: SurfaceHolder) {
+                    applySurfaceFrameRate(view)
+                }
+
+                override fun surfaceChanged(
+                    holder: SurfaceHolder,
+                    format: Int,
+                    width: Int,
+                    height: Int,
+                ) {
+                    applySurfaceFrameRate(view)
+                }
+
+                override fun surfaceDestroyed(holder: SurfaceHolder) = Unit
+            })
+        } catch (e: Exception) {
+            Log.w("MainActivity", "watchFlutterSurfaceFrameRate failed", e)
+        }
+    }
+
+    private fun applySurfaceFrameRate(view: SurfaceView) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            return
+        }
+        try {
+            val peak = peakRefreshRate()
+            if (peak <= 0f) {
+                return
+            }
+            val surfaceControl = view.surfaceControl ?: return
+            val transaction = SurfaceControl.Transaction()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                transaction.setFrameRate(
+                    surfaceControl,
+                    peak,
+                    Surface.FRAME_RATE_COMPATIBILITY_DEFAULT,
+                    Surface.CHANGE_FRAME_RATE_ALWAYS,
+                )
+            } else {
+                transaction.setFrameRate(
+                    surfaceControl,
+                    peak,
+                    Surface.FRAME_RATE_COMPATIBILITY_DEFAULT,
+                )
+            }
+            transaction.apply()
+        } catch (e: Throwable) {
+            // 这是可选的性能提示：任何失败（含个别 ROM 上用错重载导致的
+            // NoSuchMethodError，那是 Error 不是 Exception）都不该影响画帧。
+            Log.w("MainActivity", "applySurfaceFrameRate failed", e)
+        }
+    }
+
     override fun onFlutterSurfaceViewCreated(flutterSurfaceView: FlutterSurfaceView) {
         super.onFlutterSurfaceViewCreated(flutterSurfaceView)
         applyPeakRefreshRate()
+        watchFlutterSurfaceFrameRate(flutterSurfaceView)
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
