@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_glass_backdrop_host.dart';
+import 'package:university_timetable/ui/hyperos/os4_glass_popup_surface.dart';
 import 'package:university_timetable/ui/hyperos/soft_glass/soft_glass_surface.dart';
 import 'package:university_timetable/ui/hyperos/os4_glass_backdrop.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
@@ -167,6 +168,9 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
             // 宽度见 [_popupSizing]（收到旧实现的下界原宽 200）。
             sizing: _popupSizing,
             visuals: visuals,
+            // 面板材质交给全局档位分派（液态 / 柔光 / 高斯 / 实底）——
+            // **形变动效与几何仍由上游 presenter 负责，一行不动**。
+            surfaceBuilder: hyperosGlassPopupSurface,
             // 刻意**不用** `stacked`：它的语义是"二级展开时一级面板收缩/变暗"，
             // 收起时要靠包内 `MiuixGlassMotion.secondaryPopup(false)` 弹簧把一级
             // 弹回原位 —— 那条回弹在真机上读起来就是"圈/描边回收很慢"，而这组
@@ -198,6 +202,7 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
               // 与一级面板**同一份**宽度约束，两块才对得齐。
               sizing: _popupSizing,
               visuals: visuals,
+              surfaceBuilder: hyperosGlassPopupSurface,
               onDismissRequest: _closeSecondary,
               child: Column(
                 mainAxisSize: MainAxisSize.min,

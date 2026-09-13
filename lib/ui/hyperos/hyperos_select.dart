@@ -16,6 +16,7 @@ import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
 import 'os4_glass_backdrop.dart';
+import 'os4_glass_popup_surface.dart';
 import '../../widgets/miuix_date_picker_sheet.dart';
 import 'frosted/liquid_glass_degradation.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart';
@@ -754,6 +755,10 @@ class HyperosSelectPopup<T> extends StatelessWidget {
         sizing: _os4SelectSizing,
         // 柔光玻璃档下跟随用户档位（与页内表面、首页菜单同一份映射）。
         visuals: softGlassPopupVisualsFor(context),
+        // 面板材质交给全局档位分派（液态 / 柔光 / 高斯 / 实底）：上游
+        // `visuals` 只能在 OS4 材质内部调参，接不进液态折射链路。
+        // 几何与 dropdown 那条两段弹簧动效仍由上游负责。
+        surfaceBuilder: hyperosGlassPopupSurface,
         onDismissRequest: onDismiss,
         // 上游 `MiuixGlassPopupItem` 的 Row 是 `mainAxisSize.max`，会直接撑满
         // `sizing.maxWidth`：只给 min/max 而不夹内容，弹层宽度恒等于 maxWidth

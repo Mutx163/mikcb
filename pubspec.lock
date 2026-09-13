@@ -286,10 +286,9 @@ packages:
   flutter_miuix:
     dependency: "direct main"
     description:
-      name: flutter_miuix
-      sha256: "3b2b578b670ef3476d38440846ceb19378368a532736224db56d85486534862e"
-      url: "https://pub.dev"
-    source: hosted
+      path: "C:/cursor/flutter_miuix_glassy"
+      relative: false
+    source: path
     version: "1.2.0"
   flutter_plugin_android_lifecycle:
     dependency: transitive

@@ -64,6 +64,13 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   fake_async: ^1.3.3
 
+# 临时覆盖：指向本地带 `surfaceBuilder` 补丁的 flutter_miuix（glassy-surface 分支，
+# 基于上游 1.2.0 + popup presenter 注入点）。推到 fork 后改成 git 依赖，
+# 不再依赖本机路径。
+dependency_overrides:
+  flutter_miuix:
+    path: C:/cursor/flutter_miuix_glassy
+
 flutter:
   uses-material-design: true
   generate: true
