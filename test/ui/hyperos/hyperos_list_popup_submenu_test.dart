@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart' show MiuixGlassPopupAnchor;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart'
     show AdaptiveGlass, LightweightLiquidGlass;
@@ -6,6 +7,7 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart'
     show HyperosLiquidGlassSurface, UndimmedBackdropCapture;
 import 'package:university_timetable/widgets/home_top_menu.dart';
+import 'package:university_timetable/widgets/home_top_menu_popup.dart';
 
 import '../../helpers_test_app.dart';
 
@@ -403,6 +405,10 @@ void main() {
   });
 
   group('home top menu add-course submenu wiring', () {
+    // 2026-09-13：首页菜单的列表形态迁到上游 OS4 玻璃弹层后，旧的
+    // `showHomeTopMenuSheet`（自研列表弹层）已删除。本组改为驱动现役实现
+    // `HomeTopMenuPopup`，保住「『添加』行 → 二级面板 → 回传子项 id」这条
+    // 唯一的覆盖 —— 此前它只测在已删除的实现上，属「测试护空」。
     final entries = [
       HomeMenuEntry(
         id: 'addCourse',
@@ -420,73 +426,58 @@ void main() {
       ),
     ];
 
-    // 同 pumpPopup：返回装 Future 的列表，避免 async flatten 挂死。
-    // anchorKey 必须挂在已布局的按钮上（hyperosPopupPositionBelow 依赖
-    // 它的 RenderBox 定位；未挂载的 key 返回 null，弹窗静默 no-op）。
-    Future<List<Future<String?>?>> pumpMenu(WidgetTester tester) async {
-      final opened = <Future<String?>?>[];
-      final anchorKey = GlobalKey();
+    /// 上游契约是「常驻挂载 + 切 show」，所以这里直接以 show: true 挂载；
+    /// 返回被点条目的 id 收集器。
+    Future<List<String>> pumpMenu(WidgetTester tester) async {
+      final selected = <String>[];
+      final anchor = MiuixGlassPopupAnchor();
+      addTearDown(anchor.dispose);
       await tester.pumpWidget(
         TestApp(
-          home: FrostedAppearanceScope(
-            appearance: gaussianAppearance,
-            child: Builder(
-              builder: (context) => ElevatedButton(
-                key: anchorKey,
-                onPressed: () {
-                  opened.add(
-                    showHomeTopMenuSheet(
-                      context,
-                      hasAvailableUpdate: false,
-                      entries: entries,
-                      anchorKey: anchorKey,
-                    ),
-                  );
-                },
-                child: const Text('open'),
-              ),
-            ),
+          home: HomeTopMenuPopup(
+            show: true,
+            anchor: anchor,
+            anchorContent: const Icon(Icons.more_vert_rounded),
+            entries: entries,
+            hasAvailableUpdate: false,
+            onDismissRequest: () {},
+            onSelected: selected.add,
           ),
         ),
       );
-      await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
-      return opened;
+      return selected;
     }
 
-    testWidgets('「添加」行挂二级列表，其余行没有展开箭头', (tester) async {
+    testWidgets('「添加」行挂二级列表，其余行没有二级', (tester) async {
       await pumpMenu(tester);
 
       expect(find.text('添加'), findsOneWidget);
-      expect(find.text('添加课程'), findsNothing);
       expect(find.text('课表设置'), findsOneWidget);
-      // 收起态只有添加行有箭头。
-      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+      // 收起态：二级子项都不在树上。
+      expect(find.text('添加课程'), findsNothing);
       expect(find.text('添加日程'), findsNothing);
       expect(find.text('添加考试'), findsNothing);
 
       await tester.tap(find.text('添加'));
       await tester.pumpAndSettle();
 
-      // 主面板父行 + 卡内父行副本（父行「添加」，与弹层标题同名）；
-      // 子项首项「添加课程」标签复用弹层按钮文案，仅 1 处。
-      expect(find.text('添加'), findsNWidgets(2));
       expect(find.text('添加课程'), findsOneWidget);
       expect(find.text('添加日程'), findsOneWidget);
       expect(find.text('添加考试'), findsOneWidget);
-      // 「课表设置」行不重复出现（无子列表，不在浮层卡里）。
+      // 一级面板不因二级展开而消失。
       expect(find.text('课表设置'), findsOneWidget);
     });
 
     testWidgets('点「添加考试」子项回传宿主分发 id', (tester) async {
-      final opened = await pumpMenu(tester);
+      final selected = await pumpMenu(tester);
 
       await tester.tap(find.text('添加'));
       await tester.pumpAndSettle();
-
       await tester.tap(find.text('添加考试'));
-      await tester.pump();
-      expect(await opened.single, kAddCourseSubmenuExamId);
+      await tester.pumpAndSettle();
+
+      expect(selected, [kAddCourseSubmenuExamId]);
     });
   });
 }

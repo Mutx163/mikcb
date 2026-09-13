@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_miuix/miuix.dart' show MiuixBadge;
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
@@ -53,63 +52,6 @@ Future<void> pushHomeMenuPage(BuildContext context, Widget page) {
   return Navigator.of(
     context,
   ).push<void>(HyperosPageRoute<void>(builder: (_) => page));
-}
-
-/// Shows the home screen top-right action menu as a small anchored Miuix list
-/// popup — the same chrome as every other anchored popup in the app: spring
-/// reveal, glass surface, tap-outside to dismiss.
-///
-/// Rows are plain text only, matching the MIUI/HyperOS top-right menu
-/// convention (icons are reserved for in-page actions, not overflow menus).
-///
-/// [entries] 与八宫格共享同一份自定义排列（`resolveHomeGridMenuEntries`
-/// 的结果）；相邻条目分类变化时插入 8dp 分组间隔，自定义排列后分组
-/// 仍然自然。返回被点条目的 [HomeMenuEntry.id]，由调用方经目录分发
-/// 导航（与八宫格形态同一条回传路径）。「添加」入口例外：它挂
-/// [kAddCourseSubmenu]（HyperOS 相册「视图」式二级列表，收起显示展开
-/// 箭头，点开浮出 添加课程/添加日程/添加考试），宿主按子项 id 直开
-/// 对应页面，与三宫格添加弹层同一组目的地。
-///
-/// [anchorKey] must be the key of the top-right "more" button; the popup is
-/// positioned just below it via [hyperosPopupPositionBelow].
-Future<String?> showHomeTopMenuSheet(
-  BuildContext context, {
-  required bool hasAvailableUpdate,
-  required List<HomeMenuEntry> entries,
-  required GlobalKey anchorKey,
-
-  /// 壁纸感知墨色（深壁纸 → 白墨）。仅在弹窗面板透出壁纸时生效：实底面
-  /// （模糊关闭 / 系统降级）与柔光玻璃面（乳白 / 深灰罩面，极性随 app
-  /// 主题）会自动回退主题墨色，避免白墨打在乳白罩面上不可读。
-  Color? foregroundColor,
-}) {
-  final l10n = AppLocalizations.of(context)!;
-  final position = hyperosPopupPositionBelow(context, anchorKey);
-
-  return showHyperosListPopup<String>(
-    context: context,
-    position: position,
-    foregroundColor: foregroundColor,
-    items: [
-      for (var index = 0; index < entries.length; index++)
-        HyperosPopupMenuItem<String>(
-          label: entries[index].title(l10n),
-          value: entries[index].id,
-          // The trailing dot badge marks the pending update; rows stay text
-          // only so the wallpaper-aware ink keeps the menu uniform.
-          trailing:
-              entries[index].id == kUpdateEntryId && hasAvailableUpdate
-                  ? const MiuixBadge()
-                  : null,
-          gapBefore:
-              index > 0 &&
-              entries[index].category != entries[index - 1].category,
-          children: entries[index].id == kAddCourseSubmenuParentId
-              ? kAddCourseSubmenu(l10n)
-              : const [],
-        ),
-    ],
-  );
 }
 
 /// 列表态菜单「添加」入口的三个二级动作 id（宿主分发用）。
