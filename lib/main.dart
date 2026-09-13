@@ -7,6 +7,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:inspire_blur/inspire_blur.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
@@ -362,6 +364,17 @@ Future<void> main() async {
           brightnessResolver: Theme.maybeBrightnessOf,
         ),
       );
+      // flutter_miuix 的 OS4 玻璃着色器预热（6 个 `miuix_os4_*.frag`）。
+      //
+      // 背景：`MiuixGlass` 首次使用时才 `MiuixGlassRendering.load()`，那会让
+      // "第一次打开玻璃弹窗"现场付这笔**管线创建**成本（6 个片元程序）。
+      // 这里排进**空闲任务**提前跑：`load()` 幂等（`_loading ??= _load()`），
+      // 与组件内部那次调用合起来只加载一次，**总工作量不变**，只是把成本从
+      // 用户可感知的时刻挪到启动后的空档。放空闲优先级而非 `main()` 里
+      // await，是为了不拖慢冷启动首帧；失败也不阻断（玻璃按未预热降级）。
+      SchedulerBinding.instance.scheduleTask(() {
+        unawaited(MiuixGlassRendering.load());
+      }, Priority.idle, debugLabel: 'miuix-os4-glass-warm');
       // 玻璃 shader 预热放到启动画面展示期间并行跑（失败只记日志不阻断，
       // 玻璃按未预热降级，绝不能因此卡死换页）。
       _glassShadersWarm = LiquidGlassWidgets.initialize().catchError((
