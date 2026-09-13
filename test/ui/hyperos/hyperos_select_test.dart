@@ -674,6 +674,49 @@ void main() {
       expect(value.right, greaterThan(300));
     });
 
+    testWidgets('弹层宽度收到内容宽度：短标签就是旧实现的下界 200，不再撑满 maxWidth', (
+      tester,
+    ) async {
+      await pumpHosted(tester, onChanged: (_) {});
+      await tester.tap(find.text('卡片外观'));
+      await tester.pumpAndSettle();
+
+      final itemWidth = tester
+          .getSize(find.byType(MiuixGlassPopupItem).first)
+          .width;
+      // 上游 MiuixGlassPopupItem 的 Row 是 mainAxisSize.max：不夹内容时弹层会
+      // 恒等于 sizing.maxWidth（372）。这里必须是内容宽度被下界 200 顶住的 200。
+      expect(itemWidth, 200);
+    });
+
+    testWidgets('长标签仍按内容变宽，且不超过 372 上限', (tester) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: HyperosGlassBackdropHost(
+            child: Center(
+              child: SizedBox(
+                width: 360,
+                child: HyperosSelectTile<String>(
+                  label: '排序',
+                  items: const {'这是一条很长很长的选项标签用来撑宽度': 'long'},
+                  value: 'long',
+                  onChanged: (_) {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('排序'));
+      await tester.pumpAndSettle();
+
+      final itemWidth = tester
+          .getSize(find.byType(MiuixGlassPopupItem).first)
+          .width;
+      expect(itemWidth, greaterThan(200));
+      expect(itemWidth, lessThanOrEqualTo(372));
+    });
+
     testWidgets('点空白关闭弹层并归还页级捕获', (tester) async {
       await pumpHosted(tester, onChanged: (_) {});
 

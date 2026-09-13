@@ -749,17 +749,25 @@ class HyperosSelectPopup<T> extends StatelessWidget {
           os4GlassBackdrop,
       sizing: _os4SelectSizing,
       onDismissRequest: onDismiss,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final entry in items.entries)
-            MiuixGlassPopupItem(
-              text: entry.key,
-              selected: entry.value == currentValue,
-              icon: itemPrefixBuilder?.call(entry.value),
-              onPressed: () => onSelected(entry.value),
-            ),
-        ],
+      // 上游 `MiuixGlassPopupItem` 的 Row 是 `mainAxisSize.max`，会直接撑满
+      // `sizing.maxWidth`：只给 min/max 而不夹内容，弹层宽度恒等于 maxWidth
+      // （短标签的「卡片外观」也会变成 372 宽）。这里用 [IntrinsicWidth] 把内容
+      // 夹到「最宽一条的自然宽度」，再由 sizing 收敛到 [200, 372] —— 与旧实现
+      // （`ConstrainedBox(minWidth: 132 + popupExtraLeadingWidth)` + 内容自适应）
+      // 同宽度。
+      child: IntrinsicWidth(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final entry in items.entries)
+              MiuixGlassPopupItem(
+                text: entry.key,
+                selected: entry.value == currentValue,
+                icon: itemPrefixBuilder?.call(entry.value),
+                onPressed: () => onSelected(entry.value),
+              ),
+          ],
+        ),
       ),
     );
   }
