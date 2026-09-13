@@ -4,6 +4,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'hyperos_blurred_header.dart';
 import 'hyperos_collapsible_top_app_bar.dart';
+import 'hyperos_glass_backdrop_host.dart';
 import 'hyperos_icon_button.dart';
 import 'hyperos_overscroll.dart';
 import 'hyperos_overlay_header.dart';
@@ -687,6 +688,13 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 页级 OS4 玻璃采样源宿主：页内选择弹层采样的是「本页内容」，而捕获必须
+    // 包住页面内容、又留在弹层之外（弹层经 OverlayPortal 画到 rootOverlay，
+    // 天然在捕获之外）。宿主只在弹层展开期间真正录帧，静态页面零开销。
+    return HyperosGlassBackdropHost(child: _buildPage(context));
+  }
+
+  Widget _buildPage(BuildContext context) {
     final pageBackground =
         widget.backgroundColor ?? HyperosColors.scaffoldBackground(context);
 

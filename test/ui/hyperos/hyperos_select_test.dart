@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
@@ -598,6 +599,93 @@ void main() {
             (content + middle + middle) +
             (content + middle + firstLast),
       );
+    });
+  });
+
+  group('HyperosSelectTile · OS4 玻璃弹层（页级宿主）', () {
+    bool captureEnabled(WidgetTester tester) => tester
+        .widget<HyperosLayerBackdropCapture>(
+          find.byType(HyperosLayerBackdropCapture),
+        )
+        .enabled;
+
+    Future<void> pumpHosted(
+      WidgetTester tester, {
+      required void Function(String) onChanged,
+    }) {
+      return tester.pumpWidget(
+        TestApp(
+          home: HyperosGlassBackdropHost(
+            child: Center(
+              child: SizedBox(
+                width: 360,
+                child: HyperosSelectTile<String>(
+                  label: '卡片外观',
+                  items: const {'实体卡片': 'solid', '高斯模糊': 'gaussian'},
+                  value: 'solid',
+                  onChanged: onChanged,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('宿主存在时改用 OS4 弹层：常驻挂载，展开才开页级捕获', (tester) async {
+      String? selected;
+      await pumpHosted(tester, onChanged: (value) => selected = value);
+
+      // 弹层常驻挂载（上游契约：保持组件挂载并切换 show），但未展开不录帧。
+      expect(find.byType(MiuixGlassDropdownPopup), findsOneWidget);
+      expect(find.text('高斯模糊'), findsNothing);
+      expect(captureEnabled(tester), isFalse);
+
+      await tester.tap(find.text('卡片外观'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('高斯模糊'), findsOneWidget);
+      expect(captureEnabled(tester), isTrue);
+
+      await tester.tap(find.text('高斯模糊'));
+      await tester.pumpAndSettle();
+
+      expect(selected, 'gaussian');
+      expect(find.text('高斯模糊'), findsNothing);
+      expect(captureEnabled(tester), isFalse);
+    });
+
+    testWidgets('OS4 弹层不改变行自身布局：标签与右侧值仍分列整行两端', (tester) async {
+      await pumpHosted(tester, onChanged: (_) {});
+
+      final row = tester.getSize(
+        find
+            .ancestor(
+              of: find.text('卡片外观'),
+              matching: find.byType(HyperosPressableRow),
+            )
+            .first,
+      );
+      expect(row.width, 360);
+
+      final label = tester.getRect(find.text('卡片外观'));
+      final value = tester.getRect(find.text('实体卡片'));
+      expect(label.left, lessThan(value.left));
+      expect(value.right, greaterThan(300));
+    });
+
+    testWidgets('点空白关闭弹层并归还页级捕获', (tester) async {
+      await pumpHosted(tester, onChanged: (_) {});
+
+      await tester.tap(find.text('卡片外观'));
+      await tester.pumpAndSettle();
+      expect(captureEnabled(tester), isTrue);
+
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      expect(find.text('高斯模糊'), findsNothing);
+      expect(captureEnabled(tester), isFalse);
     });
   });
 }

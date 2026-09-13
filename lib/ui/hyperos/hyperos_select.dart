@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_controls.dart';
+import 'hyperos_glass_backdrop_host.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_sheet.dart';
 import 'hyperos_theme.dart';
@@ -699,10 +700,11 @@ class HyperosSolidPopupSurface extends StatelessWidget {
 /// 页面树里，位置由 [anchorRect] 给出，结果只经 [onSelected] 回调回落 ——
 /// 弹层**不自己 pop 任何路由**。
 ///
-/// 玻璃需要宿主页包一层
-/// `MiuixLayerBackdropCapture(backdrop: os4GlassBackdrop, child: 页面内容)`
-/// 才有背景可采样（上游要求捕获子树不含玻璃自身，因此弹层必须放在捕获**之外**，
-/// 见 `os4_glass_backdrop.dart`）；没包时上游降级为纯色轮廓，不会报错。
+/// 玻璃需要宿主页提供采样源：优先取所在页面 [HyperosGlassBackdropScope]
+/// 下发的页级 backdrop（`_HyperosBlurredPage` 已自动挂好，弹层展开期间才录帧），
+/// 页面级宿主之外的调用点再退回全局 [os4GlassBackdrop]；都没有时上游降级为
+/// 材质底色 + 轮廓，不会报错。上游要求捕获子树不含玻璃自身，因此弹层必须留在
+/// 捕获**之外** —— 弹层经 OverlayPortal 画到 rootOverlay，天然满足。
 class HyperosSelectPopup<T> extends StatelessWidget {
   const HyperosSelectPopup({
     super.key,
@@ -713,6 +715,7 @@ class HyperosSelectPopup<T> extends StatelessWidget {
     required this.onSelected,
     required this.onDismiss,
     this.itemPrefixBuilder,
+    this.backdrop,
   });
 
   /// 是否展开。
@@ -732,12 +735,18 @@ class HyperosSelectPopup<T> extends StatelessWidget {
 
   final Widget? Function(T value)? itemPrefixBuilder;
 
+  /// 采样源覆盖（默认按所在页面自动解析，见类文档）。
+  final MiuixLayerBackdrop? backdrop;
+
   @override
   Widget build(BuildContext context) {
     return MiuixGlassDropdownPopup(
       show: show,
       anchorBounds: anchorRect,
-      backdrop: os4GlassBackdrop,
+      backdrop:
+          backdrop ??
+          HyperosGlassBackdropScope.maybeOf(context)?.backdrop ??
+          os4GlassBackdrop,
       sizing: _os4SelectSizing,
       onDismissRequest: onDismiss,
       child: Column(
@@ -1054,6 +1063,79 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
   final _anchorKey = GlobalKey();
   bool _menuOpen = false;
 
+  /// OS4 玻璃弹层：**常驻挂载 + 切 `show`**（上游契约），锚点矩形在展开时定格。
+  bool _os4Open = false;
+  Rect? _os4AnchorRect;
+
+  /// 已 acquire 的页级采样源宿主。弹层展开期间持有；手指按下即预热，抬手后
+  /// 若并未展开则立刻归还，避免页级捕获空转。
+  HyperosGlassBackdropScope? _heldCapture;
+
+  /// 本行是否走 OS4 玻璃弹层。三类调用点继续走旧弹层：
+  /// - 选项多到要用底部 sheet（`showHyperosSelectSheet`）；
+  /// - 逐项自定义字号（字体预览）—— 上游 `MiuixGlassPopupItem` 不支持覆盖文字样式；
+  /// - 所在页面没有页级采样源宿主（如单测里的裸 `HyperosSelectTile`）。
+  HyperosGlassBackdropScope? _os4ScopeFor(BuildContext context) {
+    if (widget.useSheetForPopup ||
+        widget.items.length > widget.sheetItemThreshold ||
+        widget.itemTitleStyleBuilder != null) {
+      return null;
+    }
+    return HyperosGlassBackdropScope.maybeOf(context);
+  }
+
+  void _holdCapture(HyperosGlassBackdropScope scope) {
+    if (identical(_heldCapture, scope)) return;
+    _heldCapture?.release();
+    _heldCapture = scope;
+    scope.acquire();
+  }
+
+  void _dropCapture() {
+    _heldCapture?.release();
+    _heldCapture = null;
+  }
+
+  /// 手指按下就开启页级捕获：图层快照在帧末录制，早一拍预热可保证弹层首帧
+  /// 已经采得到背景（否则展开的第一帧只有材质底色）。
+  void _prewarmCapture(BuildContext context) {
+    if (_menuOpen || !widget.enabled || widget.onChanged == null) return;
+    final scope = _os4ScopeFor(context);
+    if (scope != null) {
+      _holdCapture(scope);
+    }
+  }
+
+  /// 抬手/取消：没真展开就归还预热。
+  void _settleCapture() {
+    if (!_os4Open) {
+      _dropCapture();
+    }
+  }
+
+  void _closeOs4() {
+    if (!_os4Open) return;
+    setState(() {
+      _os4Open = false;
+      _menuOpen = false;
+    });
+    _dropCapture();
+  }
+
+  void _onOs4Selected(T value) {
+    final changed = value != widget.value;
+    _closeOs4();
+    if (changed) {
+      widget.onChanged?.call(value);
+    }
+  }
+
+  @override
+  void dispose() {
+    _dropCapture();
+    super.dispose();
+  }
+
   Future<void> _openSelector(BuildContext context) async {
     if (_menuOpen || !widget.enabled || widget.onChanged == null) {
       return;
@@ -1064,7 +1146,19 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
         widget.useSheetForPopup ||
         widget.items.length > widget.sheetItemThreshold ||
         anchorRect == null;
+    final os4Scope = useSheet ? null : _os4ScopeFor(context);
 
+    if (os4Scope != null) {
+      _holdCapture(os4Scope);
+      setState(() {
+        _menuOpen = true;
+        _os4Open = true;
+        _os4AnchorRect = anchorRect;
+      });
+      return;
+    }
+
+    _dropCapture();
     setState(() => _menuOpen = true);
 
     T? selected;
@@ -1189,12 +1283,42 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
       );
     }
 
-    return HyperosPressableRow(
+    final pressable = HyperosPressableRow(
       onTap: effectiveEnabled ? () => _openSelector(context) : null,
       backgroundColor: cardColor,
       highlightColor: highlightColor,
       forceHighlighted: _menuOpen,
       child: row,
+    );
+
+    final os4Scope = _os4ScopeFor(context);
+    if (os4Scope == null) {
+      // 没有页级采样源（或本行本就走 sheet / 需要逐项字号）：保持原样，连弹层
+      // 都不挂载。
+      return pressable;
+    }
+
+    // OS4 弹层经 OverlayPortal 画到 rootOverlay，自身零尺寸，所以与行同层放
+    // Stack 不会改变行本身的布局（Stack 只把约束放松给非定位子节点，行内部
+    // 的 Row 仍按 mainAxisSize.max 撑满）。
+    return Stack(
+      children: [
+        Listener(
+          onPointerDown: (_) => _prewarmCapture(context),
+          onPointerUp: (_) => _settleCapture(),
+          onPointerCancel: (_) => _settleCapture(),
+          child: pressable,
+        ),
+        HyperosSelectPopup<T>(
+          show: _os4Open,
+          anchorRect: _os4AnchorRect ?? Rect.zero,
+          items: widget.items,
+          currentValue: widget.value,
+          onSelected: _onOs4Selected,
+          onDismiss: _closeOs4,
+          itemPrefixBuilder: widget.itemPrefixBuilder,
+        ),
+      ],
     );
   }
 }
