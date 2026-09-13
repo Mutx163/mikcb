@@ -176,4 +176,42 @@ void main() {
     );
     expect(popup.backdrop, same(menuBackdrop));
   });
+
+  testWidgets('玻璃在捕获子树内也不会自激重绘（静止后不再排帧）', (tester) async {
+    // 真机现象：外观与配色页静止也吃满一个核。玻璃就在捕获子树里时，
+    // 录帧 → 通知消费者 → 玻璃重绘 → 捕获节点（最近的重绘边界）被标脏 →
+    // 再录一次 …… 变成 60fps 永远排下一帧。修好后静止即停。
+    final controller = HyperosGlassBackdropController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      hostWith(
+        controller: controller,
+        child: const Stack(
+          children: <Widget>[
+            SizedBox.expand(),
+            Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: 240,
+                height: 60,
+                child: SoftGlassSurface(child: SizedBox.expand()),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+
+    expect(controller.capturing, isTrue);
+    expect(controller.backdrop.snapshot, isNotNull, reason: '采样源要真的录到快照');
+    expect(
+      tester.binding.hasScheduledFrame,
+      isFalse,
+      reason: '静止后不应继续排帧（自激重绘）',
+    );
+  });
 }

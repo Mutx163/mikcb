@@ -284,9 +284,23 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
     super.detach();
   }
 
+  /// 上一次录帧后是否已经通知过消费者（玻璃）。
+  ///
+  /// 玻璃就在本捕获子树里时（页内玻璃都是），`updateSnapshot` 的通知会让它
+  /// `markNeedsPaint`，进而把本节点也标脏 → 又录一次 → 又通知…… 变成 60fps 的
+  /// 自激重绘：真机实测「外观与配色」页静止也吃满一个核、整机发烫掉帧。
+  ///
+  /// 录帧只应在**内容变了**时发生，所以这一帧若是被自己的通知带出来的，直接跳过，
+  /// 循环即止（代价：连续滚动时最多两帧的采样延迟）。
+  bool _notifiedSinceCapture = false;
+
   @override
   void paint(PaintingContext context, Offset offset) {
     super.paint(context, offset);
+    if (_notifiedSinceCapture) {
+      _notifiedSinceCapture = false;
+      return;
+    }
     _scheduleCapture();
   }
 
@@ -311,6 +325,7 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
       Offset.zero & size,
       pixelRatio: dpr,
     );
+    _notifiedSinceCapture = true;
     _controller.backdrop.updateSnapshot(
       image,
       localToGlobal(Offset.zero),
