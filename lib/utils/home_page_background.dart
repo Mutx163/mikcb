@@ -13,7 +13,6 @@ import 'dart:ui'
 import 'package:flutter/material.dart';
 
 import '../models/timetable_settings.dart';
-import '../ui/background/bokeh_lava_gradient.dart';
 import '../ui/background/builtin_wallpaper.dart';
 import 'hex_color.dart';
 
@@ -372,10 +371,13 @@ Widget homePageBackdropLayer({required TimetableSettings settings}) {
 
 /// Full-bleed backdrop image for embedding inside a week page.
 ///
-/// 自选图片仍返回 [Image]；内置壁纸返回动画 [BokehLavaGradient]（光斑漂移）。
-/// 亮度采样与预模糊玻璃继续走 [BuiltInWallpaperImage] 静态位图，与此显示层解耦。
-/// [BokehLavaGradient.debugDisableAnimationForced] 打开时（widget 集成测试）
-/// 回落到静态 Image，避免模糊绘制拖垮假异步环境。
+/// 自选图片与内置壁纸**都**返回静态 [Image]。
+///
+/// 内置壁纸原先走 `BokehLavaGradient` 的光斑漂移动画，2026-09-13 整体移除：
+/// 它每 tick 都会改写玻璃的 backdrop，使首页每块玻璃跟着重做一次
+/// 采样 + 模糊 + 折射；真机实测动态壁纸下**静置也以 15.2fps 持续空转**，
+/// 换成静态后静置降到 0fps、滚动跟手感明显变好。亮度采样与预模糊玻璃一直
+/// 走 [BuiltInWallpaperImage] 静态位图，移除后显示层与采样层彻底同源。
 Widget? homePageBackdropImageWidget({required TimetableSettings settings}) {
   final path = resolveHomePageBackdropImagePath(settings);
   final provider = homePageBackdropProvider(settings);
@@ -385,14 +387,6 @@ Widget? homePageBackdropImageWidget({required TimetableSettings settings}) {
   // 横向壁纸在 cover 下水平溢出，用用户拖选的对齐值决定显示哪一段。
   // 内置壁纸由代码生成，没有可拖动的裁剪窗口，固定居中。
   final isBuiltIn = path == null || path.isEmpty;
-  if (isBuiltIn &&
-      provider is BuiltInWallpaperImage &&
-      !BokehLavaGradient.debugDisableAnimationForced) {
-    return BokehLavaGradient(
-      key: ValueKey(homePageBackdropKey(settings)),
-      wallpaper: provider.wallpaper,
-    );
-  }
   final alignX = isBuiltIn
       ? 0.0
       : settings.homePageWallpaperAlignX.clamp(-1.0, 1.0);

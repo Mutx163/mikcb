@@ -8,8 +8,11 @@ import 'package:flutter/material.dart';
 ///
 /// 完整移植自 [bokeh-lava-gradient](https://github.com/keepYaoung/bokeh-lava-gradient)
 /// （MIT，© keepYaoung / tommy / joon shin）的 7 个预设：`og` + 3 浅色 + 3 深色。
-/// 首页显示层用 [BokehLavaGradient] 做光斑漂移动画；亮度采样与预模糊玻璃
-/// 仍走 [renderBuiltInWallpaperImage] 静态位图（可播种、与动画首帧同构）。
+///
+/// 2026-09-13：**取消光斑漂移动画**。首页显示层与亮度采样 / 预模糊玻璃现在统一走
+/// [renderBuiltInWallpaperImage] 的静态位图（显示层经 [BuiltInWallpaperImage]）。
+/// 原因见 `lib/utils/home_page_background.dart` 的注释：动画每 tick 都会改写玻璃的
+/// backdrop，使首页每块玻璃跟着重做采样+模糊+折射，真机静置即以 15.2fps 持续空转。
 enum BuiltInWallpaper {
   /// 原版 `og`：烧橙底 + 暖橙光斑（默认原作配色）。
   og,
@@ -386,11 +389,10 @@ double _srgbLuminanceOf(Color color) {
       0.0722 * lin((color.b * 255).round());
 }
 
-/// 把内置壁纸渲染成一张静态位图，供亮度采样 / 预模糊玻璃复用。
+/// 把内置壁纸渲染成一张静态位图。
 ///
-/// 首页**显示**层走 [BokehLavaGradient] 动画；本入口只服务「需要单帧像素」
-/// 的管线（墨色极性、玻璃带采样），因此刻意不带动画——与动画首帧同 seed
-/// 同构，画面观感一致。
+/// 首页**显示**层（经 [BuiltInWallpaperImage]）与亮度采样 / 预模糊玻璃都用它，
+/// 因此显示层与采样层天然同源、同 seed、画面完全一致。
 Future<ui.Image> renderBuiltInWallpaperImage(
   BuiltInWallpaper wallpaper, {
   int width = kBuiltInWallpaperWidth,
@@ -428,9 +430,8 @@ Future<ui.Image> renderBuiltInWallpaperImage(
         sigmaX: shortest * spec.blurStrength,
         sigmaY: shortest * spec.blurStrength,
         // clamp 而非 decal：光斑渐变会一路铺到画布边界，decal 把界外当透明，
-        // 模糊后四周会留一圈渐隐并透出底色。必须与动画层
-        // （BokehLavaGradient 的 ImageFiltered）严格同口径 —— 首帧与这份
-        // 位图是「同构」承诺，亮度采样与预模糊玻璃都建立在这个不变量上。
+        // 模糊后四周会留一圈渐隐并透出底色。此值与静态位图必须保持一致——
+        // 显示层、亮度采样与预模糊玻璃都建立在这份不变量上。
         tileMode: TileMode.clamp,
       ),
   );

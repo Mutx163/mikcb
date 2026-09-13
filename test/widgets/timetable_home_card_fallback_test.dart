@@ -21,7 +21,6 @@ import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
-import 'package:university_timetable/ui/background/bokeh_lava_gradient.dart';
 import 'package:university_timetable/widgets/course_card.dart';
 import 'package:university_timetable/utils/home_page_background.dart';
 import 'package:university_timetable/widgets/course_grid_surface_host.dart';
@@ -98,14 +97,6 @@ Future<void> _pumpHome(WidgetTester tester, TimetableSettings settings) async {
 }
 
 void main() {
-  setUp(() {
-    BokehLavaGradient.debugDisableAnimationForced = true;
-  });
-
-  tearDown(() {
-    BokehLavaGradient.debugDisableAnimationForced = false;
-  });
-
   testWidgets('无壁纸 + 高斯模糊设置：课程卡片按实体卡片渲染', (tester) async {
     final settings = TimetableSettings.defaults().copyWith(
       courseCardSurfaceStyle: CourseCardSurfaceStyle.gaussian,

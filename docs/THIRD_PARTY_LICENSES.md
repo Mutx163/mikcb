@@ -30,10 +30,15 @@
 
 | 组件 | 用途 | 许可 / 说明 |
 |------|------|-------------|
-| [bokeh-lava-gradient](https://github.com/keepYaoung/bokeh-lava-gradient) | 内置壁纸的光斑渐变绘制思路与调色板 | MIT，© keepYaoung / tommy / joon shin。按「静态位图」需求重写于 `lib/ui/background/bokeh_lava_gradient.dart` 与 `lib/ui/background/builtin_wallpaper.dart`，未引入 git 依赖 |
+| [bokeh-lava-gradient](https://github.com/keepYaoung/bokeh-lava-gradient) | 内置壁纸的光斑渐变绘制思路与调色板 | MIT，© keepYaoung / tommy / joon shin。按「静态位图」需求重写于 `lib/ui/background/builtin_wallpaper.dart`，未引入 git 依赖 |
 
-> 该移植去掉了原包的逐帧动画与低分辨率模糊缓冲，改为一次性渲染静态位图，
+> 该移植只保留**静态位图**渲染（`renderBuiltInWallpaperImage`）：光斑布局、
+> 调色板与模糊口径均沿用原包，去掉了逐帧动画与低分辨率模糊缓冲，
 > 以便复用本仓库「壁纸文件 → 亮度采样 → 预模糊玻璃」的既有管线。
+>
+> 2026-09-13 起连**光斑漂移动画**也一并移除（原先实现在
+> `lib/ui/background/bokeh_lava_gradient.dart`，该文件已删除）：动画每 tick 都会
+> 改写玻璃的 backdrop，真机实测静置即 15.2fps 持续空转；改为全静态后静置降到 0fps。
 
 ## Bundled 前端资源（局域网 Web 编辑）
 

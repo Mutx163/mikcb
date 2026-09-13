@@ -16,7 +16,6 @@ import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
-import 'package:university_timetable/ui/background/bokeh_lava_gradient.dart';
 import 'package:university_timetable/ui/background/builtin_wallpaper.dart';
 import 'package:university_timetable/utils/home_page_background.dart';
 
@@ -45,8 +44,7 @@ void _seedInitializedPrefs(TimetableSettings settings) {
 /// **刻意不用 `tester.runAsync`**：TimetableScreen 的 Ticker 与 runAsync
 /// 假时钟会互相等待，历史上表现为整用例挂满 10 分钟超时（同款注释见
 /// timetable_home_card_fallback_test）。本文件断言的「背景层存在/不存在」
-/// 是构建期属性（BokehLavaGradient / 内置位图 Image 是否在树上），无需
-/// 真实异步管线收敛。
+/// is 构建期属性（内置位图 Image 是否在树上），无需真实异步管线收敛。
 Future<void> _pumpHome(
   WidgetTester tester,
   TimetableSettings settings, {
@@ -82,9 +80,8 @@ Future<void> _pumpHome(
     await tester.pump(const Duration(milliseconds: 100));
   }
 
-  // 有背景时首页背景层必须画出内置壁纸（动画 BokehLavaGradient 或位图
-  // Image）；无背景时两者都不应出现（只有主题兜底色）。
-  final hasAnimated = find.byType(BokehLavaGradient).evaluate().isNotEmpty;
+  // 有背景时首页背景层必须画出内置壁纸（静态位图 Image）；无背景时不应
+  // 出现（只剩主题兜底色）。
   final hasStatic =
       find
           .byWidgetPredicate(
@@ -93,29 +90,14 @@ Future<void> _pumpHome(
           .evaluate()
           .isNotEmpty;
   if (expectBackdrop) {
-    expect(
-      hasAnimated || hasStatic,
-      isTrue,
-      reason: '内置壁纸应以 BokehLavaGradient 动画或静态位图渲染',
-    );
+    expect(hasStatic, isTrue, reason: '内置壁纸应以静态位图渲染');
   } else {
-    expect(hasAnimated, isFalse, reason: '无背景时不应渲染内置壁纸动画');
     expect(hasStatic, isFalse, reason: '无背景时不应渲染内置壁纸位图');
   }
   expect(tester.takeException(), isNull);
 }
 
 void main() {
-  setUp(() {
-    // TimetableScreen + Ticker 与 runAsync 假时钟会死锁；本用例只断言
-    // 背景层是否出现，不需要真实漂移。
-    BokehLavaGradient.debugDisableAnimationForced = true;
-  });
-
-  tearDown(() {
-    BokehLavaGradient.debugDisableAnimationForced = false;
-  });
-
   testWidgets('选中内置壁纸后首页把它当作背景（无磁盘文件）', (tester) async {
     final settings = TimetableSettings.defaults().copyWith(
       homePageBuiltInWallpaper: BuiltInWallpaper.lavaDark.value,

@@ -500,10 +500,12 @@ class _TimetablePageSettingsScreenState
                   selected: entry.key == selectedKey,
                   onTap: () => _selectBackdropEntry(entry),
                   thumbnail: builtIn != null
-                      ? BokehLavaGradient(
-                          wallpaper: builtIn,
-                          // 同屏多张缩略图：静态首帧即可，避免多 Ticker。
-                          animate: false,
+                      // 缩略图直接用静态位图：与首页同一 ImageProvider，
+                      // 同一预设只渲染一次、由 ImageCache 复用。
+                      ? Image(
+                          image: BuiltInWallpaperImage(builtIn),
+                          fit: BoxFit.cover,
+                          gaplessPlayback: true,
                         )
                       : Image.file(
                           File(entry.key),
@@ -781,11 +783,11 @@ class _BuiltInWallpaperOption extends StatelessWidget {
                 color: HyperosColors.secondaryText(context),
               ),
             )
-          : BokehLavaGradient(
-              wallpaper: wallpaper,
-              // 列表里多张缩略图同屏；静态首帧与首页动画同 seed，
-              // 避免同时起多个 Ticker 耗电。
-              animate: false,
+          // 缩略图直接用静态位图（与首页同一 ImageProvider，缓存复用）。
+          : Image(
+              image: BuiltInWallpaperImage(wallpaper),
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
             ),
     );
   }
