@@ -111,6 +111,31 @@
 
 补充：包的 `GlassMenu` 是公开 widget（`items` / `menuWidth` / `menuBorderRadius` / `stretch` / `interactionScale` / `glow*` / `morphFromZero` / `GlassMenuController`），**但不支持二级子菜单**——这正是我们自研 `hyperos_list_popup` 的原因（右上角菜单有二级）。所以可行路径是：**保留自研弹窗逻辑，只把入场换成 `GlassMorphController`**（约 25 行集成）。
 
+#### D.1 这个"形变转场"到底是什么效果（按源码逐帧拆解）
+
+两个 blob：
+
+- **Blob A**（触发控件的"幽灵"）留在原位，在前 **40%**（`_anchorEaseDuration = 0.4`）缩到 0，让液体桥**干净断开**；关闭时再长回来"接住"面板。
+- **Blob B**（面板本体）沿 **J 曲线**从按钮中心飞向面板中心，同时从按钮尺寸长到面板尺寸。
+
+**那根"脖子"不是画出来的**：`blend`（SDF metaball 融合强度，clamp 0–28）= `|pathT − sizeT| × 150`。两个圆角矩形在 SDF 里融成一滴，中间自然长出连接的颈；`pathT/sizeT` 分离最大时脖子最长。源码注释原文："The metaball SDF shader automatically creates the teardrop neck between the two blobs — **there is no explicit neck geometry**."
+
+**过冲**：位置用 `_BackOutCurve(amplitude 2.5)` → 面板冲过目标再弹回（源码称 "string pull"，正是脖子被拉到最长的时刻）。
+
+**关闭才是重点**（同一根弹簧 `mass 1 / stiffness 120 / damping 16` → ζ≈0.73 略欠阻尼，另注入初速 **−2.5**）：
+
+- 面板**挤一下**：`containerScale = 1 + rawValue × 0.55`（rawValue<0，肉眼可见的压扁）
+- **按钮被顶一下**：`pushDx/pushDy = (finalDx + offset) × rawValue`（只在关闭过冲时非零）
+- 幽灵按钮重新长回来接住面板 —— 就是 iOS 那种橡皮筋回弹手感
+
+**时长与旋钮**：`MorphSpeed.normal` = iOS 26 原生对齐的 **375ms profile**；slow / normal / fast / instant 四档都保持 ζ=0.73（只改频率）；系统"减少动效"时切 instant 硬弹簧（单帧、无脖子）。`_backOutAmplitude` / `_blendMultiplier` / `_maxBlend` 等物理常数**故意不公开**（注释："暴露会产生物理上破碎的动画"），安全旋钮只有 `MorphSpeed`。
+
+**谁在用它**：包内 `GlassMenu`（`widgets/overlays/shared/glass_menu_internal.dart:369` → `_morphController.computeState(...)`）与 glass popover 内部；`open()` 从静止起步、`close()` 注入 −2.5。
+
+**怎么亲眼看**：published 包的 `example/example.dart` 只是通用首页（没有 morph 演示），要看真效果得 clone 仓库跑 Apple Messages 演示：`github.com/sdegenaar/liquid_glass_widgets` → `cd example && flutter run -t lib/apple_messages/apple_messages_demo.dart`（README：「点顶部菜单或 Edit 按钮，实时看 teardrop 开合物理」）。
+
+**和我们现在的差别**：我们是"玻璃卡片缩放着出现/消失"（`_listPopupSpring` 362.5/0.82 的 scale + reveal 补间）；morph 是"一滴液体从按钮里被扯出来"。差别就在那根脖子、J 曲线过冲，以及关闭时按钮被顶的那一下。
+
 ### E. 其他 pub 包（不推荐）
 
 pub.dev 搜 "page transition" 返回：`page_transition`、`concentric_transition`、`turn_page_transition`、`go_transitions`、`page_animation_transition`、`page_route_animator`、`page_route_transition`、`page_curl_flip`、`bottom_bar_page_transition`。
