@@ -10141,9 +10141,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedGlassModeSolid => '솔리드 카드';
 
   @override
-  String get frostedLiquidGlassHint => '리퀴드 글래스는 고성능 기기가 필요합니다';
-
-  @override
   String get advancedMaterialTitle => '고급 재질';
 
   @override
@@ -10195,9 +10192,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get collapsibleLargeTitle => '접을 수 있는 큰 제목';
 
   @override
-  String get liquidGlassCustomExpandedTitle => '사용자 정의 매개변수';
-
-  @override
   String get liquidGlassThicknessLabel => '두께';
 
   @override
@@ -10231,9 +10225,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liquidGlassResetAction => '기본값으로 초기화';
 
   @override
-  String get softGlassHint => '소프트 글래스는 고성능 기기가 필요하지 않으며, 변경 사항이 즉시 적용됩니다';
-
-  @override
   String get softGlassPresetLabel => '소프트 글래스 프리셋';
 
   @override
@@ -10250,9 +10241,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get softGlassPresetCustom => '사용자 지정';
-
-  @override
-  String get softGlassCustomExpandedTitle => '사용자 지정 매개변수';
 
   @override
   String get softGlassBlurLabel => '흐림 강도';
@@ -11104,10 +11092,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get progressiveBlurPresetLabel => '점진 블러 프리셋';
 
   @override
-  String get progressiveBlurHint =>
-      '점진 블러는 위쪽 가장자리에서 아래로 감쇠합니다. 변경 사항은 즉시 적용됩니다';
-
-  @override
   String get progressiveBlurPresetClear => '맑음';
 
   @override
@@ -11121,9 +11105,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get progressiveBlurPresetCustom => '사용자 지정';
-
-  @override
-  String get progressiveBlurCustomExpandedTitle => '사용자 지정 매개변수';
 
   @override
   String get progressiveBlurSigmaLabel => '블러 강도';

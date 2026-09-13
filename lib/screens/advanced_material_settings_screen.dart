@@ -84,13 +84,6 @@ class _AdvancedMaterialSettingsScreenState
                           showFrostedSheetSettingsDemo(context),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                    child: Text(
-                      l10n.frostedLiquidGlassHint,
-                      style: HyperosTypography.sectionDescription(context),
-                    ),
-                  ),
                   HyperosSelectTile<LiquidGlassPreset>(
                     label: l10n.liquidGlassPresetLabel,
                     items: {
@@ -116,13 +109,6 @@ class _AdvancedMaterialSettingsScreenState
                     },
                   ),
                   if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                      child: Text(
-                        l10n.liquidGlassCustomExpandedTitle,
-                        style: HyperosTypography.sectionDescription(context),
-                      ),
-                    ),
                     HyperosSliderTile(
                       title: l10n.liquidGlassThicknessLabel,
                       value: _draft.liquidGlassTuning!.thickness,
@@ -355,13 +341,6 @@ class _AdvancedMaterialSettingsScreenState
                               showFrostedSheetSettingsDemo(context),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        child: Text(
-                          l10n.softGlassHint,
-                          style: HyperosTypography.sectionDescription(context),
-                        ),
-                      ),
                       HyperosSelectTile<SoftGlassPreset>(
                         label: l10n.softGlassPresetLabel,
                         items: {
@@ -387,13 +366,6 @@ class _AdvancedMaterialSettingsScreenState
                         },
                       ),
                       if (_draft.softGlassPreset == SoftGlassPreset.custom) ...[
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                          child: Text(
-                            l10n.softGlassCustomExpandedTitle,
-                            style: HyperosTypography.sectionDescription(context),
-                          ),
-                        ),
                         HyperosSliderTile(
                           title: l10n.softGlassBlurLabel,
                           value: softTuning.blurRadiusMultiplier,
@@ -459,13 +431,6 @@ class _AdvancedMaterialSettingsScreenState
                       value.toStringAsFixed(digits);
                   return HyperosListGroup(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        child: Text(
-                          l10n.progressiveBlurHint,
-                          style: HyperosTypography.sectionDescription(context),
-                        ),
-                      ),
                       HyperosSelectTile<ProgressiveBlurPreset>(
                         label: l10n.progressiveBlurPresetLabel,
                         items: {
@@ -493,13 +458,6 @@ class _AdvancedMaterialSettingsScreenState
                       ),
                       if (_draft.progressiveBlurPreset ==
                           ProgressiveBlurPreset.custom) ...[
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                          child: Text(
-                            l10n.progressiveBlurCustomExpandedTitle,
-                            style: HyperosTypography.sectionDescription(context),
-                          ),
-                        ),
                         HyperosSliderTile(
                           title: l10n.progressiveBlurSigmaLabel,
                           value: tuning.sigma,

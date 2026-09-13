@@ -10098,9 +10098,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get frostedGlassModeSolid => 'ソリッドカード';
 
   @override
-  String get frostedLiquidGlassHint => 'リキッドガラスには高性能デバイスが必要です';
-
-  @override
   String get advancedMaterialTitle => '高度なマテリアル';
 
   @override
@@ -10152,9 +10149,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get collapsibleLargeTitle => '折りたたみ大タイトル';
 
   @override
-  String get liquidGlassCustomExpandedTitle => 'カスタムパラメータ';
-
-  @override
   String get liquidGlassThicknessLabel => '厚さ';
 
   @override
@@ -10188,9 +10182,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liquidGlassResetAction => 'デフォルトに戻す';
 
   @override
-  String get softGlassHint => 'ソフトグラスは高性能デバイスを必要とせず、変更はすぐに反映されます';
-
-  @override
   String get softGlassPresetLabel => 'ソフトグラスのプリセット';
 
   @override
@@ -10207,9 +10198,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get softGlassPresetCustom => 'カスタム';
-
-  @override
-  String get softGlassCustomExpandedTitle => 'カスタムパラメータ';
 
   @override
   String get softGlassBlurLabel => '曇りの強さ';
@@ -11060,9 +11048,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get progressiveBlurPresetLabel => 'プログレッシブぼかしプリセット';
 
   @override
-  String get progressiveBlurHint => 'プログレッシブぼかしは上端から下へ減衰します。変更は即時反映されます';
-
-  @override
   String get progressiveBlurPresetClear => 'クリア';
 
   @override
@@ -11076,9 +11061,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get progressiveBlurPresetCustom => 'カスタム';
-
-  @override
-  String get progressiveBlurCustomExpandedTitle => 'カスタムパラメータ';
 
   @override
   String get progressiveBlurSigmaLabel => 'ぼかしの強さ';

@@ -17767,12 +17767,6 @@ abstract class AppLocalizations {
   /// **'实体卡片'**
   String get frostedGlassModeSolid;
 
-  /// No description provided for @frostedLiquidGlassHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'液态玻璃需要高性能设备支持'**
-  String get frostedLiquidGlassHint;
-
   /// No description provided for @advancedMaterialTitle.
   ///
   /// In zh, this message translates to:
@@ -17875,12 +17869,6 @@ abstract class AppLocalizations {
   /// **'折叠大标题'**
   String get collapsibleLargeTitle;
 
-  /// No description provided for @liquidGlassCustomExpandedTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'自定义参数'**
-  String get liquidGlassCustomExpandedTitle;
-
   /// No description provided for @liquidGlassThicknessLabel.
   ///
   /// In zh, this message translates to:
@@ -17947,12 +17935,6 @@ abstract class AppLocalizations {
   /// **'恢复默认'**
   String get liquidGlassResetAction;
 
-  /// No description provided for @softGlassHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'柔光玻璃不依赖高性能设备，参数实时生效'**
-  String get softGlassHint;
-
   /// No description provided for @softGlassPresetLabel.
   ///
   /// In zh, this message translates to:
@@ -17988,12 +17970,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'自定义'**
   String get softGlassPresetCustom;
-
-  /// No description provided for @softGlassCustomExpandedTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'自定义参数'**
-  String get softGlassCustomExpandedTitle;
 
   /// No description provided for @softGlassBlurLabel.
   ///
@@ -19572,12 +19548,6 @@ abstract class AppLocalizations {
   /// **'渐进模糊预设'**
   String get progressiveBlurPresetLabel;
 
-  /// No description provided for @progressiveBlurHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'渐进模糊自顶边向下衰减；参数实时生效'**
-  String get progressiveBlurHint;
-
   /// No description provided for @progressiveBlurPresetClear.
   ///
   /// In zh, this message translates to:
@@ -19607,12 +19577,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'自定义'**
   String get progressiveBlurPresetCustom;
-
-  /// No description provided for @progressiveBlurCustomExpandedTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'自定义参数'**
-  String get progressiveBlurCustomExpandedTitle;
 
   /// No description provided for @progressiveBlurSigmaLabel.
   ///

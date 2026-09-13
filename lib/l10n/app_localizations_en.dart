@@ -10394,10 +10394,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frostedGlassModeSolid => 'Solid cards';
 
   @override
-  String get frostedLiquidGlassHint =>
-      'Liquid glass requires a high-performance device';
-
-  @override
   String get advancedMaterialTitle => 'Advanced Material';
 
   @override
@@ -10450,9 +10446,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collapsibleLargeTitle => 'Collapsible Large Title';
 
   @override
-  String get liquidGlassCustomExpandedTitle => 'Custom Parameters';
-
-  @override
   String get liquidGlassThicknessLabel => 'Thickness';
 
   @override
@@ -10486,10 +10479,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liquidGlassResetAction => 'Reset to Default';
 
   @override
-  String get softGlassHint =>
-      'Soft glass needs no high-end device; changes apply live';
-
-  @override
   String get softGlassPresetLabel => 'Soft glass preset';
 
   @override
@@ -10506,9 +10495,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get softGlassPresetCustom => 'Custom';
-
-  @override
-  String get softGlassCustomExpandedTitle => 'Custom parameters';
 
   @override
   String get softGlassBlurLabel => 'Frost strength';
@@ -11385,10 +11371,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get progressiveBlurPresetLabel => 'Progressive blur preset';
 
   @override
-  String get progressiveBlurHint =>
-      'Progressive blur fades from the top edge downward; changes apply instantly';
-
-  @override
   String get progressiveBlurPresetClear => 'Clear';
 
   @override
@@ -11402,9 +11384,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get progressiveBlurPresetCustom => 'Custom';
-
-  @override
-  String get progressiveBlurCustomExpandedTitle => 'Custom parameters';
 
   @override
   String get progressiveBlurSigmaLabel => 'Blur strength';

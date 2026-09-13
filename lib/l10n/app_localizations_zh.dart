@@ -9815,9 +9815,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get frostedGlassModeSolid => '实体卡片';
 
   @override
-  String get frostedLiquidGlassHint => '液态玻璃需要高性能设备支持';
-
-  @override
   String get advancedMaterialTitle => '高级材质';
 
   @override
@@ -9869,9 +9866,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get collapsibleLargeTitle => '折叠大标题';
 
   @override
-  String get liquidGlassCustomExpandedTitle => '自定义参数';
-
-  @override
   String get liquidGlassThicknessLabel => '厚度';
 
   @override
@@ -9905,9 +9899,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liquidGlassResetAction => '恢复默认';
 
   @override
-  String get softGlassHint => '柔光玻璃不依赖高性能设备，参数实时生效';
-
-  @override
   String get softGlassPresetLabel => '柔光玻璃预设';
 
   @override
@@ -9924,9 +9915,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get softGlassPresetCustom => '自定义';
-
-  @override
-  String get softGlassCustomExpandedTitle => '自定义参数';
 
   @override
   String get softGlassBlurLabel => '雾面强度';
@@ -10768,9 +10756,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get progressiveBlurPresetLabel => '渐进模糊预设';
 
   @override
-  String get progressiveBlurHint => '渐进模糊自顶边向下衰减；参数实时生效';
-
-  @override
   String get progressiveBlurPresetClear => '清透';
 
   @override
@@ -10784,9 +10769,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get progressiveBlurPresetCustom => '自定义';
-
-  @override
-  String get progressiveBlurCustomExpandedTitle => '自定义参数';
 
   @override
   String get progressiveBlurSigmaLabel => '模糊强度';
@@ -20656,9 +20638,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get frostedGlassModeSolid => '實體卡片';
 
   @override
-  String get frostedLiquidGlassHint => '液態玻璃需要高效能裝置';
-
-  @override
   String get advancedMaterialTitle => '進階材質';
 
   @override
@@ -20710,9 +20689,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get collapsibleLargeTitle => '摺疊大標題';
 
   @override
-  String get liquidGlassCustomExpandedTitle => '自訂參數';
-
-  @override
   String get liquidGlassThicknessLabel => '厚度';
 
   @override
@@ -20746,9 +20722,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liquidGlassResetAction => '還原預設';
 
   @override
-  String get softGlassHint => '柔光玻璃不依賴高效能裝置，參數即時生效';
-
-  @override
   String get softGlassPresetLabel => '柔光玻璃預設';
 
   @override
@@ -20765,9 +20738,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get softGlassPresetCustom => '自訂';
-
-  @override
-  String get softGlassCustomExpandedTitle => '自訂參數';
 
   @override
   String get softGlassBlurLabel => '霧面強度';
@@ -21609,9 +21579,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get progressiveBlurPresetLabel => '漸進模糊預設';
 
   @override
-  String get progressiveBlurHint => '漸進模糊自頂邊向下衰減；參數即時生效';
-
-  @override
   String get progressiveBlurPresetClear => '清透';
 
   @override
@@ -21625,9 +21592,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get progressiveBlurPresetCustom => '自訂';
-
-  @override
-  String get progressiveBlurCustomExpandedTitle => '自訂參數';
 
   @override
   String get progressiveBlurSigmaLabel => '模糊強度';
@@ -31497,9 +31461,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get frostedGlassModeSolid => '實體卡片';
 
   @override
-  String get frostedLiquidGlassHint => '液態玻璃需要高效能裝置支援';
-
-  @override
   String get advancedMaterialTitle => '進階材質';
 
   @override
@@ -31551,9 +31512,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get collapsibleLargeTitle => '折疊大標題';
 
   @override
-  String get liquidGlassCustomExpandedTitle => '自訂參數';
-
-  @override
   String get liquidGlassThicknessLabel => '厚度';
 
   @override
@@ -31587,9 +31545,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liquidGlassResetAction => '還原預設';
 
   @override
-  String get softGlassHint => '柔光玻璃不依賴高效能裝置，參數即時生效';
-
-  @override
   String get softGlassPresetLabel => '柔光玻璃預設';
 
   @override
@@ -31606,9 +31561,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get softGlassPresetCustom => '自訂';
-
-  @override
-  String get softGlassCustomExpandedTitle => '自訂參數';
 
   @override
   String get softGlassBlurLabel => '霧面強度';
@@ -32450,9 +32402,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get progressiveBlurPresetLabel => '漸進模糊預設';
 
   @override
-  String get progressiveBlurHint => '漸進模糊自頂邊向下衰減；參數即時生效';
-
-  @override
   String get progressiveBlurPresetClear => '清透';
 
   @override
@@ -32466,9 +32415,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get progressiveBlurPresetCustom => '自訂';
-
-  @override
-  String get progressiveBlurCustomExpandedTitle => '自訂參數';
 
   @override
   String get progressiveBlurSigmaLabel => '模糊強度';
