@@ -288,56 +288,33 @@ class _HyperosTransitionPageShell extends StatelessWidget {
           );
         }
 
-        // 不透明底 + 圆角，**不含投影**；投影单独成层（见下）。
-        final shell = DecoratedBox(
+        // 投影**不**单独成层：曾试过把它拆出来、用 Opacity 表达强度（让模糊
+        // 只算一次），真机实测对「进入设置页的长帧」没有可测改善
+        // （523/498/432ms vs 基线 440/523/531ms），反而每次转场多挂一块全屏
+        // 缓存层 —— 而实测那时的瓶颈正是「每次打开都分配上百 MB 离屏目标」，
+        // 加层方向相反，故回退到与不透明底同一层绘制。
+        return DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: effectiveRadius > 0.5 ? clipRadius : null,
             color: surface,
+            boxShadow: shadowStrength <= 0
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(
+                        alpha:
+                            HyperosMiuixNavigation.pageShadowAlpha *
+                            shadowStrength,
+                      ),
+                      blurRadius: HyperosMiuixNavigation.pageShadowBlur,
+                      offset: const Offset(
+                        HyperosMiuixNavigation.pageShadowOffsetX,
+                        HyperosMiuixNavigation.pageShadowOffsetY,
+                      ),
+                    ),
+                  ],
           ),
           child: page,
-        );
-        if (shadowStrength <= 0) {
-          return shell;
-        }
-
-        // 投影单独一层，并把「强度」从颜色 alpha 挪到 Opacity：
-        // 滑行中段的圆角半径是常量（transitionCornerRadiusFactor 只在两端
-        // settle band 收缩），所以投影形状在中段恒定 —— 放进 RepaintBoundary
-        // 后**模糊只算一次**，之后每帧只是重新合成透明度。
-        //
-        // 原先把 alpha 乘进 BoxShadow 颜色、与不透明底写在同一个 BoxDecoration
-        // 上，等于每一帧都重做一次**全屏**模糊：真机实测一次推页会在栅格侧留下
-        // 440~530ms 的单个长帧、进程 RSS 瞬时 +279MB（约 20 块全屏缓冲），
-        // 1.9s 后才释放；同一页从底栏内嵌进入（无转场）则既无长帧也只 +88MB。
-        return Stack(
-          // 投影画在页面之下；页面不透明，投影可见部分只有滑入那条边与圆角外侧。
-          children: [
-            Positioned.fill(
-              child: Opacity(
-                opacity: shadowStrength.clamp(0.0, 1.0),
-                child: RepaintBoundary(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: effectiveRadius > 0.5 ? clipRadius : null,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(
-                            alpha: HyperosMiuixNavigation.pageShadowAlpha,
-                          ),
-                          blurRadius: HyperosMiuixNavigation.pageShadowBlur,
-                          offset: const Offset(
-                            HyperosMiuixNavigation.pageShadowOffsetX,
-                            HyperosMiuixNavigation.pageShadowOffsetY,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            shell,
-          ],
         );
       },
       child: child,
