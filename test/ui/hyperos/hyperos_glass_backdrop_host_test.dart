@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -110,6 +112,79 @@ void main() {
       notifications,
       greaterThan(before),
       reason: '新开了一块采样区，捕获节点必须重绘一次，否则这块区永远没有快照',
+    );
+  });
+
+  testWidgets('弹层滑入过程中采样带跟着重录，不再冻在屏幕外那一帧', (tester) async {
+    // 真机回归（2026-09-13）：外观与配色 →「打开预览面板」→ 柔光档底部弹窗看着透明。
+    //
+    // 采样带是按"玻璃在哪"实时算的，但**捕获节点在页面里**，而弹层画在 root Overlay
+    // 上：滑入动画只重绘 Overlay，页面不重绘，捕获节点就没有任何理由重录 —— 采样带
+    // 永远停在"面板还压在屏幕下沿之外"那一帧，与视口求交只剩一条边（真机日志
+    // `img=470x23` 对 668×353 逻辑像素的面板）。玻璃把这条细条拉伸铺满自己，观感就是
+    // 一层平的淡色纱 = 用户看到的「透明」。
+    //
+    // 所以这里必须让玻璃在 Overlay 里动（`showHyperosSheet` 的 SlideTransition），
+    // 而不是在页面子树里动 —— 后者会顺带把捕获节点标脏，测不出这条通道。
+    final controller = HyperosGlassBackdropController();
+    addTearDown(controller.dispose);
+
+    late BuildContext pageContext;
+    await tester.pumpWidget(
+      TestApp(
+        home: FrostedAppearanceScope(
+          appearance: const FrostedAppearance(
+            sheetBlurSigma: 15,
+            sheetTintAlpha: 0.70,
+            sheetBarrierAlpha: 0.20,
+            glassMode: FrostedGlassMode.softGlass,
+          ),
+          child: HyperosGlassBackdropHost(
+            controller: controller,
+            child: Builder(
+              builder: (context) {
+                pageContext = context;
+                return const ColoredBox(
+                  color: Color(0xFFE8E8E8),
+                  child: SizedBox.expand(),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(controller.zones, isEmpty, reason: '页面本身没有玻璃，不该录帧');
+
+    unawaited(
+      showHyperosSheet<void>(
+        context: pageContext,
+        builder: (_) => const Align(
+          alignment: Alignment.bottomCenter,
+          child: SizedBox(
+            width: 320,
+            height: 200,
+            child: SoftGlassSurface(
+              enableShadows: false,
+              child: SizedBox.expand(),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    final zone = controller.zones.single;
+    expect(zone.image, isNotNull, reason: '动画走完必须录到玻璃背后那条带');
+    // 测试视口 800×600，面板高 200 且贴底 → 停稳后顶端在 400，减采样余量 96 = 304。
+    // 不重录的话这里会停在滑入早期（屏幕下沿之外）的位置。
+    expect(
+      zone.origin!.dy,
+      closeTo(400 - HyperosGlassBackdropController.sampleMargin, 4),
+      reason: '采样带原点要跟着玻璃停稳的位置，而不是滑入早期那一帧',
     );
   });
 

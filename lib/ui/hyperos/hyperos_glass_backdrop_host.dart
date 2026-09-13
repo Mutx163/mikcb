@@ -174,6 +174,15 @@ class HyperosGlassBackdropController extends ChangeNotifier {
     if (openedZone) notifyListeners();
   }
 
+  /// 玻璃自己动了（弹层滑入 / 版面变化）：采样带的位置跟着变，需要重录一帧。
+  ///
+  /// 捕获节点在**页面**里，而弹层动画只重绘 Overlay，它收不到任何重绘信号 ——
+  /// 不主动要一帧的话，采样带会停在"玻璃还没进画面"那一帧上（录成一条几像素高的
+  /// 细条，被玻璃拉伸铺满自己）。真机现象就是柔光档底部弹窗看着透明
+  /// （`img=470x23` 对 668×283 逻辑像素的面板，2026-09-13）。位移停下就不再要，
+  /// 不会自激：`_onDemandChanged` 只在几何真的变了时才被喊到。
+  void requestCapture() => notifyListeners();
+
   /// 页内玻璃卸载。
   void releaseZone(RenderBox box, HyperosZoneBackdrop backdrop) {
     // 宿主已释放（dispose 早于子节点 detach）：zone 的图已随宿主 dispose() 一起
@@ -771,5 +780,32 @@ class _RenderHyperosGlassBackdropReporter extends RenderProxyBox {
   void detach() {
     _unregister();
     super.detach();
+  }
+
+  /// 上一次绘制时自己的全局矩形，用来发现"玻璃在动"。
+  Rect? _lastPaintRect;
+
+  /// 玻璃自己动（弹层滑入、版面变化）时向控制器要一帧重录。
+  ///
+  /// 采样带是按"玻璃在哪"实时算的，但**捕获节点在页面里** —— 弹层（画在 Overlay
+  /// 上）的滑入动画只重绘 Overlay，页面不会重绘，捕获节点也就没有理由重录：采样带
+  /// 会永远停在"玻璃还压在屏幕下沿之外"那一帧上，与视口求交只剩一条边，录出来的
+  /// 是一条几像素高的细条。玻璃把这条细条拉伸铺满自己 → 观感是一层平的淡色纱，
+  /// 底下的内容清晰透出（真机现象：柔光档底部弹窗看着透明）。
+  ///
+  /// 位移停下后 `rect` 不再变，这里就不再要帧，所以不会自激；而页面滚动本来就
+  /// 每帧重绘，标记重绘是空操作，不额外增加录制。
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    super.paint(context, offset);
+    final rect = localToGlobal(Offset.zero) & size;
+    if (rect == _lastPaintRect) return;
+    _lastPaintRect = rect;
+    final controller = _controller;
+    if (controller == null) return;
+    // paint 阶段不去改绘制状态：排到本帧末由控制器通知捕获节点重绘一次。
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (attached) controller.requestCapture();
+    });
   }
 }
