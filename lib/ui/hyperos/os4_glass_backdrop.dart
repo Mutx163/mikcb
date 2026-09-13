@@ -1,24 +1,34 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_miuix/miuix.dart';
 
-/// 全应用共享的 OS4 玻璃采样源（上游 `MiuixLayerBackdrop`）。
+/// 全应用共享的 OS4 玻璃采样源（上游 `MiuixLayerBackdrop`）——**仅作最后兜底**。
 ///
 /// 上游玻璃（`MiuixGlass` / 各类 `MiuixGlass*Popup`）**不自己抓背景**，而是从
-/// 一个 [MiuixLayerBackdrop] 取快照；快照由包在**宿主页内容**外侧的
-/// `MiuixLayerBackdropCapture` 提供。上游原话：
+/// 一个 [MiuixLayerBackdrop] 取快照。正常路径下快照由**屏级宿主**
+/// （`HyperosGlassBackdropHost` + 其 `HyperosLayerBackdropCapture`）提供，
+/// 弹层则通过 `HyperosGlassBackdropRegistry` 取到"压在它下面那一屏"的采样源。
 ///
-/// > 必须放在 backdrop 捕获子树之外，防止反馈采样
+/// ## 这个全局兜底为什么基本等于"没有玻璃"
 ///
-/// 两点推论（决定了接入形态）：
-/// 1. 捕获子树**不能包含玻璃自身** —— 所以不能做"应用级捕获"，只能"哪个宿主页
-///    用玻璃，就用它自己的捕获包住页面内容"，且**弹层必须留在捕获之外**。
-/// 2. 弹层按上游契约是「常驻挂载 + 切 `show`」（见 `HomeTopMenuPopup` 与
-///    `HyperosSelectPopup`），其 OverlayPortal 把面板画到 Overlay 上，因此
-///    "在捕获之外"是天然成立的。
+/// `os4GlassBackdrop` **没有任何捕获者** —— 项目里没有任何 `Capture` 往它写快照。
+/// 所以一旦某个玻璃走到"屏级宿主取不到"这条路（例如不在任何
+/// `HyperosGlassBackdropHost` 子树里的页面弹层），它会拿到 null 快照，上游于是
+/// 走"纯色轮廓 + 可绘制高光"的降级分支 —— 也就是**实底**。
 ///
-/// 同一时刻只应有一个捕获在树上（同时可见的两个宿主会互相覆盖；
-/// 本项目不存在该场景）。宿主没包捕获时，上游玻璃自我降级为纯色轮廓，
-/// 不会报错 —— 所以这是"要不要模糊/材质"的开关，不是必需前置。
+/// 换句话说：**这不是"应用级捕获"，只是"别崩"的兜底**。改用它的地方要先确认
+/// 自己真的取不到屏级采样源；能取到就该取。
+///
+/// ## ⚠️ 上游契约与当前实现的偏差
+///
+/// 上游原话：
+///
+/// > 必须放在 backdrop 捕获子树之外，防止反馈采样。
+///
+/// 本项目**尚未满足**这一条：宿主把捕获节点包在整页外面，而页内玻璃就在那棵
+/// 子树里，于是玻璃采到的窄带含它自己上一帧的合成结果（滚动 / 转场的拖影来源）。
+/// 弹层因为被 `OverlayPortal` 画到 Overlay 上，**天然在捕获之外**，不受影响。
+///
+/// 详见 `SoftGlassSurface` 类注释里的「已知偏差」一节。
 final MiuixLayerBackdrop os4GlassBackdrop = MiuixLayerBackdrop();
 
 /// 包住 OS4 玻璃弹层，隔断它与宿主页之间的滚动手势 / 通知耦合。

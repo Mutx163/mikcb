@@ -56,18 +56,27 @@ void main() {
 
   testWidgets('默认档位 = 上游弹层材质原样（与首页菜单 / 选择弹层同款）', (tester) async {
     await pumpSurface(tester);
-    final material = glassOf(tester).material!;
+    final glass = glassOf(tester);
+    final material = glass.material!;
+    final base = MiuixGlassMaterials.popupViewGlassLight;
+
     // 基线就是菜单用的 popupViewGlass：同半径、同颜色层。
-    expect(
-      material.blurRadius,
-      MiuixGlassMaterials.popupViewGlassLight.blurRadius,
-    );
+    expect(material.blurRadius, base.blurRadius);
     expect(material.blurRadius, SoftGlassRecipe.standard.blurRadiusDp);
-    // 底色倍率默认 1：颜色层不透明度与上游预设一致。
-    expect(
-      material.first.color.a,
-      closeTo(MiuixGlassMaterials.puredThinGlassLight.first.color.a, 1e-6),
-    );
+    // 底色倍率默认 1：三层颜色层 alpha 与上游预设**逐层**一致。
+    expect(material.first.color.a, closeTo(base.first.color.a, 1e-6));
+    expect(material.second!.color.a, closeTo(base.second!.color.a, 1e-6));
+    expect(material.third!.color.a, closeTo(base.third!.color.a, 1e-6));
+
+    // 描边也必须原样。`defaultEdgeHighlight` 一旦不是 1.0（历史上是 0.95），
+    // 标准档的描边就会比菜单暗一档 —— 而上面那几条只验半径 / 颜色层的断言
+    // **完全发现不了**，正是这个盲区让「标准档 = 菜单原样」的说法长期不成立。
+    final stroke = glass.stroke!;
+    final baseStroke = MiuixGlassStrokes.forTheme(false);
+    expect(stroke.width, baseStroke.width);
+    expect(stroke.color.a, closeTo(baseStroke.color.a, 1e-6));
+    expect(stroke.primary.color.a, closeTo(baseStroke.primary.color.a, 1e-6));
+    expect(stroke.secondary.color.a, closeTo(baseStroke.secondary.color.a, 1e-6));
   });
 
   testWidgets('底色倍率整体缩放上游颜色层 alpha', (tester) async {
@@ -111,6 +120,19 @@ void main() {
   testWidgets('模糊关闭时不接采样源（上游走纯色轮廓兜底）', (tester) async {
     await pumpSurface(tester, blurEnabled: false);
     expect(glassOf(tester).backdrop, isNull);
+  });
+
+  testWidgets('模糊关闭时的兜底实底取自 SoftGlassTokens.tint，不是上游默认纯白', (tester) async {
+    await pumpSurface(tester, blurEnabled: false);
+    final glass = glassOf(tester);
+    final expected = SoftGlassTokens.tint(
+      tester.element(find.byType(SoftGlassSurface)),
+      blurEnabled: false,
+    );
+    expect(glass.fill, expected);
+    // 上游 `MiuixGlass` 在没给 fill 时兜底 0xFFFFFFFF，直接沿用会在深色壁纸上
+    // 糊一块纯白卡；项目约定「模糊关闭即实底」= tintAlphaNoBlur 的半透明灰。
+    expect(glass.fill!.a, closeTo(SoftGlassTokens.tintAlphaNoBlur, 1e-6));
   });
 
   testWidgets('与菜单同档：栏与菜单 MaterialToken（shading 关）', (tester) async {

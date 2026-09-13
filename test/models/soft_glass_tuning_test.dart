@@ -10,10 +10,21 @@ void main() {
       expect(SoftGlassTuning.defaults.tintAlphaMultiplier, 1);
     });
 
-    test('edge highlight default matches render token', () {
+    test('edge highlight default is identity (menu parity)', () {
+      // 1.0 = 不缩放上游描边 = 首页菜单 / 选择弹层原样。
+      //
+      // 曾经是 0.95（自研链路 SoftGlassTokens.edgeHighlightAlpha 的数值）。
+      // 迁到上游后那个值变成了「给菜单同款描边再乘 0.95」，于是标准档其实
+      // 比菜单暗一档，与「标准档 = 菜单原样」的承诺矛盾。
+      expect(SoftGlassTuning.defaultEdgeHighlight, 1);
+      expect(SoftGlassTuning.presetStandard.edgeHighlight, 1);
+    });
+
+    test('recipe baseline is sourced from the render token', () {
+      // 「标准档 = 菜单同款」的半径承诺：配方基准必须等于 token 常量。
       expect(
-        SoftGlassTuning.defaultEdgeHighlight,
-        SoftGlassTokens.edgeHighlightAlpha,
+        SoftGlassRecipe.standard.blurRadiusDp,
+        SoftGlassTokens.baseBlurRadius,
       );
     });
   });

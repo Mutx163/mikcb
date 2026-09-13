@@ -688,9 +688,14 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 页级 OS4 玻璃采样源宿主：页内选择弹层采样的是「本页内容」，而捕获必须
-    // 包住页面内容、又留在弹层之外（弹层经 OverlayPortal 画到 rootOverlay，
-    // 天然在捕获之外）。宿主只在弹层展开期间真正录帧，静态页面零开销。
+    // 页级 OS4 玻璃采样源宿主：页内玻璃（顶栏带 / 卡片 / 弹窗面等）通过
+    // HyperosGlassBackdropReporter 把自己占的区域登记给屏级控制器，宿主只为
+    // 每块录「玻璃背后那条窄带」；一屏之内没有任何玻璃时完全不录帧。
+    // 页内选择弹层经 OverlayPortal 画到 rootOverlay，天然在捕获之外。
+    //
+    // ⚠️ 已知偏差（未修）：捕获节点仍包在**整页**外面，所以页内玻璃会采到
+    // 自己上一帧的合成结果——上游要求 `MiuixGlass` 必须放在 backdrop 捕获
+    // 子树之外。详见 `SoftGlassSurface` 类注释的「已知偏差」一节。
     return HyperosGlassBackdropHost(child: _buildPage(context));
   }
 

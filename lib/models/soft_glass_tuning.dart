@@ -21,6 +21,18 @@
 /// | **标准 standard** | 1.0 | 60（= 菜单 / 选择弹层同款） |
 /// | 浓雾 dense | 1.6 | 96 |
 /// | 滑杆上限 | 2.7 | 162 |
+///
+/// **`tintAlphaMultiplier` 作用在哪儿（调档位前先看这条）**：它线性缩放上游
+/// `popupViewGlass` 的**三层颜色层** alpha——
+/// | 层 | 颜色 | α | 模式 |
+/// |---|---|---|---|
+/// | first | `0x05000000` | 0.020 | plusDarker |
+/// | second | `0x99FFFFFF` | 0.600 | softLight |
+/// | third | `0x66FFFFFF` | 0.400 | hardLight |
+///
+/// 首层 α 只有 0.02，**乘任何倍率都看不出来**；档位的可见差异几乎全部来自
+/// 第二、三层。所以"清透 ↔ 浓雾"的观感强弱，实质等于
+/// 「0.6α / 0.4α 两层被乘了多少」——调参时盯这两层，不要指望首层。
 enum SoftGlassPreset {
   /// 清透 — 薄雾淡底色，最接近裸壁纸。
   clear,
@@ -103,7 +115,7 @@ class SoftGlassTuning {
   static const presetDense = SoftGlassTuning(
     blurRadiusMultiplier: 1.6,
     tintAlphaMultiplier: 1.3,
-    edgeHighlight: 1,
+    // edgeHighlight 同默认值 1（= 上游描边原样），不必重复写。
   );
 
   /// 按参数反查内置预设，不匹配任意一档即为 [SoftGlassPreset.custom]。
@@ -123,7 +135,13 @@ class SoftGlassTuning {
   static const double defaultTintAlphaMultiplier = 1;
 
   /// rim 高光强度（作用于上游 OS4 描边的三处高光）。
-  static const double defaultEdgeHighlight = 0.95;
+  ///
+  /// **必须是 1.0**：标准档的对外承诺是"= 首页菜单 / 选择弹层原样"，
+  /// 而 1.0 才是"不缩放上游描边"。历史上这里是 0.95（自研链路
+  /// `SoftGlassTokens.edgeHighlightAlpha` 的数值），迁到上游后它变成
+  /// **给菜单同款描边额外乘 0.95**，于是标准档其实比菜单暗一档，
+  /// 与「标准档 = 菜单原样」的注释和测试用例名矛盾。
+  static const double defaultEdgeHighlight = 1;
 
   // --- 滑杆范围 ---
   static const double minBlurRadiusMultiplier = 0;

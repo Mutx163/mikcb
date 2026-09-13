@@ -278,13 +278,16 @@ class HomePageChromeGlassFill extends StatelessWidget {
     final material = HyperosBlurredHeader.homeBandGlassMaterialOf(context);
     final appearance = FrostedAppearanceScope.of(context);
     if (material == 'soft' && useBlur) {
-      // 底色倍率 = 配方倍率 × 用户调参（与 SoftGlassSurface 的 fill 同口径）。
+      // 与 `SoftGlassSurface.fill` **同源同口径**：两边都走 `SoftGlassTokens.tint`
+      // （配方倍率 0.90 已在函数内部计入，这里只补用户档位倍率）。
+      //
+      // 注意这只是**静态替身的近似等效底色**：真实玻璃（有 backdrop 时）的底色
+      // 来自上游 `popupViewGlass` 的三层颜色层 + blend shader，与单个 Color
+      // 不可能严格等价，替身与真玻璃之间允许有细微差异。
       return SoftGlassTokens.tint(
         context,
         blurEnabled: useBlur,
-        tintAlphaMultiplier:
-            SoftGlassRecipe.standard.tintAlphaMultiplier *
-            appearance.softGlassTuning.tintAlphaMultiplier,
+        tintAlphaMultiplier: appearance.softGlassTuning.tintAlphaMultiplier,
       );
     }
     if (material == 'liquid' && useBlur) {

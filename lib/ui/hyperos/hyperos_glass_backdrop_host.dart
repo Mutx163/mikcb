@@ -189,8 +189,20 @@ class HyperosGlassBackdropController extends ChangeNotifier {
     return union?.inflate(sampleMargin);
   }
 
+  bool _disposed = false;
+
+  /// 是否已释放。
+  ///
+  /// 宿主在 `dispose()` 里会 [HyperosGlassBackdropRegistry.unregister]，正常路径
+  /// 不会留下悬空引用；但热重载、构建异常、页面被非常规移除等路径可能让
+  /// `unregister` 跑不到 —— 那时注册表栈顶会指着一个 **backdrop 已释放** 的
+  /// 控制器，下一个打开弹层的页面就会拿它去采样。注册表用这个标志把这类
+  /// "僵尸"挡在栈顶之外。
+  bool get disposed => _disposed;
+
   @override
   void dispose() {
+    _disposed = true;
     for (final zone in _zones) {
       zone.dispose();
     }
@@ -211,11 +223,27 @@ abstract final class HyperosGlassBackdropRegistry {
       <HyperosGlassBackdropController>[];
 
   /// 栈顶那一屏的采样源（没有屏时为 null）。
-  static HyperosGlassBackdropController? get active =>
-      _screens.isEmpty ? null : _screens.last;
+  ///
+  /// 从栈顶往下找第一个**还活着**的控制器，顺手清掉路上遇到的僵尸条目
+  /// （见 [HyperosGlassBackdropController.disposed]）。正常路径下第一个就是，
+  /// 不会有多余开销。
+  static HyperosGlassBackdropController? get active {
+    for (var i = _screens.length - 1; i >= 0; i--) {
+      final controller = _screens[i];
+      if (controller.disposed) {
+        _screens.removeAt(i);
+        continue;
+      }
+      return controller;
+    }
+    return null;
+  }
 
   static void register(HyperosGlassBackdropController controller) {
     _screens.remove(controller);
+    if (controller.disposed) {
+      return;
+    }
     _screens.add(controller);
   }
 
