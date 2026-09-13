@@ -6101,6 +6101,7 @@
   "miuixShowcaseEntryTitle": "Miuix 组件展示",
   "miuixShowcaseEntrySubtitle": "Miuix 组件预览",
   "debugUiOverlayToggleTitle": "调试 UI 叠层",
+  "debugUiOverlayOpenPanelTitle": "打开调试面板",
   "scheduleRepeatSectionTitle": "重复设置",
   "scheduleRepeatNone": "不重复",
   "scheduleRepeatDaily": "每天",

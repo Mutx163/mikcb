@@ -10418,6 +10418,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get debugUiOverlayToggleTitle => '디버그 UI 오버레이';
 
   @override
+  String get debugUiOverlayOpenPanelTitle => '디버그 패널 열기';
+
+  @override
   String get scheduleRepeatSectionTitle => '반복';
 
   @override

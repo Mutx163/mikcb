@@ -9,6 +9,15 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   SharedPreferences.setMockInitialValues({});
 
+  test('defaults to hidden so the overlay never runs unless enabled', () async {
+    // 回归守卫：浮层默认必须关闭。它一旦挂载就带上常驻订阅与整树
+    // RepaintBoundary 包裹，曾经因为「默认开启 + 悬浮球无限脉冲动画」
+    // 让性能版静止时持续 120fps 出帧 / 205% CPU（2026-09-13）。
+    SharedPreferences.setMockInitialValues({});
+    await BlackBoxOverlayPreferences.instance.load();
+    expect(BlackBoxOverlayPreferences.instance.visible, isFalse);
+  });
+
   testWidgets('shows BlackBox when the debug UI setting is enabled', (
     tester,
   ) async {

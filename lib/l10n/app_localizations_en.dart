@@ -10675,6 +10675,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get debugUiOverlayToggleTitle => 'Debug UI Overlay';
 
   @override
+  String get debugUiOverlayOpenPanelTitle => 'Open debug panel';
+
+  @override
   String get scheduleRepeatSectionTitle => 'Repeat';
 
   @override

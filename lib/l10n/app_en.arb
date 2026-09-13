@@ -6062,6 +6062,7 @@
   "miuixShowcaseEntryTitle": "Miuix Component Showcase",
   "miuixShowcaseEntrySubtitle": "Miuix component preview",
   "debugUiOverlayToggleTitle": "Debug UI Overlay",
+  "debugUiOverlayOpenPanelTitle": "Open debug panel",
   "scheduleRepeatSectionTitle": "Repeat",
   "scheduleRepeatNone": "Does not repeat",
   "scheduleRepeatDaily": "Every day",

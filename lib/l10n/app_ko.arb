@@ -5837,6 +5837,7 @@
   "miuixShowcaseEntryTitle": "Miuix 컴포넌트 쇼케이스",
   "miuixShowcaseEntrySubtitle": "Miuix 컴포넌트 미리보기",
   "debugUiOverlayToggleTitle": "디버그 UI 오버레이",
+  "debugUiOverlayOpenPanelTitle": "디버그 패널 열기",
   "scheduleRepeatSectionTitle": "반복",
   "scheduleRepeatNone": "반복하지 않음",
   "scheduleRepeatDaily": "매일",

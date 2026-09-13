@@ -1125,6 +1125,14 @@ class _SettingsDeveloperListGroupState
                       onChanged: BlackBoxOverlayPreferences.instance.setVisible,
                     ),
                   ),
+                  _MiuixSettingsPreference(
+                    startAction: _settingsIconBadge(
+                      MiuixIcons.extended.byName('notes')!,
+                      HyperosIconColors.orange,
+                    ),
+                    title: l10n.debugUiOverlayOpenPanelTitle,
+                    onClick: openBlackBoxPanel,
+                  ),
                 ],
               ],
             ),

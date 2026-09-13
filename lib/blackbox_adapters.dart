@@ -264,7 +264,23 @@ void setupBlackBox({http.Client? httpClient}) {
     httpAdapters: [httpAdapter],
     storageAdapters: [SharedPrefsStorageAdapter()],
     logAdapter: PrintLogAdapter(),
-    trigger: const BlackBoxTrigger.floatingButton(),
+    // 不要改用 BlackBoxTrigger.floatingButton()。
+    //
+    // 悬浮球（_DraggableFloatingButton）在 initState 里挂了
+    // `AnimationController(1500ms)..repeat(reverse: true)` 的无限脉冲动画
+    // （上游 flutter_blackbox 0.7.0 的 blackbox_overlay.dart:955-961），
+    // 只要浮层挂载就**每帧请求新帧**。
+    //
+    // 2026-09-13 于 Redmi K80 Ultra / perfProfile 实测：静止放置不动也恒定
+    // 120fps 出帧、205% CPU、机身持续发烫；把浮层关掉后降到 1.2% CPU / <1fps
+    // （同一台机上的 prodRelease 一直是 17% / 1~5fps）。也就是说性能版/调试版
+    // 上的任何性能测量都会被它污染。
+    //
+    // 换成 none()：上游 overlay 的
+    // `if (trigger is FloatingButtonTrigger || _isHudPinned)` 分支（overlay:221）
+    // 不再构造悬浮球，面板改由设置页「打开调试面板」调用
+    // openBlackBoxPanel()（→ BlackBox.open()）按需打开。
+    trigger: const BlackBoxTrigger.none(),
     enabled: !kReleaseMode,
   );
 }

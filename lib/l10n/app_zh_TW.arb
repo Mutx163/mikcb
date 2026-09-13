@@ -5835,6 +5835,7 @@
   "miuixShowcaseEntryTitle": "Miuix 元件展示",
   "miuixShowcaseEntrySubtitle": "Miuix 元件預覽",
   "debugUiOverlayToggleTitle": "除錯 UI 疊層",
+  "debugUiOverlayOpenPanelTitle": "開啟除錯面板",
   "scheduleRepeatSectionTitle": "重複設定",
   "scheduleRepeatNone": "不重複",
   "scheduleRepeatDaily": "每天",

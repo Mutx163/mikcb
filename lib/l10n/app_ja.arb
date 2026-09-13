@@ -5837,6 +5837,7 @@
   "miuixShowcaseEntryTitle": "Miuix コンポーネントショーケース",
   "miuixShowcaseEntrySubtitle": "Miuix コンポーネントプレビュー",
   "debugUiOverlayToggleTitle": "デバッグ UI オーバーレイ",
+  "debugUiOverlayOpenPanelTitle": "デバッグパネルを開く",
   "scheduleRepeatSectionTitle": "繰り返し",
   "scheduleRepeatNone": "繰り返さない",
   "scheduleRepeatDaily": "毎日",

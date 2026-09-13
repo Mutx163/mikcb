@@ -10088,6 +10088,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get debugUiOverlayToggleTitle => '调试 UI 叠层';
 
   @override
+  String get debugUiOverlayOpenPanelTitle => '打开调试面板';
+
+  @override
   String get scheduleRepeatSectionTitle => '重复设置';
 
   @override
@@ -20911,6 +20914,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get debugUiOverlayToggleTitle => '除錯 UI 疊層';
 
   @override
+  String get debugUiOverlayOpenPanelTitle => '開啟除錯面板';
+
+  @override
   String get scheduleRepeatSectionTitle => '重複設定';
 
   @override
@@ -31732,6 +31738,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get debugUiOverlayToggleTitle => '除錯 UI 疊層';
+
+  @override
+  String get debugUiOverlayOpenPanelTitle => '開啟除錯面板';
 
   @override
   String get scheduleRepeatSectionTitle => '重複設定';

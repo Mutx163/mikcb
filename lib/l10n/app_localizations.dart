@@ -18307,6 +18307,12 @@ abstract class AppLocalizations {
   /// **'调试 UI 叠层'**
   String get debugUiOverlayToggleTitle;
 
+  /// No description provided for @debugUiOverlayOpenPanelTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开调试面板'**
+  String get debugUiOverlayOpenPanelTitle;
+
   /// No description provided for @scheduleRepeatSectionTitle.
   ///
   /// In zh, this message translates to:

@@ -12,7 +12,11 @@ class BlackBoxOverlayPreferences extends ChangeNotifier {
   // Keep the preference from older builds so an existing choice is not lost.
   static const _legacyVisibleKey = 'debug_tuning_panel_visible';
 
-  bool _visible = true;
+  // 默认关闭。浮层是调试工具而非日常 UI：挂载它会给整棵树套一层
+  // RepaintBoundary + Stack，并常驻若干 store 订阅；在排查发热/掉帧时，
+  // 它自己就是最大的噪声源（见 blackbox_adapters.dart 中 trigger 的说明）。
+  // 需要时在设置页 → 开发者选项里手动打开。
+  bool _visible = false;
   bool _loaded = false;
 
   bool get visible => _visible;
@@ -23,7 +27,7 @@ class BlackBoxOverlayPreferences extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final savedVisible = prefs.getBool(_visibleKey);
     final legacyVisible = prefs.getBool(_legacyVisibleKey);
-    _visible = savedVisible ?? legacyVisible ?? true;
+    _visible = savedVisible ?? legacyVisible ?? false;
     if (savedVisible == null && legacyVisible != null) {
       await prefs.setBool(_visibleKey, legacyVisible);
     }
