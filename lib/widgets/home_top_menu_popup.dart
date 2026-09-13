@@ -3,6 +3,20 @@ import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
 
+/// 主 / 二级面板共用的尺寸约束。
+///
+/// 上游默认是 `MiuixGlassPopupSizing(maxWidth: 288)`，而新条目
+///（`MiuixGlassPopupItem` 的文字样式 + 箭头 + 内边距）比旧实现的手搓条目宽，
+/// 面板会被顶到接近上限 —— 真机上就是"菜单比换实现前胖了一圈"。
+///
+/// 收到 **200** 即回到旧实现的**下界原宽**：旧公式
+/// `132 + HyperosMiuixDropdown.popupExtraLeadingWidth` 恰好 = 200，而旧条目更窄、
+/// 实际宽度一直停在这个下界。
+///
+/// ⚠️ **两块面板必须传同一份**：`sizing` 是各自独立的入参，只给一级会让
+/// 主面板 200、二级默认 288，两块宽度对不齐。
+const _popupSizing = MiuixGlassPopupSizing(maxWidth: 200);
+
 /// 首页右上角「更多」菜单的**列表形态**——改用上游 flutter_miuix 1.2.0 的
 /// HyperOS 4 玻璃弹层实现（`MiuixGlassTransformPopup` + `MiuixGlassSecondaryPopup`），
 /// 取代本仓库手搓的 `lib/ui/hyperos/hyperos_list_popup.dart` 那条路径。
@@ -104,13 +118,8 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
           anchor: widget.anchor,
           anchorContent: widget.anchorContent,
           backdrop: widget.backdrop,
-          // 宽度：换实现后菜单明显变宽。核对过两边公式——`minWidth` 其实一样
-          //（旧实现 `132 + popupExtraLeadingWidth` 恰好 = 上游默认 200），所以
-          // 差别出在**上限与行内容**：上游默认 `maxWidth: 288`，而新条目
-          //（`MiuixGlassPopupItem` 的文字样式 + 箭头/内边距）本身比旧条目宽，
-          // 于是面板被顶到接近上限。这里把上限收到 240（旧实现的实际观感宽度
-          // 落在 200~240 这一段），标签都是 4~6 字，不会被截断。
-          sizing: const MiuixGlassPopupSizing(maxWidth: 240),
+          // 宽度见 [_popupSizing]（收到旧实现的下界原宽 200）。
+          sizing: _popupSizing,
           // 刻意**不用** `stacked`：它的语义是"二级展开时一级面板收缩/变暗"，
           // 收起时要靠包内 `MiuixGlassMotion.secondaryPopup(false)` 弹簧把一级
           // 弹回原位 —— 那条回弹在真机上读起来就是"圈/描边回收很慢"，而这组
@@ -139,6 +148,8 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
             // 二级共享一级菜单的材质（上游 materialAnchor 语义）。
             materialAnchor: widget.anchor,
             backdrop: widget.backdrop,
+            // 与一级面板**同一份**宽度约束，两块才对得齐。
+            sizing: _popupSizing,
             onDismissRequest: _closeSecondary,
             child: Column(
               mainAxisSize: MainAxisSize.min,
