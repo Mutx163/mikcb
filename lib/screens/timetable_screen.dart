@@ -831,7 +831,27 @@ class _TimetableScreenState extends State<TimetableScreen>
             : Stack(
                 fit: StackFit.expand,
                 children: [
-                  dockContent,
+                  // 内嵌页是**不透明**的整屏 Scaffold，会把首页完全盖住；但
+                  // Stack 的两个孩子每帧都会被绘制，于是内嵌态下首页那一整套
+                  // （满屏壁纸铺底 + 玻璃带 backdrop 采样 + 课程卡片）一直在
+                  // 白白重画。真机实测（Redmi K80 Ultra / 120Hz 面板）：
+                  //   - 内嵌态设置页上下滑动 ≈ 82 fps；
+                  //   - 同一页从右上角菜单**单独推路由**打开 ≈ 103 fps。
+                  // 两者唯一的结构差别就是这个"看不见但仍在画"的首页。
+                  // 用 Visibility(maintainSize) 保留挂载与布局、只去掉绘制
+                  // （返回首页仍是闪现直切，几何/滚动位置不受影响），
+                  // 并用 TickerMode 停掉被完全遮挡页面的动画节拍
+                  //（与"被路由覆盖"时框架的默认行为一致）。
+                  TickerMode(
+                    enabled: false,
+                    child: Visibility(
+                      visible: false,
+                      maintainState: true,
+                      maintainSize: true,
+                      maintainAnimation: true,
+                      child: dockContent,
+                    ),
+                  ),
                   // 与旧「设置 Tab」一致：点底栏闪现直切，无滑动转场。
                   Positioned.fill(
                     child: Material(
