@@ -55,11 +55,12 @@ npx serve site/out
 | 项 | 值 |
 | --- | --- |
 | Root directory（根目录） | `site` |
-| 构建命令 | `pnpm install --frozen-lockfile && pnpm build` |
+| 构建命令 | `corepack enable && pnpm install --frozen-lockfile && pnpm build` |
 | 输出目录 | `out` |
-| 环境变量 `NODE_VERSION` | `22` |
 
-**为什么 Root directory 必须是 `site`（2026-09-13 真实故障）**
+环境变量 `NODE_VERSION` 建议**写明确版本**（如 `22.16.0`）而不要写 `22`，理由见下。
+
+**为什么必须改 Root directory（2026-09-13 真实故障）**
 
 原配置是「根目录留空（= 仓库根）+ 命令 `cd site && pnpm i && pnpm build`」，
 在 Cloudflare 上直接失败：
@@ -67,22 +68,41 @@ npx serve site/out
 ```text
 Executing user command: cd site && pnpm install && pnpm build
 No preset version installed for command pnpm
+Please install a version by running one of the following:
+asdf install nodejs 22.22.0
+or add one of the following versions in your config file at /opt/buildhome/.tool-versions
+nodejs 14.21.3 / 16.20.2 / 18.17.1 / 20.19.0 / 22.16.0
 Failed: Error while executing user command. Exited with error code: 126
 ```
 
-原因：Cloudflare Pages v2 构建系统按**根目录**探测包管理器。仓库根既没有
-`package.json` 也没有锁文件——`site/package.json` 里的
-`"packageManager": "pnpm@11.22.0"` 与 `site/pnpm-lock.yaml` 都在 `site/` 下——
-于是 CF 只装了 Node、**没有装 pnpm**，`pnpm` 命令不存在 → 退出码 126。
-注意 `NODE_VERSION=22` 本身是生效的（日志里有 `Installing nodejs 22.22.0`），
-失败点只在 pnpm。
+**根因有两层，第二层才是这次真正踩到的那个：**
 
-把 Root directory 设为 `site` 后，CF 就地读到 `packageManager` 与
-`pnpm-lock.yaml`，自动装上对应版本的 pnpm；构建命令也就不再需要 `cd site`。
+1. **根目录留空 = 整个仓库被当成根目录。** 官方文档写得很直白：
+   「根目录不填时 Cloudflare 假定整个 git 仓库就是根目录；像 **monorepo** 这种
+   一个仓库里多个项目的情况**必须指定根目录**」
+   （[Build configuration](https://developers.cloudflare.com/pages/configuration/build-configuration/)）。
+   而本仓库的 `package.json` 与 `pnpm-lock.yaml` 都在 `site/` 下，根目录什么都没有。
 
-> 若因故必须保留「根目录 = 仓库根」，则把构建命令改为
-> `corepack enable && cd site && pnpm install --frozen-lockfile && pnpm build`，
-> 由 corepack（Node 22 自带）依据 `packageManager` 提供 pnpm。
+2. **Node 被解析到了预设表之外的版本。** 日志里 Node 装的是 **22.22.0**，
+   但 asdf 列出的可用预设只有 `… 20.19.0 / 22.16.0` —— **22.22.0 不在其中**。
+   CF 构建镜像的工具（含 pnpm）是**按 Node 预设配套提供**的，Node 落在预设之外
+   就一并拿不到 pnpm，于是 `pnpm` 命令根本不存在 → 退出码 126。
+   这就是 `NODE_VERSION=22`（会解析成最新的 22.x）比写死 `22.16.0` 更危险的原因。
+
+另外，pnpm 本身在镜像里**是预装的**：v2 镜像默认 8.7.1、v3 镜像默认 10.11.1，
+覆盖变量是 `PNPM_VERSION`（[Build image](https://developers.cloudflare.com/pages/configuration/build-image/)）。
+但 v3 镜像的**已知限制**里明确写着「**不支持按 `pnpm-lock.yaml` 探测 pnpm 版本**」，
+所以不要指望它自动挑对版本。
+
+**因此推荐**：根目录设成 `site`，并用 `corepack enable` 让 pnpm 版本由
+`site/package.json` 的 `"packageManager": "pnpm@11.22.0"` 决定 —— 与生成
+`pnpm-lock.yaml` 的版本**严格一致**，避免用镜像默认的 10.x 去装 11.x 生成的锁文件
+而触发 `--frozen-lockfile` 失败。
+
+> **备选（必须保留「根目录 = 仓库根」时）**：
+> 保持命令 `cd site && pnpm install && pnpm build`、输出 `site/out`，
+> 然后加两个环境变量：`NODE_VERSION=22.16.0`（落在预设表内）与
+> `PNPM_VERSION=<与 lockfile 生成版本一致的值>`。
 
 **已知问题：`__next.*` 预取载荷 404（Cloudflare Pages 路径匹配差异）**
 
