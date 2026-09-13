@@ -166,7 +166,13 @@ abstract final class HyperosNavigation {
           secondaryAnimation: secondaryAnimation,
           child: _HyperosTransitionPageShell(
             animation: animation,
-            child: child,
+            // 帧缓存边界：转场期间 shell 每帧都要改「圆角裁切 + 投影」。
+            // 框架给 route 那个 RepaintBoundary（routes.dart 的 `_page`）把
+            // buildPage **整个包在里面**——也就是把本 shell 也包进去了，
+            // 于是裁切/投影一变，它下面的整页像素照旧逐帧重栅格化。
+            // 这里把页面本体单独隔离：转场期间只重新合成「裁切 + 投影」，
+            // 页面像素直接复用，滑入/滑出不再重画整页。
+            child: RepaintBoundary(child: child),
           ),
         ),
       ),
