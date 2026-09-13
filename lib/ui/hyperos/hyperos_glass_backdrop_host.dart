@@ -106,6 +106,14 @@ class HyperosGlassBackdropController extends ChangeNotifier {
 
   List<HyperosGlassBackdropZone> get zones => _zones;
 
+  /// 满员时"位置还量不到"而临时并入最后一块的成员，等首次录帧（已布局）再改判。
+  ///
+  /// 见 [resolveDeferredMerges]：分块满员的判断需要玻璃的全局矩形，而
+  /// [acquireZone] 发生在 attach 阶段、那时还没布局，所以这个改判是必需的，
+  /// 不是优化。
+  final Map<HyperosZoneBackdrop, RenderBox> _deferredMerge =
+      <HyperosZoneBackdrop, RenderBox>{};
+
   /// 当前是否有玻璃需要背景（有则开录帧；没有任何玻璃时零开销）。
   bool get capturing => _zones.isNotEmpty || _plainConsumers > 0;
 
@@ -128,7 +136,20 @@ class HyperosGlassBackdropController extends ChangeNotifier {
     }
     if (target == null) {
       if (_zones.length >= _maxZones) {
-        target = _zones.last;
+        // 分块已满：并入「并集膨胀最小」的那一块。
+        //
+        // 不能取 `_zones.last` —— 那是"最后创建的"，不是"最近的"。第 5 块玻璃
+        // 可能离它隔了整屏，并进去会把该块的采样矩形撑到接近整屏，恰好抵消
+        // 分块要避免的那件事（整屏离屏目标每帧 ~100MB）。
+        final best = _leastGrowingZoneFor(rect);
+        if (best != null) {
+          target = best;
+        } else {
+          // 此刻还没布局、量不到矩形，无从判断谁最近：先临时并入最后一块保证
+          // 它有采样源，并记下来在首次录帧时改判（[resolveDeferredMerges]）。
+          target = _zones.last;
+          _deferredMerge[backdrop] = box;
+        }
       } else {
         target = HyperosGlassBackdropZone();
         _zones.add(target);
@@ -141,6 +162,8 @@ class HyperosGlassBackdropController extends ChangeNotifier {
 
   /// 页内玻璃卸载。
   void releaseZone(RenderBox box, HyperosZoneBackdrop backdrop) {
+    // 已卸载的成员不该再占着待改判队列（否则每帧都要为它白算一次矩形）。
+    _deferredMerge.remove(backdrop);
     for (final zone in List<HyperosGlassBackdropZone>.of(_zones)) {
       if (!identical(zone.members[backdrop], box)) continue;
       zone.members.remove(backdrop);
@@ -187,6 +210,78 @@ class HyperosGlassBackdropController extends ChangeNotifier {
   Rect? captureRectOf(HyperosGlassBackdropZone zone) {
     final union = _unionOf(zone);
     return union?.inflate(sampleMargin);
+  }
+
+  /// 把 [rect] 并进哪一块最省（量不到矩形 / 没有可用块时返回 null）。
+  ///
+  /// 判据用**膨胀面积**而不是矩形间距：这里要避免的本来就是"采样矩形变大"，
+  /// 面积增量就是这件事的直接度量；块数 ≤ [_maxZones]，开销可忽略。
+  ///
+  /// [excluding] 是"评估某成员该不该换块"时的那个成员：算每一块时先把它排除，
+  /// 否则它当前所在那块算出来的增量恒为 0，永远选回原地。
+  HyperosGlassBackdropZone? _leastGrowingZoneFor(
+    Rect? rect, {
+    RenderBox? excluding,
+  }) {
+    if (rect == null) return null;
+    HyperosGlassBackdropZone? best;
+    var leastGrowth = double.infinity;
+    for (final zone in _zones) {
+      Rect? union;
+      for (final box in zone.members.values) {
+        if (identical(box, excluding)) continue;
+        final memberRect = _globalRectOf(box);
+        if (memberRect == null) continue;
+        union = union == null ? memberRect : union.expandToInclude(memberRect);
+      }
+      final merged = union == null ? rect : union.expandToInclude(rect);
+      final growth =
+          merged.width * merged.height -
+          (union == null ? 0 : union.width * union.height);
+      if (growth < leastGrowth) {
+        leastGrowth = growth;
+        best = zone;
+      }
+    }
+    return best;
+  }
+
+  /// 首次录帧时，改判那些"满员且当时量不到位置"的成员（见 [_deferredMerge]）。
+  ///
+  /// 必须在录帧**之前**调用：录帧时已经布局，此刻才量得到全局矩形，
+  /// 也才谈得上"谁离谁近"。不改判的话第 5 块玻璃会一直黏在"最后创建的那一块"
+  /// 上，把它的采样矩形撑到接近整屏 —— 实测 2332 逻辑像素高（整屏 2600）。
+  void resolveDeferredMerges() {
+    if (_deferredMerge.isEmpty) return;
+    final pending = Map<HyperosZoneBackdrop, RenderBox>.of(_deferredMerge);
+    _deferredMerge.clear();
+    for (final entry in pending.entries) {
+      final backdrop = entry.key;
+      final box = entry.value;
+      final rect = _globalRectOf(box);
+      if (rect == null) {
+        // 本帧仍未布局：留到下一次录帧再试。
+        _deferredMerge[backdrop] = box;
+        continue;
+      }
+      HyperosGlassBackdropZone? current;
+      for (final zone in _zones) {
+        if (identical(zone.members[backdrop], box)) {
+          current = zone;
+          break;
+        }
+      }
+      if (current == null) continue;
+      final better = _leastGrowingZoneFor(rect, excluding: box);
+      if (better == null || identical(better, current)) continue;
+      current.members.remove(backdrop);
+      better.members[backdrop] = box;
+      backdrop.bind(better);
+      if (current.isEmpty) {
+        _zones.remove(current);
+        current.dispose();
+      }
+    }
   }
 
   bool _disposed = false;
@@ -509,6 +604,8 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
     final dpr = _devicePixelRatio;
     final mine = Offset.zero & size;
     var wrote = false;
+    // 先改判"满员时量不到位置"的成员：录帧时已布局，才量得到矩形、才谈得上远近。
+    _controller.resolveDeferredMerges();
     // 每块玻璃背后那条窄带各录一张：整屏快照是 ~100MB 级离屏目标，每帧一次
     // 等于烧掉一个核（真机实测 106~129% CPU、Mali 驱动线程满载）。
     for (final zone in _controller.zones) {

@@ -262,4 +262,60 @@ void main() {
     );
     expect(image.height, lessThan((800 * dpr * 0.6).round()));
   });
+
+  testWidgets('分块满员时并入「最近」的一块，不把采样矩形撑成整屏高', (tester) async {
+    // 回归背景：分块上限 4。超出时旧实现取 `_zones.last` —— 那是"最后创建的"，
+    // 不是"最近的"。第 5 块玻璃若离它隔了整屏，并进去会把该块的采样矩形撑到接近
+    // 整屏，恰好抵消分块要避免的那件事（整屏离屏目标每帧 ~100MB）。
+    await tester.binding.setSurfaceSize(const Size(400, 2600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final controller = HyperosGlassBackdropController();
+    addTearDown(controller.dispose);
+
+    Widget glassAt(double top) => Positioned(
+      top: top,
+      left: 100,
+      child: const SizedBox(
+        width: 200,
+        height: 40,
+        child: SoftGlassSurface(child: SizedBox.expand()),
+      ),
+    );
+
+    await tester.pumpWidget(
+      hostWith(
+        controller: controller,
+        child: Stack(
+          children: [
+            const SizedBox.expand(),
+            // 挂载顺序 = 建块顺序。四块相隔 800（> joinGap 192），各自成块。
+            glassAt(0),
+            glassAt(800),
+            glassAt(1600),
+            glassAt(2400),
+            // 第 5 块：离第一块最近（间距 260），离最后建的第四块最远（间距 2100）。
+            glassAt(300),
+          ],
+        ),
+      ),
+    );
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+
+    expect(controller.zones.length, 4, reason: '分块上限就是 4');
+
+    // 一块玻璃自身 40 高，并上最近的那块后跨度也远小于整屏（2600）。
+    // 若误并入最远的那块，该块高度会逼近整屏 —— 这条断言就会挂。
+    for (final zone in controller.zones) {
+      final rect = controller.captureRectOf(zone);
+      expect(rect, isNotNull);
+      expect(
+        rect!.height,
+        lessThan(800),
+        reason: '不相邻的玻璃不能并进同一块，否则采样矩形退化成整屏',
+      );
+    }
+  });
 }
