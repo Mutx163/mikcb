@@ -72,9 +72,7 @@ abstract final class LiquidGlassDegradation {
   /// the moment the route is disposed - no arbitrary rebuild required.
   static bool shouldDegrade(BuildContext context) {
     LiquidGlassDegradationScope.dependOn(context);
-    return LiquidGlassRouteTransitionScope.isActive(context) ||
-        platformViewSurfaceUnsafe ||
-        shouldDegradeFor(MediaQuery.of(context));
+    return platformViewSurfaceUnsafe || shouldDegradeFor(MediaQuery.of(context));
   }
 
   /// Pure core that does not depend on [BuildContext], meant for unit tests.
@@ -156,43 +154,4 @@ abstract final class LiquidGlassDegradation {
       _platformViewUnsafeDepth.value--;
     }
   }
-}
-
-/// 标记「**正在做路由转场的那一页**」的作用域。
-///
-/// 转场（`HyperosPageRoute` 的滑入 shell）期间，本页的玻璃必须回落实体材质，
-/// 理由有两条，都在本仓库实测过：
-///
-/// 1. **采不到稳定背景**：动画中的层还没落到屏幕上，BackdropFilter 整段动画
-///    渲染为透明，动画结束才「啪」地出现——与弹窗/面板上那份记录同源
-///    （见 [LiquidGlassDegradation.familyFallsBackToSolid] 注释一）。
-/// 2. **每帧一次全屏背景采样**：转场里页面一直在移动，玻璃采样目标每帧都在
-///    变，于是每帧都要重做一次 backdrop 采样 + 模糊。降级为实体后这笔开销
-///    整体消失，页面本身也能被外层 [RepaintBoundary] 缓存住。
-///
-/// 作用域**刻意只包住正在滑动的那一页**，不波及下层路由：若做成全局闸门，
-/// 下层首页的玻璃带与玻璃坞会在每次推页时都闪一下实体，非常刺眼。
-///
-/// 由 [HyperosNavigation.buildSharedAxisTransition] 在转场进行时置
-/// `active: true`；页面 settle 后置回 false，玻璃自动恢复。
-class LiquidGlassRouteTransitionScope extends InheritedWidget {
-  const LiquidGlassRouteTransitionScope({
-    super.key,
-    required this.active,
-    required super.child,
-  });
-
-  /// 本页是否正在做路由转场（滑入 / 滑出 / 被覆盖 / 被揭示）。
-  final bool active;
-
-  /// 调用方所在页面是否正在转场；不在本作用域内（如下层路由）恒为 false。
-  static bool isActive(BuildContext context) =>
-      context
-          .dependOnInheritedWidgetOfExactType<LiquidGlassRouteTransitionScope>()
-          ?.active ??
-      false;
-
-  @override
-  bool updateShouldNotify(LiquidGlassRouteTransitionScope oldWidget) =>
-      active != oldWidget.active;
 }
