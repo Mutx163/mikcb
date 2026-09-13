@@ -5,21 +5,83 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_miuix/miuix.dart';
 
-/// 页级 OS4 玻璃采样源宿主。
+/// 屏级 OS4 玻璃采样源控制器。
+///
+/// 一个"屏"（页面 / 首页）持有一个：里面的玻璃表面（顶栏带、玻璃坞、卡片、弹层）
+/// 都从它取 [backdrop]，并在挂载期间 [acquire] 请求录帧；被压在 modal 路由下面的
+/// 页面则由 modal 里的玻璃通过 [HyperosGlassBackdropRegistry] 拿到它并代为请求。
+class HyperosGlassBackdropController {
+  HyperosGlassBackdropController({this.onDemandChanged});
+
+  /// 采样源：由本屏的捕获写快照，屏内外所有玻璃共享同一份。
+  final MiuixLayerBackdrop backdrop = MiuixLayerBackdrop();
+
+  /// 开关切换回调：宿主用它 setState，重建捕获节点的 `enabled`。
+  final VoidCallback? onDemandChanged;
+
+  int _consumers = 0;
+
+  /// 当前是否有玻璃需要背景（有则开录帧；没有任何玻璃时零开销）。
+  bool get capturing => _consumers > 0;
+
+  /// 有玻璃挂载 / 弹层要展开时调用。
+  void acquire() {
+    _consumers++;
+    if (_consumers == 1) onDemandChanged?.call();
+  }
+
+  /// 玻璃卸载 / 弹层关闭时调用。
+  void release() {
+    if (_consumers == 0) return;
+    _consumers--;
+    if (_consumers == 0) onDemandChanged?.call();
+  }
+
+  void dispose() => backdrop.dispose();
+}
+
+/// 屏级采样源注册表。
+///
+/// 路由栈里被压在下面的页面仍然挂载，modal 路由（sheet / dialog / 弹层）里的玻璃
+/// 看不到它的 `InheritedWidget`，只能从这里取"当前最上面那一屏"的采样源 —— 那正是
+/// 压在 modal 下面、应该被采样的画面。[_screens] 按挂载顺序入栈：push 的页面后
+/// 挂载、pop 时先销毁，因此 `last` 恒等于栈顶那一屏。
+abstract final class HyperosGlassBackdropRegistry {
+  static final List<HyperosGlassBackdropController> _screens =
+      <HyperosGlassBackdropController>[];
+
+  /// 栈顶那一屏的采样源（没有屏时为 null）。
+  static HyperosGlassBackdropController? get active =>
+      _screens.isEmpty ? null : _screens.last;
+
+  static void register(HyperosGlassBackdropController controller) {
+    _screens.remove(controller);
+    _screens.add(controller);
+  }
+
+  static void unregister(HyperosGlassBackdropController controller) {
+    _screens.remove(controller);
+  }
+
+  /// 取"离 [context] 最近的"采样源：页内优先用本页作用域，modal 路由回落到注册表。
+  static HyperosGlassBackdropController? resolve(BuildContext context) =>
+      HyperosGlassBackdropScope.maybeOf(context)?.controller ?? active;
+}
+
+/// 屏级 OS4 玻璃采样源宿主。
 ///
 /// 上游玻璃（`MiuixGlass*`）不自己抓背景：它从 [MiuixLayerBackdrop] 取一张由
-/// `MiuixLayerBackdropCapture` 录制的图层快照。捕获必须包住「弹层之下的页面
-/// 内容」，且**不能包含玻璃自身**（上游要求：防反馈采样）。本组件把两件事
-/// 收在一处：
+/// `MiuixLayerBackdropCapture` 录制的图层快照。捕获必须包住「玻璃之下的页面
+/// 内容」，且**不能包含玻璃自身**（上游要求：防反馈采样）。本组件把三件事收在一处：
 ///
-/// 1. 给页内弹层提供**本页专属**的 [MiuixLayerBackdrop]（经
-///    [HyperosGlassBackdropScope] 下发）。不能用全局那一份：路由栈里被压在
-///    下面的页面仍然挂载着，两个宿主会往同一个 backdrop 里互相覆盖快照，
-///    采到的背景会是另一页的画面。
-/// 2. **只在弹层展开时才真正录帧**。捕获节点是重绘边界，开启期间页面每次
-///    重绘（滚动、动画）都要多做一次全页 `toImageSync`；常开会让设置页滚动
-///    掉帧。开关只改绘制行为、不改控件树形态，因此展开/收起不会重建页面
-///    子树（不丢滚动位置、不整页 relayout）。
+/// 1. 给屏内所有玻璃下发**本屏专属**的 [MiuixLayerBackdrop]（经
+///    [HyperosGlassBackdropScope]）。不能用全局那一份：路由栈里被压在下面的页面
+///    仍然挂载着，两个宿主会往同一个 backdrop 里互相覆盖快照。
+/// 2. 注册进 [HyperosGlassBackdropRegistry]，让 modal 路由（sheet / dialog）里的
+///    玻璃也能采到本屏画面。
+/// 3. **有玻璃要采样时才真正录帧**。捕获节点是重绘边界，开启期间页面每次重绘
+///    （滚动、动画）都要多做一次全页 `toImageSync`；没有任何玻璃时不录。开关只改
+///    绘制行为、不改控件树形态，因此不会重建页面子树（不丢滚动位置、不 relayout）。
 class HyperosGlassBackdropHost extends StatefulWidget {
   const HyperosGlassBackdropHost({super.key, required this.child});
 
@@ -31,77 +93,77 @@ class HyperosGlassBackdropHost extends StatefulWidget {
 }
 
 class _HyperosGlassBackdropHostState extends State<HyperosGlassBackdropHost> {
-  final MiuixLayerBackdrop _backdrop = MiuixLayerBackdrop();
+  late final HyperosGlassBackdropController _controller =
+      HyperosGlassBackdropController(
+        onDemandChanged: () {
+          if (!mounted) return;
+          // 玻璃表面在 build / didChangeDependencies 里挂载即 acquire，此时同步
+          // setState 会触发「setState() called during build」。空闲期（弹层展开、
+          // 手指按下这类事件回调）直接重建，让捕获当帧就位；否则推到帧末。
+          if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
+            setState(() {});
+          } else {
+            SchedulerBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() {});
+            });
+          }
+        },
+      );
 
-  /// 本页当前有多少个玻璃弹层在展开（含「抬手前预热」）。
-  int _consumers = 0;
+  @override
+  void initState() {
+    super.initState();
+    HyperosGlassBackdropRegistry.register(_controller);
+  }
 
   @override
   void dispose() {
-    _backdrop.dispose();
+    HyperosGlassBackdropRegistry.unregister(_controller);
+    _controller.dispose();
     super.dispose();
-  }
-
-  void _acquire() {
-    _consumers++;
-    if (_consumers == 1 && mounted) {
-      setState(() {});
-    }
-  }
-
-  void _release() {
-    if (_consumers == 0) {
-      return;
-    }
-    _consumers--;
-    if (_consumers == 0 && mounted) {
-      setState(() {});
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return HyperosGlassBackdropScope(
-      backdrop: _backdrop,
-      acquire: _acquire,
-      release: _release,
+      controller: _controller,
       child: HyperosLayerBackdropCapture(
-        backdrop: _backdrop,
-        enabled: _consumers > 0,
+        backdrop: _controller.backdrop,
+        enabled: _controller.capturing,
         child: widget.child,
       ),
     );
   }
 }
 
-/// 页内 OS4 玻璃弹层拿采样源、并按需开关页级捕获的作用域。
+/// 屏内玻璃表面拿采样源的作用域。
 ///
 /// 用 [maybeOf] 读取（`getInheritedWidgetOfExactType`，不建立依赖）：宿主页是
-/// 页面级常量，页面中途不会换采样源，所以弹层不需要跟着它重建。
+/// 页面级常量，页面中途不会换采样源，所以玻璃不需要跟着它重建。
 class HyperosGlassBackdropScope extends InheritedWidget {
   const HyperosGlassBackdropScope({
     super.key,
-    required this.backdrop,
-    required this.acquire,
-    required this.release,
+    required this.controller,
     required super.child,
   });
 
-  /// 本页的采样源：页级捕获往这里写快照，页内弹层从这里取。
-  final MiuixLayerBackdrop backdrop;
+  /// 本屏的采样源与"按需录帧"开关。
+  final HyperosGlassBackdropController controller;
 
-  /// 有弹层要展开（或手指已按下列、即将展开）时调用，页级捕获随即开启。
-  final VoidCallback acquire;
+  /// 兼容旧读取点：本屏采样源。
+  MiuixLayerBackdrop get backdrop => controller.backdrop;
 
-  /// 弹层关闭（或抬手后并未展开）时调用，页级捕获随即关闭。
-  final VoidCallback release;
+  /// 兼容旧读取点：请求 / 归还录帧。
+  VoidCallback get acquire => controller.acquire;
+
+  VoidCallback get release => controller.release;
 
   static HyperosGlassBackdropScope? maybeOf(BuildContext context) =>
       context.getInheritedWidgetOfExactType<HyperosGlassBackdropScope>();
 
   @override
   bool updateShouldNotify(HyperosGlassBackdropScope oldWidget) =>
-      !identical(oldWidget.backdrop, backdrop);
+      !identical(oldWidget.controller, controller);
 }
 
 /// [MiuixLayerBackdropCapture] 的可开关版本（上游同名类没有 `enabled`）。

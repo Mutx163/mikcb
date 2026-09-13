@@ -1,29 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/ui/hyperos/soft_glass/soft_glass_surface.dart';
 
-/// 柔光玻璃调参（SoftGlassTuning）渲染冒烟：
-/// 倍率作用在配方底色 alpha 上，测试环境无折射 shader（回退纯高斯），
-/// 因此只验证底色合成与构建不炸；折射 uniform 走模型测试的常量守卫。
+/// 柔光玻璃调参（[SoftGlassTuning]）→ 上游 OS4 玻璃材质的映射：
+///
+/// 自研折射链路删除后，[SoftGlassSurface] 内部换成 `MiuixGlass`，用户档位不再
+/// 作用于自绘底色，而是作用在上游材质上：
+/// - `blurRadiusMultiplier` → 材质 `blurRadius`（上游 radius 单位，与配方半径
+///   `SoftGlassRecipe.blurRadiusDp` 同源）；
+/// - `tintAlphaMultiplier` → 上游颜色层不透明度；
+/// - `blurEnabled: false` → 不接采样源（上游无 backdrop 时保留纯色轮廓）。
 void main() {
-  /// 底栏配方（floatingNavigation）最终底色 = 0.75 × 0.90 × tint 倍率。
-  double fillAlpha(WidgetTester tester) {
-    final boxes = tester.widgetList<DecoratedBox>(
-      find.descendant(
-        of: find.byType(SoftGlassSurface),
-        matching: find.byType(DecoratedBox),
-      ),
-    );
-    for (final box in boxes) {
-      final decoration = box.decoration;
-      if (decoration is BoxDecoration && decoration.color != null) {
-        return decoration.color!.a;
-      }
-    }
-    fail('SoftGlassSurface 子树里没找到带底色的 DecoratedBox');
-  }
+  MiuixGlass glassOf(WidgetTester tester) =>
+      tester.widget<MiuixGlass>(find.byType(MiuixGlass));
 
   Future<void> pumpSurface(
     WidgetTester tester, {
@@ -60,47 +52,57 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('默认调参 = 接入前的底色（0.75 × 0.90）', (tester) async {
+  testWidgets('默认档位 = 配方半径原样交给上游材质', (tester) async {
     await pumpSurface(tester);
-    expect(fillAlpha(tester), closeTo(0.675, 1e-6));
+    final material = glassOf(tester).material!;
+    expect(material.blurRadius, SoftGlassRecipe.standard.blurRadiusDp);
+    // 底色倍率默认 1：颜色层不透明度与上游预设一致。
+    expect(
+      material.first.color.a,
+      closeTo(MiuixGlassMaterials.puredThinGlassLight.first.color.a, 1e-6),
+    );
   });
 
-  testWidgets('底色倍率整体缩放配方 alpha', (tester) async {
+  testWidgets('底色倍率整体缩放上游颜色层 alpha', (tester) async {
     await pumpSurface(
       tester,
       scopeTuning: const SoftGlassTuning(tintAlphaMultiplier: 0.5),
     );
-    expect(fillAlpha(tester), closeTo(0.675 * 0.5, 1e-6));
+    final material = glassOf(tester).material!;
+    expect(
+      material.first.color.a,
+      closeTo(
+        MiuixGlassMaterials.puredThinGlassLight.first.color.a * 0.5,
+        1e-6,
+      ),
+    );
+  });
+
+  testWidgets('雾面倍率整体缩放配方半径', (tester) async {
+    await pumpSurface(
+      tester,
+      scopeTuning: const SoftGlassTuning(blurRadiusMultiplier: 0.25),
+    );
+    expect(
+      glassOf(tester).material!.blurRadius,
+      closeTo(SoftGlassRecipe.standard.blurRadiusDp * 0.25, 1e-6),
+    );
   });
 
   testWidgets('显式 tuning 覆盖优先于 scope', (tester) async {
     await pumpSurface(
       tester,
-      scopeTuning: const SoftGlassTuning(tintAlphaMultiplier: 0.5),
-      // 1.2 × 0.675 = 0.81，不触 alpha 上限 clamp。
-      override: const SoftGlassTuning(tintAlphaMultiplier: 1.2),
+      scopeTuning: const SoftGlassTuning(blurRadiusMultiplier: 0.25),
+      override: const SoftGlassTuning(blurRadiusMultiplier: 2),
     );
-    expect(fillAlpha(tester), closeTo(0.675 * 1.2, 1e-6));
+    expect(
+      glassOf(tester).material!.blurRadius,
+      closeTo(SoftGlassRecipe.standard.blurRadiusDp * 2, 1e-6),
+    );
   });
 
-  testWidgets('模糊关闭时落 0.90 实底，不受底色倍率影响', (tester) async {
-    await pumpSurface(
-      tester,
-      scopeTuning: const SoftGlassTuning(tintAlphaMultiplier: 0.1),
-      blurEnabled: false,
-    );
-    expect(fillAlpha(tester), closeTo(SoftGlassTokens.tintAlphaNoBlur, 1e-6));
-  });
-
-  testWidgets('雾面/折射拉满也不炸（sigma 与 shader 参数越界由链路夹紧）', (tester) async {
-    await pumpSurface(
-      tester,
-      scopeTuning: SoftGlassTuning.defaults.copyWith(
-        blurRadiusMultiplier: SoftGlassTuning.maxBlurRadiusMultiplier,
-        refraction: SoftGlassTuning.maxRefraction,
-        chromaticAberration: SoftGlassTuning.maxChromaticAberration,
-      ),
-    );
-    expect(tester.takeException(), isNull);
+  testWidgets('模糊关闭时不接采样源（上游走纯色轮廓兜底）', (tester) async {
+    await pumpSurface(tester, blurEnabled: false);
+    expect(glassOf(tester).backdrop, isNull);
   });
 }

@@ -225,7 +225,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///（[MiuixGlassPopupAnchor.dispose] 在 [dispose] 里释放）；弹层是
   /// 「常驻挂载 + 切 show」的声明式组件，故用 [_homeMenuOpen] 控制显隐。
   final MiuixGlassPopupAnchor _homeMenuAnchor = MiuixGlassPopupAnchor();
-  final MiuixLayerBackdrop _homeMenuBackdrop = MiuixLayerBackdrop();
   bool _homeMenuOpen = false;
   final AppUpdateService _updateService = AppUpdateService();
   final SupportCreatorService _supportCreatorService = SupportCreatorService();
@@ -8285,10 +8284,14 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 首页主体 + 顶栏「更多」弹层。
   ///
-  /// 弹层放在 [MiuixLayerBackdropCapture] **之外**：后者捕获的是「弹层之下的
-  /// 页面」，正是上游玻璃材质要采样的背景（缺捕获时上游会退化为纯色轮廓，
-  /// 见 MiuixGlass 的说明）。弹层内部经 OverlayPortal 渲染到 Overlay，
-  /// 所以这里的次序只影响它继承到的主题。
+  /// 首页整屏都包在 [HyperosGlassBackdropHost] 里：玻璃坞 / 首页玻璃带 / 分区
+  /// 玻璃 / 弹层都从它取的采样源渲染 OS4 玻璃；宿主同时注册进
+  /// [HyperosGlassBackdropRegistry]，于是压在首页之上的 sheet / dialog 里的玻璃
+  /// 也能采到首页画面（modal 路由看不到首页的 InheritedWidget）。
+  ///
+  /// 弹层放在宿主**之外**：宿主捕获的是「弹层之下的页面」，正是上游玻璃材质要
+  /// 采样的背景，捕获子树不能含玻璃自身（防反馈采样）。弹层内部经 OverlayPortal
+  /// 渲染到 Overlay，所以这里的次序只影响它继承到的主题。
   Widget _wrapHomeWithTopMenu(
     Widget content, {
     required TimetableSettings settings,
@@ -8296,10 +8299,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        MiuixLayerBackdropCapture(backdrop: _homeMenuBackdrop, child: content),
+        HyperosGlassBackdropHost(child: content),
         HomeTopMenuPopup(
           show: _homeMenuOpen,
-          backdrop: _homeMenuBackdrop,
           anchor: _homeMenuAnchor,
           // 形变动效要从按钮位置长出来，故传入按钮内容的**副本**（不含
           // GlobalKey，避免与真实按钮抢同一个 key）。

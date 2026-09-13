@@ -1,13 +1,9 @@
-import 'dart:math' as math;
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart'
-    show BackdropFilterLayer, PaintingContext, RenderProxyBox;
+import 'package:flutter_miuix/miuix.dart';
 
 import '../../../models/soft_glass_tuning.dart';
 import '../frosted/frosted_appearance.dart';
-import 'soft_glass_refraction.dart';
+import '../hyperos_glass_backdrop_host.dart';
 
 /// 柔光玻璃 token —— 数值直译 Hyper-PiliPlus（Deadliner）的
 /// `AdvancedMaterialFineTuning` / `GlassBlurSpec` / `GlassEdgeOpticsSpec` /
@@ -75,14 +71,9 @@ abstract final class SoftGlassTokens {
 
   /// 后置柔化（上游 `GlassLayeringSpec.postRefractionBlurRadius`）。
   ///
-  /// 上游在折射之后再过一道极小的高斯：`Dialog` 0.75dp、`BottomSheet` 1dp、
-  /// 其余默认 0.5dp，作用是削掉球面透镜在贴边处的采样硬边。
-  ///
-  /// **本项目有意不实现**：0.5dp 在 2x 屏折算 σ ≈ 1.1px、3x 屏 ≈ 1.6px，
-  /// 而 Flutter 侧要多付一次 `ImageFilter.compose`（或者一个额外的 BackdropFilter
-  /// 通道）才能叠上去；更要紧的是它会把 [SoftGlassRefraction] 那层刚压锐的
-  /// 边缘折射重新糊开——而「折射看着不像折射」正是柔光玻璃此刻要解决的问题。
-  /// 若将来在设备上确认贴边出现采样硬边，再把这条补上。
+  /// 自研折射链路时代保留的常量：自绘 shader 之后本该再过一道 0.5dp 高斯削掉
+  /// 贴边硬边，当时没做。现在玻璃交给上游 OS4 shader（它自己处理边缘），本常量
+  /// 已无消费者，只作为历史数值留档。
   static const double postRefractionBlurDp = 0.5;
 
   // ---------------------------------------------------------------------
@@ -292,7 +283,23 @@ enum SoftGlassPolarity { light, dark }
 ///   纯高斯 + 底色 + 边缘高光。描边仍用**光学档**的高光强度，保证即便没有
 ///   折射 shader，玻璃面也能靠镜面边缘立住——这一步与背景内容无关，是
 ///   「看起来像玻璃」的最低成本来源。
-class SoftGlassSurface extends StatelessWidget {
+/// 柔光玻璃表面 —— **全 app 玻璃统一材质**：直接渲染 flutter_miuix 的 OS4 玻璃
+/// （[MiuixGlass]），与首页右上角菜单、选择弹层用的是同一套材质与 shader。
+///
+/// 历史：这里曾经是 Hyper-PiliPlus「柔光玻璃」的自研实现 —— 自绘折射 shader +
+/// 双影边缘 + 自己录制 backdrop。那条链路已整体删除，本类只保留原来的**入参
+/// 契约**，内部换成上游玻璃，于是顶栏带 / 玻璃坞 / 弹窗 / 面板 / 选择弹层 /
+/// 标签栏所有接入点一次性换成菜单那套材质，不再各写一套观感。
+///
+/// 采样源（`MiuixLayerBackdrop`）由屏级宿主提供：屏内玻璃取
+/// [HyperosGlassBackdropScope]，modal 路由（sheet / dialog）取
+/// [HyperosGlassBackdropRegistry] 栈顶那一屏，并在挂载期间 `acquire` /
+/// `release` 请求录帧 —— 一屏之内没有任何玻璃时页面不做快照，零开销。
+///
+/// [blurEnabled] 为 false（模糊总开关关闭 / 后端不支持）时**不接采样源**：上游在
+/// 没有 backdrop 时保留纯色轮廓与可绘制高光，正好就是原来的「实底兜底」观感，
+/// 不会出现半透明空壳。
+class SoftGlassSurface extends StatefulWidget {
   const SoftGlassSurface({
     super.key,
     required this.child,
@@ -315,12 +322,15 @@ class SoftGlassSurface extends StatelessWidget {
   final BorderRadius? borderRadius;
   final double materialAlpha;
   final SoftGlassPolarity? polarity;
+
+  /// 兼容旧入参：旧自研链路用它覆盖高斯 sigma。上游玻璃的雾面由
+  /// [SoftGlassRecipe.blurRadiusDp] × 用户档位决定，这里只在显式传入时按同一套
+  /// radius→sigma 系数换回 radius 交给材质。
   final double? blurSigma;
   final bool enableShadows;
   final bool enableEdgeHighlight;
 
-  /// 是否允许走折射 shader。默认允许——折射透镜现在是绝对 dp 参数，
-  /// 任意尺寸都成立；只有明确不想要的场景才传 false。
+  /// true = 上游「仿生折射」档（bionic 折射材质），false = 栏 / 菜单的普通材质。
   final bool enableRefraction;
 
   /// 材质配方：决定雾面半径、底色倍率与自带圆角。见 [SoftGlassRecipe]。
@@ -344,589 +354,119 @@ class SoftGlassSurface extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final alpha = materialAlpha.clamp(0.0, 1.0);
-    final isDark = SoftGlassTokens._dark(context, polarity);
-    final tuning =
-        this.tuning ?? FrostedAppearanceScope.of(context).softGlassTuning;
-    final fill =
-        tint ??
-        SoftGlassTokens.tint(
-          context,
-          blurEnabled: blurEnabled,
-          polarity: polarity,
-          tintAlphaMultiplier:
-              recipe.tintAlphaMultiplier * tuning.tintAlphaMultiplier,
-        );
-    // 雾面半径 = 配方半径 × 用户倍率，再按 radius → sigma 换算；配方层级
-    // （面板厚于底栏）由倍率整体缩放保留。
-    final sigma =
-        blurSigma ?? recipe.blurSigmaWithMultiplier(tuning.blurRadiusMultiplier);
-    final edgeAlpha =
-        SoftGlassTokens.edgeAlphaOf(isDark) * alpha * tuning.edgeHighlight;
-    final resolvedRadius = _radius;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        Widget? glassLayer;
-        if (blurEnabled) {
-          glassLayer = _SoftGlassBackdrop(
-            blurSigma: sigma,
-            enableRefraction: enableRefraction,
-            cornerRadius: resolvedRadius.topLeft.x,
-            tuning: tuning,
-            // rim 高光强度（未乘 materialAlpha）：shader 内的边缘高光与
-            // 底下的折射同属一层，明暗折减在 Dart 侧算好再下发。
-            edgeHighlightAlpha:
-                SoftGlassTokens.edgeAlphaOf(isDark) * tuning.edgeHighlight,
-            child: const SizedBox.expand(),
-          );
-        }
-
-        final layers = <Widget>[
-          if (glassLayer != null) Positioned.fill(child: glassLayer),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: fill.withValues(alpha: fill.a * alpha),
-              ),
-            ),
-          ),
-          if (enableEdgeHighlight && edgeAlpha > 0.001)
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _SoftGlassEdgePainter(
-                  radius: resolvedRadius,
-                  alpha: edgeAlpha,
-                  width: SoftGlassTokens.edgeWidth,
-                ),
-              ),
-            ),
-        ];
-
-        final glass = ClipRRect(
-          borderRadius: resolvedRadius,
-          child: Stack(
-            // 尺寸语义必须与改动前完全等价：
-            //  - 外层给的是**紧约束**（如底栏 SizedBox 54、圆钮 SizedBox 56）
-            //    → expand，让内容照旧被撑满；
-            //  - 外层给的是**松约束**（弹窗/面板按内容定高）
-            //    → loose，Stack 尺寸跟随内容，绝不能撑到约束上限，否则
-            //      小内容弹窗会变成一整屏。
-            fit: constraints.isTight ? StackFit.expand : StackFit.loose,
-            children: [
-              ...layers,
-              // 宽度下限必须透传给内容 —— 材质容器不得改写内容的布局语义。
-              //
-              // 非紧约束时 Stack 走 `StackFit.loose`，给非定位子项的约束是
-              // `0..maxWidth`：父约束的 `minWidth` 在这里被松掉了。锚定选择弹窗
-              // 那类「外层 `ConstrainedBox(minWidth)` + 内层 `IntrinsicWidth` +
-              // `Column(stretch)`」的排版会因此收缩到内容固有宽度——`stretch`
-              // 撑不动、行内 `Expanded` 无处可撑，选中的勾从贴容器右边变成
-              // 紧跟文字。实测（test/ui/hyperos/soft_glass_constraint_test.dart）：
-              // 同样 `minWidth: 200` 下普通容器内容宽 200、此处仅 85。
-              //
-              // 只补 `minWidth`，不碰 `maxWidth`：高度仍由内容决定，小内容弹窗
-              // 不会被撑成一整屏。
-              if (constraints.isTight)
-                child
-              else
-                ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.minWidth),
-                  child: child,
-                ),
-            ],
-          ),
-        );
-
-        if (!enableShadows || alpha <= 0.01) {
-          return glass;
-        }
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: resolvedRadius,
-            boxShadow: [
-              for (final s in SoftGlassTokens.shadows(context, polarity: polarity))
-                BoxShadow(
-                  color: s.color.withValues(alpha: s.color.a * alpha),
-                  blurRadius: s.blurRadius,
-                  spreadRadius: s.spreadRadius,
-                  offset: s.offset,
-                ),
-            ],
-          ),
-          child: glass,
-        );
-      },
-    );
-  }
+  State<SoftGlassSurface> createState() => _SoftGlassSurfaceState();
 }
 
-/// 光学档边缘高光：沿胶囊描边一圈 0.5dp 的高光线，自上而下按
-/// `1 / 0.62 / 0.30` 三档衰减（原版 `Brush.verticalGradient`）。
-///
-/// 原版用 `Modifier.border(width, brush, shape)` 画在底色之上、内容之下，
-/// Flutter 侧没有等价的「带渐变的描边」，因此用画笔手绘，层级保持一致。
-class _SoftGlassEdgePainter extends CustomPainter {
-  const _SoftGlassEdgePainter({
-    required this.radius,
-    required this.alpha,
-    required this.width,
-  });
-
-  final BorderRadius radius;
-  final double alpha;
-  final double width;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (alpha <= 0.001 || width <= 0 || size.isEmpty) {
-      return;
-    }
-    // 半线宽内缩，让整条 0.5dp 描边都落在控件内部。
-    final inset = width / 2;
-    final rect = Rect.fromLTWH(
-      inset,
-      inset,
-      size.width - width,
-      size.height - width,
-    );
-    if (rect.width <= 0 || rect.height <= 0) {
-      return;
-    }
-    final corner = math.min(
-      radius.topLeft.x,
-      math.min(rect.width, rect.height) / 2,
-    );
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = width
-      ..isAntiAlias = true
-      ..shader = ui.Gradient.linear(
-        Offset(rect.center.dx, rect.top),
-        Offset(rect.center.dx, rect.bottom),
-        [
-          for (final factor in SoftGlassTokens.edgeGradientAlphas)
-            Colors.white.withValues(alpha: alpha * factor),
-        ],
-        SoftGlassTokens.edgeGradientStops,
-      );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(rect, Radius.circular(corner)),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_SoftGlassEdgePainter oldDelegate) =>
-      oldDelegate.alpha != alpha ||
-      oldDelegate.width != width ||
-      oldDelegate.radius != radius;
-}
-
-/// 玻璃背衬层：高斯 + 折射 shader。
-///
-/// 存在的唯一理由：`ImageFilter.shader` 拿到的 `FlutterFragCoord()` 落在
-/// **backdrop 快照（整屏）的纹理空间**里，引擎只把自己的纹理尺寸写进 uniform 0，
-/// **不会**告诉 shader 控件在其中的位置。位置只能由 Dart 侧在 paint 时实测
-/// （[RenderBox.getTransformTo]）——这正是本仓库已在用的 `liquid_glass_widgets`
-/// 的做法，也是它在同一台设备上能正常渲染的原因。
-///
-/// 不能沿用普通 `BackdropFilter`：它的 `filter` 是构建期给的，里面没有几何，
-/// 而几何每帧都可能变（底栏拉伸、弹窗入场）。由渲染对象在 paint 时现算，滤镜与
-/// 当前帧严格同步，不会出现「用上一帧位置」的错位。
-///
-/// shader 是异步装载的：[SoftGlassRefraction.warmUp] 完成后补一次重建。首个
-/// 帧只有高斯，这是可接受的——比第一帧画一个几何未知的透镜要好。
-class _SoftGlassBackdrop extends StatefulWidget {
-  const _SoftGlassBackdrop({
-    required this.blurSigma,
-    required this.enableRefraction,
-    required this.cornerRadius,
-    required this.edgeHighlightAlpha,
-    required this.tuning,
-    required this.child,
-  });
-
-  final double blurSigma;
-  final bool enableRefraction;
-
-  /// 实际形状的圆角半径（逻辑像素）。胶囊传 999 也行——渲染侧会夹到短边一半。
-  final double cornerRadius;
-
-  /// 已按明暗折减的 rim 高光强度，直接进 shader。
-  final double edgeHighlightAlpha;
-
-  /// 用户调参（折射 / 色散 / 厚度感）。
-  final SoftGlassTuning tuning;
-  final Widget child;
-
-  @override
-  State<_SoftGlassBackdrop> createState() => _SoftGlassBackdropState();
-}
-
-class _SoftGlassBackdropState extends State<_SoftGlassBackdrop> {
-  SoftGlassRefractionLens? _lens;
-  ModalRoute<dynamic>? _route;
-
-  @override
-  void initState() {
-    super.initState();
-    _syncLens();
-  }
+class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
+  HyperosGlassBackdropController? _controller;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final route = ModalRoute.of(context);
-    if (identical(route, _route)) {
-      return;
-    }
-    _route?.animation?.removeStatusListener(_onRouteSettled);
-    _route = route;
-    route?.animation?.addStatusListener(_onRouteSettled);
+    _bindController();
   }
 
   @override
-  void didUpdateWidget(_SoftGlassBackdrop oldWidget) {
+  void didUpdateWidget(SoftGlassSurface oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.enableRefraction != widget.enableRefraction) {
-      _syncLens();
+    if (oldWidget.blurEnabled != widget.blurEnabled) {
+      _bindController();
     }
   }
 
   @override
   void dispose() {
-    _route?.animation?.removeStatusListener(_onRouteSettled);
-    _route = null;
-    _lens?.dispose();
-    _lens = null;
+    _controller?.release();
+    _controller = null;
     super.dispose();
   }
 
-  /// 路由转场（HyperosPageRoute 的滑入 shell：不透明底 + 圆角 saveLayer）
-  /// 结束的那一刻，引擎的 backdrop 采样才恢复稳定（同问题记录见
-  /// LiquidGlassDegradation.familyFallsBackToSolid 注释一：动画期间
-  /// BackdropFilter 采不到稳定背景，整段动画渲染为透明）。转场里建出的
-  /// 滤镜对象被 _resolveFilter 缓存后，settle 时几何/sigma/tuning 均未变
-  /// → 缓存命中 → 坏滤镜一直复用，玻璃面停在透明（外观页预览顶栏尤甚，
-  /// 页面静止后不再有任何重绘）。settle 必须清一次缓存强制重建。
-  void _onRouteSettled(AnimationStatus status) {
-    if (status != AnimationStatus.completed &&
-        status != AnimationStatus.dismissed) {
+  /// 解析采样源（屏内作用域 → modal 时的栈顶屏），并在挂载期间请求录帧。
+  void _bindController() {
+    final next = widget.blurEnabled
+        ? HyperosGlassBackdropRegistry.resolve(context)
+        : null;
+    if (identical(next, _controller)) {
       return;
     }
-    final renderObject = context.findRenderObject();
-    if (renderObject is _RenderSoftGlassBackdrop) {
-      renderObject.invalidateFilterCache();
-    }
-  }
-
-  void _syncLens() {
-    if (!widget.enableRefraction) {
-      _lens?.dispose();
-      _lens = null;
-      return;
-    }
-    if (_lens != null) {
-      return;
-    }
-    final lens = SoftGlassRefraction.createLens();
-    if (lens != null) {
-      _lens = lens;
-      return;
-    }
-    SoftGlassRefraction.warmUp().then((_) {
-      if (!mounted || _lens != null) {
-        return;
-      }
-      final loaded = SoftGlassRefraction.createLens();
-      if (loaded != null) {
-        setState(() => _lens = loaded);
-      }
-    });
+    _controller?.release();
+    _controller = next;
+    next?.acquire();
   }
 
   @override
   Widget build(BuildContext context) {
-    final view = View.of(context);
-    return _SoftGlassBackdropHost(
-      blurSigma: widget.blurSigma,
-      lens: _lens,
-      devicePixelRatio: view.devicePixelRatio,
-      viewSize: view.physicalSize,
-      cornerRadius: widget.cornerRadius,
-      edgeHighlightAlpha: widget.edgeHighlightAlpha,
-      tuning: widget.tuning,
+    final tuning =
+        widget.tuning ?? FrostedAppearanceScope.of(context).softGlassTuning;
+    final isDark = SoftGlassTokens._dark(context, widget.polarity);
+    return MiuixGlass(
+      backdrop: widget.blurEnabled ? _controller?.backdrop : null,
+      style: MiuixGlassStyles.forTheme(isDark),
+      material: _tunedMaterial(
+        MiuixGlassMaterials.puredThinGlass(isDark),
+        tuning,
+      ),
+      shape: MiuixGlassShape(borderRadius: widget._radius),
+      alpha: widget.materialAlpha.clamp(0.0, 1.0),
+      fill: widget.tint,
+      shading: widget.enableRefraction,
+      stroke: widget.enableEdgeHighlight
+          ? _scaledStroke(
+              MiuixGlassStrokes.forTheme(isDark),
+              tuning.edgeHighlight,
+            )
+          : null,
+      shadow: widget.enableShadows ? MiuixGlassShadows.regular : null,
       child: widget.child,
     );
   }
-}
 
-class _SoftGlassBackdropHost extends SingleChildRenderObjectWidget {
-  const _SoftGlassBackdropHost({
-    required this.blurSigma,
-    required this.lens,
-    required this.devicePixelRatio,
-    required this.viewSize,
-    required this.cornerRadius,
-    required this.edgeHighlightAlpha,
-    required this.tuning,
-    required super.child,
-  });
-
-  final double blurSigma;
-  final SoftGlassRefractionLens? lens;
-  final double devicePixelRatio;
-  final Size viewSize;
-
-  /// 实际形状的圆角半径（逻辑像素）。
-  final double cornerRadius;
-
-  /// 已按明暗折减的 rim 高光强度。
-  final double edgeHighlightAlpha;
-
-  /// 用户调参。
-  final SoftGlassTuning tuning;
-
-  @override
-  _RenderSoftGlassBackdrop createRenderObject(BuildContext context) =>
-      _RenderSoftGlassBackdrop(
-        blurSigma, // 高斯 sigma
-        lens, // 折射透镜，可为 null（回退纯高斯）
-        devicePixelRatio, // 设备像素比
-        viewSize, // 视图物理尺寸
-        cornerRadius, // 圆角半径（逻辑像素）
-        edgeHighlightAlpha, // rim 高光强度
-        tuning, // 用户调参
-      );
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    _RenderSoftGlassBackdrop renderObject,
+  /// 上游材质包上用户档位：雾面半径 = 配方半径 × 档位倍率；底色浓度按
+  /// `tintAlphaMultiplier` 缩放颜色层不透明度。
+  MiuixGlassMaterial _tunedMaterial(
+    MiuixGlassMaterial base,
+    SoftGlassTuning tuning,
   ) {
-    renderObject
-      ..blurSigma = blurSigma
-      ..lens = lens
-      ..devicePixelRatio = devicePixelRatio
-      ..viewSize = viewSize
-      ..cornerRadius = cornerRadius
-      ..edgeHighlightAlpha = edgeHighlightAlpha
-      ..tuning = tuning;
-  }
-}
-
-class _RenderSoftGlassBackdrop extends RenderProxyBox {
-  _RenderSoftGlassBackdrop(
-    this._blurSigma,
-    this._lens,
-    this._devicePixelRatio,
-    this._viewSize,
-    this._cornerRadius,
-    this._edgeHighlightAlpha,
-    this._tuning,
-  );
-
-  double _blurSigma;
-  SoftGlassRefractionLens? _lens;
-  double _devicePixelRatio;
-  Size _viewSize;
-  double _cornerRadius;
-  double _edgeHighlightAlpha;
-  SoftGlassTuning _tuning;
-
-  ui.ImageFilter? _cachedFilter;
-  SoftGlassRefractionLens? _cachedLens;
-  Rect? _cachedGeometry;
-  double? _cachedSigma;
-  double? _cachedHighlight;
-  SoftGlassTuning? _cachedTuning;
-
-  @override
-  BackdropFilterLayer? get layer => super.layer as BackdropFilterLayer?;
-
-  @override
-  bool get alwaysNeedsCompositing => child != null;
-
-  double get blurSigma => _blurSigma;
-  set blurSigma(double value) {
-    if (_blurSigma == value) {
-      return;
-    }
-    _blurSigma = value;
-    markNeedsPaint();
+    final radius =
+        (widget.blurSigma != null
+                ? (widget.blurSigma! - SoftGlassTokens.radiusToSigmaBias) /
+                      SoftGlassTokens.radiusToSigmaScale
+                : widget.recipe.blurRadiusDp * tuning.blurRadiusMultiplier)
+            .clamp(0.0, SoftGlassTokens.maximumBlurRadius);
+    final tintScale = tuning.tintAlphaMultiplier.clamp(0.0, 2.0);
+    MiuixGlassColorLayer scale(MiuixGlassColorLayer layer) =>
+        MiuixGlassColorLayer(
+          layer.color.withValues(
+            alpha: (layer.color.a * tintScale).clamp(0.0, 1.0),
+          ),
+          layer.mode,
+        );
+    return MiuixGlassMaterial(
+      blurRadius: radius,
+      first: scale(base.first),
+      second: base.second == null ? null : scale(base.second!),
+      third: base.third == null ? null : scale(base.third!),
+    );
   }
 
-  SoftGlassRefractionLens? get lens => _lens;
-  set lens(SoftGlassRefractionLens? value) {
-    if (identical(_lens, value)) {
-      return;
-    }
-    _lens = value;
-    // 旧滤镜可能引用已释放的 shader，缓存必须一并失效。
-    _cachedFilter = null;
-    _cachedLens = null;
-    markNeedsPaint();
-  }
-
-  double get devicePixelRatio => _devicePixelRatio;
-  set devicePixelRatio(double value) {
-    if (_devicePixelRatio == value) {
-      return;
-    }
-    _devicePixelRatio = value;
-    markNeedsPaint();
-  }
-
-  Size get viewSize => _viewSize;
-  set viewSize(Size value) {
-    if (_viewSize == value) {
-      return;
-    }
-    _viewSize = value;
-    markNeedsPaint();
-  }
-
-  double get cornerRadius => _cornerRadius;
-  set cornerRadius(double value) {
-    if (_cornerRadius == value) {
-      return;
-    }
-    _cornerRadius = value;
-    markNeedsPaint();
-  }
-
-  double get edgeHighlightAlpha => _edgeHighlightAlpha;
-  set edgeHighlightAlpha(double value) {
-    if (_edgeHighlightAlpha == value) {
-      return;
-    }
-    _edgeHighlightAlpha = value;
-    markNeedsPaint();
-  }
-
-  SoftGlassTuning get tuning => _tuning;
-  set tuning(SoftGlassTuning value) {
-    if (_tuning == value) {
-      return;
-    }
-    _tuning = value;
-    markNeedsPaint();
-  }
-
-  @override
-  void paint(PaintingContext context, Offset offset) {
-    if (child == null) {
-      layer = null;
-      return;
-    }
-    assert(needsCompositing);
-    layer ??= BackdropFilterLayer();
-    layer!.filter = _resolveFilter();
-    layer!.blendMode = BlendMode.srcOver;
-    context.pushLayer(layer!, super.paint, offset);
-  }
-
-  /// 出滤镜。几何没变就复用——`ImageFilter.shader` 每次创建都会重新抓一份
-  /// uniform，逐帧新建纯属浪费。
-  ui.ImageFilter _resolveFilter() {
-    final lens = _lens;
-    final Rect? geometry = lens == null ? null : _geometryInPhysicalPixels();
-    final bool refracted = lens != null && geometry != null;
-    if (_cachedFilter != null &&
-        identical(_cachedLens, refracted ? lens : null) &&
-        _cachedGeometry == geometry &&
-        _cachedSigma == blurSigma &&
-        _cachedHighlight == edgeHighlightAlpha &&
-        _cachedTuning == tuning) {
-      return _cachedFilter!;
-    }
-
-    final blur = ui.ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma);
-    // compose 语义：先 inner（高斯）后 outer（折射），与原版
-    // 「colorControls → BlurEffect → runtimeShader(折射)」同序，且只占一个
-    // backdrop 通道。引擎侧对此有专门的单测（ComposeBackdropRuntimeOuterBlurInner）。
-    final result = refracted
-        ? ui.ImageFilter.compose(
-            outer: lens.filterFor(
-              geometry,
-              viewSize,
-              devicePixelRatio: _devicePixelRatio,
-              cornerRadiusPx: _cornerRadiusPx(),
-              edgeHighlightAlpha: edgeHighlightAlpha,
-              // 带宽度与位移共用 tuning.refraction：两者默认同值（上游
-              // GlassRefractionSpec 18/18），同步缩放可保持透镜剖面形状。
-              refractionHeightDp: tuning.refraction,
-              refractionAmountDp: tuning.refraction,
-              chromaticAberrationDp: tuning.chromaticAberration,
-              depthEffect: tuning.depthEffect,
-            ),
-            inner: blur,
-          )
-        : blur;
-
-    _cachedLens = refracted ? lens : null;
-    _cachedGeometry = geometry;
-    _cachedSigma = blurSigma;
-    _cachedHighlight = edgeHighlightAlpha;
-    _cachedTuning = tuning;
-    _cachedFilter = result;
-    _filterBuilds++;
-    return result;
-  }
-
-  /// 滤镜重建次数（每次缓存未命中 +1）。测试用观测点：路由 settle 后
-  /// 应 +1（见 [_SoftGlassBackdropState._onRouteSettled]）。
-  @visibleForTesting
-  int get debugFilterBuilds => _filterBuilds;
-  int _filterBuilds = 0;
-
-  /// 清空滤镜缓存并重画。转场 settle 时由 state 调用：动画期间引擎的
-  /// backdrop 采样不稳定，彼时建出的滤镜必须废弃重建。
-  void invalidateFilterCache() {
-    if (_cachedFilter == null) {
-      return;
-    }
-    _cachedFilter = null;
-    markNeedsPaint();
-  }
-
-  /// 圆角半径（物理像素）。胶囊传 999 也能用——这里夹到短边一半，即胶囊半径；
-  /// 面板传自己的 borderRadius。shader 里还会再夹一次。
-  double _cornerRadiusPx() {
-    final limit = size.isEmpty ? 0.0 : size.shortestSide * 0.5;
-    return (_cornerRadius <= 0 || _cornerRadius > limit ? limit : _cornerRadius) *
-        _devicePixelRatio;
-  }
-
-  /// 控件在整屏 backdrop 快照里的矩形，物理像素。
-  ///
-  /// 旋转或非等比缩放时返回 null：折射 SDF 是轴对齐的，那种情形几何必然失真，
-  /// 退回纯高斯比画一个歪掉的透镜更稳妥。
-  ///
-  /// 注：折射透镜改用绝对 dp 参数后**不再限制高度**——任意尺寸都挂同一套透镜。
-  Rect? _geometryInPhysicalPixels() {
-    if (size.isEmpty) {
-      return null;
-    }
-    final transform = getTransformTo(null);
-    // 只看左上 2×2：m01/m10 非零即有旋转或错切，对角线不等即非等比缩放。
-    if (transform.entry(0, 1).abs() > 0.001 ||
-        transform.entry(1, 0).abs() > 0.001) {
-      return null;
-    }
-    final double scaleX = transform.entry(0, 0);
-    final double scaleY = transform.entry(1, 1);
-    if (scaleX <= 0 || scaleY <= 0 || (scaleX - scaleY).abs() > 0.02) {
-      return null;
-    }
-    // 轴对齐时平移量即左上角（entry(0,3) / entry(1,3)）。
-    return Rect.fromLTWH(
-      transform.entry(0, 3) * _devicePixelRatio,
-      transform.entry(1, 3) * _devicePixelRatio,
-      size.width * scaleX * _devicePixelRatio,
-      size.height * scaleY * _devicePixelRatio,
+  /// 边缘高光强度（0..1）按比例作用到上游描边的三处高光上。
+  MiuixGlassStroke _scaledStroke(MiuixGlassStroke base, double strength) {
+    final scale = strength.clamp(0.0, 1.0);
+    Color scaleColor(Color color) =>
+        color.withValues(alpha: (color.a * scale).clamp(0.0, 1.0));
+    MiuixGlassStrokeLight scaleLight(MiuixGlassStrokeLight light) =>
+        MiuixGlassStrokeLight(
+          light.x,
+          light.y,
+          light.z,
+          scaleColor(light.color),
+        );
+    return MiuixGlassStroke(
+      width: base.width,
+      bevel: base.bevel,
+      color: scaleColor(base.color),
+      primary: scaleLight(base.primary),
+      secondary: scaleLight(base.secondary),
     );
   }
 }

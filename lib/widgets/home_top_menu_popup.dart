@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_glass_backdrop_host.dart';
 import 'package:university_timetable/ui/hyperos/os4_glass_backdrop.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
 
@@ -37,7 +38,7 @@ class HomeTopMenuPopup extends StatefulWidget {
   const HomeTopMenuPopup({
     super.key,
     required this.show,
-    required this.backdrop,
+    this.backdrop,
     required this.anchor,
     required this.anchorContent,
     required this.entries,
@@ -49,8 +50,9 @@ class HomeTopMenuPopup extends StatefulWidget {
   /// 是否展开一级菜单。
   final bool show;
 
-  /// 材质取样的捕获容器，由宿主创建并持有（上游约定：调用方创建并 dispose）。
-  final MiuixLayerBackdrop backdrop;
+  /// 材质取样源覆盖。默认按所在屏自动解析（屏级作用域 → 注册表栈顶 → 全局），
+  /// 与 [HyperosSelectPopup] 同一套规则；测试可显式传入。
+  final MiuixLayerBackdrop? backdrop;
 
   /// 绑在「更多」按钮上的锚点，由宿主创建并持有。
   final MiuixGlassPopupAnchor anchor;
@@ -82,10 +84,42 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
   Rect? _secondaryBounds;
   bool _secondaryOpen = false;
 
+  /// 本次展开期间持有的屏级采样源（展开时 acquire，关闭时 release）。
+  HyperosGlassBackdropController? _captureHold;
+
   @override
   void dispose() {
+    _captureHold?.release();
+    _captureHold = null;
     _addRowAnchor.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(HomeTopMenuPopup oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.show != widget.show) {
+      _syncCaptureHold();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncCaptureHold();
+  }
+
+  /// 菜单展开期间请求所在屏录帧（关闭即归还，页面没玻璃时不空转）。
+  void _syncCaptureHold() {
+    final next = widget.show && widget.backdrop == null
+        ? HyperosGlassBackdropRegistry.resolve(context)
+        : null;
+    if (identical(next, _captureHold)) {
+      return;
+    }
+    _captureHold?.release();
+    _captureHold = next;
+    next?.acquire();
   }
 
   /// 收起二级并关掉一级菜单；点遮罩关闭也走这里。
@@ -111,6 +145,10 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final entries = widget.entries;
+    final backdrop =
+        widget.backdrop ??
+        HyperosGlassBackdropRegistry.resolve(context)?.backdrop ??
+        os4GlassBackdrop;
 
     // 外层手势隔离：弹层自带的滚动视图不该继承首页的橡皮筋物理，也不该把滚动
     // 通知冒泡回首页（首页同样有整页滚动监听）。
@@ -121,7 +159,7 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
             show: widget.show,
             anchor: widget.anchor,
             anchorContent: widget.anchorContent,
-            backdrop: widget.backdrop,
+            backdrop: backdrop,
             // 宽度见 [_popupSizing]（收到旧实现的下界原宽 200）。
             sizing: _popupSizing,
             // 刻意**不用** `stacked`：它的语义是"二级展开时一级面板收缩/变暗"，
@@ -151,7 +189,7 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
               anchorBounds: _secondaryBounds,
               // 二级共享一级菜单的材质（上游 materialAnchor 语义）。
               materialAnchor: widget.anchor,
-              backdrop: widget.backdrop,
+              backdrop: backdrop,
               // 与一级面板**同一份**宽度约束，两块才对得齐。
               sizing: _popupSizing,
               onDismissRequest: _closeSecondary,
