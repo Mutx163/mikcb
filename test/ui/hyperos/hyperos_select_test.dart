@@ -603,11 +603,13 @@ void main() {
   });
 
   group('HyperosSelectTile · OS4 玻璃弹层（页级宿主）', () {
+    /// 页级捕获是否开着（= 有玻璃在请求录帧）。
     bool captureEnabled(WidgetTester tester) => tester
         .widget<HyperosLayerBackdropCapture>(
           find.byType(HyperosLayerBackdropCapture),
         )
-        .enabled;
+        .controller
+        .capturing;
 
     Future<void> pumpHosted(
       WidgetTester tester, {

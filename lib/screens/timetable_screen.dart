@@ -225,6 +225,16 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///（[MiuixGlassPopupAnchor.dispose] 在 [dispose] 里释放）；弹层是
   /// 「常驻挂载 + 切 show」的声明式组件，故用 [_homeMenuOpen] 控制显隐。
   final MiuixGlassPopupAnchor _homeMenuAnchor = MiuixGlassPopupAnchor();
+
+  /// 首页整屏的玻璃采样源。首页自持（而不是让宿主自建）有两个原因：
+  /// 1. 首页右上角菜单与首页内容不在同一棵子树里（菜单要在捕获之外，防反馈采样），
+  ///    菜单必须拿到**首页这一屏**的 backdrop，而不是"注册表栈顶"（玻璃坞里被盖住的
+  ///    内嵌页也会注册，栈顶可能是一屏不绘制的页面 → 快照为空 → 菜单透明）；
+  /// 2. 「更多」按钮按下即 `acquire` 预热录帧，抬手打开菜单时快照已就绪，
+  ///    弹层首帧就有玻璃（否则展开头一两帧是透明轮廓）。
+  final HyperosGlassBackdropController _homeGlass =
+      HyperosGlassBackdropController();
+  bool _homeGlassHeld = false;
   bool _homeMenuOpen = false;
   final AppUpdateService _updateService = AppUpdateService();
   final SupportCreatorService _supportCreatorService = SupportCreatorService();
@@ -454,6 +464,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
     _pendingDayViewControllerDisposals.clear();
     _homeMenuAnchor.dispose();
+    _homeGlass.dispose();
     super.dispose();
   }
 
@@ -703,7 +714,17 @@ class _TimetableScreenState extends State<TimetableScreen>
                   // 上游形变弹层要求把锚点绑在触发控件上（[MiuixGlassAnchor]
                   // 负责挂它自己的 GlobalKey）；[_topMenuButtonKey] 仍保留，
                   // 供「八宫格」形态在原位置弹出底部弹层用。
-                  MiuixGlassAnchor(
+                  // 按下即预热首页采样源：图层快照帧末录制，抬手打开菜单时
+                  // 已就绪，弹层首帧就是玻璃而不是透明轮廓。
+                  Listener(
+                    onPointerDown: (_) => _prewarmHomeGlass(),
+                    onPointerUp: (_) {
+                      if (!_homeMenuOpen) _releaseHomeGlass();
+                    },
+                    onPointerCancel: (_) {
+                      if (!_homeMenuOpen) _releaseHomeGlass();
+                    },
+                    child: MiuixGlassAnchor(
                     anchor: _homeMenuAnchor,
                     child: KeyedSubtree(
                     key: _topMenuButtonKey,
@@ -740,6 +761,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       semanticsLabel: l10n.moreTooltip,
                       onPress: _showTopActionsSheet,
                     ),
+                  ),
                   ),
                   ),
                 ],
@@ -8299,9 +8321,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        HyperosGlassBackdropHost(child: content),
+        HyperosGlassBackdropHost(controller: _homeGlass, child: content),
         HomeTopMenuPopup(
           show: _homeMenuOpen,
+          backdrop: _homeGlass.backdrop,
           anchor: _homeMenuAnchor,
           // 形变动效要从按钮位置长出来，故传入按钮内容的**副本**（不含
           // GlobalKey，避免与真实按钮抢同一个 key）。
@@ -8312,11 +8335,26 @@ class _TimetableScreenState extends State<TimetableScreen>
             if (_homeMenuOpen) {
               setState(() => _homeMenuOpen = false);
             }
+            _releaseHomeGlass();
           },
           onSelected: _dispatchTopMenuSelection,
         ),
       ],
     );
+  }
+
+  /// 「更多」按钮按下即预热：图层快照在帧末录制，早一拍才能保证菜单首帧有玻璃。
+  void _prewarmHomeGlass() {
+    if (_homeGlassHeld) return;
+    _homeGlassHeld = true;
+    _homeGlass.acquire();
+  }
+
+  /// 抬手未展开 / 菜单关闭后归还录帧请求（配对 [acquire]，避免首页一直录帧）。
+  void _releaseHomeGlass() {
+    if (!_homeGlassHeld) return;
+    _homeGlassHeld = false;
+    _homeGlass.release();
   }
 
   Future<void> _showTopActionsSheet() async {
@@ -8329,9 +8367,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 共享同一份自定义排列（homeGridMenuActions），统一以入口 id 回传，
     // 再经 _dispatchTopMenuSelection 分发到全应用任意二级页面/功能。
     if (settings.homeMenuStyle != HomeMenuStyle.grid) {
+      _prewarmHomeGlass();
       setState(() => _homeMenuOpen = true);
       return;
     }
+    // 八宫格是底部弹层，不吃首页采样源：抬手即归还预热。
+    _releaseHomeGlass();
 
     final selectedId = await showHomeTopGridMenuSheet(
       context,

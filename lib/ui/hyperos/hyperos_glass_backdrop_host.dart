@@ -10,14 +10,12 @@ import 'package:flutter_miuix/miuix.dart';
 /// 一个"屏"（页面 / 首页）持有一个：里面的玻璃表面（顶栏带、玻璃坞、卡片、弹层）
 /// 都从它取 [backdrop]，并在挂载期间 [acquire] 请求录帧；被压在 modal 路由下面的
 /// 页面则由 modal 里的玻璃通过 [HyperosGlassBackdropRegistry] 拿到它并代为请求。
-class HyperosGlassBackdropController {
-  HyperosGlassBackdropController({this.onDemandChanged});
-
+///
+/// 它本身是 [ChangeNotifier]：开关（有人要录帧 / 没人要）变化时通知宿主，宿主只重建
+/// 那个捕获节点，不惊动页面子树。
+class HyperosGlassBackdropController extends ChangeNotifier {
   /// 采样源：由本屏的捕获写快照，屏内外所有玻璃共享同一份。
   final MiuixLayerBackdrop backdrop = MiuixLayerBackdrop();
-
-  /// 开关切换回调：宿主用它 setState，重建捕获节点的 `enabled`。
-  final VoidCallback? onDemandChanged;
 
   int _consumers = 0;
 
@@ -27,17 +25,21 @@ class HyperosGlassBackdropController {
   /// 有玻璃挂载 / 弹层要展开时调用。
   void acquire() {
     _consumers++;
-    if (_consumers == 1) onDemandChanged?.call();
+    if (_consumers == 1) notifyListeners();
   }
 
   /// 玻璃卸载 / 弹层关闭时调用。
   void release() {
     if (_consumers == 0) return;
     _consumers--;
-    if (_consumers == 0) onDemandChanged?.call();
+    if (_consumers == 0) notifyListeners();
   }
 
-  void dispose() => backdrop.dispose();
+  @override
+  void dispose() {
+    backdrop.dispose();
+    super.dispose();
+  }
 }
 
 /// 屏级采样源注册表。
@@ -83,9 +85,17 @@ abstract final class HyperosGlassBackdropRegistry {
 ///    （滚动、动画）都要多做一次全页 `toImageSync`；没有任何玻璃时不录。开关只改
 ///    绘制行为、不改控件树形态，因此不会重建页面子树（不丢滚动位置、不 relayout）。
 class HyperosGlassBackdropHost extends StatefulWidget {
-  const HyperosGlassBackdropHost({super.key, required this.child});
+  const HyperosGlassBackdropHost({
+    super.key,
+    required this.child,
+    this.controller,
+  });
 
   final Widget child;
+
+  /// 外部持有的采样源（首页要自己按「按下更多按钮」预热录帧，并把同一份传给
+  /// 弹层）。为空则自建、并随宿主一起释放。
+  final HyperosGlassBackdropController? controller;
 
   @override
   State<HyperosGlassBackdropHost> createState() =>
@@ -94,32 +104,43 @@ class HyperosGlassBackdropHost extends StatefulWidget {
 
 class _HyperosGlassBackdropHostState extends State<HyperosGlassBackdropHost> {
   late final HyperosGlassBackdropController _controller =
-      HyperosGlassBackdropController(
-        onDemandChanged: () {
-          if (!mounted) return;
-          // 玻璃表面在 build / didChangeDependencies 里挂载即 acquire，此时同步
-          // setState 会触发「setState() called during build」。空闲期（弹层展开、
-          // 手指按下这类事件回调）直接重建，让捕获当帧就位；否则推到帧末。
-          if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
-            setState(() {});
-          } else {
-            SchedulerBinding.instance.addPostFrameCallback((_) {
-              if (mounted) setState(() {});
-            });
-          }
-        },
-      );
+      widget.controller ?? HyperosGlassBackdropController();
+
+  bool _registered = false;
 
   @override
-  void initState() {
-    super.initState();
-    HyperosGlassBackdropRegistry.register(_controller);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncRegistration();
+  }
+
+  /// 只有"整屏最外层、且在跑"的宿主才占注册表栈顶。两条门槛都不能少：
+  ///
+  /// * **最外层**（上面没有别的屏级作用域）：屏里可以套屏 —— 首页的
+  ///   `HyperosRootPage` 自带一层，玻璃坞的内嵌设置页也自带一层。它们都采不到外层
+  ///   背景（**壁纸**），一旦登记就顶掉外层：菜单 / 弹层按栈顶取采样源时拿到一张
+  ///   不含壁纸的快照 → 面板画的是透明图 → 底下的字直接透出来（真机现象：
+  ///   "开了内置壁纸，首页右上角菜单变透明"）。
+  /// * **在跑**（`TickerMode` 为真）：被 `Visibility` 盖住、节拍已停的那一屏不再
+  ///   绘制，它的 backdrop 永远没有新快照。
+  void _syncRegistration() {
+    final outermost = HyperosGlassBackdropScope.maybeOf(context) == null;
+    final live = outermost && TickerMode.valuesOf(context).enabled;
+    if (live == _registered) return;
+    _registered = live;
+    if (live) {
+      HyperosGlassBackdropRegistry.register(_controller);
+    } else {
+      HyperosGlassBackdropRegistry.unregister(_controller);
+    }
   }
 
   @override
   void dispose() {
     HyperosGlassBackdropRegistry.unregister(_controller);
-    _controller.dispose();
+    if (widget.controller == null) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
@@ -127,9 +148,12 @@ class _HyperosGlassBackdropHostState extends State<HyperosGlassBackdropHost> {
   Widget build(BuildContext context) {
     return HyperosGlassBackdropScope(
       controller: _controller,
+      // 捕获节点自己订阅控制器（见 HyperosLayerBackdropCapture）：开关只触发
+      // `markNeedsPaint`，**不重建任何 widget** —— 玻璃表面是在自己的
+      // didChangeDependencies 里 acquire 的，那时若 markNeedsBuild 一个不在
+      // 当前构建链上的祖先，会直接抛 "setState() called during build"。
       child: HyperosLayerBackdropCapture(
-        backdrop: _controller.backdrop,
-        enabled: _controller.capturing,
+        controller: _controller,
         child: widget.child,
       ),
     );
@@ -176,19 +200,17 @@ class HyperosGlassBackdropScope extends InheritedWidget {
 class HyperosLayerBackdropCapture extends SingleChildRenderObjectWidget {
   const HyperosLayerBackdropCapture({
     super.key,
-    required this.backdrop,
-    required this.enabled,
+    required this.controller,
     required Widget super.child,
   });
 
-  final MiuixLayerBackdrop backdrop;
-  final bool enabled;
+  /// 采样源 + 录帧开关的持有者。渲染对象订阅它：开关变化只 `markNeedsPaint`。
+  final HyperosGlassBackdropController controller;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
     return _RenderHyperosLayerBackdropCapture(
-      backdrop,
-      enabled,
+      controller,
       MediaQuery.devicePixelRatioOf(context),
     );
   }
@@ -196,36 +218,40 @@ class HyperosLayerBackdropCapture extends SingleChildRenderObjectWidget {
   @override
   void updateRenderObject(BuildContext context, RenderObject renderObject) {
     (renderObject as _RenderHyperosLayerBackdropCapture)
-      ..backdrop = backdrop
-      ..enabled = enabled
+      ..controller = controller
       ..devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
   }
 }
 
 class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
   _RenderHyperosLayerBackdropCapture(
-    this._backdrop,
-    this._enabled,
+    this._controller,
     this._devicePixelRatio,
-  );
+  ) {
+    _controller.addListener(_onDemandChanged);
+  }
 
-  MiuixLayerBackdrop _backdrop;
-  MiuixLayerBackdrop get backdrop => _backdrop;
-  set backdrop(MiuixLayerBackdrop value) {
-    if (identical(_backdrop, value)) return;
-    _backdrop.unregisterCapture(this);
-    _backdrop = value;
-    if (attached) _backdrop.registerCapture(this);
+  HyperosGlassBackdropController _controller;
+  HyperosGlassBackdropController get controller => _controller;
+  set controller(HyperosGlassBackdropController value) {
+    if (identical(_controller, value)) return;
+    _controller.removeListener(_onDemandChanged);
+    final previousBackdrop = _controller.backdrop;
+    _controller = value..addListener(_onDemandChanged);
+    if (attached) {
+      previousBackdrop.unregisterCapture(this);
+      _controller.backdrop.registerCapture(this);
+    }
     markNeedsPaint();
   }
 
-  bool _enabled;
-  bool get enabled => _enabled;
-  set enabled(bool value) {
-    if (_enabled == value) return;
-    _enabled = value;
-    // 开启当帧就要录一次，否则弹层首帧采不到背景（只剩材质底色）。
-    markNeedsPaint();
+  /// "有没有玻璃在采样"变了：只重绘本节点（当帧末补一次快照）。
+  ///
+  /// 这里刻意不 `markNeedsBuild`：玻璃表面是在自己的 `didChangeDependencies`
+  /// （构建期）里 acquire 的，此刻标脏一个不在当前构建链上的祖先会抛
+  /// `setState() called during build`；而录帧本来就只是绘制行为。
+  void _onDemandChanged() {
+    if (attached) markNeedsPaint();
   }
 
   double _devicePixelRatio;
@@ -235,6 +261,9 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
     _devicePixelRatio = value;
     markNeedsPaint();
   }
+
+  /// 只有还有玻璃需要背景时才录帧。
+  bool get recording => _controller.capturing;
 
   // 独立重绘边界：子树绘制进本节点的 OffsetLayer，快照直接对真实图层出图，
   // 避免重录子树带来的图层重入。
@@ -246,12 +275,12 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
   @override
   void attach(PipelineOwner owner) {
     super.attach(owner);
-    _backdrop.registerCapture(this);
+    _controller.backdrop.registerCapture(this);
   }
 
   @override
   void detach() {
-    _backdrop.unregisterCapture(this);
+    _controller.backdrop.unregisterCapture(this);
     super.detach();
   }
 
@@ -264,12 +293,12 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
   bool _captureScheduled = false;
 
   void _scheduleCapture() {
-    if (!_enabled || _captureScheduled || !hasSize || size.isEmpty) return;
+    if (!recording || _captureScheduled || !hasSize || size.isEmpty) return;
     _captureScheduled = true;
     // 帧结束后再快照，避免在 paint 阶段改状态触发同帧重入。
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _captureScheduled = false;
-      if (!attached || !hasSize || size.isEmpty || !_enabled) return;
+      if (!attached || !hasSize || size.isEmpty || !recording) return;
       _capture();
     });
   }
@@ -282,6 +311,10 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
       Offset.zero & size,
       pixelRatio: dpr,
     );
-    _backdrop.updateSnapshot(image, localToGlobal(Offset.zero), dpr);
+    _controller.backdrop.updateSnapshot(
+      image,
+      localToGlobal(Offset.zero),
+      dpr,
+    );
   }
 }
