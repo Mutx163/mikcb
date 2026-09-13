@@ -54,32 +54,65 @@ npx serve site/out
 
 | 项 | 值 |
 | --- | --- |
-| 构建命令 | `cd site && pnpm i && pnpm build` |
-| 输出目录 | `site/out` |
+| Root directory（根目录） | `site` |
+| 构建命令 | `pnpm install --frozen-lockfile && pnpm build` |
+| 输出目录 | `out` |
 | 环境变量 `NODE_VERSION` | `22` |
 
-仓库根不是 Node 项目，因此命令里必须先 `cd site`。
+**为什么 Root directory 必须是 `site`（2026-09-13 真实故障）**
+
+原配置是「根目录留空（= 仓库根）+ 命令 `cd site && pnpm i && pnpm build`」，
+在 Cloudflare 上直接失败：
+
+```text
+Executing user command: cd site && pnpm install && pnpm build
+No preset version installed for command pnpm
+Failed: Error while executing user command. Exited with error code: 126
+```
+
+原因：Cloudflare Pages v2 构建系统按**根目录**探测包管理器。仓库根既没有
+`package.json` 也没有锁文件——`site/package.json` 里的
+`"packageManager": "pnpm@11.22.0"` 与 `site/pnpm-lock.yaml` 都在 `site/` 下——
+于是 CF 只装了 Node、**没有装 pnpm**，`pnpm` 命令不存在 → 退出码 126。
+注意 `NODE_VERSION=22` 本身是生效的（日志里有 `Installing nodejs 22.22.0`），
+失败点只在 pnpm。
+
+把 Root directory 设为 `site` 后，CF 就地读到 `packageManager` 与
+`pnpm-lock.yaml`，自动装上对应版本的 pnpm；构建命令也就不再需要 `cd site`。
+
+> 若因故必须保留「根目录 = 仓库根」，则把构建命令改为
+> `corepack enable && cd site && pnpm install --frozen-lockfile && pnpm build`，
+> 由 corepack（Node 22 自带）依据 `packageManager` 提供 pnpm。
 
 **已知问题：`__next.*` 预取载荷 404（Cloudflare Pages 路径匹配差异）**
 
-Next.js 静态导出会把 RSC 预取载荷落盘为带字面 `$` 的目录嵌套形式：
+Next.js 静态导出把 RSC 预取载荷落盘为带字面 `$` 的目录嵌套形式：
 
 ```text
-site/out/docs/guide/quick-start/__next.docs/$oc$slug/__PAGE__.txt   # 200
+site/out/docs/guide/quick-start/__next.docs/$oc$slug/__PAGE__.txt
 ```
 
-而客户端预取请求用的是点号压平形式，Cloudflare Pages 静态文件匹配不到：
+而客户端预取请求用的是点号压平形式：
 
 ```text
-GET /docs/guide/quick-start/__next.docs.$oc$slug.__PAGE__.txt       # 404
+GET /docs/guide/quick-start/__next.docs.$oc$slug.__PAGE__.txt
 ```
 
-影响：软导航本身正常（导航请求 `<路径>/index.txt` 返回 200），
-控制台每次预取多出一条 404，预取失效回退为按需拉取。
+`site/public/_redirects` 把点号形式以 200 重写到嵌套形式。
 
-修复：仓库内 `site/public/_redirects` 已把点号形式重写到真实落盘路径，
-构建时会被 Next 复制进 `out/`。修改后需在 Pages 上重新构建才生效。
-本地可用 `python3 -m http.server --directory site/out` 复现两条路径的 404/200 差异。
+> ⚠️ **这条规则的前提尚未确认，部署后必须复测。**
+> 2026-09-13 在线上（当时仍是旧构建、`_redirects` 未上线）实测：**两种形式
+> 都返回 404** —— 既复现不出「嵌套 200」，也复现不出「点号 404」。既然前提
+> 对不上，就不能假设重写一定有益：若目标路径不存在，200 重写反而会把一个
+> 本来可用的 URL 变成 404。另外该规则的通配符 `/docs/*/…` 覆盖不到
+> `docs/__next.docs.$oc$slug/__PAGE__.txt`（中间没有路径段），`_not-found`
+> 也没有规则；规则里还硬编码了 Next 内部段名（`$oc$slug`、`!KGhvbWUp`），
+> 升级 Next 会静默失效。
+>
+> 复测方法（部署后逐条 `curl -sI`）：`/docs/guide/quick-start/__next.docs.$oc$slug.__PAGE__.txt`
+> 与 `/docs/guide/quick-start/__next.docs/$oc$slug/__PAGE__.txt`，确认前者由
+> 404 变 200 且后者仍可用。本地可用
+> `python3 -m http.server --directory site/out` 对比两条路径。
 </Step>
 <Step>
 部署完成后，在 Pages 项目的自定义域中添加 `docs.163366.xyz`，按提示完成 DNS。
@@ -121,6 +154,13 @@ GET /docs/guide/quick-start/__next.docs.$oc$slug.__PAGE__.txt       # 404
 
 5. **`.source/`、`.next/`、`out/` 不要提交**  
    已由 `site/.gitignore` 排除；`out/` 由 Cloudflare 在构建机上生成。
+
+6. **`app/favicon.ico` 会覆盖 `public/favicon.ico`**  
+   Next 把 `app/favicon.ico` 当作**文件约定**（等价于一条 `/favicon.ico` 路由），
+   路由优先于 `public/` 静态文件。2026-09-12 曾在 `public/` 下新增一份
+   `favicon.ico`，它从未被服务过（`out/favicon.ico` 始终等于 `app/favicon.ico`）。
+   要换图标请改 `app/favicon.ico`；`public/` 下只放不被 app 约定接管的资源
+   （`favicon-48.png` 这类带尺寸的 PNG 不受影响）。
 
 ## 相关
 
