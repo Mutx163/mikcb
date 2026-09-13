@@ -97,7 +97,9 @@ class _MiuixFontWeightScopeState extends State<MiuixFontWeightScope>
   Widget build(BuildContext context) {
     final systemDelta =
         _adjustment ??
-        (MediaQuery.boldTextOf(context) ? kMiuixBoldTextFontWeightDelta : 0);
+        // 上游 MiuixThemeData.boldTextFontWeightAdjustment 默认 +100（一档）；
+        // fork 时代的 kMiuixBoldTextFontWeightDelta 已随 1.2.0 移除，取同一默认值。
+        (MediaQuery.boldTextOf(context) ? 100 : 0);
     final userWeight = widget.userFontWeight ?? kAppFontWeightDefault;
     final userDelta = userWeight == kAppFontWeightDefault
         ? 0
@@ -121,7 +123,11 @@ class _MiuixFontWeightScopeState extends State<MiuixFontWeightScope>
     final data = MiuixThemeData(
       colors: seededColors ?? baseTheme.colors,
       brightness: baseTheme.brightness,
-      textStyles: applyFontWeightDelta(defaultTextStyles(), delta),
+      // 字重偏移只经 fontWeightAdjustment 下发：1.2.0 起由组件在渲染时把偏移
+      // 加到最终字重（MiuixText 内部走 adjustFontWeight），因此 textStyles 必须
+      // 保持**未平移的原样**。fork 时代的 applyFontWeightDelta(defaultTextStyles(),
+      // delta) 已随 1.2.0 移除，若仍手工平移会与 fontWeightAdjustment 叠加成两档。
+      textStyles: defaultTextStyles(),
       fontWeightAdjustment: delta,
     );
 

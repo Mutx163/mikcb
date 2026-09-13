@@ -1156,8 +1156,19 @@ class _MiuixSettingsSwitchPreference extends StatelessWidget {
       onTap: () => onChanged(!value),
       holdHighlightThroughTransition: true,
       child: MiuixBasicComponent(
-        title: title,
-        titleFontWeight: FontWeight.w400,
+        // 上游把标题字重硬编码为 w500（比本 App 其余设置行的
+        // HyperosTypography.title w400 重一档），且 1.2.0 的 MiuixBasicComponent
+        // 不再接受 titleFontWeight。改用它的 content 参数复刻默认排版、只把基准
+        // 字重降回 w400 —— 与默认路径同用 MiuixText（仍随系统字重分级平移），
+        // 因此观感与 fork 版一致。
+        content: [
+          MiuixText(
+            title,
+            fontSize: MiuixTheme.of(context).textStyles.headline1.fontSize,
+            fontWeight: FontWeight.w400,
+            color: MiuixBasicComponentDefaults.titleColor(context).resolve(true),
+          ),
+        ],
         startAction: startAction,
         endActions: [MiuixSwitch(value: value, onChanged: onChanged)],
         role: MiuixBasicComponentRole.switchControl,
@@ -1207,18 +1218,27 @@ class _MiuixSettingsPreference extends StatelessWidget {
     return HyperosPressableRow(
       onTap: onClick,
       holdHighlightThroughTransition: true,
-      child: MiuixArrowPreference(
-        startAction: startAction,
-        title: title,
-        // 上游 MiuixBasicComponent 标题硬编码 Medium(w500)，比全 App 其余设置行
-        // 所用的 HyperosTypography.title(w400) 重一档。这里下调到 w400 与之统一
-        // （仍会随系统字重经 MiuixText 分级平移）。
-        titleFontWeight: FontWeight.w400,
-        // MiuixArrowPreference 会把 endActions 放进 mainAxisSize.min 的 Row，
-        // 里面的 Text 拿到的是无界宽度，值过长时会溢出而不是省略。
-        // 逐个包 Flexible 让它们服从右侧受限宽度，并默认单行省略。
-        endActions: _constrainEndActions(endActions),
-        enabled: onClick != null,
+      // 上游把标题字重硬编码为 Medium(w500)，比全 App 其余设置行所用的
+      // HyperosTypography.title(w400) 重一档；而 1.2.0 的
+      // MiuixArrowPreference / MiuixBasicComponent 不再接受 titleFontWeight。
+      // 本行标题是这棵子树里**唯一**的 Miuix 文本（行尾值用本仓库的 Text +
+      // HyperosTypography.listDetail，不走 MiuixText），因此在这里把字重偏移
+      // 下调一档即可精确还原 w400：标题最终字重 = w500 + (delta - 100)
+      // = w400 + delta，仍随系统字重分级平移；startAction 是图标，不受影响。
+      child: MiuixTheme(
+        data: MiuixTheme.of(context).copyWith(
+          fontWeightAdjustment:
+              MiuixTheme.of(context).fontWeightAdjustment - 100,
+        ),
+        child: MiuixArrowPreference(
+          startAction: startAction,
+          title: title,
+          // MiuixArrowPreference 会把 endActions 放进 mainAxisSize.min 的 Row，
+          // 里面的 Text 拿到的是无界宽度，值过长时会溢出而不是省略。
+          // 逐个包 Flexible 让它们服从右侧受限宽度，并默认单行省略。
+          endActions: _constrainEndActions(endActions),
+          enabled: onClick != null,
+        ),
       ),
     );
   }

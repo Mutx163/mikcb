@@ -149,10 +149,10 @@ packages:
     dependency: transitive
     description:
       name: dynamic_color
-      sha256: "43a5a6679649a7731ab860334a5812f2067c2d9ce6452cf069c5e0c25336c17c"
+      sha256: "4aeb76de323e8eb660bab5557d826ad7ebbf1434a598f0c6aa8a11a9696a6757"
       url: "https://pub.dev"
     source: hosted
-    version: "1.8.1"
+    version: "1.9.0"
   equatable:
     dependency: transitive
     description:
@@ -286,12 +286,11 @@ packages:
   flutter_miuix:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "241bbea65291e2a2f7b36d77946f7f1d16654b0a"
-      resolved-ref: "241bbea65291e2a2f7b36d77946f7f1d16654b0a"
-      url: "https://github.com/Mutx163/flutter_miuix.git"
-    source: git
-    version: "1.0.11"
+      name: flutter_miuix
+      sha256: "3b2b578b670ef3476d38440846ceb19378368a532736224db56d85486534862e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.0"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:

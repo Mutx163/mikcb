@@ -43,10 +43,12 @@ dependencies:
   fast_gbk: ^1.0.0
   flutter_svg: ^2.3.0
   image: ^4.8.0
-  flutter_miuix:
-    git:
-      url: https://github.com/Mutx163/flutter_miuix.git
-      ref: 241bbea65291e2a2f7b36d77946f7f1d16654b0a
+  # 2026-09-13：由 fork（1.0.11 / commit 241bbea）切到上游 pub.dev 版 1.2.0。
+  # 依据：fork 的本地补丁已分别并入上游 1.1.0（系统字重与标题字重 API）与
+  # 1.1.1（pubspec Git 依赖在中文 Windows 下的编码修复）；1.2.0 的 HyperOS 4
+  # 玻璃组件按上游 CHANGELOG 为「可选、与旧组件并存、不改动既有组件默认表现、
+  # 原有界面样式零变化」，属纯新增，升级面安全。
+  flutter_miuix: ^1.2.0
   liquid_glass_widgets: ^0.30.2
   flutter_blackbox: ^0.7.0
   fountain_codes: ^1.0.0
