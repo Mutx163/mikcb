@@ -350,6 +350,9 @@ class SoftGlassSurface extends StatefulWidget {
 class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
   HyperosGlassBackdropController? _controller;
 
+  /// 本表面自己的采样源：内容由屏级控制器按"这块玻璃背后那条窄带"写入。
+  final HyperosZoneBackdrop _backdrop = HyperosZoneBackdrop();
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -366,12 +369,12 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
 
   @override
   void dispose() {
-    _controller?.release();
     _controller = null;
     super.dispose();
   }
 
-  /// 解析采样源（屏内作用域 → modal 时的栈顶屏），并在挂载期间请求录帧。
+  /// 解析采样源（屏内作用域 → modal 时的栈顶屏）。真正的"要不要录帧"由
+  /// [HyperosGlassBackdropReporter] 在 attach 时按区域登记，这里只解析归属。
   void _bindController() {
     final next = widget.blurEnabled
         ? HyperosGlassBackdropRegistry.resolve(context)
@@ -379,9 +382,7 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
     if (identical(next, _controller)) {
       return;
     }
-    _controller?.release();
     _controller = next;
-    next?.acquire();
   }
 
   @override
@@ -390,7 +391,7 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
         widget.tuning ?? FrostedAppearanceScope.of(context).softGlassTuning;
     final isDark = SoftGlassTokens._dark(context, widget.polarity);
     return MiuixGlass(
-      backdrop: widget.blurEnabled ? _controller?.backdrop : null,
+      backdrop: widget.blurEnabled ? _backdrop : null,
       style: MiuixGlassStyles.forTheme(isDark),
       material: softGlassMaterialFor(
         context,
@@ -411,7 +412,13 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
             )
           : null,
       shadow: widget.enableShadows ? MiuixGlassShadows.floating : null,
-      child: widget.child,
+      // 外面再包一层"报告自己占哪块"的渲染对象：屏级捕获据此只录玻璃背后的
+      // 那条窄带，而不是整屏（整屏快照 ~100MB/帧，实测静止也吃满一个核）。
+      child: HyperosGlassBackdropReporter(
+        controller: widget.blurEnabled ? _controller : null,
+        backdrop: widget.blurEnabled ? _backdrop : null,
+        child: widget.child,
+      ),
     );
   }
 

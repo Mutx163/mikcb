@@ -207,11 +207,58 @@ void main() {
     }
 
     expect(controller.capturing, isTrue);
-    expect(controller.backdrop.snapshot, isNotNull, reason: '采样源要真的录到快照');
+    expect(controller.zones, isNotEmpty, reason: '玻璃要登记自己占哪一块');
+    expect(
+      controller.zones.first.image,
+      isNotNull,
+      reason: '采样源要真的录到快照',
+    );
     expect(
       tester.binding.hasScheduledFrame,
       isFalse,
       reason: '静止后不应继续排帧（自激重绘）',
     );
+  });
+
+  testWidgets('快照只覆盖玻璃那块窄带，不是整屏（性能红线）', (tester) async {
+    // 整屏快照在 2.75x 的 1280×2772 上是 ~100MB 级离屏目标，每帧一次会直接烧掉
+    // 一个核（真机 106~129% CPU）。捕获必须按玻璃矩形裁剪。
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final controller = HyperosGlassBackdropController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      hostWith(
+        controller: controller,
+        child: const Stack(
+          children: <Widget>[
+            SizedBox.expand(),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                width: 200,
+                height: 60,
+                child: SoftGlassSurface(child: SizedBox.expand()),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+
+    final image = controller.zones.first.image!;
+    final dpr = tester.view.devicePixelRatio;
+    final full = 400 * dpr * 800 * dpr;
+    final captured = image.width * image.height;
+    expect(
+      captured,
+      lessThan(full * 0.4),
+      reason: '快照面积必须远小于整屏（贴在玻璃那条窄带上）',
+    );
+    expect(image.height, lessThan((800 * dpr * 0.6).round()));
   });
 }

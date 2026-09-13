@@ -13,31 +13,189 @@ import 'package:flutter_miuix/miuix.dart';
 ///
 /// 它本身是 [ChangeNotifier]：开关（有人要录帧 / 没人要）变化时通知宿主，宿主只重建
 /// 那个捕获节点，不惊动页面子树。
-class HyperosGlassBackdropController extends ChangeNotifier {
-  /// 采样源：由本屏的捕获写快照，屏内外所有玻璃共享同一份。
-  final MiuixLayerBackdrop backdrop = MiuixLayerBackdrop();
+/// 一块"玻璃背后"的采样区：捕获按这块矩形裁剪，相邻玻璃共用一个区。
+///
+/// 为什么要**分块**而不是整屏一块：玻璃可以两头都有（顶栏带 + 玻璃坞），取并集
+/// 会退化成整屏，而整屏快照在 2.75x 的 1280×2772 上是 ~100MB 级离屏目标，每帧
+/// 一次就烧掉一个核（真机实测 106~129% CPU、Mali 驱动线程满载）。分块后每块只覆盖
+/// 自己那条窄带，同一块里的玻璃共享同一张图。
+class HyperosGlassBackdropZone {
+  /// 本块里的玻璃：采样源 → 它的渲染对象（用来现算矩形）。
+  final Map<HyperosZoneBackdrop, RenderBox> members =
+      <HyperosZoneBackdrop, RenderBox>{};
 
-  int _consumers = 0;
+  ui.Image? image;
+  Offset? origin;
+  double pixelRatio = 1;
 
-  /// 当前是否有玻璃需要背景（有则开录帧；没有任何玻璃时零开销）。
-  bool get capturing => _consumers > 0;
+  bool get isEmpty => members.isEmpty;
 
-  /// 有玻璃挂载 / 弹层要展开时调用。
-  void acquire() {
-    _consumers++;
-    if (_consumers == 1) notifyListeners();
+  /// 换图：旧图由本块统一释放（多消费者共享同一张，不能各自 dispose）。
+  void update(ui.Image next, Offset nextOrigin, double dpr) {
+    final old = image;
+    image = next;
+    origin = nextOrigin;
+    pixelRatio = dpr;
+    if (old != null && !identical(old, next)) old.dispose();
   }
 
-  /// 玻璃卸载 / 弹层关闭时调用。
+  void dispose() {
+    image?.dispose();
+    image = null;
+  }
+}
+
+/// 玻璃自己持有的采样源：内容来自它所属的 [HyperosGlassBackdropZone]。
+///
+/// 不复用 `MiuixLayerBackdrop` 是为了**多块共享同一张图**：上层的
+/// `updateSnapshot` 会在替换时释放旧图，多个消费者共享同一张图会被释放两次。
+/// 这里图由 zone 统一持有与释放，各玻璃只做转发。
+class HyperosZoneBackdrop extends MiuixBackdrop {
+  HyperosGlassBackdropZone? _zone;
+
+  void bind(HyperosGlassBackdropZone? zone) {
+    if (identical(_zone, zone)) return;
+    _zone = zone;
+    notifyListeners();
+  }
+
+  /// 本块换图后通知这一块的玻璃重绘。
+  void zoneUpdated() => notifyListeners();
+
+  @override
+  bool get isCoordinatesDependent => true;
+
+  @override
+  ui.Image? get snapshot => _zone?.image;
+
+  @override
+  Offset? get globalOffset => _zone?.origin;
+
+  @override
+  double get pixelRatio => _zone?.pixelRatio ?? 1;
+}
+
+/// 屏级 OS4 玻璃采样源控制器。
+///
+/// 一个"屏"（页面 / 首页）持有一个：里面的玻璃表面都在挂载时登记自己**占哪一块**
+/// （[acquireZone]），modal 路由（sheet / dialog）里的玻璃则通过
+/// [HyperosGlassBackdropRegistry] 拿到它并代为请求（[acquire]）。
+class HyperosGlassBackdropController extends ChangeNotifier {
+  final List<HyperosGlassBackdropZone> _zones = <HyperosGlassBackdropZone>[];
+
+  /// 弹层 / modal 用的整层采样源（面板在 Overlay 里，拿不到"自己背后那块"）。
+  final MiuixLayerBackdrop plainBackdrop = MiuixLayerBackdrop();
+
+  /// 只要背景、给不出矩形的消费者（OS4 弹层：面板在 Overlay 里，位置由锚点算）。
+  int _plainConsumers = 0;
+
+  /// 是否有弹层在要"整层背景"。
+  bool get wantsPlainBackdrop => _plainConsumers > 0;
+
+  /// 兼容旧读取点：整层采样源（弹层 / modal 用）。
+  MiuixLayerBackdrop get backdrop => plainBackdrop;
+
+  /// 采样余量（逻辑像素）：玻璃模糊要取邻域，快照贴边会渗出透明。
+  static const double sampleMargin = 96;
+
+  /// 分块上限：再多就退化成整屏，不如少录几次。
+  static const int _maxZones = 4;
+
+  /// 两块玻璃相隔多远还算同一块（逻辑像素）。
+  static const double _joinGap = 2 * sampleMargin;
+
+  List<HyperosGlassBackdropZone> get zones => _zones;
+
+  /// 当前是否有玻璃需要背景（有则开录帧；没有任何玻璃时零开销）。
+  bool get capturing => _zones.isNotEmpty || _plainConsumers > 0;
+
+  /// 页内玻璃挂载：选/建一块采样区，并绑定它自己的采样源。
+  void acquireZone(RenderBox box, HyperosZoneBackdrop backdrop) {
+    final wasEmpty = !capturing;
+    // attach 阶段还没布局，rect 往往取不到：先登记成员，位置在录帧时按成员现算
+    //（与 globalOffset 同源），所以这里不依赖 rect。
+    final rect = _globalRectOf(box);
+    HyperosGlassBackdropZone? target;
+    if (rect != null) {
+      for (final zone in _zones) {
+        if (zone.members.isEmpty) continue;
+        final union = _unionOf(zone);
+        if (union == null || union.inflate(_joinGap).overlaps(rect)) {
+          target = zone;
+          break;
+        }
+      }
+    }
+    if (target == null) {
+      if (_zones.length >= _maxZones) {
+        target = _zones.last;
+      } else {
+        target = HyperosGlassBackdropZone();
+        _zones.add(target);
+      }
+    }
+    target.members[backdrop] = box;
+    backdrop.bind(target);
+    if (wasEmpty && capturing) notifyListeners();
+  }
+
+  /// 页内玻璃卸载。
+  void releaseZone(RenderBox box, HyperosZoneBackdrop backdrop) {
+    for (final zone in List<HyperosGlassBackdropZone>.of(_zones)) {
+      if (!identical(zone.members[backdrop], box)) continue;
+      zone.members.remove(backdrop);
+      backdrop.bind(null);
+      if (zone.isEmpty) {
+        _zones.remove(zone);
+        zone.dispose();
+      }
+      break;
+    }
+    if (!capturing) notifyListeners();
+  }
+
+  /// 弹层（拿不到自己背后矩形的那类）挂载 / 展开时调用。
+  void acquire() {
+    final wasEmpty = !capturing;
+    _plainConsumers++;
+    if (wasEmpty && capturing) notifyListeners();
+  }
+
+  /// 弹层卸载 / 关闭时调用。
   void release() {
-    if (_consumers == 0) return;
-    _consumers--;
-    if (_consumers == 0) notifyListeners();
+    if (_plainConsumers == 0) return;
+    _plainConsumers--;
+    if (!capturing) notifyListeners();
+  }
+
+  Rect? _globalRectOf(RenderBox box) {
+    if (!box.attached || !box.hasSize || box.size.isEmpty) return null;
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
+  Rect? _unionOf(HyperosGlassBackdropZone zone) {
+    Rect? union;
+    for (final box in zone.members.values) {
+      final rect = _globalRectOf(box);
+      if (rect == null) continue;
+      union = union == null ? rect : union.expandToInclude(rect);
+    }
+    return union;
+  }
+
+  /// 本块要录的矩形（全局坐标，含采样余量）。
+  Rect? captureRectOf(HyperosGlassBackdropZone zone) {
+    final union = _unionOf(zone);
+    return union?.inflate(sampleMargin);
   }
 
   @override
   void dispose() {
-    backdrop.dispose();
+    for (final zone in _zones) {
+      zone.dispose();
+    }
+    _zones.clear();
+    plainBackdrop.dispose();
     super.dispose();
   }
 }
@@ -174,8 +332,8 @@ class HyperosGlassBackdropScope extends InheritedWidget {
   /// 本屏的采样源与"按需录帧"开关。
   final HyperosGlassBackdropController controller;
 
-  /// 兼容旧读取点：本屏采样源。
-  MiuixLayerBackdrop get backdrop => controller.backdrop;
+  /// 兼容旧读取点：本屏"整层"采样源（弹层 / modal 用；页内玻璃各自按区域取）。
+  MiuixLayerBackdrop get backdrop => controller.plainBackdrop;
 
   /// 兼容旧读取点：请求 / 归还录帧。
   VoidCallback get acquire => controller.acquire;
@@ -321,15 +479,115 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
     final offsetLayer = layer;
     if (offsetLayer is! OffsetLayer) return;
     final dpr = _devicePixelRatio;
-    final ui.Image image = offsetLayer.toImageSync(
-      Offset.zero & size,
-      pixelRatio: dpr,
-    );
-    _notifiedSinceCapture = true;
-    _controller.backdrop.updateSnapshot(
-      image,
-      localToGlobal(Offset.zero),
-      dpr,
-    );
+    final mine = Offset.zero & size;
+    var wrote = false;
+    // 每块玻璃背后那条窄带各录一张：整屏快照是 ~100MB 级离屏目标，每帧一次
+    // 等于烧掉一个核（真机实测 106~129% CPU、Mali 驱动线程满载）。
+    for (final zone in _controller.zones) {
+      final global = _controller.captureRectOf(zone);
+      if (global == null) continue;
+      final target = Rect.fromPoints(
+        globalToLocal(global.topLeft),
+        globalToLocal(global.bottomRight),
+      ).intersect(mine);
+      if (target.isEmpty) continue;
+      final image = offsetLayer.toImageSync(target, pixelRatio: dpr);
+      zone.update(image, localToGlobal(target.topLeft), dpr);
+      wrote = true;
+      for (final backdrop in zone.members.keys) {
+        backdrop.zoneUpdated();
+      }
+    }
+    // 另有弹层（Overlay 里的面板，拿不到自己背后的矩形）在要背景时，补一张整层图。
+    // 只在弹层打开期间发生，页内玻璃仍按窄带录。
+    if (_controller.wantsPlainBackdrop) {
+      final image = offsetLayer.toImageSync(mine, pixelRatio: dpr);
+      _controller.plainBackdrop.updateSnapshot(
+        image,
+        localToGlobal(Offset.zero),
+        dpr,
+      );
+      wrote = true;
+    }
+    if (wrote) _notifiedSinceCapture = true;
+  }
+}
+
+/// 给屏级捕获报告"玻璃自己占哪一块"的透明包装。
+///
+/// 屏级捕获只录这块矩形（并集 + 采样余量），把每帧离屏目标从整屏（2.75x 的
+/// 1280×2772 ≈ 100MB）降到玻璃背后那条窄带。位置每帧实时读（与 `globalOffset`
+/// 同源），所以滚动/转场都不会错位。
+class HyperosGlassBackdropReporter extends SingleChildRenderObjectWidget {
+  const HyperosGlassBackdropReporter({
+    super.key,
+    required this.controller,
+    required this.backdrop,
+    required Widget super.child,
+  });
+
+  /// 归属的屏级采样源；null = 不登记、不录帧（模糊总开关关闭时）。
+  final HyperosGlassBackdropController? controller;
+
+  /// 这块玻璃自己的采样源（内容由控制器按区域写入）。
+  final HyperosZoneBackdrop? backdrop;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderHyperosGlassBackdropReporter(controller, backdrop);
+
+  @override
+  void updateRenderObject(BuildContext context, RenderObject renderObject) {
+    (renderObject as _RenderHyperosGlassBackdropReporter)
+      ..controller = controller
+      ..backdrop = backdrop;
+  }
+}
+
+class _RenderHyperosGlassBackdropReporter extends RenderProxyBox {
+  _RenderHyperosGlassBackdropReporter(this._controller, this._backdrop);
+
+  HyperosGlassBackdropController? _controller;
+  HyperosGlassBackdropController? get controller => _controller;
+  set controller(HyperosGlassBackdropController? value) {
+    if (identical(_controller, value)) return;
+    if (attached) _unregister();
+    _controller = value;
+    if (attached) _register();
+  }
+
+  HyperosZoneBackdrop? _backdrop;
+  HyperosZoneBackdrop? get backdrop => _backdrop;
+  set backdrop(HyperosZoneBackdrop? value) {
+    if (identical(_backdrop, value)) return;
+    if (attached) _unregister();
+    _backdrop = value;
+    if (attached) _register();
+  }
+
+  void _register() {
+    final controller = _controller;
+    final backdrop = _backdrop;
+    if (controller == null || backdrop == null) return;
+    controller.acquireZone(this, backdrop);
+  }
+
+  void _unregister() {
+    final controller = _controller;
+    final backdrop = _backdrop;
+    if (controller == null || backdrop == null) return;
+    controller.releaseZone(this, backdrop);
+  }
+
+  @override
+  void attach(PipelineOwner owner) {
+    super.attach(owner);
+    _register();
+  }
+
+  @override
+  void detach() {
+    _unregister();
+    super.detach();
   }
 }
