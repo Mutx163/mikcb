@@ -20,11 +20,18 @@ import 'package:university_timetable/widgets/home_top_menu.dart';
 /// 主面板 200、二级默认 288，两块宽度对不齐。
 const _popupSizing = MiuixGlassPopupSizing(maxWidth: 200);
 
-/// 首页右上角「更多」菜单的**列表形态**——改用上游 flutter_miuix 1.2.0 的
-/// HyperOS 4 玻璃弹层实现（`MiuixGlassTransformPopup` + `MiuixGlassSecondaryPopup`），
-/// 取代本仓库手搓的 `lib/ui/hyperos/hyperos_list_popup.dart` 那条路径。
+/// ⚠️ **生产已停用**（2026-09-14）：首页「更多」菜单的列表形态改走
+/// `showHyperosListPopup`（自研锚定弹层，材质由 `HyperosSelectPopupGlass`
+/// 按全局玻璃档位分派）。
 ///
-/// 为什么换：
+/// 停用原因：本组件用的是上游 flutter_miuix 1.2.0 的 OS4 玻璃弹层
+/// （`MiuixGlassTransformPopup` + `MiuixGlassSecondaryPopup`），而上游 presenter
+/// **自己在内部构造面板** —— 外部只能通过 `MiuixGlassPopupVisuals` 的 7 个字段
+/// 影响材质，没有 surfaceBuilder 注入点，`shading` 又写死 `kind == dialog`。
+/// 于是全局「液态玻璃」档下首页菜单仍是 OS4 玻璃，与底栏（跟随档位走液态折射）
+/// 断层，且无法在该链路上补救。保留本文件仅供历史对照与既有测试。
+///
+/// 它当初取代自研路径的原因（回看用）：
 /// - 上游这套与旧实现同源（都移植自 Kotlin `compose-miuix-ui/miuix`），但一级
 ///   菜单走 `motion: transform`——**从触发按钮连续变形成菜单**（HyperOS 4 的
 ///   形变动效），二级面板走 `motion: secondary` 并可 `materialAnchor` 共享一级材质。

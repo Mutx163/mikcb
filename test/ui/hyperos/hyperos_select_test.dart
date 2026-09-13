@@ -602,22 +602,25 @@ void main() {
     });
   });
 
-  group('HyperosSelectTile · OS4 玻璃弹层（页级宿主）', () {
-    /// 页级捕获是否开着（= 有玻璃在请求录帧）。
-    bool captureEnabled(WidgetTester tester) => tester
-        .widget<HyperosLayerBackdropCapture>(
-          find.byType(HyperosLayerBackdropCapture),
-        )
-        .controller
-        .capturing;
-
-    Future<void> pumpHosted(
-      WidgetTester tester, {
+  group('HyperosSelectTile · 锚定气泡（自研链路 + 全局材质分派）', () {
+    /// 锚定气泡统一走 [showHyperosSelectPopup]（`showGeneralDialog` 按需弹出），
+    /// 材质由 [HyperosSelectPopupGlass] 按全局玻璃档位分派 —— 与底栏 / 顶栏 /
+    /// 弹窗同一份口径。历史上这条 tile 在"有页级采样源"时会绕到上游
+    /// `MiuixGlassDropdownPopup`（常驻挂载 + 切换 show），于是全局液态档下
+    /// 它仍是 OS4 玻璃材质，与其它表面断层。
+    Widget hosted({
       required void Function(String) onChanged,
+      FrostedGlassMode glassMode = FrostedGlassMode.frosted,
     }) {
-      return tester.pumpWidget(
-        TestApp(
-          home: HyperosGlassBackdropHost(
+      return TestApp(
+        home: FrostedAppearanceScope(
+          appearance: FrostedAppearance(
+            sheetBlurSigma: 15,
+            sheetTintAlpha: 0.70,
+            sheetBarrierAlpha: 0.20,
+            glassMode: glassMode,
+          ),
+          child: HyperosGlassBackdropHost(
             child: Center(
               child: SizedBox(
                 width: 360,
@@ -634,31 +637,27 @@ void main() {
       );
     }
 
-    testWidgets('宿主存在时改用 OS4 弹层：常驻挂载，展开才开页级捕获', (tester) async {
+    testWidgets('点行弹出锚定气泡，选中后回传值并关闭', (tester) async {
       String? selected;
-      await pumpHosted(tester, onChanged: (value) => selected = value);
+      await tester.pumpWidget(hosted(onChanged: (value) => selected = value));
 
-      // 弹层常驻挂载（上游契约：保持组件挂载并切换 show），但未展开不录帧。
-      expect(find.byType(MiuixGlassDropdownPopup), findsOneWidget);
+      // 按需弹出：未点击时弹层根本不存在。
       expect(find.text('高斯模糊'), findsNothing);
-      expect(captureEnabled(tester), isFalse);
+      expect(find.byType(MiuixGlassDropdownPopup), findsNothing);
 
       await tester.tap(find.text('卡片外观'));
       await tester.pumpAndSettle();
-
       expect(find.text('高斯模糊'), findsOneWidget);
-      expect(captureEnabled(tester), isTrue);
 
       await tester.tap(find.text('高斯模糊'));
       await tester.pumpAndSettle();
 
       expect(selected, 'gaussian');
       expect(find.text('高斯模糊'), findsNothing);
-      expect(captureEnabled(tester), isFalse);
     });
 
-    testWidgets('OS4 弹层不改变行自身布局：标签与右侧值仍分列整行两端', (tester) async {
-      await pumpHosted(tester, onChanged: (_) {});
+    testWidgets('气泡不改变行自身布局：标签与右侧值仍分列整行两端', (tester) async {
+      await tester.pumpWidget(hosted(onChanged: (_) {}));
 
       final row = tester.getSize(
         find
@@ -676,61 +675,40 @@ void main() {
       expect(value.right, greaterThan(300));
     });
 
-    testWidgets('弹层宽度收到内容宽度：短标签就是旧实现的下界 200，不再撑满 maxWidth', (
-      tester,
-    ) async {
-      await pumpHosted(tester, onChanged: (_) {});
-      await tester.tap(find.text('卡片外观'));
-      await tester.pumpAndSettle();
-
-      final itemWidth = tester
-          .getSize(find.byType(MiuixGlassPopupItem).first)
-          .width;
-      // 上游 MiuixGlassPopupItem 的 Row 是 mainAxisSize.max：不夹内容时弹层会
-      // 恒等于 sizing.maxWidth（372）。这里必须是内容宽度被下界 200 顶住的 200。
-      expect(itemWidth, 200);
-    });
-
-    testWidgets('长标签仍按内容变宽，且不超过 372 上限', (tester) async {
-      await tester.pumpWidget(
-        TestApp(
-          home: HyperosGlassBackdropHost(
-            child: Center(
-              child: SizedBox(
-                width: 360,
-                child: HyperosSelectTile<String>(
-                  label: '排序',
-                  items: const {'这是一条很长很长的选项标签用来撑宽度': 'long'},
-                  value: 'long',
-                  onChanged: (_) {},
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('排序'));
-      await tester.pumpAndSettle();
-
-      final itemWidth = tester
-          .getSize(find.byType(MiuixGlassPopupItem).first)
-          .width;
-      expect(itemWidth, greaterThan(200));
-      expect(itemWidth, lessThanOrEqualTo(372));
-    });
-
-    testWidgets('点空白关闭弹层并归还页级捕获', (tester) async {
-      await pumpHosted(tester, onChanged: (_) {});
+    testWidgets('点空白关闭气泡', (tester) async {
+      await tester.pumpWidget(hosted(onChanged: (_) {}));
 
       await tester.tap(find.text('卡片外观'));
       await tester.pumpAndSettle();
-      expect(captureEnabled(tester), isTrue);
+      expect(find.text('高斯模糊'), findsOneWidget);
 
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
 
       expect(find.text('高斯模糊'), findsNothing);
-      expect(captureEnabled(tester), isFalse);
+    });
+
+    testWidgets('柔光玻璃档：气泡走 SoftGlassSurface，与底栏同一份柔光材质', (tester) async {
+      await tester.pumpWidget(
+        hosted(onChanged: (_) {}, glassMode: FrostedGlassMode.softGlass),
+      );
+
+      await tester.tap(find.text('卡片外观'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SoftGlassSurface), findsOneWidget);
+      expect(find.byType(MiuixGlassDropdownPopup), findsNothing);
+    });
+
+    testWidgets('非柔光档：气泡仍走分派链路，不再落到上游 OS4 弹层', (tester) async {
+      await tester.pumpWidget(hosted(onChanged: (_) {}));
+
+      await tester.tap(find.text('卡片外观'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HyperosSelectPopupGlass), findsOneWidget);
+      expect(find.byType(SoftGlassSurface), findsNothing);
+      expect(find.byType(MiuixGlassDropdownPopup), findsNothing);
     });
   });
 }

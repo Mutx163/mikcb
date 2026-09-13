@@ -574,6 +574,8 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                       key: _panelContentKey,
                       child: SingleChildScrollView(
                         controller: _panelScroll,
+                        // 同上：放得下就不接管手势，别让短菜单能拖得来回晃。
+                        physics: const ClampingScrollPhysics(),
                         child: IntrinsicWidth(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
