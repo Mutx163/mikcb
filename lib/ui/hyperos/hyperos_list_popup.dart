@@ -1,22 +1,14 @@
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
-import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
-import 'hyperos_popup_page_capture.dart';
 import 'hyperos_select.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_widgets.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart' show UndimmedBackdropCapture;
-
-// PopupPageCaptureScope / PopupPageCaptureData 已移至
-// hyperos_popup_page_capture.dart（打断与 hyperos_select.dart 的循环
-// import），此处再导出以保持既有调用方的 import 路径不变。
-export 'hyperos_popup_page_capture.dart';
 
 /// Single item in [showHyperosListPopup].
 class HyperosPopupMenuItem<T> {
@@ -125,10 +117,6 @@ Future<T?> showHyperosListPopup<T>({
     return Future.value();
   }
 
-  // 二级子卡的页面捕获来源：宿主页面根部的捕获边界。宿主未挂
-  // [PopupPageCaptureScope] 时为 null，子卡退回共享组磨砂底采样。
-  final pageBoundaryKey = PopupPageCaptureData.maybeOf(context)?.boundaryKey;
-
   return showGeneralDialog<T>(
     context: context,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -142,7 +130,6 @@ Future<T?> showHyperosListPopup<T>({
           items: items,
           foregroundColor: foregroundColor,
           opaqueSurface: opaqueSurface,
-          pageBoundaryKey: pageBoundaryKey,
         ),
       );
     },
@@ -155,7 +142,6 @@ class _HyperosListPopupBody<T> extends StatefulWidget {
     required this.items,
     this.foregroundColor,
     this.opaqueSurface = false,
-    this.pageBoundaryKey,
   });
 
   final RelativeRect position;
@@ -176,10 +162,6 @@ class _HyperosListPopupBody<T> extends StatefulWidget {
 
   /// Solid surface instead of sampled glass (see [showHyperosListPopup]).
   final bool opaqueSurface;
-
-  /// 宿主页面捕获边界（[PopupPageCaptureScope]）；null 表示宿主未提供，
-  /// 液态子卡退回共享组磨砂底采样。
-  final GlobalKey? pageBoundaryKey;
 
   @override
   State<_HyperosListPopupBody<T>> createState() =>
@@ -249,56 +231,6 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     (item) => item.children.isNotEmpty,
   );
 
-  /// 宿主页面的整页快照（不透明，含页面自身内容）+ 它的全局逻辑原点
-  /// 与逻辑尺寸。页面在模态弹窗期间静止，弹窗打开时捕一份复用到关闭
-  /// （见 [_warmPageCapture]，勿推迟到首次展开当帧）。快照作为子卡
-  /// 玻璃面下的不透明垫底（见 _PopupPageSnapshotUnderlay）：玻璃面是
-  /// 标准组件 live 采样垫底输出，模糊/折射/材质全走与一级相同的链路，
-  /// 垫底只负责挡住主面板玻璃、对齐取样源亮度。
-  ui.Image? _pageCapture;
-  Offset _pageCaptureOrigin = Offset.zero;
-  Size _pageCaptureSize = Size.zero;
-
-  /// 弹窗打开当帧预热整页捕获（挂在 didChangeDependencies）。必须与
-  /// 二级展开首帧错开：toImageSync 会在栅格线程同步栅格化整页边界，
-  /// 而首次展开当帧恰好是子卡玻璃面（快照垫底 + 双 BackdropFilter
-  /// 链）第一次在揭示窗口下合成——整页栅格化与揭示首帧的背景捕获在
-  /// 栅格线程上争抢，实测真机表现为子卡顶缘一条横贯卡宽的亮带，随
-  /// 揭示动画结束才消失，且仅每次弹窗会话的首次展开出现（快照已缓存
-  /// 的再展开无此现象）。弹窗期间页面静止，打开时捕获与展开时捕获
-  /// 内容完全一致，提前预热即可把这次栅格化从揭示帧挪走。捕获失败
-  /// （宿主未挂作用域、边界未布局、toImageSync 异常等）保持 null，
-  /// 子卡退回共享组磨砂底，且展开时仍会再试一次（[_ensurePageCapture]）。
-  void _warmPageCapture() {
-    if (_pageCapture != null) return;
-    if (!_hasSubmenu) return;
-    if (!HyperosSelectPopupGlass.liquidSurfaceActive(context)) return;
-    _ensurePageCapture();
-  }
-
-  /// 确保宿主页面整页快照可用（幂等）。常规路径由 [_warmPageCapture]
-  /// 在弹窗打开时调用；此处仅作展开时的兜底重试。
-  void _ensurePageCapture() {
-    if (_pageCapture != null) return;
-    final key = widget.pageBoundaryKey;
-    if (key == null) return;
-    final boundary = key.currentContext?.findRenderObject();
-    if (boundary is! RenderRepaintBoundary ||
-        !boundary.hasSize ||
-        boundary.size.isEmpty) {
-      return;
-    }
-    try {
-      _pageCapture = boundary.toImageSync(
-        pixelRatio: MediaQuery.devicePixelRatioOf(context),
-      );
-      _pageCaptureOrigin = boundary.localToGlobal(Offset.zero);
-      _pageCaptureSize = boundary.size;
-    } catch (_) {
-      _pageCapture = null;
-    }
-  }
-
   /// Plays the exit animation (fade + shrink, [MiuixListPopupDefaults]
   /// alphaExit spec) and only then pops the route with [result].
   ///
@@ -350,9 +282,6 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // 弹窗一打开就预热整页捕获（有二级子项且液态面激活时）：把
-    // toImageSync 的整页栅格化从首次展开当帧挪走，见 _warmPageCapture。
-    _warmPageCapture();
     // 弹窗打开当帧就实测面板宽度并缓存：首次展开的子卡构建期面板渲染
     // 对象尚未 layout（重挂当帧 hasSize=false），没有这份缓存就只能回退
     // 松约束（200..364）——真机液态路径下首帧卡身会被拉到上界附近，
@@ -378,8 +307,6 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     _alpha.dispose();
     _expand.dispose();
     _panelScroll.dispose();
-    _pageCapture?.dispose();
-    _pageCapture = null;
     super.dispose();
   }
 
@@ -393,12 +320,6 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
       } else {
         _expandedIndex = index;
         _lastSubmenuIndex = index;
-        // 液态子卡需要页面捕获图；磨砂/实底分支走共享组/实底，不采。
-        // 常规已在弹窗打开时预热（_warmPageCapture），这里只兜底重试，
-        // 避免整页栅格化落在揭示首帧（真机亮带问题，见预热方法注释）。
-        if (HyperosSelectPopupGlass.liquidSurfaceActive(context)) {
-          _ensurePageCapture();
-        }
         // 先记下展开瞬间的滚动偏移（重挂过渡帧的锚定基准，见
         // _currentPanelScrollOffset），再重挂面板玻璃 + 起跳过 0：
         // 见 _expandSession 与 _submenuRevealFrom。
@@ -492,25 +413,6 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
   /// 避免构建期断言与卡宽跳变；未挂载时兜底 200..364。
   double? _panelMeasuredWidth;
 
-  /// 页面快照垫底的全局对齐原点 = 卡片真实左上角。右对齐时 [cardLeft]
-  /// 是「卡片右缘」（Positioned 只给 right），必须减去卡宽才是左上角；
-  /// 卡宽与卡身 ConstrainedBox 同源（[_panelMeasuredWidth]，未实测帧
-  /// 用最小宽 200 兜底——仅重挂首帧，垫底暗底模糊，一帧偏差不可辨）。
-  /// 错一个卡宽会让垫底几乎完全盖不住主面板玻璃（玻璃叠玻璃浑浊复发）。
-  Offset _submenuCardUnderlayOrigin({
-    required double cardLeft,
-    required bool isRightAligned,
-    required double top,
-    required double safeTop,
-    required double safeBottom,
-  }) {
-    final width = _panelMeasuredWidth ?? 200.0;
-    return Offset(
-      isRightAligned ? cardLeft - width : cardLeft,
-      _submenuCardTopGlobal(top: top, safeTop: safeTop, safeBottom: safeBottom),
-    );
-  }
-
   BoxConstraints _submenuCardWidthConstraints() {
     final renderBox = _panelKey.currentContext?.findRenderObject();
     if (renderBox is RenderBox && renderBox.hasSize) {
@@ -590,13 +492,6 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     // Left-aligned if anchor is on the left half, right-aligned otherwise.
     final isRightAligned = anchorRight > screen.width / 2;
     final originX = isRightAligned ? 1.0 : 0.0;
-    // 二级子卡的定位基点（与子卡 Positioned 的 left/right 约束同一口
-    // 径）。注意语义：右对齐时 Positioned 只给 right，这是「卡片右缘」，
-    // 不是左缘——快照垫底对齐见 _submenuCardUnderlayOrigin。
-    final cardLeft = isRightAligned
-        ? screen.width -
-              (screen.width - anchorRight).clamp(margin, screen.width - margin)
-        : anchorLeft.clamp(margin, screen.width - margin);
 
     return PopScope(
       canPop: false,
@@ -775,11 +670,6 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                               )
                             : HyperosSelectPopupGlass(
                                 cornerRadius: cornerRadius,
-                                // 折射取样源 = 宿主页面捕获边界（弹窗挂在
-                                // Navigator 覆盖层上，边界只包首页 ⇒ 采到的
-                                // 是遮罩之下的页面，不含弹窗自身）。不传则
-                                // 玻璃恒走 PATH B，只剩一圈 rim/fresnel。
-                                backgroundKey: widget.pageBoundaryKey,
                                 child: dimmedPanelChild,
                               ),
                       ),
@@ -794,10 +684,9 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
             // 面板/Transform 边界截断；宽度用 _panelKey 读主面板实测尺寸
             // 做 min=max 约束，两卡严格同宽；关窗时不随主面板弹簧缩放，
             // 只走 _alpha 淡出（展开只会发生在弹簧结束后）。玻璃按
-            // useAncestorGroupCapture 同源采样：液态激活时优先折射宿主
-            // 页面捕获图（背后首页本身），无捕获图退回共享组磨砂底；
-            // 都不再把主面板玻璃的输出采一遍。揭示窗口裁在玻璃面外侧
-            // （玻璃面布局全程不变）。
+            // useAncestorGroupCapture 采样「遮罩下的页面」（共享组捕获，
+            // 合成器逐帧刷新）而不是把主面板玻璃的输出再采一遍。揭示窗口
+            // 裁在玻璃面外侧（玻璃面布局全程不变）。
             if (_lastSubmenuIndex != null)
               Positioned(
                 top: _submenuCardTopGlobal(
@@ -915,12 +804,11 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                           )
                         : HyperosSelectPopupGlass(
                             cornerRadius: cornerRadius,
-                            // 同源采样：不透明整页快照垫底挡住主面板玻璃，
-                            // 玻璃面是标准组件（与一级同链路的 live 采样），
-                            // 透出的就是背后首页本身。
+                            // 子卡浮在主面板玻璃之上：先铺一层共享组捕获
+                            // 的磨砂底（遮罩下的页面，合成器逐帧刷新）挡住
+                            // 主面板玻璃的输出，子卡的 premium 玻璃再贴着
+                            // 这层底实时折射——不是一张快照。
                             useAncestorGroupCapture: true,
-                            // 二级子卡同样接真折射通道（见主面板处的说明）。
-                            backgroundKey: widget.pageBoundaryKey,
                             // 折射厚度随揭示进度生长（t: 0.12→1）：子卡浮
                             // 在主面板文字行上方，满厚度下顶缘折射会把上方
                             // 行的文字镜像进卡内顶带，且揭示期间面板正等比
@@ -929,28 +817,6 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                             // 面板压暗也已到位，上方文字是暗的，反射微弱。
                             // 稳态厚度=完整 30，观感不变。
                             thicknessFactor: t,
-                            pageCapture: _pageCapture == null
-                                ? null
-                                : PopupPageCapture(
-                                    image: _pageCapture!,
-                                    origin: _pageCaptureOrigin,
-                                    size: _pageCaptureSize,
-                                    scrimColor:
-                                        HyperosBlurredHeader.modalBarrierColor(
-                                          context,
-                                        ),
-                                  ),
-                            // 卡片全局原点：快照垫底按它对齐「卡片在页
-                            // 面坐标系中的位置」（仅在展开分支求值，
-                            // _lastSubmenuIndex 必非空）。右对齐时必须从
-                            // 右缘减卡宽，见 _submenuCardUnderlayOrigin。
-                            pageAlignedOrigin: _submenuCardUnderlayOrigin(
-                              cardLeft: cardLeft,
-                              isRightAligned: isRightAligned,
-                              top: top,
-                              safeTop: safeTop,
-                              safeBottom: safeBottom,
-                            ),
                             child: card,
                           );
                     // 揭示裁剪（玻璃面外侧、整卡盒子内）：裁剪窗口从父

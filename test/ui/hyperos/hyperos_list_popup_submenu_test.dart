@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart'
+    show AdaptiveGlass, LightweightLiquidGlass;
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart'
-    show UndimmedBackdropCapture;
+    show HyperosLiquidGlassSurface, UndimmedBackdropCapture;
 import 'package:university_timetable/widgets/home_top_menu.dart';
 
 import '../../helpers_test_app.dart';
@@ -53,10 +55,9 @@ void main() {
       WidgetTester tester, {
       required List<HyperosPopupMenuItem<String>> items,
       FrostedAppearance appearance = gaussianAppearance,
-      bool pageCaptureScope = false,
     }) async {
       final opened = <Future<String?>?>[];
-      final Widget host = FrostedAppearanceScope(
+      final host = FrostedAppearanceScope(
         appearance: appearance,
         child: Builder(
           builder: (context) => ElevatedButton(
@@ -73,15 +74,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpWidget(
-        TestApp(
-          // 捕获作用域挂在宿主根部（与首页根部同构）：弹窗从中解析
-          // 整页捕获边界，液态子卡据此折射背后页面。
-          home: pageCaptureScope
-              ? PopupPageCaptureScope(child: host)
-              : host,
-        ),
-      );
+      await tester.pumpWidget(TestApp(home: host));
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
       return opened;
@@ -225,10 +218,11 @@ void main() {
     testWidgets('有二级子项的弹窗挂共享组捕获垫层，子卡取遮罩下页面', (
       tester,
     ) async {
-      // 液态外观下子卡走「磨砂底 + 液态面」的共享组采样路径，垫层随
+      // 液态外观下子卡走「共享组磨砂底 + premium 液态面」路径，垫层随
       // 弹窗挂载（高斯/实底环境无 grouped 消费者，不插，见
-      // liquid_glass_consistency_test 的无冗余垫层断言）。宿主未挂捕获
-      // 作用域 → 无页面捕获图，退回该路径。
+      // liquid_glass_consistency_test 的无冗余垫层断言）。垫底必须是
+      // **实时合成器捕获**：曾经那种「整页同步快照」垫底会让子卡变成
+      // 一张跟着卡片走的静态照片。
       await pumpPopup(
         tester,
         items: items,
@@ -236,36 +230,44 @@ void main() {
       );
 
       expect(find.byType(UndimmedBackdropCapture), findsOneWidget);
-      final cardGlass = tester
-          .widgetList<HyperosSelectPopupGlass>(
-            find.byType(HyperosSelectPopupGlass),
-          )
-          .last;
-      expect(cardGlass.pageCapture, isNull);
       expect(find.text('普通项'), findsOneWidget);
-    });
-
-    testWidgets('宿主挂捕获作用域时子卡玻璃拿到页面捕获图', (tester) async {
-      await pumpPopup(
-        tester,
-        items: items,
-        appearance: liquidAppearance,
-        pageCaptureScope: true,
-      );
 
       await tester.tap(find.text('视图父项'));
       await tester.pumpAndSettle();
 
+      // Stack 里主面板在前、浮层卡在后：.last 是子卡，必须取共享组垫底。
       final glasses = tester
           .widgetList<HyperosSelectPopupGlass>(
             find.byType(HyperosSelectPopupGlass),
           )
           .toList();
       expect(glasses.length, 2);
-      // 主面板不取页面捕获（它的自有采样源本来就不经过其他玻璃）。
-      expect(glasses.first.pageCapture, isNull);
-      // 二级子卡玻璃拿到整页捕获图：折射的是背后的首页本身。
-      expect(glasses.last.pageCapture, isNotNull);
+      expect(glasses.first.useAncestorGroupCapture, isFalse);
+      expect(glasses.last.useAncestorGroupCapture, isTrue);
+    });
+
+    testWidgets('弹窗与顶栏/玻璃坞同一条渲染路径（无抓拍纹理、无快照垫底）', (
+      tester,
+    ) async {
+      // 回归锁：弹窗液态面走 AdaptiveGlass（premium 实时读底面），与顶栏带、
+      // 玻璃坞、卡片同一个组件同一条路。曾经它有两条歧路：①传 backgroundKey
+      // 走抓拍纹理通道——玻璃里是一张静态照片（ticker 只在几何变化时重拍、
+      // 稳定后停摆），展开时照片跟着卡片走；②单独开 premium 档——于是同一个
+      // 材质出现「顶栏一种观感、弹窗另一种观感」。两条都已删除。
+      await pumpPopup(
+        tester,
+        items: items,
+        appearance: liquidAppearance,
+      );
+
+      await tester.tap(find.text('视图父项'));
+      await tester.pumpAndSettle();
+
+      // 主面板 + 子卡都走同一条路。
+      expect(find.byType(HyperosLiquidGlassSurface), findsNWidgets(2));
+      expect(find.byType(AdaptiveGlass), findsNWidgets(2));
+      // 抓拍纹理通道入口（LightweightLiquidGlass）已从组件上删除。
+      expect(find.byType(LightweightLiquidGlass), findsNothing);
     });
 
     testWidgets('无二级子项的弹窗不挂捕获垫层', (tester) async {
@@ -309,46 +311,6 @@ void main() {
       await tester.tap(find.text('视图父项').first);
       await tester.pumpAndSettle();
       expect(panelScale(), closeTo(1.0, 0.0001));
-    });
-
-    testWidgets('右对齐弹窗：页面快照垫底原点对齐卡片真实左上角', (tester) async {
-      // 420 逻辑宽窄屏 + 右上角锚点 = 首页「⋮」形态。右对齐时 Positioned
-      // 只给 right（右缘），cardLeft 常量算出的是「卡片右缘」；快照垫底
-      // 按它当左上角对齐会错位整整一个卡宽（垫底盖不住主面板玻璃，玻璃
-      // 叠玻璃复发）。回归锁：垫底原点必须等于卡片渲染框的真实 topLeft。
-      tester.view.physicalSize = const Size(1260, 2772); // 420×924 逻辑
-      tester.view.devicePixelRatio = 3.0;
-      addTearDown(tester.view.reset);
-
-      await pumpPopup(
-        tester,
-        items: items,
-        appearance: liquidAppearance,
-        pageCaptureScope: true,
-      );
-
-      await tester.tap(find.text('视图父项'));
-      await tester.pumpAndSettle();
-
-      final cardGlass = tester
-          .widgetList<HyperosSelectPopupGlass>(
-            find.byType(HyperosSelectPopupGlass),
-          )
-          .last;
-      final origin = cardGlass.pageAlignedOrigin;
-      expect(origin, isNotNull);
-      final cardRect = tester.getRect(
-        find
-            .ancestor(
-              of: find.text('子项一'),
-              matching: find.byWidgetPredicate(
-                (w) => w is ClipPath && w.clipper is SelectPopupRevealClipper,
-              ),
-            )
-            .first,
-      );
-      expect(origin!.dx, closeTo(cardRect.left, 0.5));
-      expect(origin.dy, closeTo(cardRect.top, 0.5));
     });
 
     testWidgets('长菜单滚动后展开：卡内父行与面板父行同位', (tester) async {

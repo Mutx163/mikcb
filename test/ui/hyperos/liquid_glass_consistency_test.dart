@@ -128,47 +128,17 @@ void main() {
     });
   });
 
-  /// 折射通道回归：**这是「有没有折射」的唯一开关**。
+  /// 液态玻璃只有一条渲染路径：AdaptiveGlass + premium（实时读底面）。
   ///
-  /// 包内 lightweight_glass.frag 的折射位移在 PATH A，守卫是
-  /// `uBackgroundSize.x > 1.0`；而经 AdaptiveGlass 渲染的表面从不传
-  /// backgroundKey，恒走 PATH B——折射为零，真机只剩一圈 rim/fresnel 描边。
-  /// 传了宿主捕获边界时必须改走 LightweightLiquidGlass 才真的会折射。
-  group('refraction requires a host capture boundary', () {
-    test('a capture boundary is the single gate', () {      // 有边界 + 非共享 + 非降级 → 才走真折射。
-      expect(
-        HyperosLiquidGlassSurface.usesRefractingPath(
-          backgroundKey: GlobalKey(),
-          useShared: false,
-          useMinimal: false,
-        ),
-        isTrue,
-      );
-      // 三个必要条件逐个缺失都必须回落，任一缺失都等于「零折射」。
-      expect(
-        HyperosLiquidGlassSurface.usesRefractingPath(
-          backgroundKey: null,
-          useShared: false,
-          useMinimal: false,
-        ),
-        isFalse,
-      );
-      expect(
-        HyperosLiquidGlassSurface.usesRefractingPath(
-          backgroundKey: GlobalKey(),
-          useShared: true,
-          useMinimal: false,
-        ),
-        isFalse,
-      );
-      expect(
-        HyperosLiquidGlassSurface.usesRefractingPath(
-          backgroundKey: GlobalKey(),
-          useShared: false,
-          useMinimal: true,
-        ),
-        isFalse,
-      );
+  /// 回归锁：曾经这里有一条「抓拍纹理真折射通道」——有宿主捕获边界时绕开
+  /// AdaptiveGlass 直连 LightweightLiquidGlass 传 backgroundKey，让 standard
+  /// 档也能折射。那条路有两个致命后果：①玻璃里是一张静态照片（ticker 只在
+  /// 几何变化时重拍、稳定后停摆）；②只有部分表面走它，于是同一个材质出现
+  /// 「顶栏一种观感、弹窗另一种观感」。两者都已删除，用一个常量钉住。
+  group('liquid glass has exactly one render path', () {
+    test('the material has a single quality constant', () {
+      // 一个材质一个档：任何调用点都不得再传自己的档位。
+      expect(MikcbLiquidGlassTokens.defaultQuality, GlassQuality.premium);
     });
 
     testWidgets('no backgroundKey keeps the AdaptiveGlass path', (tester) async {
@@ -190,11 +160,10 @@ void main() {
     });
 
     // 名字写实：widget 测试环境里 ImageFilter.isShaderFilterSupported 恒为
-    // false，useMinimal 必然成立，所以这里**不会**看到切到折射通道（断言
-    // 故意钉住「未显式传 key 时仍走 AdaptiveGlass」）。真折射通道的判定由
-    // 上面的纯函数用例 usesRefractingPath 覆盖，那条才与渲染环境无关。
-    testWidgets('no backgroundKey keeps the AdaptiveGlass path even with a '
-        'host boundary nearby', (
+    // false，useMinimal 必然成立，所以真机上那条 premium 实时通道在测试里
+    // 只会渲染 minimal——但**渲染路径**仍然是同一条 AdaptiveGlass，绝不再
+    // 因为「旁边有没有宿主捕获边界」而分流。
+    testWidgets('a nearby host boundary never diverts the render path', (
       tester,
     ) async {
       final boundary = GlobalKey();
@@ -207,7 +176,6 @@ void main() {
                 width: 200,
                 height: 80,
                 child: HyperosLiquidGlassSurface(
-                  // 用一个非降级的角色，保证不是 minimal 分支。
                   role: HyperosLiquidGlassRole.header,
                   child: SizedBox.expand(),
                 ),
@@ -218,25 +186,28 @@ void main() {
       );
       await tester.pump();
 
-      // 宿主边界存在时不变量：走真折射通道。
-      final surface = tester.widget<HyperosLiquidGlassSurface>(
-        find.byType(HyperosLiquidGlassSurface),
-      );
-      expect(surface.role, HyperosLiquidGlassRole.header);
-      // 未显式传 key 时仍走 AdaptiveGlass（默认行为不变）。
       expect(find.byType(AdaptiveGlass), findsOneWidget);
+      // 抓拍纹理通道的入口（LightweightLiquidGlass + backgroundKey）已从
+      // 组件上删除，任何宿主边界都分流不了渲染路径。
+      expect(find.byType(LightweightLiquidGlass), findsNothing);
     });
 
-    testWidgets('popup glass forwards the host boundary as refraction source', (
+    testWidgets('popup glass renders through the same AdaptiveGlass path', (
       tester,
     ) async {
-      final boundary = GlobalKey();
+      // 弹窗与顶栏带、玻璃坞、卡片同一条路（同一组件、同一档位常量），
+      // 不再有「弹窗 premium / 顶栏 standard」这种按表面分档的观感分叉。
       await tester.pumpWidget(
-        TestApp(
-          home: Center(
-            child: RepaintBoundary(
-              key: boundary,
-              child: const SizedBox(
+        const TestApp(
+          home: FrostedAppearanceScope(
+            appearance: FrostedAppearance(
+              sheetBlurSigma: 15,
+              sheetTintAlpha: 0.7,
+              sheetBarrierAlpha: 0.2,
+              glassMode: FrostedGlassMode.liquidGlass,
+            ),
+            child: Center(
+              child: SizedBox(
                 width: 200,
                 height: 120,
                 child: HyperosSelectPopupGlass(
@@ -250,83 +221,8 @@ void main() {
       );
       await tester.pump();
 
-      // 调用方（列表弹窗）必须把宿主边界传进来，否则玻璃又回落到 PATH B
-      // ——真机表现就是「菜单上只有一个圈圈，没有折射」。
-      expect(
-        tester
-            .widget<HyperosSelectPopupGlass>(
-              find.byType(HyperosSelectPopupGlass),
-            )
-            .backgroundKey,
-        isNull,
-      );
-    });
-
-    testWidgets('popup glass carries a forwarded boundary key', (
-      tester,
-    ) async {
-      final boundary = GlobalKey();
-      await tester.pumpWidget(
-        TestApp(
-          home: Center(
-            child: RepaintBoundary(
-              key: boundary,
-              child: SizedBox(
-                width: 200,
-                height: 120,
-                child: HyperosSelectPopupGlass(
-                  cornerRadius: 20,
-                  backgroundKey: boundary,
-                  child: const SizedBox.expand(),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(
-        tester
-            .widget<HyperosSelectPopupGlass>(
-              find.byType(HyperosSelectPopupGlass),
-            )
-            .backgroundKey,
-        boundary,
-      );
-    });
-
-    testWidgets('an explicit backgroundKey is carried by the widget', (
-      tester,
-    ) async {
-      final boundary = GlobalKey();
-      await tester.pumpWidget(
-        TestApp(
-          home: Center(
-            child: RepaintBoundary(
-              key: boundary,
-              child: SizedBox(
-                width: 200,
-                height: 80,
-                child: HyperosLiquidGlassSurface(
-                  role: HyperosLiquidGlassRole.header,
-                  backgroundKey: boundary,
-                  child: const SizedBox.expand(),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      // 注意：widget 测试里 ImageFilter.isShaderFilterSupported 为 false，
-      // 渲染必然降级到 minimal，因此这里只钉「key 被带上」，渲染路径的判定
-      // 由上面的纯函数用例覆盖（否则这条断言会变成环境相关的假绿/假红）。
-      final surface = tester.widget<HyperosLiquidGlassSurface>(
-        find.byType(HyperosLiquidGlassSurface),
-      );
-      expect(surface.backgroundKey, boundary);
+      expect(find.byType(AdaptiveGlass), findsOneWidget);
+      expect(find.byType(LightweightLiquidGlass), findsNothing);
     });
   });
 

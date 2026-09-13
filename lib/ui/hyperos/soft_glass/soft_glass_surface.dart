@@ -242,30 +242,21 @@ class SoftGlassRecipe {
       blurRadiusDp * multiplier * SoftGlassTokens.radiusToSigmaScale +
       SoftGlassTokens.radiusToSigmaBias;
 
-  /// 浮空导航（底栏、浮钮）：92 × 0.25 = radius 23 → σ ≈ 13.78。
+  /// 全 app 柔光玻璃**唯一**的配方：底栏 / 浮钮 / 顶栏带 / 弹窗 / 面板 /
+  /// 选择弹层全都用它，雾度、底色、圆角来源只有这一处。
+  ///
+  /// 铁律同液态玻璃：一个材质只有一种观感。历史上这里并存过
+  /// [dialog]（σ ≈ 53.6）与 [bottomSheet]（σ ≈ 107）两套按尺寸分派的配方，
+  /// 于是同一个「柔光玻璃」在顶栏和弹层是两种雾度——用户口径「是柔光玻璃
+  /// 就全部显示一样」。
+  ///
+  /// 若真机要整体改雾度，只改这一个常量的半径倍率（或用户在
+  /// `SoftGlassTuning.blurRadiusMultiplier` 里整体缩放），不要再按表面分别挂。
   static const SoftGlassRecipe floatingNavigation = SoftGlassRecipe(
     blurRadiusDp:
         SoftGlassTokens.baseBlurRadius *
         SoftGlassTokens.floatingNavigationRadiusMultiplier,
     tintAlphaMultiplier: SoftGlassTokens.navigationTintAlphaMultiplier,
-  );
-
-  /// 对话框 / 弹层：92 × 1 = radius 92 → σ ≈ 53.6，圆角 40dp，底色倍率 0.90。
-  static const SoftGlassRecipe dialog = SoftGlassRecipe(
-    blurRadiusDp: SoftGlassTokens.baseBlurRadius,
-    tintAlphaMultiplier: SoftGlassTokens.navigationTintAlphaMultiplier,
-    cornerRadiusDp: 40,
-  );
-
-  /// 底部面板 / 抽屉：92 × 2 = radius 184 → σ ≈ 106.7，圆角 36dp。
-  ///
-  /// ⚠️ Flutter 的 `BackdropFilter` 是真高斯，σ ≈ 107 在整屏面板上明显比
-  /// σ 54 贵。上游走的是降采样金字塔模糊，付得起；这里先留作可选配方，
-  /// 未在设备上确认性能前不要直接挂到大面板上。
-  static const SoftGlassRecipe bottomSheet = SoftGlassRecipe(
-    blurRadiusDp: SoftGlassTokens.baseBlurRadius * 2,
-    tintAlphaMultiplier: SoftGlassTokens.navigationTintAlphaMultiplier,
-    cornerRadiusDp: 36,
   );
 }
 

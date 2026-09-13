@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:ui' show ImageFilter;
-import 'dart:ui' as ui show Image;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
@@ -9,7 +8,6 @@ import 'package:flutter/services.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_controls.dart';
-import 'hyperos_popup_page_capture.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_sheet.dart';
 import 'hyperos_theme.dart';
@@ -454,83 +452,6 @@ class SelectPopupRevealClipper extends CustomClipper<Path> {
   }
 }
 
-/// 宿主页面的整页同步快照（PopupPageCaptureScope 捕获、发布给锚定
-/// 弹窗的二级子卡用）。
-class PopupPageCapture {
-  const PopupPageCapture({
-    required this.image,
-    required this.origin,
-    required this.size,
-    required this.scrimColor,
-  });
-
-  /// 整页快照（物理像素）。
-  final ui.Image image;
-
-  /// 快照左上角的全局逻辑坐标（捕获边界在屏幕上的位置）。
-  final Offset origin;
-
-  /// 快照的逻辑尺寸（= 捕获边界的布局尺寸）。
-  final Size size;
-
-  /// 与弹窗遮罩同色的压暗层：面板 live 采样的是「页面+遮罩」，垫底
-  /// 快照叠同一层后子卡与一级的取样源完全同亮度。
-  final Color scrimColor;
-}
-
-/// 页面快照垫底层：把整页快照按卡片在页面坐标系中的位置平移绘制并叠
-/// 遮罩，不透明——玻璃面 live 采样它，主面板玻璃被挡在垫底之外。
-class _PopupPageSnapshotUnderlay extends StatelessWidget {
-  const _PopupPageSnapshotUnderlay({
-    required this.capture,
-    required this.localOrigin,
-  });
-
-  final PopupPageCapture capture;
-
-  /// 卡片原点在快照坐标系中的位置（卡片全局原点 − 快照原点）。
-  final Offset localOrigin;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(painter: _PageSnapshotPainter(capture, localOrigin));
-  }
-}
-
-class _PageSnapshotPainter extends CustomPainter {
-  const _PageSnapshotPainter(this.capture, this.localOrigin);
-
-  final PopupPageCapture capture;
-  final Offset localOrigin;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // 先铺快照（按卡片在页面坐标系中的位置对齐），再叠遮罩压暗层；
-    // 垫底不透明，玻璃面 live 采样它，主面板玻璃被完全挡住。
-    final dst = (Offset.zero - localOrigin) & capture.size;
-    canvas.drawImageRect(
-      capture.image,
-      Rect.fromLTWH(
-        0,
-        0,
-        capture.image.width.toDouble(),
-        capture.image.height.toDouble(),
-      ),
-      dst,
-      Paint(),
-    );
-    canvas.drawRect(dst, Paint()..color = capture.scrimColor);
-  }
-
-  @override
-  bool shouldRepaint(_PageSnapshotPainter oldDelegate) =>
-      oldDelegate.capture.image != capture.image ||
-      oldDelegate.capture.origin != capture.origin ||
-      oldDelegate.capture.size != capture.size ||
-      oldDelegate.capture.scrimColor != capture.scrimColor ||
-      oldDelegate.localOrigin != localOrigin;
-}
-
 /// Glass background for the select popup.
 ///
 /// Renders the appropriate surface based on [FrostedGlassMode]:
@@ -544,23 +465,11 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     required this.cornerRadius,
     required this.child,
     this.useAncestorGroupCapture = false,
-    this.pageCapture,
-    this.pageAlignedOrigin,
     this.thicknessFactor,
-    this.backgroundKey,
   });
 
   final double cornerRadius;
   final Widget child;
-
-  /// 宿主页面的同步快照（PopupPageCaptureScope 提供）。非空且液态玻璃
-  /// 激活时，先垫一层不透明的快照（页面+遮罩，与一级的取样源同亮度）
-  /// 挡住主面板玻璃，玻璃面本身是标准组件 live 采样垫底输出——模糊/
-  /// 折射/材质全走与一级完全相同的链路；为空时退回磨砂底挡板方案。
-  final PopupPageCapture? pageCapture;
-
-  /// 本面左上角在页面坐标系（全局逻辑坐标）中的位置，用于对齐快照。
-  final Offset? pageAlignedOrigin;
 
   /// 折射厚度缩放（0..1）：液态面按完整厚度的该比例渲染。二级子卡揭示
   /// 期间传揭示进度——厚度从近零生长到满值，顶缘折射对上方面板文字的
@@ -568,20 +477,18 @@ class HyperosSelectPopupGlass extends StatelessWidget {
   /// 厚度。
   final double? thicknessFactor;
 
-  /// 折射取样源（宿主页面捕获边界）。非空时液态面走真折射通道
-  /// （PATH A）；为空则恒走 PATH B，玻璃只剩一圈 rim/fresnel 描边。
-  /// 由调用方决定：列表弹窗传宿主页边界；独立下拉选择弹窗未提供时为
-  /// null（保持原自适应路径）。
-  final GlobalKey? backgroundKey;
-
   /// 浮在同一块玻璃面之上的弹层（如列表弹窗的二级子卡）置 true。
   ///
-  /// 液态玻璃面自带一次「自有层」背景捕获，采样点是它在绘制顺序里的
-  /// 位置——二级子卡排在主面板之后，采到的输入必然包含主面板玻璃的
-  /// 输出，玻璃叠玻璃再模糊/折射一遍，读感浑浊。置真后先铺一层共享组
-  /// 捕获（弹窗遮罩下的页面，与主面板玻璃同源）的磨砂底把下方玻璃挡在
-  /// 外面，液态玻璃再贴着这层底折射。磨砂/高斯分支本就按 grouped 采样
-  /// 共享捕获，此参数对它无额外影响。
+  /// 液态玻璃面按绘制顺序采样它下面的合成结果——二级子卡排在主面板
+  /// 之后，直接采样就会包含主面板玻璃的输出，玻璃叠玻璃再折射一遍，
+  /// 读感浑浊。置真后先铺一层**共享组捕获的磨砂底**（弹窗遮罩下的页面，
+  /// 与主面板玻璃同源、由合成器逐帧刷新）把下方玻璃挡在外面，液态玻璃
+  /// 再贴着这层底折射。
+  ///
+  /// 历史教训：这里一度垫的是宿主页面的**整页同步快照**（ui.Image），
+  /// 结果展开时是一张静态照片跟着卡片走（用户口径：「就好携带一个有
+  /// 背景的卡片出来了，而不是玻璃出来了」）。premium 档改为实时读底面
+  /// 后，垫底必须是 live 的合成器捕获，不能再垫任何快照。
   final bool useAncestorGroupCapture;
 
   /// 当前外观下弹窗是否走柔光玻璃面（Hyper-PiliPlus SoftGlass 风格）。
@@ -646,10 +553,10 @@ class HyperosSelectPopupGlass extends StatelessWidget {
         child: SoftGlassSurface(
           borderRadius: borderRadius,
           blurEnabled: useBlur,
-          // 对话框配方（上游 `DeadlinerGlassRecipes.dialog`）：radius 92 →
-          // σ ≈ 53.6、圆角 40dp、底色倍率 1.0，并保留折射透镜。此前沿用底栏
-          // 配方（σ 13.78 + 无透镜），弹层看起来就是一块实心白卡。
-          recipe: SoftGlassRecipe.dialog,
+          // 不传 recipe：全 app 柔光玻璃共用 [SoftGlassSurface] 的唯一配方
+          // （顶栏 / 底栏 / 弹窗 / 面板同参）。曾经这里单独挂 dialog 配方、
+          // 顶栏挂 floatingNavigation 配方——同一个材质两种雾度，用户口径
+          // 「是柔光玻璃就全部显示一样」。
           enableShadows: false,
           child: child,
         ),
@@ -663,66 +570,21 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     final useLiquidGlass = liquidSurfaceActive(context);
 
     if (useLiquidGlass) {
-      // 局部变量承载可空字段，构建期内空检查可提升（公共字段无法隐式
-      // 提升）。
-      final pageCapture = this.pageCapture;
-      final pageAlignedOrigin = this.pageAlignedOrigin;
-      // 折射取样源：弹窗场景下 = 宿主页面的整页捕获边界（弹窗本体挂在
-      // Navigator 覆盖层上，而 [PopupPageCaptureScope] 只包住首页 => 捕获
-      // 到的正好是**遮罩之下的页面**，不含弹窗自身，天然无自采样反馈）。
-      // 传下去后玻璃走 PATH A、真正做折射位移；不传则恒走 PATH B，只画
-      // 一圈 rim/fresnel——即用户报的「菜单上有个圈圈」。
-      final popupRefractionKey =
-          backgroundKey ?? PopupPageCaptureData.maybeOf(context)?.boundaryKey;
-      // 页面快照可用 → 垫一层不透明快照（页面+遮罩，与一级的取样源同
-      // 亮度）挡住主面板玻璃，玻璃面用标准组件 live 采样垫底输出：
-      // 模糊 pass、折射、tint/whiten/rim 全部与一级弹窗同一链路，玻璃
-      // 观感由此保证；自定义部分只有一张快照图，不是玻璃。
-      if (useAncestorGroupCapture &&
-          pageCapture != null &&
-          pageAlignedOrigin != null) {
-        return Stack(
-          fit: StackFit.passthrough,
-          clipBehavior: Clip.none,
-          children: [
-            Positioned.fill(
-              child: ClipRRect(
-                borderRadius: borderRadius,
-                child: _PopupPageSnapshotUnderlay(
-                  capture: pageCapture,
-                  localOrigin: pageAlignedOrigin - pageCapture.origin,
-                ),
-              ),
-            ),
-            HyperosLiquidGlassSurface(
-              role: HyperosLiquidGlassRole.modal,
-              borderRadius: cornerRadius,
-              // Sample the same undimmed modal capture as every other popup.
-              useAncestorBackdropGroup: true,
-              instantUnderlay: true,
-              thicknessFactor: thicknessFactor,
-              backgroundKey: popupRefractionKey,
-              child: child,
-            ),
-          ],
-        );
-      }
+      // 与顶栏带 / 玻璃坞 / 卡片完全同一个组件、同一个档位常量
+      // （[MikcbLiquidGlassTokens.defaultQuality]）。任何表面都不得再传自己的
+      // 档位或捕获源——那正是「同一个材质几种观感」的成因。
       final surface = HyperosLiquidGlassSurface(
         role: HyperosLiquidGlassRole.modal,
         borderRadius: cornerRadius,
-        // Sample the same undimmed modal capture as every other popup.
-        useAncestorBackdropGroup: true,
-        instantUnderlay: true,
         thicknessFactor: thicknessFactor,
-        backgroundKey: popupRefractionKey,
         child: child,
       );
       if (!useAncestorGroupCapture) {
         return surface;
       }
-      // 磨砂底：共享组捕获（遮罩下的页面）+ 常规磨砂参数，把主面板玻璃
-      // 的输出挡在液态玻璃的采样输入之外。ClipRRect 只圆底垫的角；液态
-      // 玻璃面保持不裁，浅色模式的外阴影才能画到卡外。
+      // 磨砂底：共享组捕获（遮罩下的页面，合成器逐帧刷新）+ 常规磨砂
+      // 参数，把主面板玻璃的输出挡在液态玻璃的采样输入之外。ClipRRect
+      // 只圆底垫的角；液态玻璃面保持不裁，浅色模式的外阴影才能画到卡外。
       final sigma = HyperosBlurredHeader.blurSigmaOf(context);
       final tint = HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
       return Stack(

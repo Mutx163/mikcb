@@ -323,12 +323,12 @@ class LiquidGlassTuning {
   /// Builds official [LiquidGlassSettings] for sheet / dialog panels.
   ///
   /// **不在本方法里做厚度补偿**：厚度折算成 edgeAbsorption / fresnelStrength
-  /// 只在 PATH B（没拿到背景纹理、折射位移不执行）下才是必要的，而这属于
-  /// **渲染路径**的信息，应当由表面层决定。HyperosLiquidGlassSurface 会按
-  /// usesRefractingPath 二选一调用 withThicknessOptics（PATH A，只留真实折
-  /// 射）/ withoutThicknessOptics（PATH B，把折算量写进来）。若在此处无条件
-  /// 写入，PATH A 表面就会双重计数（真实折射 + 边缘变沉变亮），且
-  /// `tuning == null` 的兜底档拿不到同一处理，两条路观感分叉。
+  /// 只在降级路径（impeller 不可用、包内退到轻量片元着色器，折射位移不执行）
+  /// 下才是必要的，而这属于**渲染路径**的信息，应当由表面层决定。
+  /// HyperosLiquidGlassSurface 按引擎能力二选一调用 withThicknessOptics
+  /// （实时折射，只留真实折射）/ withoutThicknessOptics（降级，把折算量写
+  /// 进来）。若在此处无条件写入，实时折射表面就会双重计数（真实折射 + 边缘
+  /// 变沉变亮），且 `tuning == null` 的兜底档拿不到同一处理，观感分叉。
   LiquidGlassSettings toSheetSettings({required Brightness brightness}) {
     final tint = brightness == Brightness.dark
         ? Colors.white.withValues(alpha: (tintAlpha * 0.85).clamp(0.0, 1.0))

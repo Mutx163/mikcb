@@ -158,18 +158,6 @@ class _DayPagerFlickRescuePhysics extends PageScrollPhysics {
 
 class _TimetableScreenState extends State<TimetableScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
-  /// 液态玻璃的折射取样边界（本页整屏内容）。
-  ///
-  /// 包内 lightweight_glass.frag 的折射位移在 PATH A，守卫是
-  /// `uBackgroundSize.x > 1.0`——只有传了 backgroundKey、真的抓到纹理才成立。
-  /// 边界挂在 **BackdropGroup 之内、玻璃带之前**：捕获到的正是「壁纸 + 未压
-  /// 暗内容」这一层，既不带玻璃自身（否则自采样反馈），也带上了壁纸与课表
-  /// 卡片（顶栏下面的课表正好是折射内容）。优先级说明：这个 key 只服务
-  /// **顶栏玻璃带**，二级子卡的整页快照仍走 PopupPageCaptureScope（外层）。
-  final GlobalKey _chromeRefractionKey = GlobalKey(
-    debugLabel: 'chrome-refraction-source',
-  );
-
   static const int _minWeek = 1;
   static const double _weekDayHeaderHeight = 40;
   static const double _homeTitleHorizontalNudge = 4;
@@ -622,38 +610,32 @@ class _TimetableScreenState extends State<TimetableScreen>
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // 折射取样边界只包住「壁纸 + 未压暗缓存」：顺序不可调——
-              // UndimmedBackdropCapture 是组内首个 grouped filter，必须在边界
-              // **内部**；玻璃带必须在边界**外部**，否则捕获到自己（反馈）。
               Positioned.fill(
-                child: RepaintBoundary(
-                  key: _chromeRefractionKey,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (hasBackdrop)
-                        // 内置壁纸是程序生成的动画，克隆多页只会多起 Ticker，
-                        // 不随周次滑动。
-                        (followsWeekPager &&
-                                resolveBuiltInWallpaper(settings) == null)
-                            ? HomePageSlidingBackdropLayer(
-                                controller: _weekPageController,
-                                pageCount: settings.semesterWeekCount,
-                                settings: settings,
-                              )
-                            : homePageBackdropLayer(settings: settings),
-                      if (hasBackdrop && !statusBarShowsBackdrop)
-                        HomePageStatusBarBackdropMask(
-                          color: pageBackgroundColor,
-                        ),
-                      // 组内首个 grouped filter：缓存未压暗的全屏壁纸供玻璃带
-                      // 采样，与预览的 UndimmedBackdropCapture 同款、同相对位置。
-                      if (continuousChromeBlur)
-                        const Positioned.fill(
-                          child: UndimmedBackdropCapture(),
-                        ),
-                    ],
-                  ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (hasBackdrop)
+                      // 内置壁纸是程序生成的动画，克隆多页只会多起 Ticker，
+                      // 不随周次滑动。
+                      (followsWeekPager &&
+                              resolveBuiltInWallpaper(settings) == null)
+                          ? HomePageSlidingBackdropLayer(
+                              controller: _weekPageController,
+                              pageCount: settings.semesterWeekCount,
+                              settings: settings,
+                            )
+                          : homePageBackdropLayer(settings: settings),
+                    if (hasBackdrop && !statusBarShowsBackdrop)
+                      HomePageStatusBarBackdropMask(
+                        color: pageBackgroundColor,
+                      ),
+                    // 组内首个 grouped filter：缓存未压暗的全屏壁纸供玻璃带
+                    // 采样，与预览的 UndimmedBackdropCapture 同款、同相对位置。
+                    if (continuousChromeBlur)
+                      const Positioned.fill(
+                        child: UndimmedBackdropCapture(),
+                      ),
+                  ],
                 ),
               ),
               // Single continuous glass for title + weekday (no time-column blur).
@@ -665,7 +647,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                   weekdayBarBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
                   includeStatusBar: statusBarShowsBackdrop,
                   weekdayBarHeight: _weekDayHeaderHeight,
-                  backgroundKey: _chromeRefractionKey,
                 ),
               HyperosRootPage(
                 overlayHeader: false,
@@ -6815,8 +6796,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (dockMaterial == _DockMaterial.soft) {
       // 柔光圆钮走 SoftGlassSurface（见 _buildDockMergeSlot）。
     } else if (dockMaterial == _DockMaterial.liquid) {
-      dockBtnSettings = MikcbLiquidGlassTokens.stockBottomBarGlass;
-      dockBtnQuality = null; // 包原版自适应质量
+      // 与顶栏带 / 弹窗 / 面板 / 卡片同一份材质解析（[settingsForRole] 用的
+      // 就是它）：全 app 液态玻璃只有这一套参数。曾经这里单独用包原版底栏
+      // 材质（色散 0.3 / 折射率 1.59），于是玻璃坞与其它液态表面是两种观感。
+      dockBtnSettings = MikcbLiquidGlassTokens.sheetSettingsFor(
+        Theme.of(context).brightness,
+        tuning: dockAppearance.liquidGlassTuning,
+      );
+      dockBtnQuality = MikcbLiquidGlassTokens.defaultQuality;
     } else if (dockMaterial == _DockMaterial.frosted) {
       dockBtnSettings = LiquidGlassSettings(
         blur: dockAppearance.sheetBlurSigma,
@@ -6987,8 +6974,11 @@ class _TimetableScreenState extends State<TimetableScreen>
       // 整颗按钮滑入药丸并被圆形裁切，运动与遮罩都贴合药丸端帽弧度。
       barHeight: 56,
       settings: switch (dockMaterial) {
-        // 液态：包原版底栏材质，与右侧圆钮同参。
-        _DockMaterial.liquid => MikcbLiquidGlassTokens.stockBottomBarGlass,
+        // 液态：全 app 唯一那套液态材质（与顶栏带 / 弹窗 / 卡片同参）。
+        _DockMaterial.liquid => MikcbLiquidGlassTokens.sheetSettingsFor(
+          Theme.of(context).brightness,
+          tuning: appearance.liquidGlassTuning,
+        ),
         // 基础高斯：高斯模糊药丸（blur/tint 与弹窗 frosted 一致）。
         _DockMaterial.frosted => LiquidGlassSettings(
           blur: appearance.sheetBlurSigma,
@@ -7003,10 +6993,11 @@ class _TimetableScreenState extends State<TimetableScreen>
           glassColor: solidDockFill,
         ),
         // 柔光已在上方提前返回 SoftGlassTabBar，不会到这里。
-        _DockMaterial.soft => MikcbLiquidGlassTokens.stockBottomBarGlass,
+        _DockMaterial.soft => MikcbLiquidGlassTokens.sheetSettings,
       },
+      // 液态玻璃全 app 同档；其余材质本来就是「实底 / 磨砂」语义，走最小档。
       quality: dockMaterial == _DockMaterial.liquid
-          ? null
+          ? MikcbLiquidGlassTokens.defaultQuality
           : GlassQuality.minimal,
       iconSize: 22,
       labelFontSize: 10,
@@ -7021,7 +7012,7 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 独立圆钮：与药丸同质的液态玻璃圆钮（56 正圆）。
   ///
-  /// 材质与药丸显式同源（_wrapWithGlassDock 传入 stockBottomBarGlass），
+  /// 材质与药丸显式同源（_wrapWithGlassDock 传入全 app 唯一那套液态材质），
   /// useOwnLayer:true + isStationary:true 保证 minimal 回退时仍保留
   /// BackdropFilter 模糊——与药丸 frosted 回退一致，消除“两种材质”断层。
   /// 柔光底栏下改用 SoftGlassSurface，与柔光药丸同一套雾面材质。
@@ -7069,8 +7060,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 但坞层 Row 树外没有任何 LiquidGlassLayer/BluetoothGroup 祖先，
     // Impeller 下 grouped 在无层时直接回退为固色无玻璃——看起来像一块
     // 实色圆片，与药丸的真液态玻璃完全两种材质。改为 useOwnLayer:true
-    // + isStationary:true 后，按钮与药丸共享同质的 stockBottomBarGlass /
-    // sheetSettings，且在 minimal/降级路径两侧一致保留 BackdropFilter。
+    // + isStationary:true 后，按钮与药丸共享**同一份**液态材质
+    // （sheetSettingsFor），且在 minimal/降级路径两侧一致保留 BackdropFilter。
     // 独立圆钮与药丸端帽同圆（56 正圆），外层 SizedBox(56) 与 Row 间距
     // 由调用侧 SizedBox(width:8) 承担，无需 68 高的方形过渡槽及二次
     // ClipRRect 裁切（会把玻璃边缘光切硬）。

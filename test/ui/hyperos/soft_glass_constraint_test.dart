@@ -70,7 +70,6 @@ void main() {
         borderRadius: BorderRadius.circular(20),
         blurEnabled: false,
         enableShadows: false,
-        recipe: SoftGlassRecipe.dialog,
         child: content(),
       ),
     );

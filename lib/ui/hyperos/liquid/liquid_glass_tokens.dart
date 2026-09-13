@@ -13,22 +13,29 @@ import '../hyperos_tokens.dart';
 ///
 /// Kept separate from HyperOS solid surfaces so gaussian blur tuning stays untouched.
 abstract final class MikcbLiquidGlassTokens {
-  /// 本项目所有液态玻璃统一使用的渲染质量档。
+  /// 全 app 液态玻璃**唯一**的渲染质量档：premium。
   ///
-  /// 此前每一处调用点都各自写死 [GlassQuality.premium]——那是「自定义着色器 +
-  /// 逐帧纹理抓取」的最高档。包文档对 premium 的适用面写得很明确：
-  /// 更高画质（镜面高光 + 色散），但**计算量更大**，且在**可滚动布局里可能
-  /// 渲染不正确**；持续动画有超出 GPU 预算的风险。
+  /// 铁律：一个材质只有一种观感。同一材质在不同表面走不同档位 = 两种观感
+  /// （standard 档的折射需要抓拍纹理，与 premium 的实时折射完全不是一回事），
+  /// 所以这里只保留**一个**常量，任何调用点都不得再传自己的档位。例外只有
+  /// 引擎降级（Skia/Web 无 shader filter、系统无障碍高对比、`fake` 预览层）
+  /// ——那是全 app 一起降级，不是「某个表面换个观感」。
   ///
-  /// 真机实测（Redmi K80 Ultra / 天玑 9400 / 120Hz）：切到液态玻璃后首页
-  /// 掉到 60fps、滑动卡死——正是 premium 的代价，因为底栏药丸 + 圆钮 +
-  /// 返回本周钮会**各建一个 LiquidGlassLayer**，每帧各自抓取一次全屏纹理
-  /// 再做折射。
+  /// 为什么是 premium 而不是 standard：standard 档下想要真折射，唯一通道是
+  /// 抓拍纹理（包内 lightweight_glass.frag 的 PATH A，需要 backgroundKey），
+  /// 而那条通道每帧只在几何变化时重拍一次、连续 3 帧稳定后 ticker 直接停摆
+  /// ——玻璃里是一张**静态照片**（弹窗展开时照片跟着卡片走）。premium 走
+  /// `LiquidGlass.withOwnLayer` → `BackdropFilterLayer(ImageFilter.shader)`，
+  /// 由合成器每帧实时读底面，折射是真的、底面是活的。
   ///
-  /// [GlassQuality.standard] 是包方**推荐的默认档**：轻量片元着色器，
-  /// 文档标称「比 BackdropFilter 快 5~10 倍」，观感优于 BackdropFilter，
-  /// 且明确支持滚动场景。省电与流畅都从这里来，而不是把玻璃换成纯色。
-  static const GlassQuality defaultQuality = GlassQuality.standard;
+  /// 历史包袱（勿重犯）：这里一度写成 standard，另给弹窗开 popupQuality =
+  /// premium，于是顶栏/卡片/弹窗三种观感并存——用户口径「同一个材质就应该
+  /// 一模一样，不要搞那么多观感种类」。
+  ///
+  /// 代价：premium 每帧为每个自有层抓一次纹理（曾实测拖慢首页）。若真机
+  /// 掉帧，**改这一个常量**让全 app 一起回退，绝不允许再出现「某个表面单独
+  /// 降级」。
+  static const GlassQuality defaultQuality = GlassQuality.premium;
 
   /// Single liquid-glass material for every surface.
   ///
@@ -67,61 +74,6 @@ abstract final class MikcbLiquidGlassTokens {
     saturation: 0.7,
     ambientStrength: 1,
     glassColor: Color(0x3DFFFFFF),
-  );
-
-  /// liquid_glass_widgets 底栏官方默认材质（kBottomBarGlassDefaults）镜像。
-  ///
-  /// 原常量在包内 `src/widgets/surfaces/tab_bar_bottom_internal.dart`，
-  /// 未从包级导出，故按值复制；升级包版本时需与上游核对同步。
-  ///
-  /// 用途：玻璃坞「原版材质」形态下，bar 与 GlassButton 不传 settings
-  /// 时各自回退到**不同**的内部默认（bar→kBottomBarGlassDefaults；
-  /// button→DefaultButtonSettings/主题回退档），并排会呈现明显的玻璃
-  /// 材质断层。把这份官方底栏材质同时显式传给药丸本体与右侧浮钮，
-  /// 即可在「零自定义参数」的前提下保证两块玻璃完全同质。
-  static const LiquidGlassSettings stockBottomBarGlass = LiquidGlassSettings(
-    thickness: 30,
-    blur: 3,
-    chromaticAberration: 0.3,
-    lightIntensity: 0.6,
-    refractiveIndex: 1.59,
-    saturation: 0.7,
-    ambientStrength: 1,
-    glassColor: Color(0x3DFFFFFF),
-  );
-
-  /// 玻璃坞拖拽透镜（GlassTabBar.bottom 的 [LiquidGlassSettings]）。
-  ///
-  /// 用在 [GlassTabBar.bottom] 的 indicatorSettings 上：长按底栏滑出的
-  /// 那颗「果冻玻璃」专用材质。包内默认（AnimatedGlassIndicator 的
-  /// baseIndicatorSettings）是刻意调淡的 iOS 26 校准值——折射率仅
-  /// 1.10、厚度 20、色散 0，在纯色壁纸/同色底上几乎看不出折射，观感
-  /// 「跟底色一样平」。产品要求拖起时给最强的光折射，因此这里拉满：
-  /// - refractiveIndex: 1.5 —— 应用「液态玻璃调校」滑杆的上限（≈玻璃），
-  ///   远高于包默认的 1.10；
-  /// - thickness: 36 —— 比 bar 本体（30）更厚，小透镜曲率更大，
-  ///   边缘弯折更夸张；
-  /// - chromaticAberration: 0.6 —— 明显的彩虹色散边，强化「真玻璃」
-  ///   光学感（包默认 0 = 无色散；iOS 26 药丸默认也只有 0.15）；
-  /// - ambientRim: 0 —— 不加边缘光环：光环会把整颗透镜罩上一层灰白，
-  ///   看起来「和底下同色连成一体」。产品要求全透明只靠折射反射，
-  ///   glassColor 保持构造默认的全透明；
-  /// - blur: 0 —— 保持透镜内容锐利，只有折弯没有雾化。
-  ///
-  /// 注意合并语义：AnimatedGlassIndicator 会把 indicatorSettings 里
-  /// 「不等于 LiquidGlassSettings() 构造默认值」的字段叠到
-  /// baseIndicatorSettings 上。这里每个字段都不同于构造默认
-  /// （thickness≠20、blur≠5、aberration≠0.01、ambientRim≠0、
-  /// refractiveIndex≠1.2），因此全部会生效。
-  ///
-  /// 刻意不跟随「液态玻璃调校」（[LiquidGlassTuning]）：这是瞬时交互
-  /// 强调件而非持久表面，固定最强档保证任何调校下拖起都有戏剧化的
-  /// 折射反馈。
-  static const dragLensSettings = LiquidGlassSettings(
-    thickness: 36,
-    blur: 0,
-    chromaticAberration: 0.6,
-    refractiveIndex: 1.5,
   );
 
   /// 设置页预览专用：把「最容易被读成假」的两个边缘量按住。
