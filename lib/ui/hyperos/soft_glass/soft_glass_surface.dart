@@ -268,22 +268,6 @@ class SoftGlassRecipe {
 /// 柔光亮暗极性。
 enum SoftGlassPolarity { light, dark }
 
-/// 柔光玻璃表面。
-///
-/// 渲染分两条路径，观感以「折射路径」为准：
-///
-/// * **折射路径**（Impeller + shader 装载成功 + [enableRefraction] 为真）
-///   `compose(outer: 折射 shader, inner: 高斯)` 压在一个 backdrod 层上，
-///   再叠底色与边缘高光。与原版 `glassOpticalBackdrop` 同构：先高斯，再折射，
-///   再叠底与描边。
-///
-///   折射 shader 需要知道**控件在屏幕上的物理矩形**（引擎只喂给它整屏
-///   backdrop 快照的尺寸，不喂位置），所以这条路径由 [_SoftGlassBackdrop]
-///   在 paint 时用 `getTransformTo(null)` 实测，详见该类的注释。
-/// * **回退路径**（其余后端 / 大面板 / 模糊总开关关闭）
-///   纯高斯 + 底色 + 边缘高光。描边仍用**光学档**的高光强度，保证即便没有
-///   折射 shader，玻璃面也能靠镜面边缘立住——这一步与背景内容无关，是
-///   「看起来像玻璃」的最低成本来源。
 /// 柔光玻璃表面 —— **全 app 玻璃统一材质**：直接渲染 flutter_miuix 的 OS4 玻璃
 /// （[MiuixGlass]），材质与首页右上角菜单、选择弹层**同一份**
 /// （`MiuixGlassMaterials.popupViewGlass` + `MiuixGlassStyles.forTheme` +
