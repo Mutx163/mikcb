@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'frosted/liquid_glass_degradation.dart';
 import 'hyperos_motion.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
@@ -250,9 +251,20 @@ class _HyperosTransitionPageShell extends StatelessWidget {
       animation: animation,
       builder: (context, child) {
         final status = animation.status;
-        if (!HyperosNavigation.isPrimaryTransitionActive(status)) {
+        final active = HyperosNavigation.isPrimaryTransitionActive(status);
+        // 转场期间本页玻璃回落实体材质：动画中 BackdropFilter 采不到稳定背景
+        //（整段渲染为透明），而且页面在移动、每帧都要重做一次全屏背景采样。
+        // 作用域只包住**正在滑动的这一页**，下层路由（首页玻璃带 / 玻璃坞）
+        // 不受影响 —— 否则每次推页它们都会闪一下实体，非常刺眼。
+        // 玻璃降级后页面内容不再逐帧变化，外层那个 RepaintBoundary 才能
+        // 真正把整页像素缓存下来，转场只剩「裁切 + 投影」的重新合成。
+        final scopedChild = LiquidGlassRouteTransitionScope(
+          active: active,
+          child: child!,
+        );
+        if (!active) {
           // Settled: no ClipRRect / no rounded DecoratedBox.
-          return child!;
+          return scopedChild;
         }
 
         final progress = animation.value.clamp(0.0, 1.0);
@@ -267,10 +279,10 @@ class _HyperosTransitionPageShell extends StatelessWidget {
         );
 
         if (effectiveRadius <= 0.5 && shadowStrength <= 0) {
-          return child!;
+          return scopedChild;
         }
 
-        Widget page = child!;
+        Widget page = scopedChild;
         if (effectiveRadius > 0.5) {
           page = ClipRRect(
             borderRadius: clipRadius,
