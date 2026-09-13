@@ -3,6 +3,7 @@ import 'package:flutter_miuix/miuix.dart';
 
 import '../../../models/soft_glass_tuning.dart';
 import '../frosted/frosted_appearance.dart';
+import '../frosted/liquid_glass_degradation.dart';
 import '../hyperos_glass_backdrop_host.dart';
 
 /// 柔光玻璃 token —— 数值直译 Hyper-PiliPlus（Deadliner）的
@@ -391,9 +392,12 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
     return MiuixGlass(
       backdrop: widget.blurEnabled ? _controller?.backdrop : null,
       style: MiuixGlassStyles.forTheme(isDark),
-      material: _tunedMaterial(
-        MiuixGlassMaterials.popupViewGlass(isDark),
-        tuning,
+      material: softGlassMaterialFor(
+        context,
+        dark: isDark,
+        recipe: widget.recipe,
+        tuning: tuning,
+        blurSigma: widget.blurSigma,
       ),
       shape: MiuixGlassShape(borderRadius: widget._radius),
       alpha: widget.materialAlpha.clamp(0.0, 1.0),
@@ -401,7 +405,7 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
       // 菜单 / 选择弹层同档：栏与菜单 MaterialToken（shading: false）。
       shading: widget.enableRefraction,
       stroke: widget.enableEdgeHighlight
-          ? _scaledStroke(
+          ? scaleSoftGlassStroke(
               MiuixGlassStrokes.forTheme(isDark),
               tuning.edgeHighlight,
             )
@@ -411,52 +415,81 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
     );
   }
 
-  /// 上游材质包上用户档位：雾面半径 = 配方半径 × 档位倍率；底色浓度按
-  /// `tintAlphaMultiplier` 缩放颜色层不透明度。
-  MiuixGlassMaterial _tunedMaterial(
-    MiuixGlassMaterial base,
-    SoftGlassTuning tuning,
-  ) {
-    final radius =
-        (widget.blurSigma != null
-                ? (widget.blurSigma! - SoftGlassTokens.radiusToSigmaBias) /
-                      SoftGlassTokens.radiusToSigmaScale
-                : widget.recipe.blurRadiusDp * tuning.blurRadiusMultiplier)
-            .clamp(0.0, SoftGlassTokens.maximumBlurRadius);
-    final tintScale = tuning.tintAlphaMultiplier.clamp(0.0, 2.0);
-    MiuixGlassColorLayer scale(MiuixGlassColorLayer layer) =>
-        MiuixGlassColorLayer(
-          layer.color.withValues(
-            alpha: (layer.color.a * tintScale).clamp(0.0, 1.0),
-          ),
-          layer.mode,
-        );
-    return MiuixGlassMaterial(
-      blurRadius: radius,
-      first: scale(base.first),
-      second: base.second == null ? null : scale(base.second!),
-      third: base.third == null ? null : scale(base.third!),
-    );
-  }
+}
 
-  /// 边缘高光强度（0..1）按比例作用到上游描边的三处高光上。
-  MiuixGlassStroke _scaledStroke(MiuixGlassStroke base, double strength) {
-    final scale = strength.clamp(0.0, 1.0);
-    Color scaleColor(Color color) =>
-        color.withValues(alpha: (color.a * scale).clamp(0.0, 1.0));
-    MiuixGlassStrokeLight scaleLight(MiuixGlassStrokeLight light) =>
-        MiuixGlassStrokeLight(
-          light.x,
-          light.y,
-          light.z,
-          scaleColor(light.color),
-        );
-    return MiuixGlassStroke(
-      width: base.width,
-      bevel: base.bevel,
-      color: scaleColor(base.color),
-      primary: scaleLight(base.primary),
-      secondary: scaleLight(base.secondary),
-    );
+/// 用户档位（[SoftGlassTuning]）→ 上游 OS4 玻璃材质。
+///
+/// **柔光玻璃全 app 共用这一份映射**：页面表面（[SoftGlassSurface]）与 OS4 弹层
+/// （首页右上角菜单、选择弹层）都走它。否则同一个「柔光玻璃」，弹层不跟档位 ——
+/// 真机反馈就是「选最透明和最浓的档位，首页右上角菜单一模一样」。
+MiuixGlassMaterial softGlassMaterialFor(
+  BuildContext context, {
+  bool? dark,
+  SoftGlassRecipe recipe = SoftGlassRecipe.standard,
+  SoftGlassTuning? tuning,
+  double? blurSigma,
+}) {
+  final isDark = dark ?? SoftGlassTokens._dark(context, null);
+  final resolvedTuning =
+      tuning ?? FrostedAppearanceScope.of(context).softGlassTuning;
+  final radius =
+      (blurSigma != null
+              ? (blurSigma - SoftGlassTokens.radiusToSigmaBias) /
+                    SoftGlassTokens.radiusToSigmaScale
+              : recipe.blurRadiusDp * resolvedTuning.blurRadiusMultiplier)
+          .clamp(0.0, SoftGlassTokens.maximumBlurRadius);
+  final tintScale = resolvedTuning.tintAlphaMultiplier.clamp(0.0, 2.0);
+  final base = MiuixGlassMaterials.popupViewGlass(isDark);
+  MiuixGlassColorLayer scale(MiuixGlassColorLayer layer) =>
+      MiuixGlassColorLayer(
+        layer.color.withValues(
+          alpha: (layer.color.a * tintScale).clamp(0.0, 1.0),
+        ),
+        layer.mode,
+      );
+  return MiuixGlassMaterial(
+    blurRadius: radius,
+    first: scale(base.first),
+    second: base.second == null ? null : scale(base.second!),
+    third: base.third == null ? null : scale(base.third!),
+  );
+}
+
+/// 边缘高光强度（0..1）按比例作用到上游描边的三处高光上。
+MiuixGlassStroke scaleSoftGlassStroke(MiuixGlassStroke base, double strength) {
+  final scale = strength.clamp(0.0, 1.0);
+  Color scaleColor(Color color) =>
+      color.withValues(alpha: (color.a * scale).clamp(0.0, 1.0));
+  MiuixGlassStrokeLight scaleLight(MiuixGlassStrokeLight light) =>
+      MiuixGlassStrokeLight(light.x, light.y, light.z, scaleColor(light.color));
+  return MiuixGlassStroke(
+    width: base.width,
+    bevel: base.bevel,
+    color: scaleColor(base.color),
+    primary: scaleLight(base.primary),
+    secondary: scaleLight(base.secondary),
+  );
+}
+
+/// OS4 弹层（首页菜单 / 选择弹层）在当前外观下的材质：柔光玻璃档跟随用户档位，
+/// 其它档位返回上游默认 visuals（弹层永远是 OS4 玻璃，不随液态/高斯档改材质）。
+MiuixGlassPopupVisuals softGlassPopupVisualsFor(BuildContext context) {
+  final scope = FrostedAppearanceScope.maybeOf(context);
+  if (scope == null) return const MiuixGlassPopupVisuals();
+  final appearance = scope.appearance;
+  if (appearance.glassMode != FrostedGlassMode.softGlass) {
+    return const MiuixGlassPopupVisuals();
   }
+  if (LiquidGlassDegradation.shouldDegrade(context)) {
+    return const MiuixGlassPopupVisuals();
+  }
+  final tuning = appearance.softGlassTuning;
+  final dark = SoftGlassTokens._dark(context, null);
+  return MiuixGlassPopupVisuals(
+    material: softGlassMaterialFor(context, dark: dark, tuning: tuning),
+    stroke: scaleSoftGlassStroke(
+      MiuixGlassStrokes.forTheme(dark),
+      tuning.edgeHighlight,
+    ),
+  );
 }

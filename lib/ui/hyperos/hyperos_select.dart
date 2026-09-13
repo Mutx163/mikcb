@@ -752,6 +752,8 @@ class HyperosSelectPopup<T> extends StatelessWidget {
             HyperosGlassBackdropScope.maybeOf(context)?.backdrop ??
             os4GlassBackdrop,
         sizing: _os4SelectSizing,
+        // 柔光玻璃档下跟随用户档位（与页内表面、首页菜单同一份映射）。
+        visuals: softGlassPopupVisualsFor(context),
         onDismissRequest: onDismiss,
         // 上游 `MiuixGlassPopupItem` 的 Row 是 `mainAxisSize.max`，会直接撑满
         // `sizing.maxWidth`：只给 min/max 而不夹内容，弹层宽度恒等于 maxWidth

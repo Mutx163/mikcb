@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_glass_backdrop_host.dart';
+import 'package:university_timetable/ui/hyperos/soft_glass/soft_glass_surface.dart';
 import 'package:university_timetable/ui/hyperos/os4_glass_backdrop.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
 
@@ -149,6 +150,9 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
         widget.backdrop ??
         HyperosGlassBackdropRegistry.resolve(context)?.backdrop ??
         os4GlassBackdrop;
+    // 柔光玻璃档下，弹层材质跟随用户档位（与页内表面同一份映射）；
+    // 其它档位保持上游默认材质。
+    final visuals = softGlassPopupVisualsFor(context);
 
     // 外层手势隔离：弹层自带的滚动视图不该继承首页的橡皮筋物理，也不该把滚动
     // 通知冒泡回首页（首页同样有整页滚动监听）。
@@ -162,6 +166,7 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
             backdrop: backdrop,
             // 宽度见 [_popupSizing]（收到旧实现的下界原宽 200）。
             sizing: _popupSizing,
+            visuals: visuals,
             // 刻意**不用** `stacked`：它的语义是"二级展开时一级面板收缩/变暗"，
             // 收起时要靠包内 `MiuixGlassMotion.secondaryPopup(false)` 弹簧把一级
             // 弹回原位 —— 那条回弹在真机上读起来就是"圈/描边回收很慢"，而这组
@@ -192,6 +197,7 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
               backdrop: backdrop,
               // 与一级面板**同一份**宽度约束，两块才对得齐。
               sizing: _popupSizing,
+              visuals: visuals,
               onDismissRequest: _closeSecondary,
               child: Column(
                 mainAxisSize: MainAxisSize.min,

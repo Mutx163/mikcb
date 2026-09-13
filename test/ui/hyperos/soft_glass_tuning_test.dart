@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/soft_glass_tuning.dart';
-import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
-import 'package:university_timetable/ui/hyperos/soft_glass/soft_glass_surface.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/widgets/home_top_menu_popup.dart';
+
+import '../../helpers_test_app.dart';
 
 /// 柔光玻璃调参（[SoftGlassTuning]）→ 上游 OS4 玻璃材质的映射：
 ///
@@ -114,5 +116,95 @@ void main() {
   testWidgets('与菜单同档：栏与菜单 MaterialToken（shading 关）', (tester) async {
     await pumpSurface(tester);
     expect(glassOf(tester).shading, isFalse);
+  });
+
+  group('OS4 弹层也跟随柔光玻璃档位', () {
+    /// 真机反馈：选了「清透」和「浓雾」，首页右上角菜单一模一样 —— 弹层当时用的是
+    /// 上游固定材质，没接用户档位。这里守「同一份映射也喂给弹层」。
+    Widget scope({required SoftGlassTuning tuning, required Widget child}) =>
+        FrostedAppearanceScope(
+          appearance: FrostedAppearance(
+            sheetBlurSigma: 15,
+            sheetTintAlpha: 0.70,
+            sheetBarrierAlpha: 0.20,
+            glassMode: FrostedGlassMode.softGlass,
+            softGlassTuning: tuning,
+          ),
+          child: child,
+        );
+
+    Future<double> selectPopupBlur(
+      WidgetTester tester,
+      SoftGlassTuning tuning,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: scope(
+            tuning: tuning,
+            child: Stack(
+              children: [
+                HyperosSelectPopup<int>(
+                  show: false,
+                  anchorRect: Rect.zero,
+                  items: const {'A': 1, 'B': 2},
+                  currentValue: 1,
+                  onSelected: (_) {},
+                  onDismiss: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final popup = tester.widget<MiuixGlassDropdownPopup>(
+        find.byType(MiuixGlassDropdownPopup),
+      );
+      return popup.visuals.material!.blurRadius;
+    }
+
+    testWidgets('选择弹层材质随档位变化（清透 < 标准 < 浓雾）', (tester) async {
+      final clear = await selectPopupBlur(tester, SoftGlassTuning.presetClear);
+      final standard = await selectPopupBlur(
+        tester,
+        SoftGlassTuning.defaults,
+      );
+      final dense = await selectPopupBlur(tester, SoftGlassTuning.presetDense);
+
+      expect(clear, lessThan(standard));
+      expect(standard, lessThan(dense));
+      expect(standard, SoftGlassRecipe.standard.blurRadiusDp);
+    });
+
+    testWidgets('首页右上角菜单材质随档位变化', (tester) async {
+      final anchor = MiuixGlassPopupAnchor();
+      addTearDown(anchor.dispose);
+      await tester.pumpWidget(
+        TestApp(
+          home: scope(
+            tuning: SoftGlassTuning.presetDense,
+            child: HomeTopMenuPopup(
+              show: false,
+              anchor: anchor,
+              anchorContent: const Icon(Icons.more_vert_rounded),
+              entries: const [],
+              hasAvailableUpdate: false,
+              onDismissRequest: () {},
+              onSelected: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final popup = tester.widget<MiuixGlassTransformPopup>(
+        find.byType(MiuixGlassTransformPopup),
+      );
+      expect(
+        popup.visuals.material!.blurRadius,
+        SoftGlassRecipe.standard.blurRadiusDp *
+            SoftGlassTuning.presetDense.blurRadiusMultiplier,
+      );
+    });
   });
 }
