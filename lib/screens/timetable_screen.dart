@@ -54,6 +54,7 @@ import '../widgets/course_surface.dart';
 import '../widgets/course_grid_surface_host.dart';
 import '../widgets/home_menu_catalog.dart';
 import '../widgets/home_top_menu.dart';
+import '../widgets/home_top_menu_popup.dart';
 import '../widgets/home_update_prompt.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
 import '../widgets/profile_quick_switch_sheet.dart';
@@ -218,6 +219,14 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// Anchor for the top-right "more" menu popup (positioned below this key).
   final GlobalKey _topMenuButtonKey = GlobalKey();
+
+  /// 首页「更多」菜单（列表形态）改用上游 flutter_miuix 1.2.0 的 HyperOS 4
+  /// 玻璃弹层后的持有物。按上游约定：锚点与材质捕获容器由宿主创建并持有
+  ///（[MiuixGlassPopupAnchor.dispose] 在 [dispose] 里释放）；弹层是
+  /// 「常驻挂载 + 切 show」的声明式组件，故用 [_homeMenuOpen] 控制显隐。
+  final MiuixGlassPopupAnchor _homeMenuAnchor = MiuixGlassPopupAnchor();
+  final MiuixLayerBackdrop _homeMenuBackdrop = MiuixLayerBackdrop();
+  bool _homeMenuOpen = false;
   final AppUpdateService _updateService = AppUpdateService();
   final SupportCreatorService _supportCreatorService = SupportCreatorService();
   final HomeUpdatePromptController _updatePromptController =
@@ -445,6 +454,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       controller.dispose();
     }
     _pendingDayViewControllerDisposals.clear();
+    _homeMenuAnchor.dispose();
     super.dispose();
   }
 
@@ -691,7 +701,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                         );
                       },
                     ),
-                  KeyedSubtree(
+                  // 上游形变弹层要求把锚点绑在触发控件上（[MiuixGlassAnchor]
+                  // 负责挂它自己的 GlobalKey）；[_topMenuButtonKey] 仍保留，
+                  // 供「八宫格」形态在原位置弹出底部弹层用。
+                  MiuixGlassAnchor(
+                    anchor: _homeMenuAnchor,
+                    child: KeyedSubtree(
                     key: _topMenuButtonKey,
                     child: FHeaderAction(
                       icon: Stack(
@@ -726,6 +741,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       semanticsLabel: l10n.moreTooltip,
                       onPress: _showTopActionsSheet,
                     ),
+                  ),
                   ),
                 ],
                 child: Padding(
@@ -813,11 +829,14 @@ class _TimetableScreenState extends State<TimetableScreen>
               )
             : homeStack;
         if (!glassDockForm) {
-          return _wrapWithGlassDock(
-            dockContent,
-            glassDockForm: false,
+          return _wrapHomeWithTopMenu(
+            _wrapWithGlassDock(
+              dockContent,
+              glassDockForm: false,
+              settings: settings,
+              l10n: l10n,
+            ),
             settings: settings,
-            l10n: l10n,
           );
         }
         // 底栏为可编排快捷区：页面类条目在首页栈内切换（内嵌宿主，
@@ -878,11 +897,14 @@ class _TimetableScreenState extends State<TimetableScreen>
         // 系统返回不拦内嵌页：与日/周课表同口径，底栏任意状态（日/周
         // 课表或内嵌页）按返回都直接退出应用（根路由 bubble → 系统退出）。
         // 收回内嵌页走底栏切换（点 日/周 Tab 或其他页面条目）与圆钮再点。
-        return _wrapWithGlassDock(
-          hostedContent,
-          glassDockForm: true,
+        return _wrapHomeWithTopMenu(
+          _wrapWithGlassDock(
+            hostedContent,
+            glassDockForm: true,
+            settings: settings,
+            l10n: l10n,
+          ),
           settings: settings,
-          l10n: l10n,
         );
       },
     );
@@ -8261,52 +8283,72 @@ class _TimetableScreenState extends State<TimetableScreen>
     _maybeSelectionClick(provider.settings);
   }
 
+  /// 首页主体 + 顶栏「更多」弹层。
+  ///
+  /// 弹层放在 [MiuixLayerBackdropCapture] **之外**：后者捕获的是「弹层之下的
+  /// 页面」，正是上游玻璃材质要采样的背景（缺捕获时上游会退化为纯色轮廓，
+  /// 见 MiuixGlass 的说明）。弹层内部经 OverlayPortal 渲染到 Overlay，
+  /// 所以这里的次序只影响它继承到的主题。
+  Widget _wrapHomeWithTopMenu(
+    Widget content, {
+    required TimetableSettings settings,
+  }) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        MiuixLayerBackdropCapture(backdrop: _homeMenuBackdrop, child: content),
+        HomeTopMenuPopup(
+          show: _homeMenuOpen,
+          backdrop: _homeMenuBackdrop,
+          anchor: _homeMenuAnchor,
+          // 形变动效要从按钮位置长出来，故传入按钮内容的**副本**（不含
+          // GlobalKey，避免与真实按钮抢同一个 key）。
+          anchorContent: const Icon(Icons.more_vert_rounded),
+          entries: resolveHomeGridMenuEntries(settings),
+          hasAvailableUpdate: _hasAvailableUpdate,
+          onDismissRequest: () {
+            if (_homeMenuOpen) {
+              setState(() => _homeMenuOpen = false);
+            }
+          },
+          onSelected: _dispatchTopMenuSelection,
+        ),
+      ],
+    );
+  }
+
   Future<void> _showTopActionsSheet() async {
-    // The anchored menu floats over the wallpaper; give its rows the same
-    // wallpaper-aware ink as the home chrome (white over dark wallpaper,
-    // dark over light). Only the wallpaper-transparent panels honour it —
-    // the list popup drops it on solid / soft-glass surfaces, whose polarity
-    // follows the app theme rather than the wallpaper.
     final provider = context.read<TimetableProvider>();
     final settings = provider.settings;
-    final hasBackdrop = hasHomePageBackdrop(settings);
-    final headerShowsBackdrop = homePageRegionShowsBackdrop(
-      settings,
-      HomePageBackgroundScope.header,
-    );
-    final headerUsesFrostedChrome =
-        hasBackdrop &&
-        (headerShowsBackdrop || settings.homePageHeaderBlurEnabled);
-    final menuForeground = _resolveHomeChromeForeground(
-      headerShowsWallpaper: headerUsesFrostedChrome,
-      themeForeground: context.theme.colors.foreground,
-    );
 
-    // 菜单形态由设置分流：「八宫格」是 v2.0.5.5 已发布版本的底部弹层，
-    // 「列表」是当前的锚定弹窗。两种形态共享同一份自定义排列
-    // （homeGridMenuActions），统一以入口 id 回传，再经目录分发到
-    // 全应用任意二级页面/功能。
-    final String? selectedId;
-    if (settings.homeMenuStyle == HomeMenuStyle.grid) {
-      selectedId = await showHomeTopGridMenuSheet(
-        context,
-        hasAvailableUpdate: _hasAvailableUpdate,
-        entries: resolveHomeGridMenuEntries(settings),
-        themeSeedHex: settings.themeSeedColor,
-      );
-    } else {
-      selectedId = await showHomeTopMenuSheet(
-        context,
-        hasAvailableUpdate: _hasAvailableUpdate,
-        entries: resolveHomeGridMenuEntries(settings),
-        anchorKey: _topMenuButtonKey,
-        foregroundColor: menuForeground,
-      );
-    }
-
-    if (!mounted || selectedId == null) {
+    // 菜单形态由设置分流：「八宫格」是 v2.0.5.5 已发布版本的底部弹层；
+    // 「列表」自 2026-09-13 起改用上游 flutter_miuix OS4 玻璃弹层
+    // （HomeTopMenuPopup：形变动效 + 不再逐帧重采整页组捕获）。两种形态
+    // 共享同一份自定义排列（homeGridMenuActions），统一以入口 id 回传，
+    // 再经 _dispatchTopMenuSelection 分发到全应用任意二级页面/功能。
+    if (settings.homeMenuStyle != HomeMenuStyle.grid) {
+      setState(() => _homeMenuOpen = true);
       return;
     }
+
+    final selectedId = await showHomeTopGridMenuSheet(
+      context,
+      hasAvailableUpdate: _hasAvailableUpdate,
+      entries: resolveHomeGridMenuEntries(settings),
+      themeSeedHex: settings.themeSeedColor,
+    );
+    if (selectedId == null) {
+      return;
+    }
+    await _dispatchTopMenuSelection(selectedId);
+  }
+
+  /// 顶栏菜单选中项分发：八宫格与列表（OS4 玻璃弹层）两种形态共用入口。
+  Future<void> _dispatchTopMenuSelection(String selectedId) async {
+    if (!mounted) {
+      return;
+    }
+    final provider = context.read<TimetableProvider>();
 
     // Let the sheet route finish closing before pushing the next page.
     await Future<void>.delayed(Duration.zero);

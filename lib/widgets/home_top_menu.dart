@@ -98,13 +98,13 @@ Future<String?> showHomeTopMenuSheet(
           // The trailing dot badge marks the pending update; rows stay text
           // only so the wallpaper-aware ink keeps the menu uniform.
           trailing:
-              entries[index].id == 'update' && hasAvailableUpdate
+              entries[index].id == kUpdateEntryId && hasAvailableUpdate
                   ? const MiuixBadge()
                   : null,
           gapBefore:
               index > 0 &&
               entries[index].category != entries[index - 1].category,
-          children: entries[index].id == 'addCourse'
+          children: entries[index].id == kAddCourseSubmenuParentId
               ? kAddCourseSubmenu(l10n)
               : const [],
         ),
@@ -116,6 +116,12 @@ Future<String?> showHomeTopMenuSheet(
 const String kAddCourseSubmenuCourseId = 'addCourse:course';
 const String kAddCourseSubmenuScheduleId = 'addCourse:schedule';
 const String kAddCourseSubmenuExamId = 'addCourse:exam';
+
+/// 列表态菜单里「添加」父行的入口 id：该行只是二级展开开关，不直接回传。
+const String kAddCourseSubmenuParentId = 'addCourse';
+
+/// 列表态菜单里「更新」入口的 id：有待更新时带点状角标。
+const String kUpdateEntryId = 'update';
 
 /// 「添加」入口的二级列表内容：三宫格添加弹层的同组目的地，
 /// 标签复用弹层按钮文案（无新串）。
