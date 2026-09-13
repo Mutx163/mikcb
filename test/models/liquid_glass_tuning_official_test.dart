@@ -145,7 +145,7 @@ void main() {
       // edgeOffset = surfaceNormal * edgeInfluence * uThickness * 0.5），
       // 再叠 edgeAbsorption / fresnelStrength 就是双重计数。
       final pathA = HyperosLiquidGlassSurface.withThicknessOptics(
-        LiquidGlassTuning(thickness: 40).toSheetSettings(
+        const LiquidGlassTuning(thickness: 40).toSheetSettings(
           brightness: Brightness.light,
         ),
         const LiquidGlassTuning(thickness: 40),

@@ -75,14 +75,18 @@ void main() {
     });
 
     test('a custom tuning reaches the preview with the same 色散 cap', () {
+      // 必须用**非默认**值，否则本用例退化成「默认档 = 默认档」，既测不到
+      // 穿透也测不到截断（thickness 30 / chromaticAberration 0.12 恰是
+      // LiquidGlassTuning 的默认值）。色散取滑杆上限 0.3（真机默认 0.12 的
+      // 2.5 倍），厚度取 34（低于 presetDense 上限 36，不该被夹）。
       final safe = FrostedSheetSettingsPreview.previewSafeTuning(
-        const LiquidGlassTuning(thickness: 30, chromaticAberration: 0.12),
+        const LiquidGlassTuning(thickness: 34, chromaticAberration: 0.3),
       )!;
       expect(
         safe.chromaticAberration,
         MikcbLiquidGlassTokens.previewChromaticAberration,
       );
-      expect(safe.thickness, 30);
+      expect(safe.thickness, 34);
     });
 
     test('clamps from a mid-range tuning only up to the ceiling', () {

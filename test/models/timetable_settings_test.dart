@@ -985,27 +985,34 @@ void main() {
     expect(restored.homePageBackgroundFill, HomePageBackgroundFill.image);
     expect(restored.homePageBackgroundImagePath, '/tmp/home_bg.png');
     expect(restored.homePageWallpaperPath, '/tmp/wallpaper.png');
+
+    // homePageBackgroundScope 已于 2026-09-12 下线（壁纸整体透出）：该字段
+    // 不再写入 JSON，读取时固化为 HomePageBackgroundScope.defaultValue。
+    //
+    // 因此这里**不再**断言「用户设过的窄范围被保留」——那条契约已经作废，
+    // 继续断言它会让本用例长红。改为钉住下线后的真实契约：无论旧存档里写
+    // 的是什么，读回来恒为默认值（四个区域全部透出）。若哪天有人恢复序列化，
+    // 这条会立刻变红，提醒同步本注释与用例名。
     expect(
-      HomePageBackgroundScope.includes(
-        restored.homePageBackgroundScope,
-        HomePageBackgroundScope.timetable,
-      ),
-      isTrue,
+      restored.homePageBackgroundScope,
+      HomePageBackgroundScope.defaultValue,
+      reason: 'homePageBackgroundScope 已下线，读取恒为默认值',
     );
-    expect(
-      HomePageBackgroundScope.includes(
-        restored.homePageBackgroundScope,
-        HomePageBackgroundScope.header,
-      ),
-      isTrue,
-    );
-    expect(
-      HomePageBackgroundScope.includes(
-        restored.homePageBackgroundScope,
-        HomePageBackgroundScope.weekdayBar,
-      ),
-      isFalse,
-    );
+    for (final region in <int>[
+      HomePageBackgroundScope.timetable,
+      HomePageBackgroundScope.weekdayBar,
+      HomePageBackgroundScope.header,
+      HomePageBackgroundScope.statusBar,
+    ]) {
+      expect(
+        HomePageBackgroundScope.includes(
+          restored.homePageBackgroundScope,
+          region,
+        ),
+        isTrue,
+        reason: '默认范围应包含该区域（壁纸整体透出）',
+      );
+    }
   });
 
   group('home top menu style settings', () {
