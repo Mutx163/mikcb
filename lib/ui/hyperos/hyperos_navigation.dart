@@ -211,7 +211,17 @@ class _HyperosParallaxBleed extends StatelessWidget {
             clipBehavior: Clip.none,
             alignment: Alignment.centerLeft,
             children: [
-              Positioned.fill(child: ColoredBox(color: surface)),
+              // 补底只铺**会被露出的那一条**（页面右侧 bleed 出来的部分）：
+              // 整块 1.25× 视口铺底里，[0, width] 这一段始终被不透明页面盖住，
+              // 铺它是每帧白填一整屏。补底本身不能省 —— 它负责让视差滑出后
+              // 不露出 Navigator 里更下一层的路由。
+              Positioned(
+                left: width,
+                top: 0,
+                bottom: 0,
+                width: bleedWidth - width,
+                child: ColoredBox(color: surface),
+              ),
               SizedBox(width: width, child: child),
             ],
           ),
@@ -278,28 +288,56 @@ class _HyperosTransitionPageShell extends StatelessWidget {
           );
         }
 
-        return DecoratedBox(
+        // 不透明底 + 圆角，**不含投影**；投影单独成层（见下）。
+        final shell = DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: effectiveRadius > 0.5 ? clipRadius : null,
             color: surface,
-            boxShadow: shadowStrength <= 0
-                ? null
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(
-                        alpha:
-                            HyperosMiuixNavigation.pageShadowAlpha *
-                            shadowStrength,
-                      ),
-                      blurRadius: HyperosMiuixNavigation.pageShadowBlur,
-                      offset: const Offset(
-                        HyperosMiuixNavigation.pageShadowOffsetX,
-                        HyperosMiuixNavigation.pageShadowOffsetY,
-                      ),
-                    ),
-                  ],
           ),
           child: page,
+        );
+        if (shadowStrength <= 0) {
+          return shell;
+        }
+
+        // 投影单独一层，并把「强度」从颜色 alpha 挪到 Opacity：
+        // 滑行中段的圆角半径是常量（transitionCornerRadiusFactor 只在两端
+        // settle band 收缩），所以投影形状在中段恒定 —— 放进 RepaintBoundary
+        // 后**模糊只算一次**，之后每帧只是重新合成透明度。
+        //
+        // 原先把 alpha 乘进 BoxShadow 颜色、与不透明底写在同一个 BoxDecoration
+        // 上，等于每一帧都重做一次**全屏**模糊：真机实测一次推页会在栅格侧留下
+        // 440~530ms 的单个长帧、进程 RSS 瞬时 +279MB（约 20 块全屏缓冲），
+        // 1.9s 后才释放；同一页从底栏内嵌进入（无转场）则既无长帧也只 +88MB。
+        return Stack(
+          // 投影画在页面之下；页面不透明，投影可见部分只有滑入那条边与圆角外侧。
+          children: [
+            Positioned.fill(
+              child: Opacity(
+                opacity: shadowStrength.clamp(0.0, 1.0),
+                child: RepaintBoundary(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: effectiveRadius > 0.5 ? clipRadius : null,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(
+                            alpha: HyperosMiuixNavigation.pageShadowAlpha,
+                          ),
+                          blurRadius: HyperosMiuixNavigation.pageShadowBlur,
+                          offset: const Offset(
+                            HyperosMiuixNavigation.pageShadowOffsetX,
+                            HyperosMiuixNavigation.pageShadowOffsetY,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            shell,
+          ],
         );
       },
       child: child,
