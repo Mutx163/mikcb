@@ -56,6 +56,14 @@ class WallpaperHistoryEntry {
   };
 
   /// 非法输入返回 null 而不是抛错：设置 JSON 可能来自旧版本或手改备份。
+  ///
+  /// ⚠️ 这里**必须**用类型判断（`v is num ? v : null`），不能用
+  /// `raw['alignX'] as num?`：`as num?` 只在「null 或 num」时成立，遇到字符串
+  /// 之类会**抛 TypeError**，然后一路冒出到 `TimetableSettings.fromJson`
+  /// （见 `timetable_settings.dart` 的 `listFromJson` 调用点，那里没有
+  /// try/catch），被 `TimetableProfile.fromJsonLenient` 捕获后**把整份课表设置
+  /// 重置为默认**——单个坏值放大成整份设置丢失，与本函数上面那条承诺直接
+  /// 矛盾。同款约定见 `class_reminder.dart` 的 `is! num` 写法。
   static WallpaperHistoryEntry? fromJson(Object? raw) {
     if (raw is! Map) {
       return null;
@@ -66,12 +74,15 @@ class WallpaperHistoryEntry {
     }
     final entry = WallpaperHistoryEntry(
       key: key,
-      alignX: (raw['alignX'] as num?)?.toDouble() ?? 0,
-      alignY: (raw['alignY'] as num?)?.toDouble() ?? 0,
-      usedAt: (raw['usedAt'] as num?)?.toInt() ?? 0,
+      alignX: _numOrNull(raw['alignX'])?.toDouble() ?? 0,
+      alignY: _numOrNull(raw['alignY'])?.toDouble() ?? 0,
+      usedAt: _numOrNull(raw['usedAt'])?.toInt() ?? 0,
     );
     return entry.isValid ? entry : null;
   }
+
+  /// 只放行 num；其余类型（含字符串数字）一律视为缺失，回退默认值。
+  static num? _numOrNull(Object? value) => value is num ? value : null;
 
   static List<WallpaperHistoryEntry> listFromJson(Object? raw) {
     if (raw is! List) {

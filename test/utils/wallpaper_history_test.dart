@@ -119,6 +119,43 @@ void main() {
       expect(result.history.length, kMaxWallpaperHistoryEntries);
       expect(result.evictedPaths, ['/img/0.png', '/img/1.png']);
     });
+
+    test('同一批里被重新加回的条目不得列入待删（会删掉正在使用的壁纸）', () {
+      // 回归：历史已满，当前壁纸不在历史里，用户点「最近使用」里最旧那条。
+      // 调用方按顺序传 [被换下的, 新选中的]：第一条把最旧的挤出并列入待删，
+      // 第二条又把它补回队首——若照单删除，就会删掉**刚被设为当前壁纸**的
+      // 那个文件（settings.homePageWallpaperPath 正指向它）。
+      var history = <WallpaperHistoryEntry>[];
+      for (var i = 0; i < kMaxWallpaperHistoryEntries; i++) {
+        history = pushWallpaperHistory(
+          history: history,
+          key: '/img/$i.png',
+        ).history;
+      }
+      final oldest = history.last;
+      expect(oldest.key, '/img/0.png');
+
+      final result = rememberWallpaperHistoryBatch(
+        history: history,
+        entries: [
+          const WallpaperHistoryEntry(key: '/img/previous.png'),
+          WallpaperHistoryEntry(key: oldest.key),
+        ],
+      );
+
+      expect(
+        result.history.map((entry) => entry.key),
+        contains(oldest.key),
+        reason: '它已被第二条重新加回历史',
+      );
+      expect(
+        result.evictedPaths,
+        isNot(contains(oldest.key)),
+        reason: '仍在历史里、且正被 settings 引用的文件绝不能列入待删',
+      );
+      // 其余确已离开历史的仍要删（第二条只挤掉了 /img/1）。
+      expect(result.evictedPaths, ['/img/1.png']);
+    });
   });
 
   group('availableWallpaperHistory', () {

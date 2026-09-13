@@ -161,7 +161,21 @@ WallpaperHistoryPushResult rememberWallpaperHistoryBatch({
     current = result.history;
     evicted.addAll(result.evictedPaths);
   }
-  return WallpaperHistoryPushResult(history: current, evictedPaths: evicted);
+  // 淘汰清单必须按**最终历史**再过滤一遍。
+  //
+  // 同一批里后一条可能把前一条挤出的那张图重新加回队首（典型：历史已满，
+  // 用户点「最近使用」里最旧的一条 —— 调用方传 [被换下的, 新选中的]，第一条
+  // 把最旧的 entry 挤出并列入待删，第二条又把它补回队首）。此时它仍在
+  // history 里、`settings.homePageWallpaperPath` 也刚指向它，但 evicted 里还
+  // 留着它 —— 照单删除就会删掉**正在使用的壁纸文件**。
+  final keptKeys = <String>{for (final entry in current) entry.key};
+  return WallpaperHistoryPushResult(
+    history: current,
+    evictedPaths: <String>[
+      for (final path in evicted)
+        if (!keptKeys.contains(path)) path,
+    ],
+  );
 }
 
 /// 删除被历史淘汰的图片壁纸文件。

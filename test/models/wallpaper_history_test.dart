@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
 
 void main() {
@@ -49,6 +50,35 @@ void main() {
     test('listFromJson 非列表输入返回空表', () {
       expect(WallpaperHistoryEntry.listFromJson(null), isEmpty);
       expect(WallpaperHistoryEntry.listFromJson({'key': 'x'}), isEmpty);
+    });
+
+    test('数字字段类型错误时不得抛错（不得放大成整份设置丢失）', () {
+      // 回归：此前用 `raw['alignX'] as num?`，遇到字符串会抛 TypeError。这条
+      // 异常会一路冒到 TimetableSettings.fromJson（该处无 try/catch），被
+      // TimetableProfile.fromJsonLenient 捕获后**把整份课表设置重置为默认**——
+      // 单个坏值放大成整份设置丢失，与「脏条目逐条丢弃」的承诺直接矛盾。
+      // 现改为 `is num` 判断：非法类型当缺失处理，回退默认值。
+      final entry = WallpaperHistoryEntry.fromJson(<String, Object?>{
+        'key': '/a.png',
+        'alignX': '0.5',
+        'alignY': 'oops',
+        'usedAt': 'ten',
+      });
+      expect(entry, isNotNull);
+      expect(entry!.alignX, 0);
+      expect(entry.alignY, 0);
+      expect(entry.usedAt, 0);
+
+      // 同一份脏 JSON 走**完整设置**解析路径也不许抛，且好条目要保住。
+      final settings = TimetableSettings.fromJson(<String, dynamic>{
+        'wallpaperHistory': <Object?>[
+          <String, Object?>{'key': '/a.png', 'alignX': '0.5', 'usedAt': 'ten'},
+          <String, Object?>{'key': '/b.png', 'alignX': 0.5, 'usedAt': 7},
+        ],
+      });
+      expect(settings.wallpaperHistory.map((e) => e.key), ['/a.png', '/b.png']);
+      expect(settings.wallpaperHistory.last.alignX, 0.5);
+      expect(settings.wallpaperHistory.last.usedAt, 7);
     });
 
     test('copyWith 只改指定字段', () {
