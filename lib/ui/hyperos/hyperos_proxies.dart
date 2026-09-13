@@ -11,11 +11,23 @@ class FHeaderAction extends StatelessWidget {
     required this.icon,
     required this.semanticsLabel,
     this.onPress,
+    this.backgroundColor,
   });
 
   final Widget icon;
   final String semanticsLabel;
   final VoidCallback? onPress;
+
+  /// 常驻圆底（首页顶栏「更多」「爱心」那个白色玻璃球）。
+  ///
+  /// [MiuixIconButton] 的 `cornerRadius` 默认 40、最小边长也是 40，所以这里给的
+  /// 实色会被画成**正圆**。null = 透明底，与接入前逐字一致。
+  ///
+  /// 为什么需要它：上游 `MiuixGlassTransformPopup` 的形变终点是「面板缩回锚点
+  /// 矩形」——也就是按钮位置的一个圆，动画跑完才随 overlay 一起隐藏，读起来
+  /// 就是个「点一下冒出来、过一会才消失的小球」。按钮自己常驻同一颗球，形变
+  /// 才有落点，关闭时也不会留下突兀的残影。
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +41,11 @@ class FHeaderAction extends StatelessWidget {
       child: Semantics(
         label: semanticsLabel,
         button: true,
-        child: MiuixIconButton(onPressed: onPress, child: icon),
+        child: MiuixIconButton(
+          onPressed: onPress,
+          backgroundColor: backgroundColor,
+          child: icon,
+        ),
       ),
     );
   }

@@ -577,6 +577,14 @@ class _TimetableScreenState extends State<TimetableScreen>
         final chromeMutedForeground = hasBackdrop
             ? homePageChromeMutedForeground(chromeForeground)
             : foruiTheme.colors.mutedForeground;
+        // 顶栏两个图标按钮（「更多」「爱心」）的常驻圆底。
+        //
+        // 与图标墨色**反相**，任何壁纸上都读得出：墨色浅（白图标）用暗底，
+        // 墨色深（黑图标）用透明白底 —— 后者就是「小白球」，取 0.72 与柔光玻璃
+        // 底色同源（`SoftGlassTokens.tint` 亮色 252@67.5%）。
+        final chromeActionBall = chromeForeground.computeLuminance() > 0.5
+            ? Colors.black.withValues(alpha: 0.30)
+            : Colors.white.withValues(alpha: 0.72);
 
         final followsWeekPager =
             hasBackdrop && settings.homePageBackdropFollowsWeekPager;
@@ -698,6 +706,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       semanticsLabel: _isCoupleOverlayActive(provider)
                           ? l10n.coupleTimetableModeDisableTooltip
                           : l10n.coupleTimetableModeEnableTooltip,
+                      backgroundColor: chromeActionBall,
                       onPress: () {
                         setState(() {
                           _coupleOverlayEnabled = !_coupleOverlayEnabled;
@@ -757,6 +766,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                         ],
                       ),
                       semanticsLabel: l10n.moreTooltip,
+                      backgroundColor: chromeActionBall,
                       onPress: _showTopActionsSheet,
                     ),
                   ),
