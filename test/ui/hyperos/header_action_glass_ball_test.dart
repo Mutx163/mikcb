@@ -76,6 +76,37 @@ void main() {
     );
   });
 
+  testWidgets('leader 缺席时不画（不能退化成画在左上角）', (tester) async {
+    // 这颗球用 [CompositedTransformFollower] 跟随真实按钮。leader 不在树上时
+    // （首页切到内嵌页如任务清单，首页内容整块被替换）follower 默认会画在
+    // **自己的布局位置** —— 也就是 Stack 左上角，屏幕上就是"左上角冒出一颗
+    // 爱心球"。所以必须 showWhenUnlinked: false（2026-09-14 真机反馈）。
+    final link = LayerLink();
+    await tester.pumpWidget(
+      scope(
+        child: Scaffold(
+          body: Center(
+            child: FHeaderActionBall(
+              link: link,
+              icon: const Icon(Icons.more_vert_rounded),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      tester
+          .widget<CompositedTransformFollower>(
+            find.byType(CompositedTransformFollower),
+          )
+          .showWhenUnlinked,
+      isFalse,
+      reason: '没有 leader 时不能画在布局位置（Stack 左上角）',
+    );
+  });
+
   testWidgets('visible: false 时不渲染（菜单打开期间让位给弹窗的球）', (tester) async {
     final link = LayerLink();
     await tester.pumpWidget(

@@ -78,6 +78,12 @@ class FHeaderActionBall extends StatelessWidget {
     const radius = MiuixIconButtonDefaults.minWidth / 2;
     return CompositedTransformFollower(
       link: link,
+      // ⚠️ 必须 false。leader（真实按钮）不在树上时，follower 会退化成画在
+      // **自己的布局位置** —— 也就是这层 Stack 的左上角，屏幕上就是"左上角
+      // 冒出一颗爱心/菜单球"。首页切到内嵌页（任务清单等）时首页内容整块被
+      // 替换，两个 leader 都不在树上，就是这个现象（2026-09-14 真机反馈）。
+      // 置 false 后没有 leader 就不画，任何导致 leader 缺席的路径都被堵住。
+      showWhenUnlinked: false,
       child: IgnorePointer(
         child: HyperosSelectPopupGlass(
           cornerRadius: radius,

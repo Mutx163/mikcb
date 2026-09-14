@@ -770,6 +770,11 @@ class _TimetableScreenState extends State<TimetableScreen>
                         },
                       ),
                     ),
+                  // 两颗玻璃球之间的间距：顶栏后缀行是裸 `Row`（无 spacing），
+                  // 两个 40 宽按钮挨着 = 两颗球边缘相切；换成玻璃后各带描边 /
+                  // 外阴影，相切读起来就是"贴得太近"（2026-09-14 真机反馈）。
+                  // 只在与爱心同时出现时插入，单独一颗时与原来一致。
+                  if (provider.hasPartnerBinding) const SizedBox(width: 8),
                   // 上游形变弹层要求把锚点绑在触发控件上（[MiuixGlassAnchor]
                   // 负责挂它自己的 GlobalKey）；[_topMenuButtonKey] 仍保留，
                   // 供「八宫格」形态在原位置弹出底部弹层用。
