@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart'
     show
+        MiuixGlassAnchor,
         MiuixGlassPopupAnchor,
         MiuixGlassSecondaryPopup,
         MiuixGlassTransformPopup;
@@ -622,6 +623,77 @@ void main() {
       expect(pageTaps, 1, reason: '收起期点击必须穿透，不能吞掉重开那一下');
 
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('开合首帧：注入面的圆角必须是「锚点短边一半」（面板从正圆长出来）', (
+      tester,
+    ) async {
+      // 形变动效的几何由上游算好（圆角每帧从「按钮短边一半」lerp 到面板圆角），
+      // 注入面必须直接用这个值。若首帧拿到的是面板圆角（或 0），面板会以方角
+      // 出现 —— 真机读起来就是"点击放大的那一刻，圆圈外面露出正方形的白边"。
+      final controller = HyperosGlassBackdropController();
+      addTearDown(controller.dispose);
+      final anchor = MiuixGlassPopupAnchor();
+      addTearDown(anchor.dispose);
+      final show = ValueNotifier<bool>(false);
+      addTearDown(show.dispose);
+
+      await tester.pumpWidget(
+        TestApp(
+          home: HyperosGlassBackdropHost(
+            controller: controller,
+            child: Stack(
+              children: [
+                // 真实触发控件：40×40（上游图标按钮的最小边长）。
+                MiuixGlassAnchor(
+                  anchor: anchor,
+                  child: const SizedBox(
+                    key: ValueKey('home-more-button'),
+                    width: 40,
+                    height: 40,
+                  ),
+                ),
+                ValueListenableBuilder<bool>(
+                  valueListenable: show,
+                  builder: (context, visible, _) => HomeTopMenuPopup(
+                    show: visible,
+                    anchor: anchor,
+                    anchorContent: const Icon(Icons.more_vert_rounded),
+                    entries: entries,
+                    hasAvailableUpdate: false,
+                    onDismissRequest: () => show.value = false,
+                    onSelected: (_) {},
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      show.value = true;
+      // 第 1 帧：OverlayPortal 才把覆盖层挂上；第 2 帧才是面板的第一帧
+      // （此时进度 ≈ 0，面板应当还是一个正圆）。
+      await tester.pump();
+      await tester.pump();
+      final openingRadius = tester
+          .widget<HyperosSelectPopupGlass>(
+            find.descendant(
+              of: find.byType(MiuixGlassTransformPopup),
+              matching: find.byType(HyperosSelectPopupGlass),
+            ),
+          )
+          .cornerRadius;
+      expect(
+        openingRadius,
+        closeTo(20, 0.01),
+        reason: '40×40 锚点 ⇒ 首帧圆角应为 20（正圆），不是面板圆角',
+      );
+
+      // 注：只探测首帧 —— 这一条就是"方块 vs 圆圈"的判据。展开后的材料会随
+      // 全局档位在柔光 / 液态 / 高斯分支间分派，不再在这里断言。
+      await tester.pumpAndSettle(); // 让形变动画跑完，避免留下未完成的计时器
     });
 
     testWidgets('首页菜单不再请求整层快照（注入面只读采样区）', (tester) async {
