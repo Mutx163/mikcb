@@ -57,6 +57,17 @@ bool homePageHasAnyChromeBlur(
   if (!hasBackdrop) {
     return false;
   }
+  // 顶栏材质选「实体」时那条带是**不透明实心条**（本文件 'solid' 分支：页面
+  // 底色实心、完全遮住壁纸），它不再提供任何可"同款"的玻璃材质。下游必须按
+  // 实底处理，否则会出现「顶栏实心、下面的卡片/覆盖层还透明」的分裂（真机
+  // 反馈：全局实体档、课程卡也是实底，日课表顶上的日期卡却还是透的）。
+  //
+  // 注意与两个旧开关的关系：`homePageHeaderBlurEnabled` /
+  // `homePageWeekdayBarBlurEnabled` 只表达「这两块要不要磨砂」，材质档是
+  // 2026-09-12 之后独立选择的，两者可以不一致 —— 所以这里必须看材质。
+  if (settings.homeBandGlassMaterial == 'solid') {
+    return false;
+  }
   return settings.homePageHeaderBlurEnabled ||
       settings.homePageWeekdayBarBlurEnabled;
 }

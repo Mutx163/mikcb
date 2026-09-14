@@ -4049,27 +4049,33 @@ class _TimetableScreenState extends State<TimetableScreen>
     final hasBackdrop = hasHomePageBackdrop(settings);
     final backdropBlurOn =
         hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context);
-    // 顶栏/信息栏开着玻璃时，摘要卡与顶部铬玻璃带同材质、同墨色极性。
+    // 顶栏/信息栏【真的还在走玻璃】时，摘要卡与顶部铬玻璃带同材质、同墨色
+    // 极性（顶栏材质选「实体」时这条为 false —— 那条带是不透明实心条，
+    // 见 homePageHasAnyChromeBlur）。
     final matchesChromeBand = homePageHasAnyChromeBlur(
       settings,
       hasBackdrop: hasBackdrop,
     );
-    // 课程卡切到「高斯模糊」档且有壁纸时，摘要卡也走铬玻璃亮磨砂材质：
-    // CourseSurface 的高斯路径只有 0.42 的弱中性 tint，深色壁纸会直接透出，
-    // 让「回到今天 / 关闭 / 日期」整张卡读作发黑的玻璃；铬玻璃 wash 与弹窗
-    // 同级（浅色主题约白色 0.68），保证卡片始终偏亮色。
+    final courseCardStyle = effectiveCourseCardSurfaceStyle(
+      settings,
+      gaussianBlurAvailable: backdropBlurOn,
+    );
+    // 摘要卡是**内容卡**，材质规则先跟课程卡走：
+    // - 课程卡是实底（全局「实体卡片」档 / 无壁纸）：摘要卡也必须实底。
+    //   否则会出现「课程卡实心、顶上的日期卡还透」的分裂（真机反馈）。
+    // - 课程卡是高斯档：CourseSurface 的高斯路径只有 0.42 的弱中性 tint，
+    //   深色壁纸会直接透出，让「回到今天 / 关闭 / 日期」整张卡读作发黑的
+    //   玻璃；这时才改用铬玻璃亮磨砂（wash 与弹窗同级，浅色主题约白色
+    //   0.68），保证卡片始终偏亮色。
+    // - 课程卡是玻璃档且顶栏也是玻璃：与顶栏同款，两侧读作一体。
+    final courseCardIsSolid = courseCardStyle == CourseCardSurfaceStyle.solid;
     final useChromeGlass =
-        matchesChromeBand ||
-        (backdropBlurOn &&
-            effectiveCourseCardSurfaceStyle(
-                  settings,
-                  gaussianBlurAvailable: backdropBlurOn,
-                ) ==
-                CourseCardSurfaceStyle.gaussian);
-    // Ink: 与顶部玻璃带同材质时沿用壁纸亮度自动黑白；否则卡面就是主题底色
-    // （或亮磨砂），墨色必须跟主题走 —— 按原始壁纸亮度翻白会让白墨落在
-    // 亮色卡面上不可读。
-    final summaryInk = matchesChromeBand
+        (!courseCardIsSolid && matchesChromeBand) ||
+        (backdropBlurOn && courseCardStyle == CourseCardSurfaceStyle.gaussian);
+    // Ink: 走壁纸采样玻璃时才按壁纸亮度自动黑白；否则卡面是主题底色（或亮
+    // 磨砂）的实底，墨色必须跟主题走 —— 按原始壁纸亮度翻白会让白墨落在
+    // 亮色卡面上不可读。判据是**卡实际用的材质**，不是顶栏状态。
+    final summaryInk = useChromeGlass
         ? homePageOverWallpaperInk(
             configuredHex: isDark
                 ? settings.weekdayBarFontColorDark
