@@ -97,7 +97,7 @@ class SoftGlassTuning {
   /// 标准（[SoftGlassPreset.standard]）。
   static const presetStandard = defaults;
 
-  /// 清透 — 只动倍率与折射量。
+  /// 清透 — 三个倍率一起压低（雾度 0.6 / 底色 0.55 / 描边 0.8）。
   static const presetClear = SoftGlassTuning(
     blurRadiusMultiplier: 0.6,
     tintAlphaMultiplier: 0.55,

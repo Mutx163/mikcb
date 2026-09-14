@@ -64,15 +64,6 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 不透明衬底完全盖住，翻转点只剩一次衬底切换。
   final bool opaqueAtRest;
 
-  /// 渐进档衬底在底边保留的不透明度比例（默认值 = 接入调参前的常量；
-  /// 实际取值见 [ProgressiveBlurTuning.tintBottomScale]）。
-  ///
-  /// 均匀 tint 会把 inspire 模糊的「上浓下淡」抹平成一整条半透明；渐进
-  /// 档必须让衬底也随方向衰减。底边取 0：玻璃带与课表之间不得出现
-  /// 可见切边，完全靠顶区对比度保证状态栏/标题可读。
-  static const progressiveTintBottomScale =
-      ProgressiveBlurTuning.defaultTintBottomScale;
-
   /// 设备是否支持 shader filter（Inspire Blur 的兜底条件）。
   static bool get _shaderFilterSupported => ImageFilter.isShaderFilterSupported;
 

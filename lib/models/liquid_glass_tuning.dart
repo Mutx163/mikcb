@@ -68,9 +68,11 @@ extension LiquidGlassPresetX on LiquidGlassPreset {
 /// (`lightIntensity` 0.5, `ambientStrength` 0, `saturation` 1.5, …).
 ///
 /// 唯一的例外是 `edgeAbsorption` / `fresnelStrength`：这两个量**不是**用户
-/// 参数，而是由 [thickness] 折算出来的可见光学量（见
-/// [visibleThicknessOptics]）——当前全 app 跑 standard 渲染档，厚度在那里
-/// 只剩不可辨的边缘 rim，必须靠这两个通道把「厚度」重新变成看得见的调节。
+/// 参数，而是由 [thickness] 折算出来的可见光学量（见 [visibleThicknessOptics]）。
+/// 全 app 统一跑 `MikcbLiquidGlassTokens.defaultQuality` = premium，厚度直接就是
+/// 真实折射位移，这两个量保持包默认（0 / 1）；只有**引擎降级**（impeller 不可用、
+/// 包内退到轻量片元着色器，折射位移不执行）时才由表面层写入折算量，把「厚度」
+/// 重新变成看得见的调节。
 class LiquidGlassTuning {
   const LiquidGlassTuning({
     this.thickness = defaultThickness,
@@ -92,8 +94,8 @@ class LiquidGlassTuning {
 
   /// High transparency — only thickness / blur / tint vary.
   ///
-  /// 注意 thickness 24 低于枢轴 30：standard 档下这会**降低**边缘高光
-  /// （比标准档更「薄片」），与它「清澈」的定位一致。
+  /// 注意 thickness 24 低于枢轴 30：引擎降级档下这会**降低**边缘高光
+  /// （比默认档更「薄片」），与它「清澈」的定位一致。
   static const presetClear = LiquidGlassTuning(
     thickness: 24,
     blur: 2,
@@ -197,9 +199,9 @@ class LiquidGlassTuning {
 
   /// Glass surface thickness — higher = stronger refraction.
   ///
-  /// 同时驱动两个渲染档的可见反馈：
-  /// - premium / 拿到背景纹理的档：直接就是几何厚度 = 折射位移；
-  /// - standard 档（当前）：折射位移不执行，改由 [visibleThicknessOptics]
+  /// 同时驱动两条渲染路径的可见反馈：
+  /// - premium（全 app 默认，拿到背景纹理）：直接就是几何厚度 = 折射位移；
+  /// - 引擎降级档：折射位移不执行，改由 [visibleThicknessOptics]
   ///   折算的边缘吸收与掠射高光承载，默认厚度 30 为枢轴（观感不变）。
   final double thickness;
 
@@ -286,7 +288,7 @@ class LiquidGlassTuning {
     );
   }
 
-  /// 把当前厚度折算成 standard 档真正可见的两个光学量。
+  /// 把当前厚度折算成**引擎降级档**真正可见的两个光学量。
   ///
   /// 见 [thicknessPivotFraction] 一节的说明。口径按**有效厚度**
   /// （[thickness] × [visibility]）计算，与包内
