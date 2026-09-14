@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_miuix/miuix.dart' show MiuixGlassPopupAnchor;
+import 'package:flutter_miuix/miuix.dart'
+    show
+        MiuixGlassPopupAnchor,
+        MiuixGlassSecondaryPopup,
+        MiuixGlassTransformPopup;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart'
     show AdaptiveGlass, LightweightLiquidGlass;
@@ -478,6 +482,42 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(selected, [kAddCourseSubmenuExamId]);
+    });
+
+    testWidgets('二级面板浮在一级玻璃之上：注入面必须垫底（一级不垫）', (tester) async {
+      await pumpMenu(tester);
+
+      await tester.tap(find.text('添加'));
+      await tester.pumpAndSettle();
+
+      // 一级面板站在页面上：直接采样自己背后的画面。
+      expect(
+        tester
+            .widget<HyperosSelectPopupGlass>(
+              find.descendant(
+                of: find.byType(MiuixGlassTransformPopup),
+                matching: find.byType(HyperosSelectPopupGlass),
+              ),
+            )
+            .useAncestorGroupCapture,
+        isFalse,
+      );
+
+      // 二级面板浮在一级玻璃之上：不垫「共享组捕获的磨砂底」的话，液态档会
+      // 按绘制顺序直接采样到一级面板的玻璃输出 —— 玻璃叠玻璃再折射一遍，
+      // 读感浑浊（口径见 os4_glass_popup_surface.dart 与列表弹窗的二级子卡）。
+      expect(
+        tester
+            .widget<HyperosSelectPopupGlass>(
+              find.descendant(
+                of: find.byType(MiuixGlassSecondaryPopup),
+                matching: find.byType(HyperosSelectPopupGlass),
+              ),
+            )
+            .useAncestorGroupCapture,
+        isTrue,
+        reason: '二级面板必须走带垫底的注入面',
+      );
     });
   });
 }

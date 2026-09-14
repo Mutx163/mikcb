@@ -60,8 +60,10 @@ void main() {
       expect(find.byType(BlackBoxOverlay), findsNothing);
     } finally {
       BlackBox.dispose();
+      // 复位到"默认关闭"（不是 true）：这个单例会把写入落到 mock prefs 上，
+      // 复位成 true 会让后续用例读到与默认值相反的持久化状态。
       await tester.runAsync(
-        () => BlackBoxOverlayPreferences.instance.setVisible(true),
+        () => BlackBoxOverlayPreferences.instance.setVisible(false),
       );
       await tester.pump();
     }

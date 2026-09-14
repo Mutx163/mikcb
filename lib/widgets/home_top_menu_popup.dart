@@ -3,7 +3,6 @@ import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_glass_backdrop_host.dart';
 import 'package:university_timetable/ui/hyperos/os4_glass_popup_surface.dart';
-import 'package:university_timetable/ui/hyperos/soft_glass/soft_glass_surface.dart';
 import 'package:university_timetable/ui/hyperos/os4_glass_backdrop.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
 
@@ -151,9 +150,6 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
         widget.backdrop ??
         HyperosGlassBackdropRegistry.resolve(context)?.backdrop ??
         os4GlassBackdrop;
-    // 柔光玻璃档下，弹层材质跟随用户档位（与页内表面同一份映射）；
-    // 其它档位保持上游默认材质。
-    final visuals = softGlassPopupVisualsFor(context);
 
     // 外层手势隔离：弹层自带的滚动视图不该继承首页的橡皮筋物理，也不该把滚动
     // 通知冒泡回首页（首页同样有整页滚动监听）。
@@ -167,9 +163,10 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
             backdrop: backdrop,
             // 宽度见 [_popupSizing]（收到旧实现的下界原宽 200）。
             sizing: _popupSizing,
-            visuals: visuals,
             // 面板材质交给全局档位分派（液态 / 柔光 / 高斯 / 实底）——
             // **形变动效与几何仍由上游 presenter 负责，一行不动**。
+            // 不再传 `visuals`：注入面已取代上游内置面板，上游那 7 个 OS4 材质
+            // 字段不再参与渲染（见 os4_glass_popup_surface.dart）。
             surfaceBuilder: hyperosGlassPopupSurface,
             // 刻意**不用** `stacked`：它的语义是"二级展开时一级面板收缩/变暗"，
             // 收起时要靠包内 `MiuixGlassMotion.secondaryPopup(false)` 弹簧把一级
@@ -196,13 +193,16 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
             MiuixGlassSecondaryPopup(
               show: _secondaryOpen,
               anchorBounds: _secondaryBounds,
-              // 二级共享一级菜单的材质（上游 materialAnchor 语义）。
+              // 二级与一级共用同一个锚点（上游 materialAnchor 语义）。注意锚点
+              // 一旦绑定到图标按钮，上游 `inherited` 分支会让内置面板改用锚点
+              // 的 OS4 surface —— 那条分支已被注入面取代，不再参与渲染。
               materialAnchor: widget.anchor,
               backdrop: backdrop,
               // 与一级面板**同一份**宽度约束，两块才对得齐。
               sizing: _popupSizing,
-              visuals: visuals,
-              surfaceBuilder: hyperosGlassPopupSurface,
+              // 二级面板**浮在一级玻璃之上**，必须走带垫底的注入面：否则液态档
+              // 会采样到一级面板的玻璃输出，玻璃叠玻璃再折射一遍、读感浑浊。
+              surfaceBuilder: hyperosGlassPopupSecondarySurface,
               onDismissRequest: _closeSecondary,
               child: Column(
                 mainAxisSize: MainAxisSize.min,

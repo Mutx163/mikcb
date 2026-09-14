@@ -143,6 +143,11 @@ void main() {
   group('OS4 弹层也跟随柔光玻璃档位', () {
     /// 真机反馈：选了「清透」和「浓雾」，首页右上角菜单一模一样 —— 弹层当时用的是
     /// 上游固定材质，没接用户档位。这里守「同一份映射也喂给弹层」。
+    ///
+    /// 断言落点已从上游 `visuals` 改成**真正出图的那块玻璃**：弹层面板现在是
+    /// 项目自己的注入面（`os4_glass_popup_surface.dart` → `HyperosSelectPopupGlass`
+    /// → `SoftGlassSurface` → `MiuixGlass`），档位由注入面自己按全局档位分派，
+    /// 上游那 7 个 OS4 材质字段不再参与渲染（`visuals` 传了也是死参）。
     Widget scope({required SoftGlassTuning tuning, required Widget child}) =>
         FrostedAppearanceScope(
           appearance: FrostedAppearance(
@@ -155,6 +160,15 @@ void main() {
           child: child,
         );
 
+    /// 读弹层面板的材质半径。正常只该有一块（面板本身）。
+    double popupBlur(WidgetTester tester, Finder popup) =>
+        tester
+            .widget<MiuixGlass>(
+              find.descendant(of: popup, matching: find.byType(MiuixGlass)),
+            )
+            .material!
+            .blurRadius;
+
     Future<double> selectPopupBlur(
       WidgetTester tester,
       SoftGlassTuning tuning,
@@ -166,7 +180,7 @@ void main() {
             child: Stack(
               children: [
                 HyperosSelectPopup<int>(
-                  show: false,
+                  show: true,
                   anchorRect: Rect.zero,
                   items: const {'A': 1, 'B': 2},
                   currentValue: 1,
@@ -178,11 +192,11 @@ void main() {
           ),
         ),
       );
+      // 面板经 OverlayPortal 挂到 Overlay：只有真正展示（show: true）时
+      // overlay child 才非空，断言才有落点。
       await tester.pump();
-      final popup = tester.widget<MiuixGlassDropdownPopup>(
-        find.byType(MiuixGlassDropdownPopup),
-      );
-      return popup.visuals.material!.blurRadius;
+      await tester.pump(const Duration(milliseconds: 50));
+      return popupBlur(tester, find.byType(MiuixGlassDropdownPopup));
     }
 
     testWidgets('选择弹层材质随档位变化（清透 < 标准 < 浓雾）', (tester) async {
@@ -206,7 +220,7 @@ void main() {
           home: scope(
             tuning: SoftGlassTuning.presetDense,
             child: HomeTopMenuPopup(
-              show: false,
+              show: true,
               anchor: anchor,
               anchorContent: const Icon(Icons.more_vert_rounded),
               entries: const [],
@@ -217,13 +231,12 @@ void main() {
           ),
         ),
       );
+      // 同选择弹层：面板经 OverlayPortal 挂到 Overlay，只有展示时才有落点。
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
-      final popup = tester.widget<MiuixGlassTransformPopup>(
-        find.byType(MiuixGlassTransformPopup),
-      );
       expect(
-        popup.visuals.material!.blurRadius,
+        popupBlur(tester, find.byType(MiuixGlassTransformPopup)),
         SoftGlassRecipe.standard.blurRadiusDp *
             SoftGlassTuning.presetDense.blurRadiusMultiplier,
       );

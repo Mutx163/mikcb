@@ -181,7 +181,13 @@ class HyperosGlassBackdropController extends ChangeNotifier {
   /// 细条，被玻璃拉伸铺满自己）。真机现象就是柔光档底部弹窗看着透明
   /// （`img=470x23` 对 668×283 逻辑像素的面板，2026-09-13）。位移停下就不再要，
   /// 不会自激：`_onDemandChanged` 只在几何真的变了时才被喊到。
-  void requestCapture() => notifyListeners();
+  ///
+  /// 同 [acquireZone]：宿主已释放就不再通知。本函数是从 `paint` 里排到帧末的
+  /// post-frame 回调调用的，回调执行时宿主可能已经 dispose。
+  void requestCapture() {
+    if (_disposed) return;
+    notifyListeners();
+  }
 
   /// 页内玻璃卸载。
   void releaseZone(RenderBox box, HyperosZoneBackdrop backdrop) {

@@ -28,12 +28,38 @@ import 'hyperos_select.dart' show HyperosSelectPopupGlass;
 ///
 /// 依赖上游 `GlassPopupPresenter.surfaceBuilder`（flutter_miuix 的
 /// `feat/glass-popup-surface-builder` 分支）。
+///
+/// 用于**一级面板**（直接站在页面上、或锚在按钮上的那一块）。
 Widget hyperosGlassPopupSurface(
   BuildContext context,
   ShapeBorder shape,
   Widget child,
-) => HyperosSelectPopupGlass(
+) => _os4GlassPopupSurface(shape, child);
+
+/// 二级面板的注入面：与 [hyperosGlassPopupSurface] 只差一件事 ——
+/// **垫一层共享组捕获的磨砂底**（`useAncestorGroupCapture`）。
+///
+/// 二级面板是**浮在另一块玻璃之上**的（首页菜单的二级面板锚点就是一级面板里
+/// 那一行，见 `home_top_menu_popup.dart`）。液态玻璃面按绘制顺序采样自己下面的
+/// 合成结果，不垫底的话会直接采样到一级面板的玻璃输出 —— 玻璃叠玻璃再折射一遍，
+/// 读感浑浊。口径与列表弹窗的二级子卡（`hyperos_list_popup.dart` 的
+/// `useAncestorGroupCapture: true`）完全一致，见
+/// [HyperosSelectPopupGlass.useAncestorGroupCapture]。
+///
+/// 只影响液态档：柔光 / 高斯 / 实底三条分支不读这个开关。
+Widget hyperosGlassPopupSecondarySurface(
+  BuildContext context,
+  ShapeBorder shape,
+  Widget child,
+) => _os4GlassPopupSurface(shape, child, useAncestorGroupCapture: true);
+
+Widget _os4GlassPopupSurface(
+  ShapeBorder shape,
+  Widget child, {
+  bool useAncestorGroupCapture = false,
+}) => HyperosSelectPopupGlass(
   cornerRadius: os4GlassPopupCornerRadiusOf(shape),
+  useAncestorGroupCapture: useAncestorGroupCapture,
   child: child,
 );
 

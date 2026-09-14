@@ -753,10 +753,9 @@ class HyperosSelectPopup<T> extends StatelessWidget {
             HyperosGlassBackdropScope.maybeOf(context)?.backdrop ??
             os4GlassBackdrop,
         sizing: _os4SelectSizing,
-        // 柔光玻璃档下跟随用户档位（与页内表面、首页菜单同一份映射）。
-        visuals: softGlassPopupVisualsFor(context),
-        // 面板材质交给全局档位分派（液态 / 柔光 / 高斯 / 实底）：上游
-        // `visuals` 只能在 OS4 材质内部调参，接不进液态折射链路。
+        // 面板材质交给全局档位分派（液态 / 柔光 / 高斯 / 实底）：上游内置面板
+        // 只能在 OS4 材质内部调参，接不进液态折射链路，所以整块换掉。
+        // 不再传 `visuals` —— 注入面取代内置面板后，那 7 个字段完全失效。
         // 几何与 dropdown 那条两段弹簧动效仍由上游负责。
         surfaceBuilder: hyperosGlassPopupSurface,
         onDismissRequest: onDismiss,

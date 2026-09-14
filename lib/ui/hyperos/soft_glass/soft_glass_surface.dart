@@ -3,7 +3,6 @@ import 'package:flutter_miuix/miuix.dart';
 
 import '../../../models/soft_glass_tuning.dart';
 import '../frosted/frosted_appearance.dart';
-import '../frosted/liquid_glass_degradation.dart';
 import '../hyperos_glass_backdrop_host.dart';
 
 /// 柔光玻璃 token —— 数值直译 Hyper-PiliPlus（Deadliner）的
@@ -250,8 +249,9 @@ class SoftGlassSurface extends StatefulWidget {
 
   /// 整体不透明度（上游 `MiuixGlass.alpha`）：会同时作用到混合结果、
   /// 描边、阴影与遮罩。**目前没有页面用它**（全部走默认 1.0），
-  /// 弹层（`softGlassPopupVisualsFor`）也没有对应入参 —— 若将来要用，
-  /// 记得两边一起加，否则弹层与页内表面口径会分叉。
+  /// 弹层也没接这个入参（弹层的柔光面走 [SoftGlassSurface]，见
+  /// `os4_glass_popup_surface.dart`）—— 若将来要用，记得两边一起加，
+  /// 否则弹层与页内表面口径会分叉。
   final double materialAlpha;
   final SoftGlassPolarity? polarity;
   final bool enableShadows;
@@ -429,28 +429,5 @@ MiuixGlassStroke scaleSoftGlassStroke(MiuixGlassStroke base, double strength) {
     color: scaleColor(base.color),
     primary: scaleLight(base.primary),
     secondary: scaleLight(base.secondary),
-  );
-}
-
-/// OS4 弹层（首页菜单 / 选择弹层）在当前外观下的材质：柔光玻璃档跟随用户档位，
-/// 其它档位返回上游默认 visuals（弹层永远是 OS4 玻璃，不随液态/高斯档改材质）。
-MiuixGlassPopupVisuals softGlassPopupVisualsFor(BuildContext context) {
-  final scope = FrostedAppearanceScope.maybeOf(context);
-  if (scope == null) return const MiuixGlassPopupVisuals();
-  final appearance = scope.appearance;
-  if (appearance.glassMode != FrostedGlassMode.softGlass) {
-    return const MiuixGlassPopupVisuals();
-  }
-  if (LiquidGlassDegradation.shouldDegrade(context)) {
-    return const MiuixGlassPopupVisuals();
-  }
-  final tuning = appearance.softGlassTuning;
-  final dark = SoftGlassTokens._dark(context, null);
-  return MiuixGlassPopupVisuals(
-    material: softGlassMaterialFor(context, dark: dark, tuning: tuning),
-    stroke: scaleSoftGlassStroke(
-      MiuixGlassStrokes.forTheme(dark),
-      tuning.edgeHighlight,
-    ),
   );
 }
