@@ -1,7 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_miuix/miuix.dart';
 
-import 'hyperos_select.dart' show HyperosSelectPopupGlass;
+// 取叶子文件（不是 `hyperos_select.dart`）：后者要用本文件里的
+// `hyperosGlassPopupSurface`，直接互 import 会成环。见该文件的说明。
+import 'hyperos_popup_glass.dart' show HyperosSelectPopupGlass;
 
 /// 上游 OS4 弹层的**面板材质注入**。
 ///
@@ -26,8 +28,10 @@ import 'hyperos_select.dart' show HyperosSelectPopupGlass;
 /// )
 /// ```
 ///
-/// 依赖上游 `GlassPopupPresenter.surfaceBuilder`（flutter_miuix 的
-/// `feat/glass-popup-surface-builder` 分支）。
+/// 依赖上游 `GlassPopupPresenter.surfaceBuilder` —— 这个注入点是**本仓 fork 上的
+/// 补丁**，尚未进 pub.dev（锁定来源见 `pubspec.yaml` 的
+/// `dependency_overrides.flutter_miuix`，固定到 commit）。补丁进了上游 release 后，
+/// 这条 override 与本段说明一起删。
 ///
 /// 用于**一级面板**（直接站在页面上、或锚在按钮上的那一块）。
 Widget hyperosGlassPopupSurface(
