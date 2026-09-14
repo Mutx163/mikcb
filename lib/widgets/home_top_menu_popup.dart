@@ -103,7 +103,12 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
 
   @override
   void dispose() {
-    _captureHold?.release();
+    // 必须与 [_syncCaptureHold] 取持有的方法配对：这里持有的是
+    // `holdRecording()`，归还只能用 `releaseRecording()`。
+    // `release()` 是给 `acquire()` 用的（那条路要整层快照），它只递减
+    // `_plainConsumers`，对本弹层的 `_recordingHolds` 无效 —— 漏一次归还，
+    // 宿主页的 `capturing` 就再也回不到 false，页面一直白录帧。
+    _captureHold?.releaseRecording();
     _captureHold = null;
     _addRowAnchor.dispose();
     super.dispose();

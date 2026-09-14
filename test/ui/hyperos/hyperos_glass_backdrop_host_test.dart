@@ -392,6 +392,54 @@ void main() {
     expect(popup.backdrop, same(menuBackdrop));
   });
 
+  testWidgets('菜单在展开态被卸载时归还录帧：宿主页不会一直白录帧', (tester) async {
+    // 弹层持有的是 `holdRecording()`（只保持录帧，不要整层快照），归还必须用
+    // `releaseRecording()`。早先 `HomeTopMenuPopup.dispose()` 里写的是 `release()`
+    // —— 那是给 `acquire()` 配对的（只递减 `_plainConsumers`，本弹层从没调用过），
+    // 于是 `_recordingHolds` 永不归零、`capturing` 再也回不到 false。
+    final controller = HyperosGlassBackdropController();
+    addTearDown(controller.dispose);
+    final anchor = MiuixGlassPopupAnchor();
+    addTearDown(anchor.dispose);
+
+    // `backdrop: null` 才会去认领本屏采样源（见 `_syncCaptureHold`）。
+    Widget tree({required bool withMenu}) => hostWith(
+      controller: controller,
+      child: Stack(
+        children: [
+          const SizedBox.expand(),
+          if (withMenu)
+            HomeTopMenuPopup(
+              show: true,
+              anchor: anchor,
+              anchorContent: const Icon(Icons.more_vert_rounded),
+              entries: const [],
+              hasAvailableUpdate: false,
+              onDismissRequest: () {},
+              onSelected: (_) {},
+            ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(tree(withMenu: true));
+    await tester.pumpAndSettle();
+    expect(
+      controller.capturing,
+      isTrue,
+      reason: '菜单展开期间应当持有录帧',
+    );
+
+    // 菜单在 show: true 状态下被整体摘掉（宿主页结构变化、页面卸载等）。
+    await tester.pumpWidget(tree(withMenu: false));
+    await tester.pumpAndSettle();
+    expect(
+      controller.capturing,
+      isFalse,
+      reason: '菜单卸载时必须归还录帧，否则宿主页一直白录帧',
+    );
+  });
+
   testWidgets('玻璃在捕获子树内也不会自激重绘（静止后不再排帧）', (tester) async {
     // 真机现象：外观与配色页静止也吃满一个核。玻璃就在捕获子树里时，
     // 录帧 → 通知消费者 → 玻璃重绘 → 捕获节点（最近的重绘边界）被标脏 →
