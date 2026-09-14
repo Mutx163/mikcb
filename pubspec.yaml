@@ -72,7 +72,7 @@ dependency_overrides:
   flutter_miuix:
     git:
       url: https://github.com/Mutx163/flutter_miuix.git
-      ref: cb1fbed74bce8ee197a91bd76572da2c604a6846
+      ref: c33a9a977f2bb2d720cb8b7c884f52113a0f7deb
 
 flutter:
   uses-material-design: true

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_glass_backdrop_host.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_theme.dart';
 import 'package:university_timetable/ui/hyperos/os4_glass_popup_surface.dart';
 import 'package:university_timetable/ui/hyperos/os4_glass_backdrop.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
@@ -19,6 +21,12 @@ import 'package:university_timetable/widgets/home_top_menu.dart';
 /// ⚠️ **两块面板必须传同一份**：`sizing` 是各自独立的入参，只给一级会让
 /// 主面板 200、二级默认 288，两块宽度对不齐。
 const _popupSizing = MiuixGlassPopupSizing(maxWidth: 200);
+
+/// 二级展开 / 收起的时长：一级让位缩放、两侧箭头旋转共用同一长度。
+///
+/// 200ms + `Curves.fastOutSlowIn` 抄的是旧实现（`hyperos_list_popup.dart`
+/// 的 `_submenuRevealDuration`）—— 同一套交互在两处必须同手感。
+const _submenuRevealDuration = Duration(milliseconds: 200);
 
 /// 首页右上角「更多」菜单的**列表形态**——改用上游 flutter_miuix 1.2.0 的
 /// HyperOS 4 玻璃弹层实现（`MiuixGlassTransformPopup` + `MiuixGlassSecondaryPopup`），
@@ -100,6 +108,13 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
   void didUpdateWidget(HomeTopMenuPopup oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.show != widget.show) {
+      if (oldWidget.show && !widget.show) {
+        // 宿主若绕过 [_close] 直接把菜单收起来（切页、路由变化等），二级状态
+        // 必须跟着复位：否则下次打开时 `stacked` 还是 true、让位进度停在 1，
+        // 面板会"开局就是缩小的"，还得再点一次才回正常。
+        _secondaryOpen = false;
+        _secondaryBounds = null;
+      }
       _syncCaptureHold();
     }
   }
@@ -168,14 +183,19 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
             // 不再传 `visuals`：注入面已取代上游内置面板，上游那 7 个 OS4 材质
             // 字段不再参与渲染（见 os4_glass_popup_surface.dart）。
             surfaceBuilder: hyperosGlassPopupSurface,
-            // 刻意**不用** `stacked`：它的语义是"二级展开时一级面板收缩/变暗"，
-            // 收起时要靠包内 `MiuixGlassMotion.secondaryPopup(false)` 弹簧把一级
-            // 弹回原位 —— 那条回弹在真机上读起来就是"圈/描边回收很慢"，而这组
-            // 弹簧与 `transformMaterial(80ms)+delay(50ms)+threshold(.0015)` 都在包内、
-            // **没有对外参数**可调。故保持 stacked=false：二级直接浮出/收起，
-            // 一级面板全程不移动，也就没有需要回收的形变。
-            //（想要包内那套"一级让位"观感时，把这一行放开即可。）
-            // stacked: _secondaryOpen,
+            // 二级展开时一级面板"让位"：绕**锚点角**（「更多」按钮在面板右上）
+            // 缩小 5% + 压暗，收起复原。
+            //
+            // 手感由 fork 补丁的两个参数定：`stackDuration` 把包内那条
+            // 「收敛容差写死、参数不可调」的让位弹簧换成确定性的 200ms
+            // fastOutSlowIn（曲线取补丁缺省值；时长与旧实现
+            // `hyperos_list_popup.dart` 同值）；
+            // `stackShrinkFromAnchor` 把支点从面板中心挪到锚点角 —— 锚点角正是
+            // 面板"长出来的那一点"，以它为支点，让位期间「添加」行在原位几乎
+            // 不动，读起来才是"原地缩小"而不是"整体挪走"。
+            stacked: _secondaryOpen,
+            stackDuration: _submenuRevealDuration,
+            stackShrinkFromAnchor: true,
             onDismissRequest: _close,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -203,10 +223,17 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
               // 二级面板**浮在一级玻璃之上**，必须走带垫底的注入面：否则液态档
               // 会采样到一级面板的玻璃输出，玻璃叠玻璃再折射一遍、读感浑浊。
               surfaceBuilder: hyperosGlassPopupSecondarySurface,
+              // 只留底边距（顶边 0）：二级面板顶边 = 锚点行（「添加」）顶边，
+              // 标题行才能与一级那一行**逐像素同位**（默认顶边 8 会整体下沉）。
+              contentPadding: const EdgeInsets.only(bottom: 8),
+              // 点面板外遮罩 = 整个菜单关掉；返回键仍走 onDismissRequest
+              // （先收二级、再按才关窗），两条路径分工与旧实现一致。
+              onScrimTap: _close,
               onDismissRequest: _closeSecondary,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  _secondaryTitleRow(l10n),
                   for (final child in kAddCourseSubmenu(l10n))
                     MiuixGlassPopupItem(
                       text: child.label,
@@ -218,6 +245,51 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
         ],
       ),
     );
+  }
+
+  /// 二级面板顶部重复出来的**父行（标题行）**。
+  ///
+  /// 口径同旧实现（`hyperos_list_popup.dart` 的「父行在卡内原位重复」）：与其它
+  /// 行同款条目 + 下方一条 hairline；差别只在箭头朝上（展开态）且**点它只收起
+  /// 二级、不关菜单**。二级面板顶边 = 锚点行顶边（见 `contentPadding`），所以这
+  /// 一行与一级里那一行在屏幕上同位，读起来是"同一行分出了下面一截"。
+  Widget _secondaryTitleRow(AppLocalizations l10n) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      MiuixGlassPopupItem(
+        text: _submenuParentLabel(l10n),
+        showArrow: true,
+        arrowRotation: -90,
+        arrowRotationDuration: _submenuRevealDuration,
+        onPressed: _closeSecondary,
+      ),
+      // 父行 → 子项的分隔线：数值与旧实现同一份（水平内边距与行文字对齐、
+      // 细线 0.75、墨色 15%）。
+      Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: HyperosMiuixDropdown.insideHorizontalPadding,
+          vertical: 4,
+        ),
+        child: Container(
+          height: HyperosMiuixDivider.thickness,
+          color: HyperosColors.onSurface(
+            context,
+          ).withValues(alpha: 0.15),
+        ),
+      ),
+    ],
+  );
+
+  /// 「添加」那一行的标题（二级面板的标题行与一级用同一份文案）。
+  ///
+  /// 用循环而不是 `firstWhere`：`entries` 为空（部分测试就这么挂）时不能抛。
+  String _submenuParentLabel(AppLocalizations l10n) {
+    for (final entry in widget.entries) {
+      if (entry.id == kAddCourseSubmenuParentId) {
+        return entry.title(l10n);
+      }
+    }
+    return '';
   }
 
   Widget _row(HomeMenuEntry entry, AppLocalizations l10n) {
@@ -232,8 +304,9 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
             child: MiuixGlassPopupItem(
               text: label,
               showArrow: true,
-              // LTR 展开箭头取 -90（上游约定）。
-              arrowRotation: _secondaryOpen ? 0 : -90,
+              // 收起朝右（0）、展开朝上（-90）；LTR 的上箭头取 -90（上游约定）。
+              arrowRotation: _secondaryOpen ? -90 : 0,
+              arrowRotationDuration: _submenuRevealDuration,
               onPressed: () {
                 final bounds = _addRowAnchor.bounds;
                 if (bounds == null) {

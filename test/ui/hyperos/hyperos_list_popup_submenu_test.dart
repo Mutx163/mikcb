@@ -430,38 +430,65 @@ void main() {
       ),
     ];
 
-    /// 上游契约是「常驻挂载 + 切 show」，所以这里直接以 show: true 挂载；
-    /// 返回被点条目的 id 收集器。
-    Future<List<String>> pumpMenu(WidgetTester tester) async {
+    /// 上游契约是「常驻挂载 + 切 show」；这里用 [ValueNotifier] 驱动 show，并收集
+    /// 被点条目 id 与菜单关闭次数 —— 返回键 / 遮罩那两条用例要观测「关没关」。
+    Future<
+      ({List<String> selected, ValueNotifier<bool> show, List<int> dismisses})
+    >
+    pumpMenu(WidgetTester tester) async {
       final selected = <String>[];
+      final dismisses = <int>[];
+      final show = ValueNotifier<bool>(true);
       final anchor = MiuixGlassPopupAnchor();
       addTearDown(anchor.dispose);
+      addTearDown(show.dispose);
       await tester.pumpWidget(
         TestApp(
-          home: HomeTopMenuPopup(
-            show: true,
-            anchor: anchor,
-            anchorContent: const Icon(Icons.more_vert_rounded),
-            entries: entries,
-            hasAvailableUpdate: false,
-            onDismissRequest: () {},
-            onSelected: selected.add,
+          home: ValueListenableBuilder<bool>(
+            valueListenable: show,
+            builder: (context, visible, _) => HomeTopMenuPopup(
+              show: visible,
+              anchor: anchor,
+              anchorContent: const Icon(Icons.more_vert_rounded),
+              entries: entries,
+              hasAvailableUpdate: false,
+              onDismissRequest: () {
+                dismisses.add(1);
+                show.value = false;
+              },
+              onSelected: selected.add,
+            ),
           ),
         ),
       );
       await tester.pumpAndSettle();
-      return selected;
+      return (selected: selected, show: show, dismisses: dismisses);
     }
+
+    /// 一级面板当前的让位缩放。缩放写在 render object 的 paint transform 里
+    /// （树上没有 Transform widget，抄不了列表弹层那套 `byWidgetPredicate`），
+    /// 所以从内容子树的全局变换矩阵读：settle 后 contentScale = 1，storage[0]
+    /// 就是 `1 - 0.05 * 让位进度`。
+    double panelScale(WidgetTester tester) => tester
+        .renderObject<RenderBox>(find.text('课表设置'))
+        .getTransformTo(null)
+        .storage[0];
 
     testWidgets('「添加」行挂二级列表，其余行没有二级', (tester) async {
       await pumpMenu(tester);
 
       expect(find.text('添加'), findsOneWidget);
       expect(find.text('课表设置'), findsOneWidget);
-      // 收起态：二级子项都不在树上。
+      // 收起态：二级子项都不在树上；箭头朝右；一级面板不缩放。
       expect(find.text('添加课程'), findsNothing);
       expect(find.text('添加日程'), findsNothing);
       expect(find.text('添加考试'), findsNothing);
+      for (final arrow in tester.widgetList<AnimatedRotation>(
+        find.byType(AnimatedRotation),
+      )) {
+        expect(arrow.turns, 0);
+      }
+      expect(panelScale(tester), closeTo(1, 2e-3));
 
       await tester.tap(find.text('添加'));
       await tester.pumpAndSettle();
@@ -471,17 +498,79 @@ void main() {
       expect(find.text('添加考试'), findsOneWidget);
       // 一级面板不因二级展开而消失。
       expect(find.text('课表设置'), findsOneWidget);
+      // 标题行 = 一级那一行在二级面板顶部的原位重复（同款条目），两份同时可见。
+      expect(find.text('添加'), findsNWidgets(2));
+      // 展开态两处箭头都朝上（-90° = -0.25 圈）：一级那一行 + 标题行。
+      final arrows = tester
+          .widgetList<AnimatedRotation>(find.byType(AnimatedRotation))
+          .toList();
+      expect(arrows, hasLength(2));
+      for (final arrow in arrows) {
+        expect(arrow.turns, closeTo(-0.25, 1e-4));
+      }
+      // 一级面板让位缩小 5%（绕锚点角 → 读起来是"原地缩小"）。
+      expect(panelScale(tester), closeTo(0.95, 2e-3));
+    });
+
+    testWidgets('点二级标题行只收起二级、不关菜单，一级缩放复原', (tester) async {
+      final menu = await pumpMenu(tester);
+
+      await tester.tap(find.text('添加'));
+      await tester.pumpAndSettle();
+      expect(panelScale(tester), closeTo(0.95, 2e-3));
+
+      // 标题行是两份「添加」里的最后一份（一级那一行在前）。
+      await tester.tap(find.text('添加').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('添加课程'), findsNothing);
+      expect(find.text('添加'), findsOneWidget);
+      expect(find.text('课表设置'), findsOneWidget);
+      expect(menu.dismisses, isEmpty, reason: '点标题行只收二级，不关整个菜单');
+      expect(panelScale(tester), closeTo(1, 2e-3));
     });
 
     testWidgets('点「添加考试」子项回传宿主分发 id', (tester) async {
-      final selected = await pumpMenu(tester);
+      final menu = await pumpMenu(tester);
 
       await tester.tap(find.text('添加'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('添加考试'));
       await tester.pumpAndSettle();
 
-      expect(selected, [kAddCourseSubmenuExamId]);
+      expect(menu.selected, [kAddCourseSubmenuExamId]);
+    });
+
+    testWidgets('返回键：先收二级，再按才关菜单', (tester) async {
+      final menu = await pumpMenu(tester);
+
+      await tester.tap(find.text('添加'));
+      await tester.pumpAndSettle();
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('添加课程'), findsNothing);
+      expect(find.text('课表设置'), findsOneWidget);
+      expect(menu.dismisses, isEmpty);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(menu.dismisses, isNotEmpty);
+      expect(find.text('课表设置'), findsNothing);
+    });
+
+    testWidgets('点面板外遮罩整个菜单关闭（不是只收二级）', (tester) async {
+      final menu = await pumpMenu(tester);
+
+      await tester.tap(find.text('添加'));
+      await tester.pumpAndSettle();
+
+      // 面板居屏幕中部（锚点未绑定，宽 200），左下角远端必在遮罩上。
+      await tester.tapAt(const Offset(30, 520));
+      await tester.pumpAndSettle();
+
+      expect(menu.dismisses, isNotEmpty);
+      expect(find.text('课表设置'), findsNothing);
     });
 
     testWidgets('二级面板浮在一级玻璃之上：注入面必须垫底（一级不垫）', (tester) async {
