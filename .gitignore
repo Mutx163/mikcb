@@ -84,6 +84,10 @@ node_modules/
 tmp/
 local/
 
+# 根目录下的本地录制素材（宣传视频等，单文件十几 MB，不入库）。
+# 只匹配仓库根，不影响 site/ 等需要入库的素材目录。
+/*.mp4
+
 # 审查输出
 reviews/
 .adversarial-review/
