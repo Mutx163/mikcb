@@ -577,15 +577,6 @@ class _TimetableScreenState extends State<TimetableScreen>
         final chromeMutedForeground = hasBackdrop
             ? homePageChromeMutedForeground(chromeForeground)
             : foruiTheme.colors.mutedForeground;
-        // 顶栏两个图标按钮（「更多」「爱心」）的常驻圆底。
-        //
-        // 与图标墨色**反相**，任何壁纸上都读得出：墨色浅（白图标）用暗底，
-        // 墨色深（黑图标）用透明白底 —— 后者就是「小白球」，取 0.72 与柔光玻璃
-        // 底色同源（`SoftGlassTokens.tint` 亮色 252@67.5%）。
-        final chromeActionBall = chromeForeground.computeLuminance() > 0.5
-            ? Colors.black.withValues(alpha: 0.30)
-            : Colors.white.withValues(alpha: 0.72);
-
         final followsWeekPager =
             hasBackdrop && settings.homePageBackdropFollowsWeekPager;
         // Keep the same frosted chrome band in day view. The weekday header
@@ -701,12 +692,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                             : Icons.favorite_outline_rounded,
                         color: _isCoupleOverlayActive(provider)
                             ? const Color(0xFFE91E63)
-                            : chromeForeground,
+                            : _chromeActionBallInk,
                       ),
                       semanticsLabel: _isCoupleOverlayActive(provider)
                           ? l10n.coupleTimetableModeDisableTooltip
                           : l10n.coupleTimetableModeEnableTooltip,
-                      backgroundColor: chromeActionBall,
+                      glassBall: true,
                       onPress: () {
                         setState(() {
                           _coupleOverlayEnabled = !_coupleOverlayEnabled;
@@ -741,7 +732,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                         children: [
                           Icon(
                             Icons.more_vert_rounded,
-                            color: chromeForeground,
+                            color: _chromeActionBallInk,
                           ),
                           if (_hasAvailableUpdate)
                             Positioned(
@@ -766,7 +757,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                         ],
                       ),
                       semanticsLabel: l10n.moreTooltip,
-                      backgroundColor: chromeActionBall,
+                      glassBall: true,
                       onPress: _showTopActionsSheet,
                     ),
                   ),
@@ -962,6 +953,16 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   bool get _isDayView =>
       _selectedDayOfWeek != null && _selectedWeekForDayView != null;
+
+  /// 顶栏两个图标按钮（「更多」「爱心」）常驻玻璃球上的墨色。
+  ///
+  /// **跟球走，不跟壁纸反相**：球是玻璃材质（[FHeaderAction.glassBall]），
+  /// 浓淡只跟主题明暗走 —— 浅色主题是奶白球、深色主题是暗球；跟壁纸反相算出来
+  /// 的白墨到深壁纸下就是「白图标 + 奶白球」，等于没墨。
+  ///
+  /// 同一份墨色也喂给首页菜单弹窗的 `anchorContent`：打开/关闭菜单时，图标会在
+  /// 「按钮的球」与「弹窗形变那颗球」之间交接，两边不同色会看到一次跳色。
+  Color get _chromeActionBallInk => context.theme.colors.foreground;
 
   bool get _shouldShowDayViewOverlay =>
       _selectedDayOfWeek != null &&
@@ -8333,8 +8334,12 @@ class _TimetableScreenState extends State<TimetableScreen>
           backdrop: _homeGlass.backdrop,
           anchor: _homeMenuAnchor,
           // 形变动效要从按钮位置长出来，故传入按钮内容的**副本**（不含
-          // GlobalKey，避免与真实按钮抢同一个 key）。
-          anchorContent: const Icon(Icons.more_vert_rounded),
+          // GlobalKey，避免与真实按钮抢同一个 key）。墨色与按钮上那颗球
+          // 同色（见 [_chromeActionBallInk]），交接时不跳色。
+          anchorContent: Icon(
+            Icons.more_vert_rounded,
+            color: _chromeActionBallInk,
+          ),
           entries: resolveHomeGridMenuEntries(settings),
           hasAvailableUpdate: _hasAvailableUpdate,
           onDismissRequest: () {

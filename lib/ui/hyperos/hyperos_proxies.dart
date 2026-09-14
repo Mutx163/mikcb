@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_popup_glass.dart' show HyperosSelectPopupGlass;
 
 /// Temporary compatibility widget until all FHeaderAction usages are
 /// migrated to HyperosIconButton.
@@ -11,23 +12,26 @@ class FHeaderAction extends StatelessWidget {
     required this.icon,
     required this.semanticsLabel,
     this.onPress,
-    this.backgroundColor,
+    this.glassBall = false,
   });
 
   final Widget icon;
   final String semanticsLabel;
   final VoidCallback? onPress;
 
-  /// 常驻圆底（首页顶栏「更多」「爱心」那个白色玻璃球）。
-  ///
-  /// [MiuixIconButton] 的 `cornerRadius` 默认 40、最小边长也是 40，所以这里给的
-  /// 实色会被画成**正圆**。null = 透明底，与接入前逐字一致。
+  /// 常驻玻璃圆底（首页顶栏「更多」「爱心」那颗球）。
   ///
   /// 为什么需要它：上游 `MiuixGlassTransformPopup` 的形变终点是「面板缩回锚点
-  /// 矩形」——也就是按钮位置的一个圆，动画跑完才随 overlay 一起隐藏，读起来
+  /// 矩形」——也就是按钮位置的一块玻璃，动画跑完才随 overlay 一起隐藏，读起来
   /// 就是个「点一下冒出来、过一会才消失的小球」。按钮自己常驻同一颗球，形变
   /// 才有落点，关闭时也不会留下突兀的残影。
-  final Color? backgroundColor;
+  ///
+  /// ⚠️ 球必须用 [HyperosSelectPopupGlass] 画，**不要退回 `MiuixIconButton` 的
+  /// `backgroundColor`**（那是平涂色：没有模糊、没有边缘高光、没有描边，而且
+  /// 颜色得按壁纸反相才读得出来）。这里与首页菜单弹窗的注入面
+  /// （`os4_glass_popup_surface.dart`）用的是**同一个组件、同一份档位分派**，
+  /// 所以打开/关闭菜单时那颗球不会跳。
+  final bool glassBall;
 
   @override
   Widget build(BuildContext context) {
@@ -36,16 +40,20 @@ class FHeaderAction extends StatelessWidget {
     // and the wallpaper chrome foreground on the home header).
     // MiuixIconButton has no tooltip parameter; wrap in Tooltip so desktop/web
     // hover still shows the label, matching the former IconButton.tooltip.
+    Widget button = MiuixIconButton(onPressed: onPress, child: icon);
+    if (glassBall) {
+      // 圆角取「最小边长 / 2」＝正圆。弹窗形变时用的是**同一个**口径
+      // （`锚点短边 / 2`，锚点就是这颗按钮的矩形），两边必须同值 ——
+      // 差一点就会在打开/关闭菜单的交接瞬间看到圆角跳一下。
+      const radius = MiuixIconButtonDefaults.minWidth / 2;
+      button = HyperosSelectPopupGlass(cornerRadius: radius, child: button);
+    }
     return Tooltip(
       message: semanticsLabel,
       child: Semantics(
         label: semanticsLabel,
         button: true,
-        child: MiuixIconButton(
-          onPressed: onPress,
-          backgroundColor: backgroundColor,
-          child: icon,
-        ),
+        child: button,
       ),
     );
   }
