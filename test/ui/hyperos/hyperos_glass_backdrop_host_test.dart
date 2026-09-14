@@ -24,6 +24,85 @@ void main() {
     home: HyperosGlassBackdropHost(controller: controller, child: child),
   );
 
+  testWidgets('本屏恢复（TickerMode 转真）后必须重新解析采样源，不停在旧的', (tester) async {
+    // 场景：页面 push 后被盖住（OverlayEntry 会关掉 TickerMode）、期间玻璃面
+    // 因父级重建重新解析过采样源（注册表栈顶已换人），pop 回来时页面 widget 是
+    // 缓存的、**不会重建** —— 没有这一步重新解析，采样源就永远停在旧的那个上，
+    // 回来时玻璃只剩半套材质、另一半回落实底（真机：进设置再回来爱心变半透明）。
+    final home = HyperosGlassBackdropController();
+    final pushed = HyperosGlassBackdropController();
+    addTearDown(home.dispose);
+    addTearDown(pushed.dispose);
+    final live = ValueNotifier<bool>(true);
+    final revision = ValueNotifier<int>(0);
+    addTearDown(live.dispose);
+    addTearDown(revision.dispose);
+
+    await tester.pumpWidget(
+      TestApp(
+        home: Stack(
+          children: [
+            HyperosGlassBackdropHost(
+              controller: home,
+              // 宿主子树必须有非零尺寸，否则捕获节点 `size.isEmpty` 会直接
+              // 早退、永远录不到带（这一条踩过）。
+              child: const SizedBox(width: 200, height: 120),
+            ),
+            // 玻璃面在宿主**之外**：只能靠注册表"栈顶"取采样源 —— 正是常驻
+            // 玻璃球的挂法（球为了不自采样必须画在宿主之外）。
+            ValueListenableBuilder<bool>(
+              valueListenable: live,
+              builder: (context, enabled, _) => TickerMode(
+                enabled: enabled,
+                child: ValueListenableBuilder<int>(
+                  valueListenable: revision,
+                  builder: (context, r, _) => SizedBox(
+                    width: 60,
+                    height: 60,
+                    // 不传 blurEnabled（默认 true，测试环境也能真的登记采样区）。
+                    child: SoftGlassSurface(
+                      borderRadius: BorderRadius.circular(20 + r.toDouble()),
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(home.zones, isNotEmpty, reason: '初始应绑在本屏（栈顶 = home）');
+    expect(pushed.zones, isEmpty);
+
+    // push：新页面注册自己的采样源（成为栈顶）、本屏被盖住；期间玻璃面因父级
+    // 重建重新解析一次 → 绑到了新页面那个（这就是要修的那个"绑错"状态）。
+    HyperosGlassBackdropRegistry.register(pushed);
+    addTearDown(() => HyperosGlassBackdropRegistry.unregister(pushed));
+    live.value = false;
+    revision.value = 1;
+    await tester.pumpAndSettle();
+    expect(pushed.zones, isNotEmpty, reason: '被盖住期间会绑到栈顶那个（记录现状）');
+
+    // pop：新页面注销、本屏恢复。**不再重建**玻璃面 —— 只剩 TickerMode 依赖
+    // 能触发重新解析。
+    HyperosGlassBackdropRegistry.unregister(pushed);
+    live.value = true;
+    await tester.pumpAndSettle();
+
+    expect(
+      home.zones,
+      isNotEmpty,
+      reason: '恢复后必须重新解析回本屏采样源（否则回来只剩半套材质）',
+    );
+    // 重新绑上之后要再录一帧：重绑发生在布局阶段，录帧排在帧末。
+    await tester.pump(const Duration(milliseconds: 32));
+    for (final zone in home.zones) {
+      expect(zone.image, isNotNull, reason: '重新绑上之后必须重新录到带');
+    }
+  });
+
   testWidgets('有玻璃 acquire 才录帧，全部释放即停（零开销）', (tester) async {
     final controller = HyperosGlassBackdropController();
     addTearDown(controller.dispose);

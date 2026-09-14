@@ -8385,10 +8385,20 @@ class _TimetableScreenState extends State<TimetableScreen>
         HyperosGlassBackdropHost(controller: _homeGlass, child: content),
         // 常驻玻璃球画在宿主**之外**（不自采样，见 build 里 homeChromeBalls
         // 的说明）；整屏 IgnorePointer 让点击穿透到下面的真实按钮。
+        //
+        // ⚠️ 必须同时用 [HyperosGlassBackdropScope] **把球钉在本屏采样源上**：
+        // 球在宿主之外，拿不到宿主下发的 scope，只能靠全局注册表"栈顶"取采样源
+        // —— 而栈顶会随 push / pop 换人（设置页自己的采样源会顶上来），页面回来
+        // 后球还绑在别人的（已释放的）采样源上，就只剩半套材质、另一半回落实底
+        // （真机反馈："进设置再回来，爱心变成一半一半透明的、一半是实底"）。
+        // 与页内玻璃同一个口径：**本屏的玻璃只采本屏的画面**。
         if (chromeBalls.isNotEmpty)
           Positioned.fill(
-            child: IgnorePointer(
-              child: Stack(children: chromeBalls),
+            child: HyperosGlassBackdropScope(
+              controller: _homeGlass,
+              child: IgnorePointer(
+                child: Stack(children: chromeBalls),
+              ),
             ),
           ),
         HomeTopMenuPopup(

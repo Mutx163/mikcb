@@ -285,6 +285,13 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // 订阅"本屏是否在跑"这一位（`OverlayEntry` 会给被盖住的路由关掉 TickerMode，
+    // 恢复时再打开）。**这是必需的**：[HyperosGlassBackdropRegistry.resolve]
+    // 是纯查表、不建立任何依赖，而路由 push / pop 会让注册表栈顶换人 ——
+    // 上面对 [didUpdateWidget] 的说明假定"父级会重建"，但被盖住再回来这一路
+    // **不会重建**（页面 widget 是缓存的），于是采样源永远停在旧的那个上：
+    // 回来时玻璃只剩半套材质、另一半回落实底（真机反馈）。
+    TickerMode.valuesOf(context);
     _bindController();
   }
 
