@@ -590,38 +590,16 @@ class _TimetableScreenState extends State<TimetableScreen>
         // 的样子（2026-09-14 真机现象）。图标墨色见 [_chromeActionBallInk]；
         // 「更多」在菜单打开期间让位给弹窗自己的形变球（与真实按钮被
         // `contentHidden` 隐藏的窗口一致，见 ListenableBuilder）。
+        final chromeDotBorderColor = headerBarColor.a == 0
+            ? colorScheme.surface
+            : headerBarColor;
         final homeChromeBalls = [
           ListenableBuilder(
             listenable: _homeMenuAnchor,
             builder: (_, _) => FHeaderActionBall(
               link: _moreBallLink,
               visible: !_homeMenuAnchor.contentHidden,
-              icon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(Icons.more_vert_rounded, color: _chromeActionBallInk),
-                  if (_hasAvailableUpdate)
-                    Positioned(
-                      right: -1,
-                      top: -1,
-                      child: Container(
-                        width: 9,
-                        height: 9,
-                        decoration: BoxDecoration(
-                          color:
-                              HyperosColors.destructive, // 更新红点与危险语义统一色
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: headerBarColor.a == 0
-                                ? colorScheme.surface
-                                : headerBarColor,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+              icon: _buildMoreActionIcon(dotBorderColor: chromeDotBorderColor),
             ),
           ),
           // 爱心球与爱心按钮同门禁（hasPartnerBinding）：按钮不在树上时
@@ -901,6 +879,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             ),
             settings: settings,
             chromeBalls: homeChromeBalls,
+            chromeDotBorderColor: chromeDotBorderColor,
           );
         }
         // 底栏为可编排快捷区：页面类条目在首页栈内切换（内嵌宿主，
@@ -970,6 +949,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           ),
           settings: settings,
           chromeBalls: homeChromeBalls,
+          chromeDotBorderColor: chromeDotBorderColor,
         );
       },
     );
@@ -1008,6 +988,37 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 同一份墨色也喂给首页菜单弹窗的 `anchorContent`：打开/关闭菜单时，图标会在
   /// 「按钮的球」与「弹窗形变那颗球」之间交接，两边不同色会看到一次跳色。
   Color get _chromeActionBallInk => context.theme.colors.foreground;
+
+  /// 「更多」按钮的**可见内容**：图标 + 更新红点。
+  ///
+  /// 常驻玻璃球与弹窗形变起点（`anchorContent`）**必须共用这一份** —— 两者
+  /// 内容不一致时，开合交接的那一瞬就会露出来（红点晚一步出现、整颗球跟着
+  /// 重绘一次，读起来是"圆按钮闪一下"，且只在有待更新时可见）。
+  ///
+  /// [dotBorderColor] 是红点那圈"挖坑"描边色（顶栏带色 / 无带时的主题底色），
+  /// 两处必须同色，否则交接瞬间红点那圈边会跳一下。
+  Widget _buildMoreActionIcon({required Color dotBorderColor}) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(Icons.more_vert_rounded, color: _chromeActionBallInk),
+        if (_hasAvailableUpdate)
+          Positioned(
+            right: -1,
+            top: -1,
+            child: Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(
+                color: HyperosColors.destructive, // 更新红点与危险语义统一色
+                shape: BoxShape.circle,
+                border: Border.all(color: dotBorderColor, width: 1.5),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 
   bool get _shouldShowDayViewOverlay =>
       _selectedDayOfWeek != null &&
@@ -8382,6 +8393,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     Widget content, {
     required TimetableSettings settings,
     required List<Widget> chromeBalls,
+    required Color chromeDotBorderColor,
   }) {
     return Stack(
       fit: StackFit.expand,
@@ -8400,11 +8412,14 @@ class _TimetableScreenState extends State<TimetableScreen>
           backdrop: _homeGlass.backdrop,
           anchor: _homeMenuAnchor,
           // 形变动效要从按钮位置长出来，故传入按钮内容的**副本**（不含
-          // GlobalKey，避免与真实按钮抢同一个 key）。墨色与按钮上那颗球
-          // 同色（见 [_chromeActionBallInk]），交接时不跳色。
-          anchorContent: Icon(
-            Icons.more_vert_rounded,
-            color: _chromeActionBallInk,
+          // GlobalKey，避免与真实按钮抢同一个 key）：与常驻球**共用同一份**
+          // 可见内容（[_buildMoreActionIcon]，含更新红点与同一墨色）。
+          //
+          // ⚠️ 两者不能有差异：早先这里只给了一个裸图标，红点只画在常驻球上，
+          // 于是关闭菜单交接的那一瞬"红点突然出现 + 整颗球跟着重绘一次"，
+          // 读起来就是圆按钮闪一下（2026-09-14 真机反馈，仅在有待更新时可见）。
+          anchorContent: _buildMoreActionIcon(
+            dotBorderColor: chromeDotBorderColor,
           ),
           entries: resolveHomeGridMenuEntries(settings),
           hasAvailableUpdate: _hasAvailableUpdate,
