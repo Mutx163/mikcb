@@ -573,6 +573,57 @@ void main() {
       expect(find.text('课表设置'), findsNothing);
     });
 
+    testWidgets('收起动画期间点击穿透到页面（关掉后立刻再点不会丢）', (tester) async {
+      var pageTaps = 0;
+      final show = ValueNotifier<bool>(true);
+      final anchor = MiuixGlassPopupAnchor();
+      addTearDown(show.dispose);
+      addTearDown(anchor.dispose);
+      await tester.pumpWidget(
+        TestApp(
+          home: Stack(
+            children: [
+              // 页面本体（弹层开着时被遮罩盖住）：整屏点击区，用来观测
+              // "这一下有没有穿透下来"。
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => pageTaps++,
+                child: const SizedBox.expand(),
+              ),
+              ValueListenableBuilder<bool>(
+                valueListenable: show,
+                builder: (context, visible, _) => HomeTopMenuPopup(
+                  show: visible,
+                  anchor: anchor,
+                  anchorContent: const Icon(Icons.more_vert_rounded),
+                  entries: entries,
+                  hasAvailableUpdate: false,
+                  onDismissRequest: () => show.value = false,
+                  onSelected: (_) {},
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 点空白关掉：这一下属于遮罩，页面不该收到。
+      await tester.tapAt(const Offset(30, 520));
+      await tester.pump();
+      expect(show.value, isFalse, reason: '遮罩点击应先请求关闭');
+      expect(pageTaps, 0, reason: '这一下仍属于遮罩，不该穿透');
+
+      // 收起动画跑完前再点同一位置：必须穿透到页面。旧实现在这段窗口里遮罩
+      // 还在最上层且 opaque，会把这一下吃掉（去重后什么也不做）—— 用户读到的
+      // 就是"关掉后立刻再点没反应、等一会儿才灵"。
+      await tester.tapAt(const Offset(30, 520));
+      await tester.pump();
+      expect(pageTaps, 1, reason: '收起期点击必须穿透，不能吞掉重开那一下');
+
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('二级面板浮在一级玻璃之上：注入面必须垫底（一级不垫）', (tester) async {
       await pumpMenu(tester);
 
