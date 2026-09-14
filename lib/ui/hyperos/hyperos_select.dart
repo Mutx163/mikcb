@@ -871,15 +871,17 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
     return HyperosGlassBackdropScope.maybeOf(context);
   }
 
+  /// 持有"继续录帧"（**不要**整层图）：本弹层面板走注入面，读的是采样区。
+  /// 早先这里用 `acquire()`，于是开合动画每帧多录一张全屏图，而没人读它。
   void _holdCapture(HyperosGlassBackdropScope scope) {
     if (identical(_heldCapture, scope)) return;
-    _heldCapture?.release();
+    _heldCapture?.releaseRecording();
     _heldCapture = scope;
-    scope.acquire();
+    scope.holdRecording();
   }
 
   void _dropCapture() {
-    _heldCapture?.release();
+    _heldCapture?.releaseRecording();
     _heldCapture = null;
   }
 

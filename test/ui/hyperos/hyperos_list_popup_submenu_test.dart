@@ -624,6 +624,52 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets('首页菜单不再请求整层快照（注入面只读采样区）', (tester) async {
+      final controller = HyperosGlassBackdropController();
+      addTearDown(controller.dispose);
+      final show = ValueNotifier<bool>(false);
+      final anchor = MiuixGlassPopupAnchor();
+      addTearDown(show.dispose);
+      addTearDown(anchor.dispose);
+      await tester.pumpWidget(
+        TestApp(
+          home: HyperosGlassBackdropHost(
+            controller: controller,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: show,
+              builder: (context, visible, _) => HomeTopMenuPopup(
+                show: visible,
+                anchor: anchor,
+                anchorContent: const Icon(Icons.more_vert_rounded),
+                entries: entries,
+                hasAvailableUpdate: false,
+                onDismissRequest: () => show.value = false,
+                onSelected: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      show.value = true; // 打开菜单 → _syncCaptureHold → holdRecording
+      await tester.pumpAndSettle();
+
+      // 采样区继续录（玻璃始终有背景），但**整层图从不录**：首页菜单两块面板
+      // 都走注入面，没人读它 —— 而 `acquire()` 那条路会在开合动画期间每帧录
+      // 一张全屏（按 dpr ≈ 6.7MB/帧），是这段动画最大的一笔每帧开销。
+      expect(
+        controller.plainBackdrop.snapshot,
+        isNull,
+        reason: '注入面弹层不该产生整层快照',
+      );
+      expect(
+        controller.capturing,
+        isTrue,
+        reason: '菜单展开期间必须仍然持有录帧（采样区要刷新）',
+      );
+    });
+
     testWidgets('二级面板浮在一级玻璃之上：注入面必须垫底（一级不垫）', (tester) async {
       await pumpMenu(tester);
 

@@ -86,10 +86,14 @@ class HyperosGlassBackdropController extends ChangeNotifier {
   /// 弹层 / modal 用的整层采样源（面板在 Overlay 里，拿不到"自己背后那块"）。
   final MiuixLayerBackdrop plainBackdrop = MiuixLayerBackdrop();
 
-  /// 只要背景、给不出矩形的消费者（OS4 弹层：面板在 Overlay 里，位置由锚点算）。
+  /// 只要背景、给不出矩形的消费者（走**上游内置面板**的 OS4 弹层才需要）。
   int _plainConsumers = 0;
 
-  /// 是否有弹层在要"整层背景"。
+  /// 只要求"继续录帧"、**不要**整层快照的持有者（本仓弹层都走注入面，见
+  /// [holdRecording]）。
+  int _recordingHolds = 0;
+
+  /// 是否有消费者在要"整层背景"（只有内置面板那条路读它）。
   bool get wantsPlainBackdrop => _plainConsumers > 0;
 
   /// 兼容旧读取点：整层采样源（弹层 / modal 用）。
@@ -115,7 +119,8 @@ class HyperosGlassBackdropController extends ChangeNotifier {
       <HyperosZoneBackdrop, RenderBox>{};
 
   /// 当前是否有玻璃需要背景（有则开录帧；没有任何玻璃时零开销）。
-  bool get capturing => _zones.isNotEmpty || _plainConsumers > 0;
+  bool get capturing =>
+      _zones.isNotEmpty || _plainConsumers > 0 || _recordingHolds > 0;
 
   /// 页内玻璃挂载：选/建一块采样区，并绑定它自己的采样源。
   void acquireZone(RenderBox box, HyperosZoneBackdrop backdrop) {
@@ -214,6 +219,11 @@ class HyperosGlassBackdropController extends ChangeNotifier {
   }
 
   /// 弹层（拿不到自己背后矩形的那类）挂载 / 展开时调用。
+  ///
+  /// ⚠️ 它会额外请求**整层快照**：每帧一次全屏 `ui.Image`（按 dpr 约 6.7MB）。
+  /// 只有走**上游内置面板**（`MiuixGlassPanel(backdrop: …)`）的弹层才读它。
+  /// 本仓弹层全部传了 `surfaceBuilder`（注入面走"玻璃背后那条带"的采样区），
+  /// 所以调用点用的是 [holdRecording] —— 只保持录帧、不要整层图。
   void acquire() {
     // 同 [acquireZone]：宿主已释放就不再受理，更不通知。
     if (_disposed) return;
@@ -231,6 +241,29 @@ class HyperosGlassBackdropController extends ChangeNotifier {
     if (_disposed) return;
     if (_plainConsumers == 0) return;
     _plainConsumers--;
+    if (!capturing) notifyListeners();
+  }
+
+  /// 只请求"继续录帧"：刷新各采样区，**不**产生整层快照。
+  ///
+  /// 注入面弹层（本仓全部）只需要采样区一直在录 —— 它们读的是"玻璃背后那条带"，
+  /// 从不读整层图。早先这类调用点走 [acquire]，于是**整个开合动画期间每帧都录
+  /// 一张全屏**（`_capture` 里注释实测：每次打开瞬时分配 100~140MB，快速连开
+  /// RSS 峰值 1.01GB）—— 那是这段动画最大的一笔每帧开销，而产出的图没人读。
+  void holdRecording() {
+    if (_disposed) return;
+    _recordingHolds++;
+    // 与 [acquire] 同理：判据不能用 `capturing` 有没有翻转 —— 页内玻璃通常已经
+    // 让它为 true，而这一下通知才是"本帧末立刻录一次"的触发（弹层首帧要玻璃
+    // 而不是兜底实底，靠的就是它）。
+    notifyListeners();
+  }
+
+  /// 与 [holdRecording] 配对。
+  void releaseRecording() {
+    if (_disposed) return;
+    if (_recordingHolds == 0) return;
+    _recordingHolds--;
     if (!capturing) notifyListeners();
   }
 
@@ -501,7 +534,15 @@ class HyperosGlassBackdropScope extends InheritedWidget {
   /// 兼容旧读取点：本屏"整层"采样源（弹层 / modal 用；页内玻璃各自按区域取）。
   MiuixLayerBackdrop get backdrop => controller.plainBackdrop;
 
-  /// 兼容旧读取点：请求 / 归还录帧。
+  /// 请求 / 归还"继续录帧"（只刷采样区，**不要**整层图）。
+  ///
+  /// 本仓弹层都走注入面（读"玻璃背后那条带"），整层图没人读 —— 而
+  /// [acquire] 会在开合动画期间每帧录一张全屏。所以调用点一律用这两个。
+  VoidCallback get holdRecording => controller.holdRecording;
+
+  VoidCallback get releaseRecording => controller.releaseRecording;
+
+  /// 走上游内置面板（`MiuixGlassPanel(backdrop: …)`）的弹层才用；本仓暂无调用点。
   VoidCallback get acquire => controller.acquire;
 
   VoidCallback get release => controller.release;

@@ -8414,18 +8414,22 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 「更多」按钮按下即预热：图层快照在帧末录制，早一拍才能保证菜单首帧有玻璃。
+  /// 「更多」按钮按下即预热：采样区快照在帧末录制，早一拍才能保证菜单首帧有玻璃。
+  ///
+  /// 用 [HyperosGlassBackdropController.holdRecording] 而不是 `acquire()`：
+  /// 首页菜单两块面板都走注入面（读"玻璃背后那条带"），整层图没人读 —— 而
+  /// `acquire()` 会在**整个开合动画期间每帧录一张全屏**（按 dpr ≈ 6.7MB/帧）。
   void _prewarmHomeGlass() {
     if (_homeGlassHeld) return;
     _homeGlassHeld = true;
-    _homeGlass.acquire();
+    _homeGlass.holdRecording();
   }
 
-  /// 抬手未展开 / 菜单关闭后归还录帧请求（配对 [acquire]，避免首页一直录帧）。
+  /// 抬手未展开 / 菜单关闭后归还录帧请求（配对 [holdRecording]，避免首页一直录帧）。
   void _releaseHomeGlass() {
     if (!_homeGlassHeld) return;
     _homeGlassHeld = false;
-    _homeGlass.release();
+    _homeGlass.releaseRecording();
   }
 
   Future<void> _showTopActionsSheet() async {

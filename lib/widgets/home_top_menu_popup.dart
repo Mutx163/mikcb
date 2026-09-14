@@ -126,6 +126,9 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
   }
 
   /// 菜单展开期间请求所在屏录帧（关闭即归还，页面没玻璃时不空转）。
+  ///
+  /// 只持有"继续录帧"（`holdRecording`），不请求整层快照：本弹层两块面板都走
+  /// 注入面（读采样区），整层图没人读 —— 而它会在开合动画期间每帧录一张全屏。
   void _syncCaptureHold() {
     final next = widget.show && widget.backdrop == null
         ? HyperosGlassBackdropRegistry.resolve(context)
@@ -133,9 +136,9 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
     if (identical(next, _captureHold)) {
       return;
     }
-    _captureHold?.release();
+    _captureHold?.releaseRecording();
     _captureHold = next;
-    next?.acquire();
+    next?.holdRecording();
   }
 
   /// 收起二级并关掉一级菜单；点遮罩关闭也走这里。
