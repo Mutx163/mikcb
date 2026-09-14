@@ -286,9 +286,11 @@ packages:
   flutter_miuix:
     dependency: "direct main"
     description:
-      path: "C:/cursor/flutter_miuix_glassy"
-      relative: false
-    source: path
+      path: "."
+      ref: cb1fbed74bce8ee197a91bd76572da2c604a6846
+      resolved-ref: cb1fbed74bce8ee197a91bd76572da2c604a6846
+      url: "https://github.com/Mutx163/flutter_miuix.git"
+    source: git
     version: "1.2.0"
   flutter_plugin_android_lifecycle:
     dependency: transitive

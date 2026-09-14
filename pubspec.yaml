@@ -64,12 +64,15 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   fake_async: ^1.3.3
 
-# 临时覆盖：指向本地带 `surfaceBuilder` 补丁的 flutter_miuix（glassy-surface 分支，
-# 基于上游 1.2.0 + popup presenter 注入点）。推到 fork 后改成 git 依赖，
-# 不再依赖本机路径。
+# 覆盖：指向 fork 上带 `surfaceBuilder` 补丁的 flutter_miuix（glassy-surface 分支，
+# 基于上游 1.2.0 + popup presenter 注入点）。**固定到 commit，不要写分支名** ——
+# 分支名会让不同时间 / 不同机器解析到不同的那份，CI 也拿不到可复现的依赖。
+# 补丁进了上游 release 后整块删掉，即回到 pub.dev。
 dependency_overrides:
   flutter_miuix:
-    path: C:/cursor/flutter_miuix_glassy
+    git:
+      url: https://github.com/Mutx163/flutter_miuix.git
+      ref: cb1fbed74bce8ee197a91bd76572da2c604a6846
 
 flutter:
   uses-material-design: true
