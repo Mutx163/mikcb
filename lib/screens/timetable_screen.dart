@@ -624,17 +624,20 @@ class _TimetableScreenState extends State<TimetableScreen>
               ),
             ),
           ),
-          FHeaderActionBall(
-            link: _heartBallLink,
-            icon: Icon(
-              _isCoupleOverlayActive(provider)
-                  ? Icons.favorite_rounded
-                  : Icons.favorite_outline_rounded,
-              color: _isCoupleOverlayActive(provider)
-                  ? const Color(0xFFE91E63)
-                  : _chromeActionBallInk,
+          // 爱心球与爱心按钮同门禁（hasPartnerBinding）：按钮不在树上时
+          // LayerLink 没有 leader，follower 会画在自己的布局位置（Stack 左上角）。
+          if (provider.hasPartnerBinding)
+            FHeaderActionBall(
+              link: _heartBallLink,
+              icon: Icon(
+                _isCoupleOverlayActive(provider)
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_outline_rounded,
+                color: _isCoupleOverlayActive(provider)
+                    ? const Color(0xFFE91E63)
+                    : _chromeActionBallInk,
+              ),
             ),
-          ),
         ];
         final followsWeekPager =
             hasBackdrop && settings.homePageBackdropFollowsWeekPager;
