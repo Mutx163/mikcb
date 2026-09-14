@@ -22,7 +22,7 @@ description: 开发环境、构建命令、代码约定与提交流程。
 flutter pub get
 flutter run -d android --flavor dev      # 本地开发
 flutter test                              # 测试
-flutter analyze --no-fatal-infos          # 静态分析
+flutter analyze --fatal-infos            # 静态分析（CI 同款）
 flutter build apk --release --flavor prod --target-platform android-arm64
 ```
 
@@ -32,8 +32,11 @@ flutter build apk --release --flavor prod --target-platform android-arm64
 
 ## 代码约定
 
-- 静态分析基线为 0 error、0 warning
-- 界面文案统一走 l10n（ARB 文件），新增文案需同步各语言
+- 静态分析基线为 0 error、0 warning、0 info（CI 跑 `--fatal-infos`，
+  info 也算失败，本地务必用同一条命令）
+- 界面文案统一走 l10n（ARB 文件），新增文案需同步各语言。
+  同步工具在 `tool/` 下（`sync_arb.dart`、`merge_l10n_batch.py` 等一批
+  `*_arb*.py` 脚本），改文案前先看一眼有没有现成脚本，别手工逐语言改
 - 应用支持简体中文、繁体中文（台湾 / 香港）、英文、日文、韩文
 - 修改超级岛规则时，需同步原生实现、预览组件与对应测试
 
