@@ -72,7 +72,6 @@ class FHeaderActionBall extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!visible) return const SizedBox.shrink();
     // 半径取「最小边长 / 2」＝正圆，与弹窗形变的「锚点短边 / 2」同口径
     // （锚点就是这颗按钮的矩形），两边必须同值。
     const radius = MiuixIconButtonDefaults.minWidth / 2;
@@ -85,12 +84,28 @@ class FHeaderActionBall extends StatelessWidget {
       // 置 false 后没有 leader 就不画，任何导致 leader 缺席的路径都被堵住。
       showWhenUnlinked: false,
       child: IgnorePointer(
-        child: HyperosSelectPopupGlass(
-          cornerRadius: radius,
-          child: SizedBox(
-            width: MiuixIconButtonDefaults.minWidth,
-            height: MiuixIconButtonDefaults.minHeight,
-            child: Center(child: icon),
+        // ⚠️ 菜单打开期间**不要**把这颗球从树上摘掉（早先这里是
+        // `if (!visible) return SizedBox.shrink();`）：摘掉会连带销毁它内部的
+        // 玻璃面状态与采样区登记。关闭菜单重新挂载时，采样区里还没有快照，
+        // `MiuixGlass` 会先走兜底实底画一帧平涂，等录帧落地才变回玻璃 ——
+        // 读起来就是"关掉菜单时右上角圆按钮闪一下"（2026-09-14 真机反馈）。
+        //
+        // 改成「留着、但不画」：`maintainSize` 让它继续参与布局，采样区矩形
+        // 保持有效、录帧不中断（快照一直是新鲜的），重新出现时第一帧就是玻璃。
+        // `maintainState` 保住玻璃面自己的状态，`IgnorePointer` 让点击穿透到
+        // 下面的真实按钮。
+        child: Visibility(
+          visible: visible,
+          maintainState: true,
+          maintainAnimation: true,
+          maintainSize: true,
+          child: HyperosSelectPopupGlass(
+            cornerRadius: radius,
+            child: SizedBox(
+              width: MiuixIconButtonDefaults.minWidth,
+              height: MiuixIconButtonDefaults.minHeight,
+              child: Center(child: icon),
+            ),
           ),
         ),
       ),

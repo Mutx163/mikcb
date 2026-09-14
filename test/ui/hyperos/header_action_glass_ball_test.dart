@@ -107,7 +107,7 @@ void main() {
     );
   });
 
-  testWidgets('visible: false 时不渲染（菜单打开期间让位给弹窗的球）', (tester) async {
+  testWidgets('visible: false 时留着但不画（让位给弹窗的球）', (tester) async {
     final link = LayerLink();
     await tester.pumpWidget(
       scope(
@@ -124,8 +124,23 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byType(HyperosSelectPopupGlass), findsNothing);
-    expect(find.byType(SoftGlassSurface), findsNothing);
+    // ⚠️ 玻璃面必须**仍在树上**，只是不画：摘掉会连带销毁采样区登记，关闭
+    // 菜单重新挂载时区里还没有快照，玻璃面只能先画一帧兜底实底 —— 真机上
+    // 就是"关掉菜单时圆按钮闪一下"。所以这里断言「在树上 + visible: false」，
+    // 而不是断言它不存在。
+    expect(find.byType(HyperosSelectPopupGlass), findsOneWidget);
+    expect(
+      tester
+          .widget<Visibility>(
+            find.ancestor(
+              of: find.byType(HyperosSelectPopupGlass),
+              matching: find.byType(Visibility),
+            ),
+          )
+          .visible,
+      isFalse,
+      reason: '不画（Opacity 0），但布局与采样区保持有效',
+    );
   });
 
   testWidgets('球绘制在采样宿主之外（不自采样）', (tester) async {
