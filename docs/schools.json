@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-13T06:39:51+00:00",
+  "updatedAt": "2026-09-14T06:51:46+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 207,
-    "schools": 202,
+    "total": 208,
+    "schools": 203,
     "generic": 5
   },
   "schools": [
@@ -615,6 +615,13 @@
       "name": "湖北医药学院",
       "initial": "H",
       "resourceFolder": "HBMU",
+      "category": "school"
+    },
+    {
+      "id": "HBMZU",
+      "name": "湖北民族大学",
+      "initial": "H",
+      "resourceFolder": "HBMZU",
       "category": "school"
     },
     {
