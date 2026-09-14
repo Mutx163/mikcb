@@ -7,16 +7,21 @@ import '../../helpers_test_app.dart';
 
 /// 首页顶栏「更多」「爱心」那颗**常驻玻璃球**的契约。
 ///
-/// 这颗球必须与首页菜单弹窗的形变终点同源：弹窗在 progress=0 时把面板摆成
+/// 球必须与首页菜单弹窗的形变终点同源：弹窗在 progress=0 时把面板摆成
 /// 「锚点矩形、圆角 = 短边/2」，画它的是 `hyperosGlassPopupSurface` →
-/// [HyperosSelectPopupGlass]。所以按钮侧必须用**同一个组件、同一个半径** ——
-/// 一旦有人退回 `MiuixIconButton(backgroundColor:)`（平涂色：没有模糊、没有
-/// 边缘高光，颜色还得按壁纸反相）或把半径改成别的值，打开/关闭菜单的交接
-/// 瞬间就会露馅（材质不一样 / 圆角跳一档）。
+/// [HyperosSelectPopupGlass]。所以 [FHeaderActionBall] 用**同一个组件、
+/// 同一个半径** —— 一旦退回 `MiuixIconButton(backgroundColor:)`（平涂色）或
+/// 把半径改成别的值，打开/关闭菜单的交接瞬间就会露馅。
+///
+/// 更要命的是**位置**：球必须画在采样宿主（[HyperosLayerBackdropCapture]）
+/// 之外。页内玻璃的采样快照录自捕获节点的图层，球若长在捕获子树里，它自己的
+/// 输出会被烘进下一次采样 —— 打开菜单时按钮被上游隐藏、快照是干净的，关闭后
+/// 按钮重绘即触发重采样，球就"变一次材质"并稳定在烘过自己一层的样子
+/// （2026-09-14 真机现象：关掉菜单一秒后顶栏按钮材质变了）。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Widget ballAction({bool ball = true}) => TestApp(
+  Widget scope({required Widget child}) => TestApp(
     home: FrostedAppearanceScope(
       appearance: const FrostedAppearance(
         sheetBlurSigma: 15,
@@ -24,20 +29,24 @@ void main() {
         sheetBarrierAlpha: 0.20,
         glassMode: FrostedGlassMode.softGlass,
       ),
-      child: Scaffold(
-        body: Center(
-          child: FHeaderAction(
-            icon: const Icon(Icons.more_vert_rounded),
-            semanticsLabel: '更多',
-            glassBall: ball,
-          ),
-        ),
-      ),
+      child: child,
     ),
   );
 
-  testWidgets('glassBall：与弹窗同一组件、同一半径，走真玻璃材质', (tester) async {
-    await tester.pumpWidget(ballAction());
+  testWidgets('球用与弹窗同一组件、同一半径，走真玻璃材质', (tester) async {
+    final link = LayerLink();
+    await tester.pumpWidget(
+      scope(
+        child: Scaffold(
+          body: Center(
+            child: FHeaderActionBall(
+              link: link,
+              icon: const Icon(Icons.more_vert_rounded),
+            ),
+          ),
+        ),
+      ),
+    );
     await tester.pump();
 
     final ball = tester.widget<HyperosSelectPopupGlass>(
@@ -67,11 +76,73 @@ void main() {
     );
   });
 
-  testWidgets('默认不画球：其它调用点保持透明底', (tester) async {
-    await tester.pumpWidget(ballAction(ball: false));
+  testWidgets('visible: false 时不渲染（菜单打开期间让位给弹窗的球）', (tester) async {
+    final link = LayerLink();
+    await tester.pumpWidget(
+      scope(
+        child: Scaffold(
+          body: Center(
+            child: FHeaderActionBall(
+              link: link,
+              visible: false,
+              icon: const Icon(Icons.more_vert_rounded),
+            ),
+          ),
+        ),
+      ),
+    );
     await tester.pump();
 
     expect(find.byType(HyperosSelectPopupGlass), findsNothing);
     expect(find.byType(SoftGlassSurface), findsNothing);
+  });
+
+  testWidgets('球绘制在采样宿主之外（不自采样）', (tester) async {
+    final controller = HyperosGlassBackdropController();
+    addTearDown(controller.dispose);
+    final link = LayerLink();
+
+    // 与首页同构：捕获节点包住"玻璃之下的内容"（真实按钮），球是 Host 的
+    // Stack 兄弟层 —— 不在捕获子树里。
+    await tester.pumpWidget(
+      scope(
+        child: Stack(
+          children: [
+            HyperosGlassBackdropHost(
+              controller: controller,
+              child: CompositedTransformTarget(
+                link: link,
+                child: const FHeaderAction(
+                  icon: SizedBox(width: 24, height: 24),
+                  semanticsLabel: '更多',
+                ),
+              ),
+            ),
+            FHeaderActionBall(
+              link: link,
+              icon: const Icon(Icons.more_vert_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 球不在捕获节点的子树里 —— 这是"不自采样"的结构保证。
+    // （页内玻璃的采样快照录自捕获节点的图层；球若长在捕获子树里，它自己的
+    // 输出会被烘进下一次采样，关菜单后球就会变一次材质。）
+    final captureRo = tester.renderObject<RenderObject>(
+      find.byType(HyperosLayerBackdropCapture),
+    );
+    final ballRo = tester.renderObject<RenderObject>(
+      find.byType(HyperosSelectPopupGlass),
+    );
+    for (RenderObject? ro = ballRo; ro != null; ro = ro.parent) {
+      expect(
+        identical(ro, captureRo),
+        isFalse,
+        reason: '球不能长在捕获子树里：它自己的输出会被烘进下一次采样',
+      );
+    }
   });
 }

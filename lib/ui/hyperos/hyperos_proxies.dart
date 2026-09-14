@@ -12,26 +12,11 @@ class FHeaderAction extends StatelessWidget {
     required this.icon,
     required this.semanticsLabel,
     this.onPress,
-    this.glassBall = false,
   });
 
   final Widget icon;
   final String semanticsLabel;
   final VoidCallback? onPress;
-
-  /// 常驻玻璃圆底（首页顶栏「更多」「爱心」那颗球）。
-  ///
-  /// 为什么需要它：上游 `MiuixGlassTransformPopup` 的形变终点是「面板缩回锚点
-  /// 矩形」——也就是按钮位置的一块玻璃，动画跑完才随 overlay 一起隐藏，读起来
-  /// 就是个「点一下冒出来、过一会才消失的小球」。按钮自己常驻同一颗球，形变
-  /// 才有落点，关闭时也不会留下突兀的残影。
-  ///
-  /// ⚠️ 球必须用 [HyperosSelectPopupGlass] 画，**不要退回 `MiuixIconButton` 的
-  /// `backgroundColor`**（那是平涂色：没有模糊、没有边缘高光、没有描边，而且
-  /// 颜色得按壁纸反相才读得出来）。这里与首页菜单弹窗的注入面
-  /// （`os4_glass_popup_surface.dart`）用的是**同一个组件、同一份档位分派**，
-  /// 所以打开/关闭菜单时那颗球不会跳。
-  final bool glassBall;
 
   @override
   Widget build(BuildContext context) {
@@ -40,20 +25,68 @@ class FHeaderAction extends StatelessWidget {
     // and the wallpaper chrome foreground on the home header).
     // MiuixIconButton has no tooltip parameter; wrap in Tooltip so desktop/web
     // hover still shows the label, matching the former IconButton.tooltip.
-    Widget button = MiuixIconButton(onPressed: onPress, child: icon);
-    if (glassBall) {
-      // 圆角取「最小边长 / 2」＝正圆。弹窗形变时用的是**同一个**口径
-      // （`锚点短边 / 2`，锚点就是这颗按钮的矩形），两边必须同值 ——
-      // 差一点就会在打开/关闭菜单的交接瞬间看到圆角跳一下。
-      const radius = MiuixIconButtonDefaults.minWidth / 2;
-      button = HyperosSelectPopupGlass(cornerRadius: radius, child: button);
-    }
     return Tooltip(
       message: semanticsLabel,
       child: Semantics(
         label: semanticsLabel,
         button: true,
-        child: button,
+        child: MiuixIconButton(onPressed: onPress, child: icon),
+      ),
+    );
+  }
+}
+
+/// 首页顶栏「更多」「爱心」的**常驻玻璃球** —— 画在采样宿主之外的那一份。
+///
+/// ⚠️ **必须放在 [HyperosLayerBackdropCapture] 子树之外**（首页即
+/// `HyperosGlassBackdropHost` 的 Stack 兄弟层，配合
+/// [CompositedTransformTarget] 跟随真实按钮），**不能放回按钮原位**。
+/// 页内玻璃的采样快照录自捕获节点的图层：球若长在捕获子树里，它自己的输出
+/// 会被烘进下一次采样 —— 打开菜单时按钮被上游隐藏、快照是干净的，关闭后
+/// 按钮重新绘制随即触发重采样，球就"变一次材质"并稳定在烘过自己一层的
+/// 样子（2026-09-14 真机现象）。弹窗的球没有这个问题，正因为弹层在宿主之外。
+///
+/// 为什么用 [HyperosSelectPopupGlass]：与首页菜单弹窗的注入面
+/// （`os4_glass_popup_surface.dart`）**同一个组件、同一份档位分派**，
+/// 打开/关闭菜单时那颗球逐像素同源。
+///
+/// 真实按钮保持原位当**透明点击区**（图标也画到这颗球上），[IgnorePointer]
+/// 保证球不挡点击；菜单打开期间调用方置 `visible: false` 让位给弹窗自己的
+/// 形变球 —— 与真实按钮被上游 `contentHidden` 隐藏的窗口完全一致。
+class FHeaderActionBall extends StatelessWidget {
+  const FHeaderActionBall({
+    super.key,
+    required this.link,
+    required this.icon,
+    this.visible = true,
+  });
+
+  /// 跟随的锚点：包在真实按钮（透明点击区）外面的 [CompositedTransformTarget]。
+  final LayerLink link;
+
+  /// 球上的图标（含「更多」的更新红点）。
+  final Widget icon;
+
+  /// 菜单打开期间置 false，让位给弹窗自己的形变球。
+  final bool visible;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!visible) return const SizedBox.shrink();
+    // 半径取「最小边长 / 2」＝正圆，与弹窗形变的「锚点短边 / 2」同口径
+    // （锚点就是这颗按钮的矩形），两边必须同值。
+    const radius = MiuixIconButtonDefaults.minWidth / 2;
+    return CompositedTransformFollower(
+      link: link,
+      child: IgnorePointer(
+        child: HyperosSelectPopupGlass(
+          cornerRadius: radius,
+          child: SizedBox(
+            width: MiuixIconButtonDefaults.minWidth,
+            height: MiuixIconButtonDefaults.minHeight,
+            child: Center(child: icon),
+          ),
+        ),
       ),
     );
   }

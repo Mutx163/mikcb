@@ -226,6 +226,11 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 「常驻挂载 + 切 show」的声明式组件，故用 [_homeMenuOpen] 控制显隐。
   final MiuixGlassPopupAnchor _homeMenuAnchor = MiuixGlassPopupAnchor();
 
+  /// 顶栏「更多」「爱心」常驻玻璃球的位置锚（[FHeaderActionBall] 跟随真实
+  /// 按钮的透明点击区）。
+  final LayerLink _moreBallLink = LayerLink();
+  final LayerLink _heartBallLink = LayerLink();
+
   /// 首页整屏的玻璃采样源。首页自持（而不是让宿主自建）有两个原因：
   /// 1. 首页右上角菜单与首页内容不在同一棵子树里（菜单要在捕获之外，防反馈采样），
   ///    菜单必须拿到**首页这一屏**的 backdrop，而不是"注册表栈顶"（玻璃坞里被盖住的
@@ -577,6 +582,60 @@ class _TimetableScreenState extends State<TimetableScreen>
         final chromeMutedForeground = hasBackdrop
             ? homePageChromeMutedForeground(chromeForeground)
             : foruiTheme.colors.mutedForeground;
+        // 顶栏「更多」「爱心」的常驻玻璃球（[FHeaderActionBall]）。**必须画在
+        // 采样宿主之外**（_wrapHomeWithTopMenu 的 Stack 里、Host 的兄弟层）：
+        // 页内玻璃的采样快照录自捕获节点的图层，球若长在捕获子树里，它自己的
+        // 输出会被烘进下一次采样 —— 打开菜单时按钮被上游隐藏、快照是干净的，
+        // 关闭后按钮重绘即触发重采样，球就"变一次材质"并稳定在烘过自己一层
+        // 的样子（2026-09-14 真机现象）。图标墨色见 [_chromeActionBallInk]；
+        // 「更多」在菜单打开期间让位给弹窗自己的形变球（与真实按钮被
+        // `contentHidden` 隐藏的窗口一致，见 ListenableBuilder）。
+        final homeChromeBalls = [
+          ListenableBuilder(
+            listenable: _homeMenuAnchor,
+            builder: (_, _) => FHeaderActionBall(
+              link: _moreBallLink,
+              visible: !_homeMenuAnchor.contentHidden,
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(Icons.more_vert_rounded, color: _chromeActionBallInk),
+                  if (_hasAvailableUpdate)
+                    Positioned(
+                      right: -1,
+                      top: -1,
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color:
+                              HyperosColors.destructive, // 更新红点与危险语义统一色
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: headerBarColor.a == 0
+                                ? colorScheme.surface
+                                : headerBarColor,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          FHeaderActionBall(
+            link: _heartBallLink,
+            icon: Icon(
+              _isCoupleOverlayActive(provider)
+                  ? Icons.favorite_rounded
+                  : Icons.favorite_outline_rounded,
+              color: _isCoupleOverlayActive(provider)
+                  ? const Color(0xFFE91E63)
+                  : _chromeActionBallInk,
+            ),
+          ),
+        ];
         final followsWeekPager =
             hasBackdrop && settings.homePageBackdropFollowsWeekPager;
         // Keep the same frosted chrome band in day view. The weekday header
@@ -685,29 +744,28 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ),
                 suffixes: [
                   if (provider.hasPartnerBinding)
-                    FHeaderAction(
-                      icon: Icon(
-                        _isCoupleOverlayActive(provider)
-                            ? Icons.favorite_rounded
-                            : Icons.favorite_outline_rounded,
-                        color: _isCoupleOverlayActive(provider)
-                            ? const Color(0xFFE91E63)
-                            : _chromeActionBallInk,
+                    CompositedTransformTarget(
+                      link: _heartBallLink,
+                      // 可见图标（爱心）画到采样宿主之外的常驻玻璃球上
+                      // （见 [_homeChromeBalls] 与 FHeaderActionBall 的说明），
+                      // 这里只留透明点击区。
+                      child: FHeaderAction(
+                        icon: const SizedBox(width: 24, height: 24),
+                        semanticsLabel:
+                            _isCoupleOverlayActive(provider)
+                            ? l10n.coupleTimetableModeDisableTooltip
+                            : l10n.coupleTimetableModeEnableTooltip,
+                        onPress: () {
+                          setState(() {
+                            _coupleOverlayEnabled = !_coupleOverlayEnabled;
+                            _sharedFreeSegmentsExpanded = false;
+                          });
+                          _persistCoupleOverlayEnabled(
+                            provider,
+                            enabled: _coupleOverlayEnabled,
+                          );
+                        },
                       ),
-                      semanticsLabel: _isCoupleOverlayActive(provider)
-                          ? l10n.coupleTimetableModeDisableTooltip
-                          : l10n.coupleTimetableModeEnableTooltip,
-                      glassBall: true,
-                      onPress: () {
-                        setState(() {
-                          _coupleOverlayEnabled = !_coupleOverlayEnabled;
-                          _sharedFreeSegmentsExpanded = false;
-                        });
-                        _persistCoupleOverlayEnabled(
-                          provider,
-                          enabled: _coupleOverlayEnabled,
-                        );
-                      },
                     ),
                   // 上游形变弹层要求把锚点绑在触发控件上（[MiuixGlassAnchor]
                   // 负责挂它自己的 GlobalKey）；[_topMenuButtonKey] 仍保留，
@@ -722,44 +780,21 @@ class _TimetableScreenState extends State<TimetableScreen>
                     onPointerCancel: (_) {
                       if (!_homeMenuOpen) _releaseHomeGlass();
                     },
+                    child: CompositedTransformTarget(
+                    link: _moreBallLink,
                     child: MiuixGlassAnchor(
                     anchor: _homeMenuAnchor,
                     child: KeyedSubtree(
                     key: _topMenuButtonKey,
                     child: FHeaderAction(
-                      icon: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Icon(
-                            Icons.more_vert_rounded,
-                            color: _chromeActionBallInk,
-                          ),
-                          if (_hasAvailableUpdate)
-                            Positioned(
-                              right: -1,
-                              top: -1,
-                              child: Container(
-                                width: 9,
-                                height: 9,
-                                decoration: BoxDecoration(
-                                  color:
-                                      HyperosColors.destructive, // 更新红点与危险语义统一色
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: headerBarColor.a == 0
-                                        ? colorScheme.surface
-                                        : headerBarColor,
-                                    width: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+                      // 可见图标（含更新红点）画到采样宿主之外的常驻玻璃球上
+                      // （见 [_homeChromeBalls] 与 FHeaderActionBall 的说明），
+                      // 这里只留透明点击区。
+                      icon: const SizedBox(width: 24, height: 24),
                       semanticsLabel: l10n.moreTooltip,
-                      glassBall: true,
                       onPress: _showTopActionsSheet,
                     ),
+                  ),
                   ),
                   ),
                   ),
@@ -857,6 +892,7 @@ class _TimetableScreenState extends State<TimetableScreen>
               l10n: l10n,
             ),
             settings: settings,
+            chromeBalls: homeChromeBalls,
           );
         }
         // 底栏为可编排快捷区：页面类条目在首页栈内切换（内嵌宿主，
@@ -925,6 +961,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             l10n: l10n,
           ),
           settings: settings,
+          chromeBalls: homeChromeBalls,
         );
       },
     );
@@ -8324,11 +8361,20 @@ class _TimetableScreenState extends State<TimetableScreen>
   Widget _wrapHomeWithTopMenu(
     Widget content, {
     required TimetableSettings settings,
+    required List<Widget> chromeBalls,
   }) {
     return Stack(
       fit: StackFit.expand,
       children: [
         HyperosGlassBackdropHost(controller: _homeGlass, child: content),
+        // 常驻玻璃球画在宿主**之外**（不自采样，见 build 里 homeChromeBalls
+        // 的说明）；整屏 IgnorePointer 让点击穿透到下面的真实按钮。
+        if (chromeBalls.isNotEmpty)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Stack(children: chromeBalls),
+            ),
+          ),
         HomeTopMenuPopup(
           show: _homeMenuOpen,
           backdrop: _homeGlass.backdrop,
