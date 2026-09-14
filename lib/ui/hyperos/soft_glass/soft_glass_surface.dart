@@ -344,10 +344,15 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
       // 当 `in_tint` uniform 读；柔光玻璃钉死 `shading: false`，所以那个入参
       // 传了也不生效，一直没有页面用它。现在改成按明暗/模糊开关直接算兜底实底，
       // 与 `HomePageChromeGlassFill.standInWashColor` 同源同口径。
+      //
+      // ⚠️ 口径必须带 `tuning.tintAlphaMultiplier`：兜底实底与真玻璃要给出同一个
+      // 「这个档位有多浓」。漏了它，清透档（0.55）与浓雾档（1.3）的兜底实底
+      // 相差 2.4 倍，而 `standInWashColor`（同源）带了 —— 两边就分叉了。
       fill: SoftGlassTokens.tint(
         context,
         blurEnabled: widget.blurEnabled,
         polarity: widget.polarity,
+        tintAlphaMultiplier: tuning.tintAlphaMultiplier,
       ),
       // 菜单 / 选择弹层同档：OS4 的「栏与菜单 MaterialToken」而不是 bionic 折射档。
       // 钉死 false —— 柔光玻璃的对外承诺就是"与首页右上角菜单同一份材质"，

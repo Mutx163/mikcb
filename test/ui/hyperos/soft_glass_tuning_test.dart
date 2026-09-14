@@ -13,7 +13,8 @@ import '../../helpers_test_app.dart';
 /// 作用于自绘底色，而是作用在上游材质上：
 /// - `blurRadiusMultiplier` → 材质 `blurRadius`（上游 radius 单位，与配方半径
 ///   `SoftGlassRecipe.blurRadiusDp` 同源）；
-/// - `tintAlphaMultiplier` → 上游颜色层不透明度；
+/// - `tintAlphaMultiplier` → 上游颜色层不透明度，以及「无 backdrop」时的兜底实底
+///   （两边必须同口径，否则同一档位在真玻璃与兜底实底上是两个浓度）；
 /// - `blurEnabled: false` → 不接采样源（上游无 backdrop 时保留纯色轮廓）。
 void main() {
   MiuixGlass glassOf(WidgetTester tester) =>
@@ -138,6 +139,32 @@ void main() {
   testWidgets('与菜单同档：栏与菜单 MaterialToken（shading 关）', (tester) async {
     await pumpSurface(tester);
     expect(glassOf(tester).shading, isFalse);
+  });
+
+  testWidgets('有 backdrop 时的兜底实底也跟随底色倍率（与 standInWashColor 同口径）', (tester) async {
+    // 兜底实底在「有 backdrop 但还没录到快照」的首帧会被上游读，所以它也得
+    // 跟着档位走。漏掉倍率时清透（0.55）与浓雾（1.3）会得到同一个浓度，
+    // 而 `HomePageChromeGlassFill.standInWashColor`（同源注释）带了倍率 ——
+    // 两边就此分叉，正是「一个材质两种观感」。
+    const dense = SoftGlassTuning.presetDense;
+    await pumpSurface(tester, scopeTuning: dense);
+    final context = tester.element(find.byType(SoftGlassSurface));
+
+    expect(
+      glassOf(tester).fill,
+      SoftGlassTokens.tint(
+        context,
+        blurEnabled: true,
+        tintAlphaMultiplier: dense.tintAlphaMultiplier,
+      ),
+    );
+    // 与清透档必须不同，否则说明倍率没进兜底实底。
+    final clear = SoftGlassTokens.tint(
+      context,
+      blurEnabled: true,
+      tintAlphaMultiplier: SoftGlassTuning.presetClear.tintAlphaMultiplier,
+    );
+    expect(glassOf(tester).fill!.a, greaterThan(clear.a));
   });
 
   group('OS4 弹层也跟随柔光玻璃档位', () {
