@@ -76,6 +76,46 @@ void main() {
     );
   });
 
+  testWidgets('「更多」图标在紧约束下仍居中、红点仍贴图标右上角', (tester) async {
+    // 弹窗形变起点那份副本是按 `BoxConstraints.tight(锚点矩形)` (40×40) 布局的。
+    // 若把 Stack 直接暴露出去，它会被撑成 40×40：默认对齐把图标推到左上角、
+    // Positioned 到 Stack 右上角的红点落到右上角 —— 收起动画里就是"三个点和
+    // 红点跑到圈圈左上/右上，过一会才归位"。这里用 tight 40×40 复现该约束。
+    await tester.pumpWidget(
+      const TestApp(
+        home: Center(
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: HomeMoreActionIcon(
+              ink: Color(0xFF1A1A1A),
+              dotBorderColor: Color(0xFFFFFFFF),
+              showUpdateDot: true,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final boxTopLeft = tester.getTopLeft(find.byType(HomeMoreActionIcon));
+    final boxCenter = tester.getCenter(find.byType(HomeMoreActionIcon));
+    final iconCenter = tester.getCenter(find.byIcon(Icons.more_vert_rounded));
+    expect(iconCenter.dx, closeTo(boxCenter.dx, 0.01), reason: '图标必须居中');
+    expect(iconCenter.dy, closeTo(boxCenter.dy, 0.01), reason: '图标必须居中');
+
+    // 红点：贴 **24×24 基准框**的右上角（right/top = -1，边长 9）→ 相对基准框
+    // 左上角 = (24 + 1 - 4.5, -1 + 4.5) = (20.5, 3.5)；基准框在 40×40 里居中
+    // ⇒ 再各加 8 的留白 = (28.5, 11.5)。
+    final dotCenter = tester.getCenter(
+      find.descendant(
+        of: find.byType(HomeMoreActionIcon),
+        matching: find.byType(Container),
+      ),
+    );
+    expect(dotCenter.dx - boxTopLeft.dx, closeTo(28.5, 0.5));
+    expect(dotCenter.dy - boxTopLeft.dy, closeTo(11.5, 0.5));
+  });
+
   testWidgets('leader 缺席时不画（不能退化成画在左上角）', (tester) async {
     // 这颗球用 [CompositedTransformFollower] 跟随真实按钮。leader 不在树上时
     // （首页切到内嵌页如任务清单，首页内容整块被替换）follower 默认会画在

@@ -997,28 +997,12 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///
   /// [dotBorderColor] 是红点那圈"挖坑"描边色（顶栏带色 / 无带时的主题底色），
   /// 两处必须同色，否则交接瞬间红点那圈边会跳一下。
-  Widget _buildMoreActionIcon({required Color dotBorderColor}) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Icon(Icons.more_vert_rounded, color: _chromeActionBallInk),
-        if (_hasAvailableUpdate)
-          Positioned(
-            right: -1,
-            top: -1,
-            child: Container(
-              width: 9,
-              height: 9,
-              decoration: BoxDecoration(
-                color: HyperosColors.destructive, // 更新红点与危险语义统一色
-                shape: BoxShape.circle,
-                border: Border.all(color: dotBorderColor, width: 1.5),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
+  Widget _buildMoreActionIcon({required Color dotBorderColor}) =>
+      HomeMoreActionIcon(
+        ink: _chromeActionBallInk,
+        dotBorderColor: dotBorderColor,
+        showUpdateDot: _hasAvailableUpdate,
+      );
 
   bool get _shouldShowDayViewOverlay =>
       _selectedDayOfWeek != null &&

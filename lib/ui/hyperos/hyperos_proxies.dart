@@ -3,6 +3,7 @@ import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_popup_glass.dart' show HyperosSelectPopupGlass;
+import 'hyperos_theme.dart';
 
 /// Temporary compatibility widget until all FHeaderAction usages are
 /// migrated to HyperosIconButton.
@@ -34,6 +35,68 @@ class FHeaderAction extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 首页顶栏「更多」按钮的**可见内容**：三个点图标 + 可选更新红点。
+///
+/// 常驻玻璃球（[FHeaderActionBall]）与弹窗形变起点（`anchorContent`）**必须
+/// 共用同一份** —— 任何差异都会在开合交接的那一瞬被看见（红点晚一步出现、
+/// 或整颗球跟着重绘一次）。
+///
+/// ⚠️ 自带固定 [size]×[size] 基准框 + 外层 [Center]，**不要**把 `Stack` 直接
+/// 暴露出去：弹窗形变起点那份副本是按 `BoxConstraints.tight(锚点矩形)`（40×40）
+/// 布局的，`Stack` 被撑成 40×40 后默认对齐会把图标推到**左上角**、`Positioned`
+/// 到 Stack 右上角的红点落到**右上角** —— 收起动画里就是"三个点和红点跑到圈圈
+/// 的左上/右上，过一会（交接给常驻球）才归位"（2026-09-14 真机反馈）。
+/// 固定基准框之后，紧 / 松两种约束下图标与红点的相对位置完全一致。
+class HomeMoreActionIcon extends StatelessWidget {
+  const HomeMoreActionIcon({
+    super.key,
+    required this.ink,
+    required this.dotBorderColor,
+    required this.showUpdateDot,
+  });
+
+  /// 图标墨色（见首页 `_chromeActionBallInk`）。
+  final Color ink;
+
+  /// 更新红点那圈"挖坑"描边色（顶栏带色 / 无带时的主题底色）。
+  final Color dotBorderColor;
+
+  final bool showUpdateDot;
+
+  /// 基准边长，与 `Icon` 默认尺寸一致。
+  static const double size = 24;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: Center(child: Icon(Icons.more_vert_rounded, color: ink)),
+          ),
+          if (showUpdateDot)
+            Positioned(
+              right: -1,
+              top: -1,
+              child: Container(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(
+                  color: HyperosColors.destructive, // 更新红点与危险语义统一色
+                  shape: BoxShape.circle,
+                  border: Border.all(color: dotBorderColor, width: 1.5),
+                ),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
 }
 
 /// 首页顶栏「更多」「爱心」的**常驻玻璃球** —— 画在采样宿主之外的那一份。
