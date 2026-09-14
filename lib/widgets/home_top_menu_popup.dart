@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_blurred_header.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_glass_backdrop_host.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_theme.dart';
@@ -86,6 +87,10 @@ class HomeTopMenuPopup extends StatefulWidget {
 }
 
 class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
+  /// 一级面板那摞行的 key：遮罩点击要靠它量出"一级面板的矩形"，才能区分
+  /// 「点在一级面板里（二级之外）」与「点在两个面板之外」（见 [_handleScrimTap]）。
+  final GlobalKey _rowsKey = GlobalKey();
+
   /// 二级面板的锚点：绑在「添加」那一行上（上游 `MiuixGlassAnchor` 用法）。
   final MiuixGlassPopupAnchor _addRowAnchor = MiuixGlassPopupAnchor();
 
@@ -149,6 +154,24 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
     widget.onDismissRequest();
   }
 
+  /// 遮罩被点（带全局坐标）：**关整窗只作用在两个面板之外**。
+  ///
+  /// - 点在一级面板的矩形内（二级之外的那部分）：只收起二级、回到一级 ——
+  ///   一级面板在二级展开期间是不可交互的（上游 `stacked`），所以这一下必然
+  ///   落在二级的全屏遮罩上，只能由遮罩按坐标判断归属。
+  /// - 点在两个面板之外：关掉整个菜单。
+  void _handleScrimTap(Offset globalPosition) {
+    final rows = _rowsKey.currentContext?.findRenderObject();
+    if (rows is RenderBox && rows.hasSize) {
+      final rect = rows.localToGlobal(Offset.zero) & rows.size;
+      if (rect.contains(globalPosition)) {
+        _closeSecondary();
+        return;
+      }
+    }
+    _close();
+  }
+
   void _closeSecondary() {
     if (_secondaryOpen) {
       setState(() => _secondaryOpen = false);
@@ -199,17 +222,29 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
             stacked: _secondaryOpen,
             stackDuration: _submenuRevealDuration,
             stackShrinkFromAnchor: true,
+            // 让位期间的压暗色：上游默认是「暗色主题黑罩 / 亮色主题**白罩**」，
+            // 于是亮色主题下二级展开时一级面板反而**变亮**（真机反馈）。
+            // 改用与列表弹层同一份——模态遮罩色（黑）× 同一倍率 0.5。
+            maskColor: HyperosBlurredHeader.modalBarrierColor(context)
+                .withValues(
+                  alpha:
+                      HyperosBlurredHeader.modalBarrierColor(context).a * 0.5,
+                ),
             onDismissRequest: _close,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var index = 0; index < entries.length; index++) ...[
-                  if (index > 0 &&
-                      entries[index].category != entries[index - 1].category)
-                    const SizedBox(height: 8),
-                  _row(entries[index], l10n),
+            child: KeyedSubtree(
+              key: _rowsKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var index = 0; index < entries.length; index++) ...[
+                    if (index > 0 &&
+                        entries[index].category !=
+                            entries[index - 1].category)
+                      const SizedBox(height: 8),
+                    _row(entries[index], l10n),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
           if (_secondaryBounds != null)
@@ -229,9 +264,10 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
               // 只留底边距（顶边 0）：二级面板顶边 = 锚点行（「添加」）顶边，
               // 标题行才能与一级那一行**逐像素同位**（默认顶边 8 会整体下沉）。
               contentPadding: const EdgeInsets.only(bottom: 8),
-              // 点面板外遮罩 = 整个菜单关掉；返回键仍走 onDismissRequest
-              // （先收二级、再按才关窗），两条路径分工与旧实现一致。
-              onScrimTap: _close,
+              // 遮罩点击带坐标 → 由 [_handleScrimTap] 区分"点一级面板内"还是
+              // "点两个面板之外"；返回键仍走 onDismissRequest（先收二级、
+              // 再按才关窗），两条路径分工与旧实现一致。
+              onScrimTap: _handleScrimTap,
               onDismissRequest: _closeSecondary,
               child: Column(
                 mainAxisSize: MainAxisSize.min,

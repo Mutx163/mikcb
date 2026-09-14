@@ -429,6 +429,36 @@ void main() {
         category: HomeMenuEntryCategory.preferences,
         open: (_) async {},
       ),
+      // 下面两行是"垫高"用的占位：二级面板（标题行 + 3 个子项）比一级高，
+      // 一级必须更高才会露出「二级之外的一级区域」—— 那条交互要靠它们才能测。
+      HomeMenuEntry(
+        id: 'fillerStats',
+        title: (l10n) => '占位甲',
+        icon: Icons.bar_chart_rounded,
+        category: HomeMenuEntryCategory.preferences,
+        open: (_) async {},
+      ),
+      HomeMenuEntry(
+        id: 'fillerFocus',
+        title: (l10n) => '占位乙',
+        icon: Icons.timer_outlined,
+        category: HomeMenuEntryCategory.preferences,
+        open: (_) async {},
+      ),
+      HomeMenuEntry(
+        id: 'fillerMisc',
+        title: (l10n) => '占位丙',
+        icon: Icons.auto_awesome_outlined,
+        category: HomeMenuEntryCategory.preferences,
+        open: (_) async {},
+      ),
+      HomeMenuEntry(
+        id: 'fillerAbout',
+        title: (l10n) => '占位丁',
+        icon: Icons.info_outline_rounded,
+        category: HomeMenuEntryCategory.preferences,
+        open: (_) async {},
+      ),
     ];
 
     /// 上游契约是「常驻挂载 + 切 show」；这里用 [ValueNotifier] 驱动 show，并收集
@@ -558,6 +588,61 @@ void main() {
       await tester.pumpAndSettle();
       expect(menu.dismisses, isNotEmpty);
       expect(find.text('课表设置'), findsNothing);
+    });
+
+    testWidgets('二级展开时：点一级面板只收二级，点两个面板之外才关整窗', (tester) async {
+      final menu = await pumpMenu(tester);
+
+      await tester.tap(find.text('添加'));
+      await tester.pumpAndSettle();
+      expect(find.text('添加课程'), findsOneWidget);
+
+      // 一级面板比二级高：最下面那行（占位丁）在二级面板下方、仍然可见可点。
+      final outsideSecondary = tester.getCenter(find.text('占位丁'));
+      final secondaryBottom = tester
+          .getRect(find.byType(MiuixGlassSecondaryPopup))
+          .bottom;
+      expect(
+        outsideSecondary.dy,
+        greaterThan(secondaryBottom),
+        reason: '落点必须在二级面板之外，否则这条用例测不到分区逻辑',
+      );
+
+      await tester.tapAt(outsideSecondary);
+      await tester.pumpAndSettle();
+
+      expect(find.text('添加课程'), findsNothing, reason: '二级应收起');
+      expect(
+        menu.dismisses,
+        isEmpty,
+        reason: '点一级面板（二级之外）只收二级，不该关整窗',
+      );
+      expect(find.text('占位丁'), findsOneWidget, reason: '一级菜单仍在');
+
+      // 再展开一次，点两个面板之外 → 这时才关整窗。
+      await tester.tap(find.text('添加').first);
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(30, 520));
+      await tester.pumpAndSettle();
+
+      expect(menu.dismisses, isNotEmpty, reason: '面板外才关整窗');
+      expect(find.text('占位丁'), findsNothing);
+    });
+
+    testWidgets('二级展开时一级面板是压暗（暗罩），不是上游亮色默认的白罩', (tester) async {
+      await pumpMenu(tester);
+
+      final mask = tester
+          .widget<MiuixGlassTransformPopup>(
+            find.byType(MiuixGlassTransformPopup),
+          )
+          .maskColor;
+      expect(mask, isNotNull);
+      expect(
+        mask!.computeLuminance(),
+        lessThan(0.2),
+        reason: '上游默认亮色主题用白罩（alpha .4），二级展开时一级会反而变亮',
+      );
     });
 
     testWidgets('点面板外遮罩整个菜单关闭（不是只收二级）', (tester) async {
