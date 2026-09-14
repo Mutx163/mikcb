@@ -4075,6 +4075,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     // Ink: 走壁纸采样玻璃时才按壁纸亮度自动黑白；否则卡面是主题底色（或亮
     // 磨砂）的实底，墨色必须跟主题走 —— 按原始壁纸亮度翻白会让白墨落在
     // 亮色卡面上不可读。判据是**卡实际用的材质**，不是顶栏状态。
+    //
+    // 亮度来源必须与**它上面那条带**同源（`_weekdayInkLuminance`，信息栏与
+    // 顶栏带用的就是它）：这张卡的墨色本来就是信息栏那套
+    //（configuredHex 取的就是 weekdayBarFontColor*），材质也跟带同款。
+    // 早先这里用 body 带（整屏下半部，常含壁纸的深色区），于是出现"带是
+    // 浅色、卡片也是亮卡，却按深色壁纸翻成白墨"——白字落在亮卡上读不出来
+    // （真机反馈：高斯档下日课表那张日期卡）。
     final summaryInk = useChromeGlass
         ? homePageOverWallpaperInk(
             configuredHex: isDark
@@ -4085,8 +4092,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 : TimetableSettings.defaultWeekdayBarFontColorLight,
             themeFallback: foruiTheme.colors.foreground,
             hasBackdrop: hasBackdrop,
-            wallpaperLuminance:
-                _wallpaperBodyLuminance ?? _wallpaperTopLuminance,
+            wallpaperLuminance: _weekdayInkLuminance(settings),
           )
         : foruiTheme.colors.foreground;
     final summaryMutedInk = homePageOverWallpaperMutedInk(summaryInk);
