@@ -6,7 +6,8 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
-import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/widgets/home_top_menu_popup.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 // 玻璃坞底栏现只有 日/周 两个 Tab（设置入口走 ⋮ 八宫格菜单），
@@ -64,6 +65,35 @@ void main() {
 
   /// 玻璃坞药丸固定占用高度（与屏幕源码 _glassDockPillOccupancy 一致）。
   const double kGlassDockPillOccupancy = 62;
+
+  testWidgets('首页浮层不随本页 TickerMode 静音；常驻球钉在本屏采样源上', (tester) async {
+    await pumpDockApp(tester, HomeNavigationForm.glassDock);
+
+    // 菜单（浮层动画）必须多一层自己的 TickerMode：路由 push 会把本页整层
+    // TickerMode 关掉（`overlay.dart` 的 `_Theater`：被不透明路由盖住、仍
+    // maintainState 的层），菜单动画计时器挂在本页子树下就会被当场静音 ——
+    // 表现是"点菜单项 → 关菜单 + 跳页"时收起动画卡在半透明状态。
+    // 这里断言至少有 2 层：Flutter 路由那层 + 我们给浮层加的那层。
+    expect(
+      find.ancestor(
+        of: find.byType(HomeTopMenuPopup),
+        matching: find.byType(TickerMode),
+      ),
+      findsAtLeast(2),
+      reason: '菜单必须有自己的常开 TickerMode，否则跳页会静音它的收起动画',
+    );
+
+    // 常驻玻璃球必须钉在本屏采样源上（scope），不能靠注册表栈顶 —— push / pop
+    // 会让栈顶换人，回来时球会绑到别人（已释放）的采样源上。
+    expect(
+      find.ancestor(
+        of: find.byType(FHeaderActionBall),
+        matching: find.byType(HyperosGlassBackdropScope),
+      ),
+      findsWidgets,
+      reason: '球要钉在本屏采样源上',
+    );
+  });
 
   testWidgets('glass dock overlay layout: timetable reaches screen bottom',
       (tester) async {

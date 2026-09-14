@@ -8401,29 +8401,38 @@ class _TimetableScreenState extends State<TimetableScreen>
               ),
             ),
           ),
-        HomeTopMenuPopup(
-          show: _homeMenuOpen,
-          backdrop: _homeGlass.backdrop,
-          anchor: _homeMenuAnchor,
-          // 形变动效要从按钮位置长出来，故传入按钮内容的**副本**（不含
-          // GlobalKey，避免与真实按钮抢同一个 key）：与常驻球**共用同一份**
-          // 可见内容（[_buildMoreActionIcon]，含更新红点与同一墨色）。
-          //
-          // ⚠️ 两者不能有差异：早先这里只给了一个裸图标，红点只画在常驻球上，
-          // 于是关闭菜单交接的那一瞬"红点突然出现 + 整颗球跟着重绘一次"，
-          // 读起来就是圆按钮闪一下（2026-09-14 真机反馈，仅在有待更新时可见）。
-          anchorContent: _buildMoreActionIcon(
-            dotBorderColor: chromeDotBorderColor,
+        // ⚠️ 菜单的动画必须**不受"本页是否在前台"影响**：`Overlay` 会给被不透明
+        // 路由盖住、但仍 `maintainState` 的那一层整体加 `TickerMode(enabled:
+        // false)`（`overlay.dart` 的 `_Theater` 构建），而菜单的动画计时器挂在
+        // 本页子树下 —— 于是"点菜单项 → 关菜单 + 跳新页面"同时发生时，收起动画
+        // 会被当场静音、**卡在半透明状态**（真机反馈："跳转前那一刻菜单变成
+        // 透明的"）。菜单是浮层级的瞬时动画，显式放开 TickerMode。
+        TickerMode(
+          enabled: true,
+          child: HomeTopMenuPopup(
+            show: _homeMenuOpen,
+            backdrop: _homeGlass.backdrop,
+            anchor: _homeMenuAnchor,
+            // 形变动效要从按钮位置长出来，故传入按钮内容的**副本**（不含
+            // GlobalKey，避免与真实按钮抢同一个 key）：与常驻球**共用同一份**
+            // 可见内容（[_buildMoreActionIcon]，含更新红点与同一墨色）。
+            //
+            // ⚠️ 两者不能有差异：早先这里只给了一个裸图标，红点只画在常驻球上，
+            // 于是关闭菜单交接的那一瞬"红点突然出现 + 整颗球跟着重绘一次"，
+            // 读起来就是圆按钮闪一下（2026-09-14 真机反馈，仅在有待更新时可见）。
+            anchorContent: _buildMoreActionIcon(
+              dotBorderColor: chromeDotBorderColor,
+            ),
+            entries: resolveHomeGridMenuEntries(settings),
+            hasAvailableUpdate: _hasAvailableUpdate,
+            onDismissRequest: () {
+              if (_homeMenuOpen) {
+                setState(() => _homeMenuOpen = false);
+              }
+              _releaseHomeGlass();
+            },
+            onSelected: _dispatchTopMenuSelection,
           ),
-          entries: resolveHomeGridMenuEntries(settings),
-          hasAvailableUpdate: _hasAvailableUpdate,
-          onDismissRequest: () {
-            if (_homeMenuOpen) {
-              setState(() => _homeMenuOpen = false);
-            }
-            _releaseHomeGlass();
-          },
-          onSelected: _dispatchTopMenuSelection,
         ),
       ],
     );
