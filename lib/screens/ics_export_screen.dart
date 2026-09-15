@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -13,18 +14,34 @@ import '../services/ics_export_service.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/app_toast.dart';
 
+/// Test seam for the "save to device folder" action: receives the generated
+/// file name + bytes, returns the saved location (or null when the user
+/// cancelled). The production implementation delegates to [FilePicker.saveFile].
+typedef IcsSaveCallback =
+    Future<String?> Function(String fileName, Uint8List bytes);
+
 class IcsExportScreen extends StatefulWidget {
-  const IcsExportScreen({super.key, this.exportService, this.shareCallback});
+  const IcsExportScreen({
+    super.key,
+    this.exportService,
+    this.shareCallback,
+    this.saveCallback,
+  });
 
   final IcsExportService? exportService;
   final Future<ShareResult> Function(ShareParams params)? shareCallback;
+  final IcsSaveCallback? saveCallback;
 
   @override
   State<IcsExportScreen> createState() => _IcsExportScreenState();
 }
 
+/// 导出按钮弹出菜单的两个去向。
+enum _IcsExportAction { share, save }
+
 class _IcsExportScreenState extends State<IcsExportScreen> {
   late final IcsExportService _exportService;
+  final GlobalKey _exportButtonAnchorKey = GlobalKey();
   bool _initialized = false;
   bool _isExporting = false;
   String? _selectedProfileId;
@@ -162,12 +179,15 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
           const HyperosSectionGap(),
           HyperosControlCard(
             child: HyperosControlCardInset(
-              child: HyperosButton(
-                key: const Key('ics-export-share'),
-                label: l10n.icsExportButton,
-                loading: _isExporting,
-                expand: true,
-                onPressed: _isExporting ? null : _export,
+              child: KeyedSubtree(
+                key: _exportButtonAnchorKey,
+                child: HyperosButton(
+                  key: const Key('ics-export-share'),
+                  label: l10n.icsExportButton,
+                  loading: _isExporting,
+                  expand: true,
+                  onPressed: _isExporting ? null : _export,
+                ),
               ),
             ),
           ),
@@ -400,40 +420,34 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
         return;
       }
 
-      final params = ShareParams(
-        files: [
-          XFile.fromData(
-            Uint8List.fromList(utf8.encode(result.content)),
-            mimeType: 'text/calendar',
-            name: result.fileName,
+      // 生成成功后让用户二选一：系统分享面板 / 系统保存对话框。
+      // 分享面板里不保证有目标日历 App（它必须声明能接收 text/calendar
+      // 的 SEND 才会出现，小米日历等只声明了「打开 .ics」），保存到目录
+      // 是兜底路径：用户可从文件管理里用「打开方式」导入。
+      final action = await showHyperosListPopup<_IcsExportAction>(
+        context: context,
+        position: hyperosPopupPositionBelow(context, _exportButtonAnchorKey),
+        items: [
+          HyperosPopupMenuItem(
+            label: l10n.icsExportActionShare,
+            value: _IcsExportAction.share,
+            icon: Icons.ios_share_rounded,
+          ),
+          HyperosPopupMenuItem(
+            label: l10n.icsExportActionSave,
+            value: _IcsExportAction.save,
+            icon: Icons.folder_outlined,
           ),
         ],
-        text: l10n.icsExportShareText,
-        subject: l10n.icsExportShareSubject,
       );
-      final shareResult =
-          await (widget.shareCallback?.call(params) ??
-              SharePlus.instance.share(params));
-      if (!mounted) {
+      if (!mounted || action == null) {
         return;
       }
-      if (shareResult.status == ShareResultStatus.success) {
-        showAppToast(
-          context,
-          message: l10n.icsExportShared(result.eventCount),
-          kind: AppToastKind.success,
-        );
-      } else if (shareResult.status == ShareResultStatus.dismissed) {
-        showAppToast(
-          context,
-          message: l10n.icsExportCancelled,
-        );
-      } else if (shareResult.status == ShareResultStatus.unavailable) {
-        showAppToast(
-          context,
-          message: l10n.icsExportFailed,
-          kind: AppToastKind.error,
-        );
+      switch (action) {
+        case _IcsExportAction.share:
+          await _shareResult(l10n, result);
+        case _IcsExportAction.save:
+          await _saveResult(l10n, result);
       }
     } catch (_) {
       if (mounted) {
@@ -448,6 +462,88 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
         setState(() {
           _isExporting = false;
         });
+      }
+    }
+  }
+
+  Future<void> _shareResult(
+    AppLocalizations l10n,
+    IcsExportResult result,
+  ) async {
+    final params = ShareParams(
+      files: [
+        XFile.fromData(
+          Uint8List.fromList(utf8.encode(result.content)),
+          mimeType: 'text/calendar',
+          name: result.fileName,
+        ),
+      ],
+      text: l10n.icsExportShareText,
+      subject: l10n.icsExportShareSubject,
+    );
+    final shareResult =
+        await (widget.shareCallback?.call(params) ??
+            SharePlus.instance.share(params));
+    if (!mounted) {
+      return;
+    }
+    if (shareResult.status == ShareResultStatus.success) {
+      showAppToast(
+        context,
+        message: l10n.icsExportShared(result.eventCount),
+        kind: AppToastKind.success,
+      );
+    } else if (shareResult.status == ShareResultStatus.dismissed) {
+      showAppToast(
+        context,
+        message: l10n.icsExportCancelled,
+      );
+    } else if (shareResult.status == ShareResultStatus.unavailable) {
+      showAppToast(
+        context,
+        message: l10n.icsExportFailed,
+        kind: AppToastKind.error,
+      );
+    }
+  }
+
+  /// 走系统「保存文件」对话框（Android 上是 SAF 的创建文档选择器，无需
+  /// 存储权限）把 ICS 写到用户选的目录；文件名预先带 .ics 扩展名，
+  /// file_picker 按 `MimeTypeMap` 把它映射成 text/calendar。
+  Future<void> _saveResult(
+    AppLocalizations l10n,
+    IcsExportResult result,
+  ) async {
+    try {
+      final bytes = Uint8List.fromList(utf8.encode(result.content));
+      final savedPath =
+          await (widget.saveCallback?.call(result.fileName, bytes) ??
+              FilePicker.saveFile(
+                dialogTitle: l10n.icsExportActionSave,
+                fileName: result.fileName,
+                type: FileType.custom,
+                allowedExtensions: const ['ics'],
+                bytes: bytes,
+              ));
+      if (!mounted) {
+        return;
+      }
+      if (savedPath == null) {
+        showAppToast(context, message: l10n.icsExportSaveCancelled);
+      } else {
+        showAppToast(
+          context,
+          message: l10n.icsExportSavedCount(result.eventCount),
+          kind: AppToastKind.success,
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        showAppToast(
+          context,
+          message: l10n.icsExportSaveFailed,
+          kind: AppToastKind.error,
+        );
       }
     }
   }

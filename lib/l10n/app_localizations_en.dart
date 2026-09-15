@@ -10941,6 +10941,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icsExportShareSubject => 'Qingyu Timetable calendar';
 
   @override
+  String get icsExportActionShare => 'Share with others';
+
+  @override
+  String get icsExportActionSave => 'Save to device folder';
+
+  @override
+  String icsExportSavedCount(int count) {
+    return 'Calendar saved ($count events)';
+  }
+
+  @override
+  String get icsExportSaveCancelled => 'Save cancelled';
+
+  @override
+  String get icsExportSaveFailed =>
+      'Failed to save the calendar. Please try again later.';
+
+  @override
   String get homeNavigationTitle => 'Home & Navigation';
 
   @override

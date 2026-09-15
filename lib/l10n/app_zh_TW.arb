@@ -5932,6 +5932,18 @@
   },
   "icsExportShareText": "這是來自輕屿課表的日曆檔案",
   "icsExportShareSubject": "輕屿課表日曆",
+  "icsExportActionShare": "分享給其他人",
+  "icsExportActionSave": "儲存到手機資料夾",
+  "icsExportSavedCount": "日曆已儲存，共 {count} 個事件",
+  "@icsExportSavedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "icsExportSaveCancelled": "已取消儲存日曆",
+  "icsExportSaveFailed": "日曆儲存失敗，請稍後再試",
   "coupleTimetableEntryTitle": "情侶課表",
   "coupleTimetableEntryBound": "已綁定",
   "coupleTimetableModeEnableTooltip": "開啟情侶課表",

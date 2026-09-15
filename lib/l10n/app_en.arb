@@ -6159,6 +6159,18 @@
   },
   "icsExportShareText": "Calendar file from Qingyu Timetable",
   "icsExportShareSubject": "Qingyu Timetable calendar",
+  "icsExportActionShare": "Share with others",
+  "icsExportActionSave": "Save to device folder",
+  "icsExportSavedCount": "Calendar saved ({count} events)",
+  "@icsExportSavedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "icsExportSaveCancelled": "Save cancelled",
+  "icsExportSaveFailed": "Failed to save the calendar. Please try again later.",
   "homeNavigationTitle": "Home & Navigation",
   "homeMenuCustomizeSectionTitle": "Top-right menu",
   "homeNavigationSubtitle": "Bottom bar style, menu and home title",

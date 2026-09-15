@@ -10673,6 +10673,23 @@ class AppLocalizationsKo extends AppLocalizations {
   String get icsExportShareSubject => '轻屿课表 캘린더';
 
   @override
+  String get icsExportActionShare => '다른 앱으로 공유';
+
+  @override
+  String get icsExportActionSave => '기기 폴더에 저장';
+
+  @override
+  String icsExportSavedCount(int count) {
+    return '캘린더가 저장되었습니다($count개 일정)';
+  }
+
+  @override
+  String get icsExportSaveCancelled => '저장이 취소되었습니다';
+
+  @override
+  String get icsExportSaveFailed => '캘린더를 저장하지 못했습니다. 나중에 다시 시도해 주세요.';
+
+  @override
   String get homeNavigationTitle => '홈 및 탐색';
 
   @override

@@ -6198,6 +6198,18 @@
   },
   "icsExportShareText": "这是来自轻屿课表的日历文件",
   "icsExportShareSubject": "轻屿课表日历",
+  "icsExportActionShare": "分享给别人",
+  "icsExportActionSave": "保存到手机目录",
+  "icsExportSavedCount": "日历已保存，共 {count} 个事件",
+  "@icsExportSavedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "icsExportSaveCancelled": "已取消保存日历",
+  "icsExportSaveFailed": "日历保存失败，请稍后重试",
   "homeNavigationTitle": "首页与导航",
   "homeMenuCustomizeSectionTitle": "右上角菜单",
   "homeNavigationSubtitle": "底栏形态、菜单与首页标题",

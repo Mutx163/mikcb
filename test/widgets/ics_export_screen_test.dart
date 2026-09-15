@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
@@ -24,6 +25,21 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
+
+  /// 点导出按钮并在弹出的去向菜单里选一项。
+  ///
+  /// 弹窗锚定在导出按钮旁（showHyperosListPopup），选项文本即菜单行文本。
+  /// 注意：按钮在弹窗打开期间一直处于 loading 转圈（repeating 动画），
+  /// 弹窗打开阶段只能 pump 定长帧，不能用 pumpAndSettle。
+  Future<void> tapExportAndPick(WidgetTester tester, String optionLabel) async {
+    final button = find.byKey(const Key('ics-export-share'));
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text(optionLabel).last);
+    await tester.pumpAndSettle();
+  }
 
   testWidgets('renders profile, date range, and event type controls', (
     tester,
@@ -123,10 +139,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final button = find.byKey(const Key('ics-export-share'));
-    await tester.ensureVisible(button);
-    await tester.tap(button);
-    await tester.pumpAndSettle();
+    await tapExportAndPick(tester, '分享给别人');
 
     expect(sharedParams, isNotNull);
     expect(sharedParams!.files, hasLength(1));
@@ -136,6 +149,89 @@ void main() {
     expect(sharedContent, startsWith('BEGIN:VCALENDAR\r\n'));
     expect(sharedContent, contains('BEGIN:VEVENT'));
     expect(find.text('已导出并分享 1 个日历事件'), findsOneWidget);
+  });
+
+  testWidgets('export button offers the share / save chooser', (tester) async {
+    final provider = _testProvider();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(home: IcsExportScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final button = find.byKey(const Key('ics-export-share'));
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    // 按钮 loading 转圈是 repeating 动画，弹窗打开阶段不能 pumpAndSettle。
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('分享给别人'), findsOneWidget);
+    expect(find.text('保存到手机目录'), findsOneWidget);
+  });
+
+  testWidgets('save option writes generated ICS without sharing', (
+    tester,
+  ) async {
+    final provider = _testProvider();
+    var shareCalls = 0;
+    var saveCalls = 0;
+    String? savedFileName;
+    Uint8List? savedBytes;
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: TestApp(
+          home: IcsExportScreen(
+            shareCallback: (_) async {
+              shareCalls++;
+              return const ShareResult('shared', ShareResultStatus.success);
+            },
+            saveCallback: (fileName, bytes) async {
+              saveCalls++;
+              savedFileName = fileName;
+              savedBytes = bytes;
+              return '/fake/dir/$fileName';
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tapExportAndPick(tester, '保存到手机目录');
+
+    expect(shareCalls, 0, reason: '选了保存就不应再调起分享');
+    expect(saveCalls, 1);
+    expect(savedFileName, endsWith('.ics'));
+    expect(utf8.decode(savedBytes!), startsWith('BEGIN:VCALENDAR\r\n'));
+    expect(find.text('日历已保存，共 1 个事件'), findsOneWidget);
+  });
+
+  testWidgets('cancelling the system save dialog reports cancellation', (
+    tester,
+  ) async {
+    final provider = _testProvider();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: TestApp(
+          home: IcsExportScreen(
+            saveCallback: (_, _) async => null,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tapExportAndPick(tester, '保存到手机目录');
+
+    expect(find.text('已取消保存日历'), findsOneWidget);
   });
 
   testWidgets('exposes calendar export from Backup & Migration', (
@@ -285,12 +381,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 分享按钮在默认测试面视口之外，直接 tap 会打偏（hit-test 警告）；
-      // 与「passes generated ICS data」用例同款先 ensureVisible 再 tap。
-      final shareButton = find.byKey(const Key('ics-export-share'));
-      await tester.ensureVisible(shareButton);
-      await tester.tap(shareButton);
-      await tester.pumpAndSettle();
+      await tapExportAndPick(tester, '分享给别人');
 
       expect(shareCalls, 1, reason: '默认不过滤，假期当天的课程照常导出');
     });
@@ -312,16 +403,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 开关与分享按钮都在视口外，逐个 ensureVisible 再 tap（同上）。
+      // 开关在视口外，先 ensureVisible 再 tap（同上）。
       final toggle = find.byKey(toggleKey);
       await tester.ensureVisible(toggle);
       await tester.tap(toggle);
       await tester.pumpAndSettle();
+      // 无事件时提示直接弹出，不会进入去向菜单。
       final shareButton = find.byKey(const Key('ics-export-share'));
       await tester.ensureVisible(shareButton);
       await tester.tap(shareButton);
       await tester.pumpAndSettle();
 
+      expect(find.text('分享给别人'), findsNothing);
       expect(shareCalls, 0, reason: '全部课程都被假期过滤掉后不应分享空日历');
       expect(find.text('所选日期范围内没有日历事件'), findsOneWidget);
     });
@@ -362,10 +455,7 @@ void main() {
       await tester.ensureVisible(toggle);
       await tester.tap(toggle);
       await tester.pumpAndSettle();
-      final shareButton = find.byKey(const Key('ics-export-share'));
-      await tester.ensureVisible(shareButton);
-      await tester.tap(shareButton);
-      await tester.pumpAndSettle();
+      await tapExportAndPick(tester, '分享给别人');
 
       expect(
         shareCalls,

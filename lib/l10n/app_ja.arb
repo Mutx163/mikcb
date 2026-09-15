@@ -5934,6 +5934,18 @@
   },
   "icsExportShareText": "軽屿課表からのカレンダーファイル",
   "icsExportShareSubject": "軽屿課表カレンダー",
+  "icsExportActionShare": "ほかのアプリに共有",
+  "icsExportActionSave": "端末のフォルダに保存",
+  "icsExportSavedCount": "カレンダーを保存しました（{count}件）",
+  "@icsExportSavedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "icsExportSaveCancelled": "保存を取り消しました",
+  "icsExportSaveFailed": "カレンダーの保存に失敗しました。後でもう一度お試しください。",
   "appLogsRecordingPausedHint": "記録はオフです。以下は過去のログで、オフの間は新しく追加されません",
   "@coupleTimetableLastImportedAt": {
     "placeholders": {

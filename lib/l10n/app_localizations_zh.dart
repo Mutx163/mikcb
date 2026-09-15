@@ -10342,6 +10342,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get icsExportShareSubject => '轻屿课表日历';
 
   @override
+  String get icsExportActionShare => '分享给别人';
+
+  @override
+  String get icsExportActionSave => '保存到手机目录';
+
+  @override
+  String icsExportSavedCount(int count) {
+    return '日历已保存，共 $count 个事件';
+  }
+
+  @override
+  String get icsExportSaveCancelled => '已取消保存日历';
+
+  @override
+  String get icsExportSaveFailed => '日历保存失败，请稍后重试';
+
+  @override
   String get homeNavigationTitle => '首页与导航';
 
   @override
@@ -21168,6 +21185,23 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get icsExportShareSubject => '輕誘課表日曆';
 
   @override
+  String get icsExportActionShare => '分享給其他人';
+
+  @override
+  String get icsExportActionSave => '儲存到手機資料夾';
+
+  @override
+  String icsExportSavedCount(int count) {
+    return '日曆已儲存，共 $count 個事件';
+  }
+
+  @override
+  String get icsExportSaveCancelled => '已取消儲存日曆';
+
+  @override
+  String get icsExportSaveFailed => '日曆儲存失敗，請稍後再試';
+
+  @override
   String get homeNavigationTitle => '首頁與導覽';
 
   @override
@@ -31992,6 +32026,23 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get icsExportShareSubject => '輕屿課表日曆';
+
+  @override
+  String get icsExportActionShare => '分享給其他人';
+
+  @override
+  String get icsExportActionSave => '儲存到手機資料夾';
+
+  @override
+  String icsExportSavedCount(int count) {
+    return '日曆已儲存，共 $count 個事件';
+  }
+
+  @override
+  String get icsExportSaveCancelled => '已取消儲存日曆';
+
+  @override
+  String get icsExportSaveFailed => '日曆儲存失敗，請稍後再試';
 
   @override
   String get homeNavigationTitle => '首頁與導覽';

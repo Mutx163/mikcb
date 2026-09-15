@@ -10630,6 +10630,23 @@ class AppLocalizationsJa extends AppLocalizations {
   String get icsExportShareSubject => '軽屿課表カレンダー';
 
   @override
+  String get icsExportActionShare => 'ほかのアプリに共有';
+
+  @override
+  String get icsExportActionSave => '端末のフォルダに保存';
+
+  @override
+  String icsExportSavedCount(int count) {
+    return 'カレンダーを保存しました（$count件）';
+  }
+
+  @override
+  String get icsExportSaveCancelled => '保存を取り消しました';
+
+  @override
+  String get icsExportSaveFailed => 'カレンダーの保存に失敗しました。後でもう一度お試しください。';
+
+  @override
   String get homeNavigationTitle => 'ホームとナビゲーション';
 
   @override

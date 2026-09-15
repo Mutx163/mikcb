@@ -18805,6 +18805,36 @@ abstract class AppLocalizations {
   /// **'轻屿课表日历'**
   String get icsExportShareSubject;
 
+  /// No description provided for @icsExportActionShare.
+  ///
+  /// In zh, this message translates to:
+  /// **'分享给别人'**
+  String get icsExportActionShare;
+
+  /// No description provided for @icsExportActionSave.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存到手机目录'**
+  String get icsExportActionSave;
+
+  /// No description provided for @icsExportSavedCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'日历已保存，共 {count} 个事件'**
+  String icsExportSavedCount(int count);
+
+  /// No description provided for @icsExportSaveCancelled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已取消保存日历'**
+  String get icsExportSaveCancelled;
+
+  /// No description provided for @icsExportSaveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'日历保存失败，请稍后重试'**
+  String get icsExportSaveFailed;
+
   /// No description provided for @homeNavigationTitle.
   ///
   /// In zh, this message translates to:

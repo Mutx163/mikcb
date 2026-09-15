@@ -5934,6 +5934,18 @@
   },
   "icsExportShareText": "轻屿课表에서 내보낸 캘린더 파일",
   "icsExportShareSubject": "轻屿课表 캘린더",
+  "icsExportActionShare": "다른 앱으로 공유",
+  "icsExportActionSave": "기기 폴더에 저장",
+  "icsExportSavedCount": "캘린더가 저장되었습니다({count}개 일정)",
+  "@icsExportSavedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "icsExportSaveCancelled": "저장이 취소되었습니다",
+  "icsExportSaveFailed": "캘린더를 저장하지 못했습니다. 나중에 다시 시도해 주세요.",
   "appLogsRecordingPausedHint": "기록이 꺼져 있습니다. 아래는 과거 로그이며, 끈 후에는 새로 추가되지 않습니다",
   "@coupleTimetableLastImportedAt": {
     "placeholders": {
