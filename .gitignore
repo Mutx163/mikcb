@@ -124,6 +124,7 @@ docs/reference/hyperos-blurred-header.md
 .reasonix/
 .freebuff/
 .agents/
+.codeartsdoer/
 
 # Python 缓存
 tool/__pycache__/
