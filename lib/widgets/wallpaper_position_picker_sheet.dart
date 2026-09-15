@@ -556,23 +556,34 @@ class _HyperosHeaderTextButton extends StatelessWidget {
     final content = MiuixPressable(
       onPressed: onPressed,
       borderRadius: radius,
-      child: Container(
-        constraints: BoxConstraints(
-          minWidth: isCompact ? 56 : 120,
-          minHeight: minHeight,
-        ),
-        alignment: Alignment.center,
-        padding: EdgeInsets.symmetric(
-          horizontal: isCompact ? 16 : 24,
-          vertical: 4,
-        ),
-        child: Text(
-          label,
-          maxLines: 1,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: enabled ? fgColor : fgColor.withValues(alpha: 0.45),
+      // ⚠️ [IntrinsicWidth] 不能省：`Container` 一旦带 `alignment`，在**有界**
+      // 约束下会撑满可用宽度（`Align` 的行为），`minWidth` 只是下限、管不住上限。
+      // 底部「换壁纸」的父级是 `Positioned(left: 0, right: 0)`，于是这个盒子拿到
+      // 的 maxWidth 就是整屏宽 → 玻璃形状被拉成一条横贯整屏的长条（顺带整条底边
+      // 都变成它的点击区）。顶部两个在 `Row` 里拿到的是无界约束，回退到内容宽度，
+      // 所以只有底部能看出来。
+      //
+      // `IntrinsicWidth` 让它回到「minWidth 与文字实际宽度取大」：文字仍由
+      // `Container.alignment` 居中（所以两个入参都要保留）。
+      child: IntrinsicWidth(
+        child: Container(
+          constraints: BoxConstraints(
+            minWidth: isCompact ? 56 : 120,
+            minHeight: minHeight,
+          ),
+          alignment: Alignment.center,
+          padding: EdgeInsets.symmetric(
+            horizontal: isCompact ? 16 : 24,
+            vertical: 4,
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: enabled ? fgColor : fgColor.withValues(alpha: 0.45),
+            ),
           ),
         ),
       ),
