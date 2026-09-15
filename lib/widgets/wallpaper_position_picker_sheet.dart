@@ -148,6 +148,18 @@ class _WallpaperPositionPickerPageState
   final List<Timer> _traceTimers = <Timer>[];
   bool _tracedPreviewFrame = false;
 
+  /// 本屏玻璃材质是否已就绪（采样区里有图了）。
+  ///
+  /// 为什么需要它：柔光的材质由屏级宿主在**帧末**录制、玻璃下一帧才读得到（录制
+  /// 必须等图层画完），所以按钮第一次出现时是"平的" —— 真机反馈的"平色块 → 玻璃"
+  /// 就是这一下。进场时页面本来就在滑入，这几帧不画按钮看不出来；画一个随后会变形
+  /// 的平色块反而显眼。所以先不画，等有图了再淡入。
+  ///
+  /// 兜底：[_glassReadyFallback] 到点还没图（宿主缺失/异常）就照常显示 ——
+  /// 不能把按钮永久藏起来。
+  bool _glassReady = false;
+  Timer? _glassReadyFallback;
+
   /// 本页自己的屏级玻璃采样源。
   ///
   /// 这一页是裸 `Scaffold`，不是 [HyperosPage]，**没有宿主**。缺了它，柔光玻璃
@@ -165,6 +177,7 @@ class _WallpaperPositionPickerPageState
 
   @override
   void dispose() {
+    _glassReadyFallback?.cancel();
     // 退出这一侧也要留一条：闪变发生在采样落地那一刻，而"落地"是相对进页算的，
     // 有这条才能与进页时间对齐、判断闪的是进还是出。
     _traceGlass('dispose');
@@ -202,6 +215,24 @@ class _WallpaperPositionPickerPageState
     );
   }
 
+  /// 等本屏采样区录到第一张图（见 [_glassReady]）。
+  ///
+  /// 每帧查一次而不是听控制器：材质是写进"区"里的，控制器只在有人要录帧时通知，
+  /// 图到了不会额外通知页面。按帧查的代价可忽略，且到 [_glassReady] 置位就停。
+  void _awaitGlassMaterial() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _glassReady) {
+        return;
+      }
+      if (_glass.zones.any((zone) => zone.image != null)) {
+        _traceGlass('material ready -> fade in buttons');
+        setState(() => _glassReady = true);
+        return;
+      }
+      _awaitGlassMaterial();
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -228,6 +259,13 @@ class _WallpaperPositionPickerPageState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _traceGlass('frame1');
+      }
+    });
+    _awaitGlassMaterial();
+    _glassReadyFallback = Timer(const Duration(milliseconds: 250), () {
+      if (mounted && !_glassReady) {
+        _traceGlass('material timeout -> show buttons anyway');
+        setState(() => _glassReady = true);
       }
     });
     for (final ms in const <int>[32, 64, 120, 400, 900]) {
@@ -427,10 +465,16 @@ class _WallpaperPositionPickerPageState
               // （见 [_buildOverlayLayer]），外面套一层极性渐变 —— 衬底与墨色要等
               // 壁纸顶部亮度**异步采样**落地才能定，落地前只能按主题猜；直接切换
               // 就是真机反馈的"进 / 出页面闪一下"（浅色实底 → 玻璃）。
-              SoftGlassPolarityFade(
-                ink: inkColor,
-                wash: washColor,
-                builder: _buildOverlayLayer,
+              // 材质就绪前先不画（见 [_glassReady]）：进场这几帧什么都不画，等采样区
+              // 有图了淡入 —— 比先画一块"随后变形的平色块"干净得多。
+              AnimatedOpacity(
+                opacity: _glassReady ? 1 : 0,
+                duration: const Duration(milliseconds: 140),
+                child: SoftGlassPolarityFade(
+                  ink: inkColor,
+                  wash: washColor,
+                  builder: _buildOverlayLayer,
+                ),
               ),
             ],
           ),
