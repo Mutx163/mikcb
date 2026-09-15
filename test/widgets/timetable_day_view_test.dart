@@ -272,6 +272,62 @@ void main() {
     },
   );
 
+  testWidgets('opening day view clears the empty-slot add marker', (
+    tester,
+  ) async {
+    final provider = await _createProviderWithTodayCourse(tester);
+    final today = DateTime.now();
+    final otherDay = today.weekday == 1 ? 2 : 1;
+
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          longPressEmptySlotToAddCourseEnabled: true,
+        ),
+      );
+    });
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    const markerKey = ValueKey('empty-slot-add-marker');
+    expect(find.byKey(markerKey), findsNothing);
+
+    // 长按另一天（该天无课）的空白格：横坐标取那天的列头中心，
+    // 纵坐标借今天课程卡中心（同一节次行），确保命中空白格。
+    final courseCardCenter = tester.getCenter(find.text('高等数学').first);
+    final headerCenter = tester.getCenter(
+      find.byKey(ValueKey('weekday-header-1-$otherDay')),
+    );
+    await tester.longPressAt(Offset(headerCenter.dx, courseCardCenter.dy));
+    await _pumpTimetableFrame(tester);
+
+    expect(find.byKey(markerKey), findsOneWidget);
+
+    // 展开日视图再收起：回归点——展开时应清掉标记，收起后不得重现。
+    await tester.tap(find.byKey(ValueKey('weekday-header-1-$otherDay')));
+    await _pumpTimetableFrame(tester);
+    expect(
+      find.byKey(ValueKey('timetable-day-view-1-$otherDay')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('back-to-week-view-button')));
+    await _pumpTimetableFrame(tester);
+
+    expect(find.byKey(markerKey), findsNothing);
+  });
+
   testWidgets('screen restores saved day view state on launch', (tester) async {
     final provider = await createInitializedTestProvider(tester);
     await runRealAsync(tester, () async {

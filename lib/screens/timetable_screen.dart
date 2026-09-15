@@ -1215,6 +1215,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       await _switchDayWithinWeek(settings, normalizedWeek, dayOfWeek);
       return;
     }
+    // 走到这说明是从周视图展开（日视图内不会产生空白格标记，手势层
+    // 在展开时是关闭的）：清掉周视图里可能还挂着的两步式添加标记，
+    // 否则收起日视图后它会原样重现，绕过「点空白处取消」的规则。
+    _clearEmptySlotMarker();
     final shouldAnimateOpen = animate && !_isDayView;
     if (!_isDayView) {
       _recreateDayViewPageController(
@@ -9588,6 +9592,8 @@ class _EmptySlotAddMarker extends StatelessWidget {
             : Colors.black)
         .withValues(alpha: 0.45);
     return GestureDetector(
+      // 供测试定位「两步式添加」的虚线标记（类是私有的，测不了类型）。
+      key: const ValueKey('empty-slot-add-marker'),
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Padding(
