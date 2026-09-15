@@ -90,16 +90,6 @@ class _GeneralSettingsScreenState extends State<_GeneralSettingsScreen> {
                   );
                 },
               ),
-              HyperosSwitchTile(
-                title: l10n.longPressEmptySlotToAddTitle,
-                subtitle: l10n.longPressEmptySlotToAddSubtitle,
-                value: _draft.longPressEmptySlotToAddCourseEnabled,
-                onChanged: (value) {
-                  _updateDraft(
-                    _draft.copyWith(longPressEmptySlotToAddCourseEnabled: value),
-                  );
-                },
-              ),
             ],
           ),
         ],

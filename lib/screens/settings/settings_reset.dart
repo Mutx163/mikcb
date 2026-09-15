@@ -64,6 +64,8 @@ TimetableSettings applySettingsReset(
       timetableAutoFitSectionHeight: d.timetableAutoFitSectionHeight,
       timetableHideWeekends: d.timetableHideWeekends,
       timetableShowNonCurrentWeekCourses: d.timetableShowNonCurrentWeekCourses,
+      longPressEmptySlotToAddCourseEnabled:
+          d.longPressEmptySlotToAddCourseEnabled,
       timetableSectionTimeDisplayMode: d.timetableSectionTimeDisplayMode,
       timetableTimeColumnWidthMode: d.timetableTimeColumnWidthMode,
       sectionHeight: d.sectionHeight,

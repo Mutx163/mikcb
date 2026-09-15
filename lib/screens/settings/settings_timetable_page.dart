@@ -162,6 +162,18 @@ class _TimetablePageSettingsScreenState
               );
             },
           ),
+          // 课表网格的交互行为，归课表页设置（用户口径 2026-09-15：
+          // 不放通用设置）。
+          HyperosSwitchTile(
+            title: l10n.longPressEmptySlotToAddTitle,
+            subtitle: l10n.longPressEmptySlotToAddSubtitle,
+            value: _draft.longPressEmptySlotToAddCourseEnabled,
+            onChanged: (value) {
+              _updateDraft(
+                _draft.copyWith(longPressEmptySlotToAddCourseEnabled: value),
+              );
+            },
+          ),
           HyperosSelectTile<SectionTimeDisplayMode>(
             label: l10n.layoutTimeColumnDisplayLabel,
             items: {
