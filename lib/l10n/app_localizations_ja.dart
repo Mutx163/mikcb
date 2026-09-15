@@ -5061,8 +5061,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get longPressEmptySlotToAddTitle => '空きコマを長押しして授業を追加';
 
   @override
-  String get longPressEmptySlotToAddSubtitle =>
-      '時間割の空きコマを長押しすると点線の＋が表示され、タップするとその位置に授業を追加できます';
+  String get longPressEmptySlotToAddSubtitle => '長押し後、点線の＋をタップして追加';
 
   @override
   String get homePullQuickImportFetchingCourses => '新しい授業を取得中…';

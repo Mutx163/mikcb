@@ -4963,7 +4963,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get longPressEmptySlotToAddTitle => '长按空白格添加课程';
 
   @override
-  String get longPressEmptySlotToAddSubtitle => '长按课表空白格出现虚线加号，点它可直接在该位置添加课程';
+  String get longPressEmptySlotToAddSubtitle => '长按后点虚线加号即可添加';
 
   @override
   String get homePullQuickImportFetchingCourses => '正在获取新课程…';
@@ -15768,7 +15768,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get longPressEmptySlotToAddTitle => '長按空白格新增課程';
 
   @override
-  String get longPressEmptySlotToAddSubtitle => '長按課表空白格出現虛線加號，點它可直接在該位置新增課程';
+  String get longPressEmptySlotToAddSubtitle => '長按後點虛線加號即可新增';
 
   @override
   String get homePullQuickImportFetchingCourses => '正在獲取新課程…';
@@ -26617,7 +26617,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get longPressEmptySlotToAddTitle => '長按空白格新增課程';
 
   @override
-  String get longPressEmptySlotToAddSubtitle => '長按課表空白格出現虛線加號，點它可直接在該位置新增課程';
+  String get longPressEmptySlotToAddSubtitle => '長按後點虛線加號即可新增';
 
   @override
   String get homePullQuickImportFetchingCourses => '正在取得新課程…';

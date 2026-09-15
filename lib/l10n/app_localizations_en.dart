@@ -5291,7 +5291,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get longPressEmptySlotToAddSubtitle =>
-      'Long-press an empty timetable slot to show a dashed plus, then tap it to add a course there';
+      'Long-press a slot, then tap the dashed plus';
 
   @override
   String get homePullQuickImportFetchingCourses => 'Fetching new courses…';

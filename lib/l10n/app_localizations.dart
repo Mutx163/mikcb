@@ -9112,7 +9112,7 @@ abstract class AppLocalizations {
   /// No description provided for @longPressEmptySlotToAddSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'长按课表空白格出现虚线加号，点它可直接在该位置添加课程'**
+  /// **'长按后点虚线加号即可添加'**
   String get longPressEmptySlotToAddSubtitle;
 
   /// No description provided for @homePullQuickImportFetchingCourses.

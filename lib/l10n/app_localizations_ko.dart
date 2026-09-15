@@ -5088,8 +5088,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get longPressEmptySlotToAddTitle => '빈 칸을 길게 눌러 수업 추가';
 
   @override
-  String get longPressEmptySlotToAddSubtitle =>
-      '시간표의 빈 칸을 길게 누르면 점선 +가 나타나고, 탭하면 그 위치에 수업을 추가할 수 있습니다';
+  String get longPressEmptySlotToAddSubtitle => '길게 누른 뒤 점선 +를 탭하여 추가';
 
   @override
   String get homePullQuickImportFetchingCourses => '새 수업을 가져오는 중…';
