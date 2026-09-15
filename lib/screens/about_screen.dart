@@ -1452,7 +1452,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: colorScheme.shadow.withValues(alpha: 0.06),
               blurRadius: 16,
               offset: const Offset(0, -4),
             ),
@@ -1794,12 +1794,18 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
       showDivider: showDivider,
       trailing: probeState == null
           ? null
-          : _buildMirrorProbeStatusChip(l10n, theme, probeState.result),
+          : _buildMirrorProbeStatusChip(
+              context,
+              l10n,
+              theme,
+              probeState.result,
+            ),
       onTap: onTap,
     );
   }
 
   Widget _buildMirrorProbeStatusChip(
+    BuildContext context,
     AppLocalizations l10n,
     ThemeData theme,
     AppUpdateDownloadProbeResult result,
@@ -1808,8 +1814,8 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     final (label, background, foreground) = switch (result) {
       AppUpdateDownloadProbeResult(isSuccess: true, :final elapsed) => (
         '${elapsed.inMilliseconds}ms',
-        Colors.green.withValues(alpha: 0.12),
-        Colors.green,
+        HyperosColors.success(context).withValues(alpha: 0.12),
+        HyperosColors.success(context),
       ),
       AppUpdateDownloadProbeResult(isSuccess: false) => (
         l10n.aboutMirrorProbeFailedLabel,

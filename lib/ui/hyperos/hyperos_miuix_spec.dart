@@ -99,6 +99,7 @@ abstract final class HyperosMiuixLightColors {
   static const onPrimaryVariant = Color(0xFFAECDFF);
   static const error = Color(0xFFE94634);
   static const onError = Color(0xFFFFFFFF);
+  static const success = Color(0xFF0E8043);
   static const errorContainer = Color(0xFFFDF6F4);
   static const onErrorContainer = Color(0xFF410002);
   static const disabledPrimary = Color(0xFFC2D9FF);
@@ -159,6 +160,7 @@ abstract final class HyperosMiuixDarkColors {
   static const onPrimaryVariant = Color(0xFF99C7F1);
   static const error = Color(0xFFF12522);
   static const onError = Color(0xFFFFFFFF);
+  static const success = Color(0xFF3FD684);
   static const errorContainer = Color(0xFF2E0603);
   static const onErrorContainer = Color(0xFFFFDAD6);
   static const disabledPrimary = Color(0xFF253E64);

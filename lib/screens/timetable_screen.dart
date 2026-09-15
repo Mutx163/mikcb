@@ -8472,10 +8472,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///   下一帧做 —— push 本身是同步的，但 `isCurrent` 实测要到下一帧才翻假。
   ///   首页还是栈顶 = 这项没跳页（开关、只弹 toast）→ 照旧立刻收。
   /// - **盖没盖满**：按转场时长等（与路由用的是同一个口径）。**不能**等首页的
-  ///   `secondaryAnimation`：首页那条路是 `MaterialPageRoute`，而被推上来的是
-  ///   `HyperosPageRoute`，`MaterialPageRoute.canTransitionTo` 只认
-  ///   `MaterialRouteTransitionMixin`（`page.dart:162`），于是首页的次级动画
-  ///   根本不会动（实测恒为 dismissed）—— 这条路上等它等于永远不收菜单。
+  ///   `secondaryAnimation`：首页走的是系统默认页路由（MaterialApp 的 home），
+  ///   被推上来的是本仓库的 HyperosPageRoute；系统默认路由的 canTransitionTo
+  ///   只认自家过渡混入（`page.dart:162`），于是首页的次级动画根本不会动
+  ///   （实测恒为 dismissed）—— 这条路上等它等于永远不收菜单。
   void _requestCloseHomeMenu() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {

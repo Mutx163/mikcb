@@ -147,6 +147,16 @@ abstract final class HyperosColors {
         : HyperosMiuixLightColors.onError;
   }
 
+  /// Success / positive status color（下载探测通过、镜像连通等正向结果）。
+  ///
+  /// 与 [error] 同为语义色：亮 / 暗两套各取自 HyperosMiuix 色板，
+  /// 保证小号文字在浅色底与深色底上都有足够对比度。
+  static Color success(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.success
+        : HyperosMiuixLightColors.success;
+  }
+
   /// Outline / divider color.
   static Color outline(BuildContext context) {
     return _brightness(context) == Brightness.dark
