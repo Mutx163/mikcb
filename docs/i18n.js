@@ -263,6 +263,19 @@
     }
   }
 
+  /** 目录不可用时的页脚兜底：只把 HTML 原文里的 {year} 换成当前年份，其余文案保持原样。 */
+  function applyFooterYearFromMarkup() {
+    const footerCopy = document.querySelector(
+      '.footer-copy[data-i18n="footer.copy"], #footer-copy'
+    );
+    if (footerCopy) {
+      footerCopy.textContent = footerCopy.textContent.replace(
+        "{year}",
+        String(new Date().getFullYear())
+      );
+    }
+  }
+
   function applyDocument() {
     document.documentElement.lang = getLocaleMeta(currentLocale).htmlLang;
     syncHreflang();
@@ -491,6 +504,9 @@
       }
     } catch (error) {
       console.warn("[i18n] failed to load catalogs", error);
+      // 目录拉不到（如直接以 file:// 打开、或 i18n/*.json 404）时页面会停留在 HTML 原文，
+      // 页脚那句里带着 {year} 占位符，这里必须兜一手，否则用户看到的就是字面量。
+      applyFooterYearFromMarkup();
       return;
     }
 
