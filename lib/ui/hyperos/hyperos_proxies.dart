@@ -87,7 +87,8 @@ class HomeMoreActionIcon extends StatelessWidget {
                 width: 9,
                 height: 9,
                 decoration: BoxDecoration(
-                  color: HyperosColors.destructive, // 更新红点与危险语义统一色
+                  // 更新红点与危险语义统一色
+                  color: HyperosColors.destructive,
                   shape: BoxShape.circle,
                   border: Border.all(color: dotBorderColor, width: 1.5),
                 ),
