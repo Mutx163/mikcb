@@ -109,6 +109,20 @@ class CourseWidgetAccentTest {
     }
 
     @Test
+    fun lightCardTextStaysWithinTwiceItsBarLuminance() {
+        // 「色条 + 文字」卖的是同色：文字比色条暗太多就被读成两个颜色
+        // （旧档 0.10 时最多 2.45 倍）。这条锁住差距上限，防回退。
+        for (hex in palette) {
+            val bar = CourseWidgetAccent.accentBarArgb(hex, "solid", false)!!
+            val text = CourseWidgetAccent.accentTextArgb(hex, "solid", false)!!
+            val barY = CourseWidgetAccent.relativeLuminance(bar)
+            if (barY <= 0.0) continue
+            val ratio = CourseWidgetAccent.relativeLuminance(text) / barY
+            assertTrue("$hex text is only $ratio x its bar", ratio >= 0.5)
+        }
+    }
+
+    @Test
     fun darkChipTextClearsFourPointFive() {
         val chips = listOf(parse("#2C4A73"), parse("#324561"))
         for (hex in palette) {

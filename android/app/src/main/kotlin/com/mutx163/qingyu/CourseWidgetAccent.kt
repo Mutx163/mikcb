@@ -44,7 +44,7 @@ enum class WidgetCourseAccentMode(val value: String) {
  */
 object CourseWidgetAccent {
     private const val LIGHT_BAR_MAX_Y = 0.24
-    private const val LIGHT_TEXT_MAX_Y = 0.10
+    private const val LIGHT_TEXT_MAX_Y = 0.13
 
     private const val DARK_BAR_MIN_Y = 0.35
     private const val DARK_TEXT_MIN_Y = 0.55

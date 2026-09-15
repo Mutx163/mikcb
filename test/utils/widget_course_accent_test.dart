@@ -145,6 +145,32 @@ void main() {
       expect(worst, greaterThanOrEqualTo(4.5));
     });
 
+    test('light card: tinted text stays within 2x of its bar luminance', () {
+      // 「色条 + 文字」这一档卖的是同色：文字为了可读必须比色条暗，但差太多就被
+      // 读成两个颜色（旧档 0.10 时最多 2.45 倍）。这条锁住差距上限，防回退。
+      for (final hex in kPresetCourseColorHexes) {
+        final bar = WidgetCourseAccent.accentBarArgb(
+          hex,
+          backgroundStyle: 'solid',
+          darkMode: false,
+        );
+        final text = WidgetCourseAccent.accentTextArgb(
+          hex,
+          backgroundStyle: 'solid',
+          darkMode: false,
+        );
+        if (bar == null || text == null) continue;
+        final barY = _argb(bar).computeLuminance();
+        if (barY <= 0) continue;
+        final ratio = _argb(text).computeLuminance() / barY;
+        expect(
+          ratio,
+          greaterThanOrEqualTo(0.5),
+          reason: '$hex text is only ${ratio.toStringAsFixed(2)}x its bar',
+        );
+      }
+    });
+
     test('gradient style keeps white text (never tints the hero title)', () {
       for (final hex in kPresetCourseColorHexes) {
         expect(
