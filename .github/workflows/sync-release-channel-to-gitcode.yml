@@ -174,6 +174,34 @@ jobs:
                 ;;
             esac
           done
-          echo "::error::删除 GitCode 上的 ${TAG} 失败（HTTP ${LAST_CODE}）—— GitCode 的 API 可能不支持删除 release，请到 GitCode 网页手动删除该版本"
-          echo "$LAST_BODY"
-          exit 1
+
+          # 删除不被支持（实测 405）→ 兜底：把该版本降级为预发布并在正文标注撤回。
+          # 这样国内渠道不会继续把它当"正式版"推给用户；不算完美下线（附件还在），
+          # 但比留在 latest 上强，且是可逆的：重新发布时会自动回到 latest。
+          CHECK=$(curl -L -sS -o /dev/null -w "%{http_code}" \
+            -H "PRIVATE-TOKEN: ${GITCODE_TOKEN}" -H "Accept: application/json" \
+            "${BASE}/releases/tags/${TAG}")
+          if [ "$CHECK" != "200" ]; then
+            echo "GitCode 上本来就没有 ${TAG}—— 无需处理"
+            exit 0
+          fi
+
+          echo "::warning::GitCode 的 API 不支持删除 release（HTTP ${LAST_CODE}）：${LAST_BODY}"
+          OLD_BODY=$(curl -L -sS -H "PRIVATE-TOKEN: ${GITCODE_TOKEN}" \
+            -H "Accept: application/json" "${BASE}/releases/tags/${TAG}" | jq -r '.body // ""')
+          NOTE="⚠️ 该版本已撤回，请勿使用。"
+          # 换行用 printf 拼，不写字面换行：YAML 块里顶格的续行会被当成新的键
+          NEW_BODY=$(printf '%s\n\n%s' "$NOTE" "$OLD_BODY")
+          PAYLOAD=$(jq -n --arg tag "$TAG" --arg body "$NEW_BODY" \
+            '{tag_name: $tag, name: $tag, body: $body, release_status: "pre"}')
+          RESP_FILE="$(mktemp)"
+          CODE=$(curl -L -sS -o "$RESP_FILE" -w "%{http_code}" -X PATCH \
+            -H "PRIVATE-TOKEN: ${GITCODE_TOKEN}" \
+            -H "Content-Type: application/json" -H "Accept: application/json" \
+            -d "$PAYLOAD" "${BASE}/releases/${TAG}")
+          if [ "$CODE" != "200" ]; then
+            echo "::error::降级 GitCode 上的 ${TAG} 也失败了（HTTP ${CODE}）—— 请到 GitCode 网页手动下线该版本"
+            cat "$RESP_FILE"
+            exit 1
+          fi
+          echo "已把 GitCode 上的 ${TAG} 降级为预发布并标注「已撤回」；如需彻底下线请到 GitCode 网页删除该版本"
