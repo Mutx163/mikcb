@@ -163,8 +163,9 @@ void main() {
     // 壁纸文件路径必须一并清掉，否则「恢复默认」后背景还在。
     expect(result.homePageWallpaperPath, isNull);
     expect(result.homePageBackgroundImagePath, isNull);
-    // 「最近使用」同属这一页：历史清空后历史里的图片才允许被删除。
-    expect(result.wallpaperHistory, isEmpty);
+    // 「最近使用」是设备级**全局**历史（所有课表共用），settings 里这份只是备份 /
+    // 云同步用的镜像：恢复默认只清当前课表的壁纸指针，不碰这条历史。
+    expect(result.wallpaperHistory, dirtySettings().wallpaperHistory);
 
     final dirty = dirtySettings();
     expect(result.courseCardFontSize, dirty.courseCardFontSize);

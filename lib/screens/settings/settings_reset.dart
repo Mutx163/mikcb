@@ -89,9 +89,10 @@ TimetableSettings applySettingsReset(
       // 保证恢复默认后首页真的没有背景。
       clearHomePageWallpaperPath: true,
       clearHomePageBackgroundImagePath: true,
-      // 「最近使用」也清空：历史里的图片文件随之下线，由调用方删除
-      // （见 _SettingsResetTile._confirm），否则会留下一批没人引用的图。
-      clearWallpaperHistory: true,
+      // ⚠️ 「最近使用」**不清**：它是设备级全局历史（所有课表共用），settings 里
+      // 这份只是给备份 / 云同步留的镜像（真源见 `WallpaperHistoryService`）。
+      // 恢复默认是单个课表的动作，不该连带清掉别的课表的历史；
+      // 镜像也保持原样，否则紧接着做的备份会带上一条空历史。
     ),
     // 外观页瘦身后的范围：主题模式 / 字体 / 主题种子色与玻璃质感。
     SettingsResetScope.appearance => current.copyWith(
@@ -199,22 +200,34 @@ class _SettingsResetTile extends StatelessWidget {
     if (confirmed != true || !context.mounted) {
       return;
     }
-    // 课表页 scope 会清掉壁纸路径与整条「最近使用」：先把所有即将失去引用的
-    // 图片留底，落盘后统一删除，避免文档目录积累孤儿图片。
+    // 课表页 scope 只清**当前课表**的壁纸指针；「最近使用」是全局历史（所有课表
+    // 共用），恢复默认不动它 —— 用户口径（2026-09-15）：恢复默认是针对单个课表的
+    // 动作，不该把别的课表也在用的历史一起清掉。
+    //
+    // 于是能删的只有"连全局历史都不再引用、别的课表也没在用"的那一张：还在历史里
+    // 的图片继续留着，用户仍能从「最近使用」一键切回（留着的那条历史就是它的引用）。
     final staleBackdropPaths = <String>[];
     if (scope == SettingsResetScope.timetablePage) {
       final currentPath = resolveHomePageBackdropImagePath(provider.settings);
       if (currentPath != null && currentPath.isNotEmpty) {
         staleBackdropPaths.add(currentPath);
       }
-      for (final entry in provider.settings.wallpaperHistory) {
-        if (!isLegacyBuiltInWallpaperEntry(entry)) {
-          staleBackdropPaths.add(entry.key);
-        }
-      }
     }
+    final keepWhenDeleting = <String>{
+      // 别的课表当前在用的（本课表的指针马上要被清掉，不算"在用"）。
+      for (final profile in provider.profiles)
+        if (profile.id != provider.activeProfileId)
+          ?resolveHomePageBackdropImagePath(profile.settings),
+      // 全局历史里还留着的。
+      for (final entry in await WallpaperHistoryService.load()) entry.key,
+    };
     onReset(applySettingsReset(provider.settings, scope));
-    unawaited(deleteEvictedWallpaperFiles(staleBackdropPaths));
+    unawaited(
+      deleteEvictedWallpaperFiles(
+        staleBackdropPaths,
+        inUsePaths: keepWhenDeleting,
+      ),
+    );
     if (!context.mounted) {
       return;
     }

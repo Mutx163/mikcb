@@ -31,6 +31,7 @@ import '../services/miui_live_activities_service.dart';
 import '../services/app_log_service.dart';
 import '../services/umeng_analytics_service.dart';
 import '../services/webdav_sync_coordinator.dart';
+import '../services/wallpaper_history_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/home_page_background.dart';

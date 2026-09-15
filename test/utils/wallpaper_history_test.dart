@@ -215,4 +215,93 @@ void main() {
       await deleteEvictedWallpaperFiles(['', 'builtin:ember_teal']);
     });
   });
+
+  group('deletableWallpaperPaths', () {
+    test('跳过空串与遗留内置壁纸键', () {
+      expect(
+        deletableWallpaperPaths([
+          '',
+          'builtin:ember_teal',
+          '/img/keep.png',
+        ]),
+        ['/img/keep.png'],
+      );
+    });
+
+    test('跳过"还有人在用"的路径（全局历史下别的课表的当前壁纸）', () {
+      // 回归（2026-09-15 历史改成全局）：壁纸仍每个课表各自一张，某张图被全局
+      // 历史淘汰 ≠ 没人用 —— 别的课表可能正拿它当壁纸，删了对方首页就缺图。
+      expect(
+        deletableWallpaperPaths(
+          ['/img/evicted.png', '/img/other-profile.png'],
+          inUsePaths: {'/img/other-profile.png'},
+        ),
+        ['/img/evicted.png'],
+      );
+    });
+  });
+
+  group('mergeWallpaperHistories', () {
+    test('同 key 去重取 usedAt 更新者，并按最新在前排序', () {
+      final merged = mergeWallpaperHistories([
+        const [
+          WallpaperHistoryEntry(key: '/old.png', alignX: 0.1, usedAt: 10),
+          WallpaperHistoryEntry(key: '/shared.png', alignX: 0.2, usedAt: 20),
+        ],
+        const [
+          WallpaperHistoryEntry(key: '/shared.png', alignX: 0.8, usedAt: 30),
+          WallpaperHistoryEntry(key: '/new.png', usedAt: 40),
+        ],
+      ]);
+
+      expect(merged.map((entry) => entry.key), [
+        '/new.png',
+        '/shared.png',
+        '/old.png',
+      ]);
+      expect(merged[1].alignX, 0.8, reason: '同 key 取较新的那次对齐');
+    });
+
+    test('两条都缺 usedAt（老数据）时取后看到的那条，入参由旧到新', () {
+      final merged = mergeWallpaperHistories([
+        const [WallpaperHistoryEntry(key: '/a.png', alignX: 0.1)],
+        const [WallpaperHistoryEntry(key: '/a.png', alignX: 0.9)],
+      ]);
+
+      expect(merged.length, 1);
+      expect(merged.single.alignX, 0.9);
+    });
+
+    test('缺 usedAt 的老数据排在带 usedAt 的后面（保持各自阵营内的顺序）', () {
+      final merged = mergeWallpaperHistories([
+        const [
+          WallpaperHistoryEntry(key: '/legacy-b.png'),
+          WallpaperHistoryEntry(key: '/legacy-a.png'),
+        ],
+        const [WallpaperHistoryEntry(key: '/fresh.png', usedAt: 5)],
+      ]);
+
+      expect(merged.map((entry) => entry.key), [
+        '/fresh.png',
+        '/legacy-a.png',
+        '/legacy-b.png',
+      ]);
+    });
+
+    test('并集后仍按上限截断', () {
+      final merged = mergeWallpaperHistories([
+        [
+          for (var i = 0; i < kMaxWallpaperHistoryEntries; i++)
+            WallpaperHistoryEntry(key: '/a/$i.png', usedAt: i),
+        ],
+        [
+          for (var i = 0; i < kMaxWallpaperHistoryEntries; i++)
+            WallpaperHistoryEntry(key: '/b/$i.png', usedAt: 100 + i),
+        ],
+      ]);
+
+      expect(merged.length, kMaxWallpaperHistoryEntries);
+      expect(merged.first.key, '/b/${kMaxWallpaperHistoryEntries - 1}.png');
+    });
+  });
 }

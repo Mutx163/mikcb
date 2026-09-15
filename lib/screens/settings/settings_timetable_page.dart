@@ -20,6 +20,13 @@ class _TimetablePageSettingsScreenState
   Timer? _autoSaveTimer;
   Future<void> _saveQueue = Future<void>.value();
 
+  /// 壁纸「最近使用」历史 —— **全局**（设备级，所有课表共用同一条）。
+  ///
+  /// 真源是 [WallpaperHistoryService]：本页只是它的读者与写者。`_draft` 里那份
+  /// `wallpaperHistory` 是给备份 / 云同步留的**镜像**（payload 只带 profiles，
+  /// 见 [_rememberBackdrops]），读取一律走这里。
+  List<WallpaperHistoryEntry> _wallpaperHistory = const [];
+
   static const List<String> _backgroundColors = [
     '#F8FAFC',
     '#F7F7F5',
@@ -34,10 +41,31 @@ class _TimetablePageSettingsScreenState
     super.initState();
     _timetableProvider = context.read<TimetableProvider>();
     _draft = _timetableProvider.settings;
+    // 全局历史是 prefs 里的异步数据：先按空列表渲染，载入完再刷一次；
+    // 之后的变更（本页自己写的、别处写的）都靠 notifier 推过来。
+    WallpaperHistoryService.notifier.addListener(_onWallpaperHistoryChanged);
+    unawaited(_loadWallpaperHistory());
+  }
+
+  Future<void> _loadWallpaperHistory() async {
+    final entries = await WallpaperHistoryService.load();
+    if (!mounted || listEquals(entries, _wallpaperHistory)) {
+      return;
+    }
+    setState(() => _wallpaperHistory = entries);
+  }
+
+  void _onWallpaperHistoryChanged() {
+    final entries = WallpaperHistoryService.notifier.value;
+    if (!mounted || listEquals(entries, _wallpaperHistory)) {
+      return;
+    }
+    setState(() => _wallpaperHistory = entries);
   }
 
   @override
   void dispose() {
+    WallpaperHistoryService.notifier.removeListener(_onWallpaperHistoryChanged);
     // 滑块 debounce 未到期时若直接返回，只 cancel 会丢最后一档草稿。
     if (_autoSaveTimer?.isActive ?? false) {
       _autoSaveTimer?.cancel();
@@ -328,10 +356,15 @@ class _TimetablePageSettingsScreenState
     );
   }
 
-  /// 把 [entries]（按「旧 → 新」顺序）补记进「最近使用」，返回带新历史的设置。
+  /// 把 [entries]（按「旧 → 新」顺序）补记进「最近使用」，返回带镜像的设置。
   ///
-  /// 被挤出上限的图片文件已不再被任何历史条目引用，异步删除释放空间；
-  /// 删除失败不阻断主流程（deleteManagedImage 自身吞掉异常）。
+  /// 历史是**全局**的：以全局那一份为基准算，写完落回全局；同时抄一份进 settings
+  /// 当镜像 —— 备份 / 云同步 / 局域网传输的 payload 只序列化 `profiles`，settings
+  /// 里留一份，历史才继续随备份走（导入时由 provider 并回全局）。
+  ///
+  /// 被挤出上限的图片文件不再被任何历史条目引用，异步删除释放空间；删除失败不
+  /// 阻断主流程（deleteManagedImage 自身吞掉异常）。删之前必须过一遍在用白名单：
+  /// 全局历史里可能有**别的课表**正在用的壁纸。
   TimetableSettings _rememberBackdrops(
     TimetableSettings next,
     List<WallpaperHistoryEntry> entries,
@@ -340,12 +373,28 @@ class _TimetablePageSettingsScreenState
       return next;
     }
     final result = rememberWallpaperHistoryBatch(
-      history: next.wallpaperHistory,
+      history: _wallpaperHistory,
       entries: entries,
     );
-    unawaited(deleteEvictedWallpaperFiles(result.evictedPaths));
+    unawaited(
+      deleteEvictedWallpaperFiles(
+        result.evictedPaths,
+        inUsePaths: _inUseWallpaperPaths(),
+      ),
+    );
+    unawaited(WallpaperHistoryService.save(result.history));
+    _wallpaperHistory = result.history;
     return next.copyWith(wallpaperHistory: result.history);
   }
+
+  /// 删淘汰文件时的白名单：**所有课表**当前的壁纸 + 本页草稿里刚选中的那张。
+  ///
+  /// 历史全局、壁纸每个课表各自一张，"被历史淘汰"因此不等于"没人用"；草稿里刚
+  /// 选中的那张也还没落盘，同样要护住（见 [deleteEvictedWallpaperFiles]）。
+  Set<String> _inUseWallpaperPaths() => <String>{
+    ..._timetableProvider.allProfilesWallpaperPaths,
+    ?resolveHomePageBackdropImagePath(_draft),
+  };
 
   /// 应用一次背景切换的收尾：缓存失效 + 补记「最近使用」+ 落盘。
   ///
@@ -390,8 +439,8 @@ class _TimetablePageSettingsScreenState
 
   /// 「最近使用」缩略图条：可一键切回最近设置过的 10 张壁纸。
   ///
-  /// 列表 = 已持久化的历史（最新在前）中当前可用者；历史还是空的老用户，
-  /// 把当前生效的那一张补在最前，一进设置页就能看到自己正用着什么。
+  /// 列表 = **全局**历史（所有课表共用，最新在前）中当前可用者；历史还是空的老
+  /// 用户，把当前生效的那一张补在最前，一进设置页就能看到自己正用着什么。
   Widget _buildRecentWallpaperTile(
     BuildContext context, {
     required AppLocalizations l10n,
@@ -399,13 +448,13 @@ class _TimetablePageSettingsScreenState
     final currentKey = homePageBackdropKey(_draft);
     final entries = <WallpaperHistoryEntry>[
       if (currentKey != null &&
-          !_draft.wallpaperHistory.any((entry) => entry.key == currentKey))
+          !_wallpaperHistory.any((entry) => entry.key == currentKey))
         WallpaperHistoryEntry(
           key: currentKey,
           alignX: _draft.homePageWallpaperAlignX,
           alignY: _draft.homePageWallpaperAlignY,
         ),
-      ...availableWallpaperHistory(_draft.wallpaperHistory),
+      ...availableWallpaperHistory(_wallpaperHistory),
     ];
     if (entries.isEmpty) {
       return const SizedBox.shrink();
