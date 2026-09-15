@@ -183,8 +183,17 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
     }
   }
 
+  /// 菜单项被选中：**不在这里收菜单**，收菜单的时机交给宿主。
+  ///
+  /// 列表态菜单的条目几乎都是"跳页面/弹层"：先收菜单、再推路由，中间会有一两帧
+  /// 「菜单已经收了、新页面还没盖满」，底下的圆形按钮与爱心球就在这两帧里冒出来
+  /// 闪一下（真机 2026-09-15 反馈："点击进入页面的时候菜单闪一下、后面的圆按钮
+  /// 爱心按钮跟着闪现"）。宿主知道新路由什么时候盖满屏幕，由它决定何时收
+  /// （见 `timetable_screen.dart` 的 `_requestCloseHomeMenu`）。
+  ///
+  /// 遮罩点击 / 返回键那条路不走这里，仍是立刻收；宿主若绕过本回调直接收菜单
+  /// （切页、路由变化），[didUpdateWidget] 会把二级状态复位。
   void _select(String id) {
-    _close();
     widget.onSelected(id);
   }
 

@@ -468,6 +468,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       controller.dispose();
     }
     _pendingDayViewControllerDisposals.clear();
+    _homeMenuCloseDelay?.cancel();
+    _homeMenuCloseDelay = null;
     _homeMenuAnchor.dispose();
     _homeGlass.dispose();
     super.dispose();
@@ -8425,12 +8427,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             ),
             entries: resolveHomeGridMenuEntries(settings),
             hasAvailableUpdate: _hasAvailableUpdate,
-            onDismissRequest: () {
-              if (_homeMenuOpen) {
-                setState(() => _homeMenuOpen = false);
-              }
-              _releaseHomeGlass();
-            },
+            onDismissRequest: _closeHomeMenuNow,
             onSelected: _dispatchTopMenuSelection,
           ),
         ),
@@ -8454,6 +8451,67 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (!_homeGlassHeld) return;
     _homeGlassHeld = false;
     _homeGlass.releaseRecording();
+  }
+
+  /// 菜单正在等"新路由盖满首页"的那个定时器（见 [_requestCloseHomeMenu]）。
+  Timer? _homeMenuCloseDelay;
+
+  /// 请收首页菜单：**有新路由正在盖上来**时先留着，等它盖满再收；否则立刻收。
+  ///
+  /// 为什么不能当场收：列表态菜单是浮在首页之上的一层（上游 `OverlayPortal`
+  /// 的绘制顺序保证新路由压在菜单之上 —— `overlay.dart` 的 `_TheaterParentData`
+  /// 注释原话是"portal 子节点画在所属 entry 之后、下一条 entry 之前，而下一条
+  /// entry 可能正是该挡住它的 `ModalRoute`"）。菜单先收掉、新路由又还没铺满，
+  /// 中间那一两帧就会露出首页顶栏 —— 圆形按钮与爱心球在那两帧里冒出来闪一下
+  /// （真机 2026-09-15 反馈）。等盖满再收，收起动作用户根本看不到。
+  ///
+  /// 判定分两半：
+  /// - **有没有跳页**：看首页那条路由还是不是栈顶（[Route.isCurrent]）。判定推到
+  ///   下一帧做 —— push 本身是同步的，但 `isCurrent` 实测要到下一帧才翻假。
+  ///   首页还是栈顶 = 这项没跳页（开关、只弹 toast）→ 照旧立刻收。
+  /// - **盖没盖满**：按转场时长等（与路由用的是同一个口径）。**不能**等首页的
+  ///   `secondaryAnimation`：首页那条路是 `MaterialPageRoute`，而被推上来的是
+  ///   `HyperosPageRoute`，`MaterialPageRoute.canTransitionTo` 只认
+  ///   `MaterialRouteTransitionMixin`（`page.dart:162`），于是首页的次级动画
+  ///   根本不会动（实测恒为 dismissed）—— 这条路上等它等于永远不收菜单。
+  void _requestCloseHomeMenu() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _decideCloseHomeMenu();
+      }
+    });
+  }
+
+  void _decideCloseHomeMenu() {
+    if (!mounted || !_homeMenuOpen) {
+      return;
+    }
+    if (ModalRoute.of(context)?.isCurrent ?? true) {
+      _closeHomeMenuNow();
+      return;
+    }
+    // 新路由正在盖上来：等它铺满整屏再收。多给 3 帧余量，宁可晚收（晚收看不见）
+    // 也别早收（早收就露出顶栏那两颗球）。
+    _homeMenuCloseDelay?.cancel();
+    _homeMenuCloseDelay = Timer(
+      HyperosNavigation.transitionDuration + const Duration(milliseconds: 48),
+      () {
+        _homeMenuCloseDelay = null;
+        if (mounted) {
+          _closeHomeMenuNow();
+        }
+      },
+    );
+  }
+
+  /// 立刻收起首页菜单（遮罩点击 / 返回键 / 判定"这一项不跳页"）。
+  void _closeHomeMenuNow() {
+    _homeMenuCloseDelay?.cancel();
+    _homeMenuCloseDelay = null;
+    if (_homeMenuOpen) {
+      setState(() => _homeMenuOpen = false);
+    }
+    _releaseHomeGlass();
   }
 
   Future<void> _showTopActionsSheet() async {
@@ -8498,6 +8556,23 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
 
+    // 同步起跑分支：下面每个分支都是"先同步推路由、再 await 它的结果"，
+    // 所以这一句执行完就已经能看出"有没有新路由压上来"，收菜单的时机交给
+    // [_requestCloseHomeMenu] —— 先收菜单会把底下的圆按钮/爱心球露出来闪一下。
+    // 「软件更新」那项要先做异步版本检查才推页面，由它自己在推页面时请收
+    // （见 [_openTopMenuUpdatePage]），这里不能替它收。
+    final pending = _runTopMenuSelection(selectedId, provider);
+    if (selectedId != 'update') {
+      _requestCloseHomeMenu();
+    }
+    await pending;
+  }
+
+  /// 菜单项的实际分发（由 [_dispatchTopMenuSelection] 同步起跑）。
+  Future<void> _runTopMenuSelection(
+    String selectedId,
+    TimetableProvider provider,
+  ) async {
     switch (selectedId) {
       // 这两项依赖首页宿主上下文：添加课程要带日视图选中日期弹层，
       // 更新入口要先做版本检查再进详情页。其余全部走目录分发。
@@ -8541,6 +8616,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (!mounted) {
       return;
     }
+    // 版本检查做完、页面马上要推上来了：这时候才请收菜单 —— 早一步（检查期间）
+    // 收掉，首页顶上那两颗球就会在页面盖上来之前先冒出来闪一下。
+    _requestCloseHomeMenu();
     await Navigator.of(context).push<void>(
       HyperosPageRoute<void>(
         builder: (_) => AboutUpdateScreen(packageInfo: packageInfo),
