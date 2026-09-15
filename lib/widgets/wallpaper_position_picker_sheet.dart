@@ -197,6 +197,7 @@ class _WallpaperPositionPickerPageState
       '$_traceTag +${_traceClock.elapsedMilliseconds}ms $event '
       'lum=${_topLuminance?.toStringAsFixed(3) ?? 'null'} '
       'ink=0x${ink.toARGB32().toRadixString(16)} '
+      'bg=${_tracedPreviewFrame ? 'wallpaper' : 'placeholder'} '
       'zones=${zones.length} images=[$images] origins=[$origins]',
     );
   }
@@ -229,7 +230,7 @@ class _WallpaperPositionPickerPageState
         _traceGlass('frame1');
       }
     });
-    for (final ms in const <int>[120, 400, 900]) {
+    for (final ms in const <int>[32, 64, 120, 400, 900]) {
       _traceTimers.add(
         Timer(Duration(milliseconds: ms), () {
           if (mounted) {
@@ -543,42 +544,46 @@ class _WallpaperPositionPickerPageState
   }
 
   Widget _buildPreviewArea(BuildContext context) {
-    final imageSize = _imageSize;
-    if (imageSize == null) {
-      return Center(
-        // 文件缺失/损坏时显示占位图标，而不是永远转圈或抛异常。
-        child: _imageLoadFailed
-            ? const Icon(
-                Icons.broken_image_outlined,
-                size: 56,
-                color: Colors.white38,
-              )
-            : MiuixCircularProgressIndicator(
-                colors: MiuixProgressIndicatorColors(
-                  foregroundColor: HyperosColors.primary(context),
-                  disabledForegroundColor: HyperosColors.primary(context),
-                  backgroundColor: Colors.transparent,
-                ),
-              ),
+    // 文件缺失/损坏：占位图标，而不是永远转圈或抛异常。
+    if (_imageLoadFailed) {
+      return const Center(
+        child: Icon(
+          Icons.broken_image_outlined,
+          size: 56,
+          color: Colors.white38,
+        ),
       );
     }
     // 视口与首页一致：全屏大小。首页壁纸以 BoxFit.cover 铺满整屏，
     // 裁剪窗口完全由屏幕尺寸决定，这里用同尺寸才能保证拖动结果一致。
+    final imageSize = _imageSize;
     final screenSize = MediaQuery.sizeOf(context);
     final viewportSize = Size(screenSize.width, screenSize.height);
-    final overflowX = wallpaperOverflowDragExtent(
-      viewportSize: viewportSize,
-      imageSize: imageSize,
-      horizontal: true,
-    );
-    final overflowY = wallpaperOverflowDragExtent(
-      viewportSize: viewportSize,
-      imageSize: imageSize,
-      horizontal: false,
-    );
+    // 拖动范围要等图片尺寸才知道；尺寸没到之前拖动是空操作
+    // （`wallpaperAlignAfterDrag(overflowExtent: 0)` 恒返回 0，不会跳）。
+    final overflowX = imageSize == null
+        ? 0.0
+        : wallpaperOverflowDragExtent(
+            viewportSize: viewportSize,
+            imageSize: imageSize,
+            horizontal: true,
+          );
+    final overflowY = imageSize == null
+        ? 0.0
+        : wallpaperOverflowDragExtent(
+            viewportSize: viewportSize,
+            imageSize: imageSize,
+            horizontal: false,
+          );
     return Stack(
       fit: StackFit.expand,
       children: [
+        // ⚠️ `Image` 必须**第一帧就建**，不能挡在"尺寸已知"后面：读尺寸 + 解码
+        // 要几十到几百毫秒，挡住就是白白多黑 1~4 帧（真机日志 `[wpp-glass] size=`
+        // 之前正是这个窗口），玻璃采到的那条带也跟着是"黑底 + 转圈"。
+        // 壁纸通常已在缓存里（启动预热 + 首页显示过，同款
+        // `ResizeImage(FileImage, width: homePageBackdropDecodeWidth())`），
+        // 命中时第一帧就有像素；没命中则由 `frameBuilder` 兜一层转圈。
         GestureDetector(
           behavior: HitTestBehavior.opaque,
           onPanUpdate: (details) {
@@ -605,10 +610,28 @@ class _WallpaperPositionPickerPageState
             ),
             fit: BoxFit.cover,
             gaplessPlayback: true,
-            // 诊断：壁纸第一帧什么时候真的画出来 —— 在那之前玻璃采到的是一条
-            // "黑底 + 转圈占位"的带。
+            // 诊断 + 兜底：壁纸第一帧什么时候真的画出来（在那之前玻璃采到的是一条
+            // "黑底 + 转圈占位"的带）。`frame == null` 时在下面垫一层转圈 ——
+            // `Image` 本身可以第一帧就建（见上面的说明），但解码没完时页面会是纯黑。
             frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-              if (frame != null && !_tracedPreviewFrame) {
+              if (frame == null) {
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Center(
+                      child: MiuixCircularProgressIndicator(
+                        colors: MiuixProgressIndicatorColors(
+                          foregroundColor: HyperosColors.primary(context),
+                          disabledForegroundColor: HyperosColors.primary(context),
+                          backgroundColor: Colors.transparent,
+                        ),
+                      ),
+                    ),
+                    child,
+                  ],
+                );
+              }
+              if (!_tracedPreviewFrame) {
                 _tracedPreviewFrame = true;
                 _traceGlass(
                   'preview frame=$frame sync=$wasSynchronouslyLoaded',
