@@ -355,12 +355,25 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
       // ⚠️ 口径必须带 `tuning.tintAlphaMultiplier`：兜底实底与真玻璃要给出同一个
       // 「这个档位有多浓」。漏了它，清透档（0.55）与浓雾档（1.3）的兜底实底
       // 相差 2.4 倍，而 `standInWashColor`（同源）带了 —— 两边就分叉了。
-      fill: SoftGlassTokens.tint(
-        context,
-        blurEnabled: widget.blurEnabled,
-        polarity: widget.polarity,
-        tintAlphaMultiplier: tuning.tintAlphaMultiplier,
-      ),
+      //
+      // ⚠️ 但「等第一张快照」那一段必须画**透明**：本屏采样源存在
+      // （`_controller != null`）时，快照在当帧末就会录到，下一帧就是真玻璃 ——
+      // 中间这一帧画实底，观感就是「先冒一块奶白假玻璃、再变真玻璃」。真机反馈
+      // （2026-09-15）：柔光档进 / 出壁纸位置选择页时，三个悬浮按钮闪一下。
+      // 衬底（`wash`）与文字本来就画在玻璃之上，所以这一段仍然有轮廓、有字，
+      // 只是暂时没有材质 —— 比闪一块实底好。
+      //
+      // 而 `_controller == null`（模糊关闭 / 本屏根本没有采样源）是**真降级**：
+      // 快照永远不会来，那时画透明只会得到"半透明空壳"（底下的字直接透出来），
+      // 所以这条路继续画实底轮廓 —— 也是 `blurEnabled: false` 的历史口径。
+      fill: widget.blurEnabled && _controller != null
+          ? const Color(0x00000000)
+          : SoftGlassTokens.tint(
+              context,
+              blurEnabled: widget.blurEnabled,
+              polarity: widget.polarity,
+              tintAlphaMultiplier: tuning.tintAlphaMultiplier,
+            ),
       // 菜单 / 选择弹层同档：OS4 的「栏与菜单 MaterialToken」而不是 bionic 折射档。
       // 钉死 false —— 柔光玻璃的对外承诺就是"与首页右上角菜单同一份材质"，
       // 不留开关，避免有人翻到 `shading: true` 时把 tint / rim 那两条上游分支

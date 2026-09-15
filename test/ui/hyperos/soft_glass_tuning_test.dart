@@ -141,11 +141,39 @@ void main() {
     expect(glassOf(tester).shading, isFalse);
   });
 
-  testWidgets('有 backdrop 时的兜底实底也跟随底色倍率（与 standInWashColor 同口径）', (tester) async {
-    // 兜底实底在「有 backdrop 但还没录到快照」的首帧会被上游读，所以它也得
-    // 跟着档位走。漏掉倍率时清透（0.55）与浓雾（1.3）会得到同一个浓度，
-    // 而 `HomePageChromeGlassFill.standInWashColor`（同源注释）带了倍率 ——
-    // 两边就此分叉，正是「一个材质两种观感」。
+  testWidgets('本屏有采样源时，等第一张快照的那一帧不画实底（不再闪假玻璃）', (tester) async {
+    // 真机反馈（2026-09-15）：柔光档进 / 出壁纸位置选择页，三个悬浮按钮先冒一块
+    // 奶白实底、再变真玻璃。首帧没有快照是**暂态**（宿主当帧末就录到了），这一段
+    // 画实底正是那一闪的来源；有采样源时必须留透明，让衬底与文字先顶上。
+    final controller = HyperosGlassBackdropController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HyperosGlassBackdropScope(
+          controller: controller,
+          child: const Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 200,
+                height: 56,
+                child: SoftGlassSurface(child: SizedBox.expand()),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(glassOf(tester).fill!.a, 0);
+  });
+
+  testWidgets('真降级（本屏没有采样源）时的兜底实底也跟随底色倍率（与 standInWashColor 同口径）', (tester) async {
+    // 有采样源时兜底实底只在"等第一张快照"那一帧短暂出现（现已画透明，见上一条
+    // 用例）；这条守的是**不会有快照来**的那条路：模糊关闭、或本屏压根没有采样源。
+    // 那时上游读 `fill` 画纯色轮廓，它也得跟着档位走 —— 漏掉倍率时清透（0.55）
+    // 与浓雾（1.3）会得到同一个浓度，而 `HomePageChromeGlassFill.standInWashColor`
+    // （同源注释）带了倍率，两边就此分叉，正是「一个材质两种观感」。
     const dense = SoftGlassTuning.presetDense;
     await pumpSurface(tester, scopeTuning: dense);
     final context = tester.element(find.byType(SoftGlassSurface));
