@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-14T06:51:46+00:00",
+  "updatedAt": "2026-09-15T14:55:44+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 208,
-    "schools": 203,
+    "total": 209,
+    "schools": 204,
     "generic": 5
   },
   "schools": [
@@ -524,6 +524,13 @@
       "name": "怀化学院",
       "initial": "H",
       "resourceFolder": "HHTC",
+      "category": "school"
+    },
+    {
+      "id": "HHVTC",
+      "name": "怀化职业技术学院",
+      "initial": "H",
+      "resourceFolder": "HHVTC",
       "category": "school"
     },
     {
