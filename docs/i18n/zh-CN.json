@@ -37,7 +37,6 @@
   "hero.subtitle": "不用解锁、不用翻找——下一节课、还有几分钟、和谁一起上，抬眼就清楚。教务一键导入、情侣课表、WebDAV 云同步，课表这次真的长在了系统里。",
   "hero.download": "下载最新版本",
   "hero.docs": "使用文档",
-  "hero.explore": "看看它能做什么",
   "hero.statStars": "GitHub Stars",
   "hero.statReleases": "公开版本",
   "hero.statSchools": "已适配高校",
@@ -58,10 +57,6 @@
   "hero.courseFree": "共同空闲 ❤",
   "hero.courseFreeMeta": "16:00 – 18:00 · 你们都有空",
   "hero.courseCouple": "情侣课表",
-  "hero.floatRemind": "课前提醒",
-  "hero.floatRemindMeta": "数据结构 · 15 分钟后 · C412",
-  "hero.floatSync": "WebDAV 已同步",
-  "hero.floatSyncMeta": "云备份 · 刚刚",
 
   "marquee.island": "HyperOS 超级岛",
   "marquee.couple": "情侣课表",
@@ -77,19 +72,16 @@
   "marquee.multi": "多课表",
   "marquee.free": "免费开源",
 
-  "features.label": "功能",
   "features.title": "不只是课表，",
   "features.titleGrad": "是一整套系统体验。",
   "features.desc": "从超级岛到桌面小组件，从两个人的课表到一学期的账单——每个功能都为「少看一次手机、多懂一点今天」而存在。",
 
-  "feature.island.tag": "HyperOS 独占",
   "feature.island.title": "超级岛，替你盯着下一节课",
   "feature.island.desc": "课前预热、课中状态、下课承接，状态在灵动岛上连续流转。静音、免打扰这类课前快捷操作，下课后还会自动恢复。",
   "feature.island.demo": "数据结构 · C412",
   "feature.island.demoTime": "14:00 上课",
   "feature.island.hint": "需 HyperOS 3.0.300+",
 
-  "feature.couple.tag": "v2.0.3 新上线",
   "feature.couple.title": "情侣课表",
   "feature.couple.desc": "把课表导出给 TA，绑定后首页一键叠加：我的课、TA 的课、一起上课、共同空闲，四色一眼分清。约饭时间不用再互相截图。",
   "feature.couple.mine": "我的课",
@@ -97,33 +89,26 @@
   "feature.couple.together": "一起上课",
   "feature.couple.free": "共同空闲",
 
-  "feature.import.tag": "导入",
   "feature.import.title": "教务系统一键导入",
   "feature.import.desc": "200+ 所高校支持网页登录直接同步课表；没适配的学校也能走 .ics、AI 识图或表格模板导入。",
   "feature.import.link": "查看已适配学校 →",
 
-  "feature.webdav.tag": "v2.0 新增",
   "feature.webdav.title": "WebDAV 云同步",
   "feature.webdav.desc": "坚果云或自建服务，手机、平板之间同步课表与设置；云备份可查看历史版本、按条恢复或删除。",
 
-  "feature.bill.tag": "统计",
   "feature.bill.title": "学期账单",
   "feature.bill.desc": "总览、成就徽章、数据故事、每日课时分布、课程排名——学期结束，把这份账单生成长图分享出去。",
 
-  "feature.system.tag": "系统联动",
   "feature.system.title": "小组件 + 分阶段提醒",
   "feature.system.desc": "桌面小组件常驻整周课表；提醒按课前、课中、下课前分阶段推进，是连续流程而不是一条孤立通知。",
 
-  "feature.lan.tag": "效率",
   "feature.lan.title": "电脑上改课表",
   "feature.lan.desc": "手机开启局域网服务，电脑浏览器直接编辑课表，改完即时同步回手机。大批量调课不再戳小屏幕。",
 
-  "feature.open.tag": "开源",
   "feature.open.title": "免费、无广告、可审计",
   "feature.open.desc": "GPL-3.0 开源，无广告、无需注册，数据本地存储。代码公开透明，欢迎来 GitHub 提 issue 或 PR。",
   "feature.open.link": "GitHub 仓库 →",
 
-  "changelog.label": "更新日志",
   "changelog.title": "最近更新，",
   "changelog.titleGrad": "一直在变快变好。",
   "changelog.descHtml": "官网会自动同步最近版本的关键更新。完整日志见 <a class=\"inline-link\" href=\"https://github.com/Mutx163/mikcb/releases\" target=\"_blank\" rel=\"noreferrer\">GitHub Releases</a>。",
@@ -131,7 +116,6 @@
   "changelog.loadingBadge": "自动同步",
   "changelog.loadingStatus": "稍等一下，官网会读取最新 Release 时间线。",
 
-  "faq.label": "常见问题",
   "faq.title": "你可能想知道的",
   "faq.q1": "轻屿课表怎么导入课表？",
   "faq.a1Html": "<p>支持三种导入方式：</p><ol><li><strong>教务系统导入</strong>：点击右上角菜单 → 导入课程表 → 选择你的学校 → 登录教务系统自动同步</li><li><strong>文件导入</strong>：支持 iCal (.ics) 格式，点击导入后选择手机中的 .ics 文件即可</li><li><strong>手动添加</strong>：点击课表空白处 → 添加课程 → 填写课程信息</li></ol>",
@@ -148,7 +132,6 @@
   "faq.q7": "怎么设置单双周？",
   "faq.a7Html": "<p>添加或编辑课程时，在「重复」选项中选择「单周」或「双周」即可。也支持自定义周次范围，灵活适配各种排课方式。</p>",
 
-  "download.label": "下载",
   "download.title": "下一节课的事，",
   "download.titleGrad": "现在就交给它。",
   "download.desc": "国内下载会自动测速选择最快镜像，也可以随时切到 GitHub 原始包或蒲公英直装。",
@@ -236,7 +219,6 @@
   "js.errorNote": "当前会直接尝试可用下载线路。",
   "js.routesReadyShort": "下载线路已就绪。",
 
-  "schools.label": "教务导入",
   "schools.title": "已适配学校，",
   "schools.titleGrad": "直接登录导课。",
   "schools.descHtml": "在 App 内选择「导入课程表 → 教务系统导入」，学校在列表中就能通过网页登录同步课表。列表每天自动与 <a class=\"inline-link\" href=\"https://github.com/Mutx163/qingyu_warehouse\" target=\"_blank\" rel=\"noreferrer\">qingyu_warehouse</a> 同步更新。",
