@@ -223,6 +223,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   int? _emptySlotMarkerWeek;
   int? _emptySlotMarkerDayOfWeek;
   int? _emptySlotMarkerSection;
+
+  /// 网格级手势层的定位锚：长按拖动跟手换格时，用它把指针全局坐标
+  /// 换算成（星期几, 节次）。见 [_buildEmptySlotGestureArea]。
+  final GlobalKey _emptySlotGridKey = GlobalKey();
   final GlobalKey _timetableSurfaceKey = GlobalKey();
 
   /// Anchor for the top-right "more" menu popup (positioned below this key).
@@ -2703,6 +2707,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     final timeColumnWidth = _resolveTimeColumnWidth(settings);
     final cardInset = _resolveCourseCardInset(settings);
     final dayWidth = (availableWidth - timeColumnWidth) / visibleDays.length;
+    // （星期几, 节次）已被课程覆盖的集合，供长按拖动判定空白格。
+    final occupiedSections = <(int, int)>{};
     return SizedBox(
       key: ValueKey<int>(week),
       width: availableWidth,
@@ -2726,39 +2732,56 @@ class _TimetableScreenState extends State<TimetableScreen>
           ),
           _wrapCourseGridSurfaceHost(
             settings: settings,
-            child: Row(
-              children: visibleDays.asMap().entries.map((entry) {
-                final dayIndex = entry.key;
-                final dayOfWeek = entry.value;
-                final dayCourses = _getCoursesForDay(
-                  provider.courses,
-                  week,
-                  dayOfWeek,
-                  settings,
-                );
-                final displayItems = _buildHomeDayDisplayItems(
-                  provider: provider,
-                  settings: settings,
-                  week: week,
-                  dayOfWeek: dayOfWeek,
-                  myCourses: dayCourses,
-                );
-                return SizedBox(
-                  width: dayWidth,
-                  child: _buildDayColumn(
+            child: _buildEmptySlotGestureArea(
+              settings: settings,
+              week: week,
+              sectionHeight: sectionHeight,
+              dayWidth: dayWidth,
+              visibleDays: visibleDays,
+              occupiedSections: occupiedSections,
+              child: Row(
+                children: visibleDays.asMap().entries.map((entry) {
+                  final dayIndex = entry.key;
+                  final dayOfWeek = entry.value;
+                  final dayCourses = _getCoursesForDay(
+                    provider.courses,
                     week,
                     dayOfWeek,
-                    displayItems,
                     settings,
-                    settings.showConflictBadgeOnTimetable,
-                    sectionHeight,
-                    cardInset,
-                    provider,
-                    dayIndex: dayIndex,
-                    dayCount: visibleDays.length,
-                  ),
-                );
-              }).toList(),
+                  );
+                  final displayItems = _buildHomeDayDisplayItems(
+                    provider: provider,
+                    settings: settings,
+                    week: week,
+                    dayOfWeek: dayOfWeek,
+                    myCourses: dayCourses,
+                  );
+                  // 长按拖动换格时判定"某格是否空白"的事实来源：课程覆盖
+                  // 的（星期×节次）全集。此处在本 build 内即刻求值。
+                  for (final item in displayItems) {
+                    for (var s = item.course.startSection;
+                        s <= item.course.endSection;
+                        s++) {
+                      occupiedSections.add((dayOfWeek, s));
+                    }
+                  }
+                  return SizedBox(
+                    width: dayWidth,
+                    child: _buildDayColumn(
+                      week,
+                      dayOfWeek,
+                      displayItems,
+                      settings,
+                      settings.showConflictBadgeOnTimetable,
+                      sectionHeight,
+                      cardInset,
+                      provider,
+                      dayIndex: dayIndex,
+                      dayCount: visibleDays.length,
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
         ],
@@ -6400,12 +6423,84 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 两步式「长按空白格添加课程」的空白格单元。
+  /// 两步式「长按空白格添加课程」的网格级手势层。
+  ///
+  /// 为什么挂在整块日列 Row 而不是单格：长按拖动的事件只会派发给赢得
+  /// 手势竞技场的那个识别器——挂在单格上，手指移出该格后收不到任何
+  /// 更新，无法跟手换格。
+  ///
+  /// 行为：长按空白格出现虚线加号标记；不松手拖动时标记跟手移动到
+  /// 指针所在空白格（滑过课程卡时保持原格不动）；松手后标记留在原处，
+  /// 点虚线框进表单、点其他空白格取消选择。功能关闭时原样返回 child。
+  Widget _buildEmptySlotGestureArea({
+    required TimetableSettings settings,
+    required int week,
+    required double sectionHeight,
+    required double dayWidth,
+    required List<int> visibleDays,
+    required Set<(int, int)> occupiedSections,
+    required Widget child,
+  }) {
+    if (!settings.longPressEmptySlotToAddCourseEnabled) {
+      return child;
+    }
+
+    /// 指针全局坐标 → 所在空白格（星期几, 节次）；越界或格子有课返回 null。
+    (int, int)? cellAt(Offset globalPosition) {
+      final box = _emptySlotGridKey.currentContext?.findRenderObject();
+      if (box is! RenderBox) {
+        return null;
+      }
+      final local = box.globalToLocal(globalPosition);
+      if (local.dx < 0 || local.dy < 0) {
+        return null;
+      }
+      final dayIndex = (local.dx / dayWidth)
+          .floor()
+          .clamp(0, visibleDays.length - 1);
+      final sectionIndex = (local.dy / sectionHeight)
+          .floor()
+          .clamp(0, settings.sectionCount - 1);
+      final dayOfWeek = visibleDays[dayIndex];
+      final section = sectionIndex + 1;
+      if (occupiedSections.contains((dayOfWeek, section))) {
+        return null;
+      }
+      return (dayOfWeek, section);
+    }
+
+    return GestureDetector(
+      key: _emptySlotGridKey,
+      behavior: HitTestBehavior.opaque,
+      onLongPressStart: (details) {
+        final cell = cellAt(details.globalPosition);
+        if (cell == null) {
+          return;
+        }
+        if (settings.enableHaptics) HapticFeedback.mediumImpact();
+        _showEmptySlotMarker(week, cell.$1, cell.$2);
+      },
+      onLongPressMoveUpdate: (details) {
+        final cell = cellAt(details.globalPosition);
+        if (cell == null ||
+            (cell.$1 == _emptySlotMarkerDayOfWeek &&
+                cell.$2 == _emptySlotMarkerSection)) {
+          return;
+        }
+        if (settings.enableHaptics) HapticFeedback.selectionClick();
+        _showEmptySlotMarker(week, cell.$1, cell.$2);
+      },
+      onTap: _clearEmptySlotMarker,
+      child: child,
+    );
+  }
+
+  /// 两步式「长按空白格添加课程」的空白格单元（纯视觉，手势在
+  /// [_buildEmptySlotGestureArea]）。
   ///
   /// 功能关闭时保持原空占位（无视觉、事件穿透，行为与旧版完全一致）；
-  /// 开启后每个空白格挂长按手势，长按后该格进入虚线加号态（截图参考
-  /// WakeUp 课表），点虚线框打开预填了周次/星期/节次的添加课程表单。
-  /// 课程卡位于 Stack 更上层，命中优先，不受影响。
+  /// 开启且被标记时显示虚线加号态，点虚线框打开预填了周次/星期/节次
+  /// 的添加课程表单。课程卡位于 Stack 更上层，命中优先，不受影响。
   Widget _buildEmptySlotCell(
     int week,
     int dayOfWeek,
@@ -6421,20 +6516,13 @@ class _TimetableScreenState extends State<TimetableScreen>
         _emptySlotMarkerWeek == week &&
         _emptySlotMarkerDayOfWeek == dayOfWeek &&
         _emptySlotMarkerSection == section;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onLongPress: () {
-        if (settings.enableHaptics) HapticFeedback.mediumImpact();
-        _showEmptySlotMarker(week, dayOfWeek, section);
-      },
-      child: isMarkerActive
-          ? _EmptySlotAddMarker(
-              sectionHeight: sectionHeight,
-              inset: cardInset + 2,
-              onTap: () => _openAddCourseFromEmptySlot(week, dayOfWeek, section),
-            )
-          : const SizedBox.expand(),
-    );
+    return isMarkerActive
+        ? _EmptySlotAddMarker(
+            sectionHeight: sectionHeight,
+            inset: cardInset + 2,
+            onTap: () => _openAddCourseFromEmptySlot(week, dayOfWeek, section),
+          )
+        : const SizedBox.expand();
   }
 
   void _showEmptySlotMarker(int week, int dayOfWeek, int section) {
