@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -137,6 +138,16 @@ class _WallpaperPositionPickerPageState
   double? _topLuminance;
   String? _luminanceSampleKey;
 
+  /// 诊断时间线（定位玻璃闪变用；问题收敛后可整块删）。
+  ///
+  /// 每条带 `[wpp-glass]` 前缀，方便从 `flutter_0*.log` / `flutter run` 输出里
+  /// grep；消息是英文的（CJK 硬编码审计按行计数，日志串不该加进去）。
+  /// 定时器要在 [dispose] 里取消：widget 测试结束时留着 pending timer 会直接失败。
+  static const String _traceTag = '[wpp-glass]';
+  final Stopwatch _traceClock = Stopwatch();
+  final List<Timer> _traceTimers = <Timer>[];
+  bool _tracedPreviewFrame = false;
+
   /// 本页自己的屏级玻璃采样源。
   ///
   /// 这一页是裸 `Scaffold`，不是 [HyperosPage]，**没有宿主**。缺了它，柔光玻璃
@@ -154,10 +165,40 @@ class _WallpaperPositionPickerPageState
 
   @override
   void dispose() {
+    // 退出这一侧也要留一条：闪变发生在采样落地那一刻，而"落地"是相对进页算的，
+    // 有这条才能与进页时间对齐、判断闪的是进还是出。
+    _traceGlass('dispose');
+    for (final timer in _traceTimers) {
+      timer.cancel();
+    }
+    _traceTimers.clear();
     // 顺序安全：子节点先 unmount（捕获节点在自己的 detach/dispose 里摘掉监听与
     // 登记），本 State 的 dispose 在最后跑，此时才轮到释放控制器。
     _glass.dispose();
     super.dispose();
+  }
+
+  /// 打一条玻璃诊断时间线：亮度 / 墨色极性 / 各采样区有没有图、图多大、原点在哪。
+  ///
+  /// 进页后光看"有没有闪"说不清是哪一层：极性翻转、采样带迟到、覆盖不全都会表现为
+  /// 观感变化，而这三件事在上面的字段里是可分辨的。
+  void _traceGlass(String event) {
+    final zones = _glass.zones;
+    final images = zones
+        .map(
+          (zone) => zone.image == null
+              ? 'none'
+              : '${zone.image!.width}x${zone.image!.height}',
+        )
+        .join('|');
+    final origins = zones.map((zone) => zone.origin).join('|');
+    final ink = homePageChromeForegroundForLuminance(_topLuminance);
+    debugPrint(
+      '$_traceTag +${_traceClock.elapsedMilliseconds}ms $event '
+      'lum=${_topLuminance?.toStringAsFixed(3) ?? 'null'} '
+      'ink=0x${ink.toARGB32().toRadixString(16)} '
+      'zones=${zones.length} images=[$images] origins=[$origins]',
+    );
   }
 
   @override
@@ -176,6 +217,27 @@ class _WallpaperPositionPickerPageState
     _topLuminance = HomeStartupVisualPrimer.seededBandsFor(_imagePath)?.top;
     _resolveImageSize();
     _scheduleTopLuminanceSample();
+
+    // 诊断时间线：进页后的几个关键时点各打一条（都带 `[wpp-glass]` 前缀）。
+    _traceClock.start();
+    _traceGlass(
+      'init seeded=${_topLuminance != null} '
+      'align=${_alignX.toStringAsFixed(2)},${_alignY.toStringAsFixed(2)}',
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _traceGlass('frame1');
+      }
+    });
+    for (final ms in const <int>[120, 400, 900]) {
+      _traceTimers.add(
+        Timer(Duration(milliseconds: ms), () {
+          if (mounted) {
+            _traceGlass('t+${ms}ms');
+          }
+        }),
+      );
+    }
   }
 
   /// 只读图片头部拿原始宽高，不解码像素，进入页面无需等待整图解码。
@@ -208,6 +270,7 @@ class _WallpaperPositionPickerPageState
         _imageSize = Size(width.toDouble(), height.toDouble());
         _imageLoadFailed = false;
       });
+      _traceGlass('size=${width}x$height');
     } catch (error, stackTrace) {
       // 解码失败同样降级为占位；保留日志便于定位坏图来源。
       debugPrint(
@@ -254,15 +317,19 @@ class _WallpaperPositionPickerPageState
       alignY: _alignY,
     );
     if (!mounted || _luminanceSampleKey != key || luminance == null) {
+      _traceGlass('sample dropped (luminance=$luminance)');
       return;
     }
     // 与预热 / 上一次采样一致时不必重画，也不该触发一次极性渐变。
     if (_topLuminance == luminance) {
+      _traceGlass('sample=$luminance unchanged');
       return;
     }
+    _traceGlass('sample=$luminance PREV=${_topLuminance?.toStringAsFixed(3)}');
     setState(() {
       _topLuminance = luminance;
     });
+    _traceGlass('polarity applied');
   }
 
   Future<void> _switchWallpaper() async {
@@ -538,6 +605,17 @@ class _WallpaperPositionPickerPageState
             ),
             fit: BoxFit.cover,
             gaplessPlayback: true,
+            // 诊断：壁纸第一帧什么时候真的画出来 —— 在那之前玻璃采到的是一条
+            // "黑底 + 转圈占位"的带。
+            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+              if (frame != null && !_tracedPreviewFrame) {
+                _tracedPreviewFrame = true;
+                _traceGlass(
+                  'preview frame=$frame sync=$wasSynchronouslyLoaded',
+                );
+              }
+              return child;
+            },
             alignment: Alignment(
               _alignX.clamp(-1.0, 1.0),
               _alignY.clamp(-1.0, 1.0),
