@@ -10,6 +10,25 @@ import '../logging/app_log_messages.dart';
 import 'app_log_service.dart';
 import 'umeng_analytics_service.dart';
 
+/// 展开详情字段名单的**写法版本**，随课表快照下发给原生。
+///
+/// 名单里「没提到某个字段」有两种含义——「用户把它关掉了」与「老版本 APK 写的
+/// 快照不认识这个字段」——原生只能靠这个版本号区分：带本版本号（≥ 当前）的名单
+/// 原样生效，缺版本号的老快照才按默认顺序补齐。
+///
+/// 必须与原生 `LiveUpdateScheduler.EXPANDED_DETAIL_SCHEMA_VERSION` 同值；改名单
+/// 语义时两侧同批 +1。
+const int kLiveExpandedDetailSchemaVersion = 1;
+
+/// 快照 JSON 里的 `settings` 子树：设置本体 + 展开详情写法版本号。
+///
+/// 版本号只进快照（唯一会跨 APK 版本存活的载体），不进 `TimetableSettings.toJson`
+/// ——后者还用于档案存储与导入导出，不需要这个字段。
+Map<String, Object?> buildLiveSnapshotSettingsJson(TimetableSettings settings) => {
+  ...settings.toJson(),
+  'liveExpandedDetailSchemaVersion': kLiveExpandedDetailSchemaVersion,
+};
+
 class MiuiLiveActivitiesService {
   static const MethodChannel _channel = MethodChannel(
     'com.mutx163.qingyu/miui_live',
@@ -570,7 +589,7 @@ class MiuiLiveActivitiesService {
         'holidayOverrideEnabled': holidayOverrideEnabled,
         'enableHolidayMarking': enableHolidayMarking,
         'courses': courses.map((course) => course.toJson()).toList(),
-        'settings': settings.toJson(),
+        'settings': buildLiveSnapshotSettingsJson(settings),
       });
       await _channel.invokeMethod('syncScheduleSnapshot', snapshotJson);
       await UmengAnalyticsService.reportDiagnostic(

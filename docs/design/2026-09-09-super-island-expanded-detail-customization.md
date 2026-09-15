@@ -206,6 +206,7 @@ live_island_preview.dart 原有注释明确「展开态不在此预览范围内�
     的副本，不再返回 `null`；
   - `parseExpandedDetailFields` 对「只认识部分字段」的输入做补齐（保留用户顺序，
     未知/重复项丢弃，末尾按默认顺序补全），空数组仍表示全隐藏；
+    ⚠️ 这条补齐语义 2026-09-15 被收窄为「只对老写法生效」，见 §12；
   - `parseSnapshot` 的课中档回退改为先合并 JSON 键再解析，去掉依赖 `null` 的
     elvis 语义；
   - `LiveUpdateService.buildNotification` 两处 `?: listOf(...)` 内联列表改为
@@ -242,3 +243,27 @@ live_island_preview.dart 原有注释明确「展开态不在此预览范围内�
 
 - 展开态实时预览（`live_island_preview.dart` 仍只画摘要态胶囊），与 §5.4 一致；
 - 展开态字段的拖拽排序只作用于「已显示」区，隐藏区顺序保持不动。
+
+---
+
+## 12. 追加修订（2026-09-15）：单项隐藏被「补齐」抵消
+
+真机反馈（Redmi 25060RK16C / Android 16）：课中/下课档只留 4 项，下课提醒仍多出
+「简称」「备注」两行，且总排在用户顺序之后。根因是 §11.1 引入的补齐逻辑与「隐藏 =
+从名单里删掉」这对语义在同一数组上打架——**任何单项隐藏都不生效**，只有全关
+（空数组）才躲得过；同一 bug 也让设置页预览（按名单直画）与真机不一致。
+
+**修法：名单加写法版本号。** 快照 `settings` 子树新增 `liveExpandedDetailSchemaVersion`
+（Dart `kLiveExpandedDetailSchemaVersion`），原生 `EXPANDED_DETAIL_SCHEMA_VERSION` 同值；
+`parseExpandedDetailFields(raw, senderSchemaVersion)` 的三分支语义为：
+
+| 输入 | 行为 |
+|---|---|
+| key 缺失 / 类型不对 | 默认全显示顺序（历史行为不变） |
+| 显式空数组 | 全部隐藏（历史行为不变） |
+| 版本 ≥ 当前 | 只清洗（丢未知项、去重、保序），**不补齐** |
+| 版本缺失或更老（老快照） | 按默认顺序补齐（保住「升级后展开态不变样」） |
+
+payload 路径（Flutter → 原生，同一次安装）天然同版本，走默认参数、不补齐；
+只有跨 APK 版本存活的快照需要版本号。旧快照在用户下一次同步（打开 App / 改设置）
+时被重写并带上版本号，之后隐藏立即生效。

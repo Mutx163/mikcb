@@ -715,14 +715,44 @@ internal val PROMOTED_EXPANDED_DETAIL_DEFAULT_ORDER: List<String> = listOf(
 )
 
 /**
+ * 展开详情字段名单的**写法版本**。
+ *
+ * 名单里「没提到某个字段」有两种含义——「用户把它关掉了」与「发送方不认识这个
+ * 字段（老 APK 写的快照）」——只能靠发送方声明的写法版本区分：
+ * - 版本 ≥ 本常量：名单是完整语义，没提到 = 用户关掉，必须原样保留；
+ * - 版本缺失/更老：缺字段可能只是它不认识，按默认顺序补齐，保住历史全显示。
+ *
+ * 快照 JSON 的 `settings.liveExpandedDetailSchemaVersion` 由 Dart 侧
+ * `kLiveExpandedDetailSchemaVersion` 写入，两侧必须同步；payload 路径是同一次
+ * 安装内的 Flutter → 原生，天然同版本，直接用本常量。
+ */
+internal const val EXPANDED_DETAIL_SCHEMA_VERSION = 1
+
+/**
+ * 只做清洗：丢掉不认识的字段、去重，保留用户给的顺序。**不补齐**。
+ */
+internal fun sanitizeExpandedDetailOrder(declared: List<String>): List<String> {
+    val known = EXPANDED_DETAIL_DEFAULT_ORDER.toSet()
+    val result = ArrayList<String>(declared.size)
+    for (key in declared) {
+        if (key in known && key !in result) {
+            result += key
+        }
+    }
+    return result
+}
+
+/**
  * 解析展开详情字段列表。
  *
  * 语义：
  * - 快照/Intent **没有这个 key**（null / 未知类型）→ 返回 [EXPANDED_DETAIL_DEFAULT_ORDER]
  *   等价的全显示顺序，让老快照保持历史展开态；
  * - 显式空数组 → 空列表 = 全隐藏（用户真的把每一项都关了）；
- * - 数组里只认识部分字段 → 保持用户给的顺序，末尾补上没提到的字段，
- *   避免字段新增/传输截断后整块详情凭空消失。
+ * - [senderSchemaVersion] ≥ [EXPANDED_DETAIL_SCHEMA_VERSION] → 只清洗，没提到的
+ *   字段就是用户关掉的，原样生效；
+ * - [senderSchemaVersion] 更老（老快照）→ 保持用户顺序、末尾补齐没提到的字段，
+ *   避免字段新增后整块详情凭空消失。
  *
  * 注意：**不要返回 null**。原生下拉的 `expandedDetailFields ?: listOf(...)`
  * 兜底两处默认顺序不同（非提升态 9 行、提升态 8 行且无 stage），一旦把
@@ -731,7 +761,10 @@ internal val PROMOTED_EXPANDED_DETAIL_DEFAULT_ORDER: List<String> = listOf(
  * 即 issue 里「展开态长得和之前不一样」。用本函数的返回值覆盖请求顺序，
  * 下拉顺序只影响字段完整缺失的极端情形。
  */
-internal fun parseExpandedDetailFields(raw: Any?): List<String> {
+internal fun parseExpandedDetailFields(
+    raw: Any?,
+    senderSchemaVersion: Int = EXPANDED_DETAIL_SCHEMA_VERSION,
+): List<String> {
     val declared = when (raw) {
         is JSONArray -> buildList {
             for (index in 0 until raw.length()) {
@@ -741,12 +774,23 @@ internal fun parseExpandedDetailFields(raw: Any?): List<String> {
         is List<*> -> raw.mapNotNull { it as? String }.filter { it.isNotEmpty() }
         else -> null
     } ?: return EXPANDED_DETAIL_DEFAULT_ORDER
-    return completeExpandedDetailOrder(declared)
+    if (declared.isEmpty()) {
+        return declared
+    }
+    return if (senderSchemaVersion >= EXPANDED_DETAIL_SCHEMA_VERSION) {
+        sanitizeExpandedDetailOrder(declared)
+    } else {
+        // 老发送方保持原语义：先过滤未知项，再按默认顺序补齐。
+        completeExpandedDetailOrder(declared)
+    }
 }
 
 /**
  * 补齐 [declared] 里没有的字段：保持用户顺序，未知/重复项丢弃，末尾按默认
  * 顺序补全。空列表原样保留（全隐藏由设置页的「全关」表达）。
+ *
+ * **只给老发送方用**（见 [parseExpandedDetailFields] 的写法版本分支）：对本版本的
+ * 名单调用它会把用户关掉的字段补回来，即隐藏失效。
  */
 internal fun completeExpandedDetailOrder(
     declared: List<String>,
@@ -1035,6 +1079,8 @@ object LiveUpdateScheduler {
                 islandConfig["miuiIslandExpandedIconMode"] as? String ?: "app_icon",
             miuiIslandExpandedIconPath =
                 islandConfig["miuiIslandExpandedIconPath"] as? String,
+            // payload 来自同一次安装内的 Flutter，写法版本天然等于当前版本：
+            // 名单即「要显示的字段」，不补齐（走 parseExpandedDetailFields 的默认参数）。
             expandedDetailFields =
                 parseExpandedDetailFields(islandConfig["expandedDetailFields"]),
             beforeClassQuickAction =
@@ -1460,6 +1506,11 @@ object LiveUpdateScheduler {
 
     private fun parseSnapshot(json: JSONObject): NativeScheduleSnapshot {
         val settingsJson = json.optJSONObject("settings") ?: JSONObject()
+        // 快照里的展开详情写法版本：缺失 = 修复前的老版本 APK 写的，名单没提到
+        // 的字段可能只是它不认识，仍走补齐；本版本起写入 EXPANDED_DETAIL_SCHEMA_VERSION，
+        // 没提到 = 用户关掉，必须原样保留（详见 parseExpandedDetailFields）。
+        val expandedDetailSchemaVersion =
+            settingsJson.optInt("liveExpandedDetailSchemaVersion", 0)
         val sectionsJson = settingsJson.optJSONArray("sections") ?: JSONArray()
         val sections = mutableListOf<NativeSectionTime>()
         for (index in 0 until sectionsJson.length()) {
@@ -1562,7 +1613,10 @@ object LiveUpdateScheduler {
             liveMiuiIslandExpandedIconPath =
                 settingsJson.optString("liveMiuiIslandExpandedIconPath").takeIf { it.isNotBlank() },
             liveExpandedDetailFields =
-                parseExpandedDetailFields(settingsJson.optJSONArray("liveExpandedDetailFields")),
+                parseExpandedDetailFields(
+                    settingsJson.optJSONArray("liveExpandedDetailFields"),
+                    expandedDetailSchemaVersion,
+                ),
             liveDuringEndMiuiIslandLabelStyle =
                 settingsJson.optString(
                     "liveDuringEndMiuiIslandLabelStyle",
@@ -1629,6 +1683,7 @@ object LiveUpdateScheduler {
                 parseExpandedDetailFields(
                     settingsJson.optJSONArray("liveDuringEndExpandedDetailFields")
                         ?: settingsJson.optJSONArray("liveExpandedDetailFields"),
+                    expandedDetailSchemaVersion,
                 ),
             liveShowBeforeClassMinutes = settingsJson.optInt("liveShowBeforeClassMinutes", 20),
             liveClassReminderStartMinutes =

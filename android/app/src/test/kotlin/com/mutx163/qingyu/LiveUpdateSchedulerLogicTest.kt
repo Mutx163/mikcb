@@ -29,30 +29,44 @@ class LiveUpdateSchedulerLogicTest {
 
     @Test
     fun parseExpandedDetailFieldsKeepsOrderAndDropsBlank() {
+        // 当前写法版本：名单即「要显示的字段」，只清洗（丢空串/未知项、去重），不补齐。
         assertEquals(
-            listOf("note", "teacher", "location", "stage", "shortName", "progress", "status", "time", "next"),
+            listOf("note", "teacher", "location"),
             parseExpandedDetailFields(listOf("note", "", "teacher", "location")),
         )
         assertEquals(
             expandedDetailDefaultOrder(),
             parseExpandedDetailFields(listOf("stage", "shortName", "progress", "status", "time", "location", "teacher", "next", "note")),
         )
+        // 未知 key 丢弃、重复 key 去重（保留首次出现位置，用户顺序不被重排）。
+        assertEquals(
+            listOf("note", "stage", "next"),
+            parseExpandedDetailFields(listOf("bogus", "note", "note", "stage", "next")),
+        )
     }
 
     @Test
-    fun parseExpandedDetailFieldsRepairsPartialList() {
-        // 传输被截断/新增字段的场景：用户顺序保留，缺的字段按默认顺序补齐，
-        // 不至于整块详情凭空消失。
+    fun parseExpandedDetailFieldsCurrentVersionKeepsHiddenFieldsHidden() {
+        // 用户关掉的字段必须保持关闭——2026-09-15 真机 bug 的回归守卫：
+        // 修复前这里会被补齐成 9 项，真机展开态重新冒出简称/备注。
         assertEquals(
-            listOf("note", "stage", "shortName", "progress", "status", "time", "location", "teacher", "next"),
-            parseExpandedDetailFields(listOf("note", "stage")),
+            listOf("time", "next"),
+            parseExpandedDetailFields(listOf("time", "next"), EXPANDED_DETAIL_SCHEMA_VERSION),
         )
-        // 未知 key 丢弃、重复 key 去重（保留首次出现位置，用户顺序不被重排——
-        // b85b15a7 定稿的补齐语义；note 在输入里排最前故保持在最前，与上一条
-        // 断言的补全结果同序）。
+        // payload 路径（不显式传版本）与显式传当前版本同语义。
+        assertEquals(
+            listOf("time", "next"),
+            parseExpandedDetailFields(listOf("time", "next")),
+        )
+    }
+
+    @Test
+    fun parseExpandedDetailFieldsLegacySenderStillPads() {
+        // 老快照（没有写法版本号 = 0）：缺字段可能只是老 APK 不认识，按默认顺序
+        // 补齐，保住「升级后展开态不变样」的历史承诺。
         assertEquals(
             listOf("note", "stage", "shortName", "progress", "status", "time", "location", "teacher", "next"),
-            parseExpandedDetailFields(listOf("bogus", "note", "note", "stage", "shortName", "progress", "status", "time", "location", "teacher", "next")),
+            parseExpandedDetailFields(listOf("note", "stage"), 0),
         )
     }
 
