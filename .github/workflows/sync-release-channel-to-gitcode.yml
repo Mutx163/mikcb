@@ -1,0 +1,119 @@
+name: Sync release channel to GitCode
+
+# 为什么需要这一条：
+# android-build.yml 里的 GitCode 同步只在**推送 v* tag** 时跑，而且渠道（pre/latest）
+# 取的是那一刻 pubspec 里有没有 `-`。而「把预发布原地转成正式版」在 GitHub 上只是
+# 改一个勾选框（release: released 事件），**不会再推 tag** —— GitCode 那边因此永远
+# 停留在「预发布」，国内渠道的用户（更新源选 GitCode 时读的是 GitCode 的 releases
+# 接口）就收不到正式版提示。
+#
+# 这里订阅 GitHub 的 release 事件，把同一个 tag 的渠道标志同步到 GitCode：
+# 以后只在 GitHub 改一处，两边自动一致。
+#
+# GitCode 的 release 对象没有 id 字段，不能走标准 Gitee/Gitea 的
+# PATCH /releases/{id}；与 nvdacn/sync_to_gitcode 一致，按 tag 直接 PATCH
+# /releases/{tag}，渠道用 release_status: pre | latest 表示。
+
+on:
+  release:
+    # released：预发布 → 正式；prereleased：正式 → 预发布；edited：改勾选或改正文
+    types: [published, released, prereleased, edited]
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag to sync (e.g. v2.1.2.1)'
+        required: false
+        type: string
+      prerelease:
+        description: 'Mark as prerelease on GitCode'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: gitcode-release-channel-${{ github.event.release.tag_name || inputs.tag_name }}
+  # 不能取消：正在跑的同步被中断会留下两边渠道不一致的状态
+  cancel-in-progress: false
+
+jobs:
+  sync-channel:
+    name: Sync prerelease flag to GitCode
+    # 与 android-build.yml 的 GitCode 任务同款门禁：没配 GitCode 就整条跳过，
+    # Fork 仓库未配置也不会失败。
+    if: ${{ vars.GITCODE_USERNAME }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Resolve target state
+        id: state
+        env:
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          EVENT_PRERELEASE: ${{ github.event.release.prerelease }}
+          INPUT_TAG: ${{ inputs.tag_name }}
+          INPUT_PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          set -euo pipefail
+          if [ -n "$EVENT_TAG" ]; then
+            TAG="$EVENT_TAG"
+            case "$EVENT_PRERELEASE" in
+              true) PRERELEASE=true ;;
+              *) PRERELEASE=false ;;
+            esac
+          elif [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
+            case "$INPUT_PRERELEASE" in
+              true) PRERELEASE=true ;;
+              *) PRERELEASE=false ;;
+            esac
+          else
+            echo "::error::没拿到 tag —— 既不是 release 事件，也没填 tag_name"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "目标：$TAG（prerelease=$PRERELEASE）"
+
+      - name: Sync to GitCode
+        env:
+          GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
+          GITCODE_REPOSITORY: ${{ vars.GITCODE_REPOSITORY || github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY_SLUG: ${{ github.repository }}
+          TAG: ${{ steps.state.outputs.tag }}
+          PRERELEASE: ${{ steps.state.outputs.prerelease }}
+          EVENT_BODY: ${{ github.event.release.body }}
+        run: |
+          set -euo pipefail
+          BASE="https://api.gitcode.com/api/v5/repos/${GITCODE_REPOSITORY}"
+          if [ "$PRERELEASE" = "true" ]; then STATUS=pre; else STATUS=latest; fi
+
+          CODE=$(curl -L -sS -o /dev/null -w "%{http_code}" \
+            -H "PRIVATE-TOKEN: ${GITCODE_TOKEN}" -H "Accept: application/json" \
+            "${BASE}/releases/tags/${TAG}")
+          if [ "$CODE" != "200" ]; then
+            echo "GitCode 上还没有 ${TAG} 的 release（HTTP ${CODE}）—— 跳过，不创建空版本"
+            exit 0
+          fi
+
+          # 正文：release 事件自带；手动触发时回 GitHub 取，避免把正文覆盖成空
+          BODY="$EVENT_BODY"
+          if [ -z "$BODY" ]; then
+            BODY=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY_SLUG" --json body --jq .body)
+          fi
+
+          # 走 jq 构造 JSON：正文里的换行 / 引号不会破坏报文
+          PAYLOAD=$(jq -n --arg tag "$TAG" --arg status "$STATUS" --arg body "$BODY" \
+            '{tag_name: $tag, name: $tag, body: $body, release_status: $status}')
+
+          RESP_FILE="$(mktemp)"
+          CODE=$(curl -L -sS -o "$RESP_FILE" -w "%{http_code}" -X PATCH \
+            -H "PRIVATE-TOKEN: ${GITCODE_TOKEN}" \
+            -H "Content-Type: application/json" -H "Accept: application/json" \
+            -d "$PAYLOAD" "${BASE}/releases/${TAG}")
+          echo "PATCH ${TAG} -> release_status=${STATUS}（HTTP ${CODE}）"
+          if [ "$CODE" != "200" ]; then
+            echo "::error::GitCode 渠道同步失败（HTTP ${CODE}）"
+            cat "$RESP_FILE"
+            exit 1
+          fi
+          echo "✅ GitCode 渠道已同步为 ${STATUS}"

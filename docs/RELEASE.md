@@ -653,6 +653,18 @@ GitHub Releases 页面
 保存
 ```
 
+**只改 GitHub 这一处就够了，GitCode 会自动跟上**：
+
+- Android Build 的 GitCode 同步只在**推送 tag** 时跑，而「原地转正式」不会再推 tag，
+  所以那条任务不会重新触发；
+- `.github/workflows/sync-release-channel-to-gitcode.yml` 订阅 `release` 事件
+  （`released` / `prereleased` / `edited`），把同一个 tag 的渠道标志同步到 GitCode
+  （GitCode 用 `release_status: pre | latest`，按 tag PATCH，见该文件头部说明）；
+- 因此国内渠道（更新源选 GitCode 时读的是 GitCode 的 releases 接口）也会一起变成
+  正式版，不用再去 GitCode 手动改一遍。
+
+想手动补一次时，在该工作流的 Actions 页面点 `Run workflow`，填 tag 与是否预发布即可。
+
 ### 新正式基线模板
 
 ```bash
