@@ -28,6 +28,9 @@ jobs:
           # 的真实 lastmod。浅克隆下每个文件都只会返回 HEAD 的日期，等于每天把所有
           # 页面标记成“今天改过”，反而削弱抓取信号（此工作流每天定时运行）。
           fetch-depth: 0
+          # 同 update-docs-releases.yml：main 要求走 PR，个人仓库又没有「允许绕过」
+          # 名单可用，配了 DOCS_PUSH_TOKEN 就以其身份推送（管理员可直推）。
+          token: ${{ secrets.DOCS_PUSH_TOKEN != '' && secrets.DOCS_PUSH_TOKEN || github.token }}
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7

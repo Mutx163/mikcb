@@ -29,6 +29,13 @@ jobs:
         with:
           ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
+          # main 要求「改动必须走 PR」，而个人仓库的经典分支保护**不支持**
+          # 「允许绕过」名单（API 会拒：Only organization repositories can have
+          # users and team restrictions），内置的 GITHUB_TOKEN 因此推不上去。
+          # 配了 DOCS_PUSH_TOKEN（有仓库写权限的 PAT）时用它推送 = 以仓库所有者
+          # 身份推，保护规则的 enforce_admins 为 false，管理员可直推 → 绕过。
+          # 没配就退回内置 token，行为与以前一致（会推失败，但不影响生成）。
+          token: ${{ secrets.DOCS_PUSH_TOKEN != '' && secrets.DOCS_PUSH_TOKEN || github.token }}
 
       - name: Fetch Latest Releases and Generate JSON
         run: |
