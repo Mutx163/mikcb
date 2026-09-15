@@ -524,4 +524,10 @@ class Course {
     if (suspendedWeeks?.contains(week) == true) return false;
     return isInWeek(week);
   }
+
+  /// 是否在指定周及以后仍有上课周（排除停课周）。
+  /// 返回 false 表示课程在该周之前已全部结束，可作为「已结课」判定。
+  bool hasActiveWeekOnOrAfter(int week) {
+    return activeWeeks.any((w) => w >= week);
+  }
 }

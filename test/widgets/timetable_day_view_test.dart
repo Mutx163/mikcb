@@ -2433,6 +2433,64 @@ void main() {
     expect(find.byKey(const ValueKey('day-view-summary')), findsOneWidget);
   });
 
+  testWidgets('day view hides ended courses from non-current-week display', (
+    tester,
+  ) async {
+    final provider = await _createProviderWithTodayCourse(tester);
+    final today = DateTime.now();
+
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(timetableShowNonCurrentWeekCourses: true),
+      );
+    });
+    await runRealAsync(tester, () async {
+      await provider.addCourse(
+        Course(
+          id: 'ended-course',
+          name: '已结课课程',
+          teacher: '孙老师',
+          location: 'C105',
+          dayOfWeek: today.weekday,
+          startSection: 5,
+          endSection: 6,
+          startTime: '14:00',
+          endTime: '15:40',
+          customWeeks: const [1],
+        ),
+      );
+    });
+    await runRealAsync(tester, () async {
+      await provider.setCurrentWeek(2);
+    });
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-2-${today.weekday}')));
+    await _pumpTimetableFrame(tester);
+
+    expect(
+      find.byKey(ValueKey('timetable-day-view-2-${today.weekday}')),
+      findsOneWidget,
+    );
+    // 本周仍有课的课程正常显示
+    expect(find.text('高等数学'), findsWidgets);
+    // 已结课（所有上课周都在当前周之前）不再以「非本周」显示
+    expect(find.text('已结课课程'), findsNothing);
+    expect(find.text('非本周'), findsNothing);
+  });
+
   testWidgets('day view renders conflicting courses together', (tester) async {
     final provider = await _createProviderWithTodayCourse(tester);
     final today = DateTime.now();

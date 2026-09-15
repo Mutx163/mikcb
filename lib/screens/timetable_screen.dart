@@ -6734,7 +6734,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       if (isCurrentWeek) {
         return true;
       }
-      return settings.timetableShowNonCurrentWeekCourses;
+      // 已结课（在当前周及以后没有任何上课周）的课程不再以「非本周」显示
+      return settings.timetableShowNonCurrentWeekCourses &&
+          course.hasActiveWeekOnOrAfter(week);
     }).toList()..sort((a, b) {
       final startCompare = a.startSection.compareTo(b.startSection);
       if (startCompare != 0) return startCompare;
