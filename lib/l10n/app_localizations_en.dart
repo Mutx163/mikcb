@@ -5286,6 +5286,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pull down on the home timetable to run warehouse quick import in the background';
 
   @override
+  String get longPressEmptySlotToAddTitle =>
+      'Long-press empty slot to add course';
+
+  @override
+  String get longPressEmptySlotToAddSubtitle =>
+      'Long-press an empty timetable slot to show a dashed plus, then tap it to add a course there';
+
+  @override
   String get homePullQuickImportFetchingCourses => 'Fetching new courses…';
 
   @override

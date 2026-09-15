@@ -2557,6 +2557,8 @@
   "quickImportRetryAction": "再試行",
   "homePullQuickImportTitle": "ホーム下引きでクイックインポート",
   "homePullQuickImportSubtitle": "ホーム画面を下に引くと、教務のクイックインポートをバックグラウンドで実行します",
+  "longPressEmptySlotToAddTitle": "空きコマを長押しして授業を追加",
+  "longPressEmptySlotToAddSubtitle": "時間割の空きコマを長押しすると点線の＋が表示され、タップするとその位置に授業を追加できます",
   "homePullQuickImportFetchingCourses": "新しい授業を取得中…",
   "homePullQuickImportNeedsManualAction": "手動操作が必要です。教務インポート画面で続行してください",
   "quickImportPlaybackStepProgress": "ステップ {current} / {total}",

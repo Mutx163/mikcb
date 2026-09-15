@@ -215,6 +215,14 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool _isCommittingWeek = false;
   late int _visibleWeek;
   late final ValueNotifier<int> _visibleWeekListenable;
+
+  /// 两步式「长按空白格添加课程」的标记（可开关，见
+  /// [TimetableSettings.longPressEmptySlotToAddCourseEnabled]）：当前处于
+  /// 「虚线加号」态的 周次/星期/节次。周次也入列是为了相邻页预渲染
+  ///（allowImplicitScrolling）时不在别的周页上误显标记。
+  int? _emptySlotMarkerWeek;
+  int? _emptySlotMarkerDayOfWeek;
+  int? _emptySlotMarkerSection;
   final GlobalKey _timetableSurfaceKey = GlobalKey();
 
   /// Anchor for the top-right "more" menu popup (positioned below this key).
@@ -6277,7 +6285,14 @@ class _TimetableScreenState extends State<TimetableScreen>
           left: 0,
           right: 0,
           height: sectionHeight,
-          child: const SizedBox.expand(),
+          child: _buildEmptySlotCell(
+            week,
+            dayOfWeek,
+            section,
+            sectionHeight,
+            cardInset,
+            settings,
+          ),
         ),
       );
 
@@ -6329,8 +6344,10 @@ class _TimetableScreenState extends State<TimetableScreen>
               showDescription: settings.courseCardShowDescription,
               verticalAlign: settings.courseCardVerticalAlign,
               horizontalAlign: settings.courseCardHorizontalAlign,
-              onTap: () =>
-                  _showCourseActions(item.course, week, displayItem: item),
+              onTap: () {
+                _clearEmptySlotMarker();
+                _showCourseActions(item.course, week, displayItem: item);
+              },
               compactTitleFontSize: settings.courseCardFontSize,
               compactSubtitleFontSize: (settings.courseCardFontSize - 1).clamp(
                 7.0,
@@ -6379,6 +6396,84 @@ class _TimetableScreenState extends State<TimetableScreen>
       child: Stack(
         clipBehavior: Clip.antiAlias,
         children: [...gridLines, ...courseCards],
+      ),
+    );
+  }
+
+  /// 两步式「长按空白格添加课程」的空白格单元。
+  ///
+  /// 功能关闭时保持原空占位（无视觉、事件穿透，行为与旧版完全一致）；
+  /// 开启后每个空白格挂长按手势，长按后该格进入虚线加号态（截图参考
+  /// WakeUp 课表），点虚线框打开预填了周次/星期/节次的添加课程表单。
+  /// 课程卡位于 Stack 更上层，命中优先，不受影响。
+  Widget _buildEmptySlotCell(
+    int week,
+    int dayOfWeek,
+    int section,
+    double sectionHeight,
+    double cardInset,
+    TimetableSettings settings,
+  ) {
+    if (!settings.longPressEmptySlotToAddCourseEnabled) {
+      return const SizedBox.expand();
+    }
+    final isMarkerActive =
+        _emptySlotMarkerWeek == week &&
+        _emptySlotMarkerDayOfWeek == dayOfWeek &&
+        _emptySlotMarkerSection == section;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onLongPress: () {
+        if (settings.enableHaptics) HapticFeedback.mediumImpact();
+        _showEmptySlotMarker(week, dayOfWeek, section);
+      },
+      child: isMarkerActive
+          ? _EmptySlotAddMarker(
+              sectionHeight: sectionHeight,
+              inset: cardInset + 2,
+              onTap: () => _openAddCourseFromEmptySlot(week, dayOfWeek, section),
+            )
+          : const SizedBox.expand(),
+    );
+  }
+
+  void _showEmptySlotMarker(int week, int dayOfWeek, int section) {
+    setState(() {
+      _emptySlotMarkerWeek = week;
+      _emptySlotMarkerDayOfWeek = dayOfWeek;
+      _emptySlotMarkerSection = section;
+    });
+  }
+
+  void _clearEmptySlotMarker() {
+    if (_emptySlotMarkerWeek == null &&
+        _emptySlotMarkerDayOfWeek == null &&
+        _emptySlotMarkerSection == null) {
+      return;
+    }
+    setState(() {
+      _emptySlotMarkerWeek = null;
+      _emptySlotMarkerDayOfWeek = null;
+      _emptySlotMarkerSection = null;
+    });
+  }
+
+  /// 从虚线加号态进入添加课程表单：位置三要素全部预填，落库复用
+  /// [TimetableProvider.addCourse] 现有链路。
+  Future<void> _openAddCourseFromEmptySlot(
+    int week,
+    int dayOfWeek,
+    int section,
+  ) async {
+    _clearEmptySlotMarker();
+    await Navigator.of(context).push<void>(
+      HyperosPageRoute<void>(
+        settings: const RouteSettings(name: '/course/add-from-empty-slot'),
+        builder: (_) => AddCourseScreen(
+          initialWeek: week,
+          initialDayOfWeek: dayOfWeek,
+          initialStartSection: section,
+        ),
       ),
     );
   }
@@ -7596,6 +7691,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   void _handleWeekPageChanged(int page, int maxWeek) {
+    _clearEmptySlotMarker();
     _lastObservedWeekPage = page;
     _pendingSettledWeek = _clampWeek(page + 1, maxWeek);
     _visibleWeekListenable.value = _pendingSettledWeek!;
@@ -9376,4 +9472,93 @@ class _HomePullVerticalDragDetectorState
       child: widget.child,
     );
   }
+}
+
+/// 「长按空白格添加课程」的虚线加号标记（两步式交互的第二步目标）。
+///
+/// 视觉对齐参考截图：圆角虚线框 + 居中加号，尺寸跟随课程卡内缩与节高，
+/// 整格可点，点击即打开预填位置的添加课程表单。
+class _EmptySlotAddMarker extends StatelessWidget {
+  const _EmptySlotAddMarker({
+    required this.sectionHeight,
+    required this.inset,
+    required this.onTap,
+  });
+
+  final double sectionHeight;
+  final double inset;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    // 深浅色下都用低透明度中性色，避免和各色壁纸/课程卡抢视觉。
+    final markerColor = (brightness == Brightness.dark
+            ? Colors.white
+            : Colors.black)
+        .withValues(alpha: 0.45);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Padding(
+        padding: EdgeInsets.all(inset),
+        child: CustomPaint(
+          painter: _DashedRRectBorderPainter(
+            color: markerColor,
+            fill: markerColor.withValues(alpha: 0.08),
+          ),
+          child: Center(
+            child: Icon(
+              Icons.add_rounded,
+              size: (sectionHeight * 0.3).clamp(16.0, 26.0),
+              color: markerColor,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 圆角虚线框 painter：沿 RRect 周长按 dash/gap 逐段绘制。
+/// Flutter 内置 [Border] 不支持虚线，这里手绘（无第三方依赖）。
+class _DashedRRectBorderPainter extends CustomPainter {
+  _DashedRRectBorderPainter({required this.color, required this.fill});
+
+  final Color color;
+  final Color fill;
+
+  static const double _radius = 12;
+  static const double _strokeWidth = 1.5;
+  static const double _dashLength = 4;
+  static const double _gapLength = 3.5;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      const Radius.circular(_radius),
+    );
+    if (fill.a > 0) {
+      canvas.drawRRect(rrect, Paint()..color = fill);
+    }
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..color = color;
+    final path = Path()..addRRect(rrect);
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final end = (distance + _dashLength).clamp(0.0, metric.length);
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+        distance = end + _gapLength;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRRectBorderPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.fill != fill;
 }

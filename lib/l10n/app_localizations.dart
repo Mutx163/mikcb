@@ -9103,6 +9103,18 @@ abstract class AppLocalizations {
   /// **'在首页下拉时自动执行教务快捷导入'**
   String get homePullQuickImportSubtitle;
 
+  /// No description provided for @longPressEmptySlotToAddTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'长按空白格添加课程'**
+  String get longPressEmptySlotToAddTitle;
+
+  /// No description provided for @longPressEmptySlotToAddSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'长按课表空白格出现虚线加号，点它可直接在该位置添加课程'**
+  String get longPressEmptySlotToAddSubtitle;
+
   /// No description provided for @homePullQuickImportFetchingCourses.
   ///
   /// In zh, this message translates to:

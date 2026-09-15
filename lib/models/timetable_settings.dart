@@ -1368,6 +1368,10 @@ class TimetableSettings {
 
   /// When true, home-page pull-down runs warehouse quick import in the background.
   final bool homePullQuickImportEnabled;
+
+  /// When true, long-pressing an empty timetable slot marks it with a dashed
+  /// "+ slot" that opens the add-course form prefilled with that day/section.
+  final bool longPressEmptySlotToAddCourseEnabled;
   final bool liveShowCourseName;
   final bool liveShowLocation;
   final bool liveShowCountdown;
@@ -1617,6 +1621,7 @@ class TimetableSettings {
     this.enableHaptics = true,
     this.pageTransitionSpeed = defaultPageTransitionSpeed,
     this.homePullQuickImportEnabled = false,
+    this.longPressEmptySlotToAddCourseEnabled = false,
     this.liveShowCourseName = true,
     this.liveShowLocation = true,
     this.liveShowCountdown = true,
@@ -1827,6 +1832,8 @@ class TimetableSettings {
       'enableHaptics': enableHaptics,
       'pageTransitionSpeed': pageTransitionSpeed,
       'homePullQuickImportEnabled': homePullQuickImportEnabled,
+      'longPressEmptySlotToAddCourseEnabled':
+          longPressEmptySlotToAddCourseEnabled,
       'liveShowCourseName': liveShowCourseName,
       'liveShowLocation': liveShowLocation,
       'liveShowCountdown': liveShowCountdown,
@@ -2186,6 +2193,8 @@ class TimetableSettings {
               .clamp(minPageTransitionSpeed, maxPageTransitionSpeed),
       homePullQuickImportEnabled:
           json['homePullQuickImportEnabled'] as bool? ?? false,
+      longPressEmptySlotToAddCourseEnabled:
+          json['longPressEmptySlotToAddCourseEnabled'] as bool? ?? false,
       liveShowCourseName: json['liveShowCourseName'] as bool? ?? true,
       liveShowLocation: json['liveShowLocation'] as bool? ?? true,
       liveShowCountdown: json['liveShowCountdown'] as bool? ?? true,
@@ -2593,6 +2602,7 @@ class TimetableSettings {
     bool? enableHaptics,
     double? pageTransitionSpeed,
     bool? homePullQuickImportEnabled,
+    bool? longPressEmptySlotToAddCourseEnabled,
     bool? liveShowCourseName,
     bool? liveShowLocation,
     bool? liveShowCountdown,
@@ -2844,6 +2854,9 @@ class TimetableSettings {
           .clamp(minPageTransitionSpeed, maxPageTransitionSpeed),
       homePullQuickImportEnabled:
           homePullQuickImportEnabled ?? this.homePullQuickImportEnabled,
+      longPressEmptySlotToAddCourseEnabled:
+          longPressEmptySlotToAddCourseEnabled ??
+              this.longPressEmptySlotToAddCourseEnabled,
       liveShowCourseName: liveShowCourseName ?? this.liveShowCourseName,
       liveShowLocation: liveShowLocation ?? this.liveShowLocation,
       liveShowCountdown: liveShowCountdown ?? this.liveShowCountdown,

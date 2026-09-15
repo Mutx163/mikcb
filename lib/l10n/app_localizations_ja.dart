@@ -5058,6 +5058,13 @@ class AppLocalizationsJa extends AppLocalizations {
       'ホーム画面を下に引くと、教務のクイックインポートをバックグラウンドで実行します';
 
   @override
+  String get longPressEmptySlotToAddTitle => '空きコマを長押しして授業を追加';
+
+  @override
+  String get longPressEmptySlotToAddSubtitle =>
+      '時間割の空きコマを長押しすると点線の＋が表示され、タップするとその位置に授業を追加できます';
+
+  @override
   String get homePullQuickImportFetchingCourses => '新しい授業を取得中…';
 
   @override

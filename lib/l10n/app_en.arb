@@ -2748,6 +2748,8 @@
   "quickImportRetryAction": "Retry",
   "homePullQuickImportTitle": "Pull to quick-import",
   "homePullQuickImportSubtitle": "Pull down on the home timetable to run warehouse quick import in the background",
+  "longPressEmptySlotToAddTitle": "Long-press empty slot to add course",
+  "longPressEmptySlotToAddSubtitle": "Long-press an empty timetable slot to show a dashed plus, then tap it to add a course there",
   "homePullQuickImportFetchingCourses": "Fetching new courses…",
   "homePullQuickImportNeedsManualAction": "Manual action needed. Open the warehouse import page to continue",
   "quickImportPlaybackStepProgress": "Step {current} / {total}",

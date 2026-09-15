@@ -5085,6 +5085,13 @@ class AppLocalizationsKo extends AppLocalizations {
       '홈 시간표를 아래로 당기면 교무 빠른 가져오기를 백그라운드에서 실행합니다';
 
   @override
+  String get longPressEmptySlotToAddTitle => '빈 칸을 길게 눌러 수업 추가';
+
+  @override
+  String get longPressEmptySlotToAddSubtitle =>
+      '시간표의 빈 칸을 길게 누르면 점선 +가 나타나고, 탭하면 그 위치에 수업을 추가할 수 있습니다';
+
+  @override
   String get homePullQuickImportFetchingCourses => '새 수업을 가져오는 중…';
 
   @override

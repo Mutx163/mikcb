@@ -2550,6 +2550,8 @@
   "quickImportRetryAction": "重試",
   "homePullQuickImportTitle": "首頁下拉快捷匯入",
   "homePullQuickImportSubtitle": "在首頁下拉時自動執行教務快捷匯入",
+  "longPressEmptySlotToAddTitle": "長按空白格新增課程",
+  "longPressEmptySlotToAddSubtitle": "長按課表空白格出現虛線加號，點它可直接在該位置新增課程",
   "homePullQuickImportFetchingCourses": "正在取得新課程…",
   "homePullQuickImportNeedsManualAction": "需要手動操作，請前往教務匯入頁面繼續",
   "quickImportPlaybackStepProgress": "步驟 {current} / {total}",
