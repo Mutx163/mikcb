@@ -223,10 +223,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   int? _emptySlotMarkerWeek;
   int? _emptySlotMarkerDayOfWeek;
   int? _emptySlotMarkerSection;
-
-  /// 网格级手势层的定位锚：长按拖动跟手换格时，用它把指针全局坐标
-  /// 换算成（星期几, 节次）。见 [_buildEmptySlotGestureArea]。
-  final GlobalKey _emptySlotGridKey = GlobalKey();
   final GlobalKey _timetableSurfaceKey = GlobalKey();
 
   /// Anchor for the top-right "more" menu popup (positioned below this key).
@@ -6429,6 +6425,16 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 手势竞技场的那个识别器——挂在单格上，手指移出该格后收不到任何
   /// 更新，无法跟手换格。
   ///
+  /// 坐标换算直接用事件自带的 [LongPressStartDetails.localPosition] /
+  /// [LongPressMoveUpdateDetails.localPosition]：本 GestureDetector 恰好
+  /// 包住日列 Row，其局部坐标即（星期×节次）网格坐标。**不要**给这里挂
+  /// GlobalKey 来做 globalToLocal——周 pager `allowImplicitScrolling` 会
+  /// 同时保活相邻页，同一 GlobalKey 出现在多棵页面子树上必崩
+  ///（Duplicate GlobalKey，2026-09-15 自查抓出）。
+  ///
+  /// 日视图展开时（[_shouldShowDayViewOverlay]）周页仍在 pager 下层存活，
+  /// 遮罩未盖严处的长按会穿透到不可见的周网格上，故此时不启用手势层。
+  ///
   /// 行为：长按空白格出现虚线加号标记；不松手拖动时标记跟手移动到
   /// 指针所在空白格（滑过课程卡时保持原格不动）；松手后标记留在原处，
   /// 点虚线框进表单、点其他空白格取消选择。功能关闭时原样返回 child。
@@ -6441,24 +6447,21 @@ class _TimetableScreenState extends State<TimetableScreen>
     required Set<(int, int)> occupiedSections,
     required Widget child,
   }) {
-    if (!settings.longPressEmptySlotToAddCourseEnabled) {
+    if (!settings.longPressEmptySlotToAddCourseEnabled ||
+        _shouldShowDayViewOverlay) {
       return child;
     }
 
-    /// 指针全局坐标 → 所在空白格（星期几, 节次）；越界或格子有课返回 null。
-    (int, int)? cellAt(Offset globalPosition) {
-      final box = _emptySlotGridKey.currentContext?.findRenderObject();
-      if (box is! RenderBox) {
+    /// 指针局部坐标（相对本手势层 = 日列网格）→ 所在空白格（星期几,
+    /// 节次）；越界或格子有课返回 null。
+    (int, int)? cellAt(Offset localPosition) {
+      if (localPosition.dx < 0 || localPosition.dy < 0) {
         return null;
       }
-      final local = box.globalToLocal(globalPosition);
-      if (local.dx < 0 || local.dy < 0) {
-        return null;
-      }
-      final dayIndex = (local.dx / dayWidth)
+      final dayIndex = (localPosition.dx / dayWidth)
           .floor()
           .clamp(0, visibleDays.length - 1);
-      final sectionIndex = (local.dy / sectionHeight)
+      final sectionIndex = (localPosition.dy / sectionHeight)
           .floor()
           .clamp(0, settings.sectionCount - 1);
       final dayOfWeek = visibleDays[dayIndex];
@@ -6470,10 +6473,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
 
     return GestureDetector(
-      key: _emptySlotGridKey,
       behavior: HitTestBehavior.opaque,
       onLongPressStart: (details) {
-        final cell = cellAt(details.globalPosition);
+        final cell = cellAt(details.localPosition);
         if (cell == null) {
           return;
         }
@@ -6481,7 +6483,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         _showEmptySlotMarker(week, cell.$1, cell.$2);
       },
       onLongPressMoveUpdate: (details) {
-        final cell = cellAt(details.globalPosition);
+        final cell = cellAt(details.localPosition);
         if (cell == null ||
             (cell.$1 == _emptySlotMarkerDayOfWeek &&
                 cell.$2 == _emptySlotMarkerSection)) {
