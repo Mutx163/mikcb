@@ -650,6 +650,52 @@ void main() {
     }
   });
 
+  // 真机回归（2026-09-15）：柔光档刚进「调整壁纸显示位置」页时，三个悬浮按钮
+  // 「先冒一块平的、再变玻璃」，慢放下是一下明显的跳变。根因是上游玻璃是在
+  // **paint** 里读快照的（`flutter_miuix` 的 `_RenderGlass.paint`：`backdrop.snapshot
+  // != null && globalOffset != null` 才画材质，否则退回 `fill` 兜底实底），而捕获
+  // 节点排在这块玻璃**之前**画；首次采样若只排到帧末，玻璃头几帧必然读不到图。
+  //
+  // 下面这条就是那份时序契约：宿主**之后**画的兄弟节点（玻璃的处境），应当在
+  // 同一帧里就读到快照。
+  testWidgets('首次采样同帧完成：宿主之后画的玻璃这一帧就读得到快照', (tester) async {
+    final controller = HyperosGlassBackdropController();
+    addTearDown(controller.dispose);
+    final backdrop = HyperosZoneBackdrop();
+    final reads = <bool>[];
+
+    await tester.pumpWidget(
+      TestApp(
+        home: Stack(
+          children: [
+            HyperosGlassBackdropHost(
+              controller: controller,
+              // 宿主子树必须有非零尺寸，否则捕获节点 `size.isEmpty` 直接早退。
+              child: const SizedBox(width: 200, height: 120),
+            ),
+            // 玻璃的挂法：采样登记在宿主**之外**（壁纸位置选择页的三个悬浮按钮
+            // 就是这样挂的——不能采到自己上一帧），画在宿主之后。
+            HyperosGlassBackdropReporter(
+              controller: controller,
+              backdrop: backdrop,
+              child: CustomPaint(
+                size: const Size(40, 40),
+                painter: _BackdropReadProbe(backdrop, reads),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(reads, isNotEmpty, reason: '探针至少要画过一帧');
+    expect(
+      reads.first,
+      isTrue,
+      reason: '首帧就该读到快照，否则玻璃会先画一块平的、下一帧才变玻璃',
+    );
+  });
+
   // 上游 `MiuixGlass` 契约（flutter_miuix 1.2.0 miuix_glass.dart:54）：
   //   "必须放在 backdrop 捕获子树之外，防止反馈采样。"
   // 本项目 os4_glass_backdrop.dart:13-14 也把这条抄了一遍。
@@ -698,4 +744,24 @@ void main() {
       );
     });
   }, skip: 'P0 已知缺陷：页内玻璃仍在捕获子树内（反馈采样），修法见审核报告 §4。');
+}
+
+/// 在 paint 相位读一次「玻璃这一帧能不能拿到材质」。
+///
+/// 判据与上游 `_RenderGlass.paint` 完全一致（有快照 + 有原点才画材质，否则画
+/// `fill` 兜底实底），所以读到的就是玻璃这一帧会看到的东西；按 paint 顺序记录，
+/// 于是能证明「宿主在前、玻璃在后」的同一帧里快照已经写好。
+class _BackdropReadProbe extends CustomPainter {
+  _BackdropReadProbe(this.backdrop, this.reads);
+
+  final HyperosZoneBackdrop backdrop;
+  final List<bool> reads;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    reads.add(backdrop.snapshot != null && backdrop.globalOffset != null);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BackdropReadProbe oldDelegate) => true;
 }

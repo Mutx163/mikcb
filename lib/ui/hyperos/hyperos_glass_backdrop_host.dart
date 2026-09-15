@@ -666,12 +666,45 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
   /// 循环即止（代价：连续滚动时最多两帧的采样延迟）。
   bool _notifiedSinceCapture = false;
 
+  /// 本帧有没有「还没有图」的采样块（刚挂载、或刚从别的屏换过来的玻璃）。
+  bool get _hasPendingZones {
+    for (final zone in _controller.zones) {
+      if (zone.image == null) return true;
+    }
+    return false;
+  }
+
   @override
   void paint(PaintingContext context, Offset offset) {
     super.paint(context, offset);
     if (_notifiedSinceCapture) {
       _notifiedSinceCapture = false;
       return;
+    }
+    if (!recording || !hasSize || size.isEmpty) return;
+    // 首次采样必须**本帧**就写完，不能只排到帧末 —— 这是「柔光档刚进壁纸位置
+    // 选择页时，三个悬浮按钮先冒一块平的、再变玻璃」（2026-09-15 真机）的根因。
+    //
+    // 上游玻璃是在 **paint** 里读快照的（`miuix_glass.dart` 的 `_RenderGlass.paint`：
+    // `backdrop.snapshot != null && globalOffset != null` 才画材质，否则退回 `fill`
+    // 兜底实底），而本节点排在这块玻璃**之前**画（采样宿主包的一定是背景层）。
+    // 第一次采样只放到帧末时，玻璃的头几帧必然读到 null → 画实底 → 帧末那次采完、
+    // 下一帧才「变成玻璃」；真机上页面首帧偏慢，这段空白能拖到 80~120ms（实测）。
+    // 同帧补采把这段窗口压到一帧都看不到。
+    //
+    // 只补 `image == null` 的块：有旧图的块换了图要释放旧图，而玻璃可能正在用旧图
+    // ——那一路继续留在帧末（与今天完全一致）；稳态（块块有图）也不在这里录，
+    // 连续滚动 / 转场时把同步出图搬进 paint 相位没有收益。
+    //
+    // 这里**只写图、不发通知**（`notify: false`）：通知会让玻璃 `markNeedsPaint`，
+    // 在 paint 相位改绘制状态没必要 —— 帧末那次照旧会通知，同一帧、同一份内容。
+    if (_hasPendingZones) {
+      // 停在画了一半的图上出图会丢内容：先把本帧已画的像素收成 picture。
+      // `stopRecordingIfNeeded` 标了 `@protected`，但它本来就是干这件事的
+      // （`pushLayer` 内部也先调它），只是词法上不在 `PaintingContext` 子类里。
+      // ignore: invalid_use_of_protected_member
+      context.stopRecordingIfNeeded();
+      _capture(pendingOnly: true, notify: false);
     }
     _scheduleCapture();
   }
@@ -689,7 +722,13 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
     });
   }
 
-  void _capture() {
+  /// 录帧：每块采样区按自己的矩形各录一张窄带快照。
+  ///
+  /// [pendingOnly] 只补「还没有图」的块，且**不释放任何旧图** —— 供 [paint] 里的
+  /// 同帧补采用（那时玻璃可能正拿着旧图在画）。[notify] 为 false 时不通知玻璃
+  /// 重绘，同样是为了同帧补采（见 [paint]）：写入本身就已经能让**后画的**玻璃读到
+  /// 新图，通知则留给帧末那次全量录帧去做。
+  void _capture({bool pendingOnly = false, bool notify = true}) {
     final offsetLayer = layer;
     if (offsetLayer is! OffsetLayer) return;
     // 采样比例与上游模糊源同档（见 [_samplePixelRatio]）：上游拿到快照后一律
@@ -699,10 +738,12 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
     final mine = Offset.zero & size;
     var wrote = false;
     // 先改判"满员时量不到位置"的成员：录帧时已布局，才量得到矩形、才谈得上远近。
-    _controller.resolveDeferredMerges();
+    // 同帧补采不做这步：它只补空块，改判留给帧末的全量录帧。
+    if (!pendingOnly) _controller.resolveDeferredMerges();
     // 每块玻璃背后那条窄带各录一张：整屏快照是 ~100MB 级离屏目标，每帧一次
     // 等于烧掉一个核（真机实测 106~129% CPU、Mali 驱动线程满载）。
     for (final zone in _controller.zones) {
+      if (pendingOnly && zone.image != null) continue;
       final global = _controller.captureRectOf(zone);
       if (global == null) continue;
       final target = Rect.fromPoints(
@@ -713,10 +754,12 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
       final image = offsetLayer.toImageSync(target, pixelRatio: ratio);
       zone.update(image, localToGlobal(target.topLeft), ratio);
       wrote = true;
+      if (!notify) continue;
       for (final backdrop in zone.members.keys) {
         backdrop.zoneUpdated();
       }
     }
+    if (pendingOnly) return;
     // 另有弹层（Overlay 里的面板，拿不到自己背后的矩形）在要背景时，补一张整层图。
     // 只在弹层打开期间发生，页内玻璃仍按窄带录。整层是这里最大的一笔：2.75x 的
     // 1280×2772 = 26.8M 像素，按 dpr 录 ≈ 107MB／帧（真机实测每次打开弹层瞬时分配
@@ -730,7 +773,9 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
       );
       wrote = true;
     }
-    if (wrote) _notifiedSinceCapture = true;
+    // 同帧补采（`notify: false`）不置这个标志：它没通知任何人，也就谈不上
+    // 「这一帧是被自己的通知带出来的」——帧末那次全量录帧还要照常跑。
+    if (wrote && notify) _notifiedSinceCapture = true;
   }
 }
 

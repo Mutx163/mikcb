@@ -148,17 +148,19 @@ class _WallpaperPositionPickerPageState
   final List<Timer> _traceTimers = <Timer>[];
   bool _tracedPreviewFrame = false;
 
-  /// 本屏玻璃材质是否已就绪（采样区里有图了）。
+  /// 这条诊断最多轮询多少帧。
   ///
-  /// 为什么需要它：柔光的材质由屏级宿主在**帧末**录制、玻璃下一帧才读得到（录制
-  /// 必须等图层画完），所以按钮第一次出现时是"平的" —— 真机反馈的"平色块 → 玻璃"
-  /// 就是这一下。进场时页面本来就在滑入，这几帧不画按钮看不出来；画一个随后会变形
-  /// 的平色块反而显眼。所以先不画，等有图了再淡入。
+  /// 图永远不来（模糊总开关关闭时本屏根本没有采样区）时必须有上界，否则整页生命
+  /// 周期里每帧都排一次回调。120 帧 ≈ 2s，够覆盖真机上首帧偏慢的那一段。
+  static const int _traceMaterialPollFrames = 120;
+
+  /// 第一张采样图落地的时刻是否已经打过（只诊断，不门控绘制）。
   ///
-  /// 兜底：[_glassReadyFallback] 到点还没图（宿主缺失/异常）就照常显示 ——
-  /// 不能把按钮永久藏起来。
-  bool _glassReady = false;
-  Timer? _glassReadyFallback;
+  /// 这个时点是「三个悬浮按钮能不能在**首帧**就画成玻璃」的唯一判据：玻璃在
+  /// paint 里读快照，采样宿主必须同帧先写完（见 `HyperosGlassBackdropCapture.paint`
+  /// 里"首次采样必须本帧完成"那段）。修好之前真机实测是 +81~134ms —— 按钮先是
+  /// 一块平的、再变玻璃；修好之后应当落在首帧（+0~20ms）。
+  bool _tracedMaterialReady = false;
 
   /// 本页自己的屏级玻璃采样源。
   ///
@@ -177,7 +179,6 @@ class _WallpaperPositionPickerPageState
 
   @override
   void dispose() {
-    _glassReadyFallback?.cancel();
     // 退出这一侧也要留一条：闪变发生在采样落地那一刻，而"落地"是相对进页算的，
     // 有这条才能与进页时间对齐、判断闪的是进还是出。
     _traceGlass('dispose');
@@ -215,21 +216,24 @@ class _WallpaperPositionPickerPageState
     );
   }
 
-  /// 等本屏采样区录到第一张图（见 [_glassReady]）。
+  /// 打一条"第一张采样图落地"的时间线（见 [_tracedMaterialReady]）。
   ///
   /// 每帧查一次而不是听控制器：材质是写进"区"里的，控制器只在有人要录帧时通知，
-  /// 图到了不会额外通知页面。按帧查的代价可忽略，且到 [_glassReady] 置位就停。
-  void _awaitGlassMaterial() {
+  /// 图到了不会额外通知页面。按帧查的代价可忽略，且落地一次就停。
+  void _traceMaterialLanding({int frames = 0}) {
+    if (_tracedMaterialReady || frames > _traceMaterialPollFrames) {
+      return;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _glassReady) {
+      if (!mounted || _tracedMaterialReady) {
         return;
       }
       if (_glass.zones.any((zone) => zone.image != null)) {
-        _traceGlass('material ready -> fade in buttons');
-        setState(() => _glassReady = true);
+        _tracedMaterialReady = true;
+        _traceGlass('first snapshot -> buttons paint as glass');
         return;
       }
-      _awaitGlassMaterial();
+      _traceMaterialLanding(frames: frames + 1);
     });
   }
 
@@ -261,13 +265,7 @@ class _WallpaperPositionPickerPageState
         _traceGlass('frame1');
       }
     });
-    _awaitGlassMaterial();
-    _glassReadyFallback = Timer(const Duration(milliseconds: 250), () {
-      if (mounted && !_glassReady) {
-        _traceGlass('material timeout -> show buttons anyway');
-        setState(() => _glassReady = true);
-      }
-    });
+    _traceMaterialLanding();
     for (final ms in const <int>[32, 64, 120, 400, 900]) {
       _traceTimers.add(
         Timer(Duration(milliseconds: ms), () {
@@ -465,16 +463,14 @@ class _WallpaperPositionPickerPageState
               // （见 [_buildOverlayLayer]），外面套一层极性渐变 —— 衬底与墨色要等
               // 壁纸顶部亮度**异步采样**落地才能定，落地前只能按主题猜；直接切换
               // 就是真机反馈的"进 / 出页面闪一下"（浅色实底 → 玻璃）。
-              // 材质就绪前先不画（见 [_glassReady]）：进场这几帧什么都不画，等采样区
-              // 有图了淡入 —— 比先画一块"随后变形的平色块"干净得多。
-              AnimatedOpacity(
-                opacity: _glassReady ? 1 : 0,
-                duration: const Duration(milliseconds: 140),
-                child: SoftGlassPolarityFade(
-                  ink: inkColor,
-                  wash: washColor,
-                  builder: _buildOverlayLayer,
-                ),
+              //
+              // 不要再"等材质就绪再淡入"：那只是把"先冒一块平的"换成"按钮迟到
+              // 半秒才淡进来"，慢放下同样是一下跳。首帧就画成玻璃的正确做法是让采样
+              // 宿主**同帧**先写完快照（见 `HyperosGlassBackdropCapture.paint`）。
+              SoftGlassPolarityFade(
+                ink: inkColor,
+                wash: washColor,
+                builder: _buildOverlayLayer,
               ),
             ],
           ),
