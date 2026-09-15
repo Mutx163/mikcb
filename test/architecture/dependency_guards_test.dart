@@ -45,7 +45,10 @@ void main() {
     // 4440→4455: 桌面卡片「情侣课表」合并视图（22b6eca7 等）Provider 侧
     // 新增 couple-merged 绑定哨兵对接与快照转发（+15），属正当增长，
     // 拆分归阶段 3 重构，按测试约定同步真实值。
-    const baselineLines = 4455;
+    // 4455→4460: 壁纸「最近使用」历史改设备级全局：Provider 侧只留两条一行调用
+    // 入口（启动时收拢 + 导入后并集），迁移/并集逻辑与错误日志全部下沉
+    // WallpaperHistoryService，+5 全是调用行与注释行，按测试约定同步真实值。
+    const baselineLines = 4460;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

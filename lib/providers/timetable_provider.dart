@@ -18,7 +18,6 @@ import '../models/time_scheme.dart';
 import '../models/partner_timetable_binding.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
-import '../models/wallpaper_history.dart';
 import '../data/timetable_repository.dart';
 import '../domain/week_calculator.dart';
 import '../domain/holiday_resolver.dart';
@@ -392,18 +391,6 @@ class TimetableProvider with ChangeNotifier {
   String? _scheduleDateRuleLastAppliedSignature;
   List<TimetableProfile> get profiles => List.unmodifiable(_profiles);
   String? get activeProfileId => _activeProfileId;
-
-  /// 所有课表 profile 当前壁纸的**文件路径**集合（含已下线的 legacy 字段）。
-  ///
-  /// 壁纸「最近使用」历史是设备级共享的，而壁纸仍每个课表各自一张，于是"被历史
-  /// 淘汰 / 被恢复默认清掉"不再等于"没人用" —— 删文件前必须拿这份集合当白名单
-  /// （见 `deleteEvictedWallpaperFiles` 的 `inUsePaths`）。
-  Set<String> get allProfilesWallpaperPaths => <String>{
-    for (final profile in _profiles)
-      if (resolveHomePageBackdropImagePath(profile.settings)
-          case final String path)
-        path,
-  };
   Map<String, List<Course>> get courseConflictMap => _buildCourseConflictMap();
   Map<String, List<Course>> courseConflictMapForWeek(int week) =>
       _buildCourseConflictMap(week: week);
@@ -612,10 +599,8 @@ class TimetableProvider with ChangeNotifier {
       }
       _initializationFuture = null;
       await initialize();
-      // 从备份 / 云同步导入之后，把导入进来的各 profile 历史并回全局历史：
-      // 全局历史是设备级的，而历史随备份走的那条路是 profiles 里的镜像，
-      // 不并一次的话，从别的设备恢复过来的「最近使用」会被本机已有历史盖掉。
-      await _mergeImportedWallpaperHistory();
+      // 导入（备份 / 云同步）之后把 profile 镜像里的「最近使用」并回全局历史。
+      await WallpaperHistoryService.mergeImportedProfiles(_profiles);
       // This method already holds the mutation gate. Load directly so it does
       // not enqueue behind itself and deadlock.
       await _loadDeferredDataImpl();
@@ -635,54 +620,6 @@ class TimetableProvider with ChangeNotifier {
   Future<T> _runLiveSurfaceExclusive<T>(Future<T> Function() action) {
     return _liveSurfaceGate.runExclusive(action);
   }
-
-  /// 把各课表 profile 各自的历史并进**全局**壁纸历史；只做一次。
-  ///
-  /// 带完成标记（`WallpaperHistoryService.migratedKey`），**不做二次合并**：用户
-  /// 清空「最近使用」之后，残留在各 profile 镜像里的旧条目不能被复活。
-  /// 从备份恢复那一路走 [_mergeImportedWallpaperHistory]。
-  Future<void> _migrateWallpaperHistoryToGlobal() async {
-    try {
-      if (await WallpaperHistoryService.isMigrated()) {
-        return;
-      }
-      await WallpaperHistoryService.mergeAndSave(_profileWallpaperHistories());
-      await WallpaperHistoryService.markMigrated();
-    } catch (error, stackTrace) {
-      // 迁移失败不能拖垮启动：标记还没置位，下次载入会再试一次。
-      await AppLogService.instance.error(
-        'wallpaper_history_global_migration_failed',
-        AppLogMessages.wallpaperHistoryGlobalMigrationFailed,
-        error: error,
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
-  /// 外部快照导入（云同步 / 备份 / 局域网）之后，把导入进来的历史并回全局历史。
-  ///
-  /// 与 [_migrateWallpaperHistoryToGlobal] 的区别：这里**每次导入都要跑**，不受
-  /// 一次性标记约束 —— 备份里带的是各 profile 的镜像，恢复之后就靠这次并集把
-  /// 「最近使用」找回来。并集是幂等的，重复跑不会重复堆条目。
-  Future<void> _mergeImportedWallpaperHistory() async {
-    try {
-      await WallpaperHistoryService.mergeAndSave(_profileWallpaperHistories());
-    } catch (error, stackTrace) {
-      await AppLogService.instance.error(
-        'wallpaper_history_import_merge_failed',
-        AppLogMessages.wallpaperHistoryImportMergeFailed,
-        error: error,
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
-  /// 各 profile 镜像里的历史，按 profile 顺序（由旧到新交给并集去判新旧）。
-  List<List<WallpaperHistoryEntry>> _profileWallpaperHistories() => <
-    List<WallpaperHistoryEntry>
-  >[
-    for (final profile in _profiles) profile.settings.wallpaperHistory,
-  ];
 
   /// Public entry for external apply paths (WebDAV) that must share the
   /// timetable mutation gate with local / LAN writes.
@@ -753,9 +690,8 @@ class TimetableProvider with ChangeNotifier {
 
     // --- 非关键数据：后台加载，不阻塞首帧 ---
     unawaited(_loadDeferredData());
-    // 壁纸「最近使用」历史并成全局（只做一次）。历史改成设备级共享后，老用户
-    // 分散在各 profile 里的历史要收拢成一条，否则切课表就丢掉一半「最近使用」。
-    unawaited(_migrateWallpaperHistoryToGlobal());
+    // 壁纸「最近使用」并成全局（只做一次；逻辑在 service，本类不再长行数）。
+    unawaited(WallpaperHistoryService.migrateProfilesOnce(_profiles));
 
     final activeProfile =
         this.activeProfile ?? (_profiles.isEmpty ? null : _profiles.first);

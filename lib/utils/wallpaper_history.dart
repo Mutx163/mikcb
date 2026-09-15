@@ -205,6 +205,15 @@ List<WallpaperHistoryEntry> mergeWallpaperHistories(
   return ordered.take(kMaxWallpaperHistoryEntries).toList(growable: false);
 }
 
+/// 一批课表设置里**当前在用**的壁纸文件路径集合（含已下线的 legacy 字段）。
+///
+/// 壁纸「最近使用」历史是设备级共享的，而壁纸仍每个课表各自一张，于是"被历史
+/// 淘汰 / 被恢复默认清掉"不再等于"没人用" —— 删文件前必须拿这份集合当白名单
+/// （见 [deleteEvictedWallpaperFiles] 的 `inUsePaths`）。纯函数，便于单测。
+Set<String> inUseWallpaperPaths(Iterable<TimetableSettings> settingsList) => {
+  for (final settings in settingsList) ?resolveHomePageBackdropImagePath(settings),
+};
+
 /// 从「待删清单」里筛掉**不该删**的路径，返回真正可以删的那些。
 ///
 /// 三条豁免：空串、遗留的内置壁纸键（不是文件路径）、以及 [inUsePaths]（正要被

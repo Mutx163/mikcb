@@ -392,7 +392,9 @@ class _TimetablePageSettingsScreenState
   /// 历史全局、壁纸每个课表各自一张，"被历史淘汰"因此不等于"没人用"；草稿里刚
   /// 选中的那张也还没落盘，同样要护住（见 [deleteEvictedWallpaperFiles]）。
   Set<String> _inUseWallpaperPaths() => <String>{
-    ..._timetableProvider.allProfilesWallpaperPaths,
+    ...inUseWallpaperPaths(
+      [for (final profile in _timetableProvider.profiles) profile.settings],
+    ),
     ?resolveHomePageBackdropImagePath(_draft),
   };
 

@@ -215,9 +215,10 @@ class _SettingsResetTile extends StatelessWidget {
     }
     final keepWhenDeleting = <String>{
       // 别的课表当前在用的（本课表的指针马上要被清掉，不算"在用"）。
-      for (final profile in provider.profiles)
-        if (profile.id != provider.activeProfileId)
-          ?resolveHomePageBackdropImagePath(profile.settings),
+      ...inUseWallpaperPaths([
+        for (final profile in provider.profiles)
+          if (profile.id != provider.activeProfileId) profile.settings,
+      ]),
       // 全局历史里还留着的。
       for (final entry in await WallpaperHistoryService.load()) entry.key,
     };

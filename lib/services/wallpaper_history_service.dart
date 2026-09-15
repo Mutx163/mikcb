@@ -3,8 +3,11 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../logging/app_log_messages.dart';
+import '../models/timetable_profile.dart';
 import '../models/wallpaper_history.dart';
 import '../utils/wallpaper_history.dart';
+import 'app_log_service.dart';
 
 /// 首页壁纸「最近使用」历史的**全局**存储。
 ///
@@ -85,6 +88,56 @@ class WallpaperHistoryService {
     final preferences = await SharedPreferences.getInstance();
     await preferences.setBool(migratedKey, true);
   }
+
+  /// 把各课表 profile 各自的历史并进全局历史；**只做一次**。
+  ///
+  /// 带完成标记，不做二次合并：用户清空「最近使用」之后，残留在各 profile 镜像
+  /// 里的旧条目不能被复活。逻辑收在本 service 里（Provider 只留一行调用入口）：
+  /// 那边是 god class，行数棘轮只减不增。
+  static Future<void> migrateProfilesOnce(Iterable<TimetableProfile> profiles) async {
+    try {
+      if (await isMigrated()) {
+        return;
+      }
+      await mergeAndSave(_historiesOf(profiles));
+      await markMigrated();
+    } catch (error, stackTrace) {
+      // 迁移失败不能拖垮启动：标记还没置位，下次载入会再试一次。
+      await AppLogService.instance.error(
+        'wallpaper_history_global_migration_failed',
+        AppLogMessages.wallpaperHistoryGlobalMigrationFailed,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// 外部快照导入（云同步 / 备份 / 局域网）之后，把导入进来的历史并回全局历史。
+  ///
+  /// 与 [migrateProfilesOnce] 的区别：这里**每次导入都要跑**，不受一次性标记约束
+  /// —— 备份里带的是各 profile 的镜像，恢复之后就靠这次并集把「最近使用」找回来。
+  /// 并集幂等，重复跑不会重复堆条目。
+  static Future<void> mergeImportedProfiles(
+    Iterable<TimetableProfile> profiles,
+  ) async {
+    try {
+      await mergeAndSave(_historiesOf(profiles));
+    } catch (error, stackTrace) {
+      await AppLogService.instance.error(
+        'wallpaper_history_import_merge_failed',
+        AppLogMessages.wallpaperHistoryImportMergeFailed,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// 各 profile 镜像里的历史，按 profile 顺序（由旧到新交给并集去判新旧）。
+  static List<List<WallpaperHistoryEntry>> _historiesOf(
+    Iterable<TimetableProfile> profiles,
+  ) => <List<WallpaperHistoryEntry>>[
+    for (final profile in profiles) profile.settings.wallpaperHistory,
+  ];
 
   static List<WallpaperHistoryEntry> _decode(String? raw) {
     if (raw == null || raw.isEmpty) {
