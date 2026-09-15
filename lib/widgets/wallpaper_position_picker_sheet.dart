@@ -136,6 +136,29 @@ class _WallpaperPositionPickerPageState
   double? _topLuminance;
   String? _luminanceSampleKey;
 
+  /// 本页自己的屏级玻璃采样源。
+  ///
+  /// 这一页是裸 `Scaffold`，不是 [HyperosPage]，**没有宿主**。缺了它，柔光玻璃
+  /// 只能按全局注册表取「栈顶那一屏」—— 而栈顶是压在下面的设置页（路由仍挂载，
+  /// 且已被视差左移，被盖住后连 paint 都停了）。于是采样带录的是**别屏**的画面：
+  /// 快照盖住的那半边显示"模糊后的设置页"（灰），盖不到的那半边上游直接画透明
+  /// （`MiuixGlass` 的 `shading:false` 分支把快照按 `origin` 贴进形状，没像素的
+  /// 地方 alpha=0）→ 真机现象就是「按钮左半边灰、右半边透出壁纸」。
+  ///
+  /// 与首页同一个口径：**本屏的玻璃只采本屏的画面**（同族记录见
+  /// `timetable_screen.dart` 的 `_wrapHomeWithTopMenu`）。自建而非让宿主兜底，
+  /// 是因为按钮层在捕获子树之外（不能采到自己上一帧），拿不到宿主下发的 scope。
+  final HyperosGlassBackdropController _glass =
+      HyperosGlassBackdropController();
+
+  @override
+  void dispose() {
+    // 顺序安全：子节点先 unmount（捕获节点在自己的 detach/dispose 里摘掉监听与
+    // 登记），本 State 的 dispose 在最后跑，此时才轮到释放控制器。
+    _glass.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -308,66 +331,84 @@ class _WallpaperPositionPickerPageState
             fit: StackFit.expand,
             children: [
               // 壁纸铺满全屏（含状态栏区域），与首页完全一致。
-              _buildPreviewArea(context),
-              // 顶部操作栏悬浮在壁纸上，位于状态栏下方。
-              // 必须用 Positioned 固定到顶部：StackFit.expand 会把非定位
-              // 子节点拉满整个 Stack 高度，导致内部 Row 垂直居中到屏幕中间。
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      children: [
-                        _HyperosHeaderTextButton(
-                          label: l10n.wallpaperPositionPickerExit,
-                          onPressed: _exit,
-                          isCompact: true,
-                          foregroundColor: inkColor,
-                          surfaceLuminance: _topLuminance,
-                        ),
-                        // 标题用 Expanded 独占两按钮之间的全部剩余宽度：
-                        // 之前是 [Spacer][Flexible][Spacer] 三者均分剩余空间，
-                        // 每份只有约 70-80px，「调整壁纸显示位置」8 个字放不下，
-                        // 被 ellipsis 截成「调整壁纸...」。Expanded 让标题拿到
-                        // 全部余量后仍居中（左右按钮等宽），极端字号才兜底截断。
-                        Expanded(
-                          child: Text(
-                            l10n.wallpaperPositionPickerTitle,
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: inkColor,
-                            ),
+              // 捕获节点只包这一层：本页玻璃采样对象就是它，且**不含玻璃自身**
+              // （上游要求，否则玻璃会把自己上一帧的合成结果采进去）。
+              HyperosGlassBackdropHost(
+                controller: _glass,
+                child: _buildPreviewArea(context),
+              ),
+              // 悬浮玻璃按钮层画在捕获子树**之外**，并显式钉在本页采样源上。
+              // 不能只靠全局注册表的"栈顶"：被压住的路由仍然挂载，栈顶会指向
+              // 别的屏（见 [_glass] 的说明）。
+              HyperosGlassBackdropScope(
+                controller: _glass,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // 顶部操作栏悬浮在壁纸上，位于状态栏下方。
+                    // 必须用 Positioned 固定到顶部：StackFit.expand 会把非定位
+                    // 子节点拉满整个 Stack 高度，导致内部 Row 垂直居中到屏幕中间。
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          child: Row(
+                            children: [
+                              _HyperosHeaderTextButton(
+                                label: l10n.wallpaperPositionPickerExit,
+                                onPressed: _exit,
+                                isCompact: true,
+                                foregroundColor: inkColor,
+                                surfaceLuminance: _topLuminance,
+                              ),
+                              // 标题用 Expanded 独占两按钮之间的全部剩余宽度：
+                              // 之前是 [Spacer][Flexible][Spacer] 三者均分剩余空间，
+                              // 每份只有约 70-80px，「调整壁纸显示位置」8 个字放不下，
+                              // 被 ellipsis 截成「调整壁纸...」。Expanded 让标题拿到
+                              // 全部余量后仍居中（左右按钮等宽），极端字号才兜底截断。
+                              Expanded(
+                                child: Text(
+                                  l10n.wallpaperPositionPickerTitle,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: inkColor,
+                                  ),
+                                ),
+                              ),
+                              _HyperosHeaderTextButton(
+                                label: l10n.wallpaperPositionPickerDone,
+                                onPressed: _confirm,
+                                isCompact: true,
+                                foregroundColor: inkColor,
+                                surfaceLuminance: _topLuminance,
+                              ),
+                            ],
                           ),
                         ),
-                        _HyperosHeaderTextButton(
-                          label: l10n.wallpaperPositionPickerDone,
-                          onPressed: _confirm,
-                          isCompact: true,
-                          foregroundColor: inkColor,
-                          surfaceLuminance: _topLuminance,
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                    if (widget.onPickNewImage != null)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 24 + MediaQuery.paddingOf(context).bottom,
+                        child: Center(
+                          child: _buildSwitchWallpaperButton(context),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              if (widget.onPickNewImage != null)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 24 + MediaQuery.paddingOf(context).bottom,
-                  child: Center(child: _buildSwitchWallpaperButton(context)),
-                ),
             ],
           ),
         ),
