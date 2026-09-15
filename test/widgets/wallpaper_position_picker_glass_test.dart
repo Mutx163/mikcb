@@ -3,6 +3,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/utils/home_page_background.dart';
+import 'package:university_timetable/utils/home_startup_visual_primer.dart';
 import 'package:university_timetable/widgets/wallpaper_position_picker_sheet.dart';
 
 /// 壁纸位置选择页（「调整壁纸显示位置」）的悬浮按钮材质 / 几何守护。
@@ -34,7 +36,14 @@ void main() {
     glassMode: FrostedGlassMode.softGlass,
   );
 
-  Future<void> pumpPicker(WidgetTester tester) async {
+  /// [imagePath] 不存在的路径：本测试只关心材质 / 几何 / 极性，占位分支更省事
+  /// （真实文件 I/O 在 testWidgets 里需要 runAsync）。
+  const wallpaperPath = 'C:/definitely/not/here.png';
+
+  Future<void> pumpPicker(
+    WidgetTester tester, {
+    String imagePath = wallpaperPath,
+  }) async {
     tester.view.physicalSize = screenSize;
     tester.view.devicePixelRatio = screenDpr;
     addTearDown(tester.view.reset);
@@ -70,9 +79,7 @@ void main() {
                         onPressed: () {
                           pushWallpaperPositionPickerPage(
                             context,
-                            // 不存在的路径：本测试只关心材质/几何，占位分支更省事
-                            // （真实文件 I/O 在 testWidgets 里需要 runAsync）。
-                            imagePath: 'C:/definitely/not/here.png',
+                            imagePath: imagePath,
                             initialAlignX: 0,
                             initialAlignY: 0,
                             onPickNewImage: () async => null,
@@ -164,5 +171,32 @@ void main() {
       reason: '底部按钮被撑满了：Container 带 alignment 时会占满有界约束',
     );
     expect(widths[2], greaterThanOrEqualTo(120));
+  });
+
+  testWidgets('首帧极性直接用启动预热好的亮度带（不再按主题猜，也就不会闪）', (tester) async {
+    // 暗顶壁纸：正确极性是"白字 + 深衬底"。按主题猜（浅色主题）会先给"深字 +
+    // 浅衬底"，等异步采样落地再翻过来 —— 真机反馈的"进 / 出页面闪一下"就是那一翻
+    // （见 SoftGlassPolarityFade）。首页首帧早就在用启动预热的亮度带消这个闪变，
+    // 这一页现在接上同一条口径。
+    HomeStartupVisualPrimer.debugSeedBands(
+      wallpaperPath,
+      (top: 0.2, weekday: 0.2, body: 0.2),
+    );
+    addTearDown(
+      () => HomeStartupVisualPrimer.debugSeedBands(
+        '',
+        (top: 0, weekday: 0, body: 0),
+      ),
+    );
+
+    await pumpPicker(tester);
+
+    for (final label in ['退出', '完成', '换壁纸']) {
+      expect(
+        tester.widget<Text>(find.text(label)).style!.color,
+        homePageChromeForegroundOnDark,
+        reason: '「$label」首帧就该是暗顶壁纸的墨色（而不是主题猜出来的深色）',
+      );
+    }
   });
 }

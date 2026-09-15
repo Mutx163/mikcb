@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import '../utils/home_page_background.dart';
+import '../utils/home_startup_visual_primer.dart';
 import 'home_page_region_blur.dart' show HomePageChromeGlassFill;
 
 /// 壁纸位置选择页的返回结果。
@@ -165,6 +166,14 @@ class _WallpaperPositionPickerPageState
     _imagePath = widget.imagePath;
     _alignX = widget.initialAlignX;
     _alignY = widget.initialAlignY;
+    // 首帧极性直接用启动期预热好的亮度带（与首页首帧同一条口径，
+    // `HomeStartupVisualPrimer` 的注释里就叫它"消除墨色极性闪变"）。
+    //
+    // 不这么做的话：亮度只能异步采样（要解码一次壁纸），落地前按主题明暗猜一个
+    // 极性、落地后再修正 —— 那次修正就是真机反馈"进 / 出页面闪一下"（浅色实底
+    // → 玻璃，见 [SoftGlassPolarityFade]）。预热是按居中采样的，拖动过壁纸时这里
+    // 可能与实际不符，随后的精确采样会带着渐变平滑纠正。
+    _topLuminance = HomeStartupVisualPrimer.seededBandsFor(_imagePath)?.top;
     _resolveImageSize();
     _scheduleTopLuminanceSample();
   }
@@ -247,6 +256,10 @@ class _WallpaperPositionPickerPageState
     if (!mounted || _luminanceSampleKey != key || luminance == null) {
       return;
     }
+    // 与预热 / 上一次采样一致时不必重画，也不该触发一次极性渐变。
+    if (_topLuminance == luminance) {
+      return;
+    }
     setState(() {
       _topLuminance = luminance;
     });
@@ -307,8 +320,13 @@ class _WallpaperPositionPickerPageState
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final inkColor = homePageChromeForegroundForLuminance(_topLuminance);
+    // 衬底与墨色同源（都是"壁纸顶部亮度"），到按钮那一层只传算好的颜色 ——
+    // 这样 [SoftGlassPolarityFade] 给出的渐变中间值才能一路传下去。
+    final washColor = HomePageChromeGlassFill.scrimColor(
+      context,
+      wallpaperTopLuminance: _topLuminance,
+    );
     final statusBarIconBrightness =
         _topLuminance != null && _topLuminance! < 0.45
         ? Brightness.light
@@ -337,77 +355,14 @@ class _WallpaperPositionPickerPageState
                 controller: _glass,
                 child: _buildPreviewArea(context),
               ),
-              // 悬浮玻璃按钮层画在捕获子树**之外**，并显式钉在本页采样源上。
-              // 不能只靠全局注册表的"栈顶"：被压住的路由仍然挂载，栈顶会指向
-              // 别的屏（见 [_glass] 的说明）。
-              HyperosGlassBackdropScope(
-                controller: _glass,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // 顶部操作栏悬浮在壁纸上，位于状态栏下方。
-                    // 必须用 Positioned 固定到顶部：StackFit.expand 会把非定位
-                    // 子节点拉满整个 Stack 高度，导致内部 Row 垂直居中到屏幕中间。
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: SafeArea(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          child: Row(
-                            children: [
-                              _HyperosHeaderTextButton(
-                                label: l10n.wallpaperPositionPickerExit,
-                                onPressed: _exit,
-                                isCompact: true,
-                                foregroundColor: inkColor,
-                                surfaceLuminance: _topLuminance,
-                              ),
-                              // 标题用 Expanded 独占两按钮之间的全部剩余宽度：
-                              // 之前是 [Spacer][Flexible][Spacer] 三者均分剩余空间，
-                              // 每份只有约 70-80px，「调整壁纸显示位置」8 个字放不下，
-                              // 被 ellipsis 截成「调整壁纸...」。Expanded 让标题拿到
-                              // 全部余量后仍居中（左右按钮等宽），极端字号才兜底截断。
-                              Expanded(
-                                child: Text(
-                                  l10n.wallpaperPositionPickerTitle,
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: inkColor,
-                                  ),
-                                ),
-                              ),
-                              _HyperosHeaderTextButton(
-                                label: l10n.wallpaperPositionPickerDone,
-                                onPressed: _confirm,
-                                isCompact: true,
-                                foregroundColor: inkColor,
-                                surfaceLuminance: _topLuminance,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (widget.onPickNewImage != null)
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 24 + MediaQuery.paddingOf(context).bottom,
-                        child: Center(
-                          child: _buildSwitchWallpaperButton(context),
-                        ),
-                      ),
-                  ],
-                ),
+              // 悬浮玻璃按钮层：画在捕获子树**之外**、显式钉在本页采样源上
+              // （见 [_buildOverlayLayer]），外面套一层极性渐变 —— 衬底与墨色要等
+              // 壁纸顶部亮度**异步采样**落地才能定，落地前只能按主题猜；直接切换
+              // 就是真机反馈的"进 / 出页面闪一下"（浅色实底 → 玻璃）。
+              SoftGlassPolarityFade(
+                ink: inkColor,
+                wash: washColor,
+                builder: _buildOverlayLayer,
               ),
             ],
           ),
@@ -416,15 +371,106 @@ class _WallpaperPositionPickerPageState
     );
   }
 
-  Widget _buildSwitchWallpaperButton(BuildContext context) {
+  /// 悬浮玻璃按钮层（顶部操作栏 + 底部「换壁纸」）。
+  ///
+  /// 两个约束都不能少：
+  ///
+  /// 1. 画在 `HyperosGlassBackdropHost` 的捕获子树**之外** —— 上游要求玻璃不能被
+  ///    自己的采样捕获，否则会把上一帧的合成结果采进去（自我叠加）。
+  /// 2. 显式用 [HyperosGlassBackdropScope] 钉在本页采样源上 —— 不能只靠全局注册表
+  ///    的"栈顶"：被压住的路由仍然挂载，栈顶会指向别的屏（见 [_glass]）。
+  ///
+  /// [ink] / [wash] 由 [SoftGlassPolarityFade] 传入，可能是极性渐变中的中间值。
+  Widget _buildOverlayLayer(BuildContext context, Color ink, Color wash) {
     final l10n = AppLocalizations.of(context)!;
-    final inkColor = homePageChromeForegroundForLuminance(_topLuminance);
+    return HyperosGlassBackdropScope(
+      controller: _glass,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 顶部操作栏悬浮在壁纸上，位于状态栏下方。
+          // 必须用 Positioned 固定到顶部：StackFit.expand 会把非定位
+          // 子节点拉满整个 Stack 高度，导致内部 Row 垂直居中到屏幕中间。
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    _HyperosHeaderTextButton(
+                      label: l10n.wallpaperPositionPickerExit,
+                      onPressed: _exit,
+                      isCompact: true,
+                      foregroundColor: ink,
+                      wash: wash,
+                    ),
+                    // 标题用 Expanded 独占两按钮之间的全部剩余宽度：
+                    // 之前是 [Spacer][Flexible][Spacer] 三者均分剩余空间，
+                    // 每份只有约 70-80px，「调整壁纸显示位置」8 个字放不下，
+                    // 被 ellipsis 截成「调整壁纸...」。Expanded 让标题拿到
+                    // 全部余量后仍居中（左右按钮等宽），极端字号才兜底截断。
+                    Expanded(
+                      child: Text(
+                        l10n.wallpaperPositionPickerTitle,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: ink,
+                        ),
+                      ),
+                    ),
+                    _HyperosHeaderTextButton(
+                      label: l10n.wallpaperPositionPickerDone,
+                      onPressed: _confirm,
+                      isCompact: true,
+                      foregroundColor: ink,
+                      wash: wash,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (widget.onPickNewImage != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 24 + MediaQuery.paddingOf(context).bottom,
+              child: Center(
+                child: _buildSwitchWallpaperButton(
+                  context,
+                  ink: ink,
+                  wash: wash,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// 底部「换壁纸」按钮。极性由调用方（[SoftGlassPolarityFade] 的渐变值）给。
+  Widget _buildSwitchWallpaperButton(
+    BuildContext context, {
+    required Color ink,
+    required Color wash,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: _HyperosHeaderTextButton(
         label: l10n.wallpaperPositionPickerSwitchWallpaper,
         onPressed: _switching ? null : _switchWallpaper,
-        foregroundColor: inkColor,
-        surfaceLuminance: _topLuminance,
+        foregroundColor: ink,
+        wash: wash,
       ),
     );
   }
@@ -520,18 +566,19 @@ class _WallpaperPositionPickerPageState
 /// - 系统降级（无障碍/减动效/高对比）或关闭「毛玻璃效果」时：只画衬底，
 ///   与 [FrostedHeaderBackground] 的降级行为一致。
 ///
-/// 衬底极性跟随 [surfaceLuminance]（壁纸顶部亮度采样），与首页玻璃带
-/// [HomePageChromeGlassFill.scrimColor] 同一条规则；文字颜色仍由调用方
-/// 通过 [foregroundColor]（同源采样）决定。
+/// 衬底与墨色都由调用方给（同源于壁纸顶部亮度采样，与首页玻璃带
+/// [HomePageChromeGlassFill.scrimColor] 同一条规则）—— 由
+/// [SoftGlassPolarityFade] 传进来，可能是极性渐变中的中间值。这里不再自己按亮度
+/// 现算：那样极性一变就是一次跳变（真机反馈的"进 / 出页面闪一下"）。
 ///
 /// [isCompact] 控制更小的尺寸，用于左上角/右上角按钮。
 class _HyperosHeaderTextButton extends StatelessWidget {
   const _HyperosHeaderTextButton({
     required this.label,
     required this.onPressed,
+    required this.wash,
     this.isCompact = false,
     this.foregroundColor,
-    this.surfaceLuminance,
   });
 
   final String label;
@@ -539,8 +586,8 @@ class _HyperosHeaderTextButton extends StatelessWidget {
   final bool isCompact;
   final Color? foregroundColor;
 
-  /// 所在表面（壁纸预览）的顶部亮度；为 null 时按主题明暗回退极性。
-  final double? surfaceLuminance;
+  /// 衬底色（压在玻璃上的可读性水洗），由调用方按壁纸亮度算好。
+  final Color wash;
 
   @override
   Widget build(BuildContext context) {
@@ -593,10 +640,6 @@ class _HyperosHeaderTextButton extends StatelessWidget {
     // （LiquidGlassDegradation：无障碍/减动效/高对比时回退实底材质）。
     final appearance = FrostedAppearanceScope.of(context);
     final blurEnabled = HyperosBlurredHeader.backdropBlurEnabled(context);
-    final wash = HomePageChromeGlassFill.scrimColor(
-      context,
-      wallpaperTopLuminance: surfaceLuminance,
-    );
 
     // 高级材质面自带模糊，不受「模糊」总开关约束（与弹窗同理）；
     // 柔光与液态同为高级材质、共用「作用范围 → 壁纸选点按钮」开关。
