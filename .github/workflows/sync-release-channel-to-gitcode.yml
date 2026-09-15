@@ -181,9 +181,15 @@ jobs:
           CHECK=$(curl -L -sS -o /dev/null -w "%{http_code}" \
             -H "PRIVATE-TOKEN: ${GITCODE_TOKEN}" -H "Accept: application/json" \
             "${BASE}/releases/tags/${TAG}")
-          if [ "$CHECK" != "200" ]; then
+          if [ "$CHECK" = "404" ]; then
             echo "GitCode 上本来就没有 ${TAG}—— 无需处理"
             exit 0
+          fi
+          if [ "$CHECK" != "200" ]; then
+            # 只有 404 能断定"不存在"；5xx/401/403 等说明状态未知，
+            # 静默跳过会让该版本继续以正式版留在渠道上，必须报红让人处理。
+            echo "::error::确认 ${TAG} 在 GitCode 上是否存在时失败（HTTP ${CHECK}）—— 版本状态未知，请人工检查"
+            exit 1
           fi
 
           echo "::warning::GitCode 的 API 不支持删除 release（HTTP ${LAST_CODE}）：${LAST_BODY}"
