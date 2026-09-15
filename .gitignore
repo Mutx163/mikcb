@@ -123,7 +123,9 @@ docs/reference/hyperos-blurred-header.md
 .workbuddy-ai/
 .reasonix/
 .freebuff/
-.agents/
+# .agents/ 整体是本机私有；仅 notes/ 例外放回版本控制（write-notes-like-deepseek 的笔记需与代码同批提交）
+.agents/*
+!.agents/notes/
 
 # Python 缓存
 tool/__pycache__/
