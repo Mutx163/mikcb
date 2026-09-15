@@ -139,9 +139,6 @@
   <body>
     <div class="sky" aria-hidden="true">
       <div class="sky-grid"></div>
-      <div class="aurora aurora-a"></div>
-      <div class="aurora aurora-b"></div>
-      <div class="aurora aurora-c"></div>
     </div>
 
     <header class="global-nav">
@@ -199,13 +196,13 @@
       <section class="hero" id="overview">
         <div class="hero-inner">
           <div class="hero-copy reveal">
-            <p class="hero-eyebrow">
+            <div class="hero-kicker">
               <span class="pulse-dot" aria-hidden="true"></span>
               <span data-i18n="hero.eyebrow">大学生课表 App · 免费开源 · 无广告</span>
-            </p>
+            </div>
             <h1 class="hero-title">
               <span data-i18n="hero.titleLine">把课表，</span><br />
-              <span class="grad-text" data-i18n="hero.titleGrad">装进超级岛。</span>
+              <span data-i18n="hero.titleGrad">装进超级岛。</span>
             </h1>
             <p class="hero-subtitle" data-i18n="hero.subtitle">
               不用解锁、不用翻找——下一节课、还有几分钟、和谁一起上，抬眼就清楚。教务一键导入、情侣课表、WebDAV
@@ -224,7 +221,6 @@
                 <span data-i18n="hero.download">下载最新版本</span>
               </button>
               <a class="cta-btn cta-ghost cta-lg" href="https://docs.163366.xyz/docs/" data-i18n="hero.docs">使用文档</a>
-              <a class="cta-btn cta-ghost cta-lg" href="#features" data-i18n="hero.explore">看看它能做什么</a>
             </div>
             <dl class="hero-stats">
               <div class="hero-stat">
@@ -300,20 +296,6 @@
                 </div>
               </div>
             </div>
-            <div class="float-card fc-1">
-              <span class="fc-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
-              <div>
-                <strong data-i18n="hero.floatRemind">课前提醒</strong>
-                <small data-i18n="hero.floatRemindMeta">数据结构 · 15 分钟后 · C412</small>
-              </div>
-            </div>
-            <div class="float-card fc-2">
-              <span class="fc-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg></span>
-              <div>
-                <strong data-i18n="hero.floatSync">WebDAV 已同步</strong>
-                <small data-i18n="hero.floatSyncMeta">云备份 · 刚刚</small>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -329,8 +311,7 @@
       <section id="features" class="section">
         <div class="section-shell">
           <div class="section-head reveal">
-            <p class="section-label" data-i18n="features.label">功能</p>
-            <h2><span data-i18n="features.title">不只是课表，</span><span class="grad-text" data-i18n="features.titleGrad">是一整套系统体验。</span></h2>
+            <h2><span data-i18n="features.title">不只是课表，</span><span data-i18n="features.titleGrad">是一整套系统体验。</span></h2>
             <p class="section-desc" data-i18n="features.desc">
               从超级岛到桌面小组件，从两个人的课表到一学期的账单——每个功能都为「少看一次手机、多懂一点今天」而存在。
             </p>
@@ -338,7 +319,6 @@
 
           <div class="bento">
             <article class="bento-card bento-lg reveal" data-spotlight>
-              <div class="bento-tag tag-blue" data-i18n="feature.island.tag">HyperOS 独占</div>
               <h3 data-i18n="feature.island.title">超级岛，替你盯着下一节课</h3>
               <p data-i18n="feature.island.desc">
                 课前预热、课中状态、下课承接，状态在灵动岛上连续流转。静音、免打扰这类课前快捷操作，下课后还会自动恢复。
@@ -355,7 +335,6 @@
             </article>
 
             <article class="bento-card reveal" data-spotlight>
-              <div class="bento-tag tag-pink" data-i18n="feature.couple.tag">v2.0.3 新上线</div>
               <h3 data-i18n="feature.couple.title">情侣课表</h3>
               <p data-i18n="feature.couple.desc">
                 把课表导出给 TA，绑定后首页一键叠加：我的课、TA 的课、一起上课、共同空闲，四色一眼分清。约饭时间不用再互相截图。
@@ -369,7 +348,6 @@
             </article>
 
             <article class="bento-card reveal" data-spotlight>
-              <div class="bento-tag tag-teal" data-i18n="feature.import.tag">导入</div>
               <h3 data-i18n="feature.import.title">教务系统一键导入</h3>
               <p data-i18n="feature.import.desc">
                 200+ 所高校支持网页登录直接同步课表；没适配的学校也能走 .ics、AI 识图或表格模板导入。
@@ -381,7 +359,6 @@
             </article>
 
             <article class="bento-card reveal" data-spotlight>
-              <div class="bento-tag tag-blue" data-i18n="feature.webdav.tag">v2.0 新增</div>
               <h3 data-i18n="feature.webdav.title">WebDAV 云同步</h3>
               <p data-i18n="feature.webdav.desc">
                 坚果云或自建服务，手机、平板之间同步课表与设置；云备份可查看历史版本、按条恢复或删除。
@@ -390,7 +367,6 @@
             </article>
 
             <article class="bento-card reveal" data-spotlight>
-              <div class="bento-tag tag-amber" data-i18n="feature.bill.tag">统计</div>
               <h3 data-i18n="feature.bill.title">学期账单</h3>
               <p data-i18n="feature.bill.desc">
                 总览、成就徽章、数据故事、每日课时分布、课程排名——学期结束，把这份账单生成长图分享出去。
@@ -398,7 +374,6 @@
             </article>
 
             <article class="bento-card reveal" data-spotlight>
-              <div class="bento-tag tag-teal" data-i18n="feature.system.tag">系统联动</div>
               <h3 data-i18n="feature.system.title">小组件 + 分阶段提醒</h3>
               <p data-i18n="feature.system.desc">
                 桌面小组件常驻整周课表；提醒按课前、课中、下课前分阶段推进，是连续流程而不是一条孤立通知。
@@ -406,7 +381,6 @@
             </article>
 
             <article class="bento-card reveal" data-spotlight>
-              <div class="bento-tag tag-violet" data-i18n="feature.lan.tag">效率</div>
               <h3 data-i18n="feature.lan.title">电脑上改课表</h3>
               <p data-i18n="feature.lan.desc">
                 手机开启局域网服务，电脑浏览器直接编辑课表，改完即时同步回手机。大批量调课不再戳小屏幕。
@@ -414,7 +388,6 @@
             </article>
 
             <article class="bento-card reveal" data-spotlight>
-              <div class="bento-tag tag-green" data-i18n="feature.open.tag">开源</div>
               <h3 data-i18n="feature.open.title">免费、无广告、可审计</h3>
               <p data-i18n="feature.open.desc">
                 GPL-3.0 开源，无广告、无需注册，数据本地存储。代码公开透明，欢迎来 GitHub 提 issue 或 PR。
@@ -436,9 +409,8 @@
       <section id="schools" class="section section-schools">
         <div class="section-shell">
           <div class="schools-hero reveal">
-            <p class="section-label" data-i18n="schools.label">教务导入</p>
             <h2>
-              <span data-i18n="schools.title">已适配学校，</span><span class="grad-text" data-i18n="schools.titleGrad">直接登录导课。</span>
+              <span data-i18n="schools.title">已适配学校，</span><span data-i18n="schools.titleGrad">直接登录导课。</span>
             </h2>
             <p class="section-desc" data-i18n-html="schools.descHtml">
               在 App 内选择「导入课程表 → 教务系统导入」，学校在列表中就能通过网页登录同步课表。列表每天自动与
@@ -510,8 +482,7 @@
       <section id="changelog" class="section">
         <div class="section-shell">
           <div class="section-head reveal">
-            <p class="section-label" data-i18n="changelog.label">更新日志</p>
-            <h2><span data-i18n="changelog.title">最近更新，</span><span class="grad-text" data-i18n="changelog.titleGrad">一直在变快变好。</span></h2>
+            <h2><span data-i18n="changelog.title">最近更新，</span><span data-i18n="changelog.titleGrad">一直在变快变好。</span></h2>
             <p class="section-desc" data-i18n-html="changelog.descHtml">
               官网会自动同步最近版本的关键更新。完整日志见
               <a class="inline-link" href="https://github.com/Mutx163/mikcb/releases" target="_blank" rel="noreferrer">GitHub Releases</a>。
@@ -560,7 +531,6 @@
       <section id="faq" class="section">
         <div class="section-shell section-shell-narrow">
           <div class="section-head reveal">
-            <p class="section-label" data-i18n="faq.label">常见问题</p>
             <h2 data-i18n="faq.title">你可能想知道的</h2>
           </div>
           <div class="faq-list reveal">
@@ -625,10 +595,9 @@
       <section id="download" class="section section-download">
         <div class="section-shell">
           <div class="download-hero reveal" data-spotlight>
-            <p class="section-label" data-i18n="download.label">下载</p>
             <h2>
               <span data-i18n="download.title">下一节课的事，</span><br />
-              <span class="grad-text" data-i18n="download.titleGrad">现在就交给它。</span>
+              <span data-i18n="download.titleGrad">现在就交给它。</span>
             </h2>
             <p class="section-desc" data-i18n="download.desc">
               国内下载会自动测速选择最快镜像，也可以随时切到 GitHub 原始包或蒲公英直装。
