@@ -150,17 +150,30 @@ jobs:
         run: |
           set -euo pipefail
           BASE="https://api.gitcode.com/api/v5/repos/${GITCODE_REPOSITORY}"
-          RESP_FILE="$(mktemp)"
-          CODE=$(curl -L -sS -o "$RESP_FILE" -w "%{http_code}" -X DELETE \
-            -H "PRIVATE-TOKEN: ${GITCODE_TOKEN}" -H "Accept: application/json" \
-            "${BASE}/releases/${TAG}")
-          echo "DELETE ${TAG}（HTTP ${CODE}）"
-          case "$CODE" in
-            200|204) echo "✅ 已删除 GitCode 上的 ${TAG}" ;;
-            404) echo "GitCode 上本来就没有 ${TAG}—— 无需删除" ;;
-            *)
-              echo "::error::删除 GitCode 上的 ${TAG} 失败（HTTP ${CODE}）—— 请手动到 GitCode 处理"
-              cat "$RESP_FILE"
-              exit 1
-              ;;
-          esac
+          # GitCode 的 release 没有 id，删除只能按 tag 试；且它是否暴露 DELETE
+          # 取决于版本（实测 /releases/{tag} 会返回 405 METHOD_NOT_ALLOWED）。
+          # 两条候选依次尝试，都不行就报红，附 API 原文，方便直接照着处理。
+          for CANDIDATE in "releases/${TAG}" "releases/tags/${TAG}"; do
+            RESP_FILE="$(mktemp)"
+            CODE=$(curl -L -sS -o "$RESP_FILE" -w "%{http_code}" -X DELETE \
+              -H "PRIVATE-TOKEN: ${GITCODE_TOKEN}" -H "Accept: application/json" \
+              "${BASE}/${CANDIDATE}")
+            echo "DELETE ${CANDIDATE}（HTTP ${CODE}）"
+            case "$CODE" in
+              200|204)
+                echo "✅ 已删除 GitCode 上的 ${TAG}"
+                exit 0
+                ;;
+              404)
+                echo "GitCode 上本来就没有 ${TAG}—— 无需删除"
+                exit 0
+                ;;
+              *)
+                LAST_CODE="$CODE"
+                LAST_BODY="$(cat "$RESP_FILE")"
+                ;;
+            esac
+          done
+          echo "::error::删除 GitCode 上的 ${TAG} 失败（HTTP ${LAST_CODE}）—— GitCode 的 API 可能不支持删除 release，请到 GitCode 网页手动删除该版本"
+          echo "$LAST_BODY"
+          exit 1
