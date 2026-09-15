@@ -281,7 +281,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get coupleTimetableWeekOffsetSubtitle =>
-      '查看你的第 N 周时，读取对方课表的第 N+偏移 周，例如 +1 表示对方学期进度比你快一周';
+      '查看第 N 周时读取对方第 N+偏移 周，如 +1 表示对方快一周';
 
   @override
   String get coupleTimetableWeekOffsetZero => '无偏移';
@@ -300,8 +300,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get coupleTimetableColorsTitle => '叠加颜色';
 
   @override
-  String get coupleTimetableColorsSubtitle =>
-      '自定义「我的课」「TA的课」「一起上课」在叠加视图中的显示颜色，可按喜好自由搭配';
+  String get coupleTimetableColorsSubtitle => '自定义「我的课」「TA的课」「一起上课」的叠加显示颜色';
 
   @override
   String get partnerImportRequiresSingleProfile => '请导入单课表备份文件，不支持全量备份';
@@ -310,8 +309,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get coupleWebdavTitle => '坚果云拉取';
 
   @override
-  String get coupleWebdavSubtitle =>
-      '登录对方（或你们共用的）坚果云账号，自动下载对方上传的课表文件，与「云同步」账号独立，互不影响';
+  String get coupleWebdavSubtitle => '登录对方的坚果云账号即可获取其课表，与「云同步」账号互不影响';
 
   @override
   String get coupleWebdavNotConnected => '尚未连接坚果云';
@@ -347,8 +345,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get coupleWebdavLoginSheetTitle => '连接坚果云（情侣课表）';
 
   @override
-  String get coupleWebdavLoginSheetSubtitle =>
-      '请使用应用专用密码，对方需先将课表上传到约定路径，或由你在对方设备上登录同一账号并上传';
+  String get coupleWebdavLoginSheetSubtitle => '请使用坚果云应用专用密码，对方需先将课表上传到约定路径';
 
   @override
   String get coupleWebdavConfirmConnect => '连接并拉取';
@@ -417,8 +414,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncIntroTitle => '多设备同步';
 
   @override
-  String get cloudSyncIntroSubtitle =>
-      '配置坚果云 WebDAV 后，可在手机、平板之间自动同步课表、仓库账号与相关设置';
+  String get cloudSyncIntroSubtitle => '配置坚果云 WebDAV 后，多设备间自动同步课表与设置';
 
   @override
   String get cloudSyncSettingsSectionTitle => '同步设置';
@@ -454,7 +450,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncAccountTitle => '账号配置';
 
   @override
-  String get cloudSyncAccountSubtitle => '请使用坚果云应用专用密码，而不是登录密码，快照会包含仓库记住的学校账号';
+  String get cloudSyncAccountSubtitle => '请使用坚果云应用专用密码（非登录密码），快照含仓库记住的学校账号';
 
   @override
   String get cloudSyncUsernameLabel => '邮箱 / 用户名';
@@ -2535,14 +2531,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get beforeClassQuickActionSubtitle =>
-      '只在上课前提醒的展开通知里显示，静音/免打扰会在下课后自动恢复，重启手机也会恢复；免打扰首次可能会跳到系统授权页';
+      '仅在上课前提醒的展开通知中显示；免打扰下课自动恢复，首次需系统授权';
 
   @override
   String get liveBeforeClassQuickActionAutoTitle => '自动执行';
 
   @override
   String get liveBeforeClassQuickActionAutoSubtitle =>
-      '上课前自动打开所选模式，下课后自动恢复，重启手机也会恢复；免打扰需要先在系统设置中授权';
+      '上课前自动开启所选模式，下课后恢复；免打扰需系统授权';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => '不自动执行';
@@ -2632,8 +2628,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveDisplayConfigModeTitle => '配置方式';
 
   @override
-  String get liveDisplayConfigModeSubtitle =>
-      '打开后，课中和下课提醒会完全跟随上课前提醒显示，下面的独立设置暂时不可编辑';
+  String get liveDisplayConfigModeSubtitle => '开启后课中/下课提醒完全跟随上课前提醒的设置';
 
   @override
   String get followBeforeClassDisplayTitle => '跟随上课前提醒设置';
@@ -3198,15 +3193,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get frostedSheetSectionTitle => '磨砂玻璃';
 
   @override
-  String get frostedSheetSectionSubtitle =>
-      '调节首页弹出面板的高斯模糊强度与磨砂亮度，滑块越靠右，白色磨砂层越明显';
+  String get frostedSheetSectionSubtitle => '调节弹出面板的模糊强度与磨砂亮度';
 
   @override
   String get frostedBlurEnabledTitle => '启用模糊';
 
   @override
-  String get frostedBlurEnabledSubtitle =>
-      '关闭后不再采样模糊：弹窗变为不透明纯色底，首页模糊区域与「回本周」按钮保留半透明底色';
+  String get frostedBlurEnabledSubtitle => '关闭后弹窗为不透明纯色底，模糊区域保留半透明底色';
 
   @override
   String get frostedSheetPreviewOpenAction => '打开预览面板';
@@ -3474,8 +3467,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guideShortNameAdviceTitle => '课程简称建议';
 
   @override
-  String get guideShortNameAdviceSubtitle =>
-      '超级岛支持显示课程简称，简称不是自动生成的，需要你在课程编辑里自己填写，建议控制在 3 个字以内，显示会更稳定';
+  String get guideShortNameAdviceSubtitle => '简称需在课程编辑中手动填写，建议 3 字以内，显示更稳定';
 
   @override
   String get guideShortNameRecommended => '推荐示例';
@@ -3721,8 +3713,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTestingLocalLogsTitle => '本地诊断日志';
 
   @override
-  String get liveTestingLocalLogsSubtitle =>
-      '一键导出日志文件，直接通过系统分享发给开发者；也可以清空后重新收集';
+  String get liveTestingLocalLogsSubtitle => '一键导出日志分享给开发者，也可清空重新收集';
 
   @override
   String get liveTestingClearLogsAction => '清空日志';
@@ -3827,7 +3818,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeWidgetTodayCourseSubtitle =>
-      '首批支持 2×2、2×4、4×4 三种尺寸，点击小组件会直接打开首页，课程开始和结束时会主动刷新';
+      '支持 2×2、2×4、4×4 三种尺寸，点击打开首页，课程状态实时刷新';
 
   @override
   String get homeWidgetQuickAddTitle => '快速添加到桌面';
@@ -4019,8 +4010,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pageTransitionSpeedTitle => '页面转场速度';
 
   @override
-  String get pageTransitionSpeedSubtitle =>
-      '调节进入和返回子页面时的滑动动画快慢，数值越大越快，越小越慢；会叠加系统「过渡动画缩放」设置';
+  String get pageTransitionSpeedSubtitle => '数值越大动画越快；实际速度会叠加系统「过渡动画缩放」';
 
   @override
   String pageTransitionSpeedDurationHint(int milliseconds) {
@@ -4257,14 +4247,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutUpdateNowTitle => '立即更新';
 
   @override
-  String get aboutUpdateNowAndroidSubtitle =>
-      '普通使用只需要点一次立即下载，下载慢、下载失败、要换线路时，再去下面的高级选项';
+  String get aboutUpdateNowAndroidSubtitle => '下载慢或失败时，再用下方高级选项更换线路';
 
   @override
   String get aboutUpdateNowOtherSubtitle => '当前平台会直接打开下载页面，不会在应用内安装';
 
   @override
-  String get aboutMirrorDownloadHint => '当前会优先使用国内下载，大多数国内网络直接点“立即下载”就行';
+  String get aboutMirrorDownloadHint => '默认优先国内线路，直接点“立即下载”即可';
 
   @override
   String get aboutOriginalDownloadHint => '当前会优先使用国际源下载，如果下载慢或打不开，建议先切回“国内下载”';
@@ -4279,8 +4268,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutDownloadMethodTitle => '下载方式';
 
   @override
-  String get aboutDownloadMethodSubtitle =>
-      '默认推荐国内下载，只有你能稳定访问 GitHub 时，再切到国际源下载';
+  String get aboutDownloadMethodSubtitle => '默认推荐国内线路，GitHub 访问稳定时可切换国际源';
 
   @override
   String get aboutDownloadMethodMirror => '国内下载';
@@ -4392,8 +4380,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutRecordDiagnosticsTitle => '记录应用日志';
 
   @override
-  String get aboutRecordDiagnosticsSubtitle =>
-      '打开后会在本地持续记录应用运行日志；超级岛相关日志会单独标注来源';
+  String get aboutRecordDiagnosticsSubtitle => '开启后本地持续记录运行日志，超级岛日志单独标注';
 
   @override
   String get aboutExportDiagnosticsAction => '导出应用日志';
@@ -4726,7 +4713,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get warehouseMissingSchoolSubtitle =>
-      '去反馈页提一个 Issue 就行，建议一起写上学校名称、教务系统网址、登录后课表页链接或截图，这样更方便补适配';
+      '请到反馈页提交 Issue，附上学校名称、教务系统网址与课表页截图，便于补充适配';
 
   @override
   String get laterAction => '稍后再说';
@@ -4804,8 +4791,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get customDebugIntroTitle => '这里放你自己的教务调试记录';
 
   @override
-  String get customDebugIntroSubtitle =>
-      '每条记录都可以保存自定义网址和整段脚本，保存后下次直接点“开始调试”就能复用，不需要再去某个学校详情页里找入口';
+  String get customDebugIntroSubtitle => '保存每所学校的网址与脚本，下次一键复用';
 
   @override
   String get addDebugRecordAction => '新增调试记录';
@@ -4862,8 +4848,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get debugRecordFormula => '一条记录 = 一个网址 + 一段脚本';
 
   @override
-  String get debugRecordFormulaSubtitle =>
-      '适合你反复调试同一个学校，或者不同学校保留多套脚本，保存后会一直保留，后面可随时修改';
+  String get debugRecordFormulaSubtitle => '适合反复调试同一学校或多套脚本，保存后长期保留';
 
   @override
   String get debugRecordNameLabel => '记录名称';
@@ -5339,8 +5324,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addCourseSheetTitle => '添加';
 
   @override
-  String get addCourseSheetSubtitle =>
-      '空白课表区域不响应点击，请从这里明确选择是加一节临时课、整学期重复课，还是插入一条单次日程';
+  String get addCourseSheetSubtitle => '空白课表区域不可点击，请由此添加课程或日程';
 
   @override
   String courseWeekdaySectionSummary(
@@ -9385,8 +9369,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get locationTimeMatchTitle => '地点作息匹配';
 
   @override
-  String get locationTimeMatchSubtitle =>
-      '按地点关键词自动匹配时间模板。重新匹配仅更新命中课程的钟点，未命中课程保持不变。';
+  String get locationTimeMatchSubtitle => '按地点关键词匹配时间模板，仅更新命中课程的钟点';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -9611,8 +9594,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleDateRuleSectionTitle => '日期作息规则';
 
   @override
-  String get scheduleDateRuleSectionSubtitle =>
-      '开始日自动将所选模板套用为全部课表默认作息。最多 2 条且区间不重叠；地点作息匹配优先。';
+  String get scheduleDateRuleSectionSubtitle => '开始日自动套用模板为默认作息，最多 2 条；地点匹配优先';
 
   @override
   String get scheduleDateRuleAdd => '添加日期规则';
@@ -11086,7 +11068,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get coupleTimetableWeekOffsetSubtitle =>
-      '查看你的第 N 週時，讀取對方課表的第 N+偏移 週，例如 +1 表示對方學期進度比你快一週';
+      '查看第 N 週時讀取對方第 N+偏移 週，如 +1 表示對方快一週';
 
   @override
   String get coupleTimetableWeekOffsetZero => '無偏移';
@@ -11105,8 +11087,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get coupleTimetableColorsTitle => '疊加顏色';
 
   @override
-  String get coupleTimetableColorsSubtitle =>
-      '自訂「我的課」「對方課程」「一起上課」在疊加檢視中的顯示顏色，可按喜好自由搭配';
+  String get coupleTimetableColorsSubtitle => '自訂「我的課」「TA的課」「一起上課」的疊加顯示顏色';
 
   @override
   String get partnerImportRequiresSingleProfile => '請匯入單一課表備份檔案，不支援全量備份';
@@ -11115,8 +11096,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get coupleWebdavTitle => '堅果雲拉取';
 
   @override
-  String get coupleWebdavSubtitle =>
-      '登入對方（或你們共用的）堅果雲帳號，自動下載對方上傳的課表檔案，與「雲端同步」帳號獨立，互不蠅響';
+  String get coupleWebdavSubtitle => '登入對方的坚果雲帳號即可取得其課表，與「雲同步」帳號互不影響';
 
   @override
   String get coupleWebdavNotConnected => '尚未連接堅果雲';
@@ -11152,8 +11132,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get coupleWebdavLoginSheetTitle => '連接堅果雲（情侶課表）';
 
   @override
-  String get coupleWebdavLoginSheetSubtitle =>
-      '請使用應用程式專用密碼，對方需先將課表上傳到約定路徑，或由你在對方裝置上登入同一帳號並上傳';
+  String get coupleWebdavLoginSheetSubtitle => '請使用坚果雲應用專用密碼，對方需先將課表上傳到約定路徑';
 
   @override
   String get coupleWebdavConfirmConnect => '連接並拉取';
@@ -11222,8 +11201,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudSyncIntroTitle => '多裝置同步';
 
   @override
-  String get cloudSyncIntroSubtitle =>
-      '設定堅果雲 WebDAV 後，可在手機、平板之間自動同步課表、倉庫帳號與相關設定';
+  String get cloudSyncIntroSubtitle => '配置坚果雲 WebDAV 後，多裝置間自動同步課表與設定';
 
   @override
   String get cloudSyncSettingsSectionTitle => '同步設定';
@@ -11259,8 +11237,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudSyncAccountTitle => '帳號設定';
 
   @override
-  String get cloudSyncAccountSubtitle =>
-      '請使用堅果雲應用程式專用密碼，而不是登入密碼，快照會包含倉庫記住的學校帳號';
+  String get cloudSyncAccountSubtitle => '請使用坚果雲應用專用密碼（非登入密碼），快照含倉庫記住的學校帳號';
 
   @override
   String get cloudSyncUsernameLabel => '電郵 / 用戶名稱';
@@ -13342,14 +13319,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get beforeClassQuickActionSubtitle =>
-      '只在上課前提醒的展開通知裡顯示，靜音/免打擾會在下課後自動恢復，重啟手機也會恢復；免打擾首次可能會跳到系統授權頁';
+      '僅在上課前提醒的展開通知中顯示；勿擾模式下課自動恢復，首次需系統授權';
 
   @override
   String get liveBeforeClassQuickActionAutoTitle => '自動執行';
 
   @override
   String get liveBeforeClassQuickActionAutoSubtitle =>
-      '在上課前自動打開所選模式，下課後自動恢復，重啟手機也會恢復；免打擾需要先在系統設定中授權';
+      '上課前自動開啟所選模式，下課後恢復；勿擾需系統授權';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => '不自動執行';
@@ -13439,8 +13416,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveDisplayConfigModeTitle => '配置方式';
 
   @override
-  String get liveDisplayConfigModeSubtitle =>
-      '打開後，課中和下課提醒會完全跟隨上課前提醒顯示，下面的獨立設定暫時不可編輯';
+  String get liveDisplayConfigModeSubtitle => '開啟後課中/下課提醒完全跟隨上課前提醒的設定';
 
   @override
   String get followBeforeClassDisplayTitle => '跟隨上課前提醒設定';
@@ -14005,15 +13981,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get frostedSheetSectionTitle => '磨砂玻璃';
 
   @override
-  String get frostedSheetSectionSubtitle =>
-      '調整首頁彈出面板的高斯模糊強度與磨砂亮度，滑桿越靠右，白色磨砂層越明顯';
+  String get frostedSheetSectionSubtitle => '調節彈出面板的模糊強度與磨砂亮度';
 
   @override
   String get frostedBlurEnabledTitle => '啟用模糊';
 
   @override
-  String get frostedBlurEnabledSubtitle =>
-      '關閉後不再取樣模糊：彈窗變為不透明純色底，首頁模糊區域與「回到本週」按鈕保留半透明底色';
+  String get frostedBlurEnabledSubtitle => '關閉後彈窗為不透明純色底，模糊區域保留半透明底色';
 
   @override
   String get frostedSheetPreviewOpenAction => '開啟預覽面板';
@@ -14280,8 +14254,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guideShortNameAdviceTitle => '課程簡稱建議';
 
   @override
-  String get guideShortNameAdviceSubtitle =>
-      '超級島支持顯示課程簡稱，簡稱不是自動生成的，需要你在課程編輯裡自己填寫，建議控制在 3 個字以內，顯示會更穩定';
+  String get guideShortNameAdviceSubtitle => '簡稱需在課程編輯中手動填寫，建議 3 字以內，顯示更穩定';
 
   @override
   String get guideShortNameRecommended => '推薦示例';
@@ -14527,8 +14500,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveTestingLocalLogsTitle => '本地診斷日誌';
 
   @override
-  String get liveTestingLocalLogsSubtitle =>
-      '一鍵導出日誌文件，直接通過系統分享發給開發者；也可以清空後重新收集';
+  String get liveTestingLocalLogsSubtitle => '一鍵匯出日誌分享給開發者，也可清空重新收集';
 
   @override
   String get liveTestingClearLogsAction => '清空日誌';
@@ -14633,7 +14605,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homeWidgetTodayCourseSubtitle =>
-      '首批支持 2×2、2×4、4×4 三種尺寸，點擊小組件會直接打開首頁，課程開始和結束時會主動刷新';
+      '支援 2×2、2×4、4×4 三種尺寸，點擊開啟首頁，課程狀態即時更新';
 
   @override
   String get homeWidgetQuickAddTitle => '快速添加到桌面';
@@ -14825,8 +14797,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get pageTransitionSpeedTitle => '頁面轉場速度';
 
   @override
-  String get pageTransitionSpeedSubtitle =>
-      '調節進入和返回子頁面時的滑動動畫快慢，數值越大越快，越小越慢；會疊加系統「過渡動畫縮放」設定';
+  String get pageTransitionSpeedSubtitle => '數值越大動畫越快；實際速度會疊加系統「過渡動畫縮放」';
 
   @override
   String pageTransitionSpeedDurationHint(int milliseconds) {
@@ -15063,14 +15034,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutUpdateNowTitle => '立即更新';
 
   @override
-  String get aboutUpdateNowAndroidSubtitle =>
-      '普通使用只需要點一次立即下載，下載慢、下載失敗、要換線路時，再去下面的高級選項';
+  String get aboutUpdateNowAndroidSubtitle => '下載慢或失敗時，再用下方進階選項更換線路';
 
   @override
   String get aboutUpdateNowOtherSubtitle => '目前平台會直接打開下載頁面，不會在應用內安裝';
 
   @override
-  String get aboutMirrorDownloadHint => '目前會優先使用國內下載，大多數國內網路直接點“立即下載”就行';
+  String get aboutMirrorDownloadHint => '預設優先國內線路，直接點「立即下載」即可';
 
   @override
   String get aboutOriginalDownloadHint => '目前會優先使用國際源下載，如果下載慢或打不開，建議先切回“國內下載”';
@@ -15085,8 +15055,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutDownloadMethodTitle => '下載方式';
 
   @override
-  String get aboutDownloadMethodSubtitle =>
-      '預設推薦國內下載，只有你能穩定訪問 GitHub 時，再切到國際源下載';
+  String get aboutDownloadMethodSubtitle => '預設推薦國內線路，GitHub 存取穩定時可切換國際源';
 
   @override
   String get aboutDownloadMethodMirror => '國內下載';
@@ -15198,7 +15167,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutRecordDiagnosticsTitle => '記錄應用日誌';
 
   @override
-  String get aboutRecordDiagnosticsSubtitle => '打開後會在本地持續記錄關鍵日誌，僅用于排查“該彈不彈”等問題';
+  String get aboutRecordDiagnosticsSubtitle => '開啟後本機持續記錄執行日誌，超級島日誌單獨標註';
 
   @override
   String get aboutExportDiagnosticsAction => '匯出診斷日誌';
@@ -15531,7 +15500,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get warehouseMissingSchoolSubtitle =>
-      '去反饋頁提一個 Issue 就行，建議一起寫上學校名稱、教務系統網址、登入後課表頁連結或截圖，這養更方便補適配';
+      '請到意見回饋頁提交 Issue，附上學校名稱、教務系統網址與課表頁截圖，便於補充適配';
 
   @override
   String get laterAction => '稍後再說';
@@ -15609,8 +15578,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get customDebugIntroTitle => '這裡放你自己的教務偵錯記錄';
 
   @override
-  String get customDebugIntroSubtitle =>
-      '每條記錄都可以保存自定義網址和整段脚本，保存後下次直接點“開始偵錯”就能複用，不需要再去某個學校詳情頁裡找入口';
+  String get customDebugIntroSubtitle => '儲存每所學校的網址與腳本，下次一鍵復用';
 
   @override
   String get addDebugRecordAction => '新增偵錯記錄';
@@ -15667,8 +15635,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get debugRecordFormula => '一條記錄 = 一個網址 + 一段脚本';
 
   @override
-  String get debugRecordFormulaSubtitle =>
-      '適合你反複偵錯同一個學校，或者不同學校保留多套脚本，保存後會一直保留，後面可隨時修改';
+  String get debugRecordFormulaSubtitle => '適合反覆調試同一學校或多套腳本，儲存後長期保留';
 
   @override
   String get debugRecordNameLabel => '記錄名稱';
@@ -16144,8 +16111,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get addCourseSheetTitle => '新增';
 
   @override
-  String get addCourseSheetSubtitle =>
-      '空白課表區域不響應點擊，請從這裡明確選擇是加一節臨時課、整學期重複課，還是插入一條單次日程';
+  String get addCourseSheetSubtitle => '空白課表區域不可點擊，請由此新增課程或日程';
 
   @override
   String courseWeekdaySectionSummary(
@@ -20234,8 +20200,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get locationTimeMatchTitle => '地點作息匹配';
 
   @override
-  String get locationTimeMatchSubtitle =>
-      '按地點關鍵詞自動匹配時間範本。重新匹配僅更新命中課程的鐘點，未命中課程保持不變。';
+  String get locationTimeMatchSubtitle => '按地點關鍵詞匹配時間模板，僅更新命中課程的鐘點';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -20460,8 +20425,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get scheduleDateRuleSectionTitle => '日期作息規則';
 
   @override
-  String get scheduleDateRuleSectionSubtitle =>
-      '開始日自動將所選模板套用為全部課表預設作息。最多 2 條且區間不重疊；地點作息匹配優先。';
+  String get scheduleDateRuleSectionSubtitle => '開始日自動套用模板為預設作息，最多 2 條；地點匹配優先';
 
   @override
   String get scheduleDateRuleAdd => '新增日期規則';
@@ -21935,7 +21899,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get coupleTimetableWeekOffsetSubtitle =>
-      '查看你的第 N 週時，讀取對方課表的第 N+偏移 週，例如 +1 表示對方學期進度比你快一週';
+      '查看第 N 週時讀取對方第 N+偏移 週，如 +1 表示對方快一週';
 
   @override
   String get coupleTimetableWeekOffsetZero => '無偏移';
@@ -21954,8 +21918,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get coupleTimetableColorsTitle => '疊加顏色';
 
   @override
-  String get coupleTimetableColorsSubtitle =>
-      '自訂「我的課」「對方課程」「一起上課」在疊加檢視中的顯示顏色，可按喜好自由搭配';
+  String get coupleTimetableColorsSubtitle => '自訂「我的課」「TA的課」「一起上課」的疊加顯示顏色';
 
   @override
   String get partnerImportRequiresSingleProfile => '請匯入單一課表備份檔案，不支援全量備份';
@@ -21964,8 +21927,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get coupleWebdavTitle => '堅果雲拉取';
 
   @override
-  String get coupleWebdavSubtitle =>
-      '登入對方（或你們共用的）堅果雲帳號，自動下載對方上傳的課表檔案，與「雲端同步」帳號獨立，互不影響';
+  String get coupleWebdavSubtitle => '登入對方的坚果雲帳號即可取得其課表，與「雲同步」帳號互不影響';
 
   @override
   String get coupleWebdavNotConnected => '尚未連接堅果雲';
@@ -22001,8 +21963,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get coupleWebdavLoginSheetTitle => '連接堅果雲（情侶課表）';
 
   @override
-  String get coupleWebdavLoginSheetSubtitle =>
-      '請使用應用程式專用密碼，對方需先將課表上傳到約定路徑，或由你在對方裝置上登入同一帳號並上傳';
+  String get coupleWebdavLoginSheetSubtitle => '請使用坚果雲應用專用密碼，對方需先將課表上傳到約定路徑';
 
   @override
   String get coupleWebdavConfirmConnect => '連接並拉取';
@@ -22071,8 +22032,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudSyncIntroTitle => '多裝置同步';
 
   @override
-  String get cloudSyncIntroSubtitle =>
-      '設定堅果雲 WebDAV 後，可在手機、平板之間自動同步課表、倉庫帳號與相關設定';
+  String get cloudSyncIntroSubtitle => '配置坚果雲 WebDAV 後，多裝置間自動同步課表與設定';
 
   @override
   String get cloudSyncSettingsSectionTitle => '同步設定';
@@ -22108,8 +22068,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudSyncAccountTitle => '帳號設定';
 
   @override
-  String get cloudSyncAccountSubtitle =>
-      '請使用堅果雲應用程式專用密碼，而不是登入密碼，快照會包含倉庫記住的學校帳號';
+  String get cloudSyncAccountSubtitle => '請使用坚果雲應用專用密碼（非登入密碼），快照含倉庫記住的學校帳號';
 
   @override
   String get cloudSyncUsernameLabel => '電子郵件 / 使用者名稱';
@@ -24191,14 +24150,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get beforeClassQuickActionSubtitle =>
-      '只在上課前提醒的展開通知裡顯示，靜音/免打擾會在下課後自動恢復，重啟手機也會恢復；免打擾首次可能會跳到系統授權頁';
+      '僅在上課前提醒的展開通知中顯示；勿擾模式下課自動恢復，首次需系統授權';
 
   @override
   String get liveBeforeClassQuickActionAutoTitle => '自動執行';
 
   @override
   String get liveBeforeClassQuickActionAutoSubtitle =>
-      '在上課前自動打開所選模式，下課後自動恢復，重啟手機也會恢復；免打擾需要先在系統設定中授權';
+      '上課前自動開啟所選模式，下課後恢復；勿擾需系統授權';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => '不自動執行';
@@ -24288,8 +24247,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveDisplayConfigModeTitle => '配置方式';
 
   @override
-  String get liveDisplayConfigModeSubtitle =>
-      '打開後，課中和下課提醒會完全跟隨上課前提醒顯示，下面的独立設定暫時不可編輯';
+  String get liveDisplayConfigModeSubtitle => '開啟後課中/下課提醒完全跟隨上課前提醒的設定';
 
   @override
   String get followBeforeClassDisplayTitle => '跟隨上課前提醒設定';
@@ -24854,15 +24812,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get frostedSheetSectionTitle => '磨砂玻璃';
 
   @override
-  String get frostedSheetSectionSubtitle =>
-      '調整首頁彈出面板的高斯模糊強度與磨砂亮度，滑桿越靠右，白色磨砂層越明顯';
+  String get frostedSheetSectionSubtitle => '調節彈出面板的模糊強度與磨砂亮度';
 
   @override
   String get frostedBlurEnabledTitle => '啟用模糊';
 
   @override
-  String get frostedBlurEnabledSubtitle =>
-      '關閉後不再取樣模糊：彈窗變為不透明純色底，首頁模糊區域與「回到本週」按鈕保留半透明底色';
+  String get frostedBlurEnabledSubtitle => '關閉後彈窗為不透明純色底，模糊區域保留半透明底色';
 
   @override
   String get frostedSheetPreviewOpenAction => '開啟預覽面板';
@@ -25129,8 +25085,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guideShortNameAdviceTitle => '課程簡稱建議';
 
   @override
-  String get guideShortNameAdviceSubtitle =>
-      '超級島支持顯示課程簡稱，簡稱不是自動生成的，需要你在課程编辑裡自己填寫，建議控制在 3 個字以內，顯示会更穩定';
+  String get guideShortNameAdviceSubtitle => '簡稱需在課程編輯中手動填寫，建議 3 字以內，顯示更穩定';
 
   @override
   String get guideShortNameRecommended => '推荐示例';
@@ -25376,8 +25331,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingLocalLogsTitle => '本地診斷日誌';
 
   @override
-  String get liveTestingLocalLogsSubtitle =>
-      '一键導出日誌文件，直接通過系統分享發给開發者；也可以清空後重新收集';
+  String get liveTestingLocalLogsSubtitle => '一鍵匯出日誌分享給開發者，也可清空重新收集';
 
   @override
   String get liveTestingClearLogsAction => '清空日誌';
@@ -25482,7 +25436,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeWidgetTodayCourseSubtitle =>
-      '首批支持 2×2、2×4、4×4 三种尺寸，點擊小工具会直接打開首頁，課程開始和结束時会主動刷新';
+      '支援 2×2、2×4、4×4 三種尺寸，點擊開啟首頁，課程狀態即時更新';
 
   @override
   String get homeWidgetQuickAddTitle => '快速添加到桌面';
@@ -25674,8 +25628,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get pageTransitionSpeedTitle => '頁面轉場速度';
 
   @override
-  String get pageTransitionSpeedSubtitle =>
-      '調節進入和返回子頁面時的滑動動畫快慢，數值越大越快，越小越慢；會疊加系統「過渡動畫縮放」設定';
+  String get pageTransitionSpeedSubtitle => '數值越大動畫越快；實際速度會疊加系統「過渡動畫縮放」';
 
   @override
   String pageTransitionSpeedDurationHint(int milliseconds) {
@@ -25912,14 +25865,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutUpdateNowTitle => '立即更新';
 
   @override
-  String get aboutUpdateNowAndroidSubtitle =>
-      '普通使用只需要點一次立即下載，下載慢、下載失败、要换線路時，再去下面的高級选項';
+  String get aboutUpdateNowAndroidSubtitle => '下載慢或失敗時，再用下方進階選項更換線路';
 
   @override
   String get aboutUpdateNowOtherSubtitle => '目前平台会直接打開下載頁面，不会在應用內安装';
 
   @override
-  String get aboutMirrorDownloadHint => '目前会優先使用國內下載，大多數國內網路直接點“立即下載”就行';
+  String get aboutMirrorDownloadHint => '預設優先國內線路，直接點「立即下載」即可';
 
   @override
   String get aboutOriginalDownloadHint => '目前会優先使用國際源下載，如果下載慢或打不開，建議先切回“國內下載”';
@@ -25934,8 +25886,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutDownloadMethodTitle => '下載方式';
 
   @override
-  String get aboutDownloadMethodSubtitle =>
-      '預設推荐國內下載，只有你能穩定访問 GitHub 時，再切到國際源下載';
+  String get aboutDownloadMethodSubtitle => '預設推薦國內線路，GitHub 存取穩定時可切換國際源';
 
   @override
   String get aboutDownloadMethodMirror => '國內下載';
@@ -26047,7 +25998,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutRecordDiagnosticsTitle => '記錄應用日誌';
 
   @override
-  String get aboutRecordDiagnosticsSubtitle => '打開後会在本地持续記錄關键日誌，僅用于排查“该弹不弹”等問題';
+  String get aboutRecordDiagnosticsSubtitle => '開啟後本機持續記錄執行日誌，超級島日誌單獨標註';
 
   @override
   String get aboutExportDiagnosticsAction => '匯出診斷日誌';
@@ -26380,7 +26331,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get warehouseMissingSchoolSubtitle =>
-      '去反饋頁提一個 Issue 就行，建議一起寫上学校名稱、教務系統網址、登入後課表頁連結或截圖，這样更方便补適配';
+      '請到意見回饋頁提交 Issue，附上學校名稱、教務系統網址與課表頁截圖，便於補充適配';
 
   @override
   String get laterAction => '稍後再說';
@@ -26458,8 +26409,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get customDebugIntroTitle => '這裡放你自己的教務偵錯記錄';
 
   @override
-  String get customDebugIntroSubtitle =>
-      '每条記錄都可以保存自定义網址和整段脚本，保存後下次直接點“開始偵錯”就能複用，不需要再去某個学校详情頁裡找入口';
+  String get customDebugIntroSubtitle => '儲存每所學校的網址與腳本，下次一鍵復用';
 
   @override
   String get addDebugRecordAction => '新增偵錯記錄';
@@ -26516,8 +26466,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get debugRecordFormula => '一条記錄 = 一個網址 + 一段脚本';
 
   @override
-  String get debugRecordFormulaSubtitle =>
-      '適合你反複偵錯同一個学校，或者不同学校保留多套脚本，保存後会一直保留，後面可隨時修改';
+  String get debugRecordFormulaSubtitle => '適合反覆調試同一學校或多套腳本，儲存後長期保留';
 
   @override
   String get debugRecordNameLabel => '記錄名稱';
@@ -26993,8 +26942,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get addCourseSheetTitle => '新增';
 
   @override
-  String get addCourseSheetSubtitle =>
-      '空白課表區域不響應點擊，請從這裡明確選擇是加一節臨時課、整學期重複課，還是插入一條單次日程';
+  String get addCourseSheetSubtitle => '空白課表區域不可點擊，請由此新增課程或日程';
 
   @override
   String courseWeekdaySectionSummary(
@@ -31083,8 +31031,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get locationTimeMatchTitle => '地點作息匹配';
 
   @override
-  String get locationTimeMatchSubtitle =>
-      '按地點關鍵詞自動匹配時間範本。重新匹配僅更新命中課程的鐘點，未命中課程保持不變。';
+  String get locationTimeMatchSubtitle => '按地點關鍵詞匹配時間模板，僅更新命中課程的鐘點';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -31309,8 +31256,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get scheduleDateRuleSectionTitle => '日期作息規則';
 
   @override
-  String get scheduleDateRuleSectionSubtitle =>
-      '開始日自動將所選模板套用為全部課表預設作息。最多 2 條且區間不重疊；地點作息匹配優先。';
+  String get scheduleDateRuleSectionSubtitle => '開始日自動套用模板為預設作息，最多 2 條；地點匹配優先';
 
   @override
   String get scheduleDateRuleAdd => '新增日期規則';

@@ -629,7 +629,7 @@ abstract class AppLocalizations {
   /// No description provided for @coupleTimetableWeekOffsetSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'查看你的第 N 周时，读取对方课表的第 N+偏移 周，例如 +1 表示对方学期进度比你快一周'**
+  /// **'查看第 N 周时读取对方第 N+偏移 周，如 +1 表示对方快一周'**
   String get coupleTimetableWeekOffsetSubtitle;
 
   /// No description provided for @coupleTimetableWeekOffsetZero.
@@ -659,7 +659,7 @@ abstract class AppLocalizations {
   /// No description provided for @coupleTimetableColorsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'自定义「我的课」「TA的课」「一起上课」在叠加视图中的显示颜色，可按喜好自由搭配'**
+  /// **'自定义「我的课」「TA的课」「一起上课」的叠加显示颜色'**
   String get coupleTimetableColorsSubtitle;
 
   /// No description provided for @partnerImportRequiresSingleProfile.
@@ -677,7 +677,7 @@ abstract class AppLocalizations {
   /// No description provided for @coupleWebdavSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'登录对方（或你们共用的）坚果云账号，自动下载对方上传的课表文件，与「云同步」账号独立，互不影响'**
+  /// **'登录对方的坚果云账号即可获取其课表，与「云同步」账号互不影响'**
   String get coupleWebdavSubtitle;
 
   /// No description provided for @coupleWebdavNotConnected.
@@ -737,7 +737,7 @@ abstract class AppLocalizations {
   /// No description provided for @coupleWebdavLoginSheetSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'请使用应用专用密码，对方需先将课表上传到约定路径，或由你在对方设备上登录同一账号并上传'**
+  /// **'请使用坚果云应用专用密码，对方需先将课表上传到约定路径'**
   String get coupleWebdavLoginSheetSubtitle;
 
   /// No description provided for @coupleWebdavConfirmConnect.
@@ -875,7 +875,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncIntroSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'配置坚果云 WebDAV 后，可在手机、平板之间自动同步课表、仓库账号与相关设置'**
+  /// **'配置坚果云 WebDAV 后，多设备间自动同步课表与设置'**
   String get cloudSyncIntroSubtitle;
 
   /// No description provided for @cloudSyncSettingsSectionTitle.
@@ -947,7 +947,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncAccountSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'请使用坚果云应用专用密码，而不是登录密码，快照会包含仓库记住的学校账号'**
+  /// **'请使用坚果云应用专用密码（非登录密码），快照含仓库记住的学校账号'**
   String get cloudSyncAccountSubtitle;
 
   /// No description provided for @cloudSyncUsernameLabel.
@@ -4729,7 +4729,7 @@ abstract class AppLocalizations {
   /// No description provided for @beforeClassQuickActionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'只在上课前提醒的展开通知里显示，静音/免打扰会在下课后自动恢复，重启手机也会恢复；免打扰首次可能会跳到系统授权页'**
+  /// **'仅在上课前提醒的展开通知中显示；免打扰下课自动恢复，首次需系统授权'**
   String get beforeClassQuickActionSubtitle;
 
   /// No description provided for @liveBeforeClassQuickActionAutoTitle.
@@ -4741,7 +4741,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveBeforeClassQuickActionAutoSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'上课前自动打开所选模式，下课后自动恢复，重启手机也会恢复；免打扰需要先在系统设置中授权'**
+  /// **'上课前自动开启所选模式，下课后恢复；免打扰需系统授权'**
   String get liveBeforeClassQuickActionAutoSubtitle;
 
   /// No description provided for @liveBeforeClassQuickActionAutoOptionOff.
@@ -4897,7 +4897,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveDisplayConfigModeSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'打开后，课中和下课提醒会完全跟随上课前提醒显示，下面的独立设置暂时不可编辑'**
+  /// **'开启后课中/下课提醒完全跟随上课前提醒的设置'**
   String get liveDisplayConfigModeSubtitle;
 
   /// No description provided for @followBeforeClassDisplayTitle.
@@ -5916,7 +5916,7 @@ abstract class AppLocalizations {
   /// No description provided for @frostedSheetSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'调节首页弹出面板的高斯模糊强度与磨砂亮度，滑块越靠右，白色磨砂层越明显'**
+  /// **'调节弹出面板的模糊强度与磨砂亮度'**
   String get frostedSheetSectionSubtitle;
 
   /// No description provided for @frostedBlurEnabledTitle.
@@ -5928,7 +5928,7 @@ abstract class AppLocalizations {
   /// No description provided for @frostedBlurEnabledSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'关闭后不再采样模糊：弹窗变为不透明纯色底，首页模糊区域与「回本周」按钮保留半透明底色'**
+  /// **'关闭后弹窗为不透明纯色底，模糊区域保留半透明底色'**
   String get frostedBlurEnabledSubtitle;
 
   /// No description provided for @frostedSheetPreviewOpenAction.
@@ -6450,7 +6450,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideShortNameAdviceSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'超级岛支持显示课程简称，简称不是自动生成的，需要你在课程编辑里自己填写，建议控制在 3 个字以内，显示会更稳定'**
+  /// **'简称需在课程编辑中手动填写，建议 3 字以内，显示更稳定'**
   String get guideShortNameAdviceSubtitle;
 
   /// No description provided for @guideShortNameRecommended.
@@ -6900,7 +6900,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTestingLocalLogsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'一键导出日志文件，直接通过系统分享发给开发者；也可以清空后重新收集'**
+  /// **'一键导出日志分享给开发者，也可清空重新收集'**
   String get liveTestingLocalLogsSubtitle;
 
   /// No description provided for @liveTestingClearLogsAction.
@@ -7086,7 +7086,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetTodayCourseSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'首批支持 2×2、2×4、4×4 三种尺寸，点击小组件会直接打开首页，课程开始和结束时会主动刷新'**
+  /// **'支持 2×2、2×4、4×4 三种尺寸，点击打开首页，课程状态实时刷新'**
   String get homeWidgetTodayCourseSubtitle;
 
   /// No description provided for @homeWidgetQuickAddTitle.
@@ -7434,7 +7434,7 @@ abstract class AppLocalizations {
   /// No description provided for @pageTransitionSpeedSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'调节进入和返回子页面时的滑动动画快慢，数值越大越快，越小越慢；会叠加系统「过渡动画缩放」设置'**
+  /// **'数值越大动画越快；实际速度会叠加系统「过渡动画缩放」'**
   String get pageTransitionSpeedSubtitle;
 
   /// No description provided for @pageTransitionSpeedDurationHint.
@@ -7860,7 +7860,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutUpdateNowAndroidSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'普通使用只需要点一次立即下载，下载慢、下载失败、要换线路时，再去下面的高级选项'**
+  /// **'下载慢或失败时，再用下方高级选项更换线路'**
   String get aboutUpdateNowAndroidSubtitle;
 
   /// No description provided for @aboutUpdateNowOtherSubtitle.
@@ -7872,7 +7872,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutMirrorDownloadHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前会优先使用国内下载，大多数国内网络直接点“立即下载”就行'**
+  /// **'默认优先国内线路，直接点“立即下载”即可'**
   String get aboutMirrorDownloadHint;
 
   /// No description provided for @aboutOriginalDownloadHint.
@@ -7902,7 +7902,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutDownloadMethodSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'默认推荐国内下载，只有你能稳定访问 GitHub 时，再切到国际源下载'**
+  /// **'默认推荐国内线路，GitHub 访问稳定时可切换国际源'**
   String get aboutDownloadMethodSubtitle;
 
   /// No description provided for @aboutDownloadMethodMirror.
@@ -8106,7 +8106,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutRecordDiagnosticsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'打开后会在本地持续记录应用运行日志；超级岛相关日志会单独标注来源'**
+  /// **'开启后本地持续记录运行日志，超级岛日志单独标注'**
   String get aboutRecordDiagnosticsSubtitle;
 
   /// No description provided for @aboutExportDiagnosticsAction.
@@ -8674,7 +8674,7 @@ abstract class AppLocalizations {
   /// No description provided for @warehouseMissingSchoolSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'去反馈页提一个 Issue 就行，建议一起写上学校名称、教务系统网址、登录后课表页链接或截图，这样更方便补适配'**
+  /// **'请到反馈页提交 Issue，附上学校名称、教务系统网址与课表页截图，便于补充适配'**
   String get warehouseMissingSchoolSubtitle;
 
   /// No description provided for @laterAction.
@@ -8818,7 +8818,7 @@ abstract class AppLocalizations {
   /// No description provided for @customDebugIntroSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'每条记录都可以保存自定义网址和整段脚本，保存后下次直接点“开始调试”就能复用，不需要再去某个学校详情页里找入口'**
+  /// **'保存每所学校的网址与脚本，下次一键复用'**
   String get customDebugIntroSubtitle;
 
   /// No description provided for @addDebugRecordAction.
@@ -8920,7 +8920,7 @@ abstract class AppLocalizations {
   /// No description provided for @debugRecordFormulaSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'适合你反复调试同一个学校，或者不同学校保留多套脚本，保存后会一直保留，后面可随时修改'**
+  /// **'适合反复调试同一学校或多套脚本，保存后长期保留'**
   String get debugRecordFormulaSubtitle;
 
   /// No description provided for @debugRecordNameLabel.
@@ -9796,7 +9796,7 @@ abstract class AppLocalizations {
   /// No description provided for @addCourseSheetSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'空白课表区域不响应点击，请从这里明确选择是加一节临时课、整学期重复课，还是插入一条单次日程'**
+  /// **'空白课表区域不可点击，请由此添加课程或日程'**
   String get addCourseSheetSubtitle;
 
   /// No description provided for @courseWeekdaySectionSummary.
@@ -17004,7 +17004,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'按地点关键词自动匹配时间模板。重新匹配仅更新命中课程的钟点，未命中课程保持不变。'**
+  /// **'按地点关键词匹配时间模板，仅更新命中课程的钟点'**
   String get locationTimeMatchSubtitle;
 
   /// No description provided for @locationTimeMatchWeekAxisNote.
@@ -17380,7 +17380,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleDateRuleSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'开始日自动将所选模板套用为全部课表默认作息。最多 2 条且区间不重叠；地点作息匹配优先。'**
+  /// **'开始日自动套用模板为默认作息，最多 2 条；地点匹配优先'**
   String get scheduleDateRuleSectionSubtitle;
 
   /// No description provided for @scheduleDateRuleAdd.

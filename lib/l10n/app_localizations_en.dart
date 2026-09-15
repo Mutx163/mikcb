@@ -299,7 +299,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get coupleTimetableWeekOffsetSubtitle =>
-      'When you view week N, partner courses are read from week N + offset. For example, +1 means their semester is one week ahead';
+      'When viewing week N, shows your partner\'s week N+offset, e.g. +1 means one week ahead';
 
   @override
   String get coupleTimetableWeekOffsetZero => 'No offset';
@@ -319,7 +319,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get coupleTimetableColorsSubtitle =>
-      'Choose colors for your courses, partner courses, and shared classes in overlay view';
+      'Customize overlay colors for my, their and shared courses';
 
   @override
   String get partnerImportRequiresSingleProfile =>
@@ -330,7 +330,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get coupleWebdavSubtitle =>
-      'Sign in to your partner\'s (or shared) Nutstore account to download their uploaded timetable. Separate from Cloud Sync credentials';
+      'Sign in to your partner\'s Jianguoyun account to fetch their timetable; independent from the cloud sync account';
 
   @override
   String get coupleWebdavNotConnected => 'Not connected to Nutstore';
@@ -368,7 +368,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get coupleWebdavLoginSheetSubtitle =>
-      'Use an app-specific password. Your partner must upload their timetable to the agreed path first, or upload from their device on the same account';
+      'Use a Jianguoyun app-specific password; your partner must upload their timetable to the agreed path first';
 
   @override
   String get coupleWebdavConfirmConnect => 'Connect and pull';
@@ -446,7 +446,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncIntroSubtitle =>
-      'Configure Jianguoyun WebDAV to sync timetables, warehouse accounts, and related settings across devices';
+      'Configure Jianguoyun WebDAV to sync timetables and settings across devices';
 
   @override
   String get cloudSyncSettingsSectionTitle => 'Sync settings';
@@ -485,7 +485,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncAccountSubtitle =>
-      'Use a Jianguoyun app-specific password, not your login password. Snapshots include remembered school accounts';
+      'Use a Jianguoyun app-specific password (not your login password); snapshots include saved school accounts';
 
   @override
   String get cloudSyncUsernameLabel => 'Email / username';
@@ -2692,14 +2692,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get beforeClassQuickActionSubtitle =>
-      'Only appears in the expanded before-class reminder. Silent/DND restores after class ends and on reboot. Do Not Disturb may open a system permission page on first use';
+      'Shown only in the expanded before-class notification; DND auto-restores after class, first use needs system permission';
 
   @override
   String get liveBeforeClassQuickActionAutoTitle => 'Automatic';
 
   @override
   String get liveBeforeClassQuickActionAutoSubtitle =>
-      'Turns on the selected mode before class and restores it after class ends; Do Not Disturb requires system permission';
+      'Turns the selected mode on before class and restores it after; DND needs system permission';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => 'Off';
@@ -2793,7 +2793,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveDisplayConfigModeSubtitle =>
-      'When enabled, during-class and before-end reminders fully follow the before-class display settings, and the controls below become read-only';
+      'In-class and after-class alerts then fully follow the before-class alert settings';
 
   @override
   String get followBeforeClassDisplayTitle =>
@@ -3395,14 +3395,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frostedSheetSectionSubtitle =>
-      'Adjust home popup blur and milky frosted brightness. Further right = brighter white glass';
+      'Adjust the blur strength and frosted brightness of sheets';
 
   @override
   String get frostedBlurEnabledTitle => 'Enable Blur';
 
   @override
   String get frostedBlurEnabledSubtitle =>
-      'When off, blur sampling stops: sheets and menus turn fully opaque, while home frosted areas and the back-to-week button stay translucent';
+      'When off, sheets become opaque solid panels; blurred areas keep a translucent tint';
 
   @override
   String get frostedSheetPreviewOpenAction => 'Open Preview Panel';
@@ -3693,7 +3693,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideShortNameAdviceSubtitle =>
-      'The Island supports course short names. Short names are not generated automatically, so you need to fill them in on the course edit page yourself. Keeping them within 3 characters is usually the most stable';
+      'Short names are set manually in the course editor; 3 characters or fewer works best';
 
   @override
   String get guideShortNameRecommended => 'Recommended';
@@ -3955,7 +3955,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTestingLocalLogsSubtitle =>
-      'Export the log file with one tap and share it directly with the developer, or clear it and collect again';
+      'Export logs with one tap to share with developers, or clear and collect again';
 
   @override
   String get liveTestingClearLogsAction => 'Clear logs';
@@ -4070,7 +4070,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeWidgetTodayCourseSubtitle =>
-      'The first batch supports 2×2, 2×4, and 4×4 sizes. Tapping a widget opens the home page directly, and it refreshes automatically when classes start and end';
+      'Available in 2×2, 2×4 and 4×4; tapping opens the app, and course status refreshes automatically';
 
   @override
   String get homeWidgetQuickAddTitle => 'Quick add to home screen';
@@ -4281,7 +4281,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pageTransitionSpeedSubtitle =>
-      'Adjust how fast sub-pages slide in and out. Higher is faster, lower is slower. Multiplied by the system transition animation scale on Android';
+      'Higher values mean faster animations; the system animator scale also applies';
 
   @override
   String pageTransitionSpeedDurationHint(int milliseconds) {
@@ -4536,7 +4536,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutUpdateNowAndroidSubtitle =>
-      'For normal use, just tap Download now once. If downloading is slow, fails, or you need a different route, use Advanced Options below';
+      'If the download is slow or fails, use the advanced options below to switch mirrors';
 
   @override
   String get aboutUpdateNowOtherSubtitle =>
@@ -4544,7 +4544,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutMirrorDownloadHint =>
-      'Domestic download is currently prioritized. On most domestic networks, tapping \"Download now\" is enough';
+      'Uses the domestic mirror by default; just tap Download now';
 
   @override
   String get aboutOriginalDownloadHint =>
@@ -4561,7 +4561,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutDownloadMethodSubtitle =>
-      'Domestic download is recommended by default. Only switch to the international source if you can access GitHub reliably';
+      'Domestic mirror is recommended; switch to the international source if GitHub is reachable';
 
   @override
   String get aboutDownloadMethodMirror => 'Domestic download';
@@ -4682,7 +4682,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutRecordDiagnosticsSubtitle =>
-      'When enabled, app runtime logs are recorded locally. Super Island related entries are labeled separately';
+      'Keeps recording app logs locally; island logs are tagged separately';
 
   @override
   String get aboutExportDiagnosticsAction => 'Export app logs';
@@ -5038,7 +5038,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get warehouseMissingSchoolSubtitle =>
-      'Just open the feedback page and file an Issue. It helps a lot if you include the school name, academic-system URL, logged-in timetable page link, or screenshots';
+      'Open an issue on the feedback page with your school name, academic system URL and a timetable screenshot, so we can add support faster';
 
   @override
   String get laterAction => 'Maybe later';
@@ -5123,7 +5123,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get customDebugIntroSubtitle =>
-      'Each record can save a custom URL and a full script. Once saved, you can tap \"Start debug\" next time to reuse it directly instead of searching for the entry from a school detail page again';
+      'Save each school\'s URL and script once, then reuse them with one tap';
 
   @override
   String get addDebugRecordAction => 'Add debug record';
@@ -5183,7 +5183,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get debugRecordFormulaSubtitle =>
-      'Useful when you repeatedly debug the same school or keep multiple script sets for different schools. Records remain saved and can be edited at any time';
+      'For repeatedly debugging one school or keeping several scripts; entries persist';
 
   @override
   String get debugRecordNameLabel => 'Record name';
@@ -5677,7 +5677,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addCourseSheetSubtitle =>
-      'Blank timetable areas do not respond to taps. Choose clearly whether to add a one-off lesson, a recurring course, or a one-time schedule item';
+      'Empty timetable areas aren\'t tappable; add courses or schedules here';
 
   @override
   String courseWeekdaySectionSummary(
@@ -9949,7 +9949,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get locationTimeMatchSubtitle =>
-      'Match time schemes by location keywords. Rematching updates clocks for matched courses only; unmatched courses stay unchanged.';
+      'Matches time schemes by location keywords; only matched courses\' times are updated';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -10182,7 +10182,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      'On the start date, apply the selected scheme as the default for all timetables. Max 2 non-overlapping rules; location-based schedule takes priority.';
+      'Rules apply the selected scheme as default from the start date; at most 2, location matching wins';
 
   @override
   String get scheduleDateRuleAdd => 'Add date rule';

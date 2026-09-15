@@ -283,7 +283,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get coupleTimetableWeekOffsetSubtitle =>
-      '내 N주차를 볼 때 상대방 시간표의 N+오프셋 주차를 읽습니다. 예: +1은 상대방의 학기 진도가 한 주 빠르다는 뜻입니다';
+      'N주차를 볼 때 상대의 N+오프셋 주를 표시합니다. 예: +1이면 1주 앞섬';
 
   @override
   String get coupleTimetableWeekOffsetZero => '오프셋 없음';
@@ -303,7 +303,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get coupleTimetableColorsSubtitle =>
-      '\'내 수업\', \'상대방 수업\', \'함께 듣는 수업\'의 겹쳐 보기 색상을 자유롭게 설정할 수 있습니다';
+      '「내 수업」「상대 수업」「같이 듣는 수업」의 표시 색상을 사용자 지정합니다';
 
   @override
   String get partnerImportRequiresSingleProfile =>
@@ -314,7 +314,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get coupleWebdavSubtitle =>
-      '상대(또는 공용) 견과클라우드에 로그인하여 업로드된 시간표를 가져옵니다. 클라우드 동기화 계정과 별개입니다';
+      '상대의 Jianguoyun 계정에 로그인해 시간표를 가져옵니다. 클라우드 동기화 계정과는 별개입니다';
 
   @override
   String get coupleWebdavNotConnected => '견과클라우드 미연결';
@@ -351,7 +351,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get coupleWebdavLoginSheetSubtitle =>
-      '앱 전용 비밀번호를 사용하세요. 상대방이 미리 시간표를 약속된 경로에 업로드하거나, 상대방 기기에서 같은 계정으로 로그인해 업로드해야 합니다';
+      'Jianguoyun 앱 전용 비밀번호를 사용하세요. 상대가 먼저 시간표를 업로드해야 합니다';
 
   @override
   String get coupleWebdavConfirmConnect => '연결하고 가져오기';
@@ -424,7 +424,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cloudSyncIntroSubtitle =>
-      'Jianguoyun WebDAV를 설정하면 휴대폰, 태블릿 간 시간표, 창고 계정 및 관련 설정을 자동으로 동기화할 수 있습니다';
+      'Jianguoyun WebDAV를 설정하면 기기 간에 시간표와 설정이 자동 동기화됩니다';
 
   @override
   String get cloudSyncSettingsSectionTitle => '동기화 설정';
@@ -461,7 +461,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cloudSyncAccountSubtitle =>
-      'Jianguoyun 앱 전용 비밀번호를 사용하세요 (로그인 비밀번호 아님). 스냅샷에는 창고에 저장된 학교 계정도 포함됩니다';
+      '로그인 비밀번호가 아닌 앱 전용 비밀번호를 사용하세요. 스냅샷에는 저장된 학교 계정도 포함됩니다';
 
   @override
   String get cloudSyncUsernameLabel => '이메일 / 사용자명';
@@ -2594,14 +2594,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get beforeClassQuickActionSubtitle =>
-      '수업 전 알림의 펼친 알림에만 표시됩니다. 무음/방해 금지는 수업 종료 후와 재부팅 후 자동 복원됩니다. 방해 금지 모드 첫 실행 시 시스템 인증 페이지로 이동할 수 있습니다';
+      '수업 전 알림의 확장 알림에만 표시됩니다. 방해 금지는 수업 후 자동 복원되며 최초 1회 시스템 권한이 필요합니다';
 
   @override
   String get liveBeforeClassQuickActionAutoTitle => '자동 실행';
 
   @override
   String get liveBeforeClassQuickActionAutoSubtitle =>
-      '수업 전에 선택한 모드를 자동으로 켜고 수업 종료 후 자동 복원됩니다. 방해 금지는 시스템 권한이 필요합니다';
+      '수업 전 선택한 모드를 켜고 수업 후 복원합니다. 방해 금지는 시스템 권한이 필요합니다';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => '끄기';
@@ -2695,7 +2695,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveDisplayConfigModeSubtitle =>
-      '켜면 수업 중 및 종료 알림이 수업 전 알림 표시를 완전히 따릅니다. 아래 개별 설정은 일시적으로 편집할 수 없습니다';
+      '켜면 수업 중/하교 알림이 수업 전 알림 설정을 그대로 따릅니다';
 
   @override
   String get followBeforeClassDisplayTitle => '수업 전 알림 설정에 연동';
@@ -3269,15 +3269,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedSheetSectionTitle => '프로스트 글래스';
 
   @override
-  String get frostedSheetSectionSubtitle =>
-      '홈 팝업 패널의 가우시안 블러 강도와 성에 유리 밝기를 조절합니다. 슬라이더가 오른쪽일수록 흰 성에 유리 층이 뚜렷해집니다';
+  String get frostedSheetSectionSubtitle => '시트의 흐림 강도와 프로스트 밝기를 조절합니다';
 
   @override
   String get frostedBlurEnabledTitle => '블러 활성화';
 
   @override
   String get frostedBlurEnabledSubtitle =>
-      '끄면 블러 샘플링이 중지됩니다: 팝업은 불투명한 단색 배경이 되고, 홈 블러 영역과 \'이번 주로\' 버튼은 반투명 배경을 유지합니다';
+      '끄면 시트가 불투명한 단색이 되고 흐림 영역은 반투명 배경을 유지합니다';
 
   @override
   String get frostedSheetPreviewOpenAction => '미리보기 패널 열기';
@@ -3551,8 +3550,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guideShortNameAdviceTitle => '수업 약칭 권장사항';
 
   @override
-  String get guideShortNameAdviceSubtitle =>
-      '슈퍼아일랜드는 수업 약칭 표시를 지원합니다. 약칭은 자동 생성되지 않으며 수업 편집에서 수동 입력이 필요합니다. 3자 이내를 권장합니다';
+  String get guideShortNameAdviceSubtitle => '약칭은 수업 편집에서 직접 입력하며 3자 이하를 권장합니다';
 
   @override
   String get guideShortNameRecommended => '권장 예시';
@@ -3808,7 +3806,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveTestingLocalLogsSubtitle =>
-      '원클릭으로 로그 파일을 내보내고 시스템 공유로 개발자에게 전송. 비운 후 재수집도 가능합니다';
+      '한 번에 로그를 내보내 개발자에게 공유하거나, 지우고 다시 수집할 수 있습니다';
 
   @override
   String get liveTestingClearLogsAction => '로그 비우기';
@@ -3918,7 +3916,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get homeWidgetTodayCourseSubtitle =>
-      '2×2, 2×4, 4×4 세 가지 크기를 지원합니다. 위젯을 탭하면 홈을 열고, 수업 시작/종료 시 자동 갱신됩니다';
+      '2×2, 2×4, 4×4 크기를 지원하며 탭하면 홈이 열리고 수업 상태가 자동 새로고침됩니다';
 
   @override
   String get homeWidgetQuickAddTitle => '홈에 빠른 추가';
@@ -4122,7 +4120,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get pageTransitionSpeedSubtitle =>
-      '하위 페이지 슬라이드 애니메이션 속도를 조절합니다. 값이 클수록 빠르고, 작을수록 느립니다. Android 시스템 \'전환 애니메이션 배율\'과 함께 적용됩니다';
+      '값이 클수록 애니메이션이 빨라집니다. 시스템 \'전환 애니메이션 배율\' 설정도 함께 적용됩니다';
 
   @override
   String pageTransitionSpeedDurationHint(int milliseconds) {
@@ -4365,15 +4363,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get aboutUpdateNowAndroidSubtitle =>
-      '일반 사용은 \'지금 다운로드\'를 한 번 탭하기만 하면 됩니다. 다운로드 느림, 실패, 회선 변경 시 아래의 고급 옵션으로 이동하세요';
+      '다운로드가 느리거나 실패하면 아래 고급 옵션에서 미러를 바꿔 보세요';
 
   @override
   String get aboutUpdateNowOtherSubtitle =>
       '현재 플랫폼은 다운로드 페이지를 직접 열며 앱 내에서 설치하지 않습니다';
 
   @override
-  String get aboutMirrorDownloadHint =>
-      '현재 국내 다운로드를 우선합니다. 대부분의 국내 네트워크에서는 \'지금 다운로드\'를 탭하기만 하면 됩니다';
+  String get aboutMirrorDownloadHint => '기본적으로 국내 미러를 사용합니다. 바로 다운로드를 누르면 됩니다';
 
   @override
   String get aboutOriginalDownloadHint =>
@@ -4390,7 +4387,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get aboutDownloadMethodSubtitle =>
-      '기본으로 국내 다운로드를 권장합니다. GitHub에 안정적으로 접근할 수 있을 때만 국제 소스로 전환하세요';
+      '국내 미러를 권장합니다. GitHub 접속이 안정적이면 국제 소스로 전환하세요';
 
   @override
   String get aboutDownloadMethodMirror => '국내 다운로드';
@@ -4507,7 +4504,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get aboutRecordDiagnosticsSubtitle =>
-      '켜면 로컬에서 중요 로그를 지속적으로 기록합니다. \'표시되어야 할 것이 표시되지 않는\' 문제 트러블슈팅 전용입니다';
+      '켜면 앱 로그를 로컬에 계속 기록하며 슈퍼아일랜드 로그는 별도 표시합니다';
 
   @override
   String get aboutExportDiagnosticsAction => '앱 로그 내보내기';
@@ -4847,7 +4844,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get warehouseMissingSchoolSubtitle =>
-      '피드백 페이지에서 Issue를 제출하세요. 학교 이름, 교무 시스템 URL, 로그인 후 시간표 페이지 링크 또는 스크린샷을 함께 작성하면 적응 보충이 더 원활합니다';
+      '학교 이름, 교무 시스템 주소, 시간표 스크린샷을 첨부해 피드백 페이지에서 Issue를 등록해 주세요';
 
   @override
   String get laterAction => '나중에';
@@ -4928,7 +4925,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get customDebugIntroSubtitle =>
-      '각 레코드에 사용자 정의 URL과 스크립트 전체를 저장할 수 있습니다. 저장 후 다음에 \'디버그 시작\'을 탭하기만 하면 재사용할 수 있습니다';
+      '학교별 URL과 스크립트를 저장해 두면 다음에 한 번에 재사용할 수 있습니다';
 
   @override
   String get addDebugRecordAction => '디버그 레코드 추가';
@@ -4987,7 +4984,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get debugRecordFormulaSubtitle =>
-      '같은 학교를 반복 디버그하거나, 다른 학교에 여러 스크립트 세트를 유지하는 데 적합합니다. 저장 후 언제든 수정 가능합니다';
+      '같은 학교를 반복 디버깅하거나 여러 스크립트를 보관하기에 적합하며 저장 후 계속 유지됩니다';
 
   @override
   String get debugRecordNameLabel => '레코드 이름';
@@ -5469,7 +5466,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get addCourseSheetSubtitle =>
-      '빈 시간표 영역은 탭에 반응하지 않습니다. 임시 수업, 학기 전체 반복 수업, 또는 단일 일정 삽입을 명확히 선택하세요';
+      '시간표의 빈 영역은 탭할 수 없습니다. 여기서 수업이나 일정을 추가하세요';
 
   @override
   String courseWeekdaySectionSummary(
@@ -9699,7 +9696,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get locationTimeMatchSubtitle =>
-      'Match time schemes by location keywords. Rematching updates clocks for matched courses only; unmatched courses stay unchanged.';
+      '장소 키워드로 시간 템플릿을 매칭하고, 일치한 수업의 교시만 업데이트합니다';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -9932,7 +9929,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      'On the start date, apply the selected scheme as the default for all timetables. Max 2 non-overlapping rules; location-based schedule takes priority.';
+      '시작일부터 선택한 템플릿을 기본 시간표로 자동 적용합니다. 최대 2개, 장소 매칭 우선';
 
   @override
   String get scheduleDateRuleAdd => 'Add date rule';

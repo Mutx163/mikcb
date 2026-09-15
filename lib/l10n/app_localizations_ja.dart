@@ -285,7 +285,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get coupleTimetableWeekOffsetSubtitle =>
-      'あなたの第N週を表示するとき、相手の時間割の第N+オフセット週を読みます。例：+1 は相手の学期進度があなたより1週間進んでいることを示します';
+      'N 周目を表示中は相手の N+オフセット週を表示します（+1 なら 1 週先）';
 
   @override
   String get coupleTimetableWeekOffsetZero => 'オフセットなし';
@@ -305,7 +305,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get coupleTimetableColorsSubtitle =>
-      '「自分の授業」「相手の授業」「一緒の授業」の重ね合わせ表示での色を自由にカスタマイズできます';
+      '「自分の授業」「相手の授業」「一緒の授業」の表示色をカスタマイズします';
 
   @override
   String get partnerImportRequiresSingleProfile =>
@@ -316,7 +316,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get coupleWebdavSubtitle =>
-      'パートナー（または共有）のNutstoreにログインし、相手がアップロードした時間割を取得します。クラウド同期のアカウントとは独立です';
+      '相手の坚果雲アカウントにログインして時間割を取得します。クラウド同期のアカウントとは独立です';
 
   @override
   String get coupleWebdavNotConnected => 'Nutstore未接続';
@@ -353,7 +353,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get coupleWebdavLoginSheetSubtitle =>
-      'アプリ専用パスワードを使用してください。相手が事前に時間割を共有パスにアップロードするか、相手の端末で同じアカウントにログインしてアップロードする必要があります';
+      '坚果雲のアプリ専用パスワードを使用してください。相手が先に時間割をアップロードしておく必要があります';
 
   @override
   String get coupleWebdavConfirmConnect => '接続して取得';
@@ -425,8 +425,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudSyncIntroTitle => '複数端末同期';
 
   @override
-  String get cloudSyncIntroSubtitle =>
-      'Jianguoyun WebDAV を設定すると、スマホやタブレット間で時間割、倉庫アカウント、関連設定を自動同期できます';
+  String get cloudSyncIntroSubtitle => '坚果雲 WebDAV を設定すると、端末間で時間割と設定を自動同期します';
 
   @override
   String get cloudSyncSettingsSectionTitle => '同期設定';
@@ -463,7 +462,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get cloudSyncAccountSubtitle =>
-      'Jianguoyun のアプリ専用パスワードを使用してください（ログインパスワードではありません），スナップショットには倉庫に保存された学校アカウントも含まれます';
+      'ログイン用ではなくアプリ専用パスワードを使用します。スナップショットには保存済みの学校アカウントも含まれます';
 
   @override
   String get cloudSyncUsernameLabel => 'メール / ユーザー名';
@@ -2581,14 +2580,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get beforeClassQuickActionSubtitle =>
-      '授業前リマインダーの展開通知にのみ表示，サイレント/おやすみモードは授業終了後と端末再起動後に自動復元，おやすみモード初回はシステム認証ページに飛ぶ場合あり';
+      '授業前通知の展開表示にのみ表示されます。おやすみモードは授業後に自動復帰し、初回はシステム権限が必要です';
 
   @override
   String get liveBeforeClassQuickActionAutoTitle => '自動実行';
 
   @override
   String get liveBeforeClassQuickActionAutoSubtitle =>
-      '授業前に選択したモードを自動的にオンにし，授業終了後に自動復元，おやすみモードはシステム認証が必要';
+      '授業前に選択したモードを自動オンにし、授業後に戻します。おやすみモードにはシステム権限が必要です';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => 'オフ';
@@ -2681,7 +2680,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveDisplayConfigModeSubtitle =>
-      'オンにすると、授業中と終了リマインダーが授業前リマインダー表示に完全連携，下の個別設定は一時的に編集不可';
+      'オンにすると授業中/授業後リマインダーは授業前リマインダーの設定に完全に従います';
 
   @override
   String get followBeforeClassDisplayTitle => '授業前リマインダー設定に連携';
@@ -3254,15 +3253,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String get frostedSheetSectionTitle => 'フロストガラス';
 
   @override
-  String get frostedSheetSectionSubtitle =>
-      'ホームのポップアップパネルのガウスぼかし強度とすりガラスの明るさを調整します。スライダーが右ほど白いすりガラス層が目立ちます';
+  String get frostedSheetSectionSubtitle => 'シートのブラー強度とフロストの明るさを調整します';
 
   @override
   String get frostedBlurEnabledTitle => 'ぼかしを有効にする';
 
   @override
   String get frostedBlurEnabledSubtitle =>
-      'オフにするとぼかしサンプリングを停止します：ポップアップは不透明な単色面になり、ホームのぼかし領域と「今週に戻る」ボタンは半透明の背景を保ちます';
+      'オフにするとシートは不透明な単色になり、ブラー領域は半透明のまま残ります';
 
   @override
   String get frostedSheetPreviewOpenAction => 'プレビューパネルを開く';
@@ -3533,8 +3531,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get guideShortNameAdviceTitle => '授業略称の提案';
 
   @override
-  String get guideShortNameAdviceSubtitle =>
-      'スーパーアイランドは授業略称の表示に対応，略称は自動生成されず、授業編集で手動入力が必要，3文字以内を推奨，表示がより安定します';
+  String get guideShortNameAdviceSubtitle => '略称は授業編集で手動入力します。3 文字以内を推奨します';
 
   @override
   String get guideShortNameRecommended => '推奨例';
@@ -3789,7 +3786,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveTestingLocalLogsSubtitle =>
-      'ワンクリックでログファイルをエクスポートし、システム共有で開発者に送信，クリア後に再収集も可能';
+      'ワンタップでログを書き出して開発者に共有できます。消して収集し直すこともできます';
 
   @override
   String get liveTestingClearLogsAction => 'ログをクリア';
@@ -3898,7 +3895,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get homeWidgetTodayCourseSubtitle =>
-      '2×2、2×4、4×4の3サイズに対応，ウィジェットをタップでホームを開き、授業開始/終了時に自動更新';
+      '2×2 / 2×4 / 4×4 の 3 サイズに対応。タップでホームを開き、授業状態は自動更新されます';
 
   @override
   String get homeWidgetQuickAddTitle => 'ホームにクイック追加';
@@ -4099,7 +4096,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get pageTransitionSpeedSubtitle =>
-      'サブページのスライドアニメーションの速さを調整します，数値が大きいほど速く、小さいほど遅くなります，Android のシステム「遷移アニメーションのスケール」と掛け合わされます';
+      '数値が大きいほど速くなります。システムのアニメーション スケール設定も影響します';
 
   @override
   String pageTransitionSpeedDurationHint(int milliseconds) {
@@ -4342,15 +4339,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aboutUpdateNowAndroidSubtitle =>
-      '通常使用は一度「今すぐダウンロード」をタップするだけ，ダウンロード遅い、失敗、回線変更時は下の高度なオプションへ';
+      'ダウンロードが遅い/失敗する場合は、下の詳細オプションでミラーを切り替えてください';
 
   @override
   String get aboutUpdateNowOtherSubtitle =>
       '現在のプラットフォームはダウンロードページを直接開き、アプリ内ではインストールしない';
 
   @override
-  String get aboutMirrorDownloadHint =>
-      '現在国内ダウンロードを優先，ほとんどの国内ネットワークでは「今すぐダウンロード」をタップするだけ';
+  String get aboutMirrorDownloadHint => '通常は国内ミラーを使用します。そのままダウンロードしてください';
 
   @override
   String get aboutOriginalDownloadHint =>
@@ -4367,7 +4363,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aboutDownloadMethodSubtitle =>
-      'デフォルトで国内ダウンロードを推奨，GitHubに安定アクセスできる場合のみ国際ソースに切替';
+      '通常は国内ミラーを推奨。GitHub に安定して接続できる場合は国際ソースに切り替えられます';
 
   @override
   String get aboutDownloadMethodMirror => '国内ダウンロード';
@@ -4482,7 +4478,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aboutRecordDiagnosticsSubtitle =>
-      'オンにするとローカルで重要ログを継続記録，「表示されるべきものが表示されない」問題のトラブルシュート専用';
+      'オンにするとアプリログをローカルに記録し、スーパー島のログは別途表示されます';
 
   @override
   String get aboutExportDiagnosticsAction => 'アプリログをエクスポート';
@@ -4822,7 +4818,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get warehouseMissingSchoolSubtitle =>
-      'フィードバックページでIssueを提出するだけ，学校名、教務システムURL、ログイン後の時間割ページリンクまたはスクリーンショットを一緒に書くと、適応補充がよりスムーズ';
+      '学校名・教務システムの URL・時間割のスクリーンショットを添えて、フィードバックページから Issue を登録してください';
 
   @override
   String get laterAction => '後で';
@@ -4902,7 +4898,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get customDebugIntroSubtitle =>
-      '各レコードにカスタムURLとスクリプト全体を保存可能，保存後、次回は「デバッグ開始」をタップするだけで再利用可能，特定の学校詳細ページを探す必要なし';
+      '学校ごとの URL とスクリプトを保存し、次からワンタップで再利用できます';
 
   @override
   String get addDebugRecordAction => 'デバッグレコード追加';
@@ -4960,7 +4956,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get debugRecordFormulaSubtitle =>
-      '同じ学校を繰り返しデバッグする場合や、異なる学校に複数のスクリプトセットを保持するのに最適，保存後もいつでも変更可能';
+      '同じ学校の反復デバッグや複数スクリプトの保存に便利です。保存すると保持され続けます';
 
   @override
   String get debugRecordNameLabel => 'レコード名';
@@ -5439,8 +5435,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get addCourseSheetTitle => '追加';
 
   @override
-  String get addCourseSheetSubtitle =>
-      '空白の時間割エリアはタップに反応しません，臨時授業、学期通しの繰り返し授業、または単回スケジュールの挿入を選択してください';
+  String get addCourseSheetSubtitle => '時間割の空きコマはタップできません。ここから授業や予定を追加してください';
 
   @override
   String courseWeekdaySectionSummary(
@@ -9657,7 +9652,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get locationTimeMatchSubtitle =>
-      'Match time schemes by location keywords. Rematching updates clocks for matched courses only; unmatched courses stay unchanged.';
+      '場所キーワードで時間テンプレートを照合し、一致した授業の時限のみ更新します';
 
   @override
   String get locationTimeMatchWeekAxisNote =>
@@ -9890,7 +9885,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get scheduleDateRuleSectionSubtitle =>
-      'On the start date, apply the selected scheme as the default for all timetables. Max 2 non-overlapping rules; location-based schedule takes priority.';
+      '開始日から選択したテンプレートを既定の作息として自動適用します。最大 2 件、場所マッチを優先';
 
   @override
   String get scheduleDateRuleAdd => 'Add date rule';
