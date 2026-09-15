@@ -7,17 +7,18 @@ name: Sync release channel to GitCode
 # 停留在「预发布」，国内渠道的用户（更新源选 GitCode 时读的是 GitCode 的 releases
 # 接口）就收不到正式版提示。
 #
-# 这里订阅 GitHub 的 release 事件，把同一个 tag 的渠道标志同步到 GitCode：
+# 这里订阅 GitHub 的 release 事件（含撤回与删除），让 GitCode 跟着变：
 # 以后只在 GitHub 改一处，两边自动一致。
 #
 # GitCode 的 release 对象没有 id 字段，不能走标准 Gitee/Gitea 的
-# PATCH /releases/{id}；与 nvdacn/sync_to_gitcode 一致，按 tag 直接 PATCH
+# PATCH /releases/{id}；与 nvdacn/sync_to_gitcode 一致，按 tag 直接操作
 # /releases/{tag}，渠道用 release_status: pre | latest 表示。
 
 on:
   release:
     # released：预发布 → 正式；prereleased：正式 → 预发布；edited：改勾选或改正文
-    types: [published, released, prereleased, edited]
+    # unpublished：转成草稿（= 从用户眼前撤回）；deleted：release 被删掉
+    types: [published, released, prereleased, edited, unpublished, deleted]
   workflow_dispatch:
     inputs:
       tag_name:
@@ -25,10 +26,16 @@ on:
         required: false
         type: string
       prerelease:
-        description: 'Mark as prerelease on GitCode'
+        description: 'Mark as prerelease on GitCode (sync mode only)'
         required: false
         type: boolean
         default: false
+      mode:
+        description: 'sync = 同步渠道标志；delete = 删除 GitCode 上的该 release'
+        required: false
+        type: choice
+        default: sync
+        options: [sync, delete]
 
 concurrency:
   group: gitcode-release-channel-${{ github.event.release.tag_name || inputs.tag_name }}
@@ -37,7 +44,7 @@ concurrency:
 
 jobs:
   sync-channel:
-    name: Sync prerelease flag to GitCode
+    name: Sync release channel to GitCode
     # 与 android-build.yml 的 GitCode 任务同款门禁：没配 GitCode 就整条跳过，
     # Fork 仓库未配置也不会失败。
     if: ${{ vars.GITCODE_USERNAME }}
@@ -47,20 +54,33 @@ jobs:
       - name: Resolve target state
         id: state
         env:
+          EVENT_ACTION: ${{ github.event.action }}
           EVENT_TAG: ${{ github.event.release.tag_name }}
           EVENT_PRERELEASE: ${{ github.event.release.prerelease }}
           INPUT_TAG: ${{ inputs.tag_name }}
           INPUT_PRERELEASE: ${{ inputs.prerelease }}
+          INPUT_MODE: ${{ inputs.mode }}
         run: |
           set -euo pipefail
           if [ -n "$EVENT_TAG" ]; then
             TAG="$EVENT_TAG"
-            case "$EVENT_PRERELEASE" in
-              true) PRERELEASE=true ;;
-              *) PRERELEASE=false ;;
+            case "$EVENT_ACTION" in
+              deleted) MODE=delete ;;
+              # GitHub 的「取消发布」= 转成草稿。GitCode 没有草稿概念：
+              # 这里降级成预发布（可逆，重新发布时能自动回到 latest），
+              # 而不是直接删掉 —— 删除会连带丢掉 APK 附件，重新发布时无法自愈。
+              unpublished) MODE=sync; PRERELEASE=true ;;
+              *)
+                MODE=sync
+                case "$EVENT_PRERELEASE" in
+                  true) PRERELEASE=true ;;
+                  *) PRERELEASE=false ;;
+                esac
+                ;;
             esac
           elif [ -n "$INPUT_TAG" ]; then
             TAG="$INPUT_TAG"
+            MODE="$INPUT_MODE"
             case "$INPUT_PRERELEASE" in
               true) PRERELEASE=true ;;
               *) PRERELEASE=false ;;
@@ -69,11 +89,14 @@ jobs:
             echo "::error::没拿到 tag —— 既不是 release 事件，也没填 tag_name"
             exit 1
           fi
+          [ "$MODE" = "delete" ] || PRERELEASE="${PRERELEASE:-false}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
-          echo "目标：$TAG（prerelease=$PRERELEASE）"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "prerelease=${PRERELEASE:-false}" >> "$GITHUB_OUTPUT"
+          echo "目标：$TAG（mode=$MODE，prerelease=${PRERELEASE:-false}）"
 
-      - name: Sync to GitCode
+      - name: Sync channel flag to GitCode
+        if: steps.state.outputs.mode == 'sync'
         env:
           GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
           GITCODE_REPOSITORY: ${{ vars.GITCODE_REPOSITORY || github.repository }}
@@ -117,3 +140,27 @@ jobs:
             exit 1
           fi
           echo "✅ GitCode 渠道已同步为 ${STATUS}"
+
+      - name: Delete release on GitCode
+        if: steps.state.outputs.mode == 'delete'
+        env:
+          GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
+          GITCODE_REPOSITORY: ${{ vars.GITCODE_REPOSITORY || github.repository }}
+          TAG: ${{ steps.state.outputs.tag }}
+        run: |
+          set -euo pipefail
+          BASE="https://api.gitcode.com/api/v5/repos/${GITCODE_REPOSITORY}"
+          RESP_FILE="$(mktemp)"
+          CODE=$(curl -L -sS -o "$RESP_FILE" -w "%{http_code}" -X DELETE \
+            -H "PRIVATE-TOKEN: ${GITCODE_TOKEN}" -H "Accept: application/json" \
+            "${BASE}/releases/${TAG}")
+          echo "DELETE ${TAG}（HTTP ${CODE}）"
+          case "$CODE" in
+            200|204) echo "✅ 已删除 GitCode 上的 ${TAG}" ;;
+            404) echo "GitCode 上本来就没有 ${TAG}—— 无需删除" ;;
+            *)
+              echo "::error::删除 GitCode 上的 ${TAG} 失败（HTTP ${CODE}）—— 请手动到 GitCode 处理"
+              cat "$RESP_FILE"
+              exit 1
+              ;;
+          esac

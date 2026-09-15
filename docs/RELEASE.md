@@ -665,6 +665,16 @@ GitHub Releases 页面
 
 想手动补一次时，在该工作流的 Actions 页面点 `Run workflow`，填 tag 与是否预发布即可。
 
+**撤回与删除**（同一个工作流，监听 `unpublished` / `deleted`）：
+
+| GitHub 上的动作 | GitCode 上发生什么 |
+|---|---|
+| 取消发布（转成草稿） | 降级为 `pre`。GitCode 没有草稿概念，这里不删 —— 删除会连带丢掉 APK 附件，重新发布时无法自愈；降级成预发布是可逆的，重新发布时会自动回到 `latest`。 |
+| 删除 release | 删除 GitCode 上同 tag 的 release；404 视为"本来就没有"，其他失败码会明确报红，请手动处理。 |
+
+需要**强制删除**某条（比如上面"取消发布"也想彻底下线）时，在 Actions 页面手动跑该工作流，
+`mode` 选 `delete`、填 tag 即可。
+
 ### 新正式基线模板
 
 ```bash
