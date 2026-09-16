@@ -27,8 +27,10 @@
             android:textStyle="bold" />
 
         <!-- 课程色竖条与课程名同排：默认隐藏，开启「课程颜色」后由 provider
-             上色亮出。用 LinearLayout 而非裸 View/ImageButton：部分 ROM 的
-             RemoteViews 白名单不含 View/Space，会被静默拒载。 -->
+             上色亮出。用 TextView 承载而不是纯色块：颜色走文字色通道（背景色
+             在部分 ROM 的重渲染里会被静默丢掉，见 applyAccentBar 注释），字符
+             是整块字符「███」，由 3dp 宽度居中裁成实心竖条；不用裸
+             View/Space/ImageButton（部分 ROM 的 RemoteViews 白名单不含它们）。 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -36,12 +38,18 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <LinearLayout
+            <TextView
                 android:id="@+id/widget_course_name_accent"
                 android:layout_width="3dp"
                 android:layout_height="17dp"
                 android:layout_marginEnd="6dp"
                 android:background="@android:color/transparent"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="&#9608;&#9608;&#9608;"
+                android:textColor="@android:color/transparent"
+                android:textSize="24sp"
                 android:visibility="gone" />
 
             <TextView

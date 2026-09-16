@@ -948,7 +948,23 @@ object TodayWidgetSupport {
 
     /**
      * 上色或隐藏课程色条：无课程色 / 档位关闭时隐藏，避免残留一根灰条。
-     * [barId] 指向的必须是白名单 LinearLayout（部分 ROM 拒载裸 View）。
+     *
+     * [barId] 指向的必须是 TextView（六个今日卡型的色条视图都是 TextView，里面是
+     * 3dp 宽居中裁出的整块字符「███」）。颜色同时下发**文字色**与**背景色**两条
+     * 通道：
+     * - 文字色：与课程名同一条通道，实测在 MIUI/HyperOS 上每次重渲染都会刷新；
+     * - 背景色：多数 ROM 上的常规做法，但在 MIUI/HyperOS 上实测**日常的原地重渲染里
+     *   不生效**——色条会一直停在上一次渲染的颜色上（用户看到的「字是绿的、色条是红的」
+     *   就是这么来的：课程名的字色刷新了，色条没跟着刷新；只有视图重新 inflate 时，
+     *   色条才会再拿到一次当时的新颜色）。
+     *
+     * 两条通道发的是同一个颜色，谁生效都不冲突：文字色生效就是实心字符竖条，背景色
+     * 生效就是同色实心块。写成 LinearLayout + 只发背景色会在部分 ROM 上退化成
+     * 「永远不刷新的旧颜色」。
+     *
+     * 布局里色条字符的 `android:textColor` 是 transparent：万一某个 ROM 只认背景色
+     * 通道，条就退化成一块纯色（而不是黑字压在色块上）；两个通道都失效时条不可见，
+     * 不会留下错色。
      */
     internal fun applyAccentBar(
         views: RemoteViews,
@@ -960,6 +976,7 @@ object TodayWidgetSupport {
             return
         }
         views.setViewVisibility(barId, View.VISIBLE)
+        views.setTextColor(barId, color)
         views.setInt(barId, "setBackgroundColor", color)
     }
 

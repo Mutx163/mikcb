@@ -38,15 +38,23 @@
                 android:textStyle="bold" />
 
             <!-- 课程色竖条：默认隐藏，开启「课程色」后由 provider 上色亮出。
-                 用 LinearLayout 而非裸 View/ImageButton：部分 ROM 的 RemoteViews
-                 白名单不含 View/Space，会被静默拒载。 -->
-            <LinearLayout
+                 它是 TextView 而不是纯色块，颜色走文字色而不是背景色——见
+                 TodayWidgetSupport.applyAccentBar 的注释（背景色在部分 ROM 上不刷新）。
+                 字符用整块字符「███」由 3dp 宽度居中裁成实心竖条；仍是白名单类，
+                 不用裸 View/Space/ImageButton（部分 ROM 会静默拒载）。 -->
+            <TextView
                 android:id="@+id/widget_strip_course_accent"
                 android:layout_width="3dp"
                 android:layout_height="14dp"
                 android:layout_gravity="center_vertical"
                 android:layout_marginStart="10dp"
                 android:background="@android:color/transparent"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="&#9608;&#9608;&#9608;"
+                android:textColor="@android:color/transparent"
+                android:textSize="20sp"
                 android:visibility="gone" />
 
             <TextView

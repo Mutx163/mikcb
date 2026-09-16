@@ -92,13 +92,19 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
             android:orientation="horizontal">
-            <LinearLayout
+            <TextView
                 android:id="@+id/widget_large_row_1_accent"
                 android:layout_width="3dp"
                 android:layout_height="20dp"
                 android:layout_gravity="center_vertical"
                 android:layout_marginEnd="5dp"
                 android:background="@android:color/transparent"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="&#9608;&#9608;&#9608;"
+                android:textColor="@android:color/transparent"
+                android:textSize="28sp"
                 android:visibility="gone" />
             <LinearLayout
                 android:layout_width="0dp"
@@ -130,13 +136,19 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
             android:orientation="horizontal">
-            <LinearLayout
+            <TextView
                 android:id="@+id/widget_large_row_2_accent"
                 android:layout_width="3dp"
                 android:layout_height="20dp"
                 android:layout_gravity="center_vertical"
                 android:layout_marginEnd="5dp"
                 android:background="@android:color/transparent"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="&#9608;&#9608;&#9608;"
+                android:textColor="@android:color/transparent"
+                android:textSize="28sp"
                 android:visibility="gone" />
             <LinearLayout
                 android:layout_width="0dp"
@@ -168,13 +180,19 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
             android:orientation="horizontal">
-            <LinearLayout
+            <TextView
                 android:id="@+id/widget_large_row_3_accent"
                 android:layout_width="3dp"
                 android:layout_height="20dp"
                 android:layout_gravity="center_vertical"
                 android:layout_marginEnd="5dp"
                 android:background="@android:color/transparent"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="&#9608;&#9608;&#9608;"
+                android:textColor="@android:color/transparent"
+                android:textSize="28sp"
                 android:visibility="gone" />
             <LinearLayout
                 android:layout_width="0dp"
@@ -206,13 +224,19 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
             android:orientation="horizontal">
-            <LinearLayout
+            <TextView
                 android:id="@+id/widget_large_row_4_accent"
                 android:layout_width="3dp"
                 android:layout_height="20dp"
                 android:layout_gravity="center_vertical"
                 android:layout_marginEnd="5dp"
                 android:background="@android:color/transparent"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="&#9608;&#9608;&#9608;"
+                android:textColor="@android:color/transparent"
+                android:textSize="28sp"
                 android:visibility="gone" />
             <LinearLayout
                 android:layout_width="0dp"
@@ -243,13 +267,19 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
-            <LinearLayout
+            <TextView
                 android:id="@+id/widget_large_row_5_accent"
                 android:layout_width="3dp"
                 android:layout_height="20dp"
                 android:layout_gravity="center_vertical"
                 android:layout_marginEnd="5dp"
                 android:background="@android:color/transparent"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="&#9608;&#9608;&#9608;"
+                android:textColor="@android:color/transparent"
+                android:textSize="28sp"
                 android:visibility="gone" />
             <LinearLayout
                 android:layout_width="0dp"
