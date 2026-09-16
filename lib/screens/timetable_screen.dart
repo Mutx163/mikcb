@@ -222,7 +222,18 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///（allowImplicitScrolling）时不在别的周页上误显标记。
   int? _emptySlotMarkerWeek;
   int? _emptySlotMarkerDayOfWeek;
+  /// 虚线框的起始节次（含）。
   int? _emptySlotMarkerSection;
+  /// 虚线框的结束节次（含）。与起始相等时框只占一节；出现虚线框后拖上下
+  /// 边缘可把它拉长到多节（见 [_resizeEmptySlotMarker]）。
+  int? _emptySlotMarkerEndSection;
+  /// 一次缩放拖拽的基准首/末节次。基准必须锚在**按下那一刻**的框上：框随
+  /// 手指每变一次，若用它自己当基准，节数换算会漂移（越拖越快/回不去）。
+  int? _emptySlotResizeBaseStart;
+  int? _emptySlotResizeBaseEnd;
+  bool _emptySlotResizeIsTopEdge = false;
+  /// 本次缩放拖拽的累计纵向位移（px），除以节高取整即节数增量。
+  double _emptySlotResizeAccum = 0;
   final GlobalKey _timetableSurfaceKey = GlobalKey();
 
   /// Anchor for the top-right "more" menu popup (positioned below this key).
@@ -2778,6 +2789,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       provider,
                       dayIndex: dayIndex,
                       dayCount: visibleDays.length,
+                      occupiedSections: occupiedSections,
                     ),
                   );
                 }).toList(),
@@ -6284,6 +6296,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     TimetableProvider provider, {
     required int dayIndex,
     required int dayCount,
+    // 本列（星期几）有课的节次全集，虚线框拉长时用它挡住跨越已有课程。
+    required Set<(int, int)> occupiedSections,
   }) {
     final courseCards = <Widget>[];
     final gridLines = <Widget>[];
@@ -6302,12 +6316,15 @@ class _TimetableScreenState extends State<TimetableScreen>
         section,
       );
 
+      // 虚线框只在它的**起始格**渲染一次，高度 = 跨度 × 节高；其余被框
+      // 覆盖的节次仍是透明占位，这样拉长后不会出现多层叠框。
+      final markerSpan = _emptySlotMarkerSpanAt(week, dayOfWeek, section);
       gridLines.add(
         Positioned(
           top: sectionIndex * sectionHeight,
           left: 0,
           right: 0,
-          height: sectionHeight,
+          height: sectionHeight * (markerSpan > 0 ? markerSpan : 1),
           child: _buildEmptySlotCell(
             week,
             dayOfWeek,
@@ -6315,6 +6332,8 @@ class _TimetableScreenState extends State<TimetableScreen>
             sectionHeight,
             cardInset,
             settings,
+            span: markerSpan,
+            occupiedSections: occupiedSections,
           ),
         ),
       );
@@ -6441,6 +6460,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///
   /// 行为：长按空白格出现虚线加号标记；不松手拖动时标记跟手移动到
   /// 指针所在空白格（滑过课程卡时保持原格不动）；松手后标记留在原处，
+  /// 此时拖标记的上/下边缘可把它拉长到多节（见 [_resizeEmptySlotMarker]），
   /// 点虚线框进表单、点其他空白格取消选择。功能关闭时原样返回 child。
   Widget _buildEmptySlotGestureArea({
     required TimetableSettings settings,
@@ -6505,30 +6525,73 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// [_buildEmptySlotGestureArea]）。
   ///
   /// 功能关闭时保持原空占位（无视觉、事件穿透，行为与旧版完全一致）；
-  /// 开启且被标记时显示虚线加号态，点虚线框打开预填了周次/星期/节次
-  /// 的添加课程表单。课程卡位于 Stack 更上层，命中优先，不受影响。
+  /// 开启且被标记时显示虚线加号态，点虚线框打开预填了周次/星期/节次的
+  /// 添加课程表单，拖虚线框上下边缘可把框拉长到多节。课程卡位于 Stack
+  /// 更上层，命中优先，不受影响。
+  ///
+  /// [span] 由调用方按 [_emptySlotMarkerSpanAt] 传入：0 表示本格不是虚线
+  /// 框的起始格（不渲染）。
   Widget _buildEmptySlotCell(
     int week,
     int dayOfWeek,
     int section,
     double sectionHeight,
     double cardInset,
-    TimetableSettings settings,
-  ) {
-    if (!settings.longPressEmptySlotToAddCourseEnabled) {
+    TimetableSettings settings, {
+    required int span,
+    required Set<(int, int)> occupiedSections,
+  }) {
+    if (!settings.longPressEmptySlotToAddCourseEnabled || span <= 0) {
       return const SizedBox.expand();
     }
-    final isMarkerActive =
-        _emptySlotMarkerWeek == week &&
-        _emptySlotMarkerDayOfWeek == dayOfWeek &&
-        _emptySlotMarkerSection == section;
-    return isMarkerActive
-        ? _EmptySlotAddMarker(
-            sectionHeight: sectionHeight,
-            inset: cardInset + 2,
-            onTap: () => _openAddCourseFromEmptySlot(week, dayOfWeek, section),
-          )
-        : const SizedBox.expand();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // 虚线框墨色与时间轴数字同一套规则（用户自定义色 + 壁纸明暗自动黑白
+    // 反转），避免硬编码白/黑在壁纸或深浅色反差下看不见。
+    final markerInk = homePageOverWallpaperInk(
+      configuredHex: isDark
+          ? settings.timeAxisFontColorDark
+          : settings.timeAxisFontColorLight,
+      defaultHex: isDark
+          ? TimetableSettings.defaultTimeAxisFontColorDark
+          : TimetableSettings.defaultTimeAxisFontColorLight,
+      themeFallback: isDark ? Colors.white : Colors.grey.shade800,
+      hasBackdrop: hasHomePageBackdrop(settings),
+      wallpaperLuminance: _wallpaperBodyLuminance ?? _wallpaperTopLuminance,
+    );
+    return _EmptySlotAddMarker(
+      sectionHeight: sectionHeight,
+      span: span,
+      inset: cardInset + 2,
+      ink: markerInk,
+      onTap: () => _openAddCourseFromEmptySlot(
+        week,
+        dayOfWeek,
+        section,
+        section + span - 1,
+      ),
+      onResizeStart: _startEmptySlotResize,
+      onResizeUpdate: (deltaDy) => _resizeEmptySlotMarker(
+        deltaDy: deltaDy,
+        sectionHeight: sectionHeight,
+        dayOfWeek: dayOfWeek,
+        sectionCount: settings.sectionCount,
+        occupiedSections: occupiedSections,
+        enableHaptics: settings.enableHaptics,
+      ),
+      onResizeEnd: _endEmptySlotResize,
+    );
+  }
+
+  /// 虚线框在当前格上覆盖的节数（起始格返回跨度，其余返回 0）。
+  int _emptySlotMarkerSpanAt(int week, int dayOfWeek, int section) {
+    if (_emptySlotMarkerWeek != week ||
+        _emptySlotMarkerDayOfWeek != dayOfWeek ||
+        _emptySlotMarkerSection != section) {
+      return 0;
+    }
+    final start = _emptySlotMarkerSection!;
+    final end = _emptySlotMarkerEndSection ?? start;
+    return end >= start ? end - start + 1 : 1;
   }
 
   void _showEmptySlotMarker(int week, int dayOfWeek, int section) {
@@ -6536,6 +6599,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       _emptySlotMarkerWeek = week;
       _emptySlotMarkerDayOfWeek = dayOfWeek;
       _emptySlotMarkerSection = section;
+      _emptySlotMarkerEndSection = section;
+      _endEmptySlotResize();
     });
   }
 
@@ -6549,15 +6614,86 @@ class _TimetableScreenState extends State<TimetableScreen>
       _emptySlotMarkerWeek = null;
       _emptySlotMarkerDayOfWeek = null;
       _emptySlotMarkerSection = null;
+      _emptySlotMarkerEndSection = null;
+      _endEmptySlotResize();
     });
   }
 
-  /// 从虚线加号态进入添加课程表单：位置三要素全部预填，落库复用
-  /// [TimetableProvider.addCourse] 现有链路。
+  /// 按下虚线框上/下边缘（[isTopEdge]）时锚定本次缩放的基准框。
+  void _startEmptySlotResize(bool isTopEdge) {
+    final start = _emptySlotMarkerSection;
+    if (start == null) {
+      return;
+    }
+    _emptySlotResizeIsTopEdge = isTopEdge;
+    _emptySlotResizeBaseStart = start;
+    _emptySlotResizeBaseEnd = _emptySlotMarkerEndSection ?? start;
+    _emptySlotResizeAccum = 0;
+  }
+
+  void _endEmptySlotResize() {
+    _emptySlotResizeBaseStart = null;
+    _emptySlotResizeBaseEnd = null;
+    _emptySlotResizeAccum = 0;
+  }
+
+  /// 拖上/下边缘时按手指位移把虚线框拉长或缩短。
+  ///
+  /// 位移换算成节数后还要过两道闸：① 不越出第 1 节 ~ 第 [sectionCount] 节，
+  /// 且首尾不得交叉（框至少占一节）；② 新纳入的节次不能有课（[occupiedSections]），
+  /// 遇到第一节有课的格子就停在它前面——收缩方向永远放开。
+  void _resizeEmptySlotMarker({
+    required double deltaDy,
+    required double sectionHeight,
+    required int dayOfWeek,
+    required int sectionCount,
+    required Set<(int, int)> occupiedSections,
+    required bool enableHaptics,
+  }) {
+    final baseStart = _emptySlotResizeBaseStart;
+    final baseEnd = _emptySlotResizeBaseEnd;
+    if (baseStart == null || baseEnd == null) {
+      return;
+    }
+    _emptySlotResizeAccum += deltaDy;
+    final delta = (_emptySlotResizeAccum / sectionHeight).round();
+    var newStart = baseStart;
+    var newEnd = baseEnd;
+    if (_emptySlotResizeIsTopEdge) {
+      newStart = (baseStart + delta).clamp(1, baseEnd);
+      for (var s = baseStart - 1; s >= newStart; s--) {
+        if (occupiedSections.contains((dayOfWeek, s))) {
+          newStart = s + 1;
+          break;
+        }
+      }
+    } else {
+      newEnd = (baseEnd + delta).clamp(baseStart, sectionCount);
+      for (var s = baseEnd + 1; s <= newEnd; s++) {
+        if (occupiedSections.contains((dayOfWeek, s))) {
+          newEnd = s - 1;
+          break;
+        }
+      }
+    }
+    if (newStart == _emptySlotMarkerSection &&
+        newEnd == _emptySlotMarkerEndSection) {
+      return;
+    }
+    setState(() {
+      _emptySlotMarkerSection = newStart;
+      _emptySlotMarkerEndSection = newEnd;
+    });
+    if (enableHaptics) HapticFeedback.selectionClick();
+  }
+
+  /// 从虚线加号态进入添加课程表单：位置三要素全部预填（节次范围 = 虚线框
+  /// 覆盖的范围），落库复用 [TimetableProvider.addCourse] 现有链路。
   Future<void> _openAddCourseFromEmptySlot(
     int week,
     int dayOfWeek,
-    int section,
+    int startSection,
+    int endSection,
   ) async {
     _clearEmptySlotMarker();
     await Navigator.of(context).push<void>(
@@ -6566,7 +6702,8 @@ class _TimetableScreenState extends State<TimetableScreen>
         builder: (_) => AddCourseScreen(
           initialWeek: week,
           initialDayOfWeek: dayOfWeek,
-          initialStartSection: section,
+          initialStartSection: startSection,
+          initialEndSection: endSection,
         ),
       ),
     );
@@ -9572,25 +9709,40 @@ class _HomePullVerticalDragDetectorState
 ///
 /// 视觉对齐参考截图：圆角虚线框 + 居中加号，尺寸跟随课程卡内缩与节高，
 /// 整格可点，点击即打开预填位置的添加课程表单。
+///
+/// 框覆盖 [span] 节（高 = [span] × [sectionHeight]）：上下各有一条细横杠
+/// 提示可拖，纵拖即改首尾节次（回调给外层，外层还要挡住有课的格子）。
 class _EmptySlotAddMarker extends StatelessWidget {
   const _EmptySlotAddMarker({
     required this.sectionHeight,
+    required this.span,
     required this.inset,
+    required this.ink,
     required this.onTap,
+    required this.onResizeStart,
+    required this.onResizeUpdate,
+    required this.onResizeEnd,
   });
 
   final double sectionHeight;
+  final int span;
   final double inset;
+  /// 已按壁纸/深浅色适配好的墨色（外层用 homePageOverWallpaperInk 求得）。
+  final Color ink;
   final VoidCallback onTap;
+  /// 参数为 true 表示拖的是上边缘，false 为下边缘。
+  final ValueChanged<bool> onResizeStart;
+  /// 参数为每次纵拖的纵向增量（px）。
+  final ValueChanged<double> onResizeUpdate;
+  final VoidCallback onResizeEnd;
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    // 深浅色下都用低透明度中性色，避免和各色壁纸/课程卡抢视觉。
-    final markerColor = (brightness == Brightness.dark
-            ? Colors.white
-            : Colors.black)
-        .withValues(alpha: 0.45);
+    // 虚线与加号走「弱化墨色」（与时间轴副文本同款），填充再淡一档。
+    final markerColor = homePageOverWallpaperMutedInk(ink);
+    final totalHeight = sectionHeight * span;
+    // 单节框很矮时按 1/3 高收窄把手，避免两条把手吃掉整个点击区。
+    final handleHeight = (totalHeight / 3).clamp(8.0, 16.0);
     return GestureDetector(
       // 供测试定位「两步式添加」的虚线标记（类是私有的，测不了类型）。
       key: const ValueKey('empty-slot-add-marker'),
@@ -9603,11 +9755,75 @@ class _EmptySlotAddMarker extends StatelessWidget {
             color: markerColor,
             fill: markerColor.withValues(alpha: 0.08),
           ),
-          child: Center(
-            child: Icon(
-              Icons.add_rounded,
-              size: (sectionHeight * 0.3).clamp(16.0, 26.0),
-              color: markerColor,
+          child: Stack(
+            children: [
+              Center(
+                child: Icon(
+                  Icons.add_rounded,
+                  size: (sectionHeight * 0.3).clamp(16.0, 26.0),
+                  color: markerColor,
+                ),
+              ),
+              _buildResizeHandle(
+                key: const ValueKey('empty-slot-add-marker-top-handle'),
+                isTopEdge: true,
+                height: handleHeight,
+                color: markerColor,
+              ),
+              _buildResizeHandle(
+                key: const ValueKey('empty-slot-add-marker-bottom-handle'),
+                isTopEdge: false,
+                height: handleHeight,
+                color: markerColor,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 上/下边缘的拖拽把手：横杠只作视觉提示，整条区域都收纵拖。
+  ///
+  /// 把手自己也挂 onTap：纵拖识别器在「没拖动就抬手」时会把自己判负，但
+  /// 手势竞技场按命中顺序先问内层，补一个 onTap 才能保住「点把手也能进
+  /// 表单」。
+  Widget _buildResizeHandle({
+    required Key key,
+    required bool isTopEdge,
+    required double height,
+    required Color color,
+  }) {
+    return Positioned(
+      key: key,
+      top: isTopEdge ? 0 : null,
+      bottom: isTopEdge ? null : 0,
+      left: 0,
+      right: 0,
+      height: height,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        onVerticalDragStart: (_) => onResizeStart(isTopEdge),
+        onVerticalDragUpdate: (details) => onResizeUpdate(details.delta.dy),
+        onVerticalDragEnd: (_) => onResizeEnd(),
+        onVerticalDragCancel: onResizeEnd,
+        child: Align(
+          alignment: isTopEdge
+              ? Alignment.topCenter
+              : Alignment.bottomCenter,
+          child: Padding(
+            padding: EdgeInsets.only(
+              top: isTopEdge ? 4 : 0,
+              bottom: isTopEdge ? 0 : 4,
+            ),
+            child: Container(
+              width: 26,
+              height: 3,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.75),
+                borderRadius: BorderRadius.circular(1.5),
+              ),
             ),
           ),
         ),

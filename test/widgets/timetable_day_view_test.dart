@@ -328,6 +328,142 @@ void main() {
     expect(find.byKey(markerKey), findsNothing);
   });
 
+  testWidgets('empty-slot marker stretches to cover more sections', (
+    tester,
+  ) async {
+    final provider = await _createProviderWithTodayCourse(tester);
+    final today = DateTime.now();
+    final otherDay = today.weekday == 1 ? 2 : 1;
+
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          longPressEmptySlotToAddCourseEnabled: true,
+        ),
+      );
+    });
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    const markerKey = ValueKey('empty-slot-add-marker');
+    const bottomHandleKey = ValueKey('empty-slot-add-marker-bottom-handle');
+    const topHandleKey = ValueKey('empty-slot-add-marker-top-handle');
+
+    // 长按另一天（该天无课）的空白格：横坐标取那天的列头中心，
+    // 纵坐标借今天课程卡中心（同一节次行），确保命中空白格。
+    final courseCardCenter = tester.getCenter(find.text('高等数学').first);
+    final headerCenter = tester.getCenter(
+      find.byKey(ValueKey('weekday-header-1-$otherDay')),
+    );
+    await tester.longPressAt(Offset(headerCenter.dx, courseCardCenter.dy));
+    await _pumpTimetableFrame(tester);
+    expect(find.byKey(markerKey), findsOneWidget);
+
+    // 单节框高度即节高：拖下边缘往下一节，框应变成两节高。
+    final singleSectionHeight = tester.getSize(find.byKey(markerKey)).height;
+    await tester.dragFrom(
+      tester.getCenter(find.byKey(bottomHandleKey)),
+      Offset(0, singleSectionHeight),
+    );
+    await _pumpTimetableFrame(tester);
+    expect(
+      tester.getSize(find.byKey(markerKey)).height,
+      closeTo(singleSectionHeight * 2, 2),
+    );
+
+    // 再拖上边缘往下一节，框缩回一节高（收缩方向不受空格限制）。
+    await tester.dragFrom(
+      tester.getCenter(find.byKey(topHandleKey)),
+      Offset(0, singleSectionHeight),
+    );
+    await _pumpTimetableFrame(tester);
+    expect(
+      tester.getSize(find.byKey(markerKey)).height,
+      closeTo(singleSectionHeight, 2),
+    );
+
+    // 点框进添加课程表单（预填节次 = 框住的范围）。
+    await tester.tap(find.byKey(markerKey));
+    await tester.pumpAndSettle();
+    expect(find.byType(AddCourseScreen), findsOneWidget);
+  });
+
+  testWidgets('empty-slot marker stops before an occupied section', (
+    tester,
+  ) async {
+    final provider = await _createProviderWithTodayCourse(tester);
+    final today = DateTime.now();
+    final otherDay = today.weekday == 1 ? 2 : 1;
+
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          longPressEmptySlotToAddCourseEnabled: true,
+        ),
+      );
+      // 同一天第 3-4 节先占住，虚线框向下拉长时必须停在它前面。
+      await provider.addCourse(
+        Course(
+          id: 'blocker-course',
+          name: '占位课',
+          teacher: '李老师',
+          location: 'B202',
+          dayOfWeek: otherDay,
+          startSection: 3,
+          endSection: 4,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      );
+    });
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    const markerKey = ValueKey('empty-slot-add-marker');
+    const bottomHandleKey = ValueKey('empty-slot-add-marker-bottom-handle');
+    final courseCardCenter = tester.getCenter(find.text('高等数学').first);
+    final headerCenter = tester.getCenter(
+      find.byKey(ValueKey('weekday-header-1-$otherDay')),
+    );
+    await tester.longPressAt(Offset(headerCenter.dx, courseCardCenter.dy));
+    await _pumpTimetableFrame(tester);
+    expect(find.byKey(markerKey), findsOneWidget);
+
+    final sectionHeight = tester.getSize(find.byKey(markerKey)).height;
+    // 一路往下拖三节：只吃到第 1-2 节，不得吞掉占位课所在的第 3 节。
+    await tester.dragFrom(
+      tester.getCenter(find.byKey(bottomHandleKey)),
+      Offset(0, sectionHeight * 3),
+    );
+    await _pumpTimetableFrame(tester);
+    expect(
+      tester.getSize(find.byKey(markerKey)).height,
+      lessThanOrEqualTo(sectionHeight * 2 + 2),
+    );
+  });
+
   testWidgets('screen restores saved day view state on launch', (tester) async {
     final provider = await createInitializedTestProvider(tester);
     await runRealAsync(tester, () async {

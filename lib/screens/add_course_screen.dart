@@ -26,6 +26,8 @@ class AddCourseScreen extends StatefulWidget {
   final Course? initialCourse;
   final int? initialDayOfWeek;
   final int? initialStartSection;
+  /// 从课表虚线框进来时框住的末节次（含）：框拉到几节，表单就预填几节。
+  final int? initialEndSection;
   final int? initialWeek;
 
   const AddCourseScreen({
@@ -35,6 +37,7 @@ class AddCourseScreen extends StatefulWidget {
     this.initialCourse,
     this.initialDayOfWeek,
     this.initialStartSection,
+    this.initialEndSection,
     this.initialWeek,
   });
 
@@ -210,7 +213,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             id: const Uuid().v4(),
             dayOfWeek: widget.initialDayOfWeek ?? 1,
             startSection: widget.initialStartSection ?? 1,
-            endSection: (widget.initialStartSection ?? 1) + 1,
+            endSection:
+                widget.initialEndSection ?? (widget.initialStartSection ?? 1) + 1,
           ),
         ];
       }
