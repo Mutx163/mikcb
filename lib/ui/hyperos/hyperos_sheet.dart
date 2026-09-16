@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+// 诊断标记：弹层开场卡顿的归因（临时件，见 utils/frame_perf_probe.dart）。
+import '../../utils/frame_perf_probe.dart';
+
 import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
@@ -650,6 +653,9 @@ Future<T?> showHyperosSheet<T>({
   Color? barrierColor,
   HyperosSheetChrome chrome = HyperosSheetChrome.floating,
 }) async {
+  // 诊断标记：sheet / dialog 的实际展示入口（`showHomeHyperosSheet`、
+  // `showHyperosDialog` 等都收敛到这里）。临时件，见 frame_perf_probe.dart。
+  FramePerfProbe.mark('sheet:open');
   final appearance = FrostedAppearanceScope.of(context);
   final dimColor =
       barrierColor ?? HyperosBlurredHeader.modalBarrierColor(context);

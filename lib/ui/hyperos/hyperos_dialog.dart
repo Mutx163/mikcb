@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+// 诊断标记：对话框开场卡顿的归因（临时件，见 utils/frame_perf_probe.dart）。
+import '../../utils/frame_perf_probe.dart';
 import 'hyperos_blurred_header.dart';
 import 'hyperos_controls.dart';
 import 'hyperos_miuix_spec.dart';
@@ -187,6 +189,9 @@ Future<T?> showHyperosDialog<T>({
   double maxBodyHeightFactor = 0.55,
   bool useRootNavigator = false,
 }) {
+  // 诊断标记：对话框与 sheet 的区别只在这一层（本函数直接转发 showHyperosSheet，
+  // 所以两边各留一条，汇总里能看到 `dialog:open` → `sheet:open` 的顺序）。
+  FramePerfProbe.mark('dialog:open');
   return showHyperosSheet<T>(
     context: context,
     isDismissible: barrierDismissible,

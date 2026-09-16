@@ -17,6 +17,7 @@ import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
 import 'os4_glass_backdrop.dart';
 import 'os4_glass_popup_surface.dart';
+import '../../utils/frame_perf_probe.dart';
 import '../../widgets/miuix_date_picker_sheet.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart';
 
@@ -891,6 +892,7 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
     if (_menuOpen || !widget.enabled || widget.onChanged == null) return;
     final scope = _os4ScopeFor(context);
     if (scope != null) {
+      FramePerfProbe.mark('select:press');
       _holdCapture(scope);
     }
   }
@@ -904,6 +906,7 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
 
   void _closeOs4() {
     if (!_os4Open) return;
+    FramePerfProbe.mark('select:close');
     setState(() {
       _os4Open = false;
       _menuOpen = false;
@@ -938,6 +941,7 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
     final os4Scope = useSheet ? null : _os4ScopeFor(context);
 
     if (os4Scope != null) {
+      FramePerfProbe.mark('select:open');
       _holdCapture(os4Scope);
       setState(() {
         _menuOpen = true;

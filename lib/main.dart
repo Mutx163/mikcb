@@ -29,6 +29,7 @@ import 'screens/timetable_screen.dart';
 import 'screens/timetable_settings_screen.dart';
 import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
+import 'utils/frame_perf_probe.dart';
 import 'utils/home_startup_visual_primer.dart';
 import 'utils/theme_seed_accent.dart';
 import 'widgets/app_startup_splash.dart';
@@ -234,6 +235,10 @@ Future<void> main() async {
       // particularly after an Android process restart (e.g. returning from
       // the system image picker).
       WidgetsFlutterBinding.ensureInitialized();
+      // 帧耗时探针（临时诊断件，release 里是空壳）：按帧统计 UI / 渲染线程耗时，
+      // 把「动画卡的那一段」聚合成一条 `[frame-perf]` 日志并判定是哪条线程超时。
+      // 详情与删除清单见 `.agents/notes/implemented/process/2026-09-16-frame-perf-probe.md`。
+      FramePerfProbe.install();
       // 金标联盟「谷歌Android导航条适配」（Edge-to-Edge，截止 2026-10-31）：
       // 全局启用手势导航条沉浸式。Android 15+（targetSdk 35+）系统已强制
       // 生效；此处覆盖 Android 10~14 设备，使内容延伸到透明导航条下方，

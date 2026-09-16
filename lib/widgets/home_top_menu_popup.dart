@@ -7,6 +7,7 @@ import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_theme.dart';
 import 'package:university_timetable/ui/hyperos/os4_glass_popup_surface.dart';
 import 'package:university_timetable/ui/hyperos/os4_glass_backdrop.dart';
+import 'package:university_timetable/utils/frame_perf_probe.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
 
 /// 主 / 二级面板共用的尺寸约束。
@@ -118,6 +119,9 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
   void didUpdateWidget(HomeTopMenuPopup oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.show != widget.show) {
+      // 诊断标记：与 popup 出场/收起动画同一帧，用来把 `[frame-perf]` 的卡顿段
+      // 归因到菜单开合（临时件，见 frame_perf_probe.dart）。
+      FramePerfProbe.mark(widget.show ? 'homeMenu:open' : 'homeMenu:close');
       if (oldWidget.show && !widget.show) {
         // 宿主若绕过 [_close] 直接把菜单收起来（切页、路由变化等），二级状态
         // 必须跟着复位：否则下次打开时 `stacked` 还是 true、让位进度停在 1，
