@@ -68,7 +68,15 @@ void main() {
     // scheduleItems 与 deleteScheduleItem，属正当的同形依赖；分组排序逻辑
     // 已下沉纯 Dart domain（schedule_list_grouping），Provider 零改动，
     // 按测试约定同步真实值。
-    const baselineFanIn = 52;
+    // 52→54：课表分享图（截屏后一键分享 / 菜单「分享课表图片」）新增两个文件
+    // 直接依赖 Provider——widgets/timetable_export_document.dart（日视图调
+    // getCoursesForDay 拿当天课程；周视图把 provider 原样转交屏内同款的
+    // TimetableWeekPreview，那是既有的独立依赖）与 services/
+    // timetable_share_service.dart（装配该文档并走离屏光栅化后分享）。
+    // 两者都是「读当前课表状态出图」的同形依赖，属于该功能的必要读取面，
+    // Provider 本身零改动，按测试约定同步真实值。若要收回这两个名额，
+    // 需把 TimetableWeekPreview 改成接收数据快照而非 Provider，属阶段 3 解耦范围。
+    const baselineFanIn = 54;
     final importers = libDartFiles()
         .where(
           (file) =>
