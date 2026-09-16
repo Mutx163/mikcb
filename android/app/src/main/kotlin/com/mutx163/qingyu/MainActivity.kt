@@ -9,6 +9,10 @@ import android.view.SurfaceControl
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.Manifest
+// 嵌套类 `Activity.ScreenCaptureCallback` 必须靠这行才能解析：Kotlin
+// **不会**从父类（FlutterActivity → Activity）继承嵌套类的简单名，
+// 而 Java 会。漏了它就是 `Unresolved reference 'Activity'` 编译失败。
+import android.app.Activity
 import android.app.ActivityManager
 import android.app.AlarmManager
 import android.app.DownloadManager
