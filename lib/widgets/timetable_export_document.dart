@@ -92,9 +92,6 @@ class TimetableExportDocument extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 品牌条与统计导出共用（它本来就只依赖 app 名与官网地址）。
-            StatisticsExportBrandBar.header(),
-            const SizedBox(height: 10),
             Text(
               _title(l10n),
               style: HyperosTypography.sheetTitle(context),
