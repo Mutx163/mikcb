@@ -6305,6 +6305,37 @@ class _TimetableScreenState extends State<TimetableScreen>
     final date = _dateForWeekDay(settings, week, dayOfWeek);
     final isDayHoliday = date != null && provider.isHoliday(date);
 
+    // 虚线框：整列**只挂一个固定槽位**的 Positioned（top/height 随标记状
+    // 态变），不与某个节次格绑定。原因：向上拉长会改 _emptySlotMarkerSection，
+    // 若把框挂在"起始格"那个 Positioned 里，每次改起始格就等于把整棵标记子
+    // 树挪到另一个父节点——旧 Element 被卸载，它手里那个正在拖拽的手势
+    // 识别器随 dispose 注销掉路由，纵拖当场断箭（现象：向上只能拉一格，
+    // 向下改的是末节次、框不挪窝所以能一直拉）。固定槽位后无论首尾怎么变，
+    // 标记始终是同一个 Element。放在 courseCards 之前＝框永远在课程卡下面。
+    final markerSpan = _emptySlotMarkerSpanAt(week, dayOfWeek);
+    final markerStart = _emptySlotMarkerSection;
+    gridLines.add(
+      Positioned(
+        key: const ValueKey('empty-slot-add-marker-slot'),
+        top: markerSpan > 0 && markerStart != null
+            ? (markerStart - 1) * sectionHeight
+            : 0,
+        left: 0,
+        right: 0,
+        height: markerSpan > 0 ? sectionHeight * markerSpan : 0,
+        child: _buildEmptySlotCell(
+          week,
+          dayOfWeek,
+          markerStart ?? 1,
+          sectionHeight,
+          cardInset,
+          settings,
+          span: markerSpan,
+          occupiedSections: occupiedSections,
+        ),
+      ),
+    );
+
     for (
       var sectionIndex = 0;
       sectionIndex < settings.sectionCount;
@@ -6314,28 +6345,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       final startingCourses = _getDisplayItemsStartingAtSection(
         displayItems,
         section,
-      );
-
-      // 虚线框只在它的**起始格**渲染一次，高度 = 跨度 × 节高；其余被框
-      // 覆盖的节次仍是透明占位，这样拉长后不会出现多层叠框。
-      final markerSpan = _emptySlotMarkerSpanAt(week, dayOfWeek, section);
-      gridLines.add(
-        Positioned(
-          top: sectionIndex * sectionHeight,
-          left: 0,
-          right: 0,
-          height: sectionHeight * (markerSpan > 0 ? markerSpan : 1),
-          child: _buildEmptySlotCell(
-            week,
-            dayOfWeek,
-            section,
-            sectionHeight,
-            cardInset,
-            settings,
-            span: markerSpan,
-            occupiedSections: occupiedSections,
-          ),
-        ),
       );
 
       for (final item in startingCourses) {
@@ -6529,12 +6538,12 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 添加课程表单，拖虚线框上下边缘可把框拉长到多节。课程卡位于 Stack
   /// 更上层，命中优先，不受影响。
   ///
-  /// [span] 由调用方按 [_emptySlotMarkerSpanAt] 传入：0 表示本格不是虚线
-  /// 框的起始格（不渲染）。
+  /// [span] 由调用方按 [_emptySlotMarkerSpanAt] 传入：0 表示本列没有虚线
+  /// 框（返回无尺寸空盒子）。[startSection] 为框的首节次。
   Widget _buildEmptySlotCell(
     int week,
     int dayOfWeek,
-    int section,
+    int startSection,
     double sectionHeight,
     double cardInset,
     TimetableSettings settings, {
@@ -6542,7 +6551,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     required Set<(int, int)> occupiedSections,
   }) {
     if (!settings.longPressEmptySlotToAddCourseEnabled || span <= 0) {
-      return const SizedBox.expand();
+      return const SizedBox.shrink();
     }
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // 虚线框墨色与时间轴数字同一套规则（用户自定义色 + 壁纸明暗自动黑白
@@ -6566,8 +6575,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       onTap: () => _openAddCourseFromEmptySlot(
         week,
         dayOfWeek,
-        section,
-        section + span - 1,
+        startSection,
+        startSection + span - 1,
       ),
       onResizeStart: _startEmptySlotResize,
       onResizeUpdate: (deltaDy) => _resizeEmptySlotMarker(
@@ -6582,16 +6591,18 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 虚线框在当前格上覆盖的节数（起始格返回跨度，其余返回 0）。
-  int _emptySlotMarkerSpanAt(int week, int dayOfWeek, int section) {
+  /// 虚线框在本列覆盖的节数：没有标记（或标记不在这一天/这一周）返回 0。
+  int _emptySlotMarkerSpanAt(int week, int dayOfWeek) {
     if (_emptySlotMarkerWeek != week ||
-        _emptySlotMarkerDayOfWeek != dayOfWeek ||
-        _emptySlotMarkerSection != section) {
+        _emptySlotMarkerDayOfWeek != dayOfWeek) {
       return 0;
     }
-    final start = _emptySlotMarkerSection!;
+    final start = _emptySlotMarkerSection;
+    if (start == null) {
+      return 0;
+    }
     final end = _emptySlotMarkerEndSection ?? start;
-    return end >= start ? end - start + 1 : 1;
+    return end >= start ? end - start + 1 : 0;
   }
 
   void _showEmptySlotMarker(int week, int dayOfWeek, int section) {

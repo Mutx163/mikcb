@@ -393,6 +393,38 @@ void main() {
       closeTo(singleSectionHeight, 2),
     );
 
+    // 先把框一路顶到第 1 节，得到网格顶坐标——之后就能按节数精确定位。
+    await tester.dragFrom(
+      tester.getCenter(find.byKey(topHandleKey)),
+      Offset(0, -singleSectionHeight * 8),
+    );
+    await _pumpTimetableFrame(tester);
+    final gridTop = tester.getTopLeft(find.byKey(markerKey)).dy;
+
+    // 长按第 5 节（该天整天无课），再向上拉三节 → 框应变成四节高。
+    // 回归点：框曾挂在"起始格"上，向上每拉一节就换一次挂载点，正在进行的
+    // 拖拽手势随旧 Element dispose 断掉，结果向上只能拉一格。
+    // 必须用 timedDragFrom 发一连串小位移模拟真手指：一次性位移的 dragFrom
+    // 只产生一个 update 事件，跨几节都在这一次里算完，复现不出这个 bug。
+    await tester.longPressAt(
+      Offset(headerCenter.dx, gridTop + 4.5 * singleSectionHeight),
+    );
+    await _pumpTimetableFrame(tester);
+    expect(
+      tester.getSize(find.byKey(markerKey)).height,
+      closeTo(singleSectionHeight, 2),
+    );
+    await tester.timedDragFrom(
+      tester.getCenter(find.byKey(topHandleKey)),
+      Offset(0, -singleSectionHeight * 3),
+      const Duration(milliseconds: 400),
+    );
+    await _pumpTimetableFrame(tester);
+    expect(
+      tester.getSize(find.byKey(markerKey)).height,
+      closeTo(singleSectionHeight * 4, 2),
+    );
+
     // 点框进添加课程表单（预填节次 = 框住的范围）。
     await tester.tap(find.byKey(markerKey));
     await tester.pumpAndSettle();
