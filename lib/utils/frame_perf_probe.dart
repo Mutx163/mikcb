@@ -9,21 +9,42 @@ import 'package:flutter/scheduler.dart';
 /// 不同**，而它们的共同点是「不随弹窗材质切换而消失」—— 所以「关掉玻璃后还是卡」
 /// 这件事本身反推不出是哪一条，必须有实测数据。
 ///
-/// 本探针只做一件事：把**连续超预算**的帧聚合成一条日志，并把这一段时间花在
-/// 哪个线程上直接判出来：
+/// ## 首轮实测暴露的问题（本文件的预算口径就是为此改的）
 ///
-/// - `verdict=ui-bound`：UI 线程（build / layout / paint）超时。往「构建重建、
-///   布局、paint 相位的同步录帧（`toImageSync`）」这条线找。
-/// - `verdict=raster-bound`：渲染线程（GPU）超时。往「离屏层（Opacity /
-///   saveLayer）、模糊阴影、着色器」这条线找。
-/// - `verdict=both`：两边都超，通常是一条链上的连带（例如 UI 侧多一层离屏层，
-///   渲染侧就要多合成一遍）。
+/// 首轮跑在 `com.mutx163.qingyu.profile`（Redmi 25060RK16C / Android 16）上，
+/// 探针自报 `thresholdMs=20.8`（= 16.7 × 1.25），也就是它认定屏幕是 60Hz。但
+/// `adb shell dumpsys SurfaceFlinger --latency <SurfaceView 图层>` 的头行给出的
+/// 是 **8333333ns（8.33ms = 120Hz）**，实测滚动时一半的送显间隔也正好是 8.3ms。
+///
+/// 原因：面板在**空闲 60Hz / 交互 120Hz** 之间切换，而探针是在启动（空闲）时读
+/// `FlutterView.display.refreshRate` 的，读到的正是那个 60。于是**真实预算 8.3ms
+/// 被放宽成了 20.8ms**，一整个交互过程里一帧都没被记为卡 —— 数据看着「全绿」，
+/// 却跟用户看到的不流畅对不上。教训：预算不能只信显示上报，必须用**实测帧间隔**
+/// 收紧（见 [_budgetUs]）。
+///
+/// ## 两种输出
+///
+/// - `[frame-perf] mark <label> ...`（主）：每次 [mark] 开一个窗口，把这次交互
+///   之后 700ms 内（或 400 帧内）的帧汇总成**一条**：帧数、墙钟跨度、等效 fps、
+///   窗口内实测 vsync 间隔、超预算帧数、最差与平均的 build / raster。**有没有
+///   「超阈值」都照样出读数** —— 这正是首轮缺的那块：一帧没超标，但动画只跑到
+///   60fps。
+/// - `[frame-perf] burst ...`（粗）：没有标记的那类卡顿（冷启动、页面转场、未打点
+///   的路径）靠它兜底。连续超预算的帧聚合成一条，附 `verdict=ui-bound /
+///   raster-bound / both`，直接说明该往哪条线程找。
+///
+/// 判据：
+/// - `verdict=ui-bound`，或窗口里 `worstBuildMs` 明显大于 `worstRasterMs`：UI 线程
+///   （build / layout / paint）超时 —— 找构建重建、布局、paint 相位里的同步录帧
+///   （`toImageSync`）。
+/// - `raster-bound`，或 `worstRasterMs` 大：渲染线程（GPU）超时 —— 找离屏层
+///   （Opacity / saveLayer）、模糊阴影、着色器。
+/// - 窗口里 `fps` 明显低于 `1000 / vsyncMs`：动画掉帧，帧成本压不过 vsync 周期。
 ///
 /// ## 用法
 ///
 /// 1. `main()` 里 `FramePerfProbe.install()` —— 启动时一次。
-/// 2. 关键交互处 `FramePerfProbe.mark('label')` —— 汇总里会带上「标记落在这段
-///    卡顿之前/之后多少毫秒」（如 `select:open@+3ms`），用来把卡顿归因到动作。
+/// 2. 关键交互处 `FramePerfProbe.mark('label')` —— 每条标记对应一条窗口读数。
 /// 3. 真机复现 → 在 `flutter run` 输出或 `adb logcat` 里搜 `[frame-perf]`。
 ///
 /// ## 纪律
@@ -38,8 +59,9 @@ abstract final class FramePerfProbe {
   /// 日志前缀，搜这一个词就能捞出全部输出。
   static const String _tag = '[frame-perf]';
 
-  /// 「这一帧算卡」的容差倍数：预算 = 1/刷新率，真机上帧耗时本来就在预算附近
-  /// 抖动，乘 1.25 免得把正常抖动报成卡顿。
+  /// 「这一帧算卡」的容差倍数：真机上帧耗时本来就在预算附近抖动，乘 1.25
+  /// 免得把正常抖动报成卡顿。**只用于 burst 的粗判**：标记窗口不做门槛，它按
+  /// 实测间隔把每一帧都算一遍。
   static const double _budgetTolerance = 1.25;
 
   /// 一段卡顿最多累计这么多帧就强制结算一条，避免长时间持续卡顿时日志要等
@@ -56,10 +78,33 @@ abstract final class FramePerfProbe {
   /// 标记条数上限：一段卡顿前的标记再多也不该把日志行撑爆。
   static const int _maxMarks = 12;
 
+  /// 标记窗口的长度：一次弹层入场动画约 300~400ms，给到 700ms 把尾巴（弹簧
+  /// 收敛、内容淡入）一起收进去。
+  static const int _windowDurationUs = 700000;
+
+  /// 单个窗口最多累计多少帧就强制结算（长动画 / 长滚动时给个上界）。
+  static const int _windowMaxFrames = 400;
+
+  /// 可信帧间隔的下限（微秒）：低于 4ms 的间隔不是 vsync 节奏 —— 引擎一次回调
+  /// 可能投递多帧，同批帧的到达时间几乎相同。
+  static const int _minPlausibleGapUs = 4000;
+
+  /// 可信帧间隔的上限（微秒）：高于 40ms 的间隔是卡顿，不是面板节奏。
+  static const int _maxPlausibleGapUs = 40000;
+
+  /// 帧间隔重采样周期：面板会在空闲 60Hz / 交互 120Hz 之间来回切，每 N 帧重新
+  /// 估一次最小间隔，免得一次闲时的 16.7ms 把预算永久钉死在宽的那一档。
+  static const int _gapResampleFrames = 240;
+
   static bool _installed = false;
 
-  /// 单帧卡顿阈值（微秒）：预算 × [_budgetTolerance]。
-  static int _thresholdUs = 20800;
+  /// 显示上报的单帧预算（微秒）：安装时按 `display.refreshRate` 算，读不到按 60Hz。
+  static int _configuredBudgetUs = 16700;
+
+  /// 实测到的最小相邻帧间隔（微秒）：0 = 还没采到可信样本。
+  static int _observedMinGapUs = 0;
+  static int _gapSampleCount = 0;
+  static int? _lastFrameUs;
 
   /// 汇总输出落点；测试可替换成自己的收集器。
   static void Function(String line) _emit = debugPrint;
@@ -71,7 +116,7 @@ abstract final class FramePerfProbe {
   static int _framesTotal = 0;
   static int _jankyTotal = 0;
 
-  // 当前「卡顿段」的累计值（无卡顿时全为 0）。
+  // 当前「卡顿段」（burst）的累计值。
   static int _burstFrames = 0;
   static int _burstStartUs = 0;
   static int _burstLastUs = 0;
@@ -80,6 +125,19 @@ abstract final class FramePerfProbe {
   static int _worstBuildUs = 0;
   static int _worstRasterUs = 0;
   static int _worstTotalUs = 0;
+
+  // 当前「标记窗口」的累计值（`_windowLabel == null` 时无窗口）。
+  static String? _windowLabel;
+  static int _windowStartUs = 0;
+  static int _windowFrames = 0;
+  static int _windowLastUs = 0;
+  static int _windowSumBuildUs = 0;
+  static int _windowSumRasterUs = 0;
+  static int _windowWorstBuildUs = 0;
+  static int _windowWorstRasterUs = 0;
+  static int _windowMinGapUs = 0;
+  static int _windowOverCount = 0;
+  static int? _windowLastFrameUs;
 
   /// 交互标记：(标签, 时间戳微秒)。
   static final List<(String, int)> _marks = <(String, int)>[];
@@ -90,25 +148,47 @@ abstract final class FramePerfProbe {
       return;
     }
     _installed = true;
-    _thresholdUs = ((1000000 / _refreshRate()) * _budgetTolerance).round();
+    final reportedRate = _reportedRefreshRate();
+    _configuredBudgetUs = (1000000 / reportedRate).round();
     _clock.start();
     SchedulerBinding.instance.addTimingsCallback(_onTimings);
-    _emit('$_tag installed thresholdMs=${_ms(_thresholdUs)}');
+    _emit(
+      '$_tag installed reportedRateFps=$reportedRate '
+      'budgetMs=${_ms(_configuredBudgetUs)} '
+      '(budget tightens to the measured vsync gap)',
+    );
   }
 
   /// 打一条交互标记（如 `select:open`）。未安装时是空操作。
+  ///
+  /// 会开一个新的读数窗口；上一个窗口若还没结算，先结算掉。
   static void mark(String label) {
     if (!_installed) {
       return;
     }
     final nowUs = _clock.elapsedMicroseconds;
+    _openOrExtendWindow(label, nowUs);
     _marks.add((label, nowUs));
     _pruneMarks(nowUs);
   }
 
-  /// 一帧的预算（微秒）：按屏幕刷新率算，读不到显示信息时按 60Hz 兜底
-  /// （探针不该因为拿不到刷新率而整条失效）。
-  static int _refreshRate() {
+  /// 当前生效的单帧预算（微秒）：取「显示上报的」与「实测最小帧间隔」里**更紧**
+  /// 的那个。
+  ///
+  /// 必须收紧的原因见类文档：面板空闲时 60Hz、交互时升 120Hz，而安装那一刻读到
+  /// 的往往是空闲档 —— 照它算会把预算放宽一倍，把「每两帧掉一帧」读成正常。
+  static int get _budgetUs {
+    final observed = _observedMinGapUs;
+    if (observed <= 0) {
+      return _configuredBudgetUs;
+    }
+    return observed < _configuredBudgetUs ? observed : _configuredBudgetUs;
+  }
+
+  static int get _burstThresholdUs => (_budgetUs * _budgetTolerance).round();
+
+  /// 显示上报的刷新率，读不到按 60Hz 兜底。
+  static int _reportedRefreshRate() {
     var rate = 60.0;
     try {
       final views = SchedulerBinding.instance.platformDispatcher.views;
@@ -134,10 +214,8 @@ abstract final class FramePerfProbe {
     }
   }
 
-  /// 收一帧。预算内 = 结算当前卡顿段；超预算 = 累进当前卡顿段。
-  ///
-  /// 时间戳由调用方给（不在这里读表）：录帧回调可能一次投递多帧，各帧用同一个
-  /// 「现在」会把一段卡顿压成 0ms。
+  /// 收一帧。时间戳由调用方给（不在这里读表）：录帧回调可能一次投递多帧，
+  /// 各帧用同一个「现在」会把一段卡顿压成 0ms。
   static void _ingest({
     required int buildUs,
     required int rasterUs,
@@ -147,8 +225,25 @@ abstract final class FramePerfProbe {
       return;
     }
     _framesTotal++;
+    _sampleGap(nowUs);
+
     final totalUs = buildUs + rasterUs;
-    if (totalUs <= _thresholdUs) {
+
+    if (_windowLabel != null) {
+      if (nowUs - _windowStartUs > _windowDurationUs) {
+        // 窗口到期：先把这段读数结算掉，本帧不进这个窗口。
+        _flushWindow();
+      } else {
+        _accumulateWindow(
+          buildUs: buildUs,
+          rasterUs: rasterUs,
+          totalUs: totalUs,
+          nowUs: nowUs,
+        );
+      }
+    }
+
+    if (totalUs <= _burstThresholdUs) {
       if (_burstFrames > 0) {
         _flushBurst();
       }
@@ -182,13 +277,129 @@ abstract final class FramePerfProbe {
     }
   }
 
+  /// 采一个帧间隔样本，用来估真实 vsync 周期（见 [_budgetUs]）。
+  static void _sampleGap(int nowUs) {
+    final previous = _lastFrameUs;
+    _lastFrameUs = nowUs;
+    if (previous == null) {
+      return;
+    }
+    final gap = nowUs - previous;
+    if (gap < _minPlausibleGapUs || gap > _maxPlausibleGapUs) {
+      return;
+    }
+    if (_observedMinGapUs == 0 || gap < _observedMinGapUs) {
+      _observedMinGapUs = gap;
+    }
+    _gapSampleCount++;
+    if (_gapSampleCount >= _gapResampleFrames) {
+      _gapSampleCount = 0;
+      // 重新估：面板可能刚从 120 掉回 60，旧的下限会把预算卡在不该有的紧档上。
+      _observedMinGapUs = 0;
+    }
+  }
+
+  /// 开窗口：无窗口时直接开；同一瞬间连着打两条（`dialog:open` → `sheet:open`
+  /// 这类转发链）时合并标签 —— 否则前一条会以 0 帧收场、什么也读不到；已有帧的
+  /// 窗口则先结算再开新的。
+  static void _openOrExtendWindow(String label, int nowUs) {
+    if (_windowLabel == null) {
+      _beginWindow(label, nowUs);
+      return;
+    }
+    if (_windowFrames == 0) {
+      _windowLabel = '$_windowLabel+$label';
+      _windowStartUs = nowUs;
+      return;
+    }
+    _flushWindow();
+    _beginWindow(label, nowUs);
+  }
+
+  static void _beginWindow(String label, int nowUs) {
+    _windowLabel = label;
+    _windowStartUs = nowUs;
+    _windowFrames = 0;
+    _windowLastUs = nowUs;
+    _windowSumBuildUs = 0;
+    _windowSumRasterUs = 0;
+    _windowWorstBuildUs = 0;
+    _windowWorstRasterUs = 0;
+    _windowMinGapUs = 0;
+    _windowOverCount = 0;
+    _windowLastFrameUs = null;
+  }
+
+  static void _accumulateWindow({
+    required int buildUs,
+    required int rasterUs,
+    required int totalUs,
+    required int nowUs,
+  }) {
+    final previous = _windowLastFrameUs;
+    if (previous != null) {
+      final gap = nowUs - previous;
+      if (gap >= _minPlausibleGapUs &&
+          (_windowMinGapUs == 0 || gap < _windowMinGapUs)) {
+        _windowMinGapUs = gap;
+      }
+    }
+    _windowLastFrameUs = nowUs;
+    _windowFrames++;
+    _windowLastUs = nowUs;
+    _windowSumBuildUs += buildUs;
+    _windowSumRasterUs += rasterUs;
+    if (buildUs > _windowWorstBuildUs) {
+      _windowWorstBuildUs = buildUs;
+    }
+    if (rasterUs > _windowWorstRasterUs) {
+      _windowWorstRasterUs = rasterUs;
+    }
+    if (totalUs > _budgetUs) {
+      _windowOverCount++;
+    }
+    if (_windowFrames >= _windowMaxFrames) {
+      _flushWindow();
+    }
+  }
+
+  /// 结算标记窗口，打一条读数。0 帧的窗口静默丢弃（标记打了但一帧都没出）。
+  static void _flushWindow() {
+    final label = _windowLabel;
+    final frames = _windowFrames;
+    final spanMs = (_windowLastUs - _windowStartUs) / 1000;
+    final minGapUs = _windowMinGapUs;
+    final overCount = _windowOverCount;
+    final worstBuildUs = _windowWorstBuildUs;
+    final worstRasterUs = _windowWorstRasterUs;
+    final sumBuildUs = _windowSumBuildUs;
+    final sumRasterUs = _windowSumRasterUs;
+    _windowLabel = null;
+    if (label == null || frames == 0) {
+      return;
+    }
+
+    final budgetUs = _budgetUs;
+    final fps = spanMs <= 0 ? 0 : (frames * 1000 / spanMs).round();
+    _emit(
+      '$_tag mark $label frames=$frames spanMs=${spanMs.toStringAsFixed(0)} '
+      'fps=$fps vsyncMs=${minGapUs == 0 ? '?' : _ms(minGapUs)} '
+      'budgetMs=${_ms(budgetUs)} over=$overCount '
+      'worstBuildMs=${_ms(worstBuildUs)} '
+      'worstRasterMs=${_ms(worstRasterUs)} '
+      'avgBuildMs=${(sumBuildUs / frames / 1000).toStringAsFixed(1)} '
+      'avgRasterMs=${(sumRasterUs / frames / 1000).toStringAsFixed(1)}',
+    );
+  }
+
   /// 结算当前卡顿段，打一条汇总。
   static void _flushBurst() {
     final frames = _burstFrames;
     _burstFrames = 0;
+    final thresholdUs = _burstThresholdUs;
     // 单帧的轻微超预算不报（真机抖动），要么连着卡（≥2 帧），要么单帧就超
     // 两倍阈值（那已经掉了一整帧）。
-    if (frames < 2 && _worstTotalUs < _thresholdUs * 2) {
+    if (frames < 2 && _worstTotalUs < thresholdUs * 2) {
       return;
     }
 
@@ -203,8 +414,8 @@ abstract final class FramePerfProbe {
       'avgBuildMs=${(_sumBuildUs / frames / 1000).toStringAsFixed(1)} '
       'avgRasterMs=${(_sumRasterUs / frames / 1000).toStringAsFixed(1)} '
       'verdict=${_verdictOf(_worstBuildUs, _worstRasterUs)} '
-      'framesTotal=$_framesTotal jankyTotal=$_jankyTotal '
-      'marks=[${marks.join(', ')}]',
+      'budgetMs=${_ms(_budgetUs)} framesTotal=$_framesTotal '
+      'jankyTotal=$_jankyTotal marks=[${marks.join(', ')}]',
     );
   }
 
@@ -254,11 +465,16 @@ abstract final class FramePerfProbe {
     _worstBuildUs = 0;
     _worstRasterUs = 0;
     _worstTotalUs = 0;
+    _observedMinGapUs = 0;
+    _gapSampleCount = 0;
+    _lastFrameUs = null;
+    _windowLabel = null;
+    _windowFrames = 0;
     _marks.clear();
   }
 
   /// 测试专用安装：不碰 `SchedulerBinding`（不注册录帧回调、不开时钟），
-  /// 阈值按给定刷新率算，输出收到 [emit]。
+  /// 预算按给定刷新率算，输出收到 [emit]。
   @visibleForTesting
   static void debugInstall({
     required void Function(String line) emit,
@@ -266,7 +482,7 @@ abstract final class FramePerfProbe {
   }) {
     _installed = true;
     _emit = emit;
-    _thresholdUs = ((1000000 / refreshRate) * _budgetTolerance).round();
+    _configuredBudgetUs = (1000000 / refreshRate).round();
     _resetState();
   }
 
@@ -281,6 +497,10 @@ abstract final class FramePerfProbe {
   /// 测试专用标记。
   @visibleForTesting
   static void debugMark(String label, int nowUs) {
+    if (!_installed) {
+      return;
+    }
+    _openOrExtendWindow(label, nowUs);
     _marks.add((label, nowUs));
     _pruneMarks(nowUs);
   }
