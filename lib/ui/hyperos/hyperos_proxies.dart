@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_miuix_spec.dart';
-import 'hyperos_popup_glass.dart' show HyperosSelectPopupGlass;
+import 'hyperos_popup_glass.dart' show HyperosGlassEdge, HyperosSelectPopupGlass;
 import 'hyperos_theme.dart';
 
 
@@ -124,7 +124,6 @@ class FHeaderActionBall extends StatelessWidget {
     required this.link,
     required this.icon,
     this.visible = true,
-    this.overFlatBackdrop = false,
   });
 
   /// 跟随的锚点：包在真实按钮（透明点击区）外面的 [CompositedTransformTarget]。
@@ -136,37 +135,31 @@ class FHeaderActionBall extends StatelessWidget {
   /// 菜单打开期间置 false，让位给弹窗自己的形变球。
   final bool visible;
 
-  /// 球背后是一片纯色（没设壁纸），采样不到任何东西。
+  /// 描边（压在玻璃**之上**）+ 外阴影（垫在玻璃**之下**）。
   ///
   /// 上游同款组件 `MiuixGlassIconButton` 的可见性靠三样东西保底：材质自身、
   /// **描边**、**外阴影** —— 后两样与背景无关，任何底色上都读得出轮廓。本仓
   /// 这颗球走 [HyperosSelectPopupGlass]，而默认的「高斯磨砂」分支既没描边也
   /// 没阴影：纯色背景上模糊一个纯色仍是同一个纯色，圆就整颗融进页面
   /// （真机反馈：没设壁纸时右上角小球在浅色和深色下都几乎看不见）。
-  /// 这里补回描边 + 阴影（见 [_buildVisibleBall]），并在真的没东西可采样时
-  /// 再垫一层淡洗色。
-  final bool overFlatBackdrop;
-
-  /// 描边（压在玻璃**之上**）+ 外阴影（垫在玻璃**之下**）+ 纯色背景时的淡洗色。
+  ///
+  /// ⚠️ 两层的**数值必须与弹层侧同源**（[HyperosGlassEdge]，弹层侧由
+  /// [HyperosSelectPopupGlass.surfaceEdge] 打开）：菜单收起时这颗球是弹窗先画
+  /// 一颗、再交接给常驻球的，两侧不一致就会在交接瞬间现形 —— 真机反馈「阴影在
+  /// 弹窗收回后一秒突然出现」就是这么来的。同理，这里**不要**再给自己垫洗色之类
+  /// 弹层侧没有的层：交接面多一层，跳变就换一种形式回来。
   ///
   /// 描边必须叠在最上层而不是画在玻璃下面：降级实底那条分支的球是不透明的，
   /// 画在下面会被整块盖掉。
   Widget _buildVisibleBall(BuildContext context) {
-    final wash = overFlatBackdrop
-        ? (Theme.of(context).brightness == Brightness.dark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.black.withValues(alpha: 0.05))
-        : Colors.transparent;
     return Stack(
       children: [
-        Positioned.fill(
+        const Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: wash,
-              boxShadow: const [
-                BoxShadow(color: Color(0x24000000), blurRadius: 20),
-              ],
+              // 与弹层侧同源（见 [HyperosGlassEdge]）。
+              boxShadow: [HyperosGlassEdge.shadow],
             ),
           ),
         ),
@@ -183,11 +176,11 @@ class FHeaderActionBall extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                // 0.75 物理像素级发丝线（与顶栏分隔线同口径）：只勾轮廓，
+                // 与弹层侧同源的轮廓线（见 [HyperosGlassEdge]）：只勾边界，
                 // 不抢图标。
                 border: Border.all(
-                  color: HyperosColors.outline(context),
-                  width: 0.75,
+                  color: HyperosGlassEdge.ringColor(context),
+                  width: HyperosGlassEdge.ringWidth,
                 ),
               ),
             ),

@@ -29,6 +29,69 @@ import 'frosted/liquid_glass_degradation.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart';
 import 'soft_glass/soft_glass_surface.dart';
 
+/// 弹层与首页常驻圆球**共用**的「轮廓 + 浮影」。
+///
+/// 为什么必须只有一处定义：首页那两颗球（「更多」「爱心」）不是按钮自己画的，
+/// 而是"弹窗先画、再交接给常驻球"——上游形变动画的终点就是锚点大小的一块玻璃。
+/// 两侧的描边/阴影只要不一致，交接那一瞬就会跳：真机反馈「阴影在弹窗收回后
+/// 一秒突然出现」，根因正是常驻球有阴影而弹窗那颗没有（上游 `MiuixGlassPanel`
+/// 默认带 `stroke` + `floating` 阴影，本仓的注入面把整块面板换掉时把这两层丢了）。
+///
+/// 用法：弹层侧传 [HyperosSelectPopupGlass.surfaceEdge]，球侧用这里的常量自己
+/// 搭（球还要多垫一层洗色）。
+abstract final class HyperosGlassEdge {
+  /// 外浮影。数值与 [HyperosSolidPopupSurface] 既有的那层一致：实底分支本来就
+  /// 有阴影，两边同值才谈得上"同源"。
+  static const shadow = BoxShadow(color: Color(0x24000000), blurRadius: 20);
+
+  /// 0.75 逻辑像素的发丝轮廓线（与顶栏分隔线同口径）：只勾出边界，不抢内容。
+  static const ringWidth = 0.75;
+
+  static Color ringColor(BuildContext context) => HyperosColors.outline(context);
+
+  /// 把一块玻璃面按同源参数包上「浮影（下）+ 轮廓线（上）」。
+  ///
+  /// - 轮廓线 must 叠在玻璃**之上**：降级实底分支的面是不透明的，画在下面会被
+  ///   整块盖掉。
+  /// - [withShadow] 只在面**自带了同值阴影**时关掉（实底分支），否则会叠两层。
+  /// - [clipBehavior] 必须 `none`，否则 Stack 默认会把外浮影裁掉。
+  static Widget wrap(
+    BuildContext context, {
+    required BorderRadius borderRadius,
+    required Widget child,
+    bool withShadow = true,
+  }) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        if (withShadow)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: borderRadius,
+                boxShadow: const [shadow],
+              ),
+            ),
+          ),
+        child,
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: borderRadius,
+                border: Border.all(
+                  color: ringColor(context),
+                  width: ringWidth,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// Glass background for the select popup.
 ///
 /// Renders the appropriate surface based on [FrostedGlassMode]:
@@ -43,10 +106,18 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     required this.child,
     this.useAncestorGroupCapture = false,
     this.thicknessFactor,
+    this.surfaceEdge = false,
   });
 
   final double cornerRadius;
   final Widget child;
+
+  /// 面上再叠一圈同源轮廓 + 浮影（见 [HyperosGlassEdge]）。
+  ///
+  /// 默认关：其余弹层（选择弹窗、列表弹窗）保持原观感，那些弹层没有"要交接给
+  /// 常驻球"的终点。**OS4 注入面必须开**（`os4_glass_popup_surface.dart`）——
+  /// 首页菜单收起时那颗球就是这块面缩到锚点大小，两侧不一致就会在交接瞬间跳。
+  final bool surfaceEdge;
 
   /// 折射厚度缩放（0..1）：液态面按完整厚度的该比例渲染。二级子卡揭示
   /// 期间传揭示进度——厚度从近零生长到满值，顶缘折射对上方面板文字的
@@ -121,6 +192,20 @@ class HyperosSelectPopupGlass extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final surface = _buildSurface(context);
+    if (!surfaceEdge) {
+      return surface;
+    }
+    return HyperosGlassEdge.wrap(
+      context,
+      borderRadius: BorderRadius.circular(cornerRadius),
+      child: surface,
+      // 实底分支自带同值浮影（[HyperosSolidPopupSurface]），再叠一层会明显更黑。
+      withShadow: surface is! HyperosSolidPopupSurface,
+    );
+  }
+
+  Widget _buildSurface(BuildContext context) {
     final borderRadius = BorderRadius.circular(cornerRadius);
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
     final appearance = FrostedAppearanceScope.of(context);
@@ -246,9 +331,8 @@ class HyperosSolidPopupSurface extends StatelessWidget {
   final double cornerRadius;
   final Widget child;
 
-  static const _kPopupShadow = [
-    BoxShadow(color: Color(0x24000000), blurRadius: 20),
-  ];
+  /// 与首页常驻球同源的那层外浮影（见 [HyperosGlassEdge]）。
+  static const _kPopupShadow = [HyperosGlassEdge.shadow];
 
   @override
   Widget build(BuildContext context) {

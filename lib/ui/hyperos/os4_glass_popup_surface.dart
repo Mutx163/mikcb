@@ -64,6 +64,12 @@ Widget _os4GlassPopupSurface(
 }) => HyperosSelectPopupGlass(
   cornerRadius: os4GlassPopupCornerRadiusOf(shape),
   useAncestorGroupCapture: useAncestorGroupCapture,
+  // ⚠️ 必须开：上游 `MiuixGlassPanel` 的面板默认就带描边 + 浮影（`v.stroke` /
+  // `v.shadow = MiuixGlassShadows.floating`），注入面把整块面板换掉时把这两层
+  // 一起丢了。首页菜单收起时那颗球**就是这块面缩到锚点大小**，常驻球（同样带
+  // 描边 + 浮影，见 [HyperosGlassEdge]）在它之后接管 —— 两侧不一致时，真机上
+  // 看到的就是"阴影在弹窗收回后一秒突然出现"。
+  surfaceEdge: true,
   child: child,
 );
 

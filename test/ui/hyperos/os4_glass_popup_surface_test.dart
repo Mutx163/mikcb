@@ -69,6 +69,16 @@ void main() {
       reason: '二级面板浮在一级玻璃之上，不垫底会把一级玻璃的输出折射进去',
     );
     expect(secondary.cornerRadius, 18, reason: '二级与一级同一份几何');
+
+    // 上游 `MiuixGlassPanel` 的面板默认带描边 + 浮影，注入面换掉整块面板时
+    // 把这两层一起丢了。首页菜单收起时那颗球就是这块面缩到锚点大小 —— 缺了
+    // 它们，常驻球（带描边 + 浮影）接管的那一瞬阴影会"突然出现"。
+    expect(
+      primary.surfaceEdge,
+      isTrue,
+      reason: '一级面板要带与常驻球同源的描边 + 浮影',
+    );
+    expect(secondary.surfaceEdge, isTrue, reason: '二级面板同门禁');
   });
 
   testWidgets('选择弹层真的换上了注入面（上游内置面板不再出图）', (tester) async {

@@ -232,17 +232,19 @@ void main() {
     }
   });
 
-  testWidgets('纯色背景（没壁纸）下小球必须看得见：描边 + 阴影 + 淡洗色', (
+  testWidgets('纯色背景（没壁纸）下小球必须看得见：描边 + 阴影（与弹层侧同源）', (
     tester,
   ) async {
-    // 回归点：球的材质（磨砂 / 柔光 / 液态 / 实底）都是从"背后那条窄带"采样
+    // 回归点一：球的材质（磨砂 / 柔光 / 液态 / 实底）都是从"背后那条窄带"采样
     // 的，没壁纸时背后就是一片纯色 —— 磨砂分支模糊一个纯色仍是同一个纯色，
     // 且页面背景与球的实底色**是同一个色标**（浅色都是 #FFFFFF、深色都是
     // #242424），圆会整颗融进页面（真机反馈：没设壁纸时右上角小球在浅色和
-    // 深色下都几乎看不见）。
+    // 深色下都几乎看不见）。上游同款组件 `MiuixGlassIconButton` 从来都画描边 +
+    // 阴影 —— 这两样与背景无关，是可见性下限。
     //
-    // 上游同款组件 `MiuixGlassIconButton` 从来都画描边 + 阴影 —— 这两样与背景
-    // 无关，是可见性下限。这里把这条钉住。
+    // 回归点二：这两层必须与弹层侧同源。菜单收起时那颗球是"弹窗先画、再交接给
+    // 常驻球"的，两侧不一致就会在交接瞬间现形（真机反馈：阴影在弹窗收回后一秒
+    // 突然出现）。所以这里同时钉住"用了 [HyperosGlassEdge] 的值"。
     for (final brightness in Brightness.values) {
       final link = LayerLink();
       await tester.pumpWidget(
@@ -253,7 +255,6 @@ void main() {
               body: Center(
                 child: FHeaderActionBall(
                   link: link,
-                  overFlatBackdrop: true,
                   icon: const Icon(Icons.more_vert_rounded),
                 ),
               ),
@@ -272,14 +273,16 @@ void main() {
           )
           .map((b) => b.decoration as BoxDecoration);
 
-      // 垫底那层：淡洗色 + 外阴影（没壁纸时给一点与页面的分离感）。
+      // 垫底那层：外浮影（球的分离感全靠它与那圈描边，材质本身在纯色背景上
+      // 等于没画）。**不要**再往这里加洗色之类弹层侧没有的层：交接面多一层，
+      // 跳变就换一种形式回来。
       final base = decorations.firstWhere(
         (d) => d.boxShadow?.isNotEmpty ?? false,
       );
       expect(
         base.color,
-        isNot(Colors.transparent),
-        reason: '$brightness：没壁纸时球要垫一层淡洗色才读得出是个面',
+        anyOf(isNull, Colors.transparent),
+        reason: '$brightness：与弹层侧同源，球不额外垫洗色',
       );
       expect(base.shape, BoxShape.circle);
 
@@ -295,6 +298,18 @@ void main() {
         reason: '$brightness：描边色不能和页面底色相同',
       );
       expect(ringColor.a, 1.0, reason: '描边必须是不透明的轮廓线');
+      expect(
+        ringColor,
+        HyperosGlassEdge.ringColor(
+          tester.element(find.byType(FHeaderActionBall)),
+        ),
+        reason: '球与弹层侧（surfaceEdge）必须用同一处定义的轮廓色',
+      );
+      expect(
+        base.boxShadow!.first,
+        HyperosGlassEdge.shadow,
+        reason: '球与弹层侧必须用同一处定义的浮影',
+      );
     }
   });
 
