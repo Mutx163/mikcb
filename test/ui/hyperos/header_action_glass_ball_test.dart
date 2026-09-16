@@ -231,4 +231,121 @@ void main() {
       );
     }
   });
+
+  testWidgets('纯色背景（没壁纸）下小球必须看得见：描边 + 阴影 + 淡洗色', (
+    tester,
+  ) async {
+    // 回归点：球的材质（磨砂 / 柔光 / 液态 / 实底）都是从"背后那条窄带"采样
+    // 的，没壁纸时背后就是一片纯色 —— 磨砂分支模糊一个纯色仍是同一个纯色，
+    // 且页面背景与球的实底色**是同一个色标**（浅色都是 #FFFFFF、深色都是
+    // #242424），圆会整颗融进页面（真机反馈：没设壁纸时右上角小球在浅色和
+    // 深色下都几乎看不见）。
+    //
+    // 上游同款组件 `MiuixGlassIconButton` 从来都画描边 + 阴影 —— 这两样与背景
+    // 无关，是可见性下限。这里把这条钉住。
+    for (final brightness in Brightness.values) {
+      final link = LayerLink();
+      await tester.pumpWidget(
+        scope(
+          child: Theme(
+            data: ThemeData(brightness: brightness),
+            child: Scaffold(
+              body: Center(
+                child: FHeaderActionBall(
+                  link: link,
+                  overFlatBackdrop: true,
+                  icon: const Icon(Icons.more_vert_rounded),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final decorations = tester
+          .widgetList<DecoratedBox>(
+            find.descendant(
+              of: find.byType(FHeaderActionBall),
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .map((b) => b.decoration as BoxDecoration);
+
+      // 垫底那层：淡洗色 + 外阴影（没壁纸时给一点与页面的分离感）。
+      final base = decorations.firstWhere(
+        (d) => d.boxShadow?.isNotEmpty ?? false,
+      );
+      expect(
+        base.color,
+        isNot(Colors.transparent),
+        reason: '$brightness：没壁纸时球要垫一层淡洗色才读得出是个面',
+      );
+      expect(base.shape, BoxShape.circle);
+
+      // 压在最上面那圈描边：描边色必须**不是**页面底色，否则等于没画。
+      final ring = decorations.firstWhere((d) => d.border != null);
+      final ringColor = (ring.border! as Border).top.color;
+      final pageBackground = brightness == Brightness.dark
+          ? const Color(0xFF242424)
+          : const Color(0xFFFFFFFF);
+      expect(
+        ringColor,
+        isNot(pageBackground),
+        reason: '$brightness：描边色不能和页面底色相同',
+      );
+      expect(ringColor.a, 1.0, reason: '描边必须是不透明的轮廓线');
+    }
+  });
+
+  testWidgets('球的子树随明暗切换换身份（底图快照不跟着主题变）', (tester) async {
+    // 回归点：玻璃面的底图是"背后那条窄带"的快照，快照不跟着主题变 —— 切到
+    // 深色再切回浅色，球会一直停在深色那张底图上（真机反馈："球还是黑的"）。
+    // Key 里带 brightness ⇒ 每次切换整块换掉，重新登记采样区、重新录帧。
+    final link = LayerLink();
+    await tester.pumpWidget(
+      scope(
+        child: Theme(
+          data: ThemeData(brightness: Brightness.light),
+          child: Scaffold(
+            body: Center(
+              child: FHeaderActionBall(
+                link: link,
+                icon: const Icon(Icons.more_vert_rounded),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    Key? ballSubtreeKey() => tester
+        .widget<KeyedSubtree>(
+          find.descendant(
+            of: find.byType(FHeaderActionBall),
+            matching: find.byType(KeyedSubtree),
+          ),
+        )
+        .key;
+    final lightKey = ballSubtreeKey();
+
+    await tester.pumpWidget(
+      scope(
+        child: Theme(
+          data: ThemeData(brightness: Brightness.dark),
+          child: Scaffold(
+            body: Center(
+              child: FHeaderActionBall(
+                link: link,
+                icon: const Icon(Icons.more_vert_rounded),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(ballSubtreeKey(), isNot(lightKey), reason: '明暗切换后必须换一棵子树重新录帧');
+  });
 }

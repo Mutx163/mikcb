@@ -5,6 +5,7 @@ import 'hyperos_miuix_spec.dart';
 import 'hyperos_popup_glass.dart' show HyperosSelectPopupGlass;
 import 'hyperos_theme.dart';
 
+
 /// Temporary compatibility widget until all FHeaderAction usages are
 /// migrated to HyperosIconButton.
 class FHeaderAction extends StatelessWidget {
@@ -123,6 +124,7 @@ class FHeaderActionBall extends StatelessWidget {
     required this.link,
     required this.icon,
     this.visible = true,
+    this.overFlatBackdrop = false,
   });
 
   /// 跟随的锚点：包在真实按钮（透明点击区）外面的 [CompositedTransformTarget]。
@@ -134,11 +136,69 @@ class FHeaderActionBall extends StatelessWidget {
   /// 菜单打开期间置 false，让位给弹窗自己的形变球。
   final bool visible;
 
+  /// 球背后是一片纯色（没设壁纸），采样不到任何东西。
+  ///
+  /// 上游同款组件 `MiuixGlassIconButton` 的可见性靠三样东西保底：材质自身、
+  /// **描边**、**外阴影** —— 后两样与背景无关，任何底色上都读得出轮廓。本仓
+  /// 这颗球走 [HyperosSelectPopupGlass]，而默认的「高斯磨砂」分支既没描边也
+  /// 没阴影：纯色背景上模糊一个纯色仍是同一个纯色，圆就整颗融进页面
+  /// （真机反馈：没设壁纸时右上角小球在浅色和深色下都几乎看不见）。
+  /// 这里补回描边 + 阴影（见 [_buildVisibleBall]），并在真的没东西可采样时
+  /// 再垫一层淡洗色。
+  final bool overFlatBackdrop;
+
+  /// 描边（压在玻璃**之上**）+ 外阴影（垫在玻璃**之下**）+ 纯色背景时的淡洗色。
+  ///
+  /// 描边必须叠在最上层而不是画在玻璃下面：降级实底那条分支的球是不透明的，
+  /// 画在下面会被整块盖掉。
+  Widget _buildVisibleBall(BuildContext context) {
+    final wash = overFlatBackdrop
+        ? (Theme.of(context).brightness == Brightness.dark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.05))
+        : Colors.transparent;
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: wash,
+              boxShadow: const [
+                BoxShadow(color: Color(0x24000000), blurRadius: 20),
+              ],
+            ),
+          ),
+        ),
+        HyperosSelectPopupGlass(
+          cornerRadius: MiuixIconButtonDefaults.minWidth / 2,
+          child: SizedBox(
+            width: MiuixIconButtonDefaults.minWidth,
+            height: MiuixIconButtonDefaults.minHeight,
+            child: Center(child: icon),
+          ),
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                // 0.75 物理像素级发丝线（与顶栏分隔线同口径）：只勾轮廓，
+                // 不抢图标。
+                border: Border.all(
+                  color: HyperosColors.outline(context),
+                  width: 0.75,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 半径取「最小边长 / 2」＝正圆，与弹窗形变的「锚点短边 / 2」同口径
-    // （锚点就是这颗按钮的矩形），两边必须同值。
-    const radius = MiuixIconButtonDefaults.minWidth / 2;
     return CompositedTransformFollower(
       link: link,
       // ⚠️ 必须 false。leader（真实按钮）不在树上时，follower 会退化成画在
@@ -163,13 +223,14 @@ class FHeaderActionBall extends StatelessWidget {
           maintainState: true,
           maintainAnimation: true,
           maintainSize: true,
-          child: HyperosSelectPopupGlass(
-            cornerRadius: radius,
-            child: SizedBox(
-              width: MiuixIconButtonDefaults.minWidth,
-              height: MiuixIconButtonDefaults.minHeight,
-              child: Center(child: icon),
-            ),
+          // ⚠️ 明暗切换必须让球**换一棵子树**（Key 里带 brightness）：玻璃面的
+          // 底图是"背后那条窄带"的快照，快照不跟着主题变，切回浅色时球会一直
+          // 停在深色那张底图上（真机反馈：切深色再切浅色，球还是黑的）。整块换
+          // 掉等于强制重新登记采样区、重新录帧；`maintainState` 仍保住显隐状态，
+          // 与"不摘掉球"那条口径不冲突（球一直在，只是换了个身份重新登记）。
+          child: KeyedSubtree(
+            key: ValueKey<Brightness>(Theme.of(context).brightness),
+            child: _buildVisibleBall(context),
           ),
         ),
       ),

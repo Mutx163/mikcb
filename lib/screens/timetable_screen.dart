@@ -620,6 +620,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             builder: (_, _) => FHeaderActionBall(
               link: _moreBallLink,
               visible: !_homeMenuAnchor.contentHidden,
+              overFlatBackdrop: !hasBackdrop,
               icon: _buildMoreActionIcon(dotBorderColor: chromeDotBorderColor),
             ),
           ),
@@ -628,6 +629,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           if (provider.hasPartnerBinding)
             FHeaderActionBall(
               link: _heartBallLink,
+              overFlatBackdrop: !hasBackdrop,
               icon: Icon(
                 _isCoupleOverlayActive(provider)
                     ? Icons.favorite_rounded
