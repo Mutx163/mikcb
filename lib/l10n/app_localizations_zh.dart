@@ -7961,6 +7961,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String serviceMsgTimetableShareFailed(String detail) {
+    return '分享失败: $detail';
+  }
+
+  @override
   String get serviceMsgAuthFailed => '账号或密码错误';
 
   @override
@@ -9311,6 +9316,37 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get statisticsShareText => '来自轻屿课表的学期统计';
+
+  @override
+  String get timetableShareText => '来自轻屿课表的课表';
+
+  @override
+  String get homeMenuShareTimetableTitle => '分享课表图片';
+
+  @override
+  String get timetableSharePromptMessage => '要分享一张干净的课表图吗？';
+
+  @override
+  String get timetableSharePromptAction => '分享';
+
+  @override
+  String timetableShareExportWeekTitle(int week) {
+    return '第 $week 周课表';
+  }
+
+  @override
+  String timetableShareExportDayTitle(int week, String weekday) {
+    return '第 $week 周 · $weekday';
+  }
+
+  @override
+  String get timetableShareExportEmptyDay => '这天没有课';
+
+  @override
+  String get settingsScreenshotShareTitle => '截屏后提示分享课表';
+
+  @override
+  String get settingsScreenshotShareSubtitle => '在课表页截屏后浮出提示，点了才生成图片';
 
   @override
   String get aboutUpdateAvailableHeadline => '有版本更新';
@@ -18792,6 +18828,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String serviceMsgTimetableShareFailed(String detail) {
+    return '分享失敗: $detail';
+  }
+
+  @override
   String get serviceMsgAuthFailed => 'Invalid username or password.';
 
   @override
@@ -20142,6 +20183,37 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get statisticsShareText => '來自輕誘課表的學期統計';
+
+  @override
+  String get timetableShareText => '來自輕嶼課表的課表';
+
+  @override
+  String get homeMenuShareTimetableTitle => '分享課表圖片';
+
+  @override
+  String get timetableSharePromptMessage => '要分享一張乾淨的課表圖嗎？';
+
+  @override
+  String get timetableSharePromptAction => '分享';
+
+  @override
+  String timetableShareExportWeekTitle(int week) {
+    return '第 $week 週課表';
+  }
+
+  @override
+  String timetableShareExportDayTitle(int week, String weekday) {
+    return '第 $week 週 · $weekday';
+  }
+
+  @override
+  String get timetableShareExportEmptyDay => '這天沒有課';
+
+  @override
+  String get settingsScreenshotShareTitle => '截圖後提示分享課表';
+
+  @override
+  String get settingsScreenshotShareSubtitle => '在課表頁截圖後浮出提示，點了才產生圖片';
 
   @override
   String get aboutUpdateAvailableHeadline => '有版本更新';
@@ -29623,6 +29695,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String serviceMsgTimetableShareFailed(String detail) {
+    return '分享失敗: $detail';
+  }
+
+  @override
   String get serviceMsgAuthFailed => 'Invalid username or password.';
 
   @override
@@ -30973,6 +31050,37 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get statisticsShareText => '来自轻屿课表的学期统计';
+
+  @override
+  String get timetableShareText => '來自輕嶼課表的課表';
+
+  @override
+  String get homeMenuShareTimetableTitle => '分享課表圖片';
+
+  @override
+  String get timetableSharePromptMessage => '要分享一張乾淨的課表圖嗎？';
+
+  @override
+  String get timetableSharePromptAction => '分享';
+
+  @override
+  String timetableShareExportWeekTitle(int week) {
+    return '第 $week 週課表';
+  }
+
+  @override
+  String timetableShareExportDayTitle(int week, String weekday) {
+    return '第 $week 週 · $weekday';
+  }
+
+  @override
+  String get timetableShareExportEmptyDay => '這天沒有課';
+
+  @override
+  String get settingsScreenshotShareTitle => '截圖後提示分享課表';
+
+  @override
+  String get settingsScreenshotShareSubtitle => '在課表頁截圖後浮出提示，點了才產生圖片';
 
   @override
   String get aboutUpdateAvailableHeadline => '有版本更新';

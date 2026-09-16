@@ -8176,6 +8176,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String serviceMsgTimetableShareFailed(String detail) {
+    return 'Share failed: $detail';
+  }
+
+  @override
   String get serviceMsgAuthFailed => 'Invalid username or password.';
 
   @override
@@ -9635,6 +9640,38 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get statisticsShareText => 'Semester statistics from mikcb';
+
+  @override
+  String get timetableShareText => 'A timetable from mikcb';
+
+  @override
+  String get homeMenuShareTimetableTitle => 'Share timetable image';
+
+  @override
+  String get timetableSharePromptMessage => 'Share a clean timetable image?';
+
+  @override
+  String get timetableSharePromptAction => 'Share';
+
+  @override
+  String timetableShareExportWeekTitle(int week) {
+    return 'Week $week timetable';
+  }
+
+  @override
+  String timetableShareExportDayTitle(int week, String weekday) {
+    return 'Week $week · $weekday';
+  }
+
+  @override
+  String get timetableShareExportEmptyDay => 'No classes on this day';
+
+  @override
+  String get settingsScreenshotShareTitle => 'Offer sharing after a screenshot';
+
+  @override
+  String get settingsScreenshotShareSubtitle =>
+      'Show a prompt after you screenshot the timetable page; the image is only rendered if you tap it';
 
   @override
   String get aboutUpdateAvailableHeadline => 'Update available';

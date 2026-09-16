@@ -29,6 +29,7 @@ class TimetableWeekPreview extends StatefulWidget {
     this.applyHomePageBackdrop = true,
     this.heightBudget,
     this.isSettingsPreview = false,
+    this.showFloatingBackToCurrentWeek = true,
   });
 
   final TimetableProvider provider;
@@ -38,6 +39,12 @@ class TimetableWeekPreview extends StatefulWidget {
   final bool includeAppHeader;
   final bool applyHomePageBackdrop;
   final double? heightBudget;
+
+  /// 是否绘制「回本周」浮钮。
+  ///
+  /// 导出分享图时必须关掉：那个浮钮是**交互**入口，且只在非当前周出现，
+  /// 印在一张静态图片上是噪音而非功能。
+  final bool showFloatingBackToCurrentWeek;
 
   /// 设置页的缩略预览（而非真机通栏）。
   ///
@@ -147,6 +154,7 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
           applyHomePageBackdrop: widget.applyHomePageBackdrop,
           heightBudget: widget.heightBudget,
           isSettingsPreview: widget.isSettingsPreview,
+          showFloatingBackToCurrentWeek: widget.showFloatingBackToCurrentWeek,
           wallpaperTopLuminance: _topLuminance,
           wallpaperWeekdayLuminance: _weekdayLuminance,
           wallpaperBodyLuminance: _bodyLuminance,
@@ -166,6 +174,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     required this.applyHomePageBackdrop,
     required this.heightBudget,
     required this.isSettingsPreview,
+    required this.showFloatingBackToCurrentWeek,
     required this.wallpaperTopLuminance,
     required this.wallpaperWeekdayLuminance,
     required this.wallpaperBodyLuminance,
@@ -179,6 +188,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
   final bool applyHomePageBackdrop;
   final double? heightBudget;
   final bool isSettingsPreview;
+  final bool showFloatingBackToCurrentWeek;
 
   /// Top-band wallpaper luminance from [_TimetableWeekPreviewState]'s sample
   /// (null while sampling / no wallpaper).
@@ -371,8 +381,8 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
             settings.timetablePageBackgroundColor,
             fallback: colorScheme.surface,
           );
-    // 回本周收敛为浮钮单一入口后恒显示（仅非当前周）。
-    const showsFloatingButton = true;
+    // 回本周收敛为浮钮单一入口后恒显示（仅非当前周）；导出分享图时由
+    // [showFloatingBackToCurrentWeek] 关掉。
     final visibleSectionCount = _resolveVisibleSectionCount();
     final appHeaderHeight = includeAppHeader ? _appHeaderHeight : 0.0;
     final weekdayChromeBlurEnabled =
@@ -491,7 +501,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (showsFloatingButton &&
+                    if (showFloatingBackToCurrentWeek &&
                         _canReturnToCurrentWeek(settings, week))
                       Positioned(
                         right: 20,

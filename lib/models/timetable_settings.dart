@@ -1369,6 +1369,13 @@ class TimetableSettings {
   /// When true, home-page pull-down runs warehouse quick import in the background.
   final bool homePullQuickImportEnabled;
 
+  /// 截屏后是否在课表页浮出「分享干净的课表图」提示。
+  ///
+  /// 只影响**提示**：关掉它，课表页右上角菜单里的手动分享入口照常可用。
+  /// 平台不支持（Android 14 以下）时该开关在设置页不展示 —— 系统没有那个
+  /// 回调，开了也不会响。
+  final bool screenshotSharePromptEnabled;
+
   /// When true, long-pressing an empty timetable slot marks it with a dashed
   /// "+ slot" that opens the add-course form prefilled with that day/section.
   final bool longPressEmptySlotToAddCourseEnabled;
@@ -1621,6 +1628,7 @@ class TimetableSettings {
     this.enableHaptics = true,
     this.pageTransitionSpeed = defaultPageTransitionSpeed,
     this.homePullQuickImportEnabled = false,
+    this.screenshotSharePromptEnabled = true,
     this.longPressEmptySlotToAddCourseEnabled = false,
     this.liveShowCourseName = true,
     this.liveShowLocation = true,
@@ -1832,6 +1840,7 @@ class TimetableSettings {
       'enableHaptics': enableHaptics,
       'pageTransitionSpeed': pageTransitionSpeed,
       'homePullQuickImportEnabled': homePullQuickImportEnabled,
+      'screenshotSharePromptEnabled': screenshotSharePromptEnabled,
       'longPressEmptySlotToAddCourseEnabled':
           longPressEmptySlotToAddCourseEnabled,
       'liveShowCourseName': liveShowCourseName,
@@ -2193,6 +2202,8 @@ class TimetableSettings {
               .clamp(minPageTransitionSpeed, maxPageTransitionSpeed),
       homePullQuickImportEnabled:
           json['homePullQuickImportEnabled'] as bool? ?? false,
+      screenshotSharePromptEnabled:
+          json['screenshotSharePromptEnabled'] as bool? ?? true,
       longPressEmptySlotToAddCourseEnabled:
           json['longPressEmptySlotToAddCourseEnabled'] as bool? ?? false,
       liveShowCourseName: json['liveShowCourseName'] as bool? ?? true,
@@ -2602,6 +2613,7 @@ class TimetableSettings {
     bool? enableHaptics,
     double? pageTransitionSpeed,
     bool? homePullQuickImportEnabled,
+    bool? screenshotSharePromptEnabled,
     bool? longPressEmptySlotToAddCourseEnabled,
     bool? liveShowCourseName,
     bool? liveShowLocation,
@@ -2854,6 +2866,8 @@ class TimetableSettings {
           .clamp(minPageTransitionSpeed, maxPageTransitionSpeed),
       homePullQuickImportEnabled:
           homePullQuickImportEnabled ?? this.homePullQuickImportEnabled,
+      screenshotSharePromptEnabled:
+          screenshotSharePromptEnabled ?? this.screenshotSharePromptEnabled,
       longPressEmptySlotToAddCourseEnabled:
           longPressEmptySlotToAddCourseEnabled ??
               this.longPressEmptySlotToAddCourseEnabled,

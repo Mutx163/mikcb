@@ -479,6 +479,10 @@ String localizeServiceMessage(
       return l10n.serviceMsgStatisticsShareFailed(
         resolvedArgs['detail']?.toString() ?? '',
       );
+    case 'timetable_share_failed':
+      return l10n.serviceMsgTimetableShareFailed(
+        resolvedArgs['detail']?.toString() ?? '',
+      );
 
     // WebDAV / sync (shared with sanitizeWebdavErrorMessage)
     case 'auth_failed':

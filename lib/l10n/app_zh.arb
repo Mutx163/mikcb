@@ -4910,6 +4910,14 @@
       }
     }
   },
+  "serviceMsgTimetableShareFailed": "分享失败: {detail}",
+  "@serviceMsgTimetableShareFailed": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
   "serviceMsgAuthFailed": "账号或密码错误",
   "serviceMsgAccessDenied": "没有访问权限",
   "serviceMsgCertificateError": "证书校验失败",
@@ -5684,6 +5692,32 @@
     }
   },
   "statisticsShareText": "来自轻屿课表的学期统计",
+  "timetableShareText": "来自轻屿课表的课表",
+  "homeMenuShareTimetableTitle": "分享课表图片",
+  "timetableSharePromptMessage": "要分享一张干净的课表图吗？",
+  "timetableSharePromptAction": "分享",
+  "timetableShareExportWeekTitle": "第 {week} 周课表",
+  "@timetableShareExportWeekTitle": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "timetableShareExportDayTitle": "第 {week} 周 · {weekday}",
+  "@timetableShareExportDayTitle": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      },
+      "weekday": {
+        "type": "String"
+      }
+    }
+  },
+  "timetableShareExportEmptyDay": "这天没有课",
+  "settingsScreenshotShareTitle": "截屏后提示分享课表",
+  "settingsScreenshotShareSubtitle": "在课表页截屏后浮出提示，点了才生成图片",
   "aboutUpdateAvailableHeadline": "有版本更新",
   "aboutAlreadyLatestHeadline": "已是最新版本",
   "aboutDownloadChannelSectionTitle": "下载渠道",

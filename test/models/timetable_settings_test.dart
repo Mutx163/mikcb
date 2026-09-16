@@ -44,6 +44,8 @@ void main() {
     );
     expect(settings.timetableHideWeekends, isFalse);
     expect(settings.enableHaptics, isTrue);
+    // 截屏分享提示默认开：新装用户截屏后应当看到那条「要不要分享课表图」。
+    expect(settings.screenshotSharePromptEnabled, isTrue);
     expect(
       settings.liveDuringClassTimeDisplayMode,
       LiveDuringClassTimeDisplayMode.nearest,
@@ -1409,6 +1411,36 @@ void main() {
       );
       expect(cleared.liveExpandedDetailFields, isNull);
       expect(cleared.beforeClassDisplaySettings.expandedDetailFields, isNull);
+    });
+  });
+
+  group('screenshot share prompt', () {
+    test('json round trip keeps an explicit off', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        screenshotSharePromptEnabled: false,
+      );
+      final restored = TimetableSettings.fromJson(
+        Map<String, dynamic>.from(settings.toJson()),
+      );
+      expect(restored.screenshotSharePromptEnabled, isFalse);
+    });
+
+    test('missing key falls back to on (older saves keep prompting)', () {
+      final json = Map<String, dynamic>.from(
+        TimetableSettings.defaults().toJson(),
+      )..remove('screenshotSharePromptEnabled');
+      expect(
+        TimetableSettings.fromJson(json).screenshotSharePromptEnabled,
+        isTrue,
+      );
+    });
+
+    test('copyWith leaves other fields alone', () {
+      final base = TimetableSettings.defaults();
+      final toggled = base.copyWith(screenshotSharePromptEnabled: false);
+      expect(toggled.screenshotSharePromptEnabled, isFalse);
+      expect(toggled.enableHaptics, base.enableHaptics);
+      expect(toggled.sectionCount, base.sectionCount);
     });
   });
 }

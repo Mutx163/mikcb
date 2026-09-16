@@ -66,6 +66,7 @@ TimetableSettings applySettingsReset(
       timetableShowNonCurrentWeekCourses: d.timetableShowNonCurrentWeekCourses,
       longPressEmptySlotToAddCourseEnabled:
           d.longPressEmptySlotToAddCourseEnabled,
+      screenshotSharePromptEnabled: d.screenshotSharePromptEnabled,
       timetableSectionTimeDisplayMode: d.timetableSectionTimeDisplayMode,
       timetableTimeColumnWidthMode: d.timetableTimeColumnWidthMode,
       sectionHeight: d.sectionHeight,

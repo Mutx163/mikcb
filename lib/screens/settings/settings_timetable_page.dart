@@ -36,6 +36,10 @@ class _TimetablePageSettingsScreenState
     '#ECFDF5',
   ];
 
+  /// 截屏提示依赖 Android 14 的官方回调；不支持的平台不展示这个开关，
+  /// 免得留给用户一个「点了没反应」的开关。
+  bool _screenshotShareSupported = false;
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +49,15 @@ class _TimetablePageSettingsScreenState
     // 之后的变更（本页自己写的、别处写的）都靠 notifier 推过来。
     WallpaperHistoryService.notifier.addListener(_onWallpaperHistoryChanged);
     unawaited(_loadWallpaperHistory());
+    unawaited(_loadScreenshotShareSupport());
+  }
+
+  Future<void> _loadScreenshotShareSupport() async {
+    final supported = await ScreenCaptureService.ensureSupported();
+    if (!mounted || supported == _screenshotShareSupported) {
+      return;
+    }
+    setState(() => _screenshotShareSupported = supported);
   }
 
   Future<void> _loadWallpaperHistory() async {
@@ -174,6 +187,18 @@ class _TimetablePageSettingsScreenState
               );
             },
           ),
+          // 截屏提示同理：只在课表页生效，所以归这里。
+          if (_screenshotShareSupported)
+            HyperosSwitchTile(
+              title: l10n.settingsScreenshotShareTitle,
+              subtitle: l10n.settingsScreenshotShareSubtitle,
+              value: _draft.screenshotSharePromptEnabled,
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(screenshotSharePromptEnabled: value),
+                );
+              },
+            ),
           HyperosSelectTile<SectionTimeDisplayMode>(
             label: l10n.layoutTimeColumnDisplayLabel,
             items: {

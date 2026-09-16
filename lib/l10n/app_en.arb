@@ -4871,6 +4871,14 @@
       }
     }
   },
+  "serviceMsgTimetableShareFailed": "Share failed: {detail}",
+  "@serviceMsgTimetableShareFailed": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
   "serviceMsgAuthFailed": "Invalid username or password.",
   "serviceMsgAccessDenied": "Access denied.",
   "serviceMsgCertificateError": "Certificate validation failed.",
@@ -5645,6 +5653,32 @@
     }
   },
   "statisticsShareText": "Semester statistics from mikcb",
+  "timetableShareText": "A timetable from mikcb",
+  "homeMenuShareTimetableTitle": "Share timetable image",
+  "timetableSharePromptMessage": "Share a clean timetable image?",
+  "timetableSharePromptAction": "Share",
+  "timetableShareExportWeekTitle": "Week {week} timetable",
+  "@timetableShareExportWeekTitle": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "timetableShareExportDayTitle": "Week {week} · {weekday}",
+  "@timetableShareExportDayTitle": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      },
+      "weekday": {
+        "type": "String"
+      }
+    }
+  },
+  "timetableShareExportEmptyDay": "No classes on this day",
+  "settingsScreenshotShareTitle": "Offer sharing after a screenshot",
+  "settingsScreenshotShareSubtitle": "Show a prompt after you screenshot the timetable page; the image is only rendered if you tap it",
   "aboutUpdateAvailableHeadline": "Update available",
   "aboutAlreadyLatestHeadline": "Already up to date",
   "aboutDownloadChannelSectionTitle": "Download channel",

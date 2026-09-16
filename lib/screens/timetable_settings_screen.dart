@@ -28,6 +28,7 @@ import '../utils/widget_course_accent.dart';
 import '../services/home_widget_service.dart';
 import '../services/home_widget_binding_service.dart';
 import '../services/miui_live_activities_service.dart';
+import '../services/screen_capture_service.dart';
 import '../services/app_log_service.dart';
 import '../services/umeng_analytics_service.dart';
 import '../services/webdav_sync_coordinator.dart';

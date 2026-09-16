@@ -14399,6 +14399,12 @@ abstract class AppLocalizations {
   /// **'分享失败: {detail}'**
   String serviceMsgStatisticsShareFailed(String detail);
 
+  /// No description provided for @serviceMsgTimetableShareFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'分享失败: {detail}'**
+  String serviceMsgTimetableShareFailed(String detail);
+
   /// No description provided for @serviceMsgAuthFailed.
   ///
   /// In zh, this message translates to:
@@ -16907,6 +16913,60 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'来自轻屿课表的学期统计'**
   String get statisticsShareText;
+
+  /// No description provided for @timetableShareText.
+  ///
+  /// In zh, this message translates to:
+  /// **'来自轻屿课表的课表'**
+  String get timetableShareText;
+
+  /// No description provided for @homeMenuShareTimetableTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'分享课表图片'**
+  String get homeMenuShareTimetableTitle;
+
+  /// No description provided for @timetableSharePromptMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'要分享一张干净的课表图吗？'**
+  String get timetableSharePromptMessage;
+
+  /// No description provided for @timetableSharePromptAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'分享'**
+  String get timetableSharePromptAction;
+
+  /// No description provided for @timetableShareExportWeekTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {week} 周课表'**
+  String timetableShareExportWeekTitle(int week);
+
+  /// No description provided for @timetableShareExportDayTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {week} 周 · {weekday}'**
+  String timetableShareExportDayTitle(int week, String weekday);
+
+  /// No description provided for @timetableShareExportEmptyDay.
+  ///
+  /// In zh, this message translates to:
+  /// **'这天没有课'**
+  String get timetableShareExportEmptyDay;
+
+  /// No description provided for @settingsScreenshotShareTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'截屏后提示分享课表'**
+  String get settingsScreenshotShareTitle;
+
+  /// No description provided for @settingsScreenshotShareSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'在课表页截屏后浮出提示，点了才生成图片'**
+  String get settingsScreenshotShareSubtitle;
 
   /// No description provided for @aboutUpdateAvailableHeadline.
   ///

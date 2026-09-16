@@ -26,6 +26,7 @@ void main() {
       timetableShowNonCurrentWeekCourses: true,
       sectionHeight: 90,
       timetableHideWeekends: true,
+      screenshotSharePromptEnabled: false,
       timetableCourseCardGap: 3,
       timetablePageBackgroundColor: '#ABCDEF',
       homePageBackgroundScope: 15,
@@ -124,6 +125,11 @@ void main() {
     );
     expect(result.sectionHeight, dirty.sectionHeight);
     expect(
+      result.screenshotSharePromptEnabled,
+      dirty.screenshotSharePromptEnabled,
+      reason: '截屏分享开关属于课表页面页，课卡作用域不许碰它',
+    );
+    expect(
       result.timetablePageBackgroundColor,
       dirty.timetablePageBackgroundColor,
     );
@@ -148,6 +154,10 @@ void main() {
       defaults.timetableShowNonCurrentWeekCourses,
     );
     expect(result.timetableCourseCardGap, defaults.timetableCourseCardGap);
+    expect(
+      result.screenshotSharePromptEnabled,
+      defaults.screenshotSharePromptEnabled,
+    );
     expect(
       result.timetablePageBackgroundColor,
       defaults.timetablePageBackgroundColor,

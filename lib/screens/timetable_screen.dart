@@ -34,7 +34,9 @@ import '../domain/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_log_service.dart';
 import '../services/app_update_service.dart';
+import '../services/screen_capture_service.dart';
 import '../services/support_creator_service.dart';
+import '../services/timetable_share_service.dart';
 import '../services/widget_launch_router.dart';
 import '../widgets/class_reminder_sheet.dart';
 import '../utils/app_toast.dart';
@@ -271,6 +273,23 @@ class _TimetableScreenState extends State<TimetableScreen>
   StreamSubscription<SystemDownloadProgress>? _systemDownloadSubscription;
   bool? _lastUpdateCheckIncludePrerelease;
 
+  /// 截屏检测订阅与节流状态。
+  ///
+  /// [_screenshotListening] 存的是「当前是否应该监听」，用来跟开关比对；
+  /// 真实注册由 [ScreenCaptureService] 负责，平台不支持时它自己空转。
+  StreamSubscription<void>? _screenshotSubscription;
+  bool _screenshotListening = false;
+  DateTime? _lastScreenshotPromptAt;
+
+  /// 连拍截屏不叠提示的最小间隔（略大于提示自身的存活时间）。
+  static const Duration _screenshotPromptCooldown = Duration(seconds: 6);
+
+  /// 截屏提示的存活时间。
+  ///
+  /// 比普通 toast 长得多：这是一句「要不要做点什么」的邀请，2 秒来不及看清
+  /// 就消失会显得像误触。官方的截屏通知本来就同时弹了，多停几秒不算打扰。
+  static const Duration _screenshotPromptDuration = Duration(seconds: 5);
+
   /// In-flight update check, used for de-duplication.
   ///
   /// A shared [Future] (instead of a boolean flag) cannot leak: every early
@@ -489,6 +508,11 @@ class _TimetableScreenState extends State<TimetableScreen>
     _pendingDayViewControllerDisposals.clear();
     _homeMenuCloseDelay?.cancel();
     _homeMenuCloseDelay = null;
+    // 页面走了就把截屏监听交回去：监听不该比「谁在听」活得久。
+    unawaited(_screenshotSubscription?.cancel());
+    _screenshotSubscription = null;
+    _screenshotListening = false;
+    unawaited(ScreenCaptureService.stop());
     _homeMenuAnchor.dispose();
     _homeGlass.dispose();
     super.dispose();
@@ -520,6 +544,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         _syncViewStateIfNeeded(provider);
         _scheduleUpdateCheckIfNeeded(provider);
         _syncWeekPageWithProvider(provider.currentWeek, provider.settings);
+        _syncScreenshotListener(provider.settings);
         final colorScheme = Theme.of(context).colorScheme;
         final foruiTheme = context.theme;
         final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1113,6 +1138,81 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     _restoreViewStateFromProvider(provider);
+  }
+
+  /// 让截屏监听跟着设置开关走。
+  ///
+  /// 平台不支持（Android 14 以下）时 [ScreenCaptureService.start] 自己会
+  /// 空转，这里不再重复判断能力：判断只留一处，免得两边口径漂移。
+  void _syncScreenshotListener(TimetableSettings settings) {
+    final shouldListen = settings.screenshotSharePromptEnabled;
+    if (shouldListen == _screenshotListening) {
+      return;
+    }
+    _screenshotListening = shouldListen;
+    if (shouldListen) {
+      _screenshotSubscription ??= ScreenCaptureService.onScreenshot.listen(
+        (_) => _onScreenshotDetected(),
+      );
+      unawaited(ScreenCaptureService.start());
+      return;
+    }
+    unawaited(_screenshotSubscription?.cancel());
+    _screenshotSubscription = null;
+    unawaited(ScreenCaptureService.stop());
+  }
+
+  /// 用户截屏 → 浮一条「要分享干净的课表图吗」的胶囊提示。
+  ///
+  /// 两道门：本页必须还盖在最上面（去设置页等二级页截图，跟「分享课表图」
+  /// 的意图对不上），以及不在冷却期内（连拍截屏不叠提示）。
+  void _onScreenshotDetected() {
+    if (!mounted || !_screenshotListening) {
+      return;
+    }
+    if (!(ModalRoute.of(context)?.isCurrent ?? false)) {
+      return;
+    }
+    final now = DateTime.now();
+    final lastPromptAt = _lastScreenshotPromptAt;
+    if (lastPromptAt != null &&
+        now.difference(lastPromptAt) < _screenshotPromptCooldown) {
+      return;
+    }
+    _lastScreenshotPromptAt = now;
+
+    final provider = context.read<TimetableProvider>();
+    final l10n = AppLocalizations.of(context)!;
+    showAppToastWithAction(
+      context,
+      message: l10n.timetableSharePromptMessage,
+      actionLabel: l10n.timetableSharePromptAction,
+      duration: _screenshotPromptDuration,
+      onAction: () => unawaited(_shareTimetableImage(provider)),
+    );
+  }
+
+  /// 分享「当前这一屏」的干净课表图。
+  ///
+  /// 只有这里知道用户正看着哪一周、以及是周视图还是日视图 —— 所以菜单里的
+  /// `shareTimetable` 由本页拦截，不走目录条目的通用 open。
+  Future<void> _shareTimetableImage(TimetableProvider provider) async {
+    if (!mounted) {
+      return;
+    }
+    final settings = provider.settings;
+    final isDayView =
+        settings.timetableHomeViewMode == TimetableHomeViewMode.day &&
+        _isDayView;
+    await TimetableShareService.exportAndShare(
+      context: context,
+      provider: provider,
+      settings: settings,
+      week: isDayView
+          ? (_selectedWeekForDayView ?? _visibleWeek)
+          : _visibleWeek,
+      dayOfWeek: isDayView ? (_selectedDayOfWeek ?? 1) : null,
+    );
   }
 
   void _persistViewState(
@@ -8943,6 +9043,10 @@ class _TimetableScreenState extends State<TimetableScreen>
         );
       case 'update':
         await _openTopMenuUpdatePage();
+      case 'shareTimetable':
+        // 分享要带上「当前可见周」与「当前是周/日视图」，只有本页知道，
+        // 所以在这里拦截，不走目录条目的通用 open。
+        await _shareTimetableImage(provider);
       default:
         final entry = homeMenuEntryById(selectedId);
         if (entry != null) {

@@ -5,6 +5,7 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/widgets/home_menu_route_catalog.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/memory_stats_service.dart';
+import 'package:university_timetable/services/timetable_share_service.dart';
 import 'package:university_timetable/widgets/course_recolor_sheet.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
 import 'package:university_timetable/widgets/profile_quick_switch_sheet.dart';
@@ -94,6 +95,24 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     // 直接弹「课表重新配色」弹层（非页面）：八宫格/底栏圆钮/坞 Tab 的
     // 分发都走 entry.open，弹层在当前页上方浮现，空课表时内部 toast 提示。
     open: showCourseRecolorSheet,
+  ),
+  HomeMenuEntry(
+    id: 'shareTimetable',
+    title: (l10n) => l10n.homeMenuShareTimetableTitle,
+    icon: Icons.ios_share_rounded,
+    category: HomeMenuEntryCategory.features,
+    // 首页宿主优先处理（要带上「当前可见周」与「当前是周视图还是日视图」，
+    // 只有课表页自己知道）；这处兜底从别的入口（玻璃坞等）点进来时分享
+    // 本周的周视图课表。
+    open: (context) {
+      final provider = context.read<TimetableProvider>();
+      return TimetableShareService.exportAndShare(
+        context: context,
+        provider: provider,
+        settings: provider.settings,
+        week: provider.currentWeek,
+      );
+    },
   ),
   HomeMenuEntry(
     id: 'tasks',

@@ -63,7 +63,11 @@
          AudioManager.setRingerMode 在框架内被静默丢弃（不抛异常也不生效），
          表现为点了「取消静音」毫无反应。 -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
-    
+    <!-- 截屏检测（Android 14+ 官方 Activity.registerScreenCaptureCallback）。
+         普通权限，安装即授予、不弹框、读不到截图内容，系统只告知「截了一张」。
+         低于 14 的系统不认识该权限，声明本身无副作用。 -->
+    <uses-permission android:name="android.permission.DETECT_SCREEN_CAPTURE"/>
+
     <application
         android:name=".UmengApplication"
         android:label="${appLabel}"

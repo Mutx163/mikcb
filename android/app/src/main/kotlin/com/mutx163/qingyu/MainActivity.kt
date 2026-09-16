@@ -35,6 +35,7 @@ import android.provider.MediaStore
 import android.provider.Settings
 import android.util.Log
 import android.webkit.URLUtil
+import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -43,6 +44,7 @@ import io.flutter.embedding.android.FlutterSurfaceView
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.util.Locale
+import java.util.concurrent.Executor
 import java.io.File
 
 class MainActivity : FlutterActivity() {
@@ -68,6 +70,7 @@ class MainActivity : FlutterActivity() {
         private const val LAUNCH_URL_CHANNEL = "com.mutx163.qingyu/launch_url"
         private const val HAPTIC_CHANNEL = "com.mutx163.qingyu/haptic"
         private const val SYSTEM_ALARM_CHANNEL = "com.mutx163.qingyu/system_alarm"
+        private const val SCREEN_CAPTURE_CHANNEL = "com.mutx163.qingyu/screen_capture"
 
         /** Schemes allowed for the `launch_url` channel (feedback deep links). */
         private val ALLOWED_LAUNCH_SCHEMES = setOf(
@@ -96,6 +99,38 @@ class MainActivity : FlutterActivity() {
     private var pendingWidgetLaunchAppWidgetId: Int? = null
     private var flutterChannel: MethodChannel? = null
     private var lanEditChannel: MethodChannel? = null
+
+    /**
+     * 截屏检测（Android 14+ 官方 [Activity.ScreenCaptureCallback]）。
+     *
+     * 只把「有没有截屏」这一事实回传 Dart，拿不到截图内容，也不需要任何
+     * 运行时权限（Manifest 里的 DETECT_SCREEN_CAPTURE 是普通权限）。
+     */
+    private var screenCaptureChannel: MethodChannel? = null
+
+    /** Dart 侧是否正在监听（由 `start` / `stop` 切换）。 */
+    private var screenCaptureListenerWanted = false
+
+    /** Activity 是否已进入 STARTED —— 官方回调只允许在这个窗口内注册。 */
+    private var screenCaptureActivityStarted = false
+
+    /** 当前是否已注册，避免重复注册 / 重复注销。 */
+    private var screenCaptureRegistered = false
+
+    /**
+     * 回调只报「刚截了一张」，不带任何图像数据。
+     *
+     * 字段本身是 API 34 才有的类型，因此挂 [RequiresApi]：本仓没有 lint
+     * 白名单，release 构建的 lintVitalRelease 会把 NewApi 当错误，打包直接失败。
+     */
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    private var screenCaptureCallback: Activity.ScreenCaptureCallback? = null
+
+    /** 回调要求在主线程执行，且 minSdk 26 拿不到 Context.getMainExecutor()。 */
+    private val screenCaptureMainHandler by lazy { Handler(Looper.getMainLooper()) }
+    private val screenCaptureExecutor = Executor { command ->
+        screenCaptureMainHandler.post(command)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Fix: when launched via ACTION_SEND / ACTION_VIEW from another app (e.g.
@@ -156,6 +191,78 @@ class MainActivity : FlutterActivity() {
         applyPersistedHideFromRecents()
         // 用户可能在后台期间改过系统刷新率，回前台时重放一次（幂等）。
         applyPeakRefreshRate()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // 官方回调只允许在 Activity 处于 STARTED 时注册，因此注册收在
+        // onStart、注销收在 onStop，不要在 configureFlutterEngine 里抢跑
+        // （那时还没 STARTED，registerScreenCaptureCallback 会抛
+        // IllegalStateException，表现为一开监听就崩）。
+        screenCaptureActivityStarted = true
+        syncScreenCaptureRegistration()
+    }
+
+    override fun onStop() {
+        screenCaptureActivityStarted = false
+        syncScreenCaptureRegistration()
+        super.onStop()
+    }
+
+    private fun isScreenCaptureCallbackSupported(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+
+    /**
+     * 把「Dart 想听」与「Activity 已 STARTED」两个条件合成一次注册/注销。
+     *
+     * 两者缺一不可：Dart 说停就马上注销（省电、也给系统一个明确的隐私信号），
+     * Activity 进后台也注销 —— 后台截屏本来就不该归因到本页面。
+     * 幂等，可重复调用。
+     */
+    private fun syncScreenCaptureRegistration() {
+        // 内联写 SDK 判断（而不是调用 isScreenCaptureCallbackSupported()）：
+        // lint 的 NewApi 只认眼皮底下的 Build.VERSION.SDK_INT 比较，抽成函数
+        // 它就跟丢了，会把下面两处 API 34 调用报成错误。
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return
+        }
+        val shouldRegister = screenCaptureListenerWanted && screenCaptureActivityStarted
+        if (shouldRegister == screenCaptureRegistered) {
+            return
+        }
+        if (shouldRegister) {
+            registerScreenCaptureCallbackInternal()
+        } else {
+            unregisterScreenCaptureCallbackInternal()
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    private fun registerScreenCaptureCallbackInternal() {
+        val callback = Activity.ScreenCaptureCallback {
+            // 只报「刚截了一张」，不带任何图像数据。
+            screenCaptureChannel?.invokeMethod("onScreenshot", null)
+        }
+        try {
+            registerScreenCaptureCallback(screenCaptureExecutor, callback)
+            screenCaptureCallback = callback
+            screenCaptureRegistered = true
+        } catch (error: Exception) {
+            // ROM 实现异常时静默降级：检测不可用不影响手动分享入口。
+            Log.w("ScreenCapture", "registerScreenCaptureCallback failed", error)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    private fun unregisterScreenCaptureCallbackInternal() {
+        val callback = screenCaptureCallback ?: return
+        screenCaptureCallback = null
+        screenCaptureRegistered = false
+        try {
+            unregisterScreenCaptureCallback(callback)
+        } catch (error: Exception) {
+            Log.w("ScreenCapture", "unregisterScreenCaptureCallback failed", error)
+        }
     }
 
     /** 屏幕支持的最高刷新率（Hz）；取不到返回 0。 */
@@ -367,6 +474,26 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        screenCaptureChannel =
+            MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SCREEN_CAPTURE_CHANNEL)
+        screenCaptureChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                // 能力探测：Dart 侧据此决定要不要展示「截屏提示」开关。
+                "isSupported" -> result.success(isScreenCaptureCallbackSupported())
+                "start" -> {
+                    screenCaptureListenerWanted = true
+                    syncScreenCaptureRegistration()
+                    result.success(isScreenCaptureCallbackSupported())
+                }
+                "stop" -> {
+                    screenCaptureListenerWanted = false
+                    syncScreenCaptureRegistration()
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, FROSTED_BLUR_CHANNEL)
             .setMethodCallHandler { call, result ->
