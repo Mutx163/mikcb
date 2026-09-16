@@ -135,9 +135,7 @@ abstract final class FramePerfProbe {
   static int _windowSumRasterUs = 0;
   static int _windowWorstBuildUs = 0;
   static int _windowWorstRasterUs = 0;
-  static int _windowMinGapUs = 0;
   static int _windowOverCount = 0;
-  static int? _windowLastFrameUs;
 
   /// 交互标记：(标签, 时间戳微秒)。
   static final List<(String, int)> _marks = <(String, int)>[];
@@ -325,9 +323,7 @@ abstract final class FramePerfProbe {
     _windowSumRasterUs = 0;
     _windowWorstBuildUs = 0;
     _windowWorstRasterUs = 0;
-    _windowMinGapUs = 0;
     _windowOverCount = 0;
-    _windowLastFrameUs = null;
   }
 
   static void _accumulateWindow({
@@ -336,15 +332,6 @@ abstract final class FramePerfProbe {
     required int totalUs,
     required int nowUs,
   }) {
-    final previous = _windowLastFrameUs;
-    if (previous != null) {
-      final gap = nowUs - previous;
-      if (gap >= _minPlausibleGapUs &&
-          (_windowMinGapUs == 0 || gap < _windowMinGapUs)) {
-        _windowMinGapUs = gap;
-      }
-    }
-    _windowLastFrameUs = nowUs;
     _windowFrames++;
     _windowLastUs = nowUs;
     _windowSumBuildUs += buildUs;
@@ -368,7 +355,6 @@ abstract final class FramePerfProbe {
     final label = _windowLabel;
     final frames = _windowFrames;
     final spanMs = (_windowLastUs - _windowStartUs) / 1000;
-    final minGapUs = _windowMinGapUs;
     final overCount = _windowOverCount;
     final worstBuildUs = _windowWorstBuildUs;
     final worstRasterUs = _windowWorstRasterUs;
@@ -380,10 +366,15 @@ abstract final class FramePerfProbe {
     }
 
     final budgetUs = _budgetUs;
-    final fps = spanMs <= 0 ? 0 : (frames * 1000 / spanMs).round();
+    // vsync 取**全局**实测下限，不取本窗口自己的最小间隔：引擎会把卡顿时积压的
+    // 帧批量投递（同批帧的到达时间几乎相同），窗口内可信间隔样本可能只有
+    // 100ms+ 那几个 —— 2026-09-16 第二轮真机就这么打出过 `vsyncMs=126.8`
+    // 这种自相矛盾的值（同窗口平均间隔才 45ms）。
+    final vsyncUs = _observedMinGapUs;
     _emit(
       '$_tag mark $label frames=$frames spanMs=${spanMs.toStringAsFixed(0)} '
-      'fps=$fps vsyncMs=${minGapUs == 0 ? '?' : _ms(minGapUs)} '
+      'fps=${_fps(frames, spanMs)} '
+      'vsyncMs=${vsyncUs == 0 ? '?' : _ms(vsyncUs)} '
       'budgetMs=${_ms(budgetUs)} over=$overCount '
       'worstBuildMs=${_ms(worstBuildUs)} '
       'worstRasterMs=${_ms(worstRasterUs)} '
@@ -404,10 +395,10 @@ abstract final class FramePerfProbe {
     }
 
     final spanMs = (_burstLastUs - _burstStartUs) / 1000;
-    final fps = spanMs <= 0 ? 0 : (frames * 1000 / spanMs).round();
     final marks = _marksNear(_burstStartUs, _burstLastUs);
     _emit(
-      '$_tag burst frames=$frames spanMs=${spanMs.toStringAsFixed(0)} fps=$fps '
+      '$_tag burst frames=$frames spanMs=${spanMs.toStringAsFixed(0)} '
+      'fps=${_fps(frames, spanMs)} '
       'worstBuildMs=${_ms(_worstBuildUs)} '
       'worstRasterMs=${_ms(_worstRasterUs)} '
       'worstTotalMs=${_ms(_worstTotalUs)} '
@@ -453,6 +444,12 @@ abstract final class FramePerfProbe {
 
   /// 微秒 → 毫秒字符串（一位小数，不带单位后缀：字段名里已带 `Ms`）。
   static String _ms(int micros) => (micros / 1000).toStringAsFixed(1);
+
+  /// 等效帧率。`spanMs` 过小说明这批帧是引擎攒着一次性投递的（UI 线程刚被卡住
+  /// 过），此时「帧数 ÷ 时间」的分子分母都不可信 —— 给 `?`，别报出
+  /// `fps=3000000` 这种数字（2026-09-16 第二轮真机实见）。
+  static String _fps(int frames, double spanMs) =>
+      spanMs < 1 ? '?' : (frames * 1000 / spanMs).round().toString();
 
   static void _resetState() {
     _framesTotal = 0;

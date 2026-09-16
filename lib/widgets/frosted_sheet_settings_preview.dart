@@ -9,6 +9,8 @@ import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import '../ui/hyperos/liquid/liquid_glass_tokens.dart';
+// 诊断标记（临时件，见 utils/frame_perf_probe.dart）。
+import '../utils/frame_perf_probe.dart';
 import 'timetable_week_preview.dart';
 
 /// Live + interactive frosted sheet preview for appearance settings.
@@ -261,6 +263,10 @@ class FrostedSheetSettingsDemoSheet extends StatelessWidget {
 }
 
 Future<void> showFrostedSheetSettingsDemo(BuildContext context) {
+  // 诊断标记（临时件，见 utils/frame_perf_probe.dart）：这个演示弹层的内容比
+  // 普通弹层重得多（含课表预览 + 四块玻璃砖），量与「普通弹层」分开，
+  // 否则 `sheet:open` 这一条会把两种完全不同的开销混在一个名字里。
+  FramePerfProbe.mark('sheet:open:demoPreview');
   return showHomeHyperosSheet<void>(
     context: context,
     builder: (_) => const FrostedSheetSettingsDemoSheet(),
