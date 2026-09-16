@@ -163,3 +163,38 @@ extension AppFontModeFontSpec on AppFontMode {
     AppFontMode.monospace => const AppFontSpec(fontFamily: 'monospace'),
   };
 }
+
+/// 预热所有候选字体族，把「字体选择」弹层的首帧开销挪走。
+///
+/// 该弹层的**每一行都用不同字族**渲染自己的名字（`itemTitleStyleBuilder`），
+/// 于是弹开的那一帧要一次性完成 N 次系统字族解析 + CJK 文本布局。真机实测这笔
+/// 开销就落在「弹开那一帧」的主线程上：25060RK16C 上 38.7ms、24879RPDCC 上
+/// 165~188ms —— 同帧渲染线程只有 4~6ms，且换弹层材质（柔光 / 实底）毫无影响，
+/// 所以它跟玻璃无关，是纯内容成本（见 `.agents/notes/implemented/process/
+/// 2026-09-16-frame-perf-probe.md`）。
+///
+/// 这里在页面打开后**每帧只排一个字族**，分摊后每帧只多几毫秒，且都发生在用户
+/// 按下那一行之前。用 `scheduleFrame` 显式要下一帧：设置页静止时 Flutter 不再产帧，
+/// 只挂 postFrameCallback 会在第一帧后停住（那样只剩一个字族被预热）。
+void prewarmAppFontSpecs() {
+  final specs = AppFontMode.values
+      .map((mode) => mode.fontSpec)
+      .toList(growable: false);
+  var index = 0;
+
+  void step(Duration _) {
+    if (index >= specs.length) return;
+    final painter = TextPainter(
+      text: TextSpan(
+        text: '轻屿课表 Aa 0123',
+        style: specs[index++].applyTo(const TextStyle(fontSize: 16)),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    painter.dispose();
+    WidgetsBinding.instance.scheduleFrame();
+    WidgetsBinding.instance.addPostFrameCallback(step);
+  }
+
+  WidgetsBinding.instance.addPostFrameCallback(step);
+}
