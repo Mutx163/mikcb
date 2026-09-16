@@ -23,6 +23,9 @@ import '../logging/app_debug_log.dart';
 ///   视口（一屏）而不是文档本身的固有高度，长图导出静默失效。
 /// * **必须合成到不透明底色上**，否则文档里的透明区域分享出去是黑块。
 /// * 宿主用 `Opacity(0.02)` 而不是 0 —— 0 会跳过绘制，捕获到空图。
+/// * **光栅化前必须等文档里的图片解码完**（见 [precacheDocumentImages]）：
+///   `Image` 异步解析，固定帧数等不到它，拍出来就是空白。文档里想加图片，
+///   不必自己做预热，这里统一处理。
 /// * 这个宿主**采不到实时底面**：`BackdropFilter` / 液态折射在离屏
 ///   opacity 层下拿不到背后内容，只会塌成一层裸 tint。因此进这里的文档
 ///   不要保留实时玻璃，卡片材质请走实底。
@@ -35,6 +38,9 @@ abstract final class ImageExportCapture {
 
   /// 布局稳定所需的帧数（不用 sleep —— sleep 体感像卡死）。
   static const int settleFrameCount = 2;
+
+  /// 等文档内图片解码的上限。超时只放弃这几张图，不中断整次导出。
+  static const Duration _imagePrecacheTimeout = Duration(seconds: 5);
 
   /// 文档逻辑高度上限，超过即切片。
   static const double maxExportLogicalHeight = 30000;
@@ -78,6 +84,9 @@ abstract final class ImageExportCapture {
     await WidgetsBinding.instance.endOfFrame;
 
     try {
+      // 图片必须先落地：`Image` 是异步解码的，文档首帧里它往往还是空盒子。
+      await precacheDocumentImages(session.boundaryKey);
+
       // 第一趟：量文档的完整逻辑高度（同一个宿主，中途不拆装）。
       session.configureFullDocument();
       captureEntry.markNeedsBuild();
@@ -223,6 +232,63 @@ abstract final class ImageExportCapture {
       return null;
     }
     return renderObject.size;
+  }
+
+  /// 收集文档子树里所有 [Image] 的 provider（`RepaintBoundary` 之外的宿主
+  /// 外壳不在遍历范围内）。
+  static List<ImageProvider> _imageProvidersIn(BuildContext rootContext) {
+    final providers = <ImageProvider>[];
+    void visit(Element element) {
+      final widget = element.widget;
+      if (widget is Image) {
+        providers.add(widget.image);
+      }
+      element.visitChildren(visit);
+    }
+
+    rootContext.visitChildElements(visit);
+    return providers;
+  }
+
+  /// 等 [rootKey] 所指子树里的图片全部解码完。
+  ///
+  /// 取 key 而不是 [BuildContext]：调用点在 `await` 之后，直接把 context
+  /// 递进去会触发 `use_build_context_synchronously`（context 只在这里取、
+  /// 且取出后紧跟着用，天然没有跨异步间隙的问题）。
+  ///
+  /// 导出流程里由 [captureToPng] 调用；标 `@visibleForTesting` 是为了让测试
+  /// 能绕开「离屏宿主 + 帧调度」单独验这条契约。
+  ///
+  /// [Image] 是异步解析的：文档首帧建好时它往往还只是个空盒子，解码结果要等
+  /// 后续帧才回来。而本流程只按固定帧数等待（[settleFrameCount] + 量高那几
+  /// 帧），量高与光栅化都可能赶在解码之前 —— 拍出来的图里那张图就是空白。
+  /// 课表分享图底部的品牌 logo 就踩过这个坑（同一个 provider 已被图片缓存
+  /// 认定为 in-flight，这里只是等它完成；落地后文档下一帧就能直接画出来）。
+  ///
+  /// 缺资源、解码失败、超时都只让这几张图空着，不中断整次导出：一张 logo
+  /// 不该让整张图出不来。失败原因进日志。
+  @visibleForTesting
+  static Future<void> precacheDocumentImages(GlobalKey rootKey) async {
+    final rootContext = rootKey.currentContext;
+    if (rootContext == null) {
+      return;
+    }
+    final providers = _imageProvidersIn(rootContext);
+    if (providers.isEmpty) {
+      return;
+    }
+
+    await Future.wait(
+      providers.map(
+        (provider) => precacheImage(
+          provider,
+          rootContext,
+          onError: (error, stackTrace) {
+            appDebugLog('ImageExport', 'Image precache failed: $error');
+          },
+        ),
+      ),
+    ).timeout(_imagePrecacheTimeout, onTimeout: () => const <void>[]);
   }
 
   /// `RepaintBoundary` → 不透明 RGBA [img.Image]（不做 PNG 中转）。
