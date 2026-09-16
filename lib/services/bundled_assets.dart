@@ -15,7 +15,16 @@ class BundledAssets {
   static const alipayQr = 'assets/donate/alipay.png';
 
 
-  static const _warmUpPaths = <String>[wechatPayQr, alipayQr];
+  /// 启动后（首帧之后）预读的图。**App 图标必须在列**。
+  ///
+  /// 品牌条走 [BundledAssetImage]：字节没预热时它先渲染成一个占位盒
+  /// （`Image` 根本没进树），等资源到位的 `setState` 要落在后面的帧上。而分享
+  /// 课表图 / 统计长图的离屏快照只按固定帧数等待，等不到这个异步过程 ——
+  /// 拍出来的图里 logo 就是空白（2026-09-16 用户报的就是这个）。
+  ///
+  /// 图标曾在 `7b49e35c` 被移出清单：当时它是为「启动品牌层」预读的，而那一层
+  /// 被删了。品牌条同样需要它，故加回。
+  static const _warmUpPaths = <String>[launcherIcon, wechatPayQr, alipayQr];
 
   static final Map<String, Uint8List> _bytesByPath = {};
 
