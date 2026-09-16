@@ -421,6 +421,9 @@ class _AdvancedMaterialSettingsScreenState
             // inspire 风格共用这一套档位。它不是「高级材质」（任何后端都能画、
             // 不受作用范围开关约束），因此在作用范围段之外单独成段。
             if (_usesProgressiveBlur) ...[
+              // 小标题上方补标准节间距：label 自带的是下方 8px，上方 0，
+              // 紧跟上一张卡片时会贴死（其余页面的惯例是节前 HyperosSectionGap）。
+              const HyperosSectionGap(),
               HyperosSectionLabel(text: l10n.headerBlurStyleInspire),
               Builder(
                 builder: (context) {
@@ -518,6 +521,7 @@ class _AdvancedMaterialSettingsScreenState
             // 当前全局高级材质（柔光 / 液态）；关 = 该表面回落
             // **实体卡片**（不降级为高斯，见
             // [LiquidGlassDegradation.familyFallsBackToSolid]）。
+            const HyperosSectionGap(),
             HyperosSectionLabel(text: l10n.liquidGlassScopeSectionTitle),
             HyperosListGroup(
               children: [
