@@ -28,6 +28,7 @@ import 'hyperos_theme.dart';
 import 'frosted/liquid_glass_degradation.dart';
 import 'liquid/hyperos_liquid_glass_surface.dart';
 import 'soft_glass/soft_glass_surface.dart';
+import 'soft_glass/stable_frosted_surface.dart';
 
 /// 弹层与首页常驻圆球**共用**的「轮廓 + 浮影」。
 ///
@@ -287,32 +288,16 @@ class HyperosSelectPopupGlass extends StatelessWidget {
       return HyperosSolidPopupSurface(cornerRadius: cornerRadius, child: child);
     }
 
-    // Frosted / gaussian / translucent: use the same sigma and tint as every
-    // HyperosSheetFrame. The selected glass mode changes the shared modal
-    // material, not the visual identity of one popup versus another.
-    final sigma = HyperosBlurredHeader.blurSigmaOf(context);
-    final tint = HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
-
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: Stack(
-        fit: StackFit.passthrough,
-        children: [
-          Positioned.fill(
-            // Grouped: samples the ancestor BackdropGroup's capture (undimmed
-            // page), so the sibling modal scrim stays out of the blur input.
-            child: BackdropFilter.grouped(
-              filter: ImageFilter.blur(
-                sigmaX: sigma,
-                sigmaY: sigma,
-                tileMode: TileMode.clamp,
-              ),
-              child: ColoredBox(color: tint),
-            ),
-          ),
-          child,
-        ],
-      ),
+    // Frosted / gaussian / translucent：**与柔光/液态统一走稳定快照**
+    // （[StableFrostedSurface]）——入场动画期间四种材质共用同一张稳定背景，
+    // 不再出现"磨砂在入场时采不到稳定背景、整段发平"这种与其它材质不一致的
+    // 观感。没有采样源时该类内部维持原实时 BackdropFilter 分支，不会变差。
+    //
+    // 历史：这里原本直接 `BackdropFilter.grouped` + `sheetTintColor`。sigma 与
+    // tint 仍然由共享的弹层材质档位决定（见 [StableFrostedSurface]）。
+    return StableFrostedSurface(
+      cornerRadius: cornerRadius,
+      child: child,
     );
   }
 }
