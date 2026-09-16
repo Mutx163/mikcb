@@ -6,7 +6,8 @@
 #   .\tool\qa.ps1 seed-soon 15
 #   .\tool\qa.ps1 resume-cycle -SleepSeconds 5
 #   .\tool\qa.ps1 dump-live
-#   .\tool\qa.ps1 screenshot
+#   .\tool\qa.ps1 screenshot            # full-res PNG + a small JPEG to look at
+#   .\tool\qa.ps1 screenshot -NoThumb   # full-res PNG only
 #   .\tool\qa.ps1 list
 
 param(
@@ -34,7 +35,17 @@ param(
 
     [string]$Package = "",
 
-    [string]$OutDir = "tmp/qa"
+    [string]$OutDir = "tmp/qa",
+
+    # screenshot only. A full-res PNG off this device is 2-5 MB, and every image
+    # an agent opens is carried as base64 inside the conversation, so a handful
+    # of full-res reads is enough to exhaust the CLI heap. The PNG is kept for
+    # pixel work; the JPEG is what you should actually look at in a chat.
+    [int]$ThumbWidth = 720,
+
+    [int]$ThumbQuality = 80,
+
+    [switch]$NoThumb
 )
 
 $ErrorActionPreference = "Stop"
@@ -67,6 +78,22 @@ function Assert-Device {
         Write-Error "No Android device connected. Plug USB or adb connect first."
         exit 1
     }
+}
+
+# Real interpreter only. The `python3` name on this machine resolves to the
+# Microsoft Store stub, which exits without running anything, so it is never
+# used here; a missing python just downgrades the thumbnail to a warning.
+function Get-PythonExe {
+    $found = Get-ChildItem -Path (Join-Path $env:LOCALAPPDATA "Programs\Python\Python3*\python.exe") `
+        -ErrorAction SilentlyContinue | Sort-Object FullName -Descending
+    foreach ($candidate in $found) {
+        return $candidate.FullName
+    }
+    $onPath = Get-Command python -ErrorAction SilentlyContinue
+    if ($onPath -and $onPath.Source -notlike "*\WindowsApps\*") {
+        return $onPath.Source
+    }
+    return $null
 }
 
 function Resolve-Package {
@@ -114,7 +141,11 @@ function Show-Help {
     Write-Host "  .\tool\qa.ps1 home"
     Write-Host "  .\tool\qa.ps1 launch"
     Write-Host "  .\tool\qa.ps1 screenshot"
+    Write-Host "  .\tool\qa.ps1 screenshot -ThumbWidth 900 -ThumbQuality 85"
     Write-Host "  .\tool\qa.ps1 list"
+    Write-Host ""
+    Write-Host "screenshot writes screen-<stamp>.png (full res) and screen-<stamp>-small.jpg."
+    Write-Host "Open the -small.jpg in chat; the PNG is for pixel measurement only."
     Write-Host ""
     Write-Host "Paths for open:"
     Write-Host "  home, settings, settings/live, settings/live/testing,"
@@ -191,6 +222,26 @@ switch ($Command) {
         & $adb pull $remote $local | Out-Host
         & $adb shell rm $remote
         Write-Host "Screenshot saved: $local" -ForegroundColor Green
+
+        if (-not $NoThumb) {
+            $py = Get-PythonExe
+            $small = Join-Path $OutDir "screen-$stamp-small.jpg"
+            if ($py) {
+                $shrink = Join-Path $PSScriptRoot "shrink_image.py"
+                try {
+                    & $py $shrink $local -o $small -w $ThumbWidth -q $ThumbQuality | Out-Host
+                } catch {
+                    Write-Warning "thumbnail failed: $_"
+                }
+                if (Test-Path $small) {
+                    Write-Host "Read this one (small): $small" -ForegroundColor Green
+                } else {
+                    Write-Warning "no thumbnail written; use $local and keep it out of chat"
+                }
+            } else {
+                Write-Warning "python not found; only the full-size PNG is available"
+            }
+        }
     }
     default {
         Show-Help
