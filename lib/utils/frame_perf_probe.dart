@@ -1,3 +1,5 @@
+import 'dart:ui' show FramePhase;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -80,31 +82,47 @@ abstract final class FramePerfProbe {
 
   /// 标记窗口的长度：一次弹层入场动画约 300~400ms，给到 700ms 把尾巴（弹簧
   /// 收敛、内容淡入）一起收进去。
-  static const int _windowDurationUs = 700000;
+  static const int _markWindowUs = 700000;
+
+  /// 没有任何标记在跑时的兜底窗口长度：每 2 秒（且这段里真有帧）结算一条
+  /// `steady` 读数，用来给「当下正在发生的任何事」（滚动、转场、悬停动画）
+  /// 一个基线 —— 判「是弹层特别贵，还是这台设备/这块屏本来就贴着 120Hz 门槛」
+  /// 就靠它对照。
+  static const int _steadyWindowUs = 2000000;
+
+  /// 兜底窗口的标签（不是交互标记，出线时不带 `mark` 前缀）。
+  static const String _steadyLabel = 'steady';
 
   /// 单个窗口最多累计多少帧就强制结算（长动画 / 长滚动时给个上界）。
   static const int _windowMaxFrames = 400;
 
   /// 可信帧间隔的下限（微秒）：低于 4ms 的间隔不是 vsync 节奏 —— 引擎一次回调
-  /// 可能投递多帧，同批帧的到达时间几乎相同。
+  /// 可能投递多帧，同批帧的时间戳几乎相同。
   static const int _minPlausibleGapUs = 4000;
 
   /// 可信帧间隔的上限（微秒）：高于 40ms 的间隔是卡顿，不是面板节奏。
   static const int _maxPlausibleGapUs = 40000;
 
-  /// 帧间隔重采样周期：面板会在空闲 60Hz / 交互 120Hz 之间来回切，每 N 帧重新
-  /// 估一次最小间隔，免得一次闲时的 16.7ms 把预算永久钉死在宽的那一档。
-  static const int _gapResampleFrames = 240;
+  /// `steady` 兜底窗口至少要有这么多帧才出一行：闲着没动画时几分钟才来一两帧，
+  /// 那种「窗口」报出来只是噪音。
+  static const int _minSteadyWindowFrames = 10;
 
   static bool _installed = false;
+
+  /// 是否启用 `steady` 兜底窗口（测试里关掉，免得用例被它多打的行干扰）。
+  static bool _steadyEnabled = true;
 
   /// 显示上报的单帧预算（微秒）：安装时按 `display.refreshRate` 算，读不到按 60Hz。
   static int _configuredBudgetUs = 16700;
 
-  /// 实测到的最小相邻帧间隔（微秒）：0 = 还没采到可信样本。
+  /// 实测到的最小相邻帧间隔（微秒）：0 = 还没采到可信样本。取自**引擎给的
+  /// 每帧 vsync 时刻**，不是回调到达时间（见 [_sampleVsyncPeriod]）。
+  ///
+  /// 一次会话内**只收紧、不放宽**（取到过的最紧周期）。代价是面板从 120 掉回
+  /// 60 档后预算会偏紧、`over` 偏悲观；收益是读数不会因为一次采样的窗口边界
+  /// 而反复跳档。`budgetMs` 字段本身就打在同一行里，判读以它为准。
   static int _observedMinGapUs = 0;
-  static int _gapSampleCount = 0;
-  static int? _lastFrameUs;
+  static int? _lastVsyncUs;
 
   /// 汇总输出落点；测试可替换成自己的收集器。
   static void Function(String line) _emit = debugPrint;
@@ -149,6 +167,8 @@ abstract final class FramePerfProbe {
     final reportedRate = _reportedRefreshRate();
     _configuredBudgetUs = (1000000 / reportedRate).round();
     _clock.start();
+    _steadyEnabled = true;
+    _beginWindow(_steadyLabel, 0);
     SchedulerBinding.instance.addTimingsCallback(_onTimings);
     _emit(
       '$_tag installed reportedRateFps=$reportedRate '
@@ -208,30 +228,53 @@ abstract final class FramePerfProbe {
         buildUs: timing.buildDuration.inMicroseconds,
         rasterUs: timing.rasterDuration.inMicroseconds,
         nowUs: _clock.elapsedMicroseconds,
+        vsyncUs: _vsyncStampOf(timing),
       );
     }
   }
 
-  /// 收一帧。时间戳由调用方给（不在这里读表）：录帧回调可能一次投递多帧，
-  /// 各帧用同一个「现在」会把一段卡顿压成 0ms。
+  /// 这一帧的 vsync 时刻（引擎时间轴微秒，单调）；拿不到返回 null。
+  static int? _vsyncStampOf(FrameTiming timing) {
+    try {
+      final stamp = timing.timestampInMicroseconds(FramePhase.vsyncStart);
+      return stamp > 0 ? stamp : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 收一帧。窗口与标记的时间戳由调用方给（不在这里读表）：录帧回调可能一次
+  /// 投递多帧，各帧用同一个「现在」会把一段卡顿压成 0ms。
   static void _ingest({
     required int buildUs,
     required int rasterUs,
     required int nowUs,
+    int? vsyncUs,
   }) {
     if (!_installed) {
       return;
     }
     _framesTotal++;
-    _sampleGap(nowUs);
+    _sampleVsyncPeriod(vsyncUs);
 
     final totalUs = buildUs + rasterUs;
 
-    if (_windowLabel != null) {
-      if (nowUs - _windowStartUs > _windowDurationUs) {
-        // 窗口到期：先把这段读数结算掉，本帧不进这个窗口。
+    final label = _windowLabel;
+    if (label != null && nowUs - _windowStartUs <= _windowDurationUs(label)) {
+      _accumulateWindow(
+        buildUs: buildUs,
+        rasterUs: rasterUs,
+        totalUs: totalUs,
+        nowUs: nowUs,
+      );
+    } else {
+      // 窗口到期（或当前没有窗口）：先结算上一段读数，再用本帧开一段新的
+      // 兜底窗口 —— 标记窗口结束后，基线读数要立刻接上。
+      if (label != null) {
         _flushWindow();
-      } else {
+      }
+      if (_steadyEnabled) {
+        _beginWindow(_steadyLabel, nowUs);
         _accumulateWindow(
           buildUs: buildUs,
           rasterUs: rasterUs,
@@ -275,25 +318,34 @@ abstract final class FramePerfProbe {
     }
   }
 
-  /// 采一个帧间隔样本，用来估真实 vsync 周期（见 [_budgetUs]）。
-  static void _sampleGap(int nowUs) {
-    final previous = _lastFrameUs;
-    _lastFrameUs = nowUs;
+  /// 窗口长度按标签分档：标记窗口短（一次交互动画），兜底窗口长（基线）。
+  static int _windowDurationUs(String label) =>
+      label == _steadyLabel ? _steadyWindowUs : _markWindowUs;
+
+  /// 采一个 vsync 周期样本，用来把预算收紧到屏幕真实节奏（见 [_budgetUs]）。
+  ///
+  /// **必须用引擎给的每帧 vsync 时刻**，不能用回调到达时间：引擎在 UI 线程忙时
+  /// 会把积压的多帧一次性投递，同批帧的到达时间几乎相同、批次之间又隔得很远，
+  /// 于是「最小到达间隔」要么被过滤成 0 样本、要么是个自相矛盾的 100ms+。
+  /// 2026-09-16 两轮真机分别打出了 `vsyncMs=126.8`（同窗口平均才 45ms）与
+  /// 恒为 `?` 的读数 —— 都出在这个口径上。
+  static void _sampleVsyncPeriod(int? vsyncUs) {
+    if (vsyncUs == null) {
+      return;
+    }
+    final previous = _lastVsyncUs;
+    _lastVsyncUs = vsyncUs;
     if (previous == null) {
       return;
     }
-    final gap = nowUs - previous;
+    // 相邻两帧的 vsync 相隔整数个刷新周期：取窗口内最小的可信值即面板节奏
+    // （掉了 vsync 的帧给出 2 倍、3 倍周期，取最小自然被排除在外）。
+    final gap = vsyncUs - previous;
     if (gap < _minPlausibleGapUs || gap > _maxPlausibleGapUs) {
       return;
     }
     if (_observedMinGapUs == 0 || gap < _observedMinGapUs) {
       _observedMinGapUs = gap;
-    }
-    _gapSampleCount++;
-    if (_gapSampleCount >= _gapResampleFrames) {
-      _gapSampleCount = 0;
-      // 重新估：面板可能刚从 120 掉回 60，旧的下限会把预算卡在不该有的紧档上。
-      _observedMinGapUs = 0;
     }
   }
 
@@ -364,15 +416,18 @@ abstract final class FramePerfProbe {
     if (label == null || frames == 0) {
       return;
     }
+    if (label == _steadyLabel && frames < _minSteadyWindowFrames) {
+      // 闲着没动：窗口里只有零星几帧，报出来只是噪音。
+      return;
+    }
 
     final budgetUs = _budgetUs;
-    // vsync 取**全局**实测下限，不取本窗口自己的最小间隔：引擎会把卡顿时积压的
-    // 帧批量投递（同批帧的到达时间几乎相同），窗口内可信间隔样本可能只有
-    // 100ms+ 那几个 —— 2026-09-16 第二轮真机就这么打出过 `vsyncMs=126.8`
-    // 这种自相矛盾的值（同窗口平均间隔才 45ms）。
+    // vsync 取**全局**实测下限（引擎时间轴），不取本窗口自己的最小间隔：
+    // 理由见 [_sampleVsyncPeriod]。
     final vsyncUs = _observedMinGapUs;
+    final prefix = label == _steadyLabel ? _steadyLabel : 'mark $label';
     _emit(
-      '$_tag mark $label frames=$frames spanMs=${spanMs.toStringAsFixed(0)} '
+      '$_tag $prefix frames=$frames spanMs=${spanMs.toStringAsFixed(0)} '
       'fps=${_fps(frames, spanMs)} '
       'vsyncMs=${vsyncUs == 0 ? '?' : _ms(vsyncUs)} '
       'budgetMs=${_ms(budgetUs)} over=$overCount '
@@ -463,33 +518,50 @@ abstract final class FramePerfProbe {
     _worstRasterUs = 0;
     _worstTotalUs = 0;
     _observedMinGapUs = 0;
-    _gapSampleCount = 0;
-    _lastFrameUs = null;
-    _windowLabel = null;
+    _lastVsyncUs = null;
+    _windowLabel = _steadyEnabled ? _steadyLabel : null;
+    _windowStartUs = 0;
     _windowFrames = 0;
+    _windowLastUs = 0;
+    _windowSumBuildUs = 0;
+    _windowSumRasterUs = 0;
+    _windowWorstBuildUs = 0;
+    _windowWorstRasterUs = 0;
+    _windowOverCount = 0;
     _marks.clear();
   }
 
   /// 测试专用安装：不碰 `SchedulerBinding`（不注册录帧回调、不开时钟），
   /// 预算按给定刷新率算，输出收到 [emit]。
+  ///
+  /// [steadyWindows] 默认关：兜底窗口会按 2 秒周期多打行，用例只想看自己那一条。
   @visibleForTesting
   static void debugInstall({
     required void Function(String line) emit,
     double refreshRate = 60,
+    bool steadyWindows = false,
   }) {
     _installed = true;
     _emit = emit;
+    _steadyEnabled = steadyWindows;
     _configuredBudgetUs = (1000000 / refreshRate).round();
     _resetState();
   }
 
-  /// 测试专用喂帧：时间戳由调用方显式给，不读探针时钟。
+  /// 测试专用喂帧：时间戳由调用方显式给，不读探针时钟。[vsyncUs] 是引擎时间轴
+  /// 上的 vsync 时刻（用来估面板周期），不传就等于这一帧没有该样本。
   @visibleForTesting
   static void debugIngest({
     required int buildUs,
     required int rasterUs,
     required int nowUs,
-  }) => _ingest(buildUs: buildUs, rasterUs: rasterUs, nowUs: nowUs);
+    int? vsyncUs,
+  }) => _ingest(
+    buildUs: buildUs,
+    rasterUs: rasterUs,
+    nowUs: nowUs,
+    vsyncUs: vsyncUs,
+  );
 
   /// 测试专用标记。
   @visibleForTesting

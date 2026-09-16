@@ -129,6 +129,8 @@ void main() {
           buildUs: 5000,
           rasterUs: 4000,
           nowUs: i * 8333,
+          // 引擎给的 vsync 时刻按 8333µs 递进 → 探针认定面板是 120Hz。
+          vsyncUs: i * 8333,
         );
       }
       // 下一帧已经超出窗口时长（700ms）：先结算窗口，本帧不进窗口。
@@ -182,14 +184,25 @@ void main() {
       expect(lines[1], contains('frames=1'));
     });
 
-    test('实测 8.3ms 间隔把预算从 60Hz 档收紧到 120Hz 档', () {
+    test('实测 8.3ms 的 vsync 间隔把预算从 60Hz 档收紧到 120Hz 档', () {
       FramePerfProbe.debugMark('homeMenu:open', 0);
       // 每帧 10ms：60Hz 预算（16.7ms）下不算超，120Hz 预算（8.3ms）下每帧都超。
-      // 第一帧采样不到间隔（还没有上一帧），所以它仍按宽预算判 —— over=2 而不是 3。
-      FramePerfProbe.debugIngest(buildUs: 6000, rasterUs: 4000, nowUs: 8333);
-      FramePerfProbe.debugIngest(buildUs: 6000, rasterUs: 4000, nowUs: 16666);
-      FramePerfProbe.debugIngest(buildUs: 6000, rasterUs: 4000, nowUs: 24999);
-      FramePerfProbe.debugIngest(buildUs: 1000, rasterUs: 1000, nowUs: 900000);
+      // vsync 时刻按 8333µs 递进 → 探针认定面板是 120Hz。
+      // 第一帧采不到间隔（还没有上一帧），所以它仍按宽预算判 —— over=2 而不是 3。
+      for (var i = 1; i <= 3; i++) {
+        FramePerfProbe.debugIngest(
+          buildUs: 6000,
+          rasterUs: 4000,
+          nowUs: i * 8333,
+          vsyncUs: i * 8333,
+        );
+      }
+      FramePerfProbe.debugIngest(
+        buildUs: 1000,
+        rasterUs: 1000,
+        nowUs: 900000,
+        vsyncUs: 900000,
+      );
 
       expect(lines, hasLength(1));
       final line = lines.single;
@@ -204,6 +217,26 @@ void main() {
       FramePerfProbe.debugIngest(buildUs: 1000, rasterUs: 1000, nowUs: 900000);
 
       expect(lines, isEmpty);
+    });
+
+    test('没有标记时的兜底窗口：每 2 秒给一条 steady 基线读数', () {
+      FramePerfProbe.debugInstall(emit: lines.add, steadyWindows: true);
+      // 120Hz 节奏跑 3 秒：前 2 秒凑满 240 帧时结算一段，余下的重新开一段。
+      for (var i = 1; i <= 360; i++) {
+        FramePerfProbe.debugIngest(
+          buildUs: 1000,
+          rasterUs: 2000,
+          nowUs: i * 8333,
+          vsyncUs: i * 8333,
+        );
+      }
+
+      expect(lines, hasLength(1));
+      final line = lines.single;
+      expect(line, startsWith('[frame-perf] steady'));
+      expect(line, contains('frames=240'));
+      expect(line, contains('budgetMs=8.3'));
+      expect(line, contains('vsyncMs=8.3'));
     });
   });
 }
