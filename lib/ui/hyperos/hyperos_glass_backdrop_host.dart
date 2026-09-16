@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
@@ -122,6 +123,28 @@ class HyperosGlassBackdropController extends ChangeNotifier {
   bool get capturing =>
       _zones.isNotEmpty || _plainConsumers > 0 || _recordingHolds > 0;
 
+  /// 诊断（临时件，与 `lib/utils/frame_perf_probe.dart` 配套）：采样状态每次变化
+  /// 打一条，用来判「反复开合弹层后动画变贵」是不是采样侧的状态在累积
+  /// （持有数没归零 / 采样区越并越大）。
+  ///
+  /// 只在状态真的变化时调用，稳态零输出；问题收敛后连同调用点一起删。
+  void traceState(String event) {
+    if (kReleaseMode) return;
+    var bandArea = 0.0;
+    var bands = 0;
+    for (final zone in _zones) {
+      final rect = captureRectOf(zone);
+      if (rect == null) continue;
+      bands++;
+      bandArea += rect.width * rect.height;
+    }
+    debugPrint(
+      '[glass-state] $event holds=$_recordingHolds plain=$_plainConsumers '
+      'zones=${_zones.length} bands=$bands bandArea=${bandArea.round()} '
+      'capturing=$capturing',
+    );
+  }
+
   /// 页内玻璃挂载：选/建一块采样区，并绑定它自己的采样源。
   void acquireZone(RenderBox box, HyperosZoneBackdrop backdrop) {
     // 宿主已释放（dispose 早于子节点 detach 的路径：热重载、非常规移除、
@@ -177,6 +200,7 @@ class HyperosGlassBackdropController extends ChangeNotifier {
     // 真机现象就是柔光档「打开预览面板」的弹窗看着透明（2026-09-13）。
     // 新块必须单独要一帧。
     if (openedZone) notifyListeners();
+    traceState('acquireZone');
   }
 
   /// 玻璃自己动了（弹层滑入 / 版面变化）：采样带的位置跟着变，需要重录一帧。
@@ -216,6 +240,7 @@ class HyperosGlassBackdropController extends ChangeNotifier {
       break;
     }
     if (!capturing) notifyListeners();
+    traceState('releaseZone');
   }
 
   /// 弹层（拿不到自己背后矩形的那类）挂载 / 展开时调用。
@@ -242,6 +267,7 @@ class HyperosGlassBackdropController extends ChangeNotifier {
     if (_plainConsumers == 0) return;
     _plainConsumers--;
     if (!capturing) notifyListeners();
+    traceState('release(plain)');
   }
 
   /// 只请求"继续录帧"：刷新各采样区，**不**产生整层快照。
@@ -257,6 +283,7 @@ class HyperosGlassBackdropController extends ChangeNotifier {
     // 让它为 true，而这一下通知才是"本帧末立刻录一次"的触发（弹层首帧要玻璃
     // 而不是兜底实底，靠的就是它）。
     notifyListeners();
+    traceState('holdRecording');
   }
 
   /// 与 [holdRecording] 配对。
@@ -265,6 +292,7 @@ class HyperosGlassBackdropController extends ChangeNotifier {
     if (_recordingHolds == 0) return;
     _recordingHolds--;
     if (!capturing) notifyListeners();
+    traceState('releaseRecording');
   }
 
   Rect? _globalRectOf(RenderBox box) {
