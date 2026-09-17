@@ -590,7 +590,18 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     super.dispose();
   }
 
-  Widget _buildHeaderShell(Widget header, Color pageBackground) {
+  /// 首帧拆解采样点（临时诊断件）：顶栏外壳那棵子树（模糊层 + 作用域）。
+  ///
+  /// 与 [nodeTag] 为 `header` 的采样点配对：首轮真机数据显示「页面外壳」有一笔
+  /// 与内容无关的恒定开销（约 40ms），把外壳单列出来才能判断它落在这里、
+  /// 落在 [HyperosBlurredHeaderShell] 里、还是落在 Scaffold / Stack 上。
+  Widget _buildHeaderShell(Widget header, Color pageBackground) =>
+      FirstFrameProbeNode(
+        nodeTag: 'headerShell',
+        child: _buildHeaderShellInner(header, pageBackground),
+      );
+
+  Widget _buildHeaderShellInner(Widget header, Color pageBackground) {
     if (!widget.overlayHeader) {
       // Stacked headers (e.g. timetable home) use a solid bar; frosted tint
       // is based on HyperosColors.scaffoldBackground and mismatches custom
@@ -648,9 +659,14 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     );
     // Always listen: edge haptics + snap-back are not limited to frosted overlay
     // pages. HyperosScrollBehavior also hooks each Scrollable as a second path.
-    return NotificationListener<ScrollNotification>(
-      onNotification: _handleBodyScrollForBlur,
-      child: body,
+    // 首帧拆解采样点（临时诊断件）：内容外壳（Material / ScrollConfiguration /
+    // 通知监听）。与 `body` 那个配对，用来判断恒定开销落在外壳还是内容上。
+    return FirstFrameProbeNode(
+      nodeTag: 'bodyShell',
+      child: NotificationListener<ScrollNotification>(
+        onNotification: _handleBodyScrollForBlur,
+        child: body,
+      ),
     );
   }
 
