@@ -42,6 +42,7 @@ import '../widgets/class_reminder_sheet.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
+import '../utils/first_frame_probe.dart';
 import '../utils/frame_perf_probe.dart';
 import '../widgets/home_page_region_blur.dart';
 import '../utils/home_page_background.dart';
@@ -9430,7 +9431,11 @@ class _OpenOnlyContainerPageRoute<T> extends PageRouteBuilder<T> {
          reverseTransitionDuration: Duration.zero,
          opaque: false,
          pageBuilder: (context, animation, secondaryAnimation) =>
-             builder(context),
+             // 首帧拆解采样点（临时诊断件）。
+             FirstFrameProbeNode(
+               nodeTag: 'page',
+               child: builder(context),
+             ),
          transitionsBuilder: (context, animation, secondaryAnimation, child) {
            final size = MediaQuery.of(context).size;
            final sourceCenter = sourceRect.center;
@@ -9492,6 +9497,7 @@ class _OpenOnlyContainerPageRoute<T> extends PageRouteBuilder<T> {
   @override
   TickerFuture didPush() {
     FramePerfProbe.mark('route:push:openOnlyContainer');
+    FirstFrameProbe.begin('push:openOnlyContainer');
     return super.didPush();
   }
 

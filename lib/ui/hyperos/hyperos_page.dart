@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+
+import '../../utils/first_frame_probe.dart';
 import 'hyperos_blurred_header.dart';
 import 'hyperos_collapsible_top_app_bar.dart';
 import 'hyperos_glass_backdrop_host.dart';
@@ -602,7 +604,17 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     return HyperosBlurredHeaderShell(child: header);
   }
 
-  Widget _buildHeaderContent() {
+  /// 首帧拆解采样点（临时诊断件）：顶栏那棵子树。
+  ///
+  /// 采样点必须放在这里，不能挂在 `HyperosSubpage` 传进来的 `header` 上 ——
+  /// 默认走折叠大标题时（[_useCollapsibleTopAppBar]）那条分支**根本不用**
+  /// `widget.header`，挂在调用方等于永远不挂载（试过，白跑一轮）。
+  Widget _buildHeaderContent() => FirstFrameProbeNode(
+    nodeTag: 'header',
+    child: _buildHeaderContentInner(),
+  );
+
+  Widget _buildHeaderContentInner() {
     if (_useCollapsibleTopAppBar) {
       return HyperosCollapsibleTopAppBar(
         key: _collapsibleBarKey,
@@ -629,7 +641,9 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       type: MaterialType.transparency,
       child: ScrollConfiguration(
         behavior: const HyperosScrollBehavior(),
-        child: child,
+        // 首帧拆解采样点（临时诊断件）：页面内容这棵子树。与顶栏那一个配对，
+        // 差值是「钱花在列表内容上还是顶栏外壳上」。
+        child: FirstFrameProbeNode(nodeTag: 'body', child: child),
       ),
     );
     // Always listen: edge haptics + snap-back are not limited to frosted overlay

@@ -30,6 +30,7 @@ import 'screens/timetable_screen.dart';
 import 'screens/timetable_settings_screen.dart';
 import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
+import 'utils/first_frame_probe.dart';
 import 'utils/frame_perf_probe.dart';
 import 'utils/home_startup_visual_primer.dart';
 import 'utils/theme_seed_accent.dart';
@@ -240,6 +241,10 @@ Future<void> main() async {
       // 把「动画卡的那一段」聚合成一条 `[frame-perf]` 日志并判定是哪条线程超时。
       // 详情与删除清单见 `.agents/notes/implemented/process/2026-09-16-frame-perf-probe.md`。
       FramePerfProbe.install();
+      // 首帧拆解探针（临时诊断件，release 里是空壳）：把「进页面」那一帧切成
+      // 等帧 / 构建 / 布局 / 绘制四段，并用命名采样点分出顶栏外壳与页面内容。
+      // `[frame-perf]` 已证明尖峰在 UI 线程，但指不出该改哪一段，靠它定位。
+      FirstFrameProbe.install();
       // 金标联盟「谷歌Android导航条适配」（Edge-to-Edge，截止 2026-10-31）：
       // 全局启用手势导航条沉浸式。Android 15+（targetSdk 35+）系统已强制
       // 生效；此处覆盖 Android 10~14 设备，使内容延伸到透明导航条下方，

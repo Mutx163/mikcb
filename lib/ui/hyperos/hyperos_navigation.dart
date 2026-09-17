@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../utils/first_frame_probe.dart';
 import '../../utils/frame_perf_probe.dart';
 import 'hyperos_motion.dart';
 import 'hyperos_miuix_spec.dart';
@@ -375,6 +376,8 @@ class HyperosPageRoute<T> extends PageRoute<T> {
   @override
   TickerFuture didPush() {
     FramePerfProbe.mark('route:push:$_probeLabel');
+    // 首帧拆解（临时诊断件）：这一帧就是「新页面第一次被建出来」的那一帧。
+    FirstFrameProbe.begin('push:$_probeLabel');
     return super.didPush();
   }
 
@@ -417,7 +420,8 @@ class HyperosPageRoute<T> extends PageRoute<T> {
     Animation<double> animation,
     Animation<double> secondaryAnimation,
   ) {
-    return builder(context);
+    // 首帧拆解采样点（临时诊断件）：整页子树的构建 / 布局 / 绘制时刻。
+    return FirstFrameProbeNode(nodeTag: 'page', child: builder(context));
   }
 
   @override
