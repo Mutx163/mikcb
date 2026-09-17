@@ -315,7 +315,17 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
   /// 解析采样源（屏内作用域 → modal 时的栈顶屏）。真正的"要不要录帧"由
   /// [HyperosGlassBackdropReporter] 在 attach 时按区域登记，这里只解析归属。
   void _bindController() {
-    final resolved = widget.blurEnabled
+    // ⚠️ 节拍被停下来的那一层里的玻璃**不登记采样区**：内嵌页盖住首页时
+    // （`TickerMode(enabled: false)` + `Visibility(visible: false)`）、被不透明
+    // 路由盖住的上一层，都是这种状态 —— 那些玻璃根本不绘制，占着采样名额只会
+    // 让每一次录帧都白录一块，并让它们被卷进材质重算（上游每块玻璃重建材质都
+    // 要同步等一次 GPU 回读，**块数**才是这条链路上最贵的维度）。
+    //
+    // 判据与 [HyperosGlassBackdropHost] 的 `_syncRegistration` 同源：那里也用
+    // `TickerMode` 判"本屏是否在跑"。恢复时 `didChangeDependencies` 会重跑这里
+    // （上面已订阅 `TickerMode.valuesOf`），重新登记由同帧补采保证首帧就有材质。
+    final live = TickerMode.valuesOf(context).enabled;
+    final resolved = (widget.blurEnabled && live)
         ? HyperosGlassBackdropRegistry.resolve(context)
         : null;
     // 已释放的宿主不再持有：它的 backdrop 图已被 dispose，继续用它采样会踩到

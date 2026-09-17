@@ -25,10 +25,10 @@ void main() {
   );
 
   testWidgets('本屏恢复（TickerMode 转真）后必须重新解析采样源，不停在旧的', (tester) async {
-    // 场景：页面 push 后被盖住（OverlayEntry 会关掉 TickerMode）、期间玻璃面
-    // 因父级重建重新解析过采样源（注册表栈顶已换人），pop 回来时页面 widget 是
-    // 缓存的、**不会重建** —— 没有这一步重新解析，采样源就永远停在旧的那个上，
-    // 回来时玻璃只剩半套材质、另一半回落实底（真机：进设置再回来爱心变半透明）。
+    // 场景：页面 push 后被盖住（OverlayEntry 会关掉 TickerMode）；pop 回来时页面
+    // widget 是缓存的、**不会重建** —— 只剩 TickerMode 依赖能触发重新解析。
+    // 没有这一步，采样源就永远停在被盖住前的那个上，回来时玻璃只剩半套材质、
+    // 另一半回落实底（真机：进设置再回来爱心变半透明）。
     final home = HyperosGlassBackdropController();
     final pushed = HyperosGlassBackdropController();
     addTearDown(home.dispose);
@@ -77,13 +77,16 @@ void main() {
     expect(pushed.zones, isEmpty);
 
     // push：新页面注册自己的采样源（成为栈顶）、本屏被盖住；期间玻璃面因父级
-    // 重建重新解析一次 → 绑到了新页面那个（这就是要修的那个"绑错"状态）。
+    // 重建会重新解析一次 —— 但节拍已经停了，解析结果是**不登记任何采样区**：
+    // 那些玻璃不绘制，占着名额只会让每次录帧白录一块、还要把它们拉进材质重建
+    // （块数才是这条链路上最贵的维度）。
     HyperosGlassBackdropRegistry.register(pushed);
     addTearDown(() => HyperosGlassBackdropRegistry.unregister(pushed));
     live.value = false;
     revision.value = 1;
     await tester.pumpAndSettle();
-    expect(pushed.zones, isNotEmpty, reason: '被盖住期间会绑到栈顶那个（记录现状）');
+    expect(pushed.zones, isEmpty, reason: '被盖住期间不该绑到栈顶那个');
+    expect(home.zones, isEmpty, reason: '本屏那份也不该继续占着名额');
 
     // pop：新页面注销、本屏恢复。**不再重建**玻璃面 —— 只剩 TickerMode 依赖
     // 能触发重新解析。
