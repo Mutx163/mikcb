@@ -9968,6 +9968,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get memoryStatsEntryTitle => '内存状态';
 
   @override
+  String get performanceSnapshotEntryTitle => '设置快照';
+
+  @override
+  String get performanceSnapshotEntrySubtitle => '把当前所有影响流畅度的设置写进应用日志';
+
+  @override
+  String get performanceSnapshotEntryDone => '已写入应用日志';
+
+  @override
   String get generalSettingsTitle => '通用';
 
   @override
@@ -20835,6 +20844,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get memoryStatsEntryTitle => '記憶體狀態';
 
   @override
+  String get performanceSnapshotEntryTitle => '設定快照';
+
+  @override
+  String get performanceSnapshotEntrySubtitle => '把目前所有會影響效能的設定寫入應用日誌';
+
+  @override
+  String get performanceSnapshotEntryDone => '已寫入應用日誌';
+
+  @override
   String get generalSettingsTitle => '一般';
 
   @override
@@ -31700,6 +31718,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get memoryStatsEntryTitle => '記憶體狀態';
+
+  @override
+  String get performanceSnapshotEntryTitle => '設定快照';
+
+  @override
+  String get performanceSnapshotEntrySubtitle => '把目前所有會影響效能的設定寫入應用日誌';
+
+  @override
+  String get performanceSnapshotEntryDone => '已寫入應用日誌';
 
   @override
   String get generalSettingsTitle => '一般';

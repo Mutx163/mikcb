@@ -10569,6 +10569,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryStatsEntryTitle => 'Memory Stats';
 
   @override
+  String get performanceSnapshotEntryTitle => 'Settings snapshot';
+
+  @override
+  String get performanceSnapshotEntrySubtitle =>
+      'Write every performance-affecting setting to the app log';
+
+  @override
+  String get performanceSnapshotEntryDone => 'Written to the app log';
+
+  @override
   String get generalSettingsTitle => 'General';
 
   @override

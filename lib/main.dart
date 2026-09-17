@@ -20,6 +20,7 @@ import 'package:flutter_blackbox/flutter_blackbox.dart';
 
 import 'blackbox_adapters.dart';
 import 'logging/app_log_messages.dart';
+import 'logging/performance_settings_snapshot.dart';
 import 'models/timetable_settings.dart';
 import 'providers/timetable_provider.dart';
 import 'screens/course_import_screen.dart';
@@ -813,6 +814,11 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         _revealHomeOnce();
         unawaited(AppLogService.instance.updatePrivacyAccepted(true));
         unawaited(UmengAnalyticsService.initializeIfNeeded());
+        // 渲染性能设置快照（只在调试版 / 性能版写日志）：调性能时不用再翻三层
+        // 设置页回忆「现在是什么材质档」，直接和 `[frame-perf]` 读数对上。
+        unawaited(
+          logPerformanceSettingsSnapshot(provider.settings, reason: 'startup'),
+        );
         unawaited(_checkPendingExternalImport());
         unawaited(_checkPendingWidgetLaunch());
         unawaited(_installLanEditNotificationHandler());
@@ -916,6 +922,11 @@ class _AppEntryScreenState extends State<AppEntryScreen>
 
       unawaited(_checkPendingExternalImport());
       unawaited(_installLanEditNotificationHandler());
+      // 走完引导页这条路径要**重新取** settings：引导页里选视觉效果会写设置，
+      // 上面那份是引导之前的档位。与快速路径那条同源（见 _handleStartupFlows）。
+      unawaited(
+        logPerformanceSettingsSnapshot(provider.settings, reason: 'startup'),
+      );
       unawaited(
         AppLogService.instance.info(
           'startup_flow_completed',

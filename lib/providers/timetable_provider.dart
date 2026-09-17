@@ -29,6 +29,7 @@ import '../ui/hyperos/hyperos_overscroll.dart';
 import '../services/app_analytics.dart';
 import '../logging/app_debug_log.dart';
 import '../logging/app_log_messages.dart';
+import '../logging/performance_settings_snapshot.dart';
 import '../services/app_log_service.dart';
 import '../services/data_transfer_service.dart';
 import '../services/holiday_service.dart';
@@ -320,6 +321,7 @@ class TimetableProvider with ChangeNotifier {
   /// 批量更新设置（用于主题导入）
   Future<void> updateSettings(TimetableSettings newSettings) {
     return _runMutation(() async {
+      final previous = _settings;
       _settings = _normalizeSettingsWithTimeScheme(newSettings);
       hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
       _writeEpoch++;
@@ -327,6 +329,7 @@ class TimetableProvider with ChangeNotifier {
       await _persistActiveProfileState();
       if (_writeEpoch == epoch) {
         notifyListeners();
+        _logPerformanceSnapshotIfChanged(previous);
       }
     });
   }
@@ -3708,6 +3711,7 @@ class TimetableProvider with ChangeNotifier {
     }
 
     final previousBackdropKey = homePageBackdropKey(_settings);
+    final previousSettings = _settings;
     final semesterStartChanged =
         settings.semesterStartDate != _settings.semesterStartDate;
     _settings = _normalizeSettingsWithTimeScheme(settings);
@@ -3730,9 +3734,34 @@ class TimetableProvider with ChangeNotifier {
       await precacheHomePageBackdropImage(_settings);
     }
     notifyListeners();
+    _logPerformanceSnapshotIfChanged(previousSettings);
     unawaited(_syncLiveScheduleSnapshot());
     unawaited(_updateLiveActivity(syncScheduleSnapshot: false));
     return null;
+  }
+
+  /// 渲染性能设置快照（只在调试版 / 性能版写日志，release 里是空操作）。
+  ///
+  /// 所有设置子页的保存都收敛到 [updateTimetableSettings]（或主题导入那条
+  /// [updateSettings]），挂在这里就能做到「改一次设置记一条」。守卫不可省：
+  /// 拖材质滑杆只有 250ms 防抖，快速连拖仍会连着落盘好几次，没有守卫就是
+  /// 一屏一模一样的快照。
+  ///
+  /// 用 fire-and-forget：快照只是观测，写日志慢一点不该拖慢保存。
+  ///
+  /// 第一道门控不可省：指纹要跑一次「约 90 个键的 JSON 编码 + 一次壁纸文件
+  /// stat」，而 [updateTimetableSettings] 是所有设置写入的唯一收口，正式包里
+  /// 不该为一条永远不会输出的日志白付这笔。先问那个同步缓存布尔最便宜。
+  void _logPerformanceSnapshotIfChanged(TimetableSettings previous) {
+    if (!performanceSnapshotEnabled) {
+      return;
+    }
+    if (!shouldLogPerformanceSettingsChange(previous, _settings)) {
+      return;
+    }
+    unawaited(
+      logPerformanceSettingsSnapshot(_settings, reason: 'settingsChanged'),
+    );
   }
 
   int previewWakeUpImportRequiredSectionCount(

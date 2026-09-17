@@ -18097,6 +18097,24 @@ abstract class AppLocalizations {
   /// **'内存状态'**
   String get memoryStatsEntryTitle;
 
+  /// No description provided for @performanceSnapshotEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'设置快照'**
+  String get performanceSnapshotEntryTitle;
+
+  /// No description provided for @performanceSnapshotEntrySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'把当前所有影响流畅度的设置写进应用日志'**
+  String get performanceSnapshotEntrySubtitle;
+
+  /// No description provided for @performanceSnapshotEntryDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'已写入应用日志'**
+  String get performanceSnapshotEntryDone;
+
   /// No description provided for @generalSettingsTitle.
   ///
   /// In zh, this message translates to:

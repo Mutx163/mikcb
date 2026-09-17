@@ -66,12 +66,40 @@ class _DiagnosticsScreenState extends State<_DiagnosticsScreen> {
                         );
                       },
                     ),
+                  // 渲染性能设置快照：只在调试版 / 性能版可见（与内存监测同一个
+                  // 包名门控）。调性能时不必再翻三层设置页回忆「现在是什么材质
+                  // 档」—— 打一条就能和 logcat 里的 `[frame-perf]` 读数对上。
+                  if (showMemoryStats)
+                    HyperosListTile(
+                      title: l10n.performanceSnapshotEntryTitle,
+                      subtitle: l10n.performanceSnapshotEntrySubtitle,
+                      onTap: _logPerformanceSnapshot,
+                    ),
                 ],
               ),
             ],
           );
         },
       ),
+    );
+  }
+
+  /// 手动打一条快照。自动的两次（启动、改设置）在 `main.dart` 与
+  /// `TimetableProvider` 里；这一条是给「已经卡了、想立刻留一份现场」用的。
+  Future<void> _logPerformanceSnapshot() async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<TimetableProvider>();
+    await logPerformanceSettingsSnapshot(
+      provider.settings,
+      reason: 'manualExport',
+    );
+    if (!mounted) {
+      return;
+    }
+    showAppToast(
+      context,
+      message: l10n.performanceSnapshotEntryDone,
+      kind: AppToastKind.success,
     );
   }
 

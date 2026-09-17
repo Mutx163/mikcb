@@ -10265,6 +10265,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get memoryStatsEntryTitle => 'メモリ統計';
 
   @override
+  String get performanceSnapshotEntryTitle => '設定スナップショット';
+
+  @override
+  String get performanceSnapshotEntrySubtitle =>
+      '現在のパフォーマンスに影響する設定をアプリログに書き出します';
+
+  @override
+  String get performanceSnapshotEntryDone => 'アプリログに書き出しました';
+
+  @override
   String get generalSettingsTitle => '一般';
 
   @override

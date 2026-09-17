@@ -10310,6 +10310,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get memoryStatsEntryTitle => '메모리 상태';
 
   @override
+  String get performanceSnapshotEntryTitle => '설정 스냅숏';
+
+  @override
+  String get performanceSnapshotEntrySubtitle =>
+      '현재 성능에 영향을 주는 설정을 앱 로그에 기록합니다';
+
+  @override
+  String get performanceSnapshotEntryDone => '앱 로그에 기록했습니다';
+
+  @override
   String get generalSettingsTitle => '일반';
 
   @override
