@@ -72,7 +72,7 @@ dependency_overrides:
   flutter_miuix:
     git:
       url: https://github.com/Mutx163/flutter_miuix.git
-      ref: 65b0828f8cf928c2e615ff073791495e865a0256
+      ref: 4d6992645c38e11195e2f576397202fbd0922670
   # inspire_blur：分布图像素记忆化——上游每个新挂载的顶栏都同步重算一张
   # 674k 像素的分布图（真机实测 36~49ms），这里按 (distribution, size) 记住像素。
   # fork 自 inspirestack/inspire_blur，分支 mikcb/distribution-pixels-cache，

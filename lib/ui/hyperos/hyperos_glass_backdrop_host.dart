@@ -759,6 +759,11 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
   void _capture({bool pendingOnly = false, bool notify = true}) {
     final offsetLayer = layer;
     if (offsetLayer is! OffsetLayer) return;
+    // 诊断（临时件）：这一次录帧花了多久。`toImageSync` 是同步 GPU 回读，会堵住
+    // UI 线程，是「主线程偶发 180ms」的头号嫌疑 —— 只在 ≥4ms 或 paint 相位补采时
+    // 打一行，配合 `[frame-perf]` 的 burst 定位。
+    final Stopwatch? watch = kReleaseMode ? null : (Stopwatch()..start());
+    var pendingArea = 0.0;
     // 采样比例与上游模糊源同档（见 [_samplePixelRatio]）：上游拿到快照后一律
     // 缩到 `(dpr / 4).clamp(.5, 1.0)` 才开始模糊，多录的像素只抬高每帧的离屏
     // 目标，进不了最终画面。
@@ -779,6 +784,7 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
         globalToLocal(global.bottomRight),
       ).intersect(mine);
       if (target.isEmpty) continue;
+      pendingArea += target.width * target.height;
       final image = offsetLayer.toImageSync(target, pixelRatio: ratio);
       zone.update(image, localToGlobal(target.topLeft), ratio);
       wrote = true;
@@ -786,6 +792,13 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
       for (final backdrop in zone.members.keys) {
         backdrop.zoneUpdated();
       }
+    }
+    if (watch != null && (pendingOnly || watch.elapsedMilliseconds >= 4)) {
+      debugPrint(
+        '[glass-cap] ms=${watch.elapsedMilliseconds} pending=$pendingOnly '
+        'zones=${_controller.zones.length} area=${pendingArea.round()} '
+        'wrote=$wrote',
+      );
     }
     if (pendingOnly) return;
     // 另有弹层（Overlay 里的面板，拿不到自己背后的矩形）在要背景时，补一张整层图。

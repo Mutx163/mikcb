@@ -287,8 +287,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "65b0828f8cf928c2e615ff073791495e865a0256"
-      resolved-ref: "65b0828f8cf928c2e615ff073791495e865a0256"
+      ref: "4d6992645c38e11195e2f576397202fbd0922670"
+      resolved-ref: "4d6992645c38e11195e2f576397202fbd0922670"
       url: "https://github.com/Mutx163/flutter_miuix.git"
     source: git
     version: "1.2.0"
