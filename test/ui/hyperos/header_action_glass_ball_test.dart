@@ -363,4 +363,67 @@ void main() {
 
     expect(ballSubtreeKey(), isNot(lightKey), reason: '明暗切换后必须换一棵子树重新录帧');
   });
+
+  testWidgets('球不画上游那圈「加法白」高光（壁纸上白边过重的根因）', (tester) async {
+    // 真机反馈：柔光档 + 壁纸时，右上角那颗球的白边特别重。
+    //
+    // 那圈白**不是**本仓补的轮廓线，而是柔光档独有的上游描边（高斯档压根不传
+    // `stroke`）：贴边白 10% + 两处方向高光 50% / 30%，以加法混合画上去。球内部
+    // 本就被三层白提亮到接近纯白，加法一叠直接钳到 1.0 —— 一圈没有过渡的死白边
+    // （纯色底上"白叠白"等于没画，所以只在有壁纸时暴露）。
+    //
+    // 球的轮廓由 `HyperosGlassEdge` 那道不透明轮廓线保证（任何底色都读得出），
+    // 因此上游这圈高光在球上是零收益、纯副作用：整层不画。注意**不能只衰减它**
+    // —— 玻璃内部接近纯白时，减半与满值都顶在 1.0，看不出任何区别。
+    final link = LayerLink();
+    await tester.pumpWidget(
+      scope(
+        child: Scaffold(
+          body: Center(
+            child: FHeaderActionBall(
+              link: link,
+              icon: const Icon(Icons.more_vert_rounded),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final ballGlass = tester.widget<MiuixGlass>(
+      find.descendant(
+        of: find.byType(HyperosSelectPopupGlass),
+        matching: find.byType(MiuixGlass),
+      ),
+    );
+    expect(ballGlass.stroke, isNull, reason: '球上的上游高光必须整层不画');
+  });
+
+  testWidgets('弹层面板仍保留上游高光（关掉的只有球）', (tester) async {
+    // 对照组：`HyperosSelectPopupGlass.enableEdgeHighlight` 默认开，其余调用方
+    // （选择弹层 / 列表弹层 / OS4 注入面）的观感一个字节不变。
+    await tester.pumpWidget(
+      scope(
+        child: const Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 240,
+              height: 120,
+              child: HyperosSelectPopupGlass(
+                cornerRadius: 24,
+                child: SizedBox.expand(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      tester.widget<MiuixGlass>(find.byType(MiuixGlass)).stroke,
+      isNotNull,
+      reason: '面板的高光不能被这次改动波及',
+    );
+  });
 }

@@ -332,24 +332,6 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
     final tuning =
         widget.tuning ?? FrostedAppearanceScope.of(context).softGlassTuning;
     final isDark = SoftGlassTokens._dark(context, widget.polarity);
-    // 描边强度得看**本表面最终有多大**（小圆球上要衰减，理由见
-    // [softGlassBallEdgeHighlight]），所以套一层 LayoutBuilder 取约束。
-    return LayoutBuilder(
-      builder: (context, constraints) => _buildGlass(
-        context,
-        constraints: constraints,
-        tuning: tuning,
-        isDark: isDark,
-      ),
-    );
-  }
-
-  Widget _buildGlass(
-    BuildContext context, {
-    required BoxConstraints constraints,
-    required SoftGlassTuning tuning,
-    required bool isDark,
-  }) {
     return MiuixGlass(
       backdrop: widget.blurEnabled ? _backdrop : null,
       style: MiuixGlassStyles.forTheme(isDark),
@@ -400,7 +382,7 @@ class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
       stroke: widget.enableEdgeHighlight
           ? scaleSoftGlassStroke(
               MiuixGlassStrokes.forTheme(isDark),
-              softGlassBallEdgeHighlight(constraints, tuning.edgeHighlight),
+              tuning.edgeHighlight,
             )
           : null,
       shadow: widget.enableShadows ? MiuixGlassShadows.floating : null,
@@ -457,49 +439,6 @@ MiuixGlassMaterial softGlassMaterialFor(
     second: base.second == null ? null : scale(base.second!),
     third: base.third == null ? null : scale(base.third!),
   );
-}
-
-/// 「玻璃球」的判定上限：接近正方形、且短边不超过这个值的表面。
-///
-/// 40dp 的顶栏图标球命中；底栏（54 高、横长）、顶栏带、弹窗面板都不命中。
-/// 尺寸之外再要一个「接近正方形」条件，是为了不误伤那些高度也落在阈值附近、
-/// 但横向很长的玻璃条（底栏 54，`soft_glass_tuning_test` 用的 200×56 面板）。
-const double softGlassBallMaxSide = 48;
-
-/// 玻璃球上的描边衰减系数。调到 1 即退回"与面板同一档"。
-const double softGlassBallEdgeScale = 0.5;
-
-/// 柔光玻璃描边在**小圆球**上的强度衰减。
-///
-/// ## 为什么小圆球要单独衰减
-///
-/// 上游这套描边（`MiuixGlassStrokes.forTheme`：贴边底色白 10% + 两处方向高光
-/// 白 50% / 30%，以 `BlendMode.plus` 加法混合画上去）是给**面板**调的 —— 大面板
-/// 上那条 1px 高光只占面积极小一份。而 40dp 圆球的周长/面积比是面板的十几倍，
-/// 同一条高光几乎绕满一圈；更要命的是浅色档玻璃内部本就被三层白提亮到接近纯白，
-/// 加法再叠上去直接钳到 1.0 —— 读起来就是"一圈死白边"，没有任何过渡。
-///
-/// 这也解释了它为什么**只在有壁纸时暴露**：白底上"白叠白"等于没画（所以历史上
-/// 没壁纸时的反馈是"球几乎看不见"，才补了不透明轮廓线保底）；一旦背后有内容，
-/// 球内部变成壁纸糊出来的颜色，边缘那圈加法白就跳出来了。
-///
-/// ## 为什么按尺寸算、而不是给球单独传参
-///
-/// 首页菜单收起时那颗球是"弹窗先画一块缩到锚点大小的面、再交接给常驻球"。
-/// 只把常驻球调淡会让两侧在交接瞬间闪一下 —— 项目已经栽过一次同类跟头
-/// （"阴影在弹窗收回后一秒突然出现"）。按尺寸算则**两边自动同档**：弹窗收缩到
-/// 锚点大小时落进小球档，与常驻球逐像素同源。
-///
-/// 同时保住「标准档 = 菜单原样」这条承诺：尺寸阈值把面板排除在外，
-/// [SoftGlassTuning.edgeHighlight] 的语义一个字节都没动。
-double softGlassBallEdgeHighlight(BoxConstraints constraints, double base) {
-  if (!constraints.hasBoundedWidth || !constraints.hasBoundedHeight) {
-    return base;
-  }
-  final size = constraints.biggest;
-  if (size.shortestSide > softGlassBallMaxSide) return base;
-  if (size.longestSide > size.shortestSide * 1.4) return base;
-  return base * softGlassBallEdgeScale;
 }
 
 /// 边缘高光强度（0..1）按比例作用到上游描边的三处高光上。

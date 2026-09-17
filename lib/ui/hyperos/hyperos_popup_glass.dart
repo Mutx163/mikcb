@@ -108,6 +108,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     this.useAncestorGroupCapture = false,
     this.thicknessFactor,
     this.surfaceEdge = false,
+    this.enableEdgeHighlight = true,
   });
 
   final double cornerRadius;
@@ -119,6 +120,22 @@ class HyperosSelectPopupGlass extends StatelessWidget {
   /// 常驻球"的终点。**OS4 注入面必须开**（`os4_glass_popup_surface.dart`）——
   /// 首页菜单收起时那颗球就是这块面缩到锚点大小，两侧不一致就会在交接瞬间跳。
   final bool surfaceEdge;
+
+  /// 上游那圈「贴边加法白」高光要不要画（透传给 `SoftGlassSurface`）。
+  ///
+  /// 默认开 —— 那是柔光玻璃的标准观感，弹层一律保持。**只有首页那颗常驻玻璃球
+  /// 关掉它**（`FHeaderActionBall`）：球的轮廓由 [HyperosGlassEdge] 那道不透明
+  /// 描边保证，任何背景上都读得出；而上游这圈加法白在球上属于**零收益、纯副作用** ——
+  /// 纯色底上"白叠白"等于没画（历史反馈「没壁纸时球看不见」正是这个成因，当时的
+  /// 修法是补轮廓线），有壁纸时球内部变成壁纸糊出来的颜色，贴边那层白一叠就顶到
+  /// 纯白，读起来是"一圈没有过渡的死白边"（用户反馈：柔光档 + 壁纸，右上角球的
+  /// 白边特别重）。
+  ///
+  /// ⚠️ 关闭它会让球与"菜单收起时那块缩到锚点大小的面板"在描边上有差异（面板仍带
+  /// 高光）。两侧仍是同一个组件、同一圈轮廓与浮影，只是那 1px 高光的有无 ——
+  /// 这是有意接受的取舍，见 `.agents/notes/implemented/bug-fix/`
+  /// 下 2026-09-17 那篇。
+  final bool enableEdgeHighlight;
 
   /// 折射厚度缩放（0..1）：液态面按完整厚度的该比例渲染。二级子卡揭示
   /// 期间传揭示进度——厚度从近零生长到满值，顶缘折射对上方面板文字的
@@ -222,6 +239,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
           // 顶栏挂 floatingNavigation 配方——同一个材质两种雾度，用户口径
           // 「是柔光玻璃就全部显示一样」。
           enableShadows: false,
+          enableEdgeHighlight: enableEdgeHighlight,
           child: child,
         ),
       );
