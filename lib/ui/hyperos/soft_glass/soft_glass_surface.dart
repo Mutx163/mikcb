@@ -35,12 +35,38 @@ abstract final class SoftGlassTokens {
   // 模糊（AdvancedMaterialTuning.DefaultBlurRadius + GlassBlurSpec）
   // ---------------------------------------------------------------------
 
-  /// 全局模糊半径基准 = 上游弹层材质 `MiuixGlassMaterials.popupViewGlass` 的
-  /// `blurRadius`（60）—— 首页右上角菜单与选择弹层用的就是这一份材质，柔光玻璃
-  /// 与它们同参。
+  /// 全局模糊半径基准：柔光玻璃的**成本旋钮，同时也是雾度旋钮**。
   ///
-  /// （历史值 92 是 Hyper-PiliPlus 自研链路的口径，随自研折射链路一起退场。）
-  static const double baseBlurRadius = 60;
+  /// ## 这个数为什么这么敏感
+  ///
+  /// 它同时决定三件事，而三件都在每帧、每块柔光面上重算
+  /// （上游 `MiuixGlass` 的 `_RenderGlass.prepare`）：
+  ///
+  /// | 派生量 | 公式 | 影响 |
+  /// |---|---|---|
+  /// | 模糊核 | σ = radius × 0.45 | 高斯卷积的采样数（近似线性） |
+  /// | 离屏边距 | padding = radius × 1.5（每边） | 纹理面积 ∝ (宽 + 3r)(高 + 3r) |
+  /// | 纹理尺寸 | (元素尺寸 + 2×padding) × `(dpr/4).clamp(.5,1)` | 两次同步 GPU 回读的量 |
+  ///
+  /// 而且 `prepare()` 每帧要**同步回读 GPU 两次**（`picture.toImageSync`：一次出模糊底，
+  /// 一次出三层颜色混合的结果），缓存键含元素的位置与尺寸 —— **任何入场/位移动画都是
+  /// 逐帧缓存不命中**，也就是逐帧两次同步回读。
+  ///
+  /// 真机实测（25079RPDCC / dpr 2.75）：弹层入场期间渲染线程 9.4~11ms 对 8.2ms 预算，
+  /// 帧率 35~66，`over` 13~21 帧；主线程只有 1.5ms（即与 Dart 侧无关）。把材质换成
+  /// 「实体卡片」后整个软件流畅 —— 玻璃是那一段的全部账。
+  ///
+  /// ## 取值
+  ///
+  /// 2026-09-17：60 → 32。原值 60（= 上游 `popupViewGlass.blurRadius`）推出 σ=27，
+  /// 比常见磨砂玻璃的 σ=10~20 重得多，而成本按上面的公式**超线性**放大：降到 32 后
+  /// σ=14.4、padding=48，一块面板的离屏纹理约小 1.3 倍、模糊核约省 1.9 倍，合计
+  /// 约 2.5 倍。
+  ///
+  /// 这是**观感取舍**，不是纯性能修复：雾度会比原来淡一档。想找回原观感就回 60
+  /// （或直接把「高级材质 → 柔光玻璃 → 模糊强度」倍率调到 1.9×）。
+  /// 真正的结构性问题（每块玻璃每帧两次同步回读）没解决，见本文件末尾的说明。
+  static const double baseBlurRadius = 32;
 
   /// Miuix 材质的半径上限（上游 `MiuixGlassMaterial.blurRadius` 的实际天花板
   /// 由离屏目标尺寸决定，这里只做兜底 clamp）。
@@ -49,14 +75,17 @@ abstract final class SoftGlassTokens {
   /// **档位阶梯（同一基线的绝对半径，供改数值时对照）**：
   /// | 档位 | radius (= [baseBlurRadius] × 倍率) |
   /// |---|---|
-  /// | 清透 clear (×0.6) | 36 |
-  /// | 轻盈 light (×0.8) | 48 |
-  /// | **标准 standard (×1.0)** | **60**（= 菜单 / 选择弹层同款） |
-  /// | 浓雾 dense (×1.6) | 96 |
-  /// | 滑杆上限 (×2.7) | 162 |
+  /// | 清透 clear (×0.6) | 19 |
+  /// | 轻盈 light (×0.8) | 26 |
+  /// | **标准 standard (×1.0)** | **32** |
+  /// | 浓雾 dense (×1.6) | 51 |
+  /// | 滑杆上限 (×2.7) | 86 |
   ///
   /// 倍率来自用户档位（[SoftGlassTuning.blurRadiusMultiplier]），不是在
-  /// 这里写死的。滑杆上限 2.7 对应 162，仍远低于 [maximumBlurRadius]。
+  /// 这里写死的。滑杆上限 2.7 对应 86，远低于 [maximumBlurRadius]。
+  ///
+  /// > 基线 60 时代的阶梯是 36/48/60/96，滑杆上限 162 —— 那套值落在成本曲线更陡的
+  /// > 一段上，往上调一档的代价比现在大得多。
 
   // ---------------------------------------------------------------------
   // 边缘光学
@@ -162,7 +191,8 @@ abstract final class SoftGlassTokens {
 /// 柔光玻璃配方 —— 全 app 只有一个（[standard]）。
 ///
 /// 现在柔光玻璃渲染的是上游 `MiuixGlass`，配方半径由
-/// [SoftGlassTokens.baseBlurRadius]（= 上游 `popupViewGlass.blurRadius`，60）
+/// [SoftGlassTokens.baseBlurRadius]（2026-09-17 起 32，原为上游
+/// `popupViewGlass.blurRadius` 的 60 —— 改值理由与成本模型见该常量）
 /// 给出，再乘用户档位倍率（[SoftGlassTuning.blurRadiusMultiplier]），最终写成
 /// 上游 `MiuixGlassMaterial.blurRadius`。
 ///
