@@ -25,6 +25,7 @@ void main() {
     SoftGlassTuning? scopeTuning,
     SoftGlassTuning? override,
     bool blurEnabled = true,
+    Size size = const Size(200, 56),
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -39,8 +40,8 @@ void main() {
           child: Scaffold(
             body: Center(
               child: SizedBox(
-                width: 200,
-                height: 56,
+                width: size.width,
+                height: size.height,
                 child: SoftGlassSurface(
                   blurEnabled: blurEnabled,
                   tuning: override,
@@ -294,6 +295,64 @@ void main() {
         popupBlur(tester, find.byType(MiuixGlassTransformPopup)),
         SoftGlassRecipe.standard.blurRadiusDp *
             SoftGlassTuning.presetDense.blurRadiusMultiplier,
+      );
+    });
+  });
+
+  group('小圆球的描边衰减', () {
+    /// 真机反馈：柔光档 + 壁纸时，首页右上角那颗球的白边特别重。
+    ///
+    /// 根因在材质侧：这圈描边是**柔光档独有**的（高斯 / 液态两条分支都不传
+    /// `stroke`，所以只有柔光档会白），而它的参数是按面板调的 —— 贴边 1px 的
+    /// 加法白高光，叠在"浅色档本就被三层白提亮到接近纯白"的玻璃内部上，直接
+    /// 钳到 1.0。球的周长/面积比是面板的十几倍，同一条高光几乎绕满一圈，于是
+    /// 只剩"一圈死白边"。纯色底上白叠白等于没画，这个偏差只在**有背景**时暴露
+    /// —— 正好对上"带壁纸才看得见"。
+    ///
+    /// 这里守住**判定**（谁算球、谁不算）与**落点**（球的 MiuixGlass 真拿到
+    /// 衰减后的值，且面板没被波及）。
+    final baseStroke = MiuixGlassStrokes.forTheme(false);
+
+    double strokeAlphaOf(WidgetTester tester) =>
+        glassOf(tester).stroke!.primary.color.a;
+
+    test('只有接近正方形的小表面算球', () {
+      double at(double w, double h) => softGlassBallEdgeHighlight(
+        BoxConstraints.tightFor(width: w, height: h),
+        SoftGlassTuning.defaultEdgeHighlight,
+      );
+      const scaled =
+          SoftGlassTuning.defaultEdgeHighlight * softGlassBallEdgeScale;
+
+      // 40dp 的顶栏图标球正是这一档。
+      expect(at(40, 40), closeTo(scaled, 1e-9));
+      // 56dp 圆钮**不在**本档（阈值 48）：它的边要不要一起收是另一个决定，
+      // 调 `softGlassBallMaxSide` 即可 —— 这里钉住当前口径。
+      expect(at(56, 56), SoftGlassTuning.defaultEdgeHighlight);
+      // 横长的玻璃条与面板不能被误伤：底栏 54 高、本文件的测试面 200×56 都
+      // 贴着阈值，靠"接近正方形"这个条件把它们挡在外面。
+      expect(at(380, 54), SoftGlassTuning.defaultEdgeHighlight);
+      expect(at(200, 56), SoftGlassTuning.defaultEdgeHighlight);
+      expect(at(300, 240), SoftGlassTuning.defaultEdgeHighlight);
+      // 约束无界（放进 Column / Row 按内容撑）时不做猜测。
+      expect(
+        softGlassBallEdgeHighlight(const BoxConstraints(maxWidth: 200), 1),
+        1,
+      );
+    });
+
+    testWidgets('40dp 的球发出衰减档描边，面板保持原样', (tester) async {
+      await pumpSurface(tester, size: const Size(40, 40));
+      expect(
+        strokeAlphaOf(tester),
+        closeTo(baseStroke.primary.color.a * softGlassBallEdgeScale, 1e-6),
+      );
+
+      await pumpSurface(tester);
+      expect(
+        strokeAlphaOf(tester),
+        closeTo(baseStroke.primary.color.a, 1e-6),
+        reason: '「标准档 = 菜单原样」对面板依然成立，衰减不能波及大面板',
       );
     });
   });
