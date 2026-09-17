@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../utils/frame_perf_probe.dart';
 import 'hyperos_motion.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
@@ -357,6 +358,37 @@ class HyperosPageRoute<T> extends PageRoute<T> {
   void install() {
     super.install();
     _activeRoutes.add(this);
+  }
+
+  /// 转场打点：把「这一次 push / pop」交给帧探针开一个读数窗口。
+  ///
+  /// 存在的理由：转场此前没有任何标记，卡顿只能从每 2 秒的 `steady` 基线和无标记的
+  /// `burst` 里猜，无法把某一次跳转单独拎出来归因。而「新页面整棵树的首次构建」
+  /// 与「转场第一帧」在框架里是同一帧（`routes.dart` 的 `_page ??=` 只调一次
+  /// `buildPage`），首帧一重就整段动画掉帧 —— 有标记才分得清是首帧的账还是
+  /// 整段动画每帧的账。
+  ///
+  /// 标记用 route name（未命名路由给 `unnamed`），与 `[frame-perf] mark` 行配套读。
+  /// [FramePerfProbe] 在未安装时是空操作，release 里更是一行都不输出。
+  String get _probeLabel => settings.name ?? 'unnamed';
+
+  @override
+  TickerFuture didPush() {
+    FramePerfProbe.mark('route:push:$_probeLabel');
+    return super.didPush();
+  }
+
+  /// [Navigator.pushReplacement] 走这条（`didPush` 不会被调），同样要打点。
+  @override
+  void didReplace(Route<dynamic>? oldRoute) {
+    super.didReplace(oldRoute);
+    FramePerfProbe.mark('route:replace:$_probeLabel');
+  }
+
+  @override
+  bool didPop(T? result) {
+    FramePerfProbe.mark('route:pop:$_probeLabel');
+    return super.didPop(result);
   }
 
   @override

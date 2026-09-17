@@ -42,6 +42,7 @@ import '../widgets/class_reminder_sheet.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
+import '../utils/frame_perf_probe.dart';
 import '../widgets/home_page_region_blur.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
@@ -9483,6 +9484,22 @@ class _OpenOnlyContainerPageRoute<T> extends PageRouteBuilder<T> {
            );
          },
        );
+
+  /// 转场打点：这条路由没有 route name，用固定标签。
+  ///
+  /// 它是 `opaque: false` 的 420ms 形变转场，下面那屏（首页）全程照画，因此
+  /// 与 `HyperosPageRoute` 那条不透明滑动不是同一份成本账，需要单独读数。
+  @override
+  TickerFuture didPush() {
+    FramePerfProbe.mark('route:push:openOnlyContainer');
+    return super.didPush();
+  }
+
+  @override
+  bool didPop(T? result) {
+    FramePerfProbe.mark('route:pop:openOnlyContainer');
+    return super.didPop(result);
+  }
 }
 
 class _HomeActionPageButton extends StatelessWidget {

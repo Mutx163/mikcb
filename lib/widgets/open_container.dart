@@ -21,6 +21,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+import '../utils/frame_perf_probe.dart';
+
 /// Signature for `action` callback function provided to [OpenContainer.openBuilder].
 ///
 /// Parameter `returnValue` is the value which will be provided to [OpenContainer.onClosed]
@@ -712,6 +714,9 @@ class _OpenContainerRoute<T> extends ModalRoute<T> {
 
   @override
   TickerFuture didPush() {
+    // mikcb patch (perf): frame probe mark. 课卡 → 课程详情这条转场此前没有任何
+    // 标记，掉帧只能从 `steady` 基线和无标记的 `burst` 里猜。标记本身不改绘制。
+    FramePerfProbe.mark('route:push:${settings.name ?? 'courseDetail'}');
     _takeMeasurements(navigatorContext: hideableKey.currentContext!);
 
     animation!.addStatusListener((AnimationStatus status) {
@@ -733,6 +738,8 @@ class _OpenContainerRoute<T> extends ModalRoute<T> {
 
   @override
   bool didPop(T? result) {
+    // mikcb patch (perf): frame probe mark，配对 didPush（见那里的说明）。
+    FramePerfProbe.mark('route:pop:${settings.name ?? 'courseDetail'}');
     // mikcb patch (perf): rebuild the closed-card copy for the closing
     // transition so it reflects data changed while the container was open
     // (stock behavior rebuilt it every frame; we reuse per frame instead).
