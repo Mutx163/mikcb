@@ -894,7 +894,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         // - 设置页的滚动位置与大标题折叠状态不随 Tab 切换丢失（切走再切回，
         //   标题保持离开时的折叠态）；
         // - 壁纸层随 homeStack 常驻，解码缓存不失效，切回课表不黑闪。
-        // 玻璃坞导航始终由 [_wrapWithGlassDock] 浮在最上层。
+        // 玻璃坞导航始终由 [_buildGlassDockLayer] 浮在最上层（画在采样宿主之外）。
         final Widget dockContent = useHomePreblur
             ? PreblurredWallpaperScope(
                 // Same pre-blur model as the week grid: sample one cached
@@ -917,12 +917,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             : homeStack;
         if (!glassDockForm) {
           return _wrapHomeWithTopMenu(
-            _wrapWithGlassDock(
-              dockContent,
-              glassDockForm: false,
-              settings: settings,
-              l10n: l10n,
-            ),
+            dockContent,
             settings: settings,
             chromeBalls: homeChromeBalls,
             chromeDotBorderColor: chromeDotBorderColor,
@@ -987,15 +982,13 @@ class _TimetableScreenState extends State<TimetableScreen>
         // 课表或内嵌页）按返回都直接退出应用（根路由 bubble → 系统退出）。
         // 收回内嵌页走底栏切换（点 日/周 Tab 或其他页面条目）与圆钮再点。
         return _wrapHomeWithTopMenu(
-          _wrapWithGlassDock(
-            hostedContent,
-            glassDockForm: true,
-            settings: settings,
-            l10n: l10n,
-          ),
+          hostedContent,
           settings: settings,
           chromeBalls: homeChromeBalls,
           chromeDotBorderColor: chromeDotBorderColor,
+          // 坞层由 _wrapHomeWithTopMenu 摆到采样宿主**之外**（不自采样），
+          // 理由见 _buildGlassDockLayer 的注释。
+          dockLayer: _buildGlassDockLayer(settings: settings, l10n: l10n),
         );
       },
     );
@@ -7340,18 +7333,22 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   /// 经典形态直接返回原内容，行为与之前完全一致。
-  Widget _wrapWithGlassDock(
-    Widget child, {
-    required bool glassDockForm,
+  /// 玻璃坞（药丸 + 右侧独立圆钮）那一层的内容。
+  ///
+  /// ⚠️ **必须画在采样宿主之外** —— 由 [_wrapHomeWithTopMenu] 摆到宿主之外，与
+  /// 顶栏那两颗常驻玻璃球同一条规则。坞层原来长在宿主子树的末尾，于是每次录帧
+  /// 都把坞层自己的画面烘进采样快照，坞层再拿这张"含自己"的图去算材质：展开 /
+  /// 收起内嵌页那几帧里，圆钮的明暗会来回颤几下才收敛（真机反馈：「圆钮展开
+  /// 收起之后闪」）。同一机制在 `SoftGlassSurface` 类注释的「已知偏差」一节有
+  /// 完整说明 —— 那条偏差的修法就是"把玻璃移到捕获之外"，这里是其中一块。
+  ///
+  /// 浮钮与药丸显式同源材质：两者都由同一份全局材质推导
+  /// （[_resolveDockMaterial]），避免出现圆钮与药丸两种玻璃的断层。
+  /// 柔光路径不用液态 settings，改走 SoftGlassSurface。
+  Widget _buildGlassDockLayer({
     required TimetableSettings settings,
     required AppLocalizations l10n,
   }) {
-    if (!glassDockForm) {
-      return child;
-    }
-    // 浮钮与药丸显式同源材质：两者都由同一份全局材质推导
-    // （[_resolveDockMaterial]），避免出现圆钮与药丸两种玻璃的断层。
-    // 柔光路径不用液态 settings，改走 SoftGlassSurface。
     LiquidGlassSettings? dockBtnSettings;
     GlassQuality? dockBtnQuality;
     final dockMaterial = _resolveDockMaterial(context);
@@ -7384,78 +7381,60 @@ class _TimetableScreenState extends State<TimetableScreen>
       );
       dockBtnQuality = GlassQuality.minimal;
     }
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        child,
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: SafeArea(
-            minimum: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-            // 官方 iOS 26 形态：居中药丸 + 右侧独立圆钮，整组居中。
-            // 圆钮固定展开（加课程唯一主动入口，不再随页收起）；
-            // 材质经 dockBtnSettings 与药丸显式同源。
-            child: Builder(
-              builder: (context) {
-                final lum = _dockInlinePageId != null
-                    ? null
-                    : _wallpaperBodyLuminance; // 内嵌页表态只看主题
-                final isDarkTheme =
-                    Theme.of(context).brightness == Brightness.dark;
-                final isSoftDock = dockMaterial == _DockMaterial.soft;
-                // 通用底栏墨色判据（chrome 阈值 0.45）。
-                // 实体卡片档的药丸/圆钮是不透明**主题色**面（浅色主题≈纯白），
-                // 墨色极性必须跟主题走；半透明材质（液态/磨砂/柔光）的面 =
-                // 壁纸 + 玻璃，继续按壁纸亮度判——否则浅色主题 + 暗壁纸会
-                // 出现白底白字。
-                final inkIsLight = dockMaterial == _DockMaterial.solid
-                    ? isDarkTheme
-                    : (lum != null ? lum < 0.45 : isDarkTheme);
-                // 柔光面与墨色同源：暗壁纸 → 深灰玻璃 + 白墨；亮壁纸 → 乳白 + 黑墨。
-                // 极性阈值必须与柔光药丸同源（[_kSoftGlassDarkLuminance]）：
-                // 药丸与圆钮在同一行并列，各自一套阈值会一深一浅。
-                final softInkIsLight = lum != null
-                    ? lum < _kSoftGlassDarkLuminance
-                    : isDarkTheme;
-                final ink = isSoftDock
-                    ? (softInkIsLight
-                          ? Colors.white.withValues(alpha: 0.92)
-                          : Colors.black.withValues(alpha: 0.80))
-                    : (inkIsLight
-                          ? Colors.white.withValues(alpha: 0.9)
-                          : Colors.black.withValues(alpha: 0.75));
-                return Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 272),
-                        child: _buildGlassDockBar(
-                          settings: settings,
-                          l10n: l10n,
-                        ),
-                      ),
-                      if (settings.glassDockShowAddButton) ...[
-                        const SizedBox(width: 8),
-                        _buildDockMergeSlot(
-                          ink: ink,
-                          l10n: l10n,
-                          settings: dockBtnSettings,
-                          quality: dockBtnQuality,
-                          softGlass: isSoftDock,
-                          softDark: softInkIsLight,
-                        ),
-                      ],
-                    ],
-                  ),
-                );
-              },
+    final lum = _dockInlinePageId != null
+        ? null
+        : _wallpaperBodyLuminance; // 内嵌页表态只看主题
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    final isSoftDock = dockMaterial == _DockMaterial.soft;
+    // 通用底栏墨色判据（chrome 阈值 0.45）。
+    // 实体卡片档的药丸/圆钮是不透明**主题色**面（浅色主题≈纯白），
+    // 墨色极性必须跟主题走；半透明材质（液态/磨砂/柔光）的面 =
+    // 壁纸 + 玻璃，继续按壁纸亮度判——否则浅色主题 + 暗壁纸会
+    // 出现白底白字。
+    final inkIsLight = dockMaterial == _DockMaterial.solid
+        ? isDarkTheme
+        : (lum != null ? lum < 0.45 : isDarkTheme);
+    // 柔光面与墨色同源：暗壁纸 → 深灰玻璃 + 白墨；亮壁纸 → 乳白 + 黑墨。
+    // 极性阈值必须与柔光药丸同源（[_kSoftGlassDarkLuminance]）：
+    // 药丸与圆钮在同一行并列，各自一套阈值会一深一浅。
+    final softInkIsLight = lum != null
+        ? lum < _kSoftGlassDarkLuminance
+        : isDarkTheme;
+    final ink = isSoftDock
+        ? (softInkIsLight
+              ? Colors.white.withValues(alpha: 0.92)
+              : Colors.black.withValues(alpha: 0.80))
+        : (inkIsLight
+              ? Colors.white.withValues(alpha: 0.9)
+              : Colors.black.withValues(alpha: 0.75));
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        // 官方 iOS 26 形态：居中药丸 + 右侧独立圆钮，整组居中。
+        // 圆钮固定展开（加课程唯一主动入口，不再随页收起）；
+        // 材质经 dockBtnSettings 与药丸显式同源。
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 272),
+              child: _buildGlassDockBar(settings: settings, l10n: l10n),
             ),
-          ),
+            if (settings.glassDockShowAddButton) ...[
+              const SizedBox(width: 8),
+              _buildDockMergeSlot(
+                ink: ink,
+                l10n: l10n,
+                settings: dockBtnSettings,
+                quality: dockBtnQuality,
+                softGlass: isSoftDock,
+                softDark: softInkIsLight,
+              ),
+            ],
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -7533,7 +7512,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       tabs: [for (final id in dockIds) _dockTabForId(id, l10n)],
       selectedIndex: _dockSelectedIndex(dockIds),
       onTabSelected: (index) => _handleDockTap(dockIds[index], settings),
-      // 独立圆钮改由坞层「水滴合并槽」渲染（见 _wrapWithGlassDock）：
+      // 独立圆钮改由坞层「水滴合并槽」渲染（见 _buildGlassDockLayer）：
       // 整颗按钮滑入药丸并被圆形裁切，运动与遮罩都贴合药丸端帽弧度。
       barHeight: 56,
       settings: switch (dockMaterial) {
@@ -7575,7 +7554,7 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 独立圆钮：与药丸同质的液态玻璃圆钮（56 正圆）。
   ///
-  /// 材质与药丸显式同源（_wrapWithGlassDock 传入全 app 唯一那套液态材质），
+  /// 材质与药丸显式同源（_buildGlassDockLayer 传入全 app 唯一那套液态材质），
   /// useOwnLayer:true + isStationary:true 保证 minimal 回退时仍保留
   /// BackdropFilter 模糊——与药丸 frosted 回退一致，消除“两种材质”断层。
   /// 柔光底栏下改用 SoftGlassSurface，与柔光药丸同一套雾面材质。
@@ -8820,11 +8799,28 @@ class _TimetableScreenState extends State<TimetableScreen>
     required TimetableSettings settings,
     required List<Widget> chromeBalls,
     required Color chromeDotBorderColor,
+    Widget? dockLayer,
   }) {
     return Stack(
       fit: StackFit.expand,
       children: [
         HyperosGlassBackdropHost(controller: _homeGlass, child: content),
+        // ⚠️ 玻璃坞（药丸 + 圆钮）同样画在宿主**之外** —— 与下面那两颗常驻球
+        // 同一条规则，理由也一样：宿主捕获的是"玻璃之下的页面"，捕获子树不能含
+        // 玻璃自身。坞层原先长在宿主子树末尾，于是每次录帧都把它自己的画面烘进
+        // 快照，坞层再拿这张"含自己"的图算材质 —— 展开 / 收起内嵌页那几帧里
+        // 圆钮的明暗会颤几下才收敛（真机反馈：「圆钮展开收起之后闪」）。
+        //
+        // ⚠️ 必须同时用 [HyperosGlassBackdropScope] 把坞层钉在本屏采样源上：
+        // 它在宿主之外拿不到宿主下发的 scope，只能靠全局注册表"栈顶"取采样源，
+        // 而栈顶会随 push / pop 换人（与常驻球完全同一处境，见下面的说明）。
+        if (dockLayer != null)
+          Positioned.fill(
+            child: HyperosGlassBackdropScope(
+              controller: _homeGlass,
+              child: dockLayer,
+            ),
+          ),
         // 常驻玻璃球画在宿主**之外**（不自采样，见 build 里 homeChromeBalls
         // 的说明）；整屏 IgnorePointer 让点击穿透到下面的真实按钮。
         //
