@@ -48,7 +48,11 @@ void main() {
     // 4455→4460: 壁纸「最近使用」历史改设备级全局：Provider 侧只留两条一行调用
     // 入口（启动时收拢 + 导入后并集），迁移/并集逻辑与错误日志全部下沉
     // WallpaperHistoryService，+5 全是调用行与注释行，按测试约定同步真实值。
-    const baselineLines = 4460;
+    // 4460→4489: 调试版/性能版「渲染性能设置快照」——Provider 侧只新增一个私有转发
+    // _logPerformanceSnapshotIfChanged（含说明注释）与两处一行调用（updateTimetableSettings
+    // / updateSettings），快照构建与指纹判断全在 lib/logging/performance_settings_snapshot.dart，
+    // Provider 未新增业务逻辑，按测试约定同步真实值。
+    const baselineLines = 4489;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

@@ -287,8 +287,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "0ef868ae791ace129d70d5ba626b88e9a6de1fa1"
-      resolved-ref: "0ef868ae791ace129d70d5ba626b88e9a6de1fa1"
+      ref: "65b0828f8cf928c2e615ff073791495e865a0256"
+      resolved-ref: "65b0828f8cf928c2e615ff073791495e865a0256"
       url: "https://github.com/Mutx163/flutter_miuix.git"
     source: git
     version: "1.2.0"
@@ -481,10 +481,11 @@ packages:
   inspire_blur:
     dependency: "direct main"
     description:
-      name: inspire_blur
-      sha256: b585981ba722ef7e1d4bba6b761dd516a3318189d422186c6a1f756e131a09e5
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: "6247f025b5b6fdb8700d3f6e2728bef04b658d3d"
+      resolved-ref: "6247f025b5b6fdb8700d3f6e2728bef04b658d3d"
+      url: "https://github.com/Mutx163/inspire_blur.git"
+    source: git
     version: "0.4.1"
   intl:
     dependency: "direct main"
