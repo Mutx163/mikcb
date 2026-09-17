@@ -4,10 +4,10 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../../utils/first_frame_probe.dart';
+import 'hyperos_back_button.dart';
 import 'hyperos_blurred_header.dart';
 import 'hyperos_collapsible_top_app_bar.dart';
 import 'hyperos_glass_backdrop_host.dart';
-import 'hyperos_icon_button.dart';
 import 'hyperos_overscroll.dart';
 import 'hyperos_overlay_header.dart';
 import 'hyperos_page_collaborators.dart';
@@ -205,10 +205,7 @@ class HyperosSubpage extends StatelessWidget {
     // 底栏内嵌宿主里的子页不渲染返回键（见 [HyperosSubpageNoBack]）。
     final showBack = onBack != null && !HyperosSubpageNoBack.of(context);
     if (showBack) {
-      navigationIcon = HyperosIconButton(
-        icon: Icons.arrow_back,
-        onPressed: onBack,
-      );
+      navigationIcon = HyperosBackButton(onPressed: onBack);
     } else if (prefixes != null && prefixes!.isNotEmpty) {
       navigationIcon = Row(mainAxisSize: MainAxisSize.min, children: prefixes!);
     } else {
@@ -227,10 +224,7 @@ class HyperosSubpage extends StatelessWidget {
       header: HyperosOverlayNestedHeader(
         prefixes:
             prefixes ??
-            [
-              if (showBack)
-                HyperosIconButton(icon: Icons.arrow_back, onPressed: onBack),
-            ],
+            [if (showBack) HyperosBackButton(onPressed: onBack)],
         suffixes: suffixes ?? const [],
         title: title,
       ),
