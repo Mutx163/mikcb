@@ -382,11 +382,44 @@ void main() {
       warnIfMissed: false,
     );
     await tester.pump();
-    expect(source.positionCalls, 1);
+    expect(source.fixCalls, 1);
 
     await tester.pump(const Duration(seconds: 3));
     await _pumpUntilSettled(tester);
     expect(weather.isLocating, isFalse);
     expect(weather.location!.displayName, '杭州市 · 拱墅区');
+  });
+
+  testWidgets('定位成功时不该出现「按网络估算」的提示', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    await pumpSettings(tester, locationService: stubLocationService());
+    await openWeatherSubpage(tester, l10n);
+
+    await tester.tap(find.text(l10n.weatherUseCurrentLocation));
+    await _pumpUntilSettled(tester);
+
+    // 对照组：真实定位走通了就不能标成估算，否则这个提示会变成狼来了。
+    expect(find.text(l10n.weatherLocationEstimated), findsNothing);
+  });
+
+  testWidgets('实时定位拿不到 → 用 IP 估算，并明确提示这是估算', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    final weather = await pumpSettings(
+      tester,
+      locationService: stubLocationService(
+        // 实时定位拿不到 → 退到 IP 估算，估算成功。
+        source: StubDeviceLocationSource(fix: null),
+        estimatesTo: stubLocatedHangzhou,
+      ),
+    );
+    await openWeatherSubpage(tester, l10n);
+
+    await tester.tap(find.text(l10n.weatherUseCurrentLocation));
+    await _pumpUntilSettled(tester);
+
+    expect(weather.lastLocateWasEstimated, isTrue);
+    expect(weather.location!.displayName, '杭州市 · 拱墅区');
+    // 估算值不能冒充真实定位：界面必须说出来。
+    expect(find.text(l10n.weatherLocationEstimated), findsOneWidget);
   });
 }

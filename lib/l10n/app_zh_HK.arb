@@ -6441,5 +6441,6 @@
   "weatherLocationPermissionDeniedForever": "位置權限已被拒絕，請到系統設定裡允許本應用程式使用位置",
   "weatherLocationTimeout": "定位逾時，請到窗邊或室外再試，或直接搜尋城市",
   "weatherLocationFailed": "定位失敗，請改用手動搜尋城市",
-  "weatherLocationAddressUnavailable": "已定位，但解析不出地名，請改用手動搜尋城市"
+  "weatherLocationAddressUnavailable": "已定位，但解析不出地名，請改用手動搜尋城市",
+  "weatherLocationEstimated": "已按網絡位置估算，可能不精確"
 }

@@ -20025,6 +20025,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'已定位，但解析不出地名，请改用手动搜索城市'**
   String get weatherLocationAddressUnavailable;
+
+  /// No description provided for @weatherLocationEstimated.
+  ///
+  /// In zh, this message translates to:
+  /// **'已按网络位置估算，可能不精确'**
+  String get weatherLocationEstimated;
 }
 
 class _AppLocalizationsDelegate

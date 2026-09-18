@@ -11346,4 +11346,7 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get weatherLocationAddressUnavailable =>
       '위치는 확인했지만 지명을 찾지 못했습니다. 도시를 검색해 주세요';
+
+  @override
+  String get weatherLocationEstimated => '네트워크 위치로 추정했습니다. 정확하지 않을 수 있습니다';
 }

@@ -6501,5 +6501,6 @@
   "weatherLocationPermissionDeniedForever": "位置权限已被拒绝，请到系统设置里允许本应用使用位置",
   "weatherLocationTimeout": "定位超时，请到窗边或室外再试，或直接搜索城市",
   "weatherLocationFailed": "定位失败，请改用手动搜索城市",
-  "weatherLocationAddressUnavailable": "已定位，但解析不出地名，请改用手动搜索城市"
+  "weatherLocationAddressUnavailable": "已定位，但解析不出地名，请改用手动搜索城市",
+  "weatherLocationEstimated": "已按网络位置估算，可能不精确"
 }

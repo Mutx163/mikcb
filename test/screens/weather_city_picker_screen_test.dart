@@ -414,6 +414,55 @@ void main() {
     expect(provider.location!.displayName, '杭州市 · 拱墅区');
   });
 
+  testWidgets('定位成功时不该出现「按网络估算」的提示', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    final server = _SearchServer();
+    final provider = await _provider(
+      server.service,
+      locationService: stubLocationService(),
+    );
+    await _pumpPicker(tester, provider);
+
+    await tester.tap(find.text(l10n.weatherUseCurrentLocation));
+    await tester.pumpAndSettle();
+
+    // 对照组：真实定位走通了就不能标成估算，否则这个提示会变成狼来了。
+    expect(find.text(l10n.weatherLocationEstimated), findsNothing);
+  });
+
+  testWidgets('实时定位拿不到 → 用 IP 估算，提示后照常返回上一页', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    final server = _SearchServer();
+    final provider = await _provider(
+      server.service,
+      locationService: stubLocationService(
+        // 实时定位拿不到 → 退到 IP 估算，估算成功。
+        source: StubDeviceLocationSource(fix: null),
+        estimatesTo: stubLocatedHangzhou,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<WeatherProvider>.value(
+        value: provider,
+        child: const TestApp(home: _PickerLauncher()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('open-picker'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.weatherUseCurrentLocation));
+    await tester.pumpAndSettle();
+
+    expect(provider.lastLocateWasEstimated, isTrue);
+    expect(provider.location!.displayName, '杭州市 · 拱墅区');
+    // 估算值不能冒充真实定位：提示必须活过这次返回（toast 挂在页面之上）。
+    expect(find.text(l10n.weatherLocationEstimated), findsOneWidget);
+    // 估算仍然是可用结果 → 与「点选城市」一致，返回上一页。
+    expect(find.byType(WeatherCityPickerScreen), findsNothing);
+  });
+
   testWidgets('定位失败 → 弹提示且留在本页', (tester) async {
     final l10n = lookupAppLocalizations(const Locale('zh'));
     final server = _SearchServer();
@@ -468,7 +517,7 @@ void main() {
       warnIfMissed: false,
     );
     await tester.pump();
-    expect(source.positionCalls, 1);
+    expect(source.fixCalls, 1);
 
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();

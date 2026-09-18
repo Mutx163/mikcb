@@ -102,6 +102,11 @@ class _WeatherCityPickerScreenState extends State<WeatherCityPickerScreen> {
       );
       return;
     }
+    // 按网络 IP 估算出来的位置要如实标注：它可能指到运营商网关所在城市，
+    // 不能让它冒充真实定位。标注之后照常返回上一页——它仍然是可用结果。
+    if (provider.lastLocateWasEstimated) {
+      showAppToast(context, message: l10n.weatherLocationEstimated);
+    }
     Navigator.pop(context);
   }
 

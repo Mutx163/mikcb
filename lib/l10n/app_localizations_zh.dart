@@ -10990,6 +10990,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get weatherLocationAddressUnavailable => '已定位，但解析不出地名，请改用手动搜索城市';
+
+  @override
+  String get weatherLocationEstimated => '已按网络位置估算，可能不精确';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -22022,6 +22025,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get weatherLocationAddressUnavailable => '已定位，但解析不出地名，請改用手動搜尋城市';
+
+  @override
+  String get weatherLocationEstimated => '已按網絡位置估算，可能不精確';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -33054,4 +33060,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get weatherLocationAddressUnavailable => '已定位，但解析不出地名，請改用手動搜尋城市';
+
+  @override
+  String get weatherLocationEstimated => '已按網路位置估算，可能不精確';
 }

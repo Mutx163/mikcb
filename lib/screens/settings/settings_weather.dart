@@ -126,12 +126,20 @@ Future<void> _locateWeather(BuildContext context, WeatherProvider weather) async
   // l10n 必须在 await 之前取：await 之后 context 可能已失效。
   final l10n = AppLocalizations.of(context)!;
   final failure = await weather.locateCurrentPosition();
-  if (failure == null || !context.mounted) {
+  if (!context.mounted) {
     return;
   }
-  showAppToast(
-    context,
-    message: WeatherLocationFailureLocalizer.message(l10n, failure),
-    kind: AppToastKind.warning,
-  );
+  if (failure != null) {
+    showAppToast(
+      context,
+      message: WeatherLocationFailureLocalizer.message(l10n, failure),
+      kind: AppToastKind.warning,
+    );
+    return;
+  }
+  // 按网络 IP 估算出来的位置要如实标注：它可能指到运营商网关所在城市，
+  // 不能让它冒充真实定位。
+  if (weather.lastLocateWasEstimated) {
+    showAppToast(context, message: l10n.weatherLocationEstimated);
+  }
 }

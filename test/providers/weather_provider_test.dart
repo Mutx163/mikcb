@@ -150,17 +150,30 @@ const _located = WeatherLocation(
 );
 
 /// 定位源固定在 [_located] 的坐标上（断言「请求打在新坐标上」要用）。
-StubDeviceLocationSource _source({bool serviceEnabled = true}) =>
+///
+/// `fix: null` 表示实时定位拿不到，流程会退到 IP 估算那条路。
+StubDeviceLocationSource _source({bool serviceEnabled = true, bool hasFix = true}) =>
     StubDeviceLocationSource(
       serviceEnabled: serviceEnabled,
-      latitude: _located.latitude,
-      longitude: _located.longitude,
+      fix: hasFix
+          ? const DeviceFix(
+              latitude: 30.5728,
+              longitude: 104.0668,
+              accuracyMeters: 12,
+              source: 'network',
+            )
+          : null,
     );
 
 DeviceLocationService _locationService(
   StubDeviceLocationSource source, {
   required WeatherLocation? resolvesTo,
-}) => stubLocationService(resolvesTo: resolvesTo, source: source);
+  WeatherLocation? estimatesTo,
+}) => stubLocationService(
+  resolvesTo: resolvesTo,
+  estimatesTo: estimatesTo,
+  source: source,
+);
 
 void main() {
   setUp(() {
@@ -189,6 +202,8 @@ void main() {
       expect(failure, isNull);
       expect(provider.lastLocateFailure, isNull);
       expect(provider.isLocating, isFalse);
+      // 真实定位成功 → 绝不能标成估算。
+      expect(provider.lastLocateWasEstimated, isFalse);
       expect(provider.location!.name, '成都市');
       expect(provider.location!.district, '武侯区');
       expect(provider.location!.displayName, '成都市 · 武侯区');
@@ -219,10 +234,61 @@ void main() {
 
       expect(failure, DeviceLocationFailure.addressUnavailable);
       expect(provider.lastLocateFailure, DeviceLocationFailure.addressUnavailable);
+      // 失败时也不该残留上一次的「估算」标记。
+      expect(provider.lastLocateWasEstimated, isFalse);
       expect(provider.location!.name, original.name);
       expect(provider.location!.latitude, original.latitude);
       final persisted = await WeatherPreferences.loadLocation();
       expect(persisted!.name, original.name);
+    });
+
+    test('实时定位拿不到 → 退到 IP 估算，并把结果标记为估算', () async {
+      await _seed();
+      final server = _Server();
+      final provider = WeatherProvider(
+        service: server.service,
+        locationService: _locationService(
+          _source(hasFix: false),
+          resolvesTo: _located,
+          estimatesTo: _located,
+        ),
+      );
+      await provider.initialize();
+      await provider.ensureFresh();
+      expect(provider.location!.name, '杭州');
+
+      final failure = await provider.locateCurrentPosition();
+      await provider.ensureFresh();
+
+      expect(failure, isNull);
+      // 这一步是关键：界面靠它决定要不要加「按网络估算」的提示。
+      expect(provider.lastLocateWasEstimated, isTrue);
+      expect(provider.location!.name, '成都市');
+      // 估算同样是有效结果：照常换城市、落盘。
+      final persisted = await WeatherPreferences.loadLocation();
+      expect(persisted!.name, '成都市');
+    });
+
+    test('实时定位与 IP 估算都拿不到 → timeout，且不动原城市', () async {
+      await _seed();
+      final server = _Server();
+      final provider = WeatherProvider(
+        service: server.service,
+        locationService: _locationService(
+          _source(hasFix: false),
+          resolvesTo: _located,
+          // estimatesTo 默认 null：模拟网络估算也不可用。
+        ),
+      );
+      await provider.initialize();
+      await provider.ensureFresh();
+
+      expect(
+        await provider.locateCurrentPosition(),
+        DeviceLocationFailure.timeout,
+      );
+      expect(provider.lastLocateWasEstimated, isFalse);
+      expect(provider.location!.name, '杭州');
     });
 
     test('系统定位开关没开时透传 serviceDisabled', () async {
@@ -260,7 +326,7 @@ void main() {
       final second = provider.locateCurrentPosition();
       final results = await Future.wait([first, second]);
 
-      expect(source.positionCalls, 1);
+      expect(source.fixCalls, 1);
       expect(results, [isNull, isNull]);
     });
 
@@ -297,6 +363,7 @@ void main() {
         service: server.service,
         locationService: DeviceLocationService(
           reverseGeocode: (_, _) async => resolves ? _located : null,
+          networkGeocode: () async => null,
           source: _source(),
         ),
       );

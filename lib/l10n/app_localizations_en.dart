@@ -11635,4 +11635,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get weatherLocationAddressUnavailable =>
       'Located, but couldn\'t resolve a place name. Search for a city instead';
+
+  @override
+  String get weatherLocationEstimated =>
+      'Estimated from your network location, so it may be off';
 }

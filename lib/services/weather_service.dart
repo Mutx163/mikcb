@@ -134,13 +134,48 @@ class WeatherService {
       },
     );
 
-    final json = await _getJson(uri, 'weather_reverse_geocode');
+    return _parseLocation(
+      await _getJson(uri, 'weather_reverse_geocode'),
+      // 坐标用**请求时那一份**而不是响应里回显的：响应会把坐标取整，而天气请求
+      // 该用我们实际拿到的那份。
+      fallbackLatitude: latitude,
+      fallbackLongitude: longitude,
+    );
+  }
+
+  /// 按网络出口 IP 估算所在地（同一个接口，**不带坐标**）。
+  ///
+  /// 只在实时定位拿不到时用。必须说清它的性质：这是**估算**，坐标取自 IP 归属地，
+  /// 移动网络下可能指到运营商网关所在城市。调用方要把结果标注出来，不能当真实定位用。
+  Future<WeatherLocation?> networkGeocode() async {
+    final uri = Uri.parse(_reverseGeocodeBaseUrl).replace(
+      queryParameters: {'localityLanguage': 'zh-Hans'},
+    );
+    // 估算没有「请求坐标」可依，只能用响应里 IP 推断出来的那对。
+    return _parseLocation(await _getJson(uri, 'weather_network_geocode'));
+  }
+
+  /// 反查与 IP 估算的响应字段完全一样，共用一份解析——免得「city 缺失退到 locality」
+  /// 「区名与市名相同时不重复记」这类规则在两处各写一遍、慢慢分叉。
+  ///
+  /// [fallbackLatitude] / [fallbackLongitude] 给定时优先用它们，否则取响应里的坐标。
+  WeatherLocation? _parseLocation(
+    Map<String, dynamic>? json, {
+    double? fallbackLatitude,
+    double? fallbackLongitude,
+  }) {
     if (json == null) {
       return null;
     }
     // 市级名优先取 city；直辖市与区级场景 city 本身就是区名。
     final name = _text(json['city']) ?? _text(json['locality']);
     if (name == null) {
+      return null;
+    }
+    final latitude = fallbackLatitude ?? (json['latitude'] as num?)?.toDouble();
+    final longitude =
+        fallbackLongitude ?? (json['longitude'] as num?)?.toDouble();
+    if (latitude == null || longitude == null) {
       return null;
     }
     final locality = _text(json['locality']);

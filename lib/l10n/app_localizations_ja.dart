@@ -11299,4 +11299,7 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get weatherLocationAddressUnavailable =>
       '位置は取得できましたが地名を解決できません。都市を検索してください';
+
+  @override
+  String get weatherLocationEstimated => 'ネットワーク位置から推定しました。正確でない場合があります';
 }

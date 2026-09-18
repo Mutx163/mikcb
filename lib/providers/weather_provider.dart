@@ -41,6 +41,7 @@ class WeatherProvider extends ChangeNotifier {
       locationService ??
           DeviceLocationService(
             reverseGeocode: resolvedService.reverseGeocode,
+            networkGeocode: resolvedService.networkGeocode,
           ),
     );
   }
@@ -74,6 +75,7 @@ class WeatherProvider extends ChangeNotifier {
   DateTime? _nextRetryNotBefore;
   bool _isLocating = false;
   DeviceLocationFailure? _lastLocateFailure;
+  bool _lastLocateWasEstimated = false;
   Future<DeviceLocationFailure?>? _locateInFlight;
 
   bool get enabled => _enabled;
@@ -90,6 +92,10 @@ class WeatherProvider extends ChangeNotifier {
 
   /// 上次定位失败的原因；成功或还没定位过时为 null。
   DeviceLocationFailure? get lastLocateFailure => _lastLocateFailure;
+
+  /// 上次定位是不是「按网络 IP 估算」出来的（成功且为估算时才为 true）。
+  /// 界面据此如实标注——估算值不能冒充真实定位。
+  bool get lastLocateWasEstimated => _lastLocateWasEstimated;
 
   /// 读本地配置进内存，然后后台补一次「过期就刷」。
   ///
@@ -236,6 +242,7 @@ class WeatherProvider extends ChangeNotifier {
       await setLocation(located);
     }
     _lastLocateFailure = outcome.failure;
+    _lastLocateWasEstimated = outcome.estimated;
     _isLocating = false;
     notifyListeners();
     return _lastLocateFailure;
