@@ -4,6 +4,10 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/utils/home_page_background.dart';
 import 'package:university_timetable/widgets/home_page_region_blur.dart';
 
+/// Hue in degrees; the accents used here sit in the blue/green range so a
+/// plain difference is enough (no 0/360 wrap).
+double _hueOf(Color color) => HSLColor.fromColor(color).hue;
+
 void main() {
   group('homePageHasAnyChromeBlur', () {
     test('false without backdrop even if blur switches on', () {
@@ -290,7 +294,7 @@ void main() {
       );
     });
 
-    test('accent falls back to auto black/white when unreadable', () {
+    test('unreadable accent keeps its hue and only moves in lightness', () {
       // No backdrop → the accent always stays.
       expect(
         homePageOverWallpaperAccent(
@@ -300,17 +304,36 @@ void main() {
         ),
         const Color(0xFF2563EB),
       );
-      // Dark band: the default blue keeps only ~2:1 → auto-flips white so the
-      // "today" column never vanishes into the photo.
-      expect(
-        homePageOverWallpaperAccent(
-          configuredHex: '#2563EB',
-          themeFallback: const Color(0xFF111111),
-          hasBackdrop: true,
-          wallpaperLuminance: 0.05,
-        ),
-        homePageChromeForegroundOnDark,
+      const accent = Color(0xFF2563EB);
+      // Dark band: the default blue sits at ~1.2:1 → lightened toward white
+      // (pale blue), NOT replaced by pure white.
+      final onDarkBand = homePageOverWallpaperAccent(
+        configuredHex: '#2563EB',
+        themeFallback: const Color(0xFF111111),
+        hasBackdrop: true,
+        wallpaperLuminance: 0.05,
       );
+      expect(homePageInkHasSufficientContrast(onDarkBand, 0.05), isTrue);
+      expect(onDarkBand, isNot(homePageChromeForegroundOnDark));
+      expect(
+        onDarkBand.computeLuminance(),
+        greaterThan(accent.computeLuminance()),
+      );
+      expect((_hueOf(onDarkBand) - _hueOf(accent)).abs(), lessThan(5));
+      // Mid band (~0.5): used to flip to pure black; now a darker blue.
+      final onMidBand = homePageOverWallpaperAccent(
+        configuredHex: '#2563EB',
+        themeFallback: const Color(0xFF111111),
+        hasBackdrop: true,
+        wallpaperLuminance: 0.5,
+      );
+      expect(homePageInkHasSufficientContrast(onMidBand, 0.5), isTrue);
+      expect(onMidBand, isNot(Colors.black));
+      expect(
+        onMidBand.computeLuminance(),
+        lessThan(accent.computeLuminance()),
+      );
+      expect((_hueOf(onMidBand) - _hueOf(accent)).abs(), lessThan(5));
       // Light band: contrast is sufficient → the custom blue stays.
       expect(
         homePageOverWallpaperAccent(
@@ -321,6 +344,30 @@ void main() {
         ),
         const Color(0xFF2563EB),
       );
+    });
+
+    test('readableAccentOnLuminance keeps the configured hue on both sides', () {
+      const accent = Color(0xFF4CAF50);
+      final onDarkBand = readableAccentOnLuminance(accent, 0.05);
+      final onMidBand = readableAccentOnLuminance(accent, 0.5);
+      expect(homePageInkHasSufficientContrast(onDarkBand, 0.05), isTrue);
+      expect(homePageInkHasSufficientContrast(onMidBand, 0.5), isTrue);
+      expect((_hueOf(onDarkBand) - _hueOf(accent)).abs(), lessThan(5));
+      expect((_hueOf(onMidBand) - _hueOf(accent)).abs(), lessThan(5));
+      // 0.4 is a band the "toward white" side cannot serve — pure white tops
+      // out at 2.3:1 there — while the dark side needs only a few steps. The
+      // smaller move wins, so the accent stays blue (never pure white).
+      final onStuckBand = readableAccentOnLuminance(accent, 0.4);
+      expect(homePageInkHasSufficientContrast(onStuckBand, 0.4), isTrue);
+      expect(onStuckBand, isNot(Colors.white));
+      expect((_hueOf(onStuckBand) - _hueOf(accent)).abs(), lessThan(5));
+      // 0.3 is the boundary case that separates "fewest steps" from "same
+      // polarity as the neighbouring labels": lightening needs the full walk
+      // to pure white, darkening needs a handful of steps → the hue stays.
+      final onBoundaryBand = readableAccentOnLuminance(accent, 0.3);
+      expect(homePageInkHasSufficientContrast(onBoundaryBand, 0.3), isTrue);
+      expect(onBoundaryBand, isNot(Colors.white));
+      expect((_hueOf(onBoundaryBand) - _hueOf(accent)).abs(), lessThan(5));
     });
   });
 

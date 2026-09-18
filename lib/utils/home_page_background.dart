@@ -558,11 +558,13 @@ bool homePageInkHasSufficientContrast(
 
 /// Accent (today / selected day) over wallpaper.
 ///
-/// Custom blues etc. stay as the user set them — unless they would be
-/// unreadable over the wallpaper band (contrast below ~3:1), in which case
-/// the automatic black/white flip takes over so the "today" column never
-/// vanishes into the photo. The unset path falls back to [themeFallback]
-/// (usually [ColorScheme.primary]).
+/// Custom blues etc. stay exactly as the user set them — unless they would be
+/// unreadable over the wallpaper band (contrast below ~3:1), in which case the
+/// accent **keeps its hue** and only its lightness is pushed
+/// ([readableAccentOnLuminance]). Replacing the user's colour with pure
+/// black/white reads as "my accent setting stopped working", which is exactly
+/// the complaint that retired the old flip.
+/// The unset path falls back to [themeFallback] (usually [ColorScheme.primary]).
 Color homePageOverWallpaperAccent({
   required String? configuredHex,
   required Color themeFallback,
@@ -575,15 +577,86 @@ Color homePageOverWallpaperAccent({
     return configured;
   }
   final luminance = wallpaperLuminance;
-  if (luminance != null &&
-      !homePageInkHasSufficientContrast(configured, luminance)) {
-    return homePageChromeForegroundForLuminance(
-      luminance,
-      darkThreshold: darkThreshold,
-      fallback: configured,
-    );
+  if (luminance == null ||
+      homePageInkHasSufficientContrast(configured, luminance)) {
+    return configured;
   }
-  return configured;
+  return readableAccentOnLuminance(
+    configured,
+    luminance,
+    darkThreshold: darkThreshold,
+  );
+}
+
+/// Readable variant of [accent] over a wallpaper band of [wallpaperLuminance],
+/// hue preserved.
+///
+/// Both poles (toward white, toward black) are tried in 5% steps — the same
+/// granularity as [readableAccentOnCardInk], which does this for course-card
+/// accents — and the side that clears [minContrastRatio] with the **fewest
+/// steps wins**, i.e. the smallest possible deviation from the colour the user
+/// picked. Staying on the band's ink polarity
+/// ([homePageChromeForegroundForLuminance]) only breaks a step-count tie: it
+/// keeps the accent on the same side as the weekday labels next to it, but it
+/// never wins over a colour that moved less.
+///
+/// A band sitting right next to the accent in luminance can make one side
+/// unusable (pure white tops out at ~2.3:1 against a 0.4 band); the other side
+/// is then the only option and is taken. Colour identity is the goal, ink
+/// polarity is a preference.
+Color readableAccentOnLuminance(
+  Color accent,
+  double wallpaperLuminance, {
+  double minContrastRatio = 3.0,
+  double darkThreshold = 0.45,
+}) {
+  final towardLight = _pushAccentTowardPole(
+    accent,
+    Colors.white,
+    wallpaperLuminance,
+    minContrastRatio,
+  );
+  final towardDark = _pushAccentTowardPole(
+    accent,
+    Colors.black,
+    wallpaperLuminance,
+    minContrastRatio,
+  );
+  if (towardLight == null || towardDark == null) {
+    final only = towardLight ?? towardDark;
+    if (only != null) {
+      return only.$1;
+    }
+    // Neither pole reaches the floor (needs a band that no 5%-step walk can
+    // clear): fall back to the band's own polarity, like the old flip did.
+    return wallpaperLuminance < darkThreshold ? Colors.white : Colors.black;
+  }
+  if (towardLight.$2 != towardDark.$2) {
+    return towardLight.$2 < towardDark.$2 ? towardLight.$1 : towardDark.$1;
+  }
+  return wallpaperLuminance < darkThreshold ? towardLight.$1 : towardDark.$1;
+}
+
+/// First 5%-step interpolate of [accent] toward [pole] that clears
+/// [minContrastRatio] against [wallpaperLuminance], with its step count; null
+/// when even the pole itself falls short.
+(Color, int)? _pushAccentTowardPole(
+  Color accent,
+  Color pole,
+  double wallpaperLuminance,
+  double minContrastRatio,
+) {
+  for (var i = 1; i <= 20; i++) {
+    final candidate = Color.lerp(accent, pole, i / 20)!;
+    if (homePageInkHasSufficientContrast(
+      candidate,
+      wallpaperLuminance,
+      minContrastRatio: minContrastRatio,
+    )) {
+      return (candidate, i);
+    }
+  }
+  return null;
 }
 
 /// Secondary/muted label derived from an already-resolved primary ink.
