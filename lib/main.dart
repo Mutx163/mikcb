@@ -58,6 +58,7 @@ import 'ui/app_fonts.dart';
 import 'ui/debug/debug.dart';
 import 'ui/hyperos/hyperos.dart';
 import 'ui/hyperos/hyperos_motion.dart';
+import 'ui/hyperos/refraction/glass_surface_shader.dart';
 import 'ui/hyperos_motion_bridge.dart';
 
 ThemeMode _themeModeFromSettings(AppThemeMode mode) {
@@ -393,6 +394,13 @@ Future<void> main() async {
       SchedulerBinding.instance.scheduleTask(() {
         unawaited(CourseCardGlassShader.instance.ensureLoaded());
       }, Priority.idle, debugLabel: 'course-card-glass-warm');
+      // 全局「折射玻璃」表面（弹层 / 顶栏 / 玻璃坞…）的着色器预热
+      // （1 个 `shaders/glass_surface_refraction.frag`）。同上一份：幂等、空闲优先级、
+      // 失败不阻断（各表面按自己既有的基础材质降级）。与卡片那份是**两个独立程序**，
+      // 不能互相顶替：卡片吃预模糊位图、按局部坐标画；这一份吃实时背景、按屏幕坐标画。
+      SchedulerBinding.instance.scheduleTask(() {
+        unawaited(GlassSurfaceShader.instance.ensureLoaded());
+      }, Priority.idle, debugLabel: 'glass-surface-refraction-warm');
       // 玻璃 shader 预热放到启动画面展示期间并行跑（失败只记日志不阻断，
       // 玻璃按未预热降级，绝不能因此卡死换页）。
       _glassShadersWarm = LiquidGlassWidgets.initialize().catchError((
