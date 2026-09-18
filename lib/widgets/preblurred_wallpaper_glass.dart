@@ -635,14 +635,14 @@ Rect preblurredWallpaperSourceRect({
 /// The alignment is read from the render transform at paint time, so the frost
 /// never lags a frame behind the card and no rebuilds happen while paging.
 ///
-/// [glass] 非 null 时走「折射玻璃」：同一份共享预模糊位图先过一遍折射着色器
+/// [glass] 非 null 时走「液态玻璃」：同一份共享预模糊位图先过一遍折射着色器
 /// 再上屏（边缘按圆角 SDF 把采样点朝外推开 + 叠染色 + 叠受光边缘高光）。
 /// 着色器没就绪（后端不支持 / 资产缺失 / 测试环境）时自动回落成直接贴图 +
 /// 一层染色 —— 也就是「高斯磨砂」的外观，不会破相。
 class PreblurredWallpaperAlignedFill extends LeafRenderObjectWidget {
   const PreblurredWallpaperAlignedFill({this.glass, super.key});
 
-  /// 折射玻璃参数；null = 原行为（直接贴图，即高斯模糊档）。
+  /// 液态玻璃参数；null = 原行为（直接贴图，即高斯模糊档）。
   final CourseGlassStyle? glass;
 
   @override
@@ -785,7 +785,7 @@ class _RenderPreblurredFill extends RenderBox {
   /// Whether [markNeedsPaint] is registered on [_verticalScrollPosition].
   bool _listeningVertical = false;
 
-  /// 折射玻璃参数。null = 直接贴图（高斯磨砂档）。
+  /// 液态玻璃参数。null = 直接贴图（高斯磨砂档）。
   CourseGlassStyle? _glass;
   set glass(CourseGlassStyle? value) {
     if (_glass == value) {
@@ -1046,7 +1046,7 @@ class _RenderPreblurredFill extends RenderBox {
     }
   }
 
-  /// 折射玻璃路径：同一份共享预模糊位图，按卡片圆角做边缘折射 + 染色 + 高光。
+  /// 液态玻璃路径：同一份共享预模糊位图，按卡片圆角做边缘折射 + 染色 + 高光。
   ///
   /// 全程只有一次 `drawRect`，没有离屏目标、没有 GPU 回读 —— 这正是「卡片数量
   /// 翻倍不改变 GPU 工作量级」的来源（对比每卡一次实时 BackdropFilter）。

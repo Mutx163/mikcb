@@ -8,7 +8,7 @@ import 'hyperos_miuix_spec.dart';
 import 'hyperos_select.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_widgets.dart';
-import 'liquid/hyperos_liquid_glass_surface.dart' show UndimmedBackdropCapture;
+import 'liquid/liquid_glass_surface.dart' show UndimmedBackdropCapture;
 
 /// Single item in [showHyperosListPopup].
 class HyperosPopupMenuItem<T> {

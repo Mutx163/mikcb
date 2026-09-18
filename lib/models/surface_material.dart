@@ -23,16 +23,14 @@ enum SurfaceMaterial {
   /// 高斯模糊（顶栏风格 · 高斯）。
   frostGaussian,
 
-  /// 折射玻璃（课程卡片的第三档材质：共享预模糊位图 + 边缘折射着色器）。
-  ///
-  /// 与 [frostGaussian] 分开而不是复用：两者在设置页「课程卡片」那一行要显示
-  /// 不同文案，混在一起会让用户看到与实际不符的档位名。
-  refractionGlass,
-
   /// 柔光玻璃（高级材质）。
   softGlass,
 
-  /// 液态玻璃（高级材质）。
+  /// 液态玻璃（高级材质；也是课程卡片「液态玻璃」档的材质）。
+  ///
+  /// 课程卡片那一档与弹层/顶栏/玻璃坞走的是**同一份**折射着色器，因此共用
+  /// 一个枚举值：它在「各表面当前材质」地图卡上要显示的就是「液态玻璃」，
+  /// 没有第二个名字。
   liquidGlass,
 }
 
@@ -139,7 +137,7 @@ SurfaceMaterial pickerButtonsSurfaceMaterial(TimetableSettings s) =>
     );
 
 /// 课程卡片。玻璃档依赖背景模糊，模糊总开关关时渲染侧回退实体
-/// （resolveCourseCardSurfaceStyle 的 gaussianBlurAvailable 口径）。
+/// （effectiveCourseCardSurfaceStyle 的 gaussianBlurAvailable 口径）。
 SurfaceMaterial courseCardSurfaceMaterial(TimetableSettings s) {
   if (s.courseCardSurfaceStyle == CourseCardSurfaceStyle.solid) {
     return SurfaceMaterial.solid;
@@ -147,7 +145,7 @@ SurfaceMaterial courseCardSurfaceMaterial(TimetableSettings s) {
   if (!s.frostedBlurEnabled) {
     return SurfaceMaterial.solid;
   }
-  return s.courseCardSurfaceStyle == CourseCardSurfaceStyle.refraction
-      ? SurfaceMaterial.refractionGlass
+  return s.courseCardSurfaceStyle == CourseCardSurfaceStyle.liquidGlass
+      ? SurfaceMaterial.liquidGlass
       : SurfaceMaterial.frostGaussian;
 }

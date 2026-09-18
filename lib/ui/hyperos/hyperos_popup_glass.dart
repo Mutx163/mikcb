@@ -18,15 +18,13 @@
 /// 搬回 `hyperos_select.dart`**。
 library;
 
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_sheet.dart';
 import 'hyperos_theme.dart';
 import 'frosted/liquid_glass_degradation.dart';
-import 'liquid/hyperos_liquid_glass_surface.dart';
+import 'liquid/liquid_glass_surface.dart';
 import 'soft_glass/soft_glass_surface.dart';
 import 'soft_glass/stable_frosted_surface.dart';
 
@@ -96,7 +94,7 @@ abstract final class HyperosGlassEdge {
 /// Glass background for the select popup.
 ///
 /// Renders the appropriate surface based on [FrostedGlassMode]:
-/// - **liquidGlass**: [HyperosLiquidGlassSurface] with the shared modal role.
+/// - **liquidGlass**: [LiquidGlassSurface] with the shared modal material.
 /// - **frosted / gaussian**: [BackdropFilter] blur + tint scrim.
 /// - **translucent**: lighter blur + minimal tint.
 /// - **blur disabled**: solid [HyperosColors.surfaceContainer].
@@ -145,16 +143,15 @@ class HyperosSelectPopupGlass extends StatelessWidget {
 
   /// 浮在同一块玻璃面之上的弹层（如列表弹窗的二级子卡）置 true。
   ///
-  /// 液态玻璃面按绘制顺序采样它下面的合成结果——二级子卡排在主面板
-  /// 之后，直接采样就会包含主面板玻璃的输出，玻璃叠玻璃再折射一遍，
-  /// 读感浑浊。置真后先铺一层**共享组捕获的磨砂底**（弹窗遮罩下的页面，
-  /// 与主面板玻璃同源、由合成器逐帧刷新）把下方玻璃挡在外面，液态玻璃
-  /// 再贴着这层底折射。
+  /// 置真时液态面进祖先 `BackdropGroup` 的共享捕获点（`grouped: true`）：
+  /// 组内所有玻璃采到的是**同一个**捕获点处的背景，于是二级子卡折射的是
+  /// 「遮罩下的页面」，而不是排在它前面的主面板玻璃的输出——玻璃叠玻璃再
+  /// 折射一遍，读感浑浊。
   ///
   /// 历史教训：这里一度垫的是宿主页面的**整页同步快照**（ui.Image），
   /// 结果展开时是一张静态照片跟着卡片走（用户口径：「就好携带一个有
-  /// 背景的卡片出来了，而不是玻璃出来了」）。premium 档改为实时读底面
-  /// 后，垫底必须是 live 的合成器捕获，不能再垫任何快照。
+  /// 背景的卡片出来了，而不是玻璃出来了」）。改用共享组捕获后，垫底是
+  /// live 的合成器捕获，不能再垫任何快照。
   final bool useAncestorGroupCapture;
 
   /// 当前外观下弹窗是否走柔光玻璃面（Hyper-PiliPlus SoftGlass 风格）。
@@ -252,42 +249,21 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     final useLiquidGlass = liquidSurfaceActive(context);
 
     if (useLiquidGlass) {
-      // 与顶栏带 / 玻璃坞 / 卡片完全同一个组件、同一个档位常量
-      // （[MikcbLiquidGlassTokens.defaultQuality]）。任何表面都不得再传自己的
+      // 与顶栏带 / 玻璃坞 / 卡片完全同一个组件、同一份参数（
+      // [LiquidGlassSurface] 只从 scope 读调参）。任何表面都不得再传自己的
       // 档位或捕获源——那正是「同一个材质几种观感」的成因。
-      final surface = HyperosLiquidGlassSurface(
-        role: HyperosLiquidGlassRole.modal,
+      return LiquidGlassSurface(
         borderRadius: cornerRadius,
-        thicknessFactor: thicknessFactor,
+        // 二级子卡（[useAncestorGroupCapture]）进祖先 BackdropGroup 的共享
+        // 捕获点：由此采到「遮罩下的页面」，而不是把主面板玻璃的输出再折射
+        // 一遍（玻璃叠玻璃读感浑浊）。
+        grouped: useAncestorGroupCapture,
+        refractionFactor: thicknessFactor,
+        // 引擎没有 shader filter 后端 / 着色器未就绪时回落稳定磨砂面：
+        // 仍是玻璃观感，不会突然变成一块实底。
+        fallbackBuilder: (_) =>
+            StableFrostedSurface(cornerRadius: cornerRadius, child: child),
         child: child,
-      );
-      if (!useAncestorGroupCapture) {
-        return surface;
-      }
-      // 磨砂底：共享组捕获（遮罩下的页面，合成器逐帧刷新）+ 常规磨砂
-      // 参数，把主面板玻璃的输出挡在液态玻璃的采样输入之外。ClipRRect
-      // 只圆底垫的角；液态玻璃面保持不裁，浅色模式的外阴影才能画到卡外。
-      final sigma = HyperosBlurredHeader.blurSigmaOf(context);
-      final tint = HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
-      return Stack(
-        fit: StackFit.passthrough,
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: borderRadius,
-              child: BackdropFilter.grouped(
-                filter: ImageFilter.blur(
-                  sigmaX: sigma,
-                  sigmaY: sigma,
-                  tileMode: TileMode.clamp,
-                ),
-                child: ColoredBox(color: tint),
-              ),
-            ),
-          ),
-          surface,
-        ],
       );
     }
 

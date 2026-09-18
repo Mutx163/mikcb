@@ -3,10 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../models/header_blur_style.dart';
+import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos_blurred_header.dart';
 import '../ui/hyperos/hyperos_theme.dart';
-import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
+import '../ui/hyperos/liquid/liquid_glass_surface.dart';
 import '../ui/hyperos/soft_glass/soft_glass_surface.dart';
 import '../utils/home_page_background.dart';
 
@@ -232,7 +233,7 @@ class HomePageChromeGlassFill extends StatelessWidget {
   const HomePageChromeGlassFill({
     this.borderRadius = 0,
     this.useAncestorBackdropGroup = false,
-    this.maxThickness,
+    this.maxRefraction,
     super.key,
   });
 
@@ -248,7 +249,11 @@ class HomePageChromeGlassFill extends StatelessWidget {
   /// group) so the displacement range stays inside the captured backdrop.
   final bool useAncestorBackdropGroup;
 
-  final double? maxThickness;
+  /// 折射位移上限（逻辑 px），见 [LiquidGlassSurface.maxRefraction]。
+  ///
+  /// 窄带（设置页预览里那条 ~40dp 的星期条）上必须压小，否则上下两条边缘
+  /// 折射带会占满整条带。null = 不压。
+  final double? maxRefraction;
 
   /// Corner radius of the glass shape itself. The chrome band is square (0);
   /// the day-view summary card reuses this material with its card radius —
@@ -302,11 +307,8 @@ class HomePageChromeGlassFill extends StatelessWidget {
       );
     }
     if (material == 'liquid' && useBlur) {
-      return HyperosLiquidGlassSurface.settingsForRole(
-        role: HyperosLiquidGlassRole.header,
-        brightness: Theme.of(context).brightness,
-        tuning: appearance.liquidGlassTuning,
-      ).glassColor;
+      return (appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
+          .tintColor(Theme.of(context).brightness);
     }
     return HyperosBlurredHeader.homePageRegionTintColor(
       context,
@@ -324,13 +326,39 @@ class HomePageChromeGlassFill extends StatelessWidget {
     final material = HyperosBlurredHeader.homeBandGlassMaterialOf(context);
     const fill = SizedBox.expand();
 
+    // 高斯 / 渐进磨砂带：既是这两个材质档本身，也是液态玻璃在引擎没有
+    // shader filter 后端 / 着色器未就绪时的回落（仍是玻璃观感）。
+    Widget frostBand() {
+      final frost = FrostedHeaderBackground(
+        blurEnabled: useBlur,
+        blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
+        blurStyle: material == 'gaussian'
+            ? HeaderBlurStyle.gaussian
+            : HeaderBlurStyle.inspire,
+        tint: HyperosBlurredHeader.homePageRegionTintColor(
+          context,
+          withBlur: useBlur,
+        ),
+        child: fill,
+      );
+      if (borderRadius <= 0) {
+        return frost;
+      }
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: frost,
+      );
+    }
+
     switch (material) {
       case 'liquid' when useBlur:
-        return HyperosLiquidGlassSurface(
-          role: HyperosLiquidGlassRole.header,
+        return LiquidGlassSurface(
           borderRadius: borderRadius,
-          useAncestorBackdropGroup: useAncestorBackdropGroup,
-          maxThickness: maxThickness,
+          // 首页带上自己那块 bounds 就够宽；设置页预览里它是小矩形，
+          // 必须共享组捕获，否则折射位移被钳在带边界上糊成「相框」。
+          grouped: useAncestorBackdropGroup,
+          maxRefraction: maxRefraction,
+          fallbackBuilder: (_) => frostBand(),
           child: fill,
         );
       case 'soft' when useBlur:
@@ -342,25 +370,7 @@ class HomePageChromeGlassFill extends StatelessWidget {
         );
       case 'gaussian':
       case 'progressive':
-        final frost = FrostedHeaderBackground(
-          blurEnabled: useBlur,
-          blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-          blurStyle: material == 'gaussian'
-              ? HeaderBlurStyle.gaussian
-              : HeaderBlurStyle.inspire,
-          tint: HyperosBlurredHeader.homePageRegionTintColor(
-            context,
-            withBlur: useBlur,
-          ),
-          child: fill,
-        );
-        if (borderRadius <= 0) {
-          return frost;
-        }
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: frost,
-        );
+        return frostBand();
       case 'solid':
         // 实体档：用户显式选择的不透明顶栏——页面底色实心条，完全遮住
         // 壁纸。与 default 分支的「淡色衬底」是两回事：那是不模糊时的降

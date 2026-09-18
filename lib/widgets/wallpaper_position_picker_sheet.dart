@@ -8,7 +8,7 @@ import 'package:flutter_miuix/miuix.dart';
 
 import '../l10n/app_localizations.dart';
 import '../ui/hyperos/hyperos.dart';
-import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
+import '../ui/hyperos/liquid/liquid_glass_surface.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
 import 'home_page_region_blur.dart' show HomePageChromeGlassFill;
@@ -700,8 +700,8 @@ class _WallpaperPositionPickerPageState
 /// 材质跟随全局「玻璃模式」设置（[FrostedAppearanceScope.glassMode]），
 /// 判定与首页玻璃带 / 底部玻璃坞完全同一条路径：
 ///
-/// - **液态玻璃**：[HyperosLiquidGlassSurface]（nestedTile 角色）折射材质，
-///   与弹窗/首页顶部同参；文字浮在玻璃上，只叠一层极性衬底保证可读性。
+/// - **液态玻璃**：[LiquidGlassSurface] 折射材质，与弹窗/首页顶部同参；
+///   文字浮在玻璃上，只叠一层极性衬底保证可读性。
 /// - **经典磨砂 / 高斯模糊 / 半透明**：实时 [BackdropFilter] 高斯模糊 +
 ///   极性衬底（模糊强度跟随「模糊强度」滑杆）。
 /// - 系统降级（无障碍/减动效/高对比）或关闭「毛玻璃效果」时：只画衬底，
@@ -808,15 +808,44 @@ class _HyperosHeaderTextButton extends StatelessWidget {
       );
     }
 
+    // 高斯模糊路径（经典磨砂/高斯模糊/半透明共用）：模糊强度跟随设置；
+    // 关闭模糊或系统降级时 FrostedHeaderBackground 自动只画衬底。
+    // 描边保留，保证纯衬底状态下按钮轮廓仍然可辨。
+    // 它同时是液态玻璃不可用时的回落（仍是玻璃观感）。
+    Widget frostButton() => ClipRRect(
+      borderRadius: radius,
+      child: FrostedHeaderBackground(
+        blurEnabled: blurEnabled,
+        blurSigma: appearance.sheetBlurSigma,
+        tint: wash,
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: [
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: radius,
+                  border: Border.all(color: borderColor),
+                ),
+              ),
+            ),
+            content,
+          ],
+        ),
+      ),
+    );
+
     // 液态玻璃：折射 shader 与弹窗/首页顶部完全同参。
     if (advancedMode == FrostedGlassMode.liquidGlass &&
         !LiquidGlassDegradation.shouldDegrade(context)) {
-      // 液态玻璃：折射 shader 与弹窗/首页顶部完全同参。液态玻璃自带
-      // 边缘高光，不再叠加描边；衬底压在玻璃上保证文字对比度
+      // 液态玻璃自带边缘高光，不再叠加描边；衬底压在玻璃上保证文字对比度
       // （与课程玻璃卡片叠课程色 tint 同一做法）。
-      return HyperosLiquidGlassSurface(
-        role: HyperosLiquidGlassRole.nestedTile,
+      return LiquidGlassSurface(
         borderRadius: cornerRadius,
+        // 同屏可能有多颗悬浮玻璃按钮：进祖先 BackdropGroup 的共享捕获点，
+        // 避免后画的那颗把先画的那颗玻璃折射进去。
+        grouped: true,
+        fallbackBuilder: (_) => frostButton(),
         child: Stack(
           fit: StackFit.passthrough,
           children: [
@@ -842,30 +871,6 @@ class _HyperosHeaderTextButton extends StatelessWidget {
       );
     }
 
-    // 高斯模糊路径（经典磨砂/高斯模糊/半透明共用）：模糊强度跟随设置；
-    // 关闭模糊或系统降级时 FrostedHeaderBackground 自动只画衬底。
-    // 描边保留，保证纯衬底状态下按钮轮廓仍然可辨。
-    return ClipRRect(
-      borderRadius: radius,
-      child: FrostedHeaderBackground(
-        blurEnabled: blurEnabled,
-        blurSigma: appearance.sheetBlurSigma,
-        tint: wash,
-        child: Stack(
-          fit: StackFit.passthrough,
-          children: [
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: radius,
-                  border: Border.all(color: borderColor),
-                ),
-              ),
-            ),
-            content,
-          ],
-        ),
-      ),
-    );
+    return frostButton();
   }
 }

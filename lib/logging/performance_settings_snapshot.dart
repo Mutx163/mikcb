@@ -16,8 +16,8 @@
 ///   转换点，各种回落已经在那里做完了）；
 /// * 各表面实际材质 → `lib/models/surface_material.dart` 的工厂函数（与渲染侧
 ///   门控同口径，设置页「各表面当前材质」卡用的也是它们）；
-/// * 液态玻璃的光学参数 → `MikcbLiquidGlassTokens.sheetSettingsFor`，因此
-///   「用户没进过高级材质页」时走的内置常量也照样读得到；
+/// * 液态玻璃的光学参数 → `LiquidGlassTuning`（非空即用户调过的档，空则回落
+///   `LiquidGlassTuning.defaults`），因此「用户没进过高级材质页」时也照样读得到；
 /// * 档位名 → `glassModeChoiceOf` / `texturePresetOf`。
 ///
 /// ## 刻意不收集的东西
@@ -44,6 +44,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../models/glass_mode_choice.dart';
+import '../models/liquid_glass_tuning.dart';
 import '../models/surface_material.dart';
 import '../models/texture_preset.dart';
 import '../models/timetable_settings.dart';
@@ -51,7 +52,6 @@ import '../services/android_animation_scale_service.dart';
 import '../services/app_log_service.dart';
 import '../services/memory_stats_service.dart';
 import '../ui/hyperos/hyperos_miuix_spec.dart';
-import '../ui/hyperos/liquid/liquid_glass_tokens.dart';
 import '../utils/home_page_background.dart';
 
 /// 日志分类：复用已注册的 `debug_snapshot`（日志页显示「调试快照」）。
@@ -79,13 +79,9 @@ bool get performanceSnapshotEnabled =>
 /// 产生假触发。
 Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
   final appearance = s.frostedAppearance;
-  // 亮色档解析一次即可：`toSheetSettings` 只把 brightness 用在 glassColor 上，
-  // 光学参数（thickness / blur / 色散 / 折射率…）两档完全相同。内置兜底常量
-  // `sheetSettings` 与 `sheetSettingsDark` 也是逐字相同的两份。
-  final liquidOptics = MikcbLiquidGlassTokens.sheetSettingsFor(
-    Brightness.light,
-    tuning: appearance.liquidGlassTuning,
-  );
+  // 液态玻璃全 app 只有一套参数（[LiquidGlassTuning]）：取「已回落」的那份，
+  // 所以内置兜底档（用户没进过高级材质页）也读得到同样的值。
+  final liquid = appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults;
   final soft = appearance.softGlassTuning;
   final progressive = appearance.progressiveBlurTuning;
 
@@ -131,17 +127,13 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
     'lgTuningSource': appearance.liquidGlassTuning == null
         ? 'builtin'
         : 'custom',
-    'lgThickness': liquidOptics.thickness,
-    'lgBlur': liquidOptics.blur,
-    'lgChromaticAberration': liquidOptics.chromaticAberration,
-    'lgRefractiveIndex': liquidOptics.refractiveIndex,
-    'lgSaturation': liquidOptics.saturation,
-    'lgLightIntensity': liquidOptics.lightIntensity,
-    'lgAmbientStrength': liquidOptics.ambientStrength,
-    'lgVisibility': liquidOptics.visibility,
-    // premium 档才有的边缘光学，由厚度折算而来，滑块上看不到。
-    'lgEdgeAbsorption': liquidOptics.edgeAbsorption,
-    'lgFresnelStrength': liquidOptics.fresnelStrength,
+    'lgRefraction': liquid.refraction,
+    'lgRefractionBand': liquid.refractionBand,
+    'lgRefractionEdgePow': liquid.refractionEdgePow,
+    'lgRimStrength': liquid.rimStrength,
+    'lgRimWidth': liquid.rimWidth,
+    'lgBlurSigma': liquid.blurSigma,
+    'lgTintAlpha': liquid.tintAlpha,
 
     // —— 渐进（顶栏）模糊参数 ——
     'pbPreset': s.progressiveBlurPreset.name,
@@ -150,7 +142,6 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
     'pbTintBottomScale': progressive.tintBottomScale,
 
     // —— 材质常量（用户看不到但直接决定开销）——
-    'liquidQuality': MikcbLiquidGlassTokens.defaultQuality.name,
     'sheetBlurSigma': appearance.sheetBlurSigma,
     'sheetTintAlpha': appearance.sheetTintAlpha,
     'sheetBarrierAlpha': appearance.sheetBarrierAlpha,

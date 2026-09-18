@@ -70,7 +70,7 @@ abstract final class HomeStartupVisualPrimer {
         // 否则预热位图和首帧实际材质不一致。
         liquidGlassChrome: appearance.homeBandGlassMaterial == 'liquid',
         sheetBlurSigma: appearance.sheetBlurSigma,
-        liquidGlassTunedBlur: appearance.liquidGlassTuning?.blur,
+        liquidGlassTunedBlur: appearance.liquidGlassTuning?.blurSigma,
       );
 
       // 亮度带单独 await：避免用列表下标对齐可选的预模糊任务。

@@ -60,7 +60,6 @@ dependencies:
   # 玻璃组件按上游 CHANGELOG 为「可选、与旧组件并存、不改动既有组件默认表现、
   # 原有界面样式零变化」，属纯新增，升级面安全。
   flutter_miuix: ^1.2.0
-  liquid_glass_widgets: ^0.30.2
   flutter_blackbox: ^0.7.0
   fountain_codes: ^1.0.0
   mobile_scanner: ^7.4.0
@@ -97,12 +96,12 @@ dependency_overrides:
 flutter:
   uses-material-design: true
   generate: true
-  # 课程卡片「折射玻璃」档的着色器：在共享的预模糊壁纸上做圆角 SDF 边缘折射 +
+  # 课程卡片「液态玻璃」档的着色器：在共享的预模糊壁纸上做圆角 SDF 边缘折射 +
   # 染色 + 边缘高光。一份纹理全部卡片共用，没有离屏与回读，见 shaders/ 里的注释。
   # 加载失败（或后端不支持）时卡片回落「高斯磨砂」外观，不会破相。
   shaders:
     - shaders/course_card_glass.frag
-    # 全局「折射玻璃」表面（弹层 / 顶栏 / 玻璃坞…）的着色器：当 `ImageFilter`
+    # 全局「液态玻璃」表面（弹层 / 顶栏 / 玻璃坞…）的着色器：当 `ImageFilter`
     # 用（BackdropFilter 的滤镜输入即实时背景），折射数学与卡片那份同源。
     # 加载失败时各表面回落自己既有的基础材质，不会破相。
     - shaders/glass_surface_refraction.frag

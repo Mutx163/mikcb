@@ -10439,9 +10439,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frostedGlassModeSolid => 'Solid cards';
 
   @override
-  String get frostedGlassModeRefraction => 'Refraction Glass';
-
-  @override
   String get advancedMaterialTitle => 'Advanced Material';
 
   @override
@@ -10467,6 +10464,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liquidGlassPresetCustom => 'Custom';
 
   @override
+  String get liquidGlassRefractionLabel => 'Refraction strength';
+
+  @override
+  String get liquidGlassRefractionBandLabel => 'Refraction band width';
+
+  @override
+  String get liquidGlassRefractionEdgePowLabel => 'Edge falloff';
+
+  @override
+  String get liquidGlassRimStrengthLabel => 'Edge highlight';
+
+  @override
+  String get liquidGlassRimWidthLabel => 'Highlight width';
+
+  @override
+  String get liquidGlassBlurSigmaLabel => 'Frost strength';
+
+  @override
   String get courseCardSettingsTitle => 'Course Card';
 
   @override
@@ -10485,7 +10500,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseCardSurfaceStyleGaussian => 'Gaussian Blur';
 
   @override
-  String get courseCardSurfaceStyleRefraction => 'Refraction Glass';
+  String get courseCardSurfaceStyleLiquidGlass => 'Refraction Glass';
 
   @override
   String get courseCardSectionColor => 'Color';
@@ -10497,34 +10512,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collapsibleLargeTitle => 'Collapsible Large Title';
 
   @override
-  String get liquidGlassThicknessLabel => 'Thickness';
-
-  @override
-  String get liquidGlassBlurLabel => 'Blur Intensity';
-
-  @override
   String get liquidGlassTintLabel => 'Tint Intensity';
-
-  @override
-  String get liquidGlassLightIntensityLabel => 'Light Intensity';
-
-  @override
-  String get liquidGlassAmbientStrengthLabel => 'Ambient Light Strength';
-
-  @override
-  String get liquidGlassRefractiveIndexLabel => 'Refractive Index';
-
-  @override
-  String get liquidGlassSaturationLabel => 'Saturation';
-
-  @override
-  String get liquidGlassChromaticAberrationLabel => 'Chromatic Aberration';
-
-  @override
-  String get liquidGlassLightAngleLabel => 'Light Angle';
-
-  @override
-  String get liquidGlassVisibilityLabel => 'Visibility';
 
   @override
   String get liquidGlassResetAction => 'Reset to Default';
@@ -10567,48 +10555,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get softGlassResetAction => 'Reset to Default';
-
-  @override
-  String get refractionGlassPresetLabel => 'Refraction Glass preset';
-
-  @override
-  String get refractionGlassPresetClear => 'Clear';
-
-  @override
-  String get refractionGlassPresetLight => 'Light';
-
-  @override
-  String get refractionGlassPresetStandard => 'Standard';
-
-  @override
-  String get refractionGlassPresetDense => 'Heavy';
-
-  @override
-  String get refractionGlassPresetCustom => 'Custom';
-
-  @override
-  String get refractionGlassRefractionLabel => 'Refraction strength';
-
-  @override
-  String get refractionGlassBandLabel => 'Refraction band width';
-
-  @override
-  String get refractionGlassEdgePowLabel => 'Edge falloff';
-
-  @override
-  String get refractionGlassRimStrengthLabel => 'Edge highlight';
-
-  @override
-  String get refractionGlassRimWidthLabel => 'Highlight width';
-
-  @override
-  String get refractionGlassBlurSigmaLabel => 'Frost strength';
-
-  @override
-  String get refractionGlassTintLabel => 'Tint depth';
-
-  @override
-  String get refractionGlassResetAction => 'Reset to Default';
 
   @override
   String get diagnosticsEntryTitle => 'Diagnostics';

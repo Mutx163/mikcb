@@ -127,6 +127,7 @@ class SoftGlassTabBar extends StatefulWidget {
     this.iconSize = SoftGlassTokens.tabIconSize,
     this.labelFontSize = 10,
     this.polarity,
+    this.surfaceBuilder,
   });
 
   final List<SoftGlassTab> tabs;
@@ -141,6 +142,14 @@ class SoftGlassTabBar extends StatefulWidget {
   final double iconSize;
   final double labelFontSize;
   final SoftGlassPolarity? polarity;
+
+  /// 药丸**底**材质。null = 柔光玻璃（历史行为，[blurEnabled] / [polarity]
+  /// 只在这一条路里生效）。
+  ///
+  /// 底栏的四种材质（柔光 / 液态 / 磨砂 / 实底）共用同一套拖拽、弹簧与指示器
+  /// 实现，差别只在「底」——所以把底做成可注入的，而不是给每种材质各写一条
+  /// 底栏。注入方只需保证画出来的东西是一颗**胶囊**（本组件自己不裁圆角）。
+  final Widget Function(Widget child)? surfaceBuilder;
 
   @override
   State<SoftGlassTabBar> createState() => _SoftGlassTabBarState();
@@ -418,6 +427,19 @@ class _SoftGlassTabBarState extends State<SoftGlassTabBar>
     );
   }
 
+  /// 给药丸内容套上「底」。见 [surfaceBuilder]。
+  Widget _wrapSurface(Widget child) {
+    final builder = widget.surfaceBuilder;
+    if (builder != null) {
+      return builder(child);
+    }
+    return SoftGlassSurface(
+      blurEnabled: widget.blurEnabled,
+      polarity: widget.polarity,
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.tabs.isEmpty) {
@@ -454,10 +476,8 @@ class _SoftGlassTabBarState extends State<SoftGlassTabBar>
         child: SizedBox(
           height: SoftGlassTokens.barHeight,
           width: double.infinity,
-          child: SoftGlassSurface(
-            blurEnabled: widget.blurEnabled,
-            polarity: widget.polarity,
-            child: Padding(
+          child: _wrapSurface(
+            Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: SoftGlassTokens.horizontalContentPadding,
                 vertical: SoftGlassTokens.verticalContentPadding,

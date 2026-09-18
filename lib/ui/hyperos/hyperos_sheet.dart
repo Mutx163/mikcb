@@ -9,7 +9,7 @@ import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'frosted/liquid_glass_degradation.dart';
 import 'hyperos_widgets.dart';
-import 'liquid/hyperos_liquid_glass_surface.dart';
+import 'liquid/liquid_glass_surface.dart';
 import 'soft_glass/soft_glass_surface.dart';
 
 /// Extra height painted below an edge-flush glass sheet's bottom edge so the
@@ -98,8 +98,6 @@ class HyperosSheetFrame extends StatelessWidget {
     this.maxHeight,
     this.frosted = true,
     this.chrome,
-    this.liquidGlassRole = HyperosLiquidGlassRole.modal,
-    this.liquidGlassContentLegibilityFill = false,
     this.liquidGlassGroup = HyperosSheetLiquidGlassGroup.sheetDialog,
   });
 
@@ -113,20 +111,6 @@ class HyperosSheetFrame extends StatelessWidget {
 
   /// When null, uses [HyperosSheetChromeScope] or [HyperosSheetChrome.floating].
   final HyperosSheetChrome? chrome;
-
-  /// Material role used when [frosted] resolves to liquid glass.
-  ///
-  /// All modal shells default to [HyperosLiquidGlassRole.modal] so dialogs,
-  /// action sheets, and pickers share one clear material. Override this only
-  /// for a deliberately different embedded surface.
-  final HyperosLiquidGlassRole liquidGlassRole;
-
-  /// Whether liquid-glass content receives the extra opaque legibility fill.
-  ///
-  /// Defaults to false so every sheet/dialog uses the same clear material as
-  /// the home chrome band (9de96b8 / A 方案通透统一). Set true explicitly
-  /// only for a deliberately milky panel.
-  final bool liquidGlassContentLegibilityFill;
 
   /// 「液态玻璃作用范围」开关档位：本框液态材质跟随弹窗对话框（默认）
   /// 还是对话式全屏选择面板（预设主题等长列表选择弹窗）。
@@ -298,45 +282,51 @@ class HyperosSheetFrame extends StatelessWidget {
       );
     }
 
+    // 基础材质（磨砂 / 实底）：既是液态玻璃不可用时的回落，也是下面两条
+    // 基础分支本身的产物。
+    Widget baseBackground() {
+      final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+
+      // Blur off or family-disabled → solid opaque panel (no translucent scrim).
+      if (!useBlur || familySolid) {
+        return Material(
+          color: HyperosColors.surfaceContainer(context),
+          borderRadius: borderRadius,
+          clipBehavior: Clip.antiAlias,
+          child: const SizedBox.expand(),
+        );
+      }
+
+      // Frosted / gaussian / translucent: BackdropFilter + tint.
+      final tint = HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
+
+      return ClipRRect(
+        borderRadius: borderRadius,
+        child: FrostedHeaderBackground(
+          blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
+          tint: tint,
+          child: const SizedBox.expand(),
+        ),
+      );
+    }
+
     // Liquid glass mode: real-time refraction shader panel. Checked before
     // the gaussian blur gate because liquid glass carries its own blur —
     // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
     // would make the frame a solid gray slab on desktop/web while the nested
     // tiles keep rendering liquid glass.
     if (useAdvancedMaterial && mode == FrostedGlassMode.liquidGlass) {
-      return HyperosLiquidGlassSurface(
-        role: liquidGlassRole,
+      return LiquidGlassSurface(
         borderRadius: borderRadius.topLeft.x,
-        instantUnderlay: true,
-        useAncestorBackdropGroup: true,
-        contentLegibilityFill: liquidGlassContentLegibilityFill,
+        // 采样祖先 BackdropGroup 在压暗层**之前**缓存的「未压暗页面」，
+        // 否则玻璃里会连弹窗的黑色蒙层一起折射进去。
+        grouped: true,
+        fallbackBuilder: (_) => baseBackground(),
         child: const SizedBox.expand(),
       );
     }
 
-    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-
-    // Blur off or family-disabled → solid opaque panel (no translucent scrim).
-    if (!useBlur || familySolid) {
-      return Material(
-        color: HyperosColors.surfaceContainer(context),
-        borderRadius: borderRadius,
-        clipBehavior: Clip.antiAlias,
-        child: const SizedBox.expand(),
-      );
-    }
-
-    // Frosted / gaussian / translucent: BackdropFilter + tint.
-    final tint = HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
-
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: FrostedHeaderBackground(
-        blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-        tint: tint,
-        child: const SizedBox.expand(),
-      ),
-    );
+    return baseBackground();
   }
 
   Widget _buildFrostedSurface({
@@ -369,6 +359,38 @@ class HyperosSheetFrame extends StatelessWidget {
       );
     }
 
+    // 基础材质（磨砂 / 实底）：既是液态玻璃不可用时的回落，也是下面两条
+    // 基础分支本身的产物。
+    Widget baseSurface() {
+      final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+
+      // Blur off or family-disabled → solid opaque panel.
+      if (!useBlur || familySolid) {
+        return HyperosFrostedPanelScope(
+          child: Material(
+            color: HyperosColors.surfaceContainer(context),
+            borderRadius: borderRadius,
+            clipBehavior: Clip.antiAlias,
+            child: content,
+          ),
+        );
+      }
+
+      // Frosted / gaussian / translucent: BackdropFilter + tint.
+      final tint = HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
+
+      return HyperosFrostedPanelScope(
+        child: ClipRRect(
+          borderRadius: borderRadius,
+          child: FrostedHeaderBackground(
+            blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
+            tint: tint,
+            child: content,
+          ),
+        ),
+      );
+    }
+
     // Liquid glass mode: real-time refraction shader panel. Checked before
     // the gaussian blur gate because liquid glass carries its own blur —
     // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
@@ -376,44 +398,16 @@ class HyperosSheetFrame extends StatelessWidget {
     // tiles keep rendering liquid glass.
     if (useAdvancedMaterial && mode == FrostedGlassMode.liquidGlass) {
       return HyperosFrostedPanelScope(
-        child: HyperosLiquidGlassSurface(
-          role: liquidGlassRole,
+        child: LiquidGlassSurface(
           borderRadius: borderRadius.topLeft.x,
-          instantUnderlay: true,
-          useAncestorBackdropGroup: true,
-          contentLegibilityFill: liquidGlassContentLegibilityFill,
+          grouped: true,
+          fallbackBuilder: (_) => baseSurface(),
           child: content,
         ),
       );
     }
 
-    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-
-    // Blur off or family-disabled → solid opaque panel.
-    if (!useBlur || familySolid) {
-      return HyperosFrostedPanelScope(
-        child: Material(
-          color: HyperosColors.surfaceContainer(context),
-          borderRadius: borderRadius,
-          clipBehavior: Clip.antiAlias,
-          child: content,
-        ),
-      );
-    }
-
-    // Frosted / gaussian / translucent: BackdropFilter + tint.
-    final tint = HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
-
-    return HyperosFrostedPanelScope(
-      child: ClipRRect(
-        borderRadius: borderRadius,
-        child: FrostedHeaderBackground(
-          blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-          tint: tint,
-          child: content,
-        ),
-      ),
-    );
+    return baseSurface();
   }
 }
 
@@ -691,9 +685,10 @@ Future<T?> showHyperosSheet<T>({
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // 原 UndimmedBackdropCapture 垫层已移除：本树内没有任何
-            // BackdropFilter.grouped 成员加入该外层组，垫层每次开弹窗
-            // 白做一次全屏近零模糊采样（premium 玻璃走包内自有隔离组）。
+            // 组内首个分组滤镜：在压暗层**之前**缓存「未压暗的整页」，
+            // 弹层玻璃（grouped: true）采样它而不是蒙层。见
+            // [UndimmedBackdropCapture] 的类注释。
+            const Positioned.fill(child: UndimmedBackdropCapture()),
             if (isDismissible)
               Positioned.fill(
                 child: GestureDetector(

@@ -3,7 +3,7 @@ import 'package:flutter/painting.dart' show Color, Offset;
 
 import 'glass_shader_program.dart';
 
-/// 课程卡片「折射玻璃」档的片元程序。
+/// 课程卡片「液态玻璃」档的片元程序。
 ///
 /// 加载/预热/降级逻辑全在 [GlassShaderProgram]（与全局折射表面共用同一套），
 /// 这里只钉住资产键与日志名。
@@ -20,7 +20,7 @@ class CourseCardGlassShader extends GlassShaderProgram {
   static final CourseCardGlassShader instance = CourseCardGlassShader._();
 }
 
-/// 一张卡片折射玻璃的绘制参数。
+/// 一张卡片液态玻璃的绘制参数。
 ///
 /// 这里刻意只有纯数据、不持有 `FragmentShader`：着色器实例是**可变 uniform 的
 /// 载体**，必须由绘制对象自己创建与释放（见 `_RenderPreblurredFill`），

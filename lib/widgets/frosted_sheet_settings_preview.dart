@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/progressive_blur_tuning.dart';
-import 'package:university_timetable/models/refraction_glass_tuning.dart';
 import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -10,8 +9,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
 import '../ui/hyperos/hyperos.dart';
-import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
-import '../ui/hyperos/liquid/liquid_glass_tokens.dart';
+import '../ui/hyperos/liquid/liquid_glass_surface.dart';
 // 诊断标记（临时件，见 utils/frame_perf_probe.dart）。
 import '../utils/frame_perf_probe.dart';
 import 'timetable_week_preview.dart';
@@ -31,7 +29,6 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
     this.liquidGlassTuning,
     this.softGlassTuning = SoftGlassTuning.defaults,
     this.progressiveBlurTuning = ProgressiveBlurTuning.defaults,
-    this.refractionGlassTuning = RefractionGlassTuning.defaults,
     super.key,
   });
 
@@ -44,9 +41,6 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
   /// 渐进模糊参数（预览里的顶栏玻璃带同款材质，必须跟草稿一起走，
   /// 否则预览与真实首页不同观感）。
   final ProgressiveBlurTuning progressiveBlurTuning;
-
-  /// 折射玻璃参数（草稿，非空缺省）——不跟草稿一起走的话，拖滑杆时预览不动。
-  final RefractionGlassTuning refractionGlassTuning;
   final TimetableProvider provider;
   final TimetableSettings settings;
   final int week;
@@ -58,48 +52,6 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
 
   static const _previewHeight = 280.0;
 
-  /// Preview-only render protection against the liquid-glass package's
-  /// extreme-parameter artifacts.
-  ///
-  /// Past the dense preset's thickness/blur (28/14) the package shaders break
-  /// down: the refraction displacement (thickness*10) exceeds the geometry
-  /// texture's 8-bit encoding range and quantises into vertical stripes, and
-  /// the edge-lighting pass paints fringe gradients on the band's visible
-  /// edges. The real home page never sees this — it renders the *saved*
-  /// tuning, which only becomes extreme if the user saves one — but this
-  /// preview mirrors the live slider draft, so pulling a knob to the max
-  /// used to paint stripes and fringes all over the preview band.
-  ///
-  /// Clamp the preview display only: slider ranges, the saved tuning and the
-  /// real home page are untouched. Values at or below the dense preset pass
-  /// through unchanged, so the preview stays 1:1 for every stock preset.
-  ///
-  /// 色散额外固定到 [MikcbLiquidGlassTokens.previewChromaticAberration]：
-  /// 预览框是小尺寸面板，而玻璃的边缘形态学是按大面板标定的，同一个色散
-  /// 值在小框上会读成「彩虹描边」而不是玻璃的边。真机表面不受此处影响。
-  ///
-  /// ⚠️ 由此产生一处**有意的所见非所得**：预览固定 0.03，而真机用的是
-  /// 用户实际调参（默认为上限 0.12，是预览的 4 倍）。原因是小框会把色散
-  /// 放大成伪影，两者无法同时满足；已知且接受。若日后要消除这处背离，
-  /// 应改预览框的尺寸/标定，而不是把这里的值提到与真机一致。
-  static LiquidGlassTuning? previewSafeTuning(LiquidGlassTuning? tuning) {
-    if (tuning == null) {
-      return null;
-    }
-    return tuning.copyWith(
-      thickness: tuning.thickness.clamp(
-        LiquidGlassTuning.minThickness,
-        LiquidGlassTuning.presetDense.thickness,
-      ),
-      blur: tuning.blur.clamp(
-        LiquidGlassTuning.minBlur,
-        LiquidGlassTuning.presetDense.blur,
-      ),
-      chromaticAberration:
-          MikcbLiquidGlassTokens.previewChromaticAberration,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -110,10 +62,9 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
       sheetBarrierAlpha: barrierAlpha,
       blurEnabled: blurEnabled,
       glassMode: glassMode,
-      liquidGlassTuning: previewSafeTuning(liquidGlassTuning),
+      liquidGlassTuning: liquidGlassTuning,
       softGlassTuning: softGlassTuning,
       progressiveBlurTuning: progressiveBlurTuning,
-      refractionGlassTuning: refractionGlassTuning,
       liquidGlassPopupEnabled: settings.liquidGlassPopupEnabled,
       liquidGlassSelectSheetEnabled: settings.liquidGlassSelectSheetEnabled,
       liquidGlassSheetDialogEnabled: settings.liquidGlassSheetDialogEnabled,
@@ -252,11 +203,11 @@ class FrostedSheetSettingsDemoSheet extends StatelessWidget {
               // other modes use the same translucent nested surface rule as
               // settings cards; keeping them out of this layer prevents a
               // Gaussian/classic preview from rendering as liquid glass.
-              return HyperosLiquidGlassLayer(
-                // Sample the modal group's undimmed backdrop (matches home menu).
-                useBackdropGroup: true,
-                child: tiles,
-              );
+              //
+              // 分组采样由每块 [LiquidGlassSurface] 自己的 `grouped` 打开
+              // （见其类注释）：祖先 BackdropGroup 的共享捕获点保证四块瓦片
+              // 互相看不到对方的输出，也不必再挂一层包内专属的共享层。
+              return tiles;
             },
           ),
           const SizedBox(height: 12),
@@ -344,23 +295,12 @@ class _DemoMenuTile extends StatelessWidget {
         appearance.glassMode == FrostedGlassMode.liquidGlass &&
         appearance.liquidGlassSheetDialogEnabled &&
         !LiquidGlassDegradation.shouldDegrade(context);
-    if (useLiquidGlass) {
-      return HyperosLiquidGlassSurface(
-        role: HyperosLiquidGlassRole.nestedTile,
-        borderRadius: HyperosTheme.cardBorderRadius.topLeft.x,
-        // Tiles live in a shared HyperosLiquidGlassLayer (see the demo sheet);
-        // sharedLayer registers this shape in the ancestor layer. A per-tile
-        // instant FakeGlass underlay would paint its own backdrop filter per
-        // tile, re-introducing seams, so it stays off here.
-        layerMode: HyperosLiquidGlassLayerMode.sharedLayer,
-        child: content,
-      );
-    }
 
     // Classic frosted / Gaussian / translucent modes keep nested cards as a
     // translucent tint over the already-frosted modal. They must not create a
     // liquid surface just because the demo card is shared with the liquid path.
-    return HyperosFrostedSurface(
+    // 液态玻璃不可用时（引擎没有 shader filter 后端 / 着色器未就绪）也落到这里。
+    Widget frostedTile() => HyperosFrostedSurface(
       borderRadius: HyperosTheme.cardBorderRadius,
       blurEnabled: false,
       tint: HyperosBlurredHeader.nestedSurfaceTintColor(
@@ -369,5 +309,17 @@ class _DemoMenuTile extends StatelessWidget {
       ),
       child: content,
     );
+
+    if (useLiquidGlass) {
+      return LiquidGlassSurface(
+        borderRadius: HyperosTheme.cardBorderRadius.topLeft.x,
+        // 四块瓦片是并列的兄弟：必须进祖先 BackdropGroup 共享同一个捕获点，
+        // 否则后画的瓦片会把先画的那块玻璃一起折射进去（玻璃叠玻璃）。
+        grouped: true,
+        fallbackBuilder: (_) => frostedTile(),
+        child: content,
+      );
+    }
+    return frostedTile();
   }
 }

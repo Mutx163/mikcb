@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter_miuix/miuix.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
@@ -48,9 +47,8 @@ import '../utils/frame_perf_probe.dart';
 import '../widgets/home_page_region_blur.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
-import '../ui/hyperos/liquid/liquid_glass_tokens.dart';
-import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart'
-    show UndimmedBackdropCapture;
+import '../ui/hyperos/liquid/liquid_glass_surface.dart'
+    show LiquidGlassSurface, UndimmedBackdropCapture;
 import '../widgets/course_action_sheet.dart';
 import '../widgets/course_followup_sheets.dart';
 import '../widgets/course_note_sheet.dart';
@@ -726,7 +724,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           sheetBlurSigma: HyperosBlurredHeader.blurSigmaOf(context),
           liquidGlassTunedBlur:
               (dockAppearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
-                  .blur,
+                  .blurSigma,
         );
         // 与设置页课表预览完全同构的组采样结构：BackdropGroup 内先放全尺寸
         // UndimmedBackdropCapture（组内首个 filter 缓存整屏壁纸），chrome 玻璃
@@ -7496,38 +7494,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     required TimetableSettings settings,
     required AppLocalizations l10n,
   }) {
-    LiquidGlassSettings? dockBtnSettings;
-    GlassQuality? dockBtnQuality;
+    // 圆钮与药丸由**同一个** [_resolveDockMaterial] 分派，材质天然同源
+    // （见 [_dockRoundSurface]），不必再各解析一份参数。
     final dockMaterial = _resolveDockMaterial(context);
-    final dockAppearance = FrostedAppearanceScope.of(context);
-    if (dockMaterial == _DockMaterial.soft) {
-      // 柔光圆钮走 SoftGlassSurface（见 _buildDockMergeSlot）。
-    } else if (dockMaterial == _DockMaterial.liquid) {
-      // 与顶栏带 / 弹窗 / 面板 / 卡片同一份材质解析（[settingsForRole] 用的
-      // 就是它）：全 app 液态玻璃只有这一套参数。曾经这里单独用包原版底栏
-      // 材质（色散 0.3 / 折射率 1.59），于是玻璃坞与其它液态表面是两种观感。
-      dockBtnSettings = MikcbLiquidGlassTokens.sheetSettingsFor(
-        Theme.of(context).brightness,
-        tuning: dockAppearance.liquidGlassTuning,
-      );
-      dockBtnQuality = MikcbLiquidGlassTokens.defaultQuality;
-    } else if (dockMaterial == _DockMaterial.frosted) {
-      dockBtnSettings = LiquidGlassSettings(
-        blur: dockAppearance.sheetBlurSigma,
-        glassColor: HyperosBlurredHeader.sheetTintColor(
-          context,
-          withBlur: true,
-        ),
-      );
-      dockBtnQuality = GlassQuality.minimal;
-    } else {
-      // 实体卡片：零模糊、不透明底。
-      dockBtnSettings = LiquidGlassSettings(
-        blur: 0,
-        glassColor: HyperosColors.surfaceContainer(context),
-      );
-      dockBtnQuality = GlassQuality.minimal;
-    }
     final lum = _dockInlinePageId != null
         ? null
         : _wallpaperBodyLuminance; // 内嵌页表态只看主题
@@ -7573,9 +7542,7 @@ class _TimetableScreenState extends State<TimetableScreen>
               _buildDockMergeSlot(
                 ink: ink,
                 l10n: l10n,
-                settings: dockBtnSettings,
-                quality: dockBtnQuality,
-                softGlass: isSoftDock,
+                material: dockMaterial,
                 softDark: softInkIsLight,
               ),
             ],
@@ -7587,8 +7554,9 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 玻璃坞底部导航：周课表 / 日课表 / 设置。
   ///
-  /// 使用 liquid_glass_widgets 的 [GlassTabBar.bottom]（iOS 26 官方形态：
-  /// 浮动药丸 + 拖拽指示器，自带真实折射 shader 与自适应质量）。
+  /// 四种材质共用同一套底栏实现（[SoftGlassTabBar]：浮动药丸 + 拖拽指示器 +
+  /// 弹簧动画），材质差异只由注入的 `surfaceBuilder` 决定（见
+  /// [_dockPillSurface]）。
   Widget _buildGlassDockBar({
     required TimetableSettings settings,
     required AppLocalizations l10n,
@@ -7634,148 +7602,161 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 会把「日课表」挤成一个字。极性：仅明确暗壁纸才用深灰玻璃，中等
     // 亮度壁纸走乳白+黑墨（截图里浅橄榄壁纸配黑玻璃像一块塑料）。阈值与
     // 右侧柔光圆钮共用 [_kSoftGlassDarkLuminance]（同一行两块玻璃同极）。
-    if (dockMaterial == _DockMaterial.soft) {
-      final softDark = wallpaperLuminance != null
-          ? wallpaperLuminance < _kSoftGlassDarkLuminance
-          : isDark;
-      return SoftGlassTabBar(
-        tabs: [
-          for (final id in dockIds)
-            SoftGlassTab(
-              icon: Icon(glassDockActionIcon(id)),
-              label: glassDockActionLabel(l10n, id),
-            ),
-        ],
-        selectedIndex: _dockSelectedIndex(dockIds),
-        onTabSelected: (index) => _handleDockTap(dockIds[index], settings),
-        selectedColor: softDark ? Colors.white : Colors.black,
-        // 不再单独衰减未选中墨色：原版 selected / unselected 同色，
-        // 选中态只靠字重 + 指示器区分。
-        blurEnabled: appearance.blurEnabled,
-        polarity: softDark ? SoftGlassPolarity.dark : SoftGlassPolarity.light,
-      );
-    }
-    return GlassTabBar.bottom(
-      tabs: [for (final id in dockIds) _dockTabForId(id, l10n)],
+    // 墨色：柔光档用柔光自己的极性阈值（与右侧柔光圆钮共用
+    // [_kSoftGlassDarkLuminance]，同一行两块玻璃同极）；其余档沿用既有判据。
+    final isSoftDock = dockMaterial == _DockMaterial.soft;
+    final softDark = wallpaperLuminance != null
+        ? wallpaperLuminance < _kSoftGlassDarkLuminance
+        : isDark;
+    final barSelectedInk = isSoftDock
+        ? (softDark ? Colors.white : Colors.black)
+        : selectedColor;
+    // 柔光档不再单独衰减未选中墨色：原版 selected / unselected 同色，
+    // 选中态只靠字重 + 指示器区分。
+    final barUnselectedInk = isSoftDock ? barSelectedInk : unselectedColor;
+
+    // 四种材质共用同一套底栏实现（[SoftGlassTabBar]：拖拽切换、弹簧指示器、
+    // 速度拉伸），只有「底」不同——见 [_dockPillSurface]。
+    return SoftGlassTabBar(
+      tabs: [
+        for (final id in dockIds)
+          SoftGlassTab(
+            icon: Icon(glassDockActionIcon(id)),
+            label: glassDockActionLabel(l10n, id),
+          ),
+      ],
       selectedIndex: _dockSelectedIndex(dockIds),
       onTabSelected: (index) => _handleDockTap(dockIds[index], settings),
-      // 独立圆钮改由坞层「水滴合并槽」渲染（见 _buildGlassDockLayer）：
-      // 整颗按钮滑入药丸并被圆形裁切，运动与遮罩都贴合药丸端帽弧度。
-      barHeight: 56,
-      settings: switch (dockMaterial) {
-        // 液态：全 app 唯一那套液态材质（与顶栏带 / 弹窗 / 卡片同参）。
-        _DockMaterial.liquid => MikcbLiquidGlassTokens.sheetSettingsFor(
-          Theme.of(context).brightness,
-          tuning: appearance.liquidGlassTuning,
-        ),
-        // 基础高斯：高斯模糊药丸（blur/tint 与弹窗 frosted 一致）。
-        _DockMaterial.frosted => LiquidGlassSettings(
-          blur: appearance.sheetBlurSigma,
-          glassColor: HyperosBlurredHeader.sheetTintColor(
-            context,
-            withBlur: true,
-          ),
-        ),
-        // 实体卡片：零模糊、不透明底。
-        _DockMaterial.solid => LiquidGlassSettings(
-          blur: 0,
-          glassColor: solidDockFill,
-        ),
-        // 柔光已在上方提前返回 SoftGlassTabBar，不会到这里。
-        _DockMaterial.soft => MikcbLiquidGlassTokens.sheetSettings,
-      },
-      // 液态玻璃全 app 同档；其余材质本来就是「实底 / 磨砂」语义，走最小档。
-      quality: dockMaterial == _DockMaterial.liquid
-          ? MikcbLiquidGlassTokens.defaultQuality
-          : GlassQuality.minimal,
+      selectedColor: barSelectedInk,
+      unselectedColor: barUnselectedInk,
       iconSize: 22,
-      labelFontSize: 10,
-      horizontalPadding: 6,
-      verticalPadding: 6,
-      selectedIconColor: selectedColor,
-      unselectedIconColor: unselectedColor,
-      selectedLabelColor: selectedColor,
-      unselectedLabelColor: unselectedColor,
+      blurEnabled: appearance.blurEnabled,
+      polarity: softDark ? SoftGlassPolarity.dark : SoftGlassPolarity.light,
+      surfaceBuilder: (child) => _dockPillSurface(
+        material: dockMaterial,
+        solidFill: solidDockFill,
+        softDark: softDark,
+        child: child,
+      ),
     );
   }
 
-  /// 独立圆钮：与药丸同质的液态玻璃圆钮（56 正圆）。
+  /// 药丸底材质分派（四种材质共用同一套底栏实现，见 [_buildGlassDockBar]）。
+  Widget _dockPillSurface({
+    required _DockMaterial material,
+    required Color solidFill,
+    required bool softDark,
+    required Widget child,
+  }) {
+    const radius = SoftGlassTokens.barHeight / 2;
+    return switch (material) {
+      _DockMaterial.soft => SoftGlassSurface(
+        blurEnabled: FrostedAppearanceScope.of(context).blurEnabled,
+        polarity: softDark ? SoftGlassPolarity.dark : SoftGlassPolarity.light,
+        child: child,
+      ),
+      _DockMaterial.liquid => LiquidGlassSurface(
+        borderRadius: radius,
+        // 药丸与右侧圆钮并列：进祖先 BackdropGroup 的共享捕获点，否则后画的
+        // 那块会把先画的玻璃一起折射进去（玻璃叠玻璃）。
+        grouped: true,
+        fallbackBuilder: (_) => _frostedDockSurface(radius: radius, child: child),
+        child: child,
+      ),
+      _DockMaterial.frosted => _frostedDockSurface(
+        radius: radius,
+        child: child,
+      ),
+      // 实体卡片：不透明主题色面，不含模糊。
+      _DockMaterial.solid => ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: ColoredBox(color: solidFill, child: child),
+      ),
+    };
+  }
+
+  /// 磨砂底（高斯药丸 / 圆钮共用）：blur 与 tint 都从 scope 出，与弹窗 frosted
+  /// 档同参。也是液态玻璃不可用时的回落——仍是玻璃观感，不会突然变实底。
+  Widget _frostedDockSurface({
+    required double radius,
+    required Widget child,
+  }) {
+    final appearance = FrostedAppearanceScope.of(context);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: FrostedHeaderBackground(
+        blurEnabled: appearance.blurEnabled,
+        blurSigma: appearance.sheetBlurSigma,
+        tint: HyperosBlurredHeader.sheetTintColor(context, withBlur: true),
+        child: child,
+      ),
+    );
+  }
+
+  /// 独立圆钮：与药丸**同一份材质**的 56 正圆（材质由同一个
+  /// [_resolveDockMaterial] 推出，见 [_dockPillSurface]）。
   ///
-  /// 材质与药丸显式同源（_buildGlassDockLayer 传入全 app 唯一那套液态材质），
-  /// useOwnLayer:true + isStationary:true 保证 minimal 回退时仍保留
-  /// BackdropFilter 模糊——与药丸 frosted 回退一致，消除“两种材质”断层。
-  /// 柔光底栏下改用 SoftGlassSurface，与柔光药丸同一套雾面材质。
+  /// 历史包袱（勿重犯）：这里曾经走第三方包自己的按钮组件，坞层树外没有它的
+  /// 玻璃层祖先时会退化成一块实色圆片，与药丸成为两种材质。现在两条都由本仓的
+  /// [LiquidGlassSurface] / 磨砂底渲染，天然同源。
   Widget _buildDockMergeSlot({
     required Color ink,
     required AppLocalizations l10n,
-    required LiquidGlassSettings? settings,
-    required GlassQuality? quality,
-    bool softGlass = false,
+    required _DockMaterial material,
     bool softDark = false,
   }) {
     final icon = _roundButtonIcon(context.read<TimetableProvider>().settings);
     void onTap() =>
         _handleRoundButtonTap(context.read<TimetableProvider>().settings);
     final label = l10n.glassDockExtraButtonSemanticLabel;
-    if (softGlass) {
-      return SizedBox(
-        width: 56,
-        height: 56,
-        child: Semantics(
-          button: true,
-          label: label,
-          child: Material(
-            type: MaterialType.transparency,
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: onTap,
-              child: SoftGlassSurface(
-                polarity: softDark
-                    ? SoftGlassPolarity.dark
-                    : SoftGlassPolarity.light,
-                child: Center(
-                  child: IconTheme.merge(
-                    data: IconThemeData(color: ink, size: 22),
-                    child: icon,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-    // 材质断层根因：此前此处以 useOwnLayer:false 渲染（LiquidGlass.grouped），
-    // 但坞层 Row 树外没有任何 LiquidGlassLayer/BluetoothGroup 祖先，
-    // Impeller 下 grouped 在无层时直接回退为固色无玻璃——看起来像一块
-    // 实色圆片，与药丸的真液态玻璃完全两种材质。改为 useOwnLayer:true
-    // + isStationary:true 后，按钮与药丸共享**同一份**液态材质
-    // （sheetSettingsFor），且在 minimal/降级路径两侧一致保留 BackdropFilter。
-    // 独立圆钮与药丸端帽同圆（56 正圆），外层 SizedBox(56) 与 Row 间距
-    // 由调用侧 SizedBox(width:8) 承担，无需 68 高的方形过渡槽及二次
-    // ClipRRect 裁切（会把玻璃边缘光切硬）。
+    const radius = 28.0; // 56 正圆
+    final body = Center(
+      child: IconTheme.merge(
+        data: IconThemeData(color: ink, size: 22),
+        child: icon,
+      ),
+    );
     return SizedBox(
       width: 56,
       height: 56,
-      child: GlassButton(
-        icon: icon,
-        onTap: onTap,
+      child: Semantics(
+        button: true,
         label: label,
-        iconSize: 22,
-        iconColor: ink,
-        settings: settings,
-        quality: quality,
-        useOwnLayer: true,
-        isStationary: true,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: switch (material) {
+              _DockMaterial.soft => SoftGlassSurface(
+                polarity: softDark
+                    ? SoftGlassPolarity.dark
+                    : SoftGlassPolarity.light,
+                child: body,
+              ),
+              _DockMaterial.liquid => LiquidGlassSurface(
+                borderRadius: radius,
+                grouped: true,
+                fallbackBuilder: (_) =>
+                    _frostedDockSurface(radius: radius, child: body),
+                child: body,
+              ),
+              _DockMaterial.frosted => _frostedDockSurface(
+                radius: radius,
+                child: body,
+              ),
+              // 实体卡片：不透明主题色面，不含模糊。
+              _DockMaterial.solid => ClipRRect(
+                borderRadius: BorderRadius.circular(radius),
+                child: ColoredBox(
+                  color: HyperosColors.surfaceContainer(context),
+                  child: body,
+                ),
+              ),
+            },
+          ),
+        ),
       ),
-    );
-  }
-
-  /// 底栏按钮 → GlassTab 视觉配置：视图动作用固定图标，页面条目取目录。
-  GlassTab _dockTabForId(String id, AppLocalizations l10n) {
-    return GlassTab(
-      icon: Icon(glassDockActionIcon(id)),
-      label: glassDockActionLabel(l10n, id),
     );
   }
 
@@ -7934,6 +7915,45 @@ class _TimetableScreenState extends State<TimetableScreen>
         dockAppearance.liquidGlassDockEnabled &&
         !LiquidGlassDegradation.shouldDegrade(context);
 
+    // 按钮内容（图标 + 文字）。液态 / 磨砂两条材质分支共用它，只有「底」不同
+    // ——以前两条分支各写一份内容，改一处文字要改两遍。
+    // 透明度整体压在内容层：不能包住整块玻璃，否则 BackdropFilter 采不到后面
+    // 的内容（见下方那条注释）。
+    Widget chipBody() => Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        key: const ValueKey('back-to-current-week-button'),
+        onTap: () => _jumpToCurrentWeek(provider),
+        borderRadius: borderRadius,
+        child: Opacity(
+          opacity: contentOpacity,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.my_location_rounded,
+                  size: 15,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  l10n.backToCurrentWeekAction,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                    height: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
     final glassDockForm =
         provider.settings.homeNavigationForm == HomeNavigationForm.glassDock;
     // 按钮需始终浮在玻璃坞药丸之上：玻璃坞形态下统一取「内容避让量 +
@@ -7975,97 +7995,27 @@ class _TimetableScreenState extends State<TimetableScreen>
               ],
             ),
             child: useLiquidGlassMaterial
-                ? GlassButton.custom(
-                    onTap: () => _jumpToCurrentWeek(provider),
-                    shape: const LiquidRoundedRectangle(borderRadius: 18),
-                    settings: MikcbLiquidGlassTokens.sheetSettingsFor(
-                      theme.brightness,
-                      tuning: dockAppearance.liquidGlassTuning,
-                    ),
-                    quality: MikcbLiquidGlassTokens.defaultQuality,
-                    // 崩溃修复：此钮挂在无任何 LiquidGlassLayer 祖先的裸 Stack 上，
-                    // premium + 默认 useOwnLayer:false 会触发 LiquidGlassBlendGroup
-                    // 的 renderLink != null 断言。显式自带层；isStationary 与
-                    // _buildDockMergeSlot / 包内 BottomBarExtraBtn 对齐，
-                    // 保证引擎降级路径仍保留 BackdropFilter 模糊。
-                    useOwnLayer: true,
-                    isStationary: true,
-                    child: Opacity(
-                      opacity: contentOpacity,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.my_location_rounded,
-                              size: 15,
-                              color: colorScheme.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              l10n.backToCurrentWeekAction,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: colorScheme.onSurface,
-                                height: 1,
-                              ),
-                            ),
-                          ],
-                        ),
+                ? LiquidGlassSurface(
+                    borderRadius: borderRadius.topLeft.x,
+                    // 悬浮钮与底栏药丸同屏并列：进祖先 BackdropGroup 的共享
+                    // 捕获点，避免后画的把先画的那块玻璃折射进去。
+                    grouped: true,
+                    fallbackBuilder: (_) => ClipRRect(
+                      borderRadius: borderRadius,
+                      child: HyperosFrostedSurface(
+                        borderRadius: borderRadius,
+                        tint: frostedTint,
+                        child: chipBody(),
                       ),
                     ),
+                    child: chipBody(),
                   )
                 : ClipRRect(
                     borderRadius: borderRadius,
                     child: HyperosFrostedSurface(
                       borderRadius: borderRadius,
                       tint: frostedTint,
-                      child: Material(
-                        type: MaterialType.transparency,
-                        child: InkWell(
-                          key: const ValueKey('back-to-current-week-button'),
-                          onTap: () => _jumpToCurrentWeek(provider),
-                          borderRadius: borderRadius,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.my_location_rounded,
-                                  size: 15,
-                                  color: colorScheme.primary.withValues(
-                                    alpha:
-                                        colorScheme.primary.a * contentOpacity,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  l10n.backToCurrentWeekAction,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: colorScheme.onSurface.withValues(
-                                      alpha:
-                                          colorScheme.onSurface.a *
-                                          contentOpacity,
-                                    ),
-                                    height: 1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+                      child: chipBody(),
                     ),
                   ),
           ),
@@ -8182,7 +8132,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 未挂 ThemeSeedScope 或深色近黑 seed 时由它自己回落。
   ///
   /// 材质沿用全 app 的玻璃口径（同一份 [FrostedAppearanceScope] 与
-  /// [MikcbLiquidGlassTokens]），但**不复用**「回本周」那颗的实现：位置
+  /// [LiquidGlassSurface]），但**不复用**「回本周」那颗的实现：位置
   /// （居中 vs 右下）、文案、动作、可见性条件、配色都不同，两边分开演进。
   Widget _buildFloatingBackToTodayButton(TimetableProvider provider) {
     final l10n = AppLocalizations.of(context)!;
@@ -8227,39 +8177,37 @@ class _TimetableScreenState extends State<TimetableScreen>
         ),
       ),
     );
-    final surface = useLiquidGlassMaterial
-        ? GlassButton.custom(
+    // 磨砂底：既是磨砂档本身，也是液态玻璃不可用时的回落（仍是玻璃观感）。
+    Widget frostedChip() => ClipRRect(
+      borderRadius: borderRadius,
+      child: HyperosFrostedSurface(
+        borderRadius: borderRadius,
+        tint: tint,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
             onTap: () => unawaited(_navigateDayViewToToday(provider)),
-            shape: const LiquidRoundedRectangle(
-              borderRadius: _backToTodayButtonRadius,
-            ),
-            settings: MikcbLiquidGlassTokens.sheetSettingsFor(
-              brightness,
-              tuning: dockAppearance.liquidGlassTuning,
-            ),
-            quality: MikcbLiquidGlassTokens.defaultQuality,
-            // 与「回本周」同款注意事项：此钮挂在没有 LiquidGlassLayer 祖先
-            // 的裸 Stack 上，必须自带层，否则 premium 档会命中
-            // LiquidGlassBlendGroup 的 renderLink 断言。
-            useOwnLayer: true,
-            isStationary: true,
-            child: content,
-          )
-        : ClipRRect(
             borderRadius: borderRadius,
-            child: HyperosFrostedSurface(
-              borderRadius: borderRadius,
-              tint: tint,
-              child: Material(
-                type: MaterialType.transparency,
-                child: InkWell(
-                  onTap: () => unawaited(_navigateDayViewToToday(provider)),
-                  borderRadius: borderRadius,
-                  child: content,
-                ),
+            child: content,
+          ),
+        ),
+      ),
+    );
+    final surface = useLiquidGlassMaterial
+        ? LiquidGlassSurface(
+            borderRadius: _backToTodayButtonRadius,
+            grouped: true,
+            fallbackBuilder: (_) => frostedChip(),
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: () => unawaited(_navigateDayViewToToday(provider)),
+                borderRadius: borderRadius,
+                child: content,
               ),
             ),
-          );
+          )
+        : frostedChip();
     return SafeArea(
       minimum: EdgeInsets.only(
         bottom: _backToTodayButtonBottomInset(provider.settings),

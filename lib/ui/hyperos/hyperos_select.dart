@@ -19,7 +19,7 @@ import 'os4_glass_backdrop.dart';
 import 'os4_glass_popup_surface.dart';
 import '../../utils/frame_perf_probe.dart';
 import '../../widgets/miuix_date_picker_sheet.dart';
-import 'liquid/hyperos_liquid_glass_surface.dart';
+import 'liquid/liquid_glass_surface.dart';
 
 // 弹层玻璃面（[HyperosSelectPopupGlass] / [HyperosSolidPopupSurface]）已下沉到
 // 叶子文件 `hyperos_popup_glass.dart`（见那里的说明：为断开与本文件之间的循环

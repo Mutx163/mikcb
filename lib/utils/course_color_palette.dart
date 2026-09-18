@@ -280,7 +280,7 @@ bool courseCardSurfaceShowsWallpaper(CourseCardSurfaceStyle style) {
     case CourseCardSurfaceStyle.solid:
       return false;
     case CourseCardSurfaceStyle.gaussian:
-    case CourseCardSurfaceStyle.refraction:
+    case CourseCardSurfaceStyle.liquidGlass:
       return true;
   }
 }

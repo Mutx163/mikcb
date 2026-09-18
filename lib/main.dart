@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:inspire_blur/inspire_blur.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -58,7 +57,7 @@ import 'ui/app_fonts.dart';
 import 'ui/debug/debug.dart';
 import 'ui/hyperos/hyperos.dart';
 import 'ui/hyperos/hyperos_motion.dart';
-import 'ui/hyperos/refraction/glass_surface_shader.dart';
+import 'ui/hyperos/liquid/liquid_glass_shader.dart';
 import 'ui/hyperos_motion_bridge.dart';
 
 ThemeMode _themeModeFromSettings(AppThemeMode mode) {
@@ -341,8 +340,8 @@ Future<void> main() async {
       if (!kReleaseMode) {
         setupBlackBox();
       }
-      // liquid_glass_widgets 的 AdaptiveGlass 自行处理引擎自适应
-      // （Impeller 真折射 / Skia 轻量 shader / frosted 回退），无需启动探测。
+      // 液态玻璃全部由本仓的着色器表面绘制（见 lib/ui/hyperos/liquid/），
+      // 不再需要第三方玻璃包的启动包装：`runApp` 直接挂根 widget。
       late final PackageInfo packageInfo;
       try {
         packageInfo = await PackageInfo.fromPlatform();
@@ -370,13 +369,7 @@ Future<void> main() async {
         settingsScreen: () => const TimetableSettingsScreen(),
         subpageById: settingsSubpageById,
       );
-      runApp(
-        LiquidGlassWidgets.wrap(
-          child: MyApp(packageInfo: packageInfo),
-          // MaterialApp 集成：让玻璃组件跟随应用 ThemeMode（而非系统亮度）。
-          brightnessResolver: Theme.maybeBrightnessOf,
-        ),
-      );
+      runApp(MyApp(packageInfo: packageInfo));
       // flutter_miuix 的 OS4 玻璃着色器预热（6 个 `miuix_os4_*.frag`）。
       //
       // 背景：`MiuixGlass` 首次使用时才 `MiuixGlassRendering.load()`，那会让
@@ -388,34 +381,33 @@ Future<void> main() async {
       SchedulerBinding.instance.scheduleTask(() {
         unawaited(MiuixGlassRendering.load());
       }, Priority.idle, debugLabel: 'miuix-os4-glass-warm');
-      // 课程卡片「折射玻璃」档的着色器预热（1 个 `shaders/course_card_glass.frag`）。
+      // 课程卡片「液态玻璃」档的着色器预热（1 个 `shaders/course_card_glass.frag`）。
       // 同 miuix 那一份：幂等、放空闲优先级、失败不阻断（卡片按磨砂降级）。
       // 放在这里是因为一屏 20~50 张卡片都会用到它，首帧现编译会直接掉帧。
       SchedulerBinding.instance.scheduleTask(() {
         unawaited(CourseCardGlassShader.instance.ensureLoaded());
       }, Priority.idle, debugLabel: 'course-card-glass-warm');
-      // 全局「折射玻璃」表面（弹层 / 顶栏 / 玻璃坞…）的着色器预热
+      // 全局液态玻璃表面（弹层 / 顶栏 / 玻璃坞…）的着色器预热
       // （1 个 `shaders/glass_surface_refraction.frag`）。同上一份：幂等、空闲优先级、
       // 失败不阻断（各表面按自己既有的基础材质降级）。与卡片那份是**两个独立程序**，
       // 不能互相顶替：卡片吃预模糊位图、按局部坐标画；这一份吃实时背景、按屏幕坐标画。
       SchedulerBinding.instance.scheduleTask(() {
-        unawaited(GlassSurfaceShader.instance.ensureLoaded());
-      }, Priority.idle, debugLabel: 'glass-surface-refraction-warm');
+        unawaited(LiquidGlassSurfaceShader.instance.ensureLoaded());
+      }, Priority.idle, debugLabel: 'liquid-glass-surface-warm');
       // 玻璃 shader 预热放到启动画面展示期间并行跑（失败只记日志不阻断，
       // 玻璃按未预热降级，绝不能因此卡死换页）。
-      _glassShadersWarm = LiquidGlassWidgets.initialize().catchError((
-        Object error,
-        StackTrace stackTrace,
-      ) {
-        unawaited(
-          AppLogService.instance.error(
-            'liquid_glass_warmup_failed',
-            '玻璃 shader 预热失败：$error',
-            error: error,
-            stackTrace: stackTrace,
-          ),
-        );
-      });
+      _glassShadersWarm = LiquidGlassSurfaceShader.instance
+          .ensureLoaded()
+          .catchError((Object error, StackTrace stackTrace) {
+            unawaited(
+              AppLogService.instance.error(
+                'liquid_glass_warmup_failed',
+                '玻璃 shader 预热失败：$error',
+                error: error,
+                stackTrace: stackTrace,
+              ),
+            );
+          });
       _inspireBlurShadersWarm = Inspire.warmUp().catchError((
         Object error,
         StackTrace stackTrace,

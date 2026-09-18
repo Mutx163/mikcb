@@ -2,7 +2,6 @@ import '../models/course.dart';
 import '../models/exam.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/progressive_blur_tuning.dart';
-import 'package:university_timetable/models/refraction_glass_tuning.dart';
 import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import '../models/timetable_settings.dart';
@@ -291,19 +290,7 @@ String frostedGlassModeLabel(AppLocalizations l10n, FrostedGlassMode mode) =>
       FrostedGlassMode.liquidGlass => l10n.frostedGlassModeLiquid,
       FrostedGlassMode.softGlass => l10n.frostedGlassModeSoft,
       FrostedGlassMode.gaussian => l10n.frostedGlassModeGaussian,
-      FrostedGlassMode.refractionGlass => l10n.frostedGlassModeRefraction,
     };
-
-String refractionGlassPresetLabel(
-  AppLocalizations l10n,
-  RefractionGlassPreset preset,
-) => switch (preset) {
-  RefractionGlassPreset.clear => l10n.refractionGlassPresetClear,
-  RefractionGlassPreset.light => l10n.refractionGlassPresetLight,
-  RefractionGlassPreset.standard => l10n.refractionGlassPresetStandard,
-  RefractionGlassPreset.dense => l10n.refractionGlassPresetDense,
-  RefractionGlassPreset.custom => l10n.refractionGlassPresetCustom,
-};
 
 String liquidGlassPresetLabel(
   AppLocalizations l10n,
@@ -344,7 +331,8 @@ String courseCardSurfaceStyleLabel(
 ) => switch (style) {
   CourseCardSurfaceStyle.solid => l10n.courseCardSurfaceStyleSolid,
   CourseCardSurfaceStyle.gaussian => l10n.courseCardSurfaceStyleGaussian,
-  CourseCardSurfaceStyle.refraction => l10n.courseCardSurfaceStyleRefraction,
+  CourseCardSurfaceStyle.liquidGlass =>
+    l10n.courseCardSurfaceStyleLiquidGlass,
 };
 
 String foruiThemeLabel(AppLocalizations l10n, ForuiTheme theme) =>

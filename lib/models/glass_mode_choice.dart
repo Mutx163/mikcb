@@ -3,17 +3,17 @@ import '../ui/hyperos/frosted/frosted_appearance.dart';
 import 'header_blur_style.dart';
 import 'timetable_settings.dart';
 
-/// 玻璃模式五档选择（设置页「玻璃模式」与引导页「视觉效果」共用的映射
+/// 玻璃模式四档选择（设置页「玻璃模式」与引导页「视觉效果」共用的映射
 /// 语义）。
 ///
 /// 历史上 FrostedGlassMode 有 经典磨砂/高斯模糊/半透明/液态玻璃 四档，
 /// 其中前三档渲染链路完全相同（BackdropFilter + tint，仅「高斯模糊」
 /// 档在设置页多露出两个滑杆），用户无从选起；现将「启用模糊」总开关
-/// 并入档位：实体卡片 / 高斯模糊 / 柔光玻璃 / 液态玻璃 / 折射玻璃。
-enum GlassModeChoice { solid, gaussian, softGlass, liquidGlass, refractionGlass }
+/// 并入档位：实体卡片 / 高斯模糊 / 柔光玻璃 / 液态玻璃。
+enum GlassModeChoice { solid, gaussian, softGlass, liquidGlass }
 
 /// 从当前设置推导玻璃模式档位：模糊关 → 实体卡片；液态 → 液态玻璃；
-/// 柔光 → 柔光玻璃；折射 → 折射玻璃；其余（含存量 frosted/gaussian）→ 高斯模糊。
+/// 柔光 → 柔光玻璃；其余（含存量 frosted/gaussian）→ 高斯模糊。
 GlassModeChoice glassModeChoiceOf(TimetableSettings settings) {
   if (!settings.frostedBlurEnabled) {
     return GlassModeChoice.solid;
@@ -23,9 +23,6 @@ GlassModeChoice glassModeChoiceOf(TimetableSettings settings) {
   }
   if (settings.frostedGlassMode == FrostedGlassMode.softGlass) {
     return GlassModeChoice.softGlass;
-  }
-  if (settings.frostedGlassMode == FrostedGlassMode.refractionGlass) {
-    return GlassModeChoice.refractionGlass;
   }
   return GlassModeChoice.gaussian;
 }
@@ -39,9 +36,9 @@ GlassModeChoice glassModeChoiceOf(TimetableSettings settings) {
 /// 底栏不再由这里写入独立材质：底栏材质现在**跟随全局**
 /// （见 `_buildGlassDockBar`），不再会出现「全局高斯 + 底栏柔光」这类脱钩。
 ///
-/// 折射档额外打开五个「作用范围」开关（见分支内注释）；**顶栏两处的写穿**
-/// （首页玻璃带材质、子页顶栏风格）与折射的顶栏渲染分支同批落地，见
-/// `.agents/notes/implemented/architecture/2026-09-18-global-refraction-glass-surface.md`。
+/// 液态档额外打开五个「作用范围」开关（见分支内注释）；**顶栏两处的写穿**
+/// （首页玻璃带材质、子页顶栏风格）与液态的顶栏渲染分支同批落地，见
+/// `.agents/notes/implemented/architecture/2026-09-18-liquid-glass-surface.md`。
 TimetableSettings applyGlassModeChoice(
   TimetableSettings settings,
   GlassModeChoice choice,
@@ -61,12 +58,8 @@ TimetableSettings applyGlassModeChoice(
   GlassModeChoice.liquidGlass => settings.copyWith(
     frostedBlurEnabled: true,
     frostedGlassMode: FrostedGlassMode.liquidGlass,
-  ),
-  GlassModeChoice.refractionGlass => settings.copyWith(
-    frostedBlurEnabled: true,
-    frostedGlassMode: FrostedGlassMode.refractionGlass,
-    // 折射是「整机材质」，选中它时用户期待整个软件都变：一并打开五个作用范围
-    // 开关。其余四档不动它们（各表面保持用户上一次的取舍）。
+    // 液态是「整机材质」，选中它时用户期待整个软件都变：一并打开五个作用范围
+    // 开关。其余三档不动它们（各表面保持用户上一次的取舍）。
     liquidGlassPopupEnabled: true,
     liquidGlassSelectSheetEnabled: true,
     liquidGlassSheetDialogEnabled: true,
@@ -93,4 +86,3 @@ TimetableSettings applySubpageChromeBlurStyle(
   TimetableSettings settings,
   HeaderBlurStyle style,
 ) => settings.copyWith(subpageHeaderBlurStyle: style);
-

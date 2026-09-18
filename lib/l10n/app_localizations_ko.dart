@@ -10181,9 +10181,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedGlassModeSolid => '솔리드 카드';
 
   @override
-  String get frostedGlassModeRefraction => '굴절 유리';
-
-  @override
   String get advancedMaterialTitle => '고급 재질';
 
   @override
@@ -10208,6 +10205,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liquidGlassPresetCustom => '사용자 정의';
 
   @override
+  String get liquidGlassRefractionLabel => '굴절 강도';
+
+  @override
+  String get liquidGlassRefractionBandLabel => '굴절 대역 너비';
+
+  @override
+  String get liquidGlassRefractionEdgePowLabel => '가장자리 기울기';
+
+  @override
+  String get liquidGlassRimStrengthLabel => '가장자리 하이라이트';
+
+  @override
+  String get liquidGlassRimWidthLabel => '하이라이트 너비';
+
+  @override
+  String get liquidGlassBlurSigmaLabel => '흐림 강도';
+
+  @override
   String get courseCardSettingsTitle => '강의 카드';
 
   @override
@@ -10226,7 +10241,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseCardSurfaceStyleGaussian => '가우시안 블러';
 
   @override
-  String get courseCardSurfaceStyleRefraction => '굴절 유리';
+  String get courseCardSurfaceStyleLiquidGlass => '굴절 유리';
 
   @override
   String get courseCardSectionColor => '색상';
@@ -10238,34 +10253,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get collapsibleLargeTitle => '접을 수 있는 큰 제목';
 
   @override
-  String get liquidGlassThicknessLabel => '두께';
-
-  @override
-  String get liquidGlassBlurLabel => '블러 강도';
-
-  @override
   String get liquidGlassTintLabel => '색조 강도';
-
-  @override
-  String get liquidGlassLightIntensityLabel => '조명 강도';
-
-  @override
-  String get liquidGlassAmbientStrengthLabel => '환경광 강도';
-
-  @override
-  String get liquidGlassRefractiveIndexLabel => '굴절률';
-
-  @override
-  String get liquidGlassSaturationLabel => '채도';
-
-  @override
-  String get liquidGlassChromaticAberrationLabel => '색수차';
-
-  @override
-  String get liquidGlassLightAngleLabel => '조명 각도';
-
-  @override
-  String get liquidGlassVisibilityLabel => '가시성';
 
   @override
   String get liquidGlassResetAction => '기본값으로 초기화';
@@ -10308,48 +10296,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get softGlassResetAction => '기본값으로 초기화';
-
-  @override
-  String get refractionGlassPresetLabel => '굴절 유리 프리셋';
-
-  @override
-  String get refractionGlassPresetClear => '투명';
-
-  @override
-  String get refractionGlassPresetLight => '라이트';
-
-  @override
-  String get refractionGlassPresetStandard => '표준';
-
-  @override
-  String get refractionGlassPresetDense => '헤비';
-
-  @override
-  String get refractionGlassPresetCustom => '사용자 지정';
-
-  @override
-  String get refractionGlassRefractionLabel => '굴절 강도';
-
-  @override
-  String get refractionGlassBandLabel => '굴절 대역 너비';
-
-  @override
-  String get refractionGlassEdgePowLabel => '가장자리 기울기';
-
-  @override
-  String get refractionGlassRimStrengthLabel => '가장자리 하이라이트';
-
-  @override
-  String get refractionGlassRimWidthLabel => '하이라이트 너비';
-
-  @override
-  String get refractionGlassBlurSigmaLabel => '흐림 강도';
-
-  @override
-  String get refractionGlassTintLabel => '바탕 농도';
-
-  @override
-  String get refractionGlassResetAction => '기본값으로 초기화';
 
   @override
   String get diagnosticsEntryTitle => '진단';

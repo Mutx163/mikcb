@@ -9838,9 +9838,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get frostedGlassModeSolid => '实体卡片';
 
   @override
-  String get frostedGlassModeRefraction => '折射玻璃';
-
-  @override
   String get advancedMaterialTitle => '高级材质';
 
   @override
@@ -9865,6 +9862,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liquidGlassPresetCustom => '自定义';
 
   @override
+  String get liquidGlassRefractionLabel => '折射强度';
+
+  @override
+  String get liquidGlassRefractionBandLabel => '作用带宽度';
+
+  @override
+  String get liquidGlassRefractionEdgePowLabel => '边缘陡缓';
+
+  @override
+  String get liquidGlassRimStrengthLabel => '边缘高光';
+
+  @override
+  String get liquidGlassRimWidthLabel => '高光带宽';
+
+  @override
+  String get liquidGlassBlurSigmaLabel => '磨砂强度';
+
+  @override
   String get courseCardSettingsTitle => '课程卡片';
 
   @override
@@ -9883,7 +9898,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseCardSurfaceStyleGaussian => '高斯模糊';
 
   @override
-  String get courseCardSurfaceStyleRefraction => '折射玻璃';
+  String get courseCardSurfaceStyleLiquidGlass => '折射玻璃';
 
   @override
   String get courseCardSectionColor => '颜色';
@@ -9895,34 +9910,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get collapsibleLargeTitle => '折叠大标题';
 
   @override
-  String get liquidGlassThicknessLabel => '厚度';
-
-  @override
-  String get liquidGlassBlurLabel => '模糊强度';
-
-  @override
   String get liquidGlassTintLabel => '染色强度';
-
-  @override
-  String get liquidGlassLightIntensityLabel => '灯光强度';
-
-  @override
-  String get liquidGlassAmbientStrengthLabel => '环境光强度';
-
-  @override
-  String get liquidGlassRefractiveIndexLabel => '折射率';
-
-  @override
-  String get liquidGlassSaturationLabel => '饱和度';
-
-  @override
-  String get liquidGlassChromaticAberrationLabel => '色差';
-
-  @override
-  String get liquidGlassLightAngleLabel => '光照角度';
-
-  @override
-  String get liquidGlassVisibilityLabel => '可见性';
 
   @override
   String get liquidGlassResetAction => '恢复默认';
@@ -9965,48 +9953,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get softGlassResetAction => '恢复默认';
-
-  @override
-  String get refractionGlassPresetLabel => '折射玻璃预设';
-
-  @override
-  String get refractionGlassPresetClear => '清澈';
-
-  @override
-  String get refractionGlassPresetLight => '轻盈';
-
-  @override
-  String get refractionGlassPresetStandard => '标准';
-
-  @override
-  String get refractionGlassPresetDense => '厚重';
-
-  @override
-  String get refractionGlassPresetCustom => '自定义';
-
-  @override
-  String get refractionGlassRefractionLabel => '折射强度';
-
-  @override
-  String get refractionGlassBandLabel => '作用带宽度';
-
-  @override
-  String get refractionGlassEdgePowLabel => '边缘陡缓';
-
-  @override
-  String get refractionGlassRimStrengthLabel => '边缘高光';
-
-  @override
-  String get refractionGlassRimWidthLabel => '高光带宽';
-
-  @override
-  String get refractionGlassBlurSigmaLabel => '磨砂强度';
-
-  @override
-  String get refractionGlassTintLabel => '底色深浅';
-
-  @override
-  String get refractionGlassResetAction => '恢复默认';
 
   @override
   String get diagnosticsEntryTitle => '诊断';
@@ -20952,9 +20898,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get frostedGlassModeSolid => '實體卡片';
 
   @override
-  String get frostedGlassModeRefraction => '折射玻璃';
-
-  @override
   String get advancedMaterialTitle => '進階材質';
 
   @override
@@ -20979,6 +20922,24 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liquidGlassPresetCustom => '自訂';
 
   @override
+  String get liquidGlassRefractionLabel => '折射強度';
+
+  @override
+  String get liquidGlassRefractionBandLabel => '作用帶寬度';
+
+  @override
+  String get liquidGlassRefractionEdgePowLabel => '邊緣陡緩';
+
+  @override
+  String get liquidGlassRimStrengthLabel => '邊緣高光';
+
+  @override
+  String get liquidGlassRimWidthLabel => '高光帶寬';
+
+  @override
+  String get liquidGlassBlurSigmaLabel => '磨砂強度';
+
+  @override
   String get courseCardSettingsTitle => '課程卡片';
 
   @override
@@ -20997,7 +20958,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseCardSurfaceStyleGaussian => '高斯模糊';
 
   @override
-  String get courseCardSurfaceStyleRefraction => '折射玻璃';
+  String get courseCardSurfaceStyleLiquidGlass => '折射玻璃';
 
   @override
   String get courseCardSectionColor => '顏色';
@@ -21009,34 +20970,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get collapsibleLargeTitle => '摺疊大標題';
 
   @override
-  String get liquidGlassThicknessLabel => '厚度';
-
-  @override
-  String get liquidGlassBlurLabel => '模糊強度';
-
-  @override
   String get liquidGlassTintLabel => '染色強度';
-
-  @override
-  String get liquidGlassLightIntensityLabel => '燈光強度';
-
-  @override
-  String get liquidGlassAmbientStrengthLabel => '環境光強度';
-
-  @override
-  String get liquidGlassRefractiveIndexLabel => '折射率';
-
-  @override
-  String get liquidGlassSaturationLabel => '飽和度';
-
-  @override
-  String get liquidGlassChromaticAberrationLabel => '色差';
-
-  @override
-  String get liquidGlassLightAngleLabel => '光照角度';
-
-  @override
-  String get liquidGlassVisibilityLabel => '可見性';
 
   @override
   String get liquidGlassResetAction => '還原預設';
@@ -21079,48 +21013,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get softGlassResetAction => '還原預設';
-
-  @override
-  String get refractionGlassPresetLabel => '折射玻璃預設';
-
-  @override
-  String get refractionGlassPresetClear => '清澈';
-
-  @override
-  String get refractionGlassPresetLight => '輕盈';
-
-  @override
-  String get refractionGlassPresetStandard => '標準';
-
-  @override
-  String get refractionGlassPresetDense => '厚重';
-
-  @override
-  String get refractionGlassPresetCustom => '自訂';
-
-  @override
-  String get refractionGlassRefractionLabel => '折射強度';
-
-  @override
-  String get refractionGlassBandLabel => '作用帶寬度';
-
-  @override
-  String get refractionGlassEdgePowLabel => '邊緣陡緩';
-
-  @override
-  String get refractionGlassRimStrengthLabel => '邊緣高光';
-
-  @override
-  String get refractionGlassRimWidthLabel => '高光帶寬';
-
-  @override
-  String get refractionGlassBlurSigmaLabel => '磨砂強度';
-
-  @override
-  String get refractionGlassTintLabel => '底色深淺';
-
-  @override
-  String get refractionGlassResetAction => '還原預設';
 
   @override
   String get diagnosticsEntryTitle => '診斷';
@@ -32066,9 +31958,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get frostedGlassModeSolid => '實體卡片';
 
   @override
-  String get frostedGlassModeRefraction => '折射玻璃';
-
-  @override
   String get advancedMaterialTitle => '進階材質';
 
   @override
@@ -32093,6 +31982,24 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liquidGlassPresetCustom => '自訂';
 
   @override
+  String get liquidGlassRefractionLabel => '折射強度';
+
+  @override
+  String get liquidGlassRefractionBandLabel => '作用帶寬度';
+
+  @override
+  String get liquidGlassRefractionEdgePowLabel => '邊緣陡緩';
+
+  @override
+  String get liquidGlassRimStrengthLabel => '邊緣高光';
+
+  @override
+  String get liquidGlassRimWidthLabel => '高光帶寬';
+
+  @override
+  String get liquidGlassBlurSigmaLabel => '磨砂強度';
+
+  @override
   String get courseCardSettingsTitle => '課程卡片';
 
   @override
@@ -32111,7 +32018,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseCardSurfaceStyleGaussian => '高斯模糊';
 
   @override
-  String get courseCardSurfaceStyleRefraction => '折射玻璃';
+  String get courseCardSurfaceStyleLiquidGlass => '折射玻璃';
 
   @override
   String get courseCardSectionColor => '顏色';
@@ -32123,34 +32030,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get collapsibleLargeTitle => '折疊大標題';
 
   @override
-  String get liquidGlassThicknessLabel => '厚度';
-
-  @override
-  String get liquidGlassBlurLabel => '模糊強度';
-
-  @override
   String get liquidGlassTintLabel => '染色強度';
-
-  @override
-  String get liquidGlassLightIntensityLabel => '燈光強度';
-
-  @override
-  String get liquidGlassAmbientStrengthLabel => '環境光強度';
-
-  @override
-  String get liquidGlassRefractiveIndexLabel => '折射率';
-
-  @override
-  String get liquidGlassSaturationLabel => '飽和度';
-
-  @override
-  String get liquidGlassChromaticAberrationLabel => '色差';
-
-  @override
-  String get liquidGlassLightAngleLabel => '光照角度';
-
-  @override
-  String get liquidGlassVisibilityLabel => '可見性';
 
   @override
   String get liquidGlassResetAction => '還原預設';
@@ -32193,48 +32073,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get softGlassResetAction => '還原預設';
-
-  @override
-  String get refractionGlassPresetLabel => '折射玻璃預設';
-
-  @override
-  String get refractionGlassPresetClear => '清澈';
-
-  @override
-  String get refractionGlassPresetLight => '輕盈';
-
-  @override
-  String get refractionGlassPresetStandard => '標準';
-
-  @override
-  String get refractionGlassPresetDense => '厚重';
-
-  @override
-  String get refractionGlassPresetCustom => '自訂';
-
-  @override
-  String get refractionGlassRefractionLabel => '折射強度';
-
-  @override
-  String get refractionGlassBandLabel => '作用帶寬度';
-
-  @override
-  String get refractionGlassEdgePowLabel => '邊緣陡緩';
-
-  @override
-  String get refractionGlassRimStrengthLabel => '邊緣高光';
-
-  @override
-  String get refractionGlassRimWidthLabel => '高光帶寬';
-
-  @override
-  String get refractionGlassBlurSigmaLabel => '磨砂強度';
-
-  @override
-  String get refractionGlassTintLabel => '底色深淺';
-
-  @override
-  String get refractionGlassResetAction => '還原預設';
 
   @override
   String get diagnosticsEntryTitle => '診斷';

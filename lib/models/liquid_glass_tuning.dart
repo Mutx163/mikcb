@@ -1,29 +1,27 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
-/// Opacity-oriented liquid-glass looks.
+import '../ui/hyperos/liquid/liquid_glass_shader.dart';
+
+/// 全局「液态玻璃」的观感档位。
 ///
-/// Built-ins only vary the package README's three primary knobs
-/// (`thickness`, `blur`, `glassColor` alpha). All other fields stay at
-/// [LiquidGlassSettings] constructor defaults.
-///
-/// [custom] keeps the last user-edited [LiquidGlassTuning] values.
+/// 与 `SoftGlassPreset` / `ProgressiveBlurPreset` 同构：前四档是内置观感，
+/// [custom] 保留用户自己拖出来的参数。档位名沿用同一套「清透 → 轻盈 → 标准 →
+/// 厚重」阶梯，用户在三套高级材质之间迁移时不用重新学。
 enum LiquidGlassPreset {
-  /// Very transparent — thin frost, low tint.
+  /// 最薄：折射浅、作用带窄、几乎不染色。
   clear,
 
-  /// Light frost — still see-through.
+  /// 偏薄：仍明显透出背景。
   light,
 
-  /// Package README medium glass (`thickness: 20`, `blur: 10`, `0x33FFFFFF`).
+  /// 标准档 —— **必须逐字段等于课程卡片液态玻璃档的默认值**，见
+  /// [LiquidGlassTuning.defaults] 的说明。
   standard,
 
-  /// Dense milky glass — stronger frost and tint.
+  /// 最厚：折射深、作用带宽、底色更实。
   dense,
 
-  /// User-edited parameters.
+  /// 用户自己拖出来的参数。
   custom,
 }
 
@@ -43,7 +41,7 @@ extension LiquidGlassPresetX on LiquidGlassPreset {
     );
   }
 
-  /// Built-in looks only (excludes [custom]).
+  /// 内置观感（不含 [custom]）。
   static const List<LiquidGlassPreset> builtIns = [
     LiquidGlassPreset.clear,
     LiquidGlassPreset.light,
@@ -51,71 +49,82 @@ extension LiquidGlassPresetX on LiquidGlassPreset {
     LiquidGlassPreset.dense,
   ];
 
-  /// Recommended tuning for this preset. [custom] falls back to [standard].
+  /// 本档推荐的参数。[custom] 回落到 [LiquidGlassTuning.defaults]。
   LiquidGlassTuning get recommendedTuning => switch (this) {
     LiquidGlassPreset.clear => LiquidGlassTuning.presetClear,
     LiquidGlassPreset.light => LiquidGlassTuning.presetLight,
-    LiquidGlassPreset.standard => LiquidGlassTuning.presetStandard,
+    LiquidGlassPreset.standard => LiquidGlassTuning.defaults,
     LiquidGlassPreset.dense => LiquidGlassTuning.presetDense,
-    LiquidGlassPreset.custom => LiquidGlassTuning.presetStandard,
+    LiquidGlassPreset.custom => LiquidGlassTuning.defaults,
   };
 }
 
-/// User-tunable liquid-glass parameters (maps 1:1 to [LiquidGlassSettings]).
+/// 用户可调的液态玻璃参数（逻辑像素口径）。
 ///
-/// Defaults match the package README medium-glass example for the three
-/// primary knobs, with remaining fields at [LiquidGlassSettings] defaults
-/// (`lightIntensity` 0.5, `ambientStrength` 0, `saturation` 1.5, …).
+/// 只有 [LiquidGlassTuning.defaults] 这一档的折射旋钮**逐字段等于**
+/// `CourseGlassStyle` 的默认值（折射 8 / 作用带 7 / 陡缓 2.5 / 高光 0.2 /
+/// 高光带 3）：全局液态玻璃与课程卡片液态玻璃是两条独立链路（卡片不受全局档位
+/// 约束），但出厂观感必须一样，否则用户会在两个页面看到两种玻璃。
 ///
-/// 唯一的例外是 `edgeAbsorption` / `fresnelStrength`：这两个量**不是**用户
-/// 参数，而是由 [thickness] 折算出来的可见光学量（见 [visibleThicknessOptics]）。
-/// 全 app 统一跑 `MikcbLiquidGlassTokens.defaultQuality` = premium，厚度直接就是
-/// 真实折射位移，这两个量保持包默认（0 / 1）；只有**引擎降级**（impeller 不可用、
-/// 包内退到轻量片元着色器，折射位移不执行）时才由表面层写入折算量，把「厚度」
-/// 重新变成看得见的调节。
+/// 模糊量与底色深浅没有卡片对应项（卡片吃的是预先糊好的位图、染的是课程色），
+/// 因此取的是**现有磨砂面板**已经调好的那两个值（sigma 15 / alpha 0.70）：
+/// 从「高斯模糊」切到「液态玻璃」时，只该多出边缘折射与受光高光，不该顺带
+/// 把整块面板的奶白程度也换掉。
+///
+/// 这些参数由 `TimetableSettings` 持久化，并在渲染期经 [toStyle] 合成
+/// [LiquidGlassStyle]。**表面自己不得再传折射参数**：全 app 只此一套，历史上
+/// 「同一材质两种观感」正是被自带的参数通道搞出来的。
+@immutable
 class LiquidGlassTuning {
   const LiquidGlassTuning({
-    this.thickness = defaultThickness,
-    this.blur = defaultBlur,
+    this.refraction = defaultRefraction,
+    this.refractionBand = defaultRefractionBand,
+    this.refractionEdgePow = defaultRefractionEdgePow,
+    this.rimStrength = defaultRimStrength,
+    this.rimWidth = defaultRimWidth,
+    this.blurSigma = defaultBlurSigma,
     this.tintAlpha = defaultTintAlpha,
-    this.lightIntensity = defaultLightIntensity,
-    this.ambientStrength = defaultAmbientStrength,
-    this.refractiveIndex = defaultRefractiveIndex,
-    this.saturation = defaultSaturation,
-    this.chromaticAberration = defaultChromaticAberration,
-    this.lightAngleDegrees = defaultLightAngleDegrees,
-    this.visibility = defaultVisibility,
   });
 
   static const defaults = LiquidGlassTuning();
 
-  /// Package README medium glass (same as [defaults]).
+  /// 标准档（同 [defaults]）。
   static const presetStandard = defaults;
 
-  /// High transparency — only thickness / blur / tint vary.
-  ///
-  /// 注意 thickness 24 低于枢轴 30：引擎降级档下这会**降低**边缘高光
-  /// （比默认档更「薄片」），与它「清澈」的定位一致。
+  /// 偏薄档：只把三个「厚度感」旋钮往薄里调，高光与染色同步收一点。
   static const presetClear = LiquidGlassTuning(
-    thickness: 24,
-    blur: 2,
-    tintAlpha: 0.08,
+    refraction: 6,
+    refractionBand: 6,
+    refractionEdgePow: 3,
+    rimStrength: 0.14,
+    rimWidth: 2,
+    blurSigma: 8,
+    tintAlpha: 0.35,
   );
 
-  /// Light frost — only thickness / blur / tint vary.
+  /// 轻盈档。
   static const presetLight = LiquidGlassTuning(
-    thickness: 26,
-    tintAlpha: 0.16,
+    refraction: 7,
+    refractionBand: 6.5,
+    refractionEdgePow: 2.7,
+    rimStrength: 0.18,
+    rimWidth: 2.5,
+    blurSigma: 12,
+    tintAlpha: 0.55,
   );
 
-  /// Dense milky glass — only thickness / blur / tint vary.
+  /// 厚重档。
   static const presetDense = LiquidGlassTuning(
-    thickness: 36,
-    blur: 6,
-    tintAlpha: 0.40,
+    refraction: 11,
+    refractionBand: 9,
+    refractionEdgePow: 2.2,
+    rimStrength: 0.26,
+    rimWidth: 4,
+    blurSigma: 22,
+    tintAlpha: 0.85,
   );
 
-  /// Picks a built-in preset that matches [tuning], or [LiquidGlassPreset.custom].
+  /// 反推 [tuning] 属于哪一档；都不匹配时返回 [LiquidGlassPreset.custom]。
   static LiquidGlassPreset matchPreset(LiquidGlassTuning tuning) {
     for (final preset in LiquidGlassPresetX.builtIns) {
       if (preset.recommendedTuning == tuning) {
@@ -125,251 +134,133 @@ class LiquidGlassTuning {
     return LiquidGlassPreset.custom;
   }
 
-  // --- Defaults ---
-  // Primary three: liquid_glass_renderer README medium glass example.
-  // Remaining: LiquidGlassSettings constructor defaults (0.2.0-dev.4).
-  static const double defaultThickness = 30;
-  static const double defaultBlur = 3;
-  static const double defaultTintAlpha = 0.24; // Color(0x3DFFFFFF).a
-  static const double defaultLightIntensity = 0.6;
-  static const double defaultAmbientStrength = 1;
-  // 默认折射率与滑杆上限(maxRefractiveIndex=1.5)对齐：原默认 1.59
-  // 超出上限，fromJson 经 clamp() 后持久化值漂移到 1.5，与内存默认
-  // 不一致（首次保存前后观感跳变）。取上限值本身，行为可预期。
-  static const double defaultRefractiveIndex = 1.5;
-  static const double defaultSaturation = 0.7;
-  // 默认色差与滑杆上限对齐（原 0.3 超出上限 0.12 → 真机表现为玻璃边缘
-  // 一条彩虹描边）。成因与上面 refractiveIndex 那次同型：构造默认落在
-  // 自己的滑杆区间外，UI 显示与内存默认脱节，且用户把滑杆拖到最左也关不
-  // 干净（clamp 到 0.12 仍有 1.4dp 级 RGB 分离）。取上限值本身：既保留
-  // iOS 26 药丸的色散手感，又让滑杆两端都能真正到达。
-  static const double defaultChromaticAberration = 0.12;
-  static const double defaultLightAngleDegrees = 135; // 0.75 * pi rad（官方默认，左上光源）
-  static const double defaultVisibility = 1;
+  // --- 默认值 ---
+  // 前五项必须与 CourseGlassStyle 的默认值一致（有测试断言）。
+  static const double defaultRefraction = 8;
+  static const double defaultRefractionBand = 7;
+  static const double defaultRefractionEdgePow = 2.5;
+  static const double defaultRimStrength = 0.2;
+  static const double defaultRimWidth = 3;
+  // 后两项对齐现有磨砂面板的默认值（kDefaultFrostedSheetBlurSigma /
+  // kDefaultFrostedSheetTintAlpha），理由见类注释。
+  static const double defaultBlurSigma = 15;
+  static const double defaultTintAlpha = 0.70;
 
-  // --- Slider ranges ---
-  static const double minThickness = 0;
-  static const double maxThickness = 40;
-  static const double minBlur = 0;
-  static const double maxBlur = 24;
+  // --- 滑杆区间 ---
+  static const double minRefraction = 0;
+  static const double maxRefraction = 20;
+  static const double minRefractionBand = 1;
+  static const double maxRefractionBand = 24;
+  static const double minRefractionEdgePow = 1;
+  static const double maxRefractionEdgePow = 6;
+  static const double minRimStrength = 0;
+  static const double maxRimStrength = 1;
+  static const double minRimWidth = 0;
+  static const double maxRimWidth = 12;
+  static const double minBlurSigma = 0;
+  static const double maxBlurSigma = 40;
   static const double minTintAlpha = 0;
-  static const double maxTintAlpha = 0.55;
-  static const double minLightIntensity = 0;
-  static const double maxLightIntensity = 2;
-  static const double minAmbientStrength = 0;
-  static const double maxAmbientStrength = 1;
-  static const double minRefractiveIndex = 1;
-  static const double maxRefractiveIndex = 1.5;
-  static const double minSaturation = 0.5;
-  static const double maxSaturation = 2;
-  static const double minChromaticAberration = 0;
-  static const double maxChromaticAberration = 0.12;
-  static const double minLightAngleDegrees = 0;
-  static const double maxLightAngleDegrees = 360;
-  static const double minVisibility = 0;
-  static const double maxVisibility = 1;
+  static const double maxTintAlpha = 1;
 
-  // --- 厚度 → 可见光学量映射（降级档补偿）---
-  // 全 app 统一跑 MikcbLiquidGlassTokens.defaultQuality = premium：厚度本身就
-  // 驱动真实折射位移，这条映射**不生效**（HyperosLiquidGlassSurface 走
-  // withThicknessOptics 把它清零，避免双重计数）。
-  //
-  // 它只为**引擎降级**兜底：设备不支持 shader filter 或 `fake` 预览层时包内退到
-  // lightweight_glass.frag，那条路 thickness 只剩「边缘 rim 透明度 ±0.3」，
-  // 肉眼基本不可辨，滑杆 0..40 拉满观感不变（真机症状：「透明高斯模糊、没有
-  // 玻璃效果」）。把归一化厚度映射到那两个真正生效的光学量，让降级路径上的
-  // 「厚度」也有连续可见反馈：
-  //   edgeAbsorption  —— 边缘光吸收，弧面越厚边缘越沉（厚度存在感）
-  //   fresnelStrength —— 掠射角边缘高光，浅色模式下 rimFade≈0.08 压不住它，
-  //                      是浅色/深色都看得见的通道
-  // 分派依据只有「引擎能不能实时折射」，全 app 一致。
-  //
-  // 关键：默认厚度 30/40 是**枢轴点**，此处两个量恰好等于 LiquidGlassSettings
-  // 的构造默认（0.0 / 1.0），因此出厂默认观感与历史版本逐字段一致；只有用户
-  // 主动偏离默认厚度才会看到补偿。
+  /// 边缘处的最大折射位移（逻辑 px）。
+  final double refraction;
 
-  /// 枢轴厚度占比 = [defaultThickness] / [maxThickness]（30 / 40）。
-  static const double thicknessPivotFraction = 0.75;
+  /// 折射作用带宽度（逻辑 px）。
+  final double refractionBand;
 
-  /// 达到 [maxThickness] 时的边缘光吸收上限（包文档推荐 0.10–0.20 物理厚度区间）。
-  static const double maxThicknessEdgeAbsorption = 0.20;
+  /// 位移沿边缘上升的陡缓，越大越集中在最外圈。
+  final double refractionEdgePow;
 
-  /// 达到 [maxThickness] 时掠射角边缘高光的放大倍率。
-  static const double maxThicknessFresnelBoost = 0.6;
+  /// 边缘高光强度（0–1）。
+  final double rimStrength;
 
-  /// Glass surface thickness — higher = stronger refraction.
-  ///
-  /// 同时驱动两条渲染路径的可见反馈：
-  /// - premium（全 app 默认，拿到背景纹理）：直接就是几何厚度 = 折射位移；
-  /// - 引擎降级档：折射位移不执行，改由 [visibleThicknessOptics]
-  ///   折算的边缘吸收与掠射高光承载，默认厚度 30 为枢轴（观感不变）。
-  final double thickness;
+  /// 边缘高光带宽（逻辑 px）。
+  final double rimWidth;
 
-  /// Frost blur of the glass surface.
-  final double blur;
+  /// 实时背景的模糊量（逻辑 px）。
+  final double blurSigma;
 
-  /// White tint opacity (maps to [LiquidGlassSettings.glassColor] alpha).
+  /// 底色（白）不透明度（0–1）。
   final double tintAlpha;
 
-  /// Specular highlight strength.
-  final double lightIntensity;
-
-  /// Ambient light contribution.
-  final double ambientStrength;
-
-  /// Refraction index (≈1.0 air … ≈1.5 glass).
-  final double refractiveIndex;
-
-  /// Background saturation through glass (1 = unchanged).
-  final double saturation;
-
-  /// Color fringe amount (chromatic aberration).
-  final double chromaticAberration;
-
-  /// Light direction in degrees (0–360), converted to radians for the shader.
-  final double lightAngleDegrees;
-
-  /// Global scale for thickness-related shader properties (0–1).
-  final double visibility;
-
   LiquidGlassTuning copyWith({
-    double? thickness,
-    double? blur,
+    double? refraction,
+    double? refractionBand,
+    double? refractionEdgePow,
+    double? rimStrength,
+    double? rimWidth,
+    double? blurSigma,
     double? tintAlpha,
-    double? lightIntensity,
-    double? ambientStrength,
-    double? refractiveIndex,
-    double? saturation,
-    double? chromaticAberration,
-    double? lightAngleDegrees,
-    double? visibility,
   }) {
     return LiquidGlassTuning(
-      thickness: thickness ?? this.thickness,
-      blur: blur ?? this.blur,
+      refraction: refraction ?? this.refraction,
+      refractionBand: refractionBand ?? this.refractionBand,
+      refractionEdgePow: refractionEdgePow ?? this.refractionEdgePow,
+      rimStrength: rimStrength ?? this.rimStrength,
+      rimWidth: rimWidth ?? this.rimWidth,
+      blurSigma: blurSigma ?? this.blurSigma,
       tintAlpha: tintAlpha ?? this.tintAlpha,
-      lightIntensity: lightIntensity ?? this.lightIntensity,
-      ambientStrength: ambientStrength ?? this.ambientStrength,
-      refractiveIndex: refractiveIndex ?? this.refractiveIndex,
-      saturation: saturation ?? this.saturation,
-      chromaticAberration: chromaticAberration ?? this.chromaticAberration,
-      lightAngleDegrees: lightAngleDegrees ?? this.lightAngleDegrees,
-      visibility: visibility ?? this.visibility,
     );
   }
 
   LiquidGlassTuning clamped() {
     return LiquidGlassTuning(
-      thickness: thickness.clamp(minThickness, maxThickness),
-      blur: blur.clamp(minBlur, maxBlur),
+      refraction: refraction.clamp(minRefraction, maxRefraction),
+      refractionBand: refractionBand.clamp(
+        minRefractionBand,
+        maxRefractionBand,
+      ),
+      refractionEdgePow: refractionEdgePow.clamp(
+        minRefractionEdgePow,
+        maxRefractionEdgePow,
+      ),
+      rimStrength: rimStrength.clamp(minRimStrength, maxRimStrength),
+      rimWidth: rimWidth.clamp(minRimWidth, maxRimWidth),
+      blurSigma: blurSigma.clamp(minBlurSigma, maxBlurSigma),
       tintAlpha: tintAlpha.clamp(minTintAlpha, maxTintAlpha),
-      lightIntensity: lightIntensity.clamp(
-        minLightIntensity,
-        maxLightIntensity,
-      ),
-      ambientStrength: ambientStrength.clamp(
-        minAmbientStrength,
-        maxAmbientStrength,
-      ),
-      refractiveIndex: refractiveIndex.clamp(
-        minRefractiveIndex,
-        maxRefractiveIndex,
-      ),
-      saturation: saturation.clamp(minSaturation, maxSaturation),
-      chromaticAberration: chromaticAberration.clamp(
-        minChromaticAberration,
-        maxChromaticAberration,
-      ),
-      lightAngleDegrees: lightAngleDegrees.clamp(
-        minLightAngleDegrees,
-        maxLightAngleDegrees,
-      ),
-      visibility: visibility.clamp(minVisibility, maxVisibility),
     );
   }
 
-  /// 把当前厚度折算成**引擎降级档**真正可见的两个光学量。
+  /// 底色（白）在给定明暗下的实际颜色。
   ///
-  /// 见 [thicknessPivotFraction] 一节的说明。口径按**有效厚度**
-  /// （[thickness] × [visibility]）计算，与包内
-  /// `effectiveThickness` 同源，因此「可见性」拉低时厚度观感一起变薄，
-  /// 两个滑杆不会互相矛盾。
+  /// 深色下收 15%：深色背景本身暗，同样的白底会显得更糊。抽成方法是因为
+  /// 除了渲染，**静态替身**（没有采样源时顶栏玻璃带画的近似底色）也要用同一个
+  /// 口径，两处各写一遍迟早会漂。
+  Color tintColor(Brightness brightness) {
+    final alpha = brightness == Brightness.dark
+        ? (tintAlpha * 0.85).clamp(0.0, 1.0)
+        : tintAlpha.clamp(0.0, 1.0);
+    return Colors.white.withValues(alpha: alpha);
+  }
+
+  /// 合成一块液态玻璃表面的渲染参数。
   ///
-  /// 返回值恒在包内 clamp 窗口内（absorption 0..1、fresnel 0..4），
-  /// 且对有效厚度单调不减：
-  /// - 0  → absorption 0.0 / fresnel 0.0（完全无边缘，纸片感）
-  /// - 30（默认，枢轴）→ 0.0 / 1.0（= 包构造默认，出厂观感不变）
-  /// - 40（上限）→ [maxThicknessEdgeAbsorption] / 1 + [maxThicknessFresnelBoost]
-  ({double edgeAbsorption, double fresnelStrength}) visibleThicknessOptics() {
-    final double effective = (thickness * visibility).clamp(
-      minThickness,
-      maxThickness,
+  /// 这是**全 app 唯一的**参数入口：各表面只提供自己的圆角与当前明暗，折射旋钮、
+  /// 底色、光来向一律从这里出，所以不存在「这个表面折射 8、那个表面折射 12」。
+  LiquidGlassStyle toStyle({
+    required double borderRadius,
+    required Brightness brightness,
+  }) {
+    return LiquidGlassStyle(
+      borderRadius: borderRadius,
+      tint: tintColor(brightness),
+      blurSigma: blurSigma,
+      refraction: refraction,
+      refractionBand: refractionBand,
+      refractionEdgePow: refractionEdgePow,
+      rimStrength: rimStrength,
+      rimWidth: rimWidth,
     );
-    final double fraction = (effective / maxThickness).clamp(0.0, 1.0);
-    // 枢轴以上：越厚越沉越亮。
-    final double thicker = ((fraction - thicknessPivotFraction) /
-            (1 - thicknessPivotFraction))
-        .clamp(0.0, 1.0);
-    // 枢轴以下：越薄越平，0 厚度时边缘高光完全消失。
-    final double thinner =
-        ((thicknessPivotFraction - fraction) / thicknessPivotFraction)
-            .clamp(0.0, 1.0);
-    return (
-      edgeAbsorption: maxThicknessEdgeAbsorption * thicker,
-      fresnelStrength: 1.0 +
-          maxThicknessFresnelBoost * thicker -
-          thinner,
-    );
-  }
-
-  /// Builds official [LiquidGlassSettings] for sheet / dialog panels.
-  ///
-  /// **不在本方法里做厚度补偿**：厚度折算成 edgeAbsorption / fresnelStrength
-  /// 只在降级路径（impeller 不可用、包内退到轻量片元着色器，折射位移不执行）
-  /// 下才是必要的，而这属于**渲染路径**的信息，应当由表面层决定。
-  /// HyperosLiquidGlassSurface 按引擎能力二选一调用 withThicknessOptics
-  /// （实时折射，只留真实折射）/ withoutThicknessOptics（降级，把折算量写
-  /// 进来）。若在此处无条件写入，实时折射表面就会双重计数（真实折射 + 边缘
-  /// 变沉变亮），且 `tuning == null` 的兜底档拿不到同一处理，观感分叉。
-  LiquidGlassSettings toSheetSettings({required Brightness brightness}) {
-    final tint = brightness == Brightness.dark
-        ? Colors.white.withValues(alpha: (tintAlpha * 0.85).clamp(0.0, 1.0))
-        : Colors.white.withValues(alpha: tintAlpha.clamp(0.0, 1.0));
-    return LiquidGlassSettings(
-      thickness: thickness,
-      blur: blur,
-      glassColor: tint,
-      lightIntensity: lightIntensity,
-      ambientStrength: ambientStrength,
-      refractiveIndex: refractiveIndex,
-      saturation: saturation,
-      chromaticAberration: chromaticAberration,
-      lightAngle: lightAngleDegrees * math.pi / 180.0,
-      visibility: visibility,
-    );
-  }
-
-  /// Same material as sheets; nested tiles no longer scale the primary knobs.
-  LiquidGlassSettings toNestedTileSettings({required Brightness brightness}) {
-    return toSheetSettings(brightness: brightness);
-  }
-
-  /// Same material as sheets; course cards no longer get a separate glass look.
-  LiquidGlassSettings toCourseCardSettings({required Brightness brightness}) {
-    return toSheetSettings(brightness: brightness);
   }
 
   Map<String, dynamic> toJson() => {
-    'thickness': thickness,
-    'blur': blur,
+    'refraction': refraction,
+    'refractionBand': refractionBand,
+    'refractionEdgePow': refractionEdgePow,
+    'rimStrength': rimStrength,
+    'rimWidth': rimWidth,
+    'blurSigma': blurSigma,
     'tintAlpha': tintAlpha,
-    'lightIntensity': lightIntensity,
-    'ambientStrength': ambientStrength,
-    'refractiveIndex': refractiveIndex,
-    'saturation': saturation,
-    'chromaticAberration': chromaticAberration,
-    'lightAngleDegrees': lightAngleDegrees,
-    'visibility': visibility,
   };
 
   factory LiquidGlassTuning.fromJson(Map<String, dynamic>? json) {
@@ -377,25 +268,17 @@ class LiquidGlassTuning {
       return defaults;
     }
     return LiquidGlassTuning(
-      thickness: (json['thickness'] as num?)?.toDouble() ?? defaultThickness,
-      blur: (json['blur'] as num?)?.toDouble() ?? defaultBlur,
+      refraction: (json['refraction'] as num?)?.toDouble() ?? defaultRefraction,
+      refractionBand:
+          (json['refractionBand'] as num?)?.toDouble() ?? defaultRefractionBand,
+      refractionEdgePow:
+          (json['refractionEdgePow'] as num?)?.toDouble() ??
+          defaultRefractionEdgePow,
+      rimStrength:
+          (json['rimStrength'] as num?)?.toDouble() ?? defaultRimStrength,
+      rimWidth: (json['rimWidth'] as num?)?.toDouble() ?? defaultRimWidth,
+      blurSigma: (json['blurSigma'] as num?)?.toDouble() ?? defaultBlurSigma,
       tintAlpha: (json['tintAlpha'] as num?)?.toDouble() ?? defaultTintAlpha,
-      lightIntensity:
-          (json['lightIntensity'] as num?)?.toDouble() ?? defaultLightIntensity,
-      ambientStrength:
-          (json['ambientStrength'] as num?)?.toDouble() ??
-          defaultAmbientStrength,
-      refractiveIndex:
-          (json['refractiveIndex'] as num?)?.toDouble() ??
-          defaultRefractiveIndex,
-      saturation: (json['saturation'] as num?)?.toDouble() ?? defaultSaturation,
-      chromaticAberration:
-          (json['chromaticAberration'] as num?)?.toDouble() ??
-          defaultChromaticAberration,
-      lightAngleDegrees:
-          (json['lightAngleDegrees'] as num?)?.toDouble() ??
-          defaultLightAngleDegrees,
-      visibility: (json['visibility'] as num?)?.toDouble() ?? defaultVisibility,
     ).clamped();
   }
 
@@ -403,28 +286,22 @@ class LiquidGlassTuning {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is LiquidGlassTuning &&
-          thickness == other.thickness &&
-          blur == other.blur &&
-          tintAlpha == other.tintAlpha &&
-          lightIntensity == other.lightIntensity &&
-          ambientStrength == other.ambientStrength &&
-          refractiveIndex == other.refractiveIndex &&
-          saturation == other.saturation &&
-          chromaticAberration == other.chromaticAberration &&
-          lightAngleDegrees == other.lightAngleDegrees &&
-          visibility == other.visibility;
+          refraction == other.refraction &&
+          refractionBand == other.refractionBand &&
+          refractionEdgePow == other.refractionEdgePow &&
+          rimStrength == other.rimStrength &&
+          rimWidth == other.rimWidth &&
+          blurSigma == other.blurSigma &&
+          tintAlpha == other.tintAlpha;
 
   @override
   int get hashCode => Object.hash(
-    thickness,
-    blur,
+    refraction,
+    refractionBand,
+    refractionEdgePow,
+    rimStrength,
+    rimWidth,
+    blurSigma,
     tintAlpha,
-    lightIntensity,
-    ambientStrength,
-    refractiveIndex,
-    saturation,
-    chromaticAberration,
-    lightAngleDegrees,
-    visibility,
   );
 }

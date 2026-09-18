@@ -3,7 +3,6 @@ import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart'
 import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/progressive_blur_tuning.dart';
-import 'package:university_timetable/models/refraction_glass_tuning.dart';
 import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
 import 'package:university_timetable/models/class_reminder.dart';
@@ -576,7 +575,7 @@ extension LiveBeforeClassQuickActionX on LiveBeforeClassQuickAction {
 
 /// Visual surface style for course cards.
 ///
-/// 只保留三档：实体卡片、高斯模糊、折射玻璃。旧版本的「半透明」「玻璃（液态
+/// 只保留三档：实体卡片、高斯模糊、液态玻璃。旧版本的「半透明」「玻璃（液态
 /// 玻璃）」档位已下线，读取旧配置时分别并入实体/高斯（见
 /// [CourseCardSurfaceStyleX.fromValue]）。
 enum CourseCardSurfaceStyle {
@@ -586,20 +585,23 @@ enum CourseCardSurfaceStyle {
   /// Gaussian blur backdrop over the page background.
   gaussian,
 
-  /// 折射玻璃：在**共享的**预模糊壁纸位上跑一遍折射着色器，卡片边缘按圆角
+  /// 液态玻璃：在**共享的**预模糊壁纸位上跑一遍折射着色器，卡片边缘按圆角
   /// SDF 把背景「掰弯」，再叠染色与受光边缘高光。
   ///
   /// 与 [gaussian] 的关系：两者采的是同一份预模糊位图（同一份
   /// `PreblurredWallpaperCache` 出图，全部卡片共用），差别只在最后一步 ——
   /// 高斯档直接贴图，这一档多跑一次折射着色器。因此它不会因为卡片变多而
   /// 更贵，是「实体卡片 / 高斯模糊」之外的第三种材质。
-  refraction,
+  ///
+  /// 与全局「液态玻璃」材质（弹层 / 顶栏 / 玻璃坞）同源：同一份着色器家族、
+  /// 同一套调参，只是卡片走共享预模糊位图、其他表面走实时背景。
+  liquidGlass,
 }
 
 extension CourseCardSurfaceStyleX on CourseCardSurfaceStyle {
   String get value => name;
 
-  /// 是否属于「寄生在共享预模糊壁纸上」的玻璃材质（高斯模糊 / 折射玻璃）。
+  /// 是否属于「寄生在共享预模糊壁纸上」的玻璃材质（高斯模糊 / 液态玻璃）。
   ///
   /// 这两档共享同一套前置条件与墨色规则，判断「是不是玻璃材质」一律用这个，
   /// **不要写 `== gaussian`**：那样每新增一档玻璃就要满仓找一遍漏改点
@@ -607,15 +609,18 @@ extension CourseCardSurfaceStyleX on CourseCardSurfaceStyle {
   bool get isGlass => this != CourseCardSurfaceStyle.solid;
 
   static CourseCardSurfaceStyle fromValue(String? value) {
-    // 旧档位迁移：半透明并入实体卡片；玻璃 / 液态玻璃并入高斯模糊。
-    // 注意 'glass' 这个历史字符串**不是** [CourseCardSurfaceStyle.refraction]：
-    // 老配置里它指的是当年那档液态玻璃，语义上就是现在的高斯磨砂。
+    // 旧档位迁移：半透明并入实体卡片；玻璃 / 旧液态玻璃并入高斯模糊；
+    // 旧的 'refraction' 持久化值并入现在的液态玻璃档。
+    // 注意 'glass' 这个历史字符串**不是**液态玻璃档：老配置里它指的是当年
+    // 那档液态玻璃，语义上就是现在的高斯磨砂。
     switch (value) {
       case 'translucent':
         return CourseCardSurfaceStyle.solid;
       case 'glass':
       case 'liquidGlass':
         return CourseCardSurfaceStyle.gaussian;
+      case 'refraction':
+        return CourseCardSurfaceStyle.liquidGlass;
     }
     return CourseCardSurfaceStyle.values.firstWhere(
       (item) => item.value == value,
@@ -1539,8 +1544,6 @@ class TimetableSettings {
     softGlassTuning: softGlassTuning ?? SoftGlassTuning.defaults,
     progressiveBlurTuning:
         progressiveBlurTuning ?? ProgressiveBlurTuning.defaults,
-    refractionGlassTuning:
-        refractionGlassTuning ?? RefractionGlassTuning.defaults,
     liquidGlassPopupEnabled: liquidGlassPopupEnabled,
     liquidGlassSelectSheetEnabled: liquidGlassSelectSheetEnabled,
     liquidGlassSheetDialogEnabled: liquidGlassSheetDialogEnabled,
@@ -1564,6 +1567,10 @@ class TimetableSettings {
   final bool liquidGlassDockEnabled;
   final bool liquidGlassPickerButtonsEnabled;
   final CourseCardSurfaceStyle courseCardSurfaceStyle;
+
+  /// 液态玻璃预设与自定义参数（[liquidGlassTuning] 为 null 时渲染回落
+  /// [LiquidGlassTuning.defaults]）。口径与柔光/渐进完全一致：预设是非空
+  /// 枚举（reset 能落回 standard），参数对象可空。
   final LiquidGlassPreset liquidGlassPreset;
   final LiquidGlassTuning? liquidGlassTuning;
 
@@ -1578,11 +1585,6 @@ class TimetableSettings {
   final ProgressiveBlurTuning? progressiveBlurTuning;
   final SoftGlassTuning? softGlassTuning;
 
-  /// 折射玻璃预设与自定义参数（[refractionGlassTuning] 为 null 时渲染回落
-  /// [RefractionGlassTuning.defaults]）。口径与柔光/渐进/液态完全一致：
-  /// 预设是非空枚举（reset 能落回 standard），参数对象可空。
-  final RefractionGlassPreset refractionGlassPreset;
-  final RefractionGlassTuning? refractionGlassTuning;
   final bool homePageHeaderBlurEnabled;
   final bool homePageWeekdayBarBlurEnabled;
 
@@ -1793,8 +1795,6 @@ class TimetableSettings {
     this.progressiveBlurPreset = ProgressiveBlurPreset.standard,
     this.progressiveBlurTuning,
     this.softGlassTuning,
-    this.refractionGlassPreset = RefractionGlassPreset.standard,
-    this.refractionGlassTuning,
     this.homePageHeaderBlurEnabled = true,
     this.homePageWeekdayBarBlurEnabled = true,
     this.subpageHeaderBlurStyle = HeaderBlurStyle.inspire,
@@ -2030,9 +2030,6 @@ class TimetableSettings {
         'progressiveBlurTuning': progressiveBlurTuning!.toJson(),
       if (softGlassTuning != null)
         'softGlassTuning': softGlassTuning!.toJson(),
-      'refractionGlassPreset': refractionGlassPreset.value,
-      if (refractionGlassTuning != null)
-        'refractionGlassTuning': refractionGlassTuning!.toJson(),
       'homePageHeaderBlurEnabled': homePageHeaderBlurEnabled,
       'homePageWeekdayBarBlurEnabled': homePageWeekdayBarBlurEnabled,
       'subpageHeaderBlurStyle': subpageHeaderBlurStyle.value,
@@ -2558,14 +2555,6 @@ class TimetableSettings {
               json['softGlassTuning'] as Map<String, dynamic>,
             )
           : null,
-      refractionGlassPreset: RefractionGlassPresetX.fromValue(
-        json['refractionGlassPreset'] as String?,
-      ),
-      refractionGlassTuning: json['refractionGlassTuning'] != null
-          ? RefractionGlassTuning.fromJson(
-              json['refractionGlassTuning'] as Map<String, dynamic>,
-            )
-          : null,
       // 两个玻璃带显示开关已下线（顶栏玻璃归外观页材质五档），恒为开。
       // ignore: avoid_redundant_argument_values -- 故意写死默认值（下线旧开关）。
       homePageHeaderBlurEnabled: true,
@@ -2811,8 +2800,6 @@ class TimetableSettings {
     ProgressiveBlurPreset? progressiveBlurPreset,
     ProgressiveBlurTuning? progressiveBlurTuning,
     SoftGlassTuning? softGlassTuning,
-    RefractionGlassPreset? refractionGlassPreset,
-    RefractionGlassTuning? refractionGlassTuning,
     bool? homePageHeaderBlurEnabled,
     bool? homePageWeekdayBarBlurEnabled,
     HeaderBlurStyle? subpageHeaderBlurStyle,
@@ -3193,10 +3180,6 @@ class TimetableSettings {
       progressiveBlurTuning:
           progressiveBlurTuning ?? this.progressiveBlurTuning,
       softGlassTuning: softGlassTuning ?? this.softGlassTuning,
-      refractionGlassPreset:
-          refractionGlassPreset ?? this.refractionGlassPreset,
-      refractionGlassTuning:
-          refractionGlassTuning ?? this.refractionGlassTuning,
       homePageHeaderBlurEnabled:
           homePageHeaderBlurEnabled ?? this.homePageHeaderBlurEnabled,
       homePageWeekdayBarBlurEnabled:

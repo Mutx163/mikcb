@@ -65,7 +65,7 @@ class CourseSurface extends StatelessWidget {
 
   static const double frostedFillAlpha = 0.42;
 
-  /// 折射玻璃档的染色底透明度。
+  /// 液态玻璃档的染色底透明度。
   ///
   /// 比高斯档（[frostedFillAlpha]）低一截：这一档的卖点就是「能看见背景在边缘
   /// 被掰弯」，染色压太实会把折射和高光一起盖掉；但也留足色相，让课程颜色
@@ -88,7 +88,7 @@ class CourseSurface extends StatelessWidget {
     final surface = switch (style) {
       CourseCardSurfaceStyle.solid => _buildSolid(radius),
       CourseCardSurfaceStyle.gaussian => _buildGaussian(context, radius),
-      CourseCardSurfaceStyle.refraction => _buildRefraction(context, radius),
+      CourseCardSurfaceStyle.liquidGlass => _buildRefraction(context, radius),
     };
 
     final outer = outerShadow;
@@ -163,7 +163,7 @@ class CourseSurface extends StatelessWidget {
     return _buildLiveBlurFallback(context, radius, tint);
   }
 
-  /// 折射玻璃档：与 [CourseCardSurfaceStyle.gaussian] 采**同一份**共享预模糊
+  /// 液态玻璃档：与 [CourseCardSurfaceStyle.gaussian] 采**同一份**共享预模糊
   /// 位图，差别只在最后一步 —— 这里把位图交给折射着色器再上屏（边缘按圆角 SDF
   /// 把背景掰弯 + 叠染色 + 叠受光边缘高光），而不是直接贴图。
   ///

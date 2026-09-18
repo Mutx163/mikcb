@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../models/header_blur_style.dart';
 import '../../../models/liquid_glass_tuning.dart';
 import '../../../models/progressive_blur_tuning.dart';
-import '../../../models/refraction_glass_tuning.dart';
 import '../../../models/soft_glass_tuning.dart';
 
 /// Default frosted-glass tuning (aligned with app timetable defaults).
@@ -39,7 +38,9 @@ enum FrostedGlassMode {
   /// BackdropFilter + tint 链路，设置页不再作为独立档位暴露。
   frosted,
 
-  /// Liquid-glass refraction (depth-based real-time shader).
+  /// 液态玻璃：实时背景上做圆角 SDF 边缘折射 + 受光边缘高光（见
+  /// `shaders/glass_surface_refraction.frag` 与 `LiquidGlassSurface`）。
+  /// 参数由 `LiquidGlassTuning` 统一提供，全 app 只此一套。
   liquidGlass,
 
   /// 柔光玻璃（Hyper-PiliPlus SoftGlass 风格）：雾面胶囊 + 双影 + 边缘
@@ -49,18 +50,17 @@ enum FrostedGlassMode {
   /// 设置页「高斯模糊」档的存储标记：渲染与 [frosted] 同一链路，仅用于
   /// 标记用户显式选择过该档。
   gaussian,
-
-  /// 折射玻璃：实时背景上做圆角 SDF 边缘折射 + 受光边缘高光（见
-  /// `shaders/glass_surface_refraction.frag`）。与 [liquidGlass] 是两条独立链路
-  /// ——液态走第三方包自己的渲染器，这一档走本仓的 `RefractionGlassSurface`；
-  /// 参数由 `RefractionGlassTuning` 统一提供。
-  refractionGlass,
 }
 
 extension FrostedGlassModeX on FrostedGlassMode {
   String get value => name;
 
   static FrostedGlassMode fromValue(String? value) {
+    // 存量迁移：折射档曾与液态档并列，现合并为一档（液态玻璃由本仓着色器
+    // 实现）。老数据里写着 'refractionGlass' 的一律读作液态玻璃。
+    if (value == 'refractionGlass') {
+      return FrostedGlassMode.liquidGlass;
+    }
     return FrostedGlassMode.values.firstWhere(
       (item) => item.value == value,
       orElse: () => FrostedGlassMode.frosted,
@@ -68,15 +68,13 @@ extension FrostedGlassModeX on FrostedGlassMode {
   }
 }
 
-/// 是否为「高级材质」档位（柔光玻璃 / 液态玻璃 / 折射玻璃）。
+/// 是否为「高级材质」档位（柔光玻璃 / 液态玻璃）。
 ///
 /// 高级材质共享同一组「作用范围」开关（见
 /// [LiquidGlassDegradation.familyFallsBackToSolid]），也才会驱动首页玻璃带与玻璃坞
 /// 脱离基础模糊档。实体卡片与高斯模糊是基础材质，不受开关约束。
 bool isAdvancedGlassMode(FrostedGlassMode? mode) =>
-    mode == FrostedGlassMode.liquidGlass ||
-    mode == FrostedGlassMode.softGlass ||
-    mode == FrostedGlassMode.refractionGlass;
+    mode == FrostedGlassMode.liquidGlass || mode == FrostedGlassMode.softGlass;
 
 class FrostedAppearance {
   const FrostedAppearance({
@@ -90,7 +88,6 @@ class FrostedAppearance {
     this.liquidGlassTuning,
     this.softGlassTuning = SoftGlassTuning.defaults,
     this.progressiveBlurTuning = ProgressiveBlurTuning.defaults,
-    this.refractionGlassTuning = RefractionGlassTuning.defaults,
     this.liquidGlassPopupEnabled = kDefaultLiquidGlassPopupEnabled,
     this.liquidGlassSelectSheetEnabled = kDefaultLiquidGlassSelectSheetEnabled,
     this.liquidGlassSheetDialogEnabled = kDefaultLiquidGlassSheetDialogEnabled,
@@ -133,7 +130,9 @@ class FrostedAppearance {
   /// Glass surface rendering mode.
   final FrostedGlassMode glassMode;
 
-  /// Optional liquid-glass tuning (used when [glassMode] is [FrostedGlassMode.liquidGlass]).
+  /// 液态玻璃参数（[glassMode] 为 [FrostedGlassMode.liquidGlass] 时生效）。
+  /// 非空即用户调过的档；null = 出厂标准档（渲染期回落到
+  /// [LiquidGlassTuning.defaults]，其折射旋钮与课程卡片液态档逐字段一致）。
   final LiquidGlassTuning? liquidGlassTuning;
 
   /// 柔光玻璃参数（[glassMode] 为 [FrostedGlassMode.softGlass] 时生效）。
@@ -143,11 +142,6 @@ class FrostedAppearance {
   /// 渐进（渐变）模糊参数——顶栏玻璃带走 `progressive` 材质 / 子页顶栏走
   /// `inspire` 风格时生效。非空缺省即标准档（与接入调参前的常量一致）。
   final ProgressiveBlurTuning progressiveBlurTuning;
-
-  /// 折射玻璃参数（[glassMode] 为 [FrostedGlassMode.refractionGlass] 时生效）。
-  /// 非空缺省即标准档——这一档的默认值与课程卡片折射档逐字段一致，见
-  /// [RefractionGlassTuning] 的类注释。
-  final RefractionGlassTuning refractionGlassTuning;
 
   /// 液态玻璃作用范围：锚定下拉选择小弹窗（玻璃模式等设置行弹出的气泡）。
   final bool liquidGlassPopupEnabled;
@@ -178,7 +172,6 @@ class FrostedAppearance {
           liquidGlassTuning == other.liquidGlassTuning &&
           softGlassTuning == other.softGlassTuning &&
           progressiveBlurTuning == other.progressiveBlurTuning &&
-          refractionGlassTuning == other.refractionGlassTuning &&
           liquidGlassPopupEnabled == other.liquidGlassPopupEnabled &&
           liquidGlassSelectSheetEnabled ==
               other.liquidGlassSelectSheetEnabled &&
@@ -200,7 +193,6 @@ class FrostedAppearance {
     liquidGlassTuning,
     softGlassTuning,
     progressiveBlurTuning,
-    refractionGlassTuning,
     liquidGlassPopupEnabled,
     liquidGlassSelectSheetEnabled,
     liquidGlassSheetDialogEnabled,

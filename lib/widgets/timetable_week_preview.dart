@@ -9,8 +9,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
 import '../ui/hyperos/hyperos.dart';
-import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
-import '../ui/hyperos/liquid/liquid_glass_tokens.dart';
+import '../ui/hyperos/liquid/liquid_glass_surface.dart';
 import 'home_page_region_blur.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
@@ -257,12 +256,13 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     // proportionally so the edge highlight stays a thin sheen while the
     // interior remains real liquid refraction — not flat gaussian blur.
     // Combined bands (~84dp) keep full thickness like the home sheet.
-    final double? previewCap = isSettingsPreview
-        ? MikcbLiquidGlassTokens.previewEdgeThicknessCap
-        : null;
-    final double? bandMaxThickness = height <= 52
-        ? (height * 0.28).clamp(8.0, 14.0)
-        : previewCap;
+    // 薄带（≤52dp）与设置页预览里的玻璃带：把**折射位移**按带高折算收小，
+    // 否则上下两条边缘折射带会占满整条带、读成一圈描边而不是「一条玻璃带」。
+    // 与旧版「按厚度折算」是同一个几何意图，只是量纲换成了折射位移。
+    // Combined bands (~84dp) keep full displacement like the home sheet.
+    final double? bandMaxRefraction = height <= 52
+        ? (height * 0.28).clamp(2.0, 6.0)
+        : (isSettingsPreview ? 6.0 : null);
     return [
       Positioned(
         top: top,
@@ -280,7 +280,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                   right: -homePageChromeGlassEdgeOverdraw,
                   bottom: 0,
                   child: HomePageChromeGlassFill(
-                    maxThickness: bandMaxThickness,
+                    maxRefraction: bandMaxRefraction,
                   ),
                 ),
               ],

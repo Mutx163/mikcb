@@ -5,33 +5,33 @@ import 'package:flutter/painting.dart' show Color, Offset;
 
 import '../../../widgets/glass_shader_program.dart';
 
-/// 全局「折射玻璃」表面的片元程序。
+/// 全局液态玻璃表面的片元程序。
 ///
 /// 与课程卡片那份（`CourseCardGlassShader`）共用同一个加载器基类，但**是两个
 /// 独立的程序**：卡片吃的是预模糊壁纸位图、按局部坐标画；这里吃的是
 /// `BackdropFilter` 的实时背景、按屏幕坐标画（见 `glass_surface_refraction.frag`
 /// 的坐标系说明）。两者折射数学同源，参数默认值也刻意对齐——见
-/// [GlassSurfaceStyle] 与 `CourseGlassStyle` 的字段注释。
-class GlassSurfaceShader extends GlassShaderProgram {
-  GlassSurfaceShader._()
+/// [LiquidGlassStyle] 与 `CourseGlassStyle` 的字段注释。
+class LiquidGlassSurfaceShader extends GlassShaderProgram {
+  LiquidGlassSurfaceShader._()
     : super(
         assetKey: 'shaders/glass_surface_refraction.frag',
-        debugLabel: 'GlassSurfaceShader',
+        debugLabel: 'LiquidGlassSurfaceShader',
       );
 
-  static final GlassSurfaceShader instance = GlassSurfaceShader._();
+  static final LiquidGlassSurfaceShader instance = LiquidGlassSurfaceShader._();
 }
 
-/// 一块折射玻璃表面的绘制参数（**逻辑像素**）。
+/// 一块液态玻璃表面的绘制参数（**逻辑像素**）。
 ///
-/// 与 [CourseGlassStyle] 的字段几乎一一对应，多一个 [blurSigma]：卡片拿到的
+/// 与 `CourseGlassStyle` 的字段几乎一一对应，多一个 [blurSigma]：卡片拿到的
 /// 位图是外面预先糊好的，这里要自己带一次实时模糊。
 ///
 /// 单位是逻辑像素，物理像素换算由 [scaledLengths] 在绘制期按 dpr 做——着色器
 /// 那一侧所有长度都是物理像素。
 @immutable
-class GlassSurfaceStyle {
-  const GlassSurfaceStyle({
+class LiquidGlassStyle {
+  const LiquidGlassStyle({
     required this.borderRadius,
     required this.tint,
     this.blurSigma = 15,
@@ -93,7 +93,7 @@ class GlassSurfaceStyle {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is GlassSurfaceStyle &&
+      other is LiquidGlassStyle &&
           other.borderRadius == borderRadius &&
           other.tint == tint &&
           other.blurSigma == blurSigma &&
@@ -129,8 +129,8 @@ class GlassSurfaceStyle {
 /// 按名字取而不是硬编码 `setFloat(下标, …)`：下标取决于 .frag 里的声明顺序，
 /// 改一次着色器就要同步改一遍 Dart，漏改不报错、只会静默画错。名字写错会当场
 /// 抛 ArgumentError。
-class GlassSurfaceUniforms {
-  GlassSurfaceUniforms(ui.FragmentShader shader)
+class LiquidGlassUniforms {
+  LiquidGlassUniforms(ui.FragmentShader shader)
     : areaOrigin = shader.getUniformVec2('u_area_origin'),
       areaSize = shader.getUniformVec2('u_area_size'),
       radius = shader.getUniformFloat('u_radius'),
@@ -165,6 +165,6 @@ class GlassSurfaceUniforms {
 /// 注意这里**不碰 `u_size` / `u_texture`**：那两个由引擎按「第一个 vec2 /
 /// 第一个 sampler2D」自动填与自动绑，Dart 侧设了也没用（见着色器文件头）。
 @visibleForTesting
-void debugValidateGlassSurfaceUniforms(ui.FragmentShader shader) {
-  GlassSurfaceUniforms(shader);
+void debugValidateLiquidGlassUniforms(ui.FragmentShader shader) {
+  LiquidGlassUniforms(shader);
 }
