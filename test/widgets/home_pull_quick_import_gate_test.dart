@@ -21,6 +21,12 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 ///
 /// 修复：有余量（存在可滚动课表）时不再上探测器，改由 Overscroll
 /// 通知（自带 atTop 判定）驱动下拉。
+///
+/// 追加（2026-09-18）：atTop 只说明"这一帧在顶部"，一次**从半路滚回顶部**
+/// 的手势滚到顶后 atTop 立刻为真，尾巴那点 overscroll 照样被计入下拉 →
+/// 用户读到"我只是滚上去，怎么就刷新了"。现在再叠一层手势起点判定
+/// （_homePullGestureStartedAtTop）：只有"按下时就已经在顶部"的那次拖拽
+/// 才算下拉，滚回顶部的那一拖整段不计，到顶后要再拉一次。
 void main() {
   // 拆分后设置页由库侧登记（生产在 main() 启动时完成）；测试环境直接
   // 调用一次，保证玻璃坞「课表设置」内嵌入口可解析。
@@ -98,6 +104,41 @@ void main() {
       find.byType(MiuixCircularProgressIndicator),
       findsNothing,
       reason: '未滑动到顶部的下拉不应触发首页快捷导入（更新）',
+    );
+
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('玻璃坞+自适应：一次手势从半路滚回顶部不触发，到顶后再拉才触发', (
+    tester,
+  ) async {
+    await pumpHome(tester: tester, form: HomeNavigationForm.glassDock);
+    expect(weekScroll(), findsOneWidget);
+
+    // 先上滑吃满玻璃余量（62px），此刻不在顶部。
+    await tester.drag(weekScroll(), const Offset(0, -200));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+
+    // 一次连续手势：先把课表滚回顶部（62），再继续下拉约 128。
+    // 修复前：尾巴那点在顶部的 overscroll 被当成"下拉"，药丸当场弹出——
+    // 用户读到的是"我只是滚上去，怎么就刷了"。
+    await tester.drag(weekScroll(), const Offset(0, 190));
+    await tester.pump();
+    expect(
+      find.byType(MiuixCircularProgressIndicator),
+      findsNothing,
+      reason: '滚回顶部的那一拖不算下拉，要再拉一下才触发',
+    );
+
+    // 到顶后重新拉一次（手势起点在顶部）→ 照常打开药丸。
+    await tester.drag(weekScroll(), const Offset(0, 100));
+    await tester.pump();
+    expect(
+      find.byType(MiuixCircularProgressIndicator),
+      findsOneWidget,
+      reason: '到顶部后再拉一次应正常触发',
     );
 
     await tester.pump(const Duration(milliseconds: 600));

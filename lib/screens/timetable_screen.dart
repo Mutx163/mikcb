@@ -390,6 +390,15 @@ class _TimetableScreenState extends State<TimetableScreen>
   static const double _homePullDampingRange =
       HyperosHomePullPhysics.dampingRange;
 
+  /// 本次手势（手指按下后的那一次拖拽）起点是否**已经在顶部**。
+  ///
+  /// 下拉快捷导入的手感口径是「先到顶部，再拉一下」：把列表滚回顶部的那一
+  /// 拖不算下拉。否则一次从半路滚到顶的手势，尾巴那点在顶部产生的
+  /// overscroll 会被当成下拉（视觉上"刚滚上去就弹出转圈"）。
+  /// 由 ScrollStartNotification（dragDetails != null，即真是一次拖拽）写入，
+  /// ScrollEnd 清掉；弹道（dragDetails == null）不写，免得松手后的回弹被当成"拉"。
+  bool _homePullGestureStartedAtTop = false;
+
   // Raw finger travel (clamped); visual offset = damped(touch/range)*range.
   double _homePullTouchDistance = 0;
 
@@ -2975,7 +2984,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 探测器，任何竖向下拉都会不计滚动位置地累计下拉进度，「还没滑动到
     // 顶部」就打开下拉 → 提前触发快捷导入（更新）。有余量的场景统一交给
     // 上方的 NotificationListener / OverscrollNotification（自带 atTop
-    // 位置判定，回到顶部才开始计下拉）。
+    // 位置判定 + 手势起点是否在顶部的判定，见 _homePullGestureStartedAtTop）。
     if (settings.timetableAutoFitSectionHeight &&
         !_isDayView &&
         _glassDockContentScrollInset(settings) <= 0) {
@@ -3266,6 +3275,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   /// Clamping overscroll at the top of the week/day vertical scrollables.
+  ///
+  /// 只有「按下时就已经在顶部」的手势才累计下拉
+  /// （[_homePullGestureStartedAtTop]）：滚回顶部的那一拖整段不算，
+  /// 需要到顶部后再拉一次。见该字段的说明。
   bool _handleHomePullScrollNotification(ScrollNotification notification) {
     if (_isHomePullQuickImportRunning) {
       return false;
@@ -3276,6 +3289,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
 
     final atTop = metrics.pixels <= metrics.minScrollExtent + 0.5;
+
+    // 手势起点快照：只有"手指按下时就已经在顶部"的这次拖拽才允许累计下拉。
+    // 滚回顶部的那一拖（起点在半路）整段都不计，用户要再拉一下才触发。
+    if (notification is ScrollStartNotification) {
+      _homePullGestureStartedAtTop =
+          notification.dragDetails != null && atTop;
+      return false;
+    }
 
     // While the pull affordance is open, upward content scroll retracts it.
     //
@@ -3292,7 +3313,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       }
     }
 
-    if (notification is OverscrollNotification && atTop) {
+    if (notification is OverscrollNotification &&
+        atTop &&
+        _homePullGestureStartedAtTop) {
       // Negative overscroll = past the leading edge (top) while pulling down.
       if (notification.overscroll < 0) {
         _updateHomePullDragDistance(-notification.overscroll);
@@ -3303,9 +3326,12 @@ class _TimetableScreenState extends State<TimetableScreen>
       return false;
     }
 
-    if (notification is ScrollEndNotification && _homePullDragDistance > 0) {
-      _finishHomePullDrag();
-      return false;
+    if (notification is ScrollEndNotification) {
+      _homePullGestureStartedAtTop = false;
+      if (_homePullDragDistance > 0) {
+        _finishHomePullDrag();
+        return false;
+      }
     }
 
     return false;
