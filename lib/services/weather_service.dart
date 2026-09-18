@@ -6,10 +6,17 @@ import '../models/weather_forecast.dart';
 import 'app_http_client.dart';
 import 'app_log_service.dart';
 
-/// Open-Meteo 天气数据访问（预报 + 地理编码）。
+/// 天气与地名数据访问。
 ///
-/// Open-Meteo 免费开放、**不需要密钥**，免费额度 10000 次/天、600 次/分，
-/// 数据许可 CC BY 4.0（要求署名，见设置子页的 attribution）。
+/// 三个端点：
+/// - Open-Meteo 预报（[fetchForecast]）；
+/// - Open-Meteo 正向地理编码，按名字搜城市（[searchLocations]）；
+/// - BigDataCloud 反向地理编码，按坐标反查地名（[reverseGeocode]）。
+///
+/// Open-Meteo 预报与地理编码免费开放、**不需要密钥**，免费额度 10000 次/天、
+/// 600 次/分，数据许可 CC BY 4.0（要求署名，见设置子页的 attribution）。
+/// 反查之所以换 BigDataCloud：Open-Meteo 的地理编码只支持按名字查，缺 `name`
+/// 参数直接报错。
 ///
 /// 本服务只负责发请求与解析成模型，不做缓存、不做节流、不判过期——那些策略在
 /// [WeatherProvider] 里。失败一律返回 null / 空列表并留日志，绝不向上抛：
@@ -28,6 +35,10 @@ class WeatherService {
   static const String _forecastBaseUrl = 'https://api.open-meteo.com/v1/forecast';
   static const String _geocodingBaseUrl =
       'https://geocoding-api.open-meteo.com/v1/search';
+
+  /// BigDataCloud 的免费客户端反查接口：零密钥、零注册、明确面向手机客户端。
+  static const String _reverseGeocodeBaseUrl =
+      'https://api.bigdatacloud.net/data/reverse-geocode-client';
 
   /// 请求的逐小时变量。**字段名即接口契约**，改动前先看 domain 的聚合算法注释。
   static const String hourlyVariables =
@@ -98,6 +109,56 @@ class WeatherService {
       }
     }
     return locations;
+  }
+
+  /// 按坐标反查可读地名（BigDataCloud 免费客户端接口）。
+  ///
+  /// Open-Meteo 的地理编码只支持按名字查（缺 `name` 直接报错），所以定位拿到
+  /// 经纬度后必须换这个服务。失败或解析不出地名时返回 null。
+  ///
+  /// `localityLanguage` 必须是 **`zh-Hans`**：传 `zh` / `zh-CN` 会返回繁体。
+  /// 返回的 [WeatherLocation.timezone] 留空——让预报接口用 `timezone=auto`
+  /// 按坐标自行解析，比依赖地名推时区更可靠。
+  Future<WeatherLocation?> reverseGeocode({
+    required double latitude,
+    required double longitude,
+  }) async {
+    final uri = Uri.parse(_reverseGeocodeBaseUrl).replace(
+      queryParameters: {
+        'latitude': '$latitude',
+        'longitude': '$longitude',
+        'localityLanguage': 'zh-Hans',
+      },
+    );
+
+    final json = await _getJson(uri, 'weather_reverse_geocode');
+    if (json == null) {
+      return null;
+    }
+    // 市级名优先取 city；直辖市与区级场景 city 本身就是区名。
+    final name = _text(json['city']) ?? _text(json['locality']);
+    if (name == null) {
+      return null;
+    }
+    final locality = _text(json['locality']);
+    return WeatherLocation(
+      name: name,
+      admin1: _text(json['principalSubdivision']),
+      country: _text(json['countryName']),
+      // 区名与市名相同时不重复记（重庆这类直辖市反查会给出同名的 city 与 locality）。
+      district: locality == name ? null : locality,
+      latitude: latitude,
+      longitude: longitude,
+    );
+  }
+
+  /// 取非空字符串；非字符串或只有空白都返回 null。
+  static String? _text(Object? raw) {
+    if (raw is! String) {
+      return null;
+    }
+    final trimmed = raw.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   /// 拉取 [location] 的逐小时预报；失败或没有有效数据时返回 null。

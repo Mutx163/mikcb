@@ -325,6 +325,226 @@ void main() {
     });
   });
 
+  group('reverseGeocode', () {
+    test('解析出省 / 市 / 区（杭州实测结构）', () async {
+      final service = WeatherService(
+        client: MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'latitude': 30.29365,
+              'longitude': 120.16142,
+              'countryName': '中华人民共和国',
+              'principalSubdivision': '浙江省',
+              'city': '杭州市',
+              'locality': '拱墅区',
+              'postcode': '',
+            }),
+            200,
+            headers: _jsonHeaders,
+          ),
+        ),
+      );
+
+      final location = await service.reverseGeocode(
+        latitude: 30.29365,
+        longitude: 120.16142,
+      );
+
+      expect(location, isNotNull);
+      expect(location!.name, '杭州市');
+      expect(location.admin1, '浙江省');
+      expect(location.country, '中华人民共和国');
+      expect(location.district, '拱墅区');
+      expect(location.displayName, '杭州市 · 拱墅区');
+      // 时区留空，让预报接口用 timezone=auto 按坐标自行解析。
+      expect(location.timezone, isNull);
+      expect(location.latitude, closeTo(30.29365, 1e-9));
+      expect(location.longitude, closeTo(120.16142, 1e-9));
+    });
+
+    test('请求带 zh-Hans（传 zh / zh-CN 会返回繁体）', () async {
+      Uri? captured;
+      final service = WeatherService(
+        client: MockClient((request) async {
+          captured = request.url;
+          return http.Response(
+            jsonEncode({'city': '杭州市'}),
+            200,
+            headers: _jsonHeaders,
+          );
+        }),
+      );
+
+      await service.reverseGeocode(latitude: 30.29, longitude: 120.16);
+
+      expect(captured!.host, 'api.bigdatacloud.net');
+      expect(
+        captured!.path,
+        '/data/reverse-geocode-client',
+      );
+      expect(captured!.queryParameters['localityLanguage'], 'zh-Hans');
+      expect(captured!.queryParameters['latitude'], '30.29');
+      expect(captured!.queryParameters['longitude'], '120.16');
+    });
+
+    test('city 缺失时退到 locality', () async {
+      final service = WeatherService(
+        client: MockClient(
+          (_) async => http.Response(
+            jsonEncode({'locality': '铜梁区', 'principalSubdivision': '重庆市'}),
+            200,
+            headers: _jsonHeaders,
+          ),
+        ),
+      );
+
+      final location = await service.reverseGeocode(
+        latitude: 29.86,
+        longitude: 106.03,
+      );
+
+      expect(location!.name, '铜梁区');
+      // 市名与区名来自同一个字段，不该再当成两段重复显示。
+      expect(location.district, isNull);
+      expect(location.displayName, '铜梁区');
+    });
+
+    test('区名与市名相同时不重复记 district', () async {
+      final service = WeatherService(
+        client: MockClient(
+          (_) async => http.Response(
+            jsonEncode({'city': '铜梁区', 'locality': '铜梁区'}),
+            200,
+            headers: _jsonHeaders,
+          ),
+        ),
+      );
+
+      final location = await service.reverseGeocode(
+        latitude: 29.86,
+        longitude: 106.03,
+      );
+
+      expect(location!.district, isNull);
+      expect(location.displayName, '铜梁区');
+    });
+
+    test('空串与缺失字段都按缺失处理', () async {
+      final service = WeatherService(
+        client: MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'city': '   ',
+              'locality': '   ',
+              'principalSubdivision': '',
+              'countryName': null,
+            }),
+            200,
+            headers: _jsonHeaders,
+          ),
+        ),
+      );
+
+      // 地名全空 → 没有可用名字，返回 null。
+      expect(
+        await service.reverseGeocode(latitude: 30.29, longitude: 120.16),
+        isNull,
+      );
+    });
+
+    test('缺行政区与国家时仍能给出市名', () async {
+      final service = WeatherService(
+        client: MockClient(
+          (_) async => http.Response(
+            jsonEncode({'city': '杭州市'}),
+            200,
+            headers: _jsonHeaders,
+          ),
+        ),
+      );
+
+      final location = await service.reverseGeocode(
+        latitude: 30.29,
+        longitude: 120.16,
+      );
+
+      expect(location!.name, '杭州市');
+      expect(location.admin1, isNull);
+      expect(location.country, isNull);
+      expect(location.district, isNull);
+      expect(location.regionLabel, '');
+    });
+
+    test('中文不乱码', () async {
+      final service = WeatherService(
+        client: MockClient(
+          (_) async => http.Response(
+            jsonEncode({'city': '杭州市', 'locality': '拱墅区'}),
+            200,
+            headers: _jsonHeaders,
+          ),
+        ),
+      );
+
+      final location = await service.reverseGeocode(
+        latitude: 30.29,
+        longitude: 120.16,
+      );
+      expect(location!.displayName, '杭州市 · 拱墅区');
+      expect(location.displayName, isNot(contains('�')));
+    });
+
+    test('非 200 返回 null 而不抛', () async {
+      final service = WeatherService(
+        client: MockClient((_) async => http.Response('nope', 503)),
+      );
+      expect(
+        await service.reverseGeocode(latitude: 30.29, longitude: 120.16),
+        isNull,
+      );
+    });
+
+    test('网络异常返回 null 而不抛', () async {
+      final service = WeatherService(
+        client: MockClient((_) async => throw const SocketExceptionStub()),
+      );
+      expect(
+        await service.reverseGeocode(latitude: 30.29, longitude: 120.16),
+        isNull,
+      );
+    });
+
+    test('超时返回 null 而不抛', () async {
+      final service = WeatherService(
+        timeout: const Duration(milliseconds: 20),
+        client: MockClient((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 300));
+          return http.Response(
+            jsonEncode({'city': '杭州市'}),
+            200,
+            headers: _jsonHeaders,
+          );
+        }),
+      );
+      expect(
+        await service.reverseGeocode(latitude: 30.29, longitude: 120.16),
+        isNull,
+      );
+    });
+
+    test('畸形 JSON 返回 null 而不抛', () async {
+      final service = WeatherService(
+        client: MockClient(
+          (_) async => http.Response('{not json', 200, headers: _jsonHeaders),
+        ),
+      );
+      expect(
+        await service.reverseGeocode(latitude: 30.29, longitude: 120.16),
+        isNull,
+      );
+    });
+  });
+
   group('WeatherPreferences', () {
     setUp(() {
       SharedPreferences.setMockInitialValues({});
