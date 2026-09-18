@@ -75,30 +75,9 @@ class _WeatherSettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
-          _WeatherSettingsNotice(text: l10n.weatherCoverageNote),
-          _WeatherSettingsNotice(text: l10n.weatherAttribution),
+          HyperosSectionDescription(text: l10n.weatherCoverageNote),
+          HyperosSectionDescription(text: l10n.weatherAttribution),
         ],
-      ),
-    );
-  }
-}
-
-/// 设置页底部的说明文字（非设置项，因此不套 HyperosListGroup）。
-class _WeatherSettingsNotice extends StatelessWidget {
-  const _WeatherSettingsNotice({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 13,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
       ),
     );
   }

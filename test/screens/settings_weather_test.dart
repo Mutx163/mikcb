@@ -183,6 +183,40 @@ void main() {
     expect(switchTile.value, isTrue);
   });
 
+  testWidgets('子页内容不会被悬浮顶栏盖住', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    await pumpSettings(tester);
+
+    final homeList = find.byType(HyperosListView).first;
+    await tester.scrollUntilVisible(
+      find.text(l10n.weatherSettingsEntryTitle),
+      200,
+      scrollable: find.descendant(
+        of: homeList,
+        matching: find.byType(Scrollable),
+      ).first,
+    );
+    await tester.tap(find.text(l10n.weatherSettingsEntryTitle));
+    await _pumpUntilSettled(tester);
+
+    // 与选城市页同一条防线：只断言 find.text 命中是不够的，正文被悬浮顶栏
+    // 整块盖住时那些断言依然会通过。这里比几何位置。
+    final switchRect = tester.getRect(find.byType(HyperosSwitchTile));
+    expect(switchRect.width, greaterThan(0));
+    expect(switchRect.height, greaterThan(0));
+
+    final titleFinder = find.text(l10n.weatherSettingsTitle);
+    var lowestTitleBottom = 0.0;
+    for (var i = 0; i < titleFinder.evaluate().length; i++) {
+      final bottom = tester.getRect(titleFinder.at(i)).bottom;
+      if (bottom > lowestTitleBottom) {
+        lowestTitleBottom = bottom;
+      }
+    }
+    expect(lowestTitleBottom, greaterThan(0));
+    expect(switchRect.top, greaterThanOrEqualTo(lowestTitleBottom - 1));
+  });
+
   testWidgets('子页里拨动开关会写进 WeatherProvider', (tester) async {
     final l10n = lookupAppLocalizations(const Locale('zh'));
     final weather = await pumpSettings(tester);

@@ -6,11 +6,13 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/weather_forecast.dart';
 import 'package:university_timetable/providers/weather_provider.dart';
 import 'package:university_timetable/screens/weather_city_picker_screen.dart';
 import 'package:university_timetable/services/weather_preferences.dart';
 import 'package:university_timetable/services/weather_service.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../helpers_test_app.dart';
 
@@ -114,6 +116,64 @@ Future<void> _type(WidgetTester tester, String query) async {
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+  });
+
+  testWidgets('内容不会被悬浮顶栏盖住，且输入框真实占到尺寸', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    final server = _SearchServer();
+    final provider = await _provider(server.service);
+    await _pumpPicker(tester, provider);
+
+    // 这条是回归防线：裸 Column 当正文时，内容会被悬浮顶栏整块盖住——页面看起来
+    // 「只有标题、正文空白」。只断言 find.text 命中的话那种坏布局也会通过，
+    // 所以必须比几何位置：输入框要落在标题下方，且自身有非零尺寸。
+    final fieldRect = tester.getRect(find.byType(HyperosTextField));
+    expect(fieldRect.width, greaterThan(0));
+    expect(fieldRect.height, greaterThan(0));
+
+    final titleFinder = find.text(l10n.weatherCityPickerTitle);
+    var lowestTitleBottom = 0.0;
+    for (var i = 0; i < titleFinder.evaluate().length; i++) {
+      final bottom = tester.getRect(titleFinder.at(i)).bottom;
+      if (bottom > lowestTitleBottom) {
+        lowestTitleBottom = bottom;
+      }
+    }
+    expect(lowestTitleBottom, greaterThan(0));
+    expect(fieldRect.top, greaterThanOrEqualTo(lowestTitleBottom - 1));
+  });
+
+  testWidgets('对照：裸 Column 当正文确实会被顶栏盖住（证明上一条断言有牙）', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+
+    // 故意还原出问题的那种写法（正文是裸 Column，不走 HyperosListView）：
+    // 顶栏是悬浮的，不会给正文让位，所以输入框顶边落在标题底边之上。
+    await tester.pumpWidget(
+      TestApp(
+        home: HyperosSubpage(
+          title: Text(l10n.weatherCityPickerTitle),
+          child: Column(
+            children: [
+              HyperosTextField(hint: l10n.weatherCitySearchHint),
+              const Expanded(child: SizedBox.shrink()),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final fieldRect = tester.getRect(find.byType(HyperosTextField));
+    final titleFinder = find.text(l10n.weatherCityPickerTitle);
+    var lowestTitleBottom = 0.0;
+    for (var i = 0; i < titleFinder.evaluate().length; i++) {
+      final bottom = tester.getRect(titleFinder.at(i)).bottom;
+      if (bottom > lowestTitleBottom) {
+        lowestTitleBottom = bottom;
+      }
+    }
+
+    expect(fieldRect.top, lessThan(lowestTitleBottom));
   });
 
   testWidgets('初始状态不发请求、不显示空结果提示', (tester) async {

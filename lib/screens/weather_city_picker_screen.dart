@@ -91,84 +91,78 @@ class _WeatherCityPickerScreenState extends State<WeatherCityPickerScreen> {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.weatherCityPickerTitle),
-      child: Column(
+      // 键盘弹出时把内容顶上去，否则搜索结果会被输入法盖住。
+      resizeToAvoidBottomInset: true,
+      child: HyperosListView(
+        pageStorageKey: const PageStorageKey<String>('weather-city-picker'),
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: HyperosTextField(
-              controller: _controller,
-              hint: l10n.weatherCitySearchHint,
-              autofocus: true,
-              textInputAction: TextInputAction.search,
-              onChanged: _onQueryChanged,
-            ),
+          HyperosTextField(
+            controller: _controller,
+            hint: l10n.weatherCitySearchHint,
+            autofocus: true,
+            textInputAction: TextInputAction.search,
+            onChanged: _onQueryChanged,
           ),
-          Expanded(
-            child: _buildResults(context, l10n, provider),
-          ),
+          ..._buildResults(l10n, provider),
         ],
       ),
     );
   }
 
-  Widget _buildResults(
-    BuildContext context,
+  /// 结果区。
+  ///
+  /// 必须走 `HyperosSubpage` + [HyperosListView] 这一套，不能用裸 `Column`：
+  /// 顶栏是**悬浮**在内容之上的，只有 [HyperosListView] 会把顶栏占用的高度算成
+  /// 顶部内边距（`HyperosBlurredHeaderScope.insetOf`），裸 Column 的内容会被
+  /// 顶栏整块盖住——表现就是「页面只有标题、正文空白」。
+  /// 同理不能用惰性 `ListView.builder`：那会在滚动时回收输入框。
+  List<Widget> _buildResults(
     AppLocalizations l10n,
     WeatherProvider? provider,
   ) {
     if (_searching) {
-      return const Center(
-        child: SizedBox(
-          width: 22,
-          height: 22,
-          child: CircularProgressIndicator(strokeWidth: 2.2),
+      return const [
+        SizedBox(height: 28),
+        Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
         ),
-      );
+      ];
     }
 
-    final settledQuery = _settledQuery;
-    if (settledQuery == null) {
-      return const SizedBox.shrink();
+    // 还没搜过：不显示任何提示，等着用户输入。
+    if (_settledQuery == null) {
+      return const [];
     }
 
     if (_results.isEmpty) {
-      return _buildNotice(context, l10n.weatherCitySearchEmpty);
+      return [HyperosSectionDescription(text: l10n.weatherCitySearchEmpty)];
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      itemCount: _results.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        final location = _results[index];
-        final selected =
-            provider?.location?.isSamePlaceAs(location) ?? false;
-        return _WeatherCityOption(
-          location: location,
-          selected: selected,
-          onTap: provider == null
-              ? null
-              : () => _select(provider, location),
-        );
-      },
-    );
-  }
-
-  Widget _buildNotice(BuildContext context, String message) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Text(
-        message,
-        style: TextStyle(
-          fontSize: 13,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+    return [
+      const SizedBox(height: 4),
+      HyperosListGroup(
+        children: [
+          for (final location in _results)
+            _WeatherCityOption(
+              location: location,
+              selected: provider?.location?.isSamePlaceAs(location) ?? false,
+              onTap: provider == null
+                  ? null
+                  : () => _select(provider, location),
+            ),
+        ],
       ),
-    );
+    ];
   }
 }
 
 /// 单个城市候选：城市名 + 行政区（用于区分同名地点）+ 选中标记。
+///
+/// 用与设置行同一套行壳，保证行高与左右内边距跟其他列表行对齐。
 class _WeatherCityOption extends StatelessWidget {
   const _WeatherCityOption({
     required this.location,
@@ -182,20 +176,21 @@ class _WeatherCityOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final region = location.regionLabel;
     return HyperosPressableRow(
       onTap: onTap,
       backgroundColor: HyperosColors.card(context),
       highlightColor: HyperosColors.rowHighlight(context),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      child: hyperosListRowShell(
+        padding: hyperosRowPadding(context),
+        minHeight: HyperosTokens.listRowTwoLineMinHeight,
         child: Row(
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     location.name,
@@ -203,15 +198,13 @@ class _WeatherCityOption extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: HyperosTypography.listTitle(context),
                   ),
-                  if (region.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      region,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: HyperosTypography.listDetail(context),
-                    ),
-                  ],
+                  const SizedBox(height: HyperosTokens.titleCaptionGap),
+                  Text(
+                    region,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: HyperosTypography.listDetail(context),
+                  ),
                 ],
               ),
             ),
@@ -220,7 +213,7 @@ class _WeatherCityOption extends StatelessWidget {
               Icon(
                 Icons.check_rounded,
                 size: 20,
-                color: theme.colorScheme.primary,
+                color: HyperosColors.primary(context),
               ),
             ],
           ],
