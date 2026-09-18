@@ -1723,6 +1723,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
     if (_selectedWeekForDayView == target.week &&
         _selectedDayOfWeek == target.dayOfWeek) {
+      // 回滑到已选那天：必须把提前预览撤掉。留着的话预览标记会停在被滑
+      // 过去的那一天，而 ScrollEnd 收到「选择没变」时不会重建，星期栏
+      // 就永久多亮一格（只能靠「回到今天」之类的整屏重建才消失）。
+      // 清空与翻页发生在同一次 setPixels 里：位置通知已经在同一帧把这
+      // 条栏标脏，本帧的 build 就会读到 null，高亮随之回到已选那天。
+      _dayHeaderPreview.value = null;
       return;
     }
     // Midpoint preview: recolour the weekday header the moment the pager
