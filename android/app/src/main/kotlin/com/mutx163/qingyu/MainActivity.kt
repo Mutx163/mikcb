@@ -426,6 +426,11 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LocationFix.CHANNEL)
+            .setMethodCallHandler { call, result ->
+                LocationFix.handle(call, applicationContext, result)
+            }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SYSTEM_UI_CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
