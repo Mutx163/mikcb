@@ -886,10 +886,26 @@ class _TimetableScreenState extends State<TimetableScreen>
                                 // 日视图自己的「回今日」浮钮（底部居中）。与上面
                                 // 那颗「回本周」互斥：那颗在日视图一律不显示，
                                 // 这颗只在日视图且当前不是今天时出现。
-                                if (_shouldShowFloatingBackToTodayButton(
-                                  provider,
-                                ))
-                                  _buildFloatingBackToTodayButton(provider),
+                                //
+                                // 绑在 [_dayHeaderPreview] 上做**局部重建**，与
+                                // 周视图「回本周」绑 [_visibleWeekListenable] 是
+                                // 同一个套路：日视图滑动期间整屏刻意不 setState
+                                // （防 ANR），若把可见性算在整屏 build 里，就得等
+                                // ScrollEnd 落定后才出现——用户读到的是"过半天才
+                                // 弹出来"。页中点预览是滑动中唯一逐页变化的信号。
+                                ValueListenableBuilder<(int, int)?>(
+                                  valueListenable: _dayHeaderPreview,
+                                  builder: (context, _, _) {
+                                    if (!_shouldShowFloatingBackToTodayButton(
+                                      provider,
+                                    )) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return _buildFloatingBackToTodayButton(
+                                      provider,
+                                    );
+                                  },
+                                ),
                               ],
                             ),
                           ),
@@ -7904,31 +7920,54 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 日视图底部「回今日」悬浮按钮的几何常量。
   ///
-  /// 高度按内容算：图标 15 与文字 11 取高者 15，加 8×2 内边距与 1×2 描边。
+  /// **与底栏药丸同尺寸**：底栏 `barHeight: 56`、圆角用包的 `capsuleRadius`
+  /// （全圆端 = 半高），所以这里是 56 高 + 28 圆角。高度即成品高度（外层
+  /// 描边画在边界内，不占布局，与 `Container` 的行为不同）。
+  ///
   /// 列表底部余量（[_backToTodayButtonScrollInset]）与按钮本体共用这些
   /// 常量，避免两边各自写死数字后走偏（钮变高、内容又被遮）。
-  static const double _backToTodayButtonRadius = 12;
-  static const double _backToTodayButtonHPadding = 12;
-  static const double _backToTodayButtonVPadding = 8;
-  static const double _backToTodayButtonIconSize = 15;
+  static const double _backToTodayButtonHeight = 56;
+  static const double _backToTodayButtonRadius = _backToTodayButtonHeight / 2;
+  static const double _backToTodayButtonHPadding = 24;
+  static const double _backToTodayButtonFontSize = 15;
   /// 玻璃坞形态下按钮底边与药丸顶边之间的视觉间隙。
   static const double _backToTodayButtonDockGap = 12;
   /// 列表最后一项与按钮顶边之间的视觉间隙。
   static const double _backToTodayButtonGap = 8;
   /// 经典形态（底栏在页面之外）下按钮距页面底边的边距。
   static const double _backToTodayButtonClassicMargin = 24;
-  static const double _backToTodayButtonHeight =
-      _backToTodayButtonIconSize + _backToTodayButtonVPadding * 2 + 2;
+
+  /// 日视图"此刻正看着的那一天"。
+  ///
+  /// 滑动中用**页中点预览**（[_dayHeaderPreview]，与星期栏高亮同源），静止时
+  /// 用已落定的选择。必须这么取：日视图滑动期间整屏不 setState（防 ANR），
+  /// 只看落定选择的话，按钮要等 ScrollEnd 之后才可能变化。
+  (int, int)? _visibleDayViewTarget() {
+    if (!_isDayView) {
+      return null;
+    }
+    final preview = _dayHeaderPreview.value;
+    if (preview != null) {
+      return preview;
+    }
+    final week = _selectedWeekForDayView;
+    final day = _selectedDayOfWeek;
+    if (week == null || day == null) {
+      return null;
+    }
+    return (week, day);
+  }
 
   /// 日视图底部的「回今日」浮钮该不该出现。
   ///
   /// **与周视图的「回本周」浮钮是两套独立体系**：各有自己的可见性条件、
   /// 文案、动作、位置与配色，也不共用设置项——「回本周」受
   /// [TimetableSettings.timetableBackToCurrentWeekButtonStyle] 与浮态透明度
-  /// 控制，这颗只跟着「日视图当前看的不是今天」走。两者之间唯一共用的
+  /// 控制，这颗只跟着"日视图当前看的不是今天"走。两者之间唯一共用的
   /// 事实是底部导航的物理占用（[_glassDockPillOccupancy]）。
   bool _shouldShowFloatingBackToTodayButton(TimetableProvider provider) {
-    if (!_isDayView) {
+    final target = _visibleDayViewTarget();
+    if (target == null) {
       return false;
     }
     final settings = provider.settings;
@@ -7940,8 +7979,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     return !_isSelectedDayToday(
       provider: provider,
       settings: settings,
-      week: _selectedWeekForDayView ?? _visibleWeek,
-      dayOfWeek: _selectedDayOfWeek ?? 1,
+      week: target.$1,
+      dayOfWeek: target.$2,
     );
   }
 
@@ -7978,12 +8017,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 日视图底部居中的「回今日」浮钮：玻璃底 + **主题色**的图标与文字，
-  /// 12dp 圆角矩形（刻意不做成胶囊 / 正圆）。
+  /// 日视图底部居中的「回今日」浮钮：与底栏药丸**同高同胶囊**（56 / 28 圆角）、
+  /// 玻璃底 + **主题色**文字，只有文案没有箭头。
   ///
-  /// 配色走全 app 的主题色口径：底色是玻璃，所以"跟随主题色"落在图标与
-  /// 文字上，取 [HyperosColors.primary]——即外观里选的 seed 本身（所见即
-  /// 所得），未挂 ThemeSeedScope 或深色近黑 seed 时由它自己回落。
+  /// 配色走全 app 的主题色口径：底色是玻璃，所以"跟随主题色"落在文字上，
+  /// 取 [HyperosColors.primary]——即外观里选的 seed 本身（所见即所得），
+  /// 未挂 ThemeSeedScope 或深色近黑 seed 时由它自己回落。
   ///
   /// 材质沿用全 app 的玻璃口径（同一份 [FrostedAppearanceScope] 与
   /// [MikcbLiquidGlassTokens]），但**不复用**「回本周」那颗的实现：位置
@@ -8005,44 +8044,25 @@ class _TimetableScreenState extends State<TimetableScreen>
       context,
       withBlur: useBlur,
     );
-    // 箭头指向"今天在哪边"：今天比当前这天晚 → 朝右，早 → 朝左。沿用原来
-    // 摘要卡那颗胶囊的方向语义（滑动/点选都能一眼看出该往哪边回）。
-    final selectedDate = _resolveDisplayDateForWeekDay(
-      provider: provider,
-      settings: provider.settings,
-      week: _selectedWeekForDayView ?? _visibleWeek,
-      dayOfWeek: _selectedDayOfWeek ?? 1,
-    );
-    final todayDate = DateUtils.dateOnly(DateTime.now());
-    final pointsForward = DateUtils.dateOnly(
-      selectedDate,
-    ).isBefore(todayDate);
-    final content = Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: _backToTodayButtonHPadding,
-        vertical: _backToTodayButtonVPadding,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            pointsForward
-                ? Icons.arrow_forward_rounded
-                : Icons.arrow_back_rounded,
-            size: _backToTodayButtonIconSize,
-            color: accent,
-          ),
-          const SizedBox(width: 4),
-          Text(
+    final content = SizedBox(
+      // 与底栏药丸同高。外层 DecoratedBox 的 1dp 描边是**画在边界内**的
+      // （与 Container 不同，不占布局），所以内容高度就是成品高度。
+      height: _backToTodayButtonHeight,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: _backToTodayButtonHPadding,
+        ),
+        child: Center(
+          child: Text(
             l10n.backToTodayAction,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: _backToTodayButtonFontSize,
               fontWeight: FontWeight.w700,
               color: accent,
               height: 1,
             ),
           ),
-        ],
+        ),
       ),
     );
     final surface = useLiquidGlassMaterial

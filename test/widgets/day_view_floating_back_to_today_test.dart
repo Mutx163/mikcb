@@ -172,6 +172,16 @@ void main() {
 
     final screenSize = tester.view.physicalSize / tester.view.devicePixelRatio;
     final buttonRect = tester.getRect(buttonFinder);
+    // 尺寸与底栏药丸一致：56 高；圆角是半高（胶囊）；只有文字没有箭头。
+    expect(buttonRect.height, moreOrLessEquals(56, epsilon: 1));
+    final decoration =
+        tester.widget<DecoratedBox>(buttonFinder).decoration as BoxDecoration;
+    expect(decoration.borderRadius, BorderRadius.circular(28));
+    expect(
+      find.descendant(of: buttonFinder, matching: find.byType(Icon)),
+      findsNothing,
+      reason: '按用户要求去掉箭头，只留文案',
+    );
     // 底部居中：水平居中于屏幕，且贴屏幕底部（经典形态留 24 边距）。
     expect(
       (buttonRect.center.dx - screenSize.width / 2).abs(),
@@ -180,11 +190,9 @@ void main() {
     );
     expect(
       buttonRect.bottom,
-      greaterThan(screenSize.height - 80),
+      greaterThan(screenSize.height - 90),
       reason: '按钮应在屏幕底部（导航栏上方）',
     );
-    // 圆角矩形而非胶囊：按钮不是正方形，也不是整圆。
-    expect(buttonRect.width, greaterThan(buttonRect.height));
 
     // 跟随主题色：图标与文字都取外观里选的 seed 本身。
     final labelStyle = tester
@@ -232,5 +240,23 @@ void main() {
       findsNothing,
       reason: '回到今天后按钮应消失',
     );
+
+    // 秒显示：再从今天滑出去，**手指还没松、刚过页中点**就该出现。
+    // 绑的是星期栏同一份页中点预览做局部重建；若把可见性算在整屏 build 里，
+    // 这里会读到 0 个（要等 ScrollEnd 落定后的整屏 setState）。
+    final swipeRect = tester.getRect(
+      find.byKey(const ValueKey('day-view-swipe-area')),
+    );
+    final swipeDx = swipeRect.width * 0.7 * (today.weekday <= 3 ? -1 : 1);
+    final gesture = await tester.startGesture(swipeRect.center);
+    await gesture.moveBy(Offset(swipeDx, 0));
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(
+      find.byKey(const ValueKey('back-to-today-button')),
+      findsOneWidget,
+      reason: '滑过页中点、手指未松时就该出现（不能等落定）',
+    );
+    await gesture.up();
+    await _pumpUntilSettled(tester);
   });
 }
