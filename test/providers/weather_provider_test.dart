@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +10,8 @@ import 'package:university_timetable/providers/weather_provider.dart';
 import 'package:university_timetable/services/device_location_service.dart';
 import 'package:university_timetable/services/weather_preferences.dart';
 import 'package:university_timetable/services/weather_service.dart';
+
+import '../helpers_location_stub.dart';
 
 const _jsonHeaders = {'content-type': 'application/json; charset=utf-8'};
 
@@ -138,43 +139,6 @@ Future<void> _seed({
   }
 }
 
-/// 极简假定位源：provider 测试只关心「成功 / 失败 / 被调用几次」，
-/// 权限各分支与完整失败矩阵在 test/services/device_location_service_test.dart 里覆盖。
-class _StubLocationSource implements DeviceLocationSource {
-  _StubLocationSource({this.serviceEnabled = true});
-
-  bool serviceEnabled;
-  int positionCalls = 0;
-
-  @override
-  Future<bool> isServiceEnabled() async => serviceEnabled;
-
-  @override
-  Future<LocationPermission> checkPermission() async =>
-      LocationPermission.whileInUse;
-
-  @override
-  Future<LocationPermission> requestPermission() async =>
-      LocationPermission.whileInUse;
-
-  @override
-  Future<Position> getCurrentPosition(LocationSettings settings) async {
-    positionCalls++;
-    return Position(
-      latitude: _located.latitude,
-      longitude: _located.longitude,
-      timestamp: DateTime(2026, 9, 18, 10),
-      accuracy: 10,
-      altitude: 0,
-      altitudeAccuracy: 0,
-      heading: 0,
-      headingAccuracy: 0,
-      speed: 0,
-      speedAccuracy: 0,
-    );
-  }
-}
-
 /// 定位反查会得到的地点。
 const _located = WeatherLocation(
   name: '成都市',
@@ -185,15 +149,18 @@ const _located = WeatherLocation(
   longitude: 104.0668,
 );
 
+/// 定位源固定在 [_located] 的坐标上（断言「请求打在新坐标上」要用）。
+StubDeviceLocationSource _source({bool serviceEnabled = true}) =>
+    StubDeviceLocationSource(
+      serviceEnabled: serviceEnabled,
+      latitude: _located.latitude,
+      longitude: _located.longitude,
+    );
+
 DeviceLocationService _locationService(
-  _StubLocationSource source, {
+  StubDeviceLocationSource source, {
   required WeatherLocation? resolvesTo,
-}) {
-  return DeviceLocationService(
-    reverseGeocode: (_, _) async => resolvesTo,
-    source: source,
-  );
-}
+}) => stubLocationService(resolvesTo: resolvesTo, source: source);
 
 void main() {
   setUp(() {
@@ -204,7 +171,7 @@ void main() {
     test('成功：换城市、落盘、重拉预报、清空失败原因', () async {
       await _seed();
       final server = _Server();
-      final source = _StubLocationSource();
+      final source = _source();
       final provider = WeatherProvider(
         service: server.service,
         locationService: _locationService(source, resolvesTo: _located),
@@ -239,7 +206,7 @@ void main() {
     test('失败：记录原因，且**不动**用户原来选好的城市', () async {
       await _seed();
       final server = _Server();
-      final source = _StubLocationSource();
+      final source = _source();
       final provider = WeatherProvider(
         service: server.service,
         locationService: _locationService(source, resolvesTo: null),
@@ -264,7 +231,7 @@ void main() {
       final provider = WeatherProvider(
         service: server.service,
         locationService: _locationService(
-          _StubLocationSource(serviceEnabled: false),
+          _source(serviceEnabled: false),
           resolvesTo: _located,
         ),
       );
@@ -281,7 +248,7 @@ void main() {
     test('连点两次只跑一次（单飞）', () async {
       await _seed();
       final server = _Server();
-      final source = _StubLocationSource();
+      final source = _source();
       final provider = WeatherProvider(
         service: server.service,
         locationService: _locationService(source, resolvesTo: _located),
@@ -303,7 +270,7 @@ void main() {
       final provider = WeatherProvider(
         service: server.service,
         locationService: _locationService(
-          _StubLocationSource(),
+          _source(),
           resolvesTo: _located,
         ),
       );
@@ -330,7 +297,7 @@ void main() {
         service: server.service,
         locationService: DeviceLocationService(
           reverseGeocode: (_, _) async => resolves ? _located : null,
-          source: _StubLocationSource(),
+          source: _source(),
         ),
       );
       await provider.initialize();

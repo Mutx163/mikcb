@@ -7,13 +7,16 @@ import 'package:http/testing.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/weather_location_failure_localizer.dart';
 import 'package:university_timetable/models/weather_forecast.dart';
 import 'package:university_timetable/providers/weather_provider.dart';
 import 'package:university_timetable/screens/weather_city_picker_screen.dart';
+import 'package:university_timetable/services/device_location_service.dart';
 import 'package:university_timetable/services/weather_preferences.dart';
 import 'package:university_timetable/services/weather_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
+import '../helpers_location_stub.dart';
 import '../helpers_test_app.dart';
 
 const _jsonHeaders = {'content-type': 'application/json; charset=utf-8'};
@@ -83,15 +86,38 @@ class _SearchServer {
 Future<WeatherProvider> _provider(
   WeatherService service, {
   WeatherLocation? current,
+  DeviceLocationService? locationService,
 }) async {
   if (current != null) {
     await WeatherPreferences.saveLocation(current);
   }
   // 必须 initialize：所选城市是 initialize 从 prefs 读进内存的，
   // 不初始化的话 provider.location 一直是 null。
-  final provider = WeatherProvider(service: service);
+  final provider = WeatherProvider(
+    service: service,
+    locationService: locationService,
+  );
   await provider.initialize();
   return provider;
+}
+
+/// 从另一个页面推入选城市页，这样「定位成功后返回上一页」才有得可返。
+class _PickerLauncher extends StatelessWidget {
+  const _PickerLauncher();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: TextButton(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const WeatherCityPickerScreen(),
+          ),
+        ),
+        child: const Text('open-picker'),
+      ),
+    );
+  }
 }
 
 Future<void> _pumpPicker(WidgetTester tester, WeatherProvider provider) async {
@@ -317,5 +343,135 @@ void main() {
     await _type(tester, '杭州');
 
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('顶部有「当前位置」区块，且定位行落在页面标题下方', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    final server = _SearchServer();
+    final provider = await _provider(server.service);
+    await _pumpPicker(tester, provider);
+
+    expect(find.text(l10n.weatherSectionCurrentLocation), findsOneWidget);
+    expect(find.text(l10n.weatherSectionSearchCity), findsOneWidget);
+    expect(find.text(l10n.weatherUseCurrentLocation), findsOneWidget);
+
+    // 与设置子页同一条防线：只断言 find.text 命中抓不到「被悬浮顶栏盖住」，
+    // 必须比几何位置。
+    final locateRect = tester.getRect(
+      find.text(l10n.weatherUseCurrentLocation),
+    );
+    expect(locateRect.width, greaterThan(0));
+    expect(locateRect.height, greaterThan(0));
+
+    final titleFinder = find.text(l10n.weatherCityPickerTitle);
+    var lowestTitleBottom = 0.0;
+    for (var i = 0; i < titleFinder.evaluate().length; i++) {
+      final bottom = tester.getRect(titleFinder.at(i)).bottom;
+      if (bottom > lowestTitleBottom) {
+        lowestTitleBottom = bottom;
+      }
+    }
+    expect(lowestTitleBottom, greaterThan(0));
+    expect(locateRect.top, greaterThanOrEqualTo(lowestTitleBottom - 1));
+  });
+
+  testWidgets('定位行排在搜索框上方', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    final server = _SearchServer();
+    final provider = await _provider(server.service);
+    await _pumpPicker(tester, provider);
+
+    final locateTop = tester
+        .getRect(find.text(l10n.weatherUseCurrentLocation))
+        .top;
+    final fieldTop = tester.getRect(find.byType(HyperosTextField)).top;
+    expect(locateTop, lessThan(fieldTop));
+  });
+
+  testWidgets('点定位行 → 成功 → 返回上一页并换城市', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    final server = _SearchServer();
+    final provider = await _provider(
+      server.service,
+      locationService: stubLocationService(),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<WeatherProvider>.value(
+        value: provider,
+        child: const TestApp(home: _PickerLauncher()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('open-picker'));
+    await tester.pumpAndSettle();
+    expect(find.byType(WeatherCityPickerScreen), findsOneWidget);
+
+    await tester.tap(find.text(l10n.weatherUseCurrentLocation));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WeatherCityPickerScreen), findsNothing);
+    expect(provider.location!.displayName, '杭州市 · 拱墅区');
+  });
+
+  testWidgets('定位失败 → 弹提示且留在本页', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    final server = _SearchServer();
+    final provider = await _provider(
+      server.service,
+      locationService: stubLocationService(resolvesTo: null),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<WeatherProvider>.value(
+        value: provider,
+        child: const TestApp(home: _PickerLauncher()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('open-picker'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.weatherUseCurrentLocation));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WeatherCityPickerScreen), findsOneWidget);
+    expect(
+      find.text(
+        WeatherLocationFailureLocalizer.message(
+          l10n,
+          DeviceLocationFailure.addressUnavailable,
+        ),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('定位中禁用定位行，期间再点不会发第二次', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    final server = _SearchServer();
+    final source = StubDeviceLocationSource(delay: const Duration(seconds: 2));
+    final provider = await _provider(
+      server.service,
+      locationService: stubLocationService(source: source),
+    );
+    await _pumpPicker(tester, provider);
+
+    await tester.tap(find.text(l10n.weatherUseCurrentLocation));
+    await tester.pump();
+    expect(provider.isLocating, isTrue);
+    // 定位中副标题换成「正在定位…」。
+    expect(find.text(l10n.weatherLocating), findsOneWidget);
+
+    await tester.tap(
+      find.text(l10n.weatherUseCurrentLocation),
+      warnIfMissed: false,
+    );
+    await tester.pump();
+    expect(source.positionCalls, 1);
+
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(provider.isLocating, isFalse);
   });
 }

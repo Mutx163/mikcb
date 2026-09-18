@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../l10n/weather_location_failure_localizer.dart';
 import '../models/weather_forecast.dart';
 import '../providers/weather_provider.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../utils/app_toast.dart';
 
 /// 选城市页：搜索 + 结果列表。
 ///
@@ -83,10 +85,31 @@ class _WeatherCityPickerScreenState extends State<WeatherCityPickerScreen> {
     Navigator.pop(context);
   }
 
+  /// 一键定位。成功后**返回上一页**——与「点选一个城市」一致，回到设置页那一行
+  /// 已经显示新地点了，留在搜索页没有意义。
+  Future<void> _locate(WeatherProvider provider) async {
+    // l10n 必须在 await 之前取：await 之后 context 可能已失效。
+    final l10n = AppLocalizations.of(context)!;
+    final failure = await provider.locateCurrentPosition();
+    if (!mounted) {
+      return;
+    }
+    if (failure != null) {
+      showAppToast(
+        context,
+        message: WeatherLocationFailureLocalizer.message(l10n, failure),
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<WeatherProvider?>();
+    final locating = provider?.isLocating ?? false;
 
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
@@ -96,6 +119,26 @@ class _WeatherCityPickerScreenState extends State<WeatherCityPickerScreen> {
       child: HyperosListView(
         pageStorageKey: const PageStorageKey<String>('weather-city-picker'),
         children: [
+          // 定位入口排在搜索之前：它是「我不挑，就用我在的地方」那条更短的路。
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.weatherSectionCurrentLocation),
+          HyperosListGroup(
+            children: [
+              HyperosListTile(
+                icon: Icons.my_location_rounded,
+                title: l10n.weatherUseCurrentLocation,
+                subtitle: locating
+                    ? l10n.weatherLocating
+                    : provider?.location?.displayName,
+                // 定位中禁用（onTap 为 null 时该行变灰且不画箭头）。
+                onTap: provider == null || locating
+                    ? null
+                    : () => unawaited(_locate(provider)),
+              ),
+            ],
+          ),
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.weatherSectionSearchCity),
           HyperosTextField(
             controller: _controller,
             hint: l10n.weatherCitySearchHint,

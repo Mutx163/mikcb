@@ -46,6 +46,29 @@ class _WeatherSettingsScreen extends StatelessWidget {
           HyperosSectionLabel(text: l10n.weatherSectionSourceTitle),
           HyperosListGroup(
             children: [
+              // 一键定位放在城市行之前：它比「手动搜索」更常用，也是「我不想挑
+              // 城市，直接用我在的地方」的默认路径。
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  // 城市行用的是 location，这里换 pin 避免两个同形图标。
+                  MiuixIcons.extended.byName('pin')!,
+                  HyperosIconColors.blue,
+                ),
+                title: l10n.weatherUseCurrentLocation,
+                endActions: [
+                  if (weather?.isLocating ?? false)
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                ],
+                // 定位中整行禁用：系统级动作会弹权限框、要十几秒，防重复触发。
+                // provider 侧还有单飞兜底，两道都在。
+                onClick: (weather == null || weather.isLocating)
+                    ? null
+                    : () => unawaited(_locateWeather(context, weather)),
+              ),
               _MiuixSettingsPreference(
                 startAction: _settingsIconBadge(
                   MiuixIcons.extended.byName('location')!,
@@ -54,7 +77,9 @@ class _WeatherSettingsScreen extends StatelessWidget {
                 title: l10n.weatherCityLabel,
                 endActions: [
                   Text(
-                    weather?.location?.name ?? l10n.weatherCityNotSet,
+                    // displayName 而不是 name：定位来的地点带区级，显示「杭州市 ·
+                    // 拱墅区」；手动搜索的没有区级，就只显示市名。
+                    weather?.location?.displayName ?? l10n.weatherCityNotSet,
                     style: HyperosTypography.listDetail(context),
                   ),
                 ],
@@ -93,4 +118,20 @@ class _WeatherSettingsScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 一键定位。成功后**留在原地**——那一行的尾随值已经变成新地点，本身就是反馈，
+/// 再弹一次是噪音；失败才提示。
+Future<void> _locateWeather(BuildContext context, WeatherProvider weather) async {
+  // l10n 必须在 await 之前取：await 之后 context 可能已失效。
+  final l10n = AppLocalizations.of(context)!;
+  final failure = await weather.locateCurrentPosition();
+  if (failure == null || !context.mounted) {
+    return;
+  }
+  showAppToast(
+    context,
+    message: WeatherLocationFailureLocalizer.message(l10n, failure),
+    kind: AppToastKind.warning,
+  );
 }
