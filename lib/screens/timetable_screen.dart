@@ -399,6 +399,13 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// ScrollEnd 清掉；弹道（dragDetails == null）不写，免得松手后的回弹被当成"拉"。
   bool _homePullGestureStartedAtTop = false;
 
+  /// 本次指针位移事件开始时下拉是否还开着（决定这一段位移要不要冻住滚动）。
+  ///
+  /// 由 [_buildHomePullQuickImportSurface] 的原始指针监听写入 / 清空，
+  /// 被 [_HomePullFreezeScrollPhysics] 读取。存在这个"事件开始时"的快照，
+  /// 是因为原始监听与滚动体处理的是同一个事件、且有先后顺序：见写入处的说明。
+  bool _homePullFrozeScrollForEvent = false;
+
   // Raw finger travel (clamped); visual offset = damped(touch/range)*range.
   double _homePullTouchDistance = 0;
 
@@ -2985,6 +2992,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 顶部」就打开下拉 → 提前触发快捷导入（更新）。有余量的场景统一交给
     // 上方的 NotificationListener / OverscrollNotification（自带 atTop
     // 位置判定 + 手势起点是否在顶部的判定，见 _homePullGestureStartedAtTop）。
+    // 两种驱动二选一，避免同一段手指位移被计两次：
+    // - 无纵向滚动体（自适应周课表 + 经典形态）：探测器自己看原始指针；
+    // - 有纵向滚动体：打开仍由上面的 Overscroll 通知驱动（自带 atTop +
+    //   手势起点判定），一旦打开，纵向滚动被 [_HomePullFreezeScrollPhysics]
+    //   冻住，改由原始指针收放——冻结后不再产生滚动通知，手指上移的"收"
+    //   只有这里收得到。此前是"边收边让列表滚"，用户读作"想取消却把页面
+    //   滚上去了"。
     if (settings.timetableAutoFitSectionHeight &&
         !_isDayView &&
         _glassDockContentScrollInset(settings) <= 0) {
@@ -2993,6 +3007,25 @@ class _TimetableScreenState extends State<TimetableScreen>
         onPullUpdate: _updateHomePullDragDistance,
         onPullEnd: _finishHomePullDrag,
         onPullCancel: _cancelHomePullDrag,
+        child: surface,
+      );
+    } else {
+      surface = Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) => _homePullFrozeScrollForEvent = false,
+        onPointerUp: (_) => _homePullFrozeScrollForEvent = false,
+        onPointerCancel: (_) => _homePullFrozeScrollForEvent = false,
+        onPointerMove: (event) {
+          // 冻结判定必须用**本事件开始时**的下拉状态：原始指针监听先于滚动体
+          // 收到同一事件，用实时值的话，手指上移会先把下拉收到 0，紧接着
+          // 滚动体查到的就是"下拉已关"→ 列表照滚（正是要拦的那一下）。
+          final open = _homePullDragDistance > 0 || _homePullTouchDistance > 0;
+          _homePullFrozeScrollForEvent = open;
+          if (!open) {
+            return;
+          }
+          _updateHomePullDragDistance(event.delta.dy);
+        },
         child: surface,
       );
     }
@@ -3154,6 +3187,14 @@ class _TimetableScreenState extends State<TimetableScreen>
       ),
     );
   }
+
+  /// 首页纵向滚动体统一使用的 physics：下拉开着时冻结（见
+  /// [_HomePullFreezeScrollPhysics]）。周课表与日课表都用它，"回拉取消"
+  /// 的手感两处一致；runtimeType 恒定，不会中途重建 ScrollPosition。
+  ScrollPhysics get _homePullVerticalPhysics => _HomePullFreezeScrollPhysics(
+    isFrozen: () => _homePullFrozeScrollForEvent,
+    parent: const AlwaysScrollableScrollPhysics(),
+  );
 
   void _updateHomePullDragDistance(double deltaDy) {
     if (_isHomePullQuickImportRunning) {
@@ -3613,9 +3654,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       weekGrid = SingleChildScrollView(
         key: PageStorageKey<String>('week-scroll-$week'),
         // Explicit clamp: do not inherit HyperOS rubber-band here.
-        physics: const ClampingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
+        // 下拉开着时冻结纵向滚动（见 _HomePullFreezeScrollPhysics）：
+        // 回拉取消只收下拉，不把列表一起滚走。
+        physics: _homePullVerticalPhysics,
         child: Padding(
           padding: EdgeInsets.only(bottom: weekGridScrollRelief),
           child: grid,
@@ -3626,9 +3667,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     } else {
       weekGrid = SingleChildScrollView(
         key: PageStorageKey<String>('week-scroll-$week'),
-        physics: const ClampingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
+        // 下拉开着时冻结纵向滚动（见 _HomePullFreezeScrollPhysics）：
+        // 回拉取消只收下拉，不把列表一起滚走。
+        physics: _homePullVerticalPhysics,
         child: grid,
       );
     }
@@ -4901,9 +4942,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     final agendaList = ListView.separated(
       key: PageStorageKey<String>('day-agenda-$week-$dayOfWeek'),
       padding: EdgeInsets.fromLTRB(14, 0, 14, bottomContentInset),
-      physics: const ClampingScrollPhysics(
-        parent: AlwaysScrollableScrollPhysics(),
-      ),
+      // 下拉开着时冻结纵向滚动（见 _HomePullFreezeScrollPhysics）：
+      // 回拉取消只收下拉，不把列表一起滚走。
+      physics: _homePullVerticalPhysics,
       itemCount: agendaItems.length,
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, itemIndex) {
@@ -9965,6 +10006,39 @@ class _DayAgendaPalette {
     required this.fillColor,
     required this.foregroundColor,
   });
+}
+
+/// 首页纵向滚动体的 physics：下拉开着时把用户位移整个吃掉。
+///
+/// 「回拉取消」的手感要求：下拉还没收回时手指上移应该是**把下拉收回去**，
+/// 而不是让列表跟着滚——两者同时发生，读起来就是"我想取消，页面却被滚上去
+/// 了"。所以下拉开着期间 `applyPhysicsToUserOffset` 返回 0（列表冻住），等
+/// 下拉收到 0 再恢复 1:1，同一次手势接着滚是自然的。
+///
+/// 必须**常驻安装**：`Scrollable._shouldUpdatePosition` 按 physics 的
+/// runtimeType 判断要不要重建 ScrollPosition，运行中换类型会重建 position
+/// 并当场终结手势。这里只让闭包读状态，类型的 runtimeType 恒定不变。
+class _HomePullFreezeScrollPhysics extends ClampingScrollPhysics {
+  const _HomePullFreezeScrollPhysics({required this.isFrozen, super.parent});
+
+  /// 下拉是否还开着（开着就冻结纵向滚动）。
+  final bool Function() isFrozen;
+
+  @override
+  _HomePullFreezeScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return _HomePullFreezeScrollPhysics(
+      isFrozen: isFrozen,
+      parent: buildParent(ancestor),
+    );
+  }
+
+  @override
+  double applyPhysicsToUserOffset(ScrollMetrics position, double offset) {
+    if (isFrozen()) {
+      return 0;
+    }
+    return super.applyPhysicsToUserOffset(position, offset);
+  }
 }
 
 /// Home timetable only: clamping scroll, no HyperOS rubber-band overscroll.

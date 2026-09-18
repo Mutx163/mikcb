@@ -81,6 +81,50 @@ void main() {
   /// 当前周（第 1 周）的纵向周课表滚动视图。
   Finder weekScroll() => find.byKey(const PageStorageKey<String>('week-scroll-1'));
 
+  /// 周课表纵向滚动位置（测试里玻璃余量 62px，滚走一眼看得出）。
+  double weekScrollPixels(WidgetTester tester) {
+    return tester
+        .state<ScrollableState>(
+          find.descendant(of: weekScroll(), matching: find.byType(Scrollable)),
+        )
+        .position
+        .pixels;
+  }
+
+  testWidgets('玻璃坞+自适应：下拉开着时手指上移只收下拉，不把列表滚走', (tester) async {
+    await pumpHome(tester: tester, form: HomeNavigationForm.glassDock);
+    expect(weekScroll(), findsOneWidget);
+    expect(weekScrollPixels(tester), 0);
+
+    final gesture = await tester.startGesture(tester.getCenter(weekScroll()));
+    // 先过 touch slop，再真正下拉：`DragStartBehavior.start` 会把 slop 那段
+    // 吃掉，一次 moveBy 是拉不出药丸的（tester.drag 内部就是这么拆两步的）。
+    await gesture.moveBy(const Offset(0, 30));
+    await gesture.moveBy(const Offset(0, 80));
+    await tester.pump();
+    expect(
+      find.byType(MiuixCircularProgressIndicator),
+      findsOneWidget,
+      reason: '下拉已打开',
+    );
+    expect(weekScrollPixels(tester), 0, reason: '下拉期间列表本就不动');
+
+    // 手指上移 = 想取消：应当只把下拉收回去。修复前这段位移会同时把列表
+    // 滚走（读到 62），用户看到的是"我想取消，页面却被滚上去了"。
+    await gesture.moveBy(const Offset(0, -150));
+    await tester.pump();
+    expect(
+      find.byType(MiuixCircularProgressIndicator),
+      findsNothing,
+      reason: '上移应收起下拉药丸',
+    );
+    expect(weekScrollPixels(tester), 0, reason: '收起下拉时列表不能被滚走');
+
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('玻璃坞+自适应：网格未回顶部的小幅下拉不应触发快捷导入', (
     tester,
   ) async {
