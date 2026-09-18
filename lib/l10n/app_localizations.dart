@@ -19885,7 +19885,7 @@ abstract class AppLocalizations {
   /// No description provided for @weatherEnableSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'每节课的卡片上显示该时段的天气、温度与降水概率'**
+  /// **'显示该时段的天气、温度与降水概率'**
   String get weatherEnableSubtitle;
 
   /// No description provided for @weatherCityLabel.
@@ -19953,6 +19953,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'天气数据来自 Open-Meteo.com'**
   String get weatherAttribution;
+
+  /// No description provided for @weatherSectionDisplayTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示'**
+  String get weatherSectionDisplayTitle;
+
+  /// No description provided for @weatherSectionSourceTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'数据来源'**
+  String get weatherSectionSourceTitle;
 }
 
 class _AppLocalizationsDelegate

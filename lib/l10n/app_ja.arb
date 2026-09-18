@@ -6417,7 +6417,7 @@
   "weatherSettingsEntryTitle": "授業カードの天気",
   "weatherSettingsTitle": "天気",
   "weatherEnableTitle": "日表示に天気を表示",
-  "weatherEnableSubtitle": "各授業カードにその時間帯の天気・気温・降水確率を表示します",
+  "weatherEnableSubtitle": "その時間帯の天気・気温・降水確率を表示",
   "weatherCityLabel": "都市",
   "weatherCityNotSet": "未設定",
   "weatherCityPickerTitle": "都市を選択",
@@ -6428,5 +6428,7 @@
   "weatherStatusFailed": "前回の更新に失敗しました",
   "weatherRetryAction": "再試行",
   "weatherCoverageNote": "予報は今後 16 日分のみです。それより先の日付では天気を表示しません。",
-  "weatherAttribution": "天気データ: Open-Meteo.com"
+  "weatherAttribution": "天気データ: Open-Meteo.com",
+  "weatherSectionDisplayTitle": "表示",
+  "weatherSectionSourceTitle": "データ提供元"
 }

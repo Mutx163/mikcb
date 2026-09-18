@@ -6421,7 +6421,7 @@
   "weatherSettingsEntryTitle": "Weather on course cards",
   "weatherSettingsTitle": "Weather",
   "weatherEnableTitle": "Show weather in day view",
-  "weatherEnableSubtitle": "Show that period's weather, temperature and rain chance on each course card",
+  "weatherEnableSubtitle": "Weather, temperature and rain chance for each class period",
   "weatherCityLabel": "City",
   "weatherCityNotSet": "Not set",
   "weatherCityPickerTitle": "Choose a city",
@@ -6432,5 +6432,7 @@
   "weatherStatusFailed": "Last update failed",
   "weatherRetryAction": "Retry",
   "weatherCoverageNote": "Forecasts only cover the next 16 days; weather is hidden beyond that.",
-  "weatherAttribution": "Weather data from Open-Meteo.com"
+  "weatherAttribution": "Weather data from Open-Meteo.com",
+  "weatherSectionDisplayTitle": "Display",
+  "weatherSectionSourceTitle": "Data source"
 }

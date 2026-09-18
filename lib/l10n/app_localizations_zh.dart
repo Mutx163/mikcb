@@ -10919,7 +10919,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherEnableTitle => '在日视图显示天气';
 
   @override
-  String get weatherEnableSubtitle => '每节课的卡片上显示该时段的天气、温度与降水概率';
+  String get weatherEnableSubtitle => '显示该时段的天气、温度与降水概率';
 
   @override
   String get weatherCityLabel => '城市';
@@ -10953,6 +10953,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get weatherAttribution => '天气数据来自 Open-Meteo.com';
+
+  @override
+  String get weatherSectionDisplayTitle => '显示';
+
+  @override
+  String get weatherSectionSourceTitle => '数据来源';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -21914,7 +21920,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get weatherEnableTitle => '在日檢視顯示天氣';
 
   @override
-  String get weatherEnableSubtitle => '每節課的卡片上顯示該時段的天氣、溫度與降水概率';
+  String get weatherEnableSubtitle => '顯示該時段的天氣、溫度與降水概率';
 
   @override
   String get weatherCityLabel => '城市';
@@ -21948,6 +21954,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get weatherAttribution => '天氣資料來自 Open-Meteo.com';
+
+  @override
+  String get weatherSectionDisplayTitle => '顯示';
+
+  @override
+  String get weatherSectionSourceTitle => '資料來源';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -32909,7 +32921,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get weatherEnableTitle => '在日檢視顯示天氣';
 
   @override
-  String get weatherEnableSubtitle => '每節課的卡片上顯示該時段的天氣、溫度與降水機率';
+  String get weatherEnableSubtitle => '顯示該時段的天氣、溫度與降水機率';
 
   @override
   String get weatherCityLabel => '城市';
@@ -32943,4 +32955,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get weatherAttribution => '天氣資料來自 Open-Meteo.com';
+
+  @override
+  String get weatherSectionDisplayTitle => '顯示';
+
+  @override
+  String get weatherSectionSourceTitle => '資料來源';
 }

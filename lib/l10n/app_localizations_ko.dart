@@ -11272,7 +11272,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get weatherEnableTitle => '일간 보기에 날씨 표시';
 
   @override
-  String get weatherEnableSubtitle => '각 수업 카드에 해당 시간대의 날씨, 기온, 강수 확률을 표시합니다';
+  String get weatherEnableSubtitle => '해당 시간대의 날씨, 기온, 강수 확률을 표시';
 
   @override
   String get weatherCityLabel => '도시';
@@ -11307,4 +11307,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get weatherAttribution => '날씨 데이터: Open-Meteo.com';
+
+  @override
+  String get weatherSectionDisplayTitle => '표시';
+
+  @override
+  String get weatherSectionSourceTitle => '데이터 출처';
 }

@@ -6418,7 +6418,7 @@
   "weatherSettingsEntryTitle": "課程卡天氣",
   "weatherSettingsTitle": "天氣",
   "weatherEnableTitle": "在日檢視顯示天氣",
-  "weatherEnableSubtitle": "每節課的卡片上顯示該時段的天氣、溫度與降水概率",
+  "weatherEnableSubtitle": "顯示該時段的天氣、溫度與降水概率",
   "weatherCityLabel": "城市",
   "weatherCityNotSet": "未設定",
   "weatherCityPickerTitle": "選擇城市",
@@ -6429,5 +6429,7 @@
   "weatherStatusFailed": "上次更新失敗",
   "weatherRetryAction": "重試",
   "weatherCoverageNote": "預報只涵蓋未來 16 天，更遠的日期不顯示天氣。",
-  "weatherAttribution": "天氣資料來自 Open-Meteo.com"
+  "weatherAttribution": "天氣資料來自 Open-Meteo.com",
+  "weatherSectionDisplayTitle": "顯示",
+  "weatherSectionSourceTitle": "資料來源"
 }

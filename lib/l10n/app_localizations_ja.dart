@@ -11226,7 +11226,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get weatherEnableTitle => '日表示に天気を表示';
 
   @override
-  String get weatherEnableSubtitle => '各授業カードにその時間帯の天気・気温・降水確率を表示します';
+  String get weatherEnableSubtitle => 'その時間帯の天気・気温・降水確率を表示';
 
   @override
   String get weatherCityLabel => '都市';
@@ -11260,4 +11260,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get weatherAttribution => '天気データ: Open-Meteo.com';
+
+  @override
+  String get weatherSectionDisplayTitle => '表示';
+
+  @override
+  String get weatherSectionSourceTitle => 'データ提供元';
 }

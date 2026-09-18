@@ -11558,7 +11558,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weatherEnableSubtitle =>
-      'Show that period\'s weather, temperature and rain chance on each course card';
+      'Weather, temperature and rain chance for each class period';
 
   @override
   String get weatherCityLabel => 'City';
@@ -11593,4 +11593,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weatherAttribution => 'Weather data from Open-Meteo.com';
+
+  @override
+  String get weatherSectionDisplayTitle => 'Display';
+
+  @override
+  String get weatherSectionSourceTitle => 'Data source';
 }

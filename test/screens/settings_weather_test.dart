@@ -217,6 +217,88 @@ void main() {
     expect(switchRect.top, greaterThanOrEqualTo(lowestTitleBottom - 1));
   });
 
+  testWidgets('两个区块各有区块标题，且之间留出区块间距', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    await pumpSettings(tester);
+
+    final homeList = find.byType(HyperosListView).first;
+    await tester.scrollUntilVisible(
+      find.text(l10n.weatherSettingsEntryTitle),
+      200,
+      scrollable: find.descendant(
+        of: homeList,
+        matching: find.byType(Scrollable),
+      ).first,
+    );
+    await tester.tap(find.text(l10n.weatherSettingsEntryTitle));
+    await _pumpUntilSettled(tester);
+
+    // IA 规范不许无名分组：每个区块都要有自己的标题。
+    expect(find.text(l10n.weatherSectionDisplayTitle), findsOneWidget);
+    expect(find.text(l10n.weatherSectionSourceTitle), findsOneWidget);
+
+    // 只断言「标题存在」还不够——当初两块卡片就是贴在一起的。这里量间距：
+    // 相邻两组之间必须留出至少一个 HyperosSectionGap。
+    final subpageList = find.byType(HyperosListView).last;
+    final groups = find
+        .descendant(of: subpageList, matching: find.byType(HyperosListGroup))
+        .evaluate()
+        .toList();
+    expect(groups.length, 2, reason: '显示 / 数据来源 两个区块');
+    final firstBottom = tester
+        .getRect(
+          find
+              .descendant(
+                of: subpageList,
+                matching: find.byType(HyperosListGroup),
+              )
+              .at(0),
+        )
+        .bottom;
+    final secondTop = tester
+        .getRect(
+          find
+              .descendant(
+                of: subpageList,
+                matching: find.byType(HyperosListGroup),
+              )
+              .at(1),
+        )
+        .top;
+    expect(
+      secondTop - firstBottom,
+      greaterThanOrEqualTo(HyperosTokens.sectionGap - 1),
+    );
+  });
+
+  testWidgets('说明文字挂在所属区块之后（覆盖范围在显示组下、署名在数据来源组下）', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    await pumpSettings(tester);
+
+    final homeList = find.byType(HyperosListView).first;
+    await tester.scrollUntilVisible(
+      find.text(l10n.weatherSettingsEntryTitle),
+      200,
+      scrollable: find.descendant(
+        of: homeList,
+        matching: find.byType(Scrollable),
+      ).first,
+    );
+    await tester.tap(find.text(l10n.weatherSettingsEntryTitle));
+    await _pumpUntilSettled(tester);
+
+    final coverageY = tester.getRect(find.text(l10n.weatherCoverageNote)).top;
+    final sourceLabelY = tester
+        .getRect(find.text(l10n.weatherSectionSourceTitle))
+        .top;
+    final attributionY = tester.getRect(find.text(l10n.weatherAttribution)).top;
+
+    // 覆盖范围说明在「显示」组与「数据来源」组标题之间。
+    expect(coverageY, lessThan(sourceLabelY));
+    // 署名在「数据来源」组标题之后。
+    expect(attributionY, greaterThan(sourceLabelY));
+  });
+
   testWidgets('子页里拨动开关会写进 WeatherProvider', (tester) async {
     final l10n = lookupAppLocalizations(const Locale('zh'));
     final weather = await pumpSettings(tester);

@@ -6417,7 +6417,7 @@
   "weatherSettingsEntryTitle": "수업 카드 날씨",
   "weatherSettingsTitle": "날씨",
   "weatherEnableTitle": "일간 보기에 날씨 표시",
-  "weatherEnableSubtitle": "각 수업 카드에 해당 시간대의 날씨, 기온, 강수 확률을 표시합니다",
+  "weatherEnableSubtitle": "해당 시간대의 날씨, 기온, 강수 확률을 표시",
   "weatherCityLabel": "도시",
   "weatherCityNotSet": "설정 안 됨",
   "weatherCityPickerTitle": "도시 선택",
@@ -6428,5 +6428,7 @@
   "weatherStatusFailed": "지난 업데이트 실패",
   "weatherRetryAction": "다시 시도",
   "weatherCoverageNote": "예보는 앞으로 16일까지만 제공되며, 그 이후 날짜에는 날씨를 표시하지 않습니다.",
-  "weatherAttribution": "날씨 데이터: Open-Meteo.com"
+  "weatherAttribution": "날씨 데이터: Open-Meteo.com",
+  "weatherSectionDisplayTitle": "표시",
+  "weatherSectionSourceTitle": "데이터 출처"
 }
