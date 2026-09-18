@@ -969,8 +969,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get applicableScenarioTitle => '适用场景';
 
   @override
-  String get icsScenarioIntro =>
-      '如果你已经能在 WakeUp 等课表应用里导入教务系统课程，再导出为 .ics 文件，这条路最稳';
+  String get icsScenarioIntro => '如果你已经能在其他课表应用里导入教务系统课程，再导出为 .ics 文件，这条路最稳';
 
   @override
   String stepLabel(String step) {
@@ -1936,7 +1935,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aboutImportMigrationBullet2 =>
-      '如果你的学校暂时还没适配，仍然可以先在 WakeUp 等课表应用里导入课程，再导出为日历格式，然后在本应用导入';
+      '如果你的学校暂时还没适配，仍然可以先在其他课表应用里导入课程，再导出为日历格式，然后在本应用导入';
 
   @override
   String get aboutImportMigrationBullet3 =>
@@ -3497,7 +3496,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get guideImportMethodStep2 =>
-      '如果你的学校暂时没有适配，可以先在 WakeUp 等课表应用里导入教务系统课程，再导出日历格式，最后回到本应用导入。';
+      '如果你的学校暂时没有适配，可以先在其他课表应用里导入教务系统课程，再导出日历格式，最后回到本应用导入。';
 
   @override
   String get guideImportMethodStep3 =>
@@ -11960,8 +11959,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get applicableScenarioTitle => '適用場景';
 
   @override
-  String get icsScenarioIntro =>
-      '如果你已經能在 WakeUp 等課表應用裡匯入教務系統課程，再匯出為 .ics 檔案，這條路最穩';
+  String get icsScenarioIntro => '如果你已經能在其他課表應用裡匯入教務系統課程，再匯出為 .ics 檔案，這條路最穩';
 
   @override
   String stepLabel(String step) {
@@ -12927,7 +12925,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get aboutImportMigrationBullet2 =>
-      '如果你的學校暫時還沒有適配，仍然可以先在 WakeUp 等課表應用裡匯入課程，再匯出為日歷格式，然後在本應用匯入';
+      '如果你的學校暫時還沒有適配，仍然可以先在其他課表應用裡匯入課程，再匯出為日歷格式，然後在本應用匯入';
 
   @override
   String get aboutImportMigrationBullet3 =>
@@ -14488,7 +14486,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get guideImportMethodStep2 =>
-      '如果你的學校暫時没有適配，可以先在 WakeUp 等課表應用裡導入教務系統課程，再導出日歷格式，最後回到本應用導入。';
+      '如果你的學校暫時没有適配，可以先在其他課表應用裡導入教務系統課程，再導出日歷格式，最後回到本應用導入。';
 
   @override
   String get guideImportMethodStep3 =>
@@ -22995,8 +22993,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get applicableScenarioTitle => '適用場景';
 
   @override
-  String get icsScenarioIntro =>
-      '如果你已經能在 WakeUp 等課表應用裡匯入教務系統課程，再匯出為 .ics 檔案，這條路最穩';
+  String get icsScenarioIntro => '如果你已經能在其他課表應用裡匯入教務系統課程，再匯出為 .ics 檔案，這條路最穩';
 
   @override
   String stepLabel(String step) {
@@ -23962,7 +23959,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get aboutImportMigrationBullet2 =>
-      '如果你的學校暫時還沒有適配，仍然可以先在 WakeUp 等課表應用裡匯入課程，再匯出為日歷格式，然後在本應用匯入';
+      '如果你的學校暫時還沒有適配，仍然可以先在其他課表應用裡匯入課程，再匯出為日歷格式，然後在本應用匯入';
 
   @override
   String get aboutImportMigrationBullet3 =>
@@ -25523,7 +25520,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get guideImportMethodStep2 =>
-      '如果你的学校暫時没有適配，可以先在 WakeUp 等課表應用裡導入教務系統課程，再導出日歷格式，最後回到本應用導入。';
+      '如果你的学校暫時没有適配，可以先在其他課表應用裡導入教務系統課程，再導出日歷格式，最後回到本應用導入。';
 
   @override
   String get guideImportMethodStep3 =>

@@ -1041,7 +1041,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get icsScenarioIntro =>
-      'If you can already import courses into WakeUp or similar apps and export them as an .ics file, this path is the most stable';
+      'If you can already import courses into another timetable app and export them as an .ics file, this path is the most stable';
 
   @override
   String stepLabel(String step) {
@@ -2056,7 +2056,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutImportMigrationBullet2 =>
-      'If your school is not adapted yet, you can still import into WakeUp or a similar app first, export as a calendar file, and then import it here.';
+      'If your school is not adapted yet, you can still import into another timetable app first, export as a calendar file, and then import it here.';
 
   @override
   String get aboutImportMigrationBullet3 =>
@@ -3724,7 +3724,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideImportMethodStep2 =>
-      'If your school is not supported yet, you can first import courses into WakeUp or another timetable app, export them as a calendar file, and then import them into this app.';
+      'If your school is not supported yet, you can first import courses into another timetable app, export them as a calendar file, and then import them into this app.';
 
   @override
   String get guideImportMethodStep3 =>

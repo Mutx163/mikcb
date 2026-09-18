@@ -323,7 +323,7 @@
   "spreadsheetFormatUnrecognized": "未識別表格格式，請使用輕嶼課表模板；也相容 WakeUp 等同列格式",
   "icsImportTitle": ".ics 日歷匯入",
   "applicableScenarioTitle": "適用場景",
-  "icsScenarioIntro": "如果你已經能在 WakeUp 等課表應用裡匯入教務系統課程，再匯出為 .ics 檔案，這條路最穩",
+  "icsScenarioIntro": "如果你已經能在其他課表應用裡匯入教務系統課程，再匯出為 .ics 檔案，這條路最穩",
   "stepLabel": "步骤 {step}",
   "@stepLabel": {
     "placeholders": {
@@ -951,7 +951,7 @@
   "aboutImportMigrationTitle": "匯入與遷移",
   "aboutImportMigrationSubtitle": "目前匯入方式、備份還原和遷移建議",
   "aboutImportMigrationBullet1": "目前版本已經支持適配學校的教務系統網頁登錄匯入；進入“匯入課程 > 教務系統匯入”後選擇學校和適配器即可",
-  "aboutImportMigrationBullet2": "如果你的學校暫時還沒有適配，仍然可以先在 WakeUp 等課表應用裡匯入課程，再匯出為日歷格式，然後在本應用匯入",
+  "aboutImportMigrationBullet2": "如果你的學校暫時還沒有適配，仍然可以先在其他課表應用裡匯入課程，再匯出為日歷格式，然後在本應用匯入",
   "aboutImportMigrationBullet3": "如果其他人已經在用本應用，也可以直接讓對方匯出完整備份檔案，你在“資料備份與遷移”裡匯入即可直接還原",
   "aboutImportMigrationBullet4": "如果你會抓包、網頁偵錯或 JavaScript，也歡迎去 qingyu_warehouse 參與教務適配補充",
   "aboutContributorsTitle": "代碼貢獻者",
@@ -1769,7 +1769,7 @@
   "guideImportMethodsTitle": "課表導入方式",
   "guideImportMethodsSubtitle": "目前版本已经支持部分学校的教務系統網頁登入導入；如果你的学校還没適配，也還有其他遷移方式",
   "guideImportMethodStep1": "優先進入“導入課程 > 教務系統導入”，选擇学校和適配器後，直接在應用內打開教務網頁完成導入。",
-  "guideImportMethodStep2": "如果你的学校暫時没有適配，可以先在 WakeUp 等課表應用裡導入教務系統課程，再導出日歷格式，最後回到本應用導入。",
+  "guideImportMethodStep2": "如果你的学校暫時没有適配，可以先在其他課表應用裡導入教務系統課程，再導出日歷格式，最後回到本應用導入。",
   "guideImportMethodStep3": "如果别人已经在用本應用，也可以让对方導出完整備份文件，你直接導入就能恢複課程和設定。",
   "guideImportMethodExtra": "如果你会抓包、網頁偵錯或 JavaScript，也欢迎參與学校教務適配补充，让更多学校能直接導入。",
   "guideFinalTipsTitle": "最後再看這 3 条",

@@ -992,7 +992,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get icsScenarioIntro =>
-      'WakeUp 등 시간표 앱에서 교무 시스템 수업을 가져온 뒤 .ics 파일로 내보낼 수 있다면, 이 방법이 가장 안정적입니다';
+      '다른 시간표 앱에서 교무 시스템 수업을 가져온 뒤 .ics 파일로 내보낼 수 있다면, 이 방법이 가장 안정적입니다';
 
   @override
   String stepLabel(String step) {
@@ -1981,7 +1981,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get aboutImportMigrationBullet2 =>
-      '사용하는 학교가 아직 미대응인 경우, WakeUp 등 시간표 앱에서 수업을 가져온 뒤 캘린더 형식으로 내보내고 본 앱에서 가져올 수 있습니다.';
+      '사용하는 학교가 아직 미대응인 경우, 다른 시간표 앱에서 수업을 가져온 뒤 캘린더 형식으로 내보내고 본 앱에서 가져올 수 있습니다.';
 
   @override
   String get aboutImportMigrationBullet3 =>
@@ -3580,7 +3580,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get guideImportMethodStep2 =>
-      '사용하는 학교가 아직 미대응인 경우, WakeUp 등 시간표 앱에서 수업을 가져온 뒤 캘린더 형식으로 내보내고 본 앱에서 가져오세요.';
+      '사용하는 학교가 아직 미대응인 경우, 다른 시간표 앱에서 수업을 가져온 뒤 캘린더 형식으로 내보내고 본 앱에서 가져오세요.';
 
   @override
   String get guideImportMethodStep3 =>

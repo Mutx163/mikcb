@@ -323,7 +323,7 @@
   "spreadsheetFormatUnrecognized": "表形式を認識できません。軽嶼課表テンプレートを使用してください。WakeUpなど同列形式にも対応。",
   "icsImportTitle": ".icsカレンダーインポート",
   "applicableScenarioTitle": "適用シナリオ",
-  "icsScenarioIntro": "WakeUpなどの時間割アプリで教務システムの授業をインポート済みで、.icsファイルにエクスポートできる場合、この方法が最も安定しています",
+  "icsScenarioIntro": "他の時間割アプリで教務システムの授業をインポート済みで、.icsファイルにエクスポートできる場合、この方法が最も安定しています",
   "stepLabel": "ステップ{step}",
   "@stepLabel": {
     "placeholders": {
@@ -952,7 +952,7 @@
   "aboutImportMigrationTitle": "インポートと移行",
   "aboutImportMigrationSubtitle": "現在のインポート方法、バックアップ復元と移行提案",
   "aboutImportMigrationBullet1": "現在のバージョンは対応学校の教務システムWebログインインポートに対応。「授業インポート > 教務システムインポート」から学校とアダプタを選択してください。",
-  "aboutImportMigrationBullet2": "お使いの学校がまだ未対応の場合、WakeUpなどの時間割アプリで授業をインポートし、カレンダー形式でエクスポートしてから本アプリでインポート可能。",
+  "aboutImportMigrationBullet2": "お使いの学校がまだ未対応の場合、他の時間割アプリで授業をインポートし、カレンダー形式でエクスポートしてから本アプリでインポート可能。",
   "aboutImportMigrationBullet3": "他のユーザーが本アプリを使用している場合、完全バックアップファイルをエクスポートしてもらい、「データバックアップと移行」からインポートして復元可能。",
   "aboutImportMigrationBullet4": "パケットキャプチャ、Webデバッグ、JavaScriptができる場合は、qingyu_warehouseで教務適応の補充に参加歓迎。",
   "aboutContributorsTitle": "コード貢献者",
@@ -1769,7 +1769,7 @@
   "guideImportMethodsTitle": "時間割インポート方法",
   "guideImportMethodsSubtitle": "現在のバージョンは一部学校の教務システムWebログインインポートに対応，未対応の学校でも他の移行方法があります",
   "guideImportMethodStep1": "まず「授業インポート > 教務システムインポート」から学校とアダプタを選択し、アプリ内で教務Webページを開いてインポート完了。",
-  "guideImportMethodStep2": "お使いの学校がまだ未対応の場合、WakeUpなどの時間割アプリで授業をインポートし、カレンダー形式でエクスポートしてから本アプリでインポート。",
+  "guideImportMethodStep2": "お使いの学校がまだ未対応の場合、他の時間割アプリで授業をインポートし、カレンダー形式でエクスポートしてから本アプリでインポート。",
   "guideImportMethodStep3": "他のユーザーが本アプリを使用している場合、完全バックアップファイルをエクスポートしてもらい、直接インポートで授業と設定を復元。",
   "guideImportMethodExtra": "パケットキャプチャ、Webデバッグ、JavaScriptができる場合は、学校教務適応の補充に参加して、より多くの学校が直接インポートできるように歓迎。",
   "guideFinalTipsTitle": "最後にこの3点を確認",

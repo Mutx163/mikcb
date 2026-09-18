@@ -456,7 +456,7 @@
   "spreadsheetFormatUnrecognized": "Unrecognized format. Please use the mikcb template; WakeUp-like column layouts are also supported.",
   "icsImportTitle": ".ics Calendar Import",
   "applicableScenarioTitle": "When to use",
-  "icsScenarioIntro": "If you can already import courses into WakeUp or similar apps and export them as an .ics file, this path is the most stable",
+  "icsScenarioIntro": "If you can already import courses into another timetable app and export them as an .ics file, this path is the most stable",
   "stepLabel": "Step {step}",
   "@stepLabel": {
     "placeholders": {
@@ -1054,7 +1054,7 @@
   "aboutImportMigrationTitle": "Import & Migration",
   "aboutImportMigrationSubtitle": "Current import methods, backup restore, and migration advice",
   "aboutImportMigrationBullet1": "The current version already supports academic system web import for adapted schools; enter Import Courses > Academic System Import, then choose a school and adapter.",
-  "aboutImportMigrationBullet2": "If your school is not adapted yet, you can still import into WakeUp or a similar app first, export as a calendar file, and then import it here.",
+  "aboutImportMigrationBullet2": "If your school is not adapted yet, you can still import into another timetable app first, export as a calendar file, and then import it here.",
   "aboutImportMigrationBullet3": "If someone else is already using this app, they can export a full backup and you can restore it directly in Backup & Migration.",
   "aboutImportMigrationBullet4": "If you know packet capture, web debugging, or JavaScript, you are welcome to contribute adapters in qingyu_warehouse.",
   "aboutContributorsTitle": "Contributors",
@@ -1954,7 +1954,7 @@
   "guideImportMethodsTitle": "Timetable import methods",
   "guideImportMethodsSubtitle": "This version already supports web login import for some school systems. If your school is not supported yet, there are still other migration options",
   "guideImportMethodStep1": "Go to \"Import Courses > Academic System Import\" first, choose your school and adapter, then complete the import directly in the in-app web page.",
-  "guideImportMethodStep2": "If your school is not supported yet, you can first import courses into WakeUp or another timetable app, export them as a calendar file, and then import them into this app.",
+  "guideImportMethodStep2": "If your school is not supported yet, you can first import courses into another timetable app, export them as a calendar file, and then import them into this app.",
   "guideImportMethodStep3": "If someone else is already using this app, they can export a full backup and you can import it directly to restore courses and settings.",
   "guideImportMethodExtra": "If you know packet capture, web debugging, or JavaScript, you are also welcome to help add school adapters so more schools can import directly.",
   "guideFinalTipsTitle": "Three final tips",

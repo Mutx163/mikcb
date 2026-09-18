@@ -1907,7 +1907,7 @@ abstract class AppLocalizations {
   /// No description provided for @icsScenarioIntro.
   ///
   /// In zh, this message translates to:
-  /// **'如果你已经能在 WakeUp 等课表应用里导入教务系统课程，再导出为 .ics 文件，这条路最稳'**
+  /// **'如果你已经能在其他课表应用里导入教务系统课程，再导出为 .ics 文件，这条路最稳'**
   String get icsScenarioIntro;
 
   /// No description provided for @stepLabel.
@@ -3638,7 +3638,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutImportMigrationBullet2.
   ///
   /// In zh, this message translates to:
-  /// **'如果你的学校暂时还没适配，仍然可以先在 WakeUp 等课表应用里导入课程，再导出为日历格式，然后在本应用导入'**
+  /// **'如果你的学校暂时还没适配，仍然可以先在其他课表应用里导入课程，再导出为日历格式，然后在本应用导入'**
   String get aboutImportMigrationBullet2;
 
   /// No description provided for @aboutImportMigrationBullet3.
@@ -6504,7 +6504,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideImportMethodStep2.
   ///
   /// In zh, this message translates to:
-  /// **'如果你的学校暂时没有适配，可以先在 WakeUp 等课表应用里导入教务系统课程，再导出日历格式，最后回到本应用导入。'**
+  /// **'如果你的学校暂时没有适配，可以先在其他课表应用里导入教务系统课程，再导出日历格式，最后回到本应用导入。'**
   String get guideImportMethodStep2;
 
   /// No description provided for @guideImportMethodStep3.

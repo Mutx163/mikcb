@@ -323,7 +323,7 @@
   "spreadsheetFormatUnrecognized": "표 형식을 인식하지 못했습니다. 경량섬 시간표 템플릿을 사용하세요. WakeUp 등 동일 열 형식도 지원합니다.",
   "icsImportTitle": ".ics 캘린더 가져오기",
   "applicableScenarioTitle": "적용 시나리오",
-  "icsScenarioIntro": "WakeUp 등 시간표 앱에서 교무 시스템 수업을 가져온 뒤 .ics 파일로 내보낼 수 있다면, 이 방법이 가장 안정적입니다",
+  "icsScenarioIntro": "다른 시간표 앱에서 교무 시스템 수업을 가져온 뒤 .ics 파일로 내보낼 수 있다면, 이 방법이 가장 안정적입니다",
   "stepLabel": "단계 {step}",
   "@stepLabel": {
     "placeholders": {
@@ -952,7 +952,7 @@
   "aboutImportMigrationTitle": "가져오기 및 마이그레이션",
   "aboutImportMigrationSubtitle": "현재 가져오기 방법, 백업 복원 및 마이그레이션 권장사항",
   "aboutImportMigrationBullet1": "현재 버전은 대응 학교의 교무 시스템 웹 로그인 가져오기를 지원합니다. '수업 가져오기 > 교무 시스템 가져오기'에서 학교와 어댑터를 선택하세요.",
-  "aboutImportMigrationBullet2": "사용하는 학교가 아직 미대응인 경우, WakeUp 등 시간표 앱에서 수업을 가져온 뒤 캘린더 형식으로 내보내고 본 앱에서 가져올 수 있습니다.",
+  "aboutImportMigrationBullet2": "사용하는 학교가 아직 미대응인 경우, 다른 시간표 앱에서 수업을 가져온 뒤 캘린더 형식으로 내보내고 본 앱에서 가져올 수 있습니다.",
   "aboutImportMigrationBullet3": "다른 사용자가 이미 본 앱을 사용 중인 경우, 전체 백업 파일을 내보내어 '데이터 백업 및 마이그레이션'에서 가져오면 바로 복원됩니다.",
   "aboutImportMigrationBullet4": "패킷 캡처, 웹 디버깅, JavaScript를 할 수 있다면, qingyu_warehouse에서 교무 적응 보충에 참여해 주세요.",
   "aboutContributorsTitle": "코드 기여자",
@@ -1769,7 +1769,7 @@
   "guideImportMethodsTitle": "시간표 가져오기 방법",
   "guideImportMethodsSubtitle": "현재 버전은 일부 학교의 교무 시스템 웹 로그인 가져오기를 지원합니다. 미대응 학교라도 다른 마이그레이션 방법이 있습니다",
   "guideImportMethodStep1": "먼저 '수업 가져오기 > 교무 시스템 가져오기'에서 학교와 어댑터를 선택하고, 앱 내에서 교무 웹페이지를 열어 가져오기를 완료하세요.",
-  "guideImportMethodStep2": "사용하는 학교가 아직 미대응인 경우, WakeUp 등 시간표 앱에서 수업을 가져온 뒤 캘린더 형식으로 내보내고 본 앱에서 가져오세요.",
+  "guideImportMethodStep2": "사용하는 학교가 아직 미대응인 경우, 다른 시간표 앱에서 수업을 가져온 뒤 캘린더 형식으로 내보내고 본 앱에서 가져오세요.",
   "guideImportMethodStep3": "다른 사용자가 이미 본 앱을 사용 중인 경우, 전체 백업 파일을 내보내어 직접 가져오면 수업과 설정을 복원할 수 있습니다.",
   "guideImportMethodExtra": "패킷 캡처, 웹 디버깅, JavaScript를 할 수 있다면, 학교 교무 적응 보충에 참여하여 더 많은 학교가 바로 가져올 수 있도록 해주세요.",
   "guideFinalTipsTitle": "마지막으로 이 3가지를 확인하세요",

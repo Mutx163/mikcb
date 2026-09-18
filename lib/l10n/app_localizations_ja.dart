@@ -992,7 +992,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get icsScenarioIntro =>
-      'WakeUpなどの時間割アプリで教務システムの授業をインポート済みで、.icsファイルにエクスポートできる場合、この方法が最も安定しています';
+      '他の時間割アプリで教務システムの授業をインポート済みで、.icsファイルにエクスポートできる場合、この方法が最も安定しています';
 
   @override
   String stepLabel(String step) {
@@ -1971,7 +1971,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aboutImportMigrationBullet2 =>
-      'お使いの学校がまだ未対応の場合、WakeUpなどの時間割アプリで授業をインポートし、カレンダー形式でエクスポートしてから本アプリでインポート可能。';
+      'お使いの学校がまだ未対応の場合、他の時間割アプリで授業をインポートし、カレンダー形式でエクスポートしてから本アプリでインポート可能。';
 
   @override
   String get aboutImportMigrationBullet3 =>
@@ -3561,7 +3561,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get guideImportMethodStep2 =>
-      'お使いの学校がまだ未対応の場合、WakeUpなどの時間割アプリで授業をインポートし、カレンダー形式でエクスポートしてから本アプリでインポート。';
+      'お使いの学校がまだ未対応の場合、他の時間割アプリで授業をインポートし、カレンダー形式でエクスポートしてから本アプリでインポート。';
 
   @override
   String get guideImportMethodStep3 =>
