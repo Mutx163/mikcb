@@ -266,4 +266,77 @@ void main() {
     await gesture.up();
     await _pumpUntilSettled(tester);
   });
+
+  // 回归：甩到别的天、惯性还没停就点「回今日」，必须真的有反应。
+  // 首版会失败：此时"已落定的选择"还停在今天，_animateDayViewToWeek 的
+  // 「已经在目标那天」判断看的是落定值，于是整调用直接 return，用户读到的
+  // 就是"点了没反应"，随后惯性照旧把画面带到别的天。
+  testWidgets('惯性未停时点回今日也要回到今天', (tester) async {
+    final provider = await createInitializedTestProvider(tester);
+    final today = DateTime.now();
+
+    await tester.runAsync(() async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          semesterStartDate: _startOfCurrentWeek(today),
+          semesterWeekCount: 20,
+          timetableHideWeekends: false,
+        ),
+      );
+      await provider.setCurrentWeek(1);
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+    });
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+    await tester.tap(find.byKey(ValueKey('weekday-header-1-${today.weekday}')));
+    await _pumpTimetableFrame(tester);
+    await _pumpUntilSettled(tester);
+
+    final buttonFinder = find.byKey(const ValueKey('back-to-today-button'));
+    expect(buttonFinder, findsNothing, reason: '起点是今天，先没有这颗钮');
+
+    // 甩向同周内的相邻一天：往周中方向甩，避免跨周。
+    final goForward = today.weekday <= 3;
+    final otherDay = goForward ? today.weekday + 1 : today.weekday - 1;
+    final swipeArea = find.byKey(const ValueKey('day-view-swipe-area'));
+    await tester.fling(
+      swipeArea,
+      Offset(goForward ? -400 : 400, 0),
+      1200,
+    );
+    // 只推进一点点：惯性还在跑，选择尚未落定。
+    await tester.pump(const Duration(milliseconds: 16));
+    await tester.pump(const Duration(milliseconds: 16));
+
+    expect(
+      buttonFinder,
+      findsOneWidget,
+      reason: '甩过页中点后、惯性未停时就该有「回今日」',
+    );
+
+    await tester.tap(buttonFinder);
+    await _pumpUntilSettled(tester);
+
+    expect(
+      find.byKey(ValueKey('timetable-day-view-1-${today.weekday}')),
+      findsOneWidget,
+      reason: '惯性未停时点「回今日」也要回到今天（首版在这里无反应）',
+    );
+    expect(
+      find.byKey(ValueKey('timetable-day-view-1-$otherDay')),
+      findsNothing,
+      reason: '不能停在甩过去的那天',
+    );
+  });
 }

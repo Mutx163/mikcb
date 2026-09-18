@@ -1670,8 +1670,14 @@ class _TimetableScreenState extends State<TimetableScreen>
       targetWeek,
       provider.settings.semesterWeekCount,
     );
-    if (normalizedTargetWeek == _selectedWeekForDayView &&
-        targetDayOfWeek == _selectedDayOfWeek) {
+    // 「已经在目标那天」按**画面实际所在**判断（滑动中取页中点预览），不能
+    // 只看已落定的选择：手势 / 惯性还没停时选择仍停在上一天，用户此刻点
+    // 「回今日」会被这条误判成"已经在今天"而整个调用直接返回——读起来就是
+    // 点了没反应，随后惯性照旧把画面带到别的天。
+    final liveTarget = _visibleDayViewTarget();
+    final liveWeek = liveTarget?.$1 ?? _selectedWeekForDayView;
+    final liveDay = liveTarget?.$2 ?? _selectedDayOfWeek;
+    if (normalizedTargetWeek == liveWeek && targetDayOfWeek == liveDay) {
       return;
     }
 
