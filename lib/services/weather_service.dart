@@ -119,10 +119,13 @@ class WeatherService {
   /// `localityLanguage` 必须是 **`zh-Hans`**：传 `zh` / `zh-CN` 会返回繁体。
   /// 返回的 [WeatherLocation.timezone] 留空——让预报接口用 `timezone=auto`
   /// 按坐标自行解析，比依赖地名推时区更可靠。
-  Future<WeatherLocation?> reverseGeocode({
-    required double latitude,
-    required double longitude,
-  }) async {
+  ///
+  /// 参数用位置式（与 [searchLocations] 一致），这样本方法可以直接当
+  /// `ReverseGeocode` 的引用传给 [DeviceLocationService]。
+  Future<WeatherLocation?> reverseGeocode(
+    double latitude,
+    double longitude,
+  ) async {
     final uri = Uri.parse(_reverseGeocodeBaseUrl).replace(
       queryParameters: {
         'latitude': '$latitude',

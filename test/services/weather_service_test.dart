@@ -345,10 +345,7 @@ void main() {
         ),
       );
 
-      final location = await service.reverseGeocode(
-        latitude: 30.29365,
-        longitude: 120.16142,
-      );
+      final location = await service.reverseGeocode(30.29365, 120.16142);
 
       expect(location, isNotNull);
       expect(location!.name, '杭州市');
@@ -375,7 +372,7 @@ void main() {
         }),
       );
 
-      await service.reverseGeocode(latitude: 30.29, longitude: 120.16);
+      await service.reverseGeocode(30.29, 120.16);
 
       expect(captured!.host, 'api.bigdatacloud.net');
       expect(
@@ -398,10 +395,7 @@ void main() {
         ),
       );
 
-      final location = await service.reverseGeocode(
-        latitude: 29.86,
-        longitude: 106.03,
-      );
+      final location = await service.reverseGeocode(29.86, 106.03);
 
       expect(location!.name, '铜梁区');
       // 市名与区名来自同一个字段，不该再当成两段重复显示。
@@ -420,10 +414,7 @@ void main() {
         ),
       );
 
-      final location = await service.reverseGeocode(
-        latitude: 29.86,
-        longitude: 106.03,
-      );
+      final location = await service.reverseGeocode(29.86, 106.03);
 
       expect(location!.district, isNull);
       expect(location.displayName, '铜梁区');
@@ -447,7 +438,7 @@ void main() {
 
       // 地名全空 → 没有可用名字，返回 null。
       expect(
-        await service.reverseGeocode(latitude: 30.29, longitude: 120.16),
+        await service.reverseGeocode(30.29, 120.16),
         isNull,
       );
     });
@@ -463,10 +454,7 @@ void main() {
         ),
       );
 
-      final location = await service.reverseGeocode(
-        latitude: 30.29,
-        longitude: 120.16,
-      );
+      final location = await service.reverseGeocode(30.29, 120.16);
 
       expect(location!.name, '杭州市');
       expect(location.admin1, isNull);
@@ -486,10 +474,7 @@ void main() {
         ),
       );
 
-      final location = await service.reverseGeocode(
-        latitude: 30.29,
-        longitude: 120.16,
-      );
+      final location = await service.reverseGeocode(30.29, 120.16);
       expect(location!.displayName, '杭州市 · 拱墅区');
       expect(location.displayName, isNot(contains('�')));
     });
@@ -499,7 +484,7 @@ void main() {
         client: MockClient((_) async => http.Response('nope', 503)),
       );
       expect(
-        await service.reverseGeocode(latitude: 30.29, longitude: 120.16),
+        await service.reverseGeocode(30.29, 120.16),
         isNull,
       );
     });
@@ -509,7 +494,7 @@ void main() {
         client: MockClient((_) async => throw const SocketExceptionStub()),
       );
       expect(
-        await service.reverseGeocode(latitude: 30.29, longitude: 120.16),
+        await service.reverseGeocode(30.29, 120.16),
         isNull,
       );
     });
@@ -527,7 +512,7 @@ void main() {
         }),
       );
       expect(
-        await service.reverseGeocode(latitude: 30.29, longitude: 120.16),
+        await service.reverseGeocode(30.29, 120.16),
         isNull,
       );
     });
@@ -539,7 +524,7 @@ void main() {
         ),
       );
       expect(
-        await service.reverseGeocode(latitude: 30.29, longitude: 120.16),
+        await service.reverseGeocode(30.29, 120.16),
         isNull,
       );
     });
