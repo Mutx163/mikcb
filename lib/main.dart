@@ -23,6 +23,7 @@ import 'logging/app_log_messages.dart';
 import 'logging/performance_settings_snapshot.dart';
 import 'models/timetable_settings.dart';
 import 'providers/timetable_provider.dart';
+import 'providers/weather_provider.dart';
 import 'screens/course_import_screen.dart';
 import 'screens/startup_flow_screens.dart';
 import 'screens/user_guide_screen.dart';
@@ -478,6 +479,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => TimetableProvider(autoInitialize: false),
         ),
+        // 日视图课卡的天气。挂在 MaterialApp 之上是必须的：设置子页是 push 出来
+        // 的路由、日视图在另一个位置，两者要共享同一份状态，否则改了城市卡片不刷新。
+        // create 是懒加载，且天气默认关闭时 initialize 一次网络请求都不发。
+        ChangeNotifierProvider(create: (_) => WeatherProvider()..initialize()),
       ],
       child:
           Selector<
