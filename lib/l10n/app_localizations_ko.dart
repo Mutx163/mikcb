@@ -11187,4 +11187,124 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get progressiveBlurResetAction => '기본값으로 복원';
+
+  @override
+  String courseWeatherSummary(
+    String phenomenon,
+    int temperature,
+    int probability,
+  ) {
+    return '$phenomenon · $temperature° · $probability%';
+  }
+
+  @override
+  String courseWeatherSummaryNoProbability(String phenomenon, int temperature) {
+    return '$phenomenon · $temperature°';
+  }
+
+  @override
+  String get weatherClear => '맑음';
+
+  @override
+  String get weatherMainlyClear => '대체로 맑음';
+
+  @override
+  String get weatherPartlyCloudy => '구름 조금';
+
+  @override
+  String get weatherOvercast => '흐림';
+
+  @override
+  String get weatherFog => '안개';
+
+  @override
+  String get weatherDrizzle => '이슬비';
+
+  @override
+  String get weatherFreezingDrizzle => '어는 이슬비';
+
+  @override
+  String get weatherLightRain => '약한 비';
+
+  @override
+  String get weatherRain => '비';
+
+  @override
+  String get weatherHeavyRain => '많은 비';
+
+  @override
+  String get weatherFreezingRain => '어는 비';
+
+  @override
+  String get weatherLightSnow => '약한 눈';
+
+  @override
+  String get weatherSnow => '눈';
+
+  @override
+  String get weatherHeavySnow => '많은 눈';
+
+  @override
+  String get weatherSnowGrains => '싸락눈';
+
+  @override
+  String get weatherRainShowers => '소나기';
+
+  @override
+  String get weatherHeavyRainShowers => '강한 소나기';
+
+  @override
+  String get weatherSnowShowers => '눈 소나기';
+
+  @override
+  String get weatherThunderstorm => '뇌우';
+
+  @override
+  String get weatherThunderstormHail => '우박을 동반한 뇌우';
+
+  @override
+  String get weatherSettingsEntryTitle => '수업 카드 날씨';
+
+  @override
+  String get weatherSettingsTitle => '날씨';
+
+  @override
+  String get weatherEnableTitle => '일간 보기에 날씨 표시';
+
+  @override
+  String get weatherEnableSubtitle => '각 수업 카드에 해당 시간대의 날씨, 기온, 강수 확률을 표시합니다';
+
+  @override
+  String get weatherCityLabel => '도시';
+
+  @override
+  String get weatherCityNotSet => '설정 안 됨';
+
+  @override
+  String get weatherCityPickerTitle => '도시 선택';
+
+  @override
+  String get weatherCitySearchHint => '도시 이름 입력';
+
+  @override
+  String get weatherCitySearchEmpty => '일치하는 도시를 찾을 수 없습니다';
+
+  @override
+  String get weatherCitySearchFailed => '검색에 실패했습니다. 잠시 후 다시 시도해 주세요';
+
+  @override
+  String get weatherStatusLoading => '날씨 업데이트 중';
+
+  @override
+  String get weatherStatusFailed => '지난 업데이트 실패';
+
+  @override
+  String get weatherRetryAction => '다시 시도';
+
+  @override
+  String get weatherCoverageNote =>
+      '예보는 앞으로 16일까지만 제공되며, 그 이후 날짜에는 날씨를 표시하지 않습니다.';
+
+  @override
+  String get weatherAttribution => '날씨 데이터: Open-Meteo.com';
 }

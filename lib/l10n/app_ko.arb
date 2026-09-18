@@ -6368,5 +6368,65 @@
   "progressiveBlurSigmaLabel": "블러 강도",
   "progressiveBlurExtentLabel": "그라데이션 범위",
   "progressiveBlurTintBottomLabel": "하단부 배경",
-  "progressiveBlurResetAction": "기본값으로 복원"
+  "progressiveBlurResetAction": "기본값으로 복원",
+  "courseWeatherSummary": "{phenomenon} · {temperature}° · {probability}%",
+  "@courseWeatherSummary": {
+    "placeholders": {
+      "phenomenon": {
+        "type": "String"
+      },
+      "temperature": {
+        "type": "int"
+      },
+      "probability": {
+        "type": "int"
+      }
+    }
+  },
+  "courseWeatherSummaryNoProbability": "{phenomenon} · {temperature}°",
+  "@courseWeatherSummaryNoProbability": {
+    "placeholders": {
+      "phenomenon": {
+        "type": "String"
+      },
+      "temperature": {
+        "type": "int"
+      }
+    }
+  },
+  "weatherClear": "맑음",
+  "weatherMainlyClear": "대체로 맑음",
+  "weatherPartlyCloudy": "구름 조금",
+  "weatherOvercast": "흐림",
+  "weatherFog": "안개",
+  "weatherDrizzle": "이슬비",
+  "weatherFreezingDrizzle": "어는 이슬비",
+  "weatherLightRain": "약한 비",
+  "weatherRain": "비",
+  "weatherHeavyRain": "많은 비",
+  "weatherFreezingRain": "어는 비",
+  "weatherLightSnow": "약한 눈",
+  "weatherSnow": "눈",
+  "weatherHeavySnow": "많은 눈",
+  "weatherSnowGrains": "싸락눈",
+  "weatherRainShowers": "소나기",
+  "weatherHeavyRainShowers": "강한 소나기",
+  "weatherSnowShowers": "눈 소나기",
+  "weatherThunderstorm": "뇌우",
+  "weatherThunderstormHail": "우박을 동반한 뇌우",
+  "weatherSettingsEntryTitle": "수업 카드 날씨",
+  "weatherSettingsTitle": "날씨",
+  "weatherEnableTitle": "일간 보기에 날씨 표시",
+  "weatherEnableSubtitle": "각 수업 카드에 해당 시간대의 날씨, 기온, 강수 확률을 표시합니다",
+  "weatherCityLabel": "도시",
+  "weatherCityNotSet": "설정 안 됨",
+  "weatherCityPickerTitle": "도시 선택",
+  "weatherCitySearchHint": "도시 이름 입력",
+  "weatherCitySearchEmpty": "일치하는 도시를 찾을 수 없습니다",
+  "weatherCitySearchFailed": "검색에 실패했습니다. 잠시 후 다시 시도해 주세요",
+  "weatherStatusLoading": "날씨 업데이트 중",
+  "weatherStatusFailed": "지난 업데이트 실패",
+  "weatherRetryAction": "다시 시도",
+  "weatherCoverageNote": "예보는 앞으로 16일까지만 제공되며, 그 이후 날짜에는 날씨를 표시하지 않습니다.",
+  "weatherAttribution": "날씨 데이터: Open-Meteo.com"
 }

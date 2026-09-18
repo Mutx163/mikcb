@@ -6427,5 +6427,67 @@
   "progressiveBlurSigmaLabel": "模糊强度",
   "progressiveBlurExtentLabel": "渐变延伸",
   "progressiveBlurTintBottomLabel": "下部衬底",
-  "progressiveBlurResetAction": "恢复默认"
+  "progressiveBlurResetAction": "恢复默认",
+  "courseWeatherSummary": "{phenomenon} · {temperature}° · {probability}%",
+  "@courseWeatherSummary": {
+    "description": "日视图课卡上的天气行：现象 + 温度 + 降水概率",
+    "placeholders": {
+      "phenomenon": {
+        "type": "String"
+      },
+      "temperature": {
+        "type": "int"
+      },
+      "probability": {
+        "type": "int"
+      }
+    }
+  },
+  "courseWeatherSummaryNoProbability": "{phenomenon} · {temperature}°",
+  "@courseWeatherSummaryNoProbability": {
+    "description": "降水概率偏低时的天气行，不显示百分比",
+    "placeholders": {
+      "phenomenon": {
+        "type": "String"
+      },
+      "temperature": {
+        "type": "int"
+      }
+    }
+  },
+  "weatherClear": "晴",
+  "weatherMainlyClear": "晴间多云",
+  "weatherPartlyCloudy": "多云",
+  "weatherOvercast": "阴",
+  "weatherFog": "雾",
+  "weatherDrizzle": "毛毛雨",
+  "weatherFreezingDrizzle": "冻毛毛雨",
+  "weatherLightRain": "小雨",
+  "weatherRain": "中雨",
+  "weatherHeavyRain": "大雨",
+  "weatherFreezingRain": "冻雨",
+  "weatherLightSnow": "小雪",
+  "weatherSnow": "中雪",
+  "weatherHeavySnow": "大雪",
+  "weatherSnowGrains": "米雪",
+  "weatherRainShowers": "阵雨",
+  "weatherHeavyRainShowers": "强阵雨",
+  "weatherSnowShowers": "阵雪",
+  "weatherThunderstorm": "雷阵雨",
+  "weatherThunderstormHail": "雷阵雨伴冰雹",
+  "weatherSettingsEntryTitle": "课程卡天气",
+  "weatherSettingsTitle": "天气",
+  "weatherEnableTitle": "在日视图显示天气",
+  "weatherEnableSubtitle": "每节课的卡片上显示该时段的天气、温度与降水概率",
+  "weatherCityLabel": "城市",
+  "weatherCityNotSet": "未设置",
+  "weatherCityPickerTitle": "选择城市",
+  "weatherCitySearchHint": "输入城市名称",
+  "weatherCitySearchEmpty": "没有找到匹配的城市",
+  "weatherCitySearchFailed": "搜索失败，请稍后重试",
+  "weatherStatusLoading": "正在更新天气",
+  "weatherStatusFailed": "上次更新失败",
+  "weatherRetryAction": "重试",
+  "weatherCoverageNote": "预报只覆盖未来 16 天，更远的日期不显示天气。",
+  "weatherAttribution": "天气数据来自 Open-Meteo.com"
 }

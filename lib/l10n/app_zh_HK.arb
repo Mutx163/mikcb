@@ -6369,5 +6369,65 @@
   "progressiveBlurSigmaLabel": "模糊強度",
   "progressiveBlurExtentLabel": "漸變延伸",
   "progressiveBlurTintBottomLabel": "下部襯底",
-  "progressiveBlurResetAction": "恢復預設"
+  "progressiveBlurResetAction": "恢復預設",
+  "courseWeatherSummary": "{phenomenon} · {temperature}° · {probability}%",
+  "@courseWeatherSummary": {
+    "placeholders": {
+      "phenomenon": {
+        "type": "String"
+      },
+      "temperature": {
+        "type": "int"
+      },
+      "probability": {
+        "type": "int"
+      }
+    }
+  },
+  "courseWeatherSummaryNoProbability": "{phenomenon} · {temperature}°",
+  "@courseWeatherSummaryNoProbability": {
+    "placeholders": {
+      "phenomenon": {
+        "type": "String"
+      },
+      "temperature": {
+        "type": "int"
+      }
+    }
+  },
+  "weatherClear": "晴",
+  "weatherMainlyClear": "晴間多雲",
+  "weatherPartlyCloudy": "多雲",
+  "weatherOvercast": "陰",
+  "weatherFog": "霧",
+  "weatherDrizzle": "毛毛雨",
+  "weatherFreezingDrizzle": "凍毛毛雨",
+  "weatherLightRain": "小雨",
+  "weatherRain": "中雨",
+  "weatherHeavyRain": "大雨",
+  "weatherFreezingRain": "凍雨",
+  "weatherLightSnow": "小雪",
+  "weatherSnow": "中雪",
+  "weatherHeavySnow": "大雪",
+  "weatherSnowGrains": "米雪",
+  "weatherRainShowers": "陣雨",
+  "weatherHeavyRainShowers": "強陣雨",
+  "weatherSnowShowers": "陣雪",
+  "weatherThunderstorm": "雷陣雨",
+  "weatherThunderstormHail": "雷陣雨伴冰雹",
+  "weatherSettingsEntryTitle": "課程卡天氣",
+  "weatherSettingsTitle": "天氣",
+  "weatherEnableTitle": "在日檢視顯示天氣",
+  "weatherEnableSubtitle": "每節課的卡片上顯示該時段的天氣、溫度與降水概率",
+  "weatherCityLabel": "城市",
+  "weatherCityNotSet": "未設定",
+  "weatherCityPickerTitle": "選擇城市",
+  "weatherCitySearchHint": "輸入城市名稱",
+  "weatherCitySearchEmpty": "沒有找到符合的城市",
+  "weatherCitySearchFailed": "搜尋失敗，請稍後再試",
+  "weatherStatusLoading": "正在更新天氣",
+  "weatherStatusFailed": "上次更新失敗",
+  "weatherRetryAction": "重試",
+  "weatherCoverageNote": "預報只涵蓋未來 16 天，更遠的日期不顯示天氣。",
+  "weatherAttribution": "天氣資料來自 Open-Meteo.com"
 }

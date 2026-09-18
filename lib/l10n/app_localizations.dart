@@ -19727,6 +19727,232 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'恢复默认'**
   String get progressiveBlurResetAction;
+
+  /// 日视图课卡上的天气行：现象 + 温度 + 降水概率
+  ///
+  /// In zh, this message translates to:
+  /// **'{phenomenon} · {temperature}° · {probability}%'**
+  String courseWeatherSummary(
+    String phenomenon,
+    int temperature,
+    int probability,
+  );
+
+  /// 降水概率偏低时的天气行，不显示百分比
+  ///
+  /// In zh, this message translates to:
+  /// **'{phenomenon} · {temperature}°'**
+  String courseWeatherSummaryNoProbability(String phenomenon, int temperature);
+
+  /// No description provided for @weatherClear.
+  ///
+  /// In zh, this message translates to:
+  /// **'晴'**
+  String get weatherClear;
+
+  /// No description provided for @weatherMainlyClear.
+  ///
+  /// In zh, this message translates to:
+  /// **'晴间多云'**
+  String get weatherMainlyClear;
+
+  /// No description provided for @weatherPartlyCloudy.
+  ///
+  /// In zh, this message translates to:
+  /// **'多云'**
+  String get weatherPartlyCloudy;
+
+  /// No description provided for @weatherOvercast.
+  ///
+  /// In zh, this message translates to:
+  /// **'阴'**
+  String get weatherOvercast;
+
+  /// No description provided for @weatherFog.
+  ///
+  /// In zh, this message translates to:
+  /// **'雾'**
+  String get weatherFog;
+
+  /// No description provided for @weatherDrizzle.
+  ///
+  /// In zh, this message translates to:
+  /// **'毛毛雨'**
+  String get weatherDrizzle;
+
+  /// No description provided for @weatherFreezingDrizzle.
+  ///
+  /// In zh, this message translates to:
+  /// **'冻毛毛雨'**
+  String get weatherFreezingDrizzle;
+
+  /// No description provided for @weatherLightRain.
+  ///
+  /// In zh, this message translates to:
+  /// **'小雨'**
+  String get weatherLightRain;
+
+  /// No description provided for @weatherRain.
+  ///
+  /// In zh, this message translates to:
+  /// **'中雨'**
+  String get weatherRain;
+
+  /// No description provided for @weatherHeavyRain.
+  ///
+  /// In zh, this message translates to:
+  /// **'大雨'**
+  String get weatherHeavyRain;
+
+  /// No description provided for @weatherFreezingRain.
+  ///
+  /// In zh, this message translates to:
+  /// **'冻雨'**
+  String get weatherFreezingRain;
+
+  /// No description provided for @weatherLightSnow.
+  ///
+  /// In zh, this message translates to:
+  /// **'小雪'**
+  String get weatherLightSnow;
+
+  /// No description provided for @weatherSnow.
+  ///
+  /// In zh, this message translates to:
+  /// **'中雪'**
+  String get weatherSnow;
+
+  /// No description provided for @weatherHeavySnow.
+  ///
+  /// In zh, this message translates to:
+  /// **'大雪'**
+  String get weatherHeavySnow;
+
+  /// No description provided for @weatherSnowGrains.
+  ///
+  /// In zh, this message translates to:
+  /// **'米雪'**
+  String get weatherSnowGrains;
+
+  /// No description provided for @weatherRainShowers.
+  ///
+  /// In zh, this message translates to:
+  /// **'阵雨'**
+  String get weatherRainShowers;
+
+  /// No description provided for @weatherHeavyRainShowers.
+  ///
+  /// In zh, this message translates to:
+  /// **'强阵雨'**
+  String get weatherHeavyRainShowers;
+
+  /// No description provided for @weatherSnowShowers.
+  ///
+  /// In zh, this message translates to:
+  /// **'阵雪'**
+  String get weatherSnowShowers;
+
+  /// No description provided for @weatherThunderstorm.
+  ///
+  /// In zh, this message translates to:
+  /// **'雷阵雨'**
+  String get weatherThunderstorm;
+
+  /// No description provided for @weatherThunderstormHail.
+  ///
+  /// In zh, this message translates to:
+  /// **'雷阵雨伴冰雹'**
+  String get weatherThunderstormHail;
+
+  /// No description provided for @weatherSettingsEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程卡天气'**
+  String get weatherSettingsEntryTitle;
+
+  /// No description provided for @weatherSettingsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'天气'**
+  String get weatherSettingsTitle;
+
+  /// No description provided for @weatherEnableTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'在日视图显示天气'**
+  String get weatherEnableTitle;
+
+  /// No description provided for @weatherEnableSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'每节课的卡片上显示该时段的天气、温度与降水概率'**
+  String get weatherEnableSubtitle;
+
+  /// No description provided for @weatherCityLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'城市'**
+  String get weatherCityLabel;
+
+  /// No description provided for @weatherCityNotSet.
+  ///
+  /// In zh, this message translates to:
+  /// **'未设置'**
+  String get weatherCityNotSet;
+
+  /// No description provided for @weatherCityPickerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择城市'**
+  String get weatherCityPickerTitle;
+
+  /// No description provided for @weatherCitySearchHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'输入城市名称'**
+  String get weatherCitySearchHint;
+
+  /// No description provided for @weatherCitySearchEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有找到匹配的城市'**
+  String get weatherCitySearchEmpty;
+
+  /// No description provided for @weatherCitySearchFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索失败，请稍后重试'**
+  String get weatherCitySearchFailed;
+
+  /// No description provided for @weatherStatusLoading.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在更新天气'**
+  String get weatherStatusLoading;
+
+  /// No description provided for @weatherStatusFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'上次更新失败'**
+  String get weatherStatusFailed;
+
+  /// No description provided for @weatherRetryAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'重试'**
+  String get weatherRetryAction;
+
+  /// No description provided for @weatherCoverageNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'预报只覆盖未来 16 天，更远的日期不显示天气。'**
+  String get weatherCoverageNote;
+
+  /// No description provided for @weatherAttribution.
+  ///
+  /// In zh, this message translates to:
+  /// **'天气数据来自 Open-Meteo.com'**
+  String get weatherAttribution;
 }
 
 class _AppLocalizationsDelegate

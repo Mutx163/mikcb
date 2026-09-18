@@ -11141,4 +11141,123 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get progressiveBlurResetAction => '既定値に戻す';
+
+  @override
+  String courseWeatherSummary(
+    String phenomenon,
+    int temperature,
+    int probability,
+  ) {
+    return '$phenomenon · $temperature° · $probability%';
+  }
+
+  @override
+  String courseWeatherSummaryNoProbability(String phenomenon, int temperature) {
+    return '$phenomenon · $temperature°';
+  }
+
+  @override
+  String get weatherClear => '晴れ';
+
+  @override
+  String get weatherMainlyClear => '晴れ時々くもり';
+
+  @override
+  String get weatherPartlyCloudy => 'くもり';
+
+  @override
+  String get weatherOvercast => '本曇り';
+
+  @override
+  String get weatherFog => '霧';
+
+  @override
+  String get weatherDrizzle => '霧雨';
+
+  @override
+  String get weatherFreezingDrizzle => '着氷性の霧雨';
+
+  @override
+  String get weatherLightRain => '小雨';
+
+  @override
+  String get weatherRain => '雨';
+
+  @override
+  String get weatherHeavyRain => '大雨';
+
+  @override
+  String get weatherFreezingRain => '着氷性の雨';
+
+  @override
+  String get weatherLightSnow => '小雪';
+
+  @override
+  String get weatherSnow => '雪';
+
+  @override
+  String get weatherHeavySnow => '大雪';
+
+  @override
+  String get weatherSnowGrains => '霧雪';
+
+  @override
+  String get weatherRainShowers => 'にわか雨';
+
+  @override
+  String get weatherHeavyRainShowers => '強いにわか雨';
+
+  @override
+  String get weatherSnowShowers => 'にわか雪';
+
+  @override
+  String get weatherThunderstorm => '雷雨';
+
+  @override
+  String get weatherThunderstormHail => 'ひょうを伴う雷雨';
+
+  @override
+  String get weatherSettingsEntryTitle => '授業カードの天気';
+
+  @override
+  String get weatherSettingsTitle => '天気';
+
+  @override
+  String get weatherEnableTitle => '日表示に天気を表示';
+
+  @override
+  String get weatherEnableSubtitle => '各授業カードにその時間帯の天気・気温・降水確率を表示します';
+
+  @override
+  String get weatherCityLabel => '都市';
+
+  @override
+  String get weatherCityNotSet => '未設定';
+
+  @override
+  String get weatherCityPickerTitle => '都市を選択';
+
+  @override
+  String get weatherCitySearchHint => '都市名を入力';
+
+  @override
+  String get weatherCitySearchEmpty => '一致する都市が見つかりません';
+
+  @override
+  String get weatherCitySearchFailed => '検索に失敗しました。しばらくしてからお試しください';
+
+  @override
+  String get weatherStatusLoading => '天気を更新中';
+
+  @override
+  String get weatherStatusFailed => '前回の更新に失敗しました';
+
+  @override
+  String get weatherRetryAction => '再試行';
+
+  @override
+  String get weatherCoverageNote => '予報は今後 16 日分のみです。それより先の日付では天気を表示しません。';
+
+  @override
+  String get weatherAttribution => '天気データ: Open-Meteo.com';
 }

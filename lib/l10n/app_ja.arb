@@ -6368,5 +6368,65 @@
   "progressiveBlurSigmaLabel": "ぼかしの強さ",
   "progressiveBlurExtentLabel": "グラデーションの範囲",
   "progressiveBlurTintBottomLabel": "下半分の下地",
-  "progressiveBlurResetAction": "既定値に戻す"
+  "progressiveBlurResetAction": "既定値に戻す",
+  "courseWeatherSummary": "{phenomenon} · {temperature}° · {probability}%",
+  "@courseWeatherSummary": {
+    "placeholders": {
+      "phenomenon": {
+        "type": "String"
+      },
+      "temperature": {
+        "type": "int"
+      },
+      "probability": {
+        "type": "int"
+      }
+    }
+  },
+  "courseWeatherSummaryNoProbability": "{phenomenon} · {temperature}°",
+  "@courseWeatherSummaryNoProbability": {
+    "placeholders": {
+      "phenomenon": {
+        "type": "String"
+      },
+      "temperature": {
+        "type": "int"
+      }
+    }
+  },
+  "weatherClear": "晴れ",
+  "weatherMainlyClear": "晴れ時々くもり",
+  "weatherPartlyCloudy": "くもり",
+  "weatherOvercast": "本曇り",
+  "weatherFog": "霧",
+  "weatherDrizzle": "霧雨",
+  "weatherFreezingDrizzle": "着氷性の霧雨",
+  "weatherLightRain": "小雨",
+  "weatherRain": "雨",
+  "weatherHeavyRain": "大雨",
+  "weatherFreezingRain": "着氷性の雨",
+  "weatherLightSnow": "小雪",
+  "weatherSnow": "雪",
+  "weatherHeavySnow": "大雪",
+  "weatherSnowGrains": "霧雪",
+  "weatherRainShowers": "にわか雨",
+  "weatherHeavyRainShowers": "強いにわか雨",
+  "weatherSnowShowers": "にわか雪",
+  "weatherThunderstorm": "雷雨",
+  "weatherThunderstormHail": "ひょうを伴う雷雨",
+  "weatherSettingsEntryTitle": "授業カードの天気",
+  "weatherSettingsTitle": "天気",
+  "weatherEnableTitle": "日表示に天気を表示",
+  "weatherEnableSubtitle": "各授業カードにその時間帯の天気・気温・降水確率を表示します",
+  "weatherCityLabel": "都市",
+  "weatherCityNotSet": "未設定",
+  "weatherCityPickerTitle": "都市を選択",
+  "weatherCitySearchHint": "都市名を入力",
+  "weatherCitySearchEmpty": "一致する都市が見つかりません",
+  "weatherCitySearchFailed": "検索に失敗しました。しばらくしてからお試しください",
+  "weatherStatusLoading": "天気を更新中",
+  "weatherStatusFailed": "前回の更新に失敗しました",
+  "weatherRetryAction": "再試行",
+  "weatherCoverageNote": "予報は今後 16 日分のみです。それより先の日付では天気を表示しません。",
+  "weatherAttribution": "天気データ: Open-Meteo.com"
 }

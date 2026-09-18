@@ -10834,6 +10834,125 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get progressiveBlurResetAction => '恢复默认';
+
+  @override
+  String courseWeatherSummary(
+    String phenomenon,
+    int temperature,
+    int probability,
+  ) {
+    return '$phenomenon · $temperature° · $probability%';
+  }
+
+  @override
+  String courseWeatherSummaryNoProbability(String phenomenon, int temperature) {
+    return '$phenomenon · $temperature°';
+  }
+
+  @override
+  String get weatherClear => '晴';
+
+  @override
+  String get weatherMainlyClear => '晴间多云';
+
+  @override
+  String get weatherPartlyCloudy => '多云';
+
+  @override
+  String get weatherOvercast => '阴';
+
+  @override
+  String get weatherFog => '雾';
+
+  @override
+  String get weatherDrizzle => '毛毛雨';
+
+  @override
+  String get weatherFreezingDrizzle => '冻毛毛雨';
+
+  @override
+  String get weatherLightRain => '小雨';
+
+  @override
+  String get weatherRain => '中雨';
+
+  @override
+  String get weatherHeavyRain => '大雨';
+
+  @override
+  String get weatherFreezingRain => '冻雨';
+
+  @override
+  String get weatherLightSnow => '小雪';
+
+  @override
+  String get weatherSnow => '中雪';
+
+  @override
+  String get weatherHeavySnow => '大雪';
+
+  @override
+  String get weatherSnowGrains => '米雪';
+
+  @override
+  String get weatherRainShowers => '阵雨';
+
+  @override
+  String get weatherHeavyRainShowers => '强阵雨';
+
+  @override
+  String get weatherSnowShowers => '阵雪';
+
+  @override
+  String get weatherThunderstorm => '雷阵雨';
+
+  @override
+  String get weatherThunderstormHail => '雷阵雨伴冰雹';
+
+  @override
+  String get weatherSettingsEntryTitle => '课程卡天气';
+
+  @override
+  String get weatherSettingsTitle => '天气';
+
+  @override
+  String get weatherEnableTitle => '在日视图显示天气';
+
+  @override
+  String get weatherEnableSubtitle => '每节课的卡片上显示该时段的天气、温度与降水概率';
+
+  @override
+  String get weatherCityLabel => '城市';
+
+  @override
+  String get weatherCityNotSet => '未设置';
+
+  @override
+  String get weatherCityPickerTitle => '选择城市';
+
+  @override
+  String get weatherCitySearchHint => '输入城市名称';
+
+  @override
+  String get weatherCitySearchEmpty => '没有找到匹配的城市';
+
+  @override
+  String get weatherCitySearchFailed => '搜索失败，请稍后重试';
+
+  @override
+  String get weatherStatusLoading => '正在更新天气';
+
+  @override
+  String get weatherStatusFailed => '上次更新失败';
+
+  @override
+  String get weatherRetryAction => '重试';
+
+  @override
+  String get weatherCoverageNote => '预报只覆盖未来 16 天，更远的日期不显示天气。';
+
+  @override
+  String get weatherAttribution => '天气数据来自 Open-Meteo.com';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -21710,6 +21829,125 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get progressiveBlurResetAction => '恢復預設';
+
+  @override
+  String courseWeatherSummary(
+    String phenomenon,
+    int temperature,
+    int probability,
+  ) {
+    return '$phenomenon · $temperature° · $probability%';
+  }
+
+  @override
+  String courseWeatherSummaryNoProbability(String phenomenon, int temperature) {
+    return '$phenomenon · $temperature°';
+  }
+
+  @override
+  String get weatherClear => '晴';
+
+  @override
+  String get weatherMainlyClear => '晴間多雲';
+
+  @override
+  String get weatherPartlyCloudy => '多雲';
+
+  @override
+  String get weatherOvercast => '陰';
+
+  @override
+  String get weatherFog => '霧';
+
+  @override
+  String get weatherDrizzle => '毛毛雨';
+
+  @override
+  String get weatherFreezingDrizzle => '凍毛毛雨';
+
+  @override
+  String get weatherLightRain => '小雨';
+
+  @override
+  String get weatherRain => '中雨';
+
+  @override
+  String get weatherHeavyRain => '大雨';
+
+  @override
+  String get weatherFreezingRain => '凍雨';
+
+  @override
+  String get weatherLightSnow => '小雪';
+
+  @override
+  String get weatherSnow => '中雪';
+
+  @override
+  String get weatherHeavySnow => '大雪';
+
+  @override
+  String get weatherSnowGrains => '米雪';
+
+  @override
+  String get weatherRainShowers => '陣雨';
+
+  @override
+  String get weatherHeavyRainShowers => '強陣雨';
+
+  @override
+  String get weatherSnowShowers => '陣雪';
+
+  @override
+  String get weatherThunderstorm => '雷陣雨';
+
+  @override
+  String get weatherThunderstormHail => '雷陣雨伴冰雹';
+
+  @override
+  String get weatherSettingsEntryTitle => '課程卡天氣';
+
+  @override
+  String get weatherSettingsTitle => '天氣';
+
+  @override
+  String get weatherEnableTitle => '在日檢視顯示天氣';
+
+  @override
+  String get weatherEnableSubtitle => '每節課的卡片上顯示該時段的天氣、溫度與降水概率';
+
+  @override
+  String get weatherCityLabel => '城市';
+
+  @override
+  String get weatherCityNotSet => '未設定';
+
+  @override
+  String get weatherCityPickerTitle => '選擇城市';
+
+  @override
+  String get weatherCitySearchHint => '輸入城市名稱';
+
+  @override
+  String get weatherCitySearchEmpty => '沒有找到符合的城市';
+
+  @override
+  String get weatherCitySearchFailed => '搜尋失敗，請稍後再試';
+
+  @override
+  String get weatherStatusLoading => '正在更新天氣';
+
+  @override
+  String get weatherStatusFailed => '上次更新失敗';
+
+  @override
+  String get weatherRetryAction => '重試';
+
+  @override
+  String get weatherCoverageNote => '預報只涵蓋未來 16 天，更遠的日期不顯示天氣。';
+
+  @override
+  String get weatherAttribution => '天氣資料來自 Open-Meteo.com';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -32586,4 +32824,123 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get progressiveBlurResetAction => '恢復預設';
+
+  @override
+  String courseWeatherSummary(
+    String phenomenon,
+    int temperature,
+    int probability,
+  ) {
+    return '$phenomenon · $temperature° · $probability%';
+  }
+
+  @override
+  String courseWeatherSummaryNoProbability(String phenomenon, int temperature) {
+    return '$phenomenon · $temperature°';
+  }
+
+  @override
+  String get weatherClear => '晴';
+
+  @override
+  String get weatherMainlyClear => '晴時多雲';
+
+  @override
+  String get weatherPartlyCloudy => '多雲';
+
+  @override
+  String get weatherOvercast => '陰';
+
+  @override
+  String get weatherFog => '霧';
+
+  @override
+  String get weatherDrizzle => '毛毛雨';
+
+  @override
+  String get weatherFreezingDrizzle => '凍毛毛雨';
+
+  @override
+  String get weatherLightRain => '小雨';
+
+  @override
+  String get weatherRain => '中雨';
+
+  @override
+  String get weatherHeavyRain => '大雨';
+
+  @override
+  String get weatherFreezingRain => '凍雨';
+
+  @override
+  String get weatherLightSnow => '小雪';
+
+  @override
+  String get weatherSnow => '中雪';
+
+  @override
+  String get weatherHeavySnow => '大雪';
+
+  @override
+  String get weatherSnowGrains => '米雪';
+
+  @override
+  String get weatherRainShowers => '陣雨';
+
+  @override
+  String get weatherHeavyRainShowers => '強陣雨';
+
+  @override
+  String get weatherSnowShowers => '陣雪';
+
+  @override
+  String get weatherThunderstorm => '雷陣雨';
+
+  @override
+  String get weatherThunderstormHail => '雷陣雨伴冰雹';
+
+  @override
+  String get weatherSettingsEntryTitle => '課卡天氣';
+
+  @override
+  String get weatherSettingsTitle => '天氣';
+
+  @override
+  String get weatherEnableTitle => '在日檢視顯示天氣';
+
+  @override
+  String get weatherEnableSubtitle => '每節課的卡片上顯示該時段的天氣、溫度與降水機率';
+
+  @override
+  String get weatherCityLabel => '城市';
+
+  @override
+  String get weatherCityNotSet => '未設定';
+
+  @override
+  String get weatherCityPickerTitle => '選擇城市';
+
+  @override
+  String get weatherCitySearchHint => '輸入城市名稱';
+
+  @override
+  String get weatherCitySearchEmpty => '找不到符合的城市';
+
+  @override
+  String get weatherCitySearchFailed => '搜尋失敗，請稍後再試';
+
+  @override
+  String get weatherStatusLoading => '正在更新天氣';
+
+  @override
+  String get weatherStatusFailed => '上次更新失敗';
+
+  @override
+  String get weatherRetryAction => '重試';
+
+  @override
+  String get weatherCoverageNote => '預報只涵蓋未來 16 天，更遠的日期不顯示天氣。';
+
+  @override
+  String get weatherAttribution => '天氣資料來自 Open-Meteo.com';
 }

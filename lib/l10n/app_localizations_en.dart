@@ -11472,4 +11472,125 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get progressiveBlurResetAction => 'Reset to defaults';
+
+  @override
+  String courseWeatherSummary(
+    String phenomenon,
+    int temperature,
+    int probability,
+  ) {
+    return '$phenomenon · $temperature° · $probability%';
+  }
+
+  @override
+  String courseWeatherSummaryNoProbability(String phenomenon, int temperature) {
+    return '$phenomenon · $temperature°';
+  }
+
+  @override
+  String get weatherClear => 'Clear';
+
+  @override
+  String get weatherMainlyClear => 'Mostly clear';
+
+  @override
+  String get weatherPartlyCloudy => 'Partly cloudy';
+
+  @override
+  String get weatherOvercast => 'Overcast';
+
+  @override
+  String get weatherFog => 'Fog';
+
+  @override
+  String get weatherDrizzle => 'Drizzle';
+
+  @override
+  String get weatherFreezingDrizzle => 'Freezing drizzle';
+
+  @override
+  String get weatherLightRain => 'Light rain';
+
+  @override
+  String get weatherRain => 'Rain';
+
+  @override
+  String get weatherHeavyRain => 'Heavy rain';
+
+  @override
+  String get weatherFreezingRain => 'Freezing rain';
+
+  @override
+  String get weatherLightSnow => 'Light snow';
+
+  @override
+  String get weatherSnow => 'Snow';
+
+  @override
+  String get weatherHeavySnow => 'Heavy snow';
+
+  @override
+  String get weatherSnowGrains => 'Snow grains';
+
+  @override
+  String get weatherRainShowers => 'Rain showers';
+
+  @override
+  String get weatherHeavyRainShowers => 'Heavy rain showers';
+
+  @override
+  String get weatherSnowShowers => 'Snow showers';
+
+  @override
+  String get weatherThunderstorm => 'Thunderstorm';
+
+  @override
+  String get weatherThunderstormHail => 'Thunderstorm with hail';
+
+  @override
+  String get weatherSettingsEntryTitle => 'Weather on course cards';
+
+  @override
+  String get weatherSettingsTitle => 'Weather';
+
+  @override
+  String get weatherEnableTitle => 'Show weather in day view';
+
+  @override
+  String get weatherEnableSubtitle =>
+      'Show that period\'s weather, temperature and rain chance on each course card';
+
+  @override
+  String get weatherCityLabel => 'City';
+
+  @override
+  String get weatherCityNotSet => 'Not set';
+
+  @override
+  String get weatherCityPickerTitle => 'Choose a city';
+
+  @override
+  String get weatherCitySearchHint => 'Enter a city name';
+
+  @override
+  String get weatherCitySearchEmpty => 'No matching city found';
+
+  @override
+  String get weatherCitySearchFailed => 'Search failed, please try again later';
+
+  @override
+  String get weatherStatusLoading => 'Updating weather';
+
+  @override
+  String get weatherStatusFailed => 'Last update failed';
+
+  @override
+  String get weatherRetryAction => 'Retry';
+
+  @override
+  String get weatherCoverageNote =>
+      'Forecasts only cover the next 16 days; weather is hidden beyond that.';
+
+  @override
+  String get weatherAttribution => 'Weather data from Open-Meteo.com';
 }

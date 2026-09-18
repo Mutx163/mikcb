@@ -6372,5 +6372,65 @@
   "progressiveBlurSigmaLabel": "Blur strength",
   "progressiveBlurExtentLabel": "Gradient extent",
   "progressiveBlurTintBottomLabel": "Lower tint",
-  "progressiveBlurResetAction": "Reset to defaults"
+  "progressiveBlurResetAction": "Reset to defaults",
+  "courseWeatherSummary": "{phenomenon} · {temperature}° · {probability}%",
+  "@courseWeatherSummary": {
+    "placeholders": {
+      "phenomenon": {
+        "type": "String"
+      },
+      "temperature": {
+        "type": "int"
+      },
+      "probability": {
+        "type": "int"
+      }
+    }
+  },
+  "courseWeatherSummaryNoProbability": "{phenomenon} · {temperature}°",
+  "@courseWeatherSummaryNoProbability": {
+    "placeholders": {
+      "phenomenon": {
+        "type": "String"
+      },
+      "temperature": {
+        "type": "int"
+      }
+    }
+  },
+  "weatherClear": "Clear",
+  "weatherMainlyClear": "Mostly clear",
+  "weatherPartlyCloudy": "Partly cloudy",
+  "weatherOvercast": "Overcast",
+  "weatherFog": "Fog",
+  "weatherDrizzle": "Drizzle",
+  "weatherFreezingDrizzle": "Freezing drizzle",
+  "weatherLightRain": "Light rain",
+  "weatherRain": "Rain",
+  "weatherHeavyRain": "Heavy rain",
+  "weatherFreezingRain": "Freezing rain",
+  "weatherLightSnow": "Light snow",
+  "weatherSnow": "Snow",
+  "weatherHeavySnow": "Heavy snow",
+  "weatherSnowGrains": "Snow grains",
+  "weatherRainShowers": "Rain showers",
+  "weatherHeavyRainShowers": "Heavy rain showers",
+  "weatherSnowShowers": "Snow showers",
+  "weatherThunderstorm": "Thunderstorm",
+  "weatherThunderstormHail": "Thunderstorm with hail",
+  "weatherSettingsEntryTitle": "Weather on course cards",
+  "weatherSettingsTitle": "Weather",
+  "weatherEnableTitle": "Show weather in day view",
+  "weatherEnableSubtitle": "Show that period's weather, temperature and rain chance on each course card",
+  "weatherCityLabel": "City",
+  "weatherCityNotSet": "Not set",
+  "weatherCityPickerTitle": "Choose a city",
+  "weatherCitySearchHint": "Enter a city name",
+  "weatherCitySearchEmpty": "No matching city found",
+  "weatherCitySearchFailed": "Search failed, please try again later",
+  "weatherStatusLoading": "Updating weather",
+  "weatherStatusFailed": "Last update failed",
+  "weatherRetryAction": "Retry",
+  "weatherCoverageNote": "Forecasts only cover the next 16 days; weather is hidden beyond that.",
+  "weatherAttribution": "Weather data from Open-Meteo.com"
 }
