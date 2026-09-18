@@ -220,13 +220,54 @@ class WeatherForecast {
     if (latitude == null || longitude == null || fetchedAtMs == null) {
       throw const FormatException('weather forecast: missing header');
     }
+    return _fromColumns(
+      latitude: latitude,
+      longitude: longitude,
+      fetchedAt: DateTime.fromMillisecondsSinceEpoch(fetchedAtMs),
+      columns: json,
+    );
+  }
 
-    final times = _column(json['time']);
-    final temperatures = _column(json['temperature_2m']);
-    final probabilities = _column(json['precipitation_probability']);
-    final precipitation = _column(json['precipitation']);
-    final snowfall = _column(json['snowfall']);
-    final codes = _column(json['weather_code']);
+  /// 解析 Open-Meteo `/v1/forecast` 的原始响应。
+  ///
+  /// 厂商把 6 个平行数组放在 `hourly` 子对象里，且不返回 `fetchedAt`（由调用方
+  /// 在请求成功那一刻传入）。放在模型里而不是服务里，是为了让「列式数组怎么读」
+  /// 只有一份实现——服务只管发请求与取字段。
+  factory WeatherForecast.fromOpenMeteoResponse(
+    Map<String, dynamic> json, {
+    required DateTime fetchedAt,
+  }) {
+    final hourly = json['hourly'];
+    if (hourly is! Map) {
+      throw const FormatException('weather forecast: missing hourly block');
+    }
+    // 经纬度用响应里回填的格点中心，而不是请求坐标——后续判断「缓存是不是这个
+    // 城市的」时才不会因为格点偏移误判为换城。
+    final latitude = (json['latitude'] as num?)?.toDouble();
+    final longitude = (json['longitude'] as num?)?.toDouble();
+    if (latitude == null || longitude == null) {
+      throw const FormatException('weather forecast: missing coordinates');
+    }
+    return _fromColumns(
+      latitude: latitude,
+      longitude: longitude,
+      fetchedAt: fetchedAt,
+      columns: Map<String, dynamic>.from(hourly),
+    );
+  }
+
+  static WeatherForecast _fromColumns({
+    required double latitude,
+    required double longitude,
+    required DateTime fetchedAt,
+    required Map<String, dynamic> columns,
+  }) {
+    final times = _column(columns['time']);
+    final temperatures = _column(columns['temperature_2m']);
+    final probabilities = _column(columns['precipitation_probability']);
+    final precipitation = _column(columns['precipitation']);
+    final snowfall = _column(columns['snowfall']);
+    final codes = _column(columns['weather_code']);
 
     final hourly = <HourlyWeatherPoint>[];
     for (var i = 0; i < times.length; i++) {
@@ -253,7 +294,7 @@ class WeatherForecast {
     return WeatherForecast(
       latitude: latitude,
       longitude: longitude,
-      fetchedAt: DateTime.fromMillisecondsSinceEpoch(fetchedAtMs),
+      fetchedAt: fetchedAt,
       hourly: hourly,
     );
   }
