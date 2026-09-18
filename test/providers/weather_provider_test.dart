@@ -77,6 +77,24 @@ class _Server {
     if (fail) {
       return http.Response('boom', 500);
     }
+    if (request.url.host == 'geocoding-api.open-meteo.com') {
+      return http.Response(
+        jsonEncode({
+          'results': [
+            {
+              'name': '杭州',
+              'latitude': 30.29365,
+              'longitude': 120.16142,
+              'country': '中国',
+              'admin1': '浙江',
+              'timezone': 'Asia/Shanghai',
+            },
+          ],
+        }),
+        200,
+        headers: _jsonHeaders,
+      );
+    }
     final latitude =
         double.tryParse(request.url.queryParameters['latitude'] ?? '') ??
         _hangzhou.latitude;
@@ -492,6 +510,36 @@ void main() {
 
       await provider.setEnabled(true);
       expect(notifications, greaterThan(0));
+    });
+  });
+
+  group('城市搜索转发', () {
+    test('searchLocations 转发给 service 并返回候选', () async {
+      await _seed();
+      final server = _Server();
+      final provider = WeatherProvider(service: server.service);
+      await provider.initialize();
+      await provider.ensureFresh();
+
+      final results = await provider.searchLocations('杭州');
+      expect(results, isNotEmpty);
+      expect(results.first.name, '杭州');
+      expect(results.first.admin1, '浙江');
+      expect(server.uris.last.host, 'geocoding-api.open-meteo.com');
+      expect(server.uris.last.queryParameters['name'], '杭州');
+    });
+
+    test('关键字不足两个字符时转发也不发请求', () async {
+      await _seed();
+      final server = _Server();
+      final provider = WeatherProvider(service: server.service);
+      await provider.initialize();
+      await provider.ensureFresh();
+      final callsBefore = server.calls;
+
+      expect(await provider.searchLocations('杭'), isEmpty);
+      expect(await provider.searchLocations('  '), isEmpty);
+      expect(server.calls, callsBefore);
     });
   });
 

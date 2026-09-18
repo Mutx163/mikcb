@@ -24,6 +24,7 @@ import '../models/surface_material.dart';
 import '../models/texture_preset.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../providers/weather_provider.dart';
 import '../utils/locale_utils.dart';
 import '../utils/widget_course_accent.dart';
 import '../services/home_widget_service.dart';
@@ -71,6 +72,7 @@ import 'log_viewer_entry.dart';
 import 'live_testing_fixture_screen.dart';
 import 'time_scheme_management_screen.dart';
 import 'timetable_profiles_screen.dart';
+import 'weather_city_picker_screen.dart';
 import 'hyperos_showcase_screen.dart';
 import 'miuix_showcase_screen.dart';
 import 'user_guide_screen.dart';
@@ -89,6 +91,7 @@ part 'settings/settings_live.dart';
 part 'settings/settings_timetable_page.dart';
 part 'settings/settings_home_widget.dart';
 part 'settings/settings_holiday.dart';
+part 'settings/settings_weather.dart';
 
 String formatLiveTimeCorrection(AppLocalizations l10n, int seconds) {
   if (seconds == 0) {
@@ -112,6 +115,7 @@ Widget? settingsSubpageById(String id) {
     'courseCardSettings' => const _CourseCardSettingsScreen(),
     'liveSettings' => const _LiveSettingsScreen(),
     'holidaySettings' => const _HolidaySettingsScreen(),
+    'weatherSettings' => const _WeatherSettingsScreen(),
     'homeWidgetSettings' => const _HomeWidgetSettingsScreen(),
     'diagnosticsSettings' => const _DiagnosticsScreen(),
     _ => null,
@@ -184,6 +188,14 @@ class TimetableSettingsScreen extends StatelessWidget {
             context,
             settings: const RouteSettings(name: '/settings/timetable-page'),
             builder: (_) => const _TimetablePageSettingsScreen(),
+          );
+        }
+
+        void openWeatherSettings() {
+          HyperosNavigation.push(
+            context,
+            settings: const RouteSettings(name: '/settings/weather'),
+            builder: (_) => const _WeatherSettingsScreen(),
           );
         }
 
@@ -341,6 +353,7 @@ class TimetableSettingsScreen extends StatelessWidget {
             openHolidaySettings: openHolidaySettings,
             openCourseCardSettings: openCourseCardSettings,
             openTimetablePageSettings: openTimetablePageSettings,
+            openWeatherSettings: openWeatherSettings,
             openHomeNavigation: openHomeNavigation,
             openLiveSettings: openLiveSettings,
             openHomeWidgetSettings: openHomeWidgetSettings,
@@ -397,6 +410,7 @@ class TimetableSettingsScreen extends StatelessWidget {
     required VoidCallback openHolidaySettings,
     required VoidCallback openCourseCardSettings,
     required VoidCallback openTimetablePageSettings,
+    required VoidCallback openWeatherSettings,
     required VoidCallback openHomeNavigation,
     required VoidCallback openLiveSettings,
     required VoidCallback openHomeWidgetSettings,
@@ -414,6 +428,9 @@ class TimetableSettingsScreen extends StatelessWidget {
     required VoidCallback openHyperosShowcase,
     required VoidCallback openMiuixShowcase,
   }) {
+    // 天气入口行要显示当前城市；用可空类型查，天气 provider 缺失时整行照常
+    // 显示（值为「未设置」），而不是让设置首页崩掉。
+    final weather = context.watch<WeatherProvider?>();
     return switch (index) {
       // 0 — Summary card (semester overview).
       0 => HyperosSummaryCard(
@@ -521,6 +538,20 @@ class TimetableSettingsScreen extends StatelessWidget {
                 ),
                 title: l10n.timetablePageSettingsTitle,
                 onClick: openTimetablePageSettings,
+              ),
+              _MiuixSettingsPreference(
+                startAction: _settingsIconBadge(
+                  MiuixIcons.extended.byName('cloudFill')!,
+                  HyperosIconColors.blue,
+                ),
+                title: l10n.weatherSettingsEntryTitle,
+                endActions: [
+                  Text(
+                    weather?.location?.name ?? l10n.weatherCityNotSet,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                ],
+                onClick: openWeatherSettings,
               ),
             ],
           ),

@@ -161,6 +161,14 @@ class WeatherProvider extends ChangeNotifier {
     return summarizeCourseWeather(forecast: forecast, start: start, end: end);
   }
 
+  /// 搜索城市。
+  ///
+  /// 转发给 service，让选城市的界面不必自建第二个 HTTP 客户端（那会多一份
+  /// 生命周期要管，还会在 debug 下绕过 BlackBox 观测）。
+  Future<List<WeatherLocation>> searchLocations(String query) {
+    return _service.searchLocations(query);
+  }
+
   /// 是否需要刷新。
   ///
   /// 四条失效条件：没有预报、城市对不上、窗口已走完（跨天）、超过 TTL。
