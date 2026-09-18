@@ -6431,5 +6431,15 @@
   "weatherCoverageNote": "預報只涵蓋未來 16 天，更遠的日期不顯示天氣。",
   "weatherAttribution": "天氣資料來自 Open-Meteo.com",
   "weatherSectionDisplayTitle": "顯示",
-  "weatherSectionSourceTitle": "資料來源"
+  "weatherSectionSourceTitle": "資料來源",
+  "weatherUseCurrentLocation": "使用目前位置",
+  "weatherLocating": "正在定位…",
+  "weatherSectionCurrentLocation": "目前位置",
+  "weatherSectionSearchCity": "搜尋城市",
+  "weatherLocationServiceDisabled": "請先開啟系統定位服務",
+  "weatherLocationPermissionDenied": "沒有位置權限，無法取得目前位置",
+  "weatherLocationPermissionDeniedForever": "位置權限已被拒絕，請到系統設定裡允許本應用程式使用位置",
+  "weatherLocationTimeout": "定位逾時，請到窗邊或室外再試",
+  "weatherLocationFailed": "定位失敗，請改用手動搜尋城市",
+  "weatherLocationAddressUnavailable": "已定位，但解析不出地名，請改用手動搜尋城市"
 }

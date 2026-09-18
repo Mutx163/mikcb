@@ -10959,6 +10959,37 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get weatherSectionSourceTitle => '数据来源';
+
+  @override
+  String get weatherUseCurrentLocation => '使用当前位置';
+
+  @override
+  String get weatherLocating => '正在定位…';
+
+  @override
+  String get weatherSectionCurrentLocation => '当前位置';
+
+  @override
+  String get weatherSectionSearchCity => '搜索城市';
+
+  @override
+  String get weatherLocationServiceDisabled => '请先开启系统定位服务';
+
+  @override
+  String get weatherLocationPermissionDenied => '没有位置权限，无法获取当前位置';
+
+  @override
+  String get weatherLocationPermissionDeniedForever =>
+      '位置权限已被拒绝，请到系统设置里允许本应用使用位置';
+
+  @override
+  String get weatherLocationTimeout => '定位超时，请到窗边或室外再试';
+
+  @override
+  String get weatherLocationFailed => '定位失败，请改用手动搜索城市';
+
+  @override
+  String get weatherLocationAddressUnavailable => '已定位，但解析不出地名，请改用手动搜索城市';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -21960,6 +21991,37 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get weatherSectionSourceTitle => '資料來源';
+
+  @override
+  String get weatherUseCurrentLocation => '使用目前位置';
+
+  @override
+  String get weatherLocating => '正在定位…';
+
+  @override
+  String get weatherSectionCurrentLocation => '目前位置';
+
+  @override
+  String get weatherSectionSearchCity => '搜尋城市';
+
+  @override
+  String get weatherLocationServiceDisabled => '請先開啟系統定位服務';
+
+  @override
+  String get weatherLocationPermissionDenied => '沒有位置權限，無法取得目前位置';
+
+  @override
+  String get weatherLocationPermissionDeniedForever =>
+      '位置權限已被拒絕，請到系統設定裡允許本應用程式使用位置';
+
+  @override
+  String get weatherLocationTimeout => '定位逾時，請到窗邊或室外再試';
+
+  @override
+  String get weatherLocationFailed => '定位失敗，請改用手動搜尋城市';
+
+  @override
+  String get weatherLocationAddressUnavailable => '已定位，但解析不出地名，請改用手動搜尋城市';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -32961,4 +33023,35 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get weatherSectionSourceTitle => '資料來源';
+
+  @override
+  String get weatherUseCurrentLocation => '使用目前位置';
+
+  @override
+  String get weatherLocating => '正在定位…';
+
+  @override
+  String get weatherSectionCurrentLocation => '目前位置';
+
+  @override
+  String get weatherSectionSearchCity => '搜尋城市';
+
+  @override
+  String get weatherLocationServiceDisabled => '請先開啟系統定位服務';
+
+  @override
+  String get weatherLocationPermissionDenied => '沒有位置權限，無法取得目前位置';
+
+  @override
+  String get weatherLocationPermissionDeniedForever =>
+      '位置權限已被拒絕，請到系統設定裡允許本應用程式使用位置';
+
+  @override
+  String get weatherLocationTimeout => '定位逾時，請到窗邊或室外再試';
+
+  @override
+  String get weatherLocationFailed => '定位失敗，請改用手動搜尋城市';
+
+  @override
+  String get weatherLocationAddressUnavailable => '已定位，但解析不出地名，請改用手動搜尋城市';
 }

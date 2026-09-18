@@ -11266,4 +11266,36 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get weatherSectionSourceTitle => 'データ提供元';
+
+  @override
+  String get weatherUseCurrentLocation => '現在地を使う';
+
+  @override
+  String get weatherLocating => '位置を取得中…';
+
+  @override
+  String get weatherSectionCurrentLocation => '現在地';
+
+  @override
+  String get weatherSectionSearchCity => '都市を検索';
+
+  @override
+  String get weatherLocationServiceDisabled => '先に端末の位置情報サービスを有効にしてください';
+
+  @override
+  String get weatherLocationPermissionDenied => '位置情報の権限がないため現在地を取得できません';
+
+  @override
+  String get weatherLocationPermissionDeniedForever =>
+      '位置情報の権限が拒否されています。システム設定で本アプリの位置情報を許可してください';
+
+  @override
+  String get weatherLocationTimeout => '位置取得がタイムアウトしました。窓際か屋外でお試しください';
+
+  @override
+  String get weatherLocationFailed => '位置を取得できませんでした。都市を検索してください';
+
+  @override
+  String get weatherLocationAddressUnavailable =>
+      '位置は取得できましたが地名を解決できません。都市を検索してください';
 }

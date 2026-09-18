@@ -19965,6 +19965,66 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'数据来源'**
   String get weatherSectionSourceTitle;
+
+  /// No description provided for @weatherUseCurrentLocation.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用当前位置'**
+  String get weatherUseCurrentLocation;
+
+  /// No description provided for @weatherLocating.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在定位…'**
+  String get weatherLocating;
+
+  /// No description provided for @weatherSectionCurrentLocation.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前位置'**
+  String get weatherSectionCurrentLocation;
+
+  /// No description provided for @weatherSectionSearchCity.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索城市'**
+  String get weatherSectionSearchCity;
+
+  /// No description provided for @weatherLocationServiceDisabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'请先开启系统定位服务'**
+  String get weatherLocationServiceDisabled;
+
+  /// No description provided for @weatherLocationPermissionDenied.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有位置权限，无法获取当前位置'**
+  String get weatherLocationPermissionDenied;
+
+  /// No description provided for @weatherLocationPermissionDeniedForever.
+  ///
+  /// In zh, this message translates to:
+  /// **'位置权限已被拒绝，请到系统设置里允许本应用使用位置'**
+  String get weatherLocationPermissionDeniedForever;
+
+  /// No description provided for @weatherLocationTimeout.
+  ///
+  /// In zh, this message translates to:
+  /// **'定位超时，请到窗边或室外再试'**
+  String get weatherLocationTimeout;
+
+  /// No description provided for @weatherLocationFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'定位失败，请改用手动搜索城市'**
+  String get weatherLocationFailed;
+
+  /// No description provided for @weatherLocationAddressUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'已定位，但解析不出地名，请改用手动搜索城市'**
+  String get weatherLocationAddressUnavailable;
 }
 
 class _AppLocalizationsDelegate

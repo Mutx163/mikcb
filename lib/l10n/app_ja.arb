@@ -6430,5 +6430,15 @@
   "weatherCoverageNote": "予報は今後 16 日分のみです。それより先の日付では天気を表示しません。",
   "weatherAttribution": "天気データ: Open-Meteo.com",
   "weatherSectionDisplayTitle": "表示",
-  "weatherSectionSourceTitle": "データ提供元"
+  "weatherSectionSourceTitle": "データ提供元",
+  "weatherUseCurrentLocation": "現在地を使う",
+  "weatherLocating": "位置を取得中…",
+  "weatherSectionCurrentLocation": "現在地",
+  "weatherSectionSearchCity": "都市を検索",
+  "weatherLocationServiceDisabled": "先に端末の位置情報サービスを有効にしてください",
+  "weatherLocationPermissionDenied": "位置情報の権限がないため現在地を取得できません",
+  "weatherLocationPermissionDeniedForever": "位置情報の権限が拒否されています。システム設定で本アプリの位置情報を許可してください",
+  "weatherLocationTimeout": "位置取得がタイムアウトしました。窓際か屋外でお試しください",
+  "weatherLocationFailed": "位置を取得できませんでした。都市を検索してください",
+  "weatherLocationAddressUnavailable": "位置は取得できましたが地名を解決できません。都市を検索してください"
 }

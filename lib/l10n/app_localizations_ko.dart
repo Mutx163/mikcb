@@ -11313,4 +11313,36 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get weatherSectionSourceTitle => '데이터 출처';
+
+  @override
+  String get weatherUseCurrentLocation => '현재 위치 사용';
+
+  @override
+  String get weatherLocating => '위치 확인 중…';
+
+  @override
+  String get weatherSectionCurrentLocation => '현재 위치';
+
+  @override
+  String get weatherSectionSearchCity => '도시 검색';
+
+  @override
+  String get weatherLocationServiceDisabled => '먼저 기기의 위치 서비스를 켜 주세요';
+
+  @override
+  String get weatherLocationPermissionDenied => '위치 권한이 없어 현재 위치를 가져올 수 없습니다';
+
+  @override
+  String get weatherLocationPermissionDeniedForever =>
+      '위치 권한이 거부되었습니다. 시스템 설정에서 이 앱의 위치 사용을 허용해 주세요';
+
+  @override
+  String get weatherLocationTimeout => '위치 확인 시간이 초과되었습니다. 창가나 실외에서 다시 시도해 주세요';
+
+  @override
+  String get weatherLocationFailed => '위치 확인에 실패했습니다. 도시를 검색해 주세요';
+
+  @override
+  String get weatherLocationAddressUnavailable =>
+      '위치는 확인했지만 지명을 찾지 못했습니다. 도시를 검색해 주세요';
 }

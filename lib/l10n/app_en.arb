@@ -6434,5 +6434,15 @@
   "weatherCoverageNote": "Forecasts only cover the next 16 days; weather is hidden beyond that.",
   "weatherAttribution": "Weather data from Open-Meteo.com",
   "weatherSectionDisplayTitle": "Display",
-  "weatherSectionSourceTitle": "Data source"
+  "weatherSectionSourceTitle": "Data source",
+  "weatherUseCurrentLocation": "Use current location",
+  "weatherLocating": "Locating…",
+  "weatherSectionCurrentLocation": "Current location",
+  "weatherSectionSearchCity": "Search city",
+  "weatherLocationServiceDisabled": "Turn on system location services first",
+  "weatherLocationPermissionDenied": "No location permission, so your position can't be read",
+  "weatherLocationPermissionDeniedForever": "Location permission was denied. Allow location access for this app in system settings",
+  "weatherLocationTimeout": "Locating timed out. Try again near a window or outdoors",
+  "weatherLocationFailed": "Locating failed. Search for a city instead",
+  "weatherLocationAddressUnavailable": "Located, but couldn't resolve a place name. Search for a city instead"
 }

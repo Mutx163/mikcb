@@ -6430,5 +6430,15 @@
   "weatherCoverageNote": "예보는 앞으로 16일까지만 제공되며, 그 이후 날짜에는 날씨를 표시하지 않습니다.",
   "weatherAttribution": "날씨 데이터: Open-Meteo.com",
   "weatherSectionDisplayTitle": "표시",
-  "weatherSectionSourceTitle": "데이터 출처"
+  "weatherSectionSourceTitle": "데이터 출처",
+  "weatherUseCurrentLocation": "현재 위치 사용",
+  "weatherLocating": "위치 확인 중…",
+  "weatherSectionCurrentLocation": "현재 위치",
+  "weatherSectionSearchCity": "도시 검색",
+  "weatherLocationServiceDisabled": "먼저 기기의 위치 서비스를 켜 주세요",
+  "weatherLocationPermissionDenied": "위치 권한이 없어 현재 위치를 가져올 수 없습니다",
+  "weatherLocationPermissionDeniedForever": "위치 권한이 거부되었습니다. 시스템 설정에서 이 앱의 위치 사용을 허용해 주세요",
+  "weatherLocationTimeout": "위치 확인 시간이 초과되었습니다. 창가나 실외에서 다시 시도해 주세요",
+  "weatherLocationFailed": "위치 확인에 실패했습니다. 도시를 검색해 주세요",
+  "weatherLocationAddressUnavailable": "위치는 확인했지만 지명을 찾지 못했습니다. 도시를 검색해 주세요"
 }

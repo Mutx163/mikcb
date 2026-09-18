@@ -11599,4 +11599,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weatherSectionSourceTitle => 'Data source';
+
+  @override
+  String get weatherUseCurrentLocation => 'Use current location';
+
+  @override
+  String get weatherLocating => 'Locating…';
+
+  @override
+  String get weatherSectionCurrentLocation => 'Current location';
+
+  @override
+  String get weatherSectionSearchCity => 'Search city';
+
+  @override
+  String get weatherLocationServiceDisabled =>
+      'Turn on system location services first';
+
+  @override
+  String get weatherLocationPermissionDenied =>
+      'No location permission, so your position can\'t be read';
+
+  @override
+  String get weatherLocationPermissionDeniedForever =>
+      'Location permission was denied. Allow location access for this app in system settings';
+
+  @override
+  String get weatherLocationTimeout =>
+      'Locating timed out. Try again near a window or outdoors';
+
+  @override
+  String get weatherLocationFailed =>
+      'Locating failed. Search for a city instead';
+
+  @override
+  String get weatherLocationAddressUnavailable =>
+      'Located, but couldn\'t resolve a place name. Search for a city instead';
 }

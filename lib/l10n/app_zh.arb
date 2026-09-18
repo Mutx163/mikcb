@@ -6491,5 +6491,15 @@
   "weatherCoverageNote": "预报只覆盖未来 16 天，更远的日期不显示天气。",
   "weatherAttribution": "天气数据来自 Open-Meteo.com",
   "weatherSectionDisplayTitle": "显示",
-  "weatherSectionSourceTitle": "数据来源"
+  "weatherSectionSourceTitle": "数据来源",
+  "weatherUseCurrentLocation": "使用当前位置",
+  "weatherLocating": "正在定位…",
+  "weatherSectionCurrentLocation": "当前位置",
+  "weatherSectionSearchCity": "搜索城市",
+  "weatherLocationServiceDisabled": "请先开启系统定位服务",
+  "weatherLocationPermissionDenied": "没有位置权限，无法获取当前位置",
+  "weatherLocationPermissionDeniedForever": "位置权限已被拒绝，请到系统设置里允许本应用使用位置",
+  "weatherLocationTimeout": "定位超时，请到窗边或室外再试",
+  "weatherLocationFailed": "定位失败，请改用手动搜索城市",
+  "weatherLocationAddressUnavailable": "已定位，但解析不出地名，请改用手动搜索城市"
 }
