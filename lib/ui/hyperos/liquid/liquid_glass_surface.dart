@@ -304,7 +304,17 @@ class _RenderLiquidGlass extends RenderProxyBox {
     backdropLayer.backdropKey = _backdropKey;
     backdropLayer.filter = ui.ImageFilter.compose(
       outer: ui.ImageFilter.shader(shader),
-      inner: ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+      // `tileMode` 必须显式给。默认值（unspecified → decal）会把模糊结果在
+      // 离图边约 3σ 的一条带里淡成**透明黑**，而着色器在玻璃边缘是把采样点
+      // 朝**外**推的（最多 `refraction` 个逻辑 px），正好探进这条带 —— 于是
+      // 每块玻璃贴图边的那一侧就被涂出一条黑线（真机实测：把「模糊」调到 0
+      // 这条线即消失，因为 3σ 归零）。同一份几何下磨砂档用 clamp
+      // （见 `stable_frosted_surface.dart`），并不发黑，故照抄同一个值。
+      inner: ui.ImageFilter.blur(
+        sigmaX: sigma,
+        sigmaY: sigma,
+        tileMode: ui.TileMode.clamp,
+      ),
     );
     context.pushLayer(backdropLayer, super.paint, offset);
   }
