@@ -125,6 +125,34 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('玻璃坞+自适应：没课的日视图也能下拉打开快捷导入药丸', (tester) async {
+    await pumpHome(tester: tester, form: HomeNavigationForm.glassDock);
+    final today = DateTime.now();
+
+    // 进日视图：本例没有任何课程，进的是空态那天。
+    await tester.tap(find.byKey(ValueKey('weekday-header-1-${today.weekday}')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    final column = find.byKey(ValueKey('day-column-1-${today.weekday}'));
+    expect(column, findsOneWidget, reason: '应已进入日视图');
+
+    // 空态下从顶部下拉：空态此前只是个 Padding（不是滚动体），下拉没有着力点，
+    // 整条手势无处驱动 → 药丸永远出不来。
+    final gesture = await tester.startGesture(tester.getCenter(column));
+    await gesture.moveBy(const Offset(0, 30));
+    await gesture.moveBy(const Offset(0, 80));
+    await tester.pump();
+    expect(
+      find.byType(MiuixCircularProgressIndicator),
+      findsOneWidget,
+      reason: '没课的那天也要能下拉导入',
+    );
+
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('玻璃坞+自适应：网格未回顶部的小幅下拉不应触发快捷导入', (
     tester,
   ) async {

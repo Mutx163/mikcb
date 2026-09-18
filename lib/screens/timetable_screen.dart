@@ -4933,10 +4933,26 @@ class _TimetableScreenState extends State<TimetableScreen>
     final todayButtonAvoidance = _backToTodayButtonScrollInset(provider);
     final bottomContentInset = 8 + dockScrollAvoidance + todayButtonAvoidance;
     if (agendaItems.isEmpty) {
-      return Padding(
+      // 空白天同样要能下拉导入：空态本身不是滚动体，外面套一层
+      // AlwaysScrollable 的滚动视图，下拉才有着力点（有课那天走的是
+      // ListView，两条路都必须能触发）。physics 与有课那天同源，
+      // 「下拉开着时冻结」的手感一致。
+      return CustomScrollView(
         key: key,
-        padding: EdgeInsets.fromLTRB(14, 0, 14, bottomContentInset),
-        child: _buildDayViewEmptyColumn(week: week, settings: settings),
+        physics: _homePullVerticalPhysics,
+        slivers: [
+          // SliverFillRemaining 让空态仍占满视口（内部 Center 照旧居中），
+          // 底距留在 child 的 Padding 上——与改动前"Expanded + Padding"的
+          // 布局逐像素一致，坞避让那条既有断言（找 bottom = 8 + 药丸占用
+          // 的 Padding）也照旧成立。
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(14, 0, 14, bottomContentInset),
+              child: _buildDayViewEmptyColumn(week: week, settings: settings),
+            ),
+          ),
+        ],
       );
     }
     // Gaussian cards sample the cached wallpaper bitmap while the day view
