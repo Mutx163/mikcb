@@ -8,7 +8,6 @@ import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/widgets/home_top_menu_popup.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 // 玻璃坞底栏现只有 日/周 两个 Tab（设置入口走 ⋮ 八宫格菜单），
 // 原三个「设置 Tab」场景（渲染/切回/日→设置→日）随该 Tab 一并删除。
@@ -50,7 +49,7 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.byType(GlassTabBar), findsOneWidget);
+    expect(find.byType(SoftGlassTabBar), findsOneWidget);
     return provider;
   }
 

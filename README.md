@@ -127,7 +127,7 @@ flutter build apk --release --flavor prod --target-platform android-arm64
 - Flutter
 - Provider
 - SharedPreferences
-- liquid_glass_widgets（液态玻璃界面）
+- 自研液态玻璃材质（Fragment Shader，Impeller）
 - fl_chart（统计图表）
 - flutter_miuix（HyperOS 风格组件）
 - mobile_scanner / fountain_codes（二维码传输）

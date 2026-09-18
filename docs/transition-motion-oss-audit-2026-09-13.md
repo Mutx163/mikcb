@@ -2,6 +2,11 @@
 
 日期：2026-09-13 · 范围：`lib/ui/hyperos/`、`lib/screens/timetable_screen.dart`、`pubspec.yaml`
 
+> **2026-09-18 更新：** `liquid_glass_widgets` 已从依赖中整体移除，本文中「我们已经在依赖它」
+> 与 §D「用该包自带的 Morph 引擎」两条建议随之失效；液态玻璃改由本仓自研折射着色器实现
+> （`.agents/notes/implemented/architecture/2026-09-18-liquid-glass-surface.md`）。
+> 其余结论（路由转场、预测性返回、运动参数重复）不受影响。
+
 ## 结论速览
 
 1. **我们的路由转场不需要换开源库**。它是按 MIUI/HyperOS 系统设置的规格手写的（水平 shared-axis + 卡片圆角 + 视差 + 投影 + 系统动画缩放），pub.dev 上没有能 1:1 复刻这套语义的包（`page_transition` / `concentric_transition` / `go_transitions` / `page_route_animator` 等全是"换一套通用转场"，反而会丢掉卡片圆角、投影、速度缩放）。

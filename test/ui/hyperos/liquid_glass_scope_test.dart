@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
-import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
 
 import '../../helpers_test_app.dart';
 
@@ -172,7 +172,7 @@ void main() {
 
     testWidgets('玻璃模式选择小弹窗：默认跟随液态玻璃', (tester) async {
       await openSelectPopup(tester, appearanceValue: liquidAppearance());
-      expect(find.byType(HyperosLiquidGlassSurface), findsOneWidget);
+      expect(find.byType(LiquidGlassSurface), findsOneWidget);
     });
 
     testWidgets('玻璃模式选择小弹窗：开关关闭回退磨砂', (tester) async {
@@ -180,13 +180,13 @@ void main() {
         tester,
         appearanceValue: liquidAppearance(popup: false),
       );
-      expect(find.byType(HyperosLiquidGlassSurface), findsNothing);
+      expect(find.byType(LiquidGlassSurface), findsNothing);
       expect(find.text('Option A'), findsOneWidget);
     });
 
     testWidgets('预设主题式全屏选择面板：默认保持磨砂', (tester) async {
       await openSelectSheet(tester, appearanceValue: liquidAppearance());
-      expect(find.byType(HyperosLiquidGlassSurface), findsNothing);
+      expect(find.byType(LiquidGlassSurface), findsNothing);
       expect(find.byType(HyperosSheetFrame), findsOneWidget);
     });
 
@@ -195,12 +195,12 @@ void main() {
         tester,
         appearanceValue: liquidAppearance(selectSheet: true),
       );
-      expect(find.byType(HyperosLiquidGlassSurface), findsOneWidget);
+      expect(find.byType(LiquidGlassSurface), findsOneWidget);
     });
 
     testWidgets('弹窗与对话框：默认仍为液态玻璃', (tester) async {
       await openDemoSheet(tester, appearanceValue: liquidAppearance());
-      expect(find.byType(HyperosLiquidGlassSurface), findsOneWidget);
+      expect(find.byType(LiquidGlassSurface), findsOneWidget);
     });
 
     testWidgets('弹窗与对话框：开关关闭回退磨砂', (tester) async {
@@ -208,7 +208,7 @@ void main() {
         tester,
         appearanceValue: liquidAppearance(sheetDialog: false),
       );
-      expect(find.byType(HyperosLiquidGlassSurface), findsNothing);
+      expect(find.byType(LiquidGlassSurface), findsNothing);
       expect(find.byType(HyperosSheetFrame), findsOneWidget);
     });
   });

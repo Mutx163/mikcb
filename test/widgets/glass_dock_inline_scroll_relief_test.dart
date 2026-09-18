@@ -9,7 +9,6 @@ import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/widgets/home_menu_route_catalog.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// 玻璃坞内嵌页底部滚动余量回归（满屏悬浮对全部底栏页面生效）。
 ///
@@ -72,12 +71,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(tester.takeException(), isNull);
-    expect(find.byType(GlassTabBar), findsOneWidget);
+    expect(find.byType(SoftGlassTabBar), findsOneWidget);
     return provider;
   }
 
   Finder dockTab(String label) => find
-      .descendant(of: find.byType(GlassTabBar), matching: find.text(label))
+      .descendant(of: find.byType(SoftGlassTabBar), matching: find.text(label))
       .first;
 
   /// 内嵌课表设置页主列表（pageStorageKey 定位）的底部内边距。

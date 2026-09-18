@@ -6,11 +6,9 @@ import 'package:flutter_miuix/miuix.dart'
         MiuixGlassSecondaryPopup,
         MiuixGlassTransformPopup;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart'
-    show AdaptiveGlass, LightweightLiquidGlass;
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
-import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart'
-    show HyperosLiquidGlassSurface, UndimmedBackdropCapture;
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart'
+    show LiquidGlassSurface, UndimmedBackdropCapture;
 import 'package:university_timetable/widgets/home_top_menu.dart';
 import 'package:university_timetable/widgets/home_top_menu_popup.dart';
 
@@ -253,14 +251,13 @@ void main() {
       expect(glasses.last.useAncestorGroupCapture, isTrue);
     });
 
-    testWidgets('弹窗与顶栏/玻璃坞同一条渲染路径（无抓拍纹理、无快照垫底）', (
-      tester,
-    ) async {
-      // 回归锁：弹窗液态面走 AdaptiveGlass（premium 实时读底面），与顶栏带、
-      // 玻璃坞、卡片同一个组件同一条路。曾经它有两条歧路：①传 backgroundKey
-      // 走抓拍纹理通道——玻璃里是一张静态照片（ticker 只在几何变化时重拍、
-      // 稳定后停摆），展开时照片跟着卡片走；②单独开 premium 档——于是同一个
-      // 材质出现「顶栏一种观感、弹窗另一种观感」。两条都已删除。
+    testWidgets('弹窗与顶栏/玻璃坞同一个玻璃表面组件', (tester) async {
+      // 回归锁：弹窗液态面走 [LiquidGlassSurface]（全 app 唯一的玻璃表面
+      // 组件），与顶栏带、玻璃坞、课程卡片同一条路。曾经它有两条歧路：
+      // ①传 backgroundKey 走抓拍纹理通道——玻璃里是一张静态照片（ticker
+      // 只在几何变化时重拍、稳定后停摆），展开时照片跟着卡片走；②按表面
+      // 单独分档——于是同一个材质出现「顶栏一种观感、弹窗另一种观感」。
+      // 两条路与它们依赖的第三方包都已删除。
       await pumpPopup(
         tester,
         items: items,
@@ -270,11 +267,8 @@ void main() {
       await tester.tap(find.text('视图父项'));
       await tester.pumpAndSettle();
 
-      // 主面板 + 子卡都走同一条路。
-      expect(find.byType(HyperosLiquidGlassSurface), findsNWidgets(2));
-      expect(find.byType(AdaptiveGlass), findsNWidgets(2));
-      // 抓拍纹理通道入口（LightweightLiquidGlass）已从组件上删除。
-      expect(find.byType(LightweightLiquidGlass), findsNothing);
+      // 主面板 + 子卡都走同一个表面组件。
+      expect(find.byType(LiquidGlassSurface), findsNWidgets(2));
     });
 
     testWidgets('无二级子项的弹窗不挂捕获垫层', (tester) async {

@@ -599,7 +599,15 @@ enum CourseCardSurfaceStyle {
 }
 
 extension CourseCardSurfaceStyleX on CourseCardSurfaceStyle {
-  String get value => name;
+  /// 持久化值。**刻意不等于 `name`**：新档的枚举名是 `liquidGlass`，但磁盘上
+  /// 沿用 `'refraction'` —— `'liquidGlass'` 这个字符串已经被老版本的「玻璃」
+  /// 档占用（语义是现在的高斯磨砂，见 [fromValue]），跟着枚举改名会让存量配置
+  /// 悄悄换材质。
+  String get value => switch (this) {
+    CourseCardSurfaceStyle.solid => 'solid',
+    CourseCardSurfaceStyle.gaussian => 'gaussian',
+    CourseCardSurfaceStyle.liquidGlass => 'refraction',
+  };
 
   /// 是否属于「寄生在共享预模糊壁纸上」的玻璃材质（高斯模糊 / 液态玻璃）。
   ///
@@ -609,18 +617,17 @@ extension CourseCardSurfaceStyleX on CourseCardSurfaceStyle {
   bool get isGlass => this != CourseCardSurfaceStyle.solid;
 
   static CourseCardSurfaceStyle fromValue(String? value) {
-    // 旧档位迁移：半透明并入实体卡片；玻璃 / 旧液态玻璃并入高斯模糊；
-    // 旧的 'refraction' 持久化值并入现在的液态玻璃档。
-    // 注意 'glass' 这个历史字符串**不是**液态玻璃档：老配置里它指的是当年
-    // 那档液态玻璃，语义上就是现在的高斯磨砂。
+    // 旧档位迁移：半透明并入实体卡片；玻璃 / 旧液态玻璃并入高斯模糊。
+    // 注意 'glass' 与 'liquidGlass' 这两个历史字符串**不是**现在的液态玻璃
+    // 档：老配置里它们指的是当年那档液态玻璃，语义上就是现在的高斯磨砂。
+    // 液态玻璃档的持久化值是 'refraction'（见 [value]），由下面的按值匹配
+    // 命中，所以本档既不需要改磁盘格式，也不会抢走那两条历史值。
     switch (value) {
       case 'translucent':
         return CourseCardSurfaceStyle.solid;
       case 'glass':
       case 'liquidGlass':
         return CourseCardSurfaceStyle.gaussian;
-      case 'refraction':
-        return CourseCardSurfaceStyle.liquidGlass;
     }
     return CourseCardSurfaceStyle.values.firstWhere(
       (item) => item.value == value,

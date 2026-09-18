@@ -36,8 +36,11 @@ void main() {
       // 拖动液态调参滑杆（tuning 偏离标准预设）→ 不再命中。
       expect(
         texturePresetOf(
-          liquid.copyWith(liquidGlassTuning: liquid.liquidGlassTuning!
-              .copyWith(blur: liquid.liquidGlassTuning!.blur + 1)),
+          liquid.copyWith(
+            liquidGlassTuning: liquid.liquidGlassTuning!.copyWith(
+              refraction: liquid.liquidGlassTuning!.refraction + 1,
+            ),
+          ),
         ),
         isNull,
       );

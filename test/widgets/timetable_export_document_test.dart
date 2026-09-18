@@ -9,7 +9,7 @@ import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
-import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
 import 'package:university_timetable/widgets/timetable_export_document.dart';
 
 import '../helpers_test_app.dart';

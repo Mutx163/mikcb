@@ -1,7 +1,7 @@
-// 课程卡片「折射玻璃」档（CourseCardSurfaceStyle.refraction）的回归测试。
+// 课程卡片「液态玻璃」档（CourseCardSurfaceStyle.liquidGlass）的回归测试。
 //
 // 这一档是「实体卡片 / 高斯模糊」之外的第三种材质：与高斯档采**同一份**共享
-// 预模糊位图，差别只在最后一步多跑一次折射着色器。因此它的契约有两块：
+// 预模糊位图，差别只在最后一步多跑一次液态玻璃着色器。因此它的契约有两块：
 //   ① 档位语义 —— 它属于「玻璃材质」，前置条件与墨色规则必须跟高斯档同源
 //      （判据是 CourseCardSurfaceStyleX.isGlass，不是 == gaussian）；
 //   ② 着色器契约 —— `.frag` 的 uniform 名字必须与 Dart 侧解析的名字对得上，
@@ -25,18 +25,20 @@ import 'package:university_timetable/widgets/preblurred_wallpaper_glass.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('CourseCardSurfaceStyle.refraction 档位语义', () {
+  group('CourseCardSurfaceStyle.liquidGlass 档位语义', () {
     test('value 与 fromValue 往返一致', () {
-      expect(CourseCardSurfaceStyle.refraction.value, 'refraction');
+      // 枚举名换成了 liquidGlass，但磁盘上仍写 'refraction'：'liquidGlass'
+      // 这个字符串已经被老版本的「玻璃」档占用（见下一条）。
+      expect(CourseCardSurfaceStyle.liquidGlass.value, 'refraction');
       expect(
         CourseCardSurfaceStyleX.fromValue('refraction'),
-        CourseCardSurfaceStyle.refraction,
+        CourseCardSurfaceStyle.liquidGlass,
       );
     });
 
     test('历史字符串 glass / liquidGlass 仍归高斯，不会被新档抢走', () {
       // 回归点：老配置里的 'glass' 指的是当年那档液态玻璃，语义就是现在的
-      // 高斯磨砂。新档用 'refraction' 这个名字正是为了不与它撞车。
+      // 高斯磨砂。新档的持久化值用 'refraction' 正是为了不与它撞车。
       expect(
         CourseCardSurfaceStyleX.fromValue('glass'),
         CourseCardSurfaceStyle.gaussian,
@@ -54,21 +56,21 @@ void main() {
     test('isGlass：两种玻璃档为真，实体档为假', () {
       expect(CourseCardSurfaceStyle.solid.isGlass, isFalse);
       expect(CourseCardSurfaceStyle.gaussian.isGlass, isTrue);
-      expect(CourseCardSurfaceStyle.refraction.isGlass, isTrue);
+      expect(CourseCardSurfaceStyle.liquidGlass.isGlass, isTrue);
     });
 
-    test('折射档同样被视为「壁纸会透出来」', () {
+    test('液态玻璃档同样被视为「壁纸会透出来」', () {
       // 墨色对比度判据：玻璃档不能拿实体卡面色做对比度基准。
-      expect(courseCardSurfaceShowsWallpaper(CourseCardSurfaceStyle.refraction), isTrue);
+      expect(courseCardSurfaceShowsWallpaper(CourseCardSurfaceStyle.liquidGlass), isTrue);
       expect(courseCardSurfaceShowsWallpaper(CourseCardSurfaceStyle.gaussian), isTrue);
       expect(courseCardSurfaceShowsWallpaper(CourseCardSurfaceStyle.solid), isFalse);
     });
   });
 
-  group('effectiveCourseCardSurfaceStyle 对折射档的口径', () {
-    test('没有壁纸：折射档回落实体', () {
+  group('effectiveCourseCardSurfaceStyle 对液态玻璃档的口径', () {
+    test('没有壁纸：液态玻璃档回落实体', () {
       final settings = TimetableSettings.defaults().copyWith(
-        courseCardSurfaceStyle: CourseCardSurfaceStyle.refraction,
+        courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
       );
       expect(
         effectiveCourseCardSurfaceStyle(settings),
@@ -76,29 +78,29 @@ void main() {
       );
     });
 
-    test('有壁纸：折射档保持折射', () async {
+    test('有壁纸：液态玻璃档保持液态玻璃', () async {
       final dir = await Directory.systemTemp.createTemp('refraction_style');
       final file = File('${dir.path}/wall.png')..writeAsBytesSync([1, 2, 3, 4]);
       addTearDown(() => dir.deleteSync(recursive: true));
       final settings = TimetableSettings.defaults().copyWith(
         homePageWallpaperPath: file.path,
-        courseCardSurfaceStyle: CourseCardSurfaceStyle.refraction,
+        courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
       );
       expect(
         effectiveCourseCardSurfaceStyle(settings),
-        CourseCardSurfaceStyle.refraction,
+        CourseCardSurfaceStyle.liquidGlass,
       );
     });
 
-    test('模糊管线不可用：折射档与高斯档一样回落实体', () async {
-      // 折射档也寄生在同一份预模糊位图 / 全局模糊管线上，管线关了就没有可
+    test('模糊管线不可用：液态玻璃档与高斯档一样回落实体', () async {
+      // 液态玻璃档也寄生在同一份预模糊位图 / 全局模糊管线上，管线关了就没有可
       // 采样的磨砂背景，裸 tint 过壁纸读作透明卡片。
       final dir = await Directory.systemTemp.createTemp('refraction_blur');
       final file = File('${dir.path}/wall.png')..writeAsBytesSync([1, 2, 3, 4]);
       addTearDown(() => dir.deleteSync(recursive: true));
       final settings = TimetableSettings.defaults().copyWith(
         homePageWallpaperPath: file.path,
-        courseCardSurfaceStyle: CourseCardSurfaceStyle.refraction,
+        courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
       );
       expect(
         effectiveCourseCardSurfaceStyle(settings, gaussianBlurAvailable: false),
@@ -108,21 +110,21 @@ void main() {
   });
 
   group('courseCardSurfaceMaterial 的展示标签', () {
-    test('折射档在模糊开着时报 refractionGlass，而不是 frostGaussian', () {
+    test('液态玻璃档在模糊开着时报 refractionGlass，而不是 frostGaussian', () {
       final settings = TimetableSettings.defaults().copyWith(
         frostedBlurEnabled: true,
-        courseCardSurfaceStyle: CourseCardSurfaceStyle.refraction,
+        courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
       );
       expect(
         courseCardSurfaceMaterial(settings),
-        SurfaceMaterial.refractionGlass,
+        SurfaceMaterial.liquidGlass,
       );
     });
 
     test('模糊关掉时仍然回落实体', () {
       final settings = TimetableSettings.defaults().copyWith(
         frostedBlurEnabled: false,
-        courseCardSurfaceStyle: CourseCardSurfaceStyle.refraction,
+        courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
       );
       expect(courseCardSurfaceMaterial(settings), SurfaceMaterial.solid);
     });
@@ -139,7 +141,7 @@ void main() {
     });
   });
 
-  group('折射着色器契约', () {
+  group('液态玻璃着色器契约', () {
     test('资产已声明且文件存在', () {
       final pubspec = File('pubspec.yaml').readAsStringSync();
       expect(
@@ -171,7 +173,7 @@ void main() {
     });
   });
 
-  group('CourseSurface 折射档', () {
+  group('CourseSurface 液态玻璃档', () {
     Future<void> pumpSurface(
       WidgetTester tester,
       CourseCardSurfaceStyle style,
@@ -189,9 +191,9 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('模糊管线不可用：折射档回退实体卡面，不留裸 tint', (tester) async {
+    testWidgets('模糊管线不可用：液态玻璃档回退实体卡面，不留裸 tint', (tester) async {
       // 测试环境（VM）liveBlurSupported 恒为 false，正对应「模糊管线不可用」。
-      await pumpSurface(tester, CourseCardSurfaceStyle.refraction);
+      await pumpSurface(tester, CourseCardSurfaceStyle.liquidGlass);
 
       expect(find.byType(BackdropFilter), findsNothing);
       final surface = tester.widget<DecoratedBox>(find.byType(DecoratedBox));
@@ -208,7 +210,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: CourseSurface(
-            style: CourseCardSurfaceStyle.refraction,
+            style: CourseCardSurfaceStyle.liquidGlass,
             color: Color(0xFF2196F3),
             borderRadius: 12,
             child: SizedBox.expand(),
@@ -221,7 +223,7 @@ void main() {
     });
   });
 
-  group('PreblurredWallpaperAlignedFill 的折射参数', () {
+  group('PreblurredWallpaperAlignedFill 的液态玻璃参数', () {
     testWidgets('带 glass 参数时正常占位、不抛异常', (tester) async {
       await tester.pumpWidget(
         const Directionality(
@@ -324,7 +326,7 @@ void main() {
   // 真机上卡片就是整屏预模糊位图上的一个移动窗口，而不是把位图拉伸铺满自己。
   //
   // 所有坐标推算都按「像素中心在 +0.5」来（Impeller 与本地测试后端同一口径）。
-  group('折射着色器绘制结果', () {
+  group('液态玻璃着色器绘制结果', () {
     test('圆角内不透明且就是背景位图，圆角外全透明', () async {
       final texture = await _glassTexture(
         const Size(100, 100),
@@ -466,7 +468,7 @@ Future<ui.Image> _glassTexture(
   return image;
 }
 
-/// 把折射着色器按给定参数画进 [_glassCardSize] 的位图，返回 rawRgba 像素。
+/// 把液态玻璃着色器按给定参数画进 [_glassCardSize] 的位图，返回 rawRgba 像素。
 ///
 /// 这里直接摆 uniform，而不是走 `CourseSurface` → `PreblurredWallpaperAlignedFill`：
 /// 那条路要求 `HyperosBlurredHeader.backdropBlurEnabled` 为真，而测试环境恒为假

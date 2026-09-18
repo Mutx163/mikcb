@@ -71,10 +71,17 @@ void main() {
       final snapshot = snapshotOf(TimetableSettings.defaults());
 
       expect(snapshot['lgTuningSource'], 'builtin');
-      // 内置兜底档的实测值（liquid_glass_tokens.dart 的 sheetSettings）。
-      expect(snapshot['lgThickness'], 30);
-      expect(snapshot['lgBlur'], 3);
-      expect(snapshot['lgChromaticAberration'], 0.12);
+      // 内置兜底档的实测值（LiquidGlassTuning.defaults）。
+      expect(snapshot['lgRefraction'], LiquidGlassTuning.defaultRefraction);
+      expect(snapshot['lgRefractionBand'], LiquidGlassTuning.defaultRefractionBand);
+      expect(
+        snapshot['lgRefractionEdgePow'],
+        LiquidGlassTuning.defaultRefractionEdgePow,
+      );
+      expect(snapshot['lgRimStrength'], LiquidGlassTuning.defaultRimStrength);
+      expect(snapshot['lgRimWidth'], LiquidGlassTuning.defaultRimWidth);
+      expect(snapshot['lgBlurSigma'], LiquidGlassTuning.defaultBlurSigma);
+      expect(snapshot['lgTintAlpha'], LiquidGlassTuning.defaultTintAlpha);
     });
 
     test('液态调参非空时标记为 custom 并写出该档的数值', () {
@@ -88,7 +95,8 @@ void main() {
 
       expect(snapshot['lgTuningSource'], 'custom');
       expect(snapshot['lgPreset'], 'dense');
-      expect(snapshot['lgThickness'], dense.thickness);
+      expect(snapshot['lgRefraction'], dense.refraction);
+      expect(snapshot['lgBlurSigma'], dense.blurSigma);
     });
   });
 

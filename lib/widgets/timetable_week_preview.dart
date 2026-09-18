@@ -258,11 +258,13 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     // Combined bands (~84dp) keep full thickness like the home sheet.
     // 薄带（≤52dp）与设置页预览里的玻璃带：把**折射位移**按带高折算收小，
     // 否则上下两条边缘折射带会占满整条带、读成一圈描边而不是「一条玻璃带」。
-    // 与旧版「按厚度折算」是同一个几何意图，只是量纲换成了折射位移。
+    // 与旧版「按厚度折算」是同一个几何意图，只是量纲换成了折射位移：
+    // 旧厚度上限 40 → 窄带封顶 8~14、预览封顶 22（55%）；折射量程 0~20，
+    // 故窄带沿用 8~14（默认折射 8 不被误压），预览按同比例取 11。
     // Combined bands (~84dp) keep full displacement like the home sheet.
     final double? bandMaxRefraction = height <= 52
-        ? (height * 0.28).clamp(2.0, 6.0)
-        : (isSettingsPreview ? 6.0 : null);
+        ? (height * 0.28).clamp(8.0, 14.0)
+        : (isSettingsPreview ? 11.0 : null);
     return [
       Positioned(
         top: top,

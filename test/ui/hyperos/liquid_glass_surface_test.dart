@@ -4,8 +4,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:university_timetable/ui/hyperos/refraction/glass_surface_shader.dart';
-import 'package:university_timetable/ui/hyperos/refraction/refraction_glass_surface.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_shader.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
 import 'package:university_timetable/widgets/course_glass_shader.dart';
 
 /// 模拟的「屏幕」尺寸 = 绑定纹理尺寸 = 着色器里的 `u_size`。
@@ -15,13 +15,13 @@ const Size _screenSize = Size(200, 200);
 const Offset _surfaceOrigin = Offset(50, 50);
 const Size _surfaceSize = Size(100, 100);
 
-const GlassSurfaceStyle _style = GlassSurfaceStyle(
+const LiquidGlassStyle _style = LiquidGlassStyle(
   borderRadius: 20,
   tint: Color(0x00000000),
 );
 
 void main() {
-  group('折射表面着色器契约', () {
+  group('液态玻璃表面着色器契约', () {
     test('资产已声明且文件存在', () {
       final pubspec = File('pubspec.yaml').readAsStringSync();
       expect(
@@ -30,31 +30,31 @@ void main() {
         reason: '着色器没在 pubspec 的 flutter.shaders 里声明，运行时取不到资产',
       );
       expect(
-        File(GlassSurfaceShader.instance.assetKey).existsSync(),
+        File(LiquidGlassSurfaceShader.instance.assetKey).existsSync(),
         isTrue,
         reason: '声明的资产键必须对应一个真实文件',
       );
     });
 
     test('着色器能编译，且 Dart 侧解析的每个 uniform 名字都存在', () async {
-      await GlassSurfaceShader.instance.ensureLoaded();
+      await LiquidGlassSurfaceShader.instance.ensureLoaded();
       expect(
-        GlassSurfaceShader.instance.isLoaded,
+        LiquidGlassSurfaceShader.instance.isLoaded,
         isTrue,
         reason: '着色器编译失败（语法错误 / 缺 uniform 声明）会静默降级成基础材质，'
             '这里必须红',
       );
-      final shader = GlassSurfaceShader.instance.newShader();
+      final shader = LiquidGlassSurfaceShader.instance.newShader();
       expect(shader, isNotNull);
       // 名字错一个就抛 ArgumentError —— 这是「改 .frag 忘了改 Dart」的唯一
       // 自动化拦截点（绘制期才炸，真机上才看得见）。
-      debugValidateGlassSurfaceUniforms(shader!);
+      debugValidateLiquidGlassUniforms(shader!);
       shader.dispose();
     });
 
     test('与卡片那份是两个独立程序，资产键不同', () {
       expect(
-        GlassSurfaceShader.instance.assetKey,
+        LiquidGlassSurfaceShader.instance.assetKey,
         isNot(CourseCardGlassShader.instance.assetKey),
         reason: '卡片吃预模糊位图、按局部坐标画；这一份吃实时背景、按屏幕坐标画，'
             '两个程序不能互相顶替',
@@ -62,18 +62,18 @@ void main() {
     });
   });
 
-  group('GlassSurfaceStyle', () {
+  group('LiquidGlassStyle', () {
     test('同值相等，可作为 RenderObject 的更新判据', () {
-      const a = GlassSurfaceStyle(borderRadius: 12, tint: Color(0x552196F3));
-      const b = GlassSurfaceStyle(borderRadius: 12, tint: Color(0x552196F3));
-      const c = GlassSurfaceStyle(borderRadius: 8, tint: Color(0x552196F3));
+      const a = LiquidGlassStyle(borderRadius: 12, tint: Color(0x552196F3));
+      const b = LiquidGlassStyle(borderRadius: 12, tint: Color(0x552196F3));
+      const c = LiquidGlassStyle(borderRadius: 8, tint: Color(0x552196F3));
       expect(a, b);
       expect(a.hashCode, b.hashCode);
       expect(a == c, isFalse);
     });
 
     test('逻辑长度按 dpr 换算成物理像素', () {
-      const style = GlassSurfaceStyle(
+      const style = LiquidGlassStyle(
         borderRadius: 12,
         tint: Color(0xFF000000),
       );
@@ -90,8 +90,8 @@ void main() {
       expect(at1.rimWidth, 3);
     });
 
-    test('折射旋钮的默认值与课程卡片折射档逐字段一致', () {
-      // 「同一个材质只有一种观感」：全局折射与卡片折射出厂必须长得一样，
+    test('折射旋钮的默认值与课程卡片液态玻璃档逐字段一致', () {
+      // 「同一个材质只有一种观感」：全局液态玻璃与卡片液态玻璃出厂必须长得一样，
       // 否则用户会在两个页面看到两种玻璃。任何一边改默认值都必须同步另一边。
       const card = CourseGlassStyle(borderRadius: 12, tint: Color(0xFF000000));
       expect(_style.refraction, card.refraction);
@@ -114,7 +114,7 @@ void main() {
   // 着色器与卡片那份最大的口径差别（卡片按局部坐标画、自己映射纹理窗口）。
   //
   // 所有坐标推算都按「像素中心在 +0.5」来（Impeller 与本地测试后端同一口径）。
-  group('折射表面着色器绘制结果', () {
+  group('液态玻璃表面着色器绘制结果', () {
     test('玻璃只落在 u_area_origin 指定的屏幕矩形里，圆角外全透明', () async {
       final texture = await _screenTexture(
         (canvas) => canvas.drawRect(
@@ -195,7 +195,7 @@ void main() {
     });
   });
 
-  group('RefractionGlassSurface 降级', () {
+  group('LiquidGlassSurface 降级', () {
     testWidgets('测试环境没有 shader filter 后端：返回 fallback，不建玻璃层', (
       tester,
     ) async {
@@ -212,8 +212,8 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) => RefractionGlassSurface(
-                style: _style,
+              builder: (context) => LiquidGlassSurface(
+                borderRadius: _style.borderRadius,
                 fallbackBuilder: (context) =>
                     const ColoredBox(key: Key('fallback'), color: Color(0xFF112233)),
                 child: const ColoredBox(
@@ -227,7 +227,7 @@ void main() {
       );
 
       final context = tester.element(find.byType(Scaffold));
-      expect(RefractionGlassSurface.isAvailable(context), isFalse);
+      expect(LiquidGlassSurface.isAvailable(context), isFalse);
       expect(find.byKey(const Key('fallback')), findsOneWidget);
       expect(
         find.byKey(const Key('glass-child')),
@@ -237,7 +237,7 @@ void main() {
     });
 
     test('未加载时 newShader 返回 null（绘制侧据此走基础材质）', () {
-      final loader = GlassSurfaceShader.instance;
+      final loader = LiquidGlassSurfaceShader.instance;
       final wasLoaded = loader.isLoaded;
       loader.resetForTesting();
       expect(loader.isLoaded, isFalse);
@@ -278,13 +278,13 @@ Future<ui.Image> _screenTexture(void Function(ui.Canvas canvas) paint) async {
   return image;
 }
 
-/// 把折射表面着色器按给定参数画进 [_screenSize] 的位图，返回 rawRgba 像素。
+/// 把液态玻璃表面着色器按给定参数画进 [_screenSize] 的位图，返回 rawRgba 像素。
 ///
-/// 这里直接摆 uniform，而不是走 [RefractionGlassSurface]：那条路要求
+/// 这里直接摆 uniform，而不是走 [LiquidGlassSurface]：那条路要求
 /// `ImageFilter.isShaderFilterSupported` 为真，测试环境恒为假。所以「Dart 侧接线」
 /// 由上面那组降级用例负责，这里只管着色器算得对不对。
 ///
-/// 默认值刻意与 [GlassSurfaceStyle] 的默认参数一致（band 7 / edgePow 2.5 /
+/// 默认值刻意与 [LiquidGlassStyle] 的默认参数一致（band 7 / edgePow 2.5 /
 /// rimWidth 3），于是这组同时钉住了默认参数下的观感。
 Future<Uint8List> _renderSurface({
   required ui.Image texture,
@@ -293,7 +293,7 @@ Future<Uint8List> _renderSurface({
   double refract = 0,
   double rim = 0,
 }) async {
-  final shader = GlassSurfaceShader.instance.newShader()!;
+  final shader = LiquidGlassSurfaceShader.instance.newShader()!;
   shader.setImageSampler(0, texture);
   // 真机上这两项由引擎填/绑（第一个 vec2 / 第一个 sampler2D），这里手动摆成
   // 「整屏纹理 + 表面只占其中一块」的形态。

@@ -126,17 +126,10 @@ class FrostedSheetSettingsDemoSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appearance = FrostedAppearanceScope.of(context);
-    // 演示的是真实弹窗材质：跟随「液态玻璃作用范围 → 弹窗与对话框」。
-    final useLiquidGlass =
-        appearance.glassMode == FrostedGlassMode.liquidGlass &&
-        appearance.liquidGlassSheetDialogEnabled &&
-        !LiquidGlassDegradation.shouldDegrade(context);
-
-    return _buildSheet(context, useLiquidGlass: useLiquidGlass);
+    return _buildSheet(context);
   }
 
-  Widget _buildSheet(BuildContext context, {required bool useLiquidGlass}) {
+  Widget _buildSheet(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final colors = context.theme.colors;
@@ -173,42 +166,23 @@ class FrostedSheetSettingsDemoSheet extends StatelessWidget {
             style: HyperosTypography.sectionDescription(context),
           ),
           const SizedBox(height: 14),
-          // Liquid-glass mode uses one shared layer for all four tiles:
-          // identical siblings share one backdrop capture, so refraction at tile
-          // edges samples a continuous backdrop instead of four independent
-          // own-layer captures (which caused seam lines).
-          Builder(
-            builder: (context) {
-              final tiles = Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  tile(Icons.bar_chart_rounded, l10n.homeMenuStatisticsTitle),
-                  const SizedBox(width: tileSpacing),
-                  tile(Icons.tune_rounded, l10n.homeMenuSettingsTitle),
-                  const SizedBox(width: tileSpacing),
-                  tile(Icons.file_upload_outlined, l10n.homeMenuImportTitle),
-                  const SizedBox(width: tileSpacing),
-                  tile(
-                    Icons.add_circle_outline_rounded,
-                    l10n.homeMenuAddCourseTitle,
-                  ),
-                ],
-              );
-
-              if (!useLiquidGlass) {
-                return tiles;
-              }
-
-              // Only liquid-glass mode needs a shared refraction layer. The
-              // other modes use the same translucent nested surface rule as
-              // settings cards; keeping them out of this layer prevents a
-              // Gaussian/classic preview from rendering as liquid glass.
-              //
-              // 分组采样由每块 [LiquidGlassSurface] 自己的 `grouped` 打开
-              // （见其类注释）：祖先 BackdropGroup 的共享捕获点保证四块瓦片
-              // 互相看不到对方的输出，也不必再挂一层包内专属的共享层。
-              return tiles;
-            },
+          // 四块瓦片各自是 [LiquidGlassSurface]（液态档才建），分组采样由各自
+          // 的 `grouped` 打开：祖先 BackdropGroup 的共享捕获点保证瓦片互相
+          // 看不到对方的输出，不必再挂一层包内专属的共享层。
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              tile(Icons.bar_chart_rounded, l10n.homeMenuStatisticsTitle),
+              const SizedBox(width: tileSpacing),
+              tile(Icons.tune_rounded, l10n.homeMenuSettingsTitle),
+              const SizedBox(width: tileSpacing),
+              tile(Icons.file_upload_outlined, l10n.homeMenuImportTitle),
+              const SizedBox(width: tileSpacing),
+              tile(
+                Icons.add_circle_outline_rounded,
+                l10n.homeMenuAddCourseTitle,
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           HyperosButton(

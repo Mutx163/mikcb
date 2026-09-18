@@ -11,7 +11,6 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// 复现环境：真实壁纸文件存在（hasBackdrop=true），与真机一致。
 ///
@@ -64,15 +63,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
   }
 
-  /// 读取底栏指示器当前 tabIndex（TabIndicator 由包内部提供）。
+  /// 读取底栏当前选中项（指示器由 [SoftGlassTabBar] 按 selectedIndex 自己摆位）。
   int? currentIndicatorIndex() {
-    final finder = find.byWidgetPredicate(
-      (w) => w.runtimeType.toString() == 'TabIndicator',
-    );
+    final finder = find.byType(SoftGlassTabBar);
     if (finder.evaluate().isEmpty) {
       return null;
     }
-    return (finder.evaluate().first.widget as dynamic).tabIndex as int?;
+    return (finder.evaluate().first.widget as SoftGlassTabBar).selectedIndex;
   }
 
   Future<void> runScenarios(
@@ -106,7 +103,7 @@ void main() {
 
     await pumpApp(tester, provider);
     expect(tester.takeException(), isNull, reason: '周视图初始渲染不应有异常');
-    expect(find.byType(GlassTabBar), findsOneWidget);
+    expect(find.byType(SoftGlassTabBar), findsOneWidget);
     expect(currentIndicatorIndex(), 1,
         reason: '初始指示器应在周课表 Tab（排序：日课表/周课表）');
 

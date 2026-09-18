@@ -1,35 +1,69 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
-import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
-import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_tokens.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_shader.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
 
 import '../../helpers_test_app.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('liquid glass settings are unified', () {
-    for (final brightness in Brightness.values) {
-      test('sheet/nested/course use the same settings for $brightness', () {
-        final sheet = MikcbLiquidGlassTokens.sheetSettingsFor(brightness);
-        final nested = MikcbLiquidGlassTokens.nestedTileSettingsFor(brightness);
-        final course = MikcbLiquidGlassTokens.courseCardSettingsFor(brightness);
+  /// 全 app 只有一套液态玻璃观感：材质参数只能从 [LiquidGlassTuning.toStyle]
+  /// 出，表面只提供自己的几何（圆角）与当前明暗。
+  ///
+  /// 回归锁：历史上出现过「同一个材质两种观感」——一条自带抓拍纹理的折射
+  /// 通道，只有部分表面走它，于是顶栏一种观感、弹窗另一种。那条通道与它
+  /// 依赖的第三方包一起删掉了，这里用两条不变量钉住：
+  ///   ① 圆角只影响几何，不影响任何材质旋钮；
+  ///   ② 全局只有一份表面着色器资产，且加载器是单例。
+  group('liquid glass has exactly one material parameter source', () {
+    test('圆角只改几何，材质旋钮与它无关', () {
+      const tuning = LiquidGlassTuning(
+        refraction: 11,
+        refractionBand: 9,
+        refractionEdgePow: 2.2,
+        rimStrength: 0.26,
+        rimWidth: 4,
+        blurSigma: 22,
+        tintAlpha: 0.4,
+      );
 
-        expect(nested, sheet);
-        expect(course, sheet);
-      });
-    }
+      final small = tuning.toStyle(
+        borderRadius: 12,
+        brightness: Brightness.light,
+      );
+      final large = tuning.toStyle(
+        borderRadius: 28,
+        brightness: Brightness.light,
+      );
 
-    test('tuning role methods do not scale sheet settings', () {
-      const tuning = LiquidGlassTuning(thickness: 18, blur: 8, tintAlpha: 0.25);
-      const brightness = Brightness.light;
-      final sheet = tuning.toSheetSettings(brightness: brightness);
+      expect(small.borderRadius, 12);
+      expect(large.borderRadius, 28);
+      // 除圆角外逐字段一致：表面拿不到自己的折射旋钮。
+      expect(small.refraction, large.refraction);
+      expect(small.refractionBand, large.refractionBand);
+      expect(small.refractionEdgePow, large.refractionEdgePow);
+      expect(small.rimStrength, large.rimStrength);
+      expect(small.rimWidth, large.rimWidth);
+      expect(small.blurSigma, large.blurSigma);
+      expect(small.tint, large.tint);
+      expect(small.rimColor, large.rimColor);
+      expect(small.lightDirection, large.lightDirection);
+      expect(small.refraction, tuning.refraction);
+      expect(small.blurSigma, tuning.blurSigma);
+    });
 
-      expect(tuning.toNestedTileSettings(brightness: brightness), sheet);
-      expect(tuning.toCourseCardSettings(brightness: brightness), sheet);
+    test('表面着色器只有一份，且加载器是单例', () {
+      final a = LiquidGlassSurfaceShader.instance;
+      final b = LiquidGlassSurfaceShader.instance;
+      expect(identical(a, b), isTrue, reason: '每次 new 一个加载器会各自持有一份程序');
+      expect(
+        a.assetKey,
+        'shaders/glass_surface_refraction.frag',
+        reason: '换资产键等于换材质，必须是同一个文件',
+      );
     });
   });
 
@@ -64,7 +98,7 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(HyperosLiquidGlassSurface), findsNothing);
+      expect(find.byType(LiquidGlassSurface), findsNothing);
       expect(find.byType(HyperosSheetFrame), findsOneWidget);
     });
 
@@ -94,7 +128,7 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(HyperosLiquidGlassSurface), findsNothing);
+      expect(find.byType(LiquidGlassSurface), findsNothing);
       expect(find.text('Option A'), findsOneWidget);
     });
 
@@ -123,126 +157,13 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(HyperosLiquidGlassSurface), findsNothing);
+      expect(find.byType(LiquidGlassSurface), findsNothing);
       expect(find.text('Option A'), findsOneWidget);
     });
   });
 
-  /// 液态玻璃只有一条渲染路径：AdaptiveGlass + premium（实时读底面）。
-  ///
-  /// 回归锁：曾经这里有一条「抓拍纹理真折射通道」——有宿主捕获边界时绕开
-  /// AdaptiveGlass 直连 LightweightLiquidGlass 传 backgroundKey，让 standard
-  /// 档也能折射。那条路有两个致命后果：①玻璃里是一张静态照片（ticker 只在
-  /// 几何变化时重拍、稳定后停摆）；②只有部分表面走它，于是同一个材质出现
-  /// 「顶栏一种观感、弹窗另一种观感」。两者都已删除，用一个常量钉住。
-  group('liquid glass has exactly one render path', () {
-    test('the material has a single quality constant', () {
-      // 一个材质一个档：任何调用点都不得再传自己的档位。
-      expect(MikcbLiquidGlassTokens.defaultQuality, GlassQuality.premium);
-    });
-
-    testWidgets('no backgroundKey keeps the AdaptiveGlass path', (tester) async {
-      await tester.pumpWidget(
-        const TestApp(
-          home: Center(
-            child: SizedBox(
-              width: 200,
-              height: 80,
-              child: HyperosLiquidGlassSurface(child: SizedBox.expand()),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byType(AdaptiveGlass), findsOneWidget);
-      expect(find.byType(LightweightLiquidGlass), findsNothing);
-    });
-
-    // 名字写实：widget 测试环境里 ImageFilter.isShaderFilterSupported 恒为
-    // false，useMinimal 必然成立，所以真机上那条 premium 实时通道在测试里
-    // 只会渲染 minimal——但**渲染路径**仍然是同一条 AdaptiveGlass，绝不再
-    // 因为「旁边有没有宿主捕获边界」而分流。
-    testWidgets('a nearby host boundary never diverts the render path', (
-      tester,
-    ) async {
-      final boundary = GlobalKey();
-      await tester.pumpWidget(
-        TestApp(
-          home: Center(
-            child: RepaintBoundary(
-              key: boundary,
-              child: const SizedBox(
-                width: 200,
-                height: 80,
-                child: HyperosLiquidGlassSurface(
-                  role: HyperosLiquidGlassRole.header,
-                  child: SizedBox.expand(),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byType(AdaptiveGlass), findsOneWidget);
-      // 抓拍纹理通道的入口（LightweightLiquidGlass + backgroundKey）已从
-      // 组件上删除，任何宿主边界都分流不了渲染路径。
-      expect(find.byType(LightweightLiquidGlass), findsNothing);
-    });
-
-    testWidgets('popup glass renders through the same AdaptiveGlass path', (
-      tester,
-    ) async {
-      // 弹窗与顶栏带、玻璃坞、卡片同一条路（同一组件、同一档位常量），
-      // 不再有「弹窗 premium / 顶栏 standard」这种按表面分档的观感分叉。
-      await tester.pumpWidget(
-        const TestApp(
-          home: FrostedAppearanceScope(
-            appearance: FrostedAppearance(
-              sheetBlurSigma: 15,
-              sheetTintAlpha: 0.7,
-              sheetBarrierAlpha: 0.2,
-              glassMode: FrostedGlassMode.liquidGlass,
-            ),
-            child: Center(
-              child: SizedBox(
-                width: 200,
-                height: 120,
-                child: HyperosSelectPopupGlass(
-                  cornerRadius: 20,
-                  child: SizedBox.expand(),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byType(AdaptiveGlass), findsOneWidget);
-      expect(find.byType(LightweightLiquidGlass), findsNothing);
-    });
-  });
-
   group('modal liquid glass sampling', () {
-    test('all modal roles resolve identical liquid settings', () {
-      for (final brightness in Brightness.values) {
-        final header = HyperosLiquidGlassSurface.settingsForRole(
-          role: HyperosLiquidGlassRole.header,
-          brightness: brightness,
-        );
-        final modal = HyperosLiquidGlassSurface.settingsForRole(
-          role: HyperosLiquidGlassRole.modal,
-          brightness: brightness,
-        );
-
-        expect(modal, header);
-      }
-    });
-
-    testWidgets('showHyperosSheet mounts no redundant undimmed capture', (
+    testWidgets('showHyperosSheet builds an undimmed capture group', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -273,9 +194,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(BackdropGroup), findsOneWidget);
-      // 树内没有 BackdropFilter.grouped 成员加入外层组，挂
-      // UndimmedBackdropCapture 只会白做一次全屏近零模糊采样。
-      expect(find.byType(UndimmedBackdropCapture), findsNothing);
+      // 弹层玻璃走 grouped: true，采样组内首个分组滤镜处缓存的「未压暗页面」。
+      // 垫层必须存在，否则玻璃会把弹窗自己的黑色蒙层一起折射进去。
+      expect(find.byType(UndimmedBackdropCapture), findsOneWidget);
       expect(find.text('sheet body'), findsOneWidget);
     });
 
@@ -316,7 +237,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(BackdropGroup), findsOneWidget);
-      // 同 showHyperosSheet：树内无 grouped 过滤器，垫层无消费者。
+      // 没有二级子项时树内没有 grouped 消费者，垫层只会白做一次全屏近零模糊采样。
       expect(find.byType(UndimmedBackdropCapture), findsNothing);
       expect(find.text('Option A'), findsOneWidget);
     });
@@ -352,5 +273,4 @@ void main() {
       expect(find.text('Option A'), findsOneWidget);
     });
   });
-
 }

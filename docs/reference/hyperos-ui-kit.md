@@ -411,7 +411,7 @@ return HyperosSubpage(
 | 卡片和设置分组 | `MiuixCard` / `MiuixSurface` | `HyperosListGroup` / `HyperosCard` / `HyperosControlCard` |
 | 页面与顶栏 | `MiuixScaffold` / `MiuixTopAppBar` | `HyperosRootPage` / `HyperosSubpage` / `HyperosNavigation` |
 | 弹层与反馈 | `MiuixOverlayDialog` / `MiuixOverlayBottomSheet` / `MiuixSnackbar` | `HyperosDialog` / `HyperosSheet` / `showAppToast` / `showHyperosSnackBar` |
-| 玻璃与降级 | `MiuixTextureBlur` 等基础能力 | `HyperosBlurredHeader` / `HyperosLiquidGlassSurface` 等项目策略封装 |
+| 玻璃与降级 | `MiuixTextureBlur` 等基础能力 | `HyperosBlurredHeader` / `LiquidGlassSurface` 等项目策略封装 |
 
 **原则：** 官方库定义基础行为和 Miuix 语义；自研层定义轻屿课表的页面结构、视觉 token、兼容策略和业务组合。页面代码不应绕过已经存在的自研入口重新实现同一规则。
 

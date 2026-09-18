@@ -11,7 +11,7 @@ import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/widgets/home_menu_route_catalog.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:university_timetable/ui/hyperos/soft_glass/soft_glass_tab_bar.dart';
 
 /// 玻璃坞内嵌页触觉与再点口径回归。
 ///
@@ -53,15 +53,13 @@ void main() {
         .length;
   }
 
-  /// 读取底栏指示器当前 tabIndex（TabIndicator 由包内部提供）。
+  /// 读取底栏当前选中项（指示器由 [SoftGlassTabBar] 按 selectedIndex 自己摆位）。
   int? currentIndicatorIndex() {
-    final finder = find.byWidgetPredicate(
-      (w) => w.runtimeType.toString() == 'TabIndicator',
-    );
+    final finder = find.byType(SoftGlassTabBar);
     if (finder.evaluate().isEmpty) {
       return null;
     }
-    return (finder.evaluate().first.widget as dynamic).tabIndex as int?;
+    return (finder.evaluate().first.widget as SoftGlassTabBar).selectedIndex;
   }
 
   Future<TimetableProvider> pumpDockApp(
@@ -105,12 +103,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(tester.takeException(), isNull);
-    expect(find.byType(GlassTabBar), findsOneWidget);
+    expect(find.byType(SoftGlassTabBar), findsOneWidget);
     return provider;
   }
 
   Finder dockTab(String label) => find
-      .descendant(of: find.byType(GlassTabBar), matching: find.text(label))
+      .descendant(of: find.byType(SoftGlassTabBar), matching: find.text(label))
       .first;
 
   testWidgets('底栏页面 Tab：真实切换各震一次，再点当前页无动作零震动', (tester) async {

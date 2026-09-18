@@ -7,6 +7,7 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
+import 'package:university_timetable/ui/hyperos/soft_glass/soft_glass_tab_bar.dart';
 
 /// 快速连点回归：玻璃坞 日/周 两 Tab 快速交替连点不允许丢拍
 /// （原 1→3→1→3 三 Tab 场景随「设置」Tab 移除而改为两态交替）。
@@ -48,14 +49,13 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
+    /// 读取底栏当前选中项（指示器由 [SoftGlassTabBar] 按 selectedIndex 自己摆位）。
     int? indicatorIndex() {
-      final finder = find.byWidgetPredicate(
-        (w) => w.runtimeType.toString() == 'TabIndicator',
-      );
+      final finder = find.byType(SoftGlassTabBar);
       if (finder.evaluate().isEmpty) {
         return null;
       }
-      return (finder.evaluate().first.widget as dynamic).tabIndex as int?;
+      return (finder.evaluate().first.widget as SoftGlassTabBar).selectedIndex;
     }
 
     expect(indicatorIndex(), 1, reason: '初始应在周课表 Tab');

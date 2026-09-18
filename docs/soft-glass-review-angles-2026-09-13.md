@@ -6,6 +6,14 @@
 - 代码基线：`fb1c72fc`（zone 分块捕获）+ `1bd613e`
 - 上游基线：`flutter_miuix 1.2.0`（`D:\Cache\Pub\hosted\pub.dev\flutter_miuix-1.2.0`）
 
+> **2026-09-18 更新（本文其余部分仍是 09-13 的快照）：** `liquid_glass_widgets` 已从依赖中
+> 整体移除，原第三方液态玻璃实现被本仓自研的折射着色器材质取代（`LiquidGlassSurface` +
+> `shaders/glass_surface_refraction.frag`，见
+> `.agents/notes/implemented/architecture/2026-09-18-liquid-glass-surface.md`）。
+> 因此 §G1「两条玻璃路线是否该收敛」**已不再是「自研 vs 第三方」的重复投资**：液态这一档
+> 现在和柔光一样都是本仓自研材质，共用同一套降级判据与调参出口；文中出现的
+> `HyperosLiquidGlassSurface` / `liquid_glass_widgets` 字样一律读作历史名称。
+
 ## 怎么用这份东西
 
 下面 §1 是可直接粘贴给高级模型的角色与产出要求；§2 起是审查角度，每条都带

@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/ui/hyperos/frosted/liquid_glass_degradation.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_sheet.dart';
-import 'package:university_timetable/ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
 
 import '../../helpers_test_app.dart';
 
@@ -103,7 +103,7 @@ void main() {
     // Sanity: without any accessibility flag the liquid-glass sheet still
     // spawns its glass surface, so the downgrade assertions below are
     // meaningful (they fail because of degradation, not by accident).
-    testWidgets('liquid sheet builds HyperosLiquidGlassSurface by default', (
+    testWidgets('liquid sheet builds LiquidGlassSurface by default', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -117,7 +117,7 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.byType(HyperosLiquidGlassSurface), findsOneWidget);
+      expect(find.byType(LiquidGlassSurface), findsOneWidget);
     });
 
     Widget degradedSheet({required bool highContrast}) {
@@ -145,7 +145,7 @@ void main() {
       await tester.pump();
       // Degradation skips the liquid-glass branch; the sheet falls through to
       // the solid Material surface instead of spawning a glass surface.
-      expect(find.byType(HyperosLiquidGlassSurface), findsNothing);
+      expect(find.byType(LiquidGlassSurface), findsNothing);
       expect(find.byType(Material), findsWidgets);
     });
 
@@ -154,10 +154,10 @@ void main() {
     ) async {
       await tester.pumpWidget(degradedSheet(highContrast: true));
       await tester.pump();
-      expect(find.byType(HyperosLiquidGlassSurface), findsNothing);
+      expect(find.byType(LiquidGlassSurface), findsNothing);
       await tester.pumpWidget(degradedSheet(highContrast: false));
       await tester.pump();
-      expect(find.byType(HyperosLiquidGlassSurface), findsOneWidget);
+      expect(find.byType(LiquidGlassSurface), findsOneWidget);
     });
   });
 }
