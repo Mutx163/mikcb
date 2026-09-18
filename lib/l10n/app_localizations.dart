@@ -17848,7 +17848,7 @@ abstract class AppLocalizations {
   /// No description provided for @advancedMaterialEntrySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'柔光 / 液态 / 折射玻璃参数微调'**
+  /// **'柔光 / 液态玻璃参数微调'**
   String get advancedMaterialEntrySubtitle;
 
   /// No description provided for @liquidGlassPresetLabel.
@@ -17962,7 +17962,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseCardSurfaceStyleLiquidGlass.
   ///
   /// In zh, this message translates to:
-  /// **'折射玻璃'**
+  /// **'液态玻璃'**
   String get courseCardSurfaceStyleLiquidGlass;
 
   /// No description provided for @courseCardSectionColor.

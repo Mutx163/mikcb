@@ -10184,7 +10184,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get advancedMaterialTitle => '고급 재질';
 
   @override
-  String get advancedMaterialEntrySubtitle => '소프트 / 리퀴드 / 굴절 유리 매개변수 미세 조정';
+  String get advancedMaterialEntrySubtitle => '소프트 / 리퀴드 유리 매개변수 미세 조정';
 
   @override
   String get liquidGlassPresetLabel => '리퀴드 글래스 프리셋';
@@ -10241,7 +10241,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseCardSurfaceStyleGaussian => '가우시안 블러';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => '굴절 유리';
+  String get courseCardSurfaceStyleLiquidGlass => '리퀴드 글래스';
 
   @override
   String get courseCardSectionColor => '색상';

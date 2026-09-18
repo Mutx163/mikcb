@@ -10139,7 +10139,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get advancedMaterialTitle => '高度なマテリアル';
 
   @override
-  String get advancedMaterialEntrySubtitle => 'ソフト / リキッド / 屈折ガラスのパラメータ調整';
+  String get advancedMaterialEntrySubtitle => 'ソフト / リキッドガラスのパラメータ調整';
 
   @override
   String get liquidGlassPresetLabel => 'リキッドガラスプリセット';
@@ -10196,7 +10196,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseCardSurfaceStyleGaussian => 'ガウスぼかし';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => '屈折ガラス';
+  String get courseCardSurfaceStyleLiquidGlass => 'リキッドガラス';
 
   @override
   String get courseCardSectionColor => '色';

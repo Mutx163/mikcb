@@ -9841,7 +9841,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get advancedMaterialTitle => '高级材质';
 
   @override
-  String get advancedMaterialEntrySubtitle => '柔光 / 液态 / 折射玻璃参数微调';
+  String get advancedMaterialEntrySubtitle => '柔光 / 液态玻璃参数微调';
 
   @override
   String get liquidGlassPresetLabel => '液态玻璃预设';
@@ -9898,7 +9898,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseCardSurfaceStyleGaussian => '高斯模糊';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => '折射玻璃';
+  String get courseCardSurfaceStyleLiquidGlass => '液态玻璃';
 
   @override
   String get courseCardSectionColor => '颜色';
@@ -20902,7 +20902,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get advancedMaterialTitle => '進階材質';
 
   @override
-  String get advancedMaterialEntrySubtitle => '柔光 / 液態 / 折射玻璃參數微調';
+  String get advancedMaterialEntrySubtitle => '柔光 / 液態玻璃參數微調';
 
   @override
   String get liquidGlassPresetLabel => '液態玻璃預設';
@@ -20959,7 +20959,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseCardSurfaceStyleGaussian => '高斯模糊';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => '折射玻璃';
+  String get courseCardSurfaceStyleLiquidGlass => '液態玻璃';
 
   @override
   String get courseCardSectionColor => '顏色';
@@ -31963,7 +31963,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get advancedMaterialTitle => '進階材質';
 
   @override
-  String get advancedMaterialEntrySubtitle => '柔光 / 液態 / 折射玻璃參數微調';
+  String get advancedMaterialEntrySubtitle => '柔光 / 液態玻璃參數微調';
 
   @override
   String get liquidGlassPresetLabel => '液態玻璃預設';
@@ -32020,7 +32020,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseCardSurfaceStyleGaussian => '高斯模糊';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => '折射玻璃';
+  String get courseCardSurfaceStyleLiquidGlass => '液態玻璃';
 
   @override
   String get courseCardSectionColor => '顏色';

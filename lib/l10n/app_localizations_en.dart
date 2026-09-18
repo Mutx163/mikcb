@@ -10443,7 +10443,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get advancedMaterialEntrySubtitle =>
-      'Soft / liquid / refraction glass parameter tuning';
+      'Soft / liquid glass parameter tuning';
 
   @override
   String get liquidGlassPresetLabel => 'Liquid Glass Preset';
@@ -10500,7 +10500,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseCardSurfaceStyleGaussian => 'Gaussian Blur';
 
   @override
-  String get courseCardSurfaceStyleLiquidGlass => 'Refraction Glass';
+  String get courseCardSurfaceStyleLiquidGlass => 'Liquid Glass';
 
   @override
   String get courseCardSectionColor => 'Color';
