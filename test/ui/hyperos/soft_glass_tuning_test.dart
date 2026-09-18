@@ -61,9 +61,12 @@ void main() {
     final material = glass.material!;
     final base = MiuixGlassMaterials.popupViewGlassLight;
 
-    // 基线就是菜单用的 popupViewGlass：同半径、同颜色层。
-    expect(material.blurRadius, base.blurRadius);
+    // 颜色层与描边照抄菜单用的 popupViewGlass；**半径是有意压低的**：
+    // 2026-09-17 把柔光基线 60 → 32（成本随半径超线性放大，见
+    // SoftGlassTokens.baseBlurRadius 的注释与 perf 提交 16490c82），
+    // 所以这一条锁本仓基线，不再等于上游 base.blurRadius（60）。
     expect(material.blurRadius, SoftGlassRecipe.standard.blurRadiusDp);
+    expect(material.blurRadius, SoftGlassTokens.baseBlurRadius);
     // 底色倍率默认 1：三层颜色层 alpha 与上游预设**逐层**一致。
     expect(material.first.color.a, closeTo(base.first.color.a, 1e-6));
     expect(material.second!.color.a, closeTo(base.second!.color.a, 1e-6));
