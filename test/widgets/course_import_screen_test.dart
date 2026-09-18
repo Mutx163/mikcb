@@ -278,6 +278,68 @@ void main() {
     });
   });
 
+  group('shouldDetachPlatformViewOnExit', () {
+    test('返回动画滑出大半（阈值及以下）时摘掉平台视图', () {
+      expect(
+        shouldDetachPlatformViewOnExit(
+          status: AnimationStatus.reverse,
+          value: platformViewExitDetachThreshold,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldDetachPlatformViewOnExit(
+          status: AnimationStatus.reverse,
+          value: platformViewExitDetachThreshold - 0.05,
+        ),
+        isTrue,
+      );
+    });
+
+    test('还没滑出大半就不摘：摘早了会在屏上留一大块空白滑出去', () {
+      expect(
+        shouldDetachPlatformViewOnExit(
+          status: AnimationStatus.reverse,
+          value: platformViewExitDetachThreshold + 0.01,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldDetachPlatformViewOnExit(
+          status: AnimationStatus.reverse,
+          value: 1,
+        ),
+        isFalse,
+      );
+    });
+
+    test('进入动画与落定帧都不摘', () {
+      // 进入动画：平台视图要一直在，否则页面一进来就是一块空白。
+      expect(
+        shouldDetachPlatformViewOnExit(
+          status: AnimationStatus.forward,
+          value: platformViewExitDetachThreshold - 0.05,
+        ),
+        isFalse,
+      );
+      // 落定帧（0 = 已被移除，1 = 已就位）：这一帧路由正在被拆，不能 setState。
+      expect(
+        shouldDetachPlatformViewOnExit(
+          status: AnimationStatus.dismissed,
+          value: 0,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldDetachPlatformViewOnExit(
+          status: AnimationStatus.completed,
+          value: 1,
+        ),
+        isFalse,
+      );
+    });
+  });
+
   testWidgets('ai import screen keeps keyboard-aware resizing enabled', (
     tester,
   ) async {

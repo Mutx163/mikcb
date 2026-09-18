@@ -3383,6 +3383,29 @@ class _WarehouseAdapterDetailScreenState
   }
 }
 
+/// 返回摘除阈值：路由主动画反向走到这个值以下时，把 WebView 的平台视图摘出树。
+///
+/// 被动画的视觉位置吃 `Cubic(0.05, 0, 0.1333, 1)` 这条缓出曲线：动画值 0.35
+/// 时页面已滑出约 73%，距离动画结束还有约 105ms —— 摘除是异步的（要走平台侧
+/// 把真实视图从窗口上移除），必须留在这段窗口里完成，否则动画落地后它还会停在
+/// 半路的位置上（真机现象：返回动画结束又闪回"半页"）。也不能取得更早：网页占
+/// 页面主体，摘早了会在屏上留一大块空白滑出去。
+@visibleForTesting
+const double platformViewExitDetachThreshold = 0.35;
+
+/// 是否到了"把网页的平台视图摘出树"的时机。
+///
+/// 只认反向（返回）动画且已滑出大半；进入动画（forward）与已落定（completed /
+/// dismissed）一律不摘——落定那一帧路由正在被拆，不能再 setState。
+@visibleForTesting
+bool shouldDetachPlatformViewOnExit({
+  required AnimationStatus status,
+  required double value,
+}) {
+  return status == AnimationStatus.reverse &&
+      value <= platformViewExitDetachThreshold;
+}
+
 class WarehouseAdapterWebLoginScreen extends StatefulWidget {
   final String title;
   final String initialUrl;
@@ -3463,6 +3486,17 @@ class _WarehouseAdapterWebLoginScreenState
   bool _isPromptShowing = false;
   String? _lastLoginStateDecisionKey;
   bool _useDesktopMode = true;
+
+  /// 返回动画跑到尾段时，平台视图是否已摘出树（见
+  /// [_detachPlatformViewIfExitReached]）。
+  bool _platformViewDetachedForExit = false;
+
+  /// 平台视图玻璃闸门是否已经释放：begin/end 必须严格配对（见 [dispose]）。
+  bool _platformViewGateReleased = false;
+
+  /// 本页路由的主动画，用来盯"开始返回"这一位（见 [didChangeDependencies]）。
+  Animation<double>? _exitRouteAnimation;
+  VoidCallback? _exitRouteAnimationListener;
 
   // --- 宏录制相关 ---
   final WarehouseMacroService _macroService = WarehouseMacroService();
@@ -3714,7 +3748,85 @@ class _WarehouseAdapterWebLoginScreenState
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _bindExitRouteAnimation();
+  }
+
+  /// 盯住"本页开始返回"这一位：反向动画走到尾段时把平台视图摘出树。
+  ///
+  /// 用路由自己的动画，而不是给每个 pop 调用点各包一层：左上角返回键、系统返回、
+  /// 导入成功后这一页自己 pop，全都走同一条反向动画。
+  ///
+  /// `runInBackground` 实例挂在 Overlay 里（没有本页路由），这里一并挡掉：后台
+  /// 导入正是靠这个平台视图继续跑，不能摘。
+  void _bindExitRouteAnimation() {
+    if (widget.runInBackground) {
+      return;
+    }
+    final animation = ModalRoute.of(context)?.animation;
+    if (identical(animation, _exitRouteAnimation)) {
+      return;
+    }
+    _unbindExitRouteAnimation();
+    if (animation == null) {
+      return;
+    }
+    void onChanged() => _detachPlatformViewIfExitReached(animation);
+    _exitRouteAnimation = animation;
+    _exitRouteAnimationListener = onChanged;
+    animation.addListener(onChanged);
+  }
+
+  void _unbindExitRouteAnimation() {
+    final listener = _exitRouteAnimationListener;
+    if (listener != null) {
+      _exitRouteAnimation?.removeListener(listener);
+    }
+    _exitRouteAnimationListener = null;
+    _exitRouteAnimation = null;
+  }
+
+  /// 反向动画滑出大半时，把 WebView 摘出树（换空白占位）。
+  ///
+  /// Hybrid Composition 的 WebView 是**真实 Android 视图**，不在 Flutter 图层
+  /// 树里：返回动画挪的是 Flutter 的图层，它跟不上；路由销毁时才发起的移除又是
+  /// 异步的，于是动画落地后它还会在"滑到一半"的位置停一两帧（真机现象：返回动画
+  /// 结束又闪回半页，然后才消失）。提前摘掉，移除的异步延迟就落在动画还在跑的时
+  /// 候，落地时它早就不在了。
+  void _detachPlatformViewIfExitReached(Animation<double> animation) {
+    if (_platformViewDetachedForExit) {
+      return;
+    }
+    if (!shouldDetachPlatformViewOnExit(
+      status: animation.status,
+      value: animation.value,
+    )) {
+      return;
+    }
+    _platformViewDetachedForExit = true;
+    // 平台视图这一刻已经离开屏幕，玻璃闸门语义上就该结束，而不是等 dispose。
+    // 闸门原本在 dispose（返回动画落地**之后**）才归零，首页玻璃会在落地那一帧
+    // 从实底当场跳成磨砂 / 液态——那本身也是一闪。挪到这里，跳变落回滑动过程里。
+    _releasePlatformViewGate();
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// 结束平台视图玻璃闸门。begin / end 严格配对：摘除那条路已经释放过的，
+  /// [dispose] 不得再减一次（会虚减掉别人的计数）。
+  void _releasePlatformViewGate() {
+    if (widget.runInBackground || _platformViewGateReleased) {
+      return;
+    }
+    _platformViewGateReleased = true;
+    LiquidGlassDegradation.endPlatformViewUnsafeSurface();
+  }
+
+  @override
   void dispose() {
+    _unbindExitRouteAnimation();
     _replayer?.cancel();
     _replayContinueCompleter?.complete(false);
     _replayContinueCompleter = null;
@@ -3723,9 +3835,7 @@ class _WarehouseAdapterWebLoginScreenState
     _addressFocusNode.dispose();
     // 与 initState 的置位对称：runInBackground 实例从未置位，不得复位别人
     // 的计数（endPlatformViewUnsafeSurface 虽有下限守卫，仍不应虚减）。
-    if (!widget.runInBackground) {
-      LiquidGlassDegradation.endPlatformViewUnsafeSurface();
-    }
+    _releasePlatformViewGate();
     super.dispose();
   }
 
@@ -4047,7 +4157,7 @@ class _WarehouseAdapterWebLoginScreenState
                   ),
                   if (_loadingProgress < 100)
                     HyperosLinearProgress(value: _loadingProgress / 100),
-                  Expanded(child: _buildWebViewWidget()),
+                  Expanded(child: _buildWebViewSlot()),
                   if (_showImportScriptBar)
                     SafeArea(
                       top: false,
@@ -4129,6 +4239,17 @@ class _WarehouseAdapterWebLoginScreenState
   /// （新版 WebView + 高版本 Android 上更明显）；HC 是真实视图，insets
   /// 按普通视图链路分发，配合 setInsetsForWebContentToIgnore 行为最稳定。
   /// 登录导入页不是性能敏感场景，代价可接受。非 Android 平台回退默认实现。
+  /// 网页槽位：正常是 WebView；返回动画跑到尾段时换成空白占位（见
+  /// [_detachPlatformViewIfExitReached]），让平台视图在动画结束前就离开合成帧。
+  Widget _buildWebViewSlot() {
+    if (!_platformViewDetachedForExit) {
+      return _buildWebViewWidget();
+    }
+    // 用页面自己的底色而不是透明：这块占页面主体，透明会让后面的首页从"洞"里
+    // 透出来。这一刻页面已滑出大半，能看见它的时间只有几十毫秒。
+    return ColoredBox(color: HyperosColors.scaffoldBackground(context));
+  }
+
   Widget _buildWebViewWidget() {
     final platform = _controller.platform;
     if (platform is! AndroidWebViewController) {
