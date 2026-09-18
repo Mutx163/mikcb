@@ -24,6 +24,17 @@ dependencies:
   file_picker: ^11.0.3
   http: ^1.2.2
   package_info_plus: ^9.0.1
+  # 天气「使用当前位置」用。国行设备没装 Google Play Services 时，插件会自己
+  # 回退到系统 LocationManager，所以无需 GMS、也不必设 forceLocationManager。
+  # 反查地名不走这个包（它不提供），走 BigDataCloud，见 device_location_service.dart。
+  #
+  # 约束写 ^14.0.0 而不是 ^14.0.3：14.0.3 要求 geolocator_linux ^0.2.6，后者要求
+  # package_info_plus ^10.0.0，而本项目锁在 ^9.0.1——升级 package_info_plus 会连带
+  # 10.2.0 的 Android Gradle/Kotlin 构建改动，与本功能无关且我这边没法验证构建。
+  # 写 ^14.0.0 让 pub 自己回退：实测解析到 geolocator 14.0.2 + geolocator_linux 0.2.4
+  # （后者兼容 package_info_plus 9）。将来 package_info_plus 升上去后，这个约束会
+  # 自动解析到更新的 geolocator，不必再改。
+  geolocator: ^14.0.0
   share_plus: ^12.0.2
   crypto: ^3.0.6
   webdav_plus: ^1.2.2
