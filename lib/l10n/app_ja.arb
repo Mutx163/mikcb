@@ -5797,6 +5797,7 @@
   "courseCardSurfaceStyleLabel": "カードの外観",
   "courseCardSurfaceStyleSolid": "ソリッド",
   "courseCardSurfaceStyleGaussian": "ガウスぼかし",
+  "courseCardSurfaceStyleRefraction": "屈折ガラス",
   "courseCardSectionColor": "色",
   "liveSelfCheckTitle": "セルフチェック",
   "collapsibleLargeTitle": "折りたたみ大タイトル",

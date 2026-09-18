@@ -709,7 +709,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         // Gaussian cards sample the cached bitmap instead of a live
         // BackdropFilter while the day-view shell is animating.
         final useCoursePreblur =
-            backdropBlurOn && cardStyle == CourseCardSurfaceStyle.gaussian;
+            backdropBlurOn && cardStyle.isGlass;
         // The day-view summary card is drawn from this same bitmap whenever
         // the chrome band has glass — regardless of the course-card style.
         // Without it the card's PreblurredWallpaperAlignedFill paints nothing
@@ -720,8 +720,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         // 键位（分支语义与原内联闭包一致）。
         final dockAppearance = FrostedAppearanceScope.of(context);
         final homePreblurSigma = resolveHomePreblurSigma(
-          gaussianCardsDrive:
-              backdropBlurOn && cardStyle == CourseCardSurfaceStyle.gaussian,
+          gaussianCardsDrive: backdropBlurOn && cardStyle.isGlass,
           // 预模糊位图服务的是首页玻璃带/摘要卡，跟随「首页玻璃带」开关。
           liquidGlassChrome: dockAppearance.homeBandGlassMaterial == 'liquid',
           sheetBlurSigma: HyperosBlurredHeader.blurSigmaOf(context),
@@ -4304,7 +4303,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final courseCardIsSolid = courseCardStyle == CourseCardSurfaceStyle.solid;
     final useChromeGlass =
         (!courseCardIsSolid && matchesChromeBand) ||
-        (backdropBlurOn && courseCardStyle == CourseCardSurfaceStyle.gaussian);
+        (backdropBlurOn && courseCardStyle.isGlass);
     // Ink: 走壁纸采样玻璃时才按壁纸亮度自动黑白；否则卡面是主题底色（或亮
     // 磨砂）的实底，墨色必须跟主题走 —— 按原始壁纸亮度翻白会让白墨落在
     // 亮色卡面上不可读。判据是**卡实际用的材质**，不是顶栏状态。
@@ -6411,14 +6410,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (settings == null) {
       return Colors.white;
     }
-    final glassOverWallpaper =
-        effectiveCourseCardSurfaceStyle(
-          settings,
-          gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
-            context,
-          ),
-        ) ==
-        CourseCardSurfaceStyle.gaussian;
+    final glassOverWallpaper = effectiveCourseCardSurfaceStyle(
+      settings,
+      gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(context),
+    ).isGlass;
     if (!glassOverWallpaper) {
       return Colors.white;
     }

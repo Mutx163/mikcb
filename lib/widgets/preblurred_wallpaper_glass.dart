@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../utils/home_page_background.dart';
+import 'course_glass_shader.dart';
 
 /// Identity of a cached pre-blurred wallpaper.
 ///
@@ -633,8 +634,16 @@ Rect preblurredWallpaperSourceRect({
 /// Must sit inside a clip (e.g. [ClipRRect]) so only the card region shows.
 /// The alignment is read from the render transform at paint time, so the frost
 /// never lags a frame behind the card and no rebuilds happen while paging.
+///
+/// [glass] 非 null 时走「折射玻璃」：同一份共享预模糊位图先过一遍折射着色器
+/// 再上屏（边缘按圆角 SDF 把采样点朝外推开 + 叠染色 + 叠受光边缘高光）。
+/// 着色器没就绪（后端不支持 / 资产缺失 / 测试环境）时自动回落成直接贴图 +
+/// 一层染色 —— 也就是「高斯磨砂」的外观，不会破相。
 class PreblurredWallpaperAlignedFill extends LeafRenderObjectWidget {
-  const PreblurredWallpaperAlignedFill({super.key});
+  const PreblurredWallpaperAlignedFill({this.glass, super.key});
+
+  /// 折射玻璃参数；null = 原行为（直接贴图，即高斯模糊档）。
+  final CourseGlassStyle? glass;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
@@ -650,6 +659,7 @@ class PreblurredWallpaperAlignedFill extends LeafRenderObjectWidget {
         context,
         axis: Axis.vertical,
       )?.position,
+      glass: glass,
     );
   }
 
@@ -666,7 +676,8 @@ class PreblurredWallpaperAlignedFill extends LeafRenderObjectWidget {
       ..verticalScrollPosition = Scrollable.maybeOf(
         context,
         axis: Axis.vertical,
-      )?.position;
+      )?.position
+      ..glass = glass;
   }
 }
 
@@ -679,7 +690,12 @@ class _RenderPreblurredFill extends RenderBox {
     required this._pageIndex,
     this._repaint,
     this._verticalScrollPosition,
-  });
+    CourseGlassStyle? glass,
+  }) {
+    // 构造期直接落字段、不走 setter：setter 里的 _syncShader 要 attached 才
+    // 建着色器，此刻还没 attach，交给 attach() 统一处理。
+    _glass = glass;
+  }
 
   ui.Image? _image;
   set image(ui.Image? value) {
@@ -769,6 +785,77 @@ class _RenderPreblurredFill extends RenderBox {
   /// Whether [markNeedsPaint] is registered on [_verticalScrollPosition].
   bool _listeningVertical = false;
 
+  /// 折射玻璃参数。null = 直接贴图（高斯磨砂档）。
+  CourseGlassStyle? _glass;
+  set glass(CourseGlassStyle? value) {
+    if (_glass == value) {
+      return;
+    }
+    _glass = value;
+    _syncShader();
+    markNeedsPaint();
+  }
+
+  /// 本绘制对象独占的着色器实例。
+  ///
+  /// 由本对象创建、本对象释放。这是**所有权**上的选择（attach 建、detach 释放），
+  /// 不是正确性要求：引擎把着色器交给渲染列表前会复制一份 uniform
+  /// （`lib/ui/painting/fragment_shader.cc` 的 `ReusableFragmentShader::shader`），
+  /// 所以只要「设 uniform → 立刻绘制」不被打断，多张卡共用一个实例也不会互相踩。
+  /// 一张卡一个实例换来的好处是生命周期不用再找中央持有者，代价只是每卡一个
+  /// Float32List 与一次 `fragmentShader()`。
+  ui.FragmentShader? _shader;
+
+  /// 绑定在 [_shader] 上的 uniform 槽位，跟着着色器实例一起换。
+  _CourseGlassUniforms? _uniforms;
+
+  /// 是否已把 [_onShaderReady] 挂到全局加载器上。
+  bool _listeningShader = false;
+
+  /// 期望用着色器时确保实例在手：程序已加载就立刻建，没加载就订阅加载器，
+  /// 等它就绪后补一次重绘（不重建整棵树）。
+  void _syncShader() {
+    final wantsShader = _glass != null && attached;
+    if (wantsShader) {
+      if (_shader == null) {
+        final loader = CourseCardGlassShader.instance;
+        _shader = loader.newShader();
+        if (_shader == null && !_listeningShader) {
+          loader.addListener(_onShaderReady);
+          _listeningShader = true;
+          unawaited(loader.ensureLoaded());
+        }
+      }
+    } else if (_shader != null) {
+      _removeShaderListener();
+      _shader!.dispose();
+      _shader = null;
+      _uniforms = null;
+    }
+  }
+
+  void _onShaderReady() {
+    if (!attached || _glass == null || _shader != null) {
+      return;
+    }
+    final shader = CourseCardGlassShader.instance.newShader();
+    if (shader == null) {
+      return;
+    }
+    _removeShaderListener();
+    _shader = shader;
+    _uniforms = null;
+    markNeedsPaint();
+  }
+
+  void _removeShaderListener() {
+    if (!_listeningShader) {
+      return;
+    }
+    CourseCardGlassShader.instance.removeListener(_onShaderReady);
+    _listeningShader = false;
+  }
+
   /// A screen-fixed wallpaper needs a fresh sample every frame while pages
   /// slide. Without this, a parent [RepaintBoundary] (or similar layer cache)
   /// can translate a stale frost texture. A wallpaper that slides *with* the
@@ -837,6 +924,7 @@ class _RenderPreblurredFill extends RenderBox {
     _syncPagerListener();
     _syncRepaintListener();
     _syncVerticalScrollListener();
+    _syncShader();
   }
 
   @override
@@ -846,6 +934,7 @@ class _RenderPreblurredFill extends RenderBox {
     _syncPagerListener();
     _syncRepaintListener();
     _syncVerticalScrollListener();
+    _syncShader();
   }
 
   @override
@@ -862,6 +951,10 @@ class _RenderPreblurredFill extends RenderBox {
       _verticalScrollPosition?.removeListener(markNeedsPaint);
       _listeningVertical = false;
     }
+    _removeShaderListener();
+    _shader?.dispose();
+    _shader = null;
+    _uniforms = null;
     super.dispose();
   }
 
@@ -932,11 +1025,121 @@ class _RenderPreblurredFill extends RenderBox {
 
     // dest is in global/screen coords; paint is in this box's parent coords.
     final paintDest = dest.shift(offset - globalTopLeft);
+
+    final glass = _glass;
+    final shader = _shader;
+    if (glass != null && shader != null) {
+      _paintRefraction(context.canvas, offset, shader, glass, paintDest);
+      return;
+    }
+
     context.canvas.drawImageRect(
       image,
       Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
       paintDest,
       Paint()..filterQuality = FilterQuality.low,
     );
+    // 折射档但着色器还没就绪：补一层染色，外观与「高斯模糊」档一致。
+    // 染色在着色器路径里是着色器自己做的，所以这里不能无条件画。
+    if (glass != null) {
+      context.canvas.drawRect(offset & size, Paint()..color = glass.tint);
+    }
   }
+
+  /// 折射玻璃路径：同一份共享预模糊位图，按卡片圆角做边缘折射 + 染色 + 高光。
+  ///
+  /// 全程只有一次 `drawRect`，没有离屏目标、没有 GPU 回读 —— 这正是「卡片数量
+  /// 翻倍不改变 GPU 工作量级」的来源（对比每卡一次实时 BackdropFilter）。
+  void _paintRefraction(
+    Canvas canvas,
+    Offset offset,
+    ui.FragmentShader shader,
+    CourseGlassStyle glass,
+    Rect paintDest,
+  ) {
+    final image = _image;
+    if (image == null) {
+      return;
+    }
+    final uniforms = _uniforms ??= _CourseGlassUniforms(shader);
+    final tint = glass.tint;
+    final rim = glass.rimColor;
+    final light = glass.lightDirection;
+
+    // 纹理左上角在**本 box 局部坐标**里的位置：着色器按局部坐标算 uv，
+    // 而 paintDest 是在父坐标系里。
+    final texOrigin = paintDest.topLeft - offset;
+
+    uniforms.size.set(size.width, size.height);
+    uniforms.texOrigin.set(texOrigin.dx, texOrigin.dy);
+    uniforms.texDestSize.set(paintDest.width, paintDest.height);
+    uniforms.radius.set(glass.borderRadius);
+    uniforms.tint.set(tint.r, tint.g, tint.b, tint.a);
+    uniforms.refract.set(glass.refraction);
+    uniforms.band.set(glass.refractionBand);
+    uniforms.edgePow.set(glass.refractionEdgePow);
+    uniforms.rimColor.set(rim.r, rim.g, rim.b);
+    uniforms.rim.set(glass.rimStrength);
+    uniforms.rimWidth.set(glass.rimWidth);
+    uniforms.lightDir.set(light.dx, light.dy);
+
+    shader.setImageSampler(0, image);
+
+    // FlutterFragCoord() 取的是 drawRect 的局部坐标（Impeller 的顶点着色器直接
+    // 把顶点 position 传下来），所以必须先平移到卡片原点、再从 (0,0) 画，
+    // 否则坐标从 offset 起算，SDF 与圆角会整体偏移。
+    canvas.save();
+    canvas.translate(offset.dx, offset.dy);
+    canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
+    canvas.restore();
+  }
+}
+
+/// 已解析的 uniform 槽位，绑在一个具体的 [ui.FragmentShader] 实例上。
+///
+/// 为什么不在每帧调 `shader.getUniformFloat('名字')`：那是一次引擎查询
+/// （native 调用）。一屏 20~50 张卡、每帧十几处 uniform，累起来是实打实的
+/// 开销；而名字只在拿到着色器实例时解析一次即可。槽位本身只是
+/// 「着色器 + 下标」的轻量包装，`set` 直接写 float，没有名字查找。
+///
+/// 按名字取而不是硬编码 `setFloat(下标, …)`：uniform 的下标取决于
+/// `course_card_glass.frag` 里的声明顺序，改一次着色器就要同步改一遍 Dart，
+/// 漏改不报错、只会静默画错。名字写错会当场抛 ArgumentError。
+class _CourseGlassUniforms {
+  _CourseGlassUniforms(ui.FragmentShader shader)
+    : size = shader.getUniformVec2('u_size'),
+      texOrigin = shader.getUniformVec2('u_tex_origin'),
+      texDestSize = shader.getUniformVec2('u_tex_dest_size'),
+      radius = shader.getUniformFloat('u_radius'),
+      tint = shader.getUniformVec4('u_tint'),
+      refract = shader.getUniformFloat('u_refract'),
+      band = shader.getUniformFloat('u_band'),
+      edgePow = shader.getUniformFloat('u_edge_pow'),
+      rimColor = shader.getUniformVec3('u_rim_color'),
+      rim = shader.getUniformFloat('u_rim'),
+      rimWidth = shader.getUniformFloat('u_rim_width'),
+      lightDir = shader.getUniformVec2('u_light_dir');
+
+  final ui.UniformVec2Slot size;
+  final ui.UniformVec2Slot texOrigin;
+  final ui.UniformVec2Slot texDestSize;
+  final ui.UniformFloatSlot radius;
+  final ui.UniformVec4Slot tint;
+  final ui.UniformFloatSlot refract;
+  final ui.UniformFloatSlot band;
+  final ui.UniformFloatSlot edgePow;
+  final ui.UniformVec3Slot rimColor;
+  final ui.UniformFloatSlot rim;
+  final ui.UniformFloatSlot rimWidth;
+  final ui.UniformVec2Slot lightDir;
+}
+
+/// 校验着色器与 Dart 侧的 uniform 名字对得上，测试专用。
+///
+/// 名字写错时 [ui.FragmentShader.getUniformVec2] 等会当场抛 ArgumentError ——
+/// 但那是**绘制期**才发生的事，一屏几十张卡一起炸在真机上才发现。这个入口让
+/// 纯单元测试能在不画任何东西的前提下先把名字对一遍。
+@visibleForTesting
+void debugValidateCourseGlassUniforms(ui.FragmentShader shader) {
+  _CourseGlassUniforms(shader);
 }

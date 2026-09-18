@@ -10178,6 +10178,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseCardSurfaceStyleGaussian => 'ガウスぼかし';
 
   @override
+  String get courseCardSurfaceStyleRefraction => '屈折ガラス';
+
+  @override
   String get courseCardSectionColor => '色';
 
   @override

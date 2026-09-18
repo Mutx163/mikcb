@@ -97,6 +97,11 @@ dependency_overrides:
 flutter:
   uses-material-design: true
   generate: true
+  # 课程卡片「折射玻璃」档的着色器：在共享的预模糊壁纸上做圆角 SDF 边缘折射 +
+  # 染色 + 边缘高光。一份纹理全部卡片共用，没有离屏与回读，见 shaders/ 里的注释。
+  # 加载失败（或后端不支持）时卡片回落「高斯磨砂」外观，不会破相。
+  shaders:
+    - shaders/course_card_glass.frag
   assets:
     - assets/branding/
     - assets/donate/

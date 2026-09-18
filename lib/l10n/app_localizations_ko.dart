@@ -10223,6 +10223,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseCardSurfaceStyleGaussian => '가우시안 블러';
 
   @override
+  String get courseCardSurfaceStyleRefraction => '굴절 유리';
+
+  @override
   String get courseCardSectionColor => '색상';
 
   @override

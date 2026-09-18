@@ -1040,6 +1040,7 @@ String _surfaceMaterialLabel(AppLocalizations l10n, SurfaceMaterial material) =>
       SurfaceMaterial.frost => l10n.materialStateFrost,
       SurfaceMaterial.frostProgressive => l10n.headerBlurStyleInspire,
       SurfaceMaterial.frostGaussian => l10n.headerBlurStyleGaussian,
+      SurfaceMaterial.refractionGlass => l10n.courseCardSurfaceStyleRefraction,
       SurfaceMaterial.softGlass => l10n.frostedGlassModeSoft,
       SurfaceMaterial.liquidGlass => l10n.frostedGlassModeLiquid,
     };

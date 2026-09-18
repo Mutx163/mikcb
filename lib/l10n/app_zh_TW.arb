@@ -5797,6 +5797,7 @@
   "courseCardSurfaceStyleLabel": "卡片外觀",
   "courseCardSurfaceStyleSolid": "實體卡片",
   "courseCardSurfaceStyleGaussian": "高斯模糊",
+  "courseCardSurfaceStyleRefraction": "折射玻璃",
   "courseCardSectionColor": "顏色",
   "liveSelfCheckTitle": "自我檢查",
   "collapsibleLargeTitle": "折疊大標題",

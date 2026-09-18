@@ -65,8 +65,7 @@ abstract final class HomeStartupVisualPrimer {
       final devicePixelRatio = _devicePixelRatio();
       final appearance = settings.frostedAppearance;
       final sigma = resolveHomePreblurSigma(
-        gaussianCardsDrive:
-            settings.courseCardSurfaceStyle == CourseCardSurfaceStyle.gaussian,
+        gaussianCardsDrive: settings.courseCardSurfaceStyle.isGlass,
         // 与首页玻璃带消费点同判：顶栏材质为液态时按折射预热，
         // 否则预热位图和首帧实际材质不一致。
         liquidGlassChrome: appearance.homeBandGlassMaterial == 'liquid',

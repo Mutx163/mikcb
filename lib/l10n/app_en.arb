@@ -6022,6 +6022,7 @@
   "courseCardSurfaceStyleLabel": "Card Appearance",
   "courseCardSurfaceStyleSolid": "Solid",
   "courseCardSurfaceStyleGaussian": "Gaussian Blur",
+  "courseCardSurfaceStyleRefraction": "Refraction Glass",
   "courseCardSectionColor": "Color",
   "liveSelfCheckTitle": "Self-Check",
   "collapsibleLargeTitle": "Collapsible Large Title",

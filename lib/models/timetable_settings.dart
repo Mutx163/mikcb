@@ -575,8 +575,8 @@ extension LiveBeforeClassQuickActionX on LiveBeforeClassQuickAction {
 
 /// Visual surface style for course cards.
 ///
-/// 只保留两档：实体卡片与高斯模糊。旧版本的「半透明」「玻璃（液态玻璃）」
-/// 档位已下线，读取旧配置时分别并入这两档（见
+/// 只保留三档：实体卡片、高斯模糊、折射玻璃。旧版本的「半透明」「玻璃（液态
+/// 玻璃）」档位已下线，读取旧配置时分别并入实体/高斯（见
 /// [CourseCardSurfaceStyleX.fromValue]）。
 enum CourseCardSurfaceStyle {
   /// Solid opaque card with gradient wash (default).
@@ -584,13 +584,31 @@ enum CourseCardSurfaceStyle {
 
   /// Gaussian blur backdrop over the page background.
   gaussian,
+
+  /// 折射玻璃：在**共享的**预模糊壁纸位上跑一遍折射着色器，卡片边缘按圆角
+  /// SDF 把背景「掰弯」，再叠染色与受光边缘高光。
+  ///
+  /// 与 [gaussian] 的关系：两者采的是同一份预模糊位图（同一份
+  /// `PreblurredWallpaperCache` 出图，全部卡片共用），差别只在最后一步 ——
+  /// 高斯档直接贴图，这一档多跑一次折射着色器。因此它不会因为卡片变多而
+  /// 更贵，是「实体卡片 / 高斯模糊」之外的第三种材质。
+  refraction,
 }
 
 extension CourseCardSurfaceStyleX on CourseCardSurfaceStyle {
   String get value => name;
 
+  /// 是否属于「寄生在共享预模糊壁纸上」的玻璃材质（高斯模糊 / 折射玻璃）。
+  ///
+  /// 这两档共享同一套前置条件与墨色规则，判断「是不是玻璃材质」一律用这个，
+  /// **不要写 `== gaussian`**：那样每新增一档玻璃就要满仓找一遍漏改点
+  /// （壁纸采样开关、摘要卡铬玻璃、墨色自动黑白、进度条半透明填充）。
+  bool get isGlass => this != CourseCardSurfaceStyle.solid;
+
   static CourseCardSurfaceStyle fromValue(String? value) {
     // 旧档位迁移：半透明并入实体卡片；玻璃 / 液态玻璃并入高斯模糊。
+    // 注意 'glass' 这个历史字符串**不是** [CourseCardSurfaceStyle.refraction]：
+    // 老配置里它指的是当年那档液态玻璃，语义上就是现在的高斯磨砂。
     switch (value) {
       case 'translucent':
         return CourseCardSurfaceStyle.solid;

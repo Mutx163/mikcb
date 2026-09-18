@@ -5799,6 +5799,7 @@
   "courseCardSurfaceStyleLabel": "카드 외관",
   "courseCardSurfaceStyleSolid": "솔리드",
   "courseCardSurfaceStyleGaussian": "가우시안 블러",
+  "courseCardSurfaceStyleRefraction": "굴절 유리",
   "courseCardSectionColor": "색상",
   "liveSelfCheckTitle": "자체 점검",
   "collapsibleLargeTitle": "접을 수 있는 큰 제목",

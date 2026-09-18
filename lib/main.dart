@@ -36,6 +36,7 @@ import 'utils/frame_perf_probe.dart';
 import 'utils/home_startup_visual_primer.dart';
 import 'utils/theme_seed_accent.dart';
 import 'widgets/app_startup_splash.dart';
+import 'widgets/course_glass_shader.dart';
 import 'widgets/home_menu_route_catalog.dart';
 import 'widgets/miuix_font_weight_scope.dart';
 import 'services/app_log_service.dart';
@@ -386,6 +387,12 @@ Future<void> main() async {
       SchedulerBinding.instance.scheduleTask(() {
         unawaited(MiuixGlassRendering.load());
       }, Priority.idle, debugLabel: 'miuix-os4-glass-warm');
+      // 课程卡片「折射玻璃」档的着色器预热（1 个 `shaders/course_card_glass.frag`）。
+      // 同 miuix 那一份：幂等、放空闲优先级、失败不阻断（卡片按磨砂降级）。
+      // 放在这里是因为一屏 20~50 张卡片都会用到它，首帧现编译会直接掉帧。
+      SchedulerBinding.instance.scheduleTask(() {
+        unawaited(CourseCardGlassShader.instance.ensureLoaded());
+      }, Priority.idle, debugLabel: 'course-card-glass-warm');
       // 玻璃 shader 预热放到启动画面展示期间并行跑（失败只记日志不阻断，
       // 玻璃按未预热降级，绝不能因此卡死换页）。
       _glassShadersWarm = LiquidGlassWidgets.initialize().catchError((

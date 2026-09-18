@@ -6061,6 +6061,7 @@
   "courseCardSurfaceStyleLabel": "卡片外观",
   "courseCardSurfaceStyleSolid": "实体卡片",
   "courseCardSurfaceStyleGaussian": "高斯模糊",
+  "courseCardSurfaceStyleRefraction": "折射玻璃",
   "courseCardSectionColor": "颜色",
   "liveSelfCheckTitle": "自检",
   "collapsibleLargeTitle": "折叠大标题",

@@ -17923,6 +17923,12 @@ abstract class AppLocalizations {
   /// **'高斯模糊'**
   String get courseCardSurfaceStyleGaussian;
 
+  /// No description provided for @courseCardSurfaceStyleRefraction.
+  ///
+  /// In zh, this message translates to:
+  /// **'折射玻璃'**
+  String get courseCardSurfaceStyleRefraction;
+
   /// No description provided for @courseCardSectionColor.
   ///
   /// In zh, this message translates to:

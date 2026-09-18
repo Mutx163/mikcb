@@ -331,6 +331,7 @@ String courseCardSurfaceStyleLabel(
 ) => switch (style) {
   CourseCardSurfaceStyle.solid => l10n.courseCardSurfaceStyleSolid,
   CourseCardSurfaceStyle.gaussian => l10n.courseCardSurfaceStyleGaussian,
+  CourseCardSurfaceStyle.refraction => l10n.courseCardSurfaceStyleRefraction,
 };
 
 String foruiThemeLabel(AppLocalizations l10n, ForuiTheme theme) =>
