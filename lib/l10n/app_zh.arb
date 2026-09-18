@@ -6428,32 +6428,27 @@
   "progressiveBlurExtentLabel": "渐变延伸",
   "progressiveBlurTintBottomLabel": "下部衬底",
   "progressiveBlurResetAction": "恢复默认",
-  "courseWeatherSummary": "{phenomenon} · {temperature}° · {probability}%",
-  "@courseWeatherSummary": {
-    "description": "日视图课卡上的天气行：现象 + 温度 + 降水概率",
+  "weatherTemperatureValue": "{temperature}°",
+  "@weatherTemperatureValue": {
+    "description": "天气行里的温度一项",
     "placeholders": {
-      "phenomenon": {
-        "type": "String"
-      },
       "temperature": {
         "type": "int"
-      },
+      }
+    }
+  },
+  "weatherProbabilityValue": "{probability}%",
+  "@weatherProbabilityValue": {
+    "description": "天气行里的降水概率一项",
+    "placeholders": {
       "probability": {
         "type": "int"
       }
     }
   },
-  "courseWeatherSummaryNoProbability": "{phenomenon} · {temperature}°",
-  "@courseWeatherSummaryNoProbability": {
-    "description": "降水概率偏低时的天气行，不显示百分比",
-    "placeholders": {
-      "phenomenon": {
-        "type": "String"
-      },
-      "temperature": {
-        "type": "int"
-      }
-    }
+  "weatherSummarySeparator": " · ",
+  "@weatherSummarySeparator": {
+    "description": "天气行各显示项之间的分隔符"
   },
   "weatherClear": "晴",
   "weatherMainlyClear": "晴间多云",
@@ -6477,8 +6472,8 @@
   "weatherThunderstormHail": "雷阵雨伴冰雹",
   "weatherSettingsEntryTitle": "课程卡天气",
   "weatherSettingsTitle": "天气",
-  "weatherEnableTitle": "在日视图显示天气",
-  "weatherEnableSubtitle": "显示该时段的天气、温度与降水概率",
+  "weatherEnableTitle": "显示天气",
+  "weatherEnableSubtitle": "关闭后不再获取天气数据",
   "weatherCityLabel": "城市",
   "weatherCityNotSet": "未设置",
   "weatherCityPickerTitle": "选择城市",
@@ -6491,6 +6486,17 @@
   "weatherCoverageNote": "预报只覆盖未来 16 天，更远的日期不显示天气。",
   "weatherAttribution": "天气数据来自 Open-Meteo.com",
   "weatherSectionDisplayTitle": "显示",
+  "weatherShowOnDayCardTitle": "日视图课卡",
+  "weatherShowOnWeekCardTitle": "周视图课卡",
+  "weatherShowOnSheetTitle": "课程详情弹窗",
+  "weatherSectionContentTitle": "显示内容",
+  "weatherShowPhenomenonTitle": "天气现象",
+  "weatherShowPhenomenonSubtitle": "如「小雨」「多云」，同时决定天气图标",
+  "weatherShowTemperatureTitle": "温度",
+  "weatherShowProbabilityTitle": "降水概率",
+  "weatherShowProbabilitySubtitle": "低于 30% 时不显示",
+  "weatherSectionContentNote": "三项都不选时，天气整行不显示。",
+  "weatherCourseTileSubtitle": "该课程时段内的天气",
   "weatherSectionSourceTitle": "数据来源",
   "weatherUseCurrentLocation": "使用当前位置",
   "weatherLocating": "正在定位…",

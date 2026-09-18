@@ -6369,31 +6369,23 @@
   "progressiveBlurExtentLabel": "グラデーションの範囲",
   "progressiveBlurTintBottomLabel": "下半分の下地",
   "progressiveBlurResetAction": "既定値に戻す",
-  "courseWeatherSummary": "{phenomenon} · {temperature}° · {probability}%",
-  "@courseWeatherSummary": {
+  "weatherTemperatureValue": "{temperature}°",
+  "@weatherTemperatureValue": {
     "placeholders": {
-      "phenomenon": {
-        "type": "String"
-      },
       "temperature": {
         "type": "int"
-      },
+      }
+    }
+  },
+  "weatherProbabilityValue": "{probability}%",
+  "@weatherProbabilityValue": {
+    "placeholders": {
       "probability": {
         "type": "int"
       }
     }
   },
-  "courseWeatherSummaryNoProbability": "{phenomenon} · {temperature}°",
-  "@courseWeatherSummaryNoProbability": {
-    "placeholders": {
-      "phenomenon": {
-        "type": "String"
-      },
-      "temperature": {
-        "type": "int"
-      }
-    }
-  },
+  "weatherSummarySeparator": " · ",
   "weatherClear": "晴れ",
   "weatherMainlyClear": "晴れ時々くもり",
   "weatherPartlyCloudy": "くもり",
@@ -6416,8 +6408,8 @@
   "weatherThunderstormHail": "ひょうを伴う雷雨",
   "weatherSettingsEntryTitle": "授業カードの天気",
   "weatherSettingsTitle": "天気",
-  "weatherEnableTitle": "日表示に天気を表示",
-  "weatherEnableSubtitle": "その時間帯の天気・気温・降水確率を表示",
+  "weatherEnableTitle": "天気を表示",
+  "weatherEnableSubtitle": "オフにすると天気データを取得しなくなります",
   "weatherCityLabel": "都市",
   "weatherCityNotSet": "未設定",
   "weatherCityPickerTitle": "都市を選択",
@@ -6430,6 +6422,17 @@
   "weatherCoverageNote": "予報は今後 16 日分のみです。それより先の日付では天気を表示しません。",
   "weatherAttribution": "天気データ: Open-Meteo.com",
   "weatherSectionDisplayTitle": "表示",
+  "weatherShowOnDayCardTitle": "日表示のカード",
+  "weatherShowOnWeekCardTitle": "週表示のカード",
+  "weatherShowOnSheetTitle": "授業詳細シート",
+  "weatherSectionContentTitle": "表示する項目",
+  "weatherShowPhenomenonTitle": "天気",
+  "weatherShowPhenomenonSubtitle": "「小雨」など。天気アイコンもこれに連動します",
+  "weatherShowTemperatureTitle": "気温",
+  "weatherShowProbabilityTitle": "降水確率",
+  "weatherShowProbabilitySubtitle": "30% 未満のときは表示しません",
+  "weatherSectionContentNote": "3 つともオフにすると、天気の行は表示されません。",
+  "weatherCourseTileSubtitle": "この授業の時間帯の天気",
   "weatherSectionSourceTitle": "データ提供元",
   "weatherUseCurrentLocation": "現在地を使う",
   "weatherLocating": "位置を取得中…",

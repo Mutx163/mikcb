@@ -10835,18 +10835,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get progressiveBlurResetAction => '恢复默认';
 
   @override
-  String courseWeatherSummary(
-    String phenomenon,
-    int temperature,
-    int probability,
-  ) {
-    return '$phenomenon · $temperature° · $probability%';
+  String weatherTemperatureValue(int temperature) {
+    return '$temperature°';
   }
 
   @override
-  String courseWeatherSummaryNoProbability(String phenomenon, int temperature) {
-    return '$phenomenon · $temperature°';
+  String weatherProbabilityValue(int probability) {
+    return '$probability%';
   }
+
+  @override
+  String get weatherSummarySeparator => ' · ';
 
   @override
   String get weatherClear => '晴';
@@ -10915,10 +10914,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherSettingsTitle => '天气';
 
   @override
-  String get weatherEnableTitle => '在日视图显示天气';
+  String get weatherEnableTitle => '显示天气';
 
   @override
-  String get weatherEnableSubtitle => '显示该时段的天气、温度与降水概率';
+  String get weatherEnableSubtitle => '关闭后不再获取天气数据';
 
   @override
   String get weatherCityLabel => '城市';
@@ -10955,6 +10954,39 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get weatherSectionDisplayTitle => '显示';
+
+  @override
+  String get weatherShowOnDayCardTitle => '日视图课卡';
+
+  @override
+  String get weatherShowOnWeekCardTitle => '周视图课卡';
+
+  @override
+  String get weatherShowOnSheetTitle => '课程详情弹窗';
+
+  @override
+  String get weatherSectionContentTitle => '显示内容';
+
+  @override
+  String get weatherShowPhenomenonTitle => '天气现象';
+
+  @override
+  String get weatherShowPhenomenonSubtitle => '如「小雨」「多云」，同时决定天气图标';
+
+  @override
+  String get weatherShowTemperatureTitle => '温度';
+
+  @override
+  String get weatherShowProbabilityTitle => '降水概率';
+
+  @override
+  String get weatherShowProbabilitySubtitle => '低于 30% 时不显示';
+
+  @override
+  String get weatherSectionContentNote => '三项都不选时，天气整行不显示。';
+
+  @override
+  String get weatherCourseTileSubtitle => '该课程时段内的天气';
 
   @override
   String get weatherSectionSourceTitle => '数据来源';
@@ -21869,18 +21901,17 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get progressiveBlurResetAction => '恢復預設';
 
   @override
-  String courseWeatherSummary(
-    String phenomenon,
-    int temperature,
-    int probability,
-  ) {
-    return '$phenomenon · $temperature° · $probability%';
+  String weatherTemperatureValue(int temperature) {
+    return '$temperature°';
   }
 
   @override
-  String courseWeatherSummaryNoProbability(String phenomenon, int temperature) {
-    return '$phenomenon · $temperature°';
+  String weatherProbabilityValue(int probability) {
+    return '$probability%';
   }
+
+  @override
+  String get weatherSummarySeparator => ' · ';
 
   @override
   String get weatherClear => '晴';
@@ -21949,10 +21980,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get weatherSettingsTitle => '天氣';
 
   @override
-  String get weatherEnableTitle => '在日檢視顯示天氣';
+  String get weatherEnableTitle => '顯示天氣';
 
   @override
-  String get weatherEnableSubtitle => '顯示該時段的天氣、溫度與降水概率';
+  String get weatherEnableSubtitle => '關閉後不再取得天氣資料';
 
   @override
   String get weatherCityLabel => '城市';
@@ -21989,6 +22020,39 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get weatherSectionDisplayTitle => '顯示';
+
+  @override
+  String get weatherShowOnDayCardTitle => '日檢視課卡';
+
+  @override
+  String get weatherShowOnWeekCardTitle => '週檢視課卡';
+
+  @override
+  String get weatherShowOnSheetTitle => '課程詳情彈窗';
+
+  @override
+  String get weatherSectionContentTitle => '顯示內容';
+
+  @override
+  String get weatherShowPhenomenonTitle => '天氣現象';
+
+  @override
+  String get weatherShowPhenomenonSubtitle => '如「小雨」「多雲」，同時決定天氣圖示';
+
+  @override
+  String get weatherShowTemperatureTitle => '溫度';
+
+  @override
+  String get weatherShowProbabilityTitle => '降水概率';
+
+  @override
+  String get weatherShowProbabilitySubtitle => '低於 30% 時不顯示';
+
+  @override
+  String get weatherSectionContentNote => '三項都不選時，天氣整行不顯示。';
+
+  @override
+  String get weatherCourseTileSubtitle => '該課程時段內的天氣';
 
   @override
   String get weatherSectionSourceTitle => '資料來源';
@@ -32903,18 +32967,17 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get progressiveBlurResetAction => '恢復預設';
 
   @override
-  String courseWeatherSummary(
-    String phenomenon,
-    int temperature,
-    int probability,
-  ) {
-    return '$phenomenon · $temperature° · $probability%';
+  String weatherTemperatureValue(int temperature) {
+    return '$temperature°';
   }
 
   @override
-  String courseWeatherSummaryNoProbability(String phenomenon, int temperature) {
-    return '$phenomenon · $temperature°';
+  String weatherProbabilityValue(int probability) {
+    return '$probability%';
   }
+
+  @override
+  String get weatherSummarySeparator => ' · ';
 
   @override
   String get weatherClear => '晴';
@@ -32983,10 +33046,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get weatherSettingsTitle => '天氣';
 
   @override
-  String get weatherEnableTitle => '在日檢視顯示天氣';
+  String get weatherEnableTitle => '顯示天氣';
 
   @override
-  String get weatherEnableSubtitle => '顯示該時段的天氣、溫度與降水機率';
+  String get weatherEnableSubtitle => '關閉後不再取得天氣資料';
 
   @override
   String get weatherCityLabel => '城市';
@@ -33023,6 +33086,39 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get weatherSectionDisplayTitle => '顯示';
+
+  @override
+  String get weatherShowOnDayCardTitle => '日檢視課卡';
+
+  @override
+  String get weatherShowOnWeekCardTitle => '週檢視課卡';
+
+  @override
+  String get weatherShowOnSheetTitle => '課程詳情彈窗';
+
+  @override
+  String get weatherSectionContentTitle => '顯示內容';
+
+  @override
+  String get weatherShowPhenomenonTitle => '天氣現象';
+
+  @override
+  String get weatherShowPhenomenonSubtitle => '如「小雨」「多雲」，同時決定天氣圖示';
+
+  @override
+  String get weatherShowTemperatureTitle => '溫度';
+
+  @override
+  String get weatherShowProbabilityTitle => '降水機率';
+
+  @override
+  String get weatherShowProbabilitySubtitle => '低於 30% 時不顯示';
+
+  @override
+  String get weatherSectionContentNote => '三項都不選時，天氣整行不顯示。';
+
+  @override
+  String get weatherCourseTileSubtitle => '該課程時段內的天氣';
 
   @override
   String get weatherSectionSourceTitle => '資料來源';

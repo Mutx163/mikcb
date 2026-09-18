@@ -7,6 +7,10 @@ import 'app_localizations.dart';
 /// 文案要跟着语言走，两者混在一起会让 domain 依赖 AppLocalizations。
 abstract final class WeatherCategoryLocalizer {
   /// 天气现象的中文/本地化名称。
+  ///
+  /// 只到「现象名」为止：整行怎么拼（图标、分隔符、哪几项要显示）在
+  /// `lib/widgets/course_weather_display.dart`——那一步需要 `IconData`，而本层
+  /// 不该依赖 material 的图标表。
   static String label(AppLocalizations l10n, WeatherCategory category) {
     return switch (category) {
       WeatherCategory.clear => l10n.weatherClear,
@@ -30,25 +34,5 @@ abstract final class WeatherCategoryLocalizer {
       WeatherCategory.thunderstorm => l10n.weatherThunderstorm,
       WeatherCategory.thunderstormHail => l10n.weatherThunderstormHail,
     };
-  }
-
-  /// 课卡上的那一行，例如 `小雨 · 23° · 60%`。
-  ///
-  /// 降水概率偏低时用不带百分比的短句——`showPrecipitationProbability`
-  /// 由聚合算法按阈值判定，这里只负责选模板。
-  static String summary(AppLocalizations l10n, CourseWeatherSummary summary) {
-    final phenomenon = label(l10n, summary.category);
-    final probability = summary.precipitationProbability;
-    if (!summary.showPrecipitationProbability || probability == null) {
-      return l10n.courseWeatherSummaryNoProbability(
-        phenomenon,
-        summary.temperatureC,
-      );
-    }
-    return l10n.courseWeatherSummary(
-      phenomenon,
-      summary.temperatureC,
-      probability,
-    );
   }
 }

@@ -11143,18 +11143,17 @@ class AppLocalizationsJa extends AppLocalizations {
   String get progressiveBlurResetAction => '既定値に戻す';
 
   @override
-  String courseWeatherSummary(
-    String phenomenon,
-    int temperature,
-    int probability,
-  ) {
-    return '$phenomenon · $temperature° · $probability%';
+  String weatherTemperatureValue(int temperature) {
+    return '$temperature°';
   }
 
   @override
-  String courseWeatherSummaryNoProbability(String phenomenon, int temperature) {
-    return '$phenomenon · $temperature°';
+  String weatherProbabilityValue(int probability) {
+    return '$probability%';
   }
+
+  @override
+  String get weatherSummarySeparator => ' · ';
 
   @override
   String get weatherClear => '晴れ';
@@ -11223,10 +11222,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get weatherSettingsTitle => '天気';
 
   @override
-  String get weatherEnableTitle => '日表示に天気を表示';
+  String get weatherEnableTitle => '天気を表示';
 
   @override
-  String get weatherEnableSubtitle => 'その時間帯の天気・気温・降水確率を表示';
+  String get weatherEnableSubtitle => 'オフにすると天気データを取得しなくなります';
 
   @override
   String get weatherCityLabel => '都市';
@@ -11263,6 +11262,39 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get weatherSectionDisplayTitle => '表示';
+
+  @override
+  String get weatherShowOnDayCardTitle => '日表示のカード';
+
+  @override
+  String get weatherShowOnWeekCardTitle => '週表示のカード';
+
+  @override
+  String get weatherShowOnSheetTitle => '授業詳細シート';
+
+  @override
+  String get weatherSectionContentTitle => '表示する項目';
+
+  @override
+  String get weatherShowPhenomenonTitle => '天気';
+
+  @override
+  String get weatherShowPhenomenonSubtitle => '「小雨」など。天気アイコンもこれに連動します';
+
+  @override
+  String get weatherShowTemperatureTitle => '気温';
+
+  @override
+  String get weatherShowProbabilityTitle => '降水確率';
+
+  @override
+  String get weatherShowProbabilitySubtitle => '30% 未満のときは表示しません';
+
+  @override
+  String get weatherSectionContentNote => '3 つともオフにすると、天気の行は表示されません。';
+
+  @override
+  String get weatherCourseTileSubtitle => 'この授業の時間帯の天気';
 
   @override
   String get weatherSectionSourceTitle => 'データ提供元';

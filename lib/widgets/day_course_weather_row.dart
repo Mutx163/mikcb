@@ -3,42 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../domain/weather_logic.dart';
 import '../l10n/app_localizations.dart';
-import '../l10n/weather_category_localizer.dart';
 import '../providers/weather_provider.dart';
+import 'course_weather_display.dart';
 import 'day_agenda_info_row.dart';
 
-/// 天气现象 → 图标。
-///
-/// 放在 widget 层而不是 domain：[IconData] 来自 material，而 `lib/domain` 被
-/// `test/architecture/dependency_guards_test.dart` 禁止依赖 UI 框架。
-///
-/// 图标名全部对 `flutter/lib/src/material/icons.dart` 逐个核对过存在
-/// （`Icons.rainy`、`Icons.partly_cloudy_day` 并不存在，勿改成它们）。
-IconData weatherIconFor(WeatherCategory category) => switch (category) {
-  WeatherCategory.clear || WeatherCategory.mainlyClear => Icons.wb_sunny_outlined,
-  WeatherCategory.partlyCloudy => Icons.wb_cloudy_outlined,
-  WeatherCategory.overcast => Icons.cloud_outlined,
-  WeatherCategory.fog => Icons.foggy,
-  WeatherCategory.drizzle ||
-  WeatherCategory.snowGrains => Icons.grain,
-  WeatherCategory.freezingDrizzle ||
-  WeatherCategory.freezingRain ||
-  WeatherCategory.lightSnow => Icons.ac_unit,
-  WeatherCategory.lightRain ||
-  WeatherCategory.rain ||
-  WeatherCategory.heavyRain => Icons.water_drop_outlined,
-  WeatherCategory.rainShowers ||
-  WeatherCategory.heavyRainShowers => Icons.umbrella_outlined,
-  WeatherCategory.snow ||
-  WeatherCategory.heavySnow ||
-  WeatherCategory.snowShowers => Icons.snowing,
-  WeatherCategory.thunderstorm ||
-  WeatherCategory.thunderstormHail => Icons.thunderstorm_outlined,
-};
-
-/// 日视图课卡上的天气行：那节课时段内的现象 + 温度 + 降水概率。
+/// 日视图课卡上的天气行：那节课时段内的天气。
 ///
 /// **不接收天气数据**，自己去 [WeatherProvider] 取——这样 `timetable_screen.dart`
 /// 里只需要在地点行后面插一个无参部件，不必把天气一路透过列表、分发器、
@@ -46,6 +16,9 @@ IconData weatherIconFor(WeatherCategory category) => switch (category) {
 ///
 /// 任何前提下拿不到数据都返回 [SizedBox.shrink]（连同自带的上间距一起消失），
 /// 所以调用点不必写条件展开，失败时也不会在卡片上留下半格空隙。
+///
+/// 「显示哪几项」由调用方把设置里的三个开关传进来，不在内部读 `TimetableProvider`：
+/// 这个部件因此可以脱离课表 provider 单独测，也不多一条隐式依赖。
 class DayCourseWeatherRow extends StatefulWidget {
   const DayCourseWeatherRow({
     super.key,
@@ -54,6 +27,9 @@ class DayCourseWeatherRow extends StatefulWidget {
     required this.endTime,
     required this.ink,
     this.visible = true,
+    this.showPhenomenon = true,
+    this.showTemperature = true,
+    this.showProbability = false,
   });
 
   /// 这节课所在的具体日期；为 null（学期开始日未设置）时不显示。
@@ -68,8 +44,13 @@ class DayCourseWeatherRow extends StatefulWidget {
   /// 卡片调色板算好的前景色。
   final Color ink;
 
-  /// 是否允许显示（停课、情侣对方课程等场景传 false）。
+  /// 是否允许显示（停课、情侣对方课程、非本周等场景传 false）。
   final bool visible;
+
+  /// 显示内容（天气现象 / 温度 / 降水概率），与设置页同名的三个开关一一对应。
+  final bool showPhenomenon;
+  final bool showTemperature;
+  final bool showProbability;
 
   /// 与课卡里其他信息行一致的上间距。
   static const double topGap = 5.5;
@@ -124,12 +105,22 @@ class _DayCourseWeatherRowState extends State<DayCourseWeatherRow> {
     if (l10n == null) {
       return const SizedBox.shrink();
     }
+    final display = courseWeatherDisplayFor(
+      l10n: l10n,
+      summary: summary,
+      showPhenomenon: widget.showPhenomenon,
+      showTemperature: widget.showTemperature,
+      showProbability: widget.showProbability,
+    );
+    if (display == null) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.only(top: DayCourseWeatherRow.topGap),
       child: DayAgendaInfoRow(
-        icon: weatherIconFor(summary.category),
-        text: WeatherCategoryLocalizer.summary(l10n, summary),
+        icon: display.icon,
+        text: display.text,
         ink: widget.ink,
       ),
     );

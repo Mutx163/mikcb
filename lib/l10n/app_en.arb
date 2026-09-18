@@ -6373,31 +6373,23 @@
   "progressiveBlurExtentLabel": "Gradient extent",
   "progressiveBlurTintBottomLabel": "Lower tint",
   "progressiveBlurResetAction": "Reset to defaults",
-  "courseWeatherSummary": "{phenomenon} · {temperature}° · {probability}%",
-  "@courseWeatherSummary": {
+  "weatherTemperatureValue": "{temperature}°",
+  "@weatherTemperatureValue": {
     "placeholders": {
-      "phenomenon": {
-        "type": "String"
-      },
       "temperature": {
         "type": "int"
-      },
+      }
+    }
+  },
+  "weatherProbabilityValue": "{probability}%",
+  "@weatherProbabilityValue": {
+    "placeholders": {
       "probability": {
         "type": "int"
       }
     }
   },
-  "courseWeatherSummaryNoProbability": "{phenomenon} · {temperature}°",
-  "@courseWeatherSummaryNoProbability": {
-    "placeholders": {
-      "phenomenon": {
-        "type": "String"
-      },
-      "temperature": {
-        "type": "int"
-      }
-    }
-  },
+  "weatherSummarySeparator": " · ",
   "weatherClear": "Clear",
   "weatherMainlyClear": "Mostly clear",
   "weatherPartlyCloudy": "Partly cloudy",
@@ -6420,8 +6412,8 @@
   "weatherThunderstormHail": "Thunderstorm with hail",
   "weatherSettingsEntryTitle": "Weather on course cards",
   "weatherSettingsTitle": "Weather",
-  "weatherEnableTitle": "Show weather in day view",
-  "weatherEnableSubtitle": "Weather, temperature and rain chance for each class period",
+  "weatherEnableTitle": "Show weather",
+  "weatherEnableSubtitle": "Turning this off stops fetching weather data",
   "weatherCityLabel": "City",
   "weatherCityNotSet": "Not set",
   "weatherCityPickerTitle": "Choose a city",
@@ -6434,6 +6426,17 @@
   "weatherCoverageNote": "Forecasts only cover the next 16 days; weather is hidden beyond that.",
   "weatherAttribution": "Weather data from Open-Meteo.com",
   "weatherSectionDisplayTitle": "Display",
+  "weatherShowOnDayCardTitle": "Day view cards",
+  "weatherShowOnWeekCardTitle": "Week view cards",
+  "weatherShowOnSheetTitle": "Course detail sheet",
+  "weatherSectionContentTitle": "What to show",
+  "weatherShowPhenomenonTitle": "Condition",
+  "weatherShowPhenomenonSubtitle": "Such as “light rain”; also controls the weather icon",
+  "weatherShowTemperatureTitle": "Temperature",
+  "weatherShowProbabilityTitle": "Rain chance",
+  "weatherShowProbabilitySubtitle": "Hidden below 30%",
+  "weatherSectionContentNote": "With all three off, the weather line is hidden entirely.",
+  "weatherCourseTileSubtitle": "Weather during this class period",
   "weatherSectionSourceTitle": "Data source",
   "weatherUseCurrentLocation": "Use current location",
   "weatherLocating": "Locating…",

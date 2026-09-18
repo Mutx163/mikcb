@@ -310,6 +310,7 @@ String _cardTextFields(TimetableSettings s) {
     if (s.courseCardShowTimeLabels) 'timeLabels',
     if (s.courseCardShowWeeks) 'weeks',
     if (s.courseCardShowDescription) 'description',
+    if (s.weatherShowOnWeekCard) 'weather',
   ];
   return enabled.isEmpty ? 'none' : enabled.join(',');
 }

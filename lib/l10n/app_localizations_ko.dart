@@ -11189,18 +11189,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get progressiveBlurResetAction => '기본값으로 복원';
 
   @override
-  String courseWeatherSummary(
-    String phenomenon,
-    int temperature,
-    int probability,
-  ) {
-    return '$phenomenon · $temperature° · $probability%';
+  String weatherTemperatureValue(int temperature) {
+    return '$temperature°';
   }
 
   @override
-  String courseWeatherSummaryNoProbability(String phenomenon, int temperature) {
-    return '$phenomenon · $temperature°';
+  String weatherProbabilityValue(int probability) {
+    return '$probability%';
   }
+
+  @override
+  String get weatherSummarySeparator => ' · ';
 
   @override
   String get weatherClear => '맑음';
@@ -11269,10 +11268,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get weatherSettingsTitle => '날씨';
 
   @override
-  String get weatherEnableTitle => '일간 보기에 날씨 표시';
+  String get weatherEnableTitle => '날씨 표시';
 
   @override
-  String get weatherEnableSubtitle => '해당 시간대의 날씨, 기온, 강수 확률을 표시';
+  String get weatherEnableSubtitle => '끄면 날씨 데이터를 더 이상 가져오지 않습니다';
 
   @override
   String get weatherCityLabel => '도시';
@@ -11310,6 +11309,39 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get weatherSectionDisplayTitle => '표시';
+
+  @override
+  String get weatherShowOnDayCardTitle => '일간 보기 카드';
+
+  @override
+  String get weatherShowOnWeekCardTitle => '주간 보기 카드';
+
+  @override
+  String get weatherShowOnSheetTitle => '수업 상세 시트';
+
+  @override
+  String get weatherSectionContentTitle => '표시할 항목';
+
+  @override
+  String get weatherShowPhenomenonTitle => '날씨 현상';
+
+  @override
+  String get weatherShowPhenomenonSubtitle => '「약한 비」 등. 날씨 아이콘도 여기에 연동됩니다';
+
+  @override
+  String get weatherShowTemperatureTitle => '기온';
+
+  @override
+  String get weatherShowProbabilityTitle => '강수 확률';
+
+  @override
+  String get weatherShowProbabilitySubtitle => '30% 미만이면 표시하지 않습니다';
+
+  @override
+  String get weatherSectionContentNote => '세 항목을 모두 끄면 날씨 줄이 표시되지 않습니다.';
+
+  @override
+  String get weatherCourseTileSubtitle => '이 수업 시간대의 날씨';
 
   @override
   String get weatherSectionSourceTitle => '데이터 출처';

@@ -19728,21 +19728,23 @@ abstract class AppLocalizations {
   /// **'恢复默认'**
   String get progressiveBlurResetAction;
 
-  /// 日视图课卡上的天气行：现象 + 温度 + 降水概率
+  /// 天气行里的温度一项
   ///
   /// In zh, this message translates to:
-  /// **'{phenomenon} · {temperature}° · {probability}%'**
-  String courseWeatherSummary(
-    String phenomenon,
-    int temperature,
-    int probability,
-  );
+  /// **'{temperature}°'**
+  String weatherTemperatureValue(int temperature);
 
-  /// 降水概率偏低时的天气行，不显示百分比
+  /// 天气行里的降水概率一项
   ///
   /// In zh, this message translates to:
-  /// **'{phenomenon} · {temperature}°'**
-  String courseWeatherSummaryNoProbability(String phenomenon, int temperature);
+  /// **'{probability}%'**
+  String weatherProbabilityValue(int probability);
+
+  /// 天气行各显示项之间的分隔符
+  ///
+  /// In zh, this message translates to:
+  /// **' · '**
+  String get weatherSummarySeparator;
 
   /// No description provided for @weatherClear.
   ///
@@ -19879,13 +19881,13 @@ abstract class AppLocalizations {
   /// No description provided for @weatherEnableTitle.
   ///
   /// In zh, this message translates to:
-  /// **'在日视图显示天气'**
+  /// **'显示天气'**
   String get weatherEnableTitle;
 
   /// No description provided for @weatherEnableSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'显示该时段的天气、温度与降水概率'**
+  /// **'关闭后不再获取天气数据'**
   String get weatherEnableSubtitle;
 
   /// No description provided for @weatherCityLabel.
@@ -19959,6 +19961,72 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'显示'**
   String get weatherSectionDisplayTitle;
+
+  /// No description provided for @weatherShowOnDayCardTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'日视图课卡'**
+  String get weatherShowOnDayCardTitle;
+
+  /// No description provided for @weatherShowOnWeekCardTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'周视图课卡'**
+  String get weatherShowOnWeekCardTitle;
+
+  /// No description provided for @weatherShowOnSheetTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程详情弹窗'**
+  String get weatherShowOnSheetTitle;
+
+  /// No description provided for @weatherSectionContentTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示内容'**
+  String get weatherSectionContentTitle;
+
+  /// No description provided for @weatherShowPhenomenonTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'天气现象'**
+  String get weatherShowPhenomenonTitle;
+
+  /// No description provided for @weatherShowPhenomenonSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'如「小雨」「多云」，同时决定天气图标'**
+  String get weatherShowPhenomenonSubtitle;
+
+  /// No description provided for @weatherShowTemperatureTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'温度'**
+  String get weatherShowTemperatureTitle;
+
+  /// No description provided for @weatherShowProbabilityTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'降水概率'**
+  String get weatherShowProbabilityTitle;
+
+  /// No description provided for @weatherShowProbabilitySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'低于 30% 时不显示'**
+  String get weatherShowProbabilitySubtitle;
+
+  /// No description provided for @weatherSectionContentNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'三项都不选时，天气整行不显示。'**
+  String get weatherSectionContentNote;
+
+  /// No description provided for @weatherCourseTileSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'该课程时段内的天气'**
+  String get weatherCourseTileSubtitle;
 
   /// No description provided for @weatherSectionSourceTitle.
   ///

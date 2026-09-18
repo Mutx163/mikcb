@@ -6370,31 +6370,23 @@
   "progressiveBlurExtentLabel": "漸變延伸",
   "progressiveBlurTintBottomLabel": "下部襯底",
   "progressiveBlurResetAction": "恢復預設",
-  "courseWeatherSummary": "{phenomenon} · {temperature}° · {probability}%",
-  "@courseWeatherSummary": {
+  "weatherTemperatureValue": "{temperature}°",
+  "@weatherTemperatureValue": {
     "placeholders": {
-      "phenomenon": {
-        "type": "String"
-      },
       "temperature": {
         "type": "int"
-      },
+      }
+    }
+  },
+  "weatherProbabilityValue": "{probability}%",
+  "@weatherProbabilityValue": {
+    "placeholders": {
       "probability": {
         "type": "int"
       }
     }
   },
-  "courseWeatherSummaryNoProbability": "{phenomenon} · {temperature}°",
-  "@courseWeatherSummaryNoProbability": {
-    "placeholders": {
-      "phenomenon": {
-        "type": "String"
-      },
-      "temperature": {
-        "type": "int"
-      }
-    }
-  },
+  "weatherSummarySeparator": " · ",
   "weatherClear": "晴",
   "weatherMainlyClear": "晴時多雲",
   "weatherPartlyCloudy": "多雲",
@@ -6417,8 +6409,8 @@
   "weatherThunderstormHail": "雷陣雨伴冰雹",
   "weatherSettingsEntryTitle": "課卡天氣",
   "weatherSettingsTitle": "天氣",
-  "weatherEnableTitle": "在日檢視顯示天氣",
-  "weatherEnableSubtitle": "顯示該時段的天氣、溫度與降水機率",
+  "weatherEnableTitle": "顯示天氣",
+  "weatherEnableSubtitle": "關閉後不再取得天氣資料",
   "weatherCityLabel": "城市",
   "weatherCityNotSet": "未設定",
   "weatherCityPickerTitle": "選擇城市",
@@ -6431,6 +6423,17 @@
   "weatherCoverageNote": "預報只涵蓋未來 16 天，更遠的日期不顯示天氣。",
   "weatherAttribution": "天氣資料來自 Open-Meteo.com",
   "weatherSectionDisplayTitle": "顯示",
+  "weatherShowOnDayCardTitle": "日檢視課卡",
+  "weatherShowOnWeekCardTitle": "週檢視課卡",
+  "weatherShowOnSheetTitle": "課程詳情彈窗",
+  "weatherSectionContentTitle": "顯示內容",
+  "weatherShowPhenomenonTitle": "天氣現象",
+  "weatherShowPhenomenonSubtitle": "如「小雨」「多雲」，同時決定天氣圖示",
+  "weatherShowTemperatureTitle": "溫度",
+  "weatherShowProbabilityTitle": "降水機率",
+  "weatherShowProbabilitySubtitle": "低於 30% 時不顯示",
+  "weatherSectionContentNote": "三項都不選時，天氣整行不顯示。",
+  "weatherCourseTileSubtitle": "該課程時段內的天氣",
   "weatherSectionSourceTitle": "資料來源",
   "weatherUseCurrentLocation": "使用目前位置",
   "weatherLocating": "正在定位…",

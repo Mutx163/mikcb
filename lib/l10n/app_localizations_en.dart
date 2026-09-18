@@ -11474,18 +11474,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get progressiveBlurResetAction => 'Reset to defaults';
 
   @override
-  String courseWeatherSummary(
-    String phenomenon,
-    int temperature,
-    int probability,
-  ) {
-    return '$phenomenon · $temperature° · $probability%';
+  String weatherTemperatureValue(int temperature) {
+    return '$temperature°';
   }
 
   @override
-  String courseWeatherSummaryNoProbability(String phenomenon, int temperature) {
-    return '$phenomenon · $temperature°';
+  String weatherProbabilityValue(int probability) {
+    return '$probability%';
   }
+
+  @override
+  String get weatherSummarySeparator => ' · ';
 
   @override
   String get weatherClear => 'Clear';
@@ -11554,11 +11553,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherSettingsTitle => 'Weather';
 
   @override
-  String get weatherEnableTitle => 'Show weather in day view';
+  String get weatherEnableTitle => 'Show weather';
 
   @override
   String get weatherEnableSubtitle =>
-      'Weather, temperature and rain chance for each class period';
+      'Turning this off stops fetching weather data';
 
   @override
   String get weatherCityLabel => 'City';
@@ -11596,6 +11595,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weatherSectionDisplayTitle => 'Display';
+
+  @override
+  String get weatherShowOnDayCardTitle => 'Day view cards';
+
+  @override
+  String get weatherShowOnWeekCardTitle => 'Week view cards';
+
+  @override
+  String get weatherShowOnSheetTitle => 'Course detail sheet';
+
+  @override
+  String get weatherSectionContentTitle => 'What to show';
+
+  @override
+  String get weatherShowPhenomenonTitle => 'Condition';
+
+  @override
+  String get weatherShowPhenomenonSubtitle =>
+      'Such as “light rain”; also controls the weather icon';
+
+  @override
+  String get weatherShowTemperatureTitle => 'Temperature';
+
+  @override
+  String get weatherShowProbabilityTitle => 'Rain chance';
+
+  @override
+  String get weatherShowProbabilitySubtitle => 'Hidden below 30%';
+
+  @override
+  String get weatherSectionContentNote =>
+      'With all three off, the weather line is hidden entirely.';
+
+  @override
+  String get weatherCourseTileSubtitle => 'Weather during this class period';
 
   @override
   String get weatherSectionSourceTitle => 'Data source';
