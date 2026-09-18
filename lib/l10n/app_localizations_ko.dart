@@ -11320,7 +11320,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get weatherShowPhenomenonTitle => '날씨 현상';
 
   @override
-  String get weatherShowPhenomenonSubtitle => '「약한 비」 등. 날씨 아이콘도 여기에 연동됩니다';
+  String get weatherShowPhenomenonSubtitle => '「약한 비」 등';
 
   @override
   String get weatherShowTemperatureTitle => '기온';
@@ -11332,7 +11332,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get weatherShowProbabilitySubtitle => '30% 미만이면 표시하지 않습니다';
 
   @override
-  String get weatherSectionContentNote => '세 항목을 모두 끄면 날씨 줄이 표시되지 않습니다.';
+  String get weatherSectionContentNote =>
+      '아이콘은 처음 켠 항목을 따릅니다(날씨 현상→날씨 아이콘, 기온→온도계, 강수 확률→퍼센트 기호). 세 항목을 모두 끄면 줄이 표시되지 않습니다.';
 
   @override
   String get weatherCourseTileSubtitle => '이 수업 시간대의 날씨';

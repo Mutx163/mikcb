@@ -11273,7 +11273,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get weatherShowPhenomenonTitle => '天気';
 
   @override
-  String get weatherShowPhenomenonSubtitle => '「小雨」など。天気アイコンもこれに連動します';
+  String get weatherShowPhenomenonSubtitle => '「小雨」など';
 
   @override
   String get weatherShowTemperatureTitle => '気温';
@@ -11285,7 +11285,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get weatherShowProbabilitySubtitle => '30% 未満のときは表示しません';
 
   @override
-  String get weatherSectionContentNote => '3 つともオフにすると、天気の行は表示されません。';
+  String get weatherSectionContentNote =>
+      'アイコンは最初に選んだ項目に従います（天気→天気アイコン、気温→温度計、降水確率→パーセント記号）。3 つともオフにすると行は表示されません。';
 
   @override
   String get weatherCourseTileSubtitle => 'この授業の時間帯の天気';

@@ -179,13 +179,15 @@ void main() {
     expect(find.text('小雨 · 23° · 60%'), findsOneWidget);
   });
 
-  testWidgets('关掉现象只剩温度（图标仍在）', (tester) async {
+  testWidgets('关掉现象只剩温度：文字只剩温度，图标换成温度计', (tester) async {
     final provider = await _readyProvider(tester);
     await tester.pumpWidget(_wrap(provider, showPhenomenon: false));
     await tester.pump();
 
     expect(find.text('23°'), findsOneWidget);
-    expect(find.byType(Icon), findsOneWidget);
+    // 图标由「第一个勾上的项目」（这里是温度）认领，不再是现象那一族的雨滴。
+    expect(find.byIcon(Icons.thermostat), findsOneWidget);
+    expect(find.byIcon(Icons.water_drop_outlined), findsNothing);
   });
 
   testWidgets('三个内容项全关时整行消失（不留半格空隙）', (tester) async {

@@ -10965,7 +10965,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherShowPhenomenonTitle => '天气现象';
 
   @override
-  String get weatherShowPhenomenonSubtitle => '如「小雨」「多云」，同时决定天气图标';
+  String get weatherShowPhenomenonSubtitle => '如「小雨」「多云」';
 
   @override
   String get weatherShowTemperatureTitle => '温度';
@@ -10977,7 +10977,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherShowProbabilitySubtitle => '低于 30% 时不显示';
 
   @override
-  String get weatherSectionContentNote => '三项都不选时，天气整行不显示。';
+  String get weatherSectionContentNote =>
+      '图标跟着第一个勾上的项目走（现象→天气图标，温度→温度计，概率→百分号）。三项都不选时整行不显示。';
 
   @override
   String get weatherCourseTileSubtitle => '该课程时段内的天气';
@@ -22025,7 +22026,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get weatherShowPhenomenonTitle => '天氣現象';
 
   @override
-  String get weatherShowPhenomenonSubtitle => '如「小雨」「多雲」，同時決定天氣圖示';
+  String get weatherShowPhenomenonSubtitle => '如「小雨」「多雲」';
 
   @override
   String get weatherShowTemperatureTitle => '溫度';
@@ -22037,7 +22038,8 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get weatherShowProbabilitySubtitle => '低於 30% 時不顯示';
 
   @override
-  String get weatherSectionContentNote => '三項都不選時，天氣整行不顯示。';
+  String get weatherSectionContentNote =>
+      '圖示跟著第一個勾上的項目走（現象→天氣圖示，溫度→溫度計，概率→百分號）。三項都不選時整行不顯示。';
 
   @override
   String get weatherCourseTileSubtitle => '該課程時段內的天氣';
@@ -33085,7 +33087,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get weatherShowPhenomenonTitle => '天氣現象';
 
   @override
-  String get weatherShowPhenomenonSubtitle => '如「小雨」「多雲」，同時決定天氣圖示';
+  String get weatherShowPhenomenonSubtitle => '如「小雨」「多雲」';
 
   @override
   String get weatherShowTemperatureTitle => '溫度';
@@ -33097,7 +33099,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get weatherShowProbabilitySubtitle => '低於 30% 時不顯示';
 
   @override
-  String get weatherSectionContentNote => '三項都不選時，天氣整行不顯示。';
+  String get weatherSectionContentNote =>
+      '圖示跟著第一個勾選的項目走（現象→天氣圖示，溫度→溫度計，機率→百分號）。三項都不選時整行不顯示。';
 
   @override
   String get weatherCourseTileSubtitle => '該課程時段內的天氣';

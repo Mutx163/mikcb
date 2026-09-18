@@ -11606,8 +11606,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherShowPhenomenonTitle => 'Condition';
 
   @override
-  String get weatherShowPhenomenonSubtitle =>
-      'Such as “light rain”; also controls the weather icon';
+  String get weatherShowPhenomenonSubtitle => 'Such as “light rain”';
 
   @override
   String get weatherShowTemperatureTitle => 'Temperature';
@@ -11620,7 +11619,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weatherSectionContentNote =>
-      'With all three off, the weather line is hidden entirely.';
+      'The icon follows the first item you turn on (condition → weather icon, temperature → thermometer, rain chance → percent sign). With all three off, the line is hidden.';
 
   @override
   String get weatherCourseTileSubtitle => 'Weather during this class period';

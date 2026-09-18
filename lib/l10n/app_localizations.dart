@@ -19983,7 +19983,7 @@ abstract class AppLocalizations {
   /// No description provided for @weatherShowPhenomenonSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'如「小雨」「多云」，同时决定天气图标'**
+  /// **'如「小雨」「多云」'**
   String get weatherShowPhenomenonSubtitle;
 
   /// No description provided for @weatherShowTemperatureTitle.
@@ -20007,7 +20007,7 @@ abstract class AppLocalizations {
   /// No description provided for @weatherSectionContentNote.
   ///
   /// In zh, this message translates to:
-  /// **'三项都不选时，天气整行不显示。'**
+  /// **'图标跟着第一个勾上的项目走（现象→天气图标，温度→温度计，概率→百分号）。三项都不选时整行不显示。'**
   String get weatherSectionContentNote;
 
   /// No description provided for @weatherCourseTileSubtitle.

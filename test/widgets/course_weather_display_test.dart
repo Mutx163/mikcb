@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/domain/weather_logic.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
@@ -136,7 +136,7 @@ void main() {
   });
 
   group('图标', () {
-    test('图标跟随现象分类', () {
+    test('现象开着时图标跟随现象分类', () {
       expect(
         _display(_summary())?.icon,
         weatherIconFor(WeatherCategory.lightRain),
@@ -147,10 +147,73 @@ void main() {
       );
     });
 
-    test('关掉现象文字也仍有图标（图标是这一行的形状，不是文字的一部分）', () {
+    test('现象开着时，温度也开着也不会抢走图标', () {
+      // 优先级 = 现象 > 温度 > 概率：由第一个勾上的项目认领。
+      expect(
+        _display(_summary(), probability: true)?.icon,
+        weatherIconFor(WeatherCategory.lightRain),
+      );
+    });
+
+    test('关掉现象、只留温度 → 图标换成温度计', () {
       final display = _display(_summary(), phenomenon: false);
-      expect(display?.icon, weatherIconFor(WeatherCategory.lightRain));
+      expect(display?.icon, Icons.thermostat);
       expect(display?.text, '23°');
+      // 不能还是「小雨」那一族的雨滴——用户刚把现象关掉，再画雨滴等于把现象从
+      // 后门放回来。
+      expect(display?.icon, isNot(weatherIconFor(WeatherCategory.lightRain)));
+    });
+
+    test('关掉现象、只留概率 → 图标换成百分号', () {
+      final display = _display(
+        _summary(),
+        phenomenon: false,
+        temperature: false,
+        probability: true,
+      );
+      expect(display?.icon, Icons.percent);
+      expect(display?.text, '60%');
+    });
+
+    test('关掉现象、温度与概率都在 → 图标由温度认领', () {
+      final display = _display(_summary(), phenomenon: false, probability: true);
+      expect(display?.icon, Icons.thermostat);
+      expect(display?.text, '23° · 60%');
+    });
+
+    test('只要这一行会画，图标就一定是三种可认领形状之一', () {
+      // 「认领」原则的兜底断言：图标只可能来自某个勾上的项目（现象→天气图标、
+      // 温度→温度计、概率→百分号），不会冒出第四种说不出所以然的图形。
+      final claimable = {
+        weatherIconFor(WeatherCategory.lightRain),
+        Icons.thermostat,
+        Icons.percent,
+      };
+      for (final phenomenon in [true, false]) {
+        for (final temperature in [true, false]) {
+          for (final probability in [true, false]) {
+            if (!phenomenon && !temperature && !probability) {
+              continue; // 三项全关：整行不画，本来就没有图标
+            }
+            final display = _display(
+              _summary(),
+              phenomenon: phenomenon,
+              temperature: temperature,
+              probability: probability,
+            );
+            expect(
+              display,
+              isNotNull,
+              reason: 'p=$phenomenon t=$temperature r=$probability',
+            );
+            expect(
+              claimable,
+              contains(display!.icon),
+              reason: 'p=$phenomenon t=$temperature r=$probability',
+            );
+          }
+        }
+      }
     });
 
     test('20 个分类都有图标且不是同一个', () {
