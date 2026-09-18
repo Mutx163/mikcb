@@ -4,9 +4,13 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/providers/timetable_provider.dart';
+import 'package:university_timetable/providers/weather_provider.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/widgets/course_grid_surface_host.dart';
@@ -14,6 +18,7 @@ import 'package:university_timetable/widgets/home_page_region_blur.dart';
 import 'package:university_timetable/widgets/timetable_week_preview.dart';
 
 import '../helpers_test_app.dart';
+import '../helpers_weather.dart';
 
 void _seedInitializedPrefs() {
   final now = DateTime(2026, 4, 12);
@@ -235,6 +240,92 @@ void main() {
         closeTo(previewRect.top + headerHeight, 0.5),
         reason: 'bottom stays at band boundary for thin sheen',
       );
+    });
+  });
+
+  group('天气行由外部显式传入', () {
+    /// 造一个「今天有课」的 provider：semesterStartDate 会被归一到本周周一，
+    /// 于是第 1 周第 `today.weekday` 天正好是今天，落在预报窗口内。
+    Future<TimetableProvider> providerWithTodayCourse(WidgetTester tester) async {
+      final provider = await createInitializedTestProvider(tester);
+      final today = DateTime.now();
+      await runRealAsync(tester, () async {
+        await provider.updateTimetableSettings(
+          provider.settings.copyWith(semesterStartDate: today),
+        );
+        await provider.addCourse(
+          Course(
+            id: 'preview-weather-course',
+            name: '数据结构',
+            teacher: '张老师',
+            location: 'A101',
+            dayOfWeek: today.weekday,
+            startSection: 1,
+            endSection: 2,
+            startTime: '08:00',
+            endTime: '09:40',
+          ),
+        );
+      });
+      return provider;
+    }
+
+    Future<void> pumpWithWeather(
+      WidgetTester tester, {
+      required TimetableProvider provider,
+      required WeatherProvider ancestorWeather,
+      WeatherProvider? passedWeather,
+    }) async {
+      await tester.pumpWidget(
+        // 天气 provider 挂在**祖先**上：导出文档就是插进根 Overlay 渲染的，
+        // 环境里查得到真实 provider。这正是「不传就不画」要防的场景。
+        ChangeNotifierProvider<WeatherProvider>.value(
+          value: ancestorWeather,
+          child: TestApp(
+            home: SizedBox(
+              width: 360,
+              height: 320,
+              child: TimetableWeekPreview(
+                provider: provider,
+                settings: provider.settings,
+                week: 1,
+                maxVisibleSections: 4,
+                applyHomePageBackdrop: false,
+                weather: passedWeather,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('传了天气源就画出来（设置页预览要跟首页一致）', (tester) async {
+      final provider = await providerWithTodayCourse(tester);
+      final weather = await readyWeatherProvider(tester);
+
+      await pumpWithWeather(
+        tester,
+        provider: provider,
+        ancestorWeather: weather,
+        passedWeather: weather,
+      );
+
+      expect(find.text('小雨 · 23°'), findsOneWidget);
+    });
+
+    testWidgets('不传天气源时一张卡都不带天气（导出分享图走这条路）', (tester) async {
+      final provider = await providerWithTodayCourse(tester);
+      final weather = await readyWeatherProvider(tester);
+
+      // 祖先上挂着能出数据的天气 provider，但预览不接收它。
+      await pumpWithWeather(tester, provider: provider, ancestorWeather: weather);
+
+      // 分享图不带天气靠的就是「显式不传」；这条红了说明有人改成了自动查
+      // provider，天气会漏进导出图。
+      expect(weather.forecast, isNotNull);
+      expect(find.text('小雨 · 23°'), findsNothing);
+      expect(find.text('数据结构'), findsWidgets);
     });
   });
 }

@@ -14,22 +14,6 @@ const _locales = <String, Locale>{
   'ko': Locale('ko'),
 };
 
-CourseWeatherSummary _summary({
-  WeatherCategory category = WeatherCategory.lightRain,
-  int temperatureC = 23,
-  int? probability = 60,
-  bool showProbability = true,
-}) {
-  return CourseWeatherSummary(
-    category: category,
-    temperatureC: temperatureC,
-    hourCount: 2,
-    precipitationProbability: probability,
-    showPrecipitationProbability: showProbability,
-    representativeWmoCode: null,
-  );
-}
-
 void main() {
   test('每个分类在每种语言下都有非空文案', () {
     for (final entry in _locales.entries) {
@@ -102,65 +86,18 @@ void main() {
     );
   });
 
-  test('摘要行：现象 · 温度 · 概率', () {
-    final l10n = lookupAppLocalizations(const Locale('zh'));
-    expect(
-      WeatherCategoryLocalizer.summary(l10n, _summary()),
-      '小雨 · 23° · 60%',
-    );
-  });
-
-  test('概率不该显示时用短句', () {
-    final l10n = lookupAppLocalizations(const Locale('zh'));
-    expect(
-      WeatherCategoryLocalizer.summary(
-        l10n,
-        _summary(category: WeatherCategory.clear, temperatureC: 26, showProbability: false),
-      ),
-      '晴 · 26°',
-    );
-  });
-
-  test('概率为 null 时不渲染百分号', () {
-    final l10n = lookupAppLocalizations(const Locale('zh'));
-    final line = WeatherCategoryLocalizer.summary(
-      l10n,
-      _summary(probability: null, showProbability: false),
-    );
-    expect(line, '小雨 · 23°');
-    expect(line, isNot(contains('%')));
-  });
-
   test('每种语言的摘要行都替换掉了占位符', () {
+    // 整行怎么拼（分隔符、显示哪几项）已移到
+    // `test/widgets/course_weather_display_test.dart`；这里只守住「现象名本身
+    // 在每种语言下都不是空占位」。
     for (final entry in _locales.entries) {
       final l10n = lookupAppLocalizations(entry.value);
-      final withProbability = WeatherCategoryLocalizer.summary(
+      final label = WeatherCategoryLocalizer.label(
         l10n,
-        _summary(temperatureC: -7, probability: 80),
+        WeatherCategory.lightRain,
       );
-      final withoutProbability = WeatherCategoryLocalizer.summary(
-        l10n,
-        _summary(temperatureC: -7, showProbability: false),
-      );
-      for (final line in [withProbability, withoutProbability]) {
-        expect(line, contains('-7'), reason: entry.key);
-        expect(line, isNot(contains('{')), reason: entry.key);
-        expect(line.trim(), isNotEmpty, reason: entry.key);
-      }
-      expect(withProbability, contains('80%'), reason: entry.key);
-      expect(withoutProbability, isNot(contains('80')), reason: entry.key);
+      expect(label, isNot(contains('{')), reason: entry.key);
+      expect(label.trim(), isNotEmpty, reason: entry.key);
     }
-  });
-
-  test('负温度与零度都正常渲染', () {
-    final l10n = lookupAppLocalizations(const Locale('zh'));
-    expect(
-      WeatherCategoryLocalizer.summary(l10n, _summary(temperatureC: 0)),
-      '小雨 · 0° · 60%',
-    );
-    expect(
-      WeatherCategoryLocalizer.summary(l10n, _summary(temperatureC: -12)),
-      '小雨 · -12° · 60%',
-    );
   });
 }

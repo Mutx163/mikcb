@@ -11,6 +11,7 @@ import 'package:university_timetable/models/weather_forecast.dart';
 import 'package:university_timetable/providers/weather_provider.dart';
 import 'package:university_timetable/services/weather_preferences.dart';
 import 'package:university_timetable/services/weather_service.dart';
+import 'package:university_timetable/widgets/course_weather_display.dart';
 import 'package:university_timetable/widgets/day_agenda_info_row.dart';
 import 'package:university_timetable/widgets/day_course_weather_row.dart';
 
@@ -83,7 +84,14 @@ DateTime get _today => DateTime.now();
 String _hhmm(int hour, int minute) =>
     '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
 
-Widget _wrap(WeatherProvider provider, {DateTime? date, bool visible = true}) {
+Widget _wrap(
+  WeatherProvider provider, {
+  DateTime? date,
+  bool visible = true,
+  bool showPhenomenon = true,
+  bool showTemperature = true,
+  bool showProbability = false,
+}) {
   return TestApp(
     home: ChangeNotifierProvider<WeatherProvider>.value(
       value: provider,
@@ -93,6 +101,9 @@ Widget _wrap(WeatherProvider provider, {DateTime? date, bool visible = true}) {
         endTime: _hhmm(9, 35),
         ink: Colors.white,
         visible: visible,
+        showPhenomenon: showPhenomenon,
+        showTemperature: showTemperature,
+        showProbability: showProbability,
       ),
     ),
   );
@@ -150,14 +161,52 @@ void main() {
     expect(find.byType(DayAgendaInfoRow), findsNothing);
   });
 
-  testWidgets('有数据时渲染「现象 · 温度 · 概率」', (tester) async {
+  testWidgets('有数据时渲染「现象 · 温度」（默认内容组合）', (tester) async {
     final provider = await _readyProvider(tester);
     await tester.pumpWidget(_wrap(provider));
     await tester.pump();
 
-    expect(find.text('小雨 · 23° · 60%'), findsOneWidget);
+    expect(find.text('小雨 · 23°'), findsOneWidget);
     expect(find.byType(DayAgendaInfoRow), findsOneWidget);
     expect(find.byType(Icon), findsOneWidget);
+  });
+
+  testWidgets('勾上降水概率才出现百分号', (tester) async {
+    final provider = await _readyProvider(tester);
+    await tester.pumpWidget(_wrap(provider, showProbability: true));
+    await tester.pump();
+
+    expect(find.text('小雨 · 23° · 60%'), findsOneWidget);
+  });
+
+  testWidgets('关掉现象只剩温度（图标仍在）', (tester) async {
+    final provider = await _readyProvider(tester);
+    await tester.pumpWidget(_wrap(provider, showPhenomenon: false));
+    await tester.pump();
+
+    expect(find.text('23°'), findsOneWidget);
+    expect(find.byType(Icon), findsOneWidget);
+  });
+
+  testWidgets('三个内容项全关时整行消失（不留半格空隙）', (tester) async {
+    final provider = await _readyProvider(tester);
+    await tester.pumpWidget(
+      _wrap(
+        provider,
+        showPhenomenon: false,
+        showTemperature: false,
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(DayAgendaInfoRow), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(DayCourseWeatherRow),
+        matching: find.byType(Padding),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('图标与该时段的现象对应', (tester) async {
@@ -207,7 +256,7 @@ void main() {
       await provider.ensureFresh();
     });
 
-    await tester.pumpWidget(_wrap(provider));
+    await tester.pumpWidget(_wrap(provider, showProbability: true));
     await tester.pump();
 
     expect(find.text('小雨 · 23°'), findsOneWidget);

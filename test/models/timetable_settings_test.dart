@@ -21,6 +21,14 @@ void main() {
     expect(settings.courseCardShowTimeLabels, isTrue);
     expect(settings.courseCardShowWeeks, isFalse);
     expect(settings.courseCardShowDescription, isFalse);
+    // 天气：三个位置默认都开（开了天气就该看得见），内容默认「现象 + 温度」——
+    // 温度是主语，现象名/图标让「23°」有意义；概率默认关（低于 30% 本来也不显示）。
+    expect(settings.weatherShowOnDayCard, isTrue);
+    expect(settings.weatherShowOnWeekCard, isTrue);
+    expect(settings.weatherShowOnSheet, isTrue);
+    expect(settings.weatherShowPhenomenon, isTrue);
+    expect(settings.weatherShowTemperature, isTrue);
+    expect(settings.weatherShowProbability, isFalse);
     expect(settings.timetableAutoFitSectionHeight, isFalse);
     expect(settings.widgetBackgroundStyle, WidgetBackgroundStyle.solid);
     expect(settings.widgetShowLocation, isTrue);
@@ -114,6 +122,12 @@ void main() {
     expect(restored.courseCardShowTimeLabels, isTrue);
     expect(restored.courseCardShowWeeks, isFalse);
     expect(restored.courseCardShowDescription, isFalse);
+    expect(restored.weatherShowOnDayCard, isTrue);
+    expect(restored.weatherShowOnWeekCard, isTrue);
+    expect(restored.weatherShowOnSheet, isTrue);
+    expect(restored.weatherShowPhenomenon, isTrue);
+    expect(restored.weatherShowTemperature, isTrue);
+    expect(restored.weatherShowProbability, isFalse);
     expect(restored.timetableAutoFitSectionHeight, isFalse);
     expect(restored.widgetBackgroundStyle, WidgetBackgroundStyle.solid);
     expect(restored.widgetShowLocation, isTrue);
@@ -426,6 +440,46 @@ void main() {
     expect(duringEnd.showCourseName, isFalse);
     expect(duringEnd.showLocation, isFalse);
     expect(duringEnd.countdownTextStyle, LiveCountdownTextStyle.minuteSecondCn);
+  });
+
+  test('weather display settings survive json round trip', () {
+    // 全部翻成非默认值：只测「默认值往返」会漏掉 toJson/fromJson 里漏写字段
+    // （漏写时读回来正好等于默认值，测试仍然绿）。
+    final settings = TimetableSettings.defaults().copyWith(
+      weatherShowOnDayCard: false,
+      weatherShowOnWeekCard: false,
+      weatherShowOnSheet: false,
+      weatherShowPhenomenon: false,
+      weatherShowTemperature: false,
+      weatherShowProbability: true,
+    );
+    final json = settings.toJson();
+    expect(json['weatherShowOnDayCard'], isFalse);
+    expect(json['weatherShowOnWeekCard'], isFalse);
+    expect(json['weatherShowOnSheet'], isFalse);
+    expect(json['weatherShowPhenomenon'], isFalse);
+    expect(json['weatherShowTemperature'], isFalse);
+    expect(json['weatherShowProbability'], isTrue);
+
+    final restored = TimetableSettings.fromJson(json);
+    expect(restored.weatherShowOnDayCard, isFalse);
+    expect(restored.weatherShowOnWeekCard, isFalse);
+    expect(restored.weatherShowOnSheet, isFalse);
+    expect(restored.weatherShowPhenomenon, isFalse);
+    expect(restored.weatherShowTemperature, isFalse);
+    expect(restored.weatherShowProbability, isTrue);
+  });
+
+  test('weather display settings default in when reading a legacy profile', () {
+    // 老档案里没有这些键：三个位置按「开」兼容（天气开着就该看得见），
+    // 内容按设置页默认（现象 + 温度）。
+    final restored = TimetableSettings.fromJson(<String, dynamic>{});
+    expect(restored.weatherShowOnDayCard, isTrue);
+    expect(restored.weatherShowOnWeekCard, isTrue);
+    expect(restored.weatherShowOnSheet, isTrue);
+    expect(restored.weatherShowPhenomenon, isTrue);
+    expect(restored.weatherShowTemperature, isTrue);
+    expect(restored.weatherShowProbability, isFalse);
   });
 
   test('widget course accent mode survives json round trip', () {

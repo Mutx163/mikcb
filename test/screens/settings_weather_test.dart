@@ -12,6 +12,7 @@ import 'package:university_timetable/l10n/weather_location_failure_localizer.dar
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/weather_forecast.dart';
+import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/providers/weather_provider.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/screens/weather_city_picker_screen.dart';
@@ -95,11 +96,24 @@ Future<void> openWeatherSubpage(
   await _pumpUntilSettled(tester);
 }
 
+/// 按标题定位某个开关。
+///
+/// 天气子页现在有 7 个 `HyperosSwitchTile`，按类型找会撞成「Found multiple
+/// widgets」，而且点错行的用例还会假绿。
+Finder switchTileFor(String title) =>
+    find.widgetWithText(HyperosSwitchTile, title);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const homeWidgetChannel = MethodChannel('com.mutx163.qingyu/home_widget');
   const analyticsChannel = MethodChannel('com.mutx163.qingyu/umeng_analytics');
   const liveChannel = MethodChannel('com.mutx163.qingyu/live');
+
+  /// 最近一次 [pumpSettings] 挂上去的课表 provider。
+  ///
+  /// 天气显示项落在 `TimetableSettings` 上，断言得拿到它；而 `pumpSettings`
+  /// 的返回值已经被既有十几个用例当成 `WeatherProvider` 用了，不便改成 record。
+  late TimetableProvider lastTimetable;
 
   setUp(() {
     StorageService().resetForTesting();
@@ -131,6 +145,7 @@ void main() {
 
     _seedPrefs(withCity: withCity, enabled: enabled);
     final timetable = await createInitializedTestProvider(tester);
+    lastTimetable = timetable;
     final weather = _weatherProvider(locationService: locationService);
     await tester.runAsync(weather.initialize);
 
@@ -180,11 +195,106 @@ void main() {
     expect(find.text('杭州'), findsOneWidget);
     expect(find.text(l10n.weatherCoverageNote), findsOneWidget);
     expect(find.text(l10n.weatherAttribution), findsOneWidget);
-    // 开关初始为开。
+    // 总开关初始为开。
     final switchTile = tester.widget<HyperosSwitchTile>(
-      find.byType(HyperosSwitchTile),
+      switchTileFor(l10n.weatherEnableTitle),
     );
     expect(switchTile.value, isTrue);
+  });
+
+  testWidgets('显示位置与显示内容共 6 个开关，默认值符合出厂设置', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    await pumpSettings(tester);
+
+    await openWeatherSubpage(tester, l10n);
+
+    // 三个位置默认都开（天气开着就该看得见）。
+    for (final title in [
+      l10n.weatherShowOnDayCardTitle,
+      l10n.weatherShowOnWeekCardTitle,
+      l10n.weatherShowOnSheetTitle,
+    ]) {
+      expect(find.text(title), findsOneWidget, reason: title);
+      expect(
+        tester.widget<HyperosSwitchTile>(switchTileFor(title)).value,
+        isTrue,
+        reason: title,
+      );
+    }
+
+    // 内容默认「现象 + 温度」，概率关。
+    expect(
+      tester
+          .widget<HyperosSwitchTile>(
+            switchTileFor(l10n.weatherShowPhenomenonTitle),
+          )
+          .value,
+      isTrue,
+    );
+    expect(
+      tester
+          .widget<HyperosSwitchTile>(
+            switchTileFor(l10n.weatherShowTemperatureTitle),
+          )
+          .value,
+      isTrue,
+    );
+    expect(
+      tester
+          .widget<HyperosSwitchTile>(
+            switchTileFor(l10n.weatherShowProbabilityTitle),
+          )
+          .value,
+      isFalse,
+    );
+    expect(find.text(l10n.weatherSectionContentNote), findsOneWidget);
+  });
+
+  testWidgets('拨动「周视图课卡」写进 TimetableSettings', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    await pumpSettings(tester);
+    final timetable = lastTimetable;
+
+    await openWeatherSubpage(tester, l10n);
+    expect(timetable.settings.weatherShowOnWeekCard, isTrue);
+
+    await tester.tap(switchTileFor(l10n.weatherShowOnWeekCardTitle));
+    await _pumpUntilSettled(tester);
+
+    expect(timetable.settings.weatherShowOnWeekCard, isFalse);
+    // 只改这一个，别把邻居带下去。
+    expect(timetable.settings.weatherShowOnDayCard, isTrue);
+    expect(timetable.settings.weatherShowOnSheet, isTrue);
+  });
+
+  testWidgets('天气总开关关闭时，位置与内容开关全部禁用', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    await pumpSettings(tester, enabled: false);
+
+    await openWeatherSubpage(tester, l10n);
+
+    // 数据都不会拉，这些选项点了也没用——禁用而不是藏起来，用户能看到
+    // 「原来还有这些选项」。
+    for (final title in [
+      l10n.weatherShowOnDayCardTitle,
+      l10n.weatherShowOnWeekCardTitle,
+      l10n.weatherShowOnSheetTitle,
+      l10n.weatherShowPhenomenonTitle,
+      l10n.weatherShowTemperatureTitle,
+      l10n.weatherShowProbabilityTitle,
+    ]) {
+      expect(
+        tester.widget<HyperosSwitchTile>(switchTileFor(title)).onChanged,
+        isNull,
+        reason: title,
+      );
+    }
+    expect(
+      tester
+          .widget<HyperosSwitchTile>(switchTileFor(l10n.weatherEnableTitle))
+          .onChanged,
+      isNotNull,
+    );
   });
 
   testWidgets('子页内容不会被悬浮顶栏盖住', (tester) async {
@@ -195,7 +305,7 @@ void main() {
 
     // 与选城市页同一条防线：只断言 find.text 命中是不够的，正文被悬浮顶栏
     // 整块盖住时那些断言依然会通过。这里比几何位置。
-    final switchRect = tester.getRect(find.byType(HyperosSwitchTile));
+    final switchRect = tester.getRect(switchTileFor(l10n.weatherEnableTitle));
     expect(switchRect.width, greaterThan(0));
     expect(switchRect.height, greaterThan(0));
 
@@ -211,7 +321,7 @@ void main() {
     expect(switchRect.top, greaterThanOrEqualTo(lowestTitleBottom - 1));
   });
 
-  testWidgets('两个区块各有区块标题，且之间留出区块间距', (tester) async {
+  testWidgets('三个区块各有区块标题，且两两之间留出区块间距', (tester) async {
     final l10n = lookupAppLocalizations(const Locale('zh'));
     await pumpSettings(tester);
 
@@ -219,40 +329,27 @@ void main() {
 
     // IA 规范不许无名分组：每个区块都要有自己的标题。
     expect(find.text(l10n.weatherSectionDisplayTitle), findsOneWidget);
+    expect(find.text(l10n.weatherSectionContentTitle), findsOneWidget);
     expect(find.text(l10n.weatherSectionSourceTitle), findsOneWidget);
 
     // 只断言「标题存在」还不够——当初两块卡片就是贴在一起的。这里量间距：
     // 相邻两组之间必须留出至少一个 HyperosSectionGap。
     final subpageList = find.byType(HyperosListView).last;
-    final groups = find
-        .descendant(of: subpageList, matching: find.byType(HyperosListGroup))
-        .evaluate()
-        .toList();
-    expect(groups.length, 2, reason: '显示 / 数据来源 两个区块');
-    final firstBottom = tester
-        .getRect(
-          find
-              .descendant(
-                of: subpageList,
-                matching: find.byType(HyperosListGroup),
-              )
-              .at(0),
-        )
-        .bottom;
-    final secondTop = tester
-        .getRect(
-          find
-              .descendant(
-                of: subpageList,
-                matching: find.byType(HyperosListGroup),
-              )
-              .at(1),
-        )
-        .top;
-    expect(
-      secondTop - firstBottom,
-      greaterThanOrEqualTo(HyperosTokens.sectionGap - 1),
+    final groupFinder = find.descendant(
+      of: subpageList,
+      matching: find.byType(HyperosListGroup),
     );
+    expect(groupFinder.evaluate().length, 3, reason: '显示 / 显示内容 / 数据来源');
+
+    for (var i = 1; i < 3; i++) {
+      final previousBottom = tester.getRect(groupFinder.at(i - 1)).bottom;
+      final nextTop = tester.getRect(groupFinder.at(i)).top;
+      expect(
+        nextTop - previousBottom,
+        greaterThanOrEqualTo(HyperosTokens.sectionGap - 1),
+        reason: '第 $i 组与前一组贴在一起了',
+      );
+    }
   });
 
   testWidgets('说明文字挂在所属区块之后（覆盖范围在显示组下、署名在数据来源组下）', (tester) async {
@@ -262,13 +359,22 @@ void main() {
     await openWeatherSubpage(tester, l10n);
 
     final coverageY = tester.getRect(find.text(l10n.weatherCoverageNote)).top;
+    final contentLabelY = tester
+        .getRect(find.text(l10n.weatherSectionContentTitle))
+        .top;
+    final contentNoteY = tester
+        .getRect(find.text(l10n.weatherSectionContentNote))
+        .top;
     final sourceLabelY = tester
         .getRect(find.text(l10n.weatherSectionSourceTitle))
         .top;
     final attributionY = tester.getRect(find.text(l10n.weatherAttribution)).top;
 
-    // 覆盖范围说明在「显示」组与「数据来源」组标题之间。
-    expect(coverageY, lessThan(sourceLabelY));
+    // 覆盖范围说明在「显示」组与「显示内容」组标题之间。
+    expect(coverageY, lessThan(contentLabelY));
+    // 内容说明在「显示内容」组之后、「数据来源」组之前。
+    expect(contentNoteY, greaterThan(contentLabelY));
+    expect(contentNoteY, lessThan(sourceLabelY));
     // 署名在「数据来源」组标题之后。
     expect(attributionY, greaterThan(sourceLabelY));
   });
@@ -280,7 +386,7 @@ void main() {
     await openWeatherSubpage(tester, l10n);
 
     expect(weather.enabled, isTrue);
-    await tester.tap(find.byType(HyperosSwitchTile));
+    await tester.tap(switchTileFor(l10n.weatherEnableTitle));
     await _pumpUntilSettled(tester);
 
     expect(weather.enabled, isFalse);

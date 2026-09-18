@@ -2712,12 +2712,12 @@ void main() {
     expect(find.text('非本周'), findsWidgets);
 
     // 本周那节课：10:00–11:40 命中 11:00 / 12:00 两个桶，温度 11、12 →
-    // 平均 11.5 → 12。
-    expect(find.text('小雨 · 12° · 60%'), findsWidgets);
+    // 平均 11.5 → 12。文案是设置页的默认内容组合（现象 + 温度，不带概率）。
+    expect(find.text('小雨 · 12°'), findsWidgets);
 
     // 非本周的灰卡这一周并不上课，它显示的日期（本周那天）根本不是它的上课日。
     // 这条红了就说明「visible」判据漏了「这一周本来就不上」这一格。
-    expect(find.text('小雨 · 16° · 60%'), findsNothing);
+    expect(find.text('小雨 · 16°'), findsNothing);
   });
 
   testWidgets('day view hides ended courses from non-current-week display', (

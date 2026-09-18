@@ -125,8 +125,11 @@ void main() {
     test('默认只列开启的字段', () {
       final snapshot = snapshotOf(TimetableSettings.defaults());
 
-      // 出厂开：课程名 / 教师 / 地点 / 时间标签。
-      expect(snapshot['cardTextFields'], 'name,teacher,location,timeLabels');
+      // 出厂开：课程名 / 教师 / 地点 / 时间标签 / 周视图课卡的天气行。
+      expect(
+        snapshot['cardTextFields'],
+        'name,teacher,location,timeLabels,weather',
+      );
     });
 
     test('逐项关掉后跟着变', () {
@@ -134,7 +137,7 @@ void main() {
         TimetableSettings.defaults().copyWith(courseCardShowTeacher: false),
       );
 
-      expect(snapshot['cardTextFields'], 'name,location,timeLabels');
+      expect(snapshot['cardTextFields'], 'name,location,timeLabels,weather');
     });
 
     test('全关时报 none', () {
@@ -147,6 +150,8 @@ void main() {
           courseCardShowTimeLabels: false,
           courseCardShowWeeks: false,
           courseCardShowDescription: false,
+          // 天气也是一行文本，不关掉就永远到不了 none。
+          weatherShowOnWeekCard: false,
         ),
       );
 
