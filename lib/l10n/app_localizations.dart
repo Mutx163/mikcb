@@ -18262,13 +18262,13 @@ abstract class AppLocalizations {
   /// No description provided for @weekdayInkContrastBodyDark.
   ///
   /// In zh, this message translates to:
-  /// **'你的信息栏文字颜色在深色壁纸上对比度不足，已临时切换为自动白色保证可读。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。'**
+  /// **'你的信息栏文字颜色在深色壁纸上对比度不足，已自动调亮以免看不清（色系仍按你设置的保留）。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。'**
   String get weekdayInkContrastBodyDark;
 
   /// No description provided for @weekdayInkContrastBodyLight.
   ///
   /// In zh, this message translates to:
-  /// **'你的信息栏文字颜色在浅色壁纸上对比度不足，已临时切换为自动黑色保证可读。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。'**
+  /// **'你的信息栏文字颜色在浅色壁纸上对比度不足，已自动调暗以免看不清（色系仍按你设置的保留）。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。'**
   String get weekdayInkContrastBodyLight;
 
   /// No description provided for @gotItAction.

@@ -497,10 +497,13 @@ bool homePageInkUsesBuiltInDefault(String? configuredHex, String defaultHex) {
 ///
 /// - No wallpaper → [themeFallback] (or the configured hex when set).
 /// - User customized away from [defaultHex] → the configured colour, unless it
-///   would be unreadable over the wallpaper band: then the automatic black/
-///   white flip takes over ([homePageInkHasSufficientContrast]).
+///   would be unreadable over the wallpaper band: then its lightness is pushed
+///   with the hue kept ([readableColorOnLuminance]). The pick is never thrown
+///   away for black/white anymore — that read as "my text colour setting
+///   stopped working".
 /// - Still on the built-in default + dark/light wallpaper → same black/white
-///   flip as the title logo ([homePageChromeForegroundForLuminance]).
+///   flip as the title logo ([homePageChromeForegroundForLuminance]): nothing
+///   was picked here, and auto-flipping IS that default's behaviour.
 Color homePageOverWallpaperInk({
   required String? configuredHex,
   required String defaultHex,
@@ -518,16 +521,16 @@ Color homePageOverWallpaperInk({
   if (!usesDefault && configured != null) {
     // A user-picked colour stays as long as it keeps ~3:1 contrast against
     // the wallpaper band behind this chrome; below that the ink would render
-    // invisible over the photo, so fall back to the auto black/white flip.
-    // The custom colour returns as soon as the wallpaper (or this region's
-    // view of it) is gone.
+    // invisible over the photo, so its lightness is pushed (hue preserved).
+    // The custom colour returns untouched as soon as the wallpaper (or this
+    // region's view of it) is gone.
     final luminance = wallpaperLuminance;
     if (luminance != null &&
         !homePageInkHasSufficientContrast(configured, luminance)) {
-      return homePageChromeForegroundForLuminance(
+      return readableColorOnLuminance(
+        configured,
         luminance,
         darkThreshold: darkThreshold,
-        fallback: configured,
       );
     }
     return configured;
@@ -561,7 +564,7 @@ bool homePageInkHasSufficientContrast(
 /// Custom blues etc. stay exactly as the user set them — unless they would be
 /// unreadable over the wallpaper band (contrast below ~3:1), in which case the
 /// accent **keeps its hue** and only its lightness is pushed
-/// ([readableAccentOnLuminance]). Replacing the user's colour with pure
+/// ([readableColorOnLuminance]). Replacing the user's colour with pure
 /// black/white reads as "my accent setting stopped working", which is exactly
 /// the complaint that retired the old flip.
 /// The unset path falls back to [themeFallback] (usually [ColorScheme.primary]).
@@ -581,35 +584,50 @@ Color homePageOverWallpaperAccent({
       homePageInkHasSufficientContrast(configured, luminance)) {
     return configured;
   }
-  return readableAccentOnLuminance(
+  return readableColorOnLuminance(
     configured,
     luminance,
     darkThreshold: darkThreshold,
   );
 }
 
-/// Readable variant of [accent] over a wallpaper band of [wallpaperLuminance],
-/// hue preserved.
+/// Below this HSL saturation a pick counts as grey (white/black included):
+/// there is no hue worth preserving, so it gets the black/white pole instead of
+/// a "just 3:1" intermediate grey.
+const double _achromaticSaturation = 0.02;
+
+/// Readable variant of a user-picked colour (weekday ink or accent) over a
+/// wallpaper band of [wallpaperLuminance], hue preserved.
 ///
-/// Both poles (toward white, toward black) are tried in 5% steps — the same
-/// granularity as [readableAccentOnCardInk], which does this for course-card
-/// accents — and the side that clears [minContrastRatio] with the **fewest
-/// steps wins**, i.e. the smallest possible deviation from the colour the user
-/// picked. Staying on the band's ink polarity
-/// ([homePageChromeForegroundForLuminance]) only breaks a step-count tie: it
-/// keeps the accent on the same side as the weekday labels next to it, but it
-/// never wins over a colour that moved less.
+/// - Grey / white / black picks (no hue to keep) go straight to
+///   [homePageChromeForegroundForLuminance]. Stopping such a pick at "just
+///   3:1" would turn a dark grey into a mid grey, which reads far worse than
+///   the pure white it used to get.
+/// - Coloured picks are walked toward white and toward black in 5% steps (the
+///   granularity [readableAccentOnCardInk] uses for course-card accents); the
+///   side that clears [minContrastRatio] in the **fewest steps wins**, i.e.
+///   the smallest deviation from the colour the user picked. The band's ink
+///   polarity ([homePageChromeForegroundForLuminance]) only breaks a tie: it
+///   keeps the colour on the same side as the chrome next to it, but never
+///   beats a colour that moved less.
 ///
-/// A band sitting right next to the accent in luminance can make one side
+/// A band sitting right next to the colour in luminance can make one side
 /// unusable (pure white tops out at ~2.3:1 against a 0.4 band); the other side
 /// is then the only option and is taken. Colour identity is the goal, ink
 /// polarity is a preference.
-Color readableAccentOnLuminance(
+Color readableColorOnLuminance(
   Color accent,
   double wallpaperLuminance, {
   double minContrastRatio = 3.0,
   double darkThreshold = 0.45,
 }) {
+  if (HSLColor.fromColor(accent).saturation < _achromaticSaturation) {
+    return homePageChromeForegroundForLuminance(
+      wallpaperLuminance,
+      darkThreshold: darkThreshold,
+      fallback: accent,
+    );
+  }
   final towardLight = _pushAccentTowardPole(
     accent,
     Colors.white,

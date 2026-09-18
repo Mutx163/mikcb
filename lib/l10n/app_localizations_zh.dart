@@ -10051,11 +10051,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get weekdayInkContrastBodyDark =>
-      '你的信息栏文字颜色在深色壁纸上对比度不足，已临时切换为自动白色保证可读。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。';
+      '你的信息栏文字颜色在深色壁纸上对比度不足，已自动调亮以免看不清（色系仍按你设置的保留）。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。';
 
   @override
   String get weekdayInkContrastBodyLight =>
-      '你的信息栏文字颜色在浅色壁纸上对比度不足，已临时切换为自动黑色保证可读。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。';
+      '你的信息栏文字颜色在浅色壁纸上对比度不足，已自动调暗以免看不清（色系仍按你设置的保留）。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。';
 
   @override
   String get gotItAction => '知道了';
@@ -20927,11 +20927,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get weekdayInkContrastBodyDark =>
-      '你的資訊欄文字顏色在深色桌布上對比度不足，已暫時切換為自動白色以保證可讀。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
+      '你的資訊欄文字顏色在深色桌布上對比度不足，已自動調亮以免看不清（仍保留你設定的色系）。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
 
   @override
   String get weekdayInkContrastBodyLight =>
-      '你的資訊欄文字顏色在淺色桌布上對比度不足，已暫時切換為自動黑色以保證可讀。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
+      '你的資訊欄文字顏色在淺色桌布上對比度不足，已自動調暗以免看不清（仍保留你設定的色系）。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
 
   @override
   String get gotItAction => '知道了';
@@ -31803,11 +31803,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get weekdayInkContrastBodyDark =>
-      '你的資訊欄文字顏色在深色桌布上對比度不足，已暫時切換為自動白色以保證可讀。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
+      '你的資訊欄文字顏色在深色桌布上對比度不足，已自動調亮以免看不清（仍保留你設定的色系）。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
 
   @override
   String get weekdayInkContrastBodyLight =>
-      '你的資訊欄文字顏色在淺色桌布上對比度不足，已暫時切換為自動黑色以保證可讀。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
+      '你的資訊欄文字顏色在淺色桌布上對比度不足，已自動調暗以免看不清（仍保留你設定的色系）。可在「課表頁面 → 文字顏色」中更換顏色或恢復預設。';
 
   @override
   String get gotItAction => '知道了';

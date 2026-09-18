@@ -214,21 +214,23 @@ void main() {
       );
     });
 
-    test('user custom color falls back to auto black/white when unreadable '
-        'over the wallpaper', () {
-      // Dark band (0.05): #2563EB keeps only ~2:1 → auto-flips to white so
-      // the chrome never renders invisible ink over the photo.
-      expect(
-        homePageOverWallpaperInk(
-          configuredHex: '#2563EB',
-          defaultHex: TimetableSettings.defaultWeekdayBarFontColorLight,
-          themeFallback: const Color(0xFF111111),
-          hasBackdrop: true,
-          wallpaperLuminance: 0.05,
-        ),
-        homePageChromeForegroundOnDark,
+    test('user custom colour keeps its hue when unreadable over the wallpaper', () {
+      const customBlue = Color(0xFF2563EB);
+      // Dark band (0.05): the blue keeps only ~1.2:1 → lightened until it
+      // clears 3:1, and it stays blue (never swapped for pure white).
+      final onDarkBand = homePageOverWallpaperInk(
+        configuredHex: '#2563EB',
+        defaultHex: TimetableSettings.defaultWeekdayBarFontColorLight,
+        themeFallback: const Color(0xFF111111),
+        hasBackdrop: true,
+        wallpaperLuminance: 0.05,
       );
-      // A light custom ink on a light band is equally unreadable → black.
+      expect(homePageInkHasSufficientContrast(onDarkBand, 0.05), isTrue);
+      expect(onDarkBand, isNot(homePageChromeForegroundOnDark));
+      expect((_hueOf(onDarkBand) - _hueOf(customBlue)).abs(), lessThan(5));
+      // A near-white custom ink on a light band has no hue to keep: it goes to
+      // the black pole outright, not to a "just 3:1" mid grey. That is the
+      // same outcome the old flip gave, and it is what a grey pick deserves.
       expect(
         homePageOverWallpaperInk(
           configuredHex: '#F2F2F2',
@@ -238,6 +240,18 @@ void main() {
           wallpaperLuminance: 0.9,
         ),
         homePageChromeForegroundOnLight,
+      );
+      // Same for a hand-picked dark grey on a dark band (black wallpaper) →
+      // the white pole.
+      expect(
+        homePageOverWallpaperInk(
+          configuredHex: '#3C3C3C',
+          defaultHex: TimetableSettings.defaultWeekdayBarFontColorLight,
+          themeFallback: const Color(0xFF111111),
+          hasBackdrop: true,
+          wallpaperLuminance: 0,
+        ),
+        homePageChromeForegroundOnDark,
       );
       // Without a luminance sample (sampling pending) the colour is kept.
       expect(
@@ -249,6 +263,21 @@ void main() {
           wallpaperLuminance: null,
         ),
         const Color(0xFF2563EB),
+      );
+    });
+
+    test('default ink still flips black/white with the wallpaper', () {
+      // Nothing was picked here, so the auto flip stays: that IS the default's
+      // behaviour (and the ink keeps ~10:1 instead of stopping at 3:1).
+      expect(
+        homePageOverWallpaperInk(
+          configuredHex: TimetableSettings.defaultWeekdayBarFontColorLight,
+          defaultHex: TimetableSettings.defaultWeekdayBarFontColorLight,
+          themeFallback: const Color(0xFF111111),
+          hasBackdrop: true,
+          wallpaperLuminance: 0.6,
+        ),
+        homePageChromeForegroundOnLight,
       );
     });
 
@@ -346,10 +375,10 @@ void main() {
       );
     });
 
-    test('readableAccentOnLuminance keeps the configured hue on both sides', () {
+    test('readableColorOnLuminance keeps the configured hue on both sides', () {
       const accent = Color(0xFF4CAF50);
-      final onDarkBand = readableAccentOnLuminance(accent, 0.05);
-      final onMidBand = readableAccentOnLuminance(accent, 0.5);
+      final onDarkBand = readableColorOnLuminance(accent, 0.05);
+      final onMidBand = readableColorOnLuminance(accent, 0.5);
       expect(homePageInkHasSufficientContrast(onDarkBand, 0.05), isTrue);
       expect(homePageInkHasSufficientContrast(onMidBand, 0.5), isTrue);
       expect((_hueOf(onDarkBand) - _hueOf(accent)).abs(), lessThan(5));
@@ -357,14 +386,14 @@ void main() {
       // 0.4 is a band the "toward white" side cannot serve — pure white tops
       // out at 2.3:1 there — while the dark side needs only a few steps. The
       // smaller move wins, so the accent stays blue (never pure white).
-      final onStuckBand = readableAccentOnLuminance(accent, 0.4);
+      final onStuckBand = readableColorOnLuminance(accent, 0.4);
       expect(homePageInkHasSufficientContrast(onStuckBand, 0.4), isTrue);
       expect(onStuckBand, isNot(Colors.white));
       expect((_hueOf(onStuckBand) - _hueOf(accent)).abs(), lessThan(5));
       // 0.3 is the boundary case that separates "fewest steps" from "same
       // polarity as the neighbouring labels": lightening needs the full walk
       // to pure white, darkening needs a handful of steps → the hue stays.
-      final onBoundaryBand = readableAccentOnLuminance(accent, 0.3);
+      final onBoundaryBand = readableColorOnLuminance(accent, 0.3);
       expect(homePageInkHasSufficientContrast(onBoundaryBand, 0.3), isTrue);
       expect(onBoundaryBand, isNot(Colors.white));
       expect((_hueOf(onBoundaryBand) - _hueOf(accent)).abs(), lessThan(5));

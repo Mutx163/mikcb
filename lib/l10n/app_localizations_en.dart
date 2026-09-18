@@ -10658,11 +10658,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weekdayInkContrastBodyDark =>
-      'Your weekday bar text color has too little contrast against the dark wallpaper, so it is temporarily using automatic white to stay readable. You can change or reset it under \"Timetable Page → Text Colors\".';
+      'Your weekday bar text color had too little contrast against the dark wallpaper, so it was lightened automatically to stay readable — your color is kept. You can change or reset it under \"Timetable Page → Text Colors\".';
 
   @override
   String get weekdayInkContrastBodyLight =>
-      'Your weekday bar text color has too little contrast against the light wallpaper, so it is temporarily using automatic black to stay readable. You can change or reset it under \"Timetable Page → Text Colors\".';
+      'Your weekday bar text color had too little contrast against the light wallpaper, so it was darkened automatically to stay readable — your color is kept. You can change or reset it under \"Timetable Page → Text Colors\".';
 
   @override
   String get gotItAction => 'Got it';
