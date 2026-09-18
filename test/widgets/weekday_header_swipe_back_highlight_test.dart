@@ -166,9 +166,15 @@ void main() {
     );
     final dx = rect.width * 0.7 * (goForward ? -1 : 1);
     final gesture = await tester.startGesture(rect.center);
-    await gesture.moveBy(Offset(dx, 0));
+    // 每段位移拆两步（先过 touch slop）：页面里有纵向滚动体时，分页的横向
+    // 识别器不再是竞技场唯一成员，要到位移超过 slop 才 accept，而
+    // DragStartBehavior.start 会把 accept 的那一次 move 当作起点吃掉——
+    // 单次大 move 会被整段吞掉（真实手指一帧一帧移动，不受影响）。
+    await gesture.moveBy(Offset(dx.sign * 24, 0));
+    await gesture.moveBy(Offset(dx - dx.sign * 24, 0));
     await tester.pump(const Duration(milliseconds: 16));
-    await gesture.moveBy(Offset(-dx, 0));
+    await gesture.moveBy(Offset(-dx.sign * 24, 0));
+    await gesture.moveBy(Offset(-dx + dx.sign * 24, 0));
     await tester.pump(const Duration(milliseconds: 16));
     await gesture.up();
     await _pumpUntilDayPagerSettled(tester);

@@ -166,7 +166,7 @@ void main() {
 
     test('用户转场速度会改变实际生效的转场时长', () {
       final snapshot = snapshotOf(
-        TimetableSettings.defaults().copyWith(pageTransitionSpeed: 2.0),
+        TimetableSettings.defaults().copyWith(pageTransitionSpeed: 2),
       );
 
       // _settingsDerivedSnapshot 里也有这项，两边都要跟着变。
