@@ -1,9 +1,14 @@
 part of '../timetable_settings_screen.dart';
 
-/// 天气设置：开关、城市、失败重试、覆盖范围说明与数据来源署名。
+/// 天气设置：开关、显示位置、显示内容、城市、失败重试、覆盖范围说明与数据来源署名。
 ///
 /// 卡片上刻意不显示任何错误态（一屏 5~8 张卡，错误提示会变成视觉灾难），
 /// 所以这里是把「为什么没有天气」讲清楚的唯一出口。
+///
+/// **跟天气有关的一切都在这页**：显示位置（日视图课卡/周视图课卡/详情弹窗）与
+/// 显示内容（现象/温度/降水概率）也放这里，而不是把周视图那一个开关塞进
+/// 「课程卡片」页——三个位置开关拆到两页会让人来回跑，而本页本来就是天气的
+/// 唯一入口（设置首页「显示与外观」组里紧挨着「课程卡片」）。
 ///
 /// 结构遵循设置页惯例（见 `settings_home_widget.dart` /
 /// `settings_home_menu_editor.dart`）：**每个区块 = `HyperosSectionGap` +
@@ -17,6 +22,14 @@ class _WeatherSettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final weather = context.watch<WeatherProvider?>();
+    final timetable = context.watch<TimetableProvider>();
+    final settings = timetable.settings;
+    // 天气没开时下面那些显示项一律无效（数据都不会拉），整组禁用而不是藏起来：
+    // 用户能看到「原来还有这些选项」，也知道为什么点不动。
+    final enabled = weather?.enabled ?? false;
+    void update(TimetableSettings next) {
+      unawaited(timetable.updateSettings(next));
+    }
 
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
@@ -31,16 +44,81 @@ class _WeatherSettingsScreen extends StatelessWidget {
               HyperosSwitchTile(
                 title: l10n.weatherEnableTitle,
                 subtitle: l10n.weatherEnableSubtitle,
-                value: weather?.enabled ?? false,
+                value: enabled,
                 onChanged: weather == null
                     ? null
                     : (value) => unawaited(weather.setEnabled(value)),
+              ),
+              // 「显示在哪」三个开关与总开关同组：它们回答的都是「显不显示」，
+              // 与下一组「显示什么内容」是两件事。
+              HyperosSwitchTile(
+                title: l10n.weatherShowOnDayCardTitle,
+                value: settings.weatherShowOnDayCard,
+                onChanged: enabled
+                    ? (value) => update(
+                        settings.copyWith(weatherShowOnDayCard: value),
+                      )
+                    : null,
+              ),
+              HyperosSwitchTile(
+                title: l10n.weatherShowOnWeekCardTitle,
+                value: settings.weatherShowOnWeekCard,
+                onChanged: enabled
+                    ? (value) => update(
+                        settings.copyWith(weatherShowOnWeekCard: value),
+                      )
+                    : null,
+              ),
+              HyperosSwitchTile(
+                title: l10n.weatherShowOnSheetTitle,
+                value: settings.weatherShowOnSheet,
+                onChanged: enabled
+                    ? (value) =>
+                          update(settings.copyWith(weatherShowOnSheet: value))
+                    : null,
               ),
             ],
           ),
           // 「预报只覆盖 16 天」解释的是「为什么有些日子看不到天气」，
           // 属于显示区块的脚注。
           HyperosSectionDescription(text: l10n.weatherCoverageNote),
+
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.weatherSectionContentTitle),
+          HyperosListGroup(
+            children: [
+              HyperosSwitchTile(
+                title: l10n.weatherShowPhenomenonTitle,
+                subtitle: l10n.weatherShowPhenomenonSubtitle,
+                value: settings.weatherShowPhenomenon,
+                onChanged: enabled
+                    ? (value) => update(
+                        settings.copyWith(weatherShowPhenomenon: value),
+                      )
+                    : null,
+              ),
+              HyperosSwitchTile(
+                title: l10n.weatherShowTemperatureTitle,
+                value: settings.weatherShowTemperature,
+                onChanged: enabled
+                    ? (value) => update(
+                        settings.copyWith(weatherShowTemperature: value),
+                      )
+                    : null,
+              ),
+              HyperosSwitchTile(
+                title: l10n.weatherShowProbabilityTitle,
+                subtitle: l10n.weatherShowProbabilitySubtitle,
+                value: settings.weatherShowProbability,
+                onChanged: enabled
+                    ? (value) => update(
+                        settings.copyWith(weatherShowProbability: value),
+                      )
+                    : null,
+              ),
+            ],
+          ),
+          HyperosSectionDescription(text: l10n.weatherSectionContentNote),
 
           const HyperosSectionGap(),
           HyperosSectionLabel(text: l10n.weatherSectionSourceTitle),
