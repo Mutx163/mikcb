@@ -131,6 +131,102 @@ void main() {
       expect(restored.longitude, closeTo(120.16142, 1e-9));
     });
 
+    test('序列化往返一致（含区级 district）', () {
+      const location = WeatherLocation(
+        name: '杭州市',
+        admin1: '浙江省',
+        country: '中国',
+        district: '拱墅区',
+        latitude: 30.29365,
+        longitude: 120.16142,
+        timezone: 'Asia/Shanghai',
+      );
+      final restored = WeatherLocation.tryDecode(location.toJsonString());
+      expect(restored, isNotNull);
+      expect(restored!.name, '杭州市');
+      expect(restored.admin1, '浙江省');
+      expect(restored.country, '中国');
+      expect(restored.district, '拱墅区');
+      expect(restored.timezone, 'Asia/Shanghai');
+      expect(restored.latitude, closeTo(30.29365, 1e-9));
+      expect(restored.longitude, closeTo(120.16142, 1e-9));
+    });
+
+    test('老数据（没有 district 键）能解析，district 为 null', () {
+      // 手动搜索来的城市在加 district 字段之前就存过，JSON 里没有这个键。
+      final legacy = jsonEncode({
+        'name': '杭州',
+        'admin1': '浙江',
+        'country': '中国',
+        'latitude': 30.29365,
+        'longitude': 120.16142,
+        'timezone': 'Asia/Shanghai',
+      });
+      final restored = WeatherLocation.tryDecode(legacy);
+      expect(restored, isNotNull);
+      expect(restored!.name, '杭州');
+      expect(restored.district, isNull);
+      expect(restored.displayName, '杭州');
+    });
+
+    test('district 非字符串时按缺失处理', () {
+      final restored = WeatherLocation.tryDecode(
+        jsonEncode({
+          'name': '杭州',
+          'latitude': 30.29,
+          'longitude': 120.16,
+          'district': 42,
+        }),
+      );
+      expect(restored, isNotNull);
+      expect(restored!.district, isNull);
+    });
+
+    test('displayName：有区级时给出「市 · 区」', () {
+      const located = WeatherLocation(
+        name: '杭州市',
+        admin1: '浙江省',
+        district: '拱墅区',
+        latitude: 30.29365,
+        longitude: 120.16142,
+      );
+      expect(located.displayName, '杭州市 · 拱墅区');
+    });
+
+    test('displayName：没有区级时只给市名，不留空段', () {
+      const searched = WeatherLocation(
+        name: '杭州',
+        admin1: '浙江',
+        country: '中国',
+        latitude: 30.29365,
+        longitude: 120.16142,
+      );
+      expect(searched.displayName, '杭州');
+      expect(searched.displayName, isNot(contains('·')));
+    });
+
+    test('displayName：区级与市名相同时不重复', () {
+      // 重庆这类直辖市，反查可能给出 city 与 locality 同名。
+      const municipality = WeatherLocation(
+        name: '铜梁区',
+        admin1: '重庆市',
+        district: '铜梁区',
+        latitude: 29.86,
+        longitude: 106.03,
+      );
+      expect(municipality.displayName, '铜梁区');
+    });
+
+    test('displayName：区级是空白串时按缺失处理', () {
+      const blank = WeatherLocation(
+        name: '杭州市',
+        district: '   ',
+        latitude: 30.29,
+        longitude: 120.16,
+      );
+      expect(blank.displayName, '杭州市');
+    });
+
     test('缺名称或经纬度时抛 FormatException', () {
       expect(
         () => WeatherLocation.fromJson(const {'latitude': 1.0, 'longitude': 2.0}),

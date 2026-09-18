@@ -1,10 +1,13 @@
 import 'dart:convert';
 
-/// Open-Meteo 地理编码返回的一个地点。
+/// 一个地点（天气数据的地理坐标载体）。
 ///
 /// 只保留「选城市」需要的字段：显示名、行政区、国家、经纬度、时区。
 /// [admin1] 是区分同名地点的唯一依据——搜「杭州」会同时返回浙江杭州与
 /// 四川甘孜一个同名村，列表必须把行政区显示出来。
+///
+/// 两个来源共用本模型：手动搜索（Open-Meteo 地理编码，无 [district]）与
+/// 定位反查（BigDataCloud，有 [district]）。
 class WeatherLocation {
   const WeatherLocation({
     required this.name,
@@ -12,6 +15,7 @@ class WeatherLocation {
     required this.longitude,
     this.admin1,
     this.country,
+    this.district,
     this.timezone,
   });
 
@@ -21,6 +25,9 @@ class WeatherLocation {
   final String? admin1;
 
   final String? country;
+
+  /// 区 / 县一级。只有定位反查会填；手动搜索来的地点为 null。
+  final String? district;
 
   final double latitude;
   final double longitude;
@@ -44,6 +51,19 @@ class WeatherLocation {
     return parts.join(' · ');
   }
 
+  /// 设置页那一行尾随显示的紧凑地名。
+  ///
+  /// 有 [district] 时给出「市 · 区」（例如「杭州市 · 拱墅区」）——定位场景下用户
+  /// 要的就是这个精度；尾随区域窄，省市区全串会被截断。手动搜索来的地点没有
+  /// district，就只显示市名，不会出现空段或多余的间隔点。
+  String get displayName {
+    final trimmedDistrict = district?.trim() ?? '';
+    if (trimmedDistrict.isEmpty || trimmedDistrict == name) {
+      return name;
+    }
+    return '$name · $trimmedDistrict';
+  }
+
   /// 是否与 [other] 指向同一地点。
   ///
   /// 只比经纬度，不比名字：同一地点在不同语言下的名字不同。
@@ -56,6 +76,7 @@ class WeatherLocation {
     'name': name,
     'admin1': admin1,
     'country': country,
+    'district': district,
     'latitude': latitude,
     'longitude': longitude,
     'timezone': timezone,
@@ -73,11 +94,14 @@ class WeatherLocation {
     }
     final admin1 = json['admin1'];
     final country = json['country'];
+    // district 是后加的字段：老数据里没有这个键，读到 null 即可，不需要迁移。
+    final district = json['district'];
     final timezone = json['timezone'];
     return WeatherLocation(
       name: name,
       admin1: admin1 is String ? admin1 : null,
       country: country is String ? country : null,
+      district: district is String ? district : null,
       latitude: latitude,
       longitude: longitude,
       timezone: timezone is String ? timezone : null,
