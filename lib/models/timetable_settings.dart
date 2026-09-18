@@ -3,6 +3,7 @@ import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart'
 import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/progressive_blur_tuning.dart';
+import 'package:university_timetable/models/refraction_glass_tuning.dart';
 import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
 import 'package:university_timetable/models/class_reminder.dart';
@@ -1538,6 +1539,8 @@ class TimetableSettings {
     softGlassTuning: softGlassTuning ?? SoftGlassTuning.defaults,
     progressiveBlurTuning:
         progressiveBlurTuning ?? ProgressiveBlurTuning.defaults,
+    refractionGlassTuning:
+        refractionGlassTuning ?? RefractionGlassTuning.defaults,
     liquidGlassPopupEnabled: liquidGlassPopupEnabled,
     liquidGlassSelectSheetEnabled: liquidGlassSelectSheetEnabled,
     liquidGlassSheetDialogEnabled: liquidGlassSheetDialogEnabled,
@@ -1574,6 +1577,12 @@ class TimetableSettings {
   final ProgressiveBlurPreset progressiveBlurPreset;
   final ProgressiveBlurTuning? progressiveBlurTuning;
   final SoftGlassTuning? softGlassTuning;
+
+  /// 折射玻璃预设与自定义参数（[refractionGlassTuning] 为 null 时渲染回落
+  /// [RefractionGlassTuning.defaults]）。口径与柔光/渐进/液态完全一致：
+  /// 预设是非空枚举（reset 能落回 standard），参数对象可空。
+  final RefractionGlassPreset refractionGlassPreset;
+  final RefractionGlassTuning? refractionGlassTuning;
   final bool homePageHeaderBlurEnabled;
   final bool homePageWeekdayBarBlurEnabled;
 
@@ -1784,6 +1793,8 @@ class TimetableSettings {
     this.progressiveBlurPreset = ProgressiveBlurPreset.standard,
     this.progressiveBlurTuning,
     this.softGlassTuning,
+    this.refractionGlassPreset = RefractionGlassPreset.standard,
+    this.refractionGlassTuning,
     this.homePageHeaderBlurEnabled = true,
     this.homePageWeekdayBarBlurEnabled = true,
     this.subpageHeaderBlurStyle = HeaderBlurStyle.inspire,
@@ -2019,6 +2030,9 @@ class TimetableSettings {
         'progressiveBlurTuning': progressiveBlurTuning!.toJson(),
       if (softGlassTuning != null)
         'softGlassTuning': softGlassTuning!.toJson(),
+      'refractionGlassPreset': refractionGlassPreset.value,
+      if (refractionGlassTuning != null)
+        'refractionGlassTuning': refractionGlassTuning!.toJson(),
       'homePageHeaderBlurEnabled': homePageHeaderBlurEnabled,
       'homePageWeekdayBarBlurEnabled': homePageWeekdayBarBlurEnabled,
       'subpageHeaderBlurStyle': subpageHeaderBlurStyle.value,
@@ -2544,6 +2558,14 @@ class TimetableSettings {
               json['softGlassTuning'] as Map<String, dynamic>,
             )
           : null,
+      refractionGlassPreset: RefractionGlassPresetX.fromValue(
+        json['refractionGlassPreset'] as String?,
+      ),
+      refractionGlassTuning: json['refractionGlassTuning'] != null
+          ? RefractionGlassTuning.fromJson(
+              json['refractionGlassTuning'] as Map<String, dynamic>,
+            )
+          : null,
       // 两个玻璃带显示开关已下线（顶栏玻璃归外观页材质五档），恒为开。
       // ignore: avoid_redundant_argument_values -- 故意写死默认值（下线旧开关）。
       homePageHeaderBlurEnabled: true,
@@ -2789,6 +2811,8 @@ class TimetableSettings {
     ProgressiveBlurPreset? progressiveBlurPreset,
     ProgressiveBlurTuning? progressiveBlurTuning,
     SoftGlassTuning? softGlassTuning,
+    RefractionGlassPreset? refractionGlassPreset,
+    RefractionGlassTuning? refractionGlassTuning,
     bool? homePageHeaderBlurEnabled,
     bool? homePageWeekdayBarBlurEnabled,
     HeaderBlurStyle? subpageHeaderBlurStyle,
@@ -3169,6 +3193,10 @@ class TimetableSettings {
       progressiveBlurTuning:
           progressiveBlurTuning ?? this.progressiveBlurTuning,
       softGlassTuning: softGlassTuning ?? this.softGlassTuning,
+      refractionGlassPreset:
+          refractionGlassPreset ?? this.refractionGlassPreset,
+      refractionGlassTuning:
+          refractionGlassTuning ?? this.refractionGlassTuning,
       homePageHeaderBlurEnabled:
           homePageHeaderBlurEnabled ?? this.homePageHeaderBlurEnabled,
       homePageWeekdayBarBlurEnabled:

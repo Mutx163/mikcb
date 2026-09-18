@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../models/header_blur_style.dart';
 import '../../../models/liquid_glass_tuning.dart';
 import '../../../models/progressive_blur_tuning.dart';
+import '../../../models/refraction_glass_tuning.dart';
 import '../../../models/soft_glass_tuning.dart';
 
 /// Default frosted-glass tuning (aligned with app timetable defaults).
@@ -82,6 +83,7 @@ class FrostedAppearance {
     this.liquidGlassTuning,
     this.softGlassTuning = SoftGlassTuning.defaults,
     this.progressiveBlurTuning = ProgressiveBlurTuning.defaults,
+    this.refractionGlassTuning = RefractionGlassTuning.defaults,
     this.liquidGlassPopupEnabled = kDefaultLiquidGlassPopupEnabled,
     this.liquidGlassSelectSheetEnabled = kDefaultLiquidGlassSelectSheetEnabled,
     this.liquidGlassSheetDialogEnabled = kDefaultLiquidGlassSheetDialogEnabled,
@@ -135,6 +137,11 @@ class FrostedAppearance {
   /// `inspire` 风格时生效。非空缺省即标准档（与接入调参前的常量一致）。
   final ProgressiveBlurTuning progressiveBlurTuning;
 
+  /// 折射玻璃参数（[glassMode] 为 [FrostedGlassMode.refractionGlass] 时生效）。
+  /// 非空缺省即标准档——这一档的默认值与课程卡片折射档逐字段一致，见
+  /// [RefractionGlassTuning] 的类注释。
+  final RefractionGlassTuning refractionGlassTuning;
+
   /// 液态玻璃作用范围：锚定下拉选择小弹窗（玻璃模式等设置行弹出的气泡）。
   final bool liquidGlassPopupEnabled;
 
@@ -164,6 +171,7 @@ class FrostedAppearance {
           liquidGlassTuning == other.liquidGlassTuning &&
           softGlassTuning == other.softGlassTuning &&
           progressiveBlurTuning == other.progressiveBlurTuning &&
+          refractionGlassTuning == other.refractionGlassTuning &&
           liquidGlassPopupEnabled == other.liquidGlassPopupEnabled &&
           liquidGlassSelectSheetEnabled ==
               other.liquidGlassSelectSheetEnabled &&
@@ -185,6 +193,7 @@ class FrostedAppearance {
     liquidGlassTuning,
     softGlassTuning,
     progressiveBlurTuning,
+    refractionGlassTuning,
     liquidGlassPopupEnabled,
     liquidGlassSelectSheetEnabled,
     liquidGlassSheetDialogEnabled,
