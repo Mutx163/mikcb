@@ -883,6 +883,13 @@ class _TimetableScreenState extends State<TimetableScreen>
                                     );
                                   },
                                 ),
+                                // 日视图自己的「回今日」浮钮（底部居中）。与上面
+                                // 那颗「回本周」互斥：那颗在日视图一律不显示，
+                                // 这颗只在日视图且当前不是今天时出现。
+                                if (_shouldShowFloatingBackToTodayButton(
+                                  provider,
+                                ))
+                                  _buildFloatingBackToTodayButton(provider),
                               ],
                             ),
                           ),
@@ -2129,9 +2136,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   /// One-shot heads-up when a hand-picked weekday-bar ink has too little
-  /// contrast against the current wallpaper. The ink is temporarily auto-flipped
-  /// for readability ([homePageOverWallpaperInk]); this explains why the custom
-  /// colour is not showing and offers restoring the default (auto B/W).
+  /// contrast against the current wallpaper. The ink keeps its colour and only
+  /// gets its lightness pushed for readability ([homePageOverWallpaperInk]);
+  /// this explains the change and offers restoring the default (auto B/W).
   void _maybeWarnWeekdayInkContrast(
     TimetableProvider provider,
     TimetableSettings settings,
@@ -2382,7 +2389,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         ? _wallpaperTopLuminance
         : _wallpaperWeekdayLuminance ?? _wallpaperTopLuminance;
     // Week label sits in the weekday chrome band: auto-invert default black/white
-    // over a dark wallpaper; unreadable custom ink follows the same fallback.
+    // over a dark wallpaper; a custom ink keeps its hue, only the lightness moves.
     final weekLabelColor = homePageOverWallpaperInk(
       configuredHex: isDark
           ? settings.weekdayBarFontColorDark
@@ -2452,10 +2459,11 @@ class _TimetableScreenState extends State<TimetableScreen>
                             ? settings.weekdayBarAccentColorDark
                             : settings.weekdayBarAccentColorLight;
                         // Default weekday ink flips with the band behind this
-                        // bar; user-custom hex is kept (auto-flipped only when
-                        // it would be unreadable). Accent (today/selected) gets
-                        // the same readability fallback so the blue "today"
-                        // column never vanishes into the photo.
+                        // bar; a custom hex keeps its colour, only the
+                        // lightness moves when it would be unreadable. Accent
+                        // (today/selected) obeys the same rule so the "today"
+                        // column neither vanishes into the photo nor loses the
+                        // colour the user picked.
                         final weekdayColor = homePageOverWallpaperInk(
                           configuredHex: configuredWeekdayHex,
                           defaultHex: isDark
@@ -4176,15 +4184,6 @@ class _TimetableScreenState extends State<TimetableScreen>
             .where((e) => !e.isExpired && _isSameDate(e.dateTime, targetDate))
             .toList()
           ..sort((a, b) => a.startTime.compareTo(b.startTime));
-    final today = DateTime.now();
-    final normalizedToday = DateTime(today.year, today.month, today.day);
-    final selectedDayDate = selectedDate != null
-        ? DateTime(selectedDate.year, selectedDate.month, selectedDate.day)
-        : null;
-    final backToTodayIcon =
-        selectedDayDate != null && selectedDayDate.isBefore(normalizedToday)
-        ? Icons.arrow_forward_rounded
-        : Icons.arrow_back_rounded;
 
     final isDark = theme.brightness == Brightness.dark;
     final hasBackdrop = hasHomePageBackdrop(settings);
@@ -4284,56 +4283,17 @@ class _TimetableScreenState extends State<TimetableScreen>
                 Expanded(
                   child: Row(
                     children: [
-                      if (isToday)
+                      // 「回到今天」已挪到日视图底部的悬浮按钮（见
+                      // [_buildFloatingBackToTodayButton]）：这张摘要卡只留
+                      // 「今天 · 第几周」，不再放可点胶囊，避免两个入口。
+                      if (isToday) ...[
                         Text(
                           l10n.todayTimetableTitle,
                           style: foruiTheme.typography.body.sm.copyWith(
                             color: summaryMutedInk,
                             fontWeight: FontWeight.w500,
                           ),
-                        )
-                      else if (_canNavigateDayViewToToday(settings))
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            key: const ValueKey('back-to-today-button'),
-                            onTap: () async {
-                              await _navigateDayViewToToday(provider);
-                            },
-                            borderRadius: BorderRadius.circular(999),
-                            child: Ink(
-                              decoration: BoxDecoration(
-                                color: colorScheme.primaryContainer,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      backToTodayIcon,
-                                      size: 14,
-                                      color: colorScheme.onPrimaryContainer,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      l10n.backToTodayAction,
-                                      style: foruiTheme.typography.body.xs
-                                          .copyWith(
-                                            color:
-                                                colorScheme.onPrimaryContainer,
-                                            fontWeight: FontWeight.w600,
-                                            height: 1.1,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
                         ),
-                      if (isToday || _canNavigateDayViewToToday(settings))
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                           child: Text(
@@ -4344,6 +4304,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                             ),
                           ),
                         ),
+                      ],
                       Text(
                         l10n.weekLabel(week),
                         style: foruiTheme.typography.body.sm.copyWith(
@@ -4786,8 +4747,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     final hasBackdrop = hasHomePageBackdrop(settings);
     final colorScheme = Theme.of(context).colorScheme;
     // Same wallpaper auto-contrast as weekday / time-axis chrome: default ink
-    // flips black↔white over dark photos; user-custom hex is kept as-is. The
-    // empty state sits mid-screen, so judge from the card-region band.
+    // flips black↔white over dark photos; a custom hex keeps its hue and only
+    // gets its lightness pushed. The empty state sits mid-screen, so judge
+    // from the card-region band.
     final titleColor = homePageOverWallpaperInk(
       configuredHex: isDark
           ? settings.weekdayBarFontColorDark
@@ -4874,10 +4836,15 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 满屏悬浮（overlay）同样取滚动余量（药丸占用兜底）：此前 overlay
     // 余量为 0，下滑到底最后一张卡仍压在药丸后面，无法滑出来看。
     final dockScrollAvoidance = _glassDockContentScrollInset(settings);
+    // 再叠一层「回今日」浮钮的占用：浮钮浮在药丸上方居中，不补这段余量
+    // 时滑到底的最后一张卡会被它压住（同底栏遮内容的道理，见
+    // [_backToTodayButtonScrollInset]）。
+    final todayButtonAvoidance = _backToTodayButtonScrollInset(provider);
+    final bottomContentInset = 8 + dockScrollAvoidance + todayButtonAvoidance;
     if (agendaItems.isEmpty) {
       return Padding(
         key: key,
-        padding: EdgeInsets.fromLTRB(14, 0, 14, 8 + dockScrollAvoidance),
+        padding: EdgeInsets.fromLTRB(14, 0, 14, bottomContentInset),
         child: _buildDayViewEmptyColumn(week: week, settings: settings),
       );
     }
@@ -4885,7 +4852,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // moves; the shared host keeps their BackdropFilter capture at grid scope.
     final agendaList = ListView.separated(
       key: PageStorageKey<String>('day-agenda-$week-$dayOfWeek'),
-      padding: EdgeInsets.fromLTRB(14, 0, 14, 8 + dockScrollAvoidance),
+      padding: EdgeInsets.fromLTRB(14, 0, 14, bottomContentInset),
       physics: const ClampingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
@@ -7935,6 +7902,211 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
+  /// 日视图底部「回今日」悬浮按钮的几何常量。
+  ///
+  /// 高度按内容算：图标 15 与文字 11 取高者 15，加 8×2 内边距与 1×2 描边。
+  /// 列表底部余量（[_backToTodayButtonScrollInset]）与按钮本体共用这些
+  /// 常量，避免两边各自写死数字后走偏（钮变高、内容又被遮）。
+  static const double _backToTodayButtonRadius = 12;
+  static const double _backToTodayButtonHPadding = 12;
+  static const double _backToTodayButtonVPadding = 8;
+  static const double _backToTodayButtonIconSize = 15;
+  /// 玻璃坞形态下按钮底边与药丸顶边之间的视觉间隙。
+  static const double _backToTodayButtonDockGap = 12;
+  /// 列表最后一项与按钮顶边之间的视觉间隙。
+  static const double _backToTodayButtonGap = 8;
+  /// 经典形态（底栏在页面之外）下按钮距页面底边的边距。
+  static const double _backToTodayButtonClassicMargin = 24;
+  static const double _backToTodayButtonHeight =
+      _backToTodayButtonIconSize + _backToTodayButtonVPadding * 2 + 2;
+
+  /// 日视图底部的「回今日」浮钮该不该出现。
+  ///
+  /// **与周视图的「回本周」浮钮是两套独立体系**：各有自己的可见性条件、
+  /// 文案、动作、位置与配色，也不共用设置项——「回本周」受
+  /// [TimetableSettings.timetableBackToCurrentWeekButtonStyle] 与浮态透明度
+  /// 控制，这颗只跟着「日视图当前看的不是今天」走。两者之间唯一共用的
+  /// 事实是底部导航的物理占用（[_glassDockPillOccupancy]）。
+  bool _shouldShowFloatingBackToTodayButton(TimetableProvider provider) {
+    if (!_isDayView) {
+      return false;
+    }
+    final settings = provider.settings;
+    // 今天不在本学期内（假期 / 学期末）或今天那个星期被隐藏时不给入口，
+    // 免得点一下跳到"上周同一个星期几"。
+    if (!_canNavigateDayViewToToday(settings)) {
+      return false;
+    }
+    return !_isSelectedDayToday(
+      provider: provider,
+      settings: settings,
+      week: _selectedWeekForDayView ?? _visibleWeek,
+      dayOfWeek: _selectedDayOfWeek ?? 1,
+    );
+  }
+
+  /// 玻璃坞药丸之上 / 经典底栏之上，浮钮距屏幕底部的边距。
+  double _backToTodayButtonBottomInset(TimetableSettings settings) {
+    if (settings.homeNavigationForm != HomeNavigationForm.glassDock) {
+      return _backToTodayButtonClassicMargin;
+    }
+    return math.max(
+          _backToTodayButtonClassicMargin,
+          _glassDockPillOccupancy + _backToTodayButtonDockGap,
+        ) +
+        MediaQuery.viewPaddingOf(context).bottom;
+  }
+
+  /// 日课表列表为「回今日」浮钮留出的底部滚动余量。
+  ///
+  /// 与玻璃坞避让（[_glassDockContentScrollInset]）叠加使用：坞避让负责
+  /// "别被药丸盖住"，这里补上"别被浮钮盖住"的那一段（浮钮比药丸高出的
+  /// 间隙 + 钮高 + 一个视觉间隙）。钮不显示时返回 0——不为一颗看不见的
+  /// 按钮白留一条空白，也不改变今天那天的滚动手感。
+  double _backToTodayButtonScrollInset(TimetableProvider provider) {
+    if (!_shouldShowFloatingBackToTodayButton(provider)) {
+      return 0;
+    }
+    final buttonTop =
+        _backToTodayButtonBottomInset(provider.settings) +
+        _backToTodayButtonHeight;
+    return math.max(
+      0,
+      buttonTop +
+          _backToTodayButtonGap -
+          _glassDockContentScrollInset(provider.settings),
+    );
+  }
+
+  /// 日视图底部居中的「回今日」浮钮：玻璃底 + **主题色**的图标与文字，
+  /// 12dp 圆角矩形（刻意不做成胶囊 / 正圆）。
+  ///
+  /// 配色走全 app 的主题色口径：底色是玻璃，所以"跟随主题色"落在图标与
+  /// 文字上，取 [HyperosColors.primary]——即外观里选的 seed 本身（所见即
+  /// 所得），未挂 ThemeSeedScope 或深色近黑 seed 时由它自己回落。
+  ///
+  /// 材质沿用全 app 的玻璃口径（同一份 [FrostedAppearanceScope] 与
+  /// [MikcbLiquidGlassTokens]），但**不复用**「回本周」那颗的实现：位置
+  /// （居中 vs 右下）、文案、动作、可见性条件、配色都不同，两边分开演进。
+  Widget _buildFloatingBackToTodayButton(TimetableProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final foruiColors = context.theme.colors;
+    final accent = HyperosColors.primary(context);
+    final borderRadius = BorderRadius.circular(_backToTodayButtonRadius);
+    final dockAppearance = FrostedAppearanceScope.of(context);
+    final useLiquidGlassMaterial =
+        dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
+        dockAppearance.liquidGlassDockEnabled &&
+        !LiquidGlassDegradation.shouldDegrade(context);
+    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+    final tint = HyperosBlurredHeader.homePageRegionTintColor(
+      context,
+      withBlur: useBlur,
+    );
+    // 箭头指向"今天在哪边"：今天比当前这天晚 → 朝右，早 → 朝左。沿用原来
+    // 摘要卡那颗胶囊的方向语义（滑动/点选都能一眼看出该往哪边回）。
+    final selectedDate = _resolveDisplayDateForWeekDay(
+      provider: provider,
+      settings: provider.settings,
+      week: _selectedWeekForDayView ?? _visibleWeek,
+      dayOfWeek: _selectedDayOfWeek ?? 1,
+    );
+    final todayDate = DateUtils.dateOnly(DateTime.now());
+    final pointsForward = DateUtils.dateOnly(
+      selectedDate,
+    ).isBefore(todayDate);
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: _backToTodayButtonHPadding,
+        vertical: _backToTodayButtonVPadding,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            pointsForward
+                ? Icons.arrow_forward_rounded
+                : Icons.arrow_back_rounded,
+            size: _backToTodayButtonIconSize,
+            color: accent,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            l10n.backToTodayAction,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: accent,
+              height: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+    final surface = useLiquidGlassMaterial
+        ? GlassButton.custom(
+            onTap: () => unawaited(_navigateDayViewToToday(provider)),
+            shape: const LiquidRoundedRectangle(
+              borderRadius: _backToTodayButtonRadius,
+            ),
+            settings: MikcbLiquidGlassTokens.sheetSettingsFor(
+              brightness,
+              tuning: dockAppearance.liquidGlassTuning,
+            ),
+            quality: MikcbLiquidGlassTokens.defaultQuality,
+            // 与「回本周」同款注意事项：此钮挂在没有 LiquidGlassLayer 祖先
+            // 的裸 Stack 上，必须自带层，否则 premium 档会命中
+            // LiquidGlassBlendGroup 的 renderLink 断言。
+            useOwnLayer: true,
+            isStationary: true,
+            child: content,
+          )
+        : ClipRRect(
+            borderRadius: borderRadius,
+            child: HyperosFrostedSurface(
+              borderRadius: borderRadius,
+              tint: tint,
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: () => unawaited(_navigateDayViewToToday(provider)),
+                  borderRadius: borderRadius,
+                  child: content,
+                ),
+              ),
+            ),
+          );
+    return SafeArea(
+      minimum: EdgeInsets.only(
+        bottom: _backToTodayButtonBottomInset(provider.settings),
+      ),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: DecoratedBox(
+          // 键挂在**带描边的外壳**上，两种材质分支（液态 / 磨砂）都能被
+          // 找到、点到；挂在分支内部的 InkWell 上时，液态档就没有键了。
+          key: const ValueKey('back-to-today-button'),
+          decoration: BoxDecoration(
+            borderRadius: borderRadius,
+            border: Border.all(color: foruiColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(
+                  alpha: brightness == Brightness.dark ? 0.12 : 0.06,
+                ),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: surface,
+        ),
+      ),
+    );
+  }
+
   bool _isSameDate(DateTime left, DateTime right) {
     return left.year == right.year &&
         left.month == right.month &&
@@ -8693,9 +8865,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasBackdrop = hasHomePageBackdrop(settings);
-    // Same wallpaper auto-contrast as weekday ink; user-custom time-axis hex
-    // is never replaced. The time column spans the body band (not the
-    // status/title strip), so judge from the card-region sample.
+    // Same wallpaper auto-contrast as weekday ink; a custom time-axis hex
+    // keeps its hue and only gets its lightness pushed. The time column spans
+    // the body band (not the status/title strip), so judge from the
+    // card-region sample.
     final timeAxisColor = homePageOverWallpaperInk(
       configuredHex: isDark
           ? settings.timeAxisFontColorDark

@@ -5161,7 +5161,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backToWeekViewAction => '返回周视图';
 
   @override
-  String get backToTodayAction => '回到今天';
+  String get backToTodayAction => '回今日';
 
   @override
   String get ongoingCourseBadge => '正在上课';
@@ -15993,7 +15993,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get backToWeekViewAction => '返回周視圖';
 
   @override
-  String get backToTodayAction => '回到今天';
+  String get backToTodayAction => '回今日';
 
   @override
   String get ongoingCourseBadge => '正在上課';
@@ -26869,7 +26869,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get backToWeekViewAction => '返回周視圖';
 
   @override
-  String get backToTodayAction => '回到今天';
+  String get backToTodayAction => '回今日';
 
   @override
   String get ongoingCourseBadge => '正在上課';

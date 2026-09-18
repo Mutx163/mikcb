@@ -9514,7 +9514,7 @@ abstract class AppLocalizations {
   /// No description provided for @backToTodayAction.
   ///
   /// In zh, this message translates to:
-  /// **'回到今天'**
+  /// **'回今日'**
   String get backToTodayAction;
 
   /// No description provided for @ongoingCourseBadge.

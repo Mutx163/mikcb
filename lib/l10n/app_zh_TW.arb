@@ -2885,7 +2885,7 @@
   "scheduleOngoingLabel": "進行中",
   "scheduleTimeRange": "{start} – {end}",
   "scheduleWeeklyWithDay": "每週{day}",
-  "backToTodayAction": "回到今天",
+  "backToTodayAction": "回今日",
   "courseWeekdaySectionSummary": "{weekDescription} · {weekday} 第{startSection}-{endSection}節",
   "@courseWeekdaySectionSummary": {
     "placeholders": {
