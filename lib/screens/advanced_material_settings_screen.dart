@@ -8,6 +8,7 @@ import 'package:university_timetable/l10n/enum_localizations.dart';
 import '../models/header_blur_style.dart';
 import '../models/liquid_glass_tuning.dart';
 import '../models/progressive_blur_tuning.dart';
+import '../models/refraction_glass_tuning.dart';
 import '../models/soft_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
@@ -15,7 +16,7 @@ import '../ui/hyperos/hyperos.dart';
 import '../utils/app_toast.dart';
 import '../widgets/frosted_sheet_settings_preview.dart';
 
-/// 高级材质精细参数（液态 / 柔光）：从外观主路径下沉，避免刷屏。
+/// 高级材质精细参数（液态 / 柔光 / 折射）：从外观主路径下沉，避免刷屏。
 class AdvancedMaterialSettingsScreen extends StatefulWidget {
   const AdvancedMaterialSettingsScreen({super.key});
 
@@ -63,7 +64,8 @@ class _AdvancedMaterialSettingsScreenState
         child: HyperosListView(
           children: [
             // 折射 / 雾面参数各档各自有意义：液态调折射管线，柔光调
-            // 雾面倍率与折射透镜；作用范围开关两组共用。
+            // 雾面倍率与折射透镜，折射调边缘折射与受光高光；作用范围开关
+            // 三组共用。
             if (mode == FrostedGlassMode.liquidGlass) ...[
               HyperosSectionLabel(text: l10n.frostedSheetSectionTitle),
               HyperosListGroup(
@@ -417,6 +419,163 @@ class _AdvancedMaterialSettingsScreenState
                 },
               ),
             ],
+            // 折射玻璃：与液态/柔光同构的「预设 + 自定义参数」。旋钮只有折射
+            // 相关的七项（折射位移 / 作用带宽度 / 边缘陡缓 / 高光强度 / 高光带宽 /
+            // 磨砂量 / 底色深浅），全部来自 RefractionGlassTuning —— 各表面拿不到
+            // 自己的参数入口，这是「同一材质只有一种观感」的结构性保证。
+            if (mode == FrostedGlassMode.refractionGlass) ...[
+              HyperosSectionLabel(text: l10n.frostedSheetSectionTitle),
+              Builder(
+                builder: (context) {
+                  final refractionTuning =
+                      _draft.refractionGlassTuning ??
+                      RefractionGlassTuning.defaults;
+                  String num(double value, int digits) =>
+                      value.toStringAsFixed(digits);
+                  String pct(double value) => '${(value * 100).round()}%';
+                  return HyperosListGroup(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: FrostedSheetSettingsPreview(
+                          provider: provider,
+                          settings: _draft,
+                          week: provider.currentWeek,
+                          blurSigma: _draft.frostedSheetBlurSigma,
+                          tintAlpha: _draft.frostedSheetTintAlpha,
+                          barrierAlpha: _draft.frostedSheetBarrierAlpha,
+                          blurEnabled: _draft.frostedBlurEnabled,
+                          glassMode: _draft.frostedGlassMode,
+                          liquidGlassTuning: _draft.liquidGlassTuning,
+                          refractionGlassTuning: refractionTuning,
+                          onOpenDemoSheet: () =>
+                              showFrostedSheetSettingsDemo(context),
+                        ),
+                      ),
+                      HyperosSelectTile<RefractionGlassPreset>(
+                        label: l10n.refractionGlassPresetLabel,
+                        items: {
+                          for (final preset in RefractionGlassPreset.values)
+                            refractionGlassPresetLabel(l10n, preset): preset,
+                        },
+                        value: _draft.refractionGlassPreset,
+                        onChanged: (preset) {
+                          if (preset == RefractionGlassPreset.custom) {
+                            _updateDraft(
+                              _draft.copyWith(
+                                refractionGlassPreset:
+                                    RefractionGlassPreset.custom,
+                              ),
+                            );
+                            return;
+                          }
+                          _updateDraft(
+                            _draft.copyWith(
+                              refractionGlassPreset: preset,
+                              refractionGlassTuning: preset.recommendedTuning,
+                            ),
+                          );
+                        },
+                      ),
+                      if (_draft.refractionGlassPreset ==
+                          RefractionGlassPreset.custom) ...[
+                        HyperosSliderTile(
+                          title: l10n.refractionGlassRefractionLabel,
+                          value: refractionTuning.refraction,
+                          max: RefractionGlassTuning.maxRefraction,
+                          divisions: 40,
+                          valueLabel: num(refractionTuning.refraction, 1),
+                          onChanged: (value) => _updateRefractionTuning(
+                            (t) => t.copyWith(refraction: value),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.refractionGlassBandLabel,
+                          value: refractionTuning.refractionBand,
+                          min: RefractionGlassTuning.minRefractionBand,
+                          max: RefractionGlassTuning.maxRefractionBand,
+                          divisions: 46,
+                          valueLabel: num(refractionTuning.refractionBand, 1),
+                          onChanged: (value) => _updateRefractionTuning(
+                            (t) => t.copyWith(refractionBand: value),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.refractionGlassEdgePowLabel,
+                          value: refractionTuning.refractionEdgePow,
+                          min: RefractionGlassTuning.minRefractionEdgePow,
+                          max: RefractionGlassTuning.maxRefractionEdgePow,
+                          divisions: 20,
+                          valueLabel: num(
+                            refractionTuning.refractionEdgePow,
+                            2,
+                          ),
+                          onChanged: (value) => _updateRefractionTuning(
+                            (t) => t.copyWith(refractionEdgePow: value),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.refractionGlassRimStrengthLabel,
+                          value: refractionTuning.rimStrength,
+                          divisions: 20,
+                          valueLabel: pct(refractionTuning.rimStrength),
+                          onChanged: (value) => _updateRefractionTuning(
+                            (t) => t.copyWith(rimStrength: value),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.refractionGlassRimWidthLabel,
+                          value: refractionTuning.rimWidth,
+                          max: RefractionGlassTuning.maxRimWidth,
+                          divisions: 24,
+                          valueLabel: num(refractionTuning.rimWidth, 1),
+                          onChanged: (value) => _updateRefractionTuning(
+                            (t) => t.copyWith(rimWidth: value),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.refractionGlassBlurSigmaLabel,
+                          value: refractionTuning.blurSigma,
+                          max: RefractionGlassTuning.maxBlurSigma,
+                          divisions: 40,
+                          valueLabel: num(refractionTuning.blurSigma, 0),
+                          onChanged: (value) => _updateRefractionTuning(
+                            (t) => t.copyWith(blurSigma: value),
+                          ),
+                        ),
+                        HyperosSliderTile(
+                          title: l10n.refractionGlassTintLabel,
+                          value: refractionTuning.tintAlpha,
+                          divisions: 20,
+                          valueLabel: pct(refractionTuning.tintAlpha),
+                          onChanged: (value) => _updateRefractionTuning(
+                            (t) => t.copyWith(tintAlpha: value),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                          child: HyperosButton(
+                            label: l10n.refractionGlassResetAction,
+                            variant: HyperosButtonVariant.secondary,
+                            expand: true,
+                            onPressed: () {
+                              _updateDraft(
+                                _draft.copyWith(
+                                  refractionGlassPreset:
+                                      RefractionGlassPreset.standard,
+                                  refractionGlassTuning:
+                                      RefractionGlassTuning.defaults,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ],
             // 渐进（渐变）模糊：顶栏玻璃带的 progressive 材质 / 子页顶栏的
             // inspire 风格共用这一套档位。它不是「高级材质」（任何后端都能画、
             // 不受作用范围开关约束），因此在作用范围段之外单独成段。
@@ -633,6 +792,22 @@ class _AdvancedMaterialSettingsScreenState
       _draft.copyWith(
         softGlassPreset: SoftGlassPreset.custom,
         softGlassTuning: transform(base),
+      ),
+      debounce: true,
+    );
+  }
+
+  /// 折射滑杆统一写入口：任意滑杆拖动都落 [RefractionGlassPreset.custom]，
+  /// 拖动防抖（与液态/柔光/渐进一致）。
+  void _updateRefractionTuning(
+    RefractionGlassTuning Function(RefractionGlassTuning tuning) transform,
+  ) {
+    final base =
+        _draft.refractionGlassTuning ?? RefractionGlassTuning.defaults;
+    _updateDraft(
+      _draft.copyWith(
+        refractionGlassPreset: RefractionGlassPreset.custom,
+        refractionGlassTuning: transform(base),
       ),
       debounce: true,
     );

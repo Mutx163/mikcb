@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/progressive_blur_tuning.dart';
+import 'package:university_timetable/models/refraction_glass_tuning.dart';
 import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -30,6 +31,7 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
     this.liquidGlassTuning,
     this.softGlassTuning = SoftGlassTuning.defaults,
     this.progressiveBlurTuning = ProgressiveBlurTuning.defaults,
+    this.refractionGlassTuning = RefractionGlassTuning.defaults,
     super.key,
   });
 
@@ -42,6 +44,9 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
   /// 渐进模糊参数（预览里的顶栏玻璃带同款材质，必须跟草稿一起走，
   /// 否则预览与真实首页不同观感）。
   final ProgressiveBlurTuning progressiveBlurTuning;
+
+  /// 折射玻璃参数（草稿，非空缺省）——不跟草稿一起走的话，拖滑杆时预览不动。
+  final RefractionGlassTuning refractionGlassTuning;
   final TimetableProvider provider;
   final TimetableSettings settings;
   final int week;
@@ -108,6 +113,7 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
       liquidGlassTuning: previewSafeTuning(liquidGlassTuning),
       softGlassTuning: softGlassTuning,
       progressiveBlurTuning: progressiveBlurTuning,
+      refractionGlassTuning: refractionGlassTuning,
       liquidGlassPopupEnabled: settings.liquidGlassPopupEnabled,
       liquidGlassSelectSheetEnabled: settings.liquidGlassSelectSheetEnabled,
       liquidGlassSheetDialogEnabled: settings.liquidGlassSheetDialogEnabled,

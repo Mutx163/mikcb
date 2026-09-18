@@ -17839,6 +17839,12 @@ abstract class AppLocalizations {
   /// **'实体卡片'**
   String get frostedGlassModeSolid;
 
+  /// No description provided for @frostedGlassModeRefraction.
+  ///
+  /// In zh, this message translates to:
+  /// **'折射玻璃'**
+  String get frostedGlassModeRefraction;
+
   /// No description provided for @advancedMaterialTitle.
   ///
   /// In zh, this message translates to:
@@ -17848,7 +17854,7 @@ abstract class AppLocalizations {
   /// No description provided for @advancedMaterialEntrySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'柔光 / 液态玻璃参数微调'**
+  /// **'柔光 / 液态 / 折射玻璃参数微调'**
   String get advancedMaterialEntrySubtitle;
 
   /// No description provided for @liquidGlassPresetLabel.
@@ -18090,6 +18096,90 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'恢复默认'**
   String get softGlassResetAction;
+
+  /// No description provided for @refractionGlassPresetLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'折射玻璃预设'**
+  String get refractionGlassPresetLabel;
+
+  /// No description provided for @refractionGlassPresetClear.
+  ///
+  /// In zh, this message translates to:
+  /// **'清澈'**
+  String get refractionGlassPresetClear;
+
+  /// No description provided for @refractionGlassPresetLight.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻盈'**
+  String get refractionGlassPresetLight;
+
+  /// No description provided for @refractionGlassPresetStandard.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准'**
+  String get refractionGlassPresetStandard;
+
+  /// No description provided for @refractionGlassPresetDense.
+  ///
+  /// In zh, this message translates to:
+  /// **'厚重'**
+  String get refractionGlassPresetDense;
+
+  /// No description provided for @refractionGlassPresetCustom.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义'**
+  String get refractionGlassPresetCustom;
+
+  /// No description provided for @refractionGlassRefractionLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'折射强度'**
+  String get refractionGlassRefractionLabel;
+
+  /// No description provided for @refractionGlassBandLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'作用带宽度'**
+  String get refractionGlassBandLabel;
+
+  /// No description provided for @refractionGlassEdgePowLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'边缘陡缓'**
+  String get refractionGlassEdgePowLabel;
+
+  /// No description provided for @refractionGlassRimStrengthLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'边缘高光'**
+  String get refractionGlassRimStrengthLabel;
+
+  /// No description provided for @refractionGlassRimWidthLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'高光带宽'**
+  String get refractionGlassRimWidthLabel;
+
+  /// No description provided for @refractionGlassBlurSigmaLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'磨砂强度'**
+  String get refractionGlassBlurSigmaLabel;
+
+  /// No description provided for @refractionGlassTintLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'底色深浅'**
+  String get refractionGlassTintLabel;
+
+  /// No description provided for @refractionGlassResetAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复默认'**
+  String get refractionGlassResetAction;
 
   /// No description provided for @diagnosticsEntryTitle.
   ///

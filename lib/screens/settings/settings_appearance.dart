@@ -337,7 +337,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                     _applyTexturePreset(preset);
                   },
                 ),
-                // 玻璃模式三档，与引导页「视觉效果」同一映射（见
+                // 玻璃模式五档，与引导页「视觉效果」同一映射（见
                 // [glassModeChoiceOf] / [applyGlassModeChoice]）：此前
                 // 经典磨砂/高斯模糊/半透明三档渲染链路完全相同，只有
                 // 「高斯模糊」多露出两个滑杆，四个名字里三个长一个样，
@@ -349,6 +349,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                     l10n.frostedGlassModeGaussian: GlassModeChoice.gaussian,
                     l10n.frostedGlassModeSoft: GlassModeChoice.softGlass,
                     l10n.frostedGlassModeLiquid: GlassModeChoice.liquidGlass,
+                    l10n.frostedGlassModeRefraction:
+                        GlassModeChoice.refractionGlass,
                   },
                   value: glassModeChoiceOf(_draft),
                   onChanged: (value) {

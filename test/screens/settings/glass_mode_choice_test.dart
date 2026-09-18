@@ -60,6 +60,22 @@ void main() {
         GlassModeChoice.solid,
       );
     });
+
+    test('开模糊 + 折射模式 → 折射玻璃', () {
+      expect(
+        glassModeChoiceOf(settings(mode: FrostedGlassMode.refractionGlass)),
+        GlassModeChoice.refractionGlass,
+      );
+    });
+
+    test('模糊关 + 折射模式（存量混搭）仍推导为实体卡片', () {
+      expect(
+        glassModeChoiceOf(
+          settings(blurEnabled: false, mode: FrostedGlassMode.refractionGlass),
+        ),
+        GlassModeChoice.solid,
+      );
+    });
   });
 
   group('applyGlassModeChoice', () {
@@ -111,6 +127,70 @@ void main() {
       expect(glassModeChoiceOf(s), GlassModeChoice.liquidGlass);
       s = applyGlassModeChoice(s, GlassModeChoice.solid);
       expect(glassModeChoiceOf(s), GlassModeChoice.solid);
+    });
+
+    test('折射玻璃：开模糊 + 折射模式', () {
+      final result = applyGlassModeChoice(
+        settings(blurEnabled: false),
+        GlassModeChoice.refractionGlass,
+      );
+      expect(result.frostedBlurEnabled, isTrue);
+      expect(result.frostedGlassMode, FrostedGlassMode.refractionGlass);
+    });
+
+    test('折射玻璃：把五个作用范围开关一并打开', () {
+      // 折射被定位成「整机材质」：选中它时用户期待整个软件都变。其余四档不动
+      // 这些开关（各表面保持用户上一次的取舍），所以这条断言同时钉住了对称性
+      // 的边界——只有折射这一档会写它们。
+      final off = settings().copyWith(
+        liquidGlassPopupEnabled: false,
+        liquidGlassSelectSheetEnabled: false,
+        liquidGlassSheetDialogEnabled: false,
+        liquidGlassDockEnabled: false,
+        liquidGlassPickerButtonsEnabled: false,
+      );
+      final result = applyGlassModeChoice(off, GlassModeChoice.refractionGlass);
+      expect(result.liquidGlassPopupEnabled, isTrue);
+      expect(result.liquidGlassSelectSheetEnabled, isTrue);
+      expect(result.liquidGlassSheetDialogEnabled, isTrue);
+      expect(result.liquidGlassDockEnabled, isTrue);
+      expect(result.liquidGlassPickerButtonsEnabled, isTrue);
+    });
+
+    test('其余四档不碰作用范围开关', () {
+      final off = settings().copyWith(
+        liquidGlassPopupEnabled: false,
+        liquidGlassSelectSheetEnabled: false,
+        liquidGlassSheetDialogEnabled: false,
+        liquidGlassDockEnabled: false,
+        liquidGlassPickerButtonsEnabled: false,
+      );
+      for (final choice in const [
+        GlassModeChoice.solid,
+        GlassModeChoice.gaussian,
+        GlassModeChoice.softGlass,
+        GlassModeChoice.liquidGlass,
+      ]) {
+        final result = applyGlassModeChoice(off, choice);
+        expect(
+          result.liquidGlassPopupEnabled,
+          isFalse,
+          reason: '$choice 不该动作用范围开关',
+        );
+        expect(result.liquidGlassDockEnabled, isFalse);
+      }
+    });
+
+    test('五档往返切换后状态自洽', () {
+      var s = settings(mode: FrostedGlassMode.liquidGlass);
+      for (final choice in GlassModeChoice.values) {
+        s = applyGlassModeChoice(s, choice);
+        expect(
+          glassModeChoiceOf(s),
+          choice,
+          reason: '写回 $choice 后必须能原样读回来',
+        );
+      }
     });
   });
 

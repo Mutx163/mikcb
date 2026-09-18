@@ -49,6 +49,12 @@ enum FrostedGlassMode {
   /// 设置页「高斯模糊」档的存储标记：渲染与 [frosted] 同一链路，仅用于
   /// 标记用户显式选择过该档。
   gaussian,
+
+  /// 折射玻璃：实时背景上做圆角 SDF 边缘折射 + 受光边缘高光（见
+  /// `shaders/glass_surface_refraction.frag`）。与 [liquidGlass] 是两条独立链路
+  /// ——液态走第三方包自己的渲染器，这一档走本仓的 `RefractionGlassSurface`；
+  /// 参数由 `RefractionGlassTuning` 统一提供。
+  refractionGlass,
 }
 
 extension FrostedGlassModeX on FrostedGlassMode {
@@ -62,14 +68,15 @@ extension FrostedGlassModeX on FrostedGlassMode {
   }
 }
 
-/// 是否为「高级材质」档位（柔光玻璃 / 液态玻璃）。
+/// 是否为「高级材质」档位（柔光玻璃 / 液态玻璃 / 折射玻璃）。
 ///
 /// 高级材质共享同一组「作用范围」开关（见
 /// [LiquidGlassDegradation.familyFallsBackToSolid]），也才会驱动首页玻璃带与玻璃坞
 /// 脱离基础模糊档。实体卡片与高斯模糊是基础材质，不受开关约束。
 bool isAdvancedGlassMode(FrostedGlassMode? mode) =>
     mode == FrostedGlassMode.liquidGlass ||
-    mode == FrostedGlassMode.softGlass;
+    mode == FrostedGlassMode.softGlass ||
+    mode == FrostedGlassMode.refractionGlass;
 
 class FrostedAppearance {
   const FrostedAppearance({

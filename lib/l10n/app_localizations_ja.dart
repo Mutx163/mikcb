@@ -10136,10 +10136,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get frostedGlassModeSolid => 'ソリッドカード';
 
   @override
+  String get frostedGlassModeRefraction => '屈折ガラス';
+
+  @override
   String get advancedMaterialTitle => '高度なマテリアル';
 
   @override
-  String get advancedMaterialEntrySubtitle => 'ソフト / リキッドガラスのパラメータ調整';
+  String get advancedMaterialEntrySubtitle => 'ソフト / リキッド / 屈折ガラスのパラメータ調整';
 
   @override
   String get liquidGlassPresetLabel => 'リキッドガラスプリセット';
@@ -10260,6 +10263,48 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get softGlassResetAction => 'デフォルトに戻す';
+
+  @override
+  String get refractionGlassPresetLabel => '屈折ガラスプリセット';
+
+  @override
+  String get refractionGlassPresetClear => 'クリア';
+
+  @override
+  String get refractionGlassPresetLight => 'ライト';
+
+  @override
+  String get refractionGlassPresetStandard => '標準';
+
+  @override
+  String get refractionGlassPresetDense => 'ヘビー';
+
+  @override
+  String get refractionGlassPresetCustom => 'カスタム';
+
+  @override
+  String get refractionGlassRefractionLabel => '屈折の強さ';
+
+  @override
+  String get refractionGlassBandLabel => '屈折帯の幅';
+
+  @override
+  String get refractionGlassEdgePowLabel => 'エッジの急峻さ';
+
+  @override
+  String get refractionGlassRimStrengthLabel => 'エッジの光沢';
+
+  @override
+  String get refractionGlassRimWidthLabel => 'ハイライトの幅';
+
+  @override
+  String get refractionGlassBlurSigmaLabel => '曇りの強さ';
+
+  @override
+  String get refractionGlassTintLabel => '下地の濃さ';
+
+  @override
+  String get refractionGlassResetAction => 'デフォルトに戻す';
 
   @override
   String get diagnosticsEntryTitle => '診断';

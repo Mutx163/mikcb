@@ -10181,10 +10181,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedGlassModeSolid => '솔리드 카드';
 
   @override
+  String get frostedGlassModeRefraction => '굴절 유리';
+
+  @override
   String get advancedMaterialTitle => '고급 재질';
 
   @override
-  String get advancedMaterialEntrySubtitle => '소프트 / 리퀴드 글래스 매개변수 미세 조정';
+  String get advancedMaterialEntrySubtitle => '소프트 / 리퀴드 / 굴절 유리 매개변수 미세 조정';
 
   @override
   String get liquidGlassPresetLabel => '리퀴드 글래스 프리셋';
@@ -10305,6 +10308,48 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get softGlassResetAction => '기본값으로 초기화';
+
+  @override
+  String get refractionGlassPresetLabel => '굴절 유리 프리셋';
+
+  @override
+  String get refractionGlassPresetClear => '투명';
+
+  @override
+  String get refractionGlassPresetLight => '라이트';
+
+  @override
+  String get refractionGlassPresetStandard => '표준';
+
+  @override
+  String get refractionGlassPresetDense => '헤비';
+
+  @override
+  String get refractionGlassPresetCustom => '사용자 지정';
+
+  @override
+  String get refractionGlassRefractionLabel => '굴절 강도';
+
+  @override
+  String get refractionGlassBandLabel => '굴절 대역 너비';
+
+  @override
+  String get refractionGlassEdgePowLabel => '가장자리 기울기';
+
+  @override
+  String get refractionGlassRimStrengthLabel => '가장자리 하이라이트';
+
+  @override
+  String get refractionGlassRimWidthLabel => '하이라이트 너비';
+
+  @override
+  String get refractionGlassBlurSigmaLabel => '흐림 강도';
+
+  @override
+  String get refractionGlassTintLabel => '바탕 농도';
+
+  @override
+  String get refractionGlassResetAction => '기본값으로 초기화';
 
   @override
   String get diagnosticsEntryTitle => '진단';
