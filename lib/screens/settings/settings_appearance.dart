@@ -31,10 +31,24 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
     // 本页草稿立即跟随，避免本页 snapshot 在 dispose 时把旧主题整体回写
     // （曾导致「主题管理页切换主题无效且与外面不同步」）。
     _timetableProvider.addListener(_onTimetableChanged);
-    // 「字体选择」弹层首帧要为每个候选字族做一次系统字体解析 + 文本布局（真机
-    // 实测主线程 38.7~188ms 的尖峰）。在本页打开后按帧摊开预热掉，见
-    // [prewarmAppFontSpecs]。
-    prewarmAppFontSpecs();
+  }
+
+  /// 「字体选择」弹层首帧要为每个候选字族做一次系统字体解析 + 文本布局（真机
+  /// 实测主线程 38.7~188ms 的尖峰）。在本页打开后按帧摊开预热掉，见
+  /// [prewarmAppFontSpecs]。
+  ///
+  /// 放在 didChangeDependencies 而不是 initState：样例句走 l10n（弹层里渲染的
+  /// 也是本地化文字），而 initState 里还读不到 [AppLocalizations]。
+  bool _fontPrewarmStarted = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_fontPrewarmStarted) {
+      return;
+    }
+    _fontPrewarmStarted = true;
+    prewarmAppFontSpecs(AppLocalizations.of(context)!.fontPreviewSample);
   }
 
   void _onTimetableChanged() {

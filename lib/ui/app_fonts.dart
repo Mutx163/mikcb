@@ -176,7 +176,11 @@ extension AppFontModeFontSpec on AppFontMode {
 /// 这里在页面打开后**每帧只排一个字族**，分摊后每帧只多几毫秒，且都发生在用户
 /// 按下那一行之前。用 `scheduleFrame` 显式要下一帧：设置页静止时 Flutter 不再产帧，
 /// 只挂 postFrameCallback 会在第一帧后停住（那样只剩一个字族被预热）。
-void prewarmAppFontSpecs() {
+///
+/// [sampleText] 由调用方传入**本地化**样例句（`l10n.fontPreviewSample`，弹层里
+/// 那行预览用的就是它）：这里原先硬编码中文 `'轻屿课表 Aa 0123'`，既被 CJK
+/// 硬编码门禁按"只减不增"拦下，也和"弹层渲染的是本地化文字"这个事实不符。
+void prewarmAppFontSpecs(String sampleText) {
   final specs = AppFontMode.values
       .map((mode) => mode.fontSpec)
       .toList(growable: false);
@@ -186,7 +190,7 @@ void prewarmAppFontSpecs() {
     if (index >= specs.length) return;
     final painter = TextPainter(
       text: TextSpan(
-        text: '轻屿课表 Aa 0123',
+        text: sampleText,
         style: specs[index++].applyTo(const TextStyle(fontSize: 16)),
       ),
       textDirection: TextDirection.ltr,
