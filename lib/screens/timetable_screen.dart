@@ -56,6 +56,8 @@ import '../widgets/course_note_sheet.dart';
 import '../widgets/course_card.dart';
 import '../widgets/course_surface.dart';
 import '../widgets/course_grid_surface_host.dart';
+import '../widgets/day_agenda_info_row.dart';
+import '../widgets/day_course_weather_row.dart';
 import '../widgets/home_menu_catalog.dart';
 import '../widgets/home_top_menu.dart';
 import '../widgets/home_top_menu_popup.dart';
@@ -5393,6 +5395,15 @@ class _TimetableScreenState extends State<TimetableScreen>
               text: locationLine,
               ink: ink,
             ),
+            DayCourseWeatherRow(
+              date: _dateForWeekDay(settings, week, item.course.dayOfWeek),
+              startTime: item.course.startTime,
+              endTime: item.course.endTime,
+              ink: ink,
+              visible:
+                  !item.isPartnerCourse &&
+                  !item.course.isSuspendedInWeek(week),
+            ),
             if (sessionPreview != null && sessionPreview.isNotEmpty) ...[
               const SizedBox(height: 5.5),
               _buildCurrentDayAgendaInfoRow(
@@ -5591,6 +5602,19 @@ class _TimetableScreenState extends State<TimetableScreen>
                     icon: Icons.location_on_outlined,
                     text: locationLine,
                     ink: ink,
+                  ),
+                  DayCourseWeatherRow(
+                    date: _dateForWeekDay(
+                      settings,
+                      week,
+                      item.course.dayOfWeek,
+                    ),
+                    startTime: item.course.startTime,
+                    endTime: item.course.endTime,
+                    ink: ink,
+                    visible:
+                        !item.isPartnerCourse &&
+                        !item.course.isSuspendedInWeek(week),
                   ),
                   if (sessionPreview != null && sessionPreview.isNotEmpty) ...[
                     const SizedBox(height: 5.5),
@@ -6157,31 +6181,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
+  /// 日视图日程信息行。实现已提到 [DayAgendaInfoRow]（天气行要复用同一套排版），
+  /// 这里保留同名同签名的转发，调用点不必改动。
   Widget _buildCurrentDayAgendaInfoRow({
     required IconData icon,
     required String text,
     required Color ink,
   }) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: ink.withValues(alpha: 0.82)),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: ink.withValues(alpha: 0.92),
-              fontWeight: FontWeight.w400,
-              fontSize: 11.5,
-              height: 1.15,
-            ),
-          ),
-        ),
-      ],
-    );
+    return DayAgendaInfoRow(icon: icon, text: text, ink: ink);
   }
 
   /// Translucent chip/pill glaze under [ink]-coloured content.
