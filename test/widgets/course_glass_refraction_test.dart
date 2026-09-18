@@ -148,7 +148,7 @@ void main() {
         reason: '着色器没在 pubspec 的 flutter.shaders 里声明，运行时取不到资产',
       );
       expect(
-        File(CourseCardGlassShader.assetKey).existsSync(),
+        File(CourseCardGlassShader.instance.assetKey).existsSync(),
         isTrue,
         reason: '声明的资产键必须对应一个真实文件',
       );
