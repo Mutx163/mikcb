@@ -7920,16 +7920,17 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 日视图底部「回今日」悬浮按钮的几何常量。
   ///
-  /// **与底栏药丸同尺寸**：底栏 `barHeight: 56`、圆角用包的 `capsuleRadius`
-  /// （全圆端 = 半高），所以这里是 56 高 + 28 圆角。高度即成品高度（外层
-  /// 描边画在边界内，不占布局，与 `Container` 的行为不同）。
+  /// 形状与底栏药丸同族（胶囊，圆角 = 半高），但**比底栏矮一档、窄一圈**：
+  /// 高度取底栏 `barHeight: 56` 的约 2/3（38），左右内边距 16，而不是让
+  /// 文字悬在大片留白里。高度即成品高度（外层描边画在边界内、不占布局，
+  /// 与 `Container` 的行为不同）。
   ///
   /// 列表底部余量（[_backToTodayButtonScrollInset]）与按钮本体共用这些
   /// 常量，避免两边各自写死数字后走偏（钮变高、内容又被遮）。
-  static const double _backToTodayButtonHeight = 56;
+  static const double _backToTodayButtonHeight = 38;
   static const double _backToTodayButtonRadius = _backToTodayButtonHeight / 2;
-  static const double _backToTodayButtonHPadding = 24;
-  static const double _backToTodayButtonFontSize = 15;
+  static const double _backToTodayButtonHPadding = 16;
+  static const double _backToTodayButtonFontSize = 14;
   /// 玻璃坞形态下按钮底边与药丸顶边之间的视觉间隙。
   static const double _backToTodayButtonDockGap = 12;
   /// 列表最后一项与按钮顶边之间的视觉间隙。
@@ -8017,8 +8018,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 日视图底部居中的「回今日」浮钮：与底栏药丸**同高同胶囊**（56 / 28 圆角）、
-  /// 玻璃底 + **主题色**文字，只有文案没有箭头。
+  /// 日视图底部居中的「回今日」浮钮：与底栏同族的胶囊形状、玻璃底 +
+  /// **主题色**文字，只有文案没有箭头。
   ///
   /// 配色走全 app 的主题色口径：底色是玻璃，所以"跟随主题色"落在文字上，
   /// 取 [HyperosColors.primary]——即外观里选的 seed 本身（所见即所得），
@@ -8052,16 +8053,21 @@ class _TimetableScreenState extends State<TimetableScreen>
         padding: const EdgeInsets.symmetric(
           horizontal: _backToTodayButtonHPadding,
         ),
-        child: Center(
-          child: Text(
-            l10n.backToTodayAction,
-            style: TextStyle(
-              fontSize: _backToTodayButtonFontSize,
-              fontWeight: FontWeight.w700,
-              color: accent,
-              height: 1,
+        // 宽度只让文字撑开（Row 取 min，别用 Center/Align —— 它们会把
+        // 可用宽度吃满，胶囊就变成横贯屏幕的一条）。
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l10n.backToTodayAction,
+              style: TextStyle(
+                fontSize: _backToTodayButtonFontSize,
+                fontWeight: FontWeight.w700,
+                color: accent,
+                height: 1,
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

@@ -172,11 +172,18 @@ void main() {
 
     final screenSize = tester.view.physicalSize / tester.view.devicePixelRatio;
     final buttonRect = tester.getRect(buttonFinder);
-    // 尺寸与底栏药丸一致：56 高；圆角是半高（胶囊）；只有文字没有箭头。
-    expect(buttonRect.height, moreOrLessEquals(56, epsilon: 1));
+    // 形状与底栏同族（胶囊，圆角 = 半高），但比底栏矮一档、窄一圈：
+    // 高度约底栏 56 的 2/3，宽度只让文字 + 左右 16 内边距。
+    expect(buttonRect.height, moreOrLessEquals(38, epsilon: 1));
     final decoration =
         tester.widget<DecoratedBox>(buttonFinder).decoration as BoxDecoration;
-    expect(decoration.borderRadius, BorderRadius.circular(28));
+    expect(decoration.borderRadius, BorderRadius.circular(19));
+    debugPrint('[back-to-today] size=${buttonRect.size}');
+    expect(
+      buttonRect.width,
+      lessThan(96),
+      reason: '宽度要克制，别让文字悬在大片留白里',
+    );
     expect(
       find.descendant(of: buttonFinder, matching: find.byType(Icon)),
       findsNothing,
