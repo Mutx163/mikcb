@@ -127,7 +127,7 @@ void main() {
     expect(LiquidGlassDegradation.platformViewSurfaceUnsafe, isFalse);
   });
 
-  testWidgets('返回动画滑出大半即摘掉平台视图，玻璃闸门同步结束（不等 dispose）', (
+  testWidgets('返回动画滑出大半即摘掉平台视图；闸门仍留到路由销毁（不摊进动画）', (
     tester,
   ) async {
     expect(LiquidGlassDegradation.platformViewSurfaceUnsafe, isFalse);
@@ -163,8 +163,9 @@ void main() {
     );
     expect(
       LiquidGlassDegradation.platformViewSurfaceUnsafe,
-      isFalse,
-      reason: '平台视图离屏即结束闸门；等 dispose 会让首页玻璃在落地那一帧从实底跳变',
+      isTrue,
+      reason: '闸门归零会让全 app 玻璃一次性重建材质，不能摊进返回动画（真机反馈：'
+          '网页退出比别的页面卡顿）；它仍留在路由销毁那一帧',
     );
 
     await tester.pumpAndSettle();
@@ -172,7 +173,11 @@ void main() {
       find.byType(WarehouseAdapterWebLoginScreen, skipOffstage: false),
       findsNothing,
     );
-    expect(LiquidGlassDegradation.platformViewSurfaceUnsafe, isFalse);
+    expect(
+      LiquidGlassDegradation.platformViewSurfaceUnsafe,
+      isFalse,
+      reason: '路由销毁后闸门照旧归零',
+    );
   });
 
   testWidgets('被别的路由盖住时不摘平台视图：登录流程得能接着用', (tester) async {

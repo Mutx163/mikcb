@@ -3491,9 +3491,6 @@ class _WarehouseAdapterWebLoginScreenState
   /// [_detachPlatformViewIfExitReached]）。
   bool _platformViewDetachedForExit = false;
 
-  /// 平台视图玻璃闸门是否已经释放：begin/end 必须严格配对（见 [dispose]）。
-  bool _platformViewGateReleased = false;
-
   /// 本页路由的主动画，用来盯"开始返回"这一位（见 [didChangeDependencies]）。
   Animation<double>? _exitRouteAnimation;
   VoidCallback? _exitRouteAnimationListener;
@@ -3793,7 +3790,11 @@ class _WarehouseAdapterWebLoginScreenState
   /// 树里：返回动画挪的是 Flutter 的图层，它跟不上；路由销毁时才发起的移除又是
   /// 异步的，于是动画落地后它还会在"滑到一半"的位置停一两帧（真机现象：返回动画
   /// 结束又闪回半页，然后才消失）。提前摘掉，移除的异步延迟就落在动画还在跑的时
-  /// 候，落地时它早就不在了。
+  /// 候，落地时它早就不在了；顺带把 HC 在剩余滑行里的逐帧合成开销一并免掉。
+  ///
+  /// ⚠️ 这里**只摘平台视图，不动玻璃闸门**。闸门结束会让全 app 的玻璃一次性重建
+  /// 材质（这套玻璃里最贵的一步），放在动画中间做就是把掉帧摊在用户眼前 —— 真机
+  /// 反馈「网页退出明显比别的页面卡顿」就是这么来的。闸门仍留在 [dispose] 归零。
   void _detachPlatformViewIfExitReached(Animation<double> animation) {
     if (_platformViewDetachedForExit) {
       return;
@@ -3805,23 +3806,9 @@ class _WarehouseAdapterWebLoginScreenState
       return;
     }
     _platformViewDetachedForExit = true;
-    // 平台视图这一刻已经离开屏幕，玻璃闸门语义上就该结束，而不是等 dispose。
-    // 闸门原本在 dispose（返回动画落地**之后**）才归零，首页玻璃会在落地那一帧
-    // 从实底当场跳成磨砂 / 液态——那本身也是一闪。挪到这里，跳变落回滑动过程里。
-    _releasePlatformViewGate();
     if (mounted) {
       setState(() {});
     }
-  }
-
-  /// 结束平台视图玻璃闸门。begin / end 严格配对：摘除那条路已经释放过的，
-  /// [dispose] 不得再减一次（会虚减掉别人的计数）。
-  void _releasePlatformViewGate() {
-    if (widget.runInBackground || _platformViewGateReleased) {
-      return;
-    }
-    _platformViewGateReleased = true;
-    LiquidGlassDegradation.endPlatformViewUnsafeSurface();
   }
 
   @override
@@ -3835,7 +3822,11 @@ class _WarehouseAdapterWebLoginScreenState
     _addressFocusNode.dispose();
     // 与 initState 的置位对称：runInBackground 实例从未置位，不得复位别人
     // 的计数（endPlatformViewUnsafeSurface 虽有下限守卫，仍不应虚减）。
-    _releasePlatformViewGate();
+    // 归零时机就在路由销毁这一帧：不提前到返回动画中间（见
+    // [_detachPlatformViewIfExitReached]）。
+    if (!widget.runInBackground) {
+      LiquidGlassDegradation.endPlatformViewUnsafeSurface();
+    }
     super.dispose();
   }
 
