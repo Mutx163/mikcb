@@ -1,12 +1,14 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/domain/weather_logic.dart';
 import 'package:university_timetable/models/weather_forecast.dart';
 import 'package:university_timetable/providers/weather_provider.dart';
+import 'package:university_timetable/services/device_location_service.dart';
 import 'package:university_timetable/services/weather_preferences.dart';
 import 'package:university_timetable/services/weather_service.dart';
 
@@ -136,9 +138,215 @@ Future<void> _seed({
   }
 }
 
+/// 极简假定位源：provider 测试只关心「成功 / 失败 / 被调用几次」，
+/// 权限各分支与完整失败矩阵在 test/services/device_location_service_test.dart 里覆盖。
+class _StubLocationSource implements DeviceLocationSource {
+  _StubLocationSource({this.serviceEnabled = true});
+
+  bool serviceEnabled;
+  int positionCalls = 0;
+
+  @override
+  Future<bool> isServiceEnabled() async => serviceEnabled;
+
+  @override
+  Future<LocationPermission> checkPermission() async =>
+      LocationPermission.whileInUse;
+
+  @override
+  Future<LocationPermission> requestPermission() async =>
+      LocationPermission.whileInUse;
+
+  @override
+  Future<Position> getCurrentPosition(LocationSettings settings) async {
+    positionCalls++;
+    return Position(
+      latitude: _located.latitude,
+      longitude: _located.longitude,
+      timestamp: DateTime(2026, 9, 18, 10),
+      accuracy: 10,
+      altitude: 0,
+      altitudeAccuracy: 0,
+      heading: 0,
+      headingAccuracy: 0,
+      speed: 0,
+      speedAccuracy: 0,
+    );
+  }
+}
+
+/// 定位反查会得到的地点。
+const _located = WeatherLocation(
+  name: '成都市',
+  admin1: '四川省',
+  country: '中国',
+  district: '武侯区',
+  latitude: 30.5728,
+  longitude: 104.0668,
+);
+
+DeviceLocationService _locationService(
+  _StubLocationSource source, {
+  required WeatherLocation? resolvesTo,
+}) {
+  return DeviceLocationService(
+    reverseGeocode: (_, _) async => resolvesTo,
+    source: source,
+  );
+}
+
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+  });
+
+  group('一键定位', () {
+    test('成功：换城市、落盘、重拉预报、清空失败原因', () async {
+      await _seed();
+      final server = _Server();
+      final source = _StubLocationSource();
+      final provider = WeatherProvider(
+        service: server.service,
+        locationService: _locationService(source, resolvesTo: _located),
+      );
+      await provider.initialize();
+      await provider.ensureFresh();
+      expect(provider.location!.name, '杭州');
+      final callsBefore = server.calls;
+
+      final failure = await provider.locateCurrentPosition();
+      // 定位成功后 provider 是在后台重拉预报的（界面不该等网络），测试里补一次
+      // await 把它落定；单飞会返回同一个在飞的 future。
+      await provider.ensureFresh();
+
+      expect(failure, isNull);
+      expect(provider.lastLocateFailure, isNull);
+      expect(provider.isLocating, isFalse);
+      expect(provider.location!.name, '成都市');
+      expect(provider.location!.district, '武侯区');
+      expect(provider.location!.displayName, '成都市 · 武侯区');
+      // 换了城市 → 旧预报作废并重拉，且请求打在新坐标上。
+      expect(server.calls, greaterThan(callsBefore));
+      expect(
+        server.uris.last.queryParameters['latitude'],
+        '${_located.latitude}',
+      );
+      // 也落了盘：重启后不必重新定位。
+      final persisted = await WeatherPreferences.loadLocation();
+      expect(persisted!.district, '武侯区');
+    });
+
+    test('失败：记录原因，且**不动**用户原来选好的城市', () async {
+      await _seed();
+      final server = _Server();
+      final source = _StubLocationSource();
+      final provider = WeatherProvider(
+        service: server.service,
+        locationService: _locationService(source, resolvesTo: null),
+      );
+      await provider.initialize();
+      await provider.ensureFresh();
+      final original = provider.location!;
+
+      final failure = await provider.locateCurrentPosition();
+
+      expect(failure, DeviceLocationFailure.addressUnavailable);
+      expect(provider.lastLocateFailure, DeviceLocationFailure.addressUnavailable);
+      expect(provider.location!.name, original.name);
+      expect(provider.location!.latitude, original.latitude);
+      final persisted = await WeatherPreferences.loadLocation();
+      expect(persisted!.name, original.name);
+    });
+
+    test('系统定位开关没开时透传 serviceDisabled', () async {
+      await _seed();
+      final server = _Server();
+      final provider = WeatherProvider(
+        service: server.service,
+        locationService: _locationService(
+          _StubLocationSource(serviceEnabled: false),
+          resolvesTo: _located,
+        ),
+      );
+      await provider.initialize();
+      await provider.ensureFresh();
+
+      expect(
+        await provider.locateCurrentPosition(),
+        DeviceLocationFailure.serviceDisabled,
+      );
+      expect(provider.location!.name, '杭州');
+    });
+
+    test('连点两次只跑一次（单飞）', () async {
+      await _seed();
+      final server = _Server();
+      final source = _StubLocationSource();
+      final provider = WeatherProvider(
+        service: server.service,
+        locationService: _locationService(source, resolvesTo: _located),
+      );
+      await provider.initialize();
+      await provider.ensureFresh();
+
+      final first = provider.locateCurrentPosition();
+      final second = provider.locateCurrentPosition();
+      final results = await Future.wait([first, second]);
+
+      expect(source.positionCalls, 1);
+      expect(results, [isNull, isNull]);
+    });
+
+    test('定位期间 isLocating 为 true 并通知监听者，结束后复位', () async {
+      await _seed();
+      final server = _Server();
+      final provider = WeatherProvider(
+        service: server.service,
+        locationService: _locationService(
+          _StubLocationSource(),
+          resolvesTo: _located,
+        ),
+      );
+      await provider.initialize();
+      await provider.ensureFresh();
+
+      var notifications = 0;
+      provider.addListener(() => notifications++);
+
+      final future = provider.locateCurrentPosition();
+      // 同步就能看到「进行中」——界面据此立刻禁用入口。
+      expect(provider.isLocating, isTrue);
+
+      await future;
+      expect(provider.isLocating, isFalse);
+      expect(notifications, greaterThanOrEqualTo(2));
+    });
+
+    test('失败后再点会重试，成功后清空失败原因', () async {
+      await _seed();
+      final server = _Server();
+      var resolves = false;
+      final provider = WeatherProvider(
+        service: server.service,
+        locationService: DeviceLocationService(
+          reverseGeocode: (_, _) async => resolves ? _located : null,
+          source: _StubLocationSource(),
+        ),
+      );
+      await provider.initialize();
+      await provider.ensureFresh();
+
+      expect(
+        await provider.locateCurrentPosition(),
+        DeviceLocationFailure.addressUnavailable,
+      );
+      expect(provider.lastLocateFailure, isNotNull);
+
+      resolves = true;
+      expect(await provider.locateCurrentPosition(), isNull);
+      expect(provider.lastLocateFailure, isNull);
+      expect(provider.location!.name, '成都市');
+    });
   });
 
   group('初始化', () {

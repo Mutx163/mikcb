@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../domain/weather_logic.dart';
 import '../models/weather_forecast.dart';
+import '../services/device_location_service.dart';
 import '../services/weather_preferences.dart';
 import '../services/weather_service.dart';
 
@@ -21,11 +22,35 @@ enum WeatherStatus { idle, loading, ready, failed }
 /// - 构造函数不发任何请求；网络只在 [initialize] / [ensureFresh] 里发生。
 /// - [summaryForCourse] 是纯读，无副作用、不 await，可以在 build 里每帧调用。
 /// - 失败**从不**向上抛：拿不到数据就返回 null，由调用方决定不渲染。
+/// - [locateCurrentPosition] 是唯一需要用户在现场看着的动作（会弹权限框、要等
+///   十几秒），同样单飞且失败不抛。
 class WeatherProvider extends ChangeNotifier {
-  WeatherProvider({WeatherService? service, DateTime Function()? clock})
-    : _service = service ?? WeatherService(),
-      _ownsService = service == null,
-      _clock = clock ?? DateTime.now;
+  /// 用工厂构造：默认的 [DeviceLocationService] 要拿 [_service] 的
+  /// [WeatherService.reverseGeocode] 当反查实现，而初始化列表里没法既建实例又把它
+  /// 引用两次；私有构造函数让两个协作者都保持 final。
+  factory WeatherProvider({
+    WeatherService? service,
+    DeviceLocationService? locationService,
+    DateTime Function()? clock,
+  }) {
+    final resolvedService = service ?? WeatherService();
+    return WeatherProvider._(
+      resolvedService,
+      service == null,
+      clock ?? DateTime.now,
+      locationService ??
+          DeviceLocationService(
+            reverseGeocode: resolvedService.reverseGeocode,
+          ),
+    );
+  }
+
+  WeatherProvider._(
+    this._service,
+    this._ownsService,
+    this._clock,
+    this._locationService,
+  );
 
   /// 预报的保鲜期。Open-Meteo 逐小时更新，3 小时内取值变化用户无感；单城市 +
   /// 3 小时 → 一天最多 8 次请求，离免费额度 10000 次/天极远。
@@ -38,6 +63,7 @@ class WeatherProvider extends ChangeNotifier {
   final WeatherService _service;
   final bool _ownsService;
   final DateTime Function() _clock;
+  final DeviceLocationService _locationService;
 
   bool _enabled = WeatherPreferences.defaultEnabled;
   WeatherLocation? _location;
@@ -46,6 +72,9 @@ class WeatherProvider extends ChangeNotifier {
   bool _initialized = false;
   Future<void>? _inFlight;
   DateTime? _nextRetryNotBefore;
+  bool _isLocating = false;
+  DeviceLocationFailure? _lastLocateFailure;
+  Future<DeviceLocationFailure?>? _locateInFlight;
 
   bool get enabled => _enabled;
 
@@ -55,6 +84,12 @@ class WeatherProvider extends ChangeNotifier {
   WeatherForecast? get forecast => _forecast;
 
   WeatherStatus get status => _status;
+
+  /// 是否正在定位（设置页与选城市页据此禁用入口并显示进度）。
+  bool get isLocating => _isLocating;
+
+  /// 上次定位失败的原因；成功或还没定位过时为 null。
+  DeviceLocationFailure? get lastLocateFailure => _lastLocateFailure;
 
   /// 读本地配置进内存，然后后台补一次「过期就刷」。
   ///
@@ -167,6 +202,43 @@ class WeatherProvider extends ChangeNotifier {
   /// 生命周期要管，还会在 debug 下绕过 BlackBox 观测）。
   Future<List<WeatherLocation>> searchLocations(String query) {
     return _service.searchLocations(query);
+  }
+
+  /// 一键定位：取当前位置 → 反查地名 → 作为天气城市。
+  ///
+  /// 返回失败原因（成功时返回 null），同时把结果反映在 [lastLocateFailure] 上，
+  /// 方便界面只靠 watch 就能显示状态。**失败时不动已有城市**——定位失败不该把
+  /// 用户原来选好的城市清掉。
+  ///
+  /// 单飞：定位是一次系统级动作（会弹权限框、要十几秒），连点两下必须只跑一次；
+  /// 重复调用返回同一个 future，即使界面没来得及禁用入口也不会发两次。
+  Future<DeviceLocationFailure?> locateCurrentPosition() {
+    final existing = _locateInFlight;
+    if (existing != null) {
+      return existing;
+    }
+    final future = _locate().whenComplete(() {
+      _locateInFlight = null;
+    });
+    _locateInFlight = future;
+    return future;
+  }
+
+  Future<DeviceLocationFailure?> _locate() async {
+    _isLocating = true;
+    _lastLocateFailure = null;
+    notifyListeners();
+
+    final outcome = await _locationService.locate();
+    final located = outcome.location;
+    if (located != null) {
+      // 复用选城市那条路：落盘、作废旧城市缓存、重拉天气。
+      await setLocation(located);
+    }
+    _lastLocateFailure = outcome.failure;
+    _isLocating = false;
+    notifyListeners();
+    return _lastLocateFailure;
   }
 
   /// 是否需要刷新。
