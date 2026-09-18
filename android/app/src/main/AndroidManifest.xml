@@ -68,6 +68,13 @@
          低于 14 的系统不认识该权限，声明本身无副作用。 -->
     <uses-permission android:name="android.permission.DETECT_SCREEN_CAPTURE"/>
 
+    <!-- 天气「使用当前位置」。
+         COARSE 必须与 FINE 同时声明：Android 12+ 只声明 FINE 会直接 lint 失败，
+         且两者同在时系统才会弹「精确 / 大致」二选一；用户选「大致」时功能照常，
+         天气本来就按区级算。只在用户点「使用当前位置」时才申请，不随启动索取。 -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+
     <application
         android:name=".UmengApplication"
         android:label="${appLabel}"
