@@ -10983,7 +10983,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '位置权限已被拒绝，请到系统设置里允许本应用使用位置';
 
   @override
-  String get weatherLocationTimeout => '定位超时，请到窗边或室外再试';
+  String get weatherLocationTimeout => '定位超时，请到窗边或室外再试，或直接搜索城市';
 
   @override
   String get weatherLocationFailed => '定位失败，请改用手动搜索城市';
@@ -22015,7 +22015,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
       '位置權限已被拒絕，請到系統設定裡允許本應用程式使用位置';
 
   @override
-  String get weatherLocationTimeout => '定位逾時，請到窗邊或室外再試';
+  String get weatherLocationTimeout => '定位逾時，請到窗邊或室外再試，或直接搜尋城市';
 
   @override
   String get weatherLocationFailed => '定位失敗，請改用手動搜尋城市';
@@ -33047,7 +33047,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '位置權限已被拒絕，請到系統設定裡允許本應用程式使用位置';
 
   @override
-  String get weatherLocationTimeout => '定位逾時，請到窗邊或室外再試';
+  String get weatherLocationTimeout => '定位逾時，請到窗邊或室外再試，或直接搜尋城市';
 
   @override
   String get weatherLocationFailed => '定位失敗，請改用手動搜尋城市';

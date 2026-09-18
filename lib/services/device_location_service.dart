@@ -57,6 +57,10 @@ abstract interface class DeviceLocationSource {
   Future<bool> isServiceEnabled();
   Future<LocationPermission> checkPermission();
   Future<LocationPermission> requestPermission();
+
+  /// 系统缓存的上一次位置；没有则 null。毫秒级返回，不触发新的定位。
+  Future<Position?> getLastKnownPosition();
+
   Future<Position> getCurrentPosition(LocationSettings settings);
 }
 
@@ -76,6 +80,9 @@ class GeolocatorDeviceLocationSource implements DeviceLocationSource {
   @override
   Future<LocationPermission> requestPermission() =>
       Geolocator.requestPermission();
+
+  @override
+  Future<Position?> getLastKnownPosition() => Geolocator.getLastKnownPosition();
 
   @override
   Future<Position> getCurrentPosition(LocationSettings settings) =>
@@ -102,44 +109,119 @@ class DeviceLocationService {
 
   DeviceLocationService._(this._reverseGeocode, this._source);
 
-  /// 定位精度与超时。用户选了「精确位置」，所以走 high；15 秒是给室内首次
-  /// 冷启动留的余量（高精度室内常要十几秒），再久就该提示去开阔处了。
+  /// 取实时位置时的精度与上限。
+  ///
+  /// 精度**不改变 provider 选择**（实测 geolocator_android 的
+  /// `LocationManagerClient.determineProvider`：只有 `lowest` 会换成
+  /// PASSIVE_PROVIDER，其余一律优先 fused → GPS → NETWORK），所以别指望调低精度
+  /// 能让室内更快拿到。真正解决室内等待的是 [lastKnownMaxAge] 那条缓存快路。
+  ///
+  /// 25 秒是冷启动 GPS 的余量；用户选了「精确位置」，所以请求 high。
   static const LocationSettings locationSettings = LocationSettings(
     accuracy: LocationAccuracy.high,
-    timeLimit: Duration(seconds: 15),
+    timeLimit: Duration(seconds: 25),
   );
+
+  /// 系统缓存位置的可接受年龄。
+  ///
+  /// 超过这个年龄就不再信任它（可能已经是另一个城市了），改为等实时定位。
+  /// 天气按区级算，半小时内的缓存完全够用。
+  static const Duration lastKnownMaxAge = Duration(minutes: 30);
 
   final ReverseGeocode _reverseGeocode;
   final DeviceLocationSource _source;
 
   Future<DeviceLocationOutcome> locate() async {
+    final startedAt = DateTime.now();
     try {
       final permissionFailure = await _ensureUsablePermission();
       if (permissionFailure != null) {
-        return DeviceLocationOutcome.failure(permissionFailure);
+        return _failed(permissionFailure, step: 'permission', startedAt: startedAt);
       }
 
-      final position = await _source.getCurrentPosition(locationSettings);
+      final cached = await _tryLastKnownPosition();
+      final String positionSource;
+      final Position position;
+      if (cached != null) {
+        positionSource = 'lastKnown';
+        position = cached;
+      } else {
+        positionSource = 'current';
+        position = await _source.getCurrentPosition(locationSettings);
+      }
 
       final location = await _reverseGeocode(
         position.latitude,
         position.longitude,
       );
       if (location == null) {
-        return const DeviceLocationOutcome.failure(
+        return _failed(
           DeviceLocationFailure.addressUnavailable,
+          step: 'reverseGeocode',
+          startedAt: startedAt,
+          extra: {'positionSource': positionSource},
         );
       }
-      return DeviceLocationOutcome.success(location);
-    } on TimeoutException catch (error, stackTrace) {
+
+      _logInfo('weather_location_ok', {
+        'positionSource': positionSource,
+        'elapsedMs': DateTime.now().difference(startedAt).inMilliseconds,
+        'accuracyMeters': position.accuracy,
+      });
+      return DeviceLocationOutcome.success(location);    } on TimeoutException catch (error, stackTrace) {
       // 只有取位置会抛到这里：反查内部自己吞掉超时并返回 null（走
       // addressUnavailable），所以「已经拿到坐标但地名没解析出来」不会被
       // 误报成定位超时。
-      unawaited(_log('weather_location_timeout', error, stackTrace));
-      return const DeviceLocationOutcome.failure(DeviceLocationFailure.timeout);
+      return _failed(
+        DeviceLocationFailure.timeout,
+        step: 'position',
+        startedAt: startedAt,
+        error: error,
+        stackTrace: stackTrace,
+      );
     } catch (error, stackTrace) {
-      unawaited(_log('weather_location_failed', error, stackTrace));
-      return const DeviceLocationOutcome.failure(DeviceLocationFailure.failed);
+      return _failed(
+        DeviceLocationFailure.failed,
+        step: 'unknown',
+        startedAt: startedAt,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// 先试系统缓存的上一次位置。
+  ///
+  /// 这条快路是**真机踩出来的**：设备没有可用的 Google Play Services 时，插件回退
+  /// 到系统 LocationManager，而它在 `determineProvider` 里除 `lowest` 之外**优先选
+  /// GPS_PROVIDER**——室内冷启动等不到定位，只能超时失败（用户反馈：「允许了精确
+  /// 位置，定位半天没反应然后失败」）。系统缓存里通常有一份网络定位结果，毫秒级
+  /// 返回；天气按区级算，[lastKnownMaxAge] 内的缓存完全够用。
+  ///
+  /// 任何异常都吞掉返回 null，绝不影响后面等实时定位。
+  Future<Position?> _tryLastKnownPosition() async {
+    try {
+      final cached = await _source.getLastKnownPosition();
+      if (cached == null) {
+        _logInfo('weather_location_last_known_empty', const {});
+        return null;
+      }
+      final age = DateTime.now().difference(cached.timestamp);
+      if (age > lastKnownMaxAge) {
+        _logInfo('weather_location_last_known_stale', {
+          'ageMinutes': age.inMinutes,
+        });
+        return null;
+      }
+      return cached;
+    } catch (error, stackTrace) {
+      _logWarn(
+        'weather_location_last_known_failed',
+        'last known position unavailable',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
     }
   }
 
@@ -165,17 +247,66 @@ class DeviceLocationService {
     };
   }
 
-  /// 留痕。日志通道自身失败也不外抛，与本项目其它服务的失败路径一致。
-  Future<void> _log(String event, Object error, StackTrace stackTrace) async {
-    try {
-      await AppLogService.instance.warn(
-        event,
-        'device location failed',
-        error: error,
-        stackTrace: stackTrace,
-      );
-    } catch (_) {
-      // 忽略：日志不可用不该把定位结果带偏。
-    }
+  /// 失败出口：**每个分支都留一条日志**。
+  ///
+  /// 这条纪律也是被真机坑出来的——原先只在超时和未知异常时记日志，结果用户反馈
+  /// 「定位半天没反应然后失败」时，日志里一片空白，完全判不出卡在权限、服务开关
+  /// 还是取位置。事件名统一是 `weather_location_<失败原因>`，grep 一个前缀就能看到
+  /// 完整故事。
+  DeviceLocationOutcome _failed(
+    DeviceLocationFailure failure, {
+    required String step,
+    required DateTime startedAt,
+    Map<String, Object?> extra = const {},
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    _logWarn(
+      'weather_location_${failure.name}',
+      'failed at $step',
+      error: error,
+      stackTrace: stackTrace,
+      extra: {
+        'step': step,
+        'elapsedMs': DateTime.now().difference(startedAt).inMilliseconds,
+        ...extra,
+      },
+    );
+    return DeviceLocationOutcome.failure(failure);
+  }
+
+  /// 留痕。**发出即走，绝不 await**。
+  ///
+  /// 不 await 是被测试逼出来的：`AppLogService` 的调用在 `testWidgets` 的
+  /// FakeAsync 里永远不会完成（实测探针：2 秒推进后仍未 completes），一旦 await
+  /// 就会把整条定位流程卡死——表现是「权限弹了、进度圈转了、然后永远没结果」，
+  /// 而这不是 AppLogService 的 bug，是「日志不该决定业务结果」这条原则在测试里
+  /// 被放大了。日志失败或悬挂都不影响定位返回值。
+  void _logWarn(
+    String event,
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+    Map<String, Object?> extra = const {},
+  }) {
+    unawaited(
+      AppLogService.instance
+          .warn(
+            event,
+            message,
+            error: error,
+            stackTrace: stackTrace,
+            extras: extra,
+          )
+          .catchError((Object _) {}),
+    );
+  }
+
+  void _logInfo(String event, Map<String, Object?> extra) {
+    unawaited(
+      AppLogService.instance
+          .info(event, event, extras: extra)
+          .catchError((Object _) {}),
+    );
   }
 }

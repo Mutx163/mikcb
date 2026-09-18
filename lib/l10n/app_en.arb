@@ -6442,7 +6442,7 @@
   "weatherLocationServiceDisabled": "Turn on system location services first",
   "weatherLocationPermissionDenied": "No location permission, so your position can't be read",
   "weatherLocationPermissionDeniedForever": "Location permission was denied. Allow location access for this app in system settings",
-  "weatherLocationTimeout": "Locating timed out. Try again near a window or outdoors",
+  "weatherLocationTimeout": "Locating timed out. Try again near a window or outdoors, or just search for a city",
   "weatherLocationFailed": "Locating failed. Search for a city instead",
   "weatherLocationAddressUnavailable": "Located, but couldn't resolve a place name. Search for a city instead"
 }

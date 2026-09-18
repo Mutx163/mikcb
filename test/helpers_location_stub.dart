@@ -13,6 +13,7 @@ class StubDeviceLocationSource implements DeviceLocationSource {
     this.latitude = 30.29365,
     this.longitude = 120.16142,
     this.delay,
+    this.lastKnown,
   });
 
   bool serviceEnabled;
@@ -22,7 +23,31 @@ class StubDeviceLocationSource implements DeviceLocationSource {
   /// 让取位置晚一点返回，用来在测试里观察「定位中」这一瞬间的状态。
   Duration? delay;
 
+  /// 系统缓存的上一次位置；默认 null（走实时定位那条路）。
+  Position? lastKnown;
+
   int positionCalls = 0;
+  int lastKnownCalls = 0;
+
+  /// 造一个「几分钟前」的缓存位置，用来测缓存年龄判定。
+  static Position cachedAgo(
+    Duration age, {
+    double latitude = 30.29365,
+    double longitude = 120.16142,
+  }) {
+    return Position(
+      latitude: latitude,
+      longitude: longitude,
+      timestamp: DateTime.now().subtract(age),
+      accuracy: 800,
+      altitude: 0,
+      altitudeAccuracy: 0,
+      heading: 0,
+      headingAccuracy: 0,
+      speed: 0,
+      speedAccuracy: 0,
+    );
+  }
 
   @override
   Future<bool> isServiceEnabled() async => serviceEnabled;
@@ -34,6 +59,12 @@ class StubDeviceLocationSource implements DeviceLocationSource {
   @override
   Future<LocationPermission> requestPermission() async =>
       LocationPermission.whileInUse;
+
+  @override
+  Future<Position?> getLastKnownPosition() async {
+    lastKnownCalls++;
+    return lastKnown;
+  }
 
   @override
   Future<Position> getCurrentPosition(LocationSettings settings) async {

@@ -11626,7 +11626,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weatherLocationTimeout =>
-      'Locating timed out. Try again near a window or outdoors';
+      'Locating timed out. Try again near a window or outdoors, or just search for a city';
 
   @override
   String get weatherLocationFailed =>

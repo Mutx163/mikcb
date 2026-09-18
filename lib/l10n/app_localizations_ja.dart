@@ -11290,7 +11290,8 @@ class AppLocalizationsJa extends AppLocalizations {
       '位置情報の権限が拒否されています。システム設定で本アプリの位置情報を許可してください';
 
   @override
-  String get weatherLocationTimeout => '位置取得がタイムアウトしました。窓際か屋外でお試しください';
+  String get weatherLocationTimeout =>
+      '位置取得がタイムアウトしました。窓際か屋外でお試しください（都市を検索することもできます）';
 
   @override
   String get weatherLocationFailed => '位置を取得できませんでした。都市を検索してください';

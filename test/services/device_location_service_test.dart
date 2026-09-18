@@ -12,6 +12,8 @@ class _FakeSource implements DeviceLocationSource {
     this.permission = LocationPermission.whileInUse,
     this.permissionAfterRequest,
     this.positionThrower,
+    this.lastKnown,
+    this.lastKnownThrower,
   });
 
   bool serviceEnabled;
@@ -23,11 +25,32 @@ class _FakeSource implements DeviceLocationSource {
   /// 让 `getCurrentPosition` 抛出指定异常（超时 / 插件故障等）。
   void Function()? positionThrower;
 
+  /// 系统缓存的上一次位置。
+  Position? lastKnown;
+
+  /// 让 `getLastKnownPosition` 抛出异常（验证它不会拖垮主流程）。
+  void Function()? lastKnownThrower;
+
   int serviceChecks = 0;
   int permissionChecks = 0;
   int permissionRequests = 0;
   int positionCalls = 0;
+  int lastKnownCalls = 0;
   LocationSettings? lastSettings;
+
+  /// 若干分钟前的缓存位置。
+  static Position cachedAgo(Duration age) => Position(
+    latitude: 30.29365,
+    longitude: 120.16142,
+    timestamp: DateTime.now().subtract(age),
+    accuracy: 800,
+    altitude: 0,
+    altitudeAccuracy: 0,
+    heading: 0,
+    headingAccuracy: 0,
+    speed: 0,
+    speedAccuracy: 0,
+  );
 
   @override
   Future<bool> isServiceEnabled() async {
@@ -45,6 +68,13 @@ class _FakeSource implements DeviceLocationSource {
   Future<LocationPermission> requestPermission() async {
     permissionRequests++;
     return permissionAfterRequest ?? permission;
+  }
+
+  @override
+  Future<Position?> getLastKnownPosition() async {
+    lastKnownCalls++;
+    lastKnownThrower?.call();
+    return lastKnown;
   }
 
   @override
@@ -198,7 +228,7 @@ void main() {
       expect(outcome.failure, DeviceLocationFailure.failed);
     });
 
-    test('用高精度与 15 秒上限，且坐标透传给反查', () async {
+    test('用高精度与 25 秒上限，且坐标透传给反查', () async {
       final source = _FakeSource();
       double? seenLatitude;
       double? seenLongitude;
@@ -214,7 +244,7 @@ void main() {
       await service.locate();
 
       expect(source.lastSettings?.accuracy, LocationAccuracy.high);
-      expect(source.lastSettings?.timeLimit, const Duration(seconds: 15));
+      expect(source.lastSettings?.timeLimit, const Duration(seconds: 25));
       expect(seenLatitude, closeTo(30.29365, 1e-9));
       expect(seenLongitude, closeTo(120.16142, 1e-9));
     });
@@ -270,6 +300,105 @@ void main() {
       expect(location.latitude, closeTo(30.29365, 1e-9));
       expect(location.longitude, closeTo(120.16142, 1e-9));
       expect(outcome.failure, isNull);
+    });
+  });
+
+  group('系统缓存位置优先（真机室内等不到 GPS 的修法）', () {
+    test('有新鲜缓存时直接用，不再等实时定位', () async {
+      final source = _FakeSource(
+        lastKnown: _FakeSource.cachedAgo(const Duration(minutes: 3)),
+        // 实时定位故意抛超时：只要走了它就会失败，用来证明这条路没被走。
+        positionThrower: () => throw TimeoutException('should not be used'),
+      );
+      final service = DeviceLocationService(
+        reverseGeocode: (_, _) async => _hangzhou(),
+        source: source,
+      );
+
+      final outcome = await service.locate();
+
+      expect(outcome.isSuccess, isTrue);
+      expect(source.lastKnownCalls, 1);
+      expect(source.positionCalls, 0);
+    });
+
+    test('缓存太旧则不用，改为等实时定位', () async {
+      final source = _FakeSource(
+        lastKnown: _FakeSource.cachedAgo(const Duration(hours: 3)),
+      );
+      final service = DeviceLocationService(
+        reverseGeocode: (_, _) async => _hangzhou(),
+        source: source,
+      );
+
+      final outcome = await service.locate();
+
+      expect(outcome.isSuccess, isTrue);
+      expect(source.lastKnownCalls, 1);
+      expect(source.positionCalls, 1);
+    });
+
+    test('缓存刚好在可接受年龄内就用它', () async {
+      final source = _FakeSource(
+        lastKnown: _FakeSource.cachedAgo(
+          DeviceLocationService.lastKnownMaxAge - const Duration(minutes: 1),
+        ),
+      );
+      final service = DeviceLocationService(
+        reverseGeocode: (_, _) async => _hangzhou(),
+        source: source,
+      );
+
+      await service.locate();
+
+      expect(source.positionCalls, 0);
+    });
+
+    test('没有缓存时等实时定位', () async {
+      final source = _FakeSource();
+      final service = DeviceLocationService(
+        reverseGeocode: (_, _) async => _hangzhou(),
+        source: source,
+      );
+
+      final outcome = await service.locate();
+
+      expect(outcome.isSuccess, isTrue);
+      expect(source.lastKnownCalls, 1);
+      expect(source.positionCalls, 1);
+    });
+
+    test('查缓存本身抛异常也不影响主流程', () async {
+      final source = _FakeSource(
+        lastKnownThrower: () => throw StateError('cache blew up'),
+      );
+      final service = DeviceLocationService(
+        reverseGeocode: (_, _) async => _hangzhou(),
+        source: source,
+      );
+
+      final outcome = await service.locate();
+
+      expect(outcome.isSuccess, isTrue);
+      expect(source.positionCalls, 1);
+    });
+
+    test('缓存命中也走反查，坐标用缓存里的那一份', () async {
+      final source = _FakeSource(
+        lastKnown: _FakeSource.cachedAgo(const Duration(minutes: 5)),
+      );
+      double? seenLatitude;
+      final service = DeviceLocationService(
+        reverseGeocode: (latitude, _) async {
+          seenLatitude = latitude;
+          return _hangzhou();
+        },
+        source: source,
+      );
+
+      await service.locate();
+
+      expect(seenLatitude, closeTo(30.29365, 1e-9));
     });
   });
 }

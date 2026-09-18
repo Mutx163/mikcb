@@ -20011,7 +20011,7 @@ abstract class AppLocalizations {
   /// No description provided for @weatherLocationTimeout.
   ///
   /// In zh, this message translates to:
-  /// **'定位超时，请到窗边或室外再试'**
+  /// **'定位超时，请到窗边或室外再试，或直接搜索城市'**
   String get weatherLocationTimeout;
 
   /// No description provided for @weatherLocationFailed.

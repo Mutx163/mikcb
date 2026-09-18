@@ -6438,7 +6438,7 @@
   "weatherLocationServiceDisabled": "先に端末の位置情報サービスを有効にしてください",
   "weatherLocationPermissionDenied": "位置情報の権限がないため現在地を取得できません",
   "weatherLocationPermissionDeniedForever": "位置情報の権限が拒否されています。システム設定で本アプリの位置情報を許可してください",
-  "weatherLocationTimeout": "位置取得がタイムアウトしました。窓際か屋外でお試しください",
+  "weatherLocationTimeout": "位置取得がタイムアウトしました。窓際か屋外でお試しください（都市を検索することもできます）",
   "weatherLocationFailed": "位置を取得できませんでした。都市を検索してください",
   "weatherLocationAddressUnavailable": "位置は取得できましたが地名を解決できません。都市を検索してください"
 }

@@ -11337,7 +11337,8 @@ class AppLocalizationsKo extends AppLocalizations {
       '위치 권한이 거부되었습니다. 시스템 설정에서 이 앱의 위치 사용을 허용해 주세요';
 
   @override
-  String get weatherLocationTimeout => '위치 확인 시간이 초과되었습니다. 창가나 실외에서 다시 시도해 주세요';
+  String get weatherLocationTimeout =>
+      '위치 확인 시간이 초과되었습니다. 창가나 실외에서 다시 시도하거나 도시를 검색해 주세요';
 
   @override
   String get weatherLocationFailed => '위치 확인에 실패했습니다. 도시를 검색해 주세요';
