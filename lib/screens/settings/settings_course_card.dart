@@ -6,6 +6,11 @@ part of '../timetable_settings_screen.dart';
 /// 显示字段、对齐、冲突表现在「课表显示」，文字色又在「课表显示」页最底部。
 /// 用户想改课卡上的任何东西都要先猜它归哪一页。这里按「作用对象」收成一页：
 /// 凡是画在课卡上的，都在这。
+///
+/// **一个刻意的例外：天气**。课卡上的天气行（「周视图课卡」开关）与显示内容
+/// （现象/温度/降水概率）都在「天气」页——天气有独立的数据开关、城市与数据来源
+/// 署名，它的显示项跟那三件事是一套的；三个位置开关（日视图/周视图/详情弹窗）
+/// 拆到两页反而更难找。本页顶部的实时预览仍会画出天气行（跟首页一致）。
 class _CourseCardSettingsScreen extends StatefulWidget {
   const _CourseCardSettingsScreen();
 
@@ -81,6 +86,9 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
                     week: provider.currentWeek,
                     maxVisibleSections: _draft.sectionCount,
                     isSettingsPreview: true,
+                    // 预览要跟首页周网格一致，所以显式把天气源传进去
+                    // （预览部件刻意不自己查 provider，导出分享图那条路会绕过它）。
+                    weather: context.watch<WeatherProvider?>(),
                   ),
                 ),
               ),

@@ -119,6 +119,8 @@ class _TimetablePageSettingsScreenState
                     week: provider.currentWeek,
                     maxVisibleSections: _draft.sectionCount,
                     isSettingsPreview: true,
+                    // 预览要跟首页周网格一致，天气源显式传入（见该部件的字段说明）。
+                    weather: context.watch<WeatherProvider?>(),
                   ),
                 ),
               ),

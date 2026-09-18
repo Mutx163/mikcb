@@ -3,9 +3,11 @@ import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/progressive_blur_tuning.dart';
 import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../providers/weather_provider.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import '../ui/hyperos/liquid/liquid_glass_tokens.dart';
@@ -143,6 +145,8 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
                 includeAppHeader: true,
                 heightBudget: _previewHeight,
                 isSettingsPreview: true,
+                // 这块预览的是首页外观，天气行跟着首页一起出现/消失。
+                weather: context.watch<WeatherProvider?>(),
               ),
             ),
           ),

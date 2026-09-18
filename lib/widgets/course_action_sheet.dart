@@ -7,9 +7,11 @@ import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../domain/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
+import '../providers/weather_provider.dart';
 import '../utils/hex_color.dart';
 import '../ui/hyperos/hyperos.dart';
 import 'course_note_sheet.dart';
+import 'course_weather_display.dart';
 
 typedef CourseActionHandler = void Function(Course course);
 
@@ -510,6 +512,43 @@ class _CourseActionSheetContent extends StatelessWidget {
     });
   }
 
+  /// 详情里的那一行天气；不该显示时返回 null（整行不渲染，不留空档）。
+  ///
+  /// [weather] 由调用方在 build 里 `watch` 出来（可空查询）：没挂载（部分既有
+  /// 测试）或天气功能没开时为 null，详情照常打开。日期复用文件内的
+  /// `_dateForWeekDay`——学期开始日没设时为 null，那本来就没有「哪一天」可言，
+  /// 不显示天气是对的。
+  CourseWeatherDisplay? _weatherDisplay({
+    required WeatherProvider? weather,
+    required AppLocalizations l10n,
+    required TimetableSettings settings,
+    required Course course,
+    required int week,
+    required bool isPartnerCourse,
+  }) {
+    if (!settings.weatherShowOnSheet || isPartnerCourse) {
+      return null;
+    }
+    if (!course.isActiveInWeek(week)) {
+      return null;
+    }
+    final date = _dateForWeekDay(settings, week, course.dayOfWeek);
+    if (date == null) {
+      return null;
+    }
+    return courseWeatherDisplayFor(
+      l10n: l10n,
+      summary: weather?.summaryForCourse(
+        date: date,
+        startTime: course.startTime,
+        endTime: course.endTime,
+      ),
+      showPhenomenon: settings.weatherShowPhenomenon,
+      showTemperature: settings.weatherShowTemperature,
+      showProbability: settings.weatherShowProbability,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -600,6 +639,16 @@ class _CourseActionSheetContent extends StatelessWidget {
         : linkedTask.isCompleted
         ? l10n.taskCompletedSection
         : l10n.taskListTitle;
+    // 天气是「那一天」的属性：停课周、还没开课的那一周、以及对方课程都不显示，
+    // 判据与日视图/周网格一致（见 `_weekCardWeatherDisplay`）。
+    final weatherDisplay = _weatherDisplay(
+      weather: context.watch<WeatherProvider?>(),
+      l10n: l10n,
+      settings: provider.settings,
+      course: course,
+      week: week,
+      isPartnerCourse: previewItem.isPartnerCourse,
+    );
 
     return Column(
       key: ValueKey('course-action-content-${course.id}'),
@@ -674,6 +723,16 @@ class _CourseActionSheetContent extends StatelessWidget {
           title: location.isNotEmpty ? location : l10n.unknownLocation,
           subtitle: locationSubtitle,
         ),
+        if (weatherDisplay != null) ...[
+          const SizedBox(height: 8),
+          _CourseDetailTile(
+            icon: weatherDisplay.icon,
+            title: weatherDisplay.text,
+            // 副题说明这几个数取的是「这节课的时段」而不是全天，否则用户会以为
+            // 那是当日天气。
+            subtitle: l10n.weatherCourseTileSubtitle,
+          ),
+        ],
         const SizedBox(height: 8),
         _CourseDetailTile(
           icon: Icons.sticky_note_2_outlined,

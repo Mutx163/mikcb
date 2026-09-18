@@ -8,6 +8,7 @@ import '../utils/hex_color.dart';
 import '../ui/app_fonts.dart';
 import '../ui/hyperos/hyperos_theme.dart';
 import 'course_surface.dart';
+import 'course_weather_display.dart';
 
 /// 课卡文本的设计字重。
 ///
@@ -36,6 +37,14 @@ class CourseCard extends StatelessWidget {
   final bool showTimeLabels;
   final bool showWeeks;
   final bool showDescription;
+
+  /// 这节课时段内的天气（图标 + 已本地化文案）；null = 不显示这一行。
+  ///
+  /// 由调用方算好传进来而不是在这里查 `WeatherProvider`：本部件同时被首页周网格、
+  /// 设置页预览与**导出分享图**的离屏树使用，后者不能出现天气（用户明确选了
+  /// 分享图不带天气），显式传 null 比「靠环境里有没有 provider」可靠得多。
+  final CourseWeatherDisplay? weather;
+
   final CourseCardVerticalAlign verticalAlign;
   final CourseCardHorizontalAlign horizontalAlign;
   final double compactTitleFontSize;
@@ -83,6 +92,7 @@ class CourseCard extends StatelessWidget {
     this.showTimeLabels = true,
     this.showWeeks = false,
     this.showDescription = false,
+    this.weather,
     this.verticalAlign = CourseCardVerticalAlign.center,
     this.horizontalAlign = CourseCardHorizontalAlign.center,
     this.compactTitleFontSize = 9,
@@ -385,12 +395,7 @@ class CourseCard extends StatelessWidget {
                                     i++
                                   ) ...[
                                     if (i > 0) const SizedBox(height: 2),
-                                    Text(
-                                      textLines[i].text,
-                                      style: textLines[i].style,
-                                      textAlign: textAlign,
-                                      softWrap: true,
-                                    ),
+                                    _compactLineWidget(textLines[i], textAlign),
                                   ],
                                 ],
                               );
@@ -408,12 +413,7 @@ class CourseCard extends StatelessWidget {
                                       crossAxisAlignment: crossAxisAlignment,
                                       children: [
                                         for (final line in textLines)
-                                          Text(
-                                            line.text,
-                                            style: line.style,
-                                            textAlign: textAlign,
-                                            softWrap: true,
-                                          ),
+                                          _compactLineWidget(line, textAlign),
                                       ],
                                     ),
                                   ),
@@ -491,6 +491,35 @@ class CourseCard extends StatelessWidget {
       return Opacity(opacity: 0.4, child: card);
     }
     return card;
+  }
+
+  /// 一行紧凑卡文本；带图标时是「图标 + 文字」，否则就是纯文字。
+  ///
+  /// 图标尺寸按同行字号推导（而不是写死 dp）：整块内容会被外层
+  /// `FittedBox(scaleDown)` 等比缩放，写死的尺寸会让图标在字号调大调小时
+  /// 与文字比例失衡。颜色跟随该行的文字色，深色卡面自动可读。
+  Widget _compactLineWidget(_CompactTextLine line, TextAlign textAlign) {
+    final text = Text(
+      line.text,
+      style: line.style,
+      textAlign: textAlign,
+      softWrap: true,
+    );
+    final icon = line.icon;
+    if (icon == null) {
+      return text;
+    }
+    final fontSize = line.style.fontSize ?? 9;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: fontSize * 1.25, color: line.style.color),
+        SizedBox(width: fontSize * 0.5),
+        // Flexible 而不是 Expanded：文字按自身宽度收紧，短文案不会把整行撑满，
+        // 横向对齐（左/中/右）仍由外层 Column 的 crossAxisAlignment 决定。
+        Flexible(child: text),
+      ],
+    );
   }
 
   /// Circular outlined badge used for per-session homework marks.
@@ -837,20 +866,41 @@ class CourseCard extends StatelessWidget {
         ),
       );
     }
-    return lines.isEmpty
-        ? [
-            _CompactTextLine(
-              text: course.name,
-              flex: 1,
-              style: TextStyle(
-                fontSize: compactTitleFontSize,
-                fontWeight: titleWeight,
-                color: titleColor,
-                height: 1.15,
-              ),
-            ),
-          ]
-        : lines;
+    if (lines.isEmpty) {
+      // 一个字段都没开时也要有课名，否则卡片上只剩天气/空白。
+      lines.add(
+        _CompactTextLine(
+          text: course.name,
+          flex: 1,
+          style: TextStyle(
+            fontSize: compactTitleFontSize,
+            fontWeight: titleWeight,
+            color: titleColor,
+            height: 1.15,
+          ),
+        ),
+      );
+    }
+    // 天气排在最后：上面那些是「这门课是什么」的自身字段，天气是外部环境信息。
+    // 也刻意放在课名兜底之后——兜底判的是「课卡自身字段是不是全关了」，
+    // 天气不算课卡字段，不该把兜底顶掉。
+    final weather = this.weather;
+    if (weather != null) {
+      lines.add(
+        _CompactTextLine(
+          text: weather.text,
+          flex: 2,
+          icon: weather.icon,
+          style: TextStyle(
+            fontSize: compactSubtitleFontSize,
+            fontWeight: detailWeight,
+            color: detailColor,
+            height: 1.1,
+          ),
+        ),
+      );
+    }
+    return lines;
   }
 
   String _buildWeekText(BuildContext context) {
@@ -900,9 +950,13 @@ class _CompactTextLine {
   final int flex;
   final TextStyle style;
 
+  /// 行首图标；null = 纯文字行（绝大多数字段）。目前只有天气行会带。
+  final IconData? icon;
+
   const _CompactTextLine({
     required this.text,
     required this.flex,
     required this.style,
+    this.icon,
   });
 }

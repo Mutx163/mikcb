@@ -7,6 +7,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../providers/weather_provider.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../ui/hyperos/liquid/hyperos_liquid_glass_surface.dart';
 import '../ui/hyperos/liquid/liquid_glass_tokens.dart';
@@ -16,6 +17,7 @@ import '../utils/course_color_palette.dart';
 import '../utils/home_page_background.dart';
 import 'course_card.dart';
 import 'course_grid_surface_host.dart';
+import 'course_weather_display.dart';
 
 /// Renders the home week timetable surface for settings previews.
 class TimetableWeekPreview extends StatefulWidget {
@@ -30,6 +32,7 @@ class TimetableWeekPreview extends StatefulWidget {
     this.heightBudget,
     this.isSettingsPreview = false,
     this.showFloatingBackToCurrentWeek = true,
+    this.weather,
   });
 
   final TimetableProvider provider;
@@ -39,6 +42,14 @@ class TimetableWeekPreview extends StatefulWidget {
   final bool includeAppHeader;
   final bool applyHomePageBackdrop;
   final double? heightBudget;
+
+  /// 天气数据源；null = 这个预览不画天气。
+  ///
+  /// **必须显式传，不能在这里 `context.watch<WeatherProvider?>()`**：导出分享图
+  /// 的文档也是插进根 Overlay 渲染的（见 `image_export_capture.dart`），
+  /// `MultiProvider` 在 Navigator 之上，离屏树里照样查得到真实 provider——
+  /// 那样天气会漏进分享图，而用户明确选了分享图不带天气。
+  final WeatherProvider? weather;
 
   /// 是否绘制「回本周」浮钮。
   ///
@@ -155,6 +166,7 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
           heightBudget: widget.heightBudget,
           isSettingsPreview: widget.isSettingsPreview,
           showFloatingBackToCurrentWeek: widget.showFloatingBackToCurrentWeek,
+          weather: widget.weather,
           wallpaperTopLuminance: _topLuminance,
           wallpaperWeekdayLuminance: _weekdayLuminance,
           wallpaperBodyLuminance: _bodyLuminance,
@@ -175,6 +187,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     required this.heightBudget,
     required this.isSettingsPreview,
     required this.showFloatingBackToCurrentWeek,
+    required this.weather,
     required this.wallpaperTopLuminance,
     required this.wallpaperWeekdayLuminance,
     required this.wallpaperBodyLuminance,
@@ -189,6 +202,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
   final double? heightBudget;
   final bool isSettingsPreview;
   final bool showFloatingBackToCurrentWeek;
+  final WeatherProvider? weather;
 
   /// Top-band wallpaper luminance from [_TimetableWeekPreviewState]'s sample
   /// (null while sampling / no wallpaper).
@@ -907,6 +921,38 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     );
   }
 
+  /// 这个预览里某张课卡要画的天气行；不该画时返回 null。
+  ///
+  /// 判据与首页周网格逐条对齐（开关 → 这一周真的上 → 才查摘要），
+  /// 唯一的差别是预览里只有用户自己的课，没有「情侣对方课程」这一档。
+  CourseWeatherDisplay? _weatherDisplay(
+    BuildContext context,
+    Course course,
+    DateTime? date,
+    int week,
+  ) {
+    final weather = this.weather;
+    final l10n = AppLocalizations.of(context);
+    if (weather == null ||
+        l10n == null ||
+        date == null ||
+        !settings.weatherShowOnWeekCard ||
+        !course.isActiveInWeek(week)) {
+      return null;
+    }
+    return courseWeatherDisplayFor(
+      l10n: l10n,
+      summary: weather.summaryForCourse(
+        date: date,
+        startTime: course.startTime,
+        endTime: course.endTime,
+      ),
+      showPhenomenon: settings.weatherShowPhenomenon,
+      showTemperature: settings.weatherShowTemperature,
+      showProbability: settings.weatherShowProbability,
+    );
+  }
+
   Widget _buildDayColumn({
     required BuildContext context,
     required int week,
@@ -940,6 +986,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
             // Same as home grid: never wrap frosted cards in Opacity.
             child: CourseCard(
               course: item.course,
+              weather: _weatherDisplay(context, item.course, date, week),
               overrideColorHex: _resolveDisplayCourseColor(item),
               compactOverlineText: _resolveCompactOverlineText(context, item),
               topRightBadgeText: _resolveCompactBadgeText(context, item),

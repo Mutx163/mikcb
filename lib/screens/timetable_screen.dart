@@ -32,6 +32,7 @@ import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../domain/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
+import '../providers/weather_provider.dart';
 import '../services/app_log_service.dart';
 import '../services/app_update_service.dart';
 import '../services/screen_capture_service.dart';
@@ -56,6 +57,7 @@ import '../widgets/course_note_sheet.dart';
 import '../widgets/course_card.dart';
 import '../widgets/course_surface.dart';
 import '../widgets/course_grid_surface_host.dart';
+import '../widgets/course_weather_display.dart';
 import '../widgets/day_agenda_info_row.dart';
 import '../widgets/day_course_weather_row.dart';
 import '../widgets/home_menu_catalog.dart';
@@ -5420,7 +5422,13 @@ class _TimetableScreenState extends State<TimetableScreen>
               // 非本周的灰卡（单双周错位、还没开课）代表的那一天并不上课，挂上
               // 那天的天气会让人以为当天要带伞；对方课程则是在别的城市，拿本地
               // 天气同样不对。教师、地点是课程属性，与哪一周无关，照常显示。
-              visible: !item.isPartnerCourse && item.course.isActiveInWeek(week),
+              visible:
+                  settings.weatherShowOnDayCard &&
+                  !item.isPartnerCourse &&
+                  item.course.isActiveInWeek(week),
+              showPhenomenon: settings.weatherShowPhenomenon,
+              showTemperature: settings.weatherShowTemperature,
+              showProbability: settings.weatherShowProbability,
             ),
             if (sessionPreview != null && sessionPreview.isNotEmpty) ...[
               const SizedBox(height: 5.5),
@@ -5633,8 +5641,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                     // 同普通课卡：这一周真的上才有天气。判据用 isActiveInWeek
                     // （= 不在停课周 且 在本周上课范围内），一处覆盖两种情况。
                     visible:
+                        settings.weatherShowOnDayCard &&
                         !item.isPartnerCourse &&
                         item.course.isActiveInWeek(week),
+                    showPhenomenon: settings.weatherShowPhenomenon,
+                    showTemperature: settings.weatherShowTemperature,
+                    showProbability: settings.weatherShowProbability,
                   ),
                   if (sessionPreview != null && sessionPreview.isNotEmpty) ...[
                     const SizedBox(height: 5.5),
@@ -6469,6 +6481,41 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
+  /// 周网格课卡上那一行天气；不该显示时返回 null（[CourseCard] 据此不加这一行）。
+  ///
+  /// 三道闸按「成本从低到高」排：先看开关与课程状态（纯内存判断），都过了才去
+  /// 查预报摘要。判据与日视图完全一致：**天气是「那一天」的属性**，只有这节课
+  /// 这一周真的要上才有意义；对方课程在别的城市，拿本地天气同样不对。
+  CourseWeatherDisplay? _weekCardWeatherDisplay({
+    required AppLocalizations? l10n,
+    required WeatherProvider? weather,
+    required TimetableSettings settings,
+    required Course course,
+    required DateTime? date,
+    required int week,
+    required bool isPartnerCourse,
+  }) {
+    if (l10n == null ||
+        weather == null ||
+        date == null ||
+        isPartnerCourse ||
+        !settings.weatherShowOnWeekCard ||
+        !course.isActiveInWeek(week)) {
+      return null;
+    }
+    return courseWeatherDisplayFor(
+      l10n: l10n,
+      summary: weather.summaryForCourse(
+        date: date,
+        startTime: course.startTime,
+        endTime: course.endTime,
+      ),
+      showPhenomenon: settings.weatherShowPhenomenon,
+      showTemperature: settings.weatherShowTemperature,
+      showProbability: settings.weatherShowProbability,
+    );
+  }
+
   Widget _buildDayColumn(
     int week,
     int dayOfWeek,
@@ -6488,6 +6535,11 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     final date = _dateForWeekDay(settings, week, dayOfWeek);
     final isDayHoliday = date != null && provider.isHoliday(date);
+
+    // 可空查询：没挂天气 provider（大量既有测试、以及天气功能未启用的极端情形）
+    // 时返回 null，周网格照常渲染、只是没有天气行。
+    final weatherProvider = context.watch<WeatherProvider?>();
+    final weatherL10n = AppLocalizations.of(context);
 
     // 虚线框：整列**只挂一个固定槽位**的 Positioned（top/height 随标记状
     // 态变），不与某个节次格绑定。原因：向上拉长会改 _emptySlotMarkerSection，
@@ -6577,6 +6629,15 @@ class _TimetableScreenState extends State<TimetableScreen>
               showTimeLabels: settings.courseCardShowTimeLabels,
               showWeeks: settings.courseCardShowWeeks,
               showDescription: settings.courseCardShowDescription,
+              weather: _weekCardWeatherDisplay(
+                l10n: weatherL10n,
+                weather: weatherProvider,
+                settings: settings,
+                course: item.course,
+                date: date,
+                week: week,
+                isPartnerCourse: item.isPartnerCourse,
+              ),
               verticalAlign: settings.courseCardVerticalAlign,
               horizontalAlign: settings.courseCardHorizontalAlign,
               onTap: () {
