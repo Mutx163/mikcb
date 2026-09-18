@@ -5416,9 +5416,11 @@ class _TimetableScreenState extends State<TimetableScreen>
               startTime: item.course.startTime,
               endTime: item.course.endTime,
               ink: ink,
-              visible:
-                  !item.isPartnerCourse &&
-                  !item.course.isSuspendedInWeek(week),
+              // 天气是「那一天」的属性，只有这节课这一周真的要上才有意义。
+              // 非本周的灰卡（单双周错位、还没开课）代表的那一天并不上课，挂上
+              // 那天的天气会让人以为当天要带伞；对方课程则是在别的城市，拿本地
+              // 天气同样不对。教师、地点是课程属性，与哪一周无关，照常显示。
+              visible: !item.isPartnerCourse && item.course.isActiveInWeek(week),
             ),
             if (sessionPreview != null && sessionPreview.isNotEmpty) ...[
               const SizedBox(height: 5.5),
@@ -5628,9 +5630,11 @@ class _TimetableScreenState extends State<TimetableScreen>
                     startTime: item.course.startTime,
                     endTime: item.course.endTime,
                     ink: ink,
+                    // 同普通课卡：这一周真的上才有天气。判据用 isActiveInWeek
+                    // （= 不在停课周 且 在本周上课范围内），一处覆盖两种情况。
                     visible:
                         !item.isPartnerCourse &&
-                        !item.course.isSuspendedInWeek(week),
+                        item.course.isActiveInWeek(week),
                   ),
                   if (sessionPreview != null && sessionPreview.isNotEmpty) ...[
                     const SizedBox(height: 5.5),

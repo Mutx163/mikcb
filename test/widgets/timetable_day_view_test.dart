@@ -12,9 +12,13 @@ import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/schedule_item.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/models/weather_forecast.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
+import 'package:university_timetable/providers/weather_provider.dart';
 import 'package:university_timetable/services/holiday_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
+import 'package:university_timetable/services/weather_preferences.dart';
+import 'package:university_timetable/services/weather_service.dart';
 import 'package:university_timetable/screens/add_course_screen.dart';
 import 'package:university_timetable/screens/add_schedule_item_screen.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
@@ -152,6 +156,72 @@ List<SectionTime> _outOfProgressSections(DateTime now) {
       endTime: _formatClock(secondEnd.hour, secondEnd.minute),
     ),
   ];
+}
+
+/// 天气用例用的城市。坐标必须与 [_weatherPayload] 回填的一致，否则预报会被
+/// 判成「换城市了」而丢弃，卡片上什么都不显示。
+const _weatherCity = WeatherLocation(
+  name: '杭州',
+  admin1: '浙江',
+  latitude: 30.29365,
+  longitude: 120.16142,
+  timezone: 'Asia/Shanghai',
+);
+
+const _weatherJsonHeaders = {'content-type': 'application/json; charset=utf-8'};
+
+/// 造一份覆盖今天 0 点起 96 小时的预报。
+///
+/// **温度取「小时序号」而不是常数**：本用例要同时断言「本周那节课有天气」与
+/// 「非本周灰卡没有天气」，两行文案若一模一样就分不出是哪张卡带出来的。
+/// 天气码固定 61（小雨）、概率固定 60，所以期望文案可以写死。
+Map<String, dynamic> _weatherPayload() {
+  final now = DateTime.now();
+  final start = DateTime(now.year, now.month, now.day);
+  String two(int value) => value.toString().padLeft(2, '0');
+  return {
+    'latitude': _weatherCity.latitude,
+    'longitude': _weatherCity.longitude,
+    'timezone': 'Asia/Shanghai',
+    'hourly': {
+      'time': [
+        for (var hour = 0; hour < 96; hour++)
+          () {
+            final time = start.add(Duration(hours: hour));
+            return '${time.year}-${two(time.month)}-${two(time.day)}'
+                'T${two(time.hour)}:00';
+          }(),
+      ],
+      'temperature_2m': [for (var i = 0; i < 96; i++) (i % 24).toDouble()],
+      'precipitation_probability': [for (var i = 0; i < 96; i++) 60],
+      'precipitation': [for (var i = 0; i < 96; i++) 0.5],
+      'snowfall': [for (var i = 0; i < 96; i++) 0.0],
+      'weather_code': [for (var i = 0; i < 96; i++) 61],
+    },
+  };
+}
+
+/// 拉起一个已经拿到预报的天气 provider（HTTP 与 prefs 都要跳出 FakeAsync）。
+Future<WeatherProvider> _readyWeatherProvider(WidgetTester tester) async {
+  late WeatherProvider provider;
+  await tester.runAsync(() async {
+    await WeatherPreferences.setEnabled(true);
+    await WeatherPreferences.saveLocation(_weatherCity);
+    provider = WeatherProvider(
+      service: WeatherService(
+        client: MockClient(
+          (_) async => http.Response(
+            jsonEncode(_weatherPayload()),
+            200,
+            headers: _weatherJsonHeaders,
+          ),
+        ),
+      ),
+    );
+    await provider.initialize();
+    await provider.ensureFresh();
+  });
+  return provider;
 }
 
 Future<TimetableProvider> _createProviderWithTodayCourse(
@@ -2570,6 +2640,84 @@ void main() {
     expect(find.text('实验课'), findsWidgets);
     expect(find.text('非本周'), findsWidgets);
     expect(find.byKey(const ValueKey('day-view-summary')), findsOneWidget);
+  });
+
+  testWidgets('day view shows weather for this-week courses but not for the 非本周 grey card', (
+    tester,
+  ) async {
+    final provider = await _createProviderWithTodayCourse(tester);
+    final weather = await _readyWeatherProvider(tester);
+    final today = DateTime.now();
+
+    await runRealAsync(tester, () async {
+      // helper 自带的「进行中」课程时段随运行时刻浮动，它的天气文案不可预期，
+      // 会与本用例写死的期望文案撞车；这里只关心「本周 / 非本周」这一组对照。
+      await provider.deleteCourse('today-course');
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(timetableShowNonCurrentWeekCourses: true),
+      );
+      // 本周的课：默认节次表的第 3–4 节 = 10:00–11:40。
+      await provider.addCourse(
+        Course(
+          id: 'this-week-course',
+          name: '本周实验',
+          teacher: '周老师',
+          location: '实验楼 201',
+          dayOfWeek: today.weekday,
+          startSection: 3,
+          endSection: 4,
+          startTime: '10:00',
+          endTime: '11:40',
+        ),
+      );
+      // 非本周的课：同一张节次表里第 5–6 节 = 14:00–15:40，只在第 2 周上。
+      await provider.addCourse(
+        Course(
+          id: 'other-week-course',
+          name: '下周实验',
+          teacher: '吴老师',
+          location: '实验楼 202',
+          dayOfWeek: today.weekday,
+          startSection: 5,
+          endSection: 6,
+          startTime: '14:00',
+          endTime: '15:40',
+          customWeeks: const [2],
+        ),
+      );
+    });
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: provider),
+          ChangeNotifierProvider<WeatherProvider>.value(value: weather),
+        ],
+        child: const TestApp(
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-1-${today.weekday}')));
+    await _pumpTimetableFrame(tester);
+
+    // 前提：两张卡都在，且非本周那张确实带「非本周」标记。
+    expect(find.text('本周实验'), findsWidgets);
+    expect(find.text('下周实验'), findsWidgets);
+    expect(find.text('非本周'), findsWidgets);
+
+    // 本周那节课：10:00–11:40 命中 11:00 / 12:00 两个桶，温度 11、12 →
+    // 平均 11.5 → 12。
+    expect(find.text('小雨 · 12° · 60%'), findsWidgets);
+
+    // 非本周的灰卡这一周并不上课，它显示的日期（本周那天）根本不是它的上课日。
+    // 这条红了就说明「visible」判据漏了「这一周本来就不上」这一格。
+    expect(find.text('小雨 · 16° · 60%'), findsNothing);
   });
 
   testWidgets('day view hides ended courses from non-current-week display', (
