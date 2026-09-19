@@ -10,12 +10,16 @@ class _AppearanceSettingsScreen extends StatefulWidget {
 
 class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
   /// Visual groups on this page (not one card per control).
-  /// 0 preview · 1 app display · 2 theme manage + seed · 3 frosted · 4 reset.
+  /// 0 preview · 1 app display · 2 theme manage + seed · 3 reset.
   ///
   /// 页面背景、壁纸与背景区域已移到「课表页面」，统一课卡颜色已移到
   /// 「课程卡片」：它们染的不是应用，而是课表页和课卡。导航形态 /
   /// 玻璃坞 / 首页标题等结构性设置已迁到「首页与导航」。
-  static const _appearanceSectionCount = 5;
+  ///
+  /// 材质（质感方案 / 玻璃模式 / 材质预览 / 高级材质入口 / 高斯滑杆 /
+  /// 首页顶栏材质 / 子页顶栏风格 / 各表面材质地图）2026-09-19 整体迁到
+  /// 「课表页面」——理由同背景：它染的是课表那一页，不是应用。
+  static const _appearanceSectionCount = 4;
 
   late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
@@ -89,7 +93,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
 
   Widget _buildAppearanceSection(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context)!;
-    final provider = context.watch<TimetableProvider>();
     final themePreviewColor = _colorFromHex(_draft.themeSeedColor);
     final isDarkPreview = Theme.of(context).brightness == Brightness.dark;
 
@@ -310,207 +313,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ],
         ),
       ),
-      3 => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          HyperosSettingsBlock(
-            title: l10n.frostedSheetSectionTitle,
-            child: HyperosListGroup(
-              children: [
-                // 「质感方案」：一键写穿一组推荐的材质搭配（2026-09-12）。
-                // 纯增量层——只改既有字段、不锁定、不落盘新字段：当前命中
-                // 哪个方案由 texturePresetOf 派生，应用后手动改任何一项即
-                // 回落「自定义」。写穿前经确认弹层说明覆盖范围。
-                HyperosSelectTile<TexturePreset?>(
-                  label: l10n.texturePresetLabel,
-                  subtitle: l10n.texturePresetSubtitle,
-                  items: {
-                    l10n.texturePresetClassicFrost: TexturePreset.classicFrost,
-                    l10n.texturePresetFullLiquid: TexturePreset.fullLiquid,
-                    l10n.texturePresetSoftMist: TexturePreset.softMist,
-                    l10n.texturePresetMinimalSolid: TexturePreset.minimalSolid,
-                    l10n.texturePresetCustom: null,
-                  },
-                  value: texturePresetOf(_draft),
-                  onChanged: (preset) {
-                    if (preset == null) return;
-                    _applyTexturePreset(preset);
-                  },
-                ),
-                // 玻璃模式四档，与引导页「视觉效果」同一映射（见
-                // [glassModeChoiceOf] / [applyGlassModeChoice]）：此前
-                // 经典磨砂/高斯模糊/半透明三档渲染链路完全相同，只有
-                // 「高斯模糊」多露出两个滑杆，四个名字里三个长一个样，
-                // 用户无从选起；独立的「启用模糊」开关并入「实体卡片」。
-                HyperosSelectTile<GlassModeChoice>(
-                  label: l10n.frostedGlassModeLabel,
-                  items: {
-                    l10n.frostedGlassModeSolid: GlassModeChoice.solid,
-                    l10n.frostedGlassModeGaussian: GlassModeChoice.gaussian,
-                    l10n.frostedGlassModeSoft: GlassModeChoice.softGlass,
-                    l10n.frostedGlassModeLiquid: GlassModeChoice.liquidGlass,
-                  },
-                  value: glassModeChoiceOf(_draft),
-                  onChanged: (value) {
-                    _updateDraft(applyGlassModeChoice(_draft, value));
-                  },
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: FrostedSheetSettingsPreview(
-                    provider: provider,
-                    settings: _draft,
-                    week: provider.currentWeek,
-                    blurSigma: _draft.frostedSheetBlurSigma,
-                    tintAlpha: _draft.frostedSheetTintAlpha,
-                    barrierAlpha: _draft.frostedSheetBarrierAlpha,
-                    blurEnabled: _draft.frostedBlurEnabled,
-                    glassMode: _draft.frostedGlassMode,
-                    liquidGlassTuning: _draft.liquidGlassTuning,
-                    softGlassTuning:
-                        _draft.softGlassTuning ?? SoftGlassTuning.defaults,
-                    progressiveBlurTuning:
-                        _draft.progressiveBlurTuning ??
-                        ProgressiveBlurTuning.defaults,
-                    onOpenDemoSheet: () =>
-                        showFrostedSheetSettingsDemo(context),
-                  ),
-                ),
-                // 高级材质（柔光 / 液态）才需要进一步调校：液态有折射
-                // 参数，两者共用同一组「作用范围」开关。
-                if (isAdvancedGlassMode(_draft.frostedGlassMode))
-                  HyperosListTile(
-                    title: l10n.advancedMaterialTitle,
-                    details: l10n.advancedMaterialEntrySubtitle,
-                    onTap: () async {
-                      await HyperosNavigation.push(
-                        context,
-                        settings: const RouteSettings(
-                          name: '/settings/advanced-material',
-                        ),
-                        builder: (_) => const AdvancedMaterialSettingsScreen(),
-                      );
-                      if (!mounted) return;
-                      setState(() {
-                        _draft = context.read<TimetableProvider>().settings;
-                      });
-                    },
-                  ),
-                // 高斯模糊档(开模糊 + 非液态)露出强度/亮度滑杆。按
-                // 「开模糊且非液态/非柔光」判定而非 == gaussian：存量
-                // frosted 默认档用户现在同样落在这一档，需要能看到滑杆。
-                if (_draft.frostedBlurEnabled &&
-                    _draft.frostedGlassMode != FrostedGlassMode.liquidGlass &&
-                    _draft.frostedGlassMode != FrostedGlassMode.softGlass) ...[
-                  HyperosSliderTile(
-                    title: l10n.frostedSheetBlurLabel,
-                    value: _draft.frostedSheetBlurSigma,
-                    max: 24,
-                    divisions: 24,
-                    valueLabel: _draft.frostedSheetBlurSigma.toStringAsFixed(0),
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(frostedSheetBlurSigma: value),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                  HyperosSliderTile(
-                    title: l10n.frostedSheetTintLabel,
-                    value: _draft.frostedSheetTintAlpha,
-                    max: 0.75,
-                    divisions: 75,
-                    valueLabel:
-                        '${(_draft.frostedSheetTintAlpha * 100).round()}%',
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(frostedSheetTintAlpha: value),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                ],
-                // 首页顶栏玻璃（材质独立自由选择，2026-09-12 拍板）：渐进
-                // 磨砂 / 高斯磨砂 / 柔光 / 液态 / 实体五档，与全局玻璃模式
-                // 和「作用范围」开关无关——柔光/液态只通过范围开关作用于
-                // 弹窗、玻璃坞等其他表面，顶栏选什么渲染什么。行恒常显示、
-                // 永不禁用（所有档位任何时候都真实生效，无需例外说明）。
-                HyperosSelectTile<String>(
-                  label: l10n.homeBandGlassMaterialLabel,
-                  items: {
-                    l10n.headerBlurStyleInspire: 'progressive',
-                    l10n.headerBlurStyleGaussian: 'gaussian',
-                    l10n.frostedGlassModeSoft: 'soft',
-                    l10n.frostedGlassModeLiquid: 'liquid',
-                    l10n.materialStateSolid: 'solid',
-                  },
-                  value: _draft.homeBandGlassMaterial,
-                  onChanged: (value) {
-                    _updateDraft(applyHomeBandGlassMaterial(_draft, value));
-                  },
-                ),
-                // 子页顶栏（设置等页）与首页玻璃带相互独立，各选各的风格；
-                // 子页永不走高级材质，此行无任何生效条件。
-                HyperosSelectTile<HeaderBlurStyle>(
-                  label: l10n.subpageHeaderBlurStyleLabel,
-                  items: {
-                    l10n.headerBlurStyleInspire: HeaderBlurStyle.inspire,
-                    l10n.headerBlurStyleGaussian: HeaderBlurStyle.gaussian,
-                  },
-                  value: _draft.subpageHeaderBlurStyle,
-                  onChanged: (value) {
-                    _updateDraft(applySubpageChromeBlurStyle(_draft, value));
-                  },
-                ),
-              ],
-            ),
-          ),
-          const HyperosSectionGap(),
-          // 「各表面当前材质」地图：与渲染侧门控同口径的只读推导（2026-
-          // 09-12），回答「哪个表面现在是什么材质、为什么」。行名复用作用
-          // 范围开关的既有文案（同物同名），不含依设备实时状态定的系统降级。
-          HyperosSettingsBlock(
-            title: l10n.surfaceMaterialSectionTitle,
-            child: HyperosListGroup(
-              children: [
-                _surfaceMaterialTile(
-                  l10n.liquidGlassScopeHomeChromeTitle,
-                  homeBandSurfaceMaterial(_draft),
-                ),
-                _surfaceMaterialTile(
-                  l10n.surfaceSubpageHeader,
-                  subpageHeaderSurfaceMaterial(_draft),
-                ),
-                _surfaceMaterialTile(
-                  l10n.liquidGlassScopeDockTitle,
-                  dockSurfaceMaterial(_draft),
-                ),
-                _surfaceMaterialTile(
-                  l10n.liquidGlassScopeSheetDialogTitle,
-                  pinnedChromeSurfaceMaterial(),
-                ),
-                _surfaceMaterialTile(
-                  l10n.liquidGlassScopeSelectSheetTitle,
-                  pinnedChromeSurfaceMaterial(),
-                ),
-                _surfaceMaterialTile(
-                  l10n.liquidGlassScopePopupTitle,
-                  pinnedChromeSurfaceMaterial(),
-                ),
-                _surfaceMaterialTile(
-                  l10n.liquidGlassScopePickerButtonsTitle,
-                  pinnedChromeSurfaceMaterial(),
-                ),
-                _surfaceMaterialTile(
-                  l10n.surfaceCourseCard,
-                  courseCardSurfaceMaterial(_draft),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      4 => _SettingsResetTile(
+      3 => _SettingsResetTile(
         scope: SettingsResetScope.appearance,
         onReset: _updateDraft,
       ),
@@ -524,50 +327,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [const HyperosSectionGap(), section],
     );
-  }
-
-  /// 「各表面当前材质」地图的只读行：左表面名（主题墨色）、右材质值（次级
-  /// 墨色）。不用 [HyperosListTile]——它的 details 只在可点行渲染，纯展示
-  /// 行会把标题打到 45% 透明度且不画值（2026-09-12 真机灰色卡回归）。
-  Widget _surfaceMaterialTile(String title, SurfaceMaterial material) {
-    final l10n = AppLocalizations.of(context)!;
-    return hyperosListRowShell(
-      padding: hyperosRowPadding(context),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: HyperosTypography.listTitle(context),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: HyperosTokens.rowContentGap),
-          Text(
-            _surfaceMaterialLabel(l10n, material),
-            style: HyperosTypography.listDetail(context).copyWith(
-              color: HyperosColors.secondaryText(context),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _applyTexturePreset(TexturePreset preset) async {
-    final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showHyperosConfirmDialog(
-      context: context,
-      title: l10n.texturePresetApplyTitle,
-      message: l10n.texturePresetApplyBody,
-      cancelLabel: l10n.cancelAction,
-      confirmLabel: l10n.confirmAction,
-    );
-    if (confirmed != true || !mounted) {
-      return;
-    }
-    _updateDraft(applyTexturePreset(_draft, preset));
   }
 
   void _updateDraft(TimetableSettings next, {bool debounce = false}) {
