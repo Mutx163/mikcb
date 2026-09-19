@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../../../models/liquid_glass_tuning.dart';
+import '../../debug/liquid_glass_uv_probe.dart';
 import '../hyperos_blurred_header.dart';
 import 'liquid_glass_shader.dart';
 
@@ -298,6 +299,11 @@ class _RenderLiquidGlass extends RenderProxyBox {
     }
 
     _configure(shader);
+
+    // ⚠️ 临时探针（2026-09-19，量到数即撤）：见 lib/ui/debug/liquid_glass_uv_probe.dart。
+    // 量的是「compose 的模糊把绑定纹理扩边后，着色器眼里的坐标原点有没有跟着动」——
+    // 这个推断被真机否过一次，不再靠推理，先量。
+    LiquidGlassUvProbe.runOnce();
 
     final sigma = _style.blurSigma;
     final backdropLayer = layer ??= BackdropFilterLayer();
