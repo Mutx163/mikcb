@@ -324,11 +324,59 @@ class _RenderLiquidGlass extends RenderProxyBox {
     // u_size 与 u_texture 由引擎自动填/自动绑，这里不设（见着色器文件头）。
   }
 
+  /// 祖先链上是否有「还没淡完」的半透明层，有就返回它的 alpha（否则 1）。
+  ///
+  /// **这是上游 OS4 弹层给的处境**：它在入场/退场期间把整块面板包进
+  /// `Opacity(panelAlpha)`（`flutter_miuix` 的 `popup_presenter.dart` 里
+  /// `panel: Opacity(opacity: panelAlpha, child: surfaceBuilder(...))`；
+  /// `dropdown` / `dialog` 两类的 `panelAlpha = fade`，形变类才恒为 1）。而 Opacity
+  /// 会把子树隔离进离屏层 —— `BackdropFilter` 读不到背后的东西，玻璃就渲染成一块黑，
+  /// 越淡越黑。本仓自己的弹窗早就绕开了这个坑（`hyperos_select.dart` 的注释写着
+  /// 「No Opacity here」），但注入给上游的那条路绕不开。
+  ///
+  /// 只认 `RenderOpacity`（上游用的就是普通 `Opacity`）。`AnimatedOpacity` 的
+  /// alpha 藏在 Animation 里、读它的值有踩空的风险，暂不覆盖。
+  double _ancestorOpacity() {
+    var alpha = 1.0;
+    for (RenderObject? node = parent; node != null; node = node.parent) {
+      if (node is RenderOpacity) {
+        alpha = math.min(alpha, node.opacity.clamp(0.0, 1.0));
+        if (alpha <= 0) {
+          return 0;
+        }
+      }
+    }
+    return alpha;
+  }
+
   @override
   void paint(PaintingContext context, Offset offset) {
     final shader = child == null ? null : _ensureShader();
     if (shader == null) {
       layer = null;
+      if (child != null) {
+        super.paint(context, offset);
+      }
+      return;
+    }
+
+    // 祖先在淡出：这一帧挂滤镜层只会得到一块黑（采样不到背景）。退化成与材质
+    // 同色的圆角填充 —— 上面的 Opacity 会照常把它淡掉，读起来是「面板在淡」，
+    // 而不是「面板先变黑再淡」。淡完（alpha 回到 1）下一帧就恢复玻璃。
+    if (_ancestorOpacity() < 1) {
+      layer = null;
+      final radius = _style.borderRadius * _devicePixelRatio;
+      context.canvas
+        ..save()
+        ..translate(offset.dx, offset.dy)
+        ..drawRRect(
+          RRect.fromRectAndRadius(
+            Offset.zero & size,
+            Radius.circular(radius),
+          ),
+          Paint()..color = _style.tint,
+        )
+        ..restore();
       if (child != null) {
         super.paint(context, offset);
       }
