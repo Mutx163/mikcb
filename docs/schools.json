@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-18T06:27:05+00:00",
+  "updatedAt": "2026-09-19T06:25:33+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 214,
-    "schools": 209,
+    "total": 215,
+    "schools": 210,
     "generic": 5
   },
   "schools": [
@@ -1266,6 +1266,13 @@
       "name": "厦门城市职业学院",
       "initial": "X",
       "resourceFolder": "XMCU",
+      "category": "school"
+    },
+    {
+      "id": "XMU",
+      "name": "厦门大学",
+      "initial": "X",
+      "resourceFolder": "XMU",
       "category": "school"
     },
     {
