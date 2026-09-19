@@ -384,22 +384,19 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
               builder: (context, _) {
                 final fraction = _fraction.value.clamp(0.0, 1.0);
                 final scale = 0.15 + 0.85 * fraction;
-                // No Opacity here: an Opacity layer (opacity < 1) isolates the
-                // popup into an offscreen layer, so the glass BackdropFilter /
-                // liquid shader samples an empty backdrop and renders fully
-                // transparent until the fade ends (then snaps to blur). Scale +
-                // clip reveal carry the entrance while the glass stays live.
+                // 入场只做「从锚点缩放」，**不套揭示裁剪、也不套 Opacity**。
+                //
+                // 这块玻璃读的是实时合成器背景。裁剪层会把它连同「图边」一起
+                // 缩到裁剪窗口上，而着色器恰恰是在边缘**往外**采样的 —— 窗口越
+                // 小、离边越近，采到的就越接近出界，真机上读作关闭过程中一块块
+                // 发黑；Opacity 则把它隔离进离屏层，玻璃直接采到空背景。
+                // 缩放是安全的（右上角菜单只缩放、不裁剪，从来没有黑块）。
+                // 列表弹窗主面板早就是这套配方，见 hyperos_list_popup.dart 里
+                // 「No reveal clip around the glass」那条注释。
                 return Transform.scale(
                   scale: scale,
                   alignment: Alignment(1, localOriginY * 2 - 1),
-                  child: ClipPath(
-                    clipper: SelectPopupRevealClipper(
-                      progress: fraction,
-                      showBelow: showBelow,
-                      cornerRadius: HyperosMiuixDropdown.popupCornerRadius,
-                    ),
-                    child: popupChild,
-                  ),
+                  child: popupChild,
                 );
               },
             ),
@@ -415,48 +412,6 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _scrollToSelected();
     });
-  }
-}
-
-/// Squircle-ish reveal clipper for select popup enter animation.
-///
-/// Mirrors `MiuixListPopupContent._PopupRevealClipper`: progressively reveals
-/// the popup from the anchor-facing edge (top when below, bottom when above).
-class SelectPopupRevealClipper extends CustomClipper<Path> {
-  const SelectPopupRevealClipper({
-    required this.progress,
-    required this.showBelow,
-    required this.cornerRadius,
-  });
-
-  final double progress;
-  final bool showBelow;
-  final double cornerRadius;
-
-  @override
-  Path getClip(Size size) {
-    final value = progress.clamp(0.0, 1.0);
-    if (value <= 0 || size.isEmpty) return Path();
-    final visibleHeight = size.height * value;
-    final top = showBelow ? 0.0 : size.height - visibleHeight;
-    final r = cornerRadius
-        .clamp(0.0, visibleHeight / 2)
-        .clamp(0.0, size.width / 2);
-    final path = Path()
-      ..addRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(0, top, size.width, visibleHeight),
-          Radius.circular(r),
-        ),
-      );
-    return path;
-  }
-
-  @override
-  bool shouldReclip(SelectPopupRevealClipper oldClipper) {
-    return oldClipper.progress != progress ||
-        oldClipper.showBelow != showBelow ||
-        oldClipper.cornerRadius != cornerRadius;
   }
 }
 

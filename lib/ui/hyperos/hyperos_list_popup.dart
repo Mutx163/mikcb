@@ -682,11 +682,10 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
             // 原样重复，视觉上不动，其下方行被亮卡盖住，对齐系统相册展开
             // 「视图」的形态）。与主面板平级放在全屏 Stack：命中测试不被
             // 面板/Transform 边界截断；宽度用 _panelKey 读主面板实测尺寸
-            // 做 min=max 约束，两卡严格同宽；关窗时不随主面板弹簧缩放，
-            // 只走 _alpha 淡出（展开只会发生在弹簧结束后）。玻璃按
-            // useAncestorGroupCapture 采样「遮罩下的页面」（共享组捕获，
-            // 合成器逐帧刷新）而不是把主面板玻璃的输出再采一遍。揭示窗口
-            // 裁在玻璃面外侧（玻璃面布局全程不变）。
+            // 做 min=max 约束，两卡严格同宽。玻璃按 useAncestorGroupCapture
+            // 采样「遮罩下的页面」（共享组捕获，合成器逐帧刷新）而不是把
+            // 主面板玻璃的输出再采一遍；展开走「从父行那条边缩放」，淡入
+            // 只作用在玻璃内侧的内容上（见下方两处注释）。
             if (_lastSubmenuIndex != null)
               Positioned(
                 top: _submenuCardTopGlobal(
@@ -721,12 +720,13 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                       safeBottom: safeBottom,
                     );
                     final cardOverflows = cardHeight < fullCardHeight;
-                    // 玻璃面按完整内容尺寸稳定布局，揭示窗口裁在玻璃面
-                    // 外侧（见下方 ClipRect）。旧实现把揭示放在玻璃内侧
-                    // （Align heightFactor 包着玻璃），玻璃面布局高度逐帧
-                    // 从 0 长到全高：头几帧高度小于 2×圆角时超椭圆形状退
-                    // 化、玻璃逐帧重采样，顶边会闪一下；现在第一帧起就是
-                    // 完整圆角形状（从圆角开始显示），动画只动裁剪窗口。
+                    // 玻璃面按完整内容尺寸稳定布局，展开动画只动外层的
+                    // Transform.scale（见下方）。曾经用「揭示裁剪窗口」从
+                    // 父行顶边往下长；那会把实时背景的采样范围连同图边一起
+                    // 缩到窗口上，而着色器在边缘是往外采的 —— 窗口越小越
+                    // 接近出界，真机上读作展开/关闭时发黑。也试过更早的
+                    // 「让玻璃面高度从 0 真实长到全高」（Align heightFactor
+                    // 包着玻璃）：玻璃逐帧重采样，顶边会闪，同样不用。
                     Widget card = ConstrainedBox(
                       constraints: _submenuCardWidthConstraints(),
                       child: SizedBox(
@@ -797,45 +797,45 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
                         ),
                       ),
                     );
+                    // 淡入只作用在玻璃**内侧的内容**上：玻璃自己一直是实心的。
+                    // 把 Opacity 套在玻璃外面会把它隔离进离屏层，实时背景采不到，
+                    // 真机上表现为开合时一块块发黑。坞内圆钮也是同一个做法
+                    // （Opacity 在玻璃内侧，只影响内容）。
+                    final cardAlpha = _alpha.value.clamp(0.0, 1.0);
+                    final content = cardAlpha >= 1
+                        ? card
+                        : Opacity(opacity: cardAlpha, child: card);
                     card = widget.opaqueSurface
                         ? HyperosSolidPopupSurface(
                             cornerRadius: cornerRadius,
-                            child: card,
+                            child: content,
                           )
                         : HyperosSelectPopupGlass(
                             cornerRadius: cornerRadius,
                             // 子卡浮在主面板玻璃之上：先铺一层共享组捕获
                             // 的磨砂底（遮罩下的页面，合成器逐帧刷新）挡住
-                            // 主面板玻璃的输出，子卡的 premium 玻璃再贴着
+                            // 主面板玻璃的输出，子卡的玻璃再贴着
                             // 这层底实时折射——不是一张快照。
                             useAncestorGroupCapture: true,
-                            // 折射厚度随揭示进度生长（t: 0.12→1）：子卡浮
+                            // 折射厚度随展开进度生长（t: 0.12→1）：子卡浮
                             // 在主面板文字行上方，满厚度下顶缘折射会把上方
-                            // 行的文字镜像进卡内顶带，且揭示期间面板正等比
+                            // 行的文字镜像进卡内顶带，且展开期间面板正等比
                             // 回放、上方文字随之移动，读作「字体反射闪动」。
                             // 厚度从近零生长，早期无折射无反射；厚度到满时
                             // 面板压暗也已到位，上方文字是暗的，反射微弱。
                             // 稳态厚度=完整 30，观感不变。
                             thicknessFactor: t,
-                            child: card,
+                            child: content,
                           );
-                    // 揭示裁剪（玻璃面外侧、整卡盒子内）：裁剪窗口从父
-                    // 行顶边向下生长，父行位置全程不动；t=1 时窗口即完
-                    // 整卡。与选择弹窗同款 ClipPath（复用
-                    // SelectPopupRevealClipper）：盒子始终是整卡尺寸、玻
-                    // 璃作为「不溢出」的子项被路径裁剪。
-                    card = ClipPath(
-                      clipper: SelectPopupRevealClipper(
-                        progress: t,
-                        showBelow: true,
-                        cornerRadius: cornerRadius,
-                      ),
+                    // 展开用「从父行那条边缩放」，**不套揭示裁剪**：裁剪层会把
+                    // 实时背景的采样范围连同图边一起缩到裁剪窗口上，而着色器
+                    // 恰恰是在边缘往外采的，窗口越小越靠近边就越接近出界，
+                    // 真机上读作展开/关闭时发黑。主面板与选择弹窗同款配方。
+                    return Transform.scale(
+                      scale: 0.15 + 0.85 * t,
+                      alignment: Alignment(isRightAligned ? 1 : -1, -1),
                       child: card,
                     );
-                    if (_alpha.value < 1) {
-                      card = Opacity(opacity: _alpha.value, child: card);
-                    }
-                    return card;
                   },
                 ),
               ),

@@ -180,38 +180,40 @@ void main() {
       expect(find.text('视图父项'), findsNothing);
     });
 
-    testWidgets('首次展开首帧：卡宽与面板同宽（紧约束），揭示窗盒同宽', (
+    testWidgets('首次展开首帧：卡宽与面板同宽（紧约束），全程布局尺寸不变', (
       tester,
     ) async {
       // 首次展开的子卡构建期面板渲染对象尚未 layout（重挂当帧
       // hasSize=false），宽度曾回退松约束 200..364——真机液态路径下首帧
-      // 卡身被拉到上界附近，顶缘揭示带横贯大半屏幕（用户描述「闪现横条
+      // 卡身被拉到上界附近，顶缘折射带横贯大半屏幕（用户描述「闪现横条
       // 到左边，左边剩余空隙与二级右侧空隙一样」）；再展开时宽度已缓存
-      // 故不闪。回归锁：面板宽度在弹窗打开当帧预热缓存后，首帧卡宽与
-      // 揭示窗盒宽都必须等于面板宽。
+      // 故不闪。回归锁：面板宽度在弹窗打开当帧预热缓存后，首帧卡宽与外
+      // 层盒宽必须都等于面板宽。
+      //
+      // 外层动画不再用揭示裁剪（裁剪会收缩实时背景的采样范围，见
+      // hyperos_list_popup.dart 的注释），改成 Transform.scale：缩放只影响
+      // 绘制、不改布局，所以这里锁的是「玻璃面布局尺寸全程不变」——
+      // 一旦有谁把动画改成逐帧改玻璃尺寸，就会逐帧重采样，这条会红。
       await pumpPopup(tester, items: items, appearance: liquidAppearance);
 
       await tester.tap(find.text('视图父项'));
-      await tester.pump(); // 展开首帧（构建 + 市局 + 绘制）
+      await tester.pump(); // 展开首帧（构建 + 布局 + 绘制）
 
       final glass = tester.renderObject<RenderBox>(
         find.byType(HyperosSelectPopupGlass).last,
       );
-      final windowFinder = find.ancestor(
-        of: find.byType(HyperosSelectPopupGlass).last,
-        matching: find.byWidgetPredicate(
-          (w) => w is ClipPath && w.clipper is SelectPopupRevealClipper,
-        ),
-      ).first;
-      final window = tester.renderObject<RenderBox>(windowFinder);
-      expect(window.size.width, closeTo(glass.size.width, 0.5));
+      final boxFinder = find
+          .ancestor(
+            of: find.byType(HyperosSelectPopupGlass).last,
+            matching: find.byWidgetPredicate((w) => w is Transform),
+          )
+          .first;
+      final box = tester.renderObject<RenderBox>(boxFinder);
+      expect(box.size.width, closeTo(glass.size.width, 0.5));
 
       await tester.pump(const Duration(milliseconds: 60)); // 动画中段
-      // 揭示窗盒子全程与玻璃面同宽同高（玻璃不溢出不重采样）。
-      expect(
-        tester.renderObject<RenderBox>(windowFinder).size,
-        glass.size,
-      );
+      // 外层盒全程与玻璃面同尺寸（玻璃不溢出不重采样）。
+      expect(tester.renderObject<RenderBox>(boxFinder).size, glass.size);
 
       await tester.pumpAndSettle();
       final settled = tester.renderObject<RenderBox>(
@@ -385,15 +387,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // 未收缩卡高 = 7 行 × 56 + 分隔块 ≈ 400.75，安全区只有 336。
+      // 量玻璃面本身（展开结束后 scale 已到 1，与布局矩形一致）。
       final cardRect = tester.getRect(
-        find
-            .ancestor(
-              of: find.text('子项0'),
-              matching: find.byWidgetPredicate(
-                (w) => w is ClipPath && w.clipper is SelectPopupRevealClipper,
-              ),
-            )
-            .first,
+        find.byType(HyperosSelectPopupGlass).last,
       );
       const safeTop = 12.0;
       const safeBottom = 360.0 - 12.0;
