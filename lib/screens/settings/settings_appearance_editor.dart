@@ -1,22 +1,27 @@
 part of '../timetable_settings_screen.dart';
 
-/// 「外观编辑」页：**整页就是一张首页微缩图**，底部两颗按钮进弹窗改东西。
+/// 「外观编辑」页：**沉浸式**的一页 —— 整屏暗底，中间一张**真首页缩尺卡**，
+/// 顶部一行标题 + 日 / 周切换 + 取消 / 完成，底部一排圆形玻璃入口。
 ///
-/// 用户口径（2026-09-19，两轮）：
+/// 用户口径（2026-09-19，三轮）：
 /// * 微缩预览是「把整个首页原样缩小」，**直接用首页那份代码、让那个页面缩小**，
 ///   保证观感一致；要完整展示（顶部底部都不能被切），缩小后摆在屏幕中间；
 /// * 不要大标题 + 小标题那两行；
 /// * 可日 / 周视图切换，按钮放顶部；
-/// * 顶部完成 / 取消；底部「调整壁纸」「材质」两个入口。
+/// * 顶部完成 / 取消；底部「调整壁纸」「材质」两个入口；
+/// * 页面结构照参考实现（Nexio 课程表 `CustomizeScheduleScreen.kt` 的「课表外观」
+///   页）：沉浸式暗底 + 圆角卡片 + 顶部胶囊按钮 + 底部一排圆钮 + 弹窗打开时上下
+///   chrome 淡出。
 ///
-/// 落实方式：把 [TimetableScreen] **本体**按整屏逻辑尺寸渲染，外面套一层
-/// `FittedBox` 缩到可用区里居中 —— 不是另写一套小屏布局，也不是「用预览替身
-/// 近似」。日 / 周、进页不进回访状态这些外部控制走
-/// [TimetableHomePreviewScope]（首页一侧在预览模式下不写浏览状态、不接截屏
-/// 监听，见该 scope 的类注释）。
-///
-/// 编辑语义：本页与别的设置页一样**即时落盘**（弹窗里改一下预览就变），
-/// 「取消」= 用进页时的那份设置回滚，「完成」= 保留并返回。
+/// 落实方式：
+/// * [TimetableScreen] **本体**按整屏逻辑尺寸渲染，`FittedBox` 缩进卡片里 ——
+///   不是另写一套小屏布局，也不是「用预览替身近似」；
+/// * 卡片圆角取**真机屏幕圆角**并按缩放比例收小（与参考实现
+///   `screenRadiusDp * cardScale` 同一口径），所以卡片读起来就是「这台机器的那一屏」；
+/// * 日 / 周、进页不进回访状态这些外部控制走 [TimetableHomePreviewScope]
+///   （首页一侧在预览模式下不写浏览状态、不接截屏监听，见该 scope 的类注释）；
+/// * 卡片支持**双指缩放并回弹**（参考实现同款手势），缩放只作用在卡片内容上、
+///   不会传给嵌进来的首页。
 ///
 /// 编辑语义：本页与别的设置页一样**即时落盘**（弹窗里改一下预览就变），
 /// 「取消」= 用进页时的那份设置回滚，「完成」= 保留并返回。
@@ -29,7 +34,16 @@ class _AppearanceEditorScreen extends StatefulWidget {
 }
 
 class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
-    with _HomeBackdropFlow<_AppearanceEditorScreen> {
+    with _HomeBackdropFlow<_AppearanceEditorScreen>, TickerProviderStateMixin {
+  /// 沉浸式底衬：与参考实现同色（不透明深底，只有卡片是亮的）。
+  static const _scrimColor = Color(0xFF1A1A1A);
+
+  /// 卡片相对可用区的最大宽度比例（剩下的留白保证「在屏幕中间、不顶边」）。
+  static const _cardMaxWidthFactor = 0.82;
+
+  static const _zoomMin = 1.0;
+  static const _zoomMax = 2.6;
+
   late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
 
@@ -51,6 +65,15 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     DateTime.now().weekday,
   );
 
+  /// 弹窗打开期间把上下 chrome 淡出（参考实现同款：让位给内容与弹窗）。
+  bool _chromeVisible = true;
+
+  /// 卡片内容的缩放（1 = 完整放下整屏，上限 [_zoomMax]）。手势只作用在卡片内容，
+  /// 不会传给嵌进来的首页（那层套了 IgnorePointer）。
+  double _zoom = _zoomMin;
+  late final AnimationController _zoomBounce;
+  Animation<double>? _zoomAnimation;
+
   // —— _HomeBackdropFlow 的宿主适配：壁纸流程本体在
   // settings_home_backdrop_flow.dart，本页只提供草稿读写与课表列表。
 
@@ -69,10 +92,15 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     _timetableProvider = context.read<TimetableProvider>();
     _draft = _timetableProvider.settings;
     _openedWith = _draft;
+    _zoomBounce = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 240),
+    );
   }
 
   @override
   void dispose() {
+    _zoomBounce.dispose();
     _previewDayView.dispose();
     _previewDayOfWeekNotifier.dispose();
     // 滑块 debounce 未到期时若直接返回，只 cancel 会丢最后一档草稿。
@@ -139,96 +167,115 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     Navigator.pop(context);
   }
 
-  Future<void> _openWallpaperSheet() async {
+  /// 弹窗打开期间淡出上下 chrome（等弹窗关掉再淡回来）。
+  Future<void> _withChromeHidden(Future<void> Function() action) async {
+    setState(() => _chromeVisible = false);
+    try {
+      await action();
+    } finally {
+      if (mounted) {
+        setState(() => _chromeVisible = true);
+      }
+    }
+  }
+
+  Future<void> _openWallpaperSheet() {
     final l10n = AppLocalizations.of(context)!;
-    await showHomeHyperosSheet<void>(
-      context: context,
-      builder: (sheetContext) => HyperosSheetFrame(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        child: SingleChildScrollView(
-          child: buildWallpaperSheetBody(sheetContext, l10n: l10n),
+    return _withChromeHidden(
+      () => showHomeHyperosSheet<void>(
+        context: context,
+        builder: (sheetContext) => HyperosSheetFrame(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: SingleChildScrollView(
+            child: buildWallpaperSheetBody(sheetContext, l10n: l10n),
+          ),
         ),
       ),
     );
   }
 
-  Future<void> _openMaterialSheet() async {
+  Future<void> _openMaterialSheet() {
     final l10n = AppLocalizations.of(context)!;
-    await showHomeHyperosSheet<void>(
-      context: context,
-      builder: (sheetContext) => HyperosSheetFrame(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        child: StatefulBuilder(
-          builder: (sheetContext, setSheetState) => Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                l10n.appearanceEditorMaterialAction,
-                style: HyperosTypography.sheetTitle(sheetContext),
-              ),
-              const SizedBox(height: 16),
-              HyperosListGroup(
-                children: [
-                  // 质感方案：一键写穿一组推荐的材质搭配。
-                  HyperosSelectTile<TexturePreset?>(
-                    label: l10n.texturePresetLabel,
-                    subtitle: l10n.texturePresetSubtitle,
-                    items: {
-                      l10n.texturePresetClassicFrost:
-                          TexturePreset.classicFrost,
-                      l10n.texturePresetFullLiquid: TexturePreset.fullLiquid,
-                      l10n.texturePresetSoftMist: TexturePreset.softMist,
-                      l10n.texturePresetMinimalSolid:
-                          TexturePreset.minimalSolid,
-                      l10n.texturePresetCustom: null,
-                    },
-                    value: texturePresetOf(_draft),
-                    onChanged: (preset) async {
-                      if (preset == null) return;
-                      final applied = await _confirmTexturePreset(preset);
-                      if (!applied || !mounted) return;
-                      setSheetState(() {});
-                    },
-                  ),
-                  // 玻璃模式四档：与「课表页面」设置里那行同一映射。
-                  HyperosSelectTile<GlassModeChoice>(
-                    label: l10n.frostedGlassModeLabel,
-                    items: {
-                      l10n.frostedGlassModeSolid: GlassModeChoice.solid,
-                      l10n.frostedGlassModeGaussian: GlassModeChoice.gaussian,
-                      l10n.frostedGlassModeSoft: GlassModeChoice.softGlass,
-                      l10n.frostedGlassModeLiquid: GlassModeChoice.liquidGlass,
-                    },
-                    value: glassModeChoiceOf(_draft),
-                    onChanged: (value) {
-                      _updateDraft(applyGlassModeChoice(_draft, value));
-                      setSheetState(() {});
-                    },
-                  ),
-                  // 高级材质（柔光 / 液态）才需要进一步调校：档位与滑杆都在那页。
-                  if (isAdvancedGlassMode(_draft.frostedGlassMode))
-                    HyperosListTile(
-                      title: l10n.advancedMaterialTitle,
-                      details: l10n.advancedMaterialEntrySubtitle,
-                      onTap: () async {
-                        await HyperosNavigation.push(
-                          context,
-                          settings: const RouteSettings(
-                            name: '/settings/advanced-material',
-                          ),
-                          builder: (_) => const AdvancedMaterialSettingsScreen(),
-                        );
-                        if (!mounted) return;
-                        setState(() {
-                          _draft = context.read<TimetableProvider>().settings;
-                        });
+    return _withChromeHidden(
+      () => showHomeHyperosSheet<void>(
+        context: context,
+        builder: (sheetContext) => HyperosSheetFrame(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: StatefulBuilder(
+            builder: (sheetContext, setSheetState) => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  l10n.appearanceEditorMaterialAction,
+                  style: HyperosTypography.sheetTitle(sheetContext),
+                ),
+                const SizedBox(height: 16),
+                HyperosListGroup(
+                  children: [
+                    // 质感方案：一键写穿一组推荐的材质搭配。
+                    HyperosSelectTile<TexturePreset?>(
+                      label: l10n.texturePresetLabel,
+                      subtitle: l10n.texturePresetSubtitle,
+                      items: {
+                        l10n.texturePresetClassicFrost:
+                            TexturePreset.classicFrost,
+                        l10n.texturePresetFullLiquid: TexturePreset.fullLiquid,
+                        l10n.texturePresetSoftMist: TexturePreset.softMist,
+                        l10n.texturePresetMinimalSolid:
+                            TexturePreset.minimalSolid,
+                        l10n.texturePresetCustom: null,
+                      },
+                      value: texturePresetOf(_draft),
+                      onChanged: (preset) async {
+                        if (preset == null) return;
+                        final applied = await _confirmTexturePreset(preset);
+                        if (!applied || !mounted) return;
                         setSheetState(() {});
                       },
                     ),
-                ],
-              ),
-            ],
+                    // 玻璃模式四档：与「课表页面」设置里那行同一映射。
+                    HyperosSelectTile<GlassModeChoice>(
+                      label: l10n.frostedGlassModeLabel,
+                      items: {
+                        l10n.frostedGlassModeSolid: GlassModeChoice.solid,
+                        l10n.frostedGlassModeGaussian:
+                            GlassModeChoice.gaussian,
+                        l10n.frostedGlassModeSoft: GlassModeChoice.softGlass,
+                        l10n.frostedGlassModeLiquid:
+                            GlassModeChoice.liquidGlass,
+                      },
+                      value: glassModeChoiceOf(_draft),
+                      onChanged: (value) {
+                        _updateDraft(applyGlassModeChoice(_draft, value));
+                        setSheetState(() {});
+                      },
+                    ),
+                    // 高级材质（柔光 / 液态）才需要进一步调校：档位与滑杆都在那页。
+                    if (isAdvancedGlassMode(_draft.frostedGlassMode))
+                      HyperosListTile(
+                        title: l10n.advancedMaterialTitle,
+                        details: l10n.advancedMaterialEntrySubtitle,
+                        onTap: () async {
+                          await HyperosNavigation.push(
+                            context,
+                            settings: const RouteSettings(
+                              name: '/settings/advanced-material',
+                            ),
+                            builder: (_) =>
+                                const AdvancedMaterialSettingsScreen(),
+                          );
+                          if (!mounted) return;
+                          setState(() {
+                            _draft = context.read<TimetableProvider>().settings;
+                          });
+                          setSheetState(() {});
+                        },
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -252,106 +299,163 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     return true;
   }
 
+  // —— 卡片缩放（双指捏合 + 回弹，参考实现同款手势）。
+
+  void _animateZoomTo(double target) {
+    final from = _zoom;
+    final animation = Tween<double>(begin: from, end: target).animate(
+      CurvedAnimation(parent: _zoomBounce, curve: Curves.easeOutCubic),
+    );
+    _zoomAnimation = animation;
+    _zoomBounce
+      ..reset()
+      ..forward();
+  }
+
+  void _onZoomTick() {
+    final animation = _zoomAnimation;
+    if (animation == null) {
+      return;
+    }
+    setState(() => _zoom = animation.value);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    // 虚拟屏：真首页按**整屏尺寸**排版（它读的是环境 MediaQuery，与这个
-    // SizedBox 无关），这一层再整体缩到可用区里居中 —— 「原样缩小」而不是
-    // 「另排一套小屏布局」。宽高都取真机逻辑尺寸，保证缩略图与实际观感同形。
-    final virtualScreen = MediaQuery.sizeOf(context);
-    return FrostedAppearanceScope(
-      // 预览必须读**本页草稿**的外观，否则弹窗里刚改的材质不会反映到微缩图上
-      // （FrostedAppearanceScope.of 会静默回落到默认值）。
-      appearance: _draft.frostedAppearance,
-      child: HyperosSubpage(
-        onBack: _cancel,
-        title: Text(l10n.appearanceEditorTitle),
-        // 只留顶栏那一行标题：折叠大标题在预览页里既占高度又和标题重复
-        // （用户反馈「不应该显示大标题小标题」）。
-        collapsibleLargeTitle: false,
-        suffixes: [
-          FHeaderAction(
-            icon: const Icon(Icons.check_rounded),
-            semanticsLabel: l10n.appearanceEditorDoneAction,
-            onPress: _finish,
-          ),
-        ],
-        headerExtension: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-          child: HyperosTabRow(
-            tabs: [
-              l10n.glassDockTabDay,
-              l10n.glassDockTabWeek,
-            ],
-            selectedIndex: _dayPreview ? 0 : 1,
-            onChanged: (index) {
-              setState(() => _dayPreview = index == 0);
-              _previewDayView.value = _dayPreview;
-            },
-          ),
-        ),
-        bottomBar: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: HyperosButton(
-                  label: l10n.appearanceEditorWallpaperAction,
-                  variant: HyperosButtonVariant.secondary,
-                  onPressed: _openWallpaperSheet,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: HyperosButton(
-                  label: l10n.appearanceEditorMaterialAction,
-                  onPressed: _openMaterialSheet,
-                ),
-              ),
-            ],
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: LayoutBuilder(
-            builder: (context, constraints) => Center(
-              child: FittedBox(
-                // 默认就是 contain：完整展示、不变形、居中；可用区比虚拟屏
-                // 窄或矮都吃得下。
-                child: DecoratedBox(
-                  // 一圈外浮影，让缩略图读成「一张缩小的屏幕」而不是一块贴在
-                  // 页面上的图（参考 Nexio「课表外观」的做法：那边是暗色遮罩上
-                  // 挖一个圆角洞，露出被缩放的**真首页**）。
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(
-                      HyperosMotionPlatform.displayCornerRadiusDp,
-                    ),
-                    boxShadow: const [
-                      BoxShadow(color: Color(0x33000000), blurRadius: 28),
-                    ],
-                  ),
-                  child: SizedBox(
-                    width: virtualScreen.width,
-                    height: virtualScreen.height,
-                    child: ClipRRect(
-                      // 圆角取**真机屏幕圆角**（与 Nexio 的 screenRadiusDp 同一
-                      // 口径）：缩略图于是就是「这台机器上的那一屏」，而不是
-                      // 一个直角矩形。
-                      borderRadius: BorderRadius.circular(
-                        HyperosMotionPlatform.displayCornerRadiusDp,
+    final media = MediaQuery.of(context);
+    // 虚拟屏：真首页按**整屏尺寸**排版（它读的是环境 MediaQuery，与卡片尺寸
+    // 无关），卡片把它整体缩进去 —— 「原样缩小」而不是「另排一套小屏布局」。
+    final virtualScreen = media.size;
+    final topInset = media.padding.top;
+    final bottomInset = media.padding.bottom;
+
+    _zoomBounce.removeListener(_onZoomTick);
+    _zoomBounce.addListener(_onZoomTick);
+
+    return PopScope(
+      // 系统返回 = 取消（与左上角那颗胶囊同义）。
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _cancel();
+        }
+      },
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        // 沉浸式暗底：状态栏图标走浅色。
+        value: SystemUiOverlayStyle.light,
+        child: FrostedAppearanceScope(
+          // 预览必须读**本页草稿**的外观，否则弹窗里刚改的材质不会反映到卡片上
+          // （FrostedAppearanceScope.of 会静默回落到默认值）。
+          appearance: _draft.frostedAppearance,
+          child: ColoredBox(
+            color: _scrimColor,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // 上下给 chrome 留出的净空：顶部是「胶囊那一行 + 日/周分段」，
+                // 底部是「一排圆钮 + 名字」。
+                final topReserve = topInset + 16 + 40 + 12 + 36 + 18;
+                final bottomReserve = bottomInset + 34 + 56 + 8 + 18;
+                final availableHeight = (constraints.maxHeight -
+                        topReserve -
+                        bottomReserve)
+                    .clamp(120.0, double.infinity);
+                final availableWidth =
+                    constraints.maxWidth * _cardMaxWidthFactor;
+                // 保持整屏宽高比，完整放下（不裁切）。
+                final scale = math.min(
+                  availableWidth / virtualScreen.width,
+                  availableHeight / virtualScreen.height,
+                );
+                final cardWidth = virtualScreen.width * scale;
+                final cardHeight = virtualScreen.height * scale;
+                // 圆角跟着缩放走（参考实现是 screenRadiusDp * cardScale）。
+                final cardRadius = math.min(
+                  HyperosMotionPlatform.displayCornerRadiusDp * scale,
+                  cardHeight / 2,
+                );
+                // 卡片中心略偏上：视觉重心比几何中心高一点才「在屏幕中间」。
+                final cardCenterY = topReserve +
+                    availableHeight / 2 -
+                    (bottomReserve - topReserve) / 6;
+
+                return Stack(
+                  children: [
+                    Positioned(
+                      left: (constraints.maxWidth - cardWidth) / 2,
+                      top: cardCenterY - cardHeight / 2,
+                      width: cardWidth,
+                      height: cardHeight,
+                      child: _buildPreviewCard(
+                        virtualScreen: virtualScreen,
+                        radius: cardRadius,
                       ),
-                      child: TimetableHomePreviewScope(
-                        dayView: _previewDayView,
-                        dayOfWeek: _previewDayOfWeekNotifier,
-                        // 预览里点按一律吞掉：这是「看外观」的缩略图，不是第二个
-                        // 可操作首页（误触会加课、翻周、改真实浏览位置）。
-                        child: const IgnorePointer(
-                          child: TimetableScreen(
-                            // 预览不查更新、不跑秒级刷新：那是首页自己的事。
-                            enableUpdateCheck: false,
-                            enableProgressTimer: false,
-                          ),
-                        ),
+                    ),
+                    _buildTopChrome(context, l10n, topInset),
+                    _buildBottomChrome(context, l10n, bottomInset),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 中间那张卡：真首页缩进去 + 屏幕圆角 + 描边浮影，可双指缩放。
+  Widget _buildPreviewCard({
+    required Size virtualScreen,
+    required double radius,
+  }) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: const [
+          BoxShadow(color: Color(0x66000000), blurRadius: 32, spreadRadius: 2),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: GestureDetector(
+          // 手势只挂在卡片上：缩放进内容，不传给嵌进来的首页。
+          behavior: HitTestBehavior.opaque,
+          onScaleStart: (_) {
+            _zoomBounce.stop();
+            _zoomAnimation = null;
+          },
+          onScaleUpdate: (details) {
+            final next = (_zoom * details.scale).clamp(_zoomMin, _zoomMax);
+            if (next != _zoom) {
+              setState(() => _zoom = next);
+            }
+          },
+          onScaleEnd: (_) {
+            // 参考实现同款：松手回弹到合法区间。
+            final target = _zoom.clamp(_zoomMin, _zoomMax);
+            if (target != _zoom) {
+              _animateZoomTo(target);
+            }
+          },
+          child: ClipRect(
+            child: Transform.scale(
+              scale: _zoom,
+              child: FittedBox(
+                // 默认就是 contain：完整展示、不变形；卡片与虚拟屏同比，
+                // 所以放大到 1 倍时正好铺满卡片。
+                child: SizedBox(
+                  width: virtualScreen.width,
+                  height: virtualScreen.height,
+                  child: TimetableHomePreviewScope(
+                    dayView: _previewDayView,
+                    dayOfWeek: _previewDayOfWeekNotifier,
+                    // 预览里点按一律吞掉：这是「看外观」的缩略图，不是第二个
+                    // 可操作首页（误触会加课、翻周、改真实浏览位置）。
+                    child: const IgnorePointer(
+                      child: TimetableScreen(
+                        // 预览不查更新、不跑秒级刷新：那是首页自己的事。
+                        enableUpdateCheck: false,
+                        enableProgressTimer: false,
                       ),
                     ),
                   ),
@@ -360,6 +464,231 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// 顶部：居中标题 + 日 / 周分段 + 左上取消 / 右上完成。
+  Widget _buildTopChrome(
+    BuildContext context,
+    AppLocalizations l10n,
+    double topInset,
+  ) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      top: 0,
+      child: IgnorePointer(
+        ignoring: !_chromeVisible,
+        child: AnimatedOpacity(
+          opacity: _chromeVisible ? 1 : 0,
+          duration: const Duration(milliseconds: 200),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20, topInset + 12, 20, 0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    _capsuleButton(
+                      label: l10n.cancelAction,
+                      onTap: _cancel,
+                      emphasized: false,
+                    ),
+                    Expanded(
+                      child: Text(
+                        l10n.appearanceEditorTitle,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    _capsuleButton(
+                      label: l10n.appearanceEditorDoneAction,
+                      onTap: _finish,
+                      emphasized: true,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // 日 / 周切换：用户要求「按钮放顶部」，放在标题下面一行。
+                _dayWeekSegmented(l10n),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 顶部胶囊按钮：与参考实现同尺寸（84×40）的玻璃胶囊。
+  Widget _capsuleButton({
+    required String label,
+    required VoidCallback onTap,
+    required bool emphasized,
+  }) {
+    return SizedBox(
+      width: 84,
+      height: 40,
+      child: Material(
+        color: emphasized
+            ? Colors.white.withValues(alpha: 0.92)
+            : Colors.white.withValues(alpha: 0.14),
+        shape: const StadiumBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: emphasized ? const Color(0xFF1A1A1A) : Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 日 / 周分段：暗底上的一枚玻璃胶囊，选中段是白底深字。
+  Widget _dayWeekSegmented(AppLocalizations l10n) {
+    Widget segment(String label, bool selected, VoidCallback onTap) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+          decoration: BoxDecoration(
+            color: selected
+                ? Colors.white.withValues(alpha: 0.92)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? const Color(0xFF1A1A1A) : Colors.white,
+              fontSize: 14,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          segment(l10n.glassDockTabDay, _dayPreview, () {
+            setState(() => _dayPreview = true);
+            _previewDayView.value = true;
+          }),
+          segment(l10n.glassDockTabWeek, !_dayPreview, () {
+            setState(() => _dayPreview = false);
+            _previewDayView.value = false;
+          }),
+        ],
+      ),
+    );
+  }
+
+  /// 底部：一排圆形玻璃入口（调整壁纸 ｜ 材质），与参考实现同款排布。
+  Widget _buildBottomChrome(
+    BuildContext context,
+    AppLocalizations l10n,
+    double bottomInset,
+  ) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: IgnorePointer(
+        ignoring: !_chromeVisible,
+        child: AnimatedOpacity(
+          opacity: _chromeVisible ? 1 : 0,
+          duration: const Duration(milliseconds: 200),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: bottomInset + 26),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _circleAction(
+                  icon: Icons.image_outlined,
+                  label: l10n.appearanceEditorWallpaperAction,
+                  onTap: _openWallpaperSheet,
+                ),
+                // 竖杠（参考实现里同样的分隔）。
+                Container(
+                  width: 1,
+                  height: 30,
+                  margin: const EdgeInsets.symmetric(horizontal: 18),
+                  color: Colors.white.withValues(alpha: 0.18),
+                ),
+                _circleAction(
+                  icon: Icons.auto_awesome_outlined,
+                  label: l10n.appearanceEditorMaterialAction,
+                  onTap: _openMaterialSheet,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _circleAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      // 圆钮与它下面那行名字**同属一个点击区**：只让圆钮可点的话，用户按到
+      // 名字上会毫无反应（参考实现那行没有名字，本仓加了名字就得一起接住）。
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 56,
+            height: 56,
+            child: Material(
+              color: Colors.white.withValues(alpha: 0.14),
+              shape: CircleBorder(
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onTap,
+                child: Icon(icon, size: 26, color: Colors.white),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.86),
+              fontSize: 12,
+            ),
+          ),
+        ],
       ),
     );
   }
