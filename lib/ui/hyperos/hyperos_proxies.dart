@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_miuix_spec.dart';
-import 'hyperos_popup_glass.dart' show HyperosGlassEdge, HyperosSelectPopupGlass;
+import 'hyperos_popup_glass.dart' show HyperosGlassShadow, HyperosSelectPopupGlass;
 import 'hyperos_theme.dart';
 
 
@@ -135,22 +135,23 @@ class FHeaderActionBall extends StatelessWidget {
   /// 菜单打开期间置 false，让位给弹窗自己的形变球。
   final bool visible;
 
-  /// 描边（压在玻璃**之上**）+ 外阴影（垫在玻璃**之下**）。
+  /// 外阴影（垫在玻璃**之下**）。
   ///
   /// 上游同款组件 `MiuixGlassIconButton` 的可见性靠三样东西保底：材质自身、
-  /// **描边**、**外阴影** —— 后两样与背景无关，任何底色上都读得出轮廓。本仓
-  /// 这颗球走 [HyperosSelectPopupGlass]，而默认的「高斯磨砂」分支既没描边也
-  /// 没阴影：纯色背景上模糊一个纯色仍是同一个纯色，圆就整颗融进页面
-  /// （真机反馈：没设壁纸时右上角小球在浅色和深色下都几乎看不见）。
+  /// 描边、外阴影 —— 后两样与背景无关，任何底色上都读得出轮廓。本仓这颗球走
+  /// [HyperosSelectPopupGlass]，而默认的「高斯磨砂」分支既没描边也没阴影：
+  /// 纯色背景上模糊一个纯色仍是同一个纯色，圆就整颗融进页面（真机反馈：没设
+  /// 壁纸时右上角小球在浅色和深色下都几乎看不见）。
   ///
-  /// ⚠️ 两层的**数值必须与弹层侧同源**（[HyperosGlassEdge]，弹层侧由
-  /// [HyperosSelectPopupGlass.surfaceEdge] 打开）：菜单收起时这颗球是弹窗先画
+  /// **其中「描边」已按用户要求下线**（2026-09-19）：球的边界改由玻璃材质自己
+  /// 交代，组件不再在材质之外叠一层发丝线。浮影保留 —— 它同样与背景无关，也是
+  /// 下面那条交接一致性的载体。
+  ///
+  /// ⚠️ 数值必须与弹层侧同源（[HyperosGlassShadow] 定义、弹层侧由
+  /// [HyperosSelectPopupGlass.surfaceShadow] 打开）：菜单收起时这颗球是弹窗先画
   /// 一颗、再交接给常驻球的，两侧不一致就会在交接瞬间现形 —— 真机反馈「阴影在
   /// 弹窗收回后一秒突然出现」就是这么来的。同理，这里**不要**再给自己垫洗色之类
   /// 弹层侧没有的层：交接面多一层，跳变就换一种形式回来。
-  ///
-  /// 描边必须叠在最上层而不是画在玻璃下面：降级实底那条分支的球是不透明的，
-  /// 画在下面会被整块盖掉。
   Widget _buildVisibleBall(BuildContext context) {
     return Stack(
       children: [
@@ -158,15 +159,14 @@ class FHeaderActionBall extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              // 与弹层侧同源（见 [HyperosGlassEdge]）。
-              boxShadow: [HyperosGlassEdge.shadow],
+              // 与弹层侧同源（见 [HyperosGlassShadow]）。
+              boxShadow: [HyperosGlassShadow.shadow],
             ),
           ),
         ),
         HyperosSelectPopupGlass(
           cornerRadius: MiuixIconButtonDefaults.minWidth / 2,
-          // ⚠️ 关掉上游那圈「贴边加法白」高光。球的轮廓由上面那道不透明轮廓线
-          // 保证（任何背景都读得出），而加法白在球上是**零收益、纯副作用**：
+          // ⚠️ 关掉上游那圈「贴边加法白」高光。加法白在球上是**零收益、纯副作用**：
           // 纯色底上"白叠白"等于没画（见本方法上方那段历史），有壁纸时球内部是
           // 壁纸糊出来的颜色，贴边那层白一叠就顶到纯白 —— 真机上就是"一圈没有
           // 过渡的死白边"（用户反馈：柔光档 + 壁纸，右上角球的白边特别重）。
@@ -177,21 +177,6 @@ class FHeaderActionBall extends StatelessWidget {
             width: MiuixIconButtonDefaults.minWidth,
             height: MiuixIconButtonDefaults.minHeight,
             child: Center(child: icon),
-          ),
-        ),
-        Positioned.fill(
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                // 与弹层侧同源的轮廓线（见 [HyperosGlassEdge]）：只勾边界，
-                // 不抢图标。
-                border: Border.all(
-                  color: HyperosGlassEdge.ringColor(context),
-                  width: HyperosGlassEdge.ringWidth,
-                ),
-              ),
-            ),
           ),
         ),
       ],

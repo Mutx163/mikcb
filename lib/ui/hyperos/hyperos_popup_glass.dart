@@ -28,64 +28,49 @@ import 'liquid/liquid_glass_surface.dart';
 import 'soft_glass/soft_glass_surface.dart';
 import 'soft_glass/stable_frosted_surface.dart';
 
-/// 弹层与首页常驻圆球**共用**的「轮廓 + 浮影」。
+/// 弹层与首页常驻圆球**共用**的那层外浮影。
 ///
 /// 为什么必须只有一处定义：首页那两颗球（「更多」「爱心」）不是按钮自己画的，
 /// 而是"弹窗先画、再交接给常驻球"——上游形变动画的终点就是锚点大小的一块玻璃。
-/// 两侧的描边/阴影只要不一致，交接那一瞬就会跳：真机反馈「阴影在弹窗收回后
-/// 一秒突然出现」，根因正是常驻球有阴影而弹窗那颗没有（上游 `MiuixGlassPanel`
-/// 默认带 `stroke` + `floating` 阴影，本仓的注入面把整块面板换掉时把这两层丢了）。
+/// 两侧的阴影只要不一致，交接那一瞬就会跳：真机反馈「阴影在弹窗收回后一秒突然
+/// 出现」，根因正是常驻球有阴影而弹窗那颗没有（上游 `MiuixGlassPanel` 默认带
+/// `stroke` + `floating` 阴影，本仓的注入面把整块面板换掉时把这两层丢了）。
 ///
-/// 用法：弹层侧传 [HyperosSelectPopupGlass.surfaceEdge]，球侧用这里的常量自己
-/// 搭（球还要多垫一层洗色）。
-abstract final class HyperosGlassEdge {
+/// **组件自己那道 0.75 发丝轮廓线已按用户要求下线**（2026-09-19）：球的边界改由
+/// 玻璃材质自己交代（液态玻璃的受光边缘高光），不再在材质之外叠一层描边。浮影
+/// 保留 —— 它是上面那条交接一致性的载体，与「描边」是两回事。
+///
+/// 用法：弹层侧传 [HyperosSelectPopupGlass.surfaceShadow]，球侧用这里的常量自己搭。
+abstract final class HyperosGlassShadow {
   /// 外浮影。数值与 [HyperosSolidPopupSurface] 既有的那层一致：实底分支本来就
   /// 有阴影，两边同值才谈得上"同源"。
   static const shadow = BoxShadow(color: Color(0x24000000), blurRadius: 20);
 
-  /// 0.75 逻辑像素的发丝轮廓线（与顶栏分隔线同口径）：只勾出边界，不抢内容。
-  static const ringWidth = 0.75;
-
-  static Color ringColor(BuildContext context) => HyperosColors.outline(context);
-
-  /// 把一块玻璃面按同源参数包上「浮影（下）+ 轮廓线（上）」。
+  /// 把一块玻璃面按同源参数衬上外浮影。
   ///
-  /// - 轮廓线 must 叠在玻璃**之上**：降级实底分支的面是不透明的，画在下面会被
-  ///   整块盖掉。
   /// - [withShadow] 只在面**自带了同值阴影**时关掉（实底分支），否则会叠两层。
+  /// - [borderRadius] 只用来给浮影定形状 —— 少了它阴影会是个方块。
   /// - [clipBehavior] 必须 `none`，否则 Stack 默认会把外浮影裁掉。
-  static Widget wrap(
-    BuildContext context, {
+  static Widget wrap({
     required BorderRadius borderRadius,
     required Widget child,
     bool withShadow = true,
   }) {
+    if (!withShadow) {
+      return child;
+    }
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        if (withShadow)
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: borderRadius,
-                boxShadow: const [shadow],
-              ),
-            ),
-          ),
-        child,
         Positioned.fill(
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: borderRadius,
-                border: Border.all(
-                  color: ringColor(context),
-                  width: ringWidth,
-                ),
-              ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: borderRadius,
+              boxShadow: const [shadow],
             ),
           ),
         ),
+        child,
       ],
     );
   }
@@ -105,32 +90,33 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     required this.child,
     this.useAncestorGroupCapture = false,
     this.thicknessFactor,
-    this.surfaceEdge = false,
+    this.surfaceShadow = false,
     this.enableEdgeHighlight = true,
   });
 
   final double cornerRadius;
   final Widget child;
 
-  /// 面上再叠一圈同源轮廓 + 浮影（见 [HyperosGlassEdge]）。
+  /// 面上再衬一层同源浮影（见 [HyperosGlassShadow]）。
   ///
   /// 默认关：其余弹层（选择弹窗、列表弹窗）保持原观感，那些弹层没有"要交接给
   /// 常驻球"的终点。**OS4 注入面必须开**（`os4_glass_popup_surface.dart`）——
-  /// 首页菜单收起时那颗球就是这块面缩到锚点大小，两侧不一致就会在交接瞬间跳。
-  final bool surfaceEdge;
+  /// 首页菜单收起时那颗球就是这块面缩到锚点大小，两侧阴影不一致就会在交接瞬间跳。
+  ///
+  /// 曾经它还带一圈 0.75 的发丝轮廓线，2026-09-19 按用户要求下线：球的边界改由
+  /// 玻璃材质自己交代，组件不再叠描边。
+  final bool surfaceShadow;
 
   /// 上游那圈「贴边加法白」高光要不要画（透传给 `SoftGlassSurface`）。
   ///
   /// 默认开 —— 那是柔光玻璃的标准观感，弹层一律保持。**只有首页那颗常驻玻璃球
-  /// 关掉它**（`FHeaderActionBall`）：球的轮廓由 [HyperosGlassEdge] 那道不透明
-  /// 描边保证，任何背景上都读得出；而上游这圈加法白在球上属于**零收益、纯副作用** ——
-  /// 纯色底上"白叠白"等于没画（历史反馈「没壁纸时球看不见」正是这个成因，当时的
-  /// 修法是补轮廓线），有壁纸时球内部变成壁纸糊出来的颜色，贴边那层白一叠就顶到
-  /// 纯白，读起来是"一圈没有过渡的死白边"（用户反馈：柔光档 + 壁纸，右上角球的
-  /// 白边特别重）。
+  /// 关掉它**（`FHeaderActionBall`）：上游这圈加法白在球上属于**零收益、纯副作用** ——
+  /// 纯色底上"白叠白"等于没画，有壁纸时球内部变成壁纸糊出来的颜色，贴边那层白一叠
+  /// 就顶到纯白，读起来是"一圈没有过渡的死白边"（用户反馈：柔光档 + 壁纸，右上角球
+  /// 的白边特别重）。
   ///
-  /// ⚠️ 关闭它会让球与"菜单收起时那块缩到锚点大小的面板"在描边上有差异（面板仍带
-  /// 高光）。两侧仍是同一个组件、同一圈轮廓与浮影，只是那 1px 高光的有无 ——
+  /// ⚠️ 关闭它会让球与"菜单收起时那块缩到锚点大小的面板"在高光上有差异（面板仍带
+  /// 高光）。两侧仍是同一个组件、同一层浮影，只是那 1px 高光的有无 ——
   /// 这是有意接受的取舍，见 `.agents/notes/implemented/bug-fix/`
   /// 下 2026-09-17 那篇。
   final bool enableEdgeHighlight;
@@ -208,11 +194,10 @@ class HyperosSelectPopupGlass extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final surface = _buildSurface(context);
-    if (!surfaceEdge) {
+    if (!surfaceShadow) {
       return surface;
     }
-    return HyperosGlassEdge.wrap(
-      context,
+    return HyperosGlassShadow.wrap(
       borderRadius: BorderRadius.circular(cornerRadius),
       child: surface,
       // 实底分支自带同值浮影（[HyperosSolidPopupSurface]），再叠一层会明显更黑。
@@ -310,8 +295,8 @@ class HyperosSolidPopupSurface extends StatelessWidget {
   final double cornerRadius;
   final Widget child;
 
-  /// 与首页常驻球同源的那层外浮影（见 [HyperosGlassEdge]）。
-  static const _kPopupShadow = [HyperosGlassEdge.shadow];
+  /// 与首页常驻球同源的那层外浮影（见 [HyperosGlassShadow]）。
+  static const _kPopupShadow = [HyperosGlassShadow.shadow];
 
   @override
   Widget build(BuildContext context) {

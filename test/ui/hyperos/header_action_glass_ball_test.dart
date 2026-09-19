@@ -244,7 +244,7 @@ void main() {
     //
     // 回归点二：这两层必须与弹层侧同源。菜单收起时那颗球是"弹窗先画、再交接给
     // 常驻球"的，两侧不一致就会在交接瞬间现形（真机反馈：阴影在弹窗收回后一秒
-    // 突然出现）。所以这里同时钉住"用了 [HyperosGlassEdge] 的值"。
+    // 突然出现）。所以这里同时钉住"用了 [HyperosGlassShadow] 的值"。
     for (final brightness in Brightness.values) {
       final link = LayerLink();
       await tester.pumpWidget(
@@ -273,9 +273,9 @@ void main() {
           )
           .map((b) => b.decoration as BoxDecoration);
 
-      // 垫底那层：外浮影（球的分离感全靠它与那圈描边，材质本身在纯色背景上
-      // 等于没画）。**不要**再往这里加洗色之类弹层侧没有的层：交接面多一层，
-      // 跳变就换一种形式回来。
+      // 垫底那层：外浮影（球的分离感靠它，材质本身在纯色背景上等于没画）。
+      // **不要**再往这里加洗色之类弹层侧没有的层：交接面多一层，跳变就换一种
+      // 形式回来。
       final base = decorations.firstWhere(
         (d) => d.boxShadow?.isNotEmpty ?? false,
       );
@@ -286,28 +286,16 @@ void main() {
       );
       expect(base.shape, BoxShape.circle);
 
-      // 压在最上面那圈描边：描边色必须**不是**页面底色，否则等于没画。
-      final ring = decorations.firstWhere((d) => d.border != null);
-      final ringColor = (ring.border! as Border).top.color;
-      final pageBackground = brightness == Brightness.dark
-          ? const Color(0xFF242424)
-          : const Color(0xFFFFFFFF);
+      // 2026-09-19 起组件**不再给球叠描边**（用户口径「去掉，靠玻璃设置」）：
+      // 球的边界交给玻璃材质自己交代。谁要是把描边加回来，这条会红。
       expect(
-        ringColor,
-        isNot(pageBackground),
-        reason: '$brightness：描边色不能和页面底色相同',
-      );
-      expect(ringColor.a, 1.0, reason: '描边必须是不透明的轮廓线');
-      expect(
-        ringColor,
-        HyperosGlassEdge.ringColor(
-          tester.element(find.byType(FHeaderActionBall)),
-        ),
-        reason: '球与弹层侧（surfaceEdge）必须用同一处定义的轮廓色',
+        decorations.where((d) => d.border != null),
+        isEmpty,
+        reason: '$brightness：组件不再叠描边，边界由玻璃材质交代',
       );
       expect(
         base.boxShadow!.first,
-        HyperosGlassEdge.shadow,
+        HyperosGlassShadow.shadow,
         reason: '球与弹层侧必须用同一处定义的浮影',
       );
     }
@@ -372,7 +360,7 @@ void main() {
     // 本就被三层白提亮到接近纯白，加法一叠直接钳到 1.0 —— 一圈没有过渡的死白边
     // （纯色底上"白叠白"等于没画，所以只在有壁纸时暴露）。
     //
-    // 球的轮廓由 `HyperosGlassEdge` 那道不透明轮廓线保证（任何底色都读得出），
+    // 球的边界自 2026-09-19 起交给玻璃材质自己交代（组件不再叠描边），
     // 因此上游这圈高光在球上是零收益、纯副作用：整层不画。注意**不能只衰减它**
     // —— 玻璃内部接近纯白时，减半与满值都顶在 1.0，看不出任何区别。
     final link = LayerLink();
