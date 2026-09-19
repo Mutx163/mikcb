@@ -138,6 +138,44 @@ void main() {
     expect(find.byType(MiuixWindowBottomSheet), findsNothing);
   });
 
+  testWidgets('内容与屏幕底之间留出安全区 + 16 的呼吸', (tester) async {
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) => Center(
+            child: TextButton(
+              onPressed: () => showMiuixBottomSheet<void>(
+                context: context,
+                builder: (sheetContext, close) => const SizedBox(
+                  key: ValueKey('sheet-content'),
+                  width: 120,
+                  height: 200,
+                ),
+              ),
+              child: const Text('打开'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+
+    // 上游面板只按键盘留底部内边距，不管系统手势区 —— 承载壳补的这层要是掉了，
+    // 最后一行内容会贴死在屏幕最下沿（用户反馈过：「调课停课什么的都到底部屏幕外面去了」）。
+    final screenHeight =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    final contentBottom = tester
+        .getBottomLeft(find.byKey(const ValueKey('sheet-content')))
+        .dy;
+    expect(
+      screenHeight - contentBottom,
+      // 浮点误差留一点余量；测试窗口的系统安全区是 0，所以这里就是那道 16。
+      greaterThanOrEqualTo(hyperosMiuixBottomSheetContentBottomGap - 0.5),
+    );
+  });
+
   testWidgets('barrierDismissible: false 时点蒙层不关', (tester) async {
     await tester.pumpWidget(
       TestApp(

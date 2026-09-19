@@ -30,7 +30,14 @@ void main() {
           glassMode: mode,
         ),
         child: MediaQuery(
-          data: MediaQueryData(padding: mediaQueryPadding),
+          // 本用例只注入 padding；但 **size 必须给真实值** —— MediaQueryData 默认
+          // size 是 Size.zero，而底部弹窗面板的高度上限是「屏高 − 状态栏」，
+          // 零高度会算出负数、直接命中约束断言
+          //（`BoxConstraints has non-normalized height constraints`）。
+          data: MediaQueryData(
+            padding: mediaQueryPadding,
+            size: tester.view.physicalSize / tester.view.devicePixelRatio,
+          ),
           child: TestApp(
             home: Builder(
               builder: (context) => TextButton(

@@ -44,8 +44,34 @@ enum HyperosSheetChrome {
   floating,
 
   /// Edge-flush panel: full width, top corners only, sits on screen bottom.
-  /// Preferred for home timetable menus and action sheets.
+  ///
+  /// ⚠️ 2026-09-19 起**本仓已无调用方**：贴底通栏弹窗改由上游底部弹窗承载
+  /// （`showHomeHyperosSheet` → `showMiuixBottomSheet`），面板材质由
+  /// `hyperosMiuixBottomSheetSurface` 注入。这条分支留着是为了「上游组件不满意要回退」
+  /// 时能原地切回来；确认不回退后再连同 [_buildEdgePanel] 一起删。
   edge,
+}
+
+/// 标记「面板已经由外层弹层画好了」。
+///
+/// 底部弹窗换成上游组件之后（`showMiuixBottomSheet` / `showHomeHyperosSheet`），面板
+/// 材质由承载壳注入（见 `miuix_bottom_sheet.dart` 的 `hyperosMiuixBottomSheetSurface`），
+/// 于是内容里的 [HyperosSheetFrame] / [HyperosSheet] **不能再画一层玻璃** ——
+/// 否则玻璃叠玻璃、里外两层内边距。承载壳把内容包进这个作用域，框自己让位
+/// （见 [HyperosSheetFrame.build]）。
+///
+/// 为什么用 InheritedWidget 而不是给框加参数：这是**跨调用点**的口径（十几个调用点），
+/// 逐个加参数既啰嗦又容易漏。注意作用域必须由**内容子树自己**提供 ——
+/// 上游窗口层的子树挂在根 Overlay 上，包在组件外面的作用域它继承不到。
+class HyperosHostedSheetScope extends InheritedWidget {
+  const HyperosHostedSheetScope({required super.child, super.key});
+
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<HyperosHostedSheetScope>() !=
+      null;
+
+  @override
+  bool updateShouldNotify(covariant HyperosHostedSheetScope oldWidget) => false;
 }
 
 /// Provides default [HyperosSheetChrome] for nested [HyperosSheetFrame]s.
@@ -79,6 +105,9 @@ class HyperosSheetChromeScope extends InheritedWidget {
 /// Defaults to the shared modal glass material using the same tuning as the
 /// top chrome. Defaults to [HyperosSheetChrome.floating] unless an ancestor
 /// [HyperosSheetChromeScope] or [chrome] overrides it.
+///
+/// 处在 [HyperosHostedSheetScope] 里（外层弹层自带面板）时**不画画板**：
+/// 只把 `child` 原样交出（必要时套 `maxHeight`），内边距 / 圆角 / 安全区归外层。
 class HyperosSheetFrame extends StatelessWidget {
   const HyperosSheetFrame({
     super.key,
@@ -102,6 +131,18 @@ class HyperosSheetFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 面板已由外层弹层画好（上游底部弹窗）：只保留调用方要的高度上限 ——
+    // 材质、圆角、内边距、底部安全区都归外层，见 [HyperosHostedSheetScope]。
+    if (HyperosHostedSheetScope.of(context)) {
+      final hosted = child;
+      return maxHeight == null
+          ? hosted
+          : ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeight!),
+              child: hosted,
+            );
+    }
+
     final resolvedChrome = chrome ?? HyperosSheetChromeScope.of(context);
     final panel = switch (resolvedChrome) {
       HyperosSheetChrome.floating => _buildFloatingPanel(context),
@@ -564,8 +605,9 @@ Future<T?> showHyperosSheet<T>({
   Color? barrierColor,
   HyperosSheetChrome chrome = HyperosSheetChrome.floating,
 }) async {
-  // 诊断标记：sheet / dialog 的实际展示入口（`showHomeHyperosSheet`、
-  // `showHyperosDialog` 等都收敛到这里）。临时件，见 frame_perf_probe.dart。
+  // 诊断标记：`showHyperosDialog` 等都收敛到这里；贴底通栏那批自 2026-09-19 起
+  // 走上游底部弹窗（`miuix_bottom_sheet.dart`），那边打同一个标记。
+  // 临时件，见 frame_perf_probe.dart。
   FramePerfProbe.mark('sheet:open');
   final appearance = FrostedAppearanceScope.of(context);
   final dimColor =
@@ -634,27 +676,6 @@ Future<T?> showHyperosSheet<T>({
   );
 }
 
-/// Home timetable sheets: edge-flush chrome + lighter barrier.
-/// Nested [HyperosSheetFrame]s default to frosted glass.
-Future<T?> showHomeHyperosSheet<T>({
-  required BuildContext context,
-  required WidgetBuilder builder,
-  bool isDismissible = true,
-  bool enableDrag = true,
-  bool useRootNavigator = false,
-  bool padForKeyboard = true,
-  Color? barrierColor,
-  HyperosSheetChrome chrome = HyperosSheetChrome.edge,
-}) {
-  return showHyperosSheet<T>(
-    context: context,
-    builder: builder,
-    isDismissible: isDismissible,
-    enableDrag: enableDrag,
-    useRootNavigator: useRootNavigator,
-    padForKeyboard: padForKeyboard,
-    chrome: chrome,
-    barrierColor:
-        barrierColor ?? HyperosBlurredHeader.modalBarrierColor(context),
-  );
-}
+// `showHomeHyperosSheet`（首页 / 课程那批贴底通栏弹窗的入口）自 2026-09-19 起由
+// 上游底部弹窗承载，搬到了 `miuix_bottom_sheet.dart` —— 那里才能既用它又不用把
+// 上游依赖反向引回本文件（避免两个文件互相 import）。

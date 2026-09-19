@@ -5,7 +5,8 @@ import 'package:flutter_miuix/miuix.dart';
 import '../../utils/frame_perf_probe.dart';
 import 'hyperos_blurred_header.dart';
 import 'hyperos_popup_glass.dart';
-import 'hyperos_sheet.dart' show hyperosEdgeSheetBottomOverdraw;
+import 'hyperos_sheet.dart'
+    show HyperosFrostedPanelScope, HyperosHostedSheetScope, hyperosEdgeSheetBottomOverdraw;
 import 'liquid/liquid_glass_surface.dart';
 
 /// 面板圆角：直接取上游默认值。
@@ -57,6 +58,7 @@ Future<T?> showMiuixBottomSheet<T>({
   required MiuixBottomSheetBuilder builder,
   bool barrierDismissible = true,
   bool useRootNavigator = false,
+  Color? barrierColor,
 }) {
   // 诊断标记沿用 `sheet:open`（这个弹窗就是「弹层开场」那一类，改用上游组件不换口径，
   // 历史读数仍然可比）。见 utils/frame_perf_probe.dart。
@@ -73,7 +75,35 @@ Future<T?> showMiuixBottomSheet<T>({
         _MiuixBottomSheetPage(
           builder: builder,
           barrierDismissible: barrierDismissible,
+          barrierColor: barrierColor,
         ),
+  );
+}
+
+/// 首页 / 课程那批**贴底通栏弹窗**的入口（原 `hyperos_sheet.dart` 的实现）。
+///
+/// 2026-09-19 起由[上游底部弹窗][showMiuixBottomSheet]（`MiuixWindowBottomSheet`）承载：
+/// 面板材质仍是本仓液态玻璃
+/// （承载壳注入），几何、把手、蒙层、弹簧滑入与「只在把手上拖」的关闭手势都归上游。
+/// 内容里的 [HyperosSheetFrame] / [HyperosSheet] 不用改 —— 承载壳用
+/// [HyperosHostedSheetScope] 告诉它们「面板已经有了」，框自己让位。
+///
+/// 三个上游表达能力不同、已经去掉的参数（原先也没有调用方在用）：
+/// `enableDrag`（上游只有把手可拖，不能整面板拖）、`padForKeyboard`（上游自带键盘
+/// 处理）、`chrome`（上游只有通栏形态）。
+Future<T?> showHomeHyperosSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool isDismissible = true,
+  bool useRootNavigator = false,
+  Color? barrierColor,
+}) {
+  return showMiuixBottomSheet<T>(
+    context: context,
+    useRootNavigator: useRootNavigator,
+    barrierDismissible: isDismissible,
+    barrierColor: barrierColor,
+    builder: (sheetContext, close) => builder(sheetContext),
   );
 }
 
@@ -81,10 +111,12 @@ class _MiuixBottomSheetPage extends StatefulWidget {
   const _MiuixBottomSheetPage({
     required this.builder,
     required this.barrierDismissible,
+    this.barrierColor,
   });
 
   final MiuixBottomSheetBuilder builder;
   final bool barrierDismissible;
+  final Color? barrierColor;
 
   @override
   State<_MiuixBottomSheetPage> createState() => _MiuixBottomSheetPageState();
@@ -134,15 +166,38 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
         // 圆角用上游默认值（= [hyperosMiuixBottomSheetCornerRadius]，注入面按它画玻璃）。
         onDismissRequest: widget.barrierDismissible ? _requestClose : () {},
         onDismissFinished: _onDismissFinished,
-        dimColor: HyperosBlurredHeader.modalBarrierColor(context),
+        dimColor:
+            widget.barrierColor ??
+            HyperosBlurredHeader.modalBarrierColor(context),
         dragHandleColor: Theme.of(context).colorScheme.onSurfaceVariant,
         surfaceBuilder: hyperosMiuixBottomSheetSurface,
         scrimUnderlay: const UndimmedBackdropCapture(),
-        content: widget.builder(context, _requestClose),
+        content: HyperosHostedSheetScope(
+          // 面板是本仓液态玻璃 → 告诉内容「你站在磨砂面板上」（次要按钮的填充色
+          // 靠它保持可读），同时告诉 HyperosSheetFrame「别再画一层面板」。
+          child: HyperosFrostedPanelScope(
+            child: Padding(
+              // 上游面板只按**键盘**（viewInsets）留底部内边距，不管系统手势区 / 导航栏
+              // （`MediaQuery.padding.bottom`）—— 不留这一层，最后一行按钮会贴到屏幕
+              // 最下沿、被手势条压住（用户口径：「调课停课什么的都到底部屏幕外面去了」）。
+              // 口径与改动前的 edge sheet 一致：安全区 + [..ContentBottomGap]。
+              // 键盘弹起时 `padding.bottom` 在 Android 上会归零，不会与上游那层叠成双份。
+              padding: EdgeInsets.only(
+                bottom:
+                    MediaQuery.paddingOf(context).bottom +
+                    hyperosMiuixBottomSheetContentBottomGap,
+              ),
+              child: widget.builder(context, _requestClose),
+            ),
+          ),
+        ),
       ),
     );
   }
 }
+
+/// 内容底部额外留的呼吸（系统安全区之外）。与改动前 edge sheet 的 16 一致。
+const double hyperosMiuixBottomSheetContentBottomGap = 16;
 
 /// 把上游底部弹窗的实底面板换成**本仓贴底液态玻璃**：上沿两角按
 /// [hyperosMiuixBottomSheetCornerRadius] 圆角，底边外溢

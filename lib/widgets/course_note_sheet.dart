@@ -206,7 +206,9 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
       child: SingleChildScrollView(
         controller: _scrollController,
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: EdgeInsets.fromLTRB(0, 0, 0, 16 + mediaQuery.padding.bottom),
+        // 底部安全区 + 呼吸由弹层承载壳统一留（2026-09-19 换成上游底部弹窗之后），
+        // 这里再垫一份会叠成两层。
+        padding: EdgeInsets.zero,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,

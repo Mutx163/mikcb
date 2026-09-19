@@ -170,7 +170,8 @@ class _HomeTopGridMenuSheet extends StatelessWidget {
     return HyperosSheetFrame(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // Width is already after floating outer inset + frame padding.
+          // Width 已扣掉面板左右内边距（承载壳把面板交给上游底部弹窗之后是
+          // 上游那 24，不再是本仓 frame 的 16）。
           const gapCount = columnsPerRow - 1;
           final availableWidth = constraints.maxWidth;
           final hasBoundedWidth = availableWidth.isFinite && availableWidth > 0;

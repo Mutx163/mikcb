@@ -22,7 +22,7 @@ double effectiveOpacityOf(WidgetTester tester, Finder finder) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('showHomeHyperosSheet drag-to-dismiss', () {
+  group('showHomeHyperosSheet drag-to-dismiss（面板换成上游底部弹窗之后）', () {
     Future<void> openSheet(WidgetTester tester) async {
       await tester.pumpWidget(
         TestApp(
@@ -34,11 +34,11 @@ void main() {
                     showHomeHyperosSheet<void>(
                       context: context,
                       builder: (sheetContext) {
+                        // 内容里照旧用 HyperosSheetFrame：面板由承载壳注入，
+                        // 框自己让位（不画第二层玻璃）—— 这条也顺带被下面几条覆盖。
                         return const HyperosSheetFrame(
-                          // Keep the panel solid: BackdropFilter / shader
-                          // rendering is not the point of these tests.
-                          frosted: false,
                           child: SizedBox(
+                            key: ValueKey('sheet-body'),
                             width: 300,
                             height: 400,
                             child: Center(child: Text('Sheet content')),
@@ -58,71 +58,73 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('sheet content stays fully opaque while dragged down', (
-      tester,
-    ) async {
+    /// 把手中心：面板顶部那条 24dp 横条。
+    ///
+    /// ⚠️ 上游只给**把手**挂了拖拽手势（无标题时它下面还有 18dp 的标题行），
+    /// 面板本身拖不动 —— 拿内容坐标当把手会「拖不动」，这是 2026-09-19 换组件后
+    /// 行为变化最明显的一处（旧实现整面板可拖）。
+    Offset handleCenter(WidgetTester tester, Finder content) {
+      final topLeft = tester.getTopLeft(content);
+      return Offset(topLeft.dx + 150, topLeft.dy - 30);
+    }
+
+    testWidgets('拖把手：面板整体下移，且内容始终不透明', (tester) async {
       await openSheet(tester);
 
-      final content = find.text('Sheet content');
-      expect(content, findsOneWidget);
-      expect(effectiveOpacityOf(tester, content), 1.0);
-      final topBeforeDrag = tester.getTopLeft(content).dy;
+      final body = find.byKey(const ValueKey('sheet-body'));
+      expect(body, findsOneWidget);
+      expect(effectiveOpacityOf(tester, body), 1.0);
+      final topBeforeDrag = tester.getTopLeft(body).dy;
 
-      final gesture = await tester.startGesture(tester.getCenter(content));
+      final gesture = await tester.startGesture(handleCenter(tester, body));
+      // 先来一小步越过 touch slop，让纵向拖拽识别器赢下竞技场；再拖才是位移。
+      await gesture.moveBy(const Offset(0, 40));
+      await tester.pump();
       await gesture.moveBy(const Offset(0, 120));
       await tester.pump();
 
-      // Dragging must never fade the panel — an Opacity layer over frosted /
-      // liquid glass content flickers (the regression this guards against).
-      expect(effectiveOpacityOf(tester, content), 1.0);
-      // The panel actually moved down with the finger.
-      expect(tester.getTopLeft(content).dy, greaterThan(topBeforeDrag));
+      // 拖拽期间面板只平移、不淡出：盖一层 Opacity 会让磨砂 / 液态玻璃闪烁
+      // （这条是当初修过的回归）。
+      expect(effectiveOpacityOf(tester, body), 1.0);
+      expect(tester.getTopLeft(body).dy, greaterThan(topBeforeDrag));
 
       await gesture.up();
       await tester.pumpAndSettle();
     });
 
-    testWidgets('drag past the distance threshold dismisses the sheet', (
-      tester,
-    ) async {
+    testWidgets('拖过距离阈值就收起', (tester) async {
       await openSheet(tester);
 
-      final content = find.text('Sheet content');
-      final topBeforeDrag = tester.getTopLeft(content).dy;
-
-      final gesture = await tester.startGesture(tester.getCenter(content));
-      await gesture.moveBy(const Offset(0, 300));
-      await tester.pump();
-      expect(tester.getTopLeft(content).dy, greaterThan(topBeforeDrag));
-
-      await gesture.up();
+      // 慢拖：速度不过阈值，靠**距离**判定（>150dp）。
+      await tester.timedDragFrom(
+        handleCenter(tester, find.byKey(const ValueKey('sheet-body'))),
+        const Offset(0, 300),
+        const Duration(milliseconds: 600),
+      );
       await tester.pumpAndSettle();
 
-      expect(content, findsNothing);
+      expect(find.text('Sheet content'), findsNothing);
     });
 
-    testWidgets('small drag springs back to rest without dismissing', (
-      tester,
-    ) async {
+    testWidgets('小幅慢拖回弹、不收起', (tester) async {
       await openSheet(tester);
 
-      final content = find.text('Sheet content');
-      final topBeforeDrag = tester.getTopLeft(content).dy;
+      final body = find.byKey(const ValueKey('sheet-body'));
+      final topBeforeDrag = tester.getTopLeft(body).dy;
 
-      final gesture = await tester.startGesture(tester.getCenter(content));
-      await gesture.moveBy(const Offset(0, 40));
-      await tester.pump();
-      expect(tester.getTopLeft(content).dy, greaterThan(topBeforeDrag));
-
-      await gesture.up();
+      await tester.timedDragFrom(
+        handleCenter(tester, body),
+        const Offset(0, 40),
+        const Duration(milliseconds: 1000),
+      );
       await tester.pumpAndSettle();
 
-      expect(content, findsOneWidget);
-      expect(tester.getTopLeft(content).dy, closeTo(topBeforeDrag, 0.1));
+      expect(body, findsOneWidget);
+      expect(tester.getTopLeft(body).dy, closeTo(topBeforeDrag, 0.5));
     });
   });
 
-  group('showHomeHyperosSheet edge chrome sizing', () {
+  group('showHomeHyperosSheet 贴底布局（内容贴底、不撑满全屏）', () {
     Future<void> openFrostedEdgeSheet(WidgetTester tester) async {
       await tester.pumpWidget(
         TestApp(
