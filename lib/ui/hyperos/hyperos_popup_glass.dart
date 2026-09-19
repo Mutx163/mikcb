@@ -21,11 +21,9 @@ library;
 import 'package:flutter/material.dart';
 
 import 'hyperos_blurred_header.dart';
-import 'hyperos_sheet.dart';
 import 'hyperos_theme.dart';
 import 'frosted/liquid_glass_degradation.dart';
 import 'liquid/liquid_glass_surface.dart';
-import 'soft_glass/soft_glass_surface.dart';
 import 'soft_glass/stable_frosted_surface.dart';
 
 /// 弹层与首页常驻圆球**共用**的那层外浮影。
@@ -91,7 +89,6 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     this.useAncestorGroupCapture = false,
     this.thicknessFactor,
     this.surfaceShadow = false,
-    this.enableEdgeHighlight = true,
   });
 
   final double cornerRadius;
@@ -106,20 +103,6 @@ class HyperosSelectPopupGlass extends StatelessWidget {
   /// 曾经它还带一圈 0.75 的发丝轮廓线，2026-09-19 按用户要求下线：球的边界改由
   /// 玻璃材质自己交代，组件不再叠描边。
   final bool surfaceShadow;
-
-  /// 上游那圈「贴边加法白」高光要不要画（透传给 `SoftGlassSurface`）。
-  ///
-  /// 默认开 —— 那是柔光玻璃的标准观感，弹层一律保持。**只有首页那颗常驻玻璃球
-  /// 关掉它**（`FHeaderActionBall`）：上游这圈加法白在球上属于**零收益、纯副作用** ——
-  /// 纯色底上"白叠白"等于没画，有壁纸时球内部变成壁纸糊出来的颜色，贴边那层白一叠
-  /// 就顶到纯白，读起来是"一圈没有过渡的死白边"（用户反馈：柔光档 + 壁纸，右上角球
-  /// 的白边特别重）。
-  ///
-  /// ⚠️ 关闭它会让球与"菜单收起时那块缩到锚点大小的面板"在高光上有差异（面板仍带
-  /// 高光）。两侧仍是同一个组件、同一层浮影，只是那 1px 高光的有无 ——
-  /// 这是有意接受的取舍，见 `.agents/notes/implemented/bug-fix/`
-  /// 下 2026-09-17 那篇。
-  final bool enableEdgeHighlight;
 
   /// 折射厚度缩放（0..1）：液态面按完整厚度的该比例渲染。二级子卡揭示
   /// 期间传揭示进度——厚度从近零生长到满值，顶缘折射对上方面板文字的
@@ -140,36 +123,21 @@ class HyperosSelectPopupGlass extends StatelessWidget {
   /// live 的合成器捕获，不能再垫任何快照。
   final bool useAncestorGroupCapture;
 
-  /// 当前外观下弹窗是否走柔光玻璃面（Hyper-PiliPlus SoftGlass 风格）。
+  /// 弹窗家族的玻璃**能不能真的画出来**（技术 / 系统门禁）。
   ///
-  /// 与 [liquidSurfaceActive] 同口径：柔光与液态同为高级材质，受**同一组**
-  /// 「作用范围」开关约束。关闭时落入 [solidSurfaceActive]的实底分支
-  /// （不降级为高斯）。此前该判定只看全局档位，全局柔光时
-  /// 六个作用范围开关全部失效（历史 bug）。
-  static bool softSurfaceActive(BuildContext context) {
-    final appearance = FrostedAppearanceScope.of(context);
-    return appearance.glassMode == FrostedGlassMode.softGlass &&
-        appearance.liquidGlassPopupEnabled &&
-        !LiquidGlassDegradation.shouldDegrade(context);
-  }
+  /// 自 2026-09-19 起弹窗锁成「永远液态玻璃的标准档」（见 [LiquidGlassRole.pinnedChrome]），
+  /// 材质不再由用户的档位 / 作用范围开关 / 模糊开关决定，所以这里只剩「能不能采样」
+  /// 一个问题 —— 直接问表面自己。调用方用它判断要不要准备共享组捕获垫层
+  /// （见列表弹窗的 `_hasSubmenu` 那段）。
+  static bool liquidSurfaceActive(BuildContext context) =>
+      LiquidGlassSurface.isAvailable(context, LiquidGlassRole.pinnedChrome);
 
-  /// 当前外观下弹窗是否走液态玻璃面（与 [build] 分支同一口径，供调用方
-  /// 判断是否需要准备共享组捕获垫层）。
-  static bool liquidSurfaceActive(BuildContext context) {
-    final appearance = FrostedAppearanceScope.of(context);
-    return appearance.glassMode == FrostedGlassMode.liquidGlass &&
-        appearance.liquidGlassPopupEnabled &&
-        !LiquidGlassDegradation.shouldDegrade(context);
-  }
-
-  /// 当前外观下弹窗是否走不透明实底面（[HyperosSolidPopupSurface]）。
+  /// 当前弹窗是否走不透明实底面（[HyperosSolidPopupSurface]）。
   ///
-  /// 判定与 [build] 的材质分支同序：调用方强制实底（WebView 场景）→
-  /// 实底；液态玻璃激活 → 液态面（自带模糊，不受 blur 总开关约束）；
-  /// 否则 blur 总开关关闭、系统降级、或「液态玻璃作用范围」关闭本家族
-  /// → 实底。调用方（如列表弹窗的墨色选择）据此把「为透明玻璃准备的
-  /// 壁纸感知墨色」重置为主题墨——实底不再透出壁纸，浅色实底上的白墨
-  /// 不可读。
+  /// 只剩两类情形会走到：调用方强制实底（WebView 场景），以及**技术 / 系统门禁**
+  /// 让玻璃画不出来（平台视图上方、系统无障碍降级、没有 shader 后端）。
+  /// 调用方（如列表弹窗的墨色选择）据此把「为透明玻璃准备的壁纸感知墨色」重置为
+  /// 主题墨 —— 实底不再透出壁纸，浅色实底上的白墨不可读。
   static bool solidSurfaceActive(
     BuildContext context, {
     bool opaqueSurface = false,
@@ -177,18 +145,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     if (opaqueSurface) {
       return true;
     }
-    if (liquidSurfaceActive(context) || softSurfaceActive(context)) {
-      return false;
-    }
-    if (LiquidGlassDegradation.familyFallsBackToSolid(
-      context,
-      advancedFamilyEnabled: FrostedAppearanceScope.of(
-        context,
-      ).liquidGlassPopupEnabled,
-    )) {
-      return true;
-    }
-    return !HyperosBlurredHeader.backdropBlurEnabled(context);
+    return !liquidSurfaceActive(context);
   }
 
   @override
@@ -206,76 +163,34 @@ class HyperosSelectPopupGlass extends StatelessWidget {
   }
 
   Widget _buildSurface(BuildContext context) {
-    final borderRadius = BorderRadius.circular(cornerRadius);
-    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-    final appearance = FrostedAppearanceScope.of(context);
-
-    // Soft glass (global): milky frost panel for anchored popups.
-    if (softSurfaceActive(context)) {
-      return HyperosFrostedPanelScope(
-        child: SoftGlassSurface(
-          borderRadius: borderRadius,
-          blurEnabled: useBlur,
-          // 不传 recipe：全 app 柔光玻璃共用 [SoftGlassSurface] 的唯一配方
-          // （顶栏 / 底栏 / 弹窗 / 面板同参）。曾经这里单独挂 dialog 配方、
-          // 顶栏挂 floatingNavigation 配方——同一个材质两种雾度，用户口径
-          // 「是柔光玻璃就全部显示一样」。
-          enableShadows: false,
-          enableEdgeHighlight: enableEdgeHighlight,
-          child: child,
-        ),
-      );
-    }
-
-    // Liquid glass owns its own blur/refraction and must not be gated by the
-    // platform BackdropFilter capability. Otherwise anchored popups become
-    // solid surfaces on desktop while sheets and headers keep their glass.
-    // 「液态玻璃作用范围 → 下拉选择弹窗」关闭时回退磨砂/实底材质。
-    final useLiquidGlass = liquidSurfaceActive(context);
-
-    if (useLiquidGlass) {
-      // 与顶栏带 / 玻璃坞 / 卡片完全同一个组件、同一份参数（
-      // [LiquidGlassSurface] 只从 scope 读调参）。任何表面都不得再传自己的
-      // 档位或捕获源——那正是「同一个材质几种观感」的成因。
-      return LiquidGlassSurface(
-        borderRadius: cornerRadius,
-        // 二级子卡（[useAncestorGroupCapture]）进祖先 BackdropGroup 的共享
-        // 捕获点：由此采到「遮罩下的页面」，而不是把主面板玻璃的输出再折射
-        // 一遍（玻璃叠玻璃读感浑浊）。
-        grouped: useAncestorGroupCapture,
-        refractionFactor: thicknessFactor,
-        // 引擎没有 shader filter 后端 / 着色器未就绪时回落稳定磨砂面：
-        // 仍是玻璃观感，不会突然变成一块实底。
-        fallbackBuilder: (_) =>
-            StableFrostedSurface(cornerRadius: cornerRadius, child: child),
-        child: child,
-      );
-    }
-
-    // Blur disabled, 或「液态玻璃作用范围 → 下拉选择弹窗」关闭
-    // → solid opaque surface.
+    // 弹窗家族（选择弹窗 / 列表弹窗 / 二级子卡 / 右上角菜单弹窗 / 常驻球与菜单钮）
+    // 自 2026-09-19 起**永远是液态玻璃的标准档**：用户的全局材质档位、5 个
+    // 「作用范围」开关、模糊总开关、自定义档位与滑杆一律不再参与
+    // （用户口径：「不允许用户调整这些的材质，这些只能永远是玻璃然后标准档位」）。
+    // 见 [LiquidGlassRole.pinnedChrome]。
     //
-    // 家族关闭时不再降级为磨砂：磨砂走实时 BackdropFilter，入场动画
-    // （弹簧缩放 + 揭示裁切）期间采不到稳定背景，面板会整段渲染为透明，
-    // 动画结束才「啪」地出现——读起来就是弹窗没有动画。实体卡片不依赖
-    // 背景采样，动画全程正常。
-    if (!useBlur ||
-        LiquidGlassDegradation.familyFallsBackToSolid(
-          context,
-          advancedFamilyEnabled: appearance.liquidGlassPopupEnabled,
-        )) {
-      return HyperosSolidPopupSurface(cornerRadius: cornerRadius, child: child);
-    }
-
-    // Frosted / gaussian / translucent：**与柔光/液态统一走稳定快照**
-    // （[StableFrostedSurface]）——入场动画期间四种材质共用同一张稳定背景，
-    // 不再出现"磨砂在入场时采不到稳定背景、整段发平"这种与其它材质不一致的
-    // 观感。没有采样源时该类内部维持原实时 BackdropFilter 分支，不会变差。
-    //
-    // 历史：这里原本直接 `BackdropFilter.grouped` + `sheetTintColor`。sigma 与
-    // tint 仍然由共享的弹层材质档位决定（见 [StableFrostedSurface]）。
-    return StableFrostedSurface(
-      cornerRadius: cornerRadius,
+    // 剩下的只有**技术 / 系统**门禁（都不是偏好，见 [LiquidGlassSurface.isAvailable]）：
+    // 引擎没有 shader filter 后端、着色器没加载出来、平台视图在上方、系统无障碍降级。
+    // 前三者里「没有 shader 后端」只是画不出折射，磨砂仍是玻璃观感；而平台视图 /
+    // 系统降级是**采不到背景**，只能用实底（否则会渲染成一块黑／透明）。
+    return LiquidGlassSurface(
+      borderRadius: cornerRadius,
+      role: LiquidGlassRole.pinnedChrome,
+      // 二级子卡（[useAncestorGroupCapture]）进祖先 BackdropGroup 的共享
+      // 捕获点：由此采到「遮罩下的页面」，而不是把主面板玻璃的输出再折射
+      // 一遍（玻璃叠玻璃读感浑浊）。
+      grouped: useAncestorGroupCapture,
+      refractionFactor: thicknessFactor,
+      fallbackBuilder: (fallbackContext) =>
+          LiquidGlassDegradation.shouldDegrade(fallbackContext)
+          ? HyperosSolidPopupSurface(
+              cornerRadius: cornerRadius,
+              child: child,
+            )
+          : StableFrostedSurface(
+              cornerRadius: cornerRadius,
+              child: child,
+            ),
       child: child,
     );
   }

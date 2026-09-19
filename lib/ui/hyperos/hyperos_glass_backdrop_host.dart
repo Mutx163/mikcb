@@ -295,9 +295,27 @@ class HyperosGlassBackdropController extends ChangeNotifier {
     traceState('releaseRecording');
   }
 
+  /// 玻璃在屏幕上的矩形（拿不到就返回 null）。
+  ///
+  /// 两个角都过 [RenderBox.localToGlobal]，**不再**用「左上角 + `box.size`」：
+  /// 后者在**祖先有缩放**时会把矩形量得比屏幕上的实际区域大（位置是变换后的、
+  /// 尺寸还是布局尺寸）。外观编辑器把首页缩小、弹层入场缩放都会走到这条。
+  ///
+  /// 拆除过程（`detach` → `releaseZone` → 诊断也会顺路量一次）里祖先链可能已经
+  /// 断了一半，`localToGlobal` 会在框架内部断言（`child._parent == this`）——
+  /// 量矩形本身是尽力而为的事，量不到就当这一帧没有这块玻璃；
+  /// 让它把异常抛出去会把整棵树变成 ErrorWidget（真机表现为「弹层一关整个页面崩成红屏」
+  /// 那类），代价完全不成比例。
   Rect? _globalRectOf(RenderBox box) {
     if (!box.attached || !box.hasSize || box.size.isEmpty) return null;
-    return box.localToGlobal(Offset.zero) & box.size;
+    try {
+      return Rect.fromPoints(
+        box.localToGlobal(Offset.zero),
+        box.localToGlobal(box.size.bottomRight(Offset.zero)),
+      );
+    } on AssertionError {
+      return null;
+    }
   }
 
   Rect? _unionOf(HyperosGlassBackdropZone zone) {

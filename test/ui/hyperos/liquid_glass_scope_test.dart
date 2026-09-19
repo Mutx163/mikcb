@@ -175,18 +175,23 @@ void main() {
       expect(find.byType(LiquidGlassSurface), findsOneWidget);
     });
 
-    testWidgets('玻璃模式选择小弹窗：开关关闭回退磨砂', (tester) async {
+    testWidgets('玻璃模式选择小弹窗：开关关掉也仍是标准档液态玻璃', (tester) async {
+      // 2026-09-19 起弹窗家族锁成「永远液态玻璃的标准档」：作用范围开关不再影响它。
       await openSelectPopup(
         tester,
         appearanceValue: liquidAppearance(popup: false),
       );
-      expect(find.byType(LiquidGlassSurface), findsNothing);
+      expect(find.byType(LiquidGlassSurface), findsOneWidget);
+      expect(
+        tester.widget<LiquidGlassSurface>(find.byType(LiquidGlassSurface)).role,
+        LiquidGlassRole.pinnedChrome,
+      );
       expect(find.text('Option A'), findsOneWidget);
     });
 
-    testWidgets('预设主题式全屏选择面板：默认保持磨砂', (tester) async {
+    testWidgets('预设主题式全屏选择面板：同样锁标准档液态玻璃', (tester) async {
       await openSelectSheet(tester, appearanceValue: liquidAppearance());
-      expect(find.byType(LiquidGlassSurface), findsNothing);
+      expect(find.byType(LiquidGlassSurface), findsOneWidget);
       expect(find.byType(HyperosSheetFrame), findsOneWidget);
     });
 
@@ -203,12 +208,12 @@ void main() {
       expect(find.byType(LiquidGlassSurface), findsOneWidget);
     });
 
-    testWidgets('弹窗与对话框：开关关闭回退磨砂', (tester) async {
+    testWidgets('弹窗与对话框：开关关掉也仍是标准档液态玻璃', (tester) async {
       await openDemoSheet(
         tester,
         appearanceValue: liquidAppearance(sheetDialog: false),
       );
-      expect(find.byType(LiquidGlassSurface), findsNothing);
+      expect(find.byType(LiquidGlassSurface), findsOneWidget);
       expect(find.byType(HyperosSheetFrame), findsOneWidget);
     });
   });

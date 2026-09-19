@@ -8,6 +8,7 @@ import 'hyperos_miuix_spec.dart';
 import 'hyperos_select.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_widgets.dart';
+import 'frosted/liquid_glass_degradation.dart';
 import 'liquid/liquid_glass_surface.dart' show UndimmedBackdropCapture;
 
 /// Single item in [showHyperosListPopup].
@@ -450,8 +451,7 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
         !HyperosSelectPopupGlass.solidSurfaceActive(
           context,
           opaqueSurface: widget.opaqueSurface,
-        ) &&
-        !HyperosSelectPopupGlass.softSurfaceActive(context);
+        );
     final Color? effectiveForeground = panelUsesWallpaperBackdrop
         ? widget.foregroundColor
         : null;
@@ -513,11 +513,10 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
             // 共享组捕获垫层（遮罩之后、主面板之前）：组内首个 grouped
             // 过滤器的捕获点决定采样内容——二级子卡的玻璃由此采到
             // 「遮罩下的页面」（与主面板玻璃同源），而不是把主面板玻璃
-            // 的输出再采样一遍。仅当有二级子项且采样面可用时才付这层
-            // 全屏 pass（其余情况树内没有 grouped 消费者）。
-            if (_hasSubmenu &&
-                (HyperosBlurredHeader.backdropBlurEnabled(context) ||
-                    HyperosSelectPopupGlass.liquidSurfaceActive(context)))
+            // 的输出再采样一遍。只要**有二级子项**且不在降级态就付这层全屏
+            // pass：子卡自 2026-09-19 起锁成「永远液态玻璃的标准档」，材质
+            // 不再是变量，树里的 grouped 消费者要么是它、要么是它的降级面。
+            if (_hasSubmenu && !LiquidGlassDegradation.shouldDegrade(context))
               const Positioned.fill(child: UndimmedBackdropCapture()),
             // Dim 以渐变 alpha 淡入（复用 _alpha AnimationController, 200ms fastOutSlowIn）
             GestureDetector(

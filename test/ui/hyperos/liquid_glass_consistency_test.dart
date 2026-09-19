@@ -98,7 +98,13 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(LiquidGlassSurface), findsNothing);
+      // 弹窗家族自 2026-09-19 起锁成「永远液态玻璃的标准档」：调用方的非液态档
+      // 不再改变它们的材质（这里跑在高斯档下，弹窗照样是液态玻璃）。
+      expect(find.byType(LiquidGlassSurface), findsOneWidget);
+      expect(
+        tester.widget<LiquidGlassSurface>(find.byType(LiquidGlassSurface)).role,
+        LiquidGlassRole.pinnedChrome,
+      );
       expect(find.byType(HyperosSheetFrame), findsOneWidget);
     });
 
@@ -128,7 +134,13 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(LiquidGlassSurface), findsNothing);
+      // 弹窗家族自 2026-09-19 起锁成「永远液态玻璃的标准档」：调用方的非液态档
+      // 不再改变它们的材质（这里跑在高斯档下，弹窗照样是液态玻璃）。
+      expect(find.byType(LiquidGlassSurface), findsOneWidget);
+      expect(
+        tester.widget<LiquidGlassSurface>(find.byType(LiquidGlassSurface)).role,
+        LiquidGlassRole.pinnedChrome,
+      );
       expect(find.text('Option A'), findsOneWidget);
     });
 
@@ -157,7 +169,13 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(LiquidGlassSurface), findsNothing);
+      // 弹窗家族自 2026-09-19 起锁成「永远液态玻璃的标准档」：调用方的非液态档
+      // 不再改变它们的材质（这里跑在高斯档下，弹窗照样是液态玻璃）。
+      expect(find.byType(LiquidGlassSurface), findsOneWidget);
+      expect(
+        tester.widget<LiquidGlassSurface>(find.byType(LiquidGlassSurface)).role,
+        LiquidGlassRole.pinnedChrome,
+      );
       expect(find.text('Option A'), findsOneWidget);
     });
   });

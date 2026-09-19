@@ -10,7 +10,6 @@ import 'hyperos_tokens.dart';
 import 'frosted/liquid_glass_degradation.dart';
 import 'hyperos_widgets.dart';
 import 'liquid/liquid_glass_surface.dart';
-import 'soft_glass/soft_glass_surface.dart';
 
 /// Extra height painted below an edge-flush glass sheet's bottom edge so the
 /// liquid-glass specular fringe along the straight bottom side lands outside
@@ -254,36 +253,18 @@ class HyperosSheetFrame extends StatelessWidget {
     required BorderRadius borderRadius,
   }) {
     final appearance = FrostedAppearanceScope.of(context);
-    final mode = appearance.glassMode;
 
-    // 「高级材质作用范围」家族开关：全局高级材质（柔光 / 液态）
-    // + 该家族关闭 → 实体卡片（不再降级为高斯磨砂，见
-    // [LiquidGlassDegradation.familyFallsBackToSolid]）。
-    //
-    // **必须在材质分支之前求值**：柔光与液态同为高级材质、共用同一
-    // 组开关，柔光分支若排在前面会把开关整个绕过去（历史 bug）。
+    // 家族开关只服务于**回落分支**：弹窗家族锁成「永远液态玻璃的标准档」之后，
+    // 用户的材质档位不再决定这里画什么；但技术 / 系统门禁把它摘下来时，
+    // [familyFallsBackToSolid] 依旧给出「该退到实底」的判定（平台视图上方、
+    // 系统无障碍降级都算），所以这条判定留着。
     final familySolid = LiquidGlassDegradation.familyFallsBackToSolid(
       context,
       advancedFamilyEnabled: _liquidGlassAllowed(appearance),
     );
-    // 高级材质面自带模糊，不受平台 BackdropFilter 能力与「模糊」总
-    // 开关约束（与液态同理：高级材质是产品档位，不是兜底材质）。
-    final useAdvancedMaterial =
-        isAdvancedGlassMode(mode) && !familySolid;
 
-    // Soft glass (Hyper-PiliPlus style): milky frost + soft shadow optics.
-    if (useAdvancedMaterial && mode == FrostedGlassMode.softGlass) {
-      return SoftGlassSurface(
-        borderRadius: borderRadius,
-        blurEnabled: HyperosBlurredHeader.backdropBlurEnabled(context),
-        // 不传 recipe：全 app 柔光玻璃一个配方（与顶栏 / 底栏 / 弹窗同参）。
-        enableShadows: false,
-        child: const SizedBox.expand(),
-      );
-    }
-
-    // 基础材质（磨砂 / 实底）：既是液态玻璃不可用时的回落，也是下面两条
-    // 基础分支本身的产物。
+    // 基础材质（磨砂 / 实底）：**只剩回落**一个用途 —— 弹窗家族自 2026-09-19 起
+    // 永远是液态玻璃的标准档，只有技术 / 系统门禁能把它摘下来。
     Widget baseBackground() {
       final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
 
@@ -310,23 +291,19 @@ class HyperosSheetFrame extends StatelessWidget {
       );
     }
 
-    // Liquid glass mode: real-time refraction shader panel. Checked before
-    // the gaussian blur gate because liquid glass carries its own blur —
-    // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
-    // would make the frame a solid gray slab on desktop/web while the nested
-    // tiles keep rendering liquid glass.
-    if (useAdvancedMaterial && mode == FrostedGlassMode.liquidGlass) {
-      return LiquidGlassSurface(
-        borderRadius: borderRadius.topLeft.x,
-        // 采样祖先 BackdropGroup 在压暗层**之前**缓存的「未压暗页面」，
-        // 否则玻璃里会连弹窗的黑色蒙层一起折射进去。
-        grouped: true,
-        fallbackBuilder: (_) => baseBackground(),
-        child: const SizedBox.expand(),
-      );
-    }
-
-    return baseBackground();
+    // 液态玻璃：弹窗家族（含底部弹窗 / 对话框）自 2026-09-19 起**唯一的材质**，
+    // 且锁标准档（见 [LiquidGlassRole.pinnedChrome]）：用户的全局材质档位、作用范围
+    // 开关、模糊总开关、自定义滑杆都不参与。`fallbackBuilder` 只在**技术 / 系统**
+    // 门禁把它摘下来时走到（平台视图上方、系统无障碍降级、没有 shader 后端）。
+    return LiquidGlassSurface(
+      borderRadius: borderRadius.topLeft.x,
+      role: LiquidGlassRole.pinnedChrome,
+      // 采样祖先 BackdropGroup 在压暗层**之前**缓存的「未压暗页面」，
+      // 否则玻璃里会连弹窗的黑色蒙层一起折射进去。
+      grouped: true,
+      fallbackBuilder: (_) => baseBackground(),
+      child: const SizedBox.expand(),
+    );
   }
 
   Widget _buildFrostedSurface({
@@ -335,32 +312,14 @@ class HyperosSheetFrame extends StatelessWidget {
     required Widget content,
   }) {
     final appearance = FrostedAppearanceScope.of(context);
-    final mode = appearance.glassMode;
 
-    // 同 [_buildFrostedBackground]：先算家族判定，再分派高级材质，
-    // 保证柔光与液态同样受「作用范围」开关约束。
+    // 同 [_buildFrostedBackground]：家族判定只服务回落分支。
     final familySolid = LiquidGlassDegradation.familyFallsBackToSolid(
       context,
       advancedFamilyEnabled: _liquidGlassAllowed(appearance),
     );
-    final useAdvancedMaterial =
-        isAdvancedGlassMode(mode) && !familySolid;
 
-    // Soft glass panel: same material as [_buildFrostedBackground].
-    if (useAdvancedMaterial && mode == FrostedGlassMode.softGlass) {
-      return HyperosFrostedPanelScope(
-        child: SoftGlassSurface(
-          borderRadius: borderRadius,
-          blurEnabled: HyperosBlurredHeader.backdropBlurEnabled(context),
-          // 同上：全 app 柔光玻璃一个配方。
-          enableShadows: false,
-          child: content,
-        ),
-      );
-    }
-
-    // 基础材质（磨砂 / 实底）：既是液态玻璃不可用时的回落，也是下面两条
-    // 基础分支本身的产物。
+    // 基础材质（磨砂 / 实底）：只剩回落一个用途。
     Widget baseSurface() {
       final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
 
@@ -391,23 +350,16 @@ class HyperosSheetFrame extends StatelessWidget {
       );
     }
 
-    // Liquid glass mode: real-time refraction shader panel. Checked before
-    // the gaussian blur gate because liquid glass carries its own blur —
-    // gating it on backdropBlurEnabled (liveBlurSupported && blurEnabled)
-    // would make the frame a solid gray slab on desktop/web while nested
-    // tiles keep rendering liquid glass.
-    if (useAdvancedMaterial && mode == FrostedGlassMode.liquidGlass) {
-      return HyperosFrostedPanelScope(
-        child: LiquidGlassSurface(
-          borderRadius: borderRadius.topLeft.x,
-          grouped: true,
-          fallbackBuilder: (_) => baseSurface(),
-          child: content,
-        ),
-      );
-    }
-
-    return baseSurface();
+    // 同 [_buildFrostedBackground]：液态玻璃是弹窗家族唯一的材质，锁标准档。
+    return HyperosFrostedPanelScope(
+      child: LiquidGlassSurface(
+        borderRadius: borderRadius.topLeft.x,
+        role: LiquidGlassRole.pinnedChrome,
+        grouped: true,
+        fallbackBuilder: (_) => baseSurface(),
+        child: content,
+      ),
+    );
   }
 }
 

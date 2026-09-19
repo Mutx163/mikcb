@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
 
 import '../../helpers_test_app.dart';
 
-/// 子页左上角返回键的上游一致性契约。
+/// 子页左上角返回键的契约：**上游圆形钮的骨架 + 我们自己那块标准档液态玻璃**。
 ///
-/// 上游 OS4 的返回键是 `MiuixGlassIconButton`（直径 44 的圆）+ OS4 的
-/// `chevronBackward` 图标（`example/lib/showcase/os4.dart` 的
-/// `MiuixGlassTopAppBar.navigationIcon`）。本仓由 [HyperosBackButton] 承接，
-/// [HyperosSubpage] 在顶栏的导航位渲染它。
+/// 2026-09-19 起材质换成液态玻璃（用户口径：「返回按钮……只能永远是玻璃然后标准档位」），
+/// 但上游那颗 `MiuixGlassIconButton` 留着只负责图标、44×44 命中区与按压缩放
+/// （它的 `surfaceAlpha` 恒为 0，那层材质一次都不画）。这里同时钉住两件事：
+/// 骨架照旧，圆底那块是 pinned 的液态玻璃。
 void main() {
   Future<void> pumpSubpage(
     WidgetTester tester, {
@@ -43,6 +44,12 @@ void main() {
         .surfaceAlpha;
   }
 
+  /// 圆底那块玻璃（停在页顶时不存在）。
+  Finder glassCircle() => find.descendant(
+    of: find.byType(HyperosBackButton),
+    matching: find.byType(LiquidGlassSurface),
+  );
+
   testWidgets('subpage nav icon is the upstream circular glass back button', (
     WidgetTester tester,
   ) async {
@@ -59,14 +66,16 @@ void main() {
       find.descendant(of: button, matching: find.byType(MiuixIcon)),
     );
     expect(icon.vector, same(MiuixIcons.os4.chevronBackward));
+    // 骨架留着，但它自己那层材质必须一次都不画（换成下面那块玻璃）。
+    expect(tester.widget<MiuixGlassIconButton>(button).surfaceAlpha, 0);
   });
 
   testWidgets('circle stays hidden at rest and shows once content tucks under '
       'the header', (WidgetTester tester) async {
     await pumpSubpage(tester, onBack: () {}, rows: 20);
 
-    // 停在页顶：表面 alpha 为 0，`MiuixGlass.paint` 整块跳过 —— 只有一根箭头。
-    expect(surfaceAlphaOf(tester), 0);
+    // 停在页顶：没有圆底，只有一根箭头。
+    expect(glassCircle(), findsNothing);
 
     final scrollable = find.descendant(
       of: find.byType(HyperosListView),
@@ -75,20 +84,29 @@ void main() {
     await tester.drag(scrollable, const Offset(0, -160));
     await tester.pump();
 
-    // 内容压到顶栏带下面（与顶栏磨砂同一判据）：圆底出现。
+    // 内容压到顶栏带下面（与顶栏磨砂同一判据）：圆底出现，且是**锁标准档**的玻璃。
     expect(
       HyperosHeaderUnderContentScope.of(
         tester.element(find.byType(HyperosBackButton)),
       ),
       isTrue,
     );
-    expect(surfaceAlphaOf(tester), 1);
+    expect(glassCircle(), findsOneWidget);
+    final glass = tester.widget<LiquidGlassSurface>(glassCircle());
+    expect(
+      glass.role,
+      LiquidGlassRole.pinnedChrome,
+      reason: '返回键永远是液态玻璃的标准档，用户改不动它的材质',
+    );
+    expect(glass.borderRadius, 22, reason: '44 直径的圆：圆角取半径');
+    // 上游那层材质始终不画，圆底只由我们的玻璃负责。
+    expect(surfaceAlphaOf(tester), 0);
 
     // 滑回页顶：圆底收回，仍是同一颗按钮（没有换 widget、没有重挂）。
     await tester.drag(scrollable, const Offset(0, 160));
     await tester.pump();
 
-    expect(surfaceAlphaOf(tester), 0);
+    expect(glassCircle(), findsNothing);
     expect(find.byType(MiuixGlassIconButton), findsOneWidget);
   });
 
@@ -116,7 +134,7 @@ void main() {
     );
     await tester.drag(scrollable, const Offset(0, -160));
     await tester.pump();
-    expect(surfaceAlphaOf(tester), 1);
+    expect(glassCircle(), findsOneWidget);
 
     await tester.tap(find.byType(MiuixGlassIconButton));
     await tester.pump();

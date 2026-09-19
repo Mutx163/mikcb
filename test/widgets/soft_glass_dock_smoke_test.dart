@@ -63,7 +63,15 @@ void main() {
     await pumpDock(tester, FrostedGlassMode.softGlass);
     expect(find.byType(SoftGlassTabBar), findsOneWidget);
     expect(find.byType(SoftGlassSurface), findsWidgets);
-    expect(find.byType(LiquidGlassSurface), findsNothing);
+    // 断言**底栏内部**没有液态玻璃面（底栏继续跟用户档）。不能断言全树没有：
+    // 首页右上那两颗球自 2026-09-19 起永远是液态玻璃（固定小件）。
+    expect(
+      find.descendant(
+        of: find.byType(SoftGlassTabBar),
+        matching: find.byType(LiquidGlassSurface),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('柔光底栏 tab 点击可切到日课表', (tester) async {
@@ -89,7 +97,14 @@ void main() {
     // 高斯档落到实体药丸——正对应全局实体卡片档在真机上的材质。
     await pumpDock(tester, FrostedGlassMode.frosted);
     expect(find.byType(SoftGlassTabBar), findsOneWidget);
-    expect(find.byType(LiquidGlassSurface), findsNothing);
+    // 同上前一条：只看底栏内部（全树有球那块液态玻璃）。
+    expect(
+      find.descendant(
+        of: find.byType(SoftGlassTabBar),
+        matching: find.byType(LiquidGlassSurface),
+      ),
+      findsNothing,
+    );
     expect(find.byType(SoftGlassSurface), findsNothing);
 
     final barContext = tester.element(find.byType(SoftGlassTabBar));

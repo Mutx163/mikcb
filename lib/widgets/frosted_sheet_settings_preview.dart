@@ -264,16 +264,7 @@ class _DemoMenuTile extends StatelessWidget {
       ),
     );
 
-    final appearance = FrostedAppearanceScope.of(context);
-    final useLiquidGlass =
-        appearance.glassMode == FrostedGlassMode.liquidGlass &&
-        appearance.liquidGlassSheetDialogEnabled &&
-        !LiquidGlassDegradation.shouldDegrade(context);
-
-    // Classic frosted / Gaussian / translucent modes keep nested cards as a
-    // translucent tint over the already-frosted modal. They must not create a
-    // liquid surface just because the demo card is shared with the liquid path.
-    // 液态玻璃不可用时（引擎没有 shader filter 后端 / 着色器未就绪）也落到这里。
+    // 液态玻璃画不出来时（技术 / 系统门禁）落到这里 —— 见下方 return 的说明。
     Widget frostedTile() => HyperosFrostedSurface(
       borderRadius: HyperosTheme.cardBorderRadius,
       blurEnabled: false,
@@ -284,16 +275,16 @@ class _DemoMenuTile extends StatelessWidget {
       child: content,
     );
 
-    if (useLiquidGlass) {
-      return LiquidGlassSurface(
-        borderRadius: HyperosTheme.cardBorderRadius.topLeft.x,
-        // 四块瓦片是并列的兄弟：必须进祖先 BackdropGroup 共享同一个捕获点，
-        // 否则后画的瓦片会把先画的那块玻璃一起折射进去（玻璃叠玻璃）。
-        grouped: true,
-        fallbackBuilder: (_) => frostedTile(),
-        child: content,
-      );
-    }
-    return frostedTile();
+    // 四块瓦片在**演示弹层**里 —— 与弹层同一条规矩：自 2026-09-19 起永远液态玻璃的
+    // 标准档，材质不再随用户的档位变化，只剩技术 / 系统门禁（fallback 仍是原来的磨砂瓦片）。
+    return LiquidGlassSurface(
+      borderRadius: HyperosTheme.cardBorderRadius.topLeft.x,
+      role: LiquidGlassRole.pinnedChrome,
+      // 四块瓦片是并列的兄弟：必须进祖先 BackdropGroup 共享同一个捕获点，
+      // 否则后画的瓦片会把先画的那块玻璃一起折射进去（玻璃叠玻璃）。
+      grouped: true,
+      fallbackBuilder: (_) => frostedTile(),
+      child: content,
+    );
   }
 }

@@ -166,13 +166,10 @@ class FHeaderActionBall extends StatelessWidget {
         ),
         HyperosSelectPopupGlass(
           cornerRadius: MiuixIconButtonDefaults.minWidth / 2,
-          // ⚠️ 关掉上游那圈「贴边加法白」高光。加法白在球上是**零收益、纯副作用**：
-          // 纯色底上"白叠白"等于没画（见本方法上方那段历史），有壁纸时球内部是
-          // 壁纸糊出来的颜色，贴边那层白一叠就顶到纯白 —— 真机上就是"一圈没有
-          // 过渡的死白边"（用户反馈：柔光档 + 壁纸，右上角球的白边特别重）。
-          // 柔光玻璃内部本就被三层白提亮到接近纯白，所以这里**减半之类的小幅
-          // 衰减是没用的**（加法叠上去一样顶死），必须整层不画。
-          enableEdgeHighlight: false,
+          // 这里原本要关掉上游柔光玻璃那圈「贴边加法白」高光（它在球上是零收益、
+          // 纯副作用：纯色底上白叠白等于没画，有壁纸时贴边那层白一叠就顶到纯白，
+          // 读成「一圈没有过渡的死白边」）。2026-09-19 起球与弹层一起锁成
+          // **永远液态玻璃的标准档**，柔光分支在这里不存在了，那个开关随之删除。
           child: SizedBox(
             width: MiuixIconButtonDefaults.minWidth,
             height: MiuixIconButtonDefaults.minHeight,

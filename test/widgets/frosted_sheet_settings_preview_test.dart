@@ -36,9 +36,7 @@ const _liquidAppearance = FrostedAppearance(
 void main() {
   group('demo sheet follows the selected glass mode', () {
     for (final mode in FrostedGlassMode.values) {
-      testWidgets('$mode does not render liquid tiles unless selected', (
-        tester,
-      ) async {
+      testWidgets('$mode 下演示瓦片仍是锁标准档的液态玻璃', (tester) async {
         final appearance = FrostedAppearance(
           sheetBlurSigma: 15,
           sheetTintAlpha: 0.7,
@@ -56,18 +54,15 @@ void main() {
         );
         await tester.pump();
 
-        final liquid = mode == FrostedGlassMode.liquidGlass;
-        // 液态档下建 5 块玻璃表面：弹层自己的面板 1 块 + 演示的四块瓦片。
-        // 其余档一块都不建（走既有的半透明嵌套面）。
-        expect(
-          find.byType(LiquidGlassSurface),
-          liquid ? findsNWidgets(5) : findsNothing,
-        );
+        // 演示弹层属于弹窗家族：自 2026-09-19 起**永远**是液态玻璃的标准档，
+        // 不再随全局材质档位变（用户口径：不允许用户调整这些的材质）。
+        // 5 块 = 弹层自己的面板 1 + 演示的四块瓦片。
+        expect(find.byType(LiquidGlassSurface), findsNWidgets(5));
       });
     }
 
     testWidgets(
-      'demo route keeps the draft mode across the navigator boundary',
+      'demo route opens and renders its four entry rows',
       (tester) async {
         const savedAppearance = _liquidAppearance;
         const draftAppearance = FrostedAppearance(
@@ -101,9 +96,10 @@ void main() {
         await tester.tap(find.text('Open demo'));
         await tester.pumpAndSettle();
 
-        // Without the appearance snapshot, the dialog route would resolve the
-        // ancestor's saved liquid mode and build a liquid outer panel + tiles.
-        expect(find.byType(LiquidGlassSurface), findsNothing);
+        // 弹层锁标准档之后，「用草稿档还是存档档」在**材质上**已经看不出来了
+        // （两边都是液态玻璃），所以这里退化成冒烟：路由能开、五块面都在、
+        // 四行入口都渲染。档位跨越路由边界的语义由上面那组逐档用例覆盖。
+        expect(find.byType(LiquidGlassSurface), findsNWidgets(5));
         expect(find.text('课程统计'), findsOneWidget);
         expect(find.text('课表设置'), findsOneWidget);
         expect(find.text('导入课程'), findsOneWidget);

@@ -6,8 +6,44 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../../../models/liquid_glass_tuning.dart';
+import '../frosted/liquid_glass_degradation.dart';
 import '../hyperos_blurred_header.dart';
 import 'liquid_glass_shader.dart';
+
+/// 这块玻璃表面**按哪个作用域取参数**。
+///
+/// 2026-09-19 起，规矩从「全 app 只有一份参数」改成「**两个作用域，各自只有一个出口**」：
+///
+/// * [pinnedChrome]：**固定小件** —— 弹窗家族（选择弹窗 / 列表弹窗 / 二级子卡 / 右上角
+///   菜单弹窗 / 常驻球与菜单钮）、底部弹窗与对话框、子页返回键。它们**永远是液态玻璃的
+///   标准档**：用户的全局材质档位、5 个「作用范围」开关、模糊总开关、自定义档位与滑杆
+///   一律不参与。
+/// * [followsUser]：其余表面 —— 首页玻璃带与星期栏（同一条连续带）、底栏药丸与坞内圆钮、
+///   悬浮钮等。跟随用户在「课程页面」里选的档位与滑杆。
+///
+/// 两个作用域**各自只有一个出口**，表面依旧不许自带参数 —— 这是历史教训：旧的
+/// 「每个表面自己传档位」把同一块材质搞出好几种观感，那条通道被整体删过。
+/// 别把 [pinnedChrome] 当成「又允许表面带参数」的后门。
+enum LiquidGlassRole {
+  /// 跟随用户在「课程页面」里选的玻璃档位与滑杆。
+  followsUser,
+
+  /// 固定小件：永远是液态玻璃的标准档，用户改不动。
+  pinnedChrome,
+}
+
+/// 按 [role] 解析这块表面该用哪份调参。
+///
+/// 抽成纯函数是为了让单元测试能在**没有 shader 后端**的环境里钉住这条规则
+/// （整条渲染路径在 `flutter test` 里跑不到，见 [LiquidGlassSurface.isAvailable]）。
+LiquidGlassTuning liquidGlassTuningForRole(
+  FrostedAppearance? appearance,
+  LiquidGlassRole role,
+) => switch (role) {
+  LiquidGlassRole.pinnedChrome => LiquidGlassPreset.standard.recommendedTuning,
+  LiquidGlassRole.followsUser =>
+    appearance?.liquidGlassTuning ?? LiquidGlassTuning.defaults,
+};
 
 /// 一块**液态玻璃**表面：把实时背景糊掉之后，再按圆角 SDF 在边缘做折射与受光高光。
 ///
@@ -21,9 +57,9 @@ import 'liquid_glass_shader.dart';
 /// 期间会一直过期——那些动作只触发重绘不触发重建，取到的会是动画开始前的位置。
 /// 上游 `progressive_blur` 为同一个理由走了同一条路。
 ///
-/// 不可用时（引擎没有 shader filter 后端 / 着色器没加载出来 / 用户关了模糊或开了
-/// 降动效）直接返回 [fallbackBuilder] 给的**既有基础材质**，绝不抛异常、也不留半透明
-/// 空壳。
+/// 不可用时（引擎没有 shader filter 后端 / 着色器没加载出来 / 系统降级；跟随用户的
+/// 表面还包括「用户关了模糊」）直接返回 [fallbackBuilder] 给的**既有基础材质**，
+/// 绝不抛异常、也不留半透明空壳。参数来自哪个作用域见 [LiquidGlassRole]。
 class LiquidGlassSurface extends StatefulWidget {
   const LiquidGlassSurface({
     super.key,
@@ -33,6 +69,7 @@ class LiquidGlassSurface extends StatefulWidget {
     this.grouped = false,
     this.refractionFactor,
     this.maxRefraction,
+    this.role = LiquidGlassRole.followsUser,
     this.clipBehavior = Clip.antiAlias,
   });
 
@@ -68,19 +105,37 @@ class LiquidGlassSurface extends StatefulWidget {
 
   final Clip clipBehavior;
 
+  /// 参数作用域（见 [LiquidGlassRole]）。
+  ///
+  /// 默认 [LiquidGlassRole.followsUser]；弹窗家族 / 底部弹窗 / 返回键这些**固定小件**
+  /// 传 [LiquidGlassRole.pinnedChrome]，从此不受用户的材质设置影响。
+  final LiquidGlassRole role;
+
   /// 现在能不能真的画出折射。
   ///
-  /// 三个条件缺一不可：
-  /// * `ImageFilter.isShaderFilterSupported` —— 引擎得有 shader filter 后端（即
-  ///   Impeller）。桌面/测试环境恒为 false，所以这条路径**在 `flutter test` 里跑不到**，
-  ///   只能靠纯单元测试钉住参数与降级行为。
-  /// * 着色器已加载 —— 加载失败时保持 false，走基础材质。
-  /// * `HyperosBlurredHeader.backdropBlurEnabled` —— 已含「用户关了模糊总开关」与
-  ///   「系统无障碍 / 降动效 / 高对比」两类降级，与全 app 其他玻璃表面同一判据。
-  static bool isAvailable(BuildContext context) =>
-      ui.ImageFilter.isShaderFilterSupported &&
-      LiquidGlassSurfaceShader.instance.isLoaded &&
-      HyperosBlurredHeader.backdropBlurEnabled(context);
+  /// **技术下限**（两个作用域都要过）：引擎得有 shader filter 后端（即 Impeller）、
+  /// 且着色器已加载 —— 桌面/测试环境 `isShaderFilterSupported` 恒为 false，所以这条
+  /// 路径在 `flutter test` 里跑不到，只能靠纯单元测试钉住参数与降级行为。
+  ///
+  /// 往上的门禁按 [role] 分岔：
+  /// * [LiquidGlassRole.pinnedChrome]：只再过一道**技术 / 系统**门禁
+  ///   （[LiquidGlassDegradation.shouldDegrade]：平台视图上方、系统无障碍降级）。
+  ///   用户关模糊、选实体/高斯/柔光、关「作用范围」开关，**都不能**把这些小件从玻璃上摘下来。
+  /// * [LiquidGlassRole.followsUser]：与全 app 其他玻璃表面同一判据
+  ///   （[HyperosBlurredHeader.backdropBlurEnabled] 已含用户模糊总开关与系统降级）。
+  static bool isAvailable(
+    BuildContext context, [
+    LiquidGlassRole role = LiquidGlassRole.followsUser,
+  ]) {
+    if (!ui.ImageFilter.isShaderFilterSupported ||
+        !LiquidGlassSurfaceShader.instance.isLoaded) {
+      return false;
+    }
+    if (role == LiquidGlassRole.pinnedChrome) {
+      return !LiquidGlassDegradation.shouldDegrade(context);
+    }
+    return HyperosBlurredHeader.backdropBlurEnabled(context);
+  }
 
   @override
   State<LiquidGlassSurface> createState() => _LiquidGlassSurfaceState();
@@ -100,15 +155,16 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface> {
     return ListenableBuilder(
       listenable: LiquidGlassSurfaceShader.instance,
       builder: (context, _) {
-        if (!LiquidGlassSurface.isAvailable(context)) {
+        if (!LiquidGlassSurface.isAvailable(context, widget.role)) {
           return widget.fallbackBuilder(context);
         }
-        // 全 app 唯一的参数入口：表面只提供自己的圆角与当前明暗，折射旋钮、
-        // 底色、光来向一律从 [FrostedAppearanceScope] 里那一份调参出，所以不存在
-        // 「这个表面折射 8、那个表面折射 12」。
-        final tuning =
-            FrostedAppearanceScope.of(context).liquidGlassTuning ??
-            LiquidGlassTuning.defaults;
+        // 两个作用域，各自只有一个出口：表面只提供自己的圆角与当前明暗，折射旋钮、
+        // 底色、光来向一律从 [liquidGlassTuningForRole] 出 —— 固定小件拿标准档，
+        // 其余拿 [FrostedAppearanceScope] 里那一份，表面自己仍然碰不到参数。
+        final tuning = liquidGlassTuningForRole(
+          FrostedAppearanceScope.of(context),
+          widget.role,
+        );
         final style = tuning.toStyle(
           borderRadius: widget.borderRadius,
           brightness: Theme.of(context).brightness,

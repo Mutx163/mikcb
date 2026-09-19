@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
+import 'package:university_timetable/ui/hyperos/frosted/frosted_header_background.dart';
 import 'package:university_timetable/ui/hyperos/frosted/liquid_glass_degradation.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_sheet.dart';
 import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
@@ -143,9 +144,10 @@ void main() {
     ) async {
       await tester.pumpWidget(degradedSheet(highContrast: true));
       await tester.pump();
-      // Degradation skips the liquid-glass branch; the sheet falls through to
-      // the solid Material surface instead of spawning a glass surface.
-      expect(find.byType(LiquidGlassSurface), findsNothing);
+      // 降级不再靠「不建液态玻璃面」来表达（弹层锁标准档后那个 widget 恒在），
+      // 而是**换成实底材质**：0-模糊那条分支画 Material，浅色实底不再透出背景。
+      // 判据改成看得见的那一半：非降级时那层磨砂底不见了。
+      expect(find.byType(FrostedHeaderBackground), findsNothing);
       expect(find.byType(Material), findsWidgets);
     });
 
@@ -154,9 +156,23 @@ void main() {
     ) async {
       await tester.pumpWidget(degradedSheet(highContrast: true));
       await tester.pump();
-      expect(find.byType(LiquidGlassSurface), findsNothing);
+      expect(
+        LiquidGlassDegradation.shouldDegrade(
+          tester.element(find.byType(HyperosSheetFrame).first),
+        ),
+        isTrue,
+      );
       await tester.pumpWidget(degradedSheet(highContrast: false));
       await tester.pump();
+      expect(
+        LiquidGlassDegradation.shouldDegrade(
+          tester.element(find.byType(HyperosSheetFrame).first),
+        ),
+        isFalse,
+      );
+      // 玻璃面自始至终都在（弹层锁标准档），变的是它**有没有降级**。具体画成玻璃
+      // 还是实底在 VM 里分辨不出来（没有 shader 后端、平台模糊也不支持，两条都会
+      // 落到实底），所以这里钉的是降级判定本身的翻转；材质渲染由真机验收。
       expect(find.byType(LiquidGlassSurface), findsOneWidget);
     });
   });

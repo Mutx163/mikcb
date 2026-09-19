@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_blurred_header.dart';
+import 'hyperos_popup_glass.dart';
+import 'hyperos_theme.dart';
+import 'liquid/liquid_glass_surface.dart';
 
-/// 子页左上角的返回键 —— 上游 OS4 那颗**圆形**玻璃图标按钮。
-///
-/// 用法与上游示例逐字对齐（`flutter_miuix` 的 `example/lib/showcase/os4.dart`
-/// 把 `MiuixGlassIconButton` 放进 `MiuixGlassTopAppBar.navigationIcon`，图标用
-/// `MiuixIcons.os4.chevronBackward`）：直径 44 的圆、圆角取 `size / 2`、图标 24，
-/// 描边与阴影都由上游给，本仓不再自绘一套球。
+/// 子页左上角的返回键：**液态玻璃的标准档圆底 + 箭头**。
 ///
 /// ## 圆底只在"内容压到顶栏下面"时出现
 ///
@@ -18,33 +16,30 @@ import 'hyperos_blurred_header.dart';
 /// 翻面是瞬时的 —— 顶栏那条带本身也是瞬时换色（`InspireHeaderBlur` 里没有任何
 /// 过渡动画），圆底跟着一起切才读作同一件事。
 ///
-/// 实现上只动上游给的 `surfaceAlpha`（0 关掉整块玻璃表面），**不换 widget**：
-/// 图标、44×44 命中区、按压缩放都保持不变，也不会有重挂与图标位移。
+/// ## 材质：锁标准档的液态玻璃（2026-09-19 起）
 ///
-/// ## 为什么不传 `backdrop`
+/// 用户口径：「设置页面左上角的返回按钮……只能永远是玻璃然后标准档位」。
+/// 所以圆底走 [LiquidGlassRole.pinnedChrome]：全局材质档位、作用范围开关、模糊总
+/// 开关、自定义滑杆都不参与，只剩技术 / 系统门禁（见 [LiquidGlassSurface.isAvailable]），
+/// 那时的兜底是一颗同色实心圆 + 同一处定义的浮影（不描边 —— 与首页球、弹窗同一条
+/// 2026-09-19 决定）。
 ///
-/// 上游玻璃的采样源只有两条来路：`GlassBarScope`（玻璃顶栏下发）或显式
-/// `backdrop`。本仓两者都取不到 —— 子页顶栏走的是实时 `BackdropFilter`
-/// （[HyperosBlurredHeader]，根本不录快照），而 [HyperosGlassBackdropHost] 只挂在
-/// **整页级**的根页面上（`HyperosRootPage` / 课表首页），子页是独立路由、不在那棵树
-/// 里；`HyperosGlassBackdropRegistry` 的"栈顶"兜底取到的是**被压在下面那一屏**的
-/// 快照，用它画玻璃等于让返回键显示上一页的画面。
+/// ## 为什么这次可以用实时玻璃
 ///
-/// 所以这里走上游在"没有采样源"时那条分支：**纯色轮廓 + 描边 + 阴影**，兜底色由
-/// 上游按主题明暗给（亮 `#FFFFFF` / 暗 `#2C2C2C`）。它是实心圆钮，**不是玻璃** ——
-/// 要真折射得先给子页顶栏接一路采样源，那是另一件事
-/// （见 `.agents/notes/implemented/feature/2026-09-17-subpage-glass-back-button.md`）。
+/// 2026-09-17 那版结论是「不要给它接采样源」，针对的是**快照**那条路：当时
+/// [HyperosGlassBackdropHost] 的捕获子树包含玻璃自身，接采样源会读到上一帧的
+/// 合成结果。液态玻璃走的是**实时 `BackdropFilter`**，不依赖任何快照，所以
+/// 这条顾虑不成立；子页顶栏本来就是实时模糊，背景在它下面一直都在。
 ///
-/// ## 尺寸与位置
+/// ## 实现细节
 ///
-/// - 直径 44 比原先的 [HyperosIconButton]（40）宽 4：折叠顶栏按**实测**导航图标宽度
-///   给居中标题让位，所以这 4px 会被自动算进去，不需要动任何 padding。
-/// - 顶栏的 `navigationIconPadding` 仍是 16（上游玻璃顶栏用 12 是为了让
-///   `padding + 宽度` 与旧的 16 + 40 相等）。本仓沿用 16，图标的视觉左边缘因此
-///   右移 2px —— 不接参数、不为它加一条布局分支。
+/// 上游那颗 [MiuixGlassIconButton] 保留下来只负责三件事：图标、44×44 命中区、
+/// 按压缩放 —— 用 `surfaceAlpha: 0` 让它自己那层材质一次都不画（上游
+/// `MiuixGlass.paint` 在 `cfg.alpha <= 0` 时直接早退），我们把自己那块玻璃叠在
+/// 它下面。这样图标、命中区、按压手感与原先逐像素一致，换的只是"底下那层画什么"。
 ///
-/// 没有 tooltip / semantics label：原先那颗 [HyperosIconButton] 也没有，加中文
-/// 文案会带出一批 l10n 改动，等真要给无障碍标签时再一起做。
+/// 没有 tooltip / semantics label：原先那颗也没有，加中文文案会带出一批 l10n 改动，
+/// 等真要给无障碍标签时再一起做。
 class HyperosBackButton extends StatelessWidget {
   const HyperosBackButton({super.key, required this.onPressed});
 
@@ -53,20 +48,38 @@ class HyperosBackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 只有"内容已经压到顶栏带下面"时才长出圆底；停在页顶就是一根光箭头。
-    // 判据直接复用顶栏磨砂那一份（[HyperosBlurredHeaderScope.contentUnderHeaderOf]，
-    // 即 `scrollPixels > 阈值`）：圆底与磨砂带同一时刻翻面，读起来是"顶栏活过来"
-    // 而不是两个各自为政的开关。它走 InheritedWidget 依赖，翻面时本元素自己重建，
-    // 不需要 [HyperosSubpage]（StatelessWidget）跟着重建。
+    // 判据走 InheritedWidget 依赖，翻面时本元素自己重建，不需要
+    // [HyperosSubpage]（StatelessWidget）跟着重建。
     final contentUnder = HyperosBlurredHeaderScope.contentUnderHeaderOf(context);
-    return MiuixGlassIconButton(
-      onPressed: onPressed,
-      // 用上游给的 `surfaceAlpha` 开关**表面**，而不是换 widget：
-      // `surfaceAlpha: 0` 会把材质 alpha 压到 0，`MiuixGlass.paint` 里
-      // `cfg.alpha <= 0` 直接早退（填充、描边、阴影、高光一次都不画），
-      // 而图标、44×44 命中区、按压缩放全都照旧 —— 也就没有换 widget 带来的
-      // 重挂与图标位移。上游玻璃顶栏同步显隐进度用的就是这个入参。
-      surfaceAlpha: contentUnder ? 1 : 0,
-      child: MiuixIcon(vector: MiuixIcons.os4.chevronBackward),
+    return Stack(
+      children: [
+        if (contentUnder)
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) => LiquidGlassSurface(
+                // 正圆：半径取**实际边长**的一半（上游那颗按钮 44×44；它的默认值
+                // 将来若变，这里跟着走，不会变成圆角方块）。
+                borderRadius: constraints.maxWidth / 2,
+                role: LiquidGlassRole.pinnedChrome,
+                fallbackBuilder: (fallbackContext) => DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: HyperosColors.surfaceContainer(fallbackContext),
+                    boxShadow: const [HyperosGlassShadow.shadow],
+                  ),
+                  child: const SizedBox.expand(),
+                ),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+        // 图标 / 命中区 / 按压缩放都由它给；它自己的材质层用 surfaceAlpha 关掉。
+        MiuixGlassIconButton(
+          onPressed: onPressed,
+          surfaceAlpha: 0,
+          child: MiuixIcon(vector: MiuixIcons.os4.chevronBackward),
+        ),
+      ],
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
 
 import '../../helpers_test_app.dart';
 
@@ -65,14 +66,17 @@ void main() {
       ),
     );
 
-    // 柔光档下必须真的是那块柔光玻璃（而不是平涂色）。
+    // 材质自 2026-09-19 起锁成「永远液态玻璃的标准档」（用户口径：不允许用户调整
+    // 这些的材质）：不再按全局档位分派 —— 这里跑在柔光档下，球照样是液态玻璃面。
+    // 测试环境没有 shader filter 后端，所以实际画出来的是它的回落面
+    // （[StableFrostedSurface]），但 widget 本身必须是 [LiquidGlassSurface]。
     expect(
       find.descendant(
         of: find.byType(HyperosSelectPopupGlass),
-        matching: find.byType(SoftGlassSurface),
+        matching: find.byType(LiquidGlassSurface),
       ),
       findsOneWidget,
-      reason: '球要跟弹窗一样按全局档位分派材质',
+      reason: '球是固定小件：永远液态玻璃，不跟全局档位走',
     );
   });
 
@@ -352,17 +356,13 @@ void main() {
     expect(ballSubtreeKey(), isNot(lightKey), reason: '明暗切换后必须换一棵子树重新录帧');
   });
 
-  testWidgets('球不画上游那圈「加法白」高光（壁纸上白边过重的根因）', (tester) async {
-    // 真机反馈：柔光档 + 壁纸时，右上角那颗球的白边特别重。
+  testWidgets('球不再有上游那层材质（那圈「加法白」高光的根）', (tester) async {
+    // 真机反馈：柔光档 + 壁纸时，右上角那颗球的白边特别重。那圈白**不是**本仓补的
+    // 轮廓线，而是柔光档独有的上游描边（贴边白 10% + 两处方向高光 50% / 30%，以加法
+    // 混合画上去）；球内部本就被三层白提亮到接近纯白，加法一叠直接钳到 1.0。
     //
-    // 那圈白**不是**本仓补的轮廓线，而是柔光档独有的上游描边（高斯档压根不传
-    // `stroke`）：贴边白 10% + 两处方向高光 50% / 30%，以加法混合画上去。球内部
-    // 本就被三层白提亮到接近纯白，加法一叠直接钳到 1.0 —— 一圈没有过渡的死白边
-    // （纯色底上"白叠白"等于没画，所以只在有壁纸时暴露）。
-    //
-    // 球的边界自 2026-09-19 起交给玻璃材质自己交代（组件不再叠描边），
-    // 因此上游这圈高光在球上是零收益、纯副作用：整层不画。注意**不能只衰减它**
-    // —— 玻璃内部接近纯白时，减半与满值都顶在 1.0，看不出任何区别。
+    // 2026-09-19 起球锁成「永远液态玻璃的标准档」，柔光分支在球上不存在了 ——
+    // 上游那层材质（`MiuixGlass`）整块都不再出现在球的子树里，这圈白自然也没有了。
     final link = LayerLink();
     await tester.pumpWidget(
       scope(
@@ -378,18 +378,27 @@ void main() {
     );
     await tester.pump();
 
-    final ballGlass = tester.widget<MiuixGlass>(
+    expect(
       find.descendant(
         of: find.byType(HyperosSelectPopupGlass),
         matching: find.byType(MiuixGlass),
       ),
+      findsNothing,
+      reason: '球不再走上游材质：柔光那圈加法白高光的根被拔掉了',
     );
-    expect(ballGlass.stroke, isNull, reason: '球上的上游高光必须整层不画');
+    expect(
+      find.descendant(
+        of: find.byType(HyperosSelectPopupGlass),
+        matching: find.byType(LiquidGlassSurface),
+      ),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('弹层面板仍保留上游高光（关掉的只有球）', (tester) async {
-    // 对照组：`HyperosSelectPopupGlass.enableEdgeHighlight` 默认开，其余调用方
-    // （选择弹层 / 列表弹层 / OS4 注入面）的观感一个字节不变。
+  testWidgets('弹层与球同一条规矩：也没有上游那层材质', (tester) async {
+    // 2026-09-19 之前这里钉的是「面板保留上游高光、只有球关掉」。现在弹窗家族与球
+    // 一起锁成「永远液态玻璃的标准档」，上游材质在两边都不再出现 —— 这条翻成
+    // 同一个方向的断言，防止谁把上游面板又塞回来。
     await tester.pumpWidget(
       scope(
         child: const Scaffold(
@@ -409,9 +418,10 @@ void main() {
     await tester.pump();
 
     expect(
-      tester.widget<MiuixGlass>(find.byType(MiuixGlass)).stroke,
-      isNotNull,
-      reason: '面板的高光不能被这次改动波及',
+      find.byType(MiuixGlass),
+      findsNothing,
+      reason: '弹层不再走上游材质（面板同样锁标准档液态玻璃）',
     );
+    expect(find.byType(LiquidGlassSurface), findsOneWidget);
   });
 }
