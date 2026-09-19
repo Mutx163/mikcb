@@ -141,8 +141,7 @@ class LiquidGlassUniforms {
       rimColor = shader.getUniformVec3('u_rim_color'),
       rim = shader.getUniformFloat('u_rim'),
       rimWidth = shader.getUniformFloat('u_rim_width'),
-      lightDir = shader.getUniformVec2('u_light_dir'),
-      viewSize = shader.getUniformVec2('u_view_size');
+      lightDir = shader.getUniformVec2('u_light_dir');
 
   final ui.UniformVec2Slot areaOrigin;
   final ui.UniformVec2Slot areaSize;
@@ -155,14 +154,6 @@ class LiquidGlassUniforms {
   final ui.UniformFloatSlot rim;
   final ui.UniformFloatSlot rimWidth;
   final ui.UniformVec2Slot lightDir;
-
-  /// 视口的物理像素尺寸。
-  ///
-  /// 着色器拿它跟引擎自动填的 `u_size`（**绑定纹理**的尺寸）相减，量出
-  /// `compose` 内层模糊把纹理往外扩了多少 —— 扩边会让 `FlutterFragCoord()`
-  /// 的原点相对屏幕原点前移，不补掉就会在玻璃贴图边那一侧缺一条覆盖（真机表现
-  /// 是「模糊一开就有、归零就消失」的黑边）。详见 .frag 里 `u_view_size` 的说明。
-  final ui.UniformVec2Slot viewSize;
 }
 
 /// 校验着色器与 Dart 侧的 uniform 名字对得上，测试专用。
