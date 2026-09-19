@@ -6446,5 +6446,6 @@
   "appearanceEditorTitle": "모양 편집",
   "appearanceEditorDoneAction": "완료",
   "appearanceEditorWallpaperAction": "배경화면 조정",
-  "appearanceEditorMaterialAction": "재질"
+  "appearanceEditorMaterialAction": "재질",
+  "appearanceEditorEntrySubtitle": "전체 페이지 축소 미리보기에서 배경화면과 재질 조정"
 }

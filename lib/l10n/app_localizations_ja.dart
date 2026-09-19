@@ -11341,4 +11341,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get appearanceEditorMaterialAction => 'マテリアル';
+
+  @override
+  String get appearanceEditorEntrySubtitle => 'ページ全体の縮小プレビューで壁紙とマテリアルを調整';
 }

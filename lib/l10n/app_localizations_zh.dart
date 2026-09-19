@@ -11031,6 +11031,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get appearanceEditorMaterialAction => '材质';
+
+  @override
+  String get appearanceEditorEntrySubtitle => '整页微缩预览，改壁纸与材质';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -22104,6 +22107,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get appearanceEditorMaterialAction => '材質';
+
+  @override
+  String get appearanceEditorEntrySubtitle => '整頁縮小預覽，改桌布與材質';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -33177,4 +33183,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get appearanceEditorMaterialAction => '材質';
+
+  @override
+  String get appearanceEditorEntrySubtitle => '整頁縮小預覽，改桌布與材質';
 }

@@ -6510,5 +6510,6 @@
   "appearanceEditorTitle": "外观编辑",
   "appearanceEditorDoneAction": "完成",
   "appearanceEditorWallpaperAction": "调整壁纸",
-  "appearanceEditorMaterialAction": "材质"
+  "appearanceEditorMaterialAction": "材质",
+  "appearanceEditorEntrySubtitle": "整页微缩预览，改壁纸与材质"
 }

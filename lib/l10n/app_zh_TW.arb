@@ -6447,5 +6447,6 @@
   "appearanceEditorTitle": "外觀編輯",
   "appearanceEditorDoneAction": "完成",
   "appearanceEditorWallpaperAction": "調整桌布",
-  "appearanceEditorMaterialAction": "材質"
+  "appearanceEditorMaterialAction": "材質",
+  "appearanceEditorEntrySubtitle": "整頁縮小預覽，改桌布與材質"
 }

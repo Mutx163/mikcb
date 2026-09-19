@@ -11388,4 +11388,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get appearanceEditorMaterialAction => '재질';
+
+  @override
+  String get appearanceEditorEntrySubtitle => '전체 페이지 축소 미리보기에서 배경화면과 재질 조정';
 }

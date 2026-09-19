@@ -11678,4 +11678,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appearanceEditorMaterialAction => 'Material';
+
+  @override
+  String get appearanceEditorEntrySubtitle =>
+      'Full-page mini preview — adjust the wallpaper and the material';
 }

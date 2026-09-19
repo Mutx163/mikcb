@@ -376,6 +376,30 @@ class _TimetablePageSettingsScreenState
           title: l10n.frostedSheetSectionTitle,
           child: HyperosListGroup(
             children: [
+              // 「外观编辑」入口：整页首页微缩 + 底部两个弹窗，比在设置列表里
+              // 逐行拨更直观。放在材质区块**最前**——用户找的是「改外观」，
+              // 不该先翻完所有滑杆才看到它。
+              //
+              // 首页右上角菜单里也有一个同名入口（`kHomeMenuCatalog` 的
+              // `appearanceEditor`），但八宫格只有 8 格且排列是用户自己存的，
+              // 新增条目不会自动出现；这一行才是**保证一键可达**的那条路。
+              HyperosListTile(
+                title: l10n.appearanceEditorTitle,
+                details: l10n.appearanceEditorEntrySubtitle,
+                onTap: () async {
+                  await HyperosNavigation.push(
+                    context,
+                    settings: const RouteSettings(
+                      name: '/settings/appearance-editor',
+                    ),
+                    builder: (_) => const _AppearanceEditorScreen(),
+                  );
+                  if (!mounted) return;
+                  setState(() {
+                    _draft = context.read<TimetableProvider>().settings;
+                  });
+                },
+              ),
               // 「质感方案」：一键写穿一组推荐的材质搭配（2026-09-12）。
               // 纯增量层——只改既有字段、不锁定、不落盘新字段：当前命中
               // 哪个方案由 texturePresetOf 派生，应用后手动改任何一项即

@@ -6446,5 +6446,6 @@
   "appearanceEditorTitle": "外観を編集",
   "appearanceEditorDoneAction": "完了",
   "appearanceEditorWallpaperAction": "壁紙を調整",
-  "appearanceEditorMaterialAction": "マテリアル"
+  "appearanceEditorMaterialAction": "マテリアル",
+  "appearanceEditorEntrySubtitle": "ページ全体の縮小プレビューで壁紙とマテリアルを調整"
 }

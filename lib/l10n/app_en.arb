@@ -6450,5 +6450,6 @@
   "appearanceEditorTitle": "Appearance editor",
   "appearanceEditorDoneAction": "Done",
   "appearanceEditorWallpaperAction": "Adjust wallpaper",
-  "appearanceEditorMaterialAction": "Material"
+  "appearanceEditorMaterialAction": "Material",
+  "appearanceEditorEntrySubtitle": "Full-page mini preview — adjust the wallpaper and the material"
 }

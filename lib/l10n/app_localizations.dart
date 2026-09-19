@@ -20111,6 +20111,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'材质'**
   String get appearanceEditorMaterialAction;
+
+  /// No description provided for @appearanceEditorEntrySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'整页微缩预览，改壁纸与材质'**
+  String get appearanceEditorEntrySubtitle;
 }
 
 class _AppLocalizationsDelegate
