@@ -72,20 +72,7 @@ float roundedBoxSDF(vec2 p, vec2 halfSize, float r) {
   return min(max(q.x, q.y), 0.0) + length(max(q, vec2(0.0))) - r;
 }
 
-// ⚠️ 临时探针开关（2026-09-19，量完即撤；切换前先看 `lib/ui/debug/liquid_glass_uv_probe.dart`）。
-// 置 1 时不着色，改成输出一张「能读出坐标」的图：
-//   * 红：FlutterFragCoord 的 x 或 y 小于 8 —— 标记**绑定纹理的原点**在哪；
-//   * 绿：fract(FlutterFragCoord().y / 128) —— 从相位反推纹理原点相对屏幕的偏移。
-uniform float u_probe;
-
 void main() {
-  if (u_probe > 0.5) {
-    vec2 fc = FlutterFragCoord().xy;
-    float marker = (fc.x < 8.0 || fc.y < 8.0) ? 1.0 : 0.0;
-    frag_color = vec4(marker, fract(fc.y / 128.0), 0.0, 1.0);
-    return;
-  }
-
   // 屏幕物理像素 → 表面局部物理像素（见文件头第 1、3 条）。
   vec2 screenPx = FlutterFragCoord().xy;
   vec2 local = screenPx - u_area_origin;
