@@ -757,6 +757,19 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
 
   bool _captureScheduled = false;
 
+  /// 本捕获节点相对屏幕的等比缩放（祖先链上没有缩放时 = 1）。
+  ///
+  /// 只在**采集比例**上用一次（见 [_capture] 的 `reportedRatio`）：玻璃按屏幕逻辑像素
+  /// 贴图，而捕获按本地空间出图，两者差的就是这个缩放。取不到（未 attach / 退化矩阵）
+  /// 按 1 处理，与接入前逐字一致。
+  double _captureAncestorScale() {
+    if (!attached) {
+      return 1;
+    }
+    final scale = getTransformTo(null).getMaxScaleOnAxis();
+    return scale.isFinite && scale > 0 ? scale : 1;
+  }
+
   void _scheduleCapture() {
     if (!recording || _captureScheduled || !hasSize || size.isEmpty) return;
     _captureScheduled = true;
@@ -786,6 +799,15 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
     // 缩到 `(dpr / 4).clamp(.5, 1.0)` 才开始模糊，多录的像素只抬高每帧的离屏
     // 目标，进不了最终画面。
     final ratio = _samplePixelRatio(_devicePixelRatio);
+    // 祖先缩放（把页面整体缩小成缩略图时会 < 1）。**必须折算进报出去的采样比例**：
+    // 捕获是在本节点**本地空间**做的（`toImageSync` 的 rect 也是本地的），而玻璃那边
+    // 是拿「屏幕逻辑像素」去贴这张图的（上游 `miuix_glass.dart` 用
+    // `image.width / pixelRatio` 当它在屏幕上的宽度、用 `localToGlobal - globalOffset`
+    // 当原点）。本地空间与屏幕空间正好差一个祖先缩放：不折算，玻璃就把这张图按错误的
+    // 尺度铺开 —— 真机现象是玻璃带发白死板、或一条条横线（外观编辑页把首页缩成卡片时）。
+    // 祖先没有缩放时（scale == 1，即平时所有页面）这个折算恒等于 1，行为逐字不变。
+    final ancestorScale = _captureAncestorScale();
+    final reportedRatio = glassCapturePixelRatio(ratio, ancestorScale);
     final mine = Offset.zero & size;
     var wrote = false;
     // 先改判"满员时量不到位置"的成员：录帧时已布局，才量得到矩形、才谈得上远近。
@@ -804,7 +826,7 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
       if (target.isEmpty) continue;
       pendingArea += target.width * target.height;
       final image = offsetLayer.toImageSync(target, pixelRatio: ratio);
-      zone.update(image, localToGlobal(target.topLeft), ratio);
+      zone.update(image, localToGlobal(target.topLeft), reportedRatio);
       wrote = true;
       if (!notify) continue;
       for (final backdrop in zone.members.keys) {
@@ -828,7 +850,7 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
       _controller.plainBackdrop.updateSnapshot(
         image,
         localToGlobal(Offset.zero),
-        ratio,
+        reportedRatio,
       );
       wrote = true;
     }
@@ -854,6 +876,26 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
 /// 下限 0.5 与上游保持一致，避免低 dpr 设备录出过小的图。
 double _samplePixelRatio(double devicePixelRatio) =>
     (devicePixelRatio / 4).clamp(.5, 1.0);
+
+/// 报给玻璃的采样比例（**图上的点 / 屏幕逻辑像素**）。
+///
+/// 捕获是按捕获节点的**本地空间**出图的（[HyperosLayerBackdropCapture] 的
+/// `toImageSync` 用本地 rect），而玻璃那边按**屏幕逻辑像素**贴图（上游
+/// `miuix_glass.dart`：`image.width / pixelRatio` 当作它占的屏幕宽度、
+/// `localToGlobal - globalOffset` 当作原点）。两者相差一个祖先缩放，所以：
+///
+/// * 祖先没有缩放（平时所有页面，`ancestorScale == 1`）→ 原样返回，行为逐字不变；
+/// * 页面被整体缩小（外观编辑页把真首页缩成卡片）→ 折算回来，玻璃才不会把这张图
+///   按错误尺度铺开（真机现象：玻璃带发白死板、或一条条横线）。
+///
+/// 抽成纯函数是为了让单元测试能钉住这套推导（捕获那一步在测试环境跑不了）。
+@visibleForTesting
+double glassCapturePixelRatio(double sampleRatio, double ancestorScale) {
+  if (!ancestorScale.isFinite || ancestorScale <= 0) {
+    return sampleRatio;
+  }
+  return sampleRatio / ancestorScale;
+}
 
 /// 给屏级捕获报告"玻璃自己占哪一块"的透明包装。
 ///

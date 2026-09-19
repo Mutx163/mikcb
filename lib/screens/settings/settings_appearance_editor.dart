@@ -41,6 +41,16 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 卡片相对可用区的最大宽度比例（剩下的留白保证「在屏幕中间、不顶边」）。
   static const _cardMaxWidthFactor = 0.82;
 
+  /// 本页自己的玻璃采样源。
+  ///
+  /// 为什么必须有：卡片里那份真首页自带一个采样宿主，但它套在本页里 ——
+  /// 每个宿主只在「自己上面没有别的屏级作用域」时才登记到全局注册表（见
+  /// HyperosGlassBackdropHost._syncRegistration）。本页先立一层作用域，卡片里那层
+  /// 就成了「屏内嵌屏」，不会去顶掉注册表；而本页打开的弹窗（壁纸 / 材质）按注册表
+  /// 取源，拿到的就是这一层 = 整屏画面，而不是卡片里那一小块。
+  final HyperosGlassBackdropController _pageGlass =
+      HyperosGlassBackdropController();
+
   late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
 
@@ -87,6 +97,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
 
   @override
   void dispose() {
+    _pageGlass.dispose();
     _previewDayView.dispose();
     _previewDayOfWeekNotifier.dispose();
     // 滑块 debounce 未到期时若直接返回，只 cancel 会丢最后一档草稿。
@@ -225,8 +236,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
                       label: l10n.frostedGlassModeLabel,
                       items: {
                         l10n.frostedGlassModeSolid: GlassModeChoice.solid,
-                        l10n.frostedGlassModeGaussian:
-                            GlassModeChoice.gaussian,
+                        l10n.frostedGlassModeGaussian: GlassModeChoice.gaussian,
                         l10n.frostedGlassModeSoft: GlassModeChoice.softGlass,
                         l10n.frostedGlassModeLiquid:
                             GlassModeChoice.liquidGlass,
@@ -310,58 +320,60 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           // 预览必须读**本页草稿**的外观，否则弹窗里刚改的材质不会反映到卡片上
           // （FrostedAppearanceScope.of 会静默回落到默认值）。
           appearance: _draft.frostedAppearance,
-          child: ColoredBox(
-            color: _scrimColor,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // 上下给 chrome 留出的净空：顶部是「胶囊那一行 + 日/周分段」，
-                // 底部是「一排圆钮 + 名字」。
-                final topReserve = topInset + 16 + 40 + 12 + 36 + 18;
-                final bottomReserve = bottomInset + 34 + 56 + 8 + 18;
-                final availableHeight = (constraints.maxHeight -
-                        topReserve -
-                        bottomReserve)
-                    .clamp(120.0, double.infinity);
-                final availableWidth =
-                    constraints.maxWidth * _cardMaxWidthFactor;
-                // 保持整屏宽高比，完整放下（不裁切）。
-                final scale = math.min(
-                  availableWidth / virtualScreen.width,
-                  availableHeight / virtualScreen.height,
-                );
-                final cardWidth = virtualScreen.width * scale;
-                final cardHeight = virtualScreen.height * scale;
-                // 圆角跟着缩放走（参考实现是 screenRadiusDp * cardScale）。
-                final cardRadius = math.min(
-                  HyperosMotionPlatform.displayCornerRadiusDp * scale,
-                  cardHeight / 2,
-                );
-                // 卡片居中于「上下 chrome 之间」这条带子，不做任何手工偏移：
-                // 之前那版按上下净空差加了个「视觉重心」修正，结果卡片被推得压到
-                // 底部按钮的净空里（真机量化出来偏 2px），反而更容易被读成没对齐。
-                // 卡片自带浮影，几何居中看起来就是居中。
-                final cardCenterY = topReserve + availableHeight / 2;
+          // 本页的采样源：卡片里那份真首页会自带一层内嵌宿主，套在这里之后它不会去
+          // 顶掉全局注册表（见 [_pageGlass]），而本页打开的弹窗按注册表取源时拿到的
+          // 是这一层 = 整屏画面。
+          child: HyperosGlassBackdropHost(
+            controller: _pageGlass,
+            child: ColoredBox(
+              color: _scrimColor,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // 上下给 chrome 留出的净空：顶部是「胶囊那一行 + 日/周分段」，
+                  // 底部是「一排圆钮 + 名字」。
+                  final topReserve = topInset + 16 + 40 + 12 + 36 + 18;
+                  final bottomReserve = bottomInset + 34 + 56 + 8 + 18;
+                  final availableHeight =
+                      (constraints.maxHeight - topReserve - bottomReserve)
+                          .clamp(120.0, double.infinity);
+                  final availableWidth =
+                      constraints.maxWidth * _cardMaxWidthFactor;
+                  // 保持整屏宽高比，完整放下（不裁切）。
+                  final scale = math.min(
+                    availableWidth / virtualScreen.width,
+                    availableHeight / virtualScreen.height,
+                  );
+                  final cardWidth = virtualScreen.width * scale;
+                  final cardHeight = virtualScreen.height * scale;
+                  // 圆角跟着缩放走（参考实现是 screenRadiusDp * cardScale）。
+                  final cardRadius = math.min(
+                    HyperosMotionPlatform.displayCornerRadiusDp * scale,
+                    cardHeight / 2,
+                  );
+                  // 卡片居中于「上下 chrome 之间」这条带子，不做任何手工偏移：
+                  // 之前那版按上下净空差加了个「视觉重心」修正，结果卡片被推得压到
+                  // 底部按钮的净空里（真机量化出来偏 2px），反而更容易被读成没对齐。
+                  // 卡片自带浮影，几何居中看起来就是居中。
+                  final cardCenterY = topReserve + availableHeight / 2;
 
-                return Stack(
-                  children: [
-                    Positioned(
-                      left: (constraints.maxWidth - cardWidth) / 2,
-                      top: cardCenterY - cardHeight / 2,
-                      width: cardWidth,
-                      height: cardHeight,
-                      child: _buildPreviewCard(
-                        cardSize: Size(cardWidth, cardHeight),
-                        scale: scale,
-                        radius: cardRadius,
-                        screenPadding: media.padding,
-                        screenViewPadding: media.viewPadding,
+                  return Stack(
+                    children: [
+                      Positioned(
+                        left: (constraints.maxWidth - cardWidth) / 2,
+                        top: cardCenterY - cardHeight / 2,
+                        width: cardWidth,
+                        height: cardHeight,
+                        child: _buildPreviewCard(
+                          virtualScreen: virtualScreen,
+                          radius: cardRadius,
+                        ),
                       ),
-                    ),
-                    _buildTopChrome(context, l10n, topInset),
-                    _buildBottomChrome(context, l10n, bottomInset),
-                  ],
-                );
-              },
+                      _buildTopChrome(context, l10n, topInset),
+                      _buildBottomChrome(context, l10n, bottomInset),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -369,28 +381,22 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     );
   }
 
-  /// 中间那张卡：真首页缩进去 + 屏幕圆角 + 描边浮影。
+  /// 中间那张卡：真首页**整页一起缩**进来 + 屏幕圆角 + 描边浮影。
   ///
-  /// ⚠️ **这里不能用 `Transform.scale` / `FittedBox` 缩放**（第一版就是那么写的，真机
-  /// 上卡片里的连续玻璃带、玻璃坞会变成一条发白死板的色块、完全不透壁纸）。原因：
-  /// 首页的玻璃靠 `BackdropFilter` 采**背景层**，而缩放变换之后采样坐标系与背景层
-  /// 对不上（祖先被缩放时形状与采样范围不再同空间），采到的是卡片外的深色底，于是
-  /// 玻璃读成一块灰。
+  /// 两条硬约束（都是真机试出来的，别再回头）：
   ///
-  /// 改成「按卡片尺寸重新排一遍」：给嵌进来的首页一份**卡片大小的 MediaQuery**，
-  /// 并把 `textScaler` 与内边距按同一比例收小 —— 布局是 1:1 渲染（没有变换，玻璃
-  /// 正常采样），字号与留白同比缩小，观感与「把整屏按比例缩下来」一致。
+  /// 1. **必须整页一起缩**（这里是 `FittedBox` 缩一份整屏尺寸的真首页）。
+  ///    曾经改成「按卡片尺寸重新排一遍 + 缩字号」，真机上只有文字缩了，写死
+  ///    尺寸的部件（玻璃坞药丸、玻璃球、玻璃带高度、图标）全都不缩 —— 底栏
+  ///    跟首页一样大。整页一起缩则一切同比。
+  /// 2. **玻璃的采样比例要按缩放折算**，否则玻璃读歪（真机现象：玻璃带发白
+  ///    死板、或一条条横线）。这件事由采样宿主自己处理 —— 见
+  ///    `HyperosGlassBackdropCapture.paint` 里按祖先缩放折算的采样比例，
+  ///    这里不需要做别的。
   Widget _buildPreviewCard({
-    required Size cardSize,
-    required double scale,
+    required Size virtualScreen,
     required double radius,
-    required EdgeInsets screenPadding,
-    required EdgeInsets screenViewPadding,
   }) {
-    // 用户自己的字号设置要**乘上**卡片比例，不能被我这份 MediaQuery 顶掉：
-    // TextScaler 没有「相乘」的接口，所以按一个参考字号反推环境倍率（线性
-    // scaler 下是精确值），再乘卡片比例。
-    final ambientTextScale = MediaQuery.textScalerOf(context).scale(14) / 14;
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
@@ -400,18 +406,11 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
-        child: SizedBox(
-          width: cardSize.width,
-          height: cardSize.height,
-          child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(              size: cardSize,
-              // 字号与系统内边距同比收小，缩略图才「像一张缩小的屏幕」而不是
-              // 「小屏布局 + 大字号」。
-              textScaler: TextScaler.linear(ambientTextScale * scale),
-              padding: screenPadding * scale,
-              viewPadding: screenViewPadding * scale,
-              viewInsets: EdgeInsets.zero,
-            ),
+        child: FittedBox(
+          // 默认就是 contain：整页等比缩进卡片，不变形、不裁切。
+          child: SizedBox(
+            width: virtualScreen.width,
+            height: virtualScreen.height,
             child: TimetableHomePreviewScope(
               dayView: _previewDayView,
               dayOfWeek: _previewDayOfWeekNotifier,
