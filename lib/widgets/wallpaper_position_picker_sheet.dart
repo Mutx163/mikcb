@@ -782,11 +782,10 @@ class _HyperosHeaderTextButton extends StatelessWidget {
     final appearance = FrostedAppearanceScope.of(context);
     final blurEnabled = HyperosBlurredHeader.backdropBlurEnabled(context);
 
-    // 高级材质面自带模糊，不受「模糊」总开关约束（与弹窗同理）；
-    // 柔光与液态同为高级材质、共用「作用范围 → 壁纸选点按钮」开关。
-    final advancedMode = appearance.liquidGlassPickerButtonsEnabled
-        ? appearance.glassMode
-        : null;
+    // 高级材质面自带模糊，不受「模糊」总开关约束（与弹窗同理）；柔光与液态
+    // 同为高级材质，按全局玻璃模式分派 —— 「作用范围 → 壁纸选点按钮」开关已随
+    // 小件锁档删除（这四个开关存不存在都不改变出图）。
+    final advancedMode = appearance.glassMode;
 
     // 柔光玻璃：与弹窗 / 底栏同一套雾面材质。
     if (isAdvancedGlassMode(advancedMode) &&
@@ -858,11 +857,8 @@ class _HyperosHeaderTextButton extends StatelessWidget {
       );
     }
 
-    // 「液态玻璃作用范围 → 壁纸选点按钮」关闭 → 实体卡片（不再降级磨砂）。
-    if (LiquidGlassDegradation.familyFallsBackToSolid(
-      context,
-      advancedFamilyEnabled: appearance.liquidGlassPickerButtonsEnabled,
-    )) {
+    // 技术 / 系统门禁（平台视图、系统无障碍降级）→ 实体卡片（不再降级磨砂）。
+    if (LiquidGlassDegradation.shouldDegrade(context)) {
       return Material(
         color: HyperosColors.surfaceContainer(context),
         borderRadius: radius,

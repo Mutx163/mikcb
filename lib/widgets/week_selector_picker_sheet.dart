@@ -38,13 +38,9 @@ class _WeekSelectorPickerSheetBody extends StatelessWidget {
     final showBackToCurrentWeek =
         currentSemesterWeek != null && visibleWeek != currentSemesterWeek;
     // 材质判定须与 HyperosSheetFrame._buildFrostedBackground 的液态玻璃分支
-    // 一致（同一 appearance 字段 + 同一降级策略），保证格子样式跟实际面板
-    // 材质同步切换。
-    final appearance = FrostedAppearanceScope.of(context);
-    final onLiquidGlassPanel =
-        appearance.glassMode == FrostedGlassMode.liquidGlass &&
-        appearance.liquidGlassSheetDialogEnabled &&
-        !LiquidGlassDegradation.shouldDegrade(context);
+    // 一致：面板锁标准档之后它**永远是玻璃**（本页不传 frosted:false），唯一
+    // 能让它变成实底的是系统降级，格子样式跟着同一条判据切换。
+    final onLiquidGlassPanel = !LiquidGlassDegradation.shouldDegrade(context);
     final weekCountText = l10n.availableWeeksCount(availableWeeks.length);
 
     return HyperosSheetFrame(

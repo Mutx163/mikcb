@@ -96,10 +96,12 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
     'surfaceHomeBand': homeBandSurfaceMaterial(s).name,
     'surfaceSubpageHeader': subpageHeaderSurfaceMaterial(s).name,
     'surfaceDock': dockSurfaceMaterial(s).name,
-    'surfaceSheetDialog': sheetDialogSurfaceMaterial(s).name,
-    'surfaceSelectSheet': selectSheetSurfaceMaterial(s).name,
-    'surfacePopup': popupSurfaceMaterial(s).name,
-    'surfacePickerButtons': pickerButtonsSurfaceMaterial(s).name,
+    // 弹窗家族锁标准档：这四个读数恒为液态玻璃（唯一能让它变的是设备级
+    // shader / 系统降级，不在本推导范围内）。
+    'surfaceSheetDialog': pinnedChromeSurfaceMaterial().name,
+    'surfaceSelectSheet': pinnedChromeSurfaceMaterial().name,
+    'surfacePopup': pinnedChromeSurfaceMaterial().name,
+    'surfacePickerButtons': pinnedChromeSurfaceMaterial().name,
     'surfaceCourseCard': courseCardSurfaceMaterial(s).name,
     // 课卡的真实门控比 `courseCardSurfaceMaterial` 多一条「有没有可用壁纸」：
     // 没有壁纸时高斯档没有可采样的背景，渲染侧会回落实体卡。两个值不一致
@@ -109,12 +111,8 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
       gaussianBlurAvailable: s.frostedBlurEnabled,
     ).name,
 
-    // —— 高级材质作用范围（五个逐表面开关）——
-    'lgPopup': s.liquidGlassPopupEnabled,
-    'lgSelectSheet': s.liquidGlassSelectSheetEnabled,
-    'lgSheetDialog': s.liquidGlassSheetDialogEnabled,
+    // —— 高级材质作用范围（2026-09-19 起只剩底栏一项）——
     'lgDock': s.liquidGlassDockEnabled,
-    'lgPickerButtons': s.liquidGlassPickerButtonsEnabled,
 
     // —— 柔光玻璃参数（已回落，非空）——
     'softPreset': s.softGlassPreset.name,

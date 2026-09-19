@@ -545,9 +545,6 @@ Future<T?> showHyperosSelectSheet<T>({
 
       return HyperosSheetFrame(
         chrome: HyperosSheetChrome.floating,
-        // 对话式选择面板走「液态玻璃作用范围 → 全屏选择面板」开关
-        //（默认关）：预设主题/字体等长列表弹窗默认保持磨砂材质。
-        liquidGlassGroup: HyperosSheetLiquidGlassGroup.selectSheet,
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,

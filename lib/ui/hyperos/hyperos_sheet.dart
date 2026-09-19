@@ -48,16 +48,6 @@ enum HyperosSheetChrome {
   edge,
 }
 
-/// 本框的液态玻璃材质受「液态玻璃作用范围」哪一档开关控制。
-enum HyperosSheetLiquidGlassGroup {
-  /// 底部弹窗与对话框（showHyperosSheet / HyperosDialog 系，默认开）。
-  sheetDialog,
-
-  /// 对话式全屏选择面板——预设主题、字体等长列表选择弹窗（默认关：
-  /// 大面积折射在长列表上偏炫且更费电，默认保持经典磨砂）。
-  selectSheet,
-}
-
 /// Provides default [HyperosSheetChrome] for nested [HyperosSheetFrame]s.
 class HyperosSheetChromeScope extends InheritedWidget {
   const HyperosSheetChromeScope({
@@ -97,7 +87,6 @@ class HyperosSheetFrame extends StatelessWidget {
     this.maxHeight,
     this.frosted = true,
     this.chrome,
-    this.liquidGlassGroup = HyperosSheetLiquidGlassGroup.sheetDialog,
   });
 
   final Widget child;
@@ -110,19 +99,6 @@ class HyperosSheetFrame extends StatelessWidget {
 
   /// When null, uses [HyperosSheetChromeScope] or [HyperosSheetChrome.floating].
   final HyperosSheetChrome? chrome;
-
-  /// 「液态玻璃作用范围」开关档位：本框液态材质跟随弹窗对话框（默认）
-  /// 还是对话式全屏选择面板（预设主题等长列表选择弹窗）。
-  final HyperosSheetLiquidGlassGroup liquidGlassGroup;
-
-  /// 本框当前是否允许使用液态玻璃材质（全局模式 × 家族开关）。
-  bool _liquidGlassAllowed(FrostedAppearance appearance) =>
-      switch (liquidGlassGroup) {
-        HyperosSheetLiquidGlassGroup.sheetDialog =>
-          appearance.liquidGlassSheetDialogEnabled,
-        HyperosSheetLiquidGlassGroup.selectSheet =>
-          appearance.liquidGlassSelectSheetEnabled,
-      };
 
   @override
   Widget build(BuildContext context) {
@@ -252,16 +228,10 @@ class HyperosSheetFrame extends StatelessWidget {
     required BuildContext context,
     required BorderRadius borderRadius,
   }) {
-    final appearance = FrostedAppearanceScope.of(context);
-
-    // 家族开关只服务于**回落分支**：弹窗家族锁成「永远液态玻璃的标准档」之后，
-    // 用户的材质档位不再决定这里画什么；但技术 / 系统门禁把它摘下来时，
-    // [familyFallsBackToSolid] 依旧给出「该退到实底」的判定（平台视图上方、
-    // 系统无障碍降级都算），所以这条判定留着。
-    final familySolid = LiquidGlassDegradation.familyFallsBackToSolid(
-      context,
-      advancedFamilyEnabled: _liquidGlassAllowed(appearance),
-    );
+    // 弹窗家族锁成「永远液态玻璃的标准档」之后，用户侧再没有任何开关能参与
+    // 这里的材质判定（作用范围开关已整体删除，见 [LiquidGlassRole.pinnedChrome]）。
+    // 只剩**技术 / 系统门禁**：平台视图上方、系统无障碍降级 → 实底。
+    final familySolid = LiquidGlassDegradation.shouldDegrade(context);
 
     // 基础材质（磨砂 / 实底）：**只剩回落**一个用途 —— 弹窗家族自 2026-09-19 起
     // 永远是液态玻璃的标准档，只有技术 / 系统门禁能把它摘下来。
@@ -311,13 +281,8 @@ class HyperosSheetFrame extends StatelessWidget {
     required BorderRadius borderRadius,
     required Widget content,
   }) {
-    final appearance = FrostedAppearanceScope.of(context);
-
-    // 同 [_buildFrostedBackground]：家族判定只服务回落分支。
-    final familySolid = LiquidGlassDegradation.familyFallsBackToSolid(
-      context,
-      advancedFamilyEnabled: _liquidGlassAllowed(appearance),
-    );
+    // 同 [_buildFrostedBackground]：只剩技术 / 系统门禁。
+    final familySolid = LiquidGlassDegradation.shouldDegrade(context);
 
     // 基础材质（磨砂 / 实底）：只剩回落一个用途。
     Widget baseSurface() {

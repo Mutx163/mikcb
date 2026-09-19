@@ -113,33 +113,17 @@ void main() {
       expect(glassModeChoiceOf(s), GlassModeChoice.solid);
     });
 
-    test('液态玻璃：把五个作用范围开关一并打开', () {
+    test('液态玻璃：把底栏作用范围开关一并打开', () {
       // 液态被定位成「整机材质」：选中它时用户期待整个软件都变。其余三档不动
-      // 这些开关（各表面保持用户上一次的取舍），所以这条断言同时钉住了对称性
-      // 的边界——只有液态这一档会写它们。
-      final off = settings().copyWith(
-        liquidGlassPopupEnabled: false,
-        liquidGlassSelectSheetEnabled: false,
-        liquidGlassSheetDialogEnabled: false,
-        liquidGlassDockEnabled: false,
-        liquidGlassPickerButtonsEnabled: false,
-      );
+      // 这个开关（坞保持用户上一次的取舍），所以这条断言同时钉住了对称性的
+      // 边界——只有液态这一档会写它。弹窗家族那四个开关已删除（锁标准档）。
+      final off = settings().copyWith(liquidGlassDockEnabled: false);
       final result = applyGlassModeChoice(off, GlassModeChoice.liquidGlass);
-      expect(result.liquidGlassPopupEnabled, isTrue);
-      expect(result.liquidGlassSelectSheetEnabled, isTrue);
-      expect(result.liquidGlassSheetDialogEnabled, isTrue);
       expect(result.liquidGlassDockEnabled, isTrue);
-      expect(result.liquidGlassPickerButtonsEnabled, isTrue);
     });
 
     test('其余三档不碰作用范围开关', () {
-      final off = settings().copyWith(
-        liquidGlassPopupEnabled: false,
-        liquidGlassSelectSheetEnabled: false,
-        liquidGlassSheetDialogEnabled: false,
-        liquidGlassDockEnabled: false,
-        liquidGlassPickerButtonsEnabled: false,
-      );
+      final off = settings().copyWith(liquidGlassDockEnabled: false);
       for (final choice in const [
         GlassModeChoice.solid,
         GlassModeChoice.gaussian,
@@ -147,11 +131,10 @@ void main() {
       ]) {
         final result = applyGlassModeChoice(off, choice);
         expect(
-          result.liquidGlassPopupEnabled,
+          result.liquidGlassDockEnabled,
           isFalse,
           reason: '$choice 不该动作用范围开关',
         );
-        expect(result.liquidGlassDockEnabled, isFalse);
       }
     });
 

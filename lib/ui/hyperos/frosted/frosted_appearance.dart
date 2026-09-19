@@ -17,17 +17,13 @@ const kDefaultHeaderBlurStyle = HeaderBlurStyle.inspire;
 /// 首页顶栏玻璃带默认材质：渐进磨砂。独立自由选择，不随全局玻璃模式。
 const kDefaultHomeBandGlassMaterial = 'progressive';
 
-/// 液态玻璃作用范围默认值（外观与配色页可逐表面开关）。
+/// 玻璃坞（含坞内圆钮）要不要走高级材质（外观与配色页保留的唯一作用范围开关）。
 ///
-/// 全局玻璃模式为「液态玻璃」时，各表面家族是否跟随折射材质；关闭的
-/// 家族回退高斯磨砂（模糊总开关关闭时回落实底）。默认值：锚定下拉小
-/// 弹窗开；对话式全屏选择面板关——大面积折射在长列表上偏炫且更费电，
-/// 预设主题等选择弹窗默认保持经典磨砂；其余家族维持既有行为（开）。
-const kDefaultLiquidGlassPopupEnabled = true;
-const kDefaultLiquidGlassSelectSheetEnabled = false;
-const kDefaultLiquidGlassSheetDialogEnabled = true;
+/// 其余「作用范围」开关（下拉小弹窗 / 对话式全屏选择面板 / 底部弹窗与对话框 /
+/// 壁纸选点按钮）已于 2026-09-19 整体删除：这些表面锁成「永远液态玻璃的标准档」
+/// （见 `LiquidGlassRole.pinnedChrome`），开关存不存在都不影响出图，留着只是
+/// 让用户以为改得动。坞跟随用户档位，故保留。
 const kDefaultLiquidGlassDockEnabled = true;
-const kDefaultLiquidGlassPickerButtonsEnabled = true;
 
 /// User-tunable frosted glass appearance for home sheets and related surfaces.
 /// Glass-surface rendering mode for frosted/Wallpaper-backgrounded sheets and cards.
@@ -88,12 +84,7 @@ class FrostedAppearance {
     this.liquidGlassTuning,
     this.softGlassTuning = SoftGlassTuning.defaults,
     this.progressiveBlurTuning = ProgressiveBlurTuning.defaults,
-    this.liquidGlassPopupEnabled = kDefaultLiquidGlassPopupEnabled,
-    this.liquidGlassSelectSheetEnabled = kDefaultLiquidGlassSelectSheetEnabled,
-    this.liquidGlassSheetDialogEnabled = kDefaultLiquidGlassSheetDialogEnabled,
     this.liquidGlassDockEnabled = kDefaultLiquidGlassDockEnabled,
-    this.liquidGlassPickerButtonsEnabled =
-        kDefaultLiquidGlassPickerButtonsEnabled,
   });
 
   static const defaults = FrostedAppearance(
@@ -143,20 +134,11 @@ class FrostedAppearance {
   /// `inspire` 风格时生效。非空缺省即标准档（与接入调参前的常量一致）。
   final ProgressiveBlurTuning progressiveBlurTuning;
 
-  /// 液态玻璃作用范围：锚定下拉选择小弹窗（玻璃模式等设置行弹出的气泡）。
-  final bool liquidGlassPopupEnabled;
-
-  /// 液态玻璃作用范围：对话式全屏选择面板（预设主题/字体等长列表选择弹窗）。
-  final bool liquidGlassSelectSheetEnabled;
-
-  /// 液态玻璃作用范围：底部弹窗与对话框（showHyperosSheet 系材质）。
-  final bool liquidGlassSheetDialogEnabled;
-
-  /// 液态玻璃作用范围：玻璃坞导航（底部悬浮药丸与加课圆钮）。
+  /// 唯一保留的「作用范围」开关：玻璃坞导航（底部悬浮药丸与加课圆钮）。
+  ///
+  /// 弹窗家族那四个同族开关已随「小件永远锁标准档」删除——它们存不存在都不
+  /// 改变出图（见 `LiquidGlassRole.pinnedChrome`），留着是死开关。
   final bool liquidGlassDockEnabled;
-
-  /// 液态玻璃作用范围：壁纸位置选择页悬浮在壁纸上的玻璃按钮。
-  final bool liquidGlassPickerButtonsEnabled;
 
   @override
   bool operator ==(Object other) =>
@@ -172,14 +154,7 @@ class FrostedAppearance {
           liquidGlassTuning == other.liquidGlassTuning &&
           softGlassTuning == other.softGlassTuning &&
           progressiveBlurTuning == other.progressiveBlurTuning &&
-          liquidGlassPopupEnabled == other.liquidGlassPopupEnabled &&
-          liquidGlassSelectSheetEnabled ==
-              other.liquidGlassSelectSheetEnabled &&
-          liquidGlassSheetDialogEnabled ==
-              other.liquidGlassSheetDialogEnabled &&
-          liquidGlassDockEnabled == other.liquidGlassDockEnabled &&
-          liquidGlassPickerButtonsEnabled ==
-              other.liquidGlassPickerButtonsEnabled;
+          liquidGlassDockEnabled == other.liquidGlassDockEnabled;
 
   @override
   int get hashCode => Object.hash(
@@ -193,11 +168,7 @@ class FrostedAppearance {
     liquidGlassTuning,
     softGlassTuning,
     progressiveBlurTuning,
-    liquidGlassPopupEnabled,
-    liquidGlassSelectSheetEnabled,
-    liquidGlassSheetDialogEnabled,
     liquidGlassDockEnabled,
-    liquidGlassPickerButtonsEnabled,
   );
 }
 

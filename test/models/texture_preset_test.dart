@@ -57,7 +57,6 @@ void main() {
         TimetableSettings.defaults(),
         TexturePreset.minimalSolid,
       ).copyWith(
-        liquidGlassPopupEnabled: false,
         liquidGlassDockEnabled: false,
         subpageHeaderBlurStyle: HeaderBlurStyle.gaussian,
         softGlassPreset: SoftGlassPreset.dense,
@@ -94,18 +93,14 @@ void main() {
       expect(applied.courseCardSurfaceStyle, CourseCardSurfaceStyle.solid);
     });
 
-    test('全液态：五范围全开 + 顶栏液态 + 液态标准预设 + 高斯卡，不碰子页风格与磨砂滑杆', () {
+    test('全液态：坞范围开 + 顶栏液态 + 液态标准预设 + 高斯卡，不碰子页风格与磨砂滑杆', () {
       final base = TimetableSettings.defaults().copyWith(
         frostedSheetBlurSigma: 20,
         subpageHeaderBlurStyle: HeaderBlurStyle.gaussian,
       );
       final applied = applyTexturePreset(base, TexturePreset.fullLiquid);
       expect(applied.frostedGlassMode, FrostedGlassMode.liquidGlass);
-      expect(applied.liquidGlassPopupEnabled, isTrue);
-      expect(applied.liquidGlassSelectSheetEnabled, isTrue);
-      expect(applied.liquidGlassSheetDialogEnabled, isTrue);
       expect(applied.liquidGlassDockEnabled, isTrue);
-      expect(applied.liquidGlassPickerButtonsEnabled, isTrue);
       expect(applied.liquidGlassPreset, LiquidGlassPreset.standard);
       expect(applied.liquidGlassTuning,
           LiquidGlassPreset.standard.recommendedTuning);
@@ -116,17 +111,13 @@ void main() {
       expect(applied.subpageHeaderBlurStyle, HeaderBlurStyle.gaussian);
     });
 
-    test('轻雾柔光：坞/面板/按钮保持磨砂，柔光标准预设 + 实体卡', () {
+    test('轻雾柔光：坞保持磨砂，柔光标准预设 + 实体卡', () {
       final applied = applyTexturePreset(
         TimetableSettings.defaults(),
         TexturePreset.softMist,
       );
       expect(applied.frostedGlassMode, FrostedGlassMode.softGlass);
-      expect(applied.liquidGlassPopupEnabled, isTrue);
-      expect(applied.liquidGlassSelectSheetEnabled, isFalse);
-      expect(applied.liquidGlassSheetDialogEnabled, isTrue);
       expect(applied.liquidGlassDockEnabled, isFalse);
-      expect(applied.liquidGlassPickerButtonsEnabled, isFalse);
       expect(applied.softGlassPreset, SoftGlassPreset.standard);
       expect(applied.softGlassTuning,
           SoftGlassPreset.standard.recommendedTuning);

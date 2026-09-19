@@ -421,46 +421,17 @@ class _AdvancedMaterialSettingsScreenState
                 },
               ),
             ],
-            // 高级材质作用范围：逐表面家族开关。开 = 该表面用
-            // 当前全局高级材质（柔光 / 液态）；关 = 该表面回落
-            // **实体卡片**（不降级为高斯，见
+            // 高级材质作用范围：**只剩底栏**。弹窗家族（下拉小弹窗 / 对话式
+            // 全屏选择面板 / 底部弹窗与对话框 / 壁纸选点按钮）自 2026-09-19 起
+            // 锁成「永远液态玻璃的标准档」，开关存不存在都不改变出图，四个
+            // 开关与字段已整体删除（用户口径：「不允许用户调整这些的材质」）。
+            // 这里保留的这一个：开 = 坞用当前全局高级材质（柔光 / 液态）；
+            // 关 = 坞回落**实体**（不降级为高斯，见
             // [LiquidGlassDegradation.familyFallsBackToSolid]）。
             const HyperosSectionGap(),
             HyperosSectionLabel(text: l10n.liquidGlassScopeSectionTitle),
             HyperosListGroup(
               children: [
-                HyperosSwitchTile(
-                  title: l10n.liquidGlassScopePopupTitle,
-                  subtitle: l10n.liquidGlassScopePopupSubtitle,
-                  value: _draft.liquidGlassPopupEnabled,
-                  onChanged: (value) {
-                    _updateDraft(
-                      _draft.copyWith(liquidGlassPopupEnabled: value),
-                    );
-                  },
-                ),
-                HyperosSwitchTile(
-                  title: l10n.liquidGlassScopeSelectSheetTitle,
-                  subtitle: l10n.liquidGlassScopeSelectSheetSubtitle,
-                  value: _draft.liquidGlassSelectSheetEnabled,
-                  onChanged: (value) {
-                    _updateDraft(
-                      _draft.copyWith(liquidGlassSelectSheetEnabled: value),
-                    );
-                  },
-                ),
-                HyperosSwitchTile(
-                  title: l10n.liquidGlassScopeSheetDialogTitle,
-                  subtitle: l10n.liquidGlassScopeSheetDialogSubtitle,
-                  value: _draft.liquidGlassSheetDialogEnabled,
-                  onChanged: (value) {
-                    _updateDraft(
-                      _draft.copyWith(liquidGlassSheetDialogEnabled: value),
-                    );
-                  },
-                ),
-                // 「首页玻璃带」开关已下线（2026-09-12）：首页顶栏材质独立
-                // 自由选择（外观与配色页「首页顶栏玻璃」五档），不再跟随全局。
                 HyperosSwitchTile(
                   title: l10n.liquidGlassScopeDockTitle,
                   subtitle: l10n.liquidGlassScopeDockSubtitle,
@@ -468,16 +439,6 @@ class _AdvancedMaterialSettingsScreenState
                   onChanged: (value) {
                     _updateDraft(
                       _draft.copyWith(liquidGlassDockEnabled: value),
-                    );
-                  },
-                ),
-                HyperosSwitchTile(
-                  title: l10n.liquidGlassScopePickerButtonsTitle,
-                  subtitle: l10n.liquidGlassScopePickerButtonsSubtitle,
-                  value: _draft.liquidGlassPickerButtonsEnabled,
-                  onChanged: (value) {
-                    _updateDraft(
-                      _draft.copyWith(liquidGlassPickerButtonsEnabled: value),
                     );
                   },
                 ),

@@ -6,24 +6,22 @@ import '../hyperos_sheet.dart';
 import '../inspire/inspire_header_blur.dart';
 import 'liquid_glass_degradation.dart';
 
+/// 本格是否浮在一块**液态玻璃**弹窗面板上。
+///
+/// 弹窗家族锁标准档之后不再有开关可看：面板出图恒为液态玻璃，唯一能让它改成
+/// 实底的是技术 / 系统门禁（[LiquidGlassDegradation.shouldDegrade]）。
 bool _isLiquidSheetPanel(BuildContext context) {
   if (LiquidGlassDegradation.shouldDegrade(context)) return false;
   final scope = FrostedAppearanceScope.maybeOf(context);
-  if (scope == null) return false;
-  final a = scope.appearance;
-  return a.glassMode == FrostedGlassMode.liquidGlass &&
-      a.liquidGlassSheetDialogEnabled;
+  return scope?.appearance.glassMode == FrostedGlassMode.liquidGlass;
 }
 
 /// 柔光面板内的嵌套 tile：与 [_isLiquidSheetPanel] 同口径（同为高级材质，
-/// 受同一组「作用范围 → 弹窗与对话框」开关与系统降级约束）。
+/// 受同一道系统降级约束）。
 bool _isSoftSheetPanel(BuildContext context) {
   if (LiquidGlassDegradation.shouldDegrade(context)) return false;
   final scope = FrostedAppearanceScope.maybeOf(context);
-  if (scope == null) return false;
-  final a = scope.appearance;
-  return a.glassMode == FrostedGlassMode.softGlass &&
-      a.liquidGlassSheetDialogEnabled;
+  return scope?.appearance.glassMode == FrostedGlassMode.softGlass;
 }
 
 /// Frosted top bar: progressive blur + tint scrim (via [InspireHeaderBlur]).
@@ -157,20 +155,13 @@ class HyperosFrostedSurface extends StatelessWidget {
     final useBlur =
         HyperosBlurredHeader.backdropBlurEnabled(context) &&
         (blurEnabled ?? true);
-    // 与面板材质同步：高级材质（柔光/液态）+「作用范围→弹窗」关（或系统
-    // 降级）时，父面板已按 HyperosSheetFrame 的 solid 分支回退**纯白实体
-    // 卡片**；白色水洗叠白底会让嵌套 tile 整个隐形（只剩文字）。改走
+    // 与面板材质同步：面板被**技术 / 系统门禁**（平台视图、无障碍降级）摘成
+    // 实体卡片时，白色水洗叠白底会让嵌套 tile 整个隐形（只剩文字）。改走
     // withBlur:false 的中性水洗（亮色黑 5% / 暗色白 10%），与实体面板同框。
     // 只作用于 sheet 面板内（PanelScope 标记）；面板外的菜单/井保持原判。
-    final scope = FrostedAppearanceScope.maybeOf(context);
     final sheetPanelFellBackSolid =
-        scope != null &&
         HyperosFrostedPanelScope.of(context) &&
-        LiquidGlassDegradation.familyFallsBackToSolid(
-          context,
-          advancedFamilyEnabled:
-              scope.appearance.liquidGlassSheetDialogEnabled,
-        );
+        LiquidGlassDegradation.shouldDegrade(context);
     final resolvedTint =
         tint ??
         HyperosBlurredHeader.nestedSurfaceTintColor(

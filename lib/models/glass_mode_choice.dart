@@ -58,13 +58,10 @@ TimetableSettings applyGlassModeChoice(
   GlassModeChoice.liquidGlass => settings.copyWith(
     frostedBlurEnabled: true,
     frostedGlassMode: FrostedGlassMode.liquidGlass,
-    // 液态是「整机材质」，选中它时用户期待整个软件都变：一并打开五个作用范围
-    // 开关。其余三档不动它们（各表面保持用户上一次的取舍）。
-    liquidGlassPopupEnabled: true,
-    liquidGlassSelectSheetEnabled: true,
-    liquidGlassSheetDialogEnabled: true,
+    // 液态是「整机材质」，选中它时用户期待整个软件都变：连同唯一保留的
+    // 「作用范围 → 底栏」开关一起打开。弹窗家族的四个开关已删除（那些表面
+    // 锁标准档，恒为玻璃，没有开关可开）。其余三档不动坞的取舍。
     liquidGlassDockEnabled: true,
-    liquidGlassPickerButtonsEnabled: true,
   ),
 };
 

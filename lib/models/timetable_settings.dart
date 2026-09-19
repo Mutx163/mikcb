@@ -1270,17 +1270,17 @@ class TimetableSettings {
   static const double defaultFrostedSheetBarrierAlpha = 0.20;
   static const bool defaultFrostedBlurEnabled = true;
 
-  /// 液态玻璃作用范围默认值：下拉选择小弹窗开；对话式全屏选择面板关
-  /// （大面积折射长列表默认保持磨砂）；其余家族维持既有行为（开）。
-  static const bool defaultLiquidGlassPopupEnabled = true;
-  static const bool defaultLiquidGlassSelectSheetEnabled = false;
-  static const bool defaultLiquidGlassSheetDialogEnabled = true;
-
   /// 旧版「作用范围 → 首页玻璃带」开关的默认值。该开关已随顶栏材质自由
   /// 选择下线（2026-09-12），常量仅用于读取旧存档做迁移判定。
   static const bool defaultLiquidGlassHomeChromeEnabled = true;
+
+  /// 玻璃坞（含坞内圆钮）要不要走高级材质。
+  ///
+  /// 这是**硕果仅存**的作用范围开关：弹窗家族（下拉小弹窗 / 全屏选择面板 /
+  /// 底部弹窗与对话框 / 选择器圆钮）自 2026-09-19 起都锁成「永远液态玻璃的
+  /// 标准档」，用户改不动，对应的四个开关与字段已整体删除；坞跟随用户在
+  /// 「课程页面」选的档位，所以保留这一个开关。
   static const bool defaultLiquidGlassDockEnabled = true;
-  static const bool defaultLiquidGlassPickerButtonsEnabled = true;
 
   /// 首页顶栏玻璃带材质：`progressive` / `gaussian` / `soft` / `liquid` /
   /// `solid`（渐进磨砂 / 高斯磨砂 / 柔光 / 液态 / 实体）。
@@ -1551,11 +1551,7 @@ class TimetableSettings {
     softGlassTuning: softGlassTuning ?? SoftGlassTuning.defaults,
     progressiveBlurTuning:
         progressiveBlurTuning ?? ProgressiveBlurTuning.defaults,
-    liquidGlassPopupEnabled: liquidGlassPopupEnabled,
-    liquidGlassSelectSheetEnabled: liquidGlassSelectSheetEnabled,
-    liquidGlassSheetDialogEnabled: liquidGlassSheetDialogEnabled,
     liquidGlassDockEnabled: liquidGlassDockEnabled,
-    liquidGlassPickerButtonsEnabled: liquidGlassPickerButtonsEnabled,
     homeBandGlassMaterial: homeBandGlassMaterial,
   );
 
@@ -1567,12 +1563,10 @@ class TimetableSettings {
 
   final FrostedGlassMode frostedGlassMode;
 
-  /// 液态玻璃作用范围开关（见 [FrostedAppearance] 同名字段）。
-  final bool liquidGlassPopupEnabled;
-  final bool liquidGlassSelectSheetEnabled;
-  final bool liquidGlassSheetDialogEnabled;
+  /// 玻璃坞（含坞内圆钮）要不要走高级材质（见 [FrostedAppearance] 同名字段）。
+  ///
+  /// 弹窗家族那四个同族开关已随「小件永远锁标准档」删除，只剩这一个。
   final bool liquidGlassDockEnabled;
-  final bool liquidGlassPickerButtonsEnabled;
   final CourseCardSurfaceStyle courseCardSurfaceStyle;
 
   /// 液态玻璃预设与自定义参数（[liquidGlassTuning] 为 null 时渲染回落
@@ -1789,12 +1783,7 @@ class TimetableSettings {
     this.frostedSheetBarrierAlpha = defaultFrostedSheetBarrierAlpha,
     this.frostedBlurEnabled = defaultFrostedBlurEnabled,
     this.frostedGlassMode = FrostedGlassMode.frosted,
-    this.liquidGlassPopupEnabled = defaultLiquidGlassPopupEnabled,
-    this.liquidGlassSelectSheetEnabled = defaultLiquidGlassSelectSheetEnabled,
-    this.liquidGlassSheetDialogEnabled = defaultLiquidGlassSheetDialogEnabled,
     this.liquidGlassDockEnabled = defaultLiquidGlassDockEnabled,
-    this.liquidGlassPickerButtonsEnabled =
-        defaultLiquidGlassPickerButtonsEnabled,
     this.courseCardSurfaceStyle = CourseCardSurfaceStyle.solid,
     this.liquidGlassPreset = LiquidGlassPreset.standard,
     this.liquidGlassTuning,
@@ -2022,11 +2011,7 @@ class TimetableSettings {
       'frostedSheetBarrierAlpha': frostedSheetBarrierAlpha,
       'frostedBlurEnabled': frostedBlurEnabled,
       'frostedGlassMode': frostedGlassMode.value,
-      'liquidGlassPopupEnabled': liquidGlassPopupEnabled,
-      'liquidGlassSelectSheetEnabled': liquidGlassSelectSheetEnabled,
-      'liquidGlassSheetDialogEnabled': liquidGlassSheetDialogEnabled,
       'liquidGlassDockEnabled': liquidGlassDockEnabled,
-      'liquidGlassPickerButtonsEnabled': liquidGlassPickerButtonsEnabled,
       'courseCardSurfaceStyle': courseCardSurfaceStyle.value,
       'liquidGlassPreset': liquidGlassPreset.value,
       if (liquidGlassTuning != null)
@@ -2520,21 +2505,9 @@ class TimetableSettings {
           : FrostedGlassModeX.fromValue(
               json['frostedGlassMode'] as String?,
             ),
-      liquidGlassPopupEnabled:
-          json['liquidGlassPopupEnabled'] as bool? ??
-          defaultLiquidGlassPopupEnabled,
-      liquidGlassSelectSheetEnabled:
-          json['liquidGlassSelectSheetEnabled'] as bool? ??
-          defaultLiquidGlassSelectSheetEnabled,
-      liquidGlassSheetDialogEnabled:
-          json['liquidGlassSheetDialogEnabled'] as bool? ??
-          defaultLiquidGlassSheetDialogEnabled,
       liquidGlassDockEnabled:
           json['liquidGlassDockEnabled'] as bool? ??
           defaultLiquidGlassDockEnabled,
-      liquidGlassPickerButtonsEnabled:
-          json['liquidGlassPickerButtonsEnabled'] as bool? ??
-          defaultLiquidGlassPickerButtonsEnabled,
       courseCardSurfaceStyle: CourseCardSurfaceStyleX.fromValue(
         json['courseCardSurfaceStyle'] as String?,
       ),
@@ -2795,11 +2768,7 @@ class TimetableSettings {
     double? frostedSheetBarrierAlpha,
     bool? frostedBlurEnabled,
     FrostedGlassMode? frostedGlassMode,
-    bool? liquidGlassPopupEnabled,
-    bool? liquidGlassSelectSheetEnabled,
-    bool? liquidGlassSheetDialogEnabled,
     bool? liquidGlassDockEnabled,
-    bool? liquidGlassPickerButtonsEnabled,
     CourseCardSurfaceStyle? courseCardSurfaceStyle,
     LiquidGlassPreset? liquidGlassPreset,
     LiquidGlassTuning? liquidGlassTuning,
@@ -3166,17 +3135,8 @@ class TimetableSettings {
           frostedSheetBarrierAlpha ?? this.frostedSheetBarrierAlpha,
       frostedBlurEnabled: frostedBlurEnabled ?? this.frostedBlurEnabled,
       frostedGlassMode: frostedGlassMode ?? this.frostedGlassMode,
-      liquidGlassPopupEnabled:
-          liquidGlassPopupEnabled ?? this.liquidGlassPopupEnabled,
-      liquidGlassSelectSheetEnabled:
-          liquidGlassSelectSheetEnabled ?? this.liquidGlassSelectSheetEnabled,
-      liquidGlassSheetDialogEnabled:
-          liquidGlassSheetDialogEnabled ?? this.liquidGlassSheetDialogEnabled,
       liquidGlassDockEnabled:
           liquidGlassDockEnabled ?? this.liquidGlassDockEnabled,
-      liquidGlassPickerButtonsEnabled:
-          liquidGlassPickerButtonsEnabled ??
-          this.liquidGlassPickerButtonsEnabled,
       courseCardSurfaceStyle:
           courseCardSurfaceStyle ?? this.courseCardSurfaceStyle,
       liquidGlassPreset: liquidGlassPreset ?? this.liquidGlassPreset,

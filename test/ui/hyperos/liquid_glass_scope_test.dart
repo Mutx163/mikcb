@@ -7,94 +7,72 @@ import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart
 
 import '../../helpers_test_app.dart';
 
-/// 「液态玻璃作用范围」逐表面开关：默认值、持久化与各表面家族的材质判定。
+/// 「液态玻璃作用范围」开关：**2026-09-19 起只剩底栏一条**。
 ///
-/// 默认约定（外观与配色 → 磨砂玻璃）：
-/// - 下拉选择弹窗（玻璃模式等设置行的小气泡）→ 开；
-/// - 全屏选择面板（预设主题/字体等长列表弹窗）→ 关；
-/// - 弹窗与对话框 / 玻璃坞导航 → 维持既有行为（开）。
-///
-/// 「首页玻璃带」开关已退役（2026-09-12）：首页顶栏材质独立自由五档
-/// （homeBandGlassMaterial），不再属于作用范围开关组。
+/// 历史：这里曾有五个逐表面开关（下拉小弹窗 / 全屏选择面板 / 弹窗与对话框 /
+/// 玻璃坞 / 壁纸选点按钮）。弹窗家族的四个整体删除 —— 那些表面锁成「永远液态
+/// 玻璃的标准档」（[LiquidGlassRole.pinnedChrome]），用户改不动，开关存不存在
+/// 都不影响出图；「首页玻璃带」开关更早（2026-09-12）随顶栏材质五档自由选择
+/// 退役。坞跟随用户档位，故保留。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  FrostedAppearance liquidAppearance({
-    bool popup = true,
-    bool selectSheet = false,
-    bool sheetDialog = true,
-    bool dock = true,
-    bool pickerButtons = true,
-  }) {
+  FrostedAppearance liquidAppearance({bool dock = true}) {
     final settings = TimetableSettings.defaults().copyWith(
       frostedBlurEnabled: true,
       frostedGlassMode: FrostedGlassMode.liquidGlass,
-      liquidGlassPopupEnabled: popup,
-      liquidGlassSelectSheetEnabled: selectSheet,
-      liquidGlassSheetDialogEnabled: sheetDialog,
       liquidGlassDockEnabled: dock,
-      liquidGlassPickerButtonsEnabled: pickerButtons,
     );
     return settings.frostedAppearance;
   }
 
   group('液态玻璃作用范围：模型层', () {
-    test('默认值：下拉弹窗开、全屏选择面板关、其余开', () {
+    test('默认值：只剩底栏开关，默认为开', () {
       final d = TimetableSettings.defaults();
-      expect(d.liquidGlassPopupEnabled, isTrue);
-      expect(d.liquidGlassSelectSheetEnabled, isFalse);
-      expect(d.liquidGlassSheetDialogEnabled, isTrue);
       expect(d.liquidGlassDockEnabled, isTrue);
-      expect(d.liquidGlassPickerButtonsEnabled, isTrue);
     });
 
-    test('frostedAppearance 映射五个开关', () {
+    test('frostedAppearance 映射底栏开关', () {
       final a = liquidAppearance(dock: false);
       expect(a.glassMode, FrostedGlassMode.liquidGlass);
-      expect(a.liquidGlassPopupEnabled, isTrue);
-      expect(a.liquidGlassSelectSheetEnabled, isFalse);
-      expect(a.liquidGlassSheetDialogEnabled, isTrue);
       expect(a.liquidGlassDockEnabled, isFalse);
-      expect(a.liquidGlassPickerButtonsEnabled, isTrue);
+      expect(liquidAppearance().liquidGlassDockEnabled, isTrue);
     });
 
     test('JSON 往返保留开关；老档案缺键回退默认值', () {
       final custom = TimetableSettings.defaults().copyWith(
-        liquidGlassPopupEnabled: false,
-        liquidGlassSelectSheetEnabled: true,
-        liquidGlassSheetDialogEnabled: false,
         liquidGlassDockEnabled: false,
-        liquidGlassPickerButtonsEnabled: false,
       );
       final restored = TimetableSettings.fromJson(custom.toJson());
-      expect(restored.liquidGlassPopupEnabled, isFalse);
-      expect(restored.liquidGlassSelectSheetEnabled, isTrue);
-      expect(restored.liquidGlassSheetDialogEnabled, isFalse);
       expect(restored.liquidGlassDockEnabled, isFalse);
-      expect(restored.liquidGlassPickerButtonsEnabled, isFalse);
 
       final legacy = TimetableSettings.fromJson(const {'sections': []});
-      expect(legacy.liquidGlassPopupEnabled, isTrue);
-      expect(legacy.liquidGlassSelectSheetEnabled, isFalse);
-      expect(legacy.liquidGlassSheetDialogEnabled, isTrue);
       expect(legacy.liquidGlassDockEnabled, isTrue);
-      expect(legacy.liquidGlassPickerButtonsEnabled, isTrue);
     });
 
-    test('外观恢复默认作用域覆盖五个开关', () {
+    test('老档案里删掉的那四个开关键被静默忽略（不再读回）', () {
+      // 升级路径：用户旧存档里写着「全屏选择面板关 / 壁纸选点按钮关」，那些
+      // 家族现在锁标准档，这些键必须被丢掉而不是报错或改变矩阵。
+      final legacy = TimetableSettings.fromJson(const {
+        'sections': [],
+        'liquidGlassPopupEnabled': false,
+        'liquidGlassSelectSheetEnabled': true,
+        'liquidGlassSheetDialogEnabled': false,
+        'liquidGlassPickerButtonsEnabled': false,
+      });
+      expect(legacy.liquidGlassDockEnabled, isTrue);
+      expect(
+        legacy.toJson().keys.where((k) => k.startsWith('liquidGlass')),
+        contains('liquidGlassDockEnabled'),
+      );
+    });
+
+    test('外观恢复默认作用域覆盖底栏开关', () {
       final dirty = TimetableSettings.defaults().copyWith(
-        liquidGlassPopupEnabled: false,
-        liquidGlassSelectSheetEnabled: true,
-        liquidGlassSheetDialogEnabled: false,
         liquidGlassDockEnabled: false,
-        liquidGlassPickerButtonsEnabled: false,
       );
       final reset = applySettingsReset(dirty, SettingsResetScope.appearance);
-      expect(reset.liquidGlassPopupEnabled, isTrue);
-      expect(reset.liquidGlassSelectSheetEnabled, isFalse);
-      expect(reset.liquidGlassSheetDialogEnabled, isTrue);
       expect(reset.liquidGlassDockEnabled, isTrue);
-      expect(reset.liquidGlassPickerButtonsEnabled, isTrue);
     });
   });
 
@@ -170,17 +148,8 @@ void main() {
       );
     }
 
-    testWidgets('玻璃模式选择小弹窗：默认跟随液态玻璃', (tester) async {
+    testWidgets('玻璃模式选择小弹窗：永远是标准档液态玻璃', (tester) async {
       await openSelectPopup(tester, appearanceValue: liquidAppearance());
-      expect(find.byType(LiquidGlassSurface), findsOneWidget);
-    });
-
-    testWidgets('玻璃模式选择小弹窗：开关关掉也仍是标准档液态玻璃', (tester) async {
-      // 2026-09-19 起弹窗家族锁成「永远液态玻璃的标准档」：作用范围开关不再影响它。
-      await openSelectPopup(
-        tester,
-        appearanceValue: liquidAppearance(popup: false),
-      );
       expect(find.byType(LiquidGlassSurface), findsOneWidget);
       expect(
         tester.widget<LiquidGlassSurface>(find.byType(LiquidGlassSurface)).role,
@@ -192,28 +161,20 @@ void main() {
     testWidgets('预设主题式全屏选择面板：同样锁标准档液态玻璃', (tester) async {
       await openSelectSheet(tester, appearanceValue: liquidAppearance());
       expect(find.byType(LiquidGlassSurface), findsOneWidget);
+      expect(
+        tester.widget<LiquidGlassSurface>(find.byType(LiquidGlassSurface)).role,
+        LiquidGlassRole.pinnedChrome,
+      );
       expect(find.byType(HyperosSheetFrame), findsOneWidget);
     });
 
-    testWidgets('全屏选择面板：打开后应用液态玻璃', (tester) async {
-      await openSelectSheet(
-        tester,
-        appearanceValue: liquidAppearance(selectSheet: true),
-      );
-      expect(find.byType(LiquidGlassSurface), findsOneWidget);
-    });
-
-    testWidgets('弹窗与对话框：默认仍为液态玻璃', (tester) async {
+    testWidgets('弹窗与对话框：永远是标准档液态玻璃', (tester) async {
       await openDemoSheet(tester, appearanceValue: liquidAppearance());
       expect(find.byType(LiquidGlassSurface), findsOneWidget);
-    });
-
-    testWidgets('弹窗与对话框：开关关掉也仍是标准档液态玻璃', (tester) async {
-      await openDemoSheet(
-        tester,
-        appearanceValue: liquidAppearance(sheetDialog: false),
+      expect(
+        tester.widget<LiquidGlassSurface>(find.byType(LiquidGlassSurface)).role,
+        LiquidGlassRole.pinnedChrome,
       );
-      expect(find.byType(LiquidGlassSurface), findsOneWidget);
       expect(find.byType(HyperosSheetFrame), findsOneWidget);
     });
   });

@@ -65,15 +65,11 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
       liquidGlassTuning: liquidGlassTuning,
       softGlassTuning: softGlassTuning,
       progressiveBlurTuning: progressiveBlurTuning,
-      liquidGlassPopupEnabled: settings.liquidGlassPopupEnabled,
-      liquidGlassSelectSheetEnabled: settings.liquidGlassSelectSheetEnabled,
-      liquidGlassSheetDialogEnabled: settings.liquidGlassSheetDialogEnabled,
       // 预览里的首页玻璃带（HomePageChromeGlassFill）经 scope 读顶栏材质
       // 与子页风格；缺省会让预览带永远渲染默认档，与真实首页不符。
       subpageHeaderBlurStyle: settings.subpageHeaderBlurStyle,
       homeBandGlassMaterial: settings.homeBandGlassMaterial,
       liquidGlassDockEnabled: settings.liquidGlassDockEnabled,
-      liquidGlassPickerButtonsEnabled: settings.liquidGlassPickerButtonsEnabled,
     );
 
     return FrostedAppearanceScope(

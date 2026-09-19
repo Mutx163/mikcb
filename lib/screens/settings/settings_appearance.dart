@@ -487,19 +487,19 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 ),
                 _surfaceMaterialTile(
                   l10n.liquidGlassScopeSheetDialogTitle,
-                  sheetDialogSurfaceMaterial(_draft),
+                  pinnedChromeSurfaceMaterial(),
                 ),
                 _surfaceMaterialTile(
                   l10n.liquidGlassScopeSelectSheetTitle,
-                  selectSheetSurfaceMaterial(_draft),
+                  pinnedChromeSurfaceMaterial(),
                 ),
                 _surfaceMaterialTile(
                   l10n.liquidGlassScopePopupTitle,
-                  popupSurfaceMaterial(_draft),
+                  pinnedChromeSurfaceMaterial(),
                 ),
                 _surfaceMaterialTile(
                   l10n.liquidGlassScopePickerButtonsTitle,
-                  pickerButtonsSurfaceMaterial(_draft),
+                  pinnedChromeSurfaceMaterial(),
                 ),
                 _surfaceMaterialTile(
                   l10n.surfaceCourseCard,

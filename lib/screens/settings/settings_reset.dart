@@ -111,11 +111,7 @@ TimetableSettings applySettingsReset(
       frostedSheetTintAlpha: d.frostedSheetTintAlpha,
       frostedSheetBarrierAlpha: d.frostedSheetBarrierAlpha,
       liquidGlassTuning: d.liquidGlassTuning,
-      liquidGlassPopupEnabled: d.liquidGlassPopupEnabled,
-      liquidGlassSelectSheetEnabled: d.liquidGlassSelectSheetEnabled,
-      liquidGlassSheetDialogEnabled: d.liquidGlassSheetDialogEnabled,
       liquidGlassDockEnabled: d.liquidGlassDockEnabled,
-      liquidGlassPickerButtonsEnabled: d.liquidGlassPickerButtonsEnabled,
       // 预设是非空枚举，reset 能落回 standard；tuning 与 liquidGlassTuning
       // 同为可空 + copyWith 吞 null 的既有口径（reset 后保留现值），不在此处
       // 单独发明清除位。
