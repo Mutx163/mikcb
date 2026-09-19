@@ -54,6 +54,7 @@ import '../widgets/semester_week_count_picker_sheet.dart';
 import '../widgets/miuix_date_picker_sheet.dart';
 import '../widgets/theme_manage_sheets.dart';
 import '../widgets/timetable_text_color_settings.dart';
+import '../widgets/timetable_home_preview_scope.dart';
 import '../widgets/timetable_week_preview.dart';
 import '../widgets/course_field_picker_sheet.dart';
 import '../widgets/course_recolor_sheet.dart';
@@ -76,6 +77,7 @@ import 'timetable_profiles_screen.dart';
 import 'weather_city_picker_screen.dart';
 import 'hyperos_showcase_screen.dart';
 import 'miuix_showcase_screen.dart';
+import 'timetable_screen.dart';
 import 'user_guide_screen.dart';
 import 'advanced_material_settings_screen.dart';
 

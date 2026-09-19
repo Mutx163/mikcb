@@ -1,7 +1,10 @@
-// 「外观编辑」页：整页一张首页微缩图 + 顶部日 / 周切换 + 底部两个弹窗入口。
+// 「外观编辑」页：整页一张**真首页缩尺图** + 顶部日 / 周切换 + 底部两个弹窗入口。
 //
 // 这一页的公开入口只有 [settingsSubpageById] 一个（页面类本身是库内私有），
 // 所以测试顺便把它与首页菜单的注册串起来验：注册表里拿不到页 = 菜单点了没反应。
+//
+// 关键口径（用户 2026-09-19 明确）：预览**直接用首页那份页面**缩尺，而不是另写一套
+// 小屏布局 —— 所以这里断言的是 `TimetableScreen` 本体嵌在里面，不是预览替身。
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -13,11 +16,11 @@ import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/providers/weather_provider.dart';
+import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
-import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
-import 'package:university_timetable/widgets/timetable_week_preview.dart';
+import 'package:university_timetable/widgets/timetable_home_preview_scope.dart';
 
 import '../helpers_test_app.dart';
 
@@ -47,7 +50,7 @@ void main() {
   setUp(() {
     StorageService().resetForTesting();
     _seedInitializedPrefs();
-    // 设置库里的平台通道在 VM 下没有实现，不 mock 会抛 MissingPluginException。
+    // 设置库 / 首页里的平台通道在 VM 下没有实现，不 mock 会抛 MissingPluginException。
     for (final channel in const [
       'com.mutx163.qingyu/home_widget',
       'com.mutx163.qingyu/umeng_analytics',
@@ -77,7 +80,7 @@ void main() {
       MultiProvider(
         providers: [
           ChangeNotifierProvider<TimetableProvider>.value(value: provider),
-          // 预览显式读天气（字段说明要求），缺失会抛 ProviderNotFound。
+          // 首页/预览可能读天气，缺失会抛 ProviderNotFound。
           ChangeNotifierProvider<WeatherProvider?>.value(value: null),
         ],
         child: TestApp(home: page!),
@@ -87,11 +90,69 @@ void main() {
     return provider;
   }
 
-  testWidgets('注册表能拿到页面，页面里是首页微缩预览', (tester) async {
+  TimetableHomePreviewScope previewScope(WidgetTester tester) =>
+      tester.widget<TimetableHomePreviewScope>(
+        find.byType(TimetableHomePreviewScope),
+      );
+
+  testWidgets('注册表能拿到页面，页面里嵌的是**真首页**本体', (tester) async {
     await pumpEditor(tester);
-    expect(find.byType(TimetableWeekPreview), findsOneWidget);
-    // 标题在折叠顶栏里会渲染大小两处（小标题 + 大标题），所以用 findsWidgets。
-    expect(find.text('外观编辑'), findsWidgets);
+    // 缩尺预览用的就是首页那一份页面（用户口径：「直接使用首页的代码……让那个
+    // 页面缩小」），不是另写的预览替身。
+    expect(find.byType(TimetableScreen), findsOneWidget);
+    // 标题只有顶栏那一行：折叠大标题已关（用户反馈「不应该显示大标题小标题」）。
+    expect(find.text('外观编辑'), findsOneWidget);
+  });
+
+  testWidgets('顶部日 / 周切换驱动嵌进来的首页（不是本地替身）', (tester) async {
+    await pumpEditor(tester);
+
+    expect(previewScope(tester).dayView.value, isFalse);
+
+    await tester.tap(find.text('日课表'));
+    await tester.pumpAndSettle();
+    expect(previewScope(tester).dayView.value, isTrue);
+    // 首页那一份真的切到了日视图（日视图面板挂上了）。
+    expect(
+      find.byKey(const ValueKey('timetable-day-view-panel')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('周课表'));
+    await tester.pumpAndSettle();
+    expect(previewScope(tester).dayView.value, isFalse);
+    expect(find.byKey(const ValueKey('timetable-day-view-panel')), findsNothing);
+  });
+
+  testWidgets('缩尺预览不进回访状态：改日/周不动真实首页的视图', (tester) async {
+    final provider = await pumpEditor(tester);
+    final before = provider.settings.timetableHomeViewMode;
+    await tester.tap(find.text('日课表'));
+    await tester.pumpAndSettle();
+    expect(provider.settings.timetableHomeViewMode, before);
+  });
+
+  testWidgets('底部「材质」打开材质弹窗（玻璃模式四档在里面）', (tester) async {
+    await pumpEditor(tester);
+    await tester.tap(find.text('材质'));
+    await tester.pumpAndSettle();
+
+    // 弹窗标题、质感方案与玻璃模式两行都在；玻璃模式那行显示的是当前档位
+    // （出厂默认不是液态，所以这里断言的是档位名而不是「液态玻璃」——四档
+    // 候选在选择气泡里，不在行上）。
+    expect(find.text('材质'), findsWidgets);
+    expect(find.text('质感方案'), findsOneWidget);
+    expect(find.text('玻璃模式'), findsOneWidget);
+    expect(find.text('高斯模糊'), findsWidgets);
+  });
+
+  testWidgets('底部「调整壁纸」打开壁纸弹窗（选图按钮在里面）', (tester) async {
+    await pumpEditor(tester);
+    await tester.tap(find.text('调整壁纸'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('背景图片'), findsOneWidget);
+    expect(find.text('选择图片'), findsOneWidget);
   });
 
   testWidgets('从「设置 → 课表页面」的材质区块一键进得来（入口行必须常驻）', (
@@ -136,58 +197,8 @@ void main() {
     await tester.tap(find.text('外观编辑'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(TimetableWeekPreview), findsOneWidget);
+    expect(find.byType(TimetableScreen), findsOneWidget);
     expect(find.text('调整壁纸'), findsOneWidget);
     expect(find.text('材质'), findsOneWidget);
-  });
-
-  testWidgets('顶部日 / 周切换只改预览：周视图整周、日视图收成一天', (tester) async {
-    await pumpEditor(tester);
-
-    TimetableWeekPreview preview() =>
-        tester.widget<TimetableWeekPreview>(find.byType(TimetableWeekPreview));
-
-    // 进页默认周视图：不裁天。
-    expect(preview().onlyDayOfWeek, isNull);
-
-    await tester.tap(find.text('日课表'));
-    await tester.pumpAndSettle();
-    expect(preview().onlyDayOfWeek, DateTime.now().weekday);
-
-    await tester.tap(find.text('周课表'));
-    await tester.pumpAndSettle();
-    expect(preview().onlyDayOfWeek, isNull);
-  });
-
-  testWidgets('底部「材质」打开材质弹窗（玻璃模式四档在里面）', (tester) async {
-    await pumpEditor(tester);
-    await tester.tap(find.text('材质'));
-    await tester.pumpAndSettle();
-
-    // 弹窗标题、质感方案与玻璃模式两行都在；玻璃模式那行显示的是当前档位
-    // （出厂默认不是液态，所以这里断言的是档位名而不是「液态玻璃」——四档
-    // 候选在选择气泡里，不在行上）。
-    expect(find.text('材质'), findsWidgets);
-    expect(find.text('质感方案'), findsOneWidget);
-    expect(find.text('玻璃模式'), findsOneWidget);
-    expect(find.text('高斯模糊'), findsWidgets);
-  });
-
-  testWidgets('底部「调整壁纸」打开壁纸弹窗（选图按钮在里面）', (tester) async {
-    await pumpEditor(tester);
-    await tester.tap(find.text('调整壁纸'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('背景图片'), findsOneWidget);
-    expect(find.text('选择图片'), findsOneWidget);
-  });
-
-  testWidgets('预览不自己上液态玻璃（测试环境没有 shader 后端，走既有基础材质）', (
-    tester,
-  ) async {
-    // 这只是钉住「预览不会因为材质缺后端而崩」：VM 上 isShaderFilterSupported
-    // 恒 false，所以这里断言的是**没有**液态玻璃层，而不是有。
-    await pumpEditor(tester);
-    expect(find.byType(LiquidGlassSurface), findsNothing);
   });
 }

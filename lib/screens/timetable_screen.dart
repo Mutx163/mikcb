@@ -64,6 +64,7 @@ import '../widgets/home_top_menu_popup.dart';
 import '../widgets/home_update_prompt.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
 import '../widgets/profile_quick_switch_sheet.dart';
+import '../widgets/timetable_home_preview_scope.dart';
 import '../widgets/week_selector_picker_sheet.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
@@ -446,6 +447,65 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool _isCoupleOverlayActive(TimetableProvider provider) =>
       _coupleOverlayEnabled && provider.hasPartnerBinding;
 
+  /// 「缩尺预览」宿主（「外观编辑」页）注入时非空；正常首页为 null。
+  ///
+  /// 非空即**预览模式**：日 / 周由外部 notifier 驱动，且不写回访状态、
+  /// 不接截屏监听（见 [TimetableHomePreviewScope] 的类注释）。
+  TimetableHomePreviewScope? _previewScope;
+  bool _previewSyncScheduled = false;
+
+  bool get _isPreview => _previewScope != null;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final scope = TimetableHomePreviewScope.maybeOf(context);
+    if (identical(scope, _previewScope)) {
+      return;
+    }
+    _previewScope?.dayView.removeListener(_onPreviewDayViewChanged);
+    _previewScope?.dayOfWeek.removeListener(_onPreviewDayViewChanged);
+    _previewScope = scope;
+    scope?.dayView.addListener(_onPreviewDayViewChanged);
+    scope?.dayOfWeek.addListener(_onPreviewDayViewChanged);
+    if (scope != null) {
+      _onPreviewDayViewChanged();
+    }
+  }
+
+  /// 宿主拨了日 / 周之后，把嵌进来的这一份首页同步过去。
+  ///
+  /// 一律推迟到帧末执行：宿主既可能在点按回调里改 notifier（那时直接 setState
+  /// 没问题），也可能在自己的 didChangeDependencies 里改（那是 build 期，
+  /// 同步 setState 会直接报错）。统一延后就没有这两种时序要分。
+  void _onPreviewDayViewChanged() {
+    if (_previewSyncScheduled) {
+      return;
+    }
+    _previewSyncScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _previewSyncScheduled = false;
+      final scope = _previewScope;
+      if (!mounted || scope == null) {
+        return;
+      }
+      final settings = context.read<TimetableProvider>().settings;
+      if (scope.dayView.value) {
+        unawaited(
+          _toggleDayView(
+            week: _visibleWeek,
+            dayOfWeek: scope.dayOfWeek.value,
+            settings: settings,
+            // 预览不做展开动画：宿主那一帧已经切完了，动画只会让它慢半拍。
+            animate: false,
+          ),
+        );
+        return;
+      }
+      unawaited(_closeDayView(settings, animate: false));
+    });
+  }
+
   Color _colorFromHex(String hexColor, Color fallback) {
     return parseHexColorOrFallback(hexColor, fallback: fallback);
   }
@@ -456,8 +516,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     WidgetsBinding.instance.addObserver(this);
     WidgetLaunchRouter.coupleOverlayRequestTick.addListener(
       _onExternalCoupleOverlayRequest,
-    );
-    final provider = context.read<TimetableProvider>();
+    );    final provider = context.read<TimetableProvider>();
     final initialWeek = provider.currentWeek;
     _visibleWeek = initialWeek;
     _pendingSettledWeek = initialWeek;
@@ -503,6 +562,8 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   @override
   void dispose() {
+    _previewScope?.dayView.removeListener(_onPreviewDayViewChanged);
+    _previewScope?.dayOfWeek.removeListener(_onPreviewDayViewChanged);
     WidgetsBinding.instance.removeObserver(this);
     WidgetLaunchRouter.coupleOverlayRequestTick.removeListener(
       _onExternalCoupleOverlayRequest,
@@ -1128,7 +1189,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (oldController != null) {
       _disposeDayViewControllerAfterReplacement(oldController);
     }
-    if (settings.timetableHomeViewMode == TimetableHomeViewMode.day) {
+    // 预览永远从周视图起步：日 / 周由宿主顶部分段按钮说了算，不继承
+    // 「上次看到哪一天」——否则进编辑页先看到日视图，与按钮显示的周视图对不上。
+    if (settings.timetableHomeViewMode == TimetableHomeViewMode.day &&
+        !_isPreview) {
       _selectedWeekForDayView = _visibleWeek;
       _selectedDayOfWeek = restoredDayOfWeek;
       _dayViewExpandController.value = 1;
@@ -1180,6 +1244,11 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 平台不支持（Android 14 以下）时 [ScreenCaptureService.start] 自己会
   /// 空转，这里不再重复判断能力：判断只留一处，免得两边口径漂移。
   void _syncScreenshotListener(TimetableSettings settings) {
+    // 预览里不接截屏监听：真首页那一份已经接上了，再来一份等于截一次屏
+    // 弹两次提示。
+    if (_isPreview) {
+      return;
+    }
     final shouldListen = settings.screenshotSharePromptEnabled;
     if (shouldListen == _screenshotListening) {
       return;
@@ -1255,6 +1324,11 @@ class _TimetableScreenState extends State<TimetableScreen>
     required TimetableHomeViewMode mode,
     int? dayOfWeek,
   }) {
+    // 缩尺预览里的开合**不算用户浏览过**：宿主在编辑页点一下「日课表」，
+    // 退回首页不该变成日视图。
+    if (_isPreview) {
+      return;
+    }
     final resolvedDayOfWeek = _resolveStoredDayOfWeek(
       provider.settings,
       dayOfWeek ??
