@@ -318,19 +318,40 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
               child: FittedBox(
                 // 默认就是 contain：完整展示、不变形、居中；可用区比虚拟屏
                 // 窄或矮都吃得下。
-                child: SizedBox(
-                  width: virtualScreen.width,
-                  height: virtualScreen.height,
-                  child: TimetableHomePreviewScope(
-                    dayView: _previewDayView,
-                    dayOfWeek: _previewDayOfWeekNotifier,
-                    // 预览里点按一律吞掉：这是「看外观」的缩略图，不是第二个
-                    // 可操作首页（误触会加课、翻周、改真实浏览位置）。
-                    child: const IgnorePointer(
-                      child: TimetableScreen(
-                        // 预览不查更新、不跑秒级刷新：那是首页自己的事。
-                        enableUpdateCheck: false,
-                        enableProgressTimer: false,
+                child: DecoratedBox(
+                  // 一圈外浮影，让缩略图读成「一张缩小的屏幕」而不是一块贴在
+                  // 页面上的图（参考 Nexio「课表外观」的做法：那边是暗色遮罩上
+                  // 挖一个圆角洞，露出被缩放的**真首页**）。
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(
+                      HyperosMotionPlatform.displayCornerRadiusDp,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x33000000), blurRadius: 28),
+                    ],
+                  ),
+                  child: SizedBox(
+                    width: virtualScreen.width,
+                    height: virtualScreen.height,
+                    child: ClipRRect(
+                      // 圆角取**真机屏幕圆角**（与 Nexio 的 screenRadiusDp 同一
+                      // 口径）：缩略图于是就是「这台机器上的那一屏」，而不是
+                      // 一个直角矩形。
+                      borderRadius: BorderRadius.circular(
+                        HyperosMotionPlatform.displayCornerRadiusDp,
+                      ),
+                      child: TimetableHomePreviewScope(
+                        dayView: _previewDayView,
+                        dayOfWeek: _previewDayOfWeekNotifier,
+                        // 预览里点按一律吞掉：这是「看外观」的缩略图，不是第二个
+                        // 可操作首页（误触会加课、翻周、改真实浏览位置）。
+                        child: const IgnorePointer(
+                          child: TimetableScreen(
+                            // 预览不查更新、不跑秒级刷新：那是首页自己的事。
+                            enableUpdateCheck: false,
+                            enableProgressTimer: false,
+                          ),
+                        ),
                       ),
                     ),
                   ),
