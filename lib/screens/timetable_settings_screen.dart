@@ -90,6 +90,8 @@ part 'settings/settings_course_card.dart';
 part 'settings/settings_general.dart';
 part 'settings/settings_live.dart';
 part 'settings/settings_timetable_page.dart';
+part 'settings/settings_home_backdrop_flow.dart';
+part 'settings/settings_appearance_editor.dart';
 part 'settings/settings_home_widget.dart';
 part 'settings/settings_holiday.dart';
 part 'settings/settings_weather.dart';
@@ -112,6 +114,8 @@ Widget? settingsSubpageById(String id) {
   return switch (id) {
     'generalSettings' => const _GeneralSettingsScreen(),
     'appearanceSettings' => const _AppearanceSettingsScreen(),
+    // 「外观编辑」：整页一张首页微缩图 + 底部「调整壁纸 / 材质」两颗按钮。
+    'appearanceEditor' => const _AppearanceEditorScreen(),
     'timetablePageSettings' => const _TimetablePageSettingsScreen(),
     'courseCardSettings' => const _CourseCardSettingsScreen(),
     'liveSettings' => const _LiveSettingsScreen(),

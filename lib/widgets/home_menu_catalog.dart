@@ -276,6 +276,13 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     title: (l10n) => l10n.appearanceTitle,
     icon: Icons.palette_outlined,
   ),
+  // 「外观编辑」：把整页首页缩成一张图直接调材质与壁纸（用户 2026-09-19 要的
+  // 入口，放首页右上角菜单里与「外观与配色」并列）。
+  _settingsSubpageEntry(
+    id: 'appearanceEditor',
+    title: (l10n) => l10n.appearanceEditorTitle,
+    icon: Icons.auto_fix_high_outlined,
+  ),
   _settingsSubpageEntry(
     id: 'timetablePageSettings',
     title: (l10n) => l10n.timetablePageSettingsTitle,

@@ -11329,4 +11329,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get weatherLocationEstimated => 'ネットワーク位置から推定しました。正確でない場合があります';
+
+  @override
+  String get appearanceEditorTitle => '外観を編集';
+
+  @override
+  String get appearanceEditorDoneAction => '完了';
+
+  @override
+  String get appearanceEditorWallpaperAction => '壁紙を調整';
+
+  @override
+  String get appearanceEditorMaterialAction => 'マテリアル';
 }

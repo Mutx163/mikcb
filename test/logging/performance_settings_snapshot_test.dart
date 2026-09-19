@@ -27,26 +27,29 @@ void main() {
     test('八个表面各自的材质都写进快照', () {
       final snapshot = snapshotOf(TimetableSettings.defaults());
 
-      // 顶栏走渐进模糊；坞 / 弹窗 / 选择面板 / 气泡 / 圆钮都是基础磨砂；
-      // 出厂卡片是实体（高斯卡要用户显式开）。
+      // 顶栏走渐进模糊；坞是基础磨砂（跟随全局档位）；弹窗家族那四个读数
+      // 2026-09-19 起锁标准档，恒为液态玻璃（与用户设置无关）；出厂卡片是
+      // 实体（高斯卡要用户显式开）。
       expect(snapshot['surfaceHomeBand'], 'frostProgressive');
       expect(snapshot['surfaceSubpageHeader'], 'frostProgressive');
       expect(snapshot['surfaceDock'], 'frost');
-      expect(snapshot['surfaceSheetDialog'], 'frost');
-      expect(snapshot['surfaceSelectSheet'], 'frost');
-      expect(snapshot['surfacePopup'], 'frost');
-      expect(snapshot['surfacePickerButtons'], 'frost');
+      expect(snapshot['surfaceSheetDialog'], 'liquidGlass');
+      expect(snapshot['surfaceSelectSheet'], 'liquidGlass');
+      expect(snapshot['surfacePopup'], 'liquidGlass');
+      expect(snapshot['surfacePickerButtons'], 'liquidGlass');
       expect(snapshot['surfaceCourseCard'], 'solid');
     });
 
-    test('关掉模糊总开关后所有表面回落实体（顶栏除外，它是独立轴）', () {
+    test('关掉模糊总开关后跟随用户的表面回落实体，弹窗家族仍是液态玻璃', () {
       final snapshot = snapshotOf(
         TimetableSettings.defaults().copyWith(frostedBlurEnabled: false),
       );
 
       expect(snapshot['glassMode'], 'solid');
       expect(snapshot['surfaceDock'], 'solid');
-      expect(snapshot['surfacePopup'], 'solid');
+      // 弹窗家族锁标准档：模糊总开关不参与它的材质判定（唯一能摘下来的是
+      // 设备级的技术 / 系统降级，不在本推导范围内）。
+      expect(snapshot['surfacePopup'], 'liquidGlass');
       expect(snapshot['surfaceSubpageHeader'], 'solid');
     });
   });

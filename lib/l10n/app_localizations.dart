@@ -20087,6 +20087,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'已按网络位置估算，可能不精确'**
   String get weatherLocationEstimated;
+
+  /// No description provided for @appearanceEditorTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'外观编辑'**
+  String get appearanceEditorTitle;
+
+  /// No description provided for @appearanceEditorDoneAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成'**
+  String get appearanceEditorDoneAction;
+
+  /// No description provided for @appearanceEditorWallpaperAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'调整壁纸'**
+  String get appearanceEditorWallpaperAction;
+
+  /// No description provided for @appearanceEditorMaterialAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'材质'**
+  String get appearanceEditorMaterialAction;
 }
 
 class _AppLocalizationsDelegate

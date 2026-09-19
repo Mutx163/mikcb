@@ -11376,4 +11376,16 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get weatherLocationEstimated => '네트워크 위치로 추정했습니다. 정확하지 않을 수 있습니다';
+
+  @override
+  String get appearanceEditorTitle => '모양 편집';
+
+  @override
+  String get appearanceEditorDoneAction => '완료';
+
+  @override
+  String get appearanceEditorWallpaperAction => '배경화면 조정';
+
+  @override
+  String get appearanceEditorMaterialAction => '재질';
 }

@@ -225,8 +225,8 @@ void main() {
       // 让边缘光占满整个条带。
       expect(fill.maxRefraction, isNotNull);
       expect(fill.maxRefraction, inInclusiveRange(8.0, 14.0));
-      // 底边仍与可见带同边界（首页同款细窄包边），顶部/左右仍越界以
-      // 藏掉上缘发丝缝与角落倒三角。
+      // 顶边 / 左右 / 底边都越界：上缘发丝缝、角落倒三角、底边那条发丝边
+      // 一律推出可见带切掉（底边只多画 4px，可见区内的折射仍在）。
       final glassRect = tester.getRect(find.byType(HomePageChromeGlassFill));
       final previewRect = tester.getRect(find.byType(TimetableWeekPreview));
       const headerHeight = 40.0;
@@ -237,8 +237,13 @@ void main() {
       );
       expect(
         glassRect.bottom,
-        closeTo(previewRect.top + headerHeight, 0.5),
-        reason: 'bottom stays at band boundary for thin sheen',
+        closeTo(
+          previewRect.top +
+              headerHeight +
+              homePageChromeGlassBottomEdgeOverdraw,
+          0.5,
+        ),
+        reason: 'bottom overdrawn by the same 4px as the home band',
       );
     });
   });

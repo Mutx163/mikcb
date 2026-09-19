@@ -6446,5 +6446,9 @@
   "weatherLocationTimeout": "Locating timed out. Try again near a window or outdoors, or just search for a city",
   "weatherLocationFailed": "Locating failed. Search for a city instead",
   "weatherLocationAddressUnavailable": "Located, but couldn't resolve a place name. Search for a city instead",
-  "weatherLocationEstimated": "Estimated from your network location, so it may be off"
+  "weatherLocationEstimated": "Estimated from your network location, so it may be off",
+  "appearanceEditorTitle": "Appearance editor",
+  "appearanceEditorDoneAction": "Done",
+  "appearanceEditorWallpaperAction": "Adjust wallpaper",
+  "appearanceEditorMaterialAction": "Material"
 }

@@ -11019,6 +11019,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get weatherLocationEstimated => '已按网络位置估算，可能不精确';
+
+  @override
+  String get appearanceEditorTitle => '外观编辑';
+
+  @override
+  String get appearanceEditorDoneAction => '完成';
+
+  @override
+  String get appearanceEditorWallpaperAction => '调整壁纸';
+
+  @override
+  String get appearanceEditorMaterialAction => '材质';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -22080,6 +22092,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get weatherLocationEstimated => '已按網絡位置估算，可能不精確';
+
+  @override
+  String get appearanceEditorTitle => '外觀編輯';
+
+  @override
+  String get appearanceEditorDoneAction => '完成';
+
+  @override
+  String get appearanceEditorWallpaperAction => '調整桌布';
+
+  @override
+  String get appearanceEditorMaterialAction => '材質';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -33141,4 +33165,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get weatherLocationEstimated => '已按網路位置估算，可能不精確';
+
+  @override
+  String get appearanceEditorTitle => '外觀編輯';
+
+  @override
+  String get appearanceEditorDoneAction => '完成';
+
+  @override
+  String get appearanceEditorWallpaperAction => '調整桌布';
+
+  @override
+  String get appearanceEditorMaterialAction => '材質';
 }

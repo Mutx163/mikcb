@@ -11666,4 +11666,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get weatherLocationEstimated =>
       'Estimated from your network location, so it may be off';
+
+  @override
+  String get appearanceEditorTitle => 'Appearance editor';
+
+  @override
+  String get appearanceEditorDoneAction => 'Done';
+
+  @override
+  String get appearanceEditorWallpaperAction => 'Adjust wallpaper';
+
+  @override
+  String get appearanceEditorMaterialAction => 'Material';
 }

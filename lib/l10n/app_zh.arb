@@ -6506,5 +6506,9 @@
   "weatherLocationTimeout": "定位超时，请到窗边或室外再试，或直接搜索城市",
   "weatherLocationFailed": "定位失败，请改用手动搜索城市",
   "weatherLocationAddressUnavailable": "已定位，但解析不出地名，请改用手动搜索城市",
-  "weatherLocationEstimated": "已按网络位置估算，可能不精确"
+  "weatherLocationEstimated": "已按网络位置估算，可能不精确",
+  "appearanceEditorTitle": "外观编辑",
+  "appearanceEditorDoneAction": "完成",
+  "appearanceEditorWallpaperAction": "调整壁纸",
+  "appearanceEditorMaterialAction": "材质"
 }

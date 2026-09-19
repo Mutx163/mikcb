@@ -31,6 +31,7 @@ class TimetableWeekPreview extends StatefulWidget {
     this.heightBudget,
     this.isSettingsPreview = false,
     this.showFloatingBackToCurrentWeek = true,
+    this.onlyDayOfWeek,
     this.weather,
   });
 
@@ -41,6 +42,15 @@ class TimetableWeekPreview extends StatefulWidget {
   final bool includeAppHeader;
   final bool applyHomePageBackdrop;
   final double? heightBudget;
+
+  /// 只画某一天（1 = 周一 … 7 = 周日）；null = 照常画整周。
+  ///
+  /// 「外观编辑」页的日视图预览用：**同一套网格渲染代码**收成一天 —— 星期栏与
+  /// 课表列都只剩这一列，宽度铺满可用区。它不是首页那套「摘要卡 + 议程列表」的
+  /// 日视图（那一套还长在 `timetable_screen` 里，尚未抽成可复用组件），但材质、
+  /// 壁纸、玻璃带、课程卡都与周视图逐字同源，所以「换材质看看日视图长什么样」这
+  /// 件事是准的。
+  final int? onlyDayOfWeek;
 
   /// 天气数据源；null = 这个预览不画天气。
   ///
@@ -165,6 +175,7 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
           heightBudget: widget.heightBudget,
           isSettingsPreview: widget.isSettingsPreview,
           showFloatingBackToCurrentWeek: widget.showFloatingBackToCurrentWeek,
+          onlyDayOfWeek: widget.onlyDayOfWeek,
           weather: widget.weather,
           wallpaperTopLuminance: _topLuminance,
           wallpaperWeekdayLuminance: _weekdayLuminance,
@@ -186,6 +197,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     required this.heightBudget,
     required this.isSettingsPreview,
     required this.showFloatingBackToCurrentWeek,
+    required this.onlyDayOfWeek,
     required this.weather,
     required this.wallpaperTopLuminance,
     required this.wallpaperWeekdayLuminance,
@@ -201,6 +213,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
   final double? heightBudget;
   final bool isSettingsPreview;
   final bool showFloatingBackToCurrentWeek;
+  final int? onlyDayOfWeek;
   final WeatherProvider? weather;
 
   /// Top-band wallpaper luminance from [_TimetableWeekPreviewState]'s sample
@@ -1337,6 +1350,10 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
   }
 
   List<int> _visibleDayNumbers(TimetableSettings settings) {
+    final only = onlyDayOfWeek;
+    if (only != null) {
+      return [only.clamp(1, 7)];
+    }
     return settings.timetableHideWeekends
         ? const [1, 2, 3, 4, 5]
         : const [1, 2, 3, 4, 5, 6, 7];

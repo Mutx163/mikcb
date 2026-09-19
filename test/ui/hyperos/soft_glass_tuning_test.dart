@@ -3,6 +3,7 @@ import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/ui/hyperos/soft_glass/stable_frosted_surface.dart';
 import 'package:university_timetable/widgets/home_top_menu_popup.dart';
 
 import '../../helpers_test_app.dart';
@@ -198,14 +199,18 @@ void main() {
     expect(glassOf(tester).fill!.a, greaterThan(clear.a));
   });
 
-  group('OS4 弹层也跟随柔光玻璃档位', () {
-    /// 真机反馈：选了「清透」和「浓雾」，首页右上角菜单一模一样 —— 弹层当时用的是
-    /// 上游固定材质，没接用户档位。这里守「同一份映射也喂给弹层」。
+  group('OS4 弹层的材质已与用户档位脱钩（锁标准档）', () {
+    /// 历史：这里曾经守「柔光档位（清透 / 标准 / 浓雾）要喂给弹层」——真机反馈
+    /// 「选了清透和浓雾，首页右上角菜单一模一样」，当时的弹层还没接用户档位。
     ///
-    /// 断言落点已从上游 `visuals` 改成**真正出图的那块玻璃**：弹层面板现在是
-    /// 项目自己的注入面（`os4_glass_popup_surface.dart` → `HyperosSelectPopupGlass`
-    /// → `SoftGlassSurface` → `MiuixGlass`），档位由注入面自己按全局档位分派，
-    /// 上游那 7 个 OS4 材质字段不再参与渲染（`visuals` 传了也是死参）。
+    /// 2026-09-19 口径反转：弹窗家族锁成「永远液态玻璃的标准档」
+    /// （`LiquidGlassRole.pinnedChrome`），用户档位（含柔光档位）**不再参与**弹层
+    /// 材质。所以这条从「跟随档位」改成「怎么拨都不变」：三档下出图的必须是同一块
+    /// 面，且不再是 `SoftGlassSurface`。
+    ///
+    /// 断言落点在**真正出图的那块玻璃**：弹层面板是本仓的注入面
+    /// （`os4_glass_popup_surface.dart` → `HyperosSelectPopupGlass`），上游那 7 个
+    /// OS4 材质字段不参与渲染（`visuals` 传了也是死参）。
     Widget scope({required SoftGlassTuning tuning, required Widget child}) =>
         FrostedAppearanceScope(
           appearance: FrostedAppearance(
@@ -218,16 +223,8 @@ void main() {
           child: child,
         );
 
-    /// 读弹层面板的材质半径。正常只该有一块（面板本身）。
-    double popupBlur(WidgetTester tester, Finder popup) =>
-        tester
-            .widget<MiuixGlass>(
-              find.descendant(of: popup, matching: find.byType(MiuixGlass)),
-            )
-            .material!
-            .blurRadius;
-
-    Future<double> selectPopupBlur(
+    /// 在给定柔光档位下展示选择弹层（不读材质：档位已经不影响出图了）。
+    Future<void> showSelectPopup(
       WidgetTester tester,
       SoftGlassTuning tuning,
     ) async {
@@ -254,23 +251,31 @@ void main() {
       // overlay child 才非空，断言才有落点。
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
-      return popupBlur(tester, find.byType(MiuixGlassDropdownPopup));
     }
 
-    testWidgets('选择弹层材质随档位变化（清透 < 标准 < 浓雾）', (tester) async {
-      final clear = await selectPopupBlur(tester, SoftGlassTuning.presetClear);
-      final standard = await selectPopupBlur(
-        tester,
+    testWidgets('选择弹层材质不随柔光档位变化（锁标准档）', (tester) async {
+      for (final tuning in [
+        SoftGlassTuning.presetClear,
         SoftGlassTuning.defaults,
-      );
-      final dense = await selectPopupBlur(tester, SoftGlassTuning.presetDense);
-
-      expect(clear, lessThan(standard));
-      expect(standard, lessThan(dense));
-      expect(standard, SoftGlassRecipe.standard.blurRadiusDp);
+        SoftGlassTuning.presetDense,
+      ]) {
+        await showSelectPopup(tester, tuning);
+        // 不再是柔光面：档位拨到哪一档都不影响出图。
+        expect(
+          find.byType(SoftGlassSurface),
+          findsNothing,
+          reason: 'tuning: ${tuning.blurRadiusMultiplier}',
+        );
+        // 测试环境没有 shader 后端 → 玻璃面退化成磨砂兜底，三档同一块。
+        expect(
+          find.byType(StableFrostedSurface),
+          findsOneWidget,
+          reason: 'tuning: ${tuning.blurRadiusMultiplier}',
+        );
+      }
     });
 
-    testWidgets('首页右上角菜单材质随档位变化', (tester) async {
+    testWidgets('首页右上角菜单同样不随柔光档位变化（锁标准档）', (tester) async {
       final anchor = MiuixGlassPopupAnchor();
       addTearDown(anchor.dispose);
       await tester.pumpWidget(
@@ -293,11 +298,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(
-        popupBlur(tester, find.byType(MiuixGlassTransformPopup)),
-        SoftGlassRecipe.standard.blurRadiusDp *
-            SoftGlassTuning.presetDense.blurRadiusMultiplier,
-      );
+      // 浓雾档拨到底也换不出柔光面：菜单和所有弹窗共用同一块标准档玻璃。
+      expect(find.byType(SoftGlassSurface), findsNothing);
+      expect(find.byType(StableFrostedSurface), findsOneWidget);
     });
   });
 }

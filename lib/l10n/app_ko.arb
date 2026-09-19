@@ -6442,5 +6442,9 @@
   "weatherLocationTimeout": "위치 확인 시간이 초과되었습니다. 창가나 실외에서 다시 시도하거나 도시를 검색해 주세요",
   "weatherLocationFailed": "위치 확인에 실패했습니다. 도시를 검색해 주세요",
   "weatherLocationAddressUnavailable": "위치는 확인했지만 지명을 찾지 못했습니다. 도시를 검색해 주세요",
-  "weatherLocationEstimated": "네트워크 위치로 추정했습니다. 정확하지 않을 수 있습니다"
+  "weatherLocationEstimated": "네트워크 위치로 추정했습니다. 정확하지 않을 수 있습니다",
+  "appearanceEditorTitle": "모양 편집",
+  "appearanceEditorDoneAction": "완료",
+  "appearanceEditorWallpaperAction": "배경화면 조정",
+  "appearanceEditorMaterialAction": "재질"
 }

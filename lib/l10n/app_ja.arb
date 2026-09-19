@@ -6442,5 +6442,9 @@
   "weatherLocationTimeout": "位置取得がタイムアウトしました。窓際か屋外でお試しください（都市を検索することもできます）",
   "weatherLocationFailed": "位置を取得できませんでした。都市を検索してください",
   "weatherLocationAddressUnavailable": "位置は取得できましたが地名を解決できません。都市を検索してください",
-  "weatherLocationEstimated": "ネットワーク位置から推定しました。正確でない場合があります"
+  "weatherLocationEstimated": "ネットワーク位置から推定しました。正確でない場合があります",
+  "appearanceEditorTitle": "外観を編集",
+  "appearanceEditorDoneAction": "完了",
+  "appearanceEditorWallpaperAction": "壁紙を調整",
+  "appearanceEditorMaterialAction": "マテリアル"
 }

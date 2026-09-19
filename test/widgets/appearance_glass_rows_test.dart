@@ -1,12 +1,14 @@
-// 顶栏模糊风格两行的可发现性回归（现居「外观与配色」页玻璃模式组）。
+// 顶栏模糊风格两行的可发现性回归（2026-09-19 起在「课表页面」页玻璃 / 材质区块）。
 //
 // 历史：ded4b7e5 把「顶栏模糊风格」（渐进 / 高斯）并进「玻璃材质」三选一，
 // 页面上再也找不到一行叫这个名字的开关；随后拆回独立行，但一度按「改了
 // 不生效就隐藏」的口径在高级材质 / 玻璃总关时把行藏掉，用户仍然找不到
 // （2026-09-12 反馈）。最终口径：**两行恒常显示，不做任何条件隐藏**。
 // 2026-09-12 二次反馈：材质选择放在「课表页面」页属于放错位置，两行迁入
-// 「外观与配色」玻璃模式组（课表页面只留顶栏玻璃显示开关），提示语同步
-// 改为按「玻璃模式」措辞的人话；本文件随之钉住外观页的常驻两行。
+// 「外观与配色」玻璃模式组。
+// 2026-09-19 三次调整：用户要求「玻璃档位改到课程页面调整」，整块材质设置
+// （含这两行）又搬回「课表页面」的玻璃 / 材质区块 —— 搬家只换宿主页，
+// 「恒常显示、永不条件隐藏」的口径一个字没变，所以本文件只改导航落点。
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -45,8 +47,8 @@ void _seedPrefs(TimetableSettings settings) {
 Finder _scrollableUnder(Finder host) =>
     find.descendant(of: host, matching: find.byType(Scrollable)).first;
 
-/// 进入「设置 → 外观与配色」子页。
-Future<void> _openAppearanceSettings(WidgetTester tester) async {
+/// 进入「设置 → 课表页面」子页（材质区块 2026-09-19 起在这里）。
+Future<void> _openTimetablePageSettings(WidgetTester tester) async {
   final provider = await createInitializedTestProvider(tester);
   await tester.pumpWidget(
     ChangeNotifierProvider.value(
@@ -59,15 +61,15 @@ Future<void> _openAppearanceSettings(WidgetTester tester) async {
 
   final homeList = find.byType(HyperosListView).first;
   await tester.scrollUntilVisible(
-    find.text('外观与配色'),
+    find.text('课表页面'),
     200,
     scrollable: _scrollableUnder(homeList),
   );
-  await tester.tap(find.text('外观与配色'));
+  await tester.tap(find.text('课表页面'));
   await tester.pumpAndSettle();
 }
 
-/// 外观子页整页是一条 HyperosListView（分节渲染）。
+/// 课表页面子页整页是一条 HyperosListView（分节渲染）。
 Finder _appearanceList() => find.byType(HyperosListView).last;
 
 Future<void> _scrollTo(WidgetTester tester, Finder target) async {
@@ -109,7 +111,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(TimetableSettings.defaults());
 
-    await _openAppearanceSettings(tester);
+    await _openTimetablePageSettings(tester);
 
     // 质感方案行存在，出厂默认命中「经典磨砂」。
     await _scrollTo(tester, find.text('质感方案'));
@@ -139,7 +141,7 @@ void main() {
       ),
     );
 
-    await _openAppearanceSettings(tester);
+    await _openTimetablePageSettings(tester);
     await _scrollTo(tester, find.text('首页顶栏玻璃'));
 
     // 材质自由选择后不存在任何「暂不可用」状态：行恒可用。
@@ -168,7 +170,7 @@ void main() {
       ),
     );
 
-    await _openAppearanceSettings(tester);
+    await _openTimetablePageSettings(tester);
     await _scrollTo(tester, find.text('首页顶栏玻璃'));
 
     expect(

@@ -12,9 +12,10 @@ import 'hyperos_popup_glass.dart' show HyperosSelectPopupGlass;
 /// showStroke），**接不进另一条渲染链路** —— 于是全局「液态玻璃」档下，用玻璃
 /// 弹层的首页菜单仍是 OS4 玻璃，与玻璃坞底栏（跟随档位走液态折射）断层。
 ///
-/// 这个函数把面板换成 [HyperosSelectPopupGlass]：材质由它按全局玻璃档位分派
-/// （液态 → 液态折射面、柔光 → `SoftGlassSurface`、高斯 → `BackdropFilter`、
-/// 降级 → 实底），与页内表面同一份口径。
+/// 这个函数把面板换成 [HyperosSelectPopupGlass]：弹窗家族自 2026-09-19 起锁成
+/// 「**永远液态玻璃的标准档**」（见 `LiquidGlassRole.pinnedChrome`）——用户的全局
+/// 材质档位、作用范围开关、模糊总开关都不参与，只剩技术 / 系统门禁能把它摘下来
+/// （没有 shader 后端 → 磨砂兜底；平台视图 / 系统降级 → 实底）。
 ///
 /// ⚠️ **几何、形变动效、二级面板、锚定与返回键处理一行都不动** —— 注入的只是
 /// 面板材质。首页「更多」菜单的「从按钮形变长出 + 图标渐隐」正是靠这一点保住的，
