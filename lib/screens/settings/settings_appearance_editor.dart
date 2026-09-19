@@ -34,15 +34,12 @@ class _AppearanceEditorScreen extends StatefulWidget {
 }
 
 class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
-    with _HomeBackdropFlow<_AppearanceEditorScreen>, TickerProviderStateMixin {
+    with _HomeBackdropFlow<_AppearanceEditorScreen> {
   /// 沉浸式底衬：与参考实现同色（不透明深底，只有卡片是亮的）。
   static const _scrimColor = Color(0xFF1A1A1A);
 
   /// 卡片相对可用区的最大宽度比例（剩下的留白保证「在屏幕中间、不顶边」）。
   static const _cardMaxWidthFactor = 0.82;
-
-  static const _zoomMin = 1.0;
-  static const _zoomMax = 2.6;
 
   late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
@@ -68,12 +65,6 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 弹窗打开期间把上下 chrome 淡出（参考实现同款：让位给内容与弹窗）。
   bool _chromeVisible = true;
 
-  /// 卡片内容的缩放（1 = 完整放下整屏，上限 [_zoomMax]）。手势只作用在卡片内容，
-  /// 不会传给嵌进来的首页（那层套了 IgnorePointer）。
-  double _zoom = _zoomMin;
-  late final AnimationController _zoomBounce;
-  Animation<double>? _zoomAnimation;
-
   // —— _HomeBackdropFlow 的宿主适配：壁纸流程本体在
   // settings_home_backdrop_flow.dart，本页只提供草稿读写与课表列表。
 
@@ -92,15 +83,10 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     _timetableProvider = context.read<TimetableProvider>();
     _draft = _timetableProvider.settings;
     _openedWith = _draft;
-    _zoomBounce = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 240),
-    );
   }
 
   @override
   void dispose() {
-    _zoomBounce.dispose();
     _previewDayView.dispose();
     _previewDayOfWeekNotifier.dispose();
     // 滑块 debounce 未到期时若直接返回，只 cancel 会丢最后一档草稿。
@@ -299,27 +285,6 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     return true;
   }
 
-  // —— 卡片缩放（双指捏合 + 回弹，参考实现同款手势）。
-
-  void _animateZoomTo(double target) {
-    final from = _zoom;
-    final animation = Tween<double>(begin: from, end: target).animate(
-      CurvedAnimation(parent: _zoomBounce, curve: Curves.easeOutCubic),
-    );
-    _zoomAnimation = animation;
-    _zoomBounce
-      ..reset()
-      ..forward();
-  }
-
-  void _onZoomTick() {
-    final animation = _zoomAnimation;
-    if (animation == null) {
-      return;
-    }
-    setState(() => _zoom = animation.value);
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -329,9 +294,6 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     final virtualScreen = media.size;
     final topInset = media.padding.top;
     final bottomInset = media.padding.bottom;
-
-    _zoomBounce.removeListener(_onZoomTick);
-    _zoomBounce.addListener(_onZoomTick);
 
     return PopScope(
       // 系统返回 = 取消（与左上角那颗胶囊同义）。
@@ -374,10 +336,11 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
                   HyperosMotionPlatform.displayCornerRadiusDp * scale,
                   cardHeight / 2,
                 );
-                // 卡片中心略偏上：视觉重心比几何中心高一点才「在屏幕中间」。
-                final cardCenterY = topReserve +
-                    availableHeight / 2 -
-                    (bottomReserve - topReserve) / 6;
+                // 卡片居中于「上下 chrome 之间」这条带子，不做任何手工偏移：
+                // 之前那版按上下净空差加了个「视觉重心」修正，结果卡片被推得压到
+                // 底部按钮的净空里（真机量化出来偏 2px），反而更容易被读成没对齐。
+                // 卡片自带浮影，几何居中看起来就是居中。
+                final cardCenterY = topReserve + availableHeight / 2;
 
                 return Stack(
                   children: [
@@ -387,8 +350,11 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
                       width: cardWidth,
                       height: cardHeight,
                       child: _buildPreviewCard(
-                        virtualScreen: virtualScreen,
+                        cardSize: Size(cardWidth, cardHeight),
+                        scale: scale,
                         radius: cardRadius,
+                        screenPadding: media.padding,
+                        screenViewPadding: media.viewPadding,
                       ),
                     ),
                     _buildTopChrome(context, l10n, topInset),
@@ -403,11 +369,28 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     );
   }
 
-  /// 中间那张卡：真首页缩进去 + 屏幕圆角 + 描边浮影，可双指缩放。
+  /// 中间那张卡：真首页缩进去 + 屏幕圆角 + 描边浮影。
+  ///
+  /// ⚠️ **这里不能用 `Transform.scale` / `FittedBox` 缩放**（第一版就是那么写的，真机
+  /// 上卡片里的连续玻璃带、玻璃坞会变成一条发白死板的色块、完全不透壁纸）。原因：
+  /// 首页的玻璃靠 `BackdropFilter` 采**背景层**，而缩放变换之后采样坐标系与背景层
+  /// 对不上（祖先被缩放时形状与采样范围不再同空间），采到的是卡片外的深色底，于是
+  /// 玻璃读成一块灰。
+  ///
+  /// 改成「按卡片尺寸重新排一遍」：给嵌进来的首页一份**卡片大小的 MediaQuery**，
+  /// 并把 `textScaler` 与内边距按同一比例收小 —— 布局是 1:1 渲染（没有变换，玻璃
+  /// 正常采样），字号与留白同比缩小，观感与「把整屏按比例缩下来」一致。
   Widget _buildPreviewCard({
-    required Size virtualScreen,
+    required Size cardSize,
+    required double scale,
     required double radius,
+    required EdgeInsets screenPadding,
+    required EdgeInsets screenViewPadding,
   }) {
+    // 用户自己的字号设置要**乘上**卡片比例，不能被我这份 MediaQuery 顶掉：
+    // TextScaler 没有「相乘」的接口，所以按一个参考字号反推环境倍率（线性
+    // scaler 下是精确值），再乘卡片比例。
+    final ambientTextScale = MediaQuery.textScalerOf(context).scale(14) / 14;
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
@@ -417,48 +400,28 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
-        child: GestureDetector(
-          // 手势只挂在卡片上：缩放进内容，不传给嵌进来的首页。
-          behavior: HitTestBehavior.opaque,
-          onScaleStart: (_) {
-            _zoomBounce.stop();
-            _zoomAnimation = null;
-          },
-          onScaleUpdate: (details) {
-            final next = (_zoom * details.scale).clamp(_zoomMin, _zoomMax);
-            if (next != _zoom) {
-              setState(() => _zoom = next);
-            }
-          },
-          onScaleEnd: (_) {
-            // 参考实现同款：松手回弹到合法区间。
-            final target = _zoom.clamp(_zoomMin, _zoomMax);
-            if (target != _zoom) {
-              _animateZoomTo(target);
-            }
-          },
-          child: ClipRect(
-            child: Transform.scale(
-              scale: _zoom,
-              child: FittedBox(
-                // 默认就是 contain：完整展示、不变形；卡片与虚拟屏同比，
-                // 所以放大到 1 倍时正好铺满卡片。
-                child: SizedBox(
-                  width: virtualScreen.width,
-                  height: virtualScreen.height,
-                  child: TimetableHomePreviewScope(
-                    dayView: _previewDayView,
-                    dayOfWeek: _previewDayOfWeekNotifier,
-                    // 预览里点按一律吞掉：这是「看外观」的缩略图，不是第二个
-                    // 可操作首页（误触会加课、翻周、改真实浏览位置）。
-                    child: const IgnorePointer(
-                      child: TimetableScreen(
-                        // 预览不查更新、不跑秒级刷新：那是首页自己的事。
-                        enableUpdateCheck: false,
-                        enableProgressTimer: false,
-                      ),
-                    ),
-                  ),
+        child: SizedBox(
+          width: cardSize.width,
+          height: cardSize.height,
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(              size: cardSize,
+              // 字号与系统内边距同比收小，缩略图才「像一张缩小的屏幕」而不是
+              // 「小屏布局 + 大字号」。
+              textScaler: TextScaler.linear(ambientTextScale * scale),
+              padding: screenPadding * scale,
+              viewPadding: screenViewPadding * scale,
+              viewInsets: EdgeInsets.zero,
+            ),
+            child: TimetableHomePreviewScope(
+              dayView: _previewDayView,
+              dayOfWeek: _previewDayOfWeekNotifier,
+              // 预览里点按一律吞掉：这是「看外观」的缩略图，不是第二个
+              // 可操作首页（误触会加课、翻周、改真实浏览位置）。
+              child: const IgnorePointer(
+                child: TimetableScreen(
+                  // 预览不查更新、不跑秒级刷新：那是首页自己的事。
+                  enableUpdateCheck: false,
+                  enableProgressTimer: false,
                 ),
               ),
             ),
@@ -524,7 +487,11 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     );
   }
 
-  /// 顶部胶囊按钮：与参考实现同尺寸（84×40）的玻璃胶囊。
+  /// 顶部胶囊按钮：两枚**形状、尺寸、配色完全一致**（84×40、同一底色与描边），
+  /// 只有「完成」字重更重一点。
+  ///
+  /// 之前给「完成」用纯白实心、「取消」用半透明深色，视觉重量差一截，真机上看就是
+  /// 「右边那颗跟左边不等大、像是错位了」—— 同形同色后不会再有这个错觉。
   Widget _capsuleButton({
     required String label,
     required VoidCallback onTap,
@@ -534,10 +501,10 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       width: 84,
       height: 40,
       child: Material(
-        color: emphasized
-            ? Colors.white.withValues(alpha: 0.92)
-            : Colors.white.withValues(alpha: 0.14),
-        shape: const StadiumBorder(),
+        color: Colors.white.withValues(alpha: 0.14),
+        shape: StadiumBorder(
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
+        ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -545,9 +512,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
             child: Text(
               label,
               style: TextStyle(
-                color: emphasized ? const Color(0xFF1A1A1A) : Colors.white,
+                color: Colors.white,
                 fontSize: 15,
-                fontWeight: FontWeight.w500,
+                fontWeight: emphasized ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
           ),
@@ -632,13 +599,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
                   label: l10n.appearanceEditorWallpaperAction,
                   onTap: _openWallpaperSheet,
                 ),
-                // 竖杠（参考实现里同样的分隔）。
-                Container(
-                  width: 1,
-                  height: 30,
-                  margin: const EdgeInsets.symmetric(horizontal: 18),
-                  color: Colors.white.withValues(alpha: 0.18),
-                ),
+                // 只留等距留白：参考实现那条竖杠在只有两个入口时是多余的隔断，
+                // 真机上读起来就是「这一排散着」（用户反馈「底栏按钮乱七八糟」）。
+                const SizedBox(width: 40),
                 _circleAction(
                   icon: Icons.auto_awesome_outlined,
                   label: l10n.appearanceEditorMaterialAction,
