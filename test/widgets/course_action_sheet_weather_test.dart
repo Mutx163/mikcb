@@ -52,19 +52,24 @@ Widget _wrap(
         if (weather != null)
           ChangeNotifierProvider<WeatherProvider>.value(value: weather),
       ],
-      child: CourseActionSheetBody(
-        previewItems: [
-          CourseActionPreviewItem(
-            course: provider.courses.first,
-            isPartnerCourse: isPartnerCourse,
-          ),
-        ],
-        week: 1,
-        onEdit: (_) {},
-        onReschedule: (_) {},
-        onDelete: (_) {},
-        onSuspend: (_) {},
-        onAddTask: (_) {},
+      // 只测内容面板：容器（滚动 / 面板 / 收起口子）归宿主，2026-09-19 起是
+      // 居中的 OS4 玻璃对话框（`showCourseActionSheet` → `showOs4GlassDialog`）。
+      // 这里没有宿主，所以自己套一层滚动，避免测试窗口装不下内容而溢出。
+      child: SingleChildScrollView(
+        child: CourseActionSheetBody(
+          previewItems: [
+            CourseActionPreviewItem(
+              course: provider.courses.first,
+              isPartnerCourse: isPartnerCourse,
+            ),
+          ],
+          week: 1,
+          onEdit: (_) {},
+          onReschedule: (_) {},
+          onDelete: (_) {},
+          onSuspend: (_) {},
+          onAddTask: (_) {},
+        ),
       ),
     ),
   );

@@ -38,7 +38,10 @@ class CourseActionPreviewItem {
       coupleKind == CoupleCourseKind.partner;
 }
 
-/// Shows the home timetable course action sheet with Forui styling.
+/// 点周视图课卡弹出的课程详情 —— **屏幕居中的 OS4 玻璃对话框**。
+///
+/// 容器走 [showOs4GlassDialog]（上游 `MiuixGlassDialog` + 我们的液态玻璃注入），
+/// 内容仍是 [CourseActionSheetBody]。2026-09-19 之前这里是贴底的 edge sheet。
 Future<void> showCourseActionSheet(
   BuildContext context, {
   required List<CourseActionPreviewItem> previewItems,
@@ -50,9 +53,9 @@ Future<void> showCourseActionSheet(
   required CourseActionHandler onAddTask,
   CourseAlarmHandler? onSetAlarm,
 }) {
-  return showHomeHyperosSheet<void>(
+  return showOs4GlassDialog<void>(
     context: context,
-    builder: (sheetContext) => CourseActionSheetBody(
+    builder: (dialogContext, close) => CourseActionSheetBody(
       previewItems: previewItems,
       week: week,
       onEdit: onEdit,
@@ -61,6 +64,7 @@ Future<void> showCourseActionSheet(
       onSuspend: onSuspend,
       onAddTask: onAddTask,
       onSetAlarm: onSetAlarm,
+      onRequestClose: close,
     ),
   );
 }
@@ -76,6 +80,7 @@ class CourseActionSheetBody extends StatefulWidget {
     required this.onSuspend,
     required this.onAddTask,
     this.onSetAlarm,
+    this.onRequestClose,
   });
 
   final List<CourseActionPreviewItem> previewItems;
@@ -87,20 +92,18 @@ class CourseActionSheetBody extends StatefulWidget {
   final CourseActionHandler onAddTask;
   final CourseAlarmHandler? onSetAlarm;
 
+  /// 宿主给的收起口子（见 [Os4GlassDialogClose]）：退场动画结束才回调
+  /// `afterDismiss`。为 null 时（测试直接构造本组件的路径）退回
+  /// `Navigator.pop()` + 立刻执行。
+  final Os4GlassDialogClose? onRequestClose;
+
   @override
   State<CourseActionSheetBody> createState() => _CourseActionSheetBodyState();
 }
 
 class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
-  final _scrollController = ScrollController();
   int _selectedIndex = 0;
   bool _relatedExpanded = false;
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
 
   void _selectCourse(int index) {
     if (index == _selectedIndex) {
@@ -110,13 +113,10 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
       _selectedIndex = index;
       _relatedExpanded = false;
     });
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-      );
-    }
+    // 换到另一门相关课程时不再「回到顶部」：滚动容器在上游对话框内部
+    // （`GlassPopupPresenter` 自己包的那层 SingleChildScrollView，`primary: false`），
+    // 调用方拿不到控制器。要恢复这条行为需要给 fork 的 presenter 再加一个
+    // 滚动控制器口子，先不做。
   }
 
   @override
@@ -127,52 +127,38 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
         if (index != _selectedIndex) index,
     ];
 
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
-
-    return HyperosSheetFrame(
-      maxHeight: maxHeight,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: constraints.maxHeight),
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _CourseActionSheetContent(
-                    key: ValueKey(
-                      'course-action-selected-${selectedItem.course.id}',
-                    ),
-                    previewItem: selectedItem,
-                    week: widget.week,
-                    onEdit: widget.onEdit,
-                    onReschedule: widget.onReschedule,
-                    onDelete: widget.onDelete,
-                    onSuspend: widget.onSuspend,
-                    onAddTask: widget.onAddTask,
-                    onSetAlarm: widget.onSetAlarm,
-                  ),
-                  if (otherIndexes.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    _RelatedCoursesPanel(
-                      previewItems: widget.previewItems,
-                      otherIndexes: otherIndexes,
-                      week: widget.week,
-                      expanded: _relatedExpanded,
-                      onToggleExpanded: () {
-                        setState(() => _relatedExpanded = !_relatedExpanded);
-                      },
-                      onSelect: _selectCourse,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+    // 面板与滚动都交给上游对话框：它按 `sizing` 给出有界高度，内容超出时由它自己
+    // 那层 SingleChildScrollView 承担滚动（`GlassPopupPresenter` 内）。
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _CourseActionSheetContent(
+          key: ValueKey('course-action-selected-${selectedItem.course.id}'),
+          previewItem: selectedItem,
+          week: widget.week,
+          onEdit: widget.onEdit,
+          onReschedule: widget.onReschedule,
+          onDelete: widget.onDelete,
+          onSuspend: widget.onSuspend,
+          onAddTask: widget.onAddTask,
+          onSetAlarm: widget.onSetAlarm,
+          onRequestClose: widget.onRequestClose,
+        ),
+        if (otherIndexes.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _RelatedCoursesPanel(
+            previewItems: widget.previewItems,
+            otherIndexes: otherIndexes,
+            week: widget.week,
+            expanded: _relatedExpanded,
+            onToggleExpanded: () {
+              setState(() => _relatedExpanded = !_relatedExpanded);
+            },
+            onSelect: _selectCourse,
+          ),
+        ],
+      ],
     );
   }
 }
@@ -484,6 +470,7 @@ class _CourseActionSheetContent extends StatelessWidget {
     required this.onSuspend,
     required this.onAddTask,
     this.onSetAlarm,
+    required this.onRequestClose,
   });
 
   final CourseActionPreviewItem previewItem;
@@ -494,22 +481,34 @@ class _CourseActionSheetContent extends StatelessWidget {
   final CourseActionHandler onSuspend;
   final CourseActionHandler onAddTask;
   final CourseAlarmHandler? onSetAlarm;
+  final Os4GlassDialogClose? onRequestClose;
 
   Course get course => previewItem.course;
 
-  void _closeSheetThen(BuildContext context, VoidCallback action) {
+  /// 收起弹层，并在它**真的消失之后**用宿主 context 执行 [action]。
+  ///
+  /// 有宿主时由对话框的退场动画结束回调触发（不再靠 280ms 猜动画时长）；
+  /// 没有宿主（测试直接构造本组件）时退回「pop + 立刻执行」。
+  void _dismissThen(
+    BuildContext context,
+    void Function(BuildContext hostContext) action,
+  ) {
+    // 面板消失后本组件会被卸载，后续动作（push 页面 / 开 sheet）必须用一个
+    // 活得比它久的 context —— 取导航器自己的那个。
+    final hostContext = Navigator.of(context).context;
+    final requestClose = onRequestClose;
+    if (requestClose != null) {
+      requestClose(
+        afterDismiss: () {
+          if (hostContext.mounted) {
+            action(hostContext);
+          }
+        },
+      );
+      return;
+    }
     Navigator.of(context).pop();
-    action();
-  }
-
-  void _closeSheetThenAfterDismiss(BuildContext context, VoidCallback action) {
-    final navigator = Navigator.of(context);
-    navigator.pop();
-    Future<void>.delayed(const Duration(milliseconds: 280), () {
-      if (navigator.context.mounted) {
-        action();
-      }
-    });
+    action(hostContext);
   }
 
   /// 详情里的那一行天气；不该显示时返回 null（整行不渲染，不留空档）。
@@ -769,25 +768,20 @@ class _CourseActionSheetContent extends StatelessWidget {
             ],
           ),
           onTap: () {
-            // Only one sheet at a time: close the action sheet, then open notes.
-            final hostNavigator = Navigator.of(context);
+            // 一次只开一个弹层：先收起课程弹窗，再开备注 —— 顺序由宿主保证
+            // （退场动画结束才回调），两者不会叠在一起。
             final courseSnapshot = course;
             final weekSnapshot = week;
             final isReadOnly = previewItem.isReadOnly;
-            hostNavigator.pop();
-            // Wait for the action sheet dismiss animation so the two never stack.
-            Future<void>.delayed(const Duration(milliseconds: 280), () {
-              final hostContext = hostNavigator.context;
-              if (!hostContext.mounted) {
-                return;
-              }
-              showCourseNoteSheet(
+            _dismissThen(
+              context,
+              (hostContext) => showCourseNoteSheet(
                 hostContext,
                 course: courseSnapshot,
                 week: weekSnapshot,
                 readOnly: isReadOnly,
-              );
-            });
+              ),
+            );
           },
         ),
         if (!previewItem.isReadOnly) ...[
@@ -797,8 +791,7 @@ class _CourseActionSheetContent extends StatelessWidget {
             title: linkedTaskTitle,
             subtitle: linkedTaskSubtitle,
             trailing: const Icon(Icons.chevron_right_rounded, size: 20),
-            onTap: () =>
-                _closeSheetThenAfterDismiss(context, () => onAddTask(course)),
+            onTap: () => _dismissThen(context, (_) => onAddTask(course)),
           ),
           if (onSetAlarm != null &&
               _isAlarmAvailable(
@@ -812,8 +805,7 @@ class _CourseActionSheetContent extends StatelessWidget {
               icon: Icons.alarm_outlined,
               title: l10n.classAlarmActionLabel,
               trailing: const Icon(Icons.chevron_right_rounded, size: 20),
-              onTap: () =>
-                  _closeSheetThenAfterDismiss(context, () => onSetAlarm!(course)),
+              onTap: () => _dismissThen(context, (_) => onSetAlarm!(course)),
             ),
           ],
         ],
@@ -839,7 +831,7 @@ class _CourseActionSheetContent extends StatelessWidget {
             child: HyperosButton(
               label: l10n.courseActionEditPrimary,
               expand: true,
-              onPressed: () => _closeSheetThen(context, () => onEdit(course)),
+              onPressed: () => _dismissThen(context, (_) => onEdit(course)),
             ),
           ),
           const SizedBox(height: 10),
@@ -851,8 +843,7 @@ class _CourseActionSheetContent extends StatelessWidget {
                   label: l10n.courseActionRescheduleSecondary,
                   expand: true,
                   onPressed: canReschedule
-                      ? () =>
-                            _closeSheetThen(context, () => onReschedule(course))
+                      ? () => _dismissThen(context, (_) => onReschedule(course))
                       : null,
                 ),
               ),
@@ -864,8 +855,7 @@ class _CourseActionSheetContent extends StatelessWidget {
                       ? l10n.courseActionUnsuspend
                       : l10n.courseActionSuspendSecondary,
                   expand: true,
-                  onPressed: () =>
-                      _closeSheetThen(context, () => onSuspend(course)),
+                  onPressed: () => _dismissThen(context, (_) => onSuspend(course)),
                 ),
               ),
               const SizedBox(width: 8),
@@ -875,8 +865,7 @@ class _CourseActionSheetContent extends StatelessWidget {
                   label: l10n.courseActionDeleteSecondary,
                   variant: HyperosFrostedSheetButtonVariant.destructive,
                   expand: true,
-                  onPressed: () =>
-                      _closeSheetThen(context, () => onDelete(course)),
+                  onPressed: () => _dismissThen(context, (_) => onDelete(course)),
                 ),
               ),
             ],

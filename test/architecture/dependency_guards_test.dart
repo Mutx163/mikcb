@@ -140,4 +140,63 @@ void main() {
           '发现 UI 依赖请上移到 UI 层或改依赖注入。',
     );
   });
+
+  test('两个 fork 补丁依赖不许被摘掉或换回 pub.dev', () {
+    // 这两条 override 背的是「不修就复现」的性能修复，摘掉不会让任何行为测试变红：
+    //   flutter_miuix（Mutx163/flutter_miuix，分支 glassy-surface）
+    //     · 形变动效期间不逐帧模糊内容与来源卡片；
+    //     · 非着色器档位降离屏倍率 + 叠色合进同一张画布（见
+    //       .agents/notes/implemented/process/2026-09-17-miuix-glass-offscreen-and-blend-patch.md）；
+    //     · 弹层面板材质注入点 `surfaceBuilder` + 覆盖层「蒙层之前的前置层」
+    //       `scrimUnderlay`（`MiuixGlassDialog` 也透出）—— 居中课程弹窗的
+    //       液态玻璃靠它才采得到未压暗的页面（见
+    //       .agents/notes/implemented/architecture/2026-09-19-course-popup-centered-glass-dialog.md）。
+    //   inspire_blur（Mutx163/inspire_blur，分支 mikcb/distribution-pixels-cache）
+    //     · 分布图像素记忆化——否则每个新挂载的子页顶栏同步重算 674k 像素（36~49ms）。
+    // 所以这里只钉「还在不在、是不是那个 fork」，不钉具体 commit：补丁迭代只该改 ref，
+    // 不该顺手改这个测试。
+    const expected = {
+      'flutter_miuix': 'https://github.com/Mutx163/flutter_miuix.git',
+      'inspire_blur': 'https://github.com/Mutx163/inspire_blur.git',
+    };
+    // 按行取块，不按字符串切片：本仓检出在 Windows 下是 CRLF。
+    final lines = File('pubspec.lock').readAsLinesSync();
+    final entryStart = RegExp(r'^  \S');
+    final blocks = <String, String>{};
+    for (final name in expected.keys) {
+      final start = lines.indexWhere((line) => line == '  $name:');
+      expect(
+        start,
+        isNonNegative,
+        reason: 'pubspec.lock 里没有 $name —— 跑过 pub get 吗？',
+      );
+      var end = start + 1;
+      while (end < lines.length && !entryStart.hasMatch(lines[end])) {
+        end++;
+      }
+      blocks[name] = lines.sublist(start, end).join('\n');
+    }
+    for (final entry in expected.entries) {
+      final block = blocks[entry.key]!;
+      expect(
+        block,
+        contains('source: git'),
+        reason: '${entry.key} 变成了非 git 依赖（回到 pub.dev？）：$block',
+      );
+      expect(
+        block,
+        contains('url: "${entry.value}"'),
+        reason: '${entry.key} 的来源仓库不是本项目 fork：$block',
+      );
+      // 引号不算契约的一部分：pub 写 lock 时，**这一轮被重新解析过的那条**会用
+      // 默认风格（裸值），没动过的沿用旧风格（带引号）。2026-09-19 给 flutter_miuix
+      // 换 ref 之后就出现过「同一个文件里一条带引号、一条裸值」。这里只钉
+      // 「resolved-ref 是 40 位 commit」这件事本身。
+      expect(
+        RegExp(r'resolved-ref: "?[0-9a-f]{40}"?').hasMatch(block),
+        isTrue,
+        reason: '${entry.key} 的 ref 不是钉死的 40 位 commit：$block',
+      );
+    }
+  });
 }

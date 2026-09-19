@@ -74,15 +74,18 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   fake_async: ^1.3.3
 
-# 覆盖：指向 fork 上带 `surfaceBuilder` 补丁的 flutter_miuix（glassy-surface 分支，
-# 基于上游 1.2.0 + popup presenter 注入点）。**固定到 commit，不要写分支名** ——
-# 分支名会让不同时间 / 不同机器解析到不同的那份，CI 也拿不到可复现的依赖。
-# 补丁进了上游 release 后整块删掉，即回到 pub.dev。
+# 覆盖：指向 fork 上带注入点补丁的 flutter_miuix（glassy-surface 分支，
+# 基于上游 1.2.0）。补丁两处：① popup presenter 的 `surfaceBuilder`（替换面板材质）；
+# ② `scrimUnderlay`（覆盖层里、压暗蒙层之前的前置层，覆盖层随之进 `BackdropGroup`）
+# 与 `MiuixGlassDialog` 上的两个透出 —— 居中玻璃对话框要用我们的液态玻璃，
+# 采样必须发生在蒙层之前，见 lib/ui/hyperos/os4_glass_dialog.dart。
+# **固定到 commit，不要写分支名** —— 分支名会让不同时间 / 不同机器解析到不同的那份，
+# CI 也拿不到可复现的依赖。补丁进了上游 release 后整块删掉，即回到 pub.dev。
 dependency_overrides:
   flutter_miuix:
     git:
       url: https://github.com/Mutx163/flutter_miuix.git
-      ref: 4d6992645c38e11195e2f576397202fbd0922670
+      ref: b7802ad61cec17ae340d5dc7abe3488ab84c198d
   # inspire_blur：分布图像素记忆化——上游每个新挂载的顶栏都同步重算一张
   # 674k 像素的分布图（真机实测 36~49ms），这里按 (distribution, size) 记住像素。
   # fork 自 inspirestack/inspire_blur，分支 mikcb/distribution-pixels-cache，
