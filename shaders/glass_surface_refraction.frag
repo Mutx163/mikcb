@@ -47,6 +47,23 @@ uniform sampler2D u_texture;
 uniform vec2 u_area_origin;
 uniform vec2 u_area_size;
 
+// 视口（屏幕）的物理像素尺寸，由 Dart 侧传（MediaQuery.size × dpr）。
+//
+// ── 为什么需要它：`compose(着色器, 高斯)` 会把纹理往外扩边 ──
+// 内层高斯模糊把自己的输出按 3σ **往外扩边**（Skia/Impeller 的模糊滤波器都会
+// inflate 输出边界），于是引擎绑给本着色器的纹理比视口大一圈，纹理原点也不再
+// 等于屏幕原点——往前挪了 pad = 扩边量的一半。而 `FlutterFragCoord()` 报的是
+// **这张纹理**的像素坐标（SDK 原文：ImageFilter.shader 的第一个 vec2 被填成
+// 绑定纹理的尺寸，示例就是 `FlutterFragCoord().xy / u_size` 取 uv）。
+// 拿它直接去减 Dart 侧按**屏幕**坐标算的 u_area_origin，形状就整体偏了 pad：
+// 真机上表现为玻璃贴图边的那一侧缺一条 3σ 宽的覆盖、露出下面的暗背景——就是
+// 那条「模糊一开就有、模糊归零就消失」的黑边（3σ 随模糊量走）。
+//
+// 这里**不写死 3σ**（不知道引擎的取值口径，也可能随版本变），而是量出来：
+// 纹理比视口大多少，原点就前移了多少的一半。没有扩边时 u_size == u_view_size，
+// pad 为 0，下面那一步完全不生效。
+uniform vec2 u_view_size;
+
 // 圆角半径（物理 px）。必须与外面裁剪用的圆角一致，否则 SDF 与裁剪对不上。
 uniform float u_radius;
 
@@ -73,8 +90,12 @@ float roundedBoxSDF(vec2 p, vec2 halfSize, float r) {
 }
 
 void main() {
+  // 纹理像素坐标（原点 = 绑定纹理的左上角，见 u_view_size 的说明）。
+  vec2 texel = FlutterFragCoord().xy;
+  // compose 内层模糊把纹理往外扩了多少 —— 原点就往前挪了这一半。
+  vec2 pad = max((u_size - u_view_size) * 0.5, vec2(0.0));
   // 屏幕物理像素 → 表面局部物理像素（见文件头第 1、3 条）。
-  vec2 screenPx = FlutterFragCoord().xy;
+  vec2 screenPx = texel - pad;
   vec2 local = screenPx - u_area_origin;
 
   vec2 halfSize = u_area_size * 0.5;
@@ -109,8 +130,9 @@ void main() {
   float push = u_refract * pow(edge, max(u_edge_pow, 1e-3));
 
   // 采样背景：位置同样用屏幕物理像素表达，除以绑定纹理尺寸即得 uv。
+  // 注意这里要把 pad 加回去 —— uv 是**纹理**坐标，而 screenPx 已经扣过扩边。
   vec2 sampleScreen = screenPx + normal * push;
-  vec2 uv = sampleScreen / max(u_size, vec2(1e-3));
+  vec2 uv = (sampleScreen + pad) / max(u_size, vec2(1e-3));
 #if defined(IMPELLER_TARGET_OPENGLES) && \
     !defined(IMPELLER_OPENGLES_UNFLIPPED_DEPRECATED)
   uv.y = 1.0 - uv.y;
