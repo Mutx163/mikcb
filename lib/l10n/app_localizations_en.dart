@@ -10587,11 +10587,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBodyTimetablePage =>
-      'This resets timetable page density, back-to-current-week button and background (including wallpaper) to their defaults.';
+      'Resets the timetable page density, the back-to-current-week button, the background (wallpaper included) and the glass material.';
 
   @override
   String get settingsResetConfirmBodyAppearance =>
-      'This resets theme mode, fonts, theme color and glass effect to their defaults.';
+      'Resets the theme mode, font and theme colour.';
 
   @override
   String get settingsResetConfirmBodyHomeWidget =>

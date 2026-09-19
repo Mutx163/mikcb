@@ -18130,13 +18130,13 @@ abstract class AppLocalizations {
   /// No description provided for @settingsResetConfirmBodyTimetablePage.
   ///
   /// In zh, this message translates to:
-  /// **'将把课表页面的密度、回到当前周按钮与背景（含清除壁纸）恢复为默认值。'**
+  /// **'将把课表页面的密度、回到当前周按钮、背景（含清除壁纸）与玻璃质感恢复为默认值。'**
   String get settingsResetConfirmBodyTimetablePage;
 
   /// No description provided for @settingsResetConfirmBodyAppearance.
   ///
   /// In zh, this message translates to:
-  /// **'将把主题模式、字体、主题色与玻璃质感恢复为默认值。'**
+  /// **'将把主题模式、字体与主题色恢复为默认值。'**
   String get settingsResetConfirmBodyAppearance;
 
   /// No description provided for @settingsResetConfirmBodyHomeWidget.

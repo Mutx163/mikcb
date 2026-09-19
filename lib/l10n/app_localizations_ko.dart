@@ -10328,11 +10328,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBodyTimetablePage =>
-      '시간표 페이지 밀도·이번 주 버튼·배경(배경화면 포함)을 기본값으로 되돌립니다.';
+      '시간표 페이지의 밀도, 이번 주로 돌아가기 버튼, 배경(배경화면 삭제 포함)과 유리 질감을 기본값으로 되돌립니다.';
 
   @override
   String get settingsResetConfirmBodyAppearance =>
-      '테마 모드·글꼴·테마 색상·유리 질감을 기본값으로 되돌립니다.';
+      '테마 모드, 글꼴, 테마 색상을 기본값으로 되돌립니다.';
 
   @override
   String get settingsResetConfirmBodyHomeWidget =>

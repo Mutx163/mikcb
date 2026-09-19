@@ -165,6 +165,12 @@ void main() {
     );
     expect(result.subpageHeaderBlurStyle, defaults.subpageHeaderBlurStyle);
     expect(result.homeBandGlassMaterial, defaults.homeBandGlassMaterial);
+    // 材质轴（玻璃模式 / 模糊总开关 / 磨砂滑杆 / 底栏作用范围）：控件在本页的
+    // 「玻璃 / 材质」区块里，恢复默认跟着本页一起走。
+    expect(result.frostedGlassMode, defaults.frostedGlassMode);
+    expect(result.frostedBlurEnabled, defaults.frostedBlurEnabled);
+    expect(result.frostedSheetBlurSigma, defaults.frostedSheetBlurSigma);
+    expect(result.liquidGlassDockEnabled, defaults.liquidGlassDockEnabled);
     expect(result.weekdayBarFontColorLight, defaults.weekdayBarFontColorLight);
     // 壁纸文件路径必须一并清掉，否则「恢复默认」后背景还在。
     expect(result.homePageWallpaperPath, isNull);
@@ -191,10 +197,11 @@ void main() {
     expect(result.appFontWeight, defaults.appFontWeight);
     expect(result.appTextScale, defaults.appTextScale);
     expect(result.themeSeedColor, defaults.themeSeedColor);
-    expect(result.frostedBlurEnabled, defaults.frostedBlurEnabled);
-    expect(result.frostedSheetBlurSigma, defaults.frostedSheetBlurSigma);
-    // 液态玻璃作用范围开关一并回到默认（2026-09-19 起只剩底栏一项）。
-    expect(result.liquidGlassDockEnabled, isTrue);
+    // 材质轴不再由本 scope 恢复：控件 2026-09-19 搬到「课表页面」，
+    // 「恢复默认只覆盖本页看得见的控件」这条规矩跟着走（见下面那条用例）。
+    expect(result.frostedBlurEnabled, dirtySettings().frostedBlurEnabled);
+    expect(result.frostedSheetBlurSigma, dirtySettings().frostedSheetBlurSigma);
+    expect(result.liquidGlassDockEnabled, isFalse);
 
     // 首页与导航的字段保持「脏」值：导航形态已拆到独立 scope。
     final dirty = dirtySettings();

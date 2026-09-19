@@ -7447,7 +7447,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///
   /// 玻璃坞当前应使用的材质。
   ///
-  /// 由**全局材质**（外观与配色 → 材质）+ 「作用范围 → 玻璃坞导航」推导：
+  /// 由**全局材质**（课表页面 → 玻璃 / 材质）+ 「作用范围 → 玻璃坞导航」推导：
   ///
   /// - 实体卡片（模糊总开关关）→ [_DockMaterial.solid]；
   /// - 高斯模糊 → [_DockMaterial.frosted]；

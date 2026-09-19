@@ -10283,11 +10283,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBodyTimetablePage =>
-      '時間割ページの密度・「現在の週へ」ボタン・背景（壁紙を含む）を既定値に戻します。';
+      '時間割ページの密度・今週に戻るボタン・背景（壁紙の削除を含む）・ガラス質感を初期値に戻します。';
 
   @override
   String get settingsResetConfirmBodyAppearance =>
-      'テーマモード・フォント・テーマカラー・ガラス質感を既定値に戻します。';
+      'テーマモード・フォント・テーマカラーを初期値に戻します。';
 
   @override
   String get settingsResetConfirmBodyHomeWidget =>

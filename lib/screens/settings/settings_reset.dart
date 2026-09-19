@@ -82,6 +82,18 @@ TimetableSettings applySettingsReset(
       homePageWeekdayBarBlurEnabled: d.homePageWeekdayBarBlurEnabled,
       subpageHeaderBlurStyle: d.subpageHeaderBlurStyle,
       homeBandGlassMaterial: d.homeBandGlassMaterial,
+      // 材质轴：控件在「玻璃 / 材质」区块里，跟着本页一起恢复。
+      frostedGlassMode: d.frostedGlassMode,
+      frostedBlurEnabled: d.frostedBlurEnabled,
+      frostedSheetBlurSigma: d.frostedSheetBlurSigma,
+      frostedSheetTintAlpha: d.frostedSheetTintAlpha,
+      frostedSheetBarrierAlpha: d.frostedSheetBarrierAlpha,
+      liquidGlassTuning: d.liquidGlassTuning,
+      liquidGlassDockEnabled: d.liquidGlassDockEnabled,
+      softGlassPreset: d.softGlassPreset,
+      softGlassTuning: d.softGlassTuning,
+      progressiveBlurPreset: d.progressiveBlurPreset,
+      progressiveBlurTuning: d.progressiveBlurTuning,
       weekdayBarFontColorLight: d.weekdayBarFontColorLight,
       weekdayBarFontColorDark: d.weekdayBarFontColorDark,
       weekdayBarAccentColorLight: d.weekdayBarAccentColorLight,
@@ -97,7 +109,10 @@ TimetableSettings applySettingsReset(
       // 恢复默认是单个课表的动作，不该连带清掉别的课表的历史；
       // 镜像也保持原样，否则紧接着做的备份会带上一条空历史。
     ),
-    // 外观页瘦身后的范围：主题模式 / 字体 / 主题种子色与玻璃质感。
+    // 外观页瘦身后的范围：主题模式 / 字体 / 主题种子色。
+    // 材质轴（玻璃模式 / 模糊总开关 / 磨砂滑杆 / 各档调参 / 底栏作用范围）2026-09-19
+    // 随控件一起划给「课表页面」作用域 —— 恢复默认必须只覆盖本页看得见的控件，
+    // 否则用户在本页点「恢复默认」会莫名其妙重置另一页的东西。
     SettingsResetScope.appearance => current.copyWith(
       appThemeMode: d.appThemeMode,
       appFontMode: d.appFontMode,
@@ -105,20 +120,6 @@ TimetableSettings applySettingsReset(
       appTextScale: d.appTextScale,
       foruiTheme: d.foruiTheme,
       themeSeedColor: d.themeSeedColor,
-      frostedGlassMode: d.frostedGlassMode,
-      frostedBlurEnabled: d.frostedBlurEnabled,
-      frostedSheetBlurSigma: d.frostedSheetBlurSigma,
-      frostedSheetTintAlpha: d.frostedSheetTintAlpha,
-      frostedSheetBarrierAlpha: d.frostedSheetBarrierAlpha,
-      liquidGlassTuning: d.liquidGlassTuning,
-      liquidGlassDockEnabled: d.liquidGlassDockEnabled,
-      // 预设是非空枚举，reset 能落回 standard；tuning 与 liquidGlassTuning
-      // 同为可空 + copyWith 吞 null 的既有口径（reset 后保留现值），不在此处
-      // 单独发明清除位。
-      softGlassPreset: d.softGlassPreset,
-      softGlassTuning: d.softGlassTuning,
-      progressiveBlurPreset: d.progressiveBlurPreset,
-      progressiveBlurTuning: d.progressiveBlurTuning,
     ),
     // 已删除 UI 的字段（设置 Tab、右上角菜单形态、内容避让布局、
     // 日/周布尔开关——已被 glassDockActions 取代）不纳入任何 scope。
