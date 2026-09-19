@@ -116,6 +116,9 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface> {
         return _LiquidGlassLayer(
           style: style,
           devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+          // 视口逻辑尺寸：着色器拿它把折射采样点铰在屏幕内（贴着屏幕边的玻璃
+          // 往外采样会落进模糊扩出来的空区域、读成黑边）。
+          viewSize: MediaQuery.sizeOf(context),
           grouped: widget.grouped,
           refractionFactor: widget.refractionFactor,
           maxRefraction: widget.maxRefraction,
@@ -134,6 +137,7 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
   const _LiquidGlassLayer({
     required this.style,
     required this.devicePixelRatio,
+    required this.viewSize,
     required this.grouped,
     required this.refractionFactor,
     required this.maxRefraction,
@@ -142,6 +146,10 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
 
   final LiquidGlassStyle style;
   final double devicePixelRatio;
+
+  /// 视口（屏幕）的**逻辑**尺寸；绘制期乘 dpr 后喂给着色器的 `u_view_size`。
+  final Size viewSize;
+
   final bool grouped;
   final double? refractionFactor;
   final double? maxRefraction;
@@ -157,6 +165,7 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
   RenderObject createRenderObject(BuildContext context) => _RenderLiquidGlass(
     style: style,
     devicePixelRatio: devicePixelRatio,
+    viewSize: viewSize,
     backdropKey: _backdropKey(context),
     refractionFactor: refractionFactor,
     maxRefraction: maxRefraction,
@@ -167,6 +176,7 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
       renderObject.update(
         style: style,
         devicePixelRatio: devicePixelRatio,
+        viewSize: viewSize,
         backdropKey: _backdropKey(context),
         refractionFactor: refractionFactor,
         maxRefraction: maxRefraction,
@@ -177,6 +187,7 @@ class _RenderLiquidGlass extends RenderProxyBox {
   _RenderLiquidGlass({
     required this._style,
     required this._devicePixelRatio,
+    required this._viewSize,
     required this._backdropKey,
     required this._refractionFactor,
     required this._maxRefraction,
@@ -184,6 +195,7 @@ class _RenderLiquidGlass extends RenderProxyBox {
 
   LiquidGlassStyle _style;
   double _devicePixelRatio;
+  Size _viewSize;
   BackdropKey? _backdropKey;
   double? _refractionFactor;
   double? _maxRefraction;
@@ -207,12 +219,14 @@ class _RenderLiquidGlass extends RenderProxyBox {
   void update({
     required LiquidGlassStyle style,
     required double devicePixelRatio,
+    required Size viewSize,
     required BackdropKey? backdropKey,
     required double? refractionFactor,
     required double? maxRefraction,
   }) {
     if (_style == style &&
         _devicePixelRatio == devicePixelRatio &&
+        _viewSize == viewSize &&
         _backdropKey == backdropKey &&
         _refractionFactor == refractionFactor &&
         _maxRefraction == maxRefraction) {
@@ -220,6 +234,7 @@ class _RenderLiquidGlass extends RenderProxyBox {
     }
     _style = style;
     _devicePixelRatio = devicePixelRatio;
+    _viewSize = viewSize;
     _backdropKey = backdropKey;
     _refractionFactor = refractionFactor;
     _maxRefraction = maxRefraction;
@@ -265,6 +280,9 @@ class _RenderLiquidGlass extends RenderProxyBox {
 
     uniforms.areaOrigin.set(origin.dx * dpr, origin.dy * dpr);
     uniforms.areaSize.set(size.width * dpr, size.height * dpr);
+    // 视口物理尺寸：着色器用它把折射采样点铰在屏幕内（模糊扩出来的那圈没有内容，
+    // 贴着屏幕边的玻璃往外采会落进去、读成黑边）。
+    uniforms.viewSize.set(_viewSize.width * dpr, _viewSize.height * dpr);
     uniforms.radius.set(scaled.radius);
     uniforms.tint.set(tint.r, tint.g, tint.b, tint.a);
     // 先按窄带上限压（几何适配），再乘入场进度（0..1）。

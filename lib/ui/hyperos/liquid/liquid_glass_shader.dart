@@ -141,7 +141,8 @@ class LiquidGlassUniforms {
       rimColor = shader.getUniformVec3('u_rim_color'),
       rim = shader.getUniformFloat('u_rim'),
       rimWidth = shader.getUniformFloat('u_rim_width'),
-      lightDir = shader.getUniformVec2('u_light_dir');
+      lightDir = shader.getUniformVec2('u_light_dir'),
+      viewSize = shader.getUniformVec2('u_view_size');
 
   final ui.UniformVec2Slot areaOrigin;
   final ui.UniformVec2Slot areaSize;
@@ -154,6 +155,13 @@ class LiquidGlassUniforms {
   final ui.UniformFloatSlot rim;
   final ui.UniformFloatSlot rimWidth;
   final ui.UniformVec2Slot lightDir;
+
+  /// 视口的物理像素尺寸。
+  ///
+  /// 只用来**把采样点铰在屏幕内**：`compose` 内层模糊会把绑定纹理往外扩一圈没有
+  /// 内容的区域，贴着屏幕边的玻璃往外采会落进去、读成空的（黑边）。详见 .frag 里
+  /// `u_view_size` 的说明。
+  final ui.UniformVec2Slot viewSize;
 }
 
 /// 校验着色器与 Dart 侧的 uniform 名字对得上，测试专用。

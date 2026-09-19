@@ -137,6 +137,61 @@ void main() {
       expect(_pixel(bytes, 100, 195).a, 0);
     });
 
+    test('贴着屏幕边缘时，折射采样被铰回屏内（不读进模糊扩出来的空区）', () async {
+      // 真机机制：`compose` 内层模糊把绑定纹理按 3σ 往外扩一圈，扩出来那圈
+      // **没有内容**；而玻璃在边缘是把采样点往外推的。贴着屏幕边的玻璃（首页右上
+      // 角那颗球离右边缘只有 9dp）往外一推就落进那圈空区，读出来是空的 —— 压在暗
+      // 底上就是一条黑边；模糊归零、不扩边，它就消失。
+      //
+      // 真机回读已确认：扩边**不改变** FlutterFragCoord 与屏幕坐标的对应，所以这里
+      // 只铰采样、不碰几何。测试把那个形态摆出来：纹理比视口大 2×pad，「内容」只铺
+      // 在视口那块（绿），多出来的扩边区涂红当标记。表面贴到视口右缘并开折射 ——
+      // 采样若不被铰住就会读到红，铰住之后必须还是绿。
+      const pad = 12.0;
+      final expandedSize = Size(
+        _screenSize.width + pad * 2,
+        _screenSize.height + pad * 2,
+      );
+      final texture = await _screenTexture(
+        (canvas) {
+          // 先铺满红（= 扩边那圈没有内容），再把内容区盖成绿。
+          canvas.drawRect(
+            Offset.zero & expandedSize,
+            ui.Paint()..color = const Color(0xFFFF0000),
+          );
+          canvas.drawRect(
+            Offset.zero & _screenSize,
+            ui.Paint()..color = const Color(0xFF00FF00),
+          );
+        },
+        size: expandedSize,
+      );
+      addTearDown(texture.dispose);
+
+      final bytes = await _renderSurface(
+        texture: texture,
+        expand: pad,
+        viewSize: _screenSize,
+        // 表面贴到视口右缘：x ∈ [100, 200)。
+        surfaceOrigin: const Offset(100, 50),
+        surfaceSize: const Size(100, 100),
+        refract: 8,
+      );
+
+      final stride = expandedSize.width.round();
+      // 表面右缘那一列：折射把它往外推几像素（越出视口）。铰住 → 仍是屏内的绿。
+      expect(
+        _pixel(bytes, 199, 100, width: stride),
+        const Color(0xFF00FF00),
+        reason: '贴着屏幕边缘的折射采样必须铰回屏内，不能读进模糊扩出来的空区',
+      );
+      // 对照：表面内部不参与折射，本来就读到绿。
+      expect(
+        _pixel(bytes, 150, 100, width: stride),
+        const Color(0xFF00FF00),
+      );
+    });
+
     test('表面是整屏纹理的一个窗口，不是把纹理拉伸铺满自己', () async {
       // 纹理 x<50 红、[50,175) 绿、≥175 蓝。表面窗口落在 x∈[50,150]，
       // 所以表面内几乎全是绿。若哪天 u_area_origin 被漏掉（退化成
@@ -266,13 +321,18 @@ void _stripedScreen(ui.Canvas canvas) {
   );
 }
 
-Future<ui.Image> _screenTexture(void Function(ui.Canvas canvas) paint) async {
+Future<ui.Image> _screenTexture(
+  void Function(ui.Canvas canvas) paint, {
+  /// 位图尺寸，默认 [_screenSize]；扩边形态下要显式给更大的。
+  Size? size,
+}) async {
+  final target = size ?? _screenSize;
   final recorder = ui.PictureRecorder();
   paint(ui.Canvas(recorder));
   final picture = recorder.endRecording();
   final image = await picture.toImage(
-    _screenSize.width.round(),
-    _screenSize.height.round(),
+    target.width.round(),
+    target.height.round(),
   );
   picture.dispose();
   return image;
@@ -292,18 +352,32 @@ Future<Uint8List> _renderSurface({
   Color tint = const Color(0x00000000),
   double refract = 0,
   double rim = 0,
+  /// 表面在屏幕上的位置/尺寸，默认用 [_surfaceOrigin] / [_surfaceSize]。
+  Offset? surfaceOrigin,
+  Size? surfaceSize,
+  /// 视口（屏幕）物理尺寸，默认等于绑定纹理尺寸。
+  ///
+  /// 真机上 `compose` 内层模糊会把绑定纹理往外扩，那时 `u_size` 比视口大——
+  /// 用 [`expand`] 复现那个形态，这里显式给视口尺寸。
+  Size? viewSize,
+  /// 模拟模糊把绑定纹理往外扩的边（物理 px）：画布与纹理一起放大 2×expand。
+  double expand = 0,
 }) async {
   final shader = LiquidGlassSurfaceShader.instance.newShader()!;
   shader.setImageSampler(0, texture);
-  // 真机上这两项由引擎填/绑（第一个 vec2 / 第一个 sampler2D），这里手动摆成
-  // 「整屏纹理 + 表面只占其中一块」的形态。
-  shader.getUniformVec2('u_size').set(_screenSize.width, _screenSize.height);
-  shader
-      .getUniformVec2('u_area_origin')
-      .set(_surfaceOrigin.dx, _surfaceOrigin.dy);
-  shader
-      .getUniformVec2('u_area_size')
-      .set(_surfaceSize.width, _surfaceSize.height);
+  // 真机上这两项由引擎填/绑（第一个 vec2 / 第一个 sampler2D）。u_size 是**绑定
+  // 纹理**尺寸（叠了 compose 的模糊时会比视口大 2×expand）。
+  final bound = Size(
+    _screenSize.width + expand * 2,
+    _screenSize.height + expand * 2,
+  );
+  shader.getUniformVec2('u_size').set(bound.width, bound.height);
+  final view = viewSize ?? bound;
+  shader.getUniformVec2('u_view_size').set(view.width, view.height);
+  final origin = surfaceOrigin ?? _surfaceOrigin;
+  final surfaceExtent = surfaceSize ?? _surfaceSize;
+  shader.getUniformVec2('u_area_origin').set(origin.dx, origin.dy);
+  shader.getUniformVec2('u_area_size').set(surfaceExtent.width, surfaceExtent.height);
   shader.getUniformFloat('u_radius').set(radius);
   shader.getUniformVec4('u_tint').set(tint.r, tint.g, tint.b, tint.a);
   shader.getUniformFloat('u_refract').set(refract);
@@ -316,11 +390,11 @@ Future<Uint8List> _renderSurface({
 
   final recorder = ui.PictureRecorder();
   final canvas = ui.Canvas(recorder);
-  canvas.drawRect(Offset.zero & _screenSize, ui.Paint()..shader = shader);
+  canvas.drawRect(Offset.zero & bound, ui.Paint()..shader = shader);
   final picture = recorder.endRecording();
   final image = await picture.toImage(
-    _screenSize.width.round(),
-    _screenSize.height.round(),
+    bound.width.round(),
+    bound.height.round(),
   );
   picture.dispose();
   // toByteData 默认就是 rawRgba。
@@ -331,7 +405,10 @@ Future<Uint8List> _renderSurface({
 }
 
 /// rawRgba 是预乘的；下面只读 alpha 为 255 的像素，所以直接当直通值用。
-Color _pixel(Uint8List bytes, int x, int y) {
-  final i = (y * _screenSize.width.round() + x) * 4;
+///
+/// [width] 是位图行宽，默认 [_screenSize]；扩边形态下位图更大，必须显式给。
+Color _pixel(Uint8List bytes, int x, int y, {int? width}) {
+  final stride = width ?? _screenSize.width.round();
+  final i = (y * stride + x) * 4;
   return Color.fromARGB(bytes[i + 3], bytes[i], bytes[i + 1], bytes[i + 2]);
 }

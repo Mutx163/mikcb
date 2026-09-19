@@ -47,6 +47,20 @@ uniform sampler2D u_texture;
 uniform vec2 u_area_origin;
 uniform vec2 u_area_size;
 
+// 视口（屏幕）的物理像素尺寸，由 Dart 侧传（MediaQuery.size × dpr）。
+//
+// 用途只有一条：**把采样点铰在屏幕内**。`compose` 内层的高斯模糊会把它的输出
+// 按 3σ **往外扩边**（Skia/Impeller 的模糊滤波器都会 inflate 输出边界），
+// 于是引擎填的 `u_size` 比屏幕大一圈，多出来的那圈**没有内容**。而着色器在玻璃
+// 边缘恰恰是**往外**推着采样的：贴着屏幕边的玻璃（右上角那颗球离右边缘只有
+// 9dp）往外一推，`uv` 还没到 1 就落进了那圈空区域 —— 读出来是空的，压在暗底上
+// 就是一条黑边。模糊越大扩得越宽，所以「模糊调到 0 就没了」。
+//
+// 真机实测（回读像素）确认：扩边**不改变** FlutterFragCoord 与屏幕坐标的对应
+// 关系（红标记落在 x<8/y<8、fract(y/128) 在两端都对得上），所以这里只铰采样，
+// **不碰几何**——形状仍是 `local = FlutterFragCoord - u_area_origin`。
+uniform vec2 u_view_size;
+
 // 圆角半径（物理 px）。必须与外面裁剪用的圆角一致，否则 SDF 与裁剪对不上。
 uniform float u_radius;
 
@@ -110,6 +124,13 @@ void main() {
 
   // 采样背景：位置同样用屏幕物理像素表达，除以绑定纹理尺寸即得 uv。
   vec2 sampleScreen = screenPx + normal * push;
+  // 采样点铰在屏幕内：模糊把纹理往外扩了一圈**没有内容**的区域，贴着屏幕边的
+  // 玻璃往外推采样会落进去，读出来是空的（= 一条黑边）。铰住之后那几像素退化成
+  // 「贴边的背景」——边缘不再折射，但不会发黑。
+  // u_view_size 没被赋值时（0）跳过，行为与加这段之前逐字节一致。
+  if (u_view_size.x > 1.0 && u_view_size.y > 1.0) {
+    sampleScreen = clamp(sampleScreen, vec2(0.0), u_view_size - 1.0);
+  }
   vec2 uv = sampleScreen / max(u_size, vec2(1e-3));
 #if defined(IMPELLER_TARGET_OPENGLES) && \
     !defined(IMPELLER_OPENGLES_UNFLIPPED_DEPRECATED)
