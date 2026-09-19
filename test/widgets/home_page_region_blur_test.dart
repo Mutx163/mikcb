@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/widgets/home_page_region_blur.dart';
@@ -59,5 +60,55 @@ void main() {
       ),
       isFalse,
     );
+  });
+
+  group('玻璃带的上下两条直边都往裁剪外多画一点', () {
+    /// 着色器的受光高光与折射位移都挤在离形状边界 1~2px 的一圈里。形状边界
+    /// 一旦**正好落在**可见区边界上，那一圈就直接读成一条发丝边——顶边早就靠
+    /// `top: -4` 推到 ClipRect 之外，底边一直是 `bottom: 0`，于是只剩底边露着
+    /// （真机：星期栏底边一条黑边）。
+    Future<Positioned> bandGlassPositioned(WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 400,
+              height: 800,
+              child: Stack(
+                children: [
+                  HomePageContinuousChromeFrostedOverlay(
+                    headerBlurEnabled: true,
+                    weekdayBarBlurEnabled: true,
+                    includeStatusBar: false,
+                    weekdayBarHeight: 40,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      return tester.widget<Positioned>(
+        find
+            .ancestor(
+              of: find.byType(HomePageChromeGlassFill),
+              matching: find.byType(Positioned),
+            )
+            .first,
+      );
+    }
+
+    testWidgets('顶边与底边都在可见带之外', (tester) async {
+      final positioned = await bandGlassPositioned(tester);
+      expect(positioned.top, -homePageChromeGlassTopEdgeOverdraw);
+      expect(positioned.bottom, -homePageChromeGlassBottomEdgeOverdraw);
+    });
+
+    testWidgets('底边外溢量必须小：大了会把整条底边折射一起切掉', (tester) async {
+      // 底边折射是「玻璃带 → 课表」的过渡，原先那份 48.0 的常量就是为此没被启用
+      // （注释写着「留作 API 完整性」）。量级上限钉在这里，防止有人顺手调大。
+      expect(homePageChromeGlassBottomEdgeOverdraw, greaterThan(0));
+      expect(homePageChromeGlassBottomEdgeOverdraw, lessThanOrEqualTo(8.0));
+    });
   });
 }

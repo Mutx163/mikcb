@@ -43,10 +43,20 @@ const homePageChromeGlassEdgeOverdraw = 48.0;
 /// Extra glass painted BELOW the band's bottom edge, outside the visible
 /// ClipRect.
 ///
-/// Kept for API completeness; the preview narrow strip no longer hides the
-/// bottom edge — it keeps the edge at the band boundary (like the home page)
-/// and caps thickness proportionally so the rim-light stays a thin sheen.
-const homePageChromeGlassBottomEdgeOverdraw = 48.0;
+/// 与顶边 **[homePageChromeGlassTopEdgeOverdraw] 同因同解**：着色器的受光高光
+/// 与折射位移都集中在离形状边界约 1~2px 的一圈里，形状边界一旦正好落在可见区
+/// 边界上，那一圈就直接读成一条 1px 的深色发丝边（真机现象：星期栏底边一条黑
+/// 边）。顶边靠往上多画 4px 把这条边推到 ClipRect 之外切掉；底边此前是
+/// `bottom: 0`（形状边界与裁剪边界重合），所以只有底边没被治住。
+///
+/// 取 4 而不是更大的值：底边的折射**是有意保留的**（玻璃带与课表的过渡靠它，
+/// 见 [homePageChromeGlassEdgeOverdraw] 的说明），4px 只切掉最外圈那点高光，
+/// 可见区内的折射深度还剩 `depth=4` 那一档，观感不变。同一个值也是 edge sheet
+/// 的既有口径（`hyperos_sheet.dart` 的 `hyperosEdgeSheetBottomOverdraw`）。
+///
+/// 历史：这里原先是 48.0 且无人使用（当时的注释只把它当「API 完整性」留着）。
+/// 48 会把整条底边折射连同圆角一起切出可见区，与「保留底边折射」的设计冲突。
+const homePageChromeGlassBottomEdgeOverdraw = 4.0;
 
 /// Whether any home chrome frosted band should paint over the wallpaper.
 ///
@@ -203,15 +213,16 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
               // Push the glass beyond the visible band on the left and right
               // so the shape's corners (the source of the diagonal
               // "triangle" fringe / picture-frame streaks at high thickness)
-              // stay off-screen and are clipped. The top keeps its small
-              // hairline-seam overdraw; the bottom edge stays at the band
-              // boundary so thickness tuning keeps its visible edge
-              // refraction (see homePageChromeGlassEdgeOverdraw).
+              // stay off-screen and are clipped. Top and bottom each keep a
+              // small overdraw so the straight-side specular fringe is cut
+              // instead of showing as a 1px hairline seam; the bottom one is
+              // only 4px, so the visible edge keeps its refraction (see
+              // homePageChromeGlassBottomEdgeOverdraw).
               Positioned(
                 top: -homePageChromeGlassTopEdgeOverdraw,
                 left: -homePageChromeGlassEdgeOverdraw,
                 right: -homePageChromeGlassEdgeOverdraw,
-                bottom: 0,
+                bottom: -homePageChromeGlassBottomEdgeOverdraw,
                 child: HomePageChromeGlassFill(),
               ),
             ],

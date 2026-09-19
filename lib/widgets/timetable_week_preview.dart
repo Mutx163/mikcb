@@ -251,10 +251,12 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     // Narrow isolated strips (weekday-only 40dp) would otherwise let
     // the thickness-wide edge zone flood the whole bar and smear the
     // bottom highlight into a thick white line under the weekday text —
-    // regressed twice already. Keep the bottom at the band boundary (like
-    // the home page's thin intentional sheen) and cap glass thickness
-    // proportionally so the edge highlight stays a thin sheen while the
-    // interior remains real liquid refraction — not flat gaussian blur.
+    // regressed twice already. Keep the interior real liquid refraction —
+    // not flat gaussian blur — and only cap glass thickness proportionally
+    // so the edge highlight stays a thin sheen while the refraction stays
+    // readable. The bottom edge additionally gets the same 4px overdraw the
+    // home band uses (homePageChromeGlassBottomEdgeOverdraw) so the preview
+    // reads exactly like the live band, hairline seam included.
     // Combined bands (~84dp) keep full thickness like the home sheet.
     // 薄带（≤52dp）与设置页预览里的玻璃带：把**折射位移**按带高折算收小，
     // 否则上下两条边缘折射带会占满整条带、读成一圈描边而不是「一条玻璃带」。
@@ -280,7 +282,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                   top: -homePageChromeGlassTopEdgeOverdraw,
                   left: -homePageChromeGlassEdgeOverdraw,
                   right: -homePageChromeGlassEdgeOverdraw,
-                  bottom: 0,
+                  bottom: -homePageChromeGlassBottomEdgeOverdraw,
                   child: HomePageChromeGlassFill(
                     maxRefraction: bandMaxRefraction,
                   ),
