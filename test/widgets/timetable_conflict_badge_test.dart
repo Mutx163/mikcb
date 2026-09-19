@@ -251,9 +251,9 @@ void main() {
     expect(find.text('计算机网络'), findsWidgets);
 
     // Expand the related panel so the conflicting course detail is available.
-    // 必须挑**真正点得到**的那一个：弹窗改成屏幕居中的玻璃对话框之后，它的蒙层
-    // 会盖住课卡上那枚「冲突」角标，而角标在树序上排在前面 —— 直接 `.first`
-    // 点到的是蒙层（等于点空白关弹窗），展开就测不到了。
+    // 必须挑**真正点得到**的那一个：课程弹窗自 2026-09-19 起是上游的通栏底部弹窗，
+    // 它的蒙层铺满整屏、盖住课卡上那枚「冲突」角标，而角标在树序上排在前面 ——
+    // 直接 `.first` 点到的是蒙层（等于点空白关弹窗），展开就测不到了。
     final conflictPanel = find.textContaining('冲突').hitTestable();
     expect(conflictPanel, findsWidgets);
     await tester.tap(conflictPanel.first);

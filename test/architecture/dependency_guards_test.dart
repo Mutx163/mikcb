@@ -147,10 +147,11 @@ void main() {
     //     · 形变动效期间不逐帧模糊内容与来源卡片；
     //     · 非着色器档位降离屏倍率 + 叠色合进同一张画布（见
     //       .agents/notes/implemented/process/2026-09-17-miuix-glass-offscreen-and-blend-patch.md）；
-    //     · 弹层面板材质注入点 `surfaceBuilder` + 覆盖层「蒙层之前的前置层」
-    //       `scrimUnderlay`（`MiuixGlassDialog` 也透出）—— 居中课程弹窗的
-    //       液态玻璃靠它才采得到未压暗的页面（见
-    //       .agents/notes/implemented/architecture/2026-09-19-course-popup-centered-glass-dialog.md）。
+    //     · 底部弹窗（MiuixOverlayBottomSheet / MiuixWindowBottomSheet）的面板材质
+    //       注入点 `surfaceBuilder` + 蒙层之前的前置层 `scrimUnderlay` + 蒙层色
+    //       `dimColor`，以及 Window 变体「父级重建时不在构建期标脏」的时序修复 ——
+    //       课程弹窗的液态玻璃与不采到压暗页面全靠它们（见
+    //       .agents/notes/implemented/architecture/2026-09-19-course-popup-miuix-bottom-sheet.md）。
     //   inspire_blur（Mutx163/inspire_blur，分支 mikcb/distribution-pixels-cache）
     //     · 分布图像素记忆化——否则每个新挂载的子页顶栏同步重算 674k 像素（36~49ms）。
     // 所以这里只钉「还在不在、是不是那个 fork」，不钉具体 commit：补丁迭代只该改 ref，

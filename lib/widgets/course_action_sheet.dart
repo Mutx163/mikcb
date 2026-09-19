@@ -38,10 +38,11 @@ class CourseActionPreviewItem {
       coupleKind == CoupleCourseKind.partner;
 }
 
-/// 点周视图课卡弹出的课程详情 —— **屏幕居中的 OS4 玻璃对话框**。
+/// 点周视图课卡弹出的课程详情 —— **上游的通栏底部弹窗**（Miuix `WindowBottomSheet`）。
 ///
-/// 容器走 [showOs4GlassDialog]（上游 `MiuixGlassDialog` + 我们的液态玻璃注入），
-/// 内容仍是 [CourseActionSheetBody]。2026-09-19 之前这里是贴底的 edge sheet。
+/// 容器走 [showMiuixBottomSheet]（面板材质仍是本仓液态玻璃，见
+/// `hyperosMiuixBottomSheetSurface`），内容仍是 [CourseActionSheetBody]。
+/// 2026-09-19 之前这里是我们自己的 edge sheet（`showHomeHyperosSheet`）。
 Future<void> showCourseActionSheet(
   BuildContext context, {
   required List<CourseActionPreviewItem> previewItems,
@@ -53,9 +54,9 @@ Future<void> showCourseActionSheet(
   required CourseActionHandler onAddTask,
   CourseAlarmHandler? onSetAlarm,
 }) {
-  return showOs4GlassDialog<void>(
+  return showMiuixBottomSheet<void>(
     context: context,
-    builder: (dialogContext, close) => CourseActionSheetBody(
+    builder: (sheetContext, close) => CourseActionSheetBody(
       previewItems: previewItems,
       week: week,
       onEdit: onEdit,
@@ -92,18 +93,25 @@ class CourseActionSheetBody extends StatefulWidget {
   final CourseActionHandler onAddTask;
   final CourseAlarmHandler? onSetAlarm;
 
-  /// 宿主给的收起口子（见 [Os4GlassDialogClose]）：退场动画结束才回调
+  /// 宿主给的收起口子（见 [MiuixBottomSheetClose]）：退场动画结束才回调
   /// `afterDismiss`。为 null 时（测试直接构造本组件的路径）退回
   /// `Navigator.pop()` + 立刻执行。
-  final Os4GlassDialogClose? onRequestClose;
+  final MiuixBottomSheetClose? onRequestClose;
 
   @override
   State<CourseActionSheetBody> createState() => _CourseActionSheetBodyState();
 }
 
 class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
+  final _scrollController = ScrollController();
   int _selectedIndex = 0;
   bool _relatedExpanded = false;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   void _selectCourse(int index) {
     if (index == _selectedIndex) {
@@ -113,10 +121,13 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
       _selectedIndex = index;
       _relatedExpanded = false;
     });
-    // 换到另一门相关课程时不再「回到顶部」：滚动容器在上游对话框内部
-    // （`GlassPopupPresenter` 自己包的那层 SingleChildScrollView，`primary: false`），
-    // 调用方拿不到控制器。要恢复这条行为需要给 fork 的 presenter 再加一个
-    // 滚动控制器口子，先不做。
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -127,38 +138,47 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
         if (index != _selectedIndex) index,
     ];
 
-    // 面板与滚动都交给上游对话框：它按 `sizing` 给出有界高度，内容超出时由它自己
-    // 那层 SingleChildScrollView 承担滚动（`GlassPopupPresenter` 内）。
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _CourseActionSheetContent(
-          key: ValueKey('course-action-selected-${selectedItem.course.id}'),
-          previewItem: selectedItem,
-          week: widget.week,
-          onEdit: widget.onEdit,
-          onReschedule: widget.onReschedule,
-          onDelete: widget.onDelete,
-          onSuspend: widget.onSuspend,
-          onAddTask: widget.onAddTask,
-          onSetAlarm: widget.onSetAlarm,
-          onRequestClose: widget.onRequestClose,
+    // 面板（材质 / 圆角 / 拖拽把手 / 蒙层）归上游底部弹窗；**滚动归我们** —— 上游的
+    // 内容区是 `Flexible`，会给到有界高度但不自带滚动（`enableNestedScroll` 在本版
+    // 没有消费方），所以这里自己套一层限高的滚动容器。
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.8,
+      ),
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _CourseActionSheetContent(
+              key: ValueKey('course-action-selected-${selectedItem.course.id}'),
+              previewItem: selectedItem,
+              week: widget.week,
+              onEdit: widget.onEdit,
+              onReschedule: widget.onReschedule,
+              onDelete: widget.onDelete,
+              onSuspend: widget.onSuspend,
+              onAddTask: widget.onAddTask,
+              onSetAlarm: widget.onSetAlarm,
+              onRequestClose: widget.onRequestClose,
+            ),
+            if (otherIndexes.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _RelatedCoursesPanel(
+                previewItems: widget.previewItems,
+                otherIndexes: otherIndexes,
+                week: widget.week,
+                expanded: _relatedExpanded,
+                onToggleExpanded: () {
+                  setState(() => _relatedExpanded = !_relatedExpanded);
+                },
+                onSelect: _selectCourse,
+              ),
+            ],
+          ],
         ),
-        if (otherIndexes.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _RelatedCoursesPanel(
-            previewItems: widget.previewItems,
-            otherIndexes: otherIndexes,
-            week: widget.week,
-            expanded: _relatedExpanded,
-            onToggleExpanded: () {
-              setState(() => _relatedExpanded = !_relatedExpanded);
-            },
-            onSelect: _selectCourse,
-          ),
-        ],
-      ],
+      ),
     );
   }
 }
@@ -481,14 +501,14 @@ class _CourseActionSheetContent extends StatelessWidget {
   final CourseActionHandler onSuspend;
   final CourseActionHandler onAddTask;
   final CourseAlarmHandler? onSetAlarm;
-  final Os4GlassDialogClose? onRequestClose;
+  final MiuixBottomSheetClose? onRequestClose;
 
   Course get course => previewItem.course;
 
   /// 收起弹层，并在它**真的消失之后**用宿主 context 执行 [action]。
   ///
-  /// 有宿主时由对话框的退场动画结束回调触发（不再靠 280ms 猜动画时长）；
-  /// 没有宿主（测试直接构造本组件）时退回「pop + 立刻执行」。
+  /// 有宿主（`showMiuixBottomSheet`）时由弹层的退场动画结束回调触发 —— 不再靠
+  /// 280ms 猜动画时长；没有宿主（测试直接构造本组件）时退回「pop + 立刻执行」。
   void _dismissThen(
     BuildContext context,
     void Function(BuildContext hostContext) action,

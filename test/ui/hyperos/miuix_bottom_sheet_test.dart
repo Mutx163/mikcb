@@ -8,46 +8,53 @@ import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart
 
 import '../../helpers_test_app.dart';
 
-/// 居中玻璃对话框（`os4_glass_dialog.dart`）的承载与材质契约。
+/// 上游通栏底部弹窗的承载壳（`miuix_bottom_sheet.dart`）与它的材质注入面。
 ///
-/// 它把上游**声明式**的 `MiuixGlassDialog`（常驻 + `visible` 切换）接到本仓
-/// **祈使式**的 `await showXxx(...)` 上，所以有两件事必须钉住：
-/// 1. 面板真的是我们的注入面，且**进祖先共享组捕获** —— 对话框自带压暗蒙层，
-///    不垫共享组捕获的话玻璃会把蒙层一起折进去；
-/// 2. 遮罩之外的那层捕获点确实建在蒙层之前（`UndimmedBackdropCapture` 在场）。
+/// 壳负责把上游**声明式**的 `MiuixWindowBottomSheet`（常驻 + `show` 切换、自己往根
+/// 覆盖层插 entry）接到本仓**祈使式**的 `await showXxx(...)` 上，所以有几件事必须钉住：
+/// 1. 面板真的是我们的注入面，且**进祖先共享组捕获** —— 弹窗自带压暗蒙层，不垫共享组
+///    捕获的话玻璃会把蒙层一起折进去；
+/// 2. 蒙层之前确实有捕获点（`UndimmedBackdropCapture` 在场）；
+/// 3. 收起后路由被摘掉，且「退场动画结束才跑」的后续动作确实跑了。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('对话框注入面与二级面板同口径：垫共享组捕获 + 带浮影', (tester) async {
-    late BuildContext context;
+  testWidgets('注入面：贴底玻璃 + 垫共享组捕获、不加浮影', (tester) async {
+    late BuildContext hostContext;
     await tester.pumpWidget(
       TestApp(
         home: Builder(
-          builder: (builderContext) {
-            context = builderContext;
+          builder: (context) {
+            hostContext = context;
             return const SizedBox.shrink();
           },
         ),
       ),
     );
 
-    final surface =
-        hyperosGlassDialogSurface(
-              context,
-              const MiuixGlassShape(cornerRadius: 28),
-              const SizedBox.shrink(),
-            )
-            as HyperosSelectPopupGlass;
-    expect(surface.cornerRadius, 28);
-    expect(
-      surface.useAncestorGroupCapture,
-      isTrue,
-      reason: '对话框的蒙层画在面板之前，不进共享组捕获就会把蒙层折进玻璃里',
+    await tester.pumpWidget(
+      TestApp(
+        home: hyperosMiuixBottomSheetSurface(
+          hostContext,
+          const MiuixGlassShape(cornerRadius: hyperosMiuixBottomSheetCornerRadius),
+          const SizedBox(width: 100, height: 100),
+        ),
+      ),
     );
-    expect(surface.surfaceShadow, isTrue, reason: '与其余 OS4 注入面同门禁');
+
+    final glass = tester.widget<HyperosSelectPopupGlass>(
+      find.byType(HyperosSelectPopupGlass),
+    );
+    expect(glass.cornerRadius, hyperosMiuixBottomSheetCornerRadius);
+    expect(
+      glass.useAncestorGroupCapture,
+      isTrue,
+      reason: '弹窗的蒙层画在面板之前，不进共享组捕获就会把蒙层折进玻璃里',
+    );
+    expect(glass.surfaceShadow, isFalse, reason: '贴底弹窗没有浮影（与 edge sheet 同口径）');
   });
 
-  testWidgets('真开一次：面板是注入面、蒙层之前有捕获点、外壳仍在', (tester) async {
+  testWidgets('真开一次：面板是注入面、蒙层之前有捕获点、收起后跑后续动作', (tester) async {
     var afterDismissRan = false;
     late BuildContext hostContext;
 
@@ -58,12 +65,11 @@ void main() {
             hostContext = context;
             return Center(
               child: TextButton(
-                onPressed: () => showOs4GlassDialog<void>(
+                onPressed: () => showMiuixBottomSheet<void>(
                   context: context,
-                  builder: (dialogContext, close) => TextButton(
-                    onPressed: () => close(
-                      afterDismiss: () => afterDismissRan = true,
-                    ),
+                  builder: (sheetContext, close) => TextButton(
+                    onPressed: () =>
+                        close(afterDismiss: () => afterDismissRan = true),
                     child: const Text('关闭'),
                   ),
                 ),
@@ -78,14 +84,11 @@ void main() {
     await tester.tap(find.text('打开'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(MiuixGlassDialog), findsOneWidget);
+    expect(find.byType(MiuixWindowBottomSheet), findsOneWidget);
     expect(
-      find.descendant(
-        of: find.byType(MiuixGlassDialog),
-        matching: find.byType(HyperosSelectPopupGlass),
-      ),
+      find.byType(HyperosSelectPopupGlass),
       findsOneWidget,
-      reason: '面板应当是项目自己的注入面，而不是上游内置面板',
+      reason: '面板应当是项目自己的注入面，而不是上游内置的实底面',
     );
     expect(
       find.byType(UndimmedBackdropCapture),
@@ -98,7 +101,7 @@ void main() {
     await tester.tap(find.text('关闭'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(MiuixGlassDialog), findsNothing, reason: '收起后路由也要摘掉');
+    expect(find.byType(MiuixWindowBottomSheet), findsNothing, reason: '收起后路由也要摘掉');
     expect(
       afterDismissRan,
       isTrue,
@@ -113,9 +116,9 @@ void main() {
         home: Builder(
           builder: (context) => Center(
             child: TextButton(
-              onPressed: () => showOs4GlassDialog<void>(
+              onPressed: () => showMiuixBottomSheet<void>(
                 context: context,
-                builder: (dialogContext, close) =>
+                builder: (sheetContext, close) =>
                     const SizedBox(width: 120, height: 80),
               ),
               child: const Text('打开'),
@@ -127,12 +130,12 @@ void main() {
 
     await tester.tap(find.text('打开'));
     await tester.pumpAndSettle();
-    expect(find.byType(MiuixGlassDialog), findsOneWidget);
+    expect(find.byType(MiuixWindowBottomSheet), findsOneWidget);
 
-    // 蒙层画在覆盖层最上层、且铺满整屏：点左上角必定落在面板之外。
+    // 蒙层铺满整屏、排在面板之下：点最上面必定落在面板之外。
     await tester.tapAt(const Offset(4, 4));
     await tester.pumpAndSettle();
-    expect(find.byType(MiuixGlassDialog), findsNothing);
+    expect(find.byType(MiuixWindowBottomSheet), findsNothing);
   });
 
   testWidgets('barrierDismissible: false 时点蒙层不关', (tester) async {
@@ -141,10 +144,10 @@ void main() {
         home: Builder(
           builder: (context) => Center(
             child: TextButton(
-              onPressed: () => showOs4GlassDialog<void>(
+              onPressed: () => showMiuixBottomSheet<void>(
                 context: context,
                 barrierDismissible: false,
-                builder: (dialogContext, close) =>
+                builder: (sheetContext, close) =>
                     const SizedBox(width: 120, height: 80),
               ),
               child: const Text('打开'),
@@ -159,6 +162,6 @@ void main() {
 
     await tester.tapAt(const Offset(4, 4));
     await tester.pumpAndSettle();
-    expect(find.byType(MiuixGlassDialog), findsOneWidget);
+    expect(find.byType(MiuixWindowBottomSheet), findsOneWidget);
   });
 }

@@ -58,23 +58,9 @@ Widget hyperosGlassPopupSecondarySurface(
   Widget child,
 ) => _os4GlassPopupSurface(shape, child, useAncestorGroupCapture: true);
 
-/// 居中玻璃对话框（`MiuixGlassDialog`）的注入面：与二级面板**同口径** ——
-/// 必须进祖先共享组捕获（`useAncestorGroupCapture: true`）。
-///
-/// 理由和二级面板同源，只是「压在它下面的那块玻璃」换成了**压暗蒙层**：
-/// 对话框的蒙层排在面板之前，不垫共享组捕获的话，液态面会直接采到「页面 + 黑蒙」
-/// 的合成结果，玻璃里连蒙一起折进去，读感发灰。捕获点由承载壳
-/// （`lib/ui/hyperos/os4_glass_dialog.dart`）注入的 `UndimmedBackdropCapture`
-/// 在蒙层之前建立。
-///
-/// 用它的前提是上游 `scrimUnderlay` 补丁（见 `pubspec.yaml` 的
-/// `dependency_overrides.flutter_miuix`）；只传 surfaceBuilder 而不传
-/// scrimUnderlay 时，这里会退化成「采到压暗后的页面」。
-Widget hyperosGlassDialogSurface(
-  BuildContext context,
-  ShapeBorder shape,
-  Widget child,
-) => _os4GlassPopupSurface(shape, child, useAncestorGroupCapture: true);
+// 底部弹窗（`MiuixOverlayBottomSheet` / `MiuixWindowBottomSheet`）的注入面不在这里：
+// 它要的是「贴底、只有上沿两角圆」的玻璃，且拿不到上游形状里的半径，所以连同承载壳
+// 一起放在 `miuix_bottom_sheet.dart`（`hyperosMiuixBottomSheetSurface`）。
 
 Widget _os4GlassPopupSurface(
   ShapeBorder shape,
