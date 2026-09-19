@@ -266,20 +266,40 @@ class _RenderLiquidGlass extends RenderProxyBox {
     return shader;
   }
 
+  /// 祖先链当前的等比缩放（入场变形动画期间 < 1）。
+  ///
+  /// 着色器里的坐标是**屏幕物理像素**，所以表面被祖先缩放时，它在屏幕上占据的
+  /// 范围也缩了；而 `u_area_size` 是本表面的布局尺寸，不会。两者不对齐，动画早期
+  /// 就会出现「形状还是满尺寸、面板已经缩到 15%」——面板边角落到形状之外，alpha 0
+  /// 处透出下面的压暗蒙层，读起来就是开合过程中一块块发黑（旧版第三方包为同一件
+  /// 事专门维护了一份「未缩放变换」快照）。
+  ///
+  /// 取 `getMaxScaleOnAxis`（而不是分别取 x/y）：弹层只有等比缩放，非等比下取最大
+  /// 轴至少不会把形状缩没。取不到（未 attach / 退化矩阵）时按 1 处理。
+  double _ancestorScale() {
+    if (!attached) {
+      return 1;
+    }
+    final scale = getTransformTo(null).getMaxScaleOnAxis();
+    return scale.isFinite && scale > 0 ? scale : 1;
+  }
+
   void _configure(ui.FragmentShader shader) {
     final uniforms = _uniforms ??= LiquidGlassUniforms(shader);
 
     // paint 期的全局原点（逻辑像素）——见类注释，build 期取会过期。
     final origin = localToGlobal(Offset.zero);
     final dpr = _devicePixelRatio;
-    final scaled = _style.scaledLengths(dpr);
+    // 祖先缩放：形状与所有长度都要跟着它走，否则动画期间形状与面板对不上。
+    final scale = _ancestorScale();
+    final scaled = _style.scaledLengths(dpr, scale: scale);
     final tint = _style.tint;
     final rimColor = _style.rimColor;
     final light = _style.lightDirection;
     final factor = _refractionFactor;
 
     uniforms.areaOrigin.set(origin.dx * dpr, origin.dy * dpr);
-    uniforms.areaSize.set(size.width * dpr, size.height * dpr);
+    uniforms.areaSize.set(size.width * dpr * scale, size.height * dpr * scale);
     // 视口物理尺寸：着色器用它把折射采样点铰在屏幕内（模糊扩出来的那圈没有内容，
     // 贴着屏幕边的玻璃往外采会落进去、读成黑边）。
     uniforms.viewSize.set(_viewSize.width * dpr, _viewSize.height * dpr);
@@ -289,7 +309,7 @@ class _RenderLiquidGlass extends RenderProxyBox {
     final cap = _maxRefraction;
     final cappedRefract = cap == null
         ? scaled.refract
-        : math.min(scaled.refract, cap * dpr);
+        : math.min(scaled.refract, cap * dpr * scale);
     uniforms.refract.set(
       factor == null || factor >= 1
           ? cappedRefract

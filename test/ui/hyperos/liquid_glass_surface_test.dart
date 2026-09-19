@@ -88,6 +88,14 @@ void main() {
       expect(at1.refract, 8);
       expect(at1.band, 7);
       expect(at1.rimWidth, 3);
+      // 祖先缩放（入场变形动画）也要一起乘：着色器里的坐标是屏幕物理像素，表面被
+      // 缩放时它在屏幕上占的范围也缩了，长度不跟着缩就会出现「形状满尺寸、面板
+      // 已经缩到很小」——面板角落落在形状外，透出下面的压暗蒙层（开合时发黑）。
+      final shrunk = style.scaledLengths(2, scale: 0.25);
+      expect(shrunk.radius, 6);
+      expect(shrunk.refract, 4);
+      expect(shrunk.band, 3.5);
+      expect(shrunk.rimWidth, 1.5);
     });
 
     test('折射旋钮的默认值与课程卡片液态玻璃档逐字段一致', () {

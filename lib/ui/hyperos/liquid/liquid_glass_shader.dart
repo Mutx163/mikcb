@@ -81,14 +81,23 @@ class LiquidGlassStyle {
   /// 单独抽成一个具名方法（而不是在绘制期散着乘 dpr）是为了让纯单元测试能钉住
   /// 这四则运算：着色器那条路在 `flutter test` 里根本跑不到（测试环境没有 shader
   /// filter 后端），换算错了只会在真机上表现为「圆角与折射位移整体差一个 dpr」。
+  ///
+  /// [scale] 是**祖先链当前的缩放**（入场变形动画期间 <1）。着色器里的坐标是屏幕
+  /// 物理像素，表面被祖先缩放时它在屏幕上占的范围也跟着缩，所以形状与所有长度都
+  /// 得按同一个 scale 缩 —— 不然动画早期会出现「形状还是满尺寸、面板已经缩到
+  /// 15%」，面板边角落到形状之外，alpha 0 处透出下面的压暗蒙层（开合时一块块发黑）。
   ({double radius, double refract, double band, double rimWidth}) scaledLengths(
-    double dpr,
-  ) => (
-    radius: borderRadius * dpr,
-    refract: refraction * dpr,
-    band: refractionBand * dpr,
-    rimWidth: rimWidth * dpr,
-  );
+    double dpr, {
+    double scale = 1,
+  }) {
+    final k = dpr * scale;
+    return (
+      radius: borderRadius * k,
+      refract: refraction * k,
+      band: refractionBand * k,
+      rimWidth: rimWidth * k,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
