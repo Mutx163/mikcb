@@ -495,6 +495,16 @@ void main() {
         .getTransformTo(null)
         .storage[0];
 
+    /// 面板**轮廓**（卡片本身）的绘制矩形 —— 与 [panelScale] 读的是同一棵子树
+    /// 的两个不同层：让位只缩内容时，内容那边是 0.95、轮廓这边原地不动。
+    ///
+    /// 注入面是 [HyperosSelectPopupGlass]，一级 / 二级靠 `useAncestorGroupCapture`
+    /// 区分（只有二级会进祖先共享捕获组）。
+    Finder panelSurface({required bool secondary}) => find.byWidgetPredicate(
+      (w) =>
+          w is HyperosSelectPopupGlass && w.useAncestorGroupCapture == secondary,
+    );
+
     testWidgets('「添加」行挂二级列表，其余行没有二级', (tester) async {
       await pumpMenu(tester);
 
@@ -591,6 +601,36 @@ void main() {
         primaryIndex,
         greaterThan(captureIndex),
         reason: '垫底必须排在**一级面板之前**，否则捕获点是面板自己',
+      );
+    });
+
+    testWidgets('让位只缩内容：一级卡轮廓原地不动', (tester) async {
+      // 二级面板是另一块**独立**面板（按一级「添加」那一行锚定，自己不参与让位）。
+      // 若让位连一级卡轮廓一起缩，一级卡的左边缘会往右收 10px（200 宽 × 5%）、
+      // 下边缘往上收 14px，而二级卡原地不动 —— 两块卡之间裂出一条缝，真机反馈
+      // 读成「玻璃缩小了，但下面那张实体卡没缩」（2026-09-20 实测：一级卡左边缘
+      // 200.5 → 210.5，二级卡仍是 200.5）。
+      //
+      // 所以一级卡改成**只缩内容**（`stackScalesPanel: false`，fork 补丁参数）：
+      // 轮廓原地不动、与二级卡保持原本的相对位置，「退让」的层次感由压暗交代。
+      await pumpMenu(tester);
+
+      final outlineClosed = tester.getRect(panelSurface(secondary: false));
+
+      await tester.tap(find.text('添加'));
+      await tester.pumpAndSettle();
+
+      // 内容照旧缩 5% —— 让位读起来仍是一步退让，不是没反应。
+      expect(panelScale(tester), closeTo(0.95, 2e-3));
+
+      final outline = tester.getRect(panelSurface(secondary: false));
+      expect(outline.left, closeTo(outlineClosed.left, .5));
+      expect(outline.top, closeTo(outlineClosed.top, .5));
+      expect(outline.right, closeTo(outlineClosed.right, .5));
+      expect(
+        outline.bottom,
+        closeTo(outlineClosed.bottom, .5),
+        reason: '一级卡轮廓必须原地不动：它一动，与不参与让位的二级卡之间就裂出接缝',
       );
     });
 

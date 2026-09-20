@@ -75,22 +75,27 @@ dev_dependencies:
   fake_async: ^1.3.3
 
 # 覆盖：指向 fork 上带注入点补丁的 flutter_miuix（glassy-surface 分支，基于上游 1.2.0）。
-# 补丁都是「把面板材质 / 蒙层让给调用方」的注入点：
+# 补丁都是「把面板材质 / 蒙层 / 让位手感让给调用方」的注入点：
 #   · 弹层族（popup presenter / 列表弹层等）已有的 `surfaceBuilder`；
 #   · 底部弹窗 `MiuixOverlayBottomSheet` / `MiuixWindowBottomSheet` 上的
 #     `surfaceBuilder`（child 是真实面板内容）+ `scrimUnderlay`（覆盖层里、压暗蒙层
 #     之前的前置层，覆盖层随之进 `BackdropGroup`）+ `dimColor`；
-#   · 弹层让位缩放（`stacked`）的支点可由调用方按矩形指定（`stackPivotBounds`）。
+#   · 弹层让位缩放（`stacked`）的手感与几何：`stackDuration` / `stackCurve` 换掉
+#     包内那条参数写死的让位弹簧；`stackShrinkFromAnchor` 把支点取到「离锚点最近
+#     的那个面板角」（朝锚点方向退让，而不是以面板中心）；`stackScalesPanel` 让
+#     让位只缩内容、卡片轮廓原地不动（同屏摆两块面板、边缘必须对齐时用）。
+#     另有 `stackPivotBounds` 可把支点钉到任意矩形，当前**无调用方**（钉到「添加」
+#     那一行上会让退让方向变成向左缩，用户否掉）。
 # 课程弹窗（通栏底部弹窗）用它们把面板换成本仓液态玻璃，并让玻璃采到未压暗的页面；
-# 用法与理由见 lib/ui/hyperos/miuix_bottom_sheet.dart；`stackPivotBounds` 的用法与
-# 理由见 lib/widgets/home_top_menu_popup.dart（首页菜单「添加」那一行必须原地不动）。
+# 用法与理由见 lib/ui/hyperos/miuix_bottom_sheet.dart；首页菜单的让位手感与几何见
+# lib/widgets/home_top_menu_popup.dart（向右退让 + 只缩内容，两块面板边缘对齐）。
 # **固定到 commit，不要写分支名** —— 分支名会让不同时间 / 不同机器解析到不同的那份，
 # CI 也拿不到可复现的依赖。补丁进了上游 release 后整块删掉，即回到 pub.dev。
 dependency_overrides:
   flutter_miuix:
     git:
       url: https://github.com/Mutx163/flutter_miuix.git
-      ref: a6480fec634d7cac18408343c2e41da3e620f5c6
+      ref: 9c2ec1194935cec3843a5d911df8962623af8cf4
   # inspire_blur：分布图像素记忆化——上游每个新挂载的顶栏都同步重算一张
   # 674k 像素的分布图（真机实测 36~49ms），这里按 (distribution, size) 记住像素。
   # fork 自 inspirestack/inspire_blur，分支 mikcb/distribution-pixels-cache，
