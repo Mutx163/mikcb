@@ -789,8 +789,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         final dockAppearance = FrostedAppearanceScope.of(context);
         final homePreblurSigma = resolveHomePreblurSigma(
           gaussianCardsDrive: backdropBlurOn && cardStyle.isGlass,
-          // 预模糊位图服务的是首页玻璃带/摘要卡，跟随「首页玻璃带」开关。
-          liquidGlassChrome: dockAppearance.homeBandGlassMaterial == 'liquid',
+          // 预模糊位图服务的是首页玻璃带/摘要卡。顶栏材质非「实体」即液态
+          // （2026-09-20 起只有这两档），与启动预热器同判。
+          liquidGlassChrome: dockAppearance.homeBandGlassMaterial != 'solid',
           sheetBlurSigma: HyperosBlurredHeader.blurSigmaOf(context),
           liquidGlassTunedBlur:
               (dockAppearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
@@ -800,6 +801,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         // UndimmedBackdropCapture（组内首个 filter 缓存整屏壁纸），chrome 玻璃
         // 带采样这份全尺寸背景。此前首页玻璃带只能采样自己 band bounds 的背
         // 景，折射位移在带边被钳制，观感与预览（组内全尺寸采样）不一致。
+        //
+        // ⚠️ 这套结构搭好之后，**带那一侧一直没接上开关**
+        // （`HomePageChromeGlassFill.useAncestorBackdropGroup` 默认 false），于是
+        // "折射在带边被钳制"照旧发生，并从那条唯一可见的下边读出来：打开磨砂强度后
+        // 星期栏底边一条黑线（用户 2026-09-20 实测）。2026-09-20 才把开关接上，
+        // 见 `widgets/home_page_region_blur.dart` 的 `HomePageContinuousChromeFrostedOverlay`。
         final Widget homeStack = BackdropGroup(
           child: Stack(
             fit: StackFit.expand,

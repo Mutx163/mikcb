@@ -55,34 +55,23 @@ SurfaceMaterial _advancedSurfaceMaterial(
 
 /// 首页玻璃带（标题栏 + 星期栏共用一条带）。
 ///
-/// 材质独立自由选择（2026-09-12）：`progressive` / `gaussian` / `soft` /
-/// `liquid` / `solid`，与全局玻璃模式和「作用范围」开关无关。「顶栏玻璃」
-/// 关 → 不渲染；柔光/液态沿用模糊总开关的 useBlur 门（关或系统降级 → 实
-/// 体衬底，与渲染侧 build 同口径）。
+/// 材质独立自由选择（2026-09-12）：**2026-09-20 起口径收成 `liquid` / `solid`
+/// 两档**（与外观编辑器里那两个选项逐字一致），所以这里是「非实体即液态」——
+/// 存量 progressive / gaussian / soft 在设置层已归到液态
+/// （`TimetableSettings.sanitizeHomeBandGlassMaterial`），这里再兜一层，保证
+/// 「各表面当前材质」地图卡显示的材质与渲染分支同口径。「顶栏玻璃」关 →
+/// 不渲染；液态沿用模糊总开关的 useBlur 门（关或系统降级 → 实体衬底，与渲染
+/// 侧 build 同口径）。
 SurfaceMaterial homeBandSurfaceMaterial(TimetableSettings s) {
   if (!s.homePageHeaderBlurEnabled) {
     return SurfaceMaterial.off;
   }
-  switch (s.homeBandGlassMaterial) {
-    case 'liquid':
-    case 'soft':
-      if (!s.frostedBlurEnabled) {
-        return SurfaceMaterial.solid;
-      }
-      return s.homeBandGlassMaterial == 'liquid'
-          ? SurfaceMaterial.liquidGlass
-          : SurfaceMaterial.softGlass;
-    case 'gaussian':
-      return s.frostedBlurEnabled
-          ? SurfaceMaterial.frostGaussian
-          : SurfaceMaterial.solid;
-    case 'solid':
-      return SurfaceMaterial.solid;
-    default:
-      return s.frostedBlurEnabled
-          ? SurfaceMaterial.frostProgressive
-          : SurfaceMaterial.solid;
+  if (s.homeBandGlassMaterial == 'solid') {
+    return SurfaceMaterial.solid;
   }
+  return s.frostedBlurEnabled
+      ? SurfaceMaterial.liquidGlass
+      : SurfaceMaterial.solid;
 }
 
 /// 子页顶栏（设置等 HyperosSubpage 外壳）。永不走高级材质，风格始终生效。

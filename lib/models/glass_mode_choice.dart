@@ -65,15 +65,22 @@ TimetableSettings applyGlassModeChoice(
   ),
 };
 
-/// 写回「首页顶栏玻璃带材质」（独立自由选择，2026-09-12：渐进磨砂 / 高斯
-/// 磨砂 / 柔光 / 液态 / 实体）。
+/// 写回「首页顶栏玻璃带材质」（独立自由选择，2026-09-12）。
 ///
-/// 顶栏材质不再跟随全局玻璃模式或「作用范围」开关；柔光/液态只通过各自
-/// 的范围开关作用于弹窗、玻璃坞等其他表面。
+/// 2026-09-20 起这个轴只有「液态玻璃 / 实体」两档（与外观编辑器里那两个选项
+/// 逐字一致）：写入口一律过一遍 [TimetableSettings.sanitizeHomeBandGlassMaterial]，
+/// 非 `solid` 的取值（含历史中间档）都落到液态，免得界面与渲染再次错位。
+///
+/// 顶栏材质不跟随全局玻璃模式或「作用范围」开关；液态只通过各自的范围开关
+/// 作用于弹窗、玻璃坞等其他表面。
 TimetableSettings applyHomeBandGlassMaterial(
   TimetableSettings settings,
   String material,
-) => settings.copyWith(homeBandGlassMaterial: material);
+) => settings.copyWith(
+  homeBandGlassMaterial: TimetableSettings.sanitizeHomeBandGlassMaterial(
+    material,
+  ),
+);
 
 /// 写回「子页顶栏模糊风格」（渐进模糊 / 高斯模糊）。
 ///

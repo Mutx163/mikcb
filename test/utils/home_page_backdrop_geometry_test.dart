@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_overlay_header.dart';
 import 'package:university_timetable/utils/home_page_background.dart';
 import 'package:university_timetable/widgets/home_page_region_blur.dart';
 
@@ -74,27 +75,33 @@ void main() {
       );
     });
 
-    test('frost needs one settle frame; advanced band needs two', () {
+    test('实体档需一帧稳定；非实体档（含存量中间档）需两帧', () {
       expect(
         homePageChromeSettleFrameCount(
           hasBackdrop: true,
           frostedBlurEnabled: true,
           headerBlurEnabled: true,
           weekdayBarBlurEnabled: false,
-          homeBandGlassMaterial: 'progressive',
+          homeBandGlassMaterial: 'solid',
         ),
         1,
       );
-      expect(
-        homePageChromeSettleFrameCount(
-          hasBackdrop: true,
-          frostedBlurEnabled: true,
-          headerBlurEnabled: false,
-          weekdayBarBlurEnabled: true,
-          homeBandGlassMaterial: 'liquid',
-        ),
-        2,
-      );
+      // 判据是「非实体」：存量 progressive / gaussian / soft 渲染的也是液态玻璃
+      // （见 HomePageChromeGlassFill.build），稳定帧数必须与液态一致，否则壁纸
+      // 预模糊还没落地就先出图，玻璃带会闪一帧。
+      for (final material in ['liquid', 'progressive', 'gaussian', 'soft']) {
+        expect(
+          homePageChromeSettleFrameCount(
+            hasBackdrop: true,
+            frostedBlurEnabled: true,
+            headerBlurEnabled: false,
+            weekdayBarBlurEnabled: true,
+            homeBandGlassMaterial: material,
+          ),
+          2,
+          reason: material,
+        );
+      }
     });
   });
 
@@ -456,24 +463,60 @@ void main() {
   });
 
   group('homePageChromeGlassLayout', () {
-    test(
-      'header+weekday band matches chrome height (gap is layout padding)',
-      () {
-        const safeTop = 48.0;
-        const weekday = 40.0;
-        final layout = homePageChromeGlassLayout(
-          safeAreaTop: safeTop,
-          includeStatusBar: true,
-          headerBlurEnabled: true,
-          weekdayBarBlurEnabled: true,
-          weekdayBarHeight: weekday,
-        );
-        expect(layout.top, 0);
-        expect(layout.height, safeTop + homePageHeaderContentHeight + weekday);
-      },
-    );
+    test('header+weekday band covers the chrome-grid clearance too', () {
+      // 页面在星期行与课表之间留了 `homePageFrostedRegionSeamOverlap` 的间隙；
+      // 带子必须把它一起盖住，否则那一小条完全没有玻璃（磨砂一开读成一条暗线）。
+      const safeTop = 48.0;
+      const weekday = 40.0;
+      final layout = homePageChromeGlassLayout(
+        safeAreaTop: safeTop,
+        includeStatusBar: true,
+        headerBlurEnabled: true,
+        weekdayBarBlurEnabled: true,
+        weekdayBarHeight: weekday,
+      );
+      expect(layout.top, 0);
+      expect(
+        layout.height,
+        safeTop +
+            homePageHeaderContentHeight +
+            weekday +
+            homePageFrostedRegionSeamOverlap,
+      );
+    });
 
-    test('weekday-only band starts below title bar', () {
+    test('带底正好落在课表第一行的上沿', () {
+      // 页面自己怎么排的（`_buildWeekPage`）：星期行 → 间隙 → 课表。所以课表上沿 =
+      // 标题行底 + 星期行高 + 间隙。带底比它高一点，那一小条就没玻璃、磨砂一开
+      // 读成一条横贯屏幕的暗线；比它低就是压进课表。
+      const safeTop = 48.0;
+      const weekday = 40.0;
+      final layout = homePageChromeGlassLayout(
+        safeAreaTop: safeTop,
+        includeStatusBar: true,
+        headerBlurEnabled: true,
+        weekdayBarBlurEnabled: true,
+        weekdayBarHeight: weekday,
+      );
+      const gridTop =
+          safeTop +
+          homePageHeaderContentHeight +
+          weekday +
+          homePageFrostedRegionSeamOverlap;
+      expect(layout.top + layout.height, gridTop);
+    });
+
+    test('标题行常量必须等于根标题栏的最小高度', () {
+      // 上一条几何断言的**前提**：带子把标题行当成 `homePageHeaderContentHeight`
+      // 高，而页面真正排出来的是根标题栏自己的高度。两者一旦不一致，带底就不再
+      // 落在课表上沿（2026-09-20 的真因就是 46 vs 44 —— 差出来的 2px 正好是那条
+      // 没有玻璃的横条）。这里只钉最小高度；标题内容比它高时两者仍会分叉，属已知
+      // 边界（首页标题行固定是一行 24px 文字 + 动作钮，不到 44）。
+      const header = HyperosRootHeader(title: SizedBox.shrink());
+      expect(homePageHeaderContentHeight, header.minHeight);
+    });
+
+    test('weekday-only band starts below title bar and covers the clearance', () {
       const safeTop = 48.0;
       const weekday = 40.0;
       final layout = homePageChromeGlassLayout(
@@ -484,7 +527,24 @@ void main() {
         weekdayBarHeight: weekday,
       );
       expect(layout.top, safeTop + homePageHeaderContentHeight);
-      expect(layout.height, weekday);
+      expect(
+        layout.height,
+        weekday + homePageFrostedRegionSeamOverlap,
+        reason: '只有星期行时同样要盖住它下面那段间隙',
+      );
+    });
+
+    test('标题行单独成带时不带那段间隙', () {
+      // 没有星期行 ⇒ 页面也不留那段间隙，带子到标题行底为止。
+      const safeTop = 48.0;
+      final layout = homePageChromeGlassLayout(
+        safeAreaTop: safeTop,
+        includeStatusBar: true,
+        headerBlurEnabled: true,
+        weekdayBarBlurEnabled: false,
+        weekdayBarHeight: 40,
+      );
+      expect(layout.height, safeTop + homePageHeaderContentHeight);
     });
 
     test(
@@ -499,9 +559,11 @@ void main() {
       () {
         // Must exceed the maximum user-tunable thickness (40) so the shape
         // corners (the source of diagonal "triangle" fringe / picture-frame
-        // streaks) stay outside the visible band at any thickness. The
-        // top/bottom edges intentionally stay at the band so thickness
-        // tuning keeps its visible edge refraction.
+        // streaks) stay outside the visible band at any thickness. Only the
+        // left/right edges are pushed this far: the bottom edge deliberately
+        // stays on the band (overhang 0) so its refraction + highlight ring
+        // stays inside the visible region, and the top edge only needs to
+        // clear the refraction band (see homePageChromeGlassVerticalOverhang).
         expect(homePageChromeGlassEdgeOverdraw, greaterThanOrEqualTo(40.0));
       },
     );

@@ -466,10 +466,13 @@ class _AdvancedMaterialSettingsScreenState
     _enqueuePersist(next);
   }
 
-  /// 当前草稿是否在用渐进（渐变）模糊：首页玻璃带选 progressive，或子页顶栏
-  /// 走 inspire 风格。命中才在设置页露出档位段，避免给用不上的用户加噪音。
+  /// 当前草稿是否在用渐进（渐变）模糊：子页顶栏走 inspire 风格。
+  ///
+  /// 首页玻璃带 2026-09-20 起只有「液态 / 实体」两档（见
+  /// `TimetableSettings.sanitizeHomeBandGlassMaterial`），顶栏不再有渐进档，
+  /// 所以判据只剩子页顶栏这一条。命中才在设置页露出档位段，避免给用不上的
+  /// 用户加噪音。
   bool get _usesProgressiveBlur =>
-      _draft.homeBandGlassMaterial == 'progressive' ||
       _draft.subpageHeaderBlurStyle == HeaderBlurStyle.inspire;
 
   /// 渐进模糊滑杆统一写入口：任意滑杆拖动都落

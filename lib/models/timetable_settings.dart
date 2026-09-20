@@ -1282,22 +1282,27 @@ class TimetableSettings {
   /// 「课程页面」选的档位，所以保留这一个开关。
   static const bool defaultLiquidGlassDockEnabled = true;
 
-  /// 首页顶栏玻璃带材质：`progressive` / `gaussian` / `soft` / `liquid` /
-  /// `solid`（渐进磨砂 / 高斯磨砂 / 柔光 / 液态 / 实体）。
-  static const String defaultHomeBandGlassMaterial = 'progressive';
-  static const List<String> homeBandGlassMaterialValues = [
-    'progressive',
-    'gaussian',
-    'soft',
-    'liquid',
-    'solid',
-  ];
+  /// 首页顶栏玻璃带材质：`liquid` / `solid`（液态玻璃 / 实体）。
+  ///
+  /// **2026-09-20 口径收成两档**，与外观编辑器里那个开关的两个选项逐字一致
+  /// （`settings_appearance_editor.dart` 的「首页顶栏玻璃」分段控件）。历史上是
+  /// progressive / gaussian / soft / liquid / solid 五档，但界面早就只提供
+  /// 「实体 / 液态玻璃」两个选项，并且把中间三档**显示**成液态 —— 于是存量用户
+  /// 界面上看到「液态玻璃」被选中、实际渲染的却是渐进磨砂（只有模糊 + 衬底，
+  /// 没有折射也没有边光那一圈），真机口径就是「顶栏没有玻璃效果」而底栏（走全局
+  /// 材质）却有（用户 2026-09-20 报的正是这个）。现在**存储层就归到液态**，
+  /// 界面 / 渲染 / 预设三层同口径：非实体即液态。
+  ///
+  /// 降级不靠这个值：液态档在引擎没有 shader 后端时会自己回落到
+  /// `HomePageChromeGlassFill` 的 `frostBand()`（就是原来渐进磨砂那条链路），
+  /// 所以把中间三档并进液态不会让任何设备变得更差。
+  static const String defaultHomeBandGlassMaterial = 'liquid';
+  static const List<String> homeBandGlassMaterialValues = ['liquid', 'solid'];
 
-  /// 非法值兜底到默认渐进档。
+  /// 非 `solid` 一律归到液态（含 progressive / gaussian / soft 三个存量档与
+  /// 一切非法值）：界面只承诺「实体 / 液态玻璃」两档，存储与渲染必须同口径。
   static String sanitizeHomeBandGlassMaterial(String? value) =>
-      homeBandGlassMaterialValues.contains(value)
-      ? value!
-      : defaultHomeBandGlassMaterial;
+      value == 'solid' ? 'solid' : 'liquid';
   static const double defaultPageTransitionSpeed = 1;
   static const double minPageTransitionSpeed = 0.5;
   static const double maxPageTransitionSpeed = 2.5;
@@ -2053,6 +2058,10 @@ class TimetableSettings {
     // - 旧「作用范围 → 首页玻璃带」开且全局为柔光/液态 → 顶栏跟随该高级材质；
     // - 其余 → 旧 homeChromeGlassMaterial 镜像（与 headerBlurStyle 同步写）
     //   映射为磨砂两档。
+    //
+    // ⚠️ 2026-09-20 起下面算出的 soft / gaussian / progressive 都会被
+    // [sanitizeHomeBandGlassMaterial] 统一归到液态（口径收成「实体 / 液态」两档）。
+    // 分支保留是为了让「当年怎么迁的」可读，不要再按它去区分渲染。
     String legacyHomeBandGlassMaterial;
     if (legacyChromeLiquid) {
       legacyHomeBandGlassMaterial = 'liquid';
@@ -2546,7 +2555,9 @@ class TimetableSettings {
         (json['subpageHeaderBlurStyle'] ?? json['headerBlurStyle']) as String?,
       ),
       // 首页顶栏材质：独立自由选择（2026-09-12）。新键缺失时按旧轴迁移
-      //（见上方 legacyHomeBandGlassMaterial），非法值兜底渐进档。
+      //（见上方 legacyHomeBandGlassMaterial）。2026-09-20 起口径只有
+      //「液态 / 实体」两档：存量 progressive / gaussian / soft 与一切非法值
+      // 都在 sanitize 里归到液态，与界面那两个选项同口径。
       homeBandGlassMaterial: sanitizeHomeBandGlassMaterial(
         (json['homeBandGlassMaterial'] as String?) ??
             legacyHomeBandGlassMaterial,

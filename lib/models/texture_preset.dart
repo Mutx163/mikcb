@@ -13,7 +13,7 @@ import '../ui/hyperos/frosted/frosted_appearance.dart' show FrostedGlassMode;
 /// 字段集」派生显示，应用后用户改任何一项即回落「自定义」。
 ///
 /// 边界（既有拍板，全部保留）：
-/// - 首页顶栏材质（五档自由选）与子页顶栏风格独立，预设只写初值不合并；
+/// - 首页顶栏材质与子页顶栏风格独立，预设只写初值不合并；
 /// - 单一全局材质轴的结构不变（不恢复每表面独立材质，首页顶栏是唯一的例外，
 ///   2026-09-12 拍板）；
 /// - 子页顶栏永不走液态；
@@ -21,15 +21,19 @@ import '../ui/hyperos/frosted/frosted_appearance.dart' show FrostedGlassMode;
 ///
 /// 2026-09-19 起「作用范围」只剩**底栏**一个开关（弹窗家族锁标准档，四个
 /// 开关已删），所以预设只在坞这一档上还写范围：全液态开坞、轻雾柔光关坞。
+///
+/// 2026-09-20 起首页顶栏材质口径收成**「液态 / 实体」两档**（与外观编辑器里
+/// 那两个选项逐字一致，见 `TimetableSettings.sanitizeHomeBandGlassMaterial`），
+/// 所以预设写穿的顶栏值只有这两个：中间三档（渐进/高斯/柔光）已归到液态。
 enum TexturePreset {
-  /// 经典磨砂——出厂默认档：全局高斯 + 现行默认作用范围 + 渐进/渐进 +
+  /// 经典磨砂——出厂默认档：全局高斯 + 现行默认作用范围 + 液态顶栏 +
   /// 实体卡。作用是「一键回家」。
   classicFrost,
 
   /// 全液态——全局液态 + 坞作用范围开 + 液态标准预设 + 高斯卡片。
   fullLiquid,
 
-  /// 轻雾柔光——全局柔光 + 坞保持磨砂，柔光标准预设 + 实体卡。
+  /// 轻雾柔光——全局柔光 + 坞保持磨砂，柔光标准预设 + 液态顶栏 + 实体卡。
   softMist,
 
   /// 极简实体——模糊总开关关闭 + 实体卡片。低性能设备 / 护眼的最小态；
@@ -70,7 +74,7 @@ TimetableSettings applyTexturePreset(
     liquidGlassDockEnabled: false,
     softGlassPreset: SoftGlassPreset.standard,
     softGlassTuning: SoftGlassPreset.standard.recommendedTuning,
-    homeBandGlassMaterial: 'soft',
+    homeBandGlassMaterial: 'liquid',
     courseCardSurfaceStyle: CourseCardSurfaceStyle.solid,
   ),
   TexturePreset.minimalSolid => settings.copyWith(
@@ -111,13 +115,14 @@ TexturePreset? texturePresetOf(TimetableSettings s) {
       s.courseCardSurfaceStyle == CourseCardSurfaceStyle.gaussian) {
     return TexturePreset.fullLiquid;
   }
-  // 轻雾柔光：全局柔光 + 底栏保持磨砂 + 顶栏柔光 + 柔光标准预设 + 实体卡。
+  // 轻雾柔光：全局柔光 + 底栏保持磨砂 + 顶栏液态 + 柔光标准预设 + 实体卡。
+  // （顶栏 2026-09-20 起只有「液态 / 实体」两档，柔光档不再可选，故写液态。）
   if (s.frostedBlurEnabled &&
       s.frostedGlassMode == FrostedGlassMode.softGlass &&
       !s.liquidGlassDockEnabled &&
       s.softGlassPreset == SoftGlassPreset.standard &&
       s.softGlassTuning == SoftGlassPreset.standard.recommendedTuning &&
-      s.homeBandGlassMaterial == 'soft' &&
+      s.homeBandGlassMaterial == 'liquid' &&
       s.courseCardSurfaceStyle == CourseCardSurfaceStyle.solid) {
     return TexturePreset.softMist;
   }

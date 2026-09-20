@@ -14,8 +14,12 @@ const kDefaultFrostedSheetBarrierAlpha = 0.20;
 /// 顶栏玻璃带的默认模糊材质：渐进模糊（inspire_blur）。
 const kDefaultHeaderBlurStyle = HeaderBlurStyle.inspire;
 
-/// 首页顶栏玻璃带默认材质：渐进磨砂。独立自由选择，不随全局玻璃模式。
-const kDefaultHomeBandGlassMaterial = 'progressive';
+/// 首页顶栏玻璃带默认材质：液态玻璃。独立自由选择，不随全局玻璃模式。
+///
+/// 2026-09-20 起这一档只有「液态玻璃 / 实体」两个取值（见
+/// `TimetableSettings.sanitizeHomeBandGlassMaterial`）：界面早就只给这两个选项，
+/// 存量中间档在读取时一并归到液态，避免「界面显示液态、实际渲染渐进磨砂」。
+const kDefaultHomeBandGlassMaterial = 'liquid';
 
 /// 玻璃坞（含坞内圆钮）要不要走高级材质（「课表页面 → 玻璃 / 材质」里保留的唯一作用范围开关）。
 ///
@@ -111,8 +115,9 @@ class FrostedAppearance {
   /// 材质，此风格始终生效。
   final HeaderBlurStyle subpageHeaderBlurStyle;
 
-  /// 首页顶栏玻璃带材质，独立自由选择（2026-09-12）：`progressive` /
-  /// `gaussian` / `soft` / `liquid` / `solid`。
+  /// 首页顶栏玻璃带材质，独立自由选择（2026-09-12）：`liquid` / `solid`
+  /// （2026-09-20 起收成两档，与外观编辑器里那两个选项逐字一致，见
+  /// [kDefaultHomeBandGlassMaterial]）。
   ///
   /// 不跟随 [glassMode] 或「作用范围」开关——柔光/液态只作用弹窗、玻璃坞
   /// 等其他表面，顶栏选什么渲染什么。

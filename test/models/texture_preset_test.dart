@@ -111,7 +111,7 @@ void main() {
       expect(applied.subpageHeaderBlurStyle, HeaderBlurStyle.gaussian);
     });
 
-    test('轻雾柔光：坞保持磨砂，柔光标准预设 + 实体卡', () {
+    test('轻雾柔光：坞保持磨砂，柔光标准预设 + 液态顶栏 + 实体卡', () {
       final applied = applyTexturePreset(
         TimetableSettings.defaults(),
         TexturePreset.softMist,
@@ -121,7 +121,8 @@ void main() {
       expect(applied.softGlassPreset, SoftGlassPreset.standard);
       expect(applied.softGlassTuning,
           SoftGlassPreset.standard.recommendedTuning);
-      expect(applied.homeBandGlassMaterial, 'soft');
+      // 顶栏 2026-09-20 起只有「液态 / 实体」两档，柔光档已不可选。
+      expect(applied.homeBandGlassMaterial, 'liquid');
       expect(applied.courseCardSurfaceStyle, CourseCardSurfaceStyle.solid);
     });
 

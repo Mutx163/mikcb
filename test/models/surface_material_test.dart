@@ -1,9 +1,10 @@
 // 各表面当前材质的推导口径测试（与渲染侧门控同口径）。
 //
 // 关键口径：
-// - 首页顶栏材质独立自由五档（2026-09-12）：渐进/高斯/柔光/液态/实体，
-//   不随全局玻璃模式或「作用范围」开关；柔光/液态沿用模糊总开关的
-//   useBlur 门（关 → 实体衬底）；
+// - 首页顶栏材质独立自由选择，2026-09-20 起收成**「液态 / 实体」两档**
+//   （与外观编辑器里那两个选项逐字一致）：非实体即液态，存量渐进/高斯/柔光
+//   在设置层已归到液态，这里再兜一层；液态沿用模糊总开关的 useBlur 门
+//   （关 → 实体衬底）；
 // - 弹窗家族（底部弹窗与对话框 / 对话式全屏选择面板 / 下拉小弹窗 / 壁纸选点
 //   按钮）自 2026-09-19 起**恒为液态玻璃**：锁标准档、不再看任何用户设置，
 //   四个「作用范围」开关连同它们的分派逻辑一并删除（用户口径：「不允许用户
@@ -18,10 +19,10 @@ import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart'
     show FrostedGlassMode;
 
 void main() {
-  group('出厂默认（全局磨砂 + 顶栏渐进磨砂）', () {
+  group('出厂默认（全局磨砂 + 顶栏液态玻璃）', () {
     final s = TimetableSettings.defaults();
-    test('各表面落在基础磨砂系，弹窗家族已是液态玻璃', () {
-      expect(homeBandSurfaceMaterial(s), SurfaceMaterial.frostProgressive);
+    test('顶栏已按界面承诺落在液态玻璃，其余表面落在基础磨砂系', () {
+      expect(homeBandSurfaceMaterial(s), SurfaceMaterial.liquidGlass);
       expect(subpageHeaderSurfaceMaterial(s), SurfaceMaterial.frostProgressive);
       expect(dockSurfaceMaterial(s), SurfaceMaterial.frost);
       // 弹窗家族锁标准档：全局还是磨砂，它们也已经是液态玻璃。
@@ -30,14 +31,16 @@ void main() {
     });
   });
 
-  group('首页顶栏材质五档（独立于全局）', () {
-    test('模糊开：五档逐一映射', () {
+  group('首页顶栏材质两档（独立于全局）', () {
+    test('模糊开：两档逐一映射，存量中间档也读成液态', () {
       final cases = {
-        'progressive': SurfaceMaterial.frostProgressive,
-        'gaussian': SurfaceMaterial.frostGaussian,
-        'soft': SurfaceMaterial.softGlass,
         'liquid': SurfaceMaterial.liquidGlass,
         'solid': SurfaceMaterial.solid,
+        // 存量中间档：界面早就把它们显示成液态，推导必须同口径，
+        // 否则「各表面当前材质」地图卡会显示成用户根本选不到的档位。
+        'progressive': SurfaceMaterial.liquidGlass,
+        'gaussian': SurfaceMaterial.liquidGlass,
+        'soft': SurfaceMaterial.liquidGlass,
       };
       cases.forEach((material, expected) {
         final s = TimetableSettings.defaults().copyWith(
@@ -47,12 +50,18 @@ void main() {
       });
     });
 
-    test('模糊关：柔光/液态回落实体，其余仍是磨砂系', () {
-      final s = TimetableSettings.defaults().copyWith(
+    test('模糊关：液态回落实体，实体档仍是实体', () {
+      final liquid = TimetableSettings.defaults().copyWith(
         frostedBlurEnabled: false,
         homeBandGlassMaterial: 'liquid',
       );
-      expect(homeBandSurfaceMaterial(s), SurfaceMaterial.solid);
+      expect(homeBandSurfaceMaterial(liquid), SurfaceMaterial.solid);
+
+      final solid = TimetableSettings.defaults().copyWith(
+        frostedBlurEnabled: false,
+        homeBandGlassMaterial: 'solid',
+      );
+      expect(homeBandSurfaceMaterial(solid), SurfaceMaterial.solid);
     });
 
     test('「顶栏玻璃」开关关 → 已关闭', () {
@@ -64,12 +73,12 @@ void main() {
     });
 
     test('顶栏材质不随全局玻璃模式走（自由选择的回归钉）', () {
-      // 全局柔光 + 顶栏高斯磨砂：顶栏是磨砂，不是柔光。
+      // 全局柔光 + 顶栏液态：顶栏是液态，不是柔光。
       final s = TimetableSettings.defaults().copyWith(
         frostedGlassMode: FrostedGlassMode.softGlass,
-        homeBandGlassMaterial: 'gaussian',
+        homeBandGlassMaterial: 'liquid',
       );
-      expect(homeBandSurfaceMaterial(s), SurfaceMaterial.frostGaussian);
+      expect(homeBandSurfaceMaterial(s), SurfaceMaterial.liquidGlass);
       // 弹窗家族仍是液态玻璃（锁标准档，与全局模式无关）。
       expect(pinnedChromeSurfaceMaterial(), SurfaceMaterial.liquidGlass);
     });

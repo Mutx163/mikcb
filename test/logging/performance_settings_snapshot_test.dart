@@ -27,10 +27,11 @@ void main() {
     test('八个表面各自的材质都写进快照', () {
       final snapshot = snapshotOf(TimetableSettings.defaults());
 
-      // 顶栏走渐进模糊；坞是基础磨砂（跟随全局档位）；弹窗家族那四个读数
-      // 2026-09-19 起锁标准档，恒为液态玻璃（与用户设置无关）；出厂卡片是
-      // 实体（高斯卡要用户显式开）。
-      expect(snapshot['surfaceHomeBand'], 'frostProgressive');
+      // 顶栏 2026-09-20 起只有「液态 / 实体」两档，出厂默认是液态玻璃；
+      // 子页顶栏是**另一根轴**（`subpageHeaderBlurStyle`），仍是渐进模糊；坞是
+      // 基础磨砂（跟随全局档位）；弹窗家族那四个读数 2026-09-19 起锁标准档，
+      // 恒为液态玻璃（与用户设置无关）；出厂卡片是实体（高斯卡要用户显式开）。
+      expect(snapshot['surfaceHomeBand'], 'liquidGlass');
       expect(snapshot['surfaceSubpageHeader'], 'frostProgressive');
       expect(snapshot['surfaceDock'], 'frost');
       expect(snapshot['surfaceSheetDialog'], 'liquidGlass');

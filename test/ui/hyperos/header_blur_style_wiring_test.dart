@@ -1,10 +1,13 @@
 // 首页顶栏材质与子页顶栏风格的消费侧接线回归测试。
 //
-// 口径（2026-09-12 拍板：首页顶栏材质独立自由五档）：
-// - HomePageChromeGlassFill 按材质分派：progressive → inspire 渐进衰减、
-//   gaussian → 均匀高斯、solid → 实底衬底；soft/liquid 自带模糊，VM 下
-//   liveBlurSupported=false 走实底回落（真机高级面由柔光/液态的既有
-//   widget 测试覆盖），但无论环境如何都不得渲染出磨砂模糊样式；
+// 口径（2026-09-20 收口：首页顶栏材质只有「液态玻璃 / 实体」两档，与外观编辑器里
+// 那两个选项逐字一致）：
+// - 存量 progressive / gaussian / soft 在设置层就归到液态
+//   （`TimetableSettings.sanitizeHomeBandGlassMaterial`），渲染侧再兜一层
+//   「非 solid 即液态」——本文件钉的就是这一层：四个取值必须渲染出**同一棵树**，
+//   不允许任何一档再分叉出"自己的磨砂样式"（用户 2026-09-20 报的「顶栏没有玻璃
+//   效果」= 界面显示液态、实际渲染渐进磨砂）；
+// - 实体 → 不透明纯色条；
 // - 子页顶栏外壳（HyperosFrostedHeaderShell）读 subpageHeaderBlurStyleOf，
 //   永不走高级材质；
 // - inspire 高斯档必须用 UniformDistribution：包的 extent 语义是「衰减到
@@ -65,22 +68,40 @@ void main() {
   });
 
   group('首页玻璃带按材质分派（HomePageChromeGlassFill）', () {
-    testWidgets('渐进磨砂 → inspire 渐进衰减', (tester) async {
-      await _pumpFill(tester, 'progressive');
+    testWidgets('非实体一律走液态玻璃：存量档与 liquid 渲染逐字段相同', (tester) async {
+      // 界面只有「液态玻璃 / 实体」两项，渲染侧按「非 solid 即液态」兜底。
+      // 这条钉的是**四个取值不许分叉**：谁再给 progressive / gaussian / soft 接
+      // 一条自己的磨砂分支，这里的 blurStyle / tint 对比就会红。
+      //
+      // VM liveBlurSupported=false ⇒ 液态玻璃按降级口径回落到衬底（半透明水洗、
+      // 不渲染磨砂模糊）。真实玻璃面由液态玻璃自己的 widget 测试覆盖，这里只钉
+      // 「分派到哪一支」。
+      FrostedHeaderBackground? liquid;
+      for (final material in ['liquid', 'progressive', 'gaussian', 'soft']) {
+        await _pumpFill(tester, material);
+        final bg = tester.widget<FrostedHeaderBackground>(
+          find.byType(FrostedHeaderBackground),
+        );
+        expect(bg.blurEnabled, isFalse, reason: material);
+        if (liquid == null) {
+          liquid = bg;
+          continue;
+        }
+        expect(bg.blurStyle, liquid.blurStyle, reason: material);
+        expect(bg.blurSigma, liquid.blurSigma, reason: material);
+        expect(bg.tint, liquid.tint, reason: material);
+      }
 
-      final bg = tester.widget<FrostedHeaderBackground>(
-        find.byType(FrostedHeaderBackground),
+      // 降级态是**均匀的半透明水洗**（`ColoredBox` + alpha < 1），不是实体档那条
+      // 不透明实心条，也不是会切出横向硬边的渐变衬底。
+      final wash = tester.widget<ColoredBox>(
+        find.descendant(
+          of: find.byType(HomePageChromeGlassFill),
+          matching: find.byType(ColoredBox),
+        ),
       );
-      expect(bg.blurStyle, HeaderBlurStyle.inspire);
-    });
-
-    testWidgets('高斯磨砂 → uniform 高斯档（真机语义）', (tester) async {
-      await _pumpFill(tester, 'gaussian');
-
-      final bg = tester.widget<FrostedHeaderBackground>(
-        find.byType(FrostedHeaderBackground),
-      );
-      expect(bg.blurStyle, HeaderBlurStyle.gaussian);
+      expect(wash.color.a, lessThan(1.0));
+      expect(wash.color, liquid!.tint);
     });
 
     testWidgets('实体 → 不透明纯色条，完全遮住壁纸', (tester) async {
@@ -99,17 +120,28 @@ void main() {
       expect(box.color.a, 1.0);
     });
 
-    testWidgets('柔光/液态在 VM 降级为实底，绝不渲染磨砂模糊样式', (tester) async {
-      // VM liveBlurSupported=false：高级面按降级口径回落实底。这里钉的是
-      // 「高级材质不带磨砂模糊样式」——若有人把 soft/liquid 误接进磨砂分
-      // 支，blurStyle/blurEnabled 断言会失败。
-      for (final material in ['soft', 'liquid']) {
-        await _pumpFill(tester, material);
-        final bg = tester.widget<FrostedHeaderBackground>(
-          find.byType(FrostedHeaderBackground),
+    test('只有实体档不吃外溢：存量档与液态同口径（上边必须推出可见区）', () {
+      // 外溢判据必须与渲染分支同源。曾按字面 `material == 'liquid'` 判：存量
+      // progressive 会渲染液态玻璃却拿到 (0, 0) 外溢 —— 上边不再推出可见区，
+      // 真机那条发丝线立刻回来。
+      const band = 22.0;
+      const rim = 3.0;
+      for (final material in ['liquid', 'progressive', 'gaussian', 'soft']) {
+        final overhang = homePageChromeGlassVerticalOverhang(
+          material: material,
+          refractionBand: band,
+          rimWidth: rim,
         );
-        expect(bg.blurEnabled, isFalse, reason: material);
+        expect(overhang.top, greaterThanOrEqualTo(band), reason: material);
+        expect(overhang.bottom, 0.0, reason: material);
       }
+      final solid = homePageChromeGlassVerticalOverhang(
+        material: 'solid',
+        refractionBand: band,
+        rimWidth: rim,
+      );
+      expect(solid.top, 0.0);
+      expect(solid.bottom, 0.0);
     });
   });
 

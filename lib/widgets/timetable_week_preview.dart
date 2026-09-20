@@ -224,7 +224,11 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
   /// wallpaper behind it and responds to every glass tuning knob (light
   /// intensity, thickness, visibility, …), with the specular fringe the old
   /// pre-blurred stand-in could not render.
-  List<Widget>? _buildChromeGlassBand({required double appHeaderHeight}) {
+  List<Widget>? _buildChromeGlassBand({
+    required BuildContext context,
+    required double appHeaderHeight,
+    required double gridClearance,
+  }) {
     final hasHeaderBand =
         settings.homePageHeaderBlurEnabled && appHeaderHeight > 0;
     final hasWeekdayBand = settings.homePageWeekdayBarBlurEnabled;
@@ -232,17 +236,20 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       return null;
     }
 
+    // 与首页同口径（见 `homePageChromeGlassLayout`）：页面在星期行与课表之间留的
+    // 那段间隙也要被玻璃盖住。带子停在间隙之上，那一小条就完全没有玻璃，磨砂一开
+    // 会读成一条横贯屏幕的暗线（真机 2026-09-20：首页与预览都报过）。
     final double top;
     final double height;
     if (hasHeaderBand && hasWeekdayBand) {
       top = 0;
-      height = appHeaderHeight + _headerHeight;
+      height = appHeaderHeight + _headerHeight + gridClearance;
     } else if (hasHeaderBand) {
       top = 0;
       height = appHeaderHeight;
     } else {
       top = appHeaderHeight;
-      height = _headerHeight;
+      height = _headerHeight + gridClearance;
     }
     if (height <= 0) {
       return null;
@@ -254,17 +261,27 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     // regressed twice already. Keep the interior real liquid refraction —
     // not flat gaussian blur — and only cap glass thickness proportionally
     // so the edge highlight stays a thin sheen while the refraction stays
-    // readable. The bottom edge additionally gets the same 4px overdraw the
-    // home band uses (homePageChromeGlassBottomEdgeOverdraw) so the preview
-    // reads exactly like the live band, hairline seam included.
+    // readable.
+    //
+    // 上下外溢与首页那条带**同源同口径**：走
+    // [homePageChromeGlassVerticalOverhangOf] —— 液态玻璃**上边**按用户的「作用带宽度」
+    // 加够（那条边朝外采样会落到可见区外/状态栏遮罩里）；**下边 0**（与底栏药丸同口径，
+    // 让折射曲线走完、边光那一圈也留在可见区里，见
+    // `homePageChromeGlassBottomEdgeOverdraw`），渐进 / 高斯两条边都是 0。左右仍是固定
+    // 的 48px（把液态玻璃的形状圆角推出可见区）。
+    //
+    // ⚠️ 下边外溢一旦 > 0，可见区里就只剩被截断的后半截位移曲线（边界上从
+    // `profile(外溢)` 直接掉到 0 ⇒ 读成一条线），而且边光带宽 2.1 < 外溢时那一圈也整条
+    // 被推出可见区（真机口径「没有黑线但也没有任何玻璃」就是这么来的）。**别再动它。**
     // Combined bands (~84dp) keep full thickness like the home sheet.
+    final overhang = homePageChromeGlassVerticalOverhangOf(context);
     // 薄带（≤52dp）与设置页预览里的玻璃带：把**折射位移**按带高折算收小，
     // 否则上下两条边缘折射带会占满整条带、读成一圈描边而不是「一条玻璃带」。
     // 与旧版「按厚度折算」是同一个几何意图，只是量纲换成了折射位移：
     // 旧厚度上限 40 → 窄带封顶 8~14、预览封顶 22（55%）；折射量程 0~20，
     // 故窄带沿用 8~14（默认折射 8 不被误压），预览按同比例取 11。
     // Combined bands (~84dp) keep full displacement like the home sheet.
-    final double? bandMaxRefraction = height <= 52
+    final double? effectiveMaxRefraction = height <= 52
         ? (height * 0.28).clamp(8.0, 14.0)
         : (isSettingsPreview ? 11.0 : null);
     return [
@@ -279,12 +296,29 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 Positioned(
-                  top: -homePageChromeGlassTopEdgeOverdraw,
+                  top: -overhang.top,
                   left: -homePageChromeGlassEdgeOverdraw,
                   right: -homePageChromeGlassEdgeOverdraw,
-                  bottom: -homePageChromeGlassBottomEdgeOverdraw,
-                  child: HomePageChromeGlassFill(
-                    maxRefraction: bandMaxRefraction,
+                  bottom: -overhang.bottom,
+                  // 进页 / 退页转场期间必须让它逐帧重画：转场外壳把整页包进了重绘边界，
+                  // 滑动时页面只换图层偏移、不重画，而玻璃的形状是按 paint 期的屏幕坐标
+                  // 算的 —— 不重画就会偏，形状那条藏在可见区外的直边会扫进带里，读作
+                  // 一根细竖线（用户 2026-09-20 报的就是这个）。详见该部件的类注释。
+                  child: HomePageChromeGlassTransitionRepaint(
+                    child: HomePageChromeGlassFill(
+                      maxRefraction: effectiveMaxRefraction,
+                      // ⚠️ 采祖先组那份整屏捕获（2026-09-20 修，与首页那条带同步）。
+                      //
+                      // 本条带上下两条横边**都在可见区附近**（首页那条的上边被状态栏埋掉），
+                      // 所以带级采样下模糊/折射在带边"钳在带自己的边上"会读成
+                      // 一条深色发丝线 —— 真机现象：设置页预览里**上下各一条线**。
+                      //
+                      // 组捕获本来就是为这件事搭的（见上面 `UndimmedBackdropCapture` 的注释：
+                      // "so the chrome band's glass below can sample beyond its own narrow bounds
+                      // without clamping against the band edges into 'picture frame' streaks"），
+                      // 只是这个开关一直没接上。
+                      useAncestorBackdropGroup: true,
+                    ),
                   ),
                 ),
               ],
@@ -491,7 +525,9 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                       const Positioned.fill(child: UndimmedBackdropCapture()),
                     if (hasBackdrop)
                       ...?_buildChromeGlassBand(
+                        context: context,
                         appHeaderHeight: appHeaderHeight,
+                        gridClearance: chromeGridClearance,
                       ),
                     Column(
                       children: [
