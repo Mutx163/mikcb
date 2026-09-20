@@ -90,6 +90,7 @@ local/
 
 # 审查输出
 reviews/
+_reviews/
 .adversarial-review/
 progress.md
 .review_changed_files.txt
@@ -105,6 +106,9 @@ coverage/
 
 # 临时分析输出（dart analyze 结果转储）
 analyze_*.txt
+
+# 临时诊断用例（下划线前缀：量尺寸 / 复现现场，用完即删，不入库）
+test/**/_debug_*_test.dart
 
 # 一次性工作记录与审查脚本
 docs/reference/changelog-2026-07-29-worktree.md
