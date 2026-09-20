@@ -1064,7 +1064,6 @@ class _RenderPreblurredFill extends RenderBox {
     final uniforms = _uniforms ??= _CourseGlassUniforms(shader);
     final tint = glass.tint;
     final rim = glass.rimColor;
-    final light = glass.lightDirection;
 
     // 纹理左上角在**本 box 局部坐标**里的位置：着色器按局部坐标算 uv，
     // 而 paintDest 是在父坐标系里。
@@ -1081,7 +1080,6 @@ class _RenderPreblurredFill extends RenderBox {
     uniforms.rimColor.set(rim.r, rim.g, rim.b);
     uniforms.rim.set(glass.rimStrength);
     uniforms.rimWidth.set(glass.rimWidth);
-    uniforms.lightDir.set(light.dx, light.dy);
 
     shader.setImageSampler(0, image);
 
@@ -1117,8 +1115,7 @@ class _CourseGlassUniforms {
       edgePow = shader.getUniformFloat('u_edge_pow'),
       rimColor = shader.getUniformVec3('u_rim_color'),
       rim = shader.getUniformFloat('u_rim'),
-      rimWidth = shader.getUniformFloat('u_rim_width'),
-      lightDir = shader.getUniformVec2('u_light_dir');
+      rimWidth = shader.getUniformFloat('u_rim_width');
 
   final ui.UniformVec2Slot size;
   final ui.UniformVec2Slot texOrigin;
@@ -1131,7 +1128,6 @@ class _CourseGlassUniforms {
   final ui.UniformVec3Slot rimColor;
   final ui.UniformFloatSlot rim;
   final ui.UniformFloatSlot rimWidth;
-  final ui.UniformVec2Slot lightDir;
 }
 
 /// 校验着色器与 Dart 侧的 uniform 名字对得上，测试专用。

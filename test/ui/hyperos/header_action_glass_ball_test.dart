@@ -1,10 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderFollowerLayer;
 import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
 
 import '../../helpers_test_app.dart';
+
+/// 球那层的显隐开关（[FHeaderActionBall] 自己那个 Visibility）。
+///
+/// 断言读它、而不是读「球在不在树上」：球的契约是**留着但不画**（摘掉会连带
+/// 销毁玻璃面状态与采样区登记，重新挂载时第一帧会闪一下），所以「不画」必须
+/// 表现为 `visible: false`，不能表现为节点消失。
+Visibility _ballVisibility(WidgetTester tester) => tester.widget<Visibility>(
+  find.ancestor(
+    of: find.byType(HyperosSelectPopupGlass),
+    matching: find.byType(Visibility),
+  ),
+);
 
 /// 首页顶栏「更多」「爱心」那颗**常驻玻璃球**的契约。
 ///
@@ -148,6 +161,115 @@ void main() {
           .showWhenUnlinked,
       isFalse,
       reason: '没有 leader 时不能画在布局位置（Stack 左上角）',
+    );
+    // 开关只是手段，行为才是契约：没有 leader 的这一帧必须真的不画。
+    // （上面那条只钉了开关，正好漏掉「开关管不到的情形」，见下面那条用例。）
+    expect(
+      _ballVisibility(tester).visible,
+      isFalse,
+      reason: '这一帧的坐标不可信，球必须不画',
+    );
+  });
+
+  testWidgets('follow 链没解析出来时也不画：此时"球在哪"的答案是布局位置', (tester) async {
+    // ⚠️ 这条钉的是 2026-09-20 真机反馈「右上角那颗圈圈跑到左上角」的机制。
+    // `showWhenUnlinked: false` 只覆盖「没有 leader」；而**链路没解析出来的任何
+    // 一帧**里，这颗球对外报的坐标都会退化成它的**布局位置** —— 在首页那颗球上
+    // 就是屏幕左上角（它是 `Stack` 的左上角对齐子节点）。两条路都通到那儿：
+    //
+    // * 绘制侧：`FollowerLayer.addToScene` 在 `_lastTransform == null` 时画的
+    //   就是 `unlinkedOffset`（= 布局位置）；
+    // * 几何侧：`RenderFollowerLayer.getCurrentTransform()` 在「没有 layer /
+    //   算不出变换」时返回**单位阵**，`applyPaintTransform` 拿它当变换 —— 所有
+    //   按它取屏幕坐标的绘制（玻璃面算采样区矩形 / 几何 uniform）都会算成左上
+    //   角，而且算错的结果会被登记或缓存住，链路恢复了也不会自己回位。
+    //
+    // 所以这条用例做两件事：①把「问位置会答到屏幕左上角」这个危险本身钉下来；
+    // ②钉住「这种帧里球必须不画」。
+    final link = LayerLink();
+    await tester.pumpWidget(
+      scope(
+        // 与首页同构：球是 Stack 的左上角对齐子节点 ⇒ 布局位置 = 屏幕左上角。
+        child: Stack(
+          children: [
+            FHeaderActionBall(
+              link: link,
+              icon: const Icon(Icons.more_vert_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final follower = tester.renderObject<RenderFollowerLayer>(
+      find.byType(CompositedTransformFollower),
+    );
+    expect(link.leader, isNull, reason: '这一帧没有锚点');
+    expect(
+      follower.layer?.getLastTransform(),
+      isNull,
+      reason: '上游契约：没接上 leader（或带退化矩阵）时变换取不到',
+    );
+    // 危险本身：变换取不到 ⇒ 用 getRect 这条与 `localToGlobal` 完全相同的链
+    // 问位置，答的是**布局位置 = 屏幕左上角**。
+    expect(
+      tester.getTopLeft(find.byType(HyperosSelectPopupGlass)),
+      Offset.zero,
+      reason: '链路没解析时，这颗球对外报的坐标就是屏幕左上角',
+    );
+
+    // ②这种帧里必须不画 —— 仍然是"留着但不画"（采样区登记保持有效，不走会
+    // 闪一下的重新挂载那条路）。
+    expect(
+      _ballVisibility(tester).visible,
+      isFalse,
+      reason: '坐标不可信的一帧必须不画：宁可少画，绝不能画到屏幕角上',
+    );
+  });
+
+  testWidgets('对照：链路正常时球照画（保护不能误伤）', (tester) async {
+    // 与上一条成对：判据只对"链路没解析"生效。正常状态下 layer 与变换都在，
+    // 球照常可见 —— 否则这条保护会把球整颗藏掉。
+    final link = LayerLink();
+    await tester.pumpWidget(
+      scope(
+        child: Stack(
+          children: [
+            Positioned(
+              left: 200,
+              top: 30,
+              child: CompositedTransformTarget(
+                link: link,
+                child: const FHeaderAction(
+                  icon: SizedBox(width: 24, height: 24),
+                  semanticsLabel: '更多',
+                ),
+              ),
+            ),
+            FHeaderActionBall(
+              link: link,
+              icon: const Icon(Icons.more_vert_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final follower = tester.renderObject<RenderFollowerLayer>(
+      find.byType(CompositedTransformFollower),
+    );
+    expect(link.leader, isNotNull, reason: '锚点在树上');
+    expect(
+      follower.layer?.getLastTransform(),
+      isNotNull,
+      reason: '链路正常时变换必须取得到，否则保护会误伤',
+    );
+    expect(
+      _ballVisibility(tester).visible,
+      isTrue,
+      reason: '链路正常时球必须照画',
     );
   });
 

@@ -16,9 +16,9 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
   /// 「课程卡片」：它们染的不是应用，而是课表页和课卡。导航形态 /
   /// 玻璃坞 / 首页标题等结构性设置已迁到「首页与导航」。
   ///
-  /// 材质（质感方案 / 玻璃模式 / 材质预览 / 高级材质入口 / 高斯滑杆 /
-  /// 首页顶栏材质 / 子页顶栏风格 / 各表面材质地图）2026-09-19 整体迁到
-  /// 「课表页面」——理由同背景：它染的是课表那一页，不是应用。
+  /// 材质（质感方案 / 玻璃模式 / 高斯滑杆 / 高级材质入口 / 首页顶栏
+  /// 材质 / 子页顶栏风格 / 各表面材质地图）2026-09-19 迁「课表页面」、同日
+  /// 第五轮再并入「外观编辑」页的材质面板——预览区就是微缩首页本身。
   static const _appearanceSectionCount = 4;
 
   late final TimetableProvider _timetableProvider;

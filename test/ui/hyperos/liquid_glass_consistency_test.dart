@@ -50,7 +50,6 @@ void main() {
       expect(small.blurSigma, large.blurSigma);
       expect(small.tint, large.tint);
       expect(small.rimColor, large.rimColor);
-      expect(small.lightDirection, large.lightDirection);
       expect(small.refraction, tuning.refraction);
       expect(small.blurSigma, tuning.blurSigma);
     });

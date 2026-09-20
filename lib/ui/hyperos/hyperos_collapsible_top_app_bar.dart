@@ -1450,7 +1450,16 @@ class _HyperosCollapsibleTopAppBarState
           Positioned.fill(
             child: ClipRect(
               child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+                // ⚠️ `tileMode` 必须显式给 clamp。默认（unspecified → decal）会把
+                // 模糊结果在**离边约 3σ** 的带里淡成**透明黑**，而这条带的底边就
+                // 落在星期栏下面 —— 真机现象：打开磨砂强度后，星期栏底下横着一条
+                // 黑线，宽度随模糊量走、调到 0 就消失（用户 2026-09-20 反馈）。
+                // 同一条规则与修法见 liquid_glass_surface.dart 的同一处注释。
+                filter: ui.ImageFilter.blur(
+                  sigmaX: sigma,
+                  sigmaY: sigma,
+                  tileMode: TileMode.clamp,
+                ),
                 child: ColoredBox(
                   color: backgroundColor.withValues(
                     alpha: widget.blurTintAlpha,

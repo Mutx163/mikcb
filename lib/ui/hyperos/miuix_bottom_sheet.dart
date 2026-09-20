@@ -6,7 +6,7 @@ import '../../utils/frame_perf_probe.dart';
 import 'hyperos_blurred_header.dart';
 import 'hyperos_popup_glass.dart';
 import 'hyperos_sheet.dart'
-    show HyperosFrostedPanelScope, HyperosHostedSheetScope, hyperosEdgeSheetBottomOverdraw;
+    show HyperosFrostedPanelScope, HyperosHostedSheetScope;
 import 'liquid/liquid_glass_surface.dart';
 
 /// 面板圆角：直接取上游默认值。
@@ -15,6 +15,21 @@ import 'liquid/liquid_glass_surface.dart';
 /// 而弹窗本身用默认值，所以写成「引用上游常量」而不是字面量 28，改上游时两边一起走。
 const double hyperosMiuixBottomSheetCornerRadius =
     MiuixBottomSheetDefaults.cornerRadius;
+
+/// 玻璃在**底边**往外多铺的逻辑像素（几何外溢，见 [hyperosMiuixBottomSheetSurface]）。
+///
+/// 底边比其它三条边多铺：底角在裁剪上是**直角**，而材质（含降级用的磨砂 / 实底）
+/// 只能画**正圆角** —— 要让材质那个圆心在 `(r − k, H + k − r)` 的圆盖住直角角点
+/// `(0, H)`，需要 `√2 × (r − k) ≤ r` → `k ≥ (1 − 1/√2) × r`，r = 28 时 = 8.2，取 **9**。
+///
+/// 底边铺到 9 是**无代价的**：面板底边就贴在屏幕最下沿，那一圈本来就在屏幕外。
+/// 上沿与左右不外溢（材料边界与裁剪同一条线）。
+///
+/// 2026-09-20：原先上沿那条"贯屏长直边上的浅色线条"是靠给直段做**边缘观感淡出**
+/// （`topRunFade`）压掉的；同批把材质的边光从「受光方向性」改成**一圈均匀**之后，
+/// 上沿不再比其它三条边亮，那个补丁连同它的 uniform 一起删掉了 —— 留着反而会在
+/// 直段与圆角的切点处切出一截接缝（用户报的"暗带在切点处戛然而止"）。
+const double hyperosMiuixBottomSheetGlassBottomOverdraw = 9;
 
 /// 请求收起底部弹窗。
 ///
@@ -200,9 +215,60 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
 const double hyperosMiuixBottomSheetContentBottomGap = 16;
 
 /// 把上游底部弹窗的实底面板换成**本仓贴底液态玻璃**：上沿两角按
-/// [hyperosMiuixBottomSheetCornerRadius] 圆角，底边外溢
-/// [hyperosEdgeSheetBottomOverdraw] 像素再被形状裁掉 —— 与 `HyperosSheetFrame`
-/// 的 edge 面板同一套做法（否则液态玻璃贴着屏幕底那条直边会露出一道 1px 亮边）。
+/// [hyperosMiuixBottomSheetCornerRadius] 圆角，上沿与左右**不外溢**（材料边界与裁剪
+/// 同一条线），底边往外铺 [hyperosMiuixBottomSheetGlassBottomOverdraw]（9，为了盖住
+/// 直角底角）。
+///
+/// ## 轮廓用**和材质同一条曲线**裁
+///
+/// 上游自己那个形状是私有类 `_TopSquircleBorder`：三次贝塞尔画的角，比同半径正圆
+/// 更接近直角；而我们的材质只画正圆角。拿它当裁剪，圆角处两条曲线最大差 **1.35px**，
+/// 那一条缝里没有玻璃、透出压暗过的页面 —— 真机上就是「外框一个圆角、里面还有一个
+/// 更小的圆角」。所以裁剪改用**材质画的那条曲线**（上沿两角正圆角、底边直边），
+/// 「外面裁的」与「材质画的」是同一条线，缝从根上没有了。
+/// 代价：面板上沿两角的轮廓与上游那条曲线最多差 1.35px（肉眼看不出来），
+/// `shape` 参数因此**不再参与裁剪**（半径仍从 [hyperosMiuixBottomSheetCornerRadius]
+/// 出，上游改半径这边跟着走）。
+///
+/// ## 上沿那条线：**全部交给材质，这块面板不再自带任何材质参数**
+///
+/// 材质画在边界上的那一圈在这块面板上有两种读法：**圆角上**是"玻璃的反光边"（用户口径：
+/// 圆角位置处理得非常好），**两个上角之间那条贯屏长直边**上是一条线（用户口径：顶部有
+/// 浅色线条）。前后十几轮都在参数上打转（整圈推走、只推峰值、压折射、给直段做局部
+/// 淡出、把高光收成发丝），直到 2026-09-20 去读参考实现 NexioSchedule 才把病根找齐：
+///
+/// 1. **方向性**：那边的边光一直是**一圈均匀**的（`EdgeLightStyle.Uniform`，alpha 只按
+///    "离边多远"算），这边的边光按 `dot(法线, 光来向)` 加权 —— 上沿恰好是被照得最亮的
+///    那条边（0.87 vs 下沿 0.35，差 2.9 倍），在长直边上就成了一条线。
+/// 2. **截面**：那边的边光是「贴边一小段满亮度平台 + 向内 smoothstep 羽化」，这边是
+///    「贴边最亮、往里二次衰减」—— 峰值正好压在抗锯齿的半像素过渡带里，圆角上读出锯齿。
+///
+/// 两条都已从材质层面解决（见两个 `.frag` 的文件头）。原先给直段做的 `topRunFade` 局部
+/// 淡出、以及这里一度给长直边加的 `maxRefraction` 折射上限，**都是补方向性那场病的药，
+/// 已同批删掉** —— 留着会让这块面板与右上角那个菜单弹窗（同属弹窗家族、锁同一档）的
+/// 边缘观感分叉，而用户的口径是「**和右上角卡片观感一致**」。
+///
+/// 于是现在这块面板**没有任何自己的材质参数**：只提供几何（圆角、底边外溢）与
+/// [LiquidGlassRole.pinnedChrome] 这个作用域，参数全从材质那一个出口出。这正是
+/// `LiquidGlassSurface` 类注释里那条硬规则要的样子 —— 以后要动边缘观感，动材质，
+/// 不要再在这块面板上开参数口子。
+///
+/// ## 底边外溢 9px
+///
+/// 底边两角在裁剪上是**直角**，材质却是正圆角 —— 不外溢的话两个底角会各缺一小块
+/// （`k ≥ (1 − 1/√2) × r` ⇒ 9）。它贴在屏幕最下沿，推出去没有任何代价。降级材质
+/// （磨砂 / 实底）与玻璃面共用同一个矩形，所以它们的底角也一起被盖住。
+///
+/// ## 浮影：与右上角那个菜单弹窗**同源**
+///
+/// 面板外面衬一层 [HyperosGlassShadow]（数值、单层浮影都跟弹层家族完全一样）。为什么必须
+/// 有：用户 2026-09-20 对比右上角菜单弹窗时指出「这块看起来明显不一样」—— 那个弹窗是
+/// `surfaceShadow: true`（浮在页面上），而贴底弹窗原来换上来的实底面板从来不带浮影。
+/// 少了这层，面板读起来是"贴在页面上的一块"，边缘也就没有"受力"的那种感觉。
+///
+/// 浮影必须包在 `ClipRRect` **外面**（阴影本来就落在面板轮廓之外，被裁掉就等于没有）；
+/// 形状用与面板一致的「上沿两角圆、底边直」。左右与下方贴在屏幕边上，实际只看得到上沿
+/// 那条淡淡的暗边 —— 那正是它要交代的"这是浮在页面之上的一层玻璃"。
 ///
 /// 材质分派直接复用弹层族的 [HyperosSelectPopupGlass]（`pinnedChrome` 液态玻璃 +
 /// 磨砂 / 实底回落），所以技术 / 系统门禁下的降级路径与其它弹层同源。
@@ -213,24 +279,32 @@ Widget hyperosMiuixBottomSheetSurface(
   ShapeBorder shape,
   Widget child,
 ) {
-  return ClipPath(
-    // 用上游算好的形状裁：上沿两角是它的 squircle 曲线，底边是直边。
-    clipper: ShapeBorderClipper(shape: shape),
-    child: Stack(
-      children: [
+  return HyperosGlassShadow.wrap(
+    borderRadius: const BorderRadius.vertical(
+      top: Radius.circular(hyperosMiuixBottomSheetCornerRadius),
+    ),
+    child: ClipRRect(
+      // 与材质**同一条**曲线（`LiquidGlassSurface.borderRadius` 是同一个常量）：
+      // 上沿两角圆、底边直。用上游那条贝塞尔曲线裁会在圆角处差 1.35px（见上）。
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(hyperosMiuixBottomSheetCornerRadius),
+      ),
+      child: Stack(
+        children: [
         const Positioned(
           top: 0,
           left: 0,
           right: 0,
-          bottom: -hyperosEdgeSheetBottomOverdraw,
-          child: HyperosSelectPopupGlass(
-            cornerRadius: hyperosMiuixBottomSheetCornerRadius,
-            useAncestorGroupCapture: true,
-            child: SizedBox.expand(),
+          bottom: -hyperosMiuixBottomSheetGlassBottomOverdraw,
+            child: HyperosSelectPopupGlass(
+              cornerRadius: hyperosMiuixBottomSheetCornerRadius,
+              useAncestorGroupCapture: true,
+              child: SizedBox.expand(),
+            ),
           ),
-        ),
-        child,
-      ],
+          child,
+        ],
+      ),
     ),
   );
 }

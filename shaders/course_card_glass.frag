@@ -6,7 +6,8 @@
 // 与「高斯模糊」档的分工：
 //   * 高斯档只把背景糊掉，卡片读作「磨砂塑料」；
 //   * 这里额外按圆角 SDF 把边缘附近的采样点朝卡片外侧推开，形成真实玻璃那种
-//     「边缘把背景掰弯」的透镜感，再叠一条带方向的边缘高光。
+//     「边缘把背景掰弯」的透镜感，再叠一条**只落在转角上**的边缘高光（2026-09-20
+//     与 glass_surface_refraction.frag 同口径：去掉方向性、按边界曲率加权）。
 //
 // 性能口径（这是这个 shader 存在的理由）：输入的 u_texture 是**整屏唯一一份**
 // 预模糊壁纸（PreblurredWallpaperCache 出图，全部卡片共用同一张 ui.Image）。
@@ -43,21 +44,24 @@ uniform float u_radius;
 uniform vec4 u_tint;
 
 // 折射：u_band 是作用带宽度，u_refract 是边缘处的最大位移，
-// u_edge_pow 控制位移沿边缘上升的陡缓（越大越集中在最外圈）。
+// u_edge_pow 是圆弧截面之上的陡缓指数（÷2.5 后参与，2.5 = 纯圆弧）。
 uniform float u_refract;
 uniform float u_band;
 uniform float u_edge_pow;
 
-// 边缘高光：颜色 + 强度 + 带宽 + 光来向（卡片局部坐标，y 向下）。
+// 边缘高光：颜色 + 强度 + 带宽。**一圈均匀**，不看法线朝向（与 glass_surface_refraction.frag
+// 同口径：2026-09-20 去掉方向性，长直边与圆角天然一致）。
 uniform vec3 u_rim_color;
 uniform float u_rim;
 uniform float u_rim_width;
-uniform vec2 u_light_dir;
 
 // 圆角矩形有符号距离场：内部为负、边界为 0、外部为正。
-float roundedBoxSDF(vec2 p, vec2 halfSize, float r) {
+//
+// `q` 是中间量（`abs(p) - halfSize + r`）：边光的"转角度"要读它（见 `main()`），
+// 所以一并交出去，别让两处各算一遍（改一处忘一处）。
+float roundedBoxSDF(vec2 p, vec2 halfSize, float r, out vec2 q) {
   r = min(r, min(halfSize.x, halfSize.y));
-  vec2 q = abs(p) - halfSize + r;
+  q = abs(p) - halfSize + r;
   return min(max(q.x, q.y), 0.0) + length(max(q, vec2(0.0))) - r;
 }
 
@@ -66,7 +70,9 @@ void main() {
   vec2 halfSize = u_size * 0.5;
   vec2 centered = p - halfSize;
 
-  float sd = roundedBoxSDF(centered, halfSize, u_radius);
+  // q 交给下面的边光判"这一段边界是不是圆弧"（见边光那段）。
+  vec2 q;
+  float sd = roundedBoxSDF(centered, halfSize, u_radius, q);
 
   // 抗锯齿：SDF 在边界 1px 内线性过渡。完全在形状外直接丢弃。
   float coverage = clamp(0.5 - sd, 0.0, 1.0);
@@ -76,9 +82,10 @@ void main() {
   }
 
   // SDF 梯度 = 外法线。用有限差分算，角上自然过渡，不用分支。
+  vec2 qGrad;
   vec2 grad = vec2(
-    roundedBoxSDF(centered + vec2(1.0, 0.0), halfSize, u_radius) - sd,
-    roundedBoxSDF(centered + vec2(0.0, 1.0), halfSize, u_radius) - sd
+    roundedBoxSDF(centered + vec2(1.0, 0.0), halfSize, u_radius, qGrad) - sd,
+    roundedBoxSDF(centered + vec2(0.0, 1.0), halfSize, u_radius, qGrad) - sd
   );
   float gradLen = length(grad);
   vec2 normal = gradLen > 1e-5 ? grad / gradLen : vec2(0.0, -1.0);
@@ -87,10 +94,14 @@ void main() {
   float depth = max(-sd, 0.0);
 
   // 折射位移：只在 u_band 以内生效，向外推开采样点 = 把卡片外更远处的内容
-  // 拉到边缘，读作凸透镜边缘的放大。
+  // 拉到边缘，读作凸透镜边缘的放大。截面是**圆弧** `circleMap(e) = 1-√(1-e²)`
+  // （Kyant0 Backdrop / iOS 26 同款，厚玻璃板倒圆角的截面），与全局液态玻璃
+  // 表面那份逐字同源——u_edge_pow 除以默认值 2.5 后作为圆弧之上的陡缓指数，
+  // 默认档恰好是纯圆弧。改截面必须两份 .frag 同步改，否则两边观感分叉。
   float band = max(u_band, 1e-3);
   float edge = clamp(1.0 - depth / band, 0.0, 1.0);
-  float push = u_refract * pow(edge, max(u_edge_pow, 1e-3));
+  float profile = 1.0 - sqrt(max(1.0 - edge * edge, 0.0));
+  float push = u_refract * pow(profile, max(u_edge_pow, 1e-3) * 0.4);
 
   vec2 sampleLocal = p + normal * push;
   vec2 uv = (sampleLocal - u_tex_origin) /
@@ -102,11 +113,25 @@ void main() {
   // 染色（先混色再加高光，高光才不会被 tint 压掉）。
   vec3 tinted = mix(base, u_tint.rgb, clamp(u_tint.a, 0.0, 1.0));
 
-  // 边缘高光：按法线与光来向的夹角加权，左上亮、右下暗，
-  // 这样玻璃才有「受光方向」而不是一圈均匀描边。
-  float rimBand = clamp(1.0 - depth / max(u_rim_width, 1e-3), 0.0, 1.0);
-  float facing = clamp(dot(normal, normalize(u_light_dir)), 0.0, 1.0);
-  float rim = u_rim * rimBand * rimBand * mix(0.35, 1.0, facing);
+  // 边缘高光：**只交代转角，不交代长直边**（与 glass_surface_refraction.frag 同口径，
+  // 2026-09-20 第三轮）。截面是「峰在带内」的鼓包：贴边那一格落在抗锯齿的半像素过渡
+  // 带里（coverage 从 0.5 起算），峰值压在那里会让亮线的亮度随边界相位跳变 —— 直边
+  // 看不出来，斜着的圆角上就是一排锯齿。权重按 SDF 中间量 q 的较小者算
+  // （`smoothstep(-w, 0, min(q.x, q.y))`）：圆角弧上为正、长直段上越来越负，于是
+  // 圆角满档、长直段归零，中间 w 内平滑过渡。圆 / 球两个分量恒非负 ⇒ 整圈满档。
+  // w 取 1.5 × 圆角半径。改一处必须两处一起改。
+  //
+  // ⚠️ 与 glass_surface_refraction.frag 的**唯一**差别：那边多一个
+  // `u_rim_corner_only`（细长条走整圈均匀、方正的大面板只留转角），这一份**没有**
+  // —— 卡片永远是方正的小格（长短边比 ≤ 1.6），按那条推导恒为「只留转角」；而卡片
+  // 的直边只有 50 多像素、转角外那点过渡几乎盖满整条边，观感与「整圈均匀」无异。
+  // 别为了两边对称硬塞一个恒为 1 的旋钮。真出现细长的卡片（长短边比 > 2）时，
+  // 再把那个 uniform 接过来。
+  float rimT = clamp(depth / max(u_rim_width, 1e-3), 0.0, 1.0);
+  float rimBand =
+      smoothstep(0.0, 0.35, rimT) * (1.0 - smoothstep(0.35, 1.0, rimT));
+  float cornerW = max(u_radius * 1.5, 2.0);
+  float rim = u_rim * rimBand * smoothstep(-cornerW, 0.0, min(q.x, q.y));
   vec3 lit = tinted + u_rim_color * rim;
 
   // 预乘 alpha 输出。

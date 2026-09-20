@@ -5,6 +5,8 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 // 捕获点（`UndimmedBackdropCapture`）住在液态玻璃那一层，桶文件没导出它 ——
 // 这里按文件直取，与 `hyperos_sheet.dart` 用法一致。
 import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
+// 回落材质（磨砂）：桶文件没导出，按文件直取。
+import 'package:university_timetable/ui/hyperos/soft_glass/stable_frosted_surface.dart';
 
 import '../../helpers_test_app.dart';
 
@@ -51,7 +53,226 @@ void main() {
       isTrue,
       reason: '弹窗的蒙层画在面板之前，不进共享组捕获就会把蒙层折进玻璃里',
     );
-    expect(glass.surfaceShadow, isFalse, reason: '贴底弹窗没有浮影（与 edge sheet 同口径）');
+    expect(glass.surfaceShadow, isFalse, reason: '浮影由注入面在 ClipRRect 外面自己衬（见下一条），玻璃面自己那层要关掉，否则叠两层');
+  });
+
+  testWidgets('注入面：衬一层与右上角菜单弹窗**同源**的浮影（画在裁剪之外）', (tester) async {
+    // 用户 2026-09-20 对比右上角菜单弹窗时指出「这块看起来明显不一样」：那个弹窗是
+    // `surfaceShadow: true`（浮在页面上），而贴底弹窗换上的实底面板从来不带浮影。
+    late BuildContext hostContext;
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) {
+            hostContext = context;
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+    await tester.pumpWidget(
+      TestApp(
+        home: Center(
+          child: hyperosMiuixBottomSheetSurface(
+            hostContext,
+            const MiuixGlassShape(
+              cornerRadius: hyperosMiuixBottomSheetCornerRadius,
+            ),
+            const SizedBox(width: 100, height: 100),
+          ),
+        ),
+      ),
+    );
+
+    final shadowBoxes = find.byWidgetPredicate(
+      (w) =>
+          w is DecoratedBox &&
+          w.decoration is BoxDecoration &&
+          ((w.decoration as BoxDecoration).boxShadow ?? const [])
+              .contains(HyperosGlassShadow.shadow),
+    );
+    expect(
+      shadowBoxes,
+      findsOneWidget,
+      reason: '浮影数值必须与弹层家族同源（HyperosGlassShadow.shadow），且只有一层',
+    );
+    // 浮影要盖在 `ClipRRect` 外面 —— 垫在里面会被裁掉，等于没有。
+    final shadowRect = tester.getRect(shadowBoxes);
+    final clipRect = tester.getRect(
+      find
+          .ancestor(
+            of: find.byType(HyperosSelectPopupGlass),
+            matching: find.byType(ClipRRect),
+          )
+          .first,
+    );
+    expect(
+      shadowRect,
+      clipRect,
+      reason: '浮影矩形应当与面板轮廓一致（浮影靠 blur 溢到轮廓外）',
+    );
+  });
+
+  testWidgets('注入面：裁剪曲线与材质同源，只有底边外溢', (tester) async {
+    late BuildContext hostContext;
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) {
+            hostContext = context;
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(
+      TestApp(
+        home: Center(
+          child: hyperosMiuixBottomSheetSurface(
+            hostContext,
+            const MiuixGlassShape(
+              cornerRadius: hyperosMiuixBottomSheetCornerRadius,
+            ),
+            const SizedBox(
+              key: ValueKey('sheet-content'),
+              width: 100,
+              height: 100,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // 2026-09-20 定稿：① 外面裁的曲线必须**就是材质画的那条**（上沿两角正圆角、底边直）
+    // —— 拿上游那条贝塞尔曲线裁会在圆角处差 1.35px，露成「外框一个圆角、里面还有一个更小
+    // 的圆角」；② 上沿与左右**不外溢**，留着材质那一圈边缘观感（推掉一点真机实测「没区别」，
+    // 推光又读成平板子 —— 两档用户都报过，最后选定「留着」）；③ 面板**不自带任何材质参数**
+    // （见下一条断言）。
+    final clip = tester.widget<ClipRRect>(
+      find
+          .ancestor(
+            of: find.byType(HyperosSelectPopupGlass),
+            matching: find.byType(ClipRRect),
+          )
+          .first,
+    );
+    final glass = tester.widget<HyperosSelectPopupGlass>(
+      find.byType(HyperosSelectPopupGlass),
+    );
+    final radius = glass.cornerRadius;
+    expect(
+      clip.borderRadius,
+      BorderRadius.vertical(top: Radius.circular(radius)),
+      reason: '裁剪曲线与材质不同源：圆角处会露出两条曲线之间那条缝',
+    );
+
+    final panel = tester.getRect(find.byKey(const ValueKey('sheet-content')));
+    final glassRect = tester.getRect(find.byType(HyperosSelectPopupGlass));
+    // 上沿与左右**不外溢**：留着材质那一圈边缘观感（推掉一点的做法真机实测「没区别」，
+    // 推光又读成平板子 —— 两档用户都报过，最后选定「留着」这一档）。
+    expect(glassRect.top, closeTo(panel.top, 0.01), reason: '上沿不该外溢');
+    expect(glassRect.left, closeTo(panel.left, 0.01), reason: '左边不该外溢');
+    expect(glassRect.right, closeTo(panel.right, 0.01), reason: '右边不该外溢');
+    // 底边必须外溢：底角在裁剪上是直角、材质是正圆角，不外溢会各缺一小块。
+    expect(
+      glassRect.bottom,
+      closeTo(panel.bottom + hyperosMiuixBottomSheetGlassBottomOverdraw, 0.01),
+      reason: '底边不外溢的话两个底角会各缺一小块',
+    );
+
+    // 面板**不自带材质参数** —— 这是用户口径「和右上角卡片观感一致」的落点。
+    //
+    // 这里一度挂着一个 `maxRefraction = 3`（"长直边上把面板外的内容整条拉进来就成了
+    // 条纹，压小它"）。那是补"边光有方向性"那场病的药：方向性让上沿成为最亮的一条边，
+    // 观感差异看起来像折射造成的。方向性已从材质层面去掉（见两个 .frag 的文件头），
+    // 药也就撤了 —— 留着它，这块面板与右上角那个菜单弹窗（同属弹窗家族、锁同一档）
+    // 的边缘观感就会分叉，而那正是用户不接受的那件事。
+    final glassSurface = tester.widget<LiquidGlassSurface>(
+      find.byType(LiquidGlassSurface),
+    );
+    expect(
+      glassSurface.maxRefraction,
+      isNull,
+      reason: '自带折射上限 = 与弹窗家族分叉；长直边的问题回材质层面解决，别在这里开参数口子',
+    );
+    expect(
+      glassSurface.role,
+      LiquidGlassRole.pinnedChrome,
+      reason: '与右上角菜单弹窗同属固定小件，锁同一档（标准档），这是"观感一致"的前提',
+    );
+  });
+
+  testWidgets('注入面：回落材质（磨砂 / 实底）跟着同一个底边外溢', (tester) async {
+    // 回落材质自己按**正圆**裁，与外面的裁剪曲线（同一个正圆角）一致；只剩底边那两个
+    // 直角角点需要外溢盖住 —— 它与玻璃面共用同一个 `Positioned` 矩形，所以一起被盖住。
+    // 测试环境恒无 shader 后端（`LiquidGlassSurface.isAvailable` 为假），这里画出来的
+    // 就是回落材质，正好用它钉住这条。
+    // 测试环境恒无 shader 后端（`LiquidGlassSurface.isAvailable` 为假），这里画出来的
+    // 就是回落材质，正好用它钉住这条。
+    late BuildContext hostContext;
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) {
+            hostContext = context;
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+    await tester.pumpWidget(
+      TestApp(
+        home: Center(
+          child: hyperosMiuixBottomSheetSurface(
+            hostContext,
+            const MiuixGlassShape(
+              cornerRadius: hyperosMiuixBottomSheetCornerRadius,
+            ),
+            const SizedBox(
+              key: ValueKey('sheet-content'),
+              width: 100,
+              height: 100,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final panel = tester.getRect(find.byKey(const ValueKey('sheet-content')));
+    final fallback = tester.getRect(find.byType(StableFrostedSurface));
+    expect(
+      fallback,
+      Rect.fromLTRB(
+        panel.left,
+        panel.top,
+        panel.right,
+        panel.bottom + hyperosMiuixBottomSheetGlassBottomOverdraw,
+      ),
+      reason: '回落材质没跟着底边外溢的话，两个底角会各缺一小块',
+    );
+  });
+
+  group('底边外溢量的几何下界（2026-09-20）', () {
+    test('要够盖住直角底角，且不多铺', () {
+      const r = hyperosMiuixBottomSheetCornerRadius;
+      const k = hyperosMiuixBottomSheetGlassBottomOverdraw;
+      const sqrt2 = 1.4142135623730951;
+
+      // 底边两角：裁剪是**直角**，材质是正圆角（圆心在 (r, H + k − r)、半径 r），
+      // 要盖住角点 (0, H) → √2·(r − k) ≤ r → k ≥ (1 − 1/√2)·r。
+      const needed = r * (1 - 1 / sqrt2);
+      expect(
+        k,
+        greaterThanOrEqualTo(needed),
+        reason: '外溢量不够：两个底角会露出材质圆角与直角裁剪之间那块缝',
+      );
+      expect(
+        k,
+        lessThan(needed + 1),
+        reason: '多铺没有收益，而这个常量以后要是被拿去当四边外溢用，就会把边缘玻璃感切掉',
+      );
+    });
   });
 
   testWidgets('真开一次：面板是注入面、蒙层之前有捕获点、收起后跑后续动作', (tester) async {

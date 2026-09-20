@@ -75,6 +75,10 @@ void main() {
           ladder[i].refractionBand,
           greaterThan(ladder[i - 1].refractionBand),
         );
+        expect(
+          ladder[i].dispersion,
+          greaterThan(ladder[i - 1].dispersion),
+        );
         expect(ladder[i].blurSigma, greaterThan(ladder[i - 1].blurSigma));
         expect(ladder[i].tintAlpha, greaterThan(ladder[i - 1].tintAlpha));
       }
@@ -85,7 +89,8 @@ void main() {
     test('标准档的折射旋钮与课程卡片液态玻璃档逐字段一致', () {
       // 「同一个材质只有一种观感」：全局液态玻璃与卡片液态玻璃是两条独立链路
       // （卡片不受全局档位约束），但出厂必须长得一样。任何一边改默认值都要同步
-      // 另一边。
+      // 另一边。dispersion（色散）是全局侧独有的旋钮（卡片没有这个参数），
+      // 不参与对齐。
       const card = CourseGlassStyle(borderRadius: 12, tint: Color(0xFF000000));
       const tuning = LiquidGlassTuning.defaults;
       expect(tuning.refraction, card.refraction);
@@ -107,6 +112,10 @@ void main() {
       expect(t.refractionEdgePow, inInclusiveRange(
         LiquidGlassTuning.minRefractionEdgePow,
         LiquidGlassTuning.maxRefractionEdgePow,
+      ));
+      expect(t.dispersion, inInclusiveRange(
+        LiquidGlassTuning.minDispersion,
+        LiquidGlassTuning.maxDispersion,
       ));
       expect(t.rimStrength, inInclusiveRange(0, 1));
       expect(t.rimWidth, inInclusiveRange(0, LiquidGlassTuning.maxRimWidth));
@@ -131,7 +140,7 @@ void main() {
         refractionBand: 8,
         refractionEdgePow: 3,
         rimStrength: 0.3,
-        rimWidth: 4,
+        rimWidth: 2.5,
         blurSigma: 18,
         tintAlpha: 0.6,
       );
@@ -144,6 +153,16 @@ void main() {
         LiquidGlassTuning.fromJson(const <String, dynamic>{}),
         LiquidGlassTuning.defaults,
       );
+    });
+
+    test('老存档没有 dispersion 键时回落默认（升级路径）', () {
+      final loaded = LiquidGlassTuning.fromJson(const <String, dynamic>{
+        'refraction': 9.5,
+        'refractionBand': 8,
+      });
+      expect(loaded.refraction, 9.5);
+      expect(loaded.refractionBand, 8);
+      expect(loaded.dispersion, LiquidGlassTuning.defaultDispersion);
     });
 
     test('越界值被 clamp 回区间内', () {
@@ -189,7 +208,7 @@ void main() {
         refractionBand: 8,
         refractionEdgePow: 3,
         rimStrength: 0.3,
-        rimWidth: 4,
+        rimWidth: 2.5,
         blurSigma: 18,
       );
       final style = tuning.toStyle(
@@ -200,8 +219,9 @@ void main() {
       expect(style.refraction, 9);
       expect(style.refractionBand, 8);
       expect(style.refractionEdgePow, 3);
+      expect(style.dispersion, tuning.dispersion);
       expect(style.rimStrength, 0.3);
-      expect(style.rimWidth, 4);
+      expect(style.rimWidth, 2.5);
       expect(style.blurSigma, 18);
       expect(style.tint, Colors.white.withValues(alpha: 0.70));
     });

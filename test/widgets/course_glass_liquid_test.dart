@@ -476,7 +476,7 @@ Future<ui.Image> _glassTexture(
 /// 语义与尺寸/命中测试那几组负责，这里只管着色器算得对不对。
 ///
 /// 默认值刻意与 [CourseGlassStyle] 的默认参数一致（band 7 / edgePow 2.5 /
-/// rimWidth 3 / lightDir(-0.6,-0.8)），于是这组同时钉住了默认参数下的观感。
+/// rimWidth 1.5），于是这组同时钉住了默认参数下的观感。
 Future<Uint8List> _renderGlass({
   required ui.Image texture,
   required Offset texOrigin,
@@ -504,8 +504,7 @@ Future<Uint8List> _renderGlass({
   shader.getUniformFloat('u_edge_pow').set(2.5);
   shader.getUniformVec3('u_rim_color').set(1, 1, 1);
   shader.getUniformFloat('u_rim').set(rim);
-  shader.getUniformFloat('u_rim_width').set(3);
-  shader.getUniformVec2('u_light_dir').set(-0.6, -0.8);
+  shader.getUniformFloat('u_rim_width').set(1.5);
 
   final recorder = ui.PictureRecorder();
   final canvas = ui.Canvas(recorder);

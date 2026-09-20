@@ -63,7 +63,7 @@ extension LiquidGlassPresetX on LiquidGlassPreset {
 ///
 /// 只有 [LiquidGlassTuning.defaults] 这一档的折射旋钮**逐字段等于**
 /// `CourseGlassStyle` 的默认值（折射 8 / 作用带 7 / 陡缓 2.5 / 高光 0.2 /
-/// 高光带 3）：全局液态玻璃与课程卡片液态玻璃是两条独立链路（卡片不受全局档位
+/// 高光带 1.5）：全局液态玻璃与课程卡片液态玻璃是两条独立链路（卡片不受全局档位
 /// 约束），但出厂观感必须一样，否则用户会在两个页面看到两种玻璃。
 ///
 /// 模糊量与底色深浅没有卡片对应项（卡片吃的是预先糊好的位图、染的是课程色），
@@ -80,6 +80,7 @@ class LiquidGlassTuning {
     this.refraction = defaultRefraction,
     this.refractionBand = defaultRefractionBand,
     this.refractionEdgePow = defaultRefractionEdgePow,
+    this.dispersion = defaultDispersion,
     this.rimStrength = defaultRimStrength,
     this.rimWidth = defaultRimWidth,
     this.blurSigma = defaultBlurSigma,
@@ -96,8 +97,9 @@ class LiquidGlassTuning {
     refraction: 6,
     refractionBand: 6,
     refractionEdgePow: 3,
+    dispersion: 0.25,
     rimStrength: 0.14,
-    rimWidth: 2,
+    rimWidth: 1.1,
     blurSigma: 8,
     tintAlpha: 0.35,
   );
@@ -107,8 +109,9 @@ class LiquidGlassTuning {
     refraction: 7,
     refractionBand: 6.5,
     refractionEdgePow: 2.7,
-    rimStrength: 0.18,
-    rimWidth: 2.5,
+    dispersion: 0.3,
+    rimStrength: 0.17,
+    rimWidth: 1.3,
     blurSigma: 12,
     tintAlpha: 0.55,
   );
@@ -118,8 +121,9 @@ class LiquidGlassTuning {
     refraction: 11,
     refractionBand: 9,
     refractionEdgePow: 2.2,
+    dispersion: 0.5,
     rimStrength: 0.26,
-    rimWidth: 4,
+    rimWidth: 2,
     blurSigma: 22,
     tintAlpha: 0.85,
   );
@@ -139,12 +143,27 @@ class LiquidGlassTuning {
   static const double defaultRefraction = 8;
   static const double defaultRefractionBand = 7;
   static const double defaultRefractionEdgePow = 2.5;
+  // 边缘高光：宽度 1.5 逻辑 px（≈ 4.5 物理 px）、强度 0.2。
+  //
+  // 这一对数字的来路（2026-09-20 一天内走了三步，别再走回去）：
+  //   ① 原值 3 / 0.2 —— 宽度 3 逻辑 px（9 物理 px）在**横贯屏幕的长直边**上读成一条
+  //      浅条纹（用户口径「上面和左右两边浅条纹」）；
+  //   ② 收到 0.8 / 0.28 —— 0.8 不到一个逻辑像素，真机上是一根发丝，圆角上直接读出
+  //      **锯齿**，而且浅边并没消失（发丝比宽带更像"描边"，用户口径「圆角有锯齿，
+  //      三边浅边还在」）；
+  //   ③ 现在这版 —— 宽度回到**一个逻辑像素以上**，同时把截面从「贴边最亮」改成
+  //      「峰在带内」（见两个 .frag 里的说明）。锯齿的成因是峰值压在抗锯齿的半像素
+  //      过渡带里，跟宽度是两个问题：宽度决定"是不是一根发丝"，截面决定"峰值落不落
+  //      在抗锯齿那一圈"。强度随宽度回调（0.28 → 0.2），峰值亮度降下来。
   static const double defaultRimStrength = 0.2;
-  static const double defaultRimWidth = 3;
+  static const double defaultRimWidth = 1.5;
   // 后两项对齐现有磨砂面板的默认值（kDefaultFrostedSheetBlurSigma /
   // kDefaultFrostedSheetTintAlpha），理由见类注释。
   static const double defaultBlurSigma = 15;
   static const double defaultTintAlpha = 0.70;
+  // 色散是 2026-09-19 借 Kyant0 Backdrop 加的第八个旋钮：标准档取克制的
+  // 0.35（边缘 1~2px 的彩虹镶边），课程卡那份没有这个旋钮（卡片是独立链路）。
+  static const double defaultDispersion = 0.35;
 
   // --- 滑杆区间 ---
   static const double minRefraction = 0;
@@ -153,10 +172,14 @@ class LiquidGlassTuning {
   static const double maxRefractionBand = 24;
   static const double minRefractionEdgePow = 1;
   static const double maxRefractionEdgePow = 6;
+  static const double minDispersion = 0;
+  static const double maxDispersion = 1;
   static const double minRimStrength = 0;
   static const double maxRimStrength = 1;
   static const double minRimWidth = 0;
-  static const double maxRimWidth = 12;
+  // 上限从 12 收到 3：12（= 36 物理 px）已经是一整条宽带了，留着等于把「条纹」这条
+  // 路重新开放给滑杆。3 仍比任何预设（最大 2）宽松。
+  static const double maxRimWidth = 3;
   static const double minBlurSigma = 0;
   static const double maxBlurSigma = 40;
   static const double minTintAlpha = 0;
@@ -168,8 +191,11 @@ class LiquidGlassTuning {
   /// 折射作用带宽度（逻辑 px）。
   final double refractionBand;
 
-  /// 位移沿边缘上升的陡缓，越大越集中在最外圈。
+  /// 位移沿边缘上升的陡缓，越大越集中在最外圈（圆弧截面之上的陡缓指数）。
   final double refractionEdgePow;
+
+  /// 色散强度（0–1）：折射带内红/蓝采样错开的比例，0 = 关。
+  final double dispersion;
 
   /// 边缘高光强度（0–1）。
   final double rimStrength;
@@ -187,6 +213,7 @@ class LiquidGlassTuning {
     double? refraction,
     double? refractionBand,
     double? refractionEdgePow,
+    double? dispersion,
     double? rimStrength,
     double? rimWidth,
     double? blurSigma,
@@ -196,6 +223,7 @@ class LiquidGlassTuning {
       refraction: refraction ?? this.refraction,
       refractionBand: refractionBand ?? this.refractionBand,
       refractionEdgePow: refractionEdgePow ?? this.refractionEdgePow,
+      dispersion: dispersion ?? this.dispersion,
       rimStrength: rimStrength ?? this.rimStrength,
       rimWidth: rimWidth ?? this.rimWidth,
       blurSigma: blurSigma ?? this.blurSigma,
@@ -214,6 +242,7 @@ class LiquidGlassTuning {
         minRefractionEdgePow,
         maxRefractionEdgePow,
       ),
+      dispersion: dispersion.clamp(minDispersion, maxDispersion),
       rimStrength: rimStrength.clamp(minRimStrength, maxRimStrength),
       rimWidth: rimWidth.clamp(minRimWidth, maxRimWidth),
       blurSigma: blurSigma.clamp(minBlurSigma, maxBlurSigma),
@@ -248,6 +277,7 @@ class LiquidGlassTuning {
       refraction: refraction,
       refractionBand: refractionBand,
       refractionEdgePow: refractionEdgePow,
+      dispersion: dispersion,
       rimStrength: rimStrength,
       rimWidth: rimWidth,
     );
@@ -257,6 +287,7 @@ class LiquidGlassTuning {
     'refraction': refraction,
     'refractionBand': refractionBand,
     'refractionEdgePow': refractionEdgePow,
+    'dispersion': dispersion,
     'rimStrength': rimStrength,
     'rimWidth': rimWidth,
     'blurSigma': blurSigma,
@@ -274,6 +305,8 @@ class LiquidGlassTuning {
       refractionEdgePow:
           (json['refractionEdgePow'] as num?)?.toDouble() ??
           defaultRefractionEdgePow,
+      dispersion:
+          (json['dispersion'] as num?)?.toDouble() ?? defaultDispersion,
       rimStrength:
           (json['rimStrength'] as num?)?.toDouble() ?? defaultRimStrength,
       rimWidth: (json['rimWidth'] as num?)?.toDouble() ?? defaultRimWidth,
@@ -289,6 +322,7 @@ class LiquidGlassTuning {
           refraction == other.refraction &&
           refractionBand == other.refractionBand &&
           refractionEdgePow == other.refractionEdgePow &&
+          dispersion == other.dispersion &&
           rimStrength == other.rimStrength &&
           rimWidth == other.rimWidth &&
           blurSigma == other.blurSigma &&
@@ -299,6 +333,7 @@ class LiquidGlassTuning {
     refraction,
     refractionBand,
     refractionEdgePow,
+    dispersion,
     rimStrength,
     rimWidth,
     blurSigma,

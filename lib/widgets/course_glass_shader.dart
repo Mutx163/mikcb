@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/painting.dart' show Color, Offset;
+import 'package:flutter/painting.dart' show Color;
 
 import 'glass_shader_program.dart';
 
@@ -34,9 +34,8 @@ class CourseGlassStyle {
     this.refractionBand = 7,
     this.refractionEdgePow = 2.5,
     this.rimStrength = 0.2,
-    this.rimWidth = 3,
+    this.rimWidth = 1.5,
     this.rimColor = const Color(0xFFFFFFFF),
-    this.lightDirection = const Offset(-0.6, -0.8),
   });
 
   /// 卡片圆角，必须与外面 [ClipRRect] 用的一致：着色器拿它算 SDF 遮罩，
@@ -55,7 +54,9 @@ class CourseGlassStyle {
   /// 位移沿边缘上升的陡缓，越大越集中在最外圈。
   final double refractionEdgePow;
 
-  /// 边缘高光强度（0–1）。
+  /// 边缘高光强度（0–1）。**只落在转角上**：着色器按边界曲率加权，圆角满档、
+  /// 长直段归零（见 `shaders/course_card_glass.frag`）。所以这个值调的是"转角那圈
+  /// 反光边多亮"，不是"整圈描边多亮"。
   final double rimStrength;
 
   /// 边缘高光带宽（逻辑 px）。
@@ -63,9 +64,6 @@ class CourseGlassStyle {
 
   /// 边缘高光颜色。
   final Color rimColor;
-
-  /// 光来向（卡片局部坐标，y 向下）。默认左上。
-  final Offset lightDirection;
 
   @override
   bool operator ==(Object other) =>
@@ -78,8 +76,7 @@ class CourseGlassStyle {
           other.refractionEdgePow == refractionEdgePow &&
           other.rimStrength == rimStrength &&
           other.rimWidth == rimWidth &&
-          other.rimColor == rimColor &&
-          other.lightDirection == lightDirection;
+          other.rimColor == rimColor;
 
   @override
   int get hashCode => Object.hash(
@@ -91,6 +88,5 @@ class CourseGlassStyle {
     rimStrength,
     rimWidth,
     rimColor,
-    lightDirection,
   );
 }

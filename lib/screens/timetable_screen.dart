@@ -3268,7 +3268,14 @@ class _TimetableScreenState extends State<TimetableScreen>
         ? ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              // ⚠️ `tileMode: clamp` 必须给：默认 decal 会让模糊结果在离边约 3σ
+              // 的带里淡成透明黑，而这张圆角药丸的边是可见的 —— 那一圈会读成
+              // 一圈深色描边。同款规则与修法见 `liquid_glass_surface.dart`。
+              filter: ui.ImageFilter.blur(
+                sigmaX: 14,
+                sigmaY: 14,
+                tileMode: ui.TileMode.clamp,
+              ),
               child: pill,
             ),
           )
@@ -7553,7 +7560,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///
   /// 玻璃坞当前应使用的材质。
   ///
-  /// 由**全局材质**（课表页面 → 玻璃 / 材质）+ 「作用范围 → 玻璃坞导航」推导：
+  /// 由**全局材质**（外观编辑 → 材质）+ 「作用范围 → 玻璃坞导航」推导：
   ///
   /// - 实体卡片（模糊总开关关）→ [_DockMaterial.solid]；
   /// - 高斯模糊 → [_DockMaterial.frosted]；

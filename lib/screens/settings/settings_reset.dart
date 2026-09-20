@@ -82,7 +82,9 @@ TimetableSettings applySettingsReset(
       homePageWeekdayBarBlurEnabled: d.homePageWeekdayBarBlurEnabled,
       subpageHeaderBlurStyle: d.subpageHeaderBlurStyle,
       homeBandGlassMaterial: d.homeBandGlassMaterial,
-      // 材质轴：控件在「玻璃 / 材质」区块里，跟着本页一起恢复。
+      // 材质轴：控件 2026-09-19 第五轮起在「外观编辑」页的材质面板里（本页
+      // 玻璃 / 材质区块只留入口行），恢复默认仍归本页作用域——确认文案里的
+      // 「与玻璃质感」就是对这件事的承诺，不随控件搬家而改。
       frostedGlassMode: d.frostedGlassMode,
       frostedBlurEnabled: d.frostedBlurEnabled,
       frostedSheetBlurSigma: d.frostedSheetBlurSigma,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/widgets/home_menu_route_catalog.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/memory_stats_service.dart';
@@ -277,11 +278,13 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.palette_outlined,
   ),
   // 「外观编辑」：把整页首页缩成一张图直接调材质与壁纸（用户 2026-09-19 要的
-  // 入口，放首页右上角菜单里与「外观与配色」并列）。
+  // 入口，放首页右上角菜单里与「外观与配色」并列）。zoom = 从首页那颗按钮
+  // 进来时走「首页整页缩小进新页」的缩放转场。
   _settingsSubpageEntry(
     id: 'appearanceEditor',
     title: (l10n) => l10n.appearanceEditorTitle,
     icon: Icons.auto_fix_high_outlined,
+    zoom: true,
   ),
   _settingsSubpageEntry(
     id: 'timetablePageSettings',
@@ -389,10 +392,15 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
 
 /// 设置库内部的私有子页通过该工厂暴露给八宫格目录，避免为导航把一批
 /// 子页类改成公有。
+///
+/// [zoom] 为 true 时走「首页整页缩小进新页」的缩放转场
+/// （[HyperosZoomPageRoute]，见 hyperos_zoom_route.dart）而不是通用侧滑；
+/// 目前仅外观编辑开启——从首页那颗按钮进来时首页与新页连贯。
 HomeMenuEntry _settingsSubpageEntry({
   required String id,
   required String Function(AppLocalizations l10n) title,
   required IconData icon,
+  bool zoom = false,
 }) {
   return HomeMenuEntry(
     id: id,
@@ -403,6 +411,19 @@ HomeMenuEntry _settingsSubpageEntry({
       final page = resolveSettingsSubpage(id);
       if (page == null) {
         return Future<void>.value();
+      }
+      if (zoom) {
+        // ⚠️ 必须**同步**推入（与下面通用子页同一条口径）。首页那条「选完菜单项
+        // 之前不要让菜单先收」的保护（`timetable_screen.dart` 的
+        // `_requestCloseHomeMenu`）是**按 `Route.isCurrent` 判定「这一项有没有
+        // 当场跳页」**的：改成延后一帧再推，判定那一刻首页还是栈顶，菜单会被当成
+        // 「不跳页」立刻收起 —— 首页顶栏那两颗球就会在新页盖满之前露出来闪一下
+        // （2026-09-15 真机反馈的老问题）。转场本身不需要错开帧：球的「跑到左上
+        // 角」由 `FHeaderActionBall` 自己的跟随失效保护兜住（见
+        // hyperos_proxies.dart）。
+        return Navigator.of(context).push<void>(
+          HyperosZoomPageRoute<void>(builder: (_) => page),
+        );
       }
       return pushHomeMenuPage(context, page);
     },

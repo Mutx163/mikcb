@@ -1386,8 +1386,14 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     // 隔开它的重绘与祖先图层（原为「弹窗页面捕获作用域」顺带承担的性能
     // 隔离；那个作用域随弹窗快照垫底一起废弃——弹窗液态玻璃改走 premium
     // 实时读底面，不再需要任何整页快照）。
+    //
+    // HyperosZoomShrinkScope：首页菜单里 zoom 条目（外观编辑）进页时把
+    // 首页整页缩小沉底、返回还原（见 hyperos_zoom_route.dart）；无 zoom
+    // 路由在飞时零包装。编辑页里嵌的那份预览渲染源不走这里，不会被连带缩放。
     return _homeRevealed
-        ? const RepaintBoundary(child: TimetableScreen())
+        ? const RepaintBoundary(
+            child: HyperosZoomShrinkScope(child: TimetableScreen()),
+          )
         : const AppStartupSplash();
   }
 }

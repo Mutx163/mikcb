@@ -52,7 +52,10 @@ void main() {
     // _logPerformanceSnapshotIfChanged（含说明注释）与两处一行调用（updateTimetableSettings
     // / updateSettings），快照构建与指纹判断全在 lib/logging/performance_settings_snapshot.dart，
     // Provider 未新增业务逻辑，按测试约定同步真实值。
-    const baselineLines = 4489;
+    // 4489→4499: 「假期课被过滤」类 UI 断言需要一份不触发桌面卡片/超级岛重排的
+    // 种数据入口，Provider 侧新增 @visibleForTesting 的 seedHolidayDataForTesting
+    // （+10，只赋值 + notifyListeners，无业务逻辑），按测试约定同步真实值。
+    const baselineLines = 4499;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

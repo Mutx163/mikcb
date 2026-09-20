@@ -372,9 +372,16 @@ Widget? homePageBackdropImageWidget({required TimetableSettings settings}) {
 
 /// Title row height under the status bar on the home timetable header.
 ///
-/// Matches [FHeader] min height (44) plus a small frosted-chrome padding budget
-/// so the continuous glass band meets the weekday bar without a 1鈥?px seam.
-const homePageHeaderContentHeight = 46.0;
+/// 就是根标题栏自己的最小高度（`HyperosRootHeader.minHeight` = 44）：星期行紧接着
+/// 在它下面开始，而「chrome↔课表」那段间隙**不折进这个常量** ——
+/// `homePageChromeGlassLayout` 会把它显式加进带高。
+///
+/// 旧值是 46（= 44 + 2px「预算」，想顺手盖掉那条缝）。后果：玻璃带比真正的
+/// 标题行高 2px，而那条缝有 4px，于是带子下沿留下 **2px 完全没有玻璃覆盖**。
+/// 模糊 = 0 时玻璃跟原图几乎一样、看不出来；模糊一开，玻璃被糊了、变亮了，
+/// 这 2px 就成了一条横贯屏幕的黑线（真机 2026-09-20：星期栏底边一条黑线，
+/// 且改上下外溢对它没有任何影响 —— 因为它根本不在玻璃形状里）。
+const homePageHeaderContentHeight = 44.0;
 
 /// The pager's live page, or null when it cannot be read safely.
 ///

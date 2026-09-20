@@ -201,10 +201,25 @@ void main() {
         final fill = tester.widget<HomePageChromeGlassFill>(
           find.byType(HomePageChromeGlassFill),
         );
-        // 预览侧不自己申请祖先组采样：玻璃形状四边全部越出可见裁剪区，
-        // 包内任何边缘处理都够不到可见区（四边越界断言见
-        // timetable_week_preview_test.dart 的 chrome glass band 组）。
-        expect(fill.useAncestorBackdropGroup, isFalse);
+        // ⚠️ 口径 2026-09-20 翻转过：**必须申请祖先组采样**。
+        //
+        // 旧断言（isFalse）的理由是「玻璃形状四边全部越出可见裁剪区，包内任何边缘
+        // 处理都够不到可见区」。这句话对**形状边界**成立，但对**采样范围**不成立：
+        // 带级采样时模糊/折射在带边会"钳在带自己的边上"读成一条深色发丝线，而本条带
+        // 上下的外溢只有 4px（左右 48px）——上下两条横边都贴着可见区。
+        // 用户 2026-09-20 实测：设置页预览里**上下各一条线**，且「只要模糊强度大于 0
+        // 必然出现」。组捕获本来就是为这件事搭的（见 UndimmedBackdropCapture 处注释），
+        // 开关补上即可。
+        expect(fill.useAncestorBackdropGroup, isTrue);
+        // 光有开关不够：组必须是它的**祖先**，否则 BackdropGroup.of 取不到 key，
+        // 开关等于没接（这正是 2026-09-20 之前两处的真实状态：结构搭好、接线没接）。
+        expect(
+          find.ancestor(
+            of: find.byType(HomePageChromeGlassFill),
+            matching: find.byType(BackdropGroup),
+          ),
+          findsOneWidget,
+        );
       },
     );
   });

@@ -872,6 +872,16 @@ class TimetableProvider with ChangeNotifier {
     syncScheduleSnapshot: syncScheduleSnapshot,
   );
 
+  /// Test-only: inject holiday data without going through the HTTP service.
+  ///
+  /// 只赋值 + 通知，不走 [_loadHolidayDataImpl] 的桌面卡片/超级岛重排副作用；
+  /// 需要「假期课被过滤」类 UI 断言的测试用这个种数据。
+  @visibleForTesting
+  void seedHolidayDataForTesting(HolidayData data) {
+    _holidayData = data;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _holidayService.onRemoteHolidayDataUpdated = null;

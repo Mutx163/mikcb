@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -44,6 +45,91 @@ LiquidGlassTuning liquidGlassTuningForRole(
   LiquidGlassRole.followsUser =>
     appearance?.liquidGlassTuning ?? LiquidGlassTuning.defaults,
 };
+
+/// 穹顶（depth effect）只给**接近方形的小件**：常驻球、坞内圆钮、悬浮钮这类。
+/// 玻璃带 / 药丸这类细长条不参与 —— 细长条的边缘折射朝中心偏会读成奇怪的扭曲，
+/// 而大面板（弹窗、底部弹窗）短边太长，本来就到不了穹顶区。
+const double _domeFullBelowSide = 48;
+const double _domeFadeToSide = 96;
+const double _domeFullBelowAspect = 1.5;
+const double _domeFadeToAspect = 3;
+
+/// 手指高光光斑半径的上限（逻辑 px）：光斑半径本取 1.5×表面短边（Nexio
+/// InteractiveHighlight 的口径），大面板上不封顶会把整块玻璃都照进光斑里。
+const double kPointerGlowRadiusCap = 180;
+
+/// 按表面尺寸推导穹顶强度（0..1）：短边越大越弱，细长条越扁越弱，两者相乘。
+///
+/// 这是**几何适配**（与 [LiquidGlassSurface.maxRefraction] 同一性质），不是材质
+/// 参数 —— 表面自己没有通道把它传进来，绘制期由 RenderObject 按自身布局尺寸算，
+/// 所以不破坏「两个作用域，各自只有一个出口」的规矩。抽成纯函数是为了让单元测试
+/// 能钉住这套推导。
+@visibleForTesting
+double liquidGlassDomeForSize(Size size) {
+  final shortSide = math.min(size.width, size.height);
+  final longSide = math.max(size.width, size.height);
+  double sideRamp;
+  if (shortSide <= _domeFullBelowSide) {
+    sideRamp = 1;
+  } else if (shortSide >= _domeFadeToSide) {
+    sideRamp = 0;
+  } else {
+    sideRamp = (_domeFadeToSide - shortSide) / (_domeFadeToSide - _domeFullBelowSide);
+  }
+  final aspect = longSide / math.max(shortSide, 1e-3);
+  double aspectRamp;
+  if (aspect <= _domeFullBelowAspect) {
+    aspectRamp = 1;
+  } else if (aspect >= _domeFadeToAspect) {
+    aspectRamp = 0;
+  } else {
+    aspectRamp =
+        (_domeFadeToAspect - aspect) / (_domeFadeToAspect - _domeFullBelowAspect);
+  }
+  final dome = sideRamp * aspectRamp;
+  return dome.clamp(0.0, 1.0);
+}
+
+/// 长短边比 ≤ 这个值时，边光按「**只留转角**」处理（方正的板）。
+const double _rimCornerOnlyBelowAspect = 1.6;
+
+/// 长短边比 ≥ 这个值时，边光按「**整圈均匀**」处理（细长条）。
+const double _rimUniformAboveAspect = 2.6;
+
+/// 按表面**形状**推导边光的作用范围（0 = 整圈均匀、1 = 只留转角）。
+///
+/// 为什么不能只看「这条边直不直」：底栏那颗药丸的上沿与底部弹窗的上沿**几何上是
+/// 同一个东西** —— 都是三百多像素的长直边、圆角都是 27/28。真机口径「底栏高光只剩
+/// 左右」就是这么来的：回读确认药丸的上沿只有左右各约 35 逻辑 px 亮着、中间 220px
+/// 全黑（弹窗的上沿读数与它几乎一样）。所以判据必须是**这块面整体是细条还是方正的
+/// 板**：
+///
+/// * 细长条（长短边比 ≥ [_rimUniformAboveAspect]）—— 底栏药丸 380×54、首页玻璃带
+///   360×百来像素：它们的长边就是主体，收掉转角以外的高光会让药丸只剩两头亮着；
+/// * 方正的大面板（长短边比 ≤ [_rimCornerOnlyBelowAspect]）—— 底部弹窗、弹窗家族：
+///   贯屏长直边上的一条高光只会读成描边，只留转角；
+/// * 中间一段线性过渡，避免同一份材质在阈值两侧出现两种观感。
+///
+/// 圆件（常驻球、坞内圆钮）不受影响：着色器里圆形的 SDF 中间量两个分量恒非负，
+/// 「只留转角」与「整圈均匀」对它是同一条读数。
+///
+/// 与 [liquidGlassDomeForSize] 同一性质：**几何适配**，不是材质参数 —— 表面自己
+/// 没有通道把它传进来，也不开放调参。抽成纯函数是为了让单元测试能钉住这套推导。
+@visibleForTesting
+double liquidGlassRimCornerOnlyForSize(Size size) {
+  final shortSide = math.min(size.width, size.height);
+  final longSide = math.max(size.width, size.height);
+  final aspect = longSide / math.max(shortSide, 1e-3);
+  if (aspect >= _rimUniformAboveAspect) {
+    return 0;
+  }
+  if (aspect <= _rimCornerOnlyBelowAspect) {
+    return 1;
+  }
+  return ((_rimUniformAboveAspect - aspect) /
+          (_rimUniformAboveAspect - _rimCornerOnlyBelowAspect))
+      .clamp(0.0, 1.0);
+}
 
 /// 一块**液态玻璃**表面：把实时背景糊掉之后，再按圆角 SDF 在边缘做折射与受光高光。
 ///
@@ -141,13 +227,57 @@ class LiquidGlassSurface extends StatefulWidget {
   State<LiquidGlassSurface> createState() => _LiquidGlassSurfaceState();
 }
 
-class _LiquidGlassSurfaceState extends State<LiquidGlassSurface> {
+class _LiquidGlassSurfaceState extends State<LiquidGlassSurface>
+    with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    // 控制器必须在 initState 里建：若懒初始化（late final 首次访问发生在
+    // dispose），SingleTickerProviderStateMixin 建 ticker 时会查 TickerMode
+    // 祖先 —— 在 unmount 路径上查祖先是 debug 断言直接炸的事。
+    _glowController =
+        AnimationController(vsync: this, duration: _glowFade)
+          ..addListener(_pushPointer);
     // 幂等预热：即使 main.dart 的预热被跳过（或首个液态玻璃表面先于它挂载），
     // 也能自己把程序拉起来。加载完成后 [ListenableBuilder] 会把玻璃补上。
     unawaited(LiquidGlassSurfaceShader.instance.ensureLoaded());
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    // ⚠️ `_pointer` 在这里**不能 dispose**：卸载顺序是 State.dispose 先于
+    // 渲染对象 detach，而渲染对象 detach 时还要在它上面 removeListener ——
+    // 对已 dispose 的 ChangeNotifier 调 removeListener 在 debug 下会炸。
+    // 留给 GC（测试环境走不到玻璃路径，这个坑只能靠注释守住）。
+    super.dispose();
+  }
+
+  /// 按压进度的渐隐时长 —— 跟手开（forward）是瞬时的，抬手渐隐走这段。
+  static const Duration _glowFade = Duration(milliseconds: 140);
+
+  late final AnimationController _glowController;
+
+  /// 指针状态（本地逻辑坐标, 按压进度），经 [ValueNotifier] 直达渲染对象。
+  /// 记录放在通知器里而不是 State 字段里：变化走 markNeedsPaint，不走整树重建。
+  final ValueNotifier<(Offset?, double)> _pointer = ValueNotifier((null, 0));
+
+  void _pushPointer() {
+    _pointer.value = (_pointer.value.$1, _glowController.value);
+  }
+
+  void _handlePointerDown(PointerDownEvent event) {
+    _pointer.value = (event.localPosition, _pointer.value.$2);
+    _glowController.forward();
+  }
+
+  void _handlePointerMove(PointerMoveEvent event) {
+    _pointer.value = (event.localPosition, _pointer.value.$2);
+  }
+
+  void _handlePointerRelease() {
+    // 位置留在原地，让光斑跟着渐隐一起停住，而不是跳走。
+    _glowController.reverse();
   }
 
   @override
@@ -169,19 +299,28 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface> {
           borderRadius: widget.borderRadius,
           brightness: Theme.of(context).brightness,
         );
-        return _LiquidGlassLayer(
-          style: style,
-          devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
-          // 视口逻辑尺寸：着色器拿它把折射采样点铰在屏幕内（贴着屏幕边的玻璃
-          // 往外采样会落进模糊扩出来的空区域、读成黑边）。
-          viewSize: MediaQuery.sizeOf(context),
-          grouped: widget.grouped,
-          refractionFactor: widget.refractionFactor,
-          maxRefraction: widget.maxRefraction,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-            clipBehavior: widget.clipBehavior,
-            child: widget.child,
+        return Listener(
+          // translucent：不挡子内容自己的手势，也不挡玻璃背后（如坞下面）的命点。
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: _handlePointerDown,
+          onPointerMove: _handlePointerMove,
+          onPointerUp: (_) => _handlePointerRelease(),
+          onPointerCancel: (_) => _handlePointerRelease(),
+          child: _LiquidGlassLayer(
+            style: style,
+            pointer: _pointer,
+            devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+            // 视口逻辑尺寸：着色器拿它把折射采样点铰在屏幕内（贴着屏幕边的玻璃
+            // 往外采样会落进模糊扩出来的空区域、读成黑边）。
+            viewSize: MediaQuery.sizeOf(context),
+            grouped: widget.grouped,
+            refractionFactor: widget.refractionFactor,
+            maxRefraction: widget.maxRefraction,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(widget.borderRadius),
+              clipBehavior: widget.clipBehavior,
+              child: widget.child,
+            ),
           ),
         );
       },
@@ -192,6 +331,7 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface> {
 class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
   const _LiquidGlassLayer({
     required this.style,
+    required this.pointer,
     required this.devicePixelRatio,
     required this.viewSize,
     required this.grouped,
@@ -201,6 +341,10 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
   });
 
   final LiquidGlassStyle style;
+
+  /// 指针状态（本地逻辑坐标, 按压进度）。渲染对象订阅它，变化时自己重绘。
+  final ValueListenable<(Offset?, double)> pointer;
+
   final double devicePixelRatio;
 
   /// 视口（屏幕）的**逻辑**尺寸；绘制期乘 dpr 后喂给着色器的 `u_view_size`。
@@ -220,6 +364,7 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
   @override
   RenderObject createRenderObject(BuildContext context) => _RenderLiquidGlass(
     style: style,
+    pointer: pointer,
     devicePixelRatio: devicePixelRatio,
     viewSize: viewSize,
     backdropKey: _backdropKey(context),
@@ -231,6 +376,7 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
   void updateRenderObject(BuildContext context, _RenderLiquidGlass renderObject) =>
       renderObject.update(
         style: style,
+        pointer: pointer,
         devicePixelRatio: devicePixelRatio,
         viewSize: viewSize,
         backdropKey: _backdropKey(context),
@@ -242,6 +388,7 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
 class _RenderLiquidGlass extends RenderProxyBox {
   _RenderLiquidGlass({
     required this._style,
+    required this._pointer,
     required this._devicePixelRatio,
     required this._viewSize,
     required this._backdropKey,
@@ -255,6 +402,22 @@ class _RenderLiquidGlass extends RenderProxyBox {
   BackdropKey? _backdropKey;
   double? _refractionFactor;
   double? _maxRefraction;
+
+  /// 指针状态（本地逻辑坐标, 按压进度 0..1），由 State 持有、widget 传入。
+  /// 渲染对象订阅它：变化只触发重绘，不惊动整棵树。
+  ValueListenable<(Offset?, double)> _pointer;
+
+  void _onPointerChanged() {
+    if (attached) {
+      markNeedsPaint();
+    }
+  }
+
+  @override
+  void attach(PipelineOwner owner) {
+    super.attach(owner);
+    _pointer.addListener(_onPointerChanged);
+  }
 
   /// 由本对象创建、本对象释放（见 [detach]）。
   ///
@@ -274,13 +437,15 @@ class _RenderLiquidGlass extends RenderProxyBox {
 
   void update({
     required LiquidGlassStyle style,
+    required ValueListenable<(Offset?, double)> pointer,
     required double devicePixelRatio,
     required Size viewSize,
     required BackdropKey? backdropKey,
     required double? refractionFactor,
     required double? maxRefraction,
   }) {
-    if (_style == style &&
+    if (identical(_pointer, pointer) &&
+        _style == style &&
         _devicePixelRatio == devicePixelRatio &&
         _viewSize == viewSize &&
         _backdropKey == backdropKey &&
@@ -288,17 +453,26 @@ class _RenderLiquidGlass extends RenderProxyBox {
         _maxRefraction == maxRefraction) {
       return;
     }
+    final pointerSwapped = !identical(_pointer, pointer);
+    if (pointerSwapped && attached) {
+      _pointer.removeListener(_onPointerChanged);
+    }
     _style = style;
+    _pointer = pointer;
     _devicePixelRatio = devicePixelRatio;
     _viewSize = viewSize;
     _backdropKey = backdropKey;
     _refractionFactor = refractionFactor;
     _maxRefraction = maxRefraction;
+    if (pointerSwapped && attached) {
+      _pointer.addListener(_onPointerChanged);
+    }
     markNeedsPaint();
   }
 
   @override
   void detach() {
+    _pointer.removeListener(_onPointerChanged);
     _shader?.dispose();
     _shader = null;
     _uniforms = null;
@@ -351,7 +525,6 @@ class _RenderLiquidGlass extends RenderProxyBox {
     final scaled = _style.scaledLengths(dpr, scale: scale);
     final tint = _style.tint;
     final rimColor = _style.rimColor;
-    final light = _style.lightDirection;
     final factor = _refractionFactor;
 
     uniforms.areaOrigin.set(origin.dx * dpr, origin.dy * dpr);
@@ -361,6 +534,12 @@ class _RenderLiquidGlass extends RenderProxyBox {
     uniforms.viewSize.set(_viewSize.width * dpr, _viewSize.height * dpr);
     uniforms.radius.set(scaled.radius);
     uniforms.tint.set(tint.r, tint.g, tint.b, tint.a);
+    uniforms.dispersion.set(_style.dispersion);
+    // 穹顶：按布局尺寸推导（见 liquidGlassDomeForSize），与 dpr / 祖先缩放无关
+    // —— 它混的是**方向**，不是长度。
+    uniforms.dome.set(
+      liquidGlassDomeForSize(Size(size.width, size.height)),
+    );
     // 先按窄带上限压（几何适配），再乘入场进度（0..1）。
     final cap = _maxRefraction;
     final cappedRefract = cap == null
@@ -376,7 +555,25 @@ class _RenderLiquidGlass extends RenderProxyBox {
     uniforms.rimColor.set(rimColor.r, rimColor.g, rimColor.b);
     uniforms.rim.set(_style.rimStrength);
     uniforms.rimWidth.set(scaled.rimWidth);
-    uniforms.lightDir.set(light.dx, light.dy);
+    // 边光的作用范围按表面**形状**推（见 liquidGlassRimCornerOnlyForSize）：细长条
+    // 整圈均匀、方正的大面板只留转角。与穹顶一样是几何适配，与 dpr / 祖先缩放无关
+    // —— 它混的是「高光落在哪条边上」，不是长度。
+    uniforms.rimCornerOnly.set(
+      liquidGlassRimCornerOnlyForSize(Size(size.width, size.height)),
+    );
+    // 手指高光：位置在 paint 期换算成屏幕物理 px（滚动/拖动中才跟得上）；
+    // 半径按 Nexio InteractiveHighlight 的口径取 1.5×短边，封顶防止大面板上
+    // 光斑铺满整块玻璃。
+    final (pointerLocal, pointerGlow) = _pointer.value;
+    if (pointerLocal != null) {
+      final pointerGlobal = localToGlobal(pointerLocal);
+      uniforms.pointer.set(pointerGlobal.dx * dpr, pointerGlobal.dy * dpr);
+    }
+    uniforms.pointerGlow.set(pointerGlow);
+    final shortSide = math.min(size.width, size.height);
+    uniforms.pointerRadius.set(
+      math.min(shortSide * 1.5, kPointerGlowRadiusCap) * dpr * scale,
+    );
     // u_size 与 u_texture 由引擎自动填/自动绑，这里不设（见着色器文件头）。
   }
 
@@ -474,6 +671,9 @@ class UndimmedBackdropCapture extends StatelessWidget {
   Widget build(BuildContext context) {
     return IgnorePointer(
       child: BackdropFilter.grouped(
+        // blur-tile-mode-ok：σ=0.01 的技法性空模糊（3σ ≈ 0.03 逻辑 px，肉眼不可见），
+        // 它存在的意义只是"让 BackdropGroup 先缓存一份未压暗的背景"。decal 与 clamp
+        // 在这种量级上没有可观察差别。
         filter: ui.ImageFilter.blur(sigmaX: 0.01, sigmaY: 0.01),
         child: const SizedBox.expand(),
       ),

@@ -1,14 +1,16 @@
-// 顶栏模糊风格两行的可发现性回归（2026-09-19 起在「课表页面」页玻璃 / 材质区块）。
+// 磨砂玻璃各行可发现性回归（2026-09-19 第七轮起在「外观编辑」页的材质面板，
+// 且面板内可调项一律**内联控件**：分段选择 / 选项胶囊，不开二级弹层）。
 //
-// 历史：ded4b7e5 把「顶栏模糊风格」（渐进 / 高斯）并进「玻璃材质」三选一，
-// 页面上再也找不到一行叫这个名字的开关；随后拆回独立行，但一度按「改了
-// 不生效就隐藏」的口径在高级材质 / 玻璃总关时把行藏掉，用户仍然找不到
-// （2026-09-12 反馈）。最终口径：**两行恒常显示，不做任何条件隐藏**。
+// 历史口径（不变的部分）：顶栏两行**恒常显示、不做任何条件隐藏**（2026-09-12
+// 反馈）；材质自由选择后不存在「暂不可用」状态。
 // 2026-09-12 二次反馈：材质选择放在「课表页面」页属于放错位置，两行迁入
 // 「外观与配色」玻璃模式组。
 // 2026-09-19 三次调整：用户要求「玻璃档位改到课程页面调整」，整块材质设置
-// （含这两行）又搬回「课表页面」的玻璃 / 材质区块 —— 搬家只换宿主页，
-// 「恒常显示、永不条件隐藏」的口径一个字没变，所以本文件只改导航落点。
+// 又搬回「课表页面」的玻璃 / 材质区块。
+// 2026-09-19 五次调整：整块材质设置并入「外观编辑」页的材质面板。
+// 2026-09-19 七次调整：整机只允许 实体卡片 / 液态玻璃 两种材质，面板改内联
+// 分段与胶囊 —— 面板本身是根覆盖层自插条目，任何嵌套弹层都会被它压在背面
+// （真机实锤），所以本文件还兼作「内联控件直接可调」的回归钉。
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -18,6 +20,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
@@ -47,8 +50,8 @@ void _seedPrefs(TimetableSettings settings) {
 Finder _scrollableUnder(Finder host) =>
     find.descendant(of: host, matching: find.byType(Scrollable)).first;
 
-/// 进入「设置 → 课表页面」子页（材质区块 2026-09-19 起在这里）。
-Future<void> _openTimetablePageSettings(WidgetTester tester) async {
+/// 进入「设置 → 课表页面」子页（材质区块的入口行在这里），返回其 provider。
+Future<TimetableProvider> _openTimetablePageSettings(WidgetTester tester) async {
   final provider = await createInitializedTestProvider(tester);
   await tester.pumpWidget(
     ChangeNotifierProvider.value(
@@ -67,6 +70,7 @@ Future<void> _openTimetablePageSettings(WidgetTester tester) async {
   );
   await tester.tap(find.text('课表页面'));
   await tester.pumpAndSettle();
+  return provider;
 }
 
 /// 课表页面子页整页是一条 HyperosListView（分节渲染）。
@@ -79,6 +83,30 @@ Future<void> _scrollTo(WidgetTester tester, Finder target) async {
     scrollable: _scrollableUnder(_appearanceList()),
   );
   await tester.pumpAndSettle();
+}
+
+Finder _panelScrollable() => find
+    .descendant(
+      of: find.byType(HyperosSheetFrame),
+      matching: find.byType(Scrollable),
+    )
+    .first;
+
+Future<void> _scrollPanelTo(WidgetTester tester, Finder target) async {
+  await tester.scrollUntilVisible(target, 200, scrollable: _panelScrollable());
+  await tester.pumpAndSettle();
+}
+
+/// 打开「外观编辑 → 材质」面板，返回其 provider。
+Future<TimetableProvider> _openMaterialPanel(WidgetTester tester) async {
+  final provider = await _openTimetablePageSettings(tester);
+  await _scrollTo(tester, find.text('外观编辑'));
+  await tester.tap(find.text('外观编辑'));
+  await tester.pumpAndSettle();
+  // 底部一排圆钮：圆钮与它下面那行名字同属一个点击区，点名字即可。
+  await tester.tap(find.text('材质'));
+  await tester.pumpAndSettle();
+  return provider;
 }
 
 void main() {
@@ -106,61 +134,32 @@ void main() {
         .setMockMethodCallHandler(liveChannel, null);
   });
 
-  testWidgets('默认设置下顶栏材质行与子页风格行恒常显示', (tester) async {
+  testWidgets('默认设置下整体材质与顶栏两行恒常显示', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(TimetableSettings.defaults());
 
-    await _openTimetablePageSettings(tester);
+    await _openMaterialPanel(tester);
 
-    // 质感方案行存在，出厂默认命中「经典磨砂」。
-    await _scrollTo(tester, find.text('质感方案'));
-    expect(find.text('质感方案'), findsOneWidget);
-    expect(find.text('经典磨砂'), findsWidgets);
+    // 整体材质两档置顶（出厂默认档在两材质口径下显示归桶为「实体卡片」）。
+    expect(find.text('玻璃模式'), findsOneWidget);
+    expect(find.text('实体卡片'), findsOneWidget);
 
-    // 首页顶栏玻璃（材质自由五档，默认渐进磨砂）+ 子页顶栏风格两档。
-    await _scrollTo(tester, find.text('首页顶栏玻璃'));
+    // 首页顶栏玻璃（两档，存量渐进档显示归桶为液态）+ 子页顶栏风格两档。
+    await _scrollPanelTo(tester, find.text('首页顶栏玻璃'));
     expect(find.text('首页顶栏玻璃'), findsOneWidget);
     expect(find.text('子页顶栏模糊风格'), findsOneWidget);
-    expect(find.text('渐进模糊'), findsWidgets);
+    expect(find.text('液态玻璃'), findsWidgets);
 
-    // 「各表面当前材质」地图卡存在，含表面行，且右侧材质值真实渲染
+    // 「各表面当前材质」地图存在，含表面行，且右侧材质值真实渲染
     // （HyperosListTile.details 只在可点行画，曾把整卡打成灰色空行）。
-    await _scrollTo(tester, find.text('各表面当前材质'));
+    await _scrollPanelTo(tester, find.text('各表面当前材质'));
     expect(find.text('首页玻璃带'), findsWidgets);
     expect(find.text('课程卡片'), findsWidgets);
     expect(find.text('实体'), findsWidgets);
   });
 
-  testWidgets('全局柔光下顶栏材质行仍常显、恒可用（不回归条件限制）', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(800, 1200));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    _seedPrefs(
-      TimetableSettings.defaults().copyWith(
-        frostedGlassMode: FrostedGlassMode.softGlass,
-      ),
-    );
-
-    await _openTimetablePageSettings(tester);
-    await _scrollTo(tester, find.text('首页顶栏玻璃'));
-
-    // 材质自由选择后不存在任何「暂不可用」状态：行恒可用。
-    expect(
-      tester
-          .widget<HyperosSelectTile<String>>(
-            find.byWidgetPredicate(
-              (widget) =>
-                  widget is HyperosSelectTile<String> &&
-                  widget.label == '首页顶栏玻璃',
-            ),
-          )
-          .enabled,
-      isTrue,
-    );
-    expect(find.text('子页顶栏模糊风格'), findsOneWidget);
-  });
-
-  testWidgets('全局液态下顶栏可选液态玻璃且行恒可用（自由选择回归钉）', (tester) async {
+  testWidgets('全局液态下顶栏内联点选直接生效（层级回归钉）', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(
@@ -170,22 +169,31 @@ void main() {
       ),
     );
 
-    await _openTimetablePageSettings(tester);
-    await _scrollTo(tester, find.text('首页顶栏玻璃'));
+    final provider = await _openMaterialPanel(tester);
 
-    expect(
-      tester
-          .widget<HyperosSelectTile<String>>(
-            find.byWidgetPredicate(
-              (widget) =>
-                  widget is HyperosSelectTile<String> &&
-                  widget.label == '首页顶栏玻璃',
-            ),
-          )
-          .enabled,
-      isTrue,
-    );
-    // 当前值如实显示为液态玻璃，与地图卡口径一致。
+    // 顶栏分段是内联控件：点「实体」段直接写回，不存在「弹层被面板压在
+    // 背面、点按落空」的层级问题（2026-09-19 真机实锤的回归钉）。
+    await _scrollPanelTo(tester, find.text('首页顶栏玻璃'));
+    await tester.tap(find.text('实体').first);
+    await tester.pumpAndSettle();
+    expect(provider.settings.homeBandGlassMaterial, 'solid');
+
+    // 地图卡的顶栏行同步显示实体（与设置同口径的只读推导）。
     expect(find.text('液态玻璃'), findsWidgets);
+  });
+
+  testWidgets('课表页面的玻璃区块只剩外观编辑入口行（整合后的回归钉）', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    _seedPrefs(TimetableSettings.defaults());
+
+    await _openTimetablePageSettings(tester);
+
+    await _scrollTo(tester, find.text('外观编辑'));
+    expect(find.text('外观编辑'), findsOneWidget);
+    // 原区块里的行都已搬进外观编辑的材质面板，页面上不再有它们。
+    expect(find.text('质感方案'), findsNothing);
+    expect(find.text('首页顶栏玻璃'), findsNothing);
+    expect(find.text('各表面当前材质'), findsNothing);
   });
 }

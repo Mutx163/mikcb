@@ -1,4 +1,8 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
+// 只取量跟随结果要用的那一个（与 hyperos_zoom_route.dart 同口径：别整包进来
+// 把 material 的一堆同名符号搞歧义）。
+import 'package:flutter/rendering.dart' show RenderFollowerLayer;
 import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_miuix_spec.dart';
@@ -118,7 +122,14 @@ class HomeMoreActionIcon extends StatelessWidget {
 /// 真实按钮保持原位当**透明点击区**（图标也画到这颗球上），[IgnorePointer]
 /// 保证球不挡点击；菜单打开期间调用方置 `visible: false` 让位给弹窗自己的
 /// 形变球 —— 与真实按钮被上游 `contentHidden` 隐藏的窗口完全一致。
-class FHeaderActionBall extends StatelessWidget {
+///
+/// ⚠️ **`showWhenUnlinked: false` 只堵得住「跟随失效」的一半**（2026-09-20）：
+/// 它挡的是「没有 leader 就画在布局位置」；链路**没解析出来**的其它情形（leader
+/// 在但变换算不出来 / layer 还没合成或刚被 detach）它管不到，而那些帧里这颗球
+/// 对外报的坐标会退化成**布局位置 = 屏幕左上角** —— 真机读成「右上角那颗圈圈
+/// 跑到左上角去了；点一下菜单才恢复」。另一半由 [_FHeaderActionBallState]
+/// 自己兜住，判据与理由都在那个类上。
+class FHeaderActionBall extends StatefulWidget {
   const FHeaderActionBall({
     super.key,
     required this.link,
@@ -134,6 +145,102 @@ class FHeaderActionBall extends StatelessWidget {
 
   /// 菜单打开期间置 false，让位给弹窗自己的形变球。
   final bool visible;
+
+  @override
+  State<FHeaderActionBall> createState() => _FHeaderActionBallState();
+}
+
+/// 球的可见性 = 调用方给的 `visible` **且**跟随链这一帧是「知道球在哪」的。
+///
+/// 为什么必须自己查：**跟随链没解析出来时，这颗球对外给的坐标全是错的**，
+/// 而错的那个值恰好就是屏幕左上角。两条路都会走到那儿：
+///
+/// 1. **绘制侧**：`FollowerLayer.addToScene` 在 `_lastTransform == null` 时画的
+///    就是 `unlinkedOffset` = 本组件的**布局位置**（这颗球是 `Stack` 的左上角
+///    对齐子节点 ⇒ 屏幕左上角）。`showWhenUnlinked: false` 只挡住其中「没有
+///    leader」那一种；「leader 在、但变换算不出来」那一种它管不到。
+/// 2. **几何侧**：`RenderFollowerLayer.getCurrentTransform()` 的契约是「没有
+///    layer（还没合成过 / 刚被 detach）/ 算不出变换 ⇒ 返回单位阵」，而
+///    `applyPaintTransform` 正是拿它当变换。也就是说这一帧里问「球在哪」，答案
+///    是**布局位置 = 屏幕左上角** —— 谁按这个答案取几何（玻璃面算采样区矩形、
+///    几何 uniform，或者任何 `localToGlobal` 取屏幕坐标的绘制）就会把圆画到
+///    左上角去，而**画出来的位置还会被登记 / 缓存住**，链路恢复了也不会自己
+///    回位。真机现象「只要进外观编辑页，右上角那颗圈圈就跑到左上角；点一下
+///    菜单才恢复」（2026-09-20）就是这一族的读法。
+///
+/// ⚠️ 本地复现不出来不是反证：`_pathsToCommonAncestor` 找不到共同祖先那条
+/// assert 只在 debug 生效，release 直接往下算；而上面第 1 条里「退化矩阵」
+/// 那一半要靠一个**行列式为 0 的 TransformLayer**，Flutter 自己的
+/// `RenderTransform.paint` 会在推层之前短路掉（"singular → paint nothing"），
+/// 所以测试环境里连触发的入口都不好造。因此这里的判据**不依赖任何一条具体
+/// 触发路径**，只依赖上游契约本身：拿不到 layer / 拿不到变换 ⇒ 这一帧坐标不可信
+/// ⇒ 不画。
+///
+/// 判据用上游契约、不做任何几何假设，所以正常状态下不会误伤：链路正常时
+/// `layer` 与 `getLastTransform()` 都在（变换是每帧重算的，
+/// `FollowerLayer.alwaysNeedsAddToScene` 恒为 true）。链路恢复（leader 回来、
+/// 重新合成）会自动把球放回去。
+class _FHeaderActionBallState extends State<FHeaderActionBall> {
+  /// 量跟随结果的抓手（[RenderFollowerLayer] 自己就是 follower）。
+  final GlobalKey _followerKey = GlobalKey();
+
+  /// 跟随链这一帧算不算得出来。默认 true：第一次合成之前没有结论，先按正常画。
+  bool _linkResolved = true;
+
+  /// 「跟随链断了」只留一次痕，状态不翻转不重复打。
+  bool _linkLossReported = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(_watchLink);
+  }
+
+  /// 每帧末查一次跟随结果（变换是**上一帧合成阶段**算出来的，只能帧末读）。
+  ///
+  /// 稳定状态下代价只有一次取 renderObject + 一次矩阵取值，且只在结果翻转时
+  /// setState（不会每帧重建球）。
+  void _watchLink(Duration _) {
+    if (!mounted) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback(_watchLink);
+    final renderObject = _followerKey.currentContext?.findRenderObject();
+    if (renderObject is! RenderFollowerLayer) {
+      return;
+    }
+    // 两个都要满足才算"知道球在哪"：
+    // * `layer == null`（还没合成过 / 刚被 detach）—— 此时
+    //   `RenderFollowerLayer.getCurrentTransform()` 回落到**单位阵**，任何按它
+    //   取几何的查询（`localToGlobal` / 命中测试 / 玻璃算采样区与几何 uniform）
+    //   都会把答案算成**布局位置**，而这颗球的布局位置就是屏幕左上角；
+    // * `getLastTransform() == null` —— 契约里那两种情况（没接上 leader，或带
+    //   退化矩阵），此时 `addToScene` 直接画在布局位置。
+    // 任一不成立都不安全，一律不画（fail-safe：宁可少画一帧）。
+    final layer = renderObject.layer;
+    final resolved = layer != null && layer.getLastTransform() != null;
+    if (resolved == _linkResolved) {
+      return;
+    }
+    if (!resolved && !_linkLossReported) {
+      _linkLossReported = true;
+      _traceLinkLoss(renderObject);
+    }
+    setState(() => _linkResolved = resolved);
+  }
+
+  /// 跟随链断裂的留痕：debug 才打（与本仓 `[glass-state]` 那条同口径，正式包
+  /// 不留诊断输出），但要对得上「哪颗球、什么时候、锚还在不在」。
+  void _traceLinkLoss(RenderFollowerLayer renderObject) {
+    if (kReleaseMode) {
+      return;
+    }
+    debugPrint(
+      '[glass-ball] link-lost size=${renderObject.size} '
+      'leaderLinked=${widget.link.leader != null} '
+      '→ 照画会落在布局位置（屏幕左上角），本帧起隐藏',
+    );
+  }
 
   /// 外阴影（垫在玻璃**之下**）。
   ///
@@ -152,7 +259,7 @@ class FHeaderActionBall extends StatelessWidget {
   /// 一颗、再交接给常驻球的，两侧不一致就会在交接瞬间现形 —— 真机反馈「阴影在
   /// 弹窗收回后一秒突然出现」就是这么来的。同理，这里**不要**再给自己垫洗色之类
   /// 弹层侧没有的层：交接面多一层，跳变就换一种形式回来。
-  Widget _buildVisibleBall(BuildContext context) {
+  Widget _buildVisibleBall() {
     return Stack(
       children: [
         const Positioned.fill(
@@ -173,7 +280,7 @@ class FHeaderActionBall extends StatelessWidget {
           child: SizedBox(
             width: MiuixIconButtonDefaults.minWidth,
             height: MiuixIconButtonDefaults.minHeight,
-            child: Center(child: icon),
+            child: Center(child: widget.icon),
           ),
         ),
       ],
@@ -183,12 +290,16 @@ class FHeaderActionBall extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CompositedTransformFollower(
-      link: link,
+      key: _followerKey,
+      link: widget.link,
       // ⚠️ 必须 false。leader（真实按钮）不在树上时，follower 会退化成画在
       // **自己的布局位置** —— 也就是这层 Stack 的左上角，屏幕上就是"左上角
       // 冒出一颗爱心/菜单球"。首页切到内嵌页（任务清单等）时首页内容整块被
       // 替换，两个 leader 都不在树上，就是这个现象（2026-09-14 真机反馈）。
-      // 置 false 后没有 leader 就不画，任何导致 leader 缺席的路径都被堵住。
+      //
+      // ⚠️ 但它只堵得住「没有 leader」这一条：**leader 在树上、变换算不出来**
+      // 时（祖先链里有退化矩阵）照样画在布局位置，且该分支无视本开关（见类
+      // 注释）。那一条由 [_watchLink] 兜住。
       showWhenUnlinked: false,
       child: IgnorePointer(
         // ⚠️ 菜单打开期间**不要**把这颗球从树上摘掉（早先这里是
@@ -202,7 +313,10 @@ class FHeaderActionBall extends StatelessWidget {
         // `maintainState` 保住玻璃面自己的状态，`IgnorePointer` 让点击穿透到
         // 下面的真实按钮。
         child: Visibility(
-          visible: visible,
+          // 跟随链断掉时同样走「留着、不画」：位置是错的，但玻璃面与采样区
+          // 登记必须留着 —— 链路一恢复下一帧就是玻璃，不能走重新挂载那条会
+          // 闪一下的路。
+          visible: widget.visible && _linkResolved,
           maintainState: true,
           maintainAnimation: true,
           maintainSize: true,
@@ -213,7 +327,7 @@ class FHeaderActionBall extends StatelessWidget {
           // 与"不摘掉球"那条口径不冲突（球一直在，只是换了个身份重新登记）。
           child: KeyedSubtree(
             key: ValueKey<Brightness>(Theme.of(context).brightness),
-            child: _buildVisibleBall(context),
+            child: _buildVisibleBall(),
           ),
         ),
       ),

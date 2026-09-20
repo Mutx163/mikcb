@@ -1,6 +1,7 @@
 import '../services/android_animation_scale_service.dart';
 import 'hyperos/hyperos_motion.dart';
 import 'hyperos/hyperos_navigation.dart';
+import 'hyperos/hyperos_zoom_route.dart';
 
 /// Wires Android system animation scale into HyperOS motion (call after
 /// [AndroidAnimationScaleService.ensureInitialized]).
@@ -12,6 +13,7 @@ void configureHyperosMotionFromAndroid() {
   HyperosMotionPlatform.onUserTransitionSpeedChanged = (speed) {
     AndroidAnimationScaleService.setUserTransitionSpeed(speed);
     HyperosPageRoute.syncTransitionDurations();
+    HyperosZoomPageRoute.syncTransitionDurations();
     notifyHyperosMotionChanged();
   };
   notifyHyperosMotionChanged();
@@ -21,6 +23,7 @@ void configureHyperosMotionFromAndroid() {
 void applyHyperosUserTransitionSpeed(double speed) {
   AndroidAnimationScaleService.setUserTransitionSpeed(speed);
   HyperosPageRoute.syncTransitionDurations();
+  HyperosZoomPageRoute.syncTransitionDurations();
 }
 
 /// Refreshes corner radius / scale from the platform channel.
@@ -31,5 +34,6 @@ Future<void> refreshHyperosMotionFromAndroid() async {
   HyperosMotionPlatform.displayCornerRadiusDp =
       AndroidAnimationScaleService.displayCornerRadiusDp;
   HyperosPageRoute.syncTransitionDurations();
+  HyperosZoomPageRoute.syncTransitionDurations();
   notifyHyperosMotionChanged();
 }

@@ -382,7 +382,14 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(HyperosTokens.cardRadius),
         child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          // tileMode 必须给 clamp：默认 decal 会让模糊结果在离边约 3σ 的带里淡成
+          // 透明黑，面板四周会读出一圈深边（σ=20 时那条带约 60px）。同款规则见
+          // test/architecture/blur_tile_mode_guard_test.dart。
+          filter: ui.ImageFilter.blur(
+            sigmaX: 20,
+            sigmaY: 20,
+            tileMode: ui.TileMode.clamp,
+          ),
           child: Container(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
             decoration: BoxDecoration(
@@ -559,7 +566,12 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
   Widget _buildFinishedOverlay(AppLocalizations l10n) {
     return Positioned.fill(
       child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        // 同上：tileMode 不给会沿屏幕四边淡出成透明黑。
+        filter: ui.ImageFilter.blur(
+          sigmaX: 18,
+          sigmaY: 18,
+          tileMode: ui.TileMode.clamp,
+        ),
         child: ColoredBox(
           color: Colors.black.withValues(alpha: 0.6),
           child: Center(

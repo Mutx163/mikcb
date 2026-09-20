@@ -1,7 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/painting.dart' show Color, Offset;
+import 'package:flutter/painting.dart' show Color;
 
 import '../../../widgets/glass_shader_program.dart';
 
@@ -38,10 +38,10 @@ class LiquidGlassStyle {
     this.refraction = 8,
     this.refractionBand = 7,
     this.refractionEdgePow = 2.5,
+    this.dispersion = 0,
     this.rimStrength = 0.2,
-    this.rimWidth = 3,
+    this.rimWidth = 1.5,
     this.rimColor = const Color(0xFFFFFFFF),
-    this.lightDirection = const Offset(-0.6, -0.8),
   });
 
   /// 表面圆角，必须与外面裁剪用的圆角一致：着色器拿它算 SDF 遮罩，对不上会出现
@@ -62,19 +62,30 @@ class LiquidGlassStyle {
   final double refractionBand;
 
   /// 位移沿边缘上升的陡缓，越大越集中在最外圈。
+  ///
+  /// 2026-09-19 起折射截面是圆弧（`1-√(1-e²)`），本值作为圆弧之上的陡缓指数、
+  /// 除以默认值 2.5 参与：默认档恰好是纯圆弧。
   final double refractionEdgePow;
 
-  /// 边缘高光强度（0–1）。
+  /// 色散强度（0–1）：折射带内红/蓝采样点沿折射方向错开 `位移 × 本值`。
+  /// 0 = 关（单采样，与加色散前逐像素一致）。
+  final double dispersion;
+
+  /// 边缘高光强度（0–1）。**高光落在哪里由表面形状决定**，不由这个值决定：细长条
+  /// （底栏药丸、首页玻璃带）整圈均匀，方正的大面板（底部弹窗、弹窗家族）只留转角
+  /// （`liquid_glass_surface.dart` 的 `liquidGlassRimCornerOnlyForSize`）。所以这个值
+  /// 调的是"这条边光多亮"，不是"它出现在哪条边上"——贯屏长直边上的一条高光无论多细
+  /// 都只会读成描边。
   final double rimStrength;
 
   /// 边缘高光带宽（逻辑 px）。
+  ///
+  /// 1.5（≈ 4.5 物理 px）。**不能低于 1 个逻辑像素** —— 0.8 那版在真机上是一根发丝，
+  /// 圆角上直接读出锯齿。见 `LiquidGlassTuning.defaultRimWidth` 的说明。
   final double rimWidth;
 
   /// 边缘高光颜色。
   final Color rimColor;
-
-  /// 光来向（屏幕坐标，y 向下）。默认左上。
-  final Offset lightDirection;
 
   /// 把着色器要的四个长度换算成**物理像素**。
   ///
@@ -109,10 +120,10 @@ class LiquidGlassStyle {
           other.refraction == refraction &&
           other.refractionBand == refractionBand &&
           other.refractionEdgePow == refractionEdgePow &&
+          other.dispersion == dispersion &&
           other.rimStrength == rimStrength &&
           other.rimWidth == rimWidth &&
-          other.rimColor == rimColor &&
-          other.lightDirection == lightDirection;
+          other.rimColor == rimColor;
 
   @override
   int get hashCode => Object.hash(
@@ -122,10 +133,10 @@ class LiquidGlassStyle {
     refraction,
     refractionBand,
     refractionEdgePow,
+    dispersion,
     rimStrength,
     rimWidth,
     rimColor,
-    lightDirection,
   );
 }
 
@@ -147,10 +158,15 @@ class LiquidGlassUniforms {
       refract = shader.getUniformFloat('u_refract'),
       band = shader.getUniformFloat('u_band'),
       edgePow = shader.getUniformFloat('u_edge_pow'),
+      dispersion = shader.getUniformFloat('u_dispersion'),
+      dome = shader.getUniformFloat('u_dome'),
+      pointer = shader.getUniformVec2('u_pointer'),
+      pointerGlow = shader.getUniformFloat('u_pointer_glow'),
+      pointerRadius = shader.getUniformFloat('u_pointer_radius'),
       rimColor = shader.getUniformVec3('u_rim_color'),
       rim = shader.getUniformFloat('u_rim'),
       rimWidth = shader.getUniformFloat('u_rim_width'),
-      lightDir = shader.getUniformVec2('u_light_dir'),
+      rimCornerOnly = shader.getUniformFloat('u_rim_corner_only'),
       viewSize = shader.getUniformVec2('u_view_size');
 
   final ui.UniformVec2Slot areaOrigin;
@@ -160,10 +176,31 @@ class LiquidGlassUniforms {
   final ui.UniformFloatSlot refract;
   final ui.UniformFloatSlot band;
   final ui.UniformFloatSlot edgePow;
+
+  /// 色散强度（0..1），来自调参模型。
+  final ui.UniformFloatSlot dispersion;
+
+  /// 穹顶强度（0..1）：绘制期按表面短边推导（小圆件才有），不是材质参数。
+  final ui.UniformFloatSlot dome;
+
+  /// 手指高光三件套：指针位置（屏幕物理 px）、按压进度（0..1）、光斑半径（物理 px）。
+  /// 由表面自己的指针监听喂，不是材质参数。
+  final ui.UniformVec2Slot pointer;
+  final ui.UniformFloatSlot pointerGlow;
+  final ui.UniformFloatSlot pointerRadius;
+
   final ui.UniformVec3Slot rimColor;
   final ui.UniformFloatSlot rim;
   final ui.UniformFloatSlot rimWidth;
-  final ui.UniformVec2Slot lightDir;
+
+  /// 边光的作用范围（0 = 整圈均匀、1 = 只留转角）：绘制期按表面**长短边比**推导
+  /// （`liquid_glass_surface.dart` 的 `liquidGlassRimCornerOnlyForSize`），不是材质参数。
+  ///
+  /// 细长条（底栏药丸、首页玻璃带）走整圈均匀 —— 它们的长边就是主体，只留转角会
+  /// 让药丸只剩两头亮着；方正的大面板（底部弹窗、弹窗家族）只留转角 —— 贯屏长直边
+  /// 上的一条高光只会读成描边。为什么必须按形状分：药丸与弹窗的上沿几何上分不开
+  /// （都是三百多像素的长直边、圆角 27/28），见 `.frag` 文件头第四轮。
+  final ui.UniformFloatSlot rimCornerOnly;
 
   /// 视口的物理像素尺寸。
   ///

@@ -154,6 +154,15 @@ class _AdvancedMaterialSettingsScreenState
                           ),
                         ),
                         HyperosSliderTile(
+                          title: l10n.liquidGlassDispersionLabel,
+                          value: liquidTuning.dispersion,
+                          divisions: 20,
+                          valueLabel: pct(liquidTuning.dispersion),
+                          onChanged: (value) => _updateLiquidTuning(
+                            (t) => t.copyWith(dispersion: value),
+                          ),
+                        ),
+                        HyperosSliderTile(
                           title: l10n.liquidGlassRimStrengthLabel,
                           value: liquidTuning.rimStrength,
                           divisions: 20,
@@ -166,7 +175,9 @@ class _AdvancedMaterialSettingsScreenState
                           title: l10n.liquidGlassRimWidthLabel,
                           value: liquidTuning.rimWidth,
                           max: LiquidGlassTuning.maxRimWidth,
-                          divisions: 24,
+                          // 步长 0.1（3 / 30）：细线口径的取值都在 0.6~1.1 之间，
+                          // 步长 0.5 会连默认值 0.8 都落不到格点上。
+                          divisions: 30,
                           valueLabel: num(liquidTuning.rimWidth, 1),
                           onChanged: (value) => _updateLiquidTuning(
                             (t) => t.copyWith(rimWidth: value),
