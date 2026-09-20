@@ -212,6 +212,12 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
         widget.backdrop ??
         HyperosGlassBackdropRegistry.resolve(context)?.backdrop ??
         os4GlassBackdrop;
+    // 二级面板的锚定矩形（窗口坐标，点开那一刻从 [_addRowAnchor] 取）。
+    //
+    // 取一份局部变量：让位时二级要跟一级绕**同一个支点**缩，支点就是这个矩形的
+    // 右上角（= 一级面板的右上角，见二级面板那段注释），而 `_secondaryBounds` 是
+    // 可空字段，Dart 不对它做类型提升。
+    final secondaryBounds = _secondaryBounds;
     // 要不要给两块面板垫一层共享组捕获（见下面 `BackdropGroup` 那段）。
     //
     // 只在二级面板真的会挂出来时才**真的垫**（`_secondaryBounds` 一旦点开就留到菜单
@@ -220,7 +226,7 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
     // 让垫底与二级面板**同帧**进出：晚一帧的话，二级面板第一帧的共享捕获点会落在
     // 它自己身上（它排在一级面板之后），又会采到一级玻璃。
     final needsGroupCapture =
-        _secondaryBounds != null &&
+        secondaryBounds != null &&
         !LiquidGlassDegradation.shouldDegrade(context);
 
     // 外层手势隔离：弹层自带的滚动视图不该继承首页的橡皮筋物理，也不该把滚动
@@ -298,8 +304,11 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
               // 一级卡轮廓与「不参与让位的二级卡」对齐，一度传过
               // `stackScalesPanel: false`（只缩内容、卡片轮廓原地不动）。用户当场
               // 否掉 ——「为什么他妈的卡片没缩，内容缩放了」。**卡片本身缩下去才是
-              // 这个让位的本体**，内容跟着缩是理所当然的；两块卡的接缝是另一个问题
-              // （要么两块一起缩，要么别动这条）。被否掉那条路的实测数据见笔记
+              // 这个让位的本体**，内容跟着缩是理所当然的。
+              //
+              // 那条接缝（一级缩了、二级没缩）由**二级也参与让位**解决，见下面
+              // 二级面板那段：两块绕同一个支点一起缩，不再靠「只缩内容」去凑。
+              // 被否掉那条路的实测数据见笔记
               // `.agents/notes/rejected/bug-fix/2026-09-20-home-menu-stack-scales-content-only.md`。
               stackShrinkFromAnchor: true,
               // 让位期间的压暗色：上游默认是「暗色主题黑罩 / 亮色主题**白罩**」，
@@ -327,10 +336,10 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
                 ),
               ),
             ),
-            if (_secondaryBounds != null)
+            if (secondaryBounds != null)
               MiuixGlassSecondaryPopup(
                 show: _secondaryOpen,
-                anchorBounds: _secondaryBounds,
+                anchorBounds: secondaryBounds,
                 // 二级与一级共用同一个锚点（上游 materialAnchor 语义）。注意锚点
                 // 一旦绑定到图标按钮，上游 `inherited` 分支会让内置面板改用锚点
                 // 的 OS4 surface —— 那条分支已被注入面取代，不再参与渲染。
@@ -343,6 +352,37 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
                 // ⚠️ 这个垫底（`grouped: true`）要靠上面那个 `BackdropGroup` 才
                 // 真的生效 —— 组里没有垫底滤镜时它什么也取不到，见那段说明。
                 surfaceBuilder: hyperosGlassPopupSecondarySurface,
+                // ── 让位：二级必须跟一级绕**同一个支点**一起缩 ──
+                //
+                // 上游只让一级参与让位，二级面板原地不动。两块面板同宽同边
+                // （二级锚在一级的「添加」行上、且共用同一份宽度约束），一级绕
+                // 右上角缩 5% 后，它的左边缘会往右收 5% 板宽（200 宽的面板上是
+                // 10px），二级却还在原地 —— 接缝处读起来就是「玻璃缩了、白底没
+                // 缩」（2026-09-20 用户口径），两处「添加」行也错开同样多。
+                //
+                // 修法不是「让二级按自己的规则缩」：二级的缺省支点取「离锚点最近
+                // 的面板角」，而它的锚点行在自己左上角 —— 会朝左上缩，与一级的
+                // 右上角正好相反。这里把支点**钉死**成锚定矩形的右上角：那既是
+                // 锚点行的右上角，也是一级面板的右上角（行横跨面板全宽、面板左右
+                // 无内边距），两块因此绕同一点、同幅度、同时长缩 —— 整个菜单读起
+                // 来是一个整体在退。
+                stacked: _secondaryOpen,
+                stackDuration: _submenuRevealDuration,
+                stackPivotBounds: Rect.fromLTWH(
+                  secondaryBounds.right,
+                  secondaryBounds.top,
+                  0,
+                  0,
+                ),
+                // 只借让位那份**视觉**：二级是浮在上面、当前唯一可点的那层，
+                // 输入（行命中 / 焦点 / 返回键）必须还归它。默认值 true 会把内容
+                // 一起锁掉 —— 那一下点击会落到遮罩上，读起来变成「点哪都只是收起
+                // 二级」，返回键也关不掉二级。
+                stackLocksInput: false,
+                // 二级是浮在前面的**亮面**（三级亮度里最亮的那一级），让位时不能
+                // 跟着压暗。不传的话上游缺省在亮色主题下是**白罩**（alpha .4），
+                // 二级面板会被照亮一层。
+                maskColor: Colors.transparent,
                 // 只留底边距（顶边 0）：二级面板顶边 = 锚点行（「添加」）顶边，
                 // 标题行才能与一级那一行**逐像素同位**（默认顶边 8 会整体下沉）。
                 contentPadding: const EdgeInsets.only(bottom: 8),

@@ -604,14 +604,20 @@ void main() {
       );
     });
 
-    testWidgets('让位缩的是整张卡：卡片轮廓跟着内容一起缩', (tester) async {
-      // 用户口径（2026-09-20，试过「只缩内容」之后当场否掉）：
-      // 「为什么他妈的卡片没缩，内容缩放了」—— **卡片本身缩下去才是这个让位的
-      // 本体**，内容跟着缩是理所当然的。
+    testWidgets('让位：两块卡绕同一支点一起缩，边缘与「添加」行对齐', (tester) async {
+      // 两条用户口径（2026-09-20）一起钉：
       //
-      // 所以这条钉的是轮廓也在缩：支点在右上角，右边与上边不动，左边往右收
-      // 5% 板宽、下边往上收 5% 板高。（「一级卡缩了、不参与让位的二级卡没缩」
-      // 造成的 10px 接缝是另一个问题，不要靠「只缩内容」去消它 —— 那条路被否了。）
+      // ①「为什么他妈的卡片没缩，内容缩放了」—— **卡片本身缩下去才是这个让位的
+      //   本体**，内容跟着缩是理所当然的。只缩内容那条路被否掉过（见笔记
+      //   `.agents/notes/rejected/bug-fix/2026-09-20-home-menu-stack-scales-content-only.md`）。
+      // ②「玻璃缩小了，但是底部的实体卡没缩小」/「玻璃颜色缩小了，但是白底没缩小」
+      //   —— 一级卡缩了、**不参与让位的二级卡**没缩。两块同宽同边（二级锚在一级
+      //   的「添加」行上、共用同一份宽度约束），一级绕右上角缩 5% 后左边缘往右
+      //   收 5% 板宽（200 宽上就是 10px），二级却还在原地：接缝处读起来就是
+      //   「只有一半缩了」，两处「添加」行也错开同样多。
+      //
+      // 所以这里量三件事：一级整张卡缩；二级绕**同一个支点**同步缩（不缩就比一级
+      // 宽出 5% 板宽）；两处「添加」行同位。
       await pumpMenu(tester);
 
       final outlineClosed = tester.getRect(panelSurface(secondary: false));
@@ -634,6 +640,28 @@ void main() {
         outlineClosed.bottom - outline.bottom,
         closeTo(outlineClosed.height * .05, .5),
       );
+
+      // 二级面板跟着一起缩：不缩的话它比缩过的一级宽出 5% 板宽、左边缘多露
+      // 10px —— 那就是用户读到的「白底没缩」。
+      final secondary = tester.getRect(panelSurface(secondary: true));
+      expect(
+        secondary.width,
+        closeTo(outline.width, .5),
+        reason: '两块卡必须同宽（二级不参与让位时会比一级宽 5% 板宽）',
+      );
+      expect(
+        secondary.left,
+        closeTo(outline.left, .5),
+        reason: '二级左边缘必须与一级卡缩后对齐 —— 接缝就在这里露出来',
+      );
+      expect(secondary.right, closeTo(outline.right, .5));
+
+      // 二级标题行与一级那一行同位（「同一行分出一截」的读感靠它）。支点取的是
+      // 锚点行右上角，与面板右上角差 8px 的内容内边距，残差 5% × 8 = 0.4px。
+      final primaryRow = tester.getRect(find.text('添加').first);
+      final titleRow = tester.getRect(find.text('添加').last);
+      expect(titleRow.left, closeTo(primaryRow.left, 1));
+      expect(titleRow.top, closeTo(primaryRow.top, 1));
     });
 
     testWidgets('点二级标题行只收起二级、不关菜单，一级缩放复原', (tester) async {
