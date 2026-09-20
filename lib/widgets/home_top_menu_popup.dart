@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/frosted/liquid_glass_degradation.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_blurred_header.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_glass_backdrop_host.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_theme.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart'
+    show UndimmedBackdropCapture;
 import 'package:university_timetable/ui/hyperos/os4_glass_popup_surface.dart';
 import 'package:university_timetable/ui/hyperos/os4_glass_backdrop.dart';
 import 'package:university_timetable/utils/frame_perf_probe.dart';
@@ -209,106 +212,151 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
         widget.backdrop ??
         HyperosGlassBackdropRegistry.resolve(context)?.backdrop ??
         os4GlassBackdrop;
+    // 要不要给两块面板垫一层共享组捕获（见下面 `BackdropGroup` 那段）。
+    //
+    // 只在二级面板真的会挂出来时才**真的垫**（`_secondaryBounds` 一旦点开就留到菜单
+    // 关闭，二级收起动画期间那块玻璃还在读组捕获）；玻璃画不出来时也不垫 —— 降级
+    // 实底不采背景，那层全屏 pass 白付。`_secondaryBounds` 是 state，这里读它是为了
+    // 让垫底与二级面板**同帧**进出：晚一帧的话，二级面板第一帧的共享捕获点会落在
+    // 它自己身上（它排在一级面板之后），又会采到一级玻璃。
+    final needsGroupCapture =
+        _secondaryBounds != null &&
+        !LiquidGlassDegradation.shouldDegrade(context);
 
     // 外层手势隔离：弹层自带的滚动视图不该继承首页的橡皮筋物理，也不该把滚动
     // 通知冒泡回首页（首页同样有整页滚动监听）。
+    //
+    // ⚠️ 两块面板必须**同处一个共享捕获组**（[BackdropGroup] + 组内首个分组滤镜
+    // 垫底）。这是本仓弹层的统一结构 —— 列表弹窗、选择弹窗、底部弹窗、设置页
+    // 预览各有一份；首页菜单从上游 OS4 弹层迁过来时漏了这一层，二级面板的
+    // `useAncestorGroupCapture` 一直是空转的（见下面垫底的说明）。
     return HyperosGlassPopupScrollGuard(
-      child: Stack(
-        children: [
-          MiuixGlassTransformPopup(
-            show: widget.show,
-            anchor: widget.anchor,
-            anchorContent: widget.anchorContent,
-            backdrop: backdrop,
-            // 宽度见 [_popupSizing]（收到旧实现的下界原宽 200）。
-            sizing: _popupSizing,
-            // 面板材质交给全局档位分派（液态 / 柔光 / 高斯 / 实底）——
-            // **形变动效与几何仍由上游 presenter 负责，一行不动**。
-            // 不再传 `visuals`：注入面已取代上游内置面板，上游那 7 个 OS4 材质
-            // 字段不再参与渲染（见 os4_glass_popup_surface.dart）。
-            surfaceBuilder: hyperosGlassPopupSurface,
-            // 二级展开时一级面板"让位"：缩小 5% + 压暗，收起复原。
+      child: BackdropGroup(
+        child: Stack(
+          children: [
+            // 组内**第一个**分组滤镜：在面板之前把共享捕获点钉在「还没画上一级
+            // 面板」的页面上。二级面板的液态面（`grouped: true`）采的就是它。
             //
-            // 手感由 fork 补丁的两个参数定：`stackDuration` 把包内那条
-            // 「收敛容差写死、参数不可调」的让位弹簧换成确定性的 200ms
-            // fastOutSlowIn（曲线取补丁缺省值；时长与旧实现
-            // `hyperos_list_popup.dart` 同值）；
-            // `stackPivotBounds` 把支点钉在**被点开的这一行**上（见下）。
-            stacked: _secondaryOpen,
-            stackDuration: _submenuRevealDuration,
-            // 让位支点 = 被点的那一行（`_secondaryBounds` = 「添加」行的窗口矩形，
-            // 点开二级那一刻量下）。
+            // 为什么非有不可：`grouped` 只是「去祖先 BackdropGroup 取共享捕获
+            // 点」，**组里没有别的滤镜时它什么也取不到**，引擎于是退回「按绘制
+            // 顺序采自己下面那一层」——而二级面板下面正是**一级面板的玻璃**。
+            // 玻璃叠玻璃再折射一遍，一级那张卡片会以折射后的样子在二级卡片里
+            // 重影出来，用户读到的就是「同时显示了收缩和未收缩的两个一级卡片，
+            // 缩放后的显示在上面」（2026-09-20 反馈）。
             //
-            // 为什么不能用「锚点角」(`stackShrinkFromAnchor`)：支点取哪个角，
-            // 面板就朝那个角缩，**离角越远的内容挪得越多** —— 而这正是二级面板
-            // 顶部那个标题行要钉住的东西（它是一级里这一行的复印件，两份必须
-            // 逐像素重合）。「更多」按钮在面板右上，这一行离那个角有一百多像素，
-            // 实测 200 宽的面板上它被挪了 9px：同一行字显示成两份、还错着位
-            // （2026-09-20 用户反馈「一级菜单同时显示了收缩和未收缩两个状态」）。
-            // 把这一行自己的矩形当支点，它的左上角原地不动，复印件与它对齐到
-            // 1px 以内；面板则向这一行收拢（顶边 / 右边各内收 7~9px，读起来仍是
-            // "整块面板让位退后"）。
-            stackPivotBounds: _secondaryBounds,
-            // 让位期间的压暗色：上游默认是「暗色主题黑罩 / 亮色主题**白罩**」，
-            // 于是亮色主题下二级展开时一级面板反而**变亮**（真机反馈）。
-            // 改用与列表弹层同一份——模态遮罩色（黑）× 同一倍率 0.5。
-            maskColor: HyperosBlurredHeader.modalBarrierColor(context)
-                .withValues(
-                  alpha:
-                      HyperosBlurredHeader.modalBarrierColor(context).a * 0.5,
-                ),
-            onDismissRequest: _close,
-            child: KeyedSubtree(
-              key: _rowsKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (var index = 0; index < entries.length; index++) ...[
-                    if (index > 0 &&
-                        entries[index].category !=
-                            entries[index - 1].category)
-                      const SizedBox(height: 8),
-                    _row(entries[index], l10n),
-                  ],
-                ],
-              ),
+            // 只在二级真的会挂出来、且玻璃画得出来时才真的垫上（那层是全屏合成器
+            // 捕获）；否则这格是 `SizedBox.shrink`，一分钱不付。开关口径与列表弹窗
+            // 的 `_hasSubmenu` 那段同款。
+            //
+            // ⚠️ 这一格**常驻**（不垫时是 `SizedBox.shrink`），不要改成条件插拔：
+            // 位置一变，下面那两块面板在 Stack 里的下标跟着变，Flutter 的无 key
+            // 复用会判成「换了个 widget」而把整棵子树重建 —— 一级面板的
+            // `GlassPopupPresenter` State 一重建，`_stack` 让位动画就永远停在 0
+            // （二级展开时一级面板不缩了），而且入场形变动画会重放一遍。
+            // 2026-09-20 实测：条件插拔时 `panelScale` 停在 0.9998 而不是 0.95。
+            Positioned.fill(
+              child: needsGroupCapture
+                  ? const UndimmedBackdropCapture()
+                  : const SizedBox.shrink(),
             ),
-          ),
-          if (_secondaryBounds != null)
-            MiuixGlassSecondaryPopup(
-              show: _secondaryOpen,
-              anchorBounds: _secondaryBounds,
-              // 二级与一级共用同一个锚点（上游 materialAnchor 语义）。注意锚点
-              // 一旦绑定到图标按钮，上游 `inherited` 分支会让内置面板改用锚点
-              // 的 OS4 surface —— 那条分支已被注入面取代，不再参与渲染。
-              materialAnchor: widget.anchor,
+            MiuixGlassTransformPopup(
+              show: widget.show,
+              anchor: widget.anchor,
+              anchorContent: widget.anchorContent,
               backdrop: backdrop,
-              // 与一级面板**同一份**宽度约束，两块才对得齐。
+              // 宽度见 [_popupSizing]（收到旧实现的下界原宽 200）。
               sizing: _popupSizing,
-              // 二级面板**浮在一级玻璃之上**，必须走带垫底的注入面：否则液态档
-              // 会采样到一级面板的玻璃输出，玻璃叠玻璃再折射一遍、读感浑浊。
-              surfaceBuilder: hyperosGlassPopupSecondarySurface,
-              // 只留底边距（顶边 0）：二级面板顶边 = 锚点行（「添加」）顶边，
-              // 标题行才能与一级那一行**逐像素同位**（默认顶边 8 会整体下沉）。
-              contentPadding: const EdgeInsets.only(bottom: 8),
-              // 遮罩点击带坐标 → 由 [_handleScrimTap] 区分"点一级面板内"还是
-              // "点两个面板之外"；返回键仍走 onDismissRequest（先收二级、
-              // 再按才关窗），两条路径分工与旧实现一致。
-              onScrimTap: _handleScrimTap,
-              onDismissRequest: _closeSecondary,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _secondaryTitleRow(l10n),
-                  for (final child in kAddCourseSubmenu(l10n))
-                    MiuixGlassPopupItem(
-                      text: child.label,
-                      onPressed: () => _select(child.value),
-                    ),
-                ],
+              // 面板材质交给全局档位分派（液态 / 柔光 / 高斯 / 实底）——
+              // **形变动效与几何仍由上游 presenter 负责，一行不动**。
+              // 不再传 `visuals`：注入面已取代上游内置面板，上游那 7 个 OS4 材质
+              // 字段不再参与渲染（见 os4_glass_popup_surface.dart）。
+              surfaceBuilder: hyperosGlassPopupSurface,
+              // 二级展开时一级面板"让位"：绕**锚点那个角**等比缩 5% + 压暗，
+              // 收起复原。
+              //
+              // 手感由 fork 补丁的一个参数定：`stackDuration` 把包内那条
+              // 「收敛容差写死、参数不可调」的让位弹簧换成确定性的 200ms
+              // fastOutSlowIn（曲线取补丁缺省值；时长与旧实现
+              // `hyperos_list_popup.dart` 同值）。
+              stacked: _secondaryOpen,
+              stackDuration: _submenuRevealDuration,
+              // 支点取「离锚点最近的那个面板角」= 右上角（「更多」按钮在面板
+              // 右上）：面板朝右上角缩，读起来是**向右退让**。旧实现
+              // （`hyperos_list_popup.dart` 的 `Transform.scale` + 同一对角
+              // `Alignment(1, -1)`）就是这个角，用户口径「原本是向右缩，那是
+              // 最好的效果」（2026-09-20）。
+              //
+              // 让位期间面板内容会整体朝那个角挪一点（离角越远挪得越多，200 宽
+              // 的面板上最多 9px），二级面板顶部那个「父行复印件」因此与一级那一
+              // 行错开几像素 —— 这是**让位设计本身**（旧实现的测试注释原话：
+              // 「面板向锚点角回放缩放 0.95、父行视觉后退属于让位设计」），不是
+              // 缺陷，别再为它去动支点：试过把支点钉在那一行上（fork 的
+              // `stackPivotBounds`），方向会变成向左缩、且用户报的"两个一级卡片"
+              // 与支点无关（那是共享捕获组的问题，见上面垫底那段）。
+              stackShrinkFromAnchor: true,
+              // 让位期间的压暗色：上游默认是「暗色主题黑罩 / 亮色主题**白罩**」，
+              // 于是亮色主题下二级展开时一级面板反而**变亮**（真机反馈）。
+              // 改用与列表弹层同一份——模态遮罩色（黑）× 同一倍率 0.5。
+              maskColor: HyperosBlurredHeader.modalBarrierColor(context)
+                  .withValues(
+                    alpha:
+                        HyperosBlurredHeader.modalBarrierColor(context).a * 0.5,
+                  ),
+              onDismissRequest: _close,
+              child: KeyedSubtree(
+                key: _rowsKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var index = 0; index < entries.length; index++) ...[
+                      if (index > 0 &&
+                          entries[index].category !=
+                              entries[index - 1].category)
+                        const SizedBox(height: 8),
+                      _row(entries[index], l10n),
+                    ],
+                  ],
+                ),
               ),
             ),
-        ],
+            if (_secondaryBounds != null)
+              MiuixGlassSecondaryPopup(
+                show: _secondaryOpen,
+                anchorBounds: _secondaryBounds,
+                // 二级与一级共用同一个锚点（上游 materialAnchor 语义）。注意锚点
+                // 一旦绑定到图标按钮，上游 `inherited` 分支会让内置面板改用锚点
+                // 的 OS4 surface —— 那条分支已被注入面取代，不再参与渲染。
+                materialAnchor: widget.anchor,
+                backdrop: backdrop,
+                // 与一级面板**同一份**宽度约束，两块才对得齐。
+                sizing: _popupSizing,
+                // 二级面板**浮在一级玻璃之上**，必须走带垫底的注入面：否则液态档
+                // 会采样到一级面板的玻璃输出，玻璃叠玻璃再折射一遍、读感浑浊。
+                // ⚠️ 这个垫底（`grouped: true`）要靠上面那个 `BackdropGroup` 才
+                // 真的生效 —— 组里没有垫底滤镜时它什么也取不到，见那段说明。
+                surfaceBuilder: hyperosGlassPopupSecondarySurface,
+                // 只留底边距（顶边 0）：二级面板顶边 = 锚点行（「添加」）顶边，
+                // 标题行才能与一级那一行**逐像素同位**（默认顶边 8 会整体下沉）。
+                contentPadding: const EdgeInsets.only(bottom: 8),
+                // 遮罩点击带坐标 → 由 [_handleScrimTap] 区分"点一级面板内"还是
+                // "点两个面板之外"；返回键仍走 onDismissRequest（先收二级、
+                // 再按才关窗），两条路径分工与旧实现一致。
+                onScrimTap: _handleScrimTap,
+                onDismissRequest: _closeSecondary,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _secondaryTitleRow(l10n),
+                    for (final child in kAddCourseSubmenu(l10n))
+                      MiuixGlassPopupItem(
+                        text: child.label,
+                        onPressed: () => _select(child.value),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

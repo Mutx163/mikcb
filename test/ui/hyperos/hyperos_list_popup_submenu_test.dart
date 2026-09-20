@@ -533,40 +533,65 @@ void main() {
       expect(panelScale(tester), closeTo(0.95, 2e-3));
     });
 
-    testWidgets('二级展开时一级那一行原地不动，与二级标题行重合成一份', (tester) async {
-      // 「同一行显示成两份」：二级面板顶部那个标题行是一级里这一行的复印件，
-      // 两份必须落在同一个位置上。让位支点若取「面板角」（曾经的
-      // `stackShrinkFromAnchor`），行离支点多远就挪多远 —— 实测 200 宽的
-      // 面板上横挪 9px、纵挪 7.5px，于是同一行字肉眼可见地显示成两份
-      // （2026-09-20 用户反馈「收缩和未收缩两个状态重叠显示」）。支点改成
-      // 这一行自己（`stackPivotBounds`）后，位移降到 1px 以内。
+    testWidgets('两块面板同处一个共享捕获组，垫底滤镜排在一级面板之前', (tester) async {
+      // 二级面板的注入面是 `useAncestorGroupCapture: true`（液态面 `grouped`）——
+      // 它全部的意义就是「**别采一级面板的玻璃输出**，改采组里缓存的那份页面」。
+      // 而 `grouped` 只是「去祖先 BackdropGroup 取共享捕获点」：**组里没有别的
+      // 滤镜时它什么也取不到**，引擎于是退回「按绘制顺序采自己下面那一层」，
+      // 二级卡片里就会重影出一级卡片 —— 用户 2026-09-20 读到的「同时显示了收缩
+      // 和未收缩的两个一级卡片，缩放后的显示在上面」。
+      //
+      // 首页菜单从上游 OS4 弹层迁过来时漏了这一层（本仓其余弹层：列表弹窗 /
+      // 选择弹窗 / 底部弹窗 / 设置页预览各有一份同构结构）。测试环境没有 shader
+      // 后端、玻璃走降级面，这条锁的是**结构契约**：
+      // ①两块面板都有 BackdropGroup 祖先；②组内第一个滤镜是垫底捕获。
       await pumpMenu(tester);
 
-      final collapsed = tester.getRect(find.text('添加'));
+      final group = find.byType(BackdropGroup);
+      expect(group, findsOneWidget, reason: '弹层必须自带共享捕获组');
+      expect(
+        find.ancestor(
+          of: find.byType(MiuixGlassTransformPopup),
+          matching: group,
+        ),
+        findsOneWidget,
+        reason: '一级面板必须进共享捕获组',
+      );
+
+      // 垫底只在二级会挂出来时才插（那层是全屏 pass，没二级不白付）。
+      expect(find.byType(UndimmedBackdropCapture), findsNothing);
 
       await tester.tap(find.text('添加'));
       await tester.pumpAndSettle();
 
-      // 让位确实发生了（否则下面的"没动"是空断言）。
-      expect(panelScale(tester), closeTo(0.95, 2e-3));
-
-      final primaryRow = tester.getRect(find.text('添加').first);
-      final titleRow = tester.getRect(find.text('添加').last);
-
+      expect(find.byType(UndimmedBackdropCapture), findsOneWidget);
       expect(
-        primaryRow.left,
-        closeTo(collapsed.left, 1.5),
-        reason: '一级那一行不该被让位挪走（取面板角当时横挪 9px）',
+        find.ancestor(
+          of: find.byType(MiuixGlassSecondaryPopup),
+          matching: group,
+        ),
+        findsOneWidget,
+        reason: '二级面板必须与一级同组：它的 grouped 采样靠这个组才生效',
       );
+      // 组内**首个**滤镜决定共享捕获点落在哪：排在面板之后就成了「采面板自己」，
+      // 与没有组一样。所以位置（不是存在与否）才是这条的关键。
+      final stack = tester.widget<Stack>(
+        find
+            .descendant(of: group, matching: find.byType(Stack))
+            .first,
+      );
+      final captureIndex = stack.children.indexWhere(
+        (w) => w is Positioned && w.child is UndimmedBackdropCapture,
+      );
+      final primaryIndex = stack.children.indexWhere(
+        (w) => w is MiuixGlassTransformPopup,
+      );
+      expect(captureIndex, isNonNegative, reason: '垫底必须在组内 Stack 里');
       expect(
-        primaryRow.top,
-        closeTo(collapsed.top, 1.5),
-        reason: '一级那一行不该被让位挪走（取面板角当时纵挪 7.5px）',
+        primaryIndex,
+        greaterThan(captureIndex),
+        reason: '垫底必须排在**一级面板之前**，否则捕获点是面板自己',
       );
-      // 两份重合。比左上角而不是中心/右下角：那一行整体在缩（95%），
-      // 行文字左对齐、靠支点角最近，左上角才是"是否同位"的判据。
-      expect(primaryRow.left, closeTo(titleRow.left, 1.5));
-      expect(primaryRow.top, closeTo(titleRow.top, 1.5));
     });
 
     testWidgets('点二级标题行只收起二级、不关菜单，一级缩放复原', (tester) async {
