@@ -6,7 +6,8 @@
 (function initSiteI18n() {
   const STORAGE_KEY = "mikcb-site-locale";
   // 与部署版本联动，避免旧 CDN/浏览器缓存缺新文案键
-  const I18N_VERSION = "20260909-hero-docs";
+  // 2026-09-18：新增 hero.tails（首屏尾句轮换），改文案键必须一起改这里。
+  const I18N_VERSION = "20260918-hero-tails";
   const DEFAULT_LOCALE = "zh-CN";
   const SUPPORTED = [
     { id: "zh-CN", htmlLang: "zh-CN", ogLocale: "zh_CN", nativeName: "简体中文" },

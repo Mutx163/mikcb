@@ -144,7 +144,11 @@ button {
 }
 
 .section {
-  padding: clamp(72px, 10vw, 128px) 0 0;
+  /* 大区块之间的留白。2026-09-18 从 clamp(72px,10vw,128px) 提到现在这档：
+     参考 premium 深色站（Linear）与小米澎湃OS 官网，区块间距都在 120~230px，
+     我们原先最大 128px 只有人家一半，整页显得挤。
+     只加大「区块之间」这一处，卡片内部间距不动——否则整页会散。 */
+  padding: clamp(96px, 13vw, 180px) 0 0;
 }
 
 .section-shell-narrow {
@@ -254,12 +258,47 @@ button {
 .cta-primary {
   color: #fff;
   background: linear-gradient(120deg, var(--cta-from), var(--cta-to));
-  box-shadow: 0 8px 30px rgba(52, 130, 255, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  /* 外发光只用按钮自己那一系的冷色，蓝收紧、紫放宽，压出一点体积感。
+     不要多色：参考站是米白底，那圈彩虹晕在上面很轻；本站是纯黑底，
+     多色发光会变成霓虹灯，又脏又抢主体。 */
+  box-shadow:
+    0 8px 30px rgba(52, 130, 255, 0.38),
+    0 0 16px rgba(41, 121, 255, 0.22),
+    0 0 34px rgba(139, 92, 246, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .cta-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 40px rgba(52, 130, 255, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 14px 40px rgba(52, 130, 255, 0.5),
+    0 0 20px rgba(41, 121, 255, 0.3),
+    0 0 44px rgba(139, 92, 246, 0.19),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* 支持广色域的屏幕（近几年的手机、新款 Mac）上，光晕换成 P3 空间解析。
+   数值故意和上面那组 sRGB 的 0~1 分量完全一样：换的是色域不是色相，
+   同一个数值在更宽的色域里出来是更饱和的颜色，光晕因此更通透。
+   上一次「光晕太夸张」的教训是**三个颜色混用**，不是色域——这里颜色数量没变，
+   峰值透明度也没动，别顺手往上调 alpha。
+   只改外发光，不动按钮填充：填充色是按白字对比度定的（见 --cta-from 的注释）。 */
+@supports (color: color(display-p3 1 1 1)) {
+  .cta-primary {
+    box-shadow:
+      0 8px 30px color(display-p3 0.204 0.51 1 / 0.38),
+      0 0 16px color(display-p3 0.161 0.475 1 / 0.22),
+      0 0 34px color(display-p3 0.545 0.361 0.965 / 0.13),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+
+  .cta-primary:hover {
+    box-shadow:
+      0 14px 40px color(display-p3 0.204 0.51 1 / 0.5),
+      0 0 20px color(display-p3 0.161 0.475 1 / 0.3),
+      0 0 44px color(display-p3 0.545 0.361 0.965 / 0.19),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
 }
 
 .cta-ghost {
@@ -517,13 +556,12 @@ button {
   padding-top: clamp(56px, 9vw, 110px);
 }
 
+/* 单栏居中。栏宽压到 820px 是因为居中排版要靠「行宽」撑住观感——
+   1180 会让标题一行太长、副标题读起来散。原来右侧还有一块视觉时这里是两栏。 */
 .hero-inner {
-  width: min(calc(100% - 40px), var(--content-width));
+  width: min(calc(100% - 40px), 820px);
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  align-items: center;
-  gap: clamp(32px, 5vw, 72px);
+  text-align: center;
 }
 
 .hero-kicker {
@@ -577,9 +615,105 @@ button {
   color: var(--text);
 }
 
+/* ---------- Hero 标题尾句轮换 ----------
+
+   结构（全部由 home.js 生成，不写死在 HTML 里——i18n 是用 textContent 覆盖
+   [data-i18n] 元素的，写死的逐字结构会被译文冲掉）：
+
+     .ht-slot      槽位，inline-grid，让新旧两句叠在同一格里
+       .ht-word    一句话；data-live=true 显示中 / data-exit=true 退场中
+         .ht-chunk 仅拉丁、韩文用：逐词 nowrap，避免长单词从中间断开
+           .ht-char 单个字，--i 决定错开顺序
+
+   为什么槽位用 inline-grid，而不是参考站那套「绝对定位 + 手动量宽度」：
+   绝对定位的槽位没有行内内容，基线会落到盒底，尾句会和前半句错位；
+   inline-grid 的基线直接取自第一个网格项的文字，天然对齐，不用猜字体度量。
+   代价是槽宽恒等于最长那句——尾句本来就在行尾，看不出差别，反而不会跳。
+
+   时序（改这里要同步 home.js 的 HERO_TAIL_* 常量）：
+   进场 0.72s + 每字错开 30ms；退场 0.62s + 每字错开 26ms。 */
+
+/* 标题两段之间在 HTML 里不留空白（中文里「把课表， 从教务搬进来」多一个空格很难看）。
+   但拉丁语言需要那个词间空格，所以只给英文补一个 margin。
+   注意别改成在 HTML 里换行留空白——那样中日韩都会多出一个空格。 */
+html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
+  margin-left: 0.24em;
+}
+
+.hero-title .ht-slot {
+  display: inline-grid;
+  vertical-align: baseline;
+}
+
+.hero-title .ht-word {
+  grid-area: 1 / 1;
+  /* 整句不换行。换行会让标题从两行变三行，每轮一次就把下面的内容顶一下；
+     配合下面「按语言量过宽度」的规则，保证任何一句都放得下。 */
+  white-space: nowrap;
+}
+
+/* 曾经有一条 html[lang="ja"] .hero-title 的降级（把日文标题压到 3.2rem），
+   因为当时文案栏只有 582px、那句日文约 747px 放不下。改成单栏居中后栏宽 820px，
+   747px 自然放得下，所以整条撤掉了——别再凭印象加回来。
+   要验：探针会报「nowrap 溢出」，日文那一列必须是 0。 */
+
+.hero-title .ht-chunk {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.hero-title .ht-char {
+  display: inline-block;
+  will-change: transform, opacity, filter;
+}
+
+/* 待进场：藏在下方，带模糊 */
+.hero-title .ht-word[data-live="false"] .ht-char {
+  opacity: 0;
+  transform: translate3d(0, 0.5em, 0) scale(0.94);
+  filter: blur(9px);
+}
+
+/* 进场：从下方浮起；落定用带轻微过冲的曲线，字是「稳住」而不是「停住」 */
+.hero-title .ht-word[data-live="true"] .ht-char {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: blur(0);
+  transition:
+    opacity 0.5s cubic-bezier(0.4, 0, 0.3, 1),
+    transform 0.72s cubic-bezier(0.3, 1.16, 0.44, 1),
+    filter 0.45s cubic-bezier(0.4, 0, 0.3, 1);
+  transition-delay: calc(var(--ht-base, 0ms) + var(--i, 0) * 30ms);
+}
+
+/* 退场：向上带模糊飘走 */
+.hero-title .ht-word[data-exit="true"] .ht-char {
+  opacity: 0;
+  transform: translate3d(0, -0.46em, 0) scale(0.96);
+  filter: blur(8px);
+  transition:
+    opacity 0.38s cubic-bezier(0.4, 0, 0.72, 0.3),
+    transform 0.62s cubic-bezier(0.4, 0, 0.72, 0.3),
+    filter 0.3s ease-in;
+  transition-delay: calc(var(--i, 0) * 26ms);
+}
+
+/* 停稳后把常驻 filter 收干净——留着不会让字变糊，但会关掉亚像素渲染，
+   标题这种大字一眼能看出「发虚」。必须排在 data-live / data-exit 之后
+   （同权重靠顺序决胜）；JS 让一句退场前会先摘掉这个类，
+   否则这里的 transition:none 会把退场动画吃掉。 */
+.hero-title .ht-word.is-rest .ht-char {
+  will-change: auto;
+  transition: none;
+  filter: none;
+}
+
 .hero-subtitle {
-  margin: 0 0 34px;
-  max-width: 540px;
+  margin: 0 auto 34px;
+  max-width: 620px;
+  /* 居中排版下断行不匀特别显眼：第三行只剩「里。」两个字，像个孤字。
+     balance 会把几行摊匀；不支持的老浏览器就是普通断行，不影响可读。 */
+  text-wrap: balance;
   color: var(--text-soft);
   font-size: clamp(1.02rem, 1.7vw, 1.16rem);
   line-height: 1.8;
@@ -588,6 +722,7 @@ button {
 .hero-cta {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 14px;
   margin-bottom: 44px;
 }
@@ -595,11 +730,13 @@ button {
 .hero-stats {
   display: grid;
   grid-template-columns: repeat(4, auto);
-  justify-content: start;
+  justify-content: center;
   gap: clamp(20px, 3.4vw, 44px);
   margin: 0;
   padding: 22px 0 0;
+  /* 两条线：亮线 + 紧挨着的黑线，理由同 .marquee */
   border-top: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.6);
 }
 
 .hero-stat dt {
@@ -623,227 +760,19 @@ button {
   font-weight: 500;
 }
 
-/* ---------- Hero 手机 ---------- */
-
-.hero-visual {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  perspective: 1400px;
-}
-
-.phone {
-  position: relative;
-  z-index: 1;
-  width: min(320px, 82vw);
-  transform-style: preserve-3d;
-  transition: transform 0.3s ease-out;
-}
-
-.phone-frame {
-  position: relative;
-  padding: 14px 12px 18px;
-  border-radius: 44px;
-  background: linear-gradient(160deg, #10151f, #0a0d15);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow:
-    0 40px 90px rgba(0, 0, 0, 0.6),
-    0 0 0 4px rgba(255, 255, 255, 0.03),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-.island-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  margin: 4px auto 12px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: #000;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  font-size: 0.72rem;
-  white-space: nowrap;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
-}
-
-.island-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--teal);
-  box-shadow: 0 0 8px var(--teal);
-  animation: island-blink 1.8s ease-in-out infinite;
-}
-
-@keyframes island-blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-
-.island-text {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.island-time {
-  color: var(--teal);
-  font-weight: 600;
-}
-
-.phone-screen {
-  border-radius: 30px;
-  overflow: hidden;
-  background: linear-gradient(175deg, #0e1420, #0a0f1a 70%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 18px 14px 20px;
-}
-
-.ps-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-
-.ps-week {
-  margin: 0 0 4px;
-  font-size: 0.98rem;
-  font-weight: 700;
-}
-
-.ps-date {
-  margin: 0;
-  color: var(--text-faint);
-  font-size: 0.74rem;
-}
-
-.ps-heart {
-  font-size: 0.95rem;
-  color: var(--pink);
-  filter: drop-shadow(0 0 6px rgba(244, 114, 182, 0.6));
-}
-
-.ps-list {
-  display: grid;
-  gap: 9px;
-}
-
-.ps-row {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 11px 12px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  overflow: hidden;
-}
-
-.ps-row.is-done {
-  opacity: 0.45;
-}
-
-.ps-row.is-now {
-  background: rgba(45, 212, 191, 0.09);
-  border-color: rgba(45, 212, 191, 0.3);
-}
-
-.ps-row.is-couple {
-  background: rgba(244, 114, 182, 0.07);
-  border-color: rgba(244, 114, 182, 0.22);
-}
-
-.ps-bar {
-  flex: none;
-  width: 4px;
-  height: 30px;
-  border-radius: 4px;
-}
-
-.bar-blue {
-  background: var(--blue);
-}
-
-.bar-teal {
-  background: var(--teal);
-}
-
-.bar-violet {
-  background: var(--violet);
-}
-
-.bar-pink {
-  background: var(--pink);
-}
-
-.ps-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.ps-info strong {
-  display: block;
-  font-size: 0.83rem;
-  font-weight: 600;
-}
-
-.ps-info small {
-  color: var(--text-faint);
-  font-size: 0.68rem;
-}
-
-.ps-state {
-  flex: none;
-  color: var(--text-faint);
-  font-size: 0.68rem;
-}
-
-.state-live {
-  color: var(--teal);
-  font-weight: 700;
-}
-
-.ps-progress {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  background: rgba(45, 212, 191, 0.15);
-}
-
-.ps-progress i {
-  display: block;
-  width: 62%;
-  height: 100%;
-  background: var(--teal);
-  border-radius: 2px;
-  animation: class-progress 6s ease-in-out infinite alternate;
-}
-
-@keyframes class-progress {
-  from {
-    width: 46%;
-  }
-  to {
-    width: 72%;
-  }
-}
-
 /* ---------- 跑马灯 ---------- */
 
 .marquee {
   margin-top: clamp(56px, 8vw, 96px);
   padding: 18px 0;
+  /* 分隔线画两条：上面一条半透明亮线，紧挨着再压一条黑线（Linear 的 keyline+shadow）。
+     单条 1px 线在近黑底上太平，两条叠出一点凹槽感。
+     这里只能用 inset 阴影：.marquee 有 mask-image，外阴影会被 mask 裁掉。 */
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
+  box-shadow:
+    inset 0 1px 0 rgba(0, 0, 0, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.6);
   overflow: hidden;
   mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
@@ -908,8 +837,17 @@ button {
   border-radius: inherit;
   background: radial-gradient(
     320px circle at var(--mx, 50%) var(--my, 0%),
-    rgba(255, 255, 255, 0.06),
-    transparent 70%
+    /* 8 个色标手工调衰减（照 Linear 的 edgeGlow：100/94/78/58/35/16/3/0%）。
+       只写「6% 白 → 70% 处透明」两个色标的话，光斑边缘能看出一圈硬边；
+       多色标是让衰减更顺，不是让光更亮——峰值仍是 6%，别往上调。 */
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.0564) 15%,
+    rgba(255, 255, 255, 0.0468) 30%,
+    rgba(255, 255, 255, 0.0348) 45%,
+    rgba(255, 255, 255, 0.021) 60%,
+    rgba(255, 255, 255, 0.0096) 75%,
+    rgba(255, 255, 255, 0.0018) 90%,
+    transparent 100%
   );
   opacity: 0;
   transition: opacity 0.3s var(--ease-out);
@@ -964,6 +902,27 @@ button {
   flex-wrap: wrap;
   gap: 14px;
   margin-top: 22px;
+}
+
+/* 演示胶囊里那颗呼吸的小圆点。首屏右侧那个手机模型已经拆掉，
+   这条样式现在只服务于功能区「超级岛，替你盯着下一节课」这张卡片。 */
+.island-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 8px var(--teal);
+  animation: island-blink 1.8s ease-in-out infinite;
+}
+
+@keyframes island-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
 }
 
 .island-demo-pill {
@@ -1561,7 +1520,9 @@ button {
 
 .site-footer {
   margin-top: clamp(48px, 7vw, 88px);
+  /* 两条线：亮线 + 紧挨着的黑线，理由同 .marquee */
   border-top: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.6);
   background: rgba(5, 7, 13, 0.6);
   padding: clamp(40px, 6vw, 64px) 0 calc(32px + env(safe-area-inset-bottom, 0px));
 }
@@ -1837,30 +1798,6 @@ button {
 /* ---------- 响应式 ---------- */
 
 @media (max-width: 1020px) {
-  .hero-inner {
-    grid-template-columns: 1fr;
-  }
-
-  .hero-copy {
-    text-align: center;
-  }
-
-  .hero-subtitle {
-    margin-inline: auto;
-  }
-
-  .hero-cta {
-    justify-content: center;
-  }
-
-  .hero-stats {
-    justify-content: center;
-  }
-
-  .hero-visual {
-    margin-top: 12px;
-  }
-
   .bento {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2417,8 +2354,7 @@ button {
 
   .marquee-track,
   .pulse-dot::after,
-  .island-dot,
-  .ps-progress i {
+  .island-dot {
     animation: none !important;
   }
 
@@ -2427,4 +2363,22 @@ button {
     transform: none;
     transition: none;
   }
+
+  /* 尾句轮换整体关掉，只留静态的第一句。
+     JS 在 reduced-motion 下根本不启动轮换，所以这里只要保证「显示中」的那句
+     干净可见；另两种状态只是不做过渡，不参与显示。
+     选择器和上面的规则同权重，靠「本块在文件更靠后」取胜，不用 !important。 */
+  .hero-title .ht-word[data-live="true"] .ht-char {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+    will-change: auto;
+  }
+
+  .hero-title .ht-word[data-live="false"] .ht-char,
+  .hero-title .ht-word[data-exit="true"] .ht-char {
+    transition: none;
+  }
+
 }
