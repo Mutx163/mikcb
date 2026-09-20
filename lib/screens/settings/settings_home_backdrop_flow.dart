@@ -26,6 +26,35 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 课表列表来源：算「在用壁纸白名单」用（历史是全局的，别的课表也可能在用）。
   TimetableProvider get backdropProvider;
 
+  /// 宿主把壁纸 UI 放在**底部弹层**里时，返回该弹层的「请求收起」口子；
+  /// 内联在设置页里的宿主返回 null（默认）。
+  ///
+  /// 只有「要推整页」的动作需要它，理由见 [_withHostSheetClosed]。
+  MiuixBottomSheetClose? get backdropHostSheetClose => null;
+
+  /// 推整页之前先把宿主弹层收起来；宿主没有弹层就直接执行。
+  ///
+  /// **为什么必须等它收完**：弹层面板是上游 `MiuixWindowBottomSheet` 插进**根覆盖层**
+  /// 的条目，而 `OverlayState.rearrange` 把「非路由条目」排在所有路由**之上**
+  /// （`_insertionIndex(null, null) == _entries.length`）。弹层开着时推的路由会落在
+  /// 面板**下面**，被它那层全屏透明屏障挡住 —— 真机口径就是「页面在弹窗背后，什么都
+  /// 点不到」（2026-09-20 用户报的「调整壁纸显示位置」被壁纸弹窗压住）。
+  ///
+  /// 走 `afterDismiss` 而不是固定延时：它在退场动画真正结束、条目摘掉之后才回调。
+  Future<R?> _withHostSheetClosed<R>(Future<R?> Function() push) async {
+    final close = backdropHostSheetClose;
+    if (close == null) {
+      return push();
+    }
+    final closed = Completer<void>();
+    close(afterDismiss: closed.complete);
+    await closed.future;
+    if (!mounted) {
+      return null;
+    }
+    return push();
+  }
+
   /// 壁纸「最近使用」历史 —— **全局**（设备级，所有课表共用同一条）。
   ///
   /// 真源是 [WallpaperHistoryService]：mixin 只是它的读者与写者。草稿里那份
@@ -185,7 +214,6 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     required AppLocalizations l10n,
   }) {
     final currentPath = resolveHomePageBackdropImagePath(backdropDraft);
-    final hasWallpaper = currentPath != null && currentPath.isNotEmpty;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -195,9 +223,10 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
           l10n: l10n,
           title: l10n.homePageWallpaperTitle,
           path: currentPath,
-          onPick: hasWallpaper
-              ? _editHomePageBackdropPosition
-              : _pickHomePageBackdropImage,
+          // 「选择图片」不再看状态分岔：永远是"选图 → 定位 → 确认"。只想调
+          // 当前位置的走它旁边那颗「调整位置」。
+          onPick: _pickAndPositionHomePageBackdrop,
+          onAdjustPosition: _editHomePageBackdropPosition,
           onClear: () {
             final stalePath = resolveHomePageBackdropImagePath(backdropDraft);
             _evictBackdropCaches(stalePath);
@@ -290,6 +319,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     required String title,
     required String? path,
     required Future<void> Function() onPick,
+    required Future<void> Function() onAdjustPosition,
     required VoidCallback onClear,
   }) {
     final fileName = path == null || path.isEmpty
@@ -305,15 +335,35 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
           const SizedBox(height: 4),
           Text(fileName, style: HyperosTypography.listDetail(context)),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: HyperosButton(
-                  label: l10n.homePagePickImageAction,
-                  onPressed: onPick,
+          // 「选择图片」独占一行、占满宽度（主操作）；已有壁纸时，次级的
+          //「调整位置」「清除图片」在第二行平分。
+          //
+          // ⚠️ **别把三颗挤回一行**：真机上（约 405dp 宽）扣掉「面板 + 内容」各一份
+          // 左右内边距后，每颗只剩约 105dp，四字文案放不下 —— 用户口径 2026-09-20
+          //「这三个按钮每一个都掉下去一个字，都有换行」。宁可多一行，也不让字折行。
+          SizedBox(
+            width: double.infinity,
+            child: HyperosButton(
+              label: l10n.homePagePickImageAction,
+              onPressed: onPick,
+            ),
+          ),
+          if (hasWallpaper) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                // 「调整位置」只在已有壁纸时有意义（没壁纸时先选图）。
+                //
+                // 它补的是 2026-09-20 那次改动腾出来的能力：改之前这颗「选择图片」
+                // 在已有壁纸时直接进位置页，所以"只想微调位置"点它就够了；改成
+                // 「一律先开相册」之后，没有这颗就等于"想调位置必须重选一张图"。
+                Expanded(
+                  child: HyperosButton(
+                    label: l10n.homePageAdjustPositionAction,
+                    variant: HyperosButtonVariant.secondary,
+                    onPressed: onAdjustPosition,
+                  ),
                 ),
-              ),
-              if (hasWallpaper) ...[
                 const SizedBox(width: 12),
                 Expanded(
                   child: HyperosButton(
@@ -323,88 +373,74 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
                   ),
                 ),
               ],
-            ],
-          ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Future<void> _pickHomePageBackdropImage() async {
-    final targetPath = await pickAndStoreManagedImage(
-      directoryName: kHomePageWallpaperDirectoryName,
-      filePrefix: kHomePageWallpaperFilePrefix,
-      // 「最近使用」要留住前几张壁纸，不能再沿用「选新图就删光本目录」
-      // 的清理模式；淘汰交给历史上限（kMaxWallpaperHistoryEntries）。
-      cleanupArtifacts: false,
-    );
+  /// 选图入口：**永远先开相册**，选完统一进位置编辑页确认。
+  ///
+  /// 口径（2026-09-20 用户拍板）：改之前这颗按钮按「当前有没有壁纸」分岔 ——
+  /// 没壁纸时选完**直接生效**（新选的图从没机会调位置），有壁纸时反而直接跳位置
+  /// 页、相册要进页后再点「换壁纸」。同一个按钮两套语义，而文案写着「选择图片」
+  /// 却不选图。现在收敛成一条：**选图 → 定位 → 确认**。
+  ///
+  /// 「只想微调当前这张图的位置」走另一颗「调整位置」钮
+  /// （[_editHomePageBackdropPosition]），不再靠这颗按钮兼职。
+  Future<void> _pickAndPositionHomePageBackdrop() async {
+    final targetPath = await _pickHomePageBackdropImage();
     if (!mounted || targetPath == null) {
       return;
     }
-    final previous = _currentBackdropEntry();
-    _applyBackdropChange(
-      backdropDraft.copyWith(
-        homePageWallpaperPath: targetPath,
-        clearHomePageBackgroundImagePath: true,
-      ),
-      remembered: [
-        ?previous,
-        WallpaperHistoryEntry(key: targetPath),
-      ],
+    await _openBackdropPositionEditor(
+      imagePath: targetPath,
+      // 全新的图从**居中**起步（位置页内「换壁纸」也是这个口径）。
+      initialAlignX: 0,
+      initialAlignY: 0,
+      pickedPaths: {targetPath},
     );
   }
 
-  /// 已存在壁纸时点击入口：直接进入位置编辑页，初始值取自上次保存的对齐。
-  Future<void> _editHomePageBackdropPosition() async {
-    final existingPath = resolveHomePageBackdropImagePath(backdropDraft);
-    if (existingPath == null || existingPath.isEmpty) {
-      await _pickHomePageBackdropImage();
-      return;
-    }
-    // 壁纸文件可能已丢失（重装/清除数据后设置被备份恢复、跨设备同步只带回
-    // JSON 不带文件等）：此时进入位置编辑页会在读取图片时抛
-    // PathNotFoundException。改为清掉失效路径，直接走重新选图流程。
-    if (!File(existingPath).existsSync()) {
-      _evictBackdropCaches(existingPath);
-      if (!mounted) {
-        return;
-      }
-      applyBackdropDraft(
-        backdropDraft.copyWith(
-          clearHomePageWallpaperPath: true,
-          clearHomePageBackgroundImagePath: true,
-        ),
-      );
-      await _pickHomePageBackdropImage();
-      return;
-    }
+  /// 开相册并把选中的图落进本 app 管理的壁纸目录；取消 / 失败返回 null。
+  ///
+  /// 「最近使用」要留住前几张壁纸，所以不能沿用「选新图就删光本目录」的清理
+  /// 模式；淘汰交给历史上限（[kMaxWallpaperHistoryEntries]）。
+  Future<String?> _pickHomePageBackdropImage() => pickAndStoreManagedImage(
+    directoryName: kHomePageWallpaperDirectoryName,
+    filePrefix: kHomePageWallpaperFilePrefix,
+    cleanupArtifacts: false,
+  );
+
+  /// 进位置编辑页 → 按结果落盘 → 清掉这次交互里**没人引用**的图。
+  ///
+  /// [pickedPaths] 是进页**之前**由相册新产生的文件（就是刚选的那张）；页内
+  /// 「换壁纸」再选的那张由页面返回的 path 带回来。两者合起来算"本次交互的产物"，
+  /// 退出时凡是不被引用的都删掉 —— 否则壁纸目录里会攒下谁都不引用的垃圾。
+  Future<void> _openBackdropPositionEditor({
+    required String imagePath,
+    required double initialAlignX,
+    required double initialAlignY,
+    required Set<String> pickedPaths,
+  }) async {
+    final result = await _withHostSheetClosed(
+      () => pushWallpaperPositionPickerPage(
+        context,
+        imagePath: imagePath,
+        initialAlignX: initialAlignX,
+        initialAlignY: initialAlignY,
+        // 页内「换壁纸」与外面同一套选图（落进本 app 目录、不清理旧文件）。
+        onPickNewImage: _pickHomePageBackdropImage,
+      ),
+    );
     if (!mounted) {
       return;
     }
-    final result = await pushWallpaperPositionPickerPage(
-      context,
-      imagePath: existingPath,
-      initialAlignX: backdropDraft.homePageWallpaperAlignX,
-      initialAlignY: backdropDraft.homePageWallpaperAlignY,
-      onPickNewImage: () => pickAndStoreManagedImage(
-        directoryName: 'home_page_wallpaper',
-        filePrefix: 'wallpaper',
-        // 编辑页内换图：保留上一张，等确认后再清理。
-        cleanupArtifacts: false,
-      ),
-    );
-    if (!mounted || result == null) {
-      return;
-    }
-    if (!result.confirmed) {
-      // 用户取消：若在编辑页里换了图，清理那张未被采用的新文件。
-      if (result.path != existingPath) {
-        final newFile = File(result.path);
-        if (newFile.existsSync()) {
-          await newFile.delete();
-        }
-        invalidateHomePageBackdropFileExists(result.path);
-      }
+    final candidates = <String>{...pickedPaths, ?result?.path};
+    if (result == null || !result.confirmed) {
+      // 取消：这次选的图一张都没被采用 —— 删掉，别留在壁纸目录里。
+      await _discardUnreferencedBackdrops(candidates);
       return;
     }
     final previous = _currentBackdropEntry();
@@ -424,7 +460,73 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
         ),
       ],
     );
-    // 被换下的旧图不再删除：它在「最近使用」里留档，用户可以随时切回，
-    // 只有被挤出上限（或恢复默认）时才真正落盘删除。
+    // 落盘**之后**才清：这时"在用的那张"已经是 result.path、前一张进了「最近
+    // 使用」，两者都会被下面的引用集合护住。
+    await _discardUnreferencedBackdrops(candidates);
+  }
+
+  /// 清掉 [candidates] 里**没有任何设置 / 历史引用**的壁纸文件。
+  ///
+  /// 判据是「谁在引用它」，不是记「哪张是新的」：删错一张就是用户口径里的
+  /// 「换过壁纸，但最近使用里那张打不开了」。所以正在用的那张（草稿里的）与
+  /// 「最近使用」里的条目一律不动。
+  Future<void> _discardUnreferencedBackdrops(Set<String> candidates) async {
+    if (candidates.isEmpty) {
+      return;
+    }
+    final referenced = <String>{
+      ?resolveHomePageBackdropImagePath(backdropDraft),
+      for (final entry in _wallpaperHistory) entry.key,
+    };
+    for (final path in candidates) {
+      if (path.isEmpty || referenced.contains(path)) {
+        continue;
+      }
+      final file = File(path);
+      if (!file.existsSync()) {
+        continue;
+      }
+      await file.delete();
+      _evictBackdropCaches(path);
+    }
+  }
+
+  /// 「调整位置」入口：进位置编辑页，初始值取自上次保存的对齐。
+  Future<void> _editHomePageBackdropPosition() async {
+    final existingPath = resolveHomePageBackdropImagePath(backdropDraft);
+    if (existingPath == null || existingPath.isEmpty) {
+      await _pickAndPositionHomePageBackdrop();
+      return;
+    }
+    // 壁纸文件可能已丢失（重装/清除数据后设置被备份恢复、跨设备同步只带回
+    // JSON 不带文件等）：此时进入位置编辑页会在读取图片时抛
+    // PathNotFoundException。改为清掉失效路径，直接走重新选图流程。
+    if (!File(existingPath).existsSync()) {
+      _evictBackdropCaches(existingPath);
+      if (!mounted) {
+        return;
+      }
+      applyBackdropDraft(
+        backdropDraft.copyWith(
+          clearHomePageWallpaperPath: true,
+          clearHomePageBackgroundImagePath: true,
+        ),
+      );
+      await _pickAndPositionHomePageBackdrop();
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    await _openBackdropPositionEditor(
+      imagePath: existingPath,
+      initialAlignX: backdropDraft.homePageWallpaperAlignX,
+      initialAlignY: backdropDraft.homePageWallpaperAlignY,
+      // 进页前没有新选文件：本次交互的产物只有页内可能「换壁纸」的那张。
+      // 当前这张正在用，会被 [_discardUnreferencedBackdrops] 的引用集合护住；
+      // 被换下的旧图也不在这里删 —— 它在「最近使用」里留档，用户可以随时切回，
+      // 只有被挤出上限（或恢复默认）时才真正落盘删除。
+      pickedPaths: const {},
+    );
   }
 }

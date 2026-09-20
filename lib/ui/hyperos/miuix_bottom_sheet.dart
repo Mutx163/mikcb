@@ -106,21 +106,44 @@ Future<T?> showMiuixBottomSheet<T>({
 /// 三个上游表达能力不同、已经去掉的参数（原先也没有调用方在用）：
 /// `enableDrag`（上游只有把手可拖，不能整面板拖）、`padForKeyboard`（上游自带键盘
 /// 处理）、`chrome`（上游只有通栏形态）。
+///
+/// ## ⚠️ 弹层开着时**不要**往上层推路由 / 弹层
+///
+/// 面板是上游 `MiuixWindowBottomSheet` **插进根覆盖层的条目**，而
+/// `OverlayState.rearrange` 会把「非路由条目」排在所有路由**之上**
+/// （`_insertionIndex(null, null) == _entries.length`）。于是弹层开着时推的任何路由都
+/// 落在面板**下面**，被它那层全屏透明屏障挡住点击 —— 真机口径就是
+/// 「页面在弹窗背后，什么东西都点不到」（2026-09-20 用户报的「调整壁纸显示位置」
+/// 被壁纸弹窗压住，正是这一条）。
+///
+/// 正确姿势：调用方用 [SheetCloseRef] 把收起口子存下来，要推整页时先
+/// `close(afterDismiss: ...)`，**等退场动画真正结束**（那一刻条目已摘掉）再推。
+/// 不要靠固定延时猜动画时长。
 Future<T?> showHomeHyperosSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   bool isDismissible = true,
   bool useRootNavigator = false,
   Color? barrierColor,
+  SheetCloseRef? closeRef,
 }) {
   return showMiuixBottomSheet<T>(
     context: context,
     useRootNavigator: useRootNavigator,
     barrierDismissible: isDismissible,
     barrierColor: barrierColor,
-    builder: (sheetContext, close) => builder(sheetContext),
+    builder: (sheetContext, close) {
+      closeRef?.call(close);
+      return builder(sheetContext);
+    },
   );
 }
+
+/// 收下弹层的收起口子的回调（见 [showHomeHyperosSheet] 的 `closeRef`）。
+///
+/// ⚠️ 它在**构建期**被调用（每次弹层重建都会来一次），实现方只应把口子存进字段，
+/// 不要在回调里 `setState`。
+typedef SheetCloseRef = void Function(MiuixBottomSheetClose close);
 
 class _MiuixBottomSheetPage extends StatefulWidget {
   const _MiuixBottomSheetPage({
@@ -185,6 +208,8 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
             widget.barrierColor ??
             HyperosBlurredHeader.modalBarrierColor(context),
         dragHandleColor: Theme.of(context).colorScheme.onSurfaceVariant,
+        // 左右内边距拉回本仓口径（上游默认 24，见该常量的说明）。
+        insideMargin: const Size(hyperosMiuixBottomSheetInsideMargin, 0),
         surfaceBuilder: hyperosMiuixBottomSheetSurface,
         scrimUnderlay: const UndimmedBackdropCapture(),
         content: HyperosHostedSheetScope(
@@ -213,6 +238,18 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
 
 /// 内容底部额外留的呼吸（系统安全区之外）。与改动前 edge sheet 的 16 一致。
 const double hyperosMiuixBottomSheetContentBottomGap = 16;
+
+/// 面板内容的**左右**内边距（逻辑 px）。
+///
+/// = [HyperosSheetFrame] 的默认内边距，也就是改动前每个弹层内容的左右内边距：
+/// 那时由框自己 `Padding(16)`，内容再自带一份（如壁纸弹窗的行另有 16）。
+///
+/// ⚠️ **必须显式给**：上游 `MiuixWindowBottomSheet` 的默认 `insideMargin` 是
+/// `Size(24, 0)`，而迁到上游承载后 [HyperosSheetFrame] 的内边距在托管模式下被忽略
+///（「内边距归外层」），于是左右悄悄从 16 变成 24、整体比改动前宽了 8dp ——
+/// 用户口径「弹窗里左右边距留得那么大」（2026-09-20，壁纸弹窗）。这里把它拉回本仓
+/// 自己那份口径。上下不设（内容自己管）。
+const double hyperosMiuixBottomSheetInsideMargin = 16;
 
 /// 把上游底部弹窗的实底面板换成**本仓贴底液态玻璃**：上沿两角按
 /// [hyperosMiuixBottomSheetCornerRadius] 圆角，上沿与左右**不外溢**（材料边界与裁剪

@@ -305,11 +305,12 @@ class _TimetablePageSettingsScreenState
                 l10n: l10n,
                 title: l10n.homePageWallpaperTitle,
                 path: resolveHomePageBackdropImagePath(_draft),
-                onPick:
-                    (resolveHomePageBackdropImagePath(_draft)?.isNotEmpty ??
-                        false)
-                    ? _editHomePageBackdropPosition
-                    : _pickHomePageBackdropImage,
+                // 与「外观编辑」页底部那颗「调整壁纸」打开的弹窗**同一套接线**
+                //（见 settings_home_backdrop_flow.dart 的
+                // [buildWallpaperSheetBody]）：选图永远先开相册、选完进位置页，
+                // 只想调位置的走旁边那颗「调整位置」。
+                onPick: _pickAndPositionHomePageBackdrop,
+                onAdjustPosition: _editHomePageBackdropPosition,
                 onClear: () {
                   final stalePath = resolveHomePageBackdropImagePath(_draft);
                   _evictBackdropCaches(stalePath);

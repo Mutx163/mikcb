@@ -6156,6 +6156,7 @@
   "chromeGlassMaterialHint": "",
   "homePagePickImageAction": "選擇圖片",
   "homePageSwitchImageAction": "切換照片",
+  "homePageAdjustPositionAction": "調整位置",
   "homePageClearImageAction": "清除圖片",
   "homePageImageNotSelected": "未選擇",
   "homePageWallpaperRecentTitle": "最近使用",

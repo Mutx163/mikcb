@@ -6099,6 +6099,12 @@ abstract class AppLocalizations {
   /// **'切换照片'**
   String get homePageSwitchImageAction;
 
+  /// No description provided for @homePageAdjustPositionAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'调整位置'**
+  String get homePageAdjustPositionAction;
+
   /// No description provided for @homePageClearImageAction.
   ///
   /// In zh, this message translates to:

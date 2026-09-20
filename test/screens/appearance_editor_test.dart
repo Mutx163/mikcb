@@ -6,6 +6,7 @@
 // 关键口径（用户 2026-09-19 明确）：预览**直接用首页那份页面**缩尺，而不是另写一套
 // 小屏布局 —— 所以这里断言的是 `TimetableScreen` 本体嵌在里面，不是预览替身。
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -25,6 +26,7 @@ import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/preview_bake_boundary.dart';
 import 'package:university_timetable/widgets/timetable_home_preview_scope.dart';
+import 'package:university_timetable/widgets/wallpaper_position_picker_sheet.dart';
 
 import '../helpers_test_app.dart';
 
@@ -348,6 +350,123 @@ void main() {
     expect(find.text('wall.png'), findsNothing);
     expect(find.text('清除图片'), findsNothing);
     expect(find.text('未选择'), findsOneWidget);
+  });
+
+  testWidgets('已有壁纸时多一颗「调整位置」：点它先收起弹窗、再进位置编辑页', (tester) async {
+    // 「调整位置」补的是 2026-09-20 那次口径改动腾出来的能力：改之前「选择图片」
+    // 在已有壁纸时**直接进位置页**，所以"只想微调一下位置"点它就够了；改成
+    // 「一律先开相册」之后，没有这颗就等于"想调位置必须重选一张图"。
+    // 必须用 **sync** 版：`testWidgets` 跑在 fake-async 区里，`await` 一个真实
+    // 文件 IO 的 Future 永远不会完成（症状是整条用例挂到 10 分钟超时）。
+    final dir = Directory.systemTemp.createTempSync('appearance_wall_pos');
+    final file = File('${dir.path}/wall.png')
+      ..writeAsBytesSync(const [1, 2, 3, 4]);
+    addTearDown(() {
+      try {
+        dir.deleteSync(recursive: true);
+      } on FileSystemException {
+        // 这张图可能还被解码器 / 预览持有（Windows 上会短暂锁文件，errno 32）。
+        // 断言不依赖这次清理，留着由系统临时目录回收即可。
+      }
+    });
+    _seedInitializedPrefs(
+      TimetableSettings.defaults().copyWith(homePageWallpaperPath: file.path),
+    );
+    await pumpEditor(tester);
+    await tester.tap(find.text('调整壁纸'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('调整位置'), findsOneWidget);
+    await tester.tap(find.text('调整位置'));
+    // ⚠️ 不用 pumpAndSettle：位置页转场期间玻璃在自激重绘，settle 不下来
+    //（同 wallpaper_position_picker_glass_test.dart 里那句说明）。用固定帧数推 ——
+    // 帧数要够弹层退场动画跑完，否则位置页还没推。
+    for (var i = 0; i < 40; i++) {
+      await tester.pump(const Duration(milliseconds: 60));
+    }
+
+    expect(
+      find.byType(WallpaperPositionPickerPage),
+      findsOneWidget,
+      reason: '「调整位置」要真的把位置编辑页推起来（不是空按钮）',
+    );
+    // 弹层**必须先收起**：面板是上游插进根覆盖层的条目，`OverlayState.rearrange`
+    // 把非路由条目排在所有路由之上 —— 不收起就推，页面会落在面板下面、还被它那层
+    // 全屏透明屏障挡住点击（用户口径 2026-09-20：「在弹窗背后，什么东西都点不到」）。
+    expect(
+      find.text('背景图片'),
+      findsNothing,
+      reason: '推整页之前弹层必须已经退场，否则页面在面板背后、点不到',
+    );
+  });
+
+  testWidgets('壁纸行三颗钮分两排：主操作独占一行，次级两颗平分', (tester) async {
+    _seedInitializedPrefs(
+      TimetableSettings.defaults().copyWith(
+        homePageWallpaperPath: r'C:\fake\wall.png',
+      ),
+    );
+    await pumpEditor(tester);
+    await tester.tap(find.text('调整壁纸'));
+    await tester.pumpAndSettle();
+
+    final pickY = tester.getCenter(find.text('选择图片')).dy;
+    final adjustY = tester.getCenter(find.text('调整位置')).dy;
+    final clearY = tester.getCenter(find.text('清除图片')).dy;
+    expect(
+      adjustY,
+      moreOrLessEquals(clearY, epsilon: 0.5),
+      reason: '「调整位置」「清除图片」同排平分',
+    );
+    expect(
+      pickY,
+      lessThan(adjustY - 20),
+      reason: '「选择图片」独占一行 —— 三颗挤一行时每颗只剩约 105dp，四字文案会折行',
+    );
+
+    // 左右内边距：面板自己 16（`hyperosMiuixBottomSheetInsideMargin`）+ 壁纸行
+    // 自带 16 = 32。上游默认的 24 会让它变成 40（用户口径 2026-09-20：
+    //「左右边距留的那么大」）。窗口比面板上限（640）宽时面板居中。
+    final logicalWidth =
+        tester.view.physicalSize.width / tester.view.devicePixelRatio;
+    final panelLeft = logicalWidth > 640 ? (logicalWidth - 640) / 2 : 0.0;
+    expect(
+      tester.getTopLeft(find.text('背景图片')).dx,
+      closeTo(panelLeft + 32, 0.5),
+    );
+  });
+
+  testWidgets('「选择图片」不再看状态分岔：已有壁纸时也走相册，不进位置页', (tester) async {
+    _seedInitializedPrefs(
+      TimetableSettings.defaults().copyWith(
+        homePageWallpaperPath: r'C:\fake\wall.png',
+      ),
+    );
+    await pumpEditor(tester);
+    await tester.tap(find.text('调整壁纸'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('选择图片'));
+    await tester.pumpAndSettle();
+
+    // VM 下相册通道没有实现，`pickAndStoreManagedImage` 返回 null —— 正好用来
+    // 证明这条路走的是**相册**：改回旧写法（已有壁纸时直接进位置页）这条会红。
+    expect(
+      find.byType(WallpaperPositionPickerPage),
+      findsNothing,
+      reason: '「选择图片」的下一步是相册，不再是位置编辑页',
+    );
+    expect(find.text('背景图片'), findsOneWidget, reason: '仍停在壁纸弹窗里');
+  });
+
+  testWidgets('没有壁纸时不显示「调整位置」「清除图片」', (tester) async {
+    await pumpEditor(tester);
+    await tester.tap(find.text('调整壁纸'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('选择图片'), findsOneWidget);
+    expect(find.text('调整位置'), findsNothing);
+    expect(find.text('清除图片'), findsNothing);
   });
 
   testWidgets('弹层正文跟着草稿走：材质面板拖滑杆面板自己刷新（回归钉）', (tester) async {

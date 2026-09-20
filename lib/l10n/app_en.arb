@@ -1849,6 +1849,7 @@
   "chromeGlassMaterialHint": "",
   "homePagePickImageAction": "Choose image",
   "homePageSwitchImageAction": "Switch photo",
+  "homePageAdjustPositionAction": "Adjust position",
   "homePageClearImageAction": "Clear image",
   "homePageImageNotSelected": "Not selected",
   "homePageWallpaperRecentTitle": "Recently used",

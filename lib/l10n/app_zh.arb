@@ -1884,6 +1884,7 @@
   "chromeGlassMaterialHint": "",
   "homePagePickImageAction": "选择图片",
   "homePageSwitchImageAction": "切换照片",
+  "homePageAdjustPositionAction": "调整位置",
   "homePageClearImageAction": "清除图片",
   "homePageImageNotSelected": "未选择",
   "homePageWallpaperRecentTitle": "最近使用",

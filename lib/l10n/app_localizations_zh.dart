@@ -3286,6 +3286,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageSwitchImageAction => '切换照片';
 
   @override
+  String get homePageAdjustPositionAction => '调整位置';
+
+  @override
   String get homePageClearImageAction => '清除图片';
 
   @override
@@ -14376,6 +14379,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homePageSwitchImageAction => '切換照片';
+
+  @override
+  String get homePageAdjustPositionAction => '調整位置';
 
   @override
   String get homePageClearImageAction => '清除圖片';
@@ -25512,6 +25518,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homePageSwitchImageAction => '切換照片';
+
+  @override
+  String get homePageAdjustPositionAction => '調整位置';
 
   @override
   String get homePageClearImageAction => '清除圖片';

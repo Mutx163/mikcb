@@ -6176,6 +6176,7 @@
   "chromeGlassMaterialHint": "",
   "homePagePickImageAction": "이미지 선택",
   "homePageSwitchImageAction": "사진 변경",
+  "homePageAdjustPositionAction": "위치 조정",
   "homePageClearImageAction": "이미지 지우기",
   "homePageImageNotSelected": "선택 안 됨",
   "homePageWallpaperRecentTitle": "최근 사용",

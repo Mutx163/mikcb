@@ -3365,6 +3365,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homePageSwitchImageAction => '사진 변경';
 
   @override
+  String get homePageAdjustPositionAction => '위치 조정';
+
+  @override
   String get homePageClearImageAction => '이미지 지우기';
 
   @override

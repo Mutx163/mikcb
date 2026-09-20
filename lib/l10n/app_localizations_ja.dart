@@ -3348,6 +3348,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePageSwitchImageAction => '写真を切り替え';
 
   @override
+  String get homePageAdjustPositionAction => '位置を調整';
+
+  @override
   String get homePageClearImageAction => '画像をクリア';
 
   @override

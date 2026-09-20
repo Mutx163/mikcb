@@ -3498,6 +3498,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePageSwitchImageAction => 'Switch photo';
 
   @override
+  String get homePageAdjustPositionAction => 'Adjust position';
+
+  @override
   String get homePageClearImageAction => 'Clear image';
 
   @override

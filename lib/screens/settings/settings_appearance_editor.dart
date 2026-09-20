@@ -59,6 +59,14 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 意义就是「改一处、看预览」。超出这一高度的内容在面板内部滚动。
   static const _materialSheetMaxHeightFactor = 0.5;
 
+  /// 当前打开的弹层（壁纸 / 材质）的「请求收起」口子；没有弹层时 null。
+  ///
+  /// 壁纸流程要推整页（位置编辑页）时必须先调它 —— 弹层面板是插进**根覆盖层**的
+  /// 条目，`OverlayState.rearrange` 把非路由条目排在所有路由**之上**，弹层开着时
+  /// 推的页面会落在面板下面、被它的全屏透明屏障挡住点击（用户口径：「调整页面出来
+  /// 的时候在弹窗背后，什么东西都点不到」）。机制详见 `showHomeHyperosSheet` 的注释。
+  MiuixBottomSheetClose? _sheetClose;
+
   /// 面板里**内容之外**、在内容上方的那一圈（上沿把手栏）。
   ///
   /// 实测值：同一套真机视口下，面板顶到内容顶差 42.0（把手 + 面板自己的上内边距）。
@@ -348,6 +356,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     // 会把它们压暗、点按被弹层接走，但位置与可见性不变。
     return showHomeHyperosSheet<void>(
       context: context,
+      // 收下收起口子：弹窗里那颗「选择图片」/「调整位置」要推整页（位置编辑页），
+      // 必须先收起本弹层再推（理由见 [_sheetClose]）。
+      closeRef: (close) => _sheetClose = close,
       builder: (_) => HyperosSheetFrame(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         child: SingleChildScrollView(
@@ -360,8 +371,11 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           ),
         ),
       ),
-    );
+    ).whenComplete(() => _sheetClose = null);
   }
+
+  @override
+  MiuixBottomSheetClose? get backdropHostSheetClose => _sheetClose;
 
   /// 材质面板（「材质」弹窗正文）：2026-09-19 第七轮按最新产品口径重排 ——
   /// **整机只有「实体卡片」与「液态玻璃」两种材质**。
