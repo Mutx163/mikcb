@@ -9871,6 +9871,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liquidGlassRefractionEdgePowLabel => '边缘陡缓';
 
   @override
+  String get liquidGlassDispersionLabel => '色散';
+
+  @override
   String get liquidGlassRimStrengthLabel => '边缘高光';
 
   @override
@@ -10383,6 +10386,63 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get icsExportSaveFailed => '日历保存失败，请稍后重试';
+
+  @override
+  String get icsExportSyncCalendarButton => '同步到系统日历';
+
+  @override
+  String get icsExportSyncCalendarTitle => '同步到系统日历';
+
+  @override
+  String icsExportSyncCalendarBody(String calendarName) {
+    return '将在系统日历中创建专属日历「$calendarName」，写入当前所选时间范围的全部日程；再次同步会覆盖上次写入的日程。假期中的课程默认不写入，如需保留可关闭「跳过节假日课程」开关。首次同步会请求日历权限。';
+  }
+
+  @override
+  String get icsExportSyncCalendarConfirm => '开始同步';
+
+  @override
+  String icsExportSyncCalendarName(String profileName) {
+    return '轻屿课表·$profileName';
+  }
+
+  @override
+  String icsExportSyncCalendarSuccess(int count) {
+    return '已同步 $count 个日程到系统日历';
+  }
+
+  @override
+  String icsExportSyncCalendarSkipped(int count) {
+    return '已跳过假期中的 $count 个课程';
+  }
+
+  @override
+  String get icsExportSyncCalendarPermissionDenied => '未获得日历权限，请在系统设置中允许后重试';
+
+  @override
+  String get icsExportSyncCalendarFailed => '同步到系统日历失败，请稍后重试';
+
+  @override
+  String get icsExportRemoveCalendarButton => '移除已同步的日程';
+
+  @override
+  String get icsExportRemoveCalendarTitle => '移除已同步的日程';
+
+  @override
+  String get icsExportRemoveCalendarBody =>
+      '将从系统日历中删除「轻屿课表」专属日历及其全部日程，你在日历里的其他内容不受影响。之后想再同步，点「同步到系统日历」即可。';
+
+  @override
+  String get icsExportRemoveCalendarConfirm => '移除';
+
+  @override
+  String get icsExportRemoveCalendarSuccess => '已从系统日历移除全部同步日程';
+
+  @override
+  String get icsExportRemoveCalendarNothing => '还没有同步过日程';
+
+  @override
+  String get icsExportRemoveCalendarFailed => '移除失败，请稍后重试';
 
   @override
   String get homeNavigationTitle => '首页与导航';
@@ -20947,6 +21007,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liquidGlassRefractionEdgePowLabel => '邊緣陡緩';
 
   @override
+  String get liquidGlassDispersionLabel => '色散';
+
+  @override
   String get liquidGlassRimStrengthLabel => '邊緣高光';
 
   @override
@@ -21459,6 +21522,63 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get icsExportSaveFailed => '日曆儲存失敗，請稍後再試';
+
+  @override
+  String get icsExportSyncCalendarButton => '同步到系統日曆';
+
+  @override
+  String get icsExportSyncCalendarTitle => '同步到系統日曆';
+
+  @override
+  String icsExportSyncCalendarBody(String calendarName) {
+    return '將在系統日曆中建立專屬日曆「$calendarName」，寫入目前所選時間範圍的全部日程；再次同步會覆寫上次寫入的日程。假期中的課程預設不寫入，如需保留可關閉「跳過節假日課程」開關。首次同步會請求日曆權限。';
+  }
+
+  @override
+  String get icsExportSyncCalendarConfirm => '開始同步';
+
+  @override
+  String icsExportSyncCalendarName(String profileName) {
+    return '輕詸課表·$profileName';
+  }
+
+  @override
+  String icsExportSyncCalendarSuccess(int count) {
+    return '已同步 $count 個日程到系統日曆';
+  }
+
+  @override
+  String icsExportSyncCalendarSkipped(int count) {
+    return '已跳過假期中的 $count 個課程';
+  }
+
+  @override
+  String get icsExportSyncCalendarPermissionDenied => '未取得日曆權限，請在系統設定中允許後重試';
+
+  @override
+  String get icsExportSyncCalendarFailed => '同步到系統日曆失敗，請稍後重試';
+
+  @override
+  String get icsExportRemoveCalendarButton => '移除已同步的日程';
+
+  @override
+  String get icsExportRemoveCalendarTitle => '移除已同步的日程';
+
+  @override
+  String get icsExportRemoveCalendarBody =>
+      '將從系統日曆中刪除「輕詸課表」專屬日曆及其全部日程，你在日曆裡的其他內容不受影響。之後想再同步，點「同步到系統日曆」即可。';
+
+  @override
+  String get icsExportRemoveCalendarConfirm => '移除';
+
+  @override
+  String get icsExportRemoveCalendarSuccess => '已從系統日曆移除全部同步日程';
+
+  @override
+  String get icsExportRemoveCalendarNothing => '尚未同步過日程';
+
+  @override
+  String get icsExportRemoveCalendarFailed => '移除失敗，請稍後重試';
 
   @override
   String get homeNavigationTitle => '首頁與導覽';
@@ -32023,6 +32143,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liquidGlassRefractionEdgePowLabel => '邊緣陡緩';
 
   @override
+  String get liquidGlassDispersionLabel => '色散';
+
+  @override
   String get liquidGlassRimStrengthLabel => '邊緣高光';
 
   @override
@@ -32535,6 +32658,63 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get icsExportSaveFailed => '日曆儲存失敗，請稍後再試';
+
+  @override
+  String get icsExportSyncCalendarButton => '同步到系統日曆';
+
+  @override
+  String get icsExportSyncCalendarTitle => '同步到系統日曆';
+
+  @override
+  String icsExportSyncCalendarBody(String calendarName) {
+    return '將在系統日曆中建立專屬日曆「$calendarName」，寫入目前所選時間範圍的全部日程；再次同步會覆寫上次寫入的日程。假期中的課程預設不寫入，如需保留可關閉「跳過節假日課程」開關。首次同步會請求日曆權限。';
+  }
+
+  @override
+  String get icsExportSyncCalendarConfirm => '開始同步';
+
+  @override
+  String icsExportSyncCalendarName(String profileName) {
+    return '輕屿課表·$profileName';
+  }
+
+  @override
+  String icsExportSyncCalendarSuccess(int count) {
+    return '已同步 $count 個日程到系統日曆';
+  }
+
+  @override
+  String icsExportSyncCalendarSkipped(int count) {
+    return '已跳過假期中的 $count 個課程';
+  }
+
+  @override
+  String get icsExportSyncCalendarPermissionDenied => '未取得日曆權限，請在系統設定中允許後重試';
+
+  @override
+  String get icsExportSyncCalendarFailed => '同步到系統日曆失敗，請稍後重試';
+
+  @override
+  String get icsExportRemoveCalendarButton => '移除已同步的日程';
+
+  @override
+  String get icsExportRemoveCalendarTitle => '移除已同步的日程';
+
+  @override
+  String get icsExportRemoveCalendarBody =>
+      '將從系統日曆中刪除「輕屿課表」專屬日曆及其全部日程，你在日曆裡的其他內容不受影響。之後想再同步，點「同步到系統日曆」即可。';
+
+  @override
+  String get icsExportRemoveCalendarConfirm => '移除';
+
+  @override
+  String get icsExportRemoveCalendarSuccess => '已從系統日曆移除全部同步日程';
+
+  @override
+  String get icsExportRemoveCalendarNothing => '尚未同步過日程';
+
+  @override
+  String get icsExportRemoveCalendarFailed => '移除失敗，請稍後重試';
 
   @override
   String get homeNavigationTitle => '首頁與導覽';

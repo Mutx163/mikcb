@@ -6,13 +6,19 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/timetable_profile.dart';
 import '../providers/timetable_provider.dart';
+import '../services/calendar_sync_service.dart';
 import '../services/ics_export_service.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/app_toast.dart';
+
+/// 首次同步确认弹层的「已阅」记忆键：确认过一次后就一键直达，不再弹。
+const String _calendarSyncNoticePrefsKey =
+    'ics_calendar_sync_notice_acknowledged_v1';
 
 /// Test seam for the "save to device folder" action: receives the generated
 /// file name + bytes, returns the saved location (or null when the user
@@ -26,11 +32,15 @@ class IcsExportScreen extends StatefulWidget {
     this.exportService,
     this.shareCallback,
     this.saveCallback,
+    this.calendarSyncService,
   });
 
   final IcsExportService? exportService;
   final Future<ShareResult> Function(ShareParams params)? shareCallback;
   final IcsSaveCallback? saveCallback;
+
+  /// 测试注入口；null 时走真实平台通道（见 [CalendarSyncService]）。
+  final CalendarSyncService? calendarSyncService;
 
   @override
   State<IcsExportScreen> createState() => _IcsExportScreenState();
@@ -41,9 +51,12 @@ enum _IcsExportAction { share, save }
 
 class _IcsExportScreenState extends State<IcsExportScreen> {
   late final IcsExportService _exportService;
+  late final CalendarSyncService _calendarSyncService;
   final GlobalKey _exportButtonAnchorKey = GlobalKey();
   bool _initialized = false;
   bool _isExporting = false;
+  bool _isSyncing = false;
+  bool _isRemoving = false;
   String? _selectedProfileId;
   late DateTime _fromDate;
   late DateTime _toDate;
@@ -51,15 +64,18 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
     IcsExportEventKind.all,
   );
 
-  /// 导出时是否排除落在节假日上的**课程**事件。
+  /// 导出/同步时是否排除落在节假日上的**课程**事件。
   ///
-  /// 默认关闭（保持历史行为）；只影响课程，考试与自定义日程照常导出。
-  bool _skipHolidayCourses = false;
+  /// 默认开启：ICS 文件导出与「同步到系统日历」两条路径都受它控制
+  /// （2026-09-19 用户拍板：一个开关管所有日历输出；此前同步固定跳过、
+  /// 开关只管文件，默认值也曾为关闭）。只影响课程，考试与自定义日程照常。
+  bool _skipHolidayCourses = true;
 
   @override
   void initState() {
     super.initState();
     _exportService = widget.exportService ?? IcsExportService();
+    _calendarSyncService = widget.calendarSyncService ?? CalendarSyncService();
   }
 
   @override
@@ -174,6 +190,31 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
           HyperosControlCard(
             child: HyperosControlCardInset(
               child: _buildSummary(context, l10n, profile),
+            ),
+          ),
+          const HyperosSectionGap(),
+          HyperosControlCard(
+            child: HyperosControlCardInset(
+              child: Column(
+                children: [
+                  HyperosButton(
+                    key: const Key('ics-export-sync-calendar'),
+                    label: l10n.icsExportSyncCalendarButton,
+                    loading: _isSyncing,
+                    expand: true,
+                    onPressed: _isSyncing ? null : _syncToSystemCalendar,
+                  ),
+                  const SizedBox(height: 8),
+                  HyperosButton(
+                    key: const Key('ics-export-remove-calendar'),
+                    label: l10n.icsExportRemoveCalendarButton,
+                    variant: HyperosButtonVariant.secondary,
+                    loading: _isRemoving,
+                    expand: true,
+                    onPressed: _isRemoving ? null : _removeFromSystemCalendar,
+                  ),
+                ],
+              ),
             ),
           ),
           const HyperosSectionGap(),
@@ -461,6 +502,203 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
       if (mounted) {
         setState(() {
           _isExporting = false;
+        });
+      }
+    }
+  }
+
+  /// 一键同步：把当前页选的课表 + 时间范围 + 事件类型直接写进手机系统
+  /// 日历，不走「生成文件 → 分享 → 手动导入」链路。
+  Future<void> _syncToSystemCalendar() async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<TimetableProvider>();
+    final profile = _profileForProvider(provider);
+
+    if (profile == null) {
+      showAppToast(
+        context,
+        message: l10n.icsExportNoProfiles,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
+    if (_eventKinds.isEmpty) {
+      showAppToast(
+        context,
+        message: l10n.icsExportNoSelection,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+    if (_eventKinds.contains(IcsExportEventKind.course) &&
+        profile.settings.semesterStartDate == null) {
+      showAppToast(
+        context,
+        message: l10n.icsExportSemesterStartRequired,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
+
+    // 首次使用先讲清规则（覆盖语义 + 假期不写入 + 日历归属），确认过一次
+    // 之后按钮即真·一键直达。prefs 实例自带内存缓存，重复读取无 IO。
+    final prefs = await SharedPreferences.getInstance();
+    if (!(prefs.getBool(_calendarSyncNoticePrefsKey) ?? false)) {
+      if (!mounted) {
+        return;
+      }
+      final confirmed = await showHyperosConfirmDialog(
+        context: context,
+        title: l10n.icsExportSyncCalendarTitle,
+        message: l10n.icsExportSyncCalendarBody(
+          l10n.icsExportSyncCalendarName(profile.name),
+        ),
+        cancelLabel: l10n.cancelAction,
+        confirmLabel: l10n.icsExportSyncCalendarConfirm,
+      );
+      if (confirmed != true || !mounted) {
+        return;
+      }
+      await prefs.setBool(_calendarSyncNoticePrefsKey, true);
+    }
+
+    if (!mounted) {
+      return;
+    }
+    // 权限缺就申请；弹系统对话框期间用户可能已关页，回来自先查 mounted。
+    var granted = await _calendarSyncService.isPermissionGranted();
+    if (!granted) {
+      granted = await _calendarSyncService.requestPermission();
+    }
+    if (!granted || !mounted) {
+      if (mounted) {
+        showAppToast(
+          context,
+          message: l10n.icsExportSyncCalendarPermissionDenied,
+          kind: AppToastKind.error,
+        );
+      }
+      return;
+    }
+
+    // 事件收集与 ICS 文件导出同源（同一套周次换算 + 去重）。假期过滤跟随
+    // 页面「跳过节假日课程」开关（默认开启）：关掉开关后同步会把假期课
+    // 一并写入日历——两条导出路径由同一个开关控制。overrideEnabled 固定
+    // false 的理由同 _export()：那是诊断页的模拟测试开关，不该进用户真实日历。
+    final collected = _exportService.collectEvents(
+      IcsExportRequest(
+        profile: profile,
+        fromDate: _fromDate,
+        toDate: _toDate,
+        eventKinds: _eventKinds,
+        holidayFilter: _skipHolidayCourses
+            ? IcsHolidayFilter(
+                data: provider.holidayData,
+                overrideEnabled: false,
+                markingEnabled: provider.settings.enableHolidayMarking,
+              )
+            : null,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (collected.events.isEmpty) {
+      showAppToast(context, message: l10n.icsExportNoEvents);
+      return;
+    }
+
+    setState(() {
+      _isSyncing = true;
+    });
+    try {
+      final outcome = await _calendarSyncService.sync(
+        calendarName: l10n.icsExportSyncCalendarName(profile.name),
+        events: [
+          for (final event in collected.events)
+            CalendarSyncEvent(
+              start: event.start,
+              end: event.end,
+              title: event.summary,
+              location: event.location,
+              description: event.description,
+            ),
+        ],
+      );
+      if (!mounted) {
+        return;
+      }
+      if (outcome.isSuccess) {
+        var message = l10n.icsExportSyncCalendarSuccess(outcome.syncedCount);
+        if (collected.skippedHolidayCourses > 0) {
+          message +=
+              '\n${l10n.icsExportSyncCalendarSkipped(collected.skippedHolidayCourses)}';
+        }
+        showAppToast(
+          context,
+          message: message,
+          kind: AppToastKind.success,
+        );
+      } else {
+        showAppToast(
+          context,
+          message: l10n.icsExportSyncCalendarFailed,
+          kind: AppToastKind.error,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSyncing = false;
+        });
+      }
+    }
+  }
+
+  /// 移除已同步到系统日历的全部日程：删掉专属日历（连带其中所有日程），
+  /// 用户自己的其他日历不受影响。删掉后想再同步，点上面的同步按钮即可
+  /// 原样重建。破坏性动作，每次都确认，不做「已阅」记忆。
+  Future<void> _removeFromSystemCalendar() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showHyperosConfirmDialog(
+      context: context,
+      title: l10n.icsExportRemoveCalendarTitle,
+      message: l10n.icsExportRemoveCalendarBody,
+      cancelLabel: l10n.cancelAction,
+      confirmLabel: l10n.icsExportRemoveCalendarConfirm,
+      destructive: true,
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _isRemoving = true;
+    });
+    try {
+      final outcome = await _calendarSyncService.deleteSynced();
+      if (!mounted) {
+        return;
+      }
+      final (message, kind) = switch (outcome) {
+        CalendarDeleteResult.deleted => (
+          l10n.icsExportRemoveCalendarSuccess,
+          AppToastKind.success,
+        ),
+        CalendarDeleteResult.notSynced => (
+          l10n.icsExportRemoveCalendarNothing,
+          AppToastKind.info,
+        ),
+        CalendarDeleteResult.failed => (
+          l10n.icsExportRemoveCalendarFailed,
+          AppToastKind.error,
+        ),
+      };
+      showAppToast(context, message: message, kind: kind);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRemoving = false;
         });
       }
     }

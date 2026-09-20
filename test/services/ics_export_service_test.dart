@@ -463,6 +463,94 @@ void main() {
       expect(result.content, isNot(contains('周一课')));
     });
   });
+
+  group('collectEvents（系统日历同步共用的事件收集）', () {
+    // 2026-03-02 是周一（第 1 周）。第 1 周周一/周二各一节课。
+    TimetableProfile twoCourses() => profileWith(
+      courses: [
+        _course(id: 'mon', name: '周一课'),
+        _course(id: 'tue', name: '周二课', dayOfWeek: DateTime.tuesday),
+      ],
+    );
+
+    HolidayData holidays(List<HolidayEntry> entries) =>
+        HolidayData(year: 2026, version: 1, entries: entries);
+
+    IcsCollectedEvents collect(
+      TimetableProfile profile, {
+      IcsHolidayFilter? holidayFilter,
+    }) => service.collectEvents(
+      IcsExportRequest(
+        profile: profile,
+        fromDate: DateTime(2026, 3),
+        toDate: DateTime(2026, 3, 7),
+        holidayFilter: holidayFilter,
+      ),
+    );
+
+    test('与 ICS 文件导出同源：事件数一致', () {
+      final collected = collect(twoCourses());
+      final exported = buildExport(twoCourses());
+      expect(collected.events.length, exported.eventCount);
+      expect(collected.events.map((e) => e.summary), containsAll(['周一课', '周二课']));
+      expect(collected.skippedHolidayCourses, 0);
+    });
+
+    test('假期课程计入 skippedHolidayCourses 且不出现在事件里', () {
+      final collected = collect(
+        twoCourses(),
+        holidayFilter: IcsHolidayFilter(
+          data: holidays([
+            HolidayEntry(
+              date: DateTime(2026, 3, 2),
+              name: '国庆节',
+              type: HolidayType.vacation,
+            ),
+          ]),
+          // 与「同步到系统日历」的实际口径一致：不用假期覆盖模拟开关。
+          overrideEnabled: false,
+          markingEnabled: true,
+        ),
+      );
+
+      expect(collected.events.map((e) => e.summary), isNot(contains('周一课')));
+      expect(collected.events.map((e) => e.summary), contains('周二课'));
+      expect(collected.skippedHolidayCourses, 1);
+    });
+
+    test('考试与日程被假期落在同一天也不计入 skipped（只统计课程）', () {
+      final profile = profileWith(
+        courses: [_course(id: 'mon', name: '周一课')],
+        exams: [_exam(name: '期中考试', date: DateTime(2026, 3, 2))],
+        scheduleItems: [
+          _scheduleItem(
+            id: 'talk',
+            title: '讲座',
+            startDate: DateTime(2026, 3, 2),
+            endDate: DateTime(2026, 3, 2),
+          ),
+        ],
+      );
+      final collected = collect(
+        profile,
+        holidayFilter: IcsHolidayFilter(
+          data: holidays([
+            HolidayEntry(
+              date: DateTime(2026, 3, 2),
+              name: '国庆节',
+              type: HolidayType.vacation,
+            ),
+          ]),
+          overrideEnabled: false,
+          markingEnabled: true,
+        ),
+      );
+
+      expect(collected.events.map((e) => e.summary), containsAll(['期中考试', '讲座']));
+      expect(collected.events.map((e) => e.summary), isNot(contains('周一课')));
+      expect(collected.skippedHolidayCourses, 1);
+    });
+  });
 }
 
 Course _course({

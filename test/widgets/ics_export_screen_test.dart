@@ -308,7 +308,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('默认关闭，且勾选课程时可见', (tester) async {
+    testWidgets('默认开启，且勾选课程时可见', (tester) async {
       await pumpScreen(tester, provider: _testProvider());
 
       expect(find.byKey(toggleKey), findsOneWidget);
@@ -316,7 +316,8 @@ void main() {
       final tile = tester.widget<HyperosSwitchTile>(
         find.byKey(toggleKey),
       );
-      expect(tile.value, isFalse, reason: '默认不改变导出结果');
+      // 2026-09-19 起默认开启：文件导出与日历同步都默认跳过假期课。
+      expect(tile.value, isTrue);
     });
 
     testWidgets('取消勾选「课程」后该开关隐藏（改了不生效的选项不保留）', (
@@ -331,9 +332,9 @@ void main() {
       expect(find.byKey(toggleKey), findsNothing);
     });
 
-    testWidgets('打开开关后摘要出现「已跳过节假日课程」', (tester) async {
+    testWidgets('关闭开关后摘要不再出现「已跳过节假日课程」', (tester) async {
       await pumpScreen(tester, provider: _testProvider());
-      expect(find.text('已跳过节假日课程'), findsNothing);
+      expect(find.text('已跳过节假日课程'), findsOneWidget);
 
       await tester.tap(find.byKey(toggleKey));
       await tester.pumpAndSettle();
@@ -341,8 +342,8 @@ void main() {
       final tile = tester.widget<HyperosSwitchTile>(
         find.byKey(toggleKey),
       );
-      expect(tile.value, isTrue);
-      expect(find.text('已跳过节假日课程'), findsOneWidget);
+      expect(tile.value, isFalse);
+      expect(find.text('已跳过节假日课程'), findsNothing);
     });
 
     /// 2026-03-02（周一，第 1 周）设为法定假期；该课表只有这一节课。
@@ -364,7 +365,7 @@ void main() {
       ),
     );
 
-    testWidgets('关闭时照常导出假期当天的课程', (tester) async {
+    testWidgets('关闭开关后照常导出假期当天的课程', (tester) async {
       var shareCalls = 0;
       await tester.pumpWidget(
         ChangeNotifierProvider.value(
@@ -381,34 +382,35 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tapExportAndPick(tester, '分享给别人');
-
-      expect(shareCalls, 1, reason: '默认不过滤，假期当天的课程照常导出');
-    });
-
-    testWidgets('开启后假期当天无事件可导出，不会调起分享', (tester) async {
-      var shareCalls = 0;
-      await tester.pumpWidget(
-        ChangeNotifierProvider.value(
-          value: holidayProvider(),
-          child: TestApp(
-            home: IcsExportScreen(
-              shareCallback: (_) async {
-                shareCalls++;
-                return const ShareResult('shared', ShareResultStatus.success);
-              },
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // 开关在视口外，先 ensureVisible 再 tap（同上）。
+      // 默认开启，先关掉开关再导出。
       final toggle = find.byKey(toggleKey);
       await tester.ensureVisible(toggle);
       await tester.tap(toggle);
       await tester.pumpAndSettle();
-      // 无事件时提示直接弹出，不会进入去向菜单。
+
+      await tapExportAndPick(tester, '分享给别人');
+
+      expect(shareCalls, 1, reason: '关掉开关后假期当天的课程照常导出');
+    });
+
+    testWidgets('默认开启时假期当天无事件可导出，不会调起分享', (tester) async {
+      var shareCalls = 0;
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: holidayProvider(),
+          child: TestApp(
+            home: IcsExportScreen(
+              shareCallback: (_) async {
+                shareCalls++;
+                return const ShareResult('shared', ShareResultStatus.success);
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 默认开启，无需动开关。
       final shareButton = find.byKey(const Key('ics-export-share'));
       await tester.ensureVisible(shareButton);
       await tester.tap(shareButton);
@@ -453,6 +455,8 @@ void main() {
 
       final toggle = find.byKey(toggleKey);
       await tester.ensureVisible(toggle);
+      // 默认已开启，关掉后验证：日历内容里没有假期课可过滤，导出不受
+      // 调试覆盖开关影响。
       await tester.tap(toggle);
       await tester.pumpAndSettle();
       await tapExportAndPick(tester, '分享给别人');

@@ -17905,6 +17905,12 @@ abstract class AppLocalizations {
   /// **'边缘陡缓'**
   String get liquidGlassRefractionEdgePowLabel;
 
+  /// No description provided for @liquidGlassDispersionLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'色散'**
+  String get liquidGlassDispersionLabel;
+
   /// No description provided for @liquidGlassRimStrengthLabel.
   ///
   /// In zh, this message translates to:
@@ -18912,6 +18918,102 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'日历保存失败，请稍后重试'**
   String get icsExportSaveFailed;
+
+  /// No description provided for @icsExportSyncCalendarButton.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步到系统日历'**
+  String get icsExportSyncCalendarButton;
+
+  /// No description provided for @icsExportSyncCalendarTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步到系统日历'**
+  String get icsExportSyncCalendarTitle;
+
+  /// No description provided for @icsExportSyncCalendarBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'将在系统日历中创建专属日历「{calendarName}」，写入当前所选时间范围的全部日程；再次同步会覆盖上次写入的日程。假期中的课程默认不写入，如需保留可关闭「跳过节假日课程」开关。首次同步会请求日历权限。'**
+  String icsExportSyncCalendarBody(String calendarName);
+
+  /// No description provided for @icsExportSyncCalendarConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始同步'**
+  String get icsExportSyncCalendarConfirm;
+
+  /// No description provided for @icsExportSyncCalendarName.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻屿课表·{profileName}'**
+  String icsExportSyncCalendarName(String profileName);
+
+  /// No description provided for @icsExportSyncCalendarSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'已同步 {count} 个日程到系统日历'**
+  String icsExportSyncCalendarSuccess(int count);
+
+  /// No description provided for @icsExportSyncCalendarSkipped.
+  ///
+  /// In zh, this message translates to:
+  /// **'已跳过假期中的 {count} 个课程'**
+  String icsExportSyncCalendarSkipped(int count);
+
+  /// No description provided for @icsExportSyncCalendarPermissionDenied.
+  ///
+  /// In zh, this message translates to:
+  /// **'未获得日历权限，请在系统设置中允许后重试'**
+  String get icsExportSyncCalendarPermissionDenied;
+
+  /// No description provided for @icsExportSyncCalendarFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步到系统日历失败，请稍后重试'**
+  String get icsExportSyncCalendarFailed;
+
+  /// No description provided for @icsExportRemoveCalendarButton.
+  ///
+  /// In zh, this message translates to:
+  /// **'移除已同步的日程'**
+  String get icsExportRemoveCalendarButton;
+
+  /// No description provided for @icsExportRemoveCalendarTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'移除已同步的日程'**
+  String get icsExportRemoveCalendarTitle;
+
+  /// No description provided for @icsExportRemoveCalendarBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'将从系统日历中删除「轻屿课表」专属日历及其全部日程，你在日历里的其他内容不受影响。之后想再同步，点「同步到系统日历」即可。'**
+  String get icsExportRemoveCalendarBody;
+
+  /// No description provided for @icsExportRemoveCalendarConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'移除'**
+  String get icsExportRemoveCalendarConfirm;
+
+  /// No description provided for @icsExportRemoveCalendarSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'已从系统日历移除全部同步日程'**
+  String get icsExportRemoveCalendarSuccess;
+
+  /// No description provided for @icsExportRemoveCalendarNothing.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有同步过日程'**
+  String get icsExportRemoveCalendarNothing;
+
+  /// No description provided for @icsExportRemoveCalendarFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'移除失败，请稍后重试'**
+  String get icsExportRemoveCalendarFailed;
 
   /// No description provided for @homeNavigationTitle.
   ///

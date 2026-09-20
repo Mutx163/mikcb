@@ -6058,6 +6058,7 @@
   "liquidGlassRefractionLabel": "折射强度",
   "liquidGlassRefractionBandLabel": "作用带宽度",
   "liquidGlassRefractionEdgePowLabel": "边缘陡缓",
+  "liquidGlassDispersionLabel": "色散",
   "liquidGlassRimStrengthLabel": "边缘高光",
   "liquidGlassRimWidthLabel": "高光带宽",
   "liquidGlassBlurSigmaLabel": "磨砂强度",
@@ -6247,6 +6248,50 @@
   },
   "icsExportSaveCancelled": "已取消保存日历",
   "icsExportSaveFailed": "日历保存失败，请稍后重试",
+  "icsExportSyncCalendarButton": "同步到系统日历",
+  "icsExportSyncCalendarTitle": "同步到系统日历",
+  "icsExportSyncCalendarBody": "将在系统日历中创建专属日历「{calendarName}」，写入当前所选时间范围的全部日程；再次同步会覆盖上次写入的日程。假期中的课程默认不写入，如需保留可关闭「跳过节假日课程」开关。首次同步会请求日历权限。",
+  "@icsExportSyncCalendarBody": {
+    "placeholders": {
+      "calendarName": {
+        "type": "String"
+      }
+    }
+  },
+  "icsExportSyncCalendarConfirm": "开始同步",
+  "icsExportSyncCalendarName": "轻屿课表·{profileName}",
+  "@icsExportSyncCalendarName": {
+    "placeholders": {
+      "profileName": {
+        "type": "String"
+      }
+    }
+  },
+  "icsExportSyncCalendarSuccess": "已同步 {count} 个日程到系统日历",
+  "@icsExportSyncCalendarSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "icsExportSyncCalendarSkipped": "已跳过假期中的 {count} 个课程",
+  "@icsExportSyncCalendarSkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "icsExportSyncCalendarPermissionDenied": "未获得日历权限，请在系统设置中允许后重试",
+  "icsExportSyncCalendarFailed": "同步到系统日历失败，请稍后重试",
+  "icsExportRemoveCalendarButton": "移除已同步的日程",
+  "icsExportRemoveCalendarTitle": "移除已同步的日程",
+  "icsExportRemoveCalendarBody": "将从系统日历中删除「轻屿课表」专属日历及其全部日程，你在日历里的其他内容不受影响。之后想再同步，点「同步到系统日历」即可。",
+  "icsExportRemoveCalendarConfirm": "移除",
+  "icsExportRemoveCalendarSuccess": "已从系统日历移除全部同步日程",
+  "icsExportRemoveCalendarNothing": "还没有同步过日程",
+  "icsExportRemoveCalendarFailed": "移除失败，请稍后重试",
   "homeNavigationTitle": "首页与导航",
   "homeMenuCustomizeSectionTitle": "右上角菜单",
   "homeNavigationSubtitle": "底栏形态、菜单与首页标题",

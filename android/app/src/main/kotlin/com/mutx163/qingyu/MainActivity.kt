@@ -431,6 +431,12 @@ class MainActivity : FlutterActivity() {
                 LocationFix.handle(call, applicationContext, result)
             }
 
+        // ── 一键同步课表到系统日历 ──
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CalendarSync.CHANNEL)
+            .setMethodCallHandler { call, result ->
+                CalendarSync.handle(call, this, applicationContext, result)
+            }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SYSTEM_UI_CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -1716,6 +1722,8 @@ class MainActivity : FlutterActivity() {
             }
             permissionResult?.success(granted)
             permissionResult = null
+        } else if (requestCode == CalendarSync.PERMISSION_REQUEST_CODE) {
+            CalendarSync.onRequestPermissionsResult(requestCode, grantResults)
         }
     }
 

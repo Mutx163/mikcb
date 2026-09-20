@@ -10169,6 +10169,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liquidGlassRefractionEdgePowLabel => 'エッジの急峻さ';
 
   @override
+  String get liquidGlassDispersionLabel => '色収差';
+
+  @override
   String get liquidGlassRimStrengthLabel => 'エッジの光沢';
 
   @override
@@ -10687,6 +10690,64 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get icsExportSaveFailed => 'カレンダーの保存に失敗しました。後でもう一度お試しください。';
+
+  @override
+  String get icsExportSyncCalendarButton => '端末のカレンダーに同期';
+
+  @override
+  String get icsExportSyncCalendarTitle => '端末のカレンダーに同期';
+
+  @override
+  String icsExportSyncCalendarBody(String calendarName) {
+    return '端末のカレンダーに専用カレンダー「$calendarName」を作成し、選択した期間のすべての予定を書き込みます。再度同期すると前回書き込んだ予定は上書きされます。休暇期間の授業はデフォルトでスキップされます。残したい場合は「休日の授業をスキップ」スイッチをオフにしてください。初回同期時にカレンダーの権限を求められます。';
+  }
+
+  @override
+  String get icsExportSyncCalendarConfirm => '同期を開始';
+
+  @override
+  String icsExportSyncCalendarName(String profileName) {
+    return '軽屿課表・$profileName';
+  }
+
+  @override
+  String icsExportSyncCalendarSuccess(int count) {
+    return '$count 件の予定を端末のカレンダーに同期しました';
+  }
+
+  @override
+  String icsExportSyncCalendarSkipped(int count) {
+    return '休暇期間の $count 件の授業はスキップしました';
+  }
+
+  @override
+  String get icsExportSyncCalendarPermissionDenied =>
+      'カレンダーの権限が許可されていません。システム設定で許可してからもう一度お試しください';
+
+  @override
+  String get icsExportSyncCalendarFailed => '端末のカレンダーへの同期に失敗しました。後でもう一度お試しください';
+
+  @override
+  String get icsExportRemoveCalendarButton => '同期した予定を削除';
+
+  @override
+  String get icsExportRemoveCalendarTitle => '同期した予定を削除';
+
+  @override
+  String get icsExportRemoveCalendarBody =>
+      '端末のカレンダーから専用カレンダーとそのすべての予定を削除します。その他のカレンダーの内容には影響しません。再同期する場合は「端末のカレンダーに同期」をタップしてください。';
+
+  @override
+  String get icsExportRemoveCalendarConfirm => '削除';
+
+  @override
+  String get icsExportRemoveCalendarSuccess => '同期したすべての予定を端末のカレンダーから削除しました';
+
+  @override
+  String get icsExportRemoveCalendarNothing => 'まだ同期した予定はありません';
+
+  @override
+  String get icsExportRemoveCalendarFailed => '削除に失敗しました。後でもう一度お試しください';
 
   @override
   String get homeNavigationTitle => 'ホームとナビゲーション';

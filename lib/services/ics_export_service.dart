@@ -62,6 +62,49 @@ class IcsHolidayFilter {
   );
 }
 
+/// One occurrence collected from a profile: a timed calendar event with
+/// concrete start/end instants.
+///
+/// 供 ICS 序列化与「同步到系统日历」两条输出链路共用——它们必须来自
+/// 同一次收集（同一套周次换算、去重与节假日过滤），否则文件导出和
+/// 日历同步会出现内容分叉。
+class IcsCalendarEvent {
+  final String uid;
+  final IcsExportEventKind kind;
+  final DateTime start;
+  final DateTime end;
+  final String summary;
+  final String? location;
+  final String? description;
+
+  const IcsCalendarEvent({
+    required this.uid,
+    required this.kind,
+    required this.start,
+    required this.end,
+    required this.summary,
+    this.location,
+    this.description,
+  });
+}
+
+/// Pure output of [IcsExportService.collectEvents].
+class IcsCollectedEvents {
+  /// Deduplicated, chronologically sorted events.
+  final List<IcsCalendarEvent> events;
+
+  /// 因落在节假日被过滤掉的**课程**事件数（仅当请求带 [IcsHolidayFilter]
+  /// 时才可能大于 0）。考试与自定义日程不受假期过滤，不计入。
+  final int skippedHolidayCourses;
+
+  const IcsCollectedEvents({
+    required this.events,
+    required this.skippedHolidayCourses,
+  });
+
+  bool get hasEvents => events.isNotEmpty;
+}
+
 /// Immutable input for one ICS export operation.
 class IcsExportRequest {
   final TimetableProfile profile;
@@ -144,11 +187,39 @@ class IcsExportService {
   /// Generates a calendar for [request]. The input range is inclusive.
   IcsExportResult generate(IcsExportRequest request) {
     final generatedAt = (request.generatedAt ?? _clock()).toUtc();
-    final events = <_IcsEvent>[];
+    final collected = collectEvents(request);
+
+    return IcsExportResult(
+      content: _serializeCalendar(
+        profile: request.profile,
+        fromDate: request.fromDate,
+        toDate: request.toDate,
+        generatedAt: generatedAt,
+        events: collected.events,
+      ),
+      eventCount: collected.events.length,
+      fileName: buildFileName(
+        profileName: request.profile.name,
+        fromDate: request.fromDate,
+        toDate: request.toDate,
+      ),
+      generatedAt: generatedAt,
+    );
+  }
+
+  /// 收集一次请求涉及的全部事件（不序列化）。
+  ///
+  /// 「同步到系统日历」走这里拿结构化事件，与 [generate] 共用同一套
+  /// 周次换算、去重与节假日过滤，保证两条导出链路内容一致。
+  IcsCollectedEvents collectEvents(IcsExportRequest request) {
+    final events = <IcsCalendarEvent>[];
+    var skippedHolidayCourses = 0;
 
     if (request.hasValidDateRange) {
       if (request.eventKinds.contains(IcsExportEventKind.course)) {
-        events.addAll(_courseEvents(request));
+        final courses = _courseEvents(request);
+        events.addAll(courses.events);
+        skippedHolidayCourses += courses.skippedHolidayCourses;
       }
       if (request.eventKinds.contains(IcsExportEventKind.exam)) {
         events.addAll(_examEvents(request));
@@ -158,27 +229,14 @@ class IcsExportService {
       }
     }
 
-    final uniqueEvents = <String, _IcsEvent>{};
+    final uniqueEvents = <String, IcsCalendarEvent>{};
     for (final event in events) {
       uniqueEvents[event.uid] = event;
     }
     final sortedEvents = uniqueEvents.values.toList()..sort(_compareEvents);
-
-    return IcsExportResult(
-      content: _serializeCalendar(
-        profile: request.profile,
-        fromDate: request.fromDate,
-        toDate: request.toDate,
-        generatedAt: generatedAt,
-        events: sortedEvents,
-      ),
-      eventCount: sortedEvents.length,
-      fileName: buildFileName(
-        profileName: request.profile.name,
-        fromDate: request.fromDate,
-        toDate: request.toDate,
-      ),
-      generatedAt: generatedAt,
+    return IcsCollectedEvents(
+      events: sortedEvents,
+      skippedHolidayCourses: skippedHolidayCourses,
     );
   }
 
@@ -222,14 +280,18 @@ class IcsExportService {
     return '$safeProfile-$from-$to.ics';
   }
 
-  List<_IcsEvent> _courseEvents(IcsExportRequest request) {
+  /// 课程事件收集 + 节假日跳过计数（named record，避免为单一调用点立类）。
+  ({List<IcsCalendarEvent> events, int skippedHolidayCourses}) _courseEvents(
+    IcsExportRequest request,
+  ) {
     final semesterStart = request.profile.settings.semesterStartDate;
     if (semesterStart == null) {
-      return const <_IcsEvent>[];
+      return (events: const <IcsCalendarEvent>[], skippedHolidayCourses: 0);
     }
 
     final firstMonday = _mondayOf(_dateOnly(semesterStart));
-    final events = <_IcsEvent>[];
+    final events = <IcsCalendarEvent>[];
+    var skippedHolidayCourses = 0;
     for (final course in request.profile.courses) {
       final dayOfWeek = course.dayOfWeek.clamp(1, 7);
       for (final week in course.activeWeeks) {
@@ -246,6 +308,7 @@ class IcsExportService {
         // 节假日过滤：仅对**课程**生效，且只在用户勾选时。
         // 判定走与首页同一个 HolidayResolver，调休上班日依然保留课程。
         if (request.holidayFilter?.hidesCoursesOn(occurrenceDate) ?? false) {
+          skippedHolidayCourses++;
           continue;
         }
 
@@ -276,11 +339,11 @@ class IcsExportService {
         }
       }
     }
-    return events;
+    return (events: events, skippedHolidayCourses: skippedHolidayCourses);
   }
 
-  List<_IcsEvent> _examEvents(IcsExportRequest request) {
-    final events = <_IcsEvent>[];
+  List<IcsCalendarEvent> _examEvents(IcsExportRequest request) {
+    final events = <IcsCalendarEvent>[];
     for (final exam in request.profile.exams) {
       final occurrenceDate = _dateOnly(exam.dateTime);
       if (!_isInRange(occurrenceDate, request.fromDate, request.toDate)) {
@@ -310,7 +373,7 @@ class IcsExportService {
     return events;
   }
 
-  List<_IcsEvent> _scheduleEvents(IcsExportRequest request) {
+  List<IcsCalendarEvent> _scheduleEvents(IcsExportRequest request) {
     final occurrences = <String, _ScheduleOccurrence>{};
     for (final item in request.profile.scheduleItems) {
       if (item.isRecurring) {
@@ -354,7 +417,7 @@ class IcsExportService {
       }
     }
 
-    final events = <_IcsEvent>[];
+    final events = <IcsCalendarEvent>[];
     for (final occurrence in occurrences.values) {
       final item = occurrence.item;
       final event = _buildTimedEvent(
@@ -377,7 +440,7 @@ class IcsExportService {
     return events;
   }
 
-  _IcsEvent? _buildTimedEvent({
+  IcsCalendarEvent? _buildTimedEvent({
     required TimetableProfile profile,
     required IcsExportEventKind kind,
     required String sourceId,
@@ -414,7 +477,7 @@ class IcsExportService {
     ].join('|');
     final digest = sha256.convert(utf8.encode(uidMaterial)).toString();
 
-    return _IcsEvent(
+    return IcsCalendarEvent(
       uid: '$digest@qingyu-timetable.local',
       kind: kind,
       start: start,
@@ -430,7 +493,7 @@ class IcsExportService {
     required DateTime fromDate,
     required DateTime toDate,
     required DateTime generatedAt,
-    required List<_IcsEvent> events,
+    required List<IcsCalendarEvent> events,
   }) {
     final from = _formatCalendarDate(fromDate);
     final to = _formatCalendarDate(toDate);
@@ -473,7 +536,7 @@ class IcsExportService {
     return '${foldedLines.join('\r\n')}\r\n';
   }
 
-  static int _compareEvents(_IcsEvent left, _IcsEvent right) {
+  static int _compareEvents(IcsCalendarEvent left, IcsCalendarEvent right) {
     final startCompare = left.start.compareTo(right.start);
     if (startCompare != 0) {
       return startCompare;
@@ -488,26 +551,6 @@ class IcsExportService {
     }
     return left.uid.compareTo(right.uid);
   }
-}
-
-class _IcsEvent {
-  final String uid;
-  final IcsExportEventKind kind;
-  final DateTime start;
-  final DateTime end;
-  final String summary;
-  final String? location;
-  final String? description;
-
-  const _IcsEvent({
-    required this.uid,
-    required this.kind,
-    required this.start,
-    required this.end,
-    required this.summary,
-    this.location,
-    this.description,
-  });
 }
 
 class _ScheduleOccurrence {

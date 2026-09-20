@@ -10214,6 +10214,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liquidGlassRefractionEdgePowLabel => '가장자리 기울기';
 
   @override
+  String get liquidGlassDispersionLabel => '색수차';
+
+  @override
   String get liquidGlassRimStrengthLabel => '가장자리 하이라이트';
 
   @override
@@ -10732,6 +10735,65 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get icsExportSaveFailed => '캘린더를 저장하지 못했습니다. 나중에 다시 시도해 주세요.';
+
+  @override
+  String get icsExportSyncCalendarButton => '기기 캘린더에 동기화';
+
+  @override
+  String get icsExportSyncCalendarTitle => '기기 캘린더에 동기화';
+
+  @override
+  String icsExportSyncCalendarBody(String calendarName) {
+    return '기기 캘린더에 전용 캘린더 \"$calendarName\"을(를) 만들어 선택한 기간의 모든 일정을 기록합니다. 다시 동기화하면 이전에 기록한 일정이 대체됩니다. 휴가 기간의 수업은 기본적으로 건너뜁니다. 유지하려면 \'캘린더 건너뛰기\' 스위치를 끄세요. 처음 동기화할 때 캘린더 권한을 요청합니다.';
+  }
+
+  @override
+  String get icsExportSyncCalendarConfirm => '동기화 시작';
+
+  @override
+  String icsExportSyncCalendarName(String profileName) {
+    return '轻屿课表·$profileName';
+  }
+
+  @override
+  String icsExportSyncCalendarSuccess(int count) {
+    return '$count개의 일정을 기기 캘린더에 동기화했습니다';
+  }
+
+  @override
+  String icsExportSyncCalendarSkipped(int count) {
+    return '휴가 기간의 $count개 수업은 건너뛰었습니다';
+  }
+
+  @override
+  String get icsExportSyncCalendarPermissionDenied =>
+      '캘린더 권한이 허용되지 않았습니다. 시스템 설정에서 허용한 후 다시 시도해 주세요';
+
+  @override
+  String get icsExportSyncCalendarFailed =>
+      '기기 캘린더 동기화에 실패했습니다. 나중에 다시 시도해 주세요';
+
+  @override
+  String get icsExportRemoveCalendarButton => '동기화한 일정 삭제';
+
+  @override
+  String get icsExportRemoveCalendarTitle => '동기화한 일정 삭제';
+
+  @override
+  String get icsExportRemoveCalendarBody =>
+      '기기 캘린더에서 전용 캘린더와 모든 일정을 삭제합니다. 다른 캘린더 내용에는 영향이 없습니다. 다시 동기화하려면 \'기기 캘린더에 동기화\'를 누르세요.';
+
+  @override
+  String get icsExportRemoveCalendarConfirm => '삭제';
+
+  @override
+  String get icsExportRemoveCalendarSuccess => '동기화한 모든 일정을 기기 캘린더에서 삭제했습니다';
+
+  @override
+  String get icsExportRemoveCalendarNothing => '아직 동기화한 일정이 없습니다';
+
+  @override
+  String get icsExportRemoveCalendarFailed => '삭제하지 못했습니다. 나중에 다시 시도해 주세요';
 
   @override
   String get homeNavigationTitle => '홈 및 탐색';

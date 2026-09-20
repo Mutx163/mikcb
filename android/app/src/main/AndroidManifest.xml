@@ -75,6 +75,11 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
+    <!-- 一键同步课表到系统日历（CalendarSync.kt）：读写专属本地日历。
+         运行时权限，只在用户点「同步到系统日历」时申请，不随启动索取。 -->
+    <uses-permission android:name="android.permission.READ_CALENDAR"/>
+    <uses-permission android:name="android.permission.WRITE_CALENDAR"/>
+
     <application
         android:name=".UmengApplication"
         android:label="${appLabel}"

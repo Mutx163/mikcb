@@ -10473,6 +10473,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liquidGlassRefractionEdgePowLabel => 'Edge falloff';
 
   @override
+  String get liquidGlassDispersionLabel => 'Dispersion';
+
+  @override
   String get liquidGlassRimStrengthLabel => 'Edge highlight';
 
   @override
@@ -11006,6 +11009,67 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get icsExportSaveFailed =>
       'Failed to save the calendar. Please try again later.';
+
+  @override
+  String get icsExportSyncCalendarButton => 'Sync to device calendar';
+
+  @override
+  String get icsExportSyncCalendarTitle => 'Sync to device calendar';
+
+  @override
+  String icsExportSyncCalendarBody(String calendarName) {
+    return 'A dedicated calendar \"$calendarName\" will be created in your device calendar and filled with every event in the selected range. Syncing again replaces the events written last time. Courses on holidays are skipped by default; turn off the \"Skip holiday classes\" switch to keep them. You will be asked for calendar permission the first time.';
+  }
+
+  @override
+  String get icsExportSyncCalendarConfirm => 'Start sync';
+
+  @override
+  String icsExportSyncCalendarName(String profileName) {
+    return 'Qingyu Timetable · $profileName';
+  }
+
+  @override
+  String icsExportSyncCalendarSuccess(int count) {
+    return 'Synced $count events to your device calendar';
+  }
+
+  @override
+  String icsExportSyncCalendarSkipped(int count) {
+    return '$count courses on holidays were skipped';
+  }
+
+  @override
+  String get icsExportSyncCalendarPermissionDenied =>
+      'Calendar permission not granted. Allow it in system settings and try again.';
+
+  @override
+  String get icsExportSyncCalendarFailed =>
+      'Failed to sync to the device calendar. Please try again later.';
+
+  @override
+  String get icsExportRemoveCalendarButton => 'Remove synced events';
+
+  @override
+  String get icsExportRemoveCalendarTitle => 'Remove synced events';
+
+  @override
+  String get icsExportRemoveCalendarBody =>
+      'The dedicated Qingyu calendar and all of its events will be removed from your device calendar. Nothing else in your calendar is affected. To sync again, tap \"Sync to device calendar\".';
+
+  @override
+  String get icsExportRemoveCalendarConfirm => 'Remove';
+
+  @override
+  String get icsExportRemoveCalendarSuccess =>
+      'All synced events were removed from your device calendar';
+
+  @override
+  String get icsExportRemoveCalendarNothing => 'Nothing has been synced yet';
+
+  @override
+  String get icsExportRemoveCalendarFailed =>
+      'Failed to remove the synced events. Please try again later.';
 
   @override
   String get homeNavigationTitle => 'Home & Navigation';
