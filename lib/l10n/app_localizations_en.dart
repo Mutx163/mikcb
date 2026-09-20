@@ -3520,7 +3520,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wallpaperPositionPickerTitle => 'Adjust wallpaper position';
 
   @override
-  String get wallpaperPositionPickerResetTooltip => 'Reset to center';
+  String get wallpaperPositionPickerResetTooltip => 'Reset';
 
   @override
   String get wallpaperPositionPickerDragHint =>

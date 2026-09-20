@@ -1891,7 +1891,7 @@
   "homePageWallpaperRecentSubtitle": "点按即可切回，最多保留 10 张",
   "homePageWallpaperRecentImageLabel": "照片",
   "wallpaperPositionPickerTitle": "调整壁纸显示位置",
-  "wallpaperPositionPickerResetTooltip": "重置居中",
+  "wallpaperPositionPickerResetTooltip": "重置",
   "wallpaperPositionPickerDragHint": "拖动壁纸调整位置",
   "wallpaperPositionPickerSwitchWallpaper": "换壁纸",
   "wallpaperPositionPickerDone": "完成",

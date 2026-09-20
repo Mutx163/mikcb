@@ -164,6 +164,55 @@ void main() {
       );
       expect(bottom.top, closeTo(0.75, 0.0001));
     });
+
+    test('zoom 缩小取景窗口、且保住对齐点', () {
+      const viewport = Size(400, 800);
+      const image = Size(1600, 800);
+      // 基准：可见宽度 0.25、居中起点 0.375。放大 2 倍 ⇒ 0.125、起点 0.4375。
+      final zoomed = homePageWallpaperVisibleSourceRect(
+        viewportSize: viewport,
+        imageSize: image,
+        zoom: 2,
+      );
+      expect(zoomed.width, closeTo(0.125, 0.0001));
+      expect(zoomed.left, closeTo(0.4375, 0.0001));
+
+      // -1 / +1 两个端点与不放大时一致：贴哪条边还是贴哪条边（放大只是把窗口收窄）。
+      expect(
+        homePageWallpaperVisibleSourceRect(
+          viewportSize: viewport,
+          imageSize: image,
+          alignX: -1,
+          zoom: 2,
+        ).left,
+        closeTo(0, 0.0001),
+      );
+      final rightEdge = homePageWallpaperVisibleSourceRect(
+        viewportSize: viewport,
+        imageSize: image,
+        alignX: 1,
+        zoom: 2,
+      );
+      expect(rightEdge.left + rightEdge.width, closeTo(1, 0.0001));
+
+      // 越界倍数被钳到渲染侧同一份上下限。
+      expect(
+        homePageWallpaperVisibleSourceRect(
+          viewportSize: viewport,
+          imageSize: image,
+          zoom: 99,
+        ).width,
+        closeTo(0.25 / kWallpaperMaxScale, 0.0001),
+      );
+      expect(
+        homePageWallpaperVisibleSourceRect(
+          viewportSize: viewport,
+          imageSize: image,
+          zoom: 0.1,
+        ).width,
+        closeTo(0.25, 0.0001),
+      );
+    });
   });
 
   group('homePageChromeForegroundForLuminance', () {

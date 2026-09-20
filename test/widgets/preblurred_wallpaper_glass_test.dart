@@ -120,6 +120,31 @@ void main() {
       expect(dest.height, closeTo(1000, 0.001));
     });
 
+    test('zoom 绕对齐点放大落点（与首页 Transform.scale 同几何）', () {
+      Rect destAt(double alignY, double zoom) =>
+          preblurredWallpaperCoverDestRect(
+            imageSize: image,
+            screenSize: screen,
+            wallpaperOriginX: 0,
+            alignY: alignY,
+            zoom: zoom,
+          );
+
+      // 基准（zoom = 1）：400x1000、纵向溢出 200（top = -100）。
+      // 居中放大 2 倍 ⇒ 400x2000、溢出 1200、top = -600（中心那一点不动）。
+      expect(destAt(0, 2).height, closeTo(2000, 0.001));
+      expect(destAt(0, 2).top, closeTo(-600, 0.001));
+      expect(destAt(0, 2).width, closeTo(800, 0.001));
+      // 两个端点仍然贴着对应的边（-1 前缘 / +1 后缘），放大不改这件事。
+      expect(destAt(-1, 2).top, closeTo(0, 0.001));
+      final bottom = destAt(1, 2);
+      expect(bottom.top + bottom.height, closeTo(800, 0.001));
+      // 越界倍数钳到口径上限（渲染侧与编辑页共用同一份上下限）。
+      expect(destAt(0, 99).height, closeTo(1000 * kWallpaperMaxScale, 0.001));
+      // zoom < 1 一律当 1：再小就露出底色。
+      expect(destAt(0, 0.5).height, closeTo(1000, 0.001));
+    });
+
     test('cover 对齐值与屏幕上真壁纸同源：-1 贴前缘 / +1 贴后缘', () {
       // 竖长的壁纸只在纵向溢出（scale = 1 → 溢出 200）：alignY 决定这 200px
       // 怎么分。默认 0（居中）时 top = -100，与上一条用例同一读数。

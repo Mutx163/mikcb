@@ -3386,7 +3386,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get wallpaperPositionPickerTitle => '배경화면 표시 위치 조정';
 
   @override
-  String get wallpaperPositionPickerResetTooltip => '중앙으로 초기화';
+  String get wallpaperPositionPickerResetTooltip => '재설정';
 
   @override
   String get wallpaperPositionPickerDragHint => '배경화면을 드래그해 위치 조정';

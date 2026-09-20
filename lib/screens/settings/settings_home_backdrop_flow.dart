@@ -119,6 +119,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
       key: key,
       alignX: backdropDraft.homePageWallpaperAlignX,
       alignY: backdropDraft.homePageWallpaperAlignY,
+      scale: backdropDraft.homePageWallpaperScale,
     );
   }
 
@@ -200,6 +201,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
           key: entry.key,
           alignX: entry.alignX,
           alignY: entry.alignY,
+          scale: entry.scale,
         ),
       ],
     );
@@ -262,6 +264,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
           key: currentKey,
           alignX: backdropDraft.homePageWallpaperAlignX,
           alignY: backdropDraft.homePageWallpaperAlignY,
+          scale: backdropDraft.homePageWallpaperScale,
         ),
       ...availableWallpaperHistory(_wallpaperHistory),
     ];
@@ -423,6 +426,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     required double initialAlignX,
     required double initialAlignY,
     required Set<String> pickedPaths,
+    double initialScale = 1,
   }) async {
     final result = await _withHostSheetClosed(
       () => pushWallpaperPositionPickerPage(
@@ -430,6 +434,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
         imagePath: imagePath,
         initialAlignX: initialAlignX,
         initialAlignY: initialAlignY,
+        initialScale: initialScale,
         // 页内「换壁纸」与外面同一套选图（落进本 app 目录、不清理旧文件）。
         onPickNewImage: _pickHomePageBackdropImage,
       ),
@@ -449,6 +454,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
         homePageWallpaperPath: result.path,
         homePageWallpaperAlignX: result.alignX,
         homePageWallpaperAlignY: result.alignY,
+        homePageWallpaperScale: result.scale,
         clearHomePageBackgroundImagePath: true,
       ),
       remembered: [
@@ -457,6 +463,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
           key: result.path,
           alignX: result.alignX,
           alignY: result.alignY,
+          scale: result.scale,
         ),
       ],
     );
@@ -522,6 +529,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
       imagePath: existingPath,
       initialAlignX: backdropDraft.homePageWallpaperAlignX,
       initialAlignY: backdropDraft.homePageWallpaperAlignY,
+      initialScale: backdropDraft.homePageWallpaperScale,
       // 进页前没有新选文件：本次交互的产物只有页内可能「换壁纸」的那张。
       // 当前这张正在用，会被 [_discardUnreferencedBackdrops] 的引用集合护住；
       // 被换下的旧图也不在这里删 —— 它在「最近使用」里留档，用户可以随时切回，

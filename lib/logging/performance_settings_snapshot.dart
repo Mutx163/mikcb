@@ -165,6 +165,7 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
     'pageBackgroundColor': s.timetablePageBackgroundColor,
     'wallpaperAlignX': s.homePageWallpaperAlignX,
     'wallpaperAlignY': s.homePageWallpaperAlignY,
+    'wallpaperScale': s.homePageWallpaperScale,
     'backgroundScope': s.homePageBackgroundScope,
     'backgroundScopeRegions': _backgroundScopeRegions(s.homePageBackgroundScope),
     'courseCardStyle': s.courseCardSurfaceStyle.name,

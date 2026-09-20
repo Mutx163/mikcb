@@ -6144,7 +6144,7 @@ abstract class AppLocalizations {
   /// No description provided for @wallpaperPositionPickerResetTooltip.
   ///
   /// In zh, this message translates to:
-  /// **'重置居中'**
+  /// **'重置'**
   String get wallpaperPositionPickerResetTooltip;
 
   /// No description provided for @wallpaperPositionPickerDragHint.

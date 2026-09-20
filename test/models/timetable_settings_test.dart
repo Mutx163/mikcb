@@ -1035,6 +1035,27 @@ void main() {
     });
   });
 
+  test('壁纸缩放跟着设置一起进 JSON；存量数据缺键读作 1', () {
+    final settings = TimetableSettings.defaults().copyWith(
+      homePageWallpaperPath: '/tmp/wallpaper.png',
+      homePageWallpaperScale: 2.4,
+    );
+    final json = settings.toJson();
+    expect(json['homePageWallpaperScale'], 2.4);
+    expect(
+      TimetableSettings.fromJson(json).homePageWallpaperScale,
+      closeTo(2.4, 1e-9),
+    );
+
+    // 存量存档（加缩放之前）没有这个键：缺省 1（刚好铺满），观感与当时一致。
+    final legacy = Map<String, Object?>.of(json)
+      ..remove('homePageWallpaperScale');
+    expect(
+      TimetableSettings.fromJson(legacy).homePageWallpaperScale,
+      closeTo(1, 1e-9),
+    );
+  });
+
   test('home page background settings roundtrip in json', () {
     final settings = TimetableSettings.defaults().copyWith(
       homePageBackgroundFill: HomePageBackgroundFill.image,

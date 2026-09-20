@@ -6163,7 +6163,7 @@
   "homePageWallpaperRecentSubtitle": "撳一下即切返，最多保留 10 張",
   "homePageWallpaperRecentImageLabel": "相片",
   "wallpaperPositionPickerTitle": "調整桌布顯示位置",
-  "wallpaperPositionPickerResetTooltip": "重設置中",
+  "wallpaperPositionPickerResetTooltip": "重設",
   "wallpaperPositionPickerDragHint": "拖曳桌布調整位置",
   "wallpaperPositionPickerSwitchWallpaper": "更換桌布",
   "wallpaperPositionPickerDone": "完成",

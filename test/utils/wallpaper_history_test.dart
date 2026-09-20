@@ -192,6 +192,45 @@ void main() {
       expect(next.homePageWallpaperAlignY, -0.7);
     });
 
+    test('缩放是取景的一部分，切回时一起还原', () {
+      final path = createTempWallpaper('zoom.png');
+      final next = settingsWithWallpaperHistoryEntry(
+        TimetableSettings.defaults().copyWith(homePageWallpaperScale: 3),
+        WallpaperHistoryEntry(key: path, scale: 1.6),
+      );
+
+      expect(next, isNotNull);
+      expect(next!.homePageWallpaperScale, 1.6);
+    });
+  });
+
+  group('WallpaperHistoryEntry 序列化', () {
+    test('缩放会写进 JSON；存量数据没有这个键时读作 1', () {
+      final json = const WallpaperHistoryEntry(
+        key: '/tmp/a.png',
+        alignX: 0.5,
+        scale: 2.5,
+      ).toJson();
+      expect(json['scale'], 2.5);
+      expect(WallpaperHistoryEntry.fromJson(json)!.scale, 2.5);
+
+      // 存量存档（加缩放之前）没有 scale：缺省 1，观感与当时一致。
+      final legacy = WallpaperHistoryEntry.fromJson(<String, Object?>{
+        'key': '/tmp/a.png',
+        'alignX': 0.5,
+      });
+      expect(legacy, isNotNull);
+      expect(legacy!.scale, 1);
+      // 坏值不许冒泡（会让整份设置被重置），一律回退默认。
+      expect(
+        WallpaperHistoryEntry.fromJson(<String, Object?>{
+          'key': '/tmp/a.png',
+          'scale': 'big',
+        })!.scale,
+        1,
+      );
+    });
+
     test('条目不可用时返回 null', () {
       expect(
         settingsWithWallpaperHistoryEntry(

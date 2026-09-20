@@ -1506,6 +1506,18 @@ class TimetableSettings {
   /// 拖动选择显示区域；cover 下高度未溢出时该值不产生位移。
   final double homePageWallpaperAlignY;
 
+  /// 壁纸放大倍数（1 = 刚好铺满屏幕，也就是 cover 的原始大小）。
+  ///
+  /// 位置编辑页的双指缩放写它；渲染侧按它把图整体放大（见
+  /// `homePageBackdropImageWidget`），仍在同一套 [homePageWallpaperAlignX] /
+  /// [homePageWallpaperAlignY] 的裁剪窗口里取景 —— 放大后溢出量随之变大，
+  /// 可拖动的范围也跟着变大（同一份拖动映射，见 `wallpaperAlignAfterDrag`）。
+  ///
+  /// 钳制口径在渲染 / 编辑两侧共用 `kWallpaperMinScale` / `kWallpaperMaxScale`
+  /// （见 `utils/home_page_background.dart`）：下限 1（再小就露出底色）、
+  /// 上限 4（够看细节，再大只是糊）。
+  final double homePageWallpaperScale;
+
   /// 首页壁纸「最近使用」历史，最新在前，最多 10 条。
   ///
   /// 记录用户设置过的每一张壁纸：自选图片与内置预设共用同一条列表，条目 key
@@ -1757,6 +1769,7 @@ class TimetableSettings {
     this.homePageWallpaperPath,
     this.homePageWallpaperAlignX = 0,
     this.homePageWallpaperAlignY = 0,
+    this.homePageWallpaperScale = 1,
     this.wallpaperHistory = const [],
     this.homePageBackgroundScope = HomePageBackgroundScope.defaultValue,
     this.timetableUseUnifiedCardColor = false,
@@ -1983,6 +1996,7 @@ class TimetableSettings {
         'homePageWallpaperPath': homePageWallpaperPath,
       'homePageWallpaperAlignX': homePageWallpaperAlignX,
       'homePageWallpaperAlignY': homePageWallpaperAlignY,
+      'homePageWallpaperScale': homePageWallpaperScale,
       'wallpaperHistory': [
         for (final entry in wallpaperHistory) entry.toJson(),
       ],
@@ -2437,6 +2451,9 @@ class TimetableSettings {
           (json['homePageWallpaperAlignX'] as num?)?.toDouble() ?? 0,
       homePageWallpaperAlignY:
           (json['homePageWallpaperAlignY'] as num?)?.toDouble() ?? 0,
+      // 存量存档没有这个字段：缺省 1（刚好铺满），观感与加缩放之前一致。
+      homePageWallpaperScale:
+          (json['homePageWallpaperScale'] as num?)?.toDouble() ?? 1,
       wallpaperHistory: WallpaperHistoryEntry.listFromJson(
         json['wallpaperHistory'],
       ),
@@ -2747,6 +2764,7 @@ class TimetableSettings {
     bool clearHomePageWallpaperPath = false,
     double? homePageWallpaperAlignX,
     double? homePageWallpaperAlignY,
+    double? homePageWallpaperScale,
     List<WallpaperHistoryEntry>? wallpaperHistory,
     bool clearWallpaperHistory = false,
     int? homePageBackgroundScope,
@@ -3089,6 +3107,8 @@ class TimetableSettings {
           homePageWallpaperAlignX ?? this.homePageWallpaperAlignX,
       homePageWallpaperAlignY:
           homePageWallpaperAlignY ?? this.homePageWallpaperAlignY,
+      homePageWallpaperScale:
+          homePageWallpaperScale ?? this.homePageWallpaperScale,
       wallpaperHistory: clearWallpaperHistory
           ? const []
           : wallpaperHistory ?? this.wallpaperHistory,

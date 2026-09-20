@@ -1028,6 +1028,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 // （卡内外壁纸接不上），所以这两个值随设置一起传。
                 wallpaperAlignX: settings.homePageWallpaperAlignX,
                 wallpaperAlignY: settings.homePageWallpaperAlignY,
+                wallpaperScale: settings.homePageWallpaperScale,
                 pageController: _isDayView
                     ? _ensureDayViewPageController(settings)
                     : _weekPageController,

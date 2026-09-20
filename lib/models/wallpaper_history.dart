@@ -17,6 +17,7 @@ class WallpaperHistoryEntry {
     required this.key,
     this.alignX = 0,
     this.alignY = 0,
+    this.scale = 1,
     this.usedAt = 0,
   });
 
@@ -28,6 +29,12 @@ class WallpaperHistoryEntry {
 
   /// 使用该壁纸时的垂直对齐（-1..1）。
   final double alignY;
+
+  /// 使用该壁纸时的放大倍数（1 = 刚好铺满）。
+  ///
+  /// 切回「最近使用」时连缩放一起还原 —— 它是"当时那个取景"的一部分，
+  /// 只还原位置不还原缩放等于取景被改了一半。
+  final double scale;
 
   /// 最近一次使用时间（epoch 毫秒），用于排序与「最近」语义。
   ///
@@ -41,11 +48,13 @@ class WallpaperHistoryEntry {
     String? key,
     double? alignX,
     double? alignY,
+    double? scale,
     int? usedAt,
   }) => WallpaperHistoryEntry(
     key: key ?? this.key,
     alignX: alignX ?? this.alignX,
     alignY: alignY ?? this.alignY,
+    scale: scale ?? this.scale,
     usedAt: usedAt ?? this.usedAt,
   );
 
@@ -53,6 +62,7 @@ class WallpaperHistoryEntry {
     'key': key,
     'alignX': alignX,
     'alignY': alignY,
+    'scale': scale,
     'usedAt': usedAt,
   };
 
@@ -77,6 +87,8 @@ class WallpaperHistoryEntry {
       key: key,
       alignX: _numOrNull(raw['alignX'])?.toDouble() ?? 0,
       alignY: _numOrNull(raw['alignY'])?.toDouble() ?? 0,
+      // 存量存档没有 scale：缺省 1（刚好铺满），与加缩放之前一致。
+      scale: _numOrNull(raw['scale'])?.toDouble() ?? 1,
       usedAt: _numOrNull(raw['usedAt'])?.toInt() ?? 0,
     );
     return entry.isValid ? entry : null;
@@ -101,11 +113,13 @@ class WallpaperHistoryEntry {
       other.key == key &&
       other.alignX == alignX &&
       other.alignY == alignY &&
+      other.scale == scale &&
       other.usedAt == usedAt;
 
   @override
-  int get hashCode => Object.hash(key, alignX, alignY, usedAt);
+  int get hashCode => Object.hash(key, alignX, alignY, scale, usedAt);
 
   @override
-  String toString() => 'WallpaperHistoryEntry($key, $alignX, $alignY, $usedAt)';
+  String toString() =>
+      'WallpaperHistoryEntry($key, $alignX, $alignY, $scale, $usedAt)';
 }

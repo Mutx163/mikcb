@@ -22,12 +22,18 @@ class WallpaperPositionPickerResult {
     required this.path,
     required this.alignX,
     required this.alignY,
+    this.scale = 1,
     required this.confirmed,
   });
 
   final String path;
   final double alignX;
   final double alignY;
+
+  /// 用户选定的放大倍数（1 = 刚好铺满；上下限见 `kWallpaperMinScale` /
+  /// `kWallpaperMaxScale`）。
+  final double scale;
+
   final bool confirmed;
 }
 
@@ -76,13 +82,15 @@ double wallpaperAlignAfterDrag({
 
 /// 以全屏页方式打开壁纸位置选择器。
 ///
-/// [initialAlignX] / [initialAlignY] 为进入时已保存的对齐值；传入
-/// [onPickNewImage] 时页面底部会显示「换壁纸」按钮，用于从相册重新选择图片。
+/// [initialAlignX] / [initialAlignY] / [initialScale] 为进入时已保存的取景；
+/// 传入 [onPickNewImage] 时页面底部会显示「换壁纸」按钮，用于从相册重新选择
+/// 图片。
 Future<WallpaperPositionPickerResult?> pushWallpaperPositionPickerPage(
   BuildContext context, {
   required String imagePath,
   required double initialAlignX,
   required double initialAlignY,
+  double initialScale = 1,
   Future<String?> Function()? onPickNewImage,
 }) {
   return HyperosNavigation.push<WallpaperPositionPickerResult>(
@@ -91,6 +99,7 @@ Future<WallpaperPositionPickerResult?> pushWallpaperPositionPickerPage(
       imagePath: imagePath,
       initialAlignX: initialAlignX,
       initialAlignY: initialAlignY,
+      initialScale: initialScale,
       onPickNewImage: onPickNewImage,
     ),
   );
@@ -109,12 +118,16 @@ class WallpaperPositionPickerPage extends StatefulWidget {
     required this.imagePath,
     required this.initialAlignX,
     required this.initialAlignY,
+    this.initialScale = 1,
     this.onPickNewImage,
   });
 
   final String imagePath;
   final double initialAlignX;
   final double initialAlignY;
+
+  /// 进入时的放大倍数（1 = 刚好铺满）。
+  final double initialScale;
 
   /// 非空时显示「换壁纸」按钮；返回 null 表示用户取消。
   final Future<String?> Function()? onPickNewImage;
@@ -129,6 +142,11 @@ class _WallpaperPositionPickerPageState
   late String _imagePath;
   late double _alignX;
   late double _alignY;
+  late double _scale;
+
+  /// 本次缩放手势开始时的倍数基准：`ScaleUpdateDetails.scale` 是**相对本手势
+  /// 起点**的倍率，不能直接当绝对倍数用。
+  double _scaleAtGestureStart = 1;
 
   Size? _imageSize;
 
@@ -243,6 +261,7 @@ class _WallpaperPositionPickerPageState
     _imagePath = widget.imagePath;
     _alignX = widget.initialAlignX;
     _alignY = widget.initialAlignY;
+    _scale = widget.initialScale.clamp(kWallpaperMinScale, kWallpaperMaxScale);
     // 首帧极性直接用启动期预热好的亮度带（与首页首帧同一条口径，
     // `HomeStartupVisualPrimer` 的注释里就叫它"消除墨色极性闪变"）。
     //
@@ -258,7 +277,8 @@ class _WallpaperPositionPickerPageState
     _traceClock.start();
     _traceGlass(
       'init seeded=${_topLuminance != null} '
-      'align=${_alignX.toStringAsFixed(2)},${_alignY.toStringAsFixed(2)}',
+      'align=${_alignX.toStringAsFixed(2)},${_alignY.toStringAsFixed(2)} '
+      'scale=${_scale.toStringAsFixed(2)}',
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -342,7 +362,7 @@ class _WallpaperPositionPickerPageState
     final viewportSize = MediaQuery.sizeOf(context);
     final key =
         '$_imagePath|${viewportSize.width}x${viewportSize.height}|'
-        '$_alignX|$_alignY';
+        '$_alignX|$_alignY|$_scale';
     if (_luminanceSampleKey == key) {
       return;
     }
@@ -352,6 +372,7 @@ class _WallpaperPositionPickerPageState
       viewportSize: viewportSize,
       alignX: _alignX,
       alignY: _alignY,
+      scale: _scale,
     );
     if (!mounted || _luminanceSampleKey != key || luminance == null) {
       _traceGlass('sample dropped (luminance=$luminance)');
@@ -384,9 +405,10 @@ class _WallpaperPositionPickerPageState
       }
       setState(() {
         _imagePath = nextPath;
-        // 换图后回到居中，重新选择显示区域。
+        // 换图后回到「居中 + 原大小」，重新选择显示区域。
         _alignX = 0;
         _alignY = 0;
+        _scale = 1;
         _imageSize = null;
       });
       await _resolveImageSize();
@@ -400,12 +422,27 @@ class _WallpaperPositionPickerPageState
     }
   }
 
+  /// 重置取景：回到「居中 + 原大小」。位置与缩放一起归位 —— 用户按的是"重置"，
+  /// 只重置一半会得到既不是默认、也不是自己刚调的那一版的第三种取景。
+  void _resetFraming() {
+    if (_alignX == 0 && _alignY == 0 && _scale == 1) {
+      return;
+    }
+    setState(() {
+      _alignX = 0;
+      _alignY = 0;
+      _scale = 1;
+    });
+    _scheduleTopLuminanceSample();
+  }
+
   void _exit() {
     Navigator.of(context).pop(
       WallpaperPositionPickerResult(
         path: _imagePath,
         alignX: _alignX,
         alignY: _alignY,
+        scale: _scale,
         confirmed: false,
       ),
     );
@@ -417,6 +454,7 @@ class _WallpaperPositionPickerPageState
         path: _imagePath,
         alignX: _alignX,
         alignY: _alignY,
+        scale: _scale,
         confirmed: true,
       ),
     );
@@ -548,19 +586,31 @@ class _WallpaperPositionPickerPageState
               ),
             ),
           ),
-          if (widget.onPickNewImage != null)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 24 + MediaQuery.paddingOf(context).bottom,
-              child: Center(
-                child: _buildSwitchWallpaperButton(
-                  context,
-                  ink: ink,
+          // 底部一排：「重置」＋「换壁纸」（这颗页面没有换图能力时只留重置）。
+          //
+          // 「重置」把**位置与缩放一起**归位（用户 2026-09-20 要的：加了双指缩放
+          // 之后得有个一键回到默认取景的出口）。文案 key 历史上叫
+          // `...ResetTooltip`（当年是个没接上的 tooltip），现在是这颗按钮的标签。
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 24 + MediaQuery.paddingOf(context).bottom,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _HyperosHeaderTextButton(
+                  label: l10n.wallpaperPositionPickerResetTooltip,
+                  onPressed: _resetFraming,
+                  foregroundColor: ink,
                   wash: wash,
                 ),
-              ),
+                if (widget.onPickNewImage != null) ...[
+                  const SizedBox(width: 12),
+                  _buildSwitchWallpaperButton(context, ink: ink, wash: wash),
+                ],
+              ],
             ),
+          ),
         ],
       ),
     );
@@ -626,68 +676,88 @@ class _WallpaperPositionPickerPageState
         // 命中时第一帧就有像素；没命中则由 `frameBuilder` 兜一层转圈。
         GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onPanUpdate: (details) {
+          // 单指拖动与双指缩放走**同一个** scale 手势：单指时倍率恒为 1、
+          // `focalPointDelta` 就是拖动位移；双指时两者一起给（捏合时也能挪）。
+          onScaleStart: (_) {
+            _scaleAtGestureStart = _scale;
+          },
+          onScaleUpdate: (details) {
             setState(() {
+              _scale = (_scaleAtGestureStart * details.scale).clamp(
+                kWallpaperMinScale,
+                kWallpaperMaxScale,
+              );
+              // 放大后溢出量跟着变大：拖动位移按「溢出 × 缩放」折算，手感才一致
+              //（否则放大后拖不动、缩小后一拖就飞）。
               _alignX = wallpaperAlignAfterDrag(
                 previousAlign: _alignX,
-                dragDelta: details.delta.dx,
-                overflowExtent: overflowX,
+                dragDelta: details.focalPointDelta.dx,
+                overflowExtent: overflowX * _scale,
               );
               _alignY = wallpaperAlignAfterDrag(
                 previousAlign: _alignY,
-                dragDelta: details.delta.dy,
-                overflowExtent: overflowY,
+                dragDelta: details.focalPointDelta.dy,
+                overflowExtent: overflowY * _scale,
               );
             });
           },
-          onPanEnd: (_) => _scheduleTopLuminanceSample(),
-          onPanCancel: _scheduleTopLuminanceSample,
-          child: Image(
-            // 限宽解码（首页同款尺寸），避免整图解码导致的进入卡顿。
-            image: ResizeImage(
-              FileImage(File(_imagePath)),
-              width: homePageBackdropDecodeWidth(),
-            ),
-            fit: BoxFit.cover,
-            gaplessPlayback: true,
-            // 诊断 + 兜底：壁纸第一帧什么时候真的画出来（在那之前玻璃采到的是一条
-            // "黑底 + 转圈占位"的带）。`frame == null` 时在下面垫一层转圈 ——
-            // `Image` 本身可以第一帧就建（见上面的说明），但解码没完时页面会是纯黑。
-            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-              if (frame == null) {
-                return Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Center(
-                      child: MiuixCircularProgressIndicator(
-                        colors: MiuixProgressIndicatorColors(
-                          foregroundColor: HyperosColors.primary(context),
-                          disabledForegroundColor: HyperosColors.primary(context),
-                          backgroundColor: Colors.transparent,
-                        ),
-                      ),
-                    ),
-                    child,
-                  ],
-                );
-              }
-              if (!_tracedPreviewFrame) {
-                _tracedPreviewFrame = true;
-                _traceGlass(
-                  'preview frame=$frame sync=$wasSynchronouslyLoaded',
-                );
-              }
-              return child;
-            },
+          onScaleEnd: (_) => _scheduleTopLuminanceSample(),
+          // 缩放与首页同一套几何：`cover` 先按对齐值选好显示段，这里绕**对齐点**
+          // 把这段整体放大（`Transform.scale(alignment:)`，对齐点不动）——
+          // 与 `homePageBackdropImageWidget` 同源，编辑页看到的取景就是首页的。
+          child: Transform.scale(
+            scale: _scale,
             alignment: Alignment(
               _alignX.clamp(-1.0, 1.0),
               _alignY.clamp(-1.0, 1.0),
             ),
-            // 解码失败的兜底：保持黑底不崩帧，错误态由占位逻辑负责。
-            errorBuilder: (context, error, stackTrace) {
-              debugPrint('WallpaperPositionPicker preview failed: $error');
-              return const SizedBox.shrink();
-            },
+            child: Image(
+              // 限宽解码（首页同款尺寸），避免整图解码导致的进入卡顿。
+              image: ResizeImage(
+                FileImage(File(_imagePath)),
+                width: homePageBackdropDecodeWidth(),
+              ),
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+              // 诊断 + 兜底：壁纸第一帧什么时候真的画出来（在那之前玻璃采到的是一条
+              // "黑底 + 转圈占位"的带）。`frame == null` 时在下面垫一层转圈 ——
+              // `Image` 本身可以第一帧就建（见上面的说明），但解码没完时页面会是纯黑。
+              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                if (frame == null) {
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Center(
+                        child: MiuixCircularProgressIndicator(
+                          colors: MiuixProgressIndicatorColors(
+                            foregroundColor: HyperosColors.primary(context),
+                            disabledForegroundColor: HyperosColors.primary(context),
+                            backgroundColor: Colors.transparent,
+                          ),
+                        ),
+                      ),
+                      child,
+                    ],
+                  );
+                }
+                if (!_tracedPreviewFrame) {
+                  _tracedPreviewFrame = true;
+                  _traceGlass(
+                    'preview frame=$frame sync=$wasSynchronouslyLoaded',
+                  );
+                }
+                return child;
+              },
+              alignment: Alignment(
+                _alignX.clamp(-1.0, 1.0),
+                _alignY.clamp(-1.0, 1.0),
+              ),
+              // 解码失败的兜底：保持黑底不崩帧，错误态由占位逻辑负责。
+              errorBuilder: (context, error, stackTrace) {
+                debugPrint('WallpaperPositionPicker preview failed: $error');
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       ],

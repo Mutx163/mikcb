@@ -1856,7 +1856,7 @@
   "homePageWallpaperRecentSubtitle": "Tap to switch back, up to 10 kept",
   "homePageWallpaperRecentImageLabel": "Photo",
   "wallpaperPositionPickerTitle": "Adjust wallpaper position",
-  "wallpaperPositionPickerResetTooltip": "Reset to center",
+  "wallpaperPositionPickerResetTooltip": "Reset",
   "wallpaperPositionPickerDragHint": "Drag the wallpaper to adjust its position",
   "wallpaperPositionPickerSwitchWallpaper": "Change wallpaper",
   "wallpaperPositionPickerDone": "Done",

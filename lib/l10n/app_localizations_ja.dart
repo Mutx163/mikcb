@@ -3369,7 +3369,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get wallpaperPositionPickerTitle => '壁紙の表示位置を調整';
 
   @override
-  String get wallpaperPositionPickerResetTooltip => '中央にリセット';
+  String get wallpaperPositionPickerResetTooltip => 'リセット';
 
   @override
   String get wallpaperPositionPickerDragHint => '壁紙をドラッグして位置を調整';

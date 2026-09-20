@@ -117,6 +117,8 @@ TimetableSettings? settingsWithWallpaperHistoryEntry(
     clearHomePageBackgroundImagePath: true,
     homePageWallpaperAlignX: entry.alignX,
     homePageWallpaperAlignY: entry.alignY,
+    // 缩放是"当时那个取景"的一部分：只还原位置不还原缩放等于取景被改了一半。
+    homePageWallpaperScale: entry.scale,
   );
 }
 

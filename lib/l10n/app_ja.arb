@@ -6183,7 +6183,7 @@
   "homePageWallpaperRecentSubtitle": "タップで切替、最大 10 枚まで保持",
   "homePageWallpaperRecentImageLabel": "写真",
   "wallpaperPositionPickerTitle": "壁紙の表示位置を調整",
-  "wallpaperPositionPickerResetTooltip": "中央にリセット",
+  "wallpaperPositionPickerResetTooltip": "リセット",
   "wallpaperPositionPickerDragHint": "壁紙をドラッグして位置を調整",
   "wallpaperPositionPickerSwitchWallpaper": "壁紙を変更",
   "wallpaperPositionPickerDone": "完了",

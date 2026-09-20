@@ -6183,7 +6183,7 @@
   "homePageWallpaperRecentSubtitle": "탭하면 바로 전환, 최대 10장 보관",
   "homePageWallpaperRecentImageLabel": "사진",
   "wallpaperPositionPickerTitle": "배경화면 표시 위치 조정",
-  "wallpaperPositionPickerResetTooltip": "중앙으로 초기화",
+  "wallpaperPositionPickerResetTooltip": "재설정",
   "wallpaperPositionPickerDragHint": "배경화면을 드래그해 위치 조정",
   "wallpaperPositionPickerSwitchWallpaper": "배경화면 바꾸기",
   "wallpaperPositionPickerDone": "완료",

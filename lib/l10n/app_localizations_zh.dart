@@ -3307,7 +3307,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get wallpaperPositionPickerTitle => '调整壁纸显示位置';
 
   @override
-  String get wallpaperPositionPickerResetTooltip => '重置居中';
+  String get wallpaperPositionPickerResetTooltip => '重置';
 
   @override
   String get wallpaperPositionPickerDragHint => '拖动壁纸调整位置';
@@ -14402,7 +14402,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get wallpaperPositionPickerTitle => '調整桌布顯示位置';
 
   @override
-  String get wallpaperPositionPickerResetTooltip => '重設置中';
+  String get wallpaperPositionPickerResetTooltip => '重設';
 
   @override
   String get wallpaperPositionPickerDragHint => '拖曳桌布調整位置';
@@ -25541,7 +25541,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get wallpaperPositionPickerTitle => '調整桌布顯示位置';
 
   @override
-  String get wallpaperPositionPickerResetTooltip => '重設置中';
+  String get wallpaperPositionPickerResetTooltip => '重設';
 
   @override
   String get wallpaperPositionPickerDragHint => '拖曳桌布調整位置';

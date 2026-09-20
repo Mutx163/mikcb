@@ -300,6 +300,7 @@ class PreblurredWallpaperData {
     required this.followsPager,
     this.alignX = 0,
     this.alignY = 0,
+    this.scale = 1,
     this.repaint,
     this.revision = 0,
   });
@@ -313,6 +314,13 @@ class PreblurredWallpaperData {
   /// [preblurredWallpaperCoverDestRect] 的说明。
   final double alignX;
   final double alignY;
+
+  /// 屏幕上真壁纸的放大倍数（1 = 刚好铺满，见
+  /// `TimetableSettings.homePageWallpaperScale`）。
+  ///
+  /// 与 [alignX] 同一条约束：抄错就是卡内外背景错位（这份位图按「cover 铺满整屏」
+  /// 画，缩放要让它的取景与屏幕上那张一致）。
+  final double scale;
 
   /// Active horizontal pager driving card motion over the wallpaper.
   ///
@@ -350,6 +358,7 @@ class PreblurredWallpaperScope extends StatefulWidget {
     this.followsPager = false,
     this.wallpaperAlignX = 0,
     this.wallpaperAlignY = 0,
+    this.wallpaperScale = 1,
     this.repaint,
     this.enabled = true,
     super.key,
@@ -367,6 +376,9 @@ class PreblurredWallpaperScope extends StatefulWidget {
   /// （见 [PreblurredWallpaperData.alignX]）。
   final double wallpaperAlignX;
   final double wallpaperAlignY;
+
+  /// 屏幕上真壁纸的放大倍数（见 [PreblurredWallpaperData.scale]）。
+  final double wallpaperScale;
 
   /// See [PreblurredWallpaperData.repaint].
   final Listenable? repaint;
@@ -531,6 +543,7 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
               followsPager: widget.followsPager,
               alignX: widget.wallpaperAlignX,
               alignY: widget.wallpaperAlignY,
+              scale: widget.wallpaperScale,
               repaint: widget.repaint,
               revision: _revision,
             ),
@@ -604,6 +617,7 @@ Rect preblurredWallpaperCoverDestRect({
   required double wallpaperOriginX,
   double alignX = 0,
   double alignY = 0,
+  double zoom = 1,
 }) {
   if (imageSize.isEmpty || screenSize.isEmpty) {
     return Rect.zero;
@@ -615,10 +629,14 @@ Rect preblurredWallpaperCoverDestRect({
   if (scale <= 0 || !scale.isFinite) {
     return Rect.zero;
   }
+  // 用户放大倍数：与屏幕上真壁纸那层 `Transform.scale(alignment: 对齐点)` 同一套
+  // 几何 —— 先把 cover 的落点放大，再按对齐值分配溢出（推导见
+  // `homePageBackdropImageWidget` 的注释）。zoom = 1 时下面几行与加缩放前逐字相同。
+  final zoomed = zoom.clamp(kWallpaperMinScale, kWallpaperMaxScale);
   // cover 下图片在两个方向都不小于屏幕，多出来的部分按对齐值分配：
   // align = -1 贴前缘（溢出全在末尾）、0 居中、+1 贴后缘。
-  final fittedWidth = imageSize.width * scale;
-  final fittedHeight = imageSize.height * scale;
+  final fittedWidth = imageSize.width * scale * zoomed;
+  final fittedHeight = imageSize.height * scale * zoomed;
   final overflowX = fittedWidth - screenSize.width;
   final overflowY = fittedHeight - screenSize.height;
   final destLeft =
@@ -640,6 +658,7 @@ Rect preblurredWallpaperSourceRect({
   required double wallpaperOriginX,
   double alignX = 0,
   double alignY = 0,
+  double zoom = 1,
 }) {
   final dest = preblurredWallpaperCoverDestRect(
     imageSize: imageSize,
@@ -647,6 +666,7 @@ Rect preblurredWallpaperSourceRect({
     wallpaperOriginX: wallpaperOriginX,
     alignX: alignX,
     alignY: alignY,
+    zoom: zoom,
   );
   if (dest.isEmpty || boxSize.isEmpty) {
     return Rect.zero;
@@ -689,6 +709,7 @@ class PreblurredWallpaperAlignedFill extends LeafRenderObjectWidget {
       followsPager: data?.followsPager ?? false,
       alignX: data?.alignX ?? 0,
       alignY: data?.alignY ?? 0,
+      scale: data?.scale ?? 1,
       repaint: data?.repaint,
       pageIndex: PreblurredWallpaperPage.maybeIndexOf(context),
       verticalScrollPosition: Scrollable.maybeOf(
@@ -708,6 +729,7 @@ class PreblurredWallpaperAlignedFill extends LeafRenderObjectWidget {
       ..followsPager = data?.followsPager ?? false
       ..alignX = data?.alignX ?? 0
       ..alignY = data?.alignY ?? 0
+      ..scale = data?.scale ?? 1
       ..pageIndex = PreblurredWallpaperPage.maybeIndexOf(context)
       ..pageController = data?.pageController
       ..repaint = data?.repaint
@@ -728,6 +750,7 @@ class _RenderPreblurredFill extends RenderBox {
     required this._pageIndex,
     this._alignX = 0,
     this._alignY = 0,
+    this._scale = 1,
     this._repaint,
     this._verticalScrollPosition,
     CourseGlassStyle? glass,
@@ -771,6 +794,16 @@ class _RenderPreblurredFill extends RenderBox {
       return;
     }
     _alignY = value;
+    markNeedsPaint();
+  }
+
+  /// 屏幕上真壁纸的放大倍数（见 [PreblurredWallpaperData.scale]）。
+  double _scale;
+  set scale(double value) {
+    if (_scale == value) {
+      return;
+    }
+    _scale = value;
     markNeedsPaint();
   }
 
@@ -1079,6 +1112,7 @@ class _RenderPreblurredFill extends RenderBox {
       wallpaperOriginX: _wallpaperOriginX(),
       alignX: _alignX,
       alignY: _alignY,
+      zoom: _scale,
     );
     if (dest.isEmpty) {
       return;

@@ -105,7 +105,7 @@ void main() {
     }
   }
 
-  testWidgets('三个悬浮按钮的材质层不在捕获子树内，且钉在本页采样源上', (tester) async {
+  testWidgets('四个悬浮按钮的材质层不在捕获子树内，且钉在本页采样源上', (tester) async {
     await pumpPicker(tester);
 
     final picker = find.byType(WallpaperPositionPickerPage);
@@ -115,7 +115,7 @@ void main() {
       of: picker,
       matching: find.byType(SoftGlassSurface),
     );
-    expect(surfaces, findsNWidgets(3));
+    expect(surfaces, findsNWidgets(4));
 
     final captureHost = find.descendant(
       of: picker,
@@ -128,12 +128,13 @@ void main() {
       reason: '玻璃不能在捕获子树里，否则会采到自己上一帧的合成结果',
     );
 
-    // 三个按钮都必须显式绑在本页宿主上。缺这一条时（真机 bug）玻璃按注册表取
+    // 四个按钮（退出 / 完成 / 重置 / 换壁纸）都必须显式绑在本页宿主上。缺这一条时
+    //（真机 bug）玻璃按注册表取
     // 「栈顶那一屏」——此处栈顶就是被盖住的首页，采到的是别的屏。
     final active = HyperosGlassBackdropRegistry.active;
     expect(active, isNotNull);
     final elements = surfaces.evaluate();
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 4; i++) {
       final scope = HyperosGlassBackdropScope.maybeOf(elements.elementAt(i));
       expect(scope, isNotNull, reason: '按钮 $i 没有本页作用域');
       expect(
@@ -144,7 +145,7 @@ void main() {
     }
   });
 
-  testWidgets('底部换壁纸按钮是内容宽胶囊，不会被 Center 撑成整屏宽', (tester) async {
+  testWidgets('底部「重置 / 换壁纸」都是内容宽胶囊，不会被撑成整屏宽', (tester) async {
     await pumpPicker(tester);
 
     final screenWidth = screenSize.width / screenDpr;
@@ -157,20 +158,25 @@ void main() {
           .evaluate())
         (e.renderObject! as RenderBox).size.width,
     ];
-    expect(widths, hasLength(3));
+    expect(widths, hasLength(4));
 
     // 前两个是顶部「退出 / 完成」（在 Row 里，无界约束，本来就是内容宽）。
     expect(widths[0], lessThan(screenWidth / 4));
     expect(widths[1], lessThan(screenWidth / 4));
 
-    // 第三个是底部「换壁纸」：`minWidth: 120` + 文字宽 → 约 120。
+    // 后两个是底部「重置 / 换壁纸」：「换壁纸」`minWidth: 120` + 文字宽 → 约 120。
     // 回归现象：这里会是整屏宽（约 400），字浮在一条横贯全屏的灰长条中间。
     expect(
       widths[2],
       lessThan(screenWidth / 2),
+      reason: '底部「重置」被撑满了',
+    );
+    expect(
+      widths[3],
+      lessThan(screenWidth / 2),
       reason: '底部按钮被撑满了：Container 带 alignment 时会占满有界约束',
     );
-    expect(widths[2], greaterThanOrEqualTo(120));
+    expect(widths[3], greaterThanOrEqualTo(120));
   });
 
   testWidgets('首帧极性直接用启动预热好的亮度带（不再按主题猜，也就不会闪）', (tester) async {
@@ -191,7 +197,7 @@ void main() {
 
     await pumpPicker(tester);
 
-    for (final label in ['退出', '完成', '换壁纸']) {
+    for (final label in ['退出', '完成', '重置', '换壁纸']) {
       expect(
         tester.widget<Text>(find.text(label)).style!.color,
         homePageChromeForegroundOnDark,

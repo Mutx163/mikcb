@@ -361,14 +361,34 @@ Widget? homePageBackdropImageWidget({required TimetableSettings settings}) {
   // 横向壁纸在 cover 下水平溢出，用用户拖选的对齐值决定显示哪一段。
   final alignX = settings.homePageWallpaperAlignX.clamp(-1.0, 1.0);
   final alignY = settings.homePageWallpaperAlignY.clamp(-1.0, 1.0);
-  return Image(
+  final alignment = Alignment(alignX.toDouble(), alignY.toDouble());
+  final image = Image(
     key: ValueKey(homePageBackdropKey(settings)),
     image: provider,
     fit: BoxFit.cover,
     gaplessPlayback: true,
-    alignment: Alignment(alignX.toDouble(), alignY.toDouble()),
+    alignment: alignment,
   );
+  final scale = settings.homePageWallpaperScale.clamp(
+    kWallpaperMinScale,
+    kWallpaperMaxScale,
+  );
+  if (scale == 1) {
+    // 出厂档（也是存量数据的读数）：不加那层变换，绘制路径与加缩放之前逐帧一致。
+    return image;
+  }
+  // 缩放**绕对齐点**做：`cover` 已经按 alignment 选好显示哪一段，这里把这段整体
+  // 放大，对齐点（左上 / 中心 / 右下）保持不动 —— 与编辑页取景一致。溢出量随之
+  // 变大，所以可拖动范围也跟着变大（编辑页的拖动映射按 `溢出 × 缩放` 算）。
+  return Transform.scale(scale: scale, alignment: alignment, child: image);
 }
+
+/// 壁纸缩放的上下限（编辑页与渲染侧共用一份口径）。
+///
+/// 下限 1 = 刚好铺满（`cover` 的原始大小）：再小就露出底色，没有意义；
+/// 上限 4 = 够看细节，再大只是糊。
+const double kWallpaperMinScale = 1;
+const double kWallpaperMaxScale = 4;
 
 /// Title row height under the status bar on the home timetable header.
 ///
@@ -735,12 +755,14 @@ Future<double?> sampleHomePageWallpaperTopLuminance(
   Size? viewportSize,
   double alignX = 0,
   double alignY = 0,
+  double scale = 1,
 }) async {
   return (await sampleHomePageWallpaperLuminanceBands(
     path,
     viewportSize: viewportSize,
     alignX: alignX,
     alignY: alignY,
+    scale: scale,
   ))?.top;
 }
 
@@ -756,6 +778,7 @@ homePageWallpaperVisibleSourceRect({
   required Size imageSize,
   double alignX = 0,
   double alignY = 0,
+  double zoom = 1,
 }) {
   if (!viewportSize.width.isFinite ||
       !viewportSize.height.isFinite ||
@@ -778,9 +801,22 @@ homePageWallpaperVisibleSourceRect({
       : 1.0;
   final normalizedAlignX = alignX.clamp(-1.0, 1.0).toDouble();
   final normalizedAlignY = alignY.clamp(-1.0, 1.0).toDouble();
-  final left = (1.0 - visibleWidth) * (normalizedAlignX + 1.0) / 2.0;
-  final top = (1.0 - visibleHeight) * (normalizedAlignY + 1.0) / 2.0;
-  return (left: left, top: top, width: visibleWidth, height: visibleHeight);
+  // 用户放大倍数：取景窗口按比例缩小（可见比例 ÷ 倍数），位置仍由对齐值决定
+  // ——与 `Transform.scale(alignment: 对齐点)` 那套几何等价（推导见
+  // `homePageBackdropImageWidget`）：align = -1 / 0 / +1 三处与不放大时完全一致。
+  final zoomed = zoom.clamp(kWallpaperMinScale, kWallpaperMaxScale);
+  final visibleWidthAtZoom = visibleWidth / zoomed;
+  final visibleHeightAtZoom = visibleHeight / zoomed;
+  final left =
+      (1.0 - visibleWidthAtZoom) * (normalizedAlignX + 1.0) / 2.0;
+  final top =
+      (1.0 - visibleHeightAtZoom) * (normalizedAlignY + 1.0) / 2.0;
+  return (
+    left: left,
+    top: top,
+    width: visibleWidthAtZoom,
+    height: visibleHeightAtZoom,
+  );
 }
 
 Future<ui.Image?> _decodeHomePageWallpaperSample(String path) async {
@@ -816,6 +852,9 @@ sampleHomePageBackdropLuminanceBands(
     viewportSize: viewportSize,
     alignX: alignX,
     alignY: alignY,
+    // 缩放直接读 settings（不发参数）：三个调用点（首页 chrome 墨色 / 启动预热 /
+    // 设置页预览带）本来就该按**当前取景**采样，多一个参数只会有人漏传。
+    scale: settings.homePageWallpaperScale,
   );
 }
 
@@ -833,6 +872,7 @@ sampleHomePageWallpaperLuminanceBands(
   Size? viewportSize,
   double alignX = 0,
   double alignY = 0,
+  double scale = 1,
 }) async {
   if (path == null || path.isEmpty) {
     return null;
@@ -855,6 +895,7 @@ sampleHomePageWallpaperLuminanceBands(
         viewportSize: viewportSize,
         alignX: alignX,
         alignY: alignY,
+        scale: scale,
       );
     } finally {
       image.dispose();
@@ -912,6 +953,7 @@ Future<({double top, double weekday, double body})?> _averageBandLuminances(
   Size? viewportSize,
   double alignX = 0,
   double alignY = 0,
+  double scale = 1,
 }) async {
   final byteData = await image.toByteData();
   if (byteData == null) {
@@ -930,6 +972,7 @@ Future<({double top, double weekday, double body})?> _averageBandLuminances(
           imageSize: Size(width.toDouble(), height.toDouble()),
           alignX: alignX,
           alignY: alignY,
+          zoom: scale,
         );
 
   double? band(double fromFraction, double toFraction) {
