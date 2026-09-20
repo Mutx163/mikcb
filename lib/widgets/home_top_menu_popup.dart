@@ -227,19 +227,28 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
             // 不再传 `visuals`：注入面已取代上游内置面板，上游那 7 个 OS4 材质
             // 字段不再参与渲染（见 os4_glass_popup_surface.dart）。
             surfaceBuilder: hyperosGlassPopupSurface,
-            // 二级展开时一级面板"让位"：绕**锚点角**（「更多」按钮在面板右上）
-            // 缩小 5% + 压暗，收起复原。
+            // 二级展开时一级面板"让位"：缩小 5% + 压暗，收起复原。
             //
             // 手感由 fork 补丁的两个参数定：`stackDuration` 把包内那条
             // 「收敛容差写死、参数不可调」的让位弹簧换成确定性的 200ms
             // fastOutSlowIn（曲线取补丁缺省值；时长与旧实现
             // `hyperos_list_popup.dart` 同值）；
-            // `stackShrinkFromAnchor` 把支点从面板中心挪到锚点角 —— 锚点角正是
-            // 面板"长出来的那一点"，以它为支点，让位期间「添加」行在原位几乎
-            // 不动，读起来才是"原地缩小"而不是"整体挪走"。
+            // `stackPivotBounds` 把支点钉在**被点开的这一行**上（见下）。
             stacked: _secondaryOpen,
             stackDuration: _submenuRevealDuration,
-            stackShrinkFromAnchor: true,
+            // 让位支点 = 被点的那一行（`_secondaryBounds` = 「添加」行的窗口矩形，
+            // 点开二级那一刻量下）。
+            //
+            // 为什么不能用「锚点角」(`stackShrinkFromAnchor`)：支点取哪个角，
+            // 面板就朝那个角缩，**离角越远的内容挪得越多** —— 而这正是二级面板
+            // 顶部那个标题行要钉住的东西（它是一级里这一行的复印件，两份必须
+            // 逐像素重合）。「更多」按钮在面板右上，这一行离那个角有一百多像素，
+            // 实测 200 宽的面板上它被挪了 9px：同一行字显示成两份、还错着位
+            // （2026-09-20 用户反馈「一级菜单同时显示了收缩和未收缩两个状态」）。
+            // 把这一行自己的矩形当支点，它的左上角原地不动，复印件与它对齐到
+            // 1px 以内；面板则向这一行收拢（顶边 / 右边各内收 7~9px，读起来仍是
+            // "整块面板让位退后"）。
+            stackPivotBounds: _secondaryBounds,
             // 让位期间的压暗色：上游默认是「暗色主题黑罩 / 亮色主题**白罩**」，
             // 于是亮色主题下二级展开时一级面板反而**变亮**（真机反馈）。
             // 改用与列表弹层同一份——模态遮罩色（黑）× 同一倍率 0.5。

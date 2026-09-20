@@ -79,16 +79,18 @@ dev_dependencies:
 #   · 弹层族（popup presenter / 列表弹层等）已有的 `surfaceBuilder`；
 #   · 底部弹窗 `MiuixOverlayBottomSheet` / `MiuixWindowBottomSheet` 上的
 #     `surfaceBuilder`（child 是真实面板内容）+ `scrimUnderlay`（覆盖层里、压暗蒙层
-#     之前的前置层，覆盖层随之进 `BackdropGroup`）+ `dimColor`。
+#     之前的前置层，覆盖层随之进 `BackdropGroup`）+ `dimColor`；
+#   · 弹层让位缩放（`stacked`）的支点可由调用方按矩形指定（`stackPivotBounds`）。
 # 课程弹窗（通栏底部弹窗）用它们把面板换成本仓液态玻璃，并让玻璃采到未压暗的页面；
-# 用法与理由见 lib/ui/hyperos/miuix_bottom_sheet.dart。
+# 用法与理由见 lib/ui/hyperos/miuix_bottom_sheet.dart；`stackPivotBounds` 的用法与
+# 理由见 lib/widgets/home_top_menu_popup.dart（首页菜单「添加」那一行必须原地不动）。
 # **固定到 commit，不要写分支名** —— 分支名会让不同时间 / 不同机器解析到不同的那份，
 # CI 也拿不到可复现的依赖。补丁进了上游 release 后整块删掉，即回到 pub.dev。
 dependency_overrides:
   flutter_miuix:
     git:
       url: https://github.com/Mutx163/flutter_miuix.git
-      ref: d18f3f621aac48f095f867ee0d65318f26541ca0
+      ref: a6480fec634d7cac18408343c2e41da3e620f5c6
   # inspire_blur：分布图像素记忆化——上游每个新挂载的顶栏都同步重算一张
   # 674k 像素的分布图（真机实测 36~49ms），这里按 (distribution, size) 记住像素。
   # fork 自 inspirestack/inspire_blur，分支 mikcb/distribution-pixels-cache，

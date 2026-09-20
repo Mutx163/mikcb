@@ -533,6 +533,42 @@ void main() {
       expect(panelScale(tester), closeTo(0.95, 2e-3));
     });
 
+    testWidgets('二级展开时一级那一行原地不动，与二级标题行重合成一份', (tester) async {
+      // 「同一行显示成两份」：二级面板顶部那个标题行是一级里这一行的复印件，
+      // 两份必须落在同一个位置上。让位支点若取「面板角」（曾经的
+      // `stackShrinkFromAnchor`），行离支点多远就挪多远 —— 实测 200 宽的
+      // 面板上横挪 9px、纵挪 7.5px，于是同一行字肉眼可见地显示成两份
+      // （2026-09-20 用户反馈「收缩和未收缩两个状态重叠显示」）。支点改成
+      // 这一行自己（`stackPivotBounds`）后，位移降到 1px 以内。
+      await pumpMenu(tester);
+
+      final collapsed = tester.getRect(find.text('添加'));
+
+      await tester.tap(find.text('添加'));
+      await tester.pumpAndSettle();
+
+      // 让位确实发生了（否则下面的"没动"是空断言）。
+      expect(panelScale(tester), closeTo(0.95, 2e-3));
+
+      final primaryRow = tester.getRect(find.text('添加').first);
+      final titleRow = tester.getRect(find.text('添加').last);
+
+      expect(
+        primaryRow.left,
+        closeTo(collapsed.left, 1.5),
+        reason: '一级那一行不该被让位挪走（取面板角当时横挪 9px）',
+      );
+      expect(
+        primaryRow.top,
+        closeTo(collapsed.top, 1.5),
+        reason: '一级那一行不该被让位挪走（取面板角当时纵挪 7.5px）',
+      );
+      // 两份重合。比左上角而不是中心/右下角：那一行整体在缩（95%），
+      // 行文字左对齐、靠支点角最近，左上角才是"是否同位"的判据。
+      expect(primaryRow.left, closeTo(titleRow.left, 1.5));
+      expect(primaryRow.top, closeTo(titleRow.top, 1.5));
+    });
+
     testWidgets('点二级标题行只收起二级、不关菜单，一级缩放复原', (tester) async {
       final menu = await pumpMenu(tester);
 
