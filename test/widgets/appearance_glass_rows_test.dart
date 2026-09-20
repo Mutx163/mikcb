@@ -11,6 +11,8 @@
 // 2026-09-19 七次调整：整机只允许 实体卡片 / 液态玻璃 两种材质，面板改内联
 // 分段与胶囊 —— 面板本身是根覆盖层自插条目，任何嵌套弹层都会被它压在背面
 // （真机实锤），所以本文件还兼作「内联控件直接可调」的回归钉。
+// 2026-09-20 八次调整：面板新增「课程卡片」一节（三档内联胶囊，写
+// `courseCardSurfaceStyle`）—— 卡片是小格，材质要与全局材质**分开**选。
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -143,7 +145,9 @@ void main() {
 
     // 整体材质两档置顶（出厂默认档在两材质口径下显示归桶为「实体卡片」）。
     expect(find.text('玻璃模式'), findsOneWidget);
-    expect(find.text('实体卡片'), findsOneWidget);
+    // 两处「实体卡片」：玻璃模式那一段（选中态），以及新加的「课程卡片」材质
+    // 那一节的胶囊（出厂默认课卡是实体档）。见下面对课程卡片那一节的断言。
+    expect(find.text('实体卡片'), findsNWidgets(2));
 
     // 首页顶栏玻璃（两档，存量渐进档显示归桶为液态）+ 子页顶栏风格两档。
     await _scrollPanelTo(tester, find.text('首页顶栏玻璃'));
@@ -155,7 +159,9 @@ void main() {
     // （HyperosListTile.details 只在可点行画，曾把整卡打成灰色空行）。
     await _scrollPanelTo(tester, find.text('各表面当前材质'));
     expect(find.text('首页玻璃带'), findsWidgets);
-    expect(find.text('课程卡片'), findsWidgets);
+    // 「课程卡片」两处：新加的课程卡片材质那一节的标题，以及这张只读地图里的
+    // 一行（面板里卡片材质与全局材质是分开的两档，见 settings_appearance_editor）。
+    expect(find.text('课程卡片'), findsNWidgets(2));
     expect(find.text('实体'), findsWidgets);
   });
 

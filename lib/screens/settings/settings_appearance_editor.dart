@@ -463,6 +463,32 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
                       _updateDraft(applyHomeBandGlassMaterial(_draft, value));
                     },
                   ),
+                  // ── 课程卡片：**与全局材质分开**的一档 ──
+                  //
+                  // 为什么单开一节而不是跟着「玻璃模式」走：卡片是小格，弹窗 / 顶栏
+                  // / 玻璃坞是别的东西 —— 用户会想「别处保持液态，只把卡片换成
+                  // 实体」或者反过来。这一档写的是 TimetableSettings.courseCardSurfaceStyle，
+                  // 渲染门控与墨色规则一律走 effectiveCourseCardSurfaceStyle
+                  // （没有壁纸、或模糊总开关关掉时回落实体卡面），面板下面
+                  // 「各表面当前材质」那行课程卡片显示的就是这个**生效值**。
+                  //
+                  // 必须是内联胶囊（不用 HyperosSelectTile）：本面板是根覆盖层自
+                  // 插条目，二级弹层/路由都会被压在背面（见 [_MaterialSegmented]）。
+                  const SizedBox(height: 20),
+                  HyperosSectionLabel(text: l10n.surfaceCourseCard),
+                  const SizedBox(height: 8),
+                  _MaterialChoiceChips<CourseCardSurfaceStyle>(
+                    items: {
+                      for (final style in CourseCardSurfaceStyle.values)
+                        courseCardSurfaceStyleLabel(l10n, style): style,
+                    },
+                    value: _draft.courseCardSurfaceStyle,
+                    onChanged: (style) {
+                      _updateDraft(
+                        _draft.copyWith(courseCardSurfaceStyle: style),
+                      );
+                    },
+                  ),
                   // ── 靠后：观感细项（仅液态档可调）──
                   if (_draft.frostedGlassMode ==
                       FrostedGlassMode.liquidGlass) ...[

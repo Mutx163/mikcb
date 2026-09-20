@@ -252,12 +252,14 @@ void main() {
     await tester.tap(find.text('材质'));
     await tester.pumpAndSettle();
 
-    // 面板标题 + 分组内容：整体材质两档（内联分段，置顶）/ 子页顶栏 /
-    // 各表面地图。出厂默认档（高斯）在两材质口径下显示归桶为「实体卡片」，
-    // 液态调校分区随之隐藏。
+    // 面板标题 + 分组内容：整体材质两档（内联分段，置顶）/ 首页顶栏 /
+    // 课程卡片材质 / 子页顶栏 / 各表面地图。出厂默认档（高斯）在两材质口径下
+    // 显示归桶为「实体卡片」，液态调校分区随之隐藏。
     expect(find.text('材质'), findsWidgets);
     expect(find.text('玻璃模式'), findsOneWidget);
-    expect(find.text('实体卡片'), findsOneWidget);
+    // 「实体卡片」现在有两处来源：玻璃模式那一段（选中态）与课程卡片材质那一节
+    // 的胶囊；后者写的是 courseCardSurfaceStyle，见下面那条用例。
+    expect(find.text('实体卡片'), findsWidgets);
     expect(find.text('首页顶栏玻璃'), findsOneWidget);
     expect(find.text('子页顶栏模糊风格'), findsOneWidget);
     expect(find.text('各表面当前材质'), findsOneWidget);
@@ -279,6 +281,56 @@ void main() {
 
     expect(find.text('背景图片'), findsOneWidget);
     expect(find.text('选择图片'), findsOneWidget);
+  });
+
+  testWidgets('材质面板里的「课程卡片」一节写的是卡片自己的档位', (tester) async {
+    // 用户口径（2026-09-20）：卡片是方格、弹窗与顶栏是别的东西，所以卡片的材质
+    // 要能**与全局材质分开**选。这一节的胶囊直接写
+    // TimetableSettings.courseCardSurfaceStyle，渲染门控仍走
+    // effectiveCourseCardSurfaceStyle（无壁纸 / 模糊总开关关 → 回落实体）。
+    final provider = await pumpEditor(tester);
+    await tester.tap(find.text('材质'));
+    await tester.pumpAndSettle();
+
+    // 「课程卡片」在面板里有两处：这一节的标题，以及下面只读地图里的一行。
+    expect(find.text('课程卡片'), findsNWidgets(2));
+    // 胶囊串（`_MaterialChoiceChips` 用 Wrap 排布）默认档下只有这一节有，
+    // 用它把「课程卡片的液态玻璃」与上方「玻璃模式」里同名的那个词分开。
+    final cardChips = find.byType(Wrap);
+    expect(cardChips, findsOneWidget);
+    final liquidChip = find.descendant(
+      of: cardChips,
+      matching: find.text('液态玻璃'),
+    );
+    expect(liquidChip, findsOneWidget);
+
+    // 面板最多占半屏、超出部分内部滚动，所以这里照面板自己的滚动条把它带进视野
+    // （真机上用户就是这么滑的）。**不动视口尺寸**：改了不还原会把后面的用例
+    // 一起带偏（整文件同进程顺序跑）。
+    await tester.scrollUntilVisible(
+      liquidChip,
+      120,
+      scrollable: find
+          .descendant(
+            of: find.byType(HyperosSheetFrame),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(liquidChip);
+    // 不用 pumpAndSettle：这一档会改首页渲染源（卡片重烤 + 玻璃重采样），测试
+    // 环境下没有「静下来」的保证；断言读的是 provider.settings，两帧足够让草稿
+    // 与落盘队列走完。
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      provider.settings.courseCardSurfaceStyle,
+      CourseCardSurfaceStyle.liquidGlass,
+      reason: '点卡片那一节的胶囊必须写进 courseCardSurfaceStyle',
+    );
   });
 
   testWidgets('从「设置 → 课表页面」的材质区块一键进得来（入口行必须常驻）', (
