@@ -384,11 +384,46 @@ class _SoftGlassTabBarState extends State<SoftGlassTabBar>
     final target = _resolveTarget(_position.value);
     _pendingCommittedIndex = target;
     _applyPendingTarget(target);
+    _revertUnlessAdopted(target);
     _stretch.animateWith(
       SpringSimulation(_SoftGlassSprings.stretch, _stretch.value, 0, 0),
     );
     _releasePanel();
     _endPress();
+  }
+
+  /// 拖动提交后确认父级有没有接管这次选择；没接管就把指示器弹回真实所在槽。
+  ///
+  /// **为什么需要**：拖动期间指示器是被**直接写走**的（[_onDragUpdate] 写
+  /// `_position.value`），而底栏只在 `selectedIndex` **变化**时才回同步
+  /// （见 [didUpdateWidget]）。于是「拖到一个父级不接管的槽」会留下一个停在
+  /// 错误格子上的指示器：该槽是**推入新路由**的页面入口（如「外观编辑」），
+  /// 底栏不该停在那格，父级的 `selectedIndex` 从头到尾没变过 —— 返回后页面已
+  /// 回到日/周视图，高亮却还停在那一格，两者不一致（2026-09-20 用户报告）。
+  ///
+  /// 判据是「本帧末 `selectedIndex` 是否已等于目标」：父级接管时会同步
+  /// `setState`，本帧 rebuild 就能读到目标值（内嵌页 / 切视图两条路都如此）；
+  /// 只推路由的父级不 setState，本帧末读数不变 —— 正是要回弹的情形。
+  ///
+  /// 万一父级是**延后一帧**才接管，这里最多多弹一下；`didUpdateWidget` 仍是
+  /// 最终权威，会把指示器收敛到父级给的值，所以这个提前回弹不会把状态带偏。
+  void _revertUnlessAdopted(int target) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _count <= 0) {
+        return;
+      }
+      if (widget.selectedIndex == target) {
+        return; // 父级已接管，指示器就该停在目标槽
+      }
+      if (_pendingCommittedIndex != target) {
+        return; // 已被别的路径（didUpdateWidget / 取消）消费，别重复处理
+      }
+      _pendingCommittedIndex = null;
+      final current = widget.selectedIndex.clamp(0, _count - 1);
+      if ((_position.value - current).abs() > 0.001) {
+        _settleTo(current.toDouble());
+      }
+    });
   }
 
   void _onDragCancel() {
@@ -522,6 +557,7 @@ class _SoftGlassTabBarState extends State<SoftGlassTabBar>
                         clipBehavior: Clip.none,
                         children: [
                           Positioned(
+                            key: const ValueKey('soft-glass-tab-indicator'),
                             left: indicatorLeft(pos),
                             top: 0,
                             bottom: 0,
