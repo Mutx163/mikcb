@@ -604,15 +604,14 @@ void main() {
       );
     });
 
-    testWidgets('让位只缩内容：一级卡轮廓原地不动', (tester) async {
-      // 二级面板是另一块**独立**面板（按一级「添加」那一行锚定，自己不参与让位）。
-      // 若让位连一级卡轮廓一起缩，一级卡的左边缘会往右收 10px（200 宽 × 5%）、
-      // 下边缘往上收 14px，而二级卡原地不动 —— 两块卡之间裂出一条缝，真机反馈
-      // 读成「玻璃缩小了，但下面那张实体卡没缩」（2026-09-20 实测：一级卡左边缘
-      // 200.5 → 210.5，二级卡仍是 200.5）。
+    testWidgets('让位缩的是整张卡：卡片轮廓跟着内容一起缩', (tester) async {
+      // 用户口径（2026-09-20，试过「只缩内容」之后当场否掉）：
+      // 「为什么他妈的卡片没缩，内容缩放了」—— **卡片本身缩下去才是这个让位的
+      // 本体**，内容跟着缩是理所当然的。
       //
-      // 所以一级卡改成**只缩内容**（`stackScalesPanel: false`，fork 补丁参数）：
-      // 轮廓原地不动、与二级卡保持原本的相对位置，「退让」的层次感由压暗交代。
+      // 所以这条钉的是轮廓也在缩：支点在右上角，右边与上边不动，左边往右收
+      // 5% 板宽、下边往上收 5% 板高。（「一级卡缩了、不参与让位的二级卡没缩」
+      // 造成的 10px 接缝是另一个问题，不要靠「只缩内容」去消它 —— 那条路被否了。）
       await pumpMenu(tester);
 
       final outlineClosed = tester.getRect(panelSurface(secondary: false));
@@ -620,17 +619,20 @@ void main() {
       await tester.tap(find.text('添加'));
       await tester.pumpAndSettle();
 
-      // 内容照旧缩 5% —— 让位读起来仍是一步退让，不是没反应。
+      // 内容缩 5%。
       expect(panelScale(tester), closeTo(0.95, 2e-3));
 
       final outline = tester.getRect(panelSurface(secondary: false));
-      expect(outline.left, closeTo(outlineClosed.left, .5));
-      expect(outline.top, closeTo(outlineClosed.top, .5));
       expect(outline.right, closeTo(outlineClosed.right, .5));
+      expect(outline.top, closeTo(outlineClosed.top, .5));
       expect(
-        outline.bottom,
-        closeTo(outlineClosed.bottom, .5),
-        reason: '一级卡轮廓必须原地不动：它一动，与不参与让位的二级卡之间就裂出接缝',
+        outline.left - outlineClosed.left,
+        closeTo(outlineClosed.width * .05, .5),
+        reason: '卡片轮廓必须跟着缩（只缩内容是用户否掉过的路）',
+      );
+      expect(
+        outlineClosed.bottom - outline.bottom,
+        closeTo(outlineClosed.height * .05, .5),
       );
     });
 
