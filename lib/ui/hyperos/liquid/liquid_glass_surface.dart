@@ -54,8 +54,8 @@ const double _domeFadeToSide = 96;
 const double _domeFullBelowAspect = 1.5;
 const double _domeFadeToAspect = 3;
 
-/// 手指高光光斑半径的上限（逻辑 px）：光斑半径本取 1.5×表面短边（Nexio
-/// InteractiveHighlight 的口径），大面板上不封顶会把整块玻璃都照进光斑里。
+/// 手指高光光斑半径的上限（逻辑 px）：光斑半径取 1.5×表面短边，大面板上不封顶会把
+/// 整块玻璃都照进光斑里。
 const double kPointerGlowRadiusCap = 180;
 
 /// 按表面尺寸推导穹顶强度（0..1）：短边越大越弱，细长条越扁越弱，两者相乘。
@@ -592,8 +592,7 @@ class _RenderLiquidGlass extends RenderProxyBox {
       liquidGlassRimCornerOnlyForSize(Size(size.width, size.height)),
     );
     // 手指高光：位置在 paint 期换算成屏幕物理 px（滚动/拖动中才跟得上）；
-    // 半径按 Nexio InteractiveHighlight 的口径取 1.5×短边，封顶防止大面板上
-    // 光斑铺满整块玻璃。
+    // 半径取 1.5×短边，封顶防止大面板上光斑铺满整块玻璃。
     final (pointerLocal, pointerGlow) = _pointer.value;
     if (pointerLocal != null) {
       final pointerGlobal = localToGlobal(pointerLocal);
