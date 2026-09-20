@@ -298,11 +298,21 @@ class PreblurredWallpaperData {
     required this.image,
     required this.pageController,
     required this.followsPager,
+    this.alignX = 0,
+    this.alignY = 0,
     this.repaint,
     this.revision = 0,
   });
 
   final ui.Image image;
+
+  /// 屏幕上真壁纸的 `BoxFit.cover` 对齐值（-1…1，与
+  /// `TimetableSettings.homePageWallpaperAlignX/Y` 同源）。
+  ///
+  /// 这份位图按「cover 铺满整屏」画，对齐值抄错就是卡内外背景错位 —— 见
+  /// [preblurredWallpaperCoverDestRect] 的说明。
+  final double alignX;
+  final double alignY;
 
   /// Active horizontal pager driving card motion over the wallpaper.
   ///
@@ -338,6 +348,8 @@ class PreblurredWallpaperScope extends StatefulWidget {
     required this.child,
     this.pageController,
     this.followsPager = false,
+    this.wallpaperAlignX = 0,
+    this.wallpaperAlignY = 0,
     this.repaint,
     this.enabled = true,
     super.key,
@@ -350,6 +362,11 @@ class PreblurredWallpaperScope extends StatefulWidget {
 
   final PageController? pageController;
   final bool followsPager;
+
+  /// 屏幕上真壁纸的 `BoxFit.cover` 对齐值，必须与渲染壁纸的那一处同源
+  /// （见 [PreblurredWallpaperData.alignX]）。
+  final double wallpaperAlignX;
+  final double wallpaperAlignY;
 
   /// See [PreblurredWallpaperData.repaint].
   final Listenable? repaint;
@@ -512,6 +529,8 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
               image: image,
               pageController: widget.pageController,
               followsPager: widget.followsPager,
+              alignX: widget.wallpaperAlignX,
+              alignY: widget.wallpaperAlignY,
               repaint: widget.repaint,
               revision: _revision,
             ),
@@ -533,6 +552,8 @@ class _PreblurredWallpaperInherited extends InheritedWidget {
     return data?.revision != oldWidget.data?.revision ||
         data?.image != oldWidget.data?.image ||
         data?.followsPager != oldWidget.data?.followsPager ||
+        data?.alignX != oldWidget.data?.alignX ||
+        data?.alignY != oldWidget.data?.alignY ||
         data?.repaint != oldWidget.data?.repaint ||
         data?.pageController != oldWidget.data?.pageController;
   }
@@ -569,12 +590,20 @@ class PreblurredWallpaperPage extends InheritedWidget {
 /// that clamps at the bitmap edge (that freezes frost under near-full-width
 /// day-view cards after a few pixels of drag).
 ///
+/// [alignX] / [alignY] **必须与屏幕上真壁纸的 `BoxFit.cover` 对齐值一致**
+/// （`TimetableSettings.homePageWallpaperAlignX/Y`，见 [homePageBackdropImageWidget]）：
+/// 这块位图是「贴在屏幕上的那张壁纸」的副本，卡片只是它的一个窗口，对齐值不一致
+/// 时卡内透出的就是**错位**的一段背景 —— 卡内外的壁纸边界接不上（默认 0，即居中）。
+/// 坐标口径与 [homePageWallpaperVisibleSourceRect] 同一套（align -1 = 贴前缘）。
+///
 /// Returns [Rect.zero] when the inputs cannot produce a sample.
 @visibleForTesting
 Rect preblurredWallpaperCoverDestRect({
   required Size imageSize,
   required Size screenSize,
   required double wallpaperOriginX,
+  double alignX = 0,
+  double alignY = 0,
 }) {
   if (imageSize.isEmpty || screenSize.isEmpty) {
     return Rect.zero;
@@ -586,15 +615,16 @@ Rect preblurredWallpaperCoverDestRect({
   if (scale <= 0 || !scale.isFinite) {
     return Rect.zero;
   }
+  // cover 下图片在两个方向都不小于屏幕，多出来的部分按对齐值分配：
+  // align = -1 贴前缘（溢出全在末尾）、0 居中、+1 贴后缘。
+  final fittedWidth = imageSize.width * scale;
+  final fittedHeight = imageSize.height * scale;
+  final overflowX = fittedWidth - screenSize.width;
+  final overflowY = fittedHeight - screenSize.height;
   final destLeft =
-      wallpaperOriginX + (screenSize.width - imageSize.width * scale) / 2;
-  final destTop = (screenSize.height - imageSize.height * scale) / 2;
-  return Rect.fromLTWH(
-    destLeft,
-    destTop,
-    imageSize.width * scale,
-    imageSize.height * scale,
-  );
+      wallpaperOriginX - overflowX * (alignX.clamp(-1.0, 1.0) + 1) / 2;
+  final destTop = -overflowY * (alignY.clamp(-1.0, 1.0) + 1) / 2;
+  return Rect.fromLTWH(destLeft, destTop, fittedWidth, fittedHeight);
 }
 
 /// Legacy helper: image-pixel slice under a box for unit tests.
@@ -608,11 +638,15 @@ Rect preblurredWallpaperSourceRect({
   required Size boxSize,
   required Offset globalOffset,
   required double wallpaperOriginX,
+  double alignX = 0,
+  double alignY = 0,
 }) {
   final dest = preblurredWallpaperCoverDestRect(
     imageSize: imageSize,
     screenSize: screenSize,
     wallpaperOriginX: wallpaperOriginX,
+    alignX: alignX,
+    alignY: alignY,
   );
   if (dest.isEmpty || boxSize.isEmpty) {
     return Rect.zero;
@@ -653,6 +687,8 @@ class PreblurredWallpaperAlignedFill extends LeafRenderObjectWidget {
       screenSize: MediaQuery.sizeOf(context),
       pageController: data?.pageController,
       followsPager: data?.followsPager ?? false,
+      alignX: data?.alignX ?? 0,
+      alignY: data?.alignY ?? 0,
       repaint: data?.repaint,
       pageIndex: PreblurredWallpaperPage.maybeIndexOf(context),
       verticalScrollPosition: Scrollable.maybeOf(
@@ -670,6 +706,8 @@ class PreblurredWallpaperAlignedFill extends LeafRenderObjectWidget {
       ..image = data?.image
       ..screenSize = MediaQuery.sizeOf(context)
       ..followsPager = data?.followsPager ?? false
+      ..alignX = data?.alignX ?? 0
+      ..alignY = data?.alignY ?? 0
       ..pageIndex = PreblurredWallpaperPage.maybeIndexOf(context)
       ..pageController = data?.pageController
       ..repaint = data?.repaint
@@ -688,6 +726,8 @@ class _RenderPreblurredFill extends RenderBox {
     required this._pageController,
     required this._followsPager,
     required this._pageIndex,
+    this._alignX = 0,
+    this._alignY = 0,
     this._repaint,
     this._verticalScrollPosition,
     CourseGlassStyle? glass,
@@ -712,6 +752,25 @@ class _RenderPreblurredFill extends RenderBox {
       return;
     }
     _screenSize = value;
+    markNeedsPaint();
+  }
+
+  /// 屏幕上真壁纸的 `BoxFit.cover` 对齐值（见 [PreblurredWallpaperData.alignX]）。
+  double _alignX;
+  set alignX(double value) {
+    if (_alignX == value) {
+      return;
+    }
+    _alignX = value;
+    markNeedsPaint();
+  }
+
+  double _alignY;
+  set alignY(double value) {
+    if (_alignY == value) {
+      return;
+    }
+    _alignY = value;
     markNeedsPaint();
   }
 
@@ -1018,6 +1077,8 @@ class _RenderPreblurredFill extends RenderBox {
       imageSize: Size(image.width.toDouble(), image.height.toDouble()),
       screenSize: screen,
       wallpaperOriginX: _wallpaperOriginX(),
+      alignX: _alignX,
+      alignY: _alignY,
     );
     if (dest.isEmpty) {
       return;

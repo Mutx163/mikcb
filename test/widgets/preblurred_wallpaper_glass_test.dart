@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/utils/home_page_background.dart';
 import 'package:university_timetable/widgets/preblurred_wallpaper_glass.dart';
 
 void main() {
@@ -117,6 +118,66 @@ void main() {
       expect(dest.top, closeTo(-100, 0.001));
       expect(dest.width, closeTo(400, 0.001));
       expect(dest.height, closeTo(1000, 0.001));
+    });
+
+    test('cover 对齐值与屏幕上真壁纸同源：-1 贴前缘 / +1 贴后缘', () {
+      // 竖长的壁纸只在纵向溢出（scale = 1 → 溢出 200）：alignY 决定这 200px
+      // 怎么分。默认 0（居中）时 top = -100，与上一条用例同一读数。
+      Rect destAt(double alignY) => preblurredWallpaperCoverDestRect(
+        imageSize: image,
+        screenSize: screen,
+        wallpaperOriginX: 0,
+        alignY: alignY,
+      );
+      expect(destAt(0).top, closeTo(-100, 0.001));
+      expect(destAt(-1).top, closeTo(0, 0.001));
+      expect(destAt(1).top, closeTo(-200, 0.001));
+
+      // 横向溢出的情形走同一套公式（800x800 铺 400x800 → 横向溢出 400）。
+      Rect wideAt(double alignX) => preblurredWallpaperCoverDestRect(
+        imageSize: const Size(800, 800),
+        screenSize: screen,
+        wallpaperOriginX: 0,
+        alignX: alignX,
+      );
+      expect(wideAt(0).left, closeTo(-200, 0.001));
+      expect(wideAt(-1).left, closeTo(0, 0.001));
+      expect(wideAt(1).left, closeTo(-400, 0.001));
+    });
+
+    test('预模糊位图的可见窗口与亮度采样那份推导一致', () {
+      // 同一件事（「cover + 对齐值在屏幕上露出哪一段」）本仓有两处实现：这份位图
+      // 的 dest 矩形，与 homePageWallpaperVisibleSourceRect（顶部亮度采样用它）。
+      // 两处漂移的后果是「卡里的背景」与「背景本身的取景」对不上，所以钉住关系：
+      // 源图里第 left 这个比例点必须落在屏幕 x = 0 上。
+      for (final alignX in const [-1.0, -0.5, 0.0, 0.5, 1.0]) {
+        for (final alignY in const [-1.0, 0.0, 1.0]) {
+          const imageSize = Size(1200, 1600);
+          final visible = homePageWallpaperVisibleSourceRect(
+            viewportSize: screen,
+            imageSize: imageSize,
+            alignX: alignX,
+            alignY: alignY,
+          );
+          final dest = preblurredWallpaperCoverDestRect(
+            imageSize: imageSize,
+            screenSize: screen,
+            wallpaperOriginX: 0,
+            alignX: alignX,
+            alignY: alignY,
+          );
+          expect(
+            dest.left + visible.left * dest.width,
+            closeTo(0, 0.001),
+            reason: 'alignX=$alignX 时露出的左边界没落在屏幕左边',
+          );
+          expect(
+            dest.top + visible.top * dest.height,
+            closeTo(0, 0.001),
+            reason: 'alignY=$alignY 时露出的上边界没落在屏幕上边',
+          );
+        }
+      }
     });
 
     test('unclamped source can leave the bitmap (clip handles edges)', () {

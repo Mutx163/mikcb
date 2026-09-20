@@ -1023,6 +1023,11 @@ class _TimetableScreenState extends State<TimetableScreen>
                 // the day swipe).
                 wallpaperPath: homePageBackdropKey(settings),
                 blurSigma: homePreblurSigma,
+                // 卡里的位图必须与屏幕上那张真壁纸**同一套 cover 对齐**：用户
+                // 在「壁纸位置」里拖过对齐值之后，居中铺图的副本就会与背景错位
+                // （卡内外壁纸接不上），所以这两个值随设置一起传。
+                wallpaperAlignX: settings.homePageWallpaperAlignX,
+                wallpaperAlignY: settings.homePageWallpaperAlignY,
                 pageController: _isDayView
                     ? _ensureDayViewPageController(settings)
                     : _weekPageController,
