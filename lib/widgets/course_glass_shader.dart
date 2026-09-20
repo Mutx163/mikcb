@@ -54,9 +54,9 @@ class CourseGlassStyle {
   /// 位移沿边缘上升的陡缓，越大越集中在最外圈。
   final double refractionEdgePow;
 
-  /// 边缘高光强度（0–1）。**只落在转角上**：着色器按边界曲率加权，圆角满档、
-  /// 长直段归零（见 `shaders/course_card_glass.frag`）。所以这个值调的是"转角那圈
-  /// 反光边多亮"，不是"整圈描边多亮"。
+  /// 边缘高光强度（0–1）。**一圈均匀**（四角与四条直边一样亮）：着色器不看法线
+  /// 朝向、也不按边界曲率收角 —— 卡片没有贯屏长直边，收角只会剩四个角上的白钩
+  /// （2026-09-20 真机口径，实算与理由见 `shaders/course_card_glass.frag` 文件头）。
   final double rimStrength;
 
   /// 边缘高光带宽（逻辑 px）。

@@ -6,8 +6,29 @@
 // 与「高斯模糊」档的分工：
 //   * 高斯档只把背景糊掉，卡片读作「磨砂塑料」；
 //   * 这里额外按圆角 SDF 把边缘附近的采样点朝卡片外侧推开，形成真实玻璃那种
-//     「边缘把背景掰弯」的透镜感，再叠一条**只落在转角上**的边缘高光（2026-09-20
-//     与 glass_surface_refraction.frag 同口径：去掉方向性、按边界曲率加权）。
+//     「边缘把背景掰弯」的透镜感，再叠一条**整圈均匀**的边缘高光（2026-09-20
+//     与 glass_surface_refraction.frag 同口径：不看法线朝向）。
+//
+// ── 边光为什么**整圈均匀**、而全局那份多一个「只留转角」的开关 ──
+//
+// 全局表面（glass_surface_refraction.frag）有 `u_rim_corner_only`：细长条走整圈
+// 均匀、方正的大面板**只留转角**（贯屏长直边上的一条高光只会读成描边）。这一份
+// 曾经照抄过「只留转角」，2026-09-20 撤掉，真机口径是「四个角有白线，上下左右都
+// 没有」。撤掉的理由是**实测那条规则在卡片上一定退化成四个白钩**：判「转角度」的
+// 过渡宽度取 1.5 × 圆角半径（r=8 → 12px、r=12 → 18px，与卡片多大无关），而卡片
+// 每条直边都短，中点到最近转角的距离远超这个宽度 —— 实算权重（顶边中点 / 左边
+// 中点）：
+//   * 45×130、r8（周视图一格）  → 0.000 / 0.000，有光的只有离转角 18px 那截；
+//   * 51×130、r8                → 0.000 / 0.000；
+//   * 340×88、r12（日视图全宽卡）→ 0.000 / 0.000，顶边 158px 的直段全黑；
+//   * 49×62、r8（单节课卡）     → 0.000 / 0.000。
+// 也就是说「转角外的过渡几乎盖满整条边」这个前提从来不成立，只剩四条互不相连的
+// 角上高光。而卡片本来也没有贯屏长直边（周视图 130px、日视图 316px 但只有 88px
+// 高、按长短边比就是「细长条」），所以直接取全局那一侧的「整圈均匀」读数。
+//
+// ⚠️ 将来卡片真出现「又宽又方正」的形态（贯屏宽 + 高到长短边比 ≤1.6）时，
+// **把全局那份的 `u_rim_corner_only` 接过来**，由 Dart 侧用
+// `liquidGlassRimCornerOnlyForSize` 推，不要在这里另发明一套判据。
 //
 // 性能口径（这是这个 shader 存在的理由）：输入的 u_texture 是**整屏唯一一份**
 // 预模糊壁纸（PreblurredWallpaperCache 出图，全部卡片共用同一张 ui.Image）。
@@ -56,12 +77,9 @@ uniform float u_rim;
 uniform float u_rim_width;
 
 // 圆角矩形有符号距离场：内部为负、边界为 0、外部为正。
-//
-// `q` 是中间量（`abs(p) - halfSize + r`）：边光的"转角度"要读它（见 `main()`），
-// 所以一并交出去，别让两处各算一遍（改一处忘一处）。
-float roundedBoxSDF(vec2 p, vec2 halfSize, float r, out vec2 q) {
+float roundedBoxSDF(vec2 p, vec2 halfSize, float r) {
   r = min(r, min(halfSize.x, halfSize.y));
-  q = abs(p) - halfSize + r;
+  vec2 q = abs(p) - halfSize + r;
   return min(max(q.x, q.y), 0.0) + length(max(q, vec2(0.0))) - r;
 }
 
@@ -70,9 +88,7 @@ void main() {
   vec2 halfSize = u_size * 0.5;
   vec2 centered = p - halfSize;
 
-  // q 交给下面的边光判"这一段边界是不是圆弧"（见边光那段）。
-  vec2 q;
-  float sd = roundedBoxSDF(centered, halfSize, u_radius, q);
+  float sd = roundedBoxSDF(centered, halfSize, u_radius);
 
   // 抗锯齿：SDF 在边界 1px 内线性过渡。完全在形状外直接丢弃。
   float coverage = clamp(0.5 - sd, 0.0, 1.0);
@@ -82,10 +98,9 @@ void main() {
   }
 
   // SDF 梯度 = 外法线。用有限差分算，角上自然过渡，不用分支。
-  vec2 qGrad;
   vec2 grad = vec2(
-    roundedBoxSDF(centered + vec2(1.0, 0.0), halfSize, u_radius, qGrad) - sd,
-    roundedBoxSDF(centered + vec2(0.0, 1.0), halfSize, u_radius, qGrad) - sd
+    roundedBoxSDF(centered + vec2(1.0, 0.0), halfSize, u_radius) - sd,
+    roundedBoxSDF(centered + vec2(0.0, 1.0), halfSize, u_radius) - sd
   );
   float gradLen = length(grad);
   vec2 normal = gradLen > 1e-5 ? grad / gradLen : vec2(0.0, -1.0);
@@ -113,25 +128,17 @@ void main() {
   // 染色（先混色再加高光，高光才不会被 tint 压掉）。
   vec3 tinted = mix(base, u_tint.rgb, clamp(u_tint.a, 0.0, 1.0));
 
-  // 边缘高光：**只交代转角，不交代长直边**（与 glass_surface_refraction.frag 同口径，
-  // 2026-09-20 第三轮）。截面是「峰在带内」的鼓包：贴边那一格落在抗锯齿的半像素过渡
-  // 带里（coverage 从 0.5 起算），峰值压在那里会让亮线的亮度随边界相位跳变 —— 直边
-  // 看不出来，斜着的圆角上就是一排锯齿。权重按 SDF 中间量 q 的较小者算
-  // （`smoothstep(-w, 0, min(q.x, q.y))`）：圆角弧上为正、长直段上越来越负，于是
-  // 圆角满档、长直段归零，中间 w 内平滑过渡。圆 / 球两个分量恒非负 ⇒ 整圈满档。
-  // w 取 1.5 × 圆角半径。改一处必须两处一起改。
+  // 边缘高光：**整圈均匀**，不看这一段的边界是不是圆弧（与
+  // glass_surface_refraction.frag 的「细长条」那一侧同口径）。
   //
-  // ⚠️ 与 glass_surface_refraction.frag 的**唯一**差别：那边多一个
-  // `u_rim_corner_only`（细长条走整圈均匀、方正的大面板只留转角），这一份**没有**
-  // —— 卡片永远是方正的小格（长短边比 ≤ 1.6），按那条推导恒为「只留转角」；而卡片
-  // 的直边只有 50 多像素、转角外那点过渡几乎盖满整条边，观感与「整圈均匀」无异。
-  // 别为了两边对称硬塞一个恒为 1 的旋钮。真出现细长的卡片（长短边比 > 2）时，
-  // 再把那个 uniform 接过来。
+  // 截面是「峰在带内」的鼓包：贴边那一格落在抗锯齿的半像素过渡带里（coverage 从 0.5
+  // 起算），峰值压在那里会让亮线的亮度随边界相位跳变 —— 直边看不出来，斜着的圆角上
+  // 就是一排锯齿。峰值内移到 0.35 × 带宽处之后，整条高光都落在 coverage = 1 的实心
+  // 区里；贴边处亮度归零，也不会在边界上描出一条硬线。
   float rimT = clamp(depth / max(u_rim_width, 1e-3), 0.0, 1.0);
   float rimBand =
       smoothstep(0.0, 0.35, rimT) * (1.0 - smoothstep(0.35, 1.0, rimT));
-  float cornerW = max(u_radius * 1.5, 2.0);
-  float rim = u_rim * rimBand * smoothstep(-cornerW, 0.0, min(q.x, q.y));
+  float rim = u_rim * rimBand;
   vec3 lit = tinted + u_rim_color * rim;
 
   // 预乘 alpha 输出。

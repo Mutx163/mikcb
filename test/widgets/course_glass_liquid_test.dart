@@ -425,6 +425,68 @@ void main() {
       expect(_glassPixel(on, 90, 50), _glassPixel(off, 90, 50));
     });
 
+    test('边光整圈均匀：四条边的中点与四角一样亮', () async {
+      // 回归点（2026-09-20 真机口径「四个角落有白线、上下左右都没有」）：边光
+      // 曾经按边界曲率加权 —— 圆角满档、长直段归零，而判据的过渡宽度是
+      // 1.5 × 圆角半径。卡片每条直边都短，中点到最近转角的距离远超那个宽度，
+      // 于是四条边中点全黑、只剩四个白色钩子。
+      //
+      // 这里画一张纯黑纹理、关掉折射、只开边光：卡内非边光区应为纯黑，边光带内
+      // 为白。修复前四个中点会读到与卡心一样的黑。
+      final texture = await _glassTexture(
+        const Size(100, 100),
+        (canvas) => canvas.drawRect(
+          const Rect.fromLTWH(0, 0, 100, 100),
+          ui.Paint()..color = const Color(0xFF000000),
+        ),
+      );
+      addTearDown(texture.dispose);
+
+      final bytes = await _renderGlass(
+        texture: texture,
+        texOrigin: Offset.zero,
+        texDestSize: const Size(100, 100),
+        rim: 1,
+      );
+
+      // 边光带峰值在离边 0.35 × 1.5 = 0.53px 处，只有最外那一圈像素落在带内
+      // （第 1 圈像素中心深度 0.5，第 2 圈深度 1.5 已经出了带宽）。
+      Color edge(int x, int y) => _glassPixel(bytes, x, y);
+      final midpoints = <String, Color>{
+        '上边中点': edge(50, 0),
+        '下边中点': edge(50, 99),
+        '左边中点': edge(0, 50),
+        '右边中点': edge(99, 50),
+      };
+      for (final entry in midpoints.entries) {
+        expect(
+          entry.value.a,
+          1.0,
+          reason: '${entry.key}应落在形状内（圆角只切四角）',
+        );
+        expect(
+          (entry.value.r * 255).round(),
+          greaterThan(200),
+          reason:
+              '${entry.key}必须和四角一样亮 —— 读到黑就是「只留转角」又回来了',
+        );
+      }
+      // 四边等亮（同一份均匀权重，容差取浮点误差）。
+      for (final entry in midpoints.entries) {
+        expect(
+          (entry.value.r * 255 - midpoints['上边中点']!.r * 255).abs(),
+          lessThan(2),
+          reason: '${entry.key}与上边中点不等亮，就不是「整圈均匀」',
+        );
+      }
+
+      // 45° 转角弧上同样亮着（这一格修复前后都亮，钉住「四角没被顺手删掉」）。
+      expect((edge(6, 6).r * 255).round(), greaterThan(100));
+      // 带外与卡心保持纯黑：边光不许漫进卡内。
+      expect(edge(50, 50), const Color(0xFF000000));
+      expect(edge(50, 10), const Color(0xFF000000));
+    });
+
     test('染色按 sRGB 分量直通，不做色彩空间转换', () async {
       // u_tint 直接吃 Color.r/g/b（sRGB 编码值）。若引擎把着色器输出当线性值
       // 再编码一次，课程色会整体变亮（0.5 灰会从 128 变 188）。
