@@ -7763,9 +7763,12 @@ class _TimetableScreenState extends State<TimetableScreen>
       ),
       _DockMaterial.liquid => LiquidGlassSurface(
         borderRadius: radius,
-        // 药丸与右侧圆钮并列：进祖先 BackdropGroup 的共享捕获点，否则后画的
-        // 那块会把先画的玻璃一起折射进去（玻璃叠玻璃）。
-        grouped: true,
+        // 实时采样（不跟祖先组）：坞层被 [_wrapHomeWithTopMenu] 摆在采样宿主
+        // **之外**，拿不到 `homeStack` 那个 `BackdropGroup` —— 原先这里的
+        // `grouped: true` 一直是**空转**，观感全靠实时采样（用户口径：药丸的
+        // 折射会跟着下面内容变，最好看）。这里不再写它，把"要实时采样"写实：
+        // 一旦将来坞层被包进某个组，`true` 会静默把它变成一块壁纸快照底
+        // （2026-09-20 两颗悬浮钮踩的就是这个坑）。
         fallbackBuilder: (_) => _frostedDockSurface(radius: radius, child: child),
         child: child,
       ),
@@ -7842,7 +7845,7 @@ class _TimetableScreenState extends State<TimetableScreen>
               ),
               _DockMaterial.liquid => LiquidGlassSurface(
                 borderRadius: radius,
-                grouped: true,
+                // 实时采样，理由同 [_dockPillSurface]（坞层在采样宿主之外）。
                 fallbackBuilder: (_) =>
                     _frostedDockSurface(radius: radius, child: body),
                 child: body,
@@ -8103,9 +8106,9 @@ class _TimetableScreenState extends State<TimetableScreen>
             child: useLiquidGlassMaterial
                 ? LiquidGlassSurface(
                     borderRadius: borderRadius.topLeft.x,
-                    // 悬浮钮与底栏药丸同屏并列：进祖先 BackdropGroup 的共享
-                    // 捕获点，避免后画的把先画的那块玻璃折射进去。
-                    grouped: true,
+                    // ⚠️ 不跟祖先组采样：组采样拿到的是壁纸快照，背景会变成一块
+                    // 逐帧不变、不反映下方内容的底（与「回今日」同一处境，见
+                    // [_buildFloatingBackToTodayButton]）。悬浮钮要的是实时采样。
                     fallbackBuilder: (_) => ClipRRect(
                       borderRadius: borderRadius,
                       child: HyperosFrostedSurface(
@@ -8302,7 +8305,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     final surface = useLiquidGlassMaterial
         ? LiquidGlassSurface(
             borderRadius: _backToTodayButtonRadius,
-            grouped: true,
+            // ⚠️ **不跟祖先组采样**（2026-09-20 用户拍板「对齐药丸实时采样」）。
+            //
+            // 跟组采样时，采样源是组里那张**壁纸快照**（`UndimmedBackdropCapture`
+            // 画在页面主体之前，见 `homeStack`），快照的屏幕位置固定 ⇒ 这颗钮的
+            // 背景逐帧一模一样，下面课表怎么滚都不变（用户口径「背景永远都是不
+            // 变的」）。底栏药丸看着"会变"是因为它在组**外**（坞层被
+            // [_wrapHomeWithTopMenu] 摆成采样宿主的兄弟），它那句 `grouped: true`
+            // 一直是空转 —— 所以这里显式不给，走实时采样，与药丸的真实行为对齐。
             fallbackBuilder: (_) => frostedChip(),
             child: Material(
               type: MaterialType.transparency,

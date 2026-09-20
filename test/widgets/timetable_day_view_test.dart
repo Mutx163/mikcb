@@ -22,6 +22,8 @@ import 'package:university_timetable/services/weather_service.dart';
 import 'package:university_timetable/screens/add_course_screen.dart';
 import 'package:university_timetable/screens/add_schedule_item_screen.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
+import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
 
 import '../helpers_test_app.dart';
 
@@ -102,6 +104,17 @@ DateTime _startOfCurrentWeek(DateTime now) {
 String _formatClock(int hour, int minute) {
   return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
 }
+
+/// 浮钮的材质读的是 [FrostedAppearanceScope]，**不是** provider 里的设置
+/// （真机上由 `main.dart` 用 `settings.frostedAppearance` 下发这一份）。
+/// `TestApp` 不装这个 scope，缺了它 `of(context)` 会回落到 [FrostedAppearance.defaults]
+/// 的基础档 —— 那时这颗钮走磨砂片、树里根本没有 [LiquidGlassSurface]。
+FrostedAppearance _liquidGlassAppearance() => FrostedAppearance(
+  sheetBlurSigma: FrostedAppearance.defaults.sheetBlurSigma,
+  sheetTintAlpha: FrostedAppearance.defaults.sheetTintAlpha,
+  sheetBarrierAlpha: FrostedAppearance.defaults.sheetBarrierAlpha,
+  glassMode: FrostedGlassMode.liquidGlass,
+);
 
 List<SectionTime> _inProgressSections(DateTime now) {
   final currentMinutes = now.hour * 60 + now.minute;
@@ -1750,6 +1763,76 @@ void main() {
     await _pumpFiniteFrames(tester, count: 12);
 
     expect(provider.currentWeek, 7);
+  });
+
+  // 「回本周」与「回今日」同处境：都画在 `homeStack` 的 `BackdropGroup` 里，
+  // 都**不能**跟组采样。组里那张快照是壁纸（`UndimmedBackdropCapture` 画在页面
+  // 主体之前），跟组采样会让背景固定成一张壁纸切片 —— 周课表怎么滚都不变。
+  // 底栏药丸之所以会跟着内容变，是因为坞层被摆在这个组**之外**。
+  // 用户 2026-09-20 拍板「对齐药丸实时采样」，两颗悬浮钮一并改。
+  testWidgets('回本周浮钮走实时采样：在组里但不跟组采样', (tester) async {
+    final now = DateTime.now();
+    final currentWeekStart = _startOfCurrentWeek(now);
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          semesterStartDate: currentWeekStart.subtract(
+            const Duration(days: 42),
+          ),
+          semesterWeekCount: 20,
+          timetableHideWeekends: false,
+          timetableBackToCurrentWeekButtonStyle:
+              BackToCurrentWeekButtonStyle.floating,
+        ),
+      );
+    });
+    await runRealAsync(tester, () async {
+      await provider.setCurrentWeek(5);
+    });
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: TestApp(
+          // 只有液态档才走 LiquidGlassSurface，其余档是磨砂片，所以材质必须
+          // 显式给液态。
+          home: FrostedAppearanceScope(
+            appearance: _liquidGlassAppearance(),
+            child: const TimetableScreen(
+              enableUpdateCheck: false,
+              enableProgressTimer: false,
+            ),
+          ),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    final buttonFinder = find.byKey(
+      const ValueKey('back-to-current-week-button'),
+    );
+    expect(buttonFinder, findsOneWidget);
+
+    // 键挂在这颗钮**内部**的 InkWell 上（见 `_buildFloatingBackToCurrentWeekButton`
+    // 的 `chipBody`），玻璃面是它的祖先，所以这里往上找而不是往下找。
+    final surface = tester.widget<LiquidGlassSurface>(
+      find.ancestor(
+        of: buttonFinder,
+        matching: find.byType(LiquidGlassSurface),
+      ),
+    );
+    expect(
+      surface.grouped,
+      isFalse,
+      reason: '跟组采样 ⇒ 背景固定成一张壁纸切片，周课表怎么滚都不变',
+    );
+    // 对照组：它确实在祖先组里 —— 所以上面那条不是空转断言。
+    expect(
+      find.ancestor(of: buttonFinder, matching: find.byType(BackdropGroup)),
+      findsWidgets,
+      reason: '这颗钮在 homeStack 的 BackdropGroup 里，正是"在组里但不跟组"的处境',
+    );
   });
 
   testWidgets(
