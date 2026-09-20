@@ -51,7 +51,11 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   static const _scrimColor = HyperosZoomRoute.backdropColor;
 
   /// 卡片相对可用区的最大宽度比例（剩下的留白保证「在屏幕中间、不顶边」）。
-  static const _cardMaxWidthFactor = 0.82;
+  ///
+  /// 2026-09-20：0.82 → 0.86，配合顶部收成一行、底部圆钮下移 —— 用户口径「把内部
+  /// 预览区域放大，这样好看」。竖屏手机上**高度**通常才是限制项（卡片按整屏宽高比
+  /// 缩放），这个系数只在宽 / 矮的窗口上兜底。
+  static const _cardMaxWidthFactor = 0.86;
 
   /// 材质面板**整体**最多占屏幕的比例（用户口径 2026-09-20）。
   ///
@@ -825,10 +829,14 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
               color: _scrimColor,
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  // 上下给 chrome 留出的净空：顶部是「胶囊那一行 + 日/周分段」，
+                  // 上下给 chrome 留出的净空：顶部是「胶囊 + 日/周分段（同一行）」，
                   // 底部是「一排圆钮 + 名字」。
-                  final topReserve = topInset + 16 + 40 + 12 + 36 + 18;
-                  final bottomReserve = bottomInset + 34 + 56 + 8 + 18;
+                  //
+                  // 2026-09-20：顶部从两行收成一行（撤标题、分段控件挪进那一行），
+                  // 底部那排圆钮往下挪 10dp（26 → 16）—— 两处省下的纵向空间全给
+                  // 预览卡（用户口径：把下面的按钮往下调一点、把预览区放大）。
+                  final topReserve = topInset + 16 + 40 + 18;
+                  final bottomReserve = bottomInset + 24 + 56 + 8 + 18;
                   final availableHeight =
                       (constraints.maxHeight - topReserve - bottomReserve)
                           .clamp(120.0, double.infinity);
@@ -1039,38 +1047,28 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
         progress: _zoomProgress,
         child: Padding(
           padding: EdgeInsets.fromLTRB(20, topInset + 12, 20, 0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                _capsuleButton(
-                  label: l10n.cancelAction,
-                  onTap: _cancel,
-                  emphasized: false,
-                ),
-                Expanded(
-                  child: Text(
-                    l10n.appearanceEditorTitle,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                _capsuleButton(
-                  label: l10n.appearanceEditorDoneAction,
-                  onTap: _finish,
-                  emphasized: true,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // 日 / 周切换：用户要求「按钮放顶部」，放在标题下面一行。
-            _dayWeekSegmented(l10n),
-          ],
+          // 一行排完：取消 ｜ 日 / 周切换 ｜ 完成。
+          //
+          // 2026-09-20：撤掉「外观编辑」标题，把日 / 周切换提到标题原来的位置 ——
+          // 标题那行只在说"你在哪"，却占掉一整行；分段控件才是这一页真正要用的
+          // 东西。省下的那行（含间隔约 48dp）全部让给预览卡（用户口径：把切换做到
+          // 标题的位置、把预览区放大）。
+          child: Row(
+            children: [
+              _capsuleButton(
+                label: l10n.cancelAction,
+                onTap: _cancel,
+                emphasized: false,
+              ),
+              Expanded(
+                child: Center(child: _dayWeekSegmented(l10n)),
+              ),
+              _capsuleButton(
+                label: l10n.appearanceEditorDoneAction,
+                onTap: _finish,
+                emphasized: true,
+              ),
+            ],
           ),
         ),
       ),
@@ -1142,6 +1140,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     }
 
     return Container(
+      // 键给几何用例用：这条胶囊 2026-09-20 起站在**顶栏正中间**（撤标题腾出来的
+      // 位置），「有没有居中」只能靠它的矩形量。
+      key: const ValueKey('appearance-editor-day-week'),
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
@@ -1178,7 +1179,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       child: _ZoomChromeReveal(
         progress: _zoomProgress,
         child: Padding(
-          padding: EdgeInsets.only(bottom: bottomInset + 26),
+          // 2026-09-20：26 → 16，圆钮往屏幕底边挪 10dp（省下的纵向空间给预览卡）。
+          // 与 `bottomReserve` 里的 24（= 16 + 8 余量）必须同步改。
+          padding: EdgeInsets.only(bottom: bottomInset + 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

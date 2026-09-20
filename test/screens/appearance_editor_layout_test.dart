@@ -107,10 +107,19 @@ void main() {
     // 左右留白相等。
     expect(card.left, closeTo(_viewport.width - card.right, 0.5));
     // 上下都在安全区加 chrome 的净空之内（不顶状态栏、不压手势条）。
-    const topReserve = 32 + 16 + 40 + 12 + 36 + 18;
-    const bottomReserve = 25.8 + 34 + 56 + 8 + 18;
+    // 顶部只有**一行**（胶囊 + 日/周分段同排，2026-09-20 撤标题后收成一行）；
+    // 底部那排圆钮往下挪了 10dp（26 → 16，净空里就是 34 → 24）。
+    const topReserve = 32 + 16 + 40 + 18;
+    const bottomReserve = 25.8 + 24 + 56 + 8 + 18;
     expect(card.top, greaterThanOrEqualTo(topReserve - 1));
     expect(card.bottom, lessThanOrEqualTo(_viewport.height - bottomReserve + 1));
+    // 预览要够大（用户 2026-09-20 口径「把内部预览区域放大，这样好看」）：
+    // 顶部收一行 + 底部下移之后，卡片占屏高约 72.6%；改之前是 65.3%。
+    expect(
+      card.height,
+      greaterThan(_viewport.height * 0.70),
+      reason: '纵向净空又被吃回去了 ⇒ 预览变小了',
+    );
   });
 
   testWidgets('顶部两枚胶囊：同高、同尺寸、离两边等距（不许视觉上错位）', (
@@ -130,9 +139,18 @@ void main() {
       closeTo(_viewport.width - done.center.dx, 0.5),
       reason: '左右两枚必须对称，否则真机上看就是「右边那颗错位」',
     );
-    // 标题在屏幕正中（不被任何一枚挤偏）。
-    final title = tester.getRect(find.text('外观编辑'));
-    expect(title.center.dx, closeTo(_viewport.width / 2, 1));
+    // 中间那格是日 / 周切换（2026-09-20：撤掉标题、把切换提到标题原来的位置），
+    // 它必须落在屏幕正中（不被任何一枚胶囊挤偏），且页面里不再有标题。
+    final segmented = tester.getRect(
+      find.byKey(const ValueKey('appearance-editor-day-week')),
+    );
+    expect(segmented.center.dx, closeTo(_viewport.width / 2, 1));
+    expect(
+      segmented.center.dy,
+      closeTo(cancel.center.dy, 1),
+      reason: '切换与两枚胶囊同一行（都在那一行里垂直居中）',
+    );
+    expect(find.text('外观编辑'), findsNothing, reason: '标题已撤（那一行让给预览）');
   });
 
   testWidgets('底部一排：两个入口等距、整组居中、名字在安全区之上', (tester) async {
