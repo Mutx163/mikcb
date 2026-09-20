@@ -23,9 +23,17 @@ class TimetableHomePreviewScope extends InheritedWidget {
   });
 
   /// 预览要不要显示日视图（true = 日，false = 周）。
+  ///
+  /// 宿主**初始值照首页那份持久化的浏览状态给**（`timetableHomeViewMode`）：
+  /// 两边一致，进页第一帧就不会出现「卡片先显示首页快照的那个视图、转场一结束
+  /// 再跳成另一个」的闪跳。首页侧对这个 notifier 是**幂等**的 —— 值不变就不动，
+  /// 值一致时重复下发也不会把已经开着的日视图关掉。
   final ValueNotifier<bool> dayView;
 
   /// 日视图看星期几（1 = 周一 … 7 = 周日）。
+  ///
+  /// 同源取 `timetableLastViewedDayOfWeek`（首页「日课表」Tab 看的就是它）；
+  /// 落在不显示的日子里时首页会按可见日归一。
   final ValueNotifier<int> dayOfWeek;
 
   static TimetableHomePreviewScope? maybeOf(BuildContext context) {

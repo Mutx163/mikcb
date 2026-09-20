@@ -24,13 +24,13 @@ import 'package:university_timetable/widgets/timetable_home_preview_scope.dart';
 
 import '../helpers_test_app.dart';
 
-void _seedInitializedPrefs() {
+void _seedInitializedPrefs([TimetableSettings? settings]) {
   final now = DateTime(2026, 4, 12);
   final profile = TimetableProfile(
     id: 'profile-1',
     name: '默认课表',
     courses: const [],
-    settings: TimetableSettings.defaults(),
+    settings: settings ?? TimetableSettings.defaults(),
     currentWeek: 1,
     createdAt: now,
     lastUsedAt: now,
@@ -95,6 +95,9 @@ void main() {
         find.byType(TimetableHomePreviewScope),
       );
 
+  Finder dayViewPanel() =>
+      find.byKey(const ValueKey('timetable-day-view-panel'));
+
   testWidgets('注册表能拿到页面，页面里嵌的是**真首页**本体', (tester) async {
     await pumpEditor(tester);
     // 缩尺预览用的就是首页那一份页面（用户口径：「直接使用首页的代码……让那个
@@ -130,6 +133,32 @@ void main() {
     await tester.tap(find.text('日课表'));
     await tester.pumpAndSettle();
     expect(provider.settings.timetableHomeViewMode, before);
+  });
+
+  testWidgets('首页在日视图时进页：预览与分段按钮一起停在日，不闪回周视图', (tester) async {
+    // 回归钉（用户 2026-09-20：「在日视图进入外观编辑页会闪现到周视图」）。
+    // 预览的初始视图曾经写死「永远从周视图起步」，而那条判断要等
+    // didChangeDependencies 才拿得到（initState 里恒为 false）—— 它从来没生效：
+    // 预览先按日视图搭起来、隔一帧才被同步指令关掉，卡片于是「先日、后跳周」。
+    // 现在预览跟着首页那份持久化视图走，进页第一帧就是日，且不会被自己关掉。
+    _seedInitializedPrefs(
+      TimetableSettings.defaults().copyWith(
+        timetableHomeViewMode: TimetableHomeViewMode.day,
+        timetableLastViewedDayOfWeek: 3,
+      ),
+    );
+    await pumpEditor(tester);
+
+    final scope = previewScope(tester);
+    expect(scope.dayView.value, isTrue, reason: '预览要跟着首页停在日视图');
+    expect(scope.dayOfWeek.value, 3, reason: '看哪一天取首页「上次看到的那一天」');
+    expect(dayViewPanel(), findsOneWidget, reason: '进页第一帧就该是日视图');
+
+    // 隔几帧再看：那条帧末同步指令不能把日视图关掉（曾经就是「切过去又闪回周」）。
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(dayViewPanel(), findsOneWidget);
+    expect(scope.dayView.value, isTrue);
   });
 
   testWidgets('底部「材质」打开材质弹窗（玻璃模式四档在里面）', (tester) async {

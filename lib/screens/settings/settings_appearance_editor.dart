@@ -67,15 +67,20 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
 
   /// 预览看日课表还是周课表（只影响这份缩尺首页，不动真实浏览位置 —— 首页侧
   /// 在预览模式下不写回访状态，见 [TimetableHomePreviewScope]）。
+  ///
+  /// **跟首页当前的视图走**，与 [_previewDayView] 同一个来源（首页自己恢复
+  /// 视图用的那份持久化状态）：用户在日视图里进编辑页，卡片、预览与顶部分段
+  /// 按钮就都停在「日」，三者从第一帧起一致。反过来（预览固定从周视图起步）
+  /// 会出现「卡片先显示首页快照的日视图、转场一结束跳成周视图」的闪跳
+  /// （用户 2026-09-20 反馈的「闪现到周视图」）。
   bool _dayPreview = false;
 
   /// 驱动嵌进来的那份真首页开合日视图（它的日视图状态在它自己的 State 里）。
-  final ValueNotifier<bool> _previewDayView = ValueNotifier<bool>(false);
+  late final ValueNotifier<bool> _previewDayView;
 
-  /// 日视图预览看哪一天（1 = 周一 … 7 = 周日）；进页时取今天。
-  final ValueNotifier<int> _previewDayOfWeekNotifier = ValueNotifier<int>(
-    DateTime.now().weekday,
-  );
+  /// 日视图预览看哪一天（1 = 周一 … 7 = 周日）：与首页底栏「日课表」Tab 同源，
+  /// 取持久化的「上次看到的那一天」（不取今天 —— 首页日视图也看的是它）。
+  late final ValueNotifier<int> _previewDayOfWeekNotifier;
 
   /// 弹窗打开期间把上下 chrome 淡出（参考实现同款：让位给内容与弹窗）。
   bool _chromeVisible = true;
@@ -98,6 +103,13 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     _timetableProvider = context.read<TimetableProvider>();
     _draft = _timetableProvider.settings;
     _openedWith = _draft;
+    // 预览的日 / 周与「看哪一天」照首页那份持久化状态起步（见字段注释）：
+    // 三者一致才不会在进页那一帧闪跳。
+    _dayPreview = _draft.timetableHomeViewMode == TimetableHomeViewMode.day;
+    _previewDayView = ValueNotifier<bool>(_dayPreview);
+    _previewDayOfWeekNotifier = ValueNotifier<int>(
+      _draft.timetableLastViewedDayOfWeek,
+    );
   }
 
   @override

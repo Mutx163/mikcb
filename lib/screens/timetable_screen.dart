@@ -494,10 +494,19 @@ class _TimetableScreenState extends State<TimetableScreen>
         unawaited(
           _toggleDayView(
             week: _visibleWeek,
-            dayOfWeek: scope.dayOfWeek.value,
+            // 看哪一天与首页「日课表」Tab 同一条口径：宿主的 notifier 可能停在
+            // 一个不显示的日子（周末被关掉时的周日），这里按可见日归一，免得
+            // 选择落在看不见的那天上。
+            dayOfWeek: _resolveStoredDayOfWeek(
+              settings,
+              scope.dayOfWeek.value,
+            ),
             settings: settings,
             // 预览不做展开动画：宿主那一帧已经切完了，动画只会让它慢半拍。
             animate: false,
+            // 这是「把预览设成日视图」的目标状态，不是一次点按：宿主与预览
+            // 本来就该一致，一致时重复下发不能把日视图关掉。
+            sameSelectionCloses: false,
           ),
         );
         return;
@@ -1189,10 +1198,17 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (oldController != null) {
       _disposeDayViewControllerAfterReplacement(oldController);
     }
-    // 预览永远从周视图起步：日 / 周由宿主顶部分段按钮说了算，不继承
-    // 「上次看到哪一天」——否则进编辑页先看到日视图，与按钮显示的周视图对不上。
-    if (settings.timetableHomeViewMode == TimetableHomeViewMode.day &&
-        !_isPreview) {
+    // 日 / 周一律照持久化的浏览状态恢复 —— 缩尺预览也走这一条：宿主（外观
+    // 编辑页）顶部的日 / 周分段就是照这份状态初始化的，两边天生一致，进页
+    // 那一帧不会出现「预览先按日视图搭起来、再被同步指令关掉」的闪跳。
+    //
+    // ⚠️ 这里曾经是 `&& !_isPreview`，想表达「预览永远从周视图起步」。那个
+    // 条件**从来没生效过**：`_isPreview` 读的是 `_previewScope`，而它要到
+    // didChangeDependencies 才拿得到（initState 里恒为 null）。后果是用户在
+    // 日视图进编辑页时，预览先渲染一帧日视图再被关掉 —— 卡片在转场期间显示
+    // 首页快照（日视图）、转场一结束跳成周视图（用户 2026-09-20 反馈的
+    // 「闪现到周视图」）。现在口径改为「预览跟着首页走」，这条守卫随之作废。
+    if (settings.timetableHomeViewMode == TimetableHomeViewMode.day) {
       _selectedWeekForDayView = _visibleWeek;
       _selectedDayOfWeek = restoredDayOfWeek;
       _dayViewExpandController.value = 1;
@@ -1416,11 +1432,18 @@ class _TimetableScreenState extends State<TimetableScreen>
     });
   }
 
+  /// [sameSelectionCloses]：目标与当前选择相同时，要不要按「再点一次」收起。
+  ///
+  /// 首页那颗按钮与底栏 Tab 传 true（点同一档 = 收起日视图）；**外部（缩尺
+  /// 预览）驱动传 false** —— 那边下发的是「要日视图」这个目标状态，不是一次
+  /// 点按：宿主的分段按钮与预览状态本来就该一致，一致时重复下发不该把日视图
+  /// 关掉（真机表现就是「切过去又自己闪回周视图」）。
   Future<void> _toggleDayView({
     required int week,
     required int dayOfWeek,
     required TimetableSettings settings,
     bool animate = true,
+    bool sameSelectionCloses = true,
   }) async {
     final normalizedWeek = _clampWeek(week, settings.semesterWeekCount);
     final isSameSelection =
@@ -1428,7 +1451,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         _selectedWeekForDayView == normalizedWeek &&
         _selectedDayOfWeek == dayOfWeek;
     if (isSameSelection) {
-      await _closeDayView(settings, animate: animate);
+      if (sameSelectionCloses) {
+        await _closeDayView(settings, animate: animate);
+      }
       return;
     }
     if (_isDayView && _selectedWeekForDayView == normalizedWeek) {
