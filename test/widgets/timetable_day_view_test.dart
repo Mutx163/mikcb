@@ -1833,6 +1833,24 @@ void main() {
       findsWidgets,
       reason: '这颗钮在 homeStack 的 BackdropGroup 里，正是"在组里但不跟组"的处境',
     );
+    // 外壳（最近的祖先 DecoratedBox，键挂在这个钮**内部**的那层上）不再画描边 ——
+    // 描边叠在玻璃自己的边光上就是用户报的「外圈那一圈」。理由与量出来的数字见
+    // [_buildFloatingBackToTodayButton] 的注释。
+    final decoration =
+        tester
+                .widgetList<DecoratedBox>(
+                  find.ancestor(
+                    of: buttonFinder,
+                    matching: find.byType(DecoratedBox),
+                  ),
+                )
+                .first
+                .decoration
+            as BoxDecoration;
+    expect(decoration.border, isNull, reason: '液态档不画描边（药丸 / 圆钮都没有）');
+    // 窄件几何适配：这颗钮只有 31dp 高，折射作用带占了 47%，不压会读成一整圈。
+    expect(surface.maxRefraction, narrowSurfaceMaxRefraction(31));
+    expect(surface.maxRefraction, closeTo(8.68, 1e-9));
   });
 
   testWidgets(

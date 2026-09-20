@@ -563,6 +563,42 @@ void main() {
     });
   });
 
+  group('窄件折射位移上限推导（narrowSurfaceMaxRefraction）', () {
+    test('窄件按短边折算：38dp 悬浮钮 / 31dp 回本周钮 / 40dp 星期条都被压', () {
+      // 上下两条折射带会连成一整圈的比例正是这里要压掉的：作用带 14.5dp 在
+      // 38dp 上占 38%、在 31dp 上占 47%。
+      expect(narrowSurfaceMaxRefraction(38), closeTo(10.64, 1e-9));
+      expect(narrowSurfaceMaxRefraction(31), closeTo(8.68, 1e-9));
+      expect(narrowSurfaceMaxRefraction(40), closeTo(11.2, 1e-9));
+    });
+
+    test('上界不与「默认折射 8」打架：下限就是 8', () {
+      // 折射量程 0~20、默认档 8 —— 折算结果掉到 8 以下会把默认档也压掉。
+      expect(narrowSurfaceMaxRefraction(10), 8.0);
+      expect(narrowSurfaceMaxRefraction(20), 8.0);
+      // 上限 14：52dp 时 14.56 被夹回 14。
+      expect(narrowSurfaceMaxRefraction(52), 14.0);
+    });
+
+    test('短边超过阈值返回 null（不压，用材质里那一份位移）', () {
+      expect(narrowSurfaceMaxRefraction(53), isNull);
+      // 组合带（约 84dp）与首页那条带、底栏药丸 / 圆钮（56dp）都不该被压。
+      expect(narrowSurfaceMaxRefraction(56), isNull);
+      expect(narrowSurfaceMaxRefraction(84), isNull);
+    });
+
+    test('单调不减，且在阈值处不跳变', () {
+      var previous = 0.0;
+      for (var side = 1.0; side <= 52.0; side += 1) {
+        final value = narrowSurfaceMaxRefraction(side)!;
+        expect(value, greaterThanOrEqualTo(previous));
+        previous = value;
+      }
+      expect(narrowSurfaceMaxRefraction(52), 14.0);
+      expect(narrowSurfaceMaxRefraction(53), isNull);
+    });
+  });
+
   group('LiquidGlassSurface 降级', () {
     testWidgets('测试环境没有 shader filter 后端：返回 fallback，不建玻璃层', (
       tester,

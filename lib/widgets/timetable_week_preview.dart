@@ -277,13 +277,12 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final overhang = homePageChromeGlassVerticalOverhangOf(context);
     // 薄带（≤52dp）与设置页预览里的玻璃带：把**折射位移**按带高折算收小，
     // 否则上下两条边缘折射带会占满整条带、读成一圈描边而不是「一条玻璃带」。
-    // 与旧版「按厚度折算」是同一个几何意图，只是量纲换成了折射位移：
-    // 旧厚度上限 40 → 窄带封顶 8~14、预览封顶 22（55%）；折射量程 0~20，
-    // 故窄带沿用 8~14（默认折射 8 不被误压），预览按同比例取 11。
-    // Combined bands (~84dp) keep full displacement like the home sheet.
-    final double? effectiveMaxRefraction = height <= 52
-        ? (height * 0.28).clamp(8.0, 14.0)
-        : (isSettingsPreview ? 11.0 : null);
+    // 折算口径见 [narrowSurfaceMaxRefraction]（窄件按短边收位移，量纲与旧版「按
+    // 厚度折算」同一意图）。组合带（约 84dp）保持全量位移，与首页那条带一致；
+    // 设置页预览里的那条带即使不算窄，也按同比例取 11（见该函数注释）。
+    final double? effectiveMaxRefraction =
+        narrowSurfaceMaxRefraction(height) ??
+        (isSettingsPreview ? 11.0 : null);
     return [
       Positioned(
         top: top,

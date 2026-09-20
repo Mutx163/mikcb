@@ -131,6 +131,36 @@ double liquidGlassRimCornerOnlyForSize(Size size) {
       .clamp(0.0, 1.0);
 }
 
+/// 短边 ≤ 这个值的表面按「窄件」压折射（逻辑 px）。
+const double _narrowSurfaceBelowSide = 52;
+
+/// 窄件上给 [LiquidGlassSurface.maxRefraction] 用的折射位移上限；宽/高的表面返回
+/// null（= 不压，用材质里那一份位移）。
+///
+/// **为什么需要**：折射位移的作用带（`refractionBand`，标准档 14.5dp）是**绝对值**，
+/// 不随表面变小。放在 56dp 的药丸 / 圆钮上它只占短边的 26%，贴着边、读成「玻璃的
+/// 边」；放在 38dp 的悬浮胶囊上占了 38%，上下两条带几乎连起来，整块就读成**一圈
+/// 描边**而不是一块玻璃（设置页那条约 40dp 的星期条同理）。
+///
+/// 折算口径沿用「按厚度折算」的旧意图，只是量纲换成了折射位移：旧厚度上限 40 →
+/// 窄件封顶 8~14、设置页预览封顶 22（55%）；折射量程 0~20，故窄件取 8~14（默认
+/// 折射 8 不被误压），预览按同比例取 11。短边 > [_narrowSurfaceBelowSide] 的组合
+/// 带（约 84dp）保持全量位移，与首页那条带一致。
+///
+/// 与 [liquidGlassDomeForSize] / [liquidGlassRimCornerOnlyForSize] 同一性质：
+/// **几何适配**，不是材质参数 —— 按表面自己的尺寸算，不经过
+/// [FrostedAppearanceScope]，所以不破坏「两个作用域，各自只有一个出口」的规矩。
+/// 抽成纯函数是为了让单元测试能钉住这套推导。
+///
+/// 与上面两个兄弟不同，这条适配**由调用点算**（而不是渲染对象按自身 `size` 算）：
+/// 窄件的尺寸在 build 期就是常量（`SizedBox` 高度 / 玻璃带高度），调用点传值比让
+/// 渲染对象反推更直白，也避免把所有短边 ≤52 的表面一刀切（常驻球、返回键这些
+/// 44~48dp 的小件目前按全量位移，本轮不动它们）。
+double? narrowSurfaceMaxRefraction(double shortSide) =>
+    shortSide > _narrowSurfaceBelowSide
+    ? null
+    : (shortSide * 0.28).clamp(8.0, 14.0);
+
 /// 一块**液态玻璃**表面：把实时背景糊掉之后，再按圆角 SDF 在边缘做折射与受光高光。
 ///
 /// 渲染结构等价于「`BackdropFilter` + 内容」，只是滤镜从单纯的高斯换成

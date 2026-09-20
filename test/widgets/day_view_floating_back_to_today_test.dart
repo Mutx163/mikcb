@@ -191,6 +191,10 @@ void main() {
     final decoration =
         tester.widget<DecoratedBox>(buttonFinder).decoration as BoxDecoration;
     expect(decoration.borderRadius, BorderRadius.circular(19));
+    // 这条用例跑在默认档（≈磨砂）：描边**必须留着** —— `HyperosFrostedSurface`
+    // 只是一层模糊 + 水洗，自己不画边，去掉这颗钮就没边界了。液态档不画描边，
+    // 见「回今日浮钮：液态档不画描边、按窄件压折射」。
+    expect(decoration.border, isNotNull);
     debugPrint('[back-to-today] size=${buttonRect.size}');
     expect(
       buttonRect.width,
@@ -351,6 +355,82 @@ void main() {
       findsWidgets,
       reason: '这颗钮在 homeStack 的 BackdropGroup 里，正是"在组里但不跟组"的处境',
     );
+  });
+
+  // 「两层圈圈」回归（用户 2026-09-20 报，对着底栏药丸说「完全不一样」）。
+  //
+  // 两圈是两个不同的东西：**外圈**是这颗钮自己画的 1dp 描边，**内圈**是玻璃的
+  // 折射/色散带（绝对 14.5dp，在这颗 38dp 高的钮上占 38%，上下两条几乎连起来）。
+  // 同族的底栏药丸 / 坞内圆钮都不画描边、短边 56dp 也不被压折射 —— 所以这颗钮
+  // 要同时改两样，只改一样就还差一圈（用户拍板「去描边 + 压折射」）。
+  testWidgets('回今日浮钮：液态档不画描边、按窄件压折射', (tester) async {
+    final provider = await createInitializedTestProvider(tester);
+    final today = DateTime.now();
+    final otherDay = today.weekday == 1 ? 2 : today.weekday - 1;
+
+    await tester.runAsync(() async {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          semesterStartDate: _startOfCurrentWeek(today),
+          semesterWeekCount: 20,
+          timetableHideWeekends: false,
+        ),
+      );
+      await provider.setCurrentWeek(1);
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+    });
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: TestApp(
+          home: FrostedAppearanceScope(
+            appearance: _liquidGlassAppearance(),
+            child: const TimetableScreen(
+              enableUpdateCheck: false,
+              enableProgressTimer: false,
+            ),
+          ),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+    await tester.tap(find.byKey(ValueKey('weekday-header-1-$otherDay')));
+    await _pumpUntilSettled(tester);
+
+    final buttonFinder = find.byKey(const ValueKey('back-to-today-button'));
+    expect(buttonFinder, findsOneWidget);
+
+    final decoration =
+        tester.widget<DecoratedBox>(buttonFinder).decoration as BoxDecoration;
+    expect(
+      decoration.border,
+      isNull,
+      reason: '描边叠在玻璃自己的边光上 ⇒ 外圈那一条硬线（药丸 / 圆钮都没有）',
+    );
+    expect(
+      decoration.boxShadow,
+      isNull,
+      reason: '同族的药丸 / 圆钮都没有投影',
+    );
+    expect(
+      decoration.borderRadius,
+      BorderRadius.circular(19),
+      reason: '这层外壳只去掉描边与投影，圆角与键位不变',
+    );
+
+    final surface = tester.widget<LiquidGlassSurface>(
+      find.descendant(
+        of: buttonFinder,
+        matching: find.byType(LiquidGlassSurface),
+      ),
+    );
+    expect(
+      surface.maxRefraction,
+      narrowSurfaceMaxRefraction(38),
+      reason: '38dp 矮胶囊要压折射位移，否则内圈那条作用带占满整颗钮',
+    );
+    expect(surface.maxRefraction, closeTo(10.64, 1e-9));
   });
 
   // 回归：甩到别的天、惯性还没停就点「回今日」，必须真的有反应。

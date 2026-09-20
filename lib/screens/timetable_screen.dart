@@ -48,7 +48,7 @@ import '../widgets/home_page_region_blur.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
-    show LiquidGlassSurface, UndimmedBackdropCapture;
+    show LiquidGlassSurface, UndimmedBackdropCapture, narrowSurfaceMaxRefraction;
 import '../widgets/course_action_sheet.dart';
 import '../widgets/course_followup_sheets.dart';
 import '../widgets/course_note_sheet.dart';
@@ -8002,6 +8002,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
   }
 
+  /// 「回本周」浮钮的高度（逻辑 px）：图标 15 与字号 11 取大者，加纵向内边距 8×2。
+  ///
+  /// 与 [_backToTodayButtonHeight] 一样，这个常量是**高度本身**（显式 `SizedBox`），
+  /// 不是对内容尺寸的旁注 —— 窄件几何适配（见 [narrowSurfaceMaxRefraction]）要按
+  /// 它算折射位移上限，改内边距 / 图标尺寸时这里跟着改，两处不会走偏。
+  static const double _backToCurrentWeekButtonHeight = 31;
+
   Widget _buildFloatingBackToCurrentWeekButton(TimetableProvider provider) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
@@ -8043,27 +8050,32 @@ class _TimetableScreenState extends State<TimetableScreen>
         borderRadius: borderRadius,
         child: Opacity(
           opacity: contentOpacity,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.my_location_rounded,
-                  size: 15,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  l10n.backToCurrentWeekAction,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface,
-                    height: 1,
+          // 高度显式钉住（= 图标 15 + 内边距 8×2，与内容撑出来的值逐像素相同），
+          // 这样窄件几何适配能按常量算，不用去猜内容尺寸。
+          child: SizedBox(
+            height: _backToCurrentWeekButtonHeight,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.my_location_rounded,
+                    size: 15,
+                    color: colorScheme.primary,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  Text(
+                    l10n.backToCurrentWeekAction,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurface,
+                      height: 1,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -8093,22 +8105,32 @@ class _TimetableScreenState extends State<TimetableScreen>
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: borderRadius,
-              border: Border.all(
-                color: foruiColors.border.withValues(
-                  alpha: foruiColors.border.a * contentOpacity,
-                ),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(
-                    alpha:
-                        (theme.brightness == Brightness.dark ? 0.12 : 0.06) *
-                        contentOpacity,
-                  ),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              // ⚠️ 液态档不叠描边与投影，理由与「回今日」同一处（那颗钮的注释里
+              // 有量出来的数字：描边 + 玻璃的折射带在小胶囊上读成两层圈圈），
+              // 见 [_buildFloatingBackToTodayButton]。磨砂档留着 —— 磨砂片自己
+              // 不画边。透明度仍按 [contentOpacity] 压在描边上（非液态档才有）。
+              border: useLiquidGlassMaterial
+                  ? null
+                  : Border.all(
+                      color: foruiColors.border.withValues(
+                        alpha: foruiColors.border.a * contentOpacity,
+                      ),
+                    ),
+              boxShadow: useLiquidGlassMaterial
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(
+                          alpha:
+                              (theme.brightness == Brightness.dark
+                                   ? 0.12
+                                   : 0.06) *
+                              contentOpacity,
+                        ),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
             ),
             child: useLiquidGlassMaterial
                 ? LiquidGlassSurface(
@@ -8116,6 +8138,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                     // ⚠️ 不跟祖先组采样：组采样拿到的是壁纸快照，背景会变成一块
                     // 逐帧不变、不反映下方内容的底（与「回今日」同一处境，见
                     // [_buildFloatingBackToTodayButton]）。悬浮钮要的是实时采样。
+                    //
+                    // 窄件几何适配：这颗钮只有 31dp 高，折射作用带占了 47%，不压会
+                    // 读成一整圈轮廓（见 [narrowSurfaceMaxRefraction]）。
+                    maxRefraction: narrowSurfaceMaxRefraction(
+                      _backToCurrentWeekButtonHeight,
+                    ),
                     fallbackBuilder: (_) => ClipRRect(
                       borderRadius: borderRadius,
                       child: HyperosFrostedSurface(
@@ -8320,6 +8348,12 @@ class _TimetableScreenState extends State<TimetableScreen>
             // 变的」）。底栏药丸看着"会变"是因为它在组**外**（坞层被
             // [_wrapHomeWithTopMenu] 摆成采样宿主的兄弟），它那句 `grouped: true`
             // 一直是空转 —— 所以这里显式不给，走实时采样，与药丸的真实行为对齐。
+            //
+            // 窄件几何适配：这颗钮只有 38dp 高，而折射位移的作用带是绝对值
+            // （标准档 14.5dp = 高度的 38%，药丸/圆钮 56dp 上只占 26%），上下两条
+            // 带会连成一整圈轮廓。与设置页那条约 40dp 的星期条同一条规矩，见
+            // [narrowSurfaceMaxRefraction]。
+            maxRefraction: narrowSurfaceMaxRefraction(_backToTodayButtonHeight),
             fallbackBuilder: (_) => frostedChip(),
             child: Material(
               type: MaterialType.transparency,
@@ -8338,21 +8372,36 @@ class _TimetableScreenState extends State<TimetableScreen>
       child: Align(
         alignment: Alignment.bottomCenter,
         child: DecoratedBox(
-          // 键挂在**带描边的外壳**上，两种材质分支（液态 / 磨砂）都能被
-          // 找到、点到；挂在分支内部的 InkWell 上时，液态档就没有键了。
+          // 键挂在这层**外壳**上，两种材质分支（液态 / 磨砂）都能被找到、点到；
+          // 挂在分支内部的 InkWell 上时，液态档就没有键了。液态档这层只留圆角
+          // （不再描边，见下）。
           key: const ValueKey('back-to-today-button'),
           decoration: BoxDecoration(
             borderRadius: borderRadius,
-            border: Border.all(color: foruiColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(
-                  alpha: brightness == Brightness.dark ? 0.12 : 0.06,
-                ),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            // ⚠️ **液态档不叠描边与投影**（2026-09-20 用户拍板）。
+            //
+            // 同族的底栏药丸 / 坞内圆钮都不画描边，只有玻璃自己的边光。这颗钮
+            // 原先两条分支共用一层 1dp 描边，于是小胶囊上出现**两层圈圈**：
+            // 外圈 = 这层描边（量出来正好是 1dp 硬线），内圈 = 玻璃的折射/色散带
+            // （作用带 14.5dp，占这颗钮高度的 38%），两者相距约 5dp。用户对照的
+            // 底栏药丸 / 加课圆钮只有一圈 —— 差的正是这层描边。
+            //
+            // 磨砂档**必须留着**：`HyperosFrostedSurface` 只是一层模糊 + 水洗，
+            // 自己不画边，去掉描边这颗钮就没边界了。
+            border: useLiquidGlassMaterial
+                ? null
+                : Border.all(color: foruiColors.border),
+            boxShadow: useLiquidGlassMaterial
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(
+                        alpha: brightness == Brightness.dark ? 0.12 : 0.06,
+                      ),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: surface,
         ),
