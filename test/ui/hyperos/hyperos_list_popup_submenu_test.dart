@@ -604,30 +604,28 @@ void main() {
       );
     });
 
-    testWidgets('让位：两块卡绕同一支点一起缩，边缘与「添加」行对齐', (tester) async {
-      // 两条用户口径（2026-09-20）一起钉：
+    testWidgets('让位：只有一级缩，二级不缩；被点那一行在屏幕上原地不动', (tester) async {
+      // 用户口径（2026-09-21）：「二级弹出时被点的那一行不缩放、不变，只向下展开；
+      // 二级卡片不缩；只有一级卡片向右缩一点」—— 就是已发布预发布版 v2.1.2.3 的
+      // 观感。本仓一度给二级补过整族让位参数、让两块卡绕同一点一起缩（把左边缘
+      // 那条 10px 的缝归零，见 archived/bug-fix/2026-09-20-home-menu-both-panels-
+      // share-stack-pivot.md），用户否掉：二级跟着缩会让它的行文字一起小 5%，而
+      // **被点那一行的「复印件」正是二级的标题行** —— 二级一缩，读起来就成了
+      // 「被点的按钮在缩放、在挪」。
       //
-      // ①「为什么他妈的卡片没缩，内容缩放了」—— **卡片本身缩下去才是这个让位的
-      //   本体**，内容跟着缩是理所当然的。只缩内容那条路被否掉过（见笔记
-      //   `.agents/notes/rejected/bug-fix/2026-09-20-home-menu-stack-scales-content-only.md`）。
-      // ②「玻璃缩小了，但是底部的实体卡没缩小」/「玻璃颜色缩小了，但是白底没缩小」
-      //   —— 一级卡缩了、**不参与让位的二级卡**没缩。两块同宽同边（二级锚在一级
-      //   的「添加」行上、共用同一份宽度约束），一级绕右上角缩 5% 后左边缘往右
-      //   收 5% 板宽（200 宽上就是 10px），二级却还在原地：接缝处读起来就是
-      //   「只有一半缩了」，两处「添加」行也错开同样多。
-      //
-      // 所以这里量三件事：一级整张卡缩；二级绕**同一个支点**同步缩（不缩就比一级
-      // 宽出 5% 板宽）；两处「添加」行同位。
+      // 所以这里量四件事：①一级整张卡缩；②二级卡一点都不缩（宽度、位置保持）；
+      // ③两块卡的左边缘因此错开 5% 板宽 —— 这条缝用户明确选择接受，不是回归；
+      // ④被点那一行在屏幕上不动（一级那份缩进二级卡背后，二级的标题行顶在原位）。
       await pumpMenu(tester);
 
       final outlineClosed = tester.getRect(panelSurface(secondary: false));
+      final rowClosed = tester.getRect(find.text('添加'));
 
       await tester.tap(find.text('添加'));
       await tester.pumpAndSettle();
 
-      // 内容缩 5%。
+      // ①一级内容与轮廓都缩 5%（只缩内容那条路被用户否掉过）。
       expect(panelScale(tester), closeTo(0.95, 2e-3));
-
       final outline = tester.getRect(panelSurface(secondary: false));
       expect(outline.right, closeTo(outlineClosed.right, .5));
       expect(outline.top, closeTo(outlineClosed.top, .5));
@@ -641,27 +639,38 @@ void main() {
         closeTo(outlineClosed.height * .05, .5),
       );
 
-      // 二级面板跟着一起缩：不缩的话它比缩过的一级宽出 5% 板宽、左边缘多露
-      // 10px —— 那就是用户读到的「白底没缩」。
+      // ②二级卡一片都不缩：宽度与位置与收起态的一级卡完全一致。
+      // 实测：二级卡宽 200.00（收起态一级卡量到 199.96 —— 出场弹簧收敛在 1 之前
+      // 的那点残差，差 0.04px）。
       final secondary = tester.getRect(panelSurface(secondary: true));
       expect(
         secondary.width,
-        closeTo(outline.width, .5),
-        reason: '两块卡必须同宽（二级不参与让位时会比一级宽 5% 板宽）',
+        closeTo(outlineClosed.width, .5),
+        reason: '二级不参与让位：它一格都不缩，行文字保持原字号',
       );
-      expect(
-        secondary.left,
-        closeTo(outline.left, .5),
-        reason: '二级左边缘必须与一级卡缩后对齐 —— 接缝就在这里露出来',
-      );
-      expect(secondary.right, closeTo(outline.right, .5));
+      expect(secondary.right, closeTo(outlineClosed.right, .5));
+      expect(secondary.left, closeTo(outlineClosed.left, .5));
 
-      // 二级标题行与一级那一行同位（「同一行分出一截」的读感靠它）。支点取的是
-      // 锚点行右上角，与面板右上角差 8px 的内容内边距，残差 5% × 8 = 0.4px。
-      final primaryRow = tester.getRect(find.text('添加').first);
+      // ③接缝：一级缩了、二级没缩，两块卡的左边缘就差 5% 板宽。
+      // 实测 -9.96px（= 5% × 200 板宽 = 10px，减去上面那 0.04px 残差）。这条是
+      // 本次口径的**已知代价**（用户拍板接受），别当成待修的缺陷。
+      expect(
+        secondary.left - outline.left,
+        closeTo(-outlineClosed.width * .05, .5),
+        reason: '二级不缩 → 左边缘错开 10px，用户已选择接受这条缝',
+      );
+
+      // ④被点那一行在屏幕上没动：二级的标题行（浮在上面、可见的那份）与它收起
+      // 态时的矩形重合（实测 x 差 0.004px、y 差 0.002px，都来自入场弹簧收敛在 1
+      // 之前那点残差）；一级那份缩过、往右收进二级卡背后，不再是可见的那份。
       final titleRow = tester.getRect(find.text('添加').last);
-      expect(titleRow.left, closeTo(primaryRow.left, 1));
-      expect(titleRow.top, closeTo(primaryRow.top, 1));
+      expect(titleRow.left, closeTo(rowClosed.left, 1));
+      expect(titleRow.top, closeTo(rowClosed.top, 1));
+      expect(
+        tester.getRect(find.text('添加').first).left,
+        greaterThan(rowClosed.left + 5),
+        reason: '一级那份是缩过、被二级卡盖住的那份',
+      );
     });
 
     testWidgets('点二级标题行只收起二级、不关菜单，一级缩放复原', (tester) async {
