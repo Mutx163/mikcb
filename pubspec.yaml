@@ -53,7 +53,7 @@ dependencies:
   fl_chart: ^1.2.0
   fast_gbk: ^1.0.0
   flutter_svg: ^2.3.0
-  image: ^4.8.0
+  image: ^4.10.1
   # 2026-09-13：由 fork（1.0.11 / commit 241bbea）切到上游 pub.dev 版 1.2.0。
   # 依据：fork 的本地补丁已分别并入上游 1.1.0（系统字重与标题字重 API）与
   # 1.1.1（pubspec Git 依赖在中文 Windows 下的编码修复）；1.2.0 的 HyperOS 4
