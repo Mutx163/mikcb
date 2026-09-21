@@ -24,10 +24,11 @@ import 'package:university_timetable/widgets/wallpaper_position_picker_sheet.dar
 ///    且被盖住后连 paint 都停了）。
 /// 2. **玻璃误入捕获子树**：上游要求玻璃必须在捕获子树之外（防反馈采样），所以按钮层
 ///    与 `HyperosGlassBackdropHost` 平级。
-/// 3. **转场帧里画活玻璃**（真机 2026-09-21「按钮被分成两层、玻璃跑到右边、原位剩一个
-///    透明按钮」）：折射层按屏幕绝对坐标摆形状，侧滑转场途中画过的那一帧会被烤进缓存
-///    ⇒ 落定后玻璃永久偏在一侧。落定前一律退回磨砂顶着，见
-///    `_WallpaperPositionPickerPageState._routeSettled`。
+/// 3. **转场期间玻璃要逐帧重算坐标**（真机 2026-09-21 两轮：「按钮被分成两层、玻璃跑到
+///    右边、原位剩一个透明按钮」→「进入退出的时候，按钮一直在变材质」）：折射层按屏幕
+///    绝对坐标摆形状，而转场外壳把整页包进了重绘边界（滑入时整页像素复用）⇒ 不逐帧重画
+///    就会把形状钉在旧坐标上。修法是 `LiquidGlassTransitionRepaint`（**照旧画、每帧重
+///    算**），不是"转场期间先不画"—— 后者本仓 2026-09-20 就给首页玻璃带否过。
 ///
 /// 另外底部按钮曾被 `Center` 的 maxWidth 撑满：`Container` 带 `alignment` 时在
 /// 有界约束下会占满可用宽度，`minWidth` 只管下限。
@@ -143,37 +144,50 @@ void main() {
     );
   });
 
-  testWidgets('转场帧里一帧都不画活玻璃：落定前磨砂顶着，落定后才上玻璃', (tester) async {
-    // 真机口径（2026-09-21）：「按钮好像被分成了两层，玻璃那层跑到了右边，原位置
-    // 剩下了一个透明按钮」，而且**不动它就一直在**。
+  testWidgets('整段转场里按钮材质一帧都不变，且玻璃由转场重绘驱动逐帧重算', (tester) async {
+    // 真机口径（2026-09-21）分两轮：
+    //   1.「按钮好像被分成了两层，玻璃那层跑到了右边，原位置剩下了一个透明按钮」，
+    //      而且**不动它就一直在** —— 成因是折射层按屏幕绝对坐标摆形状，而本页进场
+    //      走共享轴侧滑：转场外壳把整页包进了重绘边界（滑入时整页像素复用），不逐帧
+    //      重画就会把形状钉在旧坐标上，玻璃整块偏在一侧；
+    //   2. 照"转场期间先不画、落定后再画"改完之后，用户立刻报「进入退出的时候，
+    //      按钮一直在变材质」—— 那条本仓 2026-09-20 就给首页玻璃带否过（不要进场时
+    //      的任何闪动），见 `LiquidGlassTransitionRepaint` 的类注释。
     //
-    // 成因（见页面 `_routeSettled` 的注释）：折射层的形状按**屏幕绝对坐标**算，
-    // 本页进场走共享轴侧滑（页面从右边滑进来），转场帧里算出来的坐标带着中途的
-    // 位移；那一帧画过的结果会被烤进缓存，落定后没有新的重绘（本页只有一次亮度
-    // 采样会重建，且它通常落在转场途中）⇒ 玻璃永久偏在右侧，原位只剩按钮自己的
-    // 衬底与文字 = "透明按钮"。
-    //
-    // 这条用例先把"转场中"那一帧钉住：一颗活玻璃都不许有，但四个位置都要有材质面
-    // 顶着（留空就是用户看到的"透明按钮"）。
+    // 所以正确口径是：**照旧画，但每帧按当前位置重算**。这条用例把两件事一起钉住 ——
+    // 材质一路不变（每一步都仍是四颗锁档液态玻璃），以及驱动节点确实罩着这四颗。
     await pumpPicker(tester, settle: false);
 
     final picker = find.byType(WallpaperPositionPickerPage);
     expect(picker, findsOneWidget);
-    expect(
-      pickerSurfaces(),
-      findsNothing,
-      reason: '转场还没落定，活玻璃一帧都不许画 —— 画了就会被烤到转场坐标上',
+    final driver = find.descendant(
+      of: picker,
+      matching: find.byType(LiquidGlassTransitionRepaint),
     );
     expect(
-      find.descendant(
-        of: picker,
-        matching: find.byType(FrostedHeaderBackground),
-      ),
-      findsNWidgets(4),
-      reason: '四个位置都要有材质面顶着，否则就是"原位置剩下一个透明按钮"',
+      driver,
+      findsOneWidget,
+      reason: '按钮层必须由转场重绘驱动罩着：形状按屏幕坐标算，不逐帧重画就会偏在一侧',
     );
 
-    // 把转场走完：落定后才放行活玻璃，而且四颗都必须是锁档的。
+    // 转场途中每一步采样：材质必须一帧都不变（不许磨砂 ↔ 玻璃来回切）。
+    for (var step = 0; step < 6; step++) {
+      expect(
+        pickerSurfaces(),
+        findsNWidgets(4),
+        reason: '转场第 $step 步的材质与前后不一致 —— 用户会读成"按钮一直在变材质"',
+      );
+      await tester.pump(const Duration(milliseconds: 30));
+    }
+
+    // 四颗玻璃都必须在驱动节点子树里（罩错层 = 重画的对象不是它们）。
+    expect(
+      find.descendant(of: driver, matching: find.byType(LiquidGlassSurface)),
+      findsNWidgets(4),
+      reason: '有一颗玻璃不在驱动节点里，转场期间它不会按新坐标重算',
+    );
+
+    // 走完转场：材质依旧不变，四颗都还是锁档液态玻璃。
     for (var i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 60));
     }

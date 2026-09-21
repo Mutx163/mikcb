@@ -729,3 +729,132 @@ class UndimmedBackdropCapture extends StatelessWidget {
     );
   }
 }
+
+/// 让「按屏幕坐标摆形状」的玻璃在**转场 / 位移动画期间逐帧重画**。
+///
+/// ## 为什么必须有它
+///
+/// 液态玻璃着色器的几何按**屏幕物理像素**算，其中 `u_area_origin` 是 Dart 侧在
+/// **paint 期**用 `localToGlobal` 读的（见 `glass_surface_refraction.frag` 文件头与
+/// [_RenderLiquidGlass._configure]）：**形状要正，这一帧就得重画一次。**
+///
+/// 而 `HyperosPageRoute` 的转场外壳把整页包进了 `RepaintBoundary`
+/// （`hyperos_navigation.dart` 的 `_HyperosTransitionPageShell`，为的是滑入时整页像素
+/// 复用、不逐帧重栅格化）。框架对「没被标脏的重绘边界」只换图层偏移、不重画。
+/// 于是转场期间玻璃的 `u_area_origin` 停在"上一次重画时"的屏幕位置，偏差正是这段
+/// 时间页面滑过的距离 —— 玻璃会**整块**（形状 + 折射进来的内容）偏在一侧。
+/// 真机两次实锤：
+///
+/// * 2026-09-20 外观编辑页预览：顶栏 / 星期栏里扫出一根细竖线（偏差扫进那 48px 的
+///   边缘外溢区）；
+/// * 2026-09-21 壁纸页四颗悬浮按钮：「按钮被分成了两层，玻璃那层跑到了右边，原位置
+///   剩下了一个透明按钮」，且**不动它就一直错位**（本页落定后没有别的重绘去改写缓存）。
+///
+/// 本节点订阅宿主路由的**主 + 副**动画，转场每推进一帧就 `markNeedsPaint`，把形状
+/// 重新钉在当前位置；自己又是重绘边界，所以这次重画只覆盖自己这棵子树，不牵连整页
+/// （保住外壳那笔优化）。动画停住就不再 tick ⇒ 静止时零额外重画。副动画也要听：
+/// 本页被后一页盖住时，页面是被视差推着走的（同一件事）。
+///
+/// ## 只有"按屏幕坐标算形状"的材质需要它
+///
+/// 快照类（柔光）与磨砂类材质的位置由图层合成负责，不重画也是对的；实体档更是完全不按
+/// 屏幕坐标算形状。所以这是个**纯几何刷新**的包装：它一个材质参数都不碰，不构成
+/// 「表面自带参数通道」那个后门（那两个作用域的规矩见 [LiquidGlassRole]）。
+///
+/// ## ⚠️ 不要改成「转场期间先不画、落定后再画」
+///
+/// 那条看似更省事，但本仓否过两次：
+///
+/// * 2026-09-20 首页玻璃带 / 外观编辑页：用户明确不要进场时的任何闪动 —— 落定瞬间才
+///   出现就是一次闪动；
+/// * 2026-09-21 壁纸页四颗按钮：照那条改完之后用户立刻报「进入退出的时候，按钮一直在
+///   变材质」。
+///
+/// 正确做法是**照旧画、每帧重算坐标**：位置一路都对，材质一路不变。
+class LiquidGlassTransitionRepaint extends StatefulWidget {
+  const LiquidGlassTransitionRepaint({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  State<LiquidGlassTransitionRepaint> createState() =>
+      _LiquidGlassTransitionRepaintState();
+}
+
+class _LiquidGlassTransitionRepaintState
+    extends State<LiquidGlassTransitionRepaint> {
+  Animation<double>? _primary;
+  Animation<double>? _secondary;
+  Listenable? _driver;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 宿主路由（没有路由 —— 例如直接 pump 进测试 —— 退化成"不驱动"，行为与不加
+    // 本节点一致）。
+    final route = ModalRoute.of(context);
+    final primary = route?.animation;
+    final secondary = route?.secondaryAnimation;
+    if (identical(primary, _primary) && identical(secondary, _secondary)) {
+      return;
+    }
+    _primary = primary;
+    _secondary = secondary;
+    _driver = Listenable.merge(<Listenable?>[primary, secondary]);
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      _GlassTransitionRepaint(driver: _driver, child: widget.child);
+}
+
+class _GlassTransitionRepaint extends SingleChildRenderObjectWidget {
+  const _GlassTransitionRepaint({required this.driver, required super.child});
+
+  /// 转场动画；每 tick 一次就把子树标脏一次。null = 不驱动。
+  final Listenable? driver;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderGlassTransitionRepaint(driver);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant RenderObject renderObject,
+  ) {
+    if (renderObject is! _RenderGlassTransitionRepaint) {
+      return;
+    }
+    renderObject.driver = driver;
+  }
+}
+
+class _RenderGlassTransitionRepaint extends RenderProxyBox {
+  _RenderGlassTransitionRepaint(Listenable? driver) : _driver = driver {
+    _driver?.addListener(markNeedsPaint);
+  }
+
+  Listenable? _driver;
+
+  set driver(Listenable? value) {
+    if (identical(_driver, value)) {
+      return;
+    }
+    _driver?.removeListener(markNeedsPaint);
+    _driver = value;
+    _driver?.addListener(markNeedsPaint);
+  }
+
+  /// 独立重绘边界：标脏只让本子树重画，不动宿主页面的缓存像素。
+  @override
+  bool get isRepaintBoundary => true;
+
+  @override
+  void dispose() {
+    // 必须摘干净：dispose 之后 markNeedsPaint 会在 debug 下抛异常。
+    _driver?.removeListener(markNeedsPaint);
+    _driver = null;
+    super.dispose();
+  }
+}

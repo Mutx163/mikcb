@@ -170,34 +170,6 @@ class _WallpaperPositionPickerPageState
   double? _topLuminance;
   String? _luminanceSampleKey;
 
-  /// 本页路由的入场转场是否已落定。
-  ///
-  /// 落定前四颗悬浮按钮**不画活玻璃**，退回实时磨砂（[FrostedHeaderBackground]）：
-  /// 那块玻璃的形状是按**屏幕绝对坐标**算的（见 `shaders/glass_surface_refraction.frag`
-  /// 文件头：`FlutterFragCoord` 是屏幕物理像素、`u_area_origin` 是 paint 期现取的
-  /// 屏幕位置）。本页进场走的是共享轴侧滑转场（`hyperos_navigation.dart` 的两个
-  /// `SlideTransition`），页面从右边滑进来 —— 转场帧里取到的"屏幕位置"带着中途的
-  /// 位移，而画过的结果会随那一帧被烤进缓存；落定后若没有新的重绘（本页只有一次
-  /// 亮度采样会触发重建，且它通常落在转场途中），玻璃就**永久停在偏右的位置**，
-  /// 原位只剩按钮自己的衬底与文字 —— 真机口径（2026-09-21）：「按钮被分成了两层，
-  /// 玻璃那层跑到了右边，原位置剩下了一个透明按钮」，且"不动它就一直在"。
-  ///
-  /// 与外观编辑页同一套口径、同一个教训（`settings_appearance_editor.dart` 的
-  /// `_routeSettled`：转场帧里烤图必是歪的，落定后才放行；`hyperos_zoom_route.dart`
-  /// 记的更狠 —— 活玻璃在转场壳里的任何一帧绘制都可能被引擎烤成坏缓存）。
-  /// 磨砂那条路吃的是实时模糊、不按屏幕坐标摆形状，转场期间画它不会留下错位。
-  ///
-  /// 读动画状态而不是落成字段：路由进场**首帧**整条是 offstage，`ModalRoute.animation`
-  /// 那时是恒为 1.0/completed 的占位代理（见 [_syncRouteAnimationListener]）；
-  /// 没有路由（直接 pump 进测试 / 不带转场的推法）一律按已落定处理，否则按钮会
-  /// 整页生命周期都停在磨砂档。
-  bool get _routeSettled =>
-      _routeAnimation == null ||
-      _routeAnimation!.status == AnimationStatus.completed;
-
-  /// 本页路由的入场动画（落定时刻从这里来，见 [_onRouteAnimationStatus]）。
-  Animation<double>? _routeAnimation;
-
   /// 诊断时间线（定位玻璃闪变用；问题收敛后可整块删）。
   ///
   /// 每条带 `[wpp-glass]` 前缀，方便从 `flutter_0*.log` / `flutter run` 输出里
@@ -244,52 +216,7 @@ class _WallpaperPositionPickerPageState
       HyperosGlassBackdropController();
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncRouteAnimationListener();
-  }
-
-  /// 跟踪本页路由的入场动画（形态照抄外观编辑页的 `_syncRouteAnimationListener`）。
-  ///
-  /// ⚠️ **首帧不能把判据落成字段**：路由进场第一帧整条是 offstage，
-  /// `ModalRoute.animation` 那时是恒为 1.0 / `completed` 的**占位代理**（外观编辑页
-  /// 的注释里记过同一条），照它判会在首帧就"落定"、整段侧滑都画着活玻璃 —— 真机
-  /// 现象正是「玻璃那层跑到右边」。所以 [_routeSettled] 直接读动画状态（getter），
-  /// 并在本帧末再判一次：那时读到的是真控制器（`forward`），按钮回到磨砂档。
-  /// 首帧那一帧什么都没画（offstage 不 paint），所以那次误判不留痕。
-  void _syncRouteAnimationListener() {
-    final animation = ModalRoute.of(context)?.animation;
-    if (identical(animation, _routeAnimation)) {
-      return;
-    }
-    _routeAnimation?.removeStatusListener(_onRouteAnimationStatus);
-    _routeAnimation = animation;
-    _routeAnimation?.addStatusListener(_onRouteAnimationStatus);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_routeSettled) {
-        setState(() {});
-      }
-    });
-  }
-
-  /// 状态一变就重建一次 —— 按钮材质读的是 [_routeSettled] 这个 getter。
-  ///
-  /// 退场也一并收回：那一段同样带着位移，画出来的玻璃会偏在一边（页面正在飞走，
-  /// 与其带着一块错位的玻璃退场，不如退回不会错位的磨砂）。
-  void _onRouteAnimationStatus(AnimationStatus status) {
-    if (!mounted) {
-      return;
-    }
-    setState(() {});
-    _traceGlass(
-      'route ${status.name} -> live buttons glass '
-      '${_routeSettled ? 'on' : 'off'}',
-    );
-  }
-
-  @override
   void dispose() {
-    _routeAnimation?.removeStatusListener(_onRouteAnimationStatus);
     // 退出这一侧也要留一条：闪变发生在采样落地那一刻，而"落地"是相对进页算的，
     // 有这条才能与进页时间对齐、判断闪的是进还是出。
     _traceGlass('dispose');
@@ -612,13 +539,16 @@ class _WallpaperPositionPickerPageState
 
   /// 悬浮玻璃按钮层（顶部操作栏 + 底部「换壁纸」）。
   ///
-  /// 两个约束都不能少：
+  /// 三个约束都不能少：
   ///
   /// 1. 画在 `HyperosGlassBackdropHost` 的捕获子树**之外** —— 上游要求玻璃不能被
   ///    自己的采样捕获，否则会把上一帧的合成结果采进去（自我叠加）。
   /// 2. 显式用 [HyperosGlassBackdropScope] 钉在本页采样源上：这一层里将来只要有
   ///    吃快照的玻璃面，就不能靠全局注册表的"栈顶"取源（被压住的路由仍然挂载，
   ///    栈顶会指向别的屏，见 [_glass]）。
+  /// 3. 外面套 [LiquidGlassTransitionRepaint]：这四颗按钮的折射层按**屏幕绝对坐标**
+  ///    摆形状，而本页进场是共享轴侧滑 —— 转场外壳把整页包进了重绘边界（滑入时整页
+  ///    像素复用），不逐帧重画就会让形状停在旧坐标上、玻璃整块偏在一侧。
   ///
   /// 本页自己的四颗按钮走**实时**折射（锁标准档），不吃快照，所以上面第 2 条对它们
   /// 是空转；留着是这一层玻璃的取源规矩。
@@ -628,91 +558,89 @@ class _WallpaperPositionPickerPageState
     final l10n = AppLocalizations.of(context)!;
     return HyperosGlassBackdropScope(
       controller: _glass,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // 顶部操作栏悬浮在壁纸上，位于状态栏下方。
-          // 必须用 Positioned 固定到顶部：StackFit.expand 会把非定位
-          // 子节点拉满整个 Stack 高度，导致内部 Row 垂直居中到屏幕中间。
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    _HyperosHeaderTextButton(
-                      label: l10n.wallpaperPositionPickerExit,
-                      onPressed: _exit,
-                      isCompact: true,
-                      foregroundColor: ink,
-                      wash: wash,
-                      // 转场期间只画磨砂，落定后才上活玻璃（见 [_routeSettled]）。
-                      liveGlass: _routeSettled,
-                    ),
-                    // 标题用 Expanded 独占两按钮之间的全部剩余宽度：
-                    // 之前是 [Spacer][Flexible][Spacer] 三者均分剩余空间，
-                    // 每份只有约 70-80px，「调整壁纸显示位置」8 个字放不下，
-                    // 被 ellipsis 截成「调整壁纸...」。Expanded 让标题拿到
-                    // 全部余量后仍居中（左右按钮等宽），极端字号才兜底截断。
-                    Expanded(
-                      child: Text(
-                        l10n.wallpaperPositionPickerTitle,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: ink,
+      child: LiquidGlassTransitionRepaint(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // 顶部操作栏悬浮在壁纸上，位于状态栏下方。
+            // 必须用 Positioned 固定到顶部：StackFit.expand 会把非定位
+            // 子节点拉满整个 Stack 高度，导致内部 Row 垂直居中到屏幕中间。
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      _HyperosHeaderTextButton(
+                        label: l10n.wallpaperPositionPickerExit,
+                        onPressed: _exit,
+                        isCompact: true,
+                        foregroundColor: ink,
+                        wash: wash,
+                      ),
+                      // 标题用 Expanded 独占两按钮之间的全部剩余宽度：
+                      // 之前是 [Spacer][Flexible][Spacer] 三者均分剩余空间，
+                      // 每份只有约 70-80px，「调整壁纸显示位置」8 个字放不下，
+                      // 被 ellipsis 截成「调整壁纸...」。Expanded 让标题拿到
+                      // 全部余量后仍居中（左右按钮等宽），极端字号才兜底截断。
+                      Expanded(
+                        child: Text(
+                          l10n.wallpaperPositionPickerTitle,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: ink,
+                          ),
                         ),
                       ),
-                    ),
-                    _HyperosHeaderTextButton(
-                      label: l10n.wallpaperPositionPickerDone,
-                      onPressed: _confirm,
-                      isCompact: true,
-                      foregroundColor: ink,
-                      wash: wash,
-                      liveGlass: _routeSettled,
-                    ),
-                  ],
+                      _HyperosHeaderTextButton(
+                        label: l10n.wallpaperPositionPickerDone,
+                        onPressed: _confirm,
+                        isCompact: true,
+                        foregroundColor: ink,
+                        wash: wash,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          // 底部一排：「重置」＋「换壁纸」（这颗页面没有换图能力时只留重置）。
-          //
-          // 「重置」把**位置与缩放一起**归位（用户 2026-09-20 要的：加了双指缩放
-          // 之后得有个一键回到默认取景的出口）。文案 key 历史上叫
-          // `...ResetTooltip`（当年是个没接上的 tooltip），现在是这颗按钮的标签。
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 24 + MediaQuery.paddingOf(context).bottom,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _HyperosHeaderTextButton(
-                  label: l10n.wallpaperPositionPickerResetTooltip,
-                  onPressed: _resetFraming,
-                  foregroundColor: ink,
-                  wash: wash,
-                  liveGlass: _routeSettled,
-                ),
-                if (widget.onPickNewImage != null) ...[
-                  const SizedBox(width: 12),
-                  _buildSwitchWallpaperButton(context, ink: ink, wash: wash),
+            // 底部一排：「重置」＋「换壁纸」（这颗页面没有换图能力时只留重置）。
+            //
+            // 「重置」把**位置与缩放一起**归位（用户 2026-09-20 要的：加了双指缩放
+            // 之后得有个一键回到默认取景的出口）。文案 key 历史上叫
+            // `...ResetTooltip`（当年是个没接上的 tooltip），现在是这颗按钮的标签。
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 24 + MediaQuery.paddingOf(context).bottom,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _HyperosHeaderTextButton(
+                    label: l10n.wallpaperPositionPickerResetTooltip,
+                    onPressed: _resetFraming,
+                    foregroundColor: ink,
+                    wash: wash,
+                  ),
+                  if (widget.onPickNewImage != null) ...[
+                    const SizedBox(width: 12),
+                    _buildSwitchWallpaperButton(context, ink: ink, wash: wash),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -730,7 +658,6 @@ class _WallpaperPositionPickerPageState
         onPressed: _switching ? null : _switchWallpaper,
         foregroundColor: ink,
         wash: wash,
-        liveGlass: _routeSettled,
       ),
     );
   }
@@ -837,7 +764,9 @@ class _WallpaperPositionPickerPageState
                         child: MiuixCircularProgressIndicator(
                           colors: MiuixProgressIndicatorColors(
                             foregroundColor: HyperosColors.primary(context),
-                            disabledForegroundColor: HyperosColors.primary(context),
+                            disabledForegroundColor: HyperosColors.primary(
+                              context,
+                            ),
                             backgroundColor: Colors.transparent,
                           ),
                         ),
@@ -892,8 +821,6 @@ class _WallpaperPositionPickerPageState
 /// 现算：那样极性一变就是一次跳变（真机反馈的"进 / 出页面闪一下"）。
 ///
 /// [isCompact] 控制更小的尺寸，用于左上角/右上角按钮。
-/// [liveGlass] 见 [_WallpaperPositionPickerPageState._routeSettled]：转场期间必须为
-/// false，否则玻璃会按转场坐标烤进缓存、落定后永久偏在一侧。
 class _HyperosHeaderTextButton extends StatelessWidget {
   const _HyperosHeaderTextButton({
     required this.label,
@@ -901,7 +828,6 @@ class _HyperosHeaderTextButton extends StatelessWidget {
     required this.wash,
     this.isCompact = false,
     this.foregroundColor,
-    this.liveGlass = true,
   });
 
   final String label;
@@ -911,9 +837,6 @@ class _HyperosHeaderTextButton extends StatelessWidget {
 
   /// 衬底色（压在玻璃上的可读性水洗），由调用方按壁纸亮度算好。
   final Color wash;
-
-  /// 这一帧可不可以画折射玻璃（默认可以；只有本行页在转场期间传 false）。
-  final bool liveGlass;
 
   @override
   Widget build(BuildContext context) {
@@ -993,15 +916,6 @@ class _HyperosHeaderTextButton extends StatelessWidget {
         ),
       ),
     );
-
-    // 转场期间不画活玻璃，退回磨砂顶着（见 [liveGlass] 与页面的 `_routeSettled`）。
-    // ⚠️ 别改成「先画上、落定后再重画一遍」：本仓记过这一条 —— 转场壳里画过的活
-    // 玻璃会被引擎烤成坏缓存并在落定后冻结（`hyperos_zoom_route.dart` 的
-    //「任何一帧绘制都可能被引擎烤成坏缓存」），所以只有「转场期间一帧都不画」是
-    // 被真机验证过的做法（外观编辑页的卡片走的就是这一条）。
-    if (!liveGlass) {
-      return frostButton();
-    }
 
     // 液态玻璃：折射 shader 与弹窗/首页顶部完全同参，档位锁标准档
     // （[LiquidGlassRole.pinnedChrome]，见类注释）。
