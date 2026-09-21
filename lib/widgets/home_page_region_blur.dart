@@ -627,6 +627,11 @@ class HomePageChromeGlassFill extends StatelessWidget {
 ///
 /// ⚠️ 转场期间**不要**改成"先不画这条玻璃带"：那会让带在落定瞬间才出现，用户明确
 /// 不要进场时的任何闪动（2026-09-20 拍板）。
+///
+/// ⚠️ 机制本体与 `liquid_glass_surface.dart` 的 [LiquidGlassTransitionRepaint] 是同一份
+/// （壁纸页四颗悬浮按钮 2026-09-21 踩同一个坑时把它抽了出来）。本文件当时正被另一路改动
+/// 动着手（带底黑边那条线），所以**没有就地合并**；下次碰这条带时把这里换成薄薄的门控 +
+/// 那个共享节点，别让两份实现长期并存。
 class HomePageChromeGlassTransitionRepaint extends StatefulWidget {
   const HomePageChromeGlassTransitionRepaint({required this.child, super.key});
 
@@ -649,10 +654,9 @@ class _HomePageChromeGlassTransitionRepaintState
     // 只有液态档需要它（实体档不按屏幕坐标算形状，见类注释）—— 实体档在转场期间
     // 白花这笔重画没有意义。判据是"非实体"（与 [HomePageChromeGlassFill.build] 的渲染
     // 分支逐字一致）：存量 progressive / gaussian / soft 也渲染液态玻璃，同样要驱动。
-    final needsDriver =
-        homeBandUsesAdvancedGlass(
-          HyperosBlurredHeader.homeBandGlassMaterialOf(context),
-        );
+    final needsDriver = homeBandUsesAdvancedGlass(
+      HyperosBlurredHeader.homeBandGlassMaterialOf(context),
+    );
     // 宿主路由（没有路由就退化成"不驱动"，行为与不加本节点一致）。
     final route = needsDriver ? ModalRoute.of(context) : null;
     final primary = route?.animation;
@@ -667,14 +671,15 @@ class _HomePageChromeGlassTransitionRepaintState
   }
 
   @override
-  Widget build(BuildContext context) => _ChromeGlassTransitionRepaint(
-    driver: _driver,
-    child: widget.child,
-  );
+  Widget build(BuildContext context) =>
+      _ChromeGlassTransitionRepaint(driver: _driver, child: widget.child);
 }
 
 class _ChromeGlassTransitionRepaint extends SingleChildRenderObjectWidget {
-  const _ChromeGlassTransitionRepaint({required this.driver, required super.child});
+  const _ChromeGlassTransitionRepaint({
+    required this.driver,
+    required super.child,
+  });
 
   /// 转场动画；每 tick 一次就把子树标脏一次。null = 不驱动。
   final Listenable? driver;

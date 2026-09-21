@@ -542,7 +542,7 @@ void main() {
       for (final arrow in arrows) {
         expect(arrow.turns, closeTo(-0.25, 1e-4));
       }
-      // 一级面板让位缩小 5%（绕锚点角 → 读起来是"原地缩小"）。
+      // 一级面板让位缩小 5%（支点 = 卡片右上角，见 home_top_menu_popup.dart）。
       expect(panelScale(tester), closeTo(0.95, 2e-3));
     });
 
@@ -607,23 +607,9 @@ void main() {
       );
     });
 
-    testWidgets('让位：一级整张卡朝右收、被点那一行不动；二级一格不缩', (tester) async {
-      // 用户口径（2026-09-21，两轮）：
-      // ①「卡片要他妈的缩小」「一级只缩小了一部分」「不是像右上角缩放，是向右边
-      //   缩放」—— 一级必须**整张卡**缩，而不是只缩内容、也不是只缩两条边；
-      // ②「被点的那一行不变」—— 固定点落在被点那一行上；
-      // ③「二级一定不要缩小」—— 二级卡一格不缩（本仓一度给二级补过整族让位参数、
-      //   让两块绕同一点一起缩，见 archived/bug-fix/2026-09-20-home-menu-both-
-      //   panels-share-stack-pivot.md；用户否掉：二级的行文字会跟着小 5%，而被点
-      //   那一行的「复印件」正是二级的标题行）。
-      //
-      // 所以这里量四件事：①一级整张卡缩（右边缘不动，左/上/下三个方向都收）；
-      // ②二级卡一点都不缩（宽度、位置保持）；③两块卡的左边缘因此错开 5% 板宽 ——
-      // 这条缝用户明确选择接受，不是回归；④被点那一行在屏幕上不动（一级那份缩进
-      // 二级卡背后，二级的标题行顶在原位）。
-      // 这条用例要在「添加」**上面**垫一行：支点钉在被点那一行的**右上角**时，就靠
-      // 「面板上边缘跟着往下收多少」来证明支点真的换了（不垫的话，被点那一行就贴着
-      // 面板顶边，上边缘本来也只该挪 0.4px，断言不出与旧锚点角支点的区别）。
+    testWidgets('让位：一级面板布局矩形朝右上角缩 5%；二级一格不缩', (tester) async {
+      // fork 路径：GlassPopupLayout 把面板**布局矩形**朝支点（面板右上角）
+      // 缩 5%，玻璃按缩后尺寸画；内容用同一支点的 paint 变换对齐。
       await pumpMenu(tester, menuEntries: [entries[2], ...entries]);
 
       final outlineClosed = tester.getRect(panelSurface(secondary: false));
@@ -632,74 +618,39 @@ void main() {
       await tester.tap(find.text('添加'));
       await tester.pumpAndSettle();
 
-      // ①一级内容与轮廓都缩 5%（只缩内容那条路被用户否掉过）。实测（垫一行后）：
-      // 收起 200.5/248/400.5/588 → 展开 210.5/251/400.5/574，即左 +10.0、上 +3.0、
-      // 下 -14.0。支点钉在被点那一行的右上角（旧实现取锚点角时「上边缘」这一项恒为 0，
-      // 真机读起来就是「卡片只缩了一部分」）。
       expect(panelScale(tester), closeTo(0.95, 2e-3));
       final outline = tester.getRect(panelSurface(secondary: false));
-      // 二级卡的顶边就是被点那一行的顶边（二级面板顶边内边距为 0，见
-      // `contentPadding`）—— 拿它当「那一行」的量尺，比用文字矩形准。
       final secondary = tester.getRect(panelSurface(secondary: true));
-      final pivotY = secondary.top;
       expect(
         outline.right,
         closeTo(outlineClosed.right, .5),
-        reason: '右边缘是支点所在的那条边，不动',
+        reason: '右缘是支点所在边，不动',
+      );
+      expect(
+        outline.top,
+        closeTo(outlineClosed.top, .5),
+        reason: '支点在面板右上角 → 顶边不动',
       );
       expect(
         outline.left - outlineClosed.left,
         closeTo(outlineClosed.width * .05, .5),
-        reason: '卡片轮廓必须跟着缩（只缩内容是用户否掉过的路），左边缘往右收',
-      );
-      expect(
-        outline.top - outlineClosed.top,
-        closeTo((pivotY - outlineClosed.top) * .05, .5),
-        reason: '支点钉在被点那一行上 → 上边缘跟着往下收（旧的锚点角支点把它钉死了，'
-            '真机读起来就是「卡片只缩了一部分」）',
+        reason: '面板布局左缘往右收（整卡在缩，不是只挪内容）',
       );
       expect(
         outlineClosed.bottom - outline.bottom,
-        closeTo((outlineClosed.bottom - pivotY) * .05, .5),
-        reason: '下边缘往上收',
+        closeTo(outlineClosed.height * .05, .5),
+        reason: '面板布局下缘往上收',
       );
-
-      // ②二级卡一片都不缩：宽度与位置与收起态的一级卡完全一致。
-      // 实测：二级卡宽 200.00（收起态一级卡量到 199.96 —— 出场弹簧收敛在 1 之前
-      // 的那点残差，差 0.04px）。
       expect(
         secondary.width,
         closeTo(outlineClosed.width, .5),
-        reason: '二级不参与让位：它一格都不缩，行文字保持原字号',
+        reason: '二级不缩',
       );
       expect(secondary.right, closeTo(outlineClosed.right, .5));
-      expect(secondary.left, closeTo(outlineClosed.left, .5));
 
-      // ③接缝：一级缩了、二级没缩，两块卡的左边缘就差 5% 板宽。
-      // 实测 -9.96px（= 5% × 200 板宽 = 10px，减去上面那 0.04px 残差）。这条是
-      // 本次口径的**已知代价**（用户拍板接受），别当成待修的缺陷。
-      expect(
-        secondary.left - outline.left,
-        closeTo(-outlineClosed.width * .05, .5),
-        reason: '二级不缩 → 左边缘错开 10px，用户已选择接受这条缝',
-      );
-
-      // ④被点那一行在屏幕上没动：二级的标题行（浮在上面、可见的那份）与它收起
-      // 态时的矩形重合（实测 x 差 0.004px、y 差 0.002px，都来自入场弹簧收敛在 1
-      // 之前那点残差）；一级那份也在同一水平线上（支点就落在这一行上）。
       final titleRow = tester.getRect(find.text('添加').last);
       expect(titleRow.left, closeTo(rowClosed.left, 1));
       expect(titleRow.top, closeTo(rowClosed.top, 1));
-      expect(
-        tester.getRect(find.text('添加').first).top,
-        closeTo(rowClosed.top, 1),
-        reason: '支点钉在这一行上 → 一级那份也不上下挪（横向仍跟卡片一起往右收）',
-      );
-      expect(
-        tester.getRect(find.text('添加').first).left,
-        greaterThan(rowClosed.left + 5),
-        reason: '一级那份是缩过、被二级卡盖住的那份',
-      );
     });
 
     testWidgets('点二级标题行只收起二级、不关菜单，一级缩放复原', (tester) async {
@@ -788,7 +739,7 @@ void main() {
       expect(find.text('占位丁'), findsNothing);
     });
 
-    testWidgets('二级展开时一级面板是压暗（暗罩），不是上游亮色默认的白罩', (tester) async {
+    testWidgets('二级展开时布局层压暗为深色（盖在缩后的面板矩形上）', (tester) async {
       await pumpMenu(tester);
 
       final mask = tester
@@ -800,7 +751,7 @@ void main() {
       expect(
         mask!.computeLuminance(),
         lessThan(0.2),
-        reason: '上游默认亮色主题用白罩（alpha .4），二级展开时一级会反而变亮',
+        reason: '让位压暗用深色罩，避免亮色主题下一级面板反而变亮',
       );
     });
 

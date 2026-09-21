@@ -19,6 +19,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart' show MiuixGlassEdgeFade;
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_theme.dart';
@@ -49,14 +50,21 @@ abstract final class HyperosGlassShadow {
   /// - [withShadow] 只在面**自带了同值阴影**时关掉（实底分支），否则会叠两层。
   /// - [borderRadius] 只用来给浮影定形状 —— 少了它阴影会是个方块。
   /// - [clipBehavior] 必须 `none`，否则 Stack 默认会把外浮影裁掉。
+  /// - [opacity] 0..1：二级开合时随 [MiuixGlassEdgeFade] 渐变，阴影深浅与
+  ///   边缘高光同节奏（1 = 全量，静止态不变）。
   static Widget wrap({
     required BorderRadius borderRadius,
     required Widget child,
     bool withShadow = true,
+    double opacity = 1.0,
   }) {
-    if (!withShadow) {
+    if (!withShadow || opacity <= 0.01) {
       return child;
     }
+    final o = opacity.clamp(0.0, 1.0);
+    final shadowColor = shadow.color.withValues(
+      alpha: shadow.color.a * o,
+    );
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -64,7 +72,14 @@ abstract final class HyperosGlassShadow {
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: borderRadius,
-              boxShadow: const [shadow],
+              boxShadow: [
+                BoxShadow(
+                  color: shadowColor,
+                  blurRadius: shadow.blurRadius,
+                  spreadRadius: shadow.spreadRadius,
+                  offset: shadow.offset,
+                ),
+              ],
             ),
           ),
         ),
@@ -72,6 +87,22 @@ abstract final class HyperosGlassShadow {
       ],
     );
   }
+}
+
+/// 一级面板是否正在「让位」（二级已展开）——**全局信号**。
+///
+/// 为什么不能用 InheritedWidget：OS4 弹层经 `OverlayPortal(rootOverlay)` 挂到
+/// 全局 Overlay，注入面 `surfaceBuilder` 的 context **不在**宿主（首页菜单）
+/// 子树下，`dependOnInheritedWidget` 永远读到 false。真机上表现为：让位时底板
+/// 材质切换靠不住，关掉二级后一级也容易「样子/位置回不去」。
+///
+/// 宿主在 `_secondaryOpen` 变化时写 [yielding]；开了
+/// 一级面板是否在二级展开时用 [AnimatedScale] 让玻璃一起缩（见 [HyperosPopupYieldBus]）。
+/// `ListenableBuilder` 听它，让位期间强制 canvas 板，结束立刻切回液态玻璃。
+class HyperosPopupYieldBus {
+  HyperosPopupYieldBus._();
+
+  static final ValueNotifier<bool> yielding = ValueNotifier(false);
 }
 
 /// Glass background for the select popup.
@@ -150,35 +181,11 @@ class HyperosSelectPopupGlass extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final surface = _buildSurface(context);
-    if (!surfaceShadow) {
-      return surface;
-    }
-    return HyperosGlassShadow.wrap(
-      borderRadius: BorderRadius.circular(cornerRadius),
-      child: surface,
-      // 实底分支自带同值浮影（[HyperosSolidPopupSurface]），再叠一层会明显更黑。
-      withShadow: surface is! HyperosSolidPopupSurface,
-    );
-  }
-
-  Widget _buildSurface(BuildContext context) {
-    // 弹窗家族（选择弹窗 / 列表弹窗 / 二级子卡 / 右上角菜单弹窗 / 常驻球与菜单钮）
-    // 自 2026-09-19 起**永远是液态玻璃的标准档**：用户的全局材质档位、5 个
-    // 「作用范围」开关、模糊总开关、自定义档位与滑杆一律不再参与
-    // （用户口径：「不允许用户调整这些的材质，这些只能永远是玻璃然后标准档位」）。
-    // 见 [LiquidGlassRole.pinnedChrome]。
-    //
-    // 剩下的只有**技术 / 系统**门禁（都不是偏好，见 [LiquidGlassSurface.isAvailable]）：
-    // 引擎没有 shader filter 后端、着色器没加载出来、平台视图在上方、系统无障碍降级。
-    // 前三者里「没有 shader 后端」只是画不出折射，磨砂仍是玻璃观感；而平台视图 /
-    // 系统降级是**采不到背景**，只能用实底（否则会渲染成一块黑／透明）。
-    return LiquidGlassSurface(
+    // 让位缩放由 GlassPopupLayout **布局级**缩小面板矩形完成（本地 fork）：
+    // 玻璃按缩后尺寸画。这里不再包 AnimatedScale / forceCanvasBoard。
+    final Widget body = LiquidGlassSurface(
       borderRadius: cornerRadius,
       role: LiquidGlassRole.pinnedChrome,
-      // 二级子卡（[useAncestorGroupCapture]）进祖先 BackdropGroup 的共享
-      // 捕获点：由此采到「遮罩下的页面」，而不是把主面板玻璃的输出再折射
-      // 一遍（玻璃叠玻璃读感浑浊）。
       grouped: useAncestorGroupCapture,
       refractionFactor: thicknessFactor,
       fallbackBuilder: (fallbackContext) =>
@@ -192,6 +199,16 @@ class HyperosSelectPopupGlass extends StatelessWidget {
               child: child,
             ),
       child: child,
+    );
+    if (!surfaceShadow) {
+      return body;
+    }
+    // 阴影深浅与二级开合同步（与边缘高光共用 MiuixGlassEdgeFade）。
+    return HyperosGlassShadow.wrap(
+      borderRadius: BorderRadius.circular(cornerRadius),
+      child: body,
+      withShadow: body is! HyperosSolidPopupSurface,
+      opacity: MiuixGlassEdgeFade.of(context).clamp(0.0, 1.0),
     );
   }
 }

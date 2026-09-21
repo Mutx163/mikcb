@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_miuix/miuix.dart' show MiuixGlassEdgeFade;
 
 import '../../../models/liquid_glass_tuning.dart';
 import '../frosted/liquid_glass_degradation.dart';
@@ -207,7 +208,30 @@ class LiquidGlassSurface extends StatefulWidget {
     this.maxRefraction,
     this.role = LiquidGlassRole.followsUser,
     this.clipBehavior = Clip.antiAlias,
+    this.preferCanvasBoardWhenAncestorScaled = false,
+    this.forceCanvasBoard = false,
+    this.canvasBoardColor,
   });
+
+  /// 祖先链存在等比缩放（<1）时，是否改用 canvas 圆角板代替 BackdropFilter。
+  ///
+  /// 只给「让位时板子必须跟着缩」的表面开（OS4 弹层一级注入面）：液态玻璃的
+  /// 板子是 `BackdropFilterLayer` + 屏幕坐标 shader，图层不跟 canvas 矩阵走，
+  /// 真机上会读成「内容缩了、背景板没缩」。其它表面（选择弹层入场
+  /// `Transform.scale` 等）保持 false —— 那条路靠 `_ancestorScale` 校正 shader
+  /// 几何，玻璃形变是设计的一部分，不能在动画里突然变成实底板。
+  final bool preferCanvasBoardWhenAncestorScaled;
+
+  /// 无条件改画 canvas 板（宿主让位作用域说「正在让位」时置 true）。
+  ///
+  /// 真机上 `_ancestorScale()` 可能量成 1，只靠 [preferCanvasBoardWhenAncestorScaled]
+  /// 等于开关没开 —— 浅色玻璃底板停在原尺寸、内容却在缩。让位期间由宿主显式
+  /// 下发，不依赖渲染树变换。
+  final bool forceCanvasBoard;
+
+  /// canvas 底板用色。null = 用液态 [LiquidGlassStyle.tint]（半透明染色，
+  /// 没有模糊时会读成透明片）。OS4 一级让位时传更实的奶白/深色。
+  final Color? canvasBoardColor;
 
   /// 画在玻璃之上的内容（会被裁到圆角内）。
   final Widget child;
@@ -332,48 +356,60 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface>
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: LiquidGlassSurfaceShader.instance,
-      builder: (context, _) {
-        if (!LiquidGlassSurface.isAvailable(context, widget.role)) {
-          return widget.fallbackBuilder(context);
-        }
-        // 两个作用域，各自只有一个出口：表面只提供自己的圆角与当前明暗，折射旋钮、
-        // 底色、光来向一律从 [liquidGlassTuningForRole] 出 —— 固定小件拿标准档，
-        // 其余拿 [FrostedAppearanceScope] 里那一份，表面自己仍然碰不到参数。
-        final tuning = liquidGlassTuningForRole(
-          FrostedAppearanceScope.of(context),
-          widget.role,
-        );
-        final style = tuning.toStyle(
-          borderRadius: widget.borderRadius,
-          brightness: Theme.of(context).brightness,
-        );
-        return Listener(
-          // translucent：不挡子内容自己的手势，也不挡玻璃背后（如坞下面）的命点。
-          behavior: HitTestBehavior.translucent,
-          onPointerDown: _handlePointerDown,
-          onPointerMove: _handlePointerMove,
-          onPointerUp: (_) => _handlePointerRelease(),
-          onPointerCancel: (_) => _handlePointerRelease(),
-          child: _LiquidGlassLayer(
-            style: style,
-            pointer: _pointer,
-            devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
-            // 视口逻辑尺寸：着色器拿它把折射采样点铰在屏幕内（贴着屏幕边的玻璃
-            // 往外采样会落进模糊扩出来的空区域、读成黑边）。
-            viewSize: MediaQuery.sizeOf(context),
-            grouped: widget.grouped,
-            refractionFactor: widget.refractionFactor,
-            maxRefraction: widget.maxRefraction,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              clipBehavior: widget.clipBehavior,
-              child: widget.child,
+    // 所有液态玻璃默认套转场重绘驱动：形状按屏幕坐标画，路由壳的
+    // RepaintBoundary 只挪图层不重画时，必须靠它逐帧 markNeedsPaint
+    // （见 LiquidGlassTransitionRepaint / 2026-09-21「按钮分成两层」）。
+    return LiquidGlassTransitionRepaint(
+      child: ListenableBuilder(
+        listenable: LiquidGlassSurfaceShader.instance,
+        builder: (context, _) {
+          if (!LiquidGlassSurface.isAvailable(context, widget.role)) {
+            return widget.fallbackBuilder(context);
+          }
+          // 两个作用域，各自只有一个出口：表面只提供自己的圆角与当前明暗，折射旋钮、
+          // 底色、光来向一律从 [liquidGlassTuningForRole] 出 —— 固定小件拿标准档，
+          // 其余拿 [FrostedAppearanceScope] 里那一份，表面自己仍然碰不到参数。
+          final tuning = liquidGlassTuningForRole(
+            FrostedAppearanceScope.of(context),
+            widget.role,
+          );
+          final style = tuning.toStyle(
+            borderRadius: widget.borderRadius,
+            brightness: Theme.of(context).brightness,
+          );
+          // 边缘高光强度：二级开合时随 MiuixGlassEdgeFade 渐变；无作用域 = 1。
+          final rimFade = MiuixGlassEdgeFade.of(context).clamp(0.0, 1.0);
+          return Listener(
+            // translucent：不挡子内容自己的手势，也不挡玻璃背后（如坞下面）的命点。
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: _handlePointerDown,
+            onPointerMove: _handlePointerMove,
+            onPointerUp: (_) => _handlePointerRelease(),
+            onPointerCancel: (_) => _handlePointerRelease(),
+            child: _LiquidGlassLayer(
+              style: style,
+              pointer: _pointer,
+              devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+              // 视口逻辑尺寸：着色器拿它把折射采样点铰在屏幕内（贴着屏幕边的玻璃
+              // 往外采样会落进模糊扩出来的空区域、读成黑边）。
+              viewSize: MediaQuery.sizeOf(context),
+              grouped: widget.grouped,
+              refractionFactor: widget.refractionFactor,
+              maxRefraction: widget.maxRefraction,
+              rimFade: rimFade,
+              preferCanvasBoardWhenAncestorScaled:
+                  widget.preferCanvasBoardWhenAncestorScaled,
+              forceCanvasBoard: widget.forceCanvasBoard,
+              canvasBoardColor: widget.canvasBoardColor,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(widget.borderRadius),
+                clipBehavior: widget.clipBehavior,
+                child: widget.child,
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
@@ -387,10 +423,18 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
     required this.grouped,
     required this.refractionFactor,
     required this.maxRefraction,
+    this.rimFade = 1.0,
+    this.preferCanvasBoardWhenAncestorScaled = false,
+    this.forceCanvasBoard = false,
+    this.canvasBoardColor,
     required super.child,
   });
 
   final LiquidGlassStyle style;
+  final double rimFade;
+  final bool preferCanvasBoardWhenAncestorScaled;
+  final bool forceCanvasBoard;
+  final Color? canvasBoardColor;
 
   /// 指针状态（本地逻辑坐标, 按压进度）。渲染对象订阅它，变化时自己重绘。
   final ValueListenable<(Offset?, double)> pointer;
@@ -420,6 +464,10 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
     backdropKey: _backdropKey(context),
     refractionFactor: refractionFactor,
     maxRefraction: maxRefraction,
+    rimFade: rimFade,
+    preferCanvasBoardWhenAncestorScaled: preferCanvasBoardWhenAncestorScaled,
+    forceCanvasBoard: forceCanvasBoard,
+    canvasBoardColor: canvasBoardColor,
   );
 
   @override
@@ -432,6 +480,10 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
         backdropKey: _backdropKey(context),
         refractionFactor: refractionFactor,
         maxRefraction: maxRefraction,
+        rimFade: rimFade,
+        preferCanvasBoardWhenAncestorScaled: preferCanvasBoardWhenAncestorScaled,
+        forceCanvasBoard: forceCanvasBoard,
+        canvasBoardColor: canvasBoardColor,
       );
 }
 
@@ -444,6 +496,10 @@ class _RenderLiquidGlass extends RenderProxyBox {
     required this._backdropKey,
     required this._refractionFactor,
     required this._maxRefraction,
+    required this._rimFade,
+    required this._preferCanvasBoardWhenAncestorScaled,
+    required this._forceCanvasBoard,
+    required this._canvasBoardColor,
   });
 
   LiquidGlassStyle _style;
@@ -452,6 +508,10 @@ class _RenderLiquidGlass extends RenderProxyBox {
   BackdropKey? _backdropKey;
   double? _refractionFactor;
   double? _maxRefraction;
+  double _rimFade;
+  bool _preferCanvasBoardWhenAncestorScaled;
+  bool _forceCanvasBoard;
+  Color? _canvasBoardColor;
 
   /// 指针状态（本地逻辑坐标, 按压进度 0..1），由 State 持有、widget 传入。
   /// 渲染对象订阅它：变化只触发重绘，不惊动整棵树。
@@ -463,10 +523,47 @@ class _RenderLiquidGlass extends RenderProxyBox {
     }
   }
 
+  /// 上次 paint 时的屏幕原点（逻辑 px）。null = 还没画过 / 刚 attach。
+  Offset? _paintedOrigin;
+
+  /// 原点监视是否已挂上帧末回调（同一时刻只允许一个）。
+  bool _originWatchArmed = false;
+
+  /// 玻璃形状按**屏幕绝对坐标**画（shader 的 `u_area_origin` = paint 期
+  /// `localToGlobal`）。祖先图层（转场壳 RepaintBoundary、Overlay 偏移、
+  /// TransformLayer）可以只改合成矩阵、**不**调用本节点 paint —— 形状就冻在
+  /// 旧屏幕位置，而图标/文字按局部坐标画仍停在布局位。真机读成「按钮分成两层：
+  /// 玻璃跑了，实体留在原地」（壁纸页四颗钮、右上角菜单球等同族）。
+  ///
+  /// 帧末对比：若 `localToGlobal` 已相对上次 paint 变了，就 `markNeedsPaint`
+  /// 让 shader 重算 origin。静止时 distance≈0，不触发重绘。
+  void _armOriginWatch() {
+    if (_originWatchArmed || !attached) {
+      return;
+    }
+    _originWatchArmed = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _originWatchArmed = false;
+      if (!attached) {
+        return;
+      }
+      final origin = localToGlobal(Offset.zero);
+      final painted = _paintedOrigin;
+      if (painted != null && (origin - painted).distanceSquared > 0.25) {
+        markNeedsPaint();
+      }
+      // 祖先随时可能再挪（转场、让位、跟随链），持续看守；代价是每帧一次
+      // localToGlobal + 空比较，比错位后「玻璃永远偏在右边」便宜得多。
+      _armOriginWatch();
+    });
+  }
+
   @override
   void attach(PipelineOwner owner) {
     super.attach(owner);
     _pointer.addListener(_onPointerChanged);
+    _paintedOrigin = null;
+    _armOriginWatch();
   }
 
   /// 由本对象创建、本对象释放（见 [detach]）。
@@ -493,6 +590,10 @@ class _RenderLiquidGlass extends RenderProxyBox {
     required BackdropKey? backdropKey,
     required double? refractionFactor,
     required double? maxRefraction,
+    required double rimFade,
+    required bool preferCanvasBoardWhenAncestorScaled,
+    required bool forceCanvasBoard,
+    required Color? canvasBoardColor,
   }) {
     if (identical(_pointer, pointer) &&
         _style == style &&
@@ -500,7 +601,12 @@ class _RenderLiquidGlass extends RenderProxyBox {
         _viewSize == viewSize &&
         _backdropKey == backdropKey &&
         _refractionFactor == refractionFactor &&
-        _maxRefraction == maxRefraction) {
+        _maxRefraction == maxRefraction &&
+        _rimFade == rimFade &&
+        _preferCanvasBoardWhenAncestorScaled ==
+            preferCanvasBoardWhenAncestorScaled &&
+        _forceCanvasBoard == forceCanvasBoard &&
+        _canvasBoardColor == canvasBoardColor) {
       return;
     }
     final pointerSwapped = !identical(_pointer, pointer);
@@ -514,6 +620,10 @@ class _RenderLiquidGlass extends RenderProxyBox {
     _backdropKey = backdropKey;
     _refractionFactor = refractionFactor;
     _maxRefraction = maxRefraction;
+    _rimFade = rimFade;
+    _preferCanvasBoardWhenAncestorScaled = preferCanvasBoardWhenAncestorScaled;
+    _forceCanvasBoard = forceCanvasBoard;
+    _canvasBoardColor = canvasBoardColor;
     if (pointerSwapped && attached) {
       _pointer.addListener(_onPointerChanged);
     }
@@ -522,6 +632,8 @@ class _RenderLiquidGlass extends RenderProxyBox {
 
   @override
   void detach() {
+    _originWatchArmed = false;
+    _paintedOrigin = null;
     _pointer.removeListener(_onPointerChanged);
     _shader?.dispose();
     _shader = null;
@@ -603,7 +715,8 @@ class _RenderLiquidGlass extends RenderProxyBox {
     uniforms.band.set(scaled.band);
     uniforms.edgePow.set(_style.refractionEdgePow);
     uniforms.rimColor.set(rimColor.r, rimColor.g, rimColor.b);
-    uniforms.rim.set(_style.rimStrength);
+    // 边缘高光随二级开合渐显（MiuixGlassEdgeFade）；静止态 rimFade=1 不变。
+    uniforms.rim.set(_style.rimStrength * _rimFade.clamp(0.0, 1.0));
     uniforms.rimWidth.set(scaled.rimWidth);
     // 边光的作用范围按表面**形状**推（见 liquidGlassRimCornerOnlyForSize）：细长条
     // 整圈均匀、方正的大面板只留转角。与穹顶一样是几何适配，与 dpr / 祖先缩放无关
@@ -656,6 +769,40 @@ class _RenderLiquidGlass extends RenderProxyBox {
     final shader = child == null ? null : _ensureShader();
     if (shader == null) {
       layer = null;
+      _paintedOrigin = null;
+      if (child != null) {
+        super.paint(context, offset);
+      }
+      return;
+    }
+
+    // 让位期间改画 canvas 圆角板：宿主显式 force，或（兜底）祖先缩放可被量到。
+    //
+    // 为什么不能只靠祖先缩放：真机上 `_ancestorScale()` 可能返回 1，浅色玻璃
+    // 底板停在原尺寸，而菜单文字跟着让位变换缩 —— 用户口径「深色材质缩了，
+    // 浅色材质完全没缩」（2026-09-22）。
+    //
+    // canvas 圆角矩形与内容同处一条变换链：板子和行一起朝支点缩。
+    // 让位结束（force=false 且 scale=1）的下一帧切回液态玻璃。
+    final ancestorScale = _ancestorScale();
+    final useCanvasBoard =
+        _forceCanvasBoard ||
+        (_preferCanvasBoardWhenAncestorScaled && ancestorScale < 0.999);
+    if (useCanvasBoard) {
+      layer = null;
+      final rrect = RRect.fromRectAndRadius(
+        Offset.zero & size,
+        Radius.circular(_style.borderRadius),
+      );
+      // 让位底板用色：优先宿主传入的「像原玻璃卡」的实色；退回 tint 时是半透明
+      // 染色（无模糊 → 读成透明片，真机 2026-09-22）。
+      final boardColor = _canvasBoardColor ?? _style.tint;
+      _paintedOrigin = localToGlobal(Offset.zero);
+      context.canvas
+        ..save()
+        ..translate(offset.dx, offset.dy)
+        ..drawRRect(rrect, Paint()..color = boardColor)
+        ..restore();
       if (child != null) {
         super.paint(context, offset);
       }
@@ -668,6 +815,7 @@ class _RenderLiquidGlass extends RenderProxyBox {
     if (_ancestorOpacity() < 1) {
       layer = null;
       final radius = _style.borderRadius * _devicePixelRatio;
+      _paintedOrigin = localToGlobal(Offset.zero);
       context.canvas
         ..save()
         ..translate(offset.dx, offset.dy)
@@ -686,6 +834,9 @@ class _RenderLiquidGlass extends RenderProxyBox {
     }
 
     _configure(shader);
+    // 形状按屏幕坐标画；记下本帧 origin，供 [_armOriginWatch] 发现
+    // 「祖先图层挪了但本节点没被标脏重画」——那是「玻璃跑了、实体留在原地」的根因。
+    _paintedOrigin = localToGlobal(Offset.zero);
 
     final sigma = _style.blurSigma;
     final backdropLayer = layer ??= BackdropFilterLayer();

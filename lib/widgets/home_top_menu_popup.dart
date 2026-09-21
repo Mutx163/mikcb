@@ -8,6 +8,8 @@ import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_theme.dart';
 import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart'
     show UndimmedBackdropCapture;
+import 'package:university_timetable/ui/hyperos/hyperos_popup_glass.dart'
+    show HyperosPopupYieldBus;
 import 'package:university_timetable/ui/hyperos/os4_glass_popup_surface.dart';
 import 'package:university_timetable/ui/hyperos/os4_glass_backdrop.dart';
 import 'package:university_timetable/utils/frame_perf_probe.dart';
@@ -115,6 +117,8 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
     _captureHold?.releaseRecording();
     _captureHold = null;
     _addRowAnchor.dispose();
+    // dispose 期间同步写可能碰到仍在听的 ListenableBuilder；帧末再清一次。
+    _publishYieldAfterFrame();
     super.dispose();
   }
 
@@ -131,6 +135,7 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
         // 面板会"开局就是缩小的"，还得再点一次才回正常。
         _secondaryOpen = false;
         _secondaryBounds = null;
+        _publishYieldAfterFrame();
       }
       _syncCaptureHold();
     }
@@ -163,6 +168,7 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
     if (_secondaryOpen) {
       setState(() => _secondaryOpen = false);
     }
+    _publishYield(false);
     widget.onDismissRequest();
   }
 
@@ -188,6 +194,7 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
     if (_secondaryOpen) {
       setState(() => _secondaryOpen = false);
     }
+    _publishYield(false);
   }
 
   /// 菜单项被选中：**不在这里收菜单**，收菜单的时机交给宿主。
@@ -202,6 +209,29 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
   /// （切页、路由变化），[didUpdateWidget] 会把二级状态复位。
   void _select(String id) {
     widget.onSelected(id);
+  }
+
+  /// 把「一级是否在让位」写进全局信号。
+  ///
+  /// ⚠️ **绝不能在 build / didUpdateWidget 里同步写**：弹层在 Overlay 上，
+  /// `HyperosSelectPopupGlass` 用 ListenableBuilder 听这个信号；build 期间
+  /// 改 ValueNotifier 会触发 markNeedsBuild during build（2026-09-22 真机异常）。
+  /// 只在事件回调里写；宿主绕过回调直接改 show 时走帧末补写。
+  void _publishYield(bool yielding) {
+    if (HyperosPopupYieldBus.yielding.value == yielding) {
+      return;
+    }
+    HyperosPopupYieldBus.yielding.value = yielding;
+  }
+
+  void _publishYieldAfterFrame() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _publishYield(_secondaryOpen);
+      } else {
+        _publishYield(false);
+      }
+    });
   }
 
   @override
@@ -236,6 +266,8 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
     // 预览各有一份；首页菜单从上游 OS4 弹层迁过来时漏了这一层，二级面板的
     // `useAncestorGroupCapture` 一直是空转的（见下面垫底的说明）。
     return HyperosGlassPopupScrollGuard(
+      // 让位信号只在事件回调里写（见 [_publishYield]），不要在 build 里改
+      // HyperosPopupYieldBus —— Overlay 上的 ListenableBuilder 会在 build 期被标脏。
       child: BackdropGroup(
         child: Stack(
           children: [
@@ -276,49 +308,21 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
               // 不再传 `visuals`：注入面已取代上游内置面板，上游那 7 个 OS4 材质
               // 字段不再参与渲染（见 os4_glass_popup_surface.dart）。
               surfaceBuilder: hyperosGlassPopupSurface,
-              // ── 二级展开时一级面板「让位」：整张卡朝右收，被点那一行不动 ──
+              // ── 二级展开时一级面板「让位」：整张卡朝右上角收，被点那一行不动 ──
               //
               // 手感由 fork 补丁的一个参数定：`stackDuration` 把包内那条
               // 「收敛容差写死、参数不可调」的让位弹簧换成确定性的 200ms
               // fastOutSlowIn（曲线取补丁缺省值；时长与旧实现
               // `hyperos_list_popup.dart` 同值）。
+              // 让位：一级面板**布局矩形**朝右上角缩 5%（本地 fork 的
+              // GlassPopupLayout）。玻璃按缩后尺寸画，内容用同一支点的
+              // paint 变换对齐（不按窄宽重排文字）。
+              //
+              // 支点 = 离「更多」按钮最近的面板角 = 右上角
+              // （stackShrinkFromAnchor，锚点在右上）。
               stacked: _secondaryOpen,
               stackDuration: _submenuRevealDuration,
-              // 支点 = **被点那一行的右端**（2026-09-21 用户第二轮回话）。
-              //
-              // 用户口径：「卡片要他妈的缩小」「一级只缩小了一部分」「不是像右上角
-              // 缩放，是向右边缩放」「被点的那一行不变」「二级一定不要缩小」。
-              //
-              // 取面板的锚点角（`stackShrinkFromAnchor: true`）时，面板的**上边缘与
-              // 右边缘被钉死**，只有左边缘往右收、下边缘往上收 —— 真机读起来正是
-              // 「卡片只缩了一部分」。改把支点钉在**被点那一行的右端**（那一行横跨
-              // 面板全宽，它的右端就落在面板右边缘上）：面板照样朝右收，但现在是
-              // **整张缩** —— 上边缘跟着往下、下边缘往上、左边缘往右，三个方向一起
-              // 收；又因为固定点就在那一行上，**被点那一行在屏幕上不动**（实测偏差
-              // ≤0.5px），二级面板顶部那份「父行复印件」照样与它对得上。
-              //
-              // 传法：`stackPivotBounds` 取矩形**左上角**，传零尺寸矩形 = 钉到一个点；
-              // `_secondaryBounds` 就是点开二级那一刻量下的父行窗口矩形（与二级面板
-              // 的锚定矩形同一份），`right/top` 正是它的右上角。
-              //
-              // ⚠️ **卡片要整张缩，不要只缩内容**（2026-09-20 试过又回退）：为了让
-              // 一级卡轮廓与「不参与让位的二级卡」对齐，一度传过
-              // `stackScalesPanel: false`（只缩内容、卡片轮廓原地不动）。用户当场
-              // 否掉 ——「为什么他妈的卡片没缩，内容缩放了」。**卡片本身缩下去才是
-              // 这个让位的本体**，内容跟着缩是理所当然的。
-              //
-              // ⚠️ **二级面板不参与让位**（2026-09-21 用户口径）：一级缩 5% 后左边缘
-              // 比二级多收 5% 板宽（200 宽上是 10px），接缝就在两块卡的左边缘。用户
-              // 明确选择接受这条缝 —— 代价是固定的，别再拿「二级也缩」「只缩内容」去
-              // 消它：前者会让二级的字一起小 5%、被点那一行跟着挪（用户否），后者已被
-              // 否过（见 `rejected/bug-fix/2026-09-20-home-menu-stack-scales-content-only.md`）。
-              stackShrinkFromAnchor: true, // 兜底：只在 stackPivotBounds 为空时才会用到
-              stackPivotBounds: secondaryBounds == null
-                  ? null
-                  : Rect.fromLTWH(secondaryBounds.right, secondaryBounds.top, 0, 0),
-              // 让位期间的压暗色：上游默认是「暗色主题黑罩 / 亮色主题**白罩**」，
-              // 于是亮色主题下二级展开时一级面板反而**变亮**（真机反馈）。
-              // 改用与列表弹层同一份——模态遮罩色（黑）× 同一倍率 0.5。
+              stackShrinkFromAnchor: true,
               maskColor: HyperosBlurredHeader.modalBarrierColor(context)
                   .withValues(
                     alpha:
@@ -453,24 +457,34 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
     final item = isAdd
         // 「添加」是展开开关：点它不关菜单，只浮出二级面板（与旧实现的
         // 二级列表同一组目的地，宿主按子项 id 直开对应页面）。
-        ? MiuixGlassAnchor(
-            anchor: _addRowAnchor,
-            child: MiuixGlassPopupItem(
-              text: label,
-              showArrow: true,
-              // 收起朝右（0）、展开朝上（-90）；LTR 的上箭头取 -90（上游约定）。
-              arrowRotation: _secondaryOpen ? -90 : 0,
-              arrowRotationDuration: _submenuRevealDuration,
-              onPressed: () {
-                final bounds = _addRowAnchor.bounds;
-                if (bounds == null) {
-                  return;
-                }
-                setState(() {
-                  _secondaryBounds = bounds;
-                  _secondaryOpen = true;
-                });
-              },
+        //
+        // 二级展开期间一级这一份用 Opacity 藏起来（布局占位不变，其它行不跳）：
+        // 让位支点在卡片右上角，一级里的「添加」会朝右上挪；屏幕上可见的那份
+        // 交给二级标题行（钉在点开那一刻的原位、不参与让位）。两份同时露出来
+        // 会读成「被点的按钮在挪 / 显示了两次」。
+        ? Opacity(
+            opacity: _secondaryOpen ? 0.0 : 1.0,
+            child: MiuixGlassAnchor(
+              anchor: _addRowAnchor,
+              child: MiuixGlassPopupItem(
+                text: label,
+                showArrow: true,
+                // 收起朝右（0）、展开朝上（-90）；LTR 的上箭头取 -90（上游约定）。
+                // 二级展开时这一份已透明，箭头只由二级标题行展示。
+                arrowRotation: _secondaryOpen ? -90 : 0,
+                arrowRotationDuration: _submenuRevealDuration,
+                onPressed: () {
+                  final bounds = _addRowAnchor.bounds;
+                  if (bounds == null) {
+                    return;
+                  }
+                  setState(() {
+                    _secondaryBounds = bounds;
+                    _secondaryOpen = true;
+                  });
+                  _publishYield(true);
+                },
+              ),
             ),
           )
         : MiuixGlassPopupItem(text: label, onPressed: () => _select(entry.id));
