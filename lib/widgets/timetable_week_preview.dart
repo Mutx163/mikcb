@@ -283,9 +283,10 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final double? effectiveMaxRefraction =
         narrowSurfaceMaxRefraction(height) ??
         (isSettingsPreview ? 11.0 : null);
-    // 裁剪框底边再往下多留一截（[homePageChromeGlassCaptureMargin]）：带底朝外的位移
-    // 必须能采到带外的真实内容，否则那几像素读空 = 一条黑边（用户 2026-09-21：
-    // 预览与首页都有、宽度随「作用带宽度」滑杆走）。形状与观感都不动。
+    // 采样余量（[homePageChromeGlassCaptureMargin]）：**把盒子往下撑高一截**，让带底
+    // 朝外的位移采得到带外的真实内容 —— 否则那几像素读空 = 一条黑边（用户 2026-09-21：
+    // 预览与首页都有）。必须撑盒子：只放大 `ClipRect` 的矩形没用（里面的 `Stack` 是
+    // `Clip.hardEdge`，按自己的边界裁孩子，交集仍是带子本体）。形状底边一动不动。
     final captureMargin = homePageChromeGlassCaptureMarginOf(
       context,
       maxRefraction: effectiveMaxRefraction,
@@ -295,10 +296,9 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
         top: top,
         left: 0,
         right: 0,
-        height: height,
+        height: height + captureMargin,
         child: IgnorePointer(
-          child: HomePageChromeGlassBandClip(
-            margin: captureMargin,
+          child: ClipRect(
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -306,7 +306,8 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                   top: -overhang.top,
                   left: -homePageChromeGlassEdgeOverdraw,
                   right: -homePageChromeGlassEdgeOverdraw,
-                  bottom: -overhang.bottom,
+                  // 盒子的下边多出 `captureMargin`，这里补回来 ⇒ 形状底边仍在可见带底。
+                  bottom: captureMargin + overhang.bottom,
                   // 进页 / 退页转场期间必须让它逐帧重画：转场外壳把整页包进了重绘边界，
                   // 滑动时页面只换图层偏移、不重画，而玻璃的形状是按 paint 期的屏幕坐标
                   // 算的 —— 不重画就会偏，形状那条藏在可见区外的直边会扫进带里，读作
@@ -314,12 +315,10 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                   child: HomePageChromeGlassTransitionRepaint(
                     child: HomePageChromeGlassFill(
                       maxRefraction: effectiveMaxRefraction,
-                      // ⚠️ **不传 `useAncestorBackdropGroup`（= 默认 false，实时采样）**，
-                      // 2026-09-21 从 `true` 改回（与首页那条带同步；逐像素依据见
-                      // `home_page_region_blur.dart` 同名参数的订正段）。09-20 给这里接上
-                      // 组捕获时，这台机器渲染的还是渐进磨砂，液态这条分支没被走到
-                      // ⇒ 那次"修好了"从未在液态玻璃上验证过；而开了它之后带底朝外那截
-                      // 位移采到的内容在带边就断了 = 用户报的那条黑边。
+                      // ⚠️ 采祖先组那份捕获（与首页那条带同口径）。注意它**管不了
+                      // "能采到多大范围"** —— 2026-09-21 真机确认把它关掉（改实时采样）
+                      // 那条黑边没有任何变化；范围由上面的 `captureMargin` 负责。
+                      useAncestorBackdropGroup: true,
                     ),
                   ),
                 ),

@@ -150,29 +150,34 @@ const homePageChromeGlassBottomEdgeOverdraw = 0.0;
 ///
 /// * [homePageChromeGlassVerticalOverhang] 挪的是**形状边界**：上边要盖过作用带、下边
 ///   必须是 0（曲线一被截断就读成一条线）。
-/// * 本值挪的是**裁剪框**（= 引擎肯给这条带准备的那块背景的范围），**形状一动不动**。
+/// * 本值挪的是**盒子**（那条带占的矩形 —— 它同时是引擎眼中的裁剪区），**形状底边一动不动**：
+///   调用点把盒子往下撑高这么一截，同时把里面那层 `Positioned` 的下边偏移补回同样的量。
 ///
-/// ## 为什么必须有它（2026-09-21：带底那条黑边，宽度随作用带宽度走）
+/// ## 为什么必须有它（2026-09-21：带底那条黑边）
 ///
-/// 真机截图逐像素（用户档、液态玻璃）：带底一条 `58,58,58` 中性灰 + 紧挨着一条偏蓝发丝
-/// （B−R ≈ +50），合计约 5 逻辑 px，**宽度随「作用带宽度」滑杆走**（调低就变细）。
-/// `58 ≈ tint × 近白` = 着色器 `mix(base, u_tint.rgb, u_tint.a)` 里 **base 采到了空**。
+/// 真机截图逐像素（原生 1280×2772）：带底 **1 物理 px 的纯蓝**（`0,0,201`：R=G=0、只留 B）
+/// \+ 约 12 物理 px（≈3.7 逻辑 px）的**纯黑**；上下都是壁纸（`200,189,206` → `202,191,209`）。
+/// 那条纯蓝是**色散指纹**：着色器 `base = vec3(r_sample, mid.g, b_sample)`，当红、绿采样点
+/// 已经推到可采内容之外（读到 0）、只有蓝采样点还落在壁纸里时，输出正好是 R=G=0、B ≈ 壁纸的 B
+/// （量到 200，该处壁纸 209）；它**全宽一致**，不是任何局部 UI。⇒ **着色器能采到的内容，
+/// 在带子底边就断了**，而带底那圈朝外推的位移（带底就是满位移）整段落在"没有内容"的地方。
 ///
-/// 空从哪来：这条带的玻璃坐在一个 `ClipRect` 里（形状要往左右多画 48px，必须裁），而
-/// Impeller 给 backdrop filter 准备背景时把范围掐在**渲染目标 ∩ 当前裁剪区**
-/// （引擎 `Canvas::GetLocalCoverageLimit`，这份 `coverage_limit` 又喂给 `GetSourceCoverage`
-/// 决定给采样器多大一块）。而**下边外溢恒为 0** ⇒ 形状底边正好压在裁剪线上 ⇒ 带底那一圈
-/// **朝外**推着采样的像素（`push = refract × profile(1 − 深度/作用带)`，在带底就是满位移）
-/// 一推就出了可采范围 ⇒ 读空 ⇒ tint 混黑。它是"位移越界"的老症状，根却在**可采范围**上，
-/// 不在位移（§14.1 已证越界无害：越界本来就该读到带外内容，底栏药丸吃的就是带外壁纸）。
-/// 宽度随作用带走也是同一件事：能探出裁剪线的就是 `push(深度) > 深度` 那一段，而整条
-/// `push` 曲线由作用带缩放。
+/// 为什么断在带底：Impeller 给 backdrop filter 准备背景时把范围掐在**渲染目标 ∩ 当前裁剪区**
+/// （引擎 `Canvas::GetLocalCoverageLimit`，这份 `coverage_limit` 再喂给 `GetSourceCoverage`
+/// 决定给采样器多大一块）。而这条带的裁剪区就是它自己那个盒子，**下边外溢又恒为 0** ⇒ 形状
+/// 底边正好压在裁剪线上 ⇒ 一推就出界。宽度随作用带走也是同一件事：能探出裁剪线的就是
+/// `push(深度) > 深度` 那一段，而整条 `push` 曲线由作用带缩放。
 ///
-/// 为什么底栏药丸（同一份材质、同样零外溢）没这条边：药丸身上**没有紧贴的裁剪框** ——
-/// 它的 `ClipRRect` 是在滤镜层**之后**才 push 的（见 `liquid_glass_surface.dart` 的
-/// `_RenderLiquidGlass.paint`）⇒ 可采范围一直是整屏。
+/// ⚠️ **必须是"撑盒子"，不能只把 `ClipRect` 的矩形放大**（2026-09-21 第九轮那一版就是这么
+/// 白改的：`ClipRect` 的 clipper 返回了更高的矩形，但**里面那个 `Stack` 是 `Clip.hardEdge`**
+/// —— 它按自己的边界裁孩子，两层取交集之后仍然是带子本体；另外 `Stack` 与 `ClipRect` 都按
+/// 盒子尺寸布局，盒子不长，裁剪区就长不了）。⇒ 正确做法：`Positioned` 的 `height` 加
+/// `captureMargin`，盒子里面那层 `Positioned` 的 `bottom` 加同一个量，形状回到原位。
 ///
-/// ⇒ 本值把裁剪框往下放这么高：形状与观感一个字不动，只是那片内容不再被裁掉。
+/// 旁证（同日另一处、同一机制）：子页顶栏那颗返回键圆钮，顶上那条带只比它高 4dp，标准档
+/// 8dp 的位移一推就出可采范围 ⇒ 圆内顶部一圈暗弧（`b04eec64`）。两处的"可采范围"都由
+/// 裁剪区掐，差别只是那处裁剪区结构上挪不动、只能把位移压到 0。
+///
 /// 取 `max(8, 实际最大位移 + 1)` —— 位移上限就是 `refraction`（滑杆 0..20），+1 给抗锯齿
 /// 那一像素留余量。
 const homePageChromeGlassCaptureMarginFloor = 8.0;
@@ -206,47 +211,6 @@ double homePageChromeGlassCaptureMarginOf(
     refraction: tuning.refraction,
     maxRefraction: maxRefraction,
   );
-}
-
-/// 这条带的裁剪框：左右上三边仍是带本体，**底边**放到带底下方 [margin] px
-/// （理由见 [homePageChromeGlassCaptureMargin]）。
-///
-/// 为什么用 clipper 而不是把盒子撑高：撑高会连带改掉里面那层 `Positioned` 的偏移，也就动了
-/// 形状那一套算术 —— 而"形状该在哪"与"能采到哪块背景"正是这条带来回改了六轮的同一个坑。
-/// 这里只放裁剪框，形状一个数都不碰。
-class HomePageChromeGlassBandClip extends StatelessWidget {
-  const HomePageChromeGlassBandClip({
-    required this.margin,
-    required this.child,
-    super.key,
-  });
-
-  /// 底边要往下多放多少（逻辑 px）。0 = 与带本体齐平。
-  final double margin;
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => ClipRect(
-    clipper: HomePageChromeGlassCaptureClipper(margin),
-    child: child,
-  );
-}
-
-/// [HomePageChromeGlassBandClip] 的裁剪矩形：`(0, 0)` 到 `(宽, 高 + margin)`。
-@visibleForTesting
-class HomePageChromeGlassCaptureClipper extends CustomClipper<Rect> {
-  const HomePageChromeGlassCaptureClipper(this.margin);
-
-  final double margin;
-
-  @override
-  Rect getClip(Size size) =>
-      Rect.fromLTRB(0, 0, size.width, size.height + margin);
-
-  @override
-  bool shouldReclip(HomePageChromeGlassCaptureClipper oldClipper) =>
-      oldClipper.margin != margin;
 }
 
 /// Whether any home chrome frosted band should paint over the wallpaper.
@@ -411,19 +375,18 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
     // 非实体档（液态玻璃，含存量中间档）上边要盖过用户的「作用带宽度」、下边与底栏
     // 药丸同为 0；实体档两条边都是 0。
     final overhang = homePageChromeGlassVerticalOverhangOf(context);
-    // 裁剪框底边还要往下放这么高 —— 只放大「能采到哪块背景」，形状不动。
-    // 为什么（黑边）：见 [homePageChromeGlassCaptureMargin]。这两件事必须分开取，
-    // 混在一起正是这条带来回改了六轮的地方。
+    // 采样余量：**把盒子往下撑高**这么一截（形状底边一动不动），让带底朝外那截位移
+    // 采得到带外的真内容。必须撑盒子而不是只放大 `ClipRect` 的矩形，理由见
+    // [homePageChromeGlassCaptureMargin]。
     final captureMargin = homePageChromeGlassCaptureMarginOf(context);
 
     return Positioned(
       top: layout.top,
       left: 0,
       right: 0,
-      height: layout.height,
+      height: layout.height + captureMargin,
       child: IgnorePointer(
-        child: HomePageChromeGlassBandClip(
-          margin: captureMargin,
+        child: ClipRect(
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -433,29 +396,25 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
               // 可见的形状边界，推出去就等于把折射 / 高光 / 色散整圈删掉
               // （见 [homePageChromeGlassBottomEdgeOverdraw]）。
               //
-              // ⚠️ 下边朝外那截位移要能采到**带外**的内容：形状这边靠的不是这个偏移
-              // （它是 0），而是上面那层裁剪框往下多留的一截
-              // （[homePageChromeGlassCaptureMargin]，引擎的可采范围 = 渲染目标 ∩ 裁剪区）。
-              // ⚠️ 但 2026-09-21 真机上单独放开这一截**没观察到变化** ⇒ 掐点看来在下面那个
-              // 组采样开关上（已改回实时采样）。这一截先留着（它只会放宽范围，不会变窄），
-              // 等真机复验过了再决定去留。
+              // 盒子比可见带高 `captureMargin`，所以这里要把那一截补回来
+              // （`captureMargin + overhang.bottom`）：**形状底边仍落在可见带底**，
+              // 多出来的那截只用来扩采样范围，不参与形状。
               Positioned(
                 top: -overhang.top,
                 left: -homePageChromeGlassEdgeOverdraw,
                 right: -homePageChromeGlassEdgeOverdraw,
-                bottom: -overhang.bottom,
+                bottom: captureMargin + overhang.bottom,
                 child: const HomePageChromeGlassFill(
-                  // ⚠️ **不传 `useAncestorBackdropGroup`（= 默认 false，实时采样）**，
-                  // 2026-09-21 从 `true` 改回：
-                  // 这条开关在真机上是"掐住可采内容"的那一环 —— 带底朝外那截位移采到空，
-                  // 读出来就是用户报的那条黑边（2026-09-21 截图逐像素：一条 R=G=0、
-                  // 只有 B≈200 的纯蓝发丝 + 一条近黑带；前者正是色散里"红/绿采样点出界、
-                  // 蓝采样点还在壁纸里"的指纹，那条蓝的 B 与壁纸的 B 一致）。
+                  // ⚠️ 采**祖先组**那份捕获（2026-09-20）：采到的是组内
+                  // `UndimmedBackdropCapture` 缓存下来的整屏壁纸，而不是带子自己那一小块
+                  // 被压暗 / 裁过的内容。
                   //
-                  // 依据：同一份材质、同样零外溢的**底栏药丸**从不采祖先组（实时采样），
-                  // 它整段越界都采得到真内容、观感最好。09-20 把这条开关打开时，这台
-                  // 机器渲染的还是渐进磨砂（见第八轮），液态那条分支根本没被走到
-                  // ⇒ 那次"修好了"从未在液态玻璃上验证过。
+                  // ⚠️ 它**管不了"能采到多大范围"** —— 范围是引擎按「渲染目标 ∩ 当前
+                  // 裁剪区」当场掐的。2026-09-21 真机确认：把它关掉（改实时采样）那条
+                  // 黑边没有任何变化；管范围的是上面的 `captureMargin`。别再把这行开关
+                  // 当成治黑线的药（09-20 打开它时这台机器渲染的还是渐进磨砂，液态那条
+                  // 分支根本没被走到 ⇒ 那次"修好了"从没在液态玻璃上验证过）。
+                  useAncestorBackdropGroup: true,
                 ),
               ),
             ],
@@ -504,16 +463,10 @@ class HomePageChromeGlassFill extends StatelessWidget {
   /// the captured backdrop.
   ///
   /// ⚠️ **订正（2026-09-21）**：上面这条推理只对了一半 —— 组捕获定的是采到**哪一份**
-  /// 背景（未压暗的整屏壁纸），**采得到多大范围**由**裁剪框**决定（引擎把 backdrop 的
-  /// 背景掐在「渲染目标 ∩ 当前裁剪区」）。所以这条开关**不足以**治带底那条黑边；
-  /// 范围那一半见 [homePageChromeGlassCaptureMargin]。
-  ///
-  /// ⚠️ **再订正（同日，真机实测后）**：两处调用都已改回 `false`（实时采样）。真机口径：
-  /// 放开裁剪框那一半**没有任何变化**，而这条开关本身才是掐点 —— 开了它之后，带底朝外
-  /// 那截位移采到的内容在带子底边就断了（截图逐像素：R=G=0、只有 B≈200 的纯蓝发丝 =
-  /// 色散里红/绿采样点出界、蓝采样点还在壁纸里）。药丸走实时采样、整段越界都采得到内容，
-  /// 是这条判断的活证据。开关与 [UndimmedBackdropCapture] 那套组结构**暂时留着**，
-  /// 等真机确认后再决定是否一并删掉。
+  /// 背景（未压暗的整屏壁纸），**采得到多大范围**由**裁剪区**决定（引擎把 backdrop 的
+  /// 背景掐在「渲染目标 ∩ 当前裁剪区」）。真机实测：**把这个开关关掉（改实时采样），带底
+  /// 那条黑边没有任何变化** ⇒ 它既不是药、也不是病，范围那一半见
+  /// [homePageChromeGlassCaptureMargin]。两处调用保持 `true`（09-20 的口径不变）。
   final bool useAncestorBackdropGroup;
 
   /// 折射位移上限（逻辑 px），见 [LiquidGlassSurface.maxRefraction]。

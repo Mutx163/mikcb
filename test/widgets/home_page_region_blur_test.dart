@@ -126,7 +126,7 @@ void main() {
       expect(positioned.bottom, 0.0);
     });
 
-    testWidgets('液态玻璃：上边盖过作用带宽度，下边与底栏药丸同为 0', (tester) async {
+    testWidgets('液态玻璃：上边盖过作用带宽度，形状底边仍在可见带底', (tester) async {
       // 两条边口径不同，理由不同：
       // * 上边压在屏幕顶边上，而着色器在作用带内是**朝形状外**采样的 —— 朝上就落到
       //   屏幕外，那圈空样本经 `mix(base, tint, α)` 读成近黑。⇒ 上边必须 ≥ 作用带宽度。
@@ -136,9 +136,19 @@ void main() {
       //   2.1 < 外溢时那一圈也整条被推出去 —— 用户 2026-09-20 在「下边 4」那版上的
       //   原话就是「没有黑线，但也没有任何玻璃效果」。底栏药丸是同一份材质的活证据：
       //   它零外溢，整圈折射与边光都在可见区里，用户口径「折射效果特别好看」。
+      //   ⚠️ 2026-09-21 之后，这条"下边偏移 = 0"要读成"**形状底边落在可见带底**"：
+      //   盒子被撑高了采样余量，偏移里就带着那一截（见下面那条断言）。
       final dflt = await bandGlassPositioned(tester);
       expect(dflt.top, -8.0);
-      expect(dflt.bottom, 0.0);
+      // 盒子被撑高了采样余量（[homePageChromeGlassCaptureMargin]），填充层要把那一截
+      // 补回来 ⇒ 下边偏移**等于余量**（形状底边因此仍落在可见带底，不往外画）。
+      expect(
+        dflt.bottom,
+        homePageChromeGlassCaptureMargin(
+          material: 'liquid',
+          refraction: LiquidGlassTuning.defaultRefraction,
+        ),
+      );
 
       final wide = await bandGlassPositioned(
         tester,
@@ -147,8 +157,11 @@ void main() {
       expect(wide.top, -21.0);
       expect(
         wide.bottom,
-        0.0,
-        reason: '下边不许跟着作用带宽度长大 —— 那正是把折射整圈推出可见区的做法',
+        homePageChromeGlassCaptureMargin(
+          material: 'liquid',
+          refraction: LiquidGlassTuning.defaultRefraction,
+        ),
+        reason: '采样余量只跟**折射位移**走，不跟作用带宽度走（余量函数根本不收这个参数）',
       );
     });
 
@@ -251,33 +264,30 @@ void main() {
       expect(solid.bottom, 0, reason: '实体档没有形状边界那套折射');
     });
 
-    testWidgets('这条带**不采**祖先组捕获（采了就把可采内容掐在带子底边）', (tester) async {
-      // 2026-09-20 两处都接过 `useAncestorBackdropGroup: true`，理由是"组里那份整屏
-      // 壁纸能让位移越界采样取到真内容"。**2026-09-21 真机否掉了它**：
-      //  ① 放开裁剪框那一半（`homePageChromeGlassCaptureMargin`）没有任何变化；
-      //  ② 截图逐像素：带底一条 R=G=0、只有 B≈200 的**纯蓝发丝** —— 正是色散的指纹：
-      //     红/绿采样点已经出界（读到空 = 0），蓝采样点还在壁纸里（B 与壁纸的 B 一致）；
-      //  ③ 同一份材质、同样零外溢的底栏药丸走**实时采样**，整段越界都取得到真内容。
-      // ⇒ 改回实时采样（两处同步）。组捕获只决定采到"哪一份"背景，而它连"多大范围"
-      //   都没给够：开了它，可采内容在带子底边就断了。
+    testWidgets('这条带采祖先组捕获（管的是"采到哪一份"背景，不管范围）', (tester) async {
+      // 2026-09-20 两处都接上 `useAncestorBackdropGroup: true`：采到的是组内
+      // `UndimmedBackdropCapture` 缓存下来的**整屏壁纸**，而不是带子自己那一小块被压暗 /
+      // 裁过的内容。
       //
-      // 这套组结构（`BackdropGroup` + `UndimmedBackdropCapture`）暂时留着，等真机确认
-      // 后再决定是否与这个参数一起删掉 —— 见下面那条"组还在树上"的断言。
+      // **2026-09-21 真机订正了它的职责**：它管的是"采到哪一份背景"，**不管"能采到多大
+      // 范围"** —— 真机上把它关掉（改实时采样），带底那条黑边**没有任何变化**。
+      // 范围由 `homePageChromeGlassCaptureMargin` 撑盒子负责（见下面那组用例）。
+      // ⇒ 两处调用保持 true（09-20 的口径不变），别再把它当成治黑线的药。
       await bandGlassPositioned(tester);
       final fill = tester.widget<HomePageChromeGlassFill>(
         find.byType(HomePageChromeGlassFill),
       );
       expect(
         fill.useAncestorBackdropGroup,
-        isFalse,
-        reason: '开了组捕获，带底朝外那截位移采到的内容就在带边断掉 ⇒ 那条黑边',
+        isTrue,
+        reason: '采到压暗过的带级内容会让这条带读起来像一块脏玻璃',
       );
     });
   });
 
-  group('裁剪框底边要留够采样余量（带底那条黑边的修法，2026-09-21）', () {
+  group('采样余量：把盒子撑高，让带底那截越界位移采得到内容（2026-09-21）', () {
     test('液态档：余量 ≥ 最大位移 + 1，且跟着「折射位移」滑杆走', () {
-      // 带底朝外那几像素位移能探出裁剪线多少，就决定黑边多宽 —— 而位移整条曲线由
+      // 带底朝外那几像素位移能探出裁剪区多少，就决定黑边多宽 —— 而位移整条曲线由
       // 「作用带宽度」缩放（所以用户看到的是「作用带调低、黑边变细」）。
       for (
         var refraction = LiquidGlassTuning.minRefraction;
@@ -323,7 +333,7 @@ void main() {
           refraction: LiquidGlassTuning.maxRefraction,
         ),
         0,
-        reason: '实心条不采样任何东西，撑大裁剪框没有意义',
+        reason: '实心条不采样任何东西，撑高盒子没有意义',
       );
       for (final material in ['progressive', 'gaussian', 'soft']) {
         expect(
@@ -337,38 +347,49 @@ void main() {
       }
     });
 
-    testWidgets('裁剪框底边比可见带低一截，形状那一层一点不动', (tester) async {
+    testWidgets('盒子（= 裁剪区）比可见带低一截，形状那一层一点不动', (tester) async {
       // 这两件事必须分开取（这条带来回改了六轮就是混成了一个量）：
-      //  * **形状**（`HomePageChromeGlassFill` 那层）底边仍落在**可见带底**、外溢 0
+      //  * **形状**（`HomePageChromeGlassFill` 那层）底边仍落在**可见带底**、下溢 0
       //    —— 挪它就是把可见区里的位移曲线截断成一条线；
-      //  * **裁剪框**（`HomePageChromeGlassBandClip`）底边往下多留一截，让带外那块背景
-      //    进到可采范围。
+      //  * **盒子**往下撑高 `captureMargin`（盒子的下边同时是 `Stack` 与 `ClipRect` 的
+      //    裁剪线），让带外那块背景进到可采范围。
+      // ⚠️ 必须是撑盒子：只把 `ClipRect` 的矩形放大没用 —— 里面的 `Stack` 是
+      // `Clip.hardEdge`，按自己的边界裁孩子，交集仍是带子本体（2026-09-21 第九轮那一版
+      // 就是这么白改的）。
       final positioned = await bandGlassPositioned(tester);
-      expect(positioned.bottom, 0.0, reason: '形状底边仍在可见带底');
-
-      final bandClip = tester.widget<HomePageChromeGlassBandClip>(
-        find.byType(HomePageChromeGlassBandClip),
-      );
       final expected = homePageChromeGlassCaptureMargin(
         material: 'liquid',
         refraction: LiquidGlassTuning.defaults.refraction,
       );
-      expect(bandClip.margin, expected);
       expect(
         expected,
         greaterThan(0),
         reason: '没有余量就是形状底边贴着裁剪线 —— 带底朝外的位移全采到空',
       );
-
-      // 裁剪矩形：宽不变、上边不动、**底边 = 带高 + 余量**。
-      final size = tester.getSize(find.byType(HomePageChromeGlassBandClip));
-      final expanded = HomePageChromeGlassCaptureClipper(
+      // 形状：底边仍在可见带底 ⇒ 下边偏移正好等于余量（盒子多出来的那一截）。
+      expect(
+        positioned.bottom,
         expected,
-      ).getClip(size);
-      expect(expanded.left, 0);
-      expect(expanded.top, 0);
-      expect(expanded.right, size.width);
-      expect(expanded.bottom, size.height + expected);
+        reason: '形状底边仍在可见带底：盒子撑高了 `captureMargin`，这里要补回来',
+      );
+
+      // 裁剪区：`ClipRect` 的底边要比形状底边再低 `expected`，且宽高与可见带一致。
+      final glassRect = tester.getRect(find.byType(HomePageChromeGlassFill));
+      final clipRect = tester.getRect(
+        find
+            .ancestor(
+              of: find.byType(HomePageChromeGlassFill),
+              matching: find.byType(ClipRect),
+            )
+            .first,
+      );
+      expect(clipRect.left, glassRect.left + homePageChromeGlassEdgeOverdraw);
+      expect(clipRect.right, glassRect.right - homePageChromeGlassEdgeOverdraw);
+      expect(
+        clipRect.bottom,
+        closeTo(glassRect.bottom + expected, 0.5),
+        reason: '裁剪区（= 可采范围）必须比形状底边低一截，否则那截位移读空 = 一条黑边',
+      );
     });
   });
 

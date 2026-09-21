@@ -294,26 +294,37 @@ void main() {
         reason: '带底落在课表上沿，不再往下多画：多画就等于把可见区里的位移曲线截断成一条线',
       );
 
-      // 但**裁剪框**要比可见带低一截（[homePageChromeGlassCaptureMargin]）：带底朝外的
+      // 但**盒子**要比可见带低一截（[homePageChromeGlassCaptureMargin]）：带底朝外的
       // 位移得能采到带外的真实内容，否则那几像素读空、`mix(空, tint)` 就是一条黑边
-      // （用户 2026-09-21：预览与首页都有、宽度随「作用带宽度」滑杆走）。
+      // （用户 2026-09-21：预览与首页都有）。⚠️ 必须是撑盒子 —— 只放大 `ClipRect` 的矩形
+      // 没用（里面的 `Stack` 是 `Clip.hardEdge`，按自己的边界裁孩子，交集仍是带子本体）。
       // 形状那一层不动 —— 上面两条 `glassRect` 断言就是这条边界。
       final fill = tester.widget<HomePageChromeGlassFill>(
         find.byType(HomePageChromeGlassFill),
       );
-      final bandClip = tester.widget<HomePageChromeGlassBandClip>(
-        find.byType(HomePageChromeGlassBandClip),
+      final expectedMargin = homePageChromeGlassCaptureMargin(
+        material: 'liquid',
+        refraction: LiquidGlassTuning.defaults.refraction,
+        maxRefraction: fill.maxRefraction,
       );
       expect(
-        bandClip.margin,
-        homePageChromeGlassCaptureMargin(
-          material: 'liquid',
-          refraction: LiquidGlassTuning.defaults.refraction,
-          maxRefraction: fill.maxRefraction,
-        ),
+        expectedMargin,
+        greaterThan(0),
         reason: '余量要按这条带**自己的**位移上限算（预览带按带高折算那份）',
       );
-      expect(bandClip.margin, greaterThan(0));
+      final clipRect = tester.getRect(
+        find
+            .ancestor(
+              of: find.byType(HomePageChromeGlassFill),
+              matching: find.byType(ClipRect),
+            )
+            .first,
+      );
+      expect(
+        clipRect.bottom,
+        closeTo(glassRect.bottom + expectedMargin, 0.5),
+        reason: '裁剪区（= 可采范围）必须比形状底边低一截，否则那截位移读空 = 一条黑边',
+      );
     });
   });
 
