@@ -251,23 +251,21 @@ void main() {
       expect(solid.bottom, 0, reason: '实体档没有形状边界那套折射');
     });
 
-    testWidgets('这条带必须采祖先组的整屏背景（否则只会在下边钳出一条黑线）', (tester) async {
-      // 这条是 2026-09-20 用户实测「打开磨砂强度后星期栏底边一条黑线」的对策。
-      // 推理链（三段都要成立才需要组采样）：
-      //  ① 带级采样下，折射位移越过带自己的边界就会"钳在带自己的边上"；
-      //  ② 这条带的左右被 48px 推到可见区之外，**只有下边留在可见区**（上边贴着屏幕顶）；
-      //  ③ 下边的可见边界不能靠"再推远点"绕开 —— 外溢只有 0 这一个取值（> 0 就把位移曲线
-      //     截断成一条线、并把边光那一圈推出可见区，见上一条测试）。所以位移一定会朝外
-      //     越过下边，一定需要一份带外的真实背景可采。
-      // ⇒ 换采样源：采祖先 BackdropGroup 那份整屏背景，位移取到的是真实背景而不是钳出来的边。
-      // 首页为此早就搭好了 BackdropGroup + 全尺寸 UndimmedBackdropCapture，只是这个
-      // 开关一直没接上。
+    testWidgets('这条带必须采祖先组的捕获（决定采到**哪一份**背景）', (tester) async {
+      // 2026-09-20：首页与设置页预览**两处都接上**了 `useAncestorBackdropGroup`
+      // —— 它决定采到的是**哪一份**背景：祖先 `BackdropGroup` 里由
+      // `UndimmedBackdropCapture`（组内首个 filter）缓存下来的**整屏壁纸**，
+      // 而不是带子自己那一小块被压暗 / 裁过的内容。首页早就搭好了这套结构，
+      // 只是带这一侧的开关一直没接上。
       //
-      // 底栏药丸（同样零外溢、同样 `grouped: true`）是这条推理的活证据：它折射效果正常
-      // ⇒ 组采样这条路本身是通的。
+      // ⚠️ **订正（2026-09-21）**：这条开关**不足以**治带底那条黑边。黑边的真因是
+      // 「能采到的**范围**不够」—— 引擎把 backdrop 的背景掐在「渲染目标 ∩ 当前裁剪区」，
+      // 而下边外溢恒为 0 ⇒ 形状底边正好压在裁剪线上 ⇒ 带底朝外那截位移采到空。
+      // 范围那一半的修法与守卫见下面「裁剪框底边留采样余量」那组用例。
       //
-      // 首页与设置页预览**两处都开着**它（2026-09-20 第五轮起预览也接了）：两处的
-      // 差别不在采样源，而在几何适配（预览带按带高压折射位移）。
+      // 底栏药丸（同样零外溢）是"整段越界都采得到真内容"的活证据：它身上没有紧贴的
+      // 裁剪框（`ClipRRect` 在滤镜层之后才 push），而且它的 `grouped` 早被查实是空转、
+      // 已删（见 `glass-dock-outside-capture-subtree`）。
       await bandGlassPositioned(tester);
       final fill = tester.widget<HomePageChromeGlassFill>(
         find.byType(HomePageChromeGlassFill),
@@ -275,8 +273,105 @@ void main() {
       expect(
         fill.useAncestorBackdropGroup,
         isTrue,
-        reason: '带级采样会把折射位移钳在下边、读出一条黑线；这条带必须采祖先组的整屏背景',
+        reason: '采到压暗过的带级内容会让这条带读起来像一块脏玻璃',
       );
+    });
+  });
+
+  group('裁剪框底边要留够采样余量（带底那条黑边的修法，2026-09-21）', () {
+    test('液态档：余量 ≥ 最大位移 + 1，且跟着「折射位移」滑杆走', () {
+      // 带底朝外那几像素位移能探出裁剪线多少，就决定黑边多宽 —— 而位移整条曲线由
+      // 「作用带宽度」缩放（所以用户看到的是「作用带调低、黑边变细」）。
+      for (
+        var refraction = LiquidGlassTuning.minRefraction;
+        refraction <= LiquidGlassTuning.maxRefraction;
+        refraction += 1
+      ) {
+        expect(
+          homePageChromeGlassCaptureMargin(
+            material: 'liquid',
+            refraction: refraction,
+          ),
+          greaterThanOrEqualTo(refraction + 1),
+          reason: '折射位移 $refraction：余量不够时带底那圈朝外采样的像素落在可采范围外，读到空',
+        );
+      }
+      // 默认档（折射 8）取到的是下限 8：8 + 1 = 9 > 8。
+      expect(
+        homePageChromeGlassCaptureMargin(
+          material: 'liquid',
+          refraction: LiquidGlassTuning.defaultRefraction,
+        ),
+        LiquidGlassTuning.defaultRefraction + 1,
+      );
+      expect(homePageChromeGlassCaptureMarginFloor, 8.0);
+    });
+
+    test('表面自己的几何上限（窄带 / 预览带按带高折算那份）比调参更小时按它算', () {
+      expect(
+        homePageChromeGlassCaptureMargin(
+          material: 'liquid',
+          refraction: LiquidGlassTuning.maxRefraction,
+          maxRefraction: 11,
+        ),
+        12.0,
+        reason: '预览带把位移压到 11 ⇒ 余量只要盖过 11，多留的都是白花的绘制面积',
+      );
+    });
+
+    test('实体档不留余量；存量档与液态同口径（它们渲染的就是液态玻璃）', () {
+      expect(
+        homePageChromeGlassCaptureMargin(
+          material: 'solid',
+          refraction: LiquidGlassTuning.maxRefraction,
+        ),
+        0,
+        reason: '实心条不采样任何东西，撑大裁剪框没有意义',
+      );
+      for (final material in ['progressive', 'gaussian', 'soft']) {
+        expect(
+          homePageChromeGlassCaptureMargin(
+            material: material,
+            refraction: LiquidGlassTuning.maxRefraction,
+          ),
+          LiquidGlassTuning.maxRefraction + 1,
+          reason: '$material 渲染的是液态玻璃，余量漏掉就是它们的黑边回来',
+        );
+      }
+    });
+
+    testWidgets('裁剪框底边比可见带低一截，形状那一层一点不动', (tester) async {
+      // 这两件事必须分开取（这条带来回改了六轮就是混成了一个量）：
+      //  * **形状**（`HomePageChromeGlassFill` 那层）底边仍落在**可见带底**、外溢 0
+      //    —— 挪它就是把可见区里的位移曲线截断成一条线；
+      //  * **裁剪框**（`HomePageChromeGlassBandClip`）底边往下多留一截，让带外那块背景
+      //    进到可采范围。
+      final positioned = await bandGlassPositioned(tester);
+      expect(positioned.bottom, 0.0, reason: '形状底边仍在可见带底');
+
+      final bandClip = tester.widget<HomePageChromeGlassBandClip>(
+        find.byType(HomePageChromeGlassBandClip),
+      );
+      final expected = homePageChromeGlassCaptureMargin(
+        material: 'liquid',
+        refraction: LiquidGlassTuning.defaults.refraction,
+      );
+      expect(bandClip.margin, expected);
+      expect(
+        expected,
+        greaterThan(0),
+        reason: '没有余量就是形状底边贴着裁剪线 —— 带底朝外的位移全采到空',
+      );
+
+      // 裁剪矩形：宽不变、上边不动、**底边 = 带高 + 余量**。
+      final size = tester.getSize(find.byType(HomePageChromeGlassBandClip));
+      final expanded = HomePageChromeGlassCaptureClipper(
+        expected,
+      ).getClip(size);
+      expect(expanded.left, 0);
+      expect(expanded.top, 0);
+      expect(expanded.right, size.width);
+      expect(expanded.bottom, size.height + expected);
     });
   });
 

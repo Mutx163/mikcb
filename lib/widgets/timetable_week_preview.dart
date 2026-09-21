@@ -283,6 +283,13 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final double? effectiveMaxRefraction =
         narrowSurfaceMaxRefraction(height) ??
         (isSettingsPreview ? 11.0 : null);
+    // 裁剪框底边再往下多留一截（[homePageChromeGlassCaptureMargin]）：带底朝外的位移
+    // 必须能采到带外的真实内容，否则那几像素读空 = 一条黑边（用户 2026-09-21：
+    // 预览与首页都有、宽度随「作用带宽度」滑杆走）。形状与观感都不动。
+    final captureMargin = homePageChromeGlassCaptureMarginOf(
+      context,
+      maxRefraction: effectiveMaxRefraction,
+    );
     return [
       Positioned(
         top: top,
@@ -290,7 +297,8 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
         right: 0,
         height: height,
         child: IgnorePointer(
-          child: ClipRect(
+          child: HomePageChromeGlassBandClip(
+            margin: captureMargin,
             child: Stack(
               fit: StackFit.expand,
               children: [

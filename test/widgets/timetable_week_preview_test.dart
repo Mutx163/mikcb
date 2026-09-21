@@ -293,6 +293,27 @@ void main() {
         ),
         reason: '带底落在课表上沿，不再往下多画：多画就等于把可见区里的位移曲线截断成一条线',
       );
+
+      // 但**裁剪框**要比可见带低一截（[homePageChromeGlassCaptureMargin]）：带底朝外的
+      // 位移得能采到带外的真实内容，否则那几像素读空、`mix(空, tint)` 就是一条黑边
+      // （用户 2026-09-21：预览与首页都有、宽度随「作用带宽度」滑杆走）。
+      // 形状那一层不动 —— 上面两条 `glassRect` 断言就是这条边界。
+      final fill = tester.widget<HomePageChromeGlassFill>(
+        find.byType(HomePageChromeGlassFill),
+      );
+      final bandClip = tester.widget<HomePageChromeGlassBandClip>(
+        find.byType(HomePageChromeGlassBandClip),
+      );
+      expect(
+        bandClip.margin,
+        homePageChromeGlassCaptureMargin(
+          material: 'liquid',
+          refraction: LiquidGlassTuning.defaults.refraction,
+          maxRefraction: fill.maxRefraction,
+        ),
+        reason: '余量要按这条带**自己的**位移上限算（预览带按带高折算那份）',
+      );
+      expect(bandClip.margin, greaterThan(0));
     });
   });
 

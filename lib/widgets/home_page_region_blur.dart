@@ -83,6 +83,11 @@ const homePageChromeGlassEdgeOverdraw = 48.0;
 /// 注：这条带下边自 2026-09-20 起走「细长条 ⇒ 整圈均匀」那一档（见
 /// `liquidGlassRimCornerOnlyForSize`），所以零外溢时**边光也在可见区里**（这是要的：
 /// 它和折射一起构成那圈边缘观感，且边光不依赖背景，平坦壁纸上是唯一看得见的玻璃感）。
+///
+/// ⚠️ 零外溢有一个**必须同时成立**的前提：形状底边之外那截背景得**采得到**
+/// （[homePageChromeGlassCaptureMargin]）。少了它，带底朝外那几像素位移就落在可采范围外、
+/// 读到空 ⇒ 真机一条黑边（2026-09-21 用户报的就是它，宽度随「作用带宽度」走）。
+/// 治法是放裁剪框，**不是**把这个外溢调大（调大 = 把可见区里的位移曲线截断成一条线）。
 const homePageChromeGlassBottomEdgeOverdraw = 0.0;
 
 /// 这条玻璃带**上下两条直边**各要往外多画多少（逻辑 px）。
@@ -138,6 +143,110 @@ const homePageChromeGlassBottomEdgeOverdraw = 0.0;
     refractionBand: tuning.refractionBand,
     rimWidth: tuning.rimWidth,
   );
+}
+
+/// 带底**下方**还要留出多少「可被采样到的背景」（逻辑 px）—— 与
+/// [homePageChromeGlassVerticalOverhang] 是两个**独立**的量，别再混成一个。
+///
+/// * [homePageChromeGlassVerticalOverhang] 挪的是**形状边界**：上边要盖过作用带、下边
+///   必须是 0（曲线一被截断就读成一条线）。
+/// * 本值挪的是**裁剪框**（= 引擎肯给这条带准备的那块背景的范围），**形状一动不动**。
+///
+/// ## 为什么必须有它（2026-09-21：带底那条黑边，宽度随作用带宽度走）
+///
+/// 真机截图逐像素（用户档、液态玻璃）：带底一条 `58,58,58` 中性灰 + 紧挨着一条偏蓝发丝
+/// （B−R ≈ +50），合计约 5 逻辑 px，**宽度随「作用带宽度」滑杆走**（调低就变细）。
+/// `58 ≈ tint × 近白` = 着色器 `mix(base, u_tint.rgb, u_tint.a)` 里 **base 采到了空**。
+///
+/// 空从哪来：这条带的玻璃坐在一个 `ClipRect` 里（形状要往左右多画 48px，必须裁），而
+/// Impeller 给 backdrop filter 准备背景时把范围掐在**渲染目标 ∩ 当前裁剪区**
+/// （引擎 `Canvas::GetLocalCoverageLimit`，这份 `coverage_limit` 又喂给 `GetSourceCoverage`
+/// 决定给采样器多大一块）。而**下边外溢恒为 0** ⇒ 形状底边正好压在裁剪线上 ⇒ 带底那一圈
+/// **朝外**推着采样的像素（`push = refract × profile(1 − 深度/作用带)`，在带底就是满位移）
+/// 一推就出了可采范围 ⇒ 读空 ⇒ tint 混黑。它是"位移越界"的老症状，根却在**可采范围**上，
+/// 不在位移（§14.1 已证越界无害：越界本来就该读到带外内容，底栏药丸吃的就是带外壁纸）。
+/// 宽度随作用带走也是同一件事：能探出裁剪线的就是 `push(深度) > 深度` 那一段，而整条
+/// `push` 曲线由作用带缩放。
+///
+/// 为什么底栏药丸（同一份材质、同样零外溢）没这条边：药丸身上**没有紧贴的裁剪框** ——
+/// 它的 `ClipRRect` 是在滤镜层**之后**才 push 的（见 `liquid_glass_surface.dart` 的
+/// `_RenderLiquidGlass.paint`）⇒ 可采范围一直是整屏。
+///
+/// ⇒ 本值把裁剪框往下放这么高：形状与观感一个字不动，只是那片内容不再被裁掉。
+/// 取 `max(8, 实际最大位移 + 1)` —— 位移上限就是 `refraction`（滑杆 0..20），+1 给抗锯齿
+/// 那一像素留余量。
+const homePageChromeGlassCaptureMarginFloor = 8.0;
+
+double homePageChromeGlassCaptureMargin({
+  required String material,
+  required double refraction,
+  double? maxRefraction,
+}) {
+  if (!homeBandUsesAdvancedGlass(material)) {
+    return 0;
+  }
+  final effective = maxRefraction == null
+      ? refraction
+      : math.min(refraction, maxRefraction);
+  return math.max(homePageChromeGlassCaptureMarginFloor, effective + 1);
+}
+
+/// [homePageChromeGlassCaptureMargin] 的取参入口：首页玻璃带与设置页预览带共用同一口径。
+///
+/// [maxRefraction] 传该表面自己的几何上限（窄带 / 预览带按带高折算的那一份），没有就 null。
+double homePageChromeGlassCaptureMarginOf(
+  BuildContext context, {
+  double? maxRefraction,
+}) {
+  final tuning =
+      FrostedAppearanceScope.of(context).liquidGlassTuning ??
+      LiquidGlassTuning.defaults;
+  return homePageChromeGlassCaptureMargin(
+    material: HyperosBlurredHeader.homeBandGlassMaterialOf(context),
+    refraction: tuning.refraction,
+    maxRefraction: maxRefraction,
+  );
+}
+
+/// 这条带的裁剪框：左右上三边仍是带本体，**底边**放到带底下方 [margin] px
+/// （理由见 [homePageChromeGlassCaptureMargin]）。
+///
+/// 为什么用 clipper 而不是把盒子撑高：撑高会连带改掉里面那层 `Positioned` 的偏移，也就动了
+/// 形状那一套算术 —— 而"形状该在哪"与"能采到哪块背景"正是这条带来回改了六轮的同一个坑。
+/// 这里只放裁剪框，形状一个数都不碰。
+class HomePageChromeGlassBandClip extends StatelessWidget {
+  const HomePageChromeGlassBandClip({
+    required this.margin,
+    required this.child,
+    super.key,
+  });
+
+  /// 底边要往下多放多少（逻辑 px）。0 = 与带本体齐平。
+  final double margin;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ClipRect(
+    clipper: HomePageChromeGlassCaptureClipper(margin),
+    child: child,
+  );
+}
+
+/// [HomePageChromeGlassBandClip] 的裁剪矩形：`(0, 0)` 到 `(宽, 高 + margin)`。
+@visibleForTesting
+class HomePageChromeGlassCaptureClipper extends CustomClipper<Rect> {
+  const HomePageChromeGlassCaptureClipper(this.margin);
+
+  final double margin;
+
+  @override
+  Rect getClip(Size size) =>
+      Rect.fromLTRB(0, 0, size.width, size.height + margin);
+
+  @override
+  bool shouldReclip(HomePageChromeGlassCaptureClipper oldClipper) =>
+      oldClipper.margin != margin;
 }
 
 /// Whether any home chrome frosted band should paint over the wallpaper.
@@ -302,6 +411,10 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
     // 非实体档（液态玻璃，含存量中间档）上边要盖过用户的「作用带宽度」、下边与底栏
     // 药丸同为 0；实体档两条边都是 0。
     final overhang = homePageChromeGlassVerticalOverhangOf(context);
+    // 裁剪框底边还要往下放这么高 —— 只放大「能采到哪块背景」，形状不动。
+    // 为什么（黑边）：见 [homePageChromeGlassCaptureMargin]。这两件事必须分开取，
+    // 混在一起正是这条带来回改了六轮的地方。
+    final captureMargin = homePageChromeGlassCaptureMarginOf(context);
 
     return Positioned(
       top: layout.top,
@@ -309,7 +422,8 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
       right: 0,
       height: layout.height,
       child: IgnorePointer(
-        child: ClipRect(
+        child: HomePageChromeGlassBandClip(
+          margin: captureMargin,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -318,21 +432,24 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
               // 上）；**下边只推 `overhang.bottom`（液态 0）** —— 下边是这条带唯一
               // 可见的形状边界，推出去就等于把折射 / 高光 / 色散整圈删掉
               // （见 [homePageChromeGlassBottomEdgeOverdraw]）。
+              //
+              // ⚠️ 下边朝外那截位移要能采到**带外**的内容，靠的不是这个偏移（它是 0），
+              // 而是上面那层裁剪框往下多留的一截（[homePageChromeGlassCaptureMargin]）。
+              // 少了它，越界采样读空 ⇒ 带底一条黑边。
               Positioned(
                 top: -overhang.top,
                 left: -homePageChromeGlassEdgeOverdraw,
                 right: -homePageChromeGlassEdgeOverdraw,
                 bottom: -overhang.bottom,
                 child: const HomePageChromeGlassFill(
-                  // ⚠️ 必须采**祖先组的整屏背景**（2026-09-20 修）。
+                  // ⚠️ 采**祖先组**那份捕获（2026-09-20 加）：它决定采到的是**哪一份**
+                  // 背景（首页是组内 `UndimmedBackdropCapture` 缓存下来的整屏壁纸，
+                  // 而不是带子自己那一小块被压暗/裁过的内容）。
                   //
-                  // 带级采样下，折射位移一旦越过带自己的边界就"钳在带自己的边上"
-                  // （见 [HomePageChromeGlassFill.useAncestorBackdropGroup] 的说明），
-                  // 于是从条带边缘读出来。首页为此**早就搭好了组捕获结构**
-                  // （`timetable_screen.dart` 的 `BackdropGroup` + 全尺寸
-                  // `UndimmedBackdropCapture`），只是这里的开关一直没接上。
-                  // 组捕获与"上边外溢推到裁剪线外"是**两条并行的手段**：前者管位移
-                  // 出界，后者管上边那圈边缘带本身落在可见区里。
+                  // ⚠️ 但**范围**不归它管：能采到多大的世界由裁剪框决定
+                  // （引擎把 backdrop 的背景掐在「渲染目标 ∩ 当前裁剪区」）。2026-09-21
+                  // 带底那条随作用带走宽度的黑边就是范围不够 —— 修法见
+                  // [homePageChromeGlassCaptureMargin]，别再指望这一行开关。
                   useAncestorBackdropGroup: true,
                 ),
               ),
@@ -380,6 +497,11 @@ class HomePageChromeGlassFill extends StatelessWidget {
   /// this to true makes the band sample a full-size grouped capture (wallpaper layer +
   /// [UndimmedBackdropCapture] inside the group) so the displacement range stays inside
   /// the captured backdrop.
+  ///
+  /// ⚠️ **订正（2026-09-21）**：上面这条推理只对了一半 —— 组捕获定的是采到**哪一份**
+  /// 背景（未压暗的整屏壁纸），**采得到多大范围**由**裁剪框**决定（引擎把 backdrop 的
+  /// 背景掐在「渲染目标 ∩ 当前裁剪区」）。所以这条开关**不足以**治带底那条黑边；
+  /// 范围那一半见 [homePageChromeGlassCaptureMargin]。
   final bool useAncestorBackdropGroup;
 
   /// 折射位移上限（逻辑 px），见 [LiquidGlassSurface.maxRefraction]。
