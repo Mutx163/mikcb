@@ -529,119 +529,11 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
                       children: [
                         if (_draft.liquidGlassPreset ==
                             LiquidGlassPreset.custom) ...[
-                          // 滑杆一律关掉「点标题弹数字输入框」：那会开出二级弹层，
-                          // 而本面板是根覆盖层自插条目，嵌套弹层会被压在背面
-                          // （2026-09-19 真机实锤，见 [_MaterialSegmented] 的说明）。
-                          // 面板里的可调项必须全是内联控件。
-                          HyperosSliderTile(
-                            tapToEdit: false,
-                            title: l10n.liquidGlassRefractionLabel,
-                            value: liquidTuning.refraction,
-                            max: LiquidGlassTuning.maxRefraction,
-                            divisions: 40,
-                            valueLabel: _tuningNum(
-                              liquidTuning.refraction,
-                              1,
-                            ),
-                            onChanged: (value) => _updateLiquidTuning(
-                              (t) => t.copyWith(refraction: value),
-                            ),
-                          ),
-                          HyperosSliderTile(
-                            tapToEdit: false,
-                            title: l10n.liquidGlassRefractionBandLabel,
-                            value: liquidTuning.refractionBand,
-                            min: LiquidGlassTuning.minRefractionBand,
-                            max: LiquidGlassTuning.maxRefractionBand,
-                            divisions: 46,
-                            valueLabel: _tuningNum(
-                              liquidTuning.refractionBand,
-                              1,
-                            ),
-                            onChanged: (value) => _updateLiquidTuning(
-                              (t) => t.copyWith(refractionBand: value),
-                            ),
-                          ),
-                          HyperosSliderTile(
-                            tapToEdit: false,
-                            title: l10n.liquidGlassRefractionEdgePowLabel,
-                            value: liquidTuning.refractionEdgePow,
-                            min: LiquidGlassTuning.minRefractionEdgePow,
-                            max: LiquidGlassTuning.maxRefractionEdgePow,
-                            divisions: 20,
-                            valueLabel: _tuningNum(
-                              liquidTuning.refractionEdgePow,
-                              2,
-                            ),
-                            onChanged: (value) => _updateLiquidTuning(
-                              (t) => t.copyWith(refractionEdgePow: value),
-                            ),
-                          ),
-                          HyperosSliderTile(
-                            tapToEdit: false,
-                            title: l10n.liquidGlassDispersionLabel,
-                            value: liquidTuning.dispersion,
-                            divisions: 20,
-                            valueLabel: _tuningPct(
-                              liquidTuning.dispersion,
-                            ),
-                            onChanged: (value) => _updateLiquidTuning(
-                              (t) => t.copyWith(dispersion: value),
-                            ),
-                          ),
-                          HyperosSliderTile(
-                            tapToEdit: false,
-                            title: l10n.liquidGlassRimStrengthLabel,
-                            value: liquidTuning.rimStrength,
-                            divisions: 20,
-                            valueLabel: _tuningPct(
-                              liquidTuning.rimStrength,
-                            ),
-                            onChanged: (value) => _updateLiquidTuning(
-                              (t) => t.copyWith(rimStrength: value),
-                            ),
-                          ),
-                          HyperosSliderTile(
-                            tapToEdit: false,
-                            title: l10n.liquidGlassRimWidthLabel,
-                            value: liquidTuning.rimWidth,
-                            max: LiquidGlassTuning.maxRimWidth,
-                            // 步长 0.1（3 / 30）：细线口径的取值都在 0.6~1.1 之间，
-                            // 步长 0.5 会连默认值 0.8 都落不到格点上。
-                            divisions: 30,
-                            valueLabel: _tuningNum(
-                              liquidTuning.rimWidth,
-                              1,
-                            ),
-                            onChanged: (value) => _updateLiquidTuning(
-                              (t) => t.copyWith(rimWidth: value),
-                            ),
-                          ),
-                          HyperosSliderTile(
-                            tapToEdit: false,
-                            title: l10n.liquidGlassBlurSigmaLabel,
-                            value: liquidTuning.blurSigma,
-                            max: LiquidGlassTuning.maxBlurSigma,
-                            divisions: 40,
-                            valueLabel: _tuningNum(
-                              liquidTuning.blurSigma,
-                              0,
-                            ),
-                            onChanged: (value) => _updateLiquidTuning(
-                              (t) => t.copyWith(blurSigma: value),
-                            ),
-                          ),
-                          HyperosSliderTile(
-                            tapToEdit: false,
-                            title: l10n.liquidGlassTintLabel,
-                            value: liquidTuning.tintAlpha,
-                            divisions: 20,
-                            valueLabel: _tuningPct(
-                              liquidTuning.tintAlpha,
-                            ),
-                            onChanged: (value) => _updateLiquidTuning(
-                              (t) => t.copyWith(tintAlpha: value),
-                            ),
+                          // 浅色档的八根旋钮（与深色档共用同一份渲染）。
+                          ..._liquidSliderTiles(
+                            l10n,
+                            tuning: liquidTuning,
+                            onUpdate: _updateLiquidTuning,
                           ),
                           Padding(
                             padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -664,6 +556,59 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
                         ],
                       ],
                     ),
+                    const SizedBox(height: 8),
+                    // ── 浅/深成对（2026-09-21）。设计见
+                    // `.agents/notes/proposed/architecture/2026-09-21-liquid-glass-light-dark-pair.md`
+                    // 两个开关都在**恒常**区（不进 `custom` 门内）：配方作用在预设档的
+                    // 旋钮上照样成立，只有「调深色档」才需要自定义档。
+                    HyperosListGroup(
+                      children: [
+                        HyperosSwitchTile(
+                          title: l10n.liquidGlassDarkBoostLabel,
+                          subtitle: l10n.liquidGlassDarkBoostSubtitle,
+                          value: _draft.darkGlassBoostEnabled,
+                          onChanged: (value) {
+                            _updateDraft(
+                              _draft.copyWith(darkGlassBoostEnabled: value),
+                            );
+                          },
+                        ),
+                        HyperosSwitchTile(
+                          // 开关语义是「独立」，而字段存的是「是否跟随」，所以取反。
+                          title: l10n.liquidGlassDarkIndependentLabel,
+                          subtitle: l10n.liquidGlassDarkIndependentSubtitle,
+                          value: !_draft.linkLiquidGlassTuning,
+                          onChanged: (independent) {
+                            _updateDraft(
+                              _draft.copyWith(
+                                linkLiquidGlassTuning: !independent,
+                                // 第一次打开、且从没设过深色档 ⇒ 以浅色档为起点。
+                                // 配方照旧套在「选中的那一档」上，所以这一按
+                                // **不会让画面跳**（跳了就是这里写错了）。
+                                liquidGlassTuningDark: independent
+                                    ? (_draft.liquidGlassTuningDark ??
+                                          liquidTuning)
+                                    : _draft.liquidGlassTuningDark,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    // 深色档的八根旋钮：与浅色档同构、共用同一个渲染函数
+                    // （[_liquidSliderTiles]）。只在「自定义 + 深色独立」时出现 ——
+                    // 预设档下旋钮本就不可调，列出来只会误导。
+                    if (_draft.liquidGlassPreset == LiquidGlassPreset.custom &&
+                        !_draft.linkLiquidGlassTuning) ...[
+                      const SizedBox(height: 12),
+                      HyperosListGroup(
+                        children: _liquidSliderTiles(
+                          l10n,
+                          tuning: _draft.liquidGlassTuningDark ?? liquidTuning,
+                          onUpdate: _updateDarkTuning,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     HyperosListGroup(
                       children: [
@@ -788,8 +733,146 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     );
   }
 
+  /// 深色档的滑杆落地口。取值回落链必须与面板里读的那条一致
+  /// （`深色档 ?? 浅色档 ?? 默认`），否则拖杆会从另一档的初值开始跳。
+  void _updateDarkTuning(
+    LiquidGlassTuning Function(LiquidGlassTuning tuning) update,
+  ) {
+    _updateDraft(
+      _draft.copyWith(
+        liquidGlassTuningDark: update(
+          _draft.liquidGlassTuningDark ??
+              _draft.liquidGlassTuning ??
+              LiquidGlassTuning.defaults,
+        ),
+      ),
+      debounce: true,
+    );
+  }
   String _tuningNum(double value, int digits) => value.toStringAsFixed(digits);
   String _tuningPct(double value) => '${(value * 100).round()}%';
+
+  /// 液态玻璃的八根滑杆。**浅色档与深色档共用这一份** —— 两套各写一遍迟早会漂，
+  /// 而「同一材质两种观感」正是这个仓库反复吃亏的那类病。
+  ///
+  /// 滑杆一律关掉「点标题弹数字输入框」：那会开出二级弹层，而本面板是根覆盖层
+  /// 自插条目（MiuixWindowBottomSheet），嵌套弹层会被压在背面（2026-09-19 真机实锤）。
+  List<Widget> _liquidSliderTiles(
+    AppLocalizations l10n, {
+    required LiquidGlassTuning tuning,
+    required void Function(LiquidGlassTuning Function(LiquidGlassTuning)) onUpdate,
+  }) => [
+      HyperosSliderTile(
+        tapToEdit: false,
+        title: l10n.liquidGlassRefractionLabel,
+        value: tuning.refraction,
+        max: LiquidGlassTuning.maxRefraction,
+        divisions: 40,
+        valueLabel: _tuningNum(
+          tuning.refraction,
+          1,
+        ),
+        onChanged: (value) => onUpdate(
+          (t) => t.copyWith(refraction: value),
+        ),
+      ),
+      HyperosSliderTile(
+        tapToEdit: false,
+        title: l10n.liquidGlassRefractionBandLabel,
+        value: tuning.refractionBand,
+        min: LiquidGlassTuning.minRefractionBand,
+        max: LiquidGlassTuning.maxRefractionBand,
+        divisions: 46,
+        valueLabel: _tuningNum(
+          tuning.refractionBand,
+          1,
+        ),
+        onChanged: (value) => onUpdate(
+          (t) => t.copyWith(refractionBand: value),
+        ),
+      ),
+      HyperosSliderTile(
+        tapToEdit: false,
+        title: l10n.liquidGlassRefractionEdgePowLabel,
+        value: tuning.refractionEdgePow,
+        min: LiquidGlassTuning.minRefractionEdgePow,
+        max: LiquidGlassTuning.maxRefractionEdgePow,
+        divisions: 20,
+        valueLabel: _tuningNum(
+          tuning.refractionEdgePow,
+          2,
+        ),
+        onChanged: (value) => onUpdate(
+          (t) => t.copyWith(refractionEdgePow: value),
+        ),
+      ),
+      HyperosSliderTile(
+        tapToEdit: false,
+        title: l10n.liquidGlassDispersionLabel,
+        value: tuning.dispersion,
+        divisions: 20,
+        valueLabel: _tuningPct(
+          tuning.dispersion,
+        ),
+        onChanged: (value) => onUpdate(
+          (t) => t.copyWith(dispersion: value),
+        ),
+      ),
+      HyperosSliderTile(
+        tapToEdit: false,
+        title: l10n.liquidGlassRimStrengthLabel,
+        value: tuning.rimStrength,
+        divisions: 20,
+        valueLabel: _tuningPct(
+          tuning.rimStrength,
+        ),
+        onChanged: (value) => onUpdate(
+          (t) => t.copyWith(rimStrength: value),
+        ),
+      ),
+      HyperosSliderTile(
+        tapToEdit: false,
+        title: l10n.liquidGlassRimWidthLabel,
+        value: tuning.rimWidth,
+        max: LiquidGlassTuning.maxRimWidth,
+        // 步长 0.1（3 / 30）：细线口径的取值都在 0.6~1.1 之间，
+        // 步长 0.5 会连默认值 0.8 都落不到格点上。
+        divisions: 30,
+        valueLabel: _tuningNum(
+          tuning.rimWidth,
+          1,
+        ),
+        onChanged: (value) => onUpdate(
+          (t) => t.copyWith(rimWidth: value),
+        ),
+      ),
+      HyperosSliderTile(
+        tapToEdit: false,
+        title: l10n.liquidGlassBlurSigmaLabel,
+        value: tuning.blurSigma,
+        max: LiquidGlassTuning.maxBlurSigma,
+        divisions: 40,
+        valueLabel: _tuningNum(
+          tuning.blurSigma,
+          0,
+        ),
+        onChanged: (value) => onUpdate(
+          (t) => t.copyWith(blurSigma: value),
+        ),
+      ),
+      HyperosSliderTile(
+        tapToEdit: false,
+        title: l10n.liquidGlassTintLabel,
+        value: tuning.tintAlpha,
+        divisions: 20,
+        valueLabel: _tuningPct(
+          tuning.tintAlpha,
+        ),
+        onChanged: (value) => onUpdate(
+          (t) => t.copyWith(tintAlpha: value),
+        ),
+      ),
+  ];
 
   @override
   Widget build(BuildContext context) {

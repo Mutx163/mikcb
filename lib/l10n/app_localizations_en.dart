@@ -10524,6 +10524,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liquidGlassResetAction => 'Reset to Default';
 
   @override
+  String get liquidGlassDarkBoostLabel => 'Darker glass in dark mode';
+
+  @override
+  String get liquidGlassDarkBoostSubtitle =>
+      'Neutral gray tint, a bit more blur and a softer rim in dark mode';
+
+  @override
+  String get liquidGlassDarkIndependentLabel =>
+      'Set dark appearance separately';
+
+  @override
+  String get liquidGlassDarkIndependentSubtitle =>
+      'Dark mode follows the light settings; turn on to tune a separate set';
+
+  @override
   String get softGlassPresetLabel => 'Soft glass preset';
 
   @override

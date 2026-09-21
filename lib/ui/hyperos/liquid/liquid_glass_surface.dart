@@ -91,66 +91,6 @@ double liquidGlassDomeForSize(Size size) {
   return dome.clamp(0.0, 1.0);
 }
 
-/// 长短边比 ≤ 这个值时，边光按「**只留转角**」处理（方正的板）。
-const double _rimCornerOnlyBelowAspect = 1.6;
-
-/// 长短边比 ≥ 这个值时，边光按「**整圈均匀**」处理（细长条）。
-const double _rimUniformAboveAspect = 2.6;
-
-/// 短边 ≤ 这个值的表面一律「整圈均匀」，不参与上面那条「只留转角」的分档
-/// （逻辑 px，与 [narrowSurfaceMaxRefraction] 的尺寸线同档）。
-///
-/// 为什么小件必须整圈均匀：「只留转角」治的是**贯屏长直边**上的浅色条（见
-/// [liquidGlassRimCornerOnlyForSize]），而那些直边之所以读成描边，靠的是**长度**。
-/// 60×36 的悬浮按钮（圆角 16）顶边直段只有 28px、只有屏幕宽的 7%，它读作"按钮的
-/// 上沿反光"，收掉它就是另一回事了 —— 按长短边比推还会得到 0.93（几乎全收），
-/// 顶上那条直边只剩四成亮，而四个圆角仍满档。真机口径（2026-09-21）：
-/// 「四周的白边不均匀，顶部看起来是黑的，四个角是正常白边」。
-///
-/// 圆件（常驻球、返回键圆底、坞内圆钮）本就不受这条分档影响（着色器里圆形的 SDF
-/// 中间量两个分量恒非负），细长条（药丸、玻璃带）按长短边比也早已落在 0，所以这条
-/// 尺寸线实际只改小件（按钮）一个家族。
-const double _rimUniformBelowShortSide = 52;
-
-/// 按表面**形状**推导边光的作用范围（0 = 整圈均匀、1 = 只留转角）。
-///
-/// 为什么不能只看「这条边直不直」：底栏那颗药丸的上沿与底部弹窗的上沿**几何上是
-/// 同一个东西** —— 都是三百多像素的长直边、圆角都是 27/28。真机口径「底栏高光只剩
-/// 左右」就是这么来的：回读确认药丸的上沿只有左右各约 35 逻辑 px 亮着、中间 220px
-/// 全黑（弹窗的上沿读数与它几乎一样）。所以判据必须是**这块面整体是细条还是方正的
-/// 板**：
-///
-/// * 细长条（长短边比 ≥ [_rimUniformAboveAspect]）—— 底栏药丸 380×54、首页玻璃带
-///   360×百来像素：它们的长边就是主体，收掉转角以外的高光会让药丸只剩两头亮着；
-/// * 方正的大面板（长短边比 ≤ [_rimCornerOnlyBelowAspect]）—— 底部弹窗、弹窗家族：
-///   贯屏长直边上的一条高光只会读成描边，只留转角；
-/// * 中间一段线性过渡，避免同一份材质在阈值两侧出现两种观感。
-///
-/// 短边 ≤ [_rimUniformBelowShortSide] 的小件直接整圈均匀（见该常量的说明）。
-///
-/// 圆件（常驻球、坞内圆钮）不受影响：着色器里圆形的 SDF 中间量两个分量恒非负，
-/// 「只留转角」与「整圈均匀」对它是同一条读数。
-///
-/// 与 [liquidGlassDomeForSize] 同一性质：**几何适配**，不是材质参数 —— 表面自己
-/// 没有通道把它传进来，也不开放调参。抽成纯函数是为了让单元测试能钉住这套推导。
-@visibleForTesting
-double liquidGlassRimCornerOnlyForSize(Size size) {
-  final shortSide = math.min(size.width, size.height);
-  if (shortSide <= _rimUniformBelowShortSide) {
-    return 0;
-  }
-  final longSide = math.max(size.width, size.height);
-  final aspect = longSide / math.max(shortSide, 1e-3);
-  if (aspect >= _rimUniformAboveAspect) {
-    return 0;
-  }
-  if (aspect <= _rimCornerOnlyBelowAspect) {
-    return 1;
-  }
-  return ((_rimUniformAboveAspect - aspect) /
-          (_rimUniformAboveAspect - _rimCornerOnlyBelowAspect))
-      .clamp(0.0, 1.0);
-}
 
 /// 短边 ≤ 这个值的表面按「窄件」压折射（逻辑 px）。
 const double _narrowSurfaceBelowSide = 52;
@@ -168,7 +108,7 @@ const double _narrowSurfaceBelowSide = 52;
 /// 折射 8 不被误压），预览按同比例取 11。短边 > [_narrowSurfaceBelowSide] 的组合
 /// 带（约 84dp）保持全量位移，与首页那条带一致。
 ///
-/// 与 [liquidGlassDomeForSize] / [liquidGlassRimCornerOnlyForSize] 同一性质：
+/// 与 [liquidGlassDomeForSize] 同一性质：
 /// **几何适配**，不是材质参数 —— 按表面自己的尺寸算，不经过
 /// [FrostedAppearanceScope]，所以不破坏「两个作用域，各自只有一个出口」的规矩。
 /// 抽成纯函数是为了让单元测试能钉住这套推导。
@@ -297,6 +237,35 @@ class LiquidGlassSurface extends StatefulWidget {
     return HyperosBlurredHeader.backdropBlurEnabled(context);
   }
 
+  /// 解析某个角色**此刻真正会用的**渲染参数。
+  ///
+  /// 为什么抽成 `@visibleForTesting` 静态函数：测试环境没有 shader filter 后端
+  /// （[isAvailable] 恒 false），`build` 一律走 `fallbackBuilder`、**永远不构造玻璃层**，
+  /// 于是「成对开关有没有真的传下去」在 widget test 里观测不到 —— 而它一旦漏传，
+  /// 症状只是"深色观感不对"，不会有任何测试报错。这函数把那套解析变成可断言的对象，
+  /// 与同文件的 [liquidGlassDomeForSize] 同一性质。
+  ///
+  /// 成对语义（2026-09-21）：**形状**按 role 锁（[LiquidGlassRole.pinnedChrome] 永远
+  /// 标准档，用户那套深色档也不参与），**配方**是光照适配、对所有角色一视同仁 ——
+  /// 漏给某个 role 就会重现「同一材质两种观感」的翻版（同一材质深浅两套观感）。
+  @visibleForTesting
+  static LiquidGlassStyle resolveStyleFor({
+    required FrostedAppearance appearance,
+    required LiquidGlassRole role,
+    required double borderRadius,
+    required Brightness brightness,
+  }) {
+    final tuning = liquidGlassTuningForRole(appearance, role);
+    final pinned = role == LiquidGlassRole.pinnedChrome;
+    return tuning.toStyle(
+      borderRadius: borderRadius,
+      brightness: brightness,
+      dark: pinned ? null : appearance.liquidGlassTuningDark,
+      link: pinned ? true : appearance.linkLiquidGlassTuning,
+      darkBoost: appearance.darkGlassBoostEnabled,
+    );
+  }
+
   @override
   State<LiquidGlassSurface> createState() => _LiquidGlassSurfaceState();
 }
@@ -367,13 +336,11 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface>
             return widget.fallbackBuilder(context);
           }
           // 两个作用域，各自只有一个出口：表面只提供自己的圆角与当前明暗，折射旋钮、
-          // 底色、光来向一律从 [liquidGlassTuningForRole] 出 —— 固定小件拿标准档，
-          // 其余拿 [FrostedAppearanceScope] 里那一份，表面自己仍然碰不到参数。
-          final tuning = liquidGlassTuningForRole(
-            FrostedAppearanceScope.of(context),
-            widget.role,
-          );
-          final style = tuning.toStyle(
+          // 底色、光来向一律从 [resolveStyleFor] 出 —— 固定小件拿标准档，其余拿
+          // [FrostedAppearanceScope] 里那一份，表面自己仍然碰不到参数。
+          final style = LiquidGlassSurface.resolveStyleFor(
+            appearance: FrostedAppearanceScope.of(context),
+            role: widget.role,
             borderRadius: widget.borderRadius,
             brightness: Theme.of(context).brightness,
           );
@@ -718,12 +685,6 @@ class _RenderLiquidGlass extends RenderProxyBox {
     // 边缘高光随二级开合渐显（MiuixGlassEdgeFade）；静止态 rimFade=1 不变。
     uniforms.rim.set(_style.rimStrength * _rimFade.clamp(0.0, 1.0));
     uniforms.rimWidth.set(scaled.rimWidth);
-    // 边光的作用范围按表面**形状**推（见 liquidGlassRimCornerOnlyForSize）：细长条
-    // 整圈均匀、方正的大面板只留转角。与穹顶一样是几何适配，与 dpr / 祖先缩放无关
-    // —— 它混的是「高光落在哪条边上」，不是长度。
-    uniforms.rimCornerOnly.set(
-      liquidGlassRimCornerOnlyForSize(Size(size.width, size.height)),
-    );
     // 手指高光：位置在 paint 期换算成屏幕物理 px（滚动/拖动中才跟得上）；
     // 半径取 1.5×短边，封顶防止大面板上光斑铺满整块玻璃。
     final (pointerLocal, pointerGlow) = _pointer.value;

@@ -797,6 +797,12 @@ class _TimetableScreenState extends State<TimetableScreen>
               (dockAppearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
                   .blurSigma,
         );
+        // 卡片那张位图走**卡片自己的**磨砂量（液态档才有；其它档退回 0 = 不烤）。
+        // 与上面那笔分开算，是本次「卡片独立材质」的核心：一处动不再两处变。
+        final courseCardPreblurSigma = resolveCourseCardPreblurSigma(
+          cardStyle: cardStyle,
+          cardTuning: settings.courseCardGlassTuning,
+        );
         // 与设置页课表预览完全同构的组采样结构：BackdropGroup 内先放全尺寸
         // UndimmedBackdropCapture（组内首个 filter 缓存整屏壁纸），chrome 玻璃
         // 带采样这份全尺寸背景。此前首页玻璃带只能采样自己 band bounds 的背
@@ -1023,6 +1029,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                 // the day swipe).
                 wallpaperPath: homePageBackdropKey(settings),
                 blurSigma: homePreblurSigma,
+                // 卡片那份位图（只有卡片是液态档才烤）。同一份路径与对齐值，
+                // 只有 sigma 不同 —— 所以两张图不会出现取景错位。
+                cardBlurSigma: courseCardPreblurSigma ?? 0,
                 // 卡里的位图必须与屏幕上那张真壁纸**同一套 cover 对齐**：用户
                 // 在「壁纸位置」里拖过对齐值之后，居中铺图的副本就会与背景错位
                 // （卡内外壁纸接不上），所以这两个值随设置一起传。

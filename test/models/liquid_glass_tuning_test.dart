@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
-import 'package:university_timetable/widgets/course_glass_shader.dart';
 
 void main() {
   group('LiquidGlassPreset 档位语义', () {
@@ -86,20 +85,6 @@ void main() {
   });
 
   group('LiquidGlassTuning 默认值', () {
-    test('标准档的折射旋钮与课程卡片液态玻璃档逐字段一致', () {
-      // 「同一个材质只有一种观感」：全局液态玻璃与卡片液态玻璃是两条独立链路
-      // （卡片不受全局档位约束），但出厂必须长得一样。任何一边改默认值都要同步
-      // 另一边。dispersion（色散）是全局侧独有的旋钮（卡片没有这个参数），
-      // 不参与对齐。
-      const card = CourseGlassStyle(borderRadius: 12, tint: Color(0xFF000000));
-      const tuning = LiquidGlassTuning.defaults;
-      expect(tuning.refraction, card.refraction);
-      expect(tuning.refractionBand, card.refractionBand);
-      expect(tuning.refractionEdgePow, card.refractionEdgePow);
-      expect(tuning.rimStrength, card.rimStrength);
-      expect(tuning.rimWidth, card.rimWidth);
-    });
-
     test('默认值落在自己的滑杆区间内', () {
       // 构造默认值落在滑杆区间之外会让「UI 显示」与「内存默认」脱节，
       // 用户把滑杆拖到底也回不到默认值（液态玻璃历史上踩过两次）。

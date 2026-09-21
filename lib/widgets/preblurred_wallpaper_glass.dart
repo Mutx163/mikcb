@@ -7,6 +7,8 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
+import '../models/course_glass_tuning.dart';
+import '../models/timetable_settings.dart';
 import '../utils/home_page_background.dart';
 import 'course_glass_shader.dart';
 
@@ -60,21 +62,31 @@ class PreblurredWallpaperCache {
   PreblurredWallpaperCache._();
   static final PreblurredWallpaperCache instance = PreblurredWallpaperCache._();
 
-  _PreblurRequest? _key;
-  ui.Image? _image;
+  /// 缓存能同时持有的位图数：**首页那份**（页顶玻璃带 / 日视图摘要替身卡）与
+  /// **课程卡片那份**。
+  ///
+  /// 为什么不是一份：课程卡片有自己一套磨砂量（`CourseGlassTuning.blurSigma`），
+  /// 与首页那份可以不同。只留一份会让两个请求互相顶掉 —— 谁都命中不了快路径，
+  /// 每次都要把整屏位图重烤一遍（解码 + 高斯 + 离屏渲染）。消费者就这两类，
+  /// 所以上限压在 2 而不是无限：每份都是整屏 RGBA（1080 宽机约 3 MB、2160 宽屏约 12 MB）。
+  static const int maxEntries = 2;
+
+  /// 已发布位图。Dart 的 `Map` 迭代即插入序，所以 [keys] 的第一项就是最早那项。
+  final Map<_PreblurRequest, ui.Image> _images = {};
 
   /// In-flight builds. The future deliberately carries **no** [ui.Image]
   /// handle: it only signals 'the cache has (or has not) published this
-  /// request'. Every caller clones [_image] for itself afterwards, so N
-  /// concurrent waiters can never end up sharing one disposable handle.
+  /// request'. Every caller clones the published image for itself afterwards,
+  /// so N concurrent waiters can never end up sharing one disposable handle.
   final Map<_PreblurRequest, Future<void>> _inFlight = {};
 
   /// Bumped by [evict] so a build that is already running cannot publish a
   /// stale bitmap afterwards.
   int _generation = 0;
 
-  /// Blurred wallpaper for the last satisfied request, if any.
-  ui.Image? get image => _image;
+  /// 已发布的位图张数（诊断与测试用）。
+  @visibleForTesting
+  int get entryCount => _images.length;
 
   /// Half-resolution decode of the wallpaper, Gaussian-blurred once.
   ///
@@ -96,11 +108,16 @@ class PreblurredWallpaperCache {
       logicalSigma: logicalSigma,
       devicePixelRatio: devicePixelRatio,
     );
-    if (_key == request && _image != null) {
+    if (_images[request] case final cached?) {
       // Hand out a clone: the caller owns its handle, so a later evict() can
       // dispose the cache's copy without invalidating a widget that is still
       // painting. `clone()` is refcounted and shares the same GPU buffer.
-      return Future<ui.Image?>.value(_image!.clone());
+      //
+      // 命中时把它挪到插入序末尾，于是淘汰的总是"最久没用过"的那张 ——
+      // 卡片档位在实体 / 液态之间来回切时，首页那份不会被反复踢掉。
+      _images.remove(request);
+      _images[request] = cached;
+      return Future<ui.Image?>.value(cached.clone());
     }
     final pending = _inFlight[request];
     Future<void> settled;
@@ -123,8 +140,8 @@ class PreblurredWallpaperCache {
     // feet — the debug crash `Canvas.drawImageRect:
     // assert(!image.debugDisposed)` on glass card fills.
     return settled.then((_) {
-      final image = _image;
-      return (_key == request && image != null) ? image.clone() : null;
+      final image = _images[request];
+      return image?.clone();
     });
   }
 
@@ -168,15 +185,21 @@ class PreblurredWallpaperCache {
         // Evicted while we were building; finally disposes [blurred].
         return;
       }
-      if (_key == request && _image != null) {
+      if (_images[request] != null) {
         // An identical request won the race; finally disposes [blurred].
         return;
       }
 
-      _image?.dispose();
-      _image = blurred;
-      _key = request;
+      // 只顶掉**同一个请求**的旧项：别的请求（另一张图）不归这次发布管。
+      _images.remove(request)?.dispose();
+      _images[request] = blurred;
       blurred = null; // Ownership moved to the cache.
+
+      // 超出上限就淘汰最早那项（只可能是另一个请求）。
+      while (_images.length > maxEntries) {
+        final oldest = _images.keys.first;
+        _images.remove(oldest)?.dispose();
+      }
     } catch (error, stackTrace) {
       debugPrint('PreblurredWallpaperCache failed: $error\n$stackTrace');
     } finally {
@@ -255,14 +278,35 @@ class PreblurredWallpaperCache {
     }
   }
 
+  /// 失效缓存。
+  ///
+  /// * 不传 [path]（或空串）= 全清：换壁纸、恢复默认走这条；
+  /// * 传 [path] = **只清这个壁纸**的两张图；与它无关的请求（别的壁纸）不受影响。
+  ///
+  /// 两种情况下，**只要真有东西被清**就把世代 +1，好让正在跑的烤图任务无法在之后
+  /// 把陈旧位图发布出来。世代是全局的，所以清 A 的图也会让 B 的在途任务白跑一趟 ——
+  /// 代价是一次多余的重烤，换来的是不必给每个请求各记一个世代。
   void evict([String? path]) {
-    if (path != null && path.isNotEmpty && _key?.path != path) {
+    if (path != null && path.isNotEmpty) {
+      final hadEntries = _images.keys.any((key) => key.path == path);
+      final hadInFlight = _inFlight.keys.any((key) => key.path == path);
+      if (!hadEntries && !hadInFlight) {
+        return;
+      }
+      _generation++;
+      for (final key in _images.keys.toList(growable: false)) {
+        if (key.path == path) {
+          _images.remove(key)?.dispose();
+        }
+      }
+      _inFlight.removeWhere((key, _) => key.path == path);
       return;
     }
     _generation++;
-    _image?.dispose();
-    _image = null;
-    _key = null;
+    for (final image in _images.values) {
+      image.dispose();
+    }
+    _images.clear();
     _inFlight.clear();
   }
 }
@@ -276,6 +320,12 @@ class PreblurredWallpaperCache {
 /// timetable_screen's homePreblurSigma closure: gaussian course cards define
 /// the sigma first, then the liquid-glass chrome tuning (clamped to the same
 /// 2-24 range), otherwise the frosted sheet sigma.
+///
+/// ⚠️ **课程卡片 2026-09-21 起不再读这张图**（它有自己的位图，见
+/// [resolveCourseCardPreblurSigma]）。所以这里的 `gaussianCardsDrive` 现在只为
+/// 剩下的那一个消费者服务：日视图顶部的摘要替身卡。口径**刻章保持不变** ——
+/// 去掉它会让「卡片玻璃 + 全局液态调过磨砂」时那张替身卡的磨砂悄悄变一档，
+/// 那是一次没人要的观感变化。这条耦合是历史遗留，要拆得单独评估。
 double resolveHomePreblurSigma({
   required bool gaussianCardsDrive,
   required bool liquidGlassChrome,
@@ -289,6 +339,28 @@ double resolveHomePreblurSigma({
     return liquidGlassTunedBlur.clamp(2.0, 24.0).toDouble();
   }
   return sheetBlurSigma;
+}
+
+/// 课程卡片那张位图该用的 sigma；**卡片不是液态档时返回 null**（不烤）。
+///
+/// 与 [resolveHomePreblurSigma] 的两处刻意不同：
+///
+/// * 来源是**卡片自己的**配置（`CourseGlassTuning.blurSigma`），不是首页那份；
+/// * 取的是**未套深色配方**的值 —— 位图按一个 sigma 烤一次，而配方里的 ×1.3 是
+///   逐帧的光照适配。用烤好的图去表达「深色更糊」是表达不出来的，只会让那次 ×1.3
+///   永远不生效。深色只作用于几何与边光。
+///
+/// clamp 区间与首页那份一致（2~24）：再小看不出糊，再大烤图成本与取景错位都上来。
+double? resolveCourseCardPreblurSigma({
+  required CourseCardSurfaceStyle cardStyle,
+  required CourseGlassTuning? cardTuning,
+}) {
+  if (cardStyle != CourseCardSurfaceStyle.liquidGlass) {
+    return null;
+  }
+  final sigma = (cardTuning ?? CourseGlassTuning.courseCard).blurSigma;
+  final clamped = sigma.clamp(2.0, 24.0).toDouble();
+  return clamped;
 }
 
 /// Pre-blurred wallpaper handed to course-card glass fills.
@@ -354,6 +426,7 @@ class PreblurredWallpaperScope extends StatefulWidget {
     required this.wallpaperPath,
     required this.blurSigma,
     required this.child,
+    this.cardBlurSigma = 0,
     this.pageController,
     this.followsPager = false,
     this.wallpaperAlignX = 0,
@@ -368,6 +441,13 @@ class PreblurredWallpaperScope extends StatefulWidget {
 
   /// Desired on-screen blur radius in logical pixels.
   final double blurSigma;
+
+  /// 课程卡片那张位图的磨砂量（逻辑 px）；**≤ 0 = 不烤**（卡片不是液态档时就是它）。
+  ///
+  /// 为什么要第二张：卡片有自己一套磨砂量（`CourseGlassTuning.blurSigma`），
+  /// 而 [blurSigma] 那份还要喂日视图的摘要替身卡。共用一张就会「一处动两处变」。
+  /// 两张图的路径、对齐、缩放完全一致，**只有 sigma 不同**。
+  final double cardBlurSigma;
 
   final PageController? pageController;
   final bool followsPager;
@@ -391,6 +471,16 @@ class PreblurredWallpaperScope extends StatefulWidget {
         ?.data;
   }
 
+  /// 课程卡片那张位图（[cardBlurSigma] 为 0 时恒为 null）。
+  ///
+  /// 与 [maybeOf] 是**两条独立的流**：卡片要的是自己那份磨砂量，首页要的是它那份，
+  /// 谁都不许去读对方那份（读错只会在观感上体现，不会有异常）。
+  static PreblurredWallpaperData? courseCardMaybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<_CourseCardPreblurredInherited>()
+        ?.data;
+  }
+
   /// Whether [context] sits under a scope whose bitmap is still being built.
   ///
   /// Unlike [maybeOf] this does not register a dependency; it only answers the
@@ -400,13 +490,20 @@ class PreblurredWallpaperScope extends StatefulWidget {
   /// has not finished decoding both triggers a first-use shader compile storm
   /// and produces dirty colors from an empty buffer.
   static bool isWaitingForBitmap(BuildContext context) {
-    final element = context
-        .getElementForInheritedWidgetOfExactType<_PreblurredWallpaperInherited>();
+    return _isWaiting<_PreblurredWallpaperInherited>(context);
+  }
+
+  /// [isWaitingForBitmap] 的卡片版。
+  static bool courseCardIsWaitingForBitmap(BuildContext context) {
+    return _isWaiting<_CourseCardPreblurredInherited>(context);
+  }
+
+  static bool _isWaiting<T extends _PreblurredInherited>(BuildContext context) {
+    final element = context.getElementForInheritedWidgetOfExactType<T>();
     if (element == null) {
       return false;
     }
-    final inherited = element.widget as _PreblurredWallpaperInherited;
-    return inherited.data == null;
+    return (element.widget as _PreblurredInherited).data == null;
   }
 
   @override
@@ -414,21 +511,33 @@ class PreblurredWallpaperScope extends StatefulWidget {
       _PreblurredWallpaperScopeState();
 }
 
+/// 一个位图槽的请求簿记。
+///
+/// 两个槽（首页那份 / 课程卡片那份）的同步逻辑**逐字一样**，只是请求参数不同，
+/// 所以把「已到手的是哪张、正在等谁」收进这个持有者，逻辑只写一遍。
+class _PreblurSlot {
+  ui.Image? image;
+
+  /// 本次等待的令牌。换请求 / 卸载时置空，好让在途回调知道自己是过期的那一个。
+  Object? pending;
+
+  String? loadedPath;
+  double? loadedSigma;
+  double? loadedDevicePixelRatio;
+}
+
 class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
-  ui.Image? _image;
+  final _PreblurSlot _home = _PreblurSlot();
+  final _PreblurSlot _card = _PreblurSlot();
   int _revision = 0;
 
   /// Replaced handles awaiting end-of-frame disposal. See [_replaceImage].
   final List<ui.Image> _retiredImages = <ui.Image>[];
-  Object? _pending;
-  String? _loadedPath;
-  double? _loadedSigma;
-  double? _loadedDevicePixelRatio;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _syncRequest();
+    _syncRequests();
   }
 
   @override
@@ -436,50 +545,69 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.wallpaperPath != widget.wallpaperPath ||
         oldWidget.blurSigma != widget.blurSigma ||
+        oldWidget.cardBlurSigma != widget.cardBlurSigma ||
         oldWidget.enabled != widget.enabled) {
-      _syncRequest();
+      _syncRequests();
     }
   }
 
-  void _syncRequest() {
+  void _syncRequests() {
     final path = widget.enabled ? widget.wallpaperPath : null;
-    final sigma = widget.blurSigma;
     final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+    _syncSlot(
+      slot: _home,
+      path: path,
+      sigma: widget.blurSigma,
+      devicePixelRatio: devicePixelRatio,
+    );
+    _syncSlot(
+      slot: _card,
+      path: path,
+      sigma: widget.cardBlurSigma,
+      devicePixelRatio: devicePixelRatio,
+    );
+  }
 
+  void _syncSlot({
+    required _PreblurSlot slot,
+    required String? path,
+    required double sigma,
+    required double devicePixelRatio,
+  }) {
     if (path == null || path.isEmpty || sigma <= 0) {
-      _pending = null;
-      _loadedPath = null;
-      _loadedSigma = null;
-      _loadedDevicePixelRatio = null;
+      slot.pending = null;
+      slot.loadedPath = null;
+      slot.loadedSigma = null;
+      slot.loadedDevicePixelRatio = null;
       // A build always follows didChangeDependencies / didUpdateWidget, so the
       // field assignment is enough — setState here would be called during build.
-      _replaceImage(null);
+      _replaceImage(slot, null);
       return;
     }
-    if (_loadedPath == path &&
-        _loadedSigma == sigma &&
-        _loadedDevicePixelRatio == devicePixelRatio) {
+    if (slot.loadedPath == path &&
+        slot.loadedSigma == sigma &&
+        slot.loadedDevicePixelRatio == devicePixelRatio) {
       return;
     }
-    _loadedPath = path;
-    _loadedSigma = sigma;
-    _loadedDevicePixelRatio = devicePixelRatio;
+    slot.loadedPath = path;
+    slot.loadedSigma = sigma;
+    slot.loadedDevicePixelRatio = devicePixelRatio;
 
     final token = Object();
-    _pending = token;
+    slot.pending = token;
     unawaited(() async {
       final image = await PreblurredWallpaperCache.instance.obtain(
         path: path,
         logicalSigma: sigma,
         devicePixelRatio: devicePixelRatio,
       );
-      if (!mounted || _pending != token) {
+      if (!mounted || slot.pending != token) {
         // Superseded or unmounted: nobody will own this clone, so release it.
         image?.dispose();
         return;
       }
       setState(() {
-        _replaceImage(image);
+        _replaceImage(slot, image);
         _revision++;
       });
     }());
@@ -495,12 +623,12 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
   /// (listener-driven `markNeedsPaint` can land between this swap and the
   /// dependent rebuild); painting a disposed texture crashes in
   /// [Canvas.drawImageRect].
-  void _replaceImage(ui.Image? next) {
-    final previous = _image;
+  void _replaceImage(_PreblurSlot slot, ui.Image? next) {
+    final previous = slot.image;
     if (identical(previous, next)) {
       return;
     }
-    _image = next;
+    slot.image = next;
     if (previous != null) {
       _retiredImages.add(previous);
       WidgetsBinding.instance.addPostFrameCallback(
@@ -522,8 +650,10 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
 
   @override
   void dispose() {
-    _pending = null;
-    _replaceImage(null);
+    _home.pending = null;
+    _card.pending = null;
+    _replaceImage(_home, null);
+    _replaceImage(_card, null);
     // This subtree is being torn down and will never paint again, so the
     // retired handles (including the one just queued) can go right away —
     // no need to wait for a frame that may never be scheduled (app paused).
@@ -531,37 +661,48 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
     super.dispose();
   }
 
+  PreblurredWallpaperData? _dataFor(ui.Image? image) {
+    if (image == null) {
+      return null;
+    }
+    return PreblurredWallpaperData(
+      image: image,
+      pageController: widget.pageController,
+      followsPager: widget.followsPager,
+      alignX: widget.wallpaperAlignX,
+      alignY: widget.wallpaperAlignY,
+      scale: widget.wallpaperScale,
+      repaint: widget.repaint,
+      revision: _revision,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final image = _image;
+    // 两条流各自发一份：消费者按自己的角色取（首页那份 / 卡片那份），
+    // 取错不会抛异常、只会悄悄用错磨砂量，所以两处都不许"顺手读另一份"。
     return _PreblurredWallpaperInherited(
-      data: image == null
-          ? null
-          : PreblurredWallpaperData(
-              image: image,
-              pageController: widget.pageController,
-              followsPager: widget.followsPager,
-              alignX: widget.wallpaperAlignX,
-              alignY: widget.wallpaperAlignY,
-              scale: widget.wallpaperScale,
-              repaint: widget.repaint,
-              revision: _revision,
-            ),
-      child: widget.child,
+      data: _dataFor(_home.image),
+      child: _CourseCardPreblurredInherited(
+        data: _dataFor(_card.image),
+        child: widget.child,
+      ),
     );
   }
 }
 
-class _PreblurredWallpaperInherited extends InheritedWidget {
-  const _PreblurredWallpaperInherited({
-    required this.data,
-    required super.child,
-  });
+/// 两份位图的 inherited 基类。
+///
+/// 存在的唯一理由是「还在等位图」这条查询两处一模一样（见
+/// [PreblurredWallpaperScope.isWaitingForBitmap]）—— 不共基类就得把同一段
+/// 取值代码写两遍。
+abstract class _PreblurredInherited extends InheritedWidget {
+  const _PreblurredInherited({required this.data, required super.child});
 
   final PreblurredWallpaperData? data;
 
   @override
-  bool updateShouldNotify(covariant _PreblurredWallpaperInherited oldWidget) {
+  bool updateShouldNotify(covariant _PreblurredInherited oldWidget) {
     return data?.revision != oldWidget.data?.revision ||
         data?.image != oldWidget.data?.image ||
         data?.followsPager != oldWidget.data?.followsPager ||
@@ -570,6 +711,20 @@ class _PreblurredWallpaperInherited extends InheritedWidget {
         data?.repaint != oldWidget.data?.repaint ||
         data?.pageController != oldWidget.data?.pageController;
   }
+}
+
+class _CourseCardPreblurredInherited extends _PreblurredInherited {
+  const _CourseCardPreblurredInherited({
+    required super.data,
+    required super.child,
+  });
+}
+
+class _PreblurredWallpaperInherited extends _PreblurredInherited {
+  const _PreblurredWallpaperInherited({
+    required super.data,
+    required super.child,
+  });
 }
 
 /// Marks a week page so glass fills inside it can align to the wallpaper
@@ -683,6 +838,19 @@ Rect preblurredWallpaperSourceRect({
   );
 }
 
+/// 这张填充该读哪一份预糊位图。
+///
+/// **必须显式指定，不许按「有没有 glass」猜**：高斯档的卡片同样不带 `glass`，
+/// 用「带没带 glass」去判会把高斯卡片读成首页那份，而两份的磨砂量可以不同
+/// （见 [PreblurredWallpaperScope.cardBlurSigma]）。
+enum PreblurredWallpaperSource {
+  /// 首页那份：页顶玻璃带、日视图摘要替身卡。
+  home,
+
+  /// 课程卡片那份：卡片的两档玻璃材质。
+  courseCard,
+}
+
 /// Paints the pre-blurred wallpaper aligned to the wallpaper the user sees.
 ///
 /// Must sit inside a clip (e.g. [ClipRRect]) so only the card region shows.
@@ -694,14 +862,30 @@ Rect preblurredWallpaperSourceRect({
 /// 着色器没就绪（后端不支持 / 资产缺失 / 测试环境）时自动回落成直接贴图 +
 /// 一层染色 —— 也就是「高斯磨砂」的外观，不会破相。
 class PreblurredWallpaperAlignedFill extends LeafRenderObjectWidget {
-  const PreblurredWallpaperAlignedFill({this.glass, super.key});
+  const PreblurredWallpaperAlignedFill({
+    this.glass,
+    this.source = PreblurredWallpaperSource.home,
+    super.key,
+  });
+
+  static PreblurredWallpaperData? _dataOf(
+    BuildContext context,
+    PreblurredWallpaperSource source,
+  ) => switch (source) {
+    PreblurredWallpaperSource.home => PreblurredWallpaperScope.maybeOf(context),
+    PreblurredWallpaperSource.courseCard =>
+      PreblurredWallpaperScope.courseCardMaybeOf(context),
+  };
 
   /// 液态玻璃参数；null = 原行为（直接贴图，即高斯模糊档）。
   final CourseGlassStyle? glass;
 
+  /// 读哪一份预糊位图。
+  final PreblurredWallpaperSource source;
+
   @override
   RenderObject createRenderObject(BuildContext context) {
-    final data = PreblurredWallpaperScope.maybeOf(context);
+    final data = _dataOf(context, source);
     return _RenderPreblurredFill(
       image: data?.image,
       screenSize: MediaQuery.sizeOf(context),
@@ -722,7 +906,7 @@ class PreblurredWallpaperAlignedFill extends LeafRenderObjectWidget {
 
   @override
   void updateRenderObject(BuildContext context, RenderObject renderObject) {
-    final data = PreblurredWallpaperScope.maybeOf(context);
+    final data = _dataOf(context, source);
     (renderObject as _RenderPreblurredFill)
       ..image = data?.image
       ..screenSize = MediaQuery.sizeOf(context)
@@ -1172,6 +1356,7 @@ class _RenderPreblurredFill extends RenderBox {
     uniforms.refract.set(glass.refraction);
     uniforms.band.set(glass.refractionBand);
     uniforms.edgePow.set(glass.refractionEdgePow);
+    uniforms.dispersion.set(glass.dispersion);
     uniforms.rimColor.set(rim.r, rim.g, rim.b);
     uniforms.rim.set(glass.rimStrength);
     uniforms.rimWidth.set(glass.rimWidth);
@@ -1208,6 +1393,7 @@ class _CourseGlassUniforms {
       refract = shader.getUniformFloat('u_refract'),
       band = shader.getUniformFloat('u_band'),
       edgePow = shader.getUniformFloat('u_edge_pow'),
+      dispersion = shader.getUniformFloat('u_dispersion'),
       rimColor = shader.getUniformVec3('u_rim_color'),
       rim = shader.getUniformFloat('u_rim'),
       rimWidth = shader.getUniformFloat('u_rim_width');
@@ -1220,6 +1406,7 @@ class _CourseGlassUniforms {
   final ui.UniformFloatSlot refract;
   final ui.UniformFloatSlot band;
   final ui.UniformFloatSlot edgePow;
+  final ui.UniformFloatSlot dispersion;
   final ui.UniformVec3Slot rimColor;
   final ui.UniformFloatSlot rim;
   final ui.UniformFloatSlot rimWidth;

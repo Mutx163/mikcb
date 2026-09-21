@@ -65,20 +65,13 @@ class CourseSurface extends StatelessWidget {
 
   static const double frostedFillAlpha = 0.42;
 
-  /// 液态玻璃档的染色底透明度。
-  ///
-  /// 比高斯档（[frostedFillAlpha]）低一截：这一档的卖点就是「能看见背景在边缘
-  /// 被掰弯」，染色压太实会把折射和高光一起盖掉；但也留足色相，让课程颜色
-  /// 仍然可辨。
-  static const double refractionFillAlpha = 0.32;
-
   /// Second stop of the default [CourseCardSurfaceStyle.solid] gradient.
   static Color secondaryFillColor(Color color) {
     return Color.lerp(color, Colors.white, 0.08) ?? color;
   }
 
   double _scaledAlpha(double baseAlpha) {
-    return (baseAlpha * opacityScale).clamp(0.04, 1.0);
+    return courseGlassFillAlpha(baseAlpha, opacityScale);
   }
 
   @override
@@ -160,17 +153,26 @@ class CourseSurface extends StatelessWidget {
         ),
       );
     }
-    return _buildLiveBlurFallback(context, radius, tint);
+    return _buildLiveBlurFallback(
+      context,
+      radius,
+      tint,
+      source: PreblurredWallpaperSource.home,
+    );
   }
 
-  /// 液态玻璃档：与 [CourseCardSurfaceStyle.gaussian] 采**同一份**共享预模糊
-  /// 位图，差别只在最后一步 —— 这里把位图交给折射着色器再上屏（边缘按圆角 SDF
+  /// 液态玻璃档：与 [CourseCardSurfaceStyle.gaussian] 采**同一份卡片位图**，
+  /// 差别只在最后一步 —— 这里把位图交给折射着色器再上屏（边缘按圆角 SDF
   /// 把背景掰弯 + 叠染色 + 叠受光边缘高光），而不是直接贴图。
   ///
-  /// 之所以不另起一套模糊：整屏只有一份预模糊位图（[PreblurredWallpaperCache]），
+  /// 之所以不另起一套模糊：卡片位图整屏只有一份（[PreblurredWallpaperCache]），
   /// 一屏 20~50 张卡共用它，每张卡只多一次矩形绘制与一次纹理采样；而「每卡一次
   /// 实时 BackdropFilter」才是把课表拖到十几帧的元凶（见缓存类注释）。所以这一档
   /// 不会因为卡片变多而更贵。
+  ///
+  /// 卡片位图与首页那份（玻璃带 / 摘要替身卡）**是两张**：卡片有自己的磨砂量
+  /// （`CourseGlassTuning.blurSigma`），共用一张就会「一处动两处变」。所以这里的
+  /// 位图来自 [PreblurredWallpaperScope.courseCardMaybeOf]。
   Widget _buildRefraction(BuildContext context, BorderRadius radius) {
     final blurEnabled = HyperosBlurredHeader.backdropBlurEnabled(context);
     // 与高斯档同款最后防线：模糊管线关了就没有可采样的磨砂背景，
@@ -178,8 +180,19 @@ class CourseSurface extends StatelessWidget {
     if (!blurEnabled) {
       return _buildSolid(radius);
     }
-    final tint = color.withValues(alpha: _scaledAlpha(refractionFillAlpha));
-    final preblur = PreblurredWallpaperScope.maybeOf(context);
+    // 参数来自**卡片自己的**那套档位（`CourseGlassTuning`），经唯一入口
+    // `courseGlassStyleFor` 解析：形状走 `toStyle`、深色套同一份配方、染色取课程色。
+    final glass = courseGlassStyleFor(
+      appearance: FrostedAppearanceScope.of(context),
+      borderRadius: borderRadius,
+      courseColor: color,
+      brightness: Theme.of(context).brightness,
+      opacityScale: opacityScale,
+    );
+    final tint = glass.tint;
+    // 卡片吃**它自己那份**预糊位图：磨砂量独立于首页玻璃带与日视图摘要卡。
+    // 源必须显式指定 —— 高斯档同样读卡片那份，靠「有没有 glass」判会选错。
+    final preblur = PreblurredWallpaperScope.courseCardMaybeOf(context);
 
     if (preblur != null) {
       return ClipRRect(
@@ -191,10 +204,8 @@ class CourseSurface extends StatelessWidget {
               // Own layer for pager-driven repaints.
               child: RepaintBoundary(
                 child: PreblurredWallpaperAlignedFill(
-                  glass: CourseGlassStyle(
-                    borderRadius: borderRadius,
-                    tint: tint,
-                  ),
+                  glass: glass,
+                  source: PreblurredWallpaperSource.courseCard,
                 ),
               ),
             ),
@@ -206,7 +217,12 @@ class CourseSurface extends StatelessWidget {
         ),
       );
     }
-    return _buildLiveBlurFallback(context, radius, tint);
+    return _buildLiveBlurFallback(
+      context,
+      radius,
+      tint,
+      source: PreblurredWallpaperSource.courseCard,
+    );
   }
 
   /// 预模糊位图尚未就绪那几帧的过渡外观：纯 tint + 分组实时模糊兜底。
@@ -215,12 +231,21 @@ class CourseSurface extends StatelessWidget {
   /// 的说明：位图还在后台构建时对空 backdrop 做分组采样，既触发首帧 shader
   /// 编译风暴，也会把空缓冲采成脏色）。位图到位后 InheritedWidget 会通知卡片
   /// 切到各自的正规路径。
+  ///
+  /// [source] 决定「在等哪一份位图」：液态档等的是卡片那份，高斯档等的是首页那份。
+  /// 判错会让某档在位图就绪前多一帧透明（或反过来过早走实时模糊）。
   Widget _buildLiveBlurFallback(
     BuildContext context,
     BorderRadius radius,
-    Color tint,
-  ) {
-    final preblurPending = PreblurredWallpaperScope.isWaitingForBitmap(context);
+    Color tint, {
+    required PreblurredWallpaperSource source,
+  }) {
+    final preblurPending = switch (source) {
+      PreblurredWallpaperSource.home =>
+        PreblurredWallpaperScope.isWaitingForBitmap(context),
+      PreblurredWallpaperSource.courseCard =>
+        PreblurredWallpaperScope.courseCardIsWaitingForBitmap(context),
+    };
     return ClipRRect(
       borderRadius: radius,
       child: Stack(

@@ -438,5 +438,103 @@ void main() {
         expect(b.debugDisposed, isFalse);
       },
     );
+
+    test('两份位图并存：首页那份与课程卡片那份各自独立', () async {
+      // 卡片有自己的磨砂量，两个 sigma 会交替请求。只留一份发布槽的话谁都命中不了
+      // 快路径 —— 每次都要重烤整屏位图（解码 + 高斯 + 离屏渲染）。
+      final cache = PreblurredWallpaperCache.instance;
+      cache.evict();
+      addTearDown(cache.evict);
+
+      final home = await cache.obtain(
+        path: wallpaperPath,
+        logicalSigma: 15,
+        devicePixelRatio: 2,
+      );
+      final card = await cache.obtain(
+        path: wallpaperPath,
+        logicalSigma: 24,
+        devicePixelRatio: 2,
+      );
+      expect(home, isNotNull);
+      expect(card, isNotNull);
+      expect(cache.entryCount, 2);
+      home!.dispose();
+      card!.dispose();
+
+      // 回头再要首页那份：必须命中快路径（还在缓存里）。
+      final homeAgain = await cache.obtain(
+        path: wallpaperPath,
+        logicalSigma: 15,
+        devicePixelRatio: 2,
+      );
+      expect(homeAgain, isNotNull);
+      homeAgain!.dispose();
+      expect(cache.entryCount, 2);
+
+      // 同参再要一次不进新条目（否则每次拖动都在攒整屏位图）。
+      final cardAgain = await cache.obtain(
+        path: wallpaperPath,
+        logicalSigma: 24,
+        devicePixelRatio: 2,
+      );
+      expect(cardAgain, isNotNull);
+      cardAgain!.dispose();
+      expect(cache.entryCount, 2);
+    });
+
+    test('超出上限淘汰最早那份，条数不会无限涨', () async {
+      final cache = PreblurredWallpaperCache.instance;
+      cache.evict();
+      addTearDown(cache.evict);
+
+      for (final sigma in <double>[8, 15, 24]) {
+        final image = await cache.obtain(
+          path: wallpaperPath,
+          logicalSigma: sigma,
+          devicePixelRatio: 2,
+        );
+        expect(image, isNotNull);
+        image!.dispose();
+      }
+      expect(cache.entryCount, PreblurredWallpaperCache.maxEntries);
+    });
+
+    test('按路径失效只清这个壁纸，别的壁纸不动', () async {
+      final cache = PreblurredWallpaperCache.instance;
+      cache.evict();
+      addTearDown(cache.evict);
+
+      final first = await cache.obtain(
+        path: wallpaperPath,
+        logicalSigma: 15,
+        devicePixelRatio: 2,
+      );
+      first!.dispose();
+      expect(cache.entryCount, 1);
+
+      // 另一条路径（文件不存在 → 拿不到位图，但请求仍进 in-flight 簿记）。
+      final other = await cache.obtain(
+        path: '$wallpaperPath.missing',
+        logicalSigma: 15,
+        devicePixelRatio: 2,
+      );
+      expect(other, isNull);
+
+      // 失效另一条路径：第一份必须原样留着。
+      cache.evict('$wallpaperPath.missing');
+      final stillThere = await cache.obtain(
+        path: wallpaperPath,
+        logicalSigma: 15,
+        devicePixelRatio: 2,
+      );
+      expect(stillThere, isNotNull);
+      stillThere!.dispose();
+      expect(cache.entryCount, 1);
+
+      // 精准失效这一条：清掉。
+      cache.evict(wallpaperPath);
+      expect(cache.entryCount, 0);
+    });
   });
 }

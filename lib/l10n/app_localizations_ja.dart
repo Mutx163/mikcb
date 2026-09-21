@@ -10220,6 +10220,20 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liquidGlassResetAction => 'デフォルトに戻す';
 
   @override
+  String get liquidGlassDarkBoostLabel => 'ダークモードでガラスを暗く';
+
+  @override
+  String get liquidGlassDarkBoostSubtitle =>
+      'ダーク時は下地をニュートラルグレーにし、ぼかしを強め、縁の光を抑えます';
+
+  @override
+  String get liquidGlassDarkIndependentLabel => 'ダーク用を個別に設定';
+
+  @override
+  String get liquidGlassDarkIndependentSubtitle =>
+      '既定ではライト用を流用します。オンにするとダーク専用に調整できます';
+
+  @override
   String get softGlassPresetLabel => 'ソフトグラスのプリセット';
 
   @override

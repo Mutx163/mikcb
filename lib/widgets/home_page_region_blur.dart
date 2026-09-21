@@ -80,8 +80,8 @@ const homePageChromeGlassEdgeOverdraw = 48.0;
 /// 线。09-20 边光截面已改成「峰在带内」（峰值在离边 0.35×带宽处，边界上亮度本来就是
 /// 0），药丸零外溢也不见硬线 ⇒ 那条依据已经过期。
 ///
-/// 注：这条带下边自 2026-09-20 起走「细长条 ⇒ 整圈均匀」那一档（见
-/// `liquidGlassRimCornerOnlyForSize`），所以零外溢时**边光也在可见区里**（这是要的：
+/// 注：边光自 2026-09-21 起**全 app 整圈均匀**（原先按形状给方正面板「只留转角」，
+/// 已整体撤掉，见 `.frag` 文件头），所以零外溢时**边光也在可见区里**（这是要的：
 /// 它和折射一起构成那圈边缘观感，且边光不依赖背景，平坦壁纸上是唯一看得见的玻璃感）。
 ///
 /// ⚠️ 零外溢有一个**必须同时成立**的前提：形状底边之外那截背景得**采得到**
@@ -514,8 +514,16 @@ class HomePageChromeGlassFill extends StatelessWidget {
     final material = HyperosBlurredHeader.homeBandGlassMaterialOf(context);
     final appearance = FrostedAppearanceScope.of(context);
     if (material != 'solid' && useBlur) {
+      // 成对配置必须一起传（2026-09-21）：这条带走 [LiquidGlassRole.followsUser]，
+      // 所以用户的深色档参与。只传明暗的话，深色下替身停在白底、而实体玻璃已经
+      // 是「配方后的中性灰」—— 那正是注释里警告的「两处口径迟早会漂」。
       return (appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
-          .tintColor(Theme.of(context).brightness);
+          .tintForMode(
+            brightness: Theme.of(context).brightness,
+            dark: appearance.liquidGlassTuningDark,
+            link: appearance.linkLiquidGlassTuning,
+            darkBoost: appearance.darkGlassBoostEnabled,
+          );
     }
     return HyperosBlurredHeader.homePageRegionTintColor(
       context,

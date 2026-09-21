@@ -74,6 +74,16 @@ abstract final class HomeStartupVisualPrimer {
         liquidGlassTunedBlur: appearance.liquidGlassTuning?.blurSigma,
       );
 
+      // 卡片那份位图走**卡片自己的**磨砂量（与首页那份可以是两个 sigma）。
+      // 只在模糊管线开着、且卡片是液态档时有意义 —— 其它档运行时根本不请求，
+      // 预烤了就是白花 3~12 MB 与一次烤图。
+      final cardSigma = settings.frostedBlurEnabled
+          ? resolveCourseCardPreblurSigma(
+              cardStyle: settings.courseCardSurfaceStyle,
+              cardTuning: settings.courseCardGlassTuning,
+            )
+          : null;
+
       // 亮度带单独 await：避免用列表下标对齐可选的预模糊任务。
       final bandsFuture = sampleHomePageBackdropLuminanceBands(
         settings,
@@ -90,6 +100,16 @@ abstract final class HomeStartupVisualPrimer {
               .obtain(
                 path: path,
                 logicalSigma: sigma,
+                devicePixelRatio: devicePixelRatio,
+              )
+              .then((image) => image?.dispose()),
+        // 卡片那份（同一路径、不同 sigma）。两张都要，否则首帧卡片会先走实时
+        // 模糊再切成成品磨砂 —— 那一下正是预烤要消掉的闪。
+        if (devicePixelRatio > 0 && cardSigma != null)
+          PreblurredWallpaperCache.instance
+              .obtain(
+                path: path,
+                logicalSigma: cardSigma,
                 devicePixelRatio: devicePixelRatio,
               )
               .then((image) => image?.dispose()),

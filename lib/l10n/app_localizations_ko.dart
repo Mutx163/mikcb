@@ -10265,6 +10265,20 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liquidGlassResetAction => '기본값으로 초기화';
 
   @override
+  String get liquidGlassDarkBoostLabel => '다크 모드에서 유리 어둡게';
+
+  @override
+  String get liquidGlassDarkBoostSubtitle =>
+      '다크 모드에서 바탕을 중성 회색으로 하고 흐림을 늘리며 테두리 빛을 줄입니다';
+
+  @override
+  String get liquidGlassDarkIndependentLabel => '다크 모드 설정 따로 하기';
+
+  @override
+  String get liquidGlassDarkIndependentSubtitle =>
+      '기본값은 라이트 설정을 따릅니다. 켜면 다크 전용으로 따로 조정할 수 있습니다';
+
+  @override
   String get softGlassPresetLabel => '소프트 글래스 프리셋';
 
   @override

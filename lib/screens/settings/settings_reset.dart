@@ -90,12 +90,21 @@ TimetableSettings applySettingsReset(
       frostedSheetBlurSigma: d.frostedSheetBlurSigma,
       frostedSheetTintAlpha: d.frostedSheetTintAlpha,
       frostedSheetBarrierAlpha: d.frostedSheetBarrierAlpha,
-      liquidGlassTuning: d.liquidGlassTuning,
+      // 可空的 tuning 字段必须走 clear 标记：`copyWith` 对可空字段是 `??` 语义，
+      // 传 null 等于「不改」—— 直接写 `liquidGlassTuning: d.liquidGlassTuning`
+      // （d 的那几项都是 null）是**无效**的，「恢复默认」会留下用户那套参数。
+      // 这是 2026-09-21 一并修掉的既有缺陷，柔光 / 渐进同病。
+      clearLiquidGlassTuning: true,
+      clearLiquidGlassTuningDark: true,
+      linkLiquidGlassTuning: d.linkLiquidGlassTuning,
+      darkGlassBoostEnabled: d.darkGlassBoostEnabled,
+      // 卡片那套同病同治：可空字段必须走 clear 标记，传 null 等于「不改」。
+      clearCourseCardGlassTuning: true,
       liquidGlassDockEnabled: d.liquidGlassDockEnabled,
       softGlassPreset: d.softGlassPreset,
-      softGlassTuning: d.softGlassTuning,
+      clearSoftGlassTuning: true,
       progressiveBlurPreset: d.progressiveBlurPreset,
-      progressiveBlurTuning: d.progressiveBlurTuning,
+      clearProgressiveBlurTuning: true,
       weekdayBarFontColorLight: d.weekdayBarFontColorLight,
       weekdayBarFontColorDark: d.weekdayBarFontColorDark,
       weekdayBarAccentColorLight: d.weekdayBarAccentColorLight,

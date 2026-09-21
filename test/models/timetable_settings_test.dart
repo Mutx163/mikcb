@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
@@ -561,6 +562,60 @@ void main() {
     expect(
       clamped.softGlassTuning!.blurRadiusMultiplier,
       SoftGlassTuning.maxBlurRadiusMultiplier,
+    );
+  });
+
+  test('液态玻璃浅/深成对字段 survive json round trip', () {
+    // 见 `.agents/notes/proposed/architecture/2026-09-21-liquid-glass-light-dark-pair.md`。
+    // 落盘格式的错是静默的：这三个字段是新增的，漏一个就是"设置完重启就丢"。
+    final settings = TimetableSettings.defaults().copyWith(
+      liquidGlassTuning: LiquidGlassTuning.presetDense,
+      liquidGlassTuningDark: LiquidGlassTuning.presetClear,
+      linkLiquidGlassTuning: false,
+      darkGlassBoostEnabled: false,
+    );
+    final restored = TimetableSettings.fromJson(settings.toJson());
+    expect(restored.liquidGlassTuning, LiquidGlassTuning.presetDense);
+    expect(restored.liquidGlassTuningDark, LiquidGlassTuning.presetClear);
+    expect(restored.linkLiquidGlassTuning, isFalse);
+    expect(restored.darkGlassBoostEnabled, isFalse);
+
+    // 老档案缺键 → 深色档 null、两个开关取产品默认（跟随 + 开）。
+    final legacy = TimetableSettings.fromJson(<String, dynamic>{});
+    expect(legacy.liquidGlassTuningDark, isNull);
+    expect(legacy.linkLiquidGlassTuning, isTrue);
+    expect(legacy.darkGlassBoostEnabled, isTrue);
+  });
+
+  test('成对字段随 frostedAppearance 一起交给渲染层', () {
+    // 渲染层读的是 FrostedAppearance；漏传 = 设置改了但画面不动。
+    final settings = TimetableSettings.defaults().copyWith(
+      liquidGlassTuning: LiquidGlassTuning.presetLight,
+      liquidGlassTuningDark: LiquidGlassTuning.presetDense,
+      linkLiquidGlassTuning: false,
+      darkGlassBoostEnabled: false,
+    );
+    final appearance = settings.frostedAppearance;
+    expect(appearance.liquidGlassTuning, LiquidGlassTuning.presetLight);
+    expect(appearance.liquidGlassTuningDark, LiquidGlassTuning.presetDense);
+    expect(appearance.linkLiquidGlassTuning, isFalse);
+    expect(appearance.darkGlassBoostEnabled, isFalse);
+
+    final fallback = TimetableSettings.defaults().frostedAppearance;
+    expect(fallback.linkLiquidGlassTuning, isTrue);
+    expect(fallback.darkGlassBoostEnabled, isTrue);
+  });
+
+  test('深色档在 copyWith 里清不掉，是有意的', () {
+    // `??` 语义下传 null 等于"不改"。关掉独立开关只是**不使用**深色档，
+    // 用户再打开时应拿回原来那套，而不是被清空。
+    final settings = TimetableSettings.defaults().copyWith(
+      liquidGlassTuningDark: LiquidGlassTuning.presetDense,
+    );
+    expect(
+      settings.copyWith(linkLiquidGlassTuning: false).liquidGlassTuningDark,
+      LiquidGlassTuning.presetDense,
+      reason: '关开关不该顺手把用户的深色设置抹掉',
     );
   });
 

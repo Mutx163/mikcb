@@ -250,36 +250,85 @@ class LiquidGlassTuning {
     );
   }
 
-  /// 底色（白）在给定明暗下的实际颜色。
+  /// 该明暗 + 成对开关下，这块玻璃的底色。
   ///
-  /// 深色下收 15%：深色背景本身暗，同样的白底会显得更糊。抽成方法是因为
-  /// 除了渲染，**静态替身**（没有采样源时顶栏玻璃带画的近似底色）也要用同一个
-  /// 口径，两处各写一遍迟早会漂。
-  Color tintColor(Brightness brightness) {
-    final alpha = brightness == Brightness.dark
-        ? (tintAlpha * 0.85).clamp(0.0, 1.0)
-        : tintAlpha.clamp(0.0, 1.0);
-    return Colors.white.withValues(alpha: alpha);
+  /// 与 [toStyle] 走**同一套**选档（[forMode]）与配方（[LiquidGlassDarkRecipe]），
+  /// 所以静态替身与实体玻璃不会漂。只在需要底色、不想构造整个 style 时用它
+  /// （静态替身：没有采样源时顶栏玻璃带画的近似底色）。
+  ///
+  /// 不传成对配置时就是旧口径：底色恒白、深色收 15% —— 深色背景本身暗，
+  /// 同样的白底会显得更糊。
+  Color tintForMode({
+    required Brightness brightness,
+    LiquidGlassTuning? dark,
+    bool link = true,
+    bool darkBoost = false,
+  }) {
+    final recipe = _recipeFor(brightness, darkBoost: darkBoost);
+    final base = forMode(brightness: brightness, dark: dark, link: link);
+    return recipe.tintFor(base.tintAlpha);
+  }
+
+  /// 该明暗 + 开关下要套的配方。浅色恒为恒等配方 ⇒ 浅色逐位不变。
+  static LiquidGlassDarkRecipe _recipeFor(
+    Brightness brightness, {
+    required bool darkBoost,
+  }) => switch (brightness) {
+    Brightness.dark => darkBoost
+        ? LiquidGlassDarkRecipe.standard
+        : LiquidGlassDarkRecipe.legacy,
+    Brightness.light => LiquidGlassDarkRecipe.identity,
+  };
+
+  /// 按明暗挑出该用哪一档配置。
+  ///
+  /// 浅色恒为 [this]；深色不独立（`link = true`）时也是 [this]（再套深色配方），
+  /// 独立时才用 [dark]；[dark] 为 null 视为跟随。
+  LiquidGlassTuning forMode({
+    required Brightness brightness,
+    LiquidGlassTuning? dark,
+    bool link = true,
+  }) {
+    if (brightness != Brightness.dark) {
+      return this;
+    }
+    if (link) {
+      return this;
+    }
+    return dark ?? this;
   }
 
   /// 合成一块液态玻璃表面的渲染参数。
   ///
   /// 这是**全 app 唯一的**参数入口：各表面只提供自己的圆角与当前明暗，折射旋钮、
   /// 底色、光来向一律从这里出，所以不存在「这个表面折射 8、那个表面折射 12」。
+  ///
+  /// 浅/深成对（2026-09-21）：
+  /// * [dark] 是深色档（null = 跟随浅色档 [this]）；
+  /// * [link] = false 时才真的用 [dark]；true 时深色也以 [this] 为形状；
+  /// * [darkBoost] = true 才把 [LiquidGlassDarkRecipe.standard] 套到深色上。
+  ///
+  /// **默认 `darkBoost = false` 是刻意的**：那是今天的行为（白底 + 深色收 15%），
+  /// 所以未迁移的调用点零回归。由设置驱动的调用点显式传产品默认值。
   LiquidGlassStyle toStyle({
     required double borderRadius,
     required Brightness brightness,
+    LiquidGlassTuning? dark,
+    bool link = true,
+    bool darkBoost = false,
   }) {
+    final base = forMode(brightness: brightness, dark: dark, link: link);
+    final recipe = _recipeFor(brightness, darkBoost: darkBoost);
     return LiquidGlassStyle(
       borderRadius: borderRadius,
-      tint: tintColor(brightness),
-      blurSigma: blurSigma,
-      refraction: refraction,
-      refractionBand: refractionBand,
-      refractionEdgePow: refractionEdgePow,
-      dispersion: dispersion,
-      rimStrength: rimStrength,
-      rimWidth: rimWidth,
+      tint: recipe.tintFor(base.tintAlpha),
+      blurSigma: recipe.blurFor(base.blurSigma),
+      refraction: base.refraction,
+      refractionBand: base.refractionBand,
+      refractionEdgePow: base.refractionEdgePow,
+      dispersion: recipe.dispersionFor(base.dispersion),
+      rimStrength: recipe.rimFor(base.rimStrength),
+      rimWidth: base.rimWidth,
     );
   }
 
@@ -339,4 +388,103 @@ class LiquidGlassTuning {
     blurSigma,
     tintAlpha,
   );
+}
+
+/// 深色模式对浅色档施加的**配方**：目标底色 + 逐通道系数。
+///
+/// 为什么是「成对配方」而不是「同一套底色缩放」：这是业内的共同做法，四家都是两套配方，
+/// 不是一套乘系数 ——
+/// * Apple：`UIBlurEffect.Style` 有成对的 `systemMaterialLight` / `systemMaterialDark`
+///   （文档逐字 "is always light" / "is always dark"），另有 `dark` / `extraDark` 定义为
+///   "The area of the view is darker than the underlying view"；
+/// * Microsoft Fluent：Mica / Acrylic 明确 "mode aware"，而 Smoke "is not mode aware;
+///   it is always translucent black"（遮罩层**故意不随深浅变**）；
+/// * Material 3：深浅靠两套 `surfaceContainer*` 色阶（早先的 elevation overlay 在深色下
+///   把表面**提亮**，α 5%→12%）；
+/// * miuix（本仓上游）：每个材质都是 `isDark ? Dark : Light` 的成对常量，且暗色**换混合模式**
+///   —— 第二层 `0x66565656` 中灰 @ `luminosity`、第三层 `0x993F3F3F` @ `overlay`，
+///   `actionBarMask` 暗色 blur 40→60。
+///
+/// 两条硬规则（都是"材质完全可自定义"这个定位逼出来的）：
+/// 1. **系数一律用乘，不用加**：`effective = value × coef`。于是 0 恒为 0
+///    （用户关掉的通道永远保持关闭，`0 × 0.6 = 0`），单调、也不会把值顶出滑杆范围。
+/// 2. **目标底色用中性灰，不用黑**：暗底上再叠一层暗膜，面板与背景会糊在一起，
+///    既没边界也没玻璃感（miuix 从不用黑做染色层，黑色只以 5~10% 的 `plusDarker` 做压暗）。
+///
+/// 几何通道（折射 / 作用带 / 陡缓 / 穹顶）**不参与**：透镜形状与光照无关，
+/// 四家都没有按模式改透镜几何的先例。
+@immutable
+class LiquidGlassDarkRecipe {
+  const LiquidGlassDarkRecipe({
+    required this.tintTarget,
+    required this.tintAlphaScale,
+    required this.blurSigmaScale,
+    required this.rimStrengthScale,
+    required this.dispersionScale,
+  });
+
+  /// 浅色用的恒等配方：目标白、系数全 1。乘 1.0 在 IEEE754 下是恒等，
+  /// 所以浅色渲染逐位不变。
+  static const identity = LiquidGlassDarkRecipe(
+    tintTarget: Color(0xFFFFFFFF),
+    tintAlphaScale: 1,
+    blurSigmaScale: 1,
+    rimStrengthScale: 1,
+    dispersionScale: 1,
+  );
+
+  /// **今天的行为**：底色仍是白、深色只收 15%，其余不动。
+  /// [LiquidGlassTuning.toStyle] 在 `darkBoost = false` 时走它 ⇒ 未迁移调用点零回归。
+  static const legacy = LiquidGlassDarkRecipe(
+    tintTarget: Color(0xFFFFFFFF),
+    tintAlphaScale: 0.85,
+    blurSigmaScale: 1,
+    rimStrengthScale: 1,
+    dispersionScale: 1,
+  );
+
+  /// 产品默认的深色配方（起步值，待真机校准）。
+  ///
+  /// 模糊上浮对齐 miuix 的 `actionBarMask` 暗色 40→60；边光下收是因为
+  /// `lit = tinted + rimColor × rim` 是**恒定加色项**，底色一变暗它的相对亮度就升高。
+  static const standard = LiquidGlassDarkRecipe(
+    tintTarget: Color(0xFF565656),
+    tintAlphaScale: 0.85,
+    blurSigmaScale: 1.3,
+    rimStrengthScale: 0.6,
+    dispersionScale: 0.7,
+  );
+
+  /// 深色档的目标底色（中性灰量级，不是黑）。
+  final Color tintTarget;
+
+  /// 底色不透明度系数。
+  final double tintAlphaScale;
+
+  /// 模糊量系数。
+  final double blurSigmaScale;
+
+  /// 边缘高光强度系数。
+  final double rimStrengthScale;
+
+  /// 色散强度系数。
+  final double dispersionScale;
+
+  /// 目标底色 + 收缩后的 alpha。与 [LiquidGlassTuning.tintColor] 同口径。
+  Color tintFor(double tintAlpha) =>
+      tintTarget.withValues(alpha: (tintAlpha * tintAlphaScale).clamp(0.0, 1.0));
+
+  /// 模糊量，按滑杆区间收口（系数不得把值顶出区间）。
+  double blurFor(double blurSigma) => (blurSigma * blurSigmaScale).clamp(
+    LiquidGlassTuning.minBlurSigma,
+    LiquidGlassTuning.maxBlurSigma,
+  );
+
+  /// 边光强度，收在 0–1。
+  double rimFor(double rimStrength) =>
+      (rimStrength * rimStrengthScale).clamp(0.0, 1.0);
+
+  /// 色散强度，收在 0–1。
+  double dispersionFor(double dispersion) =>
+      (dispersion * dispersionScale).clamp(0.0, 1.0);
 }

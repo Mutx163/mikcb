@@ -18,6 +18,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../logging/performance_settings_snapshot.dart';
+import '../models/course_glass_tuning.dart';
 import '../models/glass_mode_choice.dart';
 import '../models/header_blur_style.dart';
 import '../models/holiday_entry.dart';

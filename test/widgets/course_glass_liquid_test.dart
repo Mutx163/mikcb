@@ -296,9 +296,16 @@ void main() {
         borderRadius: 8,
         tint: Color(0x552196F3),
       );
+      // 色散必须参与判等：渲染对象靠它决定要不要重绘，漏了就是「拖色散不动」。
+      const d = CourseGlassStyle(
+        borderRadius: 12,
+        tint: Color(0x552196F3),
+        dispersion: 0.9,
+      );
       expect(a, b);
       expect(a.hashCode, b.hashCode);
       expect(a == c, isFalse);
+      expect(a == d, isFalse);
     });
   });
 
@@ -425,6 +432,48 @@ void main() {
       expect(_glassPixel(on, 90, 50), _glassPixel(off, 90, 50));
     });
 
+    test('色散把红/蓝采样点错开：边缘像素变了，带内逐位不变', () async {
+      // 高频条纹纹理（每 4px 换一次色）：折射位移 ~3.9px，所以「红再往外一点、
+      // 蓝往回退一点」这两个采样点必然落到**不同的条纹**上，像素颜色因此改变。
+      // 条纹用红/绿交替而不是纯色块：位移的方向错了也照样会变，所以这里断言的是
+      // 「三采样分支真的接上了、uniform 真的传进来了」，方向由着色器里那三行保证。
+      final texture = await _glassTexture(
+        const Size(200, 200),
+        (canvas) {
+          for (var x = 0; x < 200; x += 8) {
+            canvas.drawRect(
+              Rect.fromLTWH(x.toDouble(), 0, 4, 200),
+              ui.Paint()..color = const Color(0xFFFF0000),
+            );
+            canvas.drawRect(
+              Rect.fromLTWH(x + 4.0, 0, 4, 200),
+              ui.Paint()..color = const Color(0xFF00FF00),
+            );
+          }
+        },
+      );
+      addTearDown(texture.dispose);
+
+      Future<Uint8List> render(double dispersion) => _renderGlass(
+        texture: texture,
+        texOrigin: const Offset(-50, -50),
+        texDestSize: const Size(200, 200),
+        refract: 8,
+        dispersion: dispersion,
+      );
+      final off = await render(0);
+      final on = await render(1);
+
+      expect(
+        _glassPixel(on, 1, 50),
+        isNot(_glassPixel(off, 1, 50)),
+        reason: '色散开了边缘却没变 —— uniform 没传进来，或三采样分支没接上',
+      );
+      // 作用带只有 7px：带内像素必须逐位一致，否则就是整卡在位移。
+      expect(_glassPixel(on, 50, 50), _glassPixel(off, 50, 50));
+      expect(_glassPixel(on, 90, 50), _glassPixel(off, 90, 50));
+    });
+
     test('边光整圈均匀：四条边的中点与四角一样亮', () async {
       // 回归点（2026-09-20 真机口径「四个角落有白线、上下左右都没有」）：边光
       // 曾经按边界曲率加权 —— 圆角满档、长直段归零，而判据的过渡宽度是
@@ -546,6 +595,7 @@ Future<Uint8List> _renderGlass({
   double radius = 20,
   Color tint = const Color(0x00000000),
   double refract = 0,
+  double dispersion = 0,
   double rim = 0,
 }) async {
   final shader = CourseCardGlassShader.instance.newShader()!;
@@ -564,6 +614,7 @@ Future<Uint8List> _renderGlass({
   shader.getUniformFloat('u_refract').set(refract);
   shader.getUniformFloat('u_band').set(7);
   shader.getUniformFloat('u_edge_pow').set(2.5);
+  shader.getUniformFloat('u_dispersion').set(dispersion);
   shader.getUniformVec3('u_rim_color').set(1, 1, 1);
   shader.getUniformFloat('u_rim').set(rim);
   shader.getUniformFloat('u_rim_width').set(1.5);

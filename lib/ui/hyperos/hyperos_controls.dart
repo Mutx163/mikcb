@@ -162,6 +162,8 @@ class HyperosSlider extends StatelessWidget {
     this.max = 1,
     this.divisions,
     this.enabled = true,
+    this.showKeyPoints = false,
+    this.keyPoints,
   });
 
   final double value;
@@ -170,6 +172,17 @@ class HyperosSlider extends StatelessWidget {
   final double max;
   final int? divisions;
   final bool enabled;
+
+  /// 是否在轨道上画关键点（`keyPoints` 非空时才有东西可画）。
+  ///
+  /// 「建议点位」用的就是它：轨道上的小圆点 + 划过时变色 + 经过时一次触感。
+  /// **不提供磁吸** —— miuix 的取值逻辑是「有档位就量化到档位、直接返回」，
+  /// 关键点磁吸那一段走不到（上游 Kotlin 与移植版逐字一致）。要磁吸就得二选一：
+  /// 去掉 [divisions] 变连续，或改 fork 让两者并存。
+  final bool showKeyPoints;
+
+  /// 自定义关键点值；null 时按 [divisions] 推导。
+  final List<double>? keyPoints;
 
   @override
   Widget build(BuildContext context) {
@@ -206,6 +219,8 @@ class HyperosSlider extends StatelessWidget {
         steps: divisions ?? 0,
         enabled: enabled,
         colors: colors,
+        showKeyPoints: showKeyPoints && keyPoints != null && keyPoints!.isNotEmpty,
+        keyPoints: keyPoints,
         hapticEffect: (divisions ?? 0) > 0
             ? MiuixSliderHapticEffect.step
             : MiuixSliderHapticEffect.edge,
@@ -483,6 +498,8 @@ class HyperosSliderTile extends StatelessWidget {
     this.tapToEdit = true,
     this.dialogTitle,
     this.dialogHelper,
+    this.showKeyPoints = false,
+    this.keyPoints,
   });
 
   /// When omitted, only the slider is shown (e.g. under [HyperosControlCard] header).
@@ -497,6 +514,10 @@ class HyperosSliderTile extends StatelessWidget {
   final bool tapToEdit;
   final String? dialogTitle;
   final String? dialogHelper;
+
+  /// 建议点位（见 [HyperosSlider.showKeyPoints]）。
+  final bool showKeyPoints;
+  final List<double>? keyPoints;
 
   Future<void> _openValueDialog(BuildContext context) async {
     if (!enabled || onChanged == null) {
@@ -606,6 +627,8 @@ class HyperosSliderTile extends StatelessWidget {
             max: max,
             divisions: divisions,
             enabled: enabled,
+            showKeyPoints: showKeyPoints,
+            keyPoints: keyPoints,
           ),
         ],
       ),

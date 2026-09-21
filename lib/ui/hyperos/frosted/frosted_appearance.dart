@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../models/course_glass_tuning.dart';
 import '../../../models/header_blur_style.dart';
 import '../../../models/liquid_glass_tuning.dart';
 import '../../../models/progressive_blur_tuning.dart';
@@ -86,6 +87,10 @@ class FrostedAppearance {
     this.subpageHeaderBlurStyle = kDefaultHeaderBlurStyle,
     this.homeBandGlassMaterial = kDefaultHomeBandGlassMaterial,
     this.liquidGlassTuning,
+    this.liquidGlassTuningDark,
+    this.linkLiquidGlassTuning = true,
+    this.darkGlassBoostEnabled = true,
+    this.courseCardGlassTuning,
     this.softGlassTuning = SoftGlassTuning.defaults,
     this.progressiveBlurTuning = ProgressiveBlurTuning.defaults,
     this.liquidGlassDockEnabled = kDefaultLiquidGlassDockEnabled,
@@ -129,7 +134,35 @@ class FrostedAppearance {
   /// 液态玻璃参数（[glassMode] 为 [FrostedGlassMode.liquidGlass] 时生效）。
   /// 非空即用户调过的档；null = 出厂标准档（渲染期回落到
   /// [LiquidGlassTuning.defaults]，其折射旋钮与课程卡片液态档逐字段一致）。
+  ///
+  /// **2026-09-21 起语义明确为「浅色档」**（存储 key 未变，存量零迁移）。
   final LiquidGlassTuning? liquidGlassTuning;
+
+  /// 液态玻璃的**深色档**（null = 跟随浅色档，见 [linkLiquidGlassTuning]）。
+  final LiquidGlassTuning? liquidGlassTuningDark;
+
+  /// 深色档是否跟随浅色档。
+  ///
+  /// `true`（默认）时深色以 [liquidGlassTuning] 为形状、再套深色配方；
+  /// `false` 时才真的用 [liquidGlassTuningDark]。
+  final bool linkLiquidGlassTuning;
+
+  /// 深色模式是否套用「变暗配方」（[LiquidGlassDarkRecipe.standard]）。
+  ///
+  /// 产品默认开；关掉即退回今天的行为（白底 + 深色收 15% = 配方表的
+  /// [LiquidGlassDarkRecipe.legacy]），这也是本改动的回滚开关。
+  /// **只作用于深色**：浅色永远走恒等配方，逐位不变。
+  ///
+  /// 2026-09-21 起**课程卡片也吃它**（见 `courseGlassStyleFor`）：配方是光照适配，
+  /// 与「哪个表面」无关，漏给某一族表面就会重现「同一材质深浅两套观感」的翻版。
+  final bool darkGlassBoostEnabled;
+
+  /// 课程卡片自己那套液态玻璃参数（null = 出厂卡片档
+  /// [CourseGlassTuning.courseCard]）。
+  ///
+  /// **刻意与 [liquidGlassTuning] 分开**：卡片与全局是两套独立配置，用户要的正是
+  /// 「别处一个样、卡片另一个样」。两者共享的是解析入口与深浅配方，不是数值。
+  final CourseGlassTuning? courseCardGlassTuning;
 
   /// 柔光玻璃参数（[glassMode] 为 [FrostedGlassMode.softGlass] 时生效）。
   /// 非空缺省即默认档，柔光任何后端都能画，无需可空判空。
@@ -157,6 +190,10 @@ class FrostedAppearance {
           sheetBarrierAlpha == other.sheetBarrierAlpha &&
           glassMode == other.glassMode &&
           liquidGlassTuning == other.liquidGlassTuning &&
+          liquidGlassTuningDark == other.liquidGlassTuningDark &&
+          linkLiquidGlassTuning == other.linkLiquidGlassTuning &&
+          darkGlassBoostEnabled == other.darkGlassBoostEnabled &&
+          courseCardGlassTuning == other.courseCardGlassTuning &&
           softGlassTuning == other.softGlassTuning &&
           progressiveBlurTuning == other.progressiveBlurTuning &&
           liquidGlassDockEnabled == other.liquidGlassDockEnabled;
@@ -171,6 +208,10 @@ class FrostedAppearance {
     sheetBarrierAlpha,
     glassMode,
     liquidGlassTuning,
+    liquidGlassTuningDark,
+    linkLiquidGlassTuning,
+    darkGlassBoostEnabled,
+    courseCardGlassTuning,
     softGlassTuning,
     progressiveBlurTuning,
     liquidGlassDockEnabled,

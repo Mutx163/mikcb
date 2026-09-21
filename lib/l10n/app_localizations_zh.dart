@@ -9922,6 +9922,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liquidGlassResetAction => '恢复默认';
 
   @override
+  String get liquidGlassDarkBoostLabel => '深色模式玻璃更暗';
+
+  @override
+  String get liquidGlassDarkBoostSubtitle => '深色下换成中性灰底、略增模糊并收边缘高光';
+
+  @override
+  String get liquidGlassDarkIndependentLabel => '独立设置深色档';
+
+  @override
+  String get liquidGlassDarkIndependentSubtitle => '默认沿用浅色档；打开后可单独调一套';
+
+  @override
   String get softGlassPresetLabel => '柔光玻璃预设';
 
   @override
@@ -21061,6 +21073,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liquidGlassResetAction => '還原預設';
 
   @override
+  String get liquidGlassDarkBoostLabel => '深色模式玻璃更暗';
+
+  @override
+  String get liquidGlassDarkBoostSubtitle => '深色下換成中性灰底、略增模糊並收邊緣高光';
+
+  @override
+  String get liquidGlassDarkIndependentLabel => '獨立設定深色檔';
+
+  @override
+  String get liquidGlassDarkIndependentSubtitle => '預設沿用淺色檔；打開後可單獨調一套';
+
+  @override
   String get softGlassPresetLabel => '柔光玻璃預設';
 
   @override
@@ -32198,6 +32222,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liquidGlassResetAction => '還原預設';
+
+  @override
+  String get liquidGlassDarkBoostLabel => '深色模式玻璃更暗';
+
+  @override
+  String get liquidGlassDarkBoostSubtitle => '深色下換成中性灰底、略增模糊並收邊緣高光';
+
+  @override
+  String get liquidGlassDarkIndependentLabel => '獨立設定深色檔';
+
+  @override
+  String get liquidGlassDarkIndependentSubtitle => '預設沿用淺色檔；開啟後可單獨調一套';
 
   @override
   String get softGlassPresetLabel => '柔光玻璃預設';

@@ -18007,6 +18007,30 @@ abstract class AppLocalizations {
   /// **'恢复默认'**
   String get liquidGlassResetAction;
 
+  /// No description provided for @liquidGlassDarkBoostLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'深色模式玻璃更暗'**
+  String get liquidGlassDarkBoostLabel;
+
+  /// No description provided for @liquidGlassDarkBoostSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'深色下换成中性灰底、略增模糊并收边缘高光'**
+  String get liquidGlassDarkBoostSubtitle;
+
+  /// No description provided for @liquidGlassDarkIndependentLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'独立设置深色档'**
+  String get liquidGlassDarkIndependentLabel;
+
+  /// No description provided for @liquidGlassDarkIndependentSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认沿用浅色档；打开后可单独调一套'**
+  String get liquidGlassDarkIndependentSubtitle;
+
   /// No description provided for @softGlassPresetLabel.
   ///
   /// In zh, this message translates to:

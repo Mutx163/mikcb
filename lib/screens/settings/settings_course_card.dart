@@ -110,7 +110,7 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
     );
   }
 
-  static const _sectionCount = 8;
+  static const _sectionCount = 9;
 
   Widget _buildSection(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context)!;
@@ -311,18 +311,156 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
           ),
         ],
       ),
-      6 => TimetableTextColorSettings(
+      6 => _buildGlassMaterialSection(l10n),
+      7 => TimetableTextColorSettings(
         settings: _draft,
         scope: TextColorScope.courseCard,
         onChanged: _updateDraft,
       ),
-      7 => _SettingsResetTile(
+      8 => _SettingsResetTile(
         scope: SettingsResetScope.courseCard,
         onReset: _updateDraft,
       ),
       _ => const SizedBox.shrink(),
     };
   }
+
+  /// 卡片的液态玻璃参数：八个旋钮，**只在卡片是液态档时出现**（其它档下这八根没有
+  /// 任何消费者，显示出来只会让人以为拖了有用）。
+  ///
+  /// 为什么放在本页而不是「外观编辑」的材质面板（那个面板里已经有「课程卡片」三档）：
+  /// 面板内容高度上限 = 屏高×0.5 − 42（把手栏）− 底部安全区 − 16（呼吸），
+  /// 393×852 真机只有约 **334px**，而一行滑杆约 74px —— 这八行就是 **592px**，
+  /// 塞进去要滚近两屏；面板的设计前提是「上面一半永远看得见预览」，塞不下。
+  /// 本页是普通子页（预览 4 成 / 列表 6 成、可滚动），自带卡片实时预览，
+  /// 而「卡片外观」这个档位开关也在这页 —— 选什么档、这档长什么样，同一屏里闭环。
+  Widget _buildGlassMaterialSection(AppLocalizations l10n) {
+    if (_draft.courseCardSurfaceStyle != CourseCardSurfaceStyle.liquidGlass) {
+      return const SizedBox.shrink();
+    }
+    final t = _draft.courseCardGlassTuning ?? CourseGlassTuning.courseCard;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const HyperosSectionGap(),
+        HyperosSectionLabel(text: l10n.advancedMaterialTitle),
+        HyperosListGroup(
+          children: [
+            // 前四根带**建议点位**：轨道上画一个点，划过的点变亮、经过时一次触感。
+            // 建议值就是出厂档的对应值（所以标记与"值等于出厂值时的滑块位置"重合）。
+            // 密度由 divisions 决定：四组数字都按「出厂值恰好落在格点上」挑过
+            // （见 `HyperosSlider` 对两层量化的说明）。
+            HyperosSliderTile(
+              title: l10n.liquidGlassRefractionLabel,
+              value: t.refraction,
+              max: LiquidGlassTuning.maxRefraction,
+              divisions: 40,
+              valueLabel: _glassNum(t.refraction, 1),
+              showKeyPoints: true,
+              keyPoints: const [CourseGlassTuning.defaultRefraction],
+              onChanged: (value) => _updateCardGlassTuning(
+                (base) => base.copyWith(refraction: value),
+              ),
+            ),
+            HyperosSliderTile(
+              title: l10n.liquidGlassRefractionBandLabel,
+              value: t.refractionBand,
+              min: LiquidGlassTuning.minRefractionBand,
+              max: LiquidGlassTuning.maxRefractionBand,
+              divisions: 46,
+              valueLabel: _glassNum(t.refractionBand, 1),
+              showKeyPoints: true,
+              keyPoints: const [CourseGlassTuning.defaultRefractionBand],
+              onChanged: (value) => _updateCardGlassTuning(
+                (base) => base.copyWith(refractionBand: value),
+              ),
+            ),
+            HyperosSliderTile(
+              title: l10n.liquidGlassRefractionEdgePowLabel,
+              value: t.refractionEdgePow,
+              min: LiquidGlassTuning.minRefractionEdgePow,
+              max: LiquidGlassTuning.maxRefractionEdgePow,
+              divisions: 20,
+              valueLabel: _glassNum(t.refractionEdgePow, 2),
+              showKeyPoints: true,
+              keyPoints: const [CourseGlassTuning.defaultRefractionEdgePow],
+              onChanged: (value) => _updateCardGlassTuning(
+                (base) => base.copyWith(refractionEdgePow: value),
+              ),
+            ),
+            HyperosSliderTile(
+              title: l10n.liquidGlassDispersionLabel,
+              value: t.dispersion,
+              divisions: 20,
+              valueLabel: _glassPct(t.dispersion),
+              onChanged: (value) => _updateCardGlassTuning(
+                (base) => base.copyWith(dispersion: value),
+              ),
+            ),
+            HyperosSliderTile(
+              title: l10n.liquidGlassRimStrengthLabel,
+              value: t.rimStrength,
+              divisions: 20,
+              valueLabel: _glassPct(t.rimStrength),
+              onChanged: (value) => _updateCardGlassTuning(
+                (base) => base.copyWith(rimStrength: value),
+              ),
+            ),
+            HyperosSliderTile(
+              title: l10n.liquidGlassRimWidthLabel,
+              value: t.rimWidth,
+              max: LiquidGlassTuning.maxRimWidth,
+              divisions: 30,
+              valueLabel: _glassNum(t.rimWidth, 1),
+              onChanged: (value) => _updateCardGlassTuning(
+                (base) => base.copyWith(rimWidth: value),
+              ),
+            ),
+            HyperosSliderTile(
+              title: l10n.liquidGlassBlurSigmaLabel,
+              value: t.blurSigma,
+              max: LiquidGlassTuning.maxBlurSigma,
+              divisions: 40,
+              valueLabel: _glassNum(t.blurSigma, 0),
+              onChanged: (value) => _updateCardGlassTuning(
+                (base) => base.copyWith(blurSigma: value),
+              ),
+            ),
+            HyperosSliderTile(
+              title: l10n.liquidGlassTintLabel,
+              value: t.tintAlpha,
+              // 步长 0.04（25 档）：出厂值 0.32 恰好落在格点上，建议点位才指得准。
+              divisions: 25,
+              valueLabel: _glassPct(t.tintAlpha),
+              showKeyPoints: true,
+              keyPoints: const [CourseGlassTuning.defaultTintAlpha],
+              onChanged: (value) => _updateCardGlassTuning(
+                (base) => base.copyWith(tintAlpha: value),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// 滑杆写回卡片那套参数。`copyWith` 对可空字段是 `??` 语义，所以基准值要显式
+  /// 回落到出厂档 —— 否则「用户没调过」时第一次拖滑杆会写进一个只含这一项的档，
+  /// 其余七项虽然会由 `fromJson` 的缺键回落兜住，但内存里那份会短暂自相矛盾。
+  void _updateCardGlassTuning(
+    CourseGlassTuning Function(CourseGlassTuning) transform,
+  ) {
+    final base = _draft.courseCardGlassTuning ?? CourseGlassTuning.courseCard;
+    _updateDraft(
+      _draft.copyWith(courseCardGlassTuning: transform(base)),
+      debounce: true,
+    );
+  }
+
+  String _glassNum(double value, int digits) => value.toStringAsFixed(digits);
+
+  String _glassPct(double value) => '${(value * 100).round()}%';
 
   void _updateDraft(TimetableSettings next, {bool debounce = false}) {
     setState(() {

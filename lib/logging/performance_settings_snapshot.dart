@@ -43,6 +43,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import '../models/course_glass_tuning.dart';
 import '../models/glass_mode_choice.dart';
 import '../models/liquid_glass_tuning.dart';
 import '../models/surface_material.dart';
@@ -82,8 +83,19 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
   // 液态玻璃全 app 只有一套参数（[LiquidGlassTuning]）：取「已回落」的那份，
   // 所以内置兜底档（用户没进过高级材质页）也读得到同样的值。
   final liquid = appearance.liquidGlassTuning ?? LiquidGlassTuning.defaults;
+  // 深色下渲染器真正会用的那份（走 toStyle 同一套选档 + 配方）。`borderRadius`
+  // 与这里要读的三个标量无关，给 0 即可。
+  final darkResolved = liquid.toStyle(
+    borderRadius: 0,
+    brightness: Brightness.dark,
+    dark: appearance.liquidGlassTuningDark,
+    link: appearance.linkLiquidGlassTuning,
+    darkBoost: appearance.darkGlassBoostEnabled,
+  );
   final soft = appearance.softGlassTuning;
   final progressive = appearance.progressiveBlurTuning;
+  // 卡片那套同款「已回落」取法：内置兜底档也读得到同样的值。
+  final card = appearance.courseCardGlassTuning ?? CourseGlassTuning.courseCard;
 
   return <String, Object?>{
     // —— 一句话档位 ——
@@ -128,10 +140,36 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
     'lgRefraction': liquid.refraction,
     'lgRefractionBand': liquid.refractionBand,
     'lgRefractionEdgePow': liquid.refractionEdgePow,
+    'lgDispersion': liquid.dispersion,
     'lgRimStrength': liquid.rimStrength,
     'lgRimWidth': liquid.rimWidth,
     'lgBlurSigma': liquid.blurSigma,
     'lgTintAlpha': liquid.tintAlpha,
+    // —— 液态玻璃的浅/深成对（2026-09-21）——
+    // 不加这几行的话，日志会**说谎**：深色下的实际底色/模糊/边光是配方后的值，
+    // 而上面那几行报的是浅色档原值，排查时会把「配方没生效」和「配方生效了」读成一样。
+    'lgDarkTuningSource':
+        appearance.liquidGlassTuningDark == null ? 'linked' : 'custom',
+    'lgLinkDark': appearance.linkLiquidGlassTuning,
+    'lgDarkBoost': appearance.darkGlassBoostEnabled,
+    'lgDarkBlurSigma': darkResolved.blurSigma,
+    'lgDarkRimStrength': darkResolved.rimStrength,
+    'lgDarkDispersion': darkResolved.dispersion,
+    'lgDarkTintAlpha': darkResolved.tint.a,
+
+    // —— 课程卡片自己那套（2026-09-21）——
+    // 卡片不再跟随上面那份，所以这几行是排查「卡片玻璃不对」的唯一读数来源。
+    'ccTuningSource': appearance.courseCardGlassTuning == null
+        ? 'builtin'
+        : 'custom',
+    'ccRefraction': card.refraction,
+    'ccRefractionBand': card.refractionBand,
+    'ccRefractionEdgePow': card.refractionEdgePow,
+    'ccDispersion': card.dispersion,
+    'ccRimStrength': card.rimStrength,
+    'ccRimWidth': card.rimWidth,
+    'ccBlurSigma': card.blurSigma,
+    'ccTintAlpha': card.tintAlpha,
 
     // —— 渐进（顶栏）模糊参数 ——
     'pbPreset': s.progressiveBlurPreset.name,

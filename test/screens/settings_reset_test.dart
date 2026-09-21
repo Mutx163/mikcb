@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/header_blur_style.dart';
+import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
@@ -48,6 +49,11 @@ void main() {
       frostedBlurEnabled: false,
       frostedSheetBlurSigma: 20,
       liquidGlassDockEnabled: false,
+      // 液态玻璃的浅/深成对（2026-09-21）：非默认值，否则下面的断言是白过的。
+      liquidGlassTuning: LiquidGlassTuning.presetDense,
+      liquidGlassTuningDark: LiquidGlassTuning.presetClear,
+      linkLiquidGlassTuning: false,
+      darkGlassBoostEnabled: false,
       // 首页与导航（自外观页拆出的独立恢复作用域）
       homeNavigationForm: HomeNavigationForm.glassDock,
       homeTitleStyle: HomeTitleStyle.brand,
@@ -171,6 +177,15 @@ void main() {
     expect(result.frostedBlurEnabled, defaults.frostedBlurEnabled);
     expect(result.frostedSheetBlurSigma, defaults.frostedSheetBlurSigma);
     expect(result.liquidGlassDockEnabled, defaults.liquidGlassDockEnabled);
+    // 浅/深成对：三个新字段也必须跟着本页回默认，否则「恢复默认」会留下一套
+    // 用户以为已经清掉的深色档与开关。
+    expect(result.liquidGlassTuning, defaults.liquidGlassTuning);
+    expect(result.liquidGlassTuningDark, defaults.liquidGlassTuningDark);
+    expect(result.linkLiquidGlassTuning, defaults.linkLiquidGlassTuning);
+    expect(result.darkGlassBoostEnabled, defaults.darkGlassBoostEnabled);
+    // 柔光 / 渐进的 tuning 与液态同类：可空字段，恢复默认必须真的清掉。
+    expect(result.softGlassTuning, defaults.softGlassTuning);
+    expect(result.progressiveBlurTuning, defaults.progressiveBlurTuning);
     expect(result.weekdayBarFontColorLight, defaults.weekdayBarFontColorLight);
     // 壁纸文件路径必须一并清掉，否则「恢复默认」后背景还在。
     expect(result.homePageWallpaperPath, isNull);

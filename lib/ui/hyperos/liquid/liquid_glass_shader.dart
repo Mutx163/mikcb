@@ -71,11 +71,9 @@ class LiquidGlassStyle {
   /// 0 = 关（单采样，与加色散前逐像素一致）。
   final double dispersion;
 
-  /// 边缘高光强度（0–1）。**高光落在哪里由表面形状决定**，不由这个值决定：细长条
-  /// （底栏药丸、首页玻璃带）整圈均匀，方正的大面板（底部弹窗、弹窗家族）只留转角
-  /// （`liquid_glass_surface.dart` 的 `liquidGlassRimCornerOnlyForSize`）。所以这个值
-  /// 调的是"这条边光多亮"，不是"它出现在哪条边上"——贯屏长直边上的一条高光无论多细
-  /// 都只会读成描边。
+  /// 边缘高光强度（0–1）。**整圈均匀**（2026-09-21 起）：这个值调的是"这条边光多亮"，
+  /// 不是"它出现在哪条边上"。曾按表面形状给方正面板收成「只留转角」，但那条规则在小面
+  /// 上一定退化成四个角钩（实测见 `course_card_glass.frag:16-27`），已整体撤掉。
   final double rimStrength;
 
   /// 边缘高光带宽（逻辑 px）。
@@ -166,7 +164,6 @@ class LiquidGlassUniforms {
       rimColor = shader.getUniformVec3('u_rim_color'),
       rim = shader.getUniformFloat('u_rim'),
       rimWidth = shader.getUniformFloat('u_rim_width'),
-      rimCornerOnly = shader.getUniformFloat('u_rim_corner_only'),
       viewSize = shader.getUniformVec2('u_view_size');
 
   final ui.UniformVec2Slot areaOrigin;
@@ -192,15 +189,6 @@ class LiquidGlassUniforms {
   final ui.UniformVec3Slot rimColor;
   final ui.UniformFloatSlot rim;
   final ui.UniformFloatSlot rimWidth;
-
-  /// 边光的作用范围（0 = 整圈均匀、1 = 只留转角）：绘制期按表面**长短边比**推导
-  /// （`liquid_glass_surface.dart` 的 `liquidGlassRimCornerOnlyForSize`），不是材质参数。
-  ///
-  /// 细长条（底栏药丸、首页玻璃带）走整圈均匀 —— 它们的长边就是主体，只留转角会
-  /// 让药丸只剩两头亮着；方正的大面板（底部弹窗、弹窗家族）只留转角 —— 贯屏长直边
-  /// 上的一条高光只会读成描边。为什么必须按形状分：药丸与弹窗的上沿几何上分不开
-  /// （都是三百多像素的长直边、圆角 27/28），见 `.frag` 文件头第四轮。
-  final ui.UniformFloatSlot rimCornerOnly;
 
   /// 视口的物理像素尺寸。
   ///

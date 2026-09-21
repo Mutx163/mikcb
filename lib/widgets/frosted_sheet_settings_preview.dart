@@ -27,6 +27,9 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
     required this.onOpenDemoSheet,
     required this.glassMode,
     this.liquidGlassTuning,
+    this.liquidGlassTuningDark,
+    this.linkLiquidGlassTuning = true,
+    this.darkGlassBoostEnabled = true,
     this.softGlassTuning = SoftGlassTuning.defaults,
     this.progressiveBlurTuning = ProgressiveBlurTuning.defaults,
     super.key,
@@ -34,6 +37,14 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
 
   final FrostedGlassMode glassMode;
   final LiquidGlassTuning? liquidGlassTuning;
+
+  /// 液态玻璃的深色档与两个成对开关（2026-09-21）。
+  ///
+  /// 与 [progressiveBlurTuning] 同一条理由：**预览必须跟草稿一起走**，否则
+  /// 用户在外观编辑器里调深色档、预览却按浅色出图 —— 那比没有预览更坏。
+  final LiquidGlassTuning? liquidGlassTuningDark;
+  final bool linkLiquidGlassTuning;
+  final bool darkGlassBoostEnabled;
 
   /// 柔光滑杆草稿（非空缺省，直接进预览 appearance）。
   final SoftGlassTuning softGlassTuning;
@@ -63,6 +74,12 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
       blurEnabled: blurEnabled,
       glassMode: glassMode,
       liquidGlassTuning: liquidGlassTuning,
+      liquidGlassTuningDark: liquidGlassTuningDark,
+      linkLiquidGlassTuning: linkLiquidGlassTuning,
+      darkGlassBoostEnabled: darkGlassBoostEnabled,
+      // 卡片那套直接从 `settings` 读，不走构造参数：两个调用点传进来的都是**草稿**
+      // （`settings: _draft`），逐字段再复制一遍只会多一个能漏传的地方。
+      courseCardGlassTuning: settings.courseCardGlassTuning,
       softGlassTuning: softGlassTuning,
       progressiveBlurTuning: progressiveBlurTuning,
       // 预览里的首页玻璃带（HomePageChromeGlassFill）经 scope 读顶栏材质

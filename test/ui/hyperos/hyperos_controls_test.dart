@@ -317,6 +317,63 @@ void main() {
       },
     );
 
+    testWidgets('建议点位透传到 miuix 滑块（显示开关 + 自定义关键点）', (
+      tester,
+    ) async {
+      // 卡片设置页的「建议点位」全靠这两个参数过桥：miuix 的 MiuixSlider 支持
+      // 关键点，但本仓的封装一直没把它透出来。漏传的症状是"标记根本不出现"，
+      // 不会有任何异常。
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HyperosListGroup(
+              children: [
+                HyperosSliderTile(
+                  title: 'Refraction',
+                  value: 8,
+                  max: 20,
+                  divisions: 40,
+                  showKeyPoints: true,
+                  keyPoints: const [8],
+                  onChanged: (_) {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final slider = tester.widget<MiuixSlider>(find.byType(MiuixSlider));
+      expect(slider.showKeyPoints, isTrue);
+      expect(slider.keyPoints, const [8]);
+      // 档位点仍在：这一版要的是「档位 + 关键点」，不是把档位换掉。
+      expect(slider.steps, 40);
+    });
+
+    testWidgets('不给关键点时保持原样（不画出多余的标记）', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HyperosListGroup(
+              children: [
+                HyperosSliderTile(
+                  title: 'Refraction',
+                  value: 8,
+                  max: 20,
+                  divisions: 40,
+                  onChanged: (_) {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final slider = tester.widget<MiuixSlider>(find.byType(MiuixSlider));
+      expect(slider.showKeyPoints, isFalse);
+      expect(slider.keyPoints, isNull);
+    });
+
     testWidgets('tap editing dialog updates slider value', (tester) async {
       var value = 9.0;
 
