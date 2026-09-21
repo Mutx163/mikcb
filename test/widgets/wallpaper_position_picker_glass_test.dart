@@ -24,6 +24,10 @@ import 'package:university_timetable/widgets/wallpaper_position_picker_sheet.dar
 ///    且被盖住后连 paint 都停了）。
 /// 2. **玻璃误入捕获子树**：上游要求玻璃必须在捕获子树之外（防反馈采样），所以按钮层
 ///    与 `HyperosGlassBackdropHost` 平级。
+/// 3. **转场帧里画活玻璃**（真机 2026-09-21「按钮被分成两层、玻璃跑到右边、原位剩一个
+///    透明按钮」）：折射层按屏幕绝对坐标摆形状，侧滑转场途中画过的那一帧会被烤进缓存
+///    ⇒ 落定后玻璃永久偏在一侧。落定前一律退回磨砂顶着，见
+///    `_WallpaperPositionPickerPageState._routeSettled`。
 ///
 /// 另外底部按钮曾被 `Center` 的 maxWidth 撑满：`Container` 带 `alignment` 时在
 /// 有界约束下会占满可用宽度，`minWidth` 只管下限。
@@ -46,6 +50,8 @@ void main() {
   Future<void> pumpPicker(
     WidgetTester tester, {
     String imagePath = wallpaperPath,
+    /// false = 只把转场推几帧（停在侧滑途中），用来验"转场帧里不画活玻璃"。
+    bool settle = true,
   }) async {
     tester.view.physicalSize = screenSize;
     tester.view.devicePixelRatio = screenDpr;
@@ -102,8 +108,11 @@ void main() {
 
     await tester.tap(find.text('open'));
     // 不用 pumpAndSettle：转场期间玻璃在自激重绘，settle 不下来。
-    for (var i = 0; i < 12; i++) {
-      await tester.pump(const Duration(milliseconds: 60));
+    final frames = settle ? 12 : 3;
+    for (var i = 0; i < frames; i++) {
+      await tester.pump(settle
+          ? const Duration(milliseconds: 60)
+          : const Duration(milliseconds: 30));
     }
   }
 
@@ -132,6 +141,49 @@ void main() {
       findsNothing,
       reason: '全局选了柔光也不该把这几颗按钮分派成柔光面',
     );
+  });
+
+  testWidgets('转场帧里一帧都不画活玻璃：落定前磨砂顶着，落定后才上玻璃', (tester) async {
+    // 真机口径（2026-09-21）：「按钮好像被分成了两层，玻璃那层跑到了右边，原位置
+    // 剩下了一个透明按钮」，而且**不动它就一直在**。
+    //
+    // 成因（见页面 `_routeSettled` 的注释）：折射层的形状按**屏幕绝对坐标**算，
+    // 本页进场走共享轴侧滑（页面从右边滑进来），转场帧里算出来的坐标带着中途的
+    // 位移；那一帧画过的结果会被烤进缓存，落定后没有新的重绘（本页只有一次亮度
+    // 采样会重建，且它通常落在转场途中）⇒ 玻璃永久偏在右侧，原位只剩按钮自己的
+    // 衬底与文字 = "透明按钮"。
+    //
+    // 这条用例先把"转场中"那一帧钉住：一颗活玻璃都不许有，但四个位置都要有材质面
+    // 顶着（留空就是用户看到的"透明按钮"）。
+    await pumpPicker(tester, settle: false);
+
+    final picker = find.byType(WallpaperPositionPickerPage);
+    expect(picker, findsOneWidget);
+    expect(
+      pickerSurfaces(),
+      findsNothing,
+      reason: '转场还没落定，活玻璃一帧都不许画 —— 画了就会被烤到转场坐标上',
+    );
+    expect(
+      find.descendant(
+        of: picker,
+        matching: find.byType(FrostedHeaderBackground),
+      ),
+      findsNWidgets(4),
+      reason: '四个位置都要有材质面顶着，否则就是"原位置剩下一个透明按钮"',
+    );
+
+    // 把转场走完：落定后才放行活玻璃，而且四颗都必须是锁档的。
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 60));
+    }
+    expect(pickerSurfaces(), findsNWidgets(4));
+    for (final element in pickerSurfaces().evaluate()) {
+      expect(
+        (element.widget as LiquidGlassSurface).role,
+        LiquidGlassRole.pinnedChrome,
+      );
+    }
   });
 
   testWidgets('按钮层与捕获子树平级，且钉在本页采样源上', (tester) async {
