@@ -63,7 +63,7 @@ dependencies:
   liquid_glass_widgets: ^0.30.2
   flutter_blackbox: ^0.7.0
   fountain_codes: ^1.0.0
-  mobile_scanner: ^7.4.0
+  mobile_scanner: ^7.4.2
   image_picker: ^1.2.3
   # 顶栏渐进模糊（Inspire Blur）：自定义 GPU shader 的变量模糊，
   # 用于顶栏玻璃带「上浓下淡」的渐进过渡（见 lib/ui/hyperos/inspire/）。
