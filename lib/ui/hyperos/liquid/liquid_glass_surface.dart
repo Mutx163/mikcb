@@ -96,6 +96,21 @@ const double _rimCornerOnlyBelowAspect = 1.6;
 /// 长短边比 ≥ 这个值时，边光按「**整圈均匀**」处理（细长条）。
 const double _rimUniformAboveAspect = 2.6;
 
+/// 短边 ≤ 这个值的表面一律「整圈均匀」，不参与上面那条「只留转角」的分档
+/// （逻辑 px，与 [narrowSurfaceMaxRefraction] 的尺寸线同档）。
+///
+/// 为什么小件必须整圈均匀：「只留转角」治的是**贯屏长直边**上的浅色条（见
+/// [liquidGlassRimCornerOnlyForSize]），而那些直边之所以读成描边，靠的是**长度**。
+/// 60×36 的悬浮按钮（圆角 16）顶边直段只有 28px、只有屏幕宽的 7%，它读作"按钮的
+/// 上沿反光"，收掉它就是另一回事了 —— 按长短边比推还会得到 0.93（几乎全收），
+/// 顶上那条直边只剩四成亮，而四个圆角仍满档。真机口径（2026-09-21）：
+/// 「四周的白边不均匀，顶部看起来是黑的，四个角是正常白边」。
+///
+/// 圆件（常驻球、返回键圆底、坞内圆钮）本就不受这条分档影响（着色器里圆形的 SDF
+/// 中间量两个分量恒非负），细长条（药丸、玻璃带）按长短边比也早已落在 0，所以这条
+/// 尺寸线实际只改小件（按钮）一个家族。
+const double _rimUniformBelowShortSide = 52;
+
 /// 按表面**形状**推导边光的作用范围（0 = 整圈均匀、1 = 只留转角）。
 ///
 /// 为什么不能只看「这条边直不直」：底栏那颗药丸的上沿与底部弹窗的上沿**几何上是
@@ -110,6 +125,8 @@ const double _rimUniformAboveAspect = 2.6;
 ///   贯屏长直边上的一条高光只会读成描边，只留转角；
 /// * 中间一段线性过渡，避免同一份材质在阈值两侧出现两种观感。
 ///
+/// 短边 ≤ [_rimUniformBelowShortSide] 的小件直接整圈均匀（见该常量的说明）。
+///
 /// 圆件（常驻球、坞内圆钮）不受影响：着色器里圆形的 SDF 中间量两个分量恒非负，
 /// 「只留转角」与「整圈均匀」对它是同一条读数。
 ///
@@ -118,6 +135,9 @@ const double _rimUniformAboveAspect = 2.6;
 @visibleForTesting
 double liquidGlassRimCornerOnlyForSize(Size size) {
   final shortSide = math.min(size.width, size.height);
+  if (shortSide <= _rimUniformBelowShortSide) {
+    return 0;
+  }
   final longSide = math.max(size.width, size.height);
   final aspect = longSide / math.max(shortSide, 1e-3);
   if (aspect >= _rimUniformAboveAspect) {

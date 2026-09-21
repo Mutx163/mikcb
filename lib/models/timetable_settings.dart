@@ -1511,7 +1511,8 @@ class TimetableSettings {
   /// 位置编辑页的双指缩放写它；渲染侧按它把图整体放大（见
   /// `homePageBackdropImageWidget`），仍在同一套 [homePageWallpaperAlignX] /
   /// [homePageWallpaperAlignY] 的裁剪窗口里取景 —— 放大后溢出量随之变大，
-  /// 可拖动的范围也跟着变大（同一份拖动映射，见 `wallpaperAlignAfterDrag`）。
+  /// 可拖动的范围也跟着变大（编辑页按同一个溢出量折算拖动位移，
+  /// 见 `wallpaperOverflowDragExtent`）。
   ///
   /// 钳制口径在渲染 / 编辑两侧共用 `kWallpaperMinScale` / `kWallpaperMaxScale`
   /// （见 `utils/home_page_background.dart`）：下限 1（再小就露出底色）、

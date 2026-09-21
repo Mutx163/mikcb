@@ -3,24 +3,27 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
 import 'package:university_timetable/utils/home_page_background.dart';
 import 'package:university_timetable/utils/home_startup_visual_primer.dart';
 import 'package:university_timetable/widgets/wallpaper_position_picker_sheet.dart';
 
 /// 壁纸位置选择页（「调整壁纸显示位置」）的悬浮按钮材质 / 几何守护。
 ///
-/// 这一页是**裸 `Scaffold`**（不是 `HyperosPage`），历史上漏了两件事，真机现象
-/// 是「底部换壁纸按钮变成横贯整屏的长条，且左半边灰、右半边透出壁纸」：
+/// 这一页是**裸 `Scaffold`**（不是 `HyperosPage`），四颗悬浮按钮（退出 / 完成 /
+/// 重置 / 换壁纸）**锁液态玻璃的标准档**（`LiquidGlassRole.pinnedChrome`），与设置页
+/// 左上角返回键同一档 —— 用户 2026-09-21 口径：「这个应该和设置界面左上角返回键保持
+/// 强制同材质」。所以本文件的场景刻意选**柔光档**（`glassMode: softGlass`）：四颗
+/// 按钮必须无视它，一颗柔光面都不许出现。
 ///
-/// 1. **没有本屏采样源**：柔光玻璃（`SoftGlassSurface` → 上游 `MiuixGlass`，
-///    `shading: false`）把采样源给的窄带快照按 `origin` 贴进自己的形状，快照
-///    盖不到的地方 alpha=0 → 直接透出壁纸。缺宿主时
-///    `HyperosGlassBackdropRegistry.resolve` 回落到「栈顶那一屏」= 压在下面的
-///    设置页（已被视差左移、且被盖住后不再 paint），于是采到的是别屏画面。
-/// 2. **玻璃误入捕获子树**：上游要求玻璃必须在捕获子树之外（防反馈采样），
-///    所以按钮层必须与 `HyperosGlassBackdropHost` 平级、并显式用
-///    `HyperosGlassBackdropScope` 钉在本页采样源上（同 `timetable_screen.dart`
-///    里常驻玻璃球的做法）。
+/// 历史上这一页踩过的两个坑，仍由本文件守着：
+///
+/// 1. **没有本屏采样源**：`HyperosGlassBackdropHost` 注册进
+///    `HyperosGlassBackdropRegistry`，弹在本页之上的 modal（sheet / dialog）才能
+///    取到**本页**画面；缺了它，注册表会回落到压在下面的设置页（已被视差左移、
+///    且被盖住后连 paint 都停了）。
+/// 2. **玻璃误入捕获子树**：上游要求玻璃必须在捕获子树之外（防反馈采样），所以按钮层
+///    与 `HyperosGlassBackdropHost` 平级。
 ///
 /// 另外底部按钮曾被 `Center` 的 maxWidth 撑满：`Container` 带 `alignment` 时在
 /// 有界约束下会占满可用宽度，`minWidth` 只管下限。
@@ -28,7 +31,7 @@ void main() {
   const screenSize = Size(1280, 2772);
   const screenDpr = 3.2;
 
-  // 依赖「液态玻璃作用范围 → 壁纸选点按钮」的默认开启值（柔光与液态共用这一档）。
+  // 刻意选柔光档：四颗按钮锁标准档液态玻璃，这个档位不该影响它们一分一毫。
   const appearance = FrostedAppearance(
     sheetBlurSigma: 20,
     sheetTintAlpha: 0.5,
@@ -48,8 +51,7 @@ void main() {
     tester.view.devicePixelRatio = screenDpr;
     addTearDown(tester.view.reset);
 
-    // 外观作用域必须在 Navigator **之上**：路由里的页面读的是同一个 scope，
-    // 否则按钮根本走不到柔光分支（会退化成高斯磨砂）。
+    // 外观作用域必须在 Navigator **之上**：路由里的页面读的是同一个 scope。
     await tester.pumpWidget(
       FrostedAppearanceScope(
         appearance: appearance,
@@ -61,7 +63,7 @@ void main() {
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('zh'),
-          // 造一条「自带宿主的被盖住页」：修复前选择页的玻璃就会绑到它身上。
+          // 造一条「自带宿主的被盖住页」：其余页面就压在这种宿主之上。
           home: Builder(
             builder: (context) => HyperosGlassBackdropHost(
               child: Scaffold(
@@ -105,36 +107,56 @@ void main() {
     }
   }
 
-  testWidgets('四个悬浮按钮的材质层不在捕获子树内，且钉在本页采样源上', (tester) async {
+  Finder pickerSurfaces() => find.descendant(
+    of: find.byType(WallpaperPositionPickerPage),
+    matching: find.byType(LiquidGlassSurface),
+  );
+
+  testWidgets('四颗按钮锁标准档液态玻璃：场景选柔光也不参与', (tester) async {
     await pumpPicker(tester);
 
     final picker = find.byType(WallpaperPositionPickerPage);
     expect(picker, findsOneWidget);
 
-    final surfaces = find.descendant(
-      of: picker,
-      matching: find.byType(SoftGlassSurface),
-    );
+    final surfaces = pickerSurfaces();
     expect(surfaces, findsNWidgets(4));
+    for (final element in surfaces.evaluate()) {
+      expect(
+        (element.widget as LiquidGlassSurface).role,
+        LiquidGlassRole.pinnedChrome,
+        reason: '必须与设置页左上角返回键同档 —— 全局档位 / 模糊开关 / 滑杆都不参与',
+      );
+    }
+    expect(
+      find.descendant(of: picker, matching: find.byType(SoftGlassSurface)),
+      findsNothing,
+      reason: '全局选了柔光也不该把这几颗按钮分派成柔光面',
+    );
+  });
 
+  testWidgets('按钮层与捕获子树平级，且钉在本页采样源上', (tester) async {
+    await pumpPicker(tester);
+
+    final picker = find.byType(WallpaperPositionPickerPage);
     final captureHost = find.descendant(
       of: picker,
       matching: find.byType(HyperosGlassBackdropHost),
     );
-    expect(captureHost, findsOneWidget, reason: '本页必须有自己的屏级采样源宿主');
     expect(
-      find.descendant(of: captureHost, matching: find.byType(SoftGlassSurface)),
+      captureHost,
+      findsOneWidget,
+      reason: '本页必须有自己的屏级采样源：它注册进注册表，弹在本页之上的 modal 才采得到本页画面',
+    );
+    expect(
+      find.descendant(of: captureHost, matching: find.byType(LiquidGlassSurface)),
       findsNothing,
       reason: '玻璃不能在捕获子树里，否则会采到自己上一帧的合成结果',
     );
 
-    // 四个按钮（退出 / 完成 / 重置 / 换壁纸）都必须显式绑在本页宿主上。缺这一条时
-    //（真机 bug）玻璃按注册表取
-    // 「栈顶那一屏」——此处栈顶就是被盖住的首页，采到的是别的屏。
     final active = HyperosGlassBackdropRegistry.active;
     expect(active, isNotNull);
-    final elements = surfaces.evaluate();
-    for (var i = 0; i < 4; i++) {
+    final elements = pickerSurfaces().evaluate();
+    for (var i = 0; i < elements.length; i++) {
       final scope = HyperosGlassBackdropScope.maybeOf(elements.elementAt(i));
       expect(scope, isNotNull, reason: '按钮 $i 没有本页作用域');
       expect(
@@ -150,12 +172,7 @@ void main() {
 
     final screenWidth = screenSize.width / screenDpr;
     final widths = [
-      for (final e in find
-          .descendant(
-            of: find.byType(WallpaperPositionPickerPage),
-            matching: find.byType(SoftGlassSurface),
-          )
-          .evaluate())
+      for (final e in pickerSurfaces().evaluate())
         (e.renderObject! as RenderBox).size.width,
     ];
     expect(widths, hasLength(4));
@@ -180,10 +197,10 @@ void main() {
   });
 
   testWidgets('首帧极性直接用启动预热好的亮度带（不再按主题猜，也就不会闪）', (tester) async {
-    // 暗顶壁纸：正确极性是"白字 + 深衬底"。按主题猜（浅色主题）会先给"深字 +
-    // 浅衬底"，等异步采样落地再翻过来 —— 真机反馈的"进 / 出页面闪一下"就是那一翻
-    // （见 SoftGlassPolarityFade）。首页首帧早就在用启动预热的亮度带消这个闪变，
-    // 这一页现在接上同一条口径。
+    // 暗顶壁纸：正确极性是"白字 + 深衬底"。按主题猜（浅色主题）会先给"深字 + 浅衬底"，
+    // 等异步采样落地再翻过来 —— 真机反馈的"进 / 出页面闪一下"就是那一翻（见
+    // SoftGlassPolarityFade）。首页首帧早就在用启动预热的亮度带消这个闪变，这一页现在
+    // 接上同一条口径。
     HomeStartupVisualPrimer.debugSeedBands(
       wallpaperPath,
       (top: 0.2, weekday: 0.2, body: 0.2),

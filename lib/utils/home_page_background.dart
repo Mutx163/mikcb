@@ -379,7 +379,8 @@ Widget? homePageBackdropImageWidget({required TimetableSettings settings}) {
   }
   // 缩放**绕对齐点**做：`cover` 已经按 alignment 选好显示哪一段，这里把这段整体
   // 放大，对齐点（左上 / 中心 / 右下）保持不动 —— 与编辑页取景一致。溢出量随之
-  // 变大，所以可拖动范围也跟着变大（编辑页的拖动映射按 `溢出 × 缩放` 算）。
+  // 变大（放大 s 倍后是 `s × 封面尺寸 − 视口尺寸`，不是「基础溢出 × s」），所以可
+  // 拖动范围也跟着变大 —— 编辑页按同一个值折算拖动位移，手指与内容始终 1:1。
   return Transform.scale(scale: scale, alignment: alignment, child: image);
 }
 

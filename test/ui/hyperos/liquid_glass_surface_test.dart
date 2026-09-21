@@ -460,6 +460,67 @@ void main() {
       );
     });
 
+    test('小按钮：整圈均匀档下上沿与两端同亮，「只留转角」档才是「顶黑角白」', () async {
+      // 真机口径（2026-09-21）：「四周的白边不均匀，顶部看起来是黑的，四个角是正常
+      // 白边」。按钮 60×36、圆角 16（`_HyperosHeaderTextButton` 的紧凑档）：顶边与
+      // 底边的直段各有 28px，四个圆角各 16px。旧推导（长短边比 1.67）给出 0.93 ——
+      // 直段上的"转角度"只有 0.376，于是顶上只剩四成亮、四角仍满档。
+      //
+      // 这条用例把**同一份几何**喂给两档，证明差别确实只来自那个系数：底用纯黑、
+      // rim 传 1，读数直接就是边光本身。
+      final texture = await _screenTexture(
+        (canvas) => canvas.drawRect(
+          Rect.fromLTWH(0, 0, _screenSize.width, _screenSize.height),
+          ui.Paint()..color = const Color(0xFF000000),
+        ),
+      );
+      addTearDown(texture.dispose);
+
+      const origin = Offset(60, 60);
+      const button = Size(60, 36);
+      expect(
+        liquidGlassRimCornerOnlyForSize(button),
+        0.0,
+        reason: '推导必须把这种小件判成整圈均匀，下面的像素读数才有意义',
+      );
+      Future<double> probeAt(int x, int y, double cornerOnly) async {
+        final bytes = await _renderSurface(
+          texture: texture,
+          radius: 16,
+          rim: 1,
+          rimWidth: 3,
+          rimCornerOnly: cornerOnly,
+          surfaceOrigin: origin,
+          surfaceSize: button,
+        );
+        return _pixel(bytes, x, y).r;
+      }
+
+      // 上沿直段正中（90, 61）与左端中点（61, 78），都是 depth 1.5 那一行 ——
+      // 带宽 3 时峰在带内，读数就是边光本身。
+      final topUniform = await probeAt(90, 61, 0);
+      final endUniform = await probeAt(61, 78, 0);
+      expect(topUniform, greaterThan(0.3), reason: '整圈均匀档下上沿必须亮着');
+      expect(
+        topUniform,
+        closeTo(endUniform, 0.02),
+        reason: '同一档下上沿与四角必须一样亮 —— 这就是"白边不均匀"的反面',
+      );
+
+      final topCornerOnly = await probeAt(90, 61, 1);
+      final endCornerOnly = await probeAt(61, 78, 1);
+      expect(
+        topCornerOnly,
+        lessThan(topUniform * 0.6),
+        reason: '「只留转角」把上沿直段收掉 —— 真机口径的「顶部发黑、四角白」',
+      );
+      expect(
+        endCornerOnly,
+        closeTo(endUniform, 0.02),
+        reason: '四角在两档下都满档：问题只在顶上那条直边',
+      );
+    });
+
     test('边光峰值落在带内，不压在抗锯齿那一格上（圆角锯齿的成因）', () async {
       // 抗锯齿只作用在贴边的**半像素过渡带**里（`coverage = clamp(0.5 - sd, 0, 1)`，
       // 也就是 depth < 0.5 的那一圈）。高光峰值若压在那里，亮线的亮度就会随边界的
@@ -560,6 +621,24 @@ void main() {
         liquidGlassRimCornerOnlyForSize(const Size(240, 110)),
         lessThan(mid),
       );
+    });
+
+    test('短边 ≤ 52 的小件整圈均匀（悬浮按钮不是「只留转角」）', () {
+      // 真机口径（2026-09-21）：「四周的白边不均匀，顶部看起来是黑的，四个角是正常
+      // 白边」。那颗按钮 60×36、圆角 16：按长短边比推会得到 0.93（几乎全收），顶上
+      // 那条 28px 的直段只剩四成亮，而四个圆角仍满档。长直边之所以读成描边靠的是
+      // 长度 —— 28px 只有屏宽的 7%，它读作「按钮上沿反光」。
+      expect(
+        liquidGlassRimCornerOnlyForSize(const Size(60, 36)),
+        0.0,
+        reason: '悬浮按钮：顶上那条直段必须和四角一样亮',
+      );
+      expect(liquidGlassRimCornerOnlyForSize(const Size(120, 40)), 0.0);
+      expect(liquidGlassRimCornerOnlyForSize(const Size(52, 52)), 0.0);
+      // 尺寸线之上仍按原来的形状分档；大面板一行不动。
+      expect(liquidGlassRimCornerOnlyForSize(const Size(56, 56)), 1.0);
+      expect(liquidGlassRimCornerOnlyForSize(const Size(300, 200)), 1.0);
+      expect(liquidGlassRimCornerOnlyForSize(const Size(380, 54)), 0.0);
     });
   });
 

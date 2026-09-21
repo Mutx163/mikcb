@@ -37,23 +37,34 @@ class WallpaperPositionPickerResult {
   final bool confirmed;
 }
 
-/// 以 BoxFit.cover 布局时，图片沿指定轴相对视口溢出的逻辑像素量。
+/// 以 BoxFit.cover 布局、并叠加用户放大倍数 [scale] 后，图片沿指定轴相对视口
+/// 溢出的逻辑像素量。
+///
+/// 这个值同时就是「对齐值从 -1 扫到 +1 时，图片在屏幕上真正走过的距离」——拖动
+/// 映射的分母（见 [wallpaperAlignAfterDrag]），也就是「拖多少才能走完全程」。
+///
+/// ⚠️ **不是「基础溢出 × 倍数」**：缩放是绕**对齐点**做的，视口那一份不跟着放大
+/// （见 `homePageBackdropImageWidget`），所以放大 s 倍后的真实溢出是
+/// `s × 封面尺寸 − 视口尺寸` = `s × 基础溢出 + (s−1) × 视口`，比「基础溢出 × s」
+/// 更大。分母取小了，同一段手指位移换来的对齐变化就更大 —— 内容跑得比手指快，
+/// 真机口径正是「放大后拖一点就飞了」（2026-09-21）。
 ///
 /// 图片在该轴不溢出（例如横向壁纸在垂直方向）时返回 0。
 double wallpaperOverflowDragExtent({
   required Size viewportSize,
   required Size imageSize,
   required bool horizontal,
+  double scale = 1,
 }) {
   final coverScale = _coverScale(
     viewportSize: viewportSize,
     imageSize: imageSize,
   );
-  final scaledImageWidth = imageSize.width * coverScale;
-  final scaledImageHeight = imageSize.height * coverScale;
+  final fittedWidth = imageSize.width * coverScale * scale;
+  final fittedHeight = imageSize.height * coverScale * scale;
   final overflow = horizontal
-      ? scaledImageWidth - viewportSize.width
-      : scaledImageHeight - viewportSize.height;
+      ? fittedWidth - viewportSize.width
+      : fittedHeight - viewportSize.height;
   return overflow < 0 ? 0 : overflow;
 }
 
@@ -68,6 +79,9 @@ double _coverScale({required Size viewportSize, required Size imageSize}) {
 /// 壁纸跟随手指移动：手指向右拖动（dragDelta > 0）时壁纸内容右移，
 /// 露出图片左侧，因此对齐值减小；向左拖动时对齐值增大。超出范围时
 /// 钳制到 [-1, 1]。
+///
+/// [overflowExtent] 必须是**当前倍数下**的溢出量（[wallpaperOverflowDragExtent]
+/// 的 `scale` 参数），这样「内容跟着手指走」在任意倍数下都是 1:1。
 double wallpaperAlignAfterDrag({
   required double previousAlign,
   required double dragDelta,
@@ -161,6 +175,9 @@ class _WallpaperPositionPickerPageState
   /// 每条带 `[wpp-glass]` 前缀，方便从 `flutter_0*.log` / `flutter run` 输出里
   /// grep；消息是英文的（CJK 硬编码审计按行计数，日志串不该加进去）。
   /// 定时器要在 [dispose] 里取消：widget 测试结束时留着 pending timer 会直接失败。
+  ///
+  /// ⚠️ 2026-09-21 起四颗按钮锁标准档**实时**折射（不吃快照），所以本页自己的
+  /// `zones` 常态是 0 —— 这条时间线现在只在「本页之上弹了吃快照的 modal」时才有读数。
   static const String _traceTag = '[wpp-glass]';
   final Stopwatch _traceClock = Stopwatch();
   final List<Timer> _traceTimers = <Timer>[];
@@ -174,7 +191,7 @@ class _WallpaperPositionPickerPageState
 
   /// 第一张采样图落地的时刻是否已经打过（只诊断，不门控绘制）。
   ///
-  /// 这个时点是「三个悬浮按钮能不能在**首帧**就画成玻璃」的唯一判据：玻璃在
+  /// 这个时点是「悬浮玻璃按钮能不能在**首帧**就画成玻璃」的唯一判据：吃快照的玻璃在
   /// paint 里读快照，采样宿主必须同帧先写完（见 `HyperosGlassBackdropCapture.paint`
   /// 里"首次采样必须本帧完成"那段）。修好之前真机实测是 +81~134ms —— 按钮先是
   /// 一块平的、再变玻璃；修好之后应当落在首帧（+0~20ms）。
@@ -182,16 +199,19 @@ class _WallpaperPositionPickerPageState
 
   /// 本页自己的屏级玻璃采样源。
   ///
-  /// 这一页是裸 `Scaffold`，不是 [HyperosPage]，**没有宿主**。缺了它，柔光玻璃
-  /// 只能按全局注册表取「栈顶那一屏」—— 而栈顶是压在下面的设置页（路由仍挂载，
-  /// 且已被视差左移，被盖住后连 paint 都停了）。于是采样带录的是**别屏**的画面：
-  /// 快照盖住的那半边显示"模糊后的设置页"（灰），盖不到的那半边上游直接画透明
-  /// （`MiuixGlass` 的 `shading:false` 分支把快照按 `origin` 贴进形状，没像素的
-  /// 地方 alpha=0）→ 真机现象就是「按钮左半边灰、右半边透出壁纸」。
+  /// 这一页是裸 `Scaffold`，不是 [HyperosPage]，**没有宿主**。它的存在有两条理由：
+  ///
+  /// 1. **给本页之上的 modal 用**：宿主会把自己注册进
+  ///    [HyperosGlassBackdropRegistry]，弹在本页之上的 sheet / dialog 取到的才是
+  ///    **本页**画面；缺了它，注册表会回落到压在下面的设置页（路由仍挂载，且已被
+  ///    视差左移，被盖住后连 paint 都停了），采样带录的就是**别屏**的画面。
+  /// 2. 本页自己那层玻璃（四颗悬浮按钮）**不再需要它**：2026-09-21 起它们锁标准档
+  ///    实时折射（`LiquidGlassRole.pinnedChrome`），不读任何快照。历史现象（真机
+  ///    「按钮左半边灰、右半边透出壁纸」）就是当年柔光玻璃按注册表取到别屏采样源
+  ///    造成的（快照盖住的那半边显示"模糊后的设置页"，盖不到的那半边上游直接画透明）。
   ///
   /// 与首页同一个口径：**本屏的玻璃只采本屏的画面**（同族记录见
-  /// `timetable_screen.dart` 的 `_wrapHomeWithTopMenu`）。自建而非让宿主兜底，
-  /// 是因为按钮层在捕获子树之外（不能采到自己上一帧），拿不到宿主下发的 scope。
+  /// `timetable_screen.dart` 的 `_wrapHomeWithTopMenu`）。
   final HyperosGlassBackdropController _glass =
       HyperosGlassBackdropController();
 
@@ -523,8 +543,12 @@ class _WallpaperPositionPickerPageState
   ///
   /// 1. 画在 `HyperosGlassBackdropHost` 的捕获子树**之外** —— 上游要求玻璃不能被
   ///    自己的采样捕获，否则会把上一帧的合成结果采进去（自我叠加）。
-  /// 2. 显式用 [HyperosGlassBackdropScope] 钉在本页采样源上 —— 不能只靠全局注册表
-  ///    的"栈顶"：被压住的路由仍然挂载，栈顶会指向别的屏（见 [_glass]）。
+  /// 2. 显式用 [HyperosGlassBackdropScope] 钉在本页采样源上：这一层里将来只要有
+  ///    吃快照的玻璃面，就不能靠全局注册表的"栈顶"取源（被压住的路由仍然挂载，
+  ///    栈顶会指向别的屏，见 [_glass]）。
+  ///
+  /// 本页自己的四颗按钮走**实时**折射（锁标准档），不吃快照，所以上面第 2 条对它们
+  /// 是空转；留着是这一层玻璃的取源规矩。
   ///
   /// [ink] / [wash] 由 [SoftGlassPolarityFade] 传入，可能是极性渐变中的中间值。
   Widget _buildOverlayLayer(BuildContext context, Color ink, Color wash) {
@@ -651,20 +675,22 @@ class _WallpaperPositionPickerPageState
     final viewportSize = Size(screenSize.width, screenSize.height);
     // 拖动范围要等图片尺寸才知道；尺寸没到之前拖动是空操作
     // （`wallpaperAlignAfterDrag(overflowExtent: 0)` 恒返回 0，不会跳）。
-    final overflowX = imageSize == null
-        ? 0.0
-        : wallpaperOverflowDragExtent(
-            viewportSize: viewportSize,
-            imageSize: imageSize,
-            horizontal: true,
-          );
-    final overflowY = imageSize == null
-        ? 0.0
-        : wallpaperOverflowDragExtent(
-            viewportSize: viewportSize,
-            imageSize: imageSize,
-            horizontal: false,
-          );
+    //
+    // 按**当前倍数**现算（缩放与拖动在同一个手势里，倍数随时在变，溢出量跟着变）：
+    // 现算出来的才是「手指走多远、内容就走多远」的那一份（见
+    // [wallpaperOverflowDragExtent] 里为什么不是「基础溢出 × 倍数」）。
+    double dragOverflow(bool horizontal, double scale) {
+      if (imageSize == null) {
+        return 0;
+      }
+      return wallpaperOverflowDragExtent(
+        viewportSize: viewportSize,
+        imageSize: imageSize,
+        horizontal: horizontal,
+        scale: scale,
+      );
+    }
+
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -682,22 +708,24 @@ class _WallpaperPositionPickerPageState
             _scaleAtGestureStart = _scale;
           },
           onScaleUpdate: (details) {
+            final nextScale = (_scaleAtGestureStart * details.scale).clamp(
+              kWallpaperMinScale,
+              kWallpaperMaxScale,
+            );
             setState(() {
-              _scale = (_scaleAtGestureStart * details.scale).clamp(
-                kWallpaperMinScale,
-                kWallpaperMaxScale,
-              );
-              // 放大后溢出量跟着变大：拖动位移按「溢出 × 缩放」折算，手感才一致
-              //（否则放大后拖不动、缩小后一拖就飞）。
+              _scale = nextScale;
+              // 拖动位移按**当前倍数下的真实溢出**折算：内容与手指始终 1:1。
+              // 曾经用「基础溢出 × 倍数」当分母，分母偏小 ⇒ 放大后内容跑得比
+              // 手指快（真机口径「拖一点就飞了」）。
               _alignX = wallpaperAlignAfterDrag(
                 previousAlign: _alignX,
                 dragDelta: details.focalPointDelta.dx,
-                overflowExtent: overflowX * _scale,
+                overflowExtent: dragOverflow(true, nextScale),
               );
               _alignY = wallpaperAlignAfterDrag(
                 previousAlign: _alignY,
                 dragDelta: details.focalPointDelta.dy,
-                overflowExtent: overflowY * _scale,
+                overflowExtent: dragOverflow(false, nextScale),
               );
             });
           },
@@ -767,15 +795,18 @@ class _WallpaperPositionPickerPageState
 
 /// 悬浮在壁纸上的玻璃按钮，圆角与 HyperOS 按钮一致。
 ///
-/// 材质跟随全局「玻璃模式」设置（[FrostedAppearanceScope.glassMode]），
-/// 判定与首页玻璃带 / 底部玻璃坞完全同一条路径：
+/// 材质**锁液态玻璃的标准档**（[LiquidGlassRole.pinnedChrome]），与设置页左上角
+/// 返回键 [HyperosBackButton] 同一档（用户 2026-09-21 口径「这个应该和设置界面
+/// 左上角返回键保持强制同材质」）：全局材质档位（柔光 / 高斯 / 实体）、模糊总开关、
+/// 自定义滑杆都不参与 —— 这一页是裸壁纸背景，这几颗按钮的观感必须与其他固定小件
+/// 一致，而不是跟着用户档位变成另一种玻璃。
 ///
-/// - **液态玻璃**：[LiquidGlassSurface] 折射材质，与弹窗/首页顶部同参；
-///   文字浮在玻璃上，只叠一层极性衬底保证可读性。
-/// - **经典磨砂 / 高斯模糊 / 半透明**：实时 [BackdropFilter] 高斯模糊 +
-///   极性衬底（模糊强度跟随「模糊强度」滑杆）。
-/// - 系统降级（无障碍/减动效/高对比）或关闭「毛玻璃效果」时：只画衬底，
-///   与 [FrostedHeaderBackground] 的降级行为一致。
+/// 只剩技术 / 系统门禁（[LiquidGlassSurface.isAvailable]）会把它摘下来，那时：
+///
+/// - 只是画不出折射（没有 shader 后端，如桌面 / 测试环境）：仍是**实时磨砂玻璃**
+///   （模糊强度跟随「模糊强度」滑杆；关闭模糊或系统降级时
+///   [FrostedHeaderBackground] 自动只画衬底），与弹层族的回落口径一致；
+/// - 采不到背景（平台视图上方 / 系统无障碍降级）：实体卡片，不再透明。
 ///
 /// 衬底与墨色都由调用方给（同源于壁纸顶部亮度采样，与首页玻璃带
 /// [HomePageChromeGlassFill.scrimColor] 同一条规则）—— 由
@@ -852,35 +883,10 @@ class _HyperosHeaderTextButton extends StatelessWidget {
     final appearance = FrostedAppearanceScope.of(context);
     final blurEnabled = HyperosBlurredHeader.backdropBlurEnabled(context);
 
-    // 高级材质面自带模糊，不受「模糊」总开关约束（与弹窗同理）；柔光与液态
-    // 同为高级材质，按全局玻璃模式分派 —— 「作用范围 → 壁纸选点按钮」开关已随
-    // 小件锁档删除（这四个开关存不存在都不改变出图）。
-    final advancedMode = appearance.glassMode;
-
-    // 柔光玻璃：与弹窗 / 底栏同一套雾面材质。
-    if (isAdvancedGlassMode(advancedMode) &&
-        advancedMode == FrostedGlassMode.softGlass &&
-        !LiquidGlassDegradation.shouldDegrade(context)) {
-      return SoftGlassSurface(
-        borderRadius: radius,
-        blurEnabled: blurEnabled,
-        enableShadows: false,
-        child: Stack(
-          fit: StackFit.passthrough,
-          children: [
-            Positioned.fill(
-              child: IgnorePointer(child: ColoredBox(color: wash)),
-            ),
-            content,
-          ],
-        ),
-      );
-    }
-
-    // 高斯模糊路径（经典磨砂/高斯模糊/半透明共用）：模糊强度跟随设置；
-    // 关闭模糊或系统降级时 FrostedHeaderBackground 自动只画衬底。
-    // 描边保留，保证纯衬底状态下按钮轮廓仍然可辨。
-    // 它同时是液态玻璃不可用时的回落（仍是玻璃观感）。
+    // 画不出折射时的回落：仍是**实时磨砂玻璃**（模糊强度跟随设置；关闭模糊或系统
+    // 降级时 FrostedHeaderBackground 自动只画衬底）。描边保留，纯衬底状态下按钮
+    // 轮廓仍然可辨 —— 这一页背景是整张壁纸，没有顶栏那条实底带可垫，所以不能像
+    // 返回键那样直接退成一块实色。
     Widget frostButton() => ClipRRect(
       borderRadius: radius,
       child: FrostedHeaderBackground(
@@ -904,39 +910,37 @@ class _HyperosHeaderTextButton extends StatelessWidget {
       ),
     );
 
-    // 液态玻璃：折射 shader 与弹窗/首页顶部完全同参。
-    if (advancedMode == FrostedGlassMode.liquidGlass &&
-        !LiquidGlassDegradation.shouldDegrade(context)) {
+    // 液态玻璃：折射 shader 与弹窗/首页顶部完全同参，档位锁标准档
+    // （[LiquidGlassRole.pinnedChrome]，见类注释）。
+    return LiquidGlassSurface(
+      borderRadius: cornerRadius,
+      role: LiquidGlassRole.pinnedChrome,
+      // 同屏可能有多颗悬浮玻璃按钮：进祖先 BackdropGroup 的共享捕获点，
+      // 避免后画的那颗把先画的那颗玻璃折射进去。本页没有祖先组时退化为
+      // 普通实时采样。
+      grouped: true,
+      // 剩下两档门禁的落点（与弹层族同一条口径）：采不到背景 → 实体卡片；
+      // 只是画不出折射 → 仍是磨砂玻璃观感。
+      fallbackBuilder: (fallbackContext) =>
+          LiquidGlassDegradation.shouldDegrade(fallbackContext)
+          ? Material(
+              color: HyperosColors.surfaceContainer(fallbackContext),
+              borderRadius: radius,
+              clipBehavior: Clip.antiAlias,
+              child: content,
+            )
+          : frostButton(),
       // 液态玻璃自带边缘高光，不再叠加描边；衬底压在玻璃上保证文字对比度
       // （与课程玻璃卡片叠课程色 tint 同一做法）。
-      return LiquidGlassSurface(
-        borderRadius: cornerRadius,
-        // 同屏可能有多颗悬浮玻璃按钮：进祖先 BackdropGroup 的共享捕获点，
-        // 避免后画的那颗把先画的那颗玻璃折射进去。
-        grouped: true,
-        fallbackBuilder: (_) => frostButton(),
-        child: Stack(
-          fit: StackFit.passthrough,
-          children: [
-            Positioned.fill(
-              child: IgnorePointer(child: ColoredBox(color: wash)),
-            ),
-            content,
-          ],
-        ),
-      );
-    }
-
-    // 技术 / 系统门禁（平台视图、系统无障碍降级）→ 实体卡片（不再降级磨砂）。
-    if (LiquidGlassDegradation.shouldDegrade(context)) {
-      return Material(
-        color: HyperosColors.surfaceContainer(context),
-        borderRadius: radius,
-        clipBehavior: Clip.antiAlias,
-        child: content,
-      );
-    }
-
-    return frostButton();
+      child: Stack(
+        fit: StackFit.passthrough,
+        children: [
+          Positioned.fill(
+            child: IgnorePointer(child: ColoredBox(color: wash)),
+          ),
+          content,
+        ],
+      ),
+    );
   }
 }
