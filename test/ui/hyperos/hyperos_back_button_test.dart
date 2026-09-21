@@ -99,6 +99,12 @@ void main() {
       reason: '返回键永远是液态玻璃的标准档，用户改不动它的材质',
     );
     expect(glass.borderRadius, 22, reason: '44 直径的圆：圆角取半径');
+    expect(
+      glass.maxRefraction,
+      0,
+      reason: '边缘不外推采样：标准档那 8dp 位移会让最外一圈读到圆外约 8dp 处的内容，'
+          '圆钮顶到带顶只有 4dp，于是顶部读成一条暗弧（真机口径 2026-09-21）',
+    );
     // 上游那层材质始终不画，圆底只由我们的玻璃负责。
     expect(surfaceAlphaOf(tester), 0);
 
