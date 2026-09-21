@@ -433,24 +433,29 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
               // 可见的形状边界，推出去就等于把折射 / 高光 / 色散整圈删掉
               // （见 [homePageChromeGlassBottomEdgeOverdraw]）。
               //
-              // ⚠️ 下边朝外那截位移要能采到**带外**的内容，靠的不是这个偏移（它是 0），
-              // 而是上面那层裁剪框往下多留的一截（[homePageChromeGlassCaptureMargin]）。
-              // 少了它，越界采样读空 ⇒ 带底一条黑边。
+              // ⚠️ 下边朝外那截位移要能采到**带外**的内容：形状这边靠的不是这个偏移
+              // （它是 0），而是上面那层裁剪框往下多留的一截
+              // （[homePageChromeGlassCaptureMargin]，引擎的可采范围 = 渲染目标 ∩ 裁剪区）。
+              // ⚠️ 但 2026-09-21 真机上单独放开这一截**没观察到变化** ⇒ 掐点看来在下面那个
+              // 组采样开关上（已改回实时采样）。这一截先留着（它只会放宽范围，不会变窄），
+              // 等真机复验过了再决定去留。
               Positioned(
                 top: -overhang.top,
                 left: -homePageChromeGlassEdgeOverdraw,
                 right: -homePageChromeGlassEdgeOverdraw,
                 bottom: -overhang.bottom,
                 child: const HomePageChromeGlassFill(
-                  // ⚠️ 采**祖先组**那份捕获（2026-09-20 加）：它决定采到的是**哪一份**
-                  // 背景（首页是组内 `UndimmedBackdropCapture` 缓存下来的整屏壁纸，
-                  // 而不是带子自己那一小块被压暗/裁过的内容）。
+                  // ⚠️ **不传 `useAncestorBackdropGroup`（= 默认 false，实时采样）**，
+                  // 2026-09-21 从 `true` 改回：
+                  // 这条开关在真机上是"掐住可采内容"的那一环 —— 带底朝外那截位移采到空，
+                  // 读出来就是用户报的那条黑边（2026-09-21 截图逐像素：一条 R=G=0、
+                  // 只有 B≈200 的纯蓝发丝 + 一条近黑带；前者正是色散里"红/绿采样点出界、
+                  // 蓝采样点还在壁纸里"的指纹，那条蓝的 B 与壁纸的 B 一致）。
                   //
-                  // ⚠️ 但**范围**不归它管：能采到多大的世界由裁剪框决定
-                  // （引擎把 backdrop 的背景掐在「渲染目标 ∩ 当前裁剪区」）。2026-09-21
-                  // 带底那条随作用带走宽度的黑边就是范围不够 —— 修法见
-                  // [homePageChromeGlassCaptureMargin]，别再指望这一行开关。
-                  useAncestorBackdropGroup: true,
+                  // 依据：同一份材质、同样零外溢的**底栏药丸**从不采祖先组（实时采样），
+                  // 它整段越界都采得到真内容、观感最好。09-20 把这条开关打开时，这台
+                  // 机器渲染的还是渐进磨砂（见第八轮），液态那条分支根本没被走到
+                  // ⇒ 那次"修好了"从未在液态玻璃上验证过。
                 ),
               ),
             ],
@@ -502,6 +507,13 @@ class HomePageChromeGlassFill extends StatelessWidget {
   /// 背景（未压暗的整屏壁纸），**采得到多大范围**由**裁剪框**决定（引擎把 backdrop 的
   /// 背景掐在「渲染目标 ∩ 当前裁剪区」）。所以这条开关**不足以**治带底那条黑边；
   /// 范围那一半见 [homePageChromeGlassCaptureMargin]。
+  ///
+  /// ⚠️ **再订正（同日，真机实测后）**：两处调用都已改回 `false`（实时采样）。真机口径：
+  /// 放开裁剪框那一半**没有任何变化**，而这条开关本身才是掐点 —— 开了它之后，带底朝外
+  /// 那截位移采到的内容在带子底边就断了（截图逐像素：R=G=0、只有 B≈200 的纯蓝发丝 =
+  /// 色散里红/绿采样点出界、蓝采样点还在壁纸里）。药丸走实时采样、整段越界都采得到内容，
+  /// 是这条判断的活证据。开关与 [UndimmedBackdropCapture] 那套组结构**暂时留着**，
+  /// 等真机确认后再决定是否一并删掉。
   final bool useAncestorBackdropGroup;
 
   /// 折射位移上限（逻辑 px），见 [LiquidGlassSurface.maxRefraction]。

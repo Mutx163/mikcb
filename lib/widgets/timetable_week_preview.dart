@@ -314,17 +314,12 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                   child: HomePageChromeGlassTransitionRepaint(
                     child: HomePageChromeGlassFill(
                       maxRefraction: effectiveMaxRefraction,
-                      // ⚠️ 采祖先组那份整屏捕获（2026-09-20 修，与首页那条带同步）。
-                      //
-                      // 本条带上下两条横边**都在可见区附近**（首页那条的上边被状态栏埋掉），
-                      // 所以带级采样下模糊/折射在带边"钳在带自己的边上"会读成
-                      // 一条深色发丝线 —— 真机现象：设置页预览里**上下各一条线**。
-                      //
-                      // 组捕获本来就是为这件事搭的（见上面 `UndimmedBackdropCapture` 的注释：
-                      // "so the chrome band's glass below can sample beyond its own narrow bounds
-                      // without clamping against the band edges into 'picture frame' streaks"），
-                      // 只是这个开关一直没接上。
-                      useAncestorBackdropGroup: true,
+                      // ⚠️ **不传 `useAncestorBackdropGroup`（= 默认 false，实时采样）**，
+                      // 2026-09-21 从 `true` 改回（与首页那条带同步；逐像素依据见
+                      // `home_page_region_blur.dart` 同名参数的订正段）。09-20 给这里接上
+                      // 组捕获时，这台机器渲染的还是渐进磨砂，液态这条分支没被走到
+                      // ⇒ 那次"修好了"从未在液态玻璃上验证过；而开了它之后带底朝外那截
+                      // 位移采到的内容在带边就断了 = 用户报的那条黑边。
                     ),
                   ),
                 ),

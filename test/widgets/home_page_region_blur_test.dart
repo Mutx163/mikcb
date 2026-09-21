@@ -251,29 +251,26 @@ void main() {
       expect(solid.bottom, 0, reason: '实体档没有形状边界那套折射');
     });
 
-    testWidgets('这条带必须采祖先组的捕获（决定采到**哪一份**背景）', (tester) async {
-      // 2026-09-20：首页与设置页预览**两处都接上**了 `useAncestorBackdropGroup`
-      // —— 它决定采到的是**哪一份**背景：祖先 `BackdropGroup` 里由
-      // `UndimmedBackdropCapture`（组内首个 filter）缓存下来的**整屏壁纸**，
-      // 而不是带子自己那一小块被压暗 / 裁过的内容。首页早就搭好了这套结构，
-      // 只是带这一侧的开关一直没接上。
+    testWidgets('这条带**不采**祖先组捕获（采了就把可采内容掐在带子底边）', (tester) async {
+      // 2026-09-20 两处都接过 `useAncestorBackdropGroup: true`，理由是"组里那份整屏
+      // 壁纸能让位移越界采样取到真内容"。**2026-09-21 真机否掉了它**：
+      //  ① 放开裁剪框那一半（`homePageChromeGlassCaptureMargin`）没有任何变化；
+      //  ② 截图逐像素：带底一条 R=G=0、只有 B≈200 的**纯蓝发丝** —— 正是色散的指纹：
+      //     红/绿采样点已经出界（读到空 = 0），蓝采样点还在壁纸里（B 与壁纸的 B 一致）；
+      //  ③ 同一份材质、同样零外溢的底栏药丸走**实时采样**，整段越界都取得到真内容。
+      // ⇒ 改回实时采样（两处同步）。组捕获只决定采到"哪一份"背景，而它连"多大范围"
+      //   都没给够：开了它，可采内容在带子底边就断了。
       //
-      // ⚠️ **订正（2026-09-21）**：这条开关**不足以**治带底那条黑边。黑边的真因是
-      // 「能采到的**范围**不够」—— 引擎把 backdrop 的背景掐在「渲染目标 ∩ 当前裁剪区」，
-      // 而下边外溢恒为 0 ⇒ 形状底边正好压在裁剪线上 ⇒ 带底朝外那截位移采到空。
-      // 范围那一半的修法与守卫见下面「裁剪框底边留采样余量」那组用例。
-      //
-      // 底栏药丸（同样零外溢）是"整段越界都采得到真内容"的活证据：它身上没有紧贴的
-      // 裁剪框（`ClipRRect` 在滤镜层之后才 push），而且它的 `grouped` 早被查实是空转、
-      // 已删（见 `glass-dock-outside-capture-subtree`）。
+      // 这套组结构（`BackdropGroup` + `UndimmedBackdropCapture`）暂时留着，等真机确认
+      // 后再决定是否与这个参数一起删掉 —— 见下面那条"组还在树上"的断言。
       await bandGlassPositioned(tester);
       final fill = tester.widget<HomePageChromeGlassFill>(
         find.byType(HomePageChromeGlassFill),
       );
       expect(
         fill.useAncestorBackdropGroup,
-        isTrue,
-        reason: '采到压暗过的带级内容会让这条带读起来像一块脏玻璃',
+        isFalse,
+        reason: '开了组捕获，带底朝外那截位移采到的内容就在带边断掉 ⇒ 那条黑边',
       );
     });
   });

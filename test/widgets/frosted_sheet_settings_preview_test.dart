@@ -201,18 +201,17 @@ void main() {
         final fill = tester.widget<HomePageChromeGlassFill>(
           find.byType(HomePageChromeGlassFill),
         );
-        // ⚠️ 口径 2026-09-20 翻转过：**必须申请祖先组采样**。
+        // ⚠️ 口径 2026-09-21 翻回 `false`：**这条带改回实时采样**。
         //
-        // 旧断言（isFalse）的理由是「玻璃形状四边全部越出可见裁剪区，包内任何边缘
-        // 处理都够不到可见区」。这句话对**形状边界**成立，但对**采样范围**不成立：
-        // 带级采样时模糊/折射在带边会"钳在带自己的边上"读成一条深色发丝线，而本条带
-        // 上下的外溢只有 4px（左右 48px）——上下两条横边都贴着可见区。
-        // 用户 2026-09-20 实测：设置页预览里**上下各一条线**，且「只要模糊强度大于 0
-        // 必然出现」。组捕获本来就是为这件事搭的（见 UndimmedBackdropCapture 处注释），
-        // 开关补上即可。
-        expect(fill.useAncestorBackdropGroup, isTrue);
-        // 光有开关不够：组必须是它的**祖先**，否则 BackdropGroup.of 取不到 key，
-        // 开关等于没接（这正是 2026-09-20 之前两处的真实状态：结构搭好、接线没接）。
+        // 09-20 曾断言 `isTrue`，理由是"带级采样时模糊/折射会钳在带自己的边上读成一条
+        // 深色发丝线"。**2026-09-21 真机否掉了它**：放开裁剪框那一半（采样范围）没有任何
+        // 变化，而截图逐像素显示带底那条黑边的指纹是"红/绿采样点出界、蓝采样点还在壁纸里"
+        // （R=G=0、B≈200 的纯蓝发丝）—— 开了组捕获之后，可采内容在带子底边就断了。
+        // 底栏药丸（同材质、零外溢、实时采样）整段越界都取得到真内容，是这条判断的活证据。
+        // 完整推理见 `home_page_region_blur.dart` 的 `useAncestorBackdropGroup` 订正段。
+        expect(fill.useAncestorBackdropGroup, isFalse);
+        // 组与组内捕获**仍在树上**（暂时留着，等真机复验后再决定是否连这个参数一起删）；
+        // 这里保留结构断言，避免"以为拆了其实没拆"。
         expect(
           find.ancestor(
             of: find.byType(HomePageChromeGlassFill),
