@@ -5,14 +5,25 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
-/// 烤图节流：两次出图的最小间隔。
+/// 出图节奏：**改动停下来这么久之后**才补拍一张（去抖，不是固定间隔）。
 ///
-/// 每张图都是整屏 dpr 密度的离屏出图（约 14MB GPU 纹理），`toImageSync`
-/// 会同步等 GPU 完成——重绘成串时（切日视图的展开动画、拖滑杆）逐帧出图会
-/// 把 UI 线程堵到 2fps（2026-09-19 真机日志实锤：点日课表后 37 秒内只出 74
-/// 帧）。节流把连续重绘合并成至多每 200ms 一张，且**收尾必补一张最新帧**
-/// （拖动的最终状态不丢）。
-const Duration _minBakeInterval = Duration(milliseconds: 200);
+/// 每张图都是整屏 dpr 密度的离屏出图（约 14MB GPU 纹理），而且密度**不能降**
+/// （降了玻璃形状整体位移出画面，见类注释）；也就是说每出一次图，显卡就要多画
+/// 一整个首页。所以这个数字是「预览跟手」与「页面不卡」之间唯一的旋钮：
+///
+/// * 逐帧出图 = 2fps（2026-09-19 真机日志实锤：点日课表后 37 秒内只出 74 帧）；
+/// * 固定间隔（曾经的 200ms = 5 张/秒）仍然明显吃帧 —— 用户 2026-09-22 反馈
+///   「调整有一些延迟，不够跟随，感觉上有一秒延迟」，而**在此之前预览压根不重烤**
+///   （玻璃面的重绘传不到本边界，见 [repaintSignal]），所以页面是顺的。
+///   取舍就在于"拖动过程中要不要一直出图"。
+///
+/// 现在的口径：**拖动过程中不出图，停手 [settleBakeDelay] 后出一张**。于是
+/// * 拖动跟手程度与"预览完全不动"那阵子一样（回到用户记得的顺滑）；
+/// * 预览又不是死的 —— 每次调整停下来一张就到位（且比"最多等一个间隔"更快）。
+///
+/// 想让它拖动中也动起来，就在 [_RenderPreviewBakeBoundary._armSettleBake] 里
+/// 补一条"最长等待"（连续改动超过 N 毫秒也出一张）——代价就是上面那条手感。
+const Duration settleBakeDelay = Duration(milliseconds: 150);
 
 /// 「按帧快照」边界：子树每次重绘完成后，把它的整层内容出成一张 [ui.Image]，
 /// 写进 [bakes] 交给订阅者显示。
@@ -25,9 +36,9 @@ const Duration _minBakeInterval = Duration(milliseconds: 200);
 ///   BackdropFilter + 片段着色器）、按屏幕摆位的浮动层，全部工作在**原生尺度**
 ///   与**原生密度**上，「祖先缩放下采样坐标错位」这一类问题从根上不存在；
 /// * 调材质 / 切日周时首页子树照常重绘（外加内容源显式喊一声，见 [repaintSignal]），
-///   本边界重绘后**延一帧**出图（玻璃快照的滞后，见最后一条警告）且**节流**
-///   （见 [_minBakeInterval]）——与活树同源的「实时」。卡片上看到的画面与真实首页
-///   是同一份内容，只差两帧（约 32ms：玻璃就绪一帧 + 卡片换图一帧，看不出来）。
+///   本边界**在改动停下来之后**出图（见 [settleBakeDelay]）—— 卡片上看到的画面与
+///   真实首页是同一份内容，只是要等你松手。拖动中它是上一张，这是刻意的：
+///   真去逐次出图的代价见 [settleBakeDelay] 的说明。
 ///
 /// 工程纪律（与 `HyperosLayerBackdropCapture` 同源）：
 ///
@@ -51,20 +62,17 @@ const Duration _minBakeInterval = Duration(milliseconds: 200);
 /// 现象：右上角玻璃圈先在卡片左边闪一下才跳回右边、底栏玻璃闪一下）。落定后
 /// 再烤，第一张就是正的。
 ///
-/// ⚠️ **每一张都延一帧出**（2026-09-19 起因，2026-09-22 扩到全部）：玻璃面在
-/// `paint` 里读的是**上一帧末**才落地的快照（捕获节点的 postFrame 排在本边界
-/// 之前，而玻璃按新快照的重画要等下一帧）—— 也就是说**任何一帧里的玻璃画的
-/// 都是上一帧的内容**。本帧就出图，烤下来的必然是「上一帧的画面」：
+/// ⚠️ **玻璃那一帧画的永远是上一帧的内容**（2026-09-19 起因，2026-09-22 复核）：
+/// 玻璃面在 `paint` 里读的是**上一帧末**才落地的快照（捕获节点的 postFrame 排在本
+/// 边界之前，而玻璃按新快照的重画要等下一帧）。所以"改动的同一帧就出图"必然烤到
+/// 「上一帧的画面」—— 用户 2026-09-22 的读数就是「预览和实际差一帧，一直显示上一帧」。
 ///
-/// * 首张：第一帧 layer 里的玻璃还停在「无快照退化态」，烤上卡就是「球/底栏
-///   先歪一帧才跳正」（真机反馈「进入外观编辑页时球与底栏乱跑」）；
-/// * 之后每一张：拖滑杆 / 调壁纸时读数就是「预览和实际差一帧，一直显示上一帧」
-///   （用户 2026-09-22 实测）。**这条曾经只对首张生效**，因为最初以为后续重烤
-///   天然落在玻璃就绪的那一帧 —— 直到 2026-09-22 补上 [repaintSignal] 之后，
-///   重烤变成"改动的同一帧就出图"，这一帧的滞后才暴露出来。
+/// 现在这个滞后被静默期盖住了，只有首烤需要单独处理：
 ///
-/// 所以：**统一延一帧再出图**（[_deferBakeAndCapture]）。代价是一帧延迟（16ms，
-/// 看不出来），换到的是烤出来的图等于这一帧内容的就绪态。
+/// * **首烤**：走"延一帧立刻出"（第一帧 layer 里的玻璃还停在「无快照退化态」，
+///   烤上卡就是「球/底栏先歪一帧才跳正」，真机反馈「进入外观编辑页时球与底栏乱跑」）；
+/// * **其余出图**：走 [settleBakeDelay]（150ms ≈ 9 帧），远大于这一帧的滞后，
+///   不需要再为它做别的。
 ///
 /// ⚠️ **靠子树重绘来触发重烤是不够的，必须给 [repaintSignal]**（2026-09-22
 /// 真机实锤）：液态玻璃面与壁纸层各自带**重绘边界**，它们的内容变化只在边界
@@ -195,7 +203,7 @@ class _RenderPreviewBakeBoundary extends RenderProxyBox {
       if (!attached || !_enabled || _bakes.value != null) {
         return;
       }
-      _reportBlocked('启用 1.5s 后仍一张图都没出（paint 没被调到 / 一直被节流挡住）');
+      _reportBlocked('启用 1.5s 后仍一张图都没出（paint 没被调到）');
     });
   }
 
@@ -203,10 +211,11 @@ class _RenderPreviewBakeBoundary extends RenderProxyBox {
 
   bool _bakeScheduled = false;
 
-  /// 上次出图所在的帧时间戳与节流补拍的定时器（见 [_minBakeInterval]）。
-  /// 用帧时间戳而不是 DateTime：测试环境的假时钟才能推进节流间隔。
-  Duration? _lastBakeFrameTs;
-  Timer? _throttleTimer;
+  /// 首烤是否已经出过图（首烤走"延一帧立刻出"，其余一律等静默期）。
+  bool _bakedOnce = false;
+
+  /// 静默期定时器：每次子树重绘都重置它（见 [settleBakeDelay]）。
+  Timer? _settleTimer;
 
   bool _reportedBlocked = false;
 
@@ -243,8 +252,8 @@ class _RenderPreviewBakeBoundary extends RenderProxyBox {
 
   @override
   void dispose() {
-    _throttleTimer?.cancel();
-    _throttleTimer = null;
+    _settleTimer?.cancel();
+    _settleTimer = null;
     _noImageTimer?.cancel();
     _noImageTimer = null;
     _repaintSignal?.removeListener(_onRepaintSignal);
@@ -252,58 +261,51 @@ class _RenderPreviewBakeBoundary extends RenderProxyBox {
   }
 
   void _scheduleBake() {
-    if (_bakeScheduled) return;
     if (!hasSize || size.isEmpty) {
       _reportBlocked('本节点没有尺寸（size=$size hasSize=$hasSize）');
       return;
     }
+    if (_bakedOnce) {
+      // 后续一律等静默期（见 [settleBakeDelay]）：每次重绘都重置定时器，所以
+      // 一整串重绘（拖滑杆、日周开合动画）只挤出**停下来之后**的那一张。
+      _armSettleBake();
+      return;
+    }
+    if (_bakeScheduled) return;
     _bakeScheduled = true;
-    final bool firstBake = _lastBakeFrameTs == null;
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _bakeScheduled = false;
       if (!attached) return;
-      // ⚠️ **每一张都延一帧**，不只首张（2026-09-22）：玻璃面这一帧画的是
-      // **上一帧末**才落地的快照，它按新快照的重画要等下一帧（见类注释最后一条
-      // 警告）。本帧就出图，烤下来的必然是「上一帧的画面」—— 拖滑杆时读数就是
-      // 「预览和实际差一帧，一直显示上一帧」。延到下一帧末，layer 里的玻璃才是
-      // 这一帧内容的就绪态。
-      _deferBakeAndCapture(first: firstBake);
+      // ⚠️ 首烤延一帧：首帧 layer 里的玻璃还停在「无快照退化态」，本帧出图就是
+      // 「球/底栏先歪一帧才跳正」（见类注释最后一条警告）。
+      _bakeDeferredOnce();
     });
   }
 
-  /// 延一帧再出图（理由见 [_scheduleBake] 与类注释最后一条警告）。
+  /// 静默期到点就出图（去抖）。定时器在**帧外**触发，所以这里不碰帧时间戳。
+  void _armSettleBake() {
+    _settleTimer?.cancel();
+    _settleTimer = Timer(settleBakeDelay, () {
+      _settleTimer = null;
+      _captureNow();
+    });
+  }
+
+  /// 首烤：延一帧出图（理由见 [_scheduleBake]）。
   ///
   /// **出图不需要本节点在那一帧重绘**：`toImageSync` 是按图层树重建场景，子级
   /// 自己的重绘边界层是保留的、里面已经换成新画面。这里只要保证**那一帧真的会
   /// 来** —— 落定后若没有别的动画在跑，下一帧不会被调度，延一帧就永远等不到。
-  ///
-  /// [first] 只影响是否绕开节流：首烤时 `_lastBakeFrameTs` 还是空，本来也不会被
-  /// 节流拦，但同帧玻璃若已自行触发过一次常规出图，这里若不 force 会再排一轮
-  /// 补拍定时器 —— 首烤路径明确只出这一张。
-  void _deferBakeAndCapture({required bool first}) {
+  void _bakeDeferredOnce() {
     SchedulerBinding.instance.scheduleFrame();
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (!attached) return;
-      _captureNow(
-        frameTs: SchedulerBinding.instance.currentFrameTimeStamp,
-        force: first,
-      );
+      _captureNow();
     });
   }
 
-  void _captureNow({required Duration frameTs, bool force = false}) {
+  void _captureNow() {
     if (!_enabled || !attached || !hasSize || size.isEmpty) return;
-    // 节流：距上次出图不足间隔时改为补拍（trailing）——重绘串再密，出图
-    // 也至多每 [_minBakeInterval] 一张，收尾必是最新内容。
-    final last = _lastBakeFrameTs;
-    if (!force && last != null && frameTs - last < _minBakeInterval) {
-      final remaining = _minBakeInterval - (frameTs - last);
-      _throttleTimer ??= Timer(remaining, () {
-        _throttleTimer = null;
-        _captureNow(frameTs: frameTs + remaining, force: true);
-      });
-      return;
-    }
     final layer = this.layer;
     if (layer is! OffsetLayer) {
       _reportBlocked('this.layer 是 ${layer.runtimeType}（不是 OffsetLayer）');
@@ -329,7 +331,7 @@ class _RenderPreviewBakeBoundary extends RenderProxyBox {
       );
       return;
     }
-    _lastBakeFrameTs = frameTs;
+    _bakedOnce = true;
     final old = _bakes.value;
     _bakes.value = image;
     old?.dispose();
