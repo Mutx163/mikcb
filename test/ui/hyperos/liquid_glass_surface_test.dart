@@ -333,23 +333,21 @@ void main() {
       expect(mid.r, lessThan(near.r));
     });
 
-    test('边光只交代转角：圆角上满档，贯屏长直段归零，四角两两一致', () async {
-      // 2026-09-20 的真机口径「圆角异常，上面和左右异常浅色条」把前两轮的结论顶翻了：
-      // 边光"一圈均匀"解决的是**方向性**（上沿比下沿亮 2.9 倍），但真机上那块通栏底部
-      // 弹窗的上沿与左右仍然读成亮线 —— 因为一条**不随内容变化**的高光落在贯屏长直边上，
-      // 无论多暗多细都只能读成"描边"；同一条高光落在圆角上才读作玻璃的反光边。
+    test('边光整圈均匀：长直段与圆角一样亮（2026-09-21 口径）', () async {
+      // 用户口径（2026-09-21）：「全部均匀才对，直边和圆角一致」。
       //
-      // 所以权重改成按**边界曲率**：SDF 中间量 q 的较小者（`min(q.x, q.y)`）在圆角弧上
-      // 为正、在长直段上越来越负，`smoothstep(-w, 0, 它)` 就是"转角度"—— 圆角满档、
-      // 长直段归零，中间 w 内平滑过渡。
+      // 这一档原先叫「只留转角」：按长短边比给方正面板把长直段收干净。撤掉的依据**不是
+      // 审美**，而是卡片那份着色器上已经实测过一次同一条规则 —— 它的过渡宽度取
+      // 1.5 × 圆角半径（与表面多大无关），而直边中点到最近转角的距离远超它，于是每条
+      // 直边中点权重都是 0.000，只剩四条互不相连的角上高光。真机口径就是
+      // 「四个角有白线，上下左右都没有」（见 `course_card_glass.frag` 的说明）。
       //
-      // 这条规则**只对方正的面板成立**（默认表面 100×100 ⇒ `u_rim_corner_only` 为 1）。
-      // 细长条走整圈均匀，见下面「细长条（药丸）」那条用例 —— 真机上只按曲率判会把
-      // 药丸的上沿一起收掉。
+      // 而当初加那条规则要治的「上面和左右两边浅条纹」，病根是**带宽 3 + 截面贴边最亮**
+      // （贴边那格正是抗锯齿的半像素过渡带），不是"均匀"本身 —— 见
+      // `liquid_glass_tuning.dart` 里 `defaultRimWidth` 的三步说明。
       //
       // 底用**纯黑**、rim 传 1（满档）：底色为 0 时像素值直接就是边光本身，
-      // 读数不受染色与背景影响。带宽给 3（滑杆上限，峰在 depth 1.05）—— 带宽太窄
-      // 时采样点落不到峰值那一格上。
+      // 读数不受染色与背景影响。带宽给 3（滑杆上限，峰在 depth 1.05）。
       final texture = await _screenTexture(
         (canvas) => canvas.drawRect(
           Rect.fromLTWH(0, 0, _screenSize.width, _screenSize.height),
@@ -361,57 +359,59 @@ void main() {
       final lit = await _renderSurface(texture: texture, rim: 1, rimWidth: 3);
 
       // 表面 (50,50) 100×100、半径 20 ⇒ 直段是 x/y ∈ [70,130]，圆角在四角。
-      // 取**最外一行往里一格**（像素中心 depth = 1.5，正是峰值附近那一格）。
+      // 取**最外一行往里一格**（像素中心 depth = 1.5，峰值附近那一格）。
       final straightTop = _pixel(lit, 100, 51).r;
       final straightLeft = _pixel(lit, 51, 100).r;
       final straightBottom = _pixel(lit, 100, 148).r;
       final straightRight = _pixel(lit, 148, 100).r;
 
       // 四个圆角弧上的同深度点：屏幕 (56,56) 的**像素中心**在表面局部 (6.5,6.5)，
-      // 到左上角圆心 (20,20) 的距离 19.09 ⇒ depth 0.91，正落在峰值附近。
+      // 到左上角圆心 (20,20) 的距离 19.09 ⇒ depth 0.91。
       final cornerTopLeft = _pixel(lit, 56, 56).r;
       final cornerTopRight = _pixel(lit, 143, 56).r;
       final cornerBottomLeft = _pixel(lit, 56, 143).r;
       final cornerBottomRight = _pixel(lit, 143, 143).r;
 
-      // 先确认高光真的还在（否则下面"直段归零"也可能只是整体没画）。
-      expect(
+      final straights = [straightTop, straightLeft, straightBottom, straightRight];
+      final corners = [
         cornerTopLeft,
-        greaterThan(0.5),
-        reason: '圆角上那圈反光边是用户认的观感，不能被一起收掉',
-      );
-      for (final straight in [
-        straightTop,
-        straightLeft,
-        straightBottom,
-        straightRight,
-      ]) {
+        cornerTopRight,
+        cornerBottomLeft,
+        cornerBottomRight,
+      ];
+
+      // ① 直段必须亮着 —— 这一条从 `lessThan(0.02)` 翻过来，是本次改动的核心。
+      for (final straight in straights) {
         expect(
           straight,
-          lessThan(0.02),
-          reason: '贯屏长直段上不许有边光 —— 那正是"上面和左右异常浅色条"的来源',
+          greaterThan(0.8),
+          reason: '整圈均匀下长直段必须比肩圆角；归零就是「四个角钩」那个现象',
         );
       }
-      // 四角两两一致：方向性（`mix(0.35, 1.0, facing)` 那一类加权）没有偷偷回来。
-      expect(cornerTopLeft, closeTo(cornerTopRight, 0.004), reason: '上沿左右角不一致');
-      expect(
-        cornerTopLeft,
-        closeTo(cornerBottomLeft, 0.004),
-        reason: '上下角不一致 = 方向性又回来了',
-      );
-      expect(cornerTopLeft, closeTo(cornerBottomRight, 0.004));
+      // ② 四条直段两两一致：方向性（`mix(0.35, 1.0, facing)` 那一类加权）没有偷偷回来。
+      for (final straight in straights.skip(1)) {
+        expect(straight, closeTo(straightTop, 0.004), reason: '四边不一致 = 方向性回来了');
+      }
+      // ③ 四角两两一致。
+      for (final corner in corners.skip(1)) {
+        expect(corner, closeTo(cornerTopLeft, 0.004), reason: '四角不一致');
+      }
+      // ④ 直段与圆角同量级。**不写严格相等**：两个取样点的 depth 本来就不同
+      // （直段 depth 1.5、圆角 depth 0.91，而带宽 3 的峰在 1.05），那点差来自采样深度、
+      // 不是几何补偿 —— 严格相等要靠改取样点，而不是放宽这个容差。
+      for (final corner in corners) {
+        expect(
+          straightTop,
+          closeTo(corner, 0.15),
+          reason: '直边与圆角必须一样亮（用户口径「直边和圆角一致」）',
+        );
+      }
     });
 
-    test('细长条（药丸）：同一条上沿，整圈均匀档亮着、只留转角档归零', () async {
-      // 2026-09-20 真机口径「底栏高光只剩左右」把上一条用例的适用范围顶出来了：
-      // 只按边界曲率判，**药丸的上沿和底部弹窗的上沿读数一样**（都是三百多像素的
-      // 长直边、圆角 27/28），于是药丸中间 220px 全黑。能分开两者的只有「这块面
-      // 整体是细条还是方正的板」，也就是 `u_rim_corner_only`（由
-      // [liquidGlassRimCornerOnlyForSize] 按长短边比推）。
-      //
-      // 这条用例把**同一份几何**喂给两档，证明差别确实只来自那个系数：
-      // 药丸 190×54、圆角 27（长短边比 3.5，按推导属于细条 ⇒ 整圈均匀）。
-      // 底用纯黑、rim 传 1，读数直接就是边光本身。
+    test('细长条（药丸）：上沿正中与两端半圆一样亮', () async {
+      // 药丸在旧规则下本来就落在「整圈均匀」档（长短边比 3.5），所以它是本次改动**不受
+      // 影响**的对照组。留这条用例是为了钉住那个曾经的回归：真机口径「底栏高光只剩左右」
+      // —— 上沿正中一旦归零，就是它回来了。
       final texture = await _screenTexture(
         (canvas) => canvas.drawRect(
           Rect.fromLTWH(0, 0, _screenSize.width, _screenSize.height),
@@ -422,52 +422,41 @@ void main() {
 
       const pill = Offset(5, 60);
       const pillSize = Size(190, 54);
-      Future<double> probeAt(int x, int y, double cornerOnly) async {
+      Future<double> probeAt(int x, int y) async {
         final bytes = await _renderSurface(
           texture: texture,
           radius: 27,
           rim: 1,
           rimWidth: 3,
-          rimCornerOnly: cornerOnly,
           surfaceOrigin: pill,
           surfaceSize: pillSize,
         );
         return _pixel(bytes, x, y).r;
       }
 
-      // 上沿正中（像素中心 depth 1.5，带宽 3 时峰在带内）。
-      final uniformTop = await probeAt(100, 61, 0);
-      final cornerOnlyTop = await probeAt(100, 61, 1);
+      // 两个取样点都取在 **depth ≈ 1.5** 那一格，否则读数差里混着"离边多远"：
+      // * 上沿正中 (100,61)：局部 y 1.5 ⇒ depth 1.5；
+      // * 左端半圆 (6,87)：局部 (1.5, 27.5)，到左圆心 (27,27) 距离 25.505
+      //   ⇒ depth = 27 - 25.505 ≈ 1.5。
+      // （取 x=5 会落到 depth 0.5，读数天然只有 0.47，与上沿的 0.87 差 0.4 —— 那是采样
+      //   深度差，不是几何补偿；别靠放宽容差去盖它。）
+      final top = await probeAt(100, 61);
+      final end = await probeAt(6, 87);
+      expect(top, greaterThan(0.5), reason: '上沿正中必须亮着 —— 归零就是「只剩左右」');
       expect(
-        uniformTop,
-        greaterThan(0.5),
-        reason: '细条走整圈均匀时，上沿正中必须亮着 —— 归零就是真机报的「只剩左右」',
-      );
-      expect(
-        cornerOnlyTop,
-        lessThan(0.02),
-        reason: '只留转角档必须把长直段收干净，否则「贯屏浅色条」会回来',
-      );
-
-      // 对照：药丸左端的半圆在两档下都亮着（形状没被一起收掉）。
-      final uniformEnd = await probeAt(5, 87, 0);
-      final cornerOnlyEnd = await probeAt(5, 87, 1);
-      expect(uniformEnd, greaterThan(0.3));
-      expect(
-        cornerOnlyEnd,
-        closeTo(uniformEnd, 0.004),
-        reason: '两端半圆在「只留转角」档下也是满档，两档读数必须一致',
+        top,
+        closeTo(end, 0.05),
+        reason: '长直段与端部半圆一样亮（同深度取样）',
       );
     });
 
-    test('小按钮：整圈均匀档下上沿与两端同亮，「只留转角」档才是「顶黑角白」', () async {
+    test('小按钮：上沿与两端一样亮（「顶黑角白」不许回来）', () async {
       // 真机口径（2026-09-21）：「四周的白边不均匀，顶部看起来是黑的，四个角是正常
       // 白边」。按钮 60×36、圆角 16（`_HyperosHeaderTextButton` 的紧凑档）：顶边与
-      // 底边的直段各有 28px，四个圆角各 16px。旧推导（长短边比 1.67）给出 0.93 ——
-      // 直段上的"转角度"只有 0.376，于是顶上只剩四成亮、四角仍满档。
+      // 底边的直段各有 28px。旧规则按长短边比给 0.93（几乎全收）—— 顶上只剩四成亮、
+      // 四角仍满档，正是那条口径。现在整圈均匀，直段与端部必须一样亮。
       //
-      // 这条用例把**同一份几何**喂给两档，证明差别确实只来自那个系数：底用纯黑、
-      // rim 传 1，读数直接就是边光本身。
+      // 底用纯黑、rim 传 1，读数直接就是边光本身。
       final texture = await _screenTexture(
         (canvas) => canvas.drawRect(
           Rect.fromLTWH(0, 0, _screenSize.width, _screenSize.height),
@@ -478,18 +467,12 @@ void main() {
 
       const origin = Offset(60, 60);
       const button = Size(60, 36);
-      expect(
-        liquidGlassRimCornerOnlyForSize(button),
-        0.0,
-        reason: '推导必须把这种小件判成整圈均匀，下面的像素读数才有意义',
-      );
-      Future<double> probeAt(int x, int y, double cornerOnly) async {
+      Future<double> probeAt(int x, int y) async {
         final bytes = await _renderSurface(
           texture: texture,
           radius: 16,
           rim: 1,
           rimWidth: 3,
-          rimCornerOnly: cornerOnly,
           surfaceOrigin: origin,
           surfaceSize: button,
         );
@@ -498,26 +481,13 @@ void main() {
 
       // 上沿直段正中（90, 61）与左端中点（61, 78），都是 depth 1.5 那一行 ——
       // 带宽 3 时峰在带内，读数就是边光本身。
-      final topUniform = await probeAt(90, 61, 0);
-      final endUniform = await probeAt(61, 78, 0);
-      expect(topUniform, greaterThan(0.3), reason: '整圈均匀档下上沿必须亮着');
+      final top = await probeAt(90, 61);
+      final end = await probeAt(61, 78);
+      expect(top, greaterThan(0.3), reason: '整圈均匀下上沿必须亮着');
       expect(
-        topUniform,
-        closeTo(endUniform, 0.02),
-        reason: '同一档下上沿与四角必须一样亮 —— 这就是"白边不均匀"的反面',
-      );
-
-      final topCornerOnly = await probeAt(90, 61, 1);
-      final endCornerOnly = await probeAt(61, 78, 1);
-      expect(
-        topCornerOnly,
-        lessThan(topUniform * 0.6),
-        reason: '「只留转角」把上沿直段收掉 —— 真机口径的「顶部发黑、四角白」',
-      );
-      expect(
-        endCornerOnly,
-        closeTo(endUniform, 0.02),
-        reason: '四角在两档下都满档：问题只在顶上那条直边',
+        top,
+        closeTo(end, 0.02),
+        reason: '上沿与四角必须一样亮 —— 这就是「白边不均匀 / 顶部发黑」的反面',
       );
     });
 
@@ -578,67 +548,6 @@ void main() {
       // 首页玻璃带 / 底栏药丸都是宽扁条，边缘折射朝中心偏会读成扭曲。
       expect(liquidGlassDomeForSize(const Size(360, 64)), 0.0);
       expect(liquidGlassDomeForSize(const Size(200, 48)), 0.0);
-    });
-  });
-
-  group('边光作用范围推导（liquidGlassRimCornerOnlyForSize）', () {
-    test('细长条整圈均匀，方正的大面板只留转角', () {
-      // 真机尺寸（逻辑 px）。这一组是「药丸只剩左右亮着」那条回归的护栏：
-      // 药丸与玻璃带必须落在 0（整圈均匀），底部弹窗与弹窗家族必须落在 1（只留转角）。
-      expect(
-        liquidGlassRimCornerOnlyForSize(const Size(380, 54)),
-        0.0,
-        reason: '底栏药丸 380×54：细条，必须整圈均匀',
-      );
-      expect(
-        liquidGlassRimCornerOnlyForSize(const Size(360, 64)),
-        0.0,
-        reason: '首页玻璃带：细条，必须整圈均匀',
-      );
-      expect(
-        liquidGlassRimCornerOnlyForSize(const Size(360, 400)),
-        1.0,
-        reason: '底部弹窗：方正面板，必须只留转角（上沿那条浅色线就是这里治的）',
-      );
-      expect(
-        liquidGlassRimCornerOnlyForSize(const Size(300, 200)),
-        1.0,
-        reason: '弹窗家族的面板：与底部弹窗同档，两边观感才一致',
-      );
-      expect(
-        liquidGlassRimCornerOnlyForSize(const Size(56, 56)),
-        1.0,
-        reason: '圆钮：推到只留转角也无所谓 —— 圆形的 SDF 中间量两个分量恒非负',
-      );
-    });
-
-    test('中间一段是过渡，不是硬切', () {
-      final mid = liquidGlassRimCornerOnlyForSize(const Size(240, 120));
-      expect(mid, greaterThan(0.0));
-      expect(mid, lessThan(1.0));
-      // 单调：越长越接近「整圈均匀」。
-      expect(
-        liquidGlassRimCornerOnlyForSize(const Size(240, 110)),
-        lessThan(mid),
-      );
-    });
-
-    test('短边 ≤ 52 的小件整圈均匀（悬浮按钮不是「只留转角」）', () {
-      // 真机口径（2026-09-21）：「四周的白边不均匀，顶部看起来是黑的，四个角是正常
-      // 白边」。那颗按钮 60×36、圆角 16：按长短边比推会得到 0.93（几乎全收），顶上
-      // 那条 28px 的直段只剩四成亮，而四个圆角仍满档。长直边之所以读成描边靠的是
-      // 长度 —— 28px 只有屏宽的 7%，它读作「按钮上沿反光」。
-      expect(
-        liquidGlassRimCornerOnlyForSize(const Size(60, 36)),
-        0.0,
-        reason: '悬浮按钮：顶上那条直段必须和四角一样亮',
-      );
-      expect(liquidGlassRimCornerOnlyForSize(const Size(120, 40)), 0.0);
-      expect(liquidGlassRimCornerOnlyForSize(const Size(52, 52)), 0.0);
-      // 尺寸线之上仍按原来的形状分档；大面板一行不动。
-      expect(liquidGlassRimCornerOnlyForSize(const Size(56, 56)), 1.0);
-      expect(liquidGlassRimCornerOnlyForSize(const Size(300, 200)), 1.0);
-      expect(liquidGlassRimCornerOnlyForSize(const Size(380, 54)), 0.0);
     });
   });
 
@@ -782,11 +691,6 @@ Future<Uint8List> _renderSurface({
   double rim = 0,
   /// 边缘高光带宽（u_rim_width）；默认与 [LiquidGlassStyle] 的默认值一致。
   double rimWidth = 1.5,
-  /// 边光作用范围（u_rim_corner_only）：0 = 整圈均匀、1 = 只留转角。
-  ///
-  /// 默认 1 —— 默认表面是 100×100 的方正面（长短边比 1），按
-  /// [liquidGlassRimCornerOnlyForSize] 推导正是「只留转角」。细长条的用例显式传 0。
-  double rimCornerOnly = 1,
   /// 色散强度（u_dispersion）；默认 0 = 关。
   double dispersion = 0,
   /// 穹顶强度（u_dome）；默认 0 = 关。
@@ -836,7 +740,6 @@ Future<Uint8List> _renderSurface({
   shader.getUniformVec3('u_rim_color').set(1, 1, 1);
   shader.getUniformFloat('u_rim').set(rim);
   shader.getUniformFloat('u_rim_width').set(rimWidth);
-  shader.getUniformFloat('u_rim_corner_only').set(rimCornerOnly);
 
   final recorder = ui.PictureRecorder();
   final canvas = ui.Canvas(recorder);
