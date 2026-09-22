@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -247,7 +248,7 @@ class HyperosZoomPageRoute<T> extends PageRouteBuilder<T> {
 /// 进缓存；落定后壳撤、几何恢复，缓存却命中复用不再重绘——错位冻结。此前
 /// 「退场首帧让活首页垫黑重绘一帧重烤新快照」正是踩在这一帧上：那一帧的
 /// 绘制就发生在转场壳里。纪律由此收紧为：活首页在 zoom 转场的整个生命周期
-/// 里零绘制——进场从 p=0 起就由快照顶替（p=0 时是整屏矩形、无圆角，与活画面
+/// 里零绘制——进场从 p=0 起就由快照顶替（p=0 时是整屏矩形 + 屏幕圆角，与活画面
 /// 逐像素等价，顶替无感），退场倒放沿用同一份快照，落定帧的完整重绘发生在
 /// 壳撤之后。代价：编辑页里改过的外观要在落定切回的那一刻才在首页出现
 /// （退出动画回放的是进页时的观感），一次静止时刻的内容更新。
@@ -376,7 +377,8 @@ class _HyperosZoomShrinkScopeState extends State<HyperosZoomShrinkScope> {
             // 进场（forward，含 p=0 的头几帧）与退场（reverse 倒放）全程
             // 快照顶替活首页：活玻璃在转场壳里的任何一帧绘制都可能被烤成
             // 坏缓存并在落定后冻结（真机：右上角球错位到左上角），一次都
-            // 不给。p=0 时快照铺满整屏、无圆角，与活画面逐像素等价。
+            // 不给。p=0 时快照铺满整屏、带屏幕圆角，与活画面逐像素等价
+            // （圆角口径见下面 [startRadius] 那段）。
             _ensureSnapshot();
             final p = HyperosZoomRoute.progress(animation.value);
             final landT = HyperosZoomRoute.shrinkT(p);
@@ -393,7 +395,26 @@ class _HyperosZoomShrinkScopeState extends State<HyperosZoomShrinkScope> {
             final Rect target = landing == null
                 ? screenRect
                 : Rect.lerp(screenRect, landing.rect, landT)!;
-            final double radius = landing == null ? 0 : landing.radius * landT;
+            // ⚠️ 圆角的**起点是屏幕圆角，不是 0**（2026-09-22 用户口径）。
+            //
+            // 曾经是 `landing.radius * landT`：首帧整屏 + 直角，圆角只在往卡片
+            // 缩的过程里才一点点涨满 —— 前段「圆角 / 尺寸」的比例明显偏小，整段
+            // 读起来是「带着直角缩进来」（用户原话：「看起来好像是带着直角进来
+            // 的，有点怪」）。改成从**屏幕圆角**起、与矩形同步收到落点，比例全程
+            // 恒定，第一帧就是一张圆角画面在缩；口径与页面切换转场同源（那边也取
+            // `displayCornerRadiusDp`，见 `_HyperosTransitionPageShell`）。
+            //
+            // ⚠️ 圆角只属于**转场这一层**（下面那个 ClipRRect 包的是快照）：首页
+            // 本体、以及编辑页里那份"真首页"渲染源都不经过它 —— 转场结束后本
+            // scope 直接返回裸 child、树上没有任何裁剪。用户明确要求「不要导致
+            // 首页截图的时候截出来圆角了」，所以圆角绝不能挪到首页子树上。
+            final double startRadius = math.min(
+              HyperosMotionPlatform.displayCornerRadiusDp,
+              screenRect.shortestSide / 2,
+            );
+            final double radius = landing == null
+                ? startRadius
+                : ui.lerpDouble(startRadius, landing.radius, landT)!;
             final double sx = target.width / screenRect.width;
             final double sy = target.height / screenRect.height;
             // 写成矩阵而不是 Transform.scale：落点带位移，且这里是把

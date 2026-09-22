@@ -15,6 +15,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_motion.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +63,25 @@ void main() {
   double homeTextWidth(WidgetTester tester) =>
       tester.getRect(homeFinder).width;
 
+  /// 快照当前**在屏幕上看到的**圆角。
+  ///
+  /// `ClipRRect` 的半径写在 Transform **内层**的坐标系里（包的是那张整屏快照），
+  /// 要乘回横向缩放才是视觉圆角 —— 实现里的公式就是「半径 / sx」，这里按定义反算。
+  double snapshotVisibleRadius(WidgetTester tester) {
+    final clip = tester.widget<ClipRRect>(
+      find
+          .ancestor(
+            of: snapshotFinder,
+            // 落定后首页那半边会被 theater 归入 offstage（zoom 路由 opaque），
+            // 默认的 skipOffstage 会把它整棵判成不存在。
+            matching: find.byType(ClipRRect, skipOffstage: false),
+          )
+          .first,
+    );
+    final inner = clip.borderRadius.resolve(TextDirection.ltr).topLeft.x;
+    return inner * (tester.getRect(snapshotFinder).width / screenW);
+  }
+
   testWidgets('无 zoom 路由在飞时 scope 零包装、无快照', (tester) async {
     await pumpHost(tester);
     expect(
@@ -69,6 +89,14 @@ void main() {
       findsNothing,
     );
     expect(snapshotFinder, findsNothing);
+    // 平时首页不带任何裁剪 —— 圆角只是转场期间的观感（首页截图必须是方的）。
+    expect(
+      find.ancestor(
+        of: homeFinder,
+        matching: find.byType(ClipRRect, skipOffstage: false),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('进场发布首页快照必须帧末发：卡片那侧不抛「build 期间标脏」', (tester) async {
@@ -127,6 +155,32 @@ void main() {
     expect(settled.top, closeTo(landingRect.top, 1.0));
     expect(settled.right, closeTo(landingRect.right, 1.0));
     expect(settled.bottom, closeTo(landingRect.bottom, 1.0));
+    // 终点圆角 == 落点圆角（交接给卡片时不许跳一下）。
+    expect(
+      snapshotVisibleRadius(tester),
+      closeTo(landing.radius, 0.5),
+      reason: '缩到位那一帧的圆角必须等于落点圆角，否则与卡片交接时圆角会弹',
+    );
+  });
+
+  testWidgets('进场首帧就带圆角：起点是屏幕圆角，不是直角', (tester) async {
+    // 2026-09-22 用户口径（原话）：「缩放的时候，从最开始的时候就应该带着圆角
+    // 进来，不然看起来好像是带着直角进来的，有点丑，就好像页面切换动画是带着
+    // 圆角那样」。原来 `radius = landing.radius * landT` 从 0 起：首帧整屏 +
+    // 直角，圆角只在往卡片缩的过程里才涨满，前段「圆角 / 尺寸」的比例明显偏小。
+    //
+    // 起点改成屏幕圆角（与页面切换转场同一个 `displayCornerRadiusDp`）后，圆角
+    // 与矩形**同步**收到落点、比例全程恒定 —— 这条钉住首帧那个值。
+    await pumpHost(tester);
+    await pushEditor(tester); // 首帧
+
+    final screenRadius = HyperosMotionPlatform.displayCornerRadiusDp;
+    expect(screenRadius, greaterThan(0), reason: '钉子本身要成立：屏幕圆角得是个正数');
+    expect(
+      snapshotVisibleRadius(tester),
+      closeTo(screenRadius, 0.5),
+      reason: '进场首帧的快照必须已经带屏幕圆角（不是从直角开始缩）',
+    );
   });
 
   test('出场分段口径：暗底在缩到位之后才动，chrome 比它更晚', () {
@@ -187,6 +241,16 @@ void main() {
     );
     expect(homeTextWidth(tester), initialWidth);
     expect(hyperosZoomTopAnimation.value, isNull);
+    // 转场结束后**首页子树不许被任何裁剪包着**：圆角只属于转场那一层，不能
+    // 落在首页本体上（用户明确要求「不要导致首页截图的时候截出来圆角了」）。
+    expect(
+      find.ancestor(
+        of: homeFinder,
+        matching: find.byType(ClipRRect, skipOffstage: false),
+      ),
+      findsNothing,
+      reason: '落定后首页必须回到无裁剪状态，否则截图会截出圆角',
+    );
   });
 
   testWidgets('进场首帧必须是未缩小状态：路由的 offstage 占位动画不能当进度用', (tester) async {
