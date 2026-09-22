@@ -46,6 +46,11 @@ enum FrostedGlassMode {
 
   /// 柔光玻璃（Hyper-PiliPlus SoftGlass 风格）：雾面胶囊 + 双影 + 边缘
   /// 高光。与液态折射解耦——不依赖 RuntimeShader，Blur + 蒙层即可。
+  ///
+  /// ⚠️ **2026-09-22 起不再是用户可选的档位**（引导页那一档已撤，存量值
+  /// 读盘即归到 [liquidGlass]，见 [FrostedGlassModeX.fromValue]）。枚举值与
+  /// 它的渲染链（`SoftGlassSurface`）保留：只在内存里被显式构造时才会走到，
+  /// 用于存量兜底与既有测试，不再由任何界面产生。
   softGlass,
 
   /// 设置页「高斯模糊」档的存储标记：渲染与 [frosted] 同一链路，仅用于
@@ -60,6 +65,14 @@ extension FrostedGlassModeX on FrostedGlassMode {
     // 存量迁移：折射档曾与液态档并列，现合并为一档（液态玻璃由本仓着色器
     // 实现）。老数据里写着 'refractionGlass' 的一律读作液态玻璃。
     if (value == 'refractionGlass') {
+      return FrostedGlassMode.liquidGlass;
+    }
+    // 存量迁移（2026-09-22）：柔光档从用户可选材质里退场，老数据一律读作
+    // 液态玻璃 —— 这正是外观编辑器此前对它的**显示口径**（归桶成液态），
+    // 改成读入即迁移之后，界面说液态、渲染就真的画液态，不再两说。
+    // 迁移是懒迁移：不重写盘上的旧值，用户下次落盘时自然被写成 'liquidGlass'。
+    // 详细取舍见 `.agents/notes/implemented/simplification/2026-09-22-retire-soft-glass-mode.md`。
+    if (value == 'softGlass') {
       return FrostedGlassMode.liquidGlass;
     }
     return FrostedGlassMode.values.firstWhere(

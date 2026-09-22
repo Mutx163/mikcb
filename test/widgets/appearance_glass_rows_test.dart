@@ -200,6 +200,37 @@ void main() {
     expect(find.text('液态玻璃'), findsWidgets);
   });
 
+  testWidgets('存量柔光档：面板读作液态玻璃，且液态细项照给（2026-09-22 退场）', (
+    tester,
+  ) async {
+    // 用户 2026-09-22 报的正是这条：「默认在液态玻璃选项的时候，下面没有
+    // 出现玻璃相关设置」。根因是两处判据不同源 —— 顶部分段把存量柔光归桶
+    // 显示成「液态玻璃」，而下面给不给「高级材质」那一节看的是**原始字段**
+    // 是不是 liquidGlass ⇒ 界面说液态、下面空着。
+    //
+    // 此后柔光档从可选材质里退场：存量值读盘即归液态（`FrostedGlassModeX
+    // .fromValue`），顶部分段与那一节也改用同一个值（面板里的 displayedChoice）。
+    // 这里从**落盘的档案**起步，走的就是真实读盘路径。
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    _seedPrefs(
+      TimetableSettings.defaults().copyWith(
+        frostedGlassMode: FrostedGlassMode.softGlass,
+      ),
+    );
+
+    final provider = await _openMaterialPanel(tester);
+
+    // ① 读盘就把柔光归成液态，设置了对象里不再留着柔光。
+    expect(provider.settings.frostedGlassMode, FrostedGlassMode.liquidGlass);
+    // ② 顶部分段显示液态（与上一条同口径）。
+    expect(find.text('液态玻璃'), findsWidgets);
+    // ③ **下面照给液态细项** —— 这条是这次报的问题的正钉。
+    expect(find.text('高级材质'), findsOneWidget);
+    // ④ 全屏再无「柔光玻璃」：只读总览那几行也不许再报它。
+    expect(find.text('柔光玻璃'), findsNothing);
+  });
+
   testWidgets('课表页面的玻璃区块只剩外观编辑入口行（整合后的回归钉）', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));

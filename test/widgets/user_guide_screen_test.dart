@@ -359,6 +359,9 @@ void main() {
     expect(find.text('高斯模糊'), findsOneWidget);
     expect(find.text('液态玻璃'), findsOneWidget);
     expect(find.text('实体卡片'), findsOneWidget);
+    // 柔光玻璃 2026-09-22 从引导页撤下（它此前是唯一还能选到柔光的入口，
+    // 存量值改读作液态）。这里钉住它不再作为一档出现。
+    expect(find.text('柔光玻璃'), findsNothing);
 
     // 按目标当前位置精确补偿，把它挪到屏幕竖直 45% 处：既脱离底边
     // 裁剪区，也避开顶部悬浮折叠栏的遮挡区（行高变化时不再依赖

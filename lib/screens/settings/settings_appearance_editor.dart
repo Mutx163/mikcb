@@ -590,6 +590,18 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     // 模型里 liquidGlassTuning 可空（存量数据兼容）：面板统一用兜底后的局部量，
     // 滑杆读写都不会踩空。
     final liquidTuning = _draft.liquidGlassTuning ?? LiquidGlassTuning.defaults;
+    // 顶部那一格**显示**成哪一档 —— 与下面「高级材质」那一节的开关共用这一个
+    // 值（单一来源）：上面写着液态玻璃，下面就一定给液态的设置。
+    //
+    // 2026-09-22 之前是两处各判一次（显示走归桶、给不给设置走原始字段），于是
+    // 存量柔光档就成了「显示液态玻璃、下面什么都没有」。柔光同批从可见档位里
+    // 退场（存量读入即归液态，见 [FrostedGlassModeX.fromValue]），这两个判据
+    // 此后本该一致；让它们**结构上**同源，是为了不再有下一个档位踩同一个坑。
+    final displayedChoice = switch (glassModeChoiceOf(_draft)) {
+      GlassModeChoice.liquidGlass ||
+      GlassModeChoice.softGlass => GlassModeChoice.liquidGlass,
+      _ => GlassModeChoice.solid,
+    };
     return SingleChildScrollView(
       // ⚠️ 面板里第一个 `Scrollable` 是外面那层**横向翻页** —— 测试要按这个 key
       // 指名取本页的滚动视图，别再取 `Scrollable` 的第一个。
@@ -611,11 +623,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
               l10n.frostedGlassModeSolid: GlassModeChoice.solid,
               l10n.frostedGlassModeLiquid: GlassModeChoice.liquidGlass,
             },
-            value: switch (glassModeChoiceOf(_draft)) {
-              GlassModeChoice.liquidGlass ||
-              GlassModeChoice.softGlass => GlassModeChoice.liquidGlass,
-              _ => GlassModeChoice.solid,
-            },
+            value: displayedChoice,
             onChanged: (value) {
               _updateDraft(applyGlassModeChoice(_draft, value));
             },
@@ -638,8 +646,8 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
               _updateDraft(applyHomeBandGlassMaterial(_draft, value));
             },
           ),
-          // ── 靠后：观感细项（仅液态档可调）──
-          if (_draft.frostedGlassMode == FrostedGlassMode.liquidGlass) ...[
+          // ── 靠后：观感细项（跟着上面**显示**的那一档走，见 [displayedChoice]）──
+          if (displayedChoice == GlassModeChoice.liquidGlass) ...[
             const SizedBox(height: 20),
             HyperosSectionLabel(text: l10n.advancedMaterialTitle),
             const SizedBox(height: 8),

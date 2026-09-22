@@ -157,10 +157,6 @@ void main() {
       FrostedGlassMode.frosted,
     );
     expect(FrostedGlassModeX.fromValue('gaussian'), FrostedGlassMode.gaussian);
-    expect(
-      FrostedGlassModeX.fromValue('softGlass'),
-      FrostedGlassMode.softGlass,
-    );
     expect(FrostedGlassModeX.fromValue(null), FrostedGlassMode.frosted);
   });
 
@@ -171,6 +167,17 @@ void main() {
     );
     expect(
       FrostedGlassModeX.fromValue('liquidGlass'),
+      FrostedGlassMode.liquidGlass,
+    );
+  });
+
+  test('存量 softGlass 持久化值读作液态玻璃（2026-09-22 柔光档退场）', () {
+    // 柔光玻璃从用户可选材质里撤下（引导页那一档已删），存量值一律读作液态 ——
+    // 这正是外观编辑器此前对它的显示口径（归桶成液态），改成读入即迁移之后，
+    // 界面说液态、渲染就真的画液态。撤下之前这里断言的是「读回 softGlass」。
+    // 见 .agents/notes/implemented/simplification/2026-09-22-retire-soft-glass-mode.md
+    expect(
+      FrostedGlassModeX.fromValue('softGlass'),
       FrostedGlassMode.liquidGlass,
     );
   });

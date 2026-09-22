@@ -710,8 +710,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                     title: _guideVisualEffectLabel(l10n, effect),
                     summary: _guideVisualEffectDescription(l10n, effect),
                     selected: currentEffect == effect,
-                    // showDivider 画在该行下方：末行不画，否则四档只有
-                    // 三条线且最后一条悬在卡片底边。
+                    // showDivider 画在该行下方：末行不画，否则三档只有
+                    // 两条线且最后一条悬在卡片底边。
                     showDivider: index < _guideVisualEffectOptions.length - 1,
                     onTap: () => _applyVisualEffect(effect),
                   ),
@@ -793,14 +793,17 @@ class _UserGuideScreenState extends State<UserGuideScreen>
 
   /// 视觉效果档位与设置字段的映射。
   ///
-  /// 委派给 [applyGlassModeChoice]（设置页「材质」四档的唯一写入口），
+  /// 委派给 [applyGlassModeChoice]（设置页「材质」两格分段的唯一写入口），
   /// 避免引导页与设置页各自维护一套映射、日后再漂移。
-  /// 两者档位对应：gaussian / softGlass / liquidGlass / solid。
+  /// 两者档位对应：gaussian / liquidGlass / solid。
+  ///
+  /// **柔光玻璃 2026-09-22 从引导页撤下**（整机只认实体 / 液态两种材质，
+  /// 而它此前是唯一还能选到柔光的入口）；存量柔光值读盘即归液态，见
+  /// `.agents/notes/implemented/simplification/2026-09-22-retire-soft-glass-mode.md`。
   void _applyVisualEffect(_GuideVisualEffect effect) {
     _updateSettings(
       applyGlassModeChoice(_currentSettings, switch (effect) {
         _GuideVisualEffect.gaussian => GlassModeChoice.gaussian,
-        _GuideVisualEffect.softGlass => GlassModeChoice.softGlass,
         _GuideVisualEffect.liquidGlass => GlassModeChoice.liquidGlass,
         _GuideVisualEffect.solid => GlassModeChoice.solid,
       }),
@@ -1133,26 +1136,28 @@ class _PermissionItem {
   });
 }
 
-/// 引导页「视觉效果」四档选择，与设置页「材质」四档同一套
+/// 引导页「视觉效果」三档选择，与设置页「材质」两格分段同一套
 /// 映射（[GlassModeChoice] / [applyGlassModeChoice] 是唯一写入口）。
-enum _GuideVisualEffect { gaussian, softGlass, liquidGlass, solid }
+///
+/// 柔光玻璃 2026-09-22 撤下（详见 `_applyVisualEffect`）。
+enum _GuideVisualEffect { gaussian, liquidGlass, solid }
 
 const List<_GuideVisualEffect> _guideVisualEffectOptions = <_GuideVisualEffect>[
   _GuideVisualEffect.gaussian,
-  _GuideVisualEffect.softGlass,
   _GuideVisualEffect.liquidGlass,
   _GuideVisualEffect.solid,
 ];
 
 /// 从当前设置推导引导页视觉效果选中项。
 ///
-/// 早先只认高斯 / 液态 / 实体三档，全局选「柔光玻璃」时会错误地
-/// 把「高斯模糊」显示为选中——引导页与实际材质不一致。
+/// 柔光玻璃撤下之后，能落到这里的三档之外的值只剩「存量档」——
+/// 但存量柔光在读盘时已归到液态（[FrostedGlassModeX.fromValue]），
+/// 所以这里不再需要单独认它。
 _GuideVisualEffect _guideVisualEffectOf(TimetableSettings settings) {
   if (!settings.frostedBlurEnabled) return _GuideVisualEffect.solid;
   return switch (settings.frostedGlassMode) {
     FrostedGlassMode.liquidGlass => _GuideVisualEffect.liquidGlass,
-    FrostedGlassMode.softGlass => _GuideVisualEffect.softGlass,
+    FrostedGlassMode.softGlass => _GuideVisualEffect.liquidGlass,
     _ => _GuideVisualEffect.gaussian,
   };
 }
@@ -1162,7 +1167,6 @@ String _guideVisualEffectLabel(
   _GuideVisualEffect effect,
 ) => switch (effect) {
   _GuideVisualEffect.gaussian => l10n.frostedGlassModeGaussian,
-  _GuideVisualEffect.softGlass => l10n.frostedGlassModeSoft,
   _GuideVisualEffect.liquidGlass => l10n.frostedGlassModeLiquid,
   _GuideVisualEffect.solid => l10n.guidePersonalizeVisualEffectSolid,
 };
@@ -1172,7 +1176,6 @@ String _guideVisualEffectDescription(
   _GuideVisualEffect effect,
 ) => switch (effect) {
   _GuideVisualEffect.gaussian => l10n.guideVisualEffectGaussianDesc,
-  _GuideVisualEffect.softGlass => l10n.guideVisualEffectSoftDesc,
   _GuideVisualEffect.liquidGlass => l10n.guideVisualEffectLiquidDesc,
   _GuideVisualEffect.solid => l10n.guideVisualEffectSolidDesc,
 };
