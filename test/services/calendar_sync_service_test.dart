@@ -40,6 +40,24 @@ void main() {
       expect(await service.isPermissionGranted(), isFalse);
       expect(await service.requestPermission(), isFalse);
     });
+
+    test('连点两次请求权限：两个 Future 都必须落结果，不许永挂', () async {
+      // 回归钉：原生侧旧版只有一个 pendingPermissionResult 槽位，第二次会
+      // 覆盖第一次，第一次的 Future 永挂。现在原生排队扇出，Dart 侧只要
+      // 两次 invoke 都能 await 到布尔值即可。
+      var calls = 0;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+        calls++;
+        return calls == 1;
+      });
+
+      final first = service.requestPermission();
+      final second = service.requestPermission();
+      expect(await first, isTrue);
+      expect(await second, isFalse);
+      expect(calls, 2);
+    });
   });
 
   group('sync 载荷', () {

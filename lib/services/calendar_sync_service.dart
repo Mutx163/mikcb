@@ -47,9 +47,11 @@ enum CalendarDeleteResult { deleted, notSynced, failed }
 /// 把课表日程一键写入手机系统日历。
 ///
 /// 原生侧（[CalendarSync.kt]）维护一个本应用专属的**本地日历**（不依赖
-/// 任何云账户），每次同步 = 清空该日历旧日程 + 写入本次日程，天然幂等，
-/// 不会因重复点击产生重复日程。日历权限（READ/WRITE_CALENDAR）的运行时
-/// 申请也由原生侧转发，这里只暴露问询与请求两个动作。
+/// 任何云账户），每次同步 = 清空该日历旧日程 + 写入本次日程，**写在同一次
+/// 原生批处理里**（批处理是事务：中途失败整批回滚，不会留下「旧的已删、
+/// 新的没写上」的空窗）。因此同步天然幂等，不会因重复点击产生重复日程。
+/// 日历权限（READ/WRITE_CALENDAR）的运行时申请也由原生侧转发，这里只
+/// 暴露问询与请求两个动作。
 class CalendarSyncService {
   CalendarSyncService({MethodChannel? channel})
       : _channel = channel ??
@@ -71,6 +73,7 @@ class CalendarSyncService {
   /// 弹出系统权限对话框请求日历权限；返回是否获得授权。
   ///
   /// 用户拒绝、或当前没有可用 Activity（理论上不会发生）都返回 false。
+  /// 可并发调用：原生侧排队扇出，每个 Future 都会落结果。
   Future<bool> requestPermission() async {
     try {
       return await _channel.invokeMethod<bool>('requestPermission') ?? false;

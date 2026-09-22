@@ -213,6 +213,13 @@ class MainActivity : FlutterActivity() {
         super.onStop()
     }
 
+    override fun onDestroy() {
+        // 系统权限对话框随 Activity 一起消失时，日历权限等待者若不收束，
+        // Dart 侧 Future 会永挂（onRequestPermissionsResult 可能再也不来）。
+        CalendarSync.onHostDestroyed()
+        super.onDestroy()
+    }
+
     private fun isScreenCaptureCallbackSupported(): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
 
