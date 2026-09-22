@@ -27,6 +27,7 @@ import '../domain/couple_timetable_logic.dart';
 import '../ui/hyperos_motion_bridge.dart';
 import '../ui/hyperos/hyperos_overscroll.dart';
 import '../services/app_analytics.dart';
+import '../services/app_global_settings_service.dart';
 import '../logging/app_debug_log.dart';
 import '../logging/app_log_messages.dart';
 import '../logging/performance_settings_snapshot.dart';
@@ -604,6 +605,16 @@ class TimetableProvider with ChangeNotifier {
       await initialize();
       // 导入（备份 / 云同步）之后把 profile 镜像里的「最近使用」并回全局历史。
       await WallpaperHistoryService.mergeImportedProfiles(_profiles);
+      // 应用级偏好同样随课表镜像回来；导入的那份为准。
+      await AppGlobalSettingsService.refreshFromImportedProfiles(
+        profiles: _profiles,
+        activeProfileId: _activeProfileId,
+      );
+      // initialize() 里那次 _applyProfileState 读的是导入前的全局那份，重推完再盖一次。
+      final importedActive = activeProfile;
+      if (importedActive != null) {
+        _applyProfileState(importedActive);
+      }
       // This method already holds the mutation gate. Load directly so it does
       // not enqueue behind itself and deadlock.
       await _loadDeferredDataImpl();
@@ -695,6 +706,13 @@ class TimetableProvider with ChangeNotifier {
     unawaited(_loadDeferredData());
     // 壁纸「最近使用」并成全局（只做一次；逻辑在 service，本类不再长行数）。
     unawaited(WallpaperHistoryService.migrateProfilesOnce(_profiles));
+    // 应用级偏好（导航 / 材质 / 主题外观 / 通用）并成全局，只做一次。
+    // **必须 await**：紧接着的 _applyProfileState 要用它把全局那份盖到激活课表上，
+    // 晚一步首帧就是「跟随课表」的旧样子。它只读一个 prefs 键，代价极小。
+    await AppGlobalSettingsService.resolveInitial(
+      profiles: _profiles,
+      activeProfileId: _activeProfileId,
+    );
 
     final activeProfile =
         this.activeProfile ?? (_profiles.isEmpty ? null : _profiles.first);
@@ -912,8 +930,19 @@ class TimetableProvider with ChangeNotifier {
   TimeScheme? _getTimeSchemeById(String? schemeId) =>
       TimeSchemeLogic.getSchemeById(_timeSchemes, schemeId);
 
+  /// 某张课表「应该看到」的设置 = 该课表自己的 settings 叠上全局那份应用级偏好。
+  ///
+  /// 导航 / 材质 / 主题外观 / 通用这些偏好是设备级的（真源见
+  /// `AppGlobalSettingsService`），课表里那份只是给备份留的镜像。每次把某份
+  /// `settings` 拿进内存都必须盖一次 —— 少盖一处，那条写路径就会把陈旧镜像
+  /// 当成用户改动写回全局。
+  TimetableSettings _settingsFromProfile(TimetableProfile profile) =>
+      _normalizeSettingsWithTimeScheme(
+        AppGlobalSettingsService.overlay(profile.settings),
+      );
+
   void _applyProfileState(TimetableProfile profile) {
-    _settings = _normalizeSettingsWithTimeScheme(profile.settings);
+    _settings = _settingsFromProfile(profile);
     hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
     _courses = _syncCoursesWithEffectiveTimeSchemes(
       List<Course>.from(profile.courses),
@@ -1125,10 +1154,14 @@ class TimetableProvider with ChangeNotifier {
     bool touchLastUsedAt = false,
     bool notifySync = true,
   }) async {
+    // ⚠️ 内存合并必须留在最前面、且**不许在它前面插 await**：`_setCurrentWeekImpl`
+    // 等路径靠「调用本方法后就已把 `_currentWeek` 同步写进 profile」这条时序承诺。
     _mergeActiveProfileIntoProfilesList(touchLastUsedAt: touchLastUsedAt);
     if (activeProfile == null) {
       return;
     }
+    // 全局那份应用级偏好顺手落盘（所有设置写路径都收口在这里；内容没变时不写盘）。
+    await AppGlobalSettingsService.syncFrom(_settings);
     await _profileRepository.saveProfiles(_profiles);
     if (_activeProfileId != null) {
       await _profileRepository.setActiveProfileId(_activeProfileId!);
@@ -1164,7 +1197,7 @@ class TimetableProvider with ChangeNotifier {
     );
     if (activeIndex != -1) {
       _courses = List<Course>.from(_profiles[activeIndex].courses);
-      _settings = _profiles[activeIndex].settings;
+      _settings = _settingsFromProfile(_profiles[activeIndex]);
     }
 
     await _profileRepository.saveProfiles(_profiles);
@@ -1524,7 +1557,7 @@ class TimetableProvider with ChangeNotifier {
     );
     if (activeIndex != -1) {
       _courses = List<Course>.from(_profiles[activeIndex].courses);
-      _settings = _profiles[activeIndex].settings;
+      _settings = _settingsFromProfile(_profiles[activeIndex]);
     } else {
       _settings = _settings.copyWith(
         activeTimeSchemeId: scheme.id,

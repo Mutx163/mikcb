@@ -38,7 +38,8 @@ TimetableSettings applySettingsReset(
   const d = _settingsDefaults;
   return switch (scope) {
     SettingsResetScope.courseCard => current.copyWith(
-      courseCardSurfaceStyle: d.courseCardSurfaceStyle,
+      // `courseCardSurfaceStyle`（实体 / 高斯 / 液态那一档）2026-09-22 起不在本页：
+      // 它是材质，已随「应用级偏好全局化」归「外观」作用域（见下）。
       courseCardShowName: d.courseCardShowName,
       courseCardShowTeacher: d.courseCardShowTeacher,
       courseCardShowLocation: d.courseCardShowLocation,
@@ -78,33 +79,15 @@ TimetableSettings applySettingsReset(
       timetablePageBackgroundColor: d.timetablePageBackgroundColor,
       homePageBackdropFollowsWeekPager: d.homePageBackdropFollowsWeekPager,
       homePageBackgroundScope: d.homePageBackgroundScope,
-      homePageHeaderBlurEnabled: d.homePageHeaderBlurEnabled,
-      homePageWeekdayBarBlurEnabled: d.homePageWeekdayBarBlurEnabled,
-      subpageHeaderBlurStyle: d.subpageHeaderBlurStyle,
-      homeBandGlassMaterial: d.homeBandGlassMaterial,
-      // 材质轴：控件 2026-09-19 第五轮起在「外观编辑」页的材质面板里（本页
-      // 玻璃 / 材质区块只留入口行），恢复默认仍归本页作用域——确认文案里的
-      // 「与玻璃质感」就是对这件事的承诺，不随控件搬家而改。
-      frostedGlassMode: d.frostedGlassMode,
-      frostedBlurEnabled: d.frostedBlurEnabled,
-      frostedSheetBlurSigma: d.frostedSheetBlurSigma,
-      frostedSheetTintAlpha: d.frostedSheetTintAlpha,
-      frostedSheetBarrierAlpha: d.frostedSheetBarrierAlpha,
-      // 可空的 tuning 字段必须走 clear 标记：`copyWith` 对可空字段是 `??` 语义，
-      // 传 null 等于「不改」—— 直接写 `liquidGlassTuning: d.liquidGlassTuning`
-      // （d 的那几项都是 null）是**无效**的，「恢复默认」会留下用户那套参数。
-      // 这是 2026-09-21 一并修掉的既有缺陷，柔光 / 渐进同病。
-      clearLiquidGlassTuning: true,
-      clearLiquidGlassTuningDark: true,
-      linkLiquidGlassTuning: d.linkLiquidGlassTuning,
-      darkGlassBoostEnabled: d.darkGlassBoostEnabled,
-      // 卡片那套同病同治：可空字段必须走 clear 标记，传 null 等于「不改」。
-      clearCourseCardGlassTuning: true,
-      liquidGlassDockEnabled: d.liquidGlassDockEnabled,
-      softGlassPreset: d.softGlassPreset,
-      clearSoftGlassTuning: true,
-      progressiveBlurPreset: d.progressiveBlurPreset,
-      clearProgressiveBlurTuning: true,
+      // 材质轴（整体档 / 模糊总开关 / 磨砂滑杆 / 各档调参 / 首页顶栏与子页顶栏材质 /
+      // 底栏作用范围 / 卡片那一档）2026-09-22 起**不在本页**，划给「外观」作用域。
+      // 原因：材质已是设备级设置（所有课表共用一份，真源见
+      // `AppGlobalSettingsService`）—— 留在本页会让「恢复这一张课表的默认」改掉
+      // 别的课表也在用的那套。确认文案同批去掉「与玻璃质感」。
+      //
+      // 两个僵尸开关（`homePageHeaderBlurEnabled` / `homePageWeekdayBarBlurEnabled`）
+      // 也一并摘掉：它们在 `TimetableSettings.fromJson` 里被无条件写回 true，
+      // 在这里重置本来就是空动作。
       weekdayBarFontColorLight: d.weekdayBarFontColorLight,
       weekdayBarFontColorDark: d.weekdayBarFontColorDark,
       weekdayBarAccentColorLight: d.weekdayBarAccentColorLight,
@@ -120,10 +103,11 @@ TimetableSettings applySettingsReset(
       // 恢复默认是单个课表的动作，不该连带清掉别的课表的历史；
       // 镜像也保持原样，否则紧接着做的备份会带上一条空历史。
     ),
-    // 外观页瘦身后的范围：主题模式 / 字体 / 主题种子色。
-    // 材质轴（玻璃模式 / 模糊总开关 / 磨砂滑杆 / 各档调参 / 底栏作用范围）2026-09-19
-    // 随控件一起划给「课表页面」作用域 —— 恢复默认必须只覆盖本页看得见的控件，
-    // 否则用户在本页点「恢复默认」会莫名其妙重置另一页的东西。
+    // 外观页的范围：主题模式 / 字体 / 主题种子色，**加整个材质轴**。
+    //
+    // 材质 2026-09-22 从「课表页面」划过来：它已是设备级设置（所有课表共用一份，
+    // 真源见 `AppGlobalSettingsService`），而它的控件一直在「外观编辑」页 ——
+    // 恢复默认仍守「只覆盖本页看得见的东西」这条：主题与材质都是这页的入口。
     SettingsResetScope.appearance => current.copyWith(
       appThemeMode: d.appThemeMode,
       appFontMode: d.appFontMode,
@@ -131,6 +115,34 @@ TimetableSettings applySettingsReset(
       appTextScale: d.appTextScale,
       foruiTheme: d.foruiTheme,
       themeSeedColor: d.themeSeedColor,
+      // 可空的 tuning 字段必须走 clear 标记：`copyWith` 对可空字段是 `??` 语义，
+      // 传 null 等于「不改」—— 直接写 `liquidGlassTuning: d.liquidGlassTuning`
+      // （d 的那几项都是 null）是**无效**的，「恢复默认」会留下用户那套参数。
+      // 这是 2026-09-21 一并修掉的既有缺陷，柔光 / 渐进同病。
+      clearLiquidGlassTuning: true,
+      clearLiquidGlassTuningDark: true,
+      // 卡片那套同病同治：可空字段必须走 clear 标记，传 null 等于「不改」。
+      clearCourseCardGlassTuning: true,
+      clearSoftGlassTuning: true,
+      clearProgressiveBlurTuning: true,
+      frostedGlassMode: d.frostedGlassMode,
+      frostedBlurEnabled: d.frostedBlurEnabled,
+      frostedSheetBlurSigma: d.frostedSheetBlurSigma,
+      frostedSheetTintAlpha: d.frostedSheetTintAlpha,
+      frostedSheetBarrierAlpha: d.frostedSheetBarrierAlpha,
+      // `liquidGlassPreset` 此前不在任何作用域里，从没被「恢复默认」覆盖过 ——
+      // 随本次搬家一并补上，否则预设档名与旋钮会对不上（旋钮清了、档名还停在
+      // 「自定义」，界面会显示一个不该有的档）。
+      liquidGlassPreset: d.liquidGlassPreset,
+      linkLiquidGlassTuning: d.linkLiquidGlassTuning,
+      darkGlassBoostEnabled: d.darkGlassBoostEnabled,
+      liquidGlassDockEnabled: d.liquidGlassDockEnabled,
+      courseCardSurfaceStyle: d.courseCardSurfaceStyle,
+      softGlassPreset: d.softGlassPreset,
+      progressiveBlurPreset: d.progressiveBlurPreset,
+      subpageHeaderBlurStyle: d.subpageHeaderBlurStyle,
+      homeBandGlassMaterial: d.homeBandGlassMaterial,
+      homePageTimeColumnBlurEnabled: d.homePageTimeColumnBlurEnabled,
     ),
     // 已删除 UI 的字段（设置 Tab、右上角菜单形态、内容避让布局、
     // 日/周布尔开关——已被 glassDockActions 取代）不纳入任何 scope。
@@ -143,6 +155,11 @@ TimetableSettings applySettingsReset(
       glassDockButtonEntryId: d.glassDockButtonEntryId,
       clearGlassDockButtonIconName: true,
       homeTitleStyle: d.homeTitleStyle,
+      // ⚠️ 菜单形态与菜单内容（`homeMenuStyle` / `homeGridMenuActions`）**不纳入**：
+      // 它俩确实就编在本页上、确实一直缺恢复默认，但 `copyWith` 会把空表过一遍
+      // `HomeGridMenu.normalize`，把 `[]` 变成 `['settings']` —— 直接纳入会得到
+      // 一张只有「课表设置」一格的菜单，而不是出厂那套八格。要修得先给
+      // `copyWith` 加一个「清空」标记，那是另一件事，不在本次范围。
     ),
     SettingsResetScope.homeWidget => current.copyWith(
       widgetBackgroundStyle: d.widgetBackgroundStyle,

@@ -10005,10 +10005,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBodyTimetablePage =>
-      '将把课表页面的密度、回到当前周按钮、背景（含清除壁纸）与玻璃质感恢复为默认值。';
+      '将把课表页面的密度、回到当前周按钮、背景（含清除壁纸）恢复为默认值。';
 
   @override
-  String get settingsResetConfirmBodyAppearance => '将把主题模式、字体与主题色恢复为默认值。';
+  String get settingsResetConfirmBodyAppearance => '将把主题模式、字体、主题色与玻璃质感恢复为默认值。';
 
   @override
   String get settingsResetConfirmBodyHomeWidget => '将把桌面小组件的显示项与外观恢复为默认值。';
@@ -21159,10 +21159,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get settingsResetConfirmBodyTimetablePage =>
-      '將把課表頁面的密度、回到本週按鈕、背景（含清除桌布）與玻璃質感恢復為預設值。';
+      '將把課表頁面的密度、回到本週按鈕、背景（含清除桌布）恢復為預設值。';
 
   @override
-  String get settingsResetConfirmBodyAppearance => '將把主題模式、字體與主題色恢復為預設值。';
+  String get settingsResetConfirmBodyAppearance => '將把主題模式、字體、主題色與玻璃質感恢復為預設值。';
 
   @override
   String get settingsResetConfirmBodyHomeWidget => '將把桌面小組件的顯示項目與外觀恢復為預設值。';
@@ -32313,10 +32313,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settingsResetConfirmBodyTimetablePage =>
-      '將把課表頁面的密度、回到本週按鈕、背景（含清除桌布）與玻璃質感恢復為預設值。';
+      '將把課表頁面的密度、回到本週按鈕、背景（含清除桌布）恢復為預設值。';
 
   @override
-  String get settingsResetConfirmBodyAppearance => '將把主題模式、字體與主題色恢復為預設值。';
+  String get settingsResetConfirmBodyAppearance => '將把主題模式、字體、主題色與玻璃質感恢復為預設值。';
 
   @override
   String get settingsResetConfirmBodyHomeWidget => '將把桌面小工具的顯示項目與外觀恢復為預設值。';

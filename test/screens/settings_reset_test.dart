@@ -1,9 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
+import 'package:university_timetable/models/progressive_blur_tuning.dart';
+import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
+import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
 
 /// 「恢复默认」必须只动本页字段。这些用例守的是两件事：
@@ -23,6 +26,8 @@ void main() {
       timetableConflictCourseOpacity: 0.3,
       showConflictBadgeOnTimetable: false,
       courseCardTitleColorLight: '#111111',
+      // 卡片材质那一档（实体 / 高斯 / 液态）2026-09-22 属于「外观」作用域。
+      courseCardSurfaceStyle: CourseCardSurfaceStyle.gaussian,
       // 课表页面
       timetableShowNonCurrentWeekCourses: true,
       sectionHeight: 90,
@@ -31,8 +36,8 @@ void main() {
       timetableCourseCardGap: 3,
       timetablePageBackgroundColor: '#ABCDEF',
       homePageBackgroundScope: 15,
-      homePageHeaderBlurEnabled: true,
       subpageHeaderBlurStyle: HeaderBlurStyle.gaussian,
+      // 注意 `homeBandGlassMaterial` 的默认值就是 'liquid'，写 'liquid' 不算脏。
       homeBandGlassMaterial: 'liquid',
       weekdayBarFontColorLight: '#222222',
       homePageWallpaperPath: '/tmp/wallpaper.png',
@@ -40,15 +45,20 @@ void main() {
         WallpaperHistoryEntry(key: '/tmp/wallpaper.png'),
         WallpaperHistoryEntry(key: '/tmp/wallpaper_2.png'),
       ],
-      // 外观
+      // 外观（主题 + 材质轴：材质是设备级的，归本作用域）
       appThemeMode: AppThemeMode.dark,
       appFontMode: AppFontMode.serif,
       appFontWeight: 700,
       appTextScale: 1.3,
       themeSeedColor: '#FF0000',
+      frostedGlassMode: FrostedGlassMode.liquidGlass,
       frostedBlurEnabled: false,
       frostedSheetBlurSigma: 20,
       liquidGlassDockEnabled: false,
+      liquidGlassPreset: LiquidGlassPreset.dense,
+      softGlassPreset: SoftGlassPreset.dense,
+      progressiveBlurPreset: ProgressiveBlurPreset.dense,
+      homePageTimeColumnBlurEnabled: true,
       // 液态玻璃的浅/深成对（2026-09-21）：非默认值，否则下面的断言是白过的。
       liquidGlassTuning: LiquidGlassTuning.presetDense,
       liquidGlassTuningDark: LiquidGlassTuning.presetClear,
@@ -57,6 +67,8 @@ void main() {
       // 首页与导航（自外观页拆出的独立恢复作用域）
       homeNavigationForm: HomeNavigationForm.glassDock,
       homeTitleStyle: HomeTitleStyle.brand,
+      homeMenuStyle: HomeMenuStyle.grid,
+      homeGridMenuActions: const ['exams', 'weather'],
       glassDockActions: const ['week', 'settings', 'statistics'],
       glassDockShowAddButton: true,
       glassDockButtonEntryId: 'exams',
@@ -137,6 +149,11 @@ void main() {
     );
     expect(result.appThemeMode, dirty.appThemeMode);
     expect(result.widgetShowLocation, dirty.widgetShowLocation);
+    expect(
+      result.courseCardSurfaceStyle,
+      dirty.courseCardSurfaceStyle,
+      reason: '卡片材质那一档属于「外观」作用域，课卡页不许碰它',
+    );
     // 其他页的恢复默认不许碰壁纸历史。
     expect(result.wallpaperHistory, dirty.wallpaperHistory);
     expectUntouchedEssentials(result);
@@ -165,27 +182,6 @@ void main() {
       defaults.timetablePageBackgroundColor,
     );
     expect(result.homePageBackgroundScope, defaults.homePageBackgroundScope);
-    expect(
-      result.homePageHeaderBlurEnabled,
-      defaults.homePageHeaderBlurEnabled,
-    );
-    expect(result.subpageHeaderBlurStyle, defaults.subpageHeaderBlurStyle);
-    expect(result.homeBandGlassMaterial, defaults.homeBandGlassMaterial);
-    // 材质轴（玻璃模式 / 模糊总开关 / 磨砂滑杆 / 底栏作用范围）：控件在本页的
-    // 「玻璃 / 材质」区块里，恢复默认跟着本页一起走。
-    expect(result.frostedGlassMode, defaults.frostedGlassMode);
-    expect(result.frostedBlurEnabled, defaults.frostedBlurEnabled);
-    expect(result.frostedSheetBlurSigma, defaults.frostedSheetBlurSigma);
-    expect(result.liquidGlassDockEnabled, defaults.liquidGlassDockEnabled);
-    // 浅/深成对：三个新字段也必须跟着本页回默认，否则「恢复默认」会留下一套
-    // 用户以为已经清掉的深色档与开关。
-    expect(result.liquidGlassTuning, defaults.liquidGlassTuning);
-    expect(result.liquidGlassTuningDark, defaults.liquidGlassTuningDark);
-    expect(result.linkLiquidGlassTuning, defaults.linkLiquidGlassTuning);
-    expect(result.darkGlassBoostEnabled, defaults.darkGlassBoostEnabled);
-    // 柔光 / 渐进的 tuning 与液态同类：可空字段，恢复默认必须真的清掉。
-    expect(result.softGlassTuning, defaults.softGlassTuning);
-    expect(result.progressiveBlurTuning, defaults.progressiveBlurTuning);
     expect(result.weekdayBarFontColorLight, defaults.weekdayBarFontColorLight);
     // 壁纸文件路径必须一并清掉，否则「恢复默认」后背景还在。
     expect(result.homePageWallpaperPath, isNull);
@@ -197,10 +193,26 @@ void main() {
     final dirty = dirtySettings();
     expect(result.courseCardFontSize, dirty.courseCardFontSize);
     expect(result.appThemeMode, dirty.appThemeMode);
+    // ⚠️ 材质轴 2026-09-22 起**不归本页**：它是设备级设置（所有课表共用一份，
+    // 真源见 `AppGlobalSettingsService`），本页点恢复默认不该改掉别的课表也在用的
+    // 那套材质。控件也一直不在本页（在「外观编辑」的材质面板里）。
+    expect(result.subpageHeaderBlurStyle, dirty.subpageHeaderBlurStyle);
+    expect(result.homeBandGlassMaterial, dirty.homeBandGlassMaterial);
+    expect(result.frostedGlassMode, dirty.frostedGlassMode);
+    expect(result.frostedBlurEnabled, dirty.frostedBlurEnabled);
+    expect(result.frostedSheetBlurSigma, dirty.frostedSheetBlurSigma);
+    expect(result.liquidGlassDockEnabled, dirty.liquidGlassDockEnabled);
+    expect(result.liquidGlassTuning, dirty.liquidGlassTuning);
+    expect(result.liquidGlassTuningDark, dirty.liquidGlassTuningDark);
+    expect(result.linkLiquidGlassTuning, dirty.linkLiquidGlassTuning);
+    expect(result.darkGlassBoostEnabled, dirty.darkGlassBoostEnabled);
+    expect(result.softGlassTuning, dirty.softGlassTuning);
+    expect(result.progressiveBlurTuning, dirty.progressiveBlurTuning);
+    expect(result.courseCardSurfaceStyle, dirty.courseCardSurfaceStyle);
     expectUntouchedEssentials(result);
   });
 
-  test('外观恢复默认只重置应用级外观', () {
+  test('外观恢复默认重置应用级外观与整个材质轴', () {
     final defaults = TimetableSettings.defaults();
     final result = applySettingsReset(
       dirtySettings(),
@@ -212,11 +224,30 @@ void main() {
     expect(result.appFontWeight, defaults.appFontWeight);
     expect(result.appTextScale, defaults.appTextScale);
     expect(result.themeSeedColor, defaults.themeSeedColor);
-    // 材质轴不再由本 scope 恢复：控件 2026-09-19 搬到「课表页面」，
-    // 「恢复默认只覆盖本页看得见的控件」这条规矩跟着走（见下面那条用例）。
-    expect(result.frostedBlurEnabled, dirtySettings().frostedBlurEnabled);
-    expect(result.frostedSheetBlurSigma, dirtySettings().frostedSheetBlurSigma);
-    expect(result.liquidGlassDockEnabled, isFalse);
+
+    // 材质轴 2026-09-22 起归本作用域（控件在「外观编辑」的材质面板里，本页是它的
+    // 入口；且材质是设备级设置，得有个能回到出厂的口子）。
+    expect(result.frostedGlassMode, defaults.frostedGlassMode);
+    expect(result.frostedBlurEnabled, defaults.frostedBlurEnabled);
+    expect(result.frostedSheetBlurSigma, defaults.frostedSheetBlurSigma);
+    expect(result.liquidGlassDockEnabled, defaults.liquidGlassDockEnabled);
+    expect(result.liquidGlassPreset, defaults.liquidGlassPreset);
+    expect(result.softGlassPreset, defaults.softGlassPreset);
+    expect(result.progressiveBlurPreset, defaults.progressiveBlurPreset);
+    expect(
+      result.homePageTimeColumnBlurEnabled,
+      defaults.homePageTimeColumnBlurEnabled,
+    );
+    expect(result.courseCardSurfaceStyle, defaults.courseCardSurfaceStyle);
+    expect(result.subpageHeaderBlurStyle, defaults.subpageHeaderBlurStyle);
+    expect(result.homeBandGlassMaterial, defaults.homeBandGlassMaterial);
+    // 浅/深成对：可空字段，恢复默认必须真的清掉（靠 clear 标记而非传 null）。
+    expect(result.liquidGlassTuning, defaults.liquidGlassTuning);
+    expect(result.liquidGlassTuningDark, defaults.liquidGlassTuningDark);
+    expect(result.linkLiquidGlassTuning, defaults.linkLiquidGlassTuning);
+    expect(result.darkGlassBoostEnabled, defaults.darkGlassBoostEnabled);
+    expect(result.softGlassTuning, defaults.softGlassTuning);
+    expect(result.progressiveBlurTuning, defaults.progressiveBlurTuning);
 
     // 首页与导航的字段保持「脏」值：导航形态已拆到独立 scope。
     final dirty = dirtySettings();
@@ -225,6 +256,13 @@ void main() {
     expect(result.widgetShowCountdown, dirty.widgetShowCountdown);
     expect(result.homeNavigationForm, dirty.homeNavigationForm);
     expect(result.homeTitleStyle, dirty.homeTitleStyle);
+    // 课表页面自己的字段也不许被本页连带重置。
+    expect(result.weekdayBarFontColorLight, dirty.weekdayBarFontColorLight);
+    expect(
+      result.timetablePageBackgroundColor,
+      dirty.timetablePageBackgroundColor,
+    );
+    expect(result.homePageWallpaperPath, dirty.homePageWallpaperPath);
     expectUntouchedEssentials(result);
   });
 
@@ -244,6 +282,16 @@ void main() {
 
     // 外观字段不被导航页连带重置。
     final dirty = dirtySettings();
+    expect(
+      result.homeMenuStyle,
+      dirty.homeMenuStyle,
+      reason: '菜单形态故意不在本作用域（见 applySettingsReset 的注释）',
+    );
+    expect(
+      result.homeGridMenuActions,
+      dirty.homeGridMenuActions,
+      reason: '菜单内容同上：纳入会得到只有一格的菜单',
+    );
     expect(result.appThemeMode, dirty.appThemeMode);
     expect(result.appFontWeight, dirty.appFontWeight);
     expect(result.appTextScale, dirty.appTextScale);

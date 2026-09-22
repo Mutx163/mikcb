@@ -67,18 +67,16 @@ void main() {
       );
     });
 
-    test('「课表页面」恢复默认覆盖底栏开关（材质轴 2026-09-19 划给该作用域）', () {
+    test('「外观」恢复默认覆盖底栏开关（材质轴 2026-09-22 起归该作用域）', () {
       final dirty = TimetableSettings.defaults().copyWith(
         liquidGlassDockEnabled: false,
       );
-      final reset = applySettingsReset(
-        dirty,
-        SettingsResetScope.timetablePage,
-      );
+      final reset = applySettingsReset(dirty, SettingsResetScope.appearance);
       expect(reset.liquidGlassDockEnabled, isTrue);
-      // 反过来：外观作用域不再碰材质轴（控件已经不在那一页）。
+      // 反过来：「课表页面」不再碰材质轴 —— 材质已是设备级设置（所有课表共用一份），
+      // 在单张课表的恢复默认里重置它，会改掉别的课表也在用的那套。
       expect(
-        applySettingsReset(dirty, SettingsResetScope.appearance)
+        applySettingsReset(dirty, SettingsResetScope.timetablePage)
             .liquidGlassDockEnabled,
         isFalse,
       );

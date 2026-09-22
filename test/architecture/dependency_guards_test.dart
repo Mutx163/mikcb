@@ -55,7 +55,12 @@ void main() {
     // 4489→4499: 「假期课被过滤」类 UI 断言需要一份不触发桌面卡片/超级岛重排的
     // 种数据入口，Provider 侧新增 @visibleForTesting 的 seedHolidayDataForTesting
     // （+10，只赋值 + notifyListeners，无业务逻辑），按测试约定同步真实值。
-    const baselineLines = 4499;
+    // 4499→4532: 应用级偏好（导航 / 材质 / 主题外观 / 通用）改设备级全局：
+    // 迁移、覆盖、抽取、导入重推全部下沉 AppGlobalSettingsService，Provider 侧只有
+    // 三个「读」处改走 _settingsFromProfile（叠全局那份）、一处落盘口加 syncFrom、
+    // 启动与导入各一次调用 —— +33 全是边界接线与注释，无业务逻辑。真源依旧是
+    // service，本类未新增任何状态机。
+    const baselineLines = 4532;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
