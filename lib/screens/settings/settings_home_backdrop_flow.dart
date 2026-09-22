@@ -327,7 +327,10 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   }) {
     final fileName = path == null || path.isEmpty
         ? l10n.homePageImageNotSelected
-        : path.split(Platform.pathSeparator).last;
+        // 两种分隔符都切，而不是 `Platform.pathSeparator`：这条路径可能是**别的
+        // 平台**存下来的（设置能跨设备同步，本仓也有 linux / macos / windows
+        // 目标），只按当前系统的分隔符切，整条路径会被当成文件名显示出来。
+        : path.split(RegExp(r'[\\/]')).last;
     final hasWallpaper = path != null && path.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
