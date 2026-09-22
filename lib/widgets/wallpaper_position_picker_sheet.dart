@@ -539,16 +539,19 @@ class _WallpaperPositionPickerPageState
 
   /// 悬浮玻璃按钮层（顶部操作栏 + 底部「换壁纸」）。
   ///
-  /// 三个约束都不能少：
+  /// 两个约束都不能少：
   ///
   /// 1. 画在 `HyperosGlassBackdropHost` 的捕获子树**之外** —— 上游要求玻璃不能被
   ///    自己的采样捕获，否则会把上一帧的合成结果采进去（自我叠加）。
   /// 2. 显式用 [HyperosGlassBackdropScope] 钉在本页采样源上：这一层里将来只要有
   ///    吃快照的玻璃面，就不能靠全局注册表的"栈顶"取源（被压住的路由仍然挂载，
   ///    栈顶会指向别的屏，见 [_glass]）。
-  /// 3. 外面套 [LiquidGlassTransitionRepaint]：这四颗按钮的折射层按**屏幕绝对坐标**
-  ///    摆形状，而本页进场是共享轴侧滑 —— 转场外壳把整页包进了重绘边界（滑入时整页
-  ///    像素复用），不逐帧重画就会让形状停在旧坐标上、玻璃整块偏在一侧。
+  ///
+  /// 这里**曾**额外套一层 [LiquidGlassTransitionRepaint]：这四颗按钮的折射层按**屏幕
+  /// 绝对坐标**摆形状，而本页进场是共享轴侧滑 —— 转场外壳把整页包进了重绘边界（滑入时
+  /// 整页像素复用），不逐帧重画就会让形状停在旧坐标上、玻璃整块偏在一侧。
+  /// 那层包装后来**重复了**：`LiquidGlassSurface` 自己默认就套同一个驱动（见其 build），
+  /// 于是撤掉这里的这一层 —— 机制本体仍在每颗玻璃上生效。
   ///
   /// 本页自己的四颗按钮走**实时**折射（锁标准档），不吃快照，所以上面第 2 条对它们
   /// 是空转；留着是这一层玻璃的取源规矩。
@@ -558,89 +561,87 @@ class _WallpaperPositionPickerPageState
     final l10n = AppLocalizations.of(context)!;
     return HyperosGlassBackdropScope(
       controller: _glass,
-      child: LiquidGlassTransitionRepaint(
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // 顶部操作栏悬浮在壁纸上，位于状态栏下方。
-            // 必须用 Positioned 固定到顶部：StackFit.expand 会把非定位
-            // 子节点拉满整个 Stack 高度，导致内部 Row 垂直居中到屏幕中间。
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: [
-                      _HyperosHeaderTextButton(
-                        label: l10n.wallpaperPositionPickerExit,
-                        onPressed: _exit,
-                        isCompact: true,
-                        foregroundColor: ink,
-                        wash: wash,
-                      ),
-                      // 标题用 Expanded 独占两按钮之间的全部剩余宽度：
-                      // 之前是 [Spacer][Flexible][Spacer] 三者均分剩余空间，
-                      // 每份只有约 70-80px，「调整壁纸显示位置」8 个字放不下，
-                      // 被 ellipsis 截成「调整壁纸...」。Expanded 让标题拿到
-                      // 全部余量后仍居中（左右按钮等宽），极端字号才兜底截断。
-                      Expanded(
-                        child: Text(
-                          l10n.wallpaperPositionPickerTitle,
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: ink,
-                          ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 顶部操作栏悬浮在壁纸上，位于状态栏下方。
+          // 必须用 Positioned 固定到顶部：StackFit.expand 会把非定位
+          // 子节点拉满整个 Stack 高度，导致内部 Row 垂直居中到屏幕中间。
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    _HyperosHeaderTextButton(
+                      label: l10n.wallpaperPositionPickerExit,
+                      onPressed: _exit,
+                      isCompact: true,
+                      foregroundColor: ink,
+                      wash: wash,
+                    ),
+                    // 标题用 Expanded 独占两按钮之间的全部剩余宽度：
+                    // 之前是 [Spacer][Flexible][Spacer] 三者均分剩余空间，
+                    // 每份只有约 70-80px，「调整壁纸显示位置」8 个字放不下，
+                    // 被 ellipsis 截成「调整壁纸...」。Expanded 让标题拿到
+                    // 全部余量后仍居中（左右按钮等宽），极端字号才兜底截断。
+                    Expanded(
+                      child: Text(
+                        l10n.wallpaperPositionPickerTitle,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: ink,
                         ),
                       ),
-                      _HyperosHeaderTextButton(
-                        label: l10n.wallpaperPositionPickerDone,
-                        onPressed: _confirm,
-                        isCompact: true,
-                        foregroundColor: ink,
-                        wash: wash,
-                      ),
-                    ],
-                  ),
+                    ),
+                    _HyperosHeaderTextButton(
+                      label: l10n.wallpaperPositionPickerDone,
+                      onPressed: _confirm,
+                      isCompact: true,
+                      foregroundColor: ink,
+                      wash: wash,
+                    ),
+                  ],
                 ),
               ),
             ),
-            // 底部一排：「重置」＋「换壁纸」（这颗页面没有换图能力时只留重置）。
-            //
-            // 「重置」把**位置与缩放一起**归位（用户 2026-09-20 要的：加了双指缩放
-            // 之后得有个一键回到默认取景的出口）。文案 key 历史上叫
-            // `...ResetTooltip`（当年是个没接上的 tooltip），现在是这颗按钮的标签。
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 24 + MediaQuery.paddingOf(context).bottom,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _HyperosHeaderTextButton(
-                    label: l10n.wallpaperPositionPickerResetTooltip,
-                    onPressed: _resetFraming,
-                    foregroundColor: ink,
-                    wash: wash,
-                  ),
-                  if (widget.onPickNewImage != null) ...[
-                    const SizedBox(width: 12),
-                    _buildSwitchWallpaperButton(context, ink: ink, wash: wash),
-                  ],
+          ),
+          // 底部一排：「重置」＋「换壁纸」（这颗页面没有换图能力时只留重置）。
+          //
+          // 「重置」把**位置与缩放一起**归位（用户 2026-09-20 要的：加了双指缩放
+          // 之后得有个一键回到默认取景的出口）。文案 key 历史上叫
+          // `...ResetTooltip`（当年是个没接上的 tooltip），现在是这颗按钮的标签。
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 24 + MediaQuery.paddingOf(context).bottom,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _HyperosHeaderTextButton(
+                  label: l10n.wallpaperPositionPickerResetTooltip,
+                  onPressed: _resetFraming,
+                  foregroundColor: ink,
+                  wash: wash,
+                ),
+                if (widget.onPickNewImage != null) ...[
+                  const SizedBox(width: 12),
+                  _buildSwitchWallpaperButton(context, ink: ink, wash: wash),
                 ],
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

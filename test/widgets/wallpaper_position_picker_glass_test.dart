@@ -156,6 +156,12 @@ void main() {
     //
     // 所以正确口径是：**照旧画，但每帧按当前位置重算**。这条用例把两件事一起钉住 ——
     // 材质一路不变（每一步都仍是四颗锁档液态玻璃），以及驱动节点确实罩着这四颗。
+    //
+    // 驱动节点**数几个**不钉：本仓后来让 `LiquidGlassSurface` 自己默认套一层
+    // [LiquidGlassTransitionRepaint]（见其 `build`），于是本页从「外层一个、四颗
+    // 按钮都挂在它下面」变成「四颗各带一个」。本页原来额外套的那层因此撤掉了 ——
+    // 它与每颗玻璃自带的那层重复。该钉的口径是「四颗玻璃各自都被驱动罩着」，
+    // 数量随页面玻璃数走，不该跟着变。
     await pumpPicker(tester, settle: false);
 
     final picker = find.byType(WallpaperPositionPickerPage);
@@ -166,8 +172,8 @@ void main() {
     );
     expect(
       driver,
-      findsOneWidget,
-      reason: '按钮层必须由转场重绘驱动罩着：形状按屏幕坐标算，不逐帧重画就会偏在一侧',
+      findsNWidgets(4),
+      reason: '四颗按钮玻璃各自都要有转场重绘驱动：形状按屏幕坐标算，不逐帧重画就会偏在一侧',
     );
 
     // 转场途中每一步采样：材质必须一帧都不变（不许磨砂 ↔ 玻璃来回切）。
@@ -180,12 +186,19 @@ void main() {
       await tester.pump(const Duration(milliseconds: 30));
     }
 
-    // 四颗玻璃都必须在驱动节点子树里（罩错层 = 重画的对象不是它们）。
-    expect(
-      find.descendant(of: driver, matching: find.byType(LiquidGlassSurface)),
-      findsNWidgets(4),
-      reason: '有一颗玻璃不在驱动节点里，转场期间它不会按新坐标重算',
-    );
+    // 四颗玻璃各自都要带一层驱动节点（玻璃是父、驱动是子 ——
+    // `LiquidGlassSurface.build` 返回的就是「驱动包着自己的绘制内容」）。
+    // 罩错层 = 重画的不是它们，转场期间形状会停在旧坐标。
+    for (final element in pickerSurfaces().evaluate()) {
+      expect(
+        find.descendant(
+          of: find.byElementPredicate((candidate) => candidate == element),
+          matching: find.byType(LiquidGlassTransitionRepaint),
+        ),
+        findsOneWidget,
+        reason: '有一颗玻璃自己没带驱动节点，转场期间它不会按新坐标重算',
+      );
+    }
 
     // 走完转场：材质依旧不变，四颗都还是锁档液态玻璃。
     for (var i = 0; i < 20; i++) {
