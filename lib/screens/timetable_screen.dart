@@ -4409,40 +4409,35 @@ class _TimetableScreenState extends State<TimetableScreen>
     final hasBackdrop = hasHomePageBackdrop(settings);
     final backdropBlurOn =
         hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context);
-    // 顶栏/信息栏【真的还在走玻璃】时，摘要卡与顶部铬玻璃带同材质、同墨色
-    // 极性（顶栏材质选「实体」时这条为 false —— 那条带是不透明实心条，
-    // 见 homePageHasAnyChromeBlur）。
-    final matchesChromeBand = homePageHasAnyChromeBlur(
+    final courseCardStyle = dayViewContentCardSurfaceStyle(
       settings,
-      hasBackdrop: hasBackdrop,
+      backdropBlurOn: backdropBlurOn,
     );
-    final courseCardStyle = effectiveCourseCardSurfaceStyle(
-      settings,
-      gaussianBlurAvailable: backdropBlurOn,
-    );
-    // 摘要卡是**内容卡**，材质规则先跟课程卡走：
-    // - 课程卡是实底（全局「实体卡片」档 / 无壁纸）：摘要卡也必须实底。
-    //   否则会出现「课程卡实心、顶上的日期卡还透」的分裂（真机反馈）。
-    // - 课程卡是高斯档：CourseSurface 的高斯路径只有 0.42 的弱中性 tint，
-    //   深色壁纸会直接透出，让「回到今天 / 关闭 / 日期」整张卡读作发黑的
-    //   玻璃；这时才改用铬玻璃亮磨砂（wash 与弹窗同级，浅色主题约白色
-    //   0.68），保证卡片始终偏亮色。
-    // - 课程卡是玻璃档且顶栏也是玻璃：与顶栏同款，两侧读作一体。
-    final courseCardIsSolid = courseCardStyle == CourseCardSurfaceStyle.solid;
-    final useChromeGlass =
-        (!courseCardIsSolid && matchesChromeBand) ||
-        (backdropBlurOn && courseCardStyle.isGlass);
-    // Ink: 走壁纸采样玻璃时才按壁纸亮度自动黑白；否则卡面是主题底色（或亮
-    // 磨砂）的实底，墨色必须跟主题走 —— 按原始壁纸亮度翻白会让白墨落在
-    // 亮色卡面上不可读。判据是**卡实际用的材质**，不是顶栏状态。
+    // 摘要卡跟**课程卡**同材质（用户口径 2026-09-22：「日视图顶部的日期卡片……
+    // 也要跟日视图的课程卡片是一样的材质，选什么就是什么，不要第二种」）：
+    // 材质一律由 CourseSurface 按 effectiveCourseCardSurfaceStyle 出 —— 与下方
+    // 议程卡走**同一条路径、同一档、同一份预糊位图、同一套调参**。
+    //
+    // 这里曾经有一条例外分支（`chromeGlass` 亮磨砂替身：跟顶栏铬玻璃带同款）：
+    // 课程卡是玻璃档时给摘要卡贴一块固定的亮色 wash，读作"顶栏同款"而不是
+    // "课程卡同款"——用户实测两张卡材质不一致。例外已删除，
+    // `homePageHasAnyChromeBlur` 也不再参与这张卡的材质判定。
+    //
+    // 实体档那条老口径自然仍成立：无壁纸 / 全局模糊关掉时
+    // [effectiveCourseCardSurfaceStyle] 就回落实体，摘要卡跟着实底，不会出现
+    // 「课程卡实心、顶上的日期卡还透」。
+    // Ink: 卡面**真的把壁纸透出来**时才按壁纸亮度自动黑白；否则卡面是主题底色
+    // 的实底，墨色必须跟主题走 —— 按原始壁纸亮度翻白会让白墨落在亮色卡面上
+    // 不可读。判据是**卡实际用的材质**，不是顶栏状态。
     //
     // 亮度来源必须与**它上面那条带**同源（`_weekdayInkLuminance`，信息栏与
     // 顶栏带用的就是它）：这张卡的墨色本来就是信息栏那套
-    //（configuredHex 取的就是 weekdayBarFontColor*），材质也跟带同款。
+    //（configuredHex 取的就是 weekdayBarFontColor*）。
     // 早先这里用 body 带（整屏下半部，常含壁纸的深色区），于是出现"带是
     // 浅色、卡片也是亮卡，却按深色壁纸翻成白墨"——白字落在亮卡上读不出来
     // （真机反馈：高斯档下日课表那张日期卡）。
-    final summaryInk = useChromeGlass
+    final glassOverWallpaper = backdropBlurOn && courseCardStyle.isGlass;
+    final summaryInk = glassOverWallpaper
         ? homePageOverWallpaperInk(
             configuredHex: isDark
                 ? settings.weekdayBarFontColorDark
@@ -4462,15 +4457,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     final countBadgeTextColor = summaryMutedInk;
     return _dayAgendaSurface(
       key: key,
-      settings:
-          useChromeGlass ||
-              settings.courseCardSurfaceStyle == CourseCardSurfaceStyle.solid
-          ? settings
-          // 无壁纸/模糊被关掉时高斯档没有可用的磨砂来源，退化为实心亮卡。
-          : settings.copyWith(
-              courseCardSurfaceStyle: CourseCardSurfaceStyle.solid,
-            ),
-      chromeGlass: useChromeGlass,
+      // 材质全部交给 CourseSurface 按 effectiveCourseCardSurfaceStyle 判
+      //（无壁纸 / 全局模糊关掉时它自己回落实体），这里不再覆盖卡片档。
+      settings: settings,
       // Neutral wash (not a course hue); CourseSurface owns glass vs solid.
       color: foruiTheme.colors.background,
       gradient: LinearGradient(
@@ -4479,20 +4468,15 @@ class _TimetableScreenState extends State<TimetableScreen>
       // 摘要卡没有课程色填充可依托：无壁纸（纯色页面）时填充色与页面底色
       // 相同，无边框无阴影会整张隐形（下方课程卡靠 hue + outerShadow 保持
       // 边界）。补一套中性细描边 + 柔和投影，几何参数与 agenda 卡片一致，
-      // 让两种卡片在纯白底上读作同一个卡片系统。chromeGlass 分支自绘壁纸
-      // 采样材质，忽略这两个参数，不受影响。
-      border: useChromeGlass
-          ? null
-          : Border.all(color: summaryInk.withValues(alpha: 0.12)),
-      shadow: useChromeGlass
-          ? null
-          : [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
+      // 让两种卡片在纯白底上读作同一个卡片系统。
+      border: Border.all(color: summaryInk.withValues(alpha: 0.12)),
+      shadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.08),
+          blurRadius: 16,
+          offset: const Offset(0, 4),
+        ),
+      ],
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
         child: Column(
@@ -5131,7 +5115,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     double radius = _dayViewCardRadius,
     VoidCallback? onTap,
     double opacityScale = 1,
-    bool chromeGlass = false,
   }) {
     final content = onTap == null
         ? child
@@ -5143,45 +5126,16 @@ class _TimetableScreenState extends State<TimetableScreen>
               child: child,
             ),
           );
-    if (chromeGlass) {
-      // Chrome-band LOOK, course-card IMPLEMENTATION: the cached pre-blurred
-      // wallpaper sample under the chrome wash colour — a plain drawImageRect
-      // + ColoredBox, exactly like the agenda cards below. A live
-      // BackdropFilter / liquid glass here had to be swapped out around every
-      // pager swipe (per-frame backdrop resampling on the hot path) and the
-      // material hop flashed on each swipe; one permanent material can't
-      // flicker, and it stays opacity-safe through the open/close ramp.
-      return ClipRRect(
-        key: key,
-        borderRadius: BorderRadius.circular(radius),
-        child: Stack(
-          fit: StackFit.passthrough,
-          children: [
-            const Positioned.fill(child: PreblurredWallpaperAlignedFill()),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: ColoredBox(
-                  // 与首页 chrome 玻璃带同观感：液态玻璃下只有玻璃本色，
-                  // 不再叠加可读性 scrim。
-                  color: HomePageChromeGlassFill.standInWashColor(context),
-                ),
-              ),
-            ),
-            content,
-          ],
-        ),
-      );
-    }
     return CourseSurface(
       key: key,
       // Effective style: without a wallpaper or without the blur pipeline
       // (global solid / degraded) the gaussian look has no source to sample,
-      // so every agenda card falls back to solid.
-      style: effectiveCourseCardSurfaceStyle(
+      // so every agenda card falls back to solid. 与顶部摘要卡**同源**
+      // （[dayViewContentCardSurfaceStyle]）：日视图两种内容卡一个材质口径，
+      // 见那里的说明。
+      style: dayViewContentCardSurfaceStyle(
         settings,
-        gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
-          context,
-        ),
+        backdropBlurOn: HyperosBlurredHeader.backdropBlurEnabled(context),
       ),
       color: color,
       borderRadius: radius,

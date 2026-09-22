@@ -59,9 +59,11 @@ Future<Positioned> bandGlassPositioned(
 
 /// 「顶栏/信息栏到底还算不算在走玻璃」的判定。
 ///
-/// 它决定**下游**要不要跟着做玻璃：日课表顶上的摘要卡（日期 + 关闭叉）会据此
-/// 决定自己与顶栏同款，还是跟课程卡一样走实底。判错的表现是真机上「课程卡
-/// 是实心、上面那张日期卡还是透的」。
+/// 它决定首页那条连续的顶栏玻璃带要不要自绘磨砂。判错的表现是真机上「顶栏是
+/// 实心条、下面那层还透明」的分裂。
+///
+/// ⚠️ 2026-09-22 起**日课表顶上的摘要卡不再跟这条判据**：它整张改跟课程卡同材质
+/// （`dayViewContentCardSurfaceStyle`），与本函数无关。
 void main() {
   TimetableSettings settingsWith({
     required String bandMaterial,

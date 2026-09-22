@@ -260,6 +260,25 @@ CourseCardSurfaceStyle effectiveCourseCardSurfaceStyle(
   return settings.courseCardSurfaceStyle;
 }
 
+/// 日视图**内容卡**（顶部摘要卡与议程卡）该用的材质档。
+///
+/// 就是课程卡那一档：输入只有卡片配置与「模糊管线当前可用吗」，**不看**顶栏 /
+/// 信息栏 / 弹窗的材质。摘要卡曾经有一条例外（顶栏是玻璃时改成跟顶栏同款），
+/// 2026-09-22 按用户口径删掉：「日视图顶部的日期卡片……也要跟日视图的课程卡片是
+/// 一样的材质，选什么就是什么，不要第二种」。
+///
+/// 单独留这个函数是为了**可测**：真正的判据（有没有壁纸、模糊管线能不能跑）在组件
+/// 测试里是环境绑定的（`HyperosBlurredHeader.liveBlurSupported` 只认 Android/iOS，
+/// 测试宿主机上恒 false，于是任何玻璃档在组件测试里都算成实体）。把决策提成纯函数，
+/// 这条口径才有一个不受环境影响的钉子。
+CourseCardSurfaceStyle dayViewContentCardSurfaceStyle(
+  TimetableSettings settings, {
+  required bool backdropBlurOn,
+}) => effectiveCourseCardSurfaceStyle(
+  settings,
+  gaussianBlurAvailable: backdropBlurOn,
+);
+
 /// Result of pre-resolving the home page's wallpaper backdrop before first
 /// paint, so chrome frost does not flash a stale/blank capture.
 class HomePageVisualReadiness {
