@@ -6456,7 +6456,7 @@
   "weatherShowTemperatureTitle": "Temperature",
   "weatherShowProbabilityTitle": "Rain chance",
   "weatherShowProbabilitySubtitle": "Hidden below 30%",
-  "weatherSectionContentNote": "The icon follows the first item you turn on (condition → weather icon, temperature → thermometer, rain chance → percent sign). With all three off, the line is hidden.",
+  "weatherSectionContentNote": "The icon follows the first item you turn on (condition → weather icon, temperature → thermometer, rain chance → percent sign). With all three off, the line is hidden. Week view cells are narrow, so there that line shows only the temperature — or the condition if temperature is off.",
   "weatherCourseTileSubtitle": "Weather during this class period",
   "weatherSectionSourceTitle": "Data source",
   "weatherUseCurrentLocation": "Use current location",

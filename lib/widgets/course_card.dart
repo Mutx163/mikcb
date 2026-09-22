@@ -499,13 +499,22 @@ class CourseCard extends StatelessWidget {
   /// `FittedBox(scaleDown)` 等比缩放，写死的尺寸会让图标在字号调大调小时
   /// 与文字比例失衡。颜色跟随该行的文字色，深色卡面自动可读。
   Widget _compactLineWidget(_CompactTextLine line, TextAlign textAlign) {
+    final icon = line.icon;
+    // 带图标的行（目前只有天气行）**锁死单行**，超出用省略号。
+    //
+    // 它与其他行的性质不同：课名/教师/地点折行只是多占一行，而这一行是
+    // 「图标 + 一项内容」，一旦折行，掉到第二行的那半截既没有图标顶着、
+    // 又把整块内容撑高——外层 `FittedBox` 随即把整张卡（含课名）等比缩小，
+    // 同一屏里就会出现「有天气的卡字小、没天气的卡字大」。窄格里省掉那几个字
+    // 比这个代价小得多。
     final text = Text(
       line.text,
       style: line.style,
       textAlign: textAlign,
-      softWrap: true,
+      softWrap: icon == null,
+      maxLines: icon == null ? null : 1,
+      overflow: icon == null ? null : TextOverflow.ellipsis,
     );
-    final icon = line.icon;
     if (icon == null) {
       return text;
     }

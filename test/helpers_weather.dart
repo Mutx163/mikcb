@@ -22,8 +22,9 @@ const _jsonHeaders = {'content-type': 'application/json; charset=utf-8'};
 
 /// 窗口覆盖「今天 0 点起 96 小时」。
 ///
-/// 天气码固定 61（小雨）、概率固定 60、温度固定 23，所以断言可以写死文案
-/// `小雨 · 23°`（默认内容组合 = 现象 + 温度）。
+/// 天气码固定 61（小雨）、概率固定 60、温度固定 23，所以断言可以写死文案：
+/// 日视图与课程详情弹层是 `小雨 · 23°`（默认内容组合 = 现象 + 温度），
+/// 周视图课卡与设置页预览是紧凑版 `23°`（见 `WeatherTextDensity.compact`）。
 Map<String, dynamic> weatherPayload({int temperature = 23, int probability = 60}) {
   final today = DateTime.now();
   final start = DateTime(today.year, today.month, today.day);

@@ -6453,7 +6453,7 @@
   "weatherShowTemperatureTitle": "溫度",
   "weatherShowProbabilityTitle": "降水機率",
   "weatherShowProbabilitySubtitle": "低於 30% 時不顯示",
-  "weatherSectionContentNote": "圖示跟著第一個勾選的項目走（現象→天氣圖示，溫度→溫度計，機率→百分號）。三項都不選時整行不顯示。",
+  "weatherSectionContentNote": "圖示跟著第一個勾選的項目走（現象→天氣圖示，溫度→溫度計，機率→百分號）。三項都不選時整行不顯示。週視圖的格子窄，那行只寫溫度；沒勾溫度時寫現象或機率。",
   "weatherCourseTileSubtitle": "該課程時段內的天氣",
   "weatherSectionSourceTitle": "資料來源",
   "weatherUseCurrentLocation": "使用目前位置",

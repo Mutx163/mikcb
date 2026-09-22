@@ -550,7 +550,8 @@ void main() {
         passedWeather: weather,
       );
 
-      expect(find.text('小雨 · 23°'), findsOneWidget);
+      // 预览画的是周视图那张窄卡，所以文案是紧凑版「23°」而不是「小雨 · 23°」。
+      expect(find.text('23°'), findsOneWidget);
     });
 
     testWidgets('不传天气源时一张卡都不带天气（导出分享图走这条路）', (tester) async {
@@ -563,7 +564,7 @@ void main() {
       // 分享图不带天气靠的就是「显式不传」；这条红了说明有人改成了自动查
       // provider，天气会漏进导出图。
       expect(weather.forecast, isNotNull);
-      expect(find.text('小雨 · 23°'), findsNothing);
+      expect(find.text('23°'), findsNothing);
       expect(find.text('数据结构'), findsWidgets);
     });
   });

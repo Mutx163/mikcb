@@ -81,6 +81,26 @@ IconData _iconFor({
   return Icons.percent;
 }
 
+/// 这一行的文字写多长。
+///
+/// 三个渲染面的宽度差着一个量级：日视图课卡与课程详情弹层宽得能写一整句，
+/// 而周视图的格子（7 天模式下扣掉图标只剩约 27 点，默认字号 8 时约合三个汉字）
+/// 连长一点的单一项都勉强。所以宽度不同的面取不同的密度。
+enum WeatherTextDensity {
+  /// 勾上的项全写，用分隔符连成一句（`小雨 · 23° · 60%`）。
+  full,
+
+  /// 只写一项，**温度优先**；温度没勾时退回图标认领者那一项的文字。
+  ///
+  /// 为什么温度优先：它是三项里最短的（`23°`），也是唯一一个「一眼就能用」的
+  /// 数——现象已经由图标表达了，再写一遍等于同一件事说两遍。
+  ///
+  /// 为什么「退回」是 `parts.first` 而不是另写一套优先级：图标认领者本来就是
+  /// 第一个勾上的项（现象 → 温度 → 概率），温度没勾时它落到的正是 `parts.first`，
+  /// 于是「文字写哪一项」与「图标是谁」在 compact 下始终同源，不会打架。
+  compact,
+}
+
 /// 摘要 + 三个内容开关 → 要画的那一行；不该画时返回 null。
 ///
 /// **「认领」原则**：这一行画出来的每一样东西，都必须有一个勾上的开关认领它，
@@ -95,12 +115,17 @@ IconData _iconFor({
 /// - 只勾了降水概率而它不可用（全缺报 / 低于显示阈值）—— 唯一勾上的项产不出东西。
 ///
 /// 调用方一律据此**整行不渲染**，不留空档。
+///
+/// [textDensity] 只改**文字写几项**，不改「画不画」——两种密度下整行消失的条件、
+/// 以及图标认领的结果完全一致（见 [WeatherTextDensity]）。所以它不影响任何
+/// 「有没有天气行」的判定，只是同一个值对象在窄面少写几个字。
 CourseWeatherDisplay? courseWeatherDisplayFor({
   required AppLocalizations l10n,
   required CourseWeatherSummary? summary,
   required bool showPhenomenon,
   required bool showTemperature,
   required bool showProbability,
+  WeatherTextDensity textDensity = WeatherTextDensity.full,
 }) {
   if (summary == null) {
     return null;
@@ -114,11 +139,21 @@ CourseWeatherDisplay? courseWeatherDisplayFor({
       summary.showPrecipitationProbability &&
       probability != null;
 
-  final parts = <String>[
-    if (showPhenomenon) WeatherCategoryLocalizer.label(l10n, summary.category),
-    if (showTemperature) l10n.weatherTemperatureValue(summary.temperatureC),
-    if (probabilityUsable) l10n.weatherProbabilityValue(probability),
-  ];
+  final phenomenonPart = showPhenomenon
+      ? WeatherCategoryLocalizer.label(l10n, summary.category)
+      : null;
+  final temperaturePart = showTemperature
+      ? l10n.weatherTemperatureValue(summary.temperatureC)
+      : null;
+  final probabilityPart = probabilityUsable
+      ? l10n.weatherProbabilityValue(probability)
+      : null;
+
+  final parts = [
+    phenomenonPart,
+    temperaturePart,
+    probabilityPart,
+  ].whereType<String>().toList();
   if (parts.isEmpty) {
     // 只剩「勾了降水概率但这节课没有可用概率」这一种组合会走到这里。
     return null;
@@ -130,6 +165,9 @@ CourseWeatherDisplay? courseWeatherDisplayFor({
       showPhenomenon: showPhenomenon,
       showTemperature: showTemperature,
     ),
-    text: parts.join(l10n.weatherSummarySeparator),
+    text: switch (textDensity) {
+      WeatherTextDensity.full => parts.join(l10n.weatherSummarySeparator),
+      WeatherTextDensity.compact => temperaturePart ?? parts.first,
+    },
   );
 }

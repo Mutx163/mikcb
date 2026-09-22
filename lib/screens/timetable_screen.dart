@@ -6590,6 +6590,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       showPhenomenon: settings.weatherShowPhenomenon,
       showTemperature: settings.weatherShowTemperature,
       showProbability: settings.weatherShowProbability,
+      // 周网格的天格太窄（7 天模式下扣掉图标只剩约 27 点，默认字号 8 时约合
+      // 三个汉字），写全「现象 · 温度 · 概率」必然折行；折行又会把整张卡缩小。
+      // 这里只写一项，详见 `WeatherTextDensity.compact`。
+      textDensity: WeatherTextDensity.compact,
     );
   }
 

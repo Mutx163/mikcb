@@ -178,7 +178,12 @@ void main() {
 
     // 恰好一次：非本周灰卡这一周并不上课，它显示的日期不是它的上课日，
     // 挂上那天的天气会让人以为当天要带伞。这条红了说明判据漏了 isActiveInWeek。
-    expect(find.text('小雨 · 23°'), findsOneWidget);
+    //
+    // 文案是「23°」而不是日视图那种「小雨 · 23°」：周网格的天格放不下一整句
+    // （见 `WeatherTextDensity.compact`），那里只写温度、现象由图标表达。
+    // 所以这里同时钉住图标，否则「只剩一个图标」也算通过。
+    expect(find.text('23°'), findsOneWidget);
+    expect(find.byIcon(Icons.water_drop_outlined), findsOneWidget);
   });
 
   testWidgets('周网格：关掉「周视图课卡」开关后一张卡都不带天气', (tester) async {
@@ -192,7 +197,7 @@ void main() {
     await _pumpTimetableFrame(tester);
 
     expect(find.text('本周实验'), findsWidgets);
-    expect(find.text('小雨 · 23°'), findsNothing);
+    expect(find.text('23°'), findsNothing);
   });
 
   testWidgets('周网格：没挂天气 provider 时照常渲染，不抛异常', (tester) async {
@@ -203,7 +208,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('本周实验'), findsWidgets);
-    expect(find.text('小雨 · 23°'), findsNothing);
+    expect(find.text('23°'), findsNothing);
   });
 
   testWidgets('周网格：天气没开时不显示', (tester) async {
@@ -213,6 +218,6 @@ void main() {
     await tester.pumpWidget(_wrap(provider, weather: weather));
     await _pumpTimetableFrame(tester);
 
-    expect(find.text('小雨 · 23°'), findsNothing);
+    expect(find.text('23°'), findsNothing);
   });
 }

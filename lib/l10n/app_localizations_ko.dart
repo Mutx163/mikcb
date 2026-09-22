@@ -11416,7 +11416,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get weatherSectionContentNote =>
-      '아이콘은 처음 켠 항목을 따릅니다(날씨 현상→날씨 아이콘, 기온→온도계, 강수 확률→퍼센트 기호). 세 항목을 모두 끄면 줄이 표시되지 않습니다.';
+      '아이콘은 처음 켠 항목을 따릅니다(날씨 현상→날씨 아이콘, 기온→온도계, 강수 확률→퍼센트 기호). 세 항목을 모두 끄면 줄이 표시되지 않습니다. 주간 보기의 칸은 좁아서 그 줄에는 기온만 표시합니다(기온을 끈 경우 날씨 현상).';
 
   @override
   String get weatherCourseTileSubtitle => '이 수업 시간대의 날씨';

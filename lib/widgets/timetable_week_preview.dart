@@ -1048,6 +1048,9 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       showPhenomenon: settings.weatherShowPhenomenon,
       showTemperature: settings.weatherShowTemperature,
       showProbability: settings.weatherShowProbability,
+      // 预览画的就是周视图那张窄卡，密度必须与首页一致，否则设置页里
+      // 看到的和回到课表看到的是两行字。
+      textDensity: WeatherTextDensity.compact,
     );
   }
 

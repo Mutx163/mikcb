@@ -38,6 +38,7 @@ CourseWeatherDisplay? _display(
   bool phenomenon = true,
   bool temperature = true,
   bool probability = false,
+  WeatherTextDensity density = WeatherTextDensity.full,
 }) {
   return courseWeatherDisplayFor(
     l10n: _zh(),
@@ -45,6 +46,7 @@ CourseWeatherDisplay? _display(
     showPhenomenon: phenomenon,
     showTemperature: temperature,
     showProbability: probability,
+    textDensity: density,
   );
 }
 
@@ -98,6 +100,135 @@ void main() {
       expect(_display(null, probability: true), isNull);
       expect(
         _display(null, phenomenon: false, temperature: false),
+        isNull,
+      );
+    });
+  });
+
+  // 周视图的天格（7 天模式下扣掉图标只剩约 27 点，默认字号 8 时约合三个汉字）
+  // 放不下一整句，那里改用紧凑密度：只写一项、温度优先。
+  group('周视图的紧凑密度', () {
+    test('默认组合只写温度，现象交给图标表达', () {
+      expect(
+        _display(_summary(), density: WeatherTextDensity.compact)?.text,
+        '23°',
+      );
+    });
+
+    test('概率开着也不写进这一行', () {
+      expect(
+        _display(
+          _summary(),
+          probability: true,
+          density: WeatherTextDensity.compact,
+        )?.text,
+        '23°',
+      );
+    });
+
+    test('没勾温度时退回现象', () {
+      expect(
+        _display(
+          _summary(),
+          temperature: false,
+          density: WeatherTextDensity.compact,
+        )?.text,
+        '小雨',
+      );
+    });
+
+    test('现象与温度都没勾时退回概率', () {
+      expect(
+        _display(
+          _summary(),
+          phenomenon: false,
+          temperature: false,
+          probability: true,
+          density: WeatherTextDensity.compact,
+        )?.text,
+        '60%',
+      );
+    });
+
+    test('紧凑文字一定比完整文字短（它就是为省宽度而存在的）', () {
+      final full = _display(_summary(), probability: true);
+      final compact = _display(
+        _summary(),
+        probability: true,
+        density: WeatherTextDensity.compact,
+      );
+      expect(compact!.text.length, lessThan(full!.text.length));
+    });
+
+    test('穷举八种勾选组合：紧凑密度下这一行始终有字', () {
+      // 只剩一个孤零零的图标而没有任何文字，读不出这是温度还是概率。
+      for (final phenomenon in [true, false]) {
+        for (final temperature in [true, false]) {
+          for (final probability in [true, false]) {
+            if (!phenomenon && !temperature && !probability) {
+              continue;
+            }
+            final display = _display(
+              _summary(),
+              phenomenon: phenomenon,
+              temperature: temperature,
+              probability: probability,
+              density: WeatherTextDensity.compact,
+            );
+            expect(
+              display?.text,
+              isNotEmpty,
+              reason: '现象=$phenomenon 温度=$temperature 概率=$probability',
+            );
+          }
+        }
+      }
+    });
+
+    test('图标认领的结果不受密度影响', () {
+      // 密度只改文字写几项，不该顺手动到「图标是谁」。
+      for (final phenomenon in [true, false]) {
+        for (final temperature in [true, false]) {
+          expect(
+            _display(
+              _summary(),
+              phenomenon: phenomenon,
+              temperature: temperature,
+              density: WeatherTextDensity.compact,
+            )?.icon,
+            _display(
+              _summary(),
+              phenomenon: phenomenon,
+              temperature: temperature,
+            )?.icon,
+          );
+        }
+      }
+    });
+
+    test('整行消失的条件不受密度影响', () {
+      expect(
+        _display(
+          _summary(),
+          phenomenon: false,
+          temperature: false,
+          density: WeatherTextDensity.compact,
+        ),
+        isNull,
+      );
+      expect(
+        _display(null, density: WeatherTextDensity.compact),
+        isNull,
+      );
+      // 只勾概率而它不可用（概率全缺报）：紧凑密度下同样整行不画。
+      expect(
+        _display(
+          _summary(probability: null, showProbability: false),
+          phenomenon: false,
+          temperature: false,
+          probability: true,
+          density: WeatherTextDensity.compact,
+        ),
         isNull,
       );
     });

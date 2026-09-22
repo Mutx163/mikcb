@@ -11705,7 +11705,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weatherSectionContentNote =>
-      'The icon follows the first item you turn on (condition → weather icon, temperature → thermometer, rain chance → percent sign). With all three off, the line is hidden.';
+      'The icon follows the first item you turn on (condition → weather icon, temperature → thermometer, rain chance → percent sign). With all three off, the line is hidden. Week view cells are narrow, so there that line shows only the temperature — or the condition if temperature is off.';
 
   @override
   String get weatherCourseTileSubtitle => 'Weather during this class period';

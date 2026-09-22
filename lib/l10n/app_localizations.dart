@@ -20145,7 +20145,7 @@ abstract class AppLocalizations {
   /// No description provided for @weatherSectionContentNote.
   ///
   /// In zh, this message translates to:
-  /// **'图标跟着第一个勾上的项目走（现象→天气图标，温度→温度计，概率→百分号）。三项都不选时整行不显示。'**
+  /// **'图标跟着第一个勾上的项目走（现象→天气图标，温度→温度计，概率→百分号）。三项都不选时整行不显示。周视图的格子窄，那一行只写温度；没勾温度时写现象或概率。'**
   String get weatherSectionContentNote;
 
   /// No description provided for @weatherCourseTileSubtitle.
