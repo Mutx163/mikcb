@@ -169,11 +169,21 @@ class _RenderPreviewBakeBoundary extends RenderProxyBox {
     _repaintSignal?.addListener(_onRepaintSignal);
   }
 
-  /// 内容源显式喊了一声「变了」：把本节点标脏。
+  /// 内容源显式喊了一声「变了」：**只记一笔，等静默期出图**。
   ///
-  /// 本节点是重绘边界，标脏之后整层重新合成（子级自己的重绘边界层是保留的、
-  /// 里面已是新内容），紧接着 [_scheduleBake] 把新画面烤出来。
+  /// ⚠️ **故意不 `markNeedsPaint`**（2026-09-22，为了拖动时每帧不留一点活）：
+  /// 出图走的是 `toImageSync` —— 它**按图层树重建场景**，子级自己的重绘边界层是
+  /// 保留的、里面已经是新画面，所以本节点这一帧重不重绘与烤出来的内容无关。
+  /// 而一旦标脏，本节点那一帧就要把自己的非重绘边界子树**重新录一遍**（整页的
+  /// 绘制指令：壁纸、网格、文字、卡片）——拖动时每帧都来一遍，正是"调整不跟手"
+  /// 这类手感的来源，而它对结果毫无影响。
+  ///
+  /// 首烤之前仍走标脏那条路：那时还没有图，需要 [_scheduleBake] 的"延一帧"路径。
   void _onRepaintSignal() {
+    if (_bakedOnce) {
+      _armSettleBake();
+      return;
+    }
     markNeedsPaint();
   }
 
