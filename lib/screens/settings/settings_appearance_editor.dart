@@ -9,8 +9,7 @@ part of '../timetable_settings_screen.dart';
 ///   改首页真实的浏览状态；
 /// * 不要大标题 + 小标题那两行；日 / 周切换按钮放顶部；顶部完成 / 取消；
 ///   底部「调整壁纸」「材质」两个入口；
-/// * 弹窗打开时上下 chrome **保持常显**（第六轮明确，取代最初照参考实现做的
-///   「淡出让位」）；
+/// * 弹窗打开时上下 chrome **保持常显**（第六轮明确，取代最初那版「淡出让位」）；
 /// * 进页时卡片不得闪跳（玻璃圈/壁纸先偏在一侧再跳正）—— 转场落定后才烤图。
 ///
 /// 预览实现（**方案 A：烤图**，2026-09-19 定案；机制就是录一帧真实内容树、
@@ -44,10 +43,9 @@ class _AppearanceEditorScreen extends StatefulWidget {
 
 class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     with _HomeBackdropFlow<_AppearanceEditorScreen> {
-  /// 沉浸式底衬：与参考实现同色（不透明深底，只有卡片是亮的）。
-  /// 沉浸暗底。**就是缩放转场那半边的 `backdropColor`**（同一个常量，不是
-  /// 碰巧同色）：首页缩进卡片之后由这层暗底接管整屏背景，两边只要不是同一个
-  /// 值，接管那一帧就会看到一下轻微提亮/压暗。
+  /// 沉浸式底衬：不透明深底、只有卡片是亮的。**就是缩放转场那半边的
+  /// `backdropColor`**（同一个常量，不是碰巧同色）：首页缩进卡片之后由这层暗底
+  /// 接管整屏背景，两边只要不是同一个值，接管那一帧就会看到一下轻微提亮/压暗。
   static const _scrimColor = HyperosZoomRoute.backdropColor;
 
   /// 卡片相对可用区的最大宽度比例（剩下的留白保证「在屏幕中间、不顶边」）。
@@ -507,7 +505,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   Future<void> _openWallpaperSheet() {
     final l10n = AppLocalizations.of(context)!;
     // 上下 chrome（取消 / 完成 / 日周切换 / 圆钮）在弹窗打开期间**保持常显**
-    //（2026-09-19 用户口径，取代最初照参考实现做的「淡出让位」）：barrier
+    //（2026-09-19 用户口径，取代最初那版「淡出让位」）：barrier
     // 会把它们压暗、点按被弹层接走，但位置与可见性不变。
     return showHomeHyperosSheet<void>(
       context: context,
@@ -1172,7 +1170,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
                   );
                   final cardWidth = virtualScreen.width * scale;
                   final cardHeight = virtualScreen.height * scale;
-                  // 圆角跟着缩放走（参考实现是 screenRadiusDp * cardScale）。
+                  // 圆角跟着缩放走：屏幕圆角 × 缩放比。
                   final cardRadius = math.min(
                     HyperosMotionPlatform.displayCornerRadiusDp * scale,
                     cardHeight / 2,
@@ -1492,7 +1490,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     );
   }
 
-  /// 底部：一排圆形玻璃入口（调整壁纸 ｜ 材质），与参考实现同款排布。
+  /// 底部：一排圆形玻璃入口（调整壁纸 ｜ 材质），居中等距排布。
   Widget _buildBottomChrome(
     BuildContext context,
     AppLocalizations l10n,
@@ -1517,7 +1515,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
                 label: l10n.appearanceEditorWallpaperAction,
                 onTap: _openWallpaperSheet,
               ),
-              // 只留等距留白：参考实现那条竖杠在只有两个入口时是多余的隔断，
+              // 只留等距留白：两个入口之间加一条竖杠是多余的隔断，
               // 真机上读起来就是「这一排散着」（用户反馈「底栏按钮乱七八糟」）。
               const SizedBox(width: 40),
               _circleAction(
@@ -1539,7 +1537,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   }) {
     return GestureDetector(
       // 圆钮与它下面那行名字**同属一个点击区**：只让圆钮可点的话，用户按到
-      // 名字上会毫无反应（参考实现那行没有名字，本仓加了名字就得一起接住）。
+      // 名字上会毫无反应（名字是本仓加的，就得一起接住）。
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Column(
