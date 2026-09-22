@@ -10,7 +10,8 @@ class _AppearanceSettingsScreen extends StatefulWidget {
 
 class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
   /// Visual groups on this page (not one card per control).
-  /// 0 preview · 1 app display · 2 theme manage + seed · 3 reset.
+  /// 0 preview · 1 appearance editor entry · 2 app display ·
+  /// 3 theme manage + seed · 4 reset.
   ///
   /// 页面背景、壁纸与背景区域已移到「课表页面」，统一课卡颜色已移到
   /// 「课程卡片」：它们染的不是应用，而是课表页和课卡。导航形态 /
@@ -19,7 +20,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
   /// 材质（质感方案 / 玻璃模式 / 高斯滑杆 / 高级材质入口 / 首页顶栏
   /// 材质 / 子页顶栏风格 / 各表面材质地图）2026-09-19 迁「课表页面」、同日
   /// 第五轮再并入「外观编辑」页的材质面板——预览区就是微缩首页本身。
-  static const _appearanceSectionCount = 4;
+  static const _appearanceSectionCount = 5;
 
   late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
@@ -175,10 +176,40 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ),
         ),
       ),
+      // 「外观编辑」的**固定入口**（2026-09-22 用户要求）。
+      //
+      // 此前这一页没有任何进编辑页的路（「课表页面」页里那条是按「看着材质改」
+      // 的场景放的）；而首页右上角菜单里那条目是用户自己配的八宫格，挪掉或
+      // 换掉就找不回来。这里给一条不以用户配置为前提的入口，紧跟「预览」——
+      // 两者说的是同一件事：上面的预览区是抽象色块，编辑页才是整页微缩图。
+      //
+      // 入口行本身与「课表页面」页那条同名入口逐字一致（同一个文案 / 同一个
+      // 路由名 / 同一个页面构造），免得两处各自漂移。
+      //
+      // 不走 zoom 转场：那条是「从首页那颗按钮进来、首页整页缩进新页」专用
+      // （[HyperosZoomPageRoute] 的动力来自首页自己的快照）。从设置页进来时
+      // 首页在路由栈底下压着、没有可缩的对象，走通用推页。
+      1 => HyperosListGroup(
+        children: [
+          HyperosListTile(
+            title: l10n.appearanceEditorTitle,
+            details: l10n.appearanceEditorEntrySubtitle,
+            onTap: () {
+              HyperosNavigation.push(
+                context,
+                settings: const RouteSettings(
+                  name: '/settings/appearance-editor',
+                ),
+                builder: (_) => const _AppearanceEditorScreen(),
+              );
+            },
+          ),
+        ],
+      ),
       // 主题 / 字体 — 应用级外观（语言与转场已迁到「通用」，导航形态与
       // 首页标题已迁到「首页与导航」）。本组原是页面中段唯一无标题的裸组，
       // 与后续分组样式不一致（IA 规范 §3「不许无名分组」），补齐区块标题。
-      1 => HyperosSettingsBlock(
+      2 => HyperosSettingsBlock(
         title: l10n.appearanceThemeDisplaySectionTitle,
         child: HyperosListGroup(
           children: [
@@ -276,7 +307,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
       ),
       // 主题管理并入主题色卡，避免单行孤岛。（首页标题分区已迁到
       // 「首页与导航」，含预览与样式选择。）
-      2 => HyperosSettingsBlock(
+      3 => HyperosSettingsBlock(
         title: l10n.themeSeedSectionTitle,
         child: HyperosListGroup(
           children: [
@@ -313,7 +344,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ],
         ),
       ),
-      3 => _SettingsResetTile(
+      4 => _SettingsResetTile(
         scope: SettingsResetScope.appearance,
         onReset: _updateDraft,
       ),
