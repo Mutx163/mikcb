@@ -589,6 +589,68 @@ Color homePageOverWallpaperInk({
   );
 }
 
+/// 卡面玻璃上的墨色翻黑白的分界亮度（[contentCardInkOverWallpaper] 用）。
+///
+/// **不能用顶栏那套 0.45**：0.45 是「背景比中灰暗就上白字」，在分界点上白字对
+/// 背景只有 ~2:1 —— 背景越接近中灰越糊。这里取的是**黑白对比度相等**的那一点
+/// （白 `1.05/(L+0.05)` = 黑 `(L+0.05)/0.06` ⇒ L ≈ 0.20），所以两侧最差也有
+/// ~4.1:1，卡面无论落在哪一档都读得清。
+const double cardGlassInkFlipLuminance = 0.2;
+
+/// 卡面玻璃的**有效亮度**：卡自己的底色与壁纸那条带按染色强度 [washAlpha] 混合。
+///
+/// 卡面不是裸壁纸 —— 上面还压着 [washAlpha] 比例的自有底色（浅色主题下那层是
+/// 白的）。判字色必须用这份混合后的亮度，否则会把白字判到被冲白的卡面上。
+double cardGlassSurfaceLuminance({
+  required Color cardFill,
+  required double washAlpha,
+  required double wallpaperLuminance,
+}) {
+  final t = washAlpha.clamp(0.0, 1.0);
+  return cardFill.computeLuminance() * t + wallpaperLuminance * (1 - t);
+}
+
+/// 日视图**内容卡**（顶部摘要卡，以及后续可能跟进的其他卡）在玻璃档下的墨色。
+///
+/// 与 [homePageOverWallpaperInk] 只差两处，都是为了让墨色落在**卡面**上而不是
+/// 落在裸壁纸上：
+///
+/// * 判据亮度换成 [cardGlassSurfaceLuminance]（卡自己的底色 × [washAlpha] 压在
+///   壁纸上）。只看壁纸会在浅色主题下判错：壁纸偏暗 → 翻白字，而卡面其实被那层
+///   32%~42% 的白底冲成中灰，白字对比度只剩 1.5~2.8:1（真机反馈 2026-09-22
+///   「日视图日期卡片的字体颜色适配好像没做好」）。
+/// * 分界点换成 [cardGlassInkFlipLuminance]（对比度相等点 0.20），而不是顶栏
+///   默认的 0.45 —— 后者在分界点附近只剩 ~2:1。
+///
+/// 其余一律沿用 [homePageOverWallpaperInk]：用户手挑的字色照给（对比度不够时
+/// 只推明度、保色相），没挑过才自动黑白。壁纸亮度未知（还没采到）时同样回落
+/// 到配置色 / 主题色。
+Color contentCardInkOverWallpaper({
+  required Color cardFill,
+  required double washAlpha,
+  required String? configuredHex,
+  required String defaultHex,
+  required Color themeFallback,
+  required bool hasBackdrop,
+  required double? wallpaperLuminance,
+}) {
+  final cardLuminance = wallpaperLuminance == null
+      ? null
+      : cardGlassSurfaceLuminance(
+          cardFill: cardFill,
+          washAlpha: washAlpha,
+          wallpaperLuminance: wallpaperLuminance,
+        );
+  return homePageOverWallpaperInk(
+    configuredHex: configuredHex,
+    defaultHex: defaultHex,
+    themeFallback: themeFallback,
+    hasBackdrop: hasBackdrop,
+    wallpaperLuminance: cardLuminance,
+    darkThreshold: cardGlassInkFlipLuminance,
+  );
+}
+
 /// Whether [ink] keeps at least ~3:1 contrast against a wallpaper band of
 /// [wallpaperLuminance].
 ///

@@ -4426,19 +4426,30 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 实体档那条老口径自然仍成立：无壁纸 / 全局模糊关掉时
     // [effectiveCourseCardSurfaceStyle] 就回落实体，摘要卡跟着实底，不会出现
     // 「课程卡实心、顶上的日期卡还透」。
-    // Ink: 卡面**真的把壁纸透出来**时才按壁纸亮度自动黑白；否则卡面是主题底色
-    // 的实底，墨色必须跟主题走 —— 按原始壁纸亮度翻白会让白墨落在亮色卡面上
+    // Ink: 卡面**真的把壁纸透出来**时才自动黑白；否则卡面是主题底色
+    // 的实底，墨色必须跟主题走 —— 按壁纸亮度翻白会让白墨落在亮色卡面上
     // 不可读。判据是**卡实际用的材质**，不是顶栏状态。
     //
-    // 亮度来源必须与**它上面那条带**同源（`_weekdayInkLuminance`，信息栏与
-    // 顶栏带用的就是它）：这张卡的墨色本来就是信息栏那套
+    // 自动黑白判的是**卡面**亮度（卡自己的底色 + 壁纸那条带按染色强度混合，
+    // 见 [contentCardInkOverWallpaper]），不是裸壁纸亮度：2026-09-22 真机反馈
+    // "浅色主题下卡面发白、字也是浅色糊在一起"，就是漏了卡面那层 32%~42% 的
+    // 自有底色所致。
+    //
+    // 壁纸那条带取的是 `_weekdayInkLuminance`（信息栏与顶栏带用的就是它）：
+    // 这张卡的墨色本来就是信息栏那套
     //（configuredHex 取的就是 weekdayBarFontColor*）。
     // 早先这里用 body 带（整屏下半部，常含壁纸的深色区），于是出现"带是
     // 浅色、卡片也是亮卡，却按深色壁纸翻成白墨"——白字落在亮卡上读不出来
     // （真机反馈：高斯档下日课表那张日期卡）。
     final glassOverWallpaper = backdropBlurOn && courseCardStyle.isGlass;
     final summaryInk = glassOverWallpaper
-        ? homePageOverWallpaperInk(
+        ? contentCardInkOverWallpaper(
+            // 判据是**卡面**亮度，不是裸壁纸：卡面上还压着
+            // `CourseSurface.washAlpha` 比例的自有底色（就是这里的
+            // `foruiTheme.colors.background`）。只看壁纸会在浅色主题下把白字
+            // 判到被冲白的卡面上（2026-09-22 真机反馈），详见该函数。
+            cardFill: foruiTheme.colors.background,
+            washAlpha: CourseSurface.washAlpha(context, courseCardStyle),
             configuredHex: isDark
                 ? settings.weekdayBarFontColorDark
                 : settings.weekdayBarFontColorLight,

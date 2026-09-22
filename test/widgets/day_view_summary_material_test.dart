@@ -15,6 +15,7 @@
 // 被 `effectiveCourseCardSurfaceStyle` 算成实体 —— "选液态就长液态"这一步只有真机能验。
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/models/course_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
@@ -188,5 +190,167 @@ void main() {
       isA<CourseSurface>(),
       reason: '摘要卡必须是课程卡那种表层，不能是那条"顶栏同款"的亮磨砂替身',
     );
+  });
+
+  group('摘要卡墨色：判据是卡面亮度，不是裸壁纸亮度', () {
+    // 用户报（2026-09-22）「日视图日期卡片的字体颜色适配好像没做好」，真机症状是
+    // **浅色主题下卡面发白、字也是浅色，糊在一起**。根因：判字色用的是裸壁纸那条
+    // 亮度（壁纸偏暗 → 翻白字），而卡面上还压着 32%~42% 的自有底色 —— 浅色主题
+    // 下那层是白的，卡面其实被冲成中灰，白字只剩 1.5~2.8:1。
+    // 这几条钉的是 `contentCardInkOverWallpaper` 的口径，组件测试验不到
+    // （见文件头对 `liveBlurSupported` 的说明：宿主机上玻璃档一律算实体）。
+
+    const lightBackground = Color(0xFFFFFFFF); // 浅色主题的 colors.background
+    const darkBackground = Color(0xFF0A0A0A); // 深色主题的 colors.background
+
+    Color inkFor({
+      required Color cardFill,
+      required double washAlpha,
+      required double? wallpaperLuminance,
+    }) => contentCardInkOverWallpaper(
+      cardFill: cardFill,
+      washAlpha: washAlpha,
+      configuredHex: null,
+      defaultHex: '#FFFFFF',
+      themeFallback: homePageChromeForegroundOnLight,
+      hasBackdrop: true,
+      wallpaperLuminance: wallpaperLuminance,
+    );
+
+    /// WCAG 对比度：墨色 vs 卡面亮度。
+    double contrast(Color ink, double cardLuminance) {
+      final inkLuminance = ink.computeLuminance();
+      final hi = math.max(inkLuminance, cardLuminance);
+      final lo = math.min(inkLuminance, cardLuminance);
+      return (hi + 0.05) / (lo + 0.05);
+    }
+
+    test('卡面亮度 = 自有底色 × 染色强度 + 壁纸 × 余量', () {
+      expect(
+        cardGlassSurfaceLuminance(
+          cardFill: Colors.white,
+          washAlpha: 0.42,
+          wallpaperLuminance: 0,
+        ),
+        closeTo(0.42, 1e-9),
+        reason: '纯白底、壁纸全黑 ⇒ 卡面就是那层染色',
+      );
+      expect(
+        cardGlassSurfaceLuminance(
+          cardFill: Colors.black,
+          washAlpha: 0.42,
+          wallpaperLuminance: 1,
+        ),
+        closeTo(0.58, 1e-9),
+        reason: '纯黑底、壁纸全白 ⇒ 白底只透出 (1 - 染色) 那一份',
+      );
+    });
+
+    test('浅色主题 + 偏暗壁纸：卡面被冲白，必须是深墨（旧口径在这里翻白字）', () {
+      const wash = CourseSurface.frostedFillAlpha;
+      const band = 0.10; // 壁纸那条带偏暗
+      final cardLuminance = cardGlassSurfaceLuminance(
+        cardFill: lightBackground,
+        washAlpha: wash,
+        wallpaperLuminance: band,
+      );
+
+      final ink = inkFor(
+        cardFill: lightBackground,
+        washAlpha: wash,
+        wallpaperLuminance: band,
+      );
+      expect(
+        ink,
+        homePageChromeForegroundOnLight,
+        reason: '卡面亮度 $cardLuminance（被白底冲成中灰）—— 这里只能是深墨',
+      );
+      expect(
+        contrast(ink, cardLuminance),
+        greaterThan(4.5),
+        reason: '真机反馈的"糊在一起"就是这条不达标',
+      );
+
+      // 对照：改动前的口径（裸壁纸亮度 + 顶栏那套 0.45 分界）在这组输入下给白字，
+      // 对比度只有 2.2:1 —— 用例存在的意义就是别让它回来。
+      final oldInk = homePageOverWallpaperInk(
+        configuredHex: null,
+        defaultHex: '#FFFFFF',
+        themeFallback: homePageChromeForegroundOnLight,
+        hasBackdrop: true,
+        wallpaperLuminance: band,
+      );
+      expect(oldInk, homePageChromeForegroundOnDark);
+      expect(contrast(oldInk, cardLuminance), lessThan(3.0));
+    });
+
+    test('全区间扫描：任意壁纸亮度 × 两档染色 × 两种主题底色都 ≥ 4.1:1', () {
+      for (final wash in [
+        CourseSurface.frostedFillAlpha, // 高斯档
+        CourseGlassTuning.defaultTintAlpha, // 液态档（卡片出厂染色）
+      ]) {
+        for (final fill in [lightBackground, darkBackground]) {
+          for (var band = 0.0; band <= 1.0001; band += 0.01) {
+            final cardLuminance = cardGlassSurfaceLuminance(
+              cardFill: fill,
+              washAlpha: wash,
+              wallpaperLuminance: band,
+            );
+            final ink = inkFor(
+              cardFill: fill,
+              washAlpha: wash,
+              wallpaperLuminance: band,
+            );
+            expect(
+              contrast(ink, cardLuminance),
+              greaterThanOrEqualTo(4.1),
+              reason: '染色 $wash / 底色 $fill / 壁纸带 $band',
+            );
+          }
+        }
+      }
+    });
+
+    test('壁纸亮度还没采到时回落主题色（不猜黑白）', () {
+      expect(
+        inkFor(
+          cardFill: lightBackground,
+          washAlpha: CourseSurface.frostedFillAlpha,
+          wallpaperLuminance: null,
+        ),
+        homePageChromeForegroundOnLight,
+      );
+    });
+
+    testWidgets('取到的染色强度就是渲染层那一个（不另写一份，别漂）', (tester) async {
+      // 这条顺手覆盖真实代码路径：`CourseSurface.washAlpha` 里要解析外观作用域与
+      // 液态玻璃的深浅配方，纯函数用例碰不到它（组件测试里玻璃档一律算实体）。
+      late Map<CourseCardSurfaceStyle, double> alphas;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              alphas = {
+                for (final style in CourseCardSurfaceStyle.values)
+                  style: CourseSurface.washAlpha(context, style),
+              };
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+
+      expect(alphas[CourseCardSurfaceStyle.solid], 1, reason: '实体档卡面完全不透');
+      expect(
+        alphas[CourseCardSurfaceStyle.gaussian],
+        CourseSurface.frostedFillAlpha,
+        reason: '高斯档就是 `_buildGaussian` 里那个 tint 的 alpha',
+      );
+      expect(
+        alphas[CourseCardSurfaceStyle.liquidGlass],
+        CourseGlassTuning.defaultTintAlpha,
+        reason: '液态档取卡片自己那套调参的染色强度（浅色配方为恒等，不缩放）',
+      );
+    });
   });
 }

@@ -65,6 +65,37 @@ class CourseSurface extends StatelessWidget {
 
   static const double frostedFillAlpha = 0.42;
 
+  /// 这档卡面把**自己的底色**压多少在壁纸上 —— 就是 [build] 里那个 tint 的 alpha。
+  ///
+  /// 判卡面墨色的调用方要按「卡色 × 这个比例 + 壁纸 × 余量」估卡面真实亮度
+  /// （见 `contentCardInkOverWallpaper`）：只看壁纸亮度会在浅色主题下把白字判到
+  /// 被冲白的卡面上。取数放在这里是为了与渲染层同源 —— 实体 1、高斯
+  /// [frostedFillAlpha]、液态走卡片自己那套调参的 `tintAlpha`（深色下还吃
+  /// 深色配方），别在调用方另写一份。
+  ///
+  /// [borderRadius] 与 `courseColor` 都不参与这个 alpha（只影响形状与 RGB），
+  /// 所以内部按零半径、纯黑解析一次即可。
+  static double washAlpha(
+    BuildContext context,
+    CourseCardSurfaceStyle style, {
+    double opacityScale = 1,
+  }) {
+    return switch (style) {
+      CourseCardSurfaceStyle.solid => 1,
+      CourseCardSurfaceStyle.gaussian => courseGlassFillAlpha(
+        frostedFillAlpha,
+        opacityScale,
+      ),
+      CourseCardSurfaceStyle.liquidGlass => courseGlassStyleFor(
+        appearance: FrostedAppearanceScope.of(context),
+        borderRadius: 0,
+        courseColor: const Color(0xFF000000),
+        brightness: Theme.of(context).brightness,
+        opacityScale: opacityScale,
+      ).tint.a,
+    };
+  }
+
   /// Second stop of the default [CourseCardSurfaceStyle.solid] gradient.
   static Color secondaryFillColor(Color color) {
     return Color.lerp(color, Colors.white, 0.08) ?? color;
