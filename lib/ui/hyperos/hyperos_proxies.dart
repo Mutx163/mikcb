@@ -180,6 +180,12 @@ class FHeaderActionBall extends StatefulWidget {
 /// `layer` 与 `getLastTransform()` 都在（变换是每帧重算的，
 /// `FollowerLayer.alwaysNeedsAddToScene` 恒为 true）。链路恢复（leader 回来、
 /// 重新合成）会自动把球放回去。
+///
+/// ⚠️ 这里只挡得住「这一帧整颗球要不要画」；上面第 2 条那个**几何侧的窗口比它宽
+/// 一帧** —— 玻璃的屏幕原点读的是**上一次合成**的结论。那颗球玻璃面上的另一半由
+/// `liquidGlassFollowerTransformMissing`（`liquid_glass_surface.dart`）在 paint
+/// 期挡：变换拿不到的那一帧形状一步都不画、退成 canvas 板，位置仍由图层合成负责。
+/// 两处判据必须同源，改一处要同时看另一处。
 class _FHeaderActionBallState extends State<FHeaderActionBall> {
   /// 量跟随结果的抓手（[RenderFollowerLayer] 自己就是 follower）。
   final GlobalKey _followerKey = GlobalKey();

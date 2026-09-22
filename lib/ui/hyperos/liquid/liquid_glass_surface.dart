@@ -122,6 +122,34 @@ double? narrowSurfaceMaxRefraction(double shortSide) =>
     ? null
     : (shortSide * 0.28).clamp(8.0, 14.0);
 
+/// 祖先链上有没有「跟随链」这一帧**给不出变换**（`CompositedTransformFollower`）。
+///
+/// 问到它就等于问「本表面的屏幕原点可不可信」：`u_area_origin` 是 paint 期用
+/// `localToGlobal` 取的（见 [_RenderLiquidGlass._configure]），而
+/// `RenderFollowerLayer.getCurrentTransform()` 的契约是「没有 layer / 算不出变换
+/// ⇒ 返回**单位阵**」。于是原点会退化成**本表面的布局位置** —— 首页那颗常驻球是
+/// `Stack` 的左上角对齐子节点，退化成屏幕左上角；着色器按
+/// `local = FlutterFragCoord - u_area_origin` 摆形状，圆就画到屏幕角上：球的图标
+/// （走合成期算出的正常变换）留在右上角，只有玻璃那层跑到左上角
+/// （2026-09-22 真机：进外观编辑页再退出后如此）。那颗球自己的可见性门控管的是
+/// 「整颗球要不要画」，管不到形状的坐标，这一条补的就是它。
+///
+/// 判据与 `FHeaderActionBall` 的门控同源（`layer != null &&
+/// getLastTransform() != null`）：同一件事必须问同一句话，两处口径不许分叉。
+bool liquidGlassFollowerTransformMissing(RenderObject? node) {
+  RenderObject? current = node;
+  while (current != null) {
+    if (current is RenderFollowerLayer) {
+      final layer = current.layer;
+      if (layer == null || layer.getLastTransform() == null) {
+        return true;
+      }
+    }
+    current = current.parent;
+  }
+  return false;
+}
+
 /// 一块**液态玻璃**表面：把实时背景糊掉之后，再按圆角 SDF 在边缘做折射与受光高光。
 ///
 /// 渲染结构等价于「`BackdropFilter` + 内容」，只是滤镜从单纯的高斯换成
@@ -748,7 +776,14 @@ class _RenderLiquidGlass extends RenderProxyBox {
     final ancestorScale = _ancestorScale();
     final useCanvasBoard =
         _forceCanvasBoard ||
-        (_preferCanvasBoardWhenAncestorScaled && ancestorScale < 0.999);
+        (_preferCanvasBoardWhenAncestorScaled && ancestorScale < 0.999) ||
+        // 跟随链这一帧算不出变换 ⇒ 屏幕原点不可信（会退化成布局位置，见
+        // [liquidGlassFollowerTransformMissing]）。这时**形状一步都不画**：宁可
+        // 退成同一块 canvas 板（位置由图层合成负责、是对的，只是这一刻没有材质），
+        // 也不能让形状按不可信的原点画到屏幕角上 —— 真机读成「右上角的球跑到
+        // 左上角」（2026-09-22）。板上记的 `_paintedOrigin` 是那个不可信的值，
+        // 帧末看守发现它变了就会标脏重画，链路一恢复下一帧自动回到玻璃。
+        liquidGlassFollowerTransformMissing(this);
     if (useCanvasBoard) {
       layer = null;
       final rrect = RRect.fromRectAndRadius(

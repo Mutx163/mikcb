@@ -273,6 +273,80 @@ void main() {
     );
   });
 
+  testWidgets('跟随链给不出变换时，几何侧同样不许按原点画形状', (tester) async {
+    // 上面几条钉的是「整颗球要不要画」；这一条钉**几何侧**。
+    //
+    // 玻璃形状按屏幕绝对坐标画（着色器 `local = FlutterFragCoord - u_area_origin`，
+    // 见 `liquid_glass_surface_test.dart` 的「玻璃只落在 u_area_origin 指定的屏幕
+    // 矩形里」），而 `u_area_origin` 是 paint 期 `localToGlobal` 取的，它走
+    // `RenderFollowerLayer.getCurrentTransform()` —— 那条路在链路没解析出来时返回
+    // **单位阵**，原点就退化成球的**布局位置**（首页那颗球 = 屏幕左上角）。图标走的是
+    // 合成期的正常变换，于是画面读起来是「三个点还在右上角、只有那层圈圈玻璃跑到
+    // 左上角」（2026-09-22 真机反馈）。所以这一帧里形状必须一步都不画。
+    //
+    // ⚠️ 真正要挡的那一帧是**一帧宽的空档**：变换由上一帧的合成阶段算出，paint 期读的
+    // 是上一次的结论 —— 本仓测试环境没有 shader filter 后端（玻璃层从不构造），
+    // 造不出那一帧。这条用例钉的是判据本身在两种状态下的结论；调用点在
+    // `_RenderLiquidGlass.paint` 的 `useCanvasBoard` 那一条上。
+    final link = LayerLink();
+    await tester.pumpWidget(
+      scope(
+        child: Stack(
+          children: [
+            FHeaderActionBall(
+              link: link,
+              icon: const Icon(Icons.more_vert_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      liquidGlassFollowerTransformMissing(
+        tester.renderObject(find.byType(HyperosSelectPopupGlass)),
+      ),
+      isTrue,
+      reason: '链路没解析出来的一帧：屏幕原点不可信，形状不许画',
+    );
+
+    // 对照：锚点回来、变换能算出来之后，判据必须放行（不能一直退成板子）。
+    final healthy = LayerLink();
+    await tester.pumpWidget(
+      scope(
+        child: Stack(
+          children: [
+            Positioned(
+              left: 200,
+              top: 30,
+              child: CompositedTransformTarget(
+                link: healthy,
+                child: const FHeaderAction(
+                  icon: SizedBox(width: 24, height: 24),
+                  semanticsLabel: '更多',
+                ),
+              ),
+            ),
+            FHeaderActionBall(
+              link: healthy,
+              icon: const Icon(Icons.more_vert_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      liquidGlassFollowerTransformMissing(
+        tester.renderObject(find.byType(HyperosSelectPopupGlass)),
+      ),
+      isFalse,
+      reason: '链路正常时玻璃照画：保护不能误伤',
+    );
+  });
+
   testWidgets('visible: false 时留着但不画（让位给弹窗的球）', (tester) async {
     final link = LayerLink();
     await tester.pumpWidget(
