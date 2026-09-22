@@ -413,10 +413,12 @@ class _SoftGlassTabBarState extends State<SoftGlassTabBar>
         return;
       }
       if (widget.selectedIndex == target) {
-        return; // 父级已接管，指示器就该停在目标槽
+        // 父级已接管，指示器就该停在目标槽。
+        return;
       }
       if (_pendingCommittedIndex != target) {
-        return; // 已被别的路径（didUpdateWidget / 取消）消费，别重复处理
+        // 已被别的路径（didUpdateWidget / 取消）消费，别重复处理。
+        return;
       }
       _pendingCommittedIndex = null;
       final current = widget.selectedIndex.clamp(0, _count - 1);

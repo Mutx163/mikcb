@@ -7596,9 +7596,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 圆钮与药丸由**同一个** [_resolveDockMaterial] 分派，材质天然同源
     // （见 [_dockRoundSurface]），不必再各解析一份参数。
     final dockMaterial = _resolveDockMaterial(context);
+    // 内嵌页表态只看主题，不跟着壁纸亮度走。
     final lum = _dockInlinePageId != null
         ? null
-        : _wallpaperBodyLuminance; // 内嵌页表态只看主题
+        : _wallpaperBodyLuminance;
     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     final isSoftDock = dockMaterial == _DockMaterial.soft;
     // 通用底栏墨色判据（chrome 阈值 0.45）。
@@ -7811,7 +7812,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     void onTap() =>
         _handleRoundButtonTap(context.read<TimetableProvider>().settings);
     final label = l10n.glassDockExtraButtonSemanticLabel;
-    const radius = 28.0; // 56 正圆
+    // 56 正圆。
+    const radius = 28.0;
     final body = Center(
       child: IconTheme.merge(
         data: IconThemeData(color: ink, size: 22),

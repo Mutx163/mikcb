@@ -37,7 +37,6 @@ lib/screens/miuix_showcase/theming.dart:25
 lib/screens/miuix_showcase/utility.dart:20
 lib/screens/miuix_showcase_screen.dart:56
 lib/screens/settings/settings_holiday.dart:1
-lib/screens/timetable_screen.dart:1
 lib/services/ai_course_import_service.dart:38
 lib/services/app_sync_snapshot_service.dart:2
 lib/services/app_update_service.dart:35
@@ -59,12 +58,15 @@ lib/services/storage_service.dart:2
 lib/services/support_creator_service.dart:6
 lib/services/warehouse_repository_service.dart:4
 lib/services/webdav_sync_service.dart:1
+lib/ui/hyperos/hyperos_proxies.dart:1
+lib/ui/hyperos/preview_bake_boundary.dart:6
 lib/ui/hyperos/soft_glass/soft_glass_refraction.dart:1
 lib/ui/hyperos/soft_glass/soft_glass_surface.dart:7
 lib/utils/course_color_palette.dart:19
 lib/utils/locale_utils.dart:4
 lib/widgets/app_startup_splash.dart:1
 lib/widgets/class_reminder_sheet.dart:2
+lib/widgets/glass_shader_program.dart:1
 lib/widgets/live_island_preview.dart:4
 lib/widgets/miuix_date_picker_sheet.dart:3
 lib/widgets/statistics/week_stats_view.dart:1
