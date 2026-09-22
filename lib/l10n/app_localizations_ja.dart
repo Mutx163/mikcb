@@ -10196,6 +10196,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseCardSurfaceStyleLabel => 'カードの外観';
 
   @override
+  String get courseCardMaterialMasterOffHint =>
+      '全体マテリアルが「ソリッドカード」のとき、カードは常にソリッドで描画されるため、ここの選択は反映されません。';
+
+  @override
   String get courseCardSurfaceStyleSolid => 'ソリッド';
 
   @override

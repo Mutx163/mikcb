@@ -6028,6 +6028,7 @@
   "courseCardSectionFields": "Display Fields",
   "courseCardSectionLayout": "Layout",
   "courseCardSurfaceStyleLabel": "Card Appearance",
+  "courseCardMaterialMasterOffHint": "While the overall material is \"Solid Cards\", cards always render solid — the choice here has no effect yet.",
   "courseCardSurfaceStyleSolid": "Solid",
   "courseCardSurfaceStyleGaussian": "Gaussian Blur",
   "courseCardSurfaceStyleLiquidGlass": "Liquid Glass",

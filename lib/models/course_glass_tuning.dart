@@ -164,6 +164,24 @@ class CourseGlassTuning {
     tintAlpha: tintAlpha,
   );
 
+  /// [toLiquidGlassTuning] 的**逆向**：把「按滑杆改过的」等价全局档抄回卡片这一套。
+  ///
+  /// 存在的理由：材质面板里三套滑杆共用同一份行构造（编辑页的 `_glassSliderTiles`），
+  /// 而滑杆回调拿到的类型是 [LiquidGlassTuning] —— 走这一趟抄写比再写一遍八行构造稳。
+  /// **只抄这八个字段**：预设档、深浅独立这些语义卡片本来就没有，别在这里长出第二套口径。
+  factory CourseGlassTuning.fromLiquidGlassTuning(LiquidGlassTuning tuning) {
+    return CourseGlassTuning(
+      refraction: tuning.refraction,
+      refractionBand: tuning.refractionBand,
+      refractionEdgePow: tuning.refractionEdgePow,
+      dispersion: tuning.dispersion,
+      rimStrength: tuning.rimStrength,
+      rimWidth: tuning.rimWidth,
+      blurSigma: tuning.blurSigma,
+      tintAlpha: tuning.tintAlpha,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
     'refraction': refraction,
     'refractionBand': refractionBand,

@@ -10241,6 +10241,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseCardSurfaceStyleLabel => '카드 외관';
 
   @override
+  String get courseCardMaterialMasterOffHint =>
+      '전체 재질이 \'솔리드 카드\'일 때 카드는 항상 솔리드로 그려지므로, 여기서 고른 값은 반영되지 않습니다.';
+
+  @override
   String get courseCardSurfaceStyleSolid => '솔리드';
 
   @override

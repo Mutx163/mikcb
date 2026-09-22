@@ -6067,6 +6067,7 @@
   "courseCardSectionFields": "显示字段",
   "courseCardSectionLayout": "布局",
   "courseCardSurfaceStyleLabel": "卡片外观",
+  "courseCardMaterialMasterOffHint": "「整体材质」为「实体卡片」时，卡片一律按实体渲染，这里的选择暂不生效",
   "courseCardSurfaceStyleSolid": "实体卡片",
   "courseCardSurfaceStyleGaussian": "高斯模糊",
   "courseCardSurfaceStyleLiquidGlass": "液态玻璃",

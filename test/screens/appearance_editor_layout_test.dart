@@ -365,12 +365,17 @@ void main() {
       reason: '面板顶到屏幕顶了＝预览整块看不见',
     );
     // 超出的内容在面板内部滚动（不再靠长高来"全显示"）。
+    //
+    // ⚠️ 面板里第一个 `Scrollable` 是 2026-09-22 加的那层**横向翻页**（通用 /
+    // 课程卡片两页），所以这里按页 key 指名取「通用」页自己的竖向滚动视图。
     final position = tester
         .state<ScrollableState>(
-          find.descendant(
-            of: find.byType(HyperosSheetFrame),
-            matching: find.byType(Scrollable),
-          ),
+          find
+              .descendant(
+                of: find.byKey(const ValueKey('material-page-general')),
+                matching: find.byType(Scrollable),
+              )
+              .first,
         )
         .position;
     expect(

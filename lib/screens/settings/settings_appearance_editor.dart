@@ -458,307 +458,377 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   @override
   MiuixBottomSheetClose? get backdropHostSheetClose => _sheetClose;
 
-  /// 材质面板（「材质」弹窗正文）：2026-09-19 第七轮按最新产品口径重排 ——
-  /// **整机只有「实体卡片」与「液态玻璃」两种材质**。
+  /// 材质面板（「材质」弹窗正文）：**左右两页**（2026-09-22 第九轮改结构）——
+  /// 顶上「标题 + 通用 / 课程卡片」同一行，下面一层可左右滑的页面。
   ///
-  /// * **锁定件不再显示**：弹窗家族等「恒为液态玻璃标准档」的表面与设置无关，
-  ///   已从材质地图摘除（显示也没用）；
-  /// * **可调的直接显示**：液态玻璃的预设与调参滑杆从「高级材质」页直接搬进
-  ///   面板，不再入口跳转；质感方案（两材质下与模式开关重复）与高斯滑杆
-  ///  （高斯档不再提供）一并撤下；
-  /// * **观感明显的在前**：整体材质（实体 ↔ 液态）与首页顶栏玻璃置顶；
-  ///   调参细项、子页顶栏（卡片里看不见）、各表面地图依次靠后；
-  /// * 存量中间档显示按就近归桶（非液态系 → 实体、液态系 → 液态），只有
-  ///   用户点选才真正落盘；
-  /// * 行部件与设置列表同源；改动即时落盘：渲染源重绘 → 重烤 → 卡片实时
-  ///   跟随；「恢复默认」仍归「课表页面」作用域，面板只管调。
+  /// **整机只有「实体卡片」与「液态玻璃」两种材质**（2026-09-19 第七轮口径）；
+  /// 锁定件（弹窗家族等恒为液态玻璃标准档的表面）依旧不显示 —— 与设置无关。
+  ///
+  /// * **第一页「通用」**（[_buildGeneralMaterialPage]）：整机总闸（玻璃模式）、
+  ///   首页顶栏玻璃、液态的预设与八根旋钮、子页顶栏风格，末尾「各表面当前材质」
+  ///   只读总览；
+  /// * **第二页「课程卡片」**（[_buildCourseCardMaterialPage]）：卡片外观三档 +
+  ///   卡片**自己那套**八根旋钮（`TimetableSettings.courseCardGlassTuning`，
+  ///   2026-09-21 起卡片有独立配置）+ 总闸关掉时的一行说明。
+  ///
+  /// **为什么分页**：面板最多半屏（[_materialSheetMaxHeightFactor]），内容高度上限
+  /// 真机 393×852 只有约 332px，而一套八根旋钮就是 592px —— 两套旋钮放一页要滚四屏
+  /// 多。分页把「一页滚四屏」拆成「每页各滚约两屏」，而且用户只在**自己点进去的那
+  /// 一页**里滚。卡片那八根旋钮因此从「课程卡片设置页」搬了回来（那边当初单开一节的
+  /// 唯一理由正是"面板塞不下"，见
+  /// `.agents/notes/implemented/feature/2026-09-21-course-card-own-glass-tuning.md`）。
+  ///
+  /// 翻页**必须是面板内联的一层**：面板是根覆盖层自插条目，任何二级弹层 / 路由都会
+  /// 被压在背面（见 [_MaterialSegmented]）—— 所以这里不是另开弹窗，而是同一层里的
+  /// 横向 [PageView]（[_MaterialSheetBody]）。左右滑也不会和「从把手往下拖关闭」
+  /// 打架：那个手势只认把手上的**竖向**拖动（见 `showHomeHyperosSheet`）。
+  ///
+  /// 行部件与设置列表同源；改动即时落盘：渲染源重绘 → 重烤 → 卡片实时跟随；
+  /// 「恢复默认」仍归「课表页面」作用域，面板只管调。
   Future<void> _openMaterialSheet() {
     final l10n = AppLocalizations.of(context)!;
     // chrome 常显口径同 [_openWallpaperSheet]。
     // ⚠️ **最多半屏**（用户口径 2026-09-20）：这块面板改之前会长到 76% 屏高，
-    // 把上面那张预览小屏盖掉 —— 而它存在的意义就是「改一处、看预览」。超出
-    // 上限的内容由它自己的 SingleChildScrollView 内部滚动，不再靠长高来全显示。
+    // 把上面那张预览小屏盖掉 —— 而它存在的意义就是「改一处、看预览」。超出的
+    // 内容由**每一页自己的内部滚动**承担，不再靠长高来全显示。
     final contentMaxHeight = _materialSheetContentMaxHeight(context);
     return showHomeHyperosSheet<void>(
-        context: context,
-        builder: (sheetContext) => HyperosSheetFrame(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          maxHeight: contentMaxHeight,
-          child: SingleChildScrollView(
-            // 订阅草稿版本号：面板里任何一处改动（分段 / 胶囊 / 滑杆 / 开关 /
-            // 恢复默认）都立刻反映到面板自己身上。**不要退回「每个控件各喊一声
-            // 重画」的写法** —— 那样只要有一条路径漏喊，就是「拖了滑杆数字不动
-            // 但设置已经改了」的半失效状态（2026-09-20 修的正是这个）。
-            child: ValueListenableBuilder<int>(
-              valueListenable: _draftRevision,
-              builder: (sheetContext, _, _) {
-                // 模型里 liquidGlassTuning 可空（存量数据兼容）：面板统一用
-                // 兜底后的局部量，滑杆读写都不会踩空。
-                final liquidTuning =
-                    _draft.liquidGlassTuning ?? LiquidGlassTuning.defaults;
-                return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    l10n.appearanceEditorMaterialAction,
-                    style: HyperosTypography.sheetTitle(sheetContext),
+      context: context,
+      builder: (sheetContext) => HyperosSheetFrame(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        maxHeight: contentMaxHeight,
+        child: _MaterialSheetBody(editor: this, l10n: l10n),
+      ),
+    );
+  }
+
+  /// 「通用」页正文：整机总闸 + 卡片以外的表面。
+  ///
+  /// 页内顺序沿用「观感明显的在前」（2026-09-19 第七轮）：总闸 → 首页顶栏玻璃 →
+  /// 液态预设与八根旋钮 → 子页顶栏（卡片里看不见，靠后）→ 只读总览。
+  ///
+  /// 重画靠订阅草稿版本号：面板里任何一处改动（分段 / 胶囊 / 滑杆 / 开关）都立刻
+  /// 反映到面板自己身上。**不要退回「每个控件各喊一声重画」的写法** —— 那样只要
+  /// 有一条路径漏喊，就是「拖了滑杆数字不动、但设置已经改了」的半失效状态
+  /// （2026-09-20 修的正是这个）。
+  Widget _buildGeneralMaterialPage(
+    BuildContext sheetContext,
+    AppLocalizations l10n,
+  ) {
+    // 模型里 liquidGlassTuning 可空（存量数据兼容）：面板统一用兜底后的局部量，
+    // 滑杆读写都不会踩空。
+    final liquidTuning = _draft.liquidGlassTuning ?? LiquidGlassTuning.defaults;
+    return SingleChildScrollView(
+      // ⚠️ 面板里第一个 `Scrollable` 是外面那层**横向翻页** —— 测试要按这个 key
+      // 指名取本页的滚动视图，别再取 `Scrollable` 的第一个。
+      key: const ValueKey('material-page-general'),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── 总闸：观感最明显的一档，两页都受它支配（见
+          // [_buildCourseCardMaterialPage]）。**内联分段控件、不开二级弹层**：
+          // 面板本身是根覆盖层自插条目（MiuixWindowBottomSheet），任何嵌套弹层
+          // 都会被压在它背面（2026-09-19 真机实锤）──
+          HyperosSectionLabel(text: l10n.frostedGlassModeLabel),
+          const SizedBox(height: 8),
+          // 整体材质：实体 ↔ 液态。两材质口径下中间档不再提供；
+          // 存量档显示就近归桶，落盘只在点选时发生。
+          _MaterialSegmented<GlassModeChoice>(
+            items: {
+              l10n.frostedGlassModeSolid: GlassModeChoice.solid,
+              l10n.frostedGlassModeLiquid: GlassModeChoice.liquidGlass,
+            },
+            value: switch (glassModeChoiceOf(_draft)) {
+              GlassModeChoice.liquidGlass ||
+              GlassModeChoice.softGlass => GlassModeChoice.liquidGlass,
+              _ => GlassModeChoice.solid,
+            },
+            onChanged: (value) {
+              _updateDraft(applyGlassModeChoice(_draft, value));
+            },
+          ),
+          const SizedBox(height: 16),
+          HyperosSectionLabel(text: l10n.homeBandGlassMaterialLabel),
+          const SizedBox(height: 8),
+          // 首页顶栏玻璃：卡片顶部即反馈区。2026-09-20 起这个字段的口径
+          // 就是下面这两个选项本身（存量渐进/高斯/柔光在读取时已归到
+          // 液态，见 `TimetableSettings.sanitizeHomeBandGlassMaterial`），
+          // 所以这里**直接显示存下来的值** —— 不再需要"就近归桶"，
+          // 也就不会再出现「界面显示液态、实际渲染渐进磨砂」那种错位。
+          _MaterialSegmented<String>(
+            items: {
+              l10n.materialStateSolid: 'solid',
+              l10n.frostedGlassModeLiquid: 'liquid',
+            },
+            value: _draft.homeBandGlassMaterial,
+            onChanged: (value) {
+              _updateDraft(applyHomeBandGlassMaterial(_draft, value));
+            },
+          ),
+          // ── 靠后：观感细项（仅液态档可调）──
+          if (_draft.frostedGlassMode == FrostedGlassMode.liquidGlass) ...[
+            const SizedBox(height: 20),
+            HyperosSectionLabel(text: l10n.advancedMaterialTitle),
+            const SizedBox(height: 8),
+            // 液态预设：快捷档位胶囊（内联，不开二级弹层）；自定义
+            // 时展开 8 项调参滑杆（从「高级材质」页直接搬入）。
+            _MaterialChoiceChips<LiquidGlassPreset>(
+              items: {
+                for (final preset in LiquidGlassPreset.values)
+                  liquidGlassPresetLabel(l10n, preset): preset,
+              },
+              value: _draft.liquidGlassPreset,
+              onChanged: (preset) {
+                if (preset == LiquidGlassPreset.custom) {
+                  _updateDraft(
+                    _draft.copyWith(
+                      liquidGlassPreset: LiquidGlassPreset.custom,
+                    ),
+                  );
+                  return;
+                }
+                _updateDraft(
+                  _draft.copyWith(
+                    liquidGlassPreset: preset,
+                    liquidGlassTuning: preset.recommendedTuning,
                   ),
-                  const SizedBox(height: 16),
-                  // ── 顶部：观感最明显的两个开关。**内联分段控件、不开二级
-                  // 弹层**：面板本身是根覆盖层自插条目（MiuixWindowBottomSheet），
-                  // 任何嵌套弹层都会被它压在背面（2026-09-19 真机实锤）──
-                  HyperosSectionLabel(text: l10n.frostedGlassModeLabel),
-                  const SizedBox(height: 8),
-                  // 整体材质：实体 ↔ 液态。两材质口径下中间档不再提供；
-                  // 存量档显示就近归桶，落盘只在点选时发生。
-                  _MaterialSegmented<GlassModeChoice>(
-                    items: {
-                      l10n.frostedGlassModeSolid: GlassModeChoice.solid,
-                      l10n.frostedGlassModeLiquid: GlassModeChoice.liquidGlass,
-                    },
-                    value: switch (glassModeChoiceOf(_draft)) {
-                      GlassModeChoice.liquidGlass ||
-                      GlassModeChoice.softGlass => GlassModeChoice.liquidGlass,
-                      _ => GlassModeChoice.solid,
-                    },
-                    onChanged: (value) {
-                      _updateDraft(applyGlassModeChoice(_draft, value));
-                    },
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            HyperosListGroup(
+              children: [
+                if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
+                  // 浅色档的八根旋钮（与深色档共用同一份渲染）。
+                  ..._glassSliderTiles(
+                    l10n,
+                    tuning: liquidTuning,
+                    onUpdate: _updateLiquidTuning,
                   ),
-                  const SizedBox(height: 16),
-                  HyperosSectionLabel(text: l10n.homeBandGlassMaterialLabel),
-                  const SizedBox(height: 8),
-                  // 首页顶栏玻璃：卡片顶部即反馈区。2026-09-20 起这个字段的口径
-                  // 就是下面这两个选项本身（存量渐进/高斯/柔光在读取时已归到
-                  // 液态，见 `TimetableSettings.sanitizeHomeBandGlassMaterial`），
-                  // 所以这里**直接显示存下来的值** —— 不再需要"就近归桶"，
-                  // 也就不会再出现「界面显示液态、实际渲染渐进磨砂」那种错位。
-                  _MaterialSegmented<String>(
-                    items: {
-                      l10n.materialStateSolid: 'solid',
-                      l10n.frostedGlassModeLiquid: 'liquid',
-                    },
-                    value: _draft.homeBandGlassMaterial,
-                    onChanged: (value) {
-                      _updateDraft(applyHomeBandGlassMaterial(_draft, value));
-                    },
-                  ),
-                  // ── 课程卡片：**与全局材质分开**的一档 ──
-                  //
-                  // 为什么单开一节而不是跟着「玻璃模式」走：卡片是小格，弹窗 / 顶栏
-                  // / 玻璃坞是别的东西 —— 用户会想「别处保持液态，只把卡片换成
-                  // 实体」或者反过来。这一档写的是 TimetableSettings.courseCardSurfaceStyle，
-                  // 渲染门控与墨色规则一律走 effectiveCourseCardSurfaceStyle
-                  // （没有壁纸、或模糊总开关关掉时回落实体卡面），面板下面
-                  // 「各表面当前材质」那行课程卡片显示的就是这个**生效值**。
-                  //
-                  // 必须是内联胶囊（不用 HyperosSelectTile）：本面板是根覆盖层自
-                  // 插条目，二级弹层/路由都会被压在背面（见 [_MaterialSegmented]）。
-                  const SizedBox(height: 20),
-                  HyperosSectionLabel(text: l10n.surfaceCourseCard),
-                  const SizedBox(height: 8),
-                  _MaterialChoiceChips<CourseCardSurfaceStyle>(
-                    items: {
-                      for (final style in CourseCardSurfaceStyle.values)
-                        courseCardSurfaceStyleLabel(l10n, style): style,
-                    },
-                    value: _draft.courseCardSurfaceStyle,
-                    onChanged: (style) {
-                      _updateDraft(
-                        _draft.copyWith(courseCardSurfaceStyle: style),
-                      );
-                    },
-                  ),
-                  // ── 靠后：观感细项（仅液态档可调）──
-                  if (_draft.frostedGlassMode ==
-                      FrostedGlassMode.liquidGlass) ...[
-                    const SizedBox(height: 20),
-                    HyperosSectionLabel(text: l10n.advancedMaterialTitle),
-                    const SizedBox(height: 8),
-                    // 液态预设：快捷档位胶囊（内联，不开二级弹层）；自定义
-                    // 时展开 8 项调参滑杆（从「高级材质」页直接搬入）。
-                    _MaterialChoiceChips<LiquidGlassPreset>(
-                      items: {
-                        for (final preset in LiquidGlassPreset.values)
-                          liquidGlassPresetLabel(l10n, preset): preset,
-                      },
-                      value: _draft.liquidGlassPreset,
-                      onChanged: (preset) {
-                        if (preset == LiquidGlassPreset.custom) {
-                          _updateDraft(
-                            _draft.copyWith(
-                              liquidGlassPreset: LiquidGlassPreset.custom,
-                            ),
-                          );
-                          return;
-                        }
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                    child: HyperosButton(
+                      label: l10n.liquidGlassResetAction,
+                      variant: HyperosButtonVariant.secondary,
+                      expand: true,
+                      onPressed: () {
                         _updateDraft(
                           _draft.copyWith(
-                            liquidGlassPreset: preset,
-                            liquidGlassTuning: preset.recommendedTuning,
+                            liquidGlassPreset: LiquidGlassPreset.standard,
+                            liquidGlassTuning: LiquidGlassTuning.defaults,
                           ),
                         );
                       },
                     ),
-                    const SizedBox(height: 12),
-                    HyperosListGroup(
-                      children: [
-                        if (_draft.liquidGlassPreset ==
-                            LiquidGlassPreset.custom) ...[
-                          // 浅色档的八根旋钮（与深色档共用同一份渲染）。
-                          ..._liquidSliderTiles(
-                            l10n,
-                            tuning: liquidTuning,
-                            onUpdate: _updateLiquidTuning,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                            child: HyperosButton(
-                              label: l10n.liquidGlassResetAction,
-                              variant: HyperosButtonVariant.secondary,
-                              expand: true,
-                              onPressed: () {
-                                _updateDraft(
-                                  _draft.copyWith(
-                                    liquidGlassPreset:
-                                        LiquidGlassPreset.standard,
-                                    liquidGlassTuning:
-                                        LiquidGlassTuning.defaults,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    // ── 浅/深成对（2026-09-21）。设计见
-                    // `.agents/notes/proposed/architecture/2026-09-21-liquid-glass-light-dark-pair.md`
-                    // 两个开关都在**恒常**区（不进 `custom` 门内）：配方作用在预设档的
-                    // 旋钮上照样成立，只有「调深色档」才需要自定义档。
-                    HyperosListGroup(
-                      children: [
-                        HyperosSwitchTile(
-                          title: l10n.liquidGlassDarkBoostLabel,
-                          subtitle: l10n.liquidGlassDarkBoostSubtitle,
-                          value: _draft.darkGlassBoostEnabled,
-                          onChanged: (value) {
-                            _updateDraft(
-                              _draft.copyWith(darkGlassBoostEnabled: value),
-                            );
-                          },
-                        ),
-                        HyperosSwitchTile(
-                          // 开关语义是「独立」，而字段存的是「是否跟随」，所以取反。
-                          title: l10n.liquidGlassDarkIndependentLabel,
-                          subtitle: l10n.liquidGlassDarkIndependentSubtitle,
-                          value: !_draft.linkLiquidGlassTuning,
-                          onChanged: (independent) {
-                            _updateDraft(
-                              _draft.copyWith(
-                                linkLiquidGlassTuning: !independent,
-                                // 第一次打开、且从没设过深色档 ⇒ 以浅色档为起点。
-                                // 配方照旧套在「选中的那一档」上，所以这一按
-                                // **不会让画面跳**（跳了就是这里写错了）。
-                                liquidGlassTuningDark: independent
-                                    ? (_draft.liquidGlassTuningDark ??
-                                          liquidTuning)
-                                    : _draft.liquidGlassTuningDark,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    // 深色档的八根旋钮：与浅色档同构、共用同一个渲染函数
-                    // （[_liquidSliderTiles]）。只在「自定义 + 深色独立」时出现 ——
-                    // 预设档下旋钮本就不可调，列出来只会误导。
-                    if (_draft.liquidGlassPreset == LiquidGlassPreset.custom &&
-                        !_draft.linkLiquidGlassTuning) ...[
-                      const SizedBox(height: 12),
-                      HyperosListGroup(
-                        children: _liquidSliderTiles(
-                          l10n,
-                          tuning: _draft.liquidGlassTuningDark ?? liquidTuning,
-                          onUpdate: _updateDarkTuning,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    HyperosListGroup(
-                      children: [
-                        // 作用范围 → 玻璃坞：液态档下坞是否跟随液态（弹窗家族
-                        // 已锁标准档，无开关可调，不再显示）。
-                        HyperosSwitchTile(
-                          title: l10n.liquidGlassScopeDockTitle,
-                          subtitle: l10n.liquidGlassScopeDockSubtitle,
-                          value: _draft.liquidGlassDockEnabled,
-                          onChanged: (value) {
-                            _updateDraft(
-                              _draft.copyWith(liquidGlassDockEnabled: value),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                  // 子页顶栏（设置等页）：卡片里看不见，归入靠后分区。
-                  HyperosSectionLabel(text: l10n.subpageHeaderBlurStyleLabel),
-                  const SizedBox(height: 8),
-                  _MaterialSegmented<HeaderBlurStyle>(
-                    items: {
-                      l10n.headerBlurStyleInspire: HeaderBlurStyle.inspire,
-                      l10n.headerBlurStyleGaussian: HeaderBlurStyle.gaussian,
-                    },
-                    value: _draft.subpageHeaderBlurStyle,
-                    onChanged: (value) {
-                      _updateDraft(applySubpageChromeBlurStyle(_draft, value));
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  // 「各表面当前材质」地图：与渲染侧门控同口径的只读推导
-                  // （2026-09-12）。**锁定的表面不显示**（2026-09-19 第七轮）：
-                  // 弹窗家族四件（底部弹窗 / 选择面板 / 下拉小弹窗 / 选点按钮）
-                  // 恒为液态玻璃标准档、与设置无关，显示也没用，已摘除。
-                  Text(
-                    l10n.surfaceMaterialSectionTitle,
-                    style: HyperosTypography.sectionLabel(sheetContext),
-                  ),
-                  const SizedBox(height: 8),
-                  HyperosListGroup(
-                    children: [
-                      _surfaceMaterialTile(
-                        sheetContext,
-                        l10n.liquidGlassScopeHomeChromeTitle,
-                        homeBandSurfaceMaterial(_draft),
-                      ),
-                      _surfaceMaterialTile(
-                        sheetContext,
-                        l10n.surfaceSubpageHeader,
-                        subpageHeaderSurfaceMaterial(_draft),
-                      ),
-                      _surfaceMaterialTile(
-                        sheetContext,
-                        l10n.liquidGlassScopeDockTitle,
-                        dockSurfaceMaterial(_draft),
-                      ),
-                      _surfaceMaterialTile(
-                        sheetContext,
-                        l10n.surfaceCourseCard,
-                        courseCardSurfaceMaterial(_draft),
-                      ),
-                    ],
                   ),
                 ],
-                );
-              },
+              ],
             ),
+            const SizedBox(height: 8),
+            // ── 浅/深成对（2026-09-21）。设计见
+            // `.agents/notes/proposed/architecture/2026-09-21-liquid-glass-light-dark-pair.md`
+            // 两个开关都在**恒常**区（不进 `custom` 门内）：配方作用在预设档的
+            // 旋钮上照样成立，只有「调深色档」才需要自定义档。
+            HyperosListGroup(
+              children: [
+                HyperosSwitchTile(
+                  title: l10n.liquidGlassDarkBoostLabel,
+                  subtitle: l10n.liquidGlassDarkBoostSubtitle,
+                  value: _draft.darkGlassBoostEnabled,
+                  onChanged: (value) {
+                    _updateDraft(
+                      _draft.copyWith(darkGlassBoostEnabled: value),
+                    );
+                  },
+                ),
+                HyperosSwitchTile(
+                  // 开关语义是「独立」，而字段存的是「是否跟随」，所以取反。
+                  title: l10n.liquidGlassDarkIndependentLabel,
+                  subtitle: l10n.liquidGlassDarkIndependentSubtitle,
+                  value: !_draft.linkLiquidGlassTuning,
+                  onChanged: (independent) {
+                    _updateDraft(
+                      _draft.copyWith(
+                        linkLiquidGlassTuning: !independent,
+                        // 第一次打开、且从没设过深色档 ⇒ 以浅色档为起点。
+                        // 配方照旧套在「选中的那一档」上，所以这一按
+                        // **不会让画面跳**（跳了就是这里写错了）。
+                        liquidGlassTuningDark: independent
+                            ? (_draft.liquidGlassTuningDark ?? liquidTuning)
+                            : _draft.liquidGlassTuningDark,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            // 深色档的八根旋钮：与浅色档同构、共用同一个渲染函数
+            // （[_glassSliderTiles]）。只在「自定义 + 深色独立」时出现 ——
+            // 预设档下旋钮本就不可调，列出来只会误导。
+            if (_draft.liquidGlassPreset == LiquidGlassPreset.custom &&
+                !_draft.linkLiquidGlassTuning) ...[
+              const SizedBox(height: 12),
+              HyperosListGroup(
+                children: _glassSliderTiles(
+                  l10n,
+                  tuning: _draft.liquidGlassTuningDark ?? liquidTuning,
+                  onUpdate: _updateDarkTuning,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            HyperosListGroup(
+              children: [
+                // 作用范围 → 玻璃坞：液态档下坞是否跟随液态（弹窗家族
+                // 已锁标准档，无开关可调，不再显示）。
+                HyperosSwitchTile(
+                  title: l10n.liquidGlassScopeDockTitle,
+                  subtitle: l10n.liquidGlassScopeDockSubtitle,
+                  value: _draft.liquidGlassDockEnabled,
+                  onChanged: (value) {
+                    _updateDraft(
+                      _draft.copyWith(liquidGlassDockEnabled: value),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 20),
+          // 子页顶栏（设置等页）：卡片里看不见，归入靠后分区。
+          HyperosSectionLabel(text: l10n.subpageHeaderBlurStyleLabel),
+          const SizedBox(height: 8),
+          _MaterialSegmented<HeaderBlurStyle>(
+            items: {
+              l10n.headerBlurStyleInspire: HeaderBlurStyle.inspire,
+              l10n.headerBlurStyleGaussian: HeaderBlurStyle.gaussian,
+            },
+            value: _draft.subpageHeaderBlurStyle,
+            onChanged: (value) {
+              _updateDraft(applySubpageChromeBlurStyle(_draft, value));
+            },
           ),
-        ),
-      );
+          const SizedBox(height: 20),
+          // 「各表面当前材质」地图：与渲染侧门控同口径的只读推导
+          // （2026-09-12）。**锁定的表面不显示**（2026-09-19 第七轮）：
+          // 弹窗家族四件（底部弹窗 / 选择面板 / 下拉小弹窗 / 选点按钮）
+          // 恒为液态玻璃标准档、与设置无关，显示也没用，已摘除。
+          Text(
+            l10n.surfaceMaterialSectionTitle,
+            style: HyperosTypography.sectionLabel(sheetContext),
+          ),
+          const SizedBox(height: 8),
+          HyperosListGroup(
+            children: [
+              _surfaceMaterialTile(
+                sheetContext,
+                l10n.liquidGlassScopeHomeChromeTitle,
+                homeBandSurfaceMaterial(_draft),
+              ),
+              _surfaceMaterialTile(
+                sheetContext,
+                l10n.surfaceSubpageHeader,
+                subpageHeaderSurfaceMaterial(_draft),
+              ),
+              _surfaceMaterialTile(
+                sheetContext,
+                l10n.liquidGlassScopeDockTitle,
+                dockSurfaceMaterial(_draft),
+              ),
+              _surfaceMaterialTile(
+                sheetContext,
+                l10n.surfaceCourseCard,
+                courseCardSurfaceMaterial(_draft),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 「课程卡片」页正文：只管卡片这一档材质。
+  ///
+  /// 卡片是小格，弹窗 / 顶栏 / 玻璃坞是别的东西 —— 所以从 2026-09-20 起它是**与
+  /// 全局材质分开**的一档：这一档写 `TimetableSettings.courseCardSurfaceStyle`，
+  /// 渲染门控与墨色规则一律走 `effectiveCourseCardSurfaceStyle`（没有壁纸、或模糊
+  /// 总开关关掉时回落实体卡面）。2026-09-22 又把卡片**自己那套八根旋钮**从「课程
+  /// 卡片设置页」搬到这里（写 `TimetableSettings.courseCardGlassTuning`）：那边当初
+  /// 单开一节的唯一理由是「材质面板塞不下八行滑杆」，分页之后这条理由消失。
+  ///
+  /// ⚠️ **整机总闸会盖过这一页**：`effectiveCourseCardSurfaceStyle` 在模糊总开关
+  /// 关掉（= 整体材质「实体卡片」）时一律回落实体卡片 —— 这里选了液态也不生效。
+  /// 总闸在第一页，用户站在这一页看不到它，所以这一页必须把那句话说出来（用户口径
+  /// 2026-09-22：「第二页加一行提示」），否则就是「选了液态、画面不动」。
+  Widget _buildCourseCardMaterialPage(
+    BuildContext sheetContext,
+    AppLocalizations l10n,
+  ) {
+    final cardTuning =
+        _draft.courseCardGlassTuning ?? CourseGlassTuning.courseCard;
+    // 只在这一档**确实被总闸压住**时提示：用户选的本来就是实体卡片时，没有什么
+    // 「不生效」可言，多一行字只会是噪音。
+    final maskedByMaster =
+        !_draft.frostedBlurEnabled &&
+        _draft.courseCardSurfaceStyle != CourseCardSurfaceStyle.solid;
+    return SingleChildScrollView(
+      key: const ValueKey('material-page-course-card'),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 必须是内联胶囊（不用 HyperosSelectTile）：本面板是根覆盖层自插
+          // 条目，二级弹层/路由都会被压在背面（见 [_MaterialSegmented]）。
+          HyperosSectionLabel(text: l10n.courseCardSurfaceStyleLabel),
+          const SizedBox(height: 8),
+          _MaterialChoiceChips<CourseCardSurfaceStyle>(
+            items: {
+              for (final style in CourseCardSurfaceStyle.values)
+                courseCardSurfaceStyleLabel(l10n, style): style,
+            },
+            value: _draft.courseCardSurfaceStyle,
+            onChanged: (style) {
+              _updateDraft(_draft.copyWith(courseCardSurfaceStyle: style));
+            },
+          ),
+          if (maskedByMaster) ...[
+            const SizedBox(height: 8),
+            Text(
+              l10n.courseCardMaterialMasterOffHint,
+              style: HyperosTypography.listDetail(sheetContext).copyWith(
+                color: HyperosColors.secondaryText(sheetContext),
+              ),
+            ),
+          ],
+          // 卡片自己那套八根旋钮：只在卡片档为液态时出现（实体 / 高斯档没有折射
+          // 可调）。建议点位与档位数**沿用它在课程卡片设置页那一套** —— 出厂值
+          // 必须落在格点上，否则第一次拖动就把染色 0.32 吸成 0.30 / 0.35。
+          if (_draft.courseCardSurfaceStyle ==
+              CourseCardSurfaceStyle.liquidGlass) ...[
+            const SizedBox(height: 20),
+            HyperosSectionLabel(text: l10n.advancedMaterialTitle),
+            const SizedBox(height: 8),
+            HyperosListGroup(
+              children: _glassSliderTiles(
+                l10n,
+                tuning: cardTuning.toLiquidGlassTuning(),
+                showKeyPoints: true,
+                tintDivisions: 25,
+                // 滑杆改的是「等价全局档」，写回卡片那套要过一趟抄写：两套类型
+                // 各自的出厂档与染色语义不同（见 `CourseGlassTuning` 的注释），
+                // 不能就地换类型。
+                onUpdate: (update) => _updateCardTuning(
+                  (base) => CourseGlassTuning.fromLiquidGlassTuning(
+                    update(base.toLiquidGlassTuning()),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   /// 「各表面当前材质」地图的只读行：左表面名（主题墨色）、右材质值（次级
@@ -829,15 +899,36 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   String _tuningNum(double value, int digits) => value.toStringAsFixed(digits);
   String _tuningPct(double value) => '${(value * 100).round()}%';
 
-  /// 液态玻璃的八根滑杆。**浅色档与深色档共用这一份** —— 两套各写一遍迟早会漂，
-  /// 而「同一材质两种观感」正是这个仓库反复吃亏的那类病。
+  /// 卡片那套液态参数的滑杆落地口。回落链 = `卡片档 ?? 卡片出厂档`
+  /// （模型字段可空，与卡片设置页原实现同口径）。
+  void _updateCardTuning(
+    CourseGlassTuning Function(CourseGlassTuning tuning) update,
+  ) {
+    final base = _draft.courseCardGlassTuning ?? CourseGlassTuning.courseCard;
+    _updateDraft(
+      _draft.copyWith(courseCardGlassTuning: update(base)),
+      debounce: true,
+    );
+  }
+
+  /// 液态玻璃的八根滑杆。**浅色档 / 深色档 / 卡片档共用这一份** —— 三套各写一遍
+  /// 迟早会漂，而「同一材质两种观感」正是这个仓库反复吃亏的那类病。
   ///
   /// 滑杆一律关掉「点标题弹数字输入框」：那会开出二级弹层，而本面板是根覆盖层
   /// 自插条目（MiuixWindowBottomSheet），嵌套弹层会被压在背面（2026-09-19 真机实锤）。
-  List<Widget> _liquidSliderTiles(
+  ///
+  /// [showKeyPoints] 打开时在四根关键旋钮上画「建议点位」（= 出厂值那一点；轨道上
+  /// 画点、划过变亮、经过一次触感）—— 只有卡片档要它（2026-09-21 用户口径：在那几根
+  /// 可见性最强的旋钮上给建议值）。
+  ///
+  /// [tintDivisions] 默认 20；卡片档必须是 25（步长 0.04），否则出厂染色 0.32
+  /// 不落在格点上，第一次拖动就会被吸成 0.30 / 0.35。
+  List<Widget> _glassSliderTiles(
     AppLocalizations l10n, {
     required LiquidGlassTuning tuning,
     required void Function(LiquidGlassTuning Function(LiquidGlassTuning)) onUpdate,
+    bool showKeyPoints = false,
+    int tintDivisions = 20,
   }) => [
       HyperosSliderTile(
         tapToEdit: false,
@@ -845,13 +936,12 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
         value: tuning.refraction,
         max: LiquidGlassTuning.maxRefraction,
         divisions: 40,
-        valueLabel: _tuningNum(
-          tuning.refraction,
-          1,
-        ),
-        onChanged: (value) => onUpdate(
-          (t) => t.copyWith(refraction: value),
-        ),
+        valueLabel: _tuningNum(tuning.refraction, 1),
+        showKeyPoints: showKeyPoints,
+        keyPoints: showKeyPoints
+            ? const [CourseGlassTuning.defaultRefraction]
+            : null,
+        onChanged: (value) => onUpdate((t) => t.copyWith(refraction: value)),
       ),
       HyperosSliderTile(
         tapToEdit: false,
@@ -860,13 +950,13 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
         min: LiquidGlassTuning.minRefractionBand,
         max: LiquidGlassTuning.maxRefractionBand,
         divisions: 46,
-        valueLabel: _tuningNum(
-          tuning.refractionBand,
-          1,
-        ),
-        onChanged: (value) => onUpdate(
-          (t) => t.copyWith(refractionBand: value),
-        ),
+        valueLabel: _tuningNum(tuning.refractionBand, 1),
+        showKeyPoints: showKeyPoints,
+        keyPoints: showKeyPoints
+            ? const [CourseGlassTuning.defaultRefractionBand]
+            : null,
+        onChanged: (value) =>
+            onUpdate((t) => t.copyWith(refractionBand: value)),
       ),
       HyperosSliderTile(
         tapToEdit: false,
@@ -875,37 +965,29 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
         min: LiquidGlassTuning.minRefractionEdgePow,
         max: LiquidGlassTuning.maxRefractionEdgePow,
         divisions: 20,
-        valueLabel: _tuningNum(
-          tuning.refractionEdgePow,
-          2,
-        ),
-        onChanged: (value) => onUpdate(
-          (t) => t.copyWith(refractionEdgePow: value),
-        ),
+        valueLabel: _tuningNum(tuning.refractionEdgePow, 2),
+        showKeyPoints: showKeyPoints,
+        keyPoints: showKeyPoints
+            ? const [CourseGlassTuning.defaultRefractionEdgePow]
+            : null,
+        onChanged: (value) =>
+            onUpdate((t) => t.copyWith(refractionEdgePow: value)),
       ),
       HyperosSliderTile(
         tapToEdit: false,
         title: l10n.liquidGlassDispersionLabel,
         value: tuning.dispersion,
         divisions: 20,
-        valueLabel: _tuningPct(
-          tuning.dispersion,
-        ),
-        onChanged: (value) => onUpdate(
-          (t) => t.copyWith(dispersion: value),
-        ),
+        valueLabel: _tuningPct(tuning.dispersion),
+        onChanged: (value) => onUpdate((t) => t.copyWith(dispersion: value)),
       ),
       HyperosSliderTile(
         tapToEdit: false,
         title: l10n.liquidGlassRimStrengthLabel,
         value: tuning.rimStrength,
         divisions: 20,
-        valueLabel: _tuningPct(
-          tuning.rimStrength,
-        ),
-        onChanged: (value) => onUpdate(
-          (t) => t.copyWith(rimStrength: value),
-        ),
+        valueLabel: _tuningPct(tuning.rimStrength),
+        onChanged: (value) => onUpdate((t) => t.copyWith(rimStrength: value)),
       ),
       HyperosSliderTile(
         tapToEdit: false,
@@ -915,13 +997,8 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
         // 步长 0.1（3 / 30）：细线口径的取值都在 0.6~1.1 之间，
         // 步长 0.5 会连默认值 0.8 都落不到格点上。
         divisions: 30,
-        valueLabel: _tuningNum(
-          tuning.rimWidth,
-          1,
-        ),
-        onChanged: (value) => onUpdate(
-          (t) => t.copyWith(rimWidth: value),
-        ),
+        valueLabel: _tuningNum(tuning.rimWidth, 1),
+        onChanged: (value) => onUpdate((t) => t.copyWith(rimWidth: value)),
       ),
       HyperosSliderTile(
         tapToEdit: false,
@@ -929,25 +1006,20 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
         value: tuning.blurSigma,
         max: LiquidGlassTuning.maxBlurSigma,
         divisions: 40,
-        valueLabel: _tuningNum(
-          tuning.blurSigma,
-          0,
-        ),
-        onChanged: (value) => onUpdate(
-          (t) => t.copyWith(blurSigma: value),
-        ),
+        valueLabel: _tuningNum(tuning.blurSigma, 0),
+        onChanged: (value) => onUpdate((t) => t.copyWith(blurSigma: value)),
       ),
       HyperosSliderTile(
         tapToEdit: false,
         title: l10n.liquidGlassTintLabel,
         value: tuning.tintAlpha,
-        divisions: 20,
-        valueLabel: _tuningPct(
-          tuning.tintAlpha,
-        ),
-        onChanged: (value) => onUpdate(
-          (t) => t.copyWith(tintAlpha: value),
-        ),
+        divisions: tintDivisions,
+        valueLabel: _tuningPct(tuning.tintAlpha),
+        showKeyPoints: showKeyPoints,
+        keyPoints: showKeyPoints
+            ? const [CourseGlassTuning.defaultTintAlpha]
+            : null,
+        onChanged: (value) => onUpdate((t) => t.copyWith(tintAlpha: value)),
       ),
   ];
 
@@ -1407,6 +1479,110 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 材质面板的正文：顶上「标题 + 通用 / 课程卡片」一行，下面一层可左右滑的两页。
+///
+/// 为什么它必须是 StatefulWidget：翻页需要一个**跨重建存活**的 [PageController]，
+/// 而面板正文由草稿版本号订阅重画（[_AppearanceEditorScreenState._draftRevision]）——
+/// 控制器建在 builder 里的话，用户每改一次设置就换一个，翻页位置随之丢失。
+///
+/// 两页正文由编辑页那侧的 `_buildGeneralMaterialPage` / `_buildCourseCardMaterialPage`
+/// 构造（它们要用编辑页的草稿与写回口子）；这里只管标题行、分段与翻页本身。
+class _MaterialSheetBody extends StatefulWidget {
+  const _MaterialSheetBody({required this.editor, required this.l10n});
+
+  final _AppearanceEditorScreenState editor;
+  final AppLocalizations l10n;
+
+  @override
+  State<_MaterialSheetBody> createState() => _MaterialSheetBodyState();
+}
+
+class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
+  /// 页序：0 = 通用，1 = 课程卡片。与 [PageView] 的 children 顺序一一对应。
+  static const int _generalPage = 0;
+  static const int _courseCardPage = 1;
+
+  final PageController _pages = PageController();
+  int _page = _generalPage;
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  /// 点分段跳页。**用户自己滑**出来的那一页由 [PageView.onPageChanged] 回收索引 ——
+  /// 两条路都得走，否则会出现「滑过去一格、分段还亮着原来那格」。
+  void _goToPage(int page) {
+    if (page == _page) {
+      return;
+    }
+    setState(() => _page = page);
+    _pages.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final editor = widget.editor;
+    final l10n = widget.l10n;
+    return ValueListenableBuilder<int>(
+      valueListenable: editor._draftRevision,
+      builder: (sheetContext, _, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 标题与翻页分段**同一行**（用户口径 2026-09-22）：面板的高度预算只有
+            // 约 332px，标题单独占掉一行就是少一行内容。
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.appearanceEditorMaterialAction,
+                    style: HyperosTypography.sheetTitle(sheetContext),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 208),
+                  child: _MaterialSegmented<int>(
+                    items: {
+                      l10n.generalSettingsTitle: _generalPage,
+                      l10n.surfaceCourseCard: _courseCardPage,
+                    },
+                    value: _page,
+                    onChanged: _goToPage,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // 两页等高、各页自己竖向滚动：面板总高由外层 `maxHeight`（半屏上限）
+            // 顶住，见 [_AppearanceEditorScreenState._openMaterialSheet]。
+            Expanded(
+              child: PageView(
+                controller: _pages,
+                onPageChanged: (page) {
+                  if (page != _page) {
+                    setState(() => _page = page);
+                  }
+                },
+                children: [
+                  editor._buildGeneralMaterialPage(sheetContext, l10n),
+                  editor._buildCourseCardMaterialPage(sheetContext, l10n),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

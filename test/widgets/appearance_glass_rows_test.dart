@@ -13,6 +13,9 @@
 // （真机实锤），所以本文件还兼作「内联控件直接可调」的回归钉。
 // 2026-09-20 八次调整：面板新增「课程卡片」一节（三档内联胶囊，写
 // `courseCardSurfaceStyle`）—— 卡片是小格，材质要与全局材质**分开**选。
+// 2026-09-22 九次调整：面板改成「通用 / 课程卡片」**左右两页**（标题行右侧是翻页
+// 分段）。卡片那三档胶囊与它自己那八根旋钮都搬到第二页；课程卡片设置页不再有
+// 那八根（那边当初单开一节的唯一理由是面板塞不下，分页之后这条理由消失）。
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -89,7 +92,10 @@ Future<void> _scrollTo(WidgetTester tester, Finder target) async {
 
 Finder _panelScrollable() => find
     .descendant(
-      of: find.byType(HyperosSheetFrame),
+      // ⚠️ **不能取面板里第一个 `Scrollable`**：2026-09-22 起材质面板是「通用 /
+      // 课程卡片」两页（横向翻页那一层自己也是 `Scrollable`，而且排在前面）。
+      // 按页 key 指名取「通用」页自己的竖向滚动视图。
+      of: find.byKey(const ValueKey('material-page-general')),
       matching: find.byType(Scrollable),
     )
     .first;
@@ -145,9 +151,15 @@ void main() {
 
     // 整体材质两档置顶（出厂默认档在两材质口径下显示归桶为「实体卡片」）。
     expect(find.text('玻璃模式'), findsOneWidget);
-    // 两处「实体卡片」：玻璃模式那一段（选中态），以及新加的「课程卡片」材质
-    // 那一节的胶囊（出厂默认课卡是实体档）。见下面对课程卡片那一节的断言。
-    expect(find.text('实体卡片'), findsNWidgets(2));
+    // 面板顶上是「通用 / 课程卡片」两页的翻页分段（2026-09-22），默认停在「通用」页：
+    // 所以「实体卡片」这一屏只有一处（玻璃模式那一段的选中态）—— 卡片那一节的
+    // 三档胶囊在第二页，没翻过去之前不在树上。
+    expect(find.text('实体卡片'), findsOneWidget);
+    expect(find.text('通用'), findsOneWidget);
+    // 「课程卡片」两处：顶上的翻页分段标签，以及末尾只读总览里那一行
+    //（卡片材质那一节的胶囊在第二页，没翻过去之前不在树上）。
+    expect(find.text('课程卡片'), findsNWidgets(2));
+    expect(find.text('卡片外观'), findsNothing, reason: '第二页还没翻过去');
 
     // 首页顶栏玻璃（两档，存量渐进档显示归桶为液态）+ 子页顶栏风格两档。
     await _scrollPanelTo(tester, find.text('首页顶栏玻璃'));

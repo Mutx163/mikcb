@@ -254,26 +254,54 @@ void main() {
     await tester.tap(find.text('材质'));
     await tester.pumpAndSettle();
 
-    // 面板标题 + 分组内容：整体材质两档（内联分段，置顶）/ 首页顶栏 /
-    // 课程卡片材质 / 子页顶栏 / 各表面地图。出厂默认档（高斯）在两材质口径下
-    // 显示归桶为「实体卡片」，液态调校分区随之隐藏。
+    // 面板 = 标题行（「材质」+ 通用 / 课程卡片 两格翻页分段）+ 第一页正文。
+    // 出厂默认档（高斯）在两材质口径下显示归桶为「实体卡片」，液态调校分区随之隐藏。
     expect(find.text('材质'), findsWidgets);
+    expect(find.text('通用'), findsOneWidget);
+    // 「课程卡片」两处：翻页分段标签 + 末尾只读总览里那一行。
+    expect(find.text('课程卡片'), findsNWidgets(2));
     expect(find.text('玻璃模式'), findsOneWidget);
-    // 「实体卡片」现在有两处来源：玻璃模式那一段（选中态）与课程卡片材质那一节
-    // 的胶囊；后者写的是 courseCardSurfaceStyle，见下面那条用例。
-    expect(find.text('实体卡片'), findsWidgets);
+    expect(find.text('实体卡片'), findsOneWidget);
     expect(find.text('首页顶栏玻璃'), findsOneWidget);
     expect(find.text('子页顶栏模糊风格'), findsOneWidget);
     expect(find.text('各表面当前材质'), findsOneWidget);
     expect(find.text('首页玻璃带'), findsWidgets);
-    expect(find.text('课程卡片'), findsWidgets);
     expect(find.text('高级材质'), findsNothing);
+    // 第二页的内容在翻过去之前不在树上（翻页层只建当前那一页）。
+    expect(find.text('卡片外观'), findsNothing);
 
     // 第七轮口径回归钉：质感方案（与模式开关重复）撤下；弹窗家族等锁定
     // 表面不再显示；高斯中间档不再出现在候选里。
     expect(find.text('质感方案'), findsNothing);
     expect(find.text('弹窗与对话框'), findsNothing);
     expect(find.text('经典磨砂'), findsNothing);
+  });
+
+  testWidgets('材质面板第二页：左右滑得过去，分段跟着同步（2026-09-22 翻页）', (
+    tester,
+  ) async {
+    // 用户口径 2026-09-22：「做成左右切换内部页面，第一个是通用，第二个课程卡片」，
+    // 并明确要**能滑**。滑的是面板正文那一层（横向翻页），不是把手的关闭手势。
+    await pumpEditor(tester);
+    await tester.tap(find.text('材质'));
+    await tester.pumpAndSettle();
+    expect(find.text('卡片外观'), findsNothing);
+
+    // 面板正文那一层才是翻页（页面上还嵌着一份真首页，那里也有 PageView，
+    // 所以要把查找范围收到弹层里）。
+    await tester.drag(
+      find.descendant(
+        of: find.byType(HyperosSheetFrame),
+        matching: find.byType(PageView),
+      ),
+      const Offset(-400, 0),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('卡片外观'), findsOneWidget, reason: '滑过去要真的落在第二页');
+    // 分段标签两页都在（它是标题行的一部分），第一页内容已经离场。
+    expect(find.text('通用'), findsOneWidget);
+    expect(find.text('玻璃模式'), findsNothing, reason: '第一页已翻走');
   });
 
   testWidgets('底部「调整壁纸」打开壁纸弹窗（选图按钮在里面）', (tester) async {
@@ -285,19 +313,24 @@ void main() {
     expect(find.text('选择图片'), findsOneWidget);
   });
 
-  testWidgets('材质面板里的「课程卡片」一节写的是卡片自己的档位', (tester) async {
+  testWidgets('材质面板第二页的「卡片外观」写的是卡片自己的档位', (tester) async {
     // 用户口径（2026-09-20）：卡片是方格、弹窗与顶栏是别的东西，所以卡片的材质
-    // 要能**与全局材质分开**选。这一节的胶囊直接写
+    // 要能**与全局材质分开**选。2026-09-22 起这一节整节在面板第二页，胶囊直接写
     // TimetableSettings.courseCardSurfaceStyle，渲染门控仍走
     // effectiveCourseCardSurfaceStyle（无壁纸 / 模糊总开关关 → 回落实体）。
     final provider = await pumpEditor(tester);
     await tester.tap(find.text('材质'));
     await tester.pumpAndSettle();
+    // 进第二页：点顶上那格分段标签（`.first` = 标题行里的标签，另一个在只读总览里）。
+    await tester.tap(find.text('课程卡片').first);
+    await tester.pumpAndSettle();
 
-    // 「课程卡片」在面板里有两处：这一节的标题，以及下面只读地图里的一行。
-    expect(find.text('课程卡片'), findsNWidgets(2));
-    // 胶囊串（`_MaterialChoiceChips` 用 Wrap 排布）默认档下只有这一节有，
-    // 用它把「课程卡片的液态玻璃」与上方「玻璃模式」里同名的那个词分开。
+    // 第二页只剩一个「课程卡片」：分段标签自己（这一页的节标题是「卡片外观」，
+    // 只读总览在第一页）。
+    expect(find.text('课程卡片'), findsOneWidget);
+    expect(find.text('卡片外观'), findsOneWidget);
+    // 胶囊串（`_MaterialChoiceChips` 用 Wrap 排布）这一页只有这一处，
+    // 用它把「课程卡片的液态玻璃」与第一页「玻璃模式」里同名的那个词分开。
     final cardChips = find.byType(Wrap);
     expect(cardChips, findsOneWidget);
     final liquidChip = find.descendant(
@@ -305,21 +338,6 @@ void main() {
       matching: find.text('液态玻璃'),
     );
     expect(liquidChip, findsOneWidget);
-
-    // 面板最多占半屏、超出部分内部滚动，所以这里照面板自己的滚动条把它带进视野
-    // （真机上用户就是这么滑的）。**不动视口尺寸**：改了不还原会把后面的用例
-    // 一起带偏（整文件同进程顺序跑）。
-    await tester.scrollUntilVisible(
-      liquidChip,
-      120,
-      scrollable: find
-          .descendant(
-            of: find.byType(HyperosSheetFrame),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    await tester.pumpAndSettle();
 
     await tester.tap(liquidChip);
     // 不用 pumpAndSettle：这一档会改首页渲染源（卡片重烤 + 玻璃重采样），测试
@@ -332,6 +350,47 @@ void main() {
       provider.settings.courseCardSurfaceStyle,
       CourseCardSurfaceStyle.liquidGlass,
       reason: '点卡片那一节的胶囊必须写进 courseCardSurfaceStyle',
+    );
+  });
+
+  testWidgets('材质面板第二页：卡片液态档下的八根旋钮写卡片自己的配置（搬家回归钉）', (
+    tester,
+  ) async {
+    // 这八根原先在「课程卡片设置页」（那边单开一节的唯一理由是材质面板塞不下），
+    // 2026-09-22 面板分页之后搬到第二页。这条用例钉两件事：旋钮真的在这一页，
+    // 且写的是 `courseCardGlassTuning` —— 不是全局那份。
+    _seedInitializedPrefs(
+      TimetableSettings.defaults().copyWith(
+        frostedGlassMode: FrostedGlassMode.liquidGlass,
+        courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
+      ),
+    );
+    final provider = await pumpEditor(tester);
+    await tester.tap(find.text('材质'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('课程卡片').first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HyperosSlider), findsNWidgets(8), reason: '卡片这套八根');
+    // 没设过卡片档 ⇒ 显示卡片出厂档：折射强度 8.0（前五项与全局标准档同值）。
+    expect(find.text('8.0'), findsOneWidget);
+
+    // 走滑杆自己的回调（拖动时走的就是这条）。
+    tester
+        .widget<HyperosSlider>(find.byType(HyperosSlider).first)
+        .onChanged!(13);
+    // 滑杆落盘是 debounce 的（250ms），推帧要推过那个窗口才看得到
+    // provider.settings；不用 pumpAndSettle —— 这一档会让渲染源重烤，
+    // 测试环境下没有「静下来」的保证。
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    expect(provider.settings.courseCardGlassTuning!.refraction, 13);
+    expect(
+      provider.settings.liquidGlassTuning,
+      isNull,
+      reason: '卡片那八根不能顺手把全局那份也写掉',
     );
   });
 
@@ -565,6 +624,20 @@ void main() {
     await tester.tap(find.text('材质'));
     await tester.pumpAndSettle();
     expect(find.byType(HyperosSheetFrame), findsOneWidget);
+
+    // 面板最多占半屏、超出部分要自己滚，所以这里先照面板的滚动条把这一行带进
+    // 视野（真机上用户就是这么滑的；不带进来点按会落空，这条回归钉就成空的了）。
+    await tester.scrollUntilVisible(
+      find.text('折射强度'),
+      120,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('material-page-general')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('折射强度'));
     await tester.pumpAndSettle();

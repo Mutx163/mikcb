@@ -10500,6 +10500,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseCardSurfaceStyleLabel => 'Card Appearance';
 
   @override
+  String get courseCardMaterialMasterOffHint =>
+      'While the overall material is \"Solid Cards\", cards always render solid — the choice here has no effect yet.';
+
+  @override
   String get courseCardSurfaceStyleSolid => 'Solid';
 
   @override

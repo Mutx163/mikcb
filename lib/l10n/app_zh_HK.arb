@@ -5802,6 +5802,7 @@
   "courseCardSectionFields": "顯示欄位",
   "courseCardSectionLayout": "版面配置",
   "courseCardSurfaceStyleLabel": "卡片外觀",
+  "courseCardMaterialMasterOffHint": "「整體材質」為「實體卡片」時，卡片一律按實體繪製，這裡的選擇暫不生效",
   "courseCardSurfaceStyleSolid": "實體卡片",
   "courseCardSurfaceStyleGaussian": "高斯模糊",
   "courseCardSurfaceStyleLiquidGlass": "液態玻璃",

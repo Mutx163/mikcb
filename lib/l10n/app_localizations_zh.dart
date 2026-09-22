@@ -9898,6 +9898,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseCardSurfaceStyleLabel => '卡片外观';
 
   @override
+  String get courseCardMaterialMasterOffHint =>
+      '「整体材质」为「实体卡片」时，卡片一律按实体渲染，这里的选择暂不生效';
+
+  @override
   String get courseCardSurfaceStyleSolid => '实体卡片';
 
   @override
@@ -21049,6 +21053,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseCardSurfaceStyleLabel => '卡片外觀';
 
   @override
+  String get courseCardMaterialMasterOffHint =>
+      '「整體材質」為「實體卡片」時，卡片一律按實體繪製，這裡的選擇暫不生效';
+
+  @override
   String get courseCardSurfaceStyleSolid => '實體卡片';
 
   @override
@@ -32198,6 +32206,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get courseCardSurfaceStyleLabel => '卡片外觀';
+
+  @override
+  String get courseCardMaterialMasterOffHint =>
+      '「整體材質」為「實體卡片」時，卡片一律以實體繪製，這裡的選擇暫不生效';
 
   @override
   String get courseCardSurfaceStyleSolid => '實體卡片';

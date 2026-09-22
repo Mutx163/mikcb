@@ -5802,6 +5802,7 @@
   "courseCardSectionFields": "表示フィールド",
   "courseCardSectionLayout": "レイアウト",
   "courseCardSurfaceStyleLabel": "カードの外観",
+  "courseCardMaterialMasterOffHint": "全体マテリアルが「ソリッドカード」のとき、カードは常にソリッドで描画されるため、ここの選択は反映されません。",
   "courseCardSurfaceStyleSolid": "ソリッド",
   "courseCardSurfaceStyleGaussian": "ガウスぼかし",
   "courseCardSurfaceStyleLiquidGlass": "リキッドガラス",

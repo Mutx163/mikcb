@@ -17959,6 +17959,12 @@ abstract class AppLocalizations {
   /// **'卡片外观'**
   String get courseCardSurfaceStyleLabel;
 
+  /// No description provided for @courseCardMaterialMasterOffHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'「整体材质」为「实体卡片」时，卡片一律按实体渲染，这里的选择暂不生效'**
+  String get courseCardMaterialMasterOffHint;
+
   /// No description provided for @courseCardSurfaceStyleSolid.
   ///
   /// In zh, this message translates to:
