@@ -145,9 +145,8 @@ button {
 
 .section {
   /* 大区块之间的留白。2026-09-18 从 clamp(72px,10vw,128px) 提到现在这档：
-     参考 premium 深色站（Linear）与小米澎湃OS 官网，区块间距都在 120~230px，
-     我们原先最大 128px 只有人家一半，整页显得挤。
-     只加大「区块之间」这一处，卡片内部间距不动——否则整页会散。 */
+     实测同类深色长页面的区块间距都在 120~230px，原先最大 128px 不到一半，
+     整页显得挤。只加大「区块之间」这一处，卡片内部间距不动——否则整页会散。 */
   padding: clamp(96px, 13vw, 180px) 0 0;
 }
 
@@ -765,7 +764,7 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
 .marquee {
   margin-top: clamp(56px, 8vw, 96px);
   padding: 18px 0;
-  /* 分隔线画两条：上面一条半透明亮线，紧挨着再压一条黑线（Linear 的 keyline+shadow）。
+  /* 分隔线画两条：上面一条半透明亮线，紧挨着再压一条黑线（亮线 + 暗线的凹槽做法）。
      单条 1px 线在近黑底上太平，两条叠出一点凹槽感。
      这里只能用 inset 阴影：.marquee 有 mask-image，外阴影会被 mask 裁掉。 */
   border-top: 1px solid var(--line);
@@ -837,7 +836,7 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
   border-radius: inherit;
   background: radial-gradient(
     320px circle at var(--mx, 50%) var(--my, 0%),
-    /* 8 个色标手工调衰减（照 Linear 的 edgeGlow：100/94/78/58/35/16/3/0%）。
+    /* 8 个色标手工调衰减（比例 100/94/78/58/35/16/3/0%）。
        只写「6% 白 → 70% 处透明」两个色标的话，光斑边缘能看出一圈硬边；
        多色标是让衰减更顺，不是让光更亮——峰值仍是 6%，别往上调。 */
     rgba(255, 255, 255, 0.06) 0%,
