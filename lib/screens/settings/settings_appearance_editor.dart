@@ -138,6 +138,12 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 最后一张在本页 dispose 时释放。
   final ValueNotifier<ui.Image?> _previewBake = ValueNotifier<ui.Image?>(null);
 
+  /// 「完成」退出时交给退场动画的自持句柄（见 [hyperosZoomExitSource]）。
+  ///
+  /// 是 [_previewBake] 当前那张的 `clone()`：烤图边界换新图会把原来的 dispose 掉，
+  /// 而退场期间必须有一份句柄活着。本页 dispose（= 退场结束）时帧末释放。
+  ui.Image? _exitSourceOwned;
+
   /// 本页路由是否已落定（进场转场结束）。
   ///
   /// 落定前**不烤图**：转场帧里玻璃着色器与壁纸对齐取的是带转场变换的屏幕
@@ -344,6 +350,8 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     _pageGlass.dispose();
     _previewDayView.dispose();
     _previewDayOfWeekNotifier.dispose();
+    // 退场源要**先摘发布再释放**：退场倒放那一帧可能还画着它（同首页那半边的纪律）。
+    _clearExitSource();
     _previewBake.value?.dispose();
     _previewBake.dispose();
     _draftRevision.dispose();
@@ -378,6 +386,12 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       // ImageCache 键），provider 之后那次就是缓存命中、通知随之提前 ——
       // 画面内容一模一样，只是来得早。清掉壁纸（键变 null）时它自己直接返回。
       unawaited(precacheHomePageBackdropImage(next));
+      // 再把**两张预糊位图**（首页玻璃带那份 + 卡片那份）与新壁纸的亮度带一起预热：
+      // 它们按 `path + sigma` 建缓存，换壁纸就是两个全新条目；不预热的话，退出编辑页
+      // 落定之后玻璃面会先素面几帧再变磨砂、墨色也可能闪一下（同一族的"落定后才补上"
+      // 现象，见 [hyperosZoomExitSource] 那边的退场源问题）。启动预热器干的正是这组活
+      // —— 同一个缓存、同一套 sigma 推导、同一条亮度采样，直接复用。
+      unawaited(HomeStartupVisualPrimer.prime(next));
     }
     _autoSaveTimer?.cancel();
     if (debounce) {
@@ -415,7 +429,12 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   }
 
   /// 完成：保留改动，返回。
+  ///
+  /// 退出前先把"用户此刻看到的那张整屏图"交给退场动画（[_publishExitSource]）：
+  /// 退场倒放默认放的是**进页时**的快照（旧壁纸 / 旧材质），用户会先看到旧画面、
+  /// 落定才跳成新的（真机反馈 2026-09-22）。
   void _finish() {
+    _publishExitSource();
     Navigator.pop(context);
   }
 
@@ -423,11 +442,48 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   ///
   /// 本页所有改动都是即时落盘的（弹窗里改一下，预览立刻变），所以「取消」不是
   /// 什么都不做，而是回滚 —— 否则按钮名与行为不符。回滚后仍走一次正常落盘。
+  ///
+  /// **不发布退场源**：回滚之后首页要回到的就是进页那张旧观感，退场沿用它正好。
   void _cancel() {
     if (_draft != _openedWith) {
       _updateDraft(_openedWith);
     }
     Navigator.pop(context);
+  }
+
+  /// 把当前烤图交给退场动画（见 [hyperosZoomExitSource]）。
+  ///
+  /// 两个前提，缺一条就退回进页快照（null）：
+  /// * **已经烤出过一张**（没烤过时卡片显示的本来就是首页那张旧快照）；
+  /// * **缩尺预览的视图与首页当前视图一致** —— 编辑页里切日 / 周只动预览、不动首页的
+  ///   浏览状态（见类注释），两边视图不同时拿它去放大，落定处会跳一下。
+  ///
+  /// `clone()` 是刻意的：本页随后还要用那份烤图（卡片），而烤图边界换新图时会把旧的
+  /// `dispose()`；退场期间必须有一份自持的句柄活着，退场结束（本页 dispose）才放。
+  void _publishExitSource() {
+    _clearExitSource();
+    final image = _previewBake.value;
+    final matchesHomeView =
+        _dayPreview == (_draft.timetableHomeViewMode == TimetableHomeViewMode.day);
+    if (image == null || !matchesHomeView) {
+      return;
+    }
+    final owned = image.clone();
+    _exitSourceOwned = owned;
+    hyperosZoomExitSource.value = owned;
+  }
+
+  /// 摘掉退场源并释放自持那份（帧末释放：落定那一帧场景可能还画着它）。
+  void _clearExitSource() {
+    final owned = _exitSourceOwned;
+    if (owned == null) {
+      return;
+    }
+    _exitSourceOwned = null;
+    if (identical(hyperosZoomExitSource.value, owned)) {
+      hyperosZoomExitSource.value = null;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => owned.dispose());
   }
 
   Future<void> _openWallpaperSheet() {

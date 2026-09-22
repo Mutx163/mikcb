@@ -10,6 +10,7 @@
 // 104 物理像素、手势条 84 物理像素给（与截图一致）。
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -434,6 +435,90 @@ void main() {
       reason: '落定后必须交还活首页',
     );
     expect(hyperosZoomTopAnimation.value, isNull);
+  });
+
+  /// 退场那一帧被缩放的那张图（首页那半边画的就是它）。
+  ui.Image scaledHomeImage(WidgetTester tester) => tester
+      .widget<RawImage>(
+        find.descendant(
+          of: find.byType(HyperosZoomShrinkScope, skipOffstage: false),
+          matching: find.byType(RawImage, skipOffstage: false),
+        ),
+      )
+      .image!;
+
+  testWidgets('缩放转场：退场放大的是编辑页那张"新观感"图（不是进页快照）', (tester) async {
+    // 用户口径 2026-09-22：「换完壁纸点击完成的时候，为什么会显示回原本的壁纸，
+    // 然后又闪回来」。根因是退场倒放沿用了**进页时**烤的快照（旧壁纸 / 旧材质），
+    // 修法见 [hyperosZoomExitSource]：编辑页在「完成」退出前把自己那张整页烤图
+    // 交出来，退场放大它。
+    await pushEditorViaZoom(tester);
+    await tester.pumpAndSettle();
+
+    final entrySnapshot = hyperosZoomHomeSnapshot.value;
+    expect(entrySnapshot, isNotNull, reason: '进场那张旧快照还在（退场兜底要用）');
+    expect(
+      hyperosZoomExitSource.value,
+      isNull,
+      reason: '退场源只在「完成」退出前发布，编辑页开着时不该有',
+    );
+
+    await tester.tap(find.text('完成'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+
+    final exitSource = hyperosZoomExitSource.value;
+    expect(exitSource, isNotNull, reason: '「完成」退出前要把当前烤图交给退场');
+    expect(
+      identical(exitSource, entrySnapshot),
+      isFalse,
+      reason: '退场源必须是编辑页新烤的那张，不是进页那张旧快照',
+    );
+    expect(
+      identical(scaledHomeImage(tester), exitSource),
+      isTrue,
+      reason: '退场那一帧放的就是新观感那张（旧快照只作兜底）',
+    );
+  });
+
+  testWidgets('缩放转场：编辑页里切过预览视图时，退场退回进页快照', (tester) async {
+    // 缩尺预览的日 / 周是编辑页自己的状态，不改首页的浏览状态。两边视图不一致时
+    // 拿预览那张去放大，落定处会跳一下 —— 所以那种情况不发布退场源。
+    await pushEditorViaZoom(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('日课表'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('完成'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+
+    expect(
+      hyperosZoomExitSource.value,
+      isNull,
+      reason: '预览视图与首页不一致 ⇒ 不发布退场源',
+    );
+    expect(
+      identical(scaledHomeImage(tester), hyperosZoomHomeSnapshot.value),
+      isTrue,
+      reason: '退回进页那张旧快照',
+    );
+  });
+
+  testWidgets('缩放转场：取消退出不发布退场源（回滚后旧画面本来就是对的）', (tester) async {
+    await pushEditorViaZoom(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('取消'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+
+    expect(hyperosZoomExitSource.value, isNull);
+    expect(
+      identical(scaledHomeImage(tester), hyperosZoomHomeSnapshot.value),
+      isTrue,
+    );
   });
 
   testWidgets('缩放转场：按钮不跟着缩放，且缩放没走完之前不出现', (tester) async {

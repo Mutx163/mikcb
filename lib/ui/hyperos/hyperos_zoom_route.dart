@@ -110,6 +110,22 @@ final ValueNotifier<HyperosZoomLanding?> hyperosZoomLanding =
 /// （否则编辑页可能引用到已经 dispose 的 `ui.Image`）。
 final ValueNotifier<ui.Image?> hyperosZoomHomeSnapshot = ValueNotifier(null);
 
+/// 退场用的**新观感**整屏图（由编辑页在「完成」退出前发布）。
+///
+/// 为什么需要第二张：进页时烤的 [hyperosZoomHomeSnapshot] 是**旧观感**（用户改之前
+/// 的壁纸 / 材质），退场倒放沿用它的话，用户会先看到旧画面、落定那一刻才跳成新画面
+/// （真机反馈 2026-09-22：「换完壁纸点击完成的时候，为什么会显示回原本的壁纸，然后
+/// 又闪回来」）。编辑页里那份渲染源正好是"同一棵真首页 + 本页草稿设置"，**它才是
+/// 用户此刻看到的东西**，把它作为退场源，退场放大出来的就是新观感。
+///
+/// 纪律：
+/// * **所有权归编辑页**：它发布前先 `clone()` 一份自持，退出 dispose 时先摘发布、
+///   帧末再释放（同 [HyperosZoomHomeSnapshot] 那套），本 scope 只读、从不释放它；
+/// * **只在退场（reverse）时被采用**；进场仍用进页快照（那时草稿还没改，两者内容一致）；
+/// * 编辑页里**切过日 / 周**（缩尺预览的视图与首页当前视图不一致）时编辑页**不发布** ——
+///   两边内容本就不同，放大一张错的视图会在落定处跳，那种情况退回进页快照（老行为）。
+final ValueNotifier<ui.Image?> hyperosZoomExitSource = ValueNotifier(null);
+
 /// 全局缩放转场驱动源：栈顶 zoom 路由的**控制器**（真实进度）。
 ///
 /// 由 [HyperosZoomPageRoute.install] / `dispose` 维护（`_active` 栈顶）；
@@ -362,9 +378,13 @@ class _HyperosZoomShrinkScopeState extends State<HyperosZoomShrinkScope> {
             // 坏缓存并在落定后冻结（真机：右上角球错位到左上角），一次都
             // 不给。p=0 时快照铺满整屏、无圆角，与活画面逐像素等价。
             _ensureSnapshot();
-            final snapshot = _snapshot;
             final p = HyperosZoomRoute.progress(animation.value);
             final landT = HyperosZoomRoute.shrinkT(p);
+            // 退场优先用编辑页发布的**新观感**图（[hyperosZoomExitSource]）：没有
+            // （没改过东西、取消、或编辑页切过预览视图）才退回进页那张旧快照。
+            final reversed = animation.status == AnimationStatus.reverse;
+            final snapshot =
+                (reversed ? hyperosZoomExitSource.value : null) ?? _snapshot;
 
             final Rect screenRect = Offset.zero & MediaQuery.sizeOf(context);
             final landing = hyperosZoomLanding.value;

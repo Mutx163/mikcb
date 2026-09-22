@@ -40,6 +40,7 @@ import '../services/wallpaper_history_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/home_page_background.dart';
+import '../utils/home_startup_visual_primer.dart';
 import '../utils/managed_image_storage.dart';
 import '../models/wallpaper_history.dart';
 import '../utils/wallpaper_history.dart';
