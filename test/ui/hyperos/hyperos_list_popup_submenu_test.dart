@@ -3,6 +3,7 @@ import 'package:flutter_miuix/miuix.dart'
     show
         MiuixGlassAnchor,
         MiuixGlassPopupAnchor,
+        MiuixGlassPopupItem,
         MiuixGlassSecondaryPopup,
         MiuixGlassTransformPopup;
 import 'package:flutter_test/flutter_test.dart';
@@ -544,6 +545,60 @@ void main() {
       }
       // 一级面板让位缩小 5%（支点 = 卡片右上角，见 home_top_menu_popup.dart）。
       expect(panelScale(tester), closeTo(0.95, 2e-3));
+    });
+
+    testWidgets('一级面板条目一律紧贴：相邻行步进恒等于行高，不按分类插空隙', (
+      tester,
+    ) async {
+      // 2026-09-22 用户口径：整列紧贴。
+      //
+      // 旧实现在「相邻两项分类不同」的边界插一条 8px 空行（抄自旧列表弹层的
+      // `HyperosPopupMenuItem.gapBefore`，注释写作 "Miuix gap grouping"），而
+      // 上游 OS4 玻璃弹层这一族**没有分组概念** —— `MiuixGlassPopupItem` 本来
+      // 就是一行行紧贴排。两套口径混用读起来就是「有些行之间有缝、有些没有」：
+      // 默认八项排列里 features 六项之后连续撞上 preferences（课表设置）与 about
+      // （请喝咖啡）两个边界，缝是 0、0、8、8 —— 用户点名的正是「『添加』下面
+      // 那几个按钮之间的上下间距不是全一样」。
+      //
+      // 这条锁的是**几何**（不是「文字在不在」）：下面这份 entries 每一行都跨
+      // 分类，只要还留着那条空行，相邻 top 步进就是「行高 + 8」而不是行高，
+      // 断言立刻红。行高不写死 44，逐对比对上一行的实际高度，条目样式改了也不误报。
+      HomeMenuEntry entry(
+        String id,
+        String label,
+        HomeMenuEntryCategory category,
+      ) => HomeMenuEntry(
+        id: id,
+        title: (_) => label,
+        icon: Icons.circle_outlined,
+        category: category,
+        open: (_) async {},
+      );
+      final crossCategory = <HomeMenuEntry>[
+        entry('probe1', '甲', HomeMenuEntryCategory.features),
+        entry('probe2', '乙', HomeMenuEntryCategory.preferences),
+        entry('probe3', '丙', HomeMenuEntryCategory.features),
+        entry('probe4', '丁', HomeMenuEntryCategory.about),
+        entry('probe5', '戊', HomeMenuEntryCategory.data),
+        entry('probe6', '己', HomeMenuEntryCategory.preferences),
+      ];
+
+      await pumpMenu(tester, menuEntries: crossCategory);
+
+      final rows = <Rect>[];
+      for (final element in find.byType(MiuixGlassPopupItem).evaluate()) {
+        final box = element.renderObject! as RenderBox;
+        rows.add(box.localToGlobal(Offset.zero) & box.size);
+      }
+      rows.sort((a, b) => a.top.compareTo(b.top));
+      expect(rows, hasLength(crossCategory.length));
+      for (var i = 1; i < rows.length; i++) {
+        expect(
+          rows[i].top - rows[i - 1].top,
+          closeTo(rows[i - 1].height, 0.5),
+          reason: '第 ${i + 1} 行与上一行之间多出了空隙（应当紧贴排）',
+        );
+      }
     });
 
     testWidgets('两块面板同处一个共享捕获组，垫底滤镜排在一级面板之前', (tester) async {

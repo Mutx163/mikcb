@@ -333,15 +333,22 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
                 key: _rowsKey,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (var index = 0; index < entries.length; index++) ...[
-                      if (index > 0 &&
-                          entries[index].category !=
-                              entries[index - 1].category)
-                        const SizedBox(height: 8),
-                      _row(entries[index], l10n),
-                    ],
-                  ],
+                  // 条目一律紧贴排（行距 = 条目自身高度 44），**不再按
+                  // `HomeMenuEntryCategory` 在分组交界插 8px 空行**。
+                  //
+                  // 那 8px 抄自旧实现 `HyperosPopupMenuItem.gapBefore`
+                  // （`hyperos_list_popup.dart` 的 `_listPopupGroupGap`，注释写作
+                  // "Miuix gap grouping"），但上游 OS4 玻璃弹层这一族**没有分组
+                  // 概念**：`MiuixGlassPopupItem` 本来就是一行行紧贴排的，实测
+                  // 相邻行 top 步进恒为 44。本菜单已迁到上游 OS4 弹层，再留着这条
+                  // 空行就是两套口径混用 —— 用户读到的正是「有些行之间有缝、有些
+                  // 没有」（2026-09-22 反馈，点名「『添加』下面那几个按钮之间的
+                  // 上下间距不是全一样」：默认排列里 features 6 项后接
+                  // preferences 的「课表设置」、再接 about 的「请喝咖啡」，正好连续
+                  // 两个分类边界，缝是 0、0、8、8）。
+                  //
+                  // 口径由用户当场拍板：整列紧贴（0），不做分组断句。
+                  children: [for (final entry in entries) _row(entry, l10n)],
                 ),
               ),
             ),
