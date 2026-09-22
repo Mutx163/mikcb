@@ -247,7 +247,9 @@ void main() {
           .value,
       isFalse,
     );
-    expect(find.text(l10n.weatherSectionContentNote), findsOneWidget);
+    // 「显示内容」区块不再有脚注：周视图只写一项这件事挂到了「周视图课卡」
+    // 那一行的副标题上——拨开关的人正好需要知道它。
+    expect(find.text(l10n.weatherShowOnWeekCardSubtitle), findsOneWidget);
   });
 
   testWidgets('拨动「周视图课卡」写进 TimetableSettings', (tester) async {
@@ -339,7 +341,7 @@ void main() {
       of: subpageList,
       matching: find.byType(HyperosListGroup),
     );
-    expect(groupFinder.evaluate().length, 3, reason: '显示 / 显示内容 / 数据来源');
+    expect(groupFinder.evaluate().length, 3, reason: '数据来源 / 显示 / 显示内容');
 
     for (var i = 1; i < 3; i++) {
       final previousBottom = tester.getRect(groupFinder.at(i - 1)).bottom;
@@ -352,31 +354,33 @@ void main() {
     }
   });
 
-  testWidgets('说明文字挂在所属区块之后（覆盖范围在显示组下、署名在数据来源组下）', (tester) async {
+  testWidgets('区块次序是「数据来源 → 显示 → 显示内容」，脚注各挂在自己组之后', (tester) async {
     final l10n = lookupAppLocalizations(const Locale('zh'));
     await pumpSettings(tester);
 
     await openWeatherSubpage(tester, l10n);
 
-    final coverageY = tester.getRect(find.text(l10n.weatherCoverageNote)).top;
-    final contentLabelY = tester
-        .getRect(find.text(l10n.weatherSectionContentTitle))
-        .top;
-    final contentNoteY = tester
-        .getRect(find.text(l10n.weatherSectionContentNote))
-        .top;
     final sourceLabelY = tester
         .getRect(find.text(l10n.weatherSectionSourceTitle))
         .top;
     final attributionY = tester.getRect(find.text(l10n.weatherAttribution)).top;
+    final displayLabelY = tester
+        .getRect(find.text(l10n.weatherSectionDisplayTitle))
+        .top;
+    final coverageY = tester.getRect(find.text(l10n.weatherCoverageNote)).top;
+    final contentLabelY = tester
+        .getRect(find.text(l10n.weatherSectionContentTitle))
+        .top;
 
-    // 覆盖范围说明在「显示」组与「显示内容」组标题之间。
-    expect(coverageY, lessThan(contentLabelY));
-    // 内容说明在「显示内容」组之后、「数据来源」组之前。
-    expect(contentNoteY, greaterThan(contentLabelY));
-    expect(contentNoteY, lessThan(sourceLabelY));
-    // 署名在「数据来源」组标题之后。
+    // 数据来源置顶：没有城市就取不到数据，它是这个功能的前置条件。
+    expect(sourceLabelY, lessThan(displayLabelY));
+    expect(displayLabelY, lessThan(contentLabelY));
+    // 署名（数据许可要求）紧跟在数据来源组之后、「显示」组标题之前。
     expect(attributionY, greaterThan(sourceLabelY));
+    expect(attributionY, lessThan(displayLabelY));
+    // 覆盖范围说明在「显示」组与「显示内容」组标题之间。
+    expect(coverageY, greaterThan(displayLabelY));
+    expect(coverageY, lessThan(contentLabelY));
   });
 
   testWidgets('子页里拨动开关会写进 WeatherProvider', (tester) async {
@@ -494,6 +498,49 @@ void main() {
     await _pumpUntilSettled(tester);
     expect(weather.isLocating, isFalse);
     expect(weather.location!.displayName, '杭州市 · 拱墅区');
+  });
+
+  testWidgets('打开天气开关且还没有城市时，主动定位一次', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    final source = StubDeviceLocationSource();
+    // 「关着 + 没城市」正是用户第一次想用这个功能的起点：打开开关就该开始工作，
+    // 而不是停在「开关亮着、卡片上却一条天气都没有」。
+    final weather = await pumpSettings(
+      tester,
+      withCity: false,
+      enabled: false,
+      locationService: stubLocationService(source: source),
+    );
+
+    await openWeatherSubpage(tester, l10n);
+    expect(find.text(l10n.weatherCityNotSet), findsOneWidget);
+
+    await tester.tap(switchTileFor(l10n.weatherEnableTitle));
+    await _pumpUntilSettled(tester);
+
+    expect(source.fixCalls, 1);
+    expect(weather.location?.displayName, '杭州市 · 拱墅区');
+    expect(find.text('杭州市 · 拱墅区'), findsOneWidget);
+  });
+
+  testWidgets('对照：已有城市时打开开关不去定位', (tester) async {
+    // 用户手选的城市比定位更可信；每次开开关都弹一次权限框是打扰。
+    // 这条红了说明有人把「没城市」那个条件丢了。
+    final l10n = lookupAppLocalizations(const Locale('zh'));
+    final source = StubDeviceLocationSource();
+    await pumpSettings(
+      tester,
+      enabled: false,
+      locationService: stubLocationService(source: source),
+    );
+
+    await openWeatherSubpage(tester, l10n);
+
+    await tester.tap(switchTileFor(l10n.weatherEnableTitle));
+    await _pumpUntilSettled(tester);
+
+    expect(source.fixCalls, 0);
+    expect(find.text('杭州'), findsOneWidget);
   });
 
   testWidgets('定位成功时不该出现「按网络估算」的提示', (tester) async {

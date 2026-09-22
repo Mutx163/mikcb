@@ -11346,6 +11346,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get weatherShowOnWeekCardTitle => '週表示のカード';
 
   @override
+  String get weatherShowOnWeekCardSubtitle => 'マスが狭いので 1 項目だけ（気温優先）';
+
+  @override
   String get weatherShowOnSheetTitle => '授業詳細シート';
 
   @override
@@ -11365,10 +11368,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get weatherShowProbabilitySubtitle => '30% 未満のときは表示しません';
-
-  @override
-  String get weatherSectionContentNote =>
-      'アイコンは最初に選んだ項目に従います（天気→天気アイコン、気温→温度計、降水確率→パーセント記号）。3 つともオフにすると行は表示されません。週表示のマスは狭いため、そこでは気温だけを表示します（気温をオフにしている場合は天気）。';
 
   @override
   String get weatherCourseTileSubtitle => 'この授業の時間帯の天気';

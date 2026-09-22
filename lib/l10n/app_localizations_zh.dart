@@ -11035,6 +11035,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherShowOnWeekCardTitle => '周视图课卡';
 
   @override
+  String get weatherShowOnWeekCardSubtitle => '格子窄，只写一项，优先温度';
+
+  @override
   String get weatherShowOnSheetTitle => '课程详情弹窗';
 
   @override
@@ -11054,10 +11057,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get weatherShowProbabilitySubtitle => '低于 30% 时不显示';
-
-  @override
-  String get weatherSectionContentNote =>
-      '图标跟着第一个勾上的项目走（现象→天气图标，温度→温度计，概率→百分号）。三项都不选时整行不显示。周视图的格子窄，那一行只写温度；没勾温度时写现象或概率。';
 
   @override
   String get weatherCourseTileSubtitle => '该课程时段内的天气';
@@ -22190,6 +22189,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get weatherShowOnWeekCardTitle => '週檢視課卡';
 
   @override
+  String get weatherShowOnWeekCardSubtitle => '格子窄，只寫一項，優先溫度';
+
+  @override
   String get weatherShowOnSheetTitle => '課程詳情彈窗';
 
   @override
@@ -22209,10 +22211,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get weatherShowProbabilitySubtitle => '低於 30% 時不顯示';
-
-  @override
-  String get weatherSectionContentNote =>
-      '圖示跟著第一個勾上的項目走（現象→天氣圖示，溫度→溫度計，概率→百分號）。三項都不選時整行不顯示。週視圖的格子窄，那行只寫溫度；沒勾溫度時寫現象或概率。';
 
   @override
   String get weatherCourseTileSubtitle => '該課程時段內的天氣';
@@ -33345,6 +33343,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get weatherShowOnWeekCardTitle => '週檢視課卡';
 
   @override
+  String get weatherShowOnWeekCardSubtitle => '格子窄，只寫一項，優先溫度';
+
+  @override
   String get weatherShowOnSheetTitle => '課程詳情彈窗';
 
   @override
@@ -33364,10 +33365,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get weatherShowProbabilitySubtitle => '低於 30% 時不顯示';
-
-  @override
-  String get weatherSectionContentNote =>
-      '圖示跟著第一個勾選的項目走（現象→天氣圖示，溫度→溫度計，機率→百分號）。三項都不選時整行不顯示。週視圖的格子窄，那行只寫溫度；沒勾溫度時寫現象或機率。';
 
   @override
   String get weatherCourseTileSubtitle => '該課程時段內的天氣';

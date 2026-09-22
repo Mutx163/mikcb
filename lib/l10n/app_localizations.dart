@@ -20100,6 +20100,12 @@ abstract class AppLocalizations {
   /// **'周视图课卡'**
   String get weatherShowOnWeekCardTitle;
 
+  /// No description provided for @weatherShowOnWeekCardSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'格子窄，只写一项，优先温度'**
+  String get weatherShowOnWeekCardSubtitle;
+
   /// No description provided for @weatherShowOnSheetTitle.
   ///
   /// In zh, this message translates to:
@@ -20141,12 +20147,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'低于 30% 时不显示'**
   String get weatherShowProbabilitySubtitle;
-
-  /// No description provided for @weatherSectionContentNote.
-  ///
-  /// In zh, this message translates to:
-  /// **'图标跟着第一个勾上的项目走（现象→天气图标，温度→温度计，概率→百分号）。三项都不选时整行不显示。周视图的格子窄，那一行只写温度；没勾温度时写现象或概率。'**
-  String get weatherSectionContentNote;
 
   /// No description provided for @weatherCourseTileSubtitle.
   ///

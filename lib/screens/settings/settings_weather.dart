@@ -37,89 +37,9 @@ class _WeatherSettingsScreen extends StatelessWidget {
       child: HyperosListView(
         pageStorageKey: const PageStorageKey<String>('settings-weather'),
         children: [
-          const HyperosSectionGap(),
-          HyperosSectionLabel(text: l10n.weatherSectionDisplayTitle),
-          HyperosListGroup(
-            children: [
-              HyperosSwitchTile(
-                title: l10n.weatherEnableTitle,
-                subtitle: l10n.weatherEnableSubtitle,
-                value: enabled,
-                onChanged: weather == null
-                    ? null
-                    : (value) => unawaited(weather.setEnabled(value)),
-              ),
-              // 「显示在哪」三个开关与总开关同组：它们回答的都是「显不显示」，
-              // 与下一组「显示什么内容」是两件事。
-              HyperosSwitchTile(
-                title: l10n.weatherShowOnDayCardTitle,
-                value: settings.weatherShowOnDayCard,
-                onChanged: enabled
-                    ? (value) => update(
-                        settings.copyWith(weatherShowOnDayCard: value),
-                      )
-                    : null,
-              ),
-              HyperosSwitchTile(
-                title: l10n.weatherShowOnWeekCardTitle,
-                value: settings.weatherShowOnWeekCard,
-                onChanged: enabled
-                    ? (value) => update(
-                        settings.copyWith(weatherShowOnWeekCard: value),
-                      )
-                    : null,
-              ),
-              HyperosSwitchTile(
-                title: l10n.weatherShowOnSheetTitle,
-                value: settings.weatherShowOnSheet,
-                onChanged: enabled
-                    ? (value) =>
-                          update(settings.copyWith(weatherShowOnSheet: value))
-                    : null,
-              ),
-            ],
-          ),
-          // 「预报只覆盖 16 天」解释的是「为什么有些日子看不到天气」，
-          // 属于显示区块的脚注。
-          HyperosSectionDescription(text: l10n.weatherCoverageNote),
-
-          const HyperosSectionGap(),
-          HyperosSectionLabel(text: l10n.weatherSectionContentTitle),
-          HyperosListGroup(
-            children: [
-              HyperosSwitchTile(
-                title: l10n.weatherShowPhenomenonTitle,
-                subtitle: l10n.weatherShowPhenomenonSubtitle,
-                value: settings.weatherShowPhenomenon,
-                onChanged: enabled
-                    ? (value) => update(
-                        settings.copyWith(weatherShowPhenomenon: value),
-                      )
-                    : null,
-              ),
-              HyperosSwitchTile(
-                title: l10n.weatherShowTemperatureTitle,
-                value: settings.weatherShowTemperature,
-                onChanged: enabled
-                    ? (value) => update(
-                        settings.copyWith(weatherShowTemperature: value),
-                      )
-                    : null,
-              ),
-              HyperosSwitchTile(
-                title: l10n.weatherShowProbabilityTitle,
-                subtitle: l10n.weatherShowProbabilitySubtitle,
-                value: settings.weatherShowProbability,
-                onChanged: enabled
-                    ? (value) => update(
-                        settings.copyWith(weatherShowProbability: value),
-                      )
-                    : null,
-              ),
-            ],
-          ),
-          HyperosSectionDescription(text: l10n.weatherSectionContentNote),
-
+          // 「数据来源」排在最前：没有城市就一条天气都取不到，先把「数据从哪来」
+          // 这件事办完，后面那些显示开关才有意义。这也是全设置目录里唯一一块
+          // 前置的来源区块——它管的不是元信息，而是这个功能的**前置条件**。
           const HyperosSectionGap(),
           HyperosSectionLabel(text: l10n.weatherSectionSourceTitle),
           HyperosListGroup(
@@ -192,10 +112,118 @@ class _WeatherSettingsScreen extends StatelessWidget {
           ),
           // 数据来源署名是 Open-Meteo 数据许可（CC BY 4.0）的条款要求。
           HyperosSectionDescription(text: l10n.weatherAttribution),
+
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.weatherSectionDisplayTitle),
+          HyperosListGroup(
+            children: [
+              HyperosSwitchTile(
+                title: l10n.weatherEnableTitle,
+                subtitle: l10n.weatherEnableSubtitle,
+                value: enabled,
+                onChanged: weather == null
+                    ? null
+                    : (value) =>
+                          unawaited(_toggleWeather(context, weather, value)),
+              ),
+              // 「显示在哪」三个开关与总开关同组：它们回答的都是「显不显示」，
+              // 与下一组「显示什么内容」是两件事。
+              HyperosSwitchTile(
+                title: l10n.weatherShowOnDayCardTitle,
+                value: settings.weatherShowOnDayCard,
+                onChanged: enabled
+                    ? (value) => update(
+                        settings.copyWith(weatherShowOnDayCard: value),
+                      )
+                    : null,
+              ),
+              HyperosSwitchTile(
+                title: l10n.weatherShowOnWeekCardTitle,
+                // 周网格的格子只放得下一项（见 `WeatherTextDensity.compact`），
+                // 这件事挂在行上而不是堆进区块末尾的脚注——拨这个开关的人
+                // 正好需要知道它。
+                subtitle: l10n.weatherShowOnWeekCardSubtitle,
+                value: settings.weatherShowOnWeekCard,
+                onChanged: enabled
+                    ? (value) => update(
+                        settings.copyWith(weatherShowOnWeekCard: value),
+                      )
+                    : null,
+              ),
+              HyperosSwitchTile(
+                title: l10n.weatherShowOnSheetTitle,
+                value: settings.weatherShowOnSheet,
+                onChanged: enabled
+                    ? (value) =>
+                          update(settings.copyWith(weatherShowOnSheet: value))
+                    : null,
+              ),
+            ],
+          ),
+          // 「预报只覆盖 16 天」解释的是「为什么有些日子看不到天气」，
+          // 属于显示区块的脚注。
+          HyperosSectionDescription(text: l10n.weatherCoverageNote),
+
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.weatherSectionContentTitle),
+          HyperosListGroup(
+            children: [
+              HyperosSwitchTile(
+                title: l10n.weatherShowPhenomenonTitle,
+                subtitle: l10n.weatherShowPhenomenonSubtitle,
+                value: settings.weatherShowPhenomenon,
+                onChanged: enabled
+                    ? (value) => update(
+                        settings.copyWith(weatherShowPhenomenon: value),
+                      )
+                    : null,
+              ),
+              HyperosSwitchTile(
+                title: l10n.weatherShowTemperatureTitle,
+                value: settings.weatherShowTemperature,
+                onChanged: enabled
+                    ? (value) => update(
+                        settings.copyWith(weatherShowTemperature: value),
+                      )
+                    : null,
+              ),
+              HyperosSwitchTile(
+                title: l10n.weatherShowProbabilityTitle,
+                subtitle: l10n.weatherShowProbabilitySubtitle,
+                value: settings.weatherShowProbability,
+                onChanged: enabled
+                    ? (value) => update(
+                        settings.copyWith(weatherShowProbability: value),
+                      )
+                    : null,
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
+}
+
+/// 开关天气。**打开时如果还没有城市，主动定位一次**——否则用户会停在
+/// 「开关开着、卡片上却什么都没有」的状态，还得自己去找「使用当前位置」。
+///
+/// 只在「打开 + 没有城市」这一个组合下触发，两个边界都不能少：
+/// - 已有城市时绝不去动它——用户手选的城市比定位更可信，也不该被覆盖；
+/// - 关闭时什么都不做——关掉还要弹一个权限框是纯粹的打扰。
+///
+/// 定位失败走 [_locateWeather] 同一个出口，会弹一句人话说明为什么没有天气。
+Future<void> _toggleWeather(
+  BuildContext context,
+  WeatherProvider weather,
+  bool enabled,
+) async {
+  await weather.setEnabled(enabled);
+  // await 之后 context 可能已失效（用户在这期间切走了页面）。
+  if (!context.mounted || !enabled || weather.location != null) {
+    return;
+  }
+  await _locateWeather(context, weather);
 }
 
 /// 一键定位。成功后**留在原地**——那一行的尾随值已经变成新地点，本身就是反馈，
