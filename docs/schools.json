@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-18T06:27:05+00:00",
+  "updatedAt": "2026-09-22T06:40:17+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 214,
-    "schools": 209,
+    "total": 220,
+    "schools": 215,
     "generic": 5
   },
   "schools": [
@@ -296,6 +296,13 @@
       "category": "school"
     },
     {
+      "id": "DLUT",
+      "name": "大连理工大学",
+      "initial": "D",
+      "resourceFolder": "DLUT",
+      "category": "school"
+    },
+    {
       "id": "DZU",
       "name": "德州学院",
       "initial": "D",
@@ -562,6 +569,13 @@
       "category": "school"
     },
     {
+      "id": "HUUC",
+      "name": "河南城建学院",
+      "initial": "H",
+      "resourceFolder": "HUUC",
+      "category": "school"
+    },
+    {
       "id": "HAUT",
       "name": "河南工业大学",
       "initial": "H",
@@ -629,6 +643,13 @@
       "name": "湖北医药学院",
       "initial": "H",
       "resourceFolder": "HBMU",
+      "category": "school"
+    },
+    {
+      "id": "HBUAS",
+      "name": "湖北文理学院",
+      "initial": "H",
+      "resourceFolder": "HBUAS",
       "category": "school"
     },
     {
@@ -748,6 +769,13 @@
       "name": "江苏电子信息职业学院",
       "initial": "J",
       "resourceFolder": "JSEI",
+      "category": "school"
+    },
+    {
+      "id": "JUST",
+      "name": "江苏科技大学",
+      "initial": "J",
+      "resourceFolder": "JUST",
       "category": "school"
     },
     {
@@ -944,6 +972,13 @@
       "name": "南京邮电大学",
       "initial": "N",
       "resourceFolder": "NJUPT",
+      "category": "school"
+    },
+    {
+      "id": "NANKAI",
+      "name": "南开大学",
+      "initial": "N",
+      "resourceFolder": "NANKAI",
       "category": "school"
     },
     {
@@ -1266,6 +1301,13 @@
       "name": "厦门城市职业学院",
       "initial": "X",
       "resourceFolder": "XMCU",
+      "category": "school"
+    },
+    {
+      "id": "XMU",
+      "name": "厦门大学",
+      "initial": "X",
+      "resourceFolder": "XMU",
       "category": "school"
     },
     {
