@@ -119,11 +119,22 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     required this.child,
     this.useAncestorGroupCapture = false,
     this.thicknessFactor,
+    this.maxRefraction,
     this.surfaceShadow = false,
   });
 
   final double cornerRadius;
   final Widget child;
+
+  /// 折射位移上限（逻辑 px）。null = 不压，用材质里那一份。
+  ///
+  /// 与 [LiquidGlassSurface.maxRefraction] 同一性质：**几何适配**，只允许往下压。
+  /// 目前在弹层族里只有一处用到 —— 贴底通栏弹窗传 0（理由见
+  /// `miuix_bottom_sheet.dart` 的 `hyperosMiuixBottomSheetSurface`：它的上沿正好压在
+  /// 自己那层裁剪线上，朝外推的位移第一步就出了可采范围、读成一条暗线）。
+  /// 右上角菜单弹窗 / 列表弹窗这类**有自由周边**的浮起卡片不传 —— 它们的边缘折射
+  /// 落在画面里，是正常的透镜边，要留着。
+  final double? maxRefraction;
 
   /// 面上再衬一层同源浮影（见 [HyperosGlassShadow]）。
   ///
@@ -188,6 +199,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
       role: LiquidGlassRole.pinnedChrome,
       grouped: useAncestorGroupCapture,
       refractionFactor: thicknessFactor,
+      maxRefraction: maxRefraction,
       fallbackBuilder: (fallbackContext) =>
           LiquidGlassDegradation.shouldDegrade(fallbackContext)
           ? HyperosSolidPopupSurface(

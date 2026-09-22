@@ -169,8 +169,12 @@ void main() {
 
     final panel = tester.getRect(find.byKey(const ValueKey('sheet-content')));
     final glassRect = tester.getRect(find.byType(HyperosSelectPopupGlass));
-    // 上沿与左右**不外溢**：留着材质那一圈边缘观感（推掉一点的做法真机实测「没区别」，
-    // 推光又读成平板子 —— 两档用户都报过，最后选定「留着」这一档）。
+    // 上沿与左右**不外溢**：材料边界与裁剪线是同一条线。
+    //
+    // 这条与下面那条 `maxRefraction == 0` 是**一套**，不能只改一边：恰恰因为上沿不外溢
+    // （裁剪线压在形状边界上），朝外推的位移才会读空成暗线；真要重新外溢就得同时把位移放回
+    // 去（2026-09-20 试过外溢 1/2/4 与"推光"，真机不是「没区别」就是「读成平板子」，
+    // 完整沿革见 miuix_bottom_sheet.dart 的「上沿那条线」一节）。
     expect(glassRect.top, closeTo(panel.top, 0.01), reason: '上沿不该外溢');
     expect(glassRect.left, closeTo(panel.left, 0.01), reason: '左边不该外溢');
     expect(glassRect.right, closeTo(panel.right, 0.01), reason: '右边不该外溢');
@@ -181,21 +185,33 @@ void main() {
       reason: '底边不外溢的话两个底角会各缺一小块',
     );
 
-    // 面板**不自带材质参数** —— 这是用户口径「和右上角卡片观感一致」的落点。
+    // 面板**不带材质参数**；唯一压在它身上的是**几何适配**：边缘一律不外推采样。
     //
-    // 这里一度挂着一个 `maxRefraction = 3`（"长直边上把面板外的内容整条拉进来就成了
-    // 条纹，压小它"）。那是补"边光有方向性"那场病的药：方向性让上沿成为最亮的一条边，
-    // 观感差异看起来像折射造成的。方向性已从材质层面去掉（见两个 .frag 的文件头），
-    // 药也就撤了 —— 留着它，这块面板与右上角那个菜单弹窗（同属弹窗家族、锁同一档）
-    // 的边缘观感就会分叉，而那正是用户不接受的那件事。
+    // 沿革（别看错方向）：这里一度挂着一个 `maxRefraction = 3`（"长直边上把面板外的内容
+    // 整条拉进来就成了条纹，压小它"）—— 那是补"边光有方向性"那场病的药，方向性从材质层面
+    // 去掉后（见两个 .frag 的文件头）连同 `HyperosSelectPopupGlass` 的透传口子一起撤了。
+    //
+    // 2026-09-22 又按用户口径（「改成和设置页面返回键的那个圆一样的边缘高光，不然现在顶部
+    // 有暗色线」）**重新加了回来，但值不同、理由也不同**：这是**几何**问题，不是材质观感 ——
+    // 面板上沿与它外面那层 `ClipRRect` 的裁剪线是同一条线（上沿刻意不外溢），而引擎给
+    // backdrop filter 准备背景时把可采范围掐在「渲染目标 ∩ 当前裁剪区」
+    // （Impeller `Canvas::GetLocalCoverageLimit → GetSourceCoverage`）⇒ 上沿那一圈朝外推的
+    // 位移（标准档 8dp）第一步就读空、压在染色底上就是那条暗线。压到 0 = 板内每个像素只取
+    // 正下方那一个，与返回键那颗圆钮同一取舍（`hyperos_back_button_test.dart` 钉着同一个值）。
+    //
+    // 注意这不是"给这块面板开材质口子"：受光高光照旧由材质画在贴边那一圈（`rimBand` 只由
+    // "离边多远"算），所以上沿**既有边光、又没有那条线** —— 2026-09-20 记的"只有两个稳定
+    // 状态（留着 / 推光）"是因为把高光与折射当成了一件事，这次把它们拆开了。
     final glassSurface = tester.widget<LiquidGlassSurface>(
       find.byType(LiquidGlassSurface),
     );
     expect(
       glassSurface.maxRefraction,
-      isNull,
-      reason: '自带折射上限 = 与弹窗家族分叉；长直边的问题回材质层面解决，别在这里开参数口子',
+      hyperosMiuixBottomSheetMaxRefraction,
+      reason:
+          '上沿压在裁剪线上，朝外位移会读空成暗线；要改这个值先读 miuix_bottom_sheet.dart 的「上沿那条线」第十五轮',
     );
+    expect(hyperosMiuixBottomSheetMaxRefraction, 0, reason: '留一点位移就留一点暗线（可采余量就是 0）');
     expect(
       glassSurface.role,
       LiquidGlassRole.pinnedChrome,
