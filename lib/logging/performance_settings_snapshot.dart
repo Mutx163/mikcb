@@ -18,7 +18,7 @@
 ///   门控同口径，设置页「各表面当前材质」卡用的也是它们）；
 /// * 液态玻璃的光学参数 → `LiquidGlassTuning`（非空即用户调过的档，空则回落
 ///   `LiquidGlassTuning.defaults`），因此「用户没进过高级材质页」时也照样读得到；
-/// * 档位名 → `glassModeChoiceOf` / `texturePresetOf`。
+/// * 档位名 → `glassModeChoiceOf`。
 ///
 /// ## 刻意不收集的东西
 ///
@@ -47,7 +47,6 @@ import '../models/course_glass_tuning.dart';
 import '../models/glass_mode_choice.dart';
 import '../models/liquid_glass_tuning.dart';
 import '../models/surface_material.dart';
-import '../models/texture_preset.dart';
 import '../models/timetable_settings.dart';
 import '../services/android_animation_scale_service.dart';
 import '../services/app_log_service.dart';
@@ -99,7 +98,6 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
 
   return <String, Object?>{
     // —— 一句话档位 ——
-    'texturePreset': texturePresetOf(s)?.name ?? 'custom',
     'glassMode': glassModeChoiceOf(s).name,
     'glassModeRaw': s.frostedGlassMode.name,
     'blurEnabled': s.frostedBlurEnabled,

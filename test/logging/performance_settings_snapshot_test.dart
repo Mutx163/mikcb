@@ -19,7 +19,6 @@ void main() {
     test('出厂默认是经典磨砂 + 高斯档', () {
       final snapshot = snapshotOf(TimetableSettings.defaults());
 
-      expect(snapshot['texturePreset'], 'classicFrost');
       expect(snapshot['glassMode'], 'gaussian');
       expect(snapshot['blurEnabled'], isTrue);
     });
