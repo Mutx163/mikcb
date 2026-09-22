@@ -38,7 +38,7 @@ void main() {
         ),
       );
 
-  testWidgets('首烤延一帧；换内容换新图', (tester) async {
+  testWidgets('子树重绘后帧末出图；换内容换新图', (tester) async {
     final bakes = ValueNotifier<ui.Image?>(null);
     addTearDown(() {
       bakes.value?.dispose();
@@ -53,7 +53,8 @@ void main() {
     expect(first!.width, 200, reason: '100 逻辑像素 × 出图密度 2');
     expect(first.height, 160, reason: '80 逻辑像素 × 出图密度 2');
 
-    // 内容变了 → 重绘 → 静默期到点补拍出新图（旧图由边界释放，这里只核对换了实例）。
+    // 内容变了 → 重绘 → 节流间隔（200ms）后补拍出新图（旧图由边界释放，
+    // 这里只核对换了实例）。
     await tester.pumpWidget(
       MaterialApp(
         home: Center(
@@ -74,11 +75,7 @@ void main() {
     expect(identical(bakes.value, first), isFalse, reason: '重绘后必须烤新图');
   });
 
-  testWidgets('去抖：连续重绘只在停下来之后出图，且必出最新一张', (tester) async {
-    // 2026-09-22 用户口径：「调整有一些延迟，不够跟随，感觉上有一秒延迟」——
-    // 每张图都是整屏 dpr 密度的离屏出图，逐次出图会把页面吃满（2026-09-19
-    // 真机实锤：切日视图逐帧出图掉到 2fps）。所以拖动**过程中一张都不出**，
-    // 停手 [settleBakeDelay] 之后出一张最新画面。
+  testWidgets('节流：间隔内的连续重绘合并，收尾必补拍最新帧', (tester) async {
     var bakeCount = 0;
     final bakes = ValueNotifier<ui.Image?>(null);
     bakes.addListener(() => bakeCount++);
@@ -107,21 +104,21 @@ void main() {
     final countAfterFirst = bakeCount;
     expect(countAfterFirst, greaterThanOrEqualTo(1), reason: '首烤（延一帧）后必须有图');
 
-    // 模拟"拖动"：连续几帧都在变，但每帧之间的间隔都短于静默期 ——
-    // 一次都不该出图（这正是"页面不卡"的来源）。
-    for (final step in <int>[2, 3, 4, 5]) {
-      await tester.pumpWidget(host(Color(0xFF000000 + step)));
-      await tester.pump(const Duration(milliseconds: 40));
-    }
+    // 间隔内连着重绘两次：合并，不得逐帧出图（2026-09-19 真机实锤：切日
+    // 视图逐帧出整屏图把 UI 线程堵到 2fps 的教训）。
+    await tester.pumpWidget(host(const Color(0xFF000002)));
+    await tester.pump();
+    await tester.pumpWidget(host(const Color(0xFF000003)));
+    await tester.pump();
     expect(
-      bakeCount,
-      countAfterFirst,
-      reason: '拖动过程中不得出图：每张都是整屏离屏重画，连续出图会把页面吃满',
+      bakeCount - countAfterFirst,
+      lessThanOrEqualTo(1),
+      reason: '节流间隔内不得逐帧出图',
     );
 
-    // 停手：静默期到点补一张，且必须是最新内容。
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(bakeCount, greaterThan(countAfterFirst), reason: '停手后必补拍最新一张');
+    // 间隔过后补拍收尾：最终内容必有一张。
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(bakeCount, greaterThan(countAfterFirst), reason: '收尾必补拍');
   });
 
   testWidgets('enabled=false 不烤图；转正后整层重画并烤出第一张', (tester) async {
@@ -210,14 +207,11 @@ void main() {
     );
   });
 
-  testWidgets('单次改动不在当帧出图，等静默期到点才出', (tester) async {
-    // 出图一次就是整屏 dpr 密度的离屏重画，所以**一律**等静默期（包括一次性的
-    // 改动，比如切玻璃模式、开一个开关）——代价是它也晚约 0.15 秒到位，
-    // 换来的是拖动/动画期间一张都不出（见上一条用例）。
-    //
-    // 顺带钉住「不会烤到上一帧的画面」：玻璃面在 paint 里读的是上一帧末才落地的
-    // 快照，改动当帧出图必然差一帧（用户 2026-09-22 读数「预览和实际差一帧」）。
-    // 静默期 150ms ≈ 9 帧，远大于这一帧的滞后，所以这个坑不会再回来。
+  testWidgets('重烤也延一帧：内容变了的那一帧不出图，下一帧才出', (tester) async {
+    // 玻璃面在 paint 里读的是**上一帧末**才落地的快照，按新快照的重画要等下一帧
+    // —— 任何一帧里的玻璃画的都是上一帧的内容。所以"改了就在本帧出图"必然烤到
+    // 「上一帧的画面」，真机读数就是「预览和实际差一帧」（用户 2026-09-22）。
+    // 这条钉住"每一张都延一帧"，而不只是首张。
     final bakes = ValueNotifier<ui.Image?>(null);
     addTearDown(() {
       bakes.value?.dispose();
@@ -248,10 +242,10 @@ void main() {
     expect(
       identical(bakes.value, first),
       isTrue,
-      reason: '改动当帧不出图 —— 此刻 layer 里的玻璃还是上一帧的内容',
+      reason: '内容变了的那一帧不得出图 —— 此刻 layer 里的玻璃还是上一帧的内容',
     );
 
-    // 静默期到点才出图。
+    // 下一帧末才出图（带时长的 pump 顺带放行 200ms 节流）。
     await tester.pump(const Duration(milliseconds: 250));
     expect(
       identical(bakes.value, first),
