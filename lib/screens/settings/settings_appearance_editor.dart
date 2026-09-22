@@ -176,15 +176,39 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
 
   /// 渲染源「内容脏了」的显式信号：喂给 [PreviewBakeBoundary.repaintSignal]。
   ///
-  /// 列的就是渲染源那三样输入：草稿（材质 / 壁纸 / 卡片）、预览的日周、看哪一天
-  /// （最后一个进页后不再变，但它是渲染源的输入，一并带上 —— 将来真加了切换入口
-  /// 就不会重踩这个坑）。
+  /// 列的就是渲染源的**全部**输入 —— 这不是"多喊几声保险"，是几条输入各自异步：
+  ///
+  /// 1. 草稿（材质 / 壁纸 / 卡片）：[TimetableSettings.frostedAppearance] 那条路
+  ///    是同步的（[FrostedAppearanceScope] 直接吃 `_draft`），走 [_draftRevision]；
+  /// 2. **落盘那份设置**：预览源是一棵真首页，它读的是 provider 里**已落盘**的设置，
+  ///    而落盘是异步的 —— 壁纸尤其慢：`updateTimetableSettings` 先落盘、再把新壁纸
+  ///    **预解码**完，最后才 `notifyListeners`。所以"草稿变了"与"画面真的变了"
+  ///    差着好几帧（见 [_onProviderSettingsChanged]）；
+  /// 3. **预糊位图**：壁纸 / 卡片磨砂量换了之后，位图要重新解码 + 高斯 + 离屏渲染，
+  ///    就绪那一刻没有任何 widget 会重建整个画面（玻璃只在自己那个重绘边界里换图）
+  ///    —— 不订阅它，预览就永远停在旧壁纸上（见 [PreblurredWallpaperCache.changes]）。
+  ///
+  /// 另外两样（预览的日周、看哪一天）是纯同步的 notifier；最后一个进页后不再变，
+  /// 但它是渲染源的输入，一并带上。
   ///
   /// **不能指望子树重绘自己传到烤图边界**——玻璃面与壁纸层各自带重绘边界，
   /// 内容变化只在它们内部重绘，烤图边界压根不被标脏（2026-09-22 真机实锤：
   /// 拖材质滑杆上百次、切日视图，烤图边界一次都没重绘，卡片上一直挂着进场
-  /// 那张图）。所以这里显式喊一声。
+  /// 那张图）。所以这几处都要显式喊。
   late final Listenable _previewSourceDirty;
+
+  /// 「落盘那份设置变了」的信号（第 2 条输入，见 [_previewSourceDirty]）。
+  ///
+  /// 用自增计数而不是 `ChangeNotifier`：`notifyListeners` 是 protected，从外面
+  /// 喊不了（与 `_draftRevision` 同一套做法）。
+  final ValueNotifier<int> _persistedSettingsDirty = ValueNotifier<int>(0);
+
+  /// 上一次见到的**已落盘**设置对象；只用来判"这次通知是不是真的换了一份设置"。
+  ///
+  /// [TimetableSettings] 没有自定义 `==`，所以这里是**身份**比较：写设置的那条路
+  /// 一定会换一份新对象，而周次 / 实时快照这类只改别的字段的通知不会 —— 恰好是
+  /// 我们想区分的两件事。
+  TimetableSettings? _lastPersistedSettings;
 
   // —— _HomeBackdropFlow 的宿主适配：壁纸流程本体在
   // settings_home_backdrop_flow.dart，本页只提供草稿读写与课表列表。
@@ -215,7 +239,26 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       _draftRevision,
       _previewDayView,
       _previewDayOfWeekNotifier,
+      _persistedSettingsDirty,
+      PreblurredWallpaperCache.instance.changes,
     ]);
+    _lastPersistedSettings = _timetableProvider.settings;
+    _timetableProvider.addListener(_onProviderSettingsChanged);
+  }
+
+  /// 预览源读的是 **provider 里那份已落盘的设置**，所以"落盘完成"就是一次内容变化。
+  ///
+  /// 为什么不能只看草稿：`updateTimetableSettings` 里落盘、预解码壁纸、`notifyListeners`
+  /// 三步是串起来的 —— 换壁纸时草稿早就变了，而画面要等预解码完才可能变（见
+  /// [_previewSourceDirty] 第 2 条）。不订阅这里，预览就会停在旧壁纸上。
+  ///
+  /// 只在**换了一份设置对象**时喊：provider 还会为别的缘由通知（周次、实时课表
+  /// 快照），每次都烤一张整屏图是白烧。
+  void _onProviderSettingsChanged() {
+    final settings = _timetableProvider.settings;
+    if (_lastPersistedSettings == settings) return;
+    _lastPersistedSettings = settings;
+    _persistedSettingsDirty.value++;
   }
 
   @override
@@ -304,6 +347,8 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     _previewBake.value?.dispose();
     _previewBake.dispose();
     _draftRevision.dispose();
+    _timetableProvider.removeListener(_onProviderSettingsChanged);
+    _persistedSettingsDirty.dispose();
     // 滑块 debounce 未到期时若直接返回，只 cancel 会丢最后一档草稿。
     if (_autoSaveTimer?.isActive ?? false) {
       _autoSaveTimer?.cancel();
@@ -315,11 +360,25 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   }
 
   void _updateDraft(TimetableSettings next, {bool debounce = false}) {
+    final previousBackdropKey = homePageBackdropKey(_draft);
     setState(() {
       _draft = next;
     });
     // 自增即"渲染源脏了"（[_previewSourceDirty] 订阅它）→ 重烤预览图。
     _draftRevision.value++;
+    if (homePageBackdropKey(next) != previousBackdropKey) {
+      // 换壁纸：**立刻**把新壁纸的解码开起来，不等落盘那条链。
+      //
+      // 预览源读的是 provider 里**已落盘**的设置，而 `updateTimetableSettings` 的
+      // 顺序是「写盘 → 预解码新壁纸 → notifyListeners」—— 中间那句是一张整尺寸
+      // 照片的解码，几百毫秒起步。不提前解码，用户换完壁纸就要先愣半秒到一秒
+      // 才可能看到画面变化（真机反馈「感觉上有一秒延迟」，2026-09-22）。
+      //
+      // 提前发起的是**同一份**解码（同路径、同 `ResizeImage` 宽度 ⇒ 同一个
+      // ImageCache 键），provider 之后那次就是缓存命中、通知随之提前 ——
+      // 画面内容一模一样，只是来得早。清掉壁纸（键变 null）时它自己直接返回。
+      unawaited(precacheHomePageBackdropImage(next));
+    }
     _autoSaveTimer?.cancel();
     if (debounce) {
       _autoSaveTimer = Timer(

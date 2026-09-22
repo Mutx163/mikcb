@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show Listenable, kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -83,6 +83,24 @@ class PreblurredWallpaperCache {
   /// Bumped by [evict] so a build that is already running cannot publish a
   /// stale bitmap afterwards.
   int _generation = 0;
+
+  /// 「可采样的预糊位图变了」的通知出口（**发布**新图与**失效**都算）。
+  ///
+  /// 给「把整屏烤成一张图」的消费者用（`PreviewBakeBoundary.repaintSignal`）。
+  /// 位图是**异步就绪**的（解码 → 高斯 → 离屏渲染），就绪那一刻没有任何 widget
+  /// 会重建整个画面 —— 玻璃面只是在自己那个**重绘边界**里换成新图，外面看不出来。
+  /// 于是预览会在换壁纸之后**一直停在旧画面上**，直到用户又碰了别的东西
+  /// （真机反馈「换壁纸的时候，画面还是前帧」，2026-09-22）。订阅它就拿到了
+  /// 「可以重新取景了」这个确切时刻。
+  ///
+  /// 单例、进程级存活：故意不提供 dispose（与 [instance] 同寿命）。
+  ///
+  /// 用「自增的计数」而不是 `ChangeNotifier`：`notifyListeners` 是 protected，
+  /// 从外面喊不了；仓库里这类"手动喊一声"的口子一律走 `ValueNotifier` 自增
+  /// （与编辑页的草稿版本号同一套）。
+  final ValueNotifier<int> _changes = ValueNotifier<int>(0);
+
+  Listenable get changes => _changes;
 
   /// 已发布的位图张数（诊断与测试用）。
   @visibleForTesting
@@ -200,6 +218,8 @@ class PreblurredWallpaperCache {
         final oldest = _images.keys.first;
         _images.remove(oldest)?.dispose();
       }
+      // 新位图就绪：喊一声（见 [changes]）。
+      _changes.value++;
     } catch (error, stackTrace) {
       debugPrint('PreblurredWallpaperCache failed: $error\n$stackTrace');
     } finally {
@@ -300,6 +320,11 @@ class PreblurredWallpaperCache {
         }
       }
       _inFlight.removeWhere((key, _) => key.path == path);
+      // 可采样的位图少了一张：同样喊一声（消费者会退到兜底外观，画面确实变了）。
+      _changes.value++;
+      return;
+    }
+    if (_images.isEmpty && _inFlight.isEmpty) {
       return;
     }
     _generation++;
@@ -308,6 +333,7 @@ class PreblurredWallpaperCache {
     }
     _images.clear();
     _inFlight.clear();
+    _changes.value++;
   }
 }
 

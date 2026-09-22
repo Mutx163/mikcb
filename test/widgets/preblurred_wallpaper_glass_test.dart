@@ -569,5 +569,47 @@ void main() {
       cache.evict(wallpaperPath);
       expect(cache.entryCount, 0);
     });
+
+    test('位图发布 / 失效都喊一声（烤图类消费者靠它重新取景）', () async {
+      // 「把整屏烤成一张图」的预览（外观编辑页）看不到玻璃面在自己那个重绘边界里
+      // 换图 —— 位图就绪那一刻没有任何 widget 会重建整个画面。于是换壁纸之后预览
+      // 会一直停在旧画面上（真机反馈「换壁纸的时候，画面还是前帧」，2026-09-22）。
+      // [changes] 就是给它的"可以重新取景了"信号，三条边界都要钉住。
+      final cache = PreblurredWallpaperCache.instance;
+      cache.evict();
+      addTearDown(cache.evict);
+
+      var notified = 0;
+      void listener() => notified++;
+      cache.changes.addListener(listener);
+      addTearDown(() => cache.changes.removeListener(listener));
+
+      // 1) 从"没有这张图"变成"有"：玻璃这一刻才真的能采到新壁纸。
+      final first = await cache.obtain(
+        path: wallpaperPath,
+        logicalSigma: 9,
+        devicePixelRatio: 2,
+      );
+      first!.dispose();
+      expect(notified, 1, reason: '新位图就绪必须喊一声');
+
+      // 2) 命中缓存不喊：画面没变，重烤整屏图是白烧。
+      final hit = await cache.obtain(
+        path: wallpaperPath,
+        logicalSigma: 9,
+        devicePixelRatio: 2,
+      );
+      hit!.dispose();
+      expect(notified, 1, reason: '命中缓存不该重复喊');
+
+      // 3) 失效：可采样的图没了，玻璃退到兜底外观，画面确实要变。
+      cache.evict(wallpaperPath);
+      expect(notified, 2, reason: '失效也要喊一声');
+
+      // 4) 没有真清掉任何东西时不喊（否则每次无关操作都白烤一张）。
+      cache.evict(wallpaperPath);
+      cache.evict();
+      expect(notified, 2, reason: '空清不得触发重烤');
+    });
   });
 }
