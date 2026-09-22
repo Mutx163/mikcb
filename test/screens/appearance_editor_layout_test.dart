@@ -210,6 +210,70 @@ void main() {
     await tester.pump(); // 路由安装、进场首帧
   }
 
+  /// 普通推页（非 zoom）进编辑页 —— 复刻「设置 → 外观与配色 → 外观编辑」那条路。
+  /// 它与 zoom 路径的差别正是这条用例要钉的：进度源不是控制器，而是路由自己的
+  /// `animation`（首帧是 offstage 占位）。
+  Future<void> pushEditorViaOrdinaryRoute(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 2772);
+    tester.view.devicePixelRatio = 3.25;
+    tester.view.padding = const FakeViewPadding(top: 104, bottom: 84);
+    addTearDown(tester.view.reset);
+
+    final provider = await createInitializedTestProvider(tester);
+    final page = settingsSubpageById('appearanceEditor')!;
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<TimetableProvider>.value(value: provider),
+          ChangeNotifierProvider<WeatherProvider?>.value(value: null),
+        ],
+        child: const TestApp(home: ColoredBox(color: Color(0xFF101010))),
+      ),
+    );
+    await tester.pump();
+    // ignore: unawaited_futures
+    tester.state<NavigatorState>(find.byType(Navigator)).push<void>(
+      HyperosPageRoute<void>(builder: (_) => page),
+    );
+    await tester.pump(); // 路由安装、进场首帧
+  }
+
+  testWidgets('普通推页进编辑页：转场期间不许挂渲染源（落定门不许被 offstage 占位骗开）', (
+    tester,
+  ) async {
+    // 用户 2026-09-22 反馈：「这个页面进入的时候，预览页面的玻璃会出现一条竖线，
+    // 然后又消失，还有底部导航栏玻璃位置会变化，但是首页进入的入口又是正常的」。
+    //
+    // 两条入口的差别在**落定门怎么判**：渲染源（整屏 1:1 的一份首页）必须等路由
+    // 落定才挂载，否则烤出来的是带转场坐标的歪画面。zoom 路径读路由放出的控制器
+    // （不受代理影响）；普通推页路径读 `ModalRoute.animation`，而**进场首帧整条
+    // 路由是 offstage、它的动画代理被换成恒 1.0/completed 的占位动画**（上游
+    // `routes.dart` 的 `set offstage`）——照它判就是「首帧即落定」，渲染源当场
+    // 挂载并烤图，玻璃整块位移、底栏跑到别处，落定后重烤才回正。
+    await pushEditorViaOrdinaryRoute(tester);
+
+    expect(
+      find.byType(PreviewBakeBoundary, skipOffstage: false),
+      findsNothing,
+      reason: '转场首帧就挂渲染源 = 烤到带转场坐标的歪画面（玻璃位移 / 底栏错位）',
+    );
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 30));
+      expect(
+        find.byType(PreviewBakeBoundary, skipOffstage: false),
+        findsNothing,
+        reason: '第 $i 帧：转场还没落定就挂上了渲染源',
+      );
+    }
+
+    await tester.pumpAndSettle();
+    expect(
+      find.byType(PreviewBakeBoundary, skipOffstage: false),
+      findsOneWidget,
+      reason: '落定后必须挂上（否则卡片永远停在首页快照 / 空白上）',
+    );
+  });
+
   Rect cardRect(WidgetTester tester) =>
       tester.getRect(find.byKey(const ValueKey('appearance-editor-preview-card')));
 

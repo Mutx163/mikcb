@@ -183,8 +183,9 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
       // 换掉就找不回来。这里给一条不以用户配置为前提的入口，紧跟「预览」——
       // 两者说的是同一件事：上面的预览区是抽象色块，编辑页才是整页微缩图。
       //
-      // 入口行本身与「课表页面」页那条同名入口逐字一致（同一个文案 / 同一个
-      // 路由名 / 同一个页面构造），免得两处各自漂移。
+      // 入口行只留标题，不挂行尾那句灰字描述（用户 2026-09-22：「灰字描述，
+      // 不符合软件标准，去掉」）。「课表页面」页那条同名入口还带着旧的那句，
+      // 属另一处，不在本次范围内。
       //
       // 不走 zoom 转场：那条是「从首页那颗按钮进来、首页整页缩进新页」专用
       // （[HyperosZoomPageRoute] 的动力来自首页自己的快照）。从设置页进来时
@@ -193,7 +194,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
         children: [
           HyperosListTile(
             title: l10n.appearanceEditorTitle,
-            details: l10n.appearanceEditorEntrySubtitle,
             onTap: () {
               HyperosNavigation.push(
                 context,

@@ -101,7 +101,13 @@ void main() {
 
     // 首屏即入口（位置紧跟「预览」组，不用往下滚）。
     expect(find.text('外观编辑'), findsOneWidget);
-    expect(find.text('整页微缩预览，改壁纸与材质'), findsOneWidget);
+    // 行尾那句灰字描述已按用户要求去掉（2026-09-22：「灰字描述，不符合软件
+    // 标准，去掉」）—— 断言它**不在**，防有人顺手加回来。
+    expect(
+      find.text('整页微缩预览，改壁纸与材质'),
+      findsNothing,
+      reason: '入口行只留标题，不挂行尾灰字描述',
+    );
 
     await tester.tap(find.text('外观编辑'));
     await tester.pumpAndSettle();

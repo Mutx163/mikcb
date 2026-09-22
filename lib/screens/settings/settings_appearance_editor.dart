@@ -288,8 +288,26 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     _zoomDriven = zoomRoute != null;
     final animation = zoomRoute?.progressSource ?? route?.animation;
     if (!_routeSettled) {
-      _routeSettled = animation == null ||
-          animation.status == AnimationStatus.completed;
+      // ⚠️ **首帧的 `animation` 不能信**（非 zoom 路径）：进场首帧整条路由是
+      // offstage，它的动画代理被换成恒为 1.0/completed 的占位动画（上游
+      // `routes.dart` 的 `set offstage`，文档原话：「On the first frame of a
+      // route's entrance transition, the route is built Offstage using an
+      // animation progress of 1.0」）。
+      //
+      // 照它判「已落定」= 渲染源在**转场第一帧**就挂载并烤图，而那一刻页面还在
+      // 转场位移里 —— 烤出来的是带转场坐标的歪画面（玻璃整块位移、底栏跑到别处），
+      // 落定后重烤才跳回正常。用户 2026-09-22 读到的「从设置页入口进来，预览里的
+      // 玻璃位置变一下才回正」就是它；从首页菜单进走的是 zoom 路径（那边读控制器、
+      // 不受代理影响），所以两条入口表现不同。
+      //
+      // 判据：占位动画是那个全局常量本身（上游 `set offstage` 里直接赋的就是
+      // `kAlwaysCompleteAnimation`）；真控制器、或代理到真控制器的那份都不是它。
+      final offstagePlaceholder =
+          animation is ProxyAnimation &&
+          identical(animation.parent, kAlwaysCompleteAnimation);
+      _routeSettled =
+          animation == null ||
+          (!offstagePlaceholder && animation.status == AnimationStatus.completed);
     }
     if (identical(animation, _routeAnimation)) return;
     _routeAnimation?.removeStatusListener(_onRouteAnimationStatus);
