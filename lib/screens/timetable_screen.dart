@@ -30,6 +30,7 @@ import '../models/schedule_item.dart';
 import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../domain/couple_timetable_logic.dart';
+import '../domain/day_course_display_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
 import '../services/app_log_service.dart';
@@ -4301,7 +4302,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     required TimetableSettings settings,
     required int week,
     required int dayOfWeek,
-    required List<_DayCourseDisplayItem> courseItems,
+    required List<DayCourseDisplayItem> courseItems,
   }) {
     final targetDate = _resolveDisplayDateForWeekDay(
       provider: provider,
@@ -4354,7 +4355,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int dayOfWeek,
     required DateTime? selectedDate,
     required Course? currentCourse,
-    required List<_DayCourseDisplayItem> courseItems,
+    required List<DayCourseDisplayItem> courseItems,
     required List<ScheduleItem> scheduleItems,
     required List<_DayAgendaItem> agendaItems,
   }) {
@@ -5394,7 +5395,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Widget _buildDefaultDayAgendaCard({
-    required _DayCourseDisplayItem item,
+    required DayCourseDisplayItem item,
     required int week,
     required TimetableSettings settings,
     required AppLocalizations l10n,
@@ -5537,7 +5538,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Widget _buildCurrentDayAgendaCard({
-    required _DayCourseDisplayItem item,
+    required DayCourseDisplayItem item,
     required int week,
     required TimetableSettings settings,
     required _DayAgendaProgressInfo progressInfo,
@@ -6611,7 +6612,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   Widget _buildDayColumn(
     int week,
     int dayOfWeek,
-    List<_DayCourseDisplayItem> displayItems,
+    List<DayCourseDisplayItem> displayItems,
     TimetableSettings settings,
     bool showConflictBadge,
     double sectionHeight,
@@ -7075,14 +7076,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     await _jumpToWeek(provider, selectedWeek);
   }
 
-  List<_DayCourseDisplayItem> _getDisplayItemsStartingAtSection(
-    List<_DayCourseDisplayItem> items,
+  List<DayCourseDisplayItem> _getDisplayItemsStartingAtSection(
+    List<DayCourseDisplayItem> items,
     int section,
   ) {
     return items.where((item) => item.course.startSection == section).toList();
   }
 
-  List<_DayCourseDisplayItem> _buildHomeDayDisplayItems({
+  List<DayCourseDisplayItem> _buildHomeDayDisplayItems({
     required TimetableProvider provider,
     required TimetableSettings settings,
     required int week,
@@ -7120,7 +7121,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  List<_DayCourseDisplayItem> _buildCoupleDayCourseDisplayItems({
+  List<DayCourseDisplayItem> _buildCoupleDayCourseDisplayItems({
     required List<Course> myCourses,
     required List<Course> partnerCourses,
     required int week,
@@ -7131,7 +7132,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     Set<String> currentCourseIds = const <String>{},
   }) {
     final usedPartnerIds = <String>{};
-    final items = <_DayCourseDisplayItem>[];
+    final items = <DayCourseDisplayItem>[];
 
     for (final course in myCourses) {
       final isCurrentWeekCourse = course.isInWeek(week);
@@ -7159,16 +7160,16 @@ class _TimetableScreenState extends State<TimetableScreen>
       }
 
       items.add(
-        _DayCourseDisplayItem(
+        DayCourseDisplayItem(
           course: course,
           isCurrentWeekCourse: isCurrentWeekCourse,
           isConflicting: conflictMap.containsKey(course.id),
           isCurrentCourse: currentCourseIds.contains(course.id),
-          opacity: !isCurrentWeekCourse
-              ? 0.62
-              : (conflictMap.containsKey(course.id)
-                    ? settings.timetableConflictCourseOpacity
-                    : 1),
+          opacity: courseDisplayOpacity(
+            isCurrentWeekCourse: isCurrentWeekCourse,
+            isConflicting: conflictMap.containsKey(course.id),
+            conflictOpacity: settings.timetableConflictCourseOpacity,
+          ),
           coupleKind: kind,
         ),
       );
@@ -7189,160 +7190,82 @@ class _TimetableScreenState extends State<TimetableScreen>
       }
 
       items.add(
-        _DayCourseDisplayItem(
+        DayCourseDisplayItem(
           course: course,
           isCurrentWeekCourse: isCurrentWeekCourse,
-          isConflicting: false,
-          isCurrentCourse: false,
-          opacity: isCurrentWeekCourse ? 1 : 0.62,
+          opacity: isCurrentWeekCourse ? 1 : kNonCurrentWeekCourseOpacity,
           coupleKind: CoupleCourseKind.partner,
           isPartnerCourse: true,
         ),
       );
     }
 
-    return items..sort((left, right) {
-      final startCompare = left.course.startSection.compareTo(
-        right.course.startSection,
-      );
-      if (startCompare != 0) {
-        return startCompare;
-      }
-      final leftCurrent = left.isCurrentWeekCourse;
-      final rightCurrent = right.isCurrentWeekCourse;
-      if (leftCurrent != rightCurrent) {
-        return leftCurrent ? 1 : -1;
-      }
-      final endCompare = left.course.endSection.compareTo(
-        right.course.endSection,
-      );
-      if (endCompare != 0) {
-        return endCompare;
-      }
-      return left.course.id.compareTo(right.course.id);
-    });
+    return items..sort(compareDayCourseDisplayItems);
   }
 
-  List<_DayCourseDisplayItem> _buildDayCourseDisplayItems({
+  List<DayCourseDisplayItem> _buildDayCourseDisplayItems({
     required List<Course> courses,
     required int week,
     required TimetableSettings settings,
     required Map<String, List<Course>> conflictMap,
     Set<String> currentCourseIds = const <String>{},
   }) {
-    return courses
-        .where((course) {
-          final isCurrentWeekCourse = course.isInWeek(week);
-          if (isCurrentWeekCourse) {
-            return true;
-          }
-          if (_hasCurrentWeekOverlap(courses, course, week)) {
-            return false;
-          }
-          return _isPreferredNonCurrentCourse(courses, course, week);
-        })
-        .map((course) {
-          final isCurrentWeekCourse = course.isInWeek(week);
-          final isConflicting = conflictMap.containsKey(course.id);
-          return _DayCourseDisplayItem(
-            course: course,
-            isCurrentWeekCourse: isCurrentWeekCourse,
-            isConflicting: isConflicting,
-            isCurrentCourse: currentCourseIds.contains(course.id),
-            opacity: !isCurrentWeekCourse
-                ? 0.62
-                : (isConflicting ? settings.timetableConflictCourseOpacity : 1),
-          );
-        })
-        .toList()
-      ..sort((left, right) {
-        final startCompare = left.course.startSection.compareTo(
-          right.course.startSection,
-        );
-        if (startCompare != 0) {
-          return startCompare;
-        }
-        final leftCurrent = left.isCurrentWeekCourse;
-        final rightCurrent = right.isCurrentWeekCourse;
-        if (leftCurrent != rightCurrent) {
-          return leftCurrent ? 1 : -1;
-        }
-        final endCompare = left.course.endSection.compareTo(
-          right.course.endSection,
-        );
-        if (endCompare != 0) {
-          return endCompare;
-        }
-        return left.course.id.compareTo(right.course.id);
-      });
+    return buildDayCourseDisplayItems(
+      courses: courses,
+      week: week,
+      settings: settings,
+      conflictMap: conflictMap,
+      currentCourseIds: currentCourseIds,
+    );
+  }
+
+  DayCourseDisplayLabels _displayLabels() {
+    final l10n = AppLocalizations.of(context)!;
+    return DayCourseDisplayLabels(
+      nonCurrentWeek: l10n.nonCurrentWeekLabel,
+      conflict: l10n.conflictLabel,
+      coupleTogether: l10n.coupleTimetableLegendTogether,
+      couplePartner: l10n.coupleTimetableLegendPartner,
+      ongoingCourse: l10n.ongoingCourseBadge,
+    );
   }
 
   String? _resolveDisplayCourseColor(
-    _DayCourseDisplayItem item, {
+    DayCourseDisplayItem item, {
     required TimetableSettings settings,
   }) {
-    if (item.coupleKind != null) {
-      return context.read<TimetableProvider>().coupleColorForKind(
-        item.coupleKind!,
-      );
-    }
-    if (!item.isCurrentWeekCourse) {
-      return '#94A3B8';
-    }
-    return settings.timetableUseUnifiedCardColor
-        ? settings.timetableUnifiedCardColor
-        : null;
+    return resolveDisplayCourseColor(
+      item,
+      settings: settings,
+      coupleColorForKind: (kind) =>
+          context.read<TimetableProvider>().coupleColorForKind(kind),
+    );
   }
 
   String? _resolveCompactOverlineText(
-    _DayCourseDisplayItem item,
+    DayCourseDisplayItem item,
     bool showConflictBadge,
   ) {
-    final l10n = AppLocalizations.of(context)!;
-    if (item.coupleKind == CoupleCourseKind.together) {
-      return l10n.coupleTimetableLegendTogether;
-    }
-    if (item.coupleKind == CoupleCourseKind.partner) {
-      return l10n.coupleTimetableLegendPartner;
-    }
-    if (!item.isCurrentWeekCourse) {
-      return l10n.nonCurrentWeekLabel;
-    }
-    if (item.isConflicting && showConflictBadge) {
-      return l10n.conflictLabel;
-    }
-    return null;
+    return resolveCompactOverlineText(
+      item,
+      labels: _displayLabels(),
+      showConflictBadge: showConflictBadge,
+    );
   }
 
   String? _resolveCompactBadgeText(
-    _DayCourseDisplayItem item,
+    DayCourseDisplayItem item,
     bool showConflictBadge,
   ) {
-    final l10n = AppLocalizations.of(context)!;
-    final labels = <String>[];
-    if (item.coupleKind == CoupleCourseKind.together) {
-      labels.add(l10n.coupleTimetableLegendTogether);
-    }
-    if (item.isCurrentCourse) {
-      labels.add(l10n.ongoingCourseBadge);
-    }
-    if (item.isConflicting && showConflictBadge) {
-      labels.add(l10n.conflictLabel);
-    }
-    if (labels.isEmpty) {
-      return null;
-    }
-    return labels.join(' · ');
+    return resolveCompactBadgeText(
+      item,
+      labels: _displayLabels(),
+      showConflictBadge: showConflictBadge,
+    );
   }
 
   bool _hasCurrentWeekOverlap(List<Course> courses, Course target, int week) {
-    return courses.any(
-      (course) =>
-          course.id != target.id &&
-          course.isInWeek(week) &&
-          !(course.endSection < target.startSection ||
-              target.endSection < course.startSection),
-    );
+    return hasCurrentWeekOverlap(courses, target, week);
   }
 
   bool _isPreferredNonCurrentCourse(
@@ -7350,48 +7273,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     Course target,
     int week,
   ) {
-    final overlappingNonCurrentCourses =
-        courses
-            .where(
-              (course) =>
-                  !course.isInWeek(week) &&
-                  !(course.endSection < target.startSection ||
-                      target.endSection < course.startSection),
-            )
-            .toList()
-          ..sort((left, right) {
-            final leftDistance = _distanceToNearestActiveWeek(left, week);
-            final rightDistance = _distanceToNearestActiveWeek(right, week);
-            if (leftDistance != rightDistance) {
-              return leftDistance.compareTo(rightDistance);
-            }
-            final startCompare = left.startWeek.compareTo(right.startWeek);
-            if (startCompare != 0) {
-              return startCompare;
-            }
-            final endCompare = left.endWeek.compareTo(right.endWeek);
-            if (endCompare != 0) {
-              return endCompare;
-            }
-            return left.id.compareTo(right.id);
-          });
-
-    return overlappingNonCurrentCourses.isNotEmpty &&
-        overlappingNonCurrentCourses.first.id == target.id;
-  }
-
-  int _distanceToNearestActiveWeek(Course course, int week) {
-    for (var offset = 0; offset <= 60; offset++) {
-      final previousWeek = week - offset;
-      if (previousWeek >= 1 && course.isInWeek(previousWeek)) {
-        return offset;
-      }
-      final nextWeek = week + offset;
-      if (offset > 0 && course.isInWeek(nextWeek)) {
-        return offset;
-      }
-    }
-    return 999;
+    return isPreferredNonCurrentCourse(courses, target, week);
   }
 
   List<Course> _getCoursesForDay(
@@ -7400,29 +7282,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     int dayOfWeek,
     TimetableSettings settings,
   ) {
-    return allCourses.where((course) {
-      if (course.dayOfWeek != dayOfWeek) {
-        return false;
-      }
-      final isCurrentWeek = course.isInWeek(week);
-      if (isCurrentWeek) {
-        return true;
-      }
-      // 已结课（在当前周及以后没有任何上课周）的课程不再以「非本周」显示
-      return settings.timetableShowNonCurrentWeekCourses &&
-          course.hasActiveWeekOnOrAfter(week);
-    }).toList()..sort((a, b) {
-      final startCompare = a.startSection.compareTo(b.startSection);
-      if (startCompare != 0) return startCompare;
-      final aCurrent = a.isInWeek(week);
-      final bCurrent = b.isInWeek(week);
-      if (aCurrent != bCurrent) {
-        return aCurrent ? 1 : -1;
-      }
-      final endCompare = a.endSection.compareTo(b.endSection);
-      if (endCompare != 0) return endCompare;
-      return a.id.compareTo(b.id);
-    });
+    return getCoursesForDay(allCourses, week, dayOfWeek, settings);
   }
 
   int _clampWeek(int week, int maxWeek) {
@@ -8725,7 +8585,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   Future<void> _showCourseActions(
     Course course,
     int week, {
-    _DayCourseDisplayItem? displayItem,
+    DayCourseDisplayItem? displayItem,
   }) async {
     final previewItems = _buildCourseActionPreviewItems(
       course,
@@ -8773,7 +8633,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   List<CourseActionPreviewItem> _buildCourseActionPreviewItems(
     Course course,
     int week, {
-    _DayCourseDisplayItem? displayItem,
+    DayCourseDisplayItem? displayItem,
   }) {
     final provider = context.read<TimetableProvider>();
     final isPartner = displayItem?.isPartnerCourse ?? false;
@@ -10083,28 +9943,8 @@ class _DayViewPageTarget {
   const _DayViewPageTarget({required this.week, required this.dayOfWeek});
 }
 
-class _DayCourseDisplayItem {
-  final Course course;
-  final bool isCurrentWeekCourse;
-  final bool isConflicting;
-  final bool isCurrentCourse;
-  final double opacity;
-  final CoupleCourseKind? coupleKind;
-  final bool isPartnerCourse;
-
-  const _DayCourseDisplayItem({
-    required this.course,
-    required this.isCurrentWeekCourse,
-    required this.isConflicting,
-    required this.isCurrentCourse,
-    required this.opacity,
-    this.coupleKind,
-    this.isPartnerCourse = false,
-  });
-}
-
 class _DayAgendaItem {
-  final _DayCourseDisplayItem? courseItem;
+  final DayCourseDisplayItem? courseItem;
   final ScheduleItem? scheduleItem;
   final ScheduleItemInstance? scheduleInstance;
   final Exam? exam;
@@ -10124,7 +9964,7 @@ class _DayAgendaItem {
     this.continuesToNextDay = false,
   });
 
-  factory _DayAgendaItem.course(_DayCourseDisplayItem item) {
+  factory _DayAgendaItem.course(DayCourseDisplayItem item) {
     return _DayAgendaItem._(
       courseItem: item,
       startTime: item.course.startTime,
