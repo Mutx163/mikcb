@@ -106,10 +106,12 @@ dev_dependencies:
 # CI 也拿不到可复现的依赖。补丁进了上游 release 后整块删掉，即回到 pub.dev。
 dependency_overrides:
   flutter_miuix:
-    # 本地 fork（C:/cursor/flutter_miuix_glassy）：让位缩放改为**面板布局矩形**
-    # 朝支点缩小，玻璃按缩后尺寸画（paint 变变换带不动 BackdropFilter）。
-    # 验证通过后再改回 git commit pin。
-    path: ../flutter_miuix_glassy
+    # 包含「让位缩放改为面板布局矩形朝支点缩小，玻璃按缩后尺寸画」与
+    # 「二级面板边缘高光/阴影随开合渐显」两个补丁（paint 变变换带不动
+    # BackdropFilter，所以缩放必须落在布局矩形上）。
+    git:
+      url: https://github.com/Mutx163/flutter_miuix.git
+      ref: 574a23404fcde4d94f8ac0bc513b6ca0f6351a80
   # inspire_blur：分布图像素记忆化——上游每个新挂载的顶栏都同步重算一张
   # 674k 像素的分布图（真机实测 36~49ms），这里按 (distribution, size) 记住像素。
   # fork 自 inspirestack/inspire_blur，分支 mikcb/distribution-pixels-cache，
