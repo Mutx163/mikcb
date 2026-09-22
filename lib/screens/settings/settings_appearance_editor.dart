@@ -598,8 +598,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     // 退场（存量读入即归液态，见 [FrostedGlassModeX.fromValue]），这两个判据
     // 此后本该一致；让它们**结构上**同源，是为了不再有下一个档位踩同一个坑。
     final displayedChoice = switch (glassModeChoiceOf(_draft)) {
-      GlassModeChoice.liquidGlass ||
-      GlassModeChoice.softGlass => GlassModeChoice.liquidGlass,
+      GlassModeChoice.liquidGlass => GlassModeChoice.liquidGlass,
       _ => GlassModeChoice.solid,
     };
     return SingleChildScrollView(

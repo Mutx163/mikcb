@@ -4,7 +4,6 @@ import 'package:university_timetable/models/course_glass_tuning.dart';
 import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/progressive_blur_tuning.dart';
-import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
 import 'package:university_timetable/models/class_reminder.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
@@ -1584,7 +1583,6 @@ class TimetableSettings {
     linkLiquidGlassTuning: linkLiquidGlassTuning,
     darkGlassBoostEnabled: darkGlassBoostEnabled,
     courseCardGlassTuning: courseCardGlassTuning,
-    softGlassTuning: softGlassTuning ?? SoftGlassTuning.defaults,
     progressiveBlurTuning:
         progressiveBlurTuning ?? ProgressiveBlurTuning.defaults,
     liquidGlassDockEnabled: liquidGlassDockEnabled,
@@ -1606,7 +1604,7 @@ class TimetableSettings {
   final CourseCardSurfaceStyle courseCardSurfaceStyle;
 
   /// 液态玻璃预设与自定义参数（[liquidGlassTuning] 为 null 时渲染回落
-  /// [LiquidGlassTuning.defaults]）。口径与柔光/渐进完全一致：预设是非空
+  /// [LiquidGlassTuning.defaults]）。口径与渐进完全一致：预设是非空
   /// 枚举（reset 能落回 standard），参数对象可空。
   ///
   /// **2026-09-21 起 [liquidGlassTuning] 语义明确为「浅色档」**（存储 key 未变 ⇒
@@ -1637,16 +1635,12 @@ class TimetableSettings {
   /// 静默改掉 —— 详见 `lib/models/course_glass_tuning.dart` 的类注释。
   final CourseGlassTuning? courseCardGlassTuning;
 
-  /// 柔光玻璃预设与自定义参数（[softGlassTuning] 为 null 时渲染回落
-  /// [SoftGlassTuning.defaults]；[frostedAppearance] 已代为回落）。
-  final SoftGlassPreset softGlassPreset;
 
   /// 渐进（渐变）模糊预设与自定义参数（[progressiveBlurTuning] 为 null 时
-  /// 渲染回落 [ProgressiveBlurTuning.defaults]）。口径与柔光/液态完全一致：
+  /// 渲染回落 [ProgressiveBlurTuning.defaults]）。口径与液态完全一致：
   /// 预设是非空枚举（reset 能落回 standard），参数对象可空。
   final ProgressiveBlurPreset progressiveBlurPreset;
   final ProgressiveBlurTuning? progressiveBlurTuning;
-  final SoftGlassTuning? softGlassTuning;
 
   final bool homePageHeaderBlurEnabled;
   final bool homePageWeekdayBarBlurEnabled;
@@ -1657,10 +1651,11 @@ class TimetableSettings {
   final HeaderBlurStyle subpageHeaderBlurStyle;
 
   /// 首页顶栏玻璃带材质，**独立自由选择**（用户 2026-09-12 拍板）：
-  /// `progressive`（渐进磨砂）/ `gaussian`（高斯磨砂）/ `soft`（柔光）/
-  /// `liquid`（液态）/ `solid`（实体）。
+  /// 口径只有 `liquid`（液态）/ `solid`（实体）两档；写入口一律过
+  /// [sanitizeHomeBandGlassMaterial]，存量的 progressive / gaussian / soft
+  /// 在读取时已归到液态。
   ///
-  /// 不再跟随全局 [frostedGlassMode] 或「作用范围」开关——柔光/液态只
+  /// 不跟随全局 [frostedGlassMode] 或「作用范围」开关——液态只
   /// 作用弹窗、玻璃坞等其他表面；顶栏选什么渲染什么。子页顶栏永不吃
   /// 这里的高级材质（见 [subpageHeaderBlurStyle]）。
   final String homeBandGlassMaterial;
@@ -1854,10 +1849,8 @@ class TimetableSettings {
     this.linkLiquidGlassTuning = defaultLinkLiquidGlassTuning,
     this.darkGlassBoostEnabled = defaultDarkGlassBoostEnabled,
     this.courseCardGlassTuning,
-    this.softGlassPreset = SoftGlassPreset.standard,
     this.progressiveBlurPreset = ProgressiveBlurPreset.standard,
     this.progressiveBlurTuning,
-    this.softGlassTuning,
     this.homePageHeaderBlurEnabled = true,
     this.homePageWeekdayBarBlurEnabled = true,
     this.subpageHeaderBlurStyle = HeaderBlurStyle.inspire,
@@ -2090,12 +2083,9 @@ class TimetableSettings {
       'darkGlassBoostEnabled': darkGlassBoostEnabled,
       if (courseCardGlassTuning != null)
         'courseCardGlassTuning': courseCardGlassTuning!.toJson(),
-      'softGlassPreset': softGlassPreset.value,
       'progressiveBlurPreset': progressiveBlurPreset.value,
       if (progressiveBlurTuning != null)
         'progressiveBlurTuning': progressiveBlurTuning!.toJson(),
-      if (softGlassTuning != null)
-        'softGlassTuning': softGlassTuning!.toJson(),
       'homePageHeaderBlurEnabled': homePageHeaderBlurEnabled,
       'homePageWeekdayBarBlurEnabled': homePageWeekdayBarBlurEnabled,
       'subpageHeaderBlurStyle': subpageHeaderBlurStyle.value,
@@ -2124,7 +2114,7 @@ class TimetableSettings {
         : FrostedGlassModeX.fromValue(json['frostedGlassMode'] as String?);
     // 首页顶栏材质迁移（旧轴 → 独立自由选择，2026-09-12）：
     // - 旧「独立三档写死 liquid」→ 上提全局液态的同时顶栏取液态（观感不变）；
-    // - 旧「作用范围 → 首页玻璃带」开且全局为柔光/液态 → 顶栏跟随该高级材质；
+    // - 旧「作用范围 → 首页玻璃带」开且全局为液态 → 顶栏跟随该高级材质；
     // - 其余 → 旧 homeChromeGlassMaterial 镜像（与 headerBlurStyle 同步写）
     //   映射为磨砂两档。
     //
@@ -2136,12 +2126,8 @@ class TimetableSettings {
       legacyHomeBandGlassMaterial = 'liquid';
     } else if ((json['liquidGlassHomeChromeEnabled'] as bool? ??
             defaultLiquidGlassHomeChromeEnabled) &&
-        (resolvedFrostedGlassMode == FrostedGlassMode.liquidGlass ||
-            resolvedFrostedGlassMode == FrostedGlassMode.softGlass)) {
-      legacyHomeBandGlassMaterial =
-          resolvedFrostedGlassMode == FrostedGlassMode.liquidGlass
-          ? 'liquid'
-          : 'soft';
+        resolvedFrostedGlassMode == FrostedGlassMode.liquidGlass) {
+      legacyHomeBandGlassMaterial = 'liquid';
     } else {
       legacyHomeBandGlassMaterial =
           (json['homeChromeGlassMaterial'] as String?) == 'gaussian'
@@ -2616,20 +2602,12 @@ class TimetableSettings {
               json['courseCardGlassTuning'] as Map<String, dynamic>,
             )
           : null,
-      softGlassPreset: SoftGlassPresetX.fromValue(
-        json['softGlassPreset'] as String?,
-      ),
       progressiveBlurPreset: ProgressiveBlurPresetX.fromValue(
         json['progressiveBlurPreset'] as String?,
       ),
       progressiveBlurTuning: json['progressiveBlurTuning'] != null
           ? ProgressiveBlurTuning.fromJson(
               json['progressiveBlurTuning'] as Map<String, dynamic>,
-            )
-          : null,
-      softGlassTuning: json['softGlassTuning'] != null
-          ? SoftGlassTuning.fromJson(
-              json['softGlassTuning'] as Map<String, dynamic>,
             )
           : null,
       // 两个玻璃带显示开关已下线（顶栏玻璃归外观页材质五档），恒为开。
@@ -2879,12 +2857,9 @@ class TimetableSettings {
     bool? darkGlassBoostEnabled,
     CourseGlassTuning? courseCardGlassTuning,
     bool clearCourseCardGlassTuning = false,
-    SoftGlassPreset? softGlassPreset,
     ProgressiveBlurPreset? progressiveBlurPreset,
     ProgressiveBlurTuning? progressiveBlurTuning,
     bool clearProgressiveBlurTuning = false,
-    SoftGlassTuning? softGlassTuning,
-    bool clearSoftGlassTuning = false,
     bool? homePageHeaderBlurEnabled,
     bool? homePageWeekdayBarBlurEnabled,
     HeaderBlurStyle? subpageHeaderBlurStyle,
@@ -3264,15 +3239,11 @@ class TimetableSettings {
       courseCardGlassTuning: clearCourseCardGlassTuning
           ? null
           : courseCardGlassTuning ?? this.courseCardGlassTuning,
-      softGlassPreset: softGlassPreset ?? this.softGlassPreset,
       progressiveBlurPreset:
           progressiveBlurPreset ?? this.progressiveBlurPreset,
       progressiveBlurTuning: clearProgressiveBlurTuning
           ? null
           : progressiveBlurTuning ?? this.progressiveBlurTuning,
-      softGlassTuning: clearSoftGlassTuning
-          ? null
-          : softGlassTuning ?? this.softGlassTuning,
       homePageHeaderBlurEnabled:
           homePageHeaderBlurEnabled ?? this.homePageHeaderBlurEnabled,
       homePageWeekdayBarBlurEnabled:

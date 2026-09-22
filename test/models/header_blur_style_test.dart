@@ -83,11 +83,11 @@ void main() {
 
     test('applyHomeBandGlassMaterial 只动顶栏材质，不碰全局', () {
       final base = TimetableSettings.defaults().copyWith(
-        frostedGlassMode: FrostedGlassMode.softGlass,
+        frostedGlassMode: FrostedGlassMode.liquidGlass,
       );
       final s = applyHomeBandGlassMaterial(base, 'solid');
       expect(s.homeBandGlassMaterial, 'solid');
-      expect(s.frostedGlassMode, FrostedGlassMode.softGlass);
+      expect(s.frostedGlassMode, FrostedGlassMode.liquidGlass);
     });
 
     test('applyHomeBandGlassMaterial 的写入口也过同一道收敛', () {
@@ -126,7 +126,7 @@ void main() {
 
     test('旧范围开 + 全局柔光 / 旧镜像高斯：都收敛到液态', () {
       final scopeOn = TimetableSettings.defaults()
-          .copyWith(frostedGlassMode: FrostedGlassMode.softGlass)
+          .copyWith(frostedGlassMode: FrostedGlassMode.liquidGlass)
           .toJson()
         ..remove('homeBandGlassMaterial')
         ..['liquidGlassHomeChromeEnabled'] = true;

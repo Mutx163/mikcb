@@ -13,8 +13,8 @@ import 'package:university_timetable/widgets/wallpaper_position_picker_sheet.dar
 /// 这一页是**裸 `Scaffold`**（不是 `HyperosPage`），四颗悬浮按钮（退出 / 完成 /
 /// 重置 / 换壁纸）**锁液态玻璃的标准档**（`LiquidGlassRole.pinnedChrome`），与设置页
 /// 左上角返回键同一档 —— 用户 2026-09-21 口径：「这个应该和设置界面左上角返回键保持
-/// 强制同材质」。所以本文件的场景刻意选**柔光档**（`glassMode: softGlass`）：四颗
-/// 按钮必须无视它，一颗柔光面都不许出现。
+/// 强制同材质」。所以本文件的场景刻意选**液态档**（`glassMode: liquidGlass`）：四颗
+/// 按钮必须无视它，一颗磨砂面都不许出现。
 ///
 /// 历史上这一页踩过的两个坑，仍由本文件守着：
 ///
@@ -36,12 +36,12 @@ void main() {
   const screenSize = Size(1280, 2772);
   const screenDpr = 3.2;
 
-  // 刻意选柔光档：四颗按钮锁标准档液态玻璃，这个档位不该影响它们一分一毫。
+  // 刻意选磨砂档：四颗按钮锁标准档液态玻璃，这个档位不该影响它们一分一毫。
   const appearance = FrostedAppearance(
     sheetBlurSigma: 20,
     sheetTintAlpha: 0.5,
     sheetBarrierAlpha: 0.3,
-    glassMode: FrostedGlassMode.softGlass,
+    glassMode: FrostedGlassMode.gaussian,
   );
 
   /// [imagePath] 不存在的路径：本测试只关心材质 / 几何 / 极性，占位分支更省事
@@ -79,9 +79,9 @@ void main() {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      SoftGlassSurface(
-                        borderRadius: BorderRadius.circular(18),
-                        child: const SizedBox(width: 200, height: 40),
+                      const StableFrostedSurface(
+                        cornerRadius: 16,
+                        child: SizedBox(width: 200, height: 40),
                       ),
                       const SizedBox(height: 40),
                       ElevatedButton(
@@ -122,7 +122,7 @@ void main() {
     matching: find.byType(LiquidGlassSurface),
   );
 
-  testWidgets('四颗按钮锁标准档液态玻璃：场景选柔光也不参与', (tester) async {
+  testWidgets('四颗按钮锁标准档液态玻璃：场景选磨砂也不参与', (tester) async {
     await pumpPicker(tester);
 
     final picker = find.byType(WallpaperPositionPickerPage);
@@ -138,9 +138,9 @@ void main() {
       );
     }
     expect(
-      find.descendant(of: picker, matching: find.byType(SoftGlassSurface)),
+      find.descendant(of: picker, matching: find.byType(StableFrostedSurface)),
       findsNothing,
-      reason: '全局选了柔光也不该把这几颗按钮分派成柔光面',
+      reason: '全局选了磨砂也不该把这几颗按钮分派成磨砂面',
     );
   });
 

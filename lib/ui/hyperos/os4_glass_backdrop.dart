@@ -28,7 +28,7 @@ import 'package:flutter_miuix/miuix.dart';
 /// 子树里，于是玻璃采到的窄带含它自己上一帧的合成结果（滚动 / 转场的拖影来源）。
 /// 弹层因为被 `OverlayPortal` 画到 Overlay 上，**天然在捕获之外**，不受影响。
 ///
-/// 详见 `SoftGlassSurface` 类注释里的「已知偏差」一节。
+/// 详见 `stable_frosted_surface.dart` 类注释里的「已知偏差」一节。
 final MiuixLayerBackdrop os4GlassBackdrop = MiuixLayerBackdrop();
 
 /// 包住 OS4 玻璃弹层，隔断它与宿主页之间的滚动手势 / 通知耦合。

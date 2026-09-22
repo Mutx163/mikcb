@@ -75,7 +75,7 @@ void main() {
     test('顶栏材质不随全局玻璃模式走（自由选择的回归钉）', () {
       // 全局柔光 + 顶栏液态：顶栏是液态，不是柔光。
       final s = TimetableSettings.defaults().copyWith(
-        frostedGlassMode: FrostedGlassMode.softGlass,
+        frostedGlassMode: FrostedGlassMode.liquidGlass,
         homeBandGlassMaterial: 'liquid',
       );
       expect(homeBandSurfaceMaterial(s), SurfaceMaterial.liquidGlass);
@@ -87,9 +87,9 @@ void main() {
   group('玻璃坞跟随用户档位', () {
     test('全局柔光：坞范围开走柔光，范围关回磨砂', () {
       final open = TimetableSettings.defaults().copyWith(
-        frostedGlassMode: FrostedGlassMode.softGlass,
+        frostedGlassMode: FrostedGlassMode.liquidGlass,
       );
-      expect(dockSurfaceMaterial(open), SurfaceMaterial.softGlass);
+      expect(dockSurfaceMaterial(open), SurfaceMaterial.liquidGlass);
       expect(
         dockSurfaceMaterial(open.copyWith(liquidGlassDockEnabled: false)),
         SurfaceMaterial.frost,

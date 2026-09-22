@@ -8,14 +8,13 @@ import 'package:university_timetable/l10n/enum_localizations.dart';
 import '../models/header_blur_style.dart';
 import '../models/liquid_glass_tuning.dart';
 import '../models/progressive_blur_tuning.dart';
-import '../models/soft_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/app_toast.dart';
 import '../widgets/frosted_sheet_settings_preview.dart';
 
-/// 高级材质精细参数（液态 / 柔光 / 渐进）：从外观主路径下沉，避免刷屏。
+/// 高级材质精细参数（液态 / 渐进）：从外观主路径下沉，避免刷屏。
 class AdvancedMaterialSettingsScreen extends StatefulWidget {
   const AdvancedMaterialSettingsScreen({super.key});
 
@@ -62,9 +61,9 @@ class _AdvancedMaterialSettingsScreenState
         title: Text(l10n.advancedMaterialTitle),
         child: HyperosListView(
           children: [
-            // 液态 / 柔光参数各档各自有意义：液态调折射管线的七个旋钮
+            // 液态参数各档各自有意义：调折射管线的七个旋钮
             // （折射位移 / 作用带宽度 / 边缘陡缓 / 高光强度 / 高光带宽 / 磨砂量 /
-            // 底色深浅），柔光调雾面倍率与边缘高光；作用范围段（只剩底栏一个）共用。
+            // 底色深浅）；作用范围段（只剩底栏一个）共用。
             //
             // 旋钮全部来自 `LiquidGlassTuning`：各表面拿不到自己的参数入口，
             // 这是「同一材质只有一种观感」的结构性保证。
@@ -205,117 +204,6 @@ class _AdvancedMaterialSettingsScreenState
                 ),
               ],
             ],
-            // 柔光玻璃：与液态同构的 预设 + 自定义参数。自研折射链路删除后
-            // 只剩「雾面 / 底色 / 边缘高光」三项，直接作用到上游 OS4 玻璃材质。
-            if (mode == FrostedGlassMode.softGlass) ...[
-              HyperosSectionLabel(text: l10n.frostedSheetSectionTitle),
-              Builder(
-                builder: (context) {
-                  final softTuning =
-                      _draft.softGlassTuning ?? SoftGlassTuning.defaults;
-                  String pct(double value) =>
-                      '${(value * 100).round()}%';
-                  return HyperosListGroup(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: FrostedSheetSettingsPreview(
-                          provider: provider,
-                          settings: _draft,
-                          week: provider.currentWeek,
-                          blurSigma: _draft.frostedSheetBlurSigma,
-                          tintAlpha: _draft.frostedSheetTintAlpha,
-                          barrierAlpha: _draft.frostedSheetBarrierAlpha,
-                          blurEnabled: _draft.frostedBlurEnabled,
-                          glassMode: _draft.frostedGlassMode,
-                          liquidGlassTuning: _draft.liquidGlassTuning,
-                          liquidGlassTuningDark: _draft.liquidGlassTuningDark,
-                          linkLiquidGlassTuning: _draft.linkLiquidGlassTuning,
-                          darkGlassBoostEnabled: _draft.darkGlassBoostEnabled,
-                          softGlassTuning: softTuning,
-                          progressiveBlurTuning:
-                              _draft.progressiveBlurTuning ??
-                              ProgressiveBlurTuning.defaults,
-                          onOpenDemoSheet: () =>
-                              showFrostedSheetSettingsDemo(context),
-                        ),
-                      ),
-                      HyperosSelectTile<SoftGlassPreset>(
-                        label: l10n.softGlassPresetLabel,
-                        items: {
-                          for (final preset in SoftGlassPreset.values)
-                            softGlassPresetLabel(l10n, preset): preset,
-                        },
-                        value: _draft.softGlassPreset,
-                        onChanged: (preset) {
-                          if (preset == SoftGlassPreset.custom) {
-                            _updateDraft(
-                              _draft.copyWith(
-                                softGlassPreset: SoftGlassPreset.custom,
-                              ),
-                            );
-                            return;
-                          }
-                          _updateDraft(
-                            _draft.copyWith(
-                              softGlassPreset: preset,
-                              softGlassTuning: preset.recommendedTuning,
-                            ),
-                          );
-                        },
-                      ),
-                      if (_draft.softGlassPreset == SoftGlassPreset.custom) ...[
-                        HyperosSliderTile(
-                          title: l10n.softGlassBlurLabel,
-                          value: softTuning.blurRadiusMultiplier,
-                          max: SoftGlassTuning.maxBlurRadiusMultiplier,
-                          divisions: 15,
-                          valueLabel: pct(softTuning.blurRadiusMultiplier),
-                          onChanged: (value) => _updateSoftTuning(
-                            (t) => t.copyWith(blurRadiusMultiplier: value),
-                          ),
-                        ),
-                        HyperosSliderTile(
-                          title: l10n.softGlassTintLabel,
-                          value: softTuning.tintAlphaMultiplier,
-                          max: SoftGlassTuning.maxTintAlphaMultiplier,
-                          divisions: 40,
-                          valueLabel: pct(softTuning.tintAlphaMultiplier),
-                          onChanged: (value) => _updateSoftTuning(
-                            (t) => t.copyWith(tintAlphaMultiplier: value),
-                          ),
-                        ),
-                        HyperosSliderTile(
-                          title: l10n.softGlassEdgeHighlightLabel,
-                          value: softTuning.edgeHighlight,
-                          divisions: 20,
-                          valueLabel: pct(softTuning.edgeHighlight),
-                          onChanged: (value) => _updateSoftTuning(
-                            (t) => t.copyWith(edgeHighlight: value),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                          child: HyperosButton(
-                            label: l10n.softGlassResetAction,
-                            variant: HyperosButtonVariant.secondary,
-                            expand: true,
-                            onPressed: () {
-                              _updateDraft(
-                                _draft.copyWith(
-                                  softGlassPreset: SoftGlassPreset.standard,
-                                  softGlassTuning: SoftGlassTuning.defaults,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ],
-                  );
-                },
-              ),
-            ],
             // 渐进（渐变）模糊：顶栏玻璃带的 progressive 材质 / 子页顶栏的
             // inspire 风格共用这一套档位。它不是「高级材质」（任何后端都能画、
             // 不受作用范围开关约束），因此在作用范围段之外单独成段。
@@ -420,7 +308,7 @@ class _AdvancedMaterialSettingsScreenState
             // 全屏选择面板 / 底部弹窗与对话框 / 壁纸选点按钮）自 2026-09-19 起
             // 锁成「永远液态玻璃的标准档」，开关存不存在都不改变出图，四个
             // 开关与字段已整体删除（用户口径：「不允许用户调整这些的材质」）。
-            // 这里保留的这一个：开 = 坞用当前全局高级材质（柔光 / 液态）；
+            // 这里保留的这一个：开 = 坞用当前全局高级材质（液态）；
             // 关 = 坞回落**实体**（不降级为高斯，见
             // [LiquidGlassDegradation.familyFallsBackToSolid]）。
             const HyperosSectionGap(),
@@ -471,7 +359,7 @@ class _AdvancedMaterialSettingsScreenState
       _draft.subpageHeaderBlurStyle == HeaderBlurStyle.inspire;
 
   /// 渐进模糊滑杆统一写入口：任意滑杆拖动都落
-  /// [ProgressiveBlurPreset.custom]，拖动防抖（与液态/柔光一致）。
+  /// [ProgressiveBlurPreset.custom]，拖动防抖（与液态一致）。
   void _updateProgressiveTuning(
     ProgressiveBlurTuning Function(ProgressiveBlurTuning tuning) transform,
   ) {
@@ -486,23 +374,8 @@ class _AdvancedMaterialSettingsScreenState
     );
   }
 
-  /// 柔光滑杆统一写入口：任意滑杆拖动都落 [SoftGlassPreset.custom]，
-  /// 拖动防抖（与液态滑杆一致）。
-  void _updateSoftTuning(
-    SoftGlassTuning Function(SoftGlassTuning tuning) transform,
-  ) {
-    final base = _draft.softGlassTuning ?? SoftGlassTuning.defaults;
-    _updateDraft(
-      _draft.copyWith(
-        softGlassPreset: SoftGlassPreset.custom,
-        softGlassTuning: transform(base),
-      ),
-      debounce: true,
-    );
-  }
-
   /// 液态玻璃滑杆统一写入口：任意滑杆拖动都落
-  /// [LiquidGlassPreset.custom]，拖动防抖（与柔光/渐进一致）。
+  /// [LiquidGlassPreset.custom]，拖动防抖（与渐进一致）。
   void _updateLiquidTuning(
     LiquidGlassTuning Function(LiquidGlassTuning tuning) transform,
   ) {

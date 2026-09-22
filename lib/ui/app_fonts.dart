@@ -169,7 +169,7 @@ extension AppFontModeFontSpec on AppFontMode {
 /// 该弹层的**每一行都用不同字族**渲染自己的名字（`itemTitleStyleBuilder`），
 /// 于是弹开的那一帧要一次性完成 N 次系统字族解析 + CJK 文本布局。真机实测这笔
 /// 开销就落在「弹开那一帧」的主线程上：25060RK16C 上 38.7ms、24879RPDCC 上
-/// 165~188ms —— 同帧渲染线程只有 4~6ms，且换弹层材质（柔光 / 实底）毫无影响，
+/// 165~188ms —— 同帧渲染线程只有 4~6ms，且换弹层材质（磨砂 / 实底）毫无影响，
 /// 所以它跟玻璃无关，是纯内容成本（见 `.agents/notes/implemented/process/
 /// 2026-09-16-frame-perf-probe.md`）。
 ///

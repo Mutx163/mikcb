@@ -24,9 +24,6 @@ enum SurfaceMaterial {
   /// 高斯模糊（顶栏风格 · 高斯）。
   frostGaussian,
 
-  /// 柔光玻璃（高级材质）。
-  softGlass,
-
   /// 液态玻璃（高级材质；也是课程卡片「液态玻璃」档的材质）。
   ///
   /// 课程卡片那一档与弹层/顶栏/玻璃坞走的是**同一份**折射着色器，因此共用
@@ -40,7 +37,6 @@ SurfaceMaterial _advancedSurfaceMaterial(
   bool scopeOn,
 ) {
   final advanced = switch (s.frostedGlassMode) {
-    FrostedGlassMode.softGlass => SurfaceMaterial.softGlass,
     FrostedGlassMode.liquidGlass => SurfaceMaterial.liquidGlass,
     _ => null,
   };

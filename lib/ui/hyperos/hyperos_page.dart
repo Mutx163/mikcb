@@ -719,7 +719,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     //
     // ⚠️ 已知偏差（未修）：捕获节点仍包在**整页**外面，所以页内玻璃会采到
     // 自己上一帧的合成结果——上游要求 `MiuixGlass` 必须放在 backdrop 捕获
-    // 子树之外。详见 `SoftGlassSurface` 类注释的「已知偏差」一节。
+    // 子树之外。详见 `stable_frosted_surface.dart` 类注释的「已知偏差」一节。
     return HyperosGlassBackdropHost(child: _buildPage(context));
   }
 

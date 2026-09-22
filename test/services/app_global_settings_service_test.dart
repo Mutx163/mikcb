@@ -6,7 +6,6 @@ import 'package:university_timetable/models/course_glass_tuning.dart';
 import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/progressive_blur_tuning.dart';
-import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/app_global_settings_service.dart';
@@ -47,8 +46,6 @@ void main() {
     liquidGlassTuningDark: LiquidGlassTuning.defaults,
     courseCardSurfaceStyle: CourseCardSurfaceStyle.gaussian,
     courseCardGlassTuning: CourseGlassTuning.courseCard,
-    softGlassPreset: SoftGlassPreset.dense,
-    softGlassTuning: SoftGlassTuning.defaults,
     progressiveBlurPreset: ProgressiveBlurPreset.dense,
     progressiveBlurTuning: ProgressiveBlurTuning.defaults,
     subpageHeaderBlurStyle: HeaderBlurStyle.gaussian,

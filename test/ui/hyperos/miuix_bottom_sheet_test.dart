@@ -5,8 +5,6 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 // 捕获点（`UndimmedBackdropCapture`）住在液态玻璃那一层，桶文件没导出它 ——
 // 这里按文件直取，与 `hyperos_sheet.dart` 用法一致。
 import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
-// 回落材质（磨砂）：桶文件没导出，按文件直取。
-import 'package:university_timetable/ui/hyperos/soft_glass/stable_frosted_surface.dart';
 
 import '../../helpers_test_app.dart';
 

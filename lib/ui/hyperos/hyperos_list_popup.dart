@@ -154,7 +154,7 @@ class _HyperosListPopupBody<T> extends StatefulWidget {
   /// Ignored when the panel does not show the wallpaper through:
   /// * solid surfaces (blur off / degradation / [opaqueSurface]) — wallpaper
   ///   ink (white on a light panel) would be unreadable;
-  /// * soft-glass surfaces ([SoftGlassSurface]) — the panel is a milky / dark
+  /// * translucent frosted surfaces — the panel is a milky / dark
   ///   wash whose polarity follows the app theme, not the wallpaper, so
   ///   wallpaper-aware ink reads against the wrong polarity there too.
   ///
@@ -440,7 +440,7 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     // * **实底面**（blur 总开关关 / 系统降级 / WebView 强制实底）不再透出
     //   壁纸，调用方为透明玻璃准备的壁纸感知墨色（如首页按壁纸亮度翻出
     //   的白墨）写在浅色实底上不可读（白字白板，用户只剩角标可见）；
-    // * **柔光玻璃面**（[SoftGlassSurface]，乳白 / 深灰罩面）的底色由 app
+    // * **半透明磨砂面**（乳白 / 深灰罩面）的底色由 app
     //   主题明暗决定（见 `SoftGlassTokens.tint`，亮色 252@67.5% / 暗色
     //   31@67.5%），与壁纸亮度无关——深色壁纸 + 亮色主题下，壁纸感知的
     //   白墨会直接打在乳白罩面上（反之暗色主题 + 浅色壁纸是深墨打深灰面）。

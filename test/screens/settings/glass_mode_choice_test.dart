@@ -45,17 +45,10 @@ void main() {
       );
     });
 
-    test('开模糊 + 柔光模式 → 柔光玻璃', () {
-      expect(
-        glassModeChoiceOf(settings(mode: FrostedGlassMode.softGlass)),
-        GlassModeChoice.softGlass,
-      );
-    });
-
-    test('模糊关 + 柔光模式（存量混搭）仍推导为实体卡片', () {
+    test('模糊关 + 液态模式（存量混搭）仍推导为实体卡片', () {
       expect(
         glassModeChoiceOf(
-          settings(blurEnabled: false, mode: FrostedGlassMode.softGlass),
+          settings(blurEnabled: false, mode: FrostedGlassMode.liquidGlass),
         ),
         GlassModeChoice.solid,
       );
@@ -81,15 +74,6 @@ void main() {
       expect(result.frostedGlassMode, FrostedGlassMode.gaussian);
     });
 
-    test('柔光玻璃：开模糊 + softGlass 模式（底栏自动跟随，无需另写）', () {
-      final result = applyGlassModeChoice(
-        settings(blurEnabled: false),
-        GlassModeChoice.softGlass,
-      );
-      expect(result.frostedBlurEnabled, isTrue);
-      expect(result.frostedGlassMode, FrostedGlassMode.softGlass);
-    });
-
     test('液态玻璃：开模糊 + liquidGlass 模式', () {
       final result = applyGlassModeChoice(
         settings(blurEnabled: false),
@@ -99,14 +83,12 @@ void main() {
       expect(result.frostedGlassMode, FrostedGlassMode.liquidGlass);
     });
 
-    test('四档往返切换后状态自洽', () {
+    test('三档往返切换后状态自洽', () {
       var s = settings(mode: FrostedGlassMode.liquidGlass);
       s = applyGlassModeChoice(s, GlassModeChoice.solid);
       expect(glassModeChoiceOf(s), GlassModeChoice.solid);
       s = applyGlassModeChoice(s, GlassModeChoice.gaussian);
       expect(glassModeChoiceOf(s), GlassModeChoice.gaussian);
-      s = applyGlassModeChoice(s, GlassModeChoice.softGlass);
-      expect(glassModeChoiceOf(s), GlassModeChoice.softGlass);
       s = applyGlassModeChoice(s, GlassModeChoice.liquidGlass);
       expect(glassModeChoiceOf(s), GlassModeChoice.liquidGlass);
       s = applyGlassModeChoice(s, GlassModeChoice.solid);
@@ -114,7 +96,7 @@ void main() {
     });
 
     test('液态玻璃：把底栏作用范围开关一并打开', () {
-      // 液态被定位成「整机材质」：选中它时用户期待整个软件都变。其余三档不动
+      // 液态被定位成「整机材质」：选中它时用户期待整个软件都变。其余两档不动
       // 这个开关（坞保持用户上一次的取舍），所以这条断言同时钉住了对称性的
       // 边界——只有液态这一档会写它。弹窗家族那四个开关已删除（锁标准档）。
       final off = settings().copyWith(liquidGlassDockEnabled: false);
@@ -122,12 +104,11 @@ void main() {
       expect(result.liquidGlassDockEnabled, isTrue);
     });
 
-    test('其余三档不碰作用范围开关', () {
+    test('其余两档不碰作用范围开关', () {
       final off = settings().copyWith(liquidGlassDockEnabled: false);
       for (final choice in const [
         GlassModeChoice.solid,
         GlassModeChoice.gaussian,
-        GlassModeChoice.softGlass,
       ]) {
         final result = applyGlassModeChoice(off, choice);
         expect(
@@ -138,7 +119,7 @@ void main() {
       }
     });
 
-    test('四档往返切换后状态自洽', () {
+    test('三档往返切换后状态自洽', () {
       var s = settings(mode: FrostedGlassMode.liquidGlass);
       for (final choice in GlassModeChoice.values) {
         s = applyGlassModeChoice(s, choice);

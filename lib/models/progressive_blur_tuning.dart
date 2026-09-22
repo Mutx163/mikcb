@@ -1,6 +1,6 @@
 /// 渐进（渐变）模糊的用户可调参数（顶栏玻璃带的 inspire 档消费）。
 ///
-/// 与 `SoftGlassTuning` / `LiquidGlassTuning` 同构：预设枚举 + 自定义参数对象，
+/// 与 `LiquidGlassTuning` 同构：预设枚举 + 自定义参数对象，
 /// 设置页「高级材质」里露出同一套 预设选择 + 滑杆 的 UI。
 ///
 /// 三个轴都直接对应渲染链路（`InspireHeaderBlur` → `InspireBlurConfig`）：

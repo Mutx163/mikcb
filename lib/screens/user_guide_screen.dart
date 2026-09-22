@@ -1157,7 +1157,6 @@ _GuideVisualEffect _guideVisualEffectOf(TimetableSettings settings) {
   if (!settings.frostedBlurEnabled) return _GuideVisualEffect.solid;
   return switch (settings.frostedGlassMode) {
     FrostedGlassMode.liquidGlass => _GuideVisualEffect.liquidGlass,
-    FrostedGlassMode.softGlass => _GuideVisualEffect.liquidGlass,
     _ => _GuideVisualEffect.gaussian,
   };
 }

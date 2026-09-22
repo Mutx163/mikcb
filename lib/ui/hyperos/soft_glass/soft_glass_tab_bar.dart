@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 
 import 'soft_glass_surface.dart';
+import 'stable_frosted_surface.dart';
 
 /// 柔光玻璃底栏 Tab。
 class SoftGlassTab {
@@ -465,14 +466,16 @@ class _SoftGlassTabBarState extends State<SoftGlassTabBar>
   }
 
   /// 给药丸内容套上「底」。见 [surfaceBuilder]。
+  ///
+  /// 没传 builder 时兜底用磨砂面：坞的三种材质都会显式传 builder，走到这里的
+  /// 只剩测试宿主与将来新接入点。
   Widget _wrapSurface(Widget child) {
     final builder = widget.surfaceBuilder;
     if (builder != null) {
       return builder(child);
     }
-    return SoftGlassSurface(
-      blurEnabled: widget.blurEnabled,
-      polarity: widget.polarity,
+    return StableFrostedSurface(
+      cornerRadius: SoftGlassTokens.barHeight / 2,
       child: child,
     );
   }
@@ -554,7 +557,7 @@ class _SoftGlassTabBarState extends State<SoftGlassTabBar>
                       // Flutter 的 Stack 默认 Clip.hardEdge，会把外溢部分切平——
                       // 结果就是滑块停在**首槽 / 末槽**时，那一端由圆帽变成一条竖直
                       // 切边（中间槽位看不出来，因为外溢落在内容区内）。必须显式
-                      // Clip.none；外层 SoftGlassSurface 的 ClipRRect 仍按胶囊裁切。
+                      // Clip.none；外层药丸表面的 ClipRRect 仍按胶囊裁切。
                       return Stack(
                         clipBehavior: Clip.none,
                         children: [

@@ -4,7 +4,6 @@ import '../../../models/course_glass_tuning.dart';
 import '../../../models/header_blur_style.dart';
 import '../../../models/liquid_glass_tuning.dart';
 import '../../../models/progressive_blur_tuning.dart';
-import '../../../models/soft_glass_tuning.dart';
 
 /// Default frosted-glass tuning (aligned with app timetable defaults).
 const kDefaultFrostedBlurEnabled = true;
@@ -44,15 +43,6 @@ enum FrostedGlassMode {
   /// 参数由 `LiquidGlassTuning` 统一提供，全 app 只此一套。
   liquidGlass,
 
-  /// 柔光玻璃（Hyper-PiliPlus SoftGlass 风格）：雾面胶囊 + 双影 + 边缘
-  /// 高光。与液态折射解耦——不依赖 RuntimeShader，Blur + 蒙层即可。
-  ///
-  /// ⚠️ **2026-09-22 起不再是用户可选的档位**（引导页那一档已撤，存量值
-  /// 读盘即归到 [liquidGlass]，见 [FrostedGlassModeX.fromValue]）。枚举值与
-  /// 它的渲染链（`SoftGlassSurface`）保留：只在内存里被显式构造时才会走到，
-  /// 用于存量兜底与既有测试，不再由任何界面产生。
-  softGlass,
-
   /// 设置页「高斯模糊」档的存储标记：渲染与 [frosted] 同一链路，仅用于
   /// 标记用户显式选择过该档。
   gaussian,
@@ -67,11 +57,11 @@ extension FrostedGlassModeX on FrostedGlassMode {
     if (value == 'refractionGlass') {
       return FrostedGlassMode.liquidGlass;
     }
-    // 存量迁移（2026-09-22）：柔光档从用户可选材质里退场，老数据一律读作
-    // 液态玻璃 —— 这正是外观编辑器此前对它的**显示口径**（归桶成液态），
-    // 改成读入即迁移之后，界面说液态、渲染就真的画液态，不再两说。
+    // 存量迁移（2026-09-22）：柔光档已从产品里退场（枚举值本身在当天晚些时候
+    // 一并删除），老数据里写着 'softGlass' 的一律读作液态玻璃 —— 这正是外观
+    // 编辑器当年对它的**显示口径**（归桶成液态），改成读入即迁移之后，界面说
+    // 液态、渲染就真的画液态。
     // 迁移是懒迁移：不重写盘上的旧值，用户下次落盘时自然被写成 'liquidGlass'。
-    // 详细取舍见 `.agents/notes/implemented/simplification/2026-09-22-retire-soft-glass-mode.md`。
     if (value == 'softGlass') {
       return FrostedGlassMode.liquidGlass;
     }
@@ -82,13 +72,13 @@ extension FrostedGlassModeX on FrostedGlassMode {
   }
 }
 
-/// 是否为「高级材质」档位（柔光玻璃 / 液态玻璃）。
+/// 是否为「高级材质」档位（只有液态玻璃一种）。
 ///
-/// 高级材质共享同一组「作用范围」开关（见
+/// 高级材质共享那组「作用范围」开关（见
 /// [LiquidGlassDegradation.familyFallsBackToSolid]），也才会驱动首页玻璃带与玻璃坞
 /// 脱离基础模糊档。实体卡片与高斯模糊是基础材质，不受开关约束。
 bool isAdvancedGlassMode(FrostedGlassMode? mode) =>
-    mode == FrostedGlassMode.liquidGlass || mode == FrostedGlassMode.softGlass;
+    mode == FrostedGlassMode.liquidGlass;
 
 class FrostedAppearance {
   const FrostedAppearance({
@@ -104,7 +94,6 @@ class FrostedAppearance {
     this.linkLiquidGlassTuning = true,
     this.darkGlassBoostEnabled = true,
     this.courseCardGlassTuning,
-    this.softGlassTuning = SoftGlassTuning.defaults,
     this.progressiveBlurTuning = ProgressiveBlurTuning.defaults,
     this.liquidGlassDockEnabled = kDefaultLiquidGlassDockEnabled,
   });
@@ -137,7 +126,7 @@ class FrostedAppearance {
   /// （2026-09-20 起收成两档，与外观编辑器里那两个选项逐字一致，见
   /// [kDefaultHomeBandGlassMaterial]）。
   ///
-  /// 不跟随 [glassMode] 或「作用范围」开关——柔光/液态只作用弹窗、玻璃坞
+  /// 不跟随 [glassMode] 或「作用范围」开关——液态只作用弹窗、玻璃坞
   /// 等其他表面，顶栏选什么渲染什么。
   final String homeBandGlassMaterial;
 
@@ -177,10 +166,6 @@ class FrostedAppearance {
   /// 「别处一个样、卡片另一个样」。两者共享的是解析入口与深浅配方，不是数值。
   final CourseGlassTuning? courseCardGlassTuning;
 
-  /// 柔光玻璃参数（[glassMode] 为 [FrostedGlassMode.softGlass] 时生效）。
-  /// 非空缺省即默认档，柔光任何后端都能画，无需可空判空。
-  final SoftGlassTuning softGlassTuning;
-
   /// 渐进（渐变）模糊参数——顶栏玻璃带走 `progressive` 材质 / 子页顶栏走
   /// `inspire` 风格时生效。非空缺省即标准档（与接入调参前的常量一致）。
   final ProgressiveBlurTuning progressiveBlurTuning;
@@ -207,7 +192,6 @@ class FrostedAppearance {
           linkLiquidGlassTuning == other.linkLiquidGlassTuning &&
           darkGlassBoostEnabled == other.darkGlassBoostEnabled &&
           courseCardGlassTuning == other.courseCardGlassTuning &&
-          softGlassTuning == other.softGlassTuning &&
           progressiveBlurTuning == other.progressiveBlurTuning &&
           liquidGlassDockEnabled == other.liquidGlassDockEnabled;
 
@@ -225,9 +209,7 @@ class FrostedAppearance {
     linkLiquidGlassTuning,
     darkGlassBoostEnabled,
     courseCardGlassTuning,
-    softGlassTuning,
     progressiveBlurTuning,
-    liquidGlassDockEnabled,
   );
 }
 

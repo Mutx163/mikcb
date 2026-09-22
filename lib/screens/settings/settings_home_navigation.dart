@@ -110,7 +110,7 @@ class _HomeNavigationSettingsScreenState
                 children: [
                   // 底栏材质已下线独立选择器：现在**跟随全局材质**
                   // （外观编辑 → 材质 + 「作用范围 → 玻璃坞导航」），
-                  // 避免「全局高斯 + 底栏柔光」这类两种玻璃同屏的组合。
+                  // 避免「全局磨砂 + 底栏液态」这类两种玻璃同屏的组合。
                   HyperosSwitchTile(
                     title: l10n.glassDockShowAddButtonTitle,
                     subtitle: l10n.glassDockShowAddButtonSubtitle,

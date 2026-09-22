@@ -1,6 +1,6 @@
 /// 渲染性能设置快照（**只在调试版 / 性能版生效**）。
 ///
-/// 存在的理由：调性能时反复出现同一个困境 —— 「现在到底是柔光还是液态」「档位是
+/// 存在的理由：调性能时反复出现同一个困境 —— 「现在到底是磨砂还是液态」「档位是
 /// 标准还是浓雾」「转场速度被系统动画缩放压掉了没有」这些只能靠翻三层设置页去
 /// 回忆，而回忆错一次就会把两种完全不同的开销当成同一件事来比较。一条快照把
 /// 当前所有会影响帧率的档位一次性写进日志，读数（`[frame-perf]`、
@@ -8,7 +8,7 @@
 ///
 /// ## 口径：只读「有效值」，不重新推导
 ///
-/// 本文件刻意**不**自己算「柔光档该是多少模糊半径」这类问题 —— 那等于把渲染
+/// 本文件刻意**不**自己算「磨砂档该是多少模糊半径」这类问题 —— 那等于把渲染
 /// 侧的推导抄一遍，抄错或漂移之后日志会写出一个「看起来对、实际不是这样」的
 /// 值，比没有日志更误导人。所以每一项都取自渲染侧自己在用的那个来源：
 ///
@@ -91,7 +91,6 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
     link: appearance.linkLiquidGlassTuning,
     darkBoost: appearance.darkGlassBoostEnabled,
   );
-  final soft = appearance.softGlassTuning;
   final progressive = appearance.progressiveBlurTuning;
   // 卡片那套同款「已回落」取法：内置兜底档也读得到同样的值。
   final card = appearance.courseCardGlassTuning ?? CourseGlassTuning.courseCard;
@@ -123,12 +122,6 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
 
     // —— 高级材质作用范围（2026-09-19 起只剩底栏一项）——
     'lgDock': s.liquidGlassDockEnabled,
-
-    // —— 柔光玻璃参数（已回落，非空）——
-    'softPreset': s.softGlassPreset.name,
-    'softBlurMul': soft.blurRadiusMultiplier,
-    'softTintMul': soft.tintAlphaMultiplier,
-    'softEdgeHighlight': soft.edgeHighlight,
 
     // —— 液态玻璃光学参数：取「解析后」的值，所以内置兜底档也读得到 ——
     'lgPreset': s.liquidGlassPreset.name,

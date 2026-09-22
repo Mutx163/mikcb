@@ -821,7 +821,7 @@ class _HomeTitleStylePreview extends StatelessWidget {
   }
 }
 
-/// 「各表面当前材质」的展示文案。渐进 / 高斯、柔光 / 液态复用既有选项名
+/// 「各表面当前材质」的展示文案。渐进 / 高斯、磨砂 / 液态复用既有选项名
 /// （同物同名），只补「已关闭 / 实体 / 磨砂玻璃」三个状态词。
 String _surfaceMaterialLabel(AppLocalizations l10n, SurfaceMaterial material) =>
     switch (material) {
@@ -830,7 +830,6 @@ String _surfaceMaterialLabel(AppLocalizations l10n, SurfaceMaterial material) =>
       SurfaceMaterial.frost => l10n.materialStateFrost,
       SurfaceMaterial.frostProgressive => l10n.headerBlurStyleInspire,
       SurfaceMaterial.frostGaussian => l10n.headerBlurStyleGaussian,
-      SurfaceMaterial.softGlass => l10n.frostedGlassModeSoft,
       SurfaceMaterial.liquidGlass => l10n.frostedGlassModeLiquid,
     };
 

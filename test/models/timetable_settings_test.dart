@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
-import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
@@ -529,42 +528,6 @@ void main() {
     expect(clamped.appFontWeight, kAppFontWeightMax);
     expect(clamped.appTextScale, kAppTextScaleMax);
   });
-
-  test('soft glass preset and tuning survive json round trip', () {
-    final settings = TimetableSettings.defaults().copyWith(
-      softGlassPreset: SoftGlassPreset.dense,
-      softGlassTuning: SoftGlassTuning.presetDense,
-    );
-    final restored = TimetableSettings.fromJson(settings.toJson());
-    expect(restored.softGlassPreset, SoftGlassPreset.dense);
-    expect(restored.softGlassTuning, SoftGlassTuning.presetDense);
-
-    // 老档案缺字段 → 标准档 + null tuning（appearance 回落 defaults）。
-    final legacy = TimetableSettings.fromJson(<String, dynamic>{});
-    expect(legacy.softGlassPreset, SoftGlassPreset.standard);
-    expect(legacy.softGlassTuning, isNull);
-    expect(
-      legacy.frostedAppearance.softGlassTuning,
-      SoftGlassTuning.defaults,
-    );
-
-    // 非法档位回落 standard，越界参数被 clamp。
-    final clamped = TimetableSettings.fromJson({
-      ...TimetableSettings.defaults().toJson(),
-      'softGlassPreset': 'nope',
-      // 旧备份里的折射字段已随自研折射链路删除：解析时忽略，不再报错/越界。
-      'softGlassTuning': {
-        'blurRadiusMultiplier': 99,
-        'refraction': 999,
-      },
-    });
-    expect(clamped.softGlassPreset, SoftGlassPreset.standard);
-    expect(
-      clamped.softGlassTuning!.blurRadiusMultiplier,
-      SoftGlassTuning.maxBlurRadiusMultiplier,
-    );
-  });
-
   test('液态玻璃浅/深成对字段 survive json round trip', () {
     // 见 `.agents/notes/proposed/architecture/2026-09-21-liquid-glass-light-dark-pair.md`。
     // 落盘格式的错是静默的：这三个字段是新增的，漏一个就是"设置完重启就丢"。

@@ -79,8 +79,8 @@ import 'timetable_profiles_screen.dart';
 ///
 /// 由**全局材质**+ 「作用范围 → 玻璃坞导航」推导（见
 /// [_TimetableScreenState._resolveDockMaterial]），不再有独立的「底栏材质」开关——
-/// 否则会出现「全局高斯 + 底栏柔光」这类两种玻璃同屏的组合。
-enum _DockMaterial { soft, liquid, frosted, solid }
+/// 否则会出现「全局磨砂 + 底栏液态」这类两种玻璃同屏的组合。
+enum _DockMaterial { liquid, frosted, solid }
 
 class TimetableScreen extends StatefulWidget {
   final bool enableUpdateCheck;
@@ -183,15 +183,13 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// baseIndicatorSettings（轻微透镜弯曲）、pinch 0.4、expansion 水平12/
   /// 垂直8、质量自适应；右侧浮钮与药丸显式共用这份官方底栏材质——
   /// 包「原版」下两者不传参时内部默认各不相同，会呈现玻璃断层。
-  /// 柔光玻璃表面的极性阈值：壁纸亮度低于此值才用深灰玻璃 + 白墨，
-  /// 否则乳白玻璃 + 黑墨（面板极性与墨色同源，见 [SoftGlassTokens.tint]
-  /// 与 [SoftGlassPolarity]）。
+  /// 玻璃坞药丸的亮暗极性阈值：壁纸亮度低于此值才用深灰玻璃 + 白墨，
+  /// 否则乳白玻璃 + 黑墨（极性决定它的底色与指示器配色，见
+  /// [SoftGlassTokens.tint] 与 [SoftGlassPolarity]）。
   ///
-  /// 柔光药丸与柔光圆钮**必须共用这一个判据**——两者在同一行并列（居中
-  /// 药丸 + 右侧圆钮），各自一套阈值时 0.35..0.45 亮度区间的壁纸上会一深
-  /// 一浅，读作「两块不同的玻璃」。阈值取 0.35 而非通用 chrome 的 0.45，
-  /// 是柔光材质的偏保守取向：中等亮度壁纸配深灰玻璃像一块塑料。
-  static const double _kSoftGlassDarkLuminance = 0.35;
+  /// 阈值取 0.35 而非通用 chrome 的 0.45，是玻璃坞的偏保守取向：中等亮度
+  /// 壁纸配深灰玻璃像一块塑料（截图里浅橄榄壁纸配黑玻璃就是这种情况）。
+  static const double _kDockGlassDarkLuminance = 0.35;
 
   late final PageController _weekPageController;
   late final AnimationController _dayViewExpandController;
@@ -7409,13 +7407,12 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 由**全局材质**（外观编辑 → 材质）+ 「作用范围 → 玻璃坞导航」推导：
   ///
   /// - 实体卡片（模糊总开关关）→ [_DockMaterial.solid]；
-  /// - 高斯模糊 → [_DockMaterial.frosted]；
-  /// - 柔光玻璃 + 作用范围开 → [_DockMaterial.soft]；
+  /// - 磨砂玻璃 → [_DockMaterial.frosted]；
   /// - 液态玻璃 + 作用范围开 → [_DockMaterial.liquid]；
-  /// - 高级材质但该家族作用范围关（或系统降级）→ [_DockMaterial.solid]。
+  /// - 液态玻璃但该家族作用范围关（或系统降级）→ [_DockMaterial.solid]。
   ///
   /// 底栏不再有独立的「底栏材质」开关：同一份全局材质驱动所有表面，用户
-  /// 不必在两个地方对齐同一种玻璃（历史上「全局高斯 + 底栏柔光」这类组合
+  /// 不必在两个地方对齐同一种玻璃（历史上「全局磨砂 + 底栏液态」这类组合
   /// 就是把开关拆到两处造成的）。
   /// 高级材质关闭时统一走实体卡片而非降低一档磨砂：磨砂的实时
   /// BackdropFilter 在坞的滑入/合并动画期间采不到稳定背景，药丸会整段
@@ -7427,9 +7424,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       advancedFamilyEnabled: appearance.liquidGlassDockEnabled,
     );
     if (isAdvancedGlassMode(appearance.glassMode) && !familySolid) {
-      return appearance.glassMode == FrostedGlassMode.softGlass
-          ? _DockMaterial.soft
-          : _DockMaterial.liquid;
+      return _DockMaterial.liquid;
     }
     return HyperosBlurredHeader.backdropBlurEnabled(context)
         ? _DockMaterial.frosted
@@ -7443,12 +7438,12 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 顶栏那两颗常驻玻璃球同一条规则。坞层原来长在宿主子树的末尾，于是每次录帧
   /// 都把坞层自己的画面烘进采样快照，坞层再拿这张"含自己"的图去算材质：展开 /
   /// 收起内嵌页那几帧里，圆钮的明暗会来回颤几下才收敛（真机反馈：「圆钮展开
-  /// 收起之后闪」）。同一机制在 `SoftGlassSurface` 类注释的「已知偏差」一节有
+  /// 收起之后闪」）。同一机制在 `stable_frosted_surface.dart` 的类注释里有
   /// 完整说明 —— 那条偏差的修法就是"把玻璃移到捕获之外"，这里是其中一块。
   ///
   /// 浮钮与药丸显式同源材质：两者都由同一份全局材质推导
   /// （[_resolveDockMaterial]），避免出现圆钮与药丸两种玻璃的断层。
-  /// 柔光路径不用液态 settings，改走 SoftGlassSurface。
+  /// 三条材质路径共用同一份采样与稳定背景口径（见 `StableFrostedSurface`）。
   Widget _buildGlassDockLayer({
     required TimetableSettings settings,
     required AppLocalizations l10n,
@@ -7461,28 +7456,17 @@ class _TimetableScreenState extends State<TimetableScreen>
         ? null
         : _wallpaperBodyLuminance;
     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
-    final isSoftDock = dockMaterial == _DockMaterial.soft;
     // 通用底栏墨色判据（chrome 阈值 0.45）。
     // 实体卡片档的药丸/圆钮是不透明**主题色**面（浅色主题≈纯白），
-    // 墨色极性必须跟主题走；半透明材质（液态/磨砂/柔光）的面 =
+    // 墨色极性必须跟主题走；半透明材质（液态/磨砂）的面 =
     // 壁纸 + 玻璃，继续按壁纸亮度判——否则浅色主题 + 暗壁纸会
     // 出现白底白字。
     final inkIsLight = dockMaterial == _DockMaterial.solid
         ? isDarkTheme
         : (lum != null ? lum < 0.45 : isDarkTheme);
-    // 柔光面与墨色同源：暗壁纸 → 深灰玻璃 + 白墨；亮壁纸 → 乳白 + 黑墨。
-    // 极性阈值必须与柔光药丸同源（[_kSoftGlassDarkLuminance]）：
-    // 药丸与圆钮在同一行并列，各自一套阈值会一深一浅。
-    final softInkIsLight = lum != null
-        ? lum < _kSoftGlassDarkLuminance
-        : isDarkTheme;
-    final ink = isSoftDock
-        ? (softInkIsLight
-              ? Colors.white.withValues(alpha: 0.92)
-              : Colors.black.withValues(alpha: 0.80))
-        : (inkIsLight
-              ? Colors.white.withValues(alpha: 0.9)
-              : Colors.black.withValues(alpha: 0.75));
+    final ink = inkIsLight
+        ? Colors.white.withValues(alpha: 0.9)
+        : Colors.black.withValues(alpha: 0.75);
     return SafeArea(
       minimum: const EdgeInsets.fromLTRB(16, 0, 16, 6),
       child: Align(
@@ -7503,7 +7487,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ink: ink,
                 l10n: l10n,
                 material: dockMaterial,
-                softDark: softInkIsLight,
               ),
             ],
           ],
@@ -7556,24 +7539,18 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 动态入口列表：底栏最多 5 槽，用户在「首页与导航」自由编排
     // （'day'/'week' 视图动作 + 目录任意条目，含设置页）。
     final dockIds = resolveGlassDockActionIds(settings);
-    // 柔光玻璃底栏（Hyper-PiliPlus SoftGlass 形态）：全局材质为柔光时自动切入。
+    // 玻璃药丸的布局与极性：
     //
     // 布局用 Stacked（图标上、文字下）：5 槽 + maxWidth 272 时 Horizontal
-    // 会把「日课表」挤成一个字。极性：仅明确暗壁纸才用深灰玻璃，中等
-    // 亮度壁纸走乳白+黑墨（截图里浅橄榄壁纸配黑玻璃像一块塑料）。阈值与
-    // 右侧柔光圆钮共用 [_kSoftGlassDarkLuminance]（同一行两块玻璃同极）。
-    // 墨色：柔光档用柔光自己的极性阈值（与右侧柔光圆钮共用
-    // [_kSoftGlassDarkLuminance]，同一行两块玻璃同极）；其余档沿用既有判据。
-    final isSoftDock = dockMaterial == _DockMaterial.soft;
-    final softDark = wallpaperLuminance != null
-        ? wallpaperLuminance < _kSoftGlassDarkLuminance
+    // 会把「日课表」挤成一个字。极性阈值只给底栏药丸自己用（决定它的
+    // 亮暗与指示器配色）：仅明确暗壁纸才用深灰玻璃，中等亮度壁纸走
+    // 乳白+黑墨（截图里浅橄榄壁纸配黑玻璃像一块塑料），故阈值取 0.35
+    // 而非通用 chrome 的 0.45。
+    final dockGlassDark = wallpaperLuminance != null
+        ? wallpaperLuminance < _kDockGlassDarkLuminance
         : isDark;
-    final barSelectedInk = isSoftDock
-        ? (softDark ? Colors.white : Colors.black)
-        : selectedColor;
-    // 柔光档不再单独衰减未选中墨色：原版 selected / unselected 同色，
-    // 选中态只靠字重 + 指示器区分。
-    final barUnselectedInk = isSoftDock ? barSelectedInk : unselectedColor;
+    final barSelectedInk = selectedColor;
+    final barUnselectedInk = unselectedColor;
 
     // 四种材质共用同一套底栏实现（[SoftGlassTabBar]：拖拽切换、弹簧指示器、
     // 速度拉伸），只有「底」不同——见 [_dockPillSurface]。
@@ -7591,30 +7568,25 @@ class _TimetableScreenState extends State<TimetableScreen>
       unselectedColor: barUnselectedInk,
       iconSize: 22,
       blurEnabled: appearance.blurEnabled,
-      polarity: softDark ? SoftGlassPolarity.dark : SoftGlassPolarity.light,
+      polarity: dockGlassDark
+          ? SoftGlassPolarity.dark
+          : SoftGlassPolarity.light,
       surfaceBuilder: (child) => _dockPillSurface(
         material: dockMaterial,
         solidFill: solidDockFill,
-        softDark: softDark,
         child: child,
       ),
     );
   }
 
-  /// 药丸底材质分派（四种材质共用同一套底栏实现，见 [_buildGlassDockBar]）。
+  /// 药丸底材质分派（三种材质共用同一套底栏实现，见 [_buildGlassDockBar]）。
   Widget _dockPillSurface({
     required _DockMaterial material,
     required Color solidFill,
-    required bool softDark,
     required Widget child,
   }) {
     const radius = SoftGlassTokens.barHeight / 2;
     return switch (material) {
-      _DockMaterial.soft => SoftGlassSurface(
-        blurEnabled: FrostedAppearanceScope.of(context).blurEnabled,
-        polarity: softDark ? SoftGlassPolarity.dark : SoftGlassPolarity.light,
-        child: child,
-      ),
       _DockMaterial.liquid => LiquidGlassSurface(
         borderRadius: radius,
         // 实时采样（不跟祖先组）：坞层被 [_wrapHomeWithTopMenu] 摆在采样宿主
@@ -7666,7 +7638,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     required Color ink,
     required AppLocalizations l10n,
     required _DockMaterial material,
-    bool softDark = false,
   }) {
     final icon = _roundButtonIcon(context.read<TimetableProvider>().settings);
     void onTap() =>
@@ -7692,12 +7663,6 @@ class _TimetableScreenState extends State<TimetableScreen>
             customBorder: const CircleBorder(),
             onTap: onTap,
             child: switch (material) {
-              _DockMaterial.soft => SoftGlassSurface(
-                polarity: softDark
-                    ? SoftGlassPolarity.dark
-                    : SoftGlassPolarity.light,
-                child: body,
-              ),
               _DockMaterial.liquid => LiquidGlassSurface(
                 borderRadius: radius,
                 // 实时采样，理由同 [_dockPillSurface]（坞层在采样宿主之外）。

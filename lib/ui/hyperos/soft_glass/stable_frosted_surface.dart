@@ -17,7 +17,7 @@ import '../hyperos_glass_backdrop_host.dart';
 /// 给出了四种观感：实底全程稳、柔光/液态背景定、磨砂飘。
 ///
 /// 2026-09-16 统一口径：**入场期间所有材质都走同一张稳定背景** —— 也就是这里把
-/// 磨砂接到与 [SoftGlassSurface] 完全相同的两条分支上：
+/// 磨砂接到与药丸表面（`soft_glass_tab_bar.dart` 的 builder 注入那层）完全相同的两条分支上：
 ///
 /// - **本屏有采样源**（`_controller != null`）→ 用 [MiuixGlass] +
 ///   [MiuixGlassMaterials.popupViewGlass] 渲染，背景来自屏级录帧写进本表面

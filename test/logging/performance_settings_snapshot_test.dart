@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/logging/performance_settings_snapshot.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
-import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 
 /// 断言的是**日志里会出现的那些键与值**（读日志的人看到的东西），不是内部实现。
@@ -55,21 +54,6 @@ void main() {
   });
 
   group('材质参数取的是有效值（含回落）', () {
-    test('柔光调参为 null 时写默认档，不是空值', () {
-      final snapshot = snapshotOf(TimetableSettings.defaults());
-
-      expect(snapshot['softPreset'], 'standard');
-      expect(
-        snapshot['softBlurMul'],
-        SoftGlassTuning.defaults.blurRadiusMultiplier,
-      );
-      expect(
-        snapshot['softTintMul'],
-        SoftGlassTuning.defaults.tintAlphaMultiplier,
-      );
-      expect(snapshot['softEdgeHighlight'], SoftGlassTuning.defaults.edgeHighlight);
-    });
-
     test('液态调参为 null 时走内置常量，仍能读到真实光学参数', () {
       final snapshot = snapshotOf(TimetableSettings.defaults());
 

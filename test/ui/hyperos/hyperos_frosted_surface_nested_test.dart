@@ -48,7 +48,7 @@ Widget _harness({required FrostedGlassMode mode, bool degraded = false}) {
 
 void main() {
   testWidgets('soft glass：嵌套 tile 走柔光玻璃水洗', (tester) async {
-    await tester.pumpWidget(_harness(mode: FrostedGlassMode.softGlass));
+    await tester.pumpWidget(_harness(mode: FrostedGlassMode.liquidGlass));
     await tester.pump();
 
     // 柔光面板内：父面板自带模糊，tile 只上一层白色水洗（浅色主题 28%）。
@@ -63,7 +63,7 @@ void main() {
 
   testWidgets('soft glass + 系统降级：嵌套 tile 弃白色水洗改中性水洗', (tester) async {
     await tester.pumpWidget(
-      _harness(mode: FrostedGlassMode.softGlass, degraded: true),
+      _harness(mode: FrostedGlassMode.liquidGlass, degraded: true),
     );
     await tester.pump();
 

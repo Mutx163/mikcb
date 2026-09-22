@@ -200,34 +200,28 @@ void main() {
     expect(find.text('液态玻璃'), findsWidgets);
   });
 
-  testWidgets('存量柔光档：面板读作液态玻璃，且液态细项照给（2026-09-22 退场）', (
-    tester,
-  ) async {
-    // 用户 2026-09-22 报的正是这条：「默认在液态玻璃选项的时候，下面没有
-    // 出现玻璃相关设置」。根因是两处判据不同源 —— 顶部分段把存量柔光归桶
-    // 显示成「液态玻璃」，而下面给不给「高级材质」那一节看的是**原始字段**
-    // 是不是 liquidGlass ⇒ 界面说液态、下面空着。
+  testWidgets('切到液态玻璃后，面板下面照给细项（上下判据同源）', (tester) async {
+    // 用户 2026-09-22 报的正是这条：「外观编辑里选了液态玻璃，下面没有出现
+    // 玻璃相关设置」。根因是两处判据不同源 —— 顶部分段按显示归桶、下面给不给
+    // 「高级材质」那一节看的是原始字段。
     //
-    // 此后柔光档从可选材质里退场：存量值读盘即归液态（`FrostedGlassModeX
-    // .fromValue`），顶部分段与那一节也改用同一个值（面板里的 displayedChoice）。
-    // 这里从**落盘的档案**起步，走的就是真实读盘路径。
+    // 存量柔光那条读盘迁移的钉子在本轮单测里（`glass_mode_choice_test` 的
+    // `fromValue('softGlass')` 一例）；这条钉的是用户直接操作后的自洽性。
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    _seedPrefs(
-      TimetableSettings.defaults().copyWith(
-        frostedGlassMode: FrostedGlassMode.softGlass,
-      ),
-    );
+    _seedPrefs(TimetableSettings.defaults());
 
     final provider = await _openMaterialPanel(tester);
 
-    // ① 读盘就把柔光归成液态，设置了对象里不再留着柔光。
+    // 出厂默认是磨砂档：此时下面不该有液态细项。
+    expect(provider.settings.frostedGlassMode, FrostedGlassMode.frosted);
+    expect(find.text('高级材质'), findsNothing);
+
+    // 点顶部分段的「液态玻璃」：设置写回，**下面立刻给液态细项**。
+    await tester.tap(find.text('液态玻璃').first);
+    await tester.pumpAndSettle();
     expect(provider.settings.frostedGlassMode, FrostedGlassMode.liquidGlass);
-    // ② 顶部分段显示液态（与上一条同口径）。
-    expect(find.text('液态玻璃'), findsWidgets);
-    // ③ **下面照给液态细项** —— 这条是这次报的问题的正钉。
-    expect(find.text('高级材质'), findsOneWidget);
-    // ④ 全屏再无「柔光玻璃」：只读总览那几行也不许再报它。
+    expect(find.text('高级材质'), findsOneWidget, reason: '上面选液态，下面必须给细项');
     expect(find.text('柔光玻璃'), findsNothing);
   });
 

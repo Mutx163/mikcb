@@ -84,8 +84,6 @@ class AppGlobalSettingsService {
     'liquidGlassDockEnabled',
     'courseCardSurfaceStyle',
     'courseCardGlassTuning',
-    'softGlassPreset',
-    'softGlassTuning',
     'progressiveBlurPreset',
     'progressiveBlurTuning',
     'subpageHeaderBlurStyle',

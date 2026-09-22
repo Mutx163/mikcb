@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/progressive_blur_tuning.dart';
-import 'package:university_timetable/models/soft_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
@@ -56,7 +55,6 @@ void main() {
       frostedSheetBlurSigma: 20,
       liquidGlassDockEnabled: false,
       liquidGlassPreset: LiquidGlassPreset.dense,
-      softGlassPreset: SoftGlassPreset.dense,
       progressiveBlurPreset: ProgressiveBlurPreset.dense,
       homePageTimeColumnBlurEnabled: true,
       // 液态玻璃的浅/深成对（2026-09-21）：非默认值，否则下面的断言是白过的。
@@ -206,7 +204,6 @@ void main() {
     expect(result.liquidGlassTuningDark, dirty.liquidGlassTuningDark);
     expect(result.linkLiquidGlassTuning, dirty.linkLiquidGlassTuning);
     expect(result.darkGlassBoostEnabled, dirty.darkGlassBoostEnabled);
-    expect(result.softGlassTuning, dirty.softGlassTuning);
     expect(result.progressiveBlurTuning, dirty.progressiveBlurTuning);
     expect(result.courseCardSurfaceStyle, dirty.courseCardSurfaceStyle);
     expectUntouchedEssentials(result);
@@ -232,7 +229,6 @@ void main() {
     expect(result.frostedSheetBlurSigma, defaults.frostedSheetBlurSigma);
     expect(result.liquidGlassDockEnabled, defaults.liquidGlassDockEnabled);
     expect(result.liquidGlassPreset, defaults.liquidGlassPreset);
-    expect(result.softGlassPreset, defaults.softGlassPreset);
     expect(result.progressiveBlurPreset, defaults.progressiveBlurPreset);
     expect(
       result.homePageTimeColumnBlurEnabled,
@@ -246,7 +242,6 @@ void main() {
     expect(result.liquidGlassTuningDark, defaults.liquidGlassTuningDark);
     expect(result.linkLiquidGlassTuning, defaults.linkLiquidGlassTuning);
     expect(result.darkGlassBoostEnabled, defaults.darkGlassBoostEnabled);
-    expect(result.softGlassTuning, defaults.softGlassTuning);
     expect(result.progressiveBlurTuning, defaults.progressiveBlurTuning);
 
     // 首页与导航的字段保持「脏」值：导航形态已拆到独立 scope。

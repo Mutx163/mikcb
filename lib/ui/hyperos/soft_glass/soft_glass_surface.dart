@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_miuix/miuix.dart';
 
-import '../../../models/soft_glass_tuning.dart';
-import '../frosted/frosted_appearance.dart';
-import '../hyperos_glass_backdrop_host.dart';
-
-/// 柔光玻璃 token —— 数值直译 Hyper-PiliPlus（Deadliner）的
-/// `AdvancedMaterialFineTuning` / `GlassBlurSpec` / `GlassEdgeOpticsSpec` /
-/// `GlassLayeringSpec` / `SoftGlassShadowTokens` / `MiuixFloatingTabBarDefaults`。
+/// 玻璃坞药丸的几何 / 按压动效 / 亮暗 token —— 底栏药丸（`SoftGlassTabBar`）
+/// 与坞内圆钮共用这一份数值；亮暗极性的取值范围见 [SoftGlassPolarity]。
+///
+/// 与「材质」无关：坞的三种材质（液态 / 磨砂 / 实体）都共用这套几何与动效，
+/// 材质差异只由药丸的 `surfaceBuilder` 决定。
 abstract final class SoftGlassTokens {
   // ---------------------------------------------------------------------
   // 底栏几何（MiuixFloatingTabBarDefaults）
@@ -35,11 +32,11 @@ abstract final class SoftGlassTokens {
   // 模糊（AdvancedMaterialTuning.DefaultBlurRadius + GlassBlurSpec）
   // ---------------------------------------------------------------------
 
-  /// 全局模糊半径基准：柔光玻璃的**成本旋钮，同时也是雾度旋钮**。
+  /// 模糊半径基准：磨砂药丸的**成本旋钮，同时也是雾度旋钮**。
   ///
   /// ## 这个数为什么这么敏感
   ///
-  /// 它同时决定三件事，而三件都在每帧、每块柔光面上重算
+  /// 它同时决定三件事，而三件都在每帧、每块磨砂面上重算
   /// （上游 `MiuixGlass` 的 `_RenderGlass.prepare`）：
   ///
   /// | 派生量 | 公式 | 影响 |
@@ -63,29 +60,13 @@ abstract final class SoftGlassTokens {
   /// σ=14.4、padding=48，一块面板的离屏纹理约小 1.3 倍、模糊核约省 1.9 倍，合计
   /// 约 2.5 倍。
   ///
-  /// 这是**观感取舍**，不是纯性能修复：雾度会比原来淡一档。想找回原观感就回 60
-  /// （或直接把「高级材质 → 柔光玻璃 → 模糊强度」倍率调到 1.9×）。
-  /// 真正的结构性问题（每块玻璃每帧两次同步回读）没解决，见本文件末尾的说明。
+  /// 这是**观感取舍**，不是纯性能修复：雾度会比原来淡一档。想找回原观感就回 60。
+  /// 真正的结构性问题（每块玻璃每帧两次同步回读）没解决。
   static const double baseBlurRadius = 32;
 
   /// Miuix 材质的半径上限（上游 `MiuixGlassMaterial.blurRadius` 的实际天花板
   /// 由离屏目标尺寸决定，这里只做兜底 clamp）。
   static const double maximumBlurRadius = 256;
-
-  /// **档位阶梯（同一基线的绝对半径，供改数值时对照）**：
-  /// | 档位 | radius (= [baseBlurRadius] × 倍率) |
-  /// |---|---|
-  /// | 清透 clear (×0.6) | 19 |
-  /// | 轻盈 light (×0.8) | 26 |
-  /// | **标准 standard (×1.0)** | **32** |
-  /// | 浓雾 dense (×1.6) | 51 |
-  /// | 滑杆上限 (×2.7) | 86 |
-  ///
-  /// 倍率来自用户档位（[SoftGlassTuning.blurRadiusMultiplier]），不是在
-  /// 这里写死的。滑杆上限 2.7 对应 86，远低于 [maximumBlurRadius]。
-  ///
-  /// > 基线 60 时代的阶梯是 36/48/60/96，滑杆上限 162 —— 那套值落在成本曲线更陡的
-  /// > 一段上，往上调一档的代价比现在大得多。
 
   // ---------------------------------------------------------------------
   // 边缘光学
@@ -93,24 +74,18 @@ abstract final class SoftGlassTokens {
   //
   // 自绘的双影描边（0.5dp 描边 + 上/中/下三档垂直渐变高光 + 暗色折减）已随
   // 自研链路删除。现在边缘由上游 `MiuixGlassStrokes.forTheme(isDark)` 提供，
-  // 用户档位（[SoftGlassTuning.edgeHighlight]）经 [scaleSoftGlassStroke]
-  // 按比例缩放到它的三处高光（color / primary / secondary）。
-  //
-  // 注意：倍率 1.0 = 上游原样 = 首页菜单 / 选择弹层同款，不要再引入
-  // "额外折减"的默认值——那会让标准档悄悄偏离菜单（见
-  // `SoftGlassTuning.defaultEdgeHighlight` 的注释）。
+  // [edgeHighlightAlpha] 就是它三处高光（color / primary / secondary）的强度。
 
   // ---------------------------------------------------------------------
   // 兜底底色（没有 backdrop 时画的那层实底）
   // ---------------------------------------------------------------------
   //
   // ⚠️ 有 backdrop 时**这些数值一个都不参与渲染**：那时玻璃的底色由上游
-  // `popupViewGlass` 的三层颜色层 + blend shader 决定（见
-  // `softGlassMaterialFor`），`fill` 只在 `MiuixGlass` 的"无背景兜底"分支
-  // （`canvas.drawPath(shapePath, fill)`）被读。
+  // `popupViewGlass` 的三层颜色层 + blend shader 决定，`fill` 只在
+  // `MiuixGlass` 的"无背景兜底"分支（`canvas.drawPath(shapePath, fill)`）被读。
   //
   // 所以这一段服务于两件事，别拿它去解释玻璃的观感：
-  // 1. **模糊关闭 / 系统降级时的实底**（`SoftGlassSurface.fill`）；
+  // 1. **模糊关闭 / 系统降级时的实底**（`StableFrostedSurface` 的实底分支）；
   // 2. **静态替身的等效底色**（转场期间用，见
   //    `HomePageChromeGlassFill.standInWashColor`）。
 
@@ -120,8 +95,7 @@ abstract final class SoftGlassTokens {
   /// 底色基准的配方倍率（0.90）。
   ///
   /// 两个常量相乘 ≈ 0.675，是"亮色 252@67.5% / 暗色 31@67.5%"这个对外口径的
-  /// 来源。之所以拆成两个而不是一个 0.675，是为了保留上游
-  /// `AdvancedMaterialFineTuning.glassTintAlphaMultiplier` 的数值可追溯性。
+  /// 来源。之所以拆成两个而不是一个 0.675，是为了让"倍率"这一层可单独调。
   static const double navigationTintAlphaMultiplier = 0.90;
 
   /// 亮色底灰度（glassTintLightGray）→ 252。
@@ -132,7 +106,7 @@ abstract final class SoftGlassTokens {
 
   /// 模糊总开关关闭时的底色不透明度。
   ///
-  /// 上游 `SoftGlassSurface` 在材质未启用（`advancedMaterial.enabled == false`）
+  /// 上游玻璃组件在材质未启用（`advancedMaterial.enabled == false`）
   /// 时写死 0.92；本项目约定「模糊关闭即实底」（见
   /// HyperosBlurredHeader.sheetTintColor），故这里收紧到 0.90，属**有意偏离**：
   /// 既不能透出底下的课表，又要保住玻璃面的层级。
@@ -188,311 +162,6 @@ abstract final class SoftGlassTokens {
       : Colors.black.withValues(alpha: 0.075);
 }
 
-/// 柔光玻璃配方 —— 全 app 只有一个（[standard]）。
-///
-/// 现在柔光玻璃渲染的是上游 `MiuixGlass`，配方半径由
-/// [SoftGlassTokens.baseBlurRadius]（2026-09-17 起 32，原为上游
-/// `popupViewGlass.blurRadius` 的 60 —— 改值理由与成本模型见该常量）
-/// 给出，再乘用户档位倍率（[SoftGlassTuning.blurRadiusMultiplier]），最终写成
-/// 上游 `MiuixGlassMaterial.blurRadius`。
-///
-/// 历史：这里曾经并存过按表面分派的多套配方（照搬 Hyper-PiliPlus 的
-/// 「浮空导航 23dp / 对话框 92dp / 底部面板 184dp」），于是同一个「柔光玻璃」
-/// 在顶栏和弹层是两种雾度。用户口径是「是柔光玻璃就全部显示一样」，所以现在
-/// 只保留一个半径值；**形状**（圆角 / 胶囊）由调用方的 `borderRadius` 决定，
-/// 不放在配方里——配方只管雾度这一件事。
-class SoftGlassRecipe {
-  const SoftGlassRecipe({required this.blurRadiusDp});
-
-  /// 材质基准半径（dp），会被用户档位倍率缩放。
-  final double blurRadiusDp;
-
-  /// 全 app 柔光玻璃**唯一**的配方：底栏 / 浮钮 / 顶栏带 / 弹窗 / 面板 /
-  /// 选择弹层全都用它，雾度来源只有这一处。
-  ///
-  /// 若真机要整体改雾度，改 [SoftGlassTokens.baseBlurRadius] 一个数
-  /// （档位阶梯会随之整体平移，见该常量的对照表）。
-  static const SoftGlassRecipe standard = SoftGlassRecipe(
-    blurRadiusDp: SoftGlassTokens.baseBlurRadius,
-  );
-}
-
-/// 柔光亮暗极性。
+/// 玻璃坞药丸与坞内圆钮的亮暗极性：暗壁纸用深灰玻璃 + 白墨，否则乳白 + 黑墨。
 enum SoftGlassPolarity { light, dark }
 
-/// 柔光玻璃表面 —— **全 app 玻璃统一材质**：直接渲染 flutter_miuix 的 OS4 玻璃
-/// （[MiuixGlass]），材质与首页右上角菜单、选择弹层**同一份**
-/// （`MiuixGlassMaterials.popupViewGlass` + `MiuixGlassStyles.forTheme` +
-/// `MiuixGlassStrokes.forTheme` + 菜单同档的 `shading: false`）。
-///
-/// 历史：这里曾经是 Hyper-PiliPlus「柔光玻璃」的自研实现 —— 自绘折射 shader +
-/// 双影边缘 + 自己录制 backdrop。那条链路已整体删除，本类只保留原来的**入参
-/// 契约**，内部换成上游玻璃，于是顶栏带 / 玻璃坞 / 弹窗 / 面板 / 选择弹层 /
-/// 标签栏所有接入点一次性换成菜单那套材质，不再各写一套观感。
-///
-/// ## 采样源怎么来的
-///
-/// 每个表面自带一个 [HyperosZoneBackdrop]，并通过 [HyperosGlassBackdropReporter]
-/// 把自己的渲染对象登记给屏级控制器（[HyperosGlassBackdropController]）。控制器
-/// 按矩形把玻璃归并成最多几块 zone，捕获节点**只为每块录它那条窄带**（并集 +
-/// `sampleMargin`），而不是整层 —— 整屏快照在 2.75x 上约 100MB/帧，是之前
-/// "静止也吃满一个核"的主因。一屏之内没有任何玻璃时完全不录帧。
-///
-/// ## ⚠️ 已知偏差：捕获子树包含玻璃自身
-///
-/// 上游要求「`MiuixGlass` 必须放在 backdrop 捕获子树之外，防止反馈采样」
-/// （`miuix_glass.dart` 类注释），也就是捕获节点应该只包住**背景内容**、玻璃与它
-/// **并列**。本项目的现实是：`HyperosGlassBackdropHost` 把捕获节点包在**整页**
-/// 外面（`hyperos_page.dart` / `timetable_screen.dart`），而页内玻璃就在那棵子树
-/// 里 —— 于是玻璃采到的那条窄带里**含有它自己上一帧的合成结果**。
-///
-/// 影响：滚动 / 转场时玻璃边缘会有拖影与自我叠加（弹层因为画在 Overlay 上、
-/// 天然在捕获之外，不受影响）。`f9ba002b` 的"跳过被自己通知带出来的那一帧"只
-/// 截断了自激重绘循环，**没有、也无法**把玻璃从快照里去掉。
-///
-/// 修它需要页面分层（背景层被捕获、玻璃层在其外）或把页内玻璃也画到 Overlay，
-/// 属架构级改动，尚未做。**在此之前，不要以为"玻璃已经和菜单一致"就等于
-/// "采样也是对的"** —— 这两件事是分开的。
-///
-/// ## blurEnabled == false 时
-///
-/// 不接采样源（`backdrop: null`），上游走"保留纯色轮廓 + 可绘制高光"那条分支，
-/// 此时用 [SoftGlassTokens.tint] 算出的兜底实底（[fill]）上色 —— 即原来的
-/// 「模糊关闭即实底」观感，不会出现半透明空壳。
-class SoftGlassSurface extends StatefulWidget {
-  const SoftGlassSurface({
-    super.key,
-    required this.child,
-    this.blurEnabled = true,
-    this.borderRadius,
-    this.materialAlpha = 1.0,
-    this.polarity,
-    this.enableShadows = true,
-    this.enableEdgeHighlight = true,
-    this.recipe = SoftGlassRecipe.standard,
-    this.tuning,
-  });
-
-  final Widget child;
-  final bool blurEnabled;
-  final BorderRadius? borderRadius;
-
-  /// 整体不透明度（上游 `MiuixGlass.alpha`）：会同时作用到混合结果、
-  /// 描边、阴影与遮罩。**目前没有页面用它**（全部走默认 1.0），
-  /// 弹层也没接这个入参（弹层的柔光面走 [SoftGlassSurface]，见
-  /// `os4_glass_popup_surface.dart`）—— 若将来要用，记得两边一起加，
-  /// 否则弹层与页内表面口径会分叉。
-  final double materialAlpha;
-  final SoftGlassPolarity? polarity;
-  final bool enableShadows;
-  final bool enableEdgeHighlight;
-
-  /// 材质配方。全 app 只有一个（[SoftGlassRecipe.standard]）；显式传入只用于
-  /// 测试或将来真要按表面分派雾度时。
-  final SoftGlassRecipe recipe;
-
-  /// 用户调参（设置页「高级材质 → 柔光玻璃」）。null = 从
-  /// [FrostedAppearanceScope] 读全局设置；测试/特殊面可显式覆盖。
-  final SoftGlassTuning? tuning;
-
-  /// 形状：显式 [borderRadius] 优先，否则兜底胶囊。
-  ///
-  /// 999 会被上游 `MiuixGlassShape` 按短边一半 clamp，所以极窄或极扁的表面
-  /// 也拿得到正确胶囊，不需要在这里算。
-  BorderRadius get _radius =>
-      borderRadius ?? const BorderRadius.all(Radius.circular(999));
-
-  @override
-  State<SoftGlassSurface> createState() => _SoftGlassSurfaceState();
-}
-
-class _SoftGlassSurfaceState extends State<SoftGlassSurface> {
-  HyperosGlassBackdropController? _controller;
-
-  /// 本表面自己的采样源：内容由屏级控制器按"这块玻璃背后那条窄带"写入。
-  final HyperosZoneBackdrop _backdrop = HyperosZoneBackdrop();
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // 订阅"本屏是否在跑"这一位（`OverlayEntry` 会给被盖住的路由关掉 TickerMode，
-    // 恢复时再打开）。**这是必需的**：[HyperosGlassBackdropRegistry.resolve]
-    // 是纯查表、不建立任何依赖，而路由 push / pop 会让注册表栈顶换人 ——
-    // 上面对 [didUpdateWidget] 的说明假定"父级会重建"，但被盖住再回来这一路
-    // **不会重建**（页面 widget 是缓存的），于是采样源永远停在旧的那个上：
-    // 回来时玻璃只剩半套材质、另一半回落实底（真机反馈）。
-    TickerMode.valuesOf(context);
-    _bindController();
-  }
-
-  @override
-  void didUpdateWidget(SoftGlassSurface oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // 每次父级重建都重新解析一次采样源，而不是只在 blurEnabled 变化时：
-    // 宿主可能被替换、注册表栈顶可能换人（页面 push / pop、modal 关闭、
-    // 旧屏被 GC），而本表面读 scope 时**不建立 InheritedWidget 依赖**
-    // （HyperosGlassBackdropScope.maybeOf 走 getInheritedWidgetOfExactType），
-    // 不重新解析就永远绑在旧的那个上。resolve 是纯查表，开销可忽略。
-    _bindController();
-  }
-
-  @override
-  void dispose() {
-    _controller = null;
-    super.dispose();
-  }
-
-  /// 解析采样源（屏内作用域 → modal 时的栈顶屏）。真正的"要不要录帧"由
-  /// [HyperosGlassBackdropReporter] 在 attach 时按区域登记，这里只解析归属。
-  void _bindController() {
-    // ⚠️ 节拍被停下来的那一层里的玻璃**不登记采样区**：内嵌页盖住首页时
-    // （`TickerMode(enabled: false)` + `Visibility(visible: false)`）、被不透明
-    // 路由盖住的上一层，都是这种状态 —— 那些玻璃根本不绘制，占着采样名额只会
-    // 让每一次录帧都白录一块，并让它们被卷进材质重算（上游每块玻璃重建材质都
-    // 要同步等一次 GPU 回读，**块数**才是这条链路上最贵的维度）。
-    //
-    // 判据与 [HyperosGlassBackdropHost] 的 `_syncRegistration` 同源：那里也用
-    // `TickerMode` 判"本屏是否在跑"。恢复时 `didChangeDependencies` 会重跑这里
-    // （上面已订阅 `TickerMode.valuesOf`），重新登记由同帧补采保证首帧就有材质。
-    final live = TickerMode.valuesOf(context).enabled;
-    final resolved = (widget.blurEnabled && live)
-        ? HyperosGlassBackdropRegistry.resolve(context)
-        : null;
-    // 已释放的宿主不再持有：它的 backdrop 图已被 dispose，继续用它采样会踩到
-    // 已释放的 ui.Image。注册表侧也会跳过僵尸，这里是页内作用域那条路的兜底。
-    final next = (resolved == null || resolved.disposed) ? null : resolved;
-    if (identical(next, _controller)) {
-      return;
-    }
-    _controller = next;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tuning =
-        widget.tuning ?? FrostedAppearanceScope.of(context).softGlassTuning;
-    final isDark = SoftGlassTokens._dark(context, widget.polarity);
-    return MiuixGlass(
-      backdrop: widget.blurEnabled ? _backdrop : null,
-      style: MiuixGlassStyles.forTheme(isDark),
-      material: softGlassMaterialFor(
-        context,
-        dark: isDark,
-        recipe: widget.recipe,
-        tuning: tuning,
-      ),
-      shape: MiuixGlassShape(borderRadius: widget._radius),
-      alpha: widget.materialAlpha.clamp(0.0, 1.0),
-      // 兜底实底：只在"没有 backdrop"（模糊关闭 / 系统降级 / 首帧还没录到快照）
-      // 时被上游读——有 backdrop 时玻璃底色由材质三层色 + blend shader 决定，
-      // 这个 `fill` 不参与（`MiuixGlass` 的两条分支互斥，见其 paint）。
-      //
-      // 之前这里接的是 `widget.tint`，而 `tint` 只在 `shading == true` 时被上游
-      // 当 `in_tint` uniform 读；柔光玻璃钉死 `shading: false`，所以那个入参
-      // 传了也不生效，一直没有页面用它。现在改成按明暗/模糊开关直接算兜底实底，
-      // 与 `HomePageChromeGlassFill.standInWashColor` 同源同口径。
-      //
-      // ⚠️ 口径必须带 `tuning.tintAlphaMultiplier`：兜底实底与真玻璃要给出同一个
-      // 「这个档位有多浓」。漏了它，清透档（0.55）与浓雾档（1.3）的兜底实底
-      // 相差 2.4 倍，而 `standInWashColor`（同源）带了 —— 两边就分叉了。
-      //
-      // ⚠️ 但「等第一张快照」那一段必须画**透明**：本屏采样源存在
-      // （`_controller != null`）时，快照在当帧末就会录到，下一帧就是真玻璃 ——
-      // 中间这一帧画实底，观感就是「先冒一块奶白假玻璃、再变真玻璃」。真机反馈
-      // （2026-09-15）：柔光档进 / 出壁纸位置选择页时，三个悬浮按钮闪一下。
-      // 衬底（`wash`）与文字本来就画在玻璃之上，所以这一段仍然有轮廓、有字，
-      // 只是暂时没有材质 —— 比闪一块实底好。
-      //
-      // 而 `_controller == null`（模糊关闭 / 本屏根本没有采样源）是**真降级**：
-      // 快照永远不会来，那时画透明只会得到"半透明空壳"（底下的字直接透出来），
-      // 所以这条路继续画实底轮廓 —— 也是 `blurEnabled: false` 的历史口径。
-      fill: widget.blurEnabled && _controller != null
-          ? const Color(0x00000000)
-          : SoftGlassTokens.tint(
-              context,
-              blurEnabled: widget.blurEnabled,
-              polarity: widget.polarity,
-              tintAlphaMultiplier: tuning.tintAlphaMultiplier,
-            ),
-      // 菜单 / 选择弹层同档：OS4 的「栏与菜单 MaterialToken」而不是 bionic 折射档。
-      // 钉死 false —— 柔光玻璃的对外承诺就是"与首页右上角菜单同一份材质"，
-      // 不留开关，避免有人翻到 `shading: true` 时把 tint / rim 那两条上游分支
-      // 一并打开、观感在此处断开。
-      shading: false,
-      stroke: widget.enableEdgeHighlight
-          ? scaleSoftGlassStroke(
-              MiuixGlassStrokes.forTheme(isDark),
-              tuning.edgeHighlight,
-            )
-          : null,
-      shadow: widget.enableShadows ? MiuixGlassShadows.floating : null,
-      // 外面再包一层"报告自己占哪块"的渲染对象：屏级捕获据此只录玻璃背后的
-      // 那条窄带，而不是整屏（整屏快照 ~100MB/帧，实测静止也吃满一个核）。
-      child: HyperosGlassBackdropReporter(
-        controller: widget.blurEnabled ? _controller : null,
-        backdrop: widget.blurEnabled ? _backdrop : null,
-        child: widget.child,
-      ),
-    );
-  }
-
-}
-
-/// 用户档位（[SoftGlassTuning]）→ 上游 OS4 玻璃材质。
-///
-/// **柔光玻璃全 app 共用这一份映射**：页面表面（[SoftGlassSurface]）与 OS4 弹层
-/// （首页右上角菜单、选择弹层）都走它。否则同一个「柔光玻璃」，弹层不跟档位 ——
-/// 真机反馈就是「选最透明和最浓的档位，首页右上角菜单一模一样」。
-///
-/// 两条作用通道：
-/// - [SoftGlassTuning.blurRadiusMultiplier] → 材质 `blurRadius`
-///   （基准 = [SoftGlassRecipe.blurRadiusDp]）。
-/// - [SoftGlassTuning.tintAlphaMultiplier] → 三层颜色层 alpha **线性缩放**。
-///   注意首层 α 只有 0.02，所以档位的可见差异几乎全在第二、三层
-///   （详见 [SoftGlassTuning] 类头那张表）。
-MiuixGlassMaterial softGlassMaterialFor(
-  BuildContext context, {
-  bool? dark,
-  SoftGlassRecipe recipe = SoftGlassRecipe.standard,
-  SoftGlassTuning? tuning,
-}) {
-  final isDark = dark ?? SoftGlassTokens._dark(context, null);
-  final resolvedTuning =
-      tuning ?? FrostedAppearanceScope.of(context).softGlassTuning;
-  final radius =
-      (recipe.blurRadiusDp * resolvedTuning.blurRadiusMultiplier).clamp(
-        0.0,
-        SoftGlassTokens.maximumBlurRadius,
-      );
-  final tintScale = resolvedTuning.tintAlphaMultiplier.clamp(0.0, 2.0);
-  final base = MiuixGlassMaterials.popupViewGlass(isDark);
-  MiuixGlassColorLayer scale(MiuixGlassColorLayer layer) =>
-      MiuixGlassColorLayer(
-        layer.color.withValues(
-          alpha: (layer.color.a * tintScale).clamp(0.0, 1.0),
-        ),
-        layer.mode,
-      );
-  return MiuixGlassMaterial(
-    blurRadius: radius,
-    first: scale(base.first),
-    second: base.second == null ? null : scale(base.second!),
-    third: base.third == null ? null : scale(base.third!),
-  );
-}
-
-/// 边缘高光强度（0..1）按比例作用到上游描边的三处高光上。
-MiuixGlassStroke scaleSoftGlassStroke(MiuixGlassStroke base, double strength) {
-  final scale = strength.clamp(0.0, 1.0);
-  Color scaleColor(Color color) =>
-      color.withValues(alpha: (color.a * scale).clamp(0.0, 1.0));
-  MiuixGlassStrokeLight scaleLight(MiuixGlassStrokeLight light) =>
-      MiuixGlassStrokeLight(light.x, light.y, light.z, scaleColor(light.color));
-  return MiuixGlassStroke(
-    width: base.width,
-    bevel: base.bevel,
-    color: scaleColor(base.color),
-    primary: scaleLight(base.primary),
-    secondary: scaleLight(base.secondary),
-  );
-}
