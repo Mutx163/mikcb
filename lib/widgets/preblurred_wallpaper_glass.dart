@@ -370,6 +370,7 @@ class PreblurredWallpaperData {
     required this.image,
     required this.pageController,
     required this.followsPager,
+    this.coverAnchorKey,
     this.alignX = 0,
     this.alignY = 0,
     this.scale = 1,
@@ -378,6 +379,16 @@ class PreblurredWallpaperData {
   });
 
   final ui.Image image;
+
+  /// 「这张壁纸被 cover 到哪个框」—— 那个框的 widget key。
+  ///
+  /// `null` = 首页那条路：cover 到**整屏**，左上角是全局原点 (0,0)。
+  /// 非 null = 这个框的**全局矩形**才是基准（设置页的周预览就是这样：壁纸铺在预览框里，
+  /// 而预览框既不是整屏、也不在屏幕原点 —— 用整屏那套几何去取卡片那一块会与预览背景错位）。
+  ///
+  /// 存 key 而不是存矩形，是因为基准框会**随滚动移动**，而滚动不触发重建：
+  /// 绘制期现取 `localToGlobal` 才跟得上（与 fill 自己取坐标同一时刻、同一套变换）。
+  final GlobalKey? coverAnchorKey;
 
   /// 屏幕上真壁纸的 `BoxFit.cover` 对齐值（-1…1，与
   /// `TimetableSettings.homePageWallpaperAlignX/Y` 同源）。
@@ -427,6 +438,7 @@ class PreblurredWallpaperScope extends StatefulWidget {
     required this.blurSigma,
     required this.child,
     this.cardBlurSigma = 0,
+    this.coverToChild = false,
     this.pageController,
     this.followsPager = false,
     this.wallpaperAlignX = 0,
@@ -448,6 +460,14 @@ class PreblurredWallpaperScope extends StatefulWidget {
   /// 而 [blurSigma] 那份还要喂日视图的摘要替身卡。共用一张就会「一处动两处变」。
   /// 两张图的路径、对齐、缩放完全一致，**只有 sigma 不同**。
   final double cardBlurSigma;
+
+  /// 这张壁纸 cover 到哪个框：`false`（默认）= 整屏（首页那条路）；
+  /// `true` = **本 scope 的 child 框**（设置页的周预览：壁纸铺在预览框里）。
+  ///
+  /// 打开它之后，卡片不再按「屏幕坐标 + 整屏 cover」取自己那一块，而是按 child 框取 ——
+  /// 与预览里 `homePageBackdropLayer` 那层 `Positioned.fill(Image(cover))` 同一套几何。
+  /// 不打开时逐帧与之前完全一致（首页零回归）。
+  final bool coverToChild;
 
   final PageController? pageController;
   final bool followsPager;
@@ -530,6 +550,10 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
   final _PreblurSlot _home = _PreblurSlot();
   final _PreblurSlot _card = _PreblurSlot();
   int _revision = 0;
+
+  /// [PreblurredWallpaperScope.coverToChild] 时，包在 child 外面的那个 key：
+  /// 它对应的渲染框就是「壁纸被 cover 到的框」，绘制期由 fill 现取全局矩形。
+  final GlobalKey _coverKey = GlobalKey();
 
   /// Replaced handles awaiting end-of-frame disposal. See [_replaceImage].
   final List<ui.Image> _retiredImages = <ui.Image>[];
@@ -669,6 +693,7 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
       image: image,
       pageController: widget.pageController,
       followsPager: widget.followsPager,
+      coverAnchorKey: widget.coverToChild ? _coverKey : null,
       alignX: widget.wallpaperAlignX,
       alignY: widget.wallpaperAlignY,
       scale: widget.wallpaperScale,
@@ -681,11 +706,14 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
   Widget build(BuildContext context) {
     // 两条流各自发一份：消费者按自己的角色取（首页那份 / 卡片那份），
     // 取错不会抛异常、只会悄悄用错磨砂量，所以两处都不许"顺手读另一份"。
+    final child = widget.coverToChild
+        ? KeyedSubtree(key: _coverKey, child: widget.child)
+        : widget.child;
     return _PreblurredWallpaperInherited(
       data: _dataFor(_home.image),
       child: _CourseCardPreblurredInherited(
         data: _dataFor(_card.image),
-        child: widget.child,
+        child: child,
       ),
     );
   }
@@ -705,6 +733,7 @@ abstract class _PreblurredInherited extends InheritedWidget {
   bool updateShouldNotify(covariant _PreblurredInherited oldWidget) {
     return data?.revision != oldWidget.data?.revision ||
         data?.image != oldWidget.data?.image ||
+        data?.coverAnchorKey != oldWidget.data?.coverAnchorKey ||
         data?.followsPager != oldWidget.data?.followsPager ||
         data?.alignX != oldWidget.data?.alignX ||
         data?.alignY != oldWidget.data?.alignY ||
@@ -770,6 +799,7 @@ Rect preblurredWallpaperCoverDestRect({
   required Size imageSize,
   required Size screenSize,
   required double wallpaperOriginX,
+  Offset anchor = Offset.zero,
   double alignX = 0,
   double alignY = 0,
   double zoom = 1,
@@ -794,9 +824,15 @@ Rect preblurredWallpaperCoverDestRect({
   final fittedHeight = imageSize.height * scale * zoomed;
   final overflowX = fittedWidth - screenSize.width;
   final overflowY = fittedHeight - screenSize.height;
+  // [anchor] 是「被 cover 的那个框」左上角的全局位置：首页那条路是屏幕原点 (0,0)，
+  // 设置页预览那条路是预览框自己的位置（壁纸铺在预览框里，不是铺在屏幕上）。
+  // 不传 anchor 时下面两行与加它之前逐字相同 —— 首页那条路零回归。
   final destLeft =
-      wallpaperOriginX - overflowX * (alignX.clamp(-1.0, 1.0) + 1) / 2;
-  final destTop = -overflowY * (alignY.clamp(-1.0, 1.0) + 1) / 2;
+      anchor.dx +
+      wallpaperOriginX -
+      overflowX * (alignX.clamp(-1.0, 1.0) + 1) / 2;
+  final destTop =
+      anchor.dy - overflowY * (alignY.clamp(-1.0, 1.0) + 1) / 2;
   return Rect.fromLTWH(destLeft, destTop, fittedWidth, fittedHeight);
 }
 
@@ -889,6 +925,7 @@ class PreblurredWallpaperAlignedFill extends LeafRenderObjectWidget {
     return _RenderPreblurredFill(
       image: data?.image,
       screenSize: MediaQuery.sizeOf(context),
+      coverAnchorKey: data?.coverAnchorKey,
       pageController: data?.pageController,
       followsPager: data?.followsPager ?? false,
       alignX: data?.alignX ?? 0,
@@ -910,6 +947,7 @@ class PreblurredWallpaperAlignedFill extends LeafRenderObjectWidget {
     (renderObject as _RenderPreblurredFill)
       ..image = data?.image
       ..screenSize = MediaQuery.sizeOf(context)
+      ..coverAnchorKey = data?.coverAnchorKey
       ..followsPager = data?.followsPager ?? false
       ..alignX = data?.alignX ?? 0
       ..alignY = data?.alignY ?? 0
@@ -932,6 +970,7 @@ class _RenderPreblurredFill extends RenderBox {
     required this._pageController,
     required this._followsPager,
     required this._pageIndex,
+    GlobalKey? coverAnchorKey,
     this._alignX = 0,
     this._alignY = 0,
     this._scale = 1,
@@ -942,6 +981,7 @@ class _RenderPreblurredFill extends RenderBox {
     // 构造期直接落字段、不走 setter：setter 里的 _syncShader 要 attached 才
     // 建着色器，此刻还没 attach，交给 attach() 统一处理。
     _glass = glass;
+    _coverAnchorKey = coverAnchorKey;
   }
 
   ui.Image? _image;
@@ -950,6 +990,17 @@ class _RenderPreblurredFill extends RenderBox {
       return;
     }
     _image = value;
+    markNeedsPaint();
+  }
+
+  /// 壁纸被 cover 到的那个框（见 [PreblurredWallpaperData.coverAnchorKey]）。
+  /// null = 整屏 + 全局原点。
+  GlobalKey? _coverAnchorKey;
+  set coverAnchorKey(GlobalKey? value) {
+    if (_coverAnchorKey == value) {
+      return;
+    }
+    _coverAnchorKey = value;
     markNeedsPaint();
   }
 
@@ -1289,11 +1340,23 @@ class _RenderPreblurredFill extends RenderBox {
     // paint keeps frost locked with no one-frame lag. Do **not** crop+clamp a
     // per-card source rect: near-full-width day cards pin at the bitmap edge
     // after a few pixels of drag and the frost freezes onto the card.
+    //
+    // 「基准框」有两种：首页那条路是整屏（左上角 = 全局原点），设置页预览那条路是
+    // 预览框自己（见 [PreblurredWallpaperData.coverAnchorKey]）。基准框的全局矩形
+    // **必须在绘制期现取** —— 它随滚动移动，而滚动不触发重建。
+    final anchorBox = _coverAnchorKey?.currentContext?.findRenderObject();
+    final anchored = anchorBox is RenderBox && anchorBox.hasSize;
+    final coverSize = anchored ? anchorBox.size : screen;
+    final anchor = anchored ? anchorBox.localToGlobal(Offset.zero) : Offset.zero;
+    if (coverSize.width <= 0 || coverSize.height <= 0) {
+      return;
+    }
     final globalTopLeft = localToGlobal(Offset.zero);
     final dest = preblurredWallpaperCoverDestRect(
       imageSize: Size(image.width.toDouble(), image.height.toDouble()),
-      screenSize: screen,
+      screenSize: coverSize,
       wallpaperOriginX: _wallpaperOriginX(),
+      anchor: anchor,
       alignX: _alignX,
       alignY: _alignY,
       zoom: _scale,

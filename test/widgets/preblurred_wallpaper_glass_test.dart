@@ -120,6 +120,39 @@ void main() {
       expect(dest.height, closeTo(1000, 0.001));
     });
 
+    test('基准框不在屏幕原点时（设置页周预览）：落点整体平移到那个框', () {
+      // 首页那条路的基准框就是**整屏**，左上角是全局原点；设置页的周预览不是 ——
+      // 壁纸铺在预览框里，而预览框既不是整屏、也不在屏幕原点。不把框的位置算
+      // 进去，卡内透出的那段背景就会与预览自己的底图错位（卡内外接不上）。
+      final origin = preblurredWallpaperCoverDestRect(
+        imageSize: image,
+        screenSize: screen,
+        wallpaperOriginX: 0,
+      );
+      const anchor = Offset(37, 128);
+      final anchored = preblurredWallpaperCoverDestRect(
+        imageSize: image,
+        screenSize: screen,
+        wallpaperOriginX: 0,
+        anchor: anchor,
+      );
+      // 只是平移：宽高与"溢出怎么分"都不变（align / zoom 的几何不受影响）。
+      expect(anchored.left, closeTo(origin.left + anchor.dx, 0.001));
+      expect(anchored.top, closeTo(origin.top + anchor.dy, 0.001));
+      expect(anchored.size, origin.size);
+
+      // 壁纸拖动量（wallpaperOriginX）与基准框是**相加**关系，不互相覆盖。
+      // 首页那条路的 anchor 恒为 (0,0)，所以这一条同时钉住"首页零回归"。
+      final dragged = preblurredWallpaperCoverDestRect(
+        imageSize: image,
+        screenSize: screen,
+        wallpaperOriginX: 24,
+        anchor: anchor,
+      );
+      expect(dragged.left, closeTo(origin.left + anchor.dx + 24, 0.001));
+      expect(dragged.top, closeTo(origin.top + anchor.dy, 0.001));
+    });
+
     test('zoom 绕对齐点放大落点（与首页 Transform.scale 同几何）', () {
       Rect destAt(double alignY, double zoom) =>
           preblurredWallpaperCoverDestRect(

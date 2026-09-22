@@ -17,6 +17,7 @@ import '../utils/home_page_background.dart';
 import 'course_card.dart';
 import 'course_grid_surface_host.dart';
 import 'course_weather_display.dart';
+import 'preblurred_wallpaper_glass.dart';
 
 /// Renders the home week timetable surface for settings previews.
 class TimetableWeekPreview extends StatefulWidget {
@@ -28,6 +29,7 @@ class TimetableWeekPreview extends StatefulWidget {
     this.maxVisibleSections,
     this.includeAppHeader = false,
     this.applyHomePageBackdrop = true,
+    this.preblurredCardGlass = false,
     this.heightBudget,
     this.isSettingsPreview = false,
     this.showFloatingBackToCurrentWeek = true,
@@ -40,6 +42,19 @@ class TimetableWeekPreview extends StatefulWidget {
   final int? maxVisibleSections;
   final bool includeAppHeader;
   final bool applyHomePageBackdrop;
+
+  /// 让预览里的课程卡片走**真折射**（喂它卡片位图），而不是「位图未就绪」的兜底外观。
+  ///
+  /// 默认关：这条路要给这一份预览烤/请求预糊位图，只有在「用户就是来调卡片玻璃、
+  /// 需要当场看见形状类旋钮的效果」那一页才划算（课程卡片设置页）。其余预览
+  /// （课表页面、材质演示）没有这类旋钮，白白增加位图开销。
+  ///
+  /// 打开时自带两个前提（都在内部判掉，调用方不用管）：
+  /// * 只在**真的画了壁纸底图**时才给卡片喂图（导出分享图那条路
+  ///   `applyHomePageBackdrop: false` 因此天然不受影响）；
+  /// * 首页那份位图**也要一起给**：scope 一旦存在而首页那份为空，卡片走兜底时会
+  ///   判定"正在等位图"而**跳过实时模糊**，高斯卡片会退化成一块纯染色。
+  final bool preblurredCardGlass;
   final double? heightBudget;
 
   /// 天气数据源；null = 这个预览不画天气。
@@ -162,6 +177,7 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
           maxVisibleSections: widget.maxVisibleSections,
           includeAppHeader: widget.includeAppHeader,
           applyHomePageBackdrop: widget.applyHomePageBackdrop,
+          preblurredCardGlass: widget.preblurredCardGlass,
           heightBudget: widget.heightBudget,
           isSettingsPreview: widget.isSettingsPreview,
           showFloatingBackToCurrentWeek: widget.showFloatingBackToCurrentWeek,
@@ -183,6 +199,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     required this.maxVisibleSections,
     required this.includeAppHeader,
     required this.applyHomePageBackdrop,
+    required this.preblurredCardGlass,
     required this.heightBudget,
     required this.isSettingsPreview,
     required this.showFloatingBackToCurrentWeek,
@@ -198,6 +215,9 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
   final int? maxVisibleSections;
   final bool includeAppHeader;
   final bool applyHomePageBackdrop;
+
+  /// 见 [TimetableWeekPreview.preblurredCardGlass]。
+  final bool preblurredCardGlass;
   final double? heightBudget;
   final bool isSettingsPreview;
   final bool showFloatingBackToCurrentWeek;
@@ -467,6 +487,28 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
         heightBudget ??
         (appHeaderHeight + _headerHeight + chromeGridClearance + bodyHeight);
 
+    // 「卡片玻璃走真折射」那份 preview scope 的两个 sigma（见
+    // [TimetableWeekPreview.preblurredCardGlass]）。只在真的要画壁纸底图、且卡片
+    // 确实是液态档时才有值 —— 其它情况一个 scope 都不给，保持今天的行为。
+    //
+    // 两张图与首页**同源同参**：卡片那份取卡片自己的配置，首页那份沿用
+    // resolveHomePreblurSigma（包括"卡片是玻璃档时用面板磨砂"那条既有口径）。
+    // 走同一套参数意味着首页已经烤好的那两张会直接命中缓存，预览不多花显存。
+    final cardGlassSigma = preblurredCardGlass && hasBackdrop
+        ? resolveCourseCardPreblurSigma(
+            cardStyle: settings.courseCardSurfaceStyle,
+            cardTuning: settings.courseCardGlassTuning,
+          )
+        : null;
+    final homeGlassSigma = cardGlassSigma == null
+        ? 0.0
+        : resolveHomePreblurSigma(
+            gaussianCardsDrive: settings.courseCardSurfaceStyle.isGlass,
+            liquidGlassChrome: settings.homeBandGlassMaterial != 'solid',
+            sheetBlurSigma: settings.frostedSheetBlurSigma,
+            liquidGlassTunedBlur: settings.liquidGlassTuning?.blurSigma,
+          );
+
     return ColoredBox(
       color: hasBackdrop ? Colors.transparent : backgroundColor,
       child: Padding(
@@ -572,6 +614,21 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
               ),
             );
 
+            if (cardGlassSigma != null) {
+              // 这一个框就是壁纸被 cover 到的框（`Positioned.fill` 那层底图铺的
+              // 就是它），所以 `coverToChild` 让卡片按**这个框**取自己那一块，
+              // 而不是按整屏——预览框既不是整屏、也不在屏幕原点。
+              return PreblurredWallpaperScope(
+                wallpaperPath: homePageBackdropKey(settings),
+                blurSigma: homeGlassSigma,
+                cardBlurSigma: cardGlassSigma,
+                coverToChild: true,
+                wallpaperAlignX: settings.homePageWallpaperAlignX,
+                wallpaperAlignY: settings.homePageWallpaperAlignY,
+                wallpaperScale: settings.homePageWallpaperScale,
+                child: surface,
+              );
+            }
             return surface;
           },
         ),

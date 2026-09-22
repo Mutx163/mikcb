@@ -18,6 +18,7 @@ void main() {
   Widget host(
     ValueNotifier<ui.Image?> bakes, {
     bool enabled = true,
+    Listenable? repaintSignal,
   }) =>
       MaterialApp(
         home: Center(
@@ -27,8 +28,11 @@ void main() {
             child: PreviewBakeBoundary(
               bakes: bakes,
               pixelRatio: 2,
+              repaintSignal: repaintSignal,
               enabled: enabled,
-              child: const ColoredBox(color: Color(0xFF112233)),
+              child: const RepaintBoundary(
+                child: ColoredBox(color: Color(0xFF112233)),
+              ),
             ),
           ),
         ),
@@ -143,5 +147,110 @@ void main() {
     await tester.pumpWidget(host(bakes, enabled: false));
     await tester.pump();
     expect(bakes.value, isNotNull, reason: '关 门控不清空已有快照');
+  });
+
+  testWidgets('内容只在子级重绘边界内变化：必须靠 repaintSignal 才重烤', (tester) async {
+    // 这条钉的是 2026-09-22 真机上报的「外观编辑页整个定格」的机制：玻璃面与
+    // 壁纸层各自带重绘边界，它们的内容变化只在边界内部重绘、**传不到烤图边界**
+    // ——本节点没被标脏，`paint` 就不再被调到，重烤也就停了。日志上表现为
+    // 「草稿改了上百次，烤图计数一动不动」。所以内容源必须走 [repaintSignal]
+    // 显式喊一声。
+    final bakes = ValueNotifier<ui.Image?>(null);
+    final dirty = ValueNotifier<int>(0);
+    addTearDown(() {
+      bakes.value?.dispose();
+      bakes.dispose();
+      dirty.dispose();
+    });
+
+    Widget host(int revision) => MaterialApp(
+          home: Center(
+            child: SizedBox(
+              width: 100,
+              height: 80,
+              child: PreviewBakeBoundary(
+                bakes: bakes,
+                pixelRatio: 2,
+                repaintSignal: dirty,
+                // 子级自己一层重绘边界：内容变化被它挡在里面，正是真机里
+                // 玻璃面 / 壁纸层的形状。
+                child: RepaintBoundary(
+                  child: ColoredBox(color: Color(0xFF112200 + revision)),
+                ),
+              ),
+            ),
+          ),
+        );
+
+    await tester.pumpWidget(host(1));
+    await tester.pump();
+    final first = bakes.value;
+    expect(first, isNotNull, reason: '首烤（延一帧）后必须有图');
+
+    // 只改子级重绘边界里面的内容：到不了烤图边界 → 不该重烤（这就是"定格"）。
+    await tester.pumpWidget(host(2));
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(
+      identical(bakes.value, first),
+      isTrue,
+      reason: '子级重绘边界内的变化传不到烤图边界，没有信号就不该重烤',
+    );
+
+    // 显式喊一声 → 本节点标脏 → 整层重录 → 烤出新图。
+    dirty.value++;
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(
+      identical(bakes.value, first),
+      isFalse,
+      reason: 'repaintSignal 必须强制重烤（否则预览定格）',
+    );
+  });
+
+  testWidgets('重烤也延一帧：内容变了的那一帧不出图，下一帧才出', (tester) async {
+    // 玻璃面在 paint 里读的是**上一帧末**才落地的快照，按新快照的重画要等下一帧
+    // —— 任何一帧里的玻璃画的都是上一帧的内容。所以"改了就在本帧出图"必然烤到
+    // 「上一帧的画面」，真机读数就是「预览和实际差一帧」（用户 2026-09-22）。
+    // 这条钉住"每一张都延一帧"，而不只是首张。
+    final bakes = ValueNotifier<ui.Image?>(null);
+    addTearDown(() {
+      bakes.value?.dispose();
+      bakes.dispose();
+    });
+
+    // 子级**不套**重绘边界：这样内容一变，本边界就会重绘（走"子树重绘"这条腿）。
+    Widget host(Color color) => MaterialApp(
+          home: Center(
+            child: SizedBox(
+              width: 100,
+              height: 80,
+              child: PreviewBakeBoundary(
+                bakes: bakes,
+                pixelRatio: 2,
+                child: ColoredBox(color: color),
+              ),
+            ),
+          ),
+        );
+
+    await tester.pumpWidget(host(const Color(0xFF000001)));
+    await tester.pump();
+    final first = bakes.value;
+    expect(first, isNotNull, reason: '首烤（延一帧）后必须有图');
+
+    await tester.pumpWidget(host(const Color(0xFF000002)));
+    expect(
+      identical(bakes.value, first),
+      isTrue,
+      reason: '内容变了的那一帧不得出图 —— 此刻 layer 里的玻璃还是上一帧的内容',
+    );
+
+    // 下一帧末才出图（带时长的 pump 顺带放行 200ms 节流）。
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(
+      identical(bakes.value, first),
+      isFalse,
+      reason: '下一帧必须补上最新画面（否则卡片永远差一帧）',
+    );
   });
 }

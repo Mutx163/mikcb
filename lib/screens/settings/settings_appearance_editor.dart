@@ -174,6 +174,18 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     hyperosZoomHomeSnapshot,
   ]);
 
+  /// 渲染源「内容脏了」的显式信号：喂给 [PreviewBakeBoundary.repaintSignal]。
+  ///
+  /// 列的就是渲染源那三样输入：草稿（材质 / 壁纸 / 卡片）、预览的日周、看哪一天
+  /// （最后一个进页后不再变，但它是渲染源的输入，一并带上 —— 将来真加了切换入口
+  /// 就不会重踩这个坑）。
+  ///
+  /// **不能指望子树重绘自己传到烤图边界**——玻璃面与壁纸层各自带重绘边界，
+  /// 内容变化只在它们内部重绘，烤图边界压根不被标脏（2026-09-22 真机实锤：
+  /// 拖材质滑杆上百次、切日视图，烤图边界一次都没重绘，卡片上一直挂着进场
+  /// 那张图）。所以这里显式喊一声。
+  late final Listenable _previewSourceDirty;
+
   // —— _HomeBackdropFlow 的宿主适配：壁纸流程本体在
   // settings_home_backdrop_flow.dart，本页只提供草稿读写与课表列表。
 
@@ -199,6 +211,11 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     _previewDayOfWeekNotifier = ValueNotifier<int>(
       _draft.timetableLastViewedDayOfWeek,
     );
+    _previewSourceDirty = Listenable.merge(<Listenable>[
+      _draftRevision,
+      _previewDayView,
+      _previewDayOfWeekNotifier,
+    ]);
   }
 
   @override
@@ -301,6 +318,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     setState(() {
       _draft = next;
     });
+    // 自增即"渲染源脏了"（[_previewSourceDirty] 订阅它）→ 重烤预览图。
     _draftRevision.value++;
     _autoSaveTimer?.cancel();
     if (debounce) {
@@ -982,6 +1000,10 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
                         child: _routeSettled
                             ? PreviewBakeBoundary(
                                 bakes: _previewBake,
+                                // 内容源变了要显式喊一声（玻璃/壁纸的重绘被
+                                // 它们自己的重绘边界挡住，传不到本节点）——
+                                // 漏掉就是「整页定格」，见本参数与边界的注释。
+                                repaintSignal: _previewSourceDirty,
                                 // ⚠️ 必须是 dpr 本身：离屏回放按这个密度重新执行整层，
                                 // 玻璃着色器的几何 uniform 按 dpr 折算，两者必须一致
                                 // （乘显示缩放会让玻璃整体位移/缩放出画面，真机实锤）。

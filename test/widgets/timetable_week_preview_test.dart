@@ -16,6 +16,7 @@ import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/widgets/course_grid_surface_host.dart';
 import 'package:university_timetable/widgets/home_page_region_blur.dart';
+import 'package:university_timetable/widgets/preblurred_wallpaper_glass.dart';
 import 'package:university_timetable/widgets/timetable_week_preview.dart';
 
 import '../helpers_test_app.dart';
@@ -53,6 +54,7 @@ void main() {
     WidgetTester tester, {
     required TimetableSettings settings,
     bool? applyHomePageBackdrop,
+    bool preblurredCardGlass = false,
     String? homeBandGlassMaterial,
   }) async {
     final provider = await createInitializedTestProvider(tester);
@@ -78,6 +80,7 @@ void main() {
               week: provider.currentWeek,
               maxVisibleSections: 4,
               applyHomePageBackdrop: applyHomePageBackdrop ?? true,
+              preblurredCardGlass: preblurredCardGlass,
             ),
           ),
         ),
@@ -177,18 +180,6 @@ void main() {
     }
   });
 
-  testWidgets('renders every surface style without throwing', (tester) async {
-    for (final style in CourseCardSurfaceStyle.values) {
-      await pumpPreview(
-        tester,
-        settings: TimetableSettings.defaults().copyWith(
-          courseCardSurfaceStyle: style,
-        ),
-      );
-      expect(tester.takeException(), isNull, reason: 'style: $style');
-    }
-  });
-
   /// 一张不透明壁纸：让预览真的走进「有背景」那条路（玻璃带只在 hasBackdrop 时建）。
   Future<File> writeOpaqueWallpaper() async {
     final recorder = ui.PictureRecorder();
@@ -203,6 +194,113 @@ void main() {
     return File('${dir.path}/wall.png')
       ..writeAsBytesSync(bytes!.buffer.asUint8List());
   }
+
+  /// 交替「真实异步时间 + 假时钟 pump」，把多跳异步链（文件 I/O → 解码 →
+  /// 高斯离屏渲染 → setState）在组件测试里跑完（本仓既有惯例）。
+  ///
+  /// ⚠️ 建起 preview scope 的用例**必须**跑一遍：那条链上挂着一个 10 秒的
+  /// `Future.timeout`（见 `PreblurredWallpaperCache._decode`），链不跑完它就一直是
+  /// 个挂着的 Timer —— 测试收尾直接判「A Timer is still pending」失败，与功能无关。
+  Future<void> settlePreblurAsyncChain(WidgetTester tester) async {
+    for (var i = 0; i < 8; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 120)),
+      );
+      await tester.pump();
+    }
+  }
+
+  group('preblurredCardGlass：预览里的卡片走真折射', () {
+    // 开关的唯一目的，是让「卡片玻璃」的形状类旋钮（折射 / 作用带 / 陡缓 / 色散）
+    // 在这页预览里**当场看得见** —— 那就要真的给卡片喂上它自己那张预糊位图，
+    // 也就是要有一个 preview scope（此前这张缩略图一个 scope 都没有，卡片只能
+    // 走「位图未就绪」的兜底外观，于是只有染色会动）。三条契约：
+    //   1) 只对**液态档**给：卡片位图由卡片自己的配置决定，`resolveCourseCardPreblurSigma`
+    //      对非液态档返回 null（没有可喂的图）；
+    //   2) 只在**真的要画壁纸底图**时给（导出分享图那条路 `applyHomePageBackdrop: false`
+    //      因此天然不受影响）；
+    //   3) 开关关着时一个 scope 都不给 —— 别的预览页没有这类旋钮，不多花这份位图开销。
+    testWidgets('液态档 + 有底图 + 开关打开：给 scope，基准框在预览框上', (tester) async {
+      addTearDown(PreblurredWallpaperCache.instance.evict);
+      final wallpaper = (await tester.runAsync(writeOpaqueWallpaper))!;
+      await pumpPreview(
+        tester,
+        preblurredCardGlass: true,
+        settings: TimetableSettings.defaults().copyWith(
+          homePageWallpaperPath: wallpaper.path,
+          courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
+        ),
+      );
+      await settlePreblurAsyncChain(tester);
+
+      final scope = tester.widget<PreblurredWallpaperScope>(
+        find.byType(PreblurredWallpaperScope),
+      );
+      expect(
+        scope.cardBlurSigma,
+        greaterThan(0),
+        reason: '卡片那份位图的磨砂量必须带上，否则卡片只能读首页那份',
+      );
+      // ⚠️ 基准框必须是**预览框**：预览框既不是整屏、也不在屏幕原点，用整屏
+      // 那套几何去取卡片那一块会与预览自己的底图错位（卡内外接不上）。
+      expect(scope.coverToChild, isTrue);
+    });
+
+    testWidgets('开关关着：不给 scope', (tester) async {
+      final wallpaper = (await tester.runAsync(writeOpaqueWallpaper))!;
+      await pumpPreview(
+        tester,
+        settings: TimetableSettings.defaults().copyWith(
+          homePageWallpaperPath: wallpaper.path,
+          courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
+        ),
+      );
+      expect(
+        find.byType(PreblurredWallpaperScope),
+        findsNothing,
+        reason: '别的预览页没有卡片玻璃旋钮，不该为它们烤这份位图',
+      );
+    });
+
+    testWidgets('不画底图（导出分享图那条路）：开关打开也不给', (tester) async {
+      final wallpaper = (await tester.runAsync(writeOpaqueWallpaper))!;
+      await pumpPreview(
+        tester,
+        preblurredCardGlass: true,
+        applyHomePageBackdrop: false,
+        settings: TimetableSettings.defaults().copyWith(
+          homePageWallpaperPath: wallpaper.path,
+          courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
+        ),
+      );
+      expect(find.byType(PreblurredWallpaperScope), findsNothing);
+    });
+
+    testWidgets('非液态档：开关打开也不给（没有卡片位图可喂）', (tester) async {
+      final wallpaper = (await tester.runAsync(writeOpaqueWallpaper))!;
+      await pumpPreview(
+        tester,
+        preblurredCardGlass: true,
+        settings: TimetableSettings.defaults().copyWith(
+          homePageWallpaperPath: wallpaper.path,
+          courseCardSurfaceStyle: CourseCardSurfaceStyle.gaussian,
+        ),
+      );
+      expect(find.byType(PreblurredWallpaperScope), findsNothing);
+    });
+  });
+
+  testWidgets('renders every surface style without throwing', (tester) async {
+    for (final style in CourseCardSurfaceStyle.values) {
+      await pumpPreview(
+        tester,
+        settings: TimetableSettings.defaults().copyWith(
+          courseCardSurfaceStyle: style,
+        ),
+      );
+      expect(tester.takeException(), isNull, reason: 'style: $style');
+    }
+  });
 
   // 回归护栏：窄带厚度按带高比例封顶，边缘光仍可见但不再糊成
   // 粗白线。此前底边贴着边界且厚度不封顶，thickness档（最高 40）

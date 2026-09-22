@@ -86,6 +86,10 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
                     week: provider.currentWeek,
                     maxVisibleSections: _draft.sectionCount,
                     isSettingsPreview: true,
+                    // 本页就是来调卡片玻璃的：让预览里的卡片走真折射，拖下面的
+                    // 形状类旋钮（折射/边光/色散）当场看得见（否则预览只有染色会动，
+                    // 因为这张缩略图本来拿不到卡片位图）。
+                    preblurredCardGlass: true,
                     // 预览要跟首页周网格一致，所以显式把天气源传进去
                     // （预览部件刻意不自己查 provider，导出分享图那条路会绕过它）。
                     weather: context.watch<WeatherProvider?>(),
