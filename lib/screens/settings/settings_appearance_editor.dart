@@ -815,6 +815,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
                 tuning: cardTuning.toLiquidGlassTuning(),
                 showKeyPoints: true,
                 tintDivisions: 25,
+                // 卡片的磨砂量只喂它那张预糊位图，出图侧夹到 kPreblurMaxSigma：
+                // 滑杆上限取同一个常量，0 是有效的「清」档（出原图、不跑高斯）。
+                blurSigmaMax: kPreblurMaxSigma,
                 // 滑杆改的是「等价全局档」，写回卡片那套要过一趟抄写：两套类型
                 // 各自的出厂档与染色语义不同（见 `CourseGlassTuning` 的注释），
                 // 不能就地换类型。
@@ -923,13 +926,25 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   ///
   /// [tintDivisions] 默认 20；卡片档必须是 25（步长 0.04），否则出厂染色 0.32
   /// 不落在格点上，第一次拖动就会被吸成 0.30 / 0.35。
+  ///
+  /// [blurSigmaMax] 是按档走的**上限**：全局 / 深色两档是 0~40（那些面走实时模糊，
+  /// 量程就是它），卡片档是 0~24 —— 卡片的磨砂量只喂那张预糊位图，而出图侧把它夹在
+  /// [kPreblurMaxSigma]（见 `resolveCourseCardPreblurSigma`）。不收的话卡片这根滑杆
+  /// 两头都是死区：0~1 全等于 2、25~40 全等于 24。
   List<Widget> _glassSliderTiles(
     AppLocalizations l10n, {
     required LiquidGlassTuning tuning,
     required void Function(LiquidGlassTuning Function(LiquidGlassTuning)) onUpdate,
     bool showKeyPoints = false,
     int tintDivisions = 20,
-  }) => [
+    double blurSigmaMax = LiquidGlassTuning.maxBlurSigma,
+  }) {
+    // 存量值可能高于本档上限（旧版卡片那根能拖到 40）：拇指与数字都夹到上限。
+    // 出图侧本来就按上限出，显示必须同口径 —— 否则就是「拖了数字不动」那一类半失效。
+    final blurSigma = tuning.blurSigma
+        .clamp(LiquidGlassTuning.minBlurSigma, blurSigmaMax)
+        .toDouble();
+    return [
       HyperosSliderTile(
         tapToEdit: false,
         title: l10n.liquidGlassRefractionLabel,
@@ -1003,10 +1018,11 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       HyperosSliderTile(
         tapToEdit: false,
         title: l10n.liquidGlassBlurSigmaLabel,
-        value: tuning.blurSigma,
-        max: LiquidGlassTuning.maxBlurSigma,
-        divisions: 40,
-        valueLabel: _tuningNum(tuning.blurSigma, 0),
+        value: blurSigma,
+        max: blurSigmaMax,
+        // 每格 1：两条量程（0~40 / 0~24）都按 1 递增，档数跟着上限走，别写死 40。
+        divisions: blurSigmaMax.round(),
+        valueLabel: _tuningNum(blurSigma, 0),
         onChanged: (value) => onUpdate((t) => t.copyWith(blurSigma: value)),
       ),
       HyperosSliderTile(
@@ -1021,7 +1037,8 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
             : null,
         onChanged: (value) => onUpdate((t) => t.copyWith(tintAlpha: value)),
       ),
-  ];
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -26,6 +26,7 @@ import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/preview_bake_boundary.dart';
 import 'package:university_timetable/widgets/timetable_home_preview_scope.dart';
+import 'package:university_timetable/widgets/preblurred_wallpaper_glass.dart';
 import 'package:university_timetable/widgets/wallpaper_position_picker_sheet.dart';
 
 import '../helpers_test_app.dart';
@@ -374,6 +375,20 @@ void main() {
     expect(find.byType(HyperosSlider), findsNWidgets(8), reason: '卡片这套八根');
     // 没设过卡片档 ⇒ 显示卡片出厂档：折射强度 8.0（前五项与全局标准档同值）。
     expect(find.text('8.0'), findsOneWidget);
+
+    // 「磨砂强度」这根的量程跟出图侧同口径：0 是有效的「清」档（出原图、不跑高斯），
+    // 上限就是预糊位图的 sigma 上限 —— 拖到哪、出图就认到哪，两头不留死区。
+    final blurSlider = tester.widget<HyperosSlider>(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('磨砂强度'),
+          matching: find.byType(HyperosSliderTile),
+        ),
+        matching: find.byType(HyperosSlider),
+      ),
+    );
+    expect(blurSlider.min, 0, reason: '0 = 清档');
+    expect(blurSlider.max, kPreblurMaxSigma, reason: '上限 = 位图 sigma 的区间上限');
 
     // 走滑杆自己的回调（拖动时走的就是这条）。
     tester

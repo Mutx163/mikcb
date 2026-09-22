@@ -1031,7 +1031,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                 blurSigma: homePreblurSigma,
                 // 卡片那份位图（只有卡片是液态档才烤）。同一份路径与对齐值，
                 // 只有 sigma 不同 —— 所以两张图不会出现取景错位。
-                cardBlurSigma: courseCardPreblurSigma ?? 0,
+                // 卡片那份的 0 是有效值（清档：出原图），只有 null 才是不烤 ——
+                // 所以这里不做 `?? 0` 折算，null 必须原样传下去。
+                cardBlurSigma: courseCardPreblurSigma,
                 // 卡里的位图必须与屏幕上那张真壁纸**同一套 cover 对齐**：用户
                 // 在「壁纸位置」里拖过对齐值之后，居中铺图的副本就会与背景错位
                 // （卡内外壁纸接不上），所以这两个值随设置一起传。

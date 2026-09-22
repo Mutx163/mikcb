@@ -110,6 +110,12 @@ class PreblurredWallpaperCache {
   ///
   /// [logicalSigma] is the blur radius as it should appear **on screen**, in
   /// logical pixels, so it matches the chrome band's [BackdropFilter] sigma.
+  ///
+  /// **[logicalSigma] 为 0 = 「清」档**（用户口径 2026-09-22「让 0 真的清」）：
+  /// 这一档不走「55% 解码 + 高斯」那条省钱路，直接出**按屏幕物理宽度解码的原图** ——
+  /// 卡片把磨砂拖到 0 时，背景要的是与壁纸底图同等清晰，而不是一层极轻的糊。
+  /// 与首页那张壁纸底图用同一个 provider 参数，所以通常直接命中 `ImageCache`，
+  /// 不多解一次（见 [_build]）。负值非法：调用方一律过解析函数夹过。
   Future<ui.Image?> obtain({
     required String? path,
     required double logicalSigma,
@@ -117,7 +123,7 @@ class PreblurredWallpaperCache {
   }) {
     if (path == null ||
         path.isEmpty ||
-        logicalSigma <= 0 ||
+        logicalSigma < 0 ||
         devicePixelRatio <= 0) {
       return Future<ui.Image?>.value();
     }
@@ -171,30 +177,41 @@ class PreblurredWallpaperCache {
   /// any number of waiters and never leaks or double-disposes a texture.
   Future<void> _build(_PreblurRequest request) async {
     final generation = _generation;
+    // 「清」档：不跑高斯，解码宽度也换成整屏物理宽度（理由见 [obtain]）。
+    final sharp = request.logicalSigma <= 0;
     ui.Image? source;
     ui.Image? blurred;
     try {
-      final decodeWidth = (homePageBackdropDecodeWidth() * 0.55).round().clamp(
-        480,
-        1440,
-      );
+      final decodeWidth = sharp
+          ? homePageBackdropDecodeWidth()
+          : (homePageBackdropDecodeWidth() * 0.55).round().clamp(480, 1440);
       source = await _decode(request.path, decodeWidth);
       if (source == null) {
         return;
       }
-      // The blur runs in the decoded bitmap's pixel space, which is smaller
-      // than the screen and then upscaled back to full size. Convert the
-      // desired on-screen sigma into that space so the perceived frost
-      // strength remains stable across screen densities.
-      final physicalWidth = _screenPhysicalWidth();
-      final downscale = physicalWidth <= 0 ? 1.0 : source.width / physicalWidth;
-      final imageSigma =
-          (request.logicalSigma * request.devicePixelRatio * downscale).clamp(
-            0.5,
-            40.0,
-          );
+      if (sharp) {
+        // 原图就是成品：不过高斯，也不过「55% 解码再放大」那一趟。
+        // 本缓存留下的是 clone 句柄 —— 与首页壁纸底图那份解码结果共享同一份像素，
+        // 所以这一档几乎不额外占显存（代价只在"多留一整个句柄"这件事上）。
+        blurred = source;
+        source = null;
+      } else {
+        // The blur runs in the decoded bitmap's pixel space, which is smaller
+        // than the screen and then upscaled back to full size. Convert the
+        // desired on-screen sigma into that space so the perceived frost
+        // strength remains stable across screen densities.
+        final physicalWidth = _screenPhysicalWidth();
+        final downscale = physicalWidth <= 0
+            ? 1.0
+            : source.width / physicalWidth;
+        final imageSigma =
+            (request.logicalSigma * request.devicePixelRatio * downscale).clamp(
+              0.5,
+              40.0,
+            );
 
-      blurred = await _blur(source, imageSigma);
+        blurred = await _blur(source, imageSigma);
+      }
       if (blurred == null) {
         return;
       }
@@ -352,6 +369,17 @@ class PreblurredWallpaperCache {
 /// 剩下的那一个消费者服务：日视图顶部的摘要替身卡。口径**刻章保持不变** ——
 /// 去掉它会让「卡片玻璃 + 全局液态调过磨砂」时那张替身卡的磨砂悄悄变一档，
 /// 那是一次没人要的观感变化。这条耦合是历史遗留，要拆得单独评估。
+/// 预糊位图的 sigma 上限（逻辑 px）：两条路共用 —— 烤图成本与「取景错位」都随它涨。
+///
+/// 面板里卡片那根「磨砂强度」滑杆的上限也取它（编辑页 `_glassSliderTiles` 的
+/// `blurSigmaMax`）：滑杆能拖到哪、出图就认到哪，别再长出「拖了没变化」的死区。
+const double kPreblurMaxSigma = 24;
+
+/// 首页那份位图的 sigma 下限：再小看不出糊（首页那条路上 0 是「不烤」）。
+///
+/// **卡片那份没有这个下限** —— 卡片的 0 是「清」档（见 [resolveCourseCardPreblurSigma]）。
+const double kHomePreblurMinSigma = 2;
+
 double resolveHomePreblurSigma({
   required bool gaussianCardsDrive,
   required bool liquidGlassChrome,
@@ -362,21 +390,27 @@ double resolveHomePreblurSigma({
     return sheetBlurSigma;
   }
   if (liquidGlassChrome && liquidGlassTunedBlur != null) {
-    return liquidGlassTunedBlur.clamp(2.0, 24.0).toDouble();
+    return liquidGlassTunedBlur
+        .clamp(kHomePreblurMinSigma, kPreblurMaxSigma)
+        .toDouble();
   }
   return sheetBlurSigma;
 }
 
 /// 课程卡片那张位图该用的 sigma；**卡片不是液态档时返回 null**（不烤）。
 ///
-/// 与 [resolveHomePreblurSigma] 的两处刻意不同：
+/// 与 [resolveHomePreblurSigma] 的三处刻意不同：
 ///
 /// * 来源是**卡片自己的**配置（`CourseGlassTuning.blurSigma`），不是首页那份；
 /// * 取的是**未套深色配方**的值 —— 位图按一个 sigma 烤一次，而配方里的 ×1.3 是
 ///   逐帧的光照适配。用烤好的图去表达「深色更糊」是表达不出来的，只会让那次 ×1.3
 ///   永远不生效。深色只作用于几何与边光。
-///
-/// clamp 区间与首页那份一致（2~24）：再小看不出糊，再大烤图成本与取景错位都上来。
+/// * **区间是 0 ~ [kPreblurMaxSigma]，首页那份是 [kHomePreblurMinSigma] 起**：
+///   卡片的 0 是**有效的「清」档** —— 出按屏宽解码的原图、不跑高斯
+///   （见 [PreblurredWallpaperCache.obtain]）。用户 2026-09-22 口径「让 0 真的清」：
+///   拖到 0 时卡片背景要与壁纸底图一样清晰，而不是一层极轻的糊。旧口径在这里
+///   跟着首页一起夹 2，真机表现就是「磨砂调到 0 还带模糊」，而滑杆上 0~1 那两格
+///   与 2 完全同观感、25~40 那十六格又全都等于 24 —— 一根滑杆两头都是死区。
 double? resolveCourseCardPreblurSigma({
   required CourseCardSurfaceStyle cardStyle,
   required CourseGlassTuning? cardTuning,
@@ -385,7 +419,7 @@ double? resolveCourseCardPreblurSigma({
     return null;
   }
   final sigma = (cardTuning ?? CourseGlassTuning.courseCard).blurSigma;
-  final clamped = sigma.clamp(2.0, 24.0).toDouble();
+  final clamped = sigma.clamp(0.0, kPreblurMaxSigma).toDouble();
   return clamped;
 }
 
@@ -463,7 +497,7 @@ class PreblurredWallpaperScope extends StatefulWidget {
     required this.wallpaperPath,
     required this.blurSigma,
     required this.child,
-    this.cardBlurSigma = 0,
+    this.cardBlurSigma,
     this.coverToChild = false,
     this.pageController,
     this.followsPager = false,
@@ -480,12 +514,19 @@ class PreblurredWallpaperScope extends StatefulWidget {
   /// Desired on-screen blur radius in logical pixels.
   final double blurSigma;
 
-  /// 课程卡片那张位图的磨砂量（逻辑 px）；**≤ 0 = 不烤**（卡片不是液态档时就是它）。
+  /// 课程卡片那张位图的磨砂量（逻辑 px）。
+  ///
+  /// * `null` = **不烤**（卡片不是液态档时就是它）；
+  /// * `0` = **烤「清」档**：出按屏宽解码的原图、不跑高斯（用户口径 2026-09-22
+  ///   「让 0 真的清」），所以 0 是**有效值**、不是"关掉"。
+  ///
+  /// ⚠️ 注意这与 [blurSigma] 那份的 `≤ 0 = 不烤` 口径**不同** —— 两个槽在
+  /// [_PreblurredWallpaperScopeState._syncRequests] 里按各自的口径传参。
   ///
   /// 为什么要第二张：卡片有自己一套磨砂量（`CourseGlassTuning.blurSigma`），
   /// 而 [blurSigma] 那份还要喂日视图的摘要替身卡。共用一张就会「一处动两处变」。
   /// 两张图的路径、对齐、缩放完全一致，**只有 sigma 不同**。
-  final double cardBlurSigma;
+  final double? cardBlurSigma;
 
   /// 这张壁纸 cover 到哪个框：`false`（默认）= 整屏（首页那条路）；
   /// `true` = **本 scope 的 child 框**（设置页的周预览：壁纸铺在预览框里）。
@@ -517,7 +558,8 @@ class PreblurredWallpaperScope extends StatefulWidget {
         ?.data;
   }
 
-  /// 课程卡片那张位图（[cardBlurSigma] 为 0 时恒为 null）。
+  /// 课程卡片那张位图（[cardBlurSigma] 为 null 时恒为 null；为 0 时是「清」档，
+  /// 有图）。
   ///
   /// 与 [maybeOf] 是**两条独立的流**：卡片要的是自己那份磨砂量，首页要的是它那份，
   /// 谁都不许去读对方那份（读错只会在观感上体现，不会有异常）。
@@ -607,12 +649,15 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
     _syncSlot(
       slot: _home,
       path: path,
-      sigma: widget.blurSigma,
+      // 首页那份沿旧口径：≤ 0 = 不烤（全局磨砂被拖到 0 时，首页玻璃带没有成品
+      // 磨砂图，走它原来的兜底）。
+      sigma: widget.blurSigma > 0 ? widget.blurSigma : null,
       devicePixelRatio: devicePixelRatio,
     );
     _syncSlot(
       slot: _card,
       path: path,
+      // 卡片这份的 0 是**有效值**（清档），所以原样透传；只有 null 才是不烤。
       sigma: widget.cardBlurSigma,
       devicePixelRatio: devicePixelRatio,
     );
@@ -621,10 +666,10 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
   void _syncSlot({
     required _PreblurSlot slot,
     required String? path,
-    required double sigma,
+    required double? sigma,
     required double devicePixelRatio,
   }) {
-    if (path == null || path.isEmpty || sigma <= 0) {
+    if (path == null || path.isEmpty || sigma == null || sigma < 0) {
       slot.pending = null;
       slot.loadedPath = null;
       slot.loadedSigma = null;

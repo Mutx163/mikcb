@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/course_glass_tuning.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
@@ -244,6 +245,30 @@ void main() {
       // ⚠️ 基准框必须是**预览框**：预览框既不是整屏、也不在屏幕原点，用整屏
       // 那套几何去取卡片那一块会与预览自己的底图错位（卡内外接不上）。
       expect(scope.coverToChild, isTrue);
+    });
+
+    testWidgets('卡片磨砂拖到 0：仍然给 scope，cardBlurSigma 为 0（清档）', (tester) async {
+      // 0 是**有效值**（出按屏宽解码的原图、不跑高斯），不是"不烤" —— 别的调用方
+      // 传 null 才是不烤。这条钉住「磨砂拖到 0 时预览里的卡片还得有图可画」。
+      addTearDown(PreblurredWallpaperCache.instance.evict);
+      final wallpaper = (await tester.runAsync(writeOpaqueWallpaper))!;
+      await pumpPreview(
+        tester,
+        preblurredCardGlass: true,
+        settings: TimetableSettings.defaults().copyWith(
+          homePageWallpaperPath: wallpaper.path,
+          courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
+          courseCardGlassTuning: CourseGlassTuning.courseCard.copyWith(
+            blurSigma: 0,
+          ),
+        ),
+      );
+      await settlePreblurAsyncChain(tester);
+
+      final scope = tester.widget<PreblurredWallpaperScope>(
+        find.byType(PreblurredWallpaperScope),
+      );
+      expect(scope.cardBlurSigma, 0, reason: '0 是清档，必须原样传下去');
     });
 
     testWidgets('开关关着：不给 scope', (tester) async {

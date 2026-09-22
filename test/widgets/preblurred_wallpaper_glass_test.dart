@@ -6,6 +6,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/utils/home_page_background.dart';
 import 'package:university_timetable/widgets/preblurred_wallpaper_glass.dart';
 
+/// 写一张 [width] × [height] 的纯色壁纸，返回文件路径。
+///
+/// 尺寸是这类用例的唯一变量：`ResizeImage` 默认不许放大，源图必须比目标解码宽度大，
+/// 两条路（清档 / 磨砂档）才会各自停在**各自的**目标宽度上。
+Future<String> _writeWallpaper(int width, int height) async {
+  final recorder = ui.PictureRecorder();
+  final canvas = ui.Canvas(recorder);
+  canvas.drawRect(
+    Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+    ui.Paint()..color = const Color(0xFF3366AA),
+  );
+  final image = await recorder.endRecording().toImage(width, height);
+  final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+  image.dispose();
+  final dir = await Directory.systemTemp.createTemp('preblur_sharp_test');
+  final file = File('${dir.path}${Platform.pathSeparator}wallpaper.png');
+  file.writeAsBytesSync(bytes!.buffer.asUint8List());
+  return file.path;
+}
+
 void main() {
   // Portrait screen with a wallpaper that is relatively taller than the screen,
   // so cover-fit crops horizontally.
@@ -471,6 +491,50 @@ void main() {
         expect(b.debugDisposed, isFalse);
       },
     );
+
+    testWidgets('sigma 0 = 「清」档：按屏宽解码原图、不跑高斯', (tester) async {
+      // 用户口径 2026-09-22「让 0 真的清」：卡片磨砂拖到 0 时，背景要与壁纸底图
+      // 一样清晰，而不是一层极轻的糊（旧口径在这里夹 2）。两条路只有**解码宽度**
+      // 这一处可量，而它正是那段省钱的来源。
+      //
+      // 两个目标宽度都从实现用的同一个函数推出来（`tester.view` 的尺寸改不动
+      // `PlatformDispatcher.views`，测试里它恒是默认视口），所以断言写成
+      // 「等于各自的目标宽度」，而不是写死数字 —— 唯一的差别是清档不乘 0.55。
+      final sharpTarget = homePageBackdropDecodeWidth();
+      final frostedTarget = (homePageBackdropDecodeWidth() * 0.55).round().clamp(
+        480,
+        1440,
+      );
+      final cache = PreblurredWallpaperCache.instance;
+      cache.evict();
+      addTearDown(cache.evict);
+
+      // 源图必须比清档的目标宽度还大：ResizeImage 默认不许放大，否则两条路都停在
+      // 源图宽度上，量不出差别。
+      final sourceWidth = sharpTarget + 200;
+      final path = (await tester.runAsync(
+        () => _writeWallpaper(sourceWidth, 400),
+      ))!;
+
+      final sharp = (await tester.runAsync(
+        () => cache.obtain(path: path, logicalSigma: 0, devicePixelRatio: 2),
+      ))!;
+      final frosted = (await tester.runAsync(
+        () => cache.obtain(path: path, logicalSigma: 2, devicePixelRatio: 2),
+      ))!;
+
+      expect(sharp.width, sharpTarget, reason: '清档的解码宽度 = 屏幕物理宽度');
+      expect(frosted.width, frostedTarget, reason: '磨砂档仍是「55% 解码 + 高斯」那条路');
+      expect(cache.entryCount, 2, reason: '0 与 2 是两个请求，两张并存');
+
+      // ⚠️ 别在这里加"清档像素更锐"的对比度断言：flutter test 里
+      // `Paint.imageFilter` 的高斯远弱于真机（探针实测：4px 条纹在 sigma 2 下对比度
+      // 只从 1.0 掉到 0.90、sigma 4 才 0.65，真高斯 sigma 2 就该糊平），
+      // 那种断言会变成"永远绿"的假钉子。宽度就是"走了哪条路"的可量化判据。
+
+      sharp.dispose();
+      frosted.dispose();
+    });
 
     test('两份位图并存：首页那份与课程卡片那份各自独立', () async {
       // 卡片有自己的磨砂量，两个 sigma 会交替请求。只留一份发布槽的话谁都命中不了
