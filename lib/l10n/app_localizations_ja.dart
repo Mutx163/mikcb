@@ -10078,7 +10078,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get materialStateFrost => 'ガウスぼかし';
 
   @override
-  String get frostedGlassModeLabel => 'ガラスモード';
+  String get frostedGlassModeLabel => '既定のマテリアル';
 
   @override
   String get liquidGlassScopeSectionTitle => 'リキッドガラスの適用範囲（オフ＝ソリッドカード）';

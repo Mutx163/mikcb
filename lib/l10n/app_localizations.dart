@@ -17728,7 +17728,7 @@ abstract class AppLocalizations {
   /// No description provided for @frostedGlassModeLabel.
   ///
   /// In zh, this message translates to:
-  /// **'玻璃模式'**
+  /// **'默认材质'**
   String get frostedGlassModeLabel;
 
   /// No description provided for @liquidGlassScopeSectionTitle.

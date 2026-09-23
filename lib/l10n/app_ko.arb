@@ -5757,7 +5757,7 @@
   "materialStateOff": "꺼짐",
   "materialStateSolid": "솔리드",
   "materialStateFrost": "가우시안 블러",
-  "frostedGlassModeLabel": "유리 모드",
+  "frostedGlassModeLabel": "기본 소재",
   "liquidGlassScopeSectionTitle": "액체 유리 적용 범위 (끄면 솔리드 카드)",
   "liquidGlassScopePopupTitle": "드롭다운 팝업",
   "liquidGlassScopePopupSubtitle": "유리 모드 등 설정 행에서 열리는 작은 앵커 메뉴",

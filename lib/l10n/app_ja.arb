@@ -5757,7 +5757,7 @@
   "materialStateOff": "オフ",
   "materialStateSolid": "ソリッド",
   "materialStateFrost": "ガウスぼかし",
-  "frostedGlassModeLabel": "ガラスモード",
+  "frostedGlassModeLabel": "既定のマテリアル",
   "liquidGlassScopeSectionTitle": "リキッドガラスの適用範囲（オフ＝ソリッドカード）",
   "liquidGlassScopePopupTitle": "プルダウンポップアップ",
   "liquidGlassScopePopupSubtitle": "ガラスモードなど設定行から開く小さなアンカーメニュー",

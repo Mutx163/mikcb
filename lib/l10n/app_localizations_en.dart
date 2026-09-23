@@ -10375,7 +10375,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get materialStateFrost => 'Gaussian Blur';
 
   @override
-  String get frostedGlassModeLabel => 'Glass Mode';
+  String get frostedGlassModeLabel => 'Default Material';
 
   @override
   String get liquidGlassScopeSectionTitle =>

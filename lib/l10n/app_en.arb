@@ -5989,7 +5989,7 @@
   "materialStateOff": "Off",
   "materialStateSolid": "Solid",
   "materialStateFrost": "Gaussian Blur",
-  "frostedGlassModeLabel": "Glass Mode",
+  "frostedGlassModeLabel": "Default Material",
   "liquidGlassScopeSectionTitle": "Liquid Glass Surfaces (off = solid card)",
   "liquidGlassScopePopupTitle": "Dropdown popups",
   "liquidGlassScopePopupSubtitle": "Small anchored menus opened from settings rows like Glass Mode",

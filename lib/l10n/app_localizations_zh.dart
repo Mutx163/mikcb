@@ -9781,7 +9781,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get materialStateFrost => '高斯模糊';
 
   @override
-  String get frostedGlassModeLabel => '玻璃模式';
+  String get frostedGlassModeLabel => '默认材质';
 
   @override
   String get liquidGlassScopeSectionTitle => '液态玻璃作用范围（关闭即改为实体卡片）';
@@ -20926,7 +20926,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get materialStateFrost => '高斯模糊';
 
   @override
-  String get frostedGlassModeLabel => '玻璃模式';
+  String get frostedGlassModeLabel => '默认材质';
 
   @override
   String get liquidGlassScopeSectionTitle => '液態玻璃作用範圍（關閉即改為實體卡片）';
@@ -32071,7 +32071,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get materialStateFrost => '高斯模糊';
 
   @override
-  String get frostedGlassModeLabel => '玻璃模式';
+  String get frostedGlassModeLabel => '默认材质';
 
   @override
   String get liquidGlassScopeSectionTitle => '液態玻璃作用範圍（關閉即改為實體卡片）';

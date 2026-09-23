@@ -533,12 +533,13 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 材质面板（「材质」弹窗正文）：**左右两页**（2026-09-22 第九轮改结构）——
   /// 顶上「标题 + 通用 / 课程卡片」同一行，下面一层可左右滑的页面。
   ///
-  /// **整机只有「实体卡片」与「液态玻璃」两种材质**（2026-09-19 第七轮口径）；
-  /// 锁定件（弹窗家族等恒为液态玻璃标准档的表面）依旧不显示 —— 与设置无关。
+  /// **默认材质三档：实体卡片 / 高斯模糊 / 液态玻璃**（2026-09-23 口径：整机
+  /// 只有两种真实材质 —— 高斯模糊与液态玻璃，「实体卡片」是模糊总开关关）。
+  /// 锁定件（弹窗家族等恒为液态玻璃标准档的表面）依旧不显示 —— 与设置无关，
+  /// 只在末尾只读总览里按用户口径说明。
   ///
-  /// * **第一页「通用」**（[_buildGeneralMaterialPage]）：整机总闸（玻璃模式）、
-  ///   首页顶栏玻璃、液态的预设与八根旋钮、子页顶栏风格，末尾「各表面当前材质」
-  ///   只读总览；
+  /// * **第一页「通用」**（[_buildGeneralMaterialPage]）：默认材质（三档）、
+  ///   首页顶栏玻璃、液态的预设与八根旋钮，末尾「各表面当前材质」只读总览；
   /// * **第二页「课程卡片」**（[_buildCourseCardMaterialPage]）：卡片外观三档 +
   ///   卡片**自己那套**八根旋钮（`TimetableSettings.courseCardGlassTuning`，
   ///   2026-09-21 起卡片有独立配置）+ 总闸关掉时的一行说明。
@@ -590,17 +591,15 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     // 模型里 liquidGlassTuning 可空（存量数据兼容）：面板统一用兜底后的局部量，
     // 滑杆读写都不会踩空。
     final liquidTuning = _draft.liquidGlassTuning ?? LiquidGlassTuning.defaults;
-    // 顶部那一格**显示**成哪一档 —— 与下面「高级材质」那一节的开关共用这一个
-    // 值（单一来源）：上面写着液态玻璃，下面就一定给液态的设置。
+    // 顶部那一格是**默认材质**（三档：实体卡片 / 高斯模糊 / 液态玻璃）——
+    // 与下面「高级材质」那一节的开关共用这一个值（单一来源）：上面写着液态
+    // 玻璃，下面就一定给液态的设置。
     //
-    // 2026-09-22 之前是两处各判一次（显示走归桶、给不给设置走原始字段），于是
-    // 存量柔光档就成了「显示液态玻璃、下面什么都没有」。柔光同批从可见档位里
-    // 退场（存量读入即归液态，见 [FrostedGlassModeX.fromValue]），这两个判据
-    // 此后本该一致；让它们**结构上**同源，是为了不再有下一个档位踩同一个坑。
-    final displayedChoice = switch (glassModeChoiceOf(_draft)) {
-      GlassModeChoice.liquidGlass => GlassModeChoice.liquidGlass,
-      _ => GlassModeChoice.solid,
-    };
+    // 2026-09-22 之前这里只画两格，且显示走"就近归桶"、给不给设置走原始字段，
+    // 于是存量柔光档成了「显示液态玻璃、下面什么都没有」；更早的中间档（磨砂）
+    // 则是被谎报成「实体卡片」选中。2026-09-23 名字统一后，三档与
+    // [glassModeChoiceOf] 一一对应，**不再需要归桶**，两处判据天然同源。
+    final displayedChoice = glassModeChoiceOf(_draft);
     return SingleChildScrollView(
       // ⚠️ 面板里第一个 `Scrollable` 是外面那层**横向翻页** —— 测试要按这个 key
       // 指名取本页的滚动视图，别再取 `Scrollable` 的第一个。
@@ -615,11 +614,12 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           // 都会被压在它背面（2026-09-19 真机实锤）──
           HyperosSectionLabel(text: l10n.frostedGlassModeLabel),
           const SizedBox(height: 8),
-          // 整体材质：实体 ↔ 液态。两材质口径下中间档不再提供；
-          // 存量档显示就近归桶，落盘只在点选时发生。
+          // 默认材质三档：不模糊（实体）/ 模糊（高斯）/ 模糊 + 折射（液态）。
+          // 这三档就是引导页「视觉效果」那三档（[GlassModeChoice] 是唯一写入口）。
           _MaterialSegmented<GlassModeChoice>(
             items: {
               l10n.frostedGlassModeSolid: GlassModeChoice.solid,
+              l10n.frostedGlassModeGaussian: GlassModeChoice.gaussian,
               l10n.frostedGlassModeLiquid: GlassModeChoice.liquidGlass,
             },
             value: displayedChoice,

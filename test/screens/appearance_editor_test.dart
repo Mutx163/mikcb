@@ -250,19 +250,27 @@ void main() {
     expect(dayViewPanel(), findsOneWidget, reason: '转场途中的点按不能被吞掉');
   });
 
-  testWidgets('底部「材质」打开材质面板（两材质口径内联控件）', (tester) async {
+  testWidgets('底部「材质」打开材质面板（默认材质三档内联控件）', (tester) async {
     await pumpEditor(tester);
     await tester.tap(find.text('材质'));
     await tester.pumpAndSettle();
 
     // 面板 = 标题行（「材质」+ 通用 / 课程卡片 两格翻页分段）+ 第一页正文。
-    // 出厂默认档（高斯）在两材质口径下显示归桶为「实体卡片」，液态调校分区随之隐藏。
+    // 出厂默认档 = 高斯模糊（三档之一，显示成它就是它，不再归桶）；液态调校
+    // 分区只在选到液态时出现，此时隐藏。
     expect(find.text('材质'), findsWidgets);
     expect(find.text('通用'), findsOneWidget);
     // 「课程卡片」两处：翻页分段标签 + 末尾只读总览里那一行。
     expect(find.text('课程卡片'), findsNWidgets(2));
-    expect(find.text('玻璃模式'), findsOneWidget);
+    expect(find.text('默认材质'), findsOneWidget);
+    // 三档全在候选里，「实体卡片」这一屏只有分段里那一处（只读总览那几行写的是
+    // 「实体」而不是「实体卡片」，卡片出厂档正是实体）。
     expect(find.text('实体卡片'), findsOneWidget);
+    expect(find.text('液态玻璃'), findsWidgets);
+    // 「高斯模糊」三处：默认材质那一格 + 子页顶栏模糊风格那一格（同一根轴上
+    // 的另一个真档位，2026-09-23 起子页顶栏锁定渐进后这一处会消失）+
+    // 只读总览里玻璃坞那一行（模糊开着、非液态）。
+    expect(find.text('高斯模糊'), findsNWidgets(3));
     expect(find.text('首页顶栏玻璃'), findsOneWidget);
     expect(find.text('子页顶栏模糊风格'), findsOneWidget);
     expect(find.text('各表面当前材质'), findsOneWidget);
@@ -272,7 +280,7 @@ void main() {
     expect(find.text('卡片外观'), findsNothing);
 
     // 第七轮口径回归钉：质感方案（与模式开关重复）撤下；弹窗家族等锁定
-    // 表面不再显示；高斯中间档不再出现在候选里。
+    // 表面不再显示。
     expect(find.text('质感方案'), findsNothing);
     expect(find.text('弹窗与对话框'), findsNothing);
     expect(find.text('经典磨砂'), findsNothing);
@@ -302,7 +310,7 @@ void main() {
     expect(find.text('卡片外观'), findsOneWidget, reason: '滑过去要真的落在第二页');
     // 分段标签两页都在（它是标题行的一部分），第一页内容已经离场。
     expect(find.text('通用'), findsOneWidget);
-    expect(find.text('玻璃模式'), findsNothing, reason: '第一页已翻走');
+    expect(find.text('默认材质'), findsNothing, reason: '第一页已翻走');
   });
 
   testWidgets('底部「调整壁纸」打开壁纸弹窗（选图按钮在里面）', (tester) async {
@@ -331,7 +339,7 @@ void main() {
     expect(find.text('课程卡片'), findsOneWidget);
     expect(find.text('卡片外观'), findsOneWidget);
     // 胶囊串（`_MaterialChoiceChips` 用 Wrap 排布）这一页只有这一处，
-    // 用它把「课程卡片的液态玻璃」与第一页「玻璃模式」里同名的那个词分开。
+    // 用它把「课程卡片的液态玻璃」与第一页「默认材质」里同名的那个词分开。
     final cardChips = find.byType(Wrap);
     expect(cardChips, findsOneWidget);
     final liquidChip = find.descendant(
@@ -659,6 +667,6 @@ void main() {
 
     expect(find.byType(HyperosSheetFrame), findsOneWidget);
     // 面板本身还开着（点空白处不该把面板关掉）。
-    expect(find.text('玻璃模式'), findsOneWidget);
+    expect(find.text('默认材质'), findsOneWidget);
   });
 }

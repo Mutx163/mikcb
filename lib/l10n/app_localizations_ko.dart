@@ -10122,7 +10122,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get materialStateFrost => '가우시안 블러';
 
   @override
-  String get frostedGlassModeLabel => '유리 모드';
+  String get frostedGlassModeLabel => '기본 소재';
 
   @override
   String get liquidGlassScopeSectionTitle => '액체 유리 적용 범위 (끄면 솔리드 카드)';

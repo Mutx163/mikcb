@@ -1136,8 +1136,9 @@ class _PermissionItem {
   });
 }
 
-/// 引导页「视觉效果」三档选择，与设置页「材质」两格分段同一套
-/// 映射（[GlassModeChoice] / [applyGlassModeChoice] 是唯一写入口）。
+/// 引导页「视觉效果」三档选择，与设置页「材质」面板的默认材质三格同一套
+/// 映射（[GlassModeChoice] / [applyGlassModeChoice] 是唯一写入口）——
+/// 名字也是同一套：实体卡片 / 高斯模糊 / 液态玻璃。
 ///
 /// 柔光玻璃 2026-09-22 撤下（详见 `_applyVisualEffect`）。
 enum _GuideVisualEffect { gaussian, liquidGlass, solid }

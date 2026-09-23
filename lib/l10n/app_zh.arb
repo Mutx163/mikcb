@@ -6028,7 +6028,7 @@
   "materialStateOff": "已关闭",
   "materialStateSolid": "实体",
   "materialStateFrost": "高斯模糊",
-  "frostedGlassModeLabel": "玻璃模式",
+  "frostedGlassModeLabel": "默认材质",
   "liquidGlassScopeSectionTitle": "液态玻璃作用范围（关闭即改为实体卡片）",
   "liquidGlassScopePopupTitle": "下拉选择弹窗",
   "liquidGlassScopePopupSubtitle": "玻璃模式等设置行弹出的小气泡菜单",
