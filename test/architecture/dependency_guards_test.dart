@@ -159,7 +159,12 @@ void main() {
     //       注入点 `surfaceBuilder` + 蒙层之前的前置层 `scrimUnderlay` + 蒙层色
     //       `dimColor`，以及 Window 变体「父级重建时不在构建期标脏」的时序修复 ——
     //       课程弹窗的液态玻璃与不采到压暗页面全靠它们（见
-    //       .agents/notes/implemented/architecture/2026-09-19-course-popup-miuix-bottom-sheet.md）。
+    //       .agents/notes/implemented/architecture/2026-09-19-course-popup-miuix-bottom-sheet.md）；
+    //     · 弹层输入与视觉拆开：内容**显影之前不吃点击**、锚点**收起期第一帧就收回
+    //       输入**（用户快速连点「更多」会误跳页面、收起后立刻再点会丢点击）。这条
+    //       有行为测试兜着（test/widgets/home_menu_navigation_close_test.dart 两条 +
+    //       fork 侧 os4_glass_popup_test 两条），见
+    //       .agents/notes/implemented/bug-fix/2026-09-23-popup-input-visual-split.md。
     //   inspire_blur（Mutx163/inspire_blur，分支 mikcb/distribution-pixels-cache）
     //     · 分布图像素记忆化——否则每个新挂载的子页顶栏同步重算 674k 像素（36~49ms）。
     // 所以这里只钉「还在不在、是不是那个 fork」，不钉具体 commit：补丁迭代只该改 ref，

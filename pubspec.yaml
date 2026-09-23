@@ -106,12 +106,17 @@ dev_dependencies:
 # CI 也拿不到可复现的依赖。补丁进了上游 release 后整块删掉，即回到 pub.dev。
 dependency_overrides:
   flutter_miuix:
-    # 包含「让位缩放改为面板布局矩形朝支点缩小，玻璃按缩后尺寸画」与
-    # 「二级面板边缘高光/阴影随开合渐显」两个补丁（paint 变变换带不动
-    # BackdropFilter，所以缩放必须落在布局矩形上）。
+    # 包含三个补丁：
+    #   1. 让位缩放改为面板布局矩形朝支点缩小，玻璃按缩后尺寸画（paint 变变换
+    #      带不动 BackdropFilter，所以缩放必须落在布局矩形上）；
+    #   2. 二级面板边缘高光/阴影随开合渐显；
+    #   3. 弹层输入与视觉拆开：内容**显影之前不吃点击**（入场那几帧行按钮看不见
+    #      却可点，快速连点会点进那一行对应的页面），锚点**收起期第一帧就收回
+    #      输入**（原先 contentHidden 连 IgnorePointer 一起给、要等收起动画播完
+    #      才复位，整段收起期那颗球点不动，第二次点击被静默丢掉）。
     git:
       url: https://github.com/Mutx163/flutter_miuix.git
-      ref: 574a23404fcde4d94f8ac0bc513b6ca0f6351a80
+      ref: 9e0c12f70b77dd303e6dcbc383d479df1ba57266
   # inspire_blur：分布图像素记忆化——上游每个新挂载的顶栏都同步重算一张
   # 674k 像素的分布图（真机实测 36~49ms），这里按 (distribution, size) 记住像素。
   # fork 自 inspirestack/inspire_blur，分支 mikcb/distribution-pixels-cache，

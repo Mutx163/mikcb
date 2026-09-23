@@ -59,6 +59,13 @@ void main() {
   bool menuShown(WidgetTester tester) =>
       tester.widget<HomeTopMenuPopup>(find.byType(HomeTopMenuPopup)).show;
 
+  /// 按帧推进（首页另有常驻动画，`pumpAndSettle` 不必要也更容易超时）。
+  Future<void> advance(WidgetTester tester, int frames) async {
+    for (var i = 0; i < frames; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+  }
+
   testWidgets('点条目跳页面：菜单留到新页面盖满才收，不在转场中途先收掉', (tester) async {
     await pumpHome(tester);
 
@@ -144,5 +151,76 @@ void main() {
       findsOneWidget,
       reason: '推上来的应是该条目解析出的页面',
     );
+  });
+
+  testWidgets('菜单刚展开的那几帧点它的位置不该跳页（行还没显影）', (tester) async {
+    // 真机回归（2026-09-23）：行按钮从入场第一帧起就摆好了位置、开了命中，而它的
+    // 透明度要到入场动画末尾才是 1 —— 这段窗口里那几行完全看不见、却完全可点。
+    // 快速连点「更多」时第二下正落在"将来那一行"的位置上，于是直接跳进了那一行
+    // 对应的页面（点的是完全看不见的东西）。
+    //
+    // 修法在上游 fork（`GlassPopupPresenter`：内容没显影就不吃输入）。这条测试守的
+    // 是**接线**：依赖被换回 pub.dev / 补丁在新 pin 上丢了，这里必须变红 ——
+    // `dependency_guards_test.dart` 只钉「还是不是那个 fork」，不钉具体 commit。
+    await pumpHome(tester);
+    await tester.tap(find.byType(FHeaderAction).last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(menuShown(tester), isTrue, reason: '菜单已经开了，只是内容还没显影');
+    expect(
+      find.text('课程总览').hitTestable(),
+      findsNothing,
+      reason: '入场显影之前，行按钮不该在命中测试里存在（看不见就点不到）',
+    );
+
+    // 快速连点的第二下：落在球上，而球正是这面板长出来的那一角。
+    // ⚠️ 断言别用 `navigator.canPop()`：弹层自己往根路由挂了一条 LocalHistoryEntry，
+    // 开菜单那一刻它就会变 true，与「有没有跳页」无关。
+    await tester.tapAt(tester.getCenter(find.byType(FHeaderAction).last));
+    await tester.pump();
+    expect(
+      ModalRoute.of(tester.element(find.byType(TimetableScreen)))!.isCurrent,
+      isTrue,
+      reason: '这一下不该把首页顶下去（也就是不该跳页）',
+    );
+    expect(
+      menuShown(tester),
+      isTrue,
+      reason: '也不该顺带把菜单收了（点两下 = 关菜单也是误触）',
+    );
+
+    // 对照：显影之后同一行必须照旧可点 —— 证明上面那条 findsNothing 不是恒假。
+    await advance(tester, 40);
+    expect(find.text('课程总览').hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('收起动画期间再点球能立刻重开（第二下不被动画吃掉）', (tester) async {
+    // 真机回归（2026-09-23）：遮罩在收起期立刻停止拦截（上游既有行为），但锚点
+    // 原先要等收起动画**播完**才收回点击 —— 整段收起动画期间那颗球既看不见、也
+    // 点不动，「点空白收起、马上再点按钮重开」的第二下被静默丢掉，读起来是
+    // 「点了没反应，要等一会儿才灵」。修法同样在 fork：视觉仍等动画播完交接，
+    // 只把输入从收起第一帧起还给按钮。
+    await pumpHome(tester);
+    final ball = tester.getCenter(find.byType(FHeaderAction).last);
+
+    await tester.tap(find.byType(FHeaderAction).last);
+    await advance(tester, 40);
+    expect(menuShown(tester), isTrue, reason: '先正常打开菜单');
+
+    // 点空白收起，然后在收起动画**还没走完**时再点球。
+    await tester.tapAt(const Offset(20, 300));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 30));
+    expect(menuShown(tester), isFalse, reason: '收起已经开始（这一帧动画还在放）');
+
+    await tester.tapAt(ball);
+    await tester.pump();
+    expect(
+      menuShown(tester),
+      isTrue,
+      reason: '收起动画期间那颗球必须立刻能再点开',
+    );
+
+    await advance(tester, 40);
   });
 }
