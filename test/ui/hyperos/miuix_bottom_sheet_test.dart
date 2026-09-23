@@ -437,4 +437,122 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(MiuixWindowBottomSheet), findsOneWidget);
   });
+
+  testWidgets('收起动画期间下层立刻能点到（不再等退场弹簧结算）', (tester) async {
+    // 真机回归（2026-09-23）：周视图点开一节课、退出之后马上点另一节，第二下没反应。
+    // 逐帧实测的两层原因，**都在"活得比看起来久"**：
+    //   · 面板约 320ms 就滑出屏幕，而全屏蒙层与路由屏障要等退场弹簧**数学收敛**
+    //     （容差 1e-4）才摘掉 —— 到约 832ms，中间约 500ms 点哪都被吃掉；
+    //   · 蒙层那时已经是空操作（`_requestDismiss` → 已收起的 early return），
+    //     屏障更是什么都不做 —— 纯粹是吞掉。
+    // 于是两处一起改：上游那层蒙层收起即 IgnorePointer，本仓承载壳的路由屏障不挡点击。
+    var opens = 0;
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) => Center(
+            child: TextButton(
+              onPressed: () {
+                opens++;
+                showMiuixBottomSheet<void>(
+                  context: context,
+                  builder: (sheetContext, close) => SizedBox(
+                    height: 160,
+                    child: TextButton(
+                      onPressed: () => close(),
+                      child: const Text('关闭'),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('打开'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+    expect(opens, 1);
+    expect(find.byType(MiuixWindowBottomSheet), findsOneWidget);
+
+    // 收起：这里**不** settle —— 要的就是退场动画还在放的那几帧。
+    await tester.tap(find.text('关闭'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(
+      find.byType(MiuixWindowBottomSheet),
+      findsOneWidget,
+      reason: '退场动画还没走完，面板仍在树上（只是不该再吃输入）',
+    );
+
+    // 用户「关掉这节课、马上点下一节」的那一下：
+    await tester.tap(find.text('打开'));
+    await tester.pump();
+    expect(opens, 2, reason: '收起一开始，下层就该立刻收得到点击');
+
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('收起期间马上开下一个弹窗：前一个收完不会把新的弹掉', (tester) async {
+    // 上一条把输入提前还给页面之后，用户完全可能在前一个还在退场时就点开下一个。
+    // 那一刻新路由压在旧路由上面，而收尾原来是 `Navigator.pop()`（摘的是**栈顶**那条）
+    // ⇒ 会把刚开的这个弹掉、旧路由反而留在栈上。所以收尾改成「摘自己这条路由」。
+    var opens = 0;
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) => Center(
+            child: TextButton(
+              onPressed: () {
+                final index = ++opens;
+                showMiuixBottomSheet<void>(
+                  context: context,
+                  builder: (sheetContext, close) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('弹窗$index'),
+                      TextButton(
+                        onPressed: () => close(),
+                        child: const Text('关闭'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: const Text('打开'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+    expect(find.text('弹窗1'), findsOneWidget);
+
+    // 收起第一个，然后在它退场动画期间点开第二个。
+    await tester.tap(find.text('关闭'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(find.text('弹窗1'), findsOneWidget, reason: '第一个还在退场');
+    await tester.tap(find.text('打开'));
+    // 两帧：路由挂上 → 窗口层 entry 在帧末插入（`_ensureWindowEntry` 是 post-frame
+    // 回调）→ 下一帧才建出面板内容。
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('弹窗2'), findsOneWidget, reason: '退场期间就该能开下一个');
+
+    // 等第一个的退场弹簧走完（它这时才摘自己的路由）。
+    await tester.pumpAndSettle();
+    expect(
+      find.text('弹窗2'),
+      findsOneWidget,
+      reason: '前一个收完摘的必须是它自己那条路由，不能把新开的这个弹掉',
+    );
+    expect(find.text('弹窗1'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

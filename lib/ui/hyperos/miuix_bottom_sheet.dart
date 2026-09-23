@@ -54,10 +54,11 @@ typedef MiuixBottomSheetBuilder =
 ///
 /// 上游组件是**声明式**的（常驻 + `show` 切换，退场结束回调 `onDismissFinished`），
 /// 而本仓弹层的调用面是**祈使式**的（`await showXxx(...)`，内容里用
-/// `Navigator.pop()`）。这里压一条透明屏障的路由，页面里常驻一个
+/// `Navigator.pop()`）。这里压一条路由（[_MiuixBottomSheetRoute]，**不带挡点击的
+/// 屏障**，理由见那个类），页面里常驻一个
 /// `MiuixWindowBottomSheet`，对外仍是 `await showMiuixBottomSheet(...)`：
-/// 内部照旧可以 `Navigator.pop()`，返回键由本壳的 `PopScope` 接住（上游自己那个
-/// `PopScope` 在根覆盖层里拿不到 `ModalRoute`，不生效）。
+/// 内部照旧可以 `Navigator.pop()`（走本壳的收起口子），返回键由本壳的 `PopScope`
+/// 接住（上游自己那个 `PopScope` 在根覆盖层里拿不到 `ModalRoute`，不生效）。
 ///
 /// ## 材质：仍然是我们的液态玻璃
 ///
@@ -78,20 +79,16 @@ Future<T?> showMiuixBottomSheet<T>({
   // 诊断标记沿用 `sheet:open`（这个弹窗就是「弹层开场」那一类，改用上游组件不换口径，
   // 历史读数仍然可比）。见 utils/frame_perf_probe.dart。
   FramePerfProbe.mark('sheet:open');
-  return showGeneralDialog<T>(
-    context: context,
-    useRootNavigator: useRootNavigator,
-    // 蒙层点击由面板自己那层遮罩处理（它才是画在玻璃之前的那一层）；路由屏障只
-    // 负责挡住下层点击，不参与关闭，避免两条关闭路径打架。
-    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    barrierColor: Colors.transparent,
-    transitionDuration: Duration.zero,
-    pageBuilder: (dialogContext, animation, secondaryAnimation) =>
-        _MiuixBottomSheetPage(
-          builder: builder,
-          barrierDismissible: barrierDismissible,
-          barrierColor: barrierColor,
-        ),
+  return Navigator.of(context, rootNavigator: useRootNavigator).push<T>(
+    _MiuixBottomSheetRoute<T>(
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      pageBuilder: (dialogContext, animation, secondaryAnimation) =>
+          _MiuixBottomSheetPage(
+            builder: builder,
+            barrierDismissible: barrierDismissible,
+            barrierColor: barrierColor,
+          ),
+    ),
   );
 }
 
@@ -145,6 +142,35 @@ Future<T?> showHomeHyperosSheet<T>({
 /// 不要在回调里 `setState`。
 typedef SheetCloseRef = void Function(MiuixBottomSheetClose close);
 
+/// 承载壳用的路由：与 `showGeneralDialog` 造出来的那条只差**屏障不挡点击**。
+///
+/// 为什么敢去掉这条路障：挡下层点击本来就有两层，而真正干活的是面板自己那层
+/// 全屏蒙层（它在根覆盖层里、被 `OverlayState.rearrange` 排在**所有路由之上**，
+/// 覆盖层里外谁在上层看得很清楚）。路由屏障那层是多余的，可它偏偏**活得最久**：
+/// 它要等 `Navigator.pop()`（= 退场弹簧数学收敛，实测约 832ms，而面板约 320ms
+/// 就滑出屏幕）才消失，于是「关掉这个弹窗、马上点下一节课」的第二下被它吃掉 ——
+/// 实测收起期间页面位置上命中的最上层就是 `ModalBarrier` 的 `MouseRegion`。
+///
+/// 无障碍那点能力不受影响：`barrierDismissible: false` 时 `ModalBarrier` 本来就
+/// 不挂 dismiss 语义与动作。
+class _MiuixBottomSheetRoute<T> extends RawDialogRoute<T> {
+  _MiuixBottomSheetRoute({
+    required super.pageBuilder,
+    required super.barrierLabel,
+  }) : super(
+         barrierDismissible: false,
+         barrierColor: Colors.transparent,
+         transitionDuration: Duration.zero,
+       );
+
+  /// 不画、不占位、不吃指针（空 `SizedBox` 三条都不做）。
+  ///
+  /// 蒙层点击由面板自己那层遮罩处理（它才是画在玻璃之前的那一层），所以这里
+  /// 本来就不参与关闭，去掉也不会有两条关闭路径打架。
+  @override
+  Widget buildModalBarrier() => const SizedBox.shrink();
+}
+
 class _MiuixBottomSheetPage extends StatefulWidget {
   const _MiuixBottomSheetPage({
     required this.builder,
@@ -184,9 +210,17 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
     _popped = true;
     final afterDismiss = _afterDismiss;
     _afterDismiss = null;
+    // 摘掉**自己这条**路由，而不是「栈顶那条」：收起一开始输入就还给页面了
+    // （见 `_MiuixBottomSheetRoute` 与上游那层 IgnorePointer），用户完全可能在这段
+    // 退场动画里立刻点开下一节课 / 另一个弹窗 —— 那一刻新路由已经压在头上，
+    // `Navigator.pop()` 会把**新弹窗**弹掉，自己反而留在栈上。
+    // 本条路由的转场时长是 0，`removeRoute` 与 pop 在结果上一致，只差"摘谁"。
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      Navigator.of(context).removeRoute(route);
+    }
     // 先摘路由，再跑后续动作：后续动作常常立刻 push 下一个页面 / sheet，
     // 面板已经彻底消失，两者不会叠在一起。
-    Navigator.of(context).pop();
     afterDismiss?.call();
   }
 

@@ -164,7 +164,11 @@ void main() {
     //       输入**（用户快速连点「更多」会误跳页面、收起后立刻再点会丢点击）。这条
     //       有行为测试兜着（test/widgets/home_menu_navigation_close_test.dart 两条 +
     //       fork 侧 os4_glass_popup_test 两条），见
-    //       .agents/notes/implemented/bug-fix/2026-09-23-popup-input-visual-split.md。
+    //       .agents/notes/implemented/bug-fix/2026-09-23-popup-input-visual-split.md；
+    //     · 底部弹窗**收起一开始就把输入还给底层**（全屏蒙层原要等退场弹簧结算完才
+    //       移除，那约 500ms 里「关掉弹窗马上点下一节课」的第二下会被吃掉）。
+    //       同样有行为测试兜着（test/ui/hyperos/miuix_bottom_sheet_test.dart 两条 +
+    //       fork 侧 bottom_sheet_dismiss_test 一条，见同一篇笔记的续节）。
     //   inspire_blur（Mutx163/inspire_blur，分支 mikcb/distribution-pixels-cache）
     //     · 分布图像素记忆化——否则每个新挂载的子页顶栏同步重算 674k 像素（36~49ms）。
     // 所以这里只钉「还在不在、是不是那个 fork」，不钉具体 commit：补丁迭代只该改 ref，
