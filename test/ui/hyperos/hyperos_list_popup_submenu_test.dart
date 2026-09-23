@@ -27,7 +27,6 @@ void main() {
     sheetBlurSigma: 15,
     sheetTintAlpha: 0.7,
     sheetBarrierAlpha: 0.2,
-    glassMode: FrostedGlassMode.gaussian,
   );
 
   // 液态玻璃外观：用于验证共享组捕获垫层随液态子卡一起挂载（测试机

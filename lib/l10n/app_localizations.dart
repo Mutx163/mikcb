@@ -302,12 +302,6 @@ abstract class AppLocalizations {
   /// **'外观与配色'**
   String get appearanceEntryTitle;
 
-  /// No description provided for @appearanceEntrySubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'主题模式、字体、首页标题与弹窗磨砂玻璃'**
-  String get appearanceEntrySubtitle;
-
   /// No description provided for @appearanceThemeDisplaySectionTitle.
   ///
   /// In zh, this message translates to:
@@ -5910,7 +5904,7 @@ abstract class AppLocalizations {
   /// No description provided for @frostedSheetSectionTitle.
   ///
   /// In zh, this message translates to:
-  /// **'磨砂玻璃'**
+  /// **'玻璃材质'**
   String get frostedSheetSectionTitle;
 
   /// No description provided for @frostedSheetSectionSubtitle.
@@ -17659,12 +17653,6 @@ abstract class AppLocalizations {
   /// **'一键套用整套材质搭配，应用后仍可逐项调整'**
   String get texturePresetSubtitle;
 
-  /// No description provided for @texturePresetClassicFrost.
-  ///
-  /// In zh, this message translates to:
-  /// **'经典磨砂'**
-  String get texturePresetClassicFrost;
-
   /// No description provided for @texturePresetFullLiquid.
   ///
   /// In zh, this message translates to:
@@ -17734,7 +17722,7 @@ abstract class AppLocalizations {
   /// No description provided for @materialStateFrost.
   ///
   /// In zh, this message translates to:
-  /// **'磨砂玻璃'**
+  /// **'高斯模糊'**
   String get materialStateFrost;
 
   /// No description provided for @frostedGlassModeLabel.
@@ -17814,12 +17802,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'壁纸位置选择页悬浮在壁纸上的玻璃按钮'**
   String get liquidGlassScopePickerButtonsSubtitle;
-
-  /// No description provided for @frostedGlassModeFrosted.
-  ///
-  /// In zh, this message translates to:
-  /// **'经典磨砂'**
-  String get frostedGlassModeFrosted;
 
   /// No description provided for @frostedGlassModeLiquid.
   ///

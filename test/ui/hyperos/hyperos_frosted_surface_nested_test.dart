@@ -94,7 +94,7 @@ void main() {
   });
 
   testWidgets('基础高斯档：嵌套 tile 保持既有通用分支', (tester) async {
-    await tester.pumpWidget(_harness(mode: FrostedGlassMode.frosted));
+    await tester.pumpWidget(_harness(mode: FrostedGlassMode.gaussian));
     await tester.pump();
 
     // 基础档不受降级矩阵约束：VM 上模糊不可用 → withBlur:false，

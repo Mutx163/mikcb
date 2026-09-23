@@ -109,9 +109,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get appearanceEntryTitle => '外観と配色';
 
   @override
-  String get appearanceEntrySubtitle => 'アプリのテーマモード、フォント、ホームタイトル、シートのすりガラス';
-
-  @override
   String get appearanceThemeDisplaySectionTitle => 'テーマと表示';
 
   @override
@@ -3250,7 +3247,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get themeSeedSectionSubtitle => 'トップバー、アクセントカラーとグローバルメインカラーに影響';
 
   @override
-  String get frostedSheetSectionTitle => 'フロストガラス';
+  String get frostedSheetSectionTitle => 'ガラス素材';
 
   @override
   String get frostedSheetSectionSubtitle => 'シートのブラー強度とフロストの明るさを調整します';
@@ -10044,9 +10041,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get texturePresetSubtitle => '素材の組み合わせをまとめて適用。後から個別に調整できます';
 
   @override
-  String get texturePresetClassicFrost => 'クラシックなすりガラス';
-
-  @override
   String get texturePresetFullLiquid => '全面リキッドガラス';
 
   @override
@@ -10081,7 +10075,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get materialStateSolid => 'ソリッド';
 
   @override
-  String get materialStateFrost => 'すりガラス';
+  String get materialStateFrost => 'ガウスぼかし';
 
   @override
   String get frostedGlassModeLabel => 'ガラスモード';
@@ -10122,9 +10116,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liquidGlassScopePickerButtonsSubtitle => '壁紙位置選択ページで壁紙に浮かぶガラスボタン';
-
-  @override
-  String get frostedGlassModeFrosted => 'クラシックフロスト';
 
   @override
   String get frostedGlassModeLiquid => 'リキッドガラス';

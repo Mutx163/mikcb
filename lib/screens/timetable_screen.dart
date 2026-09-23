@@ -87,7 +87,7 @@ import 'timetable_profiles_screen.dart';
 ///
 /// 由**全局材质**+ 「作用范围 → 玻璃坞导航」推导（见
 /// [_TimetableScreenState._resolveDockMaterial]），不再有独立的「底栏材质」开关——
-/// 否则会出现「全局磨砂 + 底栏液态」这类两种玻璃同屏的组合。
+/// 否则会出现「全局高斯 + 底栏液态」这类两种玻璃同屏的组合。
 enum _DockMaterial { liquid, frosted, solid }
 
 class TimetableScreen extends StatefulWidget {
@@ -7478,14 +7478,14 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 由**全局材质**（外观编辑 → 材质）+ 「作用范围 → 玻璃坞导航」推导：
   ///
   /// - 实体卡片（模糊总开关关）→ [_DockMaterial.solid]；
-  /// - 磨砂玻璃 → [_DockMaterial.frosted]；
+  /// - 高斯模糊 → [_DockMaterial.frosted]；
   /// - 液态玻璃 + 作用范围开 → [_DockMaterial.liquid]；
   /// - 液态玻璃但该家族作用范围关（或系统降级）→ [_DockMaterial.solid]。
   ///
-  /// 底栏不再有独立的「底栏材质」开关：同一份全局材质驱动所有表面，用户
-  /// 不必在两个地方对齐同一种玻璃（历史上「全局磨砂 + 底栏液态」这类组合
+  /// 底栏不再有独立的「底栏材质」开关：同一份默认材质驱动所有表面，用户
+  /// 不必在两个地方对齐同一种玻璃（历史上「全局高斯 + 底栏液态」这类组合
   /// 就是把开关拆到两处造成的）。
-  /// 高级材质关闭时统一走实体卡片而非降低一档磨砂：磨砂的实时
+  /// 高级材质关闭时统一走实体卡片而非降低一档高斯：高斯的实时
   /// BackdropFilter 在坞的滑入/合并动画期间采不到稳定背景，药丸会整段
   /// 透明（见 [LiquidGlassDegradation.familyFallsBackToSolid]）。
   _DockMaterial _resolveDockMaterial(BuildContext context) {

@@ -67,11 +67,11 @@ void main() {
   });
 
   group('modal appearance scope is preserved across popup routes', () {
+    // 档位走默认（高斯模糊）：显式写出来会撞 avoid_redundant_argument_values。
     const gaussianAppearance = FrostedAppearance(
       sheetBlurSigma: 15,
       sheetTintAlpha: 0.7,
       sheetBarrierAlpha: 0.2,
-      glassMode: FrostedGlassMode.gaussian,
     );
 
     testWidgets('sheet keeps the caller appearance mode', (tester) async {

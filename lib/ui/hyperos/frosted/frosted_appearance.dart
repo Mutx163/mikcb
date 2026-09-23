@@ -30,22 +30,22 @@ const kDefaultHomeBandGlassMaterial = 'liquid';
 const kDefaultLiquidGlassDockEnabled = true;
 
 /// User-tunable frosted glass appearance for home sheets and related surfaces.
-/// Glass-surface rendering mode for frosted/Wallpaper-backgrounded sheets and cards.
+///
+/// 这里只有**两种真实材质**：高斯模糊与液态玻璃。「实体卡片」不是第三种材质，
+/// 它是「模糊总开关关掉」（[FrostedAppearance.blurEnabled]）这件事 —— 所以
+/// 不在枚举里占位。三档的完整语义见 `GlassModeChoice`。
 enum FrostedGlassMode {
-  /// 非液态磨砂的内部中性值：模型默认值、存量数据兜底（旧 translucent /
-  /// gaussian 值经 [FrostedGlassModeX.fromValue] 归一，渲染完全等价）、
-  /// 以及设置页「实体卡片」档的存储落点。渲染上与 [gaussian] 走同一条
-  /// BackdropFilter + tint 链路，设置页不再作为独立档位暴露。
-  frosted,
+  /// 高斯模糊：实时背景上做均匀 BackdropFilter 模糊 + tint。
+  ///
+  /// 整机的**默认**材质；也是锁定的弹窗家族被技术 / 系统门禁摘下来时的回落
+  /// 观感。存量数据里的 `frosted` / `translucent` 一律读作它（渲染等价，见
+  /// [FrostedGlassModeX.fromValue]）。
+  gaussian,
 
   /// 液态玻璃：实时背景上做圆角 SDF 边缘折射 + 受光边缘高光（见
   /// `shaders/glass_surface_refraction.frag` 与 `LiquidGlassSurface`）。
   /// 参数由 `LiquidGlassTuning` 统一提供，全 app 只此一套。
   liquidGlass,
-
-  /// 设置页「高斯模糊」档的存储标记：渲染与 [frosted] 同一链路，仅用于
-  /// 标记用户显式选择过该档。
-  gaussian,
 }
 
 extension FrostedGlassModeX on FrostedGlassMode {
@@ -65,9 +65,16 @@ extension FrostedGlassModeX on FrostedGlassMode {
     if (value == 'softGlass') {
       return FrostedGlassMode.liquidGlass;
     }
+    // 存量迁移（2026-09-23）：'frosted'（旧 translucent 也归到它）曾是「模糊
+    // 开着、但不是液态」这个状态的内部存值，与高斯模糊走的是同一条
+    // BackdropFilter 链路、渲染逐像素一致。既然界面上只有「高斯模糊」这一个
+    // 词，枚举里就不留第二个同义值 —— 老值一律读作高斯模糊。同样是懒迁移。
+    if (value == 'frosted') {
+      return FrostedGlassMode.gaussian;
+    }
     return FrostedGlassMode.values.firstWhere(
       (item) => item.value == value,
-      orElse: () => FrostedGlassMode.frosted,
+      orElse: () => FrostedGlassMode.gaussian,
     );
   }
 }
@@ -86,7 +93,7 @@ class FrostedAppearance {
     required this.sheetTintAlpha,
     required this.sheetBarrierAlpha,
     this.blurEnabled = kDefaultFrostedBlurEnabled,
-    this.glassMode = FrostedGlassMode.frosted,
+    this.glassMode = FrostedGlassMode.gaussian,
     this.subpageHeaderBlurStyle = kDefaultHeaderBlurStyle,
     this.homeBandGlassMaterial = kDefaultHomeBandGlassMaterial,
     this.liquidGlassTuning,

@@ -109,9 +109,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appearanceEntryTitle => '外观与配色';
 
   @override
-  String get appearanceEntrySubtitle => '主题模式、字体、首页标题与弹窗磨砂玻璃';
-
-  @override
   String get appearanceThemeDisplaySectionTitle => '主题与显示';
 
   @override
@@ -3189,7 +3186,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeSeedSectionSubtitle => '影响顶部栏、强调色和全局主色调';
 
   @override
-  String get frostedSheetSectionTitle => '磨砂玻璃';
+  String get frostedSheetSectionTitle => '玻璃材质';
 
   @override
   String get frostedSheetSectionSubtitle => '调节弹出面板的模糊强度与磨砂亮度';
@@ -9747,9 +9744,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get texturePresetSubtitle => '一键套用整套材质搭配，应用后仍可逐项调整';
 
   @override
-  String get texturePresetClassicFrost => '经典磨砂';
-
-  @override
   String get texturePresetFullLiquid => '全液态';
 
   @override
@@ -9784,7 +9778,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get materialStateSolid => '实体';
 
   @override
-  String get materialStateFrost => '磨砂玻璃';
+  String get materialStateFrost => '高斯模糊';
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';
@@ -9824,9 +9818,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liquidGlassScopePickerButtonsSubtitle => '壁纸位置选择页悬浮在壁纸上的玻璃按钮';
-
-  @override
-  String get frostedGlassModeFrosted => '经典磨砂';
 
   @override
   String get frostedGlassModeLiquid => '液态玻璃';
@@ -11217,9 +11208,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get appearanceEntryTitle => '外觀與配色';
-
-  @override
-  String get appearanceEntrySubtitle => '主題模式、字型、首頁標題與彈出視窗磨砂玻璃';
 
   @override
   String get appearanceThemeDisplaySectionTitle => '主題與顯示';
@@ -14300,7 +14288,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get themeSeedSectionSubtitle => '蠅響頂部欄、強調色和全局主色調';
 
   @override
-  String get frostedSheetSectionTitle => '磨砂玻璃';
+  String get frostedSheetSectionTitle => '玻璃材質';
 
   @override
   String get frostedSheetSectionSubtitle => '調節彈出面板的模糊強度與磨砂亮度';
@@ -20901,9 +20889,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get texturePresetSubtitle => '一鍵套用整套材質搭配，應用後仍可逐項調整';
 
   @override
-  String get texturePresetClassicFrost => '經典磨砂';
-
-  @override
   String get texturePresetFullLiquid => '全液態';
 
   @override
@@ -20938,7 +20923,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get materialStateSolid => '實體';
 
   @override
-  String get materialStateFrost => '磨砂玻璃';
+  String get materialStateFrost => '高斯模糊';
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';
@@ -20978,9 +20963,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liquidGlassScopePickerButtonsSubtitle => '壁紙位置選擇頁懸浮在壁紙上的玻璃按鈕';
-
-  @override
-  String get frostedGlassModeFrosted => '經典磨砂';
 
   @override
   String get frostedGlassModeLiquid => '液態玻璃';
@@ -22371,9 +22353,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get appearanceEntryTitle => '外觀與配色';
-
-  @override
-  String get appearanceEntrySubtitle => '主題模式、字型、首頁標題與彈出視窗磨砂玻璃';
 
   @override
   String get appearanceThemeDisplaySectionTitle => '主題與顯示';
@@ -25454,7 +25433,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get themeSeedSectionSubtitle => '影響頂部欄、強調色和全局主色調';
 
   @override
-  String get frostedSheetSectionTitle => '磨砂玻璃';
+  String get frostedSheetSectionTitle => '玻璃材質';
 
   @override
   String get frostedSheetSectionSubtitle => '調節彈出面板的模糊強度與磨砂亮度';
@@ -32055,9 +32034,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get texturePresetSubtitle => '一鍵套用整套材質搭配，應用後仍可逐項調整';
 
   @override
-  String get texturePresetClassicFrost => '經典磨砂';
-
-  @override
   String get texturePresetFullLiquid => '全液態';
 
   @override
@@ -32092,7 +32068,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get materialStateSolid => '實體';
 
   @override
-  String get materialStateFrost => '磨砂玻璃';
+  String get materialStateFrost => '高斯模糊';
 
   @override
   String get frostedGlassModeLabel => '玻璃模式';
@@ -32132,9 +32108,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liquidGlassScopePickerButtonsSubtitle => '壁紙位置選擇頁懸浮在壁紙上的玻璃按鈕';
-
-  @override
-  String get frostedGlassModeFrosted => '經典磨砂';
 
   @override
   String get frostedGlassModeLiquid => '液態玻璃';

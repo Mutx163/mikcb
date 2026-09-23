@@ -62,7 +62,7 @@ void main() {
           settings: TimetableSettings.defaults().copyWith(
             homeBandGlassMaterial: 'liquid',
             appLocaleTag: 'en',
-            frostedGlassMode: FrostedGlassMode.frosted,
+            frostedGlassMode: FrostedGlassMode.gaussian,
           ),
         ),
         profileJson(

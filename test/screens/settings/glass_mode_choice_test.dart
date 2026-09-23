@@ -6,7 +6,7 @@ import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart'
 void main() {
   TimetableSettings settings({
     bool blurEnabled = true,
-    FrostedGlassMode mode = FrostedGlassMode.frosted,
+    FrostedGlassMode mode = FrostedGlassMode.gaussian,
   }) => TimetableSettings(
     sections: const [],
     frostedBlurEnabled: blurEnabled,
@@ -37,12 +37,8 @@ void main() {
       );
     });
 
-    test('开模糊 + 存量 frosted / gaussian → 高斯模糊', () {
+    test('开模糊 + 高斯（出厂默认档）→ 高斯模糊', () {
       expect(glassModeChoiceOf(settings()), GlassModeChoice.gaussian);
-      expect(
-        glassModeChoiceOf(settings(mode: FrostedGlassMode.gaussian)),
-        GlassModeChoice.gaussian,
-      );
     });
 
     test('模糊关 + 液态模式（存量混搭）仍推导为实体卡片', () {
@@ -62,7 +58,7 @@ void main() {
         GlassModeChoice.solid,
       );
       expect(result.frostedBlurEnabled, isFalse);
-      expect(result.frostedGlassMode, FrostedGlassMode.frosted);
+      expect(result.frostedGlassMode, FrostedGlassMode.gaussian);
     });
 
     test('高斯模糊：开模糊 + gaussian 模式', () {
@@ -132,13 +128,17 @@ void main() {
     });
   });
 
-  test('存量 translucent 持久化值经 fromValue 归一为 frosted（渲染等价）', () {
+  test('存量 frosted / translucent / 空值经 fromValue 归一为高斯模糊（渲染等价）', () {
+    // `frosted` 曾是「模糊开着、但不是液态」这个状态的内部存值，与高斯模糊
+    // 同一条渲染链路。2026-09-23 起枚举里不再留这个词，老值（以及更早的
+    // translucent、从未写过的空值）一律读作高斯模糊。
+    expect(FrostedGlassModeX.fromValue('frosted'), FrostedGlassMode.gaussian);
     expect(
       FrostedGlassModeX.fromValue('translucent'),
-      FrostedGlassMode.frosted,
+      FrostedGlassMode.gaussian,
     );
     expect(FrostedGlassModeX.fromValue('gaussian'), FrostedGlassMode.gaussian);
-    expect(FrostedGlassModeX.fromValue(null), FrostedGlassMode.frosted);
+    expect(FrostedGlassModeX.fromValue(null), FrostedGlassMode.gaussian);
   });
 
   test('存量 refractionGlass 持久化值读作液态玻璃（旧档位已并入）', () {

@@ -65,11 +65,12 @@ void main() {
       'demo route opens and renders its four entry rows',
       (tester) async {
         const savedAppearance = _liquidAppearance;
+        // 档位走默认（高斯模糊）：显式写出来会撞
+        // avoid_redundant_argument_values。
         const draftAppearance = FrostedAppearance(
           sheetBlurSigma: 15,
           sheetTintAlpha: 0.7,
           sheetBarrierAlpha: 0.2,
-          glassMode: FrostedGlassMode.gaussian,
         );
 
         await tester.pumpWidget(

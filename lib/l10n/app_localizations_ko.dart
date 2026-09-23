@@ -109,9 +109,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appearanceEntryTitle => '외관 및 색상';
 
   @override
-  String get appearanceEntrySubtitle => '앱 테마 모드, 글꼴, 홈 제목 및 시트 블러 설정';
-
-  @override
   String get appearanceThemeDisplaySectionTitle => '테마 및 표시';
 
   @override
@@ -3266,7 +3263,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get themeSeedSectionSubtitle => '상단 바, 강조색 및 전반적인 주色调에 영향을 줍니다';
 
   @override
-  String get frostedSheetSectionTitle => '프로스트 글래스';
+  String get frostedSheetSectionTitle => '글래스 소재';
 
   @override
   String get frostedSheetSectionSubtitle => '시트의 흐림 강도와 프로스트 밝기를 조절합니다';
@@ -10088,9 +10085,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get texturePresetSubtitle => '재질 조합을 한 번에 적용하고, 이후에 항목별로 조정할 수 있습니다';
 
   @override
-  String get texturePresetClassicFrost => '클래식 블러';
-
-  @override
   String get texturePresetFullLiquid => '전체 리퀴드 글래스';
 
   @override
@@ -10125,7 +10119,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get materialStateSolid => '솔리드';
 
   @override
-  String get materialStateFrost => '블러';
+  String get materialStateFrost => '가우시안 블러';
 
   @override
   String get frostedGlassModeLabel => '유리 모드';
@@ -10167,9 +10161,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get liquidGlassScopePickerButtonsSubtitle =>
       '배경화면 위치 선택 페이지에서 배경 위에 떠 있는 유리 버튼';
-
-  @override
-  String get frostedGlassModeFrosted => '클래식 프로스트';
 
   @override
   String get frostedGlassModeLiquid => '리퀴드 글래스';

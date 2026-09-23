@@ -821,8 +821,12 @@ class _HomeTitleStylePreview extends StatelessWidget {
   }
 }
 
-/// 「各表面当前材质」的展示文案。渐进 / 高斯、磨砂 / 液态复用既有选项名
-/// （同物同名），只补「已关闭 / 实体 / 磨砂玻璃」三个状态词。
+/// 「各表面当前材质」的展示文案。渐进 / 高斯、高斯 / 液态复用既有选项名
+/// （同物同名），只补「已关闭 / 实体」两个状态词。
+///
+/// ⚠️ 只读清单里的「高斯模糊」是**渲染状态**，不是可选项：模糊开着、又不是
+/// 液态的表面（灰药丸回退、门禁摘下来的弹窗）都归到它 —— 与设置里那一档
+/// 同名是对的，因为渲染本来就是同一条链路。
 String _surfaceMaterialLabel(AppLocalizations l10n, SurfaceMaterial material) =>
     switch (material) {
       SurfaceMaterial.off => l10n.materialStateOff,

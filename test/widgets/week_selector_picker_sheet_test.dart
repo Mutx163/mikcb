@@ -110,7 +110,7 @@ void main() {
   testWidgets('全局高斯档：面板仍是标准档液态玻璃，格子跟着走通透样式', (
     tester,
   ) async {
-    await pumpSheet(tester, mode: FrostedGlassMode.frosted);
+    await pumpSheet(tester, mode: FrostedGlassMode.gaussian);
 
     // 面板不跟随全局档位 —— 格子的老平涂样式（#E8E8E8 + 灰墨）不再出现。
     expect(cellMaterial(tester, '第 1 周').color, Colors.white.withValues(alpha: 0.55));
@@ -126,7 +126,7 @@ void main() {
     await pumpSheet(
       tester,
       // 面板锁标准档，全局档位对这里的样式已经无影响；两格的可辨性才是被测对象。
-      mode: FrostedGlassMode.frosted,
+      mode: FrostedGlassMode.gaussian,
       // 浏览第 1 周、实际身处第 3 周：两格须同时可辨。
       visibleWeek: 1,
       currentSemesterWeek: 3,
@@ -161,7 +161,7 @@ void main() {
     // 曾被 ScrollView 自动 padding 吃掉变成格子顶上 ~50dp 透明空隙。
     await pumpSheet(
       tester,
-      mode: FrostedGlassMode.frosted,
+      mode: FrostedGlassMode.gaussian,
       mediaQueryPadding: const EdgeInsets.only(top: 51, bottom: 17),
     );
 

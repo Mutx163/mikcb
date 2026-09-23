@@ -1840,7 +1840,7 @@ class TimetableSettings {
     this.frostedSheetTintAlpha = defaultFrostedSheetTintAlpha,
     this.frostedSheetBarrierAlpha = defaultFrostedSheetBarrierAlpha,
     this.frostedBlurEnabled = defaultFrostedBlurEnabled,
-    this.frostedGlassMode = FrostedGlassMode.frosted,
+    this.frostedGlassMode = FrostedGlassMode.gaussian,
     this.liquidGlassDockEnabled = defaultLiquidGlassDockEnabled,
     this.courseCardSurfaceStyle = CourseCardSurfaceStyle.solid,
     this.liquidGlassPreset = LiquidGlassPreset.standard,

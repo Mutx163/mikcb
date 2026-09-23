@@ -402,7 +402,7 @@ void main() {
     await tapEffect('实体卡片');
     expect(provider.settings.frostedBlurEnabled, isFalse);
     // 实体卡片同时把玻璃模式归位非液态：液态面不受模糊总开关约束。
-    expect(provider.settings.frostedGlassMode, FrostedGlassMode.frosted);
+    expect(provider.settings.frostedGlassMode, FrostedGlassMode.gaussian);
   });
 
   testWidgets('personalize theme mode and seed color persist', (tester) async {

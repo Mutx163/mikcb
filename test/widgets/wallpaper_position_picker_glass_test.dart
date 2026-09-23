@@ -37,11 +37,11 @@ void main() {
   const screenDpr = 3.2;
 
   // 刻意选磨砂档：四颗按钮锁标准档液态玻璃，这个档位不该影响它们一分一毫。
+  // 档位走默认（高斯模糊）：显式写出来会撞 avoid_redundant_argument_values。
   const appearance = FrostedAppearance(
     sheetBlurSigma: 20,
     sheetTintAlpha: 0.5,
     sheetBarrierAlpha: 0.3,
-    glassMode: FrostedGlassMode.gaussian,
   );
 
   /// [imagePath] 不存在的路径：本测试只关心材质 / 几何 / 极性，占位分支更省事

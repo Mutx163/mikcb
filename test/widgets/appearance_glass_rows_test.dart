@@ -1,4 +1,4 @@
-// 磨砂玻璃各行可发现性回归（2026-09-19 第七轮起在「外观编辑」页的材质面板，
+// 玻璃材质各行可发现性回归（2026-09-19 第七轮起在「外观编辑」页的材质面板，
 // 且面板内可调项一律**内联控件**：分段选择 / 选项胶囊，不开二级弹层）。
 //
 // 历史口径（不变的部分）：顶栏两行**恒常显示、不做任何条件隐藏**（2026-09-12
@@ -213,8 +213,8 @@ void main() {
 
     final provider = await _openMaterialPanel(tester);
 
-    // 出厂默认是磨砂档：此时下面不该有液态细项。
-    expect(provider.settings.frostedGlassMode, FrostedGlassMode.frosted);
+    // 出厂默认是高斯模糊档：此时下面不该有液态细项。
+    expect(provider.settings.frostedGlassMode, FrostedGlassMode.gaussian);
     expect(find.text('高级材质'), findsNothing);
 
     // 点顶部分段的「液态玻璃」：设置写回，**下面立刻给液态细项**。

@@ -111,10 +111,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appearanceEntryTitle => 'Appearance';
 
   @override
-  String get appearanceEntrySubtitle =>
-      'App theme mode, fonts, home title and sheet frosted glass';
-
-  @override
   String get appearanceThemeDisplaySectionTitle => 'Theme & Display';
 
   @override
@@ -3391,7 +3387,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Affects the top bar, accent color, and global primary tone';
 
   @override
-  String get frostedSheetSectionTitle => 'Frosted Glass';
+  String get frostedSheetSectionTitle => 'Glass Material';
 
   @override
   String get frostedSheetSectionSubtitle =>
@@ -10342,9 +10338,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Apply a whole material setup in one tap; every option stays adjustable afterwards';
 
   @override
-  String get texturePresetClassicFrost => 'Classic frost';
-
-  @override
   String get texturePresetFullLiquid => 'Full liquid glass';
 
   @override
@@ -10379,7 +10372,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get materialStateSolid => 'Solid';
 
   @override
-  String get materialStateFrost => 'Frosted';
+  String get materialStateFrost => 'Gaussian Blur';
 
   @override
   String get frostedGlassModeLabel => 'Glass Mode';
@@ -10425,9 +10418,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get liquidGlassScopePickerButtonsSubtitle =>
       'Floating glass buttons on the wallpaper position picker';
-
-  @override
-  String get frostedGlassModeFrosted => 'Classic Frosted';
 
   @override
   String get frostedGlassModeLiquid => 'Liquid Glass';

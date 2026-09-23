@@ -2,7 +2,6 @@ import '../models/course.dart';
 import '../models/exam.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/progressive_blur_tuning.dart';
-import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import '../models/timetable_settings.dart';
 import '../utils/widget_course_accent.dart';
 import 'app_localizations.dart';
@@ -282,13 +281,6 @@ String appUpdateMirrorPresetDescription(
   AppUpdateMirrorPreset.ghproxyNet => ghproxyNetMirrorUrlPrefix,
   AppUpdateMirrorPreset.custom => l10n.appUpdateMirrorPresetCustomDescription,
 };
-
-String frostedGlassModeLabel(AppLocalizations l10n, FrostedGlassMode mode) =>
-    switch (mode) {
-      FrostedGlassMode.frosted => l10n.frostedGlassModeFrosted,
-      FrostedGlassMode.liquidGlass => l10n.frostedGlassModeLiquid,
-      FrostedGlassMode.gaussian => l10n.frostedGlassModeGaussian,
-    };
 
 String liquidGlassPresetLabel(
   AppLocalizations l10n,
