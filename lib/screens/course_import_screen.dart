@@ -1486,6 +1486,19 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
   }
 }
 
+/// 后台快捷导入的**整场**看门狗时长。
+///
+/// 为什么必须有整场这一层：整条链路（读宏 → 挂隐形网页 → 回放脚本 → 执行导入）
+/// 每一段都有自己的超时，但**没有一段管得住整场**；任何一条没报回来的路都会让
+/// 首页那颗药丸一直转下去（2026-09-22 真机：下拉的转圈一直显示、不消失）。
+/// 到点一律按失败收尾 —— 摘 Overlay（平台视图与脚本一起停）并提示去手动跑一遍，
+/// 走的还是"需要手动操作"那条既有出口。
+///
+/// 取值 120s：合法路径的最慢组合（页面就绪 20s + 单步轮询 15s + 执行导入 30s，
+/// 见 `WarehouseMacroReplayer` 与 `_importTimeout`）之上再留一档余量；正常流程
+/// 不会被它砍断。
+const Duration _kHomePullQuickImportSessionTimeout = Duration(seconds: 120);
+
 /// Runs warehouse quick import without showing the WebView login page.
 ///
 /// Equivalent to tapping the lightning icon on the warehouse import school list,
@@ -1548,12 +1561,15 @@ Future<bool> runHomePullWarehouseQuickImport(
   final completer = Completer<bool>();
   var sessionFinished = false;
   OverlayEntry? overlayEntry;
+  Timer? watchdog;
 
   void completeSession(bool success) {
     if (sessionFinished) {
       return;
     }
     sessionFinished = true;
+    watchdog?.cancel();
+    watchdog = null;
     overlayEntry?.remove();
     overlayEntry = null;
     if (!completer.isCompleted) {
@@ -1618,6 +1634,16 @@ Future<bool> runHomePullWarehouseQuickImport(
   );
 
   overlay.insert(overlayEntry!);
+  // 整场看门狗（见 [_kHomePullQuickImportSessionTimeout]）：到点按失败收尾，
+  // 摘掉 Overlay（平台视图与脚本一起停），并走"需要手动操作"那条既有出口提示。
+  // 正常收尾会把它取消，所以合法流程上它从不生效。
+  watchdog = Timer(_kHomePullQuickImportSessionTimeout, () {
+    if (sessionFinished) {
+      return;
+    }
+    completeSession(false);
+    onNeedsManualAction?.call();
+  });
   onCancelAvailable?.call(() => completeSession(false));
   return completer.future;
 }

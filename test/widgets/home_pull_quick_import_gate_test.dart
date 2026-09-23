@@ -38,6 +38,7 @@ void main() {
   Future<TimetableProvider> pumpHome({
     required WidgetTester tester,
     required HomeNavigationForm form,
+    bool autoFit = true,
   }) async {
     final provider = TimetableProvider(autoInitialize: false);
     await provider.updateTimetableSettings(
@@ -45,7 +46,7 @@ void main() {
         homeNavigationForm: form,
         glassDockActions: const ['week'],
         // 自适应节高：玻璃坞下网格 + 底部余量 = 可滚动的周课表。
-        timetableAutoFitSectionHeight: true,
+        timetableAutoFitSectionHeight: autoFit,
         homePullQuickImportEnabled: true,
       ),
     );
@@ -214,6 +215,78 @@ void main() {
     );
 
     await tester.pump(const Duration(milliseconds: 600));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('经典形态：手势收尾丢掉时看门狗把药丸收回（不许一直挂着）', (tester) async {
+    // 2026-09-22 真机：下拉那颗**进度圈**（本来就是"跟手填充、不旋转"）一直挂着，
+    // 不转也不消失。
+    //
+    // 复现的是"收尾丢掉了"：经典形态（无玻璃坞余量 ⇒ 没有纵向滚动体）走原始拖拽
+    // 探测器，而它只在**自己还在跟踪**的那次指针结束时收回。第二根手指落下会把它
+    // 的跟踪状态清掉，此后指针被系统 cancel（拉出通知栏 / 边缘返回 / 切应用）就
+    // 再没有任何人收回进度 —— 药丸停在半截，没有超时会救它。
+    //
+    // 看门狗判据不看驱动路：屏上手指清空而进度还没归零 ⇒ 这一轮收尾丢了 ⇒ 收回。
+    await pumpHome(
+      tester: tester,
+      form: HomeNavigationForm.classic,
+      autoFit: false,
+    );
+
+    final gesture = await tester.startGesture(tester.getCenter(weekScroll()));
+    await gesture.moveBy(const Offset(0, 30));
+    await gesture.moveBy(const Offset(0, 80));
+    await tester.pump();
+    expect(
+      find.byType(MiuixCircularProgressIndicator),
+      findsOneWidget,
+      reason: '前置条件：下拉已打开（进度圈挂着）',
+    );
+
+    // 第二根手指落下：探测器重置跟踪状态；随后两根指针都被系统取消。
+    final second = await tester.startGesture(
+      tester.getCenter(weekScroll()) + const Offset(60, 60),
+    );
+    await tester.pump();
+    await gesture.cancel();
+    await second.cancel();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 800));
+
+    expect(
+      find.byType(MiuixCircularProgressIndicator),
+      findsNothing,
+      reason: '屏幕上一根手指都没有了，进度必须被收回（修复前它一直挂着）',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('经典形态：拉到阈值抬手照常触发（看门狗不能把触发判定吃掉）', (tester) async {
+    // 与上一条成对：看门狗管的是"收尾丢了就收回"，不是把功能取消掉。
+    // 这条钉：拉到阈值上方抬手，那一刻"够阈值 ⇒ 拉课表"的判定仍要完整走完 ——
+    // 药丸切到**不确定态**（progress == null，转圈），而不是被收回或停在进度态。
+    await pumpHome(
+      tester: tester,
+      form: HomeNavigationForm.classic,
+      autoFit: false,
+    );
+
+    await tester.drag(weekScroll(), const Offset(0, 200));
+    await tester.pump();
+
+    final indicator = tester.widget<MiuixCircularProgressIndicator>(
+      find.byType(MiuixCircularProgressIndicator),
+    );
+    expect(
+      indicator.progress,
+      isNull,
+      reason: '够阈值抬手必须真的进入"正在拉课表"的不确定态',
+    );
+
+    await tester.pump(const Duration(seconds: 2));
+    // ⚠️ 到这里不再断言"药丸消失"：测试环境里那次会话要读本地宏记录，
+    // 收尾时机不由这条用例说了算（会话的收尾口径另有 finally 与整场看门狗两层）。
     expect(tester.takeException(), isNull);
   });
 

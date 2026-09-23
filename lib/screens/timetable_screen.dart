@@ -11,7 +11,15 @@ import 'dart:math' as math;
 import 'package:university_timetable/widgets/open_container.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart'
-    show Drag, VelocityTracker, kMinFlingVelocity;
+    show
+        Drag,
+        GestureBinding,
+        PointerCancelEvent,
+        PointerDownEvent,
+        PointerEvent,
+        PointerUpEvent,
+        VelocityTracker,
+        kMinFlingVelocity;
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
@@ -422,6 +430,23 @@ class _TimetableScreenState extends State<TimetableScreen>
   int _homePullSettleGeneration = 0;
   bool _isHomePullQuickImportRunning = false;
   VoidCallback? _homePullQuickImportCancel;
+
+  /// 下拉进度看门狗的**全局指针登记**（见 [_onGlobalPointerEvent]）。
+  ///
+  /// 为什么需要一张全局表：下拉进度有两条驱动路（无滚动体时的原始拖拽探测器 /
+  /// 有滚动体时的"到顶 overscroll 通知"），两条路各自只在**自己看得见的那次
+  /// 指针结束**时把进度收回。而"结束"送不到的情形确实存在 —— 手势被系统抢走
+  /// （从屏幕顶往下拉出通知栏、边缘返回、切到别的应用）、指针被 cancel、
+  /// 页面重建把滚动体整块换掉。进度于是停在半截，那颗药丸是**进度圈**（本来就
+  /// 不转）、又没有任何超时兜底，就一直挂在首页上（2026-09-22 真机：下拉的
+  /// 转圈一直显示、不转也不消失）。
+  ///
+  /// 判据刻意**不依赖任何一条具体驱动路**，只依赖"屏幕上还有没有手指"这条
+  /// 事实：一根都不剩、而进度还没归零 ⇒ 这一轮手势的收尾丢了，当场收回。
+  /// （与首页那颗玻璃球的门控同一条思路：拿上游契约当判据，而不是逐个触发点
+  /// 打补丁 —— 新加一条驱动路也不会再漏。）
+  final Set<int> _homePullLivePointers = <int>{};
+
   double? _wallpaperTopLuminance;
 
   /// Luminance of the wallpaper band the weekday/date chrome bar sits over.
@@ -560,6 +585,11 @@ class _TimetableScreenState extends State<TimetableScreen>
         : null;
     _homePullSettleSpring = AnimationController.unbounded(vsync: this)
       ..addListener(_driveHomePullSettle);
+    // 下拉进度的收尾看门狗：全局指针路由（事件先到这里，再走命中派发），
+    // 与下拉当前由哪条路驱动无关。见 [_homePullLivePointers]。
+    GestureBinding.instance.pointerRouter.addGlobalRoute(
+      _onGlobalPointerEvent,
+    );
     _restoreViewStateFromProvider(provider);
     if (widget.enableUpdateCheck) {
       _checkForAppUpdate(
@@ -577,6 +607,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       _onExternalCoupleOverlayRequest,
     );
     _homePullQuickImportCancel?.call();
+    GestureBinding.instance.pointerRouter.removeGlobalRoute(
+      _onGlobalPointerEvent,
+    );
     _homeDownloadController?.cancel();
     _systemDownloadSubscription?.cancel();
     _updatePromptController.dispose();
@@ -3392,6 +3425,44 @@ class _TimetableScreenState extends State<TimetableScreen>
   void _cancelHomePullDrag() {
     _homePullSettleTo(0);
     _homePullHapticArmed = true;
+  }
+
+  /// 全局指针登记（[GestureBinding.pointerRouter] 的全局路由：同一事件先到这里，
+  /// 再走命中派发）。只做两件事：登记 / 注销指针；最后一根手指离开屏幕时错开
+  /// 这一轮派发做一次兜底收回（[_retractOrphanedHomePull]）。
+  ///
+  /// ⚠️ 兜底必须错开：正常路径的收尾（滚动到顶那条路的 `ScrollEndNotification`
+  /// → [_finishHomePullDrag] 里"够阈值就拉课表"的判定）就在同一批**同步**处理里。
+  /// 抢在它前面收回会把那次触发吃掉（用户拉到阈值上方抬手，却什么都没发生）。
+  /// 微任务排在事件派发结束之后，判定已经走完。
+  void _onGlobalPointerEvent(PointerEvent event) {
+    if (event is PointerDownEvent) {
+      _homePullLivePointers.add(event.pointer);
+      return;
+    }
+    if (event is! PointerUpEvent && event is! PointerCancelEvent) {
+      return;
+    }
+    _homePullLivePointers.remove(event.pointer);
+    if (_homePullLivePointers.isNotEmpty) {
+      return;
+    }
+    scheduleMicrotask(_retractOrphanedHomePull);
+  }
+
+  /// 看门狗本体：屏上已经没有手指、也不在拉课表，而进度还没归零 ⇒ 这一轮手势
+  /// 的收尾丢了，收回。
+  ///
+  /// 与正常收尾**幂等**：正常路径已经把它拨向 0，这里最多再把弹簧重拨一次
+  /// （目标相同），不会打架；真处于"收尾丢了"的状态才是唯一有效的那一次。
+  void _retractOrphanedHomePull() {
+    if (!mounted || _isHomePullQuickImportRunning) {
+      return;
+    }
+    if (_homePullDragDistance <= 0 && _homePullTouchDistance <= 0) {
+      return;
+    }
+    _homePullSettleTo(0);
   }
 
   // --- Home pull spring helpers (HyperOS critical-damped, period 0.4s) ---
