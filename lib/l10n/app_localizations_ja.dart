@@ -6417,7 +6417,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get guideVisualEffectSoftDesc => 'やわらかなフロストガラス。軽く繊細で、リキッドより省電力';
 
   @override
-  String get guideVisualEffectLiquidDesc => 'リキッドグラスの屈折で質感をプラス（消費電力やや増）';
+  String get guideVisualEffectLiquidDesc => 'リキッドグラスの屈折で質感をプラス';
 
   @override
   String get guideVisualEffectSolidDesc => 'ぼかしを使用しない、最も高いパフォーマンス';

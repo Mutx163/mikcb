@@ -3632,7 +3632,7 @@
   "guidePersonalizeVisualEffectSolid": "Solid cards",
   "guideVisualEffectGaussianDesc": "Live gaussian blur behind surfaces — layered and translucent",
   "guideVisualEffectSoftDesc": "Soft frosted glass — light and refined, cheaper than liquid",
-  "guideVisualEffectLiquidDesc": "Liquid glass refraction with extra depth (slightly higher power use)",
+  "guideVisualEffectLiquidDesc": "Liquid glass refraction with extra depth",
   "guideVisualEffectSolidDesc": "No blur effects — best performance",
   "guidePersonalizeThemeModeTitle": "Theme mode",
   "guidePersonalizeSeedColorTitle": "Accent color",

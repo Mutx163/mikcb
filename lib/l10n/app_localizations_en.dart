@@ -6687,7 +6687,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideVisualEffectLiquidDesc =>
-      'Liquid glass refraction with extra depth (slightly higher power use)';
+      'Liquid glass refraction with extra depth';
 
   @override
   String get guideVisualEffectSolidDesc => 'No blur effects — best performance';

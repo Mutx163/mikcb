@@ -11540,7 +11540,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideVisualEffectLiquidDesc.
   ///
   /// In zh, this message translates to:
-  /// **'液态玻璃折射，更具质感（功耗略高）'**
+  /// **'液态玻璃折射，更具质感'**
   String get guideVisualEffectLiquidDesc;
 
   /// No description provided for @guideVisualEffectSolidDesc.

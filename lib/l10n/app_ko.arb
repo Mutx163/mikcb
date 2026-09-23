@@ -3393,7 +3393,7 @@
   "guidePersonalizeVisualEffectSolid": "솔리드 카드",
   "guideVisualEffectGaussianDesc": "배경에 실시간 가우시안 블러로 깊이감 있는 투명 효과",
   "guideVisualEffectSoftDesc": "부드러운 프로스트 유리. 가볍고 정교하며 리퀴드보다 효율적",
-  "guideVisualEffectLiquidDesc": "리퀴드 글래스 굴절로 질감을 더함 (배터리 소모 약간 증가)",
+  "guideVisualEffectLiquidDesc": "리퀴드 글래스 굴절로 질감을 더함",
   "guideVisualEffectSolidDesc": "블러 없음 — 최고의 성능",
   "guidePersonalizeThemeModeTitle": "테마 모드",
   "guidePersonalizeSeedColorTitle": "테마 색상",

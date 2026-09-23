@@ -6453,7 +6453,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guideVisualEffectSoftDesc => '부드러운 프로스트 유리. 가볍고 정교하며 리퀴드보다 효율적';
 
   @override
-  String get guideVisualEffectLiquidDesc => '리퀴드 글래스 굴절로 질감을 더함 (배터리 소모 약간 증가)';
+  String get guideVisualEffectLiquidDesc => '리퀴드 글래스 굴절로 질감을 더함';
 
   @override
   String get guideVisualEffectSolidDesc => '블러 없음 — 최고의 성능';

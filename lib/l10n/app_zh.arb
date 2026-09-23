@@ -3669,7 +3669,7 @@
   "guidePersonalizeVisualEffectSolid": "实体卡片",
   "guideVisualEffectGaussianDesc": "背景实时高斯模糊，通透有层次",
   "guideVisualEffectSoftDesc": "雾面柔光玻璃，轻盈细腻（比液态更省电）",
-  "guideVisualEffectLiquidDesc": "液态玻璃折射，更具质感（功耗略高）",
+  "guideVisualEffectLiquidDesc": "液态玻璃折射，更具质感",
   "guideVisualEffectSolidDesc": "不启用模糊效果，性能最好",
   "guidePersonalizeThemeModeTitle": "深浅色模式",
   "guidePersonalizeSeedColorTitle": "主题色",

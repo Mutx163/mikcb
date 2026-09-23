@@ -3393,7 +3393,7 @@
   "guidePersonalizeVisualEffectSolid": "ソリッドカード",
   "guideVisualEffectGaussianDesc": "背景をリアルタイムにぼかし、透明感と奥行きを演出",
   "guideVisualEffectSoftDesc": "やわらかなフロストガラス。軽く繊細で、リキッドより省電力",
-  "guideVisualEffectLiquidDesc": "リキッドグラスの屈折で質感をプラス（消費電力やや増）",
+  "guideVisualEffectLiquidDesc": "リキッドグラスの屈折で質感をプラス",
   "guideVisualEffectSolidDesc": "ぼかしを使用しない、最も高いパフォーマンス",
   "guidePersonalizeThemeModeTitle": "テーマモード",
   "guidePersonalizeSeedColorTitle": "テーマカラー",

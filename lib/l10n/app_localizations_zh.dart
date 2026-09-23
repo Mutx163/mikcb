@@ -6300,7 +6300,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guideVisualEffectSoftDesc => '雾面柔光玻璃，轻盈细腻（比液态更省电）';
 
   @override
-  String get guideVisualEffectLiquidDesc => '液态玻璃折射，更具质感（功耗略高）';
+  String get guideVisualEffectLiquidDesc => '液态玻璃折射，更具质感';
 
   @override
   String get guideVisualEffectSolidDesc => '不启用模糊效果，性能最好';
@@ -17410,7 +17410,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guideVisualEffectSoftDesc => '霧面柔光玻璃，輕盈細膩（比液態更省電）';
 
   @override
-  String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感（功耗略高）';
+  String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感';
 
   @override
   String get guideVisualEffectSolidDesc => '不啟用模糊效果，效能最佳';
@@ -28564,7 +28564,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guideVisualEffectSoftDesc => '霧面柔光玻璃，輕盈細膩（比液態更省電）';
 
   @override
-  String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感（功耗略高）';
+  String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感';
 
   @override
   String get guideVisualEffectSolidDesc => '不啟用模糊效果，效能最佳';
