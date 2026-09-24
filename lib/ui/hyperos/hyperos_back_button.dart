@@ -69,6 +69,16 @@ import 'liquid/liquid_glass_surface.dart';
 ///
 /// 没有 tooltip / semantics label：原先那颗也没有，加中文文案会带出一批 l10n 改动，
 /// 等真要给无障碍标签时再一起做。
+///
+/// ## 外浮影跟着圆底走（2026-09-23）
+///
+/// 圆底在显影时垫一圈**同源**外浮影（[HyperosGlassShadow.shadow]，与首页球、
+/// 弹窗、实底兜底同一处定义 —— 固定小件的观感参数不开单件口子）；停在页顶的
+/// 光箭头不带。原先实底兜底自己带阴影而玻璃分支没有，两支不同源 —— 现在
+/// 浮影上提到按钮层，玻璃 / 兜底两支共用一份。
+///
+/// 垫影的 [Stack] 必须 `Clip.none`：阴影画在 44×44 之外，默认裁剪会整圈切掉
+/// （上游 `MiuixGlassIconButton` 自己那层阴影同样因此开 `Clip.none`）。
 class HyperosBackButton extends StatelessWidget {
   const HyperosBackButton({super.key, required this.onPressed});
 
@@ -81,8 +91,22 @@ class HyperosBackButton extends StatelessWidget {
     // [HyperosSubpage]（StatelessWidget）跟着重建。
     final contentUnder = HyperosBlurredHeaderScope.contentUnderHeaderOf(context);
     return Stack(
+      // 外浮影越出按钮自身的 44×44，默认裁剪会把整圈阴影切没，见类注释。
+      clipBehavior: Clip.none,
       children: [
-        if (contentUnder)
+        if (contentUnder) ...[
+          // 外浮影垫在玻璃之下：玻璃 / 实底兜底两支共用（见类注释）。
+          // key 供测试精确钉这一份 —— 实底兜底在测试环境里会渲染，谓词类
+          // 匹配分不清"兜底自带的"与"按钮层垫的"。
+          const Positioned.fill(
+            child: DecoratedBox(
+              key: ValueKey('hyperos-back-button-shadow'),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [HyperosGlassShadow.shadow],
+              ),
+            ),
+          ),
           Positioned.fill(
             child: LayoutBuilder(
               builder: (context, constraints) => LiquidGlassSurface(
@@ -98,7 +122,8 @@ class HyperosBackButton extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: HyperosColors.surfaceContainer(fallbackContext),
-                    boxShadow: const [HyperosGlassShadow.shadow],
+                    // 浮影不再在这里画：按钮层统一垫（见 [HyperosGlassShadow]），
+                    // 两支各画一份会叠成双层影。
                   ),
                   child: const SizedBox.expand(),
                 ),
@@ -106,6 +131,7 @@ class HyperosBackButton extends StatelessWidget {
               ),
             ),
           ),
+        ],
         // 图标 / 命中区 / 按压缩放都由它给；它自己的材质层用 surfaceAlpha 关掉。
         MiuixGlassIconButton(
           onPressed: onPressed,

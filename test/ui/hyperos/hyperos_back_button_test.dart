@@ -50,6 +50,10 @@ void main() {
     matching: find.byType(LiquidGlassSurface),
   );
 
+  /// 外浮影：按钮层统一垫的那一份（key 精确钉住）。实底兜底在测试环境里会
+  /// 渲染且旧版自带阴影 —— 谓词类匹配分不清两者，所以用 key。
+  Finder backShadow() => find.byKey(const ValueKey('hyperos-back-button-shadow'));
+
   testWidgets('subpage nav icon is the upstream circular glass back button', (
     WidgetTester tester,
   ) async {
@@ -74,8 +78,9 @@ void main() {
       'the header', (WidgetTester tester) async {
     await pumpSubpage(tester, onBack: () {}, rows: 20);
 
-    // 停在页顶：没有圆底，只有一根箭头。
+    // 停在页顶：没有圆底，也没有浮影 —— 光箭头不带阴影（用户口径 2026-09-23）。
     expect(glassCircle(), findsNothing);
+    expect(backShadow(), findsNothing);
 
     final scrollable = find.descendant(
       of: find.byType(HyperosListView),
@@ -105,6 +110,9 @@ void main() {
       reason: '边缘不外推采样：标准档那 8dp 位移会让最外一圈读到圆外约 8dp 处的内容，'
           '圆钮顶到带顶只有 4dp，于是顶部读成一条暗弧（真机口径 2026-09-21）',
     );
+    // 圆底在显影：垫一圈**同源**浮影（与首页球 / 弹窗同一处定义），用户口径
+    // 「圈圈显示的时候加一点点阴影」——不多垫、也不在玻璃兜底里各画一份。
+    expect(backShadow(), findsOneWidget);
     // 上游那层材质始终不画，圆底只由我们的玻璃负责。
     expect(surfaceAlphaOf(tester), 0);
 
@@ -113,6 +121,7 @@ void main() {
     await tester.pump();
 
     expect(glassCircle(), findsNothing);
+    expect(backShadow(), findsNothing, reason: '圆底收回，浮影也跟着收');
     expect(find.byType(MiuixGlassIconButton), findsOneWidget);
   });
 
