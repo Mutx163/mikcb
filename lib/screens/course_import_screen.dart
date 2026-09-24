@@ -5317,10 +5317,6 @@ $kWarehouseBridgeCompatShim  try {
         preserveLocalColors: preserveLocalColors,
       );
       _debugImportLog('importParsedCourses done importedCount=$importedCount');
-      if (widget.runInBackground) {
-        // 即使取消时 Overlay 已经卸载，也要等真实写入结束后再报告结果。
-        widget.onBackgroundFinished?.call(true);
-      }
       if (!mounted) {
         return;
       }
