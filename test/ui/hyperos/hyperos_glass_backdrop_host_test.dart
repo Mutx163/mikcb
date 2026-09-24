@@ -24,13 +24,7 @@ void main() {
     home: HyperosGlassBackdropHost(controller: controller, child: child),
   );
 
-  testWidgets(
-    '本屏恢复（TickerMode 转真）后必须重新解析采样源，不停在旧的',
-    // 待重挂目标：这条钉的是柔光面（已随材质退场删除）的 TickerMode 门控；
-    // 换成磨砂面后「被盖住的屏仍占采样名额」，说明该门控没长在磨砂面上 ——
-    // 要么给 StableFrostedSurface 补同款门控，要么把这条钉改到还生效的表面上。
-    skip: true,
-    (tester) async {
+  testWidgets('本屏恢复（TickerMode 转真）后必须重新解析采样源，不停在旧的', (tester) async {
     // 场景：页面 push 后被盖住（OverlayEntry 会关掉 TickerMode）；pop 回来时页面
     // widget 是缓存的、**不会重建** —— 只剩 TickerMode 依赖能触发重新解析。
     // 没有这一步，采样源就永远停在被盖住前的那个上，回来时玻璃只剩半套材质、
@@ -103,11 +97,7 @@ void main() {
     live.value = true;
     await tester.pumpAndSettle();
 
-    expect(
-      home.zones,
-      isNotEmpty,
-      reason: '恢复后必须重新解析回本屏采样源（否则回来只剩半套材质）',
-    );
+    expect(home.zones, isNotEmpty, reason: '恢复后必须重新解析回本屏采样源（否则回来只剩半套材质）');
     // 重新绑上之后要再录一帧：重绑发生在布局阶段，录帧排在帧末。
     await tester.pump(const Duration(milliseconds: 32));
     for (final zone in home.zones) {
@@ -132,11 +122,7 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(controller.capturing, isTrue);
-    expect(
-      controller.backdrop.snapshot,
-      isNotNull,
-      reason: '开启录帧后当帧末应写入一张快照',
-    );
+    expect(controller.backdrop.snapshot, isNotNull, reason: '开启录帧后当帧末应写入一张快照');
 
     controller.acquire();
     controller.release();
@@ -186,7 +172,9 @@ void main() {
       ),
     );
 
-    final nearBox = tester.renderObject<RenderBox>(find.byKey(const Key('near')));
+    final nearBox = tester.renderObject<RenderBox>(
+      find.byKey(const Key('near')),
+    );
     final farBox = tester.renderObject<RenderBox>(find.byKey(const Key('far')));
 
     controller.acquireZone(nearBox, HyperosZoneBackdrop());
@@ -256,7 +244,8 @@ void main() {
           child: SizedBox(
             width: 320,
             height: 200,
-            child: StableFrostedSurface(cornerRadius: 16,
+            child: StableFrostedSurface(
+              cornerRadius: 16,
               child: SizedBox.expand(),
             ),
           ),
@@ -292,7 +281,10 @@ void main() {
           children: <Widget>[
             SizedBox.expand(),
             // 兄弟子树里的玻璃表面：靠注册表拿到同一份采样源。
-            StableFrostedSurface(cornerRadius: 16, child: SizedBox(width: 80, height: 40)),
+            StableFrostedSurface(
+              cornerRadius: 16,
+              child: SizedBox(width: 80, height: 40),
+            ),
           ],
         ),
       ),
@@ -303,9 +295,7 @@ void main() {
     expect(controller.capturing, isTrue, reason: '表面挂载即请求录帧');
   });
 
-  testWidgets('被 TickerMode 停掉的屏不占注册表栈顶（菜单不会再采到空 backdrop）', (
-    tester,
-  ) async {
+  testWidgets('被 TickerMode 停掉的屏不占注册表栈顶（菜单不会再采到空 backdrop）', (tester) async {
     final first = HyperosGlassBackdropController();
     final second = HyperosGlassBackdropController();
     addTearDown(first.dispose);
@@ -435,20 +425,12 @@ void main() {
 
     await tester.pumpWidget(tree(withMenu: true));
     await tester.pumpAndSettle();
-    expect(
-      controller.capturing,
-      isTrue,
-      reason: '菜单展开期间应当持有录帧',
-    );
+    expect(controller.capturing, isTrue, reason: '菜单展开期间应当持有录帧');
 
     // 菜单在 show: true 状态下被整体摘掉（宿主页结构变化、页面卸载等）。
     await tester.pumpWidget(tree(withMenu: false));
     await tester.pumpAndSettle();
-    expect(
-      controller.capturing,
-      isFalse,
-      reason: '菜单卸载时必须归还录帧，否则宿主页一直白录帧',
-    );
+    expect(controller.capturing, isFalse, reason: '菜单卸载时必须归还录帧，否则宿主页一直白录帧');
   });
 
   testWidgets('玻璃在捕获子树内也不会自激重绘（静止后不再排帧）', (tester) async {
@@ -468,7 +450,10 @@ void main() {
               child: SizedBox(
                 width: 240,
                 height: 60,
-                child: StableFrostedSurface(cornerRadius: 16, child: SizedBox.expand()),
+                child: StableFrostedSurface(
+                  cornerRadius: 16,
+                  child: SizedBox.expand(),
+                ),
               ),
             ),
           ],
@@ -482,11 +467,7 @@ void main() {
 
     expect(controller.capturing, isTrue);
     expect(controller.zones, isNotEmpty, reason: '玻璃要登记自己占哪一块');
-    expect(
-      controller.zones.first.image,
-      isNotNull,
-      reason: '采样源要真的录到快照',
-    );
+    expect(controller.zones.first.image, isNotNull, reason: '采样源要真的录到快照');
     expect(
       tester.binding.hasScheduledFrame,
       isFalse,
@@ -513,7 +494,10 @@ void main() {
               child: SizedBox(
                 width: 200,
                 height: 60,
-                child: StableFrostedSurface(cornerRadius: 16, child: SizedBox.expand()),
+                child: StableFrostedSurface(
+                  cornerRadius: 16,
+                  child: SizedBox.expand(),
+                ),
               ),
             ),
           ],
@@ -528,11 +512,7 @@ void main() {
     final dpr = tester.view.devicePixelRatio;
     final full = 400 * dpr * 800 * dpr;
     final captured = image.width * image.height;
-    expect(
-      captured,
-      lessThan(full * 0.4),
-      reason: '快照面积必须远小于整屏（贴在玻璃那条窄带上）',
-    );
+    expect(captured, lessThan(full * 0.4), reason: '快照面积必须远小于整屏（贴在玻璃那条窄带上）');
     expect(image.height, lessThan((800 * dpr * 0.6).round()));
   });
 
@@ -558,7 +538,10 @@ void main() {
               child: SizedBox(
                 width: 200,
                 height: 60,
-                child: StableFrostedSurface(cornerRadius: 16, child: SizedBox.expand()),
+                child: StableFrostedSurface(
+                  cornerRadius: 16,
+                  child: SizedBox.expand(),
+                ),
               ),
             ),
           ],
@@ -598,11 +581,7 @@ void main() {
       closeTo(400, 1.0),
       reason: '还原出的逻辑宽度仍等于屏宽',
     );
-    expect(
-      plain.snapshot!.width,
-      lessThan(400 * dpr),
-      reason: '不再按 dpr 出整屏像素',
-    );
+    expect(plain.snapshot!.width, lessThan(400 * dpr), reason: '不再按 dpr 出整屏像素');
   });
 
   testWidgets('分块满员时并入「最近」的一块，不把采样矩形撑成整屏高', (tester) async {
@@ -653,11 +632,7 @@ void main() {
     for (final zone in controller.zones) {
       final rect = controller.captureRectOf(zone);
       expect(rect, isNotNull);
-      expect(
-        rect!.height,
-        lessThan(800),
-        reason: '不相邻的玻璃不能并进同一块，否则采样矩形退化成整屏',
-      );
+      expect(rect!.height, lessThan(800), reason: '不相邻的玻璃不能并进同一块，否则采样矩形退化成整屏');
     }
   });
 
@@ -700,11 +675,7 @@ void main() {
     );
 
     expect(reads, isNotEmpty, reason: '探针至少要画过一帧');
-    expect(
-      reads.first,
-      isTrue,
-      reason: '首帧就该读到快照，否则玻璃会先画一块平的、下一帧才变玻璃',
-    );
+    expect(reads.first, isTrue, reason: '首帧就该读到快照，否则玻璃会先画一块平的、下一帧才变玻璃');
   });
 
   // 上游 `MiuixGlass` 契约（flutter_miuix 1.2.0 miuix_glass.dart:54）：
@@ -734,7 +705,10 @@ void main() {
                 child: SizedBox(
                   width: 200,
                   height: 60,
-                  child: StableFrostedSurface(cornerRadius: 16, child: SizedBox.expand()),
+                  child: StableFrostedSurface(
+                    cornerRadius: 16,
+                    child: SizedBox.expand(),
+                  ),
                 ),
               ),
             ],

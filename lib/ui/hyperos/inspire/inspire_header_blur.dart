@@ -198,6 +198,9 @@ class InspireHeaderBlur extends StatelessWidget {
 
     final band = Stack(
       fit: StackFit.passthrough,
+      // Positioned bottom=-overhang 的模糊/衬底层要越过原始带高；
+      // 内层 Stack 默认会在自身尺寸处裁掉那一截，外层扩展裁剪框也救不回来。
+      clipBehavior: Clip.none,
       children: [
         if (useBlur)
           _bandLayer(
@@ -220,10 +223,7 @@ class InspireHeaderBlur extends StatelessWidget {
     }
     // 默认 ClipRect 按自身尺寸裁剪，会把下沿那一截切掉 —— 这里把裁剪框往下
     // 放到带底（左右与上方仍是原框），其余行为不变。
-    return ClipRect(
-      clipper: _BandOverhangClipper(bottomOverhang),
-      child: band,
-    );
+    return ClipRect(clipper: _BandOverhangClipper(bottomOverhang), child: band);
   }
 }
 

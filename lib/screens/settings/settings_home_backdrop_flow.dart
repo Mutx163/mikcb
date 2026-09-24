@@ -47,7 +47,12 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
       return push();
     }
     final closed = Completer<void>();
-    close(afterDismiss: closed.complete);
+    close(
+      afterDismiss: closed.complete,
+      // 退场期间若已有更新路由压上来，旧面板不能再推整页；但等待方仍要结束，
+      // 不能让这个 Future 永远挂起。
+      onSuperseded: closed.complete,
+    );
     await closed.future;
     if (!mounted) {
       return null;
@@ -73,9 +78,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
 
   @override
   void dispose() {
-    WallpaperHistoryService.notifier.removeListener(
-      _onWallpaperHistoryChanged,
-    );
+    WallpaperHistoryService.notifier.removeListener(_onWallpaperHistoryChanged);
     super.dispose();
   }
 
@@ -159,9 +162,9 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 历史全局、壁纸每个课表各自一张，"被历史淘汰"因此不等于"没人用"；草稿里刚
   /// 选中的那张也还没落盘，同样要护住（见 [deleteEvictedWallpaperFiles]）。
   Set<String> _inUseWallpaperPaths() => <String>{
-    ...inUseWallpaperPaths(
-      [for (final profile in backdropProvider.profiles) profile.settings],
-    ),
+    ...inUseWallpaperPaths([
+      for (final profile in backdropProvider.profiles) profile.settings,
+    ]),
     ?resolveHomePageBackdropImagePath(backdropDraft),
   };
 

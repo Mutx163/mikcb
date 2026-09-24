@@ -38,7 +38,9 @@ void main() {
       TestApp(
         home: hyperosMiuixBottomSheetSurface(
           hostContext,
-          const MiuixGlassShape(cornerRadius: hyperosMiuixBottomSheetCornerRadius),
+          const MiuixGlassShape(
+            cornerRadius: hyperosMiuixBottomSheetCornerRadius,
+          ),
           const SizedBox(width: 100, height: 100),
         ),
       ),
@@ -53,7 +55,11 @@ void main() {
       isTrue,
       reason: '弹窗的蒙层画在面板之前，不进共享组捕获就会把蒙层折进玻璃里',
     );
-    expect(glass.surfaceShadow, isFalse, reason: '浮影由注入面在 ClipRRect 外面自己衬（见下一条），玻璃面自己那层要关掉，否则叠两层');
+    expect(
+      glass.surfaceShadow,
+      isFalse,
+      reason: '浮影由注入面在 ClipRRect 外面自己衬（见下一条），玻璃面自己那层要关掉，否则叠两层',
+    );
   });
 
   testWidgets('注入面：衬一层与右上角菜单弹窗**同源**的浮影（画在裁剪之外）', (tester) async {
@@ -88,8 +94,9 @@ void main() {
       (w) =>
           w is DecoratedBox &&
           w.decoration is BoxDecoration &&
-          ((w.decoration as BoxDecoration).boxShadow ?? const [])
-              .contains(HyperosGlassShadow.shadow),
+          ((w.decoration as BoxDecoration).boxShadow ?? const []).contains(
+            HyperosGlassShadow.shadow,
+          ),
     );
     expect(
       shadowBoxes,
@@ -106,11 +113,7 @@ void main() {
           )
           .first,
     );
-    expect(
-      shadowRect,
-      clipRect,
-      reason: '浮影矩形应当与面板轮廓一致（浮影靠 blur 溢到轮廓外）',
-    );
+    expect(shadowRect, clipRect, reason: '浮影矩形应当与面板轮廓一致（浮影靠 blur 溢到轮廓外）');
   });
 
   testWidgets('注入面：裁剪曲线与材质同源，只有底边外溢', (tester) async {
@@ -211,7 +214,11 @@ void main() {
       reason:
           '上沿压在裁剪线上，朝外位移会读空成暗线；要改这个值先读 miuix_bottom_sheet.dart 的「上沿那条线」第十五轮',
     );
-    expect(hyperosMiuixBottomSheetMaxRefraction, 0, reason: '留一点位移就留一点暗线（可采余量就是 0）');
+    expect(
+      hyperosMiuixBottomSheetMaxRefraction,
+      0,
+      reason: '留一点位移就留一点暗线（可采余量就是 0）',
+    );
     expect(
       glassSurface.role,
       LiquidGlassRole.pinnedChrome,
@@ -341,7 +348,11 @@ void main() {
     await tester.tap(find.text('关闭'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(MiuixWindowBottomSheet), findsNothing, reason: '收起后路由也要摘掉');
+    expect(
+      find.byType(MiuixWindowBottomSheet),
+      findsNothing,
+      reason: '收起后路由也要摘掉',
+    );
     expect(
       afterDismissRan,
       isTrue,
@@ -567,5 +578,101 @@ void main() {
     );
     expect(find.text('弹窗1'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('旧弹窗被新弹窗压住时不再执行越级的 afterDismiss', (tester) async {
+    var opens = 0;
+    late BuildContext hostContext;
+
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) {
+            hostContext = context;
+            return Center(
+              child: TextButton(
+                onPressed: () {
+                  final index = ++opens;
+                  showMiuixBottomSheet<void>(
+                    context: context,
+                    builder: (sheetContext, close) => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('弹窗$index'),
+                        TextButton(
+                          onPressed: () {
+                            if (index == 1) {
+                              close(
+                                afterDismiss: () {
+                                  Navigator.of(hostContext).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) =>
+                                          const Scaffold(body: Text('旧回调页')),
+                                    ),
+                                  );
+                                },
+                              );
+                            } else {
+                              close();
+                            }
+                          },
+                          child: const Text('关闭'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                child: const Text('打开'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('关闭'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    await tester.tap(find.text('打开'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('弹窗2'), findsOneWidget);
+    expect(find.text('旧回调页'), findsNothing);
+  });
+
+  testWidgets('退场期间重复 close 会收齐每个 afterDismiss', (tester) async {
+    late MiuixBottomSheetClose close;
+    var firstRan = false;
+    var secondRan = false;
+
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showMiuixBottomSheet<void>(
+              context: context,
+              builder: (sheetContext, requestClose) {
+                close = requestClose;
+                return const SizedBox(height: 120);
+              },
+            ),
+            child: const Text('打开'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+    close(afterDismiss: () => firstRan = true);
+    close(afterDismiss: () => secondRan = true);
+    await tester.pumpAndSettle();
+
+    expect(firstRan, isTrue);
+    expect(secondRan, isTrue);
   });
 }

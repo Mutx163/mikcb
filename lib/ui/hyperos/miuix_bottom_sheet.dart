@@ -35,7 +35,11 @@ const double hyperosMiuixBottomSheetGlassBottomOverdraw = 9;
 ///
 /// [afterDismiss] 在**退场动画结束、面板真的消失之后**才执行 —— 「先关弹窗、
 /// 再开下一个页面 / sheet」一律走它，不要再靠固定延时猜动画时长。
-typedef MiuixBottomSheetClose = void Function({VoidCallback? afterDismiss});
+///
+/// 若退场期间已有更新弹窗压上来，旧承载壳不会执行 [afterDismiss]，避免旧动作
+/// 越过新弹层；需要结束等待的调用方改接 [onSuperseded]。
+typedef MiuixBottomSheetClose =
+    void Function({VoidCallback? afterDismiss, VoidCallback? onSuperseded});
 
 /// [showMiuixBottomSheet] 的 builder：内容 + 收起口子一起拿到。
 typedef MiuixBottomSheetBuilder =
@@ -188,16 +192,23 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
   /// 面板当前该不该在场：上游靠它驱动滑入 / 滑出。
   bool _visible = true;
 
-  /// 收起时要接着做的事（见 [MiuixBottomSheetClose]），退场只走一次，也就只被消费一次。
-  VoidCallback? _afterDismiss;
+  /// 收起时要接着做的事。退场期间可以再次 close；每次等待都必须被消费，
+  /// 不能因为 visible 已经为 false 就把后来的 afterDismiss 静默丢掉。
+  final List<(VoidCallback?, VoidCallback?)> _dismissCallbacks = [];
 
   bool _popped = false;
 
-  void _requestClose({VoidCallback? afterDismiss}) {
+  void _requestClose({VoidCallback? afterDismiss, VoidCallback? onSuperseded}) {
+    if (_popped) {
+      onSuperseded?.call();
+      return;
+    }
+    if (afterDismiss != null || onSuperseded != null) {
+      _dismissCallbacks.add((afterDismiss, onSuperseded));
+    }
     if (!_visible) {
       return;
     }
-    _afterDismiss = afterDismiss;
     setState(() => _visible = false);
   }
 
@@ -206,8 +217,8 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
       return;
     }
     _popped = true;
-    final afterDismiss = _afterDismiss;
-    _afterDismiss = null;
+    final dismissCallbacks = List.of(_dismissCallbacks);
+    _dismissCallbacks.clear();
     // 摘掉**自己这条**路由，按"上面有没有压别的东西"分两条路：
     //
     // · 上面没压别的（最常见的"关掉就完事"）：照旧 `pop()` —— 与改前一字不差。
@@ -225,17 +236,29 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
     // 判断与摘除之间没有 await，单线程事件循环里不会插进别的路由操作。
     final route = ModalRoute.of(context);
     if (route == null) {
+      _finishDismissCallbacks(dismissCallbacks, superseded: true);
       return;
     }
+    final wasCurrent = route.isCurrent;
     final navigator = Navigator.of(context);
-    if (route.isCurrent) {
+    if (wasCurrent) {
       navigator.pop();
     } else {
       navigator.removeRoute(route);
     }
     // 先摘路由，再跑后续动作：后续动作常常立刻 push 下一个页面 / sheet，
-    // 面板已经彻底消失，两者不会叠在一起。
-    afterDismiss?.call();
+    // 面板已经彻底消失，两者不会叠在一起。若上面已有新路由，旧动作不能越级执行；
+    // 需要结束等待的一方接 onSuperseded，避免 Future 永久挂住。
+    _finishDismissCallbacks(dismissCallbacks, superseded: !wasCurrent);
+  }
+
+  void _finishDismissCallbacks(
+    List<(VoidCallback?, VoidCallback?)> callbacks, {
+    required bool superseded,
+  }) {
+    for (final (afterDismiss, onSuperseded) in callbacks) {
+      (superseded ? onSuperseded : afterDismiss)?.call();
+    }
   }
 
   @override
@@ -419,11 +442,11 @@ Widget hyperosMiuixBottomSheetSurface(
       ),
       child: Stack(
         children: [
-        const Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: -hyperosMiuixBottomSheetGlassBottomOverdraw,
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: -hyperosMiuixBottomSheetGlassBottomOverdraw,
             child: HyperosSelectPopupGlass(
               cornerRadius: hyperosMiuixBottomSheetCornerRadius,
               useAncestorGroupCapture: true,

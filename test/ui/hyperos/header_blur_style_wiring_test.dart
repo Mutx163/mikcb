@@ -88,6 +88,19 @@ void main() {
     await tester.pump();
 
     expect(tester.getSize(find.byType(InspireHeaderBlur)).height, 56);
+    final bandStack = tester.widget<Stack>(
+      find
+          .descendant(
+            of: find.byType(InspireHeaderBlur),
+            matching: find.byType(Stack),
+          )
+          .first,
+    );
+    expect(
+      bandStack.clipBehavior,
+      Clip.none,
+      reason: '内层 Stack 不能把 bottomOverhang 多出的那一截裁掉',
+    );
     final tintLayer = find.descendant(
       of: find.byType(InspireHeaderBlur),
       matching: find.byType(DecoratedBox),

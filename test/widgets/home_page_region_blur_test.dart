@@ -82,6 +82,15 @@ void main() {
     expect(solid.homePageHeaderBlurEnabled, isTrue);
     expect(solid.homePageWeekdayBarBlurEnabled, isTrue);
     expect(homePageHasAnyChromeBlur(solid, hasBackdrop: true), isFalse);
+    expect(
+      homePageHeaderUsesFrostedChrome(
+        settings: solid,
+        hasBackdrop: true,
+        headerShowsBackdrop: true,
+      ),
+      isFalse,
+      reason: '实体顶栏必须画实体底色，不能只把标题栏设成透明',
+    );
   });
 
   test('顶栏材质还是玻璃档时口径不变', () {
@@ -258,22 +267,14 @@ void main() {
         refractionBand: LiquidGlassTuning.maxRefractionBand,
         rimWidth: LiquidGlassTuning.maxRimWidth,
       );
-      expect(
-        solid.top,
-        0,
-        reason: '实体档没有形状边界那套折射，撑大盒子只会把实心条推出可见区',
-      );
+      expect(solid.top, 0, reason: '实体档没有形状边界那套折射，撑大盒子只会把实心条推出可见区');
       expect(solid.bottom, 0, reason: '实体档没有形状边界那套折射');
       final frost = homePageChromeGlassVerticalOverhang(
         material: 'frost',
         refractionBand: LiquidGlassTuning.maxRefractionBand,
         rimWidth: LiquidGlassTuning.maxRimWidth,
       );
-      expect(
-        frost.top,
-        0,
-        reason: '磨砂带同样没有折射位移，不该被撑出可见区',
-      );
+      expect(frost.top, 0, reason: '磨砂带同样没有折射位移，不该被撑出可见区');
       expect(frost.bottom, 0);
     });
 
@@ -512,11 +513,7 @@ void main() {
       await tester.pumpAndSettle();
       final settled = wrappedPaints;
       await tester.pump(const Duration(milliseconds: 200));
-      expect(
-        wrappedPaints,
-        settled,
-        reason: '动画停住后不该再有额外重画（静止时零开销）',
-      );
+      expect(wrappedPaints, settled, reason: '动画停住后不该再有额外重画（静止时零开销）');
     });
   });
 }

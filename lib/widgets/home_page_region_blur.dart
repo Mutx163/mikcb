@@ -243,6 +243,22 @@ bool homePageHasAnyChromeBlur(
       settings.homePageWeekdayBarBlurEnabled;
 }
 
+/// Whether the real home header should keep a transparent/frosted background.
+///
+/// A solid home band must paint the resolved header color even when the
+/// wallpaper scope still says "header shows backdrop"; otherwise the title bar
+/// is transparent over the wallpaper with no solid fill behind it.
+bool homePageHeaderUsesFrostedChrome({
+  required TimetableSettings settings,
+  required bool hasBackdrop,
+  required bool headerShowsBackdrop,
+}) {
+  if (!hasBackdrop || settings.homeBandGlassMaterialEffective == 'solid') {
+    return false;
+  }
+  return headerShowsBackdrop || settings.homePageHeaderBlurEnabled;
+}
+
 /// 首页顶栏材质是否为高级材质（液态）——自带模糊，壁纸预模糊需要按折射/雾面
 /// 参数预热，玻璃带渲染也需要额外一帧稳定。
 ///

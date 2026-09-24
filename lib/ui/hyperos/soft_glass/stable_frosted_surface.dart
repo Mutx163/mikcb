@@ -67,7 +67,12 @@ class _StableFrostedSurfaceState extends State<StableFrostedSurface> {
   }
 
   void _bindController() {
-    final resolved = HyperosGlassBackdropRegistry.resolve(context);
+    // OverlayEntry 会把被盖住的路由关掉 TickerMode；暂停绘制的页面不应
+    // 继续登记采样区，否则它会占住当前栈顶并把旧背景带到新页面。
+    final live = TickerMode.valuesOf(context).enabled;
+    final resolved = live
+        ? HyperosGlassBackdropRegistry.resolve(context)
+        : null;
     // 已释放的宿主不再持有：它的 backdrop 图已 dispose，继续采样会踩到已释放的
     // ui.Image。
     final next = (resolved == null || resolved.disposed) ? null : resolved;
