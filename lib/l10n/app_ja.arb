@@ -4073,6 +4073,7 @@
   "serviceMsgImportFileUnrecognized": "Import failed. The file content could not be recognized.",
   "serviceMsgImportUseOverwriteForFullBackup": "This is a full data backup. Please import using overwrite current timetable.",
   "serviceMsgImportNoProfilesInBackup": "No recoverable timetables were found in the backup file.",
+  "serviceMsgImportRollbackIncomplete": "インポートに失敗しました。インポート前のデータを完全に復元できませんでした。再試行するか、デバイスの保存状態を確認してください。",
   "serviceMsgUnrecognizedMikcbDataFile": "Not a recognizable mikcb data file.",
   "serviceMsgMissingSettingsData": "Settings data is missing.",
   "serviceMsgUnrecognizedMikcbFullBackup": "Not a recognizable mikcb full backup file.",

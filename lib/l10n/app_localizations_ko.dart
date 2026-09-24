@@ -7572,6 +7572,10 @@ class AppLocalizationsKo extends AppLocalizations {
       'No recoverable timetables were found in the backup file.';
 
   @override
+  String get serviceMsgImportRollbackIncomplete =>
+      '가져오기에 실패했습니다. 가져오기 전 데이터를 완전히 복원하지 못했습니다. 다시 시도하거나 기기 저장 공간을 확인해 주세요.';
+
+  @override
   String get serviceMsgUnrecognizedMikcbDataFile =>
       'Not a recognizable mikcb data file.';
 

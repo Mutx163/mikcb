@@ -4347,6 +4347,7 @@
   "serviceMsgImportFileUnrecognized": "导入失败，文件内容无法识别",
   "serviceMsgImportUseOverwriteForFullBackup": "这是全部数据备份，请使用“覆盖当前课表”方式导入",
   "serviceMsgImportNoProfilesInBackup": "备份文件中没有可恢复的课表",
+  "serviceMsgImportRollbackIncomplete": "导入失败，导入前的数据未能完整恢复，请重试或检查设备存储",
   "serviceMsgUnrecognizedMikcbDataFile": "不是可识别的 mikcb 数据文件",
   "serviceMsgMissingSettingsData": "缺少设置数据",
   "serviceMsgUnrecognizedMikcbFullBackup": "不是可识别的 mikcb 全量备份文件",

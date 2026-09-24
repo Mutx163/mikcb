@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/utils/import_result_message.dart';
 import 'package:university_timetable/l10n/app_localizations_zh.dart';
+import 'package:university_timetable/l10n/service_message_localizer.dart';
 
 void main() {
   test('buildImportResultMessage appends warnings when no courses imported', () {
@@ -29,5 +30,16 @@ void main() {
       ),
       '${l10n.importUpdatedCount(3)}${l10n.aiWarningExtraSuffix(1)}',
     );
+  });
+
+  test('rollback incomplete reports recovery failure', () {
+    final l10n = AppLocalizationsZh();
+    final message = localizeServiceMessage(
+      l10n,
+      'import_rollback_incomplete',
+    );
+
+    expect(message, l10n.serviceMsgImportRollbackIncomplete);
+    expect(message, isNot(contains('文件有效')));
   });
 }

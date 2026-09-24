@@ -662,8 +662,15 @@ class TimetableProvider with ChangeNotifier {
   }
 
   /// Public entry for external apply paths (WebDAV) that must share the
-  /// timetable mutation gate with local / LAN writes.
-  Future<T> runMutationExclusive<T>(Future<T> Function() action) {
+  /// timetable mutation gate with local / LAN writes. Initialization writes
+  /// are drained before taking the lock; nested callers re-enter because their
+  /// outer entry has already crossed that boundary.
+  Future<T> runMutationExclusive<T>(Future<T> Function() action) async {
+    if (_mutationGate.isHeldByCurrentZone) {
+      return _runMutation(action);
+    }
+    await initialize();
+    await _waitForStartupBackgroundWrites();
     return _runMutation(action);
   }
 
@@ -3906,51 +3913,24 @@ class TimetableProvider with ChangeNotifier {
     preserveLocalColors: preserveLocalColors,
   );
 
-  Future<String?> importAppDataBackup(String content) async {
-    if (_mutationGate.isHeldByCurrentZone) {
-      return _runMutation(() => _timetableImportAppDataBackup(this, content));
-    }
-    await initialize();
-    await _waitForStartupBackgroundWrites();
-    return _runMutation(() => _timetableImportAppDataBackup(this, content));
-  }
+  Future<String?> importAppDataBackup(String content) =>
+      runMutationExclusive(() => _timetableImportAppDataBackup(this, content));
 
   Future<String?> importAppDataBackupAsNewProfile(
     String content, {
     String? profileName,
-  }) async {
-    if (_mutationGate.isHeldByCurrentZone) {
-      return _runMutation(
-        () => _timetableImportAppDataBackupAsNewProfile(
-          this,
-          content,
-          profileName: profileName,
-        ),
-      );
-    }
-    await initialize();
-    await _waitForStartupBackgroundWrites();
-    return _runMutation(
-      () => _timetableImportAppDataBackupAsNewProfile(
-        this,
-        content,
-        profileName: profileName,
-      ),
-    );
-  }
+  }) => runMutationExclusive(
+    () => _timetableImportAppDataBackupAsNewProfile(
+      this,
+      content,
+      profileName: profileName,
+    ),
+  );
 
-  Future<String?> importFullAppDataBackup(String content) async {
-    if (_mutationGate.isHeldByCurrentZone) {
-      return _runMutation(
+  Future<String?> importFullAppDataBackup(String content) =>
+      runMutationExclusive(
         () => _timetableImportFullAppDataBackup(this, content),
       );
-    }
-    await initialize();
-    await _waitForStartupBackgroundWrites();
-    return _runMutation(
-      () => _timetableImportFullAppDataBackup(this, content),
-    );
-  }
 
   Future<void> syncCurrentWeekWithSemesterStart() =>
       _runMutation(_syncCurrentWeekWithSemesterStartImpl);

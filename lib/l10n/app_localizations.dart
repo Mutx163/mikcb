@@ -13526,6 +13526,12 @@ abstract class AppLocalizations {
   /// **'备份文件中没有可恢复的课表'**
   String get serviceMsgImportNoProfilesInBackup;
 
+  /// No description provided for @serviceMsgImportRollbackIncomplete.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入失败，导入前的数据未能完整恢复，请重试或检查设备存储'**
+  String get serviceMsgImportRollbackIncomplete;
+
   /// No description provided for @serviceMsgUnrecognizedMikcbDataFile.
   ///
   /// In zh, this message translates to:

@@ -4558,6 +4558,11 @@ class _WarehouseAdapterWebLoginScreenState
   }
 
   void _startImportTimeout() {
+    if (widget.runInBackground && _backgroundWriteStarted) {
+      _debugImportLog('skip import timeout after background write started');
+      _cancelImportTimeout();
+      return;
+    }
     _notifyBackgroundProgress();
     _debugImportLog('start import timeout duration=$_importTimeout');
     _importTimeoutTimer?.cancel();
@@ -4565,7 +4570,11 @@ class _WarehouseAdapterWebLoginScreenState
       _debugImportLog(
         'import timeout fired mounted=$mounted shouldRun=${mounted && _isExecutingImport}',
       );
-      if (!mounted || !_isExecutingImport) return;
+      if (!mounted ||
+          !_isExecutingImport ||
+          (widget.runInBackground && _backgroundWriteStarted)) {
+        return;
+      }
       final waitingForMacroCourses =
           _isMacroReplay && _playbackState == PlaybackUiState.executingImport;
       final message = waitingForMacroCourses

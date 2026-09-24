@@ -7819,6 +7819,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'No recoverable timetables were found in the backup file.';
 
   @override
+  String get serviceMsgImportRollbackIncomplete =>
+      'Import failed because the previous data could not be fully restored. Please try again or check device storage.';
+
+  @override
   String get serviceMsgUnrecognizedMikcbDataFile =>
       'Not a recognizable mikcb data file.';
 

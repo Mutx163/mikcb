@@ -7398,6 +7398,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serviceMsgImportNoProfilesInBackup => '备份文件中没有可恢复的课表';
 
   @override
+  String get serviceMsgImportRollbackIncomplete =>
+      '导入失败，导入前的数据未能完整恢复，请重试或检查设备存储';
+
+  @override
   String get serviceMsgUnrecognizedMikcbDataFile => '不是可识别的 mikcb 数据文件';
 
   @override
@@ -18378,6 +18382,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get serviceMsgImportNoProfilesInBackup =>
       'No recoverable timetables were found in the backup file.';
+
+  @override
+  String get serviceMsgImportRollbackIncomplete =>
+      '匯入失敗，匯入前的資料未能完整還原，請重試或檢查裝置儲存空間';
 
   @override
   String get serviceMsgUnrecognizedMikcbDataFile =>
@@ -29402,6 +29410,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get serviceMsgImportNoProfilesInBackup =>
       'No recoverable timetables were found in the backup file.';
+
+  @override
+  String get serviceMsgImportRollbackIncomplete =>
+      '匯入失敗，匯入前的資料未能完整還原，請重試或檢查裝置儲存空間';
 
   @override
   String get serviceMsgUnrecognizedMikcbDataFile =>

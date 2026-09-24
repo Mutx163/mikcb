@@ -4074,6 +4074,7 @@
   "serviceMsgImportFileUnrecognized": "Import failed. The file content could not be recognized.",
   "serviceMsgImportUseOverwriteForFullBackup": "This is a full data backup. Please import using overwrite current timetable.",
   "serviceMsgImportNoProfilesInBackup": "No recoverable timetables were found in the backup file.",
+  "serviceMsgImportRollbackIncomplete": "匯入失敗，匯入前的資料未能完整還原，請重試或檢查裝置儲存空間",
   "serviceMsgUnrecognizedMikcbDataFile": "Not a recognizable mikcb data file.",
   "serviceMsgMissingSettingsData": "Settings data is missing.",
   "serviceMsgUnrecognizedMikcbFullBackup": "Not a recognizable mikcb full backup file.",
