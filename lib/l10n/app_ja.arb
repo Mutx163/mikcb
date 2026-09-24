@@ -5810,7 +5810,7 @@
   "settingsResetConfirmBodyTimetablePage": "時間割ページの密度・今週に戻るボタン・背景（壁紙の削除を含む）を初期値に戻します。",
   "settingsResetConfirmBodyAppearance": "テーマモード・フォント・テーマカラー・ガラス質感を初期値に戻します。",
   "settingsResetConfirmBodyHomeWidget": "ホームウィジェットの表示項目と外観を既定値に戻します。",
-  "settingsResetConfirmBodyHomeNavigation": "ボトムバー・メニュー・ホームタイトルの設定を既定値に戻します。",
+  "settingsResetConfirmBodyHomeNavigation": "ボトムバーとホームタイトルの設定を既定値に戻します。",
   "settingsResetDoneMessage": "設定がリセットされました",
   "timetablePageSettingsTitle": "時間割ページ",
   "timetablePageSectionDensity": "密度",

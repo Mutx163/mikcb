@@ -17998,7 +17998,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsResetConfirmBodyHomeNavigation.
   ///
   /// In zh, this message translates to:
-  /// **'将把底栏、菜单与首页标题设置恢复为默认值。'**
+  /// **'将把底栏与首页标题设置恢复为默认值。'**
   String get settingsResetConfirmBodyHomeNavigation;
 
   /// No description provided for @settingsResetDoneMessage.

@@ -89,6 +89,24 @@ void main() {
     );
   });
 
+  test('并发保存按调用顺序串行落盘', () async {
+    final first = TimetableSettings.defaults().copyWith(appLocaleTag: 'en');
+    final second = TimetableSettings.defaults().copyWith(appLocaleTag: 'ja');
+
+    await Future.wait([
+      AppGlobalSettingsService.syncFrom(first),
+      AppGlobalSettingsService.syncFrom(second),
+    ]);
+
+    final preferences = await SharedPreferences.getInstance();
+    final stored =
+        jsonDecode(
+              preferences.getString(AppGlobalSettingsService.preferenceKey)!,
+            )
+            as Map<String, dynamic>;
+    expect(stored['appLocaleTag'], 'ja');
+  });
+
   test('overlay 把清单里的键全部换成全局那份，其它键原样不动', () async {
     final global = customized();
     await seedGlobal(global);
@@ -137,7 +155,9 @@ void main() {
     expect(
       AppGlobalSettingsService.keys,
       isNot(
-        contains(anyOf('homePageHeaderBlurEnabled', 'homePageWeekdayBarBlurEnabled')),
+        contains(
+          anyOf('homePageHeaderBlurEnabled', 'homePageWeekdayBarBlurEnabled'),
+        ),
       ),
     );
   });
@@ -158,7 +178,9 @@ void main() {
       final a = profile('a', customized());
       final b = profile(
         'b',
-        TimetableSettings.defaults().copyWith(homeTitleStyle: HomeTitleStyle.brand),
+        TimetableSettings.defaults().copyWith(
+          homeTitleStyle: HomeTitleStyle.brand,
+        ),
       );
 
       await AppGlobalSettingsService.resolveInitial(
@@ -185,9 +207,11 @@ void main() {
 
       final preferences = await SharedPreferences.getInstance();
       expect(preferences.getBool(AppGlobalSettingsService.migratedKey), isTrue);
-      final stored = jsonDecode(
-        preferences.getString(AppGlobalSettingsService.preferenceKey)!,
-      ) as Map<String, dynamic>;
+      final stored =
+          jsonDecode(
+                preferences.getString(AppGlobalSettingsService.preferenceKey)!,
+              )
+              as Map<String, dynamic>;
       expect(stored['homeNavigationForm'], HomeNavigationForm.glassDock.value);
     });
 
@@ -278,15 +302,17 @@ void main() {
   test('syncFrom 内容没变时重复落盘结果一致（幂等）', () async {
     final global = customized();
     await seedGlobal(global);
-    final first = (await SharedPreferences.getInstance())
-        .getString(AppGlobalSettingsService.preferenceKey);
+    final first = (await SharedPreferences.getInstance()).getString(
+      AppGlobalSettingsService.preferenceKey,
+    );
 
     await seedGlobal(global);
     await seedGlobal(global);
 
     expect(
-      (await SharedPreferences.getInstance())
-          .getString(AppGlobalSettingsService.preferenceKey),
+      (await SharedPreferences.getInstance()).getString(
+        AppGlobalSettingsService.preferenceKey,
+      ),
       first,
     );
   });

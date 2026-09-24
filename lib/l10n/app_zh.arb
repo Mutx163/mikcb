@@ -6073,7 +6073,7 @@
   "settingsResetConfirmBodyTimetablePage": "将把课表页面的密度、回到当前周按钮、背景（含清除壁纸）恢复为默认值。",
   "settingsResetConfirmBodyAppearance": "将把主题模式、字体、主题色与玻璃质感恢复为默认值。",
   "settingsResetConfirmBodyHomeWidget": "将把桌面小组件的显示项与外观恢复为默认值。",
-  "settingsResetConfirmBodyHomeNavigation": "将把底栏、菜单与首页标题设置恢复为默认值。",
+  "settingsResetConfirmBodyHomeNavigation": "将把底栏与首页标题设置恢复为默认值。",
   "settingsResetDoneMessage": "设置已重置",
   "timetablePageSettingsTitle": "课表页面",
   "timetablePageSectionDensity": "密度",

@@ -6034,7 +6034,7 @@
   "settingsResetConfirmBodyTimetablePage": "Resets the timetable page density, the back-to-current-week button and the background (wallpaper included).",
   "settingsResetConfirmBodyAppearance": "Resets the theme mode, font, theme colour and the glass material.",
   "settingsResetConfirmBodyHomeWidget": "This resets home widget visibility and appearance to their defaults.",
-  "settingsResetConfirmBodyHomeNavigation": "This resets bottom bar, menu and home title settings to their defaults.",
+  "settingsResetConfirmBodyHomeNavigation": "This resets bottom bar and home title settings to their defaults.",
   "settingsResetDoneMessage": "Settings have been reset",
   "timetablePageSettingsTitle": "Timetable Page",
   "timetablePageSectionDensity": "Density",

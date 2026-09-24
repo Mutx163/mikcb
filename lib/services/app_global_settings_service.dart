@@ -103,15 +103,16 @@ class AppGlobalSettingsService {
   /// 进程内缓存。`_applyProfileState` 是同步方法，覆盖时读这里，不再等 I/O。
   static Map<String, dynamic> _cache = const <String, dynamic>{};
 
+  /// 所有全局设置写入共用一条串行链，避免旧请求晚到覆盖新请求。
+  static Future<void> _writeQueue = Future<void>.value();
+
   /// 当前全局那份（只读；测试与诊断用）。
   static Map<String, dynamic> get current => _cache;
 
   /// 从一份设置里抽出全局字段。
   static Map<String, dynamic> extract(TimetableSettings settings) {
     final json = settings.toJson();
-    return <String, dynamic>{
-      for (final key in keys) key: json[key],
-    };
+    return <String, dynamic>{for (final key in keys) key: json[key]};
   }
 
   /// 把全局那份盖到 [base] 上，返回该课表「应该看到」的设置。
@@ -158,10 +159,15 @@ class AppGlobalSettingsService {
       _cache = const <String, dynamic>{};
       return;
     }
-    _cache = extract(source.settings);
+    final next = extract(source.settings);
     try {
-      await _write(preferences, _cache);
-      await preferences.setBool(migratedKey, true);
+      if (!await _write(preferences, next)) {
+        throw StateError('app_global_settings_write_failed');
+      }
+      _cache = next;
+      if (!await preferences.setBool(migratedKey, true)) {
+        throw StateError('app_global_settings_migration_marker_failed');
+      }
     } catch (error, stackTrace) {
       // 迁移失败不能拖垮启动：标记还没置位，下次载入会再试一次。
       await AppLogService.instance.error(
@@ -178,14 +184,27 @@ class AppGlobalSettingsService {
   /// 挂在 `_persistActiveProfileState` 上，于是**所有**设置写路径（设置页、
   /// 主题应用与撤销、保存/改名/删除主题、按日期规则批量套用作息……）自动覆盖。
   /// 课程编辑这类与全局字段无关的落盘，因为内容没变，这里是一次内存比较。
-  static Future<void> syncFrom(TimetableSettings settings) async {
+  static Future<void> syncFrom(TimetableSettings settings) {
     final next = extract(settings);
+    if (_sameAsCache(next)) {
+      return Future<void>.value();
+    }
+    final operation = _writeQueue.then((_) => _writeAndCache(next));
+    // 一次失败不能堵死后续保存；但本次调用的 Future 仍把错误交给调用方。
+    _writeQueue = operation.then<void>((_) {}, onError: (Object _) {});
+    return operation;
+  }
+
+  static Future<void> _writeAndCache(Map<String, dynamic> next) async {
     if (_sameAsCache(next)) {
       return;
     }
-    _cache = next;
     final preferences = await SharedPreferences.getInstance();
-    await _write(preferences, next);
+    if (!await _write(preferences, next)) {
+      throw StateError('app_global_settings_write_failed');
+    }
+    // 只有平台确认写成功，才推进内存缓存；失败后下一次保存仍会重试。
+    _cache = next;
   }
 
   /// 外部快照导入（云同步 / 备份 / 局域网）之后，从导入进来的那份重新推导全局值。
@@ -208,6 +227,7 @@ class AppGlobalSettingsService {
   @visibleForTesting
   static void resetCacheForTest() {
     _cache = const <String, dynamic>{};
+    _writeQueue = Future<void>.value();
   }
 
   static TimetableProfile? _pickSourceProfile(
@@ -230,7 +250,7 @@ class AppGlobalSettingsService {
   static bool _sameAsCache(Map<String, dynamic> next) =>
       jsonEncode(next) == jsonEncode(_cache);
 
-  static Future<void> _write(
+  static Future<bool> _write(
     SharedPreferences preferences,
     Map<String, dynamic> value,
   ) => preferences.setString(preferenceKey, jsonEncode(value));
@@ -250,9 +270,7 @@ class AppGlobalSettingsService {
         return null;
       }
       final map = Map<String, dynamic>.from(decoded);
-      return <String, dynamic>{
-        for (final key in keys) key: map[key],
-      };
+      return <String, dynamic>{for (final key in keys) key: map[key]};
     } catch (_) {
       return null;
     }

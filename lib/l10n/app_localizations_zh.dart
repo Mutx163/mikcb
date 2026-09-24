@@ -9917,7 +9917,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsResetConfirmBodyHomeWidget => '将把桌面小组件的显示项与外观恢复为默认值。';
 
   @override
-  String get settingsResetConfirmBodyHomeNavigation => '将把底栏、菜单与首页标题设置恢复为默认值。';
+  String get settingsResetConfirmBodyHomeNavigation => '将把底栏与首页标题设置恢复为默认值。';
 
   @override
   String get settingsResetDoneMessage => '设置已重置';
@@ -20941,7 +20941,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get settingsResetConfirmBodyHomeWidget => '將把桌面小組件的顯示項目與外觀恢復為預設值。';
 
   @override
-  String get settingsResetConfirmBodyHomeNavigation => '將把底欄、選單與首頁標題設定恢復為預設值。';
+  String get settingsResetConfirmBodyHomeNavigation => '將把底欄與首頁標題設定恢復為預設值。';
 
   @override
   String get settingsResetDoneMessage => '設定已重設';
@@ -31965,7 +31965,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsResetConfirmBodyHomeWidget => '將把桌面小工具的顯示項目與外觀恢復為預設值。';
 
   @override
-  String get settingsResetConfirmBodyHomeNavigation => '將把底欄、選單與首頁標題設定恢復為預設值。';
+  String get settingsResetConfirmBodyHomeNavigation => '將把底欄與首頁標題設定恢復為預設值。';
 
   @override
   String get settingsResetDoneMessage => '設定已重設';

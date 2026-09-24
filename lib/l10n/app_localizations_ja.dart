@@ -10222,7 +10222,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBodyHomeNavigation =>
-      'ボトムバー・メニュー・ホームタイトルの設定を既定値に戻します。';
+      'ボトムバーとホームタイトルの設定を既定値に戻します。';
 
   @override
   String get settingsResetDoneMessage => '設定がリセットされました';

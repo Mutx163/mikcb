@@ -5809,7 +5809,7 @@
   "settingsResetConfirmBodyTimetablePage": "將把課表頁面的密度、回到本週按鈕、背景（含清除桌布）恢復為預設值。",
   "settingsResetConfirmBodyAppearance": "將把主題模式、字體、主題色與玻璃質感恢復為預設值。",
   "settingsResetConfirmBodyHomeWidget": "將把桌面小工具的顯示項目與外觀恢復為預設值。",
-  "settingsResetConfirmBodyHomeNavigation": "將把底欄、選單與首頁標題設定恢復為預設值。",
+  "settingsResetConfirmBodyHomeNavigation": "將把底欄與首頁標題設定恢復為預設值。",
   "settingsResetDoneMessage": "設定已重設",
   "timetablePageSettingsTitle": "課表頁面",
   "timetablePageSectionDensity": "密度",

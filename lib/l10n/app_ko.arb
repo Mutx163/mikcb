@@ -5811,7 +5811,7 @@
   "settingsResetConfirmBodyTimetablePage": "시간표 페이지의 밀도, 이번 주로 돌아가기 버튼, 배경(배경화면 삭제 포함)을 기본값으로 되돌립니다.",
   "settingsResetConfirmBodyAppearance": "테마 모드, 글꼴, 테마 색상과 유리 질감을 기본값으로 되돌립니다.",
   "settingsResetConfirmBodyHomeWidget": "홈 위젯 표시 항목과 외관을 기본값으로 되돌립니다.",
-  "settingsResetConfirmBodyHomeNavigation": "하단 바·메뉴·홈 제목 설정을 기본값으로 되돌립니다.",
+  "settingsResetConfirmBodyHomeNavigation": "하단 바와 홈 제목 설정을 기본값으로 되돌립니다.",
   "settingsResetDoneMessage": "설정이 초기화되었습니다",
   "timetablePageSettingsTitle": "시간표 페이지",
   "timetablePageSectionDensity": "밀도",

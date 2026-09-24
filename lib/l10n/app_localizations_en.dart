@@ -10520,7 +10520,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBodyHomeNavigation =>
-      'This resets bottom bar, menu and home title settings to their defaults.';
+      'This resets bottom bar and home title settings to their defaults.';
 
   @override
   String get settingsResetDoneMessage => 'Settings have been reset';

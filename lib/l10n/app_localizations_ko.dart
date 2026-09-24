@@ -10267,7 +10267,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBodyHomeNavigation =>
-      '하단 바·메뉴·홈 제목 설정을 기본값으로 되돌립니다.';
+      '하단 바와 홈 제목 설정을 기본값으로 되돌립니다.';
 
   @override
   String get settingsResetDoneMessage => '설정이 초기화되었습니다';
