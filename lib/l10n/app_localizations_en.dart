@@ -10378,10 +10378,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frostedGlassModeLabel => 'Default Material';
 
   @override
-  String get liquidGlassScopeSectionTitle =>
-      'Liquid Glass Surfaces (off = solid card)';
-
-  @override
   String get liquidGlassScopePopupTitle => 'Dropdown popups';
 
   @override

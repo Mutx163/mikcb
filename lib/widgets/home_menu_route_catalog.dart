@@ -7,7 +7,6 @@ import 'package:university_timetable/screens/add_course_screen.dart';
 import 'package:university_timetable/screens/add_exam_screen.dart';
 import 'package:university_timetable/screens/add_schedule_item_screen.dart';
 import 'package:university_timetable/screens/add_task_screen.dart';
-import 'package:university_timetable/screens/advanced_material_settings_screen.dart';
 import 'package:university_timetable/screens/changelog_screen.dart';
 import 'package:university_timetable/screens/cloud_sync_screen.dart';
 import 'package:university_timetable/screens/couple_timetable_settings_screen.dart';
@@ -112,7 +111,6 @@ final Map<String, Widget Function()> kHomeCatalogPages = {
   'coupleTimetablePage': () => const CoupleTimetableSettingsScreen(),
   'settingsPage': _buildSettingsScreen,
   'statisticsSettingsPage': () => const StatisticsSettingsScreen(),
-  'advancedMaterialSettingsPage': () => const AdvancedMaterialSettingsScreen(),
   'supportCreatorPage': () => const SupportCreatorScreen(),
   'aboutPage': () => const AboutScreen(),
   'changelogPage': () => const ChangelogScreen(),

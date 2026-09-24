@@ -9784,9 +9784,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get frostedGlassModeLabel => '默认材质';
 
   @override
-  String get liquidGlassScopeSectionTitle => '液态玻璃作用范围（关闭即改为实体卡片）';
-
-  @override
   String get liquidGlassScopePopupTitle => '下拉选择弹窗';
 
   @override
@@ -20899,9 +20896,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get frostedGlassModeLabel => '默认材质';
 
   @override
-  String get liquidGlassScopeSectionTitle => '液態玻璃作用範圍（關閉即改為實體卡片）';
-
-  @override
   String get liquidGlassScopePopupTitle => '下拉選擇彈窗';
 
   @override
@@ -32012,9 +32006,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get frostedGlassModeLabel => '默认材质';
-
-  @override
-  String get liquidGlassScopeSectionTitle => '液態玻璃作用範圍（關閉即改為實體卡片）';
 
   @override
   String get liquidGlassScopePopupTitle => '下拉選擇彈窗';

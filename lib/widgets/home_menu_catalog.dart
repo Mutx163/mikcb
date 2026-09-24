@@ -324,14 +324,9 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     open: (context) =>
         pushHomeMenuPage(context, homePage('statisticsSettingsPage')),
   ),
-  HomeMenuEntry(
-    id: 'advancedMaterialSettings',
-    title: (l10n) => l10n.advancedMaterialTitle,
-    icon: Icons.auto_awesome_outlined,
-    category: HomeMenuEntryCategory.preferences,
-    open: (context) =>
-        pushHomeMenuPage(context, homePage('advancedMaterialSettingsPage')),
-  ),
+  // （2026-09-23 撤下「高级材质」页：液态调参与作用范围开关在材质面板里
+  // 都有同款，两处重复调参是用户点名的混乱源之一。存量菜单排列里的这条
+  // id 由渲染层按未知 id 自动丢弃，无需迁移。）
 
   // ── 关于与支持 ────────────────────────────────────────────
   HomeMenuEntry(

@@ -17731,12 +17731,6 @@ abstract class AppLocalizations {
   /// **'默认材质'**
   String get frostedGlassModeLabel;
 
-  /// No description provided for @liquidGlassScopeSectionTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'液态玻璃作用范围（关闭即改为实体卡片）'**
-  String get liquidGlassScopeSectionTitle;
-
   /// No description provided for @liquidGlassScopePopupTitle.
   ///
   /// In zh, this message translates to:

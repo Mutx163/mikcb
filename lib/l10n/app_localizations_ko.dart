@@ -10125,9 +10125,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedGlassModeLabel => '기본 소재';
 
   @override
-  String get liquidGlassScopeSectionTitle => '액체 유리 적용 범위 (끄면 솔리드 카드)';
-
-  @override
   String get liquidGlassScopePopupTitle => '드롭다운 팝업';
 
   @override
