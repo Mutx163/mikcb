@@ -60,9 +60,9 @@ void main() {
     // 三个「读」处改走 _settingsFromProfile（叠全局那份）、一处落盘口加 syncFrom、
     // 启动与导入各一次调用 —— +33 全是边界接线与注释，无业务逻辑。真源依旧是
     // service，本类未新增任何状态机。
-    // 4532→4558：审核修复补上设置保存失败时的内存/课表镜像回滚，
-    // 以及补偿写入；这是失败路径的完整性修复，不是继续堆业务状态。
-    const baselineLines = 4558;
+    // 4532→4559：审核修复补上设置保存失败时的内存/课表镜像回滚、
+    // 补偿写入和回滚后的界面通知；这是失败路径的完整性修复，不是继续堆业务状态。
+    const baselineLines = 4559;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

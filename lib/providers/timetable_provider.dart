@@ -3792,6 +3792,8 @@ class TimetableProvider with ChangeNotifier {
       } catch (_) {
         // 原始失败更有价值；回滚本身失败只保留在日志/平台存储层，不遮住它。
       }
+      // 让界面立即回到旧设置；否则调用方只看到异常，屏幕上仍可能留着新值。
+      notifyListeners();
       rethrow;
     }
     unawaited(_syncNativeRuntimePreferences());
