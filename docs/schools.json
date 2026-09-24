@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-23T06:29:59+00:00",
+  "updatedAt": "2026-09-24T06:36:01+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 223,
-    "schools": 218,
+    "total": 224,
+    "schools": 219,
     "generic": 5
   },
   "schools": [
@@ -335,6 +335,13 @@
       "name": "福建农林大学",
       "initial": "F",
       "resourceFolder": "FAFU",
+      "category": "school"
+    },
+    {
+      "id": "FJNU",
+      "name": "福建师范大学",
+      "initial": "F",
+      "resourceFolder": "FJNU",
       "category": "school"
     },
     {
