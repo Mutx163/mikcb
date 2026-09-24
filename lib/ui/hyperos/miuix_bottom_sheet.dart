@@ -81,7 +81,6 @@ Future<T?> showMiuixBottomSheet<T>({
   FramePerfProbe.mark('sheet:open');
   return Navigator.of(context, rootNavigator: useRootNavigator).push<T>(
     _MiuixBottomSheetRoute<T>(
-      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       pageBuilder: (dialogContext, animation, secondaryAnimation) =>
           _MiuixBottomSheetPage(
             builder: builder,
@@ -145,23 +144,22 @@ typedef SheetCloseRef = void Function(MiuixBottomSheetClose close);
 /// 承载壳用的路由：与 `showGeneralDialog` 造出来的那条只差**屏障不挡点击**。
 ///
 /// 为什么敢去掉这条路障：挡下层点击本来就有两层，而真正干活的是面板自己那层
-/// 全屏蒙层（它在根覆盖层里、被 `OverlayState.rearrange` 排在**所有路由之上**，
-/// 覆盖层里外谁在上层看得很清楚）。路由屏障那层是多余的，可它偏偏**活得最久**：
-/// 它要等 `Navigator.pop()`（= 退场弹簧数学收敛，实测约 832ms，而面板约 320ms
-/// 就滑出屏幕）才消失，于是「关掉这个弹窗、马上点下一节课」的第二下被它吃掉 ——
-/// 实测收起期间页面位置上命中的最上层就是 `ModalBarrier` 的 `MouseRegion`。
+/// 全屏蒙层（它在根覆盖层里、被 `OverlayState.rearrange` 排在**所有路由之上**）。
+/// 路由屏障那层是多余的，可它偏偏**活得最久**：它要等 `Navigator.pop()`
+/// （= 退场弹簧数学收敛，实测约 832ms，而面板约 320ms 就滑出屏幕）才消失，于是
+/// 「关掉这个弹窗、马上点下一节课」的第二下被它吃掉 —— 实测收起期间页面位置上
+/// 命中的最上层就是 `ModalBarrier` 的 `MouseRegion`。
 ///
 /// 无障碍那点能力不受影响：`barrierDismissible: false` 时 `ModalBarrier` 本来就
-/// 不挂 dismiss 语义与动作。
+/// 不挂 dismiss 语义与动作，所以连 `barrierLabel` 也不需要了（`RawDialogRoute`
+/// 不强制）。收尾时摘自己这条路由的口径见 `_MiuixBottomSheetPageState`。
 class _MiuixBottomSheetRoute<T> extends RawDialogRoute<T> {
-  _MiuixBottomSheetRoute({
-    required super.pageBuilder,
-    required super.barrierLabel,
-  }) : super(
-         barrierDismissible: false,
-         barrierColor: Colors.transparent,
-         transitionDuration: Duration.zero,
-       );
+  _MiuixBottomSheetRoute({required super.pageBuilder})
+    : super(
+        barrierDismissible: false,
+        barrierColor: Colors.transparent,
+        transitionDuration: Duration.zero,
+      );
 
   /// 不画、不占位、不吃指针（空 `SizedBox` 三条都不做）。
   ///
@@ -210,14 +208,30 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
     _popped = true;
     final afterDismiss = _afterDismiss;
     _afterDismiss = null;
-    // 摘掉**自己这条**路由，而不是「栈顶那条」：收起一开始输入就还给页面了
-    // （见 `_MiuixBottomSheetRoute` 与上游那层 IgnorePointer），用户完全可能在这段
-    // 退场动画里立刻点开下一节课 / 另一个弹窗 —— 那一刻新路由已经压在头上，
-    // `Navigator.pop()` 会把**新弹窗**弹掉，自己反而留在栈上。
-    // 本条路由的转场时长是 0，`removeRoute` 与 pop 在结果上一致，只差"摘谁"。
+    // 摘掉**自己这条**路由，按"上面有没有压别的东西"分两条路：
+    //
+    // · 上面没压别的（最常见的"关掉就完事"）：照旧 `pop()` —— 与改前一字不差。
+    //   观察者拿到的还是 didPop，首页 / 子页的模糊门（`HyperosRouteBlurGate`）靠
+    //   它的 didPopNext 在弹窗关掉后重同步毛玻璃；SDK 的 `RouteObserver` 只覆写了
+    //   didPop / didPush、**没有 didRemove**，这条路要是改成 removeRoute，那次
+    //   重同步会悄悄消失。
+    //
+    // · 上面已经压了别的路由（收起一开始就把输入还给页面了，用户完全可能在这段
+    //   退场动画里立刻点开下一节课 / 另一个弹窗）：这时 `pop()` 摘的是**栈顶**那条
+    //   —— 会把刚开的这个弹窗弹掉、自己反而留在栈上，只能 removeRoute 摘自己。
+    //   本条路由的转场时长是 0，两条路在"何时消失"上没有区别，只差"摘谁"与
+    //   "通知谁"；而这种情形下首页也谈不上"重获可见"（上面还有别的层）。
+    //
+    // 判断与摘除之间没有 await，单线程事件循环里不会插进别的路由操作。
     final route = ModalRoute.of(context);
-    if (route != null) {
-      Navigator.of(context).removeRoute(route);
+    if (route == null) {
+      return;
+    }
+    final navigator = Navigator.of(context);
+    if (route.isCurrent) {
+      navigator.pop();
+    } else {
+      navigator.removeRoute(route);
     }
     // 先摘路由，再跑后续动作：后续动作常常立刻 push 下一个页面 / sheet，
     // 面板已经彻底消失，两者不会叠在一起。

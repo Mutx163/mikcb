@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -291,6 +293,7 @@ void main() {
 
   testWidgets('真开一次：面板是注入面、蒙层之前有捕获点、收起后跑后续动作', (tester) async {
     var afterDismissRan = false;
+    var sheetFutureCompleted = false;
     late BuildContext hostContext;
 
     await tester.pumpWidget(
@@ -300,13 +303,15 @@ void main() {
             hostContext = context;
             return Center(
               child: TextButton(
-                onPressed: () => showMiuixBottomSheet<void>(
-                  context: context,
-                  builder: (sheetContext, close) => TextButton(
-                    onPressed: () =>
-                        close(afterDismiss: () => afterDismissRan = true),
-                    child: const Text('关闭'),
-                  ),
+                onPressed: () => unawaited(
+                  showMiuixBottomSheet<void>(
+                    context: context,
+                    builder: (sheetContext, close) => TextButton(
+                      onPressed: () =>
+                          close(afterDismiss: () => afterDismissRan = true),
+                      child: const Text('关闭'),
+                    ),
+                  ).then((_) => sheetFutureCompleted = true),
                 ),
                 child: const Text('打开'),
               ),
@@ -343,6 +348,14 @@ void main() {
       reason: '后续动作（push 页面 / 开 sheet）必须在退场动画结束之后才跑',
     );
     expect(hostContext.mounted, isTrue, reason: '宿主页面不该被弹层带走');
+    expect(
+      sheetFutureCompleted,
+      isTrue,
+      reason:
+          'await showMiuixBottomSheet 的 Future 必须完成 —— 调用方在 await 它'
+          '（`_showCourseActions` / `showCourseNoteSheet`），不完成就是静默挂起；'
+          '收尾无论走 pop 还是 removeRoute 都得保证这一点',
+    );
   });
 
   testWidgets('点面板外的蒙层收起（barrierDismissible 默认开）', (tester) async {
