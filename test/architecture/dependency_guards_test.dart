@@ -60,7 +60,9 @@ void main() {
     // 三个「读」处改走 _settingsFromProfile（叠全局那份）、一处落盘口加 syncFrom、
     // 启动与导入各一次调用 —— +33 全是边界接线与注释，无业务逻辑。真源依旧是
     // service，本类未新增任何状态机。
-    const baselineLines = 4532;
+    // 4532→4558：审核修复补上设置保存失败时的内存/课表镜像回滚，
+    // 以及补偿写入；这是失败路径的完整性修复，不是继续堆业务状态。
+    const baselineLines = 4558;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
@@ -108,7 +110,8 @@ void main() {
   });
 
   test('_persistActiveProfileState 调用点棘轮：写放大只减不增', () {
-    const baselineCallSites = 48;
+    // 48→49：设置保存失败时需要一次补偿性持久化，把两份存储都拉回旧值。
+    const baselineCallSites = 49;
     final partFiles = [
       providerFile,
       File('lib/providers/timetable/import_export_service.dart'),
