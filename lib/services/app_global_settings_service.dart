@@ -270,6 +270,13 @@ class AppGlobalSettingsService {
         return null;
       }
       final map = Map<String, dynamic>.from(decoded);
+      final candidate = <String, dynamic>{
+        ...TimetableSettings.defaults().toJson(),
+        ...map,
+      };
+      // 不能只确认外层是 JSON object：字段类型坏掉时，真正的 overlay 会在启动
+      // 过程中才抛异常。载入边界先用完整模型校验，坏数据直接走重建路径。
+      TimetableSettings.fromJson(candidate);
       return <String, dynamic>{for (final key in keys) key: map[key]};
     } catch (_) {
       return null;

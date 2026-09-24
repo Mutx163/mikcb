@@ -271,6 +271,25 @@ void main() {
       );
     });
 
+    test('全局字段类型损坏时按未迁移重建', () async {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(AppGlobalSettingsService.migratedKey, true);
+      await preferences.setString(
+        AppGlobalSettingsService.preferenceKey,
+        jsonEncode({'homeNavigationForm': 42}),
+      );
+
+      await AppGlobalSettingsService.resolveInitial(
+        profiles: [profile('a', customized())],
+        activeProfileId: 'a',
+      );
+
+      expect(
+        AppGlobalSettingsService.current['homeNavigationForm'],
+        HomeNavigationForm.glassDock.value,
+      );
+    });
+
     test('激活 id 匹配不上时退回第一张', () async {
       await AppGlobalSettingsService.resolveInitial(
         profiles: [profile('a', customized())],
