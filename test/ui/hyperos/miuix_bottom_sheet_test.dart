@@ -333,6 +333,11 @@ void main() {
 
     expect(find.byType(MiuixWindowBottomSheet), findsOneWidget);
     expect(
+      find.byType(ModalBarrier),
+      findsWidgets,
+      reason: '弹窗打开时要保留底层语义隔离和首帧点击隔离',
+    );
+    expect(
       find.byType(HyperosSelectPopupGlass),
       findsOneWidget,
       reason: '面板应当是项目自己的注入面，而不是上游内置的实底面',

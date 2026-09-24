@@ -83,10 +83,13 @@ Future<T?> showMiuixBottomSheet<T>({
   // 诊断标记沿用 `sheet:open`（这个弹窗就是「弹层开场」那一类，改用上游组件不换口径，
   // 历史读数仍然可比）。见 utils/frame_perf_probe.dart。
   FramePerfProbe.mark('sheet:open');
+  final barrierActive = ValueNotifier<bool>(true);
   return Navigator.of(context, rootNavigator: useRootNavigator).push<T>(
     _MiuixBottomSheetRoute<T>(
+      barrierActive: barrierActive,
       pageBuilder: (dialogContext, animation, secondaryAnimation) =>
           _MiuixBottomSheetPage(
+            barrierActive: barrierActive,
             builder: builder,
             barrierDismissible: barrierDismissible,
             barrierColor: barrierColor,
@@ -158,28 +161,49 @@ typedef SheetCloseRef = void Function(MiuixBottomSheetClose close);
 /// 不挂 dismiss 语义与动作，所以连 `barrierLabel` 也不需要了（`RawDialogRoute`
 /// 不强制）。收尾时摘自己这条路由的口径见 `_MiuixBottomSheetPageState`。
 class _MiuixBottomSheetRoute<T> extends RawDialogRoute<T> {
-  _MiuixBottomSheetRoute({required super.pageBuilder})
-    : super(
-        barrierDismissible: false,
-        barrierColor: Colors.transparent,
-        transitionDuration: Duration.zero,
-      );
+  _MiuixBottomSheetRoute({
+    required this.barrierActive,
+    required super.pageBuilder,
+  }) : super(
+         barrierDismissible: false,
+         barrierColor: Colors.transparent,
+         transitionDuration: Duration.zero,
+       );
 
-  /// 不画、不占位、不吃指针（空 `SizedBox` 三条都不做）。
-  ///
-  /// 蒙层点击由面板自己那层遮罩处理（它才是画在玻璃之前的那一层），所以这里
-  /// 本来就不参与关闭，去掉也不会有两条关闭路径打架。
+  final ValueNotifier<bool> barrierActive;
+
+  /// 保留 Flutter 路由屏障的无障碍隔离和首帧点击隔离；面板开始退场时
+  /// 只关闭它的指针命中，让下层立即可点，不能让读屏语义也随之穿透。
   @override
-  Widget buildModalBarrier() => const SizedBox.shrink();
+  Widget buildModalBarrier() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: barrierActive,
+      builder: (context, active, _) => IgnorePointer(
+        ignoring: !active,
+        child: const ModalBarrier(
+          color: Colors.transparent,
+          dismissible: false,
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    barrierActive.dispose();
+    super.dispose();
+  }
 }
 
 class _MiuixBottomSheetPage extends StatefulWidget {
   const _MiuixBottomSheetPage({
+    required this.barrierActive,
     required this.builder,
     required this.barrierDismissible,
     this.barrierColor,
   });
 
+  final ValueNotifier<bool> barrierActive;
   final MiuixBottomSheetBuilder builder;
   final bool barrierDismissible;
   final Color? barrierColor;
@@ -199,6 +223,12 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
   bool _popped = false;
 
   void _requestClose({VoidCallback? afterDismiss, VoidCallback? onSuperseded}) {
+    // 退场开始就交出路由屏障的指针命中，但保留语义隔离；同时撤掉旧面板焦点，
+    // 避免隐藏的输入框继续接收键盘事件。
+    if (widget.barrierActive.value) {
+      widget.barrierActive.value = false;
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
     if (_popped) {
       onSuperseded?.call();
       return;
