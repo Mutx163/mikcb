@@ -3758,6 +3758,10 @@ class TimetableProvider with ChangeNotifier {
 
     final previousBackdropKey = homePageBackdropKey(_settings);
     final previousSettings = _settings;
+    final previousProfiles = List<TimetableProfile>.from(_profiles);
+    final previousCurrentWeek = _currentWeek;
+    final previousCurrentDateWeek = _currentDateWeek;
+    final previousCurrentCalendarWeek = _currentCalendarWeek;
     final semesterStartChanged =
         settings.semesterStartDate != _settings.semesterStartDate;
     _settings = _normalizeSettingsWithTimeScheme(settings);
@@ -3772,7 +3776,24 @@ class TimetableProvider with ChangeNotifier {
     if (semesterStartChanged && _settings.semesterStartDate != null) {
       _currentWeek = _currentDateWeek;
     }
-    await _persistActiveProfileState();
+    try {
+      await _persistActiveProfileState();
+    } catch (_) {
+      // 课表镜像与全局设置是两次独立写入；其中一步失败时，不能只把内存字段
+      // 留着，让界面显示一组设置、重启却读回另一组。尽力把两边都写回旧值。
+      _settings = previousSettings;
+      _profiles = previousProfiles;
+      _currentWeek = previousCurrentWeek;
+      _currentDateWeek = previousCurrentDateWeek;
+      _currentCalendarWeek = previousCurrentCalendarWeek;
+      hyperosSetEdgeHapticsEnabled(previousSettings.enableHaptics);
+      try {
+        await _persistActiveProfileState(notifySync: false);
+      } catch (_) {
+        // 原始失败更有价值；回滚本身失败只保留在日志/平台存储层，不遮住它。
+      }
+      rethrow;
+    }
     unawaited(_syncNativeRuntimePreferences());
     _lastLiveSnapshotSignature = null;
     _currentLiveCourseId = null;
