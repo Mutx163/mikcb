@@ -1499,6 +1499,10 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
 /// 不会被它砍断。
 const Duration _kHomePullQuickImportSessionTimeout = Duration(seconds: 120);
 
+/// 写入阶段独立保护。正常写入远快于此；超过它说明底层存储或 provider
+/// Future 已经失去响应，不能让首页永远转圈。
+const Duration _kHomePullQuickImportWriteTimeout = Duration(minutes: 5);
+
 /// Runs warehouse quick import without showing the WebView login page.
 ///
 /// Equivalent to tapping the lightning icon on the warehouse import school list,
@@ -1520,6 +1524,7 @@ Future<bool> runHomePullWarehouseQuickImport(
   var importWriteStarted = false;
   OverlayEntry? overlayEntry;
   Timer? watchdog;
+  Timer? writeWatchdog;
 
   void completeSession(bool success) {
     if (sessionFinished) {
@@ -1528,6 +1533,8 @@ Future<bool> runHomePullWarehouseQuickImport(
     sessionFinished = true;
     watchdog?.cancel();
     watchdog = null;
+    writeWatchdog?.cancel();
+    writeWatchdog = null;
     overlayEntry?.remove();
     overlayEntry = null;
     if (!completer.isCompleted) {
@@ -1550,129 +1557,172 @@ Future<bool> runHomePullWarehouseQuickImport(
 
   // 从流程第一步就挂上取消和整场保护，避免读取本地宏记录时没有出口。
   onCancelAvailable?.call(requestCancel);
+  if (sessionFinished) {
+    return completer.future;
+  }
   watchdog = Timer(_kHomePullQuickImportSessionTimeout, () {
     if (sessionFinished || importWriteStarted) {
       return;
     }
+    // 超时摘掉宿主后，后台准备/网页流程仍可能继续；把取消标志也立起来，
+    // 让后续每一步都能在真正写盘前看到它并自行退出。
+    cancelRequested = true;
     completeSession(false);
     onNeedsManualAction?.call();
   });
 
-  final allEntries = await macroService.getAllMacroEntries();
-  if (!context.mounted || sessionFinished) {
-    completeSession(false);
-    return completer.future;
-  }
-  if (allEntries.isEmpty) {
-    showAppLightTip(context, message: l10n.noSavedQuickImportRecords);
-    completeSession(false);
-    return completer.future;
-  }
+  Future<void> prepare() async {
+    try {
+      final allEntries = await macroService.getAllMacroEntries();
+      if (!context.mounted || sessionFinished) {
+        completeSession(false);
+        return;
+      }
+      if (allEntries.isEmpty) {
+        showAppLightTip(context, message: l10n.noSavedQuickImportRecords);
+        completeSession(false);
+        return;
+      }
 
-  WarehouseMacroRecord? macro;
-  for (final entry in allEntries) {
-    final record = await macroService.getMacro(entry.schoolId, entry.adapterId);
-    if (record != null) {
-      macro = record;
-      break;
-    }
-  }
-  if (!context.mounted || sessionFinished) {
-    completeSession(false);
-    return completer.future;
-  }
-  if (macro == null) {
-    showAppLightTip(context, message: l10n.noSavedQuickImportRecords);
-    completeSession(false);
-    return completer.future;
-  }
+      WarehouseMacroRecord? macro;
+      for (final entry in allEntries) {
+        final record = await macroService.getMacro(
+          entry.schoolId,
+          entry.adapterId,
+        );
+        if (record != null) {
+          macro = record;
+          break;
+        }
+      }
+      if (!context.mounted || sessionFinished) {
+        completeSession(false);
+        return;
+      }
+      if (macro == null) {
+        showAppLightTip(context, message: l10n.noSavedQuickImportRecords);
+        completeSession(false);
+        return;
+      }
 
-  final customUrl = await preferencesService.getCustomImportUrl(
-    macro.adapterId,
-  );
-  if (!context.mounted || sessionFinished) {
-    completeSession(false);
-    return completer.future;
-  }
-  final initialUrl = resolveWarehouseImportUrl(
-    customImportUrl: customUrl,
-    defaultUrl: macro.importUrl,
-  );
-  if (!context.mounted || sessionFinished) {
-    completeSession(false);
-    return completer.future;
-  }
-  if (initialUrl == null) {
-    showAppLightTip(context, message: l10n.noValidWarehouseLoginUrl);
-    completeSession(false);
-    return completer.future;
-  }
+      final customUrl = await preferencesService.getCustomImportUrl(
+        macro.adapterId,
+      );
+      if (!context.mounted || sessionFinished) {
+        completeSession(false);
+        return;
+      }
+      final initialUrl = resolveWarehouseImportUrl(
+        customImportUrl: customUrl,
+        defaultUrl: macro.importUrl,
+      );
+      if (!context.mounted || sessionFinished) {
+        completeSession(false);
+        return;
+      }
+      if (initialUrl == null) {
+        showAppLightTip(context, message: l10n.noValidWarehouseLoginUrl);
+        completeSession(false);
+        return;
+      }
 
-  final settings = context.read<TimetableProvider>().settings;
-  final fetchOptions = WarehouseFetchOptions.fromSettings(settings);
-  const source = defaultQingyuWarehouseSource;
-  final selectedMacro = macro;
+      final settings = context.read<TimetableProvider>().settings;
+      final fetchOptions = WarehouseFetchOptions.fromSettings(settings);
+      const source = defaultQingyuWarehouseSource;
+      final selectedMacro = macro;
 
-  final overlay = Overlay.maybeOf(context, rootOverlay: true);
-  if (overlay == null) {
-    showAppLightTip(context, message: l10n.quickImportUnknownError);
-    completeSession(false);
-    return completer.future;
-  }
+      final overlay = Overlay.maybeOf(context, rootOverlay: true);
+      if (overlay == null) {
+        showAppLightTip(context, message: l10n.quickImportUnknownError);
+        completeSession(false);
+        return;
+      }
 
-  overlayEntry = OverlayEntry(
-    builder: (overlayContext) {
-      // Keep a tiny on-screen platform view so WebView keeps running, but do
-      // not intercept home-page touches.
-      return IgnorePointer(
-        child: Align(
-          alignment: Alignment.topLeft,
-          child: SizedBox(
-            width: 1,
-            height: 1,
-            child: WarehouseAdapterWebLoginScreen(
-              title: l10n.quickImportTitle(selectedMacro.schoolName),
-              initialUrl: initialUrl,
-              source: source,
-              school: WarehouseSchoolEntry(
-                id: selectedMacro.schoolId,
-                name: selectedMacro.schoolName,
-                initial: selectedMacro.schoolName.isNotEmpty
-                    ? selectedMacro.schoolName[0]
-                    : '#',
-                resourceFolder: selectedMacro.schoolResourceFolder.isNotEmpty
-                    ? selectedMacro.schoolResourceFolder
-                    : selectedMacro.schoolId,
-              ),
-              adapter: WarehouseAdapterEntry(
-                adapterId: selectedMacro.adapterId,
-                adapterName: selectedMacro.adapterName,
-                category: 'macro',
-                assetJsPath: selectedMacro.adapterAssetJsPath.isNotEmpty
-                    ? selectedMacro.adapterAssetJsPath
-                    : 'macro/${selectedMacro.adapterId}.js',
-                importUrl: selectedMacro.importUrl,
-                maintainer: 'macro',
-                description: l10n.courseImportQuickImportDescription(
-                  selectedMacro.schoolName,
-                  selectedMacro.adapterName,
+      overlayEntry = OverlayEntry(
+        builder: (overlayContext) {
+          // Keep a tiny on-screen platform view so WebView keeps running, but do
+          // not intercept home-page touches.
+          return IgnorePointer(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: 1,
+                height: 1,
+                child: WarehouseAdapterWebLoginScreen(
+                  title: l10n.quickImportTitle(selectedMacro.schoolName),
+                  initialUrl: initialUrl,
+                  source: source,
+                  school: WarehouseSchoolEntry(
+                    id: selectedMacro.schoolId,
+                    name: selectedMacro.schoolName,
+                    initial: selectedMacro.schoolName.isNotEmpty
+                        ? selectedMacro.schoolName[0]
+                        : '#',
+                    resourceFolder:
+                        selectedMacro.schoolResourceFolder.isNotEmpty
+                        ? selectedMacro.schoolResourceFolder
+                        : selectedMacro.schoolId,
+                  ),
+                  adapter: WarehouseAdapterEntry(
+                    adapterId: selectedMacro.adapterId,
+                    adapterName: selectedMacro.adapterName,
+                    category: 'macro',
+                    assetJsPath: selectedMacro.adapterAssetJsPath.isNotEmpty
+                        ? selectedMacro.adapterAssetJsPath
+                        : 'macro/${selectedMacro.adapterId}.js',
+                    importUrl: selectedMacro.importUrl,
+                    maintainer: 'macro',
+                    description: l10n.courseImportQuickImportDescription(
+                      selectedMacro.schoolName,
+                      selectedMacro.adapterName,
+                    ),
+                  ),
+                  fetchOptions: fetchOptions,
+                  macroRecord: selectedMacro,
+                  runInBackground: true,
+                  onBackgroundNeedsManualAction: onNeedsManualAction,
+                  onBackgroundFinished: completeSession,
+                  isBackgroundImportCancelled: () => cancelRequested,
+                  onBackgroundImportStarted: () {
+                    if (importWriteStarted || sessionFinished) {
+                      return;
+                    }
+                    importWriteStarted = true;
+                    // 写入阶段由导入自己的结果收尾；保留一个更长的独立保护，
+                    // 底层存储真的失去响应时仍能把首页从“永远转圈”带出来。
+                    watchdog?.cancel();
+                    watchdog = null;
+                    writeWatchdog = Timer(
+                      _kHomePullQuickImportWriteTimeout,
+                      () {
+                        if (sessionFinished) {
+                          return;
+                        }
+                        cancelRequested = true;
+                        completeSession(false);
+                        onNeedsManualAction?.call();
+                      },
+                    );
+                  },
                 ),
               ),
-              fetchOptions: fetchOptions,
-              macroRecord: selectedMacro,
-              runInBackground: true,
-              onBackgroundNeedsManualAction: onNeedsManualAction,
-              onBackgroundFinished: completeSession,
-              isBackgroundImportCancelled: () => cancelRequested,
-              onBackgroundImportStarted: () => importWriteStarted = true,
             ),
-          ),
-        ),
+          );
+        },
       );
-    },
-  );
 
-  overlay.insert(overlayEntry!);
+      overlay.insert(overlayEntry!);
+    } catch (_) {
+      if (sessionFinished) {
+        return;
+      }
+      cancelRequested = true;
+      completeSession(false);
+      onNeedsManualAction?.call();
+    }
+  }
+
+  unawaited(prepare());
   return completer.future;
 }
 
@@ -3550,6 +3600,13 @@ class _WarehouseAdapterWebLoginScreenState
   String? _lastLoginStateDecisionKey;
   bool _useDesktopMode = true;
 
+  /// 后台导入是否已经进入不可安全取消的写入阶段。
+  ///
+  /// 这不等同于「课程列表正在写」：时间方案、节次容量和学期设置也可能
+  /// 先落盘。只要其中任何一项已经开始，取消就只能等真实结果，不能再伪装
+  /// 成「已取消」。
+  bool _backgroundWriteStarted = false;
+
   /// 返回动画跑到尾段时，平台视图是否已摘出树（见
   /// [_detachPlatformViewIfExitReached]）。
   bool _platformViewDetachedForExit = false;
@@ -3940,6 +3997,7 @@ class _WarehouseAdapterWebLoginScreenState
   }
 
   Future<void> _applyImportedSections(List<SectionTime> sections) async {
+    _markBackgroundWriteStarted();
     final provider = context.read<TimetableProvider>();
     final schemeName = AppLocalizations.of(
       context,
@@ -4463,6 +4521,23 @@ class _WarehouseAdapterWebLoginScreenState
       // 同上：探测脚本执行失败不影响导入主流程，留痕即可。
       _debugImportLog('login state probe failed: $e', level: 'warn');
     }
+  }
+
+  bool get _isBackgroundImportCancelled =>
+      widget.runInBackground &&
+      (widget.isBackgroundImportCancelled?.call() ?? false);
+
+  /// 标记后台导入已经跨过取消边界。
+  ///
+  /// 取消边界必须覆盖时间方案、节次容量等前置写入，而不只是最后的课程写入；
+  /// 一旦标记，取消按钮只等待真实结果，导入计时器也不再报告假失败。
+  void _markBackgroundWriteStarted() {
+    if (!widget.runInBackground || _backgroundWriteStarted) {
+      return;
+    }
+    _backgroundWriteStarted = true;
+    _cancelImportTimeout();
+    widget.onBackgroundImportStarted?.call();
   }
 
   void _startImportTimeout() {
@@ -5054,6 +5129,11 @@ $kWarehouseBridgeCompatShim  try {
       final semesterTotalWeeks = (decoded['semesterTotalWeeks'] as num?)
           ?.toInt();
       if (semesterTotalWeeks != null && semesterTotalWeeks > 0) {
+        if (_isBackgroundImportCancelled) {
+          await _resolveJavaScriptRequest(requestId, false);
+          return;
+        }
+        _markBackgroundWriteStarted();
         final result = await provider.updateTimetableSettings(
           provider.settings.copyWith(semesterWeekCount: semesterTotalWeeks),
         );
@@ -5063,6 +5143,9 @@ $kWarehouseBridgeCompatShim  try {
       }
       await _resolveJavaScriptRequest(requestId, true);
     } catch (error) {
+      if (widget.runInBackground) {
+        widget.onBackgroundFinished?.call(false);
+      }
       if (!mounted) return;
       _showLightTip(
         context,
@@ -5080,9 +5163,16 @@ $kWarehouseBridgeCompatShim  try {
       );
       _pendingImportedSections = sections;
       _pendingImportedSectionsSignature = _buildSectionSignature(sections);
+      if (_isBackgroundImportCancelled) {
+        await _resolveJavaScriptRequest(requestId, false);
+        return;
+      }
       await _applyPendingImportedSectionsIfNeeded();
       await _resolveJavaScriptRequest(requestId, true);
     } catch (error) {
+      if (widget.runInBackground) {
+        widget.onBackgroundFinished?.call(false);
+      }
       if (!mounted) return;
       _showLightTip(
         context,
@@ -5248,6 +5338,10 @@ $kWarehouseBridgeCompatShim  try {
       if (!mounted) {
         return;
       }
+      if (_isBackgroundImportCancelled && _pendingImportedSections != null) {
+        widget.onBackgroundFinished?.call(false);
+        return;
+      }
       try {
         await _applyPendingImportedSectionsIfNeeded();
       } catch (error) {
@@ -5272,6 +5366,8 @@ $kWarehouseBridgeCompatShim  try {
         context,
         requiredSectionCount: requiredSectionCount,
         provider: provider,
+        onWriteStart: _markBackgroundWriteStarted,
+        isCancelled: () => _isBackgroundImportCancelled,
       );
       if (!capacityReady || !mounted) {
         _debugImportLog(
@@ -5297,18 +5393,22 @@ $kWarehouseBridgeCompatShim  try {
       final preserveLocalColors = await _shouldPreserveLocalColorsOnImport(
         replaceExisting: replaceExisting,
       );
-      if (!mounted ||
-          (widget.runInBackground &&
-              (widget.isBackgroundImportCancelled?.call() ?? false))) {
+      if (!mounted) {
         if (widget.runInBackground) {
           widget.onBackgroundFinished?.call(false);
         }
         return;
       }
+      if (_isBackgroundImportCancelled && !_backgroundWriteStarted) {
+        widget.onBackgroundFinished?.call(false);
+        return;
+      }
       _debugImportLog(
         'importParsedCourses start alignedCount=${coursesToImport.length} replaceExisting=$replaceExisting semesterStart=${semesterConfig.semesterStartDate.toIso8601String()}',
       );
-      widget.onBackgroundImportStarted?.call();
+      if (coursesToImport.isNotEmpty) {
+        _markBackgroundWriteStarted();
+      }
       final importedCount = await provider.importParsedCourses(
         coursesToImport,
         replaceExisting: replaceExisting,
@@ -6858,6 +6958,8 @@ Future<bool> _ensureSectionCapacity(
   required int requiredSectionCount,
   required TimetableProvider provider,
   bool autoConfirm = false,
+  VoidCallback? onWriteStart,
+  bool Function()? isCancelled,
 }) async {
   if (requiredSectionCount <= provider.settings.sectionCount) {
     return true;
@@ -6879,7 +6981,11 @@ Future<bool> _ensureSectionCapacity(
   if (shouldContinue != true || !context.mounted) {
     return false;
   }
+  if (isCancelled?.call() ?? false) {
+    return false;
+  }
 
+  onWriteStart?.call();
   final ensureMessage = await provider.ensureSectionCapacityForImport(
     requiredSectionCount,
   );

@@ -652,18 +652,19 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       settings,
       HomePageBackgroundScope.header,
     );
-    final headerUsesFrostedChrome =
-        hasBackdrop &&
-        (headerShowsBackdrop || settings.homePageHeaderBlurEnabled);
-    final headerBackground = resolveHomePageRegionBackground(
+    final headerUsesFrostedChrome = homePageHeaderUsesFrostedChrome(
       settings: settings,
+      hasBackdrop: hasBackdrop,
+      headerShowsBackdrop: headerShowsBackdrop,
+    );
+    final headerBackground = resolveHomePageHeaderBackground(
+      settings: settings,
+      hasBackdrop: hasBackdrop,
+      headerShowsBackdrop: headerShowsBackdrop,
       isDark: isDark,
       darkFallback: darkFallback,
-      region: HomePageBackgroundScope.header,
     );
-    final headerBarColor = headerUsesFrostedChrome
-        ? Colors.transparent
-        : headerBackground.color;
+    final headerBarColor = headerBackground.color;
     // Same auto-contrast as the home title: only invert the default ink when
     // the header band actually shows wallpaper / frosted glass under it.
     final chromeForeground = headerUsesFrostedChrome

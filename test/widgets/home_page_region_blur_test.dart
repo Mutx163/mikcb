@@ -93,6 +93,18 @@ void main() {
     );
   });
 
+  test('实体顶栏有壁纸时仍返回不透明底色', () {
+    final background = resolveHomePageHeaderBackground(
+      settings: settingsWith(bandMaterial: 'solid'),
+      hasBackdrop: true,
+      headerShowsBackdrop: true,
+      isDark: false,
+      darkFallback: Colors.white,
+    );
+
+    expect(background.color.a, 1);
+  });
+
   test('顶栏材质还是玻璃档时口径不变', () {
     for (final material in ['progressive', 'gaussian', 'soft', 'liquid']) {
       expect(

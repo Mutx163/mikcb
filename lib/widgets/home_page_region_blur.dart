@@ -259,6 +259,39 @@ bool homePageHeaderUsesFrostedChrome({
   return headerShowsBackdrop || settings.homePageHeaderBlurEnabled;
 }
 
+/// Resolve the background that belongs behind the real/preview home header.
+///
+/// A solid band must stay opaque even when the wallpaper scope includes the
+/// header. Glass keeps the existing transparent/region-aware background so the
+/// wallpaper and sampled chrome remain visible.
+HomePageBackgroundVisual resolveHomePageHeaderBackground({
+  required TimetableSettings settings,
+  required bool hasBackdrop,
+  required bool headerShowsBackdrop,
+  required bool isDark,
+  required Color darkFallback,
+}) {
+  if (homePageHeaderUsesFrostedChrome(
+    settings: settings,
+    hasBackdrop: hasBackdrop,
+    headerShowsBackdrop: headerShowsBackdrop,
+  )) {
+    return resolveHomePageRegionBackground(
+      settings: settings,
+      isDark: isDark,
+      darkFallback: darkFallback,
+      region: HomePageBackgroundScope.header,
+    );
+  }
+  return HomePageBackgroundVisual(
+    color: resolveHomePageBackgroundColor(
+      settings: settings,
+      isDark: isDark,
+      darkFallback: darkFallback,
+    ),
+  );
+}
+
 /// 首页顶栏材质是否为高级材质（液态）——自带模糊，壁纸预模糊需要按折射/雾面
 /// 参数预热，玻璃带渲染也需要额外一帧稳定。
 ///

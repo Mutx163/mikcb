@@ -649,6 +649,51 @@ void main() {
     expect(find.text('旧回调页'), findsNothing);
   });
 
+  testWidgets('退场中打开普通页面时旧弹窗仍能完成收尾', (tester) async {
+    late BuildContext hostContext;
+    var sheetCompleted = false;
+
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) {
+            hostContext = context;
+            return TextButton(
+              onPressed: () {
+                final future = showMiuixBottomSheet<void>(
+                  context: context,
+                  builder: (sheetContext, close) => TextButton(
+                    onPressed: () {
+                      close();
+                      Navigator.of(hostContext).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const Scaffold(body: Text('普通页面')),
+                        ),
+                      );
+                    },
+                    child: const Text('关闭并打开'),
+                  ),
+                );
+                future.then((_) => sheetCompleted = true);
+              },
+              child: const Text('打开'),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('关闭并打开'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+
+    expect(find.text('普通页面'), findsOneWidget);
+    expect(find.byType(MiuixWindowBottomSheet), findsNothing);
+    expect(sheetCompleted, isTrue);
+  });
+
   testWidgets('退场期间重复 close 会收齐每个 afterDismiss', (tester) async {
     late MiuixBottomSheetClose close;
     var firstRan = false;

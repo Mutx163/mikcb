@@ -28,7 +28,8 @@ class _HomeNavigationSettingsScreenState
     if (id.isEmpty || id == 'addCourse') {
       return 'addCourse';
     }
-    return homeMenuEntryById(id) == null ? 'addCourse' : id;
+    final entry = homeMenuEntryById(id);
+    return entry == null || !entry.visible() ? 'addCourse' : id;
   }
 
   @override

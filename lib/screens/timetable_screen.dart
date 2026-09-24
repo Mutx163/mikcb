@@ -17,6 +17,7 @@ import 'package:flutter/gestures.dart'
         PointerCancelEvent,
         PointerDownEvent,
         PointerEvent,
+        PointerRemovedEvent,
         PointerUpEvent,
         VelocityTracker,
         kMinFlingVelocity;
@@ -700,12 +701,6 @@ class _TimetableScreenState extends State<TimetableScreen>
           isDark: isDark,
           darkFallback: darkFallback,
         );
-        final headerBackground = resolveHomePageRegionBackground(
-          settings: settings,
-          isDark: isDark,
-          darkFallback: darkFallback,
-          region: HomePageBackgroundScope.header,
-        );
         final timetableBackground = resolveHomePageRegionBackground(
           settings: settings,
           isDark: isDark,
@@ -721,9 +716,14 @@ class _TimetableScreenState extends State<TimetableScreen>
           hasBackdrop: hasBackdrop,
           headerShowsBackdrop: headerShowsBackdrop,
         );
-        final headerBarColor = headerUsesFrostedChrome
-            ? Colors.transparent
-            : headerBackground.color;
+        final headerBackground = resolveHomePageHeaderBackground(
+          settings: settings,
+          hasBackdrop: hasBackdrop,
+          headerShowsBackdrop: headerShowsBackdrop,
+          isDark: isDark,
+          darkFallback: darkFallback,
+        );
+        final headerBarColor = headerBackground.color;
         final scaffoldBackgroundColor = timetableShowsBackdrop
             ? Colors.transparent
             : timetableBackground.color;
@@ -3447,7 +3447,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       _homePullLivePointers.add(event.pointer);
       return;
     }
-    if (event is! PointerUpEvent && event is! PointerCancelEvent) {
+    if (event is! PointerUpEvent &&
+        event is! PointerCancelEvent &&
+        event is! PointerRemovedEvent) {
       return;
     }
     final endedPrimary = _homePullPrimaryPointer == event.pointer;
@@ -7781,7 +7783,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final id = settings.glassDockButtonEntryId;
     if (id != 'addCourse' && id.isNotEmpty) {
       final entry = homeMenuEntryById(id);
-      if (entry != null) {
+      if (entry != null && entry.visible()) {
         return Icon(entry.icon);
       }
     }
@@ -7796,7 +7798,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       unawaited(_showAddCourseSheet());
       return;
     }
-    if (inlineDockPageFor(id) != null) {
+    final catalogEntry = homeMenuEntryById(id);
+    if (catalogEntry?.visible() == true && inlineDockPageFor(id) != null) {
       setState(() {
         _dockInlinePageId = (_dockInlinePageId == id) ? null : id;
       });
@@ -7806,7 +7809,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     final entry = homeMenuEntryById(id);
-    if (entry != null) {
+    if (entry != null && entry.visible()) {
       _maybeSelectionClick(settings);
       unawaited(entry.open(context));
       return;

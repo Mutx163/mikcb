@@ -46,15 +46,23 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     if (close == null) {
       return push();
     }
-    final closed = Completer<void>();
+    final closed = Completer<bool>();
     close(
-      afterDismiss: closed.complete,
+      afterDismiss: () {
+        if (!closed.isCompleted) {
+          closed.complete(false);
+        }
+      },
       // 退场期间若已有更新路由压上来，旧面板不能再推整页；但等待方仍要结束，
       // 不能让这个 Future 永远挂起。
-      onSuperseded: closed.complete,
+      onSuperseded: () {
+        if (!closed.isCompleted) {
+          closed.complete(true);
+        }
+      },
     );
-    await closed.future;
-    if (!mounted) {
+    final superseded = await closed.future;
+    if (!mounted || superseded) {
       return null;
     }
     return push();

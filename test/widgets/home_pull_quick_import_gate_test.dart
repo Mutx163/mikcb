@@ -315,6 +315,35 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('玻璃坞+自适应：快速带惯性抬手仍按阈值触发', (tester) async {
+    // 快速 fling 会让 ScrollEndNotification 紧跟 PointerUp 到达，正好覆盖
+    // 玻璃坞形态下最容易出现的“抬手收尾抢在触发判定前面”的时序。
+    await pumpHome(
+      tester: tester,
+      form: HomeNavigationForm.glassDock,
+    );
+    expect(weekScroll(), findsOneWidget);
+
+    await tester.fling(
+      weekScroll(),
+      const Offset(0, 300),
+      1200,
+    );
+    await tester.pump();
+
+    final indicator = tester.widget<MiuixCircularProgressIndicator>(
+      find.byType(MiuixCircularProgressIndicator),
+    );
+    expect(
+      indicator.progress,
+      isNull,
+      reason: '快速抬手只要越阈值，就必须进入“正在拉课表”的不确定态，不能被看门狗提前收回',
+    );
+
+    await tester.pump(const Duration(seconds: 2));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('玻璃坞+自适应：位于顶部时下拉仍能正常打开快捷导入药丸', (tester) async {
     await pumpHome(tester: tester, form: HomeNavigationForm.glassDock);
     expect(weekScroll(), findsOneWidget);

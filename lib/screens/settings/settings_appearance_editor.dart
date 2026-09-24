@@ -68,6 +68,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 推的页面会落在面板下面、被它的全屏透明屏障挡住点击（用户口径：「调整页面出来
   /// 的时候在弹窗背后，什么东西都点不到」）。机制详见 `showHomeHyperosSheet` 的注释。
   MiuixBottomSheetClose? _sheetClose;
+  int _sheetGeneration = 0;
 
   /// 面板里**内容之外**、在内容上方的那一圈（上沿把手栏）。
   ///
@@ -504,14 +505,19 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
 
   Future<void> _openWallpaperSheet() {
     final l10n = AppLocalizations.of(context)!;
+    final generation = ++_sheetGeneration;
     // 上下 chrome（取消 / 完成 / 日周切换 / 圆钮）在弹窗打开期间**保持常显**
     //（2026-09-19 用户口径，取代最初那版「淡出让位」）：barrier
     // 会把它们压暗、点按被弹层接走，但位置与可见性不变。
-    return showHomeHyperosSheet<void>(
+    final future = showHomeHyperosSheet<void>(
       context: context,
       // 收下收起口子：弹窗里那颗「选择图片」/「调整位置」要推整页（位置编辑页），
       // 必须先收起本弹层再推（理由见 [_sheetClose]）。
-      closeRef: (close) => _sheetClose = close,
+      closeRef: (close) {
+        if (generation == _sheetGeneration) {
+          _sheetClose = close;
+        }
+      },
       builder: (_) => HyperosSheetFrame(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         child: SingleChildScrollView(
@@ -524,7 +530,12 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           ),
         ),
       ),
-    ).whenComplete(() => _sheetClose = null);
+    );
+    return future.whenComplete(() {
+      if (generation == _sheetGeneration) {
+        _sheetClose = null;
+      }
+    });
   }
 
   @override
