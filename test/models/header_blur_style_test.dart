@@ -21,22 +21,30 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 
 void main() {
-  group('首页顶栏玻璃带材质：液态 / 实体两档', () {
-    test('默认值为液态玻璃档', () {
+  group('首页顶栏玻璃带材质：跟随默认 / 液态 / 实体三档', () {
+    test('出厂值仍是单独指定液态（观感与引入「跟随」前一致）', () {
       expect(TimetableSettings.defaults().homeBandGlassMaterial, 'liquid');
       expect(FrostedAppearance.defaults.homeBandGlassMaterial, 'liquid');
-      expect(TimetableSettings.homeBandGlassMaterialValues, ['liquid', 'solid']);
+      expect(TimetableSettings.homeBandGlassMaterialValues, [
+        'follow',
+        'liquid',
+        'solid',
+      ]);
     });
 
-    test('非实体一律归到液态：非法值 / 三个存量中间档 / 缺键', () {
+    test('非三档取值一律归到液态：三个存量中间档 / 非法值 / 缺键', () {
       for (final legacy in ['progressive', 'gaussian', 'soft', 'nope', null]) {
         expect(
           TimetableSettings.sanitizeHomeBandGlassMaterial(legacy),
           'liquid',
-          reason: '$legacy 必须归到液态 —— 界面只承诺「实体 / 液态玻璃」两档',
+          reason: '$legacy 必须归到液态 —— 界面只承诺「跟随默认 / 实体 / 液态」',
         );
       }
       expect(TimetableSettings.sanitizeHomeBandGlassMaterial('solid'), 'solid');
+      expect(
+        TimetableSettings.sanitizeHomeBandGlassMaterial('follow'),
+        'follow',
+      );
       // 缺键（全新安装 / 老备份）走默认档。
       final fresh = TimetableSettings.fromJson(const {'sections': []});
       expect(fresh.homeBandGlassMaterial, 'liquid');
@@ -64,11 +72,59 @@ void main() {
       }
     });
 
-    test('frostedAppearance 映射顶栏材质', () {
+    test('frostedAppearance 映射顶栏材质（显式档原样，follow 解析成生效值）', () {
       final settings = TimetableSettings.defaults().copyWith(
         homeBandGlassMaterial: 'solid',
       );
       expect(settings.frostedAppearance.homeBandGlassMaterial, 'solid');
+    });
+
+    group('follow 生效值解析（homeBandGlassMaterialEffective）', () {
+      test('显式档不受影响，原样返回', () {
+        for (final material in ['liquid', 'solid']) {
+          final s = TimetableSettings.defaults().copyWith(
+            homeBandGlassMaterial: material,
+            frostedBlurEnabled: false,
+          );
+          expect(s.homeBandGlassMaterialEffective, material, reason: material);
+        }
+      });
+
+      test('跟随默认：默认档高斯 → 磨砂带（frost），液态 → 液态带', () {
+        final gaussian = TimetableSettings.defaults().copyWith(
+          homeBandGlassMaterial: 'follow',
+          frostedBlurEnabled: true,
+          frostedGlassMode: FrostedGlassMode.gaussian,
+        );
+        final liquid = gaussian.copyWith(
+          frostedGlassMode: FrostedGlassMode.liquidGlass,
+        );
+        expect(gaussian.homeBandGlassMaterialEffective, 'frost');
+        expect(liquid.homeBandGlassMaterialEffective, 'liquid');
+      });
+
+      test('跟随默认：默认档实体（模糊总开关关）→ 实心带', () {
+        final s = TimetableSettings.defaults().copyWith(
+          homeBandGlassMaterial: 'follow',
+          frostedBlurEnabled: false,
+        );
+        expect(s.homeBandGlassMaterialEffective, 'solid');
+      });
+
+      test('跟随默认解析进外观对象：下游拿到的永远是生效值', () {
+        final frost = TimetableSettings.defaults().copyWith(
+          homeBandGlassMaterial: 'follow',
+          frostedBlurEnabled: true,
+          frostedGlassMode: FrostedGlassMode.gaussian,
+        );
+        expect(frost.frostedAppearance.homeBandGlassMaterial, 'frost');
+        // 生效值不写回存储：原字段仍是 follow，JSON 往返不丢「跟随」这个选择。
+        expect(frost.homeBandGlassMaterial, 'follow');
+        expect(
+          TimetableSettings.fromJson(frost.toJson()).homeBandGlassMaterial,
+          'follow',
+        );
+      });
     });
 
     test('FrostedAppearance 相等性包含顶栏材质', () {

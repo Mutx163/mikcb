@@ -66,10 +66,9 @@ abstract final class HomeStartupVisualPrimer {
       final appearance = settings.frostedAppearance;
       final sigma = resolveHomePreblurSigma(
         gaussianCardsDrive: settings.courseCardSurfaceStyle.isGlass,
-        // 与首页玻璃带消费点同判：顶栏材质非「实体」即液态（2026-09-20 起口径
-        // 只有这两档，见 `TimetableSettings.sanitizeHomeBandGlassMaterial`），
-        // 否则预热位图和首帧实际材质不一致。
-        liquidGlassChrome: appearance.homeBandGlassMaterial != 'solid',
+        // 与首页玻璃带消费点同判：顶栏材质是生效值（follow 已解析），只有
+        // 液态档吃液态调参的模糊量，否则预热位图和首帧实际材质不一致。
+        liquidGlassChrome: appearance.homeBandGlassMaterial == 'liquid',
         sheetBlurSigma: appearance.sheetBlurSigma,
         liquidGlassTunedBlur: appearance.liquidGlassTuning?.blurSigma,
       );

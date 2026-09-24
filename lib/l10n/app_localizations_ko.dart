@@ -10070,6 +10070,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeBandGlassMaterialLabel => '홈 상단 바 유리';
 
   @override
+  String get homeBandGlassMaterialFollow => '기본값 따르기';
+
+  @override
   String get headerBlurStyleGaussian => '가우시안 블러';
 
   @override

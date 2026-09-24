@@ -5738,6 +5738,7 @@
   "scheduleDateRuleErrorNameRequired": "請填寫名稱",
   "scheduleDateRuleNote": "地點匹配優先於日期規則。",
   "homeBandGlassMaterialLabel": "首頁頂欄玻璃",
+  "homeBandGlassMaterialFollow": "跟隨預設材質",
   "headerBlurStyleGaussian": "高斯模糊",
   "headerBlurStyleInspire": "漸進模糊",
   "texturePresetLabel": "質感方案",

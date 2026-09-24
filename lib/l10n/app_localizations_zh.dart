@@ -9729,6 +9729,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeBandGlassMaterialLabel => '首页顶栏玻璃';
 
   @override
+  String get homeBandGlassMaterialFollow => '跟随默认材质';
+
+  @override
   String get headerBlurStyleGaussian => '高斯模糊';
 
   @override
@@ -20841,6 +20844,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeBandGlassMaterialLabel => '首頁頂欄玻璃';
 
   @override
+  String get homeBandGlassMaterialFollow => '跟隨預設材質';
+
+  @override
   String get headerBlurStyleGaussian => '高斯模糊';
 
   @override
@@ -31951,6 +31957,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeBandGlassMaterialLabel => '首頁頂欄玻璃';
+
+  @override
+  String get homeBandGlassMaterialFollow => '跟隨預設材質';
 
   @override
   String get headerBlurStyleGaussian => '高斯模糊';

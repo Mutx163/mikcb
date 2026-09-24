@@ -49,6 +49,26 @@ void main() {
       });
     });
 
+    test('跟随默认（2026-09-23）：按默认档解析，地图显示生效材质', () {
+      final base = TimetableSettings.defaults().copyWith(
+        homeBandGlassMaterial: 'follow',
+      );
+      // 默认档高斯 → 磨砂带（渐进模糊链路）。
+      expect(homeBandSurfaceMaterial(base), SurfaceMaterial.frostProgressive);
+      // 默认档液态 → 液态带。
+      expect(
+        homeBandSurfaceMaterial(
+          base.copyWith(frostedGlassMode: FrostedGlassMode.liquidGlass),
+        ),
+        SurfaceMaterial.liquidGlass,
+      );
+      // 默认档实体（模糊总开关关）→ 实心带。
+      expect(
+        homeBandSurfaceMaterial(base.copyWith(frostedBlurEnabled: false)),
+        SurfaceMaterial.solid,
+      );
+    });
+
     test('模糊关：液态回落实体，实体档仍是实体', () {
       final liquid = TimetableSettings.defaults().copyWith(
         frostedBlurEnabled: false,

@@ -821,9 +821,11 @@ class _TimetableScreenState extends State<TimetableScreen>
         final dockAppearance = FrostedAppearanceScope.of(context);
         final homePreblurSigma = resolveHomePreblurSigma(
           gaussianCardsDrive: backdropBlurOn && cardStyle.isGlass,
-          // 预模糊位图服务的是首页玻璃带/摘要卡。顶栏材质非「实体」即液态
-          // （2026-09-20 起只有这两档），与启动预热器同判。
-          liquidGlassChrome: dockAppearance.homeBandGlassMaterial != 'solid',
+          // 预模糊位图服务的是首页玻璃带/摘要卡。顶栏材质是生效值（follow 已
+          // 解析），只有液态档吃液态调参的模糊量；磨砂带（frost）与实体都走
+          // 全局模糊强度，与启动预热器同判。
+          liquidGlassChrome:
+              dockAppearance.homeBandGlassMaterial == 'liquid',
           sheetBlurSigma: HyperosBlurredHeader.blurSigmaOf(context),
           liquidGlassTunedBlur:
               (dockAppearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)

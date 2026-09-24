@@ -86,10 +86,10 @@ void main() {
         ),
         1,
       );
-      // 判据是「非实体」：存量 progressive / gaussian / soft 渲染的也是液态玻璃
-      // （见 HomePageChromeGlassFill.build），稳定帧数必须与液态一致，否则壁纸
-      // 预模糊还没落地就先出图，玻璃带会闪一帧。
-      for (final material in ['liquid', 'progressive', 'gaussian', 'soft']) {
+      // 判据是「液态」：只有液态玻璃带需要等预模糊落地再出图（两帧）。
+      // 磨砂带（'frost'，跟随默认 + 默认档高斯）走渐进模糊链路，没有折射
+      // 位移，与实体一样一帧就稳。
+      for (final material in ['liquid', 'frost', 'solid']) {
         expect(
           homePageChromeSettleFrameCount(
             hasBackdrop: true,
@@ -98,7 +98,7 @@ void main() {
             weekdayBarBlurEnabled: true,
             homeBandGlassMaterial: material,
           ),
-          2,
+          material == 'liquid' ? 2 : 1,
           reason: material,
         );
       }

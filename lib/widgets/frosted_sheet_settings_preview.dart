@@ -73,9 +73,10 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
       // 卡片那套直接从 `settings` 读，不走构造参数：两个调用点传进来的都是**草稿**
       // （`settings: _draft`），逐字段再复制一遍只会多一个能漏传的地方。
       courseCardGlassTuning: settings.courseCardGlassTuning,
-      // 预览里的首页玻璃带（HomePageChromeGlassFill）经 scope 读顶栏材质
-      // 与子页风格；缺省会让预览带永远渲染默认档，与真实首页不符。
-      homeBandGlassMaterial: settings.homeBandGlassMaterial,
+      // 预览里的首页玻璃带（HomePageChromeGlassFill）经 scope 读顶栏材质；
+      // 缺省会让预览带永远渲染默认档，与真实首页不符。⚠️ 传**生效值**：
+      // 'follow' 在这里解析掉，预览带与真实首页走同一套渲染分支。
+      homeBandGlassMaterial: settings.homeBandGlassMaterialEffective,
       liquidGlassDockEnabled: settings.liquidGlassDockEnabled,
     );
 

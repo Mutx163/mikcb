@@ -5972,6 +5972,7 @@
   "scheduleDateRuleErrorNameRequired": "Enter a name",
   "scheduleDateRuleNote": "Location match takes priority over date rules.",
   "homeBandGlassMaterialLabel": "Home top bar glass",
+  "homeBandGlassMaterialFollow": "Follow default",
   "headerBlurStyleGaussian": "Gaussian blur",
   "headerBlurStyleInspire": "Progressive blur",
   "texturePresetLabel": "Texture preset",

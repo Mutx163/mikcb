@@ -58,11 +58,12 @@ TimetableSettings applyGlassModeChoice(
 
 /// 写回「首页顶栏玻璃带材质」（独立自由选择，2026-09-12）。
 ///
-/// 2026-09-20 起这个轴只有「液态玻璃 / 实体」两档（与外观编辑器里那两个选项
-/// 逐字一致）：写入口一律过一遍 [TimetableSettings.sanitizeHomeBandGlassMaterial]，
-/// 非 `solid` 的取值（含历史中间档）都落到液态，免得界面与渲染再次错位。
+/// 2026-09-23 起这个轴是「跟随默认 / 实体 / 液态」三档：写入口一律过一遍
+/// [TimetableSettings.sanitizeHomeBandGlassMaterial]，非三档取值（含历史
+/// 中间档）都落到液态，免得界面与渲染再次错位。「跟随默认」的解析在
+/// [TimetableSettings.homeBandGlassMaterialEffective]，渲染层只消费生效值。
 ///
-/// 顶栏材质不跟随全局玻璃模式或「作用范围」开关；液态只通过各自的范围开关
+/// 顶栏材质与「作用范围」开关互不影响；液态只通过各自的范围开关
 /// 作用于弹窗、玻璃坞等其他表面。
 TimetableSettings applyHomeBandGlassMaterial(
   TimetableSettings settings,

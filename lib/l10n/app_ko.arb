@@ -5740,6 +5740,7 @@
   "scheduleDateRuleErrorNameRequired": "Enter a name",
   "scheduleDateRuleNote": "Location match takes priority over date rules.",
   "homeBandGlassMaterialLabel": "홈 상단 바 유리",
+  "homeBandGlassMaterialFollow": "기본값 따르기",
   "headerBlurStyleGaussian": "가우시안 블러",
   "headerBlurStyleInspire": "점진 블러",
   "texturePresetLabel": "질감 프리셋",

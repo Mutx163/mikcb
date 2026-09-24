@@ -630,13 +630,15 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           const SizedBox(height: 16),
           HyperosSectionLabel(text: l10n.homeBandGlassMaterialLabel),
           const SizedBox(height: 8),
-          // 首页顶栏玻璃：卡片顶部即反馈区。2026-09-20 起这个字段的口径
-          // 就是下面这两个选项本身（存量渐进/高斯/柔光在读取时已归到
-          // 液态，见 `TimetableSettings.sanitizeHomeBandGlassMaterial`），
-          // 所以这里**直接显示存下来的值** —— 不再需要"就近归桶"，
-          // 也就不会再出现「界面显示液态、实际渲染渐进磨砂」那种错位。
+          // 首页顶栏玻璃：卡片顶部即反馈区。2026-09-23 起三档：「跟随默认」
+          // （默认档高斯→磨砂带、液态→液态带、实体→实心带，渲染与只读推导都
+          // 走 homeBandGlassMaterialEffective 的生效值）+「实体 / 液态」单独
+          // 指定（存量渐进/高斯/柔光在读取时已归到液态，见
+          // `TimetableSettings.sanitizeHomeBandGlassMaterial`）。出厂值仍是
+          // 单独指定液态，观感与引入「跟随」之前一致。
           _MaterialSegmented<String>(
             items: {
+              l10n.homeBandGlassMaterialFollow: 'follow',
               l10n.materialStateSolid: 'solid',
               l10n.frostedGlassModeLiquid: 'liquid',
             },

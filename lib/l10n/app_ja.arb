@@ -5740,6 +5740,7 @@
   "scheduleDateRuleErrorNameRequired": "Enter a name",
   "scheduleDateRuleNote": "Location match takes priority over date rules.",
   "homeBandGlassMaterialLabel": "ホーム上部バーのガラス",
+  "homeBandGlassMaterialFollow": "既定に従う",
   "headerBlurStyleGaussian": "ガウスぼかし",
   "headerBlurStyleInspire": "プログレッシブぼかし",
   "texturePresetLabel": "質感プリセット",

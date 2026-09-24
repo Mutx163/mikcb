@@ -17623,6 +17623,12 @@ abstract class AppLocalizations {
   /// **'首页顶栏玻璃'**
   String get homeBandGlassMaterialLabel;
 
+  /// No description provided for @homeBandGlassMaterialFollow.
+  ///
+  /// In zh, this message translates to:
+  /// **'跟随默认材质'**
+  String get homeBandGlassMaterialFollow;
+
   /// No description provided for @headerBlurStyleGaussian.
   ///
   /// In zh, this message translates to:

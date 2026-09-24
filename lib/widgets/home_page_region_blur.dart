@@ -223,8 +223,8 @@ bool homePageHasAnyChromeBlur(
   if (!hasBackdrop) {
     return false;
   }
-  // 顶栏材质选「实体」时那条带是**不透明实心条**（本文件 'solid' 分支：页面
-  // 底色实心、完全遮住壁纸），它不再提供任何可"同款"的玻璃材质。下游必须按
+  // 顶栏材质生效值为「实体」时那条带是**不透明实心条**（本文件 'solid' 分支：
+  // 页面底色实心、完全遮住壁纸），它不再提供任何可"同款"的玻璃材质。下游必须按
   // 实底处理，否则会出现「顶栏实心、下面的卡片/覆盖层还透明」的分裂。
   //
   // ⚠️ 2026-09-22 起**日视图顶上那张日期卡不再跟这条判据**：它整张改跟课程卡
@@ -234,7 +234,9 @@ bool homePageHasAnyChromeBlur(
   // 注意与两个旧开关的关系：`homePageHeaderBlurEnabled` /
   // `homePageWeekdayBarBlurEnabled` 只表达「这两块要不要磨砂」，材质档是
   // 2026-09-12 之后独立选择的，两者可以不一致 —— 所以这里必须看材质。
-  if (settings.homeBandGlassMaterial == 'solid') {
+  // ⚠️ 必须看**生效值**：'follow'（跟随默认）在默认档为实体时要解析成实体，
+  // 直接拿原字段判断会把这条带当玻璃渲染。
+  if (settings.homeBandGlassMaterialEffective == 'solid') {
     return false;
   }
   return settings.homePageHeaderBlurEnabled ||
@@ -244,17 +246,18 @@ bool homePageHasAnyChromeBlur(
 /// 首页顶栏材质是否为高级材质（液态）——自带模糊，壁纸预模糊需要按折射/雾面
 /// 参数预热，玻璃带渲染也需要额外一帧稳定。
 ///
-/// 2026-09-20 起口径只有「液态 / 实体」两档，所以判据就是「非实体」：任何非
-/// `solid` 的取值（含历史中间档）都按液态处理，与 [HomePageChromeGlassFill]
-/// 的渲染分支逐字一致。
-bool homeBandUsesAdvancedGlass(String material) => material != 'solid';
+/// 2026-09-23 起口径是「跟随默认 / 实体 / 液态」三档，但**这里消费的一律是
+/// [TimetableSettings.homeBandGlassMaterialEffective] 的生效值**（外观对象里
+/// `follow` 已解析掉），所以判据就是 `== 'liquid'`：`frost`（跟随默认解析出的
+/// 磨砂带）与 `solid` 都不算高级材质 —— 磨砂带走的是渐进模糊链路，没有折射
+/// 位移，不需要那圈 overdraw / capture margin，也不吃液态调参。
+bool homeBandUsesAdvancedGlass(String material) => material == 'liquid';
 
 /// Number of frames the home chrome glass needs to settle after a wallpaper
 /// swap so the backdrop capture is stable before showing the frost.
 ///
 /// Zero when nothing frosted paints (no backdrop, global blur off, or both
-/// chrome bands off). 实体档 settles in one frame; 非实体（液态玻璃，含存量
-/// progressive / gaussian / soft —— 它们也渲染液态玻璃）needs two.
+/// chrome bands off). 液态玻璃带 needs two; 磨砂 / 实体档 settle in one frame.
 int homePageChromeSettleFrameCount({
   required bool hasBackdrop,
   required bool frostedBlurEnabled,
@@ -268,7 +271,8 @@ int homePageChromeSettleFrameCount({
   if (!headerBlurEnabled && !weekdayBarBlurEnabled) {
     return 0;
   }
-  // 与 HomePageChromeGlassFill 同判：非实体档（液态玻璃）需两帧稳定，实体一帧。
+  // 与 HomePageChromeGlassFill 同判：液态带需两帧稳定（折射要等预模糊落地），
+  // 磨砂 / 实体一帧。
   return homeBandUsesAdvancedGlass(homeBandGlassMaterial) ? 2 : 1;
 }
 
@@ -513,10 +517,12 @@ class HomePageChromeGlassFill extends StatelessWidget {
   /// legibility scrim any more, so neither does the stand-in.
   static Color standInWashColor(BuildContext context) {
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-    // 与 [HomePageChromeGlassFill.build] 同判：非实体即液态，液态仅在模糊可用时上带。
+    // 与 [HomePageChromeGlassFill.build] 同判：只有液态档上液态替身（材质值
+    // 一律是生效值，`follow` 已在设置层解析）；磨砂带（'frost'）走下面的
+    // 区域染色路径，与渐进模糊链路的观感一致。
     final material = HyperosBlurredHeader.homeBandGlassMaterialOf(context);
     final appearance = FrostedAppearanceScope.of(context);
-    if (material != 'solid' && useBlur) {
+    if (material == 'liquid' && useBlur) {
       // 成对配置必须一起传（2026-09-21）：这条带走 [LiquidGlassRole.followsUser]，
       // 所以用户的深色档参与。只传明暗的话，深色下替身停在白底、而实体玻璃已经
       // 是「配方后的中性灰」—— 那正是注释里警告的「两处口径迟早会漂」。
@@ -537,12 +543,14 @@ class HomePageChromeGlassFill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-    // 首页顶栏材质：**只有「液态玻璃 / 实体」两档**（2026-09-20 起，与外观编辑器里
-    // 那两个选项逐字一致）。存量 progressive / gaussian / soft 在设置层就归到了液态
-    // （`TimetableSettings.sanitizeHomeBandGlassMaterial`），这里再按「非实体即液态」
-    // 兜一层：任何非 'solid' 的取值都渲染液态玻璃，绝不会再出现「界面显示液态、
-    // 实际渲染渐进磨砂」的错位 —— 用户 2026-09-20 报的「顶栏没有玻璃效果」正是它
-    // （渐进档没有折射、也没有边光那一圈，怎么调参数都不会有玻璃感）。
+    // 首页顶栏材质：**三档**「跟随默认 / 实体 / 液态」（2026-09-23 起）。这里
+    // 拿到的已经是**生效值**（外观对象里 `follow` 已按默认材质解析成
+    // solid / frost / liquid，见 `TimetableSettings.homeBandGlassMaterialEffective`）：
+    //
+    // * `liquid` → 液态玻璃（折射 + 边光）；
+    // * `frost` → 磨砂玻璃带（渐进模糊链路 —— 跟随默认且默认档是高斯时走到这，
+    //   就是这条带在液态化之前一直画的观感；着色器回落也复用这条路）；
+    // * `solid` → 实心条。
     final material = HyperosBlurredHeader.homeBandGlassMaterialOf(context);
     const fill = SizedBox.expand();
 
@@ -568,7 +576,14 @@ class HomePageChromeGlassFill extends StatelessWidget {
       );
     }
 
-    if (material != 'solid') {
+    if (material == 'frost') {
+      // 磨砂玻璃带（跟随默认 + 默认档高斯）：渐进模糊链路，与液态档的着色器
+      // 回落同一条路。磨砂不需要折射位移的 overdraw / capture margin（见
+      // [homeBandUsesAdvancedGlass]），直接铺即可。
+      return frostBand();
+    }
+
+    if (material == 'liquid') {
       // 液态玻璃。模糊总开关关闭（或系统降级）时回落实底衬底：保留既有口径的
       // 淡色半透明衬底（「模糊关 = 只剩纯色衬底」），与旧高级材质路径一致。
       if (!useBlur) {
@@ -631,10 +646,10 @@ class HomePageChromeGlassFill extends StatelessWidget {
 ///   带上；自己又是重绘边界，所以这次重画只覆盖这条带，不牵连整页（保住外壳那笔优化）。
 ///   动画停住就不再 tick ⇒ 静止时零额外重画。
 ///
-/// 只有液态档需要它，已按材质门控（实体档驱动为 null，一点额外重画都不加）：实体档不按
-/// 屏幕坐标算形状，位置由图层合成负责，不重画也是对的。门控判据是"非实体"
-/// （[homeBandUsesAdvancedGlass]）—— 存量 progressive / gaussian / soft 同样渲染液态玻璃，
-/// 不能漏掉（漏掉就是它们转场时扫出细竖线）。
+/// 只有液态档需要它，已按材质门控（磨砂 / 实体档驱动为 null，一点额外重画都
+/// 不加）：那两档不按屏幕坐标算形状，位置由图层合成负责，不重画也是对的。
+/// 门控判据是 [homeBandUsesAdvancedGlass]（= 生效值为液态；`follow` 已在设置
+/// 层解析，不会漏）。
 ///
 /// ⚠️ 转场期间**不要**改成"先不画这条玻璃带"：那会让带在落定瞬间才出现，用户明确
 /// 不要进场时的任何闪动（2026-09-20 拍板）。
@@ -662,9 +677,8 @@ class _HomePageChromeGlassTransitionRepaintState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // 只有液态档需要它（实体档不按屏幕坐标算形状，见类注释）—— 实体档在转场期间
-    // 白花这笔重画没有意义。判据是"非实体"（与 [HomePageChromeGlassFill.build] 的渲染
-    // 分支逐字一致）：存量 progressive / gaussian / soft 也渲染液态玻璃，同样要驱动。
+    // 只有液态档需要它（磨砂 / 实体档不按屏幕坐标算形状，见类注释）——
+    // 判据 [homeBandUsesAdvancedGlass]（生效值为液态）。
     final needsDriver = homeBandUsesAdvancedGlass(
       HyperosBlurredHeader.homeBandGlassMaterialOf(context),
     );

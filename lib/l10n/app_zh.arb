@@ -6011,6 +6011,7 @@
   "scheduleDateRuleErrorNameRequired": "请填写名称",
   "scheduleDateRuleNote": "地点匹配优先于日期规则。",
   "homeBandGlassMaterialLabel": "首页顶栏玻璃",
+  "homeBandGlassMaterialFollow": "跟随默认材质",
   "headerBlurStyleGaussian": "高斯模糊",
   "headerBlurStyleInspire": "渐进模糊",
   "texturePresetLabel": "质感方案",

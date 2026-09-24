@@ -50,23 +50,24 @@ SurfaceMaterial _advancedSurfaceMaterial(
 
 /// 首页玻璃带（标题栏 + 星期栏共用一条带）。
 ///
-/// 材质独立自由选择（2026-09-12）：**2026-09-20 起口径收成 `liquid` / `solid`
-/// 两档**（与外观编辑器里那两个选项逐字一致），所以这里是「非实体即液态」——
-/// 存量 progressive / gaussian / soft 在设置层已归到液态
-/// （`TimetableSettings.sanitizeHomeBandGlassMaterial`），这里再兜一层，保证
-/// 「各表面当前材质」地图卡显示的材质与渲染分支同口径。「顶栏玻璃」关 →
-/// 不渲染；液态沿用模糊总开关的 useBlur 门（关或系统降级 → 实体衬底，与渲染
-/// 侧 build 同口径）。
+/// 材质独立选择（2026-09-12）：`follow`（跟随默认）/ `liquid` / `solid` 三档
+/// （2026-09-23 起）。这里消费**生效值**
+/// [TimetableSettings.homeBandGlassMaterialEffective] —— `follow` 已按默认档
+/// 解析：实体 → 实心带；高斯 → 磨砂带（渐进模糊链路，即该带液态化之前的观感）；
+/// 液态 → 液态带（沿用模糊总开关的 useBlur 门，关或系统降级 → 实体衬底，与
+/// 渲染侧 build 同口径）。「顶栏玻璃」关 → 不渲染。
 SurfaceMaterial homeBandSurfaceMaterial(TimetableSettings s) {
   if (!s.homePageHeaderBlurEnabled) {
     return SurfaceMaterial.off;
   }
-  if (s.homeBandGlassMaterial == 'solid') {
-    return SurfaceMaterial.solid;
-  }
-  return s.frostedBlurEnabled
-      ? SurfaceMaterial.liquidGlass
-      : SurfaceMaterial.solid;
+  return switch (s.homeBandGlassMaterialEffective) {
+    'solid' => SurfaceMaterial.solid,
+    // 跟随默认解析出的磨砂带：必然处于模糊开启状态（解析条件保证），走渐进。
+    'frost' => SurfaceMaterial.frostProgressive,
+    _ => s.frostedBlurEnabled
+        ? SurfaceMaterial.liquidGlass
+        : SurfaceMaterial.solid,
+  };
 }
 
 /// 子页顶栏（设置等 HyperosSubpage 外壳）。永不走高级材质。

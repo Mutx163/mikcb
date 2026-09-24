@@ -10026,6 +10026,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeBandGlassMaterialLabel => 'ホーム上部バーのガラス';
 
   @override
+  String get homeBandGlassMaterialFollow => '既定に従う';
+
+  @override
   String get headerBlurStyleGaussian => 'ガウスぼかし';
 
   @override

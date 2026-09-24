@@ -1308,12 +1308,21 @@ class TimetableSettings {
   /// `HomePageChromeGlassFill` 的 `frostBand()`（就是原来渐进磨砂那条链路），
   /// 所以把中间三档并进液态不会让任何设备变得更差。
   static const String defaultHomeBandGlassMaterial = 'liquid';
-  static const List<String> homeBandGlassMaterialValues = ['liquid', 'solid'];
+  static const List<String> homeBandGlassMaterialValues = [
+    'follow',
+    'liquid',
+    'solid',
+  ];
 
-  /// 非 `solid` 一律归到液态（含 progressive / gaussian / soft 三个存量档与
-  /// 一切非法值）：界面只承诺「实体 / 液态玻璃」两档，存储与渲染必须同口径。
+  /// 非 `solid` / `follow` 一律归到液态（含 progressive / gaussian / soft 三个
+  /// 存量档与一切非法值）：界面只承诺「跟随默认 / 实体 / 液态玻璃」三档，
+  /// 存储与渲染必须同口径。
   static String sanitizeHomeBandGlassMaterial(String? value) =>
-      value == 'solid' ? 'solid' : 'liquid';
+      switch (value) {
+        'solid' => 'solid',
+        'follow' => 'follow',
+        _ => 'liquid',
+      };
   static const double defaultPageTransitionSpeed = 1;
   static const double minPageTransitionSpeed = 0.5;
   static const double maxPageTransitionSpeed = 2.5;
@@ -1581,7 +1590,9 @@ class TimetableSettings {
     darkGlassBoostEnabled: darkGlassBoostEnabled,
     courseCardGlassTuning: courseCardGlassTuning,
     liquidGlassDockEnabled: liquidGlassDockEnabled,
-    homeBandGlassMaterial: homeBandGlassMaterial,
+    // 外观对象只带**生效值**：`follow` 在这里就解析掉，下游（渲染、预热、
+    // 预览）拿到的永远是 solid / frost / liquid 三者之一。
+    homeBandGlassMaterial: homeBandGlassMaterialEffective,
   );
 
   final bool linkCourseCardColors; // 标题和详情颜色是否关联
@@ -1633,16 +1644,39 @@ class TimetableSettings {
   final bool homePageHeaderBlurEnabled;
   final bool homePageWeekdayBarBlurEnabled;
 
-  /// 首页顶栏玻璃带材质，**独立自由选择**（用户 2026-09-12 拍板）：
-  /// 口径只有 `liquid`（液态）/ `solid`（实体）两档；写入口一律过
-  /// [sanitizeHomeBandGlassMaterial]，存量的 progressive / gaussian / soft
-  /// 在读取时已归到液态。
+  /// 首页顶栏玻璃带材质（用户 2026-09-12 拍板独立选择）：
+  /// `follow`（跟随默认材质）/ `liquid`（液态）/ `solid`（实体）三档；
+  /// 写入口一律过 [sanitizeHomeBandGlassMaterial]，存量的 progressive /
+  /// gaussian / soft 在读取时已归到液态。
   ///
-  /// 不跟随全局 [frostedGlassMode] 或「作用范围」开关——液态只
-  /// 作用弹窗、玻璃坞等其他表面；顶栏选什么渲染什么。子页顶栏永不吃
-  /// 这里的高级材质（它按 2026-09-23 口径锁死为渐进模糊，见
+  /// `follow` 是 2026-09-23 用户口径「顶栏带改成跟随主材质」的存储值：渲染与
+  /// 只读推导一律走 [homeBandGlassMaterialEffective] 的**生效值**（默认档高斯
+  /// → 磨砂带、液态 → 液态带、实体 → 实心带），不要直接拿本字段判断分支 ——
+  /// 那会让「跟随」在渲染层不知所云。出厂值仍是 [defaultHomeBandGlassMaterial]
+  /// （单独指定液态），观感与引入本档之前逐像素一致。
+  ///
+  /// 子页顶栏永不吃这里的取值（它按 2026-09-23 口径锁死为渐进模糊，见
   /// `HyperosBlurredHeader.subpageHeaderBlurStyleOf`）。
   final String homeBandGlassMaterial;
+
+  /// [homeBandGlassMaterial] 的**生效值**：`follow` 按当前默认材质解析成
+  /// `solid` / `frost` / `liquid`，其余取值原样返回。
+  ///
+  /// 渲染侧（`HomePageChromeGlassFill`）、预热判据、只读材质地图都必须消费
+  /// 这里而不是原字段。`frost` 是本函数引入的**内部渲染档**：磨砂玻璃带
+  /// （渐进模糊链路，即该带在液态化之前一直画的那条），不出现在任何存储或
+  /// 界面候选里。
+  String get homeBandGlassMaterialEffective {
+    if (homeBandGlassMaterial != 'follow') {
+      return homeBandGlassMaterial;
+    }
+    if (!frostedBlurEnabled) {
+      return 'solid';
+    }
+    return frostedGlassMode == FrostedGlassMode.liquidGlass
+        ? 'liquid'
+        : 'frost';
+  }
   final bool homePageTimeColumnBlurEnabled;
   final bool homePageBackdropFollowsWeekPager;
   final List<SavedTheme> savedThemes; // 保存的主题列表

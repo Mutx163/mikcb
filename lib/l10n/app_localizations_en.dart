@@ -10322,6 +10322,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeBandGlassMaterialLabel => 'Home top bar glass';
 
   @override
+  String get homeBandGlassMaterialFollow => 'Follow default';
+
+  @override
   String get headerBlurStyleGaussian => 'Gaussian blur';
 
   @override
