@@ -72,15 +72,30 @@ import 'liquid/liquid_glass_surface.dart';
 ///
 /// ## 外浮影跟着圆底走（2026-09-23）
 ///
-/// 圆底在显影时垫一圈**同源**外浮影（[HyperosGlassShadow.shadow]，与首页球、
-/// 弹窗、实底兜底同一处定义 —— 固定小件的观感参数不开单件口子）；停在页顶的
-/// 光箭头不带。原先实底兜底自己带阴影而玻璃分支没有，两支不同源 —— 现在
-/// 浮影上提到按钮层，玻璃 / 兜底两支共用一份。
+/// 圆底在显影时垫一圈**小而淡**的外浮影；停在页顶的光箭头不带。原先实底兜底
+/// 自己带阴影而玻璃分支没有，两支不同源 —— 现在浮影上提到按钮层，玻璃 / 兜底
+/// 两支共用一份。
+///
+/// **为什么不用 [HyperosGlassShadow.shadow]**（弹窗 / 首页球那份数值，2026-09-23
+/// 真机否掉）：那颗是给弹窗衬在页面上的，blur 20 外扩太远，而这颗按钮贴着带边 ——
+/// 顶栏磨砂带整体在 [ClipRect] 里（左右与上沿就是带框，下沿只让
+/// `bottomOverhang`），外扩的阴影被带框切出**直边**（用户看到的"边界是正方形"），
+/// 还压在带的渐变模糊上把背景搅浑。这里的几何余量（折叠大标题条：条高 52、
+/// 按钮 44 居中）：按钮下沿距带底只 4dp、左右各 16dp，所以收成 blur 4 / 偏移
+/// 1.5dp —— 越过带底的那截强度已衰减到不可见（约峰值的 2%），切不出直边，也
+/// 基本不碰渐变模糊区。**这颗按钮若挪去更小的容器，先重算这段余量。**
 ///
 /// 垫影的 [Stack] 必须 `Clip.none`：阴影画在 44×44 之外，默认裁剪会整圈切掉
 /// （上游 `MiuixGlassIconButton` 自己那层阴影同样因此开 `Clip.none`）。
 class HyperosBackButton extends StatelessWidget {
   const HyperosBackButton({super.key, required this.onPressed});
+
+  /// 本按钮专属的浮影：小而淡（见类注释「为什么不用 [HyperosGlassShadow.shadow]」）。
+  static const BoxShadow _shadow = BoxShadow(
+    color: Color(0x1A000000),
+    offset: Offset(0, 1.5),
+    blurRadius: 4,
+  );
 
   final VoidCallback? onPressed;
 
@@ -103,7 +118,7 @@ class HyperosBackButton extends StatelessWidget {
               key: ValueKey('hyperos-back-button-shadow'),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                boxShadow: [HyperosGlassShadow.shadow],
+                boxShadow: [_shadow],
               ),
             ),
           ),

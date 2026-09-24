@@ -54,6 +54,21 @@ void main() {
   /// 渲染且旧版自带阴影 —— 谓词类匹配分不清两者，所以用 key。
   Finder backShadow() => find.byKey(const ValueKey('hyperos-back-button-shadow'));
 
+  /// 浮影数值必须保持「小而淡」：blur 4 / 偏移 1.5dp。顶栏磨砂带整体在
+  /// `ClipRect` 里，折叠条高 52、按钮 44 居中 —— 按钮下沿距带底只 4dp，
+  /// 再大就会被带框切出方形直边、压到渐变模糊区（真机口径 2026-09-23）。
+  void expectSmallShadow(WidgetTester tester) {
+    final box = tester.widget<DecoratedBox>(backShadow());
+    final decoration = box.decoration as BoxDecoration;
+    expect(decoration.shape, BoxShape.circle);
+    expect(decoration.boxShadow, hasLength(1));
+    final shadow = decoration.boxShadow!.single;
+    expect(shadow.blurRadius, 4);
+    expect(shadow.offset, const Offset(0, 1.5));
+    expect((shadow.color.a * 255).round(), lessThan(0x20), reason: '淡淡的，不是弹窗那颗');
+    expect(shadow, isNot(HyperosGlassShadow.shadow));
+  }
+
   testWidgets('subpage nav icon is the upstream circular glass back button', (
     WidgetTester tester,
   ) async {
@@ -110,9 +125,9 @@ void main() {
       reason: '边缘不外推采样：标准档那 8dp 位移会让最外一圈读到圆外约 8dp 处的内容，'
           '圆钮顶到带顶只有 4dp，于是顶部读成一条暗弧（真机口径 2026-09-21）',
     );
-    // 圆底在显影：垫一圈**同源**浮影（与首页球 / 弹窗同一处定义），用户口径
-    // 「圈圈显示的时候加一点点阴影」——不多垫、也不在玻璃兜底里各画一份。
+    // 圆底在显影：垫一圈**小而淡**的浮影（用户口径「一点点」，见 expectSmallShadow）。
     expect(backShadow(), findsOneWidget);
+    expectSmallShadow(tester);
     // 上游那层材质始终不画，圆底只由我们的玻璃负责。
     expect(surfaceAlphaOf(tester), 0);
 
