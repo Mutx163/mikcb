@@ -1327,9 +1327,26 @@ void main() {
 
     test('fromJson keeps explicit detail colors in independent mode', () {
       final settings = TimetableSettings.fromJson(dirtyJson(link: false));
+      expect(settings.linkCourseCardColors, isFalse);
       expect(settings.courseCardTitleColorLight, '#FFFFFF');
       expect(settings.courseCardDetailColorLight, '#000000');
       expect(settings.courseCardDetailColorDark, '#111111');
+    });
+
+    test('fromJson round trip keeps independent mode (regression)', () {
+      // 回归钉：2026-09-24 清死设置时误删了 linkCourseCardColors 的读取，
+      // 存关读回变开；字段一旦变开，下一次任意 copyWith 会把用户自调的
+      // 详情色回填成标题色（真实数据丢失）。原用例只断言颜色、没断言
+      // 开关本身往返，正好漏过。
+      final original = TimetableSettings.fromJson(dirtyJson(link: false));
+      expect(original.linkCourseCardColors, isFalse);
+
+      final restored = TimetableSettings.fromJson(original.toJson());
+      expect(restored.linkCourseCardColors, isFalse);
+      expect(restored.courseCardDetailColorLight, '#000000');
+
+      // 独立模式下任意一次写入都不许把详情色刷成标题色。
+      expect(restored.copyWith().courseCardDetailColorLight, '#000000');
     });
 
     test('healed state persists through a json round trip', () {

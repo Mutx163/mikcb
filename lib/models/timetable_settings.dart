@@ -2535,6 +2535,7 @@ class TimetableSettings {
       courseCardTitleColorDark: parsedTitleColorDark,
       courseCardDetailColorLight: parsedDetailColorLight,
       courseCardDetailColorDark: parsedDetailColorDark,
+      linkCourseCardColors: linkedCardTextColors,
       weekdayBarFontColorLight:
           json['weekdayBarFontColorLight'] as String? ??
           defaultWeekdayBarFontColorLight,
