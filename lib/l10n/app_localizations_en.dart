@@ -3403,10 +3403,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frostedSheetPreviewDemoTitle => 'Preview';
 
   @override
-  String get frostedSheetPreviewDemoSubtitle =>
-      'Live preview of frosted glass effect';
-
-  @override
   String get timetableBackgroundColorSectionTitle =>
       'Timetable background color';
 
@@ -6666,10 +6662,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get guideVisualEffectGaussianDesc =>
       'Live gaussian blur behind surfaces — layered and translucent';
-
-  @override
-  String get guideVisualEffectSoftDesc =>
-      'Soft frosted glass — light and refined, cheaper than liquid';
 
   @override
   String get guideVisualEffectLiquidDesc =>
@@ -10321,32 +10313,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get headerBlurStyleInspire => 'Progressive blur';
 
   @override
-  String get texturePresetLabel => 'Texture preset';
-
-  @override
-  String get texturePresetSubtitle =>
-      'Apply a whole material setup in one tap; every option stays adjustable afterwards';
-
-  @override
-  String get texturePresetFullLiquid => 'Full liquid glass';
-
-  @override
-  String get texturePresetSoftMist => 'Soft mist';
-
-  @override
-  String get texturePresetMinimalSolid => 'Minimal solid';
-
-  @override
-  String get texturePresetCustom => 'Custom';
-
-  @override
-  String get texturePresetApplyTitle => 'Apply texture preset';
-
-  @override
-  String get texturePresetApplyBody =>
-      'This overwrites the glass mode, scope switches, top bar styles and card surface. Wallpaper and text colors are untouched.';
-
-  @override
   String get surfaceMaterialSectionTitle => 'Current material per surface';
 
   @override
@@ -10409,9 +10375,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frostedGlassModeLiquid => 'Liquid Glass';
 
   @override
-  String get frostedGlassModeSoft => 'Soft Glass';
-
-  @override
   String get frostedGlassModeGaussian => 'Gaussian Blur';
 
   @override
@@ -10419,10 +10382,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get advancedMaterialTitle => 'Advanced Material';
-
-  @override
-  String get advancedMaterialEntrySubtitle =>
-      'Soft / liquid glass parameter tuning';
 
   @override
   String get liquidGlassPresetLabel => 'Liquid Glass Preset';
@@ -10519,45 +10478,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Dark mode follows the light settings; turn on to tune a separate set';
 
   @override
-  String get softGlassPresetLabel => 'Soft glass preset';
-
-  @override
-  String get softGlassPresetClear => 'Clear';
-
-  @override
-  String get softGlassPresetLight => 'Light Mist';
-
-  @override
-  String get softGlassPresetStandard => 'Standard';
-
-  @override
-  String get softGlassPresetDense => 'Dense Fog';
-
-  @override
-  String get softGlassPresetCustom => 'Custom';
-
-  @override
-  String get softGlassBlurLabel => 'Frost strength';
-
-  @override
-  String get softGlassTintLabel => 'Tint opacity';
-
-  @override
-  String get softGlassRefractionLabel => 'Refraction';
-
-  @override
-  String get softGlassDepthLabel => 'Thickness';
-
-  @override
-  String get softGlassChromaticAberrationLabel => 'Chromatic aberration';
-
-  @override
-  String get softGlassEdgeHighlightLabel => 'Edge highlight';
-
-  @override
-  String get softGlassResetAction => 'Reset to Default';
-
-  @override
   String get diagnosticsEntryTitle => 'Diagnostics';
 
   @override
@@ -10628,10 +10548,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frostedSheetPreviewShowTitle => 'Show Preview';
-
-  @override
-  String get frostedSheetPreviewShowSubtitle =>
-      'Show frosted glass preview at the top';
 
   @override
   String get aboutSupportUpdatesSectionTitle => 'Support & Updates';

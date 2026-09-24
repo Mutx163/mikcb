@@ -3201,9 +3201,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get frostedSheetPreviewDemoTitle => '预览';
 
   @override
-  String get frostedSheetPreviewDemoSubtitle => '磨砂玻璃效果实时预览';
-
-  @override
   String get timetableBackgroundColorSectionTitle => '课表背景色';
 
   @override
@@ -6283,9 +6280,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get guideVisualEffectGaussianDesc => '背景实时高斯模糊，通透有层次';
-
-  @override
-  String get guideVisualEffectSoftDesc => '雾面柔光玻璃，轻盈细腻（比液态更省电）';
 
   @override
   String get guideVisualEffectLiquidDesc => '液态玻璃折射，更具质感';
@@ -9729,31 +9723,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get headerBlurStyleInspire => '渐进模糊';
 
   @override
-  String get texturePresetLabel => '质感方案';
-
-  @override
-  String get texturePresetSubtitle => '一键套用整套材质搭配，应用后仍可逐项调整';
-
-  @override
-  String get texturePresetFullLiquid => '全液态';
-
-  @override
-  String get texturePresetSoftMist => '轻雾柔光';
-
-  @override
-  String get texturePresetMinimalSolid => '极简实体';
-
-  @override
-  String get texturePresetCustom => '自定义';
-
-  @override
-  String get texturePresetApplyTitle => '应用质感方案';
-
-  @override
-  String get texturePresetApplyBody =>
-      '将覆盖玻璃模式、作用范围开关、顶栏风格、卡片表面等材质设置；壁纸和字色不受影响。';
-
-  @override
   String get surfaceMaterialSectionTitle => '各表面当前材质';
 
   @override
@@ -9811,9 +9780,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get frostedGlassModeLiquid => '液态玻璃';
 
   @override
-  String get frostedGlassModeSoft => '柔光玻璃';
-
-  @override
   String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
@@ -9821,9 +9787,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get advancedMaterialTitle => '高级材质';
-
-  @override
-  String get advancedMaterialEntrySubtitle => '柔光 / 液态玻璃参数微调';
 
   @override
   String get liquidGlassPresetLabel => '液态玻璃预设';
@@ -9917,45 +9880,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liquidGlassDarkIndependentSubtitle => '默认沿用浅色档；打开后可单独调一套';
 
   @override
-  String get softGlassPresetLabel => '柔光玻璃预设';
-
-  @override
-  String get softGlassPresetClear => '清透';
-
-  @override
-  String get softGlassPresetLight => '轻盈';
-
-  @override
-  String get softGlassPresetStandard => '标准';
-
-  @override
-  String get softGlassPresetDense => '浓雾';
-
-  @override
-  String get softGlassPresetCustom => '自定义';
-
-  @override
-  String get softGlassBlurLabel => '雾面强度';
-
-  @override
-  String get softGlassTintLabel => '底色浓度';
-
-  @override
-  String get softGlassRefractionLabel => '折射强度';
-
-  @override
-  String get softGlassDepthLabel => '厚度感';
-
-  @override
-  String get softGlassChromaticAberrationLabel => '色散';
-
-  @override
-  String get softGlassEdgeHighlightLabel => '边缘高光';
-
-  @override
-  String get softGlassResetAction => '恢复默认';
-
-  @override
   String get diagnosticsEntryTitle => '诊断';
 
   @override
@@ -10021,9 +9945,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get frostedSheetPreviewShowTitle => '显示预览';
-
-  @override
-  String get frostedSheetPreviewShowSubtitle => '在顶部显示磨砂玻璃预览';
 
   @override
   String get aboutSupportUpdatesSectionTitle => '支持与更新';
@@ -14261,9 +14182,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get frostedSheetPreviewDemoTitle => '預覽';
 
   @override
-  String get frostedSheetPreviewDemoSubtitle => '磨砂玻璃效果即時預覽';
-
-  @override
   String get timetableBackgroundColorSectionTitle => '課表背景色';
 
   @override
@@ -17342,9 +17260,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get guideVisualEffectGaussianDesc => '背景即時高斯模糊，通透有層次';
-
-  @override
-  String get guideVisualEffectSoftDesc => '霧面柔光玻璃，輕盈細膩（比液態更省電）';
 
   @override
   String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感';
@@ -20832,31 +20747,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get headerBlurStyleInspire => '漸進模糊';
 
   @override
-  String get texturePresetLabel => '質感方案';
-
-  @override
-  String get texturePresetSubtitle => '一鍵套用整套材質搭配，應用後仍可逐項調整';
-
-  @override
-  String get texturePresetFullLiquid => '全液態';
-
-  @override
-  String get texturePresetSoftMist => '輕霧柔光';
-
-  @override
-  String get texturePresetMinimalSolid => '極簡實體';
-
-  @override
-  String get texturePresetCustom => '自定義';
-
-  @override
-  String get texturePresetApplyTitle => '套用質感方案';
-
-  @override
-  String get texturePresetApplyBody =>
-      '將覆蓋玻璃模式、作用範圍開關、頂欄風格、卡片表面等材質設定；桌布和字色不受影響。';
-
-  @override
   String get surfaceMaterialSectionTitle => '各表面當前材質';
 
   @override
@@ -20914,9 +20804,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get frostedGlassModeLiquid => '液態玻璃';
 
   @override
-  String get frostedGlassModeSoft => '柔光玻璃';
-
-  @override
   String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
@@ -20924,9 +20811,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get advancedMaterialTitle => '進階材質';
-
-  @override
-  String get advancedMaterialEntrySubtitle => '柔光 / 液態玻璃參數微調';
 
   @override
   String get liquidGlassPresetLabel => '液態玻璃預設';
@@ -21020,45 +20904,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liquidGlassDarkIndependentSubtitle => '預設沿用淺色檔；打開後可單獨調一套';
 
   @override
-  String get softGlassPresetLabel => '柔光玻璃預設';
-
-  @override
-  String get softGlassPresetClear => '清透';
-
-  @override
-  String get softGlassPresetLight => '輕盈';
-
-  @override
-  String get softGlassPresetStandard => '標準';
-
-  @override
-  String get softGlassPresetDense => '濃霧';
-
-  @override
-  String get softGlassPresetCustom => '自訂';
-
-  @override
-  String get softGlassBlurLabel => '霧面強度';
-
-  @override
-  String get softGlassTintLabel => '底色濃度';
-
-  @override
-  String get softGlassRefractionLabel => '折射強度';
-
-  @override
-  String get softGlassDepthLabel => '厚度感';
-
-  @override
-  String get softGlassChromaticAberrationLabel => '色散';
-
-  @override
-  String get softGlassEdgeHighlightLabel => '邊緣高光';
-
-  @override
-  String get softGlassResetAction => '還原預設';
-
-  @override
   String get diagnosticsEntryTitle => '診斷';
 
   @override
@@ -21124,9 +20969,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get frostedSheetPreviewShowTitle => '顯示預覽';
-
-  @override
-  String get frostedSheetPreviewShowSubtitle => '在頂部顯示磨砂玻璃預覽';
 
   @override
   String get aboutSupportUpdatesSectionTitle => '支援與更新';
@@ -25364,9 +25206,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get frostedSheetPreviewDemoTitle => '預覽';
 
   @override
-  String get frostedSheetPreviewDemoSubtitle => '磨砂玻璃效果即時預覽';
-
-  @override
   String get timetableBackgroundColorSectionTitle => '課表背景色';
 
   @override
@@ -28445,9 +28284,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get guideVisualEffectGaussianDesc => '背景即時高斯模糊，通透有層次';
-
-  @override
-  String get guideVisualEffectSoftDesc => '霧面柔光玻璃，輕盈細膩（比液態更省電）';
 
   @override
   String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感';
@@ -31935,31 +31771,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get headerBlurStyleInspire => '漸進模糊';
 
   @override
-  String get texturePresetLabel => '質感方案';
-
-  @override
-  String get texturePresetSubtitle => '一鍵套用整套材質搭配，應用後仍可逐項調整';
-
-  @override
-  String get texturePresetFullLiquid => '全液態';
-
-  @override
-  String get texturePresetSoftMist => '輕霧柔光';
-
-  @override
-  String get texturePresetMinimalSolid => '極簡實體';
-
-  @override
-  String get texturePresetCustom => '自定義';
-
-  @override
-  String get texturePresetApplyTitle => '套用質感方案';
-
-  @override
-  String get texturePresetApplyBody =>
-      '將覆蓋玻璃模式、作用範圍開關、頂欄風格、卡片表面等材質設定；桌布和字色不受影響。';
-
-  @override
   String get surfaceMaterialSectionTitle => '各表面當前材質';
 
   @override
@@ -32017,9 +31828,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get frostedGlassModeLiquid => '液態玻璃';
 
   @override
-  String get frostedGlassModeSoft => '柔光玻璃';
-
-  @override
   String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
@@ -32027,9 +31835,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get advancedMaterialTitle => '進階材質';
-
-  @override
-  String get advancedMaterialEntrySubtitle => '柔光 / 液態玻璃參數微調';
 
   @override
   String get liquidGlassPresetLabel => '液態玻璃預設';
@@ -32123,45 +31928,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liquidGlassDarkIndependentSubtitle => '預設沿用淺色檔；開啟後可單獨調一套';
 
   @override
-  String get softGlassPresetLabel => '柔光玻璃預設';
-
-  @override
-  String get softGlassPresetClear => '清透';
-
-  @override
-  String get softGlassPresetLight => '輕盈';
-
-  @override
-  String get softGlassPresetStandard => '標準';
-
-  @override
-  String get softGlassPresetDense => '濃霧';
-
-  @override
-  String get softGlassPresetCustom => '自訂';
-
-  @override
-  String get softGlassBlurLabel => '霧面強度';
-
-  @override
-  String get softGlassTintLabel => '底色濃度';
-
-  @override
-  String get softGlassRefractionLabel => '折射強度';
-
-  @override
-  String get softGlassDepthLabel => '厚度感';
-
-  @override
-  String get softGlassChromaticAberrationLabel => '色散';
-
-  @override
-  String get softGlassEdgeHighlightLabel => '邊緣高光';
-
-  @override
-  String get softGlassResetAction => '還原預設';
-
-  @override
   String get diagnosticsEntryTitle => '診斷';
 
   @override
@@ -32227,9 +31993,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get frostedSheetPreviewShowTitle => '顯示預覽';
-
-  @override
-  String get frostedSheetPreviewShowSubtitle => '在頂部顯示磨砂玻璃預覽';
 
   @override
   String get aboutSupportUpdatesSectionTitle => '支援與更新';

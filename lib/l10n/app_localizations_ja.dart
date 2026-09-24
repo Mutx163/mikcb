@@ -3263,9 +3263,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get frostedSheetPreviewDemoTitle => 'プレビュー';
 
   @override
-  String get frostedSheetPreviewDemoSubtitle => 'フロストガラス効果のリアルタイムプレビュー';
-
-  @override
   String get timetableBackgroundColorSectionTitle => '時間割背景色';
 
   @override
@@ -6400,9 +6397,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get guideVisualEffectGaussianDesc => '背景をリアルタイムにぼかし、透明感と奥行きを演出';
-
-  @override
-  String get guideVisualEffectSoftDesc => 'やわらかなフロストガラス。軽く繊細で、リキッドより省電力';
 
   @override
   String get guideVisualEffectLiquidDesc => 'リキッドグラスの屈折で質感をプラス';
@@ -10026,31 +10020,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get headerBlurStyleInspire => 'プログレッシブぼかし';
 
   @override
-  String get texturePresetLabel => '質感プリセット';
-
-  @override
-  String get texturePresetSubtitle => '素材の組み合わせをまとめて適用。後から個別に調整できます';
-
-  @override
-  String get texturePresetFullLiquid => '全面リキッドガラス';
-
-  @override
-  String get texturePresetSoftMist => 'ソフトな霧';
-
-  @override
-  String get texturePresetMinimalSolid => 'ソリッドのみ';
-
-  @override
-  String get texturePresetCustom => 'カスタム';
-
-  @override
-  String get texturePresetApplyTitle => '質感プリセットを適用';
-
-  @override
-  String get texturePresetApplyBody =>
-      'ガラスモード・適用範囲スイッチ・上部バーのスタイル・カード表面などの設定を上書きします。壁紙と文字色は変わりません。';
-
-  @override
   String get surfaceMaterialSectionTitle => '表面ごとの現在の素材';
 
   @override
@@ -10109,9 +10078,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get frostedGlassModeLiquid => 'リキッドガラス';
 
   @override
-  String get frostedGlassModeSoft => 'ソフトガラス';
-
-  @override
   String get frostedGlassModeGaussian => 'ガウスぼかし';
 
   @override
@@ -10119,9 +10085,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get advancedMaterialTitle => '高度なマテリアル';
-
-  @override
-  String get advancedMaterialEntrySubtitle => 'ソフト / リキッドガラスのパラメータ調整';
 
   @override
   String get liquidGlassPresetLabel => 'リキッドガラスプリセット';
@@ -10217,45 +10180,6 @@ class AppLocalizationsJa extends AppLocalizations {
       '既定ではライト用を流用します。オンにするとダーク専用に調整できます';
 
   @override
-  String get softGlassPresetLabel => 'ソフトグラスのプリセット';
-
-  @override
-  String get softGlassPresetClear => 'クリア';
-
-  @override
-  String get softGlassPresetLight => '軽霧';
-
-  @override
-  String get softGlassPresetStandard => '標準';
-
-  @override
-  String get softGlassPresetDense => '濃霧';
-
-  @override
-  String get softGlassPresetCustom => 'カスタム';
-
-  @override
-  String get softGlassBlurLabel => '曇りの強さ';
-
-  @override
-  String get softGlassTintLabel => '色被りの濃さ';
-
-  @override
-  String get softGlassRefractionLabel => '屈折の強さ';
-
-  @override
-  String get softGlassDepthLabel => '厚み';
-
-  @override
-  String get softGlassChromaticAberrationLabel => '色収差';
-
-  @override
-  String get softGlassEdgeHighlightLabel => 'エッジの光沢';
-
-  @override
-  String get softGlassResetAction => 'デフォルトに戻す';
-
-  @override
   String get diagnosticsEntryTitle => '診断';
 
   @override
@@ -10326,9 +10250,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get frostedSheetPreviewShowTitle => 'プレビューを表示';
-
-  @override
-  String get frostedSheetPreviewShowSubtitle => '上部にフロストガラスプレビューを表示';
 
   @override
   String get aboutSupportUpdatesSectionTitle => 'サポートと更新';

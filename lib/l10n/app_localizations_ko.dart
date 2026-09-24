@@ -3279,9 +3279,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedSheetPreviewDemoTitle => '미리보기';
 
   @override
-  String get frostedSheetPreviewDemoSubtitle => '프로스트 글래스 효과 실시간 미리보기';
-
-  @override
   String get timetableBackgroundColorSectionTitle => '시간표 배경색';
 
   @override
@@ -6436,9 +6433,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get guideVisualEffectGaussianDesc => '배경에 실시간 가우시안 블러로 깊이감 있는 투명 효과';
-
-  @override
-  String get guideVisualEffectSoftDesc => '부드러운 프로스트 유리. 가볍고 정교하며 리퀴드보다 효율적';
 
   @override
   String get guideVisualEffectLiquidDesc => '리퀴드 글래스 굴절로 질감을 더함';
@@ -10070,31 +10064,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get headerBlurStyleInspire => '점진 블러';
 
   @override
-  String get texturePresetLabel => '질감 프리셋';
-
-  @override
-  String get texturePresetSubtitle => '재질 조합을 한 번에 적용하고, 이후에 항목별로 조정할 수 있습니다';
-
-  @override
-  String get texturePresetFullLiquid => '전체 리퀴드 글래스';
-
-  @override
-  String get texturePresetSoftMist => '부드러운 안개';
-
-  @override
-  String get texturePresetMinimalSolid => '솔리드만';
-
-  @override
-  String get texturePresetCustom => '사용자 지정';
-
-  @override
-  String get texturePresetApplyTitle => '질감 프리셋 적용';
-
-  @override
-  String get texturePresetApplyBody =>
-      '유리 모드, 적용 범위 스위치, 상단 바 스타일, 카드 표면 등 재질 설정을 덮어씁니다. 배경화면과 글자색은 그대로입니다.';
-
-  @override
   String get surfaceMaterialSectionTitle => '표면별 현재 재질';
 
   @override
@@ -10154,9 +10123,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedGlassModeLiquid => '리퀴드 글래스';
 
   @override
-  String get frostedGlassModeSoft => '소프트 글래스';
-
-  @override
   String get frostedGlassModeGaussian => '가우시안 블러';
 
   @override
@@ -10164,9 +10130,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get advancedMaterialTitle => '고급 재질';
-
-  @override
-  String get advancedMaterialEntrySubtitle => '소프트 / 리퀴드 유리 매개변수 미세 조정';
 
   @override
   String get liquidGlassPresetLabel => '리퀴드 글래스 프리셋';
@@ -10262,45 +10225,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '기본값은 라이트 설정을 따릅니다. 켜면 다크 전용으로 따로 조정할 수 있습니다';
 
   @override
-  String get softGlassPresetLabel => '소프트 글래스 프리셋';
-
-  @override
-  String get softGlassPresetClear => '투명';
-
-  @override
-  String get softGlassPresetLight => '옅은 안개';
-
-  @override
-  String get softGlassPresetStandard => '표준';
-
-  @override
-  String get softGlassPresetDense => '짙은 안개';
-
-  @override
-  String get softGlassPresetCustom => '사용자 지정';
-
-  @override
-  String get softGlassBlurLabel => '흐림 강도';
-
-  @override
-  String get softGlassTintLabel => '색조 농도';
-
-  @override
-  String get softGlassRefractionLabel => '굴절 강도';
-
-  @override
-  String get softGlassDepthLabel => '두께감';
-
-  @override
-  String get softGlassChromaticAberrationLabel => '색수차';
-
-  @override
-  String get softGlassEdgeHighlightLabel => '가장자리 하이라이트';
-
-  @override
-  String get softGlassResetAction => '기본값으로 초기화';
-
-  @override
   String get diagnosticsEntryTitle => '진단';
 
   @override
@@ -10371,9 +10295,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get frostedSheetPreviewShowTitle => '미리보기 표시';
-
-  @override
-  String get frostedSheetPreviewShowSubtitle => '상단에 프로스트 글래스 미리보기를 표시합니다';
 
   @override
   String get aboutSupportUpdatesSectionTitle => '지원 및 업데이트';

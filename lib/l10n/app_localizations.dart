@@ -5931,12 +5931,6 @@ abstract class AppLocalizations {
   /// **'预览'**
   String get frostedSheetPreviewDemoTitle;
 
-  /// No description provided for @frostedSheetPreviewDemoSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'磨砂玻璃效果实时预览'**
-  String get frostedSheetPreviewDemoSubtitle;
-
   /// No description provided for @timetableBackgroundColorSectionTitle.
   ///
   /// In zh, this message translates to:
@@ -11506,12 +11500,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'背景实时高斯模糊，通透有层次'**
   String get guideVisualEffectGaussianDesc;
-
-  /// No description provided for @guideVisualEffectSoftDesc.
-  ///
-  /// In zh, this message translates to:
-  /// **'雾面柔光玻璃，轻盈细腻（比液态更省电）'**
-  String get guideVisualEffectSoftDesc;
 
   /// No description provided for @guideVisualEffectLiquidDesc.
   ///
@@ -17623,54 +17611,6 @@ abstract class AppLocalizations {
   /// **'渐进模糊'**
   String get headerBlurStyleInspire;
 
-  /// No description provided for @texturePresetLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'质感方案'**
-  String get texturePresetLabel;
-
-  /// No description provided for @texturePresetSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'一键套用整套材质搭配，应用后仍可逐项调整'**
-  String get texturePresetSubtitle;
-
-  /// No description provided for @texturePresetFullLiquid.
-  ///
-  /// In zh, this message translates to:
-  /// **'全液态'**
-  String get texturePresetFullLiquid;
-
-  /// No description provided for @texturePresetSoftMist.
-  ///
-  /// In zh, this message translates to:
-  /// **'轻雾柔光'**
-  String get texturePresetSoftMist;
-
-  /// No description provided for @texturePresetMinimalSolid.
-  ///
-  /// In zh, this message translates to:
-  /// **'极简实体'**
-  String get texturePresetMinimalSolid;
-
-  /// No description provided for @texturePresetCustom.
-  ///
-  /// In zh, this message translates to:
-  /// **'自定义'**
-  String get texturePresetCustom;
-
-  /// No description provided for @texturePresetApplyTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'应用质感方案'**
-  String get texturePresetApplyTitle;
-
-  /// No description provided for @texturePresetApplyBody.
-  ///
-  /// In zh, this message translates to:
-  /// **'将覆盖玻璃模式、作用范围开关、顶栏风格、卡片表面等材质设置；壁纸和字色不受影响。'**
-  String get texturePresetApplyBody;
-
   /// No description provided for @surfaceMaterialSectionTitle.
   ///
   /// In zh, this message translates to:
@@ -17785,12 +17725,6 @@ abstract class AppLocalizations {
   /// **'液态玻璃'**
   String get frostedGlassModeLiquid;
 
-  /// No description provided for @frostedGlassModeSoft.
-  ///
-  /// In zh, this message translates to:
-  /// **'柔光玻璃'**
-  String get frostedGlassModeSoft;
-
   /// No description provided for @frostedGlassModeGaussian.
   ///
   /// In zh, this message translates to:
@@ -17808,12 +17742,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'高级材质'**
   String get advancedMaterialTitle;
-
-  /// No description provided for @advancedMaterialEntrySubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'柔光 / 液态玻璃参数微调'**
-  String get advancedMaterialEntrySubtitle;
 
   /// No description provided for @liquidGlassPresetLabel.
   ///
@@ -17995,84 +17923,6 @@ abstract class AppLocalizations {
   /// **'默认沿用浅色档；打开后可单独调一套'**
   String get liquidGlassDarkIndependentSubtitle;
 
-  /// No description provided for @softGlassPresetLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'柔光玻璃预设'**
-  String get softGlassPresetLabel;
-
-  /// No description provided for @softGlassPresetClear.
-  ///
-  /// In zh, this message translates to:
-  /// **'清透'**
-  String get softGlassPresetClear;
-
-  /// No description provided for @softGlassPresetLight.
-  ///
-  /// In zh, this message translates to:
-  /// **'轻盈'**
-  String get softGlassPresetLight;
-
-  /// No description provided for @softGlassPresetStandard.
-  ///
-  /// In zh, this message translates to:
-  /// **'标准'**
-  String get softGlassPresetStandard;
-
-  /// No description provided for @softGlassPresetDense.
-  ///
-  /// In zh, this message translates to:
-  /// **'浓雾'**
-  String get softGlassPresetDense;
-
-  /// No description provided for @softGlassPresetCustom.
-  ///
-  /// In zh, this message translates to:
-  /// **'自定义'**
-  String get softGlassPresetCustom;
-
-  /// No description provided for @softGlassBlurLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'雾面强度'**
-  String get softGlassBlurLabel;
-
-  /// No description provided for @softGlassTintLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'底色浓度'**
-  String get softGlassTintLabel;
-
-  /// No description provided for @softGlassRefractionLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'折射强度'**
-  String get softGlassRefractionLabel;
-
-  /// No description provided for @softGlassDepthLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'厚度感'**
-  String get softGlassDepthLabel;
-
-  /// No description provided for @softGlassChromaticAberrationLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'色散'**
-  String get softGlassChromaticAberrationLabel;
-
-  /// No description provided for @softGlassEdgeHighlightLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'边缘高光'**
-  String get softGlassEdgeHighlightLabel;
-
-  /// No description provided for @softGlassResetAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'恢复默认'**
-  String get softGlassResetAction;
-
   /// No description provided for @diagnosticsEntryTitle.
   ///
   /// In zh, this message translates to:
@@ -18204,12 +18054,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'显示预览'**
   String get frostedSheetPreviewShowTitle;
-
-  /// No description provided for @frostedSheetPreviewShowSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'在顶部显示磨砂玻璃预览'**
-  String get frostedSheetPreviewShowSubtitle;
 
   /// No description provided for @aboutSupportUpdatesSectionTitle.
   ///
