@@ -107,6 +107,22 @@ void main() {
     expect(stored['appLocaleTag'], 'ja');
   });
 
+  test('写回当前缓存值时也必须排到队列末尾', () async {
+    final first = TimetableSettings.defaults().copyWith(appLocaleTag: 'en');
+    final second = TimetableSettings.defaults().copyWith(appLocaleTag: 'ja');
+    await AppGlobalSettingsService.syncFrom(first);
+
+    final queuedSecond = AppGlobalSettingsService.syncFrom(second);
+    final queuedFirst = AppGlobalSettingsService.syncFrom(first);
+    await Future.wait([queuedSecond, queuedFirst]);
+
+    final preferences = await SharedPreferences.getInstance();
+    final stored = jsonDecode(
+      preferences.getString(AppGlobalSettingsService.preferenceKey)!,
+    ) as Map<String, dynamic>;
+    expect(stored['appLocaleTag'], 'en');
+  });
+
   test('overlay 把清单里的键全部换成全局那份，其它键原样不动', () async {
     final global = customized();
     await seedGlobal(global);

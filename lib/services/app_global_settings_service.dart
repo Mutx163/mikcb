@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -98,6 +99,15 @@ class AppGlobalSettingsService {
     'pageTransitionSpeed',
     'enableHaptics',
     'homePullQuickImportEnabled',
+    // —— 应用更新与系统行为（关于页 / 系统设置）——
+    'liveHideFromRecents',
+    'appUpdateDownloadSource',
+    'appUpdateDownloadChannel',
+    'appUpdateUseSystemDownloader',
+    'appUpdateMirrorPreset',
+    'appUpdateIncludePrerelease',
+    'appUpdateMirrorUrlPrefix',
+    'appUpdatePromptEnabled',
   ];
 
   /// 进程内缓存。`_applyProfileState` 是同步方法，覆盖时读这里，不再等 I/O。
@@ -105,6 +115,11 @@ class AppGlobalSettingsService {
 
   /// 所有全局设置写入共用一条串行链，避免旧请求晚到覆盖新请求。
   static Future<void> _writeQueue = Future<void>.value();
+  /// 上一次排队但尚未完成的请求签名；只合并连续重复值，保留 A→B→A 顺序。
+  static String? _lastQueuedSignature;
+  static Future<void>? _lastQueuedFuture;
+  /// 平台写失败后，shared_preferences 的进程缓存可能已变；必须强制重试。
+  static bool _cacheNeedsWrite = false;
 
   /// 当前全局那份（只读；测试与诊断用）。
   static Map<String, dynamic> get current => _cache;
@@ -160,14 +175,21 @@ class AppGlobalSettingsService {
       return;
     }
     final next = extract(source.settings);
-    try {
+    final operation = _writeQueue.then<void>((_) async {
       if (!await _write(preferences, next)) {
+        _cacheNeedsWrite = true;
+        await _reloadAfterFailedWrite(preferences);
         throw StateError('app_global_settings_write_failed');
       }
       _cache = next;
       if (!await preferences.setBool(migratedKey, true)) {
+        await _reloadAfterFailedWrite(preferences);
         throw StateError('app_global_settings_migration_marker_failed');
       }
+    });
+    _writeQueue = operation.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    try {
+      await operation;
     } catch (error, stackTrace) {
       // 迁移失败不能拖垮启动：标记还没置位，下次载入会再试一次。
       await AppLogService.instance.error(
@@ -186,25 +208,66 @@ class AppGlobalSettingsService {
   /// 课程编辑这类与全局字段无关的落盘，因为内容没变，这里是一次内存比较。
   static Future<void> syncFrom(TimetableSettings settings) {
     final next = extract(settings);
-    if (_sameAsCache(next)) {
+    final signature = _signature(next);
+    final pending = _lastQueuedFuture;
+    // 连续的同一值共用一个 Future，避免普通课程/任务保存把队列越堆越长；
+    // 但 A→B→A 的三个不同请求仍会分别排队，保证最后状态不被吞。
+    if (pending != null && _lastQueuedSignature == signature) {
+      return pending;
+    }
+    if (pending == null && !_cacheNeedsWrite && _sameAsCache(next)) {
       return Future<void>.value();
     }
-    final operation = _writeQueue.then((_) => _writeAndCache(next));
-    // 一次失败不能堵死后续保存；但本次调用的 Future 仍把错误交给调用方。
+    final operation = _writeQueue.then<void>((_) => _writeAndCache(next));
+    _lastQueuedSignature = signature;
+    _lastQueuedFuture = operation;
     _writeQueue = operation.then<void>((_) {}, onError: (Object _) {});
+    unawaited(
+      operation.then<void>(
+        (_) {
+          if (identical(_lastQueuedFuture, operation)) {
+            _lastQueuedSignature = null;
+            _lastQueuedFuture = null;
+          }
+        },
+        onError: (Object _, StackTrace _) {
+          if (identical(_lastQueuedFuture, operation)) {
+            _lastQueuedSignature = null;
+            _lastQueuedFuture = null;
+          }
+        },
+      ),
+    );
     return operation;
   }
 
+  static String _signature(Map<String, dynamic> value) => jsonEncode(value);
+
   static Future<void> _writeAndCache(Map<String, dynamic> next) async {
-    if (_sameAsCache(next)) {
+    if (!_cacheNeedsWrite && _sameAsCache(next)) {
       return;
     }
     final preferences = await SharedPreferences.getInstance();
     if (!await _write(preferences, next)) {
+      _cacheNeedsWrite = true;
+      await _reloadAfterFailedWrite(preferences);
       throw StateError('app_global_settings_write_failed');
     }
     // 只有平台确认写成功，才推进内存缓存；失败后下一次保存仍会重试。
     _cache = next;
+    _cacheNeedsWrite = false;
+  }
+
+  static Future<void> _reloadAfterFailedWrite(
+    SharedPreferences preferences,
+  ) async {
+    try {
+      await preferences.reload();
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('AppGlobalSettingsService: reload after failed write: $error');
+      }
+    }
   }
 
   /// 外部快照导入（云同步 / 备份 / 局域网）之后，从导入进来的那份重新推导全局值。
@@ -228,6 +291,9 @@ class AppGlobalSettingsService {
   static void resetCacheForTest() {
     _cache = const <String, dynamic>{};
     _writeQueue = Future<void>.value();
+    _lastQueuedSignature = null;
+    _lastQueuedFuture = null;
+    _cacheNeedsWrite = false;
   }
 
   static TimetableProfile? _pickSourceProfile(

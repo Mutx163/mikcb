@@ -120,6 +120,73 @@ class StorageService {
     _prefs = await SharedPreferences.getInstance();
   }
 
+  Future<SharedPreferences> _requirePrefs() async {
+    if (_prefs == null) {
+      await init();
+    }
+    final prefs = _prefs;
+    if (prefs == null) {
+      throw StateError('storage_not_initialized');
+    }
+    return prefs;
+  }
+
+  Future<void> _recoverAfterFailedWrite(SharedPreferences prefs) async {
+    try {
+      // shared_preferences 会先改进程内缓存，再调用平台；平台返回 false
+      // 时必须重新从平台读回，否则本次进程会继续读到未落盘的新值。
+      await prefs.reload();
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('StorageService: failed to reload after write error: $error');
+      }
+    }
+    _invalidateProfilesListCache();
+    _invalidateTimeSchemesListCache();
+    _locationTimeGroupsListCache = null;
+    _scheduleDateRulesListCache = null;
+  }
+
+  Future<void> _setStringChecked(String key, String value) async {
+    final prefs = await _requirePrefs();
+    if (!await prefs.setString(key, value)) {
+      await _recoverAfterFailedWrite(prefs);
+      throw StateError('storage_write_failed:$key');
+    }
+  }
+
+  Future<void> _setIntChecked(String key, int value) async {
+    final prefs = await _requirePrefs();
+    if (!await prefs.setInt(key, value)) {
+      await _recoverAfterFailedWrite(prefs);
+      throw StateError('storage_write_failed:$key');
+    }
+  }
+
+  Future<void> _setBoolChecked(String key, bool value) async {
+    final prefs = await _requirePrefs();
+    if (!await prefs.setBool(key, value)) {
+      await _recoverAfterFailedWrite(prefs);
+      throw StateError('storage_write_failed:$key');
+    }
+  }
+
+  Future<void> _setStringListChecked(String key, List<String> value) async {
+    final prefs = await _requirePrefs();
+    if (!await prefs.setStringList(key, value)) {
+      await _recoverAfterFailedWrite(prefs);
+      throw StateError('storage_write_failed:$key');
+    }
+  }
+
+  Future<void> _removeChecked(String key) async {
+    final prefs = await _requirePrefs();
+    if (!await prefs.remove(key)) {
+      await _recoverAfterFailedWrite(prefs);
+      throw StateError('storage_remove_failed:$key');
+    }
+  }
+
   TimeScheme _snapshotTimeScheme(TimeScheme scheme) =>
       TimeScheme.fromJson(Map<String, dynamic>.from(scheme.toJson()));
 
@@ -140,29 +207,51 @@ class StorageService {
     Iterable<TimetableProfile> profiles,
   ) => profiles.map(_snapshotProfile).toList();
 
-  Future<void> _backupAndRemoveCorruptString(String key, String raw) async {
-    final prefs = _prefs;
-    if (prefs == null) {
-      return;
+  Future<bool> _backupAndRemoveCorruptString(String key, String raw) async {
+    try {
+      final prefs = await _requirePrefs();
+      final backupKey =
+          '${key}_corrupt_backup_${DateTime.now().microsecondsSinceEpoch}';
+      if (!await prefs.setString(backupKey, raw)) {
+        await _recoverAfterFailedWrite(prefs);
+        return false;
+      }
+      if (!await prefs.remove(key)) {
+        await _recoverAfterFailedWrite(prefs);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('StorageService: corrupt-data backup failed for $key: $error');
+      }
+      return false;
     }
-    final backupKey =
-        '${key}_corrupt_backup_${DateTime.now().microsecondsSinceEpoch}';
-    await prefs.setString(backupKey, raw);
-    await prefs.remove(key);
   }
 
-  Future<void> _backupAndRemoveCorruptStringList(
+  Future<bool> _backupAndRemoveCorruptStringList(
     String key,
     List<String> raw,
   ) async {
-    final prefs = _prefs;
-    if (prefs == null) {
-      return;
+    try {
+      final prefs = await _requirePrefs();
+      final backupKey =
+          '${key}_corrupt_backup_${DateTime.now().microsecondsSinceEpoch}';
+      if (!await prefs.setString(backupKey, jsonEncode(raw))) {
+        await _recoverAfterFailedWrite(prefs);
+        return false;
+      }
+      if (!await prefs.remove(key)) {
+        await _recoverAfterFailedWrite(prefs);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('StorageService: corrupt-list backup failed for $key: $error');
+      }
+      return false;
     }
-    final backupKey =
-        '${key}_corrupt_backup_${DateTime.now().microsecondsSinceEpoch}';
-    await prefs.setString(backupKey, jsonEncode(raw));
-    await prefs.remove(key);
   }
 
   Future<List<dynamic>?> _readJsonListPreference(String key) async {
@@ -232,7 +321,7 @@ class StorageService {
   Future<void> _writeCoursesWithoutLock(List<Course> courses) async {
     if (_prefs == null) await init();
     final coursesJson = courses.map((course) => course.toJsonString()).toList();
-    await _prefs?.setStringList(_coursesKey, coursesJson);
+    await _setStringListChecked(_coursesKey, coursesJson);
   }
 
   Future<void> addCourse(Course course) {
@@ -294,7 +383,7 @@ class StorageService {
 
   Future<void> saveTimetableSettings(TimetableSettings settings) async {
     if (_prefs == null) await init();
-    await _prefs?.setString(_timetableSettingsKey, settings.toJsonString());
+    await _setStringChecked(_timetableSettingsKey, settings.toJsonString());
   }
 
   // 当前周次存储
@@ -305,7 +394,7 @@ class StorageService {
 
   Future<void> setCurrentWeek(int week) async {
     if (_prefs == null) await init();
-    await _prefs?.setInt(_currentWeekKey, week);
+    await _setIntChecked(_currentWeekKey, week);
   }
 
   // 学期开始日期存储
@@ -320,12 +409,12 @@ class StorageService {
 
   Future<void> setSemesterStart(DateTime date) async {
     if (_prefs == null) await init();
-    await _prefs?.setInt(_semesterStartKey, date.millisecondsSinceEpoch);
+    await _setIntChecked(_semesterStartKey, date.millisecondsSinceEpoch);
   }
 
   Future<void> clearSemesterStart() async {
     if (_prefs == null) await init();
-    await _prefs?.remove(_semesterStartKey);
+    await _removeChecked(_semesterStartKey);
   }
 
   Future<bool> hasSeenUserGuide() async {
@@ -335,9 +424,9 @@ class StorageService {
 
   Future<void> setHasSeenUserGuide(bool value) async {
     if (_prefs == null) await init();
-    await _prefs?.setBool(_hasSeenUserGuideKey, value);
+    await _setBoolChecked(_hasSeenUserGuideKey, value);
     if (_prefs?.getBool(_hasSeenUserGuideKey) != value) {
-      await _prefs?.setBool(_hasSeenUserGuideKey, value);
+      await _setBoolChecked(_hasSeenUserGuideKey, value);
     }
   }
 
@@ -348,9 +437,9 @@ class StorageService {
 
   Future<void> setAcceptedPrivacyPolicy(bool value) async {
     if (_prefs == null) await init();
-    await _prefs?.setBool(_acceptedPrivacyPolicyKey, value);
+    await _setBoolChecked(_acceptedPrivacyPolicyKey, value);
     if (_prefs?.getBool(_acceptedPrivacyPolicyKey) != value) {
-      await _prefs?.setBool(_acceptedPrivacyPolicyKey, value);
+      await _setBoolChecked(_acceptedPrivacyPolicyKey, value);
     }
   }
 
@@ -361,10 +450,10 @@ class StorageService {
 
   Future<void> setCompletedOnboarding(bool value) async {
     if (_prefs == null) await init();
-    await _prefs?.setBool(_hasCompletedOnboardingKey, value);
+    await _setBoolChecked(_hasCompletedOnboardingKey, value);
     // 防御性验证：某些国产 ROM 的 commit() 可能不可靠
     if (_prefs?.getBool(_hasCompletedOnboardingKey) != value) {
-      await _prefs?.setBool(_hasCompletedOnboardingKey, value);
+      await _setBoolChecked(_hasCompletedOnboardingKey, value);
     }
   }
 
@@ -375,7 +464,7 @@ class StorageService {
 
   Future<void> setHandledPackageMigration(bool value) async {
     if (_prefs == null) await init();
-    await _prefs?.setBool(_hasHandledPackageMigrationKey, value);
+    await _setBoolChecked(_hasHandledPackageMigrationKey, value);
   }
 
   Future<bool> hasMigratedAppLogsDefault() async {
@@ -385,7 +474,7 @@ class StorageService {
 
   Future<void> setMigratedAppLogsDefault(bool value) async {
     if (_prefs == null) await init();
-    await _prefs?.setBool(_appLogsDefaultMigrationKey, value);
+    await _setBoolChecked(_appLogsDefaultMigrationKey, value);
   }
 
   Future<bool> isAppDataEffectivelyEmpty() async {
@@ -623,7 +712,7 @@ class StorageService {
     final payload = jsonEncode(
       profiles.map((profile) => profile.toJson()).toList(),
     );
-    await _prefs?.setString(_profilesKey, payload);
+    await _setStringChecked(_profilesKey, payload);
     await _stampProfilesSchemaVersion();
     _profilesListCache = _snapshotProfiles(profiles);
   }
@@ -634,7 +723,7 @@ class StorageService {
     if (current == profilesSchemaVersion) {
       return;
     }
-    await _prefs?.setInt(_profilesSchemaVersionKey, profilesSchemaVersion);
+    await _setIntChecked(_profilesSchemaVersionKey, profilesSchemaVersion);
   }
 
   /// Serializes profile disk writes (full put and RMW) on one chain.
@@ -698,8 +787,11 @@ class StorageService {
   }
 
   Future<void> setActiveProfileId(String profileId) async {
-    if (_prefs == null) await init();
-    await _prefs?.setString(_activeProfileIdKey, profileId);
+    await _setStringChecked(_activeProfileIdKey, profileId);
+  }
+
+  Future<void> clearActiveProfileId() async {
+    await _removeChecked(_activeProfileIdKey);
   }
 
   /// Profile 存储布局版本号（解耦阶段 2 引入）。
@@ -713,8 +805,7 @@ class StorageService {
   }
 
   Future<void> setProfilesSchemaVersion(int version) async {
-    if (_prefs == null) await init();
-    await _prefs?.setInt(_profilesSchemaVersionKey, version);
+    await _setIntChecked(_profilesSchemaVersionKey, version);
   }
 
   Future<List<TimeScheme>> getTimeSchemes() async {
@@ -772,7 +863,7 @@ class StorageService {
         final payload = jsonEncode(
           snapshot.map((scheme) => scheme.toJson()).toList(),
         );
-        await _prefs?.setString(_timeSchemesKey, payload);
+        await _setStringChecked(_timeSchemesKey, payload);
         _timeSchemesListCache = _snapshotTimeSchemes(snapshot);
       },
     );
@@ -832,7 +923,7 @@ class StorageService {
         final payload = jsonEncode(
           snapshot.map((group) => group.toJson()).toList(),
         );
-        await _prefs?.setString(_locationTimeGroupsKey, payload);
+        await _setStringChecked(_locationTimeGroupsKey, payload);
         _locationTimeGroupsListCache = _snapshotLocationTimeGroups(snapshot);
       },
     );
@@ -892,7 +983,7 @@ class StorageService {
         final payload = jsonEncode(
           snapshot.map((rule) => rule.toJson()).toList(),
         );
-        await _prefs?.setString(_scheduleDateRulesKey, payload);
+        await _setStringChecked(_scheduleDateRulesKey, payload);
         _scheduleDateRulesListCache = snapshot
             .map((rule) => rule.copyWith())
             .toList();
@@ -918,10 +1009,10 @@ class StorageService {
     if (_prefs == null) await init();
     final trimmed = signature?.trim();
     if (trimmed == null || trimmed.isEmpty) {
-      await _prefs?.remove(_scheduleDateRuleLastAppliedSignatureKey);
+      await _removeChecked(_scheduleDateRuleLastAppliedSignatureKey);
       return;
     }
-    await _prefs?.setString(_scheduleDateRuleLastAppliedSignatureKey, trimmed);
+    await _setStringChecked(_scheduleDateRuleLastAppliedSignatureKey, trimmed);
   }
 
   // ---------------------------------------------------------------------------
@@ -945,7 +1036,7 @@ class StorageService {
       update: (future) => _teacherRecordsWriteChain = future,
       operation: () async {
         if (_prefs == null) await init();
-        await _prefs?.setStringList(_teacherRecordsKey, snapshot);
+        await _setStringListChecked(_teacherRecordsKey, snapshot);
       },
     );
   }
@@ -964,7 +1055,7 @@ class StorageService {
       update: (future) => _locationRecordsWriteChain = future,
       operation: () async {
         if (_prefs == null) await init();
-        await _prefs?.setStringList(_locationRecordsKey, snapshot);
+        await _setStringListChecked(_locationRecordsKey, snapshot);
       },
     );
   }
@@ -990,8 +1081,12 @@ class StorageService {
     if (rawProfiles != null && rawProfiles.isNotEmpty) {
       final rawProfileList = await _readJsonListPreference(_profilesKey);
       if (rawProfileList == null) {
-        // Corrupt stored profiles were backed up and removed. Continue below so
-        // the app can recreate a valid default profile.
+        // 修复成功时原 key 已清掉，下面才创建默认课表；若备份/删除失败，
+        // 原 key 仍在，宁可让本轮读到空状态，也不能覆盖用户原始数据。
+        if (_prefs?.getString(_profilesKey)?.isNotEmpty ?? false) {
+          _profilesEnsured = true;
+          return;
+        }
       } else {
         final profiles = _parseStoredProfiles(rawProfileList);
         if (profiles.isEmpty) {
@@ -1001,13 +1096,27 @@ class StorageService {
           if (rawProfileList.isNotEmpty) {
             final raw = _prefs?.getString(_profilesKey);
             if (raw != null) {
-              await _backupAndRemoveCorruptString(_profilesKey, raw);
+              final removed = await _backupAndRemoveCorruptString(
+                _profilesKey,
+                raw,
+              );
+              if (!removed && (_prefs?.getString(_profilesKey)?.isNotEmpty ?? false)) {
+                // 备份失败时保留原 key，绝不拿新建默认课表覆盖它。
+                _profilesEnsured = true;
+                return;
+              }
             }
           }
         } else {
           final activeProfileId = _prefs?.getString(_activeProfileIdKey);
           if (activeProfileId == null || activeProfileId.isEmpty) {
-            await setActiveProfileId(profiles.first.id);
+            try {
+              await setActiveProfileId(profiles.first.id);
+            } catch (error) {
+              if (kDebugMode) {
+                debugPrint('StorageService: active profile id repair deferred: $error');
+              }
+            }
           }
           _profilesEnsured = true;
           return;
@@ -1032,9 +1141,17 @@ class StorageService {
       lastUsedAt: now,
     );
 
-    await saveProfiles([migratedProfile]);
-    await setActiveProfileId(migratedProfile.id);
-    _profilesEnsured = true;
+    var bootstrapWritten = true;
+    try {
+      await saveProfiles([migratedProfile]);
+      await setActiveProfileId(migratedProfile.id);
+    } catch (error) {
+      bootstrapWritten = false;
+      if (kDebugMode) {
+        debugPrint('StorageService: profile bootstrap write deferred: $error');
+      }
+    }
+    _profilesEnsured = bootstrapWritten;
   }
 
   Future<void> _ensureTimeSchemesInitialized() {
@@ -1067,16 +1184,27 @@ class StorageService {
         storedSchemesJson == null || storedSchemesJson.isEmpty
         ? null
         : await _readJsonListPreference(_timeSchemesKey);
+    if (rawStoredSchemes == null &&
+        (storedSchemesJson?.isNotEmpty ?? false)) {
+      // 时间模板损坏且备份/删除失败时保留原 key，不自动覆盖。
+      _timeSchemesEnsured = true;
+      return;
+    }
     var storedSchemes = <TimeScheme>[];
     if (rawStoredSchemes != null) {
       try {
         storedSchemes = _parseStoredTimeSchemes(rawStoredSchemes);
       } catch (_) {
         if (storedSchemesJson != null) {
-          await _backupAndRemoveCorruptString(
+          final removed = await _backupAndRemoveCorruptString(
             _timeSchemesKey,
             storedSchemesJson,
           );
+          if (!removed &&
+              (_prefs?.getString(_timeSchemesKey)?.isNotEmpty ?? false)) {
+            _timeSchemesEnsured = true;
+            return;
+          }
         }
       }
     }
@@ -1136,16 +1264,24 @@ class StorageService {
       }
     }
 
+    var writeSucceeded = true;
     if (storedSchemesJson == null ||
         storedSchemesJson.isEmpty ||
         storedSchemes.length != schemesById.length ||
         hasProfileChanges) {
-      await saveTimeSchemes(storedSchemes);
-      if (hasProfileChanges) {
-        await saveProfiles(profiles);
+      try {
+        await saveTimeSchemes(storedSchemes);
+        if (hasProfileChanges) {
+          await saveProfiles(profiles);
+        }
+      } catch (error) {
+        writeSucceeded = false;
+        if (kDebugMode) {
+          debugPrint('StorageService: time-scheme bootstrap write deferred: $error');
+        }
       }
     }
-    _timeSchemesEnsured = true;
+    _timeSchemesEnsured = writeSucceeded;
   }
 
   String _sectionSignature(List<SectionTime> sections) {
@@ -1187,42 +1323,54 @@ class StorageService {
 
   Future<void> _doMigrateHidePrefixDefault() async {
     if (_hidePrefixMigrated) return;
-    if (_prefs?.getBool(_hidePrefixDefaultMigrationKey) == true) {
-      _hidePrefixMigrated = true;
-      return;
-    }
+    try {
+      if (_prefs?.getBool(_hidePrefixDefaultMigrationKey) == true) {
+        _hidePrefixMigrated = true;
+        return;
+      }
 
-    final rawProfiles = _prefs?.getString(_profilesKey);
-    if (rawProfiles == null || rawProfiles.isEmpty) {
-      await _prefs?.setBool(_hidePrefixDefaultMigrationKey, true);
-      _hidePrefixMigrated = true;
-      return;
-    }
+      final rawProfiles = _prefs?.getString(_profilesKey);
+      if (rawProfiles == null || rawProfiles.isEmpty) {
+        await _setBoolChecked(_hidePrefixDefaultMigrationKey, true);
+        _hidePrefixMigrated = true;
+        return;
+      }
 
-    final rawProfileList = await _readJsonListPreference(_profilesKey);
-    if (rawProfileList == null) {
-      await _prefs?.setBool(_hidePrefixDefaultMigrationKey, true);
-      _hidePrefixMigrated = true;
-      return;
-    }
-    final profiles = _parseStoredProfiles(rawProfileList);
-    if (profiles.isEmpty) {
-      await _prefs?.setBool(_hidePrefixDefaultMigrationKey, true);
-      _hidePrefixMigrated = true;
-      return;
-    }
+      final rawProfileList = await _readJsonListPreference(_profilesKey);
+      if (rawProfileList == null) {
+        // 原始坏数据还在时不要写迁移标记，也不要覆盖它。
+        if (_prefs?.getString(_profilesKey)?.isNotEmpty ?? false) {
+          return;
+        }
+        await _setBoolChecked(_hidePrefixDefaultMigrationKey, true);
+        _hidePrefixMigrated = true;
+        return;
+      }
+      final profiles = _parseStoredProfiles(rawProfileList);
+      if (profiles.isEmpty) {
+        await _setBoolChecked(_hidePrefixDefaultMigrationKey, true);
+        _hidePrefixMigrated = true;
+        return;
+      }
 
-    final migratedProfiles = profiles
-        .map(
-          (profile) => profile.copyWith(
-            settings: profile.settings.copyWith(liveHidePrefixText: true),
-          ),
-        )
-        .toList();
+      final migratedProfiles = profiles
+          .map(
+            (profile) => profile.copyWith(
+              settings: profile.settings.copyWith(liveHidePrefixText: true),
+            ),
+          )
+          .toList();
 
-    await saveProfiles(migratedProfiles);
-    await _prefs?.setBool(_hidePrefixDefaultMigrationKey, true);
-    _hidePrefixMigrated = true;
+      await saveProfiles(migratedProfiles);
+      await _setBoolChecked(_hidePrefixDefaultMigrationKey, true);
+      _hidePrefixMigrated = true;
+    } catch (error) {
+      // 迁移失败不应让冷启动直接崩掉；原始数据保留在盘上，下次启动再试。
+      if (kDebugMode) {
+        debugPrint('StorageService: hide-prefix migration deferred: $error');
+      }
+      _hidePrefixMigrated = true;
+    }
   }
 
   Future<PartnerTimetableBinding?> getPartnerTimetableBinding() async {
@@ -1248,12 +1396,11 @@ class StorageService {
   Future<void> savePartnerTimetableBinding(
     PartnerTimetableBinding? binding,
   ) async {
-    if (_prefs == null) await init();
     if (binding == null) {
-      await _prefs?.remove(_partnerTimetableBindingKey);
+      await _removeChecked(_partnerTimetableBindingKey);
       return;
     }
-    await _prefs?.setString(
+    await _setStringChecked(
       _partnerTimetableBindingKey,
       jsonEncode(binding.toJson()),
     );

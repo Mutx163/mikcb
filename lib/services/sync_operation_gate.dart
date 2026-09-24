@@ -15,6 +15,9 @@ class SyncOperationGate {
   /// 持有者释放时仅当自己仍是队尾（身后无人排队）才置回 true。
   bool _tailSettled = true;
 
+  /// 当前调用链是否已经持有这把锁；用于避免在外层锁内等待启动任务而自锁。
+  bool get isHeldByCurrentZone => identical(Zone.current[_zoneTokenKey], this);
+
   Future<T> runExclusive<T>(Future<T> Function() action) {
     // Nested call from the holder of this gate — re-enter without deadlocking.
     // Future.sync 保持动作体同步启动、同步抛出转为失败 Future 的旧语义。

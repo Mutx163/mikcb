@@ -66,6 +66,8 @@ String localizeServiceMessage(
     // Import / backup
     case 'import_file_unrecognized':
       return l10n.serviceMsgImportFileUnrecognized;
+    case 'import_rollback_incomplete':
+      return l10n.cloudBackupRestoreFailed(l10n.importFailedInvalidFile);
     case 'import_use_overwrite_for_full_backup':
       return l10n.serviceMsgImportUseOverwriteForFullBackup;
     case 'import_no_profiles_in_backup':

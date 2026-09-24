@@ -1,5 +1,159 @@
 part of '../timetable_provider.dart';
 
+/// 完整备份导入失败时使用的内存快照。
+///
+/// SharedPreferences 没有跨多个 key 的事务；这个对象先把 provider 的旧状态
+/// 留一份，任何一步写盘或导入后同步失败时，至少先把界面恢复成导入前的样子，
+/// 再尽力把旧数据写回各个 key。
+class _FullBackupRestoreSnapshot {
+  _FullBackupRestoreSnapshot(TimetableProvider host)
+    : timeSchemes = host._timeSchemes
+          .map(
+            (scheme) => scheme.copyWith(
+              sections: List<SectionTime>.from(scheme.sections),
+            ),
+          )
+          .toList(),
+      locationTimeGroups = host._locationTimeGroups
+          .map(
+            (group) => group.copyWith(
+              keywords: List<LocationKeyword>.from(group.keywords),
+            ),
+          )
+          .toList(),
+      scheduleDateRules = host._scheduleDateRules
+          .map((rule) => rule.copyWith())
+          .toList(),
+      profiles = host._profiles
+          .map(
+            (profile) => profile.copyWith(
+              courses: List<Course>.from(profile.courses),
+              tasks: List<CourseTask>.from(profile.tasks),
+              scheduleItems: List<ScheduleItem>.from(profile.scheduleItems),
+              exams: List<Exam>.from(profile.exams),
+            ),
+          )
+          .toList(),
+      courses = List<Course>.from(host._courses),
+      tasks = List<CourseTask>.from(host._tasks),
+      scheduleItems = List<ScheduleItem>.from(host._scheduleItems),
+      exams = List<Exam>.from(host._exams),
+      settings = host._settings,
+      currentWeek = host._currentWeek,
+      currentDateWeek = host._currentDateWeek,
+      currentCalendarWeek = host._currentCalendarWeek,
+      currentDayOfWeek = host._currentDayOfWeek,
+      activeProfileId = host._activeProfileId,
+      partnerBinding = host._partnerBinding,
+      scheduleDateRuleLastAppliedSignature =
+          host._scheduleDateRuleLastAppliedSignature;
+
+  final List<TimeScheme> timeSchemes;
+  final List<LocationTimeGroup> locationTimeGroups;
+  final List<ScheduleDateRule> scheduleDateRules;
+  final List<TimetableProfile> profiles;
+  final List<Course> courses;
+  final List<CourseTask> tasks;
+  final List<ScheduleItem> scheduleItems;
+  final List<Exam> exams;
+  final TimetableSettings settings;
+  final int currentWeek;
+  final int currentDateWeek;
+  final int currentCalendarWeek;
+  final int currentDayOfWeek;
+  final String? activeProfileId;
+  final PartnerTimetableBinding? partnerBinding;
+  final String? scheduleDateRuleLastAppliedSignature;
+
+  void restoreMemory(TimetableProvider host) {
+    host._timeSchemes = List<TimeScheme>.from(timeSchemes);
+    host._locationTimeGroups = List<LocationTimeGroup>.from(locationTimeGroups);
+    host._scheduleDateRules = List<ScheduleDateRule>.from(scheduleDateRules);
+    host._profiles = List<TimetableProfile>.from(profiles);
+    host._courses = List<Course>.from(courses);
+    host._tasks = List<CourseTask>.from(tasks);
+    host._scheduleItems = List<ScheduleItem>.from(scheduleItems);
+    host._exams = List<Exam>.from(exams);
+    host._settings = settings;
+    host._currentWeek = currentWeek;
+    host._currentDateWeek = currentDateWeek;
+    host._currentCalendarWeek = currentCalendarWeek;
+    host._currentDayOfWeek = currentDayOfWeek;
+    host._activeProfileId = activeProfileId;
+    host._partnerBinding = partnerBinding;
+    host._scheduleDateRuleLastAppliedSignature =
+        scheduleDateRuleLastAppliedSignature;
+    host._currentLiveCourseId = null;
+    host._lastLiveSnapshotSignature = null;
+    host._lastHomeWidgetSnapshotSignature = null;
+  }
+
+  Future<List<_FullBackupRollbackFailure>> restorePersistence(
+    TimetableProvider host,
+  ) async {
+    final repository = host._profileRepository;
+    final failures = <_FullBackupRollbackFailure>[];
+
+    Future<void> step(
+      String name,
+      Future<void> Function() operation,
+    ) async {
+      try {
+        await operation();
+      } catch (error, stackTrace) {
+        failures.add(
+          _FullBackupRollbackFailure(name, error, stackTrace),
+        );
+        if (kDebugMode) {
+          debugPrint(
+            'Full backup rollback step "$name" failed: $error',
+          );
+        }
+      }
+    }
+
+    await step('time_schemes', () => repository.saveTimeSchemes(timeSchemes));
+    await step(
+      'location_time_groups',
+      () => repository.saveLocationTimeGroups(locationTimeGroups),
+    );
+    await step(
+      'schedule_date_rules',
+      () => repository.saveScheduleDateRules(scheduleDateRules),
+    );
+    await step('profiles', () => repository.saveProfiles(profiles));
+    await step('active_profile_id', () {
+      if (activeProfileId == null) {
+        return repository.clearActiveProfileId();
+      }
+      return repository.setActiveProfileId(activeProfileId!);
+    });
+    await step(
+      'schedule_date_rule_signature',
+      () => repository.saveScheduleDateRuleLastAppliedSignature(
+        scheduleDateRuleLastAppliedSignature,
+      ),
+    );
+    await step(
+      'partner_binding',
+      () => repository.savePartnerTimetableBinding(partnerBinding),
+    );
+    await step(
+      'global_settings',
+      () => AppGlobalSettingsService.syncFrom(settings),
+    );
+    return failures;
+  }
+}
+
+class _FullBackupRollbackFailure {
+  const _FullBackupRollbackFailure(this.name, this.error, this.stackTrace);
+
+  final String name;
+  final Object error;
+  final StackTrace stackTrace;
+}
+
 int _timetablePreviewWakeUpImportRequiredSectionCount(
   TimetableProvider host,
   String content, {
@@ -308,11 +462,13 @@ Future<String?> _timetableImportFullAppDataBackup(
   String content,
 ) {
   return host._runMutation(() async {
+    _FullBackupRestoreSnapshot? snapshot;
     try {
       final backup = host._dataTransferService.parseFullBackupJson(content);
       if (backup.profiles.isEmpty) {
         return 'import_no_profiles_in_backup';
       }
+      snapshot = _FullBackupRestoreSnapshot(host);
 
       host._timeSchemes = List<TimeScheme>.from(backup.timeSchemes);
       host._locationTimeGroups = List<LocationTimeGroup>.from(
@@ -393,9 +549,44 @@ Future<String?> _timetableImportFullAppDataBackup(
       await host._updateLiveActivity();
       return null;
     } on FormatException catch (e) {
-      return e.message;
+      final rollbackFailures = await _restoreAfterFullBackupFailure(
+        host,
+        snapshot,
+      );
+      return rollbackFailures.isEmpty ? e.message : 'import_rollback_incomplete';
     } catch (_) {
+      final rollbackFailures = await _restoreAfterFullBackupFailure(
+        host,
+        snapshot,
+      );
+      if (rollbackFailures.isNotEmpty) {
+        return 'import_rollback_incomplete';
+      }
       return 'import_file_unrecognized';
     }
   });
+}
+
+Future<List<_FullBackupRollbackFailure>> _restoreAfterFullBackupFailure(
+  TimetableProvider host,
+  _FullBackupRestoreSnapshot? snapshot,
+) async {
+  if (snapshot == null) {
+    return const <_FullBackupRollbackFailure>[];
+  }
+  snapshot.restoreMemory(host);
+  final failures = await snapshot.restorePersistence(host);
+  host._currentLiveCourseId = null;
+  host._notifyStateChanged();
+  try {
+    await host._updateLiveActivity();
+  } catch (error, stackTrace) {
+    failures.add(
+      _FullBackupRollbackFailure('live_surface', error, stackTrace),
+    );
+    if (kDebugMode) {
+      debugPrint('Full backup rollback live-surface refresh failed: $error');
+    }
+  }
+  return failures;
 }

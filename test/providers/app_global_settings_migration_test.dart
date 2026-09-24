@@ -101,6 +101,56 @@ void main() {
     );
   });
 
+  test('更新设置与最近任务隐藏不再跟课表切换', () async {
+    SharedPreferences.setMockInitialValues({
+      profilesKey: jsonEncode([
+        profileJson(
+          id: 'a',
+          settings: TimetableSettings.defaults().copyWith(
+            liveHideFromRecents: false,
+            appUpdateDownloadSource: 'original',
+            appUpdateDownloadChannel: 'github',
+            appUpdateUseSystemDownloader: false,
+            appUpdateMirrorPreset: 'ghfast',
+            appUpdateIncludePrerelease: false,
+            appUpdateMirrorUrlPrefix: 'https://a.example/',
+            appUpdatePromptEnabled: true,
+          ),
+        ),
+        profileJson(
+          id: 'b',
+          settings: TimetableSettings.defaults().copyWith(
+            liveHideFromRecents: true,
+            appUpdateDownloadSource: 'mirror',
+            appUpdateDownloadChannel: 'gitcode',
+            appUpdateUseSystemDownloader: true,
+            appUpdateMirrorPreset: 'custom',
+            appUpdateIncludePrerelease: true,
+            appUpdateMirrorUrlPrefix: 'https://b.example/',
+            appUpdatePromptEnabled: false,
+          ),
+        ),
+      ]),
+      activeProfileKey: 'b',
+    });
+
+    final provider = await bootProvider();
+    expect(provider.settings.liveHideFromRecents, isTrue);
+    expect(provider.settings.appUpdateDownloadSource, 'mirror');
+    expect(provider.settings.appUpdateMirrorUrlPrefix, 'https://b.example/');
+
+    await provider.switchProfile('a');
+
+    expect(provider.settings.liveHideFromRecents, isTrue);
+    expect(provider.settings.appUpdateDownloadSource, 'mirror');
+    expect(provider.settings.appUpdateDownloadChannel, 'gitcode');
+    expect(provider.settings.appUpdateUseSystemDownloader, isTrue);
+    expect(provider.settings.appUpdateMirrorPreset, 'custom');
+    expect(provider.settings.appUpdateIncludePrerelease, isTrue);
+    expect(provider.settings.appUpdateMirrorUrlPrefix, 'https://b.example/');
+    expect(provider.settings.appUpdatePromptEnabled, isFalse);
+  });
+
   test('改一次之后切课表仍然生效，新建的课表也继承', () async {
     final provider = await bootProvider();
     final firstId = provider.activeProfileId!;
@@ -274,6 +324,7 @@ void main() {
       isNull,
     );
     expect(provider.settings.appLocaleTag, 'ja');
+    expect(provider.profiles.single.settings.appLocaleTag, 'ja');
   });
 
   test('主题撤销会把全局字段一起退回去', () async {

@@ -262,6 +262,9 @@ class TimetableProvider with ChangeNotifier {
   List<Course> _liveTestFixtureOverlayCourses = const [];
   Future<void>? _initializationFuture;
   Future<void>? _deferredDataFuture;
+  // 初始化首帧之后的迁移/同步写盘。导入入口必须先等它们收尾，
+  // 否则旧活动课表 ID 或旧课表镜像可能在导入之后才落到盘上。
+  Future<void> _startupBackgroundWrites = Future<void>.value();
 
   /// Serializes native live/home-widget surface updates (island + widget).
   final SyncOperationGate _liveSurfaceGate = SyncOperationGate();
@@ -569,6 +572,29 @@ class TimetableProvider with ChangeNotifier {
     return initializationFuture;
   }
 
+  void _ignoreBackgroundFailure(Future<void> task) {
+    unawaited(
+      task.then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+    );
+  }
+
+  void _trackStartupBackgroundWrite(Future<void> task) {
+    _startupBackgroundWrites = _startupBackgroundWrites.then<void>(
+      (_) => task,
+      onError: (Object _, StackTrace _) {},
+    );
+  }
+
+  Future<void> _waitForStartupBackgroundWrites() async {
+    while (true) {
+      final pending = _startupBackgroundWrites;
+      await pending;
+      if (identical(pending, _startupBackgroundWrites)) {
+        return;
+      }
+    }
+  }
+
   Future<void> handleAppResumed() async {
     try {
       await initialize();
@@ -703,9 +729,11 @@ class TimetableProvider with ChangeNotifier {
     }
 
     // --- 非关键数据：后台加载，不阻塞首帧 ---
-    unawaited(_loadDeferredData());
+    _trackStartupBackgroundWrite(_loadDeferredData());
     // 壁纸「最近使用」并成全局（只做一次；逻辑在 service，本类不再长行数）。
-    unawaited(WallpaperHistoryService.migrateProfilesOnce(_profiles));
+    _trackStartupBackgroundWrite(
+      WallpaperHistoryService.migrateProfilesOnce(_profiles),
+    );
     // 应用级偏好（导航 / 材质 / 主题外观 / 通用）并成全局，只做一次。
     // **必须 await**：紧接着的 _applyProfileState 要用它把全局那份盖到激活课表上，
     // 晚一步首帧就是「跟随课表」的旧样子。它只读一个 prefs 键，代价极小。
@@ -730,44 +758,46 @@ class TimetableProvider with ChangeNotifier {
     // 磁盘 I/O 挡在 notifyListeners() 首帧通知之前。
     final homeworkSyncChanged = await _syncHomeworkTasksWithCourses();
     if (homeworkSyncChanged) {
-      unawaited(_runMutation(_persistActiveProfileState));
+      _trackStartupBackgroundWrite(_runMutation(_persistActiveProfileState));
     }
 
     // 壁纸预加载不阻塞首帧；无壁纸时此调用会立即返回。
-    unawaited(precacheHomePageBackdropImage(_settings));
+    _ignoreBackgroundFailure(precacheHomePageBackdropImage(_settings));
 
     // --- 迁移逻辑：不阻塞首帧，后台完成 ---
-    unawaited(_runAppLogsMigrationIfNeeded(activeProfile));
+    _trackStartupBackgroundWrite(_runAppLogsMigrationIfNeeded(activeProfile));
 
     if (_activeProfileId != activeProfile.id) {
       _activeProfileId = activeProfile.id;
-      unawaited(_profileRepository.setActiveProfileId(activeProfile.id));
+      _trackStartupBackgroundWrite(
+        _profileRepository.setActiveProfileId(activeProfile.id),
+      );
     }
     if (_settings.semesterStartDate != null) {
-      unawaited(syncCurrentWeekWithSemesterStart());
+      _trackStartupBackgroundWrite(syncCurrentWeekWithSemesterStart());
     }
 
     // --- 首帧已可渲染，立即通知 ---
     notifyListeners();
 
     // Seasonal bulk-apply may rewrite default scheme/clocks after first paint.
-    unawaited(applyDueScheduleDateRules());
+    _trackStartupBackgroundWrite(applyDueScheduleDateRules());
 
     // Holiday must finish before the first live/widget push so cold start on a
     // holiday day does not briefly publish courses (empty holidayData ⇒ false).
-    unawaited(_bootstrapHolidayAwareSurfaces());
+    _ignoreBackgroundFailure(_bootstrapHolidayAwareSurfaces());
   }
 
   /// Load holidays first, then push widget/island once with correct semantics.
   Future<void> _bootstrapHolidayAwareSurfaces() async {
-    unawaited(_syncNativeRuntimePreferences());
+    _ignoreBackgroundFailure(_syncNativeRuntimePreferences());
     await _loadHolidayData();
     // _loadHolidayData already re-pushes surfaces on success. If it failed
     // silently, still push once so widgets are not stuck empty forever.
     if (_lastHomeWidgetSnapshotSignature == null) {
       await _syncHomeWidgetSnapshot();
     }
-    unawaited(_syncExamReminders());
+    _ignoreBackgroundFailure(_syncExamReminders());
     if (_enableLiveActivitySync) {
       _liveStartActivityTick(this);
     }
@@ -3876,20 +3906,51 @@ class TimetableProvider with ChangeNotifier {
     preserveLocalColors: preserveLocalColors,
   );
 
-  Future<String?> importAppDataBackup(String content) =>
-      _timetableImportAppDataBackup(this, content);
+  Future<String?> importAppDataBackup(String content) async {
+    if (_mutationGate.isHeldByCurrentZone) {
+      return _runMutation(() => _timetableImportAppDataBackup(this, content));
+    }
+    await initialize();
+    await _waitForStartupBackgroundWrites();
+    return _runMutation(() => _timetableImportAppDataBackup(this, content));
+  }
 
   Future<String?> importAppDataBackupAsNewProfile(
     String content, {
     String? profileName,
-  }) => _timetableImportAppDataBackupAsNewProfile(
-    this,
-    content,
-    profileName: profileName,
-  );
+  }) async {
+    if (_mutationGate.isHeldByCurrentZone) {
+      return _runMutation(
+        () => _timetableImportAppDataBackupAsNewProfile(
+          this,
+          content,
+          profileName: profileName,
+        ),
+      );
+    }
+    await initialize();
+    await _waitForStartupBackgroundWrites();
+    return _runMutation(
+      () => _timetableImportAppDataBackupAsNewProfile(
+        this,
+        content,
+        profileName: profileName,
+      ),
+    );
+  }
 
-  Future<String?> importFullAppDataBackup(String content) =>
-      _timetableImportFullAppDataBackup(this, content);
+  Future<String?> importFullAppDataBackup(String content) async {
+    if (_mutationGate.isHeldByCurrentZone) {
+      return _runMutation(
+        () => _timetableImportFullAppDataBackup(this, content),
+      );
+    }
+    await initialize();
+    await _waitForStartupBackgroundWrites();
+    return _runMutation(
+      () => _timetableImportFullAppDataBackup(this, content),
+    );
+  }
 
   Future<void> syncCurrentWeekWithSemesterStart() =>
       _runMutation(_syncCurrentWeekWithSemesterStartImpl);

@@ -34,6 +34,8 @@ class TimetableRepository {
   Future<void> setActiveProfileId(String profileId) =>
       _storage.setActiveProfileId(profileId);
 
+  Future<void> clearActiveProfileId() => _storage.clearActiveProfileId();
+
   /// 在写链上原子地读改写 profiles 列表。
   ///
   /// Partner 导入 / 解绑等服务层流程经此入口变更 profiles；仓储因此成为
@@ -75,7 +77,7 @@ class TimetableRepository {
   Future<String?> getScheduleDateRuleLastAppliedSignature() =>
       _storage.getScheduleDateRuleLastAppliedSignature();
 
-  Future<void> saveScheduleDateRuleLastAppliedSignature(String signature) =>
+  Future<void> saveScheduleDateRuleLastAppliedSignature(String? signature) =>
       _storage.saveScheduleDateRuleLastAppliedSignature(signature);
 
   // —— 情侣课表绑定 ——

@@ -195,6 +195,8 @@ Future<String?> _timetableUpdateTimeScheme(
     host._settings = host._settingsFromProfile(
       host._profiles[activeProfileIndex],
     );
+    // 内存已叠加全局设置；同步写回活动课表镜像，避免下一次备份继续携带旧值。
+    host._mergeActiveProfileIntoProfilesList();
   }
 
   await host._persistTimeSchemes();

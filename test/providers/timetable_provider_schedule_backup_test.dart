@@ -2,9 +2,45 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/location_time_group.dart';
 import 'package:university_timetable/models/schedule_item.dart';
+import 'package:university_timetable/models/time_scheme.dart';
+import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/storage_service.dart';
+
+class _FailOnceTimeSchemeStorage extends StorageService {
+  _FailOnceTimeSchemeStorage() : super.forTesting();
+
+  bool failNextSave = false;
+  int profileFailuresRemaining = 0;
+  bool activeProfileIdWriteObserved = false;
+
+  @override
+  Future<void> saveTimeSchemes(List<TimeScheme> schemes) {
+    if (failNextSave) {
+      failNextSave = false;
+      return Future<void>.error(
+        StateError('test_time_scheme_write_failed'),
+      );
+    }
+    return super.saveTimeSchemes(schemes);
+  }
+
+  @override
+  Future<void> saveProfiles(List<TimetableProfile> profiles) {
+    if (profileFailuresRemaining > 0) {
+      profileFailuresRemaining--;
+      return Future<void>.error(StateError('test_profile_write_failed'));
+    }
+    return super.saveProfiles(profiles);
+  }
+
+  @override
+  Future<void> setActiveProfileId(String profileId) {
+    activeProfileIdWriteObserved = true;
+    return super.setActiveProfileId(profileId);
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -103,5 +139,98 @@ void main() {
     final reloaded = await createProvider();
     expect(reloaded.scheduleDateRules.single.id, ruleResult.rule.id);
     expect(reloaded.locationTimeGroups.single.id, group.id);
+  });
+
+  test('startup migration write failure does not abort provider init', () async {
+    final storage = _FailOnceTimeSchemeStorage()..failNextSave = true;
+    final provider = TimetableProvider(
+      storageService: storage,
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+
+    await provider.initialize();
+
+    expect(provider.profiles, isNotEmpty);
+  });
+
+  test('full backup write failure restores the previous in-memory state', () async {
+    final source = await createProvider();
+    await source.updateTimetableSettings(
+      source.settings.copyWith(semesterWeekCount: 21),
+    );
+    final content = source.dataTransferService.buildFullBackupJson(
+      profiles: source.profiles,
+      activeProfileId: source.activeProfileId,
+      timeSchemes: source.timeSchemes,
+      scheduleDateRules: source.scheduleDateRules,
+      locationTimeGroups: source.locationTimeGroups,
+    );
+
+    final targetStorage = _FailOnceTimeSchemeStorage();
+    final target = TimetableProvider(
+      storageService: targetStorage,
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await target.initialize();
+    final beforeProfileId = target.activeProfileId;
+    final beforeWeekCount = target.settings.semesterWeekCount;
+    final beforeTimeSchemeIds = target.timeSchemes.map((item) => item.id).toSet();
+
+    targetStorage.failNextSave = true;
+    expect(
+      await target.importFullAppDataBackup(content),
+      'import_file_unrecognized',
+    );
+    expect(target.activeProfileId, beforeProfileId);
+    expect(target.settings.semesterWeekCount, beforeWeekCount);
+    expect(
+      target.timeSchemes.map((item) => item.id).toSet(),
+      beforeTimeSchemeIds,
+    );
+
+    final reloadedStorage = _FailOnceTimeSchemeStorage();
+    final reloaded = TimetableProvider(
+      storageService: reloadedStorage,
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await reloaded.initialize();
+    expect(reloaded.activeProfileId, beforeProfileId);
+    expect(reloaded.settings.semesterWeekCount, beforeWeekCount);
+  });
+
+  test('rollback continues after a later storage key fails', () async {
+    final source = await createProvider();
+    await source.updateTimetableSettings(
+      source.settings.copyWith(semesterWeekCount: 22),
+    );
+    final content = source.dataTransferService.buildFullBackupJson(
+      profiles: source.profiles,
+      activeProfileId: source.activeProfileId,
+      timeSchemes: source.timeSchemes,
+      scheduleDateRules: source.scheduleDateRules,
+      locationTimeGroups: source.locationTimeGroups,
+    );
+
+    final targetStorage = _FailOnceTimeSchemeStorage();
+    final target = TimetableProvider(
+      storageService: targetStorage,
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await target.initialize();
+    targetStorage.activeProfileIdWriteObserved = false;
+    final beforeProfileId = target.activeProfileId;
+
+    targetStorage.failNextSave = true;
+    targetStorage.profileFailuresRemaining = 1;
+    expect(
+      await target.importFullAppDataBackup(content),
+      'import_rollback_incomplete',
+    );
+    expect(targetStorage.activeProfileIdWriteObserved, isTrue);
+    expect(target.activeProfileId, beforeProfileId);
   });
 }
