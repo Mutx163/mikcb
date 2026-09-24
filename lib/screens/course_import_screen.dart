@@ -5318,10 +5318,16 @@ $kWarehouseBridgeCompatShim  try {
       );
       _debugImportLog('importParsedCourses done importedCount=$importedCount');
       if (!mounted) {
+        if (widget.runInBackground) {
+          widget.onBackgroundFinished?.call(true);
+        }
         return;
       }
       await _preferencesService.addRecentSchool(widget.school.id);
       if (!mounted) {
+        if (widget.runInBackground) {
+          widget.onBackgroundFinished?.call(true);
+        }
         return;
       }
       setState(() {
