@@ -31,6 +31,7 @@ class FrostedHeaderBackground extends StatelessWidget {
     this.blurSigma = HyperosBlurredHeader.blurSigma,
     this.blurStyle = HeaderBlurStyle.gaussian,
     this.opaqueAtRest = false,
+    this.bottomOverhang = 0,
     super.key,
   });
 
@@ -45,6 +46,10 @@ class FrostedHeaderBackground extends StatelessWidget {
   /// keep their progressive bottom fade.
   final bool opaqueAtRest;
 
+  /// See [InspireHeaderBlur.bottomOverhang]. Only the subpage top-bar shell
+  /// passes a non-zero value.
+  final double bottomOverhang;
+
   @override
   Widget build(BuildContext context) {
     return InspireHeaderBlur(
@@ -53,6 +58,7 @@ class FrostedHeaderBackground extends StatelessWidget {
       blurSigma: blurSigma,
       style: blurStyle,
       opaqueAtRest: opaqueAtRest,
+      bottomOverhang: bottomOverhang,
       child: child,
     );
   }
@@ -65,6 +71,7 @@ class HyperosFrostedHeaderShell extends StatelessWidget {
     this.blurEnabled = true,
     this.tint,
     this.opaqueAtRest = false,
+    this.bottomOverhang = 0,
     super.key,
   });
 
@@ -74,6 +81,13 @@ class HyperosFrostedHeaderShell extends StatelessWidget {
 
   /// See [InspireHeaderBlur.opaqueAtRest].
   final bool opaqueAtRest;
+
+  /// 模糊下沿往下多画多少（见 [InspireHeaderBlur.bottomOverhang]）。
+  ///
+  /// **只在真的画模糊时生效**：模糊关掉（深色顶栏规范、系统无障碍降级、平台
+  /// 不支持）时衬底是**不透明的页面底色**，把它往下延 20dp 会盖住正文顶部那
+  /// 一条 —— 那就不是"模糊靠下"，而是"内容被切"。所以按 [useBlur] 门控。
+  final double bottomOverhang;
 
   @override
   Widget build(BuildContext context) {
@@ -90,6 +104,7 @@ class HyperosFrostedHeaderShell extends StatelessWidget {
       // 常驻模糊 + 无内容压带时必须整条不透明，否则衬底底边渐隐会露出
       // 一截已经糊进来的内容（见 [InspireHeaderBlur.opaqueAtRest]）。
       opaqueAtRest: opaqueAtRest,
+      bottomOverhang: useBlur ? bottomOverhang : 0,
       child: child,
     );
   }

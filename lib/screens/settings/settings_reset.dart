@@ -123,7 +123,6 @@ TimetableSettings applySettingsReset(
       clearLiquidGlassTuningDark: true,
       // 卡片那套同病同治：可空字段必须走 clear 标记，传 null 等于「不改」。
       clearCourseCardGlassTuning: true,
-      clearProgressiveBlurTuning: true,
       frostedGlassMode: d.frostedGlassMode,
       frostedBlurEnabled: d.frostedBlurEnabled,
       frostedSheetBlurSigma: d.frostedSheetBlurSigma,
@@ -137,8 +136,6 @@ TimetableSettings applySettingsReset(
       darkGlassBoostEnabled: d.darkGlassBoostEnabled,
       liquidGlassDockEnabled: d.liquidGlassDockEnabled,
       courseCardSurfaceStyle: d.courseCardSurfaceStyle,
-      progressiveBlurPreset: d.progressiveBlurPreset,
-      subpageHeaderBlurStyle: d.subpageHeaderBlurStyle,
       homeBandGlassMaterial: d.homeBandGlassMaterial,
       homePageTimeColumnBlurEnabled: d.homePageTimeColumnBlurEnabled,
     ),

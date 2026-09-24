@@ -84,9 +84,6 @@ class AppGlobalSettingsService {
     'liquidGlassDockEnabled',
     'courseCardSurfaceStyle',
     'courseCardGlassTuning',
-    'progressiveBlurPreset',
-    'progressiveBlurTuning',
-    'subpageHeaderBlurStyle',
     'homeBandGlassMaterial',
     'homePageTimeColumnBlurEnabled',
     // —— 主题与外观（「外观」页）——

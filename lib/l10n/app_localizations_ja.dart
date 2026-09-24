@@ -10032,9 +10032,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get headerBlurStyleInspire => 'プログレッシブぼかし';
 
   @override
-  String get subpageHeaderBlurStyleLabel => 'サブページ上部バーのぼかしスタイル';
-
-  @override
   String get texturePresetLabel => '質感プリセット';
 
   @override
@@ -11178,36 +11175,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String liveExpandedDetailLineNote(String value) {
     return 'メモ: $value';
   }
-
-  @override
-  String get progressiveBlurPresetLabel => 'プログレッシブぼかしプリセット';
-
-  @override
-  String get progressiveBlurPresetClear => 'クリア';
-
-  @override
-  String get progressiveBlurPresetLight => 'ライト';
-
-  @override
-  String get progressiveBlurPresetStandard => '標準';
-
-  @override
-  String get progressiveBlurPresetDense => '濃霧';
-
-  @override
-  String get progressiveBlurPresetCustom => 'カスタム';
-
-  @override
-  String get progressiveBlurSigmaLabel => 'ぼかしの強さ';
-
-  @override
-  String get progressiveBlurExtentLabel => 'グラデーションの範囲';
-
-  @override
-  String get progressiveBlurTintBottomLabel => '下半分の下地';
-
-  @override
-  String get progressiveBlurResetAction => '既定値に戻す';
 
   @override
   String weatherTemperatureValue(int temperature) {

@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/course_glass_tuning.dart';
-import '../../../models/header_blur_style.dart';
 import '../../../models/liquid_glass_tuning.dart';
-import '../../../models/progressive_blur_tuning.dart';
 
 /// Default frosted-glass tuning (aligned with app timetable defaults).
 const kDefaultFrostedBlurEnabled = true;
 const kDefaultFrostedSheetBlurSigma = 15.0;
 const kDefaultFrostedSheetTintAlpha = 0.70;
 const kDefaultFrostedSheetBarrierAlpha = 0.20;
-
-/// 顶栏玻璃带的默认模糊材质：渐进模糊（inspire_blur）。
-const kDefaultHeaderBlurStyle = HeaderBlurStyle.inspire;
 
 /// 首页顶栏玻璃带默认材质：液态玻璃。独立自由选择，不随全局玻璃模式。
 ///
@@ -94,14 +89,12 @@ class FrostedAppearance {
     required this.sheetBarrierAlpha,
     this.blurEnabled = kDefaultFrostedBlurEnabled,
     this.glassMode = FrostedGlassMode.gaussian,
-    this.subpageHeaderBlurStyle = kDefaultHeaderBlurStyle,
     this.homeBandGlassMaterial = kDefaultHomeBandGlassMaterial,
     this.liquidGlassTuning,
     this.liquidGlassTuningDark,
     this.linkLiquidGlassTuning = true,
     this.darkGlassBoostEnabled = true,
     this.courseCardGlassTuning,
-    this.progressiveBlurTuning = ProgressiveBlurTuning.defaults,
     this.liquidGlassDockEnabled = kDefaultLiquidGlassDockEnabled,
   });
 
@@ -127,7 +120,6 @@ class FrostedAppearance {
   ///
   /// 独立于首页玻璃带材质（[homeBandGlassMaterial]）：子页顶栏永不走高级
   /// 材质，此风格始终生效。
-  final HeaderBlurStyle subpageHeaderBlurStyle;
 
   /// 首页顶栏玻璃带材质，独立自由选择（2026-09-12）：`liquid` / `solid`
   /// （2026-09-20 起收成两档，与外观编辑器里那两个选项逐字一致，见
@@ -173,10 +165,6 @@ class FrostedAppearance {
   /// 「别处一个样、卡片另一个样」。两者共享的是解析入口与深浅配方，不是数值。
   final CourseGlassTuning? courseCardGlassTuning;
 
-  /// 渐进（渐变）模糊参数——顶栏玻璃带走 `progressive` 材质 / 子页顶栏走
-  /// `inspire` 风格时生效。非空缺省即标准档（与接入调参前的常量一致）。
-  final ProgressiveBlurTuning progressiveBlurTuning;
-
   /// 唯一保留的「作用范围」开关：玻璃坞导航（底部悬浮药丸与加课圆钮）。
   ///
   /// 弹窗家族那四个同族开关已随「小件永远锁标准档」删除——它们存不存在都不
@@ -188,7 +176,6 @@ class FrostedAppearance {
       identical(this, other) ||
       other is FrostedAppearance &&
           blurEnabled == other.blurEnabled &&
-          subpageHeaderBlurStyle == other.subpageHeaderBlurStyle &&
           homeBandGlassMaterial == other.homeBandGlassMaterial &&
           sheetBlurSigma == other.sheetBlurSigma &&
           sheetTintAlpha == other.sheetTintAlpha &&
@@ -199,13 +186,11 @@ class FrostedAppearance {
           linkLiquidGlassTuning == other.linkLiquidGlassTuning &&
           darkGlassBoostEnabled == other.darkGlassBoostEnabled &&
           courseCardGlassTuning == other.courseCardGlassTuning &&
-          progressiveBlurTuning == other.progressiveBlurTuning &&
           liquidGlassDockEnabled == other.liquidGlassDockEnabled;
 
   @override
   int get hashCode => Object.hash(
     blurEnabled,
-    subpageHeaderBlurStyle,
     homeBandGlassMaterial,
     sheetBlurSigma,
     sheetTintAlpha,
@@ -216,7 +201,6 @@ class FrostedAppearance {
     linkLiquidGlassTuning,
     darkGlassBoostEnabled,
     courseCardGlassTuning,
-    progressiveBlurTuning,
   );
 }
 

@@ -10,11 +10,13 @@
 // 「液态玻璃」被选中、实际渲染的却是渐进磨砂（只有模糊 + 衬底，没有折射也
 // 没有边光那一圈），真机口径就是「顶栏没有玻璃效果」而底栏（走全局材质）却
 // 有（用户 2026-09-20 报的正是这个）。现在**读取 / 写入口 / 渲染三层同口径**：
-// 非实体即液态，中间档一律归到液态。子页顶栏永不走高级材质，仍用
-// HeaderBlurStyle 两档（渐进 / 高斯），不受本次收口影响。
+// 非实体即液态，中间档一律归到液态。
+//
+// 2026-09-23：子页顶栏那把轴（渐进 / 高斯两档）整体撤下 —— 用户口径
+// 「子页顶部可以锁定渐变模糊」，所以设置模型里不再有 subpageHeaderBlurStyle，
+// 渲染侧恒为渐进。本文件只剩顶栏材质那一轴。
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/glass_mode_choice.dart';
-import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 
@@ -173,55 +175,25 @@ void main() {
     });
   });
 
-  group('子页顶栏模糊风格：与首页材质相互独立', () {
-    test('默认值为渐进模糊档', () {
-      expect(TimetableSettings.defaults().subpageHeaderBlurStyle,
-          HeaderBlurStyle.inspire);
-      expect(FrostedAppearance.defaults.subpageHeaderBlurStyle,
-          HeaderBlurStyle.inspire);
-    });
-
-    test('存量迁移：JSON 缺新键时沿旧 headerBlurStyle，观感不变', () {
+  group('子页顶栏模糊风格（2026-09-23 起锁死为渐进）', () {
+    test('设置里不再有这一档，存量 JSON 里的旧值一律被忽略', () {
+      // 用户口径「子页顶部可以锁定渐变模糊」：这条轴整体撤下 —— 设置模型不再
+      // 有 subpageHeaderBlurStyle 字段，渲染侧恒为渐进（见
+      // `HyperosBlurredHeader.subpageHeaderBlurStyleOf`，接线钉在
+      // `header_blur_style_wiring_test`）。
+      //
+      // 这条钉的是**老档不炸**：盘上还带着旧键的配置读进来要照常工作，
+      // 两个旧键（新键与更早的 headerBlurStyle）都当未知键忽略。
       final json = TimetableSettings.defaults().toJson()
-        ..remove('subpageHeaderBlurStyle')
-        ..remove('homeBandGlassMaterial')
+        ..['subpageHeaderBlurStyle'] = 'gaussian'
         ..['headerBlurStyle'] = 'gaussian';
       final restored = TimetableSettings.fromJson(json);
 
-      expect(restored.subpageHeaderBlurStyle, HeaderBlurStyle.gaussian);
-    });
-
-    test('新键存在时不被旧键覆盖，JSON 往返保留', () {
-      final custom = TimetableSettings.defaults().copyWith(
-        homeBandGlassMaterial: 'solid',
-        subpageHeaderBlurStyle: HeaderBlurStyle.inspire,
-      );
-      final restored = TimetableSettings.fromJson(custom.toJson());
-
-      expect(restored.homeBandGlassMaterial, 'solid');
-      expect(restored.subpageHeaderBlurStyle, HeaderBlurStyle.inspire);
-    });
-
-    test('frostedAppearance 映射子页模糊风格', () {
-      final settings = TimetableSettings.defaults().copyWith(
-        subpageHeaderBlurStyle: HeaderBlurStyle.gaussian,
-      );
       expect(
-        settings.frostedAppearance.subpageHeaderBlurStyle,
-        HeaderBlurStyle.gaussian,
+        restored.homeBandGlassMaterial,
+        TimetableSettings.defaults().homeBandGlassMaterial,
+        reason: '旧键不该影响别的字段',
       );
-    });
-
-    test('applySubpageChromeBlurStyle 只动子页字段，不碰首页材质', () {
-      final s = applySubpageChromeBlurStyle(
-        TimetableSettings.defaults().copyWith(
-          homeBandGlassMaterial: 'solid',
-        ),
-        HeaderBlurStyle.inspire,
-      );
-
-      expect(s.subpageHeaderBlurStyle, HeaderBlurStyle.inspire);
-      expect(s.homeBandGlassMaterial, 'solid');
     });
   });
 }

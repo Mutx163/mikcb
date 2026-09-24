@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/models/course_glass_tuning.dart';
-import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
-import 'package:university_timetable/models/progressive_blur_tuning.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
 import 'package:university_timetable/models/class_reminder.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
@@ -1577,14 +1575,11 @@ class TimetableSettings {
     sheetBarrierAlpha: frostedSheetBarrierAlpha,
     blurEnabled: frostedBlurEnabled,
     glassMode: frostedGlassMode,
-    subpageHeaderBlurStyle: subpageHeaderBlurStyle,
     liquidGlassTuning: liquidGlassTuning,
     liquidGlassTuningDark: liquidGlassTuningDark,
     linkLiquidGlassTuning: linkLiquidGlassTuning,
     darkGlassBoostEnabled: darkGlassBoostEnabled,
     courseCardGlassTuning: courseCardGlassTuning,
-    progressiveBlurTuning:
-        progressiveBlurTuning ?? ProgressiveBlurTuning.defaults,
     liquidGlassDockEnabled: liquidGlassDockEnabled,
     homeBandGlassMaterial: homeBandGlassMaterial,
   );
@@ -1635,20 +1630,8 @@ class TimetableSettings {
   /// 静默改掉 —— 详见 `lib/models/course_glass_tuning.dart` 的类注释。
   final CourseGlassTuning? courseCardGlassTuning;
 
-
-  /// 渐进（渐变）模糊预设与自定义参数（[progressiveBlurTuning] 为 null 时
-  /// 渲染回落 [ProgressiveBlurTuning.defaults]）。口径与液态完全一致：
-  /// 预设是非空枚举（reset 能落回 standard），参数对象可空。
-  final ProgressiveBlurPreset progressiveBlurPreset;
-  final ProgressiveBlurTuning? progressiveBlurTuning;
-
   final bool homePageHeaderBlurEnabled;
   final bool homePageWeekdayBarBlurEnabled;
-
-  /// 子页顶栏（设置等 HyperosSubpage 页）的模糊材质风格，独立于首页
-  /// 玻璃带材质。默认 [HeaderBlurStyle.inspire]；子页顶栏永不走液态，
-  /// 此风格始终生效。
-  final HeaderBlurStyle subpageHeaderBlurStyle;
 
   /// 首页顶栏玻璃带材质，**独立自由选择**（用户 2026-09-12 拍板）：
   /// 口径只有 `liquid`（液态）/ `solid`（实体）两档；写入口一律过
@@ -1657,7 +1640,8 @@ class TimetableSettings {
   ///
   /// 不跟随全局 [frostedGlassMode] 或「作用范围」开关——液态只
   /// 作用弹窗、玻璃坞等其他表面；顶栏选什么渲染什么。子页顶栏永不吃
-  /// 这里的高级材质（见 [subpageHeaderBlurStyle]）。
+  /// 这里的高级材质（它按 2026-09-23 口径锁死为渐进模糊，见
+  /// `HyperosBlurredHeader.subpageHeaderBlurStyleOf`）。
   final String homeBandGlassMaterial;
   final bool homePageTimeColumnBlurEnabled;
   final bool homePageBackdropFollowsWeekPager;
@@ -1849,11 +1833,8 @@ class TimetableSettings {
     this.linkLiquidGlassTuning = defaultLinkLiquidGlassTuning,
     this.darkGlassBoostEnabled = defaultDarkGlassBoostEnabled,
     this.courseCardGlassTuning,
-    this.progressiveBlurPreset = ProgressiveBlurPreset.standard,
-    this.progressiveBlurTuning,
     this.homePageHeaderBlurEnabled = true,
     this.homePageWeekdayBarBlurEnabled = true,
-    this.subpageHeaderBlurStyle = HeaderBlurStyle.inspire,
     this.homeBandGlassMaterial = defaultHomeBandGlassMaterial,
     this.homePageTimeColumnBlurEnabled = false,
     this.homePageBackdropFollowsWeekPager = true,
@@ -2083,12 +2064,8 @@ class TimetableSettings {
       'darkGlassBoostEnabled': darkGlassBoostEnabled,
       if (courseCardGlassTuning != null)
         'courseCardGlassTuning': courseCardGlassTuning!.toJson(),
-      'progressiveBlurPreset': progressiveBlurPreset.value,
-      if (progressiveBlurTuning != null)
-        'progressiveBlurTuning': progressiveBlurTuning!.toJson(),
       'homePageHeaderBlurEnabled': homePageHeaderBlurEnabled,
       'homePageWeekdayBarBlurEnabled': homePageWeekdayBarBlurEnabled,
-      'subpageHeaderBlurStyle': subpageHeaderBlurStyle.value,
       'homeBandGlassMaterial': homeBandGlassMaterial,
       'homePageTimeColumnBlurEnabled': homePageTimeColumnBlurEnabled,
       'homePageBackdropFollowsWeekPager': homePageBackdropFollowsWeekPager,
@@ -2602,24 +2579,11 @@ class TimetableSettings {
               json['courseCardGlassTuning'] as Map<String, dynamic>,
             )
           : null,
-      progressiveBlurPreset: ProgressiveBlurPresetX.fromValue(
-        json['progressiveBlurPreset'] as String?,
-      ),
-      progressiveBlurTuning: json['progressiveBlurTuning'] != null
-          ? ProgressiveBlurTuning.fromJson(
-              json['progressiveBlurTuning'] as Map<String, dynamic>,
-            )
-          : null,
       // 两个玻璃带显示开关已下线（顶栏玻璃归外观页材质五档），恒为开。
       // ignore: avoid_redundant_argument_values -- 故意写死默认值（下线旧开关）。
       homePageHeaderBlurEnabled: true,
       // ignore: avoid_redundant_argument_values -- 故意写死默认值（下线旧开关）。
       homePageWeekdayBarBlurEnabled: true,
-      // 存量迁移：独立字段出现前子页顶栏跟随 headerBlurStyle，缺失时沿
-      // 旧值，保证升级后子页顶栏观感不变。
-      subpageHeaderBlurStyle: HeaderBlurStyleX.fromValue(
-        (json['subpageHeaderBlurStyle'] ?? json['headerBlurStyle']) as String?,
-      ),
       // 首页顶栏材质：独立自由选择（2026-09-12）。新键缺失时按旧轴迁移
       //（见上方 legacyHomeBandGlassMaterial）。2026-09-20 起口径只有
       //「液态 / 实体」两档：存量 progressive / gaussian / soft 与一切非法值
@@ -2857,12 +2821,8 @@ class TimetableSettings {
     bool? darkGlassBoostEnabled,
     CourseGlassTuning? courseCardGlassTuning,
     bool clearCourseCardGlassTuning = false,
-    ProgressiveBlurPreset? progressiveBlurPreset,
-    ProgressiveBlurTuning? progressiveBlurTuning,
-    bool clearProgressiveBlurTuning = false,
     bool? homePageHeaderBlurEnabled,
     bool? homePageWeekdayBarBlurEnabled,
-    HeaderBlurStyle? subpageHeaderBlurStyle,
     String? homeBandGlassMaterial,
     bool? homePageTimeColumnBlurEnabled,
     bool? homePageBackdropFollowsWeekPager,
@@ -3239,17 +3199,10 @@ class TimetableSettings {
       courseCardGlassTuning: clearCourseCardGlassTuning
           ? null
           : courseCardGlassTuning ?? this.courseCardGlassTuning,
-      progressiveBlurPreset:
-          progressiveBlurPreset ?? this.progressiveBlurPreset,
-      progressiveBlurTuning: clearProgressiveBlurTuning
-          ? null
-          : progressiveBlurTuning ?? this.progressiveBlurTuning,
       homePageHeaderBlurEnabled:
           homePageHeaderBlurEnabled ?? this.homePageHeaderBlurEnabled,
       homePageWeekdayBarBlurEnabled:
           homePageWeekdayBarBlurEnabled ?? this.homePageWeekdayBarBlurEnabled,
-      subpageHeaderBlurStyle:
-          subpageHeaderBlurStyle ?? this.subpageHeaderBlurStyle,
       homeBandGlassMaterial: homeBandGlassMaterial ?? this.homeBandGlassMaterial,
       homePageTimeColumnBlurEnabled:
           homePageTimeColumnBlurEnabled ?? this.homePageTimeColumnBlurEnabled,

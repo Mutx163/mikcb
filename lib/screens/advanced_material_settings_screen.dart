@@ -5,9 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 
-import '../models/header_blur_style.dart';
 import '../models/liquid_glass_tuning.dart';
-import '../models/progressive_blur_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
@@ -204,106 +202,6 @@ class _AdvancedMaterialSettingsScreenState
                 ),
               ],
             ],
-            // 渐进（渐变）模糊：顶栏玻璃带的 progressive 材质 / 子页顶栏的
-            // inspire 风格共用这一套档位。它不是「高级材质」（任何后端都能画、
-            // 不受作用范围开关约束），因此在作用范围段之外单独成段。
-            if (_usesProgressiveBlur) ...[
-              // 小标题上方补标准节间距：label 自带的是下方 8px，上方 0，
-              // 紧跟上一张卡片时会贴死（其余页面的惯例是节前 HyperosSectionGap）。
-              const HyperosSectionGap(),
-              HyperosSectionLabel(text: l10n.headerBlurStyleInspire),
-              Builder(
-                builder: (context) {
-                  final tuning =
-                      _draft.progressiveBlurTuning ??
-                      ProgressiveBlurTuning.defaults;
-                  String num(double value, int digits) =>
-                      value.toStringAsFixed(digits);
-                  return HyperosListGroup(
-                    children: [
-                      HyperosSelectTile<ProgressiveBlurPreset>(
-                        label: l10n.progressiveBlurPresetLabel,
-                        items: {
-                          for (final preset in ProgressiveBlurPreset.values)
-                            progressiveBlurPresetLabel(l10n, preset): preset,
-                        },
-                        value: _draft.progressiveBlurPreset,
-                        onChanged: (preset) {
-                          if (preset == ProgressiveBlurPreset.custom) {
-                            _updateDraft(
-                              _draft.copyWith(
-                                progressiveBlurPreset:
-                                    ProgressiveBlurPreset.custom,
-                              ),
-                            );
-                            return;
-                          }
-                          _updateDraft(
-                            _draft.copyWith(
-                              progressiveBlurPreset: preset,
-                              progressiveBlurTuning: preset.recommendedTuning,
-                            ),
-                          );
-                        },
-                      ),
-                      if (_draft.progressiveBlurPreset ==
-                          ProgressiveBlurPreset.custom) ...[
-                        HyperosSliderTile(
-                          title: l10n.progressiveBlurSigmaLabel,
-                          value: tuning.sigma,
-                          max: ProgressiveBlurTuning.maxSigma,
-                          divisions: 40,
-                          valueLabel: num(tuning.sigma, 0),
-                          onChanged: (value) => _updateProgressiveTuning(
-                            (t) => t.copyWith(sigma: value),
-                          ),
-                        ),
-                        HyperosSliderTile(
-                          title: l10n.progressiveBlurExtentLabel,
-                          value: tuning.extent,
-                          min: ProgressiveBlurTuning.minExtent,
-                          // 上限就是滑杆默认的 1：延伸 >1 会在带底留残留模糊，
-                          // 与下方清晰内容硬切出一条横向边。
-                          divisions: 24,
-                          valueLabel: num(tuning.extent, 2),
-                          onChanged: (value) => _updateProgressiveTuning(
-                            (t) => t.copyWith(extent: value),
-                          ),
-                        ),
-                        HyperosSliderTile(
-                          title: l10n.progressiveBlurTintBottomLabel,
-                          value: tuning.tintBottomScale,
-                          max: ProgressiveBlurTuning.maxTintBottomScale,
-                          divisions: 12,
-                          valueLabel: num(tuning.tintBottomScale, 2),
-                          onChanged: (value) => _updateProgressiveTuning(
-                            (t) => t.copyWith(tintBottomScale: value),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                          child: HyperosButton(
-                            label: l10n.progressiveBlurResetAction,
-                            variant: HyperosButtonVariant.secondary,
-                            expand: true,
-                            onPressed: () {
-                              _updateDraft(
-                                _draft.copyWith(
-                                  progressiveBlurPreset:
-                                      ProgressiveBlurPreset.standard,
-                                  progressiveBlurTuning:
-                                      ProgressiveBlurTuning.defaults,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ],
-                  );
-                },
-              ),
-            ],
             // 高级材质作用范围：**只剩底栏**。弹窗家族（下拉小弹窗 / 对话式
             // 全屏选择面板 / 底部弹窗与对话框 / 壁纸选点按钮）自 2026-09-19 起
             // 锁成「永远液态玻璃的标准档」，开关存不存在都不改变出图，四个
@@ -347,31 +245,6 @@ class _AdvancedMaterialSettingsScreenState
       return;
     }
     _enqueuePersist(next);
-  }
-
-  /// 当前草稿是否在用渐进（渐变）模糊：子页顶栏走 inspire 风格。
-  ///
-  /// 首页玻璃带 2026-09-20 起只有「液态 / 实体」两档（见
-  /// `TimetableSettings.sanitizeHomeBandGlassMaterial`），顶栏不再有渐进档，
-  /// 所以判据只剩子页顶栏这一条。命中才在设置页露出档位段，避免给用不上的
-  /// 用户加噪音。
-  bool get _usesProgressiveBlur =>
-      _draft.subpageHeaderBlurStyle == HeaderBlurStyle.inspire;
-
-  /// 渐进模糊滑杆统一写入口：任意滑杆拖动都落
-  /// [ProgressiveBlurPreset.custom]，拖动防抖（与液态一致）。
-  void _updateProgressiveTuning(
-    ProgressiveBlurTuning Function(ProgressiveBlurTuning tuning) transform,
-  ) {
-    final base =
-        _draft.progressiveBlurTuning ?? ProgressiveBlurTuning.defaults;
-    _updateDraft(
-      _draft.copyWith(
-        progressiveBlurPreset: ProgressiveBlurPreset.custom,
-        progressiveBlurTuning: transform(base),
-      ),
-      debounce: true,
-    );
   }
 
   /// 液态玻璃滑杆统一写入口：任意滑杆拖动都落

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
-import 'package:university_timetable/models/progressive_blur_tuning.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -29,7 +28,6 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
     this.liquidGlassTuningDark,
     this.linkLiquidGlassTuning = true,
     this.darkGlassBoostEnabled = true,
-    this.progressiveBlurTuning = ProgressiveBlurTuning.defaults,
     super.key,
   });
 
@@ -38,7 +36,7 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
 
   /// 液态玻璃的深色档与两个成对开关（2026-09-21）。
   ///
-  /// 与 [progressiveBlurTuning] 同一条理由：**预览必须跟草稿一起走**，否则
+  /// 与液态调参同一条理由：**预览必须跟草稿一起走**，否则
   /// 用户在外观编辑器里调深色档、预览却按浅色出图 —— 那比没有预览更坏。
   final LiquidGlassTuning? liquidGlassTuningDark;
   final bool linkLiquidGlassTuning;
@@ -47,7 +45,6 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
 
   /// 渐进模糊参数（预览里的顶栏玻璃带同款材质，必须跟草稿一起走，
   /// 否则预览与真实首页不同观感）。
-  final ProgressiveBlurTuning progressiveBlurTuning;
   final TimetableProvider provider;
   final TimetableSettings settings;
   final int week;
@@ -76,10 +73,8 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
       // 卡片那套直接从 `settings` 读，不走构造参数：两个调用点传进来的都是**草稿**
       // （`settings: _draft`），逐字段再复制一遍只会多一个能漏传的地方。
       courseCardGlassTuning: settings.courseCardGlassTuning,
-      progressiveBlurTuning: progressiveBlurTuning,
       // 预览里的首页玻璃带（HomePageChromeGlassFill）经 scope 读顶栏材质
       // 与子页风格；缺省会让预览带永远渲染默认档，与真实首页不符。
-      subpageHeaderBlurStyle: settings.subpageHeaderBlurStyle,
       homeBandGlassMaterial: settings.homeBandGlassMaterial,
       liquidGlassDockEnabled: settings.liquidGlassDockEnabled,
     );

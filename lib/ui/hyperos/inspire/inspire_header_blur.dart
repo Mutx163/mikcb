@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:inspire_blur/inspire_blur.dart';
 
 import '../../../models/header_blur_style.dart';
-import '../../../models/progressive_blur_tuning.dart';
 import '../hyperos_blurred_header.dart';
 
 /// 顶栏玻璃带的渐进模糊实现（基于 `inspire_blur`）。
@@ -28,8 +27,8 @@ class InspireHeaderBlur extends StatelessWidget {
     this.blurEnabled = true,
     this.style = HeaderBlurStyle.inspire,
     this.blurSigma = HyperosBlurredHeader.blurSigma,
-    this.tuning,
     this.opaqueAtRest = false,
+    this.bottomOverhang = 0,
     super.key,
   });
 
@@ -45,13 +44,19 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 高斯档的模糊强度上限（`InspireBlurConfig` 的 sigma）。
   ///
   /// **只服务 [HeaderBlurStyle.gaussian]**：高斯是基础模糊材质，粗细由全局
-  /// 「模糊强度」滑杆（`FrostedAppearance.sheetBlurSigma`）决定。渐进档改用
-  /// 它自己的档位 [tuning]，两者互不干扰。
+  /// 「模糊强度」（`FrostedAppearance.sheetBlurSigma`）决定。渐进档用
+  /// [progressiveSigma] 等固定常量，不受此处影响。
   final double blurSigma;
 
-  /// 渐进档参数（预设 + 自定义）。null = 读 [FrostedAppearanceScope] 里的
-  /// 全局设置（与柔光/液态调参同一口径：调用方只在预览等场景显式覆盖）。
-  final ProgressiveBlurTuning? tuning;
+  /// 模糊 / 衬底这条带比内容**再往下多画**的高度。
+  ///
+  /// 子页顶栏传 [HyperosBlurredHeader.subpageBandBottomOverhang]（用户口径
+  /// 2026-09-23：「最底下模糊的边界再往下，超过标题底部一个字空间」）；其他
+  /// 调用方（卡片、菜单井、弹窗面板）保持 0，观感逐像素不变。
+  ///
+  /// 实现是**只把下面这两层撑下去**：Stack 的高度仍由 [child] 决定，所以标题
+  /// 位置、以及外壳被测量到的高度都不变 —— 只有"糊到哪儿为止"往下挪。
+  final double bottomOverhang;
 
   /// 无内容压在带下时，是否把衬底铺满整条带（不向下渐隐）。
   ///
@@ -75,6 +80,22 @@ class InspireHeaderBlur extends StatelessWidget {
     return HyperosBlurredHeader.backdropBlurEnabled(context);
   }
 
+  /// 渐进档的**固定**参数（2026-09-23 用户口径：浓淡只要一个档位）。
+  ///
+  /// 这三个数不是随手取的，与
+  /// [HyperosBlurredHeader.subpageBandBottomOverhang] 是一组：
+  ///
+  /// * [progressiveSigma] = 22（原来 15）：顶部更糊。抬到 22 是因为带子下半段
+  ///   被 overhang 拉长之后，同样的 sigma 在视觉上会显得更薄。
+  /// * [progressiveExtent] = 1：模糊自顶边满强度向下、**正好在带底**衰减到 0。
+  ///   带底已经被 overhang 推到标题下方，所以"最底下那条模糊边界"落在标题底部
+  ///   之下；而 extent = 1 保证边界处没有残留模糊，不会和下方清晰内容硬切。
+  /// * [progressiveTintBottomScale] = 0：不加下部衬底（真机上衬底在带底留过
+  ///   一条横向硬边，见 [tintGradient]）。
+  static const progressiveSigma = 22.0;
+  static const progressiveExtent = 1.0;
+  static const progressiveTintBottomScale = 0.0;
+
   /// 高斯档：整带均匀强度。
   ///
   /// ⚠️ 必须用 [UniformDistribution]：包的 `extent` 语义是「模糊从顶边衰减
@@ -83,20 +104,22 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 「全局柔光 + 子页高斯 = 顶栏全透明」的根因）。渐隐收边如需保留，应改
   /// 用带自定义 stops 的渐变分布，而不是缩 extent。
   ///
-  /// 纯函数便于测试：渐进档的 sigma / extent 全部来自 [tuning]，高斯档
-  /// 用 [gaussianSigma]（全局「模糊强度」滑杆）并整带均匀。
+  /// 纯函数便于测试：渐进档的 sigma / extent 全部来自上面的固定常量，
+  /// 高斯档用 [gaussianSigma]（全局「模糊强度」）并整带均匀。
   static InspireBlurConfig configFor(
     HeaderBlurStyle style, {
     required double gaussianSigma,
-    required ProgressiveBlurTuning tuning,
   }) {
     return switch (style) {
       // 渐进档：模糊自顶边满强度向下按 extent 衰减到 0。
-      // tuning.extent = 1（预设「标准」的默认）：完全清晰正好落在带底，
-      // 与课表衔接处无残留模糊切边。
+      // extent = 1：完全清晰正好落在**带底**（已含 overhang），与下方内容
+      // 衔接处无残留模糊切边。
       HeaderBlurStyle.inspire => InspireBlurConfig.topToBottom(
-        sigma: tuning.sigma,
-        extent: tuning.extent,
+        sigma: progressiveSigma,
+        // 故意写死 1.0：这是"边界正好落在带底"的契约本身，后面调 sigma 时
+        // 不该顺手把它当成可省的默认值。
+        // ignore: avoid_redundant_argument_values
+        extent: progressiveExtent,
       ),
       // 高斯档：整带均匀模糊，粗细走全局模糊强度。
       HeaderBlurStyle.gaussian => InspireBlurConfig(
@@ -106,16 +129,12 @@ class InspireHeaderBlur extends StatelessWidget {
     };
   }
 
-  /// 当前生效的渐进档参数：显式 [tuning] 优先，否则读全局设置。
-  ProgressiveBlurTuning resolveTuning(BuildContext context) =>
-      tuning ?? FrostedAppearanceScope.of(context).progressiveBlurTuning;
-
   /// 渐进档衬底渐变：顶边满浓度，沿方向衰减，**带底恒为全透明**。
   ///
   /// 带底必须是 0：玻璃带外面是清晰内容，衬底只要在交界处还不是透明，就会
   /// 切出一条横向硬边（真机口径「最浓状态下底部出现一条横向」）。所以
-  /// [ProgressiveBlurTuning.tintBottomScale] 只抬高下半段的浓度（多一个中间
-  /// stop），末段一律收敛到 0——任何取值都只在带内加雾，不带边。
+  /// [progressiveTintBottomScale] 只抬高下半段的浓度（多一个中间 stop），
+  /// 末段一律收敛到 0——任何取值都只在带内加雾，不带边。
   ///
   /// [bottomScale] = 0（默认）时退化成 [top, 透明] 两段，与接入调参前的观感
   /// 逐像素一致。
@@ -142,48 +161,83 @@ class InspireHeaderBlur extends StatelessWidget {
   ///
   /// 高斯档保持均匀 [tint]。渐进档若继续盖一层整幅半透明色，观感会退化
   /// 成「一致的半透明条」，完全看不出 iOS 式的顶浓底清。
-  Widget _tintLayer(ProgressiveBlurTuning tuning) {
+  Widget _tintLayer() {
     final useGradient = style == HeaderBlurStyle.inspire && !opaqueAtRest;
     if (!useGradient) {
-      return Positioned.fill(child: ColoredBox(color: tint));
+      return _bandLayer(child: ColoredBox(color: tint));
     }
-    return Positioned.fill(
+    return _bandLayer(
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: tintGradient(tint, tuning.tintBottomScale),
+          gradient: tintGradient(tint, progressiveTintBottomScale),
         ),
       ),
+    );
+  }
+
+  /// 把一层铺满整条带，并按 [bottomOverhang] 往下多画一截。
+  ///
+  /// Stack 的高度由非定位的 [child] 决定，所以这两层撑出去的部分**不参与布局**
+  /// —— 下沿能往下走，标题与外壳高度都不动。
+  Widget _bandLayer({required Widget child}) {
+    if (bottomOverhang <= 0) {
+      return Positioned.fill(child: child);
+    }
+    return Positioned(
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: -bottomOverhang,
+      child: child,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final useBlur = blurEnabled && canRender(context);
-    final tuning = resolveTuning(context);
 
-    return ClipRect(
-      child: Stack(
-        fit: StackFit.passthrough,
-        children: [
-          if (useBlur)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Inspire.backdropBlur(
-                  config: configFor(
-                    style,
-                    gaussianSigma: blurSigma,
-                    tuning: tuning,
-                  ),
-                  // 顶栏不参与手势，无需截获指针；自身已经裁剪在带内。
-                  child: const SizedBox.expand(),
-                ),
+    final band = Stack(
+      fit: StackFit.passthrough,
+      children: [
+        if (useBlur)
+          _bandLayer(
+            child: IgnorePointer(
+              child: Inspire.backdropBlur(
+                config: configFor(style, gaussianSigma: blurSigma),
+                // 顶栏不参与手势，无需截获指针；自身已经裁剪在带内。
+                child: const SizedBox.expand(),
               ),
             ),
-          // 衬底画在模糊之上：模糊负责「糊」，衬底负责可读对比度。
-          _tintLayer(tuning),
-          child,
-        ],
-      ),
+          ),
+        // 衬底画在模糊之上：模糊负责「糊」，衬底负责可读对比度。
+        _tintLayer(),
+        child,
+      ],
+    );
+
+    if (bottomOverhang <= 0) {
+      return ClipRect(child: band);
+    }
+    // 默认 ClipRect 按自身尺寸裁剪，会把下沿那一截切掉 —— 这里把裁剪框往下
+    // 放到带底（左右与上方仍是原框），其余行为不变。
+    return ClipRect(
+      clipper: _BandOverhangClipper(bottomOverhang),
+      child: band,
     );
   }
+}
+
+/// 把裁剪框按 [overhang] 往下扩一截的裁剪器（见 [InspireHeaderBlur.bottomOverhang]）。
+class _BandOverhangClipper extends CustomClipper<Rect> {
+  const _BandOverhangClipper(this.overhang);
+
+  final double overhang;
+
+  @override
+  Rect getClip(Size size) =>
+      Rect.fromLTWH(0, 0, size.width, size.height + overhang);
+
+  @override
+  bool shouldReclip(_BandOverhangClipper oldClipper) =>
+      oldClipper.overhang != overhang;
 }

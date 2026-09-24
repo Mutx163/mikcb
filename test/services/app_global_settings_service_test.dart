@@ -3,9 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course_glass_tuning.dart';
-import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
-import 'package:university_timetable/models/progressive_blur_tuning.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/app_global_settings_service.dart';
@@ -46,9 +44,6 @@ void main() {
     liquidGlassTuningDark: LiquidGlassTuning.defaults,
     courseCardSurfaceStyle: CourseCardSurfaceStyle.gaussian,
     courseCardGlassTuning: CourseGlassTuning.courseCard,
-    progressiveBlurPreset: ProgressiveBlurPreset.dense,
-    progressiveBlurTuning: ProgressiveBlurTuning.defaults,
-    subpageHeaderBlurStyle: HeaderBlurStyle.gaussian,
     homeBandGlassMaterial: 'solid',
     homePageTimeColumnBlurEnabled: true,
     // 主题外观

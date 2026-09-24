@@ -775,20 +775,10 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
             ),
           ],
           const SizedBox(height: 20),
-          // 子页顶栏（设置等页）：卡片里看不见，归入靠后分区。
-          HyperosSectionLabel(text: l10n.subpageHeaderBlurStyleLabel),
-          const SizedBox(height: 8),
-          _MaterialSegmented<HeaderBlurStyle>(
-            items: {
-              l10n.headerBlurStyleInspire: HeaderBlurStyle.inspire,
-              l10n.headerBlurStyleGaussian: HeaderBlurStyle.gaussian,
-            },
-            value: _draft.subpageHeaderBlurStyle,
-            onChanged: (value) {
-              _updateDraft(applySubpageChromeBlurStyle(_draft, value));
-            },
-          ),
-          const SizedBox(height: 20),
+          // 子页顶栏（设置等页）：2026-09-23 起**锁定为渐进模糊**（用户口径
+          // 「子页顶部可以锁定渐变模糊」），设置里不再有这一节 —— 它只在下面
+          // 只读总览里作为一行说明出现。原来那两格分段（渐进 / 高斯）删除。
+          //
           // 「各表面当前材质」地图：与渲染侧门控同口径的只读推导
           // （2026-09-12）。**锁定的表面不显示**（2026-09-19 第七轮）：
           // 弹窗家族四件（底部弹窗 / 选择面板 / 下拉小弹窗 / 选点按钮）

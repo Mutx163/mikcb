@@ -186,13 +186,20 @@ abstract final class HyperosBlurredHeader {
     return _appearanceOf(context).homeBandGlassMaterial;
   }
 
-  /// 子页顶栏（设置等 HyperosSubpage 页）的模糊材质风格。
+  /// 子页顶栏（设置等 HyperosSubpage 页）的模糊风格。
   ///
-  /// 与首页 [homeBandGlassMaterialOf] 相互独立，子页顶栏永不走液态，此
-  /// 风格始终生效。
+  /// **2026-09-23 起锁死为渐进模糊**（用户口径「子页顶部可以锁定渐变模糊」）：
+  /// 设置里不再有这个选项，返回值恒为 [HeaderBlurStyle.inspire]，函数保留只为
+  /// 让调用处读起来仍是"取当前风格"。真档位只剩课程卡片自己那一档（另一根轴）。
   static HeaderBlurStyle subpageHeaderBlurStyleOf(BuildContext context) {
-    return _appearanceOf(context).subpageHeaderBlurStyle;
+    return HeaderBlurStyle.inspire;
   }
+
+  /// 子页顶栏的模糊下沿比标题行多画多少（≈ 一个字高）。
+  ///
+  /// 用户口径 2026-09-23：「让模糊靠下一点，最底下模糊的边界再往下，超过标题
+  /// 底部一个字空间」。只加在下沿 —— 标题位置与正文顶部留白都不动。
+  static const subpageBandBottomOverhang = 20.0;
 
   static double sheetBarrierAlphaOf(BuildContext context) {
     return _appearanceOf(context).sheetBarrierAlpha;
@@ -387,6 +394,8 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
       // 真正压到带底时就被糊进这条窗口，随后衬底整条切进来，读作
       // 「内容快插到标题栏时顿一下」。见 [InspireHeaderBlur.opaqueAtRest]。
       opaqueAtRest: !underHeader,
+      // 模糊下沿推到标题下方一个字高（用户口径 2026-09-23）。
+      bottomOverhang: HyperosBlurredHeader.subpageBandBottomOverhang,
       child: child,
     );
   }

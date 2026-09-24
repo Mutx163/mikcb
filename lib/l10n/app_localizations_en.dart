@@ -10328,9 +10328,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get headerBlurStyleInspire => 'Progressive blur';
 
   @override
-  String get subpageHeaderBlurStyleLabel => 'Subpage top bar blur style';
-
-  @override
   String get texturePresetLabel => 'Texture preset';
 
   @override
@@ -11512,36 +11509,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String liveExpandedDetailLineNote(String value) {
     return 'Note: $value';
   }
-
-  @override
-  String get progressiveBlurPresetLabel => 'Progressive blur preset';
-
-  @override
-  String get progressiveBlurPresetClear => 'Clear';
-
-  @override
-  String get progressiveBlurPresetLight => 'Light';
-
-  @override
-  String get progressiveBlurPresetStandard => 'Standard';
-
-  @override
-  String get progressiveBlurPresetDense => 'Dense';
-
-  @override
-  String get progressiveBlurPresetCustom => 'Custom';
-
-  @override
-  String get progressiveBlurSigmaLabel => 'Blur strength';
-
-  @override
-  String get progressiveBlurExtentLabel => 'Gradient extent';
-
-  @override
-  String get progressiveBlurTintBottomLabel => 'Lower tint';
-
-  @override
-  String get progressiveBlurResetAction => 'Reset to defaults';
 
   @override
   String weatherTemperatureValue(int temperature) {

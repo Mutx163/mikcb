@@ -10076,9 +10076,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get headerBlurStyleInspire => '점진 블러';
 
   @override
-  String get subpageHeaderBlurStyleLabel => '하위 페이지 상단 바 블러 스타일';
-
-  @override
   String get texturePresetLabel => '질감 프리셋';
 
   @override
@@ -11225,36 +11222,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String liveExpandedDetailLineNote(String value) {
     return '메모: $value';
   }
-
-  @override
-  String get progressiveBlurPresetLabel => '점진 블러 프리셋';
-
-  @override
-  String get progressiveBlurPresetClear => '맑음';
-
-  @override
-  String get progressiveBlurPresetLight => '가벼움';
-
-  @override
-  String get progressiveBlurPresetStandard => '표준';
-
-  @override
-  String get progressiveBlurPresetDense => '짙은 안개';
-
-  @override
-  String get progressiveBlurPresetCustom => '사용자 지정';
-
-  @override
-  String get progressiveBlurSigmaLabel => '블러 강도';
-
-  @override
-  String get progressiveBlurExtentLabel => '그라데이션 범위';
-
-  @override
-  String get progressiveBlurTintBottomLabel => '하단부 배경';
-
-  @override
-  String get progressiveBlurResetAction => '기본값으로 복원';
 
   @override
   String weatherTemperatureValue(int temperature) {

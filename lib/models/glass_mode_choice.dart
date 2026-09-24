@@ -1,6 +1,5 @@
 import '../ui/hyperos/frosted/frosted_appearance.dart';
 
-import 'header_blur_style.dart';
 import 'timetable_settings.dart';
 
 /// 玻璃模式三档选择（设置页「默认材质」与引导页「视觉效果」共用的映射
@@ -73,12 +72,3 @@ TimetableSettings applyHomeBandGlassMaterial(
     material,
   ),
 );
-
-/// 写回「子页顶栏模糊风格」（渐进模糊 / 高斯模糊）。
-///
-/// 子页顶栏（设置等 HyperosSubpage 页）与首页玻璃带材质相互独立；子页
-/// 永不走高级材质，此风格始终生效。
-TimetableSettings applySubpageChromeBlurStyle(
-  TimetableSettings settings,
-  HeaderBlurStyle style,
-) => settings.copyWith(subpageHeaderBlurStyle: style);

@@ -12,7 +12,6 @@
 // - 玻璃坞跟随用户档位：「作用范围 → 底栏」关 → 回磨砂（实体档回实体）；
 // - 子页顶栏永不走高级材质；高斯卡在模糊关时降级实体。
 import 'package:flutter_test/flutter_test.dart';
-import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/surface_material.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart'
@@ -131,11 +130,18 @@ void main() {
   });
 
   group('顶栏风格映射（子页）', () {
-    test('子页高斯档映射 frostGaussian', () {
-      final s = TimetableSettings.defaults().copyWith(
-        subpageHeaderBlurStyle: HeaderBlurStyle.gaussian,
+    test('子页顶栏锁死渐进：模糊开着就报渐进，不可能是高斯', () {
+      // 2026-09-23 起子页顶栏那把轴（渐进 / 高斯）整体撤下，设置里不再有
+      // subpageHeaderBlurStyle —— 所以这里只剩「模糊开 / 关」两种结果。
+      final s = TimetableSettings.defaults();
+      expect(s.frostedBlurEnabled, isTrue, reason: '前提：出厂模糊是开的');
+      expect(subpageHeaderSurfaceMaterial(s), SurfaceMaterial.frostProgressive);
+      expect(
+        subpageHeaderSurfaceMaterial(
+          s.copyWith(frostedBlurEnabled: false),
+        ),
+        SurfaceMaterial.solid,
       );
-      expect(subpageHeaderSurfaceMaterial(s), SurfaceMaterial.frostGaussian);
     });
   });
 

@@ -167,7 +167,6 @@ void main() {
     // 首页顶栏玻璃（两档，存量渐进档显示归桶为液态）+ 子页顶栏风格两档。
     await _scrollPanelTo(tester, find.text('首页顶栏玻璃'));
     expect(find.text('首页顶栏玻璃'), findsOneWidget);
-    expect(find.text('子页顶栏模糊风格'), findsOneWidget);
     expect(find.text('液态玻璃'), findsWidgets);
 
     // 「各表面当前材质」地图存在，含表面行，且右侧材质值真实渲染

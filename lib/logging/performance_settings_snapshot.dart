@@ -91,7 +91,6 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
     link: appearance.linkLiquidGlassTuning,
     darkBoost: appearance.darkGlassBoostEnabled,
   );
-  final progressive = appearance.progressiveBlurTuning;
   // 卡片那套同款「已回落」取法：内置兜底档也读得到同样的值。
   final card = appearance.courseCardGlassTuning ?? CourseGlassTuning.courseCard;
 
@@ -162,12 +161,6 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
     'ccBlurSigma': card.blurSigma,
     'ccTintAlpha': card.tintAlpha,
 
-    // —— 渐进（顶栏）模糊参数 ——
-    'pbPreset': s.progressiveBlurPreset.name,
-    'pbSigma': progressive.sigma,
-    'pbExtent': progressive.extent,
-    'pbTintBottomScale': progressive.tintBottomScale,
-
     // —— 材质常量（用户看不到但直接决定开销）——
     'sheetBlurSigma': appearance.sheetBlurSigma,
     'sheetTintAlpha': appearance.sheetTintAlpha,
@@ -175,7 +168,6 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
 
     // —— 顶栏与背景带 ——
     'homeBandGlassMaterial': appearance.homeBandGlassMaterial,
-    'subpageBlurStyle': appearance.subpageHeaderBlurStyle.name,
     'timeColumnBlur': s.homePageTimeColumnBlurEnabled,
     'backdropFollowsWeekPager': s.homePageBackdropFollowsWeekPager,
 

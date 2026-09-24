@@ -1,4 +1,3 @@
-import 'header_blur_style.dart';
 import 'timetable_settings.dart';
 import '../ui/hyperos/frosted/frosted_appearance.dart' show FrostedGlassMode;
 
@@ -70,15 +69,14 @@ SurfaceMaterial homeBandSurfaceMaterial(TimetableSettings s) {
       : SurfaceMaterial.solid;
 }
 
-/// 子页顶栏（设置等 HyperosSubpage 外壳）。永不走高级材质，风格始终生效。
-SurfaceMaterial subpageHeaderSurfaceMaterial(TimetableSettings s) {
-  if (!s.frostedBlurEnabled) {
-    return SurfaceMaterial.solid;
-  }
-  return s.subpageHeaderBlurStyle == HeaderBlurStyle.gaussian
-      ? SurfaceMaterial.frostGaussian
-      : SurfaceMaterial.frostProgressive;
-}
+/// 子页顶栏（设置等 HyperosSubpage 外壳）。永不走高级材质。
+///
+/// 2026-09-23 起**风格锁死为渐进模糊**（设置里不再有这一档），所以这里只剩
+/// 「模糊开着 / 关掉」两种结果 —— 模糊开了就一定是渐进，不会再是高斯。
+SurfaceMaterial subpageHeaderSurfaceMaterial(TimetableSettings s) =>
+    s.frostedBlurEnabled
+    ? SurfaceMaterial.frostProgressive
+    : SurfaceMaterial.solid;
 
 /// 玻璃坞（含坞内圆钮）：跟随用户档位，「作用范围 → 底栏」关闭 → 磨砂。
 SurfaceMaterial dockSurfaceMaterial(TimetableSettings s) =>

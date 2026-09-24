@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:university_timetable/models/header_blur_style.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
@@ -221,13 +220,10 @@ void main() {
   });
 
   group('preview scope mirrors the settings band material', () {
-    testWidgets('scope carries settings.homeBandGlassMaterial / subpageHeaderBlurStyle', (
-      tester,
-    ) async {
+    testWidgets('scope carries settings.homeBandGlassMaterial', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final settings = TimetableSettings.defaults().copyWith(
         homeBandGlassMaterial: 'gaussian',
-        subpageHeaderBlurStyle: HeaderBlurStyle.inspire,
       );
       final provider = await createInitializedTestProvider(tester);
 
@@ -249,17 +245,13 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // 回归背景（2026-09-12）：scope 漏传顶栏材质/子页风格时，预览里的
-      // 首页玻璃带（HomePageChromeGlassFill）永远按默认渐进档渲染，与真
-      // 实首页不符。
+      // 回归背景（2026-09-12）：scope 漏传顶栏材质时，预览里的首页玻璃带
+      // （HomePageChromeGlassFill）永远按默认档渲染，与真实首页不符。
+      // （子页顶栏风格 2026-09-23 起锁死为渐进，不再是设置的搬运项。）
       final scope = tester.widget<FrostedAppearanceScope>(
         find.byType(FrostedAppearanceScope),
       );
       expect(scope.appearance.homeBandGlassMaterial, 'gaussian');
-      expect(
-        scope.appearance.subpageHeaderBlurStyle,
-        HeaderBlurStyle.inspire,
-      );
     });
   });
 }

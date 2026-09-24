@@ -267,12 +267,15 @@ void main() {
     // 「实体」而不是「实体卡片」，卡片出厂档正是实体）。
     expect(find.text('实体卡片'), findsOneWidget);
     expect(find.text('液态玻璃'), findsWidgets);
-    // 「高斯模糊」三处：默认材质那一格 + 子页顶栏模糊风格那一格（同一根轴上
-    // 的另一个真档位，2026-09-23 起子页顶栏锁定渐进后这一处会消失）+
-    // 只读总览里玻璃坞那一行（模糊开着、非液态）。
-    expect(find.text('高斯模糊'), findsNWidgets(3));
+    // 「高斯模糊」两处：默认材质那一格 + 只读总览里玻璃坞那一行（模糊开着、
+    // 非液态）。子页顶栏那把轴 2026-09-23 起锁死为渐进，所以不再有第三处。
+    expect(find.text('高斯模糊'), findsNWidgets(2));
+    expect(
+      find.text('子页顶栏模糊风格'),
+      findsNothing,
+      reason: '子页顶栏 2026-09-23 起锁死渐进，这一节整体撤下',
+    );
     expect(find.text('首页顶栏玻璃'), findsOneWidget);
-    expect(find.text('子页顶栏模糊风格'), findsOneWidget);
     expect(find.text('各表面当前材质'), findsOneWidget);
     expect(find.text('首页玻璃带'), findsWidgets);
     expect(find.text('高级材质'), findsNothing);

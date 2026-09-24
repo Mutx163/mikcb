@@ -9735,9 +9735,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get headerBlurStyleInspire => '渐进模糊';
 
   @override
-  String get subpageHeaderBlurStyleLabel => '子页顶栏模糊风格';
-
-  @override
   String get texturePresetLabel => '质感方案';
 
   @override
@@ -10867,36 +10864,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String liveExpandedDetailLineNote(String value) {
     return '备注: $value';
   }
-
-  @override
-  String get progressiveBlurPresetLabel => '渐进模糊预设';
-
-  @override
-  String get progressiveBlurPresetClear => '清透';
-
-  @override
-  String get progressiveBlurPresetLight => '轻盈';
-
-  @override
-  String get progressiveBlurPresetStandard => '标准';
-
-  @override
-  String get progressiveBlurPresetDense => '浓雾';
-
-  @override
-  String get progressiveBlurPresetCustom => '自定义';
-
-  @override
-  String get progressiveBlurSigmaLabel => '模糊强度';
-
-  @override
-  String get progressiveBlurExtentLabel => '渐变延伸';
-
-  @override
-  String get progressiveBlurTintBottomLabel => '下部衬底';
-
-  @override
-  String get progressiveBlurResetAction => '恢复默认';
 
   @override
   String weatherTemperatureValue(int temperature) {
@@ -20880,9 +20847,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get headerBlurStyleInspire => '漸進模糊';
 
   @override
-  String get subpageHeaderBlurStyleLabel => '子頁頂欄模糊風格';
-
-  @override
   String get texturePresetLabel => '質感方案';
 
   @override
@@ -22012,36 +21976,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String liveExpandedDetailLineNote(String value) {
     return '備註: $value';
   }
-
-  @override
-  String get progressiveBlurPresetLabel => '漸進模糊預設';
-
-  @override
-  String get progressiveBlurPresetClear => '清透';
-
-  @override
-  String get progressiveBlurPresetLight => '輕盈';
-
-  @override
-  String get progressiveBlurPresetStandard => '標準';
-
-  @override
-  String get progressiveBlurPresetDense => '濃霧';
-
-  @override
-  String get progressiveBlurPresetCustom => '自訂';
-
-  @override
-  String get progressiveBlurSigmaLabel => '模糊強度';
-
-  @override
-  String get progressiveBlurExtentLabel => '漸變延伸';
-
-  @override
-  String get progressiveBlurTintBottomLabel => '下部襯底';
-
-  @override
-  String get progressiveBlurResetAction => '恢復預設';
 
   @override
   String weatherTemperatureValue(int temperature) {
@@ -32025,9 +31959,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get headerBlurStyleInspire => '漸進模糊';
 
   @override
-  String get subpageHeaderBlurStyleLabel => '子頁頂欄模糊風格';
-
-  @override
   String get texturePresetLabel => '質感方案';
 
   @override
@@ -33157,36 +33088,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String liveExpandedDetailLineNote(String value) {
     return '備註: $value';
   }
-
-  @override
-  String get progressiveBlurPresetLabel => '漸進模糊預設';
-
-  @override
-  String get progressiveBlurPresetClear => '清透';
-
-  @override
-  String get progressiveBlurPresetLight => '輕盈';
-
-  @override
-  String get progressiveBlurPresetStandard => '標準';
-
-  @override
-  String get progressiveBlurPresetDense => '濃霧';
-
-  @override
-  String get progressiveBlurPresetCustom => '自訂';
-
-  @override
-  String get progressiveBlurSigmaLabel => '模糊強度';
-
-  @override
-  String get progressiveBlurExtentLabel => '漸變延伸';
-
-  @override
-  String get progressiveBlurTintBottomLabel => '下部襯底';
-
-  @override
-  String get progressiveBlurResetAction => '恢復預設';
 
   @override
   String weatherTemperatureValue(int temperature) {

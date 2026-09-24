@@ -1,7 +1,6 @@
 import '../models/course.dart';
 import '../models/exam.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
-import 'package:university_timetable/models/progressive_blur_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../utils/widget_course_accent.dart';
 import 'app_localizations.dart';
@@ -291,17 +290,6 @@ String liquidGlassPresetLabel(
   LiquidGlassPreset.standard => l10n.liquidGlassPresetStandard,
   LiquidGlassPreset.dense => l10n.liquidGlassPresetDense,
   LiquidGlassPreset.custom => l10n.liquidGlassPresetCustom,
-};
-
-String progressiveBlurPresetLabel(
-  AppLocalizations l10n,
-  ProgressiveBlurPreset preset,
-) => switch (preset) {
-  ProgressiveBlurPreset.clear => l10n.progressiveBlurPresetClear,
-  ProgressiveBlurPreset.light => l10n.progressiveBlurPresetLight,
-  ProgressiveBlurPreset.standard => l10n.progressiveBlurPresetStandard,
-  ProgressiveBlurPreset.dense => l10n.progressiveBlurPresetDense,
-  ProgressiveBlurPreset.custom => l10n.progressiveBlurPresetCustom,
 };
 
 String courseCardSurfaceStyleLabel(

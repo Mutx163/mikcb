@@ -8,8 +8,8 @@
 //   不允许任何一档再分叉出"自己的磨砂样式"（用户 2026-09-20 报的「顶栏没有玻璃
 //   效果」= 界面显示液态、实际渲染渐进磨砂）；
 // - 实体 → 不透明纯色条；
-// - 子页顶栏外壳（HyperosFrostedHeaderShell）读 subpageHeaderBlurStyleOf，
-//   永不走高级材质；
+// - 子页顶栏外壳（HyperosFrostedHeaderShell）恒为渐进档 —— 2026-09-23 起该档
+//   锁死（设置里不再有选项），模糊下沿比标题行多画一个字高；
 // - inspire 高斯档必须用 UniformDistribution：包的 extent 语义是「衰减到
 //   零的位置」，曾把 0.12 当底边收边传入，整条带只有顶部 12% 有模糊
 //   （2026-09-12 真机「全局柔光 + 子页高斯 = 顶栏全透明」根因）。
@@ -17,9 +17,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inspire_blur/inspire_blur.dart';
 import 'package:university_timetable/models/header_blur_style.dart';
-import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
-import 'package:university_timetable/models/progressive_blur_tuning.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_header_background.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_blurred_header.dart';
 import 'package:university_timetable/ui/hyperos/inspire/inspire_header_blur.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_theme.dart';
 import 'package:university_timetable/widgets/home_page_region_blur.dart';
@@ -50,7 +49,7 @@ Future<void> _pumpFill(WidgetTester tester, String material) async {
 }
 
 void main() {
-  testWidgets('子页顶栏外壳读 subpageHeaderBlurStyleOf', (tester) async {
+  testWidgets('子页顶栏外壳锁死渐进档，并把模糊下沿撑到标题下方', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: FrostedAppearanceScope(
@@ -65,6 +64,40 @@ void main() {
       find.byType(FrostedHeaderBackground),
     );
     expect(bg.blurStyle, HeaderBlurStyle.inspire);
+  });
+
+  testWidgets('模糊下沿按 bottomOverhang 往下多画，带子本身高度不变', (tester) async {
+    // 用户口径 2026-09-23：「让模糊靠下一点，最底下模糊的边界再往下，超过标题
+    // 底部一个字空间」。这条钉的是**只往下多画**：标题行（带子本体）的高度一点
+    // 不涨，正文顶部留白因此不动，涨的只有模糊/衬底那一层的下沿。
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: 200,
+            child: InspireHeaderBlur(
+              tint: Color(0x99FFFFFF),
+              bottomOverhang: 20,
+              child: SizedBox(height: 56),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.getSize(find.byType(InspireHeaderBlur)).height, 56);
+    final tintLayer = find.descendant(
+      of: find.byType(InspireHeaderBlur),
+      matching: find.byType(DecoratedBox),
+    );
+    expect(tintLayer, findsOneWidget);
+    expect(
+      tester.getSize(tintLayer).height,
+      76,
+      reason: '衬底/模糊层要比标题行多画 20（= 一个字高）',
+    );
   });
 
   group('首页玻璃带按材质分派（HomePageChromeGlassFill）', () {
@@ -150,12 +183,10 @@ void main() {
       final gaussian = InspireHeaderBlur.configFor(
         HeaderBlurStyle.gaussian,
         gaussianSigma: 15,
-        tuning: ProgressiveBlurTuning.defaults,
       );
       final progressive = InspireHeaderBlur.configFor(
         HeaderBlurStyle.inspire,
         gaussianSigma: 15,
-        tuning: ProgressiveBlurTuning.defaults,
       );
       expect(gaussian.distribution, isA<UniformDistribution>());
       expect(progressive.distribution, isNot(isA<UniformDistribution>()));
@@ -187,17 +218,17 @@ void main() {
       }
     });
 
-    test('渐进档吃自己的档位：sigma 与 extent 都来自 tuning', () {
-      const tuning = ProgressiveBlurTuning(sigma: 24, extent: 0.6);
+    test('渐进档用固定常量（2026-09-23：浓淡只要一个档位）', () {
       final progressive = InspireHeaderBlur.configFor(
         HeaderBlurStyle.inspire,
         gaussianSigma: 15,
-        tuning: tuning,
       );
-      // 渐进档不再读全局高斯 sigma（15），而是档位自己的 24。
-      expect(progressive.effectiveSigmaX, 24);
-      // extent = 渐变里「模糊衰减到 0」所在的带宽比例：0.6 表示带宽 60%
-      // 处就已收干（1.0 = 正好落在带底，即默认档）。
+      // 渐进档不读全局高斯 sigma（15），用的是它自己那个写死的档。
+      expect(progressive.effectiveSigmaX, InspireHeaderBlur.progressiveSigma);
+      // 用户口径「让顶部再模糊一点」：15 → 22。
+      expect(InspireHeaderBlur.progressiveSigma, 22);
+
+      // extent = 渐变里「模糊衰减到 0」所在的带宽比例：1.0 = 正好落在带底。
       double fadeEndStop(InspireBlurConfig config) {
         final dist = config.distribution as DirectionalDistribution;
         for (var i = 0; i < dist.stops.length; i++) {
@@ -207,24 +238,26 @@ void main() {
       }
 
       expect(progressive.distribution, isA<DirectionalDistribution>());
-      expect(fadeEndStop(progressive), closeTo(0.6, 1e-9));
       expect(
-        fadeEndStop(
-          InspireHeaderBlur.configFor(
-            HeaderBlurStyle.inspire,
-            gaussianSigma: 15,
-            tuning: ProgressiveBlurTuning.defaults,
-          ),
-        ),
-        closeTo(ProgressiveBlurTuning.defaultExtent, 1e-9),
+        fadeEndStop(progressive),
+        closeTo(InspireHeaderBlur.progressiveExtent, 1e-9),
       );
-      // 高斯档不受 tuning 影响：仍是全局模糊强度。
+      // 边界必须落在带底（留一丝就会和下方清晰内容硬切一条横向边）。
+      expect(InspireHeaderBlur.progressiveExtent, 1);
+
+      // 高斯档不受影响：仍是全局模糊强度。
       final gaussian = InspireHeaderBlur.configFor(
         HeaderBlurStyle.gaussian,
         gaussianSigma: 15,
-        tuning: tuning,
       );
       expect(gaussian.effectiveSigmaX, 15);
+    });
+
+    test('子页顶栏模糊下沿比标题多画 ≈ 一个字高（2026-09-23 口径）', () {
+      // 用户口径：「最底下模糊的边界再往下，超过标题底部一个字空间」。
+      // 一个字高按 20dp 取；这个值同时是"模糊往下的距离"与"上限"，
+      // 太大就会盖住正文第一条。
+      expect(HyperosBlurredHeader.subpageBandBottomOverhang, 20);
     });
   });
 }

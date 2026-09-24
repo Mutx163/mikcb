@@ -4,7 +4,7 @@ import '../ui/hyperos/liquid/liquid_glass_shader.dart';
 
 /// 全局「液态玻璃」的观感档位。
 ///
-/// 与 `ProgressiveBlurPreset` 同构：前四档是内置观感，
+/// 与旧的渐进模糊预设体系同构（那一套 2026-09-23 已随子页顶栏锁定删除）：前四档是内置观感，
 /// [custom] 保留用户自己拖出来的参数。档位名沿用同一套「清透 → 轻盈 → 标准 →
 /// 厚重」阶梯，用户在三套高级材质之间迁移时不用重新学。
 enum LiquidGlassPreset {
