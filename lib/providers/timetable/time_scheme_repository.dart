@@ -190,7 +190,11 @@ Future<String?> _timetableUpdateTimeScheme(
     host._courses = List<Course>.from(
       host._profiles[activeProfileIndex].courses,
     );
-    host._settings = host._profiles[activeProfileIndex].settings;
+    // 课表里的 settings 只是全局设置的备份镜像；从这里恢复内存状态时
+    // 必须重新叠加全局真源，否则删除/导入留下的旧镜像会把设置倒退。
+    host._settings = host._settingsFromProfile(
+      host._profiles[activeProfileIndex],
+    );
   }
 
   await host._persistTimeSchemes();

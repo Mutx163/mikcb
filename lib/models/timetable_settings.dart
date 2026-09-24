@@ -1314,12 +1314,11 @@ class TimetableSettings {
   /// 非 `solid` / `follow` 一律归到液态（含 progressive / gaussian / soft 三个
   /// 存量档与一切非法值）：界面只承诺「跟随默认 / 实体 / 液态玻璃」三档，
   /// 存储与渲染必须同口径。
-  static String sanitizeHomeBandGlassMaterial(String? value) =>
-      switch (value) {
-        'solid' => 'solid',
-        'follow' => 'follow',
-        _ => 'liquid',
-      };
+  static String sanitizeHomeBandGlassMaterial(String? value) => switch (value) {
+    'solid' => 'solid',
+    'follow' => 'follow',
+    _ => 'liquid',
+  };
   static const double defaultPageTransitionSpeed = 1;
   static const double minPageTransitionSpeed = 0.5;
   static const double maxPageTransitionSpeed = 2.5;
@@ -1675,6 +1674,7 @@ class TimetableSettings {
         ? 'liquid'
         : 'frost';
   }
+
   final bool homePageTimeColumnBlurEnabled;
   final bool homePageBackdropFollowsWeekPager;
   final List<SavedTheme> savedThemes; // 保存的主题列表
@@ -2563,9 +2563,7 @@ class TimetableSettings {
       // 模糊总开关关掉时不上提：那是「实体卡片」档，适用所有表面。
       frostedGlassMode: legacyChromeLiquid
           ? FrostedGlassMode.liquidGlass
-          : FrostedGlassModeX.fromValue(
-              json['frostedGlassMode'] as String?,
-            ),
+          : FrostedGlassModeX.fromValue(json['frostedGlassMode'] as String?),
       liquidGlassDockEnabled:
           json['liquidGlassDockEnabled'] as bool? ??
           defaultLiquidGlassDockEnabled,
@@ -2889,8 +2887,7 @@ class TimetableSettings {
       courseCardShowWeeks: courseCardShowWeeks ?? this.courseCardShowWeeks,
       courseCardShowDescription:
           courseCardShowDescription ?? this.courseCardShowDescription,
-      weatherShowOnDayCard:
-          weatherShowOnDayCard ?? this.weatherShowOnDayCard,
+      weatherShowOnDayCard: weatherShowOnDayCard ?? this.weatherShowOnDayCard,
       weatherShowOnWeekCard:
           weatherShowOnWeekCard ?? this.weatherShowOnWeekCard,
       weatherShowOnSheet: weatherShowOnSheet ?? this.weatherShowOnSheet,
@@ -2982,7 +2979,7 @@ class TimetableSettings {
           screenshotSharePromptEnabled ?? this.screenshotSharePromptEnabled,
       longPressEmptySlotToAddCourseEnabled:
           longPressEmptySlotToAddCourseEnabled ??
-              this.longPressEmptySlotToAddCourseEnabled,
+          this.longPressEmptySlotToAddCourseEnabled,
       liveShowCourseName: liveShowCourseName ?? this.liveShowCourseName,
       liveShowLocation: liveShowLocation ?? this.liveShowLocation,
       liveShowCountdown: liveShowCountdown ?? this.liveShowCountdown,
@@ -3211,7 +3208,8 @@ class TimetableSettings {
           homePageHeaderBlurEnabled ?? this.homePageHeaderBlurEnabled,
       homePageWeekdayBarBlurEnabled:
           homePageWeekdayBarBlurEnabled ?? this.homePageWeekdayBarBlurEnabled,
-      homeBandGlassMaterial: homeBandGlassMaterial ?? this.homeBandGlassMaterial,
+      homeBandGlassMaterial:
+          homeBandGlassMaterial ?? this.homeBandGlassMaterial,
       homePageTimeColumnBlurEnabled:
           homePageTimeColumnBlurEnabled ?? this.homePageTimeColumnBlurEnabled,
       homePageBackdropFollowsWeekPager:

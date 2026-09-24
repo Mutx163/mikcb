@@ -2205,6 +2205,9 @@ class TimetableProvider with ChangeNotifier {
             .first;
         _activeProfileId = fallbackProfile.id;
         _applyProfileState(fallbackProfile);
+        // 切换到备用课表后，内存里已经是全局设置覆盖后的值；
+        // 把它写回备用课表，备份/云同步才不会继续携带旧镜像。
+        _mergeActiveProfileIntoProfilesList();
         _currentLiveCourseId = null;
       }
       await _profileRepository.saveProfiles(_profiles);
@@ -4519,6 +4522,8 @@ class TimetableProvider with ChangeNotifier {
         if (fallback != null) {
           _activeProfileId = fallback.id;
           _applyProfileState(fallback);
+          _mergeActiveProfileIntoProfilesList();
+          await _profileRepository.saveProfiles(_profiles);
           await _profileRepository.setActiveProfileId(fallback.id);
           unawaited(_syncExamReminders());
         }

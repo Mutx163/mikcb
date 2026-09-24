@@ -23,6 +23,14 @@ class _HomeNavigationSettingsScreenState
   Timer? _autoSaveTimer;
   Future<void> _saveQueue = Future<void>.value();
 
+  String get _effectiveGlassDockButtonEntryId {
+    final id = _draft.glassDockButtonEntryId;
+    if (id.isEmpty || id == 'addCourse') {
+      return 'addCourse';
+    }
+    return homeMenuEntryById(id) == null ? 'addCourse' : id;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -156,9 +164,7 @@ class _HomeNavigationSettingsScreenState
                         for (final entry in kHomeMenuCatalog)
                           if (entry.visible()) entry.title(l10n): entry.id,
                       },
-                      value: _draft.glassDockButtonEntryId.isEmpty
-                          ? 'addCourse'
-                          : _draft.glassDockButtonEntryId,
+                      value: _effectiveGlassDockButtonEntryId,
                       onChanged: (value) {
                         _updateDraft(
                           _draft.copyWith(glassDockButtonEntryId: value),
@@ -197,8 +203,7 @@ class _HomeNavigationSettingsScreenState
                         );
                         if (!mounted) return;
                         setState(() {
-                          _draft =
-                              context.read<TimetableProvider>().settings;
+                          _draft = context.read<TimetableProvider>().settings;
                         });
                       },
                     ),

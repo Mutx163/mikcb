@@ -57,7 +57,10 @@ import '../widgets/home_page_region_blur.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
-    show LiquidGlassSurface, UndimmedBackdropCapture, narrowSurfaceMaxRefraction;
+    show
+        LiquidGlassSurface,
+        UndimmedBackdropCapture,
+        narrowSurfaceMaxRefraction;
 import '../widgets/course_action_sheet.dart';
 import '../widgets/course_followup_sheets.dart';
 import '../widgets/course_note_sheet.dart';
@@ -236,16 +239,20 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///（allowImplicitScrolling）时不在别的周页上误显标记。
   int? _emptySlotMarkerWeek;
   int? _emptySlotMarkerDayOfWeek;
+
   /// 虚线框的起始节次（含）。
   int? _emptySlotMarkerSection;
+
   /// 虚线框的结束节次（含）。与起始相等时框只占一节；出现虚线框后拖上下
   /// 边缘可把它拉长到多节（见 [_resizeEmptySlotMarker]）。
   int? _emptySlotMarkerEndSection;
+
   /// 一次缩放拖拽的基准首/末节次。基准必须锚在**按下那一刻**的框上：框随
   /// 手指每变一次，若用它自己当基准，节数换算会漂移（越拖越快/回不去）。
   int? _emptySlotResizeBaseStart;
   int? _emptySlotResizeBaseEnd;
   bool _emptySlotResizeIsTopEdge = false;
+
   /// 本次缩放拖拽的累计纵向位移（px），除以节高取整即节数增量。
   double _emptySlotResizeAccum = 0;
   final GlobalKey _timetableSurfaceKey = GlobalKey();
@@ -521,10 +528,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             // 看哪一天与首页「日课表」Tab 同一条口径：宿主的 notifier 可能停在
             // 一个不显示的日子（周末被关掉时的周日），这里按可见日归一，免得
             // 选择落在看不见的那天上。
-            dayOfWeek: _resolveStoredDayOfWeek(
-              settings,
-              scope.dayOfWeek.value,
-            ),
+            dayOfWeek: _resolveStoredDayOfWeek(settings, scope.dayOfWeek.value),
             settings: settings,
             // 预览不做展开动画：宿主那一帧已经切完了，动画只会让它慢半拍。
             animate: false,
@@ -549,7 +553,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     WidgetsBinding.instance.addObserver(this);
     WidgetLaunchRouter.coupleOverlayRequestTick.addListener(
       _onExternalCoupleOverlayRequest,
-    );    final provider = context.read<TimetableProvider>();
+    );
+    final provider = context.read<TimetableProvider>();
     final initialWeek = provider.currentWeek;
     _visibleWeek = initialWeek;
     _pendingSettledWeek = initialWeek;
@@ -587,9 +592,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       ..addListener(_driveHomePullSettle);
     // 下拉进度的收尾看门狗：全局指针路由（事件先到这里，再走命中派发），
     // 与下拉当前由哪条路驱动无关。见 [_homePullLivePointers]。
-    GestureBinding.instance.pointerRouter.addGlobalRoute(
-      _onGlobalPointerEvent,
-    );
+    GestureBinding.instance.pointerRouter.addGlobalRoute(_onGlobalPointerEvent);
     _restoreViewStateFromProvider(provider);
     if (widget.enableUpdateCheck) {
       _checkForAppUpdate(
@@ -709,9 +712,11 @@ class _TimetableScreenState extends State<TimetableScreen>
           settings,
           HomePageBackgroundScope.header,
         );
-        final headerUsesFrostedChrome =
-            hasBackdrop &&
-            (headerShowsBackdrop || settings.homePageHeaderBlurEnabled);
+        final headerUsesFrostedChrome = homePageHeaderUsesFrostedChrome(
+          settings: settings,
+          hasBackdrop: hasBackdrop,
+          headerShowsBackdrop: headerShowsBackdrop,
+        );
         final headerBarColor = headerUsesFrostedChrome
             ? Colors.transparent
             : headerBackground.color;
@@ -808,8 +813,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         );
         // Gaussian cards sample the cached bitmap instead of a live
         // BackdropFilter while the day-view shell is animating.
-        final useCoursePreblur =
-            backdropBlurOn && cardStyle.isGlass;
+        final useCoursePreblur = backdropBlurOn && cardStyle.isGlass;
         // The day-view summary card is drawn from this same bitmap whenever
         // the chrome band has glass — regardless of the course-card style.
         // Without it the card's PreblurredWallpaperAlignedFill paints nothing
@@ -824,8 +828,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           // 预模糊位图服务的是首页玻璃带/摘要卡。顶栏材质是生效值（follow 已
           // 解析），只有液态档吃液态调参的模糊量；磨砂带（frost）与实体都走
           // 全局模糊强度，与启动预热器同判。
-          liquidGlassChrome:
-              dockAppearance.homeBandGlassMaterial == 'liquid',
+          liquidGlassChrome: dockAppearance.homeBandGlassMaterial == 'liquid',
           sheetBlurSigma: HyperosBlurredHeader.blurSigmaOf(context),
           liquidGlassTunedBlur:
               (dockAppearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
@@ -865,15 +868,11 @@ class _TimetableScreenState extends State<TimetableScreen>
                             )
                           : homePageBackdropLayer(settings: settings),
                     if (hasBackdrop && !statusBarShowsBackdrop)
-                      HomePageStatusBarBackdropMask(
-                        color: pageBackgroundColor,
-                      ),
+                      HomePageStatusBarBackdropMask(color: pageBackgroundColor),
                     // 组内首个 grouped filter：缓存未压暗的全屏壁纸供玻璃带
                     // 采样，与预览的 UndimmedBackdropCapture 同款、同相对位置。
                     if (continuousChromeBlur)
-                      const Positioned.fill(
-                        child: UndimmedBackdropCapture(),
-                      ),
+                      const Positioned.fill(child: UndimmedBackdropCapture()),
                   ],
                 ),
               ),
@@ -914,8 +913,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       // 这里只留透明点击区。
                       child: FHeaderAction(
                         icon: const SizedBox(width: 24, height: 24),
-                        semanticsLabel:
-                            _isCoupleOverlayActive(provider)
+                        semanticsLabel: _isCoupleOverlayActive(provider)
                             ? l10n.coupleTimetableModeDisableTooltip
                             : l10n.coupleTimetableModeEnableTooltip,
                         onPress: () {
@@ -949,22 +947,22 @@ class _TimetableScreenState extends State<TimetableScreen>
                       if (!_homeMenuOpen) _releaseHomeGlass();
                     },
                     child: CompositedTransformTarget(
-                    link: _moreBallLink,
-                    child: MiuixGlassAnchor(
-                    anchor: _homeMenuAnchor,
-                    child: KeyedSubtree(
-                    key: _topMenuButtonKey,
-                    child: FHeaderAction(
-                      // 可见图标（含更新红点）画到采样宿主之外的常驻玻璃球上
-                      // （见 [_homeChromeBalls] 与 FHeaderActionBall 的说明），
-                      // 这里只留透明点击区。
-                      icon: const SizedBox(width: 24, height: 24),
-                      semanticsLabel: l10n.moreTooltip,
-                      onPress: _showTopActionsSheet,
+                      link: _moreBallLink,
+                      child: MiuixGlassAnchor(
+                        anchor: _homeMenuAnchor,
+                        child: KeyedSubtree(
+                          key: _topMenuButtonKey,
+                          child: FHeaderAction(
+                            // 可见图标（含更新红点）画到采样宿主之外的常驻玻璃球上
+                            // （见 [_homeChromeBalls] 与 FHeaderActionBall 的说明），
+                            // 这里只留透明点击区。
+                            icon: const SizedBox(width: 24, height: 24),
+                            semanticsLabel: l10n.moreTooltip,
+                            onPress: _showTopActionsSheet,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  ),
-                  ),
                   ),
                 ],
                 child: Padding(
@@ -3075,9 +3073,11 @@ class _TimetableScreenState extends State<TimetableScreen>
                   // 长按拖动换格时判定"某格是否空白"的事实来源：课程覆盖
                   // 的（星期×节次）全集。此处在本 build 内即刻求值。
                   for (final item in displayItems) {
-                    for (var s = item.course.startSection;
-                        s <= item.course.endSection;
-                        s++) {
+                    for (
+                      var s = item.course.startSection;
+                      s <= item.course.endSection;
+                      s++
+                    ) {
                       occupiedSections.add((dayOfWeek, s));
                     }
                   }
@@ -3537,8 +3537,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 手势起点快照：只有"手指按下时就已经在顶部"的这次拖拽才允许累计下拉。
     // 滚回顶部的那一拖（起点在半路）整段都不计，用户要再拉一下才触发。
     if (notification is ScrollStartNotification) {
-      _homePullGestureStartedAtTop =
-          notification.dragDetails != null && atTop;
+      _homePullGestureStartedAtTop = notification.dragDetails != null && atTop;
       return false;
     }
 
@@ -5643,12 +5642,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     // part of the card turns into a flat opaque block and the frost disappears.
     final progressFill =
         effectiveCourseCardSurfaceStyle(
-          settings,
-          gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
-            context,
-          ),
-        ) ==
-        CourseCardSurfaceStyle.solid
+              settings,
+              gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
+                context,
+              ),
+            ) ==
+            CourseCardSurfaceStyle.solid
         ? progressInfo.fillColor
         : progressInfo.fillColor.withValues(alpha: 0.55);
 
@@ -6223,12 +6222,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     // See _buildCurrentDayAgendaCard: the fill must stay see-through on glass.
     final progressFill =
         effectiveCourseCardSurfaceStyle(
-          settings,
-          gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
-            context,
-          ),
-        ) ==
-        CourseCardSurfaceStyle.solid
+              settings,
+              gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
+                context,
+              ),
+            ) ==
+            CourseCardSurfaceStyle.solid
         ? progressInfo.fillColor
         : progressInfo.fillColor.withValues(alpha: 0.55);
 
@@ -6900,12 +6899,14 @@ class _TimetableScreenState extends State<TimetableScreen>
       if (localPosition.dx < 0 || localPosition.dy < 0) {
         return null;
       }
-      final dayIndex = (localPosition.dx / dayWidth)
-          .floor()
-          .clamp(0, visibleDays.length - 1);
-      final sectionIndex = (localPosition.dy / sectionHeight)
-          .floor()
-          .clamp(0, settings.sectionCount - 1);
+      final dayIndex = (localPosition.dx / dayWidth).floor().clamp(
+        0,
+        visibleDays.length - 1,
+      );
+      final sectionIndex = (localPosition.dy / sectionHeight).floor().clamp(
+        0,
+        settings.sectionCount - 1,
+      );
       final dayOfWeek = visibleDays[dayIndex];
       final section = sectionIndex + 1;
       if (occupiedSections.contains((dayOfWeek, section))) {
@@ -7525,9 +7526,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // （见 [_dockRoundSurface]），不必再各解析一份参数。
     final dockMaterial = _resolveDockMaterial(context);
     // 内嵌页表态只看主题，不跟着壁纸亮度走。
-    final lum = _dockInlinePageId != null
-        ? null
-        : _wallpaperBodyLuminance;
+    final lum = _dockInlinePageId != null ? null : _wallpaperBodyLuminance;
     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     // 通用底栏墨色判据（chrome 阈值 0.45）。
     // 实体卡片档的药丸/圆钮是不透明**主题色**面（浅色主题≈纯白），
@@ -7556,11 +7555,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             ),
             if (settings.glassDockShowAddButton) ...[
               const SizedBox(width: 8),
-              _buildDockMergeSlot(
-                ink: ink,
-                l10n: l10n,
-                material: dockMaterial,
-              ),
+              _buildDockMergeSlot(ink: ink, l10n: l10n, material: dockMaterial),
             ],
           ],
         ),
@@ -7591,9 +7586,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         : _wallpaperBodyLuminance;
     final barUsesLightInk = dockMaterial == _DockMaterial.solid
         ? isDark
-        : (wallpaperLuminance != null
-              ? wallpaperLuminance < 0.45
-              : isDark);
+        : (wallpaperLuminance != null ? wallpaperLuminance < 0.45 : isDark);
     final unselectedColor = barUsesLightInk
         ? Colors.white.withValues(alpha: 0.62)
         : Colors.black.withValues(alpha: 0.48);
@@ -7668,7 +7661,8 @@ class _TimetableScreenState extends State<TimetableScreen>
         // 折射会跟着下面内容变，最好看）。这里不再写它，把"要实时采样"写实：
         // 一旦将来坞层被包进某个组，`true` 会静默把它变成一块壁纸快照底
         // （2026-09-20 两颗悬浮钮踩的就是这个坑）。
-        fallbackBuilder: (_) => _frostedDockSurface(radius: radius, child: child),
+        fallbackBuilder: (_) =>
+            _frostedDockSurface(radius: radius, child: child),
         child: child,
       ),
       _DockMaterial.frosted => _frostedDockSurface(
@@ -7685,10 +7679,7 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 磨砂底（高斯药丸 / 圆钮共用）：blur 与 tint 都从 scope 出，与弹窗 frosted
   /// 档同参。也是液态玻璃不可用时的回落——仍是玻璃观感，不会突然变实底。
-  Widget _frostedDockSurface({
-    required double radius,
-    required Widget child,
-  }) {
+  Widget _frostedDockSurface({required double radius, required Widget child}) {
     final appearance = FrostedAppearanceScope.of(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
@@ -7803,7 +7794,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (entry != null) {
       _maybeSelectionClick(settings);
       unawaited(entry.open(context));
+      return;
     }
+
+    // 旧版本可能保存了已经撤掉的入口 id。图标层会回退成加号，
+    // 点击也必须走同一个新增课程回退，不能显示一个无响应按钮。
+    unawaited(_showAddCourseSheet());
   }
 
   /// 当前所在视图（日/周）在排列中的下标；排列未含该视图时高亮 0，
@@ -8009,8 +8005,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                         color: Colors.black.withValues(
                           alpha:
                               (theme.brightness == Brightness.dark
-                                   ? 0.12
-                                   : 0.06) *
+                                  ? 0.12
+                                  : 0.06) *
                               contentOpacity,
                         ),
                         blurRadius: 8,
@@ -8067,10 +8063,13 @@ class _TimetableScreenState extends State<TimetableScreen>
   static const double _backToTodayButtonRadius = _backToTodayButtonHeight / 2;
   static const double _backToTodayButtonHPadding = 16;
   static const double _backToTodayButtonFontSize = 14;
+
   /// 玻璃坞形态下按钮底边与药丸顶边之间的视觉间隙。
   static const double _backToTodayButtonDockGap = 12;
+
   /// 列表最后一项与按钮顶边之间的视觉间隙。
   static const double _backToTodayButtonGap = 8;
+
   /// 经典形态（底栏在页面之外）下按钮距页面底边的边距。
   static const double _backToTodayButtonClassicMargin = 24;
 
@@ -9203,9 +9202,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           Positioned.fill(
             child: HyperosGlassBackdropScope(
               controller: _homeGlass,
-              child: IgnorePointer(
-                child: Stack(children: chromeBalls),
-              ),
+              child: IgnorePointer(child: Stack(children: chromeBalls)),
             ),
           ),
         // ⚠️ 菜单的动画必须**不受"本页是否在前台"影响**：`Overlay` 会给被不透明
@@ -9799,10 +9796,7 @@ class _OpenOnlyContainerPageRoute<T> extends PageRouteBuilder<T> {
          opaque: false,
          pageBuilder: (context, animation, secondaryAnimation) =>
              // 首帧拆解采样点（临时诊断件）。
-             FirstFrameProbeNode(
-               nodeTag: 'page',
-               child: builder(context),
-             ),
+             FirstFrameProbeNode(nodeTag: 'page', child: builder(context)),
          transitionsBuilder: (context, animation, secondaryAnimation, child) {
            final size = MediaQuery.of(context).size;
            final sourceCenter = sourceRect.center;
@@ -10241,11 +10235,14 @@ class _EmptySlotAddMarker extends StatelessWidget {
   final double sectionHeight;
   final int span;
   final double inset;
+
   /// 已按壁纸/深浅色适配好的墨色（外层用 homePageOverWallpaperInk 求得）。
   final Color ink;
   final VoidCallback onTap;
+
   /// 参数为 true 表示拖的是上边缘，false 为下边缘。
   final ValueChanged<bool> onResizeStart;
+
   /// 参数为每次纵拖的纵向增量（px）。
   final ValueChanged<double> onResizeUpdate;
   final VoidCallback onResizeEnd;
@@ -10323,9 +10320,7 @@ class _EmptySlotAddMarker extends StatelessWidget {
         onVerticalDragEnd: (_) => onResizeEnd(),
         onVerticalDragCancel: onResizeEnd,
         child: Align(
-          alignment: isTopEdge
-              ? Alignment.topCenter
-              : Alignment.bottomCenter,
+          alignment: isTopEdge ? Alignment.topCenter : Alignment.bottomCenter,
           child: Padding(
             padding: EdgeInsets.only(
               top: isTopEdge ? 4 : 0,

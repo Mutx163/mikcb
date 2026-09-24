@@ -37,9 +37,9 @@ void main() {
     final log = <MethodCall>[];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-      log.add(call);
-      return null;
-    });
+          log.add(call);
+          return null;
+        });
     return log;
   }
 
@@ -220,5 +220,22 @@ void main() {
     expect(selectionClicks(hapticLog) - before, 1, reason: '圆钮收页应震一次');
 
     await tester.pump(const Duration(seconds: 9));
+  });
+
+  testWidgets('未知旧圆钮入口回退到添加课程，不留下无响应按钮', (tester) async {
+    await pumpDockApp(
+      tester,
+      dockActions: ['day', 'week'],
+      roundButtonEntryId: 'advancedMaterialSettings',
+      roundButtonVisible: true,
+    );
+
+    expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('添加课程'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

@@ -350,10 +350,14 @@ Future<String?> _timetableImportFullAppDataBackup(
       await host._profileRepository.saveLocationTimeGroups(
         host._locationTimeGroups,
       );
-      await host._profileRepository.saveScheduleDateRules(host._scheduleDateRules);
+      await host._profileRepository.saveScheduleDateRules(
+        host._scheduleDateRules,
+      );
       await host._profileRepository.saveProfiles(host._profiles);
       if (host._activeProfileId != null) {
-        await host._profileRepository.setActiveProfileId(host._activeProfileId!);
+        await host._profileRepository.setActiveProfileId(
+          host._activeProfileId!,
+        );
       }
 
       host._applyProfileState(
@@ -361,6 +365,17 @@ Future<String?> _timetableImportFullAppDataBackup(
           (profile) => profile.id == host._activeProfileId,
         ),
       );
+
+      // 完整备份携带的课表镜像是全局设置的来源。导入路径也必须重推一次，
+      // 否则本机旧的全局键会把刚恢复的语言 / 主题 / 材质重新盖回去。
+      await AppGlobalSettingsService.refreshFromImportedProfiles(
+        profiles: host._profiles,
+        activeProfileId: host._activeProfileId,
+      );
+      final importedActive = host.activeProfile;
+      if (importedActive != null) {
+        host._applyProfileState(importedActive);
+      }
 
       // Full backup schema does not carry partner binding; drop orphans when
       // the partner profile is missing from the restored profiles list.

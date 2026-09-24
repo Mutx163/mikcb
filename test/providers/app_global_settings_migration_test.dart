@@ -6,6 +6,7 @@ import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/app_global_settings_service.dart';
+import 'package:university_timetable/services/data_transfer_service.dart';
 import 'package:university_timetable/services/miui_live_activities_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
@@ -188,14 +189,101 @@ void main() {
     expect(rebooted.settings.appLocaleTag, 'ja');
   });
 
+  test('完整备份导入会从导入课表刷新全局设置', () async {
+    final provider = await bootProvider();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appLocaleTag: 'en',
+        homeBandGlassMaterial: 'solid',
+      ),
+    );
+
+    final imported = provider.profiles.first.copyWith(
+      id: 'imported',
+      name: '导入的课表',
+      settings: provider.profiles.first.settings.copyWith(
+        appLocaleTag: 'ja',
+        homeBandGlassMaterial: 'liquid',
+      ),
+    );
+    final backupJson = DataTransferService().buildFullBackupJson(
+      profiles: [imported],
+      activeProfileId: imported.id,
+      timeSchemes: provider.timeSchemes,
+    );
+
+    expect(await provider.importFullAppDataBackup(backupJson), isNull);
+    expect(provider.settings.appLocaleTag, 'ja');
+    expect(provider.settings.homeBandGlassMaterial, 'liquid');
+    expect(AppGlobalSettingsService.current['appLocaleTag'], 'ja');
+  });
+
+  test('删除当前课表后把全局设置写回备用课表镜像', () async {
+    SharedPreferences.setMockInitialValues({
+      profilesKey: jsonEncode([
+        profileJson(
+          id: 'a',
+          settings: TimetableSettings.defaults().copyWith(appLocaleTag: 'en'),
+        ),
+        profileJson(
+          id: 'b',
+          settings: TimetableSettings.defaults().copyWith(appLocaleTag: 'zh'),
+        ),
+      ]),
+      activeProfileKey: 'a',
+    });
+
+    final provider = await bootProvider();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(appLocaleTag: 'ja'),
+    );
+
+    expect(await provider.deleteProfile('a'), isTrue);
+    expect(provider.settings.appLocaleTag, 'ja');
+    expect(provider.profiles.single.settings.appLocaleTag, 'ja');
+  });
+
+  test('删除当前课表后修改作息模板不会恢复旧镜像', () async {
+    SharedPreferences.setMockInitialValues({
+      profilesKey: jsonEncode([
+        profileJson(
+          id: 'a',
+          settings: TimetableSettings.defaults().copyWith(appLocaleTag: 'en'),
+        ),
+        profileJson(
+          id: 'b',
+          settings: TimetableSettings.defaults().copyWith(appLocaleTag: 'zh'),
+        ),
+      ]),
+      activeProfileKey: 'a',
+    });
+
+    final provider = await bootProvider();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(appLocaleTag: 'ja'),
+    );
+    expect(await provider.deleteProfile('a'), isTrue);
+
+    final scheme = provider.timeSchemes.first;
+    expect(
+      await provider.updateTimeScheme(
+        schemeId: scheme.id,
+        name: scheme.name,
+        sections: scheme.sections,
+      ),
+      isNull,
+    );
+    expect(provider.settings.appLocaleTag, 'ja');
+  });
+
   test('主题撤销会把全局字段一起退回去', () async {
     final provider = await bootProvider();
     final beforeSeed = provider.settings.themeSeedColor;
 
     await provider.applyThemeWithUndo(
-      const ThemeConfig(seedColor: '#010203').applyToSettings(
-        provider.settings,
-      ),
+      const ThemeConfig(
+        seedColor: '#010203',
+      ).applyToSettings(provider.settings),
       themeName: '测试主题',
     );
     expect(provider.settings.themeSeedColor, '#010203');
