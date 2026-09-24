@@ -436,7 +436,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   AnimationController? _homePullSettleSpring;
   int _homePullSettleGeneration = 0;
   bool _isHomePullQuickImportRunning = false;
-  VoidCallback? _homePullQuickImportCancel;
+  bool Function()? _homePullQuickImportCancel;
 
   /// 下拉进度看门狗的**全局指针登记**（见 [_onGlobalPointerEvent]）。
   ///
@@ -453,6 +453,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// （与首页那颗玻璃球的门控同一条思路：拿上游契约当判据，而不是逐个触发点
   /// 打补丁 —— 新加一条驱动路也不会再漏。）
   final Set<int> _homePullLivePointers = <int>{};
+
+  /// 本次下拉手势最先按下的指针。第二个手指加入时，第一个手指结束仍要收尾，
+  /// 不能因为它一直按着就让半截进度圈永远等“最后一根手指”。
+  int? _homePullPrimaryPointer;
 
   double? _wallpaperTopLuminance;
 
@@ -3439,11 +3443,18 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 微任务排在事件派发结束之后，判定已经走完。
   void _onGlobalPointerEvent(PointerEvent event) {
     if (event is PointerDownEvent) {
+      _homePullPrimaryPointer ??= event.pointer;
       _homePullLivePointers.add(event.pointer);
       return;
     }
     if (event is! PointerUpEvent && event is! PointerCancelEvent) {
       return;
+    }
+    final endedPrimary = _homePullPrimaryPointer == event.pointer;
+    if (endedPrimary) {
+      _homePullPrimaryPointer = null;
+      // 发起这次下拉的手指结束就收尾；不能等第二根手指也离开。
+      scheduleMicrotask(_retractOrphanedHomePull);
     }
     _homePullLivePointers.remove(event.pointer);
     if (_homePullLivePointers.isNotEmpty) {
@@ -3585,7 +3596,11 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (cancel == null) {
       return;
     }
-    cancel();
+    // 已经进入实际写入阶段时，底层必须先完成并报告真实结果，不能把
+    // “取消”按钮变成一个会撒谎的即时返回。
+    if (!cancel()) {
+      return;
+    }
     if (mounted) {
       setState(() {
         _isHomePullQuickImportRunning = false;

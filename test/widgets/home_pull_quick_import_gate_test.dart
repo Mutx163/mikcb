@@ -80,7 +80,8 @@ void main() {
   }
 
   /// 当前周（第 1 周）的纵向周课表滚动视图。
-  Finder weekScroll() => find.byKey(const PageStorageKey<String>('week-scroll-1'));
+  Finder weekScroll() =>
+      find.byKey(const PageStorageKey<String>('week-scroll-1'));
 
   /// 周课表纵向滚动位置（测试里玻璃余量 62px，滚走一眼看得出）。
   double weekScrollPixels(WidgetTester tester) {
@@ -154,9 +155,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('玻璃坞+自适应：网格未回顶部的小幅下拉不应触发快捷导入', (
-    tester,
-  ) async {
+  testWidgets('玻璃坞+自适应：网格未回顶部的小幅下拉不应触发快捷导入', (tester) async {
     await pumpHome(tester: tester, form: HomeNavigationForm.glassDock);
     expect(weekScroll(), findsOneWidget);
 
@@ -183,9 +182,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('玻璃坞+自适应：一次手势从半路滚回顶部不触发，到顶后再拉才触发', (
-    tester,
-  ) async {
+  testWidgets('玻璃坞+自适应：一次手势从半路滚回顶部不触发，到顶后再拉才触发', (tester) async {
     await pumpHome(tester: tester, form: HomeNavigationForm.glassDock);
     expect(weekScroll(), findsOneWidget);
 
@@ -262,6 +259,38 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('经典形态：第二根手指按住时，第一根结束仍收回进度', (tester) async {
+    await pumpHome(
+      tester: tester,
+      form: HomeNavigationForm.classic,
+      autoFit: false,
+    );
+
+    final first = await tester.startGesture(tester.getCenter(weekScroll()));
+    await first.moveBy(const Offset(0, 30));
+    await first.moveBy(const Offset(0, 80));
+    await tester.pump();
+    expect(find.byType(MiuixCircularProgressIndicator), findsOneWidget);
+
+    final second = await tester.startGesture(
+      tester.getCenter(weekScroll()) + const Offset(60, 60),
+    );
+    await tester.pump();
+    await first.cancel();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 800));
+
+    expect(
+      find.byType(MiuixCircularProgressIndicator),
+      findsNothing,
+      reason: '发起下拉的第一根手指结束，就不能继续等第二根手指',
+    );
+
+    await second.cancel();
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('经典形态：拉到阈值抬手照常触发（看门狗不能把触发判定吃掉）', (tester) async {
     // 与上一条成对：看门狗管的是"收尾丢了就收回"，不是把功能取消掉。
     // 这条钉：拉到阈值上方抬手，那一刻"够阈值 ⇒ 拉课表"的判定仍要完整走完 ——
@@ -278,11 +307,7 @@ void main() {
     final indicator = tester.widget<MiuixCircularProgressIndicator>(
       find.byType(MiuixCircularProgressIndicator),
     );
-    expect(
-      indicator.progress,
-      isNull,
-      reason: '够阈值抬手必须真的进入"正在拉课表"的不确定态',
-    );
+    expect(indicator.progress, isNull, reason: '够阈值抬手必须真的进入"正在拉课表"的不确定态');
 
     await tester.pump(const Duration(seconds: 2));
     // ⚠️ 到这里不再断言"药丸消失"：测试环境里那次会话要读本地宏记录，
@@ -290,9 +315,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('玻璃坞+自适应：位于顶部时下拉仍能正常打开快捷导入药丸', (
-    tester,
-  ) async {
+  testWidgets('玻璃坞+自适应：位于顶部时下拉仍能正常打开快捷导入药丸', (tester) async {
     await pumpHome(tester: tester, form: HomeNavigationForm.glassDock);
     expect(weekScroll(), findsOneWidget);
 

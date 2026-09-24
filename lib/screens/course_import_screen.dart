@@ -1509,57 +1509,15 @@ const Duration _kHomePullQuickImportSessionTimeout = Duration(seconds: 120);
 Future<bool> runHomePullWarehouseQuickImport(
   BuildContext context, {
   VoidCallback? onNeedsManualAction,
-  void Function(VoidCallback cancel)? onCancelAvailable,
+  void Function(bool Function() cancel)? onCancelAvailable,
 }) async {
   final l10n = AppLocalizations.of(context)!;
   final macroService = WarehouseMacroService();
   final preferencesService = WarehouseImportPreferencesService();
-  final allEntries = await macroService.getAllMacroEntries();
-  if (!context.mounted) {
-    return false;
-  }
-  if (allEntries.isEmpty) {
-    showAppLightTip(context, message: l10n.noSavedQuickImportRecords);
-    return false;
-  }
-
-  WarehouseMacroRecord? macro;
-  for (final entry in allEntries) {
-    final record = await macroService.getMacro(entry.schoolId, entry.adapterId);
-    if (record != null) {
-      macro = record;
-      break;
-    }
-  }
-  if (!context.mounted) {
-    return false;
-  }
-  if (macro == null) {
-    showAppLightTip(context, message: l10n.noSavedQuickImportRecords);
-    return false;
-  }
-
-  final customUrl = await preferencesService.getCustomImportUrl(
-    macro.adapterId,
-  );
-  final initialUrl = resolveWarehouseImportUrl(
-    customImportUrl: customUrl,
-    defaultUrl: macro.importUrl,
-  );
-  if (!context.mounted) {
-    return false;
-  }
-  if (initialUrl == null) {
-    showAppLightTip(context, message: l10n.noValidWarehouseLoginUrl);
-    return false;
-  }
-
-  final settings = context.read<TimetableProvider>().settings;
-  final fetchOptions = WarehouseFetchOptions.fromSettings(settings);
-  const source = defaultQingyuWarehouseSource;
-  final selectedMacro = macro;
   final completer = Completer<bool>();
   var sessionFinished = false;
+  var cancelRequested = false;
+  var importWriteStarted = false;
   OverlayEntry? overlayEntry;
   Timer? watchdog;
 
@@ -1577,10 +1535,89 @@ Future<bool> runHomePullWarehouseQuickImport(
     }
   }
 
+  bool requestCancel() {
+    if (sessionFinished) {
+      return true;
+    }
+    cancelRequested = true;
+    // 已经进入实际写入阶段时不能假装取消成功；等导入回调报告真实结果。
+    if (!importWriteStarted) {
+      completeSession(false);
+      return true;
+    }
+    return false;
+  }
+
+  // 从流程第一步就挂上取消和整场保护，避免读取本地宏记录时没有出口。
+  onCancelAvailable?.call(requestCancel);
+  watchdog = Timer(_kHomePullQuickImportSessionTimeout, () {
+    if (sessionFinished || importWriteStarted) {
+      return;
+    }
+    completeSession(false);
+    onNeedsManualAction?.call();
+  });
+
+  final allEntries = await macroService.getAllMacroEntries();
+  if (!context.mounted || sessionFinished) {
+    completeSession(false);
+    return completer.future;
+  }
+  if (allEntries.isEmpty) {
+    showAppLightTip(context, message: l10n.noSavedQuickImportRecords);
+    completeSession(false);
+    return completer.future;
+  }
+
+  WarehouseMacroRecord? macro;
+  for (final entry in allEntries) {
+    final record = await macroService.getMacro(entry.schoolId, entry.adapterId);
+    if (record != null) {
+      macro = record;
+      break;
+    }
+  }
+  if (!context.mounted || sessionFinished) {
+    completeSession(false);
+    return completer.future;
+  }
+  if (macro == null) {
+    showAppLightTip(context, message: l10n.noSavedQuickImportRecords);
+    completeSession(false);
+    return completer.future;
+  }
+
+  final customUrl = await preferencesService.getCustomImportUrl(
+    macro.adapterId,
+  );
+  if (!context.mounted || sessionFinished) {
+    completeSession(false);
+    return completer.future;
+  }
+  final initialUrl = resolveWarehouseImportUrl(
+    customImportUrl: customUrl,
+    defaultUrl: macro.importUrl,
+  );
+  if (!context.mounted || sessionFinished) {
+    completeSession(false);
+    return completer.future;
+  }
+  if (initialUrl == null) {
+    showAppLightTip(context, message: l10n.noValidWarehouseLoginUrl);
+    completeSession(false);
+    return completer.future;
+  }
+
+  final settings = context.read<TimetableProvider>().settings;
+  final fetchOptions = WarehouseFetchOptions.fromSettings(settings);
+  const source = defaultQingyuWarehouseSource;
+  final selectedMacro = macro;
+
   final overlay = Overlay.maybeOf(context, rootOverlay: true);
   if (overlay == null) {
     showAppLightTip(context, message: l10n.quickImportUnknownError);
-    return false;
+    completeSession(false);
+    return completer.future;
   }
 
   overlayEntry = OverlayEntry(
@@ -1626,6 +1663,8 @@ Future<bool> runHomePullWarehouseQuickImport(
               runInBackground: true,
               onBackgroundNeedsManualAction: onNeedsManualAction,
               onBackgroundFinished: completeSession,
+              isBackgroundImportCancelled: () => cancelRequested,
+              onBackgroundImportStarted: () => importWriteStarted = true,
             ),
           ),
         ),
@@ -1634,17 +1673,6 @@ Future<bool> runHomePullWarehouseQuickImport(
   );
 
   overlay.insert(overlayEntry!);
-  // 整场看门狗（见 [_kHomePullQuickImportSessionTimeout]）：到点按失败收尾，
-  // 摘掉 Overlay（平台视图与脚本一起停），并走"需要手动操作"那条既有出口提示。
-  // 正常收尾会把它取消，所以合法流程上它从不生效。
-  watchdog = Timer(_kHomePullQuickImportSessionTimeout, () {
-    if (sessionFinished) {
-      return;
-    }
-    completeSession(false);
-    onNeedsManualAction?.call();
-  });
-  onCancelAvailable?.call(() => completeSession(false));
   return completer.future;
 }
 
@@ -3454,6 +3482,13 @@ class WarehouseAdapterWebLoginScreen extends StatefulWidget {
   /// Called when background import finishes (success or failure).
   final ValueChanged<bool>? onBackgroundFinished;
 
+  /// Background session cancellation probe. The host uses this to stop before
+  /// the irreversible timetable write starts.
+  final bool Function()? isBackgroundImportCancelled;
+
+  /// Marks the point where the host's timetable write has become irreversible.
+  final VoidCallback? onBackgroundImportStarted;
+
   const WarehouseAdapterWebLoginScreen({
     super.key,
     required this.title,
@@ -3469,6 +3504,8 @@ class WarehouseAdapterWebLoginScreen extends StatefulWidget {
     this.runInBackground = false,
     this.onBackgroundNeedsManualAction,
     this.onBackgroundFinished,
+    this.isBackgroundImportCancelled,
+    this.onBackgroundImportStarted,
   });
 
   @override
@@ -5257,19 +5294,33 @@ $kWarehouseBridgeCompatShim  try {
       if (!mounted) {
         return;
       }
+      final preserveLocalColors = await _shouldPreserveLocalColorsOnImport(
+        replaceExisting: replaceExisting,
+      );
+      if (!mounted ||
+          (widget.runInBackground &&
+              (widget.isBackgroundImportCancelled?.call() ?? false))) {
+        if (widget.runInBackground) {
+          widget.onBackgroundFinished?.call(false);
+        }
+        return;
+      }
       _debugImportLog(
         'importParsedCourses start alignedCount=${coursesToImport.length} replaceExisting=$replaceExisting semesterStart=${semesterConfig.semesterStartDate.toIso8601String()}',
       );
+      widget.onBackgroundImportStarted?.call();
       final importedCount = await provider.importParsedCourses(
         coursesToImport,
         replaceExisting: replaceExisting,
         semesterStart: semesterConfig.semesterStartDate,
         source: 'warehouse',
-        preserveLocalColors: await _shouldPreserveLocalColorsOnImport(
-          replaceExisting: replaceExisting,
-        ),
+        preserveLocalColors: preserveLocalColors,
       );
       _debugImportLog('importParsedCourses done importedCount=$importedCount');
+      if (widget.runInBackground) {
+        // 即使取消时 Overlay 已经卸载，也要等真实写入结束后再报告结果。
+        widget.onBackgroundFinished?.call(true);
+      }
       if (!mounted) {
         return;
       }
@@ -5321,6 +5372,9 @@ $kWarehouseBridgeCompatShim  try {
         _debugImportLog(
           'handle courses caught error=$error\n${StackTrace.current}',
         );
+      }
+      if (widget.runInBackground) {
+        widget.onBackgroundFinished?.call(false);
       }
       if (!mounted) return;
       _cancelImportTimeout();
