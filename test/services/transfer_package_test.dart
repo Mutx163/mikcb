@@ -123,6 +123,35 @@ void main() {
     expect(restored.locationTimeGroups.single.keywords.single.pattern, 'A');
   });
 
+  test('round trips scoped packages without device settings', () {
+    final package = TransferPackage(
+      packageId: 'scoped-without-settings',
+      scope: TransferScope.selectedCourses,
+      courses: [_course()],
+      currentWeek: 5,
+    );
+
+    final restored = TransferPackage.decode(package.encode());
+
+    expect(restored.scope, TransferScope.selectedCourses);
+    expect(restored.settings, isNull);
+    expect(restored.courses.single.id, 'course-1');
+    expect(restored.currentWeek, 5);
+  });
+
+  test('selected-course package may omit the unused current week', () {
+    final package = TransferPackage(
+      packageId: 'selected-without-week',
+      scope: TransferScope.selectedCourses,
+      courses: [_course()],
+    );
+
+    final restored = TransferPackage.decode(package.encode());
+
+    expect(restored.currentWeek, isNull);
+    expect(restored.courses.single.id, 'course-1');
+  });
+
   test('rejects unsupported schema before any model is applied', () {
     final raw = <String, dynamic>{
       'app': TransferPackage.appId,

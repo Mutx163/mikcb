@@ -175,7 +175,9 @@ class TransferDiffService {
 
     final currentSettings = _settingsFor(current);
     final incomingSettings = _settingsFor(incoming);
-    if (currentSettings != null && incomingSettings != null) {
+    if (incoming.scope.carriesSettings &&
+        currentSettings != null &&
+        incomingSettings != null) {
       final before = currentSettings.toJson();
       final after = incomingSettings.toJson();
       summaries.add(

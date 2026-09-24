@@ -60,6 +60,26 @@ TransferPackage _fullPackage({
 
 void main() {
   group('TransferDiffService.compare 数据一致性', () {
+    test('选课范围忽略旧包携带的设置', () {
+      final current = TransferPackage(
+        packageId: 'scoped-current',
+        scope: TransferScope.selectedCourses,
+        settings: TimetableSettings.defaults().copyWith(appLocaleTag: 'zh'),
+      );
+      final incoming = TransferPackage(
+        packageId: 'scoped-incoming',
+        scope: TransferScope.selectedCourses,
+        settings: TimetableSettings.defaults().copyWith(appLocaleTag: 'ja'),
+      );
+
+      final diff = const TransferDiffService().compare(
+        current: current,
+        incoming: incoming,
+      );
+
+      expect(diff.forKind(TransferEntityKind.settings).updatedCount, 0);
+    });
+
     test('相同数据零差异（canonical JSON 等价比较，键序无关）', () {
       final a = _fullPackage(
         profiles: [_profile('p1', courses: [_course('c1')])],

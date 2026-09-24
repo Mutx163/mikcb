@@ -48,6 +48,49 @@ void main() {
     );
   }
 
+  test('scoped packages do not carry device settings', () async {
+    final provider = await createProvider();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(appLocaleTag: 'ja'),
+    );
+    final service = UnifiedTransferService();
+
+    for (final scope in [
+      TransferScope.selectedCourses,
+      TransferScope.selectedCourse,
+      TransferScope.weekTimetable,
+      TransferScope.timeTemplate,
+    ]) {
+      final package = service.buildCurrentPackage(
+        provider: provider,
+        scope: scope,
+      );
+      expect(package.settings, isNull, reason: scope.value);
+    }
+
+    final current = service.buildCurrentPackage(provider: provider);
+    expect(current.settings?.appLocaleTag, 'ja');
+  });
+
+  test('merge ignores settings on a legacy scoped package', () async {
+    final provider = await createProvider();
+    final before = provider.settings.appLocaleTag;
+    final incoming = TransferPackage(
+      packageId: 'legacy-scoped-settings',
+      scope: TransferScope.selectedCourses,
+      settings: TimetableSettings.defaults().copyWith(appLocaleTag: 'ja'),
+    );
+
+    final result = await UnifiedTransferService().applyToProvider(
+      provider: provider,
+      incoming: incoming,
+      mode: TransferApplyMode.merge,
+    );
+
+    expect(result.applied, isTrue, reason: result.error);
+    expect(provider.settings.appLocaleTag, before);
+  });
+
   test('merge maps a device-local scheme ID by section signature', () async {
     final provider = await createProvider();
     final localScheme = await provider.createTimeScheme(

@@ -48,6 +48,11 @@ extension TransferScopeSemantics on TransferScope {
     TransferScope.timeTemplate => true,
     TransferScope.currentTimetable || TransferScope.allData => false,
   };
+
+  /// Only whole-timetable transfers are allowed to carry settings. Scoped
+  /// course/week transfers must not silently change device-wide preferences.
+  bool get carriesSettings =>
+      this == TransferScope.currentTimetable || this == TransferScope.allData;
 }
 
 /// Identifies the path that produced or consumed a package. It is metadata,
@@ -413,13 +418,15 @@ class TransferPackage {
       'profile',
     );
     final profileScoped = profiles.isNotEmpty;
-    if (settings == null &&
-        scope != TransferScope.timeTemplate &&
+    if (scope.carriesSettings &&
+        settings == null &&
         !profileScoped) {
       throw const FormatException('transfer_settings_required');
     }
     if (currentWeek == null &&
         scope != TransferScope.timeTemplate &&
+        scope != TransferScope.selectedCourse &&
+        scope != TransferScope.selectedCourses &&
         !profileScoped) {
       throw const FormatException('transfer_current_week_required');
     }

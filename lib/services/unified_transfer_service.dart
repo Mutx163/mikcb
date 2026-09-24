@@ -106,7 +106,7 @@ class UnifiedTransferService {
       tasks: tasks,
       scheduleItems: scopedMetadata.scheduleItems,
       exams: exams,
-      settings: scope == TransferScope.timeTemplate ? null : provider.settings,
+      settings: scope.carriesSettings ? provider.settings : null,
       currentWeek: scope == TransferScope.timeTemplate
           ? null
           : provider.currentWeek,
@@ -636,10 +636,7 @@ class UnifiedTransferService {
         await provider.addExam(exam);
       }
     }
-    if (incoming.settings != null &&
-        (incoming.scope == TransferScope.currentTimetable ||
-            incoming.scope == TransferScope.allData ||
-            incoming.scope == TransferScope.timeTemplate)) {
+    if (incoming.settings != null && incoming.scope.carriesSettings) {
       await provider.updateSettings(
         _remapSettingsTimeSchemeReference(incoming.settings!, timeSchemeIdMap),
       );
