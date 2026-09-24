@@ -1557,19 +1557,39 @@ Future<bool> runHomePullWarehouseQuickImport(
 
   // 从流程第一步就挂上取消和整场保护，避免读取本地宏记录时没有出口。
   onCancelAvailable?.call(requestCancel);
-  if (sessionFinished) {
-    return completer.future;
-  }
-  watchdog = Timer(_kHomePullQuickImportSessionTimeout, () {
-    if (sessionFinished || importWriteStarted) {
+
+  void armSessionWatchdog() {
+    if (sessionFinished) {
       return;
     }
-    // 超时摘掉宿主后，后台准备/网页流程仍可能继续；把取消标志也立起来，
-    // 让后续每一步都能在真正写盘前看到它并自行退出。
-    cancelRequested = true;
-    completeSession(false);
-    onNeedsManualAction?.call();
-  });
+    if (importWriteStarted) {
+      watchdog?.cancel();
+      watchdog = null;
+      writeWatchdog?.cancel();
+      writeWatchdog = Timer(_kHomePullQuickImportWriteTimeout, () {
+        if (sessionFinished) {
+          return;
+        }
+        cancelRequested = true;
+        completeSession(false);
+        onNeedsManualAction?.call();
+      });
+      return;
+    }
+    writeWatchdog?.cancel();
+    writeWatchdog = null;
+    watchdog?.cancel();
+    watchdog = Timer(_kHomePullQuickImportSessionTimeout, () {
+      if (sessionFinished) {
+        return;
+      }
+      cancelRequested = true;
+      completeSession(false);
+      onNeedsManualAction?.call();
+    });
+  }
+
+  armSessionWatchdog();
 
   Future<void> prepare() async {
     try {
@@ -1682,31 +1702,16 @@ Future<bool> runHomePullWarehouseQuickImport(
                   runInBackground: true,
                   onBackgroundNeedsManualAction: onNeedsManualAction,
                   onBackgroundFinished: completeSession,
+                  onBackgroundProgress: armSessionWatchdog,
                   isBackgroundImportCancelled: () => cancelRequested,
                   onBackgroundImportStarted: () {
                     if (importWriteStarted || sessionFinished) {
                       return;
                     }
                     importWriteStarted = true;
-                    // 写入阶段由导入自己的结果收尾；保留一个更长的独立保护，
-                    // 底层存储真的失去响应时仍能把首页从“永远转圈”带出来。
-                    watchdog?.cancel();
-                    watchdog = null;
-                    writeWatchdog = Timer(
-                      _kHomePullQuickImportWriteTimeout,
-                      () {
-                        if (sessionFinished) {
-                          return;
-                        }
-                        cancelRequested = true;
-                        completeSession(false);
-                        onNeedsManualAction?.call();
-                      },
-                    );
+                    armSessionWatchdog();
                   },
                 ),
-              ),
-            ),
           );
         },
       );
@@ -3532,6 +3537,9 @@ class WarehouseAdapterWebLoginScreen extends StatefulWidget {
   /// Called when background import finishes (success or failure).
   final ValueChanged<bool>? onBackgroundFinished;
 
+  /// Reports that the background import is still making progress.
+  final VoidCallback? onBackgroundProgress;
+
   /// Background session cancellation probe. The host uses this to stop before
   /// the irreversible timetable write starts.
   final bool Function()? isBackgroundImportCancelled;
@@ -3554,6 +3562,7 @@ class WarehouseAdapterWebLoginScreen extends StatefulWidget {
     this.runInBackground = false,
     this.onBackgroundNeedsManualAction,
     this.onBackgroundFinished,
+    this.onBackgroundProgress,
     this.isBackgroundImportCancelled,
     this.onBackgroundImportStarted,
   });
@@ -3664,6 +3673,12 @@ class _WarehouseAdapterWebLoginScreenState
     );
     if (!kDebugMode) return;
     appDebugLog('WarehouseImportDebug', detail);
+  }
+
+  void _notifyBackgroundProgress() {
+    if (widget.runInBackground) {
+      widget.onBackgroundProgress?.call();
+    }
   }
 
   String _bridgeMessageSummary(Map<String, dynamic> message) {
@@ -4541,6 +4556,7 @@ class _WarehouseAdapterWebLoginScreenState
   }
 
   void _startImportTimeout() {
+    _notifyBackgroundProgress();
     _debugImportLog('start import timeout duration=$_importTimeout');
     _importTimeoutTimer?.cancel();
     _importTimeoutTimer = Timer(_importTimeout, () {
@@ -4848,6 +4864,7 @@ $kWarehouseBridgeCompatShim  try {
     if (!mounted) {
       return;
     }
+    _notifyBackgroundProgress();
     Map<String, dynamic>? message;
     try {
       message = jsonDecode(rawMessage) as Map<String, dynamic>;
@@ -5406,6 +5423,7 @@ $kWarehouseBridgeCompatShim  try {
       _debugImportLog(
         'importParsedCourses start alignedCount=${coursesToImport.length} replaceExisting=$replaceExisting semesterStart=${semesterConfig.semesterStartDate.toIso8601String()}',
       );
+      _notifyBackgroundProgress();
       if (coursesToImport.isNotEmpty) {
         _markBackgroundWriteStarted();
       }
@@ -5417,6 +5435,7 @@ $kWarehouseBridgeCompatShim  try {
         preserveLocalColors: preserveLocalColors,
       );
       _debugImportLog('importParsedCourses done importedCount=$importedCount');
+      _notifyBackgroundProgress();
       if (!mounted) {
         if (widget.runInBackground) {
           widget.onBackgroundFinished?.call(true);
@@ -5424,6 +5443,7 @@ $kWarehouseBridgeCompatShim  try {
         return;
       }
       await _preferencesService.addRecentSchool(widget.school.id);
+      _notifyBackgroundProgress();
       if (!mounted) {
         if (widget.runInBackground) {
           widget.onBackgroundFinished?.call(true);
@@ -6127,6 +6147,7 @@ $kWarehouseBridgeCompatShim  try {
       l10n: AppLocalizations.of(context)!,
       callbacks: ReplayCallbacks(
         onProgress: (progress) {
+          _notifyBackgroundProgress();
           if (!mounted) return;
           setState(() {
             _playbackProgress = progress;
