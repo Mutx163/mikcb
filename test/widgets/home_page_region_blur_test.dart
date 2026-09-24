@@ -235,12 +235,12 @@ void main() {
       );
     });
 
-    test('只有实体档上下外溢恒为 0；存量档与液态同口径', () {
-      // 判据是「非实体」（`homeBandUsesAdvancedGlass`），不是字面 `'liquid'`：
-      // 2026-09-20 口径收成「液态 / 实体」两档后，存量 progressive / gaussian /
-      // soft 也渲染液态玻璃。若这里漏掉它们，那些档会拿到 (0, 0) —— 上边不再推出
-      // 可见区，真机那条发丝线立刻回来。
-      for (final material in ['liquid', 'progressive', 'gaussian', 'soft']) {
+    test('液态档上下外溢；frost 与实体档恒为 0', () {
+      // 判据是 [homeBandUsesAdvancedGlass]（= 生效值为液态）：只有液态玻璃有
+      // 折射位移，上边必须推出可见区。磨砂带（'frost'，跟随默认 + 默认档高斯）
+      // 走渐进模糊链路，没有折射 —— 漏掉会拿到 (0,0) 外溢吗？不会，反过来：
+      // 若误判成液态，实心/磨砂带会被白白撑出可见区。
+      for (final material in ['liquid']) {
         final overhang = homePageChromeGlassVerticalOverhang(
           material: material,
           refractionBand: LiquidGlassTuning.maxRefractionBand,
@@ -264,6 +264,17 @@ void main() {
         reason: '实体档没有形状边界那套折射，撑大盒子只会把实心条推出可见区',
       );
       expect(solid.bottom, 0, reason: '实体档没有形状边界那套折射');
+      final frost = homePageChromeGlassVerticalOverhang(
+        material: 'frost',
+        refractionBand: LiquidGlassTuning.maxRefractionBand,
+        rimWidth: LiquidGlassTuning.maxRimWidth,
+      );
+      expect(
+        frost.top,
+        0,
+        reason: '磨砂带同样没有折射位移，不该被撑出可见区',
+      );
+      expect(frost.bottom, 0);
     });
 
     testWidgets('这条带采祖先组捕获（管的是"采到哪一份"背景，不管范围）', (tester) async {
@@ -328,7 +339,7 @@ void main() {
       );
     });
 
-    test('实体档不留余量；存量档与液态同口径（它们渲染的就是液态玻璃）', () {
+    test('实体 / frost 档不留余量；液态档照常', () {
       expect(
         homePageChromeGlassCaptureMargin(
           material: 'solid',
@@ -337,16 +348,22 @@ void main() {
         0,
         reason: '实心条不采样任何东西，撑高盒子没有意义',
       );
-      for (final material in ['progressive', 'gaussian', 'soft']) {
-        expect(
-          homePageChromeGlassCaptureMargin(
-            material: material,
-            refraction: LiquidGlassTuning.maxRefraction,
-          ),
-          LiquidGlassTuning.maxRefraction + 1,
-          reason: '$material 渲染的是液态玻璃，余量漏掉就是它们的黑边回来',
-        );
-      }
+      expect(
+        homePageChromeGlassCaptureMargin(
+          material: 'frost',
+          refraction: LiquidGlassTuning.maxRefraction,
+        ),
+        0,
+        reason: '磨砂带（跟随默认 + 默认档高斯）没有折射位移，同样不采样',
+      );
+      expect(
+        homePageChromeGlassCaptureMargin(
+          material: 'liquid',
+          refraction: LiquidGlassTuning.maxRefraction,
+        ),
+        LiquidGlassTuning.maxRefraction + 1,
+        reason: '液态带余量漏掉就是带底黑边回来',
+      );
     });
 
     testWidgets('盒子（= 裁剪区）比可见带低一截，形状那一层一点不动', (tester) async {

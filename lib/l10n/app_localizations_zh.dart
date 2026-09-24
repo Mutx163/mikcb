@@ -3189,9 +3189,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get frostedSheetSectionTitle => '玻璃材质';
 
   @override
-  String get frostedSheetSectionSubtitle => '调节弹出面板的模糊强度与磨砂亮度';
-
-  @override
   String get frostedBlurEnabledTitle => '启用模糊';
 
   @override
@@ -3205,12 +3202,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get frostedSheetPreviewDemoSubtitle => '磨砂玻璃效果实时预览';
-
-  @override
-  String get frostedSheetBlurLabel => '模糊强度';
-
-  @override
-  String get frostedSheetTintLabel => '磨砂亮度';
 
   @override
   String get timetableBackgroundColorSectionTitle => '课表背景色';
@@ -14258,9 +14249,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get frostedSheetSectionTitle => '玻璃材質';
 
   @override
-  String get frostedSheetSectionSubtitle => '調節彈出面板的模糊強度與磨砂亮度';
-
-  @override
   String get frostedBlurEnabledTitle => '啟用模糊';
 
   @override
@@ -14274,12 +14262,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get frostedSheetPreviewDemoSubtitle => '磨砂玻璃效果即時預覽';
-
-  @override
-  String get frostedSheetBlurLabel => '模糊強度';
-
-  @override
-  String get frostedSheetTintLabel => '磨砂亮度';
 
   @override
   String get timetableBackgroundColorSectionTitle => '課表背景色';
@@ -25370,9 +25352,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get frostedSheetSectionTitle => '玻璃材質';
 
   @override
-  String get frostedSheetSectionSubtitle => '調節彈出面板的模糊強度與磨砂亮度';
-
-  @override
   String get frostedBlurEnabledTitle => '啟用模糊';
 
   @override
@@ -25386,12 +25365,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get frostedSheetPreviewDemoSubtitle => '磨砂玻璃效果即時預覽';
-
-  @override
-  String get frostedSheetBlurLabel => '模糊強度';
-
-  @override
-  String get frostedSheetTintLabel => '磨砂亮度';
 
   @override
   String get timetableBackgroundColorSectionTitle => '課表背景色';

@@ -162,9 +162,6 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
     'ccTintAlpha': card.tintAlpha,
 
     // —— 材质常量（用户看不到但直接决定开销）——
-    'sheetBlurSigma': appearance.sheetBlurSigma,
-    'sheetTintAlpha': appearance.sheetTintAlpha,
-    'sheetBarrierAlpha': appearance.sheetBarrierAlpha,
 
     // —— 顶栏与背景带 ——
     'homeBandGlassMaterial': appearance.homeBandGlassMaterial,

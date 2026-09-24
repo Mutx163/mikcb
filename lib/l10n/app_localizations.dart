@@ -5907,12 +5907,6 @@ abstract class AppLocalizations {
   /// **'玻璃材质'**
   String get frostedSheetSectionTitle;
 
-  /// No description provided for @frostedSheetSectionSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'调节弹出面板的模糊强度与磨砂亮度'**
-  String get frostedSheetSectionSubtitle;
-
   /// No description provided for @frostedBlurEnabledTitle.
   ///
   /// In zh, this message translates to:
@@ -5942,18 +5936,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'磨砂玻璃效果实时预览'**
   String get frostedSheetPreviewDemoSubtitle;
-
-  /// No description provided for @frostedSheetBlurLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'模糊强度'**
-  String get frostedSheetBlurLabel;
-
-  /// No description provided for @frostedSheetTintLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'磨砂亮度'**
-  String get frostedSheetTintLabel;
 
   /// No description provided for @timetableBackgroundColorSectionTitle.
   ///

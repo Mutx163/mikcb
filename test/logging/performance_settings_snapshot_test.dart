@@ -181,13 +181,6 @@ void main() {
       expect(
         shouldLogPerformanceSettingsChange(
           base,
-          base.copyWith(frostedSheetBlurSigma: 24),
-        ),
-        isTrue,
-      );
-      expect(
-        shouldLogPerformanceSettingsChange(
-          base,
           base.copyWith(pageTransitionSpeed: 1.5),
         ),
         isTrue,

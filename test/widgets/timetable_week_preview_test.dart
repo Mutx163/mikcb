@@ -63,9 +63,9 @@ void main() {
       TestApp(
         home: FrostedAppearanceScope(
           appearance: FrostedAppearance(
-            sheetBlurSigma: settings.frostedSheetBlurSigma,
-            sheetTintAlpha: settings.frostedSheetTintAlpha,
-            sheetBarrierAlpha: settings.frostedSheetBarrierAlpha,
+            sheetBlurSigma: kDefaultFrostedSheetBlurSigma,
+            sheetTintAlpha: kDefaultFrostedSheetTintAlpha,
+            sheetBarrierAlpha: kDefaultFrostedSheetBarrierAlpha,
             blurEnabled: settings.frostedBlurEnabled,
             glassMode: settings.frostedGlassMode,
             homeBandGlassMaterial:

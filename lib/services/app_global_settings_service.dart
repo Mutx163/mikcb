@@ -73,9 +73,6 @@ class AppGlobalSettingsService {
     // —— 材质（外观编辑 → 材质面板）——
     'frostedGlassMode',
     'frostedBlurEnabled',
-    'frostedSheetBlurSigma',
-    'frostedSheetTintAlpha',
-    'frostedSheetBarrierAlpha',
     'liquidGlassPreset',
     'liquidGlassTuning',
     'liquidGlassTuningDark',

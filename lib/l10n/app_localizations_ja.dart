@@ -3250,9 +3250,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get frostedSheetSectionTitle => 'ガラス素材';
 
   @override
-  String get frostedSheetSectionSubtitle => 'シートのブラー強度とフロストの明るさを調整します';
-
-  @override
   String get frostedBlurEnabledTitle => 'ぼかしを有効にする';
 
   @override
@@ -3267,12 +3264,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get frostedSheetPreviewDemoSubtitle => 'フロストガラス効果のリアルタイムプレビュー';
-
-  @override
-  String get frostedSheetBlurLabel => 'ぼかし強度';
-
-  @override
-  String get frostedSheetTintLabel => 'すりガラスの明るさ';
 
   @override
   String get timetableBackgroundColorSectionTitle => '時間割背景色';

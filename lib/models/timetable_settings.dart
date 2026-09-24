@@ -1263,9 +1263,6 @@ class TimetableSettings {
   static const String defaultTimeAxisFontColorLight = '#757575';
   static const String defaultTimeAxisFontColorDark = '#FFFFFF';
 
-  static const double defaultFrostedSheetBlurSigma = 15;
-  static const double defaultFrostedSheetTintAlpha = 0.70;
-  static const double defaultFrostedSheetBarrierAlpha = 0.20;
   static const bool defaultFrostedBlurEnabled = true;
 
   /// 旧版「作用范围 → 首页玻璃带」开关的默认值。该开关已随顶栏材质自由
@@ -1578,12 +1575,16 @@ class TimetableSettings {
   final String timeAxisFontColorDark;
 
   /// Convenience getter that maps frosted-glass fields to a [FrostedAppearance].
+  ///
+  /// 弹层的三枚观感量（模糊半径 / 染色 / 遮罩深度）2026-09-23 起不再是用户
+  /// 设置 —— 没有任何界面能改它们，字段已从设置里删除。外观对象仍带这三个
+  /// 值（渲染注入口），但只能取内置常量（`kDefaultFrostedSheet*`）。
   FrostedAppearance get frostedAppearance => FrostedAppearance(
-    sheetBlurSigma: frostedSheetBlurSigma,
-    sheetTintAlpha: frostedSheetTintAlpha,
-    sheetBarrierAlpha: frostedSheetBarrierAlpha,
     blurEnabled: frostedBlurEnabled,
     glassMode: frostedGlassMode,
+    sheetBlurSigma: kDefaultFrostedSheetBlurSigma,
+    sheetTintAlpha: kDefaultFrostedSheetTintAlpha,
+    sheetBarrierAlpha: kDefaultFrostedSheetBarrierAlpha,
     liquidGlassTuning: liquidGlassTuning,
     liquidGlassTuningDark: liquidGlassTuningDark,
     linkLiquidGlassTuning: linkLiquidGlassTuning,
@@ -1596,9 +1597,6 @@ class TimetableSettings {
   );
 
   final bool linkCourseCardColors; // 标题和详情颜色是否关联
-  final double frostedSheetBlurSigma;
-  final double frostedSheetTintAlpha;
-  final double frostedSheetBarrierAlpha;
   final bool frostedBlurEnabled;
 
   final FrostedGlassMode frostedGlassMode;
@@ -1854,9 +1852,6 @@ class TimetableSettings {
     this.timeAxisFontColorLight = defaultTimeAxisFontColorLight,
     this.timeAxisFontColorDark = defaultTimeAxisFontColorDark,
     this.linkCourseCardColors = true,
-    this.frostedSheetBlurSigma = defaultFrostedSheetBlurSigma,
-    this.frostedSheetTintAlpha = defaultFrostedSheetTintAlpha,
-    this.frostedSheetBarrierAlpha = defaultFrostedSheetBarrierAlpha,
     this.frostedBlurEnabled = defaultFrostedBlurEnabled,
     this.frostedGlassMode = FrostedGlassMode.gaussian,
     this.liquidGlassDockEnabled = defaultLiquidGlassDockEnabled,
@@ -2082,9 +2077,6 @@ class TimetableSettings {
       'timeAxisFontColorLight': timeAxisFontColorLight,
       'timeAxisFontColorDark': timeAxisFontColorDark,
       'linkCourseCardColors': linkCourseCardColors,
-      'frostedSheetBlurSigma': frostedSheetBlurSigma,
-      'frostedSheetTintAlpha': frostedSheetTintAlpha,
-      'frostedSheetBarrierAlpha': frostedSheetBarrierAlpha,
       'frostedBlurEnabled': frostedBlurEnabled,
       'frostedGlassMode': frostedGlassMode.value,
       'liquidGlassDockEnabled': liquidGlassDockEnabled,
@@ -2561,16 +2553,6 @@ class TimetableSettings {
       timeAxisFontColorDark:
           json['timeAxisFontColorDark'] as String? ??
           defaultTimeAxisFontColorDark,
-      linkCourseCardColors: json['linkCourseCardColors'] as bool? ?? true,
-      frostedSheetBlurSigma:
-          (json['frostedSheetBlurSigma'] as num?)?.toDouble() ??
-          defaultFrostedSheetBlurSigma,
-      frostedSheetTintAlpha:
-          (json['frostedSheetTintAlpha'] as num?)?.toDouble() ??
-          defaultFrostedSheetTintAlpha,
-      frostedSheetBarrierAlpha:
-          (json['frostedSheetBarrierAlpha'] as num?)?.toDouble() ??
-          defaultFrostedSheetBarrierAlpha,
       frostedBlurEnabled:
           json['frostedBlurEnabled'] as bool? ?? defaultFrostedBlurEnabled,
       // 存量迁移：旧版「玻璃材质」独立三档里写死 `liquid` 的用户，
@@ -2839,9 +2821,6 @@ class TimetableSettings {
     String? timeAxisFontColorLight,
     String? timeAxisFontColorDark,
     bool? linkCourseCardColors,
-    double? frostedSheetBlurSigma,
-    double? frostedSheetTintAlpha,
-    double? frostedSheetBarrierAlpha,
     bool? frostedBlurEnabled,
     FrostedGlassMode? frostedGlassMode,
     bool? liquidGlassDockEnabled,
@@ -3207,12 +3186,6 @@ class TimetableSettings {
       timeAxisFontColorDark:
           timeAxisFontColorDark ?? this.timeAxisFontColorDark,
       linkCourseCardColors: linkCourseCardColors ?? this.linkCourseCardColors,
-      frostedSheetBlurSigma:
-          frostedSheetBlurSigma ?? this.frostedSheetBlurSigma,
-      frostedSheetTintAlpha:
-          frostedSheetTintAlpha ?? this.frostedSheetTintAlpha,
-      frostedSheetBarrierAlpha:
-          frostedSheetBarrierAlpha ?? this.frostedSheetBarrierAlpha,
       frostedBlurEnabled: frostedBlurEnabled ?? this.frostedBlurEnabled,
       frostedGlassMode: frostedGlassMode ?? this.frostedGlassMode,
       liquidGlassDockEnabled:

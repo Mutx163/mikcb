@@ -125,9 +125,6 @@ TimetableSettings applySettingsReset(
       clearCourseCardGlassTuning: true,
       frostedGlassMode: d.frostedGlassMode,
       frostedBlurEnabled: d.frostedBlurEnabled,
-      frostedSheetBlurSigma: d.frostedSheetBlurSigma,
-      frostedSheetTintAlpha: d.frostedSheetTintAlpha,
-      frostedSheetBarrierAlpha: d.frostedSheetBarrierAlpha,
       // `liquidGlassPreset` 此前不在任何作用域里，从没被「恢复默认」覆盖过 ——
       // 随本次搬家一并补上，否则预设档名与旋钮会对不上（旋钮清了、档名还停在
       // 「自定义」，界面会显示一个不该有的档）。

@@ -37,8 +37,6 @@ void main() {
     // 材质
     frostedGlassMode: FrostedGlassMode.liquidGlass,
     frostedBlurEnabled: false,
-    frostedSheetBlurSigma: 12.5,
-    frostedSheetTintAlpha: 0.42,
     liquidGlassPreset: LiquidGlassPreset.dense,
     liquidGlassTuning: LiquidGlassTuning.defaults,
     liquidGlassTuningDark: LiquidGlassTuning.defaults,

@@ -505,8 +505,10 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
         ? 0.0
         : resolveHomePreblurSigma(
             gaussianCardsDrive: settings.courseCardSurfaceStyle.isGlass,
-            liquidGlassChrome: settings.homeBandGlassMaterial != 'solid',
-            sheetBlurSigma: settings.frostedSheetBlurSigma,
+            // 与首页玻璃带消费点同判：生效值只有液态档吃液态调参的模糊量。
+            liquidGlassChrome:
+                settings.homeBandGlassMaterialEffective == 'liquid',
+            sheetBlurSigma: kDefaultFrostedSheetBlurSigma,
             liquidGlassTunedBlur: settings.liquidGlassTuning?.blurSigma,
           );
 

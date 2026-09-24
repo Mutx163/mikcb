@@ -3266,9 +3266,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedSheetSectionTitle => '글래스 소재';
 
   @override
-  String get frostedSheetSectionSubtitle => '시트의 흐림 강도와 프로스트 밝기를 조절합니다';
-
-  @override
   String get frostedBlurEnabledTitle => '블러 활성화';
 
   @override
@@ -3283,12 +3280,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get frostedSheetPreviewDemoSubtitle => '프로스트 글래스 효과 실시간 미리보기';
-
-  @override
-  String get frostedSheetBlurLabel => '블러 강도';
-
-  @override
-  String get frostedSheetTintLabel => '성에 유리 밝기';
 
   @override
   String get timetableBackgroundColorSectionTitle => '시간표 배경색';

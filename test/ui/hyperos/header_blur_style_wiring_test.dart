@@ -101,40 +101,34 @@ void main() {
   });
 
   group('首页玻璃带按材质分派（HomePageChromeGlassFill）', () {
-    testWidgets('非实体一律走液态玻璃：存量档与 liquid 渲染逐字段相同', (tester) async {
-      // 界面只有「液态玻璃 / 实体」两项，渲染侧按「非 solid 即液态」兜底。
-      // 这条钉的是**四个取值不许分叉**：谁再给 progressive / gaussian / soft 接
-      // 一条自己的磨砂分支，这里的 blurStyle / tint 对比就会红。
+    testWidgets('液态走液态玻璃（测试环境降级为水洗），frost 走磨砂带', (tester) async {
+      // 渲染侧只消费**生效值**：存量 progressive / gaussian / soft 在设置层就
+      // 归到液态、'follow' 解析成 frost/liquid/solid（2026-09-23 起），永远不会
+      // 以原始值进入这里 —— 所以候选只有 liquid / frost / solid 三个。
       //
       // VM liveBlurSupported=false ⇒ 液态玻璃按降级口径回落到衬底（半透明水洗、
       // 不渲染磨砂模糊）。真实玻璃面由液态玻璃自己的 widget 测试覆盖，这里只钉
       // 「分派到哪一支」。
-      FrostedHeaderBackground? liquid;
-      for (final material in ['liquid', 'progressive', 'gaussian', 'soft']) {
-        await _pumpFill(tester, material);
-        final bg = tester.widget<FrostedHeaderBackground>(
-          find.byType(FrostedHeaderBackground),
-        );
-        expect(bg.blurEnabled, isFalse, reason: material);
-        if (liquid == null) {
-          liquid = bg;
-          continue;
-        }
-        expect(bg.blurStyle, liquid.blurStyle, reason: material);
-        expect(bg.blurSigma, liquid.blurSigma, reason: material);
-        expect(bg.tint, liquid.tint, reason: material);
-      }
-
-      // 降级态是**均匀的半透明水洗**（`ColoredBox` + alpha < 1），不是实体档那条
-      // 不透明实心条，也不是会切出横向硬边的渐变衬底。
+      await _pumpFill(tester, 'liquid');
       final wash = tester.widget<ColoredBox>(
         find.descendant(
           of: find.byType(HomePageChromeGlassFill),
           matching: find.byType(ColoredBox),
         ),
       );
+      // 降级态是**均匀的半透明水洗**，不是实体档那条不透明实心条。
       expect(wash.color.a, lessThan(1.0));
-      expect(wash.color, liquid!.tint);
+
+      // 'frost'（跟随默认 + 默认档高斯）→ 磨砂带：渐进模糊链路（inspire 风格），
+      // 不再被吞进液态分支 —— 它没有折射，也不吃液态调参。
+      await _pumpFill(tester, 'frost');
+      final bg = tester.widget<FrostedHeaderBackground>(
+        find.byType(FrostedHeaderBackground),
+      );
+      expect(bg.blurEnabled, isFalse);
+      expect(bg.blurStyle, HeaderBlurStyle.inspire);
+      // 磨砂带的水洗色就是降级液态那条（同一取色口径），只是形状/风格不同。
+      expect(bg.tint, wash.color);
     });
 
     testWidgets('实体 → 不透明纯色条，完全遮住壁纸', (tester) async {
@@ -153,19 +147,26 @@ void main() {
       expect(box.color.a, 1.0);
     });
 
-    test('只有实体档不吃外溢：存量档与液态同口径（上边必须推出可见区）', () {
-      // 外溢判据必须与渲染分支同源。曾按字面 `material == 'liquid'` 判：存量
-      // progressive 会渲染液态玻璃却拿到 (0, 0) 外溢 —— 上边不再推出可见区，
-      // 真机那条发丝线立刻回来。
+    test('液态档吃外溢：frost 与实体同口径（磨砂带没有折射位移）', () {
+      // 外溢判据与渲染分支同源：只有液态玻璃有折射位移，上边必须推出可见区。
+      // 磨砂带（'frost'，跟随默认 + 默认档高斯）没有折射，与实体一样不吃外溢 ——
+      // 谁再把 frost 误判成液态（比如按"非实体"判），这里的 overhang.top 就会红。
       const band = 22.0;
       const rim = 3.0;
-      for (final material in ['liquid', 'progressive', 'gaussian', 'soft']) {
+      final liquid = homePageChromeGlassVerticalOverhang(
+        material: 'liquid',
+        refractionBand: band,
+        rimWidth: rim,
+      );
+      expect(liquid.top, greaterThanOrEqualTo(band));
+      expect(liquid.bottom, 0.0);
+      for (final material in ['frost', 'solid']) {
         final overhang = homePageChromeGlassVerticalOverhang(
           material: material,
           refractionBand: band,
           rimWidth: rim,
         );
-        expect(overhang.top, greaterThanOrEqualTo(band), reason: material);
+        expect(overhang.top, 0.0, reason: material);
         expect(overhang.bottom, 0.0, reason: material);
       }
       final solid = homePageChromeGlassVerticalOverhang(

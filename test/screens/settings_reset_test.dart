@@ -49,7 +49,6 @@ void main() {
       themeSeedColor: '#FF0000',
       frostedGlassMode: FrostedGlassMode.liquidGlass,
       frostedBlurEnabled: false,
-      frostedSheetBlurSigma: 20,
       liquidGlassDockEnabled: false,
       liquidGlassPreset: LiquidGlassPreset.dense,
       homePageTimeColumnBlurEnabled: true,
@@ -193,7 +192,6 @@ void main() {
     expect(result.homeBandGlassMaterial, dirty.homeBandGlassMaterial);
     expect(result.frostedGlassMode, dirty.frostedGlassMode);
     expect(result.frostedBlurEnabled, dirty.frostedBlurEnabled);
-    expect(result.frostedSheetBlurSigma, dirty.frostedSheetBlurSigma);
     expect(result.liquidGlassDockEnabled, dirty.liquidGlassDockEnabled);
     expect(result.liquidGlassTuning, dirty.liquidGlassTuning);
     expect(result.liquidGlassTuningDark, dirty.liquidGlassTuningDark);
@@ -220,7 +218,6 @@ void main() {
     // 入口；且材质是设备级设置，得有个能回到出厂的口子）。
     expect(result.frostedGlassMode, defaults.frostedGlassMode);
     expect(result.frostedBlurEnabled, defaults.frostedBlurEnabled);
-    expect(result.frostedSheetBlurSigma, defaults.frostedSheetBlurSigma);
     expect(result.liquidGlassDockEnabled, defaults.liquidGlassDockEnabled);
     expect(result.liquidGlassPreset, defaults.liquidGlassPreset);
     expect(
@@ -282,7 +279,6 @@ void main() {
     expect(result.appFontWeight, dirty.appFontWeight);
     expect(result.appTextScale, dirty.appTextScale);
     expect(result.themeSeedColor, dirty.themeSeedColor);
-    expect(result.frostedSheetBlurSigma, dirty.frostedSheetBlurSigma);
     expect(result.courseCardFontSize, dirty.courseCardFontSize);
     expectUntouchedEssentials(result);
   });

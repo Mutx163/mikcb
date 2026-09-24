@@ -3390,10 +3390,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frostedSheetSectionTitle => 'Glass Material';
 
   @override
-  String get frostedSheetSectionSubtitle =>
-      'Adjust the blur strength and frosted brightness of sheets';
-
-  @override
   String get frostedBlurEnabledTitle => 'Enable Blur';
 
   @override
@@ -3409,12 +3405,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get frostedSheetPreviewDemoSubtitle =>
       'Live preview of frosted glass effect';
-
-  @override
-  String get frostedSheetBlurLabel => 'Blur Intensity';
-
-  @override
-  String get frostedSheetTintLabel => 'Frost brightness';
 
   @override
   String get timetableBackgroundColorSectionTitle =>
