@@ -62,7 +62,11 @@ void main() {
     // service，本类未新增任何状态机。
     // 4532→4620：审核修复补上完整备份回滚、启动后台写入收尾、
     // 导入等待和失败路径处理；这些是持久化一致性边界，不是继续堆业务状态。
-    const baselineLines = 4620;
+    // 4620→4640：_trackStartupBackgroundWrite 就地接住「task 自身失败」——
+    // 原来链上的 onError 只接上一条的错，最后一条失败会让 _startupBackgroundWrites
+    // 停在失败态，随后被导入入口 await 到，抛出与导入无关的启动期异常。
+    // 改动只有一层错误处理 + 一段说明，无新增状态。
+    const baselineLines = 4640;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

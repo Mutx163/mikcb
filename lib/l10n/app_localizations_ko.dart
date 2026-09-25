@@ -10191,6 +10191,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '전체 재질이 \'솔리드 카드\'일 때 카드는 항상 솔리드로 그려지므로, 여기서 고른 값은 반영되지 않습니다.';
 
   @override
+  String get frostedGlassModeSolidNotice =>
+      '모든 흐림 효과를 끔: 상단 바와 독은 솔리드로 그려지고, 강의 카드 선택은 반영되지 않습니다.';
+
+  @override
   String get courseCardSurfaceStyleSolid => '솔리드';
 
   @override

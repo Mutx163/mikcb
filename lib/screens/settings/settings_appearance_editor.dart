@@ -427,21 +427,31 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
 
   Future<void> _persistDraft(TimetableSettings next) async {
     final provider = _timetableProvider;
-    final message = await provider.updateTimetableSettings(
-      next.copyWith(
-        activeTimeSchemeId: provider.settings.activeTimeSchemeId,
-        sections: List<SectionTime>.from(provider.settings.sections),
-      ),
-    );
-    if (!mounted) {
-      return;
-    }
-    if (message != null) {
-      showAppToast(context, message: message);
-      setState(() {
-        _draft = provider.settings;
+    try {
+      final message = await provider.updateTimetableSettings(
+        next.copyWith(
+          activeTimeSchemeId: provider.settings.activeTimeSchemeId,
+          sections: List<SectionTime>.from(provider.settings.sections),
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+      if (message != null) {
+        showAppToast(context, message: message);
+        setState(() {
+          _draft = provider.settings;
+        });
+        _draftRevision.value++;
+      }
+    } catch (_) {
+      // 落盘失败：provider 已回滚内存与课表镜像并 rethrow，不接就没人提示。
+      reportSettingsPersistFailure(this, resetDraft: () {
+        setState(() {
+          _draft = provider.settings;
+        });
+        _draftRevision.value++;
       });
-      _draftRevision.value++;
     }
   }
 
@@ -589,7 +599,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 「通用」页正文：整机总闸 + 卡片以外的表面。
   ///
   /// 页内顺序沿用「观感明显的在前」（2026-09-19 第七轮）：总闸 → 首页顶栏玻璃 →
-  /// 液态预设与八根旋钮 → 子页顶栏（卡片里看不见，靠后）→ 只读总览。
+  /// 液态预设与八根旋钮 → 只读总览。
   ///
   /// 重画靠订阅草稿版本号：面板里任何一处改动（分段 / 胶囊 / 滑杆 / 开关）都立刻
   /// 反映到面板自己身上。**不要退回「每个控件各喊一声重画」的写法** —— 那样只要
@@ -638,6 +648,16 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
               _updateDraft(applyGlassModeChoice(_draft, value));
             },
           ),
+          // 只在实体档出现：这是唯一与直觉不符的档（顺带关掉全 App 模糊）。
+          if (displayedChoice == GlassModeChoice.solid) ...[
+            const SizedBox(height: 8),
+            Text(
+              l10n.frostedGlassModeSolidNotice,
+              style: HyperosTypography.listDetail(sheetContext).copyWith(
+                color: HyperosColors.secondaryText(sheetContext),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           HyperosSectionLabel(text: l10n.homeBandGlassMaterialLabel),
           const SizedBox(height: 8),
@@ -788,14 +808,12 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
             ),
           ],
           const SizedBox(height: 20),
-          // 子页顶栏（设置等页）：2026-09-23 起**锁定为渐进模糊**（用户口径
-          // 「子页顶部可以锁定渐变模糊」），设置里不再有这一节 —— 它只在下面
-          // 只读总览里作为一行说明出现。原来那两格分段（渐进 / 高斯）删除。
+          // 子页顶栏 2026-09-23 起锁定渐进模糊，面板里没有任何一节。
           //
           // 「各表面当前材质」地图：与渲染侧门控同口径的只读推导
-          // （2026-09-12）。**锁定的表面不显示**（2026-09-19 第七轮）：
-          // 弹窗家族四件（底部弹窗 / 选择面板 / 下拉小弹窗 / 选点按钮）
-          // 恒为液态玻璃标准档、与设置无关，显示也没用，已摘除。
+          // （2026-09-12）。**只列可调表面**（2026-09-25 口径）：锁死的
+          // （弹窗家族、子页顶栏）一律不显示——固定的东西不出现，
+          // 用户就不会以为它可调。
           Text(
             l10n.surfaceMaterialSectionTitle,
             style: HyperosTypography.sectionLabel(sheetContext),
@@ -807,11 +825,6 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
                 sheetContext,
                 l10n.liquidGlassScopeHomeChromeTitle,
                 homeBandSurfaceMaterial(_draft),
-              ),
-              _surfaceMaterialTile(
-                sheetContext,
-                l10n.surfaceSubpageHeader,
-                subpageHeaderSurfaceMaterial(_draft),
               ),
               _surfaceMaterialTile(
                 sheetContext,

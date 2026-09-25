@@ -49,7 +49,16 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
 
   Future<void> _persistDraft(TimetableSettings next) async {
     final provider = _timetableProvider;
-    await provider.updateTimetableSettings(next);
+    try {
+      await provider.updateTimetableSettings(next);
+    } catch (_) {
+      // 落盘失败：provider 已回滚内存与课表镜像并 rethrow，不接就没人提示。
+      reportSettingsPersistFailure(this, resetDraft: () {
+        setState(() {
+          _draft = provider.settings;
+        });
+      });
+    }
   }
 
   Future<void> _showCustomHolidayDialog({

@@ -17857,6 +17857,12 @@ abstract class AppLocalizations {
   /// **'「整体材质」为「实体卡片」时，卡片一律按实体渲染，这里的选择暂不生效'**
   String get courseCardMaterialMasterOffHint;
 
+  /// No description provided for @frostedGlassModeSolidNotice.
+  ///
+  /// In zh, this message translates to:
+  /// **'已关闭全 App 模糊：顶栏与玻璃坞按实体渲染，课程卡片的选择暂不生效'**
+  String get frostedGlassModeSolidNotice;
+
   /// No description provided for @courseCardSurfaceStyleSolid.
   ///
   /// In zh, this message translates to:

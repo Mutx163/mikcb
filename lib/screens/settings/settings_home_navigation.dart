@@ -339,14 +339,23 @@ class _HomeNavigationSettingsScreenState
     }
     // Use the cached provider — dispose may fire after the Element is unmounted.
     final provider = _timetableProvider;
-    final message = await provider.updateTimetableSettings(next);
-    if (!mounted) {
-      return;
-    }
-    if (message != null) {
-      showAppToast(context, message: message);
-      setState(() {
-        _draft = provider.settings;
+    try {
+      final message = await provider.updateTimetableSettings(next);
+      if (!mounted) {
+        return;
+      }
+      if (message != null) {
+        showAppToast(context, message: message);
+        setState(() {
+          _draft = provider.settings;
+        });
+      }
+    } catch (_) {
+      // 落盘失败：provider 已回滚内存与课表镜像并 rethrow，不接就没人提示。
+      reportSettingsPersistFailure(this, resetDraft: () {
+        setState(() {
+          _draft = provider.settings;
+        });
       });
     }
   }

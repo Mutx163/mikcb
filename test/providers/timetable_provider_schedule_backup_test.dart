@@ -15,6 +15,11 @@ class _FailOnceTimeSchemeStorage extends StorageService {
   int profileFailuresRemaining = 0;
   bool activeProfileIdWriteObserved = false;
 
+  /// 只让「日期规则上次套用签名」落盘失败：该键只有启动期批量套用会写，
+  /// 导入路径不碰它。用它把启动链尾的后台写入停在失败态，又不会干扰导入
+  /// 自己的写盘——这样断言「导入不受启动期失败牵连」才没有竞态。
+  bool failRuleSignatureWrites = false;
+
   @override
   Future<void> saveTimeSchemes(List<TimeScheme> schemes) {
     if (failNextSave) {
@@ -39,6 +44,16 @@ class _FailOnceTimeSchemeStorage extends StorageService {
   Future<void> setActiveProfileId(String profileId) {
     activeProfileIdWriteObserved = true;
     return super.setActiveProfileId(profileId);
+  }
+
+  @override
+  Future<void> saveScheduleDateRuleLastAppliedSignature(String? signature) {
+    if (failRuleSignatureWrites) {
+      return Future<void>.error(
+        StateError('test_rule_signature_write_failed'),
+      );
+    }
+    return super.saveScheduleDateRuleLastAppliedSignature(signature);
   }
 }
 
@@ -152,6 +167,45 @@ void main() {
     await provider.initialize();
 
     expect(provider.profiles, isNotEmpty);
+  });
+
+  test('startup background write failure does not poison later imports', () async {
+    final source = await createProvider();
+    final scheme = await source.createTimeScheme(
+      name: '启动失败回归作息',
+      sections: const [SectionTime(startTime: '10:00', endTime: '10:45')],
+    );
+    final today = ScheduleDateRuleLogic.formatIsoDate(DateTime.now());
+    await source.createScheduleDateRule(
+      name: '今日生效规则',
+      timeSchemeId: scheme.id,
+      startDate: today,
+      endDate: today,
+    );
+    final content = source.dataTransferService.buildFullBackupJson(
+      profiles: source.profiles,
+      activeProfileId: source.activeProfileId,
+      timeSchemes: source.timeSchemes,
+      scheduleDateRules: source.scheduleDateRules,
+      locationTimeGroups: source.locationTimeGroups,
+    );
+
+    // 上面建规则时已经把「上次套用签名」写进去了，清掉它，target 启动才会
+    // 真的走到批量套用并落盘——启动链尾的这次写盘失败正是要构造的前提。
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('schedule_date_rule_last_applied_signature');
+
+    final storage = _FailOnceTimeSchemeStorage()
+      ..failRuleSignatureWrites = true;
+    final target = TimetableProvider(
+      storageService: storage,
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await target.initialize();
+
+    // 导入只该等启动写入收尾，不该把那次与导入毫无关系的异常原样抛出来。
+    expect(await target.importFullAppDataBackup(content), isNull);
   });
 
   test('full backup write failure restores the previous in-memory state', () async {

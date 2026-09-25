@@ -6011,6 +6011,7 @@
   "courseCardSectionLayout": "Layout",
   "courseCardSurfaceStyleLabel": "Card Appearance",
   "courseCardMaterialMasterOffHint": "While the overall material is \"Solid Cards\", cards always render solid — the choice here has no effect yet.",
+  "frostedGlassModeSolidNotice": "All blur is off: the top bar and dock render solid; course card choices have no effect yet.",
   "courseCardSurfaceStyleSolid": "Solid",
   "courseCardSurfaceStyleGaussian": "Gaussian Blur",
   "courseCardSurfaceStyleLiquidGlass": "Liquid Glass",

@@ -271,4 +271,31 @@ void main() {
     expect(find.text('首页顶栏玻璃'), findsNothing);
     expect(find.text('各表面当前材质'), findsNothing);
   });
+
+  testWidgets('实体档才显示全局影响提示；地图只列可调表面', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    _seedPrefs(TimetableSettings.defaults());
+
+    final provider = await _openMaterialPanel(tester);
+
+    // 出厂档是高斯：不加任何灰字。
+    expect(find.textContaining('已关闭全 App 模糊'), findsNothing);
+
+    // 切到实体卡片：唯一与直觉不符的档才给一行提示。
+    await tester.tap(find.text('实体卡片'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('已关闭全 App 模糊'), findsOneWidget);
+    expect(provider.settings.frostedBlurEnabled, isFalse);
+
+    // 切回高斯：提示消失。
+    await tester.tap(find.text('高斯模糊').first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('已关闭全 App 模糊'), findsNothing);
+
+    // 地图只列可调表面：锁死的子页顶栏不出现。
+    await _scrollPanelTo(tester, find.text('各表面当前材质'));
+    expect(find.text('子页顶栏'), findsNothing);
+    expect(find.text('首页玻璃带'), findsWidgets);
+  });
 }

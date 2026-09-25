@@ -354,21 +354,30 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
 
   Future<void> _persistDraft(TimetableSettings next) async {
     final provider = _timetableProvider;
-    final message = await provider.updateTimetableSettings(
-      next.copyWith(
-        activeTimeSchemeId: provider.settings.activeTimeSchemeId,
-        sections: List<SectionTime>.from(provider.settings.sections),
-      ),
-    );
-    if (!mounted) {
-      return;
-    }
-    if (message != null) {
-      showAppToast(context, message: message);
-      setState(() {
-        _draft = provider.settings;
+    try {
+      final message = await provider.updateTimetableSettings(
+        next.copyWith(
+          activeTimeSchemeId: provider.settings.activeTimeSchemeId,
+          sections: List<SectionTime>.from(provider.settings.sections),
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+      if (message != null) {
+        showAppToast(context, message: message);
+        setState(() {
+          _draft = provider.settings;
+        });
+        return;
+      }
+    } catch (_) {
+      // 落盘失败：provider 已回滚内存与课表镜像并 rethrow，不接就没人提示。
+      reportSettingsPersistFailure(this, resetDraft: () {
+        setState(() {
+          _draft = provider.settings;
+        });
       });
-      return;
     }
   }
 }

@@ -109,6 +109,32 @@ String formatLiveTimeCorrection(AppLocalizations l10n, int seconds) {
   return l10n.liveTimeCorrectionAdvance(seconds.abs());
 }
 
+/// 设置「改一下就存」入口的落盘失败兜底。
+///
+/// [TimetableProvider.updateTimetableSettings] 在落盘失败时会先把内存、课表
+/// 镜像和周次回滚，再把原始异常 rethrow 出来。设置页这些自动保存入口全都没
+/// 接这个异常——不接的话它会变成无人监听的失败 Future（最终被 `main.dart` 的
+/// `runZonedGuarded` 吃掉），用户看到的是「设置已经改了」，其实一个字节都没
+/// 存进去，重启 App 又变回去，全程没有任何提示。
+///
+/// 这里统一给出一句本地化提示，并（经 [resetDraft]）把页面草稿拉回 provider
+/// 回滚后的真实值，避免界面停在「看着已保存、实际没保存」的状态。
+void reportSettingsPersistFailure<T extends StatefulWidget>(
+  State<T> state, {
+  VoidCallback? resetDraft,
+}) {
+  if (!state.mounted) {
+    return;
+  }
+  final context = state.context;
+  showAppToast(
+    context,
+    message: AppLocalizations.of(context)!.saveFailed,
+    kind: AppToastKind.error,
+  );
+  resetDraft?.call();
+}
+
 /// 八宫格等外部入口直达设置子页的工厂。
 ///
 /// 各子页类保持库内私有，这里按稳定 id 暴露；未知 id 返回 null，

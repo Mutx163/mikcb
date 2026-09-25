@@ -578,9 +578,29 @@ class TimetableProvider with ChangeNotifier {
     );
   }
 
+  /// 登记一条启动期后台写入并纳入等待链。
+  ///
+  /// **task 自身的失败必须在这里就地接住**：下面链上的 `onError` 只接「上一
+  /// 条」的错，task 自己失败会让 `_startupBackgroundWrites` 停在失败态、且变成
+  /// 无人监听的失败 Future。之后 `importAppDataBackup` 系列入口
+  /// `await` 它时，会把这次与导入毫无关系的启动期异常原样抛给用户点的那条
+  /// 路径，只能重启 App 才能恢复。原始错误仍留一条日志，不静默丢。
   void _trackStartupBackgroundWrite(Future<void> task) {
+    final guarded = task.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stackTrace) {
+        unawaited(
+          AppLogService.instance.error(
+            'startup_background_write_failed',
+            '启动期后台写入失败，已忽略以避免传染后续入口',
+            error: error,
+            stackTrace: stackTrace,
+          ),
+        );
+      },
+    );
     _startupBackgroundWrites = _startupBackgroundWrites.then<void>(
-      (_) => task,
+      (_) => guarded,
       onError: (Object _, StackTrace _) {},
     );
   }

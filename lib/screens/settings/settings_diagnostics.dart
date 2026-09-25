@@ -110,14 +110,20 @@ class _DiagnosticsScreenState extends State<_DiagnosticsScreen> {
   Future<void> _updateRecordingPreference(bool value) async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(liveEnableLocalDiagnostics: value),
-    );
-    if (!mounted) {
-      return;
-    }
-    if (message != null) {
-      showAppToast(context, message: message);
+    try {
+      final message = await provider.updateTimetableSettings(
+        provider.settings.copyWith(liveEnableLocalDiagnostics: value),
+      );
+      if (!mounted) {
+        return;
+      }
+      if (message != null) {
+        showAppToast(context, message: message);
+        return;
+      }
+    } catch (_) {
+      // 落盘失败：provider 已回滚内存与课表镜像并 rethrow，不接就没人提示。
+      reportSettingsPersistFailure(this);
       return;
     }
     showAppToast(

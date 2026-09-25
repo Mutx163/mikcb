@@ -10146,6 +10146,10 @@ class AppLocalizationsJa extends AppLocalizations {
       '全体マテリアルが「ソリッドカード」のとき、カードは常にソリッドで描画されるため、ここの選択は反映されません。';
 
   @override
+  String get frostedGlassModeSolidNotice =>
+      'ぼかしをすべてオフ：トップバーとドックはソリッドで描画され、コースカードの選択は反映されません。';
+
+  @override
   String get courseCardSurfaceStyleSolid => 'ソリッド';
 
   @override

@@ -9848,6 +9848,10 @@ class AppLocalizationsZh extends AppLocalizations {
       '「整体材质」为「实体卡片」时，卡片一律按实体渲染，这里的选择暂不生效';
 
   @override
+  String get frostedGlassModeSolidNotice =>
+      '已关闭全 App 模糊：顶栏与玻璃坞按实体渲染，课程卡片的选择暂不生效';
+
+  @override
   String get courseCardSurfaceStyleSolid => '实体卡片';
 
   @override
@@ -20876,6 +20880,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
       '「整體材質」為「實體卡片」時，卡片一律按實體繪製，這裡的選擇暫不生效';
 
   @override
+  String get frostedGlassModeSolidNotice =>
+      '已關閉全 App 模糊：頂欄與玻璃塢按實體繪製，課程卡片的選擇暫不生效';
+
+  @override
   String get courseCardSurfaceStyleSolid => '實體卡片';
 
   @override
@@ -31902,6 +31910,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get courseCardMaterialMasterOffHint =>
       '「整體材質」為「實體卡片」時，卡片一律以實體繪製，這裡的選擇暫不生效';
+
+  @override
+  String get frostedGlassModeSolidNotice =>
+      '已關閉全 App 模糊：頂欄與玻璃塢以實體繪製，課程卡片的選擇暫不生效';
 
   @override
   String get courseCardSurfaceStyleSolid => '實體卡片';

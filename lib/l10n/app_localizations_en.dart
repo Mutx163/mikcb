@@ -10443,6 +10443,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'While the overall material is \"Solid Cards\", cards always render solid — the choice here has no effect yet.';
 
   @override
+  String get frostedGlassModeSolidNotice =>
+      'All blur is off: the top bar and dock render solid; course card choices have no effect yet.';
+
+  @override
   String get courseCardSurfaceStyleSolid => 'Solid';
 
   @override
