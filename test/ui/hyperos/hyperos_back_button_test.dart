@@ -126,6 +126,12 @@ void main() {
       reason: '边缘不外推采样：标准档那 8dp 位移会让最外一圈读到圆外约 8dp 处的内容，'
           '圆钮顶到带顶只有 4dp，于是顶部读成一条暗弧（真机口径 2026-09-21）',
     );
+    expect(
+      glass.pressGlow,
+      isTrue,
+      reason: '返回键是**按钮**：按压高光要留着（弹窗面板那种大面积底板才关掉，'
+          '见 liquid_glass_consistency_test.dart 的 modal panels 组）',
+    );
     // 圆底在显影：垫一圈**小而淡**的浮影（用户口径「一点点」，见 expectSmallShadow）。
     expect(backShadow(), findsOneWidget);
     expectSmallShadow(tester);

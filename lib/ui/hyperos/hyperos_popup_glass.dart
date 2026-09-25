@@ -270,6 +270,10 @@ class HyperosSelectPopupGlass extends StatelessWidget {
       grouped: useAncestorGroupCapture,
       refractionFactor: thicknessFactor,
       maxRefraction: maxRefraction,
+      // 弹窗面板不是控件：一律不挂手指高光（见 [LiquidGlassSurface.pressGlow]）。
+      // 真机口径 2026-09-25：「弹窗里长按着移动，有一团亮光跟着手指动来动去」。
+      // 面板里真正可按的行 / 钮自己带按压反馈，不靠这块底板。
+      pressGlow: false,
       fallbackBuilder: (fallbackContext) =>
           LiquidGlassDegradation.shouldDegrade(fallbackContext)
           ? HyperosSolidPopupSurface(

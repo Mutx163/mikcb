@@ -290,4 +290,132 @@ void main() {
       expect(find.text('Option A'), findsOneWidget);
     });
   });
+
+  /// 弹窗**面板**不挂手指高光（2026-09-25 真机口径）。
+  ///
+  /// 手指高光 = 一枚跟手的白斑 + 全面 0.06 微亮，是给「按下去有反馈」的控件准备的。
+  /// 可弹窗面板铺满整块区域、根本不是控件，于是长按着在面板上滑，光斑一路跟着手指跑
+  /// （用户口径：「弹窗里长按着移动，会出现亮光效果跟着手指动来动去，很奇怪」）——
+  /// 反馈指向一个不存在的动作，比没有反馈更莫名其妙。
+  ///
+  /// 为什么能在这里断言：[LiquidGlassSurface] 在测试环境里没有 shader 后端、走的是
+  /// `fallbackBuilder` 那条分支，可**这层 widget 本身照样在树里**，参数读得到。
+  /// 可按的小件（子页返回键）仍要留高光，那条锁在 `hyperos_back_button_test.dart`。
+  group('modal panels carry no finger highlight', () {
+    /// 面板那块玻璃的 [LiquidGlassSurface.pressGlow]。
+    bool pressGlowOf(WidgetTester tester, Finder panel) =>
+        tester.widget<LiquidGlassSurface>(panel).pressGlow;
+
+    testWidgets('贴底通栏弹窗：面板不挂高光', (tester) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showMiuixBottomSheet<void>(
+                context: context,
+                builder: (_, _) => const SizedBox(width: 200, height: 120),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(
+        pressGlowOf(tester, find.byType(LiquidGlassSurface)),
+        isFalse,
+        reason: '长按着在面板上滑，不该有一团亮光跟着手指跑',
+      );
+    });
+
+    testWidgets('选择弹窗：面板不挂高光', (tester) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showHyperosSelectPopup<String>(
+                context: context,
+                anchorRect: const Rect.fromLTWH(24, 24, 160, 48),
+                items: const {'Option A': 'a'},
+                currentValue: 'a',
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(
+        pressGlowOf(tester, find.byType(LiquidGlassSurface)),
+        isFalse,
+        reason: '列表 / 选择 / 菜单弹窗的面板是背景，不是控件',
+      );
+    });
+
+    testWidgets('列表弹窗：面板不挂高光', (tester) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showHyperosListPopup<String>(
+                context: context,
+                position: const RelativeRect.fromLTRB(24, 24, 200, 500),
+                items: const [HyperosPopupMenuItem(label: 'Option A', value: 'a')],
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(
+        pressGlowOf(tester, find.byType(LiquidGlassSurface)),
+        isFalse,
+      );
+    });
+
+    testWidgets('旧承载壳的贴底弹窗（showHyperosSheet）：面板也不挂高光', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showHyperosSheet<void>(
+                context: context,
+                // 面板由 HyperosSheetFrame 自己画（不经上游承载壳的那条路）。
+                builder: (_) => const HyperosSheetFrame(
+                  child: SizedBox(
+                    width: 240,
+                    height: 160,
+                    child: Center(child: Text('sheet body')),
+                  ),
+                ),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // 这条路径（`hyperos_sheet.dart` 自己的面）与注入面是两份独立代码，
+      // 改一处漏一处就会出现「换个弹窗又出现光斑」。
+      expect(
+        pressGlowOf(tester, find.byType(LiquidGlassSurface)),
+        isFalse,
+      );
+    });
+  });
 }

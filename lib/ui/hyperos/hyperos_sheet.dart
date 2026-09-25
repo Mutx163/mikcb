@@ -312,6 +312,8 @@ class HyperosSheetFrame extends StatelessWidget {
       // 采样祖先 BackdropGroup 在压暗层**之前**缓存的「未压暗页面」，
       // 否则玻璃里会连弹窗的黑色蒙层一起折射进去。
       grouped: true,
+      // 面板不是控件，不挂手指高光（见 [LiquidGlassSurface.pressGlow]）。
+      pressGlow: false,
       fallbackBuilder: (_) => baseBackground(),
       child: const SizedBox.expand(),
     );
@@ -362,6 +364,8 @@ class HyperosSheetFrame extends StatelessWidget {
         borderRadius: borderRadius.topLeft.x,
         role: LiquidGlassRole.pinnedChrome,
         grouped: true,
+        // 同上：面板不挂手指高光。
+        pressGlow: false,
         fallbackBuilder: (_) => baseSurface(),
         child: content,
       ),

@@ -176,6 +176,7 @@ class LiquidGlassSurface extends StatefulWidget {
     this.maxRefraction,
     this.role = LiquidGlassRole.followsUser,
     this.clipBehavior = Clip.antiAlias,
+    this.pressGlow = true,
     this.preferCanvasBoardWhenAncestorScaled = false,
     this.forceCanvasBoard = false,
     this.canvasBoardColor,
@@ -232,6 +233,22 @@ class LiquidGlassSurface extends StatefulWidget {
   final double? maxRefraction;
 
   final Clip clipBehavior;
+
+  /// 这块表面**是不是可以按下去**，也就是要不要挂手指高光（一枚跟手的白斑 +
+  /// 全面 0.06 微亮，见类注释「手指高光」那条链路）。
+  ///
+  /// 默认 true：按钮、圆钮、药丸、悬浮玻璃钮这些**按下去必须有反馈**的小件。
+  ///
+  /// **面板类表面必须传 false**（弹窗家族统一在 [HyperosSelectPopupGlass] 里传）：
+  /// 面板不是控件，可它铺满整块区域，于是长按着在面板上滑，光斑一路跟着手指跑
+  /// —— 真机口径（2026-09-25）：「弹窗里长按着移动，有一团亮光跟着手指动来动去，
+  /// 很奇怪」。反馈指向一个根本不存在的动作，比没有反馈更莫名其妙；面板上真正
+  /// 可按的行 / 钮自己带按压反馈，不靠这块底板。
+  ///
+  /// 这是**行为开关**、不是材质旋钮：关掉只是不挂那个 `Listener`，着色器侧
+  /// `u_pointer_glow` 停在默认 0（零风险默认，见 `liquid_glass_shader.dart`），
+  /// 玻璃本身一个像素都不变。
+  final bool pressGlow;
 
   /// 参数作用域（见 [LiquidGlassRole]）。
   ///
@@ -374,6 +391,33 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface>
           );
           // 边缘高光强度：二级开合时随 MiuixGlassEdgeFade 渐变；无作用域 = 1。
           final rimFade = MiuixGlassEdgeFade.of(context).clamp(0.0, 1.0);
+          final Widget layer = _LiquidGlassLayer(
+            style: style,
+            pointer: _pointer,
+            devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+            // 视口逻辑尺寸：着色器拿它把折射采样点铰在屏幕内（贴着屏幕边的玻璃
+            // 往外采样会落进模糊扩出来的空区域、读成黑边）。
+            viewSize: MediaQuery.sizeOf(context),
+            grouped: widget.grouped,
+            refractionFactor: widget.refractionFactor,
+            maxRefraction: widget.maxRefraction,
+            rimFade: rimFade,
+            preferCanvasBoardWhenAncestorScaled:
+                widget.preferCanvasBoardWhenAncestorScaled,
+            forceCanvasBoard: widget.forceCanvasBoard,
+            canvasBoardColor: widget.canvasBoardColor,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(widget.borderRadius),
+              clipBehavior: widget.clipBehavior,
+              child: widget.child,
+            ),
+          );
+          if (!widget.pressGlow) {
+            // 不可按的面（弹窗面板，见 [LiquidGlassSurface.pressGlow]）**不挂
+            // Listener**：`_pointer` 停在 (null, 0)，着色器的 `u_pointer_glow`
+            // 恒 0。少一层指针监听，手势命中与子内容一律不受影响。
+            return layer;
+          }
           return Listener(
             // translucent：不挡子内容自己的手势，也不挡玻璃背后（如坞下面）的命点。
             behavior: HitTestBehavior.translucent,
@@ -381,27 +425,7 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface>
             onPointerMove: _handlePointerMove,
             onPointerUp: (_) => _handlePointerRelease(),
             onPointerCancel: (_) => _handlePointerRelease(),
-            child: _LiquidGlassLayer(
-              style: style,
-              pointer: _pointer,
-              devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
-              // 视口逻辑尺寸：着色器拿它把折射采样点铰在屏幕内（贴着屏幕边的玻璃
-              // 往外采样会落进模糊扩出来的空区域、读成黑边）。
-              viewSize: MediaQuery.sizeOf(context),
-              grouped: widget.grouped,
-              refractionFactor: widget.refractionFactor,
-              maxRefraction: widget.maxRefraction,
-              rimFade: rimFade,
-              preferCanvasBoardWhenAncestorScaled:
-                  widget.preferCanvasBoardWhenAncestorScaled,
-              forceCanvasBoard: widget.forceCanvasBoard,
-              canvasBoardColor: widget.canvasBoardColor,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(widget.borderRadius),
-                clipBehavior: widget.clipBehavior,
-                child: widget.child,
-              ),
-            ),
+            child: layer,
           );
         },
       ),
