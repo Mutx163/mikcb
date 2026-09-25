@@ -367,6 +367,55 @@ void main() {
     );
   });
 
+  testWidgets('课程卡片设置页的「卡片外观」是跳转牌：点了直达面板课程卡片页', (tester) async {
+    // 2026-09-25 入口收敛（用户拍板）：同一开关只留材质面板一扇门。设置页这行
+    // 只显示当前值，点了进外观编辑并**自动打开**材质面板、停在第二页。
+    final provider = await createInitializedTestProvider(tester);
+    final page = settingsSubpageById('courseCardSettings');
+    expect(page, isNotNull, reason: '注册表里必须有课程卡片子页');
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<TimetableProvider>.value(value: provider),
+          ChangeNotifierProvider<WeatherProvider?>.value(value: null),
+        ],
+        child: TestApp(home: page!),
+      ),
+    );
+    await tester.pump();
+
+    // 行在列表第四节，先滚出来（懒列表不滚不建）。
+    final row = find.widgetWithText(HyperosListTile, '卡片外观');
+    final list = find.byType(HyperosListView).last;
+    await tester.scrollUntilVisible(
+      row,
+      200,
+      scrollable: find
+          .descendant(of: list, matching: find.byType(Scrollable))
+          .first,
+    );
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+
+    final sheet = find.byType(HyperosSheetFrame);
+    expect(sheet, findsOneWidget, reason: '点了要自动打开材质面板');
+    expect(
+      find.descendant(of: sheet, matching: find.text('课程卡片')),
+      findsOneWidget,
+      reason: '标题行分段标签在，且停在课程卡片那格',
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text('卡片外观')),
+      findsOneWidget,
+      reason: '第二页正文（卡片外观节）在面板里',
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text('默认材质')),
+      findsNothing,
+      reason: '没有停在第一页（通用页还没被建出来）',
+    );
+  });
+
   testWidgets('材质面板第二页：卡片液态档下的八根旋钮写卡片自己的配置（搬家回归钉）', (
     tester,
   ) async {

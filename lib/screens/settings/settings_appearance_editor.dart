@@ -34,7 +34,11 @@ part of '../timetable_settings_screen.dart';
 /// 编辑语义：本页与别的设置页一样**即时落盘**（弹窗里改一下预览就变），
 /// 「取消」= 用进页时的那份设置回滚，「完成」= 保留并返回。
 class _AppearanceEditorScreen extends StatefulWidget {
-  const _AppearanceEditorScreen();
+  const _AppearanceEditorScreen({this.initialMaterialPage});
+
+  /// 深链接：非空时入场转场落定后自动打开材质面板并停在该页
+  /// （0 = 通用，1 = 课程卡片）。课程卡片设置页的「卡片外观」跳转牌用。
+  final int? initialMaterialPage;
 
   @override
   State<_AppearanceEditorScreen> createState() =>
@@ -151,6 +155,12 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 一遍按落定坐标重录，第一张烤图就是正的。
   bool _routeSettled = false;
 
+  /// [initialMaterialPage] 的待办：入场转场落定后打开材质面板并停在该页。
+  ///
+  /// 面板是根覆盖层条目，转场期间页面还带着位移，两者会叠着动 —— 所以
+  /// 落定（[_onRouteAnimationStatus]）才开；开过即清，不重复开。
+  int? _pendingMaterialPage;
+
   /// 本页路由的入场动画：落定时刻从这里来（见 [_onRouteAnimationStatus]）。
   Animation<double>? _routeAnimation;
 
@@ -249,6 +259,26 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     ]);
     _lastPersistedSettings = _timetableProvider.settings;
     _timetableProvider.addListener(_onProviderSettingsChanged);
+    _pendingMaterialPage = widget.initialMaterialPage;
+    if (_pendingMaterialPage != null) {
+      // 首帧落定态在 didChangeDependencies 里已判过：无动画直接开；
+      // 还在转场就等 _onRouteAnimationStatus 的 completed。
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _routeSettled) {
+          _openPendingMaterialSheet();
+        }
+      });
+    }
+  }
+
+  /// 执行进页深链接：打开材质面板并停在指定页（只执行一次）。
+  void _openPendingMaterialSheet() {
+    final page = _pendingMaterialPage;
+    if (page == null || !mounted) {
+      return;
+    }
+    _pendingMaterialPage = null;
+    _openMaterialSheet(initialPage: page);
   }
 
   /// 预览源读的是 **provider 里那份已落盘的设置**，所以"落盘完成"就是一次内容变化。
@@ -355,6 +385,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     }
     if (status == AnimationStatus.completed && !_routeSettled) {
       setState(() => _routeSettled = true);
+      _openPendingMaterialSheet();
     }
     _onRouteAnimationTick();
   }
@@ -579,7 +610,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   ///
   /// 行部件与设置列表同源；改动即时落盘：渲染源重绘 → 重烤 → 卡片实时跟随；
   /// 「恢复默认」仍归「课表页面」作用域，面板只管调。
-  Future<void> _openMaterialSheet() {
+  Future<void> _openMaterialSheet({
+    int initialPage = _MaterialSheetBodyState._generalPage,
+  }) {
     final l10n = AppLocalizations.of(context)!;
     // chrome 常显口径同 [_openWallpaperSheet]。
     // ⚠️ **最多半屏**（用户口径 2026-09-20）：这块面板改之前会长到 76% 屏高，
@@ -591,7 +624,11 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       builder: (sheetContext) => HyperosSheetFrame(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         maxHeight: contentMaxHeight,
-        child: _MaterialSheetBody(editor: this, l10n: l10n),
+        child: _MaterialSheetBody(
+          editor: this,
+          l10n: l10n,
+          initialPage: initialPage,
+        ),
       ),
     );
   }
@@ -1604,10 +1641,17 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
 /// 两页正文由编辑页那侧的 `_buildGeneralMaterialPage` / `_buildCourseCardMaterialPage`
 /// 构造（它们要用编辑页的草稿与写回口子）；这里只管标题行、分段与翻页本身。
 class _MaterialSheetBody extends StatefulWidget {
-  const _MaterialSheetBody({required this.editor, required this.l10n});
+  const _MaterialSheetBody({
+    required this.editor,
+    required this.l10n,
+    this.initialPage = _MaterialSheetBodyState._generalPage,
+  });
 
   final _AppearanceEditorScreenState editor;
   final AppLocalizations l10n;
+
+  /// 初始停留页（0 = 通用，1 = 课程卡片），进页深链接用。
+  final int initialPage;
 
   @override
   State<_MaterialSheetBody> createState() => _MaterialSheetBodyState();
@@ -1618,8 +1662,17 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
   static const int _generalPage = 0;
   static const int _courseCardPage = 1;
 
-  final PageController _pages = PageController();
+  late final PageController _pages;
   int _page = _generalPage;
+
+  @override
+  void initState() {
+    super.initState();
+    _page = widget.initialPage == _courseCardPage
+        ? _courseCardPage
+        : _generalPage;
+    _pages = PageController(initialPage: _page);
+  }
 
   @override
   void dispose() {

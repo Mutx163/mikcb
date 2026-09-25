@@ -187,22 +187,16 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
           HyperosSectionLabel(text: l10n.courseCardSectionLayout),
           HyperosListGroup(
             children: [
-              HyperosSelectTile<CourseCardSurfaceStyle>(
-                // 表面样式副题原为复述标题的零信息文案，随文案治理删除。
-                //
-                // ⚠️ 选到「液态玻璃」之后的八根调参旋钮**不在这一页**（2026-09-22
-                // 起）：它们搬到了「外观编辑 → 材质 → 课程卡片」页 —— 那边改成分页
-                // 之后放得下，见 `settings_appearance_editor.dart` 的
-                // `_buildCourseCardMaterialPage`。文案与档位仍同源。
-                label: l10n.courseCardSurfaceStyleLabel,
-                items: {
-                  for (final style in CourseCardSurfaceStyle.values)
-                    courseCardSurfaceStyleLabel(l10n, style): style,
-                },
-                value: _draft.courseCardSurfaceStyle,
-                onChanged: (value) {
-                  _updateDraft(_draft.copyWith(courseCardSurfaceStyle: value));
-                },
+              HyperosListTile(
+                // 跳转牌，不是第二份选择器（2026-09-25 入口收敛，用户拍板）：
+                // 三档与那八根旋钮都只在「外观编辑 → 材质 → 课程卡片」页可调
+                // （旋钮 2026-09-22 就搬过去了）。这里显示当前值、整行跳过去。
+                title: l10n.courseCardSurfaceStyleLabel,
+                details: courseCardSurfaceStyleLabel(
+                  l10n,
+                  _draft.courseCardSurfaceStyle,
+                ),
+                onTap: _openMaterialPanel,
               ),
               HyperosSelectTile<CourseCardVerticalAlign>(
                 label: l10n.layoutVerticalAlignLabel,
@@ -331,6 +325,27 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
       ),
       _ => const SizedBox.shrink(),
     };
+  }
+
+  /// 「卡片外观」跳转牌：直达材质面板的课程卡片页。
+  ///
+  /// 返回后必须重读 provider —— 面板那边的改动即时落盘，不重读的话本页
+  /// `_draft` 还停在进页时的旧值，之后任何一次改动都会把旧档位写回去，
+  /// 覆盖掉面板里刚选的（与「课表页面」页跳外观编辑后重读草稿同一纪律）。
+  Future<void> _openMaterialPanel() async {
+    await HyperosNavigation.push(
+      context,
+      settings: const RouteSettings(name: '/settings/appearance-editor'),
+      builder: (_) => const _AppearanceEditorScreen(
+        initialMaterialPage: _MaterialSheetBodyState._courseCardPage,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _draft = _timetableProvider.settings;
+    });
   }
 
   void _updateDraft(TimetableSettings next, {bool debounce = false}) {
