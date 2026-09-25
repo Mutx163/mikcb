@@ -1927,6 +1927,7 @@ releaseGithubDownload?.addEventListener("click", (event) => {
 bindGeneralAnalytics();
 
 let schoolsDataPromise;
+let schoolsCounts = null;
 
 function loadSchoolsData() {
   if (!schoolsDataPromise) {
@@ -1942,20 +1943,47 @@ function loadSchoolsData() {
   return schoolsDataPromise;
 }
 
+/* 校方数每天从 qingyu_warehouse 同步一次，会变。文案里不写死数字，
+   统一用 {count} 占位，由这里把当天的真实值喂给 i18n，各语言自动跟上。 */
+function publishSchoolCounts(counts) {
+  const schools = Number(counts?.schools);
+  const generic = Number(counts?.generic);
+  const total = Number(counts?.total);
+  if (!Number.isFinite(schools) || schools <= 0) {
+    return false;
+  }
+  schoolsCounts = { schools, generic, total };
+
+  // 供文案引用。「200+」这类区间说法不随每天的数跳动，搜索结果才稳定。
+  const bucket = Math.floor(schools / 100) * 100;
+  const vars = {
+    schoolCount: String(schools),
+    schoolCountShort: String(schools),
+    schoolCountBucket: `${bucket}+`,
+  };
+  if (window.I18n && typeof window.I18n.setVars === "function") {
+    window.I18n.setVars(vars);
+  }
+  if (typeof window.__mikcbRefreshDynamic === "function") {
+    window.__mikcbRefreshDynamic();
+  }
+  return true;
+}
+
 async function initHeroSchoolCount() {
+  try {
+    const payload = await loadSchoolsData();
+    publishSchoolCounts(payload?.counts);
+  } catch (error) {
+    // 取不到就沿用 HTML 里的兜底文案。
+  }
+
   const countEl = document.getElementById("hero-school-count");
   if (!countEl) {
     return;
   }
-
-  try {
-    const payload = await loadSchoolsData();
-    const schoolCount = Number(payload?.counts?.schools);
-    if (Number.isFinite(schoolCount) && schoolCount > 0) {
-      countEl.textContent = String(schoolCount);
-    }
-  } catch (error) {
-    // Keep the fallback label in HTML.
+  if (schoolsCounts) {
+    countEl.textContent = schoolsCounts.schools;
   }
 }
 
@@ -2274,3 +2302,6 @@ if (window.I18n?.ready) {
 } else {
   bindI18nRefresh();
 }
+
+/* i18n.setVars 注入了学校数之后，需要重刷一遍带占位符的文案。 */
+window.__mikcbRefreshDynamic = refreshDynamicI18n;

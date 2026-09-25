@@ -131,6 +131,18 @@
     return DEFAULT_LOCALE;
   }
 
+  /* 运行时变量：{count} 之类由调用方在 setVars 里注入，供学校数这类
+     每天变的数据使用。变量值随语言切换保留，不需要各处重复传参。 */
+  let runtimeVars = {};
+
+  function setVars(next) {
+    runtimeVars = { ...runtimeVars, ...(next || {}) };
+  }
+
+  function getVars() {
+    return { ...runtimeVars };
+  }
+
   function t(key, vars) {
     const dict = catalogs[currentLocale] || catalogs[DEFAULT_LOCALE] || {};
     const fallback = catalogs[DEFAULT_LOCALE] || {};
@@ -138,11 +150,10 @@
     if (text == null) {
       return null;
     }
-    if (vars && typeof vars === "object") {
-      Object.keys(vars).forEach((name) => {
-        text = text.replaceAll(`{${name}}`, String(vars[name]));
-      });
-    }
+    const merged = { ...runtimeVars, ...(vars || {}) };
+    Object.keys(merged).forEach((name) => {
+      text = text.replaceAll(`{${name}}`, String(merged[name]));
+    });
     return text;
   }
 
@@ -522,6 +533,8 @@
 
   window.I18n = {
     t,
+    setVars,
+    getVars,
     setLocale,
     getLocale: () => currentLocale,
     getLocales: () => SUPPORTED.slice(),

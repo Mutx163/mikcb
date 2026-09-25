@@ -93,7 +93,7 @@ Failed: Error while executing user command. Exited with error code: 126
    而本仓库的 `package.json` 与 `pnpm-lock.yaml` 都在 `site/` 下，根目录什么都没有。
 
 2. **Node 被解析到了预设表之外的版本。** 日志里 Node 装的是 **22.22.0**，
-   但 asdf 列出的可用预设只有 `… 20.19.0 / 22.16.0` —— **22.22.0 不在其中**。
+   但 asdf 列出的可用预设只有 `… 20.19.0 / 22.16.0`，**22.22.0 不在其中**。
    CF 构建镜像的工具（含 pnpm）是**按 Node 预设配套提供**的，Node 落在预设之外
    就一并拿不到 pnpm，于是 `pnpm` 命令根本不存在 → 退出码 126。
    这就是 `NODE_VERSION=22`（会解析成最新的 22.x）比写死 `22.16.0` 更危险的原因。
@@ -104,7 +104,7 @@ Failed: Error while executing user command. Exited with error code: 126
 所以不要指望它自动挑对版本。
 
 **因此推荐**：根目录设成 `site`，并用 `corepack enable` 让 pnpm 版本由
-`site/package.json` 的 `"packageManager": "pnpm@11.22.0"` 决定 —— 与生成
+`site/package.json` 的 `"packageManager": "pnpm@11.22.0"` 决定。这与生成
 `pnpm-lock.yaml` 的版本**严格一致**，避免用镜像默认的 10.x 去装 11.x 生成的锁文件
 而触发 `--frozen-lockfile` 失败。
 
@@ -143,7 +143,7 @@ GET /docs/guide/quick-start/__next.docs.$oc$slug.__PAGE__.txt
 > 关键事实：**那个 `$oc$slug/__PAGE__.txt` 文件确实在构建产物里**（`site/out/…`
 > 下能直接找到），但 **Cloudflare 不服务 `$oc$slug/` 这条路径**。所以规则把一个
 > 404 重写成另一个 404，不可能生效。原注释里「嵌套形式 → 200」很可能是本地
-> `python3 -m http.server --directory site/out` 测出来的——本地文件服务器不介意
+> `python3 -m http.server --directory site/out` 测出来的。本地文件服务器不介意
 > `$`，Cloudflare 介意。
 >
 > 影响面很小：软导航正常（走 `index.txt` / `__next.*.txt`，都是 200），只是控制台
@@ -151,7 +151,7 @@ GET /docs/guide/quick-start/__next.docs.$oc$slug.__PAGE__.txt
 >
 > 要真正修掉只有两条路（都未做）：a) 用 Pages Function + `ASSETS` 绑定自己做
 > 点号形式→`$` 路径的映射（不再指望静态服务器命中）；b) 向 Next / Cloudflare
-> 反馈「`$` 目录名在 Pages 静态资源上 404」。**别再往 `_redirects` 里加规则**——
+> 反馈「`$` 目录名在 Pages 静态资源上 404」。**别再往 `_redirects` 里加规则**，
 > 重写目标本身不可达。
 </Step>
 <Step>
