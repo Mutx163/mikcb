@@ -7244,7 +7244,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveCountdownTextStyleSmartMinS => '智能（英文）';
 
   @override
-  String get liveCountdownTextStyleMinuteSecondCn => '分秒（5分钟19秒）';
+  String get liveCountdownTextStyleMinuteSecondCn => '分秒（5 分钟 19 秒）';
 
   @override
   String get liveCountdownTextStyleMinuteSecondColon => 'mm:ss（05:19）';
@@ -7256,7 +7256,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveCountdownTextStyleMinuteSecondMinSlashS => 'min/s（5min/19s）';
 
   @override
-  String get liveCountdownTextStyleMinuteOnlyCn => '纯分钟（5分钟）';
+  String get liveCountdownTextStyleMinuteOnlyCn => '纯分钟（5 分钟）';
 
   @override
   String get liveCountdownTextStyleMinuteOnlyMin => 'min（5min）';
@@ -7265,7 +7265,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveCountdownTextStyleMinuteOnlySlash => '/min（5/min）';
 
   @override
-  String get liveCountdownTextStyleSecondOnlyCn => '纯秒（5秒）';
+  String get liveCountdownTextStyleSecondOnlyCn => '纯秒（5 秒）';
 
   @override
   String get liveCountdownTextStyleSecondOnlyShort => 's（5s）';
@@ -8242,7 +8242,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hyperosShowcaseKitSubtitle => 'mikcb 澎湃风格组件一览';
 
   @override
-  String get hyperosShowcaseSectionTags => '标签 / 手风琴 / 提示';
+  String get hyperosShowcaseSectionTags => '标签、手风琴、提示';
 
   @override
   String get hyperosShowcaseAccordionSection1 => '第一节';
@@ -8269,7 +8269,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hyperosShowcaseNavRowDetails => '详情';
 
   @override
-  String get hyperosShowcaseSectionSwitchRows => '列表行 · 开关 / 危险';
+  String get hyperosShowcaseSectionSwitchRows => '列表行 · 开关、危险';
 
   @override
   String get hyperosShowcaseSwitchRowSubtitle => '带图标开关行';
@@ -8278,7 +8278,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hyperosShowcaseSwitchRowPlain => '纯文字开关行';
 
   @override
-  String get hyperosShowcaseSectionChoiceRows => '列表行 · 单选 / 选择 / 日期';
+  String get hyperosShowcaseSectionChoiceRows => '列表行 · 单选、选择、日期';
 
   @override
   String get hyperosShowcaseOptionA => '选项 A';
@@ -8361,7 +8361,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hyperosShowcaseNavSettings => '设置';
 
   @override
-  String get hyperosShowcaseSectionEmpty => '空态 / 分割线 / 装饰';
+  String get hyperosShowcaseSectionEmpty => '空态、分割线和装饰';
 
   @override
   String get hyperosShowcaseEmptySubtitle => '列表无数据时的占位';
@@ -9398,7 +9398,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get locationTimeMatchWeekAxisNote =>
-      '说明：首页左侧时间列仍显示课表默认模板；卡片/详情/实况上的钟点以地点匹配结果为准。';
+      '说明：首页左侧时间列仍显示课表默认模板；卡片、详情和实况上的钟点以地点匹配结果为准。';
 
   @override
   String get locationTimeMatchPreviewLabel => '试匹配地点';
@@ -9495,7 +9495,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get locationTimeMatchGroupNameLabel => '地点组名称';
 
   @override
-  String get locationTimeMatchGroupNameHint => '例如：主教学楼 / 其他教学楼';
+  String get locationTimeMatchGroupNameHint => '例如：主教学楼或其他教学楼';
 
   @override
   String get locationTimeMatchBoundSchemeLabel => '绑定时间模板';
@@ -9564,7 +9564,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get locationTimeMatchKeywordLabel => '关键词';
 
   @override
-  String get locationTimeMatchKeywordHint => 'A1 / A主 / 六教';
+  String get locationTimeMatchKeywordHint => 'A1、A主、六教';
 
   @override
   String get locationTimeMatchModeLabel => '匹配模式';
@@ -13223,7 +13223,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get afterSectionLabel => '第幾節後';
 
   @override
-  String get breakDurationMinutesLabel => '休息多久(分)';
+  String get breakDurationMinutesLabel => '休息多久（分）';
 
   @override
   String get fillNumbersValidationMessage => '請把節數和時長填寫為數字';
@@ -20602,7 +20602,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get locationTimeMatchKeywordLabel => '關鍵詞';
 
   @override
-  String get locationTimeMatchKeywordHint => 'A1 / A主 / 六教';
+  String get locationTimeMatchKeywordHint => 'A1、A主、六教';
 
   @override
   String get locationTimeMatchModeLabel => '匹配模式';
@@ -24261,7 +24261,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get afterSectionLabel => '第几節後';
 
   @override
-  String get breakDurationMinutesLabel => '休息多久(分)';
+  String get breakDurationMinutesLabel => '休息多久（分）';
 
   @override
   String get fillNumbersValidationMessage => '請把節數和時長填寫為數字';
@@ -31641,7 +31641,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get locationTimeMatchKeywordLabel => '關鍵字';
 
   @override
-  String get locationTimeMatchKeywordHint => 'A1 / A主 / 六教';
+  String get locationTimeMatchKeywordHint => 'A1、A主、六教';
 
   @override
   String get locationTimeMatchModeLabel => '匹配模式';

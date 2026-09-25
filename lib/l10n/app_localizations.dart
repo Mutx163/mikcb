@@ -13223,7 +13223,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveCountdownTextStyleMinuteSecondCn.
   ///
   /// In zh, this message translates to:
-  /// **'分秒（5分钟19秒）'**
+  /// **'分秒（5 分钟 19 秒）'**
   String get liveCountdownTextStyleMinuteSecondCn;
 
   /// No description provided for @liveCountdownTextStyleMinuteSecondColon.
@@ -13247,7 +13247,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveCountdownTextStyleMinuteOnlyCn.
   ///
   /// In zh, this message translates to:
-  /// **'纯分钟（5分钟）'**
+  /// **'纯分钟（5 分钟）'**
   String get liveCountdownTextStyleMinuteOnlyCn;
 
   /// No description provided for @liveCountdownTextStyleMinuteOnlyMin.
@@ -13265,7 +13265,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveCountdownTextStyleSecondOnlyCn.
   ///
   /// In zh, this message translates to:
-  /// **'纯秒（5秒）'**
+  /// **'纯秒（5 秒）'**
   String get liveCountdownTextStyleSecondOnlyCn;
 
   /// No description provided for @liveCountdownTextStyleSecondOnlyShort.
@@ -14840,7 +14840,7 @@ abstract class AppLocalizations {
   /// No description provided for @hyperosShowcaseSectionTags.
   ///
   /// In zh, this message translates to:
-  /// **'标签 / 手风琴 / 提示'**
+  /// **'标签、手风琴、提示'**
   String get hyperosShowcaseSectionTags;
 
   /// No description provided for @hyperosShowcaseAccordionSection1.
@@ -14894,7 +14894,7 @@ abstract class AppLocalizations {
   /// No description provided for @hyperosShowcaseSectionSwitchRows.
   ///
   /// In zh, this message translates to:
-  /// **'列表行 · 开关 / 危险'**
+  /// **'列表行 · 开关、危险'**
   String get hyperosShowcaseSectionSwitchRows;
 
   /// No description provided for @hyperosShowcaseSwitchRowSubtitle.
@@ -14912,7 +14912,7 @@ abstract class AppLocalizations {
   /// No description provided for @hyperosShowcaseSectionChoiceRows.
   ///
   /// In zh, this message translates to:
-  /// **'列表行 · 单选 / 选择 / 日期'**
+  /// **'列表行 · 单选、选择、日期'**
   String get hyperosShowcaseSectionChoiceRows;
 
   /// No description provided for @hyperosShowcaseOptionA.
@@ -15074,7 +15074,7 @@ abstract class AppLocalizations {
   /// No description provided for @hyperosShowcaseSectionEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'空态 / 分割线 / 装饰'**
+  /// **'空态、分割线和装饰'**
   String get hyperosShowcaseSectionEmpty;
 
   /// No description provided for @hyperosShowcaseEmptySubtitle.
@@ -17046,7 +17046,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchWeekAxisNote.
   ///
   /// In zh, this message translates to:
-  /// **'说明：首页左侧时间列仍显示课表默认模板；卡片/详情/实况上的钟点以地点匹配结果为准。'**
+  /// **'说明：首页左侧时间列仍显示课表默认模板；卡片、详情和实况上的钟点以地点匹配结果为准。'**
   String get locationTimeMatchWeekAxisNote;
 
   /// No description provided for @locationTimeMatchPreviewLabel.
@@ -17200,7 +17200,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchGroupNameHint.
   ///
   /// In zh, this message translates to:
-  /// **'例如：主教学楼 / 其他教学楼'**
+  /// **'例如：主教学楼或其他教学楼'**
   String get locationTimeMatchGroupNameHint;
 
   /// No description provided for @locationTimeMatchBoundSchemeLabel.
@@ -17320,7 +17320,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchKeywordHint.
   ///
   /// In zh, this message translates to:
-  /// **'A1 / A主 / 六教'**
+  /// **'A1、A主、六教'**
   String get locationTimeMatchKeywordHint;
 
   /// No description provided for @locationTimeMatchModeLabel.
