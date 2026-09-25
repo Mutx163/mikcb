@@ -10174,6 +10174,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liquidGlassResetAction => 'デフォルトに戻す';
 
   @override
+  String get liquidGlassResetScopeNotice =>
+      '液体ガラスの調整のみを初期化します。全体材質や他の設定には触れません';
+
+  @override
   String get liquidGlassDarkBoostLabel => 'ダークモードでガラスを暗く';
 
   @override
@@ -10231,6 +10235,12 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get settingsResetConfirmBodyHomeNavigation =>
       'ボトムバーとホームタイトルの設定を既定値に戻します。';
+
+  @override
+  String get settingsResetScopeNoticeAppearance => 'テーマ・フォント・ガラス質感';
+
+  @override
+  String get settingsResetScopeNoticeTimetablePage => '表示と背景（壁紙も消去）';
 
   @override
   String get settingsResetDoneMessage => '設定がリセットされました';

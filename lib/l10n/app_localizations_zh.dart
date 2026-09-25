@@ -9876,6 +9876,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liquidGlassResetAction => '恢复默认';
 
   @override
+  String get liquidGlassResetScopeNotice => '只恢复液态玻璃的调参，不动整体材质与其他设置';
+
+  @override
   String get liquidGlassDarkBoostLabel => '深色模式玻璃更暗';
 
   @override
@@ -9926,6 +9929,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBodyHomeNavigation => '将把底栏与首页标题设置恢复为默认值。';
+
+  @override
+  String get settingsResetScopeNoticeAppearance => '主题、字体与玻璃质感';
+
+  @override
+  String get settingsResetScopeNoticeTimetablePage => '课表显示与背景（含清除壁纸）';
 
   @override
   String get settingsResetDoneMessage => '设置已重置';
@@ -20908,6 +20917,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liquidGlassResetAction => '還原預設';
 
   @override
+  String get liquidGlassResetScopeNotice => '只還原液態玻璃的參數，不動整體材質與其他設定';
+
+  @override
   String get liquidGlassDarkBoostLabel => '深色模式玻璃更暗';
 
   @override
@@ -20958,6 +20970,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get settingsResetConfirmBodyHomeNavigation => '將把底欄與首頁標題設定恢復為預設值。';
+
+  @override
+  String get settingsResetScopeNoticeAppearance => '主題、字體與玻璃質感';
+
+  @override
+  String get settingsResetScopeNoticeTimetablePage => '課表顯示與背景（含清除壁紙）';
 
   @override
   String get settingsResetDoneMessage => '設定已重設';
@@ -31940,6 +31958,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liquidGlassResetAction => '還原預設';
 
   @override
+  String get liquidGlassResetScopeNotice => '只恢復液態玻璃的參數，不動整體材質與其他設定';
+
+  @override
   String get liquidGlassDarkBoostLabel => '深色模式玻璃更暗';
 
   @override
@@ -31990,6 +32011,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settingsResetConfirmBodyHomeNavigation => '將把底欄與首頁標題設定恢復為預設值。';
+
+  @override
+  String get settingsResetScopeNoticeAppearance => '主題、字體與玻璃質感';
+
+  @override
+  String get settingsResetScopeNoticeTimetablePage => '課表顯示與背景（含清除壁紙）';
 
   @override
   String get settingsResetDoneMessage => '設定已重設';

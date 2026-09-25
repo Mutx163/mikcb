@@ -300,4 +300,51 @@ void main() {
     expect(find.text('子页顶栏'), findsNothing);
     expect(find.text('首页玻璃带'), findsWidgets);
   });
+
+  testWidgets('液态「恢复默认」只在自定义档出现，并自带一句范围说明', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    _seedPrefs(TimetableSettings.defaults());
+
+    await _openMaterialPanel(tester);
+    // 出厂高斯：「高级材质」整节不渲染（液态才显示），恢复按钮自然不在
+    //（find.text 只认全文，页尾的「恢复默认设置」不算它）。
+    expect(find.text('高级材质'), findsNothing);
+    expect(find.text('恢复默认'), findsNothing);
+
+    // 总闸切到液态玻璃：高级材质节出现。
+    await tester.tap(find.text('液态玻璃').first);
+    await tester.pumpAndSettle();
+    expect(find.text('高级材质'), findsOneWidget);
+
+    // 标准档：按钮与提示还不在。
+    expect(find.text('恢复默认'), findsNothing);
+
+    // 自定义档：按钮出现，并自带一句范围说明。
+    await tester.ensureVisible(find.text('自定义'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('自定义'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('恢复默认'), findsOneWidget);
+    expect(
+      find.text('只恢复液态玻璃的调参，不动整体材质与其他设置'),
+      findsOneWidget,
+      reason: '按钮自带作用范围：别让人以为整体材质也会被一起恢复',
+    );
+  });
+
+  testWidgets('课表页面页尾「恢复默认」带一句范围说明（含清除壁纸）', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    _seedPrefs(TimetableSettings.defaults());
+
+    await _openTimetablePageSettings(tester);
+    await _scrollTo(tester, find.text('恢复默认设置'));
+    expect(
+      find.text('课表显示与背景（含清除壁纸）'),
+      findsOneWidget,
+      reason: '清壁纸是点下去才在确认弹窗里看到的意外项，行上先说一句',
+    );
+  });
 }

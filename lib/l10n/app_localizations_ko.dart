@@ -10219,6 +10219,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liquidGlassResetAction => '기본값으로 초기화';
 
   @override
+  String get liquidGlassResetScopeNotice =>
+      '액체 유리 튜닝만 초기화하며, 전체 재질과 다른 설정은 건드리지 않습니다';
+
+  @override
   String get liquidGlassDarkBoostLabel => '다크 모드에서 유리 어둡게';
 
   @override
@@ -10276,6 +10280,12 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get settingsResetConfirmBodyHomeNavigation =>
       '하단 바와 홈 제목 설정을 기본값으로 되돌립니다.';
+
+  @override
+  String get settingsResetScopeNoticeAppearance => '테마·글꼴·유리 질감';
+
+  @override
+  String get settingsResetScopeNoticeTimetablePage => '표시와 배경(배경화면 포함 삭제)';
 
   @override
   String get settingsResetDoneMessage => '설정이 초기화되었습니다';

@@ -17911,6 +17911,12 @@ abstract class AppLocalizations {
   /// **'恢复默认'**
   String get liquidGlassResetAction;
 
+  /// No description provided for @liquidGlassResetScopeNotice.
+  ///
+  /// In zh, this message translates to:
+  /// **'只恢复液态玻璃的调参，不动整体材质与其他设置'**
+  String get liquidGlassResetScopeNotice;
+
   /// No description provided for @liquidGlassDarkBoostLabel.
   ///
   /// In zh, this message translates to:
@@ -18012,6 +18018,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'将把底栏与首页标题设置恢复为默认值。'**
   String get settingsResetConfirmBodyHomeNavigation;
+
+  /// No description provided for @settingsResetScopeNoticeAppearance.
+  ///
+  /// In zh, this message translates to:
+  /// **'主题、字体与玻璃质感'**
+  String get settingsResetScopeNoticeAppearance;
+
+  /// No description provided for @settingsResetScopeNoticeTimetablePage.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表显示与背景（含清除壁纸）'**
+  String get settingsResetScopeNoticeTimetablePage;
 
   /// No description provided for @settingsResetDoneMessage.
   ///

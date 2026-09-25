@@ -757,18 +757,35 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                    child: HyperosButton(
-                      label: l10n.liquidGlassResetAction,
-                      variant: HyperosButtonVariant.secondary,
-                      expand: true,
-                      onPressed: () {
-                        _updateDraft(
-                          _draft.copyWith(
-                            liquidGlassPreset: LiquidGlassPreset.standard,
-                            liquidGlassTuning: LiquidGlassTuning.defaults,
-                          ),
-                        );
-                      },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        HyperosButton(
+                          label: l10n.liquidGlassResetAction,
+                          variant: HyperosButtonVariant.secondary,
+                          expand: true,
+                          onPressed: () {
+                            _updateDraft(
+                              _draft.copyWith(
+                                liquidGlassPreset: LiquidGlassPreset.standard,
+                                liquidGlassTuning: LiquidGlassTuning.defaults,
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        // 一句范围说明（2026-09-25 审计采纳）：这颗按钮只动液态
+                        // 调参，别让人以为会把整体材质也一起恢复了。
+                        Text(
+                          l10n.liquidGlassResetScopeNotice,
+                          style: HyperosTypography.listDetail(sheetContext)
+                              .copyWith(
+                                color: HyperosColors.secondaryText(
+                                  sheetContext,
+                                ),
+                              ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

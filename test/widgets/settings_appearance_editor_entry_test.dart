@@ -116,4 +116,44 @@ void main() {
     expect(find.text('调整壁纸'), findsOneWidget);
     expect(find.text('材质'), findsOneWidget);
   });
+
+  testWidgets('外观页尾「恢复默认」带一句范围说明（整套玻璃材质在内）', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    _seedPrefs(TimetableSettings.defaults());
+
+    final provider = await createInitializedTestProvider(tester);
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(home: TimetableSettingsScreen()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // 设置首页 → 「外观与配色」子页。
+    final homeList = find.byType(HyperosListView).first;
+    await tester.scrollUntilVisible(
+      find.text('外观与配色'),
+      200,
+      scrollable: find
+          .descendant(of: homeList, matching: find.byType(Scrollable))
+          .first,
+    );
+    await tester.tap(find.text('外观与配色'));
+    await tester.pumpAndSettle();
+
+    // 页尾「恢复默认」：整套玻璃材质的恢复入口在这一页（2026-09-22 起归
+    // 「外观」作用域），行上先说清范围，不用等确认弹窗。
+    final pageList = find.byType(HyperosListView).last;
+    await tester.scrollUntilVisible(
+      find.text('恢复默认设置'),
+      200,
+      scrollable: find
+          .descendant(of: pageList, matching: find.byType(Scrollable))
+          .first,
+    );
+    expect(find.text('主题、字体与玻璃质感'), findsOneWidget, reason: '范围说明挂在恢复默认行的副行上');
+  });
 }

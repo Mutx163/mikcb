@@ -185,12 +185,25 @@ class _SettingsResetTile extends StatelessWidget {
           children: [
             HyperosListTile(
               title: l10n.settingsResetDefaultsTitle,
+              subtitle: _scopeNote(l10n),
               onTap: () => _confirm(context, l10n),
             ),
           ],
         ),
       ],
     );
+  }
+
+  /// 标题下那句作用范围（2026-09-25 审计采纳）：只给两个「会顺手清掉本页看
+  /// 不出的东西」的作用域 —— 外观页连带整套玻璃材质、课表页连带清壁纸，都要
+  /// 点下去、到确认弹窗才看得见。其余三页范围与页面标题重合，不加（宁少勿多）。
+  String? _scopeNote(AppLocalizations l10n) {
+    return switch (scope) {
+      SettingsResetScope.appearance => l10n.settingsResetScopeNoticeAppearance,
+      SettingsResetScope.timetablePage =>
+        l10n.settingsResetScopeNoticeTimetablePage,
+      _ => null,
+    };
   }
 
   /// 按作用域枚举将被重置的内容。共用一句「重置所有设置」会谎报范围，

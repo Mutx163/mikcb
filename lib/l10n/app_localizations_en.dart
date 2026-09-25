@@ -10471,6 +10471,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liquidGlassResetAction => 'Reset to Default';
 
   @override
+  String get liquidGlassResetScopeNotice =>
+      'Restores the liquid-glass tuning only; the master material and other settings stay untouched';
+
+  @override
   String get liquidGlassDarkBoostLabel => 'Darker glass in dark mode';
 
   @override
@@ -10529,6 +10533,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsResetConfirmBodyHomeNavigation =>
       'This resets bottom bar and home title settings to their defaults.';
+
+  @override
+  String get settingsResetScopeNoticeAppearance =>
+      'Theme, font and glass material';
+
+  @override
+  String get settingsResetScopeNoticeTimetablePage =>
+      'Schedule display and background (clears the wallpaper)';
 
   @override
   String get settingsResetDoneMessage => 'Settings have been reset';
