@@ -11304,7 +11304,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get coupleWebdavTitle => '堅果雲拉取';
 
   @override
-  String get coupleWebdavSubtitle => '登入對方的坚果雲帳號即可取得其課表，與「雲同步」帳號互不影響';
+  String get coupleWebdavSubtitle => '登入對方的堅果雲帳號即可取得其課表，與「雲同步」帳號互不影響';
 
   @override
   String get coupleWebdavNotConnected => '尚未連接堅果雲';
@@ -11340,7 +11340,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get coupleWebdavLoginSheetTitle => '連接堅果雲（情侶課表）';
 
   @override
-  String get coupleWebdavLoginSheetSubtitle => '請使用坚果雲應用專用密碼，對方需先將課表上傳到約定路徑';
+  String get coupleWebdavLoginSheetSubtitle => '請使用堅果雲應用專用密碼，對方需先將課表上傳到約定路徑';
 
   @override
   String get coupleWebdavConfirmConnect => '連接並拉取';
@@ -11409,7 +11409,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudSyncIntroTitle => '多裝置同步';
 
   @override
-  String get cloudSyncIntroSubtitle => '配置坚果雲 WebDAV 後，多裝置間自動同步課表與設定';
+  String get cloudSyncIntroSubtitle => '設定堅果雲 WebDAV 後，多裝置間自動同步課表與設定';
 
   @override
   String get cloudSyncSettingsSectionTitle => '同步設定';
@@ -11445,7 +11445,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudSyncAccountTitle => '帳號設定';
 
   @override
-  String get cloudSyncAccountSubtitle => '請使用坚果雲應用專用密碼（非登入密碼），快照含倉庫記住的學校帳號';
+  String get cloudSyncAccountSubtitle => '請使用堅果雲應用專用密碼（非登入密碼），快照含倉庫記住的學校帳號';
 
   @override
   String get cloudSyncUsernameLabel => '電郵 / 用戶名稱';
@@ -12047,7 +12047,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get feedbackTitle => '問題回饋';
 
   @override
-  String get feedbackIntro => '如果你遇到崩溃、課程顯示異常、匯入問題，或者想提交功能建議，可以通過下面這些渠道反饋';
+  String get feedbackIntro => '如果你遇到崩潰、課程顯示異常、匯入問題，或者想提交功能建議，可以通過下面這些渠道反饋';
 
   @override
   String get feedbackIssueHint => '涉及複現步驟、截圖、版本號和日誌的問題，建議優先走 GitHub Issue';
@@ -12454,7 +12454,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get migrationTitle => '遷移舊資料';
 
   @override
-  String get migrationSafeTitle => '別擔心，這不是資料丢失';
+  String get migrationSafeTitle => '別擔心，這不是資料丟失';
 
   @override
   String get migrationSafeSubtitle =>
@@ -12543,16 +12543,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get saveToGallery => '保存到相冊';
 
   @override
-  String get supportCompleteThanks => '感谢你支持輕嶼課表繼續打磨 ❤️';
+  String get supportCompleteThanks => '感謝你支持輕嶼課表繼續打磨 ❤️';
 
   @override
   String get supportConfirmed => '我已經支持了';
 
   @override
-  String get donorListTitle => '鳴谢名單';
+  String get donorListTitle => '鳴謝名單';
 
   @override
-  String get donorListLoadFailed => '暫時無法加載在線鳴谢名單';
+  String get donorListLoadFailed => '暫時無法加載在線鳴謝名單';
 
   @override
   String get reloadAction => '重新加載';
@@ -14474,7 +14474,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get guideImportMethodsSubtitle =>
-      '目前版本已經支持部分學校的教務系統網頁登入導入；如果你的學校還没適配，也還有其他遷移方式';
+      '目前版本已經支持部分學校的教務系統網頁登入匯入；如果你的學校還沒適配，也還有其他遷移方式';
 
   @override
   String get guideImportMethodStep1 =>
@@ -14482,7 +14482,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get guideImportMethodStep2 =>
-      '如果你的學校暫時没有適配，可以先在其他課表應用裡導入教務系統課程，再導出日歷格式，最後回到本應用導入。';
+      '如果你的學校暫時沒有適配，可以先在其他課表應用裡匯入教務系統課程，再匯出日歷格式，最後回到本應用匯入。';
 
   @override
   String get guideImportMethodStep3 =>
@@ -14527,22 +14527,22 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get guidePrivacyParagraph3 =>
-      '本應用接入友盟移動統計 SDK、友盟應用性能監控 SDK 以及高級運營分析依赖庫。它們的服務用途包括移動統計分析、應用性能監控以及高級運營分析相關能力；只有在你勾選同意後，這些 SDK 才會正式初始化。';
+      '本應用接入友盟移動統計 SDK、友盟應用性能監控 SDK 以及高級運營分析依賴庫。它們的服務用途包括移動統計分析、應用性能監控以及高級運營分析相關能力；只有在你勾選同意後，這些 SDK 才會正式初始化。';
 
   @override
   String get guidePrivacyParagraph4 =>
-      '按友盟官方說明，這些 SDK 可能處理的資訊包括：裝置資訊（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、網路狀態、裝置標識，以及高級運營分析依赖庫涉及的應用列表和地理位置相關資訊。';
+      '按友盟官方說明，這些 SDK 可能處理的資訊包括：裝置資訊（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、網絡狀態、裝置標識，以及高級運營分析依賴庫涉及的應用列表和地理位置相關資訊。';
 
   @override
   String get guideRiskTitle => '免責與風險提示';
 
   @override
   String get guideRiskParagraph1 =>
-      '1. 超級島、焦點通知、後台提醒和保活效果依赖系統版本、機型、廠商策略、權限、自啟動、電池策略等外部條件，無法保證所有裝置表現完全一致。';
+      '1. 超級島、焦點通知、後臺提醒和保活效果依賴系統版本、機型、廠商策略、權限、自啟動、電池策略等外部條件，無法保證所有裝置表現完全一致。';
 
   @override
   String get guideRiskParagraph2 =>
-      '2. 檢查更新、鏡像下載、系統下載器、導入導出與分享等能力依赖網路環境、第三方服務和系統文件能力；若出現失敗、限速或文件異常，請以 Release 頁面、你自己保存的備份文件和系統提示為準。';
+      '2. 檢查更新、鏡像下載、系統下載器、匯入匯出與分享等能力依賴網絡環境、第三方服務和系統檔案能力；若出現失敗、限速或檔案異常，請以 Release 頁面、你自己儲存的備份檔案和系統提示為準。';
 
   @override
   String get guideRiskParagraph3 =>
@@ -14553,26 +14553,26 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
       '友盟隱私政策：https://www.umeng.com/page/policy';
 
   @override
-  String get liveDiagnosticsUnavailable => '目前還没有可查看的超級島診斷日誌';
+  String get liveDiagnosticsUnavailable => '目前還沒有可檢視的超級島診斷日誌';
 
   @override
   String get liveDiagnosticsViewerTitle => '超級島診斷日誌';
 
   @override
-  String get liveDiagnosticsShareText => '這是輕嶼課表導出的超級島診斷日誌，可用于排查“超級島没有彈出”等問題';
+  String get liveDiagnosticsShareText => '這是輕嶼課表匯出的超級島診斷日誌，可用於排查“超級島沒有彈出”等問題';
 
   @override
   String get liveDiagnosticsShareSubject => '輕嶼課表 - 超級島診斷日誌';
 
   @override
   String get liveDiagnosticsSnapshotShareText =>
-      '這是輕嶼課表目前測試診斷頁導出的超級島狀態快照，可用于排查“超級島没有彈出”等問題';
+      '這是輕嶼課表目前測試診斷頁匯出的超級島狀態快照，可用於排查“超級島沒有彈出”等問題';
 
   @override
   String get liveDiagnosticsSnapshotShareSubject => '輕嶼課表 - 超級島狀態快照';
 
   @override
-  String get liveDiagnosticsNothingToExport => '目前没有可導出的日誌文件，也没有可導出的狀態快照';
+  String get liveDiagnosticsNothingToExport => '目前沒有可匯出的日誌檔案，也沒有可匯出的狀態快照';
 
   @override
   String get liveDiagnosticsCleared => '已清空超級島診斷日誌，後續會重新開始收集';
@@ -14605,10 +14605,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveTestingSessionCanceled => '已取消自檢測試';
 
   @override
-  String get liveTestingUmengHint => '下面兩個按鈕僅測試版顯示，用于驗證友盟 U-APM 崩溃和卡頓上報';
+  String get liveTestingUmengHint => '下面兩個按鈕僅測試版顯示，用於驗證友盟 U-APM 崩潰和卡頓上報';
 
   @override
-  String get liveTestingCrashAction => '崩溃測試';
+  String get liveTestingCrashAction => '崩潰測試';
 
   @override
   String get liveTestingAnrAction => '異常卡頓測試';
@@ -14723,14 +14723,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveTestingCurrentNativeFieldsSubtitle => '顯示目前原生診斷字段';
 
   @override
-  String get liveTestingCrashSoon => '即將觸發友盟 U-APM 測試崩溃，請重新打開應用查看後台是否收到上報';
+  String get liveTestingCrashSoon => '即將觸發友盟 U-APM 測試崩潰，請重新打開應用檢視後臺是否收到上報';
 
   @override
   String get liveTestingAnrSoon =>
       '即將觸發約 30 秒主線程卡死，請脫離 flutter run 測試，並在卡死後重新打開應用查看友盟後台';
 
   @override
-  String get liveTestingNoCourseAvailable => '目前没有可測試的課程';
+  String get liveTestingNoCourseAvailable => '目前沒有可測試的課程';
 
   @override
   String get liveTestingPresetArmedButHidden =>
@@ -14979,7 +14979,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get layoutHideWeekendsTitle => '隱藏周六周日';
 
   @override
-  String get layoutHideWeekendsSubtitle => '開啟後首頁只顯示周一到周五，剩餘列宽會自動鋪滿';
+  String get layoutHideWeekendsSubtitle => '開啟後首頁只顯示週一到週五，剩餘列寬會自動鋪滿';
 
   @override
   String get layoutEnableHapticsTitle => '啟用應用內震動反饋';
@@ -15007,7 +15007,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get layoutTimeColumnDisplayLabel => '首頁時間列顯示';
 
   @override
-  String get layoutTimeColumnWidthLabel => '時間欄宽度';
+  String get layoutTimeColumnWidthLabel => '時間欄寬度';
 
   @override
   String get layoutBackToCurrentWeekButtonStyleLabel => '「返回本週」按鈕樣式';
@@ -15333,7 +15333,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get aboutMirrorDisabledHint =>
-      '目前没有使用國內下載，所以這裡的線路設定暫時不會生效，需要的話，請先在上面的“下載方式”裡切回國內下載';
+      '目前沒有使用國內下載，所以這裡的線路設定暫時不會生效，需要的話，請先在上面的“下載方式”裡切回國內下載';
 
   @override
   String get aboutRecentProbeResultsTitle => '最近測速結果';
@@ -15348,7 +15348,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutCheckPrereleaseTitle => '檢測測試版本';
 
   @override
-  String get aboutCheckPrereleaseSubtitle => '打開後會把測試版也纳入更新檢查；普通使用建議關閉';
+  String get aboutCheckPrereleaseSubtitle => '打開後會把測試版也納入更新檢查；普通使用建議關閉';
 
   @override
   String get aboutUpdatePromptTitle => '彈窗提醒';
@@ -15360,7 +15360,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutDiagnosticsTitle => '測試與診斷';
 
   @override
-  String get aboutDiagnosticsSubtitle => '只有遇到“超級島没彈出”或需要給開發者反饋時再展開';
+  String get aboutDiagnosticsSubtitle => '只有遇到“超級島沒彈出”或需要給開發者反饋時再展開';
 
   @override
   String get aboutRecordDiagnosticsTitle => '記錄應用日誌';
@@ -15384,10 +15384,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutLiveDiagnosticsDisabled => '已關閉超級島診斷日誌';
 
   @override
-  String get aboutNoDiagnosticsExportYet => '還没有可匯出的超級島診斷日誌';
+  String get aboutNoDiagnosticsExportYet => '還沒有可匯出的超級島診斷日誌';
 
   @override
-  String get aboutProbeNoMirrorFound => '測速完成，但暫時没有發現可用鏡像線路';
+  String get aboutProbeNoMirrorFound => '測速完成，但暫時沒有發現可用鏡像線路';
 
   @override
   String aboutProbeCurrentFastest(String label) {
@@ -15416,7 +15416,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutSetMirrorSourceTitle => '設定鏡像源';
 
   @override
-  String get aboutMirrorPrefixLabel => '鏡像前缀';
+  String get aboutMirrorPrefixLabel => '鏡像前綴';
 
   @override
   String get aboutMirrorPrefixInvalid => '鏡像源格式不正確，請輸入完整的 http 或 https 地址';
@@ -15428,7 +15428,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutDownloadCancelled => '已取消下載';
 
   @override
-  String get aboutInstallReady => '安裝包已準備好，已嘗試打開安裝界面；如果系統没有彈出，請稍後從通知或文件管理器手動安裝';
+  String get aboutInstallReady => '安裝包已準備好，已嘗試打開安裝介面；如果系統沒有彈出，請稍後從通知或檔案管理器手動安裝';
 
   @override
   String get aboutUpdatePackageTitle => '輕嶼課表更新包';
@@ -15468,7 +15468,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutDismissDialogAction => '關閉彈窗';
 
   @override
-  String get aboutContributorsScreenTitle => '代碼贡獻者';
+  String get aboutContributorsScreenTitle => '代碼貢獻者';
 
   @override
   String get aboutDevelopersTitle => '開發人員';
@@ -15489,7 +15489,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get aboutWarehouseMaintainersEmpty => '目前還没有讀取到適配者資訊';
+  String get aboutWarehouseMaintainersEmpty => '目前還沒有讀取到適配者資訊';
 
   @override
   String aboutWarehouseMaintainerCount(int count) {
@@ -15538,7 +15538,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get importNoCourseChanges => '没有需要新增或更新的課程';
+  String get importNoCourseChanges => '沒有需要新增或更新的課程';
 
   @override
   String get aiImportTitle => '識圖匯入';
@@ -15564,7 +15564,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aiWorkflowCompactSubtitle => '豆包專家模式 -> 複制 JSON -> 選擇開學日期';
 
   @override
-  String get aiWorkflowTitle => '複制提示詞 -> 豆包識圖 -> 粘贴 JSON -> 匯入';
+  String get aiWorkflowTitle => '複制提示詞 -> 豆包識圖 -> 貼上 JSON -> 匯入';
 
   @override
   String get aiWorkflowSubtitle =>
@@ -15592,7 +15592,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get jsonLabelShort => 'JSON';
 
   @override
-  String get aiPasteJsonTitle => '粘贴 AI 返回的 JSON';
+  String get aiPasteJsonTitle => '貼上 AI 返回的 JSON';
 
   @override
   String aiCourseCountChip(int count) {
@@ -15603,11 +15603,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aiParseFailedChip => '解析失敗';
 
   @override
-  String get aiPasteJsonHintShort => '粘贴 AI 返回的 JSON';
+  String get aiPasteJsonHintShort => '貼上 AI 返回的 JSON';
 
   @override
   String get aiPasteJsonHintLong =>
-      '把豆包返回的 JSON 原樣粘贴到這裡，然後點擊匯入，支持純 JSON，也兼容 ```json 代碼塊';
+      '把豆包返回的 JSON 原樣貼到這裡，然後點擊匯入，支持純 JSON，也兼容 ```json 代碼塊';
 
   @override
   String get detailAction => '詳情';
@@ -15620,7 +15620,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get aiWorkflowFooter =>
-      '複制提示詞 -> 豆包發送截圖和提示詞 -> 把 JSON 贴回這裡 -> 點擊匯入 -> 選擇開學日期';
+      '複制提示詞 -> 豆包發送截圖和提示詞 -> 把 JSON 貼回這裡 -> 點擊匯入 -> 選擇開學日期';
 
   @override
   String get previewAction => '預覽';
@@ -15632,7 +15632,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get promptCopiedHint => '提示詞已複制，去豆包發送截圖和提示詞';
 
   @override
-  String get clipboardNoText => '剪贴板裡没有可用文本';
+  String get clipboardNoText => '剪貼板裡沒有可用文本';
 
   @override
   String get aiPromptSheetTitle => '識圖提示詞';
@@ -15645,10 +15645,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aiPreviewTitle => '解析預覽';
 
   @override
-  String get aiPasteJsonFirst => '請先粘贴 AI 返回的 JSON';
+  String get aiPasteJsonFirst => '請先貼上 AI 返回的 JSON';
 
   @override
-  String get aiParseFailedIncompleteJson => '解析失敗，請確認粘贴的是完整 JSON';
+  String get aiParseFailedIncompleteJson => '解析失敗，請確認貼上的是完整 JSON';
 
   @override
   String get importAiResultTitle => '匯入 AI 解析結果';
@@ -15659,7 +15659,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get importConfirmSemesterMappingSubtitleAi =>
-      '請選擇學校校歷的開學日期，再確認課表裡的第 1 周對應校歷第幾周，如果學校第一周没課，這裡通常要改成第 2 周';
+      '請選擇學校校歷的開學日期，再確認課表裡的第 1 週對應校歷第幾週，如果學校第一週沒課，這裡通常要改成第 2 週';
 
   @override
   String aiWarningExtraSuffix(int count) {
@@ -15667,11 +15667,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get pasteAction => '粘贴';
+  String get pasteAction => '貼上';
 
   @override
   String get importConfirmSemesterMappingSubtitleWarehouse =>
-      '教務脚本已返回課程周次，請確認校歷開學日期；如果學校前幾周没有課，可把“課表第 1 周”對應到校歷後面的周次';
+      '教務腳本已返回課程週次，請確認校歷開學日期；如果學校前幾週沒有課，可把“課表第 1 週”對應到校歷後面的週次';
 
   @override
   String aiPreviewCourseCount(int count) {
@@ -15695,7 +15695,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get warehouseMissingSchoolTitle => '學校列表裡没有你的學校？';
+  String get warehouseMissingSchoolTitle => '學校列表裡沒有你的學校？';
 
   @override
   String get warehouseMissingSchoolSubtitle =>
@@ -15740,7 +15740,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get clearSearchTooltip => '清空';
 
   @override
-  String get noMatchingSchools => '没有找到匹配的學校或適配器';
+  String get noMatchingSchools => '沒有找到匹配的學校或適配器';
 
   @override
   String get noAvailableSchools => '暫無可用學校';
@@ -15753,7 +15753,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String deleteDebugRecordMessage(String name) {
-    return '確認刪除“$name”？刪除後不會蠅响已經匯入的課程';
+    return '確認刪除“$name”？刪除後不會影響已經匯入的課程';
   }
 
   @override
@@ -15768,7 +15768,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get localDebugMaintainer => '本地偵錯';
 
   @override
-  String get customDebugDescription => '用戶保存的自定義教務偵錯脚本';
+  String get customDebugDescription => '用戶儲存的自定義教務偵錯腳本';
 
   @override
   String get addDebugRecordTooltip => '新增偵錯記錄';
@@ -15783,14 +15783,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get addDebugRecordAction => '新增偵錯記錄';
 
   @override
-  String get noSavedDebugRecords => '還没有保存的偵錯記錄';
+  String get noSavedDebugRecords => '還沒有儲存的偵錯記錄';
 
   @override
-  String get noSavedDebugRecordsHint => '先新增一條，把網址和脚本贴進去，以後就能直接複用';
+  String get noSavedDebugRecordsHint => '先新增一條，把網址和腳本貼進去，以後就能直接複用';
 
   @override
   String debugScriptLength(int count) {
-    return '脚本 $count 字符';
+    return '腳本 $count 字符';
   }
 
   @override
@@ -15800,16 +15800,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get editAction => '編輯';
 
   @override
-  String get scriptFileReadFailed => '無法讀取脚本文件';
+  String get scriptFileReadFailed => '無法讀取腳本檔案';
 
   @override
   String scriptFileImported(String name) {
-    return '已匯入脚本文件：$name';
+    return '已匯入腳本檔案：$name';
   }
 
   @override
   String scriptFileImportFailed(String error) {
-    return '匯入脚本文件失敗：$error';
+    return '匯入腳本檔案失敗：$error';
   }
 
   @override
@@ -15819,7 +15819,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get invalidImportUrl => '請輸入有效的教務網址';
 
   @override
-  String get debugScriptRequired => '請先填寫或匯入脚本';
+  String get debugScriptRequired => '請先填寫或匯入腳本';
 
   @override
   String get editDebugRecordTitle => '編輯偵錯記錄';
@@ -15831,7 +15831,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get savingAction => '保存中…';
 
   @override
-  String get debugRecordFormula => '一條記錄 = 一個網址 + 一段脚本';
+  String get debugRecordFormula => '一條記錄 = 一個網址 + 一段腳本';
 
   @override
   String get debugRecordFormulaSubtitle => '適合反覆調試同一學校或多套腳本，儲存後長期保留';
@@ -15846,13 +15846,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get importUrlLabel => '教務網址';
 
   @override
-  String get debugScriptLabel => '偵錯脚本';
+  String get debugScriptLabel => '偵錯腳本';
 
   @override
   String get importFromFileAction => '從文件匯入';
 
   @override
-  String get debugScriptHint => '把瀏覽器擴展匯出的完整脚本粘贴到這裡';
+  String get debugScriptHint => '把瀏覽器擴展匯出的完整腳本貼到這裡';
 
   @override
   String get saveDebugRecordAction => '保存偵錯記錄';
@@ -15977,7 +15977,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get savedImportUrlHint => '已保存教務網址，下次可直接匯入';
 
   @override
-  String get adapterIntroSubtitle => '可查看適配器資訊、登入入口與脚本狀態';
+  String get adapterIntroSubtitle => '可檢視適配器資訊、登入入口與腳本狀態';
 
   @override
   String get schoolLabel => '學校';
@@ -15992,7 +15992,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get adapterInfoTitle => '適配器資訊';
 
   @override
-  String get scriptPathLabel => '脚本路徑';
+  String get scriptPathLabel => '腳本路徑';
 
   @override
   String get loginEntryLabel => '登入入口';
@@ -16007,15 +16007,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get repositoryLabel => '倉庫';
 
   @override
-  String get scriptStatusTitle => '脚本狀態';
+  String get scriptStatusTitle => '腳本狀態';
 
   @override
   String scriptLoadedLength(int count) {
-    return '脚本已成功讀取，長度 $count 字符';
+    return '腳本已成功讀取，長度 $count 字符';
   }
 
   @override
-  String get scriptEmpty => '脚本為空';
+  String get scriptEmpty => '腳本為空';
 
   @override
   String get openLoginInAppAction => '應用內打開登入入口';
@@ -16030,10 +16030,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get copyLoginAddressAction => '複制登入地址';
 
   @override
-  String get copiedScriptRawUrl => '已複制脚本原始地址';
+  String get copiedScriptRawUrl => '已複制腳本原始地址';
 
   @override
-  String get copyScriptAddressAction => '複制脚本地址';
+  String get copyScriptAddressAction => '複制腳本地址';
 
   @override
   String get customLoginAddressAction => '自定義登入地址';
@@ -16177,7 +16177,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String courseDialogNotThisWeekHint(int week) {
-    return '目前查看第 $week 周，這門課這周没有上課，因此不能按“本周這節”調課';
+    return '目前檢視第 $week 週，這門課這週沒有上課，因此不能按“本週這節”調課';
   }
 
   @override
@@ -18224,7 +18224,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get examReminderCustomInvalid => '請設置大于 0 的提醒時間';
 
   @override
-  String get examReminderCustomEmptyHint => '還没有自定義提醒，點下方添加';
+  String get examReminderCustomEmptyHint => '還沒有自定義提醒，點下方添加';
 
   @override
   String get debugCopiedJson => '已複製 JSON';
@@ -18350,19 +18350,19 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get timetableTimeColumnWidthNarrow => '窄';
 
   @override
-  String get timetableTimeColumnWidthWide => '宽';
+  String get timetableTimeColumnWidthWide => '寬';
 
   @override
   String get timetableCourseSpacingNarrow => '窄';
 
   @override
-  String get timetableCourseSpacingWide => '宽';
+  String get timetableCourseSpacingWide => '寬';
 
   @override
   String get appUpdateDownloadSourceOriginal => 'GitHub 原版';
 
   @override
-  String get appUpdateDownloadSourceMirror => '國內镜像';
+  String get appUpdateDownloadSourceMirror => '國內鏡像';
 
   @override
   String get appUpdateDownloadChannelPgyer => '蒲公英下載';
@@ -18374,7 +18374,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get appUpdateDownloadChannelPgyerDescription => '國內高速下載，推薦使用';
 
   @override
-  String get appUpdateDownloadChannelGithubDescription => 'GitHub 原生 + 國內镜像';
+  String get appUpdateDownloadChannelGithubDescription => 'GitHub 原生 + 國內鏡像';
 
   @override
   String get appUpdateDownloadChannelGitcode => 'GitCode 直連';
@@ -19098,7 +19098,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String holidayLogBackgroundNoData(int year) {
-    return '$year年：後台更新未获取到新數據';
+    return '$year年：後臺更新未獲取到新資料';
   }
 
   @override
@@ -19111,7 +19111,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String holidayLogPrimaryApiStatus(int statusCode) {
-    return '主 API 响應 $statusCode，跳過';
+    return '主 API 響應 $statusCode，跳過';
   }
 
   @override
@@ -19134,7 +19134,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String holidayLogFallbackApiStatus(int statusCode) {
-    return '備用 API 响應 $statusCode，跳過';
+    return '備用 API 響應 $statusCode，跳過';
   }
 
   @override
@@ -19200,7 +19200,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get macroReplayStepWaitManual => '等待用戶操作';
 
   @override
-  String get macroReplayStepExecuteScript => '正在執行導入脚本...';
+  String get macroReplayStepExecuteScript => '正在執行匯入腳本...';
 
   @override
   String get macroReplayStepDelay => '等待中...';
@@ -19209,7 +19209,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get macroReplayAcceleratedFallbackTip => '快捷路徑失敗，正在使用完整錄制步驟重試…';
 
   @override
-  String get macroReplayNoSteps => '没有錄制的步驟';
+  String get macroReplayNoSteps => '沒有錄製的步驟';
 
   @override
   String get macroReplayUserCancelled => '用戶取消';
@@ -19343,7 +19343,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get hyperosShowcaseSectionControls => '控件卡片';
 
   @override
-  String get hyperosShowcaseControlsSubtitle => '滑條、分段、按钮';
+  String get hyperosShowcaseControlsSubtitle => '滑條、分段、按鈕';
 
   @override
   String get hyperosShowcaseSegmentLeft => '左';
@@ -19378,7 +19378,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get hyperosShowcaseSectionNavActions => '導航猶操作';
 
   @override
-  String get hyperosShowcaseTooltipButton => '帶 Tooltip 的按钮';
+  String get hyperosShowcaseTooltipButton => '帶 Tooltip 的按鈕';
 
   @override
   String get hyperosShowcaseSectionProgress => '進度猶刷新';
@@ -19405,7 +19405,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get hyperosShowcaseEmptySubtitle => '列表無數據時的佔位';
 
   @override
-  String get hyperosShowcaseActionButton => '操作按钮';
+  String get hyperosShowcaseActionButton => '操作按鈕';
 
   @override
   String get hyperosShowcaseDividerRowTitle => '第二行（上方有縮進分割線）';
@@ -19485,10 +19485,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get courseImportScriptNoCourses => '導入脚本未返回課程數據';
+  String get courseImportScriptNoCourses => '匯入腳本未返回課程資料';
 
   @override
-  String get courseImportScriptFailed => '脚本執行失敗';
+  String get courseImportScriptFailed => '腳本執行失敗';
 
   @override
   String get courseImportRecordingStatus => '錄制中…點擊停止完成錄制';
@@ -19554,7 +19554,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get courseImportFirstWeekMappingSubtitle =>
-      '如果學校第一周没課，就選第 2 周；前兩周都没課就選第 3 周';
+      '如果學校第一週沒課，就選第 2 週；前兩週都沒課就選第 3 週';
 
   @override
   String get courseImportFirstWeekNoShift => '導入後會直接把課表第 1 周當作校曆第 1 周';
@@ -19696,7 +19696,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get logLiveUpdateStopFailed => '從 Flutter 停止超級島失敗';
 
   @override
-  String get logLiveUpdateDebugStatusFailed => '获取原生超級島調試狀態失敗';
+  String get logLiveUpdateDebugStatusFailed => '獲取原生超級島調試狀態失敗';
 
   @override
   String get logLiveUpdateSnapshotSyncFailed => '同步超級島課表快照失敗';
@@ -19753,7 +19753,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get logLiveUpdateTestSelectionReady => '手動超級島測試：已解析目標課程';
 
   @override
-  String get logLiveUpdateTestSuspendSync => '手動超級島測試：已臨時暂停定時同步';
+  String get logLiveUpdateTestSuspendSync => '手動超級島測試：已臨時暫停定時同步';
 
   @override
   String get logLiveUpdateTestStarting => '手動超級島測試：正在啟動原生超級島';
@@ -19899,7 +19899,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get logFieldLiveUseShortName => '使用簡稱';
 
   @override
-  String get logFieldLiveHidePrefixText => '隱藏前缀文字';
+  String get logFieldLiveHidePrefixText => '隱藏前綴文字';
 
   @override
   String get logFieldLiveDuringClassTimeDisplayMode => '課中時間顯示模式';
@@ -19980,7 +19980,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get logFieldWeekday => '星期';
 
   @override
-  String get logFieldUntilMillis => '暂停截止時間';
+  String get logFieldUntilMillis => '暫停截止時間';
 
   @override
   String get logFieldStartAtMillis => '開始時間';
@@ -20040,10 +20040,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get logCatAppLifecycleStateChanged => '應用生命周期';
 
   @override
-  String get logCatRoutePushed => '路由：入栈';
+  String get logCatRoutePushed => '路由：入棧';
 
   @override
-  String get logCatRoutePopped => '路由：出栈';
+  String get logCatRoutePopped => '路由：出棧';
 
   @override
   String get logCatRouteReplaced => '路由：替換';
@@ -20169,7 +20169,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get logCatLiveUpdateTestSelectionReady => '超級島測試：已選課程';
 
   @override
-  String get logCatLiveUpdateTestSuspendSync => '超級島測試：暂停同步';
+  String get logCatLiveUpdateTestSuspendSync => '超級島測試：暫停同步';
 
   @override
   String get logCatLiveUpdateTestStarting => '超級島測試：啟動中';
@@ -20296,25 +20296,25 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get logExportTitle => '輕嶼課表 - 應用日志';
 
   @override
-  String get appUpdateMirrorPresetGhfast => '默認镜像';
+  String get appUpdateMirrorPresetGhfast => '預設鏡像';
 
   @override
-  String get appUpdateMirrorPresetGhproxyCn => '備用镜像 1';
+  String get appUpdateMirrorPresetGhproxyCn => '備用鏡像 1';
 
   @override
-  String get appUpdateMirrorPresetGhLlkk => '備用镜像 2';
+  String get appUpdateMirrorPresetGhLlkk => '備用鏡像 2';
 
   @override
-  String get appUpdateMirrorPresetGhProxyCom => '備用镜像 3';
+  String get appUpdateMirrorPresetGhProxyCom => '備用鏡像 3';
 
   @override
-  String get appUpdateMirrorPresetGhproxyNet => '備用镜像 4';
+  String get appUpdateMirrorPresetGhproxyNet => '備用鏡像 4';
 
   @override
   String get appUpdateMirrorPresetCustom => '自定義';
 
   @override
-  String get appUpdateMirrorPresetCustomDescription => '填寫自定義镜像地址前缀';
+  String get appUpdateMirrorPresetCustomDescription => '填寫自定義鏡像地址前綴';
 
   @override
   String get cloudBackupRetentionTitle => '備份保留策略';
@@ -20414,7 +20414,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
     String schoolName,
     String adapterName,
   ) {
-    return '“$schoolName / $adapterName” 没有默認登錄地址，請先輸入學校教務系統網址';
+    return '“$schoolName / $adapterName” 沒有預設登錄地址，請先輸入學校教務系統網址';
   }
 
   @override
@@ -20549,7 +20549,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get locationTimeMatchKeywordsHelp =>
-      '可從課表地點一鍵識別樓棟，或手動填寫關鍵詞（如 A主、A1、A6）。匹配模式建議用「前缀」，更長的關鍵詞優先。';
+      '可從課表地點一鍵識別樓棟，或手動填寫關鍵詞（如 A主、A1、A6）。匹配模式建議用「前綴」，更長的關鍵詞優先。';
 
   @override
   String get locationTimeMatchSelectedKeywords => '已選關鍵詞';
@@ -20564,7 +20564,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get locationTimeMatchBuildingSuggestions => '從課表識別的樓棟';
 
   @override
-  String get locationTimeMatchNoBuildingSuggestions => '當前課表没有可識別的樓棟地點';
+  String get locationTimeMatchNoBuildingSuggestions => '當前課表沒有可識別的樓棟地點';
 
   @override
   String get locationTimeMatchAddBuilding => '添加';
@@ -20608,7 +20608,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get locationTimeMatchModeLabel => '匹配模式';
 
   @override
-  String get locationTimeMatchModePrefix => '前缀';
+  String get locationTimeMatchModePrefix => '前綴';
 
   @override
   String get locationTimeMatchModeContains => '包含';
@@ -22342,7 +22342,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get coupleWebdavTitle => '堅果雲拉取';
 
   @override
-  String get coupleWebdavSubtitle => '登入對方的坚果雲帳號即可取得其課表，與「雲同步」帳號互不影響';
+  String get coupleWebdavSubtitle => '登入對方的堅果雲帳號即可取得其課表，與「雲同步」帳號互不影響';
 
   @override
   String get coupleWebdavNotConnected => '尚未連接堅果雲';
@@ -22378,7 +22378,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get coupleWebdavLoginSheetTitle => '連接堅果雲（情侶課表）';
 
   @override
-  String get coupleWebdavLoginSheetSubtitle => '請使用坚果雲應用專用密碼，對方需先將課表上傳到約定路徑';
+  String get coupleWebdavLoginSheetSubtitle => '請使用堅果雲應用專用密碼，對方需先將課表上傳到約定路徑';
 
   @override
   String get coupleWebdavConfirmConnect => '連接並拉取';
@@ -22447,7 +22447,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudSyncIntroTitle => '多裝置同步';
 
   @override
-  String get cloudSyncIntroSubtitle => '配置坚果雲 WebDAV 後，多裝置間自動同步課表與設定';
+  String get cloudSyncIntroSubtitle => '設定堅果雲 WebDAV 後，多裝置間自動同步課表與設定';
 
   @override
   String get cloudSyncSettingsSectionTitle => '同步設定';
@@ -22483,7 +22483,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudSyncAccountTitle => '帳號設定';
 
   @override
-  String get cloudSyncAccountSubtitle => '請使用坚果雲應用專用密碼（非登入密碼），快照含倉庫記住的學校帳號';
+  String get cloudSyncAccountSubtitle => '請使用堅果雲應用專用密碼（非登入密碼），快照含倉庫記住的學校帳號';
 
   @override
   String get cloudSyncUsernameLabel => '電子郵件 / 使用者名稱';
@@ -22815,7 +22815,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get feedbackEntryTitle => '問題回饋';
 
   @override
-  String get feedbackEntrySubtitle => 'Issue、社区渠道和建議反饋入口';
+  String get feedbackEntrySubtitle => 'Issue、社區渠道和建議反饋入口';
 
   @override
   String get aboutEntryTitle => '關於軟件';
@@ -23085,7 +23085,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get feedbackTitle => '問題回饋';
 
   @override
-  String get feedbackIntro => '如果你遇到崩溃、課程顯示異常、匯入問題，或者想提交功能建議，可以通過下面這些渠道反饋';
+  String get feedbackIntro => '如果你遇到崩潰、課程顯示異常、匯入問題，或者想提交功能建議，可以通過下面這些渠道反饋';
 
   @override
   String get feedbackIssueHint =>
@@ -23487,13 +23487,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get viewGuideTitle => '查看功能說明';
 
   @override
-  String get viewGuideSubtitle => '先了解權限、超級島和基础設定';
+  String get viewGuideSubtitle => '先了解權限、超級島和基礎設定';
 
   @override
   String get migrationTitle => '遷移舊資料';
 
   @override
-  String get migrationSafeTitle => '別擔心，這不是資料丢失';
+  String get migrationSafeTitle => '別擔心，這不是資料丟失';
 
   @override
   String get migrationSafeSubtitle =>
@@ -23582,16 +23582,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get saveToGallery => '保存到相冊';
 
   @override
-  String get supportCompleteThanks => '感谢你支持輕嶼課表繼續打磨 ❤️';
+  String get supportCompleteThanks => '感謝你支持輕嶼課表繼續打磨 ❤️';
 
   @override
   String get supportConfirmed => '我已經支持了';
 
   @override
-  String get donorListTitle => '鳴谢名單';
+  String get donorListTitle => '鳴謝名單';
 
   @override
-  String get donorListLoadFailed => '暫時無法加載在線鳴谢名單';
+  String get donorListLoadFailed => '暫時無法加載在線鳴謝名單';
 
   @override
   String get reloadAction => '重新加載';
@@ -24431,10 +24431,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveDisplayModeSubtitle => '對已啟用的提醒時段生效';
 
   @override
-  String get duringClassStatusNotificationTitle => '課中狀態栏通知';
+  String get duringClassStatusNotificationTitle => '課中狀態欄通知';
 
   @override
-  String get duringClassStatusNotificationImmediate => '上課後保留狀態栏通知';
+  String get duringClassStatusNotificationImmediate => '上課後保留狀態欄通知';
 
   @override
   String get duringClassStatusNotificationBeforeEnd => '在下課提醒開始前保留普通通知文案';
@@ -24473,14 +24473,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String timeCorrectionLabel(String value) {
-    return '鈴声時間矯正：$value';
+    return '鈴聲時間矯正：$value';
   }
 
   @override
   String get timeCorrectionTitle => '鈴聲時間校正';
 
   @override
-  String get timeCorrectionHelp => '如果學校鈴声比課表快几秒，就調成提前；如果鈴声慢几秒，就調成延後';
+  String get timeCorrectionHelp => '如果學校鈴聲比課錶快幾秒，就調成提前；如果鈴聲慢幾秒，就調成延後';
 
   @override
   String get duringEndTimeDisplayLabel => '課中 / 下課提醒時間樣式';
@@ -24681,7 +24681,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get hideFromRecentsTitle => '從最近任務中隱藏應用';
 
   @override
-  String get hideFromRecentsSubtitle => '開啟後應用會尽量不顯示在最近任務列表中';
+  String get hideFromRecentsSubtitle => '開啟後應用會儘量不顯示在最近任務列表中';
 
   @override
   String get keepAliveServiceTitle => '輕嶼課表後台保活服務';
@@ -25409,7 +25409,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guideStatusIslandSupport => '焦點通知 / 超級島';
 
   @override
-  String get guideStatusSystemAllowed => '系統已允许';
+  String get guideStatusSystemAllowed => '系統已允許';
 
   @override
   String get guideStatusEnabledPending => '已開啟但系統暫未確認';
@@ -25433,7 +25433,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guideStatusAndroidVersion => 'Android 版本';
 
   @override
-  String get guideStatusVersionUnknown => '未識别';
+  String get guideStatusVersionUnknown => '未識別';
 
   @override
   String get guideStatusIslandSystemSupport => '超級島系統支持';
@@ -25443,7 +25443,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get guideStatusIslandHint =>
-      '\"如果你主要想用超級島，先確認系統版本至少是 HyperOS 3.0.300，再继續把下面權限清單按順序點完\"';
+      '\"如果你主要想用超級島，先確認系統版本至少是 HyperOS 3.0.300，再繼續把下面權限清單按順序點完\"';
 
   @override
   String get guidePermissionChecklistTitle => '權限清單';
@@ -25452,7 +25452,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guidePermissionChecklistSubtitle => '\"按這個順序檢查，最省事，也最不容易漏\"';
 
   @override
-  String get guideChecklistRequestNotificationTitle => '\"申请通知權限\"';
+  String get guideChecklistRequestNotificationTitle => '\"申請通知權限\"';
 
   @override
   String get guideChecklistRequestNotificationSubtitle => '這是所有提醒的前提';
@@ -25462,7 +25462,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get guideChecklistOpenNotificationSubtitle =>
-      '\"檢查通知总開關、鎖定畫面展示和实時通知權限\"';
+      '\"檢查通知總開關、鎖定畫面展示和實時通知權限\"';
 
   @override
   String get guideChecklistOpenIslandTitle => '打開焦點通知設定';
@@ -25475,7 +25475,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guideChecklistOpenAutoStartTitle => '打開自啟動設定';
 
   @override
-  String get guideChecklistOpenAutoStartSubtitle => '\"允许應用開机自啟和背景常駐\"';
+  String get guideChecklistOpenAutoStartSubtitle => '\"允許應用開機自啟和背景常駐\"';
 
   @override
   String get guideChecklistOpenBatteryTitle => '打開電池策略設定';
@@ -25515,33 +25515,33 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get guideImportMethodsSubtitle =>
-      '\"目前版本已经支援部分學校的教務系統網頁登入匯入；如果你的學校還没適配，也還有其他遷移方式\"';
+      '\"目前版本已經支援部分學校的教務系統網頁登入匯入；如果你的學校還沒適配，也還有其他遷移方式\"';
 
   @override
   String get guideImportMethodStep1 =>
-      '\"優先進入“匯入課程 > 教務系統匯入”，选擇學校和適配器後，直接在應用內開啟教務網頁完成匯入。\"';
+      '\"優先進入“匯入課程 > 教務系統匯入”，選擇學校和適配器後，直接在應用內開啟教務網頁完成匯入。\"';
 
   @override
   String get guideImportMethodStep2 =>
-      '\"如果你的學校暫時没有適配，可以先在其他課表應用裡匯入教務系統課程，再匯出日歷格式，最後回到本應用匯入。\"';
+      '\"如果你的學校暫時沒有適配，可以先在其他課表應用裡匯入教務系統課程，再匯出日歷格式，最後回到本應用匯入。\"';
 
   @override
   String get guideImportMethodStep3 =>
-      '\"如果别人已经在用本應用，也可以讓對方匯出完整備份檔案，你直接匯入就能恢復課程和設定。\"';
+      '\"如果別人已經在用本應用，也可以讓對方匯出完整備份檔案，你直接匯入就能恢復課程和設定。\"';
 
   @override
   String get guideImportMethodExtra =>
-      '\"如果你會抓包、網頁偵錯或 JavaScript，也欢迎參與學校教務適配补充，讓更多學校能直接匯入。\"';
+      '\"如果你會抓包、網頁偵錯或 JavaScript，也歡迎參與學校教務適配補充，讓更多學校能直接匯入。\"';
 
   @override
-  String get guideFinalTipsTitle => '最後再看這 3 条';
+  String get guideFinalTipsTitle => '最後再看這 3 條';
 
   @override
   String get guideFinalTip1 =>
-      '1. HyperOS 3.0.300 及以上才支持超級島；如果系統版本不够，應用仍可正常發普通提醒。';
+      '1. HyperOS 3.0.300 及以上才支持超級島；如果系統版本不夠，應用仍可正常發普通提醒。';
 
   @override
-  String get guideFinalTip2 => '2. 先在設定頁調整「上課前弹出」和「課中與臨近下課提醒」的閾值。';
+  String get guideFinalTip2 => '2. 先在設定頁調整「上課前彈出」和「課中與臨近下課提醒」的閾值。';
 
   @override
   String get guideFinalTip3 =>
@@ -25549,77 +25549,77 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get guidePrivacyHelperRequireConsent =>
-      '\"你勾选同意後，代表你已閱讀並同意上述友盟相關說明、隱私內容與免责提示\"';
+      '\"你勾選同意後，代表你已閱讀並同意上述友盟相關說明、隱私內容與免責提示\"';
 
   @override
   String get guidePrivacyHelperViewOnly =>
-      '\"這裡保留與首次啟動一致的隱私、第三方 SDK 與免责說明，方便你隨時檢視；目前頁面不需要再次勾选同意\"';
+      '\"這裡保留與首次啟動一致的隱私、第三方 SDK 與免責說明，方便你隨時檢視；目前頁面不需要再次勾選同意\"';
 
   @override
-  String get guidePrivacySectionTitle => '隱私、第三方 SDK 與免责說明';
+  String get guidePrivacySectionTitle => '隱私、第三方 SDK 與免責說明';
 
   @override
   String get guidePrivacyParagraph1 =>
-      '\"本應用主體功能按本機运行方式設計，課表、時間模板、課程記錄和大部分設定預設儲存在你的裝置本機。\"';
+      '\"本應用主體功能按本機執行方式設計，課表、時間模板、課程記錄和大部分設定預設儲存在你的裝置本機。\"';
 
   @override
   String get guidePrivacyParagraph2 =>
-      '\"只有在你主動使用檢查更新、下載更新、匯入匯出等联網功能，或你勾选同意後初始化友盟相關 SDK 時，應用才會與外部服務發生資料交互。\"';
+      '\"只有在你主動使用檢查更新、下載更新、匯入匯出等聯網功能，或你勾選同意後初始化友盟相關 SDK 時，應用才會與外部服務發生資料交互。\"';
 
   @override
   String get guidePrivacyParagraph3 =>
-      '\"本應用接入友盟移動統計 SDK、友盟應用效能监控 SDK 以及進階營運分析依赖庫。它們的服務用途包括移動統計分析、應用效能监控以及進階營運分析相關能力；只有在你勾选同意後，這些 SDK 才會正式初始化。\"';
+      '\"本應用接入友盟移動統計 SDK、友盟應用效能監控 SDK 以及進階營運分析依賴庫。它們的服務用途包括移動統計分析、應用效能監控以及進階營運分析相關能力；只有在你勾選同意後，這些 SDK 才會正式初始化。\"';
 
   @override
   String get guidePrivacyParagraph4 =>
-      '\"按友盟官方說明，這些 SDK 可能處理的資訊包括：裝置資訊（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、網路狀態、裝置標識，以及進階營運分析依赖庫涉及的應用列表和地理位置相關資訊。\"';
+      '\"按友盟官方說明，這些 SDK 可能處理的資訊包括：裝置資訊（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、網路狀態、裝置標識，以及進階營運分析依賴庫涉及的應用列表和地理位置相關資訊。\"';
 
   @override
-  String get guideRiskTitle => '\"免责與風險提示\"';
+  String get guideRiskTitle => '\"免責與風險提示\"';
 
   @override
   String get guideRiskParagraph1 =>
-      '\"1. 超級島、焦點通知、背景提醒和保活效果依赖系統版本、机型、厂商策略、權限、自啟動、電池策略等外部条件，無法保證所有裝置表现完全一致。\"';
+      '\"1. 超級島、焦點通知、背景提醒和保活效果依賴系統版本、機型、廠商策略、權限、自啟動、電池策略等外部條件，無法保證所有裝置表現完全一致。\"';
 
   @override
   String get guideRiskParagraph2 =>
-      '\"2. 檢查更新、鏡像下載、系統下載器、匯入匯出與分享等能力依赖網路环境、第三方服務和系統檔案能力；若出现失败、限速或檔案異常，请以 Release 頁面、你自己儲存的備份檔案和系統提示為準。\"';
+      '\"2. 檢查更新、鏡像下載、系統下載器、匯入匯出與分享等能力依賴網路環境、第三方服務和系統檔案能力；若出現失敗、限速或檔案異常，請以 Release 頁面、你自己儲存的備份檔案和系統提示為準。\"';
 
   @override
   String get guideRiskParagraph3 =>
-      '\"3. 在遷移、匯入或覆盖資料前，请先自行確認備份檔案完整可用，並妥善保管含有課表資訊的檔案；因使用者自行刪除、覆盖、分享或保管不當造成的資料問題，需要由使用者自行承担相應風險。\"';
+      '\"3. 在遷移、匯入或覆蓋資料前，請先自行確認備份檔案完整可用，並妥善保管含有課表資訊的檔案；因使用者自行刪除、覆蓋、分享或保管不當造成的資料問題，需要由使用者自行承擔相應風險。\"';
 
   @override
   String get guideUmengPrivacyLink =>
       '友盟隱私政策：https://www.umeng.com/page/policy';
 
   @override
-  String get liveDiagnosticsUnavailable => '目前還没有可查看的超級島診斷日誌';
+  String get liveDiagnosticsUnavailable => '目前還沒有可查看的超級島診斷日誌';
 
   @override
   String get liveDiagnosticsViewerTitle => '超級島診斷日誌';
 
   @override
-  String get liveDiagnosticsShareText => '這是輕嶼課表導出的超級島診斷日誌，可用于排查“超級島没有弹出”等問題';
+  String get liveDiagnosticsShareText => '這是輕嶼課表導出的超級島診斷日誌，可用於排查“超級島沒有彈出”等問題';
 
   @override
   String get liveDiagnosticsShareSubject => '輕嶼課表 - 超級島診斷日誌';
 
   @override
   String get liveDiagnosticsSnapshotShareText =>
-      '這是輕嶼課表目前測試診斷頁導出的超級島狀態快照，可用于排查“超級島没有弹出”等問題';
+      '這是輕嶼課表目前測試診斷頁導出的超級島狀態快照，可用於排查“超級島沒有彈出”等問題';
 
   @override
   String get liveDiagnosticsSnapshotShareSubject => '輕嶼課表 - 超級島狀態快照';
 
   @override
-  String get liveDiagnosticsNothingToExport => '目前没有可導出的日誌文件，也没有可導出的狀態快照';
+  String get liveDiagnosticsNothingToExport => '目前沒有可導出的日誌檔案，也沒有可導出的狀態快照';
 
   @override
   String get liveDiagnosticsCleared => '\"已清空超級島診斷日誌，後續會重新開始收集\"';
 
   @override
-  String get liveDiagnosticsClearFailed => '清空超級島診斷日誌失败';
+  String get liveDiagnosticsClearFailed => '清空超級島診斷日誌失敗';
 
   @override
   String get liveTestingNotRefreshed => '尚未刷新';
@@ -25631,7 +25631,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingNotificationTitle => '測試通知';
 
   @override
-  String get liveTestingNotificationSubtitle => '用于驗證超級島、通知栏和課程簡稱等顯示效果';
+  String get liveTestingNotificationSubtitle => '用於驗證超級島、通知欄和課程簡稱等顯示效果';
 
   @override
   String get liveTestingStartAction => '開始測試';
@@ -25646,10 +25646,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingSessionCanceled => '已取消自檢測試';
 
   @override
-  String get liveTestingUmengHint => '\"下面兩個按鈕僅測試版顯示，用于驗證友盟 U-APM 崩溃和卡頓上報\"';
+  String get liveTestingUmengHint => '\"下面兩個按鈕僅測試版顯示，用於驗證友盟 U-APM 崩潰和卡頓上報\"';
 
   @override
-  String get liveTestingCrashAction => '崩溃測試';
+  String get liveTestingCrashAction => '崩潰測試';
 
   @override
   String get liveTestingAnrAction => '\"異常卡頓測試\"';
@@ -25658,19 +25658,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingIslandStatusTitle => '上島狀態診斷';
 
   @override
-  String get liveTestingIslandStatusSubtitle => '\"這裡直接顯示原生实時服務、通知构造結果和不上島原因\"';
+  String get liveTestingIslandStatusSubtitle => '\"這裡直接顯示原生實時服務、通知構造結果和不上島原因\"';
 
   @override
-  String get liveTestingServiceStatusRunning => '\"服務运行中\"';
+  String get liveTestingServiceStatusRunning => '\"服務執行中\"';
 
   @override
-  String get liveTestingServiceStatusStopped => '\"服務未运行\"';
+  String get liveTestingServiceStatusStopped => '\"服務未執行\"';
 
   @override
   String get liveTestingNoIslandReasonTitle => '不上島原因';
 
   @override
-  String get liveTestingNoIslandReasonEmpty => '目前無拦截原因';
+  String get liveTestingNoIslandReasonEmpty => '目前無攔截原因';
 
   @override
   String get liveTestingRefreshAction => '刷新診斷';
@@ -25701,7 +25701,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get liveTestingSectionEnvironment => '环境與權限';
+  String get liveTestingSectionEnvironment => '環境與權限';
 
   @override
   String get liveTestingSectionService => '服務狀態';
@@ -25734,7 +25734,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingExpandRawJson => '展開原始 JSON';
 
   @override
-  String get liveTestingExpandRawJsonSubtitle => '避免大段原始字段一直占满頁面';
+  String get liveTestingExpandRawJsonSubtitle => '避免大段原始字段一直佔滿頁面';
 
   @override
   String get liveTestingLocalLogsTitle => '本地診斷日誌';
@@ -25749,10 +25749,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingClearingLogs => '清空中';
 
   @override
-  String get liveTestingViewPhoneLogsAction => '查看手机日誌';
+  String get liveTestingViewPhoneLogsAction => '查看手機日誌';
 
   @override
-  String get liveTestingMoreTesterOptionsAction => '\"更多測試者选項\"';
+  String get liveTestingMoreTesterOptionsAction => '\"更多測試者選項\"';
 
   @override
   String get yesLabel => '是';
@@ -25764,14 +25764,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingCurrentNativeFieldsSubtitle => '顯示目前原生診斷字段';
 
   @override
-  String get liveTestingCrashSoon => '\"即将触發友盟 U-APM 測試崩溃，请重新開啟應用檢視背景是否收到上報\"';
+  String get liveTestingCrashSoon => '\"即將觸發友盟 U-APM 測試崩潰，請重新開啟應用檢視背景是否收到上報\"';
 
   @override
   String get liveTestingAnrSoon =>
-      '\"即将触發约 30 秒主線程卡死，请脱离 flutter run 測試，並在卡死後重新開啟應用檢視友盟背景\"';
+      '\"即將觸發約 30 秒主線程卡死，請脫離 flutter run 測試，並在卡死後重新開啟應用檢視友盟背景\"';
 
   @override
-  String get liveTestingNoCourseAvailable => '目前没有可測試的課程';
+  String get liveTestingNoCourseAvailable => '目前沒有可測試的課程';
 
   @override
   String get liveTestingPresetArmedButHidden =>
@@ -25827,14 +25827,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingPresetFallbackNote => '（未檢測到可測試的真實課程，已改用自檢預設課程，不會寫入課表）';
 
   @override
-  String get liveTestingTestCourseNote => '\"此處顯示備注，可以在課程编輯頁進行設定\"';
+  String get liveTestingTestCourseNote => '\"此處顯示備注，可以在課程編輯頁進行設定\"';
 
   @override
-  String get liveTestingNotificationSent => '\"已發送上課提醒測試通知，约 8 秒內會進入上課前提醒階段\"';
+  String get liveTestingNotificationSent => '\"已發送上課提醒測試通知，約 8 秒內會進入上課前提醒階段\"';
 
   @override
   String sendFailedWithError(String error) {
-    return '發送失败: $error';
+    return '發送失敗: $error';
   }
 
   @override
@@ -25855,11 +25855,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeWidgetPinSupported =>
-      '\"支援的话會直接弹出系統添加確認，不是單獨的權限弹窗；確認後即可固定到桌面\"';
+      '\"支援的話會直接彈出系統添加確認，不是單獨的權限彈窗；確認後即可固定到桌面\"';
 
   @override
   String get homeWidgetPinUnsupported =>
-      '目前桌面不支持應用內直接添加時，仍可长按桌面 → 小工具 → 輕嶼課表 手動添加';
+      '目前桌面不支持應用內直接添加時，仍可長按桌面 → 小工具 → 輕嶼課表 手動添加';
 
   @override
   String get homeWidgetBackgroundStyleLabel => '\"背景樣式\"';
@@ -25943,7 +25943,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get homeWidgetCornerRadiusTitle => '卡片圆角';
+  String get homeWidgetCornerRadiusTitle => '卡片圓角';
 
   @override
   String get homeWidgetDescriptionTitle => '說明';
@@ -25954,20 +25954,20 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String homeWidgetPinRequested(String label) {
-    return '\"已發起“$label”添加请求，请在系統弹窗裡確認並放到桌面\"';
+    return '\"已發起“$label”添加請求，請在系統彈窗裡確認並放到桌面\"';
   }
 
   @override
   String homeWidgetPinUnsupportedManual(String label) {
-    return '\"目前系統桌面不支援應用內直接添加小工具，请长按桌面 → 小工具 → 輕嶼課表，再手動添加“$label”\"';
+    return '\"目前系統桌面不支援應用內直接添加小工具，請長按桌面 → 小工具 → 輕嶼課表，再手動添加“$label”\"';
   }
 
   @override
-  String get homeWidgetInvalidType => '\"小工具類型無效，请稍後重試\"';
+  String get homeWidgetInvalidType => '\"小工具類型無效，請稍後重試\"';
 
   @override
   String homeWidgetPinFailedManual(String label) {
-    return '\"發起添加失败，请长按桌面 → 小工具 → 輕嶼課表，再手動添加“$label”\"';
+    return '\"發起添加失敗，請長按桌面 → 小工具 → 輕嶼課表，再手動添加“$label”\"';
   }
 
   @override
@@ -26012,22 +26012,22 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get layoutDensityTitle => '課表密度';
 
   @override
-  String get layoutAutoFitHeightTitle => '自動充满屏幕高度';
+  String get layoutAutoFitHeightTitle => '自動充滿螢幕高度';
 
   @override
-  String get layoutAutoFitHeightSubtitle => '\"開啟後會按目前節數自動鋪满頁面底部，不再保留下方空隙\"';
+  String get layoutAutoFitHeightSubtitle => '\"開啟後會按目前節數自動鋪滿頁面底部，不再保留下方空隙\"';
 
   @override
   String get layoutHideWeekendsTitle => '隱藏周六周日';
 
   @override
-  String get layoutHideWeekendsSubtitle => '\"開啟後首頁只顯示周一到周五，剩余列宽會自動鋪满\"';
+  String get layoutHideWeekendsSubtitle => '\"開啟後首頁只顯示週一到週五，剩餘列寬會自動鋪滿\"';
 
   @override
   String get layoutEnableHapticsTitle => '啟用應用內震動反饋';
 
   @override
-  String get layoutEnableHapticsSubtitle => '關閉後，頁码切换等交互不再触發輕微震動';
+  String get layoutEnableHapticsSubtitle => '關閉後，頁碼切換等交互不再觸發輕微震動';
 
   @override
   String pageTransitionSpeedLabel(String speed) {
@@ -26049,7 +26049,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get layoutTimeColumnDisplayLabel => '首頁時間列顯示';
 
   @override
-  String get layoutTimeColumnWidthLabel => '時間栏宽度';
+  String get layoutTimeColumnWidthLabel => '時間欄寬度';
 
   @override
   String get layoutBackToCurrentWeekButtonStyleLabel => '「返回本週」按鈕樣式';
@@ -26093,7 +26093,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String layoutCompactFontSizeLabel(String value) {
-    return '紧凑字級 $value';
+    return '緊湊字級 $value';
   }
 
   @override
@@ -26132,7 +26132,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get layoutShowWeeksTitle => '顯示週數';
 
   @override
-  String get layoutShowWeeksSubtitle => '例如第 1-16 周、單双周';
+  String get layoutShowWeeksSubtitle => '例如第 1-16 周、單雙週';
 
   @override
   String get layoutShowDescriptionTitle => '顯示課程簡介';
@@ -26153,10 +26153,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get layoutHorizontalAlignLabel => '水平排版';
 
   @override
-  String get layoutShowConflictBadgeTitle => '\"首頁顯示衝突小胶囊\"';
+  String get layoutShowConflictBadgeTitle => '\"首頁顯示衝突小膠囊\"';
 
   @override
-  String get layoutShowConflictBadgeSubtitle => '\"關閉後，首頁課表不再對衝突課程顯示“衝突”小胶囊\"';
+  String get layoutShowConflictBadgeSubtitle => '\"關閉後，首頁課表不再對衝突課程顯示“衝突”小膠囊\"';
 
   @override
   String layoutConflictOpacityLabel(int value) {
@@ -26185,7 +26185,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get sampleCourseAdvancedMath => '高數';
 
   @override
-  String get sampleTeacherZhang => '张老師';
+  String get sampleTeacherZhang => '張老師';
 
   @override
   String get sampleCourseEnglish => '英語';
@@ -26198,7 +26198,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get aboutRepositorySheetHint =>
-      '\"如果你想补學校教務匯入適配，建議同時檢視教務適配倉 qingyu_warehouse\"';
+      '\"如果你想補學校教務匯入適配，建議同時檢視教務適配倉 qingyu_warehouse\"';
 
   @override
   String get aboutOpenGitHubAction => '打開 GitHub';
@@ -26228,11 +26228,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutCheckingForUpdate => '正在檢查更新……';
 
   @override
-  String get aboutReadVersionFailed => '\"暫時無法讀取版本資訊，请稍後重試\"';
+  String get aboutReadVersionFailed => '\"暫時無法讀取版本資訊，請稍後重試\"';
 
   @override
   String get aboutReadVersionFailedHint =>
-      '如果你目前網路访問 GitHub 不穩定，可稍後再試，或切到下面的國內下載方式後重試';
+      '如果你目前網路訪問 GitHub 不穩定，可稍後再試，或切到下面的國內下載方式後重試';
 
   @override
   String get aboutViewReleaseAction => '查看 Release';
@@ -26260,11 +26260,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get aboutUpdateAvailableHint =>
-      '\"你现在只需要點下面的“立即下載”即可，測速、鏡像和測試版都已经收進後面的高級选項裡\"';
+      '\"你現在只需要點下面的“立即下載”即可，測速、鏡像和測試版都已經收進後面的高級選項裡\"';
 
   @override
   String get aboutUpdateNoUpdateHint =>
-      '\"目前版本已经可正常使用；如果你要體驗測試版，可以在後面的高級选項裡開啟測試版檢測\"';
+      '\"目前版本已經可正常使用；如果你要體驗測試版，可以在後面的高級選項裡開啟測試版檢測\"';
 
   @override
   String aboutUpdatedAt(String time) {
@@ -26278,7 +26278,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutUpdateNowAndroidSubtitle => '下載慢或失敗時，再用下方進階選項更換線路';
 
   @override
-  String get aboutUpdateNowOtherSubtitle => '\"目前平台會直接開啟下載頁面，不會在應用內安装\"';
+  String get aboutUpdateNowOtherSubtitle => '\"目前平臺會直接開啟下載頁面，不會在應用內安裝\"';
 
   @override
   String get aboutMirrorDownloadHint => '預設優先國內線路，直接點「立即下載」即可';
@@ -26307,17 +26307,17 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String aboutMirrorModeHintRecommended(String current, String recommended) {
-    return '\"目前使用國內下載 · $current，系統最近測速更推薦“$recommended”，需要時可在後面的高級选項裡切换\"';
+    return '\"目前使用國內下載 · $current，系統最近測速更推薦“$recommended”，需要時可在後面的高級選項裡切換\"';
   }
 
   @override
   String aboutMirrorModeHintCurrent(String current) {
-    return '\"目前使用國內下載 · $current，如果下載慢或失败，再到後面的高級选項裡測速、换線路或填寫自訂地址\"';
+    return '\"目前使用國內下載 · $current，如果下載慢或失敗，再到後面的高級選項裡測速、換線路或填寫自訂地址\"';
   }
 
   @override
   String get aboutOriginalModeHint =>
-      '\"目前使用國際源下載，只有你網路能穩定访問 GitHub 時才建議這樣設定；否則请切回國內下載\"';
+      '\"目前使用國際源下載，只有你網路能穩定訪問 GitHub 時才建議這樣設定；否則請切回國內下載\"';
 
   @override
   String get aboutReleaseNotesTitle => '本次更新說明';
@@ -26326,7 +26326,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutReleaseNotesSubtitle => '顯示目前檢測到版本的 Release 說明';
 
   @override
-  String get aboutAdvancedOptionsTitle => '\"高級选項\"';
+  String get aboutAdvancedOptionsTitle => '\"高級選項\"';
 
   @override
   String get aboutAdvancedOptionsSubtitle => '只有下載慢、要手動切線路、或要檢測測試版時再展開';
@@ -26340,7 +26340,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get aboutMirrorSectionOriginalHint =>
-      '\"你现在使用的是國際源下載，下面的線路設定只有在切回“國內下載”後才會生效\"';
+      '\"你現在使用的是國際源下載，下面的線路設定只有在切回“國內下載”後才會生效\"';
 
   @override
   String get aboutFillCustomMirrorFirst => '\"先填寫自訂下載地址\"';
@@ -26355,7 +26355,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutCurrentCustomMirrorHint => '目前正在使用你手動填寫的下載地址';
 
   @override
-  String get aboutCurrentMirrorHint => '\"如果目前線路访問失败，可以切到其他內置線路，或改用自訂地址\"';
+  String get aboutCurrentMirrorHint => '\"如果目前線路訪問失敗，可以切到其他內置線路，或改用自訂地址\"';
 
   @override
   String get aboutProbeMirrorsAction => '\"測速並推薦\"';
@@ -26376,7 +26376,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get aboutMirrorDisabledHint =>
-      '\"目前没有使用國內下載，所以這裡的線路設定暫時不會生效，需要的话，请先在上面的“下載方式”裡切回國內下載\"';
+      '\"目前沒有使用國內下載，所以這裡的線路設定暫時不會生效，需要的話，請先在上面的“下載方式”裡切回國內下載\"';
 
   @override
   String get aboutRecentProbeResultsTitle => '\"最近測速結果\"';
@@ -26391,7 +26391,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutCheckPrereleaseTitle => '檢測測試版本';
 
   @override
-  String get aboutCheckPrereleaseSubtitle => '\"開啟後會把測試版也纳入更新檢查；普通使用建議關閉\"';
+  String get aboutCheckPrereleaseSubtitle => '\"開啟後會把測試版也納入更新檢查；普通使用建議關閉\"';
 
   @override
   String get aboutUpdatePromptTitle => '彈窗提醒';
@@ -26403,7 +26403,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutDiagnosticsTitle => '測試與診斷';
 
   @override
-  String get aboutDiagnosticsSubtitle => '\"只有遇到“超級島没弹出”或需要給開發者反饋時再展開\"';
+  String get aboutDiagnosticsSubtitle => '\"只有遇到“超級島沒彈出”或需要給開發者反饋時再展開\"';
 
   @override
   String get aboutRecordDiagnosticsTitle => '記錄應用日誌';
@@ -26427,10 +26427,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutLiveDiagnosticsDisabled => '已關閉超級島診斷日誌';
 
   @override
-  String get aboutNoDiagnosticsExportYet => '還没有可匯出的超級島診斷日誌';
+  String get aboutNoDiagnosticsExportYet => '還沒有可匯出的超級島診斷日誌';
 
   @override
-  String get aboutProbeNoMirrorFound => '測速完成，但暫時没有發现可用鏡像線路';
+  String get aboutProbeNoMirrorFound => '測速完成，但暫時沒有發現可用鏡像線路';
 
   @override
   String aboutProbeCurrentFastest(String label) {
@@ -26439,11 +26439,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String aboutProbeRecommendSwitch(String label) {
-    return '\"測速完成，推薦切换到“$label”\"';
+    return '\"測速完成，推薦切換到“$label”\"';
   }
 
   @override
-  String get switchAction => '切换';
+  String get switchAction => '切換';
 
   @override
   String aboutSwitchToMirrorAfterError(String error) {
@@ -26452,17 +26452,17 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String aboutSwitchPresetAfterError(String error, String label) {
-    return '$error，建議切换到“$label”後重試';
+    return '$error，建議切換到“$label”後重試';
   }
 
   @override
   String get aboutSetMirrorSourceTitle => '設定鏡像源';
 
   @override
-  String get aboutMirrorPrefixLabel => '鏡像前缀';
+  String get aboutMirrorPrefixLabel => '鏡像前綴';
 
   @override
-  String get aboutMirrorPrefixInvalid => '\"鏡像源格式不正確，请輸入完整的 http 或 https 地址\"';
+  String get aboutMirrorPrefixInvalid => '\"鏡像源格式不正確，請輸入完整的 http 或 https 地址\"';
 
   @override
   String get aboutMirrorSaved => '鏡像源已保存';
@@ -26472,19 +26472,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get aboutInstallReady =>
-      '\"安装包已準備好，已尝試開啟安装介面；如果系統没有弹出，请稍後從通知或檔案管理器手動安装\"';
+      '\"安裝包已準備好，已嘗試開啟安裝介面；如果系統沒有彈出，請稍後從通知或檔案管理器手動安裝\"';
 
   @override
   String get aboutUpdatePackageTitle => '輕嶼課表更新包';
 
   @override
-  String get aboutUpdatePackageDescription => '\"已交給系統下載管理器下載，完成後可直接從系統通知安装\"';
+  String get aboutUpdatePackageDescription => '\"已交給系統下載管理器下載，完成後可直接從系統通知安裝\"';
 
   @override
-  String get aboutSystemDownloaderQueued => '\"已交給系統下載管理器，请在系統通知或下載列表裡檢視進度\"';
+  String get aboutSystemDownloaderQueued => '\"已交給系統下載管理器，請在系統通知或下載列表裡檢視進度\"';
 
   @override
-  String get aboutSystemDownloaderFailed => '調用系統下載管理器失败';
+  String get aboutSystemDownloaderFailed => '調用系統下載管理器失敗';
 
   @override
   String get aboutDownloadCancelling => '正在取消下載…';
@@ -26500,7 +26500,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get aboutMirrorUnknownSizeHint => '鏡像源未返回文件总大小，先顯示已下載體积';
+  String get aboutMirrorUnknownSizeHint => '鏡像源未返回檔案總大小，先顯示已下載體積';
 
   @override
   String get aboutCancelDownloadAction => '取消下載';
@@ -26512,10 +26512,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutDismissDialogAction => '關閉彈窗';
 
   @override
-  String get aboutContributorsScreenTitle => '代码贡献者';
+  String get aboutContributorsScreenTitle => '代碼貢獻者';
 
   @override
-  String get aboutDevelopersTitle => '開發人员';
+  String get aboutDevelopersTitle => '開發人員';
 
   @override
   String get aboutDeveloperMaintainerSubtitle => '輕嶼課表開發與維護';
@@ -26525,7 +26525,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get aboutWarehouseMaintainersIntro =>
-      '\"以下名單来自 qingyu_warehouse 適配倉的 maintainer 字段汇总，若本機已有快取，會先顯示快取，再背景刷新\"';
+      '\"以下名單來自 qingyu_warehouse 適配倉的 maintainer 字段彙總，若本機已有快取，會先顯示快取，再背景刷新\"';
 
   @override
   String aboutWarehouseMaintainersLoadFailed(String error) {
@@ -26533,7 +26533,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get aboutWarehouseMaintainersEmpty => '目前還没有讀取到適配者資訊';
+  String get aboutWarehouseMaintainersEmpty => '目前還沒有讀取到適配者資訊';
 
   @override
   String aboutWarehouseMaintainerCount(int count) {
@@ -26545,10 +26545,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get aboutParticipateWarehouseSubtitle =>
-      '\"如果你會抓包、網頁偵錯、JavaScript，或者愿意长期維護自己學校的教務系統，欢迎去 qingyu_warehouse 提交新的學校適配與修複\"';
+      '\"如果你會抓包、網頁偵錯、JavaScript，或者願意長期維護自己學校的教務系統，歡迎去 qingyu_warehouse 提交新的學校適配與修複\"';
 
   @override
-  String get importFileReadFailed => '\"無法讀取所选檔案\"';
+  String get importFileReadFailed => '\"無法讀取所選檔案\"';
 
   @override
   String get importCleartextBlockedHint => '該站點暫不支援 HTTPS 存取且未在明文白名單內，無法在此開啟';
@@ -26558,31 +26558,31 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String importReplaceExistingMessage(String name) {
-    return '匯入 $name 時，是否替换现有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。';
+    return '匯入 $name 時，是否替換現有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。';
   }
 
   @override
-  String get importNoCoursesRecognized => '未識别到可匯入課程';
+  String get importNoCoursesRecognized => '未識別到可匯入課程';
 
   @override
   String get importConfirmSemesterMappingTitle => '\"確認開學日期和週次對應\"';
 
   @override
   String get importConfirmSemesterMappingSubtitleIcs =>
-      '\"请选擇學校校歷的開學日期，系統已根據檔案裡最早的上課日期給出預設週次對應，你也可以手動調整\"';
+      '\"請選擇學校校歷的開學日期，系統已根據檔案裡最早的上課日期給出預設週次對應，你也可以手動調整\"';
 
   @override
   String importOverwriteCount(int count) {
-    return '已覆盖匯入 $count 条課程';
+    return '已覆蓋匯入 $count 條課程';
   }
 
   @override
   String importUpdatedCount(int count) {
-    return '已更新課表：新增或更新 $count 条課程';
+    return '已更新課表：新增或更新 $count 條課程';
   }
 
   @override
-  String get importNoCourseChanges => '没有需要新增或更新的課程';
+  String get importNoCourseChanges => '沒有需要新增或更新的課程';
 
   @override
   String get aiImportTitle => '識圖匯入';
@@ -26593,50 +26593,50 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
     int sectionCount,
     String warningSuffix,
   ) {
-    return '識别到 $courseCount 門課，最高到第 $sectionCount 節$warningSuffix';
+    return '識別到 $courseCount 門課，最高到第 $sectionCount 節$warningSuffix';
   }
 
   @override
   String aiWarningCountSuffix(int count) {
-    return '，$count 条提醒';
+    return '，$count 條提醒';
   }
 
   @override
-  String get aiWorkflowCompactTitle => '複制提示词 -> 豆包識圖 -> 匯入';
+  String get aiWorkflowCompactTitle => '複制提示詞 -> 豆包識圖 -> 匯入';
 
   @override
-  String get aiWorkflowCompactSubtitle => '\"豆包專家模式 -> 複製 JSON -> 选擇開學日期\"';
+  String get aiWorkflowCompactSubtitle => '\"豆包專家模式 -> 複製 JSON -> 選擇開學日期\"';
 
   @override
-  String get aiWorkflowTitle => '複制提示词 -> 豆包識圖 -> 粘贴 JSON -> 匯入';
+  String get aiWorkflowTitle => '複制提示詞 -> 豆包識圖 -> 貼上 JSON -> 匯入';
 
   @override
   String get aiWorkflowSubtitle =>
-      '\"先複製提示词，再到豆包左下角切换為專家模式，把課表螢幕截圖和提示词一起發過去，把豆包返回的 JSON 複製回這裡，點擊匯入後再选擇開學日期\"';
+      '\"先複製提示詞，再到豆包左下角切換為專家模式，把課表螢幕截圖和提示詞一起發過去，把豆包返回的 JSON 複製回這裡，點擊匯入後再選擇開學日期\"';
 
   @override
-  String get aiPromptShortAction => '提示词';
+  String get aiPromptShortAction => '提示詞';
 
   @override
-  String get aiExpertModeSuggestion => '建議豆包專家模式，支持多圖，截圖需带星期表头';
+  String get aiExpertModeSuggestion => '建議豆包專家模式，支持多圖，截圖需帶星期表頭';
 
   @override
   String get aiHintExpertMode => '先切到豆包專家模式';
 
   @override
-  String get aiHintSendScreenshot => '截圖和提示词一起發';
+  String get aiHintSendScreenshot => '截圖和提示詞一起發';
 
   @override
   String get aiHintCopyJsonBack => '\"返回結果複製 JSON\"';
 
   @override
-  String get aiHintPickSemesterAfterImport => '\"匯入後再选開學日期\"';
+  String get aiHintPickSemesterAfterImport => '\"匯入後再選開學日期\"';
 
   @override
   String get jsonLabelShort => 'JSON';
 
   @override
-  String get aiPasteJsonTitle => '粘贴 AI 返回的 JSON';
+  String get aiPasteJsonTitle => '貼上 AI 返回的 JSON';
 
   @override
   String aiCourseCountChip(int count) {
@@ -26644,27 +26644,27 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get aiParseFailedChip => '解析失败';
+  String get aiParseFailedChip => '解析失敗';
 
   @override
-  String get aiPasteJsonHintShort => '粘贴 AI 返回的 JSON';
+  String get aiPasteJsonHintShort => '貼上 AI 返回的 JSON';
 
   @override
   String get aiPasteJsonHintLong =>
-      '\"把豆包返回的 JSON 原樣粘贴到這裡，然後點擊匯入，支援纯 JSON，也兼容 ```json 程式碼區塊\"';
+      '\"把豆包返回的 JSON 原樣貼上到這裡，然後點擊匯入，支援純 JSON，也兼容 ```json 程式碼區塊\"';
 
   @override
-  String get detailAction => '详情';
+  String get detailAction => '詳情';
 
   @override
-  String get aiParseErrorTitle => '\"解析錯误\"';
+  String get aiParseErrorTitle => '\"解析錯誤\"';
 
   @override
-  String get viewDetailsAction => '查看详情';
+  String get viewDetailsAction => '查看詳情';
 
   @override
   String get aiWorkflowFooter =>
-      '\"複製提示词 -> 豆包發送螢幕截圖和提示词 -> 把 JSON 贴回這裡 -> 點擊匯入 -> 选擇開學日期\"';
+      '\"複製提示詞 -> 豆包發送螢幕截圖和提示詞 -> 把 JSON 貼回這裡 -> 點擊匯入 -> 選擇開學日期\"';
 
   @override
   String get previewAction => '預覽';
@@ -26673,49 +26673,49 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get confirmImportAction => '確認匯入';
 
   @override
-  String get promptCopiedHint => '提示词已複制，去豆包發送截圖和提示词';
+  String get promptCopiedHint => '提示詞已複制，去豆包發送截圖和提示詞';
 
   @override
-  String get clipboardNoText => '剪贴板裡没有可用文本';
+  String get clipboardNoText => '剪貼板裡沒有可用文本';
 
   @override
-  String get aiPromptSheetTitle => '識圖提示词';
+  String get aiPromptSheetTitle => '識圖提示詞';
 
   @override
   String get aiPromptSheetSubtitle =>
-      '\"建議使用豆包，先把豆包左下角切换為專家模式，再把下面整段提示词和課表螢幕截圖一起發過去，讓它只返回 JSON，生成後把 JSON 複製回本頁，點擊匯入後再选擇開學日期\"';
+      '\"建議使用豆包，先把豆包左下角切換為專家模式，再把下面整段提示詞和課表螢幕截圖一起發過去，讓它只返回 JSON，生成後把 JSON 複製回本頁，點擊匯入後再選擇開學日期\"';
 
   @override
   String get aiPreviewTitle => '解析預覽';
 
   @override
-  String get aiPasteJsonFirst => '\"请先粘贴 AI 返回的 JSON\"';
+  String get aiPasteJsonFirst => '\"請先貼上 AI 返回的 JSON\"';
 
   @override
-  String get aiParseFailedIncompleteJson => '\"解析失败，请確認粘贴的是完整 JSON\"';
+  String get aiParseFailedIncompleteJson => '\"解析失敗，請確認貼上的是完整 JSON\"';
 
   @override
   String get importAiResultTitle => '\"匯入 AI 解析結果\"';
 
   @override
   String get importAiReplaceMessage =>
-      '\"是否用目前這份 AI 解析結果替换现有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。\"';
+      '\"是否用目前這份 AI 解析結果替換現有課程？此操作也會清空目前課表上的獨立日程（如自習、會議等）。\"';
 
   @override
   String get importConfirmSemesterMappingSubtitleAi =>
-      '\"请选擇學校校歷的開學日期，再確認課表裡的第 1 周對應校歷第几周，如果學校第一周没課，這裡通常要改成第 2 周\"';
+      '\"請選擇學校校歷的開學日期，再確認課表裡的第 1 周對應校歷第幾周，如果學校第一週沒課，這裡通常要改成第 2 周\"';
 
   @override
   String aiWarningExtraSuffix(int count) {
-    return '，另有 $count 条識别提醒';
+    return '，另有 $count 條識別提醒';
   }
 
   @override
-  String get pasteAction => '粘贴';
+  String get pasteAction => '貼上';
 
   @override
   String get importConfirmSemesterMappingSubtitleWarehouse =>
-      '\"教務脚本已返回課程週次，请確認校歷開學日期；如果學校前几周没有課，可把“課表第 1 周”對應到校歷後面的週次\"';
+      '\"教務腳本已返回課程週次，請確認校歷開學日期；如果學校前幾周沒有課，可把“課表第 1 周”對應到校歷後面的週次\"';
 
   @override
   String aiPreviewCourseCount(int count) {
@@ -26728,18 +26728,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get aiPreviewWarningsTitle => '識别提醒';
+  String get aiPreviewWarningsTitle => '識別提醒';
 
   @override
   String get aiPreviewCoursesTitle => '課程預覽';
 
   @override
   String aiPreviewRemainingCourses(int count) {
-    return '其余 $count 条将在匯入後寫入目前課表';
+    return '其餘 $count 條將在匯入後寫入目前課表';
   }
 
   @override
-  String get warehouseMissingSchoolTitle => '\"學校列表裡没有你的學校？\"';
+  String get warehouseMissingSchoolTitle => '\"學校列表裡沒有你的學校？\"';
 
   @override
   String get warehouseMissingSchoolSubtitle =>
@@ -26797,7 +26797,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String deleteDebugRecordMessage(String name) {
-    return '\"確認刪除“$name”？刪除後不會影响已经匯入的課程\"';
+    return '\"確認刪除“$name”？刪除後不會影響已經匯入的課程\"';
   }
 
   @override
@@ -26812,7 +26812,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get localDebugMaintainer => '本地偵錯';
 
   @override
-  String get customDebugDescription => '\"使用者儲存的自訂教務偵錯脚本\"';
+  String get customDebugDescription => '\"使用者儲存的自訂教務偵錯腳本\"';
 
   @override
   String get addDebugRecordTooltip => '新增偵錯記錄';
@@ -26827,46 +26827,46 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get addDebugRecordAction => '新增偵錯記錄';
 
   @override
-  String get noSavedDebugRecords => '還没有保存的偵錯記錄';
+  String get noSavedDebugRecords => '還沒有儲存的偵錯記錄';
 
   @override
-  String get noSavedDebugRecordsHint => '先新增一条，把網址和脚本贴進去，以後就能直接複用';
+  String get noSavedDebugRecordsHint => '先新增一條，把網址和腳本貼進去，以後就能直接複用';
 
   @override
   String debugScriptLength(int count) {
-    return '脚本 $count 字符';
+    return '腳本 $count 字符';
   }
 
   @override
   String get startDebugAction => '開始偵錯';
 
   @override
-  String get editAction => '\"编輯\"';
+  String get editAction => '\"編輯\"';
 
   @override
-  String get scriptFileReadFailed => '無法讀取脚本文件';
+  String get scriptFileReadFailed => '無法讀取腳本檔案';
 
   @override
   String scriptFileImported(String name) {
-    return '已匯入脚本文件：$name';
+    return '已匯入腳本檔案：$name';
   }
 
   @override
   String scriptFileImportFailed(String error) {
-    return '匯入脚本文件失败：$error';
+    return '匯入腳本檔案失敗：$error';
   }
 
   @override
-  String get debugRecordNameRequired => '\"请先填寫偵錯記錄名稱\"';
+  String get debugRecordNameRequired => '\"請先填寫偵錯記錄名稱\"';
 
   @override
-  String get invalidImportUrl => '\"请輸入有效的教務網址\"';
+  String get invalidImportUrl => '\"請輸入有效的教務網址\"';
 
   @override
-  String get debugScriptRequired => '\"请先填寫或匯入脚本\"';
+  String get debugScriptRequired => '\"請先填寫或匯入腳本\"';
 
   @override
-  String get editDebugRecordTitle => '\"编輯偵錯記錄\"';
+  String get editDebugRecordTitle => '\"編輯偵錯記錄\"';
 
   @override
   String get addDebugRecordTitle => '新增偵錯記錄';
@@ -26875,7 +26875,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get savingAction => '保存中…';
 
   @override
-  String get debugRecordFormula => '一条記錄 = 一個網址 + 一段脚本';
+  String get debugRecordFormula => '一條記錄 = 一個網址 + 一段腳本';
 
   @override
   String get debugRecordFormulaSubtitle => '適合反覆調試同一學校或多套腳本，儲存後長期保留';
@@ -26884,19 +26884,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get debugRecordNameLabel => '記錄名稱';
 
   @override
-  String get debugRecordNameHint => '例如：重庆机電-新版教務';
+  String get debugRecordNameHint => '例如：重慶機電-新版教務';
 
   @override
   String get importUrlLabel => '教務網址';
 
   @override
-  String get debugScriptLabel => '偵錯脚本';
+  String get debugScriptLabel => '偵錯腳本';
 
   @override
   String get importFromFileAction => '\"從檔案匯入\"';
 
   @override
-  String get debugScriptHint => '把浏覽器擴展匯出的完整脚本粘贴到這裡';
+  String get debugScriptHint => '把瀏覽器擴展匯出的完整腳本貼上到這裡';
 
   @override
   String get saveDebugRecordAction => '保存偵錯記錄';
@@ -27021,13 +27021,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get savedImportUrlHint => '已保存教務網址，下次可直接匯入';
 
   @override
-  String get adapterIntroSubtitle => '可查看適配器資訊、登入入口與脚本狀態';
+  String get adapterIntroSubtitle => '可查看適配器資訊、登入入口與腳本狀態';
 
   @override
   String get schoolLabel => '\"學校\"';
 
   @override
-  String get categoryLabel => '類别';
+  String get categoryLabel => '類別';
 
   @override
   String get maintainerLabel => '適配者';
@@ -27036,7 +27036,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get adapterInfoTitle => '適配器資訊';
 
   @override
-  String get scriptPathLabel => '脚本路徑';
+  String get scriptPathLabel => '腳本路徑';
 
   @override
   String get loginEntryLabel => '登入入口';
@@ -27045,27 +27045,27 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get unsetConfigLabel => '未配置';
 
   @override
-  String get adapterOverrideImportUrlHint => '目前使用你手動覆盖的登入地址';
+  String get adapterOverrideImportUrlHint => '目前使用你手動覆蓋的登入地址';
 
   @override
   String get repositoryLabel => '倉庫';
 
   @override
-  String get scriptStatusTitle => '脚本狀態';
+  String get scriptStatusTitle => '腳本狀態';
 
   @override
   String scriptLoadedLength(int count) {
-    return '脚本已成功讀取，长度 $count 字符';
+    return '腳本已成功讀取，長度 $count 字符';
   }
 
   @override
-  String get scriptEmpty => '脚本為空';
+  String get scriptEmpty => '腳本為空';
 
   @override
   String get openLoginInAppAction => '應用內打開登入入口';
 
   @override
-  String get openInSystemBrowserAction => '系統浏覽器打開';
+  String get openInSystemBrowserAction => '系統瀏覽器打開';
 
   @override
   String get copiedImportLoginUrl => '已複制教務登入地址';
@@ -27074,10 +27074,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get copyLoginAddressAction => '複制登入地址';
 
   @override
-  String get copiedScriptRawUrl => '已複制脚本原始地址';
+  String get copiedScriptRawUrl => '已複制腳本原始地址';
 
   @override
-  String get copyScriptAddressAction => '複制脚本地址';
+  String get copyScriptAddressAction => '複制腳本地址';
 
   @override
   String get customLoginAddressAction => '\"自訂登入地址\"';
@@ -27179,7 +27179,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeMenuFeedbackTitle => '問題回饋';
 
   @override
-  String get switchTimetableTitle => '切换課表';
+  String get switchTimetableTitle => '切換課表';
 
   @override
   String get todayTimetableTitle => '今日課表';
@@ -27221,7 +27221,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String courseDialogNotThisWeekHint(int week) {
-    return '目前查看第 $week 周，這門課這周没有上課，因此不能按“本周這節”調課';
+    return '目前查看第 $week 周，這門課這周沒有上課，因此不能按“本週這節”調課';
   }
 
   @override
@@ -27237,7 +27237,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get deleteModeTitle => '刪除方式';
 
   @override
-  String get deleteModeSubtitle => '你可以刪掉整条排課，也可以只刪目前看到的這一周這一節';
+  String get deleteModeSubtitle => '你可以刪掉整條排課，也可以只刪目前看到的這一週這一節';
 
   @override
   String get deleteCourseAction => '刪這個課';
@@ -27257,7 +27257,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String deleteScheduleConfirmMessage(String name, String detail) {
-    return '確定刪除“$name”這条排課嗎？\n$detail';
+    return '確定刪除“$name”這條排課嗎？\n$detail';
   }
 
   @override
@@ -27271,7 +27271,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get noChangesDetected => '未檢測到变更';
+  String get noChangesDetected => '未檢測到變更';
 
   @override
   String get rescheduleCurrentOccurrenceTitle => '調本周這節課';
@@ -27420,7 +27420,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String feedbackXiaohongshuSubtitle(String id) {
-    return '小紅書号：$id';
+    return '小紅書號：$id';
   }
 
   @override
@@ -27428,7 +27428,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String feedbackCoolapkSubtitle(String id) {
-    return '酷安号：$id';
+    return '酷安號：$id';
   }
 
   @override
@@ -27436,7 +27436,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String feedbackQqGroupSubtitle(String id) {
-    return '群号：$id';
+    return '羣號：$id';
   }
 
   @override
@@ -27612,7 +27612,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String applyReturnedTimeSchemeFailed(String error) {
-    return '應用返回的節次模板失败：$error';
+    return '應用返回的節次模板失敗：$error';
   }
 
   @override
@@ -29106,7 +29106,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String courseWeekSuspendedLabel(String weeks) {
-    return '第$weeks周停课';
+    return '第$weeks周停課';
   }
 
   @override
@@ -29136,7 +29136,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get aboutDownloadPackageMethodTitle => '下载安装包方式';
+  String get aboutDownloadPackageMethodTitle => '下載安裝包方式';
 
   @override
   String get aboutInAppDownloadTitle => '應用程式內下載';
@@ -29196,7 +29196,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get syncErrorSyncFailed => '同步失敗';
 
   @override
-  String get sectionTimeDisplayHidden => '不显示';
+  String get sectionTimeDisplayHidden => '不顯示';
 
   @override
   String get sectionTimeDisplayStartOnly => '僅顯示上課時間';
@@ -29316,22 +29316,22 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveCountdownTextStyleSecondOnlySlash => '/s（5/s）';
 
   @override
-  String get miuiIslandLabelStyleTextOnly => '仅文字';
+  String get miuiIslandLabelStyleTextOnly => '僅文字';
 
   @override
   String get miuiIslandLabelStyleIconAndText => '圖示+文字';
 
   @override
-  String get miuiIslandLabelContentCourseName => '课程名';
+  String get miuiIslandLabelContentCourseName => '課程名';
 
   @override
   String get miuiIslandLabelContentLocation => '教室';
 
   @override
-  String get miuiIslandLabelContentCourseNameAndLocation => '课程名+教室';
+  String get miuiIslandLabelContentCourseNameAndLocation => '課程名+教室';
 
   @override
-  String get miuiIslandLabelFontWeightRegular => '常规';
+  String get miuiIslandLabelFontWeightRegular => '常規';
 
   @override
   String get miuiIslandLabelFontWeightMedium => '中等';
@@ -29355,10 +29355,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get miuiIslandExpandedIconCustomImage => '自訂圖片';
 
   @override
-  String get miuiIslandExpandedIconHidden => '不显示';
+  String get miuiIslandExpandedIconHidden => '不顯示';
 
   @override
-  String get liveBeforeClassQuickActionNone => '不显示';
+  String get liveBeforeClassQuickActionNone => '不顯示';
 
   @override
   String get liveBeforeClassQuickActionSilent => '開啟靜音';
@@ -29394,13 +29394,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get timetableTimeColumnWidthNarrow => '窄';
 
   @override
-  String get timetableTimeColumnWidthWide => '宽';
+  String get timetableTimeColumnWidthWide => '寬';
 
   @override
   String get timetableCourseSpacingNarrow => '窄';
 
   @override
-  String get timetableCourseSpacingWide => '宽';
+  String get timetableCourseSpacingWide => '寬';
 
   @override
   String get appUpdateDownloadSourceOriginal => 'GitHub 原版';
@@ -29409,10 +29409,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get appUpdateDownloadSourceMirror => '國內鏡像';
 
   @override
-  String get appUpdateDownloadChannelPgyer => '蒲公英下载';
+  String get appUpdateDownloadChannelPgyer => '蒲公英下載';
 
   @override
-  String get appUpdateDownloadChannelGithub => 'GitHub 下载';
+  String get appUpdateDownloadChannelGithub => 'GitHub 下載';
 
   @override
   String get appUpdateDownloadChannelPgyerDescription => '國內高速下載，推薦使用';
@@ -30095,11 +30095,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseWeekOddModeSuffix => ' 單週';
 
   @override
-  String get courseWeekEvenModeSuffix => ' 双周';
+  String get courseWeekEvenModeSuffix => ' 雙週';
 
   @override
   String courseWeekSuspensionDescription(String weeks) {
-    return '第$weeks周停课';
+    return '第$weeks周停課';
   }
 
   @override
@@ -30165,7 +30165,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String holidayLogPrimaryApiException(String error) {
-    return '主 API 异常：$error';
+    return '主 API 異常：$error';
   }
 
   @override
@@ -30198,35 +30198,35 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get holidayNameNewYear => '元旦';
 
   @override
-  String get holidayNameLaborDay => '劳动节';
+  String get holidayNameLaborDay => '勞動節';
 
   @override
-  String get holidayNameNationalDay => '国庆节';
+  String get holidayNameNationalDay => '國慶節';
 
   @override
-  String get holidayNameSpringFestival => '春节';
+  String get holidayNameSpringFestival => '春節';
 
   @override
-  String get holidayNameQingming => '清明节';
+  String get holidayNameQingming => '清明節';
 
   @override
-  String get holidayNameDragonBoat => '端午节';
+  String get holidayNameDragonBoat => '端午節';
 
   @override
-  String get holidayNameMidAutumn => '中秋节';
+  String get holidayNameMidAutumn => '中秋節';
 
   @override
   String macroReplayStatusFailed(String error) {
-    return '失败: $error';
+    return '失敗: $error';
   }
 
   @override
   String macroReplayStatusPaused(String reason) {
-    return '等待手动操作: $reason';
+    return '等待手動操作: $reason';
   }
 
   @override
-  String get macroReplayStepNavigating => '正在导航...';
+  String get macroReplayStepNavigating => '正在導覽...';
 
   @override
   String get macroReplayStepFilling => '正在填寫表單...';
@@ -30241,10 +30241,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get macroReplayStepWaitSelector => '等待頁面元素...';
 
   @override
-  String get macroReplayStepWaitManual => '等待用户操作';
+  String get macroReplayStepWaitManual => '等待使用者操作';
 
   @override
-  String get macroReplayStepExecuteScript => '正在执行导入脚本...';
+  String get macroReplayStepExecuteScript => '正在執行匯入腳本...';
 
   @override
   String get macroReplayStepDelay => '等待中...';
@@ -30256,11 +30256,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get macroReplayNoSteps => '沒有錄製步驟';
 
   @override
-  String get macroReplayUserCancelled => '用户取消';
+  String get macroReplayUserCancelled => '使用者取消';
 
   @override
   String macroReplayStepFailed(int current, int total, String error) {
-    return '第 $current/$total 步失败: $error';
+    return '第 $current/$total 步失敗: $error';
   }
 
   @override
@@ -30301,21 +30301,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get macroReplayManualActionRequired => '需要手动操作';
+  String get macroReplayManualActionRequired => '需要手動操作';
 
   @override
   String macroReplayNavigateTo(String url) {
-    return '导航到 $url';
+    return '導覽到 $url';
   }
 
   @override
   String get macroReplayWaitPageLoad => '等待頁面載入';
 
   @override
-  String get macroReplayWaitDomReady => '等待 DOM 就绪';
+  String get macroReplayWaitDomReady => '等待 DOM 就緒';
 
   @override
-  String get hyperosShowcaseTitle => '澎湃 UI 组件库';
+  String get hyperosShowcaseTitle => '澎湃 UI 元件庫';
 
   @override
   String get hyperosShowcaseSectionSummary => '概要卡片';
@@ -30327,19 +30327,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get hyperosShowcaseSectionTags => '標籤 / 手風琴 / 提示';
 
   @override
-  String get hyperosShowcaseAccordionSection1 => '第一节';
+  String get hyperosShowcaseAccordionSection1 => '第一節';
 
   @override
   String get hyperosShowcaseAccordionSection1Body => '展開後顯示的內容區域';
 
   @override
-  String get hyperosShowcaseAccordionSection2 => '第二节';
+  String get hyperosShowcaseAccordionSection2 => '第二節';
 
   @override
   String get hyperosShowcaseAccordionSection2Body => '可摺疊分組，替代 FAccordion';
 
   @override
-  String get hyperosShowcaseSectionNavRows => '列表行 · 导航';
+  String get hyperosShowcaseSectionNavRows => '列表行 · 導覽';
 
   @override
   String get hyperosShowcaseNavRowWithIcon => '帶圖示';
@@ -30348,7 +30348,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get hyperosShowcaseNavRowNoIconSubtitle => '沒有左側彩色圖示';
 
   @override
-  String get hyperosShowcaseNavRowDetails => '详情';
+  String get hyperosShowcaseNavRowDetails => '詳情';
 
   @override
   String get hyperosShowcaseSectionSwitchRows => '清單列 · 開關 / 危險';
@@ -30387,7 +30387,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get hyperosShowcaseSectionControls => '控件卡片';
 
   @override
-  String get hyperosShowcaseControlsSubtitle => '滑条、分段、按钮';
+  String get hyperosShowcaseControlsSubtitle => '滑條、分段、按鈕';
 
   @override
   String get hyperosShowcaseSegmentLeft => '左';
@@ -30409,7 +30409,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String hyperosShowcasePickerCurrentValue(int value) {
-    return '当前值：$value';
+    return '目前值：$value';
   }
 
   @override
@@ -30422,7 +30422,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get hyperosShowcaseSectionNavActions => '導覽與操作';
 
   @override
-  String get hyperosShowcaseTooltipButton => '带 Tooltip 的按钮';
+  String get hyperosShowcaseTooltipButton => '帶 Tooltip 的按鈕';
 
   @override
   String get hyperosShowcaseSectionProgress => '進度與重新整理';
@@ -30431,16 +30431,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get hyperosShowcaseSectionColorChip => '顏色選擇 · ColorChip';
 
   @override
-  String get hyperosShowcaseSectionNavBar => '底部导航 · HyperosNavigationBar';
+  String get hyperosShowcaseSectionNavBar => '底部導覽 · HyperosNavigationBar';
 
   @override
   String get hyperosShowcaseNavHome => '首頁';
 
   @override
-  String get hyperosShowcaseNavTimetable => '课表';
+  String get hyperosShowcaseNavTimetable => '課表';
 
   @override
-  String get hyperosShowcaseNavSettings => '设置';
+  String get hyperosShowcaseNavSettings => '設定';
 
   @override
   String get hyperosShowcaseSectionEmpty => '空狀態 / 分隔線 / 裝飾';
@@ -30449,7 +30449,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get hyperosShowcaseEmptySubtitle => '清單沒有資料時的佔位';
 
   @override
-  String get hyperosShowcaseActionButton => '操作按钮';
+  String get hyperosShowcaseActionButton => '操作按鈕';
 
   @override
   String get hyperosShowcaseDividerRowTitle => '第二列（上方有縮排分隔線）';
@@ -30526,14 +30526,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
     String schoolName,
     String adapterName,
   ) {
-    return '快捷导入 $schoolName $adapterName';
+    return '快捷匯入 $schoolName $adapterName';
   }
 
   @override
   String get courseImportScriptNoCourses => '匯入腳本未傳回課程資料';
 
   @override
-  String get courseImportScriptFailed => '脚本执行失败';
+  String get courseImportScriptFailed => '腳本執行失敗';
 
   @override
   String get courseImportRecordingStatus => '錄製中…點擊停止完成錄製';
@@ -30583,7 +30583,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
     String location,
     String weekText,
   ) {
-    return '周$weekday 第$startSection-$endSection节  $name  $location  周次：$weekText';
+    return '周$weekday 第$startSection-$endSection節  $name  $location  周次：$weekText';
   }
 
   @override
@@ -30616,7 +30616,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseImportUpdateRecommendedAction => '更新課表（推薦）';
 
   @override
-  String get courseImportOverwriteAction => '覆盖导入';
+  String get courseImportOverwriteAction => '覆蓋匯入';
 
   @override
   String get courseImportSectionCountInsufficientTitle => '時間模板節次不足';
@@ -30675,37 +30675,37 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logAppLifecycleChanged => '應用程式生命週期已變更';
 
   @override
-  String get logNavigatorRouteReplaced => '导航路由已替换';
+  String get logNavigatorRouteReplaced => '導覽路由已替換';
 
   @override
-  String get logNavigatorRouteChanged => '导航路由已变更';
+  String get logNavigatorRouteChanged => '導覽路由已變更';
 
   @override
   String get logAppLogsDefaultMigrated => '遷移時已預設開啟應用程式日誌記錄';
 
   @override
-  String get logTimetableLoadSettingsFailed => '加载课表设置失败';
+  String get logTimetableLoadSettingsFailed => '載入課表設定失敗';
 
   @override
   String get logTimetableLoadCoursesFailed => '載入課程資料失敗';
 
   @override
-  String get logTimetableLoadCurrentWeekFailed => '加载当前周次失败';
+  String get logTimetableLoadCurrentWeekFailed => '載入目前周次失敗';
 
   @override
-  String get logHomeWidgetPinSupportFailed => '检查桌面小组件固定支持失败';
+  String get logHomeWidgetPinSupportFailed => '檢查桌面小元件固定支持失敗';
 
   @override
   String get logHomeWidgetPinRequestFailed => '請求固定桌面小工具失敗';
 
   @override
-  String get logHomeWidgetSyncFailed => '同步桌面小组件快照失败';
+  String get logHomeWidgetSyncFailed => '同步桌面小元件快照失敗';
 
   @override
-  String get logHomeWidgetClearFailed => '清空桌面小组件快照失败';
+  String get logHomeWidgetClearFailed => '清空桌面小元件快照失敗';
 
   @override
-  String get logHomeWidgetScheduleFailed => '调度桌面小组件刷新失败';
+  String get logHomeWidgetScheduleFailed => '調度桌面小元件刷新失敗';
 
   @override
   String get logHomeWidgetExactAlarmCheckFailed => '檢查精確鬧鐘權限失敗';
@@ -30824,7 +30824,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get logFieldSource => '来源';
+  String get logFieldSource => '來源';
 
   @override
   String get logFieldPlatform => '平台';
@@ -30833,7 +30833,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logFieldVersion => '版本';
 
   @override
-  String get logFieldBuildNumber => '构建号';
+  String get logFieldBuildNumber => '構建號';
 
   @override
   String get logFieldLoggingEnabled => '日誌記錄';
@@ -30845,16 +30845,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logFieldAccepted => '已同意';
 
   @override
-  String get logFieldPrevious => '先前状态';
+  String get logFieldPrevious => '先前狀態';
 
   @override
-  String get logFieldTruncated => '已截断';
+  String get logFieldTruncated => '已截斷';
 
   @override
-  String get logFieldTruncatedHint => '截断提示';
+  String get logFieldTruncatedHint => '截斷提示';
 
   @override
-  String get logFieldThrowable => '异常';
+  String get logFieldThrowable => '異常';
 
   @override
   String get logFieldExtras => '附加信息';
@@ -30872,7 +30872,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logFieldManufacturer => '制造商';
 
   @override
-  String get logFieldModel => '型号';
+  String get logFieldModel => '型號';
 
   @override
   String get logFieldSdkInt => 'SDK 版本';
@@ -30884,10 +30884,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logFieldChannel => '渠道';
 
   @override
-  String get logFieldHasNotificationPermission => '通知权限';
+  String get logFieldHasNotificationPermission => '通知權限';
 
   @override
-  String get logFieldHasPromotedPermissionDeclared => '已声明提升通知权限';
+  String get logFieldHasPromotedPermissionDeclared => '已聲明提升通知權限';
 
   @override
   String get logFieldCanPostPromotedNotifications => '可发布提升通知';
@@ -30902,7 +30902,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logFieldHideFromRecentsEnabled => '從最近工作隱藏';
 
   @override
-  String get logFieldTaskRemovedRecently => '近期任务被移除';
+  String get logFieldTaskRemovedRecently => '近期任務被移除';
 
   @override
   String get logFieldLastTaskRemovedAt => '上次工作移除時間';
@@ -30911,7 +30911,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logFieldProcessImportance => '處理程序重要性';
 
   @override
-  String get logFieldAutoStartStatus => '自启动状态';
+  String get logFieldAutoStartStatus => '自啟動狀態';
 
   @override
   String get logFieldLiveEnableBeforeClass => '課前超級島';
@@ -30923,10 +30923,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logFieldLiveEnableBeforeEnd => '下課前超級島';
 
   @override
-  String get logFieldLivePromoteDuringClass => '课中提升通知';
+  String get logFieldLivePromoteDuringClass => '課中提升通知';
 
   @override
-  String get logFieldLiveShowDuringClassNotification => '课中状态栏通知';
+  String get logFieldLiveShowDuringClassNotification => '課中狀態欄通知';
 
   @override
   String get logFieldLiveShowCountdown => '顯示倒數計時';
@@ -30935,13 +30935,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logFieldLiveShowStageText => '顯示階段文字';
 
   @override
-  String get logFieldLiveShowCourseName => '显示课程名';
+  String get logFieldLiveShowCourseName => '顯示課程名';
 
   @override
   String get logFieldLiveShowLocation => '顯示地點';
 
   @override
-  String get logFieldLiveUseShortName => '使用简称';
+  String get logFieldLiveUseShortName => '使用簡稱';
 
   @override
   String get logFieldLiveHidePrefixText => '隱藏前綴文字';
@@ -30962,19 +30962,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logFieldLiveMiuiIslandLabelFontColor => '島標籤字體顏色';
 
   @override
-  String get logFieldLiveMiuiIslandLabelFontWeight => '岛标签字重';
+  String get logFieldLiveMiuiIslandLabelFontWeight => '島標籤字重';
 
   @override
-  String get logFieldLiveMiuiIslandLabelRenderQuality => '岛标签渲染质量';
+  String get logFieldLiveMiuiIslandLabelRenderQuality => '島標籤渲染品質';
 
   @override
-  String get logFieldLiveMiuiIslandLabelFontSize => '岛标签字号';
+  String get logFieldLiveMiuiIslandLabelFontSize => '島標籤字號';
 
   @override
-  String get logFieldLiveMiuiIslandLabelOffsetX => '岛标签 X 偏移';
+  String get logFieldLiveMiuiIslandLabelOffsetX => '島標籤 X 偏移';
 
   @override
-  String get logFieldLiveMiuiIslandLabelOffsetY => '岛标签 Y 偏移';
+  String get logFieldLiveMiuiIslandLabelOffsetY => '島標籤 Y 偏移';
 
   @override
   String get logFieldLiveMiuiIslandExpandedIconMode => '展開圖示模式';
@@ -30989,7 +30989,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logFieldLiveEndSecondsCountdownThreshold => '下課倒數計時閾值（秒）';
 
   @override
-  String get logFieldState => '状态';
+  String get logFieldState => '狀態';
 
   @override
   String get logFieldRoute => '路由';
@@ -30998,19 +30998,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logFieldPreviousRoute => '先前路由';
 
   @override
-  String get logFieldProfileId => '课表配置 ID';
+  String get logFieldProfileId => '課表設定 ID';
 
   @override
   String get logFieldReason => '原因';
 
   @override
-  String get logFieldClientIp => '客户端 IP';
+  String get logFieldClientIp => '客戶端 IP';
 
   @override
   String get logFieldPort => '端口';
 
   @override
-  String get logFieldCourseName => '课程名';
+  String get logFieldCourseName => '課程名';
 
   @override
   String get logFieldStage => '階段';
@@ -31019,7 +31019,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logFieldFrom => '來源頁面';
 
   @override
-  String get logFieldCurrentWeek => '当前周次';
+  String get logFieldCurrentWeek => '目前周次';
 
   @override
   String get logFieldWeekday => '星期';
@@ -31040,7 +31040,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logFieldRequested => '要求數量';
 
   @override
-  String get logFieldTarget => '目标';
+  String get logFieldTarget => '目標';
 
   @override
   String get logFieldCount => '數量';
@@ -31049,7 +31049,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logFieldValue => '值';
 
   @override
-  String get logFieldSnapshotLength => '快照长度';
+  String get logFieldSnapshotLength => '快照長度';
 
   @override
   String get logFieldStoredSnapshotVersion => '快照儲存版本';
@@ -31076,22 +31076,22 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logCatStartupFlowStarted => '啟動流程：開始';
 
   @override
-  String get logCatStartupFlowCompleted => '启动流程：完成';
+  String get logCatStartupFlowCompleted => '啟動流程：完成';
 
   @override
-  String get logCatStartupFlowFailed => '启动流程：失败';
+  String get logCatStartupFlowFailed => '啟動流程：失敗';
 
   @override
   String get logCatAppLifecycleStateChanged => '應用程式生命週期';
 
   @override
-  String get logCatRoutePushed => '路由：入栈';
+  String get logCatRoutePushed => '路由：入棧';
 
   @override
-  String get logCatRoutePopped => '路由：出栈';
+  String get logCatRoutePopped => '路由：出棧';
 
   @override
-  String get logCatRouteReplaced => '路由：替换';
+  String get logCatRouteReplaced => '路由：替換';
 
   @override
   String get logCatFlutterFrameworkError => 'Flutter 框架錯誤';
@@ -31106,28 +31106,28 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logCatAppLogsDefaultMigrated => '應用程式日誌：遷移';
 
   @override
-  String get logCatTimetableLoadSettingsFailed => '课表：加载设置失败';
+  String get logCatTimetableLoadSettingsFailed => '課表：載入設定失敗';
 
   @override
-  String get logCatTimetableLoadCoursesFailed => '课表：加载课程失败';
+  String get logCatTimetableLoadCoursesFailed => '課表：載入課程失敗';
 
   @override
-  String get logCatTimetableLoadCurrentWeekFailed => '课表：加载周次失败';
+  String get logCatTimetableLoadCurrentWeekFailed => '課表：載入周次失敗';
 
   @override
-  String get logCatHomeWidgetPinSupportFailed => '桌面小组件：检查固定支持';
+  String get logCatHomeWidgetPinSupportFailed => '桌面小元件：檢查固定支持';
 
   @override
   String get logCatHomeWidgetPinRequestFailed => '桌面小工具：請求固定';
 
   @override
-  String get logCatHomeWidgetSyncFailed => '桌面小组件：同步失败';
+  String get logCatHomeWidgetSyncFailed => '桌面小元件：同步失敗';
 
   @override
-  String get logCatHomeWidgetClearFailed => '桌面小组件：清空失败';
+  String get logCatHomeWidgetClearFailed => '桌面小元件：清空失敗';
 
   @override
-  String get logCatHomeWidgetScheduleFailed => '桌面小组件：调度刷新';
+  String get logCatHomeWidgetScheduleFailed => '桌面小元件：調度刷新';
 
   @override
   String get logCatMiuiLiveInitializeFailed => '超級島：初始化失敗';
@@ -31320,19 +31320,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logCatDiagnosticsEnabled => '診斷：已開啟';
 
   @override
-  String get logCatDiagnosticsCleared => '诊断：已清空';
+  String get logCatDiagnosticsCleared => '診斷：已清空';
 
   @override
-  String get logCatDiagnosticsBootstrap => '诊断：引导';
+  String get logCatDiagnosticsBootstrap => '診斷：引導';
 
   @override
-  String get logCatFlutterDiagnostic => 'Flutter 诊断';
+  String get logCatFlutterDiagnostic => 'Flutter 診斷';
 
   @override
-  String get logCatFlutterDiagnosticEvent => 'Flutter 诊断事件';
+  String get logCatFlutterDiagnosticEvent => 'Flutter 診斷事件';
 
   @override
-  String get logCatRenderFailed => '渲染失败';
+  String get logCatRenderFailed => '渲染失敗';
 
   @override
   String get logCatDebugSnapshot => '除錯快照';
@@ -31427,10 +31427,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutAlreadyLatestHeadline => '已是最新版本';
 
   @override
-  String get aboutDownloadChannelSectionTitle => '下载渠道';
+  String get aboutDownloadChannelSectionTitle => '下載渠道';
 
   @override
-  String get aboutMirrorProbeFailedLabel => '失败';
+  String get aboutMirrorProbeFailedLabel => '失敗';
 
   @override
   String timeSchemeImportSupplementName(String name) {
@@ -31446,7 +31446,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get currentProfileTimeSchemeName => '目前課表時間';
 
   @override
-  String get unnamedTimetableProfile => '未命名课表';
+  String get unnamedTimetableProfile => '未命名課表';
 
   @override
   String get cloudBackupManualProtectedTitle => '手動備份永不過期';
@@ -31464,7 +31464,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String guidePermissionsProgressLabel(int ready, int total) {
-    return '已就绪 $ready/$total';
+    return '已就緒 $ready/$total';
   }
 
   @override
@@ -31624,7 +31624,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String locationTimeMatchBuildingGateTags(String tags) {
-    return '标签：$tags';
+    return '標籤：$tags';
   }
 
   @override
@@ -31653,13 +31653,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get locationTimeMatchModeLabel => '匹配模式';
 
   @override
-  String get locationTimeMatchModePrefix => '前缀';
+  String get locationTimeMatchModePrefix => '前綴';
 
   @override
   String get locationTimeMatchModeContains => '包含';
 
   @override
-  String get locationTimeMatchModeExact => '精确';
+  String get locationTimeMatchModeExact => '精確';
 
   @override
   String get locationTimeMatchKeywordTooShort => '關鍵字過短，容易誤匹配';
@@ -31674,7 +31674,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get locationTimeMatchSaved => '地點群組已儲存';
 
   @override
-  String get locationTimeMatchSaveFailed => '保存失败';
+  String get locationTimeMatchSaveFailed => '儲存失敗';
 
   @override
   String get followLocationAutoTimeScheme => '跟隨課表 / 地點自動';
@@ -32385,10 +32385,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get icsExportShareText => '這是來自輕屿課表的日曆檔案';
+  String get icsExportShareText => '這是來自輕嶼課表的日曆檔案';
 
   @override
-  String get icsExportShareSubject => '輕屿課表日曆';
+  String get icsExportShareSubject => '輕嶼課表日曆';
 
   @override
   String get icsExportActionShare => '分享給其他人';
@@ -32423,7 +32423,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String icsExportSyncCalendarName(String profileName) {
-    return '輕屿課表·$profileName';
+    return '輕嶼課表·$profileName';
   }
 
   @override
@@ -32450,7 +32450,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get icsExportRemoveCalendarBody =>
-      '將從系統日曆中刪除「輕屿課表」專屬日曆及其全部日程，你在日曆裡的其他內容不受影響。之後想再同步，點「同步到系統日曆」即可。';
+      '將從系統日曆中刪除「輕嶼課表」專屬日曆及其全部日程，你在日曆裡的其他內容不受影響。之後想再同步，點「同步到系統日曆」即可。';
 
   @override
   String get icsExportRemoveCalendarConfirm => '移除';
