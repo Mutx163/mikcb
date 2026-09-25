@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -288,6 +290,15 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   /// and the large-title measurement is lost mid-gesture.
   final GlobalKey _collapsibleBarKey = GlobalKey();
 
+  /// How far the frosted band paints below the header's own box this frame.
+  ///
+  /// Computed **once per build** and shared by the two places that must agree
+  /// on it: the band shell (what actually gets painted) and
+  /// [_collapsibleFrostThreshold] (when the band turns frosted). If those read
+  /// different values the symptom is a stretch of scroll where the first row
+  /// hides under an *opaque* band before the frost lights.
+  double _bandBottomOverhang = 0;
+
   /// Difference applied to the body top inset by the collapsed large title.
   /// `0` while expanded, or on pages whose scroll position holds the collapse
   /// (offset tracks pixels 1:1). `-expansion` once a short page parks the
@@ -480,7 +491,21 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
         // Content rests this much lower than the upstream layout (see
         // largeTitleContentGap) — frost must not light up until the content
         // edge actually reaches the band.
-        HyperosCollapsibleTopAppBarDefaults.largeTitleContentGap;
+        //
+        // The band paints [_bandBottomOverhang] px BELOW its own layout box
+        // (see `HyperosBlurredHeader.bandBottomOverhang`), so its *painted*
+        // bottom — not the box — is the line content has to reach. Without
+        // this trim the band grows 8px while the threshold stays put, and the
+        // "content slides under the band, then the band turns frosted" window
+        // widens by exactly that 8px: the top row spends that stretch hidden
+        // behind an opaque page-coloured band (2026-09-26 review, measured).
+        // `collapseSnapRestTightenFor` applies the same trim, which is what
+        // keeps the snap's resting point 1px shy of this threshold.
+        math.max(
+          0.0,
+          HyperosCollapsibleTopAppBarDefaults.largeTitleContentGap -
+              _bandBottomOverhang,
+        );
     return threshold < scrollFrostThreshold ? scrollFrostThreshold : threshold;
   }
 
@@ -612,15 +637,24 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       // [subpageBandBottomOverhang] 会盖住静止时的第一行 —— 小标题只剩上半截
       // （2026-09-25 桌面小组件页「快速添加到桌面」）。按版面封顶则正文一个
       // 像素都不动，「标题 → 第一行」的间距保持原样。
-      bottomOverhang: HyperosBlurredHeader.bandBottomOverhang(
-        context,
-        // 只有大标题折叠页在顶栏盒子底边之下留了 largeTitleContentGap 那段
-        // 间距（见 [bandBottomOverhang]）。带工具条时正文顶边距直接取顶栏实测
-        // 高度，工具条自己就贴在带底下，没有任何空白可让。
-        hasReservedGapBelowHeader:
-            _useCollapsibleTopAppBar && widget.headerExtension == null,
-      ),
+      // 用 build 里算好的 [_bandBottomOverhang]，与磨砂阈值、折叠吸附落点同源。
+      bottomOverhang: _bandBottomOverhang,
       child: header,
+    );
+  }
+
+  /// 玻璃带下沿实际往下多画多少（每帧算一次，见字段注释）。
+  double _resolveBandBottomOverhang(BuildContext context) {
+    if (!widget.overlayHeader) {
+      return 0;
+    }
+    return HyperosBlurredHeader.bandBottomOverhang(
+      context,
+      // 只有大标题折叠页在顶栏盒子底边之下留了 largeTitleContentGap 那段
+      // 间距（见 [bandBottomOverhang]）。带工具条时正文顶边距直接取顶栏实测
+      // 高度，工具条自己就贴在带底下，没有任何空白可让。
+      hasReservedGapBelowHeader:
+          _useCollapsibleTopAppBar && widget.headerExtension == null,
     );
   }
 
@@ -727,6 +761,12 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 每帧算一次，两处共用（见字段注释）。在 build 里算而不是
+    // didChangeDependencies：判据掺了 brightness / 模糊开关（继承依赖），
+    // 也掺了 `_useCollapsibleTopAppBar` / `headerExtension` 这些 widget 字段。
+    _bandBottomOverhang = _resolveBandBottomOverhang(context);
+    // 折叠吸附停在哪里，也是以玻璃带画出来的下沿为基准的。
+    _collapsibleScrollBehavior.bottomOverhang = _bandBottomOverhang;
     // 页级 OS4 玻璃采样源宿主：页内玻璃（顶栏带 / 卡片 / 弹窗面等）通过
     // HyperosGlassBackdropReporter 把自己占的区域登记给屏级控制器，宿主只为
     // 每块录「玻璃背后那条窄带」；一屏之内没有任何玻璃时完全不录帧。

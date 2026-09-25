@@ -518,20 +518,19 @@ function bindGeneralAnalytics() {
       }
       link.addEventListener("click", (event) => {
         const targetUrl = link.href || fallbackReleasePage;
-        const isStarLink =
-          new URL(targetUrl, window.location.href).pathname.endsWith(
-            "/stargazers"
-          );
+        // 一次解析出 path：既用于「是不是求 star 入口」的判断，也直接当事件参数。
+        // 带 base 解析，link.href 理论上已是绝对地址，但多一层保护不亏。
+        const destinationPath = new URL(targetUrl, window.location.href)
+          .pathname;
         trackStructuredEvent("outbound_repo_click", {
           destination_host: "github.com",
-          destination_path: normalizeAnalyticsValue(
-            new URL(targetUrl).pathname,
-            160
-          ),
-          // 「求 star」入口单独记一个维度，用来对比它和普通仓库链接的点击量
-          ui_label: isStarLink
-            ? `${getElementLabel(link)}|star`
-            : getElementLabel(link),
+          // 「求 star」入口与普通仓库链接的区分就靠这一维：
+          // 求 star 的两个入口都是 /Mutx163/mikcb/stargazers，仓库链接是 /Mutx163/mikcb。
+          // 不要再往 ui_label 追加 |star 之类的标记 —— ui_label 取自 aria-label，
+          // 会跟着语种变，六个语种就得 OR 六个值才能聚合，反而聚合不起来；
+          // 而且追加位置在 getElementLabel 的长度截断之后，会漏掉项目自己的长度约定。
+          destination_path: normalizeAnalyticsValue(destinationPath, 160),
+          ui_label: getElementLabel(link),
           ui_surface_label: inferElementSurfaceLabel(link),
           link_url: sanitizeUrlForAnalytics(targetUrl),
         });

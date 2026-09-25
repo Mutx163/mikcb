@@ -126,7 +126,18 @@ abstract final class HyperosBlurredHeader {
   static const darkTintOnlyAlpha = 0.62;
 
   /// Live [BackdropFilter] blur on mobile; web uses tint-only.
+  ///
+  /// [liveBlurSupportedOverride] exists because this reads `dart:io`'s
+  /// `Platform`, which is the **host** platform in `flutter test` (Windows on
+  /// the dev machine) — a widget test could otherwise never exercise the
+  /// "band actually paints an overhang" path.
+  @visibleForTesting
+  static bool? liveBlurSupportedOverride;
+
   static bool get liveBlurSupported {
+    if (liveBlurSupportedOverride != null) {
+      return liveBlurSupportedOverride!;
+    }
     if (kIsWeb) {
       return false;
     }
@@ -229,7 +240,27 @@ abstract final class HyperosBlurredHeader {
   static bool bandOverhangs(BuildContext context) =>
       bandOverhangsOverride ??
       (Theme.of(context).brightness != Brightness.dark &&
-          backdropBlurEnabled(context));
+          backdropBlurEnabledUntracked(context));
+
+  /// [backdropBlurEnabled] but reads [FrostedAppearanceScope] **untracked**.
+  ///
+  /// The page shell calls this from its own build (see
+  /// `HyperosBlurredHeaderShell.bottomOverhang`). A tracked read there would
+  /// rebuild the entire open subpage whenever an appearance setting changes —
+  /// exactly what [HyperosBlurredHeaderScope.updateShouldNotify] deliberately
+  /// avoids. Safe to be stale for a frame: the paint gate
+  /// ([HyperosFrostedHeaderShell]) keeps its own tracked read and zeroes the
+  /// overhang when blur is off, and the page rebuilds on the same frame the
+  /// scope notifies anyway.
+  static bool backdropBlurEnabledUntracked(BuildContext context) {
+    if (LiquidGlassDegradation.shouldDegrade(context) || !liveBlurSupported) {
+      return false;
+    }
+    final appearance =
+        FrostedAppearanceScope.maybeOfUntracked(context)?.appearance ??
+        FrostedAppearance.defaults;
+    return appearance.blurEnabled;
+  }
 
   /// 玻璃带下沿实际往下多画多少（已按版面空白封顶）。
   ///
@@ -254,6 +285,8 @@ abstract final class HyperosBlurredHeader {
     if (!bandOverhangs(context) || !hasReservedGapBelowHeader) {
       return 0;
     }
+    // min() 不是装饰：requested 是 2026-09-23 用户要的「一个字高」，而版面上
+    // 真正留出来的空白只有 largeTitleContentGap，超出部分会盖住第一行。
     return math.min(
       subpageBandBottomOverhang,
       HyperosMiuixTopAppBar.largeTitleContentGap,

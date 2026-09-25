@@ -222,6 +222,15 @@ class FrostedAppearanceScope extends InheritedWidget {
     return context.dependOnInheritedWidgetOfExactType<FrostedAppearanceScope>();
   }
 
+  /// Reads the scope **without** registering an inherited dependency.
+  ///
+  /// For callers that sit high in the tree (e.g. the page shell) and only need
+  /// the current value as a paint hint — a tracked read there would rebuild the
+  /// whole open page every time the user changes an appearance setting.
+  static FrostedAppearanceScope? maybeOfUntracked(BuildContext context) {
+    return context.getInheritedWidgetOfExactType<FrostedAppearanceScope>();
+  }
+
   @override
   bool updateShouldNotify(covariant FrostedAppearanceScope oldWidget) {
     return appearance != oldWidget.appearance;

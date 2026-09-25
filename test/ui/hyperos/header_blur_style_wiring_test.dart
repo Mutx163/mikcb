@@ -267,10 +267,11 @@ void main() {
       expect(gaussian.effectiveSigmaX, 15);
     });
 
-    test('子页顶栏模糊下沿比标题多画 ≈ 一个字高（2026-09-23 口径）', () {
-      // 用户口径：「最底下模糊的边界再往下，超过标题底部一个字空间」。
-      // 一个字高按 20dp 取；这个值同时是"模糊往下的距离"与"上限"，
-      // 太大就会盖住正文第一条。
+    test('子页顶栏模糊下沿的上限是 20dp，实际画多少按版面空白封顶', () {
+      // 用户口径：「最底下模糊的边界再往下，超过标题底部一个字空间」，一个字高
+      // 按 20dp 记成上限。但版面上留给「顶栏底边 → 第一行」的空白只有
+      // largeTitleContentGap，硬画满会盖住正文第一条 —— 实际值走
+      // bandBottomOverhang（见 hyperos_band_overhang_test.dart）。
       expect(HyperosBlurredHeader.subpageBandBottomOverhang, 20);
     });
   });

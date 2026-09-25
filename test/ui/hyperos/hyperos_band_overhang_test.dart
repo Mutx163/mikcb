@@ -17,31 +17,40 @@ import '../../helpers_test_app.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() => HyperosBlurredHeader.bandOverhangsOverride = true);
-  tearDown(() => HyperosBlurredHeader.bandOverhangsOverride = null);
+  setUp(() {
+    HyperosBlurredHeader.bandOverhangsOverride = true;
+    // 不顶这一项的话，widget test 跑在宿主平台（Windows）上，`liveBlurSupported`
+    // 恒 false，玻璃带**根本没画**那截外推 —— 测试就只在验算术，不验绘制路径。
+    HyperosBlurredHeader.liveBlurSupportedOverride = true;
+  });
+  tearDown(() {
+    HyperosBlurredHeader.bandOverhangsOverride = null;
+    HyperosBlurredHeader.liveBlurSupportedOverride = null;
+  });
 
   Widget subpage({
     bool collapsibleLargeTitle = true,
     bool withExtension = false,
+    double bodyHeight = 60,
+    Key? key,
   }) => HyperosSubpage(
+    key: key,
     onBack: () {},
     title: const Text('页面标题'),
     collapsibleLargeTitle: collapsibleLargeTitle,
     headerExtension: withExtension
         ? const HyperosBlurredHeaderExtension(child: SizedBox(height: 40))
         : null,
-    child: const HyperosListView(
+    child: HyperosListView(
       children: [
-        HyperosSectionLabel(text: '小标题文字'),
-        HyperosListGroup(children: [SizedBox(height: 60)]),
+        const HyperosSectionLabel(text: '小标题文字'),
+        HyperosListGroup(children: [SizedBox(height: bodyHeight)]),
       ],
     ),
   );
 
-  Future<({double overhang, double headerBottom, double firstRowTop})> pump(
-    WidgetTester tester,
-    Widget page,
-  ) async {
+  Future<({double overhang, double painted, double headerBottom, double firstRowTop})>
+  pump(WidgetTester tester, Widget page) async {
     await tester.pumpWidget(TestApp(home: page));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
@@ -50,6 +59,11 @@ void main() {
           .widget<HyperosFrostedHeaderShell>(
             find.byType(HyperosFrostedHeaderShell),
           )
+          .bottomOverhang,
+      // 真·画出去的那一截：HyperosFrostedHeaderShell 自己按 useBlur 门控后
+      // 交给 InspireHeaderBlur 的值。
+      painted: tester
+          .widget<FrostedHeaderBackground>(find.byType(FrostedHeaderBackground))
           .bottomOverhang,
       headerBottom: tester.getRect(find.byType(HyperosFrostedHeaderShell)).bottom,
       firstRowTop: tester.getRect(find.byType(HyperosSectionLabel).first).top,
@@ -87,6 +101,11 @@ void main() {
       reason: '能画的只有标题块与正文之间那点设计间距',
     );
     expect(m.overhang, lessThan(HyperosBlurredHeader.subpageBandBottomOverhang));
+    expect(
+      m.painted,
+      m.overhang,
+      reason: '页面壳算出的值必须真的被画出去（门控之后仍然是同一个数）',
+    );
   });
 
   testWidgets('无大标题页：正文紧贴顶栏，不外推', (tester) async {
@@ -111,6 +130,73 @@ void main() {
       overhang: m.overhang,
       headerBottom: m.headerBottom,
       firstRowTop: m.firstRowTop,
+    );
+  });
+
+  testWidgets('外推不改变「字滑到带下 → 变磨砂」这个窗口的宽度', (tester) async {
+    // 「内容先滑到不透明带下、越过阈值再切磨砂」是 2026-07-31 起就有的设计
+    // （见 `_collapsibleFrostThreshold` 与 `opaqueAtRest`），那个窗口本来就
+    // 存在、且有意的（无顿挫）。外推要保证的是**只把这条曲线整体前移**、
+    // 不把窗口撑宽 —— 撑宽就等于在带子底下多藏一段字。
+    //
+    // 2026-09-26 审核曾报"窗口从 4px 变 12px"，实测两条都错：外推 8 与外推 0
+    // 的窗口**都是 36px**（外推只是让接触点与磨砂点一起前移 8px）。这条测试
+    // 就是钉住那个事实，防止以后有人把窗口改宽。
+    Future<({double contact, double frost})> measure(
+      WidgetTester tester, {
+      required bool bandPaints,
+    }) async {
+      HyperosBlurredHeader.bandOverhangsOverride = bandPaints;
+      // 每次量一遍都要一棵**全新**的树：同 runtimeType 会复用 State，滚动位置与
+      // 磨砂状态会从上一次量测里带过来，把两次读数搅在一起（实测会假报 8px 差异）。
+      await pump(tester, subpage(bodyHeight: 300, key: ValueKey(bandPaints)));
+      final oh = tester
+          .widget<HyperosFrostedHeaderShell>(
+            find.byType(HyperosFrostedHeaderShell),
+          )
+          .bottomOverhang;
+      final position = tester
+          .state<ScrollableState>(
+            find
+                .descendant(
+                  of: find.byType(HyperosListView),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          )
+          .position;
+      double? contact;
+      double? frost;
+      for (final p in [0.0, 4.0, 8.0, 12.0, 16.0, 20.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 80.0]) {
+        position.jumpTo(p);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 16));
+        final bandBottom =
+            tester.getRect(find.byType(HyperosFrostedHeaderShell)).bottom + oh;
+        final rowTop = tester.getRect(find.byType(HyperosSectionLabel).first).top;
+        final frosted = tester
+            .widgetList<HyperosHeaderUnderContentScope>(
+              find.byType(HyperosHeaderUnderContentScope),
+            )
+            .first
+            .contentUnderHeader;
+        contact ??= rowTop < bandBottom ? p : null;
+        frost ??= frosted ? p : null;
+      }
+      expect(contact, isNotNull);
+      expect(frost, isNotNull);
+      return (contact: contact!, frost: frost!);
+    }
+
+    final withBand = await measure(tester, bandPaints: true);
+    final withoutBand = await measure(tester, bandPaints: false);
+
+    expect(
+      withBand.frost - withBand.contact,
+      closeTo(withoutBand.frost - withoutBand.contact, 0.01),
+      reason:
+          '外推 $withBand 与不外推 $withoutBand 的「不透明窗口」必须一样宽，'
+          '否则就有一段字被多藏在不透明带子底下',
     );
   });
 

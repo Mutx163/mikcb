@@ -73,15 +73,23 @@ abstract final class HyperosCollapsibleTopAppBarDefaults {
   }
 
   /// Extra scroll the collapse snap applies beyond the collapse point so the
-  /// first content row parks tight under the small-title band. The content
-  /// edge reaches the band at `largeTitleBottomPadding + largeTitleContentGap`
-  /// past the collapse point — which is also the frost threshold — so stop
-  /// 1px shy of it: visually flush, never overlapping, and the header never
-  /// flips to its frosted/blurred state from the snap itself.
-  static const double collapseSnapRestTighten =
+  /// first content row parks tight under the small-title band.
+  ///
+  /// The band reaches [overhang] px **below its own layout box** (see
+  /// `HyperosBlurredHeader.bandBottomOverhang`), so "the band" here means its
+  /// *painted* bottom — that trims [HyperosMiuixTopAppBar.largeTitleContentGap]
+  /// by the overhang. The frost threshold in `hyperos_page.dart` applies the
+  /// same trim, which is what keeps the snap's resting point exactly 1px shy
+  /// of it: visually flush, never overlapping, and the header never flips to
+  /// its frosted/blurred state from the snap itself.
+  static double collapseSnapRestTightenFor(double overhang) =>
       HyperosMiuixTopAppBar.largeTitleBottomPadding +
-      HyperosMiuixTopAppBar.largeTitleContentGap -
+      math.max(0.0, HyperosMiuixTopAppBar.largeTitleContentGap - overhang) -
       1.0;
+
+  /// [overhang] = 0 — the band paints exactly to its box. This is the
+  /// 2026-07-31 value, kept for callers/tests that have no band overhang.
+  static const double collapseSnapRestTighten = 11;
 }
 
 /// A curve approximation of the critical spring used by the custom
@@ -263,6 +271,15 @@ class HyperosExitUntilCollapsedScrollBehavior
 
   /// Snap the list to expanded or collapsed after the finger lifts mid-range.
   final bool snapOnRelease;
+
+  /// How far the enclosing frosted band paints below the bar's own box.
+  ///
+  /// "Park the first row flush under the band" is measured against the band's
+  /// **painted** bottom, which sits this far below the box — so the snap target
+  /// has to move with it, or a snapped page parks with its top row hidden
+  /// under a band that is not yet frosted. Written each frame by the page
+  /// shell, which owns the one value shared with the shell and the threshold.
+  double bottomOverhang = 0;
 
   final Duration snapDuration;
   final Curve snapCurve;
@@ -740,7 +757,9 @@ class HyperosExitUntilCollapsedScrollBehavior
     final collapseTarget =
         minExtent +
         expansion +
-        HyperosCollapsibleTopAppBarDefaults.collapseSnapRestTighten;
+        HyperosCollapsibleTopAppBarDefaults.collapseSnapRestTightenFor(
+          bottomOverhang,
+        );
     final targetPixels = scrolled < snapThreshold ? minExtent : collapseTarget;
 
     // notification.metrics is almost always a ScrollPosition for real scroll
