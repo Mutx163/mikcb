@@ -744,43 +744,25 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
 
 /* ---------- 「求 star」 ---------- */
 
-/* 首屏那个星数：数字本身变成入口，底下挂一句求 star。
-   整块都用 --line 描边 + 悬停提亮，跟旁边三个纯数字的 stat 区分开。 */
-.hero-stat-star dd {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
+/* 首屏那个星数：数字可点，右边挂一句「· 求个 star」。
+   后缀直接复用「价格」那格的 .hero-stat-sub（￥0 · 无广告 就是这个写法），
+   所以四格观感一致：都是「小字标签 + 一行大数字」。
+   这里不要给数字加药丸边框或另起一行——那会让这一格比右边三个高一截、
+   粗细也不一样，行的视觉重心就歪了。可点性靠悬停下划线 + 光标提示。 */
 .hero-star-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 12px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--text);
+  color: inherit;
   text-decoration: none;
-  transition: border-color 0.2s, color 0.2s, translate 0.2s;
-}
-
-.hero-star-link::before {
-  content: "★";
-  font-size: 0.8em;
-  color: #f0b429;
+  transition: color 0.2s;
 }
 
 .hero-star-link:hover {
-  border-color: var(--line-strong);
-  translate: 0 -1px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.hero-star-ask {
-  color: var(--text-faint);
-  font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
+/* 悬停时把「求个 star」点亮成星色，提示这里能点 */
+.hero-star-link:hover .hero-stat-sub {
+  color: #f0b429;
 }
 
 /* 导航栏：GitHub 图标右边挂星数，跟 trigger.dev 一个路子。
