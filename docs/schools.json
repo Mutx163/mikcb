@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-22T06:40:17+00:00",
+  "updatedAt": "2026-09-25T06:29:26+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 220,
-    "schools": 215,
+    "total": 224,
+    "schools": 219,
     "generic": 5
   },
   "schools": [
@@ -338,6 +338,13 @@
       "category": "school"
     },
     {
+      "id": "FJNU",
+      "name": "福建师范大学",
+      "initial": "F",
+      "resourceFolder": "FJNU",
+      "category": "school"
+    },
+    {
       "id": "FJCPC",
       "name": "福建船政交通职业学院",
       "initial": "F",
@@ -580,6 +587,13 @@
       "name": "河南工业大学",
       "initial": "H",
       "resourceFolder": "HAUT",
+      "category": "school"
+    },
+    {
+      "id": "HAUE",
+      "name": "河南工程学院",
+      "initial": "H",
+      "resourceFolder": "HAUE",
       "category": "school"
     },
     {
@@ -1031,6 +1045,13 @@
       "category": "school"
     },
     {
+      "id": "QFNU",
+      "name": "曲阜师范大学",
+      "initial": "Q",
+      "resourceFolder": "QFNU",
+      "category": "school"
+    },
+    {
       "id": "QAU",
       "name": "青岛农业大学",
       "initial": "Q",
@@ -1105,6 +1126,13 @@
       "name": "四川师范大学",
       "initial": "S",
       "resourceFolder": "SICNU",
+      "category": "school"
+    },
+    {
+      "id": "SCEMI",
+      "name": "四川机电职业技术学院",
+      "initial": "S",
+      "resourceFolder": "SCEMI",
       "category": "school"
     },
     {
