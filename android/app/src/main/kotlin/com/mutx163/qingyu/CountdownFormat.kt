@@ -1,11 +1,21 @@
 package com.mutx163.qingyu
 
+import android.content.Context
+
 object CountdownFormat {
 
+    /**
+     * [smartMinuteSuffix] / [smartSecondSuffix] only feed the `smart` branch (and
+     * the unknown-style fallback), which the settings page advertises as
+     * "localized". The explicit styles below keep their fixed units on purpose —
+     * `*_cn` means Chinese, the others are unit-symbol styles.
+     */
     fun formatDuration(
         durationMillis: Long,
         style: String,
         secondsThresholdMillis: Long = 60_000L,
+        smartMinuteSuffix: String = "分钟",
+        smartSecondSuffix: String = "秒",
     ): String {
         return when (style) {
             "smart_min_s" -> formatSmartDuration(
@@ -24,7 +34,12 @@ object CountdownFormat {
             "second_only_cn" -> formatSecondOnly(durationMillis, "秒")
             "second_only_short" -> formatSecondOnly(durationMillis, "s")
             "second_only_slash" -> formatSecondOnly(durationMillis, "/s")
-            else -> formatSmartDuration(durationMillis, secondsThresholdMillis)
+            else -> formatSmartDuration(
+                durationMillis = durationMillis,
+                secondsThresholdMillis = secondsThresholdMillis,
+                minuteSuffix = smartMinuteSuffix,
+                secondSuffix = smartSecondSuffix,
+            )
         }
     }
 
@@ -90,3 +105,25 @@ object CountdownFormat {
         return "$totalSeconds$suffix"
     }
 }
+
+/**
+ * [CountdownFormat.formatDuration] with the `smart` branch's units resolved from
+ * resources.
+ *
+ * `smart` is the default style and the settings page advertises it as
+ * "Smart (localized)"; without this the default style prints 分钟/秒 on every
+ * locale. The explicit styles (`*_cn`, `min_s`, …) keep their fixed units
+ * because that is what choosing them means.
+ */
+fun formatCountdownWithLocalizedUnits(
+    context: Context,
+    durationMillis: Long,
+    style: String,
+    secondsThresholdMillis: Long = 60_000L,
+): String = CountdownFormat.formatDuration(
+    durationMillis = durationMillis,
+    style = style,
+    secondsThresholdMillis = secondsThresholdMillis,
+    smartMinuteSuffix = context.getString(R.string.countdown_unit_minute),
+    smartSecondSuffix = context.getString(R.string.countdown_unit_second),
+)

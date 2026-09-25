@@ -55,6 +55,14 @@
     <string name="remaining_until_class_end">수업 종료까지%1$s</string>
     <string name="final_dismiss_with_time">수업 종료 %1$s</string>
 
+    <string name="countdown_unit_minute">분</string>
+    <string name="countdown_unit_second">초</string>
+
+    <string name="lan_edit_channel_name">LAN 편집</string>
+    <string name="lan_edit_channel_description">LAN 편집 세션 진행 중</string>
+    <string name="lan_edit_notification_title">LAN 편집이 시작되었습니다</string>
+    <string name="lan_edit_notification_text">탭하여 연결 정보를 확인하세요</string>
+
     <string name="milestone_recent_end">최근 쉬는 시간</string>
     <string name="milestone_next_start">다음 수업</string>
 

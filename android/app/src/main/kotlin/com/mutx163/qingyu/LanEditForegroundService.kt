@@ -71,10 +71,10 @@ class LanEditForegroundService : Service() {
         val manager = getSystemService(NotificationManager::class.java) ?: return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "局域网编辑",
+            getString(R.string.lan_edit_channel_name),
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
-            description = "局域网编辑会话进行中"
+            description = getString(R.string.lan_edit_channel_description)
         }
         manager.createNotificationChannel(channel)
     }
@@ -94,8 +94,8 @@ class LanEditForegroundService : Service() {
         }
 
         return builder
-            .setContentTitle("局域网编辑已开启")
-            .setContentText("点击返回 App 查看连接信息")
+            .setContentTitle(getString(R.string.lan_edit_notification_title))
+            .setContentText(getString(R.string.lan_edit_notification_text))
             .setSmallIcon(R.drawable.ic_notification)
             .setOngoing(true)
             .setAutoCancel(false)

@@ -472,7 +472,9 @@ class LiveUpdateService : Service() {
             progressBreakOffsetsMillis =
                 intent?.getLongArrayExtra("progressBreakOffsetsMillis") ?: longArrayOf()
             progressMilestoneLabels =
-                intent?.getStringArrayListExtra("progressMilestoneLabels") ?: emptyList()
+                intent?.getStringArrayListExtra("progressMilestoneLabels")
+                    ?.map { localizeLiveMilestoneLabel(this, it) }
+                    ?: emptyList()
             progressMilestoneTimeTexts =
                 intent?.getStringArrayListExtra("progressMilestoneTimeTexts") ?: emptyList()
             startAtMillis =
@@ -2458,7 +2460,12 @@ class LiveUpdateService : Service() {
     private fun formatCountdownDuration(
         durationMillis: Long,
         secondsThresholdMillis: Long = 60_000L,
-    ): String = CountdownFormat.formatDuration(durationMillis, countdownTextStyle, secondsThresholdMillis)
+    ): String = formatCountdownWithLocalizedUnits(
+        context = this,
+        durationMillis = durationMillis,
+        style = countdownTextStyle,
+        secondsThresholdMillis = secondsThresholdMillis,
+    )
 
     private data class DuringClassProgress(
         val progressMax: Int,

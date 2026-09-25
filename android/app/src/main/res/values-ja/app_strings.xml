@@ -55,6 +55,14 @@
     <string name="remaining_until_class_end">授業終了まで%1$s</string>
     <string name="final_dismiss_with_time">授業終了 %1$s</string>
 
+    <string name="countdown_unit_minute">分</string>
+    <string name="countdown_unit_second">秒</string>
+
+    <string name="lan_edit_channel_name">LAN編集</string>
+    <string name="lan_edit_channel_description">LAN編輯セッション進行中</string>
+    <string name="lan_edit_notification_title">LAN編集を開始しました</string>
+    <string name="lan_edit_notification_text">タップしてアプリに戻り、接続情報を確認してください</string>
+
     <string name="milestone_recent_end">直前の休み</string>
     <string name="milestone_next_start">次の授業</string>
 

@@ -57,6 +57,14 @@
     <string name="remaining_until_class_end">距下课%1$s</string>
     <string name="final_dismiss_with_time">整节下课 %1$s</string>
 
+    <string name="countdown_unit_minute">分钟</string>
+    <string name="countdown_unit_second">秒</string>
+
+    <string name="lan_edit_channel_name">局域网编辑</string>
+    <string name="lan_edit_channel_description">局域网编辑会话进行中</string>
+    <string name="lan_edit_notification_title">局域网编辑已开启</string>
+    <string name="lan_edit_notification_text">点击返回 App 查看连接信息</string>
+
     <string name="milestone_recent_end">最近下课</string>
     <string name="milestone_next_start">下节上课</string>
 

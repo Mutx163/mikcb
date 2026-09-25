@@ -2,10 +2,16 @@ import '../models/course.dart';
 import '../models/timetable_settings.dart';
 
 /// Stable label key for the "most recent class ended" break milestone.
-const String milestoneRecentEndLabelKey = '最近下课';
+///
+/// Android resolves these identifiers against `R.string.milestone_*` (see
+/// `localizeLiveMilestoneLabel`). They have to stay keys rather than display
+/// text: the offline scheduler builds the same milestones straight from
+/// resources, so a hard-coded Chinese label here would make the island switch
+/// language depending on who started it.
+const String milestoneRecentEndLabelKey = 'milestone_recent_end';
 
 /// Stable label key for the "next class starts" break milestone.
-const String milestoneNextStartLabelKey = '下节上课';
+const String milestoneNextStartLabelKey = 'milestone_next_start';
 
 class LiveActivityCourseSelection {
   final Course currentCourse;

@@ -130,4 +130,77 @@ class CountdownFormatTest {
         assertEquals("65s", CountdownFormat.formatDuration(ms, "second_only_short"))
         assertEquals("65/s", CountdownFormat.formatDuration(ms, "second_only_slash"))
     }
+
+    // ---------- smart 档的本地化单位 ----------
+
+    @Test
+    fun `smart style uses the units the caller supplies`() {
+        // 设置页把 smart 档标为「本地化」，调用方因此必须能把单位传进来；
+        // 默认值仍是中文，保证不传单位的老调用点行为不变。
+        assertEquals(
+            "2min",
+            CountdownFormat.formatDuration(
+                90_000L,
+                "smart",
+                60_000L,
+                smartMinuteSuffix = "min",
+                smartSecondSuffix = "s",
+            ),
+        )
+        assertEquals(
+            "45s",
+            CountdownFormat.formatDuration(
+                45_000L,
+                "smart",
+                60_000L,
+                smartMinuteSuffix = "min",
+                smartSecondSuffix = "s",
+            ),
+        )
+        assertEquals(
+            "2分",
+            CountdownFormat.formatDuration(
+                90_000L,
+                "smart",
+                60_000L,
+                smartMinuteSuffix = "分",
+                smartSecondSuffix = "秒",
+            ),
+        )
+    }
+
+    @Test
+    fun `explicit styles keep their own units regardless of localized ones`() {
+        // *_cn 就是「固定中文」的意思，min_s 就是「固定 min/s」——
+        // 传本地化单位不能把它们一起改掉。
+        val ms = 65_000L
+        assertEquals(
+            "1分钟5秒",
+            CountdownFormat.formatDuration(
+                ms,
+                "minute_second_cn",
+                smartMinuteSuffix = "min",
+                smartSecondSuffix = "s",
+            ),
+        )
+        assertEquals(
+            "1分钟",
+            CountdownFormat.formatDuration(
+                ms,
+                "minute_only_cn",
+                smartMinuteSuffix = "min",
+                smartSecondSuffix = "s",
+            ),
+        )
+        assertEquals(
+            "2min",
+            CountdownFormat.formatDuration(
+                90_000L,
+                "smart_min_s",
+                60_000L,
+                smartMinuteSuffix = "分",
+                smartSecondSuffix = "秒",
+            ),
+        )
+    }
 }

@@ -1212,7 +1212,7 @@ object TodayWidgetSupport {
                 if (durationMillis <= 0) return null
                 context.getString(
                     R.string.widget_countdown_until_end,
-                    CountdownFormat.formatDuration(durationMillis, style),
+                    formatCountdownWithLocalizedUnits(context, durationMillis, style),
                 )
             }
             "upcoming" -> {
@@ -1221,7 +1221,7 @@ object TodayWidgetSupport {
                 if (durationMillis <= 0) return null
                 context.getString(
                     R.string.widget_countdown_until_start,
-                    CountdownFormat.formatDuration(durationMillis, style),
+                    formatCountdownWithLocalizedUnits(context, durationMillis, style),
                 )
             }
             else -> null
