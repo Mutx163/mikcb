@@ -17,17 +17,9 @@ DateTime _atClock(DateTime day, String clock) {
   );
 }
 
-/// Provider 级用例的基准时间：用真实当前时间构建预设课。管线路径
-/// （[_liveUpdateActivityBody] 顶部）会按真实时钟判定预设课是否已结束，
-/// 过去日期的预设课会在任何一次刷新时被立即摘除；午夜前 10 分钟内无法
-/// 构建不跨日预设课，统一回拨保证可构建。
-DateTime _testBaseNow() {
-  final now = DateTime.now();
-  if (now.hour == 23 && now.minute >= 50) {
-    return now.subtract(const Duration(minutes: 10));
-  }
-  return now;
-}
+/// Provider 级用例的基准时间：固定为非假期的周一，避免真实运行日恰逢
+/// 节假日时，超级岛按假期规则把用来验证排序的真实课程隐藏掉。
+DateTime _testBaseNow() => DateTime(2026, 3, 23, 10, 15);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
