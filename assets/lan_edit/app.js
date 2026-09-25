@@ -312,7 +312,7 @@ async function api(path, options = {}) {
   if (!response.ok) {
     const code = response.status;
     if (code === 409 && data.error === 'profile_mismatch') {
-      throw new Error(data.message || '课表已切换，请刷新后重试');
+      throw new Error(data.message || t('timetableSwitchedReload'));
     }
     if (code === 502 || code === 504) {
       throw new Error(t('connectionError', code));
@@ -391,12 +391,12 @@ function getWeekdayCn(index) {
 }
 
 function weekdayHeaderText(label, index) {
-  const fallback = ['一', '二', '三', '四', '五', '六', '日'][index] || String(index + 1);
+  const fallback = getWeekdayCn(index) || String(index + 1);
   const raw = label || fallback;
-  if (String(raw).startsWith('周')) {
+  if (!String(raw).startsWith('周')) {
     return raw;
   }
-  return `周${raw}`;
+  return getWeekdayCn(index) || raw;
 }
 
 function contrastTextColor(hex) {
@@ -641,7 +641,7 @@ function renderCoursesTable() {
   if (filteredGroups.length === 0) {
     container.innerHTML = `
       <div class="empty-list-hint col-span-2" style="width: 100%; grid-column: 1 / -1;">
-        没有匹配的课程，请修改搜索过滤条件或点击右上方新建课程。
+        ${t('noMatchingCourses')}
       </div>
     `;
     return;
@@ -655,12 +655,12 @@ function renderCoursesTable() {
     const slotsHtml = group.courses.map(course => {
       const dayName = getWeekdayCn(course.dayOfWeek - 1);
       const sectionText = course.startSection === course.endSection
-        ? `第 ${course.startSection} 节`
-        : `第 ${course.startSection}-${course.endSection} 节`;
+        ? t('sectionSingle', course.startSection)
+        : t('sectionRange', course.startSection, course.endSection);
 
-      let weekText = `第 ${course.startWeek}-${course.endWeek} 周`;
-      if (course.isOddWeek) weekText += ' (单周)';
-      else if (course.isEvenWeek) weekText += ' (双周)';
+      let weekText = t('weekRange', course.startWeek, course.endWeek);
+      if (course.isOddWeek) weekText += t('oddWeek');
+      else if (course.isEvenWeek) weekText += t('evenWeek');
 
       return `
         <div class="card-slot-item">
@@ -679,8 +679,8 @@ function renderCoursesTable() {
     }).join('');
 
     const natureBadge = group.courseNature === 'elective'
-      ? '<span class="badge badge-success course-nature-badge">选修</span>'
-      : '<span class="badge badge-primary course-nature-badge">必修</span>';
+      ? `<span class="badge badge-success course-nature-badge">${t('electiveBadge')}</span>`
+      : `<span class="badge badge-primary course-nature-badge">${t('requiredBadge')}</span>`;
 
     const accentColor = normalizeCourseColor(group.color);
     const slotCount = group.courses.length;
@@ -689,7 +689,7 @@ function renderCoursesTable() {
       <div class="course-card-accent"></div>
       <div class="course-card-body">
         <div class="course-card-top">
-          <label class="course-card-check" title="批量删除">
+          <label class="course-card-check" title="${t('batchDelete')}">
             <input type="checkbox" class="form-check-input library-course-select" data-course-ids="${group.courses.map(c => c.id).join(',')}" />
           </label>
           <div class="course-card-heading min-w-0">
@@ -699,16 +699,16 @@ function renderCoursesTable() {
             </div>
             <div class="course-card-meta">
               ${group.shortName ? `<span class="course-card-short">${escapeHtml(group.shortName)}</span>` : ''}
-              <span class="course-card-slot-count">${slotCount} 个时段</span>
+              <span class="course-card-slot-count">${t('slotCount', slotCount)}</span>
             </div>
           </div>
         </div>
         <div class="card-slots-list">${slotsHtml}</div>
         ${group.note ? `<p class="course-card-note"><i class="ti ti-notes"></i><span>${escapeHtml(group.note)}</span></p>` : ''}
         <div class="course-card-actions">
-          <button type="button" class="btn btn-outline btn-sm action-edit-btn"><i class="ti ti-edit"></i>编辑</button>
-          <button type="button" class="btn btn-ghost btn-sm action-copy-btn"><i class="ti ti-copy"></i>复制</button>
-          <button type="button" class="btn btn-ghost btn-sm course-card-delete action-delete-btn"><i class="ti ti-trash"></i>删除</button>
+          <button type="button" class="btn btn-outline btn-sm action-edit-btn"><i class="ti ti-edit"></i>${t('edit')}</button>
+          <button type="button" class="btn btn-ghost btn-sm action-copy-btn"><i class="ti ti-copy"></i>${t('copy')}</button>
+          <button type="button" class="btn btn-ghost btn-sm course-card-delete action-delete-btn"><i class="ti ti-trash"></i>${t('deleteCourse')}</button>
         </div>
       </div>
     `;
@@ -720,7 +720,7 @@ function renderCoursesTable() {
       openEditor(group);
       state.editingGroupName = null; // 变成新建模式
       document.getElementById('modal-title').textContent = t('copyNewCourse');
-      courseForm.name.value = `${group.name} (副本)`;
+      courseForm.name.value = t('courseCopyName', group.name);
       // 重置 slots 里的 id 以便生成全新课程记录
       const slotInputs = scheduleSlotsContainer.querySelectorAll('.slot-card');
       slotInputs.forEach(slotCard => {
@@ -748,19 +748,19 @@ function renderCoursesTable() {
 
 // 快速删除整个课程
 async function deleteCourseGroupDirectly(group) {
-  if (!window.confirm(`确定要彻底删除课程《${group.name}》的全部 ${group.courses.length} 个上课时间段吗？`)) return;
+  if (!window.confirm(t('deleteGroupConfirm', group.name, group.courses.length))) return;
   try {
-    setLoading(true, '正在删除课程数据…');
+    setLoading(true, t('deletingCourse'));
     for (const course of group.courses) {
       await api(`/api/v1/courses/${encodeURIComponent(course.id)}`, {
         method: 'DELETE',
       });
     }
     showToast('整个课程已删除', 'success');
-    addActivityLog('删除课程', `删除了整个课程 [${group.name}]`);
+    addActivityLog(t('deleteCourse'), t('courseGroupDeletedLog', group.name));
     await loadEditorData({ silent: true });
   } catch (error) {
-    showToast('删除失败: ' + error.message, 'error');
+    showToast(t('deleteFailed') + error.message, 'error');
   } finally {
     setLoading(false);
   }
@@ -774,7 +774,7 @@ function renderBackupView() {
   const sections = state.meta.sections || [];
   metaSectionsContainer.innerHTML = '';
   if (sections.length === 0) {
-    metaSectionsContainer.innerHTML = '<p class="text-muted">无作息时间配置</p>';
+    metaSectionsContainer.innerHTML = `<p class="text-muted">${t('noScheduleConfig')}</p>`;
   } else {
     sections.forEach((section, index) => {
       const card = document.createElement('div');
@@ -782,7 +782,7 @@ function renderBackupView() {
       card.innerHTML = `
         <div class="meta-section-badge">${index + 1}</div>
         <div class="meta-section-info">
-          <span class="meta-section-name">第 ${index + 1} 节课</span>
+          <span class="meta-section-name">${t('periodN', index + 1)}</span>
           <span class="meta-section-time">⏰ ${escapeHtml(section.startTime)} - ${escapeHtml(section.endTime)}</span>
         </div>
       `;
@@ -794,7 +794,7 @@ function renderBackupView() {
 // 备份导入导出操作
 btnExportBackup?.addEventListener('click', async () => {
   try {
-    setLoading(true, '正在生成备份文件…');
+    setLoading(true, t('exportingBackup'));
     const data = await api('/api/v1/profile/active');
     const jsonStr = JSON.stringify(data, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -805,16 +805,16 @@ btnExportBackup?.addEventListener('click', async () => {
     const dateStr = new Date().toISOString().slice(0, 10);
     
     a.href = url;
-    a.download = `轻屿课表备份_${profile}_${dateStr}.json`;
+    a.download = t('backupFileName', profile, dateStr);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
     showToast('备份文件已下载', 'success');
-    addActivityLog('备份导出', `成功导出了课表档案 [${profile}]`);
+    addActivityLog(t('exportBackup'), t('backupProfileExportedLog', profile));
   } catch (error) {
-    showToast('备份导出失败: ' + error.message, 'error');
+    showToast(t('backupExportFailed') + error.message, 'error');
   } finally {
     setLoading(false);
   }
@@ -823,7 +823,7 @@ btnExportBackup?.addEventListener('click', async () => {
 async function previewTransferContent(content) {
   if (!content) return;
   try {
-    setLoading(true, '正在计算迁移差异…');
+    setLoading(true, t('calculatingTransferDiff'));
     const preview = await api('/api/v1/import/preview', {
       method: 'POST',
       body: content,
@@ -840,9 +840,9 @@ async function previewTransferContent(content) {
       ];
     };
     const lines = [
-      `传输 ${preview.transferId || '-'} · ${preview.channel || 'lan'} · ${preview.scope || '-'}`,
-      ...formatDiff('合并预览', mergeDiff),
-      ...formatDiff('覆盖预览', overwriteDiff),
+      t('transferPreviewMeta', preview.transferId || '-', preview.channel || 'lan', preview.scope || '-'),
+      ...formatDiff(t('mergePreview'), mergeDiff),
+      ...formatDiff(t('overwritePreview'), overwriteDiff),
     ];
     pendingTransferContent = content;
     transferPreviewResult.textContent = lines.join('\n');
@@ -851,7 +851,7 @@ async function previewTransferContent(content) {
     btnTransferPreviewOverwrite.disabled = false;
     showToast('差异预览已生成，请选择合并或覆盖', 'info');
   } catch (error) {
-    showToast('预览失败: ' + error.message, 'error');
+    showToast(t('previewFailed') + error.message, 'error');
   } finally {
     setLoading(false);
   }
@@ -860,7 +860,7 @@ async function previewTransferContent(content) {
 async function applyPreviewedTransfer(mode) {
   if (!pendingTransferContent) return;
   try {
-    setLoading(true, mode === 'overwrite' ? '正在创建本地备份并覆盖…' : '正在合并导入…');
+    setLoading(true, mode === 'overwrite' ? t('overwriteImportWithBackup') : t('mergingImport'));
     const result = await api('/api/v1/import/apply', {
       method: 'POST',
       body: JSON.stringify({ content: pendingTransferContent, mode }),
@@ -868,8 +868,8 @@ async function applyPreviewedTransfer(mode) {
     if (!result.applied) {
       throw new Error(result.error || 'transfer_import_failed');
     }
-    showToast(mode === 'overwrite' ? '覆盖导入成功，可在手机端撤销' : '合并导入成功', 'success');
-    addActivityLog('迁移导入', `${mode === 'overwrite' ? '覆盖' : '合并'} · ${result.transferId || '-'}`);
+    showToast(mode === 'overwrite' ? t('overwriteImportSuccess') : t('mergeDone'), 'success');
+    addActivityLog(t('transferImportActivity'), `${t(mode === 'overwrite' ? 'transferImportModeOverwrite' : 'transferImportModeMerge')} · ${result.transferId || '-'}`);
     pendingTransferContent = null;
     hide(transferPreviewCard);
     state.selectedBackupFileContent = null;
@@ -881,7 +881,7 @@ async function applyPreviewedTransfer(mode) {
     await loadEditorData();
     setViewTab('overview');
   } catch (error) {
-    showToast('迁移导入失败: ' + error.message, 'error');
+    showToast(t('transferImportFailed', error.message), 'error');
   } finally {
     setLoading(false);
   }
@@ -891,7 +891,7 @@ btnTransferPreviewMerge?.addEventListener('click', () =>
   applyPreviewedTransfer('merge'),
 );
 btnTransferPreviewOverwrite?.addEventListener('click', () => {
-  if (window.confirm('覆盖前会在手机端创建一次性本地备份，确定继续吗？')) {
+  if (window.confirm(t('overwriteLocalBackupConfirm'))) {
     applyPreviewedTransfer('overwrite');
   }
 });
@@ -941,7 +941,7 @@ function handleSelectedFile(file) {
       JSON.parse(event.target.result);
       state.selectedBackupFileContent = event.target.result;
       
-      selectedFilename.textContent = `已选文件: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      selectedFilename.textContent = t('selectedFileWithSize', file.name, (file.size / 1024).toFixed(1));
       show(selectedFilename);
       btnImportBackup.disabled = false;
       showToast('文件解析成功，可以打开迁移预览', 'info');
@@ -963,45 +963,45 @@ function addSlotField(data = {}, options = {}) {
     card.dataset.courseId = data.id;
   }
 
-  const slotTitle = options.focused ? '时间段 · 当前点击' : '时间段';
+  const slotTitle = t(options.focused ? 'focusedTimeSlot' : 'timeSlot');
 
   card.innerHTML = `
     <div class="slot-card-header">
       <h4 class="slot-card-title">${slotTitle}</h4>
-      <button type="button" class="btn-remove-slot" title="删除此时间段">&times; 删除</button>
+      <button type="button" class="btn-remove-slot" title="${t('deleteTimeSlotTitle')}">&times; ${t('delete')}</button>
     </div>
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">上课星期</label>
+        <label class="form-label">${t('classDay')}</label>
         <select class="field-slot-day select-modern">
-          <option value="1" ${data.dayOfWeek == 1 ? 'selected' : ''}>周一</option>
-          <option value="2" ${data.dayOfWeek == 2 ? 'selected' : ''}>周二</option>
-          <option value="3" ${data.dayOfWeek == 3 ? 'selected' : ''}>周三</option>
-          <option value="4" ${data.dayOfWeek == 4 ? 'selected' : ''}>周四</option>
-          <option value="5" ${data.dayOfWeek == 5 ? 'selected' : ''}>周五</option>
-          <option value="6" ${data.dayOfWeek == 6 ? 'selected' : ''}>周六</option>
-          <option value="7" ${data.dayOfWeek == 7 ? 'selected' : ''}>周日</option>
+          <option value="1" ${data.dayOfWeek == 1 ? 'selected' : ''}>${t('mon')}</option>
+          <option value="2" ${data.dayOfWeek == 2 ? 'selected' : ''}>${t('tue')}</option>
+          <option value="3" ${data.dayOfWeek == 3 ? 'selected' : ''}>${t('wed')}</option>
+          <option value="4" ${data.dayOfWeek == 4 ? 'selected' : ''}>${t('thu')}</option>
+          <option value="5" ${data.dayOfWeek == 5 ? 'selected' : ''}>${t('fri')}</option>
+          <option value="6" ${data.dayOfWeek == 6 ? 'selected' : ''}>${t('sat')}</option>
+          <option value="7" ${data.dayOfWeek == 7 ? 'selected' : ''}>${t('sun')}</option>
         </select>
       </div>
 
       <div class="form-group form-inline-row">
         <div class="nested-group">
-          <label class="form-label">开始节次</label>
+          <label class="form-label">${t('startPeriod')}</label>
           <input type="number" min="1" class="field-slot-startSection" value="${data.startSection || 1}" required />
         </div>
         <div class="nested-group">
-          <label class="form-label">结束节次</label>
+          <label class="form-label">${t('endPeriod')}</label>
           <input type="number" min="1" class="field-slot-endSection" value="${data.endSection || 2}" required />
         </div>
       </div>
 
       <div class="form-group form-inline-row">
         <div class="nested-group">
-          <label class="form-label">开始周</label>
+          <label class="form-label">${t('startWeek')}</label>
           <input type="number" min="1" class="field-slot-startWeek" value="${data.startWeek || 1}" required />
         </div>
         <div class="nested-group">
-          <label class="form-label">结束周</label>
+          <label class="form-label">${t('endWeek')}</label>
           <input type="number" min="1" class="field-slot-endWeek" value="${data.endWeek || (state.meta?.semesterWeekCount || 20)}" required />
         </div>
       </div>
@@ -1010,36 +1010,36 @@ function addSlotField(data = {}, options = {}) {
         <label class="checkbox-container">
           <input type="checkbox" class="field-slot-isOddWeek" ${data.isOddWeek ? 'checked' : ''} />
           <span class="checkbox-checkmark"></span>
-          <span>仅单周</span>
+          <span>${t('onlyOddWeeks')}</span>
         </label>
         <label class="checkbox-container">
           <input type="checkbox" class="field-slot-isEvenWeek" ${data.isEvenWeek ? 'checked' : ''} />
           <span class="checkbox-checkmark"></span>
-          <span>仅双周</span>
+          <span>${t('onlyEvenWeeks')}</span>
         </label>
       </div>
 
       <div class="form-group">
-        <label class="form-label">授课教师</label>
-        <input type="text" class="field-slot-teacher" placeholder="可选，例如：张老师" value="${data.teacher || ''}" />
+        <label class="form-label">${t('teacher')}</label>
+        <input type="text" class="field-slot-teacher" placeholder="${t('teacherPlaceholder')}" value="${data.teacher || ''}" />
       </div>
 
       <div class="form-group">
-        <label class="form-label">上课地点</label>
-        <input type="text" class="field-slot-location" placeholder="可选，例如：主楼 201" value="${data.location || ''}" />
+        <label class="form-label">${t('classLocation')}</label>
+        <input type="text" class="field-slot-location" placeholder="${t('locationPlaceholder')}" value="${data.location || ''}" />
       </div>
 
       <div class="form-group col-span-2 slot-advanced">
-        <label class="form-label">上课周（表达式，可选）</label>
+        <label class="form-label">${t('classWeeksExpressionOptional')}</label>
         <div class="form-inline-row">
-          <input type="text" class="field-slot-weekExpression" placeholder="如 1-8、10-16(单)；留空则用起止周+单双周" value="${escapeHtml(formatWeeksForExpression(data.customWeeks) || '')}" />
-          <button type="button" class="btn btn-outline btn-sm btn-preview-week">预览</button>
+          <input type="text" class="field-slot-weekExpression" placeholder="${t('weekExpressionPlaceholder')}" value="${escapeHtml(formatWeeksForExpression(data.customWeeks) || '')}" />
+          <button type="button" class="btn btn-outline btn-sm btn-preview-week">${t('preview')}</button>
         </div>
         <p class="field-hint field-slot-week-preview text-muted"></p>
       </div>
       <div class="form-group col-span-2 slot-advanced">
-        <label class="form-label">停课周（表达式，可选）</label>
-        <input type="text" class="field-slot-suspendedWeekExpression" placeholder="如 6、12" value="${escapeHtml(formatWeeksForExpression(data.suspendedWeeks) || '')}" />
+        <label class="form-label">${t('suspendedWeeksExpressionOptional')}</label>
+        <input type="text" class="field-slot-suspendedWeekExpression" placeholder="${t('suspendedWeeksPlaceholder')}" value="${escapeHtml(formatWeeksForExpression(data.suspendedWeeks) || '')}" />
       </div>
     </div>
   `;
@@ -1057,13 +1057,13 @@ function addSlotField(data = {}, options = {}) {
         method: 'POST',
         body: JSON.stringify({
           expression,
-          itemName: courseForm?.name?.value?.trim() || '课程',
+          itemName: courseForm?.name?.value?.trim() || t('course'),
         }),
       });
       const weeks = result.weeks || [];
       preview.textContent = weeks.length
-        ? `解析为周次：${weeks.join('、')}`
-        : '未解析到有效周次';
+        ? t('parsedWeeks', weeks.join(t('weekListSeparator')))
+        : t('noValidWeeks');
     } catch (error) {
       preview.textContent = error.message;
     }
@@ -1105,8 +1105,8 @@ function fillProfileSwitcher(profiles, activeProfileId) {
     option.value = profile.id || '';
     const courseCount = Number(profile.courseCount ?? 0);
     option.textContent = courseCount > 0
-      ? `${profile.name || '未命名'}（${courseCount} 门）`
-      : (profile.name || '未命名');
+      ? t('profileCourseCount', profile.name || t('unnamedProfile'), courseCount)
+      : (profile.name || t('unnamedProfile'));
     if (profile.id === activeId) {
       option.selected = true;
     }
@@ -1122,7 +1122,7 @@ async function switchActiveProfile(profileId) {
   if (targetId === currentId) return;
 
   try {
-    setLoading(true, '正在切换课表…');
+    setLoading(true, t('switchingTimetable'));
     const result = await api('/api/v1/profiles/switch', {
       method: 'POST',
       body: JSON.stringify({ profileId: targetId }),
@@ -1130,7 +1130,7 @@ async function switchActiveProfile(profileId) {
     // Force view week to follow the newly activated profile on next load.
     state.viewWeek = null;
     showToast(`已切换到「${result.profileName || '课表'}」`, 'success');
-    addActivityLog('切换课表', `当前课表 → ${result.profileName || targetId}`);
+    addActivityLog(t('switchTimetableLog'), t('currentTimetableTo', result.profileName || targetId));
     await loadEditorData({ silent: true });
   } catch (error) {
     showToast(error.message, 'error');
@@ -1431,7 +1431,7 @@ async function loadEditorData(options = {}) {
 
     if (notifyRefresh) {
       showToast(t('refreshSuccess'), 'success');
-      addActivityLog('数据刷新', '拉取并同步了手机端最新数据');
+      addActivityLog(t('dataRefreshLog'), t('refreshLogDetail'));
     }
   } catch (error) {
     showToast(t('syncFailed') + error.message, 'error');
@@ -1459,7 +1459,7 @@ async function verifyPinAndEnter(pin) {
   sessionStorage.setItem('lanEditToken', state.token);
   sessionStorage.setItem('lanEditPin', pin);
   await enterEditor();
-  addActivityLog('登录成功', '通过 PIN 验证连接后台');
+  addActivityLog(t('loginSuccess'), t('pinLoginLogDetail'));
 }
 
 function stripPinFromUrl() {
@@ -1527,7 +1527,7 @@ loginForm?.addEventListener('submit', async (event) => {
 });
 
 document.getElementById('logout-btn')?.addEventListener('click', () => {
-  addActivityLog('安全退出', '主动断开连接');
+  addActivityLog(t('secureLogoutLog'), t('disconnectLogDetail'));
   state.token = '';
   state.pin = '';
   sessionStorage.removeItem('lanEditToken');
@@ -1548,13 +1548,13 @@ document.getElementById('refresh-btn')?.addEventListener('click', () => {
 if (syncPhoneWeekBtn) {
   syncPhoneWeekBtn.addEventListener('click', async () => {
     try {
-      setLoading(true, '正在同步手机当前周…');
+      setLoading(true, t('syncingWeek'));
       await api('/api/v1/session', {
         method: 'PATCH',
         body: JSON.stringify({ currentWeek: state.viewWeek }),
       });
       showToast(`已将手机当前周设为第 ${state.viewWeek} 周`, 'success');
-      addActivityLog('同步当前周', `手机当前周 → 第 ${state.viewWeek} 周`);
+      addActivityLog(t('syncCurrentWeekLog'), t('phoneCurrentWeekToWeek', state.viewWeek));
       await loadEditorData({ silent: true });
     } catch (error) {
       showToast(error.message, 'error');
@@ -1572,7 +1572,7 @@ function handleSpreadsheetFile(file) {
     return;
   }
   selectedSpreadsheetFile = file;
-  spreadsheetSelectedFilename.textContent = `已选: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+  spreadsheetSelectedFilename.textContent = t('selectedFile', `${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
   show(spreadsheetSelectedFilename);
   btnImportSpreadsheet.disabled = false;
 }
@@ -1603,11 +1603,11 @@ if (spreadsheetDropZone) {
 btnImportSpreadsheet?.addEventListener('click', async () => {
   if (!selectedSpreadsheetFile) return;
   const replace = spreadsheetReplaceExisting?.checked === true;
-  if (replace && !window.confirm('覆盖模式将替换手机端现有全部课程，确定继续？')) {
+  if (replace && !window.confirm(t('overwriteCoursesConfirm'))) {
     return;
   }
   try {
-    setLoading(true, '正在解析并导入表格…');
+    setLoading(true, t('importingSpreadsheet'));
     const contentBase64 = await readFileAsBase64(selectedSpreadsheetFile);
     const result = await api('/api/v1/import/spreadsheet', {
       method: 'POST',
@@ -1618,21 +1618,21 @@ btnImportSpreadsheet?.addEventListener('click', async () => {
       }),
     });
     const lines = [
-      `成功导入 ${result.importedCount ?? 0} 条课程`,
-      `格式: ${result.format ?? '-'}`,
+      t('importedCourses', result.importedCount ?? 0),
+      t('formatLabel', result.format ?? '-'),
     ];
     if (result.warnings?.length) {
-      lines.push('警告:', ...result.warnings.map((w) => `· ${w}`));
+      lines.push(t('warnings'), ...result.warnings.map((w) => `· ${w}`));
     }
     spreadsheetImportResult.textContent = lines.join('\n');
     show(spreadsheetImportResult);
     showToast(`表格导入完成：${result.importedCount ?? 0} 门课`, 'success');
-    addActivityLog('表格导入', `导入 ${result.importedCount ?? 0} 门课 (${replace ? '覆盖' : '合并'})`);
+    addActivityLog(t('spreadsheetImport'), t('spreadsheetImportLogDetail', result.importedCount ?? 0, t(replace ? 'overwriteMode' : 'mergeMode')));
     selectedSpreadsheetFile = null;
     btnImportSpreadsheet.disabled = true;
     await loadEditorData();
   } catch (error) {
-    showToast('表格导入失败: ' + error.message, 'error');
+    showToast(t('spreadsheetFailed') + error.message, 'error');
   } finally {
     setLoading(false);
   }
@@ -1646,7 +1646,7 @@ function handleMergeBackupFile(file) {
   const reader = new FileReader();
   reader.onload = () => {
     selectedMergeFileContent = String(reader.result);
-    mergeSelectedFilename.textContent = `已选: ${file.name}`;
+    mergeSelectedFilename.textContent = t('selectedFile', file.name);
     show(mergeSelectedFilename);
     if (btnImportMerge) btnImportMerge.disabled = false;
   };
@@ -1678,15 +1678,15 @@ btnImportMerge?.addEventListener('click', () =>
 btnBatchDeleteCourses?.addEventListener('click', async () => {
   const ids = [...selectedCourseIds];
   if (!ids.length) return;
-  if (!window.confirm(`确定批量删除选中的 ${ids.length} 个上课时间段记录吗？`)) return;
+  if (!window.confirm(t('batchDeleteConfirm', ids.length))) return;
   try {
-    setLoading(true, '正在批量删除…');
+    setLoading(true, t('batchDeleting'));
     const result = await api('/api/v1/courses/batch-delete', {
       method: 'POST',
       body: JSON.stringify({ ids }),
     });
     showToast(`已删除 ${result.deletedCount ?? 0} 条`, 'success');
-    addActivityLog('批量删除', `删除 ${result.deletedCount ?? 0} 条课程记录`);
+    addActivityLog(t('batchDelete'), t('batchDeleteLogDetail', result.deletedCount ?? 0));
     selectedCourseIds.clear();
     await loadEditorData({ silent: true });
   } catch (error) {
@@ -1782,9 +1782,9 @@ btnAddSlotField?.addEventListener('click', () => {
 // 整个课程组的删除操作
 deleteCourseBtn?.addEventListener('click', async () => {
   if (!state.editingGroupName) return;
-  if (!window.confirm(`确定要彻底删除课程《${state.editingGroupName}》的全部时间段吗？`)) return;
+  if (!window.confirm(t('deleteCourseAllSlotsConfirm', state.editingGroupName))) return;
   try {
-    setLoading(true, '正在删除课程…');
+    setLoading(true, t('deletingCourse'));
     const toDelete = state.courses.filter(c => c.name === state.editingGroupName);
     for (const c of toDelete) {
       await api(`/api/v1/courses/${encodeURIComponent(c.id)}`, {
@@ -1793,7 +1793,7 @@ deleteCourseBtn?.addEventListener('click', async () => {
     }
     closeEditor();
     showToast('课程已删除', 'success');
-    addActivityLog('删除课程', `删除了课程 [${state.editingGroupName}]`);
+    addActivityLog(t('deleteCourse'), t('deletedCourseLog', state.editingGroupName));
     await loadEditorData({ silent: true });
   } catch (error) {
     setError(formError, error.message);
@@ -1805,14 +1805,14 @@ deleteCourseBtn?.addEventListener('click', async () => {
 
 // 整个课程组的复制操作
 duplicateCourseBtn?.addEventListener('click', async () => {
-  const name = courseForm.name.value.trim() + ' (副本)';
+  const name = t('courseCopySuffix', courseForm.name.value.trim());
   const shortName = courseForm.shortName.value.trim() || null;
   const courseNature = courseForm.courseNature.value;
   const color = normalizeCourseColor(colorInput.value);
   const note = courseForm.note.value.trim() || null;
 
   if (!name) {
-    setError(formError, '请填写课程名称');
+    setError(formError, t('fillCourseName'));
     return;
   }
 
@@ -1831,11 +1831,11 @@ duplicateCourseBtn?.addEventListener('click', async () => {
     const location = card.querySelector('.field-slot-location').value.trim();
 
     if (endSection < startSection) {
-      setError(formError, '结束节次不能小于开始节次');
+      setError(formError, t('endSectionError'));
       return;
     }
     if (endWeek < startWeek) {
-      setError(formError, '结束周次不能小于开始周次');
+      setError(formError, t('endWeekError'));
       return;
     }
 
@@ -1843,12 +1843,12 @@ duplicateCourseBtn?.addEventListener('click', async () => {
   }
 
   if (slots.length === 0) {
-    setError(formError, '课程必须包含至少一个上课时间段');
+    setError(formError, t('needOneSlot'));
     return;
   }
 
   try {
-    setLoading(true, '正在复制创建课程…');
+    setLoading(true, t('duplicatingCourse'));
     for (const slot of slots) {
       const payload = {
         name,
@@ -1874,7 +1874,7 @@ duplicateCourseBtn?.addEventListener('click', async () => {
 
     closeEditor();
     showToast('课程复制成功', 'success');
-    addActivityLog('复制课程', `复制并新建了课程组 [${name}]`);
+    addActivityLog(t('logCopyCourse'), t('logCourseGroupCopied', name));
     await loadEditorData({ silent: true });
   } catch (error) {
     setError(formError, error.message);
@@ -1896,7 +1896,7 @@ courseForm?.addEventListener('submit', async (event) => {
   const note = courseForm.note.value.trim() || null;
 
   if (!name) {
-    setError(formError, '请填写课程名称');
+    setError(formError, t('courseNameRequired'));
     return;
   }
 
@@ -1919,17 +1919,17 @@ courseForm?.addEventListener('submit', async (event) => {
       card.querySelector('.field-slot-suspendedWeekExpression')?.value.trim() || '';
 
     if (endSection < startSection) {
-      setError(formError, '结束节次不能小于开始节次');
+      setError(formError, t('endSectionBeforeStart'));
       return;
     }
     if (!weekExpression && endWeek < startWeek) {
-      setError(formError, '结束周次不能小于开始周次');
+      setError(formError, t('endWeekBeforeStart'));
       return;
     }
 
     const maxSection = state.meta?.sectionCount || state.meta?.sections?.length || 12;
     if (startSection < 1 || endSection > maxSection) {
-      setError(formError, `节次范围应在 1-${maxSection} 之间`);
+      setError(formError, t('sectionRangeHint', maxSection));
       return;
     }
 
@@ -1955,12 +1955,12 @@ courseForm?.addEventListener('submit', async (event) => {
   }
 
   if (slots.length === 0) {
-    setError(formError, '至少需要保留一个上课时间段');
+    setError(formError, t('needOneSlot'));
     return;
   }
 
   try {
-    setLoading(true, '正在保存数据到手机端…');
+    setLoading(true, t('savingToPhone'));
 
     const buildSlotPayload = (slot) => ({
       id: slot.id || undefined,
@@ -1994,10 +1994,10 @@ courseForm?.addEventListener('submit', async (event) => {
 
     if (state.editingGroupName) {
       showToast('课程修改已保存', 'success');
-      addActivityLog('更新课程', `更新了课程 [${name}] 的上课安排`);
+      addActivityLog(t('logUpdateCourse'), t('logCourseScheduleUpdated', name));
     } else {
       showToast('新课程已成功创建', 'success');
-      addActivityLog('新建课程', `创建了新课程 [${name}]`);
+      addActivityLog(t('logCreateCourse'), t('logCourseCreated', name));
     }
 
     closeEditor();
