@@ -56,7 +56,7 @@
   "features.titleGrad": "是一整套系統體驗。",
   "features.desc": "從超級島到桌面小組件，從兩個人的課表到一學期的賬單——每個功能都為「少看一次手機、多懂一點今天」而存在。",
   "feature.island.title": "超級島，替你盯着下一節課",
-  "feature.island.desc": "課前預熱、課中狀態、下課承接，狀態在靈動島上連續流轉。靜音、免打擾這類課前快捷操作，下課後還會自動恢復。",
+  "feature.island.desc": "課前預熱、課中狀態、下課承接，狀態在超級島上連續流轉。靜音、免打擾這類課前快捷操作，下課後還會自動恢復。",
   "feature.island.demo": "資料結構 · C412",
   "feature.island.demoTime": "14:00 上課",
   "feature.island.hint": "需 HyperOS 3.0.300+",

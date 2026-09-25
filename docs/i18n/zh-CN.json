@@ -48,13 +48,13 @@
   "marquee.couple": "情侣课表",
   "marquee.import": "教务一键导入",
   "marquee.webdav": "WebDAV 云同步",
-  "marquee.bill": "学期账单",
+  "marquee.bill": "课程统计",
   "marquee.widget": "桌面小组件",
   "marquee.remind": "分阶段提醒",
   "marquee.lan": "局域网编辑",
   "marquee.template": "时间模板",
   "marquee.ics": ".ics 导入",
-  "marquee.ai": "AI 识图导入",
+  "marquee.ai": "识图导入",
   "marquee.multi": "多课表",
   "marquee.free": "免费开源",
 
@@ -63,7 +63,7 @@
   "features.desc": "从超级岛到桌面小组件，从两个人的课表到一学期的账单——每个功能都为「少看一次手机、多懂一点今天」而存在。",
 
   "feature.island.title": "超级岛，替你盯着下一节课",
-  "feature.island.desc": "课前预热、课中状态、下课承接，状态在灵动岛上连续流转。静音、免打扰这类课前快捷操作，下课后还会自动恢复。",
+  "feature.island.desc": "课前预热、课中状态、下课承接，状态在超级岛上连续流转。静音、免打扰这类课前快捷操作，下课后还会自动恢复。",
   "feature.island.demo": "数据结构 · C412",
   "feature.island.demoTime": "14:00 上课",
   "feature.island.hint": "需 HyperOS 3.0.300+",
@@ -82,7 +82,7 @@
   "feature.webdav.title": "WebDAV 云同步",
   "feature.webdav.desc": "坚果云或自建服务，手机、平板之间同步课表与设置；云备份可查看历史版本、按条恢复或删除。",
 
-  "feature.bill.title": "学期账单",
+  "feature.bill.title": "课程统计",
   "feature.bill.desc": "总览、成就徽章、数据故事、每日课时分布、课程排名——学期结束，把这份账单生成长图分享出去。",
 
   "feature.system.title": "小组件 + 分阶段提醒",
@@ -104,9 +104,9 @@
 
   "faq.title": "你可能想知道的",
   "faq.q1": "轻屿课表怎么导入课表？",
-  "faq.a1Html": "<p>支持三种导入方式：</p><ol><li><strong>教务系统导入</strong>：点击右上角菜单 → 导入课程表 → 选择你的学校 → 登录教务系统自动同步</li><li><strong>文件导入</strong>：支持 iCal (.ics) 格式，点击导入后选择手机中的 .ics 文件即可</li><li><strong>手动添加</strong>：点击课表空白处 → 添加课程 → 填写课程信息</li></ol>",
+  "faq.a1Html": "<p>支持三种导入方式：</p><ol><li><strong>教务系统导入</strong>：点击右上角菜单 → 导入课程 → 选择你的学校 → 登录教务系统自动同步</li><li><strong>文件导入</strong>：支持 iCal (.ics) 格式，点击导入后选择手机中的 .ics 文件即可</li><li><strong>手动添加</strong>：点击课表空白处 → 添加课程 → 填写课程信息</li></ol>",
   "faq.q2": "支持哪些学校的教务导入？",
-  "faq.a2Html": "<p>目前已适配 200+ 所高校，完整列表见 <a href=\"#schools\">已适配学校列表</a>，持续扩展中。如果你的学校暂未适配，可以使用 .ics 文件导入、AI 识图导入或手动添加课程，也欢迎在 <a href=\"https://github.com/Mutx163/qingyu_warehouse/issues\" target=\"_blank\" rel=\"noreferrer\">qingyu_warehouse</a> 提交你学校的适配需求。</p>",
+  "faq.a2Html": "<p>目前已适配 200+ 所高校，完整列表见 <a href=\"#schools\">已适配学校列表</a>，持续扩展中。如果你的学校暂未适配，可以使用 .ics 文件导入、识图导入或手动添加课程，也欢迎在 <a href=\"https://github.com/Mutx163/qingyu_warehouse/issues\" target=\"_blank\" rel=\"noreferrer\">qingyu_warehouse</a> 提交你学校的适配需求。</p>",
   "faq.q3": "轻屿课表是免费的吗？",
   "faq.a3Html": "<p>是的，轻屿课表完全免费，无广告，无需注册。开源项目，代码公开透明。</p>",
   "faq.q4": "支持 iOS 或鸿蒙吗？",
@@ -207,7 +207,7 @@
 
   "schools.title": "已适配学校，",
   "schools.titleGrad": "直接登录导课。",
-  "schools.descHtml": "在 App 内选择「导入课程表 → 教务系统导入」，学校在列表中就能通过网页登录同步课表。列表每天自动与 <a class=\"inline-link\" href=\"https://github.com/Mutx163/qingyu_warehouse\" target=\"_blank\" rel=\"noreferrer\">qingyu_warehouse</a> 同步更新。",
+  "schools.descHtml": "在 App 内选择「导入课程 → 教务系统导入」，学校在列表中就能通过网页登录同步课表。列表每天自动与 <a class=\"inline-link\" href=\"https://github.com/Mutx163/qingyu_warehouse\" target=\"_blank\" rel=\"noreferrer\">qingyu_warehouse</a> 同步更新。",
   "schools.statSchools": "所高校已适配",
   "schools.statGeneric": "套通用教务适配",
   "schools.statTotal": "条导入入口",

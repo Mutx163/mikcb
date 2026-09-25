@@ -1118,7 +1118,6 @@
   },
   "timeSchemeShareSubject": "Qingyu Timetable · Time Template",
   "timeSchemeSummary": "{sections} sections · {profiles} timetables · {courses} course entries · {overrideCourses} override entries",
-  "timeSchemeSummary": "{sections} sections · {profiles} timetables · {courses} course entries · {overrideCourses} override entries",
   "@timeSchemeSummary": {
     "placeholders": {
       "sections": {

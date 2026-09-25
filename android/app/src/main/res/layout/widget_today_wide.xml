@@ -258,7 +258,7 @@
             android:layout_marginTop="10dp"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="课程表 · 今日 5 节"
+            android:text="课表 · 今日 5 节"
             android:textColor="#64748B"
             android:textSize="11sp" />
 

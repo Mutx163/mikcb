@@ -1217,13 +1217,13 @@ abstract class AppLocalizations {
   /// No description provided for @cloudBackupSectionTitle.
   ///
   /// In zh, this message translates to:
-  /// **'可恢复版本'**
+  /// **'备份版本'**
   String get cloudBackupSectionTitle;
 
   /// No description provided for @cloudBackupSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'每次同步都会自动保留可恢复版本'**
+  /// **'每次同步都会自动保留备份版本'**
   String get cloudBackupSectionSubtitle;
 
   /// No description provided for @cloudBackupCurrentLabel.
@@ -1247,13 +1247,13 @@ abstract class AppLocalizations {
   /// No description provided for @cloudBackupViewAll.
   ///
   /// In zh, this message translates to:
-  /// **'查看全部可恢复版本'**
+  /// **'查看全部备份版本'**
   String get cloudBackupViewAll;
 
   /// No description provided for @cloudBackupEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'暂无可恢复版本，同步后会自动生成'**
+  /// **'暂无备份版本，同步后会自动生成'**
   String get cloudBackupEmpty;
 
   /// No description provided for @cloudBackupSourceAuto.
@@ -3218,7 +3218,7 @@ abstract class AppLocalizations {
   /// No description provided for @timeSchemeLabel.
   ///
   /// In zh, this message translates to:
-  /// **'上课时间方案'**
+  /// **'时间模板'**
   String get timeSchemeLabel;
 
   /// No description provided for @followCurrentTimetableWithName.
@@ -3890,7 +3890,7 @@ abstract class AppLocalizations {
   /// No description provided for @timeSchemeSummary.
   ///
   /// In zh, this message translates to:
-  /// **'{sections} 节 · {profiles} 个课表 · {courses} 节课程 · {overrideCourses} 节副时间表'**
+  /// **'{sections} 节 · {profiles} 个课表 · {courses} 节课程 · {overrideCourses} 节副时间模板'**
   String timeSchemeSummary(
     int sections,
     int profiles,
@@ -4009,7 +4009,7 @@ abstract class AppLocalizations {
   /// No description provided for @overrideTimeSchemeLabel.
   ///
   /// In zh, this message translates to:
-  /// **'副时间表'**
+  /// **'副时间模板'**
   String get overrideTimeSchemeLabel;
 
   /// No description provided for @directlyBoundProfilesTitle.
@@ -4033,31 +4033,31 @@ abstract class AppLocalizations {
   /// No description provided for @followMainSchemeCoursesTitle.
   ///
   /// In zh, this message translates to:
-  /// **'跟随课表主时间表的课程'**
+  /// **'跟随课表主时间模板的课程'**
   String get followMainSchemeCoursesTitle;
 
   /// No description provided for @followMainSchemeCoursesEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'当前没有课程通过课表主时间表间接使用它'**
+  /// **'当前没有课程通过课表主时间模板间接使用它'**
   String get followMainSchemeCoursesEmpty;
 
   /// No description provided for @followMainSchemeCoursesSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'这些课程没有单独设置副时间表，而是跟着所属课表一起用这套模板'**
+  /// **'这些课程没有单独设置副时间模板，而是跟着所属课表一起用这套模板'**
   String get followMainSchemeCoursesSubtitle;
 
   /// No description provided for @overrideSchemeCoursesTitle.
   ///
   /// In zh, this message translates to:
-  /// **'把它作为副时间表的课程'**
+  /// **'把它作为副时间模板的课程'**
   String get overrideSchemeCoursesTitle;
 
   /// No description provided for @overrideSchemeCoursesEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'当前没有课程把它作为副时间表'**
+  /// **'当前没有课程把它作为副时间模板'**
   String get overrideSchemeCoursesEmpty;
 
   /// No description provided for @overrideSchemeCoursesSubtitle.
@@ -4189,7 +4189,7 @@ abstract class AppLocalizations {
   /// No description provided for @timeSchemeEditorOverrideHint.
   ///
   /// In zh, this message translates to:
-  /// **'有课程正在把这套模板作为副时间表使用，保存后会同步更新所有引用课程'**
+  /// **'有课程正在把这套模板作为副时间模板使用，保存后会同步更新所有引用课程'**
   String get timeSchemeEditorOverrideHint;
 
   /// No description provided for @editTimeAction.
@@ -4231,13 +4231,13 @@ abstract class AppLocalizations {
   /// No description provided for @mainTimeSchemeLabel.
   ///
   /// In zh, this message translates to:
-  /// **'主时间表'**
+  /// **'主时间模板'**
   String get mainTimeSchemeLabel;
 
   /// No description provided for @overrideTimeSchemeShortLabel.
   ///
   /// In zh, this message translates to:
-  /// **'副时间表'**
+  /// **'副时间模板'**
   String get overrideTimeSchemeShortLabel;
 
   /// No description provided for @timeSchemeBottomUsageSingle.
@@ -4771,7 +4771,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveMiuiLabelImageTitle.
   ///
   /// In zh, this message translates to:
-  /// **'小米岛左侧文字图标'**
+  /// **'超级岛左侧文字图标'**
   String get liveMiuiLabelImageTitle;
 
   /// No description provided for @liveMiuiLabelImageSubtitle.
@@ -5557,7 +5557,7 @@ abstract class AppLocalizations {
   /// No description provided for @reuseExistingCourseHelper.
   ///
   /// In zh, this message translates to:
-  /// **'选一个已有课程，自动带入课程名、老师和其他共享信息'**
+  /// **'选一个已有课程，自动带入课程名、教师和其他共享信息'**
   String get reuseExistingCourseHelper;
 
   /// No description provided for @manualInputLabel.
@@ -5641,7 +5641,7 @@ abstract class AppLocalizations {
   /// No description provided for @timeSchemeOverrideLabel.
   ///
   /// In zh, this message translates to:
-  /// **'上课时间方案'**
+  /// **'时间模板'**
   String get timeSchemeOverrideLabel;
 
   /// No description provided for @lessonWeeksTitle.
@@ -6516,7 +6516,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideFinalTip3.
   ///
   /// In zh, this message translates to:
-  /// **'3. 完成系统权限设置后，再用测试通知验证；如果岛区还是偶尔消失，优先检查自启动和省电策略。'**
+  /// **'3. 完成系统权限设置后，再用测试通知验证；如果超级岛还是偶尔消失，优先检查自启动和省电策略。'**
   String get guideFinalTip3;
 
   /// No description provided for @guidePrivacyHelperRequireConsent.
@@ -7254,7 +7254,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetDescriptionText.
   ///
   /// In zh, this message translates to:
-  /// **'小组件目前优先展示今日课程，无课状态会保持完整卡片，不会出现空白；如果你切换课表或修改样式，桌面组件也会跟着刷新'**
+  /// **'小组件目前优先展示今日课程，无课状态会保持完整卡片，不会出现空白；如果你切换课表或修改样式，桌面小组件也会跟着刷新'**
   String get homeWidgetDescriptionText;
 
   /// No description provided for @homeWidgetPinRequested.
@@ -7530,13 +7530,13 @@ abstract class AppLocalizations {
   /// No description provided for @layoutCourseCardDisplaySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'默认显示课程名、老师和教室；其他信息可按课表自由开关组合'**
+  /// **'默认显示课程名、教师和教室；其他信息可按课表自由开关组合'**
   String get layoutCourseCardDisplaySubtitle;
 
   /// No description provided for @layoutShowTeacherTitle.
   ///
   /// In zh, this message translates to:
-  /// **'显示老师'**
+  /// **'显示教师'**
   String get layoutShowTeacherTitle;
 
   /// No description provided for @layoutShowClassroomTitle.
@@ -7746,7 +7746,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutCheckingForUpdate.
   ///
   /// In zh, this message translates to:
-  /// **'正在检测更新…'**
+  /// **'正在检查更新……'**
   String get aboutCheckingForUpdate;
 
   /// No description provided for @aboutReadVersionFailed.
@@ -9184,7 +9184,7 @@ abstract class AppLocalizations {
   /// No description provided for @maintainerLabel.
   ///
   /// In zh, this message translates to:
-  /// **'维护者'**
+  /// **'适配者'**
   String get maintainerLabel;
 
   /// No description provided for @adapterInfoTitle.
@@ -9418,7 +9418,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeMenuUpdateTitle.
   ///
   /// In zh, this message translates to:
-  /// **'软件更新'**
+  /// **'版本更新'**
   String get homeMenuUpdateTitle;
 
   /// No description provided for @homeMenuProfilesTitle.
@@ -9514,7 +9514,7 @@ abstract class AppLocalizations {
   /// No description provided for @teacherPrefix.
   ///
   /// In zh, this message translates to:
-  /// **'老师：{value}'**
+  /// **'教师：{value}'**
   String teacherPrefix(String value);
 
   /// No description provided for @locationPrefix.
@@ -10880,7 +10880,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleEntryTimeSchemeSectionTitle.
   ///
   /// In zh, this message translates to:
-  /// **'特殊时间方案'**
+  /// **'特殊时间模板'**
   String get scheduleEntryTimeSchemeSectionTitle;
 
   /// No description provided for @scheduleEntryTimeSchemeSectionSubtitle.
@@ -11096,7 +11096,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseNoteWholeCoursePlaceholder.
   ///
   /// In zh, this message translates to:
-  /// **'例如：这个老师容易点名、教室在新楼…'**
+  /// **'例如：这位教师容易点名、教室在新楼…'**
   String get courseNoteWholeCoursePlaceholder;
 
   /// No description provided for @courseNoteSessionLabel.
@@ -11174,7 +11174,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseActionSheetNotice.
   ///
   /// In zh, this message translates to:
-  /// **'您正在查看第 {week} 周，如该时段突发考试或冲突，可立即在下方执行快速调课或停课'**
+  /// **'你正在查看第 {week} 周，如该时段突发考试或冲突，可立即在下方执行快速调课或停课'**
   String courseActionSheetNotice(int week);
 
   /// No description provided for @courseActionOddWeekShort.
@@ -11408,13 +11408,13 @@ abstract class AppLocalizations {
   /// No description provided for @selectTimeSchemeTitle.
   ///
   /// In zh, this message translates to:
-  /// **'选择时间方案'**
+  /// **'选择时间模板'**
   String get selectTimeSchemeTitle;
 
   /// No description provided for @manageTimeSchemesAction.
   ///
   /// In zh, this message translates to:
-  /// **'管理时间方案'**
+  /// **'管理时间模板'**
   String get manageTimeSchemesAction;
 
   /// No description provided for @examDefaultName.
@@ -12953,7 +12953,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutSystemDownloaderTitle.
   ///
   /// In zh, this message translates to:
-  /// **'系统管理器'**
+  /// **'系统下载管理器'**
   String get aboutSystemDownloaderTitle;
 
   /// No description provided for @aboutSystemDownloaderChoiceSubtitle.
@@ -13025,7 +13025,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncErrorMissingBackupSnapshot.
   ///
   /// In zh, this message translates to:
-  /// **'备份快照缺失'**
+  /// **'备份缺失'**
   String get syncErrorMissingBackupSnapshot;
 
   /// No description provided for @syncErrorCannotDeleteCurrentBackup.
@@ -13565,7 +13565,7 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgUnrecognizedSyncSnapshot.
   ///
   /// In zh, this message translates to:
-  /// **'不是可识别的 mikcb 云同步快照'**
+  /// **'不是可识别的 mikcb 备份文件'**
   String get serviceMsgUnrecognizedSyncSnapshot;
 
   /// No description provided for @serviceMsgMissingSyncTimetableData.
@@ -13577,19 +13577,19 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgSyncSnapshotChecksumFailed.
   ///
   /// In zh, this message translates to:
-  /// **'云同步快照校验失败'**
+  /// **'备份文件校验失败'**
   String get serviceMsgSyncSnapshotChecksumFailed;
 
   /// No description provided for @serviceMsgSyncSnapshotNoProfiles.
   ///
   /// In zh, this message translates to:
-  /// **'云同步快照中没有可恢复的课表'**
+  /// **'备份文件里没有可恢复的课表'**
   String get serviceMsgSyncSnapshotNoProfiles;
 
   /// No description provided for @serviceMsgSyncSnapshotUnrecognized.
   ///
   /// In zh, this message translates to:
-  /// **'云同步快照无法识别'**
+  /// **'备份文件无法识别'**
   String get serviceMsgSyncSnapshotUnrecognized;
 
   /// No description provided for @serviceMsgTimeSchemeNotFound.
@@ -14426,13 +14426,13 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgUsageTypeOverride.
   ///
   /// In zh, this message translates to:
-  /// **'副时间表'**
+  /// **'副时间模板'**
   String get serviceMsgUsageTypeOverride;
 
   /// No description provided for @serviceMsgUsageTypeProfile.
   ///
   /// In zh, this message translates to:
-  /// **'课表主时间表'**
+  /// **'课表主时间模板'**
   String get serviceMsgUsageTypeProfile;
 
   /// No description provided for @dataTransferProfileShareText.
@@ -19485,7 +19485,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveExpandedDetailFieldTeacher.
   ///
   /// In zh, this message translates to:
-  /// **'老师'**
+  /// **'教师'**
   String get liveExpandedDetailFieldTeacher;
 
   /// No description provided for @liveExpandedDetailFieldNext.

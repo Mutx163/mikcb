@@ -597,10 +597,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncConnectSuccess => '账号连接成功';
 
   @override
-  String get cloudBackupSectionTitle => '可恢复版本';
+  String get cloudBackupSectionTitle => '备份版本';
 
   @override
-  String get cloudBackupSectionSubtitle => '每次同步都会自动保留可恢复版本';
+  String get cloudBackupSectionSubtitle => '每次同步都会自动保留备份版本';
 
   @override
   String get cloudBackupCurrentLabel => '当前版本';
@@ -612,10 +612,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudBackupCreateNow => '立即备份';
 
   @override
-  String get cloudBackupViewAll => '查看全部可恢复版本';
+  String get cloudBackupViewAll => '查看全部备份版本';
 
   @override
-  String get cloudBackupEmpty => '暂无可恢复版本，同步后会自动生成';
+  String get cloudBackupEmpty => '暂无备份版本，同步后会自动生成';
 
   @override
   String get cloudBackupSourceAuto => '自动备份';
@@ -1706,7 +1706,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get currentScheduleSubtitle => '这里的星期、节次、教室、周次和单双周只影响当前这一条排课';
 
   @override
-  String get timeSchemeLabel => '上课时间方案';
+  String get timeSchemeLabel => '时间模板';
 
   @override
   String followCurrentTimetableWithName(String name) {
@@ -2078,7 +2078,7 @@ class AppLocalizationsZh extends AppLocalizations {
     int courses,
     int overrideCourses,
   ) {
-    return '$sections 节 · $profiles 个课表 · $courses 节课程 · $overrideCourses 节副时间表';
+    return '$sections 节 · $profiles 个课表 · $courses 节课程 · $overrideCourses 节副时间模板';
   }
 
   @override
@@ -2146,7 +2146,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseCountLabel => '课程';
 
   @override
-  String get overrideTimeSchemeLabel => '副时间表';
+  String get overrideTimeSchemeLabel => '副时间模板';
 
   @override
   String get directlyBoundProfilesTitle => '直接绑定这套模板的课表';
@@ -2158,20 +2158,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get directlyBoundProfilesSubtitle => '这些课表切到这套模板后，默认都会按这套节次时间显示';
 
   @override
-  String get followMainSchemeCoursesTitle => '跟随课表主时间表的课程';
+  String get followMainSchemeCoursesTitle => '跟随课表主时间模板的课程';
 
   @override
-  String get followMainSchemeCoursesEmpty => '当前没有课程通过课表主时间表间接使用它';
+  String get followMainSchemeCoursesEmpty => '当前没有课程通过课表主时间模板间接使用它';
 
   @override
   String get followMainSchemeCoursesSubtitle =>
-      '这些课程没有单独设置副时间表，而是跟着所属课表一起用这套模板';
+      '这些课程没有单独设置副时间模板，而是跟着所属课表一起用这套模板';
 
   @override
-  String get overrideSchemeCoursesTitle => '把它作为副时间表的课程';
+  String get overrideSchemeCoursesTitle => '把它作为副时间模板的课程';
 
   @override
-  String get overrideSchemeCoursesEmpty => '当前没有课程把它作为副时间表';
+  String get overrideSchemeCoursesEmpty => '当前没有课程把它作为副时间模板';
 
   @override
   String get overrideSchemeCoursesSubtitle => '这些课程即使所在课表切换了主模板，也会继续单独使用这套时间';
@@ -2239,7 +2239,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get timeSchemeEditorOverrideHint =>
-      '有课程正在把这套模板作为副时间表使用，保存后会同步更新所有引用课程';
+      '有课程正在把这套模板作为副时间模板使用，保存后会同步更新所有引用课程';
 
   @override
   String get editTimeAction => '编辑时间';
@@ -2262,10 +2262,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get timeSchemeUsageCourseRefPrefix => '课程引用：';
 
   @override
-  String get mainTimeSchemeLabel => '主时间表';
+  String get mainTimeSchemeLabel => '主时间模板';
 
   @override
-  String get overrideTimeSchemeShortLabel => '副时间表';
+  String get overrideTimeSchemeShortLabel => '副时间模板';
 
   @override
   String timeSchemeBottomUsageSingle(String first) {
@@ -2556,7 +2556,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveIslandVisualSubtitle => '左侧文字图、展开态大图标和自定义图片都按当前阶段单独保存';
 
   @override
-  String get liveMiuiLabelImageTitle => '小米岛左侧文字图标';
+  String get liveMiuiLabelImageTitle => '超级岛左侧文字图标';
 
   @override
   String get liveMiuiLabelImageSubtitle => '仅小米手机样式生效，会把课程名或地点生成到左侧图标位';
@@ -2978,7 +2978,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reuseExistingCourseLabel => '沿用已有课程';
 
   @override
-  String get reuseExistingCourseHelper => '选一个已有课程，自动带入课程名、老师和其他共享信息';
+  String get reuseExistingCourseHelper => '选一个已有课程，自动带入课程名、教师和其他共享信息';
 
   @override
   String get manualInputLabel => '手动填写';
@@ -3023,7 +3023,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get timeSchemeOverrideLabel => '上课时间方案';
+  String get timeSchemeOverrideLabel => '时间模板';
 
   @override
   String get lessonWeeksTitle => '上课周次';
@@ -3505,7 +3505,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guideFinalTip2 => '2. 先在设置页调整“上课前弹出”和“课中与临近下课提醒”的阈值。';
 
   @override
-  String get guideFinalTip3 => '3. 完成系统权限设置后，再用测试通知验证；如果岛区还是偶尔消失，优先检查自启动和省电策略。';
+  String get guideFinalTip3 =>
+      '3. 完成系统权限设置后，再用测试通知验证；如果超级岛还是偶尔消失，优先检查自启动和省电策略。';
 
   @override
   String get guidePrivacyHelperRequireConsent =>
@@ -3909,7 +3910,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeWidgetDescriptionText =>
-      '小组件目前优先展示今日课程，无课状态会保持完整卡片，不会出现空白；如果你切换课表或修改样式，桌面组件也会跟着刷新';
+      '小组件目前优先展示今日课程，无课状态会保持完整卡片，不会出现空白；如果你切换课表或修改样式，桌面小组件也会跟着刷新';
 
   @override
   String homeWidgetPinRequested(String label) {
@@ -4070,10 +4071,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get layoutCourseCardDisplayTitle => '课程卡片显示';
 
   @override
-  String get layoutCourseCardDisplaySubtitle => '默认显示课程名、老师和教室；其他信息可按课表自由开关组合';
+  String get layoutCourseCardDisplaySubtitle => '默认显示课程名、教师和教室；其他信息可按课表自由开关组合';
 
   @override
-  String get layoutShowTeacherTitle => '显示老师';
+  String get layoutShowTeacherTitle => '显示教师';
 
   @override
   String get layoutShowClassroomTitle => '显示教室';
@@ -4184,7 +4185,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutCheckingLatestVersion => '正在检查最新版本信息…';
 
   @override
-  String get aboutCheckingForUpdate => '正在检测更新…';
+  String get aboutCheckingForUpdate => '正在检查更新……';
 
   @override
   String get aboutReadVersionFailed => '暂时无法读取版本信息，请稍后重试';
@@ -4987,7 +4988,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get categoryLabel => '类别';
 
   @override
-  String get maintainerLabel => '维护者';
+  String get maintainerLabel => '适配者';
 
   @override
   String get adapterInfoTitle => '适配器信息';
@@ -5112,7 +5113,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get homeMenuUpdateTitle => '软件更新';
+  String get homeMenuUpdateTitle => '版本更新';
 
   @override
   String get homeMenuProfilesTitle => '课表管理';
@@ -5163,7 +5164,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String teacherPrefix(String value) {
-    return '老师：$value';
+    return '教师：$value';
   }
 
   @override
@@ -5957,7 +5958,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleEntryPeopleSectionTitle => '谁在哪里上';
 
   @override
-  String get scheduleEntryTimeSchemeSectionTitle => '特殊时间方案';
+  String get scheduleEntryTimeSchemeSectionTitle => '特殊时间模板';
 
   @override
   String get scheduleEntryTimeSchemeSectionSubtitle =>
@@ -6068,7 +6069,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseNoteWholeCourseHint => '同名课程共享，长期有效（例如课程说明、课堂注意点）。';
 
   @override
-  String get courseNoteWholeCoursePlaceholder => '例如：这个老师容易点名、教室在新楼…';
+  String get courseNoteWholeCoursePlaceholder => '例如：这位教师容易点名、教室在新楼…';
 
   @override
   String get courseNoteSessionLabel => '本节课备注';
@@ -6110,7 +6111,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String courseActionSheetNotice(int week) {
-    return '您正在查看第 $week 周，如该时段突发考试或冲突，可立即在下方执行快速调课或停课';
+    return '你正在查看第 $week 周，如该时段突发考试或冲突，可立即在下方执行快速调课或停课';
   }
 
   @override
@@ -6234,10 +6235,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weekPickerTitle => '选择上课周次';
 
   @override
-  String get selectTimeSchemeTitle => '选择时间方案';
+  String get selectTimeSchemeTitle => '选择时间模板';
 
   @override
-  String get manageTimeSchemesAction => '管理时间方案';
+  String get manageTimeSchemesAction => '管理时间模板';
 
   @override
   String get examDefaultName => '期末考试';
@@ -7102,7 +7103,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutInAppDownloadSubtitle => '下载完成后直接在应用内安装';
 
   @override
-  String get aboutSystemDownloaderTitle => '系统管理器';
+  String get aboutSystemDownloaderTitle => '系统下载管理器';
 
   @override
   String get aboutSystemDownloaderChoiceSubtitle => '交给系统下载管理器处理';
@@ -7138,7 +7139,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncErrorBackupNotFound => '备份不存在';
 
   @override
-  String get syncErrorMissingBackupSnapshot => '备份快照缺失';
+  String get syncErrorMissingBackupSnapshot => '备份缺失';
 
   @override
   String get syncErrorCannotDeleteCurrentBackup => '不能删除当前备份';
@@ -7417,19 +7418,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serviceMsgUseProfileBackupNotFull => '请使用课表档案备份 JSON，而非全部数据备份';
 
   @override
-  String get serviceMsgUnrecognizedSyncSnapshot => '不是可识别的 mikcb 云同步快照';
+  String get serviceMsgUnrecognizedSyncSnapshot => '不是可识别的 mikcb 备份文件';
 
   @override
   String get serviceMsgMissingSyncTimetableData => '缺少云同步课表数据';
 
   @override
-  String get serviceMsgSyncSnapshotChecksumFailed => '云同步快照校验失败';
+  String get serviceMsgSyncSnapshotChecksumFailed => '备份文件校验失败';
 
   @override
-  String get serviceMsgSyncSnapshotNoProfiles => '云同步快照中没有可恢复的课表';
+  String get serviceMsgSyncSnapshotNoProfiles => '备份文件里没有可恢复的课表';
 
   @override
-  String get serviceMsgSyncSnapshotUnrecognized => '云同步快照无法识别';
+  String get serviceMsgSyncSnapshotUnrecognized => '备份文件无法识别';
 
   @override
   String get serviceMsgTimeSchemeNotFound => '时间模板不存在';
@@ -7975,10 +7976,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serviceMsgSyncFailed => '同步失败';
 
   @override
-  String get serviceMsgUsageTypeOverride => '副时间表';
+  String get serviceMsgUsageTypeOverride => '副时间模板';
 
   @override
-  String get serviceMsgUsageTypeProfile => '课表主时间表';
+  String get serviceMsgUsageTypeProfile => '课表主时间模板';
 
   @override
   String get dataTransferProfileShareText => '这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置';
@@ -10700,7 +10701,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveExpandedDetailFieldLocation => '地点';
 
   @override
-  String get liveExpandedDetailFieldTeacher => '老师';
+  String get liveExpandedDetailFieldTeacher => '教师';
 
   @override
   String get liveExpandedDetailFieldNext => '下节课';
@@ -11594,10 +11595,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudSyncConnectSuccess => '帳號連接成功';
 
   @override
-  String get cloudBackupSectionTitle => '可恢復版本';
+  String get cloudBackupSectionTitle => '備份版本';
 
   @override
-  String get cloudBackupSectionSubtitle => '每次同步都會自動保留可恢復版本';
+  String get cloudBackupSectionSubtitle => '每次同步都會自動保留備份版本';
 
   @override
   String get cloudBackupCurrentLabel => '當前版本';
@@ -11609,10 +11610,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudBackupCreateNow => '立即備份';
 
   @override
-  String get cloudBackupViewAll => '查看全部可恢復版本';
+  String get cloudBackupViewAll => '查看全部備份版本';
 
   @override
-  String get cloudBackupEmpty => '暫無可恢復版本，同步後會自動生成';
+  String get cloudBackupEmpty => '暫無備份版本，同步後會自動生成';
 
   @override
   String get cloudBackupSourceAuto => '自動備份';
@@ -12703,7 +12704,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get currentScheduleSubtitle => '這裡的星期、節次、教室、周次和單雙周只影響目前這一條排課';
 
   @override
-  String get timeSchemeLabel => '上課時間方案';
+  String get timeSchemeLabel => '時間模板';
 
   @override
   String followCurrentTimetableWithName(String name) {
@@ -13075,7 +13076,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
     int courses,
     int overrideCourses,
   ) {
-    return '$sections 節 · $profiles 個課表 · $courses 節課程 · $overrideCourses 節副時間表';
+    return '$sections 節 · $profiles 個課表 · $courses 節課程 · $overrideCourses 節副時間模板';
   }
 
   @override
@@ -13143,7 +13144,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseCountLabel => '課程';
 
   @override
-  String get overrideTimeSchemeLabel => '副時間表';
+  String get overrideTimeSchemeLabel => '副時間模板';
 
   @override
   String get directlyBoundProfilesTitle => '直接綁定這套範本的課表';
@@ -13155,20 +13156,20 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get directlyBoundProfilesSubtitle => '這些課表切到這套範本後，預設都會按這套節次時間顯示';
 
   @override
-  String get followMainSchemeCoursesTitle => '跟隨課表主時間表的課程';
+  String get followMainSchemeCoursesTitle => '跟隨課表主時間模板的課程';
 
   @override
-  String get followMainSchemeCoursesEmpty => '目前沒有有課程通過課表主時間表間接使用它';
+  String get followMainSchemeCoursesEmpty => '目前沒有課程通過課表主時間模板間接使用它';
 
   @override
   String get followMainSchemeCoursesSubtitle =>
-      '這些課程沒有有單獨設定副時間表，而是跟著所屬課表一起用這套範本';
+      '這些課程沒有單獨設定副時間模板，而是跟著所屬課表一起用這套範本';
 
   @override
-  String get overrideSchemeCoursesTitle => '把它作為副時間表的課程';
+  String get overrideSchemeCoursesTitle => '把它作為副時間模板的課程';
 
   @override
-  String get overrideSchemeCoursesEmpty => '目前沒有有課程把它作為副時間表';
+  String get overrideSchemeCoursesEmpty => '目前沒有課程把它作為副時間模板';
 
   @override
   String get overrideSchemeCoursesSubtitle => '這些課程即使所在課表切換了主範本，也會繼續單獨使用這套時間';
@@ -13236,7 +13237,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get timeSchemeEditorOverrideHint =>
-      '有課程正在把這套範本作為副時間表使用，保存後會同步更新所有引用課程';
+      '有課程正在把這套模板作為副時間模板使用，儲存後會同步更新所有引用課程';
 
   @override
   String get editTimeAction => '編輯時間';
@@ -13259,10 +13260,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get timeSchemeUsageCourseRefPrefix => '課程引用：';
 
   @override
-  String get mainTimeSchemeLabel => '主時間表';
+  String get mainTimeSchemeLabel => '主時間模板';
 
   @override
-  String get overrideTimeSchemeShortLabel => '副時間表';
+  String get overrideTimeSchemeShortLabel => '副時間模板';
 
   @override
   String timeSchemeBottomUsageSingle(String first) {
@@ -13554,7 +13555,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveIslandVisualSubtitle => '左側文字圖、展開態大圖示和自定義圖片都按目前階段單獨保存';
 
   @override
-  String get liveMiuiLabelImageTitle => '小米島左側文字圖示';
+  String get liveMiuiLabelImageTitle => '超級島左側文字圖標';
 
   @override
   String get liveMiuiLabelImageSubtitle => '僅小米手機樣式生效，會把課程名或地點生成到左側圖示位';
@@ -13976,7 +13977,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get reuseExistingCourseLabel => '沿用已有課程';
 
   @override
-  String get reuseExistingCourseHelper => '選一個已有課程，自動帶入課程名、老師和其他共享資訊';
+  String get reuseExistingCourseHelper => '選一個已有課程，自動帶入課程名、教師和其他共享資訊';
 
   @override
   String get manualInputLabel => '手動填寫';
@@ -14021,7 +14022,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get timeSchemeOverrideLabel => '上課時間方案';
+  String get timeSchemeOverrideLabel => '時間模板';
 
   @override
   String get lessonWeeksTitle => '上課周次';
@@ -14502,7 +14503,8 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guideFinalTip2 => '2. 先在設定頁調整「上課前彈出」和「課中與臨近下課提醒」的閾值。';
 
   @override
-  String get guideFinalTip3 => '3. 完成系統權限設定後，再用測試通知驗證；如果島區還是偶尔消失，優先檢查自啟動和省電策略。';
+  String get guideFinalTip3 =>
+      '3. 完成系統權限設定後，再用測試通知驗證；如果超級島還是偶爾消失，優先檢查自啟動和省電策略。';
 
   @override
   String get guidePrivacyHelperRequireConsent =>
@@ -14906,7 +14908,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homeWidgetDescriptionText =>
-      '小組件目前優先展示今日課程，無課狀態會保持完整卡片，不會出現空白；如果你切換課表或修改養式，桌面組件也會跟着刷新';
+      '小組件目前優先展示今日課程，無課狀態會保持完整卡片，不會出現空白；如果你切換課表或修改樣式，桌面小組件也會跟著刷新';
 
   @override
   String homeWidgetPinRequested(String label) {
@@ -15067,10 +15069,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get layoutCourseCardDisplayTitle => '課程卡片顯示';
 
   @override
-  String get layoutCourseCardDisplaySubtitle => '預設顯示課程名、老師和教室；其他資訊可按課表自由開關組合';
+  String get layoutCourseCardDisplaySubtitle => '預設顯示課程名、教師和教室；其他資訊可按課表自由開關組合';
 
   @override
-  String get layoutShowTeacherTitle => '顯示老師';
+  String get layoutShowTeacherTitle => '顯示教師';
 
   @override
   String get layoutShowClassroomTitle => '顯示教室';
@@ -15181,7 +15183,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutCheckingLatestVersion => '正在檢查最新版本資訊…';
 
   @override
-  String get aboutCheckingForUpdate => '正在檢測更新…';
+  String get aboutCheckingForUpdate => '正在檢查更新……';
 
   @override
   String get aboutReadVersionFailed => '暫時無法讀取版本資訊，請稍後重試';
@@ -15984,7 +15986,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get categoryLabel => '類別';
 
   @override
-  String get maintainerLabel => '維護者';
+  String get maintainerLabel => '適配者';
 
   @override
   String get adapterInfoTitle => '適配器資訊';
@@ -16109,7 +16111,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get homeMenuUpdateTitle => '軟體更新';
+  String get homeMenuUpdateTitle => '版本更新';
 
   @override
   String get homeMenuProfilesTitle => '課表管理';
@@ -16160,7 +16162,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String teacherPrefix(String value) {
-    return '老師：$value';
+    return '教師：$value';
   }
 
   @override
@@ -16954,7 +16956,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get scheduleEntryPeopleSectionTitle => '誰在哪裡上';
 
   @override
-  String get scheduleEntryTimeSchemeSectionTitle => '特殊時間方案';
+  String get scheduleEntryTimeSchemeSectionTitle => '特殊時間模板';
 
   @override
   String get scheduleEntryTimeSchemeSectionSubtitle =>
@@ -17065,7 +17067,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseNoteWholeCourseHint => '同名課程共享，長期有效（例如課程說明、課堂注意事項）。';
 
   @override
-  String get courseNoteWholeCoursePlaceholder => '例如：這個老師容易點名、教室在新大樓…';
+  String get courseNoteWholeCoursePlaceholder => '例如：這位教師容易點名、教室在新樓…';
 
   @override
   String get courseNoteSessionLabel => '本節課備註';
@@ -17231,10 +17233,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get weekPickerTitle => '選擇上課週次';
 
   @override
-  String get selectTimeSchemeTitle => '選擇時間方案';
+  String get selectTimeSchemeTitle => '選擇時間模板';
 
   @override
-  String get manageTimeSchemesAction => '管理時間方案';
+  String get manageTimeSchemesAction => '管理時間模板';
 
   @override
   String get examDefaultName => '期末考試';
@@ -18099,7 +18101,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutInAppDownloadSubtitle => '下載完成後直接在應用內安裝';
 
   @override
-  String get aboutSystemDownloaderTitle => '系統管理器';
+  String get aboutSystemDownloaderTitle => '系統下載管理器';
 
   @override
   String get aboutSystemDownloaderChoiceSubtitle => '交給系統下載管理器處理';
@@ -18135,7 +18137,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get syncErrorBackupNotFound => '備份不存在';
 
   @override
-  String get syncErrorMissingBackupSnapshot => '備份快照缺失';
+  String get syncErrorMissingBackupSnapshot => '備份缺失';
 
   @override
   String get syncErrorCannotDeleteCurrentBackup => '不能刪除目前備份';
@@ -18420,24 +18422,20 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
       'Use a timetable profile backup JSON, not a full data backup.';
 
   @override
-  String get serviceMsgUnrecognizedSyncSnapshot =>
-      'Not a recognizable mikcb cloud sync snapshot.';
+  String get serviceMsgUnrecognizedSyncSnapshot => '不是可識別的 mikcb 備份檔案';
 
   @override
   String get serviceMsgMissingSyncTimetableData =>
       'Cloud sync timetable data is missing.';
 
   @override
-  String get serviceMsgSyncSnapshotChecksumFailed =>
-      'Cloud sync snapshot verification failed.';
+  String get serviceMsgSyncSnapshotChecksumFailed => '備份檔案校驗失敗';
 
   @override
-  String get serviceMsgSyncSnapshotNoProfiles =>
-      'No recoverable timetables in the cloud sync snapshot.';
+  String get serviceMsgSyncSnapshotNoProfiles => '備份檔案裡沒有可恢復的課表';
 
   @override
-  String get serviceMsgSyncSnapshotUnrecognized =>
-      'Cloud sync snapshot could not be recognized.';
+  String get serviceMsgSyncSnapshotUnrecognized => '備份檔案無法識別';
 
   @override
   String get serviceMsgTimeSchemeNotFound => 'Time scheme not found.';
@@ -19016,10 +19014,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get serviceMsgSyncFailed => 'Sync failed.';
 
   @override
-  String get serviceMsgUsageTypeOverride => 'override time scheme';
+  String get serviceMsgUsageTypeOverride => '副時間模板';
 
   @override
-  String get serviceMsgUsageTypeProfile => 'profile main time scheme';
+  String get serviceMsgUsageTypeProfile => '課表主時間模板';
 
   @override
   String get dataTransferProfileShareText => '這是輕嶼課表當前課表的完整備份文件，導入後可直接恢復課程和設置';
@@ -21741,7 +21739,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveExpandedDetailFieldLocation => '地點';
 
   @override
-  String get liveExpandedDetailFieldTeacher => '老師';
+  String get liveExpandedDetailFieldTeacher => '教師';
 
   @override
   String get liveExpandedDetailFieldNext => '下節課';
@@ -22635,10 +22633,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudSyncConnectSuccess => '帳號連接成功';
 
   @override
-  String get cloudBackupSectionTitle => '可恢復版本';
+  String get cloudBackupSectionTitle => '備份版本';
 
   @override
-  String get cloudBackupSectionSubtitle => '每次同步都會自動保留可恢復版本';
+  String get cloudBackupSectionSubtitle => '每次同步都會自動保留備份版本';
 
   @override
   String get cloudBackupCurrentLabel => '目前版本';
@@ -22650,10 +22648,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudBackupCreateNow => '立即備份';
 
   @override
-  String get cloudBackupViewAll => '查看全部可恢復版本';
+  String get cloudBackupViewAll => '查看全部備份版本';
 
   @override
-  String get cloudBackupEmpty => '暫無可恢復版本，同步後會自動生成';
+  String get cloudBackupEmpty => '暫無備份版本，同步後會自動生成';
 
   @override
   String get cloudBackupSourceAuto => '自動備份';
@@ -23744,7 +23742,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get currentScheduleSubtitle => '這裡的星期、節次、教室、周次和單雙周只影響目前這一條排課';
 
   @override
-  String get timeSchemeLabel => '上課時間方案';
+  String get timeSchemeLabel => '時間模板';
 
   @override
   String followCurrentTimetableWithName(String name) {
@@ -24116,7 +24114,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
     int courses,
     int overrideCourses,
   ) {
-    return '$sections 節 · $profiles 個課表 · $courses 節課程 · $overrideCourses 節副時間表';
+    return '$sections 節 · $profiles 個課表 · $courses 節課程 · $overrideCourses 節副時間模板';
   }
 
   @override
@@ -24184,7 +24182,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseCountLabel => '課程';
 
   @override
-  String get overrideTimeSchemeLabel => '副時間表';
+  String get overrideTimeSchemeLabel => '副時間模板';
 
   @override
   String get directlyBoundProfilesTitle => '直接綁定這套範本的課表';
@@ -24196,20 +24194,20 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get directlyBoundProfilesSubtitle => '這些課表切到這套範本後，預設都會按這套節次時間顯示';
 
   @override
-  String get followMainSchemeCoursesTitle => '跟隨課表主時間表的課程';
+  String get followMainSchemeCoursesTitle => '跟隨課表主時間模板的課程';
 
   @override
-  String get followMainSchemeCoursesEmpty => '目前沒有有課程通過課表主時間表間接使用它';
+  String get followMainSchemeCoursesEmpty => '目前沒有課程通過課表主時間模板間接使用它';
 
   @override
   String get followMainSchemeCoursesSubtitle =>
-      '這些課程沒有有單独設定副時間表，而是跟著所屬課表一起用這套範本';
+      '這些課程沒有單獨設定副時間模板，而是跟著所屬課表一起用這套範本';
 
   @override
-  String get overrideSchemeCoursesTitle => '把它作為副時間表的課程';
+  String get overrideSchemeCoursesTitle => '把它作為副時間模板的課程';
 
   @override
-  String get overrideSchemeCoursesEmpty => '目前沒有有課程把它作為副時間表';
+  String get overrideSchemeCoursesEmpty => '目前沒有課程把它作為副時間模板';
 
   @override
   String get overrideSchemeCoursesSubtitle => '這些課程即使所在課表切換了主範本，也會繼續單独使用這套時間';
@@ -24277,7 +24275,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get timeSchemeEditorOverrideHint =>
-      '有課程正在把這套範本作為副時間表使用，保存後會同步更新所有引用課程';
+      '有課程正在把這套模板作為副時間模板使用，儲存後會同步更新所有引用課程';
 
   @override
   String get editTimeAction => '編輯時間';
@@ -24300,10 +24298,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get timeSchemeUsageCourseRefPrefix => '課程引用：';
 
   @override
-  String get mainTimeSchemeLabel => '主時間表';
+  String get mainTimeSchemeLabel => '主時間模板';
 
   @override
-  String get overrideTimeSchemeShortLabel => '副時間表';
+  String get overrideTimeSchemeShortLabel => '副時間模板';
 
   @override
   String timeSchemeBottomUsageSingle(String first) {
@@ -24595,7 +24593,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveIslandVisualSubtitle => '左側文字圖、展開態大圖示和自定義圖片都按目前階段單独保存';
 
   @override
-  String get liveMiuiLabelImageTitle => '小米島左側文字圖示';
+  String get liveMiuiLabelImageTitle => '超級島左側文字圖標';
 
   @override
   String get liveMiuiLabelImageSubtitle => '僅小米手機樣式生效，會把課程名或地點生成到左側圖示位';
@@ -25017,7 +25015,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get reuseExistingCourseLabel => '沿用已有課程';
 
   @override
-  String get reuseExistingCourseHelper => '選一個已有課程，自動帶入課程名、老師和其他共享資訊';
+  String get reuseExistingCourseHelper => '選一個已有課程，自動帶入課程名、教師和其他共享資訊';
 
   @override
   String get manualInputLabel => '手動填寫';
@@ -25062,7 +25060,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get timeSchemeOverrideLabel => '上課時間方案';
+  String get timeSchemeOverrideLabel => '時間模板';
 
   @override
   String get lessonWeeksTitle => '上課周次';
@@ -25543,7 +25541,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guideFinalTip2 => '2. 先在設定頁調整「上課前弹出」和「課中與臨近下課提醒」的閾值。';
 
   @override
-  String get guideFinalTip3 => '3. 完成系統權限設定後，再用測試通知驗證；如果島区還是偶尔消失，優先檢查自啟動和省電策略。';
+  String get guideFinalTip3 =>
+      '3. 完成系統權限設定後，再用測試通知驗證；如果超級島還是偶爾消失，優先檢查自啟動和省電策略。';
 
   @override
   String get guidePrivacyHelperRequireConsent =>
@@ -25947,7 +25946,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeWidgetDescriptionText =>
-      '小工具目前優先展示今日課程，無課狀態会保持完整卡片，不会出现空白；如果你切换課表或修改样式，桌面工具也会跟着刷新';
+      '小組件目前優先展示今日課程，無課狀態會保持完整卡片，不會出現空白；如果你切換課表或修改樣式，桌面小組件也會跟著刷新';
 
   @override
   String homeWidgetPinRequested(String label) {
@@ -26108,10 +26107,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get layoutCourseCardDisplayTitle => '課程卡片顯示';
 
   @override
-  String get layoutCourseCardDisplaySubtitle => '預設顯示課程名、老師和教室；其他資訊可按課表自由開關組合';
+  String get layoutCourseCardDisplaySubtitle => '預設顯示課程名、教師和教室；其他資訊可按課表自由開關組合';
 
   @override
-  String get layoutShowTeacherTitle => '顯示老師';
+  String get layoutShowTeacherTitle => '顯示教師';
 
   @override
   String get layoutShowClassroomTitle => '顯示教室';
@@ -26222,7 +26221,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutCheckingLatestVersion => '正在檢查最新版本資訊…';
 
   @override
-  String get aboutCheckingForUpdate => '正在檢測更新…';
+  String get aboutCheckingForUpdate => '正在檢查更新……';
 
   @override
   String get aboutReadVersionFailed => '暫時無法讀取版本資訊，请稍後重試';
@@ -27025,7 +27024,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get categoryLabel => '類别';
 
   @override
-  String get maintainerLabel => '維護者';
+  String get maintainerLabel => '適配者';
 
   @override
   String get adapterInfoTitle => '適配器資訊';
@@ -27150,7 +27149,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get homeMenuUpdateTitle => '軟體更新';
+  String get homeMenuUpdateTitle => '版本更新';
 
   @override
   String get homeMenuProfilesTitle => '課表管理';
@@ -27201,7 +27200,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String teacherPrefix(String value) {
-    return '老師：$value';
+    return '教師：$value';
   }
 
   @override
@@ -27995,7 +27994,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get scheduleEntryPeopleSectionTitle => '誰在哪裡上';
 
   @override
-  String get scheduleEntryTimeSchemeSectionTitle => '特殊時間方案';
+  String get scheduleEntryTimeSchemeSectionTitle => '特殊時間模板';
 
   @override
   String get scheduleEntryTimeSchemeSectionSubtitle =>
@@ -28106,7 +28105,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseNoteWholeCourseHint => '同名課程共享，長期有效（例如課程說明、課堂注意事項）。';
 
   @override
-  String get courseNoteWholeCoursePlaceholder => '例如：這個老師容易點名、教室在新大樓…';
+  String get courseNoteWholeCoursePlaceholder => '例如：這位教師容易點名、教室在新樓…';
 
   @override
   String get courseNoteSessionLabel => '本節課備註';
@@ -28272,10 +28271,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get weekPickerTitle => '選擇上課週次';
 
   @override
-  String get selectTimeSchemeTitle => '選擇時間方案';
+  String get selectTimeSchemeTitle => '選擇時間模板';
 
   @override
-  String get manageTimeSchemesAction => '管理時間方案';
+  String get manageTimeSchemesAction => '管理時間模板';
 
   @override
   String get examDefaultName => '期末考試';
@@ -29140,7 +29139,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutInAppDownloadSubtitle => '下載完成後直接在應用內安裝';
 
   @override
-  String get aboutSystemDownloaderTitle => '系统管理器';
+  String get aboutSystemDownloaderTitle => '系統下載管理器';
 
   @override
   String get aboutSystemDownloaderChoiceSubtitle => '交給系統下載管理器處理';
@@ -29176,7 +29175,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get syncErrorBackupNotFound => '備份不存在';
 
   @override
-  String get syncErrorMissingBackupSnapshot => '備份快照缺失';
+  String get syncErrorMissingBackupSnapshot => '備份缺失';
 
   @override
   String get syncErrorCannotDeleteCurrentBackup => '不能刪除目前備份';
@@ -29461,24 +29460,20 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       'Use a timetable profile backup JSON, not a full data backup.';
 
   @override
-  String get serviceMsgUnrecognizedSyncSnapshot =>
-      'Not a recognizable mikcb cloud sync snapshot.';
+  String get serviceMsgUnrecognizedSyncSnapshot => '不是可識別的 mikcb 備份檔案';
 
   @override
   String get serviceMsgMissingSyncTimetableData =>
       'Cloud sync timetable data is missing.';
 
   @override
-  String get serviceMsgSyncSnapshotChecksumFailed =>
-      'Cloud sync snapshot verification failed.';
+  String get serviceMsgSyncSnapshotChecksumFailed => '備份檔案校驗失敗';
 
   @override
-  String get serviceMsgSyncSnapshotNoProfiles =>
-      'No recoverable timetables in the cloud sync snapshot.';
+  String get serviceMsgSyncSnapshotNoProfiles => '備份檔案裡沒有可恢復的課表';
 
   @override
-  String get serviceMsgSyncSnapshotUnrecognized =>
-      'Cloud sync snapshot could not be recognized.';
+  String get serviceMsgSyncSnapshotUnrecognized => '備份檔案無法識別';
 
   @override
   String get serviceMsgTimeSchemeNotFound => 'Time scheme not found.';
@@ -30057,10 +30052,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get serviceMsgSyncFailed => 'Sync failed.';
 
   @override
-  String get serviceMsgUsageTypeOverride => 'override time scheme';
+  String get serviceMsgUsageTypeOverride => '副時間模板';
 
   @override
-  String get serviceMsgUsageTypeProfile => 'profile main time scheme';
+  String get serviceMsgUsageTypeProfile => '課表主時間模板';
 
   @override
   String get dataTransferProfileShareText => '这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置';
@@ -32782,7 +32777,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveExpandedDetailFieldLocation => '地點';
 
   @override
-  String get liveExpandedDetailFieldTeacher => '老師';
+  String get liveExpandedDetailFieldTeacher => '教師';
 
   @override
   String get liveExpandedDetailFieldNext => '下節課';
