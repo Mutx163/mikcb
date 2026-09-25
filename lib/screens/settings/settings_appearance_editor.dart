@@ -438,7 +438,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
         return;
       }
       if (message != null) {
-        showAppToast(context, message: message);
+        reportSettingsPersistRejected(this, message);
         setState(() {
           _draft = provider.settings;
         });

@@ -365,7 +365,7 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
         return;
       }
       if (message != null) {
-        showAppToast(context, message: message);
+        reportSettingsPersistRejected(this, message);
         setState(() {
           _draft = provider.settings;
         });
