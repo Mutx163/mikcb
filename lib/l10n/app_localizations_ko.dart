@@ -9779,7 +9779,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String locationTimeMatchApplyOverflowResult(int matched, int count) {
-    return 'Matched $matched; $count exceed the scheme sections';
+    return '$matched개 과목은 매칭됨. $count개 과목은 시간표안의 교시에 맞지 않아 적용하지 않았습니다.';
   }
 
   @override

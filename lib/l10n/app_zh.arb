@@ -1810,7 +1810,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryKeepNormal": "课中普通通知，下课前 {minutes} 分钟重点提醒",
+  "liveClassReminderLeadSummaryKeepNormal": "课中先保持普通通知，下课前 {minutes} 分钟切到重点提醒，最后 {seconds} 秒切到秒级倒计时",
   "@liveClassReminderLeadSummaryKeepNormal": {
     "placeholders": {
       "minutes": {
@@ -1821,7 +1821,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryIsland": "下课前 {minutes} 分钟切到超级岛与重点提醒",
+  "liveClassReminderLeadSummaryIsland": "下课前 {minutes} 分钟切到超级岛与重点提醒，最后 {seconds} 秒切到秒级倒计时",
   "@liveClassReminderLeadSummaryIsland": {
     "placeholders": {
       "minutes": {
@@ -1832,7 +1832,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryFocused": "下课前 {minutes} 分钟开始重点提醒",
+  "liveClassReminderLeadSummaryFocused": "下课前 {minutes} 分钟开始重点提醒，最后 {seconds} 秒切到秒级倒计时",
   "@liveClassReminderLeadSummaryFocused": {
     "placeholders": {
       "minutes": {
@@ -5812,7 +5812,7 @@
     }
   },
   "locationTimeMatchApplyNoneMatched": "没有匹配到可套用的课程",
-  "locationTimeMatchApplyOverflowResult": "有 {count} 门课节次无法对号入座（模板节数不足），已拒绝套用",
+  "locationTimeMatchApplyOverflowResult": "已匹配 {matched} 门课，另有 {count} 门课节次无法对号入座（模板节数不足），已拒绝套用",
   "@locationTimeMatchApplyOverflowResult": {
     "placeholders": {
       "matched": {

@@ -9735,7 +9735,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String locationTimeMatchApplyOverflowResult(int matched, int count) {
-    return 'Matched $matched; $count exceed the scheme sections';
+    return '$matched 門課已配對；另有 $count 門課的節次無法對應（模板節數不足），已拒絕套用';
   }
 
   @override

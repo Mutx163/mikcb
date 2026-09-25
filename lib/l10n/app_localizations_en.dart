@@ -6972,7 +6972,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsSectionsUnit => 'sections';
 
   @override
-  String get statisticsSectionUnit => '';
+  String get statisticsSectionUnit => ' sections';
 
   @override
   String get statisticsNoData => 'No course data';
@@ -10028,7 +10028,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String locationTimeMatchApplyOverflowResult(int matched, int count) {
-    return '$count courses cannot map into the scheme (too few sections); apply rejected';
+    return 'Matched $matched; $count cannot map into the scheme (too few sections); apply rejected';
   }
 
   @override

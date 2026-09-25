@@ -1654,7 +1654,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryKeepNormal": "課中普通通知，下課前 {minutes} 分鐘重點提醒",
+  "liveClassReminderLeadSummaryKeepNormal": "課中先保持普通通知，下課前 {minutes} 分鐘切到重點提醒，最後 {seconds} 秒切到秒級倒數",
   "@liveClassReminderLeadSummaryKeepNormal": {
     "placeholders": {
       "minutes": {
@@ -1665,7 +1665,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryIsland": "下課前 {minutes} 分鐘切到超級島與重點提醒",
+  "liveClassReminderLeadSummaryIsland": "下課前 {minutes} 分鐘切到超級島與重點提醒，最後 {seconds} 秒切到秒級倒數",
   "@liveClassReminderLeadSummaryIsland": {
     "placeholders": {
       "minutes": {
@@ -1676,7 +1676,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryFocused": "下課前 {minutes} 分鐘開始重點提醒",
+  "liveClassReminderLeadSummaryFocused": "下課前 {minutes} 分鐘開始重點提醒，最後 {seconds} 秒切到秒級倒數",
   "@liveClassReminderLeadSummaryFocused": {
     "placeholders": {
       "minutes": {
@@ -5539,7 +5539,7 @@
     }
   },
   "locationTimeMatchApplyNoneMatched": "沒有匹配到可套用的課程",
-  "locationTimeMatchApplyOverflowResult": "有 {count} 門課節次無法對號入座（範本節數不足），已拒絕套用",
+  "locationTimeMatchApplyOverflowResult": "已配對 {matched} 門課，另有 {count} 門課節次無法對號入座（範本節數不足），已拒絕套用",
   "@locationTimeMatchApplyOverflowResult": {
     "placeholders": {
       "matched": {
@@ -5964,14 +5964,14 @@
   "icsExportSyncCalendarTitle": "同步到系統日曆",
   "icsExportSyncCalendarBody": "將在系統日曆中建立專屬日曆「{calendarName}」，寫入目前所選時間範圍的全部日程；再次同步會覆寫上次寫入的日程。假期中的課程預設不寫入，如需保留可關閉「跳過節假日課程」開關。首次同步會請求日曆權限。",
   "icsExportSyncCalendarConfirm": "開始同步",
-  "icsExportSyncCalendarName": "輕詸課表·{profileName}",
+  "icsExportSyncCalendarName": "輕嶼課表·{profileName}",
   "icsExportSyncCalendarSuccess": "已同步 {count} 個日程到系統日曆",
   "icsExportSyncCalendarSkipped": "已跳過假期中的 {count} 個課程",
   "icsExportSyncCalendarPermissionDenied": "未取得日曆權限，請在系統設定中允許後重試",
   "icsExportSyncCalendarFailed": "同步到系統日曆失敗，請稍後重試",
   "icsExportRemoveCalendarButton": "移除已同步的日程",
   "icsExportRemoveCalendarTitle": "移除已同步的日程",
-  "icsExportRemoveCalendarBody": "將從系統日曆中刪除「輕詸課表」專屬日曆及其全部日程，你在日曆裡的其他內容不受影響。之後想再同步，點「同步到系統日曆」即可。",
+  "icsExportRemoveCalendarBody": "將從系統日曆中刪除「輕嶼課表」專屬日曆及其全部日程，你在日曆裡的其他內容不受影響。之後想再同步，點「同步到系統日曆」即可。",
   "icsExportRemoveCalendarConfirm": "移除",
   "icsExportRemoveCalendarSuccess": "已從系統日曆移除全部同步日程",
   "icsExportRemoveCalendarNothing": "尚未同步過日程",

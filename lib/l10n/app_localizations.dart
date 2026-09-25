@@ -5844,19 +5844,19 @@ abstract class AppLocalizations {
   /// No description provided for @liveClassReminderLeadSummaryKeepNormal.
   ///
   /// In zh, this message translates to:
-  /// **'课中普通通知，下课前 {minutes} 分钟重点提醒'**
+  /// **'课中先保持普通通知，下课前 {minutes} 分钟切到重点提醒，最后 {seconds} 秒切到秒级倒计时'**
   String liveClassReminderLeadSummaryKeepNormal(int minutes, int seconds);
 
   /// No description provided for @liveClassReminderLeadSummaryIsland.
   ///
   /// In zh, this message translates to:
-  /// **'下课前 {minutes} 分钟切到超级岛与重点提醒'**
+  /// **'下课前 {minutes} 分钟切到超级岛与重点提醒，最后 {seconds} 秒切到秒级倒计时'**
   String liveClassReminderLeadSummaryIsland(int minutes, int seconds);
 
   /// No description provided for @liveClassReminderLeadSummaryFocused.
   ///
   /// In zh, this message translates to:
-  /// **'下课前 {minutes} 分钟开始重点提醒'**
+  /// **'下课前 {minutes} 分钟开始重点提醒，最后 {seconds} 秒切到秒级倒计时'**
   String liveClassReminderLeadSummaryFocused(int minutes, int seconds);
 
   /// No description provided for @liveSettingsEntrySubtitle.
@@ -17122,7 +17122,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchApplyOverflowResult.
   ///
   /// In zh, this message translates to:
-  /// **'有 {count} 门课节次无法对号入座（模板节数不足），已拒绝套用'**
+  /// **'已匹配 {matched} 门课，另有 {count} 门课节次无法对号入座（模板节数不足），已拒绝套用'**
   String locationTimeMatchApplyOverflowResult(int matched, int count);
 
   /// No description provided for @locationTimeMatchApplyOverflowHint.

@@ -5546,7 +5546,7 @@
     }
   },
   "locationTimeMatchApplyNoneMatched": "No courses matched the place rules",
-  "locationTimeMatchApplyOverflowResult": "Matched {matched}; {count} exceed the scheme sections",
+  "locationTimeMatchApplyOverflowResult": "{matched}개 과목은 매칭됨. {count}개 과목은 시간표안의 교시에 맞지 않아 적용하지 않았습니다.",
   "@locationTimeMatchApplyOverflowResult": {
     "placeholders": {
       "matched": {

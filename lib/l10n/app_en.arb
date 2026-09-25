@@ -3796,7 +3796,7 @@
   "statisticsNatureRatio": "Required / Elective",
   "statisticsCourseList": "Course List",
   "statisticsSectionsUnit": "sections",
-  "statisticsSectionUnit": "",
+  "statisticsSectionUnit": " sections",
   "statisticsNoData": "No course data",
   "statisticsCourseCountRatio": "By Count",
   "statisticsSectionCountRatio": "By Sections",
@@ -5773,7 +5773,7 @@
     }
   },
   "locationTimeMatchApplyNoneMatched": "No courses matched the place rules",
-  "locationTimeMatchApplyOverflowResult": "{count} courses cannot map into the scheme (too few sections); apply rejected",
+  "locationTimeMatchApplyOverflowResult": "Matched {matched}; {count} cannot map into the scheme (too few sections); apply rejected",
   "@locationTimeMatchApplyOverflowResult": {
     "placeholders": {
       "matched": {
