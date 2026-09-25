@@ -30693,19 +30693,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logTimetableLoadCurrentWeekFailed => '載入目前周次失敗';
 
   @override
-  String get logHomeWidgetPinSupportFailed => '檢查桌面小元件固定支持失敗';
+  String get logHomeWidgetPinSupportFailed => '檢查桌面小工具固定支持失敗';
 
   @override
   String get logHomeWidgetPinRequestFailed => '請求固定桌面小工具失敗';
 
   @override
-  String get logHomeWidgetSyncFailed => '同步桌面小元件快照失敗';
+  String get logHomeWidgetSyncFailed => '同步桌面小工具快照失敗';
 
   @override
-  String get logHomeWidgetClearFailed => '清空桌面小元件快照失敗';
+  String get logHomeWidgetClearFailed => '清空桌面小工具快照失敗';
 
   @override
-  String get logHomeWidgetScheduleFailed => '調度桌面小元件刷新失敗';
+  String get logHomeWidgetScheduleFailed => '調度桌面小工具刷新失敗';
 
   @override
   String get logHomeWidgetExactAlarmCheckFailed => '檢查精確鬧鐘權限失敗';
@@ -31115,19 +31115,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logCatTimetableLoadCurrentWeekFailed => '課表：載入周次失敗';
 
   @override
-  String get logCatHomeWidgetPinSupportFailed => '桌面小元件：檢查固定支持';
+  String get logCatHomeWidgetPinSupportFailed => '桌面小工具：檢查固定支持';
 
   @override
   String get logCatHomeWidgetPinRequestFailed => '桌面小工具：請求固定';
 
   @override
-  String get logCatHomeWidgetSyncFailed => '桌面小元件：同步失敗';
+  String get logCatHomeWidgetSyncFailed => '桌面小工具：同步失敗';
 
   @override
-  String get logCatHomeWidgetClearFailed => '桌面小元件：清空失敗';
+  String get logCatHomeWidgetClearFailed => '桌面小工具：清空失敗';
 
   @override
-  String get logCatHomeWidgetScheduleFailed => '桌面小元件：調度刷新';
+  String get logCatHomeWidgetScheduleFailed => '桌面小工具：調度刷新';
 
   @override
   String get logCatMiuiLiveInitializeFailed => '超級島：初始化失敗';
