@@ -92,6 +92,50 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets('往上拖把手：面板一位都不动（底沿不离开屏幕）', (tester) async {
+      await openSheet(tester);
+
+      final body = find.byKey(const ValueKey('sheet-body'));
+      final panel = find.byType(HyperosSelectPopupGlass);
+      // 玻璃那块向下多铺 9px 盖住直角底角（见 miuix_bottom_sheet.dart 的
+      // hyperosMiuixBottomSheetGlassBottomOverdraw），所以它的下沿 = 屏幕底 + 9。
+      final screenHeight = tester.view.physicalSize.height /
+          tester.view.devicePixelRatio;
+      final restingBottom = tester.getRect(panel).bottom;
+      final restingTop = tester.getTopLeft(body).dy;
+      expect(restingBottom, closeTo(screenHeight + 9, 0.5));
+
+      // 面板高度由内容决定，上面没有可展开的空间 —— 往上拖必须完全不动。
+      // 上游原先给的是 0.1 阻尼：面板被抬离屏幕底沿，下面露出一条蒙层，
+      // 用户口径「拉着杆子往上拉，拉上去下面变成空白」（2026-09-25）。
+      final gesture = await tester.startGesture(handleCenter(tester, body));
+      await gesture.moveBy(const Offset(0, -20));
+      await tester.pump();
+      await gesture.moveBy(const Offset(0, -220));
+      await tester.pump();
+
+      expect(
+        tester.getRect(panel).bottom,
+        closeTo(restingBottom, 0.5),
+        reason: '面板底沿必须一直贴着屏幕底沿，往上拖不许把它抬起来',
+      );
+      expect(
+        tester.getTopLeft(body).dy,
+        closeTo(restingTop, 0.5),
+        reason: '内容也不许跟着往上走',
+      );
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(
+        body,
+        findsOneWidget,
+        reason: '往上拖不是"收起"手势，弹窗必须还在',
+      );
+      expect(tester.getRect(panel).bottom, closeTo(restingBottom, 0.5));
+    });
+
     testWidgets('拖过距离阈值就收起', (tester) async {
       await openSheet(tester);
 

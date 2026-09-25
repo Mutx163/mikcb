@@ -117,9 +117,12 @@ dependency_overrides:
     #   4. 底部弹窗（`MiuixOverlayBottomSheet` / `MiuixWindowBottomSheet`）
     #      **收起一开始就把输入还给底层**：全屏蒙层原要等退场弹簧结算完才移除，
     #      那 500ms 里「关掉弹窗马上点下一节课」的第二下会被它吃掉。
+    #   5. 底部弹窗把手**只允许往下拖**：面板高度由内容决定，上面没有可展开的
+    #      空间，原先的 0.1 阻尼等于允许面板往上漂，底沿离开屏幕、下面露出
+    #      一条压暗蒙层（真机口径「往上拉，拉上去下面变成空白」）。
     git:
       url: https://github.com/Mutx163/flutter_miuix.git
-      ref: d0ed871b5c6357dc71c86413c07e653842b1a15e
+      ref: d76504408464c9b494c31723200be3e1ebedcc60
   # inspire_blur：分布图像素记忆化——上游每个新挂载的顶栏都同步重算一张
   # 674k 像素的分布图（真机实测 36~49ms），这里按 (distribution, size) 记住像素。
   # fork 自 inspirestack/inspire_blur，分支 mikcb/distribution-pixels-cache，
