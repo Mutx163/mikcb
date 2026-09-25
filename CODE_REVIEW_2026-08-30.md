@@ -30,7 +30,7 @@ test('timetable_provider.dart 行数棘轮：只减不增', () {
 **成因**：`e7f77af4`（桌面卡片 Flutter 侧）给 provider 加了 13 行。这是本次全量测试
 唯一的失败项。
 
-**修复**：二选一——把 `buildHomeWidgetSnapshotForProfile` 的快照构建逻辑拆到独立
+**修复**：二选一：把 `buildHomeWidgetSnapshotForProfile` 的快照构建逻辑拆到独立
 文件（推荐，该文件已 4400+ 行且昨天被改了 10 次），或按既有约定显式上调基线并在
 提交信息里说明正当理由（此前已有两次先例：`694ef923` 4359→4401、`671de2d1`
 4401→4409）。
@@ -54,7 +54,7 @@ await _storageService.saveScheduleDateRuleLastAppliedSignature(
 是两个 key 的非原子写，中途中断会留下「规则已换、签名未换」，导致规则反复重放。
 
 同类问题：`lib/providers/timetable_provider.dart:665` 在 `_init()` 里直连
-`_storageService` 读 `lastAppliedSignature`，而写路径走仓储——读写双源。
+`_storageService` 读 `lastAppliedSignature`，而写路径走仓储，读写双源。
 
 **修复**：把这条路径改道 `TimetableRepository`；双 key 改为仓储内的单次事务写。
 
@@ -77,7 +77,7 @@ final start = _pinnedStartIndex ?? (end > _pageSize ? end - _pageSize : 0);
 
 倒序侧已用 `_windowEndPin` 冻结末端解决（:322-327），正序侧没有对应保护。
 
-另注意 :319-320 的注释「正序追加在底部天然不位移」**是错的**——它只在
+另注意 :319-320 的注释「正序追加在底部天然不位移」**是错的**，它只在
 `start` 固定时成立，滑动窗口下不成立。错误注释会误导后续维护。
 
 **修复**：在 `_syncStickToLatest(false)`（:382）里同时钉住起点
@@ -160,7 +160,7 @@ fun remove(context: Context, appWidgetId: Int) {
   `holiday_resolver`、`schedule_item_expander`、`week_calculator`）对
   `DateTime.now()` / `Random` / `dart:io` / `BuildContext` / `package:flutter`
   的引用数**全为 0**，时间/随机源全部显式注入。守卫测试「lib/domain 保持无 UI
-  框架依赖（纯领域层）」通过——注意 `lib/domain/` 实际有 11 个文件，其中
+  框架依赖（纯领域层）」通过。注意 `lib/domain/` 实际有 11 个文件，其中
   `import_export_logic.dart` 导入 `foundation.dart` 属守卫豁免的既存例外，非本次
   新增。旧 `_startOfWeek` 四处实现已全删，无双份并存的伪重构。
 - **日志页性能优化思路正确**：窗口恒按时间正序建模、倒序只在渲染层反转，这个
@@ -171,11 +171,11 @@ fun remove(context: Context, appWidgetId: Int) {
   null，并补了两层回归测试。这是这批改得最扎实的一处。
 - **「先落历史再应用」的顺序修正**：识别到「颜色已变、历史未存」的中间态会让
   首次换色的原色快照永久丢失，调换顺序把不可恢复的失败降级为可自愈的冗余。
-- **Dart 与 Kotlin 的 channel 协议逐条对齐**：方法名、参数键、`profileId` 为 null
+- **Dart 与 Kotlin 的 channel 协议逐条一致**：方法名、参数键、`profileId` 为 null
   的解绑语义两端一致，绑定档案是零迁移设计（未登记即跟随当前课表，老用户升级
   无感）。
 - **临时诊断代码清理彻底**：`[GlassDbg]` 探针埋点 → 定位根因 → 移除埋点 →
-  补删探针文件本体，四步闭环，无残留。
+  补删探针文件本体，四步做完，无残留。
 - **启动画面最终决策正确**：与系统遮罩缠斗三版后（`36b06d0d`），放弃系统启动画面
   改应用自绘，不再在不可控的系统链路上反复试错。
 
@@ -183,7 +183,7 @@ fun remove(context: Context, appWidgetId: Int) {
 
 ## 流程观察
 
-修复类提交 **27 个**，功能类 **12 个**——自我纠错能力很强，但首次实现质量不稳定：
+修复类提交 **27 个**，功能类 **12 个**：自我纠错能力很强，但首次实现质量不稳定：
 日志页修 4 次、课表重新配色修 3 次、CI 修 3 次、启动画面连改 4 版。集中在分页
 窗口、异步持久化顺序、系统图标缩放这几类**难以靠静态检查发现、必须真机或精确
 推演才能暴露**的问题上。建议在动手前先补边界用例，比事后回归便宜。
@@ -221,7 +221,7 @@ fun remove(context: Context, appWidgetId: Int) {
 1. 子任务报的「超限裁剪导致指针错位（`index < dropCount` 时 clamp 到 0）」经推演
    **不可达**，已不采纳：`_applyNewBatch` 的 `index` 恒为 `schemes.length - 1`
    （`sheet:118`），恒 `>= dropCount`，clamp 不会触发。M4 的真实危害是丢原色快照，
-   与指针无关——两者不要混为一谈。
+   与指针无关，两者不要混为一谈。
 2. 另一子任务引用的 `clearPendingQrTransferWindow`、`_masked` 等符号及提交
    `52039cd`、`dc4d428` **在本仓库不存在**，属幻觉内容，已全部弃用；日志页与配色
    两块改用 `general-purpose` 重跑并重新核实。
