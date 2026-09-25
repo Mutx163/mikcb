@@ -22,6 +22,7 @@ import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/providers/weather_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
+import 'package:university_timetable/services/app_global_settings_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/preview_bake_boundary.dart';
@@ -56,6 +57,7 @@ void main() {
 
   setUp(() {
     StorageService().resetForTesting();
+    AppGlobalSettingsService.resetCacheForTest();
     _seedInitializedPrefs();
     // 设置库 / 首页里的平台通道在 VM 下没有实现，不 mock 会抛 MissingPluginException。
     for (final channel in const [
