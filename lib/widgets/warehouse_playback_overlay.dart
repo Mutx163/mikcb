@@ -238,7 +238,9 @@ class PlaybackOverlay extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    progress.errorMessage ?? l10n.quickImportUnknownError,
+                    progress.errorMessage != null
+                        ? localizeServiceMessage(l10n, progress.errorMessage!)
+                        : l10n.quickImportUnknownError,
                     textAlign: TextAlign.center,
                     style: HyperosTypography.listDetail(context),
                   ),

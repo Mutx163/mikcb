@@ -2234,9 +2234,10 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
       await _writeMaintainersCache(fresh);
     } catch (error) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
         _isLoadingMaintainers = false;
-        _maintainersError = '$error';
+        _maintainersError = localizeServiceError(l10n, error);
       });
     }
   }

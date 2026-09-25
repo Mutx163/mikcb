@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../models/location_time_group.dart';
@@ -1069,9 +1070,14 @@ class _LocationTimeGroupEditorScreenState
       if (!context.mounted) {
         return;
       }
+      // provider 抛的是 ArgumentError('time_scheme_not_found') 这类服务码，
+      // 直接显示 message 就是把内部码弹给用户。
+      final detail = error.message?.toString();
       showAppToast(
         context,
-        message: error.message?.toString() ?? l10n.locationTimeMatchSaveFailed,
+        message: detail == null || detail.isEmpty
+            ? l10n.locationTimeMatchSaveFailed
+            : localizeServiceMessage(l10n, detail),
         kind: AppToastKind.error,
       );
     }

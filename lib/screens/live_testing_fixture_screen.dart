@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/service_message_localizer.dart';
 
 import '../providers/timetable_provider.dart';
 import '../services/live_testing_fixture_service.dart';
@@ -224,9 +225,15 @@ class _LiveTestingFixtureScreenState extends State<LiveTestingFixtureScreen> {
       if (!context.mounted) {
         return;
       }
+      // 服务层把「节次数低于已使用」之类的消息码包在 StateError 里；
+      // 这个页面整体是中文的调试页，不动前缀，但里面那截码要翻。
+      final detail = error is StateError
+          ? error.message.toString()
+          : error.toString();
       showAppToast(
         context,
-        message: '安装测试课表失败：$error',
+        message: '安装测试课表失败：'
+            '${localizeServiceMessage(AppLocalizations.of(context)!, detail)}',
         kind: AppToastKind.error,
       );
     } finally {

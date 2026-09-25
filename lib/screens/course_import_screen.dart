@@ -4851,12 +4851,13 @@ $kWarehouseBridgeCompatShim  try {
         return;
       }
       _cancelImportTimeout();
-      final message = AppLocalizations.of(
-        context,
-      )!.executeFailedWithError('$error');
+      final l10n = AppLocalizations.of(context)!;
+      final message = l10n.executeFailedWithError(
+        localizeServiceError(l10n, error),
+      );
       setState(() {
         _isExecutingImport = false;
-        _lastScriptStatus = AppLocalizations.of(context)!.scriptInjectionFailed;
+        _lastScriptStatus = l10n.scriptInjectionFailed;
       });
       _showMacroReplayImportError(message);
       _showLightTip(context, message);
@@ -5202,9 +5203,10 @@ $kWarehouseBridgeCompatShim  try {
         widget.onBackgroundFinished?.call(false);
       }
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       _showLightTip(
         context,
-        AppLocalizations.of(context)!.saveSectionTimesFailedWithError('$error'),
+        l10n.saveSectionTimesFailedWithError(localizeServiceError(l10n, error)),
       );
       await _resolveJavaScriptRequest(requestId, false);
     }
@@ -5374,11 +5376,12 @@ $kWarehouseBridgeCompatShim  try {
         await _applyPendingImportedSectionsIfNeeded();
       } catch (error) {
         if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
           _showLightTip(
             context,
-            AppLocalizations.of(
-              context,
-            )!.applyReturnedTimeSchemeFailed('$error'),
+            l10n.applyReturnedTimeSchemeFailed(
+              localizeServiceError(l10n, error),
+            ),
           );
         }
       }
@@ -7023,7 +7026,13 @@ Future<bool> _ensureSectionCapacity(
   );
   if (ensureMessage != null) {
     if (context.mounted) {
-      showAppLightTip(context, message: ensureMessage);
+      showAppLightTip(
+        context,
+        message: localizeServiceMessage(
+          AppLocalizations.of(context)!,
+          ensureMessage,
+        ),
+      );
     }
     return false;
   }
