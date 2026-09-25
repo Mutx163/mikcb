@@ -36,6 +36,9 @@ class TimetableProfilesScreen extends StatelessWidget {
           ],
           child: HyperosListView(
             children: [
+              // The page title already names this page; keep a plain section
+              // gap so the first card's rounded corners stay below the title.
+              const HyperosSectionGap(),
               HyperosListGroup(
                 children: [
                   for (var index = 0; index < profiles.length; index++)

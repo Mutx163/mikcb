@@ -239,6 +239,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.byType(HyperosSectionGap), findsOneWidget);
     final titleBar = tester.getRect(find.byType(HyperosCollapsibleTopAppBar));
     final listCard = tester.getRect(find.byType(HyperosListGroup));
     expect(
