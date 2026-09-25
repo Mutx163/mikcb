@@ -9153,7 +9153,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       onManageTimetables: (buttonContext) {
         // MiuixWindowBottomSheet 的内容挂在根 Overlay 上，buttonContext
         // 拿不到原来的 ModalRoute；不能靠猜路由来收弹层。记录源按钮的位置，
-        // 等 close(afterDismiss:) 真正摘掉根 Overlay 条目后再用首页 context 推页。
+        // 让 close(immediate:) 先摘掉根 Overlay 条目，再用首页 context 推页。
         final sourceRect = _popupActionSourceRect(buttonContext);
         final close = closeSheet;
         if (close == null) {
@@ -9161,6 +9161,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         }
         final hostContext = context;
         close(
+          immediate: true,
           afterDismiss: () {
             if (!mounted || !hostContext.mounted) {
               return;

@@ -206,7 +206,8 @@ void main() {
 
     await tester.tap(find.text('课表管理'));
     await tester.pump();
-    await tester.pumpAndSettle();
+    // 管理页应在点击后的下一小段动画内就开始出现，不能等弹层弹簧完全收敛。
+    await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.byType(TimetableProfilesScreen), findsOneWidget);
     expect(
@@ -219,6 +220,8 @@ void main() {
       findsNothing,
       reason: '进入课表管理前必须先让切换弹层退场，不能把旧弹层留在新页面上方',
     );
+
+    await tester.pumpAndSettle();
   });
 
   testWidgets('profile actions use transparent dialog rows in frosted sheet', (

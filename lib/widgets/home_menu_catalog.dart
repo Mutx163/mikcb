@@ -217,13 +217,14 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
         closeRef: (close) => closeSheet = close,
         onManageTimetables: (buttonContext) {
           // 弹层内容在根 Overlay 中，不能从 buttonContext 找原路由。
-          // 先等面板退场，再用仍然挂载的宿主 context 推管理页。
+          // 先立即摘掉旧面板，再用仍然挂载的宿主 context 推管理页。
           final close = closeSheet;
           if (close == null) {
             return;
           }
           final hostContext = context;
           close(
+            immediate: true,
             afterDismiss: () {
               if (!hostContext.mounted) {
                 return;

@@ -34,12 +34,20 @@ const double hyperosMiuixBottomSheetGlassBottomOverdraw = 9;
 /// 请求收起底部弹窗。
 ///
 /// [afterDismiss] 在**退场动画结束、面板真的消失之后**才执行 —— 「先关弹窗、
-/// 再开下一个页面 / sheet」一律走它，不要再靠固定延时猜动画时长。
+/// 再开下一个页面 / sheet」默认走它，不要再靠固定延时猜动画时长。
+///
+/// [immediate] 为 true 时跳过弹簧退场，立即摘掉承载壳和根覆盖层条目，再执行
+/// [afterDismiss]。给「点入口就切整页」用：既要保证旧弹层不再压在新页面上，
+/// 又不想让用户等完整弹簧收敛（这条路径真机可能等两三秒）。
 ///
 /// 若退场期间已有更新弹窗压上来，旧承载壳不会执行 [afterDismiss]，避免旧动作
 /// 越过新弹层；需要结束等待的调用方改接 [onSuperseded]。
 typedef MiuixBottomSheetClose =
-    void Function({VoidCallback? afterDismiss, VoidCallback? onSuperseded});
+    void Function({
+      VoidCallback? afterDismiss,
+      VoidCallback? onSuperseded,
+      bool? immediate,
+    });
 
 /// [showMiuixBottomSheet] 的 builder：内容 + 收起口子一起拿到。
 typedef MiuixBottomSheetBuilder =
@@ -120,8 +128,9 @@ Future<T?> showMiuixBottomSheet<T>({
 /// 被壁纸弹窗压住，正是这一条）。
 ///
 /// 正确姿势：调用方用 [SheetCloseRef] 把收起口子存下来，要推整页时先
-/// `close(afterDismiss: ...)`，**等退场动画真正结束**（那一刻条目已摘掉）再推。
-/// 不要靠固定延时猜动画时长。
+/// `close(afterDismiss: ...)`，**等退场动画真正结束**（那一刻条目已摘掉）再推；
+/// 如果用户要的是「点入口就立刻切页」，传 `immediate: true`，让承载壳立即摘掉
+/// 根覆盖层条目再执行后续动作。不要靠固定延时猜动画时长。
 Future<T?> showHomeHyperosSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
@@ -222,24 +231,57 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
 
   bool _popped = false;
 
-  void _requestClose({VoidCallback? afterDismiss, VoidCallback? onSuperseded}) {
+  void _requestClose({
+    VoidCallback? afterDismiss,
+    VoidCallback? onSuperseded,
+    bool? immediate,
+  }) {
+    if (_popped) {
+      onSuperseded?.call();
+      return;
+    }
+
     // 退场开始就交出路由屏障的指针命中，但保留语义隔离；同时撤掉旧面板焦点，
     // 避免隐藏的输入框继续接收键盘事件。
     if (widget.barrierActive.value) {
       widget.barrierActive.value = false;
     }
     FocusManager.instance.primaryFocus?.unfocus();
-    if (_popped) {
-      onSuperseded?.call();
-      return;
-    }
+
     if (afterDismiss != null || onSuperseded != null) {
       _dismissCallbacks.add((afterDismiss, onSuperseded));
     }
+
+    if (immediate == true) {
+      _dismissImmediately();
+      return;
+    }
+
     if (!_visible) {
       return;
     }
     setState(() => _visible = false);
+  }
+
+  /// 立即摘掉承载壳和窗口层，给「关弹层后立刻切整页」的入口使用。
+  ///
+  /// 不用固定延时猜面板滑出的时刻：这里直接走 Navigator 的立即移除路径，
+  /// 路由 dispose 会同步触发 MiuixWindowBottomSheet 的窗口层清理，随后才跑
+  /// 已登记的后续动作。因此调用方可以马上推页，又不会把根覆盖层里的旧面板留在
+  /// 新页面上面。
+  void _dismissImmediately() {
+    final dismissCallbacks = List.of(_dismissCallbacks);
+    _dismissCallbacks.clear();
+    final route = ModalRoute.of(context);
+    if (route == null) {
+      _finishDismissCallbacks(dismissCallbacks, superseded: true);
+      return;
+    }
+    final navigator = Navigator.of(context);
+    final wasCurrent = route.isCurrent;
+    _popped = true;
+    navigator.removeRoute(route);
+    _finishDismissCallbacks(dismissCallbacks, superseded: !wasCurrent);
   }
 
   void _onDismissFinished() {
