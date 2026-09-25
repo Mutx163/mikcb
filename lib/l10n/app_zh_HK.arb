@@ -323,7 +323,7 @@
   "icsImportTitle": ".ics 日歷匯入",
   "applicableScenarioTitle": "適用場景",
   "icsScenarioIntro": "如果你已經能在其他課表應用裡匯入教務系統課程，再匯出為 .ics 檔案，這條路最穩",
-  "stepLabel": "步晝 {step}",
+  "stepLabel": "步驟 {step}",
   "@stepLabel": {
     "placeholders": {
       "step": {
@@ -375,7 +375,7 @@
   },
   "feedbackTitle": "問題回饋",
   "feedbackIntro": "如果你遇到崩溃、課程顯示異常、匯入問題，或者想提交功能建議，可以通過下面這些渠道反饋",
-  "feedbackIssueHint": "涉及複現步晝、截圖、版本號和日誌的問題，建議優先走 GitHub Issue",
+  "feedbackIssueHint": "涉及複現步驟、截圖、版本號和日誌的問題，建議優先走 GitHub Issue",
   "githubIssueTitle": "GitHub Issue",
   "githubIssueSubtitle": "打開倉庫 Issue 頁面，可提交問題、建議或查看已有反饋記錄",
   "openIssuePage": "打開 Issue 頁面",
@@ -825,7 +825,7 @@
     }
   },
   "currentScheduleTitle": "目前排課",
-  "currentScheduleSubtitle": "這裡的星期、節次、教室、周次和單雙周只蠅響目前這一條排課",
+  "currentScheduleSubtitle": "這裡的星期、節次、教室、周次和單雙周只影響目前這一條排課",
   "timeSchemeLabel": "上課時間方案",
   "followCurrentTimetableWithName": "跟隨目前課表（{name}）",
   "@followCurrentTimetableWithName": {
@@ -1079,7 +1079,7 @@
       }
     }
   },
-  "timeSchemeUsageIntro": "先看總蠅響範圍，再決定是直接編輯這套範本，還是先複製一套再改",
+  "timeSchemeUsageIntro": "先看總影響範圍，再決定是直接編輯這套範本，還是先複製一套再改",
   "profileCountLabel": "課表",
   "courseCountLabel": "課程",
   "overrideTimeSchemeLabel": "副時間表",
@@ -1185,7 +1185,7 @@
     }
   },
   "duringClassReminderTitle": "課中與下課提醒",
-  "duringClassReminderSubtitle": "只蠅響上課後到下課前的展示",
+  "duringClassReminderSubtitle": "只影響上課後到下課前的展示",
   "liveClassReminderLeadTitle": "下課前多久切到超級島 / 重點提醒",
   "liveClassReminderLeadOptionImmediate": "一上課就切換",
   "liveClassReminderLeadOptionMinutes": "下課前 {minutes} 分鐘切換",
@@ -1236,7 +1236,7 @@
   "duringEndTimeDisplayLabel": "課中 / 下課提醒時間樣式",
   "duringEndTimeDisplayHelp": "控製緊湊提醒裡顯示最近時間還是整段總時間",
   "liveDisplayContentTitle": "顯示內容",
-  "liveDisplayContentSubtitle": "這組設定只蠅響目前階段，不會改動另一組提醒顯示",
+  "liveDisplayContentSubtitle": "這組設定只影響目前階段，不會改動另一組提醒顯示",
   "showCourseNameTitle": "顯示課程名",
   "preferShortNameTitle": "優先顯示課程簡稱",
   "preferShortNameSubtitle": "建議簡稱控製在 3 個字以內",
@@ -1341,7 +1341,7 @@
   "hideFromRecentsSubtitle": "開啟後應用會盡量不顯示在最近任務列表中",
   "keepAliveServiceTitle": "輕嶼課表後台保活服務",
   "keepAliveServiceEnabledSubtitle": "目前已開啟，系統會保持後台保活輔助服務處於可用狀態",
-  "keepAliveServiceDisabledSubtitle": "目前未開啟，可進入系統無漲礙設定手動打開輕嶼課表後台保活服務",
+  "keepAliveServiceDisabledSubtitle": "目前未開啟，可進入系統無障礙設定手動打開輕嶼課表後台保活服務",
   "goEnableAction": "去開啟",
   "keepAliveConfirmTitle": "開啟後台保活服務",
   "keepAliveConfirmBody": "該服務僅用於在後台刷新桌面小組件與重排課程提醒，不會讀取屏幕內容，也不會代替你執行任何點擊操作。開啟需要在系統設定中授予「無障礙」權限，可隨時關閉。",
@@ -1517,7 +1517,7 @@
   "teacherLabel": "授課教師",
   "courseNatureLabel": "課程性質",
   "courseDescriptionOptional": "課程簡介 (可選)",
-  "currentScheduleHint": "這裡的星期、節次、教室、周次和單雙周只蠅響目前這一條排課",
+  "currentScheduleHint": "這裡的星期、節次、教室、周次和單雙周只影響目前這一條排課",
   "followProfileTimeScheme": "跟隨目前課表（{name}）",
   "@followProfileTimeScheme": {
     "placeholders": {
@@ -1694,7 +1694,7 @@
   "homeTitleSectionSubtitle": "控制首頁左上角課表切換入口的樣式",
   "homeTitleStyleLabel": "標題樣式",
   "themeSeedSectionTitle": "應用主題色",
-  "themeSeedSectionSubtitle": "蠅響頂部欄、強調色和全局主色調",
+  "themeSeedSectionSubtitle": "影響頂部欄、強調色和全局主色調",
   "timetableBackgroundColorSectionTitle": "課表背景色",
   "timetableBackgroundColorSectionSubtitle": "只作用於課表頁面的大背景",
   "defaultTimetablePreviewName": "預設課表",
@@ -1780,8 +1780,8 @@
   "guidePrivacySectionTitle": "隱私、第三方 SDK 與免責說明",
   "guidePrivacyParagraph1": "本應用主體功能按本地運行方式設計，課表、時間模板、課程記錄和大部分設定預設保存在你的裝置本地。",
   "guidePrivacyParagraph2": "只有在你主動使用檢查更新、下載更新、導入導出等聯網功能，或你勾選同意後初始化友盟相關 SDK 時，應用才會與外部服務發生資料交互。",
-  "guidePrivacyParagraph3": "本應用接入友盟移動統計 SDK、友盟應用性能監控 SDK 以及高級運櫻分析依赖庫。它們的服務用途包括移動統計分析、應用性能監控以及高級運櫻分析相關能力；只有在你勾選同意後，這些 SDK 才會正式初始化。",
-  "guidePrivacyParagraph4": "按友盟官方說明，這些 SDK 可能處理的資訊包括：裝置資訊（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、網路狀態、裝置標識，以及高級運櫻分析依赖庫涉及的應用列表和地理位置相關資訊。",
+  "guidePrivacyParagraph3": "本應用接入友盟移動統計 SDK、友盟應用性能監控 SDK 以及高級運營分析依赖庫。它們的服務用途包括移動統計分析、應用性能監控以及高級運營分析相關能力；只有在你勾選同意後，這些 SDK 才會正式初始化。",
+  "guidePrivacyParagraph4": "按友盟官方說明，這些 SDK 可能處理的資訊包括：裝置資訊（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、網路狀態、裝置標識，以及高級運營分析依赖庫涉及的應用列表和地理位置相關資訊。",
   "guideRiskTitle": "免責與風险提示",
   "guideRiskParagraph1": "1. 超級島、焦點通知、後台提醒和保活效果依赖系統版本、機型、廠商策略、權限、自啟動、電池策略等外部條件，無法保證所有裝置表現完全一致。",
   "guideRiskParagraph2": "2. 檢查更新、鏡像下載、系統下載器、導入導出與分享等能力依赖網路環境、第三方服務和系統文件能力；若出現失敗、限速或文件異常，請以 Release 頁面、你自己保存的備份文件和系統提示為準。",
@@ -2371,7 +2371,7 @@
   },
   "aiParseFailedChip": "解析失敗",
   "aiPasteJsonHintShort": "粘贴 AI 返回的 JSON",
-  "aiPasteJsonHintLong": "把豆包返回的 JSON 原養粘贴到這裡，然後點擊匯入，支持純 JSON，也兼容 ```json 代碼塊",
+  "aiPasteJsonHintLong": "把豆包返回的 JSON 原樣粘贴到這裡，然後點擊匯入，支持純 JSON，也兼容 ```json 代碼塊",
   "detailAction": "詳情",
   "aiParseErrorTitle": "解析錯誤",
   "viewDetailsAction": "查看詳情",
@@ -3498,7 +3498,7 @@
       }
     }
   },
-  "textColorLowContrastWarning": "顏色對比度較低，可能會蠅響可讀性",
+  "textColorLowContrastWarning": "顏色對比度較低，可能會影響可讀性",
   "themeCurrentTheme": "當前主題",
   "themeBasedOnModified": "基於{baseName}（已修改）",
   "@themeBasedOnModified": {
@@ -4650,9 +4650,9 @@
   "serviceMsgSyncFailed": "Sync failed.",
   "serviceMsgUsageTypeOverride": "override time scheme",
   "serviceMsgUsageTypeProfile": "profile main time scheme",
-  "dataTransferProfileShareText": "這是輕誘課表當前課表的完整備份文件，導入後可直接恢復課程和設置",
-  "dataTransferProfileShareSubject": "輕誘課表備份",
-  "dataTransferProfileShareSubjectNamed": "{profileName} - 輕誘課表備份",
+  "dataTransferProfileShareText": "這是輕嶼課表當前課表的完整備份文件，導入後可直接恢復課程和設置",
+  "dataTransferProfileShareSubject": "輕嶼課表備份",
+  "dataTransferProfileShareSubjectNamed": "{profileName} - 輕嶼課表備份",
   "@dataTransferProfileShareSubjectNamed": {
     "placeholders": {
       "profileName": {
@@ -4660,8 +4660,8 @@
       }
     }
   },
-  "dataTransferFullBackupShareText": "這是輕誘課表的全部數據備份文件，包含所有課表、當前選中課表和時間模板",
-  "dataTransferFullBackupShareSubject": "輕誘課表 - 全部數據備份",
+  "dataTransferFullBackupShareText": "這是輕嶼課表的全部數據備份文件，包含所有課表、當前選中課表和時間模板",
+  "dataTransferFullBackupShareSubject": "輕嶼課表 - 全部數據備份",
   "courseWeekCustomDescription": "第{weeks}周",
   "@courseWeekCustomDescription": {
     "placeholders": {
@@ -4872,8 +4872,8 @@
   "macroReplayStepWaitManual": "等待用戶操作",
   "macroReplayStepExecuteScript": "正在執行導入脚本...",
   "macroReplayStepDelay": "等待中...",
-  "macroReplayAcceleratedFallbackTip": "快捷路徑失敗，正在使用完整錄制步晝重試…",
-  "macroReplayNoSteps": "没有錄制的步晝",
+  "macroReplayAcceleratedFallbackTip": "快捷路徑失敗，正在使用完整錄制步驟重試…",
+  "macroReplayNoSteps": "没有錄制的步驟",
   "macroReplayUserCancelled": "用戶取消",
   "macroReplayStepFailed": "第 {current}/{total} 步失敗: {error}",
   "@macroReplayStepFailed": {
@@ -5038,7 +5038,7 @@
   "courseImportRecordingEmptyStatus": "未錄制到任何操作",
   "courseImportRecordingEmptyTip": "未錄制到任何操作",
   "courseImportSaveRecordingTitle": "保存錄制",
-  "courseImportSaveRecordingMessage": "錄制了 {count} 個操作步晝，是否保存為快捷導入？",
+  "courseImportSaveRecordingMessage": "錄制了 {count} 個操作步驟，是否保存為快捷導入？",
   "@courseImportSaveRecordingMessage": {
     "placeholders": {
       "count": {
@@ -5132,7 +5132,7 @@
   "courseImportPortalUrlHint": "保存後下次會直接使用，也可以在適配器信息頁里修改",
   "courseImportPortalUrlInvalid": "登錄地址格式不正確",
   "logAppLoggerInitialized": "應用日志服務已初始化",
-  "logPrivacyConsentUpdated": "隱私協議同意壯態已更新",
+  "logPrivacyConsentUpdated": "隱私協議同意狀態已更新",
   "logAppLogRecordingEnabled": "應用日志記錄已開啟",
   "logAppLogRecordingRemainsEnabled": "應用日志記錄保持開啟",
   "logStartupFlowStarted": "啟動流程處理已開始",
@@ -5158,11 +5158,11 @@
   "logMiuiLiveOpenNotificationSettingsFailed": "打開通知設置失敗",
   "logMiuiLiveOpenAutostartSettingsFailed": "打開自啟動設置失敗",
   "logMiuiLiveOpenBatterySettingsFailed": "打開電池優化設置失敗",
-  "logMiuiLiveOpenAccessibilitySettingsFailed": "打開無漲礙設置失敗",
+  "logMiuiLiveOpenAccessibilitySettingsFailed": "打開無障礙設置失敗",
   "logMiuiLiveHideFromRecentsFailed": "更新「從最近任務隱藏」失敗",
   "logLiveUpdateStartFailed": "從 Flutter 啟動超級島失敗",
   "logLiveUpdateStopFailed": "從 Flutter 停止超級島失敗",
-  "logLiveUpdateDebugStatusFailed": "获取原生超級島調試壯態失敗",
+  "logLiveUpdateDebugStatusFailed": "获取原生超級島調試狀態失敗",
   "logLiveUpdateSnapshotSyncFailed": "同步超級島課表快照失敗",
   "logLiveUpdateSnapshotClearFailed": "清空超級島課表快照失敗",
   "logLiveUpdateSuspendTriggersFailed": "掛起超級島課表調度失敗",
@@ -5221,7 +5221,7 @@
   "logFieldLoggingEnabled": "日志記錄",
   "logFieldPrivacyAccepted": "隱私協議",
   "logFieldAccepted": "已同意",
-  "logFieldPrevious": "先前壯態",
+  "logFieldPrevious": "先前狀態",
   "logFieldTruncated": "已截斷",
   "logFieldTruncatedHint": "截斷提示",
   "logFieldThrowable": "異常",
@@ -5238,17 +5238,17 @@
   "logFieldHasPromotedPermissionDeclared": "已聲明提升通知權限",
   "logFieldCanPostPromotedNotifications": "可發布提升通知",
   "logFieldIgnoringBatteryOptimizations": "忽略電池優化",
-  "logFieldKeepAliveAccessibilityEnabled": "無漲礙保活已啟用",
+  "logFieldKeepAliveAccessibilityEnabled": "無障礙保活已啟用",
   "logFieldHideFromRecentsEnabled": "從最近任務隱藏",
   "logFieldTaskRemovedRecently": "近期任務被移除",
   "logFieldLastTaskRemovedAt": "上次任務移除時間",
   "logFieldProcessImportance": "進程重要性",
-  "logFieldAutoStartStatus": "自啟動壯態",
+  "logFieldAutoStartStatus": "自啟動狀態",
   "logFieldLiveEnableBeforeClass": "課前超級島",
   "logFieldLiveEnableDuringClass": "課中超級島",
   "logFieldLiveEnableBeforeEnd": "下課前超級島",
   "logFieldLivePromoteDuringClass": "課中提升通知",
-  "logFieldLiveShowDuringClassNotification": "課中壯態欄通知",
+  "logFieldLiveShowDuringClassNotification": "課中狀態欄通知",
   "logFieldLiveShowCountdown": "顯示倒計時",
   "logFieldLiveShowStageText": "顯示階段文字",
   "logFieldLiveShowCourseName": "顯示課程名",
@@ -5269,7 +5269,7 @@
   "logFieldLiveShowBeforeClassMinutes": "課前顯示分鐘數",
   "logFieldLiveClassReminderStartMinutes": "上課提醒開始分鐘",
   "logFieldLiveEndSecondsCountdownThreshold": "下課秒倒計時阈值",
-  "logFieldState": "壯態",
+  "logFieldState": "狀態",
   "logFieldRoute": "路由",
   "logFieldPreviousRoute": "先前路由",
   "logFieldProfileId": "課表配置 ID",
@@ -5293,7 +5293,7 @@
   "logFieldStoredSnapshotVersion": "存儲快照版本",
   "logFieldIntentIsNull": "Intent 為空",
   "logFieldAction": "操作",
-  "logFieldStep": "步晝",
+  "logFieldStep": "步驟",
   "logCatAppLoggerInitialized": "應用日志：初始化",
   "logCatPrivacyConsentUpdated": "應用日志：隱私協議",
   "logCatAppLogRecordingEnabled": "應用日志：記錄開關",
@@ -5321,12 +5321,12 @@
   "logCatMiuiLiveOpenNotificationSettingsFailed": "超級島：打開通知設置",
   "logCatMiuiLiveOpenAutostartSettingsFailed": "超級島：打開自啟動設置",
   "logCatMiuiLiveOpenBatterySettingsFailed": "超級島：打開電池優化",
-  "logCatMiuiLiveOpenAccessibilitySettingsFailed": "超級島：打開無漲礙設置",
+  "logCatMiuiLiveOpenAccessibilitySettingsFailed": "超級島：打開無障礙設置",
   "logCatMiuiLiveHideFromRecentsFailed": "超級島：隱藏最近任務",
   "logCatLiveUpdateFlutterInitializeFailed": "超級島：Flutter 初始化失敗",
   "logCatLiveUpdateStartFailed": "超級島：啟動失敗",
   "logCatLiveUpdateStopFailed": "超級島：停止失敗",
-  "logCatLiveUpdateDebugStatusFailed": "超級島：調試壯態失敗",
+  "logCatLiveUpdateDebugStatusFailed": "超級島：調試狀態失敗",
   "logCatLiveUpdateSettingsSynced": "超級島：設置已同步",
   "logCatLiveUpdateSnapshotSyncFailed": "超級島：快照同步失敗",
   "logCatLiveUpdateSnapshotClearFailed": "超級島：快照清空失敗",
@@ -5373,19 +5373,19 @@
   "logCatLiveUpdateTaskRemovedResumed": "超級島：任務移除後恢復",
   "logCatLiveUpdateBeforeClassQuickAction": "超級島：課前快捷操作",
   "logCatLiveUpdateBeforeClassQuickActionRestored": "超級島：課前快捷操作已恢復",
-  "logCatLiveUpdateStatusBarDismissed": "超級島：壯態欄通知已關閉",
+  "logCatLiveUpdateStatusBarDismissed": "超級島：狀態欄通知已關閉",
   "logCatLiveUpdateNotPromoted": "超級島：未提升通知",
   "logCatLiveUpdatePromotedNotShown": "超級島：提升未顯示",
   "logCatLiveUpdateServiceStopped": "超級島：服務已停止",
-  "logCatKeepAliveAccessibilityConnected": "保活：無漲礙已連接",
-  "logCatDiagnosticsEnabled": "偵斷：已開啟",
-  "logCatDiagnosticsCleared": "偵斷：已清空",
-  "logCatDiagnosticsBootstrap": "偵斷：引導",
-  "logCatFlutterDiagnostic": "Flutter 偵斷",
-  "logCatFlutterDiagnosticEvent": "Flutter 偵斷事件",
+  "logCatKeepAliveAccessibilityConnected": "保活：無障礙已連接",
+  "logCatDiagnosticsEnabled": "診斷：已開啟",
+  "logCatDiagnosticsCleared": "診斷：已清空",
+  "logCatDiagnosticsBootstrap": "診斷：引導",
+  "logCatFlutterDiagnostic": "Flutter 診斷",
+  "logCatFlutterDiagnosticEvent": "Flutter 診斷事件",
   "logCatRenderFailed": "渲染失敗",
   "logCatDebugSnapshot": "調試快照",
-  "logExportTitle": "輕誘課表 - 應用日志",
+  "logExportTitle": "輕嶼課表 - 應用日志",
   "appUpdateMirrorPresetGhfast": "默認镜像",
   "appUpdateMirrorPresetGhproxyCn": "備用镜像 1",
   "appUpdateMirrorPresetGhLlkk": "備用镜像 2",
@@ -5414,7 +5414,7 @@
       }
     }
   },
-  "statisticsShareText": "來自輕誘課表的學期統計",
+  "statisticsShareText": "來自輕嶼課表的學期統計",
   "timetableShareText": "來自輕嶼課表的課表",
   "homeMenuShareTimetableTitle": "分享課表圖片",
   "timetableSharePromptMessage": "要分享一張乾淨的課表圖嗎？",
@@ -5581,7 +5581,7 @@
     }
   },
   "locationTimeMatchDeleteTitle": "刪除地點組？",
-  "locationTimeMatchDeleteMessage": "確定刪除「{name}」？自動匹配的課程將恢復課表預設模板；手動指定模板的課程不受蠅響。",
+  "locationTimeMatchDeleteMessage": "確定刪除「{name}」？自動匹配的課程將恢復課表預設模板；手動指定模板的課程不受影響。",
   "@locationTimeMatchDeleteMessage": {
     "placeholders": {
       "name": {
@@ -5947,8 +5947,8 @@
       }
     }
   },
-  "icsExportShareText": "這是來自輕誘課表的日曆檔案",
-  "icsExportShareSubject": "輕誘課表日曆",
+  "icsExportShareText": "這是來自輕嶼課表的日曆檔案",
+  "icsExportShareSubject": "輕嶼課表日曆",
   "icsExportActionShare": "分享給其他人",
   "icsExportActionSave": "儲存到手機資料夾",
   "icsExportSavedCount": "日曆已儲存，共 {count} 個事件",
