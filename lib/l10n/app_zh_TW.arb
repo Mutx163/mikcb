@@ -1654,7 +1654,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryKeepNormal": "上課後先保留普通課中通知，在距離下課前 {minutes} 分鐘切到重點提醒 / 下課提醒，並在最後 {seconds} 秒切到秒級倒數",
+  "liveClassReminderLeadSummaryKeepNormal": "課中普通通知，下課前 {minutes} 分鐘重點提醒",
   "@liveClassReminderLeadSummaryKeepNormal": {
     "placeholders": {
       "minutes": {
@@ -1665,7 +1665,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryIsland": "在距離下課前 {minutes} 分鐘切到超級島與重點提醒，並在最後 {seconds} 秒切到秒級倒數",
+  "liveClassReminderLeadSummaryIsland": "下課前 {minutes} 分鐘切到超級島與重點提醒",
   "@liveClassReminderLeadSummaryIsland": {
     "placeholders": {
       "minutes": {
@@ -1676,7 +1676,7 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryFocused": "在距離下課前 {minutes} 分鐘開始顯示重點提醒，並在最後 {seconds} 秒切到秒級倒數",
+  "liveClassReminderLeadSummaryFocused": "下課前 {minutes} 分鐘開始重點提醒",
   "@liveClassReminderLeadSummaryFocused": {
     "placeholders": {
       "minutes": {
@@ -2197,7 +2197,7 @@
   "aboutRecordDiagnosticsTitle": "記錄應用日誌",
   "aboutRecordDiagnosticsSubtitle": "開啟後本機持續記錄執行日誌，超級島日誌單獨標註",
   "aboutExportDiagnosticsAction": "匯出診斷日誌",
-  "aboutViewPhoneLogsAction": "查看手机日誌",
+  "aboutViewPhoneLogsAction": "開啟日誌頁面",
   "aboutClearAndRecollectAction": "清空並重新收集",
   "aboutLiveDiagnosticsEnabled": "已開啟超級島診斷日誌",
   "aboutLiveDiagnosticsDisabled": "已關閉超級島診斷日誌",
@@ -5086,7 +5086,7 @@
       }
     }
   },
-  "courseImportCalendarWeekLabel": "校历第 {week} 周",
+  "courseImportCalendarWeekLabel": "校曆第 {week} 週",
   "@courseImportCalendarWeekLabel": {
     "placeholders": {
       "week": {

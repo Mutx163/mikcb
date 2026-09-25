@@ -14150,17 +14150,17 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String liveClassReminderLeadSummaryKeepNormal(int minutes, int seconds) {
-    return '上課後先保留普通課中通知，在距離下課前 $minutes 分鐘切到重點提醒 / 下課提醒，並在最後 $seconds 秒切到秒級倒數';
+    return '課中普通通知，下課前 $minutes 分鐘重點提醒';
   }
 
   @override
   String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return '在距離下課前 $minutes 分鐘切到超級島與重點提醒，並在最後 $seconds 秒切到秒級倒數';
+    return '下課前 $minutes 分鐘切到超級島與重點提醒';
   }
 
   @override
   String liveClassReminderLeadSummaryFocused(int minutes, int seconds) {
-    return '在距離下課前 $minutes 分鐘開始顯示重點提醒，並在最後 $seconds 秒切到秒級倒數';
+    return '下課前 $minutes 分鐘開始重點提醒';
   }
 
   @override
@@ -15372,7 +15372,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutExportDiagnosticsAction => '匯出診斷日誌';
 
   @override
-  String get aboutViewPhoneLogsAction => '查看手機日誌';
+  String get aboutViewPhoneLogsAction => '開啟日誌頁面';
 
   @override
   String get aboutClearAndRecollectAction => '清空並重新收集';
@@ -19543,7 +19543,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String courseImportCalendarWeekLabel(int week) {
-    return '校曆第 $week 周';
+    return '校曆第 $week 週';
   }
 
   @override
@@ -25190,17 +25190,17 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String liveClassReminderLeadSummaryKeepNormal(int minutes, int seconds) {
-    return '上課後先保留普通課中通知，在距離下課前 $minutes 分鐘切到重點提醒 / 下課提醒，並在最後 $seconds 秒切到秒級倒數';
+    return '課中普通通知，下課前 $minutes 分鐘重點提醒';
   }
 
   @override
   String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return '在距離下課前 $minutes 分鐘切到超級島與重點提醒，並在最後 $seconds 秒切到秒級倒數';
+    return '下課前 $minutes 分鐘切到超級島與重點提醒';
   }
 
   @override
   String liveClassReminderLeadSummaryFocused(int minutes, int seconds) {
-    return '在距離下課前 $minutes 分鐘開始顯示重點提醒，並在最後 $seconds 秒切到秒級倒數';
+    return '下課前 $minutes 分鐘開始重點提醒';
   }
 
   @override
@@ -26415,7 +26415,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutExportDiagnosticsAction => '匯出診斷日誌';
 
   @override
-  String get aboutViewPhoneLogsAction => '查看手机日誌';
+  String get aboutViewPhoneLogsAction => '開啟日誌頁面';
 
   @override
   String get aboutClearAndRecollectAction => '清空並重新收集';
@@ -30588,7 +30588,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String courseImportCalendarWeekLabel(int week) {
-    return '校历第 $week 周';
+    return '校曆第 $week 週';
   }
 
   @override
