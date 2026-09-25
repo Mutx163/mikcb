@@ -60,6 +60,8 @@ abstract final class HyperosGlassShadow {
   /// - [withShadow] 只在面**自带了同值阴影**时关掉（实底分支），否则会叠两层。
   /// - [shadowOverride] 指定另一份共享浮影；缺省用 [shadow]。
   /// - [borderRadius] 只用来给浮影定形状 —— 少了它阴影会是个方块。
+  /// - 浮影层画在 [child] **之后**，并由 [_OuterShadowClipper] 裁掉玻璃内部；
+  ///   否则 [BackdropFilter] 会采到垫在下层的阴影，把纯白玻璃中央染灰。
   /// - [clipBehavior] 必须 `none`，否则 Stack 默认会把外浮影裁掉。
   /// - [opacity] 0..1：二级开合时随 [MiuixGlassEdgeFade] 渐变，阴影深浅与
   ///   边缘高光同节奏（1 = 全量，静止态不变）。
@@ -81,24 +83,76 @@ abstract final class HyperosGlassShadow {
     return Stack(
       clipBehavior: Clip.none,
       children: [
+        child,
         Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: borderRadius,
-              boxShadow: [
-                BoxShadow(
-                  color: shadowColor,
-                  blurRadius: source.blurRadius,
-                  spreadRadius: source.spreadRadius,
-                  offset: source.offset,
+          child: IgnorePointer(
+            child: ClipPath(
+              clipper: _OuterShadowClipper(
+                borderRadius: borderRadius,
+                shadow: source,
+              ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: borderRadius,
+                  boxShadow: [
+                    BoxShadow(
+                      color: shadowColor,
+                      blurRadius: source.blurRadius,
+                      spreadRadius: source.spreadRadius,
+                      offset: source.offset,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
-        child,
       ],
     );
+  }
+}
+
+/// 只保留玻璃轮廓外的阴影区域。
+///
+/// [BackdropFilter] 会采样自己之前已经画进同一合成层的像素。若把完整
+/// [BoxShadow] 直接垫在玻璃下，纯白背景上会看到阴影透过玻璃把整块中央染灰，
+/// 两端受光反而仍是白色。这里用「外矩形减去玻璃自身轮廓」作裁切区，并把这层
+/// 画在玻璃之后：浮影只落在外圈，既不会进入玻璃采样，也不会覆盖玻璃内部。
+class _OuterShadowClipper extends CustomClipper<Path> {
+  const _OuterShadowClipper({
+    required this.borderRadius,
+    required this.shadow,
+  });
+
+  final BorderRadius borderRadius;
+  final BoxShadow shadow;
+
+  @override
+  Path getClip(Size size) {
+    final dx = shadow.offset.dx.abs();
+    final dy = shadow.offset.dy.abs();
+    final offsetExtent = dx > dy ? dx : dy;
+    // BoxShadow 的模糊范围会大于 blurRadius；两倍再加固定余量，确保裁切区
+    // 不会反过来把本应可见的外浮影切掉。
+    final extent = shadow.blurRadius * 2 + shadow.spreadRadius.abs() +
+        offsetExtent + 8;
+    return Path()
+      ..fillType = PathFillType.evenOdd
+      ..addRect(
+        Rect.fromLTRB(
+          -extent,
+          -extent,
+          size.width + extent,
+          size.height + extent,
+        ),
+      )
+      ..addRRect(borderRadius.toRRect(Offset.zero & size));
+  }
+
+  @override
+  bool shouldReclip(covariant _OuterShadowClipper oldClipper) {
+    return borderRadius != oldClipper.borderRadius ||
+        shadow != oldClipper.shadow;
   }
 }
 

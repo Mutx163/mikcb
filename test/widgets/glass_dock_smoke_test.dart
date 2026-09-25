@@ -94,7 +94,7 @@ void main() {
     );
   });
 
-  testWidgets('玻璃坞药丸与设置页返回圆钮共用小浮影', (tester) async {
+  testWidgets('玻璃坞药丸复用返回圆钮的外圈小浮影', (tester) async {
     await pumpDockApp(tester, HomeNavigationForm.glassDock);
 
     final shadowFinder = find.descendant(
@@ -115,6 +115,29 @@ void main() {
       decoration.borderRadius,
       BorderRadius.circular(SoftGlassTokens.barHeight / 2),
       reason: '药丸浮影必须跟药丸同形，不能留下方形边',
+    );
+
+    final outerClipFinder = find.ancestor(
+      of: shadowFinder,
+      matching: find.byWidgetPredicate(
+        (widget) => widget is ClipPath && widget.clipper != null,
+      ),
+    );
+    expect(outerClipFinder, findsOneWidget);
+    final size = tester.getSize(find.byType(SoftGlassTabBar));
+    final outerClip = tester
+        .widget<ClipPath>(outerClipFinder)
+        .clipper!
+        .getClip(size);
+    expect(
+      outerClip.contains(size.center(Offset.zero)),
+      isFalse,
+      reason: '玻璃内部必须完全透明，不能让阴影被 BackdropFilter 采进药丸中央',
+    );
+    expect(
+      outerClip.contains(Offset(size.width / 2, -1)),
+      isTrue,
+      reason: '药丸轮廓外仍须保留可见浮影',
     );
   });
 
