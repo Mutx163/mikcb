@@ -36,7 +36,6 @@ class TimetableProfilesScreen extends StatelessWidget {
           ],
           child: HyperosListView(
             children: [
-              HyperosSectionLabel(text: l10n.timetableManagementSectionTitle),
               HyperosListGroup(
                 children: [
                   for (var index = 0; index < profiles.length; index++)

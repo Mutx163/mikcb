@@ -206,9 +206,19 @@ void main() {
 
     await tester.tap(find.text('课表管理'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
 
     expect(find.byType(TimetableProfilesScreen), findsOneWidget);
+    expect(
+      find.byType(HyperosSectionLabel),
+      findsNothing,
+      reason: '列表上方不再重复放一个灰色分组标题',
+    );
+    expect(
+      find.text('切换课表'),
+      findsNothing,
+      reason: '进入课表管理前必须先让切换弹层退场，不能把旧弹层留在新页面上方',
+    );
   });
 
   testWidgets('profile actions use transparent dialog rows in frosted sheet', (

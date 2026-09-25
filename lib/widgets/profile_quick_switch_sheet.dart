@@ -4,6 +4,11 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../models/timetable_profile.dart';
 
+/// Called when the user taps the management action in the profile sheet.
+///
+/// The callback must use [SheetCloseRef] to close the sheet before pushing a
+/// page: the sheet's visual layer lives in the root Overlay and will otherwise
+/// stay above the newly pushed page.
 typedef ProfileQuickSwitchManageHandler =
     void Function(BuildContext sheetContext);
 
@@ -13,9 +18,11 @@ Future<String?> showProfileQuickSwitchSheet(
   required List<TimetableProfile> profiles,
   required String? activeProfileId,
   required ProfileQuickSwitchManageHandler onManageTimetables,
+  SheetCloseRef? closeRef,
 }) {
   return showHomeHyperosSheet<String>(
     context: context,
+    closeRef: closeRef,
     builder: (sheetContext) => _ProfileQuickSwitchSheet(
       profiles: profiles,
       activeProfileId: activeProfileId,

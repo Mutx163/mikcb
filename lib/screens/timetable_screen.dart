@@ -9140,6 +9140,7 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   Future<void> _showProfileQuickSwitchSheet() async {
     final provider = context.read<TimetableProvider>();
+    MiuixBottomSheetClose? closeSheet;
     final selected = await showProfileQuickSwitchSheet(
       context,
       // TA 课表是覆盖层叠加，不是切换对象；switchProfile 对它静默守卫，
@@ -9148,11 +9149,28 @@ class _TimetableScreenState extends State<TimetableScreen>
           .where((profile) => !profile.isPartnerImported)
           .toList(growable: false),
       activeProfileId: provider.activeProfileId,
+      closeRef: (close) => closeSheet = close,
       onManageTimetables: (buttonContext) {
-        _openPopupActionPage(
-          buttonContext,
-          pageBuilder: (_) => const TimetableProfilesScreen(),
-          sheetRoute: ModalRoute.of(buttonContext),
+        // MiuixWindowBottomSheet 的内容挂在根 Overlay 上，buttonContext
+        // 拿不到原来的 ModalRoute；不能靠猜路由来收弹层。记录源按钮的位置，
+        // 等 close(afterDismiss:) 真正摘掉根 Overlay 条目后再用首页 context 推页。
+        final sourceRect = _popupActionSourceRect(buttonContext);
+        final close = closeSheet;
+        if (close == null) {
+          return;
+        }
+        final hostContext = context;
+        close(
+          afterDismiss: () {
+            if (!mounted || !hostContext.mounted) {
+              return;
+            }
+            _openPopupActionPage(
+              hostContext,
+              pageBuilder: (_) => const TimetableProfilesScreen(),
+              sourceRect: sourceRect,
+            );
+          },
         );
       },
     );
@@ -9773,22 +9791,27 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 }
 
-void _openPopupActionPage(
-  BuildContext buttonContext, {
-  required WidgetBuilder pageBuilder,
-  required Route<dynamic>? sheetRoute,
-}) {
+Rect _popupActionSourceRect(BuildContext buttonContext) {
   final renderBox = buttonContext.findRenderObject() as RenderBox?;
   final buttonOffset = renderBox?.localToGlobal(Offset.zero) ?? Offset.zero;
   final buttonSize = renderBox?.size ?? const Size(80, 80);
-  final sourceRect = buttonOffset & buttonSize;
-  final navigator = Navigator.of(buttonContext);
+  return buttonOffset & buttonSize;
+}
+
+void _openPopupActionPage(
+  BuildContext context, {
+  required WidgetBuilder pageBuilder,
+  Rect? sourceRect,
+  Route<dynamic>? sheetRoute,
+}) {
+  final resolvedSourceRect = sourceRect ?? _popupActionSourceRect(context);
+  final navigator = Navigator.of(context);
 
   navigator.push(
     _OpenOnlyContainerPageRoute<void>(
-      sourceRect: sourceRect,
+      sourceRect: resolvedSourceRect,
       builder: pageBuilder,
-      backgroundColor: Theme.of(buttonContext).scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
     ),
   );
 

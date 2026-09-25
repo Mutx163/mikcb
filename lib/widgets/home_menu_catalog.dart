@@ -207,17 +207,32 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     // TA 课表靠情侣覆盖层叠加显示，不是切换对象，不出现在列表里。
     open: (context) async {
       final provider = context.read<TimetableProvider>();
+      MiuixBottomSheetClose? closeSheet;
       final selected = await showProfileQuickSwitchSheet(
         context,
         profiles: provider.profiles
             .where((profile) => !profile.isPartnerImported)
             .toList(growable: false),
         activeProfileId: provider.activeProfileId,
-        onManageTimetables: (buttonContext) async {
-          Navigator.of(buttonContext).pop();
-          await pushHomeMenuPage(
-            buttonContext,
-            homePage('timetableProfilesPage'),
+        closeRef: (close) => closeSheet = close,
+        onManageTimetables: (buttonContext) {
+          // 弹层内容在根 Overlay 中，不能从 buttonContext 找原路由。
+          // 先等面板退场，再用仍然挂载的宿主 context 推管理页。
+          final close = closeSheet;
+          if (close == null) {
+            return;
+          }
+          final hostContext = context;
+          close(
+            afterDismiss: () {
+              if (!hostContext.mounted) {
+                return;
+              }
+              pushHomeMenuPage(
+                hostContext,
+                homePage('timetableProfilesPage'),
+              );
+            },
           );
         },
       );
