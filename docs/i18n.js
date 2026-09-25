@@ -132,7 +132,17 @@
   }
 
   /* 运行时变量：{count} 之类由调用方在 setVars 里注入，供学校数这类
-     每天变的数据使用。变量值随语言切换保留，不需要各处重复传参。 */
+     每天变的数据使用。变量值随语言切换保留，不需要各处重复传参。
+
+     defaults 是兜底值：schools.json 拉不到时（网络不通、文件改名），
+     变量没注入就会把 `{schoolCountBucket}` 原样吐到页面上。这里给每个
+     已知变量一个安全默认值，保证任何情况下都读得通。 */
+  const VAR_DEFAULTS = {
+    schoolCount: "200",
+    schoolCountShort: "200",
+    schoolCountBucket: "200+",
+  };
+
   let runtimeVars = {};
 
   function setVars(next) {
@@ -140,7 +150,7 @@
   }
 
   function getVars() {
-    return { ...runtimeVars };
+    return { ...VAR_DEFAULTS, ...runtimeVars };
   }
 
   function t(key, vars) {
@@ -150,7 +160,7 @@
     if (text == null) {
       return null;
     }
-    const merged = { ...runtimeVars, ...(vars || {}) };
+    const merged = { ...VAR_DEFAULTS, ...runtimeVars, ...(vars || {}) };
     Object.keys(merged).forEach((name) => {
       text = text.replaceAll(`{${name}}`, String(merged[name]));
     });
