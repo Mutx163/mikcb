@@ -125,4 +125,42 @@ void main() {
       reason: '返回后高亮必须与页面一致，停在原来的课表槽上',
     );
   });
+
+  testWidgets('点底栏的「外观编辑」槽：推页必须晚一帧（先把按压光斑收掉）', (
+    tester,
+  ) async {
+    // 用户 2026-09-25 口径：「点击底栏的时候会有亮光，但是亮光对应衔接这个
+    // 缩小动画的时候，就会形成闪一下的样子」。那颗亮光是玻璃药丸的按压光斑
+    // （`pressGlow`）：进光瞬时、抬手后 140ms 渐隐，所以抬手那刻最亮；而缩放
+    // 转场第 0 帧就把整屏烤成快照，"最亮那一帧"被定格 → 光斑亮满 400ms 后突然
+    // 消失。
+    //
+    // 修法是"归零 + 下一帧再推"，本条钉住**那半拍**：点击当帧绝不能已经推上去。
+    // 少了它就等于没修——快照照样会拍到最亮的光斑。
+    await pumpDock(tester, const ['day', 'week', 'appearanceEditor']);
+    expect(find.byKey(const ValueKey('appearance-editor-preview-card')), findsNothing);
+
+    // 真实地点那一格（走 Listener/GestureDetector 的完整路径，不用 tester.tap：
+    // tap 是"按下-立刻抬起"，而光斑的瞬时进光要靠 Listener 真的收到 down）。
+    final slot = find.text('外观编辑');
+    final gesture = await tester.startGesture(tester.getCenter(slot));
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('appearance-editor-preview-card')),
+      findsNothing,
+      reason: '点击当帧就推页 = 光斑归零的重绘还没落地，快照仍会拍到最亮那一帧',
+    );
+
+    // 下一帧才推。
+    await tester.pump();
+    await settle(tester);
+    expect(
+      find.byKey(const ValueKey('appearance-editor-preview-card')),
+      findsOneWidget,
+      reason: '晚一帧之后必须照常推入（这条不是"干脆不推了"）',
+    );
+  });
 }

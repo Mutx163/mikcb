@@ -22,6 +22,7 @@ import 'package:flutter/gestures.dart'
         VelocityTracker,
         kMinFlingVelocity;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:flutter/physics.dart';
@@ -60,6 +61,7 @@ import '../utils/home_startup_visual_primer.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
     show
         LiquidGlassSurface,
+        LiquidGlassSurfaceState,
         UndimmedBackdropCapture,
         narrowSurfaceMaxRefraction;
 import '../widgets/course_action_sheet.dart';
@@ -260,6 +262,12 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// Anchor for the top-right "more" menu popup (positioned below this key).
   final GlobalKey _topMenuButtonKey = GlobalKey();
+
+  /// 底栏那颗液态玻璃药丸。持有它是为了在**推路由**那一格上按下按压光斑：缩放
+  /// 转场第 0 帧会把整屏烤成快照，光斑被定格就会变成「亮光接缩小动画时闪一下」。
+  /// 见 [_pushAfterDockGlowSettled]。
+  final GlobalKey<LiquidGlassSurfaceState> _glassDockKey =
+      GlobalKey<LiquidGlassSurfaceState>();
 
   /// 首页「更多」菜单（列表形态）改用上游 flutter_miuix 1.2.0 的 HyperOS 4
   /// 玻璃弹层后的持有物。按上游约定：锚点与材质捕获容器由宿主创建并持有
@@ -7671,6 +7679,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     const radius = SoftGlassTokens.barHeight / 2;
     final surface = switch (material) {
       _DockMaterial.liquid => LiquidGlassSurface(
+        key: _glassDockKey,
         borderRadius: radius,
         // 实时采样（不跟祖先组）：坞层被 [_wrapHomeWithTopMenu] 摆在采样宿主
         // **之外**，拿不到 `homeStack` 那个 `BackdropGroup` —— 原先这里的
@@ -7906,9 +7915,37 @@ class _TimetableScreenState extends State<TimetableScreen>
         final entry = homeMenuEntryById(id);
         if (entry != null) {
           _maybeSelectionClick(settings);
-          unawaited(entry.open(context));
+          _pushAfterDockGlowSettled(entry.open);
         }
     }
+  }
+
+  /// 底栏某一格**会推新页面**时：先把玻璃药丸上的按压光斑收掉，下一帧再推。
+  ///
+  /// 2026-09-25 用户口径：「点击底栏的时候会有亮光，但是亮光对应衔接这个缩小
+  /// 动画的时候，就会形成闪一下的样子」。那颗亮光就是药丸的按压光斑（液态玻璃
+  /// 的 `pressGlow`）：**进光是瞬时的，抬手后靠 140ms 渐隐**，所以抬手那一刻
+  /// 它正好最亮。而缩放转场的**第 0 帧**把整屏烤成快照、之后 400ms 全靠回放这
+  /// 张图（活树全程停绘，见 `hyperos_zoom_route.dart` 类注释）——「最亮的那一
+  /// 帧」被定格进快照，光斑在整个缩小过程里一直是亮的，落定后活首页交还、
+  /// 光斑早已收掉 ⇒ 那一下闪。
+  ///
+  /// 归零必须**早于**快照那一帧，而重绘要等下一帧，所以推页顺延一帧（16.7ms，
+  /// 点击手感上察觉不到）。日/周切换与内嵌页换页**不走这里**：那些是首页内部
+  /// 状态，光斑的渐隐就是它跟手的手感，要原样保留。
+  void _pushAfterDockGlowSettled(Future<void> Function(BuildContext) open) {
+    _glassDockKey.currentState?.releasePressGlowImmediately();
+    // ⚠️ **必须显式 `scheduleFrame`**（2026-09-25 实测）：`addPostFrameCallback`
+    // 自己**不排帧**，而此刻树上已经没有别的东西会标脏（推页被推迟了、光斑归零
+    // 只改渲染对象不重建）⇒ 不会有帧被画出 ⇒ 帧末回调永远不跑，推页永远不发生
+    // （首版就栽在这，回归用例直接把它照出来）。先排一帧，回调才有执行时机。
+    SchedulerBinding.instance.scheduleFrame();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(open(context));
+    });
   }
 
   /// 「回本周」浮钮的高度（逻辑 px）：图标 15 与字号 11 取大者，加纵向内边距 8×2。

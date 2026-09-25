@@ -506,7 +506,7 @@ function bindGeneralAnalytics() {
 
   document
     .querySelectorAll(
-      'a[href="https://github.com/Mutx163/mikcb"], a[href="https://github.com/Mutx163/mikcb/releases"]'
+      'a[href="https://github.com/Mutx163/mikcb"], a[href="https://github.com/Mutx163/mikcb/releases"], a[href="https://github.com/Mutx163/mikcb/stargazers"]'
     )
     .forEach((link) => {
       if (
@@ -518,13 +518,20 @@ function bindGeneralAnalytics() {
       }
       link.addEventListener("click", (event) => {
         const targetUrl = link.href || fallbackReleasePage;
+        const isStarLink =
+          new URL(targetUrl, window.location.href).pathname.endsWith(
+            "/stargazers"
+          );
         trackStructuredEvent("outbound_repo_click", {
           destination_host: "github.com",
           destination_path: normalizeAnalyticsValue(
             new URL(targetUrl).pathname,
             160
           ),
-          ui_label: getElementLabel(link),
+          // 「求 star」入口单独记一个维度，用来对比它和普通仓库链接的点击量
+          ui_label: isStarLink
+            ? `${getElementLabel(link)}|star`
+            : getElementLabel(link),
           ui_surface_label: inferElementSurfaceLabel(link),
           link_url: sanitizeUrlForAnalytics(targetUrl),
         });
@@ -745,8 +752,8 @@ const releaseChannelLabel = document.getElementById("release-channel-label");
 const releaseChannelTabs = Array.from(
   document.querySelectorAll(".release-channel-tab")
 );
-const heroStars = document.getElementById("hero-stars");
 const trustStars = document.getElementById("trust-stars");
+const navStarCount = document.getElementById("nav-star-count");
 const trustReleases = document.getElementById("trust-releases");
 const latestStableHighlights = document.getElementById("latest-stable-highlights");
 const releaseTimeline = document.getElementById("release-timeline");
@@ -1222,13 +1229,13 @@ function renderTrustSignals({
   releaseCount = 0,
   showStars = true,
 } = {}) {
-  if (heroStars) {
-    heroStars.textContent = showStars
-      ? `GitHub Star ${formatCompactCount(stars)}`
-      : "GitHub Star";
-  }
   if (trustStars) {
     trustStars.textContent = showStars ? formatCompactCount(stars) : "—";
+  }
+  if (navStarCount) {
+    // 导航里那个数字是「求 star」的一部分，抓不到就不占位，免得显示一个假的 0
+    navStarCount.textContent = showStars ? formatCompactCount(stars) : "";
+    navStarCount.hidden = !showStars;
   }
   if (trustReleases && Number(releaseCount) > 0) {
     trustReleases.textContent = formatCompactCount(releaseCount);
@@ -1236,7 +1243,7 @@ function renderTrustSignals({
 }
 
 async function loadTrustSignals(releases = 0) {
-  if (!heroStars && !trustStars && !trustReleases) {
+  if (!trustStars && !navStarCount && !trustReleases) {
     return;
   }
 

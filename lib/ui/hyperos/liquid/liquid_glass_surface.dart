@@ -312,10 +312,12 @@ class LiquidGlassSurface extends StatefulWidget {
   }
 
   @override
-  State<LiquidGlassSurface> createState() => _LiquidGlassSurfaceState();
+  State<LiquidGlassSurface> createState() => LiquidGlassSurfaceState();
 }
 
-class _LiquidGlassSurfaceState extends State<LiquidGlassSurface>
+/// 玻璃表面的状态类。**公开**是为了让宿主在"这块面即将被定格成静态图"的
+/// 前一刻能按下 [`releasePressGlowImmediately`]（见该方法注释）。
+class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
     with SingleTickerProviderStateMixin {
   @override
   void initState() {
@@ -366,6 +368,26 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface>
   void _handlePointerRelease() {
     // 位置留在原地，让光斑跟着渐隐一起停住，而不是跳走。
     _glowController.reverse();
+  }
+
+  /// **立刻**把按压光斑收掉（跳过 140ms 渐隐），位置也一并清空。
+  ///
+  /// 存在的唯一理由（2026-09-25）：用户在底栏点「外观编辑」时，首页那半边的
+  /// 缩放转场会在**第 0 帧**把整屏烤成快照、之后整段动画回放这张图（活树全程
+  /// 停绘，见 `hyperos_zoom_route.dart` 类注释）。抬手那一刻光斑正好是最亮的
+  /// （进光是瞬时的、渐隐要 140ms），于是"最亮的那一帧"被定格进快照 → 光斑
+  /// 在整个缩小过程里一直是亮的、持续 400ms，落定后活首页交还、光斑却早已
+  /// 收掉 ⇒ 用户读成「点底栏的亮光接上缩小动画时闪了一下」。
+  ///
+  /// 归零必须**早于**快照那一帧，而重绘要等下一帧，所以调用方要把随后的动作
+  /// （推页）顺延一帧。普通按压**不许**调这里：光斑的 140ms 渐隐就是它跟手的
+  /// 手感。
+  void releasePressGlowImmediately() {
+    if (_pointer.value.$1 == null && _glowController.value == 0) {
+      return;
+    }
+    _glowController.stop();
+    _pointer.value = (null, 0);
   }
 
   @override

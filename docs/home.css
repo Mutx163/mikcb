@@ -497,23 +497,6 @@ button {
   z-index: 80;
 }
 
-.nav-github {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 1px solid var(--line);
-  color: var(--text-soft);
-  transition: color 0.2s, border-color 0.2s, transform 0.2s;
-}
-
-.nav-github:hover {
-  color: var(--text);
-  border-color: var(--line-strong);
-  transform: translateY(-1px);
-}
-
 .nav-cta {
   padding: 10px 20px;
   font-size: 0.9rem;
@@ -759,6 +742,74 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
   font-weight: 500;
 }
 
+/* ---------- 「求 star」 ---------- */
+
+/* 首屏那个星数：数字本身变成入口，底下挂一句求 star。
+   整块都用 --line 描边 + 悬停提亮，跟旁边三个纯数字的 stat 区分开。 */
+.hero-stat-star dd {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.hero-star-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s, translate 0.2s;
+}
+
+.hero-star-link::before {
+  content: "★";
+  font-size: 0.8em;
+  color: #f0b429;
+}
+
+.hero-star-link:hover {
+  border-color: var(--line-strong);
+  translate: 0 -1px;
+}
+
+.hero-star-ask {
+  color: var(--text-faint);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 导航栏：GitHub 图标右边挂星数，跟 trigger.dev 一个路子。
+   抓不到星数时 .nav-github-count 会被 hidden 掉，图标自动回到纯图标。 */
+.nav-github {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.nav-github:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.nav-github-count[hidden] {
+  display: none;
+}
+
 /* ---------- 跑马灯 ---------- */
 
 .marquee {
@@ -893,6 +944,11 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
 
 .bento-links .bento-link {
   margin-top: 0;
+}
+
+/* 「求 star」那个链接：跟旁边蓝色仓库链接区分开，加一点星色提示 */
+.bento-link-star {
+  color: #f0b429;
 }
 
 .island-demo {
