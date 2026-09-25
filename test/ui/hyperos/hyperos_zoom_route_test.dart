@@ -207,6 +207,62 @@ void main() {
     );
   });
 
+  test('linearT 在 chrome 实际用到的区间里够准（t ≥ 0.5 优于 0.3%）', () {
+    // chrome 的出场改成「在线性时间上取段」，靠的就是这个反解。反解要是偏得
+    // 太多，chrome 的斜率就会悄悄变回陡的。
+    //
+    // 只在 t ≥ 0.5 上钉：progressCurve 是 Bézier，**开头斜率极小**（实测
+    // p(0.01)≈0.0007），同样 30 次二分在 t<0.2 只能回到 ~1% 误差；中后段
+    // （chrome 唯一用到的那段）则优于 0.2%，够用。原因写在 linearT 的注释里。
+    for (var i = 50; i <= 100; i++) {
+      final t = i / 100;
+      expect(
+        HyperosZoomRoute.linearT(HyperosZoomRoute.progress(t)),
+        closeTo(t, 0.003),
+        reason: 't=$t 的往返必须回到 t（容差 0.3%）',
+      );
+    }
+    // 端点必须**精确**（二分永远收敛不到），否则落定后按钮停在 0.99999999。
+    expect(HyperosZoomRoute.linearT(0), 0.0);
+    expect(HyperosZoomRoute.linearT(1), 1.0);
+  });
+
+  test('chrome 出场按时间匀速：单帧增量不许陡成"啪地一下亮"', () {
+    // 用户 2026-09-25 口径：「点击底栏的时候会有亮光，但是亮光衔接这个缩小
+    // 动画的时候，就会形成闪一下的样子」。病根是早先把 chromeT 写成在**已经
+    // easeInOutCubic 过的总进度**上取线性段，而那一段正好落在缓动斜率最大的
+    // 区域：顶部胶囊 / 底部圆钮 4 帧（≈67ms）就从 0 涨到 82%，在"首页刚缩停
+    // 住、画面静止"的那一瞬读成一下闪光。
+    //
+    // 钉法：60fps 下每帧 = 1/24 进度。窗口是转场后 45%（≈180ms），匀速的话
+    // 每帧恰好涨 1/24 ÷ 0.45 ≈ 0.0926；阈值 0.10 留一点余量，仍远低于旧口径
+    // 的峰值（约 0.22，是它的两倍多）。
+    const frames = 24;
+    var maxStep = 0.0;
+    var previous = HyperosZoomRoute.chromeT(0);
+    for (var frame = 1; frame <= frames; frame++) {
+      final value = HyperosZoomRoute.chromeT(
+        HyperosZoomRoute.progress(frame / frames),
+      );
+      maxStep = value > previous ? value - previous : 0.0;
+      expect(
+        maxStep,
+        lessThan(0.10),
+        reason: '第 $frame 帧一次涨了 $maxStep：按钮是"啪"地亮出来的',
+      );
+      previous = value;
+    }
+
+    // 匀速之外还要保住两头：起点仍要「缩放快结束才出现」，终点要**精确** 1
+    // （旧写法除以字面量 0.45 会差 1e-16，落定后按钮停在 0.9999999999999999）。
+    expect(
+      HyperosZoomRoute.chromeT(HyperosZoomRoute.progress(0.5)),
+      0.0,
+      reason: '缩放才过半不许有按钮',
+    );
+    expect(HyperosZoomRoute.chromeT(1), 1.0, reason: '终点必须精确是 1');
+  });
+
   testWidgets('退出倒放：全程快照顶替活首页、落定才切回并释放快照', (tester) async {
     await pumpHost(tester);
     final initialWidth = homeTextWidth(tester);

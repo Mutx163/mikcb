@@ -58,6 +58,41 @@ abstract final class HyperosZoomRoute {
   static double progress(double animationValue) =>
       progressCurve.transform(animationValue.clamp(0.0, 1.0));
 
+  /// 总进度 → **原始动画值**（[progress] 的数值逆，0→1 的线性时间）。
+  ///
+  /// 为什么需要：出场层要按**时间匀速**推进才自然，而 [progress] 套过
+  /// [progressCurve] —— 它在中后段斜率最大，拿它当淡入进度会让"某段才开始
+  /// 出现的东西"在极短时间内冲到位（见 [chromeT]）。
+  ///
+  /// ⚠️ [progressCurve] 是 Bézier（`Curves.easeInOutCubic`），**没有解析逆**
+  /// （别照搬 CSS `ease-in-out-cubic` 的 `4t³` 那条），所以走二分。两点纪律：
+  /// * 端点直接短路 —— 二分永远收敛不到精确的 0/1，而 `chromeT(1)` 必须**精确**
+  ///   是 1（落定后按钮停在 0.99999999 会被"按钮没显全"的回归抓到）；
+  /// * **开头一段精度天然差**：`progressCurve` 在 t→0 处斜率极小（实测
+  ///   p(0.01)≈0.0007），同样 30 次二分在 t<0.2 只能回到 ~1% 误差，在
+  ///   t≥0.5 处则优于 0.2%。[chromeT] 只在 t≥0.55 用它，那段精度够用；**将来
+  ///   谁要在转场开头用它，先自己量一遍精度**。
+  static double linearT(double p) {
+    final target = p.clamp(0.0, 1.0);
+    if (target <= 0) {
+      return 0;
+    }
+    if (target >= 1) {
+      return 1;
+    }
+    var lo = 0.0;
+    var hi = 1.0;
+    for (var i = 0; i < 30; i++) {
+      final mid = (lo + hi) / 2;
+      if (progressCurve.transform(mid) < target) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    return (lo + hi) / 2;
+  }
+
   /// 首页缩小段进度（0→1，超过 [swapPoint] 后恒为 1 = 已落在卡片上）。
   ///
   /// 段内**再套一层 easeOutCubic 整形**：外层曲线在 [swapPoint] 处斜率接近最大，
@@ -67,14 +102,27 @@ abstract final class HyperosZoomRoute {
       Curves.easeOutCubic.transform((p / swapPoint).clamp(0.0, 1.0));
 
   /// 编辑页出场段进度（0→1，[swapPoint] 之前恒为 0）。
-  static double growT(double p) =>
-      ((p - swapPoint) / (1.0 - swapPoint)).clamp(0.0, 1.0);
+  static double growT(double p) => ((p - swapPoint) / (1.0 - swapPoint)).clamp(0.0, 1.0);
 
   /// 编辑页 chrome（顶部胶囊 / 底部按钮）的出场进度：比暗底晚一截开始 ——
   /// 用户口径「缩放结束以后，才显示页面上的按钮」。
+  ///
+  /// ⚠️ **必须按时间匀速，不能直接拿总进度当进度**（2026-09-25）。早先的
+  /// `((growT(p) - 0.35) / 0.65)` 是在**已经 easeInOutCubic 过的总进度**上
+  /// 再取线性段，而那一段正好落在 easeInOutCubic 斜率最大的区域：算下来顶部
+  /// 胶囊 / 底部圆钮会在 **4 帧（≈67ms）内从 0 涨到 82%**，而且发生在"首页刚
+  /// 缩停住、画面静止"的那一瞬 —— 一片白在静止画面上啪地亮起来，用户读成
+  /// 「点击底栏的时候会有亮光，亮光衔接这个缩小动画的时候就会形成闪一下」。
+  ///
+  /// 现在改成在**线性时间**上取段（经 [linearT] 反解），斜率恒为
+  /// `1 / span`（约 9%/帧，是原先峰值的一半），亮起来是匀速的。
   static double chromeT(double p) {
-    const double start = 0.35;
-    return ((growT(p) - start) / (1.0 - start)).clamp(0.0, 1.0);
+    // 起点 0.55 ≈ 220ms，与旧口径的 221ms 几乎一致（保住「缩放快结束才出
+    // 按钮」的手感不变）；窗口取剩下的 0.45（≈180ms）—— 写成 `1 - start` 而不是
+    // 字面量 0.45，是为了让**终点精确是 1.0**（`1.0 - 0.55` 的浮点值不等于
+    // 0.45，除以字面量会差 1e-16，落定后按钮停在 0.9999999999999999）。
+    const double start = 0.55;
+    return ((linearT(p) - start) / (1.0 - start)).clamp(0.0, 1.0);
   }
 }
 
