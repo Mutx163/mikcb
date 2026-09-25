@@ -209,7 +209,9 @@ class AppGlobalSettingsService {
   /// 当前设置是否需要改写全局键。供课表镜像事务判断是否需要写恢复记录，
   /// 避免普通课程保存产生额外的全量快照。
   static bool hasPendingChanges(TimetableSettings settings) {
-    return _cacheNeedsWrite || !_sameAsCache(extract(settings));
+    return _lastQueuedFuture != null ||
+        _cacheNeedsWrite ||
+        !_sameAsCache(extract(settings));
   }
 
   /// 从内存那份设置里抽出全局字段落盘（与缓存相同则直接返回，不写盘）。
