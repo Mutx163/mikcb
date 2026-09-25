@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'app_global_settings_service.dart';
 import '../models/partner_timetable_binding.dart';
 import '../models/course.dart';
 import '../models/location_time_group.dart';
@@ -35,6 +36,13 @@ class StorageService {
   static const String _partnerTimetableBindingKey = 'partner_timetable_binding';
   static const String _profilesSchemaVersionKey =
       'timetable_profiles_schema_version';
+
+  /// 短期恢复记录：设置全局键与课表镜像是一次逻辑保存，但底层仍是多个 key。
+  /// 进程若在中间被杀，下一次启动会先按下方的旧快照恢复，再继续读取课表。
+  @visibleForTesting
+  static const String settingsMirrorTransactionKey =
+      'app_global_settings_mirror_tx_v1';
+  static const int _settingsMirrorTransactionVersion = 1;
 
   /// 当前 profiles 存储布局版本。v1 = `timetable_profiles` 单 key 全量
   /// JSON 数组。所有写路径（含 updateProfiles RMW 与迁移写）经
@@ -81,6 +89,10 @@ class StorageService {
   Future<void> _teacherRecordsWriteChain = Future<void>.value();
   Future<void> _locationRecordsWriteChain = Future<void>.value();
 
+  /// 串行化「全局设置 + 课表镜像」这组多次写入，避免两个保存请求互相覆盖恢复记录。
+  Future<void> _settingsMirrorTransactionChain = Future<void>.value();
+  int _settingsMirrorTransactionSequence = 0;
+
   /// 仅用于测试：重置缓存的初始化状态
   @visibleForTesting
   void resetForTesting() {
@@ -104,6 +116,8 @@ class StorageService {
     _scheduleDateRulesWriteChain = Future<void>.value();
     _teacherRecordsWriteChain = Future<void>.value();
     _locationRecordsWriteChain = Future<void>.value();
+    _settingsMirrorTransactionChain = Future<void>.value();
+    _settingsMirrorTransactionSequence = 0;
   }
 
   Future<void> init() async {
@@ -118,6 +132,257 @@ class StorageService {
 
   Future<void> _doInit() async {
     _prefs = await SharedPreferences.getInstance();
+    await _recoverPendingSettingsMirrorTransaction();
+  }
+
+  Map<String, dynamic> _rawStringSnapshot(String key) {
+    final value = _prefs?.getString(key);
+    return <String, dynamic>{'present': value != null, 'value': value};
+  }
+
+  Map<String, dynamic> _rawIntSnapshot(String key) {
+    final value = _prefs?.getInt(key);
+    return <String, dynamic>{'present': value != null, 'value': value};
+  }
+
+  Map<String, dynamic> _captureSettingsMirrorBefore() {
+    final prefs = _prefs;
+    if (prefs == null) {
+      throw StateError('storage_not_initialized');
+    }
+    return <String, dynamic>{
+      'globalSettings': _rawStringSnapshot(
+        AppGlobalSettingsService.preferenceKey,
+      ),
+      'profiles': _rawStringSnapshot(_profilesKey),
+      'activeProfileId': _rawStringSnapshot(_activeProfileIdKey),
+      'profilesSchemaVersion': _rawIntSnapshot(_profilesSchemaVersionKey),
+    };
+  }
+
+  Future<void> _restoreRawStringSnapshot(
+    String key,
+    Map<String, dynamic> snapshot,
+  ) async {
+    if (snapshot['present'] == true) {
+      final value = snapshot['value'];
+      if (value is! String) {
+        throw FormatException('settings_mirror_snapshot_invalid:$key');
+      }
+      await _setStringChecked(key, value);
+    } else {
+      await _removeChecked(key);
+    }
+  }
+
+  Future<void> _restoreRawIntSnapshot(
+    String key,
+    Map<String, dynamic> snapshot,
+  ) async {
+    if (snapshot['present'] == true) {
+      final value = snapshot['value'];
+      if (value is! int) {
+        throw FormatException('settings_mirror_snapshot_invalid:$key');
+      }
+      await _setIntChecked(key, value);
+    } else {
+      await _removeChecked(key);
+    }
+  }
+
+  Map<String, dynamic> _decodeSettingsMirrorJournal(String raw) {
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(raw);
+    } on FormatException catch (error) {
+      throw StateError('settings_mirror_journal_invalid: ${error.message}');
+    }
+    if (decoded is! Map) {
+      throw StateError('settings_mirror_journal_invalid:not_object');
+    }
+    final journal = Map<String, dynamic>.from(decoded);
+    if (journal['version'] != _settingsMirrorTransactionVersion) {
+      throw StateError('settings_mirror_journal_version_unsupported');
+    }
+    final transactionId = journal['transactionId'];
+    final state = journal['state'];
+    final before = journal['before'];
+    if (transactionId is! String || transactionId.isEmpty) {
+      throw StateError('settings_mirror_journal_invalid:transaction_id');
+    }
+    if (state != 'pending' &&
+        state != 'rollback_pending' &&
+        state != 'committed') {
+      throw StateError('settings_mirror_journal_invalid:state');
+    }
+    if (before is! Map) {
+      throw StateError('settings_mirror_journal_invalid:before');
+    }
+    return journal;
+  }
+
+  Future<void> _writeSettingsMirrorJournal(
+    Map<String, dynamic> journal,
+  ) async {
+    await _setStringChecked(
+      settingsMirrorTransactionKey,
+      jsonEncode(journal),
+    );
+  }
+
+  Future<void> _reloadSettingsCachesAfterRecovery() async {
+    final prefs = _prefs;
+    if (prefs == null) {
+      throw StateError('storage_not_initialized');
+    }
+    await prefs.reload();
+    _invalidateProfilesListCache();
+    _invalidateTimeSchemesListCache();
+    _locationTimeGroupsListCache = null;
+    _scheduleDateRulesListCache = null;
+    AppGlobalSettingsService.invalidateCacheAfterStorageRecovery();
+  }
+
+  Future<void> _restoreSettingsMirrorBefore(
+    Map<String, dynamic> before,
+  ) async {
+    final profilesSchemaVersion = before['profilesSchemaVersion'];
+    final activeProfileId = before['activeProfileId'];
+    final profiles = before['profiles'];
+    final globalSettings = before['globalSettings'];
+    if (profilesSchemaVersion is! Map ||
+        activeProfileId is! Map ||
+        profiles is! Map ||
+        globalSettings is! Map) {
+      throw StateError('settings_mirror_snapshot_invalid');
+    }
+    // 目标写入顺序的逆序恢复：schema → active id → profiles → global settings。
+    await _restoreRawIntSnapshot(
+      _profilesSchemaVersionKey,
+      Map<String, dynamic>.from(profilesSchemaVersion),
+    );
+    await _restoreRawStringSnapshot(
+      _activeProfileIdKey,
+      Map<String, dynamic>.from(activeProfileId),
+    );
+    await _restoreRawStringSnapshot(
+      _profilesKey,
+      Map<String, dynamic>.from(profiles),
+    );
+    await _restoreRawStringSnapshot(
+      AppGlobalSettingsService.preferenceKey,
+      Map<String, dynamic>.from(globalSettings),
+    );
+    await _reloadSettingsCachesAfterRecovery();
+  }
+
+  /// 启动时处理上次进程被杀留下的恢复记录。
+  ///
+  /// 记录损坏或版本未知时故意保留并抛错，避免把无法确认的快照直接覆盖到用户数据上。
+  Future<void> _recoverPendingSettingsMirrorTransaction() async {
+    final prefs = _prefs;
+    if (prefs == null) {
+      return;
+    }
+    final raw = prefs.getString(settingsMirrorTransactionKey);
+    if (raw == null || raw.isEmpty) {
+      return;
+    }
+    final journal = _decodeSettingsMirrorJournal(raw);
+    final state = journal['state'];
+    if (state == 'committed') {
+      try {
+        await _removeChecked(settingsMirrorTransactionKey);
+      } catch (error) {
+        // 新数据已经确认落盘；下次启动继续清理，不能因此回滚。
+        if (kDebugMode) {
+          debugPrint('StorageService: committed settings journal cleanup failed: $error');
+        }
+      }
+      return;
+    }
+    final before = journal['before'];
+    if (before is! Map) {
+      throw StateError('settings_mirror_journal_invalid:before');
+    }
+    await _restoreSettingsMirrorBefore(Map<String, dynamic>.from(before));
+    try {
+      await _removeChecked(settingsMirrorTransactionKey);
+    } catch (error) {
+      // 快照已恢复但记录清理失败时保留它，下一次启动会重复执行幂等恢复。
+      if (kDebugMode) {
+        debugPrint('StorageService: settings journal cleanup failed: $error');
+      }
+    }
+  }
+
+  /// 包裹「全局设置 + profiles + active id」这组目标写入。
+  ///
+  /// 先可靠写入旧快照，再执行目标写入；普通异常会在本次调用中恢复旧快照，
+  /// 进程被杀则由下一次 [init] 恢复。这里故意只保存 before 快照：即使进程
+  /// 恰好死在目标全部写完、完成标记尚未写入的窄窗口，也宁可回滚一次，也不
+  /// 冒险把混合状态当成成功。
+  Future<T> runSettingsMirrorTransaction<T>(
+    Future<T> Function() writeTargets,
+  ) async {
+    final previous = _settingsMirrorTransactionChain;
+    final transactionDone = Completer<void>();
+    _settingsMirrorTransactionChain = transactionDone.future;
+    await previous.catchError((_) {});
+    try {
+      if (_prefs == null) {
+        await init();
+      }
+      await _profilesWriteChain.catchError((_) {});
+      if (_prefs?.getString(settingsMirrorTransactionKey) != null) {
+        throw StateError('settings_mirror_transaction_already_pending');
+      }
+      final before = _captureSettingsMirrorBefore();
+      final transactionId =
+          '${DateTime.now().microsecondsSinceEpoch}-${_settingsMirrorTransactionSequence++}';
+      final journal = <String, dynamic>{
+        'version': _settingsMirrorTransactionVersion,
+        'transactionId': transactionId,
+        'state': 'pending',
+        'createdAtMillis': DateTime.now().millisecondsSinceEpoch,
+        'before': before,
+      };
+      await _writeSettingsMirrorJournal(journal);
+      try {
+        final result = await writeTargets();
+        await _writeSettingsMirrorJournal(<String, dynamic>{
+          ...journal,
+          'state': 'committed',
+        });
+        try {
+          await _removeChecked(settingsMirrorTransactionKey);
+        } catch (error) {
+          // 目标数据和完成标记都已成功；清理失败留给下次启动重试。
+          if (kDebugMode) {
+            debugPrint('StorageService: settings journal cleanup failed: $error');
+          }
+        }
+        return result;
+      } catch (error) {
+        // 尽最大努力把记录标成回滚中；即使标记失败，原 pending 记录也能在
+        // 下次启动继续恢复旧的完整快照。
+        try {
+          await _writeSettingsMirrorJournal(<String, dynamic>{
+            ...journal,
+            'state': 'rollback_pending',
+          });
+        } catch (_) {}
+        try {
+          await _restoreSettingsMirrorBefore(before);
+          await _removeChecked(settingsMirrorTransactionKey);
+        } catch (_) {
+          // 保留记录，不能在恢复失败后误删最后的恢复依据。
+        }
+        rethrow;
+      }
+    } finally {
+      transactionDone.complete();
+    }
   }
 
   Future<SharedPreferences> _requirePrefs() async {

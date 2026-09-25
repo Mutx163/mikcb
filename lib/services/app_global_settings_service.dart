@@ -201,6 +201,17 @@ class AppGlobalSettingsService {
     }
   }
 
+  /// 等待已经排队的全局设置写入完成。事务快照不能与旧请求交错。
+  static Future<void> waitForPendingWrites() async {
+    await _writeQueue;
+  }
+
+  /// 当前设置是否需要改写全局键。供课表镜像事务判断是否需要写恢复记录，
+  /// 避免普通课程保存产生额外的全量快照。
+  static bool hasPendingChanges(TimetableSettings settings) {
+    return _cacheNeedsWrite || !_sameAsCache(extract(settings));
+  }
+
   /// 从内存那份设置里抽出全局字段落盘（与缓存相同则直接返回，不写盘）。
   ///
   /// 挂在 `_persistActiveProfileState` 上，于是**所有**设置写路径（设置页、
@@ -284,6 +295,13 @@ class AppGlobalSettingsService {
       return;
     }
     await syncFrom(source.settings);
+  }
+
+  /// 启动恢复原始 prefs 后清掉进程缓存，避免继续使用恢复前的内存值。
+  /// 恢复发生在初始化读取之前，因此这里不重置写入队列。
+  static void invalidateCacheAfterStorageRecovery() {
+    _cache = const <String, dynamic>{};
+    _cacheNeedsWrite = false;
   }
 
   /// 测试用：清掉进程内缓存（静态状态会跨用例残留）。

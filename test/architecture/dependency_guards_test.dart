@@ -66,7 +66,9 @@ void main() {
     // 原来链上的 onError 只接上一条的错，最后一条失败会让 _startupBackgroundWrites
     // 停在失败态，随后被导入入口 await 到，抛出与导入无关的启动期异常。
     // 改动只有一层错误处理 + 一段说明，无新增状态。
-    const baselineLines = 4640;
+    // 4640→4647：设置镜像事务接入 _persistActiveProfileState，新增一次
+    // hasPendingChanges 分支和事务包装调用；恢复记录本身在 StorageService。
+    const baselineLines = 4647;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

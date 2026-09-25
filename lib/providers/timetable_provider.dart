@@ -1217,6 +1217,28 @@ class TimetableProvider with ChangeNotifier {
     if (activeProfile == null) {
       return;
     }
+    // 全局键和课表镜像是跨两个存储层的同一次逻辑保存。只有全局字段真的
+    // 变化时才写恢复记录；普通课程保存仍走原来的单 key 写链。
+    final needsSettingsMirror = AppGlobalSettingsService.hasPendingChanges(
+      _settings,
+    );
+    if (needsSettingsMirror) {
+      await AppGlobalSettingsService.waitForPendingWrites();
+      await _storageService.runSettingsMirrorTransaction(
+        () => _persistActiveProfileStateToDisk(notifySync: false),
+      );
+      // 只有恢复记录已提交并清理后，才通知其它同步入口看到这次保存。
+      if (notifySync) {
+        notifyUserDataChangedForSync();
+      }
+    } else {
+      await _persistActiveProfileStateToDisk(notifySync: notifySync);
+    }
+  }
+
+  Future<void> _persistActiveProfileStateToDisk({
+    required bool notifySync,
+  }) async {
     // 全局那份应用级偏好顺手落盘（所有设置写路径都收口在这里；内容没变时不写盘）。
     await AppGlobalSettingsService.syncFrom(_settings);
     await _profileRepository.saveProfiles(_profiles);
@@ -3833,21 +3855,26 @@ class TimetableProvider with ChangeNotifier {
     if (semesterStartChanged && _settings.semesterStartDate != null) {
       _currentWeek = _currentDateWeek;
     }
+    final needsSettingsMirror = AppGlobalSettingsService.hasPendingChanges(
+      _settings,
+    );
     try {
       await _persistActiveProfileState();
     } catch (_) {
-      // 课表镜像与全局设置是两次独立写入；其中一步失败时，不能只把内存字段
-      // 留着，让界面显示一组设置、重启却读回另一组。尽力把两边都写回旧值。
+      // 事务写入失败时，StorageService 已经按恢复记录尽力回滚；没有事务记录
+      // 的普通课表保存才在这里走旧的补偿写入，避免第二次保存覆盖原快照。
       _settings = previousSettings;
       _profiles = previousProfiles;
       _currentWeek = previousCurrentWeek;
       _currentDateWeek = previousCurrentDateWeek;
       _currentCalendarWeek = previousCurrentCalendarWeek;
       hyperosSetEdgeHapticsEnabled(previousSettings.enableHaptics);
-      try {
-        await _persistActiveProfileState(notifySync: false);
-      } catch (_) {
-        // 原始失败更有价值；回滚本身失败只保留在日志/平台存储层，不遮住它。
+      if (!needsSettingsMirror) {
+        try {
+          await _persistActiveProfileState(notifySync: false);
+        } catch (_) {
+          // 原始失败更有价值；回滚本身失败只保留在日志/平台存储层，不遮住它。
+        }
       }
       notifyListeners();
       rethrow;
