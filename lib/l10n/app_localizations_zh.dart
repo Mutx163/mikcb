@@ -297,7 +297,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get coupleTimetableColorsTitle => '叠加颜色';
 
   @override
-  String get coupleTimetableColorsSubtitle => '自定义「我的课」「TA的课」「一起上课」的叠加显示颜色';
+  String get coupleTimetableColorsSubtitle => '自定义“我的课”“TA的课”“一起上课”的叠加显示颜色';
 
   @override
   String get partnerImportRequiresSingleProfile => '请导入单课表备份文件，不支持全量备份';
@@ -306,7 +306,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get coupleWebdavTitle => '坚果云拉取';
 
   @override
-  String get coupleWebdavSubtitle => '登录对方的坚果云账号即可获取其课表，与「云同步」账号互不影响';
+  String get coupleWebdavSubtitle => '登录对方的坚果云账号即可获取其课表，与“云同步”账号互不影响';
 
   @override
   String get coupleWebdavNotConnected => '尚未连接坚果云';
@@ -492,7 +492,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get cloudSyncSyncing => '正在同步…';
+  String get cloudSyncSyncing => '正在同步……';
 
   @override
   String cloudSyncLastError(String message) {
@@ -513,7 +513,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncSyncNow => '立即同步';
 
   @override
-  String get cloudSyncSyncNowSubtitle => '与其他设备对齐课表：先拉取云端更新，再上传本机修改';
+  String get cloudSyncSyncNowSubtitle => '与其他设备同步课表：先拉取云端更新，再上传本机修改';
 
   @override
   String get cloudSyncTestSuccess => 'WebDAV 连接成功';
@@ -555,7 +555,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cloudSyncConflictFirstSyncBody =>
-      '云端已有数据，与本机不一致。选「保留本机」会上传本机数据覆盖云端；选「使用云端」会下载云端数据替换本机。';
+      '云端已有数据，与本机不一致。选“保留本机”会上传本机数据覆盖云端；选“使用云端”会下载云端数据替换本机。';
 
   @override
   String get cloudSyncKeepLocalBackupAction => '以本机为准备份';
@@ -630,7 +630,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudBackupDeviceLabelTitle => '设备名称';
 
   @override
-  String get cloudBackupDeviceLabelHint => '在备份列表中显示，例如「我的手机」';
+  String get cloudBackupDeviceLabelHint => '在备份列表中显示，例如“我的手机”';
 
   @override
   String cloudBackupSummary(int profileCount, int courseCount) {
@@ -854,7 +854,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get courseRecolorSheetDescription =>
-      '每次「换一批」都会给全部课程刷一套随机颜色；不满意可以切回上一套，或回到导入时的原色。';
+      '每次“换一批”都会给全部课程刷一套随机颜色；不满意可以切回上一套，或回到导入时的原色。';
 
   @override
   String get courseRecolorNewBatchButton => '换一批颜色';
@@ -926,7 +926,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get spreadsheetScenarioIntro =>
-      '轻屿模板按表头识别列：必填列为课程名、星期、开始节、结束节及周次；其余列为可选，可下载完整模板，也可只保留必要列，也兼容 WakeUp 7 列格式';
+      '轻屿模板按表头识别列：必填列是课程名、星期、开始节、结束节和周次，其余列可选。模板可整体下载，也可以只留必要列导入；WakeUp 的 7 列格式同样兼容。';
 
   @override
   String get spreadsheetStep1Subtitle => '下载完整模板填写，或只保留必填列与上课周（或开始周+结束周）做最小导入';
@@ -1094,7 +1094,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get feedbackWechatOaOpenHint => '已复制公众号名称，请到微信中粘贴搜索';
 
   @override
-  String get feedbackOpeningChannel => '正在打开…';
+  String get feedbackOpeningChannel => '正在打开……';
 
   @override
   String get feedbackOpenChannelFailed => '无法打开，已复制相关信息';
@@ -1220,7 +1220,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get qrTransferSendHint => '请对方打开「扫码接收」，将摄像头对准此屏幕，保持到接收完成';
+  String get qrTransferSendHint => '请对方打开“扫码接收”，将摄像头对准此屏幕，保持到接收完成';
 
   @override
   String get qrTransferStop => '停止发送';
@@ -1237,7 +1237,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get qrTransferReceiveComplete => '数据接收完成，正在导入…';
+  String get qrTransferReceiveComplete => '数据接收完成，正在导入……';
 
   @override
   String get qrTransferSessionMismatch => '检测到不同传输内容，请确认只对准一份数据';
@@ -1491,7 +1491,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '可以先分享到微信任意一个聊天，然后在微信里点开这个备份文件并保存，保存后通常会出现在 Download / WeiXin 文件夹里，再回到新版选择这个 .mikcb 文件导入';
 
   @override
-  String get openingOldApp => '正在打开旧版...';
+  String get openingOldApp => '正在打开旧版……';
 
   @override
   String get openOldAppForBackup => '打开旧版去备份';
@@ -1545,7 +1545,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get saveToGallery => '保存到相册';
 
   @override
-  String get supportCompleteThanks => '感谢你支持轻屿课表继续打磨 ❤️';
+  String get supportCompleteThanks => '感谢你支持轻屿课表继续打磨';
 
   @override
   String get supportConfirmed => '我已经支持了';
@@ -1591,7 +1591,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get supportConfirmedShort => '已支持';
 
   @override
-  String get donorSearchHint => '搜昵称/寄语...';
+  String get donorSearchHint => '搜昵称/寄语……';
 
   @override
   String get donorSortLargeFirst => '大额优先';
@@ -1604,7 +1604,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String supportGoalRaised(String raised, String goal) {
-    return '已筹: $raised / 目标 $goal';
+    return '已筹： $raised / 目标 $goal';
   }
 
   @override
@@ -1613,15 +1613,15 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get supportDonorListFooter => '名单永久保留 💖';
+  String get supportDonorListFooter => '名单永久保留';
 
   @override
   String supportMarqueeThanks(String name, String amount) {
-    return '🎉 感谢 $name 赞助 $amount';
+    return '感谢 $name 赞助 $amount';
   }
 
   @override
-  String get supportMarqueeTail => '轻屿课表正在稳定运行中，期待你的每一次陪伴与爱心！';
+  String get supportMarqueeTail => '轻屿课表正在稳定运行中，期待你的每一次陪伴与爱心';
 
   @override
   String get scanQrWechatTitle => '使用微信扫描二维码';
@@ -1630,7 +1630,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scanQrAlipayTitle => '使用支付宝扫描二维码';
 
   @override
-  String get scanQrSubtitle => '截图并导入扫一扫，感谢支持！';
+  String get scanQrSubtitle => '截图并导入扫一扫，感谢支持';
 
   @override
   String get courseOverviewTitle => '课程总览与编辑';
@@ -1663,14 +1663,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String courseTimeSummary(int day, int start, int end) {
-    return '时间: 星期$day 第$start-$end节';
+    return '时间：星期 $day 第 $start～$end 节';
   }
 
   @override
-  String get teacherUnset => '未置';
+  String get teacherUnset => '未设置';
 
   @override
-  String get locationUnset => '未置';
+  String get locationUnset => '未设置';
 
   @override
   String courseDetailSummary(
@@ -1678,7 +1678,7 @@ class AppLocalizationsZh extends AppLocalizations {
     String teacher,
     String location,
   ) {
-    return '$weekDescription  教师: $teacher  教室: $location';
+    return '$weekDescription  教师： $teacher  教室： $location';
   }
 
   @override
@@ -1688,7 +1688,7 @@ class AppLocalizationsZh extends AppLocalizations {
     String location,
     String conflictSummary,
   ) {
-    return '$weekDescription  教师: $teacher  教室: $location\n冲突课程: $conflictSummary';
+    return '$weekDescription  教师： $teacher  教室： $location\n冲突课程： $conflictSummary';
   }
 
   @override
@@ -1731,7 +1731,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String timeRangeLabel(String start, String end) {
-    return '时间: $start - $end';
+    return '时间： $start - $end';
   }
 
   @override
@@ -1790,7 +1790,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String selectedWeeksSummary(int count, String weeks) {
-    return '已选 $count 周：第$weeks周';
+    return '已选 $count 周：第 $weeks 周';
   }
 
   @override
@@ -2121,7 +2121,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get timeSchemeInUseMessage => '该模板正在被课表使用';
+  String get timeSchemeInUseMessage => '当前课表正在使用这套模板';
 
   @override
   String get copiedTimeSchemeMessage => '已复制时间模板';
@@ -2225,7 +2225,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get afterSectionLabel => '第几节后';
 
   @override
-  String get breakDurationMinutesLabel => '休息多久(分)';
+  String get breakDurationMinutesLabel => '休息多久（分）';
 
   @override
   String get fillNumbersValidationMessage => '请把节数和时长填写为数字';
@@ -2505,12 +2505,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String liveIslandPreviewUntilClassStart(String time) {
-    return '距上课$time';
+    return '距上课 $time';
   }
 
   @override
   String liveIslandPreviewUntilClassEnd(String time) {
-    return '距下课$time';
+    return '距下课 $time';
   }
 
   @override
@@ -2624,7 +2624,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveDisplayConfigModeTitle => '配置方式';
 
   @override
-  String get liveDisplayConfigModeSubtitle => '开启后课中/下课提醒完全跟随上课前提醒的设置';
+  String get liveDisplayConfigModeSubtitle => '开启后课中与下课提醒完全跟随上课前提醒的设置';
 
   @override
   String get followBeforeClassDisplayTitle => '跟随上课前提醒设置';
@@ -2662,7 +2662,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get keepAliveConfirmBody =>
-      '该服务仅用于在后台刷新桌面小组件与重排课程提醒，不会读取屏幕内容，也不会代替你执行任何点击操作。开启需要在系统设置中授予「无障碍」权限，可随时关闭。';
+      '该服务仅用于在后台刷新桌面小组件与重排课程提醒，不会读取屏幕内容，也不会代替你执行任何点击操作。开启需要在系统设置中授予“无障碍”权限，可随时关闭。';
 
   @override
   String get keepAliveConfirmGoAction => '去开启';
@@ -2968,7 +2968,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sharedInfoSheetItemShortName =>
-      '课程简称：用于超级岛等场景的简短展示，需手动填写，系统不会自动生成，启用「优先显示课程简称」后生效；建议控制在 3 个汉字以内';
+      '课程简称：用于超级岛等场景的简短展示，需手动填写，系统不会自动生成，启用“优先显示课程简称”后生效；建议控制在 3 个汉字以内';
 
   @override
   String get sharedInfoSheetItemSharedSync =>
@@ -3000,7 +3000,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get courseShortNameHelper =>
-      '建议填写，用于超级岛等场景的简短展示，简称不会自动生成；启用「优先显示课程简称」后生效，建议控制在 3 个汉字以内';
+      '建议填写，用于超级岛等场景的简短展示，简称不会自动生成；启用“优先显示课程简称”后生效，建议控制在 3 个汉字以内';
 
   @override
   String get courseShortNameAutoFillAction => '取前两字';
@@ -3012,7 +3012,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseNatureLabel => '课程性质';
 
   @override
-  String get courseDescriptionOptional => '课程简介 (可选)';
+  String get courseDescriptionOptional => '课程简介 （可选）';
 
   @override
   String get currentScheduleHint => '这里的星期、节次、教室、周次和单双周只影响当前这一条排课';
@@ -3101,7 +3101,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String weekdaySectionRange(String weekday, int startSection, int endSection) {
-    return '周$weekday $startSection-$endSection节';
+    return '周 $weekday $startSection-$endSection 节';
   }
 
   @override
@@ -3113,7 +3113,7 @@ class AppLocalizationsZh extends AppLocalizations {
     int endSection,
     String usageType,
   ) {
-    return '$profileName · $courseName（周$weekday $startSection-$endSection节，$usageType）';
+    return '$profileName · $courseName（周 $weekday $startSection-$endSection 节，$usageType）';
   }
 
   @override
@@ -3122,7 +3122,7 @@ class AppLocalizationsZh extends AppLocalizations {
     int startSection,
     int endSection,
   ) {
-    return '周$weekday $startSection-$endSection节';
+    return '周 $weekday $startSection-$endSection 节';
   }
 
   @override
@@ -3146,7 +3146,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String liveClassReminderLeadSummaryImmediate(int seconds) {
-    return '一上课进入重点提醒，下课前 $seconds 秒秒级倒数';
+    return '一上课进入重点提醒，下课前 $seconds 秒开始逐秒倒数';
   }
 
   @override
@@ -3220,7 +3220,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageBackgroundImageTitle => '背景图';
 
   @override
-  String get homePageBackgroundImageSubtitle => '在「图片」模式下，作用于下方勾选的显示区域';
+  String get homePageBackgroundImageSubtitle => '在“图片”模式下，作用于下方勾选的显示区域';
 
   @override
   String get homePageWallpaperTitle => '背景图片';
@@ -3319,7 +3319,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get beforeClassDisplaySettingsTitle => '上课前提醒显示';
 
   @override
-  String get duringEndDisplaySettingsTitle => '课中/下课提醒显示';
+  String get duringEndDisplaySettingsTitle => '课中与下课提醒显示';
 
   @override
   String get liveDisplaySummaryShortName => '简称';
@@ -3349,7 +3349,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String liveDisplaySummaryMore(String first, int count) {
-    return '$first等$count项';
+    return '$first 等 $count 项';
   }
 
   @override
@@ -3533,18 +3533,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get guidePrivacyParagraph4 =>
-      '按友盟官方说明，这些 SDK 可能处理的信息包括：设备信息（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、网络状态、设备标识，以及高级运营分析依赖库涉及的应用列表和地理位置相关信息。';
+      '按友盟官方说明，这些 SDK 可能处理的信息包括设备信息（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、网络状态与设备标识；高级运营分析依赖库还会处理应用列表和地理位置相关信息。';
 
   @override
   String get guideRiskTitle => '免责与风险提示';
 
   @override
   String get guideRiskParagraph1 =>
-      '1. 超级岛、焦点通知、后台提醒和保活效果依赖系统版本、机型、厂商策略、权限、自启动、电池策略等外部条件，无法保证所有设备表现完全一致。';
+      '1. 超级岛、焦点通知、后台提醒和保活效果受外部条件限制，各设备表现无法完全一致。限制条件包括系统版本、机型、厂商策略、权限、自启动和电池策略。';
 
   @override
   String get guideRiskParagraph2 =>
-      '2. 检查更新、镜像下载、系统下载器、导入导出与分享等能力依赖网络环境、第三方服务和系统文件能力；若出现失败、限速或文件异常，请以 Release 页面、你自己保存的备份文件和系统提示为准。';
+      '2. 检查更新、镜像下载、系统下载器、导入导出与分享依赖三类外部条件：网络环境、第三方服务和系统文件能力。若出现失败、限速或文件异常，请以 Release 页面、你自己保存的备份文件和系统提示为准。';
 
   @override
   String get guideRiskParagraph3 =>
@@ -3736,15 +3736,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveTestingPresetArmedButHidden =>
-      '已注入自检预设课程，但超级岛此刻不会弹出——若「上课前提醒」已关闭，岛会在课程真正开始后（约 1 分钟后）才出现';
+      '已注入自检预设课程，但超级岛此刻不会弹出——若“上课前提醒”已关闭，岛会在课程真正开始后（约 1 分钟后）才出现';
 
   @override
   String get liveTestingHolidayBlocked =>
-      '当前在假期范围内，超级岛在假期期间不显示；如需测试，请先在「课表设置 → 节假日标记」中移除覆盖今天的假期';
+      '当前在假期范围内，超级岛在假期期间不显示；如需测试，请先在“课表设置 → 节假日标记”中移除覆盖今天的假期';
 
   @override
   String get liveTestingNotIslandHoliday =>
-      '当前在假期范围内——超级岛在假期期间不显示，可在「课表设置 → 节假日标记」中管理假期';
+      '当前在假期范围内——超级岛在假期期间不显示，可在“课表设置 → 节假日标记”中管理假期';
 
   @override
   String get liveTestingCourseTestAction => '选课测试';
@@ -3771,7 +3771,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String liveTestingCourseTestStartedToast(String course, String stage) {
-    return '已强制启动「$course」的超级岛测试（$stage）。请按 Home 键回桌面查看；岛会在测试窗口结束后自动收岛并恢复正式调度';
+    return '已强制启动“$course”的超级岛测试（$stage）。请按 Home 键回桌面查看；岛会在测试窗口结束后自动收岛并恢复正式调度';
   }
 
   @override
@@ -3788,14 +3788,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTestingPresetFallbackNote => '（未检测到可测试的真实课程，已改用自检预设课程，不会写入课表）';
 
   @override
-  String get liveTestingTestCourseNote => '此处显示备注，可以在课程编辑页进行设置';
+  String get liveTestingTestCourseNote => '此处显示备注，可以在课程编辑页设置';
 
   @override
   String get liveTestingNotificationSent => '已发送上课提醒测试通知，约 8 秒内会进入上课前提醒阶段';
 
   @override
   String sendFailedWithError(String error) {
-    return '发送失败: $error';
+    return '发送失败： $error';
   }
 
   @override
@@ -3812,7 +3812,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetQuickAddTitle => '快速添加到桌面';
 
   @override
-  String get homeWidgetCheckingPinSupport => '正在检查当前桌面是否支持应用内添加小组件…';
+  String get homeWidgetCheckingPinSupport => '正在检查当前桌面是否支持应用内添加小组件……';
 
   @override
   String get homeWidgetPinSupported => '支持的话会直接弹出系统添加确认，不是单独的权限弹窗；确认后即可固定到桌面';
@@ -3887,7 +3887,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetHeightAdjustTitle => '卡片高度';
 
   @override
-  String get homeWidgetHeightAdjustHint => '范围 -16 ~ 16，0 为默认档：正数比默认更高，负数更矮';
+  String get homeWidgetHeightAdjustHint => '范围 -16～16，0 为默认档：正数比默认更高，负数更矮';
 
   @override
   String get defaultLabel => '默认';
@@ -3953,17 +3953,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeWidgetExactAlarmBannerText =>
-      '未授予「闹钟和提醒」权限时，课程边界只能非精确刷新，桌面卡片可能延迟更新，建议授权以保证按课程时间精确刷新';
+      '未授予“闹钟和提醒”权限时，课程边界只能非精确刷新，桌面卡片可能延迟更新，建议授权以保证按课程时间精确刷新';
 
   @override
   String get homeWidgetExactAlarmGrantAction => '去授权';
 
   @override
-  String get homeWidgetExactAlarmOpenFailed => '打开授权页失败，请到系统设置中手动开启「闹钟和提醒」权限';
+  String get homeWidgetExactAlarmOpenFailed => '打开授权页失败，请到系统设置中手动开启“闹钟和提醒”权限';
 
   @override
   String get homeWidgetExactAlarmFallbackHint =>
-      '已在系统设置中打开应用信息，请在其中开启「闹钟和提醒」权限';
+      '已在系统设置中打开应用信息，请在其中开启“闹钟和提醒”权限';
 
   @override
   String get layoutSettingsTitle => '布局与节次';
@@ -3998,7 +3998,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pageTransitionSpeedTitle => '页面转场速度';
 
   @override
-  String get pageTransitionSpeedSubtitle => '数值越大动画越快；实际速度会叠加系统「过渡动画缩放」';
+  String get pageTransitionSpeedSubtitle => '数值越大动画越快；实际速度会叠加系统“过渡动画缩放”';
 
   @override
   String pageTransitionSpeedDurationHint(int milliseconds) {
@@ -4092,7 +4092,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get layoutShowWeeksTitle => '显示周数';
 
   @override
-  String get layoutShowWeeksSubtitle => '例如第 1-16 周、单双周';
+  String get layoutShowWeeksSubtitle => '例如第 1～16 周、单双周';
 
   @override
   String get layoutShowDescriptionTitle => '显示课程简介';
@@ -4135,7 +4135,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String currentWeekCompact(int week) {
-    return '$week周';
+    return '$week 周';
   }
 
   @override
@@ -4182,7 +4182,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutRefreshCheckTooltip => '重新检查';
 
   @override
-  String get aboutCheckingLatestVersion => '正在检查最新版本信息…';
+  String get aboutCheckingLatestVersion => '正在检查最新版本信息……';
 
   @override
   String get aboutCheckingForUpdate => '正在检查更新……';
@@ -4320,7 +4320,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutProbeMirrorsAction => '测速并推荐';
 
   @override
-  String get aboutProbingMirrors => '测速中…';
+  String get aboutProbingMirrors => '测速中……';
 
   @override
   String get aboutEditCustomMirrorAction => '修改自定义地址';
@@ -4445,7 +4445,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutSystemDownloaderFailed => '调用系统下载管理器失败';
 
   @override
-  String get aboutDownloadCancelling => '正在取消下载…';
+  String get aboutDownloadCancelling => '正在取消下载……';
 
   @override
   String aboutDownloadingBytes(String value) {
@@ -4551,7 +4551,7 @@ class AppLocalizationsZh extends AppLocalizations {
     int sectionCount,
     String warningSuffix,
   ) {
-    return '识别到 $courseCount 门课，最高到第 $sectionCount 节$warningSuffix';
+    return '识别到 $courseCount 门课，最高到第 $sectionCount 节 $warningSuffix';
   }
 
   @override
@@ -4830,7 +4830,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addDebugRecordTitle => '新增调试记录';
 
   @override
-  String get savingAction => '保存中…';
+  String get savingAction => '保存中……';
 
   @override
   String get debugRecordFormula => '一条记录 = 一个网址 + 一段脚本';
@@ -4872,7 +4872,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get recordImportAction => '录制导入';
 
   @override
-  String get quickImportAction => '⚡ 快捷导入';
+  String get quickImportAction => '快捷导入';
 
   @override
   String get quickImportTooltip => '快捷导入';
@@ -4900,10 +4900,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noMacroRecordFound => '未找到录制记录，请先完成一次录制';
 
   @override
-  String get quickImportPlayingTitle => '自动导入中…';
+  String get quickImportPlayingTitle => '自动导入中……';
 
   @override
-  String get quickImportExecutingScriptTitle => '回放完成，正在执行导入脚本…';
+  String get quickImportExecutingScriptTitle => '回放完成，正在执行导入脚本……';
 
   @override
   String get quickImportManualInputTitle => '需要手动操作';
@@ -4939,7 +4939,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get longPressEmptySlotToAddSubtitle => '长按后点虚线加号即可添加';
 
   @override
-  String get homePullQuickImportFetchingCourses => '正在获取新课程…';
+  String get homePullQuickImportFetchingCourses => '正在获取新课程……';
 
   @override
   String get homePullQuickImportNeedsManualAction => '需要手动操作，请前往教务导入页面继续';
@@ -5087,7 +5087,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String courseConflictWithCourse(String name) {
-    return '与「$name」冲突';
+    return '与“$name”冲突';
   }
 
   @override
@@ -5321,7 +5321,7 @@ class AppLocalizationsZh extends AppLocalizations {
     int startSection,
     int endSection,
   ) {
-    return '$weekDescription · $weekday 第$startSection-$endSection节';
+    return '$weekDescription · $weekday 第 $startSection-$endSection 节';
   }
 
   @override
@@ -5332,7 +5332,7 @@ class AppLocalizationsZh extends AppLocalizations {
     String startTime,
     String endTime,
   ) {
-    return '$weekday 第$startSection-$endSection节 · $startTime-$endTime';
+    return '$weekday 第 $startSection-$endSection 节 · $startTime-$endTime';
   }
 
   @override
@@ -5342,7 +5342,7 @@ class AppLocalizationsZh extends AppLocalizations {
     int startSection,
     int endSection,
   ) {
-    return '已调到第 $week 周 $weekday 第$startSection-$endSection节';
+    return '已调到第 $week 周 $weekday 第 $startSection-$endSection 节';
   }
 
   @override
@@ -5410,7 +5410,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String sectionRangeLabel(int startSection, int endSection) {
-    return '第$startSection-$endSection节';
+    return '第 $startSection～$endSection 节';
   }
 
   @override
@@ -5495,7 +5495,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get importingAction => '导入中...';
+  String get importingAction => '导入中……';
 
   @override
   String get executeLocalDebugScriptAction => '执行本地调试脚本';
@@ -5783,7 +5783,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String scheduleWeeklyWithDay(String day) {
-    return '每周$day';
+    return '每周 $day';
   }
 
   @override
@@ -5865,7 +5865,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String deleteExamConfirm(String name) {
-    return '删除考试「$name」？';
+    return '删除考试“$name”？';
   }
 
   @override
@@ -5876,7 +5876,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String examCountdownDays(int days) {
-    return '$days天后';
+    return '$days 天后';
   }
 
   @override
@@ -5966,7 +5966,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String scheduleSectionNumberLabel(int section) {
-    return '$section节';
+    return '$section 节';
   }
 
   @override
@@ -6069,7 +6069,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseNoteWholeCourseHint => '同名课程共享，长期有效（例如课程说明、课堂注意点）。';
 
   @override
-  String get courseNoteWholeCoursePlaceholder => '例如：这位教师容易点名、教室在新楼…';
+  String get courseNoteWholeCoursePlaceholder => '例如：这位教师容易点名、教室在新楼……';
 
   @override
   String get courseNoteSessionLabel => '本节课备注';
@@ -6080,7 +6080,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get courseNoteSessionPlaceholder => '例如：交第三章习题、带电脑…';
+  String get courseNoteSessionPlaceholder => '例如：交第三章习题、带电脑……';
 
   @override
   String get courseNoteHasHomeworkTitle => '有作业';
@@ -6265,7 +6265,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guidePersonalizePageTitle => '个性化定制';
 
   @override
-  String get guidePersonalizeSubtitle => '以下选择立即生效，之后可随时在「设置 → 外观」中调整';
+  String get guidePersonalizeSubtitle => '以下选择立即生效，之后可随时在“设置 → 外观”中调整';
 
   @override
   String get guidePersonalizeMenuStyleTitle => '菜单样式';
@@ -6314,7 +6314,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guideTipsHeader => '使用技巧';
 
   @override
-  String get guideTipsSubtitle => '这些随时可以在「设置」里找到';
+  String get guideTipsSubtitle => '这些随时可以在“设置”里找到';
 
   @override
   String get guidePrivacyReadBeforeUse => '使用前请阅读并同意以下内容';
@@ -6324,7 +6324,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String holidayDataYearLabel(Object year) {
-    return '$year年法定节假日';
+    return '$year 年法定节假日';
   }
 
   @override
@@ -6332,17 +6332,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String holidayUpdateLogCount(int count) {
-    return '$count条';
+    return '$count 条';
   }
 
   @override
   String holidayDateSameMonth(int month, int start, int end) {
-    return '$month月$start日 - $end日';
+    return '$month 月 $start 日～$end 日';
   }
 
   @override
   String holidayDateSameDay(int month, int day) {
-    return '$month月$day日';
+    return '$month 月 $day 日';
   }
 
   @override
@@ -6352,7 +6352,7 @@ class AppLocalizationsZh extends AppLocalizations {
     int endMonth,
     int endDay,
   ) {
-    return '$startMonth月$startDay日 - $endMonth月$endDay日';
+    return '$startMonth 月 $startDay 日～$endMonth 月 $endDay 日';
   }
 
   @override
@@ -6453,7 +6453,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String themeBasedOnModified(String baseName) {
-    return '基于$baseName（已修改）';
+    return '基于 $baseName（已修改）';
   }
 
   @override
@@ -6605,7 +6605,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String statisticsStoryBusiestDayContent(int week, String day, String avg) {
-    return '截至第$week周，这学期你最忙的一天是 **$day**，平均 **$avg** 节课';
+    return '截至第 $week 周，这学期你最忙的一天是 **$day**，平均 **$avg** 节课';
   }
 
   @override
@@ -6613,7 +6613,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String statisticsStoryLightestDayContent(int week, String day, String avg) {
-    return '截至第$week周，你最轻松的一天是 **$day**，只有 **$avg** 节课';
+    return '截至第 $week 周，你最轻松的一天是 **$day**，只有 **$avg** 节课';
   }
 
   @override
@@ -6621,7 +6621,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String statisticsStoryFavoriteRoomContent(int week, String room, int count) {
-    return '截至第$week周，你最常去的教室是 **$room**，共去了 **$count** 次';
+    return '截至第 $week 周，你最常去的教室是 **$room**，共去了 **$count** 次';
   }
 
   @override
@@ -6629,7 +6629,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String statisticsStoryBuildingCountContent(int week, int count) {
-    return '截至第$week周，你的课程分布在 **$count** 栋不同的教学楼';
+    return '截至第 $week 周，你的课程分布在 **$count** 栋不同的教学楼';
   }
 
   @override
@@ -6677,7 +6677,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statisticsExportFormatSection => '导出格式';
 
   @override
-  String get statisticsExportFormatImage => '长图 (PNG)';
+  String get statisticsExportFormatImage => '长图 （PNG）';
 
   @override
   String get statisticsExportFormatPdf => 'PDF 文档';
@@ -6716,14 +6716,14 @@ class AppLocalizationsZh extends AppLocalizations {
     int startSection,
     int endSection,
   ) {
-    return '$day 第$startSection-$endSection节';
+    return '$day 第 $startSection～$endSection 节';
   }
 
   @override
   String get statisticsAchievementEarlyBirdName => '早八战士';
 
   @override
-  String get statisticsAchievementEarlyBirdDescription => '有 8:00 的课，真棒！';
+  String get statisticsAchievementEarlyBirdDescription => '有 8:00 的课，真棒';
 
   @override
   String get statisticsAchievementPerfectAttendanceName => '全勤达人';
@@ -6786,7 +6786,7 @@ class AppLocalizationsZh extends AppLocalizations {
     String delta,
     String busiestDay,
   ) {
-    return '第$week周 · 共$sections节 · $courses门课\n较上周 $delta 节\n最忙的一天是 $busiestDay';
+    return '第 $week 周 · 共 $sections 节 · $courses 门课\n较上周 $delta 节\n最忙的一天是 $busiestDay';
   }
 
   @override
@@ -7054,17 +7054,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String courseWeekListLabel(String weeks) {
-    return '第$weeks周';
+    return '第 $weeks 周';
   }
 
   @override
   String courseWeekRangeLabel(int startWeek, int endWeek, String mode) {
-    return '第$startWeek-$endWeek周$mode';
+    return '第 $startWeek～$endWeek 周$mode';
   }
 
   @override
   String courseWeekSuspendedLabel(String weeks) {
-    return '第$weeks周停课';
+    return '第 $weeks 周停课';
   }
 
   @override
@@ -7451,7 +7451,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String serviceMsgSectionCountBelowUsage(int requiredMaxSection) {
-    return '有课排到第$requiredMaxSection节';
+    return '有课排到第 $requiredMaxSection 节';
   }
 
   @override
@@ -7464,7 +7464,7 @@ class AppLocalizationsZh extends AppLocalizations {
     int endSection,
     String usageType,
   ) {
-    return '节次数量不能小于当前已使用的最大节次（第$requiredMaxSection节），正在使用：$profileName · $courseName（周$dayOfWeek $startSection-$endSection节，$usageType）';
+    return '节次数量不能小于当前已使用的最大节次（第 $requiredMaxSection 节），正在使用：$profileName · $courseName（周 $dayOfWeek 第 $startSection～$endSection 节，$usageType）';
   }
 
   @override
@@ -7549,16 +7549,16 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get serviceMsgWeekdayMustBe1To7 => '星期必须是 1-7';
+  String get serviceMsgWeekdayMustBe1To7 => '星期必须是 1～7';
 
   @override
-  String get serviceMsgCustomWeeksRequired => '周数 不能为空';
+  String get serviceMsgCustomWeeksRequired => '周数不能为空';
 
   @override
-  String get serviceMsgClassWeeksRequired => '上课周 不能为空';
+  String get serviceMsgClassWeeksRequired => '上课周不能为空';
 
   @override
-  String get serviceMsgStartWeekMustBeAtLeast1 => '开始周 必须大于等于 1';
+  String get serviceMsgStartWeekMustBeAtLeast1 => '开始周必须大于等于1';
 
   @override
   String serviceMsgStartWeekExceedsSemester(
@@ -7569,10 +7569,10 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get serviceMsgEndWeekBeforeStartWeek => '结束周 不能小于开始周';
+  String get serviceMsgEndWeekBeforeStartWeek => '结束周不能小于开始周';
 
   @override
-  String get serviceMsgWeeksRangeRequired => '上课周 或 开始周+结束周 必须填写';
+  String get serviceMsgWeeksRangeRequired => '上课周或开始周+结束周必须填写';
 
   @override
   String serviceMsgFieldMustBeAtLeast1(String field) {
@@ -7581,7 +7581,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String serviceMsgFieldCannotBeLessThan(String startField, String endField) {
-    return '$endField 不能小于$startField';
+    return '$endField不能小于 $startField';
   }
 
   @override
@@ -7695,7 +7695,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String serviceMsgAiCourseDayOfWeekInvalid(int index) {
-    return 'courses[$index].dayOfWeek 必须是 1-7';
+    return 'courses[$index].dayOfWeek 必须是 1～7';
   }
 
   @override
@@ -7775,12 +7775,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String serviceMsgUpdateOpenInstallerFailed(String detail) {
-    return '打开安装包失败: $detail';
+    return '打开安装包失败： $detail';
   }
 
   @override
   String serviceMsgUpdateDownloadInstallError(String detail) {
-    return '下载或安装过程中出现错误: $detail';
+    return '下载或安装过程中出现错误： $detail';
   }
 
   @override
@@ -7836,12 +7836,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String serviceMsgWarehouseFetchFailedMirror(int candidatesCount) {
-    return '暂时无法读取适配仓，已尝试 $candidatesCount 个镜像线路均失败，请检查网络，或到「版本更新」里切到其他镜像线路后重试';
+    return '暂时无法读取适配仓，已尝试 $candidatesCount 个镜像线路均失败，请检查网络，或到“版本更新”里切到其他镜像线路后重试';
   }
 
   @override
   String get serviceMsgWarehouseFetchFailedGithub =>
-      '暂时无法读取适配仓，当前正在使用 GitHub 原始线路，请检查网络，或在「版本更新」里切到国内镜像后重试';
+      '暂时无法读取适配仓，当前正在使用 GitHub 原始线路，请检查网络，或在“版本更新”里切到国内镜像后重试';
 
   @override
   String get serviceMsgWarehouseScriptChecksumFailed =>
@@ -7865,7 +7865,7 @@ class AppLocalizationsZh extends AppLocalizations {
     int totalSteps,
     String detail,
   ) {
-    return '第 $stepIndex/$totalSteps 步失败: $detail';
+    return '第 $stepIndex/$totalSteps 步失败： $detail';
   }
 
   @override
@@ -7881,7 +7881,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String serviceMsgMacroElementNotFound(String selector) {
-    return '未找到元素: $selector';
+    return '未找到元素： $selector';
   }
 
   @override
@@ -7902,41 +7902,41 @@ class AppLocalizationsZh extends AppLocalizations {
     int timeoutSeconds,
     String lastError,
   ) {
-    return '$stepLabel 超时（$timeoutSeconds秒）$lastError';
+    return '$stepLabel 超时（$timeoutSeconds 秒）$lastError';
   }
 
   @override
-  String get serviceMsgMacroReplayNavigate => '正在导航...';
+  String get serviceMsgMacroReplayNavigate => '正在导航……';
 
   @override
-  String get serviceMsgMacroReplayFillField => '正在填充表单...';
+  String get serviceMsgMacroReplayFillField => '正在填充表单……';
 
   @override
-  String get serviceMsgMacroReplayClick => '正在点击...';
+  String get serviceMsgMacroReplayClick => '正在点击……';
 
   @override
-  String get serviceMsgMacroReplayWaitUrl => '等待页面跳转...';
+  String get serviceMsgMacroReplayWaitUrl => '等待页面跳转……';
 
   @override
-  String get serviceMsgMacroReplayWaitSelector => '等待页面元素...';
+  String get serviceMsgMacroReplayWaitSelector => '等待页面元素……';
 
   @override
   String get serviceMsgMacroReplayWaitManual => '等待用户操作';
 
   @override
-  String get serviceMsgMacroReplayExecuteScript => '正在执行导入脚本...';
+  String get serviceMsgMacroReplayExecuteScript => '正在执行导入脚本……';
 
   @override
-  String get serviceMsgMacroReplayDelay => '等待中...';
+  String get serviceMsgMacroReplayDelay => '等待中……';
 
   @override
   String serviceMsgMacroReplayFailed(String detail) {
-    return '失败: $detail';
+    return '失败： $detail';
   }
 
   @override
   String serviceMsgMacroReplayPaused(String reason) {
-    return '等待手动操作: $reason';
+    return '等待手动操作： $reason';
   }
 
   @override
@@ -7946,12 +7946,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String serviceMsgStatisticsShareFailed(String detail) {
-    return '分享失败: $detail';
+    return '分享失败： $detail';
   }
 
   @override
   String serviceMsgTimetableShareFailed(String detail) {
-    return '分享失败: $detail';
+    return '分享失败： $detail';
   }
 
   @override
@@ -8001,12 +8001,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String courseWeekCustomDescription(String weeks) {
-    return '第$weeks周';
+    return '第 $weeks 周';
   }
 
   @override
   String courseWeekRangeDescription(int startWeek, int endWeek, String mode) {
-    return '第$startWeek-$endWeek周$mode';
+    return '第 $startWeek～$endWeek 周$mode';
   }
 
   @override
@@ -8017,7 +8017,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String courseWeekSuspensionDescription(String weeks) {
-    return '第$weeks周停课';
+    return '第 $weeks 周停课';
   }
 
   @override
@@ -8025,17 +8025,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String holidayLogMemoryCacheHit(int year, int count) {
-    return '$year年：命中内存缓存（$count 条），后台刷新中…';
+    return '$year 年：命中内存缓存（$count 条），后台刷新中……';
   }
 
   @override
   String holidayLogLocalCacheHit(int year, int count) {
-    return '$year年：命中本地缓存（$count 条），后台刷新中…';
+    return '$year年：命中本地缓存（$count 条），后台刷新中……';
   }
 
   @override
   String holidayLogNoCacheFetching(int year) {
-    return '$year年：无缓存，正在拉取远程数据…';
+    return '$year年：无缓存，正在拉取远程数据……';
   }
 
   @override
@@ -8064,11 +8064,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get holidayLogPrimaryApiFailed => '主 API 失败，尝试备用 API…';
+  String get holidayLogPrimaryApiFailed => '主 API 失败，尝试备用 API……';
 
   @override
   String holidayLogRequesting(String uri) {
-    return '正在请求 $uri …';
+    return '正在请求 $uri ……';
   }
 
   @override
@@ -8088,7 +8088,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String holidayLogPrimaryApiParsing(int count) {
-    return '主 API 返回 $count 条原始数据，正在解析…';
+    return '主 API 返回 $count 条原始数据，正在解析……';
   }
 
   @override
@@ -8104,7 +8104,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String holidayLogFallbackApiParsing(int count) {
-    return '备用 API 返回 $count 条原始数据，正在解析…';
+    return '备用 API 返回 $count 条原始数据，正在解析……';
   }
 
   @override
@@ -8135,40 +8135,40 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String macroReplayStatusFailed(String error) {
-    return '失败: $error';
+    return '失败： $error';
   }
 
   @override
   String macroReplayStatusPaused(String reason) {
-    return '等待手动操作: $reason';
+    return '等待手动操作： $reason';
   }
 
   @override
-  String get macroReplayStepNavigating => '正在导航...';
+  String get macroReplayStepNavigating => '正在导航……';
 
   @override
-  String get macroReplayStepFilling => '正在填充表单...';
+  String get macroReplayStepFilling => '正在填充表单……';
 
   @override
-  String get macroReplayStepClicking => '正在点击...';
+  String get macroReplayStepClicking => '正在点击……';
 
   @override
-  String get macroReplayStepWaitUrl => '等待页面跳转...';
+  String get macroReplayStepWaitUrl => '等待页面跳转……';
 
   @override
-  String get macroReplayStepWaitSelector => '等待页面元素...';
+  String get macroReplayStepWaitSelector => '等待页面元素……';
 
   @override
   String get macroReplayStepWaitManual => '等待用户操作';
 
   @override
-  String get macroReplayStepExecuteScript => '正在执行导入脚本...';
+  String get macroReplayStepExecuteScript => '正在执行导入脚本……';
 
   @override
-  String get macroReplayStepDelay => '等待中...';
+  String get macroReplayStepDelay => '等待中……';
 
   @override
-  String get macroReplayAcceleratedFallbackTip => '快捷路径失败，正在使用完整录制步骤重试…';
+  String get macroReplayAcceleratedFallbackTip => '快捷路径失败，正在使用完整录制步骤重试……';
 
   @override
   String get macroReplayNoSteps => '没有录制的步骤';
@@ -8178,7 +8178,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String macroReplayStepFailed(int current, int total, String error) {
-    return '第 $current/$total 步失败: $error';
+    return '第 $current/$total 步失败： $error';
   }
 
   @override
@@ -8194,7 +8194,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String macroReplayFieldNotFound(String selector) {
-    return '未找到表单字段: $selector';
+    return '未找到表单字段： $selector';
   }
 
   @override
@@ -8202,12 +8202,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String macroReplayClickNotFound(String selector) {
-    return '未找到点击元素: $selector';
+    return '未找到点击元素： $selector';
   }
 
   @override
   String macroReplayWaitUrlPattern(String pattern) {
-    return '等待 URL 匹配: $pattern';
+    return '等待 URL 匹配： $pattern';
   }
 
   @override
@@ -8215,7 +8215,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String macroReplayWaitSelector(String selector) {
-    return '等待元素: $selector';
+    return '等待元素： $selector';
   }
 
   @override
@@ -8453,7 +8453,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseImportScriptFailed => '脚本执行失败';
 
   @override
-  String get courseImportRecordingStatus => '录制中…点击停止完成录制';
+  String get courseImportRecordingStatus => '录制中……点击停止完成录制';
 
   @override
   String get courseImportRecordingStartedTip => '录制已开始，请按正常流程操作教务网站';
@@ -8500,7 +8500,7 @@ class AppLocalizationsZh extends AppLocalizations {
     String location,
     String weekText,
   ) {
-    return '周$weekday 第$startSection-$endSection节  $name  $location  周次：$weekText';
+    return '周 $weekday 第 $startSection～$endSection 节  $name  $location  周次：$weekText';
   }
 
   @override
@@ -8649,7 +8649,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get logMiuiLiveOpenAccessibilitySettingsFailed => '打开无障碍设置失败';
 
   @override
-  String get logMiuiLiveHideFromRecentsFailed => '更新「从最近任务隐藏」失败';
+  String get logMiuiLiveHideFromRecentsFailed => '更新“从最近任务隐藏”失败';
 
   @override
   String get logLiveUpdateStartFailed => '从 Flutter 启动超级岛失败';
@@ -9485,7 +9485,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String locationTimeMatchDeleteMessage(String name) {
-    return '确定删除「$name」？自动匹配的课程将恢复课表默认模板；手动指定模板的课程不受影响。';
+    return '确定删除“$name”？自动匹配的课程将恢复课表默认模板；手动指定模板的课程不受影响。';
   }
 
   @override
@@ -9511,7 +9511,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get locationTimeMatchKeywordsHelp =>
-      '可从课表地点一键识别楼栋，或手动填写关键词（如 A主、A1、A6）。匹配模式建议用「前缀」，更长的关键词优先。';
+      '可从课表地点一键识别楼栋，或手动填写关键词（如 A主、A1、A6）。匹配模式建议用“前缀”，更长的关键词优先。';
 
   @override
   String get locationTimeMatchSelectedKeywords => '已选关键词';
@@ -9554,7 +9554,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String locationTimeMatchKeywordUsedByGroup(String group) {
-    return '关键词已被「$group」使用';
+    return '关键词已被“$group”使用';
   }
 
   @override
@@ -9607,7 +9607,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String locationTimeAutoResolvedByGroup(String group, String scheme) {
-    return '地点组「$group」→ $scheme';
+    return '地点组“$group”→ $scheme';
   }
 
   @override
@@ -9686,7 +9686,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String scheduleDateRuleDeleteMessage(String name) {
-    return '确定删除「$name」？删除后不会自动恢复已套用的作息，需手动调整。';
+    return '确定删除“$name”？删除后不会自动恢复已套用的作息，需手动调整。';
   }
 
   @override
@@ -9846,7 +9846,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get courseCardMaterialMasterOffHint =>
-      '「整体材质」为「实体卡片」时，卡片一律按实体渲染，这里的选择暂不生效';
+      '“整体材质”为“实体卡片”时，卡片一律按实体渲染，这里的选择暂不生效';
 
   @override
   String get frostedGlassModeSolidNotice =>
@@ -9984,11 +9984,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get weekdayInkContrastBodyDark =>
-      '你的信息栏文字颜色在深色壁纸上对比度不足，已自动调亮以免看不清（色系仍按你设置的保留）。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。';
+      '你的信息栏文字颜色在深色壁纸上对比度不足，已自动调亮以免看不清（色系仍按你设置的保留）。可在“课表页面 → 文字颜色”中更换颜色或恢复默认。';
 
   @override
   String get weekdayInkContrastBodyLight =>
-      '你的信息栏文字颜色在浅色壁纸上对比度不足，已自动调暗以免看不清（色系仍按你设置的保留）。可在「课表页面 → 文字颜色」中更换颜色或恢复默认。';
+      '你的信息栏文字颜色在浅色壁纸上对比度不足，已自动调暗以免看不清（色系仍按你设置的保留）。可在“课表页面 → 文字颜色”中更换颜色或恢复默认。';
 
   @override
   String get gotItAction => '知道了';
@@ -10273,7 +10273,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get icsExportButton => '导出并分享';
 
   @override
-  String get icsExportSharing => '准备日历…';
+  String get icsExportSharing => '准备日历……';
 
   @override
   String get icsExportNoProfiles => '暂无可导出的课表';
@@ -10332,7 +10332,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String icsExportSyncCalendarBody(String calendarName) {
-    return '将在系统日历中创建专属日历「$calendarName」，写入当前所选时间范围的全部日程；再次同步会覆盖上次写入的日程。假期中的课程默认不写入，如需保留可关闭「跳过节假日课程」开关。首次同步会请求日历权限。';
+    return '将在系统日历中创建专属日历“$calendarName”，写入当前所选时间范围的全部日程；再次同步会覆盖上次写入的日程。假期中的课程默认不写入，如需保留可关闭“跳过节假日课程”开关。首次同步会请求日历权限。';
   }
 
   @override
@@ -10367,7 +10367,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get icsExportRemoveCalendarBody =>
-      '将从系统日历中删除「轻屿课表」专属日历及其全部日程，你在日历里的其他内容不受影响。之后想再同步，点「同步到系统日历」即可。';
+      '将从系统日历中移除“轻屿课表”专属日历及其全部日程，你在日历里的其他内容不受影响。之后想再同步，点“同步到系统日历”即可。';
 
   @override
   String get icsExportRemoveCalendarConfirm => '移除';
@@ -10552,7 +10552,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get classAlarmCustomOption => '自定义提醒时间…';
+  String get classAlarmCustomOption => '自定义提醒时间……';
 
   @override
   String classAlarmExistingLabel(Object time) {
@@ -10581,7 +10581,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String classAlarmVariableSuffix(String days) {
-    return '另外，$days的第一节课时间在不同周不一致，这些天未创建闹钟。';
+    return '另外，$days 的第一节课时间在不同周不一致，这些天未创建闹钟。';
   }
 
   @override
@@ -10665,7 +10665,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveExpandedDetailHint =>
-      '「进度」只在课中显示；超级岛展开态下「阶段」「状态」已由标题与摘要承载，不会再单独成行；Android 16 且课中带进度条时展开态由系统绘制，本设置不生效';
+      '“进度”只在课中显示；超级岛展开态下“阶段”“状态”已由标题与摘要承载，不会再单独成行；Android 16 且课中带进度条时展开态由系统绘制，本设置不生效';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '拖动排序';
@@ -10742,57 +10742,57 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String liveIslandPreviewTitleBeforeClass(String course) {
-    return '即将上课: $course';
+    return '即将上课： $course';
   }
 
   @override
   String liveIslandPreviewTitleBeforeEnd(String course) {
-    return '下课提醒: $course';
+    return '下课提醒： $course';
   }
 
   @override
   String liveExpandedDetailLineShortName(String value) {
-    return '简称: $value';
+    return '简称： $value';
   }
 
   @override
   String liveExpandedDetailLineProgressNext(String value) {
-    return '下一节点: $value';
+    return '下一节点： $value';
   }
 
   @override
   String liveExpandedDetailLineProgressFinal(String value) {
-    return '整节下课: $value';
+    return '整节下课： $value';
   }
 
   @override
   String liveExpandedDetailLineStatus(String value) {
-    return '状态: $value';
+    return '状态： $value';
   }
 
   @override
   String liveExpandedDetailLineTime(String value) {
-    return '时间: $value';
+    return '时间： $value';
   }
 
   @override
   String liveExpandedDetailLineLocation(String value) {
-    return '地点: $value';
+    return '地点： $value';
   }
 
   @override
   String liveExpandedDetailLineTeacher(String value) {
-    return '教师: $value';
+    return '教师： $value';
   }
 
   @override
   String liveExpandedDetailLineNext(String value) {
-    return '下一节: $value';
+    return '下一节： $value';
   }
 
   @override
   String liveExpandedDetailLineNote(String value) {
-    return '备注: $value';
+    return '备注： $value';
   }
 
   @override
@@ -10935,7 +10935,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherShowPhenomenonTitle => '天气现象';
 
   @override
-  String get weatherShowPhenomenonSubtitle => '如「小雨」「多云」';
+  String get weatherShowPhenomenonSubtitle => '如“小雨”“多云”';
 
   @override
   String get weatherShowTemperatureTitle => '温度';
@@ -10956,7 +10956,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherUseCurrentLocation => '使用当前位置';
 
   @override
-  String get weatherLocating => '正在定位…';
+  String get weatherLocating => '正在定位……';
 
   @override
   String get weatherSectionCurrentLocation => '当前位置';
