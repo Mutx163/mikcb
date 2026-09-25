@@ -145,10 +145,16 @@ abstract final class HyperosBlurredHeader {
   static double contentTopInsetCollapsible(BuildContext context) {
     final safeTop = MediaQuery.paddingOf(context).top;
     // Match expanded layout: action row + large title 1 line + bottom pad,
-    // plus the app-side title→content gap (see largeTitleContentGap).
-    const expandedContentHeight =
+    // plus the app-side title→content gap (see largeTitleContentGap). The
+    // title's height must follow the same system text scale as the real bar;
+    // using the unscaled 32sp estimate makes the first list card overlap the
+    // title on devices with enlarged system text.
+    final scaledLargeTitleHeight = MediaQuery.textScalerOf(context).scale(
+      HyperosMiuixTypography.title1 * 1.2,
+    );
+    final expandedContentHeight =
         HyperosMiuixTopAppBar.collapsedHeight +
-        HyperosMiuixTypography.title1 * 1.2 +
+        scaledLargeTitleHeight +
         HyperosMiuixTopAppBar.largeTitleBottomPadding +
         HyperosMiuixTopAppBar.largeTitleContentGap;
     return safeTop + expandedContentHeight;

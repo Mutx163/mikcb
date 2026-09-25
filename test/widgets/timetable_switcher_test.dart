@@ -224,6 +224,30 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('profile list stays below the title at enlarged text scale', (
+    tester,
+  ) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+    addTearDown(() => tester.platformDispatcher.clearTextScaleFactorTestValue());
+    final provider = await createInitializedTestProvider(tester);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(home: TimetableProfilesScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final titleBar = tester.getRect(find.byType(HyperosCollapsibleTopAppBar));
+    final listCard = tester.getRect(find.byType(HyperosListGroup));
+    expect(
+      listCard.top,
+      greaterThan(titleBar.bottom),
+      reason: '系统字体放大后，列表也不能插进大标题区域',
+    );
+  });
+
   testWidgets('profile actions use transparent dialog rows in frosted sheet', (
     tester,
   ) async {
