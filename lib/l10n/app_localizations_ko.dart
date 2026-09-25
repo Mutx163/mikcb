@@ -7414,7 +7414,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveCountdownTextStyleMinuteSecondCn =>
-      'Minutes and seconds (5m19s)';
+      'Minutes and seconds, Chinese units (5分钟19秒)';
 
   @override
   String get liveCountdownTextStyleMinuteSecondColon => 'mm:ss (05:19)';
@@ -7426,7 +7426,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveCountdownTextStyleMinuteSecondMinSlashS => 'min/s (5min/19s)';
 
   @override
-  String get liveCountdownTextStyleMinuteOnlyCn => 'Minutes only (5 min)';
+  String get liveCountdownTextStyleMinuteOnlyCn =>
+      'Minutes only, Chinese units (5分钟)';
 
   @override
   String get liveCountdownTextStyleMinuteOnlyMin => 'min (5min)';
@@ -7435,7 +7436,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveCountdownTextStyleMinuteOnlySlash => '/min (5/min)';
 
   @override
-  String get liveCountdownTextStyleSecondOnlyCn => 'Seconds only (5 s)';
+  String get liveCountdownTextStyleSecondOnlyCn =>
+      'Seconds only, Chinese units (5秒)';
 
   @override
   String get liveCountdownTextStyleSecondOnlyShort => 's (5s)';
