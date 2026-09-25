@@ -1231,7 +1231,7 @@
       }
     }
   },
-  "timeCorrectionHelp": "如果學校鈴聲比課錶快幾秒，就調成提前；如果鈴聲慢幾秒，就調成延後",
+  "timeCorrectionHelp": "如果學校鈴聲比課表快幾秒，就調成提前；如果鈴聲慢幾秒，就調成延後",
   "duringEndTimeDisplayLabel": "課中 / 下課提醒時間樣式",
   "duringEndTimeDisplayHelp": "控製緊湊提醒裡顯示最近時間還是整段總時間",
   "liveDisplayContentTitle": "顯示內容",
@@ -1948,7 +1948,7 @@
   },
   "homeWidgetCornerRadiusTitle": "卡片圓角",
   "homeWidgetDescriptionTitle": "說明",
-  "homeWidgetDescriptionText": "小組件目前優先展示今日課程，無課狀態會保持完整卡片，不會出現空白；如果你切換課表或修改樣式，桌面小組件也會跟著刷新",
+  "homeWidgetDescriptionText": "小工具目前優先展示今日課程，無課狀態會保持完整卡片，不會出現空白；如果你切換課表或修改樣式，桌面小工具也會跟著刷新",
   "homeWidgetPinRequested": "\"已發起“{label}”添加請求，請在系統彈窗裡確認並放到桌面\"",
   "@homeWidgetPinRequested": {
     "placeholders": {
@@ -2131,7 +2131,7 @@
   },
   "aboutUpdateNowTitle": "立即更新",
   "aboutUpdateNowAndroidSubtitle": "下載慢或失敗時，再用下方進階選項更換線路",
-  "aboutUpdateNowOtherSubtitle": "\"目前平臺會直接開啟下載頁面，不會在應用內安裝\"",
+  "aboutUpdateNowOtherSubtitle": "\"目前平台會直接開啟下載頁面，不會在應用內安裝\"",
   "aboutMirrorDownloadHint": "預設優先國內線路，直接點「立即下載」即可",
   "aboutOriginalDownloadHint": "\"目前會優先使用國際源下載，如果下載慢或打不開，建議先切回“國內下載”\"",
   "aboutUseSystemDownloaderAction": "使用系統下載器下載",
@@ -2966,7 +2966,7 @@
     }
   },
   "feedbackQqGroupTitle": "QQ 群",
-  "feedbackQqGroupSubtitle": "羣號：{id}",
+  "feedbackQqGroupSubtitle": "群號：{id}",
   "@feedbackQqGroupSubtitle": {
     "placeholders": {
       "id": {

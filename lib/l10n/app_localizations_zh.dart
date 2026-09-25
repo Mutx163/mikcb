@@ -17358,7 +17358,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveTestingHolidayOverrideSubtitle =>
-      '開啟後模擬假期狀態，用於測試提醒和小工具是否正確隱藏課程';
+      '開啟後模擬假期狀態，用於測試提醒和小組件是否正確隱藏課程';
 
   @override
   String get liveTestingHolidayModeEnabled => '假期模式已開啟';
@@ -17367,7 +17367,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveTestingHolidayModeDisabled => '假期模式已關閉';
 
   @override
-  String get liveTestingHolidayModeEnabledDesc => '課程提醒和小工具將隱藏所有課程';
+  String get liveTestingHolidayModeEnabledDesc => '課程提醒和小組件將隱藏所有課程';
 
   @override
   String get liveTestingHolidayModeDisabledDesc => '當前使用正常假期數據';
@@ -24480,7 +24480,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get timeCorrectionTitle => '鈴聲時間校正';
 
   @override
-  String get timeCorrectionHelp => '如果學校鈴聲比課錶快幾秒，就調成提前；如果鈴聲慢幾秒，就調成延後';
+  String get timeCorrectionHelp => '如果學校鈴聲比課表快幾秒，就調成提前；如果鈴聲慢幾秒，就調成延後';
 
   @override
   String get duringEndTimeDisplayLabel => '課中 / 下課提醒時間樣式';
@@ -25950,7 +25950,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeWidgetDescriptionText =>
-      '小組件目前優先展示今日課程，無課狀態會保持完整卡片，不會出現空白；如果你切換課表或修改樣式，桌面小組件也會跟著刷新';
+      '小工具目前優先展示今日課程，無課狀態會保持完整卡片，不會出現空白；如果你切換課表或修改樣式，桌面小工具也會跟著刷新';
 
   @override
   String homeWidgetPinRequested(String label) {
@@ -26278,7 +26278,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutUpdateNowAndroidSubtitle => '下載慢或失敗時，再用下方進階選項更換線路';
 
   @override
-  String get aboutUpdateNowOtherSubtitle => '\"目前平臺會直接開啟下載頁面，不會在應用內安裝\"';
+  String get aboutUpdateNowOtherSubtitle => '\"目前平台會直接開啟下載頁面，不會在應用內安裝\"';
 
   @override
   String get aboutMirrorDownloadHint => '預設優先國內線路，直接點「立即下載」即可';
@@ -27436,7 +27436,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String feedbackQqGroupSubtitle(String id) {
-    return '羣號：$id';
+    return '群號：$id';
   }
 
   @override

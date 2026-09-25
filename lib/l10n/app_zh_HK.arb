@@ -3462,10 +3462,10 @@
     }
   },
   "liveTestingHolidayOverride": "假期狀態覆蓋",
-  "liveTestingHolidayOverrideSubtitle": "開啟後模擬假期狀態，用於測試提醒和小工具是否正確隱藏課程",
+  "liveTestingHolidayOverrideSubtitle": "開啟後模擬假期狀態，用於測試提醒和小組件是否正確隱藏課程",
   "liveTestingHolidayModeEnabled": "假期模式已開啟",
   "liveTestingHolidayModeDisabled": "假期模式已關閉",
-  "liveTestingHolidayModeEnabledDesc": "課程提醒和小工具將隱藏所有課程",
+  "liveTestingHolidayModeEnabledDesc": "課程提醒和小組件將隱藏所有課程",
   "liveTestingHolidayModeDisabledDesc": "當前使用正常假期數據",
   "textColorTitle": "文字顏色",
   "textColorSubtitle": "自訂課表各區域嘅文字顏色",
