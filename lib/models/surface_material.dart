@@ -1,5 +1,6 @@
 import 'timetable_settings.dart';
 import '../ui/hyperos/frosted/frosted_appearance.dart' show FrostedGlassMode;
+import '../utils/home_page_background.dart';
 
 /// 某个表面当前生效的材质态。
 ///
@@ -91,13 +92,14 @@ SurfaceMaterial dockSurfaceMaterial(TimetableSettings s) =>
 /// 设备级的 shader 后端与系统降级不在此推导范围内（见文件头）。
 SurfaceMaterial pinnedChromeSurfaceMaterial() => SurfaceMaterial.liquidGlass;
 
-/// 课程卡片。玻璃档依赖背景模糊，模糊总开关关时渲染侧回退实体
-/// （effectiveCourseCardSurfaceStyle 的 gaussianBlurAvailable 口径）。
+/// 课程卡片。玻璃档同时依赖**可用壁纸**与全局模糊管线：渲染侧
+/// （effectiveCourseCardSurfaceStyle 的 hasHomePageBackdrop 口径）在无壁纸时
+/// 一律回落实体，地图这里必须同口径，否则会显示一个屏幕上看不到的档位。
 SurfaceMaterial courseCardSurfaceMaterial(TimetableSettings s) {
   if (s.courseCardSurfaceStyle == CourseCardSurfaceStyle.solid) {
     return SurfaceMaterial.solid;
   }
-  if (!s.frostedBlurEnabled) {
+  if (!s.frostedBlurEnabled || !hasHomePageBackdrop(s)) {
     return SurfaceMaterial.solid;
   }
   return s.courseCardSurfaceStyle == CourseCardSurfaceStyle.liquidGlass

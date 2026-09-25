@@ -10,7 +10,10 @@
 //   四个「作用范围」开关连同它们的分派逻辑一并删除（用户口径：「不允许用户
 //   调整这些的材质」）；设备级 shader / 系统降级不在本推导范围内；
 // - 玻璃坞跟随用户档位：「作用范围 → 底栏」关 → 回磨砂（实体档回实体）；
-// - 子页顶栏永不走高级材质；高斯卡在模糊关时降级实体。
+// - 子页顶栏永不走高级材质；高斯/液态卡在模糊关**或无壁纸**时降级实体
+//   （与 effectiveCourseCardSurfaceStyle 的 hasHomePageBackdrop 口径同源）。
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/surface_material.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
@@ -165,15 +168,35 @@ void main() {
     });
   });
 
-  test('高斯卡在模糊关时降级实体', () {
+  test('玻璃档依赖壁纸：无壁纸降级实体，有壁纸才报高斯/液态', () async {
     final gaussianCard = TimetableSettings.defaults().copyWith(
       courseCardSurfaceStyle: CourseCardSurfaceStyle.gaussian,
     );
+    final liquidCard = TimetableSettings.defaults().copyWith(
+      courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
+    );
+    // 无壁纸：渲染侧真实出图是实体卡，地图必须同口径（就地归真，
+    // 2026-09-25），不许挂着「高斯/液态」招摇。
+    expect(courseCardSurfaceMaterial(gaussianCard), SurfaceMaterial.solid);
+    expect(courseCardSurfaceMaterial(liquidCard), SurfaceMaterial.solid);
+
+    final dir = await Directory.systemTemp.createTemp('surface_material_wall');
+    final file = File('${dir.path}/wall.png')..writeAsBytesSync([1, 2, 3, 4]);
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final withWall = gaussianCard.copyWith(homePageWallpaperPath: file.path);
+    final liquidWithWall = liquidCard.copyWith(
+      homePageWallpaperPath: file.path,
+    );
+
+    expect(courseCardSurfaceMaterial(withWall), SurfaceMaterial.frostGaussian);
     expect(
-        courseCardSurfaceMaterial(gaussianCard), SurfaceMaterial.frostGaussian);
+      courseCardSurfaceMaterial(liquidWithWall),
+      SurfaceMaterial.liquidGlass,
+    );
+    // 模糊总开关关（全局实体档）：有壁纸也照样降级实体。
     expect(
       courseCardSurfaceMaterial(
-        gaussianCard.copyWith(frostedBlurEnabled: false),
+        withWall.copyWith(frostedBlurEnabled: false),
       ),
       SurfaceMaterial.solid,
     );

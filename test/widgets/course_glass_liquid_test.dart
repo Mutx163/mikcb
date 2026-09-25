@@ -110,9 +110,14 @@ void main() {
   });
 
   group('courseCardSurfaceMaterial 的展示标签', () {
-    test('液态玻璃档在模糊开着时报 refractionGlass，而不是 frostGaussian', () {
+    test('液态玻璃档在模糊开着时报 refractionGlass，而不是 frostGaussian', () async {
+      // 玻璃档依赖可用壁纸（2026-09-25 就地归真）：先造一张真图。
+      final dir = await Directory.systemTemp.createTemp('card_label_liquid');
+      final file = File('${dir.path}/wall.png')..writeAsBytesSync([1, 2, 3, 4]);
+      addTearDown(() => dir.deleteSync(recursive: true));
       final settings = TimetableSettings.defaults().copyWith(
         frostedBlurEnabled: true,
+        homePageWallpaperPath: file.path,
         courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
       );
       expect(
@@ -129,9 +134,13 @@ void main() {
       expect(courseCardSurfaceMaterial(settings), SurfaceMaterial.solid);
     });
 
-    test('高斯档不受影响', () {
+    test('高斯档不受影响', () async {
+      final dir = await Directory.systemTemp.createTemp('card_label_gauss');
+      final file = File('${dir.path}/wall.png')..writeAsBytesSync([1, 2, 3, 4]);
+      addTearDown(() => dir.deleteSync(recursive: true));
       final settings = TimetableSettings.defaults().copyWith(
         frostedBlurEnabled: true,
+        homePageWallpaperPath: file.path,
         courseCardSurfaceStyle: CourseCardSurfaceStyle.gaussian,
       );
       expect(
