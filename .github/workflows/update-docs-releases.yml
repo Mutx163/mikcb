@@ -149,7 +149,7 @@ jobs:
             return null;
           }
 
-          function extractHighlights(body) {
+          function extractHighlights(body, limit) {
             const latestSection = extractLatestVersionSection(body);
             const lines = latestSection.split(/\r?\n/);
             const highlights = [];
@@ -181,11 +181,13 @@ jobs:
               }
             }
 
-            return highlights.slice(0, 8);
+            // 完整保存每个版本的全部条目：官网上要逐条展示，不能在这里截断。
+            // 只有「首页卡片 / 摘要预览」这类场景才限量，且由调用方显式传 limit。
+            return typeof limit === "number" && limit > 0 ? highlights.slice(0, limit) : highlights;
           }
 
           function buildDescription(body) {
-            const firstHighlights = extractHighlights(body).slice(0, 3);
+            const firstHighlights = extractHighlights(body, 3);
             if (!firstHighlights.length) {
               return "查看 Release 页面了解更多更新内容。";
             }
