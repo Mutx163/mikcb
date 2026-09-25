@@ -7669,7 +7669,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     required Widget child,
   }) {
     const radius = SoftGlassTokens.barHeight / 2;
-    return switch (material) {
+    final surface = switch (material) {
       _DockMaterial.liquid => LiquidGlassSurface(
         borderRadius: radius,
         // 实时采样（不跟祖先组）：坞层被 [_wrapHomeWithTopMenu] 摆在采样宿主
@@ -7692,6 +7692,14 @@ class _TimetableScreenState extends State<TimetableScreen>
         child: ColoredBox(color: solidFill, child: child),
       ),
     };
+
+    // 与设置页左上角返回圆钮共用同款小浮影。纯白主题且没有壁纸时，药丸与
+    // 页面底色几乎相同；只补轻阴影即可拉开边界，不必改玻璃本身的颜色。
+    return HyperosGlassShadow.wrap(
+      borderRadius: BorderRadius.circular(radius),
+      shadowOverride: HyperosGlassShadow.compactShadow,
+      child: surface,
+    );
   }
 
   /// 磨砂底（高斯药丸 / 圆钮共用）：blur 与 tint 都从 scope 出，与弹窗 frosted

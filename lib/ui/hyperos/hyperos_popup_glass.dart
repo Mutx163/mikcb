@@ -27,7 +27,7 @@ import 'frosted/liquid_glass_degradation.dart';
 import 'liquid/liquid_glass_surface.dart';
 import 'soft_glass/stable_frosted_surface.dart';
 
-/// 弹层与首页常驻圆球**共用**的那层外浮影。
+/// 玻璃面外浮影的共享参数：弹层、首页常驻圆球、设置页返回圆钮与玻璃坞药丸都从这里取。
 ///
 /// 为什么必须只有一处定义：首页那两颗球（「更多」「爱心」）不是按钮自己画的，
 /// 而是"弹窗先画、再交接给常驻球"——上游形变动画的终点就是锚点大小的一块玻璃。
@@ -45,9 +45,20 @@ abstract final class HyperosGlassShadow {
   /// 有阴影，两边同值才谈得上"同源"。
   static const shadow = BoxShadow(color: Color(0x24000000), blurRadius: 20);
 
+  /// 设置页返回圆钮与首页玻璃坞药丸共用的紧凑外浮影。
+  ///
+  /// 数值刻意比 [shadow] 小得多。两处都需要在浅色 / 无壁纸背景上轻轻分开边界，
+  /// 但不能把大范围阴影铺到旁边的模糊区里。
+  static const compactShadow = BoxShadow(
+    color: Color(0x1A000000),
+    offset: Offset(0, 1.5),
+    blurRadius: 4,
+  );
+
   /// 把一块玻璃面按同源参数衬上外浮影。
   ///
   /// - [withShadow] 只在面**自带了同值阴影**时关掉（实底分支），否则会叠两层。
+  /// - [shadowOverride] 指定另一份共享浮影；缺省用 [shadow]。
   /// - [borderRadius] 只用来给浮影定形状 —— 少了它阴影会是个方块。
   /// - [clipBehavior] 必须 `none`，否则 Stack 默认会把外浮影裁掉。
   /// - [opacity] 0..1：二级开合时随 [MiuixGlassEdgeFade] 渐变，阴影深浅与
@@ -57,13 +68,15 @@ abstract final class HyperosGlassShadow {
     required Widget child,
     bool withShadow = true,
     double opacity = 1.0,
+    BoxShadow? shadowOverride,
   }) {
     if (!withShadow || opacity <= 0.01) {
       return child;
     }
     final o = opacity.clamp(0.0, 1.0);
-    final shadowColor = shadow.color.withValues(
-      alpha: shadow.color.a * o,
+    final source = shadowOverride ?? shadow;
+    final shadowColor = source.color.withValues(
+      alpha: source.color.a * o,
     );
     return Stack(
       clipBehavior: Clip.none,
@@ -75,9 +88,9 @@ abstract final class HyperosGlassShadow {
               boxShadow: [
                 BoxShadow(
                   color: shadowColor,
-                  blurRadius: shadow.blurRadius,
-                  spreadRadius: shadow.spreadRadius,
-                  offset: shadow.offset,
+                  blurRadius: source.blurRadius,
+                  spreadRadius: source.spreadRadius,
+                  offset: source.offset,
                 ),
               ],
             ),

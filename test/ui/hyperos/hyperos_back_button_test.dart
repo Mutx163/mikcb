@@ -63,6 +63,7 @@ void main() {
     expect(decoration.shape, BoxShape.circle);
     expect(decoration.boxShadow, hasLength(1));
     final shadow = decoration.boxShadow!.single;
+    expect(shadow, HyperosGlassShadow.compactShadow);
     expect(shadow.blurRadius, 4);
     expect(shadow.offset, const Offset(0, 1.5));
     expect((shadow.color.a * 255).round(), lessThan(0x20), reason: '淡淡的，不是弹窗那颗');

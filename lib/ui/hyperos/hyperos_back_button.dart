@@ -74,7 +74,8 @@ import 'liquid/liquid_glass_surface.dart';
 ///
 /// 圆底在显影时垫一圈**小而淡**的外浮影；停在页顶的光箭头不带。原先实底兜底
 /// 自己带阴影而玻璃分支没有，两支不同源 —— 现在浮影上提到按钮层，玻璃 / 兜底
-/// 两支共用一份。
+/// 两支共用一份。首页玻璃坞药丸也复用 [HyperosGlassShadow.compactShadow]，让纯白
+/// 无壁纸时仍能靠阴影分开玻璃面与页面底色。
 ///
 /// **为什么不用 [HyperosGlassShadow.shadow]**（弹窗 / 首页球那份数值，2026-09-23
 /// 真机否掉）：那颗是给弹窗衬在页面上的，blur 20 外扩太远，而这颗按钮贴着带边 ——
@@ -89,13 +90,6 @@ import 'liquid/liquid_glass_surface.dart';
 /// （上游 `MiuixGlassIconButton` 自己那层阴影同样因此开 `Clip.none`）。
 class HyperosBackButton extends StatelessWidget {
   const HyperosBackButton({super.key, required this.onPressed});
-
-  /// 本按钮专属的浮影：小而淡（见类注释「为什么不用 [HyperosGlassShadow.shadow]」）。
-  static const BoxShadow _shadow = BoxShadow(
-    color: Color(0x1A000000),
-    offset: Offset(0, 1.5),
-    blurRadius: 4,
-  );
 
   final VoidCallback? onPressed;
 
@@ -118,7 +112,7 @@ class HyperosBackButton extends StatelessWidget {
               key: ValueKey('hyperos-back-button-shadow'),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                boxShadow: [_shadow],
+                boxShadow: [HyperosGlassShadow.compactShadow],
               ),
             ),
           ),
@@ -137,7 +131,7 @@ class HyperosBackButton extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: HyperosColors.surfaceContainer(fallbackContext),
-                    // 浮影不再在这里画：按钮层统一垫（见 [HyperosGlassShadow]），
+                    // 浮影不再在这里画：按钮层统一垫（见 [HyperosGlassShadow.compactShadow]），
                     // 两支各画一份会叠成双层影。
                   ),
                   child: const SizedBox.expand(),

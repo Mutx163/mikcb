@@ -94,6 +94,30 @@ void main() {
     );
   });
 
+  testWidgets('玻璃坞药丸与设置页返回圆钮共用小浮影', (tester) async {
+    await pumpDockApp(tester, HomeNavigationForm.glassDock);
+
+    final shadowFinder = find.descendant(
+      of: find.byType(SoftGlassTabBar),
+      matching: find.byWidgetPredicate((widget) {
+        if (widget is! DecoratedBox || widget.decoration is! BoxDecoration) {
+          return false;
+        }
+        final shadows = (widget.decoration as BoxDecoration).boxShadow;
+        return shadows?.contains(HyperosGlassShadow.compactShadow) ?? false;
+      }),
+    );
+
+    expect(shadowFinder, findsOneWidget);
+    final decoration =
+        tester.widget<DecoratedBox>(shadowFinder).decoration as BoxDecoration;
+    expect(
+      decoration.borderRadius,
+      BorderRadius.circular(SoftGlassTokens.barHeight / 2),
+      reason: '药丸浮影必须跟药丸同形，不能留下方形边',
+    );
+  });
+
   testWidgets('glass dock overlay layout: timetable reaches screen bottom',
       (tester) async {
     final pagerBottom = await pumpDockAndWeekPagerBottom(
