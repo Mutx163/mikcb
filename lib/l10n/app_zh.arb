@@ -114,7 +114,7 @@
   "coupleTimetableShareText": "这是我的课表，导入到轻屿课表的情侣课表即可一起查看",
   "coupleTimetableShareSubject": "轻屿课表 · 情侣课表分享",
   "coupleTimetableWeekOffsetTitle": "周次偏移",
-  "coupleTimetableWeekOffsetSubtitle": "查看第 N 周时读取对方第 N+偏移 周，如 +1 表示对方快一周",
+  "coupleTimetableWeekOffsetSubtitle": "查看第 N 周时读取对方第 N+偏移周，如 +1 表示对方快一周",
   "coupleTimetableWeekOffsetZero": "无偏移",
   "coupleTimetableWeekOffsetSigned": "{offset} 周",
   "@coupleTimetableWeekOffsetSigned": {
@@ -783,9 +783,9 @@
   "migrationStep1Title": "打开旧版应用",
   "migrationStep1Subtitle": "进入“数据备份与迁移”页面后，请点“导出全部数据”，不要点“导出当前课表”，也不要先卸载旧版",
   "migrationStep2Title": "保存备份文件",
-  "migrationStep2Subtitle": "旧版导出后会弹出系统分享面板，优先选择“保存到文件”，建议存到 下载 / Download 文件夹",
+  "migrationStep2Subtitle": "旧版导出后会弹出系统分享面板，优先选择“保存到文件”，建议存到“下载 / Download”文件夹",
   "migrationStep3Title": "回到当前版本导入",
-  "migrationStep3Subtitle": "回到新版后，通过系统文件选择器到 下载 / Download 文件夹选中 .mikcb 备份文件即可恢复，确认新版数据正常后，再卸载旧版应用",
+  "migrationStep3Subtitle": "回到新版后，通过系统文件选择器到“下载 / Download”文件夹选中 .mikcb 备份文件即可恢复，确认新版数据正常后，再卸载旧版应用",
   "migrationNoSaveToFilesTitle": "如果没有“保存到文件”",
   "migrationNoSaveToFilesSubtitle": "可以先分享到微信任意一个聊天，然后在微信里点开这个备份文件并保存，保存后通常会出现在 Download / WeiXin 文件夹里，再回到新版选择这个 .mikcb 文件导入",
   "openingOldApp": "正在打开旧版……",
@@ -838,7 +838,7 @@
   "donorSortLargeFirst": "大额优先",
   "donorSortSmallFirst": "小额优先",
   "supportMonthlyGoalLabel": "本月服务器和证书续期进度",
-  "supportGoalRaised": "已筹： {raised} / 目标 {goal}",
+  "supportGoalRaised": "已筹：{raised} / 目标 {goal}",
   "@supportGoalRaised": {
     "placeholders": {
       "raised": {
@@ -924,7 +924,7 @@
   },
   "teacherUnset": "未设置",
   "locationUnset": "未设置",
-  "courseDetailSummary": "{weekDescription}  教师： {teacher}  教室： {location}",
+  "courseDetailSummary": "{weekDescription}  教师：{teacher}  教室：{location}",
   "@courseDetailSummary": {
     "placeholders": {
       "weekDescription": {
@@ -938,7 +938,7 @@
       }
     }
   },
-  "courseDetailSummaryWithConflict": "{weekDescription}  教师： {teacher}  教室： {location}\n冲突课程： {conflictSummary}",
+  "courseDetailSummaryWithConflict": "{weekDescription}  教师：{teacher}  教室：{location}\n冲突课程：{conflictSummary}",
   "@courseDetailSummaryWithConflict": {
     "placeholders": {
       "weekDescription": {
@@ -980,7 +980,7 @@
   "weekdayLabel": "星期",
   "startSectionLabel": "开始节次",
   "endSectionLabel": "结束节次",
-  "timeRangeLabel": "时间： {start} - {end}",
+  "timeRangeLabel": "时间：{start} - {end}",
   "@timeRangeLabel": {
     "placeholders": {
       "start": {
@@ -1658,7 +1658,7 @@
   "sharedInfoHint": "查看共享字段说明",
   "sharedInfoSheetItemCourseName": "课程名称：课程唯一标识，名称相同的多条排课视为同一课程；更改名称将形成独立课程记录",
   "sharedInfoSheetItemShortName": "课程简称：用于超级岛等场景的简短展示，需手动填写，系统不会自动生成，启用“优先显示课程简称”后生效；建议控制在 3 个汉字以内",
-  "sharedInfoSheetItemSharedSync": "共享同步：课程简称、颜色、性质、简介等字段将同步至同名课程的其他排课记录",
+  "sharedInfoSheetItemSharedSync": "共享同步：课程简称、颜色、性质、简介等字段会同步给同名课程的其他排课记录",
   "reuseExistingCourseLabel": "沿用已有课程",
   "reuseExistingCourseHelper": "选一个已有课程，自动带入课程名、教师和其他共享信息",
   "manualInputLabel": "手动填写",
@@ -1732,7 +1732,7 @@
   "weekdayShortFriday": "五",
   "weekdayShortSaturday": "六",
   "weekdayShortSunday": "日",
-  "weekdaySectionRange": "周 {weekday} {startSection}-{endSection} 节",
+  "weekdaySectionRange": "周 {weekday} {startSection}～{endSection} 节",
   "@weekdaySectionRange": {
     "placeholders": {
       "weekday": {
@@ -1746,7 +1746,7 @@
       }
     }
   },
-  "timeSchemeUsageReference": "{profileName} · {courseName}（周 {weekday} {startSection}-{endSection} 节，{usageType}）",
+  "timeSchemeUsageReference": "{profileName} · {courseName}（周 {weekday} {startSection}～{endSection} 节，{usageType}）",
   "@timeSchemeUsageReference": {
     "placeholders": {
       "profileName": {
@@ -1769,7 +1769,7 @@
       }
     }
   },
-  "weekdaySectionSummary": "周 {weekday} {startSection}-{endSection} 节",
+  "weekdaySectionSummary": "周 {weekday} {startSection}～{endSection} 节",
   "@weekdaySectionSummary": {
     "placeholders": {
       "weekday": {
@@ -1975,11 +1975,11 @@
   "guidePrivacySectionTitle": "隐私、第三方 SDK 与免责说明",
   "guidePrivacyParagraph1": "本应用主体功能按本地运行方式设计，课表、时间模板、课程记录和大部分设置默认保存在你的设备本地。",
   "guidePrivacyParagraph2": "只有在你主动使用检查更新、下载更新、导入导出等联网功能，或你勾选同意后初始化友盟相关 SDK 时，应用才会与外部服务发生数据交互。",
-  "guidePrivacyParagraph3": "本应用接入友盟移动统计 SDK、友盟应用性能监控 SDK 以及高级运营分析依赖库。它们的服务用途包括移动统计分析、应用性能监控以及高级运营分析相关能力；只有在你勾选同意后，这些 SDK 才会正式初始化。",
-  "guidePrivacyParagraph4": "按友盟官方说明，这些 SDK 可能处理的信息包括设备信息（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、网络状态与设备标识；高级运营分析依赖库还会处理应用列表和地理位置相关信息。",
+  "guidePrivacyParagraph3": "本应用接入友盟移动统计 SDK、友盟应用性能监控 SDK 以及高级运营分析依赖库。它们的服务用途包括移动统计分析、应用性能监控和高级运营分析。只有在你勾选同意后，这些 SDK 才会正式初始化。",
+  "guidePrivacyParagraph4": "按友盟官方说明，这些 SDK 可能处理的信息包括：设备信息（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、网络状态与设备标识。高级运营分析依赖库还会处理应用列表和地理位置相关信息。",
   "guideRiskTitle": "免责与风险提示",
-  "guideRiskParagraph1": "1. 超级岛、焦点通知、后台提醒和保活效果受外部条件限制，各设备表现无法完全一致。限制条件包括系统版本、机型、厂商策略、权限、自启动和电池策略。",
-  "guideRiskParagraph2": "2. 检查更新、镜像下载、系统下载器、导入导出与分享依赖三类外部条件：网络环境、第三方服务和系统文件能力。若出现失败、限速或文件异常，请以 Release 页面、你自己保存的备份文件和系统提示为准。",
+  "guideRiskParagraph1": "1. 超级岛、焦点通知、后台提醒和保活效果受外部条件限制。各设备表现无法完全一致。限制条件包括系统版本、机型、厂商策略、权限、自启动和电池策略。",
+  "guideRiskParagraph2": "2. 检查更新、镜像下载、系统下载器、导入导出与分享，依赖三类外部条件：网络环境、第三方服务和系统文件能力。若出现失败、限速或文件异常，请以 Release 页面、你自己保存的备份文件和系统提示为准。",
   "guideRiskParagraph3": "3. 在迁移、导入或覆盖数据前，请先自行确认备份文件完整可用，并妥善保管含有课表信息的文件；因用户自行删除、覆盖、分享或保管不当造成的数据问题，需要由用户自行承担相应风险。",
   "guideUmengPrivacyLink": "友盟隐私政策：https://www.umeng.com/page/policy",
   "liveDiagnosticsUnavailable": "当前还没有可查看的应用日志",
@@ -2088,7 +2088,7 @@
   "liveTestingPresetFallbackNote": "（未检测到可测试的真实课程，已改用自检预设课程，不会写入课表）",
   "liveTestingTestCourseNote": "此处显示备注，可以在课程编辑页设置",
   "liveTestingNotificationSent": "已发送上课提醒测试通知，约 8 秒内会进入上课前提醒阶段",
-  "sendFailedWithError": "发送失败： {error}",
+  "sendFailedWithError": "发送失败：{error}",
   "@sendFailedWithError": {
     "placeholders": {
       "error": {
@@ -2102,7 +2102,7 @@
   "homeWidgetQuickAddTitle": "快速添加到桌面",
   "homeWidgetCheckingPinSupport": "正在检查当前桌面是否支持应用内添加小组件……",
   "homeWidgetPinSupported": "支持的话会直接弹出系统添加确认，不是单独的权限弹窗；确认后即可固定到桌面",
-  "homeWidgetPinUnsupported": "当前桌面不支持应用内直接添加时，仍可长按桌面 → 小组件 → 轻屿课表 手动添加",
+  "homeWidgetPinUnsupported": "当前桌面不支持应用内直接添加时，仍可长按桌面 → 小组件 → 轻屿课表，再手动添加",
   "homeWidgetBackgroundStyleLabel": "背景样式",
   "homeWidgetShowLocationTitle": "显示地点",
   "homeWidgetShowLocationSubtitle": "关闭后改显周次与课程数",
@@ -3004,7 +3004,7 @@
   "homeWidgetTargetTodayWide42": "今日横宽 4×2",
   "addCourseSheetTitle": "添加",
   "addCourseSheetSubtitle": "空白课表区域不可点击，请由此添加课程或日程",
-  "courseWeekdaySectionSummary": "{weekDescription} · {weekday} 第 {startSection}-{endSection} 节",
+  "courseWeekdaySectionSummary": "{weekDescription} · {weekday} 第 {startSection}～{endSection} 节",
   "@courseWeekdaySectionSummary": {
     "placeholders": {
       "weekDescription": {
@@ -3021,7 +3021,7 @@
       }
     }
   },
-  "weekdaySectionTimeSummary": "{weekday} 第 {startSection}-{endSection} 节 · {startTime}-{endTime}",
+  "weekdaySectionTimeSummary": "{weekday} 第 {startSection}～{endSection} 节 · {startTime}～{endTime}",
   "@weekdaySectionTimeSummary": {
     "placeholders": {
       "weekday": {
@@ -3041,7 +3041,7 @@
       }
     }
   },
-  "rescheduledToMessage": "已调到第 {week} 周 {weekday} 第 {startSection}-{endSection} 节",
+  "rescheduledToMessage": "已调到第 {week} 周 {weekday} 第 {startSection}～{endSection} 节",
   "@rescheduledToMessage": {
     "placeholders": {
       "week": {
@@ -3634,7 +3634,7 @@
   "customHolidayEmpty": "暂无自定义假期",
   "customHolidayCorrupted": "自定义假期数据读取异常，已暂停读写以防覆盖丢失",
   "customHolidayNameRequired": "请输入假期名称",
-  "customHolidayDateRange": "{start} ~ {end}",
+  "customHolidayDateRange": "{start}～{end}",
   "@customHolidayDateRange": {
     "placeholders": {
       "start": {},
@@ -4360,7 +4360,7 @@
   "serviceMsgTimeSchemeNotFound": "时间模板不存在",
   "serviceMsgTimeSchemeConfigUnavailable": "当前课表时间配置不可用",
   "serviceMsgTimeSchemeNotFoundSelected": "未找到所选时间模板",
-  "serviceMsgTimeSchemeSectionsInsufficient": "所选时间模板节次数不足，无法覆盖第 {startSection}-{endSection} 节",
+  "serviceMsgTimeSchemeSectionsInsufficient": "所选时间模板节次数不足，无法覆盖第 {startSection}～{endSection} 节",
   "@serviceMsgTimeSchemeSectionsInsufficient": {
     "placeholders": {
       "startSection": {
@@ -4506,7 +4506,7 @@
       }
     }
   },
-  "serviceMsgFieldCannotBeLessThan": "{endField}不能小于 {startField}",
+  "serviceMsgFieldCannotBeLessThan": "{endField} 不能小于 {startField}",
   "@serviceMsgFieldCannotBeLessThan": {
     "placeholders": {
       "startField": {
@@ -4517,7 +4517,7 @@
       }
     }
   },
-  "serviceMsgSectionOutOfRange": "节次 {section} 超出时间模板范围（1-{maxSection}）",
+  "serviceMsgSectionOutOfRange": "节次 {section} 超出时间模板范围（1～{maxSection}）",
   "@serviceMsgSectionOutOfRange": {
     "placeholders": {
       "section": {
@@ -4756,7 +4756,7 @@
       }
     }
   },
-  "serviceMsgUpdateOpenInstallerFailed": "打开安装包失败： {detail}",
+  "serviceMsgUpdateOpenInstallerFailed": "打开安装包失败：{detail}",
   "@serviceMsgUpdateOpenInstallerFailed": {
     "placeholders": {
       "detail": {
@@ -4764,7 +4764,7 @@
       }
     }
   },
-  "serviceMsgUpdateDownloadInstallError": "下载或安装过程中出现错误： {detail}",
+  "serviceMsgUpdateDownloadInstallError": "下载或安装过程中出现错误：{detail}",
   "@serviceMsgUpdateDownloadInstallError": {
     "placeholders": {
       "detail": {
@@ -4815,7 +4815,7 @@
   "serviceMsgManualInputPassword": "请手动输入密码；如已自动填充请直接继续",
   "serviceMsgMacroNoSteps": "没有录制的步骤",
   "serviceMsgMacroUserCancelled": "用户取消",
-  "serviceMsgMacroStepFailed": "第 {stepIndex}/{totalSteps} 步失败： {detail}",
+  "serviceMsgMacroStepFailed": "第 {stepIndex}/{totalSteps} 步失败：{detail}",
   "@serviceMsgMacroStepFailed": {
     "placeholders": {
       "stepIndex": {
@@ -4839,7 +4839,7 @@
     }
   },
   "serviceMsgMacroFillSelectorEmpty": "填充字段的选择器为空",
-  "serviceMsgMacroElementNotFound": "未找到元素： {selector}",
+  "serviceMsgMacroElementNotFound": "未找到元素：{selector}",
   "@serviceMsgMacroElementNotFound": {
     "placeholders": {
       "selector": {
@@ -4873,7 +4873,7 @@
   "serviceMsgMacroReplayWaitManual": "等待用户操作",
   "serviceMsgMacroReplayExecuteScript": "正在执行导入脚本……",
   "serviceMsgMacroReplayDelay": "等待中……",
-  "serviceMsgMacroReplayFailed": "失败： {detail}",
+  "serviceMsgMacroReplayFailed": "失败：{detail}",
   "@serviceMsgMacroReplayFailed": {
     "placeholders": {
       "detail": {
@@ -4881,7 +4881,7 @@
       }
     }
   },
-  "serviceMsgMacroReplayPaused": "等待手动操作： {reason}",
+  "serviceMsgMacroReplayPaused": "等待手动操作：{reason}",
   "@serviceMsgMacroReplayPaused": {
     "placeholders": {
       "reason": {
@@ -4897,7 +4897,7 @@
       }
     }
   },
-  "serviceMsgStatisticsShareFailed": "分享失败： {detail}",
+  "serviceMsgStatisticsShareFailed": "分享失败：{detail}",
   "@serviceMsgStatisticsShareFailed": {
     "placeholders": {
       "detail": {
@@ -4905,7 +4905,7 @@
       }
     }
   },
-  "serviceMsgTimetableShareFailed": "分享失败： {detail}",
+  "serviceMsgTimetableShareFailed": "分享失败：{detail}",
   "@serviceMsgTimetableShareFailed": {
     "placeholders": {
       "detail": {
@@ -4978,7 +4978,7 @@
       }
     }
   },
-  "holidayLogLocalCacheHit": "{year}年：命中本地缓存（{count} 条），后台刷新中……",
+  "holidayLogLocalCacheHit": "{year} 年：命中本地缓存（{count} 条），后台刷新中……",
   "@holidayLogLocalCacheHit": {
     "placeholders": {
       "year": {
@@ -4989,7 +4989,7 @@
       }
     }
   },
-  "holidayLogNoCacheFetching": "{year}年：无缓存，正在拉取远程数据……",
+  "holidayLogNoCacheFetching": "{year} 年：无缓存，正在拉取远程数据……",
   "@holidayLogNoCacheFetching": {
     "placeholders": {
       "year": {
@@ -4997,7 +4997,7 @@
       }
     }
   },
-  "holidayLogRemoteSuccess": "{year}年：远程拉取成功（{count} 条），已缓存",
+  "holidayLogRemoteSuccess": "{year} 年：远程拉取成功（{count} 条），已缓存",
   "@holidayLogRemoteSuccess": {
     "placeholders": {
       "year": {
@@ -5008,7 +5008,7 @@
       }
     }
   },
-  "holidayLogRemoteFailedBuiltin": "{year}年：远程拉取失败，使用内置资产兜底",
+  "holidayLogRemoteFailedBuiltin": "{year} 年：远程拉取失败，使用内置资产兜底",
   "@holidayLogRemoteFailedBuiltin": {
     "placeholders": {
       "year": {
@@ -5016,7 +5016,7 @@
       }
     }
   },
-  "holidayLogBuiltinLoaded": "{year}年：加载内置资产（{count} 条）",
+  "holidayLogBuiltinLoaded": "{year} 年：加载内置资产（{count} 条）",
   "@holidayLogBuiltinLoaded": {
     "placeholders": {
       "year": {
@@ -5027,7 +5027,7 @@
       }
     }
   },
-  "holidayLogBackgroundSuccess": "{year}年：后台更新成功（{count} 条），已覆盖缓存",
+  "holidayLogBackgroundSuccess": "{year} 年：后台更新成功（{count} 条），已覆盖缓存",
   "@holidayLogBackgroundSuccess": {
     "placeholders": {
       "year": {
@@ -5038,7 +5038,7 @@
       }
     }
   },
-  "holidayLogBackgroundNoData": "{year}年：后台更新未获取到新数据",
+  "holidayLogBackgroundNoData": "{year} 年：后台更新未获取到新数据",
   "@holidayLogBackgroundNoData": {
     "placeholders": {
       "year": {
@@ -5120,7 +5120,7 @@
   "holidayNameQingming": "清明节",
   "holidayNameDragonBoat": "端午节",
   "holidayNameMidAutumn": "中秋节",
-  "macroReplayStatusFailed": "失败： {error}",
+  "macroReplayStatusFailed": "失败：{error}",
   "@macroReplayStatusFailed": {
     "placeholders": {
       "error": {
@@ -5128,7 +5128,7 @@
       }
     }
   },
-  "macroReplayStatusPaused": "等待手动操作： {reason}",
+  "macroReplayStatusPaused": "等待手动操作：{reason}",
   "@macroReplayStatusPaused": {
     "placeholders": {
       "reason": {
@@ -5147,7 +5147,7 @@
   "macroReplayAcceleratedFallbackTip": "快捷路径失败，正在使用完整录制步骤重试……",
   "macroReplayNoSteps": "没有录制的步骤",
   "macroReplayUserCancelled": "用户取消",
-  "macroReplayStepFailed": "第 {current}/{total} 步失败： {error}",
+  "macroReplayStepFailed": "第 {current}/{total} 步失败：{error}",
   "@macroReplayStepFailed": {
     "placeholders": {
       "current": {
@@ -5171,7 +5171,7 @@
     }
   },
   "macroReplayEmptyFillSelector": "填充字段的选择器为空",
-  "macroReplayFieldNotFound": "未找到表单字段： {selector}",
+  "macroReplayFieldNotFound": "未找到表单字段：{selector}",
   "@macroReplayFieldNotFound": {
     "placeholders": {
       "selector": {
@@ -5180,7 +5180,7 @@
     }
   },
   "macroReplayEmptyClickSelector": "点击元素的选择器为空",
-  "macroReplayClickNotFound": "未找到点击元素： {selector}",
+  "macroReplayClickNotFound": "未找到点击元素：{selector}",
   "@macroReplayClickNotFound": {
     "placeholders": {
       "selector": {
@@ -5188,7 +5188,7 @@
       }
     }
   },
-  "macroReplayWaitUrlPattern": "等待 URL 匹配： {pattern}",
+  "macroReplayWaitUrlPattern": "等待 URL 匹配：{pattern}",
   "@macroReplayWaitUrlPattern": {
     "placeholders": {
       "pattern": {
@@ -5197,7 +5197,7 @@
     }
   },
   "macroReplayEmptyWaitSelector": "等待元素的选择器为空",
-  "macroReplayWaitSelector": "等待元素： {selector}",
+  "macroReplayWaitSelector": "等待元素：{selector}",
   "@macroReplayWaitSelector": {
     "placeholders": {
       "selector": {
@@ -5962,7 +5962,7 @@
   "scheduleDateRuleBoundScheme": "使用时间模板",
   "scheduleDateRuleEnabled": "启用",
   "scheduleDateRuleActiveToday": "今天在区间内",
-  "scheduleDateRuleRangeSummary": "{start} ~ {end}",
+  "scheduleDateRuleRangeSummary": "{start}～{end}",
   "@scheduleDateRuleRangeSummary": {
     "placeholders": {
       "start": {
@@ -6379,7 +6379,7 @@
   "classAlarmAddedToast": "已交给系统时钟处理",
   "classAlarmLaunchFailedToast": "未找到可处理的时钟应用",
   "classAlarmCourseConfirmTitle": "添加这节课的重复闹钟？",
-  "classAlarmCourseConfirmMessage": "将在系统时钟创建每周{weekday} {time} 的重复闹钟（比上课提前{lead}分钟响铃；上课周次：{weeks}）。假期与非上课周仍会响铃，删除需在系统时钟中完成。",
+  "classAlarmCourseConfirmMessage": "将在系统时钟创建每周 {weekday} {time} 的重复闹钟（比上课提前 {lead} 分钟响铃；上课周次：{weeks}）。假期与非上课周仍会响铃，删除需在系统时钟中完成。",
   "@classAlarmCourseConfirmMessage": {"placeholders":{"weekday":{"type":"String"},"time":{"type":"String"},"lead":{"type":"int"},"weeks":{"type":"String"}}},
   "classAlarmDaySeparator": "、",
   "classAlarmDetailSeparator": "；",
@@ -6416,17 +6416,17 @@
   "liveIslandPreviewSampleTeacher": "张老师",
   "liveIslandPreviewSampleNextClass": "大学物理",
   "liveIslandPreviewSampleNote": "带教材与习题册",
-  "liveIslandPreviewTitleBeforeClass": "即将上课： {course}",
-  "liveIslandPreviewTitleBeforeEnd": "下课提醒： {course}",
-  "liveExpandedDetailLineShortName": "简称： {value}",
-  "liveExpandedDetailLineProgressNext": "下一节点： {value}",
-  "liveExpandedDetailLineProgressFinal": "整节下课： {value}",
-  "liveExpandedDetailLineStatus": "状态： {value}",
-  "liveExpandedDetailLineTime": "时间： {value}",
-  "liveExpandedDetailLineLocation": "地点： {value}",
-  "liveExpandedDetailLineTeacher": "教师： {value}",
-  "liveExpandedDetailLineNext": "下一节： {value}",
-  "liveExpandedDetailLineNote": "备注： {value}",
+  "liveIslandPreviewTitleBeforeClass": "即将上课：{course}",
+  "liveIslandPreviewTitleBeforeEnd": "下课提醒：{course}",
+  "liveExpandedDetailLineShortName": "简称：{value}",
+  "liveExpandedDetailLineProgressNext": "下一节点：{value}",
+  "liveExpandedDetailLineProgressFinal": "整节下课：{value}",
+  "liveExpandedDetailLineStatus": "状态：{value}",
+  "liveExpandedDetailLineTime": "时间：{value}",
+  "liveExpandedDetailLineLocation": "地点：{value}",
+  "liveExpandedDetailLineTeacher": "教师：{value}",
+  "liveExpandedDetailLineNext": "下一节：{value}",
+  "liveExpandedDetailLineNote": "备注：{value}",
   "@liveIslandPreviewTitleBeforeClass": {"placeholders": {"course": {"type": "String"}}},
   "@liveIslandPreviewTitleBeforeEnd": {"placeholders": {"course": {"type": "String"}}},
   "@liveExpandedDetailLineShortName": {"placeholders": {"value": {"type": "String"}}},

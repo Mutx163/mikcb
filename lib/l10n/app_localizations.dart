@@ -623,7 +623,7 @@ abstract class AppLocalizations {
   /// No description provided for @coupleTimetableWeekOffsetSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'查看第 N 周时读取对方第 N+偏移 周，如 +1 表示对方快一周'**
+  /// **'查看第 N 周时读取对方第 N+偏移周，如 +1 表示对方快一周'**
   String get coupleTimetableWeekOffsetSubtitle;
 
   /// No description provided for @coupleTimetableWeekOffsetZero.
@@ -2819,7 +2819,7 @@ abstract class AppLocalizations {
   /// No description provided for @migrationStep2Subtitle.
   ///
   /// In zh, this message translates to:
-  /// **'旧版导出后会弹出系统分享面板，优先选择“保存到文件”，建议存到 下载 / Download 文件夹'**
+  /// **'旧版导出后会弹出系统分享面板，优先选择“保存到文件”，建议存到“下载 / Download”文件夹'**
   String get migrationStep2Subtitle;
 
   /// No description provided for @migrationStep3Title.
@@ -2831,7 +2831,7 @@ abstract class AppLocalizations {
   /// No description provided for @migrationStep3Subtitle.
   ///
   /// In zh, this message translates to:
-  /// **'回到新版后，通过系统文件选择器到 下载 / Download 文件夹选中 .mikcb 备份文件即可恢复，确认新版数据正常后，再卸载旧版应用'**
+  /// **'回到新版后，通过系统文件选择器到“下载 / Download”文件夹选中 .mikcb 备份文件即可恢复，确认新版数据正常后，再卸载旧版应用'**
   String get migrationStep3Subtitle;
 
   /// No description provided for @migrationNoSaveToFilesTitle.
@@ -3065,7 +3065,7 @@ abstract class AppLocalizations {
   /// No description provided for @supportGoalRaised.
   ///
   /// In zh, this message translates to:
-  /// **'已筹： {raised} / 目标 {goal}'**
+  /// **'已筹：{raised} / 目标 {goal}'**
   String supportGoalRaised(String raised, String goal);
 
   /// No description provided for @supportBackerCount.
@@ -3173,7 +3173,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseDetailSummary.
   ///
   /// In zh, this message translates to:
-  /// **'{weekDescription}  教师： {teacher}  教室： {location}'**
+  /// **'{weekDescription}  教师：{teacher}  教室：{location}'**
   String courseDetailSummary(
     String weekDescription,
     String teacher,
@@ -3183,7 +3183,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseDetailSummaryWithConflict.
   ///
   /// In zh, this message translates to:
-  /// **'{weekDescription}  教师： {teacher}  教室： {location}\n冲突课程： {conflictSummary}'**
+  /// **'{weekDescription}  教师：{teacher}  教室：{location}\n冲突课程：{conflictSummary}'**
   String courseDetailSummaryWithConflict(
     String weekDescription,
     String teacher,
@@ -3260,7 +3260,7 @@ abstract class AppLocalizations {
   /// No description provided for @timeRangeLabel.
   ///
   /// In zh, this message translates to:
-  /// **'时间： {start} - {end}'**
+  /// **'时间：{start} - {end}'**
   String timeRangeLabel(String start, String end);
 
   /// No description provided for @locationLabel.
@@ -5545,7 +5545,7 @@ abstract class AppLocalizations {
   /// No description provided for @sharedInfoSheetItemSharedSync.
   ///
   /// In zh, this message translates to:
-  /// **'共享同步：课程简称、颜色、性质、简介等字段将同步至同名课程的其他排课记录'**
+  /// **'共享同步：课程简称、颜色、性质、简介等字段会同步给同名课程的其他排课记录'**
   String get sharedInfoSheetItemSharedSync;
 
   /// No description provided for @reuseExistingCourseLabel.
@@ -5779,13 +5779,13 @@ abstract class AppLocalizations {
   /// No description provided for @weekdaySectionRange.
   ///
   /// In zh, this message translates to:
-  /// **'周 {weekday} {startSection}-{endSection} 节'**
+  /// **'周 {weekday} {startSection}～{endSection} 节'**
   String weekdaySectionRange(String weekday, int startSection, int endSection);
 
   /// No description provided for @timeSchemeUsageReference.
   ///
   /// In zh, this message translates to:
-  /// **'{profileName} · {courseName}（周 {weekday} {startSection}-{endSection} 节，{usageType}）'**
+  /// **'{profileName} · {courseName}（周 {weekday} {startSection}～{endSection} 节，{usageType}）'**
   String timeSchemeUsageReference(
     String profileName,
     String courseName,
@@ -5798,7 +5798,7 @@ abstract class AppLocalizations {
   /// No description provided for @weekdaySectionSummary.
   ///
   /// In zh, this message translates to:
-  /// **'周 {weekday} {startSection}-{endSection} 节'**
+  /// **'周 {weekday} {startSection}～{endSection} 节'**
   String weekdaySectionSummary(
     String weekday,
     int startSection,
@@ -6552,13 +6552,13 @@ abstract class AppLocalizations {
   /// No description provided for @guidePrivacyParagraph3.
   ///
   /// In zh, this message translates to:
-  /// **'本应用接入友盟移动统计 SDK、友盟应用性能监控 SDK 以及高级运营分析依赖库。它们的服务用途包括移动统计分析、应用性能监控以及高级运营分析相关能力；只有在你勾选同意后，这些 SDK 才会正式初始化。'**
+  /// **'本应用接入友盟移动统计 SDK、友盟应用性能监控 SDK 以及高级运营分析依赖库。它们的服务用途包括移动统计分析、应用性能监控和高级运营分析。只有在你勾选同意后，这些 SDK 才会正式初始化。'**
   String get guidePrivacyParagraph3;
 
   /// No description provided for @guidePrivacyParagraph4.
   ///
   /// In zh, this message translates to:
-  /// **'按友盟官方说明，这些 SDK 可能处理的信息包括设备信息（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、网络状态与设备标识；高级运营分析依赖库还会处理应用列表和地理位置相关信息。'**
+  /// **'按友盟官方说明，这些 SDK 可能处理的信息包括：设备信息（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、网络状态与设备标识。高级运营分析依赖库还会处理应用列表和地理位置相关信息。'**
   String get guidePrivacyParagraph4;
 
   /// No description provided for @guideRiskTitle.
@@ -6570,13 +6570,13 @@ abstract class AppLocalizations {
   /// No description provided for @guideRiskParagraph1.
   ///
   /// In zh, this message translates to:
-  /// **'1. 超级岛、焦点通知、后台提醒和保活效果受外部条件限制，各设备表现无法完全一致。限制条件包括系统版本、机型、厂商策略、权限、自启动和电池策略。'**
+  /// **'1. 超级岛、焦点通知、后台提醒和保活效果受外部条件限制。各设备表现无法完全一致。限制条件包括系统版本、机型、厂商策略、权限、自启动和电池策略。'**
   String get guideRiskParagraph1;
 
   /// No description provided for @guideRiskParagraph2.
   ///
   /// In zh, this message translates to:
-  /// **'2. 检查更新、镜像下载、系统下载器、导入导出与分享依赖三类外部条件：网络环境、第三方服务和系统文件能力。若出现失败、限速或文件异常，请以 Release 页面、你自己保存的备份文件和系统提示为准。'**
+  /// **'2. 检查更新、镜像下载、系统下载器、导入导出与分享，依赖三类外部条件：网络环境、第三方服务和系统文件能力。若出现失败、限速或文件异常，请以 Release 页面、你自己保存的备份文件和系统提示为准。'**
   String get guideRiskParagraph2;
 
   /// No description provided for @guideRiskParagraph3.
@@ -7044,7 +7044,7 @@ abstract class AppLocalizations {
   /// No description provided for @sendFailedWithError.
   ///
   /// In zh, this message translates to:
-  /// **'发送失败： {error}'**
+  /// **'发送失败：{error}'**
   String sendFailedWithError(String error);
 
   /// No description provided for @homeWidgetSettingsTitle.
@@ -7086,7 +7086,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetPinUnsupported.
   ///
   /// In zh, this message translates to:
-  /// **'当前桌面不支持应用内直接添加时，仍可长按桌面 → 小组件 → 轻屿课表 手动添加'**
+  /// **'当前桌面不支持应用内直接添加时，仍可长按桌面 → 小组件 → 轻屿课表，再手动添加'**
   String get homeWidgetPinUnsupported;
 
   /// No description provided for @homeWidgetBackgroundStyleLabel.
@@ -9778,7 +9778,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseWeekdaySectionSummary.
   ///
   /// In zh, this message translates to:
-  /// **'{weekDescription} · {weekday} 第 {startSection}-{endSection} 节'**
+  /// **'{weekDescription} · {weekday} 第 {startSection}～{endSection} 节'**
   String courseWeekdaySectionSummary(
     String weekDescription,
     String weekday,
@@ -9789,7 +9789,7 @@ abstract class AppLocalizations {
   /// No description provided for @weekdaySectionTimeSummary.
   ///
   /// In zh, this message translates to:
-  /// **'{weekday} 第 {startSection}-{endSection} 节 · {startTime}-{endTime}'**
+  /// **'{weekday} 第 {startSection}～{endSection} 节 · {startTime}～{endTime}'**
   String weekdaySectionTimeSummary(
     String weekday,
     int startSection,
@@ -9801,7 +9801,7 @@ abstract class AppLocalizations {
   /// No description provided for @rescheduledToMessage.
   ///
   /// In zh, this message translates to:
-  /// **'已调到第 {week} 周 {weekday} 第 {startSection}-{endSection} 节'**
+  /// **'已调到第 {week} 周 {weekday} 第 {startSection}～{endSection} 节'**
   String rescheduledToMessage(
     int week,
     String weekday,
@@ -11372,7 +11372,7 @@ abstract class AppLocalizations {
   /// No description provided for @customHolidayDateRange.
   ///
   /// In zh, this message translates to:
-  /// **'{start} ~ {end}'**
+  /// **'{start}～{end}'**
   String customHolidayDateRange(Object start, Object end);
 
   /// No description provided for @selectTeacherTitle.
@@ -13613,7 +13613,7 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgTimeSchemeSectionsInsufficient.
   ///
   /// In zh, this message translates to:
-  /// **'所选时间模板节次数不足，无法覆盖第 {startSection}-{endSection} 节'**
+  /// **'所选时间模板节次数不足，无法覆盖第 {startSection}～{endSection} 节'**
   String serviceMsgTimeSchemeSectionsInsufficient(
     int startSection,
     int endSection,
@@ -13822,13 +13822,13 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgFieldCannotBeLessThan.
   ///
   /// In zh, this message translates to:
-  /// **'{endField}不能小于 {startField}'**
+  /// **'{endField} 不能小于 {startField}'**
   String serviceMsgFieldCannotBeLessThan(String startField, String endField);
 
   /// No description provided for @serviceMsgSectionOutOfRange.
   ///
   /// In zh, this message translates to:
-  /// **'节次 {section} 超出时间模板范围（1-{maxSection}）'**
+  /// **'节次 {section} 超出时间模板范围（1～{maxSection}）'**
   String serviceMsgSectionOutOfRange(int section, int maxSection);
 
   /// No description provided for @serviceMsgFieldMustBeInteger.
@@ -14094,13 +14094,13 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgUpdateOpenInstallerFailed.
   ///
   /// In zh, this message translates to:
-  /// **'打开安装包失败： {detail}'**
+  /// **'打开安装包失败：{detail}'**
   String serviceMsgUpdateOpenInstallerFailed(String detail);
 
   /// No description provided for @serviceMsgUpdateDownloadInstallError.
   ///
   /// In zh, this message translates to:
-  /// **'下载或安装过程中出现错误： {detail}'**
+  /// **'下载或安装过程中出现错误：{detail}'**
   String serviceMsgUpdateDownloadInstallError(String detail);
 
   /// No description provided for @serviceMsgInvalidUrl.
@@ -14238,7 +14238,7 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgMacroStepFailed.
   ///
   /// In zh, this message translates to:
-  /// **'第 {stepIndex}/{totalSteps} 步失败： {detail}'**
+  /// **'第 {stepIndex}/{totalSteps} 步失败：{detail}'**
   String serviceMsgMacroStepFailed(
     int stepIndex,
     int totalSteps,
@@ -14266,7 +14266,7 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgMacroElementNotFound.
   ///
   /// In zh, this message translates to:
-  /// **'未找到元素： {selector}'**
+  /// **'未找到元素：{selector}'**
   String serviceMsgMacroElementNotFound(String selector);
 
   /// No description provided for @serviceMsgMacroClickSelectorEmpty.
@@ -14354,13 +14354,13 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgMacroReplayFailed.
   ///
   /// In zh, this message translates to:
-  /// **'失败： {detail}'**
+  /// **'失败：{detail}'**
   String serviceMsgMacroReplayFailed(String detail);
 
   /// No description provided for @serviceMsgMacroReplayPaused.
   ///
   /// In zh, this message translates to:
-  /// **'等待手动操作： {reason}'**
+  /// **'等待手动操作：{reason}'**
   String serviceMsgMacroReplayPaused(String reason);
 
   /// No description provided for @serviceMsgSupportDonorsLoadFailed.
@@ -14372,13 +14372,13 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMsgStatisticsShareFailed.
   ///
   /// In zh, this message translates to:
-  /// **'分享失败： {detail}'**
+  /// **'分享失败：{detail}'**
   String serviceMsgStatisticsShareFailed(String detail);
 
   /// No description provided for @serviceMsgTimetableShareFailed.
   ///
   /// In zh, this message translates to:
-  /// **'分享失败： {detail}'**
+  /// **'分享失败：{detail}'**
   String serviceMsgTimetableShareFailed(String detail);
 
   /// No description provided for @serviceMsgAuthFailed.
@@ -14510,43 +14510,43 @@ abstract class AppLocalizations {
   /// No description provided for @holidayLogLocalCacheHit.
   ///
   /// In zh, this message translates to:
-  /// **'{year}年：命中本地缓存（{count} 条），后台刷新中……'**
+  /// **'{year} 年：命中本地缓存（{count} 条），后台刷新中……'**
   String holidayLogLocalCacheHit(int year, int count);
 
   /// No description provided for @holidayLogNoCacheFetching.
   ///
   /// In zh, this message translates to:
-  /// **'{year}年：无缓存，正在拉取远程数据……'**
+  /// **'{year} 年：无缓存，正在拉取远程数据……'**
   String holidayLogNoCacheFetching(int year);
 
   /// No description provided for @holidayLogRemoteSuccess.
   ///
   /// In zh, this message translates to:
-  /// **'{year}年：远程拉取成功（{count} 条），已缓存'**
+  /// **'{year} 年：远程拉取成功（{count} 条），已缓存'**
   String holidayLogRemoteSuccess(int year, int count);
 
   /// No description provided for @holidayLogRemoteFailedBuiltin.
   ///
   /// In zh, this message translates to:
-  /// **'{year}年：远程拉取失败，使用内置资产兜底'**
+  /// **'{year} 年：远程拉取失败，使用内置资产兜底'**
   String holidayLogRemoteFailedBuiltin(int year);
 
   /// No description provided for @holidayLogBuiltinLoaded.
   ///
   /// In zh, this message translates to:
-  /// **'{year}年：加载内置资产（{count} 条）'**
+  /// **'{year} 年：加载内置资产（{count} 条）'**
   String holidayLogBuiltinLoaded(int year, int count);
 
   /// No description provided for @holidayLogBackgroundSuccess.
   ///
   /// In zh, this message translates to:
-  /// **'{year}年：后台更新成功（{count} 条），已覆盖缓存'**
+  /// **'{year} 年：后台更新成功（{count} 条），已覆盖缓存'**
   String holidayLogBackgroundSuccess(int year, int count);
 
   /// No description provided for @holidayLogBackgroundNoData.
   ///
   /// In zh, this message translates to:
-  /// **'{year}年：后台更新未获取到新数据'**
+  /// **'{year} 年：后台更新未获取到新数据'**
   String holidayLogBackgroundNoData(int year);
 
   /// No description provided for @holidayLogPrimaryApiFailed.
@@ -14660,13 +14660,13 @@ abstract class AppLocalizations {
   /// No description provided for @macroReplayStatusFailed.
   ///
   /// In zh, this message translates to:
-  /// **'失败： {error}'**
+  /// **'失败：{error}'**
   String macroReplayStatusFailed(String error);
 
   /// No description provided for @macroReplayStatusPaused.
   ///
   /// In zh, this message translates to:
-  /// **'等待手动操作： {reason}'**
+  /// **'等待手动操作：{reason}'**
   String macroReplayStatusPaused(String reason);
 
   /// No description provided for @macroReplayStepNavigating.
@@ -14738,7 +14738,7 @@ abstract class AppLocalizations {
   /// No description provided for @macroReplayStepFailed.
   ///
   /// In zh, this message translates to:
-  /// **'第 {current}/{total} 步失败： {error}'**
+  /// **'第 {current}/{total} 步失败：{error}'**
   String macroReplayStepFailed(int current, int total, String error);
 
   /// No description provided for @macroReplayEmptyNavigateUrl.
@@ -14762,7 +14762,7 @@ abstract class AppLocalizations {
   /// No description provided for @macroReplayFieldNotFound.
   ///
   /// In zh, this message translates to:
-  /// **'未找到表单字段： {selector}'**
+  /// **'未找到表单字段：{selector}'**
   String macroReplayFieldNotFound(String selector);
 
   /// No description provided for @macroReplayEmptyClickSelector.
@@ -14774,13 +14774,13 @@ abstract class AppLocalizations {
   /// No description provided for @macroReplayClickNotFound.
   ///
   /// In zh, this message translates to:
-  /// **'未找到点击元素： {selector}'**
+  /// **'未找到点击元素：{selector}'**
   String macroReplayClickNotFound(String selector);
 
   /// No description provided for @macroReplayWaitUrlPattern.
   ///
   /// In zh, this message translates to:
-  /// **'等待 URL 匹配： {pattern}'**
+  /// **'等待 URL 匹配：{pattern}'**
   String macroReplayWaitUrlPattern(String pattern);
 
   /// No description provided for @macroReplayEmptyWaitSelector.
@@ -14792,7 +14792,7 @@ abstract class AppLocalizations {
   /// No description provided for @macroReplayWaitSelector.
   ///
   /// In zh, this message translates to:
-  /// **'等待元素： {selector}'**
+  /// **'等待元素：{selector}'**
   String macroReplayWaitSelector(String selector);
 
   /// No description provided for @macroReplayManualActionRequired.
@@ -17482,7 +17482,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleDateRuleRangeSummary.
   ///
   /// In zh, this message translates to:
-  /// **'{start} ~ {end}'**
+  /// **'{start}～{end}'**
   String scheduleDateRuleRangeSummary(String start, String end);
 
   /// No description provided for @scheduleDateRuleMaxReached.
@@ -19378,7 +19378,7 @@ abstract class AppLocalizations {
   /// No description provided for @classAlarmCourseConfirmMessage.
   ///
   /// In zh, this message translates to:
-  /// **'将在系统时钟创建每周{weekday} {time} 的重复闹钟（比上课提前{lead}分钟响铃；上课周次：{weeks}）。假期与非上课周仍会响铃，删除需在系统时钟中完成。'**
+  /// **'将在系统时钟创建每周 {weekday} {time} 的重复闹钟（比上课提前 {lead} 分钟响铃；上课周次：{weeks}）。假期与非上课周仍会响铃，删除需在系统时钟中完成。'**
   String classAlarmCourseConfirmMessage(
     String weekday,
     String time,
@@ -19563,67 +19563,67 @@ abstract class AppLocalizations {
   /// No description provided for @liveIslandPreviewTitleBeforeClass.
   ///
   /// In zh, this message translates to:
-  /// **'即将上课： {course}'**
+  /// **'即将上课：{course}'**
   String liveIslandPreviewTitleBeforeClass(String course);
 
   /// No description provided for @liveIslandPreviewTitleBeforeEnd.
   ///
   /// In zh, this message translates to:
-  /// **'下课提醒： {course}'**
+  /// **'下课提醒：{course}'**
   String liveIslandPreviewTitleBeforeEnd(String course);
 
   /// No description provided for @liveExpandedDetailLineShortName.
   ///
   /// In zh, this message translates to:
-  /// **'简称： {value}'**
+  /// **'简称：{value}'**
   String liveExpandedDetailLineShortName(String value);
 
   /// No description provided for @liveExpandedDetailLineProgressNext.
   ///
   /// In zh, this message translates to:
-  /// **'下一节点： {value}'**
+  /// **'下一节点：{value}'**
   String liveExpandedDetailLineProgressNext(String value);
 
   /// No description provided for @liveExpandedDetailLineProgressFinal.
   ///
   /// In zh, this message translates to:
-  /// **'整节下课： {value}'**
+  /// **'整节下课：{value}'**
   String liveExpandedDetailLineProgressFinal(String value);
 
   /// No description provided for @liveExpandedDetailLineStatus.
   ///
   /// In zh, this message translates to:
-  /// **'状态： {value}'**
+  /// **'状态：{value}'**
   String liveExpandedDetailLineStatus(String value);
 
   /// No description provided for @liveExpandedDetailLineTime.
   ///
   /// In zh, this message translates to:
-  /// **'时间： {value}'**
+  /// **'时间：{value}'**
   String liveExpandedDetailLineTime(String value);
 
   /// No description provided for @liveExpandedDetailLineLocation.
   ///
   /// In zh, this message translates to:
-  /// **'地点： {value}'**
+  /// **'地点：{value}'**
   String liveExpandedDetailLineLocation(String value);
 
   /// No description provided for @liveExpandedDetailLineTeacher.
   ///
   /// In zh, this message translates to:
-  /// **'教师： {value}'**
+  /// **'教师：{value}'**
   String liveExpandedDetailLineTeacher(String value);
 
   /// No description provided for @liveExpandedDetailLineNext.
   ///
   /// In zh, this message translates to:
-  /// **'下一节： {value}'**
+  /// **'下一节：{value}'**
   String liveExpandedDetailLineNext(String value);
 
   /// No description provided for @liveExpandedDetailLineNote.
   ///
   /// In zh, this message translates to:
-  /// **'备注： {value}'**
+  /// **'备注：{value}'**
   String liveExpandedDetailLineNote(String value);
 
   /// 天气行里的温度一项
