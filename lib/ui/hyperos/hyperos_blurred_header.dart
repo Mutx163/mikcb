@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -201,23 +202,23 @@ abstract final class HyperosBlurredHeader {
     return HeaderBlurStyle.inspire;
   }
 
-  /// 子页顶栏的模糊下沿比标题行多画多少（≈ 一个字高）。
+  /// 子页顶栏的模糊下沿**最多**能比标题行多画多少（≈ 一个字高）。
   ///
   /// 用户口径 2026-09-23：「让模糊靠下一点，最底下模糊的边界再往下，超过标题
-  /// 底部一个字空间」。只加在下沿 —— 标题位置不动。
+  /// 底部一个字空间」。只加在下沿 —— 标题位置与正文顶部留白都不动。
   ///
-  /// ⚠️ 这一截是**画在顶栏自身盒子之外**的（见 [InspireHeaderBlur.bottomOverhang]
-  /// ：只把模糊层与衬底层往下撑，布局高度不变），所以正文必须自己给它留位置，
-  /// 否则静止时的第一行会被压在带下（小标题只剩下半截）。留位置的入口是
-  /// [bandBottomOverhangInset]，页面壳把它加进正文顶边距。
+  /// ⚠️ 这是**上限**，实际画多少由 [bandBottomOverhang] 按版面空白封顶：外推是
+  /// **画在顶栏盒子之外**的（见 [InspireHeaderBlur.bottomOverhang]：只把模糊层与
+  /// 衬底层往下撑，布局高度不变），而版面上留给「顶栏底边 → 第一行内容」的空白
+  /// 只有 [HyperosMiuixTopAppBar.largeTitleContentGap]。按 20 画就会盖住静止时的
+  /// 第一行（小标题只剩下上半截，2026-09-25 桌面小组件页「快速添加到桌面」）。
   static const subpageBandBottomOverhang = 20.0;
 
   /// 子页顶栏玻璃带此刻是否真的会往下外推那一截。
   ///
-  /// 判据必须与 [HyperosBlurredHeaderShell] → [HyperosFrostedHeaderShell] 里
-  /// `bottomOverhang: useBlur ? … : 0` 的 `useBlur` **同源**：带画了，正文就得
-  /// 让位；带没画（深色顶栏规范 / 模糊总开关关 / 平台不支持 / 无障碍降级）多留
-  /// 就是一片无谓空白。改这里必须同时看那两处。
+  /// 判据必须与 [HyperosFrostedHeaderShell] 里 `bottomOverhang: useBlur ? … : 0`
+  /// 的 `useBlur` **同源**：带画了才有下沿可谈；带没画（深色顶栏规范 / 模糊总开关
+  /// 关 / 平台不支持 / 无障碍降级）就是页面原样。改这里必须同时看那一处。
   ///
   /// [bandOverhangsOverride] 只给测试用：真机判据里的 [liveBlurSupported] 读的是
   /// `dart:io` 的 `Platform.isAndroid/isIOS`，widget test 跑在宿主平台上（这里是
@@ -230,11 +231,34 @@ abstract final class HyperosBlurredHeader {
       (Theme.of(context).brightness != Brightness.dark &&
           backdropBlurEnabled(context));
 
-  /// 正文为玻璃带外推预留的额外顶边距（逻辑像素）。
+  /// 玻璃带下沿实际往下多画多少（已按版面空白封顶）。
   ///
-  /// 带没画时返回 0，于是深色模式 / 关模糊的机器版面**一点不动**。
-  static double bandBottomOverhangInset(BuildContext context) =>
-      bandOverhangs(context) ? subpageBandBottomOverhang : 0.0;
+  /// 不变式：**带下沿不许越过正文顶边距**（[HyperosBlurredHeaderScope.contentTopInset]
+  /// 那一行的顶边），所以能画多少只能看版面上真留出来的那点空白：
+  ///
+  /// [hasReservedGapBelowHeader] 由页面壳给：只有「大标题折叠页、且顶栏下没有
+  /// 工具条」才为真 —— 那正是唯一在顶栏盒子底边之下还留了
+  /// [HyperosMiuixTopAppBar.largeTitleContentGap] 设计间距的页型。渐进档的模糊与衬底
+  /// 都是**到带底收敛到 0** 的（[InspireHeaderBlur.progressiveExtent] = 1），所以模糊
+  /// 尾巴正好铺满那段间距，贴上去没有硬边，**正文一个像素都不动**。
+  ///
+  /// 其它页型（`collapsibleLargeTitle: false`、顶栏下带工具条）的正文顶边距就是
+  /// 顶栏自身高度，**一点空白都没有**，于是不外推 —— 保持 2026-09-23 之前的样子。
+  ///
+  /// 代价要说明白：这样改完大标题页的模糊尾巴是 8px，而不是当初要的 20px。要拿回
+  /// 20px 只能让正文下移 20px（2026-09-25 上一版的做法，用户口径「空隙太大」已否）。
+  static double bandBottomOverhang(
+    BuildContext context, {
+    required bool hasReservedGapBelowHeader,
+  }) {
+    if (!bandOverhangs(context) || !hasReservedGapBelowHeader) {
+      return 0;
+    }
+    return math.min(
+      subpageBandBottomOverhang,
+      HyperosMiuixTopAppBar.largeTitleContentGap,
+    );
+  }
 
   static double sheetBarrierAlphaOf(BuildContext context) {
     return _appearanceOf(context).sheetBarrierAlpha;
@@ -385,9 +409,20 @@ abstract final class HyperosBlurredHeader {
 
 /// Frosted header chrome: [BackdropFilter] blur + tint + title row.
 class HyperosBlurredHeaderShell extends StatelessWidget {
-  const HyperosBlurredHeaderShell({required this.child, super.key});
+  const HyperosBlurredHeaderShell({
+    required this.child,
+    this.bottomOverhang = 0,
+    super.key,
+  });
 
   final Widget child;
+
+  /// How far the band's blur/tint may paint **below this box** (see
+  /// [HyperosBlurredHeader.bandBottomOverhang] for the cap and why it is not
+  /// the full [HyperosBlurredHeader.subpageBandBottomOverhang]).
+  ///
+  /// Defaults to 0 so a bare usage (showcase) never grows into the body.
+  final double bottomOverhang;
 
   @override
   Widget build(BuildContext context) {
@@ -408,8 +443,7 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
     // on the first under-header frame hitched the small-title join. Frost and
     // route-blur only swap the tint (opaque page color ↔ frosted scrim);
     // route transitions still hide the frost visually via [routeBlur].
-    // 模糊层与下沿外推是同一个开关（[bandOverhangs]）：带画出去多少，正文
-    // 就由 [bandBottomOverhangInset] 让出多少，两边不会各画各的。
+    // 模糊层与下沿外推是同一个开关（[bandOverhangs]）：带不画，下沿也不画。
     final blurCapable = HyperosBlurredHeader.bandOverhangs(context);
     final atRestColor =
         scope?.headerBackgroundColor ??
@@ -428,8 +462,10 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
       // 真正压到带底时就被糊进这条窗口，随后衬底整条切进来，读作
       // 「内容快插到标题栏时顿一下」。见 [InspireHeaderBlur.opaqueAtRest]。
       opaqueAtRest: !underHeader,
-      // 模糊下沿推到标题下方一个字高（用户口径 2026-09-23）。
-      bottomOverhang: HyperosBlurredHeader.subpageBandBottomOverhang,
+      // 模糊下沿往下推多少由调用方按版面空白封顶（2026-09-23 用户口径要的是
+      // 「超过标题底部一个字空间」，但空白只有 largeTitleContentGap那么多；
+      // 硬画 20 会盖住静止时的第一行，见 [bandBottomOverhang]）。
+      bottomOverhang: bottomOverhang,
       child: child,
     );
   }

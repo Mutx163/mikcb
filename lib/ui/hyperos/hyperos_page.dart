@@ -606,7 +606,22 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       }
       return ColoredBox(color: pageBackground, child: header);
     }
-    return HyperosBlurredHeaderShell(child: header);
+    return HyperosBlurredHeaderShell(
+      // 玻璃带下沿往下推多少：按版面真留出来的空白封顶（[bandBottomOverhang]
+      // 的不变式是「带下沿不许越过正文顶边距」）。硬画满
+      // [subpageBandBottomOverhang] 会盖住静止时的第一行 —— 小标题只剩上半截
+      // （2026-09-25 桌面小组件页「快速添加到桌面」）。按版面封顶则正文一个
+      // 像素都不动，「标题 → 第一行」的间距保持原样。
+      bottomOverhang: HyperosBlurredHeader.bandBottomOverhang(
+        context,
+        // 只有大标题折叠页在顶栏盒子底边之下留了 largeTitleContentGap 那段
+        // 间距（见 [bandBottomOverhang]）。带工具条时正文顶边距直接取顶栏实测
+        // 高度，工具条自己就贴在带底下，没有任何空白可让。
+        hasReservedGapBelowHeader:
+            _useCollapsibleTopAppBar && widget.headerExtension == null,
+      ),
+      child: header,
+    );
   }
 
   /// 首帧拆解采样点（临时诊断件）：顶栏那棵子树。
@@ -691,12 +706,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
           children: [
             Padding(
               padding: EdgeInsets.only(
-                top:
-                    MediaQuery.paddingOf(context).top +
-                    44 +
-                    // 同 overlay 布局：玻璃带画到顶栏盒子之外的那一截要在正文
-                    // 顶边距里让出来（见 [_buildPage] 的注释）。
-                    HyperosBlurredHeader.bandBottomOverhangInset(context),
+                top: MediaQuery.paddingOf(context).top + 44,
               ),
               child: _buildBody(
                 pageBackground: pageBackground,
@@ -745,16 +755,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     // out-of-range pixels back to the boundary (correctBy, no notification)
     // — which restarted the spring from 0 every frame and made the whole
     // page thrash. Transform.translate is paint-only: no relayout, no clamp.
-    //
-    // 玻璃带下沿会画到顶栏盒子之外 [HyperosBlurredHeader.subpageBandBottomOverhang]
-    // （2026-09-23 用户口径「模糊边界再往下超过标题底部一个字高」），这一截必须
-    // 在正文顶边距里让出来 —— 否则静止时的第一行正落在带下：小标题被不透明衬底
-    // 盖掉上半截（2026-09-25 桌面小组件页「快速添加到桌面」）。加在这里而不是
-    // 各页自己补间距，是因为带的高度与正文让位必须同源；带没画时本项为 0，
-    // 深色模式 / 关模糊的版面一行不动。
-    final headerInset =
-        _overlayMetrics.overlayContentTopInset(context) +
-        HyperosBlurredHeader.bandBottomOverhangInset(context);
+    final headerInset = _overlayMetrics.overlayContentTopInset(context);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value:
