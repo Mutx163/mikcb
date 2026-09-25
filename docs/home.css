@@ -716,6 +716,11 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
   gap: clamp(20px, 3.4vw, 44px);
   margin: 0;
   padding: 22px 0 0;
+  /* 四格各自是 auto 宽的 grid 单元，标签宽窄不一（「GitHub Stars」比「价格」宽得多）。
+     不居中的话，数字会贴着各自单元的左边沿，四个数字错开成锯齿。
+     text-align 是继承属性，写在容器上即可让标签和数字都在本格内居中，
+     数字正对自己的标签——dt / dd 上不要再写 text-align 把它盖掉。 */
+  text-align: center;
   /* 两条线：亮线 + 紧挨着的黑线，理由同 .marquee */
   border-top: 1px solid var(--line);
   box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.6);
@@ -744,11 +749,11 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
 
 /* ---------- 「求 star」 ---------- */
 
-/* 首屏那个星数：数字可点，右边挂一句「· 求个 star」。
-   后缀直接复用「价格」那格的 .hero-stat-sub（￥0 · 无广告 就是这个写法），
-   所以四格观感一致：都是「小字标签 + 一行大数字」。
-   这里不要给数字加药丸边框或另起一行——那会让这一格比右边三个高一截、
-   粗细也不一样，行的视觉重心就歪了。可点性靠悬停下划线 + 光标提示。 */
+/* 首屏那个星数：数字可点，但和右边三格**长得一模一样**——不加工���边框、
+   不加 ★ 图标、不挂后缀文案，就一个居中的数字。四个标签宽窄不一，
+   任何额外装饰都会把这一格的视觉重量带偏。
+   可点性只靠悬停下划线（外加光标与 aria-label）。
+   「求 star」的字样放在导航栏星数与开源卡片那个金色链接上，不塞进这一排。 */
 .hero-star-link {
   color: inherit;
   text-decoration: none;
@@ -756,13 +761,9 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
 }
 
 .hero-star-link:hover {
+  color: #f0b429;
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-
-/* 悬停时把「求个 star」点亮成星色，提示这里能点 */
-.hero-star-link:hover .hero-stat-sub {
-  color: #f0b429;
 }
 
 /* 导航栏：GitHub 图标右边挂星数，跟 trigger.dev 一个路子。
