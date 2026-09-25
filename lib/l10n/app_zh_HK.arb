@@ -900,7 +900,7 @@
       }
     }
   },
-  "saturationLabel": "饱和度 {value}%",
+  "saturationLabel": "飽和度 {value}%",
   "@saturationLabel": {
     "placeholders": {
       "value": {
@@ -1203,7 +1203,7 @@
   "duringClassStatusNotificationPersistent": "上課後持續顯示普通課中通知，到下課提醒前再切換",
   "enableIslandDisplayTitle": "展示超級島",
   "enableIslandDisplaySubtitle": "關閉後不會再嘗試觸發系統超級島",
-  "liveTimeThresholdTitle": "時間阈值",
+  "liveTimeThresholdTitle": "時間閾值",
   "liveTimeThresholdSubtitle": "控製上課前彈出、下課前多久切到超級島 / 重點提醒，以及最後秒級倒計時",
   "beforeClassPopupLabel": "上課前彈出時間",
   "beforeClassMinutesOption": "{minutes} 分鐘",
@@ -1214,7 +1214,7 @@
       }
     }
   },
-  "beforeEndSecondsLabel": "下課前秒級提醒阈值",
+  "beforeEndSecondsLabel": "下課前秒級提醒閾值",
   "beforeEndSecondsOption": "{seconds} 秒",
   "@beforeEndSecondsOption": {
     "placeholders": {
@@ -1748,11 +1748,11 @@
   "guideChecklistRequestNotificationTitle": "申請通知權限",
   "guideChecklistRequestNotificationSubtitle": "這是所有提醒的前提",
   "guideChecklistOpenNotificationTitle": "打開通知設定",
-  "guideChecklistOpenNotificationSubtitle": "檢查通知總開關、锁屏展示和實時通知權限",
+  "guideChecklistOpenNotificationSubtitle": "檢查通知總開關、鎖屏展示和實時通知權限",
   "guideChecklistOpenIslandTitle": "打開焦點通知設定",
   "guideChecklistOpenIslandSubtitle": "HyperOS 3.0.300 及以上再檢查 promoted / 超級島通知",
   "guideChecklistOpenAutoStartTitle": "打開自啟動設定",
-  "guideChecklistOpenAutoStartSubtitle": "允許應用開機自啟和後台常驻",
+  "guideChecklistOpenAutoStartSubtitle": "允許應用開機自啟和後台常駐",
   "guideChecklistOpenBatteryTitle": "打開電池策略設定",
   "guideChecklistOpenBatterySubtitle": "建議改成無限制，避免上課提醒被中斷",
   "guideChecklistOpenKeepAliveTitle": "打開後台保活輔助",
@@ -1774,17 +1774,17 @@
   "guideFinalTip1": "1. HyperOS 3.0.300 及以上才支持超級島；如果系統版本不夠，應用仍可正常發普通提醒。",
   "guideFinalTip2": "2. 先在設定頁調整「上課前彈出」和「課中與臨近下課提醒」的閾值。",
   "guideFinalTip3": "3. 完成系統權限設定後，再用測試通知驗證；如果超級島還是偶爾消失，優先檢查自啟動和省電策略。",
-  "guidePrivacyHelperRequireConsent": "你勾選同意後，代表你已阅讀並同意上述友盟相關說明、隱私內容與免責提示",
+  "guidePrivacyHelperRequireConsent": "你勾選同意後，代表你已閱讀並同意上述友盟相關說明、隱私內容與免責提示",
   "guidePrivacyHelperViewOnly": "這裡保留與首次啟動一致的隱私、第三方 SDK 與免責說明，方便你隨時查看；目前頁面不需要再次勾選同意",
   "guidePrivacySectionTitle": "隱私、第三方 SDK 與免責說明",
   "guidePrivacyParagraph1": "本應用主體功能按本地運行方式設計，課表、時間模板、課程記錄和大部分設定預設保存在你的裝置本地。",
   "guidePrivacyParagraph2": "只有在你主動使用檢查更新、下載更新、導入導出等聯網功能，或你勾選同意後初始化友盟相關 SDK 時，應用才會與外部服務發生資料交互。",
   "guidePrivacyParagraph3": "本應用接入友盟移動統計 SDK、友盟應用性能監控 SDK 以及高級運營分析依赖庫。它們的服務用途包括移動統計分析、應用性能監控以及高級運營分析相關能力；只有在你勾選同意後，這些 SDK 才會正式初始化。",
   "guidePrivacyParagraph4": "按友盟官方說明，這些 SDK 可能處理的資訊包括：裝置資訊（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、網路狀態、裝置標識，以及高級運營分析依赖庫涉及的應用列表和地理位置相關資訊。",
-  "guideRiskTitle": "免責與風险提示",
+  "guideRiskTitle": "免責與風險提示",
   "guideRiskParagraph1": "1. 超級島、焦點通知、後台提醒和保活效果依赖系統版本、機型、廠商策略、權限、自啟動、電池策略等外部條件，無法保證所有裝置表現完全一致。",
   "guideRiskParagraph2": "2. 檢查更新、鏡像下載、系統下載器、導入導出與分享等能力依赖網路環境、第三方服務和系統文件能力；若出現失敗、限速或文件異常，請以 Release 頁面、你自己保存的備份文件和系統提示為準。",
-  "guideRiskParagraph3": "3. 在遷移、導入或覆蓋資料前，請先自行確認備份文件完整可用，並妥善保管含有課表資訊的文件；因用戶自行刪除、覆蓋、分享或保管不當造成的資料問題，需要由用戶自行承擔相應風险。",
+  "guideRiskParagraph3": "3. 在遷移、導入或覆蓋資料前，請先自行確認備份文件完整可用，並妥善保管含有課表資訊的文件；因用戶自行刪除、覆蓋、分享或保管不當造成的資料問題，需要由用戶自行承擔相應風險。",
   "guideUmengPrivacyLink": "友盟隱私政策：https://www.umeng.com/page/policy",
   "liveDiagnosticsUnavailable": "目前還没有可查看的超級島診斷日誌",
   "liveDiagnosticsViewerTitle": "超級島診斷日誌",
@@ -4955,7 +4955,7 @@
   "hyperosShowcaseNavRowWithIcon": "帶圖標",
   "hyperosShowcaseNavRowNoIconSubtitle": "無左側彩圖標",
   "hyperosShowcaseNavRowDetails": "詳情",
-  "hyperosShowcaseSectionSwitchRows": "列表行 · 開關 / 危险",
+  "hyperosShowcaseSectionSwitchRows": "列表行 · 開關 / 危險",
   "hyperosShowcaseSwitchRowSubtitle": "帶圖標開關行",
   "hyperosShowcaseSwitchRowPlain": "純文字開關行",
   "hyperosShowcaseSectionChoiceRows": "列表行 · 單選 / 選擇 / 日期",
@@ -5267,7 +5267,7 @@
   "logFieldLiveMiuiIslandExpandedIconMode": "展開圖標模式",
   "logFieldLiveShowBeforeClassMinutes": "課前顯示分鐘數",
   "logFieldLiveClassReminderStartMinutes": "上課提醒開始分鐘",
-  "logFieldLiveEndSecondsCountdownThreshold": "下課秒倒計時阈值",
+  "logFieldLiveEndSecondsCountdownThreshold": "下課秒倒計時閾值",
   "logFieldState": "狀態",
   "logFieldRoute": "路由",
   "logFieldPreviousRoute": "先前路由",
@@ -5746,7 +5746,7 @@
   "materialStateOff": "已關閉",
   "materialStateSolid": "實體",
   "materialStateFrost": "高斯模糊",
-  "frostedGlassModeLabel": "默认材质",
+  "frostedGlassModeLabel": "預設材質",
   "liquidGlassScopePopupTitle": "下拉選擇彈窗",
   "liquidGlassScopePopupSubtitle": "玻璃模式等設定列彈出的小氣泡選單",
   "liquidGlassScopeSelectSheetTitle": "全螢幕選擇面板",
