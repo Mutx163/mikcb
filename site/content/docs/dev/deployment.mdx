@@ -19,9 +19,18 @@ pnpm dev
 
 ## 静态构建
 
+在仓库根目录执行（下面两条等价，任选其一）：
+
 ```bash
+# 方式一：先进目录再构建
 cd site
 pnpm build
+cd ..            # 回到仓库根，下一步的 serve 命令要用
+```
+
+```bash
+# 方式二：直接指定目录，不用 cd
+pnpm --dir site build
 ```
 
 `next.config.mjs` 已开启 `output: 'export'`，构建结果写入 `site/out/`。产物特点：
@@ -30,7 +39,7 @@ pnpm build
 - 全文搜索索引在 `out/api/search/`，浏览器端计算，无需服务端
 - 可直接丢到任意静态托管（Cloudflare Pages、Nginx、GitHub Pages 等）
 
-本地预览导出结果：
+本地预览导出结果（**在仓库根目录执行**，不要留在 `site/` 里，否则会去找 `site/site/out`）：
 
 ```bash
 # 任意静态服务器即可，例如：
