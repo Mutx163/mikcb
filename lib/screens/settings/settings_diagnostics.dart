@@ -118,7 +118,7 @@ class _DiagnosticsScreenState extends State<_DiagnosticsScreen> {
         return;
       }
       if (message != null) {
-        showAppToast(context, message: message);
+        reportSettingsPersistRejected(this, message);
         return;
       }
     } catch (_) {

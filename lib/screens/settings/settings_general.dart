@@ -129,7 +129,7 @@ class _GeneralSettingsScreenState extends State<_GeneralSettingsScreen> {
         return;
       }
       if (message != null) {
-        showAppToast(context, message: message);
+        reportSettingsPersistRejected(this, message);
         setState(() {
           _draft = provider.settings;
         });

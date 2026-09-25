@@ -12,6 +12,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/holiday_log_localizer.dart';
 import 'package:university_timetable/l10n/holiday_name_localizer.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
+import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:university_timetable/l10n/weather_location_failure_localizer.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -133,6 +134,27 @@ void reportSettingsPersistFailure<T extends StatefulWidget>(
     kind: AppToastKind.error,
   );
   resetDraft?.call();
+}
+
+/// 设置保存被底层规则拒绝（不是落盘失败）时的统一提示。
+///
+/// [TimetableProvider.updateTimetableSettings] 除了落盘异常，还会用
+/// `encodeServiceMessage` 返回一串编码过的消息键，例如把每天节数调到低于
+/// 已有课程用到的最大节次时返回 `section_count_below_usage|requiredMaxSection=12`。
+/// 那是给界面翻译用的载荷，不是能直接给人看的文案——漏掉翻译就会把内部代码
+/// 原样弹给用户。
+void reportSettingsPersistRejected<T extends StatefulWidget>(
+  State<T> state,
+  String message,
+) {
+  if (!state.mounted) {
+    return;
+  }
+  final context = state.context;
+  showAppToast(
+    context,
+    message: localizeServiceMessage(AppLocalizations.of(context)!, message),
+  );
 }
 
 /// 八宫格等外部入口直达设置子页的工厂。
@@ -871,7 +893,7 @@ class _SemesterSettingsScreen extends StatelessWidget {
       return;
     }
     if (message != null) {
-      showAppToast(context, message: message);
+      showAppToast(context, message: localizeServiceMessage(l10n, message));
       return;
     }
     showAppLightTip(
@@ -912,7 +934,10 @@ class _SemesterSettingsScreen extends StatelessWidget {
       if (!context.mounted) {
         return;
       }
-      showAppToast(context, message: message);
+      showAppToast(
+        context,
+        message: localizeServiceMessage(AppLocalizations.of(context)!, message),
+      );
       return;
     }
 

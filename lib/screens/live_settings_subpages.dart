@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
+import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -288,7 +289,10 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
     final message = await provider.updateTimetableSettings(next);
     if (!mounted) return;
     if (message != null) {
-      showAppToast(context, message: message);
+      showAppToast(
+        context,
+        message: localizeServiceMessage(AppLocalizations.of(context)!, message),
+      );
       setState(() => _draft = provider.settings);
     }
   }
@@ -959,7 +963,10 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final message = await provider.updateTimetableSettings(next);
     if (!mounted) return;
     if (message != null) {
-      showAppToast(context, message: message);
+      showAppToast(
+        context,
+        message: localizeServiceMessage(AppLocalizations.of(context)!, message),
+      );
       setState(() => _draft = provider.settings);
     }
   }
@@ -1147,7 +1154,10 @@ class _LiveKeepAliveSettingsScreenState
                   );
                   if (!context.mounted) return;
                   if (message != null) {
-                    showAppToast(context, message: message);
+                    showAppToast(
+                      context,
+                      message: localizeServiceMessage(l10n, message),
+                    );
                   }
                   setState(() => _draft = provider.settings);
                 },

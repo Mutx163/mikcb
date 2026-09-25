@@ -1127,7 +1127,10 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return;
     }
     if (message != null) {
-      showAppToast(context, message: message);
+      showAppToast(
+        context,
+        message: localizeServiceMessage(AppLocalizations.of(context)!, message),
+      );
     } else {
       _analytics.logEventLater(
         name: 'update_source_changed',
@@ -1145,7 +1148,10 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return;
     }
     if (message != null) {
-      showAppToast(context, message: message);
+      showAppToast(
+        context,
+        message: localizeServiceMessage(AppLocalizations.of(context)!, message),
+      );
       return;
     }
     _analytics.logEventLater(
@@ -1871,7 +1877,10 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     );
     if (!mounted) return;
     if (message != null) {
-      showAppToast(context, message: message);
+      showAppToast(
+        context,
+        message: localizeServiceMessage(AppLocalizations.of(context)!, message),
+      );
     }
   }
 
@@ -1882,7 +1891,10 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     );
     if (!mounted) return;
     if (message != null) {
-      showAppToast(context, message: message);
+      showAppToast(
+        context,
+        message: localizeServiceMessage(AppLocalizations.of(context)!, message),
+      );
     }
   }
 
@@ -1893,7 +1905,10 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     );
     if (!mounted) return;
     if (message != null) {
-      showAppToast(context, message: message);
+      showAppToast(
+        context,
+        message: localizeServiceMessage(AppLocalizations.of(context)!, message),
+      );
     }
   }
 
@@ -1907,7 +1922,10 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     );
     if (!mounted) return;
     if (message != null) {
-      showAppToast(context, message: message);
+      showAppToast(
+        context,
+        message: localizeServiceMessage(AppLocalizations.of(context)!, message),
+      );
     }
   }
 

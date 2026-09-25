@@ -394,7 +394,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
         return;
       }
       if (message != null) {
-        showAppToast(context, message: message);
+        reportSettingsPersistRejected(this, message);
         setState(() {
           _draft = provider.settings;
         });

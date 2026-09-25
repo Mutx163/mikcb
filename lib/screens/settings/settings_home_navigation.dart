@@ -345,7 +345,7 @@ class _HomeNavigationSettingsScreenState
         return;
       }
       if (message != null) {
-        showAppToast(context, message: message);
+        reportSettingsPersistRejected(this, message);
         setState(() {
           _draft = provider.settings;
         });
