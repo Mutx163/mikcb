@@ -691,7 +691,12 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
           children: [
             Padding(
               padding: EdgeInsets.only(
-                top: MediaQuery.paddingOf(context).top + 44,
+                top:
+                    MediaQuery.paddingOf(context).top +
+                    44 +
+                    // 同 overlay 布局：玻璃带画到顶栏盒子之外的那一截要在正文
+                    // 顶边距里让出来（见 [_buildPage] 的注释）。
+                    HyperosBlurredHeader.bandBottomOverhangInset(context),
               ),
               child: _buildBody(
                 pageBackground: pageBackground,
@@ -740,7 +745,16 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     // out-of-range pixels back to the boundary (correctBy, no notification)
     // — which restarted the spring from 0 every frame and made the whole
     // page thrash. Transform.translate is paint-only: no relayout, no clamp.
-    final headerInset = _overlayMetrics.overlayContentTopInset(context);
+    //
+    // 玻璃带下沿会画到顶栏盒子之外 [HyperosBlurredHeader.subpageBandBottomOverhang]
+    // （2026-09-23 用户口径「模糊边界再往下超过标题底部一个字高」），这一截必须
+    // 在正文顶边距里让出来 —— 否则静止时的第一行正落在带下：小标题被不透明衬底
+    // 盖掉上半截（2026-09-25 桌面小组件页「快速添加到桌面」）。加在这里而不是
+    // 各页自己补间距，是因为带的高度与正文让位必须同源；带没画时本项为 0，
+    // 深色模式 / 关模糊的版面一行不动。
+    final headerInset =
+        _overlayMetrics.overlayContentTopInset(context) +
+        HyperosBlurredHeader.bandBottomOverhangInset(context);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value:

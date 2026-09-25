@@ -204,8 +204,37 @@ abstract final class HyperosBlurredHeader {
   /// 子页顶栏的模糊下沿比标题行多画多少（≈ 一个字高）。
   ///
   /// 用户口径 2026-09-23：「让模糊靠下一点，最底下模糊的边界再往下，超过标题
-  /// 底部一个字空间」。只加在下沿 —— 标题位置与正文顶部留白都不动。
+  /// 底部一个字空间」。只加在下沿 —— 标题位置不动。
+  ///
+  /// ⚠️ 这一截是**画在顶栏自身盒子之外**的（见 [InspireHeaderBlur.bottomOverhang]
+  /// ：只把模糊层与衬底层往下撑，布局高度不变），所以正文必须自己给它留位置，
+  /// 否则静止时的第一行会被压在带下（小标题只剩下半截）。留位置的入口是
+  /// [bandBottomOverhangInset]，页面壳把它加进正文顶边距。
   static const subpageBandBottomOverhang = 20.0;
+
+  /// 子页顶栏玻璃带此刻是否真的会往下外推那一截。
+  ///
+  /// 判据必须与 [HyperosBlurredHeaderShell] → [HyperosFrostedHeaderShell] 里
+  /// `bottomOverhang: useBlur ? … : 0` 的 `useBlur` **同源**：带画了，正文就得
+  /// 让位；带没画（深色顶栏规范 / 模糊总开关关 / 平台不支持 / 无障碍降级）多留
+  /// 就是一片无谓空白。改这里必须同时看那两处。
+  ///
+  /// [bandOverhangsOverride] 只给测试用：真机判据里的 [liveBlurSupported] 读的是
+  /// `dart:io` 的 `Platform.isAndroid/isIOS`，widget test 跑在宿主平台上（这里是
+  /// Windows）恒为 false，没法复现「带真的画出去」那条路。
+  @visibleForTesting
+  static bool? bandOverhangsOverride;
+
+  static bool bandOverhangs(BuildContext context) =>
+      bandOverhangsOverride ??
+      (Theme.of(context).brightness != Brightness.dark &&
+          backdropBlurEnabled(context));
+
+  /// 正文为玻璃带外推预留的额外顶边距（逻辑像素）。
+  ///
+  /// 带没画时返回 0，于是深色模式 / 关模糊的机器版面**一点不动**。
+  static double bandBottomOverhangInset(BuildContext context) =>
+      bandOverhangs(context) ? subpageBandBottomOverhang : 0.0;
 
   static double sheetBarrierAlphaOf(BuildContext context) {
     return _appearanceOf(context).sheetBarrierAlpha;
@@ -374,15 +403,14 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
                 ?.contentUnderHeader ??
             scope?.contentUnderHeader ??
             true;
-    // 顶栏规范：深色模式使用纯不透明深色（不做任何模糊/玻璃）。
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     // Keep the GPU blur layer mounted whenever the platform can frost — not
     // only after content tucks under the band. Mounting Inspire.backdropBlur
     // on the first under-header frame hitched the small-title join. Frost and
     // route-blur only swap the tint (opaque page color ↔ frosted scrim);
     // route transitions still hide the frost visually via [routeBlur].
-    final blurCapable = !isDark &&
-        HyperosBlurredHeader.backdropBlurEnabled(context);
+    // 模糊层与下沿外推是同一个开关（[bandOverhangs]）：带画出去多少，正文
+    // 就由 [bandBottomOverhangInset] 让出多少，两边不会各画各的。
+    final blurCapable = HyperosBlurredHeader.bandOverhangs(context);
     final atRestColor =
         scope?.headerBackgroundColor ??
         HyperosColors.scaffoldBackground(context);
