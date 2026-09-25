@@ -2,6 +2,7 @@ package com.mutx163.qingyu
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -121,5 +122,40 @@ class WidgetHolidayLogicTest {
     fun formatDatePadsYearMonthDay() {
         assertEquals("2026-04-13", widgetFormatDate(2026, 4, 13))
         assertEquals("2026-10-01", widgetFormatDate(2026, 10, 1))
+    }
+
+    @Test
+    fun builtInHolidayKeysResolveToLabels() {
+        // These are the keys Flutter persists; the widget used to render them
+        // verbatim (e.g. "holiday_name:mid_autumn" on Mid-Autumn Festival).
+        assertEquals(WidgetHolidayLabel.NewYear, widgetHolidayLabel("holiday_name:new_year"))
+        assertEquals(WidgetHolidayLabel.LaborDay, widgetHolidayLabel("holiday_name:labor_day"))
+        assertEquals(WidgetHolidayLabel.NationalDay, widgetHolidayLabel("holiday_name:national_day"))
+        assertEquals(WidgetHolidayLabel.SpringFestival, widgetHolidayLabel("holiday_name:spring_festival"))
+        assertEquals(WidgetHolidayLabel.Qingming, widgetHolidayLabel("holiday_name:qingming"))
+        assertEquals(WidgetHolidayLabel.DragonBoat, widgetHolidayLabel("holiday_name:dragon_boat"))
+        assertEquals(WidgetHolidayLabel.MidAutumn, widgetHolidayLabel("holiday_name:mid_autumn"))
+        assertEquals(WidgetHolidayLabel.MakeupWorkday, widgetHolidayLabel("holiday_name:makeup_workday"))
+        assertEquals(WidgetHolidayLabel.Statutory, widgetHolidayLabel("holiday_name:statutory"))
+    }
+
+    @Test
+    fun legacyDisplayNamesResolveToTheSameLabels() {
+        // Older data (and Flutter's own localizer) also accept plain names.
+        assertEquals(WidgetHolidayLabel.MidAutumn, widgetHolidayLabel("中秋节"))
+        assertEquals(WidgetHolidayLabel.NewYear, widgetHolidayLabel("元旦"))
+        assertEquals(WidgetHolidayLabel.MakeupWorkday, widgetHolidayLabel("调休上班"))
+        assertEquals(WidgetHolidayLabel.Statutory, widgetHolidayLabel("Public holiday"))
+        assertEquals(WidgetHolidayLabel.Statutory, widgetHolidayLabel("Holiday"))
+        assertEquals(WidgetHolidayLabel.MidAutumn, widgetHolidayLabel("  holiday_name:mid_autumn  "))
+    }
+
+    @Test
+    fun customHolidayNamesHaveNoLabelSoTheyStayVerbatim() {
+        assertNull(widgetHolidayLabel("学校运动会"))
+        assertNull(widgetHolidayLabel("公司年会"))
+        assertNull(widgetHolidayLabel(""))
+        assertNull(widgetHolidayLabel("   "))
+        assertNull(widgetHolidayLabel(null))
     }
 }

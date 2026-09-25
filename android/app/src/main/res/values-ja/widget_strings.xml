@@ -32,6 +32,15 @@
     <string name="widget_status_exam_ongoing">試験中</string>
 
     <string name="widget_on_holiday">休日中</string>
+    <string name="widget_holiday_new_year">New Year</string>
+    <string name="widget_holiday_labor_day">Labor Day</string>
+    <string name="widget_holiday_national_day">National Day</string>
+    <string name="widget_holiday_spring_festival">Spring Festival</string>
+    <string name="widget_holiday_qingming">Qingming Festival</string>
+    <string name="widget_holiday_dragon_boat">Dragon Boat Festival</string>
+    <string name="widget_holiday_mid_autumn">Mid-Autumn Festival</string>
+    <string name="widget_holiday_makeup_workday">振替出勤</string>
+    <string name="widget_holiday_statutory">祝日</string>
     <string name="widget_today_ended">今日の授業は終了</string>
     <string name="widget_no_courses_today">今日は授業がありません</string>
     <string name="widget_rest_well">ゆっくり休んで</string>

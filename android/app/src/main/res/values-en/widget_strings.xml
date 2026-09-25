@@ -32,6 +32,15 @@
     <string name="widget_status_exam_ongoing">In exam</string>
 
     <string name="widget_on_holiday">On holiday</string>
+    <string name="widget_holiday_new_year">New Year</string>
+    <string name="widget_holiday_labor_day">Labor Day</string>
+    <string name="widget_holiday_national_day">National Day</string>
+    <string name="widget_holiday_spring_festival">Spring Festival</string>
+    <string name="widget_holiday_qingming">Qingming Festival</string>
+    <string name="widget_holiday_dragon_boat">Dragon Boat Festival</string>
+    <string name="widget_holiday_mid_autumn">Mid-Autumn Festival</string>
+    <string name="widget_holiday_makeup_workday">Workday</string>
+    <string name="widget_holiday_statutory">Public holiday</string>
     <string name="widget_today_ended">Classes ended for today</string>
     <string name="widget_no_courses_today">No classes today</string>
     <string name="widget_rest_well">Enjoy your break</string>
