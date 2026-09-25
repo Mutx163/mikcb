@@ -129,6 +129,7 @@ docs/reference/hyperos-blurred-header.md
 .freebuff/
 .agents/
 .codeartsdoer/
+.opencode/
 
 # Python 缓存
 tool/__pycache__/
