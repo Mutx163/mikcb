@@ -399,6 +399,67 @@ void main() {
     expect(cardAlpha(), 1.0, reason: '首页落到卡片上之后，卡片要接管画面');
   });
 
+  testWidgets('缩放转场：落地交接那一帧不许有"暗"凭空出现', (tester) async {
+    // 用户 2026-09-25 反馈：「画面开始缩小，然后缩小结束，最终大小出现的同时，
+    // 暗色闪了一下」。那一帧（`swapPoint` 刚过）有两样东西是"之前完全没有、
+    // 落地那一帧突然有"的暗：① 卡片里 180ms 淡入还没淡完 → 底下两层正从 0%
+    // 跳到约 9% 的暗底透上来；② 卡片自带那圈 40% 浮影跟着卡片阶跃一步到位。
+    // 两条都拆掉：卡片里的图直接画（不淡入），浮影跟着暗底一起长。
+    await pushEditorViaZoom(tester);
+    await tester.pump(const Duration(milliseconds: 16));
+
+    const cardKey = ValueKey('appearance-editor-preview-card');
+    final cardFinder = find.byKey(cardKey, skipOffstage: false);
+
+    // ① 卡片里不许再有 [AnimatedOpacity]：它一淡入，卡片在阶跃出现的那一帧就是
+    // 半透明的，底下的暗底正好透上来。
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.byType(AnimatedOpacity, skipOffstage: false),
+      ),
+      findsNothing,
+      reason: '卡片里的图不许再淡入（半透明那一瞬会把暗底透上来）',
+    );
+
+    // 卡片子树的实际不透明度（祖先里最不透明的那层）。
+    double cardAlpha() => tester
+        .widgetList<Opacity>(
+          find.ancestor(of: cardFinder, matching: find.byType(Opacity, skipOffstage: false)),
+        )
+        .fold<double>(1, (min, o) => math.min(min, o.opacity));
+
+    // ② 浮影不透明度 = 那圈影子的黑有多少。
+    double shadowAlpha() {
+      final decoration =
+          tester.widget<DecoratedBox>(cardFinder).decoration as BoxDecoration;
+      expect(decoration.boxShadow, hasLength(1), reason: '终态就该是一圈浮影');
+      return decoration.boxShadow!.single.color.a;
+    }
+
+    // 逐帧走到卡片出现：卡片一出现，浮影必须还很轻（跟着暗底走），
+    // 而不是一步到位的 40% 黑。
+    var sawCard = false;
+    var shadowWhenCardAppeared = -1.0;
+    for (var i = 0; i < 24; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      if (!sawCard && cardAlpha() > 0) {
+        sawCard = true;
+        shadowWhenCardAppeared = shadowAlpha();
+      }
+    }
+    expect(sawCard, isTrue, reason: '这段里必须真的看到卡片出现，否则用例空转');
+    expect(
+      shadowWhenCardAppeared,
+      lessThan(0.1),
+      reason: '卡片出现的那一帧，浮影不该跟着一步到位（那会在四周凭空多一圈暗晕）',
+    );
+
+    // 落定后恢复到终态那圈影子。
+    await tester.pumpAndSettle();
+    expect(shadowAlpha(), closeTo(0.4, 0.01), reason: '落定后浮影要长满');
+  });
+
   testWidgets('材质面板最多半屏、内容内部滚动（不许盖满屏把预览压掉）', (tester) async {
     // 用户口径 2026-09-20：「材质弹窗最多显示到半屏，不要显示到全屏，然后它可以
     // 内部滚动，不然全屏显示用户都看不到预览内容了」。

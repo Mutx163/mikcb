@@ -52,6 +52,13 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 接管整屏背景，两边只要不是同一个值，接管那一帧就会看到一下轻微提亮/压暗。
   static const _scrimColor = HyperosZoomRoute.backdropColor;
 
+  /// 卡片自带的那圈浮影（终态色，见 [_buildPreviewCard]）。
+  ///
+  /// 出场时按 [HyperosZoomRoute.growT] 缩放不透明度：影子只有在暗底接管之后
+  /// 才看得见，跟着暗底一起长出来才对；跟着卡片"一步到位"会在落点交接
+  /// 那一帧凭空多出一圈暗晕。
+  static const _cardShadowColor = Color(0x66000000);
+
   /// 卡片相对可用区的最大宽度比例（剩下的留白保证「在屏幕中间、不顶边」）。
   ///
   /// 2026-09-20：0.82 → 0.86，配合顶部收成一行、底部圆钮下移 —— 用户口径「把内部
@@ -1391,21 +1398,19 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 烤图按**原生密度 dpr** 出（与玻璃着色器的坐标折算一致，见
   /// [PreviewBakeBoundary] 类注释的警告），这里 `BoxFit.contain` GPU 等比缩进
   /// 卡片 —— 卡片观感与首页渲染结果一致。烤图要等进场转场落定
-  /// （[_routeSettled]），第一张图到位时从暗底**淡入**（转场一结束就换正图，
-  /// 避免转场帧的歪画面闪现）。
+  /// （[_routeSettled]），那之前用首页那张快照顶替（同一张图，落地时逐像素
+  /// 无感）。
+  ///
+  /// ⚠️ 卡片里的图**直接画、不做淡入**，浮影也**跟着暗底一起淡入**（不跟着
+  /// 卡片阶跃）。两处都是同一个原因：用户报的「画面缩到最终大小、预览卡片出现
+  /// 的同时暗色闪了一下」（2026-09-25）。卡片是**阶跃**出现的那一帧，底下
+  /// 两层暗底正从 0% 跳到约 9%：此刻卡片里只要有一点点半透明，底下那片暗就
+  /// 会透上来；而浮影若跟着卡片一步到位，卡片四周还会凭空多出一圈 40% 黑 ——
+  /// 两者都是"落地之前完全没有、落地那一帧突然有"的暗。
   Widget _buildPreviewCard({required double radius}) {
-    return DecoratedBox(
-      // 布局回归钉按这个 key 量卡片的几何：**不要改用 `find.byType(
-      // TimetableScreen)`** —— 烤图方案（见文件头「方案 A」）之后卡片里显示的是
-      // 快照图，而 TimetableScreen 只剩整屏 1:1 的渲染源、被 Positioned.fill
-      // 钉在屏幕顶边，量它等于量渲染源（2026-09-20 修）。
-      key: const ValueKey('appearance-editor-preview-card'),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius),
-        boxShadow: const [
-          BoxShadow(color: Color(0x66000000), blurRadius: 32, spreadRadius: 2),
-        ],
-      ),
+    return ValueListenableBuilder<double>(
+      valueListenable: _zoomProgress,
+      // 内页（图片子树）用 child: 透传：每帧只有最外层那个 [DecoratedBox] 重建。
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
         child: AnimatedBuilder(
@@ -1414,18 +1419,41 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           animation: _previewImageSources,
           builder: (context, _) {
             final image = _previewBake.value ?? hyperosZoomHomeSnapshot.value;
-            return AnimatedOpacity(
-              // 两个图源至少有一个就显示（首张烤图到位前用首页快照顶替）；
-              // 此后重烤换图不再有淡入动画。
-              opacity: image == null ? 0.0 : 1.0,
-              duration: const Duration(milliseconds: 180),
-              child: image == null
-                  ? const SizedBox.expand()
-                  : RawImage(image: image, fit: BoxFit.contain),
-            );
+            // 曾经这里套了 180ms 的 [AnimatedOpacity]（从暗底淡入）。它与外层
+            // 阶跃门叠在一起，正好跨过落点交接那一帧：卡片一出现就是半透明的，
+            // 底下的暗底透上来 = "暗一下"。换自家烤图时两边都非空、透明度本来
+            // 就不会变，去掉它没有任何损失。
+            return image == null
+                ? const SizedBox.expand()
+                : RawImage(image: image, fit: BoxFit.contain);
           },
         ),
       ),
+      builder: (context, progress, child) {
+        final grow = HyperosZoomRoute.growT(progress);
+        return DecoratedBox(
+          // 布局回归钉按这个 key 量卡片的几何：**不要改用 `find.byType(
+          // TimetableScreen)`** —— 烤图方案（见文件头「方案 A」）之后卡片里显示的是
+          // 快照图，而 TimetableScreen 只剩整屏 1:1 的渲染源、被 Positioned.fill
+          // 钉在屏幕顶边，量它等于量渲染源（2026-09-20 修）。
+          key: const ValueKey('appearance-editor-preview-card'),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(radius),
+            boxShadow: grow <= 0
+                ? const <BoxShadow>[]
+                : <BoxShadow>[
+                    BoxShadow(
+                      color: _cardShadowColor.withValues(
+                        alpha: _cardShadowColor.a * grow,
+                      ),
+                      blurRadius: 32,
+                      spreadRadius: 2,
+                    ),
+                  ],
+          ),
+          child: child,
+        );
+      },
     );
   }
 
