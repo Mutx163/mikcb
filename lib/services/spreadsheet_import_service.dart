@@ -318,14 +318,14 @@ class SpreadsheetImportService {
       throw const FormatException('course_name_required');
     }
 
-    final dayOfWeek = _readRequiredInt(row[1], fieldName: '星期');
+    final dayOfWeek = _readRequiredInt(row[1], fieldName: 'weekday');
     if (dayOfWeek < 1 || dayOfWeek > 7) {
       throw const FormatException('weekday_must_be_1_to_7');
     }
 
-    final startSection = _readRequiredInt(row[2], fieldName: '开始节数');
-    final endSection = _readRequiredInt(row[3], fieldName: '结束节数');
-    _validateSections(startSection, endSection, '开始节数', '结束节数');
+    final startSection = _readRequiredInt(row[2], fieldName: 'start_section');
+    final endSection = _readRequiredInt(row[3], fieldName: 'end_section');
+    _validateSections(startSection, endSection, 'start_section', 'end_section');
 
     final teacher = _normalizeOptionalField(row[4]);
     final location = _normalizeOptionalField(row[5]);
@@ -376,29 +376,27 @@ class SpreadsheetImportService {
 
     final dayOfWeek = _readRequiredInt(
       columns.cell(row, '星期', const []),
-      fieldName: '星期',
+      fieldName: 'weekday',
     );
     if (dayOfWeek < 1 || dayOfWeek > 7) {
       throw const FormatException('weekday_must_be_1_to_7');
     }
 
-    final startSectionField = columns.hasColumn('开始节', const [])
-        ? '开始节'
-        : '开始节数';
-    final endSectionField = columns.hasColumn('结束节', const []) ? '结束节' : '结束节数';
+    // 「开始节」「结束节」既是表头匹配键（决定读哪一列），也可能是「开始节数」这类别名。
+    // 报错文案要按语言本地化，所以传给 _readRequiredInt 的是字段代码而不是中文表头。
     final startSection = _readRequiredInt(
       columns.cell(row, '开始节', _startSectionAliases),
-      fieldName: startSectionField,
+      fieldName: 'start_section',
     );
     final endSection = _readRequiredInt(
       columns.cell(row, '结束节', _endSectionAliases),
-      fieldName: endSectionField,
+      fieldName: 'end_section',
     );
     _validateSections(
       startSection,
       endSection,
-      startSectionField,
-      endSectionField,
+      'start_section',
+      'end_section',
     );
 
     final teacher = columns.hasColumn('教师', _teacherAliases)
@@ -434,11 +432,11 @@ class SpreadsheetImportService {
     } else if (hasRangeWeekColumns) {
       startWeek = _readRequiredInt(
         columns.cell(row, '开始周', const []),
-        fieldName: '开始周',
+        fieldName: 'start_week',
       );
       endWeek = _readRequiredInt(
         columns.cell(row, '结束周', const []),
-        fieldName: '结束周',
+        fieldName: 'end_week',
       );
       if (startWeek < 1) {
         throw const FormatException('start_week_must_be_at_least_1');

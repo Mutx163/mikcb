@@ -278,6 +278,44 @@ Course A,Teacher,1,1-2,Room,1-16
     );
   });
 
+  // 报错里的字段名要走本地化，传的必须是字段代码（如 weekday），
+  // 不能是中文表头，否则英文界面会显示「星期 must be an integer」。
+  test('error field names use localizable codes, not Chinese headers', () {
+    const badWeekday = '''
+课程名,星期,开始节,结束节,上课周
+高等数学,不是数字,1,2,1-16
+''';
+    const badSection = '''
+课程名,星期,开始节,结束节,上课周
+高等数学,1,一,2,1-16
+''';
+    const badWeek = '''
+课程名,星期,开始节,结束节,开始周,结束周
+高等数学,1,1,2,不是数字,16
+''';
+
+    List<String> warningsFor(String csv) {
+      final result = service.parseBytes(
+        utf8.encode(csv),
+        fileName: 'courses.csv',
+        settings: settings,
+      );
+      return result.warnings;
+    }
+
+    final weekdayWarnings = warningsFor(badWeekday);
+    expect(weekdayWarnings.join('|'), contains('field=weekday'));
+    expect(weekdayWarnings.join('|'), isNot(contains('星期')));
+
+    final sectionWarnings = warningsFor(badSection);
+    expect(sectionWarnings.join('|'), contains('field=start_section'));
+    expect(sectionWarnings.join('|'), isNot(contains('开始节')));
+
+    final weekWarnings = warningsFor(badWeek);
+    expect(weekWarnings.join('|'), contains('field=start_week'));
+    expect(weekWarnings.join('|'), isNot(contains('开始周')));
+  });
+
   test('prefers odd week when both odd and even columns are true', () {
     const csv = '''
 课程名,星期,开始节,结束节,开始周,结束周,单周,双周
