@@ -40,7 +40,7 @@ AI / 协作者约定见 [.cursor/rules/dart-source-editing.mdc](./.cursor/rules/
 
 ### 本地 AI / 协作者主线交付
 
-对于在本地由 AI 或协作者直接完成的代码、配置、测试和文档任务，完成验证后必须主动将自己的提交合并回本地 `main`，不能把只存在于临时 worktree、detached HEAD 或个人分支中的提交作为最终交付。
+本地由 AI 或协作者完成的代码、配置、测试和文档任务，验证通过后要把自己的提交合并回本地 `main`。只存在于临时 worktree、detached HEAD 或个人分支中的提交，不能算最终交付。
 
 - 合并前检查 `git status --short`、当前分支和 `HEAD`，只处理本次任务自己的提交和文件。
 - 主线中与本次任务无关的未提交改动必须保留，不得使用 `git add .`、强制覆盖或清理命令。

@@ -3,7 +3,7 @@
 > 建立日期：2026-09-12 ｜ 依据：微软 WSL 官方文档《跨 Windows 和 Linux 文件系统工作》+ 本机实测
 > 适用：Windows 侧 Cursor、WSL 侧各 Agent（DSH / WorkBuddy 等）
 >
-> 本文是**仓库内可版本化的**规范正文。`AGENTS.md` 里同名章节是它的"常驻摘要"（`AGENTS.md` 被 `.gitignore` 有意排除，仅本地生效），两者冲突时以本文为准。
+> 本文是**仓库内可版本化的**规范正文。`AGENTS.md` 里同名章节是它的“常驻摘要”（`AGENTS.md` 被 `.gitignore` 有意排除，仅本地生效），两者冲突时以本文为准。
 
 ---
 
@@ -69,7 +69,7 @@
 | `git status` | 0.352 s | 0.004 s | ~88× |
 | 删 + `git checkout` 400 文件 | 3.530 s | 0.016 s | ~220× |
 
-> 注意：微软文档里「`\\wsl$` 直存性能更高」那句**不要拿来论证搬迁收益**——较新 WSL 对 9p 做了元数据缓存，裸 `git status`/小文件写已接近原生。真正贵的是**跨边界 × 大量小文件 × 被两个系统同时打开**。
+> 注意：微软文档里「`\\wsl$` 直存性能更高」那句**不要拿来论证搬迁收益**：较新 WSL 对 9p 做了元数据缓存，裸 `git status`/小文件写已接近原生。真正贵的是**跨边界 × 大量小文件 × 被两个系统同时打开**。
 
 ### 2.2 协作边界（两条硬事实）
 
@@ -87,13 +87,13 @@
 | `.omx/` | 122 M | 会话/工具态 | 不入库、可清理 |
 | `.git` | 53 M | — | 保留 |
 
-**不建议整体搬迁**（Windows 侧 Cursor 是源码真源、需资源管理器可见）。把 `build/`、`.dart_tool/` 外置是收益最大、风险最小的一步——**但属于用户决策，动手前先确认**。
+**不建议整体搬迁**（Windows 侧 Cursor 是源码真源、需资源管理器可见）。把 `build/`、`.dart_tool/` 外置是收益最大、风险最小的一步，但属于用户决策，动手前先确认。
 
 ---
 
 ## 3. 工具箱（本规范随附的两个脚本）
 
-### 3.1 `scripts/wsl-env.sh` —— WSL 侧环境补齐 + 诊断
+### 3.1 `scripts/wsl-env.sh`：WSL 侧环境补齐 + 诊断
 
 解决「DSH/无头 Agent 的 bash 是非交互 shell，**不加载 `~/.profile`**，于是代理/PATH/PUB_CACHE 全空」的问题。
 
@@ -107,7 +107,7 @@ WSL_ENV_SKIP_PROXY=1 source scripts/wsl-env.sh   # 跑 flutter test 前必须这
 
 > **`flutter test` 与代理**：会话环境若带 `http_proxy`，`flutter_tester` 的本机 WebSocket 会被拦，报 `Unable to connect to flutter_tester process: Invalid WebSocket upgrade request`（连官方模板用例也失败，与代码无关）。跑测试前用 `WSL_ENV_SKIP_PROXY=1` 或先 `unset` 各 `*_proxy`。
 
-### 3.2 `scripts/sync-main.sh` —— 双远端推送（bash 版）
+### 3.2 `scripts/sync-main.sh`：双远端推送（bash 版）
 
 逻辑与 `scripts/sync-main.ps1` **完全一致**（WSL 里没有 pwsh，Windows 侧仍用 PS1；改其一时请同步另一个）。固化三条铁律：先拉取（fetch 只指 GitHub）→ 不经 origin 别名显式 URL 推 GitHub → cnb 用 `--force-with-lease` 钉住当前 tip 推镜像 → 校验三端一致。
 
@@ -143,21 +143,21 @@ export PATH="/opt/flutter/bin:/opt/android-sdk/platform-tools:$PATH"
 | git / 脚本（bash 版） | PS1 | SH |
 | adb 物理设备 | ✅ | 默认不接（实测 `adb devices` 为空） |
 
-工具链版本：`/opt/flutter`（WSL）= 3.44.8 / Dart 3.12.2，`D:\Flutter\flutter`（Windows）= 3.44.8，`.fvmrc` = 3.44.8 —— **三处一致，勿漂移**。
+工具链版本：`/opt/flutter`（WSL）= 3.44.8 / Dart 3.12.2，`D:\Flutter\flutter`（Windows）= 3.44.8，`.fvmrc` = 3.44.8。**三处一致，勿漂移**。
 
 ---
 
 ## 5. adb 说明
 
 - PATH 上有三份：`~/bin/adb`（软链→Windows `adb.exe`）、`/mnt/d/Cache/Android/Sdk/...`（死条目）、`/opt/android-sdk/platform-tools/adb`（WSL 原生 37.0.1，**应当用这个**）。
-- WSL 侧实测 `adb devices` 为空。不要为了"找设备"去起 Windows 侧 adb server（会在两个系统各起一个 server，端口 5037 互相抢占）。
+- WSL 侧实测 `adb devices` 为空。不要为了“找设备”去起 Windows 侧 adb server（会在两个系统各起一个 server，端口 5037 互相抢占）。
 - 用 `android_*` 工具前先确认 serial，不凭记忆操作未识别的设备。
 
 ---
 
 ## 6. 待用户决策 / 未做的事项
 
-1. **`build/`、`.dart_tool/` 外置或软链到各系统本地**（收益最大，可根治第 1 节）——需用户确认后执行。
+1. `build/`、`.dart_tool/` 外置或软链到各系统本地（收益最大，可根治第 1 节），需用户确认后执行。
 2. **worktree 清理**：`git worktree list` 有 3 个 `prunable` 登记（`C:/cursor/...`，WSL 下路径不成立），会误导后续 Agent；4 个仍在磁盘上的（`mikcb_card_opacity`、`mikcb_homepull`、`mikcb_merge_136`、`mikcb_merge_148`）**不要动**。清理需与知情者核对后 `git worktree prune`。
 3. **Windows → WSL 方向自动化**：目前没有任何固化入口（全仓仅 `.workbuddy/memory/2026-09-11.md` 记载 WorkBuddy 调 `wsl.exe` 被安全策略拦，但 `\\wsl.localhost\Ubuntu-24.04\...` UNC 可读写、**不能执行** Linux 程序）。若要做，需用户确认走哪条路。
 4. **`WSLENV` 未使用**：当前为空。若确实需要跨系统传环境变量，可在此固化（`/p` 路径转换、`/l` 列表、`/u` 仅 Win32→WSL、`/w` 仅 WSL→Win32）。

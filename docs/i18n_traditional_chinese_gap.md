@@ -1,6 +1,6 @@
 # i18n 繁化补齐清单（体检⑧）
 
-> 生成于 PR #17 审计，基线 commit 6ed3c5ae。判定标准：**繁体文案与简体逐字相同且含 CJK 字符**（即未繁化）。不含 CJK 的相同文案（占位符、纯英文/数字）属正常，不在清单内。
+> 生成于 PR #17 审计，基线 commit 6ed3c5ae。判定标准：**繁体文案与简体逐字相同且含 CJK 字符**（即未繁化）。不含 CJK 的相同文案（占位符、纯英文或数字）属正常，不在清单内。
 
 | 语言 | key 总数 | 与简体逐字相同 | 其中含 CJK（真未繁化） |
 |---|---|---|---|
@@ -13,9 +13,9 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 ## 建议的翻译流程
 
 1. **机械预繁化**：对下方 key 用 OpenCC（`s2hk`/`s2twp`）批量转换，一次性消掉 90%+ 缺口
-2. **人工校对 TW 用语**：`s2twp` 会做词汇转换（如 网络→網路、软件→軟體），但仍需抽查教学领域用语（課程/節/教務處 等两岸差异）
+2. **人工校对 TW 用语**：`s2twp` 会做词汇转换（如 网络→網路、软件→軟體），但仍需抽查教学领域用语（課程、節、教務處等两岸差异）
 3. **HK 校对重点**：HK 用语更接近书面繁体 + 少量粤语习惯，OpenCC `s2hk` 后人工抽查即可
-4. **防回归**：本清单可作为 CI 校验脚本的数据源（繁化率低于阈值即告警），或直接以「zh_HK/zh_TW 与 zh 逐字相同的含 CJK 条数 ≤ 当前基线」作为棘轮指标
+4. **防回归**：本清单可作为 CI 校验脚本的数据源（繁化率低于阈值即告警），或直接以“zh_HK/zh_TW 与 zh 逐字相同的含 CJK 条数 ≤ 当前基线”作为棘轮指标
 
 ## zh_TW 待繁化（744 条）
 
@@ -65,7 +65,7 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `availableWeeksCount` | 共 {count} 周 |
 | `backToTodayAction` | 回到今天 |
 | `beforeEndSecondsOption` | {seconds} 秒 |
-| `breakDurationMinutesLabel` | 休息多久(分) |
+| `breakDurationMinutesLabel` | 休息多久（分） |
 | `brightnessLabel` | 明度 {value}% |
 | `cancelAction` | 取消 |
 | `classAlarmLeadTitle` | 提前量 |
@@ -295,10 +295,10 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `hyperosShowcaseRootShellLabel` | 根页壳层 |
 | `hyperosShowcaseSampleText` | 示例文本 |
 | `hyperosShowcaseSearchTooltip` | 搜索 |
-| `hyperosShowcaseSectionChoiceRows` | 列表行 · 单选 / 选择 / 日期 |
+| `hyperosShowcaseSectionChoiceRows` | 列表行 · 单选、选择、日期 |
 | `hyperosShowcaseSectionColorChip` | 颜色选择 · ColorChip |
 | `hyperosShowcaseSectionControls` | 控件卡片 |
-| `hyperosShowcaseSectionEmpty` | 空态 / 分割线 / 装饰 |
+| `hyperosShowcaseSectionEmpty` | 空态、分割线和装饰 |
 | `hyperosShowcaseSectionFeedback` | 反馈 · 弹层 |
 | `hyperosShowcaseSectionFrosted` | 模糊顶栏 · 滚动物理 |
 | `hyperosShowcaseSectionIconColors` | 主题色 · HyperosIconColors |
@@ -312,8 +312,8 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `hyperosShowcaseSectionProgress` | 进度与刷新 |
 | `hyperosShowcaseSectionShell` | 页面壳层 |
 | `hyperosShowcaseSectionSummary` | 概要卡片 |
-| `hyperosShowcaseSectionSwitchRows` | 列表行 · 开关 / 危险 |
-| `hyperosShowcaseSectionTags` | 标签 / 手风琴 / 提示 |
+| `hyperosShowcaseSectionSwitchRows` | 列表行 · 开关、危险 |
+| `hyperosShowcaseSectionTags` | 标签、手风琴、提示 |
 | `hyperosShowcaseSegmentLeft` | 左 |
 | `hyperosShowcaseSegmentRight` | 右 |
 | `hyperosShowcaseSelectSizeTitle` | 选择尺寸 |
@@ -342,9 +342,9 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `liveBeforeClassQuickActionDoNotDisturb` | 打开免打扰 |
 | `liveBeforeClassQuickActionNone` | 不显示 |
 | `liveBeforeClassQuickActionSilent` | 打开静音 |
-| `liveCountdownTextStyleMinuteOnlyCn` | 纯分钟（5分钟） |
-| `liveCountdownTextStyleMinuteSecondCn` | 分秒（5分钟19秒） |
-| `liveCountdownTextStyleSecondOnlyCn` | 纯秒（5秒） |
+| `liveCountdownTextStyleMinuteOnlyCn` | 纯分钟（5 分钟） |
+| `liveCountdownTextStyleMinuteSecondCn` | 分秒（5 分钟 19 秒） |
+| `liveCountdownTextStyleSecondOnlyCn` | 纯秒（5 秒） |
 | `liveCountdownTextStyleSmart` | 智能（中文） |
 | `liveCountdownTextStyleSmartMinS` | 智能（英文） |
 | `liveDisplayConfigModeTitle` | 配置方式 |
@@ -373,15 +373,15 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `locationTimeMatchDeleted` | 已删除地点组 |
 | `locationTimeMatchEditGroup` | 编辑地点组 |
 | `locationTimeMatchEnabledLabel` | 启用此地点组 |
-| `locationTimeMatchGroupNameHint` | 例如：主教学楼 / 其他教学楼 |
+| `locationTimeMatchGroupNameHint` | 例如：主教学楼或其他教学楼 |
 | `locationTimeMatchGroupNameLabel` | 地点组名称 |
 | `locationTimeMatchKeywordAlreadyExists` | 关键词已存在 |
 | `locationTimeMatchKeywordExtracted` | 已从地点提取关键词 {keyword} |
-| `locationTimeMatchKeywordHint` | A1 / A主 / 六教 |
+| `locationTimeMatchKeywordHint` | A1、A主、六教 |
 | `locationTimeMatchKeywordLabel` | 关键词 |
 | `locationTimeMatchKeywordRequired` | 请至少添加一个关键词 |
 | `locationTimeMatchKeywordTooShort` | 关键词过短，容易误匹配 |
-| `locationTimeMatchKeywordsHelp` | 可从课表地点一键识别楼栋，或手动填写关键词（如 A主、A1、A6）。匹配模式建议用「前缀」，更长的关键词优先。 |
+| `locationTimeMatchKeywordsHelp` | 可从课表地点一键识别楼栋，或手动填写关键词（如 A主、A1、A6）。匹配模式建议用“前缀”，更长的关键词优先。 |
 | `locationTimeMatchKeywordsLine` | 关键词：{keywords} |
 | `locationTimeMatchKeywordsSection` | 地点关键词 |
 | `locationTimeMatchModeContains` | 包含 |
@@ -402,7 +402,7 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `locationTimeMatchSaved` | 地点组已保存 |
 | `locationTimeMatchSelectedKeywords` | 已选关键词 |
 | `locationTimeMatchUnknownScheme` | 未知时间模板 |
-| `locationTimeMatchWeekAxisNote` | 说明：首页左侧时间列仍显示课表默认模板；卡片/详情/实况上的钟点以地点匹配结果为准。 |
+| `locationTimeMatchWeekAxisNote` | 说明：首页左侧时间列仍显示课表默认模板；卡片、详情和实况上的钟点以地点匹配结果为准。 |
 | `locationUnset` | 未置 |
 | `logAppLifecycleChanged` | 应用生命周期已变更 |
 | `logAppLogRecordingEnabled` | 应用日志记录已开启 |
@@ -608,7 +608,7 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `logLiveUpdateTestStarted` | 手动超级岛测试：已成功请求原生超级岛 |
 | `logLiveUpdateTestStarting` | 手动超级岛测试：正在启动原生超级岛 |
 | `logLiveUpdateTestSuspendSync` | 手动超级岛测试：已临时暂停定时同步 |
-| `logMiuiLiveHideFromRecentsFailed` | 更新「从最近任务隐藏」失败 |
+| `logMiuiLiveHideFromRecentsFailed` | 更新“从最近任务隐藏”失败 |
 | `logMiuiLiveInitializeFailed` | 初始化 MIUI 超级岛通道失败 |
 | `logMiuiLiveOpenAccessibilitySettingsFailed` | 打开无障碍设置失败 |
 | `logMiuiLiveOpenAutostartSettingsFailed` | 打开自启动设置失败 |
@@ -627,22 +627,22 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `logTimetableLoadSettingsFailed` | 加载课表设置失败 |
 | `lowerByValue` | 更矮 {value} |
 | `macroReplayAcceleratedFallbackTip` | 快捷路径失败，正在使用完整录制步骤重试… |
-| `macroReplayClickNotFound` | 未找到点击元素: {selector} |
+| `macroReplayClickNotFound` | 未找到点击元素：{selector} |
 | `macroReplayEmptyClickSelector` | 点击元素的选择器为空 |
 | `macroReplayEmptyFillSelector` | 填充字段的选择器为空 |
 | `macroReplayEmptyNavigateUrl` | 导航 URL 为空 |
 | `macroReplayEmptyWaitSelector` | 等待元素的选择器为空 |
-| `macroReplayFieldNotFound` | 未找到表单字段: {selector} |
+| `macroReplayFieldNotFound` | 未找到表单字段：{selector} |
 | `macroReplayInvalidUrl` | 无效的 URL: {url} |
 | `macroReplayManualActionRequired` | 需要手动操作 |
 | `macroReplayNavigateTo` | 导航到 {url} |
 | `macroReplayNoSteps` | 没有录制的步骤 |
-| `macroReplayStatusFailed` | 失败: {error} |
-| `macroReplayStatusPaused` | 等待手动操作: {reason} |
+| `macroReplayStatusFailed` | 失败：{error} |
+| `macroReplayStatusPaused` | 等待手动操作：{reason} |
 | `macroReplayStepClicking` | 正在点击... |
 | `macroReplayStepDelay` | 等待中... |
 | `macroReplayStepExecuteScript` | 正在执行导入脚本... |
-| `macroReplayStepFailed` | 第 {current}/{total} 步失败: {error} |
+| `macroReplayStepFailed` | 第 {current}/{total} 步失败：{error} |
 | `macroReplayStepFilling` | 正在填充表单... |
 | `macroReplayStepNavigating` | 正在导航... |
 | `macroReplayStepWaitManual` | 等待用户操作 |
@@ -651,8 +651,8 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `macroReplayUserCancelled` | 用户取消 |
 | `macroReplayWaitDomReady` | 等待 DOM 就绪 |
 | `macroReplayWaitPageLoad` | 等待页面加载 |
-| `macroReplayWaitSelector` | 等待元素: {selector} |
-| `macroReplayWaitUrlPattern` | 等待 URL 匹配: {pattern} |
+| `macroReplayWaitSelector` | 等待元素：{selector} |
+| `macroReplayWaitUrlPattern` | 等待 URL 匹配：{pattern} |
 | `miuiIslandExpandedIconAppIcon` | 应用图标 |
 | `miuiIslandExpandedIconCustomImage` | 自定义图片 |
 | `miuiIslandExpandedIconHidden` | 不显示 |
@@ -787,7 +787,7 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `availableWeeksCount` | 共 {count} 周 |
 | `backToTodayAction` | 回到今天 |
 | `beforeEndSecondsOption` | {seconds} 秒 |
-| `breakDurationMinutesLabel` | 休息多久(分) |
+| `breakDurationMinutesLabel` | 休息多久（分） |
 | `brightnessLabel` | 明度 {value}% |
 | `cancelAction` | 取消 |
 | `classAlarmLeadTitle` | 提前量 |
@@ -916,7 +916,7 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `locationTimeMatchAddBuilding` | 添加 |
 | `locationTimeMatchApplyConfirm` | 重新匹配 |
 | `locationTimeMatchApplyOverflowHint` | 未套用示例：{names} |
-| `locationTimeMatchKeywordHint` | A1 / A主 / 六教 |
+| `locationTimeMatchKeywordHint` | A1、A主、六教 |
 | `locationTimeMatchModeContains` | 包含 |
 | `locationTimeMatchModeLabel` | 匹配模式 |
 | `locationTimeMatchModePrefix` | 前缀 |
@@ -942,8 +942,8 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `logFieldWeekday` | 星期 |
 | `lowerByValue` | 更矮 {value} |
 | `macroReplayStepDelay` | 等待中... |
-| `macroReplayWaitSelector` | 等待元素: {selector} |
-| `macroReplayWaitUrlPattern` | 等待 URL 匹配: {pattern} |
+| `macroReplayWaitSelector` | 等待元素：{selector} |
+| `macroReplayWaitUrlPattern` | 等待 URL 匹配：{pattern} |
 | `miuiIslandLabelContentLocation` | 教室 |
 | `miuiIslandLabelFontWeightBold` | 加粗 |
 | `miuiIslandLabelFontWeightMedium` | 中等 |

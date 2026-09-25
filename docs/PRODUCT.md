@@ -11,7 +11,7 @@
 | 产品名称 | 轻屿课表 |
 | 文档版本 | 存档（原 v1.1.x 规划） |
 | 更新日期 | 2026-07-07 |
-| 目标平台 | Android (小米 HyperOS / 澎湃OS) |
+| 目标平台 | Android（小米 HyperOS / 澎湃OS） |
 
 ---
 
@@ -19,7 +19,7 @@
 
 ### 1.1 产品定位
 
-一款专为大学生设计的课程表应用，支持小米澎湃OS超级岛（Live Activities）功能，让用户在不打开应用的情况下即可查看当前课程信息。
+一款专为大学生设计的课程表应用，支持小米澎湃OS 超级岛（Live Activities）功能，让用户在不打开应用的情况下即可查看当前课程信息。
 
 ### 1.2 目标用户
 
@@ -70,8 +70,8 @@
 
 | 功能 | 描述 | 优先级 |
 |------|------|--------|
-| 本地存储 | 使用SharedPreferences持久化数据 | P0 |
-| 数据备份 | 导出当前课表数据为JSON | P1 |
+| 本地存储 | 使用 SharedPreferences 持久化数据 | P0 |
+| 数据备份 | 导出当前课表数据为 JSON | P1 |
 | 数据恢复 | 覆盖当前课表或导入为新课表 | P1 |
 
 ---
@@ -228,16 +228,16 @@
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| id | String | 唯一标识符 (UUID) |
+| id | String | 唯一标识符（UUID） |
 | name | String | 课程名称 |
 | teacher | String | 授课教师 |
 | location | String | 上课地点 |
-| dayOfWeek | int | 星期几 (1-7) |
-| startSection | int | 开始节次 (1-10) |
-| endSection | int | 结束节次 (1-10) |
-| startTime | String | 开始时间 (HH:mm) |
-| endTime | String | 结束时间 (HH:mm) |
-| color | String | 颜色代码 (#RRGGBB) |
+| dayOfWeek | int | 星期几（1-7） |
+| startSection | int | 开始节次（1-10） |
+| endSection | int | 结束节次（1-10） |
+| startTime | String | 开始时间（HH:mm） |
+| endTime | String | 结束时间（HH:mm） |
+| color | String | 颜色代码（#RRGGBB） |
 | startWeek | int | 开始周次 |
 | endWeek | int | 结束周次 |
 | isOddWeek | bool | 是否单周 |
@@ -276,10 +276,10 @@
 
 | 组件 | 技术方案 | 说明 |
 |------|----------|------|
-| UI框架 | Flutter | 跨平台UI框架 |
+| UI 框架 | Flutter | 跨平台 UI 框架 |
 | 状态管理 | Provider | 轻量级状态管理 |
 | 本地存储 | SharedPreferences | 键值对存储 |
-| 平台通信 | MethodChannel | Flutter与原生通信 |
+| 平台通信 | MethodChannel | Flutter 与原生通信 |
 | 通知实现 | Android Notification | 小米超级岛底层 |
 
 ### 6.3 项目结构
@@ -305,11 +305,11 @@ lib/
 
 ## 七、权限说明
 
-### 7.1 Android权限
+### 7.1 Android 权限
 
 | 权限 | 用途 | 必要性 |
 |------|------|--------|
-| POST_NOTIFICATIONS | 发送通知 (Android 13+) | 必需 |
+| POST_NOTIFICATIONS | 发送通知（Android 13+） | 必需 |
 | VIBRATE | 通知振动 | 可选 |
 | FOREGROUND_SERVICE | 前台服务 | 可选 |
 
@@ -326,41 +326,41 @@ lib/
 
 | 平台 | 最低版本 | 推荐版本 |
 |------|----------|----------|
-| Android | 8.0 (API 26) | 小米澎湃OS |
+| Android | 8.0（API 26） | 小米澎湃OS |
 | Flutter SDK | 3.0.0 | 3.27.0+ |
 
 ### 8.2 设备支持
 
 | 设备 | 超级岛支持 | 备注 |
 |------|------------|------|
-| 小米澎湃OS设备 | ✅ 完全支持 | 推荐使用 |
-| 其他Android设备 | ⚠️ 仅通知 | 无超级岛效果 |
-| iOS设备 | ❌ 不支持 | 需单独适配 |
+| 小米澎湃OS 设备 | 完全支持 | 推荐使用 |
+| 其他 Android 设备 | 仅通知 | 无超级岛效果 |
+| iOS 设备 | 不支持 | 需单独适配 |
 
 ---
 
 ## 九、版本规划
 
-### v1.0.0 (当前版本)
-- ✅ 基础课程表功能
-- ✅ 课程增删改查
-- ✅ 小米超级岛支持
-- ✅ 本地数据存储
+### v1.0.0（当前版本）
+- 基础课程表功能
+- 课程增删改查
+- 小米超级岛支持
+- 本地数据存储
 
-### v1.1.0 (计划中)
-- 📋 课程数据导入/导出
-- 📋 课表分享功能
-- 📋 桌面小组件
+### v1.1.0（计划中）
+- 课程数据导入/导出
+- 课表分享功能
+- 桌面小组件
 
-### v1.2.0 (计划中)
-- 📋 教务系统对接
-- 📋 自动导入课程
-- 📋 课程提醒通知
+### v1.2.0（计划中）
+- 教务系统对接
+- 自动导入课程
+- 课程提醒通知
 
-### v2.0.0 (远期规划)
-- 📋 iOS Live Activities支持
-- 📋 多学期管理
-- 📋 云同步功能
+### v2.0.0（远期规划）
+- iOS Live Activities 支持
+- 多学期管理
+- 云同步功能
 
 ---
 
@@ -368,8 +368,8 @@ lib/
 
 | 风险 | 影响 | 应对措施 |
 |------|------|----------|
-| 小米超级岛API变更 | 功能失效 | 关注小米开发者文档，及时更新 |
-| Android版本兼容性 | 部分设备无法使用 | 设置最低API版本，做好兼容处理 |
+| 小米超级岛 API 变更 | 功能失效 | 关注小米开发者文档，及时更新 |
+| Android 版本兼容性 | 部分设备无法使用 | 设置最低 API 版本，做好兼容处理 |
 | 数据丢失 | 用户课程丢失 | 建议实现数据备份功能 |
 
 ---
@@ -378,14 +378,14 @@ lib/
 
 ### A. 参考文档
 
-- [Flutter官方文档](https://flutter.dev/docs)
+- [Flutter 官方文档](https://flutter.dev/docs)
 - [小米开发者平台](https://developer.mi.com)
-- [Android通知指南](https://developer.android.com/guide/topics/ui/notifiers/notifications)
+- [Android 通知指南](https://developer.android.com/guide/topics/ui/notifiers/notifications)
 
 ### B. 术语解释
 
 | 术语 | 说明 |
 |------|------|
-| 超级岛 | 小米澎湃OS的实时活动显示功能 |
-| 节次 | 大学课程的时间单位，通常1节=45分钟 |
+| 超级岛 | 小米澎湃OS 的实时活动显示功能 |
+| 节次 | 大学课程的时间单位，通常 1 节 = 45 分钟 |
 | 单双周 | 部分课程隔周上课的安排方式 |

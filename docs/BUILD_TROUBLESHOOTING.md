@@ -52,7 +52,7 @@ flutter build apk
 
 IDE 从 Windows **用户级**环境变量继承 `FLUTTER_STORAGE_BASE_URL` / `PUB_HOSTED_URL`，与是否在终端里 `Remove-Item Env:...` 无关（除非从已清除变量的终端启动 IDE）。调试面板报同样 404 时，按优先级处理：
 
-**永久修复（推荐）**——删除用户级镜像变量后重启 IDE：
+永久修复（推荐）：删除用户级镜像变量，然后重启 IDE：
 
 ```powershell
 [Environment]::SetEnvironmentVariable('FLUTTER_STORAGE_BASE_URL', $null, 'User')
@@ -61,7 +61,7 @@ IDE 从 Windows **用户级**环境变量继承 `FLUTTER_STORAGE_BASE_URL` / `PU
 
 也可在「系统属性 → 环境变量 → 用户变量」中删除这两项。改完后完全退出并重新打开 VS Code / Cursor。
 
-**仅当前 IDE 会话**——在已清除镜像变量的 PowerShell 中启动 IDE（子进程不会带上用户级镜像）：
+仅当前 IDE 会话：在已清除镜像变量的 PowerShell 中启动 IDE（子进程不会带上用户级镜像）：
 
 ```powershell
 Remove-Item Env:FLUTTER_STORAGE_BASE_URL -ErrorAction SilentlyContinue
@@ -69,7 +69,7 @@ Remove-Item Env:PUB_HOSTED_URL -ErrorAction SilentlyContinue
 cursor .   # 或 code .
 ```
 
-**仅本项目**——在工作区 `.vscode/settings.json` 中为 Dart 扩展覆盖环境（不影响其他项目）：
+仅本项目：在工作区 `.vscode/settings.json` 中为 Dart 扩展覆盖环境（不影响其他项目）：
 
 ```json
 {
@@ -89,7 +89,7 @@ cursor .   # 或 code .
 }
 ```
 
-**预缓存引擎（官方源）**——先按上面任一方式切回官方源，再执行：
+预缓存引擎（官方源）：先按上面任一方式切回官方源，再执行：
 
 ```powershell
 flutter precache --android
@@ -133,7 +133,7 @@ Gradle build daemon disappeared unexpectedly
 
 ## CNB 门禁一直红：根组织「云原生构建-CPU」配额耗尽
 
-现象：CNB 上 push / PR 的 CI 检查**长期**报 error，但耗时只有 8~12 秒，
+现象：CNB 上 push / PR 的 CI 检查**长期**报 error，但耗时只有 8～12 秒，
 日志末尾固定为：
 
 ```text
@@ -176,7 +176,7 @@ Stage 列表里 `analyze` / `unit-test` 全是 `skipped`。因为根组织（Mut
 
 ### 不要做的事
 
-- 不要为这个失败改业务代码——失败的 Stage 一个都没跑。
+- 不要为这个失败改业务代码，失败的 Stage 一个都没跑。
 - 不要反复重推触发 CI，每次重试都会再冻结 0.67 核时。
 
 ## 如何查看调试记录
