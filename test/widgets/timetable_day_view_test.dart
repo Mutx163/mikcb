@@ -23,6 +23,7 @@ import 'package:university_timetable/screens/add_course_screen.dart';
 import 'package:university_timetable/screens/add_schedule_item_screen.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_popup_glass.dart';
 import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
 
 import '../helpers_test_app.dart';
@@ -1813,6 +1814,40 @@ void main() {
       const ValueKey('back-to-current-week-button'),
     );
     expect(buttonFinder, findsOneWidget);
+
+    // 浮影与设置页返回钮、玻璃坞药丸同源，但只画在玻璃轮廓外；不能被
+    // BackdropFilter 采进按钮中央。
+    const sourceShadow = HyperosGlassShadow.compactShadow;
+    final shadowFinder = find.byWidgetPredicate((widget) {
+      if (widget is! DecoratedBox || widget.decoration is! BoxDecoration) {
+        return false;
+      }
+      final shadows = (widget.decoration as BoxDecoration).boxShadow;
+      if (shadows == null || shadows.length != 1) {
+        return false;
+      }
+      final shadow = shadows.single;
+      return shadow.blurRadius == sourceShadow.blurRadius &&
+          shadow.offset == sourceShadow.offset &&
+          shadow.spreadRadius == sourceShadow.spreadRadius &&
+          shadow.color.r == sourceShadow.color.r &&
+          shadow.color.g == sourceShadow.color.g &&
+          shadow.color.b == sourceShadow.color.b &&
+          shadow.color.a > 0 &&
+          shadow.color.a <= sourceShadow.color.a;
+    });
+    expect(shadowFinder, findsOneWidget);
+    final shadowClipFinder = find.byKey(
+      const ValueKey('back-to-current-week-shadow'),
+    );
+    expect(shadowClipFinder, findsOneWidget);
+    final shadowSize = tester.getSize(shadowFinder);
+    final shadowClip = tester
+        .widget<ClipPath>(shadowClipFinder)
+        .clipper!
+        .getClip(shadowSize);
+    expect(shadowClip.contains(shadowSize.center(Offset.zero)), isFalse);
+    expect(shadowClip.contains(Offset(shadowSize.width / 2, -1)), isTrue);
 
     // 键挂在这颗钮**内部**的 InkWell 上（见 `_buildFloatingBackToCurrentWeekButton`
     // 的 `chipBody`），玻璃面是它的祖先，所以这里往上找而不是往下找。

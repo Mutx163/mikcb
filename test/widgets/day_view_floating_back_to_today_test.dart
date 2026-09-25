@@ -20,6 +20,7 @@ import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/services/storage_service.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_popup_glass.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
 import 'package:university_timetable/utils/theme_seed_accent.dart';
@@ -182,6 +183,29 @@ void main() {
     final buttonFinder = find.byKey(const ValueKey('back-to-today-button'));
     expect(buttonFinder, findsOneWidget, reason: '不是今天时应出现「回今日」');
     expect(find.text('回今日'), findsOneWidget);
+
+    const sourceShadow = HyperosGlassShadow.compactShadow;
+    final shadowFinder = find.byWidgetPredicate((widget) {
+      if (widget is! DecoratedBox || widget.decoration is! BoxDecoration) {
+        return false;
+      }
+      return (widget.decoration as BoxDecoration).boxShadow?.contains(
+            sourceShadow,
+          ) ??
+          false;
+    });
+    expect(shadowFinder, findsOneWidget);
+    final shadowClipFinder = find.byKey(
+      const ValueKey('back-to-today-shadow'),
+    );
+    expect(shadowClipFinder, findsOneWidget);
+    final buttonSize = tester.getSize(buttonFinder);
+    final shadowClip = tester
+        .widget<ClipPath>(shadowClipFinder)
+        .clipper!
+        .getClip(buttonSize);
+    expect(shadowClip.contains(buttonSize.center(Offset.zero)), isFalse);
+    expect(shadowClip.contains(Offset(buttonSize.width / 2, -1)), isTrue);
 
     final screenSize = tester.view.physicalSize / tester.view.devicePixelRatio;
     final buttonRect = tester.getRect(buttonFinder);

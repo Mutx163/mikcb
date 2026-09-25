@@ -45,9 +45,9 @@ abstract final class HyperosGlassShadow {
   /// 有阴影，两边同值才谈得上"同源"。
   static const shadow = BoxShadow(color: Color(0x24000000), blurRadius: 20);
 
-  /// 设置页返回圆钮与首页玻璃坞药丸共用的紧凑外浮影。
+  /// 设置页返回圆钮、首页玻璃坞药丸与课表「回本周 / 回今日」浮钮共用的紧凑外浮影。
   ///
-  /// 数值刻意比 [shadow] 小得多。两处都需要在浅色 / 无壁纸背景上轻轻分开边界，
+  /// 数值刻意比 [shadow] 小得多。这些表面都需要在浅色 / 无壁纸背景上轻轻分开边界，
   /// 但不能把大范围阴影铺到旁边的模糊区里。
   static const compactShadow = BoxShadow(
     color: Color(0x1A000000),
@@ -59,6 +59,7 @@ abstract final class HyperosGlassShadow {
   ///
   /// - [withShadow] 只在面**自带了同值阴影**时关掉（实底分支），否则会叠两层。
   /// - [shadowOverride] 指定另一份共享浮影；缺省用 [shadow]。
+  /// - [shadowKey] 给外浮影裁切层留一个可选的测试 / 调试锚点。
   /// - [borderRadius] 只用来给浮影定形状 —— 少了它阴影会是个方块。
   /// - 浮影层画在 [child] **之后**，并由 [_OuterShadowClipper] 裁掉玻璃内部；
   ///   否则 [BackdropFilter] 会采到垫在下层的阴影，把纯白玻璃中央染灰。
@@ -71,6 +72,7 @@ abstract final class HyperosGlassShadow {
     bool withShadow = true,
     double opacity = 1.0,
     BoxShadow? shadowOverride,
+    Key? shadowKey,
   }) {
     if (!withShadow || opacity <= 0.01) {
       return child;
@@ -87,6 +89,7 @@ abstract final class HyperosGlassShadow {
         Positioned.fill(
           child: IgnorePointer(
             child: ClipPath(
+              key: shadowKey,
               clipper: _OuterShadowClipper(
                 borderRadius: borderRadius,
                 shadow: source,

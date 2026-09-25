@@ -117,11 +117,8 @@ void main() {
       reason: '药丸浮影必须跟药丸同形，不能留下方形边',
     );
 
-    final outerClipFinder = find.ancestor(
-      of: shadowFinder,
-      matching: find.byWidgetPredicate(
-        (widget) => widget is ClipPath && widget.clipper != null,
-      ),
+    final outerClipFinder = find.byKey(
+      const ValueKey('glass-dock-pill-shadow'),
     );
     expect(outerClipFinder, findsOneWidget);
     final size = tester.getSize(find.byType(SoftGlassTabBar));

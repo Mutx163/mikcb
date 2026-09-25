@@ -7698,6 +7698,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     return HyperosGlassShadow.wrap(
       borderRadius: BorderRadius.circular(radius),
       shadowOverride: HyperosGlassShadow.compactShadow,
+      shadowKey: const ValueKey('glass-dock-pill-shadow'),
       child: surface,
     );
   }
@@ -8010,49 +8011,48 @@ class _TimetableScreenState extends State<TimetableScreen>
         alignment: Alignment.bottomRight,
         child: Tooltip(
           message: l10n.backToCurrentWeekAction,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: borderRadius,
-              // ⚠️ 液态档不叠描边与投影，理由与「回今日」同一处（那颗钮的注释里
-              // 有量出来的数字：描边 + 玻璃的折射带在小胶囊上读成两层圈圈），
-              // 见 [_buildFloatingBackToTodayButton]。磨砂档留着 —— 磨砂片自己
-              // 不画边。透明度仍按 [contentOpacity] 压在描边上（非液态档才有）。
-              border: useLiquidGlassMaterial
-                  ? null
-                  : Border.all(
-                      color: foruiColors.border.withValues(
-                        alpha: foruiColors.border.a * contentOpacity,
-                      ),
-                    ),
-              boxShadow: useLiquidGlassMaterial
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha:
-                              (theme.brightness == Brightness.dark
-                                  ? 0.12
-                                  : 0.06) *
-                              contentOpacity,
+          child: HyperosGlassShadow.wrap(
+            borderRadius: borderRadius,
+            shadowOverride: HyperosGlassShadow.compactShadow,
+            shadowKey: const ValueKey('back-to-current-week-shadow'),
+            opacity: contentOpacity,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: borderRadius,
+                // 液态档不叠描边，避免与玻璃自己的折射带叠成两层圈圈；
+                // 浮影统一由外层 [HyperosGlassShadow.wrap] 负责，且只落在外圈。
+                // 磨砂档留着描边 —— 磨砂片自己不画边。
+                border: useLiquidGlassMaterial
+                    ? null
+                    : Border.all(
+                        color: foruiColors.border.withValues(
+                          alpha: foruiColors.border.a * contentOpacity,
                         ),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
                       ),
-                    ],
-            ),
-            child: useLiquidGlassMaterial
-                ? LiquidGlassSurface(
-                    borderRadius: borderRadius.topLeft.x,
-                    // ⚠️ 不跟祖先组采样：组采样拿到的是壁纸快照，背景会变成一块
-                    // 逐帧不变、不反映下方内容的底（与「回今日」同一处境，见
-                    // [_buildFloatingBackToTodayButton]）。悬浮钮要的是实时采样。
-                    //
-                    // 窄件几何适配：这颗钮只有 31dp 高，折射作用带占了 47%，不压会
-                    // 读成一整圈轮廓（见 [narrowSurfaceMaxRefraction]）。
-                    maxRefraction: narrowSurfaceMaxRefraction(
-                      _backToCurrentWeekButtonHeight,
-                    ),
-                    fallbackBuilder: (_) => ClipRRect(
+              ),
+              child: useLiquidGlassMaterial
+                  ? LiquidGlassSurface(
+                      borderRadius: borderRadius.topLeft.x,
+                      // ⚠️ 不跟祖先组采样：组采样拿到的是壁纸快照，背景会变成一块
+                      // 逐帧不变、不反映下方内容的底（与「回今日」同一处境，见
+                      // [_buildFloatingBackToTodayButton]）。悬浮钮要的是实时采样。
+                      //
+                      // 窄件几何适配：这颗钮只有 31dp 高，折射作用带占了 47%，不压会
+                      // 读成一整圈轮廓（见 [narrowSurfaceMaxRefraction]）。
+                      maxRefraction: narrowSurfaceMaxRefraction(
+                        _backToCurrentWeekButtonHeight,
+                      ),
+                      fallbackBuilder: (_) => ClipRRect(
+                        borderRadius: borderRadius,
+                        child: HyperosFrostedSurface(
+                          borderRadius: borderRadius,
+                          tint: frostedTint,
+                          child: chipBody(),
+                        ),
+                      ),
+                      child: chipBody(),
+                    )
+                  : ClipRRect(
                       borderRadius: borderRadius,
                       child: HyperosFrostedSurface(
                         borderRadius: borderRadius,
@@ -8060,16 +8060,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                         child: chipBody(),
                       ),
                     ),
-                    child: chipBody(),
-                  )
-                : ClipRRect(
-                    borderRadius: borderRadius,
-                    child: HyperosFrostedSurface(
-                      borderRadius: borderRadius,
-                      tint: frostedTint,
-                      child: chipBody(),
-                    ),
-                  ),
+            ),
           ),
         ),
       ),
@@ -8191,8 +8182,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// （居中 vs 右下）、文案、动作、可见性条件、配色都不同，两边分开演进。
   Widget _buildFloatingBackToTodayButton(TimetableProvider provider) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final brightness = theme.brightness;
     final foruiColors = context.theme.colors;
     final accent = HyperosColors.primary(context);
     final borderRadius = BorderRadius.circular(_backToTodayButtonRadius);
@@ -8282,39 +8271,26 @@ class _TimetableScreenState extends State<TimetableScreen>
       ),
       child: Align(
         alignment: Alignment.bottomCenter,
-        child: DecoratedBox(
-          // 键挂在这层**外壳**上，两种材质分支（液态 / 磨砂）都能被找到、点到；
-          // 挂在分支内部的 InkWell 上时，液态档就没有键了。液态档这层只留圆角
-          // （不再描边，见下）。
-          key: const ValueKey('back-to-today-button'),
-          decoration: BoxDecoration(
-            borderRadius: borderRadius,
-            // ⚠️ **液态档不叠描边与投影**（2026-09-20 用户拍板）。
-            //
-            // 同族的底栏药丸 / 坞内圆钮都不画描边，只有玻璃自己的边光。这颗钮
-            // 原先两条分支共用一层 1dp 描边，于是小胶囊上出现**两层圈圈**：
-            // 外圈 = 这层描边（量出来正好是 1dp 硬线），内圈 = 玻璃的折射/色散带
-            // （作用带 14.5dp，占这颗钮高度的 38%），两者相距约 5dp。用户对照的
-            // 底栏药丸 / 加课圆钮只有一圈 —— 差的正是这层描边。
-            //
-            // 磨砂档**必须留着**：`HyperosFrostedSurface` 只是一层模糊 + 水洗，
-            // 自己不画边，去掉描边这颗钮就没边界了。
-            border: useLiquidGlassMaterial
-                ? null
-                : Border.all(color: foruiColors.border),
-            boxShadow: useLiquidGlassMaterial
-                ? null
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(
-                        alpha: brightness == Brightness.dark ? 0.12 : 0.06,
-                      ),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+        child: HyperosGlassShadow.wrap(
+          borderRadius: borderRadius,
+          shadowOverride: HyperosGlassShadow.compactShadow,
+          shadowKey: const ValueKey('back-to-today-shadow'),
+          child: DecoratedBox(
+            // 键挂在这层**外壳**上，两种材质分支（液态 / 磨砂）都能被找到、点到；
+            // 挂在分支内部的 InkWell 上时，液态档就没有键了。液态档这层只留圆角
+            // （不再描边，见下）。
+            key: const ValueKey('back-to-today-button'),
+            decoration: BoxDecoration(
+              borderRadius: borderRadius,
+              // 浮影统一由外层 [HyperosGlassShadow.wrap] 负责，且只落在外圈；
+              // 液态档不叠描边，避免与玻璃自己的折射带叠成两层圈圈。磨砂档必须
+              // 留着描边 —— [HyperosFrostedSurface] 自己不画边。
+              border: useLiquidGlassMaterial
+                  ? null
+                  : Border.all(color: foruiColors.border),
+            ),
+            child: surface,
           ),
-          child: surface,
         ),
       ),
     );
