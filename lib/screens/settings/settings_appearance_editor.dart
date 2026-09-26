@@ -1747,43 +1747,39 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
     return ValueListenableBuilder<int>(
       valueListenable: editor._draftRevision,
       builder: (sheetContext, _, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 翻页分段**自己就是标题**（用户口径 2026-09-26）：原来这行是「材质」
-            // 二字标题 + 右边 208 宽的分段，标题被压、分段左边空一大块，和底下
-            // 满宽的设置行也对不齐。去掉标题字后分段通栏，两格各约 176 宽，
-            // 「当前停在哪一页」一眼可见，也更好按。
-            //
-            // ⚠️ 高度账：换成 Miuix 分段后这一行由 ~24（标题）变成 45（控件高度），
-            // 净多花约 21，面板内容预算从约 332 掉到约 311（半屏上限不变，见
-            // [_materialSheetMaxHeightFactor]），超出的仍由每页自己内部滚动。
-            _MaterialSegmented<int>(
-              items: {
-                l10n.generalSettingsTitle: _generalPage,
-                l10n.surfaceCourseCard: _courseCardPage,
-              },
-              value: _page,
-              onChanged: _goToPage,
-            ),
-            const SizedBox(height: 16),
-            // 两页等高、各页自己竖向滚动：面板总高由外层 `maxHeight`（半屏上限）
-            // 顶住，见 [_AppearanceEditorScreenState._openMaterialSheet]。
-            Expanded(
-              child: PageView(
-                controller: _pages,
-                onPageChanged: (page) {
-                  if (page != _page) {
-                    setState(() => _page = page);
-                  }
-                },
-                children: [
-                  editor._buildGeneralMaterialPage(sheetContext, l10n),
-                  editor._buildCourseCardMaterialPage(sheetContext, l10n),
-                ],
-              ),
-            ),
-          ],
+        return HyperosSheetBlurTop(
+          // 带高 = 分段自身高度（那个常量，不是拍脑袋的 45）。
+          headerHeight: HyperosTabRow.contourHeight,
+          // 翻页分段**自己就是标题**（用户口径 2026-09-26），且**坐在顶部渐变模糊
+          // 带上**（同一条指令的第二半）：原来这行是「材质」二字 + 右边 208 宽的分段，
+          // 标题被压、分段左边空一大块，和底下满宽的设置行也对不齐；撤掉标题字后分段
+          // 通栏，宽度与底下内容一致。
+          //
+          // 放进模糊带之后它不再占正文高度：正文从「带底 + 渐隐区」起滚，滚上去的行
+          // 从带底下化进去。材质面板每页都要滚两屏，没有这条收尾就是内容在面板上沿被
+          // 硬切一刀。
+          header: _MaterialSegmented<int>(
+            items: {
+              l10n.generalSettingsTitle: _generalPage,
+              l10n.surfaceCourseCard: _courseCardPage,
+            },
+            value: _page,
+            onChanged: _goToPage,
+          ),
+          // 两页等高、各页自己竖向滚动：面板总高由外层 `maxHeight`（半屏上限）
+          // 顶住，见 [_AppearanceEditorScreenState._openMaterialSheet]。
+          body: PageView(
+            controller: _pages,
+            onPageChanged: (page) {
+              if (page != _page) {
+                setState(() => _page = page);
+              }
+            },
+            children: [
+              editor._buildGeneralMaterialPage(sheetContext, l10n),
+              editor._buildCourseCardMaterialPage(sheetContext, l10n),
+            ],
+          ),
         );
       },
     );

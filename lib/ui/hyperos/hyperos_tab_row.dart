@@ -54,6 +54,13 @@ class HyperosTabRow extends StatelessWidget {
   /// 上游自己截断加省略号。
   static const double fillWidth = double.infinity;
 
+  /// contour 档的控件高度。
+  ///
+  /// 给了它高度的分段当弹窗顶部渐变模糊带时（见 `HyperosSheetBlurTop`）拿这个数当
+  /// 带高，调用方不必自己去 import flutter_miuix 问上游要。
+  static const double contourHeight =
+      MiuixTabRowDefaults.tabRowWithContourHeight;
+
   /// HyperOS 表面墨色：轨道 = 行高亮底、选中块 = 卡片面、选中/未选中取主/次级墨。
   ///
   /// 就是分段该有的那三档面，别拿 Miuix 原始色板：它在深色下把选中块画成页面底色

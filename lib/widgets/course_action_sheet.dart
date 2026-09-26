@@ -43,6 +43,9 @@ class CourseActionPreviewItem {
 /// 容器走 [showMiuixBottomSheet]（面板材质仍是本仓液态玻璃，见
 /// `hyperosMiuixBottomSheetSurface`），内容仍是 [CourseActionSheetBody]。
 /// 2026-09-19 之前这里是我们自己的 edge sheet（`showHomeHyperosSheet`）。
+///
+/// 正文外面套一层 [HyperosSheetBlurTop]（空带、滚动才显形）：这弹窗在课表上有
+/// 「相关课程」一整块，是全 App 最长的弹窗正文，滚上去没有收尾就是一刀硬切。
 Future<void> showCourseActionSheet(
   BuildContext context, {
   required List<CourseActionPreviewItem> previewItems,
@@ -107,6 +110,14 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
   int _selectedIndex = 0;
   bool _relatedExpanded = false;
 
+  /// 顶部渐变模糊带的带高 = 正文起点比面板上沿低多少。
+  ///
+  /// 这个弹窗**没有**顶部标题行（第一块就是课程卡），所以带是空的、带高就是那截纯
+  /// 渐隐区。取 [HyperosBlurredHeader.subpageBandBottomOverhang] 同一个数（≈ 一个字
+  /// 高）：这是子页顶栏外推上限的由来，也是全 App 模糊带向下探出的既有口径。
+  static const double _sheetBlurTopExtent =
+      HyperosBlurredHeader.subpageBandBottomOverhang;
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -141,42 +152,54 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
     // 面板（材质 / 圆角 / 拖拽把手 / 蒙层）归上游底部弹窗；**滚动归我们** —— 上游的
     // 内容区是 `Flexible`，会给到有界高度但不自带滚动（`enableNestedScroll` 在本版
     // 没有消费方），所以这里自己套一层限高的滚动容器。
+    //
+    // 顶部渐变模糊带（`revealOnScroll`：滚上来才显形，见该类注释）。这个弹窗**没有**
+    // 顶部标题行 —— 第一块就是课程卡本身，所以带是空的、带高就是那截渐隐区；静止时
+    // 带不画，正文原位起，滚上去才有一道收尾把内容化掉，而不是在面板上沿硬切一刀。
+    // 换课（`_selectCourse`）会把滚动位置归零，带也跟着收起来。
     return ConstrainedBox(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.sizeOf(context).height * 0.8,
       ),
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _CourseActionSheetContent(
-              key: ValueKey('course-action-selected-${selectedItem.course.id}'),
-              previewItem: selectedItem,
-              week: widget.week,
-              onEdit: widget.onEdit,
-              onReschedule: widget.onReschedule,
-              onDelete: widget.onDelete,
-              onSuspend: widget.onSuspend,
-              onAddTask: widget.onAddTask,
-              onSetAlarm: widget.onSetAlarm,
-              onRequestClose: widget.onRequestClose,
-            ),
-            if (otherIndexes.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _RelatedCoursesPanel(
-                previewItems: widget.previewItems,
-                otherIndexes: otherIndexes,
+      child: HyperosSheetBlurTop(
+        // 空带：只留一截渐隐区（≈ 一个字高，与子页顶栏外推上限同值）。
+        headerHeight: _sheetBlurTopExtent,
+        header: const SizedBox.shrink(),
+        revealOnScroll: true,
+        scrollController: _scrollController,
+        body: SingleChildScrollView(
+          controller: _scrollController,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _CourseActionSheetContent(
+                key: ValueKey('course-action-selected-${selectedItem.course.id}'),
+                previewItem: selectedItem,
                 week: widget.week,
-                expanded: _relatedExpanded,
-                onToggleExpanded: () {
-                  setState(() => _relatedExpanded = !_relatedExpanded);
-                },
-                onSelect: _selectCourse,
+                onEdit: widget.onEdit,
+                onReschedule: widget.onReschedule,
+                onDelete: widget.onDelete,
+                onSuspend: widget.onSuspend,
+                onAddTask: widget.onAddTask,
+                onSetAlarm: widget.onSetAlarm,
+                onRequestClose: widget.onRequestClose,
               ),
+              if (otherIndexes.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _RelatedCoursesPanel(
+                  previewItems: widget.previewItems,
+                  otherIndexes: otherIndexes,
+                  week: widget.week,
+                  expanded: _relatedExpanded,
+                  onToggleExpanded: () {
+                    setState(() => _relatedExpanded = !_relatedExpanded);
+                  },
+                  onSelect: _selectCourse,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
