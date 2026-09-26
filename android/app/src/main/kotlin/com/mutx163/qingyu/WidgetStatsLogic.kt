@@ -99,11 +99,12 @@ internal object WidgetStatsLogic {
             }
             done += course.sectionCount * countActiveWeeks(course, calendarWeek - 1)
             if (!course.isInWeek(calendarWeek)) continue
-            val weekStartMillis = semesterStartMondayMillis(
-                semesterStartDayStartMillis,
-            ) + (calendarWeek - 1) * 7L * 86_400_000L
+            val weekStartMillis = addCalendarDays(
+                semesterStartMondayMillis(semesterStartDayStartMillis),
+                (calendarWeek - 1) * 7,
+            )
             for (offset in 0 until 7) {
-                val dayMillis = weekStartMillis + offset * 86_400_000L
+                val dayMillis = addCalendarDays(weekStartMillis, offset)
                 if (dayMillis > todayDayStartMillis) break
                 if (dayMillis < semesterStartDayStartMillis) continue
                 if (course.dayOfWeek == offset + 1) {
@@ -148,6 +149,26 @@ internal object WidgetStatsLogic {
                     else -> 7
                 } - 1),
             )
+        }
+        return cal.timeInMillis
+    }
+
+    /**
+     * 按日历天推进 [days] 天，返回结果那天的零点。
+     *
+     * 不能用 `start + days * 86_400_000L`：一天并不总是 24 小时，有夏令时的
+     * 地区在切换当天是 23 或 25 小时。固定毫秒会让周链在那几天整体偏移，
+     * 把「今天上了几节课」数错——而同一文件的 [semesterStartMondayMillis]
+     * 早就用 Calendar 处理了这类问题，这里跟上同一口径。
+     */
+    internal fun addCalendarDays(dayStartMillis: Long, days: Int): Long {
+        val cal = Calendar.getInstance().apply {
+            timeInMillis = dayStartMillis
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            add(Calendar.DAY_OF_YEAR, days)
         }
         return cal.timeInMillis
     }

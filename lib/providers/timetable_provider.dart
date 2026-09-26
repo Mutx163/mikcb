@@ -3992,9 +3992,15 @@ class TimetableProvider with ChangeNotifier {
     }
 
     final now = DateTime.now();
-    final normalizedNow = WeekCalculator.startOfWeek(now);
-    final normalizedStart = WeekCalculator.startOfWeek(semesterStart);
-    final week = (normalizedNow.difference(normalizedStart).inDays ~/ 7) + 1;
+    // WeekCalculator.getWeekIndex rebuilds both dates as UTC before subtracting,
+    // so it counts calendar days. The hand-rolled version this replaces
+    // subtracted local DateTimes, which measures absolute elapsed time: across a
+    // DST boundary the hour gained or lost is enough to floor a 69-day-23-hour
+    // gap down to 69, dropping the week number by one for those two weeks a year.
+    final computed = WeekCalculator.getWeekIndex(now, semesterStart);
+    // 0 mirrors WeekCalculator.calendarWeekForDate's pre-semester sentinel, so
+    // widgets that read the calendar week do not surface week-1 courses early.
+    final week = computed ?? 0;
     final targetWeek = week < 1 ? 1 : week;
     // Stay within the user-configured semester length. Do not auto-expand
     // semesterWeekCount when the calendar has moved past the last teaching week.

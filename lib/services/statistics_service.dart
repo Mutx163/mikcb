@@ -717,9 +717,27 @@ class StatisticsService {
     );
   }
 
-  /// 提取教学楼前缀（字母开头），无字母则原样返回
+  /// 提取教学楼前缀，无前缀则原样返回。
+  ///
+  /// Was `^[A-Za-z]+` only, so a room like "第一教学楼" produced no prefix at all
+  /// and every distinct room string counted as its own building — the in-app
+  /// "教学楼数量" then disagreed with the home-screen widget, which extracts
+  /// buildings on the Kotlin side. Accepting a leading CJK run as well makes the
+  /// two sides agree for Chinese room names.
   static String _buildingOf(String room) {
-    return RegExp(r'^[A-Za-z]+').stringMatch(room) ?? room;
+    final trimmed = room.trim();
+    if (trimmed.isEmpty) {
+      return room;
+    }
+    // Letters, digits (e.g. "3号楼") or a leading CJK run, stopped at the first
+    // separator so "第一教学楼-201" yields the building and not the room number.
+    final match = RegExp(
+      r'^(?:[A-Za-z]+|\d+|[一-鿿]+)',
+    ).stringMatch(trimmed);
+    if (match == null || match.isEmpty) {
+      return room;
+    }
+    return match;
   }
 
   /// 单日最大跨教学楼数

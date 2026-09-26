@@ -928,6 +928,62 @@ void main() {
         expect(hopper.isUnlocked, true);
         expect(hopper.progressCurrent, 3);
       });
+
+      test('counts buildings correctly for Chinese room names', () {
+        // Regression: building extraction was `^[A-Za-z]+` only, so each distinct
+        // Chinese room string counted as its own building and this reported 3
+        // buildings inside a single teaching building.
+        Course at(String id, String location) => Course(
+              id: id,
+              name: '课$id',
+              teacher: '老师',
+              location: location,
+              dayOfWeek: 1,
+              startSection: 1,
+              endSection: 2,
+              startTime: '08:00',
+              endTime: '09:40',
+            );
+
+        final achievements = StatisticsService.calculateAchievements(
+          allCourses: [
+            at('1', '第一教学楼-101'),
+            at('2', '第一教学楼-202'),
+            at('3', '第二教学楼-101'),
+          ],
+          currentWeek: 16,
+        );
+        final hopper = achievements.firstWhere((a) => a.id == 'building_hopper');
+
+        expect(hopper.progressCurrent, 2);
+      });
+
+      test('still handles letter and digit prefixed room names', () {
+        Course at(String id, String location) => Course(
+              id: id,
+              name: '课$id',
+              teacher: '老师',
+              location: location,
+              dayOfWeek: 1,
+              startSection: 1,
+              endSection: 2,
+              startTime: '08:00',
+              endTime: '09:40',
+            );
+
+        final achievements = StatisticsService.calculateAchievements(
+          allCourses: [
+            at('1', 'A101'),
+            at('2', 'A202'),
+            at('3', '3号楼-101'),
+            at('4', '3号楼-202'),
+          ],
+          currentWeek: 16,
+        );
+        final hopper = achievements.firstWhere((a) => a.id == 'building_hopper');
+
+        expect(hopper.progressCurrent, 2);
+      });
     });
     });
   });
