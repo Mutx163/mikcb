@@ -509,9 +509,48 @@ String localizeServiceMessage(
       return l10n.serviceMsgUsageTypeProfile;
 
     default:
+      // 兜底分两种情况，不能一刀切：
+      //
+      // 1. 内部错误码（`encodeServiceMessage` 产出的那种纯 ASCII 蛇形串）。
+      //    目前有 40+ 个码还没登记 case（含 transfer_*、invalid_sync_snapshot_*、
+      //    invalid_qr_transfer_frame、unsupported_content_type 等），原样返回
+      //    等于把 `unsupported_content_type` 这种机器码直接摆到界面上。
+      //    改成一句人话，并把原始码留在调试输出里供排查。
+      //
+      // 2. 本来就是人话的字符串。`localizeServiceMessage` 也被用来透传
+      //    usageType（:131）、detail（:422）这类**未登记的展示文本**，以及
+      //    `localizeServiceError` 里的 Dart 异常原文（:524-:538）。这些必须
+      //    原样返回，否则会把「老师」「自己」和异常详情一起吃掉。
+      //
+      // 判据：内部码一律是纯小写蛇形（^[a-z][a-z0-9_]*$）。中文、空格、
+      // 大写、标点都不匹配，所以不会误伤第 2 类。
+      //
+      // TODO(l10n)：这里借用了 quickImportUnknownError 的措辞（该键名带
+      // quickImport 前缀，语义上不贴切，但它的六语翻译出自仓库自己的流程，
+      // 比手写六份新译文稳）。等文案口径 revisiting 时应新增一个专用键
+      // serviceMsgUnknownCode，并把这条兜底的注释一并收窄。
+      if (_looksLikeInternalCode(resolvedCode)) {
+        // 原始码进调试输出，正式包里不留。
+        // ignore: avoid_print
+        print('service_message_localizer: unmapped code "$resolvedCode"');
+        return l10n.quickImportUnknownError;
+      }
       return resolvedCode;
   }
 }
+
+/// 内部错误码的形状：纯 ASCII 小写蛇形，无空格无标点。
+///
+/// 用来把「未登记的机器码」与「本来就是人话的透传文本」区分开——见
+/// [localizeServiceMessage] 兜底分支的说明。
+bool _looksLikeInternalCode(String value) {
+  if (value.isEmpty) {
+    return false;
+  }
+  return _internalCodePattern.hasMatch(value);
+}
+
+final RegExp _internalCodePattern = RegExp(r'^[a-z][a-z0-9_]*$');
 
 /// Localizes any service-layer warning string (row warnings, week clamps, etc.).
 String localizeServiceWarning(AppLocalizations l10n, String warning) {
