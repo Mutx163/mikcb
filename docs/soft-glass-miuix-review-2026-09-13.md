@@ -121,7 +121,7 @@ next?.acquire();
 - 通用化：玻璃不能简单地“自己带一块背景”（它背后就是整页），
   所以要么**页面分层**（背景层和玻璃层），要么改成上游 Compose 的思路，
   让“可被采样的背景”成为一个独立的 GraphicsLayer，玻璃在另一个。
-- ⚠️ 注意：并发进行中的“按 zone 分块捕获”**没有解决这一条**（见 §4）。
+- 注意：并发进行中的“按 zone 分块捕获”**没有解决这一条**（见 §4）。
 
 ---
 
@@ -478,7 +478,7 @@ static HyperosGlassBackdropController? get active =>
   唯一例外是被显式 `MiuixTheme` 包住的子树（如 `miuix_showcase`）。
 - 启动预热已接上：`lib/main.dart:375` → `MiuixGlassRendering.load()` ✓。
 - `test/ui/hyperos/soft_glass_tuning_test.dart` 对
-  倍率映射、显式覆盖优先、clamp 和模糊关闭不接采样源 的守卫是有效的，
+  倍率映射、显式覆盖优先、clamp 和模糊关闭不接采样源的守卫是有效的，
   只是覆盖面停在“材质参数”这一层（见 §5）。
 
 ---

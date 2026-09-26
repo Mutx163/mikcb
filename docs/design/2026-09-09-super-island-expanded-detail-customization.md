@@ -79,7 +79,7 @@ LiveUpdateService.buildNotification() 里有两个 builder：
 **优点**：一个字段同时承载显隐+顺序；缺省=全显示永远不破坏老用户；二期的排序直接复用。
 **缺点**：需定义一个枚举+序列化约定（很小）。
 
-### 方案 B：每字段一个布尔（timeShow/locationShow/teacherShow…）
+### 方案 B：每字段一个布尔（timeShow/locationShow/teacherShow……）
 
 - 与现有 liveXxx 风格完全同构，心智低。
 - 缺点：8 字段 × 双档 = 16 个 pref + 16 copyWith 字段，样板代码量是 A 的 2～3 倍，且没有排序。

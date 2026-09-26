@@ -15,23 +15,23 @@
 
 ## 二、整改清单与落地状态
 
-### P0（已完成 ✅）
+### P0（已完成）
 
 | # | 事项 | 落地 | 位置 |
 |---|------|------|------|
 | 1 | 外观「恢复默认」漏 3 字段（homeNavigationForm / glassDockLayout / glassDockInsetClearance，后者为滑块）违反 IA §5 | 补齐 copyWith + 测试断言（含跨 scope 保护） | `lib/screens/settings/settings_reset.dart` · `test/screens/settings_reset_test.dart` |
 | 2 | IA §7 搜索索引“描述了不存在的能力” | 选择**诚实化改写**而非补建：降级为路线图 + 启动条件（埋点迷路信号或入口 >30）；见偏差说明 §五-1 | `.trellis/spec/flutter/settings-information-architecture.md` §7 |
 
-### P1（已完成 ✅）
+### P1（已完成）
 
 | # | 事项 | 落地 | 位置 |
 |---|------|------|------|
-| 3 | 云同步入口零状态（IA §6 点名） | 新增 `_CloudSyncEntryTile`：行尾显示 未开启/已开启/同步中/上次同步失败；缓存 Future 不在 build 发 I/O；前台恢复重读；ListenableBuilder 跟随同步动态 | `lib/screens/timetable_settings_screen.dart` |
+| 3 | 云同步入口零状态（IA §6 点名） | 新增 `_CloudSyncEntryTile`：行尾显示未开启/已开启/同步中/上次同步失败；缓存 Future 不在 build 发 I/O；前台恢复重读；ListenableBuilder 跟随同步动态 | `lib/screens/timetable_settings_screen.dart` |
 | 4 | 时间模板未选择时首页行尾留白 | 双入口统一空态文案「未选择」 | 同上 · `settings_timetable_page.dart` |
 | 5 | 恢复默认确认框谎报范围（四页共用「重置所有设置」） | 新增 4 条按 scope 枚举的确认文案（六语言） | `lib/l10n/*.arb` · `settings_reset.dart` `_confirmBody` |
 | 6 | layout spec 正文以已删除的 Forui 组件为 canonical | 整篇降级 HISTORICAL 存根，有效契约（16 padding / SectionGap / w400）标注现居所 | `.trellis/spec/flutter/settings-screen-layout.md` |
 
-### P2（已完成 ✅）
+### P2（已完成）
 
 | # | 事项 | 落地 | 位置 |
 |---|------|------|------|
@@ -40,7 +40,7 @@
 | 9 | 外观页第 1 组无标题裸组（同页自相矛盾） | 包进 `HyperosSettingsBlock`，新标题「主题与显示」 | `settings_appearance.dart` |
 | 10 | 超级岛主页单一无名组混排偏好与诊断 | 拆「提醒 / 显示内容 / 维护与自检」三个带标签组 | `settings_live.dart` |
 
-### P3（已完成 ✅）
+### P3（已完成）
 
 | # | 事项 | 落地 | 位置 |
 |---|------|------|------|
@@ -50,7 +50,7 @@
 | 14 | 'weeks' 字形双占 | 时间模板让出 weeks 改用 timer（见 #8） | 主文件 · `settings_timetable_page.dart` |
 | 15 | 清除壁纸/恢复默认后文档目录积累孤儿图片文件 | `managed_image_storage.dart` 新增 `deleteManagedImage`（目录+前缀双保险防误删），接入清除按钮与课表页 reset 流程 | `lib/utils/managed_image_storage.dart` 等 |
 
-### 规范修订（随整改同步，✅ 已落盘）
+### 规范修订（随整改同步，已落盘）
 
 - **§1**：「诊断只此一处」→「唯一权威入口 + 允许上下文捷径（须同视觉 + 注释留痕）」；新增「上下文偏好例外条款」（如统计周报推送留在统计页）。
 - **§3**：补「页面唯一组可省略标签」例外；补超限合并判据（优先合并同一心智模型相邻组，禁止硬塞）。

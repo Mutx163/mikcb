@@ -232,9 +232,9 @@
 | name | String | 课程名称 |
 | teacher | String | 授课教师 |
 | location | String | 上课地点 |
-| dayOfWeek | int | 星期几（1-7） |
-| startSection | int | 开始节次（1-10） |
-| endSection | int | 结束节次（1-10） |
+| dayOfWeek | int | 星期几（1～7） |
+| startSection | int | 开始节次（1～10） |
+| endSection | int | 结束节次（1～10） |
 | startTime | String | 开始时间（HH:mm） |
 | endTime | String | 结束时间（HH:mm） |
 | color | String | 颜色代码（#RRGGBB） |

@@ -13,7 +13,7 @@
 
 ---
 
-## 1. ⛔ 最高优先级：`.dart_tool/package_config.json` 是双系统共用的单向开关
+## 1. 最高优先级：`.dart_tool/package_config.json` 是双系统共用的单向开关
 
 ### 1.1 机理
 

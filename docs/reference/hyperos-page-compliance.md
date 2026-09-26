@@ -38,7 +38,7 @@ python tool/hyperos_audit.py --perfect    # 严格完美合规（error + warn）
 
 | 级别 | 含义 | CI |
 |------|------|-----|
-| **error** | 禁用旧 API（ListTile、MaterialPageRoute…） | `--strict` 失败 |
+| **error** | 禁用旧 API（ListTile、MaterialPageRoute……） | `--strict` 失败 |
 | **warn** | 字体、硬编码色、圆角、ListView 结构等 | `--perfect` 失败 |
 | **info** | 间距网格、HyperosColors 使用率 | 仅报告 |
 | **manual** | 箭头对称、暗色逐屏、CFH、导入子流程 | Agent/真机必查 |
@@ -85,7 +85,7 @@ python tool/hyperos_audit.py --perfect    # 严格完美合规（error + warn）
 | `id` | 稳定标识 |
 | `file` | 相对仓库根的 Dart 路径 |
 | `label` | 中文页面名（报告用） |
-| `category` | home / settings / form / import / live / sheet / qa … |
+| `category` | home / settings / form / import / live / sheet / qa …… |
 | `expectedShell` | `HyperosSubpage` 或 `HyperosRootPage` |
 | `manualStatus` | `pass` / `partial` / `fail` / `review` |
 | `allowLegacy` | `true` 时跳过 strict（如 Showcase） |

@@ -25,7 +25,7 @@
 做得对的：
 
 - 三层令牌架构（`MiuixSpec → Tokens → HyperosColors`）健全，395 处引用，亮暗双色板完整转录自 Miuix/HyperOS（`hyperos_miuix_spec.dart`）；主色 `#3482FF`/`#277AF7`，背景 `#FFFFFF`/`#242424`，与系统观感一致。
-- 首屏纵向节奏正确：状态栏 → 标题(=课表切换器) → 星期栏(40dp) → 课表格；玻璃 chrome 带连续不分层（`home_page_region_blur.dart:129`）。
+- 首屏纵向节奏正确：状态栏 → 标题（=课表切换器） → 星期栏(40dp) → 课表格；玻璃 chrome 带连续不分层（`home_page_region_blur.dart:129`）。
 - 设置首页六大分组「课表 / 课表显示 / 提醒与桌面 / 应用 / 数据与共享 / 关于」符合用户心智模型（`timetable_settings_screen.dart:390-640`）。
 - 课程卡对比度有 WCAG 巡检（min 3.0 / critical 2.0，`course_color_palette.dart:102-107`）。
 

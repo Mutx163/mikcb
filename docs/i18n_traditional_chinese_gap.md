@@ -13,7 +13,7 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 ## 建议的翻译流程
 
 1. **机械预繁化**：对下方 key 用 OpenCC（`s2hk`/`s2twp`）批量转换，一次性消掉 90%+ 缺口
-2. **人工校对 TW 用语**：`s2twp` 会做词汇转换（如 网络→網路、软件→軟體），但仍需抽查教学领域用语（課程、節、教務處等两岸差异）
+2. **人工校对 TW 用语**：`s2twp` 会做词汇转换（如网络→網路、软件→軟體），但仍需抽查教学领域用语（課程、節、教務處等两岸差异）
 3. **HK 校对重点**：HK 用语更接近书面繁体 + 少量粤语习惯，OpenCC `s2hk` 后人工抽查即可
 4. **防回归**：本清单可作为 CI 校验脚本的数据源（繁化率低于阈值即告警），或直接以“zh_HK/zh_TW 与 zh 逐字相同的含 CJK 条数 ≤ 当前基线”作为棘轮指标
 
@@ -87,7 +87,7 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `cloudSyncModeTitle` | 同步方式 |
 | `cloudSyncResultCancelled` | 已取消同步 |
 | `cloudSyncSyncNow` | 立即同步 |
-| `cloudSyncSyncing` | 正在同步… |
+| `cloudSyncSyncing` | 正在同步…… |
 | `colorGroupDeep` | 深色系 |
 | `colorGroupDopamine` | 多巴胺系 |
 | `colorGroupOcean` | 海洋系 |
@@ -126,7 +126,7 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `courseImportRecordingEmptyTip` | 未录制到任何操作 |
 | `courseImportRecordingSavedStatus` | 录制已保存（{count} 步） |
 | `courseImportRecordingStartedTip` | 录制已开始，请按正常流程操作教务网站 |
-| `courseImportRecordingStatus` | 录制中…点击停止完成录制 |
+| `courseImportRecordingStatus` | 录制中……点击停止完成录制 |
 | `courseImportSaveRecordingMessage` | 录制了 {count} 个操作步骤，是否保存为快捷导入？ |
 | `courseImportSaveRecordingTitle` | 保存录制 |
 | `courseImportScriptFailed` | 脚本执行失败 |
@@ -229,20 +229,20 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `holidayLogBuiltinLoaded` | {year}年：加载内置资产（{count} 条） |
 | `holidayLogFallbackApiError` | 备用 API 返回错误 |
 | `holidayLogFallbackApiException` | 备用 API 异常：{error} |
-| `holidayLogFallbackApiParsing` | 备用 API 返回 {count} 条原始数据，正在解析… |
+| `holidayLogFallbackApiParsing` | 备用 API 返回 {count} 条原始数据，正在解析…… |
 | `holidayLogFallbackApiStatus` | 备用 API 响应 {statusCode}，跳过 |
-| `holidayLogLocalCacheHit` | {year}年：命中本地缓存（{count} 条），后台刷新中… |
-| `holidayLogMemoryCacheHit` | {year}年：命中内存缓存（{count} 条），后台刷新中… |
-| `holidayLogNoCacheFetching` | {year}年：无缓存，正在拉取远程数据… |
+| `holidayLogLocalCacheHit` | {year}年：命中本地缓存（{count} 条），后台刷新中…… |
+| `holidayLogMemoryCacheHit` | {year}年：命中内存缓存（{count} 条），后台刷新中…… |
+| `holidayLogNoCacheFetching` | {year}年：无缓存，正在拉取远程数据…… |
 | `holidayLogNoValidEntries` | 解析后无有效条目，跳过 |
 | `holidayLogPrimaryApiError` | 主 API 返回错误：{message} |
 | `holidayLogPrimaryApiException` | 主 API 异常：{error} |
-| `holidayLogPrimaryApiFailed` | 主 API 失败，尝试备用 API… |
-| `holidayLogPrimaryApiParsing` | 主 API 返回 {count} 条原始数据，正在解析… |
+| `holidayLogPrimaryApiFailed` | 主 API 失败，尝试备用 API…… |
+| `holidayLogPrimaryApiParsing` | 主 API 返回 {count} 条原始数据，正在解析…… |
 | `holidayLogPrimaryApiStatus` | 主 API 响应 {statusCode}，跳过 |
 | `holidayLogRemoteFailedBuiltin` | {year}年：远程拉取失败，使用内置资产兜底 |
 | `holidayLogRemoteSuccess` | {year}年：远程拉取成功（{count} 条），已缓存 |
-| `holidayLogRequesting` | 正在请求 {uri} … |
+| `holidayLogRequesting` | 正在请求 {uri} …… |
 | `holidayNameDragonBoat` | 端午节 |
 | `holidayNameLaborDay` | 劳动节 |
 | `holidayNameMidAutumn` | 中秋节 |
@@ -626,7 +626,7 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `logTimetableLoadCurrentWeekFailed` | 加载当前周次失败 |
 | `logTimetableLoadSettingsFailed` | 加载课表设置失败 |
 | `lowerByValue` | 更矮 {value} |
-| `macroReplayAcceleratedFallbackTip` | 快捷路径失败，正在使用完整录制步骤重试… |
+| `macroReplayAcceleratedFallbackTip` | 快捷路径失败，正在使用完整录制步骤重试…… |
 | `macroReplayClickNotFound` | 未找到点击元素：{selector} |
 | `macroReplayEmptyClickSelector` | 点击元素的选择器为空 |
 | `macroReplayEmptyFillSelector` | 填充字段的选择器为空 |
@@ -639,15 +639,15 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `macroReplayNoSteps` | 没有录制的步骤 |
 | `macroReplayStatusFailed` | 失败：{error} |
 | `macroReplayStatusPaused` | 等待手动操作：{reason} |
-| `macroReplayStepClicking` | 正在点击... |
-| `macroReplayStepDelay` | 等待中... |
-| `macroReplayStepExecuteScript` | 正在执行导入脚本... |
+| `macroReplayStepClicking` | 正在点击…… |
+| `macroReplayStepDelay` | 等待中…… |
+| `macroReplayStepExecuteScript` | 正在执行导入脚本…… |
 | `macroReplayStepFailed` | 第 {current}/{total} 步失败：{error} |
-| `macroReplayStepFilling` | 正在填充表单... |
-| `macroReplayStepNavigating` | 正在导航... |
+| `macroReplayStepFilling` | 正在填充表单…… |
+| `macroReplayStepNavigating` | 正在导航…… |
 | `macroReplayStepWaitManual` | 等待用户操作 |
-| `macroReplayStepWaitSelector` | 等待页面元素... |
-| `macroReplayStepWaitUrl` | 等待页面跳转... |
+| `macroReplayStepWaitSelector` | 等待页面元素…… |
+| `macroReplayStepWaitUrl` | 等待页面跳转…… |
 | `macroReplayUserCancelled` | 用户取消 |
 | `macroReplayWaitDomReady` | 等待 DOM 就绪 |
 | `macroReplayWaitPageLoad` | 等待页面加载 |
@@ -684,7 +684,7 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `recentSchoolLabel` | 最近使用 |
 | `saturationLabel` | 饱和度 {value}% |
 | `saveAction` | 保存 |
-| `savingAction` | 保存中… |
+| `savingAction` | 保存中…… |
 | `scheduleBadgeLabel` | 日程 |
 | `scheduleDateLabel` | 日期 |
 | `scheduleReminderOff` | 不提醒 |
@@ -801,7 +801,7 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `cloudSyncModeTitle` | 同步方式 |
 | `cloudSyncResultCancelled` | 已取消同步 |
 | `cloudSyncSyncNow` | 立即同步 |
-| `cloudSyncSyncing` | 正在同步… |
+| `cloudSyncSyncing` | 正在同步…… |
 | `colorGroupDeep` | 深色系 |
 | `colorGroupDopamine` | 多巴胺系 |
 | `colorGroupOcean` | 海洋系 |
@@ -941,7 +941,7 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `logFieldVersionName` | 版本名 |
 | `logFieldWeekday` | 星期 |
 | `lowerByValue` | 更矮 {value} |
-| `macroReplayStepDelay` | 等待中... |
+| `macroReplayStepDelay` | 等待中…… |
 | `macroReplayWaitSelector` | 等待元素：{selector} |
 | `macroReplayWaitUrlPattern` | 等待 URL 匹配：{pattern} |
 | `miuiIslandLabelContentLocation` | 教室 |
@@ -964,7 +964,7 @@ TW 未繁化集合完全覆盖 HK 集合（交集 265/267），修复 TW 即可�
 | `recentSchoolLabel` | 最近使用 |
 | `saturationLabel` | 饱和度 {value}% |
 | `saveAction` | 保存 |
-| `savingAction` | 保存中… |
+| `savingAction` | 保存中…… |
 | `scheduleBadgeLabel` | 日程 |
 | `scheduleDateLabel` | 日期 |
 | `scheduleReminderOff` | 不提醒 |
