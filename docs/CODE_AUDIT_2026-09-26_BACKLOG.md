@@ -11,14 +11,18 @@
 
 ---
 
-## 一、已修（1 条）
+## 一、已修（2 条）
 
 | 条目 | 提交 | 覆盖测试 |
 |---|---|---|
 | 课程颜色格式不规范 → 整个考试列表页打不开 | `3966e3f0` | `test/utils/hex_color_test.dart`（5）+ `test/screens/exam_list_malformed_color_test.dart`（6） |
+| 日历文件 `RRULE:UNTIL` 失控 → 导入途中耗尽内存 | `f884a87c` | `test/services/ics_import_service_test.dart`（8，含 1 条新增回归） |
 
-修法：删掉 `exam_list_screen.dart` 手写的 `int.parse(hex, radix: 16)`，改调仓库已有的
+第一条修法：删掉 `exam_list_screen.dart` 手写的 `int.parse(hex, radix: 16)`，改调仓库已有的
 `parseHexColorOrFallback`。实测旧逻辑对 `''`/`'#'`/`'#GGGGGG'`/`'rgb(1,2,3)'` 均抛 `FormatException`。
+
+第二条修法：ICS 是四条导入链路里唯一没加周次护栏的，补上 `Course.normalizeWeeks`（钳到 1..30），
+与存储读取路径已有的钳制对齐。回归测试实测非空转——移除护栏后断言报 `Actual: <416055>`。
 
 ---
 
@@ -28,7 +32,7 @@
 
 | # | 问题 | 位置 | 复核要点 |
 |---|---|---|---|
-| 1 | **一个日历文件能让 App 内存爆掉且永久卡死** | `ics_import_service.dart:362-386` → `course.dart:488` → `import_export_logic.dart:135`,`:143` | 实算 `UNTIL=99991231` = **416,055 周**；`activeWeeks` 是每次重算的 getter（`:482`）；去重时 `weeks.join(',')` 拼出 **2,385,225 字符 ≈ 2.4MB**／门课每次导入。**课程已落盘**，之后每次开课表都在踩 |
+| 1 | **一个日历文件能在导入途中耗尽内存** ✅ 已修 `f884a87c` | `ics_import_service.dart:189-192` → `course.dart:488` → `import_export_logic.dart:135`,`:143` | 实算 `UNTIL=99991231` = **416,055 周**（回归测试实测值一致）；`activeWeeks` 是不带缓存的 getter，会真的造出 41 万元素 List；去重时 `weeks.join(',')` 拼出 **2,385,225 字符 ≈ 2.4MB**／门课。**严重度已下修**：原文称「已落盘、之后每次开课表都在踩、只能清数据恢复」**不成立**——读取路径 `Course.fromJsonString` → `fromJson` → `normalizeWeeks` 本就钳到 1..30，重启即自愈，损害仅限导入那一刻 |
 | 3 | **坏事务记录 = 永久砖机** | `storage_service.dart:282-317`,`:337-339`,`:134` | `:305-307` 抛错发生在任何清理之前，坏记录永远留在盘上，每次保存设置都报错。**注意**：原文「后续重试都不触发」**说反了**——`:128` 会把 `_initFuture` 置 null，重试**会**再跑，只是又撞同一条坏记录 |
 | 4 | **云恢复先删后写，缺字段即永久丢** | `warehouse_import_preferences_service.dart:436-488` | 无 journal，`:477`/`:480` 空值不回写。**比原报告更广**：`:440-447` 还清掉自定义导入地址前缀、记忆登录、最近学校、自定义调试记录；`app_sync_snapshot_service.dart:404-408` 把缺失的 `warehouse` 变空 bundle = **全量清空却报成功** |
 | 6 | **快照应用无事务，杀进程 = 永久半应用且无法撤销** | `app_sync_snapshot_service.dart:900-968` | 不是「8 次以上」而是 **11 次**无条件落盘；回滚**只在内存**（`:237`，`transfer_undo_service.dart:30-32` 自述）；重启后 `:862-865` 返回 false。回滚本身又是 ~20 次写，也可能失败 |
