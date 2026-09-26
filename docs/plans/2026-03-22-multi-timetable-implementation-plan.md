@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: 建立多课表数据模型
+## Task 1: 建立多课表数据模型
 
 **Files:**
 - Create: `lib/models/timetable_profile.dart`
@@ -52,7 +52,7 @@ git add lib/models/timetable_profile.dart lib/models/timetable_settings.dart tes
 git commit -m "feat: add timetable profile model"
 ```
 
-### Task 2: 重构存储层并加入单课表迁移
+## Task 2: 重构存储层并加入单课表迁移
 
 **Files:**
 - Modify: `lib/services/storage_service.dart`
@@ -101,7 +101,7 @@ git add lib/services/storage_service.dart test/services/storage_service_profile_
 git commit -m "feat: persist timetable profiles with migration"
 ```
 
-### Task 3: 让 Provider 以当前课表为中心工作
+## Task 3: 让 Provider 以当前课表为中心工作
 
 **Files:**
 - Modify: `lib/providers/timetable_provider.dart`
@@ -151,7 +151,7 @@ git add lib/providers/timetable_provider.dart lib/services/data_transfer_service
 git commit -m "refactor: drive app state from active timetable profile"
 ```
 
-### Task 4: 让通知和超级岛只跟随当前课表
+## Task 4: 让通知和超级岛只跟随当前课表
 
 **Files:**
 - Modify: `lib/providers/timetable_provider.dart`
@@ -189,7 +189,7 @@ git add lib/providers/timetable_provider.dart lib/services/miui_live_activities_
 git commit -m "fix: bind live notifications to active timetable profile"
 ```
 
-### Task 5: 首页增加课表切换胶囊
+## Task 5: 首页增加课表切换胶囊
 
 **Files:**
 - Modify: `lib/screens/timetable_screen.dart`
@@ -228,7 +228,7 @@ git add lib/screens/timetable_screen.dart test/widgets/timetable_switcher_test.d
 git commit -m "feat: add quick timetable switcher on home screen"
 ```
 
-### Task 6: 增加课表管理页
+## Task 6: 增加课表管理页
 
 **Files:**
 - Create: `lib/screens/timetable_profiles_screen.dart`
@@ -262,7 +262,7 @@ git add lib/screens/timetable_profiles_screen.dart lib/screens/timetable_screen.
 git commit -m "feat: add timetable profile management screen"
 ```
 
-### Task 7: 适配导入导出与文案
+## Task 7: 适配导入导出与文案
 
 **Files:**
 - Modify: `lib/screens/data_transfer_screen.dart`

@@ -5,7 +5,7 @@
 
 ## 目标
 
-在 **不引入前端构建链**（仍用 `assets/lan_edit/` 静态资源）的前提下，让电脑端能力与 App 近期能力对齐，并补齐编辑体验缺口。
+在 **不引入前端构建链**（仍用 `assets/lan_edit/` 静态资源）的前提下，让电脑端能力与 App 近期能力保持一致，并补齐编辑体验缺口。
 
 ---
 
@@ -28,7 +28,7 @@
 
 - `POST /api/v1/import/spreadsheet`
 - Body: `{ "fileName": "x.csv", "contentBase64": "...", "replaceExisting": false }`
-- 响应: `{ "importedCount", "warnings", "format" }`
+- 响应：`{ "importedCount", "warnings", "format" }`
 - 实现：复用 `SpreadsheetImportService.parseBytes` + `TimetableProvider.importParsedCourses`（`source: spreadsheet`）
 
 ### Web
@@ -51,7 +51,7 @@
 
 - `POST /api/v1/week-expression/parse`  
   Body: `{ "expression": "1-8、10-16(单)", "itemName": "课程名" }`  
-  响应: `{ "weeks": [1,2,...] }` 或 400
+  响应：`{ "weeks": [1,2,...] }` 或 400
 
 ### 数据写入
 
@@ -63,7 +63,7 @@
 
 ### 完成标准
 
-- 与 `week_expression_parser_test.dart` 用例代表式在 LAN API 上结果一致
+- `week_expression_parser_test.dart` 里的代表性表达式在 LAN API 上算出的结果一致
 
 ---
 
@@ -110,7 +110,7 @@
 
 ## 实现顺序（本次 Goal）
 
-1. 本文档 ✓  
+1. 本文档（已完成）  
 2. P0-1 后端 + 测试 + Web  
 3. P0-2 后端 + 测试 + Web  
 4. P0-3 Web  

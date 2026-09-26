@@ -130,7 +130,7 @@ sequenceDiagram
 
 ## 七、回放健壮性策略
 
-1. **Converter**：`click` 后插入 800ms `delay`；`submit` 后 2500ms `delay`，给页面导航留时间。
+1. **Converter**：`click` 后插入 800 ms `delay`；`submit` 后 2500 ms `delay`，给页面导航留时间。
 2. **Replayer**：`click` / `fillField` 后调用 `_waitForPageReady`（URL + `document.readyState`）。
 3. **dialogId**：Bridge `singleSelection` 支持可选 `dialogId`，用于稳定匹配 `dialogResponses`（适配脚本可按需传入）。
 

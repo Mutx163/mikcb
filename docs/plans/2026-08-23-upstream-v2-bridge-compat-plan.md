@@ -25,7 +25,7 @@
 
 ## 二、升级前后差异对照
 
-| 维度 | v1（升级前） | v2（升级后） |
+| 对比项 | v1（升级前） | v2（升级后） |
 | --- | --- | --- |
 | 同步桥对象 | `AndroidBridge` / `AndroidBridgePromise`（裸全局与 `window.` 混用） | `window.shiguangBridge` / `window.shiguangBridgePromise` |
 | 方法与数据结构 | showToast / notifyTaskCompletion / showAlert / showPrompt / showSingleSelection / saveCourseConfig / savePresetTimeSlots / saveImportedCourses | **完全不变** |
@@ -37,14 +37,14 @@
 
 | 组合 | 结果 | 说明 |
 | --- | --- | --- |
-| 旧 App × 旧脚本(v1) | ✅ 正常 | 现状不变 |
-| 新 App × 旧脚本(v1) | ✅ 正常（需做 A 层） | 新 App 同时注入两套桥名即可 |
-| 新 App × 新脚本(v2) | ✅ 正常（需做 A 层） | 同上 |
-| **旧 App × 新脚本(v2)** | ❌ **必坏** | 旧 App 只注入 `AndroidBridge`，v2 脚本调 `window.shiguangBridge.*` 直接 undefined 抛错，toast/选择弹窗/课表保存全部失效 |
+| 旧 App × 旧脚本（v1） | ✅ 正常 | 现状不变 |
+| 新 App × 旧脚本（v1） | ✅ 正常（需做 A 层） | 新 App 同时注入两套桥名即可 |
+| 新 App × 新脚本（v2） | ✅ 正常（需做 A 层） | 同上 |
+| **旧 App × 新脚本（v2）** | ❌ **必坏** | 旧 App 只注入 `AndroidBridge`，v2 脚本调 `window.shiguangBridge.*` 直接 undefined 抛错，toast/选择弹窗/课表保存全部失效 |
 
-**关键事实链**：旧版 mikcb 从我们自己的复刻仓库 Mutx163/qingyu_warehouse 拉取脚本（非直连上游）。qingyu_warehouse 配有 `sync-upstream.yml`（每天北京时间 09:00 自动同步上游 + `scripts/sync_upstream.py` 校验，退出码 3=兼容性拦截 / 4=警告需人工）。当前 main 上脚本仍是 v1（最后同步 2026-08-23 02:22 UTC，早于上游 08:13 的 v2 合并）——**下一次自动同步就会把 v2 脚本带进 main，届时所有旧版 App 的教务导入立即开始坏**。
+**关键事实链**：旧版 mikcb 从我们自己的复刻仓库 Mutx163/qingyu_warehouse 拉取脚本（非直连上游）。qingyu_warehouse 配有 `sync-upstream.yml`（每天北京时间 09:00 自动同步上游 + `scripts/sync_upstream.py` 校验，退出码 3=兼容性拦截 / 4=警告需人工）。当前 main 上脚本仍是 v1（最后同步 2026-08-23 02:22 UTC，早于上游 08:13 的 v2 合并）。下一次自动同步就会把 v2 脚本带进 main，届时所有旧版 App 的教务导入立即开始坏。
 
-结论：「同步升级后旧版还能不能用」完全取决于我们在 qingyu_warehouse 同步管线里做什么——什么都不做就会坏；加一层自动垫片（B 层）就能让旧版继续用，无需强制升级。
+结论：「同步升级后旧版还能不能用」完全取决于我们在 qingyu_warehouse 同步管线里做什么：什么都不做就会坏；加一层自动垫片（B 层）就能让旧版继续用，无需强制升级。
 
 ## 四、方案设计（三层）
 
@@ -66,7 +66,7 @@ window.AndroidBridgePromise ||= window.shiguangBridgePromise;
 要点：
 - 本地调试脚本路径（debugScriptOverride）走同一个 wrappedScript 入口，天然一并覆盖；
 - 方法集合 v1/v2 完全一致（官方承诺结构不变），无需新增任何方法实现；
-- 验收：以上游 `GLOBAL_TOOLS/school.js`（组件测试脚本）在 WebView 手测 toast / confirm / singleSelection / saveCourseConfig / savePresetTimeSlots / saveImportedCourses 全链路。
+- 验收：以上游 `GLOBAL_TOOLS/school.js`（组件测试脚本）在 WebView 手测 toast、confirm、singleSelection、saveCourseConfig、savePresetTimeSlots、saveImportedCourses 全链路。
 
 ### B 层：qingyu_warehouse 同步管线「自动兼容垫片」（保住存量旧版用户，本方案核心）
 
@@ -83,15 +83,18 @@ window.AndroidBridgePromise ||= window.shiguangBridgePromise;
 
 要点与坑：
 - 垫片方向是「新名字 → 旧实现」，正好补上旧 App 缺失的一侧；对新 App（A 层已双侧注入）幂等无害；
-- **垫片改变文件字节 → 索引里的 sha256 必须按垫片后的最终内容重算再写入**。mikcb 端 `lib/services/warehouse_repository_service.dart`（fetchAdapterScript，L126–140）对声明了 sha256 的脚本强制校验，不匹配直接拒载——这一步漏掉会让新 App 反而拉不到脚本；
-- `tests/test_warehouse_upstream_compat.py` 增加用例：① 同步产物每个 *.js 头部含垫片标记；② adapters.yaml/pb 中 sha256 与垫片后内容一致；③ 检测到 `shiguangBridge` 调用却无垫片 ⇒ 同步报错（复用退出码 3 拦截机制，防止未来绕过）；
+- **垫片改变文件字节 → 索引里的 sha256 必须按垫片后的最终内容重算再写入**。mikcb 端 `lib/services/warehouse_repository_service.dart`（fetchAdapterScript，L126–140）对声明了 sha256 的脚本强制校验，不匹配直接拒载。这一步漏掉会让新 App 反而拉不到脚本；
+- `tests/test_warehouse_upstream_compat.py` 增加三类用例：
+  ① 同步产物每个 *.js 头部含垫片标记；
+  ② adapters.yaml/pb 中 sha256 与垫片后内容一致；
+  ③ 检测到 `shiguangBridge` 调用却无垫片 ⇒ 同步报错（复用退出码 3 拦截机制，防止未来绕过）。
 - 上线顺序：先 workflow_dispatch 手动触发验证，抽查若干脚本（如 resources/AHSZU/ahszu_01.js），再放行每日定时任务。
 
 ### C 层：索引策略（分阶段，当前不必急）
 
-- **短期（现在起）**：继续使用 `index/root_index.yaml` + `resources/*/adapters.yaml`。依据：上游 yaml 仍是创作源格式（README 贡献流程未变，pb 只是 CI 编译产物），短期内不会消失；mikcb 解析链路（`lib/services/warehouse_repository_service.dart` fetchRootIndex/fetchAdaptersIndex）不动。
-- **中期（可选增强）**：mikcb 新增 `school_index.pb` 解析（proto 模板在上游 `proto/school_index.proto`），优先 pb、失败回退 yaml——单文件拉取更快，且配合 sha256 抗镜像投毒。
-- **监控项**：qingyu_warehouse CI 增加上游哨兵检查——若上游删除 `index/root_index.yaml` 或 build_data.py 不再产出 yaml 兼容结构，则告警转人工评估。
+- **短期（现在起）**：继续使用 `index/root_index.yaml` + `resources/*/adapters.yaml`。依据：上游 yaml 仍是创作源格式（README 贡献流程未变，pb 只是 CI 编译产物），短期内不会消失；mikcb 解析流程（`lib/services/warehouse_repository_service.dart` fetchRootIndex/fetchAdaptersIndex）不动。
+- **中期（可选增强）**：mikcb 新增 `school_index.pb` 解析（proto 模板在上游 `proto/school_index.proto`），优先 pb、失败回退 yaml。单文件拉取更快，且配合 sha256 抗镜像投毒。
+- **监控项**：qingyu_warehouse CI 增加上游哨兵检查：若上游删除 `index/root_index.yaml` 或 build_data.py 不再产出 yaml 兼容结构，则告警转人工评估。
 
 ### D 层：发布与运营
 
@@ -106,7 +109,7 @@ window.AndroidBridgePromise ||= window.shiguangBridgePromise;
 3. [qingyu_warehouse] sync_upstream.py 增加垫片步骤 + sha256 重算（B 层）
 4. [qingyu_warehouse] test_warehouse_upstream_compat.py 增加垫片/sha256/拦截三类断言
 5. [qingyu_warehouse] 手动触发 sync-upstream 并抽查产物
-6. [mikcb] （可选后续）school_index.pb 解析支持（C 层中期）
+6. [mikcb]（可选后续）school_index.pb 解析支持（C 层中期）
 7. [文档] RELEASE.md 记录本次协议兼容决策
 
 ## 六、风险与回滚
@@ -117,28 +120,29 @@ window.AndroidBridgePromise ||= window.shiguangBridgePromise;
 | 个别脚本自定义了 `window.shiguangBridge` 与垫片冲突 | 垫片仅在「不存在时」赋值，天然避让；compat 测试加 grep 断言 |
 | sha256 重算遗漏导致新 App 校验失败拒载 | compat 测试强制「垫片 ⇔ sha256 一致」校验（B 层第 3 条） |
 | 上游彻底弃用 yaml 索引 | C 层哨兵检查提前告警；届时切 pb 解析（C 层中期项） |
-| 回滚 | 垫片纯附加、可逆；App 端别名无破坏性；yaml 主链路未动，回滚即移除对应步骤 |
+| 回滚 | 垫片纯附加、可逆；App 端别名无破坏性；yaml 主流程未动，回滚即移除对应步骤 |
 
 ---
 
 ## 七、实施记录（2026-08-23）
 
-### A 层 ✅ 已完成（mikcb commit ae06e41）
+### A 层 已完成（mikcb commit ae06e41）
 - 新增 `lib/services/warehouse_bridge_compat.dart`：`kWarehouseBridgeCompatShim` 常量（v1↔v2 双向别名，幂等）；
 - `course_import_screen.dart` wrappedScript 在 v1 桥实现后插值垫片；
 - `test/services/warehouse_bridge_compat_test.dart` 3 例单测锁定行为。
 
-### B 层 ✅ 已完成并上线（qingyu_warehouse commits e31aa9c…5274d22，已推送 origin/main）
+### B 层 已完成并上线（qingyu_warehouse commits e31aa9c…5274d22，已推送 origin/main）
 - `apply_v2_bridge_shim`：检测到 v2 桥调用的脚本自动前置幂等垫片；落盘后、post 校验前统一应用；
 - 校验器方法白名单扩展到 `window.shiguangBridge*`，修复 v2 未实现方法漏判缺口；
-- 新增 `--refresh-existing`（默认关闭，定时任务行为不变）与 `--quarantine-blocking` 隔离机制（`--no-quarantine` 恢复整批中止旧行为）;
+- 新增 `--refresh-existing`（默认关闭，定时任务行为不变）与 `--quarantine-blocking` 隔离机制（`--no-quarantine` 恢复整批中止旧行为）；
 - 过程中修复两个原有缺陷：预检暂存只写首个 asset_js_path（多适配器学校误报）、未兼容上游 asset_js_path 占位约定（幽灵脚本阻断）；
-- 已执行一次全量刷新：**150 个脚本带垫片更新为上游 v2 版本**，仅 HUAT 因调用轻屿未实现的 showConfirmDialog 被隔离（保持本地旧版脚本）；GLOBAL_TOOLS/test.js 等占位按警告跳过。远端 raw 抽验通过。
+- 已执行一次全量刷新：**150 个脚本带垫片更新为上游 v2 版本**，远端 raw 抽验通过。
+- 仅 HUAT 因调用轻屿未实现的 showConfirmDialog 被隔离（保持本地旧版脚本），GLOBAL_TOOLS/test.js 等占位按警告跳过。
 - 单测 18/18 通过。
 
-> 注：adapters.yaml 与 pb 索引实际均无 sha256 字段，方案中最危险的"重算"环节在本仓库不存在，天然消除该风险。
+> 注：adapters.yaml 与 pb 索引实际均无 sha256 字段，方案中最危险的“重算”环节在本仓库不存在，天然消除该风险。
 
-### C 层 ✅ 按计划维持现状
+### C 层 按计划维持现状
 继续使用 root_index.yaml + adapters.yaml；pb 解析留作后续可选增强。
 
 ### 遗留事项

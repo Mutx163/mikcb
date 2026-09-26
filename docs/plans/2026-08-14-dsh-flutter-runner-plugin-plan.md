@@ -1,4 +1,4 @@
-# dsh-flutter-runner 插件整体方案（一站式 Flutter 调试工具）
+# dsh-flutter-runner 插件整体方案（Flutter 调试工具）
 
 > 在 DeepSeek Harness（DSH）Web UI 中复刻 VSCode/Cursor 的 Flutter 调试体验：
 > **无线 ADB 连接管理（cursor-adb-connect）+ 一键编译安装到手机 + 实时日志（flutter run / logcat）+ 热重载**，全部收进一个插件。
@@ -11,11 +11,11 @@
 用户是 Flutter Android 开发者，日常工作依赖两套工具：
 
 1. **VSCode 调试运行**：点一下 Run/Debug → 编译 → 安装到手机 → 启动，实时查看日志；
-2. **cursor-adb-connect（ADB Quick Connect）**：无线 ADB 连接管理——从剪贴板读取手机上的配对信息，一键 adb pair + adb connect 无线连上手机，持续监控连接状态，断开自动告警并可一键重连。
+2. **cursor-adb-connect（ADB Quick Connect）**：无线 ADB 连接管理。它从剪贴板读取手机上的配对信息，一键 adb pair + adb connect 连上手机，并持续监控连接状态，断开自动告警、可一键重连。
 
-目标：把这两套能力**全部集合**进一个 DSH 插件，做成**一站式调试工具**，同时让 DSH agent 也能直接驱动整条链路。
+目标：把这两套能力**全部集合**进一个 DSH 插件，做成**调试工具**，同时让 DSH agent 也能直接跑完这套流程。
 
-### 1.2 功能矩阵（一站式）
+### 1.2 功能矩阵
 
 | 模块 | 功能 | 来源 |
 | --- | --- | --- |
@@ -24,7 +24,7 @@
 | C. 构建安装 | 一键 build apk（debug/profile/release）→ install → 启动，进度可视化 | 新开发 |
 | D. 运行与日志 | flutter run 流式日志（xterm.js）、关键字过滤、只看本 App logcat | 新开发 |
 | E. 热重载 | PTY 注入 r/R 键，对话中「热重载」也可触发 | 新开发 |
-| F. Agent 工具 | flutter_devices / flutter_build_install / flutter_run / flutter_stop / flutter_logs / adb_connect / adb_disconnect / adb_status | 新开发（对齐 dsh-ssh） |
+| F. Agent 工具 | flutter_devices / flutter_build_install / flutter_run / flutter_stop / flutter_logs / adb_connect / adb_disconnect / adb_status | 新开发（写法与 dsh-ssh 一致） |
 
 ### 1.3 非目标（V1）
 
@@ -49,13 +49,13 @@
 - flutter 3.44.4 可用，检测到真机 25060RK16C（android-arm64, Android 16 API 36）；
 - adb **不在 PATH**（cursor-adb-connect 的探测逻辑正好解决：ANDROID_HOME → %LOCALAPPDATA%\Android\Sdk\platform-tools → PATH）；
 - 全家桶源码完整存在于 ~/.dsh/profiles/web/node_modules/@linxin666/（dsh-ssh 双面结构模板）；
-- **cursor-adb-connect 源码在本机 D:\Users\34045\Desktop\cursor\cursor-adb-connect\**（extension.js 14.7KB，正则/探测/轮询逻辑可直接移植）。
+- **cursor-adb-connect 源码在本机 D:\Users\34045\Desktop\cursor\cursor-adb-connect\**（extension.js 14.7 KB，正则/探测/轮询逻辑可直接移植）。
 
 ### 2.2 生态现状
 
-dsh-ssh（双面结构模板，WebSocket 终端）、DSH-better-sidebar（VSCode 式侧边栏）、dsh-mobile-control（ADB 操控）、dsh-doctor（flutter doctor 诊断）——**没有现成的 Flutter 一键构建+日志插件，也没有无线 ADB 连接管理插件，本方案是生态空白点的完整覆盖。**
+dsh-ssh（双面结构模板，WebSocket 终端）、DSH-better-sidebar（VSCode 式侧边栏）、dsh-mobile-control（ADB 操控）、dsh-doctor（flutter doctor 诊断）——没有现成的 Flutter 一键构建+日志插件，也没有无线 ADB 连接管理插件，本方案补上这个空白。
 
-## 3. 插件设计：dsh-flutter-runner（一站式）
+## 3. 插件设计：dsh-flutter-runner
 
 ### 3.1 整体架构（双面插件）
 
@@ -128,27 +128,27 @@ packages/dsh-flutter-runner/
 
 ### 3.3 关键技术点
 
-#### (1) 无线 ADB 连接（cursor-adb-connect 完整移植）
+**（1）无线 ADB 连接（cursor-adb-connect 完整移植）**
 - **findAdbPath()**：原样移植 3 级探测（ANDROID_HOME/ANDROID_SDK_ROOT → %LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe → PATH），新增设置项可手填覆盖；
 - **parseClipboard()**：原样移植三组正则（adb pair <ip:port> <code> / adb connect <ip:port> / 裸 ip:port），支持多行剪贴板同时含 pair+connect；
 - **连接流程**：pair（可选）→ connect → adb devices 验证真实 serial → 推送连接状态；
-- **轮询监控**：adb devices 间隔轮询（设置可配，默认 10s，0=关闭），检测到断开 → WebSocket 推断线事件 → client 弹告警（复用 slots/通知）+ 一键重连；
+- **轮询监控**：adb devices 间隔轮询（设置可配，默认 10 s，0=关闭），检测到断开 → WebSocket 推断线事件 → client 弹告警（复用 slots/通知）+ 一键重连；
 - **最近连接历史**：≤8 条（ipPort + lastConnectedAt），存 ~/.dsh/dsh-flutter.json，UI 显示相对时间（刚刚/N 分钟前/N 天前）；
 - **断开**：adb disconnect（仅无线），状态复位。
 
-#### (2) 设备枚举
+**（2）设备枚举**
 flutter devices --machine JSON 解析，与 adb devices 合并标注连接方式（USB/无线/模拟器）。GUI 与 agent 工具共用同一解析。
 
-#### (3) 构建安装流水线
+**（3）构建安装流水线**
 步骤状态机 idle → building → built → installing → installed → launching；WebSocket 事件 {type: task, state, line} 推进度；child_process spawn + AbortController 取消；超时 kill 进程树（Windows taskkill /T）。
 
-#### (4) 运行与日志流
-- flutter run -d <id> 走 node-pty：流式 stdout/stderr + 注入 r/R（热重载）、q（退出）——**agent 对话中可直接说「热重载」**；
+**（4）运行与日志流**
+- flutter run -d <id> 走 node-pty：流式 stdout/stderr + 注入 r/R（热重载）、q（退出），**agent 对话中可直接说「热重载」**；
 - 日志行带时间戳 + 来源标记（build/run/logcat），xterm.js 渲染 + 关键字过滤（error/exception/PlatformException）；
 - logcat 子开关：「只看本 App」（adb logcat -v time --pid=$(adb shell pidof <包名>)）；
 - WebSocket 断线自动重连 + 日志缓冲重放；会话结束/刷新清理进程。
 
-#### (5) Agent 工具（对齐 dsh-ssh tools.ts 写法）
+**（5）Agent 工具（写法参照 dsh-ssh tools.ts）**
 
 | 工具 | 功能 | 触发词 |
 | --- | --- | --- |
@@ -163,7 +163,7 @@ flutter devices --machine JSON 解析，与 adb devices 合并标注连接方式
 
 工具在 ctx.systemPrompt.section 宣告（含「无线连接/构建消耗真实资源，先确认再操作」）。
 
-#### (6) 配置与安全
+**（6）配置与安全**
 - ~/.dsh/dsh-flutter.json：adb 路径、默认设备、轮询间隔、构建模式、日志保留行数、最近连接历史；
 - 设置页 installSettingsSection（schemastery schema），修改即时生效；
 - flutter/adb 执行属 shell 类操作，受 DSH 权限策略约束（当前 danger-full-access）；
@@ -189,7 +189,7 @@ dsh plugin --profile web add @<scope>/dsh-flutter-runner
 | M1 ADB 无线连接 | 移植 cursor-adb-connect：adb.ts + ConnectionTab + adb_* 工具 | 粘贴手机配对信息一键连上 25060RK16C；断线告警+重连；历史持久化 | 1 天 |
 | M2 host 引擎 | 设备枚举 + build/install/run 进程管理 + 日志缓冲 | CLI 直测 engine：完成一次 debug 构建安装 | 1 天 |
 | M3 路由与流 | /api/dsh-flutter/* + WebSocket（任务进度 + 日志流 + 连接状态） | curl 验证 REST；console 验证 ws 三路消息 | 0.5 天 |
-| M4 agent 工具 | 8 个工具 + prompt 段 | 对话中说「无线连接手机」「构建安装到手机」agent 闭环 | 0.5 天 |
+| M4 agent 工具 | 8 个工具 + prompt 段 | 对话中说「无线连接手机」「构建安装到手机」即可完成 | 0.5 天 |
 | M5 client UI | Device/Build/Log Tab + 热重载按钮 + 断线告警 UI | 真机全流程：无线连接 → 点按钮 → 装到手机 → 日志滚动 → 热重载 | 1 天 |
 | M6 打磨发布 | 设置页、logcat 过滤、错误处理、README、npm 发布 | 无孤儿进程；断线重连；可卸载重装 | 0.5 天 |
 
@@ -232,6 +232,6 @@ dsh plugin --profile web add @<scope>/dsh-flutter-runner
 
 1. 独立仓库 or 并入 dsh-web-ui 全家桶？
 2. npm scope 用什么？（需 npm 账号；或先本地 link 自用）
-3. 无线 ADB 的轮询间隔默认值？（沿用 10s，还是更快 5s）
+3. 无线 ADB 的轮询间隔默认值？（沿用 10 s，还是更快 5 s）
 4. V1 是否含 logcat tab？（含则多 0.5 天）
 5. 断线告警形式：面板内 toast 还是系统通知（dsh-session-notification 风格）？

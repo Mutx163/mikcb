@@ -1,4 +1,4 @@
-# 局域网编辑课表（电脑浏览器改手机课表）— 开发方案
+# 局域网编辑课表（电脑浏览器改手机课表）：开发方案
 
 ## 文档信息
 
@@ -170,8 +170,8 @@
 
 ### 5.1 页面
 
-1. **login.html**（或 index 内切换）— PIN 输入
-2. **editor** — 周视图 + 编辑抽屉
+1. **login.html**（或 index 内切换）：PIN 输入
+2. **editor**：周视图 + 编辑抽屉
 
 ### 5.2 周视图
 
@@ -202,20 +202,20 @@
 
 - 纯静态 **HTML + CSS + Vanilla JS**（无构建链，打进 `assets/`）
 - `fetch` 调 API；不引入 React/Vue，控制体积与维护成本
-- 响应式：最小宽度 1024px 优先（电脑），手机浏览器可只读
+- 响应式：最小宽度 1024 px 优先（电脑），手机浏览器可只读
 
 ---
 
 ## 六、安全设计
 
-1. **默认关闭**，无后台常驻监听。
-2. **随机端口 + PIN**：PIN 6 位数字，会话级 token（UUID）。
-3. **仅监听 `InternetAddress.anyIPv4`**，不 UPnP、不穿透 NAT。
-4. **会话 TTL**：30 分钟无 API 请求自动停止；单次最长 2 小时硬上限（可配置常量）。
-5. **限流**：同 IP 每分钟 PIN 错误 ≤ 5 次。
-6. **CORS**：仅允许同源（静态与 API 同服）；不开放跨域。
-7. **日志**：写入 `AppLogService`（连接、鉴权失败、写操作摘要，不含 PIN 明文）。
-8. **隐私文案**：设置页说明「仅在您开启时，同一 WiFi 下的设备可访问；不会上传云端」。
+1. 默认关闭，无后台常驻监听。
+2. 随机端口 + PIN：PIN 6 位数字，会话级 token（UUID）。
+3. 仅监听 `InternetAddress.anyIPv4`，不 UPnP、不穿透 NAT。
+4. 会话 TTL：30 分钟无 API 请求自动停止；单次最长 2 小时硬上限（可配置常量）。
+5. 限流：同 IP 每分钟 PIN 错误 ≤ 5 次。
+6. CORS：仅允许同源（静态与 API 同服）；不开放跨域。
+7. 日志：写入 `AppLogService`（连接、鉴权失败、写操作摘要，不含 PIN 明文）。
+8. 隐私文案：设置页说明「仅在您开启时，同一 WiFi 下的设备可访问；不会上传云端」。
 
 ---
 
@@ -304,21 +304,21 @@ Future<void> lanEditImportActiveProfile(AppDataBackup backup);
 
 | 操作 | 路径 | 说明 |
 |------|------|------|
-| **新增** | `lib/services/lan_edit_session.dart` | 会话/PIN/token |
-| **新增** | `lib/services/lan_edit_server_service.dart` | HttpServer |
-| **新增** | `lib/services/lan_edit_api_handlers.dart` | 路由表 |
-| **新增** | `lib/screens/lan_edit_screen.dart` | 手机端 UI |
-| **新增** | `assets/lan_edit/index.html` | Web 入口 |
-| **新增** | `assets/lan_edit/app.js` | Web 逻辑 |
-| **新增** | `assets/lan_edit/style.css` | Web 样式 |
-| **新增** | `android/.../LanEditForegroundService.kt` | 前台保活 |
-| **修改** | `lib/providers/timetable_provider.dart` | LanEdit 写接口 |
-| **修改** | `lib/screens/timetable_settings_screen.dart` | 入口 |
-| **修改** | `pubspec.yaml` | 声明 `assets/lan_edit/` |
-| **修改** | `android/app/src/main/AndroidManifest.xml` | FGS + 权限 |
-| **修改** | `lib/l10n/app_zh.arb` 等 | 文案 |
-| **新增** | `test/services/lan_edit_server_service_test.dart` | 单元测试 |
-| **新增** | `test/services/lan_edit_api_handlers_test.dart` | API 测试 |
+| 新增 | `lib/services/lan_edit_session.dart` | 会话/PIN/token |
+| 新增 | `lib/services/lan_edit_server_service.dart` | HttpServer |
+| 新增 | `lib/services/lan_edit_api_handlers.dart` | 路由表 |
+| 新增 | `lib/screens/lan_edit_screen.dart` | 手机端 UI |
+| 新增 | `assets/lan_edit/index.html` | Web 入口 |
+| 新增 | `assets/lan_edit/app.js` | Web 逻辑 |
+| 新增 | `assets/lan_edit/style.css` | Web 样式 |
+| 新增 | `android/.../LanEditForegroundService.kt` | 前台保活 |
+| 修改 | `lib/providers/timetable_provider.dart` | LanEdit 写接口 |
+| 修改 | `lib/screens/timetable_settings_screen.dart` | 入口 |
+| 修改 | `pubspec.yaml` | 声明 `assets/lan_edit/` |
+| 修改 | `android/app/src/main/AndroidManifest.xml` | FGS + 权限 |
+| 修改 | `lib/l10n/app_zh.arb` 等 | 文案 |
+| 新增 | `test/services/lan_edit_server_service_test.dart` | 单元测试 |
+| 新增 | `test/services/lan_edit_api_handlers_test.dart` | API 测试 |
 
 ---
 
@@ -344,7 +344,7 @@ Future<void> lanEditImportActiveProfile(AppDataBackup backup);
 10. 周视图渲染 + 课程抽屉表单
 11. 联调：真机热点 + PC 浏览器
 
-### Phase 4：Android 保活与打磨（1–2 天）
+### Phase 4：Android 保活与打磨（1～2 天）
 
 12. `LanEditForegroundService` + 通知
 13. 超时自动停止、错误文案、设置页说明
@@ -356,7 +356,7 @@ Future<void> lanEditImportActiveProfile(AppDataBackup backup);
 16. release note
 17. 更新本方案状态为「已实现」
 
-**合计：约 9–10 人天**
+**合计：约 9～10 人天**
 
 ---
 
@@ -368,7 +368,7 @@ Future<void> lanEditImportActiveProfile(AppDataBackup backup);
 - 未带 token 访问 API → 401
 - POST 课程后 GET 列表包含新课程
 - DELETE 后 Provider 持久化（mock SharedPreferences）
-- 会话空闲 30min 后 `isActive == false`
+- 会话空闲 30 min 后 `isActive == false`
 
 ### 11.2 手动测试
 
@@ -398,10 +398,10 @@ Future<void> lanEditImportActiveProfile(AppDataBackup backup);
 
 ## 十三、后续演进（非 MVP）
 
-- ~~二维码一键打开（`qr_flutter`）~~ ✅（2026-06-29）
+- 二维码一键打开（`qr_flutter`）：已完成（2026-06-29）
 - mDNS 服务名 `mikcb-lan.local`（进行中，见 `docs/plans/2026-06-30-lan-edit-mdns.md`）
 - 日程 / 考试编辑
-- ~~Web 端周次切换、批量删除~~ ✅（周次导航 + `batch-delete` API，2026-06-29）
+- Web 端周次切换、批量删除：已完成（周次导航 + `batch-delete` API，2026-06-29）
 - 乐观锁 `profileRevision` 防双端覆盖
 - 可选 HTTPS 自签证书（一般 LAN 不必）
 

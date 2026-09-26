@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: 定义小组件数据快照与设置模型
+## Task 1: 定义小组件数据快照与设置模型
 
 **Files:**
 - Modify: `lib/models/timetable_settings.dart`
@@ -54,7 +54,7 @@ git add lib/models/timetable_settings.dart lib/services/storage_service.dart lib
 git commit -m "feat: add widget settings model"
 ```
 
-### Task 2: 生成原生可消费的今日课表快照
+## Task 2: 生成原生可消费的今日课表快照
 
 **Files:**
 - Modify: `lib/providers/timetable_provider.dart`
@@ -97,7 +97,7 @@ git add lib/services/home_widget_snapshot_service.dart lib/providers/timetable_p
 git commit -m "feat: add home widget snapshot builder"
 ```
 
-### Task 3: 打通 Flutter 到 Android 的小组件同步桥
+## Task 3: 连通 Flutter 与 Android 的小组件同步桥
 
 **Files:**
 - Create: `lib/services/home_widget_service.dart`
@@ -142,7 +142,7 @@ git add lib/services/home_widget_service.dart lib/main.dart android/app/src/main
 git commit -m "feat: add home widget sync bridge"
 ```
 
-### Task 4: 实现 Android 小组件 Provider 与 2×2 布局
+## Task 4: 实现 Android 小组件 Provider 与 2×2 布局
 
 **Files:**
 - Create: `android/app/src/main/kotlin/com/example/university_timetable/TodayCompactWidgetProvider.kt`
@@ -184,7 +184,7 @@ git add android/app/src/main/kotlin/com/example/university_timetable/TodayCompac
 git commit -m "feat: add 2x2 today widget"
 ```
 
-### Task 5: 实现 2×4 与 4×4 布局
+## Task 5: 实现 2×4 与 4×4 布局
 
 **Files:**
 - Create: `android/app/src/main/kotlin/com/example/university_timetable/TodayMediumWidgetProvider.kt`
@@ -226,7 +226,7 @@ git add android/app/src/main/kotlin/com/example/university_timetable/TodayMedium
 git commit -m "feat: add medium and large today widgets"
 ```
 
-### Task 6: 实现按时间节点主动刷新
+## Task 6: 实现按时间节点主动刷新
 
 **Files:**
 - Create: `android/app/src/main/kotlin/com/example/university_timetable/HomeWidgetRefreshReceiver.kt`
@@ -265,7 +265,7 @@ git add android/app/src/main/kotlin/com/example/university_timetable/HomeWidgetR
 git commit -m "feat: add scheduled home widget refresh"
 ```
 
-### Task 7: 新增小组件设置页
+## Task 7: 新增小组件设置页
 
 **Files:**
 - Modify: `lib/screens/timetable_settings_screen.dart`
@@ -306,7 +306,7 @@ git add lib/screens/timetable_settings_screen.dart lib/models/timetable_settings
 git commit -m "feat: add home widget settings"
 ```
 
-### Task 8: 手工联调与发布前验证
+## Task 8: 手工联调与发布前验证
 
 **Files:**
 - No code changes required unless issues are found

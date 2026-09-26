@@ -27,10 +27,10 @@
 
 ### Modules
 
-1. `lib/utils/course_color_palette.dart` — 9 色单一来源
-2. `lib/utils/import_random_course_colors.dart` — 赋色纯函数
+1. `lib/utils/course_color_palette.dart`：9 色单一来源
+2. `lib/utils/import_random_course_colors.dart`：赋色纯函数
 3. 偏好 key：`import_random_course_colors_enabled`，默认 `true`
-4. `lib/widgets/import_random_color_toggle.dart` — 统一开关条
+4. `lib/widgets/import_random_color_toggle.dart`：统一开关条
 5. 所有 `importParsedCourses` 调用前统一 apply
 
 ## Implement steps
