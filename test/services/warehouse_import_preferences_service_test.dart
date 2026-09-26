@@ -321,4 +321,39 @@ void main() {
       expect(loaded?.password, 'secret');
     });
   });
+
+  group('getCustomDebugRecords', () {
+    // Regression: jsonDecode used to be unguarded here. This getter sits on the
+    // snapshot-export path, so one bad record failed the entire WebDAV upload,
+    // and the records page awaits it from initState, so a throw left its
+    // loading spinner up permanently.
+    test('returns empty instead of throwing on malformed JSON', () async {
+      SharedPreferences.setMockInitialValues({
+        'warehouse_custom_debug_records': '{not valid json',
+      });
+      final service = WarehouseImportPreferencesService(
+        secureStorage: _MemoryWarehouseSecureStorage(),
+      );
+
+      expect(await service.getCustomDebugRecords(), isEmpty);
+    });
+
+    test('keeps valid records and skips only the malformed one', () async {
+      SharedPreferences.setMockInitialValues({
+        'warehouse_custom_debug_records': '''
+[
+  {"id":"good","name":"n","importUrl":"u","script":"s","createdAt":"2026-01-01T00:00:00.000","updatedAt":"2026-01-02T00:00:00.000"},
+  {"id":123,"name":"bad","importUrl":"u","script":"s","createdAt":"2026-01-01T00:00:00.000","updatedAt":"2026-01-02T00:00:00.000"},
+  "not-even-an-object"
+]''',
+      });
+      final service = WarehouseImportPreferencesService(
+        secureStorage: _MemoryWarehouseSecureStorage(),
+      );
+
+      final records = await service.getCustomDebugRecords();
+
+      expect(records.map((r) => r.id), ['good']);
+    });
+  });
 }

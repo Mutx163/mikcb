@@ -359,19 +359,37 @@ class WarehouseImportPreferencesService {
     if (raw == null || raw.isEmpty) {
       return const [];
     }
-    final decoded = jsonDecode(raw);
-    if (decoded is! List) {
+    // This getter sits on the snapshot-export path, so an unhandled throw here
+    // fails the entire WebDAV upload; the records page also awaits it from
+    // initState, where a throw leaves its loading spinner up forever. Decode
+    // defensively and skip individual malformed entries rather than dropping
+    // the whole list, matching _decodeRememberedLogin above.
+    final List<dynamic> decoded;
+    try {
+      final value = jsonDecode(raw);
+      if (value is! List) {
+        return const [];
+      }
+      decoded = value;
+    } catch (_) {
       return const [];
     }
-    final records = decoded
-        .whereType<Map<String, dynamic>>()
-        .map(
-          (item) => WarehouseCustomDebugRecord.fromJson(
-            Map<String, dynamic>.from(item.cast<String, dynamic>()),
-          ),
-        )
-        .where((item) => item.id.isNotEmpty)
-        .toList();
+    final records = <WarehouseCustomDebugRecord>[];
+    for (final item in decoded) {
+      if (item is! Map) {
+        continue;
+      }
+      try {
+        final record = WarehouseCustomDebugRecord.fromJson(
+          Map<String, dynamic>.from(item.cast<String, dynamic>()),
+        );
+        if (record.id.isNotEmpty) {
+          records.add(record);
+        }
+      } catch (_) {
+        continue;
+      }
+    }
     records.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return records;
   }
