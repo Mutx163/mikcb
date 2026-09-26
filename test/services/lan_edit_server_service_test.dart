@@ -215,6 +215,8 @@ Future<_HttpClientResponse> _request({
   required String path,
   String? token,
   String? body,
+  String? origin,
+  ContentType? bodyContentType,
 }) async {
   final client = HttpClient();
   final request = await client.openUrl(
@@ -224,8 +226,11 @@ Future<_HttpClientResponse> _request({
   if (token != null) {
     request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
   }
+  if (origin != null) {
+    request.headers.set('origin', origin);
+  }
   if (body != null) {
-    request.headers.contentType = ContentType.json;
+    request.headers.contentType = bodyContentType ?? ContentType.json;
     request.write(body);
   }
   final response = await request.close();
@@ -286,6 +291,88 @@ void main() {
   // Allow real loopback HttpClient while still loading Flutter assets.
   TestWidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = null;
+
+  test('rejects cross-origin requests but allows same-origin and native ones', () async {
+    final host = _FakeLanEditHost();
+    final session = LanEditSession.create(
+      random: _SequenceRandom([345678, 1, 2, 3]),
+    );
+    final server = LanEditServerService();
+    await server.start(host: host, session: session);
+
+    try {
+      final port = server.port!;
+
+      // A page the owner visits on the same Wi-Fi must not be able to drive the
+      // API at all.
+      final crossOrigin = await _request(
+        port: port,
+        method: 'GET',
+        path: '/api/v1/health',
+        origin: 'http://evil.example.com',
+      );
+      expect(crossOrigin.statusCode, 403);
+      expect(utf8.decode(crossOrigin.bodyBytes), contains('cross_origin'));
+
+      // The bundled client is served by this same server, so its own origin is
+      // whatever address the owner scanned; comparing against the request Host
+      // keeps that working on 192.168.x.x, 10.x.x.x and hotspot aliases alike.
+      final sameOrigin = await _request(
+        port: port,
+        method: 'GET',
+        path: '/api/v1/health',
+        origin: 'http://127.0.0.1:$port',
+      );
+      expect(sameOrigin.statusCode, 200);
+
+      // The native client sends no Origin at all and must keep working.
+      final noOrigin = await _request(
+        port: port,
+        method: 'GET',
+        path: '/api/v1/health',
+      );
+      expect(noOrigin.statusCode, 200);
+    } finally {
+      await server.stop(reason: 'test_done');
+    }
+  });
+
+  test('rejects non-JSON bodies so cross-origin form posts cannot reach JSON endpoints', () async {
+    final host = _FakeLanEditHost();
+    final session = LanEditSession.create(
+      random: _SequenceRandom([456789, 1, 2, 3]),
+    );
+    final server = LanEditServerService();
+    await server.start(host: host, session: session);
+
+    try {
+      final port = server.port!;
+
+      // text/plain is the classic no-preflight content type: a browser can post
+      // it cross-origin without a CORS handshake, and the body would otherwise
+      // be parsed as JSON regardless of the declared type.
+      final formPost = await _request(
+        port: port,
+        method: 'POST',
+        path: '/api/v1/auth/verify',
+        body: '{"pin":"${session.pin}"}',
+        bodyContentType: ContentType('text', 'plain'),
+      );
+      expect(formPost.statusCode, 400);
+      expect(utf8.decode(formPost.bodyBytes), contains('unsupported_content_type'));
+
+      // The same request declared as JSON still reaches the handler.
+      final jsonPost = await _request(
+        port: port,
+        method: 'POST',
+        path: '/api/v1/auth/verify',
+        body: '{"pin":"${session.pin}"}',
+      );
+      expect(jsonPost.statusCode, isNot(400));
+    } finally {
+      await server.stop(reason: 'test_done');
+    }
+  });
 
   test('LanEditSession verifies PIN and token', () {
     final session = LanEditSession.create(

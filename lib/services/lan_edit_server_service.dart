@@ -73,6 +73,10 @@ class LanEditServerService {
     _host = host;
     _session = session;
     _server = await HttpServer.bind(InternetAddress.anyIPv4, 0);
+    // Explicit rather than relying on the 120s default: this socket is reachable
+    // by every device on the LAN, so a tighter idle window costs nothing and
+    // releases stalled connections sooner.
+    _server!.idleTimeout = const Duration(seconds: 60);
     _server!.listen(
       _onRequest,
       onError: (_) {

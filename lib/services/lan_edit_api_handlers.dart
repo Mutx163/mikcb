@@ -19,12 +19,57 @@ class LanEditApiHandlers {
   final LanEditHost host;
   final LanEditSession session;
 
+  /// Ceiling on simultaneously-open requests. Every device on the LAN can open
+  /// sockets for free, and each one costs a body read plus a JSON decode, so
+  /// without this a handful of devices can saturate the phone.
+  static const int _maxConcurrentRequests = 16;
+
+  /// Wall-clock budget for reading one request body. A client that trickles
+  /// bytes forever would otherwise hold a slot until the socket idle timeout.
+  static const Duration _bodyReadBudget = Duration(seconds: 20);
+
+  int _inFlight = 0;
+
   LanEditApiHandlers({required this.host, required this.session});
 
   Future<void> handle(HttpRequest request) async {
+    // Count from the first line so a slow body cannot dodge the cap by never
+    // reaching the route table.
+    if (_inFlight >= _maxConcurrentRequests) {
+      await _writeError(
+        request,
+        503,
+        'too_many_requests',
+        'Too many requests',
+      );
+      return;
+    }
+    _inFlight += 1;
+    try {
+      await _handleGuarded(request);
+    } finally {
+      _inFlight -= 1;
+    }
+  }
+
+  Future<void> _handleGuarded(HttpRequest request) async {
     try {
       if (request.method == 'OPTIONS') {
         await _writeJson(request, 204, const {});
+        return;
+      }
+
+      // A browser page on the same Wi-Fi can reach this API from the user's
+      // phone. Reject cross-origin requests so visiting an arbitrary site
+      // cannot burn the owner's PIN attempts or drive the API. Requests with no
+      // Origin come from the native client, which never sends one.
+      if (!await _isSameOrigin(request)) {
+        await _writeError(
+          request,
+          403,
+          'cross_origin_forbidden',
+          'Forbidden',
+        );
         return;
       }
 
@@ -167,6 +212,16 @@ class LanEditApiHandlers {
       }
 
       await _writeError(request, 404, 'not_found', 'Resource not found');
+    } on FormatException catch (error) {
+      // A malformed body is the caller's problem, not a server fault. These used
+      // to fall through to the generic handler below and answer 500 while
+      // echoing the raw Dart message back to whoever sent the request.
+      await _writeError(
+        request,
+        _statusForBodyFormatError(error.message),
+        'invalid_request',
+        error.message,
+      );
     } catch (error) {
       await _writeError(
         request,
@@ -175,6 +230,16 @@ class LanEditApiHandlers {
         error is ArgumentError ? (error.message as Object?)?.toString() ?? '$error' : '$error',
       );
     }
+  }
+
+  static int _statusForBodyFormatError(String message) {
+    if (message == 'request_body_too_large') {
+      return 413;
+    }
+    if (message == 'request_body_timeout') {
+      return 408;
+    }
+    return 400;
   }
 
   Future<void> _handleVerify(HttpRequest request) async {
@@ -777,6 +842,30 @@ class LanEditApiHandlers {
     }
   }
 
+  /// Treats a request as same-origin when its `Origin` host matches the `Host`
+  /// it was addressed to. The server binds every interface, so the phone can be
+  /// reached as 192.168.x.x, 10.x.x.x or an hotspot address; comparing against
+  /// the request's own Host accepts whichever one the client legitimately used
+  /// while still rejecting a page served from any other site.
+  Future<bool> _isSameOrigin(HttpRequest request) async {
+    final origin = request.headers.value('origin');
+    if (origin == null || origin.isEmpty || origin == 'null') {
+      return true;
+    }
+    final originUri = Uri.tryParse(origin);
+    final originHost = originUri?.host.trim().toLowerCase() ?? '';
+    if (originHost.isEmpty) {
+      return false;
+    }
+    final requestHost = Uri.tryParse(
+      'http://${request.headers.value(HttpHeaders.hostHeader) ?? ''}',
+    )?.host.trim().toLowerCase() ?? '';
+    if (requestHost.isEmpty) {
+      return false;
+    }
+    return originHost == requestHost;
+  }
+
   Future<bool> _authorize(HttpRequest request) async {
     final clientIp = clientIpFromRequest(request);
     if (session.isExpired) {
@@ -877,6 +966,7 @@ class LanEditApiHandlers {
   }
 
   Future<Map<String, dynamic>> _readJsonBody(HttpRequest request) async {
+    _requireJsonContentType(request);
     final raw = await _readBody(request);
     if (raw.trim().isEmpty) {
       return {};
@@ -888,6 +978,18 @@ class LanEditApiHandlers {
     return decoded;
   }
 
+  /// Without this a cross-origin HTML form can post `text/plain` bodies to this
+  /// API: the body is read as JSON regardless of the declared type, so the
+  /// browser's CORS preflight is skipped and the request still lands.
+  void _requireJsonContentType(HttpRequest request) {
+    final raw = request.headers.contentType;
+    final mime = raw?.mimeType.trim().toLowerCase() ?? '';
+    if (mime == 'application/json') {
+      return;
+    }
+    throw const FormatException('unsupported_content_type');
+  }
+
   static const int _maxRequestBodyBytes = 5 * 1024 * 1024;
 
   Future<String> _readBody(HttpRequest request) async {
@@ -896,7 +998,13 @@ class LanEditApiHandlers {
       throw const FormatException('request_body_too_large');
     }
     final builder = BytesBuilder(copy: false);
+    final deadline = DateTime.now().add(_bodyReadBudget);
     await for (final chunk in request) {
+      // A slow trickle can keep a socket alive indefinitely, so budget the whole
+      // read rather than trusting the per-chunk size cap below.
+      if (DateTime.now().isAfter(deadline)) {
+        throw const FormatException('request_body_timeout');
+      }
       builder.add(chunk);
       if (builder.length > _maxRequestBodyBytes) {
         throw const FormatException('request_body_too_large');
