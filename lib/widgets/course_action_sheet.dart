@@ -59,6 +59,9 @@ Future<void> showCourseActionSheet(
 }) {
   return showMiuixBottomSheet<void>(
     context: context,
+    // 内容用 HyperosSheetBlurTop 盖过把手、并自己画了替身 → 上游那颗画成透明，
+    // 否则两根杆子。拖动与命中不受影响。
+    coverDragHandle: true,
     builder: (sheetContext, close) => CourseActionSheetBody(
       previewItems: previewItems,
       week: week,
@@ -167,8 +170,10 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
         header: const SizedBox.shrink(),
         // 同材质面板：外扩面板内容那个内缩，模糊层铺满整个面板宽。
         bleed: hyperosMiuixBottomSheetInsideMargin,
-        // 往上盖过拖动把手那条：顶部成一整块渐变。盖住之后把手被糊平，由带子重画。
-        bleedTop: hyperosMiuixBottomSheetDragHandleStripHeight,
+        // 往上盖过面板顶部那一整截 chrome（把手条 24 + 空占位 18 = 42），顶部成一整块
+        // 渐变；替身把手画在紧贴面板上边缘那 24px 里（上游那颗已被藏成透明）。
+        bleedTop: hyperosMiuixBottomSheetTopChromeHeight,
+        echoDragHandleHeight: hyperosMiuixBottomSheetDragHandleStripHeight,
         revealOnScroll: true,
         scrollController: _scrollController,
         body: SingleChildScrollView(
@@ -178,7 +183,7 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
           padding: EdgeInsets.only(
             top: HyperosSheetBlurTop.topInsetFor(
               headerHeight: _sheetBlurTopExtent,
-              bleedTop: hyperosMiuixBottomSheetDragHandleStripHeight,
+              bleedTop: hyperosMiuixBottomSheetTopChromeHeight,
             ),
           ),
           child: Column(

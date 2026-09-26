@@ -628,6 +628,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     final contentMaxHeight = _materialSheetContentMaxHeight(context);
     return showHomeHyperosSheet<void>(
       context: context,
+      // 内容用 HyperosSheetBlurTop 盖过把手、并自己画了替身 → 上游那颗画成透明，
+      // 否则两根杆子。拖动与命中不受影响。
+      coverDragHandle: true,
       builder: (sheetContext) => HyperosSheetFrame(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         maxHeight: contentMaxHeight,
@@ -674,7 +677,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       padding: EdgeInsets.only(
         top: HyperosSheetBlurTop.topInsetFor(
           headerHeight: HyperosTabRow.contourHeight,
-          bleedTop: hyperosMiuixBottomSheetDragHandleStripHeight,
+          bleedTop: hyperosMiuixBottomSheetTopChromeHeight,
         ),
       ),
       child: Column(
@@ -943,7 +946,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       padding: EdgeInsets.only(
         top: HyperosSheetBlurTop.topInsetFor(
           headerHeight: HyperosTabRow.contourHeight,
-          bleedTop: hyperosMiuixBottomSheetDragHandleStripHeight,
+          bleedTop: hyperosMiuixBottomSheetTopChromeHeight,
         ),
       ),
       child: Column(
@@ -1770,10 +1773,14 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
           // 有模糊、两侧各留一条没糊的边，读起来是「浮在面板里的方框」）。分段本身
           // 按同一个数内缩回去，仍与底下正文对齐。
           bleed: hyperosMiuixBottomSheetInsideMargin,
-          // 往上盖过拖动把手那条：让「顶边满强度」那一步落在面板自己的上边缘被裁掉，
-          // 顶部才是一整块渐变，而不是「把手 + 一条亮线」。盖住之后把手会被糊平，所以
-          // 带子把它重画在自己上面（`echoDragHandle` 默认开）。
-          bleedTop: hyperosMiuixBottomSheetDragHandleStripHeight,
+          // 往上盖过面板顶部那一整截 chrome（把手条 24 + 空占位 18 = 42）：让「顶边满
+          // 强度」那一步落在面板自己的上边缘被裁掉，顶部才是一整块渐变，而不是
+          // 「把手 + 一条亮线」。**不能只传 24** —— 漏掉那 18 会让替身把手与上游那颗
+          // 错开 18px，屏幕上就是两根杆子（见该常量注释）。
+          bleedTop: hyperosMiuixBottomSheetTopChromeHeight,
+          // 替身把手画在紧贴面板上边缘的那 24px 里；承载壳那边已把上游那颗画成透明
+          // （`coverDragHandle`），所以屏幕上只有这一颗。
+          echoDragHandleHeight: hyperosMiuixBottomSheetDragHandleStripHeight,
           // 翻页分段**自己就是标题**（用户口径 2026-09-26），且**坐在顶部渐变模糊
           // 带上**（同一条指令的第二半）：原来这行是「材质」二字 + 右边 208 宽的分段，
           // 标题被压、分段左边空一大块，和底下满宽的设置行也对不齐；撤掉标题字后分段

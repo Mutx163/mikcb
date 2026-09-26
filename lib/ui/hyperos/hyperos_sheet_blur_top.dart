@@ -72,7 +72,7 @@ class HyperosSheetBlurTop extends StatefulWidget {
     this.scrollController,
     this.bleed = 0,
     this.bleedTop = 0,
-    this.echoDragHandle = true,
+    this.echoDragHandleHeight = 0,
     super.key,
   });
 
@@ -111,25 +111,35 @@ class HyperosSheetBlurTop extends StatefulWidget {
   /// 所以控件仍与正文对齐，只有模糊层是满宽的。
   final double bleed;
 
-  /// 模糊带往上盖过**拖动把手**那条多少（把手上边缘 → 面板上边缘）。
+  /// 模糊带往上盖过面板顶部那一截 chrome 多少（内容上边缘 → 面板上边缘）。
   ///
   /// 为什么要它：渐进档是「顶边满强度」，而带子上边缘若停在面板**中间**（把手下面），
   /// 这条突变就落在面板中间 → 一条亮线（2026-09-26 用户报「顶部不够整体」）。往上盖过
-  /// 把手之后，突变被面板自己的上边缘裁掉，顶部成一整块渐变。
+  /// 那一整截之后，突变被面板自己的上边缘裁掉，顶部成一整块渐变。
   ///
-  /// 传上游那个把手条的真实高度（本仓是 `hyperosMiuixBottomSheetDragHandleStripHeight`
-  /// = 24，对应上游 `SizedBox(height: 24)`），别拍脑袋。
+  /// 传**那一整截**的真实高度，不是只传把手条：底部弹窗在把手与内容之间还插了一截
+  /// 空占位（本仓是 `hyperosMiuixBottomSheetTopChromeHeight` = 42 = 把手条 24 + 空占位
+  /// 18，见该常量注释），只传 24 会让带子上移不到位 → 替身把手与上游那颗差 18px →
+  /// **两根杆子**（同一个问题的第二个症状，2026-09-26 用户报）。
   final double bleedTop;
 
-  /// [bleedTop] 大于 0 时，是否把拖动把手**再画一遍**在带上面。
+  /// 在 [bleedTop] 那一截里，**紧贴面板上边缘**的那段有多高 —— 拖动把手就在这里，
+  /// 本控件在这一段里画一颗**替身**。传 0 = 不画替身。
   ///
-  /// 默认开。把手是 45×4、alpha 0.2 的浅色小条，在 sigma 22 下会被糊得基本消失，而它
-  /// 是这个弹窗**唯一**的拖动提示（上游只让把手可拖、不能整面板拖）—— 糊没了等于
-  /// 删了一个可用性提示。重画的那颗不参与命中（`IgnorePointer`）：拖动手势仍由它下面
-  /// 上游那颗接手，观感一致、行为不变。代价是丢了上游按压时「变宽 + 加深」那点反馈。
+  /// 这颗替身是给 [bleedTop] 盖住把手那个场景准备的 ——
+  /// 把手是 45×4、alpha 0.2 的浅色小条，模糊强度 22 之下会被糊得基本消失，而它是这个
+  /// 弹窗**唯一**的拖动提示（上游只让把手可拖、不能整面板拖），糊没了等于删了一条
+  /// 可用性提示。
   ///
-  /// 只想让顶部被糊、不在意把手被抹掉时才关掉。
-  final bool echoDragHandle;
+  /// 画它时**必须**同时给承载壳传 `coverDragHandle: true`（见 [showMiuixBottomSheet]）把
+  /// 上游那颗画成透明，否则两颗都在屏幕上 = **两根杆子**（2026-09-26 用户报）。可见的
+  /// 只有这一颗；上游那颗 24px 的条仍在原位接拖动手势（只是透明），所以「看到的」与
+  /// 「能拖的」仍是同一块区域。
+  ///
+  /// 这颗替身**包在 `IgnorePointer` 里**：点不到、也不吃拖动，全交给下面上游那颗。代价
+  /// 是丢了上游按压时「变宽 + 加深」那点反馈（复制它需要接管上游的私有控制器，而替身
+  /// 本来就不该参与命中）。
+  final double echoDragHandleHeight;
 
   /// 正文（**滚动内容本身**）要自己留的顶部让位：把手让位 + 带高 + 渐隐区。
   ///
@@ -355,18 +365,17 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
                   child: SizedBox(height: bandBoxHeight),
                 ),
         ),
-        // 把手**再画一遍**在带上面（不参与命中，拖动仍由它下面上游那颗接手）。
+        // 把手**替身**画在带上面（不参与命中，拖动仍由它下面上游那颗接手；那颗已被承载壳
+        // 画成透明，见 `showMiuixBottomSheet` 的 `coverDragHandle`，所以屏幕上只有这一颗）。
         //
-        // 为什么非画不可：把手是 45×4、alpha 0.2 的浅色小条，在 sigma 22 下会被糊得
-        // 基本消失，而它是这个弹窗**唯一**的拖动提示（上游只让把手可拖、整面板不能拖）
-        // —— 糊没了等于删了一条可用性提示。观感按上游那份抄（尺寸 / 圆角 / 透明度），
-        // 改上游的把手时这里要跟着走。
-        if (reveal && widget.echoDragHandle && widget.bleedTop > 0)
+        // 位置是 `[top: -bleedTop]`（面板上边缘）起、往下 [echoDragHandleHeight] 那一段 ——
+        // 把手就在紧贴面板上边缘的那段里（底下还有一截空占位，见 [bleedTop]）。
+        if (reveal && widget.echoDragHandleHeight > 0)
           Positioned(
             top: -widget.bleedTop,
             left: 0,
             right: 0,
-            height: widget.bleedTop,
+            height: widget.echoDragHandleHeight,
             child: const IgnorePointer(child: _SheetDragHandleEcho()),
           ),
       ],
@@ -376,10 +385,12 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
 
 /// 弹窗拖动把手的**替身**：上游那颗被模糊带盖住、糊平了，这里照它的样子重画一颗。
 ///
-/// 尺寸 / 圆角 / 透明度照抄上游 `MiuixWindowBottomSheet._dragHandle`
-/// （`SizedBox(height: 24)` 里居中一颗 45×4、radius 2、alpha 0.2 的胶囊）。**刻意不
-/// 复制按压动画**（变宽 + 加深）：那需要接管上游的私有控制器，而重画这颗本来就不该
-/// 参与命中（`IgnorePointer`）—— 拖动手势与按压反馈都仍由它下面上游那颗负责。
+/// 尺寸 / 圆角 / 透明度照抄上游 `MiuixWindowBottomSheet._dragHandle`（一条
+/// `SizedBox(height: 24)` 里居中的 45×4、radius 2 胶囊；上游把持手色做成
+/// `dragHandleColor` + 0.2 alpha，本仓承载壳传的是 `colorScheme.onSurfaceVariant`，
+/// 这里必须跟着用同一个色，否则深色模式下会偏亮）。**刻意不复制按压动画**（变宽 +
+/// 加深）：那需要接管上游的私有控制器，而重画这颗本来就不该参与命中
+/// （`IgnorePointer`）—— 拖动手势与按压反馈都仍由它下面上游那颗负责。
 class _SheetDragHandleEcho extends StatelessWidget {
   const _SheetDragHandleEcho();
 
@@ -390,7 +401,9 @@ class _SheetDragHandleEcho extends StatelessWidget {
         width: 45,
         height: 4,
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.2),
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(2),
         ),
       ),
