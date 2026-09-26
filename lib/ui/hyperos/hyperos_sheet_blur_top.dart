@@ -103,6 +103,31 @@ class HyperosSheetBlurTop extends StatefulWidget {
   /// 所以控件仍与正文对齐，只有模糊层是满宽的。
   final double bleed;
 
+  /// 正文（**滚动内容本身**）要自己留的顶部让位：带高 + 渐隐区。
+  ///
+  /// 必须加在滚动内容的 `padding` 上，不能加在本控件的 body 外面 —— 加在外面会把
+  /// 滚动视口整体下移，内容在带底就被裁掉、永远进不了模糊区（见 `_buildBanded` 里
+  /// 那条注释）。调用方这样用：
+  ///
+  /// ```dart
+  /// HyperosSheetBlurTop(
+  ///   headerHeight: 45,
+  ///   header: myHeader,
+  ///   body: SingleChildScrollView(
+  ///     // ↑ 让位在这里，不是在外面
+  ///     padding: EdgeInsets.only(
+  ///       top: HyperosSheetBlurTop.topInsetFor(headerHeight: 45),
+  ///     ),
+  ///     child: content,
+  ///   ),
+  /// )
+  /// ```
+  static double topInsetFor({
+    required double headerHeight,
+    double fadeExtent = 20,
+  }) =>
+      headerHeight + fadeExtent;
+
   @override
   State<HyperosSheetBlurTop> createState() => _HyperosSheetBlurTopState();
 }
@@ -199,13 +224,22 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
         blurStyle: HeaderBlurStyle.inspire,
         blurEnabled: useBlur,
         blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-        // 有模糊：淡色水洗压在糊掉的内容上求可读；无模糊（实体面板 / 技术降级 / 平台
-        // 不支持）：改用面板自己的不透明色，带就与面板连成一体、看不出接缝。
+        // 衬底：模糊开着时**不画**（`transparent`），遮住滚上来的内容交给模糊本身 ——
+        // 渐进档顶边 sigma 22，文字在那个强度下本就不可读。
+        //
+        // 为什么非得去掉（2026-09-26 用户报「切换按钮顶部一条明显的横线」）：这条衬底
+        // 在带顶是**满浓度突然出现**（浅色下是白 @ 45%~72%，见
+        // `nestedSurfaceTintColor`）。设置页那条带贴在**屏幕最顶**，上面没有东西，
+        // 「从无到有」的突变看不见；搬进弹窗后带上边缘落在**面板中间**（把手下面 24px），
+        // 这个突变就成了一条亮线。模糊那边同样是顶边满强度，但糊的是均匀背景时几乎
+        // 看不出突变 —— 看得见的是这条白衬底。
+        //
+        // 带上那个控件（分段）自带不透明轨道，不靠这条衬底撑可读性。
+        //
+        // 模糊关掉时（实体面板 / 技术降级 / 平台不支持）仍用面板自己的**不透明**色 ——
+        // 那时带子与面板同色、看不出接缝，而且没有模糊就必须在带底把内容挡住。
         tint: useBlur
-            ? HyperosBlurredHeader.nestedSurfaceTintColor(
-                context,
-                withBlur: true,
-              )
+            ? Colors.transparent
             : HyperosBlurredHeader.sheetTintColor(context, withBlur: false),
         // 带没画模糊时没有下沿可谈（见 InspireHeaderBlur.bottomOverhang：模糊关掉还
         // 外推会盖住正文第一行）。
@@ -238,12 +272,20 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
       // 带要往左右**外扩** `bleed` 才能满宽（见 [bleed]），所以不能裁。
       clipBehavior: Clip.none,
       children: <Widget>[
-        // 正文在带**底下**：顶部让出「带高 + 渐隐区」，于是滚上去的行从模糊里穿过去，
-        // 而不是在面板上沿被切一刀。让位做在正文自己的 `Padding` 上（不是给 Stack 套
-        // padding）—— 后者会让 Stack 的尺寸也跟着多出那一截，面板凭空高一截。
-        Padding(
-          padding: EdgeInsets.only(
-            top: widget.headerHeight + widget.fadeExtent,
+        // 正文**满高铺开**（不套顶部 padding）—— 让位必须由调用方加在**滚动内容里面**
+        // （[topInsetFor]），不能在这里加。
+        //
+        // ⚠️ 这里是 2026-09-26 修掉的一个真 bug：让位加在 body **外面**时，滚动视口
+        // 被整体下移，于是内容在**带底就被裁掉**、从来没进过模糊区 —— 带子一直在糊
+        // 「面板自己的均匀玻璃」，糊了等于没糊，只剩一条满浓度的白衬底在带顶突兀出现
+        // （用户报「切换按钮顶部一条明显的横线」）。让位进了滚动内容之后，内容才会
+        // 真的从带**底下**穿过去被糊掉。
+        //
+        // `minHeight` 只保「正文至少和带一样高」（否则带会比正文还长、糊到正文外面），
+        // 不再参与内容的位置。
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: widget.headerHeight + widget.fadeExtent,
           ),
           child: widget.body,
         ),

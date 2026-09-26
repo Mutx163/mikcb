@@ -669,6 +669,13 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       // ⚠️ 面板里第一个 `Scrollable` 是外面那层**横向翻页** —— 测试要按这个 key
       // 指名取本页的滚动视图，别再取 `Scrollable` 的第一个。
       key: const ValueKey('material-page-general'),
+      // 顶部让位加在**滚动内容**里（不是外面）：外面那份已被 `HyperosSheetBlurTop`
+      // 接管，见 `topInsetFor` 的注释。
+      padding: EdgeInsets.only(
+        top: HyperosSheetBlurTop.topInsetFor(
+          headerHeight: HyperosTabRow.contourHeight,
+        ),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -930,6 +937,13 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
         _draft.courseCardSurfaceStyle != CourseCardSurfaceStyle.solid;
     return SingleChildScrollView(
       key: const ValueKey('material-page-course-card'),
+      // 顶部让位加在**滚动内容**里（不是外面）：外面那份已被 `HyperosSheetBlurTop`
+      // 接管，见 `topInsetFor` 的注释。
+      padding: EdgeInsets.only(
+        top: HyperosSheetBlurTop.topInsetFor(
+          headerHeight: HyperosTabRow.contourHeight,
+        ),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

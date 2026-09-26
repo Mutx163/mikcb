@@ -171,6 +171,13 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
         scrollController: _scrollController,
         body: SingleChildScrollView(
           controller: _scrollController,
+          // 顶部让位加在**滚动内容**里（不是外面）：外面那份已被
+          // `HyperosSheetBlurTop` 接管，见 `topInsetFor` 的注释。
+          padding: EdgeInsets.only(
+            top: HyperosSheetBlurTop.topInsetFor(
+              headerHeight: _sheetBlurTopExtent,
+            ),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
