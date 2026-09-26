@@ -128,7 +128,7 @@ Future<void> _pumpDarkHome(
         homePageBackgroundScope: _scopeAll,
         homePageHeaderBlurEnabled: headerBlur,
         homePageWeekdayBarBlurEnabled: weekdayBlur,
-        // 开学锚取「下周一」：开学前对齐第 1 周，'1周' 芯片在任何运行
+        // 开学锚取「下周一」：开学前对齐第 1 周，'1 周' 芯片在任何运行
         // 日期都存在，周一列永不命中今天的 accent（详见 ink 测试同款注释）。
         semesterStartDate: _nextWeekMonday(),
       ),
@@ -286,7 +286,7 @@ void main() {
       // Dark wallpaper → light chrome ink everywhere, like light mode.
       expect(_textColor(tester, '轻屿课表'), homePageChromeForegroundOnDark);
       expect(_textColor(tester, '周一'), homePageChromeForegroundOnDark);
-      expect(_textColor(tester, '1周'), homePageChromeForegroundOnDark);
+      expect(_textColor(tester, '1 周'), homePageChromeForegroundOnDark);
       await tester.binding.setSurfaceSize(null);
     },
   );
@@ -315,7 +315,7 @@ void main() {
       // white under a dark theme.
       expect(_textColor(tester, '轻屿课表'), homePageChromeForegroundOnLight);
       expect(_textColor(tester, '周一'), homePageChromeForegroundOnLight);
-      expect(_textColor(tester, '1周'), homePageChromeForegroundOnLight);
+      expect(_textColor(tester, '1 周'), homePageChromeForegroundOnLight);
       await tester.binding.setSurfaceSize(null);
     },
   );

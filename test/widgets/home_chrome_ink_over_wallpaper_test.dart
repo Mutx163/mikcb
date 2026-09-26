@@ -171,7 +171,7 @@ void main() {
 
     expect(_textColor(tester, '轻屿课表'), homePageChromeForegroundOnDark);
     expect(_textColor(tester, '周一'), homePageChromeForegroundOnDark);
-    expect(_textColor(tester, '1周'), homePageChromeForegroundOnDark);
+    expect(_textColor(tester, '1 周'), homePageChromeForegroundOnDark);
     expect(
       _textColor(tester, _mmdd(_nextWeekMonday())),
       homePageChromeForegroundOnDark.withValues(alpha: 0.72),
@@ -205,7 +205,7 @@ void main() {
 
       expect(_textColor(tester, '轻屿课表'), homePageChromeForegroundOnLight);
       expect(_textColor(tester, '周一'), homePageChromeForegroundOnDark);
-      expect(_textColor(tester, '1周'), homePageChromeForegroundOnDark);
+      expect(_textColor(tester, '1 周'), homePageChromeForegroundOnDark);
       expect(
         _textColor(tester, _mmdd(_nextWeekMonday())),
         homePageChromeForegroundOnDark.withValues(alpha: 0.72),
@@ -246,7 +246,7 @@ void main() {
     expect(find.text('文字对比度不足'), findsOneWidget);
     expect(find.textContaining('浅色壁纸'), findsOneWidget);
     expect(_textColor(tester, '周一'), homePageChromeForegroundOnLight);
-    expect(_textColor(tester, '1周'), homePageChromeForegroundOnLight);
+    expect(_textColor(tester, '1 周'), homePageChromeForegroundOnLight);
     expect(
       _textColor(tester, _mmdd(_nextWeekMonday())),
       homePageChromeForegroundOnLight.withValues(alpha: 0.70),
@@ -280,7 +280,7 @@ void main() {
     // Default weekday ink on the opaque background: the configured default
     // black, not the wallpaper-flipped white.
     expect(_textColor(tester, '周一'), const Color(0xFF000000));
-    expect(_textColor(tester, '1周'), const Color(0xFF000000));
+    expect(_textColor(tester, '1 周'), const Color(0xFF000000));
   });
 
   testWidgets(
@@ -321,7 +321,7 @@ void main() {
 
       // The weekday chrome renders the auto white ink, not the custom grey.
       expect(_textColor(tester, '周一'), homePageChromeForegroundOnDark);
-      expect(_textColor(tester, '1周'), homePageChromeForegroundOnDark);
+      expect(_textColor(tester, '1 周'), homePageChromeForegroundOnDark);
       expect(
         _textColor(tester, _mmdd(_nextWeekMonday())),
         homePageChromeForegroundOnDark.withValues(alpha: 0.72),
