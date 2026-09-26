@@ -41,6 +41,7 @@ import '../services/warehouse_repository_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/course_color_palette.dart';
 import '../utils/import_random_course_colors.dart';
+import '../utils/import_file_reader.dart';
 import '../utils/import_result_message.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/import_random_color_toggle.dart';
@@ -688,21 +689,24 @@ class _SpreadsheetCourseImportScreenState
         return;
       }
 
-      final length = await File(path).length();
-      if (SpreadsheetImportService.exceedsFileSizeLimit(length)) {
+      final Uint8List bytes;
+      try {
+        bytes = await readImportFileBytes(
+          path,
+          maxBytes: SpreadsheetImportService.maxFileBytes,
+        );
+      } on ImportFileTooLarge {
         if (mounted) {
           showAppToast(
             context,
             message: l10n.importFileTooLarge(
-              SpreadsheetImportService.formatMaxFileSize(),
+              formatByteBudget(SpreadsheetImportService.maxFileBytes),
             ),
             kind: AppToastKind.error,
           );
         }
         return;
       }
-
-      final bytes = await File(path).readAsBytes();
       await _executeSpreadsheetImport(bytes, file.name);
     } finally {
       if (mounted) {

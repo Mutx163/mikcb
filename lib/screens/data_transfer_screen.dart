@@ -14,6 +14,7 @@ import '../services/data_transfer_service.dart';
 import '../services/transfer_package.dart';
 import '../services/transfer_undo_service.dart';
 import '../services/unified_transfer_service.dart';
+import '../utils/import_file_reader.dart';
 import 'ics_export_screen.dart';
 import '../services/qr_transfer/qr_transfer_codec.dart';
 import '../services/qr_transfer/qr_transfer_session.dart';
@@ -383,16 +384,34 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     try {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
-        withData: true,
         allowedExtensions: const ['json', 'mikcb'],
       );
       final file = result?.files.single;
       if (file == null) {
         return;
       }
+      final path = file.path;
+      if (path == null) {
+        throw FormatException(l10n.importFileReadFailed);
+      }
 
-      final bytes = file.bytes;
-      final content = bytes == null ? '' : utf8.decode(bytes);
+      // Measure before reading: withData: true would already have the whole
+      // file in memory, and Android kills the process on OOM instead of raising
+      // something catchable.
+      final Uint8List bytes;
+      try {
+        bytes = await readImportFileBytes(
+          path,
+          maxBytes: UnifiedTransferService.maxImportFileBytes,
+        );
+      } on ImportFileTooLarge {
+        throw FormatException(
+          l10n.importFileTooLarge(
+            formatByteBudget(UnifiedTransferService.maxImportFileBytes),
+          ),
+        );
+      }
+      final content = utf8.decode(bytes);
       if (!mounted) {
         return;
       }

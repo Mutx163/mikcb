@@ -354,16 +354,11 @@ Course A,Teacher,1,1-2,Room,1-16
     expect(result.courses.first.name, '高等数学');
   });
 
-  test('refuses an oversized spreadsheet before its bytes are read', () {
-    // An xlsx is a zip container: its size on disk badly understates how much it
-    // expands when parsed, and Android kills the process on OOM instead of
-    // throwing, so the cap has to be enforced before reading.
-    const cap = SpreadsheetImportService.maxFileBytes;
-
-    expect(cap, 20 * 1024 * 1024);
-    expect(SpreadsheetImportService.exceedsFileSizeLimit(cap), isFalse);
-    expect(SpreadsheetImportService.exceedsFileSizeLimit(cap - 1), isFalse);
-    expect(SpreadsheetImportService.exceedsFileSizeLimit(cap + 1), isTrue);
-    expect(SpreadsheetImportService.formatMaxFileSize(), '20 MB');
+  test('caps a spreadsheet well above any real export', () {
+    // The cap itself, and the read-before-measure guard that makes it
+    // enforceable, live in import_file_reader and are covered by
+    // test/utils/import_file_reader_test.dart. Here we only pin the budget this
+    // service asks for.
+    expect(SpreadsheetImportService.maxFileBytes, 20 * 1024 * 1024);
   });
 }

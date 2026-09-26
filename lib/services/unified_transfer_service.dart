@@ -34,6 +34,13 @@ class TransferApplyResult {
 /// transport adapters. QR/LAN/cloud code only needs to pass decoded package
 /// bytes into this service.
 class UnifiedTransferService {
+  /// Ceiling on a backup/transfer file accepted from disk, checked before the
+  /// bytes are read (see [readImportFileBytes]). An export is uncompressed
+  /// timetable JSON, so a real one stays well under a megabyte or two; this is
+  /// here to refuse an absurd file before it becomes fully resident, not to
+  /// police correctness.
+  static const int maxImportFileBytes = 20 * 1024 * 1024;
+
   UnifiedTransferService({
     DataTransferService? dataTransferService,
     TransferDiffService? diffService,
