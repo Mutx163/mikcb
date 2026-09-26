@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../providers/timetable_provider.dart';
+import '../utils/hex_color.dart';
 import 'add_exam_screen.dart';
 
 class ExamListScreen extends StatelessWidget {
@@ -523,7 +524,10 @@ class _ExamListRow extends StatelessWidget {
     final mutedPrimary = primaryText.withValues(alpha: isPast ? 0.45 : 1);
     final mutedSecondary = secondaryText.withValues(alpha: isPast ? 0.55 : 1);
     final accent = course != null
-        ? _parseColor(course!.color)
+        ? parseHexColorOrFallback(
+            course!.color,
+            fallback: HyperosIconColors.blue,
+          )
         : HyperosIconColors.blue;
     final livePhase = isPast
         ? _ExamLivePhase.after
@@ -680,14 +684,5 @@ class _ExamListRow extends StatelessWidget {
       onDismissed: (_) => onDismissed(),
       child: row,
     );
-  }
-
-  Color _parseColor(String hex) {
-    final cleaned = hex.replaceFirst('#', '');
-    final value = int.parse(cleaned, radix: 16);
-    if (cleaned.length == 6) {
-      return Color(0xFF000000 | value);
-    }
-    return Color(value);
   }
 }

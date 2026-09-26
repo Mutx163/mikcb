@@ -40,5 +40,47 @@ void main() {
       expect(parseHexColorOrFallback('', fallback: fallback), equals(fallback));
       expect(parseHexColorOrFallback('#12345', fallback: fallback), equals(fallback));
     });
+
+    // 回归：考试列表页曾用裸 `int.parse(hex, radix: 16)` 解析课程颜色，
+    // 遇到导入进来的畸形颜色会抛 FormatException 并让整页打不开。
+    // 畸形输入必须一律回退，绝不抛异常。
+    test('malformed colors fall back instead of throwing', () {
+      const fallback = Color(0xFF2563EB);
+      const malformed = <String>[
+        '',
+        '#',
+        '#FFF', // 3 位简写
+        '#FFFFFFF', // 7 位
+        '#FFFFFFFFF', // 9 位
+        '#GGGGGG', // 非十六进制字符
+        '#12345G', // 末位非十六进制
+        '  ', // 纯空白
+        'rgb(1,2,3)', // 非十六进制表达
+        'red', // 颜色名
+        '#-12345', // 负号
+        '0x123456', // 带 0x 前缀
+      ];
+      for (final value in malformed) {
+        expect(
+          () => parseHexColorOrFallback(value, fallback: fallback),
+          returnsNormally,
+          reason: 'should not throw for "$value"',
+        );
+        expect(
+          parseHexColorOrFallback(value, fallback: fallback),
+          equals(fallback),
+          reason: 'should fall back for "$value"',
+        );
+      }
+    });
+
+    test('surrounding whitespace is tolerated, not a fallback case', () {
+      // 首尾空白会被 trim 掉，仍应正常解析出颜色。
+      expect(tryParseHexColor(' #123456 '), equals(const Color(0xFF123456)));
+      expect(
+        parseHexColorOrFallback(' #123456 ', fallback: const Color(0xFF2563EB)),
+        equals(const Color(0xFF123456)),
+      );
+    });
   });
 }
