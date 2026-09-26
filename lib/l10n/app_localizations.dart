@@ -8325,6 +8325,12 @@ abstract class AppLocalizations {
   /// **'无法读取所选文件'**
   String get importFileReadFailed;
 
+  /// No description provided for @importFileTooLarge.
+  ///
+  /// In zh, this message translates to:
+  /// **'所选文件过大（上限 {size}），请换一个较小的文件'**
+  String importFileTooLarge(String size);
+
   /// No description provided for @importCleartextBlockedHint.
   ///
   /// In zh, this message translates to:

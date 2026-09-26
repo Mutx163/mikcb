@@ -4638,6 +4638,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importFileReadFailed => '선택한 파일을 읽을 수 없습니다';
 
   @override
+  String importFileTooLarge(String size) {
+    return '선택한 파일이 너무 큽니다(한도 $size). 더 작은 파일을 선택해 주세요.';
+  }
+
+  @override
   String get importCleartextBlockedHint =>
       '이 사이트는 HTTPS를 지원하지 않고 평문 통신 허용 목록에도 없어서 여기서 열 수 없습니다';
 

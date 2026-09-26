@@ -4819,6 +4819,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importFileReadFailed => 'Unable to read the selected file';
 
   @override
+  String importFileTooLarge(String size) {
+    return 'Selected file is too large (limit $size). Please choose a smaller file.';
+  }
+
+  @override
   String get importCleartextBlockedHint =>
       'This site does not support HTTPS and is not on the cleartext allowlist, so it cannot be opened here';
 

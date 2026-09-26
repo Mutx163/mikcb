@@ -72,6 +72,21 @@ class SpreadsheetImportService {
   static const String formatWakeUp = 'wakeup_compatible';
   static const String formatUnknown = 'unknown';
 
+  /// Hard ceiling on one imported spreadsheet, checked before the bytes are
+  /// read. An xlsx is a zip container, so its on-disk size badly understates how
+  /// much it expands once parsed, and Android kills the whole process on OOM
+  /// rather than throwing something a caller could catch. Refusing up front is
+  /// the only place this can actually be enforced.
+  static const int maxFileBytes = 20 * 1024 * 1024;
+
+  /// Human-readable form of [maxFileBytes] for the rejection message.
+  static String formatMaxFileSize() =>
+      '${(maxFileBytes / (1024 * 1024)).round()} MB';
+
+  /// Whether a file of [byteLength] bytes must be refused before it is read.
+  static bool exceedsFileSizeLimit(int byteLength) =>
+      byteLength > maxFileBytes;
+
   static const String _mikcbMetadataMarker = '# mikcb-course-import-v1';
   static const String _defaultColor = '#2196F3';
 

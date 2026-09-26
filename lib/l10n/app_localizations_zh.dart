@@ -4509,6 +4509,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importFileReadFailed => '无法读取所选文件';
 
   @override
+  String importFileTooLarge(String size) {
+    return '所选文件过大（上限 $size），请换一个较小的文件';
+  }
+
+  @override
   String get importCleartextBlockedHint => '该站点暂不支持 HTTPS 访问且未在明文白名单内，无法在此打开';
 
   @override
@@ -15505,6 +15510,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get importFileReadFailed => '無法讀取所選文件';
+
+  @override
+  String importFileTooLarge(String size) {
+    return '所選檔案過大（上限 $size），請換一個較小的檔案';
+  }
 
   @override
   String get importCleartextBlockedHint => '該站點暫不支持 HTTPS 訪問且未在明文白名單內，無法在此打開';
@@ -26543,6 +26553,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get importFileReadFailed => '無法讀取所選檔案';
+
+  @override
+  String importFileTooLarge(String size) {
+    return '所選檔案過大（上限 $size），請換一個較小的檔案';
+  }
 
   @override
   String get importCleartextBlockedHint => '該站點暫不支援 HTTPS 存取且未在明文白名單內，無法在此開啟';

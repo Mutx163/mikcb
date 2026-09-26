@@ -666,16 +666,18 @@ class _SpreadsheetCourseImportScreenState
       _isImporting = true;
     });
     try {
+      // Ask for the path rather than the bytes. Reading the file eagerly would
+      // pull all of it into memory before we get any chance to measure it, which
+      // is exactly the case the size cap below exists to prevent.
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['csv', 'xlsx'],
-        withData: true,
       );
       if (result == null || result.files.isEmpty || !mounted) return;
 
       final file = result.files.single;
-      final bytes = file.bytes;
-      if (bytes == null) {
+      final path = file.path;
+      if (path == null) {
         if (mounted) {
           showAppToast(
             context,
@@ -686,6 +688,21 @@ class _SpreadsheetCourseImportScreenState
         return;
       }
 
+      final length = await File(path).length();
+      if (SpreadsheetImportService.exceedsFileSizeLimit(length)) {
+        if (mounted) {
+          showAppToast(
+            context,
+            message: l10n.importFileTooLarge(
+              SpreadsheetImportService.formatMaxFileSize(),
+            ),
+            kind: AppToastKind.error,
+          );
+        }
+        return;
+      }
+
+      final bytes = await File(path).readAsBytes();
       await _executeSpreadsheetImport(bytes, file.name);
     } finally {
       if (mounted) {
