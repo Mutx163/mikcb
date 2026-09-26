@@ -321,7 +321,18 @@ void main() {
     expect(find.text('恢复默认'), findsNothing);
 
     // 自定义档：按钮出现，并自带一句范围说明。
-    await tester.ensureVisible(find.text('自定义'));
+    // 滚到「通用」页自己的竖向滚动视图，并要求居中：
+    // d76762b9 把材质分段换成 Miuix 分段后这一行由 ~24（标题）变成 45（控件
+    // 高度），面板内容预算从 ~332 掉到 ~311，超出的由页内滚动。默认的
+    // ensureVisible 只滚到「刚可见」就停，胶囊会正好停在面板裁剪边缘，
+    // tap 打偏到 Theater 背板（报 "would not hit test"），预设没切过去、
+    // 按钮自然不出现。Scrollable.ensureVisible 支持 alignment，让它落在
+    // 可点区域中间（本版本该参数是 double：0=前沿、1=后沿、0.5=居中）。
+    await Scrollable.ensureVisible(
+      tester.element(find.text('自定义')),
+      alignment: 0.5,
+    );
+    await tester.pumpAndSettle();
     await tester.pumpAndSettle();
     await tester.tap(find.text('自定义'));
     await tester.pumpAndSettle();
