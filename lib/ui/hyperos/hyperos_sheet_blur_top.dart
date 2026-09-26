@@ -176,6 +176,16 @@ class HyperosSheetBlurTop extends StatefulWidget {
 }
 
 class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
+  /// 顶部 chrome（把手那条）那截的模糊强度，取全局「模糊强度」的这个比例。
+  ///
+  /// 为什么按比例压而不是直接用主带那一档：那一截背后**没有内容**（见 `_buildBanded`
+  /// 的注释），拿主带强度去糊一片本来就没有细节的面板 = 一块死板的平面，看着就是
+  /// 「不透明纯色」（2026-09-26 用户报）。轻到这个程度，面板自己的材质纹理还看得见，
+  /// 顶部仍然是「一整块磨砂」而不是「一块平板 + 一条分界」。
+  ///
+  /// 别调高到 1：那样就回到平板。
+  static const double _handleStripBlurFactor = 0.3;
+
   /// 带是否已显形（仅 [HyperosSheetBlurTop.revealOnScroll] 用）。
   bool _revealed = false;
 
@@ -260,12 +270,71 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
 
   Widget _buildBanded(BuildContext context) {
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-    // 带盒 = 把手那条 + 带上内容。带子整体**上移** [HyperosSheetBlurTop.bleedTop]
-    // 盖过把手，于是「顶边满强度」那一步落在面板自己的上边缘、被面板裁掉。
+    // 带盒 = 顶部 chrome 那截（[bleedTop]） + 带上内容（[headerHeight]）。带子整体
+    // **上移** bleedTop，于是「顶边满强度」那一步落在面板自己的上边缘、被面板裁掉。
+    //
+    // ⚠️ 这两截**必须用不同的模糊强度**，不是同一档铺满（2026-09-26 用户报「拉杆的位置
+    // 是不透明的了、看不到底下的模糊内容、是纯色」）：
+    //
+    // 顶部 chrome 那截**背后没有内容** —— 底部弹窗只允许拖把手（不能整面板拖），而把手
+    // 是内容区**上方**的兄弟节点、内容画在它前面，所以内容视口到不了那儿（真要盖过去，
+    // 那 24px 里的竖向拖动会被滚动视图抢走、把手直接拖不动）。拿主带那档强度（默认
+    // sigma 22）去糊一片本来就没有细节的面板 = 一块死板的平面，看着就是「不透明纯色」。
+    //
+    // 所以顶部那截走**均匀、很轻**的一档（[_handleStripBlurFactor]）：面板自己的材质还
+    // 看得出纹理，顶部于是仍然是「一整块磨砂」而不是「一块平板 + 一条分界」。
     final bandBoxHeight = widget.bleedTop + widget.headerHeight;
+    final stripSigma =
+        HyperosBlurredHeader.blurSigmaOf(context) * _handleStripBlurFactor;
     final band = SizedBox(
       height: bandBoxHeight,
-      child: FrostedHeaderBackground(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (widget.bleedTop > 0)
+            SizedBox(
+              height: widget.bleedTop,
+              child: FrostedHeaderBackground(
+                // 均匀档：这一截要的是「整片轻磨砂」，不要任何方向的浓度差（那正是平板感
+                // 的来源）。强度按比例压，别直接用主带那一档。
+                // ignore: avoid_redundant_argument_values
+                blurStyle: HeaderBlurStyle.gaussian,
+                blurEnabled: useBlur,
+                blurSigma: stripSigma,
+                tint: useBlur
+                    ? Colors.transparent
+                    : HyperosBlurredHeader.sheetTintColor(
+                        context,
+                        withBlur: false,
+                      ),
+                // 这一截是**封顶**的（上面就是面板边缘），没有下沿可探 —— `bottomOverhang`
+                // 留默认 0。
+                child: const SizedBox.expand(),
+              ),
+            ),
+          Expanded(child: _mainBand(context, useBlur: useBlur)),
+        ],
+      ),
+    );
+    return Stack(
+      // ⚠️ **不能** `expand`：那会让 Stack 直接取 `constraints.biggest` = 高度上限，
+      // 于是「内容不满一屏的弹窗」被硬撑到上限（实测课程弹窗从按内容收缩变成恒 80%
+      // 屏高，面板顶边被推到屏幕 20% 处，模糊带看着像在弹窗中段）。
+      //
+      // 正确形状是**正文非定位**（它决定 Stack 尺寸，按内容收缩、上限由外层
+      // `ConstrainedBox(maxHeight)` 封；`fit` 保持默认 `loose`，别写 `expand`）+ **带
+      // 定位**（`RenderStack` 一律把定位子节点画在非定位子节点**之上**，不必靠 child
+      // 顺序）。这样「内容短 → 面板短、带贴着面板顶边」，「内容长 → 顶到上限」。
+      alignment: Alignment.topLeft,
+      // 带要往左右**外扩** `bleed` 才能满宽（见 [bleed]），所以不能裁。
+      clipBehavior: Clip.none,
+      children: _stackChildren(band, bandBoxHeight),
+    );
+  }
+
+  /// 主带：真正有内容从底下穿过的那一段，渐进档（顶边满强度、向下衰减到 0）。
+  Widget _mainBand(BuildContext context, {required bool useBlur}) {
+    return FrostedHeaderBackground(
         // 渐进档 = 设置页顶栏那一档（子页顶栏已锁死为它，见 subpageHeaderBlurStyleOf）。
         blurStyle: HeaderBlurStyle.inspire,
         blurEnabled: useBlur,
@@ -306,80 +375,68 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
             ),
           ),
         ),
-      ),
-    );
+      );
+  }
 
+  /// Stack 的几个子节点：正文（定尺寸）+ 带（浮在上面）+ 把手替身。
+  List<Widget> _stackChildren(Widget band, double bandBoxHeight) {
     // 滚动才显形：没显形就整条不画（连模糊层一起）。**不能只淡入 header** —— 模糊带
     // 本体是「压住滚上来的内容」的那一层，它留着就等于内容还在从带底下钻出来，那正是
     // 要消掉的现象。
     final reveal = !widget.revealOnScroll || _revealed;
 
-    return Stack(
-      // ⚠️ **不能** `expand`：那会让 Stack 直接取 `constraints.biggest` = 高度上限，
-      // 于是「内容不满一屏的弹窗」被硬撑到上限（实测课程弹窗从按内容收缩变成恒 80%
-      // 屏高，面板顶边被推到屏幕 20% 处，模糊带看着像在弹窗中段）。
+    return <Widget>[
+      // 正文**满高铺开**（不套顶部 padding）—— 让位必须由调用方加在**滚动内容里面**
+      // （[topInsetFor]），不能在这里加。
       //
-      // 正确形状是**正文非定位**（它决定 Stack 尺寸，按内容收缩、上限由外层
-      // `ConstrainedBox(maxHeight)` 封；`fit` 保持默认 `loose`，别写 `expand`）+ **带
-      // 定位**（`RenderStack` 一律把定位子节点画在非定位子节点**之上**，不必靠 child
-      // 顺序）。这样「内容短 → 面板短、带贴着面板顶边」，「内容长 → 顶到上限」。
-      alignment: Alignment.topLeft,
-      // 带要往左右**外扩** `bleed` 才能满宽（见 [bleed]），所以不能裁。
-      clipBehavior: Clip.none,
-      children: <Widget>[
-        // 正文**满高铺开**（不套顶部 padding）—— 让位必须由调用方加在**滚动内容里面**
-        // （[topInsetFor]），不能在这里加。
-        //
-        // ⚠️ 这里是 2026-09-26 修掉的一个真 bug：让位加在 body **外面**时，滚动视口
-        // 被整体下移，于是内容在**带底就被裁掉**、从来没进过模糊区 —— 带子一直在糊
-        // 「面板自己的均匀玻璃」，糊了等于没糊，只剩一条满浓度的白衬底在带顶突兀出现
-        // （用户报「切换按钮顶部一条明显的横线」）。让位进了滚动内容之后，内容才会
-        // 真的从带**底下**穿过去被糊掉。
-        //
-        // `minHeight` 只保「正文至少和带一样高」（否则带会比正文还长、糊到正文外面），
-        // 不再参与内容的位置。
-        ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: widget.bleedTop + widget.headerHeight + widget.fadeExtent,
-          ),
-          child: widget.body,
+      // ⚠️ 2026-09-26 修掉的一个真 bug：让位加在 body **外面**时，滚动视口被整体下移，
+      // 于是内容在**带底就被裁掉**、从来没进过模糊区 —— 带子一直在糊「面板自己的均匀
+      // 玻璃」，糊了等于没糊，只剩一条满浓度的白衬底在带顶突兀出现（用户报「切换按钮
+      // 顶部一条明显的横线」）。让位进了滚动内容之后，内容才会真的从带**底下**穿过去。
+      //
+      // `minHeight` 只保「正文至少和带一样高」（否则带会比正文还长、糊到正文外面），
+      // 不再参与内容的位置。
+      ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: widget.bleedTop + widget.headerHeight + widget.fadeExtent,
         ),
-        // 带压在最上（定位子节点恒在非定位之上）：必须挡住从底下滚上来的内容。
-        //
-        // `left/right: -bleed` 是**满宽**的关键：面板内容的左右内缩是**外层**加的
-        // （上游底部弹窗的 `insideMargin`，16），不在本控件的盒里 —— 不外扩的话带子
-        // 就只在中间一段有模糊，两侧各留一条没糊的边，读起来是「浮在面板里的一个方框」
-        // 而不是「面板顶部的渐变」。
-        //
-        // 「滚动才显形」时没显形就换成等高的空盒：位置照样让给正文（静止时第一行就在
-        // 那儿），但不画模糊也不吃点击。刻意**不用 `Opacity`** 淡入 —— 它会把
-        // `BackdropFilter` 与玻璃材质降级成透明（`hyperos_sheet.dart` 记的同一条纪律）。
+        child: widget.body,
+      ),
+      // 带压在最上（定位子节点恒在非定位之上）：必须挡住从底下滚上来的内容。
+      //
+      // `left/right: -bleed` 是**满宽**的关键：面板内容的左右内缩是**外层**加的
+      // （上游底部弹窗的 `insideMargin`，16），不在本控件的盒里 —— 不外扩的话带子就只
+      // 在中间一段有模糊，两侧各留一条没糊的边，读起来是「浮在面板里的方框」而不是
+      // 「面板顶部的渐变」。
+      //
+      // 「滚动才显形」时没显形就换成等高的空盒：位置照样让给正文（静止时第一行就在那儿），
+      // 但不画模糊也不吃点击。刻意**不用 `Opacity`** 淡入 —— 它会把 `BackdropFilter`
+      // 与玻璃材质降级成透明（`hyperos_sheet.dart` 记的同一条纪律）。
+      Positioned(
+        top: -widget.bleedTop,
+        left: -widget.bleed,
+        right: -widget.bleed,
+        child: reveal
+            ? band
+            : IgnorePointer(
+                // 没显形时既不画也不吃点击：带的位置要让给正文。
+                child: SizedBox(height: bandBoxHeight),
+              ),
+      ),
+      // 把手**替身**画在带上面（不参与命中，拖动仍由它下面上游那颗接手；那颗已被承载壳画
+      // 成透明，见 `showMiuixBottomSheet` 的 `coverDragHandle`，所以屏幕上只有这一颗）。
+      //
+      // 位置是 `[top: -bleedTop]`（面板上边缘）起、往下 [echoDragHandleHeight] 那一段 ——
+      // 把手就在紧贴面板上边缘的那段里（底下还有一截空占位，见 [bleedTop]）。
+      if (reveal && widget.echoDragHandleHeight > 0)
         Positioned(
           top: -widget.bleedTop,
-          left: -widget.bleed,
-          right: -widget.bleed,
-          child: reveal
-              ? band
-              : IgnorePointer(
-                  // 没显形时既不画也不吃点击：带的位置要让给正文（静止时第一行就在那儿）。
-                  child: SizedBox(height: bandBoxHeight),
-                ),
+          left: 0,
+          right: 0,
+          height: widget.echoDragHandleHeight,
+          child: const IgnorePointer(child: _SheetDragHandleEcho()),
         ),
-        // 把手**替身**画在带上面（不参与命中，拖动仍由它下面上游那颗接手；那颗已被承载壳
-        // 画成透明，见 `showMiuixBottomSheet` 的 `coverDragHandle`，所以屏幕上只有这一颗）。
-        //
-        // 位置是 `[top: -bleedTop]`（面板上边缘）起、往下 [echoDragHandleHeight] 那一段 ——
-        // 把手就在紧贴面板上边缘的那段里（底下还有一截空占位，见 [bleedTop]）。
-        if (reveal && widget.echoDragHandleHeight > 0)
-          Positioned(
-            top: -widget.bleedTop,
-            left: 0,
-            right: 0,
-            height: widget.echoDragHandleHeight,
-            child: const IgnorePointer(child: _SheetDragHandleEcho()),
-          ),
-      ],
-    );
+    ];
   }
 }
 
