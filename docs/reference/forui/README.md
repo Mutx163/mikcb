@@ -12,9 +12,9 @@
 
 ## 使用建议
 
-- 查 Forui 组件 API、主题、Sheet/Dialog 等：**优先读 `llms-full.txt`**
-- 快速定位某一页：**先读 `llms.txt` 索引**
-- 改 mikcb 设置页、表单页、Bottom Sheet：**同时参考 `mikcb-settings-screen-layout.md`**
+- 查 Forui 组件 API、主题、Sheet/Dialog 等：**优先读 `llms-full.txt`**。
+- 快速定位某一页：**先读 `llms.txt` 索引**。
+- 改 mikcb 设置页、表单页、Bottom Sheet：**同时参考 `mikcb-settings-screen-layout.md`**。
 
 ## 更新
 

@@ -1,18 +1,18 @@
-# 超级岛「展开状态详细信息」自定义 — 设计方案
+# 超级岛“展开状态详细信息”自定义：设计方案
 
 > 日期：2026-09-09　|　状态：已实施（方案 A + 一期顺带完成排序）
-> 追加修订 2026-09-10：修复「未读快照导致展开态变更」与设置页 UI 规范化，见 §11。
+> 追加修订 2026-09-10：修复“未读快照导致展开态变更”与设置页 UI 规范化，见 §11。
 > 目标：让用户自定义超级岛/焦点通知**展开态**（大卡片）里显示哪些详细信息、按什么顺序显示。
 
 ---
 
 ## 1. 结论（TL;DR）
 
-**可以做，且是低风险改动。** 整条链路（设置 → Flutter payload → MethodChannel → Intent extras → 原生拼文本）已经为「逐项开关」完全打通——折叠态早就这么做了（showCourseName / showLocation / showCountdown 等）。展开态只是缺一组**字段级开关**。
+**可以做，且是低风险改动。** 从设置 → Flutter payload → MethodChannel → Intent extras → 原生拼文本，这条数据流已经支持“逐项开关”，折叠态早就这么做了（showCourseName / showLocation / showCountdown 等）。展开态只是缺一组**字段级开关**。
 
-- 建议数据结构：**一个有序字段列表** expandedDetailFields（`["stage","shortName","progress","status","time","location","teacher","next","note"]`），一次搞定「显隐 + 顺序」，而不是 8 个孤立布尔。
-- **默认值「缺省 = 全显示」**，老快照/老版本无需任何迁移，天然向后兼容。
-- 主要工作量在 **处透传**（Flutter payload → scheduler intent → service），每处都是照抄现有字段的模式，机械但量大。
+- 建议数据结构：**一个有序字段列表** expandedDetailFields（`["stage","shortName","progress","status","time","location","teacher","next","note"]`），一次搞定“显隐 + 顺序”，而不是 8 个孤立布尔。
+- **默认值“缺省 = 全显示”**，老快照/老版本无需任何迁移，天然向后兼容。
+- 主要工作量在 **3 处透传**（Flutter payload → scheduler intent → service），每处都是照抄现有字段的模式，机械但量大。
 
 ---
 
@@ -43,27 +43,27 @@ Flutter:_liveSyncScheduleSnapshot() → settings.toJson() 写入 snapshot JSON
 
 LiveUpdateService.buildNotification() 里有两个 builder：
 
-**expandedDetailText（非提升态·状态栏通知展开，Line 1838–1860）**，目前固定顺序：
+**expandedDetailText（非提升态·状态栏通知展开，Line 1838～1860）**，目前固定顺序：
 
 | 行号 | 字段 key（方案用） | 内容 | 格式串 |
 |---|---|---|---|
 | 1839 | stage | 阶段标题（课前/课中/下课前） | 无前缀（首行） |
-| 1840–1842 | shortName | 课程编写（有且 != 课程名时） | detail_short_name |
-| 1843–1851 | progress | 课中倒计时：下一节点 + 下课/结束 | detail_next_milestone / detail_final_dismiss |
-| 1852–1854 | status | 状态文字（非倒计时、非提升时） | detail_status |
+| 1840～1842 | shortName | 课程编写（有且 != 课程名时） | detail_short_name |
+| 1843～1851 | progress | 课中倒计时：下一节点 + 下课/结束 | detail_next_milestone / detail_final_dismiss |
+| 1852～1854 | status | 状态文字（非倒计时、非提升时） | detail_status |
 | 1855 | time | 上课时间 start - end | detail_time |
 | 1856 | location | 地点（原始 location，不受 showLocation 门控） | label_location |
 | 1857 | teacher | 老师 | detail_teacher |
 | 1858 | next | 下节课 | detail_next |
 | 1859 | note | 备注 | detail_note |
 
-**promptedExpandedDetailText（提升通知·超级岛展开，行 1875–1891）**：内容相同，顺序是 progress/status → time → location → teacher → shortName → next → note，**无 stage 首行**。
+**promptedExpandedDetailText（提升通知·超级岛展开，行 1875～1891）**：内容相同，顺序是 progress/status → time → location → teacher → shortName → next → note，**无 stage 首行**。
 
-两句最终被 shouldPromote 二选一赋值给 notificationExpandedText（1973–1979），塞进 BigTextStyle().bigText(...)（2065–2070）。
+两句最终被 shouldPromote 二选一赋值给 notificationExpandedText（1973～1979），塞进 BigTextStyle().bigText(...)（2065～2070）。
 
-### ⚠ 平台限制（必须先讲清）
+### 平台限制（必须先讲清）
 
-- **Android 16（SDK 36）+ 课中带进度条**：走 Notification.ProgressStyle()（2041–2063），由系统绘制进度环/节点，**完全不使用 notificationExpandedText**。即「课中 + Android 16」时展开态无法自定义文字。
+- **Android 16（SDK 36）+ 课中带进度条**：走 Notification.ProgressStyle()（2041～2063），由系统绘制进度环/节点，**完全不使用 notificationExpandedText**。即“课中 + Android 16”时展开态无法自定义文字。
 - 其余场景（课前、下课提醒、Android 15 及以下的课中）都用 BigTextStyle，**9 个字段全部可定制**，纯文本行，无字体/颜色排版自由度。
 
 ## 4. 方案选型
@@ -76,13 +76,13 @@ LiveUpdateService.buildNotification() 里有两个 builder：
 - Kotlin：Intent extra 为 ArrayList<String>（putStringArrayListExtra）；缺失 = 显示
 - UI：每项 = 开关 + 上下移排序（实施时一期完成，非二期）
 
-**优点**：一个字段同时承载显隐+顺序；缺省=全显示永远不破坏老用户；二期腾讯排序直接复用。
+**优点**：一个字段同时承载显隐+顺序；缺省=全显示永远不破坏老用户；二期的排序直接复用。
 **缺点**：需定义一个枚举+序列化约定（很小）。
 
 ### 方案 B：每字段一个布尔（timeShow/locationShow/teacherShow…）
 
 - 与现有 liveXxx 风格完全同构，心智低。
-- 缺点：8 字段 × 双档 = 16 个 pref + 16 copyWith 字段，样板代码量是 A 的 2–3 倍，且没有排序。
+- 缺点：8 字段 × 双档 = 16 个 pref + 16 copyWith 字段，样板代码量是 A 的 2～3 倍，且没有排序。
 
 **建议：方案 A。** 只需要开关不需要排序时，A 的字段列表本身就是开关。
 
@@ -97,10 +97,10 @@ LiveUpdateService.buildNotification() 里有两个 builder：
 
 | 文件 | 改动 |
 |---|---|
-| lib/models/timetable_settings.dart | ① 新增 enum LiveList<LiveExpandedDetailField>（含 name 序列化值）；② LiveDisplaySettings 增加 List<LiveExpandedDetailField>? live（null=全显示）+ constructor + copyWith；③ 双档 getter 映射新 prefs；④ toJson/从Json 加 liveExpandedDetailFields/liveDuringEndExpandedDetailFields（缺失默认 null） |
+| lib/models/timetable_settings.dart | ① 新增 enum LiveList<LiveExpandedDetailField>（含 name 序列化值）；② LiveDisplaySettings 增加 List<LiveExpandedDetailField>? live（null=全显示）+ constructor + copyWith；③ 双档 getter 映射新 prefs；④ toJson/从 Json 加 liveExpandedDetailFields/liveDuringEndExpandedDetailFields（缺失默认 null） |
 | lib/services/miui_live_activities_service.dart | startLiveUpdate/_buildData/测试 payload/live_testing_trigger.dart 同步补参 expandedDetailFields，写入 islandConfig['expandedDetailFields'] |
 | lib/providers/timetable/live_activity_controller.dart | 行 888 调用处传 displaySettings.expandedDetailFields?.map((f)=>f.name).toList() |
-| lib/screens/live_settings_subpages.dart | 显示副页「展开图标」卡片下新增「展开详情」分组：可见/隐藏分区 + 每项开关 + 上下移排序 + 恢复默认；onChanged 走 _updateDisplay 即时刷新；课中档跟随 liveDuringEndFollowBeforeClass 时整组置灰 |
+| lib/screens/live_settings_subpages.dart | 显示副页“展开图标”卡片下新增“展开详情”分组：可见/隐藏分区 + 每项开关 + 上下移排序 + 恢复默认；onChanged 走 _updateDisplay 即时刷新；课中档跟随 liveDuringEndFollowBeforeClass 时整组置灰 |
 
 > 注意：设置保存路径 updateTimetableSettings（timetable_provider.dart:3692）会自动 sync 快照 + 刷新 live activity，所以开关改完**即时生效**。
 
@@ -120,19 +120,19 @@ lib/l10n/app_zh.arb（+ zh_TW/zh_HK/en/ja/ko）新增：
 
 ### 5.4 预览组件
 
-live_island_preview.dart 原有注释明确「展开态不在此预览范围内」，摘要态胶囊看不到详情行，
+live_island_preview.dart 原有注释明确“展开态不在此预览范围内”，摘要态胶囊看不到详情行，
 用户调完设置屏幕上毫无反馈。**现已补齐**：
 
-- `LiveIslandExpandedPreviewCard`：模拟提升通知展开后的排版——标题
+- `LiveIslandExpandedPreviewCard`：模拟提升通知展开后的排版：标题
   （`即将上课: <课程名>` / `下课提醒: <课程名>` / 课中裸课程名）、正文
-  （`promotedContentText`）、分隔线、按 `expandedDetailFields` 顺序渲染的详情行；
+  （`promotedContentText`）、分隔线、按 `expandedDetailFields` 顺序渲染的详情行。
 - 未配置 = 原生默认顺序 `progress, status, time, location, teacher, shortName,
-  next, note`；空列表 = 全部隐藏，卡片内显示「已隐藏全部详情行」提示；
+  next, note`；空列表 = 全部隐藏，卡片内显示“已隐藏全部详情行”提示。
 - 课中带进度块时渲染 `下一节点` / `整节下课` 两行，并跳过 `status` 行
-  （原生 `detailStatusText` 在该情形为 null）；`stage` 行按原生非提升路径渲染；
+  （原生 `detailStatusText` 在该情形为 null）；`stage` 行按原生非提升路径渲染。
 - 卡片底部固定展示平台限制说明（Android 16 课中进度态由系统绘制、本设置不生效），
-  把原先只存在于设计文档的限制暴露给用户；
-- 设置页「展开详情」组下方接入该预览，跟随课前设置时同样展示说明徽标。
+  把原先只存在于设计文档的限制暴露给用户。
+- 设置页“展开详情”组下方接入该预览，跟随课前设置时同样展示说明徽标。
 
 ## 6. 向后兼容
 
@@ -149,7 +149,7 @@ live_island_preview.dart 原有注释明确「展开态不在此预览范围内�
 - flutter test：模型默认值、双档 getter、序列化往返
 - flutter test：设置页开关切换后 draft/持久化正确
 - Kotlin：现有 LiveUpdateScheduler 测试补 buildIntent extra 断言
-- 真机/模拟器验收：课前把「下节课」「备注」关掉展开态不出现该两行；全关只剩首行（无空通知）；Android 16 课中进度条确认不受影响
+- 真机/模拟器验收：课前把“下节课”“备注”关掉展开态不出现该两行；全关只剩首行（无空通知）；Android 16 课中进度条确认不受影响
 
 ## 8. 风险管理
 
@@ -164,19 +164,19 @@ live_island_preview.dart 原有注释明确「展开态不在此预览范围内�
 
 | 阶段 | 内容 | 预估 |
 |---|---|---|
-| 1 | Dart 模型+枚举+序列化+单测 | 0.5–1h |
-| 2 | 系统中透传+测试trigger | 0.5h |
-| 3 | 设置页 UI + 六语言 | 1–1.5h |
-| 4 | scheduler 三处透传+单测 | 1h |
-| 5 | build 过滤+冗余保护 | 0.5h |
-| 6 | analyze + 定向测试 | 0.5h |
+| 1 | Dart 模型+枚举+序列化+单测 | 0.5～1 h |
+| 2 | 系统中透传+测试 trigger | 0.5 h |
+| 3 | 设置页 UI + 六语言 | 1～1.5 h |
+| 4 | scheduler 三处透传+单测 | 1 h |
+| 5 | build 过滤+冗余保护 | 0.5 h |
+| 6 | analyze + 定向测试 | 0.5 h |
 
-合计约 **4–5 工作小时**，与现有模式平行、无迁移。
+合计约 **4～5 个工作小时**，与现有模式平行、无迁移。
 
 ## 10. 实施结论（2026-09-09）
 
 1. 显隐 + 排序一期一并完成（上/下移 + 隐藏分组 + 恢复默认）。
-2. 「展开详情预览」已于迭代中补齐（见 §5.4），摘要态 + 展开态两张预览同时在设置页可见。
+2. “展开详情预览”已于迭代中补齐（见 §5.4），摘要态 + 展开态两张预览同时在设置页可见。
 3. 展开态 location 独立开关，不跟随折叠态 showLocation（与方案 §3 现状一致）。
 4. Kotlin 空文本兜底未额外实现：全关后 setBigContentTitle 仍显示阶段标题。
 5. 定向验证：flutter analyze 0 issues；timetable_settings_test 53 例全过（含新增 4 例序列化/双档/重置）；LiveUpdateSchedulerLogicTest 含 parseExpandedDetailFields 3 例。
@@ -191,35 +191,35 @@ live_island_preview.dart 原有注释明确「展开态不在此预览范围内�
 ### 11.1 展开态回归（真 bug，已修）
 
 - **根因**：`parseExpandedDetailFields(raw)` 在 `raw == null`（快照里没有
-  `liveExpandedDetailFields` 这个 key）时返回 `null`，语义是「用户没自定义」。
+  `liveExpandedDetailFields` 这个 key）时返回 `null`，语义是“用户没自定义”。
   但 `NightlySnapshot` 里存在**两份默认顺序**：
   - `buildNotification` 兜底：非提升态 `stage, shortName, progress, status, time, location, teacher, next, note`；
   - `buildNotification` 兜底：提升态 `progress, status, time, location, teacher, shortName, next, note`。
   同时 `parseSnapshot` 把 `liveDuringEndExpandedDetailFields` 默认为
   `parse("liveDuringEnd...") ?: parse("live...")`，即课中档为 `null` 时**镜像**成了课前档的
-  `null`（而不是「未设置」）。于是「从未进过设置页」的用户，课中提升态请求顺序
-  被按 `expandedDetailFields` 提供了 9 字段默认顺序，展开态多出阶段行、进度行被
-  状态行顶掉——和加功能之前长得不一样。
+  `null`（而不是“未设置”）。于是“从未进过设置页”的用户，系统按
+  `expandedDetailFields` 提供的 9 字段默认顺序渲染课中提升态，展开态多出阶段行、进度行被
+  状态行顶掉，和加功能之前长得不一样。
 - **修复**：
   - 新增 `EXPANDED_DETAIL_DEFAULT_ORDER` / `PROMOTED_EXPANDED_DETAIL_DEFAULT_ORDER`
     两个内部常量，`parseExpandedDetailFields` 在 key 缺失时返回**全显示历史顺序**
     的副本，不再返回 `null`；
-  - `parseExpandedDetailFields` 对「只认识部分字段」的输入做补齐（保留用户顺序，
+  - `parseExpandedDetailFields` 对“只认识部分字段”的输入做补齐（保留用户顺序，
     未知/重复项丢弃，末尾按默认顺序补全），空数组仍表示全隐藏；
-    ⚠️ 这条补齐语义 2026-09-15 被收窄为「只对老写法生效」，见 §12；
+    这条补齐语义 2026-09-15 被收窄为“只对老写法生效”，见 §12；
   - `parseSnapshot` 的课中档回退改为先合并 JSON 键再解析，去掉依赖 `null` 的
     elvis 语义；
   - `LiveUpdateService.buildNotification` 两处 `?: listOf(...)` 内联列表改为
-    具名常量，消除「两处默认顺序不同」的隐患。
+    具名常量，消除“两处默认顺序不同”的隐患。
 - **回归测试**：`LiveUpdateSchedulerLogicTest` 的 4 例改为断言
-  「缺失 key → 历史默认顺序」「显式空数组 → 全隐藏」「部分列表 → 补全」；
+  “缺失 key → 历史默认顺序”“显式空数组 → 全隐藏”“部分列表 → 补全”；
   新增 Flutter 侧枚举顺序与原生默认顺序一致性断言。
 
 ### 11.2 设置页 UI 规范化（已改）
 
 原实现的两个毛刺：
 
-1. 行首放了两个 `IconButton` 上/下箭头——不是本项目的控件语言，且箭头在
+1. 行首放了两个 `IconButton` 上/下箭头，不是本项目的控件语言，且箭头在
    隐藏分组里还留着，让人误以为能拖。
 2. 用 `Theme.of(context).dividerColor` / `colorScheme.primary` 画边框和
    选中态（`_ColorDot`、`_ImagePreview`），走的是 Material 主题而不是
@@ -227,12 +227,12 @@ live_island_preview.dart 原有注释明确「展开态不在此预览范围内�
 
 改法：
 
-- 已显示区改为 `ReorderableListView`（`onReorderItem`，与「首页八宫格编辑器」
+- 已显示区改为 `ReorderableListView`（`onReorderItem`，与“首页八宫格编辑器”
   `settings_home_menu_editor.dart` 同一套交互）+ 行首拖动手柄；
   隐藏区紧随其后、只有开关，中间用 `HyperosInsetDivider(indent: 0)` 分隔；
-- 手柄外加 `Semantics` 自定义动作「上移 / 下移」，TalkBack 下不依赖拖拽；
+- 手柄外加 `Semantics` 自定义动作“上移 / 下移”，TalkBack 下不依赖拖拽；
 - 顶部加一行只读说明（`HyperosListTile` 新增可选 `subtitle`，无 `onTap`
-  时不再画 chevron），说明「长按拖动排序」以及 Android 16 课中由系统绘制
+  时不再画 chevron），说明“长按拖动排序”以及 Android 16 课中由系统绘制
   展开态、本设置不生效；
 - 展开详情的所有行统一走 `hyperosListRowShell` + `HyperosSwitch`
   （此前手搓 `SizedBox(height: listRowMinHeight)`）；
@@ -242,15 +242,15 @@ live_island_preview.dart 原有注释明确「展开态不在此预览范围内�
 ### 11.3 仍未做
 
 - 展开态实时预览（`live_island_preview.dart` 仍只画摘要态胶囊），与 §5.4 一致；
-- 展开态字段的拖拽排序只作用于「已显示」区，隐藏区顺序保持不动。
+- 展开态字段的拖拽排序只作用于“已显示”区，隐藏区顺序保持不动。
 
 ---
 
-## 12. 追加修订（2026-09-15）：单项隐藏被「补齐」抵消
+## 12. 追加修订（2026-09-15）：单项隐藏被“补齐”抵消
 
 真机反馈（Redmi 25060RK16C / Android 16）：课中/下课档只留 4 项，下课提醒仍多出
-「简称」「备注」两行，且总排在用户顺序之后。根因是 §11.1 引入的补齐逻辑与「隐藏 =
-从名单里删掉」这对语义在同一数组上打架——**任何单项隐藏都不生效**，只有全关
+“简称”“备注”两行，且总排在用户顺序之后。根因是 §11.1 引入的补齐逻辑与“隐藏 =
+从名单里删掉”这对语义在同一数组上打架，**任何单项隐藏都不生效**，只有全关
 （空数组）才躲得过；同一 bug 也让设置页预览（按名单直画）与真机不一致。
 
 **修法：名单加写法版本号。** 快照 `settings` 子树新增 `liveExpandedDetailSchemaVersion`
@@ -262,7 +262,7 @@ live_island_preview.dart 原有注释明确「展开态不在此预览范围内�
 | key 缺失 / 类型不对 | 默认全显示顺序（历史行为不变） |
 | 显式空数组 | 全部隐藏（历史行为不变） |
 | 版本 ≥ 当前 | 只清洗（丢未知项、去重、保序），**不补齐** |
-| 版本缺失或更老（老快照） | 按默认顺序补齐（保住「升级后展开态不变样」） |
+| 版本缺失或更老（老快照） | 按默认顺序补齐（保住“升级后展开态不变样”） |
 
 payload 路径（Flutter → 原生，同一次安装）天然同版本，走默认参数、不补齐；
 只有跨 APK 版本存活的快照需要版本号。旧快照在用户下一次同步（打开 App / 改设置）

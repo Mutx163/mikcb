@@ -4,7 +4,7 @@
 > **组件/API 参考：** [`hyperos-ui-kit.md`](./hyperos-ui-kit.md)  
 > **验收样板页：** `lib/screens/hyperos_showcase_screen.dart`
 
-UI 迁移已从「逐页 feature 任务」改为 **持续 audit 流水线**。不再靠对话里肉眼问「这页澎湃了吗？」——改跑脚本 + 查 registry。
+UI 迁移已从“逐页 feature 任务”改为 **持续 audit 流水线**。不再靠对话里肉眼问“这页澎湃了吗？”，改跑脚本 + 查 registry。
 
 ---
 
@@ -26,7 +26,7 @@ python tool/hyperos_audit.py --perfect    # 严格完美合规（error + warn）
 
 **CI：** `.github/workflows/ci.yml` 在 `flutter analyze` 前执行 `python tool/hyperos_audit.py --strict`。
 
-**Agent：** 用户问「XX 页面是否符合澎湃 UI」→ 读 `mikcb-hyperos-audit` SKILL，不要即兴 grep。
+**Agent：** 用户问“XX 页面是否符合澎湃 UI”→ 读 `mikcb-hyperos-audit` SKILL，不要即兴 grep。
 
 ---
 
@@ -34,7 +34,7 @@ python tool/hyperos_audit.py --perfect    # 严格完美合规（error + warn）
 
 完整规则见 [`hyperos-audit-checklist.yaml`](./hyperos-audit-checklist.yaml)（圆角 / 间距 / 字体 / 暗色 / 标题 / 对话框等）。
 
-**用户历史要求（对话提炼）：** [`hyperos-audit-user-history.yaml`](./hyperos-audit-user-history.yaml) — 你在过去会话里让改的具体 UI 项；`python tool/hyperos_audit.py --history` 逐条核对。
+**用户历史要求（对话提炼）：** [`hyperos-audit-user-history.yaml`](./hyperos-audit-user-history.yaml)：你在过去会话里让改的具体 UI 项；`python tool/hyperos_audit.py --history` 逐条核对。
 
 | 级别 | 含义 | CI |
 |------|------|-----|
@@ -107,11 +107,11 @@ python tool/hyperos_audit.py --perfect    # 严格完美合规（error + warn）
 
 ---
 
-## 与旧「UI 迁移任务」的关系
+## 与旧“UI 迁移任务”的关系
 
 - Trellis `liqkit-ui-migration` / ui-kit §3 表格：**只读历史**，不再手动维护双份状态。
 - 新页面入库：在 `hyperos-page-compliance.json` 追加条目 → 跑 audit → PR 附带报告。
-- 「这页有没有遗漏」的标准答案 = **`python tool/hyperos_audit.py` 输出 + registry `notes`**。
+- “这页有没有遗漏”的标准答案 = **`python tool/hyperos_audit.py` 输出 + registry `notes`**。
 
 ---
 
