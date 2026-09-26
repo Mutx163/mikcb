@@ -635,11 +635,33 @@ class _SpreadsheetCourseImportScreenState
   }
 
   Future<void> _importFromExternalFile(String filePath, String fileName) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isImporting = true;
     });
     try {
-      final bytes = await File(filePath).readAsBytes();
+      // 走和「自己选文件」同一个带上限的读取。这条路是**外部应用把文件递进来**
+      // （main.dart 的 share intent → SpreadsheetCourseImportScreen(initialFilePath)），
+      // 完全不受用户自觉约束——体积上限的全部意义就是防这种输入把内存撑爆，
+      // Android 上 OOM 直接杀进程，下面的 catch 救不回来。
+      final Uint8List bytes;
+      try {
+        bytes = await readImportFileBytes(
+          filePath,
+          maxBytes: SpreadsheetImportService.maxFileBytes,
+        );
+      } on ImportFileTooLarge {
+        if (mounted) {
+          showAppToast(
+            context,
+            message: l10n.importFileTooLarge(
+              formatByteBudget(SpreadsheetImportService.maxFileBytes),
+            ),
+            kind: AppToastKind.error,
+          );
+        }
+        return;
+      }
       if (!mounted) {
         return;
       }
@@ -648,7 +670,7 @@ class _SpreadsheetCourseImportScreenState
       if (mounted) {
         showAppToast(
           context,
-          message: AppLocalizations.of(context)!.importFileReadFailed,
+          message: l10n.importFileReadFailed,
           kind: AppToastKind.error,
         );
       }
