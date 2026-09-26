@@ -93,7 +93,7 @@ void main() {
     await pumpPreview(tester, displayConfig: display());
 
     expect(
-      textMatching(RegExp(r'^高等数学 三教-401 距上课\d+分钟$')),
+      textMatching(RegExp(r'^高等数学 三教-401 距上课 \d+分钟$')),
       findsOneWidget,
       reason: '右侧应是与原生一致的 islandCriticalText：课程名+地点+状态',
     );
@@ -121,7 +121,7 @@ void main() {
     );
 
     // 下课胶囊：带前缀的距下课倒计时
-    expect(textMatching(RegExp(r'^高等数学 三教-401 距下课\d+分钟$')), findsOneWidget);
+    expect(textMatching(RegExp(r'^高等数学 三教-401 距下课 \d+分钟$')), findsOneWidget);
   });
 
   testWidgets('关闭地点：右侧文本只剩课程名与状态', (tester) async {
@@ -130,7 +130,7 @@ void main() {
       displayConfig: display(showLocation: false),
     );
 
-    expect(textMatching(RegExp(r'^高等数学 距上课\d+分钟$')), findsOneWidget);
+    expect(textMatching(RegExp(r'^高等数学 距上课 \d+分钟$')), findsOneWidget);
     expect(find.textContaining('三教-401'), findsNothing);
   });
 
@@ -140,7 +140,7 @@ void main() {
       displayConfig: display(showCourseName: false),
     );
 
-    expect(textMatching(RegExp(r'^三教-401 距上课\d+分钟$')), findsOneWidget);
+    expect(textMatching(RegExp(r'^三教-401 距上课 \d+分钟$')), findsOneWidget);
     expect(find.textContaining('高等数学'), findsNothing);
   });
 
@@ -179,7 +179,7 @@ void main() {
     expect(find.byIcon(Icons.access_time), findsNothing,
         reason: '非小米机型没有超级岛，左侧图标位不应画阶段图标');
     expect(
-      textMatching(RegExp(r'^高等数学 三教-401 距上课\d+分钟$')),
+      textMatching(RegExp(r'^高等数学 三教-401 距上课 \d+分钟$')),
       findsOneWidget,
       reason: '机型只影响左侧图标位，右侧文本照常渲染',
     );
@@ -197,7 +197,7 @@ void main() {
     expect(find.text('高等数学'), findsOneWidget,
         reason: '左侧图标位显示自定义标签（纯文字样式）');
     expect(
-      textMatching(RegExp(r'^高等数学 三教-401 距上课\d+分钟$')),
+      textMatching(RegExp(r'^高等数学 三教-401 距上课 \d+分钟$')),
       findsOneWidget,
       reason: '左图不参与 islandCriticalText 拼接，右侧文本保持不变',
     );
@@ -238,10 +238,10 @@ void main() {
   testWidgets('展开态预览：课前标题带阶段前缀，正文含状态与时间', (tester) async {
     await pumpExpandedPreview(tester, displayConfig: display());
 
-    expect(find.text('即将上课: 高等数学'), findsOneWidget,
+    expect(find.text('即将上课：高等数学'), findsOneWidget,
         reason: '原生 title_before_class 会拼上课程名');
     expect(
-      textMatching(RegExp(r'^距上课\d+分钟 · 08:00 - 08:45 · 三教-401 · 张老师$')),
+      textMatching(RegExp(r'^距上课 \d+分钟 · 08:00 - 08:45 · 三教-401 · 张老师$')),
       findsOneWidget,
       reason: 'promotedContentText = 状态 · 时间 · 地点 · 教师',
     );
@@ -254,13 +254,13 @@ void main() {
     // 课前没有进度块 → 进度行不出现；课前恒定提升 → status 行被原生
     // detailStatusText 的 `&& !shouldPromote` 吞掉，同样不出现（状态改由
     // 正文 promotedContentText 首项承载）。
-    expect(find.textContaining('状态: '), findsNothing);
-    expect(find.text('时间: 08:00 - 08:45'), findsOneWidget);
-    expect(find.text('地点: 三教-401'), findsOneWidget);
-    expect(find.text('教师: 张老师'), findsOneWidget);
-    expect(find.text('简称: 高数'), findsOneWidget);
-    expect(find.text('下一节: 大学物理'), findsOneWidget);
-    expect(find.text('备注: 带教材与习题册'), findsOneWidget);
+    expect(find.textContaining('状态：'), findsNothing);
+    expect(find.text('时间：08:00 - 08:45'), findsOneWidget);
+    expect(find.text('地点：三教-401'), findsOneWidget);
+    expect(find.text('教师：张老师'), findsOneWidget);
+    expect(find.text('简称：高数'), findsOneWidget);
+    expect(find.text('下一节：大学物理'), findsOneWidget);
+    expect(find.text('备注：带教材与习题册'), findsOneWidget);
   });
 
   testWidgets('展开态预览：自定义顺序按用户设置排列', (tester) async {
@@ -272,15 +272,15 @@ void main() {
       ]),
     );
 
-    expect(find.text('备注: 带教材与习题册'), findsOneWidget);
-    expect(find.text('地点: 三教-401'), findsOneWidget);
-    expect(find.textContaining('教师: '), findsNothing,
+    expect(find.text('备注：带教材与习题册'), findsOneWidget);
+    expect(find.text('地点：三教-401'), findsOneWidget);
+    expect(find.textContaining('教师：'), findsNothing,
         reason: '未启用的字段不渲染');
     expect(find.textContaining('下一节: '), findsNothing);
 
     // 顺序断言：备注在地点之前
-    final noteY = tester.getTopLeft(find.text('备注: 带教材与习题册')).dy;
-    final locY = tester.getTopLeft(find.text('地点: 三教-401')).dy;
+    final noteY = tester.getTopLeft(find.text('备注：带教材与习题册')).dy;
+    final locY = tester.getTopLeft(find.text('地点：三教-401')).dy;
     expect(noteY, lessThan(locY));
   });
 
@@ -293,8 +293,8 @@ void main() {
     );
 
     // 课前恒定提升 → promotedExpandedDetailText 的 stageTitle 传 null，
-    // 阶段信息由标题「即将上课: 高等数学」承载，详情区不该再有一行。
-    expect(find.text('即将上课: 高等数学'), findsOneWidget);
+    // 阶段信息由标题「即将上课：高等数学」承载，详情区不该再有一行。
+    expect(find.text('即将上课：高等数学'), findsOneWidget);
     expect(find.text('即将上课'), findsNothing);
     expect(find.text('已隐藏全部详情行，展开后只显示标题与摘要'), findsOneWidget);
   });
@@ -316,7 +316,7 @@ void main() {
     // 课中关掉提升 → 走非提升态 expandedDetailText，stageTitle 与 status 都出；
     // 关掉倒计时是为了避开「课中带进度块时 status 让位给进度行」的另一条规则。
     // 下课提醒恒提升，那张卡片仍然不出这两行。
-    expect(find.text('状态: 上课中'), findsOneWidget);
+    expect(find.text('状态：上课中'), findsOneWidget);
     expect(find.text('上课中'), findsWidgets);
     expect(find.text('下课提醒'), findsOneWidget);
   });
@@ -328,8 +328,8 @@ void main() {
     );
 
     expect(find.text('已隐藏全部详情行，展开后只显示标题与摘要'), findsOneWidget);
-    expect(find.textContaining('时间: '), findsNothing);
-    expect(find.textContaining('地点: '), findsNothing);
+    expect(find.textContaining('时间：'), findsNothing);
+    expect(find.textContaining('地点：'), findsNothing);
   });
 
   testWidgets('展开态预览：课中带进度块时出进度行并隐藏状态行', (tester) async {
@@ -343,11 +343,11 @@ void main() {
     expect(find.text('上课中'), findsOneWidget);
     expect(find.text('下课提醒'), findsOneWidget);
     // 课中卡片有进度块
-    expect(find.textContaining('下一节点: '), findsOneWidget);
-    expect(find.textContaining('整节下课: '), findsOneWidget);
+    expect(find.textContaining('下一节点：'), findsOneWidget);
+    expect(find.textContaining('整节下课：'), findsOneWidget);
     // 课中标题不带前缀，下课提醒标题带前缀
     expect(find.text('高等数学'), findsOneWidget);
-    expect(find.text('下课提醒: 高等数学'), findsOneWidget);
+    expect(find.text('下课提醒：高等数学'), findsOneWidget);
   });
 
   testWidgets('展开态预览：跟随课前设置时展示说明徽标', (tester) async {
