@@ -189,7 +189,12 @@ class WarehouseAdapterEntry {
   final String description;
 
   /// 适配器脚本的 SHA-256（小写十六进制），由仓库 adapters.yaml 声明。
-  /// 为空表示索引未提供校验和（旧版索引），拉取时跳过完整性校验。
+  ///
+  /// 为空表示索引未提供校验和，拉取时跳过完整性校验。**实测当前全部为空**：
+  /// Mutx163/qingyu_warehouse 的 204 个 adapters.yaml 均无 `sha256` 键，
+  /// `scripts/build_data.py` 也不生成，所以这个字段目前不提供任何保护。
+  /// 真正补上要靠在 qingyu_warehouse 的构建里输出哈希，见
+  /// `WarehouseRepositoryService.fetchAdapterScript` 的说明。
   final String sha256;
 
   const WarehouseAdapterEntry({

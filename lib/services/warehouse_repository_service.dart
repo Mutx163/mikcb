@@ -152,9 +152,19 @@ class WarehouseRepositoryService {
     final bytes = await _fetchBytes(source, path, options: options);
     // Integrity gate: when the index declares a SHA-256 for the script, the
     // fetched bytes must match before the script is ever handed to WebView.
-    // This closes the mirror-fallback / custom-prefix supply chain where a
-    // poisoned mirror can otherwise serve arbitrary JS into the bridge session.
-    // Legacy indexes without sha256 keep working unchanged (no verification).
+    //
+    // IMPORTANT: this gate is currently INERT in production. As of 2026-09-26
+    // none of the 204 adapters.yaml files in Mutx163/qingyu_warehouse contain a
+    // `sha256` key, and scripts/build_data.py does not emit one either, so
+    // `declared` is empty for every school and no script is ever verified.
+    // Turning this into a hard failure (fail-closed) would brick 教务 import for
+    // every user until the upstream index starts publishing hashes, so the
+    // permissive branch stays deliberately. Closing this properly means adding
+    // hash emission to the qingyu_warehouse build, not changing this check.
+    //
+    // Even once hashes exist they only bind script-to-index: the index itself is
+    // still fetched unverified, so an attacker who can poison adapters.yaml can
+    // replace the hash too. The index needs its own integrity story.
     final declared = adapter.sha256.trim().toLowerCase();
     if (declared.isNotEmpty) {
       final actual = sha256.convert(bytes).toString();
