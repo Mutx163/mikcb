@@ -68,7 +68,11 @@ void main() {
     // 改动只有一层错误处理 + 一段说明，无新增状态。
     // 4640→4647：设置镜像事务接入 _persistActiveProfileState，新增一次
     // hasPendingChanges 分支和事务包装调用；恢复记录本身在 StorageService。
-    const baselineLines = 4647;
+    // 4647→4653：ff0ae83d 把周次推导从手写式（本地 DateTime.difference().inDays
+    // ~/ 7，跨夏令时少算一周）换成既有的 WeekCalculator.getWeekIndex。业务行数
+    // 净减（3 行推导换成 2 行调用），+6 全是解释「为什么不能用 difference()」的
+    // 注释——这类注释正是本基线想留下的可追溯性。按测试约定同步真实值。
+    const baselineLines = 4653;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
