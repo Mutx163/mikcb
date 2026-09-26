@@ -64,6 +64,7 @@ class HyperosSheetBlurTop extends StatefulWidget {
     this.fadeExtent = 20,
     this.revealOnScroll = false,
     this.scrollController,
+    this.bleed = 0,
     super.key,
   });
 
@@ -90,6 +91,17 @@ class HyperosSheetBlurTop extends StatefulWidget {
 
   /// [revealOnScroll] 为真时必填：正文那个滚动视图的控制器。
   final ScrollController? scrollController;
+
+  /// 模糊带往左右各外扩多少，用来**盖住面板内容的左右内缩**、铺满整个面板宽。
+  ///
+  /// 为什么要它：面板内容的左右内缩是**外层**加的（上游底部弹窗的 `insideMargin`，
+  /// 见 `hyperosMiuixBottomSheetInsideMargin`），不在本控件的盒里。不外扩的话带子
+  /// 只在中间一段有模糊、两侧各留一条没糊的边 —— 读起来是「浮在面板里的一个方框」，
+  /// 而不是「面板顶部的渐变」（这正是 2026-09-26 用户报的现象）。
+  ///
+  /// 传**外层那个内缩的真实值**，别拍脑袋。带上那个控件会按同一个数横向内缩回去，
+  /// 所以控件仍与正文对齐，只有模糊层是满宽的。
+  final double bleed;
 
   @override
   State<HyperosSheetBlurTop> createState() => _HyperosSheetBlurTopState();
@@ -198,7 +210,13 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
         // 带没画模糊时没有下沿可谈（见 InspireHeaderBlur.bottomOverhang：模糊关掉还
         // 外推会盖住正文第一行）。
         bottomOverhang: useBlur ? widget.fadeExtent : 0,
-        child: widget.header,
+        // 模糊层与衬底都是 `Positioned.fill`（铺满整条带 = 满宽），而带上那个控件
+        // 要**跟正文对齐** —— 带满宽、控件不跟着变宽，否则控件会比底下正文宽出去
+        // [bleed]×2，两边对不齐。所以横向让位加在这里，不加在带盒上。
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: widget.bleed),
+          child: widget.header,
+        ),
       ),
     );
 
@@ -208,32 +226,41 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
     final reveal = !widget.revealOnScroll || _revealed;
 
     return Stack(
-      // ⚠️ 必须 `expand`：两个子节点**都是**定位的（`Positioned.fill` + `Positioned`），
-      // 而 `Stack` 默认按「最大的非定位子节点」定尺寸 —— 那种情况下唯一的非定位尺寸
-      // 来源没有了，整块会塌成最小约束（实测材质面板直接塌到 45px，正文拿到 0 高、
-      // 两页内容在树上但一屏都画不出来）。`expand` = 铺满来.constraints。
-      fit: StackFit.expand,
+      // ⚠️ **不能** `expand`：那会让 Stack 直接取 `constraints.biggest` = 高度上限，
+      // 于是「内容不满一屏的弹窗」被硬撑到上限（实测课程弹窗从按内容收缩变成恒 80%
+      // 屏高，面板顶边被推到屏幕 20% 处，模糊带看着像在弹窗中段）。
+      //
+      // 正确形状是**正文非定位**（它决定 Stack 尺寸，按内容收缩、上限由外层
+      // `ConstrainedBox(maxHeight)` 封；`fit` 保持默认 `loose`，别写 `expand`）+ **带
+      // 定位**（`RenderStack` 一律把定位子节点画在非定位子节点**之上**，不必靠 child
+      // 顺序）。这样「内容短 → 面板短、带贴着面板顶边」，「内容长 → 顶到上限」。
+      alignment: Alignment.topLeft,
+      // 带要往左右**外扩** `bleed` 才能满宽（见 [bleed]），所以不能裁。
+      clipBehavior: Clip.none,
       children: <Widget>[
-        // 正文在带**底下**：满高铺开，顶部让出「带高 + 渐隐区」，于是滚上去的行从
-        // 模糊里穿过去，而不是在面板上沿被切一刀。
-        Positioned.fill(
-          child: Padding(
-            padding: EdgeInsets.only(
-              top: widget.headerHeight + widget.fadeExtent,
-            ),
-            child: widget.body,
+        // 正文在带**底下**：顶部让出「带高 + 渐隐区」，于是滚上去的行从模糊里穿过去，
+        // 而不是在面板上沿被切一刀。让位做在正文自己的 `Padding` 上（不是给 Stack 套
+        // padding）—— 后者会让 Stack 的尺寸也跟着多出那一截，面板凭空高一截。
+        Padding(
+          padding: EdgeInsets.only(
+            top: widget.headerHeight + widget.fadeExtent,
           ),
+          child: widget.body,
         ),
-        // 带压在最上（后画 = 更上）：必须挡住从底下滚上来的内容，所以它排在后面。
+        // 带压在最上（定位子节点恒在非定位之上）：必须挡住从底下滚上来的内容。
+        //
+        // `left/right: -bleed` 是**满宽**的关键：面板内容的左右内缩是**外层**加的
+        // （上游底部弹窗的 `insideMargin`，16），不在本控件的盒里 —— 不外扩的话带子
+        // 就只在中间一段有模糊，两侧各留一条没糊的边，读起来是「浮在面板里的一个方框」
+        // 而不是「面板顶部的渐变」。
         //
         // 「滚动才显形」时没显形就换成等高的空盒：位置照样让给正文（静止时第一行就在
-        // 那儿，不能被带压住），但不画模糊也不吃点击。刻意**不用 `Opacity`** 淡入 ——
-        // 它会把 `BackdropFilter` 与玻璃材质降级成透明（`hyperos_sheet.dart` 记的
-        // 同一条纪律）。
+        // 那儿），但不画模糊也不吃点击。刻意**不用 `Opacity`** 淡入 —— 它会把
+        // `BackdropFilter` 与玻璃材质降级成透明（`hyperos_sheet.dart` 记的同一条纪律）。
         Positioned(
           top: 0,
-          left: 0,
-          right: 0,
+          left: -widget.bleed,
+          right: -widget.bleed,
           child: reveal
               ? band
               : IgnorePointer(

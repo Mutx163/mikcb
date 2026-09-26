@@ -1750,6 +1750,10 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
         return HyperosSheetBlurTop(
           // 带高 = 分段自身高度（那个常量，不是拍脑袋的 45）。
           headerHeight: HyperosTabRow.contourHeight,
+          // 模糊带往左右各外扩面板内容那个内缩，铺满整个面板宽（否则带子只在中间一段
+          // 有模糊、两侧各留一条没糊的边，读起来是「浮在面板里的方框」）。分段本身
+          // 按同一个数内缩回去，仍与底下正文对齐。
+          bleed: hyperosMiuixBottomSheetInsideMargin,
           // 翻页分段**自己就是标题**（用户口径 2026-09-26），且**坐在顶部渐变模糊
           // 带上**（同一条指令的第二半）：原来这行是「材质」二字 + 右边 208 宽的分段，
           // 标题被压、分段左边空一大块，和底下满宽的设置行也对不齐；撤掉标题字后分段

@@ -165,6 +165,8 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
         // 空带：只留一截渐隐区（≈ 一个字高，与子页顶栏外推上限同值）。
         headerHeight: _sheetBlurTopExtent,
         header: const SizedBox.shrink(),
+        // 同材质面板：外扩面板内容那个内缩，模糊层铺满整个面板宽。
+        bleed: hyperosMiuixBottomSheetInsideMargin,
         revealOnScroll: true,
         scrollController: _scrollController,
         body: SingleChildScrollView(
