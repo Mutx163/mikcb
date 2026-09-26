@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-25T06:29:26+00:00",
+  "updatedAt": "2026-09-26T06:31:03+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 224,
-    "schools": 219,
+    "total": 225,
+    "schools": 220,
     "generic": 5
   },
   "schools": [
@@ -1427,6 +1427,13 @@
       "name": "西安科技大学",
       "initial": "X",
       "resourceFolder": "XUST",
+      "category": "school"
+    },
+    {
+      "id": "XCU",
+      "name": "许昌学院",
+      "initial": "X",
+      "resourceFolder": "XCU",
       "category": "school"
     },
     {
