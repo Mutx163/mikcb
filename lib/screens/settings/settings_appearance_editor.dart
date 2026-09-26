@@ -590,7 +590,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   MiuixBottomSheetClose? get backdropHostSheetClose => _sheetClose;
 
   /// 材质面板（「材质」弹窗正文）：**左右两页**（2026-09-22 第九轮改结构）——
-  /// 顶上「标题 + 通用 / 课程卡片」同一行，下面一层可左右滑的页面。
+  /// 顶上「通用 / 课程卡片」翻页分段自己当标题（2026-09-26），下面一层可左右滑的页面。
   ///
   /// **默认材质三档：实体卡片 / 高斯模糊 / 液态玻璃**（2026-09-23 口径：整机
   /// 只有两种真实材质 —— 高斯模糊与液态玻璃，「实体卡片」是模糊总开关关）。
@@ -1677,7 +1677,8 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   }
 }
 
-/// 材质面板的正文：顶上「标题 + 通用 / 课程卡片」一行，下面一层可左右滑的两页。
+/// 材质面板的正文：顶上「通用 / 课程卡片」翻页分段（自己就是标题），下面一层可
+/// 左右滑的两页。
 ///
 /// 为什么它必须是 StatefulWidget：翻页需要一个**跨重建存活**的 [PageController]，
 /// 而面板正文由草稿版本号订阅重画（[_AppearanceEditorScreenState._draftRevision]）——
@@ -1749,29 +1750,21 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 标题与翻页分段**同一行**（用户口径 2026-09-22）：面板的高度预算只有
-            // 约 332px，标题单独占掉一行就是少一行内容。
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.appearanceEditorMaterialAction,
-                    style: HyperosTypography.sheetTitle(sheetContext),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 208),
-                  child: _MaterialSegmented<int>(
-                    items: {
-                      l10n.generalSettingsTitle: _generalPage,
-                      l10n.surfaceCourseCard: _courseCardPage,
-                    },
-                    value: _page,
-                    onChanged: _goToPage,
-                  ),
-                ),
-              ],
+            // 翻页分段**自己就是标题**（用户口径 2026-09-26）：原来这行是「材质」
+            // 二字标题 + 右边 208 宽的分段，标题被压、分段左边空一大块，和底下
+            // 满宽的设置行也对不齐。去掉标题字后分段通栏，两格各约 176 宽，
+            // 「当前停在哪一页」一眼可见，也更好按。
+            //
+            // ⚠️ 高度账：换成 Miuix 分段后这一行由 ~24（标题）变成 45（控件高度），
+            // 净多花约 21，面板内容预算从约 332 掉到约 311（半屏上限不变，见
+            // [_materialSheetMaxHeightFactor]），超出的仍由每页自己内部滚动。
+            _MaterialSegmented<int>(
+              items: {
+                l10n.generalSettingsTitle: _generalPage,
+                l10n.surfaceCourseCard: _courseCardPage,
+              },
+              value: _page,
+              onChanged: _goToPage,
             ),
             const SizedBox(height: 16),
             // 两页等高、各页自己竖向滚动：面板总高由外层 `maxHeight`（半屏上限）
@@ -1797,8 +1790,17 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
   }
 }
 
-/// 材质面板的两档内联分段选择：HyperOS 分段控制器的观感 —— 浅轨道、
-/// 选中段浮卡 + 主墨、未选中段次级墨。
+/// 材质面板的分段选择：**薄适配层**，真正的控件是全 App 共用的
+/// [HyperosTabRow]（内部即 flutter_miuix 的 `MiuixTabRowWithContour`）。
+///
+/// 2026-09-26 换掉手搓版：那一版是全项目唯一的私货分段（灰轨道 + 999 全圆胶囊），
+/// 和数据统计 / 任务列表 / 假期设置 / 诊断日志那些页用的 Miuix 分段长得不一样，
+/// 而且圆角塌成胶囊正好撞上本项目的圆角规矩（`HyperosRadius` 要求控件留 6px 直边）。
+/// 换过去白赚四样：超椭圆轨道、一整块连续滑动的指示器、选中态自动加粗、以及每格
+/// 自带的「第几个 / 共几个、是否选中」读屏语义。
+///
+/// 只做两件本项目特有的事：把 [Map] 标签表翻译成上游要的「标签数组 + 选中下标」，
+/// 以及默认铺满整行（上游按 62~84 定宽从左排，格数少时右边空一大块）。
 ///
 /// **必须是内联控件**：面板本身是根覆盖层自插条目（MiuixWindowBottomSheet），
 /// 任何二级弹层（路由、锚定气泡、覆盖层条目）都会被它压在背面
@@ -1816,47 +1818,15 @@ class _MaterialSegmented<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: HyperosColors.rowHighlight(context),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        children: [
-          for (final entry in items.entries)
-            Expanded(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => onChanged(entry.value),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOutCubic,
-                  padding: const EdgeInsets.symmetric(vertical: 9),
-                  decoration: BoxDecoration(
-                    color: entry.value == value
-                        ? HyperosColors.card(context)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Center(
-                    child: Text(
-                      entry.key,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: HyperosTypography.listTitle(context).copyWith(
-                        fontSize: 14,
-                        color: entry.value == value
-                            ? HyperosColors.primaryText(context)
-                            : HyperosColors.secondaryText(context),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
+    final entries = items.entries.toList(growable: false);
+    // 标签表 → 上游要的「标签数组 + 选中下标」；值不在表里（理论上不会）退回第一格。
+    final found = entries.indexWhere((entry) => entry.value == value);
+    return HyperosTabRow(
+      tabs: [for (final entry in entries) entry.key],
+      selectedIndex: found < 0 ? 0 : found,
+      onChanged: (index) => onChanged(entries[index].value),
+      colors: HyperosTabRow.surfaceColors(context),
+      maxWidth: HyperosTabRow.fillWidth,
     );
   }
 }
