@@ -157,7 +157,7 @@ void main() {
   /// 按「在 [HyperosTabRow] 里」收窄，不靠树序（2026-09-26 起带与正文是
   /// `HyperosSheetBlurTop` 里 `Stack` 的两个子节点，正文排在前面，所以
   /// `find.text('课程卡片').first` 命中的是第一页只读总览那一行而不是标签）。
-  Finder _panelPageTab(String label) => find.descendant(
+  Finder panelPageTab(String label) => find.descendant(
     of: find.byType(HyperosTabRow),
     matching: find.text(label),
   );
@@ -351,7 +351,7 @@ void main() {
     // `HyperosSheetBlurTop` 里的 `Stack` 两个子节点，**正文排在前面**（带必须后画才能
     // 压住从底下滚上来的内容），于是树序里第一个「课程卡片」变成第一页只读总览那一行，
     // `.first` 点到了它、页面根本没翻。这里按「在分段控件里」收窄，与树序解耦。
-    await tester.tap(_panelPageTab('课程卡片'));
+    await tester.tap(panelPageTab('课程卡片'));
     await tester.pumpAndSettle();
 
     // 第二页只剩一个「课程卡片」：分段标签自己（这一页的节标题是「卡片外观」，
@@ -447,7 +447,7 @@ void main() {
     await tester.tap(find.text('材质'));
     await tester.pumpAndSettle();
     // 同上：按「在分段控件里」收窄，不靠树序（`.first` 会点到第一页只读总览那一行）。
-    await tester.tap(_panelPageTab('课程卡片'));
+    await tester.tap(panelPageTab('课程卡片'));
     await tester.pumpAndSettle();
 
     expect(find.byType(HyperosSlider), findsNWidgets(8), reason: '卡片这套八根');
