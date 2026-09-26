@@ -414,7 +414,10 @@ function escapeHtml(value) {
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
+    .replaceAll('"', '&quot;')
+    // 单引号：目前所有属性都用双引号包裹，所以补它属于加固而非补漏。
+    // 代价是零，且能挡住将来有人写成单引号属性的那一刻。
+    .replaceAll("'", '&#39;');
 }
 
 function courseDisplayName(course) {
@@ -690,7 +693,7 @@ function renderCoursesTable() {
       <div class="course-card-body">
         <div class="course-card-top">
           <label class="course-card-check" title="${t('batchDelete')}">
-            <input type="checkbox" class="form-check-input library-course-select" data-course-ids="${group.courses.map(c => c.id).join(',')}" />
+            <input type="checkbox" class="form-check-input library-course-select" data-course-ids="${escapeHtml(group.courses.map(c => c.id).join(','))}" />
           </label>
           <div class="course-card-heading min-w-0">
             <div class="course-card-title-row">
@@ -987,22 +990,22 @@ function addSlotField(data = {}, options = {}) {
       <div class="form-group form-inline-row">
         <div class="nested-group">
           <label class="form-label">${t('startPeriod')}</label>
-          <input type="number" min="1" class="field-slot-startSection" value="${data.startSection || 1}" required />
+          <input type="number" min="1" class="field-slot-startSection" value="${escapeHtml(data.startSection || 1)}" required />
         </div>
         <div class="nested-group">
           <label class="form-label">${t('endPeriod')}</label>
-          <input type="number" min="1" class="field-slot-endSection" value="${data.endSection || 2}" required />
+          <input type="number" min="1" class="field-slot-endSection" value="${escapeHtml(data.endSection || 2)}" required />
         </div>
       </div>
 
       <div class="form-group form-inline-row">
         <div class="nested-group">
           <label class="form-label">${t('startWeek')}</label>
-          <input type="number" min="1" class="field-slot-startWeek" value="${data.startWeek || 1}" required />
+          <input type="number" min="1" class="field-slot-startWeek" value="${escapeHtml(data.startWeek || 1)}" required />
         </div>
         <div class="nested-group">
           <label class="form-label">${t('endWeek')}</label>
-          <input type="number" min="1" class="field-slot-endWeek" value="${data.endWeek || (state.meta?.semesterWeekCount || 20)}" required />
+          <input type="number" min="1" class="field-slot-endWeek" value="${escapeHtml(data.endWeek || (state.meta?.semesterWeekCount || 20))}" required />
         </div>
       </div>
 
@@ -1021,12 +1024,12 @@ function addSlotField(data = {}, options = {}) {
 
       <div class="form-group">
         <label class="form-label">${t('teacher')}</label>
-        <input type="text" class="field-slot-teacher" placeholder="${t('teacherPlaceholder')}" value="${data.teacher || ''}" />
+        <input type="text" class="field-slot-teacher" placeholder="${t('teacherPlaceholder')}" value="${escapeHtml(data.teacher || '')}" />
       </div>
 
       <div class="form-group">
         <label class="form-label">${t('classLocation')}</label>
-        <input type="text" class="field-slot-location" placeholder="${t('locationPlaceholder')}" value="${data.location || ''}" />
+        <input type="text" class="field-slot-location" placeholder="${t('locationPlaceholder')}" value="${escapeHtml(data.location || '')}" />
       </div>
 
       <div class="form-group col-span-2 slot-advanced">
