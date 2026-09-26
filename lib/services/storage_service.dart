@@ -288,7 +288,27 @@ class StorageService {
     if (raw == null || raw.isEmpty) {
       return;
     }
-    final journal = _decodeSettingsMirrorJournal(raw);
+    Map<String, dynamic> journal;
+    try {
+      journal = _decodeSettingsMirrorJournal(raw);
+    } catch (error) {
+      // A journal written by a NEWER app version uses a format this build cannot
+      // interpret. Preserving it and refusing to boot is deliberate: rolling back
+      // a format we do not understand could put settings into a wrong state, and
+      // the actual remedy is upgrading the app.
+      if ('$error'.contains('version_unsupported')) {
+        rethrow;
+      }
+      // A genuinely corrupt payload, on the other hand, is never going to be
+      // rescued by an upgrade. Throwing used to leave it on disk forever, so the
+      // pending-transaction guard then rejected every settings save and the only
+      // way out was clearing app data. Quarantine it and carry on booting.
+      await _backupAndRemoveCorruptString(settingsMirrorTransactionKey, raw);
+      if (kDebugMode) {
+        debugPrint('StorageService: corrupt settings journal quarantined: $error');
+      }
+      return;
+    }
     final state = journal['state'];
     if (state == 'committed') {
       try {
@@ -303,6 +323,8 @@ class StorageService {
     }
     final before = journal['before'];
     if (before is! Map) {
+      // Unreachable via _decodeSettingsMirrorJournal, which validates this
+      // already; kept as a guard for the type system.
       throw StateError('settings_mirror_journal_invalid:before');
     }
     await _restoreSettingsMirrorBefore(Map<String, dynamic>.from(before));
