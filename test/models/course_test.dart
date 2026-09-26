@@ -56,7 +56,7 @@ void main() {
     expect(restored.normalizedCustomWeeks, [2, 4, 6]);
     expect(restored.isInWeek(2), isTrue);
     expect(restored.isInWeek(3), isFalse);
-    expect(restored.weekDescription(l10n), '第2、4、6周');
+    expect(restored.weekDescription(l10n), '第 2、4、6 周');
   });
 
   test('custom week description compresses continuous ranges', () {
@@ -73,7 +73,7 @@ void main() {
       customWeeks: [1, 2, 3, 5, 7, 8, 9],
     );
 
-    expect(course.weekDescription(l10n), '第1-3、5、7-9周');
+    expect(course.weekDescription(l10n), '第 1-3、5、7-9 周');
   });
 
   test('empty custom weeks fall back to range week description', () {
@@ -92,7 +92,7 @@ void main() {
       customWeeks: const [],
     );
 
-    expect(course.weekDescription(l10n), '第2-6周');
+    expect(course.weekDescription(l10n), '第 2～6 周');
   });
 
   test('fromJson clamps out-of-range day, sections, and weeks', () {

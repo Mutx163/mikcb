@@ -129,7 +129,7 @@ void main() {
     expect(find.text('周会'), findsOneWidget);
     const weekdayLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
     expect(
-      find.text('每周${weekdayLabels[today.weekday - 1]}'),
+      find.text('每周 ${weekdayLabels[today.weekday - 1]}'),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
