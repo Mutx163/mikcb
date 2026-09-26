@@ -229,4 +229,34 @@ END:VCALENDAR
     expect(course.isInWeek(2), isFalse);
     expect(course.isInWeek(3), isTrue);
   });
+
+  test('clamps a far-future RRULE:UNTIL so one file cannot exhaust memory', () {
+    // Regression: UNTIL=9999 resolved to ~416,000 weeks. activeWeeks is an
+    // uncomputed getter, so every one of those weeks was materialised, and the
+    // import dedup key joined them into a ~2.4MB string per course. The clamp
+    // must match the storage read path (Course.fromJson -> normalizeWeeks).
+    const content = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//YZune//WakeUpSchedule//EN
+BEGIN:VEVENT
+SUMMARY:恶意长周期[16][教室]
+DTSTART;TZID=/Asia/Shanghai:20260302T082000
+DTEND;TZID=/Asia/Shanghai:20260302T100000
+RRULE:FREQ=WEEKLY;UNTIL=99991231T160000Z;INTERVAL=1
+LOCATION:C301 教学楼
+DESCRIPTION:第1 - 2节\\nC301\\n教学楼
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final result = IcsImportService().parseWakeUpSchedule(content);
+    final course = result.courses.single;
+
+    expect(course.startWeek, 1);
+    expect(course.endWeek, lessThanOrEqualTo(30));
+    // The property that actually matters: the materialised week list stays small.
+    expect(course.activeWeeks.length, lessThanOrEqualTo(30));
+    expect(course.hasActiveWeekOnOrAfter(30), isTrue);
+  });
 }

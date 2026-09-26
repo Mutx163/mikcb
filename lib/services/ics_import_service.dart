@@ -186,10 +186,22 @@ class IcsImportService {
         teacher = line2;
       }
     }
-    final startWeek = _weekIndex(startDateTime, semesterStart);
-    final endWeek =
+    final rawStartWeek = _weekIndex(startDateTime, semesterStart);
+    final rawEndWeek =
         _parseEndWeek(event['RRULE'], semesterStart, startDateTime) ??
-        startWeek;
+        rawStartWeek;
+    // Clamp to the same 1..30 range the storage read path already applies
+    // (Course.fromJson -> normalizeWeeks), so writing matches reading.
+    // Without it a hostile `RRULE:UNTIL=99991231` resolves to ~416k weeks:
+    // activeWeeks is an uncomputed getter that materialises every one of
+    // them, and the import dedup key joins them into a ~2.4MB string per
+    // course, so one file can exhaust memory mid-import.
+    final weeks = Course.normalizeWeeks(
+      startWeek: rawStartWeek,
+      endWeek: rawEndWeek,
+    );
+    final startWeek = weeks.startWeek;
+    final endWeek = weeks.endWeek;
     final weeklyInterval = _parseWeeklyInterval(event['RRULE'] ?? '');
     // INTERVAL=2 means every other week; mark odd/even from the first week.
     final isBiweekly = weeklyInterval == 2;
