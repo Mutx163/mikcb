@@ -382,6 +382,12 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
   /// 归零必须**早于**快照那一帧，而重绘要等下一帧，所以调用方要把随后的动作
   /// （推页）顺延一帧。普通按压**不许**调这里：光斑的 140ms 渐隐就是它跟手的
   /// 手感。
+  ///
+  /// ⚠️ **这一条在 widget 测试里验不到**（2026-09-26 自审实测）：`build` 开头
+  /// `if (!isAvailable(...)) return fallbackBuilder(...)` —— shader 不可用时整个
+  /// 玻璃分支被跳过，**连 [pressGlow] 的 `Listener` 都不会挂**，光斑状态机压根
+  /// 不会跑（`flutter test` 的软件后端恒为不可用）。别再写"读个值就能断言"的
+  /// 用例，那会空跑通过；真要自动化得给玻璃面开一个测试专用旁路，那属于另一件事。
   void releasePressGlowImmediately() {
     if (_pointer.value.$1 == null && _glowController.value == 0) {
       return;

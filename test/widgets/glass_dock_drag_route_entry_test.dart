@@ -126,7 +126,7 @@ void main() {
     );
   });
 
-  testWidgets('点底栏的「外观编辑」槽：推页必须晚一帧（先把按压光斑收掉）', (
+  testWidgets('点底栏的「外观编辑」槽：按压光斑必须先收掉、推页晚一帧', (
     tester,
   ) async {
     // 用户 2026-09-25 口径：「点击底栏的时候会有亮光，但是亮光对应衔接这个
@@ -135,13 +135,22 @@ void main() {
     // 转场第 0 帧就把整屏烤成快照，"最亮那一帧"被定格 → 光斑亮满 400ms 后突然
     // 消失。
     //
-    // 修法是"归零 + 下一帧再推"，本条钉住**那半拍**：点击当帧绝不能已经推上去。
-    // 少了它就等于没修——快照照样会拍到最亮的光斑。
+    // 修法是"归零 + 下一帧再推"，本条钉的是**可自动验的那一半**：推页必须晚一帧
+    // （少了它，归零的重绘赶不上拍快照，等于没修）。
+    //
+    // ⚠️ 另一半（光斑确实被收掉了）**在 widget 测试里验不到**：`LiquidGlassSurface
+    // .build` 开头 `if (!isAvailable(...)) return fallbackBuilder(...)`，shader 不可
+    // 用时整个玻璃分支被跳过，连 `pressGlow` 的 Listener 都不挂，光斑状态机压根
+    // 不跑（`flutter test` 软件后端恒为不可用）。2026-09-26 自审曾按"Listener 不看
+    // 后端所以能测"写过一版断言，删光斑逻辑它照样绿 —— 空跑。**这一半只能真机验**。
     await pumpDock(tester, const ['day', 'week', 'appearanceEditor']);
-    expect(find.byKey(const ValueKey('appearance-editor-preview-card')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('appearance-editor-preview-card')),
+      findsNothing,
+    );
 
     // 真实地点那一格（走 Listener/GestureDetector 的完整路径，不用 tester.tap：
-    // tap 是"按下-立刻抬起"，而光斑的瞬时进光要靠 Listener 真的收到 down）。
+    // 底栏的按压反馈要靠真实按下-抬起这条路径才成立）。
     final slot = find.text('外观编辑');
     final gesture = await tester.startGesture(tester.getCenter(slot));
     await tester.pump();

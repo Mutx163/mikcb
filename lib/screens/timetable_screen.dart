@@ -263,10 +263,18 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// Anchor for the top-right "more" menu popup (positioned below this key).
   final GlobalKey _topMenuButtonKey = GlobalKey();
 
-  /// 底栏那颗液态玻璃药丸。持有它是为了在**推路由**那一格上按下按压光斑：缩放
+  /// 底栏那两块液态玻璃面：药丸 + 右侧合并圆钮（同一份材质推导，见
+  /// [_resolveDockMaterial]）。持有它们是为了在**推路由**时按下按压光斑：缩放
   /// 转场第 0 帧会把整屏烤成快照，光斑被定格就会变成「亮光接缩小动画时闪一下」。
   /// 见 [_pushAfterDockGlowSettled]。
+  ///
+  /// ⚠️ **两块都要**：它们是各自独立的 [LiquidGlassSurface]、各有各的光斑，而
+  /// 圆钮（[_handleRoundButtonTap]）同样会 `entry.open(context)` 推路由。只挂药丸
+  /// 的话，用户把圆钮也指到「外观编辑」时那条路原样漏（2026-09-26 自审补上）。
+  /// 非液态材质档压根没有光斑，`currentState` 为 null，`?.` 天然跳过。
   final GlobalKey<LiquidGlassSurfaceState> _glassDockKey =
+      GlobalKey<LiquidGlassSurfaceState>();
+  final GlobalKey<LiquidGlassSurfaceState> _glassDockRoundKey =
       GlobalKey<LiquidGlassSurfaceState>();
 
   /// 首页「更多」菜单（列表形态）改用上游 flutter_miuix 1.2.0 的 HyperOS 4
@@ -7763,6 +7771,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             onTap: onTap,
             child: switch (material) {
               _DockMaterial.liquid => LiquidGlassSurface(
+                key: _glassDockRoundKey,
                 borderRadius: radius,
                 // 实时采样，理由同 [_dockPillSurface]（坞层在采样宿主之外）。
                 fallbackBuilder: (_) =>
@@ -7829,7 +7838,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     final entry = homeMenuEntryById(id);
     if (entry != null && entry.visible()) {
       _maybeSelectionClick(settings);
-      unawaited(entry.open(context));
+      // 同 [_handleDockTap] 的推路由分支：圆钮是另一块液态玻璃、自带光斑，
+      // 也必须先收掉再推（否则光斑照样被快照定格）。
+      _pushAfterDockGlowSettled(entry.open);
       return;
     }
 
@@ -7935,6 +7946,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 状态，光斑的渐隐就是它跟手的手感，要原样保留。
   void _pushAfterDockGlowSettled(Future<void> Function(BuildContext) open) {
     _glassDockKey.currentState?.releasePressGlowImmediately();
+    _glassDockRoundKey.currentState?.releasePressGlowImmediately();
     // ⚠️ **必须显式 `scheduleFrame`**（2026-09-25 实测）：`addPostFrameCallback`
     // 自己**不排帧**，而此刻树上已经没有别的东西会标脏（推页被推迟了、光斑归零
     // 只改渲染对象不重建）⇒ 不会有帧被画出 ⇒ 帧末回调永远不跑，推页永远不发生
