@@ -35,6 +35,7 @@ class HomeMenuEntry {
     required this.category,
     required this.open,
     this.visible = _alwaysVisible,
+    this.zoomTransition = false,
   });
 
   static bool _alwaysVisible() => true;
@@ -45,6 +46,16 @@ class HomeMenuEntry {
   final HomeMenuEntryCategory category;
   final Future<void> Function(BuildContext context) open;
   final bool Function() visible;
+
+  /// 这一项是否走「首页整页缩小进新页」的缩放转场
+  /// （[HyperosZoomPageRoute]，见 `hyperos_zoom_route.dart`）。
+  ///
+  /// 宿主（`timetable_screen.dart` 的 `_dispatchTopMenuSelection`）要靠它决定
+  /// **收菜单的时机**：缩放转场的新页整页不动、暗底淡入，通用那条「新路由盖满
+  /// 首页再收菜单」的保护会让菜单在整个缩小段里一直浮在缩小中的首页上方，
+  /// 直到转场结束才消失（用户 2026-09-26 口径：「菜单消失后再开始缩小动画」）。
+  /// 这一项因此改成「菜单先收完、再起缩小」。
+  final bool zoomTransition;
 }
 
 /// 目录条目的标准导航壳：与首页顶部菜单同一条 Hyperos 页面转场路径。

@@ -9301,6 +9301,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             hasAvailableUpdate: _hasAvailableUpdate,
             onDismissRequest: _closeHomeMenuNow,
             onSelected: _dispatchTopMenuSelection,
+            onDismissFinished: _noteHomeMenuDismissFinished,
           ),
         ),
       ],
@@ -9327,6 +9328,24 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 菜单正在等"新路由盖满首页"的那个定时器（见 [_requestCloseHomeMenu]）。
   Timer? _homeMenuCloseDelay;
+
+  /// 正在等「菜单退场动画走完」的那个信号（见 [_openZoomMenuEntry]）。
+  ///
+  /// 由弹层的 `onDismissFinished` 收口（上游 `GlassPopupPresenter._finish`：面板已
+  /// 从覆盖层摘掉、锚点那颗球的图标也交还了）。它比 [kHomeMenuCollapseBudget] 晚
+  /// （弹簧要收敛到 0.0015，实测 ≈670ms，而视觉上 ≈240ms 就收完了），所以只当
+  /// **提前放行**用（关动效那条路是瞬时的），常态是预算到期继续。
+  Completer<void>? _homeMenuDismissed;
+
+  /// 弹层退场结束：唤醒 [_openZoomMenuEntry] 里的等待。
+  void _noteHomeMenuDismissFinished() {
+    final completer = _homeMenuDismissed;
+    if (completer == null || completer.isCompleted) {
+      return;
+    }
+    _homeMenuDismissed = null;
+    completer.complete();
+  }
 
   /// 请收首页菜单：**有新路由正在盖上来**时先留着，等它盖满再收；否则立刻收。
   ///
@@ -9428,6 +9447,13 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
 
+    // 缩放转场条目（目前仅外观编辑）：菜单**先彻底收起**，收起走完才起首页缩小。
+    // 不走下面那条「新路由盖满再收」—— 见 [_openZoomMenuEntry]。
+    if (homeMenuEntryById(selectedId)?.zoomTransition ?? false) {
+      await _openZoomMenuEntry(selectedId, provider);
+      return;
+    }
+
     // 同步起跑分支：下面每个分支都是"先同步推路由、再 await 它的结果"，
     // 所以这一句执行完就已经能看出"有没有新路由压上来"，收菜单的时机交给
     // [_requestCloseHomeMenu] —— 先收菜单会把底下的圆按钮/爱心球露出来闪一下。
@@ -9438,6 +9464,72 @@ class _TimetableScreenState extends State<TimetableScreen>
       _requestCloseHomeMenu();
     }
     await pending;
+  }
+
+  /// 「缩放转场」条目（目前仅外观编辑）的入口：**菜单先收完，收完再起首页缩小**。
+  ///
+  /// 为什么不能沿用 [_requestCloseHomeMenu] 那条「等新路由盖满首页再收」：缩放
+  /// 转场的新页**整页不动**（`HyperosZoomPageRoute` 的 `transitionsBuilder` 原样
+  /// 返回 child），编辑页的沉浸暗底要到进度 0.45 之后才淡入 —— 也就是说新页
+  /// 从头到尾都没有"盖满"这个时刻。于是菜单在整个缩小段里一直浮在缩小中的首页
+  /// 正上方（它在首页那条覆盖层条目里、画在快照之上），直到转场结束才消失
+  /// （用户 2026-09-26 口径：「右上角菜单消失后再开始缩小动画」）。
+  ///
+  /// 顺带解决一件跟着来的事：**顶栏那两颗球不会闪**。[_decideCloseHomeMenu] 那条
+  /// 保护针对的是「菜单先收、页面后盖」—— 中间那几帧页面还没盖住、球突然孤零零
+  /// 地杵在顶栏上。这里菜单收起时首页本来就该完整露出来（用户一直看着它），随后
+  /// 才是缩小，读起来是「关掉菜单 → 首页缩进编辑页」，不是穿帮。
+  ///
+  /// 等待口径 = **菜单视觉收完**，不是弹层动画的数学收敛：
+  /// * 面板退场是弹簧（上游 `transformBounds(false)` = folmeSpring 阻尼 .8 /
+  ///   response .28s），逐帧实测 200×16ms 测试帧里面板宽从 65px 缩到 12px 用
+  ///   15 帧（≈240ms），此后只剩亚像素抖动 —— 12px 的点趴在锚点那颗球上，肉眼
+  ///   与「没了」无异。
+  /// * 而上游那条 [HomeTopMenuPopup.onDismissFinished] 挂在 `animateGlassTo` 的
+  ///   收敛容差（0.0015）上，实测要 **≈670ms** 才回调。照它等 = 凭空加半秒空档。
+  /// 所以取 [kHomeMenuCollapseBudget] 作上限，弹层若**先**报退场结束（关动效那条
+  ///   路是瞬时的）就立刻走。
+  ///
+  /// 八宫格形态走不到这里：底部弹层那格是 `Navigator.pop` 直接摘路由（没有退场
+  /// 动画残留），`_homeMenuOpen` 一直是 false，于是不等待、行为与从前一致。
+  Future<void> _openZoomMenuEntry(
+    String selectedId,
+    TimetableProvider provider,
+  ) async {
+    // completer 必须**先**挂上再收起：`_closeHomeMenuNow` 只翻 `show`，退场是
+    // 弹层在后续帧里跑的，不会同步回调，但先挂可杜绝任何"信号先到、等待后建"。
+    final waiting = _homeMenuOpen
+        ? (_homeMenuDismissed = Completer<void>())
+        : null;
+    _closeHomeMenuNow();
+    if (waiting != null) {
+      await Future.any<void>([
+        waiting.future,
+        Future<void>.delayed(kHomeMenuCollapseBudget),
+      ]);
+      if (identical(_homeMenuDismissed, waiting)) {
+        _homeMenuDismissed = null;
+      }
+    }
+    if (!mounted) {
+      return;
+    }
+    // 边缘时序：这 280ms 里用户又点了球、把菜单重开了（收起期第一帧锚点就收回
+    // 输入，见上游 fork 的口径）。此时不再等第二遍 —— 直接收掉就起转场，绝不能
+    // 带着一张张开的菜单去缩小（那就是本条要修的那条老症状）。
+    if (_homeMenuOpen) {
+      _closeHomeMenuNow();
+    }
+    // 锚点那颗球的**图标**上游要等退场动画彻底结束才交还
+    // （`MiuixGlassAnchor.contentHidden` ← `GlassPopupPresenter._finish`，≈670ms）。
+    // 那时缩小早就走完了，首页快照里「更多」球会是个**没有图标的空球**（球本体在
+    // 快照里，而图标显隐晚于拍快照那帧）。此刻交还正是上游想做的那次视觉交接 ——
+    // 弹层自己的形变副本 80ms 就淡完了、面板也缩成球了 —— 只是不去等那条数学
+    // 收敛。写已释放的 anchor 会被它自己的 `_disposed` 挡掉，这里也先判 mounted。
+    if (_homeMenuAnchor.contentHidden) {
+      _homeMenuAnchor.contentHidden = false;
+    }
+    await _runTopMenuSelection(selectedId, provider);
   }
 
   /// 菜单项的实际分发（由 [_dispatchTopMenuSelection] 同步起跑）。

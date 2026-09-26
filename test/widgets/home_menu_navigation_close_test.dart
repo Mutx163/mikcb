@@ -21,11 +21,18 @@ import 'package:university_timetable/widgets/home_top_menu_popup.dart';
 /// `_requestCloseHomeMenu`），收起动作用户看不见。
 void main() {
   /// 泵起首页（列表态菜单是默认形态）并返回 provider。
-  Future<TimetableProvider> pumpHome(WidgetTester tester) async {
+  ///
+  /// [menuActions] 覆盖用户自定义的菜单排列（默认那八项里没有「外观编辑」，
+  /// 测缩放转场那条路要自己把它排进去）。
+  Future<TimetableProvider> pumpHome(
+    WidgetTester tester, {
+    List<String>? menuActions,
+  }) async {
     final provider = TimetableProvider(autoInitialize: false);
     await provider.updateTimetableSettings(
       provider.settings.copyWith(
         homeNavigationForm: HomeNavigationForm.glassDock,
+        homeGridMenuActions: menuActions,
       ),
     );
     await tester.pumpWidget(
@@ -64,6 +71,24 @@ void main() {
     for (var i = 0; i < frames; i++) {
       await tester.pump(const Duration(milliseconds: 16));
     }
+  }
+
+  /// 「更多」那颗常驻玻璃球是否已经把图标交还回来。
+  ///
+  /// 判据用它的 `visible`：宿主传的是 `!锚点.contentHidden`，而 `contentHidden`
+  /// 由弹层在**退场结束**（上游 `GlassPopupPresenter._finish`）才翻回 false ——
+  /// 也就是「菜单真的没了」的那一刻，与 [HomeTopMenuPopup.show]（只是"开始收"）
+  /// 差着一整段退场动画。
+  bool moreBallIconBack(WidgetTester tester) =>
+      tester.widget<FHeaderActionBall>(find.byType(FHeaderActionBall)).visible;
+
+  /// 菜单面板当前有多宽（用面板里那一行的宽度量）。
+  ///
+  /// 收起时整张卡朝锚点那颗球缩，这条跟着缩：满幅 ≈65px，缩进球里 ≈12px。
+  /// 弹层被整体摘掉（退场结束）时按 0 记。
+  double menuPanelWidth(WidgetTester tester) {
+    final row = find.text('外观编辑');
+    return row.evaluate().isEmpty ? 0 : tester.getRect(row).width;
   }
 
   testWidgets('点条目跳页面：菜单留到新页面盖满才收，不在转场中途先收掉', (tester) async {
@@ -120,6 +145,10 @@ void main() {
     //
     // 这里钉的是那条前提本身，可观测事实是「`open()` 返回时新路由已经在栈上」：
     // 延后一帧的写法在这一句上必然是 canPop() == false。
+    //
+    // ⚠️ 只对**通用条目**成立。缩放转场那条走的是另一条时序（菜单先收完、再起
+    // 缩小，见下一条用例）：它由宿主显式收菜单，根本不问 `isCurrent`，所以把
+    // 「等菜单收起」写进 `open()`（把推页变成异步）只会同时踩坏这一条的前提。
     registerSettingsPages(
       settingsScreen: () => const SizedBox.shrink(),
       subpageById: (id) => id == 'appearanceEditor'
@@ -150,6 +179,99 @@ void main() {
       find.byKey(const ValueKey('zoom-entry-page'), skipOffstage: false),
       findsOneWidget,
       reason: '推上来的应是该条目解析出的页面',
+    );
+  });
+
+  testWidgets('从菜单进外观编辑：菜单先收完（退场结束）才起首页缩小', (tester) async {
+    // 用户 2026-09-26 口径：「右上角菜单消失后再开始缩小动画」。原先走通用那条
+    // 「等新路由盖满首页再收菜单」——可缩放转场的新页整页不动（暗底要过 0.45 才
+    // 淡入），根本没有"盖满"这一刻，于是菜单在整个缩小段里一直浮在缩小中的首页
+    // 正上方，直到转场结束才消失。
+    //
+    // 钉的是**顺序**：菜单收起（视觉上缩回锚点那颗球）之后才允许推页；顺带钉住
+    // 「别等太久」——菜单视觉收完约 240ms（见 `kHomeMenuCollapseBudget`），等成
+    // 上游那条弹簧数学收敛（≈670ms）就是凭空加半秒空档。
+    registerSettingsPages(
+      settingsScreen: () => const SizedBox.shrink(),
+      subpageById: (id) => id == 'appearanceEditor'
+          ? const SizedBox.shrink(key: ValueKey('zoom-entry-page'))
+          : null,
+    );
+    await pumpHome(
+      tester,
+      menuActions: const ['overview', 'appearanceEditor', 'settings'],
+    );
+
+    await tester.tap(find.byType(FHeaderAction).last);
+    await advance(tester, 40);
+    expect(menuShown(tester), isTrue, reason: '先正常打开菜单');
+    expect(moreBallIconBack(tester), isFalse, reason: '菜单开着时球让位给形变球');
+    // 菜单面板此刻是满幅的（下面按宽度读它缩没缩）。
+    expect(menuPanelWidth(tester), greaterThan(40));
+
+    // 判「有没有新页压上来」只能看**页面在不在树上**：`navigator.canPop()` 在
+    // 菜单打开那一刻就是 true —— 弹层自己往根路由挂了一条 LocalHistoryEntry
+    // （与本文件第三条用例同一个坑）。
+    const editorPage = ValueKey('zoom-entry-page');
+    bool editorPushed(WidgetTester tester) =>
+        find.byKey(editorPage, skipOffstage: false).evaluate().isNotEmpty;
+    expect(editorPushed(tester), isFalse, reason: '开场还没进编辑页');
+
+    await tester.tap(find.text('外观编辑'));
+    // 分发入口先让一帧（`Future.delayed(Duration.zero)`，等弹层那条路收工），
+    // 两帧足够让「菜单开始收起」这件事落到树上。
+    await advance(tester, 2);
+    expect(
+      menuShown(tester),
+      isFalse,
+      reason: '这一项不走"等盖满再收"：点下去菜单立刻开始收起',
+    );
+    expect(
+      editorPushed(tester),
+      isFalse,
+      reason: '菜单还挂在屏幕上时不能起缩小动画',
+    );
+
+    // 逐帧推进到推页为止，顺带记下推页那一刻菜单缩成了多宽。
+    var pushedAt = -1;
+    var widthAtPush = -1.0;
+    for (var i = 0; i < 90 && pushedAt < 0; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      if (editorPushed(tester)) {
+        pushedAt = i;
+        widthAtPush = menuPanelWidth(tester);
+      }
+    }
+    expect(pushedAt, greaterThanOrEqualTo(0), reason: '菜单收起之后应当推上编辑页');
+    expect(
+      pushedAt,
+      greaterThanOrEqualTo(12),
+      reason: '菜单还在屏幕上时不能起缩小动画（≈200ms 之内不许推）',
+    );
+    expect(
+      pushedAt,
+      lessThan(30),
+      reason: '也不能等太久：菜单视觉收完约 240ms（kHomeMenuCollapseBudget）',
+    );
+    expect(
+      widthAtPush,
+      lessThanOrEqualTo(20),
+      reason: '推页那一刻菜单应已缩回锚点那颗球（12px 上下），而不是还浮在首页上',
+    );
+    // 顺带：图标交还不能等到上游那条弹簧收敛，否则缩小用的快照里「更多」球是空的。
+    expect(
+      moreBallIconBack(tester),
+      isTrue,
+      reason: '推页之前要把锚点球的图标交还回去（快照会拍下这一帧）',
+    );
+
+    // 走完转场：推上来的是那条缩放路由、指向的正是该条目解析出的页面。
+    await advance(tester, 40);
+    expect(find.byKey(editorPage, skipOffstage: false), findsOneWidget);
+    expect(
+      ModalRoute.of(tester.element(find.byKey(editorPage, skipOffstage: false))),
+      isA<HyperosZoomPageRoute<void>>(),
+      reason: '外观编辑走缩放转场，不是通用侧滑',
     );
   });
 

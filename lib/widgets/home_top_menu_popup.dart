@@ -35,6 +35,21 @@ const _popupSizing = MiuixGlassPopupSizing(maxWidth: 200);
 /// 的 `_submenuRevealDuration`）—— 同一套交互在两处必须同手感。
 const _submenuRevealDuration = Duration(milliseconds: 200);
 
+/// 「菜单视觉收完」的上限：收起动画开始之后**至多**再等这么久，就可以认为屏幕上
+/// 已经没有菜单了（宿主拿它给先收菜单、后起转场的入口当闸门，见
+/// `timetable_screen.dart` 的 `_openZoomMenuEntry`）。
+///
+/// 口径是**视觉**而不是上游那条 [MiuixGlassTransformPopup] 的
+/// `onDismissFinished`：一级面板的退场是 folmeSpring（阻尼 .8 / response .28s），
+/// 逐帧实测（200×16ms 测试帧，锚点列表态菜单）面板宽 65px → 12px 用了 15 帧
+/// （≈240ms），此后只剩亚像素抖动 —— 12px 的一小点趴在锚点那颗球上，与「没了」
+/// 无异；而上游的退场完成回调挂在 `animateGlassTo` 的收敛容差 0.0015 上，要
+/// ≈670ms 才来。取后者等于凭空加半秒空档。
+///
+/// 280ms = 上面那个 240ms 的实测值 + 一帧余量（面板宽随进度单调收缩，取略保守
+/// 一点的上限；关动效那条路上游是瞬时的，会由 `onDismissFinished` 提前放行）。
+const Duration kHomeMenuCollapseBudget = Duration(milliseconds: 280);
+
 /// 首页右上角「更多」菜单的**列表形态**——改用上游 flutter_miuix 1.2.0 的
 /// HyperOS 4 玻璃弹层实现（`MiuixGlassTransformPopup` + `MiuixGlassSecondaryPopup`），
 /// 取代本仓库手搓的 `lib/ui/hyperos/hyperos_list_popup.dart` 那条路径。
@@ -61,6 +76,7 @@ class HomeTopMenuPopup extends StatefulWidget {
     required this.hasAvailableUpdate,
     required this.onDismissRequest,
     required this.onSelected,
+    this.onDismissFinished,
   });
 
   /// 是否展开一级菜单。
@@ -87,6 +103,16 @@ class HomeTopMenuPopup extends StatefulWidget {
 
   /// 被点条目 id（含二级子项 id）。
   final ValueChanged<String> onSelected;
+
+  /// 一级面板**退场动画真正走完**的那一刻（上游 `GlassPopupPresenter._finish`）。
+  ///
+  /// 与 [show] 变 false 那一刻不是同一件事：几何弹簧、淡出、图标交接都还在跑，
+  /// 锚点那颗球的图标也要到收尾才交还（`MiuixGlassAnchor.contentHidden`，见
+  /// `_finish`）。宿主里唯一用它的路径是「缩放转场条目：菜单先收完、再起首页
+  /// 缩小」（`timetable_screen.dart` 的 `_dispatchTopMenuSelection`）—— 提前
+  /// 起转场会把「菜单还开着」和「首页开始缩」叠在一起，而且烤出来的快照里
+  /// 「更多」球是没有图标的。
+  final VoidCallback? onDismissFinished;
 
   @override
   State<HomeTopMenuPopup> createState() => _HomeTopMenuPopupState();
@@ -329,6 +355,9 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
                         HyperosBlurredHeader.modalBarrierColor(context).a * 0.5,
                   ),
               onDismissRequest: _close,
+              // 退场真正走完才回调（锚点那颗球的图标也是这一刻交还），供宿主
+              // 把「菜单先收完、再起缩小」那条路卡准。
+              onDismissFinished: widget.onDismissFinished,
               child: KeyedSubtree(
                 key: _rowsKey,
                 child: Column(

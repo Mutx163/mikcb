@@ -406,7 +406,9 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
 ///
 /// [zoom] 为 true 时走「首页整页缩小进新页」的缩放转场
 /// （[HyperosZoomPageRoute]，见 hyperos_zoom_route.dart）而不是通用侧滑；
-/// 目前仅外观编辑开启——从首页那颗按钮进来时首页与新页连贯。
+/// 目前仅外观编辑开启——从首页那颗按钮进来时首页与新页连贯。同时写进
+/// [HomeMenuEntry.zoomTransition]，让宿主按「菜单先收完、再起缩小」那条路
+/// 收菜单（见该字段注释）。
 HomeMenuEntry _settingsSubpageEntry({
   required String id,
   required String Function(AppLocalizations l10n) title,
@@ -418,13 +420,17 @@ HomeMenuEntry _settingsSubpageEntry({
     title: title,
     icon: icon,
     category: HomeMenuEntryCategory.preferences,
+    // 宿主靠这个标记改收菜单的时机：缩放转场那条是「菜单先收完、再起缩小」
+    // （见 `HomeMenuEntry.zoomTransition` 与 `timetable_screen.dart` 的
+    // `_dispatchTopMenuSelection`）。
+    zoomTransition: zoom,
     open: (context) {
       final page = resolveSettingsSubpage(id);
       if (page == null) {
         return Future<void>.value();
       }
       if (zoom) {
-        // ⚠️ 必须**同步**推入（与下面通用子页同一条口径）。首页那条「选完菜单项
+        // ⚠️ 必须**同步**推入（与下面通用子页同一条口径）。通用条目那条「选完菜单项
         // 之前不要让菜单先收」的保护（`timetable_screen.dart` 的
         // `_requestCloseHomeMenu`）是**按 `Route.isCurrent` 判定「这一项有没有
         // 当场跳页」**的：改成延后一帧再推，判定那一刻首页还是栈顶，菜单会被当成
@@ -432,6 +438,11 @@ HomeMenuEntry _settingsSubpageEntry({
         // （2026-09-15 真机反馈的老问题）。转场本身不需要错开帧：球的「跑到左上
         // 角」由 `FHeaderActionBall` 自己的跟随失效保护兜住（见
         // hyperos_proxies.dart）。
+        //
+        // 缩放这一项也不把「等菜单收完」写在这里：那会让 `open()` 变成异步，
+        // 上面的 `isCurrent` 判定必然看错。与其在条目里错开，不如由宿主
+        // （`_dispatchTopMenuSelection`）按 [HomeMenuEntry.zoomTransition] 显式
+        // 走「先收菜单、收完再推」那条路 —— 条目这边只管把页推上去。
         return Navigator.of(context).push<void>(
           HyperosZoomPageRoute<void>(builder: (_) => page),
         );
