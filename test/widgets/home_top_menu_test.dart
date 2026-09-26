@@ -44,7 +44,7 @@ void main() {
 
     // v2.0.5.5 默认排列：8 个瓷贴，任务清单不在其中（列表菜单独有）。
     for (final title in const [
-      '软件更新',
+      '版本更新',
       '课程总览',
       '课程统计',
       '添加',
@@ -103,7 +103,7 @@ void main() {
     // 自定义排列只渲染用户选择的入口，顺序与持久化一致。
     expect(find.text('任务清单'), findsOneWidget);
     expect(find.text('请喝咖啡'), findsOneWidget);
-    expect(find.text('软件更新'), findsNothing);
+    expect(find.text('版本更新'), findsNothing);
 
     // 更新角标跟随 hasAvailableUpdate（本例没有更新瓷贴，因此无角标文本）。
     expect(find.text('更新'), findsNothing);

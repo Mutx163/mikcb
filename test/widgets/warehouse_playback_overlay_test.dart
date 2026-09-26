@@ -82,7 +82,7 @@ void main() {
   ) async {
     await _pumpOverlay(tester, state: PlaybackUiState.executingImport);
 
-    expect(find.text('回放完成，正在执行导入脚本…'), findsOneWidget);
+    expect(find.text('回放完成，正在执行导入脚本……'), findsOneWidget);
     expect(find.text('导入完成'), findsNothing);
   });
 
