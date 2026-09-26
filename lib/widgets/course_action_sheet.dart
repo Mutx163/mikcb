@@ -167,6 +167,8 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
         header: const SizedBox.shrink(),
         // 同材质面板：外扩面板内容那个内缩，模糊层铺满整个面板宽。
         bleed: hyperosMiuixBottomSheetInsideMargin,
+        // 往上盖过拖动把手那条：顶部成一整块渐变。盖住之后把手被糊平，由带子重画。
+        bleedTop: hyperosMiuixBottomSheetDragHandleStripHeight,
         revealOnScroll: true,
         scrollController: _scrollController,
         body: SingleChildScrollView(
@@ -176,6 +178,7 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
           padding: EdgeInsets.only(
             top: HyperosSheetBlurTop.topInsetFor(
               headerHeight: _sheetBlurTopExtent,
+              bleedTop: hyperosMiuixBottomSheetDragHandleStripHeight,
             ),
           ),
           child: Column(

@@ -394,6 +394,16 @@ const double hyperosMiuixBottomSheetContentBottomGap = 16;
 /// 自己那份口径。上下不设（内容自己管）。
 const double hyperosMiuixBottomSheetInsideMargin = 16;
 
+/// 面板顶部**拖动把手条**的高度（逻辑 px）。
+///
+/// = 上游 `MiuixWindowBottomSheet._dragHandle` 那个 `SizedBox(height: 24)`：把手是
+/// 里面居中的一颗 45×4 胶囊，条本身只是留白。
+///
+/// 弹窗顶部渐变模糊带要靠它**往上盖过这条**（`HyperosSheetBlurTop.bleedTop`）：带子上
+/// 边缘若停在这条下面，「顶边满强度」那一步突变就落在面板中间 = 一条亮线（2026-09-26
+/// 用户报「顶部不够整体」）。改上游那个 `SizedBox` 的高度时这里要跟着走。
+const double hyperosMiuixBottomSheetDragHandleStripHeight = 24;
+
 /// 这块面板的玻璃**一律不外推采样**（[LiquidGlassSurface.maxRefraction] = 0）。
 ///
 /// 这是**几何适配**、不是材质参数（同返回键圆钮那颗 `maxRefraction: 0`）：材质旋钮仍只从
