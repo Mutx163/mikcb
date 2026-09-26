@@ -148,6 +148,12 @@ class WarehouseRememberedLoginEntry {
     'adapterId': adapterId,
     'username': login.username,
     'password': login.password,
+    // Must stay symmetric with fromJson, which reads 'host' back via
+    // WarehouseRememberedLogin.fromJson. Dropping it here made every cloud
+    // restore return host: '', and rememberedLoginAllowsUrl treats an empty
+    // bound host as "allow any site" — so a credential bound to one school
+    // domain came back willing to autofill anywhere.
+    'host': login.host,
   };
 
   factory WarehouseRememberedLoginEntry.fromJson(Map<String, dynamic> json) {

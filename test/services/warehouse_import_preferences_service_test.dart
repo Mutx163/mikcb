@@ -356,4 +356,49 @@ void main() {
       expect(records.map((r) => r.id), ['good']);
     });
   });
+
+  group('remembered login host binding survives the wire', () {
+    // Regression: WarehouseRememberedLoginEntry.toJson dropped 'host' while
+    // fromJson read it back, so every cloud restore came back with host: ''.
+    // rememberedLoginAllowsUrl treats an empty bound host as "allow any site",
+    // which meant a credential bound to one school domain would autofill
+    // anywhere after a restore. The pre-existing host tests only asserted on
+    // the in-memory object, so they never saw this.
+    const boundHost = 'jw.example.edu.cn';
+
+    const bundle = WarehouseSyncBundle(
+      rememberedLogins: [
+        WarehouseRememberedLoginEntry(
+          adapterId: 'demo',
+          login: WarehouseRememberedLogin(
+            username: 'student',
+            password: '',
+            host: boundHost,
+          ),
+        ),
+      ],
+    );
+
+    test('toJson emits host so the wire format keeps the binding', () {
+      final entries = bundle.toJson()['rememberedLogins'] as List;
+
+      expect((entries.single as Map)['host'], boundHost);
+    });
+
+    test('still refuses a foreign host after a toJson/fromJson round trip', () {
+      final wire = bundle.toJson();
+      final restored = WarehouseSyncBundle.fromJson(wire);
+      final login = restored.rememberedLogins.single.login;
+
+      expect(login.host, boundHost);
+      expect(
+        rememberedLoginAllowsUrl(login, 'https://$boundHost/login'),
+        isTrue,
+      );
+      expect(
+        rememberedLoginAllowsUrl(login, 'https://evil.example.com/login'),
+        isFalse,
+      );
+    });
+  });
 }
