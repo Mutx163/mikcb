@@ -26,6 +26,7 @@ import 'package:university_timetable/services/app_global_settings_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/preview_bake_boundary.dart';
+import 'package:university_timetable/ui/hyperos/widgets/layout.dart';
 import 'package:university_timetable/widgets/timetable_home_preview_scope.dart';
 import 'package:university_timetable/widgets/preblurred_wallpaper_glass.dart';
 import 'package:university_timetable/widgets/wallpaper_position_picker_sheet.dart';
@@ -641,6 +642,19 @@ void main() {
     expect(
       tester.getTopLeft(find.text('背景图片')).dx,
       closeTo(panelLeft + 32, 0.5),
+    );
+
+    // 这 32 必须**落在卡片里**：卡片边 16 + 行自带 16。裸内容时数字一样，但少了
+    // 那道视觉边框，同样的 32 读起来就像贴边了（用户口径 2026-09-27：「选择壁纸的
+    // 这个弹窗，左右留的空隙比其他页面小很多」）。同时这也是与旁边那颗「材质」
+    // 弹窗对齐 —— 那边用的就是 `HyperosListGroup`。
+    expect(
+      find.descendant(
+        of: find.byType(HyperosListGroup),
+        matching: find.text('背景图片'),
+      ),
+      findsOneWidget,
+      reason: '壁纸弹窗的内容必须在卡片里，不能是裸内容',
     );
   });
 
