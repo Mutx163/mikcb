@@ -5257,18 +5257,45 @@ $kWarehouseBridgeCompatShim  try {
       final provider = context.read<TimetableProvider>();
       final semesterTotalWeeks = (decoded['semesterTotalWeeks'] as num?)
           ?.toInt();
-      if (semesterTotalWeeks != null && semesterTotalWeeks > 0) {
+      final semesterStartDate = warehouseSemesterStartDate(
+        decoded['semesterStartDate'],
+      );
+      // 上游 184 个脚本还会下发这三项，但本 App 没有对应设置可落：
+      // firstDayOfWeek —— 周起始日在 week_calculator / statistics / 考试排期
+      //   三处均硬编码为周一，没有可配置项；
+      // defaultClassDuration / defaultBreakDuration —— 只在
+      //   buildQuickSectionTimes 生成模板时当入参用，模型不持久化。
+      // 记一笔到执行日志便于日后定位，不静默丢弃。
+      final ignoredKeys = warehouseUnsupportedCourseConfigKeys
+          .where((key) => decoded[key] != null)
+          .toList(growable: false);
+      if (ignoredKeys.isNotEmpty) {
+        _debugImportLog(
+          'courseConfig received-but-unsupported keys=$ignoredKeys',
+        );
+      }
+      final hasWeekCount =
+          semesterTotalWeeks != null && semesterTotalWeeks > 0;
+      if (hasWeekCount || semesterStartDate != null) {
         if (_isBackgroundImportCancelled) {
           await _resolveJavaScriptRequest(requestId, false);
           return;
         }
         _markBackgroundWriteStarted();
+        // copyWith 对 null 取「保持原值」，所以脚本没下发的字段不会被清空。
         final result = await provider.updateTimetableSettings(
-          provider.settings.copyWith(semesterWeekCount: semesterTotalWeeks),
+          provider.settings.copyWith(
+            semesterWeekCount: hasWeekCount ? semesterTotalWeeks : null,
+            semesterStartDate: semesterStartDate,
+          ),
         );
         if (result != null) {
           throw FormatException(result);
         }
+        _debugImportLog(
+          'courseConfig applied weeks=${hasWeekCount ? semesterTotalWeeks : "keep"} '
+          'startDate=${semesterStartDate?.toIso8601String() ?? "keep"}',
+        );
       }
       await _resolveJavaScriptRequest(requestId, true);
     } catch (error) {

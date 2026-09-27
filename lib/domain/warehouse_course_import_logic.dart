@@ -1,6 +1,49 @@
 import 'package:university_timetable/domain/import_export_logic.dart';
 import 'package:university_timetable/models/course.dart';
 
+/// `saveCourseConfig` keys that upstream scripts send but this app cannot store.
+///
+/// * `firstDayOfWeek` — 周起始日在 `week_calculator`、`statistics_service`、
+///   考试排期三处硬编码为周一，没有任何可配置项。
+/// * `defaultClassDuration` / `defaultBreakDuration` — 只在
+///   `buildQuickSectionTimes` 生成时间模板时作为入参使用，模型不持久化，
+///   存下来就是死状态。
+const List<String> warehouseUnsupportedCourseConfigKeys = [
+  'firstDayOfWeek',
+  'defaultClassDuration',
+  'defaultBreakDuration',
+];
+
+/// Parses an adapter-supplied semester start date into **local midnight**.
+///
+/// Why normalize: the field is persisted as `millisecondsSinceEpoch` and every
+/// week-index computation re-reads it. A UTC instant (e.g. `2026-09-07T00:00Z`
+/// → 08:00 in UTC+8) or a bare time component would shift the weekday and make
+/// week 1 start on the wrong day, so keep only the calendar date and drop the
+/// clock part.
+DateTime? warehouseSemesterStartDate(Object? raw) {
+  final text = raw?.toString().trim() ?? '';
+  if (text.isEmpty) {
+    return null;
+  }
+  final parsed = DateTime.tryParse(text);
+  if (parsed != null) {
+    return DateTime(parsed.year, parsed.month, parsed.day);
+  }
+  // 兼容 `2026-09-07 08:00` 这类非 ISO 写法。
+  final match = RegExp(r'^(\d{4})-(\d{1,2})-(\d{1,2})').firstMatch(text);
+  if (match == null) {
+    return null;
+  }
+  final year = int.tryParse(match.group(1)!);
+  final month = int.tryParse(match.group(2)!);
+  final day = int.tryParse(match.group(3)!);
+  if (year == null || month == null || day == null) {
+    return null;
+  }
+  return DateTime(year, month, day);
+}
+
 /// Pure parser for 教务适配脚本下发的课程数组（`saveImportedCourses` 的入参）。
 ///
 /// Why this exists: the warehouse protocol lets an adapter attach a real clock

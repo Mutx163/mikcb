@@ -16,6 +16,56 @@ String _nextId() => 'id-${_seq++}';
 void main() {
   setUp(() => _seq = 0);
 
+  group('warehouseSemesterStartDate', () {
+    test('归一到本地零点，丢掉时刻部分', () {
+      final d = warehouseSemesterStartDate('2026-09-07T08:30:00Z');
+      expect(d, DateTime(2026, 9, 7));
+      expect(d!.hour, 0);
+    });
+
+    test('UTC 带 Z 时只取日历日，不被时区推走一天', () {
+      // 2026-09-07T00:00Z 在 UTC+8 是 08:00 同日；若按 UTC 瞬间处理再转本地，
+      // 某些时区会退到前一天，周次起始日随之错一天。
+      final d = warehouseSemesterStartDate('2026-09-07T00:00:00Z');
+      expect(d, isNotNull);
+      expect(d!.year, 2026);
+      expect(d.month, 9);
+      expect(d.day, 7);
+    });
+
+    test('接受 H:mm 补零与 ISO 日期', () {
+      expect(warehouseSemesterStartDate('2026-9-7'), DateTime(2026, 9, 7));
+      expect(warehouseSemesterStartDate('2026-09-07'), DateTime(2026, 9, 7));
+    });
+
+    test('兼容空格分隔的非 ISO 写法', () {
+      expect(
+        warehouseSemesterStartDate('2026-09-07 08:00'),
+        DateTime(2026, 9, 7),
+      );
+    });
+
+    test('空值与垃圾输入返回 null（保持原值，不清空）', () {
+      expect(warehouseSemesterStartDate(null), isNull);
+      expect(warehouseSemesterStartDate(''), isNull);
+      expect(warehouseSemesterStartDate('   '), isNull);
+      expect(warehouseSemesterStartDate('not-a-date'), isNull);
+    });
+  });
+
+  group('warehouseUnsupportedCourseConfigKeys', () {
+    test('列出的三项正是本 App 无处安放的上游字段', () {
+      expect(
+        warehouseUnsupportedCourseConfigKeys,
+        containsAll(<String>[
+          'firstDayOfWeek',
+          'defaultClassDuration',
+          'defaultBreakDuration',
+        ]),
+      );
+    });
+  });
+
   group('normalizeClock', () {
     test('accepts HH:mm and H:mm', () {
       expect(WarehouseCourseImportLogic.normalizeClock('08:20'), '08:20');
