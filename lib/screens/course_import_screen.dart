@@ -28,8 +28,8 @@ import '../models/timetable_settings.dart';
 import '../models/warehouse_macro_models.dart';
 import '../models/warehouse_repository_models.dart';
 import '../providers/timetable_provider.dart';
-import '../domain/import_export_logic.dart';
 import '../domain/location_time_scheme_import_logic.dart';
+import '../domain/warehouse_course_import_logic.dart';
 import '../services/ai_course_import_service.dart';
 import '../services/ics_import_service.dart';
 import '../services/import_random_color_preferences.dart';
@@ -5749,66 +5749,13 @@ $kWarehouseBridgeCompatShim  try {
   }
 
   List<Course> _parseWarehouseCourses(List<dynamic> rawCourses) {
-    final courses = <Course>[];
-    for (final item in rawCourses) {
-      if (item is! Map) {
-        continue;
-      }
-      final map = Map<String, dynamic>.from(item.cast<String, dynamic>());
-      final name = (map['name'] as String? ?? '').trim();
-      final teacher = (map['teacher'] as String? ?? '').trim();
-      final location =
-          (map['position'] as String? ?? map['location'] as String? ?? '')
-              .trim();
-      final day = (map['day'] as num?)?.toInt();
-      final startSection = (map['startSection'] as num?)?.toInt();
-      final endSection = (map['endSection'] as num?)?.toInt();
-      final weeks =
-          (map['weeks'] as List<dynamic>?)
-              ?.map((item) => (item as num).toInt())
-              .where(
-                (item) =>
-                    item > 0 &&
-                    item <= ImportExportLogic.maxAllowedSemesterWeekCount,
-              )
-              .toSet()
-              .toList()
-            ?..sort();
-      if (name.isEmpty ||
-          day == null ||
-          startSection == null ||
-          endSection == null ||
-          weeks == null ||
-          weeks.isEmpty) {
-        continue;
-      }
-      final normalizedDay = Course.normalizeDayOfWeek(day);
-      final normalizedSections = Course.normalizeSections(
-        startSection: startSection,
-        endSection: endSection,
-      );
-      courses.add(
-        Course(
-          id: const Uuid().v4(),
-          name: name,
-          teacher: teacher.isEmpty
-              ? AppLocalizations.of(context)!.unknownTeacher
-              : teacher,
-          location: location.isEmpty
-              ? AppLocalizations.of(context)!.unknownLocation
-              : location,
-          dayOfWeek: normalizedDay,
-          startSection: normalizedSections.startSection,
-          endSection: normalizedSections.endSection,
-          startWeek: weeks.first,
-          endWeek: weeks.last,
-          startTime: '',
-          endTime: '',
-          customWeeks: weeks,
-        ),
-      );
-    }
-    return courses;
+    final l10n = AppLocalizations.of(context)!;
+    return WarehouseCourseImportLogic.parse(
+      rawCourses,
+      idFactory: () => const Uuid().v4(),
+      unknownTeacher: l10n.unknownTeacher,
+      unknownLocation: l10n.unknownLocation,
+    );
   }
 
   /// 诊断：登录页自动填充决策日志。loginState 消息在页面存活期内会高频

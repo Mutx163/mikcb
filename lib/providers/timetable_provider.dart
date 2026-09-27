@@ -1126,6 +1126,19 @@ class TimetableProvider with ChangeNotifier {
     return sections[index].startTime;
   }
 
+  /// 上课闹钟等场景用：解析课程在其生效时间模板下的真实结束钟点。
+  ///
+  /// 与 [resolvedCourseStartTime] 同源；适配脚本下发自定义时间的课程
+  /// （[Course.hasCustomTime]）在此返回脚本给定的钟点。
+  String? resolvedCourseEndTime(Course course) {
+    final sections = _resolveSectionsForCourse(course);
+    final index = course.endSection - 1;
+    if (sections == null || index < 0 || index >= sections.length) {
+      return null;
+    }
+    return sections[index].endTime;
+  }
+
   /// Preview location → place-group routing without writing course times.
   LocationTimeMatchResult? matchLocationTime(String? location) =>
       LocationTimeMatchLogic.match(location, _locationTimeGroups);
@@ -1149,11 +1162,47 @@ class TimetableProvider with ChangeNotifier {
       settings: settings,
       onDate: onDate,
     );
-    if (scheme != null) {
-      return scheme.sections;
+    final base = scheme?.sections ?? (settings ?? _settings).sections;
+    return _applyCourseCustomTime(course, base);
+  }
+
+  /// Pins an adapter-supplied clock range onto the course's own section span.
+  ///
+  /// Everything downstream (alarms, live activity, progress milestones) indexes
+  /// the returned list by `startSection`/`endSection`, so overriding just those
+  /// two entries makes the whole app honour [Course.hasCustomTime] without any
+  /// caller change. Interior sections keep the scheme's own times, so break
+  /// milestones between the first and last section stay meaningful.
+  static List<SectionTime> _applyCourseCustomTime(
+    Course course,
+    List<SectionTime> base,
+  ) {
+    if (!course.hasCustomTime) {
+      return base;
     }
-    final activeSettings = settings ?? _settings;
-    return activeSettings.sections;
+    final startTime = course.startTime.trim();
+    final endTime = course.endTime.trim();
+    if (startTime.isEmpty || endTime.isEmpty) {
+      return base;
+    }
+    final startIndex = course.startSection - 1;
+    final endIndex = course.endSection - 1;
+    if (startIndex < 0 || startIndex >= base.length) {
+      return base;
+    }
+    if (endIndex < 0 || endIndex >= base.length) {
+      return base;
+    }
+    final pinned = List<SectionTime>.from(base);
+    pinned[startIndex] = SectionTime(
+      startTime: startTime,
+      endTime: base[startIndex].endTime,
+    );
+    pinned[endIndex] = SectionTime(
+      startTime: base[endIndex].startTime,
+      endTime: endTime,
+    );
+    return pinned;
   }
 
   List<TimeSchemeCourseUsageReference> getTimeSchemeCourseUsages(
@@ -1779,6 +1828,13 @@ class TimetableProvider with ChangeNotifier {
           : _getTimeSchemeById(match.timeSchemeId);
 
       Course courseToSync = course;
+
+      // 适配脚本下发的真实钟点是权威值，地点分组不得覆盖，否则用户改一次分组
+      // 就会把早读/连堂这类自定义时间冲掉。
+      if (course.hasCustomTime) {
+        synced.add(course);
+        continue;
+      }
 
       if (match == null) {
         noMatchCount += 1;

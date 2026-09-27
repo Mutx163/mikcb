@@ -102,6 +102,17 @@ class Course {
   final Map<int, CourseSessionNote>? sessionNotes;
   final String? timeSchemeIdOverride; // 课程级时间模板覆盖
 
+  /// True when [startTime]/[endTime] carry an adapter-supplied clock range that
+  /// must win over the time scheme.
+  ///
+  /// 教务适配脚本可对不对应编号节次的时段（早读、实验连堂等）下发真实钟点，此时
+  /// 时间不能由时间模板按节次反推。
+  ///
+  /// 不能用「startTime 非空」来判断：历史存档里 startTime/endTime 可能残留早已
+  /// 与模板不同步的旧钟点（见 provider 注释「绝不能退回 Course.startTime 存量值」），
+  /// 以非空为准会把旧数据误当成自定义时间。
+  final bool hasCustomTime;
+
   Course({
     required this.id,
     required this.name,
@@ -126,6 +137,7 @@ class Course {
     this.note,
     this.sessionNotes,
     this.timeSchemeIdOverride,
+    this.hasCustomTime = false,
   });
 
   /// Clamps [dayOfWeek] to Monday–Sunday (1–7).
@@ -176,6 +188,7 @@ class Course {
       'endSection': endSection,
       'startTime': startTime,
       'endTime': endTime,
+      'hasCustomTime': hasCustomTime,
       'color': color,
       'textColor': textColor,
       'startWeek': startWeek,
@@ -247,6 +260,7 @@ class Course {
       endSection: sections.endSection,
       startTime: json['startTime'] as String,
       endTime: json['endTime'] as String,
+      hasCustomTime: json['hasCustomTime'] as bool? ?? false,
       color: json['color'] as String? ?? '#2196F3',
       textColor: json['textColor'] as String?,
       startWeek: weeks.startWeek,
@@ -346,6 +360,7 @@ class Course {
     Object? note = _unset,
     Object? sessionNotes = _unset,
     Object? timeSchemeIdOverride = _unset,
+    bool? hasCustomTime,
   }) {
     return Course(
       id: id ?? this.id,
@@ -385,6 +400,7 @@ class Course {
       timeSchemeIdOverride: identical(timeSchemeIdOverride, _unset)
           ? this.timeSchemeIdOverride
           : timeSchemeIdOverride as String?,
+      hasCustomTime: hasCustomTime ?? this.hasCustomTime,
     );
   }
 
