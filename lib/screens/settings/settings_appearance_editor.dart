@@ -639,6 +639,10 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     final contentMaxHeight = _materialSheetContentMaxHeight(context);
     return showHomeHyperosSheet<void>(
       context: context,
+      // 顶部渐变模糊带**自己**把把手条那 24 排掉了（带子从面板上沿起、里面第一格就是
+      // 让给把手的那 24），所以不要承载壳再统一加一段 —— 否则顶部凭空多出 24 的空档，
+      // 正是这一带在返工的那件事。
+      reserveDragHandleStrip: false,
       builder: (sheetContext) => HyperosSheetFrame(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         maxHeight: contentMaxHeight,
@@ -684,8 +688,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       // 接管，见 `topInsetFor` 的注释。
       padding: EdgeInsets.only(
         top: HyperosSheetBlurTop.topInsetFor(
-          headerHeight: 40,
-          bleedTop: hyperosMiuixBottomSheetEmptyTitleRowHeight,
+          headerHeight: hyperosMiuixBottomSheetDragHandleHeight + 40,
         ),
       ),
       child: Column(
@@ -953,8 +956,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       // 接管，见 `topInsetFor` 的注释。
       padding: EdgeInsets.only(
         top: HyperosSheetBlurTop.topInsetFor(
-          headerHeight: 40,
-          bleedTop: hyperosMiuixBottomSheetEmptyTitleRowHeight,
+          headerHeight: hyperosMiuixBottomSheetDragHandleHeight + 40,
         ),
       ),
       child: Column(
@@ -1778,17 +1780,21 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
       valueListenable: editor._draftRevision,
       builder: (sheetContext, _, _) {
         return HyperosSheetBlurTop(
-          // 带高就等于胶囊高度（40）—— 带盒正好装下它们，不留多余空档；带子整体上移那 18
-          // 之后，胶囊底到第一行正文只剩渐隐区那 20。
-          headerHeight: 40,
+          // 带高 = 把手条 24 + 胶囊 40。带子从**面板上沿**起（不再上移），所以这段 24 是
+          // 带子自己要给把手的：把手上边缘 24、小条落在 10~14，胶囊 34~74。
+          // 于是把手小条底到胶囊顶只剩 10px 空档，而**胶囊底到第一行正文只剩渐隐区那 20**。
+          //
+          // ⚠️ 别再把这段 24 缩掉：把手条是浮在内容之上的（上游
+          // `dragHandleOverlaysContent`），那 24px 画得到、点不到 —— 胶囊放进去会点不动。
+          headerHeight: hyperosMiuixBottomSheetDragHandleHeight + 40,
           // 模糊带往左右各外扩面板内容那个内缩，铺满整个面板宽（否则带子只在中间一段
           // 有模糊、两侧各留一条没糊的边，读起来是「浮在面板里的方框」）。胶囊本身
           // 按同一个数内缩回去，仍与底下正文对齐。
           bleed: hyperosMiuixBottomSheetInsideMargin,
-          // 往上盖住面板顶部那截**空占位**（18），把手与胶囊之间那段空档从 34 收到 10。
-          // **只盖空占位、绝不盖把手条**（那里面有唯一的拖动提示）—— 见该常量与
-          // `bleedTop` 的注释。
-          bleedTop: hyperosMiuixBottomSheetEmptyTitleRowHeight,
+          // **不再上移**（`bleedTop` 保持 0）：上游把手条改成悬浮之后，正文里也就没有那截
+          // 18 的空占位要避让了。带子从面板上沿起，正文能从它**底下真的滚过去** ——
+          // 顶部渐变模糊这才第一次有内容可糊（用户口径 2026-09-27：「在那个材质页面，
+          // 这个拉杆底下怎么做都不能显示模糊效果」）。
           // 翻页标签**自己就是标题**（用户口径 2026-09-26），且**坐在顶部渐变模糊带
           // 上**（同一条指令的第二半）。
           //
@@ -1802,11 +1808,17 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
           // 放进模糊带之后它不再占正文高度：正文从「带底 + 渐隐区」起滚，滚上去的行
           // 从带底下化进去。材质面板每页都要滚两屏，没有这条收尾就是内容在面板上沿被
           // 硬切一刀。
-          header: Center(
-            child: HyperosChipRow(
-              labels: [l10n.generalSettingsTitle, l10n.surfaceCourseCard],
-              selectedIndex: _page,
-              onChanged: _goToPage,
+          header: Padding(
+            // 顶部让出把手条那 24（点不到的那层），胶囊从它下面开始。
+            padding: const EdgeInsets.only(
+              top: hyperosMiuixBottomSheetDragHandleHeight,
+            ),
+            child: Center(
+              child: HyperosChipRow(
+                labels: [l10n.generalSettingsTitle, l10n.surfaceCourseCard],
+                selectedIndex: _page,
+                onChanged: _goToPage,
+              ),
             ),
           ),
           // 两页等高、各页自己竖向滚动：面板总高由外层 `maxHeight`（半屏上限）

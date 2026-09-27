@@ -81,12 +81,24 @@ typedef MiuixBottomSheetBuilder =
 /// 液态玻璃下只有很轻的一层），不用上游 dialog 系的 0.3 / 0.6。
 /// 依赖上游 `surfaceBuilder` + `scrimUnderlay` + `dimColor` 三个注入点
 /// （本仓 fork 上的补丁，锁定来源见 `pubspec.yaml` 的 `dependency_overrides.flutter_miuix`）。
+///
+/// ## 顶部那 24dp（把手条）由承载壳统一让开
+///
+/// 上游把手条**悬浮**在内容之上（`dragHandleOverlaysContent`，见
+/// [hyperosMiuixBottomSheetDragHandleHeight]），面板顶部不再被「把手条 24 + 空占位 18」
+/// 占满。代价是那 24dp **画得到、点不到**（竖向拖动归把手，面板靠它拖走）。
+///
+/// 所以承载壳默认给内容加一段顶部留白（[reserveDragHandleStrip]），**别让每个调用方各自
+/// 记得**：漏一个就是一个「最上面那颗按钮点不动」的弹窗（本仓真踩过 —— 弹层自测里那个
+/// 「关闭」按钮正好落在那 24 里）。自带顶部控件、已经把这 24 排进自己布局的弹窗
+/// （材质面板的顶部渐变模糊带）传 `false`。
 Future<T?> showMiuixBottomSheet<T>({
   required BuildContext context,
   required MiuixBottomSheetBuilder builder,
   bool barrierDismissible = true,
   bool useRootNavigator = false,
   Color? barrierColor,
+  bool reserveDragHandleStrip = true,
 }) {
   // 诊断标记沿用 `sheet:open`（这个弹窗就是「弹层开场」那一类，改用上游组件不换口径，
   // 历史读数仍然可比）。见 utils/frame_perf_probe.dart。
@@ -101,6 +113,7 @@ Future<T?> showMiuixBottomSheet<T>({
             builder: builder,
             barrierDismissible: barrierDismissible,
             barrierColor: barrierColor,
+            reserveDragHandleStrip: reserveDragHandleStrip,
           ),
     ),
   );
@@ -138,12 +151,14 @@ Future<T?> showHomeHyperosSheet<T>({
   bool useRootNavigator = false,
   Color? barrierColor,
   SheetCloseRef? closeRef,
+  bool reserveDragHandleStrip = true,
 }) {
   return showMiuixBottomSheet<T>(
     context: context,
     useRootNavigator: useRootNavigator,
     barrierDismissible: isDismissible,
     barrierColor: barrierColor,
+    reserveDragHandleStrip: reserveDragHandleStrip,
     builder: (sheetContext, close) {
       closeRef?.call(close);
       return builder(sheetContext);
@@ -210,12 +225,16 @@ class _MiuixBottomSheetPage extends StatefulWidget {
     required this.builder,
     required this.barrierDismissible,
     this.barrierColor,
+    this.reserveDragHandleStrip = true,
   });
 
   final ValueNotifier<bool> barrierActive;
   final MiuixBottomSheetBuilder builder;
   final bool barrierDismissible;
   final Color? barrierColor;
+
+  /// 内容是否自带「让开把手条」的顶部留白（见 [showMiuixBottomSheet] 同名参数）。
+  final bool reserveDragHandleStrip;
 
   @override
   State<_MiuixBottomSheetPage> createState() => _MiuixBottomSheetPageState();
@@ -351,6 +370,15 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
             widget.barrierColor ??
             HyperosBlurredHeader.modalBarrierColor(context),
         dragHandleColor: Theme.of(context).colorScheme.onSurfaceVariant,
+        // 把手条**悬浮**在内容之上（上游 `dragHandleOverlaysContent`，2026-09-27 加）：
+        // 面板顶部那 42（把手条 24 + 无标题时的空占位 18）里什么都没有，内容从 42 才开始 ——
+        // 顶部空一大块，而且那 42 背后没有内容，画在这截上的顶部渐变模糊永远糊不到东西
+        // （用户口径 2026-09-27：「在那个材质页面，这个拉杆底下怎么做都不能显示模糊效果」）。
+        // 悬浮之后内容从面板上沿起、能滚到把手底下，模糊才真的有内容可糊。
+        //
+        // 本仓的弹窗一律不传上游 `title`（标题都是自己画在内容里的），所以「有标题行就
+        // 维持原布局」那条分支不会命中。
+        dragHandleOverlaysContent: true,
         // 左右内边距拉回本仓口径（上游默认 24，见该常量的说明）。
         insideMargin: const Size(hyperosMiuixBottomSheetInsideMargin, 0),
         surfaceBuilder: hyperosMiuixBottomSheetSurface,
@@ -365,7 +393,16 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
               // 最下沿、被手势条压住（用户口径：「调课停课什么的都到底部屏幕外面去了」）。
               // 口径与改动前的 edge sheet 一致：安全区 + [..ContentBottomGap]。
               // 键盘弹起时 `padding.bottom` 在 Android 上会归零，不会与上游那层叠成双份。
+              //
+              // 顶部那层是**让开悬浮的把手条**（上游 `dragHandleOverlaysContent`：把手条
+              // 浮在内容之上、吸收命中，所以内容顶 24 里的按钮会点不动）。默认由**这里**
+              // 统一加，别让每个调用方各自记得 —— 漏一个就是一个「按钮点不动」的弹窗。
+              // 自带顶部控件的弹窗（材质面板：顶部渐变模糊带自己把这段高度排掉了）传
+              // `reserveDragHandleStrip: false`。
               padding: EdgeInsets.only(
+                top: widget.reserveDragHandleStrip
+                    ? hyperosMiuixBottomSheetDragHandleHeight
+                    : 0,
                 bottom:
                     MediaQuery.paddingOf(context).bottom +
                     hyperosMiuixBottomSheetContentBottomGap,
@@ -394,19 +431,23 @@ const double hyperosMiuixBottomSheetContentBottomGap = 16;
 /// 自己那份口径。上下不设（内容自己管）。
 const double hyperosMiuixBottomSheetInsideMargin = 16;
 
-/// 面板顶部那截**空占位**的高度（逻辑 px）。
+/// 面板顶部那条**把手条**的高度（逻辑 px）。
 ///
-/// = 上游 `MiuixWindowBottomSheet._titleRow` 在**没有标题、也没有两侧按钮**时仍然插进来的
-/// `SizedBox(height: 18)` —— 内容看得到它，它只是把内容和把手条隔开的那截留白。
+/// = 上游 `MiuixWindowBottomSheet._dragHandle` 那个 `SizedBox(height: 24)`（把手里那颗
+/// 45×4 的小条居中，占 10~14）。
 ///
-/// 顶部渐变模糊带可以往上盖住它（`HyperosSheetBlurTop.bleedTop`）：里面什么都没有，糊一片
-/// 空白等于没糊，不会出现「顶部一整块不透明」那种问题（2026-09-27 用户报），而盖住之后
-/// 把手与带上的控件之间那 34px 空档缩到 10px，顶部不再是「一个把手 + 一大片空白」。
+/// 2026-09-27 起上游把手条**悬浮**在内容之上（`dragHandleOverlaysContent`），不再占面板
+/// 高度 —— 面板顶部原先那 42（这 24 + 无标题时的空占位 18）里什么都没有，内容从 42 才有
+/// 开始：顶部空一大块，而且那截背后没有内容，画在上面的顶部渐变模糊永远糊不到东西。
 ///
-/// ⚠️ **只能盖这一截，绝不能往上盖把手条**（上面那 24px）：把手条里那颗 45×4 的浅色小条
-/// 会被糊平（它是这个弹窗唯一的拖动提示），补画替身又会出现两根杆子 —— 同一处先后返工
-/// 三次就是这个原因。改上游那个 `SizedBox` 的高度时这里要跟着走。
-const double hyperosMiuixBottomSheetEmptyTitleRowHeight = 18;
+/// 悬浮的代价：那 24px 变成「画得到、点不到」的一层 —— 竖向拖动归把手（面板靠它拖动、
+/// 拖走），所以**任何按钮都不能放在这 24px 里**。承载壳默认给内容加这段留白
+/// （`showMiuixBottomSheet` 的 `reserveDragHandleStrip`）；自带顶部控件、已经把这 24 排
+/// 进自己布局的弹窗（材质面板的顶部渐变模糊带）传 `false`。
+///
+/// 它同时是**唯一**的拖动提示，所以模糊带只能盖在它下面、绝不能糊它（糊了就是一块板，
+/// 2026-09-26/27 连续三次返工都是这条边界）。
+const double hyperosMiuixBottomSheetDragHandleHeight = 24;
 
 /// 这块面板的玻璃**一律不外推采样**（[LiquidGlassSurface.maxRefraction] = 0）。
 ///

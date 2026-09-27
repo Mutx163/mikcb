@@ -23,7 +23,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('showHomeHyperosSheet drag-to-dismiss（面板换成上游底部弹窗之后）', () {
-    Future<void> openSheet(WidgetTester tester) async {
+    Future<void> openSheet(
+      WidgetTester tester, {
+      bool reserveDragHandleStrip = true,
+    }) async {
       await tester.pumpWidget(
         TestApp(
           home: Builder(
@@ -33,6 +36,7 @@ void main() {
                   onPressed: () {
                     showHomeHyperosSheet<void>(
                       context: context,
+                      reserveDragHandleStrip: reserveDragHandleStrip,
                       builder: (sheetContext) {
                         // 内容里照旧用 HyperosSheetFrame：面板由承载壳注入，
                         // 框自己让位（不画第二层玻璃）—— 这条也顺带被下面几条覆盖。
@@ -58,15 +62,64 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    /// 把手中心：面板顶部那条 24dp 横条。
+    /// 把手中心：面板顶部那条 24dp 横条（`hyperosMiuixBottomSheetDragHandleHeight`）。
     ///
-    /// ⚠️ 上游只给**把手**挂了拖拽手势（无标题时它下面还有 18dp 的标题行），
-    /// 面板本身拖不动 —— 拿内容坐标当把手会「拖不动」，这是 2026-09-19 换组件后
-    /// 行为变化最明显的一处（旧实现整面板可拖）。
+    /// ⚠️ 上游只给**把手**挂了拖拽手势，面板本身拖不动 —— 拿内容坐标当把手会「拖不动」，
+    /// 这是 2026-09-19 换组件后行为变化最明显的一处（旧实现整面板可拖）。
+    ///
+    /// 2026-09-27 几何变了：把手条改成**悬浮**在内容之上（上游 `dragHandleOverlaysContent`），
+    /// 顶部原先是「把手条 24 + 无标题时的空占位 18」= 42，现在只剩把手条那 24，而承载壳
+    /// 正好给内容让开这 24（`reserveDragHandleStrip`）—— 所以把手中心 = `内容顶 − 12`。
     Offset handleCenter(WidgetTester tester, Finder content) {
       final topLeft = tester.getTopLeft(content);
-      return Offset(topLeft.dx + 150, topLeft.dy - 30);
+      return Offset(topLeft.dx + 150, topLeft.dy - 12);
     }
+
+    testWidgets('顶部只剩把手条那 24：那截 18 的空占位没有了', (tester) async {
+      await openSheet(tester);
+
+      final body = find.byKey(const ValueKey('sheet-body'));
+      final panel = find.byType(HyperosSelectPopupGlass);
+
+      // 上游原先在面板顶部实打实留了「把手条 24 + 无标题时的空占位 18」= 42，内容从 42
+      // 才开始 —— 面板顶部空一大块，而且那 42 背后什么都没有，画在这截上的顶部渐变模糊
+      // 永远糊不到东西（用户口径 2026-09-27）。
+      expect(
+        tester.getTopLeft(body).dy - tester.getRect(panel).top,
+        closeTo(24, 0.5),
+        reason: '内容只让开把手条那 24：那截空占位（18）已经没了',
+      );
+    });
+
+    testWidgets('内容顶到面板上沿时（自带顶部控件的弹窗），把手照样拖得动', (
+      tester,
+    ) async {
+      // `reserveDragHandleStrip: false` = 材质面板那种：内容自己把把手条那 24 排进
+      // 自己的顶部控件里，于是**内容就铺在把手条底下**。这时把手必须仍然接得住拖动
+      // —— 它排在 Stack 末位，命中与绘制都在内容之前，滚动视图抢不走。
+      await openSheet(tester, reserveDragHandleStrip: false);
+
+      final body = find.byKey(const ValueKey('sheet-body'));
+      final topLeft = tester.getTopLeft(body);
+      expect(
+        topLeft.dy - tester.getRect(find.byType(HyperosSelectPopupGlass)).top,
+        closeTo(0, 0.5),
+        reason: '不预留时内容必须真的顶到面板上沿（否则这条测不到东西）',
+      );
+
+      await tester.timedDragFrom(
+        topLeft + const Offset(150, 6),
+        const Offset(0, 300),
+        const Duration(milliseconds: 600),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Sheet content'),
+        findsNothing,
+        reason: '把手条虽然浮在内容之上，但仍然接得住拖动，否则面板拖不走',
+      );
+    });
 
     testWidgets('拖把手：面板整体下移，且内容始终不透明', (tester) async {
       await openSheet(tester);
