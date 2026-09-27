@@ -54,6 +54,22 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 课表列表来源：算「在用壁纸白名单」用（历史是全局的，别的课表也可能在用）。
   TimetableProvider get backdropProvider;
 
+  /// 本宿主给壁纸那两块（选图行 / 最近使用）**额外**留的左右内缩。
+  ///
+  /// 两个宿主的答案不同，而且**都必须保留各自那个**：
+  ///
+  /// * 「课表页面」（默认 16）：这两块在 `HyperosListGroup` 卡片里，那 16 是
+  ///   **卡片自己的行内缩**，与 `settingsRowPadding` 同口径。去掉的话内容会贴到
+  ///   卡片边上。
+  /// * 「外观编辑」的壁纸弹窗（0）：那一处**没有任何容器**，左右由面板的
+  ///   [hyperosMiuixBottomSheetInsideMargin]（16）提供。两块自己再垫一层 16，
+  ///   内容就距边 32 —— 比兄弟弹窗（选周、删除确认、课程备注…标题与按钮都从
+  ///   16 起）多缩一截，同一颗按钮旁边的「材质」弹窗又是另一套版式，读起来
+  ///   就不协调（用户口径 2026-09-27）。弹窗那一侧改成 0，与兄弟弹窗齐平。
+  ///
+  /// ⚠️ 只动**左右**；上下由各块自己排（14/14），别一起改。
+  double get backdropRowHorizontalInset => 16;
+
   /// 宿主把壁纸 UI 放在**底部弹层**里时，返回该弹层的「请求收起」口子；
   /// 内联在设置页里的宿主返回 null（默认）。
   ///
@@ -358,7 +374,8 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 壁纸弹窗（「外观编辑」页底部按钮）的正文。
   ///
   /// 内容与「课表页面」设置里的壁纸行**同一套 builder**：改一行两边一起改，
-  /// 不存在「设置页能切历史、编辑页不能」这种分叉。
+  /// 不存在「设置页能切历史、编辑页不能」这种分叉。左右内缩由
+  /// [backdropRowHorizontalInset] 按宿主给（弹窗这一侧是 0，见那里的注释）。
   Widget buildWallpaperSheetBody(
     BuildContext context, {
     required AppLocalizations l10n,
@@ -426,6 +443,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
       entries: entries,
       selectedKey: currentKey,
       l10n: l10n,
+      horizontalInset: backdropRowHorizontalInset,
       onSelect: _selectBackdropEntry,
       // 「正在用的那张不给移除」这一关放在**发起之前**：它连角标都没有，唯一的
       // 入口是长按，而长按的解释只能由这里给。
@@ -484,8 +502,10 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     // 背后是按路径记忆的 memo，不摸盘）：判据分叉过一次就会出现"提示说没了、
     // 首页却画着图"这种自相矛盾。刻意不直接 `File(path).existsSync()`。
     final fileMissing = hasWallpaper && homePageImageProvider(path) == null;
+    // 左右按宿主给（弹窗那一侧是 0，见 [backdropRowHorizontalInset]）；上下照旧。
+    final inset = backdropRowHorizontalInset;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: EdgeInsets.fromLTRB(inset, 14, inset, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

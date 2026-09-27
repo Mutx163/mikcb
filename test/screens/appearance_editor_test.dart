@@ -18,12 +18,14 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/models/wallpaper_history.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/providers/weather_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/services/app_global_settings_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
+import 'package:university_timetable/services/wallpaper_history_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/preview_bake_boundary.dart';
 import 'package:university_timetable/widgets/timetable_home_preview_scope.dart';
@@ -32,7 +34,10 @@ import 'package:university_timetable/widgets/wallpaper_position_picker_sheet.dar
 
 import '../helpers_test_app.dart';
 
-void _seedInitializedPrefs([TimetableSettings? settings]) {
+void _seedInitializedPrefs([
+  TimetableSettings? settings,
+  List<WallpaperHistoryEntry>? wallpaperHistory,
+]) {
   final now = DateTime(2026, 4, 12);
   final profile = TimetableProfile(
     id: 'profile-1',
@@ -49,6 +54,13 @@ void _seedInitializedPrefs([TimetableSettings? settings]) {
     'timetable_profiles': jsonEncode([profile.toJson()]),
     'active_timetable_profile_id': profile.id,
     'time_schemes': '[]',
+    // 「最近使用」的真源是全局 prefs 那一份，settings 里那份只是镜像（见
+    // WallpaperHistoryService 的类注释）—— 只塞 settings 的话条子不会出现在
+    // 界面上，所以这里必须直接写全局那个键。
+    if (wallpaperHistory != null)
+      WallpaperHistoryService.preferenceKey: jsonEncode([
+        for (final entry in wallpaperHistory) entry.toJson(),
+      ]),
   });
 }
 
@@ -632,15 +644,63 @@ void main() {
       reason: '「选择图片」独占一行 —— 三颗挤一行时每颗只剩约 105dp，四字文案会折行',
     );
 
-    // 左右内边距：面板自己 16（`hyperosMiuixBottomSheetInsideMargin`）+ 壁纸行
-    // 自带 16 = 32。上游默认的 24 会让它变成 40（用户口径 2026-09-20：
-    //「左右边距留的那么大」）。窗口比面板上限（640）宽时面板居中。
+    // 左右内边距 = **面板自己那 16**（`hyperosMiuixBottomSheetInsideMargin`），
+    // 壁纸行不再自带一层（`backdropRowHorizontalInset` 在弹窗这一侧是 0）。
+    //
+    // 之前这里是 16 + 16 = 32，比兄弟弹窗（选周、删除确认、课程备注…标题与按钮
+    // 都从 16 起）多缩一截，两颗按钮点开的版式对不上（用户口径 2026-09-27）。
+    // 窗口比面板上限（640）宽时面板居中。
     final logicalWidth =
         tester.view.physicalSize.width / tester.view.devicePixelRatio;
     final panelLeft = logicalWidth > 640 ? (logicalWidth - 640) / 2 : 0.0;
     expect(
       tester.getTopLeft(find.text('背景图片')).dx,
-      closeTo(panelLeft + 32, 0.5),
+      closeTo(panelLeft + 16, 0.5),
+    );
+  });
+
+  testWidgets('壁纸弹窗里两块（选图行 / 最近使用）左右齐平，都从面板的 16 起', (
+    tester,
+  ) async {
+    // 必须给**真实存在**的图：失效路径进不了「最近使用」（那一栏只列文件真在的
+    // 条目），两块齐平这条就无从验证。
+    final dir = Directory.systemTemp.createTempSync('appearance_wall_inset');
+    final current = File('${dir.path}/current.png')
+      ..writeAsBytesSync(const [1, 2, 3, 4]);
+    final older = File('${dir.path}/older.png')
+      ..writeAsBytesSync(const [5, 6, 7, 8]);
+    addTearDown(() {
+      try {
+        dir.deleteSync(recursive: true);
+      } on FileSystemException {
+        // Windows 上解码器可能短暂锁着（errno 32）；断言不依赖这次清理。
+      }
+    });
+    _seedInitializedPrefs(
+      TimetableSettings.defaults().copyWith(
+        homePageWallpaperPath: current.path,
+      ),
+      [
+        WallpaperHistoryEntry(key: current.path, usedAt: 200),
+        WallpaperHistoryEntry(key: older.path, usedAt: 100),
+      ],
+    );
+    await pumpEditor(tester);
+    await tester.tap(find.text('调整壁纸'));
+    await tester.pumpAndSettle();
+
+    final logicalWidth =
+        tester.view.physicalSize.width / tester.view.devicePixelRatio;
+    final panelLeft = logicalWidth > 640 ? (logicalWidth - 640) / 2 : 0.0;
+    expect(find.text('最近使用'), findsOneWidget, reason: '有两条可用历史');
+    expect(
+      tester.getTopLeft(find.text('背景图片')).dx,
+      closeTo(panelLeft + 16, 0.5),
+    );
+    expect(
+      tester.getTopLeft(find.text('最近使用')).dx,
+      closeTo(panelLeft + 16, 0.5),
+      reason: '两块不许一个 16 一个 32 —— 那正是这次要消掉的不协调',
     );
   });
 

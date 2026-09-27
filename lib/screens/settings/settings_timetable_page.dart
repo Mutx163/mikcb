@@ -471,6 +471,7 @@ class _RecentWallpaperSection extends StatefulWidget {
     required this.entries,
     required this.selectedKey,
     required this.l10n,
+    required this.horizontalInset,
     required this.onSelect,
     required this.onBlockedRemove,
     required this.onConfirmRemove,
@@ -482,6 +483,10 @@ class _RecentWallpaperSection extends StatefulWidget {
   final String? selectedKey;
 
   final AppLocalizations l10n;
+
+  /// 宿主给的左右内缩（见 `_HomeBackdropFlow.backdropRowHorizontalInset`）：
+  /// 设置页那一处是 16（卡片自己的行内缩），弹窗那一处是 0（面板已经给了 16）。
+  final double horizontalInset;
 
   final ValueChanged<WallpaperHistoryEntry> onSelect;
 
@@ -524,7 +529,12 @@ class _RecentWallpaperSectionState extends State<_RecentWallpaperSection> {
   Widget build(BuildContext context) {
     final l10n = widget.l10n;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: EdgeInsets.fromLTRB(
+        widget.horizontalInset,
+        14,
+        widget.horizontalInset,
+        14,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

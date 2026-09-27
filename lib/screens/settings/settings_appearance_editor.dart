@@ -255,6 +255,13 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   @override
   TimetableProvider get backdropProvider => _timetableProvider;
 
+  /// 壁纸那两块自己**不再**留左右内缩：弹窗面板的
+  /// [hyperosMiuixBottomSheetInsideMargin]（16）已经给了，块里再垫一层 16 就是
+  /// 32 —— 比兄弟弹窗（选周、删除确认、课程备注…标题与按钮都从 16 起）多缩一截，
+  /// 和同一颗按钮旁边的「材质」弹窗也对不上（用户口径 2026-09-27）。
+  @override
+  double get backdropRowHorizontalInset => 0;
+
   @override
   void initState() {
     super.initState();
