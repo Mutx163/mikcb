@@ -1786,6 +1786,20 @@ class WarehouseCourseImportScreen extends StatefulWidget {
       _WarehouseCourseImportScreenState();
 }
 
+/// Identifies the loaded document: scheme + host + path, ignoring query and
+/// fragment so same-document navigations (hash routing) compare equal.
+///
+/// Used to decide whether a page start really destroyed the injected script's
+/// execution context (only a full document replacement does) or was just an
+/// in-page tab switch that must not be mistaken for an abandoned import.
+String warehouseDocumentKey(String? url) {
+  final uri = Uri.tryParse((url ?? '').trim());
+  if (uri == null || !uri.hasScheme) {
+    return (url ?? '').trim();
+  }
+  return '${uri.scheme}://${uri.host}${uri.path}'.toLowerCase();
+}
+
 class _WarehouseCourseImportScreenState
     extends State<WarehouseCourseImportScreen> {
   static const WarehouseRepositorySource _defaultSource =
@@ -3833,10 +3847,14 @@ class _WarehouseAdapterWebLoginScreenState
             // 页面导航会销毁已注入脚本的执行上下文（强智登录后固定跳「学生个人中心」，
             // 适配脚本常需要先 location.href 跳到课表页、再让用户重跑一次）。此时脚本
             // 不可能再回调宿主，继续等导入超时只会给出「timeout」假报错，直接收尾。
+            //
+            // 只认「整个文档被替换」：部分教务站点用 # 切页签，同文档跳转不会销毁
+            // 脚本上下文，若也收尾会把进行中的导入误判为中断。
             final importAbandonedByNavigation =
                 _isExecutingImport &&
                 !_isMacroReplay &&
-                !widget.runInBackground;
+                !widget.runInBackground &&
+                warehouseDocumentKey(_currentUrl) != warehouseDocumentKey(url);
             if (importAbandonedByNavigation) {
               _debugImportLog(
                 'navigation during import -> stop waiting url=$url',
