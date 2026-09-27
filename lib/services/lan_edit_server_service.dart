@@ -36,6 +36,17 @@ class LanEditServerService {
   HttpServer? _server;
   LanEditSession? _session;
   LanEditHost? _host;
+
+  /// One handler instance for the whole server lifetime, **not one per request**.
+  ///
+  /// [LanEditApiHandlers] counts simultaneously-open requests in an *instance*
+  /// field, so constructing a fresh one per request meant the counter always
+  /// read 0 and [_maxConcurrentRequests] never engaged — the cap was inert
+  /// except in unit tests that reuse one instance. Sharing is safe because the
+  /// handler's only mutable state is that counter; `host` and `session` are
+  /// `final`.
+  LanEditApiHandlers? _apiHandlers;
+
   Timer? _idleTimer;
   final List<LanEditServerStoppedCallback> _stoppedListeners =
       <LanEditServerStoppedCallback>[];
@@ -72,6 +83,7 @@ class LanEditServerService {
     }
     _host = host;
     _session = session;
+    _apiHandlers = LanEditApiHandlers(host: host, session: session);
     _server = await HttpServer.bind(InternetAddress.anyIPv4, 0);
     // Explicit rather than relying on the 120s default: this socket is reachable
     // by every device on the LAN, so a tighter idle window costs nothing and
@@ -117,6 +129,7 @@ class LanEditServerService {
     _server = null;
     _session = null;
     _host = null;
+    _apiHandlers = null;
     if (server != null) {
       try {
         await server.close(force: true);
@@ -157,7 +170,16 @@ class LanEditServerService {
 
       final path = request.uri.path;
       if (path.startsWith('/api/')) {
-        final handlers = LanEditApiHandlers(host: host, session: session);
+        // Read the field into a local before using it: [stop] can null it
+        // concurrently (idle timer / onError), so `_apiHandlers!` would throw.
+        // Read the field into a local before using it: [stop] can null it
+        // concurrently (idle timer / onError), so `_apiHandlers!` would throw.
+        final handlers = _apiHandlers;
+        if (handlers == null) {
+          request.response.statusCode = 503;
+          await request.response.close();
+          return;
+        }
         await handlers.handle(request);
         return;
       }

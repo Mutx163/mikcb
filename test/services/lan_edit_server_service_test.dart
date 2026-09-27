@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -66,7 +67,32 @@ class _FakeLanEditHost implements LanEditHost {
   }
 
   @override
-  Future<void> ensureInitialized() async {}
+  Future<void> ensureInitialized() async {
+    final gate = initGate;
+    if (gate == null) {
+      return;
+    }
+    _parked++;
+    final reached = parkedReached;
+    if (reached != null && _parked >= initGateExpected && !reached.isCompleted) {
+      reached.complete();
+    }
+    await gate.future;
+    _parked--;
+  }
+
+  /// When set, [ensureInitialized] parks until it completes, so a test can
+  /// hold request slots open deterministically instead of sleeping.
+  Completer<void>? initGate;
+
+  /// Completes once [initGateExpected] requests are parked inside
+  /// [ensureInitialized]. Lets the test know the server's slots are all taken.
+  Completer<void>? parkedReached;
+
+  /// How many parked requests [parkedReached] waits for.
+  int initGateExpected = 0;
+
+  int _parked = 0;
 
   @override
   Future<Course> createCourse(Course draft) async {
@@ -370,6 +396,75 @@ void main() {
       );
       expect(jsonPost.statusCode, isNot(400));
     } finally {
+      await server.stop(reason: 'test_done');
+    }
+  });
+
+  test('the 16-request cap is shared across requests, not per-request', () async {
+    // Regression: LanEditApiHandlers counts in-flight requests in an *instance*
+    // field, and the server used to build a fresh handler per request, so the
+    // counter always read 0 and the cap never engaged outside unit tests that
+    // reuse one instance. This drives the real server to prove the ceiling is
+    // actually shared.
+    final host = _FakeLanEditHost();
+    final gate = Completer<void>();
+    final parked = Completer<void>();
+    host
+      ..initGate = gate
+      ..parkedReached = parked
+      ..initGateExpected = 16;
+    final session = LanEditSession.create(
+      random: _SequenceRandom([345678, 1, 2, 3]),
+    );
+    final server = LanEditServerService();
+    await server.start(host: host, session: session);
+
+    try {
+      final port = server.port!;
+      final token = session.token;
+
+      // These park inside ensureInitialized, one per occupied slot.
+      final held = <Future<_HttpClientResponse>>[
+        for (var i = 0; i < 16; i++)
+          _request(
+            port: port,
+            method: 'GET',
+            path: '/api/v1/profiles',
+            token: token,
+          ),
+      ];
+      // Deterministic: completes once all 16 are actually parked, no sleeping.
+      await parked.future;
+
+      // The 17th must be refused. The cap is checked before routing and before
+      // authorization, so the unauthenticated health probe is enough to see it.
+      final overflow = await _request(
+        port: port,
+        method: 'GET',
+        path: '/api/v1/health',
+      );
+      expect(overflow.statusCode, 503);
+      expect(utf8.decode(overflow.bodyBytes), contains('too_many_requests'));
+
+      gate.complete();
+      final served = await Future.wait(held);
+      expect(served.every((r) => r.statusCode == 200), isTrue);
+
+      // Slots are handed back, so the next request is served again.
+      final after = await _request(
+        port: port,
+        method: 'GET',
+        path: '/api/v1/health',
+      );
+      expect(after.statusCode, 200);
+    } finally {
+      // Never leave parked futures hanging, even on assertion failure.
+      if (!gate.isCompleted) {
+        gate.complete();
+      }
+      host
+        ..initGate = null
+        ..parkedReached = null;
       await server.stop(reason: 'test_done');
     }
   });
