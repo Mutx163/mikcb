@@ -152,15 +152,15 @@ void main() {
   Finder dayViewPanel() =>
       find.byKey(const ValueKey('timetable-day-view-panel'));
 
-  /// 材质面板顶部模糊带上的**翻页标签**。
+  /// 材质面板顶部模糊带上的**翻页胶囊**。
   ///
-  /// 按「在 [HyperosUnderlineTabs] 里」收窄，不靠树序（2026-09-26 起带与正文是
+  /// 按「在 [HyperosChipRow] 里」收窄，不靠树序（2026-09-26 起带与正文是
   /// `HyperosSheetBlurTop` 里 `Stack` 的两个子节点，正文排在前面，所以
   /// `find.text('课程卡片').first` 命中的是第一页只读总览那一行而不是标签）。
-  /// 2026-09-27 起翻页控件由药丸分段换成下划线标签（与面板里的选值分段按语义分家），
-  /// 查找也跟着换。
+  /// 2026-09-27 起翻页控件由药丸分段换成筛选胶囊（与面板里的选值分段按语义分家），查找
+  /// 也跟着换。
   Finder panelPageTab(String label) => find.descendant(
-    of: find.byType(HyperosUnderlineTabs),
+    of: find.byType(HyperosChipRow),
     matching: find.text(label),
   );
 

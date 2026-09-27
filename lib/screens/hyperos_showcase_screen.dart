@@ -312,6 +312,28 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
                         style: HyperosTabRowStyle.bordered,
                       ),
                       const SizedBox(height: 16),
+                      // 2026-09-27：面板里「选值 / 换类 / 翻页」三类控件必须长得不一样，
+                      // 下面这三行就是那三类 —— 药丸分段（选值，上面那几行）、筛选胶囊
+                      // （换类）、下划线标签（翻页）。摆在一起才好看出彼此的差别。
+                      HyperosChipRow(
+                        labels: const ['全部', '录音机', '通话', '应用'],
+                        selectedIndex: _segmentIndex,
+                        onChanged: (i) => setState(() => _segmentIndex = i),
+                        equalWidth: false,
+                      ),
+                      const SizedBox(height: 8),
+                      HyperosChipRow(
+                        labels: const ['通用', '课程卡片'],
+                        selectedIndex: _tabIndex.isEven ? 0 : 1,
+                        onChanged: (i) => setState(() => _tabIndex = i),
+                      ),
+                      const SizedBox(height: 8),
+                      HyperosUnderlineTabs(
+                        tabs: const ['第一页', '第二页'],
+                        selectedIndex: _tabIndex.isEven ? 0 : 1,
+                        onChanged: (i) => setState(() => _tabIndex = i),
+                      ),
+                      const SizedBox(height: 16),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,

@@ -1798,16 +1798,18 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
           // 翻页标签**自己就是标题**（用户口径 2026-09-26），且**坐在顶部渐变模糊带
           // 上**（同一条指令的第二半）。
           //
-          // 形状是**下划线标签**而不是药丸分段（2026-09-27 用户口径）：这个面板里还有
-          // 「默认材质」「首页顶栏玻璃」两个药丸分段在选**值**，而这一行是**翻页**。两者
-          // 长成一样时用户会把翻页控件当成又一个设置项去读。分家办法是按语义固定形状 ——
-          // 药丸 = 选值、短横线 = 翻页，见 `HyperosUnderlineTabs` 的类注释。
+          // 形状是**筛选胶囊**（MIUI 录音机列表顶上「全部 / 录音机 / 通话 / 应用」那种）
+          // 而不是药丸分段（用户 2026-09-27 给的参照）：这个面板里还有「默认材质」
+          // 「首页顶栏玻璃」两个药丸分段在选**值**，而这一行是**换一类看**。两者长成
+          // 一样时用户会把翻页控件当成又一个设置项去读。分家靠的是**选中态**：药丸分段是
+          // 「灰轨道里浮一块白」，胶囊是「一颗实心填色」—— 隔着两米也分得清「改一个值」
+          // 还是「换一类看」。见 `HyperosChipRow` 的类注释。
           //
           // 放进模糊带之后它不再占正文高度：正文从「带底 + 渐隐区」起滚，滚上去的行
           // 从带底下化进去。材质面板每页都要滚两屏，没有这条收尾就是内容在面板上沿被
           // 硬切一刀。
-          header: HyperosUnderlineTabs(
-            tabs: [l10n.generalSettingsTitle, l10n.surfaceCourseCard],
+          header: HyperosChipRow(
+            labels: [l10n.generalSettingsTitle, l10n.surfaceCourseCard],
             selectedIndex: _page,
             onChanged: _goToPage,
           ),
