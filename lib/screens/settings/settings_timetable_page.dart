@@ -456,11 +456,16 @@ class _WallpaperThumbnailCard extends StatelessWidget {
     required this.selected,
     required this.onTap,
     required this.thumbnail,
+    this.onLongPress,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
+
+  /// 长按 = 从「最近使用」里删掉这张（见 [_HomeBackdropFlow] 的
+  /// [_removeBackdropHistoryEntry]）。为 null 时卡片只有单击。
+  final VoidCallback? onLongPress;
 
   /// 缩略图本体；调用方负责铺满（卡内已套 ClipRRect 圆角）。
   final Widget thumbnail;
@@ -472,6 +477,7 @@ class _WallpaperThumbnailCard extends StatelessWidget {
       width: 78,
       child: MiuixPressable(
         onPressed: onTap,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(14),
         child: Column(
           mainAxisSize: MainAxisSize.min,

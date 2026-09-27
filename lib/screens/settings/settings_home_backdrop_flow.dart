@@ -1,5 +1,21 @@
 part of '../timetable_settings_screen.dart';
 
+/// 一次「长按删除最近使用」的撤销凭据：删之前的整份历史 + 被删的那张图。
+///
+/// 存**整份旧列表**而不是「那一条 + 它的下标」：撤销期间历史不会变（用户没有
+/// 别的入口改它），而"原样放回"天然把顺序、使用时间、取景值全还原了；顺带也
+/// 省掉"插回原位"这种要算下标的活（列表在撤销窗口内可能已被别的删除动过，
+/// 下标早就不可信了）。
+class _BackdropRemoval {
+  const _BackdropRemoval({
+    required this.previousHistory,
+    required this.removedPath,
+  });
+
+  final List<WallpaperHistoryEntry> previousHistory;
+  final String removedPath;
+}
+
 /// 首页壁纸流程（选图 / 最近使用 / 位置 / 清除）的**唯一实现**。
 ///
 /// 为什么要抽成 mixin：这段流程同时挂在两个宿主上 —— 「课表页面」设置里的
@@ -75,6 +91,20 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 读取一律走这里。
   List<WallpaperHistoryEntry> _wallpaperHistory = const [];
 
+  /// 「长按删除」后**等着删**的图片路径（给用户反悔的窗口，见
+  /// [_scheduleBackdropFileDeletion]）。
+  final Set<String> _pendingBackdropDeletions = <String>{};
+
+  /// 待撤销的删除（后进先出）。反悔窗口一过就整体清空 —— 那时文件已经删了，
+  /// 再"撤销"只会放回一条永远打不开的死路径。
+  final List<_BackdropRemoval> _pendingRemovals = <_BackdropRemoval>[];
+
+  Timer? _backdropDeletionTimer;
+
+  /// 删除后留给「撤销」的时间。取 2.5s：比 toast 的动作按钮常驻时长
+  /// （2s）宽一点，避免用户手指刚抬起来按钮就消失。
+  static const _backdropDeletionGrace = Duration(milliseconds: 2500);
+
   @override
   void initState() {
     super.initState();
@@ -87,6 +117,9 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   @override
   void dispose() {
     WallpaperHistoryService.notifier.removeListener(_onWallpaperHistoryChanged);
+    // ⚠️ 这里**冲刷**而不是取消：留着定时器等于把这批文件永远忘掉，
+    // 「删了历史条目却没人删文件」就是壁纸目录攒垃圾的入口。
+    _flushBackdropFileDeletions();
     super.dispose();
   }
 
@@ -218,6 +251,108 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     );
   }
 
+  /// 长按「最近使用」里某一张：把它从历史里删掉。
+  ///
+  /// **为什么不弹确认框**：这个流程在「外观编辑」页挂在**底部弹层**里，而弹层
+  /// 是根覆盖层自插条目，任何再往上的弹层都会被压在它背面（真机实锤，材质面板
+  /// 那边的注释写着同一条）。所以走「立即生效 + toast 撤销」。
+  ///
+  /// **正在用的那张不给删**：删了它要么首页当场缺图、要么得连带清掉用户的壁纸
+  /// 设置 —— 两种都不是"长按一张缩略图"该有的副作用，提示他先换一张。
+  void _removeBackdropHistoryEntry(
+    BuildContext context,
+    WallpaperHistoryEntry entry, {
+    required AppLocalizations l10n,
+  }) {
+    if (resolveHomePageBackdropImagePath(backdropDraft) == entry.key) {
+      showAppToast(
+        context,
+        message: l10n.wallpaperHistoryRemoveInUseToast,
+        kind: AppToastKind.warning,
+        showKindIcon: true,
+      );
+      return;
+    }
+    final next = removeWallpaperHistoryEntry(_wallpaperHistory, entry.key);
+    if (identical(next, _wallpaperHistory)) {
+      return;
+    }
+    // 撤销凭据必须在改 `_wallpaperHistory` **之前**取：它要存的正是删除前那一份。
+    final historyBeforeRemoval = _wallpaperHistory;
+    unawaited(WallpaperHistoryService.save(next));
+    _wallpaperHistory = next;
+    // 镜像同步进设置：备份 / 云同步的 payload 只带 profiles，历史要继续随备份
+    // 走得靠这份镜像（真源仍是全局那份，理由同 [_rememberBackdrops]）。
+    applyBackdropDraft(backdropDraft.copyWith(wallpaperHistory: next));
+    _pendingRemovals.add(
+      _BackdropRemoval(
+        previousHistory: historyBeforeRemoval,
+        removedPath: entry.key,
+      ),
+    );
+    _scheduleBackdropFileDeletion(entry.key);
+    showAppToastWithAction(
+      context,
+      message: l10n.wallpaperHistoryRemovedToast,
+      actionLabel: l10n.wallpaperHistoryRemoveUndo,
+      onAction: _undoRemoveBackdropHistoryEntry,
+    );
+  }
+
+  /// 撤销最近一次「长按删除」：整份历史原样放回，并把这张图从待删清单里摘掉。
+  void _undoRemoveBackdropHistoryEntry() {
+    if (_pendingRemovals.isEmpty) {
+      return;
+    }
+    final removal = _pendingRemovals.removeLast();
+    _pendingBackdropDeletions.remove(removal.removedPath);
+    unawaited(WallpaperHistoryService.save(removal.previousHistory));
+    _wallpaperHistory = removal.previousHistory;
+    // 镜像一起回退，否则下一次备份会把"已删除"这条又带回来。
+    applyBackdropDraft(
+      backdropDraft.copyWith(wallpaperHistory: removal.previousHistory),
+    );
+  }
+
+  /// 把 [path] 排进「待删」：给 [_backdropDeletionGrace] 的反悔窗口。
+  ///
+  /// 为什么不立刻删：撤销要把这一条放回列表，文件已经没了的话那一条就是一条
+  /// 永远打不开的死路径 —— 而「最近使用」里出现打不开的条目正是这套流程历来
+  /// 最忌讳的事（见 [_discardUnreferencedBackdrops] 的注释）。
+  void _scheduleBackdropFileDeletion(String path) {
+    // 白名单按**删除那一刻**的课表状态算：别的课表可能正拿这张图当壁纸，删了
+    // 对方首页就缺图。宿主自己不用算进去 —— 上面已经把"正在用"挡掉了。
+    final inUse = <String>{
+      for (final profile in backdropProvider.profiles)
+        if (profile.id != backdropProvider.activeProfileId)
+          ?resolveHomePageBackdropImagePath(profile.settings),
+    };
+    if (deletableWallpaperPaths([path], inUsePaths: inUse).isEmpty) {
+      return;
+    }
+    _pendingBackdropDeletions.add(path);
+    _backdropDeletionTimer?.cancel();
+    // 每次删除都重新起算：连着删两张时，第二张按下就说明第一张的反悔窗口
+    // 用户已经用过了（或者根本不要），从这一下起重新给满窗口。
+    _backdropDeletionTimer = Timer(
+      _backdropDeletionGrace,
+      _flushBackdropFileDeletions,
+    );
+  }
+
+  /// 真删待删清单里的文件（反悔窗口已过 / 页面正在退出）。
+  void _flushBackdropFileDeletions() {
+    _backdropDeletionTimer?.cancel();
+    _backdropDeletionTimer = null;
+    _pendingRemovals.clear();
+    if (_pendingBackdropDeletions.isEmpty) {
+      return;
+    }
+    final paths = _pendingBackdropDeletions.toList(growable: false);
+    _pendingBackdropDeletions.clear();
+    unawaited(deleteEvictedWallpaperFiles(paths, inUsePaths: _inUseWallpaperPaths()));
+  }
+
   /// 壁纸弹窗（「外观编辑」页底部按钮）的正文。
   ///
   /// 内容与「课表页面」设置里的壁纸行**同一套 builder**：改一行两边一起改，
@@ -310,6 +445,11 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
                   label: l10n.homePageWallpaperRecentImageLabel,
                   selected: entry.key == selectedKey,
                   onTap: () => _selectBackdropEntry(entry),
+                  onLongPress: () => _removeBackdropHistoryEntry(
+                    context,
+                    entry,
+                    l10n: l10n,
+                  ),
                   thumbnail: Image.file(
                     File(entry.key),
                     fit: BoxFit.cover,
@@ -343,6 +483,15 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
         // 目标），只按当前系统的分隔符切，整条路径会被当成文件名显示出来。
         : path.split(RegExp(r'[\\/]')).last;
     final hasWallpaper = path != null && path.isNotEmpty;
+    // 路径还在、文件已经没了（换机 / 清理数据 / 云同步只带回设置不带图）。
+    //
+    // 此前这一格只显示文件名，用户看不出"图没了"，而首页早就静悄悄退回纯色底 ——
+    // 表现就是"壁纸功能坏了"。这里把这件事说出来，并让整块可点回「选择图片」。
+    //
+    // 存在性判据走 `homePageImageProvider`（渲染侧判"有没有壁纸"用的同一条，
+    // 背后是按路径记忆的 memo，不摸盘）：判据分叉过一次就会出现"提示说没了、
+    // 首页却画着图"这种自相矛盾。刻意不直接 `File(path).existsSync()`。
+    final fileMissing = hasWallpaper && homePageImageProvider(path) == null;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
@@ -351,6 +500,10 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
           Text(title, style: HyperosTypography.listTitle(context)),
           const SizedBox(height: 4),
           Text(fileName, style: HyperosTypography.listDetail(context)),
+          if (fileMissing) ...[
+            const SizedBox(height: 10),
+            _buildMissingWallpaperNotice(context, l10n: l10n, onTap: onPick),
+          ],
           const SizedBox(height: 12),
           // 「选择图片」独占一行、占满宽度（主操作）；已有壁纸时，次级的
           //「调整位置」「清除图片」在第二行平分。
@@ -393,6 +546,62 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  /// 「壁纸文件已丢失」的提示条：一行警示色说明 + 点按回到选图。
+  ///
+  /// 刻意做成**可点**而不是纯文字：这一格的正下方就是「选择图片」按钮，把提示
+  /// 本身做成同一个动作，用户看到警示时手指已经在正确的位置上了。
+  Widget _buildMissingWallpaperNotice(
+    BuildContext context, {
+    required AppLocalizations l10n,
+    required Future<void> Function() onTap,
+  }) {
+    return MiuixPressable(
+      onPressed: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          // 警示底用 error 色的一点点，够被认出来又不至于像报错弹窗。
+          color: HyperosColors.error(context).withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.broken_image_outlined,
+              size: 18,
+              color: HyperosColors.error(context),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.homePageWallpaperFileMissingTitle,
+                    style: HyperosTypography.listDetail(context).copyWith(
+                      color: HyperosColors.error(context),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.homePageWallpaperFileMissingSubtitle,
+                    style: HyperosTypography.listDetail(context).copyWith(
+                      color: HyperosColors.secondaryText(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -522,6 +731,9 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     // 壁纸文件可能已丢失（重装/清除数据后设置被备份恢复、跨设备同步只带回
     // JSON 不带文件等）：此时进入位置编辑页会在读取图片时抛
     // PathNotFoundException。改为清掉失效路径，直接走重新选图流程。
+    //
+    // 清掉之前先说一声：这一步会**改掉用户的设置**，而症状（首页变纯色底）
+    // 此前是静悄悄的。不说的话，用户只会觉得"点调整位置把壁纸弄丢了"。
     if (!File(existingPath).existsSync()) {
       _evictBackdropCaches(existingPath);
       if (!mounted) {
@@ -532,6 +744,12 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
           clearHomePageWallpaperPath: true,
           clearHomePageBackgroundImagePath: true,
         ),
+      );
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.homePageWallpaperFileMissingToast,
+        kind: AppToastKind.warning,
+        showKindIcon: true,
       );
       await _pickAndPositionHomePageBackdrop();
       return;

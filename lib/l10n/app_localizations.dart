@@ -6096,7 +6096,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePageWallpaperRecentSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'点按即可切回，最多保留 10 张'**
+  /// **'点按切回，长按删除，最多保留 10 张'**
   String get homePageWallpaperRecentSubtitle;
 
   /// No description provided for @homePageWallpaperRecentImageLabel.
@@ -6104,6 +6104,42 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'照片'**
   String get homePageWallpaperRecentImageLabel;
+
+  /// No description provided for @wallpaperHistoryRemovedToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'已从最近使用中删除'**
+  String get wallpaperHistoryRemovedToast;
+
+  /// No description provided for @wallpaperHistoryRemoveUndo.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤销'**
+  String get wallpaperHistoryRemoveUndo;
+
+  /// No description provided for @wallpaperHistoryRemoveInUseToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在使用这张壁纸，请先换成别的再删除'**
+  String get wallpaperHistoryRemoveInUseToast;
+
+  /// No description provided for @homePageWallpaperFileMissingTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'图片文件已丢失'**
+  String get homePageWallpaperFileMissingTitle;
+
+  /// No description provided for @homePageWallpaperFileMissingSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'首页当前显示的是纯色背景。点这里重新选一张'**
+  String get homePageWallpaperFileMissingSubtitle;
+
+  /// No description provided for @homePageWallpaperFileMissingToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'壁纸文件已丢失，已恢复为纯色背景，请重新选择一张'**
+  String get homePageWallpaperFileMissingToast;
 
   /// No description provided for @wallpaperPositionPickerTitle.
   ///

@@ -3283,10 +3283,28 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageWallpaperRecentTitle => '最近使用';
 
   @override
-  String get homePageWallpaperRecentSubtitle => '点按即可切回，最多保留 10 张';
+  String get homePageWallpaperRecentSubtitle => '点按切回，长按删除，最多保留 10 张';
 
   @override
   String get homePageWallpaperRecentImageLabel => '照片';
+
+  @override
+  String get wallpaperHistoryRemovedToast => '已从最近使用中删除';
+
+  @override
+  String get wallpaperHistoryRemoveUndo => '撤销';
+
+  @override
+  String get wallpaperHistoryRemoveInUseToast => '正在使用这张壁纸，请先换成别的再删除';
+
+  @override
+  String get homePageWallpaperFileMissingTitle => '图片文件已丢失';
+
+  @override
+  String get homePageWallpaperFileMissingSubtitle => '首页当前显示的是纯色背景。点这里重新选一张';
+
+  @override
+  String get homePageWallpaperFileMissingToast => '壁纸文件已丢失，已恢复为纯色背景，请重新选择一张';
 
   @override
   String get wallpaperPositionPickerTitle => '调整壁纸显示位置';
@@ -14286,10 +14304,28 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homePageWallpaperRecentTitle => '最近使用';
 
   @override
-  String get homePageWallpaperRecentSubtitle => '撳一下即切返，最多保留 10 張';
+  String get homePageWallpaperRecentSubtitle => '撳一下切返，長按刪除，最多保留 10 張';
 
   @override
   String get homePageWallpaperRecentImageLabel => '相片';
+
+  @override
+  String get wallpaperHistoryRemovedToast => '已從最近使用中刪除';
+
+  @override
+  String get wallpaperHistoryRemoveUndo => '復原';
+
+  @override
+  String get wallpaperHistoryRemoveInUseToast => '正在使用這張桌布，請先換成別的再刪除';
+
+  @override
+  String get homePageWallpaperFileMissingTitle => '圖片檔案已遺失';
+
+  @override
+  String get homePageWallpaperFileMissingSubtitle => '首頁而家顯示嘅係純色背景。撳呢度重新揀一張';
+
+  @override
+  String get homePageWallpaperFileMissingToast => '桌布檔案已遺失，已還原做純色背景，請重新揀一張';
 
   @override
   String get wallpaperPositionPickerTitle => '調整桌布顯示位置';
@@ -25329,10 +25365,28 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homePageWallpaperRecentTitle => '最近使用';
 
   @override
-  String get homePageWallpaperRecentSubtitle => '點按即可切回，最多保留 10 張';
+  String get homePageWallpaperRecentSubtitle => '點按切回，長按刪除，最多保留 10 張';
 
   @override
   String get homePageWallpaperRecentImageLabel => '照片';
+
+  @override
+  String get wallpaperHistoryRemovedToast => '已從最近使用中刪除';
+
+  @override
+  String get wallpaperHistoryRemoveUndo => '復原';
+
+  @override
+  String get wallpaperHistoryRemoveInUseToast => '正在使用這張桌布，請先換成別的再刪除';
+
+  @override
+  String get homePageWallpaperFileMissingTitle => '圖片檔案已遺失';
+
+  @override
+  String get homePageWallpaperFileMissingSubtitle => '首頁目前顯示的是純色背景。點這裡重新選一張';
+
+  @override
+  String get homePageWallpaperFileMissingToast => '桌布檔案已遺失，已恢復為純色背景，請重新選一張';
 
   @override
   String get wallpaperPositionPickerTitle => '調整桌布顯示位置';

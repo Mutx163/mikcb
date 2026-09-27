@@ -3362,10 +3362,31 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homePageWallpaperRecentTitle => '최근 사용';
 
   @override
-  String get homePageWallpaperRecentSubtitle => '탭하면 바로 전환, 최대 10장 보관';
+  String get homePageWallpaperRecentSubtitle => '탭하면 전환, 길게 누르면 삭제, 최대 10장 보관';
 
   @override
   String get homePageWallpaperRecentImageLabel => '사진';
+
+  @override
+  String get wallpaperHistoryRemovedToast => '최근 사용에서 삭제했습니다';
+
+  @override
+  String get wallpaperHistoryRemoveUndo => '실행 취소';
+
+  @override
+  String get wallpaperHistoryRemoveInUseToast =>
+      '현재 사용 중인 배경화면입니다. 다른 배경으로 바꾼 뒤 삭제하세요';
+
+  @override
+  String get homePageWallpaperFileMissingTitle => '이미지 파일이 없습니다';
+
+  @override
+  String get homePageWallpaperFileMissingSubtitle =>
+      '홈 화면에는 단색 배경이 표시됩니다. 여기를 눌러 다시 선택하세요';
+
+  @override
+  String get homePageWallpaperFileMissingToast =>
+      '배경화면 파일이 없어 단색 배경으로 되돌렸습니다. 새 이미지를 선택하세요';
 
   @override
   String get wallpaperPositionPickerTitle => '배경화면 표시 위치 조정';

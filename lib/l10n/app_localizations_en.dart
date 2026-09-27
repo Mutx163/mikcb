@@ -3493,10 +3493,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homePageWallpaperRecentSubtitle =>
-      'Tap to switch back, up to 10 kept';
+      'Tap to switch back, long-press to delete, up to 10 kept';
 
   @override
   String get homePageWallpaperRecentImageLabel => 'Photo';
+
+  @override
+  String get wallpaperHistoryRemovedToast => 'Removed from Recently used';
+
+  @override
+  String get wallpaperHistoryRemoveUndo => 'Undo';
+
+  @override
+  String get wallpaperHistoryRemoveInUseToast =>
+      'This wallpaper is in use. Switch to another one before deleting it';
+
+  @override
+  String get homePageWallpaperFileMissingTitle => 'Image file is missing';
+
+  @override
+  String get homePageWallpaperFileMissingSubtitle =>
+      'The home page is showing a solid background. Tap here to pick one again';
+
+  @override
+  String get homePageWallpaperFileMissingToast =>
+      'The wallpaper file is missing. Fell back to a solid background — pick a new image';
 
   @override
   String get wallpaperPositionPickerTitle => 'Adjust wallpaper position';
