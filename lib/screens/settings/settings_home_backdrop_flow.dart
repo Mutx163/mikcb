@@ -359,27 +359,14 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   ///
   /// 内容与「课表页面」设置里的壁纸行**同一套 builder**：改一行两边一起改，
   /// 不存在「设置页能切历史、编辑页不能」这种分叉。
-  ///
-  /// ## 为什么套一层 [HyperosListGroup]（卡片）
-  ///
-  /// 两个宿主里只有「课表页面」那一处本来就在卡片里（它把壁纸行、底色、随周次
-  /// 开关一起塞进同一个 `HyperosListGroup`），弹窗这一处原来是**裸内容**。数字上
-  /// 两者其实一样 —— 卡片边 16 + 行自带 16 = 文字 32，弹窗是面板 16 + 行自带
-  /// 16 = 文字 32 —— 但没有卡片就没有那道视觉边框，同样的 32 读起来就像"贴边了"
-  /// （用户口径 2026-09-27：「左右留的空隙比其他页面小很多」）。
-  ///
-  /// 同一颗按钮旁边的「材质」弹窗里用的也是 `HyperosListGroup`，所以补上之后
-  /// 两颗按钮点开的版式也一致了。
-  ///
-  /// ⚠️ **宽度上限不在这件事里**：面板 640 超宽居中、页面通栏，都是 HyperOS 自己的
-  /// 标准（`MiuixBottomSheetDefaults.maxWidth`，页面侧 `MiuixScaffoldDelegate` 根本
-  /// 不加上限），别顺手给页面也加一个 —— 那是本仓自己发明的标准。
   Widget buildWallpaperSheetBody(
     BuildContext context, {
     required AppLocalizations l10n,
   }) {
     final currentPath = resolveHomePageBackdropImagePath(backdropDraft);
-    return HyperosListGroup(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildHomePageImageTile(
           context,
