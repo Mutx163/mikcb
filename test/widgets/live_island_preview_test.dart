@@ -276,7 +276,7 @@ void main() {
     expect(find.text('地点：三教-401'), findsOneWidget);
     expect(find.textContaining('教师：'), findsNothing,
         reason: '未启用的字段不渲染');
-    expect(find.textContaining('下一节: '), findsNothing);
+    expect(find.textContaining('下一节：'), findsNothing);
 
     // 顺序断言：备注在地点之前
     final noteY = tester.getTopLeft(find.text('备注：带教材与习题册')).dy;

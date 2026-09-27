@@ -321,13 +321,24 @@ void main() {
     expect(find.text('恢复默认'), findsNothing);
 
     // 自定义档：按钮出现，并自带一句范围说明。
-    // 滚到「通用」页自己的竖向滚动视图，并要求居中：
-    // d76762b9 把材质分段换成 Miuix 分段后这一行由 ~24（标题）变成 45（控件
-    // 高度），面板内容预算从 ~332 掉到 ~311，超出的由页内滚动。默认的
-    // ensureVisible 只滚到「刚可见」就停，胶囊会正好停在面板裁剪边缘，
-    // tap 打偏到 Theater 背板（报 "would not hit test"），预设没切过去、
-    // 按钮自然不出现。Scrollable.ensureVisible 支持 alignment，让它落在
-    // 可点区域中间（本版本该参数是 double：0=前沿、1=后沿、0.5=居中）。
+    //
+    // 必须用 alignment: 0.5（滚到视口中间），不能用 tester.ensureVisible 的默认
+    // 对齐。两个原因叠加，tap 才会打偏：
+    //
+    // 1) Flutter 的 ensureVisible 默认 alignment=0，是把目标的**顶边**对齐到视口
+    //    顶边（RenderViewport.getOffsetToReveal:
+    //    `targetOffset = leadingScrollOffset - … * alignment`），不是「滚到刚
+    //    可见就停」。于是「自定义」那枚胶囊会正好停在面板正文的最顶端。
+    // 2) 面板正文最顶端 headerHeight 那一段被模糊带的**着色层**盖住。模糊层
+    //    自己包了 IgnorePointer（不吃点击），但着色层没包——它就是
+    //    `_bandLayer(child: ColoredBox(...))` / `DecoratedBox`（见
+    //    inspire_header_blur.dart 的 _tintLayer），而 ColoredBox.hitTestSelf
+    //    恒为 true、BoxDecoration.hitTest 也为 true，且 _bandLayer 是
+    //    Positioned.fill，盖满整条带。于是顶边那枚胶囊整枚落在着色层的命中区
+    //    里，点击被吃掉，预设切不过去、「恢复默认」按钮自然不出现。滚到中间
+    //    就离开了那条命中区。
+    //
+    // 症状是框架的 "would not hit test" 警告 + hitTestResult 落在 Theater 背板上。
     await Scrollable.ensureVisible(
       tester.element(find.text('自定义')),
       alignment: 0.5,
