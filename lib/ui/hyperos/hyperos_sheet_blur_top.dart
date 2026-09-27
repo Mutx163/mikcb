@@ -26,13 +26,9 @@ import 'hyperos_blurred_header.dart';
 ///   看不见（带贴屏幕顶、上面没东西），搬进弹窗后带上边缘落在面板中间，就是一条亮线
 ///   （2026-09-26 用户报）。模糊关掉时改用面板自己的**不透明**色 —— 那时没有模糊就
 ///   必须在带底把内容挡住，且该色与面板同色、本就看不出接缝；
-/// * **带子上边缘就停在内容区顶边，不往面板上边缘盖**。试过盖（把手条 + 空占位共 42px）
-///   来把「顶边满强度」那一步藏到面板边缘，结果是**顶部一整块不透明**：那一截背后没有
-///   内容（底部弹窗只允许拖把手，而把手是内容区**上方**的兄弟节点、内容画在它前面，
-///   滚动视口到不了那儿），糊一片空白 + 一层不透明面板色 = 实心奶白板（用户 2026-09-26
-///   与 09-27 连着两次报「不透明 / 纯色」）。面板自己的玻璃本来就是透光的，那一截留给
-///   它才对。静止时带子糊的也只是面板玻璃（没有内容可糊）→ 与上方看不出变化，顶部仍是
-///   **一整块**、没有接缝；
+/// * 带上边缘只往上盖面板顶部那截**空占位**（[bleedTop]），**不碰把手条**。盖空占位是为了
+///   收掉「把手与带之间那段空档」（用户报「拉杆区看起来有三个拉杆区那么高」）；盖把手条会
+///   把它那颗唯一的拖动提示糊平，补画替身又变两根杆子 —— 同一处返工三次都是这条边界；
 /// * **没有滚动态、没有监听**（常驻形态）：带一直画着。静止时带里没有内容可糊，滚动时才有
 ///   内容化进去。
 ///
@@ -73,6 +69,7 @@ class HyperosSheetBlurTop extends StatefulWidget {
     this.revealOnScroll = false,
     this.scrollController,
     this.bleed = 0,
+    this.bleedTop = 0,
     super.key,
   });
 
@@ -111,7 +108,19 @@ class HyperosSheetBlurTop extends StatefulWidget {
   /// 所以控件仍与正文对齐，只有模糊层是满宽的。
   final double bleed;
 
-  /// 正文（**滚动内容本身**）要自己留的顶部让位：带高 + 渐隐区。
+  /// 带子往上盖住面板顶部那截**空占位**多少（内容上边缘 → 面板上边缘）。
+  ///
+  /// 底部弹窗在把手条与内容之间还插了一截空占位（上游 `_titleRow` 在没有标题时照样插的
+  /// `SizedBox(height: 18)`，见 `hyperosMiuixBottomSheetEmptyTitleRowHeight`），它把把手
+  /// 和内容隔开 42px，于是带子与把手之间会空出一大段（2026-09-27 用户报「拉杆区看起来
+  /// 有三个拉杆区那么高，拉杆只在最顶上」）。盖住这截空占位后那段空档缩到 10px。
+  ///
+  /// 盖它安全（里面什么都没有，糊一片空白等于没糊）；**绝不能往上盖把手条** —— 里面那颗
+  /// 浅色小条会被糊平，而它是这个弹窗唯一的拖动提示，补画替身又变成两根杆子。同一处先后
+  /// 返工三次就是这个原因，所以这个参数只允许填「空占位」那截的高度。
+  final double bleedTop;
+
+  /// 正文（**滚动内容本身**）要自己留的顶部让位：[bleedTop] + 带高 + 渐隐区。
   ///
   /// 必须加在滚动内容的 `padding` 上，不能加在本控件的 body 外面 —— 加在外面会把
   /// 滚动视口整体下移，内容在带底就被裁掉、永远进不了模糊区（见 `_buildBanded` 里
@@ -119,12 +128,16 @@ class HyperosSheetBlurTop extends StatefulWidget {
   ///
   /// ```dart
   /// HyperosSheetBlurTop(
-  ///   headerHeight: 45,
+  ///   headerHeight: 52,
+  ///   bleedTop: hyperosMiuixBottomSheetEmptyTitleRowHeight,
   ///   header: myHeader,
   ///   body: SingleChildScrollView(
   ///     // ↑ 让位在这里，不是在外面
   ///     padding: EdgeInsets.only(
-  ///       top: HyperosSheetBlurTop.topInsetFor(headerHeight: 45),
+  ///       top: HyperosSheetBlurTop.topInsetFor(
+  ///         headerHeight: 52,
+  ///         bleedTop: hyperosMiuixBottomSheetEmptyTitleRowHeight,
+  ///       ),
   ///     ),
   ///     child: content,
   ///   ),
@@ -132,9 +145,10 @@ class HyperosSheetBlurTop extends StatefulWidget {
   /// ```
   static double topInsetFor({
     required double headerHeight,
+    double bleedTop = 0,
     double fadeExtent = 20,
   }) =>
-      headerHeight + fadeExtent;
+      bleedTop + headerHeight + fadeExtent;
 
   @override
   State<HyperosSheetBlurTop> createState() => _HyperosSheetBlurTopState();
@@ -225,18 +239,17 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
 
   Widget _buildBanded(BuildContext context) {
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-    // 带盒就带上内容那一段，**从内容区顶边起**，不往面板上边缘盖。
+    // 带盒 = 盖住的那截空占位（[bleedTop]）+ 带上内容那一段。带子整体**上移**
+    // [bleedTop]，把把手与带之间那段空档收掉。
     //
-    // ⚠️ 别再往上盖面板顶部那一截 chrome（把手条 + 空占位，曾试过 42px）：
-    // 那一截背后**没有内容** —— 底部弹窗只允许拖把手（不能整面板拖），而把手是内容区
-    // **上方**的兄弟节点、内容画在它前面，所以内容视口到不了那儿（真要盖过去，那 24px
-    // 里的竖向拖动会被滚动视图抢走、把手直接拖不动）。于是盖过去只能糊一片空白 + 一层
-    // 不透明面板色 = 一块实心奶白板，用户看到的是「顶部不透光」（2026-09-26 / 09-27 连着
-    // 两次报「不透明、纯色」）。面板自己的玻璃本来就是透光的，把那一截留给它才对。
+    // ⚠️ [bleedTop] **只允许填「空占位」那截**（上游无标题时插的 18），绝不能填把手条那
+    // 24px：那一截里有那颗 45×4 的浅色把手，被糊平就没了唯一的拖动提示；补画替身则变成
+    // 两根杆子。同一处先后返工三次（黑底黑字 / 纯色 / 两根杆子）都是这个边界没守住。
     //
-    // 静止时带子糊的也只是面板玻璃（没有内容可糊）→ 与上方那块看不出变化，所以顶部仍然
-    // 是**一整块**，不会有接缝。
-    final bandBoxHeight = widget.headerHeight;
+    // 另外那一截背后**没有内容**（底部弹窗只允许拖把手，而把手是内容区**上方**的兄弟
+    // 节点、内容画在它前面，滚动视口到不了那儿），所以别指望在那里糊到内容 —— 糊空白等于
+    // 没糊，衬底也不画（见 `_mainBand`），静止时与面板看不出变化。
+    final bandBoxHeight = widget.bleedTop + widget.headerHeight;
     final band = _mainBand(context, useBlur: useBlur);
     return Stack(
       // ⚠️ **不能** `expand`：那会让 Stack 直接取 `constraints.biggest` = 高度上限，
@@ -311,7 +324,7 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
       // 不再参与内容的位置。
       ConstrainedBox(
         constraints: BoxConstraints(
-          minHeight: widget.headerHeight + widget.fadeExtent,
+          minHeight: widget.bleedTop + widget.headerHeight + widget.fadeExtent,
         ),
         child: widget.body,
       ),
@@ -326,7 +339,7 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
       // 但不画模糊也不吃点击。刻意**不用 `Opacity`** 淡入 —— 它会把 `BackdropFilter`
       // 与玻璃材质降级成透明（`hyperos_sheet.dart` 记的同一条纪律）。
       Positioned(
-        top: 0,
+        top: -widget.bleedTop,
         left: -widget.bleed,
         right: -widget.bleed,
         child: reveal

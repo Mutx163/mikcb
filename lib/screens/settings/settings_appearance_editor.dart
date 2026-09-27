@@ -685,6 +685,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       padding: EdgeInsets.only(
         top: HyperosSheetBlurTop.topInsetFor(
           headerHeight: HyperosMiuixTopAppBar.collapsedHeight,
+          bleedTop: hyperosMiuixBottomSheetEmptyTitleRowHeight,
         ),
       ),
       child: Column(
@@ -953,6 +954,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       padding: EdgeInsets.only(
         top: HyperosSheetBlurTop.topInsetFor(
           headerHeight: HyperosMiuixTopAppBar.collapsedHeight,
+          bleedTop: hyperosMiuixBottomSheetEmptyTitleRowHeight,
         ),
       ),
       child: Column(
@@ -1782,6 +1784,10 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
           // 有模糊、两侧各留一条没糊的边，读起来是「浮在面板里的方框」）。胶囊本身
           // 按同一个数内缩回去，仍与底下正文对齐。
           bleed: hyperosMiuixBottomSheetInsideMargin,
+          // 往上盖住面板顶部那截**空占位**（18），把手与胶囊之间那段空档从 34 收到 10。
+          // **只盖空占位、绝不盖把手条**（那里面有唯一的拖动提示）—— 见该常量与
+          // `bleedTop` 的注释。
+          bleedTop: hyperosMiuixBottomSheetEmptyTitleRowHeight,
           // 翻页标签**自己就是标题**（用户口径 2026-09-26），且**坐在顶部渐变模糊带
           // 上**（同一条指令的第二半）。
           //

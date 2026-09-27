@@ -394,6 +394,20 @@ const double hyperosMiuixBottomSheetContentBottomGap = 16;
 /// 自己那份口径。上下不设（内容自己管）。
 const double hyperosMiuixBottomSheetInsideMargin = 16;
 
+/// 面板顶部那截**空占位**的高度（逻辑 px）。
+///
+/// = 上游 `MiuixWindowBottomSheet._titleRow` 在**没有标题、也没有两侧按钮**时仍然插进来的
+/// `SizedBox(height: 18)` —— 内容看得到它，它只是把内容和把手条隔开的那截留白。
+///
+/// 顶部渐变模糊带可以往上盖住它（`HyperosSheetBlurTop.bleedTop`）：里面什么都没有，糊一片
+/// 空白等于没糊，不会出现「顶部一整块不透明」那种问题（2026-09-27 用户报），而盖住之后
+/// 把手与带上的控件之间那 34px 空档缩到 10px，顶部不再是「一个把手 + 一大片空白」。
+///
+/// ⚠️ **只能盖这一截，绝不能往上盖把手条**（上面那 24px）：把手条里那颗 45×4 的浅色小条
+/// 会被糊平（它是这个弹窗唯一的拖动提示），补画替身又会出现两根杆子 —— 同一处先后返工
+/// 三次就是这个原因。改上游那个 `SizedBox` 的高度时这里要跟着走。
+const double hyperosMiuixBottomSheetEmptyTitleRowHeight = 18;
+
 /// 这块面板的玻璃**一律不外推采样**（[LiquidGlassSurface.maxRefraction] = 0）。
 ///
 /// 这是**几何适配**、不是材质参数（同返回键圆钮那颗 `maxRefraction: 0`）：材质旋钮仍只从
