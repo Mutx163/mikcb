@@ -57,6 +57,7 @@ object DiagnosticLogMessages {
     const val LOG_LAN_FOREGROUND_START_FAILED = "局域网编辑前台服务启动失败"
     const val LOG_RESOLVE_IMPORT_DISPLAY_NAME_FAILED = "解析导入显示名失败"
     const val LOG_READ_IMPORT_BYTES_FAILED = "读取导入 URI 字节失败"
+    const val LOG_EXTERNAL_IMPORT_TOO_LARGE = "外部导入文件超过体积上限"
     const val LOG_CACHE_EXTERNAL_IMPORT_FAILED = "缓存外部导入文件失败"
     const val LOG_LOAD_EXTERNAL_IMPORT_FAILED = "后台加载外部导入内容失败"
     const val LOG_OPEN_NOTIFICATION_SETTINGS_FAILED = "打开通知设置失败"

@@ -1373,8 +1373,38 @@ class MainActivity : FlutterActivity() {
         if (uri.scheme == "mikcb-debug") {
             return null
         }
+        // 体积上限必须在**打开流读进内存之前**生效。分享进来的 URI 由别的应用
+        // 提供，之前的 stream.readBytes() 把整份文件一次性塞进堆；Android 的 OOM
+        // 是 Error 不是 Exception，上层 catch (e: Exception) 抓不到，直接杀进程
+        // ——Dart 侧 readImportFileBytes 的上限只管得住「用户自己选的文件」。
+        //
+        // 先问一次 SIZE 只是为了省掉一次无谓的拷贝；不少 provider 不报它，真正
+        // 的兜底是 [ExternalImportReader.readCapped] 的流式计数。
+        val declaredBytes = try {
+            contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getLong(0) else -1L
+            } ?: -1L
+        } catch (e: Exception) {
+            -1L
+        }
+        if (declaredBytes > ExternalImportReader.MAX_IMPORT_BYTES) {
+            Log.w(
+                "MainActivity",
+                "${DiagnosticLogMessages.LOG_EXTERNAL_IMPORT_TOO_LARGE}：$uri",
+            )
+            return null
+        }
         return try {
-            contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() }
+            contentResolver.openInputStream(uri)?.use { stream ->
+                val capped = ExternalImportReader.readCapped(stream)
+                if (capped == null) {
+                    Log.w(
+                        "MainActivity",
+                        "${DiagnosticLogMessages.LOG_EXTERNAL_IMPORT_TOO_LARGE}：$uri",
+                    )
+                }
+                capped
+            }
         } catch (e: Exception) {
             Log.e("MainActivity", "${DiagnosticLogMessages.LOG_READ_IMPORT_BYTES_FAILED}：$uri", e)
             null
