@@ -508,6 +508,69 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   bool get _isPreview => _previewScope != null;
 
+  /// 预览那份首页里几块纵向滚动体各自的控制器（按 [PageStorageKey] 字符串索引）。
+  ///
+  /// **只有预览那份需要**：真实首页那份继续用 `ScrollView` 内部的兜底控制器 +
+  /// `PageStorage`（本页是最热的屏，不去动它的滚动结构）；而预览那份要按宿主给的
+  /// [HomeScrollOffsets] 起步 —— 它的 `PageStorage` 桶属于**编辑页那条路由**，
+  /// 与真实首页那份毫无关系，救不了（见 [TimetableHomePreviewScope] 类注释）。
+  ///
+  /// 按 key 一块一个而不是全局一个：日视图每一天一页、每一页一条列表（同一时刻
+  /// 活着三条），一个控制器挂到两个滚动体上会直接触发
+  /// 「ScrollController attached to multiple scroll views」断言。
+  final Map<String, ScrollController> _previewScrollControllers =
+      <String, ScrollController>{};
+
+  /// 日视图某一页那条列表的 key（与它自己的 [PageStorageKey] 同串）。
+  static String _dayAgendaScrollKey(int week, int dayOfWeek) =>
+      'day-agenda-$week-$dayOfWeek';
+
+  /// 周视图某一页那块网格滚动体的 key。
+  static String _weekGridScrollKey(int week) => 'week-scroll-$week';
+
+  /// 预览那份的滚动控制器；真实首页返回 null（照旧走内部兜底控制器）。
+  ///
+  /// 首次为某个 key 建控制器时取 [HomeScrollOffsets] 里的初值，之后同一个 key
+  /// 一直复用同一颗（重建列表时不能换控制器，否则位置与动画状态全丢）。
+  ScrollController? _previewControllerFor(String key) {
+    if (!_isPreview) {
+      return null;
+    }
+    return _previewScrollControllers.putIfAbsent(
+      key,
+      () => ScrollController(
+        initialScrollOffset: _previewScope?.scrollOffsets[key] ?? 0,
+      ),
+    );
+  }
+
+  /// 把一块纵向滚动体的位置报给「缩尺预览」那份首页（见 [publishHomeScrollOffset]）。
+  ///
+  /// 只收 `ScrollUpdate` / `ScrollEnd`：**不收 `ScrollMetricsNotification`** ——
+  /// 它在滚动体挂上、拿到尺寸时就发，而那时 `PageStorage` 的恢复值可能还没应用
+  /// （`applyNewDimensions` 先发通知、后 `restoreScrollOffset`），报上去的是
+  /// 「恢复前的 0」，会把真实位置覆盖掉。恢复后紧接着的第一次真实滚动才会报对。
+  ///
+  /// 预览自己那份不回灌（否则会把真实首页的位置换成预览的），横向的日 / 周翻页
+  /// 也不管（那不是纵向位置）。
+  Widget _reportHomeScroll(String key, Widget child) {
+    if (_isPreview) {
+      return child;
+    }
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification.metrics.axis == Axis.vertical &&
+            (notification is ScrollUpdateNotification ||
+                notification is ScrollEndNotification)) {
+          publishHomeScrollOffset(key, notification.metrics.pixels);
+        }
+        // 不消费：下拉冻结（见 [_HomePullFreezeScrollPhysics]）等既有监听照旧。
+        return false;
+      },
+      child: child,
+    );
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -652,6 +715,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       controller.dispose();
     }
     _pendingDayViewControllerDisposals.clear();
+    for (final controller in _previewScrollControllers.values) {
+      controller.dispose();
+    }
+    _previewScrollControllers.clear();
     _homeMenuCloseDelay?.cancel();
     _homeMenuCloseDelay = null;
     // 页面走了就把截屏监听交回去：监听不该比「谁在听」活得久。
@@ -3884,28 +3951,39 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 适应在此统一（自适应网格同样可滚）。经典形态无坞（余量为 0），
     // 保持原样：自适应恰满视口不滚，非自适应维持原滚动结构。
     final weekGridScrollRelief = _glassDockContentScrollInset(settings);
+    // 预览那份要按宿主给的滚动位置起步（见 [_previewControllerFor]）。
+    final weekScrollKey = _weekGridScrollKey(week);
+    final weekScrollController = _previewControllerFor(weekScrollKey);
     final Widget weekGrid;
     if (weekGridScrollRelief > 0) {
-      weekGrid = SingleChildScrollView(
-        key: PageStorageKey<String>('week-scroll-$week'),
-        // Explicit clamp: do not inherit HyperOS rubber-band here.
-        // 下拉开着时冻结纵向滚动（见 _HomePullFreezeScrollPhysics）：
-        // 回拉取消只收下拉，不把列表一起滚走。
-        physics: _homePullVerticalPhysics,
-        child: Padding(
-          padding: EdgeInsets.only(bottom: weekGridScrollRelief),
-          child: grid,
+      weekGrid = _reportHomeScroll(
+        weekScrollKey,
+        SingleChildScrollView(
+          key: PageStorageKey<String>(weekScrollKey),
+          controller: weekScrollController,
+          // Explicit clamp: do not inherit HyperOS rubber-band here.
+          // 下拉开着时冻结纵向滚动（见 _HomePullFreezeScrollPhysics）：
+          // 回拉取消只收下拉，不把列表一起滚走。
+          physics: _homePullVerticalPhysics,
+          child: Padding(
+            padding: EdgeInsets.only(bottom: weekGridScrollRelief),
+            child: grid,
+          ),
         ),
       );
     } else if (settings.timetableAutoFitSectionHeight) {
       weekGrid = grid;
     } else {
-      weekGrid = SingleChildScrollView(
-        key: PageStorageKey<String>('week-scroll-$week'),
-        // 下拉开着时冻结纵向滚动（见 _HomePullFreezeScrollPhysics）：
-        // 回拉取消只收下拉，不把列表一起滚走。
-        physics: _homePullVerticalPhysics,
-        child: grid,
+      weekGrid = _reportHomeScroll(
+        weekScrollKey,
+        SingleChildScrollView(
+          key: PageStorageKey<String>(weekScrollKey),
+          controller: weekScrollController,
+          // 下拉开着时冻结纵向滚动（见 _HomePullFreezeScrollPhysics）：
+          // 回拉取消只收下拉，不把列表一起滚走。
+          physics: _homePullVerticalPhysics,
+          child: grid,
+        ),
       );
     }
     // Drive opacity from the expand controller so open and close share the
@@ -5160,33 +5238,41 @@ class _TimetableScreenState extends State<TimetableScreen>
     // [_backToTodayButtonScrollInset]）。
     final todayButtonAvoidance = _backToTodayButtonScrollInset(provider);
     final bottomContentInset = 8 + dockScrollAvoidance + todayButtonAvoidance;
+    // 预览那份要按宿主给的滚动位置起步（见 [_previewControllerFor]）。
+    final scrollKey = _dayAgendaScrollKey(week, dayOfWeek);
+    final scrollController = _previewControllerFor(scrollKey);
     if (agendaItems.isEmpty) {
       // 空白天同样要能下拉导入：空态本身不是滚动体，外面套一层
       // AlwaysScrollable 的滚动视图，下拉才有着力点（有课那天走的是
       // ListView，两条路都必须能触发）。physics 与有课那天同源，
       // 「下拉开着时冻结」的手感一致。
-      return CustomScrollView(
-        key: key,
-        physics: _homePullVerticalPhysics,
-        slivers: [
-          // SliverFillRemaining 让空态仍占满视口（内部 Center 照旧居中），
-          // 底距留在 child 的 Padding 上——与改动前"Expanded + Padding"的
-          // 布局逐像素一致，坞避让那条既有断言（找 bottom = 8 + 药丸占用
-          // 的 Padding）也照旧成立。
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(14, 0, 14, bottomContentInset),
-              child: _buildDayViewEmptyColumn(week: week, settings: settings),
+      return _reportHomeScroll(
+        scrollKey,
+        CustomScrollView(
+          key: key,
+          controller: scrollController,
+          physics: _homePullVerticalPhysics,
+          slivers: [
+            // SliverFillRemaining 让空态仍占满视口（内部 Center 照旧居中），
+            // 底距留在 child 的 Padding 上——与改动前"Expanded + Padding"的
+            // 布局逐像素一致，坞避让那条既有断言（找 bottom = 8 + 药丸占用
+            // 的 Padding）也照旧成立。
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(14, 0, 14, bottomContentInset),
+                child: _buildDayViewEmptyColumn(week: week, settings: settings),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     }
     // Gaussian cards sample the cached wallpaper bitmap while the day view
     // moves; the shared host keeps their BackdropFilter capture at grid scope.
     final agendaList = ListView.separated(
-      key: PageStorageKey<String>('day-agenda-$week-$dayOfWeek'),
+      key: PageStorageKey<String>(scrollKey),
+      controller: scrollController,
       padding: EdgeInsets.fromLTRB(14, 0, 14, bottomContentInset),
       // 下拉开着时冻结纵向滚动（见 _HomePullFreezeScrollPhysics）：
       // 回拉取消只收下拉，不把列表一起滚走。
@@ -5198,7 +5284,10 @@ class _TimetableScreenState extends State<TimetableScreen>
         return _buildDayAgendaEntry(week: week, settings: settings, item: item);
       },
     );
-    return CourseGridSurfaceHost(settings: settings, child: agendaList);
+    return CourseGridSurfaceHost(
+      settings: settings,
+      child: _reportHomeScroll(scrollKey, agendaList),
+    );
   }
 
   Widget _buildDayViewEmptyColumn({

@@ -148,6 +148,17 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 最后一张在本页 dispose 时释放。
   final ValueNotifier<ui.Image?> _previewBake = ValueNotifier<ui.Image?>(null);
 
+  /// **进页那一刻**真实首页报上来的纵向滚动位置（见 [homeScrollOffsets]）。
+  ///
+  /// 为什么要「进页那一刻」而不是每次现取：预览那份首页的滚动位置只在它**首次
+  /// 建控制器**时读这份快照；页面开着的时候真实首页被盖住也不会再滚，取新的只会
+  /// 让两份对不上。
+  ///
+  /// 少了它就是这个症状：用户 2026-09-27 反馈「在周/日视图下滑着点进编辑页，预览
+  /// 的状态变成置顶到顶部」—— 预览那份首页是另一条路由里的另一个实例，滚动位置
+  /// 走自己的 `PageStorage` 桶（每条路由一份），与真实首页那份毫无关系。
+  late final HomeScrollOffsets _homeScrollAtEntry = homeScrollOffsets.value;
+
   /// 「完成」退出时交给退场动画的自持句柄（见 [hyperosZoomExitSource]）。
   ///
   /// 是 [_previewBake] 当前那张的 `clone()`：烤图边界换新图会把原来的 dispose 掉，
@@ -1403,6 +1414,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     return TimetableHomePreviewScope(
       dayView: _previewDayView,
       dayOfWeek: _previewDayOfWeekNotifier,
+      // 进页那一刻真实首页的滚动位置：预览那份据此起步，于是它烤出来的图与首页
+      // 那张快照是同一屏（见 [_homeScrollAtEntry]）。
+      scrollOffsets: _homeScrollAtEntry,
       child: const IgnorePointer(
         child: TimetableScreen(
           enableUpdateCheck: false,
