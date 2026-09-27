@@ -42,4 +42,27 @@ void main() {
     expect(message, l10n.serviceMsgImportRollbackIncomplete);
     expect(message, isNot(contains('文件有效')));
   });
+
+  test('row warnings keep the field name of the inner code', () {
+    // Regression: encodeServiceRowWarning nests the inner payload inside the
+    // outer one, and both levels use the same `|` separator, so parseServiceMessage
+    // flattened the inner args into the outer map. The recursion did not pass
+    // them down, so every field_must_be_integer / field_cannot_be_empty row
+    // warning rendered with an empty field name.
+    final l10n = AppLocalizationsZh();
+    final message = localizeServiceMessage(
+      l10n,
+      encodeServiceRowWarning(7, 'field_must_be_integer', args: {
+        'field': 'start_section',
+      }),
+    );
+
+    expect(message, contains('7'));
+    expect(
+      message,
+      contains(l10n.serviceMsgFieldStartSection),
+      reason: '内层的 {field} 必须显示出来，而不是空字符串',
+    );
+    expect(message, isNot(contains('：，')));
+  });
 }

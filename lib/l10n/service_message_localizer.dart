@@ -59,9 +59,16 @@ String localizeServiceMessage(
     case 'spreadsheet_row_warning':
       final rowNumber = _intArg(resolvedArgs, 'rowNumber') ?? 0;
       final inner = resolvedArgs['inner']?.toString() ?? '';
+      // 必须把 resolvedArgs 传下去。`encodeServiceRowWarning` 把内层 payload
+      // 塞进外层的 `inner=` 里，两层用的是同一个 `|` 分隔符，于是
+      // parseServiceMessage 会把**内层**的参数也一并平铺进外层的参数表
+      // （`spreadsheet_row_warning|rowNumber=5|inner=field_cannot_be_empty|
+      // field=课程名` 解析出 field 这个外层参数）。不显式传下去，内层的
+      // {field} / {value} 查不到，field_must_be_integer、field_cannot_be_empty
+      // 这一类行级警告就永远显示一个空字段名。
       return l10n.serviceMsgSpreadsheetRowWarning(
         rowNumber,
-        localizeServiceMessage(l10n, inner),
+        localizeServiceMessage(l10n, inner, args: resolvedArgs),
       );
 
     // Import / backup
