@@ -2124,6 +2124,37 @@ class AppLocalizationsZh extends AppLocalizations {
   String get timeSchemeInUseMessage => '当前课表正在使用这套模板';
 
   @override
+  String get timeSchemeDeleteBlockedIntro => '还有下面的地方在用这套模板，解除后才能删除：';
+
+  @override
+  String timeSchemeBlockedByProfiles(String names) {
+    return '作为主时间模板的课表：$names';
+  }
+
+  @override
+  String timeSchemeBlockedByOverrideCourses(int count) {
+    return '把它设为副时间模板的课程：$count 门';
+  }
+
+  @override
+  String timeSchemeBlockedByLocationCourses(int count) {
+    return '按上课地点自动匹配到它的课程：$count 门';
+  }
+
+  @override
+  String timeSchemeBlockedByLocationGroups(String names) {
+    return '绑定了它的地点作息匹配：$names';
+  }
+
+  @override
+  String timeSchemeBlockedByDateRules(String names) {
+    return '绑定了它的日期作息规则：$names';
+  }
+
+  @override
+  String get timeSchemeBlockerListSeparator => '、';
+
+  @override
   String get copiedTimeSchemeMessage => '已复制时间模板';
 
   @override
@@ -13146,6 +13177,37 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get timeSchemeInUseMessage => '該範本正在被課表使用';
+
+  @override
+  String get timeSchemeDeleteBlockedIntro => '仲有下面嘅地方用緊呢套範本，解除咗先可以刪除：';
+
+  @override
+  String timeSchemeBlockedByProfiles(String names) {
+    return '作為主時間範本嘅課表：$names';
+  }
+
+  @override
+  String timeSchemeBlockedByOverrideCourses(int count) {
+    return '設咗做副時間範本嘅課程：$count 門';
+  }
+
+  @override
+  String timeSchemeBlockedByLocationCourses(int count) {
+    return '按上課地點自動配對到嘅課程：$count 門';
+  }
+
+  @override
+  String timeSchemeBlockedByLocationGroups(String names) {
+    return '綁咗佢嘅地點作息配對：$names';
+  }
+
+  @override
+  String timeSchemeBlockedByDateRules(String names) {
+    return '綁咗佢嘅日期作息規則：$names';
+  }
+
+  @override
+  String get timeSchemeBlockerListSeparator => '、';
 
   @override
   String get copiedTimeSchemeMessage => '已複製時間範本';
@@ -24210,6 +24272,37 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get timeSchemeInUseMessage => '該範本正在被課表使用';
+
+  @override
+  String get timeSchemeDeleteBlockedIntro => '還有下面的地方在用這套範本，解除後才能刪除：';
+
+  @override
+  String timeSchemeBlockedByProfiles(String names) {
+    return '作為主時間範本的課表：$names';
+  }
+
+  @override
+  String timeSchemeBlockedByOverrideCourses(int count) {
+    return '設為副時間範本的課程：$count 門';
+  }
+
+  @override
+  String timeSchemeBlockedByLocationCourses(int count) {
+    return '依上課地點自動配對到的課程：$count 門';
+  }
+
+  @override
+  String timeSchemeBlockedByLocationGroups(String names) {
+    return '綁定了它的地點作息配對：$names';
+  }
+
+  @override
+  String timeSchemeBlockedByDateRules(String names) {
+    return '綁定了它的日期作息規則：$names';
+  }
+
+  @override
+  String get timeSchemeBlockerListSeparator => '、';
 
   @override
   String get copiedTimeSchemeMessage => '已複製時間範本';

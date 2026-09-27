@@ -3970,6 +3970,48 @@ abstract class AppLocalizations {
   /// **'当前课表正在使用这套模板'**
   String get timeSchemeInUseMessage;
 
+  /// No description provided for @timeSchemeDeleteBlockedIntro.
+  ///
+  /// In zh, this message translates to:
+  /// **'还有下面的地方在用这套模板，解除后才能删除：'**
+  String get timeSchemeDeleteBlockedIntro;
+
+  /// No description provided for @timeSchemeBlockedByProfiles.
+  ///
+  /// In zh, this message translates to:
+  /// **'作为主时间模板的课表：{names}'**
+  String timeSchemeBlockedByProfiles(String names);
+
+  /// No description provided for @timeSchemeBlockedByOverrideCourses.
+  ///
+  /// In zh, this message translates to:
+  /// **'把它设为副时间模板的课程：{count} 门'**
+  String timeSchemeBlockedByOverrideCourses(int count);
+
+  /// No description provided for @timeSchemeBlockedByLocationCourses.
+  ///
+  /// In zh, this message translates to:
+  /// **'按上课地点自动匹配到它的课程：{count} 门'**
+  String timeSchemeBlockedByLocationCourses(int count);
+
+  /// No description provided for @timeSchemeBlockedByLocationGroups.
+  ///
+  /// In zh, this message translates to:
+  /// **'绑定了它的地点作息匹配：{names}'**
+  String timeSchemeBlockedByLocationGroups(String names);
+
+  /// No description provided for @timeSchemeBlockedByDateRules.
+  ///
+  /// In zh, this message translates to:
+  /// **'绑定了它的日期作息规则：{names}'**
+  String timeSchemeBlockedByDateRules(String names);
+
+  /// No description provided for @timeSchemeBlockerListSeparator.
+  ///
+  /// In zh, this message translates to:
+  /// **'、'**
+  String get timeSchemeBlockerListSeparator;
+
   /// No description provided for @copiedTimeSchemeMessage.
   ///
   /// In zh, this message translates to:

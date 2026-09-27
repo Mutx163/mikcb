@@ -2162,6 +2162,37 @@ class AppLocalizationsJa extends AppLocalizations {
   String get timeSchemeInUseMessage => 'このテンプレートは時間割で使用中です';
 
   @override
+  String get timeSchemeDeleteBlockedIntro => '下記がまだこのテンプレートを使っています。解除後に削除できます：';
+
+  @override
+  String timeSchemeBlockedByProfiles(String names) {
+    return 'メインテンプレートにしている時間割：$names';
+  }
+
+  @override
+  String timeSchemeBlockedByOverrideCourses(int count) {
+    return 'サブテンプレートに設定した授業：$count 件';
+  }
+
+  @override
+  String timeSchemeBlockedByLocationCourses(int count) {
+    return '授業場所から自動割り当てされた授業：$count 件';
+  }
+
+  @override
+  String timeSchemeBlockedByLocationGroups(String names) {
+    return '結び付いている場所ルール：$names';
+  }
+
+  @override
+  String timeSchemeBlockedByDateRules(String names) {
+    return '結び付いている日程ルール：$names';
+  }
+
+  @override
+  String get timeSchemeBlockerListSeparator => '、';
+
+  @override
   String get copiedTimeSchemeMessage => 'テンプレートをコピーしました';
 
   @override

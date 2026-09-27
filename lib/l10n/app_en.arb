@@ -1167,6 +1167,48 @@
     }
   },
   "timeSchemeInUseMessage": "This scheme is currently used by a timetable",
+  "timeSchemeDeleteBlockedIntro": "These still point at this scheme. Clear them first, then it can be deleted:",
+  "timeSchemeBlockedByProfiles": "Timetables using it as their main scheme: {names}",
+  "@timeSchemeBlockedByProfiles": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeBlockedByOverrideCourses": "Courses using it as their override scheme: {count}",
+  "@timeSchemeBlockedByOverrideCourses": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeSchemeBlockedByLocationCourses": "Courses matched to it by their location: {count}",
+  "@timeSchemeBlockedByLocationCourses": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeSchemeBlockedByLocationGroups": "Location rules bound to it: {names}",
+  "@timeSchemeBlockedByLocationGroups": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeBlockedByDateRules": "Date rules bound to it: {names}",
+  "@timeSchemeBlockedByDateRules": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeBlockerListSeparator": ", ",
   "copiedTimeSchemeMessage": "Time scheme copied",
   "appliedTimeSchemeMessage": "Applied time scheme: {name}",
   "@appliedTimeSchemeMessage": {

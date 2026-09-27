@@ -2251,6 +2251,38 @@ class AppLocalizationsEn extends AppLocalizations {
       'This scheme is currently used by a timetable';
 
   @override
+  String get timeSchemeDeleteBlockedIntro =>
+      'These still point at this scheme. Clear them first, then it can be deleted:';
+
+  @override
+  String timeSchemeBlockedByProfiles(String names) {
+    return 'Timetables using it as their main scheme: $names';
+  }
+
+  @override
+  String timeSchemeBlockedByOverrideCourses(int count) {
+    return 'Courses using it as their override scheme: $count';
+  }
+
+  @override
+  String timeSchemeBlockedByLocationCourses(int count) {
+    return 'Courses matched to it by their location: $count';
+  }
+
+  @override
+  String timeSchemeBlockedByLocationGroups(String names) {
+    return 'Location rules bound to it: $names';
+  }
+
+  @override
+  String timeSchemeBlockedByDateRules(String names) {
+    return 'Date rules bound to it: $names';
+  }
+
+  @override
+  String get timeSchemeBlockerListSeparator => ', ';
+
+  @override
   String get copiedTimeSchemeMessage => 'Time scheme copied';
 
   @override

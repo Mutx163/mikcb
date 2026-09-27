@@ -1062,6 +1062,48 @@
     }
   },
   "timeSchemeInUseMessage": "このテンプレートは時間割で使用中です",
+  "timeSchemeDeleteBlockedIntro": "下記がまだこのテンプレートを使っています。解除後に削除できます：",
+  "timeSchemeBlockedByProfiles": "メインテンプレートにしている時間割：{names}",
+  "@timeSchemeBlockedByProfiles": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeBlockedByOverrideCourses": "サブテンプレートに設定した授業：{count} 件",
+  "@timeSchemeBlockedByOverrideCourses": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeSchemeBlockedByLocationCourses": "授業場所から自動割り当てされた授業：{count} 件",
+  "@timeSchemeBlockedByLocationCourses": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeSchemeBlockedByLocationGroups": "結び付いている場所ルール：{names}",
+  "@timeSchemeBlockedByLocationGroups": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeBlockedByDateRules": "結び付いている日程ルール：{names}",
+  "@timeSchemeBlockedByDateRules": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeBlockerListSeparator": "、",
   "copiedTimeSchemeMessage": "テンプレートをコピーしました",
   "appliedTimeSchemeMessage": "テンプレート適用済み：{name}",
   "@appliedTimeSchemeMessage": {

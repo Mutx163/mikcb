@@ -1061,6 +1061,48 @@
     }
   },
   "timeSchemeInUseMessage": "該範本正在被課表使用",
+  "timeSchemeDeleteBlockedIntro": "還有下面的地方在用這套範本，解除後才能刪除：",
+  "timeSchemeBlockedByProfiles": "作為主時間範本的課表：{names}",
+  "@timeSchemeBlockedByProfiles": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeBlockedByOverrideCourses": "設為副時間範本的課程：{count} 門",
+  "@timeSchemeBlockedByOverrideCourses": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeSchemeBlockedByLocationCourses": "依上課地點自動配對到的課程：{count} 門",
+  "@timeSchemeBlockedByLocationCourses": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeSchemeBlockedByLocationGroups": "綁定了它的地點作息配對：{names}",
+  "@timeSchemeBlockedByLocationGroups": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeBlockedByDateRules": "綁定了它的日期作息規則：{names}",
+  "@timeSchemeBlockedByDateRules": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeBlockerListSeparator": "、",
   "copiedTimeSchemeMessage": "已複製時間範本",
   "appliedTimeSchemeMessage": "已應用時間範本：{name}",
   "@appliedTimeSchemeMessage": {

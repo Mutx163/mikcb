@@ -2173,6 +2173,38 @@ class AppLocalizationsKo extends AppLocalizations {
   String get timeSchemeInUseMessage => '이 템플릿은 시간표에서 사용 중입니다';
 
   @override
+  String get timeSchemeDeleteBlockedIntro =>
+      '아래 항목들이 이 템플릿을 사용 중입니다. 해제해야 삭제할 수 있습니다:';
+
+  @override
+  String timeSchemeBlockedByProfiles(String names) {
+    return '메인 템플릿으로 쓰는 시간표: $names';
+  }
+
+  @override
+  String timeSchemeBlockedByOverrideCourses(int count) {
+    return '서브 템플릿으로 지정한 수업: $count개';
+  }
+
+  @override
+  String timeSchemeBlockedByLocationCourses(int count) {
+    return '수업 장소로 자동 배정된 수업: $count개';
+  }
+
+  @override
+  String timeSchemeBlockedByLocationGroups(String names) {
+    return '이 템플릿에 연결된 장소 규칙: $names';
+  }
+
+  @override
+  String timeSchemeBlockedByDateRules(String names) {
+    return '이 템플릿에 연결된 날짜 규칙: $names';
+  }
+
+  @override
+  String get timeSchemeBlockerListSeparator => ', ';
+
+  @override
   String get copiedTimeSchemeMessage => '템플릿을 복사했습니다';
 
   @override

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'package:share_plus/share_plus.dart';
 
+import '../domain/time_scheme_logic.dart';
 import '../models/schedule_date_rule.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
@@ -338,7 +339,13 @@ class _TimeSchemeManagementScreenState
                         label: l10n.deleteAction,
                         value: 'delete',
                         destructive: true,
-                        enabled: usage.isUnused,
+                        // Never disable this row.  A disabled row paints in
+                        // the destructive red (the popup checks `destructive`
+                        // before `enabled`), so it reads as a normal delete
+                        // button while swallowing the tap — no prompt, no
+                        // toast, nothing.  Tapping always opens a dialog: a
+                        // real confirm when nothing references the scheme,
+                        // otherwise an explanation of what blocks it.
                       ),
                     ],
                   );
@@ -497,6 +504,22 @@ class _TimeSchemeManagementScreenState
 
   Future<void> _deleteScheme(BuildContext context, TimeScheme scheme) async {
     final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<TimetableProvider>();
+    // Read the blockers with the same helper the provider guard uses, so the
+    // dialog can never promise a delete that the guard then refuses.
+    final blockers = TimeSchemeLogic.collectDeleteBlockers(
+      provider.profiles,
+      scheme.id,
+      schemes: provider.timeSchemes,
+      locationTimeGroups: provider.locationTimeGroups,
+      scheduleDateRules: provider.scheduleDateRules,
+    );
+
+    if (blockers.isNotEmpty) {
+      await _explainDeleteBlocked(context, scheme, blockers);
+      return;
+    }
+
     final confirmed = await showHyperosConfirmDialog(
       context: context,
       title: l10n.deleteTimeSchemeTitle,
@@ -510,9 +533,7 @@ class _TimeSchemeManagementScreenState
       return;
     }
 
-    final deleted = await context.read<TimetableProvider>().deleteTimeScheme(
-      scheme.id,
-    );
+    final deleted = await provider.deleteTimeScheme(scheme.id);
     if (!context.mounted) {
       return;
     }
@@ -522,6 +543,107 @@ class _TimeSchemeManagementScreenState
           ? l10n.deletedTimeSchemeMessage(scheme.name)
           : l10n.timeSchemeInUseMessage,
       kind: deleted ? AppToastKind.success : AppToastKind.warning,
+    );
+  }
+
+  /// Shown instead of the confirm sheet when something still references the
+  /// scheme.  The old flow said only "当前课表正在使用这套模板" after a delete
+  /// that was already rejected, which named neither the real blocker (a profile
+  /// default is not a course) nor any way out of it.
+  Future<void> _explainDeleteBlocked(
+    BuildContext context,
+    TimeScheme scheme,
+    TimeSchemeDeleteBlockers blockers,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final separator = l10n.timeSchemeBlockerListSeparator;
+    final lines = <String>[
+      if (blockers.profileNames.isNotEmpty)
+        l10n.timeSchemeBlockedByProfiles(
+          blockers.profileNames.join(separator),
+        ),
+      if (blockers.overrideCourseCount > 0)
+        l10n.timeSchemeBlockedByOverrideCourses(
+          blockers.overrideCourseCount,
+        ),
+      if (blockers.locationCourseCount > 0)
+        l10n.timeSchemeBlockedByLocationCourses(blockers.locationCourseCount),
+      if (blockers.locationGroupNames.isNotEmpty)
+        l10n.timeSchemeBlockedByLocationGroups(
+          blockers.locationGroupNames.join(separator),
+        ),
+      if (blockers.dateRuleNames.isNotEmpty)
+        l10n.timeSchemeBlockedByDateRules(
+          blockers.dateRuleNames.join(separator),
+        ),
+    ];
+
+    final viewUsage = await showHyperosDialog<bool>(
+      context: context,
+      title: l10n.deleteTimeSchemeTitle,
+      body: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l10n.timeSchemeDeleteBlockedIntro,
+              style: HyperosTypography.listDetail(context).copyWith(
+                color: HyperosColors.primaryText(context),
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (final line in lines)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Container(
+                        width: 5,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: HyperosColors.primary(context),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        line,
+                        style: HyperosTypography.listDetail(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        HyperosDialogAction(
+          label: l10n.cancelAction,
+          onPressed: () => Navigator.pop(context, false),
+        ),
+        HyperosDialogAction(
+          label: l10n.viewUsageAction,
+          isPrimary: true,
+          onPressed: () => Navigator.pop(context, true),
+        ),
+      ],
+    );
+
+    if (viewUsage != true || !context.mounted) {
+      return;
+    }
+    await _showUsageDetails(
+      context,
+      scheme,
+      _usageSummaryForScheme(context.read<TimetableProvider>(), scheme.id),
     );
   }
 
@@ -741,6 +863,18 @@ class _TimeSchemeManagementScreenState
     final l10n = AppLocalizations.of(context)!;
     final directCourseReferences = usage.directCourseReferences;
     final overrideReferences = usage.overrideReferences;
+    // Read through the same helper the delete guard uses, so the sections
+    // below can never disagree with whether the delete is allowed.
+    final provider = context.read<TimetableProvider>();
+    final blockers = TimeSchemeLogic.collectDeleteBlockers(
+      provider.profiles,
+      scheme.id,
+      schemes: provider.timeSchemes,
+      locationTimeGroups: provider.locationTimeGroups,
+      scheduleDateRules: provider.scheduleDateRules,
+    );
+    final locationGroupNames = blockers.locationGroupNames;
+    final dateRuleNames = blockers.dateRuleNames;
     await showHyperosDialog<void>(
       context: context,
       title: l10n.timeSchemeUsageTitle(scheme.name),
@@ -829,6 +963,35 @@ class _TimeSchemeManagementScreenState
                     .toList(growable: false),
                 emptyText: l10n.overrideSchemeCoursesEmpty,
               ),
+              // Location groups and date rules also block deletion but own no
+              // courses of their own, so without these two sections the usage
+              // dialog could not explain a delete the provider refuses.
+              if (locationGroupNames.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _UsageSection(
+                  title: l10n.locationTimeMatchEntryTitle,
+                  subtitle: l10n.timeSchemeBlockedByLocationGroups(
+                    locationGroupNames.join(l10n.timeSchemeBlockerListSeparator),
+                  ),
+                  items: locationGroupNames
+                      .map((name) => _UsageLine(primary: name))
+                      .toList(growable: false),
+                  emptyText: l10n.timeSchemeBlockedByLocationGroups(''),
+                ),
+              ],
+              if (dateRuleNames.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _UsageSection(
+                  title: l10n.scheduleDateRuleSectionTitle,
+                  subtitle: l10n.timeSchemeBlockedByDateRules(
+                    dateRuleNames.join(l10n.timeSchemeBlockerListSeparator),
+                  ),
+                  items: dateRuleNames
+                      .map((name) => _UsageLine(primary: name))
+                      .toList(growable: false),
+                  emptyText: l10n.timeSchemeBlockedByDateRules(''),
+                ),
+              ],
             ],
           ),
         ),

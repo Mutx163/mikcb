@@ -1204,6 +1204,48 @@
     }
   },
   "timeSchemeInUseMessage": "当前课表正在使用这套模板",
+  "timeSchemeDeleteBlockedIntro": "还有下面的地方在用这套模板，解除后才能删除：",
+  "timeSchemeBlockedByProfiles": "作为主时间模板的课表：{names}",
+  "@timeSchemeBlockedByProfiles": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeBlockedByOverrideCourses": "把它设为副时间模板的课程：{count} 门",
+  "@timeSchemeBlockedByOverrideCourses": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeSchemeBlockedByLocationCourses": "按上课地点自动匹配到它的课程：{count} 门",
+  "@timeSchemeBlockedByLocationCourses": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeSchemeBlockedByLocationGroups": "绑定了它的地点作息匹配：{names}",
+  "@timeSchemeBlockedByLocationGroups": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeBlockedByDateRules": "绑定了它的日期作息规则：{names}",
+  "@timeSchemeBlockedByDateRules": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeBlockerListSeparator": "、",
   "copiedTimeSchemeMessage": "已复制时间模板",
   "appliedTimeSchemeMessage": "已应用时间模板：{name}",
   "@appliedTimeSchemeMessage": {
