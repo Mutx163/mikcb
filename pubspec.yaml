@@ -106,7 +106,7 @@ dev_dependencies:
 # CI 也拿不到可复现的依赖。补丁进了上游 release 后整块删掉，即回到 pub.dev。
 dependency_overrides:
   flutter_miuix:
-    # 包含四个补丁：
+    # 包含六个补丁：
     #   1. 让位缩放改为面板布局矩形朝支点缩小，玻璃按缩后尺寸画（paint 变变换
     #      带不动 BackdropFilter，所以缩放必须落在布局矩形上）；
     #   2. 二级面板边缘高光/阴影随开合渐显；
@@ -120,9 +120,17 @@ dependency_overrides:
     #   5. 底部弹窗把手**只允许往下拖**：面板高度由内容决定，上面没有可展开的
     #      空间，原先的 0.1 阻尼等于允许面板往上漂，底沿离开屏幕、下面露出
     #      一条压暗蒙层（真机口径「往上拉，拉上去下面变成空白」）。
+    #   6. 底部弹窗把手条可**悬浮**在内容之上（`dragHandleOverlaysContent`，默认
+    #      假 = 行为不变）：面板顶部原先实打实留了「把手条 24 + 无标题时的空占位
+    #      18」= 42，内容从 42 才开始，那 42 背后什么都没有 ——
+    #      **画在这截上的顶部渐变模糊永远糊不到东西**（材质面板就卡在这里），顶部
+    #      也空一大块。悬浮后内容从面板上沿起、能滚到把手底下，死区归零；把手排在
+    #      Stack 末位，命中与绘制都在内容之前，竖向拖动不会被滚动视图抢走。
+    #      代价是那 24px 画得到、点不到，调用方自己让开（见
+    #      lib/ui/hyperos/miuix_bottom_sheet.dart 的 reserveDragHandleStrip）。
     git:
       url: https://github.com/Mutx163/flutter_miuix.git
-      ref: d76504408464c9b494c31723200be3e1ebedcc60
+      ref: 614bf04249542f0c002ee5d95b057f2bad5dd506
   # inspire_blur：分布图像素记忆化——上游每个新挂载的顶栏都同步重算一张
   # 674k 像素的分布图（真机实测 36~49ms），这里按 (distribution, size) 记住像素。
   # fork 自 inspirestack/inspire_blur，分支 mikcb/distribution-pixels-cache，
