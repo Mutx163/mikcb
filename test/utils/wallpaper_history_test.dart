@@ -173,6 +173,64 @@ void main() {
     });
   });
 
+  group('removeWallpaperHistoryEntry', () {
+    test('移除指定条目，其余保持原有先后顺序', () {
+      const history = [
+        WallpaperHistoryEntry(key: '/a.png'),
+        WallpaperHistoryEntry(key: '/b.png'),
+        WallpaperHistoryEntry(key: '/c.png'),
+      ];
+
+      final next = removeWallpaperHistoryEntry(history, '/b.png');
+
+      expect(next.map((entry) => entry.key), ['/a.png', '/c.png']);
+    });
+
+    test('历史里没有这一条时原样返回同一实例（幂等）', () {
+      const history = [WallpaperHistoryEntry(key: '/a.png')];
+
+      expect(
+        identical(removeWallpaperHistoryEntry(history, '/missing.png'), history),
+        isTrue,
+      );
+    });
+
+    test('空键与纯空白键不删任何东西', () {
+      const history = [WallpaperHistoryEntry(key: '/a.png')];
+
+      expect(identical(removeWallpaperHistoryEntry(history, ''), history), isTrue);
+      expect(
+        identical(removeWallpaperHistoryEntry(history, '   '), history),
+        isTrue,
+      );
+    });
+
+    test('键只做首尾空白裁剪，不做路径归一化', () {
+      // 历史键是文件绝对路径，且可能来自**别的平台**（设置能跨设备同步）。
+      // 只保证"首尾空白 + 完全相同"才认，绝不把分隔符 / 大小写抹平 ——
+      // 误删一条别人的历史，比多留一条严重得多。
+      const history = [WallpaperHistoryEntry(key: '/a/b.png')];
+
+      expect(removeWallpaperHistoryEntry(history, '  /a/b.png  '), isEmpty);
+      expect(
+        identical(removeWallpaperHistoryEntry(history, r'\a\b.png'), history),
+        isTrue,
+        reason: '分隔符不同的同名路径不是同一张图',
+      );
+      expect(
+        identical(removeWallpaperHistoryEntry(history, '/A/B.png'), history),
+        isTrue,
+        reason: '大小写不同的同名路径不是同一张图',
+      );
+    });
+
+    test('删完最后一条得到空列表（不是 null）', () {
+      const history = [WallpaperHistoryEntry(key: '/a.png')];
+
+      expect(removeWallpaperHistoryEntry(history, '/a.png'), isEmpty);
+    });
+  });
+
   group('settingsWithWallpaperHistoryEntry', () {
     test('图片条目恢复路径与当时的对齐', () {
       final path = createTempWallpaper('b.png');

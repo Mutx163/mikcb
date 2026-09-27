@@ -77,6 +77,34 @@ WallpaperHistoryPushResult pushWallpaperHistory({
   return WallpaperHistoryPushResult(history: kept, evictedPaths: evictedPaths);
 }
 
+/// 从「最近使用」里移除一条，返回新历史（其余条目保持原有先后顺序）。
+///
+/// 键为空、或历史里本来就没有这一条时**原样返回**（幂等），调用方可以无脑
+/// 先算再落盘，不必自己先判存在。
+///
+/// 只动列表，**不碰磁盘**：文件删不删由调用方按「还有没有别的课表在用」决定
+/// （见 [deleteEvictedWallpaperFiles] 的 `inUsePaths`）。列表与文件分两步走是
+/// 刻意的 —— 只有调用方知道"删完这一条之后谁还在用这张图"。
+///
+/// 刻意返回新实例而不是就地改：调用方普遍把这份列表当不可变值交给 notifier，
+/// 返回新实例才能让「最近使用」缩略图条与持久化同时刷新。
+List<WallpaperHistoryEntry> removeWallpaperHistoryEntry(
+  List<WallpaperHistoryEntry> history,
+  String key,
+) {
+  final trimmedKey = key.trim();
+  if (trimmedKey.isEmpty) {
+    return history;
+  }
+  if (!history.any((entry) => entry.key == trimmedKey)) {
+    return history;
+  }
+  return <WallpaperHistoryEntry>[
+    for (final entry in history)
+      if (entry.key != trimmedKey) entry,
+  ];
+}
+
 /// 条目当前是否可用：背景图片文件必须还在。
 ///
 /// 图片存在性走 [homePageImageProvider]，与首页共用同一份按路径记忆的结果，
