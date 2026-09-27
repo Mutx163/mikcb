@@ -1,3 +1,4 @@
+import '../logging/app_debug_log.dart';
 import '../models/warehouse_repository_models.dart';
 import 'app_localizations.dart';
 
@@ -511,35 +512,39 @@ String localizeServiceMessage(
     default:
       // 兜底分两种情况，不能一刀切：
       //
-      // 1. 内部错误码（`encodeServiceMessage` 产出的那种纯 ASCII 蛇形串）。
-      //    目前有 40+ 个码还没登记 case（含 transfer_*、invalid_sync_snapshot_*、
-      //    invalid_qr_transfer_frame、unsupported_content_type 等），原样返回
-      //    等于把 `unsupported_content_type` 这种机器码直接摆到界面上。
-      //    改成一句人话，并把原始码留在调试输出里供排查。
+      // 1. 内部错误码（`encodeServiceMessage` / `throw` 产出的那种 ASCII 蛇形
+      //    串，可能带 `:细节` 后缀）。目前有 40+ 个码还没登记 case（含
+      //    transfer_*、invalid_sync_snapshot_*、invalid_qr_transfer_frame、
+      //    unsupported_content_type、settings_mirror_* 等），原样返回等于把
+      //    `unsupported_content_type` 这种机器码直接摆到界面上。改成一句人话，
+      //    并把原始码留在日志里供排查。
       //
       // 2. 本来就是人话的字符串。`localizeServiceMessage` 也被用来透传
-      //    usageType（:131）、detail（:422）这类**未登记的展示文本**，以及
-      //    `localizeServiceError` 里的 Dart 异常原文（:524-:538）。这些必须
-      //    原样返回，否则会把「老师」「自己」和异常详情一起吃掉。
+      //    未登记的展示文本，以及 `localizeServiceError` 里的 Dart 异常原文
+      //    （见本文件尾部那几个 `localize*Error`）。这些必须原样返回，否则会
+      //    把中文内容和异常详情一起吃掉。
       //
-      // 判据：内部码一律是纯小写蛇形（^[a-z][a-z0-9_]*$）。中文、空格、
-      // 大写、标点都不匹配，所以不会误伤第 2 类。
+      // 判据：内部码是「纯 ASCII 小写蛇形，可选地跟一个 `:细节`」，细节部分
+      // 只允许 ASCII 字母数字与 `._-`。中文、空格、大写、其它标点都不匹配，
+      // 所以不会误伤第 2 类（Dart 异常原文形如 `Bad state: xxx` 带空格与
+      // 大写，命中不了）。
       //
       // TODO(l10n)：这里借用了 quickImportUnknownError 的措辞（该键名带
       // quickImport 前缀，语义上不贴切，但它的六语翻译出自仓库自己的流程，
       // 比手写六份新译文稳）。等文案口径 revisiting 时应新增一个专用键
       // serviceMsgUnknownCode，并把这条兜底的注释一并收窄。
       if (_looksLikeInternalCode(resolvedCode)) {
-        // 原始码进调试输出，正式包里不留。
-        // ignore: avoid_print
-        print('service_message_localizer: unmapped code "$resolvedCode"');
+        // 走 appDebugLog 而不是 print：它的 tag 不在 forensicTags 白名单里，
+        // 所以正式包会被 `if (!kDebugMode && ...) return` 剥掉；而裸 print
+        // 不受 kDebugMode 约束，会一直进 logcat。
+        appDebugLog('ServiceMessageLocalizer', '未登记的错误码: $resolvedCode');
         return l10n.quickImportUnknownError;
       }
       return resolvedCode;
   }
 }
 
-/// 内部错误码的形状：纯 ASCII 小写蛇形，无空格无标点。
+/// 内部错误码的形状：ASCII 小写蛇形，可选地跟一个 `:细节` 后缀。
 ///
 /// 用来把「未登记的机器码」与「本来就是人话的透传文本」区分开——见
 /// [localizeServiceMessage] 兜底分支的说明。
@@ -550,7 +555,15 @@ bool _looksLikeInternalCode(String value) {
   return _internalCodePattern.hasMatch(value);
 }
 
-final RegExp _internalCodePattern = RegExp(r'^[a-z][a-z0-9_]*$');
+/// `code` 或 `code:detail`。
+///
+/// `:detail` 这一族是真的存在（`settings_mirror_snapshot_invalid:$key`、
+/// `settings_mirror_journal_invalid:...`、`task_course_missing:${id}`），细节
+/// 部分允许 ASCII 字母数字与 `._-`；一旦细节里出现空格、中文或大写（例如
+/// `Bad state: xxx`），就不算内部码，原样透传。
+final RegExp _internalCodePattern = RegExp(
+  r'^[a-z][a-z0-9_]*(?::[A-Za-z0-9._-]+)?$',
+);
 
 /// Localizes any service-layer warning string (row warnings, week clamps, etc.).
 String localizeServiceWarning(AppLocalizations l10n, String warning) {
