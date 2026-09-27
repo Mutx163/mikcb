@@ -87,18 +87,6 @@ Future<T?> showMiuixBottomSheet<T>({
   bool barrierDismissible = true,
   bool useRootNavigator = false,
   Color? barrierColor,
-
-  /// 把手**画成透明**（2026-09-26）：给「内容用 [HyperosSheetBlurTop] 盖过把手那条」的
-  /// 弹窗用 —— 模糊带会把上游那颗把手糊平，带子自己再画一颗替身，于是两颗都在屏幕上
-  /// = 两根杆子（用户 2026-09-26 报）。这参数把上游那颗藏掉，屏幕上只剩带子画的那颗。
-  ///
-  /// **拖动与命中不受影响**：上游那颗 24px 的条仍在原位、仍接拖动手势，只是画出来是透明
-  /// 的；带子画的那颗在它上面、被 `IgnorePointer` 包着（点不到），所以「看到的」与
-  /// 「能拖的」仍是同一块区域。
-  ///
-  /// 代价：连上游那点按压反馈（变宽 + 加深）一起没了 —— 替身不参与命中，复制那个动画
-  /// 需要接管上游的私有控制器。**只在真的盖了把手时才传**，否则这个弹窗就没有把手了。
-  bool coverDragHandle = false,
 }) {
   // 诊断标记沿用 `sheet:open`（这个弹窗就是「弹层开场」那一类，改用上游组件不换口径，
   // 历史读数仍然可比）。见 utils/frame_perf_probe.dart。
@@ -110,7 +98,6 @@ Future<T?> showMiuixBottomSheet<T>({
       pageBuilder: (dialogContext, animation, secondaryAnimation) =>
           _MiuixBottomSheetPage(
             barrierActive: barrierActive,
-            coverDragHandle: coverDragHandle,
             builder: builder,
             barrierDismissible: barrierDismissible,
             barrierColor: barrierColor,
@@ -151,14 +138,12 @@ Future<T?> showHomeHyperosSheet<T>({
   bool useRootNavigator = false,
   Color? barrierColor,
   SheetCloseRef? closeRef,
-  bool coverDragHandle = false,
 }) {
   return showMiuixBottomSheet<T>(
     context: context,
     useRootNavigator: useRootNavigator,
     barrierDismissible: isDismissible,
     barrierColor: barrierColor,
-    coverDragHandle: coverDragHandle,
     builder: (sheetContext, close) {
       closeRef?.call(close);
       return builder(sheetContext);
@@ -225,17 +210,12 @@ class _MiuixBottomSheetPage extends StatefulWidget {
     required this.builder,
     required this.barrierDismissible,
     this.barrierColor,
-    this.coverDragHandle = false,
   });
 
   final ValueNotifier<bool> barrierActive;
   final MiuixBottomSheetBuilder builder;
   final bool barrierDismissible;
   final Color? barrierColor;
-
-  /// 见 [showMiuixBottomSheet] 的同名参数：把手画成透明（内容自己用
-  /// [HyperosSheetBlurTop] 画了一颗替身）。
-  final bool coverDragHandle;
 
   @override
   State<_MiuixBottomSheetPage> createState() => _MiuixBottomSheetPageState();
@@ -370,11 +350,7 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
         dimColor:
             widget.barrierColor ??
             HyperosBlurredHeader.modalBarrierColor(context),
-        dragHandleColor: widget.coverDragHandle
-            // 内容用 HyperosSheetBlurTop 盖过把手、并自己画了一颗替身 → 上游这颗
-            // 画成透明，否则屏幕上是两根杆子（2026-09-26 用户报）。拖动与命中不受影响。
-            ? Colors.transparent
-            : Theme.of(context).colorScheme.onSurfaceVariant,
+        dragHandleColor: Theme.of(context).colorScheme.onSurfaceVariant,
         // 左右内边距拉回本仓口径（上游默认 24，见该常量的说明）。
         insideMargin: const Size(hyperosMiuixBottomSheetInsideMargin, 0),
         surfaceBuilder: hyperosMiuixBottomSheetSurface,
@@ -417,30 +393,6 @@ const double hyperosMiuixBottomSheetContentBottomGap = 16;
 /// 用户口径「弹窗里左右边距留得那么大」（2026-09-20，壁纸弹窗）。这里把它拉回本仓
 /// 自己那份口径。上下不设（内容自己管）。
 const double hyperosMiuixBottomSheetInsideMargin = 16;
-
-/// 面板顶部**拖动把手条**的高度（逻辑 px）。
-///
-/// = 上游 `MiuixWindowBottomSheet._dragHandle` 那个 `SizedBox(height: 24)`：把手是
-/// 里面居中的一颗 45×4 胶囊，条本身只是留白。
-///
-/// 弹窗顶部渐变模糊带要靠它**往上盖过这条**（`HyperosSheetBlurTop.bleedTop`）：带子上
-/// 边缘若停在这条下面，「顶边满强度」那一步突变就落在面板中间 = 一条亮线（2026-09-26
-/// 用户报「顶部不够整体」）。改上游那个 `SizedBox` 的高度时这里要跟着走。
-const double hyperosMiuixBottomSheetDragHandleStripHeight = 24;
-
-/// 面板顶部在**内容之上**、内容自己看不到的那一截 chrome 高度。
-///
-/// = 把手条 24（[hyperosMiuixBottomSheetDragHandleStripHeight]）+ 上游即使没有标题 /
-/// 两侧按钮也**照样插**的空占位 18（见上游 `_titleRow` 的 `SizedBox(height: 18)`）。
-///
-/// 弹窗顶部渐变模糊带要靠它**往上盖过这一整截**（`HyperosSheetBlurTop.bleedTop`），
-/// 否则带子上边缘就停在面板中间，「顶边满强度」那一步突变被画在面板中间 = 一条亮线
-/// （2026-09-26 用户报「顶部不够整体」）。
-///
-/// ⚠️ 别拿把手条那 24 当这个数：漏掉那 18 会让带子上移不到位，于是**带子画的那颗把手
-/// 替身与上游那颗差了 18px，屏幕上就是两根杆子**（同一个问题的第二个症状）。
-const double hyperosMiuixBottomSheetTopChromeHeight =
-    hyperosMiuixBottomSheetDragHandleStripHeight + 18;
 
 /// 这块面板的玻璃**一律不外推采样**（[LiquidGlassSurface.maxRefraction] = 0）。
 ///
