@@ -537,7 +537,7 @@ String localizeServiceMessage(
         // 走 appDebugLog 而不是 print：它的 tag 不在 forensicTags 白名单里，
         // 所以正式包会被 `if (!kDebugMode && ...) return` 剥掉；而裸 print
         // 不受 kDebugMode 约束，会一直进 logcat。
-        appDebugLog('ServiceMessageLocalizer', '未登记的错误码: $resolvedCode');
+        appDebugLog('ServiceMessageLocalizer', 'unmapped code: $resolvedCode');
         return l10n.quickImportUnknownError;
       }
       return resolvedCode;
