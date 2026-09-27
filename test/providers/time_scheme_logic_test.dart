@@ -12,12 +12,13 @@ Course _course({
   String? timeSchemeIdOverride,
   int endSection = 4,
   int dayOfWeek = 1,
+  String location = 'L',
 }) {
   return Course(
     id: id,
     name: 'Course $id',
     teacher: 'T',
-    location: 'L',
+    location: location,
     dayOfWeek: dayOfWeek,
     startSection: 1,
     endSection: endSection,
@@ -381,6 +382,116 @@ void main() {
       expect(TimeSchemeLogic.isSchemeInUse(profiles, scheme.id), isTrue);
       expect(TimeSchemeLogic.isSchemeInUse(profiles, other.id), isTrue);
       expect(TimeSchemeLogic.isSchemeInUse(profiles, 'unused'), isFalse);
+    });
+
+    test('reports no blockers for a scheme nothing references', () {
+      final scheme = _scheme('free');
+      final profiles = [
+        _profile(
+          id: 'p1',
+          name: 'Main',
+          activeSchemeId: 'other',
+          courses: [_course(id: 'c1')],
+        ),
+      ];
+
+      final blockers = TimeSchemeLogic.collectDeleteBlockers(profiles, scheme.id);
+
+      expect(blockers.isEmpty, isTrue);
+      expect(TimeSchemeLogic.isSchemeInUse(profiles, scheme.id), isFalse);
+    });
+
+    test('names the blocking profiles and counts override courses', () {
+      final scheme = _scheme('in-use');
+      final profiles = [
+        _profile(id: 'p1', name: 'Main', activeSchemeId: scheme.id),
+        _profile(
+          id: 'p2',
+          name: 'Alt',
+          activeSchemeId: 'other',
+          courses: [
+            _course(id: 'c1', timeSchemeIdOverride: scheme.id),
+            _course(id: 'c2', timeSchemeIdOverride: scheme.id),
+          ],
+        ),
+      ];
+
+      final blockers = TimeSchemeLogic.collectDeleteBlockers(profiles, scheme.id);
+
+      expect(blockers.profileNames, ['Main']);
+      expect(blockers.overrideCourseCount, 2);
+      expect(blockers.locationCourseCount, 0);
+      expect(blockers.isNotEmpty, isTrue);
+    });
+
+    // The management page used to gate the delete row on profiles and courses
+    // only, so a scheme held by one of these two looked deletable and the
+    // provider then refused after the confirm dialog had already been accepted.
+    test('reports location group and date rule references', () {
+      final scheme = _scheme('in-use');
+      final profiles = [
+        _profile(id: 'p1', name: 'Main', activeSchemeId: 'other'),
+      ];
+
+      final blockers = TimeSchemeLogic.collectDeleteBlockers(
+        profiles,
+        scheme.id,
+        schemes: [scheme],
+        locationTimeGroups: [
+          LocationTimeGroup(
+            id: 'g1',
+            name: '实验楼',
+            timeSchemeId: scheme.id,
+          ),
+        ],
+        scheduleDateRules: [
+          ScheduleDateRule(
+            id: 'r1',
+            name: '期末周',
+            timeSchemeId: scheme.id,
+            startDate: '2026-01-05',
+            endDate: '2026-01-18',
+          ),
+        ],
+      );
+
+      expect(blockers.locationGroupNames, ['实验楼']);
+      expect(blockers.dateRuleNames, ['期末周']);
+      expect(blockers.isNotEmpty, isTrue);
+    });
+
+    test('counts courses routed to the scheme by a location group', () {
+      final scheme = _scheme('lab');
+      final profiles = [
+        _profile(
+          id: 'p1',
+          name: 'Main',
+          activeSchemeId: 'other',
+          courses: [
+            _course(id: 'c1', location: '实验楼 101'),
+            _course(id: 'c2', location: '实验楼 202'),
+            _course(id: 'c3', location: '主教学楼 301'),
+          ],
+        ),
+      ];
+
+      final blockers = TimeSchemeLogic.collectDeleteBlockers(
+        profiles,
+        scheme.id,
+        schemes: [scheme],
+        locationTimeGroups: [
+          LocationTimeGroup(
+            id: 'g1',
+            name: '实验楼',
+            timeSchemeId: scheme.id,
+            keywords: const [LocationKeyword(pattern: '实验楼')],
+          ),
+        ],
+      );
+
+      expect(blockers.locationCourseCount, 2);
+      expect(blockers.overrideCourseCount, 0);
+      expect(blockers.isNotEmpty, isTrue);
     });
   });
 }

@@ -25,6 +25,51 @@ class TimeSchemeCourseUsageReference {
   });
 }
 
+/// Every reference that keeps a time scheme from being deleted.
+///
+/// Returned by [TimeSchemeLogic.collectDeleteBlockers] so the delete guard in
+/// the provider and the explanation shown in the management page read the same
+/// data.  They used to drift apart: the page only counted profiles and courses
+/// while the guard also counted location groups and date rules, which left the
+/// menu row silently disabled (no prompt at all) in one case and a misleading
+/// "it is in use" toast in the other.
+class TimeSchemeDeleteBlockers {
+  /// Profiles that use the scheme as their default (main) time scheme.
+  final List<String> profileNames;
+
+  /// Courses that set the scheme manually as their override time scheme.
+  final int overrideCourseCount;
+
+  /// Courses routed to the scheme by a location keyword group.
+  final int locationCourseCount;
+
+  /// Location groups bound to the scheme (enabled or not — any reference
+  /// blocks deletion, matching [LocationTimeMatchLogic.isSchemeReferencedByGroups]).
+  final List<String> locationGroupNames;
+
+  /// Date rules that switch a profile to the scheme.
+  final List<String> dateRuleNames;
+
+  const TimeSchemeDeleteBlockers({
+    this.profileNames = const [],
+    this.overrideCourseCount = 0,
+    this.locationCourseCount = 0,
+    this.locationGroupNames = const [],
+    this.dateRuleNames = const [],
+  });
+
+  int get totalCourseCount => overrideCourseCount + locationCourseCount;
+
+  bool get isEmpty =>
+      profileNames.isEmpty &&
+      overrideCourseCount == 0 &&
+      locationCourseCount == 0 &&
+      locationGroupNames.isEmpty &&
+      dateRuleNames.isEmpty;
+
+  bool get isNotEmpty => !isEmpty;
+}
+
 /// Pure time-scheme query helpers extracted from [TimetableProvider].
 class TimeSchemeLogic {
   TimeSchemeLogic._();
@@ -245,24 +290,50 @@ class TimeSchemeLogic {
     List<LocationTimeGroup> locationTimeGroups = const [],
     List<TimeScheme> schemes = const [],
     List<ScheduleDateRule> scheduleDateRules = const [],
-  }) {
-    if (LocationTimeMatchLogic.isSchemeReferencedByGroups(
-      locationTimeGroups,
-      schemeId,
-    )) {
-      return true;
-    }
-    if (scheduleDateRules.any((rule) => rule.timeSchemeId == schemeId)) {
-      return true;
-    }
+  }) => collectDeleteBlockers(
+    profiles,
+    schemeId,
+    locationTimeGroups: locationTimeGroups,
+    schemes: schemes,
+    scheduleDateRules: scheduleDateRules,
+  ).isNotEmpty;
 
-    return profiles.any((profile) {
+  /// Lists every reference that blocks deleting [schemeId].
+  ///
+  /// This is the single source of truth behind [isSchemeInUse]: the provider
+  /// guard and the management page's delete prompt both go through it, so a
+  /// scheme can never look deletable while the guard still refuses it.
+  static TimeSchemeDeleteBlockers collectDeleteBlockers(
+    List<TimetableProfile> profiles,
+    String schemeId, {
+    List<LocationTimeGroup> locationTimeGroups = const [],
+    List<TimeScheme> schemes = const [],
+    List<ScheduleDateRule> scheduleDateRules = const [],
+  }) {
+    // Any location group referencing the scheme blocks deletion, enabled or
+    // not — a disabled group still holds a stale id and would resurrect the
+    // scheme if re-enabled later.
+    final locationGroupNames = locationTimeGroups
+        .where((group) => group.timeSchemeId == schemeId)
+        .map((group) => group.name)
+        .toList(growable: false);
+    final dateRuleNames = scheduleDateRules
+        .where((rule) => rule.timeSchemeId == schemeId)
+        .map((rule) => rule.name)
+        .toList(growable: false);
+
+    final profileNames = <String>[];
+    var overrideCourseCount = 0;
+    var locationCourseCount = 0;
+
+    for (final profile in profiles) {
       if (profile.settings.activeTimeSchemeId == schemeId) {
-        return true;
+        profileNames.add(profile.name);
       }
       for (final course in profile.courses) {
         if (course.timeSchemeIdOverride == schemeId) {
-          return true;
+          overrideCourseCount++;
+          continue;
         }
         if (course.timeSchemeIdOverride != null) {
           continue;
@@ -274,11 +345,18 @@ class TimeSchemeLogic {
         if (locationMatch != null &&
             locationMatch.timeSchemeId == schemeId &&
             getSchemeById(schemes, schemeId) != null) {
-          return true;
+          locationCourseCount++;
         }
       }
-      return false;
-    });
+    }
+
+    return TimeSchemeDeleteBlockers(
+      profileNames: profileNames,
+      overrideCourseCount: overrideCourseCount,
+      locationCourseCount: locationCourseCount,
+      locationGroupNames: locationGroupNames,
+      dateRuleNames: dateRuleNames,
+    );
   }
 
   /// 按课程生效时间模板改写全部课程的钟点（迁移自 timetable_provider，
