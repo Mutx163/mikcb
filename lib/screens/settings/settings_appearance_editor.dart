@@ -684,7 +684,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       // 接管，见 `topInsetFor` 的注释。
       padding: EdgeInsets.only(
         top: HyperosSheetBlurTop.topInsetFor(
-          headerHeight: HyperosMiuixTopAppBar.collapsedHeight,
+          headerHeight: 40,
           bleedTop: hyperosMiuixBottomSheetEmptyTitleRowHeight,
         ),
       ),
@@ -953,7 +953,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       // 接管，见 `topInsetFor` 的注释。
       padding: EdgeInsets.only(
         top: HyperosSheetBlurTop.topInsetFor(
-          headerHeight: HyperosMiuixTopAppBar.collapsedHeight,
+          headerHeight: 40,
           bleedTop: hyperosMiuixBottomSheetEmptyTitleRowHeight,
         ),
       ),
@@ -1778,8 +1778,9 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
       valueListenable: editor._draftRevision,
       builder: (sheetContext, _, _) {
         return HyperosSheetBlurTop(
-          // 带高 = 这一行顶栏的高度（折叠顶栏那行 44，语义上它现在**就是**一行顶栏）。
-          headerHeight: HyperosMiuixTopAppBar.collapsedHeight,
+          // 带高就等于胶囊高度（40）—— 带盒正好装下它们，不留多余空档；带子整体上移那 18
+          // 之后，胶囊底到第一行正文只剩渐隐区那 20。
+          headerHeight: 40,
           // 模糊带往左右各外扩面板内容那个内缩，铺满整个面板宽（否则带子只在中间一段
           // 有模糊、两侧各留一条没糊的边，读起来是「浮在面板里的方框」）。胶囊本身
           // 按同一个数内缩回去，仍与底下正文对齐。

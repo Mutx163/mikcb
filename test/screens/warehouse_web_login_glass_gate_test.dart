@@ -20,6 +20,8 @@ import '../helpers_test_app.dart';
 /// 不进合成帧，必须**不**置位——否则首页下拉导入期间玻璃全部陪葬降级。
 /// 闸门为响应式（LiquidGlassDegradationScope）：dispose 在帧末归零时通知依赖
 /// 的玻璃表面重建，导入返回首页后玻璃立即恢复。
+/// 宿主一律挂上那个 Scope（与真机结构一致），推入/退出这两步才测得到
+/// 「通知撞上构建期断言」这件事。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -76,29 +78,34 @@ void main() {
   }
 
   Widget buildLoginScreen({required bool runInBackground}) {
-    return TestApp(home: buildLoginPage(runInBackground: runInBackground));
+    return _withGateScope(
+      TestApp(home: buildLoginPage(runInBackground: runInBackground)),
+    );
   }
 
   /// 把登录页当二级页面推上来的宿主：只有它是被推上来的路由，才测得到
   /// "返回时摘平台视图"这件事（直接当 home 没有反向动画）。
   Widget buildPushHost() {
-    return TestApp(
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: Center(
-            child: TextButton(
-              onPressed: () => Navigator.of(context).push<void>(
-                HyperosPageRoute<void>(
-                  builder: (_) => buildLoginPage(runInBackground: false),
+    return _withGateScope(
+      TestApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () => Navigator.of(context).push<void>(
+                  HyperosPageRoute<void>(
+                    builder: (_) => buildLoginPage(runInBackground: false),
+                  ),
                 ),
+                child: const Text('打开登录页'),
               ),
-              child: const Text('打开登录页'),
             ),
           ),
         ),
       ),
     );
   }
+
   testWidgets('runInBackground 实例不置位平台视图玻璃闸门', (tester) async {
     expect(LiquidGlassDegradation.platformViewSurfaceUnsafe, isFalse);
 
@@ -212,6 +219,50 @@ void main() {
     await tester.pumpAndSettle();
     expect(LiquidGlassDegradation.platformViewSurfaceUnsafe, isFalse);
   });
+
+  testWidgets('推入与退出都不撞框架构建期断言（Scope 在场）', (tester) async {
+    await tester.pumpWidget(buildPushHost());
+    await tester.tap(find.text('打开登录页'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // 置位发生在登录页 initState —— 那正是构建阶段。若闸门在那个时刻直接
+    // 通知 Scope，真机会红屏：
+    // 'setState() or markNeedsBuild() called during build ... LiquidGlassDegradationScope'
+    expect(
+      tester.takeException(),
+      isNull,
+      reason: '闸门置位不得在构建阶段通知挂在路由之上的 Scope',
+    );
+    expect(LiquidGlassDegradation.platformViewSurfaceUnsafe, isTrue);
+
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator).first);
+    navigator.pop();
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // 归零发生在 dispose —— 那是 BuildOwner.finalizeTree 的锁定窗口，撞的是
+    // 'setState() or markNeedsBuild() called when widget tree was locked'。
+    expect(
+      tester.takeException(),
+      isNull,
+      reason: '闸门归零不得在 widget 树锁定时通知 Scope',
+    );
+    expect(LiquidGlassDegradation.platformViewSurfaceUnsafe, isFalse);
+  });
+}
+
+/// 挂上 [LiquidGlassDegradationScope]，与 `MyApp.builder` 的真实结构一致。
+///
+/// 这一层不是装饰：闸门在 `initState`（**构建阶段**）置位、在 `dispose`
+/// （`BuildOwner.finalizeTree` 的锁定窗口）归零，两处都会去通知一个挂在路由
+/// 之上的 InheritedNotifier。挂上它，推入 / 退出这两步才真的被测到——不挂时
+/// 框架断言根本不会触发（那是本文件早先漏掉这个红屏的原因）。
+Widget _withGateScope(Widget child) {
+  return LiquidGlassDegradationScope(
+    notifier: LiquidGlassDegradation.platformViewUnsafeDepthNotifier,
+    child: child,
+  );
 }
 
 class _FakeWebViewController extends PlatformWebViewController {

@@ -1,3 +1,4 @@
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import 'frosted_appearance.dart';
@@ -124,9 +125,8 @@ abstract final class LiquidGlassDegradation {
   /// Platform-view gate depth, exposed as a notifier so
   /// [LiquidGlassDegradationScope] (and every registered glass surface) rebuilds
   /// whenever it changes.
-  static final ValueNotifier<int> _platformViewUnsafeDepth = ValueNotifier<int>(
-    0,
-  );
+  static final ValueNotifier<int> _platformViewUnsafeDepth =
+      _FrameSafeGateNotifier(0);
 
   /// Whether a route hosting a visible Android platform view (WebView) is
   /// currently active. Glass captures cannot include platform-view content -
@@ -142,15 +142,80 @@ abstract final class LiquidGlassDegradation {
       _platformViewUnsafeDepth;
 
   /// Marks the window unsafe for glass while a platform-view route is on top.
+  ///
+  /// 置位发生在被推路由的 `initState` 里 —— 那正是**构建阶段**。写入本身没问题
+  /// （同一次构建里后续读 `shouldDegrade` 的表面立刻拿到新值，这正是要的），
+  /// 通知由 [_FrameSafeGateNotifier] 挪到帧末。
   static void beginPlatformViewUnsafeSurface() => _platformViewUnsafeDepth.value++;
 
   /// Ends the unsafe window; other overlapping marks keep it unsafe. Fires the
   /// notifier so every dependent glass surface rebuilds with blur restored -
   /// this ends the stuck-degraded state even though the route's dispose runs
   /// at the end of the frame.
+  ///
+  /// 与 [beginPlatformViewUnsafeSurface] 对称：`dispose` 跑在
+  /// `BuildOwner.finalizeTree` 的锁定窗口里，通知同样由
+  /// [_FrameSafeGateNotifier] 挪到帧末。
   static void endPlatformViewUnsafeSurface() {
     if (_platformViewUnsafeDepth.value > 0) {
       _platformViewUnsafeDepth.value--;
     }
+  }
+}
+
+/// 平台视图闸门的通知器：**值同步写，通知躲出本帧的构建窗口**。
+///
+/// 闸门只有两个写点，两个都在框架不许 `markNeedsBuild()` 的时刻：
+///
+/// - 置位在被推路由的 `initState` —— `Navigator` 是在**构建阶段**把新路由装进
+///   树的，`initState` 因此跑在构建里。此时通知会让挂在路由之上的
+///   [LiquidGlassDegradationScope] 撞上 `setState() or markNeedsBuild() called
+///   during build`（红屏）。它不是「正在构建的祖先」，所以框架不放行。
+/// - 归零在该路由的 `dispose` —— 路由销毁跑在 `BuildOwner.finalizeTree` 的
+///   锁定窗口（`lockState(_inactiveElements._unmountAll)`）里，撞上
+///   `... called when widget tree was locked`。
+///
+/// 为什么挪到帧末不改变可见行为：`InheritedNotifier` 收到通知后只是把自己标脏，
+/// 依赖方要等**下一帧**构建时才被通知（`_InheritedNotifierElement._handleUpdate`
+/// → `markNeedsBuild`）。也就是说「这一帧写、下一帧重建」本来就是它的语义，
+/// 延后通知等于把一次非法调用换成一次合法调用，一帧都不多等。
+///
+/// 帧末只补一次通知：窗口内多次改值（begin 紧跟 end 之类）合并成一次，依赖方
+/// 重建时读到的自然是最新值。
+class _FrameSafeGateNotifier extends ValueNotifier<int> {
+  _FrameSafeGateNotifier(super.value);
+
+  /// 已排了一个帧末通知（合并窗口内的重复通知）。
+  bool _flushScheduled = false;
+
+  /// 正在帧末补发，此时不能再排下一次，否则通知会永远推不出去。
+  bool _flushing = false;
+
+  @override
+  void notifyListeners() {
+    if (_flushing) {
+      super.notifyListeners();
+      return;
+    }
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase != SchedulerPhase.persistentCallbacks) {
+      super.notifyListeners();
+      return;
+    }
+    if (_flushScheduled) {
+      return;
+    }
+    _flushScheduled = true;
+    // postFrameCallbacks 在解锁之后才跑（锁只包住 finalizeTree 里的 unmount），
+    // 所以这里通知是合法的；此刻正处在一帧之内，这一帧的帧末必定会执行到。
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _flushScheduled = false;
+      _flushing = true;
+      try {
+        super.notifyListeners();
+      } finally {
+        _flushing = false;
+      }
+    });
   }
 }

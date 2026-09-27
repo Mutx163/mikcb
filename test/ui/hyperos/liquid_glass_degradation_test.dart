@@ -91,6 +91,64 @@ void main() {
       await tester.pump();
       expect(find.text('glass'), findsOneWidget);
     });
+
+    testWidgets('gating from initState/dispose must not trip a build-phase assert', (
+      tester,
+    ) async {
+      // 真机上打开教务登录页就撞这一条：置位在被推路由的 initState（构建阶段），
+      // 归零在该路由的 dispose（BuildOwner.finalizeTree 的锁定窗口）。两处都
+      // 会去通知一个挂在路由之上的 InheritedNotifier，直接通知会拿到
+      // 'setState() or markNeedsBuild() called during build'。
+      LiquidGlassDegradation.platformViewUnsafeDepthNotifier.value = 0;
+      _GateScreenState.firstRead = null;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: LiquidGlassDegradationScope(
+            notifier: LiquidGlassDegradation.platformViewUnsafeDepthNotifier,
+            child: const Scaffold(body: Center(child: Text('home'))),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      navigator.push<void>(
+        MaterialPageRoute<void>(builder: (_) => const _GateScreen()),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: '置位在构建阶段发生，不得当场通知 Scope',
+      );
+      expect(LiquidGlassDegradation.platformViewSurfaceUnsafe, isTrue);
+      expect(
+        _GateScreenState.firstRead,
+        isTrue,
+        reason: '值是同步写的：同一次构建里后续读闸门的表面必须立刻看到降级，'
+            '只有「通知」被挪到帧末',
+      );
+      expect(
+        find.text('degraded'),
+        findsOneWidget,
+        reason: '被推上来的页面自身就是闸门之上的玻璃表面',
+      );
+
+      navigator.pop();
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: '归零在 widget 树锁定时发生，同样不得当场通知 Scope',
+      );
+      expect(LiquidGlassDegradation.platformViewSurfaceUnsafe, isFalse);
+      expect(find.text('degraded'), findsNothing);
+    });
   });
 
   group('liquid glass surfaces downgrade under system degradation', () {
@@ -185,5 +243,38 @@ class _DegradationProbe extends StatelessWidget {
   Widget build(BuildContext context) {
     final degraded = LiquidGlassDegradation.shouldDegrade(context);
     return Text(degraded ? 'degraded' : 'glass');
+  }
+}
+
+/// 扮演教务登录页：闸门在 [State.initState] 置位（= 被推路由的构建阶段）、
+/// 在 [State.dispose] 归零（= 路由销毁的锁定窗口）。
+class _GateScreen extends StatefulWidget {
+  const _GateScreen();
+
+  @override
+  State<_GateScreen> createState() => _GateScreenState();
+}
+
+class _GateScreenState extends State<_GateScreen> {
+  /// 首次构建读到的降级状态。置位在 [initState]、这一读在同一次构建里求值，
+  /// 所以它为 true 才说明「值同步写、只有通知挪到帧末」这件事成立。
+  static bool? firstRead;
+
+  @override
+  void initState() {
+    super.initState();
+    LiquidGlassDegradation.beginPlatformViewUnsafeSurface();
+  }
+
+  @override
+  void dispose() {
+    LiquidGlassDegradation.endPlatformViewUnsafeSurface();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    firstRead ??= LiquidGlassDegradation.shouldDegrade(context);
+    return const _DegradationProbe();
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../models/header_blur_style.dart';
@@ -120,7 +122,12 @@ class HyperosSheetBlurTop extends StatefulWidget {
   /// 返工三次就是这个原因，所以这个参数只允许填「空占位」那截的高度。
   final double bleedTop;
 
-  /// 正文（**滚动内容本身**）要自己留的顶部让位：[bleedTop] + 带高 + 渐隐区。
+  /// 正文（**滚动内容本身**）要自己留的顶部让位：带高 + 渐隐区 − [bleedTop]。
+  ///
+  /// ⚠️ **`bleedTop` 是减项**：带子整体**往上移**了那么多，带盒的**下沿并没有跟着下移**
+  /// （盒高仍是 [headerHeight]，只是位置高了），所以正文要让位的量不因上移而变大、反而变小。
+  /// 2026-09-27 我在这里误把它当加项，正文多让了 18px，控件与内容之间空出一大片
+  /// （用户报「切换按钮和下面的内容区域之间间隔那么大空白」）。
   ///
   /// 必须加在滚动内容的 `padding` 上，不能加在本控件的 body 外面 —— 加在外面会把
   /// 滚动视口整体下移，内容在带底就被裁掉、永远进不了模糊区（见 `_buildBanded` 里
@@ -128,14 +135,14 @@ class HyperosSheetBlurTop extends StatefulWidget {
   ///
   /// ```dart
   /// HyperosSheetBlurTop(
-  ///   headerHeight: 52,
+  ///   headerHeight: 40,
   ///   bleedTop: hyperosMiuixBottomSheetEmptyTitleRowHeight,
   ///   header: myHeader,
   ///   body: SingleChildScrollView(
   ///     // ↑ 让位在这里，不是在外面
   ///     padding: EdgeInsets.only(
   ///       top: HyperosSheetBlurTop.topInsetFor(
-  ///         headerHeight: 52,
+  ///         headerHeight: 40,
   ///         bleedTop: hyperosMiuixBottomSheetEmptyTitleRowHeight,
   ///       ),
   ///     ),
@@ -148,7 +155,7 @@ class HyperosSheetBlurTop extends StatefulWidget {
     double bleedTop = 0,
     double fadeExtent = 20,
   }) =>
-      bleedTop + headerHeight + fadeExtent;
+      math.max(0, headerHeight + fadeExtent - bleedTop);
 
   @override
   State<HyperosSheetBlurTop> createState() => _HyperosSheetBlurTopState();
@@ -249,7 +256,12 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
     // 另外那一截背后**没有内容**（底部弹窗只允许拖把手，而把手是内容区**上方**的兄弟
     // 节点、内容画在它前面，滚动视口到不了那儿），所以别指望在那里糊到内容 —— 糊空白等于
     // 没糊，衬底也不画（见 `_mainBand`），静止时与面板看不出变化。
-    final bandBoxHeight = widget.bleedTop + widget.headerHeight;
+    //
+    // ⚠️ 带盒高度就是 [headerHeight]，**不要**为了上移而把它加高 [bleedTop]：盒子往上
+    // 移、控件占满整盒，则带盒**下沿不动**（内容-y 仍是 headerHeight），控件底下不会多出
+    // 一截空带。2026-09-27 我把盒高写成 `bleedTop + headerHeight`、控件又贴在盒顶，于是
+    // 控件底下凭空空出 18px。
+    final bandBoxHeight = widget.headerHeight;
     final band = _mainBand(context, useBlur: useBlur);
     return Stack(
       // ⚠️ **不能** `expand`：那会让 Stack 直接取 `constraints.biggest` = 高度上限，
@@ -324,7 +336,10 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
       // 不再参与内容的位置。
       ConstrainedBox(
         constraints: BoxConstraints(
-          minHeight: widget.bleedTop + widget.headerHeight + widget.fadeExtent,
+          minHeight: math.max(
+            0,
+            widget.headerHeight + widget.fadeExtent - widget.bleedTop,
+          ),
         ),
         child: widget.body,
       ),
