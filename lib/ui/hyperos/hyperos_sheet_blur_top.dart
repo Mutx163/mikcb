@@ -297,28 +297,33 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
     );
   }
 
-  /// 带子的衬底（见 `_mainBand` 的调用处）。
-  ///
-  /// 三档，**暗色单独一档**：
+  /// 带子的衬底。
   ///
   /// * 模糊关掉 → 面板自己的**不透明**色。没有模糊就必须在带底把滚上来的内容挡住，而该色
   ///   与面板同色、本就看不出接缝。
-  /// * 模糊开着 + **浅色** → 刻意**全透明**。满浓度白衬底在带顶是「从无到有」的突变，在
-  ///   设置页看不见（带贴屏幕顶、上面没东西），搬进弹窗后带上边缘落在面板中间，就是一条
-  ///   亮线（2026-09-26 用户报「切换按钮顶部一条明显的横线」）。那时遮内容交给模糊本身
-  ///   （顶边 sigma 22，那个强度下文字本就不可读）。
-  /// * 模糊开着 + **暗色** → 给共享的磨砂 veil。暗色下没有 veil 就是「一块透明片」
-  ///   （2026-09-27 用户报「暗色模式…渐变模糊也是显示的透明效果」，子页顶栏与本带子
-  ///   同时中招）。而且现在带子上边缘就在**面板顶边**，紧挨着玻璃自己的边光，当年那条亮线
-  ///   的成因（衬底突然出现在面板中间）已经不存在。
+  /// * 模糊开着 → 共享的那份磨砂衬底（`HyperosBlurredHeader.sheetTintColor`），**明暗
+  ///   都给**。这与设置页顶栏是**同一份材料**（用户口径 2026-09-27：「最底下的模糊不是我
+  ///   原本设置页面那种柔和的过渡了」—— 要的就是设置页那一份）。
+  ///
+  /// ## 为什么必须有（2026-09-27 一次返工）
+  ///
+  /// 带子覆盖的那一段（带上边缘 → 带底 + 渐隐区）**一行内容都没有**：正文第一行在带底之下
+  /// 才开始，那一截是滚动视口里的空白。于是：
+  ///
+  /// * 只有模糊、没有衬底 → 模糊糊的是一片**均匀的面板玻璃**，等于没糊（用户报「拉杆区域
+  ///   的模糊效果不显示」）；浅色下衬底全透明时那一截直接读成**一块透明片**（同一个投诉）。
+  /// * 渐隐区里同样没有内容可糊 → 从「什么都没有」到「下面第一行清晰内容」是**硬过渡**，
+  ///   底边能看出一条线（用户报「渐变模糊底部变成强硬模糊…能看出来一条线」）。
+  ///
+  /// 有衬底之后这三件事一起消掉：渐隐区成了一条真正在渐隐的磨砂带，底边自然柔和。
+  ///
+  /// ## 为什么不再怕「带顶一条亮线」（2026-09-26 那笔的教训）
+  ///
+  /// 当年去掉衬底是因为它在面板**中间**满浓度突然出现（带子上边缘落在把手下面 24px），
+  /// 那条突变在面板中间切出一条亮线。现在带上边缘就在**面板顶边**，紧挨玻璃自己的边光，
+  /// 而且衬底是向下渐隐到 0 的（`InspireHeaderBlur` 的渐进档），面板中间不再有突变。
   Color _bandTint(BuildContext context, {required bool useBlur}) {
-    if (!useBlur) {
-      return HyperosBlurredHeader.sheetTintColor(context, withBlur: false);
-    }
-    if (Theme.of(context).brightness == Brightness.dark) {
-      return HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
-    }
-    return Colors.transparent;
+    return HyperosBlurredHeader.sheetTintColor(context, withBlur: useBlur);
   }
 
   /// 主带：真正有内容从底下穿过的那一段，渐进档（顶边满强度、向下衰减到 0）。
@@ -328,10 +333,9 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
         blurStyle: HeaderBlurStyle.inspire,
         blurEnabled: useBlur,
         blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-        // 衬底分三档（暗色单独一档，理由见 [_bandTint]）：模糊关掉时用面板自己的**不透明**
-        // 色；模糊开着时浅色全透明（满浓度白衬底在带顶是「从无到有」的突变，落在面板中间
-        // 就是一条亮线，2026-09-26 用户报），暗色则必须有 veil，否则整条带读成透明片
-        // （2026-09-27 用户报）。
+        // 衬底：模糊开着时是共享的那份磨砂色（与设置页顶栏同一份材料），模糊关掉时是面板
+        // 自己的**不透明**色。为什么开着模糊也必须有衬底、以及为什么现在才不会有「带顶一条
+        // 亮线」，见 [_bandTint]。
         tint: _bandTint(context, useBlur: useBlur),
         // 带没画模糊时没有下沿可谈（见 InspireHeaderBlur.bottomOverhang：模糊关掉还
         // 外推会盖住正文第一行）。

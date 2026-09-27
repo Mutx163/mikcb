@@ -73,7 +73,9 @@ void main() {
     }
   });
 
-  testWidgets('弹窗顶部模糊带：暗色下衬底不能是全透明', (tester) async {
+  testWidgets('弹窗顶部模糊带：衬底不能是全透明，且与设置页顶栏同一份材料', (
+    tester,
+  ) async {
     for (final brightness in Brightness.values) {
       await tester.pumpWidget(
         MaterialApp(
@@ -100,25 +102,21 @@ void main() {
         find.byType(FrostedHeaderBackground),
       );
 
-      if (brightness == Brightness.dark) {
-        expect(
-          bg.tint.a,
-          greaterThan(0),
-          reason: '暗色下带子必须有 veil，否则读成透明片（2026-09-27）',
-        );
-        expect(
-          _isWhiteBased(bg.tint),
-          isTrue,
-          reason: '暗色 veil 必须是亮 veil',
-        );
-      } else {
-        // 浅色保持全透明：满浓度白衬底落在面板中间会切出一条亮线（2026-09-26）。
-        expect(
-          bg.tint.a,
-          0,
-          reason: '浅色 + 模糊开着时衬底刻意全透明，亮线那笔的教训',
-        );
-      }
+      expect(
+        bg.tint.a,
+        greaterThan(0),
+        reason: '$brightness 下带子都必须有衬底：带子覆盖的那一段一行内容都没有，'
+            '只有模糊就等于糊了一片均匀玻璃（读成没糊 / 一块透明片），渐隐区也会与下面'
+            '第一行内容硬切出一条线（2026-09-27 三条投诉的同一个根因）',
+      );
+      expect(
+        bg.tint,
+        HyperosBlurredHeader.sheetTintColor(
+          tester.element(find.byType(FrostedHeaderBackground)),
+          withBlur: true,
+        ),
+        reason: '带子必须与设置页顶栏用**同一份**磨砂衬底（用户要的就是设置页那份观感）',
+      );
     }
   });
 }
