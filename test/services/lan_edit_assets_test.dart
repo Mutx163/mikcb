@@ -43,4 +43,52 @@ void main() {
     expect(style, contains('.dialog-overlay'));
     expect(style, contains('.app-shell'));
   });
+
+  // The page used to pull Tabler icons from cdn.jsdelivr.net at a floating
+  // `@latest` tag with no integrity check, while a complete local subset sat
+  // unused in this same directory. The main stylesheet defines no icon rules, so
+  // any offline phone or guest device rendered the page with no icons at all.
+  test('lan edit icons are served locally with no third-party CDN', () async {
+    final index = await rootBundle.loadString('assets/lan_edit/index.html');
+    final icons = await rootBundle.loadString(
+      'assets/lan_edit/tabler-icons-subset.css',
+    );
+    final script = await rootBundle.loadString('assets/lan_edit/app.js');
+    final i18n = await rootBundle.loadString('assets/lan_edit/i18n.js');
+
+    // No remote stylesheet, script, or font may come back.
+    for (final source in {index: 'index.html', script: 'app.js', i18n: 'i18n.js'}.entries) {
+      expect(
+        source.value,
+        isNot(contains('cdn.jsdelivr.net')),
+        reason: '${source.key} must not load from a CDN',
+      );
+      expect(
+        source.value,
+        isNot(contains('cdnjs.cloudflare.com')),
+        reason: '${source.key} must not load from a CDN',
+      );
+    }
+    expect(index, contains('/assets/tabler-icons-subset.css'));
+    // Icons are inline data: URIs, so no @font-face and no network font.
+    expect(icons, isNot(contains('@font-face')));
+    expect(icons, contains('--ti-svg: url("data:image/svg+xml'));
+    // The mask rule is what actually paints them; without it every icon is blank.
+    expect(icons, matches(RegExp(r'\.ti\s*\{[^}]*mask\s*:')));
+
+    // Every icon the page references must exist locally. This caught ti-eye and
+    // ti-lock, which the subset shipped without while index.html used them in
+    // four places.
+    final defined = RegExp(r'^\.(ti-[a-z0-9-]+)\s*\{', multiLine: true)
+        .allMatches(icons)
+        .map((m) => m.group(1)!)
+        .toSet();
+    final used = RegExp(r'\bti-[a-z0-9-]+')
+        .allMatches('$index\n$script')
+        .map((m) => m.group(0)!)
+        .toSet();
+    expect(used, isNotEmpty);
+    final missing = used.where((name) => !defined.contains(name)).toList()..sort();
+    expect(missing, isEmpty, reason: 'icons used but not bundled: $missing');
+  });
 }

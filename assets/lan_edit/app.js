@@ -260,7 +260,7 @@ function renderActivityLog() {
   }
   listEl.innerHTML = state.logs.map(log => `
     <div class="log-item">
-      <span class="log-time">${log.time}</span>
+      <span class="log-time">${escapeHtml(log.time)}</span>
       <span class="log-action badge badge-primary">${escapeHtml(log.action)}</span>
       <span class="log-detail">${escapeHtml(log.detail)}</span>
     </div>
@@ -455,9 +455,17 @@ function renderDashboard() {
       const item = document.createElement('li');
       item.className = 'list-card-item';
 
-      const sectionText = course.startSection === course.endSection
-        ? t('sectionSingle', course.startSection)
-        : t('sectionRange', course.startSection, course.endSection);
+      // Escape even though these can only be numbers today. The guarantee comes
+      // from the Dart type (Course.startSection is a non-nullable int), not from
+      // this file: if a future importer ever hands the client a string here, an
+      // unescaped interpolation becomes stored XSS with nothing to catch it.
+      // b344be91 applied exactly this reasoning to the value="" attributes and
+      // these three text nodes were left out of it.
+      const sectionText = escapeHtml(
+        course.startSection === course.endSection
+          ? t('sectionSingle', course.startSection)
+          : t('sectionRange', course.startSection, course.endSection),
+      );
 
       const typeBadge = course.courseNature === 'elective'
         ? `<span class="badge badge-success">${t('electiveBadge')}</span>`
@@ -665,13 +673,19 @@ function renderCoursesTable() {
     // 生成上课时间段的 HTML 列表
     const slotsHtml = group.courses.map(course => {
       const dayName = getWeekdayCn(course.dayOfWeek - 1);
-      const sectionText = course.startSection === course.endSection
-        ? t('sectionSingle', course.startSection)
-        : t('sectionRange', course.startSection, course.endSection);
+      // See the note at the other sectionText: numeric today by Dart's type, but
+      // escape here rather than depend on that. Build the whole label first so
+      // the odd/even suffix is covered too.
+      const sectionText = escapeHtml(
+        course.startSection === course.endSection
+          ? t('sectionSingle', course.startSection)
+          : t('sectionRange', course.startSection, course.endSection),
+      );
 
       let weekText = t('weekRange', course.startWeek, course.endWeek);
       if (course.isOddWeek) weekText += t('oddWeek');
       else if (course.isEvenWeek) weekText += t('evenWeek');
+      weekText = escapeHtml(weekText);
 
       return `
         <div class="card-slot-item">

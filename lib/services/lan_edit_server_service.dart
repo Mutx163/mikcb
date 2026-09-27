@@ -237,6 +237,15 @@ class LanEditServerService {
     if (path == '/assets/lan-timetable.css') {
       return 'assets/lan_edit/lan-timetable.css';
     }
+    // Icons ship as inline data: URIs in this file, so the LAN page needs no
+    // third-party CDN. index.html used to pull @tabler/icons-webfont@latest
+    // from cdn.jsdelivr.net, which meant every icon vanished when the phone or
+    // the guest device was offline — the main stylesheet defines no icon rules
+    // of its own. A floating @latest tag with no integrity check was also a
+    // supply-chain dependency this feature never needed.
+    if (path == '/assets/tabler-icons-subset.css') {
+      return 'assets/lan_edit/tabler-icons-subset.css';
+    }
     // App brand mark for login page + browser tab icon.
     if (path == '/assets/logo.png' || path == '/favicon.ico') {
       return 'assets/branding/launcher_icon.png';
