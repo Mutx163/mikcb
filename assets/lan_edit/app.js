@@ -350,7 +350,15 @@ function courseInWeek(course, week) {
 
 // 分组计算逻辑 (核心：将一门课的多个上课时间聚合成一个 CourseGroup)
 function getCourseGroups(coursesList) {
-  const groupsMap = {};
+  // ⚠️ 必须 `Object.create(null)`，不能用 `{}`。
+  // 键是**课程名**，而课程名来自导入的表格/备份，用户可控。普通对象字面量继承
+  // Object.prototype，所以课程名恰好叫 `__proto__` / `constructor` / `toString`
+  // 时，`groupsMap[key]` 命中的是原型上的东西（真值）→ `if (!groupsMap[key])`
+  // 判不出「还没有」→ 落到 `groupsMap[key].courses.push(...)`，而原型上并没有
+  // courses，抛 TypeError。renderGrid / renderCoursesTable / renderDashboard
+  // 一起废掉，整页不可用。
+  // null 原型对象没有继承链，`Object.values()` 照常可用。
+  const groupsMap = Object.create(null);
   coursesList.forEach(course => {
     const key = course.name.trim();
     if (!groupsMap[key]) {
