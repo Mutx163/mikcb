@@ -2150,7 +2150,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String deleteTimeSchemeMessage(String name) {
-    return '「$name」を削除しますか？使用中のテンプレートは削除できません';
+    return '「$name」を削除しますか？元に戻せません';
   }
 
   @override
@@ -2191,6 +2191,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get timeSchemeBlockerListSeparator => '、';
+
+  @override
+  String get timeSchemeBlockedLocationGroupsSubtitle =>
+      'これらの場所ルールがこのテンプレートを指しています。別のテンプレートに付け替えてから削除してください';
+
+  @override
+  String get timeSchemeBlockedDateRulesSubtitle =>
+      'これらの日程ルールがこのテンプレートに切り替えます。別のテンプレートに付け替えてから削除してください';
 
   @override
   String get copiedTimeSchemeMessage => 'テンプレートをコピーしました';
@@ -3393,6 +3401,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get wallpaperHistoryRemoveBadgeTooltip => '最近使った壁紙から削除';
+
+  @override
+  String get wallpaperHistoryRemoveConfirmHint =>
+      '最近使った壁紙から削除され、画像ファイルも一緒に削除されます';
 
   @override
   String get homePageWallpaperFileMissingTitle => '画像ファイルがありません';

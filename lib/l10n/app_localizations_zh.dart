@@ -2112,7 +2112,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String deleteTimeSchemeMessage(String name) {
-    return '确定删除“$name”吗？正在使用中的模板不能删除';
+    return '确定删除“$name”吗？删除后无法恢复';
   }
 
   @override
@@ -2153,6 +2153,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get timeSchemeBlockerListSeparator => '、';
+
+  @override
+  String get timeSchemeBlockedLocationGroupsSubtitle =>
+      '这些地点作息匹配指向这套模板，需要先改绑别的模板才能删除';
+
+  @override
+  String get timeSchemeBlockedDateRulesSubtitle =>
+      '这些日期作息规则会把课表切到这套模板，需要先改绑别的模板才能删除';
 
   @override
   String get copiedTimeSchemeMessage => '已复制时间模板';
@@ -3330,6 +3338,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get wallpaperHistoryRemoveBadgeTooltip => '从最近使用中移除';
+
+  @override
+  String get wallpaperHistoryRemoveConfirmHint => '将从最近使用中移除，图片文件也会一起删除';
 
   @override
   String get homePageWallpaperFileMissingTitle => '图片文件已丢失';
@@ -13167,7 +13178,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String deleteTimeSchemeMessage(String name) {
-    return '確定刪除“$name”嗎？正在使用中的範本不能刪除';
+    return '確定刪除“$name”嗎？刪除咗就冇得復原';
   }
 
   @override
@@ -13208,6 +13219,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get timeSchemeBlockerListSeparator => '、';
+
+  @override
+  String get timeSchemeBlockedLocationGroupsSubtitle =>
+      '呢啲地點作息配對指向呢套範本，要先改綁另一套範本先可以刪除';
+
+  @override
+  String get timeSchemeBlockedDateRulesSubtitle =>
+      '呢啲日期作息規則會將課表切換到呢套範本，要先改綁另一套範本先可以刪除';
 
   @override
   String get copiedTimeSchemeMessage => '已複製時間範本';
@@ -14385,6 +14404,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get wallpaperHistoryRemoveBadgeTooltip => '從最近使用中移除';
+
+  @override
+  String get wallpaperHistoryRemoveConfirmHint => '會由最近使用中移除，圖片檔案亦會一併刪除';
 
   @override
   String get homePageWallpaperFileMissingTitle => '圖片檔案已遺失';
@@ -24262,7 +24284,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String deleteTimeSchemeMessage(String name) {
-    return '確定刪除“$name”嗎？正在使用中的範本不能刪除';
+    return '確定刪除“$name”嗎？刪除後無法復原';
   }
 
   @override
@@ -24303,6 +24325,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get timeSchemeBlockerListSeparator => '、';
+
+  @override
+  String get timeSchemeBlockedLocationGroupsSubtitle =>
+      '這些地點作息配對指向這套範本，需要先改綁別的範本才能刪除';
+
+  @override
+  String get timeSchemeBlockedDateRulesSubtitle =>
+      '這些日期作息規則會把課表切到這套範本，需要先改綁別的範本才能刪除';
 
   @override
   String get copiedTimeSchemeMessage => '已複製時間範本';
@@ -25480,6 +25510,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get wallpaperHistoryRemoveBadgeTooltip => '從最近使用中移除';
+
+  @override
+  String get wallpaperHistoryRemoveConfirmHint => '將從最近使用中移除，圖片檔案也會一併刪除';
 
   @override
   String get homePageWallpaperFileMissingTitle => '圖片檔案已遺失';

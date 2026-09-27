@@ -1044,7 +1044,7 @@
     }
   },
   "deleteTimeSchemeTitle": "刪除時間範本",
-  "deleteTimeSchemeMessage": "確定刪除“{name}”嗎？正在使用中的範本不能刪除",
+  "deleteTimeSchemeMessage": "確定刪除“{name}”嗎？刪除後無法復原",
   "@deleteTimeSchemeMessage": {
     "placeholders": {
       "name": {
@@ -1103,6 +1103,8 @@
     }
   },
   "timeSchemeBlockerListSeparator": "、",
+  "timeSchemeBlockedLocationGroupsSubtitle": "這些地點作息配對指向這套範本，需要先改綁別的範本才能刪除",
+  "timeSchemeBlockedDateRulesSubtitle": "這些日期作息規則會把課表切到這套範本，需要先改綁別的範本才能刪除",
   "copiedTimeSchemeMessage": "已複製時間範本",
   "appliedTimeSchemeMessage": "已應用時間範本：{name}",
   "@appliedTimeSchemeMessage": {
@@ -6192,6 +6194,7 @@
   "wallpaperHistoryRemoveUndo": "復原",
   "wallpaperHistoryRemoveInUseToast": "正在使用這張桌布，請先換成別的再刪除",
   "wallpaperHistoryRemoveBadgeTooltip": "從最近使用中移除",
+  "wallpaperHistoryRemoveConfirmHint": "將從最近使用中移除，圖片檔案也會一併刪除",
   "homePageWallpaperFileMissingTitle": "圖片檔案已遺失",
   "homePageWallpaperFileMissingSubtitle": "首頁目前顯示的是純色背景。點這裡重新選一張",
   "homePageWallpaperFileMissingToast": "桌布檔案已遺失，已恢復為純色背景，請重新選一張",

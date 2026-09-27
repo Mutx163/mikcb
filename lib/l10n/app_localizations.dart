@@ -3955,7 +3955,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteTimeSchemeMessage.
   ///
   /// In zh, this message translates to:
-  /// **'确定删除“{name}”吗？正在使用中的模板不能删除'**
+  /// **'确定删除“{name}”吗？删除后无法恢复'**
   String deleteTimeSchemeMessage(String name);
 
   /// No description provided for @deletedTimeSchemeMessage.
@@ -4011,6 +4011,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'、'**
   String get timeSchemeBlockerListSeparator;
+
+  /// No description provided for @timeSchemeBlockedLocationGroupsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'这些地点作息匹配指向这套模板，需要先改绑别的模板才能删除'**
+  String get timeSchemeBlockedLocationGroupsSubtitle;
+
+  /// No description provided for @timeSchemeBlockedDateRulesSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'这些日期作息规则会把课表切到这套模板，需要先改绑别的模板才能删除'**
+  String get timeSchemeBlockedDateRulesSubtitle;
 
   /// No description provided for @copiedTimeSchemeMessage.
   ///
@@ -6170,6 +6182,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'从最近使用中移除'**
   String get wallpaperHistoryRemoveBadgeTooltip;
+
+  /// No description provided for @wallpaperHistoryRemoveConfirmHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'将从最近使用中移除，图片文件也会一起删除'**
+  String get wallpaperHistoryRemoveConfirmHint;
 
   /// No description provided for @homePageWallpaperFileMissingTitle.
   ///

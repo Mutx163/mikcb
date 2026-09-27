@@ -589,6 +589,11 @@ class _TimeSchemeManagementScreenState
           children: [
             Text(
               l10n.timeSchemeDeleteBlockedIntro,
+              // Lead-in sentence stays centered — that is the dialog's own
+              // convention (showHyperosDialog centers body text, same as the
+              // title above).  The blocker list below is the part that opts out
+              // via TextAlign.start, because a list reads wrong centered.
+              textAlign: TextAlign.center,
               style: HyperosTypography.listDetail(context).copyWith(
                 color: HyperosColors.primaryText(context),
               ),
@@ -956,31 +961,29 @@ class _TimeSchemeManagementScreenState
               ),
               // Location groups and date rules also block deletion but own no
               // courses of their own, so without these two sections the usage
-              // dialog could not explain a delete the provider refuses.
+              // dialog could not explain a delete the provider refuses.  Gated
+              // on non-empty (unlike the three course sections above) so the
+              // common one-blocker case doesn't grow two empty boxes; the
+              // subtitle is a static sentence and the names live only in
+              // `items` — naming them in both printed every rule twice.
               if (locationGroupNames.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 _UsageSection(
                   title: l10n.locationTimeMatchEntryTitle,
-                  subtitle: l10n.timeSchemeBlockedByLocationGroups(
-                    locationGroupNames.join(l10n.timeSchemeBlockerListSeparator),
-                  ),
+                  subtitle: l10n.timeSchemeBlockedLocationGroupsSubtitle,
                   items: locationGroupNames
                       .map((name) => _UsageLine(primary: name))
                       .toList(growable: false),
-                  emptyText: l10n.timeSchemeBlockedByLocationGroups(''),
                 ),
               ],
               if (dateRuleNames.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 _UsageSection(
                   title: l10n.scheduleDateRuleSectionTitle,
-                  subtitle: l10n.timeSchemeBlockedByDateRules(
-                    dateRuleNames.join(l10n.timeSchemeBlockerListSeparator),
-                  ),
+                  subtitle: l10n.timeSchemeBlockedDateRulesSubtitle,
                   items: dateRuleNames
                       .map((name) => _UsageLine(primary: name))
                       .toList(growable: false),
-                  emptyText: l10n.timeSchemeBlockedByDateRules(''),
                 ),
               ],
             ],
@@ -1411,13 +1414,19 @@ class _UsageSection extends StatelessWidget {
   final String title;
   final String subtitle;
   final List<_UsageLine> items;
-  final String emptyText;
+
+  /// Text for the no-items case.  Optional: sections that only render when they
+  /// have something to show (see the location-group / date-rule sections in
+  /// [_showUsageDetails]) have no meaningful empty state to spell out, and
+  /// inventing one by formatting a sentence with an empty placeholder produced
+  /// text like "绑定了它的地点作息匹配：".
+  final String? emptyText;
 
   const _UsageSection({
     required this.title,
     required this.subtitle,
     required this.items,
-    required this.emptyText,
+    this.emptyText,
   });
 
   @override
@@ -1447,7 +1456,7 @@ class _UsageSection extends StatelessWidget {
           const SizedBox(height: 10),
           if (items.isEmpty)
             Text(
-              emptyText,
+              emptyText ?? subtitle,
               textAlign: TextAlign.start,
               style: HyperosTypography.listDetail(context),
             )

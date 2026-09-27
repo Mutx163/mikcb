@@ -2238,7 +2238,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteTimeSchemeMessage(String name) {
-    return 'Delete “$name”? A scheme in use cannot be deleted';
+    return 'Delete “$name”? This cannot be undone';
   }
 
   @override
@@ -2281,6 +2281,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get timeSchemeBlockerListSeparator => ', ';
+
+  @override
+  String get timeSchemeBlockedLocationGroupsSubtitle =>
+      'These location rules point at this scheme — rebind them to another scheme before deleting it';
+
+  @override
+  String get timeSchemeBlockedDateRulesSubtitle =>
+      'These date rules switch a timetable to this scheme — rebind them to another scheme before deleting it';
 
   @override
   String get copiedTimeSchemeMessage => 'Time scheme copied';
@@ -3542,6 +3550,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wallpaperHistoryRemoveBadgeTooltip => 'Remove from Recently used';
+
+  @override
+  String get wallpaperHistoryRemoveConfirmHint =>
+      'It will be removed from Recently used, and the image file will be deleted too';
 
   @override
   String get homePageWallpaperFileMissingTitle => 'Image file is missing';

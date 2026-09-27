@@ -1187,7 +1187,7 @@
     }
   },
   "deleteTimeSchemeTitle": "删除时间模板",
-  "deleteTimeSchemeMessage": "确定删除“{name}”吗？正在使用中的模板不能删除",
+  "deleteTimeSchemeMessage": "确定删除“{name}”吗？删除后无法恢复",
   "@deleteTimeSchemeMessage": {
     "placeholders": {
       "name": {
@@ -1246,6 +1246,8 @@
     }
   },
   "timeSchemeBlockerListSeparator": "、",
+  "timeSchemeBlockedLocationGroupsSubtitle": "这些地点作息匹配指向这套模板，需要先改绑别的模板才能删除",
+  "timeSchemeBlockedDateRulesSubtitle": "这些日期作息规则会把课表切到这套模板，需要先改绑别的模板才能删除",
   "copiedTimeSchemeMessage": "已复制时间模板",
   "appliedTimeSchemeMessage": "已应用时间模板：{name}",
   "@appliedTimeSchemeMessage": {
@@ -1930,6 +1932,7 @@
   "wallpaperHistoryRemoveUndo": "撤销",
   "wallpaperHistoryRemoveInUseToast": "正在使用这张壁纸，请先换成别的再删除",
   "wallpaperHistoryRemoveBadgeTooltip": "从最近使用中移除",
+  "wallpaperHistoryRemoveConfirmHint": "将从最近使用中移除，图片文件也会一起删除",
   "homePageWallpaperFileMissingTitle": "图片文件已丢失",
   "homePageWallpaperFileMissingSubtitle": "首页当前显示的是纯色背景。点这里重新选一张",
   "homePageWallpaperFileMissingToast": "壁纸文件已丢失，已恢复为纯色背景，请重新选择一张",

@@ -1045,7 +1045,7 @@
     }
   },
   "deleteTimeSchemeTitle": "テンプレート削除",
-  "deleteTimeSchemeMessage": "「{name}」を削除しますか？使用中のテンプレートは削除できません",
+  "deleteTimeSchemeMessage": "「{name}」を削除しますか？元に戻せません",
   "@deleteTimeSchemeMessage": {
     "placeholders": {
       "name": {
@@ -1104,6 +1104,8 @@
     }
   },
   "timeSchemeBlockerListSeparator": "、",
+  "timeSchemeBlockedLocationGroupsSubtitle": "これらの場所ルールがこのテンプレートを指しています。別のテンプレートに付け替えてから削除してください",
+  "timeSchemeBlockedDateRulesSubtitle": "これらの日程ルールがこのテンプレートに切り替えます。別のテンプレートに付け替えてから削除してください",
   "copiedTimeSchemeMessage": "テンプレートをコピーしました",
   "appliedTimeSchemeMessage": "テンプレート適用済み：{name}",
   "@appliedTimeSchemeMessage": {
@@ -6213,6 +6215,7 @@
   "wallpaperHistoryRemoveUndo": "元に戻す",
   "wallpaperHistoryRemoveInUseToast": "この壁紙は使用中です。別の壁紙に切り替えてから削除してください",
   "wallpaperHistoryRemoveBadgeTooltip": "最近使った壁紙から削除",
+  "wallpaperHistoryRemoveConfirmHint": "最近使った壁紙から削除され、画像ファイルも一緒に削除されます",
   "homePageWallpaperFileMissingTitle": "画像ファイルがありません",
   "homePageWallpaperFileMissingSubtitle": "ホームは単色の背景を表示しています。ここをタップして選び直してください",
   "homePageWallpaperFileMissingToast": "壁紙ファイルがないため単色の背景に戻りました。新しい画像を選んでください",

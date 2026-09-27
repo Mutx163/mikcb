@@ -62,8 +62,7 @@ class TimeSchemeDeleteBlockers {
 
   bool get isEmpty =>
       profileNames.isEmpty &&
-      overrideCourseCount == 0 &&
-      locationCourseCount == 0 &&
+      totalCourseCount == 0 &&
       locationGroupNames.isEmpty &&
       dateRuleNames.isEmpty;
 

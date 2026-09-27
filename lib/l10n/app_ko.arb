@@ -1045,7 +1045,7 @@
     }
   },
   "deleteTimeSchemeTitle": "템플릿 삭제",
-  "deleteTimeSchemeMessage": "\"{name}\"을(를) 삭제하시겠습니까? 사용 중인 템플릿은 삭제할 수 없습니다",
+  "deleteTimeSchemeMessage": "\"{name}\"을(를) 삭제하시겠습니까? 되돌릴 수 없습니다",
   "@deleteTimeSchemeMessage": {
     "placeholders": {
       "name": {
@@ -1104,6 +1104,8 @@
     }
   },
   "timeSchemeBlockerListSeparator": ", ",
+  "timeSchemeBlockedLocationGroupsSubtitle": "이 장소 규칙들이 이 템플릿을 가리킵니다. 다른 템플릿으로 먼저 바꿔야 삭제할 수 있습니다",
+  "timeSchemeBlockedDateRulesSubtitle": "이 날짜 규칙들이 시간표를 이 템플릿으로 전환합니다. 다른 템플릿으로 먼저 바꿔야 삭제할 수 있습니다",
   "copiedTimeSchemeMessage": "템플릿을 복사했습니다",
   "appliedTimeSchemeMessage": "템플릿 적용됨: {name}",
   "@appliedTimeSchemeMessage": {
@@ -6213,6 +6215,7 @@
   "wallpaperHistoryRemoveUndo": "실행 취소",
   "wallpaperHistoryRemoveInUseToast": "현재 사용 중인 배경화면입니다. 다른 배경으로 바꾼 뒤 삭제하세요",
   "wallpaperHistoryRemoveBadgeTooltip": "최근 사용에서 삭제",
+  "wallpaperHistoryRemoveConfirmHint": "최근 사용에서 삭제되며 이미지 파일도 함께 삭제됩니다",
   "homePageWallpaperFileMissingTitle": "이미지 파일이 없습니다",
   "homePageWallpaperFileMissingSubtitle": "홈 화면에는 단색 배경이 표시됩니다. 여기를 눌러 다시 선택하세요",
   "homePageWallpaperFileMissingToast": "배경화면 파일이 없어 단색 배경으로 되돌렸습니다. 새 이미지를 선택하세요",

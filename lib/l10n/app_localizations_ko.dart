@@ -2161,7 +2161,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String deleteTimeSchemeMessage(String name) {
-    return '\"$name\"을(를) 삭제하시겠습니까? 사용 중인 템플릿은 삭제할 수 없습니다';
+    return '\"$name\"을(를) 삭제하시겠습니까? 되돌릴 수 없습니다';
   }
 
   @override
@@ -2203,6 +2203,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get timeSchemeBlockerListSeparator => ', ';
+
+  @override
+  String get timeSchemeBlockedLocationGroupsSubtitle =>
+      '이 장소 규칙들이 이 템플릿을 가리킵니다. 다른 템플릿으로 먼저 바꿔야 삭제할 수 있습니다';
+
+  @override
+  String get timeSchemeBlockedDateRulesSubtitle =>
+      '이 날짜 규칙들이 시간표를 이 템플릿으로 전환합니다. 다른 템플릿으로 먼저 바꿔야 삭제할 수 있습니다';
 
   @override
   String get copiedTimeSchemeMessage => '템플릿을 복사했습니다';
@@ -3412,6 +3420,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get wallpaperHistoryRemoveBadgeTooltip => '최근 사용에서 삭제';
+
+  @override
+  String get wallpaperHistoryRemoveConfirmHint =>
+      '최근 사용에서 삭제되며 이미지 파일도 함께 삭제됩니다';
 
   @override
   String get homePageWallpaperFileMissingTitle => '이미지 파일이 없습니다';

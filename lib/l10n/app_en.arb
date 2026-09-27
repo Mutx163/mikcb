@@ -1150,7 +1150,7 @@
     }
   },
   "deleteTimeSchemeTitle": "Delete Time Scheme",
-  "deleteTimeSchemeMessage": "Delete “{name}”? A scheme in use cannot be deleted",
+  "deleteTimeSchemeMessage": "Delete “{name}”? This cannot be undone",
   "@deleteTimeSchemeMessage": {
     "placeholders": {
       "name": {
@@ -1209,6 +1209,8 @@
     }
   },
   "timeSchemeBlockerListSeparator": ", ",
+  "timeSchemeBlockedLocationGroupsSubtitle": "These location rules point at this scheme — rebind them to another scheme before deleting it",
+  "timeSchemeBlockedDateRulesSubtitle": "These date rules switch a timetable to this scheme — rebind them to another scheme before deleting it",
   "copiedTimeSchemeMessage": "Time scheme copied",
   "appliedTimeSchemeMessage": "Applied time scheme: {name}",
   "@appliedTimeSchemeMessage": {
@@ -1895,6 +1897,7 @@
   "wallpaperHistoryRemoveUndo": "Undo",
   "wallpaperHistoryRemoveInUseToast": "This wallpaper is in use. Switch to another one before removing it",
   "wallpaperHistoryRemoveBadgeTooltip": "Remove from Recently used",
+  "wallpaperHistoryRemoveConfirmHint": "It will be removed from Recently used, and the image file will be deleted too",
   "homePageWallpaperFileMissingTitle": "Image file is missing",
   "homePageWallpaperFileMissingSubtitle": "The home page is showing a solid background. Tap here to pick one again",
   "homePageWallpaperFileMissingToast": "The wallpaper file is missing. Fell back to a solid background — pick a new image",
