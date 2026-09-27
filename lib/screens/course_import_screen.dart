@@ -3830,7 +3830,24 @@ class _WarehouseAdapterWebLoginScreenState
             if (!mounted) {
               return;
             }
+            // 页面导航会销毁已注入脚本的执行上下文（强智登录后固定跳「学生个人中心」，
+            // 适配脚本常需要先 location.href 跳到课表页、再让用户重跑一次）。此时脚本
+            // 不可能再回调宿主，继续等导入超时只会给出「timeout」假报错，直接收尾。
+            final importAbandonedByNavigation =
+                _isExecutingImport &&
+                !_isMacroReplay &&
+                !widget.runInBackground;
+            if (importAbandonedByNavigation) {
+              _debugImportLog(
+                'navigation during import -> stop waiting url=$url',
+              );
+              _cancelImportTimeout();
+            }
             setState(() {
+              if (importAbandonedByNavigation) {
+                _isExecutingImport = false;
+                _lastScriptStatus = null;
+              }
               _currentUrl = url;
               _hasPromptedAutofill = false;
               _lastLoginStateDecisionKey = null;
