@@ -3493,7 +3493,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homePageWallpaperRecentSubtitle =>
-      'Tap to switch back, long-press to delete, up to 10 kept';
+      'Tap to switch back, tap the corner badge to remove, up to 10 kept';
 
   @override
   String get homePageWallpaperRecentImageLabel => 'Photo';
@@ -3506,7 +3506,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wallpaperHistoryRemoveInUseToast =>
-      'This wallpaper is in use. Switch to another one before deleting it';
+      'This wallpaper is in use. Switch to another one before removing it';
+
+  @override
+  String get wallpaperHistoryRemoveBadgeTooltip => 'Remove from Recently used';
 
   @override
   String get homePageWallpaperFileMissingTitle => 'Image file is missing';

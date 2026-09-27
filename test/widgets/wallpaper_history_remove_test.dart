@@ -5,10 +5,12 @@
 // **课表页面**那条进去：那一处是内联的，不经过底部弹层，测试最不容易被弹层
 // 动画 / 覆盖层顺序带偏；两个宿主共用同一套 builder 与同一个 mixin，行为一致。
 //
-// 钉的是三件容易悄悄退化的事：
+// 钉的是四件容易悄悄退化的事：
 // ① 提示条只在「路径还在、文件没了」时出现，且给出重新选图的出口；
-// ② 长按删掉的是**历史条目**，不是当前壁纸 —— 正在用的那张必须被挡住；
-// ③ 删除会连带删文件，但留 2.5s 反悔窗口，撤销期间文件不许没。
+// ② 删除必须**走两步**：先点角标进确认态，再按「删除」才真删（长按直接销毁
+//    数据是不可逆的破坏性操作，不能让隐藏手势当主入口）；
+// ③ 同一时刻只有一张卡能待确认，正在用的那张根本没有角标；
+// ④ 确认之后文件仍留 2.5s 反悔窗口，撤销期间不许没。
 import 'dart:convert';
 import 'dart:io';
 
@@ -69,6 +71,24 @@ void _seedPrefs({
 
 /// 「最近使用」里每张缩略图的标签（条目带的是"照片"这种类目名，不是文件名）。
 const _kRecentCardLabel = '照片';
+
+/// 某张壁纸在条里那张卡（key 由设置侧的卡片 key 约定，见 _WallpaperThumbnailCard）。
+Finder _cardOf(String wallpaperKey) =>
+    find.byKey(ValueKey<String>('wallpaper-recent-card:$wallpaperKey'));
+
+/// 某张卡右上角那颗「×」（正在用的那张没有这颗角标）。
+Finder _removeBadgeOf(String wallpaperKey) => find.descendant(
+  of: _cardOf(wallpaperKey),
+  matching: find.byIcon(Icons.close_rounded),
+);
+
+/// 某张卡里那张缩略图（含确认态的压暗层）。
+Finder _thumbnailOf(String wallpaperKey) => find.descendant(
+  of: _cardOf(wallpaperKey),
+  matching: find.byKey(
+    const ValueKey<String>('wallpaper-card-thumbnail'),
+  ),
+);
 
 /// 起好 App 并进到「课表页面」子页，滚到「背景」组（壁纸行 + 最近使用都在里面）。
 Future<void> _openTimetablePageSettings(WidgetTester tester) async {
@@ -164,9 +184,7 @@ void main() {
     expect(find.text('最近使用'), findsNothing);
   });
 
-  testWidgets('长按「最近使用」里的一张：条目消失、文件仍在（反悔窗口内）', (
-    tester,
-  ) async {
+  testWidgets('删除要走两步：先点角标进确认态，再按「删除」才真删', (tester) async {
     final inUse = _createTempWallpaper('current.png');
     final other = _createTempWallpaper('other.png');
     _seedPrefs(
@@ -181,19 +199,48 @@ void main() {
     await pumpSettings(tester);
     await _openTimetablePageSettings(tester);
 
-    // 当前壁纸已被历史收录，不会再合出一张，所以正好两张、下标即身份：
-    // 0 = 正在用的 current，1 = 另一张 other。
+    // 当前壁纸已被历史收录，不会再合出一张，所以正好两张、可删的只有一张。
     final cards = find.text(_kRecentCardLabel);
     expect(cards, findsNWidgets(2));
+    // 正在用的那张**没有**角标：可删入口要靠角标表达"哪张能删"。
+    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    expect(
+      find.descendant(of: _cardOf(inUse), matching: find.byIcon(Icons.close_rounded)),
+      findsNothing,
+    );
+    final thumbnailSizeBeforeConfirm = tester.getSize(_thumbnailOf(other));
 
-    await tester.longPress(cards.at(1));
+    await tester.tap(_removeBadgeOf(other));
     await tester.pumpAndSettle();
 
+    // 第一步只进确认态：什么都不能少，也什么都不该动。
+    expect(find.text('删除'), findsOneWidget, reason: '确认态要给出那颗删除键');
+    expect(find.text('取消'), findsOneWidget);
+    expect(cards, findsNWidgets(1), reason: '这一张的标签位让给了确认按钮');
+    expect(File(other).existsSync(), isTrue);
+    expect(find.text('已从最近使用中删除'), findsNothing, reason: '还没确认');
+    // 缩略图在两种状态间**不变大小** —— 标签位不定高的话，差值会被 Expanded
+    // 吃掉，进确认态那一帧图会肉眼可见地缩一下。
     expect(
-      cards,
-      findsNWidgets(1),
-      reason: '长按必须真的把这张从「最近使用」里摘掉',
+      tester.getSize(_thumbnailOf(other)),
+      thumbnailSizeBeforeConfirm,
+      reason: '进确认态不许让缩略图改尺寸',
     );
+
+    // 取消 → 回到常态，条目与文件都还在。
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(cards, findsNWidgets(2));
+    expect(find.text('删除'), findsNothing);
+    expect(File(other).existsSync(), isTrue);
+
+    // 再来一次，这次按「删除」。
+    await tester.tap(_removeBadgeOf(other));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('删除'));
+    await tester.pumpAndSettle();
+
+    expect(cards, findsNWidgets(1), reason: '确认之后必须真的把这张摘掉');
     expect(
       File(other).existsSync(),
       isTrue,
@@ -203,7 +250,50 @@ void main() {
     expect(find.text('撤销'), findsOneWidget);
   });
 
-  testWidgets('长按当前正在用的那张：只提示，不删条目也不删文件', (tester) async {
+  testWidgets('同一时刻只有一张卡能处于确认态（对另一张发起即取消这一张）', (
+    tester,
+  ) async {
+    final a = _createTempWallpaper('a.png');
+    final b = _createTempWallpaper('b.png');
+    final inUse = _createTempWallpaper('current.png');
+    _seedPrefs(
+      settings: TimetableSettings.defaults().copyWith(
+        homePageWallpaperPath: inUse,
+      ),
+      history: [
+        WallpaperHistoryEntry(key: inUse, usedAt: 300),
+        WallpaperHistoryEntry(key: a, usedAt: 200),
+        WallpaperHistoryEntry(key: b, usedAt: 100),
+      ],
+    );
+    await pumpSettings(tester);
+    await _openTimetablePageSettings(tester);
+
+    // 正在用的那张没有角标：可删的只有 a、b 两张。
+    expect(find.text(_kRecentCardLabel), findsNWidgets(3));
+    expect(find.byIcon(Icons.close_rounded), findsNWidgets(2));
+
+    await tester.tap(_removeBadgeOf(a));
+    await tester.pumpAndSettle();
+    expect(find.text('删除'), findsOneWidget);
+    expect(
+      find.descendant(of: _cardOf(a), matching: find.byIcon(Icons.close_rounded)),
+      findsNothing,
+      reason: '进入确认态后这张自己的角标要收起（已被「删除」取代）',
+    );
+
+    // 对 b 发起确认：a 的确认态必须让位，不能两张同时待确认。
+    await tester.tap(_removeBadgeOf(b));
+    await tester.pumpAndSettle();
+    expect(find.text('删除'), findsOneWidget, reason: '仍然只该有一颗删除键');
+    expect(find.text('取消'), findsOneWidget);
+    // 此刻两张都还在，确认键还只是提议。
+    expect(find.text(_kRecentCardLabel), findsNWidgets(2));
+    expect(File(a).existsSync(), isTrue);
+    expect(File(b).existsSync(), isTrue);
+  });
+
+  testWidgets('正在用的那张没有角标，长按只解释一句、不进确认态', (tester) async {
     final inUse = _createTempWallpaper('current.png');
     _seedPrefs(
       settings: TimetableSettings.defaults().copyWith(
@@ -216,10 +306,17 @@ void main() {
 
     final cards = find.text(_kRecentCardLabel);
     expect(cards, findsOneWidget);
+    expect(
+      find.byIcon(Icons.close_rounded),
+      findsNothing,
+      reason: '可删入口要靠角标表达"哪张能删"，正在用的那张不能有',
+    );
+
     await tester.longPress(cards.at(0));
     await tester.pumpAndSettle();
 
     expect(find.text('正在使用这张壁纸，请先换成别的再删除'), findsOneWidget);
+    expect(find.text('删除'), findsNothing, reason: '不许进确认态');
     expect(cards, findsOneWidget, reason: '条目必须留着');
     expect(File(inUse).existsSync(), isTrue);
     expect(find.text('已从最近使用中删除'), findsNothing);

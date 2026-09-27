@@ -3345,7 +3345,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePageWallpaperRecentTitle => '最近使った壁紙';
 
   @override
-  String get homePageWallpaperRecentSubtitle => 'タップで切替、長押しで削除。最大 10 枚まで保持';
+  String get homePageWallpaperRecentSubtitle => 'タップで切替、角のマークで削除。最大 10 枚まで保持';
 
   @override
   String get homePageWallpaperRecentImageLabel => '写真';
@@ -3359,6 +3359,9 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get wallpaperHistoryRemoveInUseToast =>
       'この壁紙は使用中です。別の壁紙に切り替えてから削除してください';
+
+  @override
+  String get wallpaperHistoryRemoveBadgeTooltip => '最近使った壁紙から削除';
 
   @override
   String get homePageWallpaperFileMissingTitle => '画像ファイルがありません';

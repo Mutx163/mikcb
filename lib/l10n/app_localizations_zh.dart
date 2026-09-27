@@ -3283,7 +3283,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageWallpaperRecentTitle => '最近使用';
 
   @override
-  String get homePageWallpaperRecentSubtitle => '点按切回，长按删除，最多保留 10 张';
+  String get homePageWallpaperRecentSubtitle => '点按切回，点角标移除，最多保留 10 张';
 
   @override
   String get homePageWallpaperRecentImageLabel => '照片';
@@ -3296,6 +3296,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get wallpaperHistoryRemoveInUseToast => '正在使用这张壁纸，请先换成别的再删除';
+
+  @override
+  String get wallpaperHistoryRemoveBadgeTooltip => '从最近使用中移除';
 
   @override
   String get homePageWallpaperFileMissingTitle => '图片文件已丢失';
@@ -14304,7 +14307,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homePageWallpaperRecentTitle => '最近使用';
 
   @override
-  String get homePageWallpaperRecentSubtitle => '撳一下切返，長按刪除，最多保留 10 張';
+  String get homePageWallpaperRecentSubtitle => '撳一下切返，撳角標移除，最多保留 10 張';
 
   @override
   String get homePageWallpaperRecentImageLabel => '相片';
@@ -14317,6 +14320,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get wallpaperHistoryRemoveInUseToast => '正在使用這張桌布，請先換成別的再刪除';
+
+  @override
+  String get wallpaperHistoryRemoveBadgeTooltip => '從最近使用中移除';
 
   @override
   String get homePageWallpaperFileMissingTitle => '圖片檔案已遺失';
@@ -25365,7 +25371,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homePageWallpaperRecentTitle => '最近使用';
 
   @override
-  String get homePageWallpaperRecentSubtitle => '點按切回，長按刪除，最多保留 10 張';
+  String get homePageWallpaperRecentSubtitle => '點按切回，點角標移除，最多保留 10 張';
 
   @override
   String get homePageWallpaperRecentImageLabel => '照片';
@@ -25378,6 +25384,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get wallpaperHistoryRemoveInUseToast => '正在使用這張桌布，請先換成別的再刪除';
+
+  @override
+  String get wallpaperHistoryRemoveBadgeTooltip => '從最近使用中移除';
 
   @override
   String get homePageWallpaperFileMissingTitle => '圖片檔案已遺失';

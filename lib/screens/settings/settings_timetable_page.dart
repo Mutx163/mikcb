@@ -449,74 +449,367 @@ class _TimetablePageSettingsScreenState
   }
 }
 
-/// 壁纸缩略图卡（「最近使用」条）：78 宽，选中态描边 + 高亮标签。
+/// 壁纸缩略图卡（「最近使用」条里的一张）：78 宽，选中态描边 + 高亮标签。
+///
+/// 三种形态由入参决定，**彼此互斥**（见 [_RecentWallpaperStrip]）：
+/// * 常态：点按切回，右上角一颗 × 用来发起删除；
+/// * 确认态（[confirming]）：缩略图压暗 + 警示色描边，标签位置换成「删除 / 取消」
+///   两颗小按钮，此时 × 收起（它已经被"删除"取代了）；
+/// * 正在用的那张（[removable] 为 false）：没有 ×，长按只解释一句为什么不给删。
 class _WallpaperThumbnailCard extends StatelessWidget {
   const _WallpaperThumbnailCard({
+    super.key,
     required this.label,
     required this.selected,
     required this.onTap,
     required this.thumbnail,
-    this.onLongPress,
+    this.removable = true,
+    this.confirming = false,
+    this.onRequestRemove,
+    this.onConfirmRemove,
+    this.onCancelRemove,
+    this.onBlockedRemove,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
-
-  /// 长按 = 从「最近使用」里删掉这张（见 [_HomeBackdropFlow] 的
-  /// [_removeBackdropHistoryEntry]）。为 null 时卡片只有单击。
-  final VoidCallback? onLongPress;
-
-  /// 缩略图本体；调用方负责铺满（卡内已套 ClipRRect 圆角）。
   final Widget thumbnail;
+
+  /// 是否允许删除。正在用的那张传 false（不给 ×，也没有确认态）。
+  final bool removable;
+
+  /// 本卡是否正处在「确认删除」态。
+  final bool confirming;
+
+  /// 请求进入确认态（× 徽标 / 长按都走它）。为 null 时长按改走
+  /// [onBlockedRemove]（正在用的那张：解释一句为什么不给删）。
+  final VoidCallback? onRequestRemove;
+
+  /// 确认删除。
+  final VoidCallback? onConfirmRemove;
+
+  /// 撤销确认。
+  final VoidCallback? onCancelRemove;
+
+  /// 不可删除时对"用户仍想删"的回应（提示为什么不行）。
+  final VoidCallback? onBlockedRemove;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final primary = HyperosColors.primary(context);
+    final danger = HyperosColors.error(context);
     return SizedBox(
       width: 78,
-      child: MiuixPressable(
-        onPressed: onTap,
-        onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(14),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: selected ? primary : Colors.transparent,
-                    width: 2,
+      child: Stack(
+        children: [
+          MiuixPressable(
+            onPressed: onTap,
+            // 确认态里单击**不**切壁纸：那张卡此刻的语义是"要不要删"，
+            // 让它顺手把壁纸也换了会变成一次操作两个后果。
+            onLongPress: confirming
+                ? null
+                : (removable ? onRequestRemove : onBlockedRemove),
+            borderRadius: BorderRadius.circular(14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: confirming
+                            ? danger
+                            : (selected ? primary : Colors.transparent),
+                        width: 2,
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(2),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(11),
+                      // 确认态在缩略图上压一层半透明黑：让"这张要被删了"在图
+                      // 本身也读得出来，而不只是靠那颗红边和下面两颗按钮。
+                      //
+                      // 刻意用「叠一层」而不是 `Opacity` / `ColorFiltered`：
+                      // `Opacity` 会把图往卡片底色上混（读作"发白"而不是"被压
+                      // 暗"），`ColorFiltered(srcATop, 黑)` 则直接把不透明区域
+                      // 涂成纯黑。
+                      child: Stack(
+                        key: const ValueKey<String>('wallpaper-card-thumbnail'),
+                        fit: StackFit.expand,
+                        children: [
+                          thumbnail,
+                          if (confirming)
+                            const ColoredBox(color: Color(0x99000000)),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-                padding: const EdgeInsets.all(2),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(11),
-                  child: thumbnail,
+                const SizedBox(height: 6),
+                // 标签位**定高**：两行 11px 的高度。定高是为了缩略图在常态与
+                // 确认态之间**不变大小** —— 下面换成 24px 的按钮行时若不定高，
+                // Expanded 会把差值吃掉，缩略图在进确认态的那一帧肉眼可见地缩一下。
+                SizedBox(
+                  height: _recentCardLabelHeight,
+                  child: confirming
+                      ? _WallpaperRemoveConfirmRow(
+                          confirmLabel: l10n.deleteAction,
+                          cancelLabel: l10n.cancelAction,
+                          danger: danger,
+                          onConfirm: onConfirmRemove,
+                          onCancel: onCancelRemove,
+                        )
+                      : Center(
+                          child: Text(
+                            label,
+                            maxLines: 2,
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              height: 1.2,
+                              color: selected
+                                  ? primary
+                                  : HyperosColors.secondaryText(context),
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                        ),
                 ),
+              ],
+            ),
+          ),
+          // × 徽标画在按压区**之外**：压在卡内的话，点它会连带把壁纸切了。
+          if (removable && !confirming)
+            Positioned(
+              top: 4,
+              right: 4,
+              child: _WallpaperRemoveBadge(
+                onPressed: onRequestRemove,
+                tooltip: l10n.wallpaperHistoryRemoveBadgeTooltip,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
+        ],
+      ),
+    );
+  }
+}
+
+/// 「最近使用」条：横向缩略图列表 + 每张卡自己的删除确认态。
+///
+/// **确认态为什么做成"卡片自己变"而不是弹确认框**：这个流程有两个宿主，其中
+/// 「外观编辑」页底部那颗「调整壁纸」是**底部弹层**；而弹层是根覆盖层自插条目，
+/// `OverlayState` 把非路由条目排在所有路由之上 —— 任何再往上的弹层都会被压在
+/// 它背面（真机实锤，材质面板那边为同一件事做过 `_withHostSheetClosed`）。所以
+/// 弹确认框在两个宿主里表现会分叉，而"这张卡自己变成待确认"是纯 widget 状态，
+/// 两边天然一致。
+///
+/// 同一时刻**只有一张**卡能处于确认态：对另一张发起确认会把这一张的取消掉
+/// （而不是让两张同时待确认 —— 那样用户已经不知道自己会不会删掉两张了）。
+class _RecentWallpaperStrip extends StatefulWidget {
+  const _RecentWallpaperStrip({
+    required this.entries,
+    required this.selectedKey,
+    required this.onSelect,
+    required this.onRequestRemove,
+    required this.onConfirmRemove,
+  });
+
+  final List<WallpaperHistoryEntry> entries;
+
+  /// 当前正在用的那张的键；它不可删除。
+  final String? selectedKey;
+
+  final ValueChanged<WallpaperHistoryEntry> onSelect;
+
+  /// 对"想删一张"的拦截：正在用的那张在这里被换成一句解释。
+  final void Function(BuildContext context, WallpaperHistoryEntry entry)
+  onRequestRemove;
+
+  final void Function(BuildContext context, WallpaperHistoryEntry entry)
+  onConfirmRemove;
+
+  @override
+  State<_RecentWallpaperStrip> createState() => _RecentWallpaperStripState();
+}
+
+class _RecentWallpaperStripState extends State<_RecentWallpaperStrip> {
+  /// 正处在确认态的那一条的键；null = 没有。
+  String? _confirmingKey;
+
+  @override
+  void didUpdateWidget(_RecentWallpaperStrip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 删掉之后（或历史被外部改动之后）不能让一个已经不存在的 key 继续挂在
+    // 确认态上：那会留下一张永远点不掉的红卡。
+    final key = _confirmingKey;
+    if (key != null && !widget.entries.any((entry) => entry.key == key)) {
+      _confirmingKey = null;
+    }
+  }
+
+  void _requestRemove(WallpaperHistoryEntry entry) {
+    setState(() => _confirmingKey = entry.key);
+  }
+
+  void _cancelRemove() {
+    setState(() => _confirmingKey = null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: widget.entries.length,
+      separatorBuilder: (_, _) => const SizedBox(width: 10),
+      itemBuilder: (context, index) {
+        final entry = widget.entries[index];
+        final isCurrent = entry.key == widget.selectedKey;
+        return _WallpaperThumbnailCard(
+          // 按壁纸键给每张卡一个稳定的 key：确认态会让角标此消彼长（发起确认的
+          // 那个卡自己收起角标），几何测试只靠"第几个 ×"根本指不准是哪一张。
+          key: ValueKey<String>('wallpaper-recent-card:${entry.key}'),
+          label: l10n.homePageWallpaperRecentImageLabel,
+          selected: isCurrent,
+          removable: !isCurrent,
+          confirming: entry.key == _confirmingKey,
+          onTap: () {
+            if (entry.key == _confirmingKey) {
+              return;
+            }
+            widget.onSelect(entry);
+          },
+          onRequestRemove: () => _requestRemove(entry),
+          onConfirmRemove: () {
+            _cancelRemove();
+            widget.onConfirmRemove(context, entry);
+          },
+          onCancelRemove: _cancelRemove,
+          onBlockedRemove: () => widget.onRequestRemove(context, entry),
+          thumbnail: Image.file(
+            File(entry.key),
+            fit: BoxFit.cover,
+            cacheWidth: 240,
+            // 列表构建后文件被删/损坏时不崩帧。
+            errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 确认态里那两颗小按钮：删除（警示色实心）/ 取消（描边）。
+///
+/// 78 宽里平分两颗，各约 37 —— 「删除」「取消」都是两字，11px 下放得下，不再
+/// 折行（与壁纸那一行"三颗按钮各掉一个字"的教训同源）。
+class _WallpaperRemoveConfirmRow extends StatelessWidget {
+  const _WallpaperRemoveConfirmRow({
+    required this.confirmLabel,
+    required this.cancelLabel,
+    required this.danger,
+    required this.onConfirm,
+    required this.onCancel,
+  });
+
+  final String confirmLabel;
+  final String cancelLabel;
+  final Color danger;
+  final VoidCallback? onConfirm;
+  final VoidCallback? onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget button(String label, {required bool destructive, VoidCallback? onTap}) {
+      return Expanded(
+        child: MiuixPressable(
+          onPressed: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            height: 24,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: destructive ? danger : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: destructive ? danger : HyperosColors.outline(context),
+              ),
+            ),
+            child: Text(
               label,
-              maxLines: 2,
+              maxLines: 1,
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 11,
-                height: 1.2,
-                color: selected
-                    ? primary
+                height: 1.1,
+                fontWeight: FontWeight.w500,
+                color: destructive
+                    ? HyperosColors.onPrimary(context)
                     : HyperosColors.secondaryText(context),
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
-          ],
+          ),
+        ),
+      );
+    }
+
+    return Center(
+      child: Row(
+        children: [
+          button(confirmLabel, destructive: true, onTap: onConfirm),
+          const SizedBox(width: 4),
+          button(cancelLabel, destructive: false, onTap: onCancel),
+        ],
+      ),
+    );
+  }
+}
+/// 缩略图右上角的「×」徽标（小米相册那套「角标移除」）。
+///
+/// 刻意做成**看得见的入口**而不是只有长按：删除是不可逆的（文件一起删），
+/// 藏在隐藏手势后面等于让用户自己发现 + 试错。
+class _WallpaperRemoveBadge extends StatelessWidget {
+  const _WallpaperRemoveBadge({required this.onPressed, this.tooltip});
+
+  final VoidCallback? onPressed;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final badge = MiuixPressable(
+      onPressed: onPressed,
+      borderRadius: BorderRadius.circular(10),
+      // 不加白底：压在照片上时白圆反而更抢眼，半透明黑 + 白 × 才是图库里
+      // 那个"角标"该有的分量。
+      child: Container(
+        width: 22,
+        height: 22,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: const Color(0xFF000000).withValues(alpha: 0.45),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Icon(
+          Icons.close_rounded,
+          size: 15,
+          color: Colors.white,
         ),
       ),
     );
+    // 无障碍/悬停说明：角标本身只有一颗 15px 的 ×，不配一句说明读屏用户
+    // 只能听出"按钮"。
+    final label = tooltip;
+    if (label == null || label.isEmpty) {
+      return badge;
+    }
+    return Tooltip(message: label, child: badge);
   }
 }

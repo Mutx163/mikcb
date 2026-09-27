@@ -16,6 +16,18 @@ class _BackdropRemoval {
   final String removedPath;
 }
 
+/// 「最近使用」缩略图条的固定高度。
+///
+/// 卡内是「缩略图（Expanded）+ 6px + 标签/确认按钮」三段，高度定死才不会因为
+/// 其中一张卡进了确认态（标签位换成两颗 24px 按钮）而把整条撑高、邻卡错位。
+const double _recentWallpaperStripHeight = 116;
+
+/// 卡内标签位的高度：常态是标签（最多两行 11px），确认态是那颗按钮行。
+///
+/// 定高的意义是缩略图在两种状态间**尺寸不变** —— 不定高的话 `Expanded` 会把
+/// 高度差吃掉，进确认态那一帧缩略图会肉眼可见地缩一下。
+const double _recentCardLabelHeight = 26;
+
 /// 首页壁纸流程（选图 / 最近使用 / 位置 / 清除）的**唯一实现**。
 ///
 /// 为什么要抽成 mixin：这段流程同时挂在两个宿主上 —— 「课表页面」设置里的
@@ -251,28 +263,18 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     );
   }
 
-  /// 长按「最近使用」里某一张：把它从历史里删掉。
+  /// 「最近使用」里某一张**确认删除之后**的收尾：摘条目 + 落盘 + 排删文件。
   ///
-  /// **为什么不弹确认框**：这个流程在「外观编辑」页挂在**底部弹层**里，而弹层
-  /// 是根覆盖层自插条目，任何再往上的弹层都会被压在它背面（真机实锤，材质面板
-  /// 那边的注释写着同一条）。所以走「立即生效 + toast 撤销」。
+  /// 调用方（条上的确认态）已经挡住了"正在用的那张"，这里不再重复判断 ——
+  /// 两处各判一次的话，改一边就会漏另一边。
   ///
-  /// **正在用的那张不给删**：删了它要么首页当场缺图、要么得连带清掉用户的壁纸
-  /// 设置 —— 两种都不是"长按一张缩略图"该有的副作用，提示他先换一张。
+  /// 「撤销」仍然留着，但它是**兜底**而不是主防线：主防线是条上那颗要按两次的
+  /// 删除（见 [_RecentWallpaperStrip]）。
   void _removeBackdropHistoryEntry(
     BuildContext context,
     WallpaperHistoryEntry entry, {
     required AppLocalizations l10n,
   }) {
-    if (resolveHomePageBackdropImagePath(backdropDraft) == entry.key) {
-      showAppToast(
-        context,
-        message: l10n.wallpaperHistoryRemoveInUseToast,
-        kind: AppToastKind.warning,
-        showKindIcon: true,
-      );
-      return;
-    }
     final next = removeWallpaperHistoryEntry(_wallpaperHistory, entry.key);
     if (identical(next, _wallpaperHistory)) {
       return;
@@ -417,7 +419,6 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     if (entries.isEmpty) {
       return const SizedBox.shrink();
     }
-    final selectedKey = currentKey;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
@@ -434,36 +435,44 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 116,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: entries.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (context, index) {
-                final entry = entries[index];
-                return _WallpaperThumbnailCard(
-                  label: l10n.homePageWallpaperRecentImageLabel,
-                  selected: entry.key == selectedKey,
-                  onTap: () => _selectBackdropEntry(entry),
-                  onLongPress: () => _removeBackdropHistoryEntry(
-                    context,
-                    entry,
-                    l10n: l10n,
-                  ),
-                  thumbnail: Image.file(
-                    File(entry.key),
-                    fit: BoxFit.cover,
-                    cacheWidth: 240,
-                    // 列表构建后文件被删/损坏时不崩帧。
-                    errorBuilder: (context, error, stackTrace) =>
-                        const SizedBox.shrink(),
-                  ),
-                );
-              },
+            height: _recentWallpaperStripHeight,
+            child: _RecentWallpaperStrip(
+              entries: entries,
+              selectedKey: currentKey,
+              onSelect: _selectBackdropEntry,
+              // 「正在用的那张不给删」这一关放在**发起确认之前**：拦在确认态
+              // 之后的话，用户会先看到一张变成红色的卡，再被告知不能删。
+              onRequestRemove: (context, entry) =>
+                  _warnBackdropHistoryInUse(context, entry, l10n: l10n),
+              onConfirmRemove: (context, entry) => _removeBackdropHistoryEntry(
+                context,
+                entry,
+                l10n: l10n,
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// 「正在用的那张不给删」的提示。
+  ///
+  /// 与删除走的是同一个入口（条上的 × 或长按），所以拦住它之后只能解释一句、
+  /// 不做任何改动。
+  void _warnBackdropHistoryInUse(
+    BuildContext context,
+    WallpaperHistoryEntry entry, {
+    required AppLocalizations l10n,
+  }) {
+    if (resolveHomePageBackdropImagePath(backdropDraft) != entry.key) {
+      return;
+    }
+    showAppToast(
+      context,
+      message: l10n.wallpaperHistoryRemoveInUseToast,
+      kind: AppToastKind.warning,
+      showKindIcon: true,
     );
   }
 

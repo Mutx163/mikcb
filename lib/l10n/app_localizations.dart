@@ -6096,7 +6096,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePageWallpaperRecentSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'点按切回，长按删除，最多保留 10 张'**
+  /// **'点按切回，点角标移除，最多保留 10 张'**
   String get homePageWallpaperRecentSubtitle;
 
   /// No description provided for @homePageWallpaperRecentImageLabel.
@@ -6122,6 +6122,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'正在使用这张壁纸，请先换成别的再删除'**
   String get wallpaperHistoryRemoveInUseToast;
+
+  /// No description provided for @wallpaperHistoryRemoveBadgeTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'从最近使用中移除'**
+  String get wallpaperHistoryRemoveBadgeTooltip;
 
   /// No description provided for @homePageWallpaperFileMissingTitle.
   ///
