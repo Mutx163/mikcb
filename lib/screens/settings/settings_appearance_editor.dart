@@ -687,7 +687,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       // 接管，见 `topInsetFor` 的注释。
       padding: EdgeInsets.only(
         top: HyperosSheetBlurTop.topInsetFor(
-          headerHeight: HyperosTabRow.contourHeight,
+          headerHeight: HyperosMiuixTopAppBar.collapsedHeight,
           bleedTop: hyperosMiuixBottomSheetTopChromeHeight,
         ),
       ),
@@ -956,7 +956,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       // 接管，见 `topInsetFor` 的注释。
       padding: EdgeInsets.only(
         top: HyperosSheetBlurTop.topInsetFor(
-          headerHeight: HyperosTabRow.contourHeight,
+          headerHeight: HyperosMiuixTopAppBar.collapsedHeight,
           bleedTop: hyperosMiuixBottomSheetTopChromeHeight,
         ),
       ),
@@ -1781,8 +1781,8 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
       valueListenable: editor._draftRevision,
       builder: (sheetContext, _, _) {
         return HyperosSheetBlurTop(
-          // 带高 = 分段自身高度（那个常量，不是拍脑袋的 45）。
-          headerHeight: HyperosTabRow.contourHeight,
+          // 带高 = 这一行顶栏的高度（折叠顶栏那行 44，语义上它现在**就是**一行顶栏）。
+          headerHeight: HyperosMiuixTopAppBar.collapsedHeight,
           // 模糊带往左右各外扩面板内容那个内缩，铺满整个面板宽（否则带子只在中间一段
           // 有模糊、两侧各留一条没糊的边，读起来是「浮在面板里的方框」）。分段本身
           // 按同一个数内缩回去，仍与底下正文对齐。
@@ -1795,20 +1795,20 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
           // 替身把手画在紧贴面板上边缘的那 24px 里；承载壳那边已把上游那颗画成透明
           // （`coverDragHandle`），所以屏幕上只有这一颗。
           echoDragHandleHeight: hyperosMiuixBottomSheetDragHandleStripHeight,
-          // 翻页分段**自己就是标题**（用户口径 2026-09-26），且**坐在顶部渐变模糊
-          // 带上**（同一条指令的第二半）：原来这行是「材质」二字 + 右边 208 宽的分段，
-          // 标题被压、分段左边空一大块，和底下满宽的设置行也对不齐；撤掉标题字后分段
-          // 通栏，宽度与底下内容一致。
+          // 翻页标签**自己就是标题**（用户口径 2026-09-26），且**坐在顶部渐变模糊带
+          // 上**（同一条指令的第二半）。
+          //
+          // 形状是**下划线标签**而不是药丸分段（2026-09-27 用户口径）：这个面板里还有
+          // 「默认材质」「首页顶栏玻璃」两个药丸分段在选**值**，而这一行是**翻页**。两者
+          // 长成一样时用户会把翻页控件当成又一个设置项去读。分家办法是按语义固定形状 ——
+          // 药丸 = 选值、短横线 = 翻页，见 `HyperosUnderlineTabs` 的类注释。
           //
           // 放进模糊带之后它不再占正文高度：正文从「带底 + 渐隐区」起滚，滚上去的行
           // 从带底下化进去。材质面板每页都要滚两屏，没有这条收尾就是内容在面板上沿被
           // 硬切一刀。
-          header: _MaterialSegmented<int>(
-            items: {
-              l10n.generalSettingsTitle: _generalPage,
-              l10n.surfaceCourseCard: _courseCardPage,
-            },
-            value: _page,
+          header: HyperosUnderlineTabs(
+            tabs: [l10n.generalSettingsTitle, l10n.surfaceCourseCard],
+            selectedIndex: _page,
             onChanged: _goToPage,
           ),
           // 两页等高、各页自己竖向滚动：面板总高由外层 `maxHeight`（半屏上限）

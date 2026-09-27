@@ -152,13 +152,15 @@ void main() {
   Finder dayViewPanel() =>
       find.byKey(const ValueKey('timetable-day-view-panel'));
 
-  /// 材质面板顶部模糊带上的**翻页分段标签**。
+  /// 材质面板顶部模糊带上的**翻页标签**。
   ///
-  /// 按「在 [HyperosTabRow] 里」收窄，不靠树序（2026-09-26 起带与正文是
+  /// 按「在 [HyperosUnderlineTabs] 里」收窄，不靠树序（2026-09-26 起带与正文是
   /// `HyperosSheetBlurTop` 里 `Stack` 的两个子节点，正文排在前面，所以
   /// `find.text('课程卡片').first` 命中的是第一页只读总览那一行而不是标签）。
+  /// 2026-09-27 起翻页控件由药丸分段换成下划线标签（与面板里的选值分段按语义分家），
+  /// 查找也跟着换。
   Finder panelPageTab(String label) => find.descendant(
-    of: find.byType(HyperosTabRow),
+    of: find.byType(HyperosUnderlineTabs),
     matching: find.text(label),
   );
 
@@ -345,12 +347,12 @@ void main() {
     final provider = await pumpEditor(tester);
     await tester.tap(find.text('材质'));
     await tester.pumpAndSettle();
-    // 进第二页：点顶部模糊带上的那格分段标签。
+    // 进第二页：点顶部模糊带上的那个标签。
     //
     // ⚠️ **不能再用 `find.text('课程卡片').first`**（2026-09-26 改版）：带与正文是
     // `HyperosSheetBlurTop` 里的 `Stack` 两个子节点，**正文排在前面**（带必须后画才能
     // 压住从底下滚上来的内容），于是树序里第一个「课程卡片」变成第一页只读总览那一行，
-    // `.first` 点到了它、页面根本没翻。这里按「在分段控件里」收窄，与树序解耦。
+    // `.first` 点到了它、页面根本没翻。这里按「在翻页标签栏里」收窄，与树序解耦。
     await tester.tap(panelPageTab('课程卡片'));
     await tester.pumpAndSettle();
 
@@ -446,7 +448,7 @@ void main() {
     final provider = await pumpEditor(tester);
     await tester.tap(find.text('材质'));
     await tester.pumpAndSettle();
-    // 同上：按「在分段控件里」收窄，不靠树序（`.first` 会点到第一页只读总览那一行）。
+    // 同上：按「在翻页标签栏里」收窄，不靠树序（`.first` 会点到第一页只读总览那一行）。
     await tester.tap(panelPageTab('课程卡片'));
     await tester.pumpAndSettle();
 
@@ -720,16 +722,21 @@ void main() {
 
     // 面板最多占半屏、超出部分要自己滚，所以这里先照面板的滚动条把这一行带进
     // 视野（真机上用户就是这么滑的；不带进来点按会落空，这条回归钉就成空的了）。
-    await tester.scrollUntilVisible(
-      find.text('折射强度'),
-      120,
-      scrollable: find
-          .descendant(
-            of: find.byKey(const ValueKey('material-page-general')),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
+    final pageScroll = find
+        .descendant(
+          of: find.byKey(const ValueKey('material-page-general')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    await tester.scrollUntilVisible(find.text('折射强度'), 120, scrollable: pageScroll);
+    await tester.pumpAndSettle();
+
+    // ⚠️ `scrollUntilVisible` 一「看得见」就停手，可能刚好把目标停在**顶部渐变模糊带
+    // 底下**。带子（含它的翻页标签）是浮在滚动内容之上的，那一带整片吃点击 —— 与任何
+    // 吸顶栏同理，内容停在它底下就点不到。所以这里再把内容往下推一截，让目标落到带子
+    // 下面真正能点的位置。（别用 `headerHeight` 之类的数把这钉子写死：带高一变它就红，
+    // 而真机上「停在带底点不到」本来就是既有行为，不是回归。）
+    await tester.drag(pageScroll, const Offset(0, 80));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('折射强度'));

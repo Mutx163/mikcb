@@ -36,6 +36,7 @@ export 'hyperos_sheet_blur_top.dart';
 export 'hyperos_snackbar.dart';
 export 'hyperos_switch.dart';
 export 'hyperos_tab_row.dart';
+export 'hyperos_underline_tabs.dart';
 export 'hyperos_text_field.dart';
 export 'hyperos_theme.dart';
 export 'hyperos_tokens.dart';
