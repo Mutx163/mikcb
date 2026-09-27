@@ -44,8 +44,8 @@ class CourseActionPreviewItem {
 /// `hyperosMiuixBottomSheetSurface`），内容仍是 [CourseActionSheetBody]。
 /// 2026-09-19 之前这里是我们自己的 edge sheet（`showHomeHyperosSheet`）。
 ///
-/// 正文外面套一层 [HyperosSheetBlurTop]（空带、滚动才显形）：这弹窗在课表上有
-/// 「相关课程」一整块，是全 App 最长的弹窗正文，滚上去没有收尾就是一刀硬切。
+/// 正文**不**套 [HyperosSheetBlurTop]（2026-09-27 拆掉，理由见 `_CourseActionSheetBodyState`
+/// 上方注释）：这个弹窗没有顶部标题行，带子整截都是空档，代价大于收益。
 Future<void> showCourseActionSheet(
   BuildContext context, {
   required List<CourseActionPreviewItem> previewItems,
@@ -110,13 +110,20 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
   int _selectedIndex = 0;
   bool _relatedExpanded = false;
 
-  /// 顶部渐变模糊带的带高 = 正文起点比面板上沿低多少。
-  ///
-  /// 这个弹窗**没有**顶部标题行（第一块就是课程卡），所以带是空的、带高就是那截纯
-  /// 渐隐区。取 [HyperosBlurredHeader.subpageBandBottomOverhang] 同一个数（≈ 一个字
-  /// 高）：这是子页顶栏外推上限的由来，也是全 App 模糊带向下探出的既有口径。
-  static const double _sheetBlurTopExtent =
-      HyperosBlurredHeader.subpageBandBottomOverhang;
+  // ⚠️ 2026-09-27 拆掉这里的 `HyperosSheetBlurTop`（空带）。用户报「拉杆下面跟内容之间
+  // 也有那么大的空隙」，算下来这笔是**纯亏**：
+  //
+  // 面板上沿往下是 把手条 24（把手小条只占 10~14）+ 空占位 18 = **28** 死区（上游给的，
+  // 任何弹窗都有，拆不掉）。要有一条「滚上来的内容化开」的渐隐区，正文就得再让出那一段
+  // 化开距离，于是顶部空档 = 28 + 化开长度。有 header 的弹窗（如材质面板）**带里有东西**
+  // 撑着，那段不显空；这里带是空的，等于凭空多出 20+。
+  //
+  // 代价换算：一段能看出来的化开至少 16 → 顶部空档 44，比不放带子的 28 还多 16，换来的
+  // 只是滚到顶时 16px 的渐隐。**不值**，拆掉。这里滚到顶就是内容在面板上沿硬切一刀，
+  // 而这正是所有「无标题行」弹窗（含上游各 App）本来的样子。
+  //
+  // 顺带说明：`_scrollController` 留着（换课 `_selectCourse` 要把滚动位置归零），只是不再
+  // 传给带子、不再当 `revealOnScroll` 的监听源。
 
   @override
   void dispose() {
@@ -153,65 +160,44 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
     // 内容区是 `Flexible`，会给到有界高度但不自带滚动（`enableNestedScroll` 在本版
     // 没有消费方），所以这里自己套一层限高的滚动容器。
     //
-    // 顶部渐变模糊带（`revealOnScroll`：滚上来才显形，见该类注释）。这个弹窗**没有**
-    // 顶部标题行 —— 第一块就是课程卡本身，所以带是空的、带高就是那截渐隐区；静止时
-    // 带不画，正文原位起，滚上去才有一道收尾把内容化掉，而不是在面板上沿硬切一刀。
-    // 换课（`_selectCourse`）会把滚动位置归零，带也跟着收起来。
+    // 这里**不**套顶部渐变模糊带：这个弹窗没有顶部标题行，带子整截都是空档，拆掉的账算在
+    // `_CourseActionSheetBodyState` 上方。换课（`_selectCourse`）仍把滚动位置归零。
     return ConstrainedBox(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.sizeOf(context).height * 0.8,
       ),
-      child: HyperosSheetBlurTop(
-        // 空带：只留一截渐隐区（≈ 一个字高，与子页顶栏外推上限同值）。
-        headerHeight: _sheetBlurTopExtent,
-        header: const SizedBox.shrink(),
-        // 同材质面板：外扩面板内容那个内缩，模糊层铺满整个面板宽；再往上盖住面板顶部那截
-        // **空占位**（只盖空占位、绝不盖把手条，见两个常量的注释）。
-        bleed: hyperosMiuixBottomSheetInsideMargin,
-        bleedTop: hyperosMiuixBottomSheetEmptyTitleRowHeight,
-        revealOnScroll: true,
-        scrollController: _scrollController,
-        body: SingleChildScrollView(
-          controller: _scrollController,
-          // 顶部让位加在**滚动内容**里（不是外面）：外面那份已被
-          // `HyperosSheetBlurTop` 接管，见 `topInsetFor` 的注释。
-          padding: EdgeInsets.only(
-            top: HyperosSheetBlurTop.topInsetFor(
-              headerHeight: _sheetBlurTopExtent,
-              bleedTop: hyperosMiuixBottomSheetEmptyTitleRowHeight,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _CourseActionSheetContent(
+              key: ValueKey('course-action-selected-${selectedItem.course.id}'),
+              previewItem: selectedItem,
+              week: widget.week,
+              onEdit: widget.onEdit,
+              onReschedule: widget.onReschedule,
+              onDelete: widget.onDelete,
+              onSuspend: widget.onSuspend,
+              onAddTask: widget.onAddTask,
+              onSetAlarm: widget.onSetAlarm,
+              onRequestClose: widget.onRequestClose,
             ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _CourseActionSheetContent(
-                key: ValueKey('course-action-selected-${selectedItem.course.id}'),
-                previewItem: selectedItem,
+            if (otherIndexes.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _RelatedCoursesPanel(
+                previewItems: widget.previewItems,
+                otherIndexes: otherIndexes,
                 week: widget.week,
-                onEdit: widget.onEdit,
-                onReschedule: widget.onReschedule,
-                onDelete: widget.onDelete,
-                onSuspend: widget.onSuspend,
-                onAddTask: widget.onAddTask,
-                onSetAlarm: widget.onSetAlarm,
-                onRequestClose: widget.onRequestClose,
+                expanded: _relatedExpanded,
+                onToggleExpanded: () {
+                  setState(() => _relatedExpanded = !_relatedExpanded);
+                },
+                onSelect: _selectCourse,
               ),
-              if (otherIndexes.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _RelatedCoursesPanel(
-                  previewItems: widget.previewItems,
-                  otherIndexes: otherIndexes,
-                  week: widget.week,
-                  expanded: _relatedExpanded,
-                  onToggleExpanded: () {
-                    setState(() => _relatedExpanded = !_relatedExpanded);
-                  },
-                  onSelect: _selectCourse,
-                ),
-              ],
             ],
-          ),
+          ],
         ),
       ),
     );
