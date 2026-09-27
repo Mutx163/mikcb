@@ -1808,10 +1808,12 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
           // 放进模糊带之后它不再占正文高度：正文从「带底 + 渐隐区」起滚，滚上去的行
           // 从带底下化进去。材质面板每页都要滚两屏，没有这条收尾就是内容在面板上沿被
           // 硬切一刀。
-          header: HyperosChipRow(
-            labels: [l10n.generalSettingsTitle, l10n.surfaceCourseCard],
-            selectedIndex: _page,
-            onChanged: _goToPage,
+          header: Center(
+            child: HyperosChipRow(
+              labels: [l10n.generalSettingsTitle, l10n.surfaceCourseCard],
+              selectedIndex: _page,
+              onChanged: _goToPage,
+            ),
           ),
           // 两页等高、各页自己竖向滚动：面板总高由外层 `maxHeight`（半屏上限）
           // 顶住，见 [_AppearanceEditorScreenState._openMaterialSheet]。

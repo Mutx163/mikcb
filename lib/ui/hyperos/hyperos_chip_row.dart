@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 
 import '../../utils/theme_seed_accent.dart';
-import 'hyperos_radius.dart';
 import 'hyperos_theme.dart';
 
 /// 筛选胶囊一排（MIUI/HyperOS 那种「全部 / 录音机 / 通话 / 应用」）。
@@ -20,15 +19,16 @@ import 'hyperos_theme.dart';
 /// 胶囊与分段最关键的区别是**选中态**：分段是「灰轨道里浮一块白」，胶囊是「一颗实心填色」。
 /// 隔着两米也能一眼分清「这是改一个值」还是「这是换一类看」。
 ///
-/// 交互底座直接用 [MiuixButton]（带 MiuixPressable 的按压回弹），不是自己拼
-/// `GestureDetector` —— 按压手感与全 App 按钮一致。
+/// 交互底座用 [MiuixPressable]（Miuix 的按压遮罩 + 无障碍），盒子自己画 —— **不要**改回
+/// `MiuixButton`：那个控件会用 `DefaultTextStyle.merge` 注入自己的墨色与行高，胶囊里
+/// 只要再带一个带 `color`/`height` 的文字样式就会把它盖掉（黑底黑字就是那么来的）。
 class HyperosChipRow extends StatelessWidget {
   const HyperosChipRow({
     required this.labels,
     required this.selectedIndex,
     required this.onChanged,
     this.equalWidth = true,
-    this.height = MiuixButtonDefaults.minHeight,
+    this.height = 40,
     this.gap = 8,
     super.key,
   });
@@ -44,7 +44,7 @@ class HyperosChipRow extends StatelessWidget {
   /// 顶上的那种。
   final bool equalWidth;
 
-  /// 胶囊高度（默认 [MiuixButtonDefaults.minHeight]）。
+  /// 胶囊高度（默认 40，与本仓按钮同高）。
   final double height;
 
   /// 不等宽时的胶囊间距。
@@ -109,41 +109,63 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 圆角按本仓圆角规矩收口：胶囊不塌成全圆，留 6px 直边（`HyperosRadius` 的
-    // `minStraightEdge`），所以是 `height / 2 - 6` 而不是 `height / 2`。
-    final radius = HyperosRadius.clampCornerRadius(height / 2, height);
+    // 选中 = **实心主题色**（这一条就是它与药丸分段的分野）；未选中 = 与分段轨道同一档中性
+    // 底，于是「一排浅底 + 一颗填色」的整体观感与 MIUI 录音机那个一致。
+    final fill = selected
+        ? HyperosColors.primarySurface(context)
+        : HyperosColors.rowHighlight(context);
+    // 墨色**由底色本身**算黑白，不是 `onAccentInk(primary)`。
+    //
+    // ⚠️ 这条是 2026-09-27 修的一个真 bug：用户的中性灰主题下，黑底上出现了**深色字**。
+    // 两个原因叠加 ——① `primary` 与 `primarySurface` 是**两套解析**：深色模式下近黑
+    // seed（中性灰/锌灰/石板灰）`primary` 回落墨色、`primarySurface` 却向白提亮，两者
+    // 不是同一个色，拿 `primary` 算出来的墨色对不上真正的底色。② 更直接的是我把
+    // `HyperosTypography.listTitle`（自带 `primaryText` 墨色）整个塞进了按钮里，**盖掉了**
+    // 按钮注入的墨色。改成从 `fill` 算、并在文字样式上**显式写死 color**，两条路都堵死。
+    final ink = selected
+        ? onAccentInk(fill)
+        : HyperosColors.secondaryText(context);
+
+    // 胶囊**全圆**（`height / 2`）。
+    //
+    // ⚠️ 别用 `HyperosRadius.clampCornerRadius` 那套留 6px 直边的收口：那条规矩是给
+    // **卡片 / 面板**那类大面子的（弧线不许并成一条），胶囊本来就该是圆的 —— 本仓
+    // `_MaterialChoiceChips`（液态预设那排）也是全圆。2026-09-27 用户报「按钮也不圆」就是
+    // 被我按大面子的规矩收窄了。
+    final radius = BorderRadius.circular(height / 2);
 
     return Semantics(
-      button: true,
+      // 只带「互斥组 + 选中」两个标记，按钮 / 无障碍标签交给内层 `MiuixPressable`
+      // （它自己发 `button` + `onTap` + label），免得两个 Semantics 节点各念一遍。
       selected: selected,
       inMutuallyExclusiveGroup: true,
-      label: label,
-      child: MiuixButton(
+      child: MiuixPressable(
         onPressed: onTap,
-        cornerRadius: radius,
-        minWidth: 0,
-        minHeight: height,
-        insideMargin: const EdgeInsets.symmetric(horizontal: 20),
-        colors: MiuixButtonColors(
-          // 选中 = **实心主题色**（这一条就是它与药丸分段的分野）；未选中 = 与分段轨道
-          // 同一档中性底，于是「一排浅底 + 一颗填色」的整体观感与 MIUI 录音机那个一致。
-          color: selected
-              ? HyperosColors.primarySurface(context)
-              : HyperosColors.rowHighlight(context),
-          // 主题色底上的墨色按亮度取黑白（用户把主题色调成浅黄时也不会白字白底）。
-          contentColor: selected
-              ? onAccentInk(HyperosColors.primary(context))
-              : HyperosColors.secondaryText(context),
-          disabledColor: HyperosColors.rowHighlight(context),
-          disabledContentColor: HyperosColors.secondaryText(context),
-        ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: HyperosTypography.listTitle(context).copyWith(
-            fontSize: 15,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+        borderRadius: radius,
+        semanticLabel: label,
+        child: DecoratedBox(
+          decoration: BoxDecoration(color: fill, borderRadius: radius),
+          child: SizedBox(
+            height: height,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: HyperosTypography.listTitle(context).copyWith(
+                    fontSize: 15,
+                    // 行高**显式写死**：不写就继承 `listTitle` 的 1.25（那是给列表行排的），
+                    // 字号一改行高与字形对不上，视觉上就是「字没上下居中」（2026-09-27 用户报）。
+                    height: 1.2,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    color: ink,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
