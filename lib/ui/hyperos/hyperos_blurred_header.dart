@@ -348,13 +348,27 @@ abstract final class HyperosBlurredHeader {
   }
 
   /// Shared frosted scrim for subpage headers, sheets, and menus.
+  ///
+  /// ⚠️ **暗色必须是「亮 veil」，不能是暗 veil**（用户口径 2026-09-27：「暗色模式，进入
+  /// 设置页面渐变模糊也是显示的透明效果」）。理由：暗 veil 压在暗背景上**一点对比都没有**，
+  /// 模糊没有可糊的东西，整条带读起来就是一块透明片 —— 这件事本文件里早就写着：
+  /// [homePageRegionTintColor] 的注释「generic tintColor scrim is too dark and low-contrast
+  /// on dark wallpapers」说的就是同一件。
+  ///
+  /// 同族的三个接口早就按「暗色用亮 veil」实现：[homePageRegionTintColor] 0.20 /
+  /// [nestedLiquidTileTintColor] 0.12 / [nestedSurfaceTintColor] 0.10 —— **只有这一个共享
+  /// 的写成了暗 veil**，而子页顶栏、弹窗面板、菜单全都经过它，于是暗色下这几处一起读成透明。
+  ///
+  /// 量级与 [homePageRegionTintColor] 的暗色档保持同一档（0.2 上下）：两处不能漂，否则暗色下
+  /// 顶栏那条带与首页区域会是两种灰。用户的「材质浓度」（[FrostedAppearance.sheetTintAlpha]）
+  /// 仍然起作用，但**留了下限** —— 暗 scrim 落在任何低值上都会读成透明。
   static Color _frostedScrimColor(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final alpha = _appearanceOf(context).sheetTintAlpha;
     if (isDark) {
-      return HyperosColors.scaffoldBackground(
-        context,
-      ).withValues(alpha: (alpha * 0.55 + 0.10).clamp(0.22, 0.72));
+      return Colors.white.withValues(
+        alpha: (alpha * 0.2 + 0.12).clamp(0.16, 0.30),
+      );
     }
     return Colors.white.withValues(alpha: alpha);
   }

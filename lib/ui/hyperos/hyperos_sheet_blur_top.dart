@@ -297,6 +297,30 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
     );
   }
 
+  /// 带子的衬底（见 `_mainBand` 的调用处）。
+  ///
+  /// 三档，**暗色单独一档**：
+  ///
+  /// * 模糊关掉 → 面板自己的**不透明**色。没有模糊就必须在带底把滚上来的内容挡住，而该色
+  ///   与面板同色、本就看不出接缝。
+  /// * 模糊开着 + **浅色** → 刻意**全透明**。满浓度白衬底在带顶是「从无到有」的突变，在
+  ///   设置页看不见（带贴屏幕顶、上面没东西），搬进弹窗后带上边缘落在面板中间，就是一条
+  ///   亮线（2026-09-26 用户报「切换按钮顶部一条明显的横线」）。那时遮内容交给模糊本身
+  ///   （顶边 sigma 22，那个强度下文字本就不可读）。
+  /// * 模糊开着 + **暗色** → 给共享的磨砂 veil。暗色下没有 veil 就是「一块透明片」
+  ///   （2026-09-27 用户报「暗色模式…渐变模糊也是显示的透明效果」，子页顶栏与本带子
+  ///   同时中招）。而且现在带子上边缘就在**面板顶边**，紧挨着玻璃自己的边光，当年那条亮线
+  ///   的成因（衬底突然出现在面板中间）已经不存在。
+  Color _bandTint(BuildContext context, {required bool useBlur}) {
+    if (!useBlur) {
+      return HyperosBlurredHeader.sheetTintColor(context, withBlur: false);
+    }
+    if (Theme.of(context).brightness == Brightness.dark) {
+      return HyperosBlurredHeader.sheetTintColor(context, withBlur: true);
+    }
+    return Colors.transparent;
+  }
+
   /// 主带：真正有内容从底下穿过的那一段，渐进档（顶边满强度、向下衰减到 0）。
   Widget _mainBand(BuildContext context, {required bool useBlur}) {
     return FrostedHeaderBackground(
@@ -304,23 +328,11 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
         blurStyle: HeaderBlurStyle.inspire,
         blurEnabled: useBlur,
         blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-        // 衬底：模糊开着时**不画**（`transparent`），遮住滚上来的内容交给模糊本身 ——
-        // 渐进档顶边 sigma 22，文字在那个强度下本就不可读。
-        //
-        // 为什么非得去掉（2026-09-26 用户报「切换按钮顶部一条明显的横线」）：这条衬底
-        // 在带顶是**满浓度突然出现**（浅色下是白 @ 45%~72%，见
-        // `nestedSurfaceTintColor`）。设置页那条带贴在**屏幕最顶**，上面没有东西，
-        // 「从无到有」的突变看不见；搬进弹窗后带上边缘落在**面板中间**（把手下面 24px），
-        // 这个突变就成了一条亮线。模糊那边同样是顶边满强度，但糊的是均匀背景时几乎
-        // 看不出突变 —— 看得见的是这条白衬底。
-        //
-        // 带上那个控件（分段）自带不透明轨道，不靠这条衬底撑可读性。
-        //
-        // 模糊关掉时（实体面板 / 技术降级 / 平台不支持）仍用面板自己的**不透明**色 ——
-        // 那时带子与面板同色、看不出接缝，而且没有模糊就必须在带底把内容挡住。
-        tint: useBlur
-            ? Colors.transparent
-            : HyperosBlurredHeader.sheetTintColor(context, withBlur: false),
+        // 衬底分三档（暗色单独一档，理由见 [_bandTint]）：模糊关掉时用面板自己的**不透明**
+        // 色；模糊开着时浅色全透明（满浓度白衬底在带顶是「从无到有」的突变，落在面板中间
+        // 就是一条亮线，2026-09-26 用户报），暗色则必须有 veil，否则整条带读成透明片
+        // （2026-09-27 用户报）。
+        tint: _bandTint(context, useBlur: useBlur),
         // 带没画模糊时没有下沿可谈（见 InspireHeaderBlur.bottomOverhang：模糊关掉还
         // 外推会盖住正文第一行）。
         bottomOverhang: useBlur ? widget.fadeExtent : 0,
