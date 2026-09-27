@@ -240,7 +240,7 @@ class StorageService {
     _invalidateTimeSchemesListCache();
     _locationTimeGroupsListCache = null;
     _scheduleDateRulesListCache = null;
-    AppGlobalSettingsService.invalidateCacheAfterStorageRecovery();
+    AppGlobalSettingsService.restoreCacheAfterStorageRecovery(prefs);
   }
 
   Future<void> _restoreSettingsMirrorBefore(
@@ -357,7 +357,30 @@ class StorageService {
       }
       await _profilesWriteChain.catchError((_) {});
       if (_prefs?.getString(settingsMirrorTransactionKey) != null) {
-        throw StateError('settings_mirror_transaction_already_pending');
+        // 上一条事务的恢复记录没清掉，而 [_recoverPendingSettingsMirrorTransaction]
+        // 只在 [_doInit] 里跑过一次——进程还活着就再也不会跑第二次。于是本次会话
+        // 之后**每一次**设置保存都撞在这一行抛 already_pending，用户只能杀进程
+        // 重开才恢复。触发条件：平台 remove 返回 false（磁盘满、部分国产 ROM 的
+        // commit 不可靠），记录留在盘上。
+        //
+        // 这里补一次幂等恢复：committed 的只清理，未提交的先恢复旧快照再清理。
+        // 安全性：同进程内不可能有另一条事务在跑——上面的
+        // [_settingsMirrorTransactionChain] 已经把事务串行化，所以读到的记录一定
+        // 是「上一次遗留的」，不会是「正在跑的」。
+        try {
+          await _recoverPendingSettingsMirrorTransaction();
+        } catch (error) {
+          // 记录损坏且版本不认识时它是故意 rethrow 的；会话内不改变对外错误面，
+          // 仍按「有残留、不能开新事务」处理。
+          if (kDebugMode) {
+            debugPrint(
+              'StorageService: in-session settings journal recovery failed: $error',
+            );
+          }
+        }
+        if (_prefs?.getString(settingsMirrorTransactionKey) != null) {
+          throw StateError('settings_mirror_transaction_already_pending');
+        }
       }
       final before = _captureSettingsMirrorBefore();
       final transactionId =

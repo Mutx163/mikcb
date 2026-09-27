@@ -55,6 +55,12 @@ class _FailingPreferencesStore extends SharedPreferencesStorePlatform {
   final Map<String, Object> values;
   String? failKey;
 
+  /// When set, [remove] for this key reports failure **without** deleting it —
+  /// what a full disk / an unreliable platform `commit()` actually does. The
+  /// journal is then left on disk, which is the precondition the in-session
+  /// recovery has to cope with.
+  String? failRemoveKey;
+
   @override
   bool get isMock => true;
 
@@ -69,6 +75,9 @@ class _FailingPreferencesStore extends SharedPreferencesStorePlatform {
 
   @override
   Future<bool> remove(String key) async {
+    if (key == 'flutter.$failRemoveKey') {
+      return false;
+    }
     values.remove(key);
     return true;
   }
@@ -143,6 +152,124 @@ void main() {
       'new-global',
     );
     expect(preferences.getString('active_timetable_profile_id'), 'new-profile');
+  });
+
+  test('a journal the platform refuses to delete does not block later saves',
+      () async {
+    // Regression: the journal is removed *after* the targets are written, and
+    // both cleanup sites swallow a platform `remove` failure. Recovery only ran
+    // from _doInit, so a record left behind (full disk / unreliable commit())
+    // made every later settings save throw already_pending until the process
+    // was killed. The guard now recovers in-session.
+    final store = _FailingPreferencesStore(<String, Object>{
+      'flutter.app_global_settings_v1': 'old-global',
+      'flutter.timetable_profiles': _oldProfiles,
+      'flutter.active_timetable_profile_id': 'old-profile',
+      'flutter.timetable_profiles_schema_version': 1,
+    });
+    SharedPreferencesStorePlatform.instance = store;
+
+    final storage = StorageService.forTesting();
+    await storage.init();
+    final preferences = await SharedPreferences.getInstance();
+
+    // The platform now refuses to delete the journal record.
+    store.failRemoveKey = StorageService.settingsMirrorTransactionKey;
+    await storage.runSettingsMirrorTransaction(() async {
+      await preferences.setString(
+        AppGlobalSettingsService.preferenceKey,
+        'new-global',
+      );
+    });
+
+    // Precondition: the committed record is still on disk.
+    expect(
+      preferences.getString(StorageService.settingsMirrorTransactionKey),
+      isNotNull,
+    );
+
+    // The next save must recover in-session instead of throwing. The cap here is
+    // 16 for the reader: on the old code this threw
+    // StateError('settings_mirror_transaction_already_pending').
+    store.failRemoveKey = null;
+    await storage.runSettingsMirrorTransaction(() async {
+      await preferences.setString(
+        AppGlobalSettingsService.preferenceKey,
+        'newer-global',
+      );
+    });
+
+    expect(
+      preferences.getString(AppGlobalSettingsService.preferenceKey),
+      'newer-global',
+    );
+    expect(
+      preferences.getString(StorageService.settingsMirrorTransactionKey),
+      isNull,
+    );
+  });
+
+  test('a rolled-back settings save keeps app-level preferences device-global',
+      () async {
+    // Regression: the rollback path used to blank the in-process global-settings
+    // cache instead of re-reading it. `overlay` returns `base` unchanged when the
+    // cache is empty, so "app-level preferences are device-global" silently
+    // stopped being true for the rest of the session — and `hasPendingChanges`
+    // then reports true forever, so the next save of anything promotes the
+    // active timetable's stale mirror to the new global truth.
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'app_global_settings_v1': jsonEncode(<String, dynamic>{
+        'homeTitleStyle': HomeTitleStyle.brand.value,
+      }),
+      'app_global_settings_v1_migrated': true,
+      'timetable_profiles': _oldProfiles,
+      'active_timetable_profile_id': 'old-profile',
+      'timetable_profiles_schema_version': 1,
+    });
+    final storage = StorageService.forTesting();
+    await storage.init();
+
+    // Populate the cache the way provider init does.
+    await AppGlobalSettingsService.resolveInitial(
+      profiles: const [],
+      activeProfileId: null,
+    );
+    expect(
+      AppGlobalSettingsService.current['homeTitleStyle'],
+      HomeTitleStyle.brand.value,
+    );
+
+    // Any failing transaction goes through the same restore path a failed save
+    // does.
+    await expectLater(
+      storage.runSettingsMirrorTransaction<void>(
+        () async => throw StateError('simulated_failure'),
+      ),
+      throwsA(isA<StateError>()),
+    );
+
+    // The global value is still on disk...
+    final preferences = await SharedPreferences.getInstance();
+    final onDisk =
+        jsonDecode(
+              preferences.getString(AppGlobalSettingsService.preferenceKey)!,
+            )
+            as Map<String, dynamic>;
+    expect(onDisk['homeTitleStyle'], HomeTitleStyle.brand.value);
+    // ...and, the part that used to break, the in-process cache still carries it
+    // so `overlay` keeps applying the global value.
+    expect(
+      AppGlobalSettingsService.current['homeTitleStyle'],
+      HomeTitleStyle.brand.value,
+      reason: 'recovery must re-read the global key, not blank the cache',
+    );
+    final base = TimetableSettings.defaults().copyWith(
+      homeTitleStyle: HomeTitleStyle.classic,
+    );
+    expect(
+      AppGlobalSettingsService.overlay(base).homeTitleStyle,
+      HomeTitleStyle.brand,
+    );
   });
 
   test('target failure restores the old raw values', () async {

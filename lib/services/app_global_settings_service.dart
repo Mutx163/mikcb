@@ -299,10 +299,24 @@ class AppGlobalSettingsService {
     await syncFrom(source.settings);
   }
 
-  /// 启动恢复原始 prefs 后清掉进程缓存，避免继续使用恢复前的内存值。
-  /// 恢复发生在初始化读取之前，因此这里不重置写入队列。
-  static void invalidateCacheAfterStorageRecovery() {
-    _cache = const <String, dynamic>{};
+  /// 存储恢复之后**重新读回**全局那份，而不是清空进程缓存。
+  ///
+  /// 冷启动那次（[_doInit] 里的恢复）后面一定紧跟 [resolveInitial]，清空也无妨；
+  /// 但运行中那次（设置事务回滚，见 `runSettingsMirrorTransaction` 的 catch 分支）
+  /// 之后 [resolveInitial] 不会再跑——它是本类唯一的缓存填充点，生产代码里只有
+  /// Provider 初始化调一次。而 [overlay] 见到空缓存就直接原样返回 base，于是
+  /// 「应用级偏好是设备全局的」当场失效，设置重新跟随当前课表；再叠加
+  /// `hasPendingChanges` 恒为 true，下一次任何保存都会把课表镜像里的旧值当成
+  /// 新的全局真源写回去——把一次瞬时故障变成永久污染。所以这里必须读盘。
+  ///
+  /// 读回来的键就是刚被恢复的那一份（见 `_restoreSettingsMirrorBefore` 里的
+  /// [preferenceKey] 快照），与盘上状态一致。写入队列不重置：恢复不产生新的
+  /// 待写请求。
+  static void restoreCacheAfterStorageRecovery(
+    SharedPreferences preferences,
+  ) {
+    _cache = _tryDecode(preferences.getString(preferenceKey)) ??
+        const <String, dynamic>{};
     _cacheNeedsWrite = false;
   }
 
