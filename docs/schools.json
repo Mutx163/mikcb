@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-26T06:31:03+00:00",
+  "updatedAt": "2026-09-27T06:59:00+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 225,
-    "schools": 220,
+    "total": 228,
+    "schools": 223,
     "generic": 5
   },
   "schools": [
@@ -384,6 +384,13 @@
       "name": "广东科技学院",
       "initial": "G",
       "resourceFolder": "GDUST",
+      "category": "school"
+    },
+    {
+      "id": "GDKM",
+      "name": "广东科贸职业学院",
+      "initial": "G",
+      "resourceFolder": "GDKM",
       "category": "school"
     },
     {
@@ -975,6 +982,13 @@
       "category": "school"
     },
     {
+      "id": "NUSTTI",
+      "name": "南京理工大学泰州科技学院",
+      "initial": "N",
+      "resourceFolder": "NUSTTI",
+      "category": "school"
+    },
+    {
       "id": "NUAA",
       "name": "南京航空航天大学",
       "initial": "N",
@@ -1112,6 +1126,13 @@
       "name": "上海中侨职业技术大学",
       "initial": "S",
       "resourceFolder": "SHZQ",
+      "category": "school"
+    },
+    {
+      "id": "SHIEP",
+      "name": "上海电力大学",
+      "initial": "S",
+      "resourceFolder": "SHIEP",
       "category": "school"
     },
     {
