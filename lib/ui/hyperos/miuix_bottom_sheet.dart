@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 
@@ -584,8 +586,129 @@ Widget hyperosMiuixBottomSheetSurface(
             ),
           ),
           child,
+          // 上沿 + 两个上角的那条边线，**画在内容与模糊带之上**（见
+          // [HyperosSheetTopEdgeHighlight] 的注释：为什么面板轮廓必须永远在最上层）。
+          const Positioned.fill(child: HyperosSheetTopEdgeHighlight()),
         ],
       ),
     ),
   );
+}
+
+/// 面板**上沿与两个上角**的那条边线，画在面板内容（尤其是顶部渐变模糊带）**之上**。
+///
+/// ## 为什么需要它（2026-09-27 用户口径）
+///
+/// 「内容滑到弹窗顶部渐变模糊带里时，弹窗左上角右上角的圆角变成平铺，滑回顶部/底部又恢复」
+/// （停住不动也复现，所以不是滚动中的临时状态）。
+///
+/// 机制：顶部那条模糊带是一条**矩形**，它从面板上沿起、满宽铺到面板两边，于是
+///
+/// * 带子的模糊在**带上边缘是满强度**，而带上边缘正好压在面板顶边上 → 内容一滑进来，
+///   就在面板最上沿拉出一条**笔直的线**横贯整个宽度；
+/// * 面板玻璃自己的边光（rim）画在**玻璃上**，也就是在带子**下面** → 被带子盖掉。
+///
+/// 一条贯通的直线 + 没有边光 = 眼睛读到的顶边是直的，角上那两道圆弧就被压平 → 读成方角。
+/// 内容不在带子里时模糊糊的是一片均匀玻璃、那条线不显，所以又「恢复正常」。
+///
+/// ## 为什么是「画在上面」而不是别的解法
+///
+/// 另一个思路是让带子在顶部两角让开圆角（带子最上面那段左右各收 28）。那样角上确实
+/// 交回面板自己的玻璃，但**带子的上沿会在距两边 28px 处齐刷刷断掉**，面板最上沿多出两个
+/// 台阶 —— 比现在更难看。
+///
+/// 边线画在上层没有这两个代价：带子的模糊与渐隐一点没动，角上多出来的是一条本来就该有的
+/// 轮廓线（上游面板默认就带描边 —— 本仓把整块面板换掉时把它一起丢了，见
+/// `2026-09-16-home-chrome-ball-invisible-on-flat-backdrop`）。
+///
+/// ## 数值一律取自玻璃自己那份样式
+///
+/// 颜色 / 强度 / 线宽都走 [LiquidGlassSurface.resolveStyleFor]（`pinnedChrome` 角色、
+/// 同一个圆角、同一个亮度），**不另写一套**：边线是这块玻璃的边，写死了就会与玻璃的配方
+/// 漂移（深浅两档各调一次玻璃、边线却不动 = 又一次「同一材质两种观感」）。
+///
+/// 只画上沿与两个上角：左右两条边贴在屏幕边上（通栏弹窗通宽），画出来是两条贴屏边的线；
+/// 底边在屏幕外。真正需要它兜住的只有上沿与两个上角。
+class HyperosSheetTopEdgeHighlight extends StatelessWidget {
+  const HyperosSheetTopEdgeHighlight({super.key});
+
+  /// 这条边线此刻的落笔颜色与线宽（= 玻璃 rim 配方乘上浓度）。
+  ///
+  /// 抽出来是为了让「边线与玻璃同源」这条能被机械断言，而不是靠注释保证。
+  @visibleForTesting
+  static ({Color color, double strokeWidth}) resolveEdge(
+    BuildContext context,
+  ) {
+    final style = LiquidGlassSurface.resolveStyleFor(
+      appearance: FrostedAppearanceScope.of(context),
+      role: LiquidGlassRole.pinnedChrome,
+      borderRadius: hyperosMiuixBottomSheetCornerRadius,
+      brightness: Theme.of(context).brightness,
+    );
+    return (
+      color: style.rimColor.withValues(alpha: style.rimColor.a * style.rimStrength),
+      strokeWidth: style.rimWidth,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final edge = resolveEdge(context);
+    return IgnorePointer(
+      child: CustomPaint(
+        painter: HyperosSheetTopEdgePainter(
+          color: edge.color,
+          strokeWidth: edge.strokeWidth,
+          cornerRadius: hyperosMiuixBottomSheetCornerRadius,
+        ),
+      ),
+    );
+  }
+}
+
+/// [HyperosSheetTopEdgeHighlight] 的笔：只描「上沿 + 两个上角」这一段。
+///
+/// 公开是为了让路径几何可被断言（[topEdgePath]）；它不该被别的调用方直接使用。
+@visibleForTesting
+class HyperosSheetTopEdgePainter extends CustomPainter {
+  const HyperosSheetTopEdgePainter({
+    required this.color,
+    required this.strokeWidth,
+    required this.cornerRadius,
+  });
+
+  final Color color;
+  final double strokeWidth;
+  final double cornerRadius;
+
+  /// 上沿 + 两个上角的路径。四分之一圆用三次贝塞尔逼近（k = 0.5523）：面板的圆角是
+  /// 上游那条贝塞尔曲线，用 `arcTo` 的正圆去描会在角上差 1.35px（见本文件「轮廓」一节）。
+  @visibleForTesting
+  static Path topEdgePath(Size size, double cornerRadius) {
+    final r = math.min(cornerRadius, math.min(size.width, size.height) / 2);
+    const k = 0.5523;
+    return Path()
+      ..moveTo(0, r)
+      ..cubicTo(0, r - r * k, r - r * k, 0, r, 0)
+      ..lineTo(size.width - r, 0)
+      ..cubicTo(size.width - r + r * k, 0, size.width, r - r * k, size.width, r);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(
+      topEdgePath(size, cornerRadius),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round
+        ..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(HyperosSheetTopEdgePainter old) =>
+      old.color != color ||
+      old.strokeWidth != strokeWidth ||
+      old.cornerRadius != cornerRadius;
 }

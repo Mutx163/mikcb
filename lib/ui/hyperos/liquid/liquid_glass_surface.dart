@@ -284,7 +284,12 @@ class LiquidGlassSurface extends StatefulWidget {
 
   /// 解析某个角色**此刻真正会用的**渲染参数。
   ///
-  /// 为什么抽成 `@visibleForTesting` 静态函数：测试环境没有 shader filter 后端
+  /// 玻璃自己（[LiquidGlassSurfaceState]）与「要在玻璃之上重画它的边」的调用方
+  /// （`miuix_bottom_sheet.dart` 的 `_SheetTopEdgeHighlight`：面板上沿那条边线必须与
+  /// 这块玻璃用**同一份** rim 数值）都走这里 —— **边线的颜色/强度/线宽一旦另写一套，
+  /// 就会与玻璃配方漂移**，也就是又来一次「同一材质两种观感」。
+  ///
+  /// 最初抽成独立函数是为了给测试观测：测试环境没有 shader filter 后端
   /// （[isAvailable] 恒 false），`build` 一律走 `fallbackBuilder`、**永远不构造玻璃层**，
   /// 于是「成对开关有没有真的传下去」在 widget test 里观测不到 —— 而它一旦漏传，
   /// 症状只是"深色观感不对"，不会有任何测试报错。这函数把那套解析变成可断言的对象，
@@ -293,7 +298,6 @@ class LiquidGlassSurface extends StatefulWidget {
   /// 成对语义（2026-09-21）：**形状**按 role 锁（[LiquidGlassRole.pinnedChrome] 永远
   /// 标准档，用户那套深色档也不参与），**配方**是光照适配、对所有角色一视同仁 ——
   /// 漏给某个 role 就会重现「同一材质两种观感」的翻版（同一材质深浅两套观感）。
-  @visibleForTesting
   static LiquidGlassStyle resolveStyleFor({
     required FrostedAppearance appearance,
     required LiquidGlassRole role,
