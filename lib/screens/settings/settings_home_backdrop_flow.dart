@@ -400,6 +400,9 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   ///
   /// 列表 = **全局**历史（所有课表共用，最新在前）中当前可用者；历史还是空的老
   /// 用户，把当前生效的那一张补在最前，一进设置页就能看到自己正用着什么。
+  ///
+  /// 整块（标题 + 条 + 移除确认条）都是 [_RecentWallpaperSection]：确认态是
+  /// 这一段的 widget 状态，条本身是无状态的，所以确认按钮能画在**条外面**。
   Widget _buildRecentWallpaperTile(
     BuildContext context, {
     required AppLocalizations l10n,
@@ -419,47 +422,27 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     if (entries.isEmpty) {
       return const SizedBox.shrink();
     }
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.homePageWallpaperRecentTitle,
-            style: HyperosTypography.listTitle(context),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.homePageWallpaperRecentSubtitle,
-            style: HyperosTypography.listDetail(context),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: _recentWallpaperStripHeight,
-            child: _RecentWallpaperStrip(
-              entries: entries,
-              selectedKey: currentKey,
-              onSelect: _selectBackdropEntry,
-              // 「正在用的那张不给删」这一关放在**发起确认之前**：拦在确认态
-              // 之后的话，用户会先看到一张变成红色的卡，再被告知不能删。
-              onRequestRemove: (context, entry) =>
-                  _warnBackdropHistoryInUse(context, entry, l10n: l10n),
-              onConfirmRemove: (context, entry) => _removeBackdropHistoryEntry(
-                context,
-                entry,
-                l10n: l10n,
-              ),
-            ),
-          ),
-        ],
+    return _RecentWallpaperSection(
+      entries: entries,
+      selectedKey: currentKey,
+      l10n: l10n,
+      onSelect: _selectBackdropEntry,
+      // 「正在用的那张不给移除」这一关放在**发起之前**：它连角标都没有，唯一的
+      // 入口是长按，而长按的解释只能由这里给。
+      onBlockedRemove: (context, entry) =>
+          _warnBackdropHistoryInUse(context, entry, l10n: l10n),
+      onConfirmRemove: (context, entry) => _removeBackdropHistoryEntry(
+        context,
+        entry,
+        l10n: l10n,
       ),
     );
   }
 
-  /// 「正在用的那张不给删」的提示。
+  /// 「正在用的那张不给移除」的提示。
   ///
-  /// 与删除走的是同一个入口（条上的 × 或长按），所以拦住它之后只能解释一句、
-  /// 不做任何改动。
+  /// 那一行没有角标（可移除入口靠角标表达），所以这条只可能来自长按 —— 长按
+  /// 之后除了解释一句，不做任何改动。
   void _warnBackdropHistoryInUse(
     BuildContext context,
     WallpaperHistoryEntry entry, {
