@@ -984,6 +984,83 @@ void main() {
 
         expect(hopper.progressCurrent, 2);
       });
+
+      test('never folds distinct numeric room names into one building', () {
+        // Regression: ff0ae83d let a bare digit prefix count as a building, so
+        // 3101 / 3201 both became "3" and 1号楼 / 1024 both became "1" —
+        // merging different rooms, which under-reports both the summed sections
+        // per building and the distinct-buildings-per-day count.
+        Course at(String id, String location) => Course(
+              id: id,
+              name: '课$id',
+              teacher: '老师',
+              location: location,
+              dayOfWeek: 1,
+              startSection: 1,
+              endSection: 2,
+              startTime: '08:00',
+              endTime: '09:40',
+            );
+
+        final bare = StatisticsService.calculateVenueStats(
+          allCourses: [at('1', '3101'), at('2', '3201')],
+          currentWeek: 16,
+        );
+        expect(
+          bare.buildings.map((b) => b.name).toSet(),
+          {'3101', '3201'},
+          reason: '两间不同的教室不能共用数字键 "3"',
+        );
+
+        final mixed = StatisticsService.calculateVenueStats(
+          allCourses: [at('3', '1号楼'), at('4', '1024')],
+          currentWeek: 16,
+        );
+        expect(
+          mixed.buildings.map((b) => b.name).toSet(),
+          {'1号楼', '1024'},
+          reason: '1号楼 与 1024 不能共用数字键 "1"',
+        );
+
+        // Real building prefixes still collapse, and carry a usable label.
+        final real = StatisticsService.calculateVenueStats(
+          allCourses: [
+            at('5', '3号楼-101'),
+            at('6', '3号楼-202'),
+            at('7', 'A101'),
+          ],
+          currentWeek: 16,
+        );
+        expect(real.buildings.map((b) => b.name).toSet(), {'3号楼', 'A'});
+      });
+
+      test('the building-count story uses the same extraction as the stats', () {
+        // ff0ae83d fixed calculateAchievements but left a second copy of the
+        // old `^[A-Za-z]+` regex in generateDataStories, so the same data
+        // reported 2 buildings in one place and 3 in the other.
+        Course at(String id, String location) => Course(
+              id: id,
+              name: '课$id',
+              teacher: '老师',
+              location: location,
+              dayOfWeek: 1,
+              startSection: 1,
+              endSection: 2,
+              startTime: '08:00',
+              endTime: '09:40',
+            );
+
+        final stories = StatisticsService.generateDataStories(
+          allCourses: [
+            at('1', '第一教学楼-101'),
+            at('2', '第一教学楼-202'),
+            at('3', '第二教学楼-101'),
+          ],
+          currentWeek: 16,
+        );
+        final story = stories.firstWhere((s) => s.type == StoryType.buildingCount);
+        expect(story.buildingCount, 2);
+      });
     });
     });
   });

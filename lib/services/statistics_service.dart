@@ -318,10 +318,10 @@ class StatisticsService {
         ),
       );
 
-      // 教学楼数量
-      final buildings = roomCounts.keys
-          .map((r) => RegExp(r'^[A-Za-z]+').stringMatch(r) ?? r)
-          .toSet();
+      // 教学楼数量。与 calculateAchievements 用**同一个**提取口径
+      // （_buildingOf）——ff0ae83d 只改了那边，这边还留着一份 `^[A-Za-z]+`
+      // 的老正则，于是同一批数据「成就」说 2 栋、「故事卡」说 3 栋。
+      final buildings = roomCounts.keys.map(_buildingOf).toSet();
       if (buildings.length > 1) {
         stories.add(
           DataStory(
@@ -719,20 +719,31 @@ class StatisticsService {
 
   /// 提取教学楼前缀，无前缀则原样返回。
   ///
-  /// Was `^[A-Za-z]+` only, so a room like "第一教学楼" produced no prefix at all
-  /// and every distinct room string counted as its own building — the in-app
-  /// "教学楼数量" then disagreed with the home-screen widget, which extracts
-  /// buildings on the Kotlin side. Accepting a leading CJK run as well makes the
-  /// two sides agree for Chinese room names.
+  /// 历史：`^[A-Za-z]+` 只认字母，中文教室名（第一教学楼-201）取不到前缀，于是
+  /// 每个不同教室串各算一栋楼。ff0ae83d 加上中文与数字前缀后解决了中文那一半，
+  /// 但数字前缀**不要门槛**又带来更糟的一半：3101 与 3201 都被折成 "3"，
+  /// 1号楼 与 1024 都被折成 "1"——把不同教室合并，比少认更糟（下面两个口径都
+  /// 是累加/去重，一并少报）。
+  ///
+  /// 三个分支的门槛各不相同：
+  /// 1. 字母前缀（A101 / B203）无条件认——「A 座」那套命名没有歧义。
+  /// 2. 数字前缀**只有**后面跟着楼栋词（3号楼）或分隔符（3-201）才认。
+  /// 3. 中文楼名（第一教学楼-201 / 教三 401）认整段开头中文，中文串在数字或
+  ///    分隔符处自然停下，所以 "-201" 不会混进来。
+  ///
+  /// 三条都不命中时返回房间名本身：它没有可依据的楼栋名，但**绝不**折进一个
+  /// 共用的数字键里。
+  ///
+  /// 已知残留：非楼栋的中文名也认整段中文，所以 `自习室301` 与 `自习室402`
+  /// 仍会并成「自习室」一栋。要把「这是楼还是房间」彻底分清，得引入楼栋词
+  /// 词典，超出此处范围。
   static String _buildingOf(String room) {
     final trimmed = room.trim();
     if (trimmed.isEmpty) {
       return room;
     }
-    // Letters, digits (e.g. "3号楼") or a leading CJK run, stopped at the first
-    // separator so "第一教学楼-201" yields the building and not the room number.
     final match = RegExp(
-      r'^(?:[A-Za-z]+|\d+|[一-鿿]+)',
+      r'^(?:[A-Za-z]+|[一-鿿]+|\d+(?:[ \t]*[号栋楼馆舍区教]+|(?=[ \t]*[-/])))',
     ).stringMatch(trimmed);
     if (match == null || match.isEmpty) {
       return room;
