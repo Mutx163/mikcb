@@ -594,31 +594,22 @@ class _TimeSchemeManagementScreenState
               ),
             ),
             const SizedBox(height: 12),
+            // No leading dot here.  This dialog almost always has a single
+            // blocker, so a bullet carries no information, and a dot painted
+            // in `HyperosColors.primary` just inherits the theme accent — a
+            // black seed made it read as a stray speck.  The lines are
+            // self-describing ("作为主时间模板的课表：…"), so plain left-aligned
+            // text reads better.
             for (final line in lines)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Container(
-                        width: 5,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: HyperosColors.primary(context),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        line,
-                        style: HyperosTypography.listDetail(context),
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  line,
+                  // showHyperosDialog wraps the whole body in a centered
+                  // DefaultTextStyle, so this must be set explicitly or the
+                  // line floats in the middle of the dialog.
+                  textAlign: TextAlign.start,
+                  style: HyperosTypography.listDetail(context),
                 ),
               ),
           ],
@@ -1442,12 +1433,24 @@ class _UsageSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: HyperosTypography.listTitle(context)),
+          Text(
+            title,
+            textAlign: TextAlign.start,
+            style: HyperosTypography.listTitle(context),
+          ),
           const SizedBox(height: 4),
-          Text(subtitle, style: HyperosTypography.listDetail(context)),
+          Text(
+            subtitle,
+            textAlign: TextAlign.start,
+            style: HyperosTypography.listDetail(context),
+          ),
           const SizedBox(height: 10),
           if (items.isEmpty)
-            Text(emptyText, style: HyperosTypography.listDetail(context))
+            Text(
+              emptyText,
+              textAlign: TextAlign.start,
+              style: HyperosTypography.listDetail(context),
+            )
           else
             ...items.map((item) => item),
         ],
@@ -1485,11 +1488,19 @@ class _UsageLine extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(primary, style: HyperosTypography.listTitle(context)),
+                // showHyperosDialog's body inherits a centered DefaultTextStyle;
+                // short course names would otherwise float mid-dialog instead
+                // of sitting next to their bullet.
+                Text(
+                  primary,
+                  textAlign: TextAlign.start,
+                  style: HyperosTypography.listTitle(context),
+                ),
                 if (secondary != null) ...[
                   const SizedBox(height: 2),
                   Text(
                     secondary!,
+                    textAlign: TextAlign.start,
                     style: HyperosTypography.listDetail(context),
                   ),
                 ],
