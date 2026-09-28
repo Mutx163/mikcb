@@ -343,11 +343,21 @@ Future<String?> _timetableImportAppDataBackup(
   TimetableProvider host,
   String content,
 ) async {
+  // 回滚快照：与完整备份那条路径同款。缺了它，这条路径是**先换内存、后写盘**——
+  // 磁盘满 → 抛错 → 内存里已经是新课表（界面立刻显示新课表），盘上还是旧的；
+  // 用户退出 App 再进来，课表凭空消失。同一次改动里被一起包住的完整备份路径
+  // 早就加了这个保护，单课表路径却没有，两条路径的失败后果完全不同却只有一条
+  // 能自愈。
+  //
+  // 代价：快照会把全部课表档案各拷一份，而这里只改动当前档案的那几个字段。
+  // 复用已有且已被测试的机制，好过再写一套只覆盖部分字段的平行实现。
+  _FullBackupRestoreSnapshot? snapshot;
   try {
     if (host._dataTransferService.isFullBackupJson(content)) {
       return host.importFullAppDataBackup(content);
     }
     final backup = host._dataTransferService.parseBackupJson(content);
+    snapshot = _FullBackupRestoreSnapshot(host);
     final resolvedSettings = await host._resolveSettingsAgainstTimeSchemes(
       backup.settings,
       fallbackName: '${host.activeProfile?.name ?? "导入课表"} 时间',
@@ -384,8 +394,19 @@ Future<String?> _timetableImportAppDataBackup(
     await host._updateLiveActivity();
     return null;
   } on FormatException catch (e) {
-    return e.message;
+    final rollbackFailures = await _restoreAfterFullBackupFailure(
+      host,
+      snapshot,
+    );
+    return rollbackFailures.isEmpty ? e.message : 'import_rollback_incomplete';
   } catch (_) {
+    final rollbackFailures = await _restoreAfterFullBackupFailure(
+      host,
+      snapshot,
+    );
+    if (rollbackFailures.isNotEmpty) {
+      return 'import_rollback_incomplete';
+    }
     return 'import_file_unrecognized';
   }
 }
