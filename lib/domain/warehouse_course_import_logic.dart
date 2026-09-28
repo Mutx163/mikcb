@@ -225,19 +225,30 @@ class WarehouseCourseImportLogic {
   /// would otherwise pull from localisation.
   ///
   /// [onSkip] reports every record that did not make it in, together with a
-  /// best-effort [name]. It exists because the alternative is worse on both
-  /// ends: throwing used to cost the user *every* course in the batch, and
+  /// best-effort [name] and, for [WarehouseCourseSkipReason.malformed], the
+  /// error that was swallowed. It exists because the alternative is worse on
+  /// both ends: throwing used to cost the user *every* course in the batch, and
   /// skipping quietly costs them one course with no explanation — which is
   /// exactly the complaint that started this funnel ("a course just isn't on
   /// my timetable and nothing says why"). Callers should both log the count and
   /// show it; a skip that nobody is told about is the bug, not the fix.
+  ///
+  /// The `error` is there because this funnel catches *everything* on purpose:
+  /// one `TypeError` from a future field shape must not void the batch. Without
+  /// it, a genuine programming bug in this file is indistinguishable from dirty
+  /// adapter data and the stack trace is gone for good. Pass it to the log.
   static List<Course> parse(
     List<dynamic> rawCourses, {
     required String Function() idFactory,
     required String unknownTeacher,
     required String unknownLocation,
     int maxWeek = ImportExportLogic.maxAllowedSemesterWeekCount,
-    void Function(WarehouseCourseSkipReason reason, String? name)? onSkip,
+    void Function(
+      WarehouseCourseSkipReason reason,
+      String? name, {
+      Object? error,
+    })?
+    onSkip,
   }) {
     final courses = <Course>[];
     for (final item in rawCourses) {
@@ -256,24 +267,29 @@ class WarehouseCourseImportLogic {
           maxWeek: maxWeek,
           onWeeksTrimmed: () => weeksTrimmed = true,
         );
-      } catch (_) {
+      } catch (error) {
         // One malformed record must never cost the user the whole batch.
         // `parse` is the single funnel for every adapter's output, so a throw
-        // here used to surface as "import failed" with nothing saved.
+        // here used to surface as "import failed" with nothing saved. The error
+        // is handed back rather than dropped: this catch is deliberately
+        // total, so without it a real programming bug here would be
+        // indistinguishable from dirty adapter data.
         onSkip?.call(
           WarehouseCourseSkipReason.malformed,
           _bestEffortName(item),
+          error: error,
         );
         continue;
       }
-      if (weeksTrimmed) {
-        onSkip?.call(
-          WarehouseCourseSkipReason.partialWeeks,
-          parsed?.name,
-        );
-      }
       if (parsed != null) {
         courses.add(parsed);
+        // 只有课真的进来了，「周次被削」才成立。一门「周次全越界 + 被整条丢弃」
+        // 的课会同时命中两个标志，若在这里无条件上报，用户会同时看到「丢掉了
+        // 1 门」和「1 门课导入成功但少了周次」——后一句是假的。而它恰好是这个
+        // 功能专门要防的那类隐蔽故障，跟「整条没进来」混在一起就把提示词废掉了。
+        if (weeksTrimmed) {
+          onSkip?.call(WarehouseCourseSkipReason.partialWeeks, parsed.name);
+        }
       } else {
         onSkip?.call(
           WarehouseCourseSkipReason.unusable,

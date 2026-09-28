@@ -373,7 +373,11 @@ class SpreadsheetImportService {
     required _SpreadsheetColumnMap columns,
     required List<String> warnings,
   }) {
-    final nameField = columns.indexOf('课程名', const []) != null ? '课程名' : '课程名称';
+    // 用代码而不是中文表头当字段名：`_localizeFieldName` 按代码查各语言的字段名，
+    // 直接塞中文会让英文 / 日文界面在报错里露出「课程名」。这一处此前是全仓
+    // 最后漏掉的（`weekday` / `start_section` 等都已是代码）。表头是「课程名」还是
+    // 「课程名称」不影响字段本身，两者都归到同一个代码。
+    const nameField = 'course_name';
     final name = columns.cell(row, '课程名', _nameAliases).trim();
     if (name.isEmpty) {
       throw FormatException(

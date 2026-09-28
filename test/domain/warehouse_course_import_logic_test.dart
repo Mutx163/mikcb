@@ -623,7 +623,7 @@ void main() {
           idFactory: _nextId,
           unknownTeacher: '未知教师',
           unknownLocation: '未知地点',
-          onSkip: (reason, name) => skips.add((reason, name)),
+          onSkip: (reason, name, {error}) => skips.add((reason, name)),
         );
         return (courses: courses, skips: skips);
       }
@@ -667,6 +667,24 @@ void main() {
         expect(result.courses, isEmpty);
         expect(tally(result.skips), {WarehouseCourseSkipReason.malformed: 2});
         expect(result.skips.every((s) => s.$2 == null), isTrue);
+      });
+
+      test('malformed 必须把异常带出来，否则编程 bug 与脏数据无法区分', () {
+        // 解析层的 catch 是全抓的（一条脏课不该毁掉整批）。代价是真正的编程
+        // bug 也会走这条路，所以异常对象必须交回调用方记进日志——否则它和
+        // 「脚本数据脏」在日志里长得一模一样，堆栈永久丢失。
+        final errors = <Object?>[];
+        WarehouseCourseImportLogic.parse(
+          [
+            {1: '非字符串键'}, // 让 cast<String, dynamic>() 抛错
+          ],
+          idFactory: _nextId,
+          unknownTeacher: '未知教师',
+          unknownLocation: '未知地点',
+          onSkip: (reason, name, {error}) => errors.add(error),
+        );
+        expect(errors, hasLength(1));
+        expect(errors.single, isA<Object>());
       });
 
       test('周次里有非数字 → 课还在，但报 partialWeeks', () {
@@ -731,8 +749,21 @@ void main() {
         });
       });
 
-      test('一条脏记录不影响同批其他课，且脏的那条会被点名', () {
+      test('整条被丢弃的课不得同时报「周次被削」——那句提示会是假的', () {
+        // 周次全越界 + 既无节次又无钟点：这门课两条标志都命中。若两条都上报，
+        // 用户会同时看到「丢掉了 1 门」和「1 门课导入成功但少了周次」——后一句
+        // 是假的，而「课上着但少显示几周」恰恰是这个功能专门要防的隐蔽故障，
+        // 混在一起就把提示词自己废掉了。
         final result = parseWithSkips([
+          {'name': '周次越界且没有落点', 'day': 1, 'weeks': [9999, 8888]},
+        ]);
+        expect(result.courses, isEmpty);
+        expect(result.skips, [
+          (WarehouseCourseSkipReason.unusable, '周次越界且没有落点'),
+        ]);
+      });
+
+      test('一条脏记录不影响同批其他课，且脏的那条会被点名', () {        final result = parseWithSkips([
           {
             'name': '好的',
             'day': 1,

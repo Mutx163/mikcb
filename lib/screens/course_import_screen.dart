@@ -4416,7 +4416,13 @@ class _WarehouseAdapterWebLoginScreenState
   ) {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
-      title: Text(widget.title),
+      // 顶栏不摆标题：这一页标题是「学校名 + 适配器名」（如「重庆城市科技
+      // 学院强智通适配」，14 个字 ≈ 237dp），而顶栏右侧常年挂着 4 个动作
+      // 图标（录制 / 桌面切换 / 刷新 / 更多，合计 160dp）——360dp 宽的机器上
+      // 标题只剩 100dp 出头，塞不下就是省略号，看不出是哪所学校；干脆不摆
+      // （2026-09-28 用户拍板）。要看学校名退回上一层就是，网页本身也在
+      // 地址栏里露了教务域名。
+      title: const SizedBox.shrink(),
       // 校名收进返回按钮那一行的小标题：可折叠大标题在网页场景永远不会被
       // 滚动收起（滚动发生在 WebView 内部），只会常驻占用约一整行高度。
       collapsibleLargeTitle: false,
@@ -4480,24 +4486,32 @@ class _WarehouseAdapterWebLoginScreenState
                         // URL 地址栏（压缩为单行：桌面/移动模式由头部切换按钮
                         // 表达，本地调试脚本名由状态行 currentStatus 表达，
                         // 不再常驻占一行提示）
-                        Row(
-                          children: [
-                            Expanded(
-                              child: HyperosTextField(
-                                controller: _addressController,
-                                focusNode: _addressFocusNode,
-                                hint: l10n.webAddressHint,
-                                keyboardType: TextInputType.url,
-                                textInputAction: TextInputAction.go,
-                                onSubmitted: (_) => _loadAddressBarUrl(),
+                        //
+                        // IntrinsicHeight + stretch：「前往」跟着输入框等高。
+                        // 按钮规格高 40、输入框 58，按默认的居中对齐会上下各
+                        // 空 6，看着像没对齐（2026-09-28 真机反馈）。行高交给
+                        // 输入框定，按钮不反向影响它。
+                        IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: HyperosTextField(
+                                  controller: _addressController,
+                                  focusNode: _addressFocusNode,
+                                  hint: l10n.webAddressHint,
+                                  keyboardType: TextInputType.url,
+                                  textInputAction: TextInputAction.go,
+                                  onSubmitted: (_) => _loadAddressBarUrl(),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            HyperosButton(
-                              label: l10n.goAction,
-                              onPressed: _loadAddressBarUrl,
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              HyperosButton(
+                                label: l10n.goAction,
+                                onPressed: _loadAddressBarUrl,
+                              ),
+                            ],
+                          ),
                         ),
                         // 状态/提示行
                         if ((currentStatus ?? '').isNotEmpty ||
@@ -5679,6 +5693,13 @@ $kWarehouseBridgeCompatShim  try {
           'courses import aborted at capacity mounted=$mounted capacityReady=$capacityReady requiredSectionCount=$requiredSectionCount',
         );
         _cancelImportTimeout();
+        // 收尾回调：这条路径必须和同函数里其余 5 条结束路径（取消、写盘失败、课表
+        // 为空 …）做同一个动作，否则后台导入的会话永不结束——用户点取消后首页要
+        // 空转到看门狗兜底（2 分钟），走错误码那条更久（5 分钟），而且看到的是
+        // 「需要手动操作」这种并不存在的失败。语义上它是「正常结束」，不是崩溃。
+        if (widget.runInBackground) {
+          widget.onBackgroundFinished?.call(false);
+        }
         if (!mounted) return;
         final status = AppLocalizations.of(context)!.importInterruptedStatus;
         setState(() {
@@ -5829,15 +5850,20 @@ $kWarehouseBridgeCompatShim  try {
 
   void _recordWarehouseCourseSkip(
     WarehouseCourseSkipReason reason,
-    String? name,
-  ) {
+    String? name, {
+    Object? error,
+  }) {
     _warehouseCourseSkips.update(
       reason,
       (count) => count + 1,
       ifAbsent: () => 1,
     );
+    // 解析层的 catch 是「全抓」的：一条脏记录不该毁掉整批。代价是真正的编程
+    // bug（字段形状变了导致 TypeError）也会走这条路，所以异常对象必须记下来 ——
+    // 否则它和「脚本数据脏」在日志里长得一模一样，堆栈就永久丢了。
     _debugImportLog(
-      'course record skipped reason=${reason.name} name=${name ?? '-'}',
+      'course record skipped reason=${reason.name} name=${name ?? '-'}'
+      '${error == null ? '' : ' error=$error'}',
     );
   }
 
