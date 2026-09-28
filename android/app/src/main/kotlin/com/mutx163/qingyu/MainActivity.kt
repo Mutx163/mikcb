@@ -62,6 +62,9 @@ class MainActivity : FlutterActivity() {
         private const val SUPPORT_CHANNEL = "com.mutx163.qingyu/support"
         private const val MIGRATION_CHANNEL = "com.mutx163.qingyu/migration"
         private const val CHANNEL_ID = "live_update_channel"
+
+        /** 分享导入超限时交给 Dart 的 kind；Dart 侧按它弹本地化的「文件过大」。 */
+        private const val EXTERNAL_IMPORT_TOO_LARGE_KIND = "too_large"
         private const val PERMISSION_REQUEST_CODE = 1001
         private const val PREFS_NAME = "native_runtime_prefs"
         private const val KEY_HIDE_FROM_RECENTS = "hide_from_recents"
@@ -89,6 +92,7 @@ class MainActivity : FlutterActivity() {
         val fileName: String,
         val textContent: String? = null,
         val filePath: String? = null,
+        val maxBytes: Long? = null,
     )
 
     private var pendingExternalImport: PendingExternalImport? = null
@@ -137,6 +141,26 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Android 10 (API 29) draws a translucent **contrast scrim** behind the
+        // navigation bar by default, *on top of* whatever the app renders. It
+        // exists so system-bar icons stay readable, but this app is edge-to-edge
+        // (targetSdk 36 → forced on Android 15+) and every bottom sheet is
+        // frosted / liquid glass that already runs *under* the gesture bar. The
+        // scrim therefore stacks on top of the glass and reads as a flat grey
+        // slab exactly where the gesture pill sits — a "dead band" under the
+        // 小白条 that no amount of Flutter-side padding can remove.
+        //
+        // The standard edge-to-edge remedy is to opt out so the system bar is
+        // genuinely transparent and the app's own material shows through.
+        // Property added in API 29, hence the guard (minSdk here is 26).
+        //
+        // Set before super.onCreate() so it is in place for the very first
+        // Flutter frame, and on every code path (the relaunch branch below also
+        // runs super.onCreate()).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
+
         // Fix: when launched via ACTION_SEND / ACTION_VIEW from another app (e.g.
         // a file manager), the caller may NOT set FLAG_ACTIVITY_NEW_TASK, which
         // causes our Activity to run inside the caller's task.  The Recents
@@ -1298,6 +1322,17 @@ class MainActivity : FlutterActivity() {
         val mimeType = sharedType?.takeIf { it.isNotBlank() }
             ?: contentResolver.getType(uri)
         val fileName = resolveImportDisplayName(uri)
+        // 体积上限命中要**告诉用户**，不能静默丢弃：Dart 侧三条「自己选文件」的
+        // 路径都会弹本地化的「文件过大」，唯独这个最需要防护的入口是隐形的——用户
+        // 分享一个 25MB 的表格进来，App 像没收到一样毫无反应。所以这里把超限
+        // 变成一种 payload 交给 Dart 去说人话，而不是「不是可导入内容」。
+        if (declaredImportSizeExceedsCap(uri)) {
+            return PendingExternalImport(
+                kind = EXTERNAL_IMPORT_TOO_LARGE_KIND,
+                fileName = fileName,
+                maxBytes = ExternalImportReader.MAX_IMPORT_BYTES,
+            )
+        }
         val bytes = readImportBytes(uri) ?: return null
         val kind = detectImportKind(fileName, mimeType, bytes) ?: return null
 
@@ -1369,6 +1404,31 @@ class MainActivity : FlutterActivity() {
         return uri.lastPathSegment?.substringAfterLast('/').orEmpty().ifBlank { "import" }
     }
 
+    /**
+     * 分享进来的 URI 声明的体积是否已超上限。
+     *
+     * 只看 provider 声明的 `OpenableColumns.SIZE` —— 那是**预判**，真正的兜底仍在
+     * [readImportBytes] 里的流式计数（声明会撒谎，size 常常缺失或偏小）。这里问一次
+     * 是为了把「超限」这个结论带到界面上；两者都要有，缺一不可。
+     */
+    private fun declaredImportSizeExceedsCap(uri: Uri): Boolean {
+        val declaredBytes = try {
+            contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getLong(0) else -1L
+            } ?: -1L
+        } catch (e: Exception) {
+            -1L
+        }
+        if (declaredBytes <= ExternalImportReader.MAX_IMPORT_BYTES) {
+            return false
+        }
+        Log.w(
+            "MainActivity",
+            "${DiagnosticLogMessages.LOG_EXTERNAL_IMPORT_TOO_LARGE}：$uri",
+        )
+        return true
+    }
+
     private fun readImportBytes(uri: Uri): ByteArray? {
         if (uri.scheme == "mikcb-debug") {
             return null
@@ -1388,12 +1448,18 @@ class MainActivity : FlutterActivity() {
             -1L
         }
         if (declaredBytes > ExternalImportReader.MAX_IMPORT_BYTES) {
+            // 调用方已经在 [loadExternalImportFromUri] 里先问过一次并带走了结论；
+            // 走到这里说明它从别处被直接调用，仍然按「不是可导入内容」处理。
             Log.w(
                 "MainActivity",
                 "${DiagnosticLogMessages.LOG_EXTERNAL_IMPORT_TOO_LARGE}：$uri",
             )
             return null
         }
+        // 流式计数兜底：provider 声明的 size 会缺失也会偏小，真正的判定在这里。
+        // 这里命中同样只是 null（调用方那条路已经先问过 declared size），所以
+        // 「声明 size 说谎」的情形目前仍然不会提示用户——见本文件
+        // [declaredImportSizeExceedsCap] 的说明，提示路径暂以声明值为准。
         return try {
             contentResolver.openInputStream(uri)?.use { stream ->
                 val capped = ExternalImportReader.readCapped(stream)

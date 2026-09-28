@@ -47,6 +47,7 @@ import 'services/debug_deep_link_service.dart';
 import 'services/lan_edit_foreground_service.dart';
 import 'services/app_migration_service.dart';
 import 'services/storage_service.dart';
+import 'services/spreadsheet_import_service.dart';
 import 'services/user_data_sync_hooks.dart';
 import 'services/webdav_sync_coordinator.dart';
 import 'services/android_animation_scale_service.dart';
@@ -59,6 +60,7 @@ import 'ui/hyperos/hyperos.dart';
 import 'ui/hyperos/hyperos_motion.dart';
 import 'ui/hyperos/liquid/liquid_glass_shader.dart';
 import 'ui/hyperos_motion_bridge.dart';
+import 'utils/import_file_reader.dart';
 
 ThemeMode _themeModeFromSettings(AppThemeMode mode) {
   return switch (mode) {
@@ -1298,6 +1300,22 @@ class _AppEntryScreenState extends State<AppEntryScreen>
               ),
             );
           }
+        case 'too_large':
+          // 原生侧已经拦下了（分享进来的文件由别的应用提供，体积不受用户约束）。
+          // 此前这里只有一行 Log，App 像没收到一样毫无反应——而同一周改的 Dart 侧
+          // 三条「自己选文件」的路径都会弹「文件过大」，唯独最需要防护的入口是
+          // 隐形的。现在把结论带上来，用同一套本地化文案说清楚。
+          if (!mounted) return;
+          final budget = formatByteBudget(
+            // 原生侧一定会带 maxBytes；兜底取 Dart 侧同一个 20MB 口径，
+            // 不写魔法数字，也避免「上限」这句话里出现空占位符。
+            payload['maxBytes'] as int? ?? SpreadsheetImportService.maxFileBytes,
+          );
+          showAppToast(
+            context,
+            message: AppLocalizations.of(context)!.importFileTooLarge(budget),
+            kind: AppToastKind.error,
+          );
       }
     } catch (e, stackTrace) {
       // 非关键功能不中断启动流程，但失败要留痕：否则用户反馈
