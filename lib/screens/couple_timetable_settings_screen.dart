@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,8 @@ import '../providers/timetable_provider.dart';
 import '../services/couple_webdav_config.dart';
 import '../services/couple_webdav_service.dart';
 import '../services/partner_timetable_service.dart';
+import '../services/unified_transfer_service.dart';
+import '../utils/import_file_reader.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/app_toast.dart';
 import '../utils/course_color_palette.dart';
@@ -555,15 +558,34 @@ class _CoupleTimetableSettingsScreenState
     try {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
-        withData: true,
+        // withData: true would already have the whole file in memory; on
+        // Android an OOM kills the process rather than raising something
+        // catchable, so the ceiling must be enforced before the read.
+        // (false is the default; stated here because the default is the trap.)
         allowedExtensions: const ['json', 'mikcb'],
       );
       final file = result?.files.single;
       if (file == null) {
         return;
       }
-      final bytes = file.bytes;
-      final content = bytes == null ? '' : utf8.decode(bytes);
+      final path = file.path;
+      if (path == null || path.isEmpty) {
+        throw FormatException(l10n.importFileReadFailed);
+      }
+      final Uint8List bytes;
+      try {
+        bytes = await readImportFileBytes(
+          path,
+          maxBytes: UnifiedTransferService.maxImportFileBytes,
+        );
+      } on ImportFileTooLarge {
+        throw FormatException(
+          l10n.importFileTooLarge(
+            formatByteBudget(UnifiedTransferService.maxImportFileBytes),
+          ),
+        );
+      }
+      final content = utf8.decode(bytes);
       if (!mounted || content.isEmpty) {
         if (mounted && content.isEmpty) {
           throw FormatException(l10n.importFileReadFailed);

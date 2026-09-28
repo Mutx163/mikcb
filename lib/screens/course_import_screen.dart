@@ -5,6 +5,7 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/widgets/miuix_date_picker_sheet.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:azlistview/azlistview.dart';
 import 'package:file_picker/file_picker.dart';
@@ -33,6 +34,7 @@ import '../services/ics_import_service.dart';
 import '../services/import_random_color_preferences.dart';
 import '../services/import_week_alignment_service.dart';
 import '../services/spreadsheet_import_service.dart';
+import '../services/unified_transfer_service.dart';
 import '../services/warehouse_bridge_compat.dart';
 import '../services/warehouse_import_preferences_service.dart';
 import '../services/warehouse_import_session_log.dart';
@@ -353,16 +355,38 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['ics'],
-        withData: true,
+        // withData: true would already have the whole file in memory, and on
+        // Android an OOM kills the process instead of raising something
+        // catchable — so the ceiling has to be enforced before the read.
+        withData: false,
       );
       if (result == null || result.files.isEmpty || !mounted) return;
 
-      final bytes = result.files.single.bytes;
-      if (bytes == null) {
+      final path = result.files.single.path;
+      if (path == null || path.isEmpty) {
         if (mounted) {
           showAppToast(
             context,
             message: l10n.importFileReadFailed,
+            kind: AppToastKind.error,
+          );
+        }
+        return;
+      }
+
+      final Uint8List bytes;
+      try {
+        bytes = await readImportFileBytes(
+          path,
+          maxBytes: IcsImportService.maxFileBytes,
+        );
+      } on ImportFileTooLarge {
+        if (mounted) {
+          showAppToast(
+            context,
+            message: l10n.importFileTooLarge(
+              formatByteBudget(IcsImportService.maxFileBytes),
+            ),
             kind: AppToastKind.error,
           );
         }
@@ -2629,15 +2653,32 @@ class _WarehouseCustomDebugEditScreenState
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['js', 'txt'],
-        withData: true,
+        // Measure before reading; see the .ics picker above for why.
+        withData: false,
       );
       if (result == null || result.files.isEmpty || !mounted) {
         return;
       }
       final file = result.files.single;
-      List<int>? bytes = file.bytes;
-      if (bytes == null && (file.path ?? '').isNotEmpty) {
-        bytes = await File(file.path!).readAsBytes();
+      List<int>? bytes;
+      if ((file.path ?? '').isNotEmpty) {
+        try {
+          bytes = await readImportFileBytes(
+            file.path!,
+            maxBytes: UnifiedTransferService.maxImportFileBytes,
+          );
+        } on ImportFileTooLarge {
+          if (mounted) {
+            showAppToast(
+              context,
+              message: l10n.importFileTooLarge(
+                formatByteBudget(UnifiedTransferService.maxImportFileBytes),
+              ),
+              kind: AppToastKind.error,
+            );
+          }
+          return;
+        }
       }
       if (bytes == null || bytes.isEmpty) {
         if (mounted) {

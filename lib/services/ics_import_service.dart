@@ -9,6 +9,13 @@ class IcsImportResult {
 }
 
 class IcsImportService {
+  /// Size budget for a picked `.ics` file.
+  ///
+  /// Same 20 MB as the spreadsheet and unified-transfer import paths, so every
+  /// import entry enforces an identical ceiling. An `.ics` is plain text, so
+  /// this is far more than any real calendar export needs.
+  static const int maxFileBytes = 20 * 1024 * 1024;
+
   IcsImportResult parseWakeUpSchedule(String content) {
     final events = _parseEvents(content);
     if (events.isEmpty) {

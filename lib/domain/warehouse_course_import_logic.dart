@@ -83,7 +83,7 @@ class WarehouseCourseConfigResolution {
 class WarehouseCourseConfigLogic {
   const WarehouseCourseConfigLogic._();
 
-  static WarehouseCourseConfigResolution resolve(Map<String, dynamic> decoded) {
+  static WarehouseCourseConfigResolution resolve(Map<Object?, Object?> decoded) {
     // coerceInt, not a bare `as num?`: an adapter sending
     // `semesterTotalWeeks: "20"` would throw and take the whole import with it,
     // same class of bug as the course-array parser.
