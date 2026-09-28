@@ -2,6 +2,7 @@
 library;
 
 export 'hyperos_accordion.dart';
+export 'hyperos_anchor_menu_popup.dart';
 export 'hyperos_back_button.dart';
 export 'hyperos_badge.dart';
 export 'hyperos_blurred_header.dart';

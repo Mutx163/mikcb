@@ -3,7 +3,8 @@ import 'package:flutter_miuix/miuix.dart';
 
 // 取叶子文件（不是 `hyperos_select.dart`）：后者要用本文件里的
 // `hyperosGlassPopupSurface`，直接互 import 会成环。见该文件的说明。
-import 'hyperos_popup_glass.dart' show HyperosSelectPopupGlass;
+import 'hyperos_popup_glass.dart'
+    show HyperosSelectPopupGlass, HyperosSolidPopupSurface;
 
 /// 上游 OS4 弹层的**面板材质注入**。
 ///
@@ -41,6 +42,20 @@ Widget hyperosGlassPopupSurface(
   Widget child,
 ) => _os4GlassPopupSurface(shape, child);
 
+/// 实底注入面：弹层悬在 **Android 平台视图**（WebView）上方时必须用它。
+///
+/// 玻璃的背景采集读不到平台视图的纹理，采样结果是一块黑，面板会渲染成黑色方块
+/// （`HyperosSolidPopupSurface` 的类注释原话）。与
+/// [hyperosGlassPopupSurface] 一样只换材质，几何、动效、锚定仍归上游。
+Widget hyperosGlassPopupOpaqueSurface(
+  BuildContext context,
+  ShapeBorder shape,
+  Widget child,
+) => HyperosSolidPopupSurface(
+  cornerRadius: os4GlassPopupCornerRadiusOf(shape),
+  child: child,
+);
+
 /// 二级面板的注入面：与 [hyperosGlassPopupSurface] 只差一件事 ——
 /// **垫一层共享组捕获的磨砂底**（`useAncestorGroupCapture`）。
 ///
@@ -72,6 +87,25 @@ Widget _os4GlassPopupSurface(
   surfaceShadow: true,
   child: child,
 );
+
+/// **全软件锚定式玻璃菜单的统一宽度口径**（`minWidth` 默认 200，故这是固定 200）。
+///
+/// 为什么是 200：
+/// - 上游默认是 `MiuixGlassPopupSizing(maxWidth: 288)`，而 `MiuixGlassPopupItem`
+///   的文字样式 + 箭头 + 内边距比旧实现的手搓条目宽，面板会被顶到接近上限 ——
+///   真机上就是"菜单比换实现前胖了一圈"。
+/// - 收到 **200** 即回到旧实现的**下界原宽**：旧公式
+///   `132 + HyperosMiuixDropdown.popupExtraLeadingWidth` 恰好 = 200，而旧条目
+///   更窄、实际宽度一直停在这个下界。
+///
+/// 单一来源的规矩：**所有锚定式玻璃菜单都传这一份**（首页「更多」主/二级面板、
+/// 时间模板页卡片菜单、后续迁移的页面）。`sizing` 是各自独立的入参，某一处
+/// 私开一个数字就会读成"这个菜单比那个菜单胖"。
+///
+/// ⚠️ 首页的主面板与二级面板**必须传同一份**：只给一级会让主面板 200、二级
+/// 默认 288，两块宽度对不齐。
+const MiuixGlassPopupSizing os4GlassPopupStandardSizing =
+    MiuixGlassPopupSizing(maxWidth: 200);
 
 /// 从上游弹层几何里读出圆角标量。
 ///
