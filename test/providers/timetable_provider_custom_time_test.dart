@@ -169,6 +169,77 @@ void main() {
     expect(provider.resolvedCourseEndTime(saved), '08:00');
   });
 
+  test('两节连上的早读：不得产出倒挂，也不得把终点拖到真实结束之后', () async {
+    final provider = await providerWithScheme(_yongchuMainBuilding);
+    // 两节早读恰恰是早读最常见的形态。脚本给 07:30–08:05，而模板第 1、2 节是
+    // 08:20–09:05 / 09:15–10:00 —— 真实区间完全落在模板那两格之前。
+    //
+    // 旧实现只钉两端、保留中间的模板写法，算出的是 07:30–09:05 与 09:15–08:05：
+    // 首节终点比真实结束晚了一小时，末节直接倒挂。倒挂会让「正在上课」永不命中、
+    // 闹钟不响，而且在课表上看不出来。
+    final course = Course(
+      id: 'two-section-reading',
+      name: '两节早读',
+      teacher: '张三',
+      location: 'A主101',
+      dayOfWeek: 1,
+      startSection: 1,
+      endSection: 2,
+      endWeek: 3,
+      startTime: '07:30',
+      endTime: '08:05',
+      hasCustomTime: true,
+    );
+    await provider.addCourse(course);
+
+    final saved = stored(provider, 'two-section-reading');
+    expect(saved.startTime, '07:30');
+    expect(saved.endTime, '08:05');
+    expect(saved.startTime.compareTo(saved.endTime) < 0, isTrue);
+    expect(provider.resolvedCourseStartTime(saved), '07:30');
+    expect(provider.resolvedCourseEndTime(saved), '08:05');
+
+    // 覆盖到的每一节都不得倒挂，且彼此不交叠 —— 这两条是「正在上课」判断和
+    // 闹钟能工作的前提，逐节钉死。
+    final sections = provider.resolvedSectionsForCourse(saved)!;
+    for (final section in sections) {
+      expect(
+        section.startTime.compareTo(section.endTime) < 0,
+        isTrue,
+        reason: '第 ${section.startTime} 节倒挂：${section.startTime}–${section.endTime}',
+      );
+    }
+  });
+
+  test('真实区间能容下模板那几格时，中间节次仍保留学校的课间时间', () async {
+    final provider = await providerWithScheme(_yongchuMainBuilding);
+    // 08:20–12:10 连堂四节，模板四节的课间节点都要留住 —— 这是
+    // `a6873d40` 刻意保留的行为，不能被上一条的兜底逻辑吃掉。
+    final course = Course(
+      id: 'long-block',
+      name: '连堂课',
+      teacher: '张三',
+      location: 'A主201',
+      dayOfWeek: 2,
+      startSection: 1,
+      endSection: 4,
+      endWeek: 3,
+      startTime: '08:20',
+      endTime: '12:10',
+      hasCustomTime: true,
+    );
+    await provider.addCourse(course);
+
+    final sections = provider
+        .resolvedSectionsForCourse(stored(provider, 'long-block'))!
+        .toList();
+    // 四个节次全部还在，且第 2、3 节与模板一致（课间节点仍是学校的真实时间）。
+    expect(sections[1].startTime, '09:15');
+    expect(sections[1].endTime, '10:00');
+    expect(sections[2].startTime, '10:30');
+    expect(sections[2].endTime, '11:15');
+  });
+
   test('走真实导入路径：脚本下发的钟点不被时间模板覆盖', () async {
     final provider = await providerWithScheme(_yongchuMainBuilding);
     // 导入时 provider 会对每门课重算一次钟点（import_export_service 末尾

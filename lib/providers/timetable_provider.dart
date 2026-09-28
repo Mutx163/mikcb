@@ -1139,6 +1139,15 @@ class TimetableProvider with ChangeNotifier {
     return sections[index].endTime;
   }
 
+  /// 课程在其生效时间模板下的完整节次表（已把自定义钟点钉进去）。
+  ///
+  /// 与 [resolvedCourseStartTime] / [resolvedCourseEndTime] 同源，三者读的是同一份
+  /// 解析结果。之所以要把整张表放出来：自定义钟点一旦与模板那一段对不齐，中间
+  /// 那些节次会各自变成「开始晚于结束」，而这在只看首尾两端时是看不出来的——
+  /// 课表、闹钟、进度里程碑各自读不同的节次。null 表示该课程落在模板节数之外。
+  List<SectionTime>? resolvedSectionsForCourse(Course course) =>
+      _resolveSectionsForCourse(course);
+
   /// Preview location → place-group routing without writing course times.
   LocationTimeMatchResult? matchLocationTime(String? location) =>
       LocationTimeMatchLogic.match(location, _locationTimeGroups);
@@ -1210,7 +1219,90 @@ class TimetableProvider with ChangeNotifier {
       startTime: base[endIndex].startTime,
       endTime: endTime,
     );
+    // 只钉两端、保留中间节次的模板时间，是刻意的：中间那些课间节点仍等于学校真实
+    // 的上下课时间，连堂课的进度里程碑也就还有意义。
+    //
+    // 但这套写法有个前提：真实区间要能容得下模板那几格。容不下时它会同时产出两种
+    // 坏结果 —— 首节终点比真实结束还晚，末节直接倒挂。实测两节早读就是如此：
+    // 脚本给 07:30–08:05，模板第 1 节 08:20–09:05、第 2 节 09:15–10:00，算出
+    // 07:30–09:05 与 09:15–08:05。倒挂会让「正在上课」永不命中、闹钟不响，
+    // 而且在课表上看不出来。
+    //
+    // 所以这里不猜哪一端对，而是先验一遍钉完之后这段是否仍自洽（每节自身不倒挂、
+    // 相邻两节不交叠）；不自洽就把整段换成按真实区间等分——真实区间是事实、
+    // 模板只是猜测，两者冲突时听事实的。
+    if (!_pinnedSpanIsConsistent(pinned, startIndex, endIndex)) {
+      _distributeRealRange(pinned, startIndex, endIndex, startTime, endTime);
+    }
     return pinned;
+  }
+
+  /// 钉完两端后区间内是否仍自洽：每节不倒挂，且不与下一节交叠。
+  static bool _pinnedSpanIsConsistent(
+    List<SectionTime> pinned,
+    int startIndex,
+    int endIndex,
+  ) {
+    for (var i = startIndex; i <= endIndex; i++) {
+      final start = _clockMinutesOf(pinned[i].startTime);
+      final end = _clockMinutesOf(pinned[i].endTime);
+      if (start == null || end == null || end <= start) {
+        return false;
+      }
+      if (i < endIndex) {
+        final nextStart = _clockMinutesOf(pinned[i + 1].startTime);
+        if (nextStart == null || end > nextStart) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  /// 把真实区间按节次数量等分填进 [startIndex, endIndex]。
+  ///
+  /// 两端一定等于真实起止（`(span-1)/span` 与 `span/span` 的整除结果恰是首尾），
+  /// 中间节次单调不交叠——同一线性区间的相邻切片，数学上不可能倒挂。
+  static void _distributeRealRange(
+    List<SectionTime> pinned,
+    int startIndex,
+    int endIndex,
+    String startTime,
+    String endTime,
+  ) {
+    final from = _clockMinutesOf(startTime);
+    final to = _clockMinutesOf(endTime);
+    if (from == null || to == null || to <= from) {
+      // 真实区间本身不可用（解析层已拒过一次，这里是兜底）：不写，保留模板。
+      return;
+    }
+    final span = endIndex - startIndex + 1;
+    final total = to - from;
+    for (var i = 0; i < span; i++) {
+      pinned[startIndex + i] = SectionTime(
+        startTime: _formatClock(from + total * i ~/ span),
+        endTime: _formatClock(from + total * (i + 1) ~/ span),
+      );
+    }
+  }
+
+  static int? _clockMinutesOf(String clock) {
+    final parts = clock.split(':');
+    if (parts.length != 2) {
+      return null;
+    }
+    final hour = int.tryParse(parts[0].trim());
+    final minute = int.tryParse(parts[1].trim());
+    if (hour == null || minute == null || hour > 23 || minute > 59) {
+      return null;
+    }
+    return hour * 60 + minute;
+  }
+
+  static String _formatClock(int minutesSinceMidnight) {
+    String two(int value) => value.toString().padLeft(2, '0');
+    return '${two(minutesSinceMidnight ~/ 60)}:'
+        '${two(minutesSinceMidnight % 60)}';
   }
 
   List<TimeSchemeCourseUsageReference> getTimeSchemeCourseUsages(
