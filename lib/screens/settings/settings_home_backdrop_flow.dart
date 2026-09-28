@@ -439,23 +439,29 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     BuildContext context, {
     required AppLocalizations l10n,
   }) {
-    return Padding(
-      // ⚠️ **左右不要再垫** [backdropRowHorizontalInset]：[HyperosSwitchTile] 自己带
-      // `hyperosRowPadding`（16），而上面两块的文字是从 0 起算的 —— 这里再垫一层
-      // 16，开关标题就会比「背景图片」「最近使用」多缩 16，两个宿主（设置页卡片内
-      // / 弹窗面板内）都错开。这里只补上下的 14，与那两块齐平。
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      child: HyperosSwitchTile(
-        title: l10n.homePageBackdropFollowsWeekPagerTitle,
-        subtitle: l10n.homePageBackdropFollowsWeekPagerSubtitle,
-        // 无容器那一侧要关掉行底色（见 [backdropRowsHaveCardBackground]）。
-        backgroundColor: backdropRowsHaveCardBackground
-            ? null
-            : Colors.transparent,
-        value: backdropDraft.homePageBackdropFollowsWeekPager,
-        onChanged: (value) => applyBackdropDraft(
-          backdropDraft.copyWith(homePageBackdropFollowsWeekPager: value),
-        ),
+    // ⚠️ **外面不要再垫任何 `Padding`**（2026-09-28 用户报「上下空白太多，尤其是到
+    // 底部小白条那一截」）：这一行是 [HyperosSwitchTile]，自带 `hyperosRowPadding`
+    // 的 13/13（两行行高 72 = 13 + 文字 43.9 + 13，剩 2 摊在文字上下各 1），而上面
+    // 两块（选图行 / 最近使用）的 14/14 是**它们自己那一份**的留白。两边各有一份，
+    // 再垫一层 14 就是同一段留白算两遍：
+    //
+    //   缩略图标签底 → 开关标题顶：14 + 14 + 14 = 42（改后 14 + 14 = 28）
+    //   开关副标题底 → 面板内容底：14 + 14 + 16(面板统一呼吸) = 44（改后 14 + 16 = 30）
+    //
+    // 而它又是**最后一块**，多出来的全堆在它后面，所以下面那截尤其显眼。改后的两个数
+    // 与「课表页面」卡片里同一行完全一致（那一侧本来就没有这层 Padding）。
+    //
+    // 左右同理：不要再垫 [backdropRowHorizontalInset]，行自己那 16 正好与兄弟弹窗齐平。
+    return HyperosSwitchTile(
+      title: l10n.homePageBackdropFollowsWeekPagerTitle,
+      subtitle: l10n.homePageBackdropFollowsWeekPagerSubtitle,
+      // 无容器那一侧要关掉行底色（见 [backdropRowsHaveCardBackground]）。
+      backgroundColor: backdropRowsHaveCardBackground
+          ? null
+          : Colors.transparent,
+      value: backdropDraft.homePageBackdropFollowsWeekPager,
+      onChanged: (value) => applyBackdropDraft(
+        backdropDraft.copyWith(homePageBackdropFollowsWeekPager: value),
       ),
     );
   }
