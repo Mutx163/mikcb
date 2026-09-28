@@ -21,16 +21,22 @@ const List<String> warehouseUnsupportedCourseConfigKeys = [
 /// → 08:00 in UTC+8) or a bare time component would shift the weekday and make
 /// week 1 start on the wrong day, so keep only the calendar date and drop the
 /// clock part.
+///
+/// Out-of-range calendar dates are **rejected, not rolled over**. `DateTime`
+/// happily normalises `2026-13-45` into 2027-02-14, and this value is the sole
+/// input to every "which week is it" computation in the app — silently
+/// accepting a rollover corrupts a whole semester of week numbers. Returning
+/// null makes the caller keep the user's existing value, which is the same
+/// contract as an unparseable string.
 DateTime? warehouseSemesterStartDate(Object? raw) {
   final text = raw?.toString().trim() ?? '';
   if (text.isEmpty) {
     return null;
   }
-  final parsed = DateTime.tryParse(text);
-  if (parsed != null) {
-    return DateTime(parsed.year, parsed.month, parsed.day);
-  }
-  // 兼容 `2026-09-07 08:00` 这类非 ISO 写法。
+  // One validation path for both the ISO branch and the `2026-9-7 08:00`
+  // fallback: take the leading calendar components, then require that they
+  // name a real day. `DateTime.tryParse` alone is not enough — it normalises
+  // overflow (`2026-13-45` → 2027-02-14, `2026-02-30` → 2026-03-02).
   final match = RegExp(r'^(\d{4})-(\d{1,2})-(\d{1,2})').firstMatch(text);
   if (match == null) {
     return null;
@@ -41,7 +47,15 @@ DateTime? warehouseSemesterStartDate(Object? raw) {
   if (year == null || month == null || day == null) {
     return null;
   }
-  return DateTime(year, month, day);
+  // Round-trip is sufficient on its own: `DateTime` normalises every overflow
+  // case we care about (month 0/13, day 0/32, Feb 30) into a *different*
+  // year/month/day, so a mismatch catches all of them. A separate range check
+  // was tried first and proved redundant by mutation testing.
+  final built = DateTime(year, month, day);
+  if (built.year != year || built.month != month || built.day != day) {
+    return null;
+  }
+  return built;
 }
 
 /// Pure parser for 教务适配脚本下发的课程数组（`saveImportedCourses` 的入参）。
@@ -57,6 +71,38 @@ DateTime? warehouseSemesterStartDate(Object? raw) {
 /// widget used to own it inline.
 class WarehouseCourseImportLogic {
   const WarehouseCourseImportLogic._();
+
+  /// Coerces an adapter-supplied integer, tolerating the shapes JavaScript
+  /// adapters actually produce (`1`, `"1"`, `1.0`).
+  ///
+  /// A bare `as num` cast throws on `"1"`, and because [parse] maps over the
+  /// whole batch, one dirty record used to abort every other course in the
+  /// import. Adapters serializing week numbers as strings is common enough
+  /// that failing the entire import over it is the wrong trade.
+  static int? coerceInt(Object? raw) {
+    if (raw is int) return raw;
+    if (raw is num) return raw.toInt();
+    if (raw is String) return int.tryParse(raw.trim());
+    return null;
+  }
+
+  /// Coerces an adapter-supplied boolean, tolerating `1`/`0` and `"true"`.
+  ///
+  /// Same rationale as [coerceInt]: `isCustomTime: 1` is a natural thing for
+  /// a JS adapter to emit, and it must not throw.
+  static bool? coerceBool(Object? raw) {
+    if (raw is bool) return raw;
+    if (raw is num) return raw != 0;
+    if (raw is String) {
+      final text = raw.trim().toLowerCase();
+      if (text == 'true' || text == '1') return true;
+      if (text == 'false' || text == '0') return false;
+    }
+    return null;
+  }
+
+  /// Reads a string-ish field without throwing on a non-string value.
+  static String coerceText(Object? raw) => raw?.toString().trim() ?? '';
 
   /// Normalizes an adapter-supplied `HH:mm` clock value, or null when unusable.
   ///
@@ -98,75 +144,102 @@ class WarehouseCourseImportLogic {
       if (item is! Map) {
         continue;
       }
-      final map = Map<String, dynamic>.from(item.cast<String, dynamic>());
-      final name = (map['name'] as String? ?? '').trim();
-      final teacher = (map['teacher'] as String? ?? '').trim();
-      final location =
-          (map['position'] as String? ?? map['location'] as String? ?? '')
-              .trim();
-      final day = (map['day'] as num?)?.toInt();
-      final startSection = (map['startSection'] as num?)?.toInt();
-      final endSection = (map['endSection'] as num?)?.toInt();
-      final weeks =
-          (map['weeks'] as List<dynamic>?)
-              ?.map((item) => (item as num).toInt())
-              .where((item) => item > 0 && item <= maxWeek)
-              .toSet()
-              .toList()
-            ?..sort();
-
-      final customStart = normalizeClock(map['customStartTime']);
-      final customEnd = normalizeClock(map['customEndTime']);
-      // `isCustomTime` absent → infer from the presence of a usable clock pair,
-      // so adapters that only send the times still work.
-      final hasCustomTime =
-          ((map['isCustomTime'] as bool?) ??
-                  (customStart != null && customEnd != null)) &&
-          customStart != null &&
-          customEnd != null;
-
-      // No section but a real clock range (早读 etc.): seat it in section 1 so
-      // the record survives; the pinned clock drives display and alarms.
-      final effectiveStartSection = startSection ?? (hasCustomTime ? 1 : null);
-      final effectiveEndSection = endSection ?? effectiveStartSection;
-
-      if (name.isEmpty ||
-          day == null ||
-          effectiveStartSection == null ||
-          effectiveEndSection == null ||
-          weeks == null ||
-          weeks.isEmpty) {
+      Course? parsed;
+      try {
+        parsed = _parseOne(
+          item,
+          idFactory: idFactory,
+          unknownTeacher: unknownTeacher,
+          unknownLocation: unknownLocation,
+          maxWeek: maxWeek,
+        );
+      } catch (_) {
+        // One malformed record must never cost the user the whole batch.
+        // `parse` is the single funnel for every adapter's output, so a throw
+        // here used to surface as "import failed" with nothing saved.
         continue;
       }
-      final sections = Course.normalizeSections(
-        startSection: effectiveStartSection,
-        endSection: effectiveEndSection,
-      );
-      courses.add(
-        Course(
-          id: idFactory(),
-          name: name,
-          teacher: teacher.isEmpty ? unknownTeacher : teacher,
-          location: location.isEmpty ? unknownLocation : location,
-          dayOfWeek: Course.normalizeDayOfWeek(day),
-          startSection: sections.startSection,
-          endSection: sections.endSection,
-          startWeek: weeks.first,
-          endWeek: weeks.last,
-          startTime: hasCustomTime ? customStart : '',
-          endTime: hasCustomTime ? customEnd : '',
-          hasCustomTime: hasCustomTime,
-          customWeeks: weeks,
-          // Adapters that know 必修/选修 send `courseNature: 'required' |
-          // 'elective'`（上游 CQUET 会先把课程名里的 `[必修]`/`[选修]` 抠出来）。
-          // Previously dropped, so every 选修 course imported as 必修 — which
-          // mislabels the course card / overview and, worse, feeds
-          // `statistics_service` a required course, skewing credit totals.
-          // Unknown/absent values fall back to 必修 via CourseNatureX.
-          courseNature: CourseNatureX.fromValue(map['courseNature']?.toString()),
-        ),
-      );
+      if (parsed != null) {
+        courses.add(parsed);
+      }
     }
     return courses;
+  }
+
+  static Course? _parseOne(
+    Map<dynamic, dynamic> item, {
+    required String Function() idFactory,
+    required String unknownTeacher,
+    required String unknownLocation,
+    required int maxWeek,
+  }) {
+    final map = Map<String, dynamic>.from(item.cast<String, dynamic>());
+    final name = coerceText(map['name']);
+    final teacher = coerceText(map['teacher']);
+    final locationRaw = map['position'] ?? map['location'];
+    final location = coerceText(locationRaw);
+    final day = coerceInt(map['day']);
+    final startSection = coerceInt(map['startSection']);
+    final endSection = coerceInt(map['endSection']);
+    final rawWeeks = map['weeks'];
+    final weeks = rawWeeks is List
+        ? (rawWeeks
+                .map(coerceInt)
+                .whereType<int>()
+                .where((week) => week > 0 && week <= maxWeek)
+                .toSet()
+                .toList()
+              ..sort())
+        : null;
+
+    final customStart = normalizeClock(map['customStartTime']);
+    final customEnd = normalizeClock(map['customEndTime']);
+    // `isCustomTime` absent → infer from the presence of a usable clock pair,
+    // so adapters that only send the times still work.
+    final hasCustomTime =
+        (coerceBool(map['isCustomTime']) ??
+            (customStart != null && customEnd != null)) &&
+        customStart != null &&
+        customEnd != null;
+
+    // No section but a real clock range (早读 etc.): seat it in section 1 so
+    // the record survives; the pinned clock drives display and alarms.
+    final effectiveStartSection = startSection ?? (hasCustomTime ? 1 : null);
+    final effectiveEndSection = endSection ?? effectiveStartSection;
+
+    if (name.isEmpty ||
+        day == null ||
+        effectiveStartSection == null ||
+        effectiveEndSection == null ||
+        weeks == null ||
+        weeks.isEmpty) {
+      return null;
+    }
+    final sections = Course.normalizeSections(
+      startSection: effectiveStartSection,
+      endSection: effectiveEndSection,
+    );
+    return Course(
+      id: idFactory(),
+      name: name,
+      teacher: teacher.isEmpty ? unknownTeacher : teacher,
+      location: location.isEmpty ? unknownLocation : location,
+      dayOfWeek: Course.normalizeDayOfWeek(day),
+      startSection: sections.startSection,
+      endSection: sections.endSection,
+      startWeek: weeks.first,
+      endWeek: weeks.last,
+      startTime: hasCustomTime ? customStart : '',
+      endTime: hasCustomTime ? customEnd : '',
+      hasCustomTime: hasCustomTime,
+      customWeeks: weeks,
+      // Adapters that know 必修/选修 send `courseNature: 'required' |
+      // 'elective'`（上游 CQUET 会先把课程名里的 `[必修]`/`[选修]` 抠出来）。
+      // Previously dropped, so every 选修 course imported as 必修 — which
+      // mislabels the course card / overview and, worse, feeds
+      // `statistics_service` a required course, skewing credit totals.
+      // Unknown/absent values fall back to 必修 via CourseNatureX.
+      courseNature: CourseNatureX.fromValue(coerceText(map['courseNature'])),
+    );
   }
 }

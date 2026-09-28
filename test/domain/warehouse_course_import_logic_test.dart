@@ -51,6 +51,47 @@ void main() {
       expect(warehouseSemesterStartDate('   '), isNull);
       expect(warehouseSemesterStartDate('not-a-date'), isNull);
     });
+
+    group('越界日期必须拒绝，不能让 DateTime 静默进位', () {
+      // DateTime 会把 2026-13-45 归一化成 2027-02-14。开学日期是全 App 算
+      // 「第几周」的唯一输入，进位等于把整个学期的周次算错。
+      test('月份越界返回 null', () {
+        expect(warehouseSemesterStartDate('2026-13-01'), isNull);
+        expect(warehouseSemesterStartDate('2026-00-01'), isNull);
+        expect(warehouseSemesterStartDate('2026-13-45'), isNull);
+      });
+
+      test('日期越界返回 null（含不存在的 2 月 30 日）', () {
+        expect(warehouseSemesterStartDate('2026-02-30'), isNull);
+        expect(warehouseSemesterStartDate('2026-04-31'), isNull);
+        expect(warehouseSemesterStartDate('2026-09-31'), isNull);
+      });
+
+      test('非 ISO 写法的越界值同样被拒', () {
+        expect(warehouseSemesterStartDate('2026-13-45 08:00'), isNull);
+        expect(warehouseSemesterStartDate('2026-02-30 08:00'), isNull);
+      });
+
+      test('单位月日的非 ISO 写法（DateTime 解析不了的那条分支）也要拦', () {
+        // `2026-13-7` / `2026-9-7 08:00` 走的是回退分支，不经 tryParse，
+        // 越界值若不在这条分支上拦，就是个只对一半输入生效的检查。
+        expect(warehouseSemesterStartDate('2026-13-7'), isNull);
+        expect(warehouseSemesterStartDate('2026-9-7 08:00'), DateTime(2026, 9, 7));
+        expect(warehouseSemesterStartDate('2026-2-30'), isNull);
+        expect(warehouseSemesterStartDate('2026-4-31 08:00'), isNull);
+        expect(warehouseSemesterStartDate('2026-0-7'), isNull);
+        expect(warehouseSemesterStartDate('2026-9-0'), isNull);
+      });
+
+      test('合法边界日期照常通过（不能误伤）', () {
+        expect(warehouseSemesterStartDate('2026-02-28'), DateTime(2026, 2, 28));
+        expect(warehouseSemesterStartDate('2024-02-29'), DateTime(2024, 2, 29));
+        expect(warehouseSemesterStartDate('2026-01-31'), DateTime(2026, 1, 31));
+        expect(warehouseSemesterStartDate('2026-12-31'), DateTime(2026, 12, 31));
+        expect(warehouseSemesterStartDate('2026-09-07 08:00'),
+            DateTime(2026, 9, 7));
+      });
+    });
   });
 
   group('warehouseUnsupportedCourseConfigKeys', () {
@@ -290,6 +331,138 @@ void main() {
 
     test('空数组返回空列表', () {
       expect(_parse([]), isEmpty);
+    });
+
+    group('脏数据不得毁掉整次导入', () {
+      // 适配脚本是 JavaScript：周次常被序列化成字符串，布尔常写成 1/0。
+      // 以前这两处是裸强转（`item as num`、`x as bool?`），一个脏元素就抛错，
+      // 而 parse 是整批的唯一入口 —— 抛错意味着同一批其他课程一门都导不进来。
+      test('weeks 传字符串照样解析', () {
+        final courses = _parse([
+          {
+            'name': '大学英语',
+            'day': 1,
+            'startSection': 1,
+            'endSection': 2,
+            'weeks': ['1', '2', 3],
+          },
+        ]);
+        expect(courses.single.customWeeks, [1, 2, 3]);
+      });
+
+      test('isCustomTime 传 1/0 照样解析', () {
+        final courses = _parse([
+          {
+            'name': '早读',
+            'day': 1,
+            'weeks': [1, 2],
+            'isCustomTime': 1,
+            'customStartTime': '07:30',
+            'customEndTime': '08:00',
+          },
+          {
+            'name': '正课',
+            'day': 2,
+            'startSection': 1,
+            'endSection': 2,
+            'weeks': [1],
+            'isCustomTime': 0,
+          },
+        ]);
+        expect(courses, hasLength(2));
+        expect(courses[0].hasCustomTime, isTrue);
+        expect(courses[1].hasCustomTime, isFalse);
+      });
+
+      test('day / 节次传字符串也解析', () {
+        final courses = _parse([
+          {
+            'name': '体育',
+            'day': '3',
+            'startSection': '5',
+            'endSection': '6',
+            'weeks': ['1'],
+          },
+        ]);
+        expect(courses.single.dayOfWeek, 3);
+        expect(courses.single.startSection, 5);
+        expect(courses.single.endSection, 6);
+      });
+
+      test('一条脏数据只丢脏的那部分，同批其他课程全部保留', () {
+        final courses = _parse([
+          {
+            'name': '正常课',
+            'day': 1,
+            'startSection': 1,
+            'endSection': 2,
+            'weeks': [1, 2],
+          },
+          {
+            'name': '周次里有非数字',
+            'day': 2,
+            'startSection': 1,
+            'endSection': 2,
+            'weeks': [1, 'x', {'bad': 1}],
+          },
+          {
+            'name': '另一门正常课',
+            'day': 3,
+            'startSection': 3,
+            'endSection': 4,
+            'weeks': [3],
+          },
+        ]);
+        // 三门都在：中间那门只是把无法解析的周次丢掉，仍留下可用的第 1 周 ——
+        // 宽容丢掉脏元素，好过整条丢弃。
+        expect(courses.map((c) => c.name),
+            ['正常课', '周次里有非数字', '另一门正常课']);
+        expect(courses[1].customWeeks, [1]);
+      });
+
+      test('weeks 不是数组时按缺资料丢弃该条，不影响其余', () {
+        final courses = _parse([
+          {'name': '坏的', 'day': 1, 'startSection': 1, 'endSection': 1},
+          {
+            'name': '好的',
+            'day': 2,
+            'startSection': 1,
+            'endSection': 1,
+            'weeks': [1],
+          },
+        ]);
+        expect(courses.map((c) => c.name), ['好的']);
+      });
+
+      test('weeks 传标量或字典也不抛错', () {
+        expect(
+          () => _parse([
+            {'name': 'a', 'day': 1, 'startSection': 1, 'endSection': 1, 'weeks': 3},
+            {
+              'name': 'b',
+              'day': 1,
+              'startSection': 1,
+              'endSection': 1,
+              'weeks': {'1': true},
+            },
+          ]),
+          returnsNormally,
+        );
+      });
+
+      test('position 传数字也不抛错', () {
+        final courses = _parse([
+          {
+            'name': '地点是数字',
+            'day': 1,
+            'startSection': 1,
+            'endSection': 1,
+            'weeks': [1],
+            'position': 215,
+          },
+        ]);
+        expect(courses.single.location, '215');
+      });
     });
 
     group('courseNature（必修/选修）', () {
