@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -126,6 +127,42 @@ class WarehouseRepositoryService {
     return WarehouseAdaptersIndex(adapters: adapters);
   }
 
+  /// 轻屿专属目录探测的超时。
+  ///
+  /// 它是锦上添花：探测失败只是少一个额外条目，不该拖慢主路径，更不该挂住。
+  /// `http.Client` 默认**没有**超时，所以一个半死的镜像能把这次等待拖成永远 ——
+  /// 上一版就是因此让学校页一直转圈圈。
+  static const Duration qingyuOnlyProbeTimeout = Duration(seconds: 6);
+
+  /// 只打一次主地址、且自带超时的探测读取。
+  ///
+  /// Why 不用 [_fetchText]：那条路会按「主地址 + 4 个镜像候选」依次试。`qingyu_only/`
+  /// 对绝大多数学校**不存在**（222 所里目前只有 1 所），走完整候选链等于每次开学校
+  /// 页都为一次必然的 404 花掉 5 个来回。主地址能读到就够了：读不到就当这所学校
+  /// 没有专属条目，下次还会再试。
+  Future<String> _fetchProbeText(
+    WarehouseRepositorySource source,
+    String relativePath,
+  ) async {
+    final effectiveSource = source;
+    final uri = effectiveSource.buildFileUri(relativePath);
+    final response = await _client
+        .get(
+          uri,
+          headers: {
+            'Accept': uri.host == 'api.gitcode.com'
+                ? 'application/json'
+                : 'text/plain, */*',
+            'User-Agent': 'mikcb-warehouse-client',
+          },
+        )
+        .timeout(qingyuOnlyProbeTimeout);
+    if (response.statusCode != 200) {
+      throw const WarehouseRepositoryException('qingyu_only_probe_miss');
+    }
+    return utf8.decode(_decodeCandidateBytes(uri, response.bodyBytes));
+  }
+
   /// 拉取轻屿专属适配条目（`qingyu_only/<目录>/adapters.yaml`）。
   ///
   /// 这个目录是本仓自有的，永不参与上游同步、也永不打进任何索引
@@ -138,17 +175,21 @@ class WarehouseRepositoryService {
   ///
   /// 逐个学校按需探测（1 次请求），不引入新的全局索引 —— 多一个索引就多一件要维护
   /// 且要防同步的东西，而学校数量有界。
+  ///
+  /// 调用方**不得**把这个 Future 挂在页面渲染的关键路径上：它对绝大多数学校都是
+  /// 一次必然的 404，挂在关键路径上会让整个学校页陪着它一起等。
   Future<List<WarehouseAdapterEntry>> fetchQingyuOnlyAdapters(
     WarehouseRepositorySource source,
-    WarehouseSchoolEntry school, {
-    WarehouseFetchOptions? options,
-  }) async {
+    WarehouseSchoolEntry school,
+  ) async {
     final path = 'qingyu_only/${school.resourceFolder}/adapters.yaml';
     String content;
     try {
-      content = await _fetchText(source, path, options: options);
+      content = await _fetchProbeText(source, path);
     } on WarehouseRepositoryException {
       // 绝大多数学校没有这个目录，属正常情况。
+      return const [];
+    } on TimeoutException {
       return const [];
     }
     return _parseQingyuOnlyAdapterEntries(content);

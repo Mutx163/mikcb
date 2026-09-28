@@ -2898,7 +2898,14 @@ class WarehouseSchoolAdaptersScreen extends StatefulWidget {
     required this.source,
     required this.school,
     required this.fetchOptions,
+    this.repositoryServiceOverride,
   });
+
+  /// 测试用的注入口。生产路径不传。
+  ///
+  /// 存在的理由是下面那条回归测试要能造出「探测永远不返回」的假服务——这类 bug
+  /// （把可选探测挂在渲染关键路径上）靠读代码看不出来，只能造出来看。
+  final WarehouseRepositoryService? repositoryServiceOverride;
 
   @override
   State<WarehouseSchoolAdaptersScreen> createState() =>
@@ -2909,6 +2916,8 @@ class _WarehouseSchoolAdaptersScreenState
     extends State<WarehouseSchoolAdaptersScreen> {
   final WarehouseRepositoryService _repositoryService =
       WarehouseRepositoryService();
+  WarehouseRepositoryService get _repository =>
+      widget.repositoryServiceOverride ?? _repositoryService;
   final WarehouseImportPreferencesService _preferencesService =
       WarehouseImportPreferencesService();
   final WarehouseMacroService _macroService = WarehouseMacroService();
@@ -2920,10 +2929,20 @@ class _WarehouseSchoolAdaptersScreenState
   String? _customImportUrlAdapterSignature;
   bool _customImportUrlCheckInFlight = false;
 
+  /// `qingyu_only/` 探测的结果。**刻意不进 `_adaptersFuture`**：那个 Future 挂在
+  /// 渲染路径上，探测对绝大多数学校是必然的 404，挂上去等于让整个学校页陪它等。
+  List<WarehouseAdapterEntry> _qingyuOnlyAdapters = const [];
+  Future<List<WarehouseAdapterEntry>>? _extrasFuture;
+
   @override
   void initState() {
     super.initState();
-    _adaptersFuture = _loadAdapters();
+    _adaptersFuture = _repository.fetchAdaptersIndex(
+      widget.source,
+      widget.school,
+      options: widget.fetchOptions,
+    );
+    _startQingyuOnlyExtrasLoad();
   }
 
   @override
@@ -2972,8 +2991,9 @@ class _WarehouseSchoolAdaptersScreenState
                 );
               }
 
-              final adapters =
-                  snapshot.data?.adapters ?? const <WarehouseAdapterEntry>[];
+              final adapters = _mergeQingyuOnlyAdapters(
+                snapshot.data?.adapters ?? const <WarehouseAdapterEntry>[],
+              );
               // 检查每个适配器是否有宏录制
               _scheduleMacroCacheCheck(adapters);
               _scheduleCustomImportUrlCacheCheck(adapters);
@@ -3030,51 +3050,54 @@ class _WarehouseSchoolAdaptersScreenState
     );
   }
 
-  /// 学校适配器列表 = `resources/` 下的标准适配器 + `qingyu_only/` 下的轻屿专属条目。
+  /// 学校适配器列表分两段到。
   ///
-  /// 专属条目**追加在后面**，标准条目永远排在前面、也永远可用：它在任何仓库（含
-  /// 上游仓、他人 fork、镜像的旧快照）里都存在，而专属条目只在我们的仓里有。
-  /// 探测失败一律降级为「没有专属条目」，不抛——绝大多数学校本来就没有这个目录。
+  /// 第一段是**关键路径**：`resources/` 下的标准适配器，打开学校页就该看到它。
+  /// 第二段是 `qingyu_only/` 下的轻屿专属条目，**刻意不挂在渲染路径上** ——
+  /// 它对绝大多数学校是一次必然的 404，而上一版把两段塞进同一个 Future，页面
+  /// 只能等探测结束才渲染：探测走「主地址 + 4 个镜像候选」共 5 个来回，加上
+  /// `http.Client` 默认没有超时，一个半死的镜像就把整个学校页拖成一直转圈圈。
   ///
-  /// 旧版 App 从不请求 `qingyu_only/`，所以它们看到的列表与今天完全一致。
-  Future<WarehouseAdaptersIndex> _loadAdapters() async {
-    final standard = _repositoryService.fetchAdaptersIndex(
+  /// 所以这里只负责发起；结果到了再 setState 追加。渲染耗时与加这一段之前
+  /// 完全一致。
+  void _startQingyuOnlyExtrasLoad() {
+    _extrasFuture = _repository.fetchQingyuOnlyAdapters(
       widget.source,
       widget.school,
-      options: widget.fetchOptions,
     );
-    final extras = _repositoryService.fetchQingyuOnlyAdapters(
-      widget.source,
-      widget.school,
-      options: widget.fetchOptions,
-    );
-    // 两条并行，且专属那条失败不影响标准那条：先等标准结果（它是必须的），
-    // 专属结果无论成功失败都只是追加。
-    final base = await standard;
-    List<WarehouseAdapterEntry> extrasList = const [];
-    try {
-      extrasList = await extras;
-    } catch (error) {
-      // 这一层没有 _debugImportLog（那是导入执行页的诊断通道）；降级本身对用户
-      // 不可见，所以一句注释足够说明为什么静默。
-      debugPrint('qingyu_only adapters unavailable: $error');
+    _extrasFuture!.then((list) {
+      if (!mounted || list.isEmpty) {
+        return;
+      }
+      setState(() => _qingyuOnlyAdapters = list);
+    }, onError: (Object _) {
+      // 降级本身对用户不可见（一所没有专属条目的学校看起来和以前一样），不必打扰。
+    });
+  }
+
+  /// 专属条目在标准列表之后追加。标准条目永远排在前面、也永远可用：它在任何仓库
+  /// （含上游仓、他人 fork、镜像的旧快照）里都存在，而专属条目只在我们的仓里有。
+  List<WarehouseAdapterEntry> _mergeQingyuOnlyAdapters(
+    List<WarehouseAdapterEntry> standard,
+  ) {
+    if (_qingyuOnlyAdapters.isEmpty) {
+      return standard;
     }
-    if (extrasList.isEmpty) {
-      return base;
-    }
-    return WarehouseAdaptersIndex(
-      adapters: [
-        ...base.adapters,
-        for (final adapter in extrasList)
-          if (!base.adapters.any((it) => it.adapterId == adapter.adapterId))
-            adapter,
-      ],
-    );
+    return [
+      ...standard,
+      for (final adapter in _qingyuOnlyAdapters)
+        if (!standard.any((it) => it.adapterId == adapter.adapterId)) adapter,
+    ];
   }
 
   void _reloadAdapters() {
     setState(() {
-      _adaptersFuture = _loadAdapters();
+      _adaptersFuture = _repository.fetchAdaptersIndex(
+        widget.source,
+        widget.school,
+        options: widget.fetchOptions,
+      );
+      _startQingyuOnlyExtrasLoad();
     });
   }
 
