@@ -95,6 +95,51 @@ Color? resolveThemeSeedDisabledInk(Color? accent, Brightness brightness) {
       : const Color(0xFFFCFCFC);
 }
 
+/// 在 [background] 上仍然读得清的「禁用态」墨水。
+///
+/// 禁用控件按 WCAG 1.4.3 确实可以豁免对比度，但豁免不等于该看不清：按钮上
+/// 的字要告诉用户「按下去会发生什么」，认不出字就等于没有标签。所以这里仍守住
+/// [targetContrast]（默认 4.5:1），同时取**刚好达标**的那一档——底色亮就往黑走、
+/// 底色暗就往白走，走到够了就停，状态因此仍然读作 muted，而不是纯黑/纯白那么冲。
+///
+/// 为什么需要它：禁用**底色**会随主题色走（[resolveThemeSeedDisabled]），而配套的
+/// 字色曾经是写死的 Miuix 灰（`HyperosColors.disabledOnSecondaryVariant` 浅色
+/// #B2B2B2 / 浅色主按钮更是近白 #FCFCFC）。两者不同源就必然撞色，且**中性灰/
+/// 近黑 seed 撞得最狠**——实测浅色模式 #B2B2B2 on #BFBFBF 只有 1.15:1、纯黑 seed
+/// 1.01:1，主色按钮 1.79:1，默认蓝色 seed 也有 1.39:1。
+///
+/// 附带好处：墨水是从带色的底色混出来的，因此**带着主题色的色相**（蓝色 seed 得到
+/// 偏蓝的灰），而不是一个与主题无关的 foreign gray。
+///
+/// 两个方向都试、各取最小达标混比：只按 `luminance > 0.5` 选黑/白会在中等亮度
+/// 底色上翻车（底色本身偏亮时往白混只会更近，#B3B3B3 上无论怎么混都到不了 4.5）。
+///
+/// [background] 需为**不透明**色：[Color.computeLuminance] 忽略 alpha，半透明色
+/// 会被当成其 RGB 判定深浅。玻璃/毛玻璃面上的按钮（合成色取决于背后的壁纸）没有
+/// 可推导的实底，不要套用。
+Color disabledInkOn(Color background, {double targetContrast = 4.5}) {
+  Color? toward(Color towards) {
+    // 从 2% 起步逐步加深，找到**第一档**达标的就停 —— 保证取的是最小可行混比。
+    for (var step = 1; step <= 50; step++) {
+      final candidate = Color.lerp(background, towards, step / 50)!;
+      if (_contrastRatio(candidate, background) >= targetContrast) {
+        return candidate;
+      }
+    }
+    return null;
+  }
+
+  return toward(Colors.black) ?? toward(Colors.white) ?? background;
+}
+
+double _contrastRatio(Color a, Color b) {
+  final la = a.computeLuminance();
+  final lb = b.computeLuminance();
+  final hi = la > lb ? la : lb;
+  final lo = la > lb ? lb : la;
+  return (hi + 0.05) / (lo + 0.05);
+}
+
 /// 把当前主题 seed 暴露给整棵组件树的 InheritedWidget。
 ///
 /// 挂在 `MaterialApp.builder`（根 Navigator 之上），`HyperosColors` 等

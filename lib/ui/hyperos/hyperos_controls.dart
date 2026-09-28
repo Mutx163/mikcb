@@ -688,7 +688,11 @@ class HyperosButton extends StatelessWidget {
         primarySurfaceColor,
         onAccentInk(primarySurfaceColor),
         HyperosColors.disabledPrimaryButton(context),
-        HyperosColors.disabledOnPrimaryButton(context),
+        // Derived from the fill above rather than
+        // `HyperosColors.disabledOnPrimaryButton`: that token reuses the seed's
+        // "disabled ink" rule, which is tuned for a switch *thumb* and returns
+        // near-white in light mode — only 1.4–1.8:1 on the seed-derived fill.
+        disabledInkOn(HyperosColors.disabledPrimaryButton(context)),
       ),
       // Flat #E6E6E6 secondary washes out on milky frosted glass; use a clearer
       // fill (+ light outline) when nested under [HyperosFrostedPanelScope].
@@ -702,19 +706,26 @@ class HyperosButton extends StatelessWidget {
                 isDark
                     ? Colors.white.withValues(alpha: 0.08)
                     : Colors.white.withValues(alpha: 0.16),
+                // Deliberately NOT derived: a translucent fill composites against
+                // whatever wallpaper is behind it, so there is no solid
+                // background to derive an ink from. Low-contrast ink on
+                // glass-over-wallpaper is a separate problem.
                 HyperosColors.disabledOnSecondaryVariant(context),
               )
             : (
                 HyperosColors.secondary(context),
                 HyperosColors.onSecondaryVariant(context),
                 HyperosColors.disabledSecondary(context),
-                HyperosColors.disabledOnSecondaryVariant(context),
+                // Derived from the fill above: that fill follows the user's theme
+                // seed while the fixed Miuix grey ink did not, so neutral/dark
+                // seeds collapsed to 1.15:1 (see [disabledInkOn]).
+                disabledInkOn(HyperosColors.disabledSecondary(context)),
               ),
       HyperosButtonVariant.destructive => (
         HyperosColors.error(context),
         HyperosColors.onError(context),
         HyperosColors.disabledSecondaryVariant(context),
-        HyperosColors.disabledOnSecondaryVariant(context),
+        disabledInkOn(HyperosColors.disabledSecondaryVariant(context)),
       ),
     };
 

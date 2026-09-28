@@ -268,6 +268,118 @@ void main() {
     });
   });
 
+  group('disabledInkOn：禁用按钮的字色从底色推出来', () {
+    double contrast(Color a, Color b) {
+      final la = a.computeLuminance();
+      final lb = b.computeLuminance();
+      final hi = la > lb ? la : lb;
+      final lo = la > lb ? lb : la;
+      return (hi + 0.05) / (lo + 0.05);
+    }
+
+    /// 用户实际能选到的 seed（含中性灰 / 近黑——旧实现在这两种下最惨）。
+    const seeds = <String>[
+      '#3482FF',
+      '#277AF7',
+      '#5CA502',
+      '#F5C518',
+      '#FF6B00',
+      '#808080',
+      '#7F7F7F',
+      '#4A4A4A',
+      '#2A2A2A',
+      '#000000',
+      '#FFFFFF',
+    ];
+
+    /// 走生产路径取禁用底色：[HyperosColors.disabledSecondary] 会先解析
+    /// accent，解析不到（深色模式的近黑 seed 按设计返回 null）就回落包默认。
+    /// 这里直接复用它，别在测试里重抄一遍回落逻辑——抄一遍就会漏掉这条分支。
+    Future<Color> disabledFillFor(
+      WidgetTester tester,
+      String seed,
+      Brightness brightness,
+    ) async {
+      late Color fill;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(brightness: brightness, useMaterial3: true),
+          home: ThemeSeedScope(
+            seedHex: seed,
+            child: Builder(
+              builder: (context) {
+                fill = HyperosColors.disabledSecondary(context);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+      return fill;
+    }
+
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      testWidgets('${brightness.name}：每个 seed 的禁用底色上都达到 4.5:1', (tester) async {
+        for (final seed in seeds) {
+          final bg = await disabledFillFor(tester, seed, brightness);
+          final ink = disabledInkOn(bg);
+          expect(
+            contrast(ink, bg),
+            greaterThanOrEqualTo(4.5),
+            reason: 'seed=$seed brightness=$brightness bg=$bg ink=$ink',
+          );
+        }
+      });
+    }
+
+    test('无 seed 的包默认底色同样达标', () {
+      for (final bg in const [Color(0xFFF2F2F2), Color(0xFF404040)]) {
+        expect(contrast(disabledInkOn(bg), bg), greaterThanOrEqualTo(4.5));
+      }
+    });
+
+    // 旧实现的字色是写死的 Miuix 灰（浅色 #B2B2B2），而底色跟着 seed 走，
+    // 两者不同源必然撞色。这条把当时的实测值钉住，说明为什么要改。
+    test('回归锚点：旧固定灰在中性灰/近黑 seed 下确实不可读', () {
+      const oldInk = Color(0xFFB2B2B2);
+      for (final seed in const ['#2A2A2A', '#000000', '#808080']) {
+        final bg = resolveThemeSeedDisabled(
+          resolveThemeSeedAccent(seed, Brightness.light),
+          Brightness.light,
+        )!;
+        expect(contrast(oldInk, bg), lessThan(3.0), reason: 'seed=$seed');
+      }
+    });
+
+    // 中等亮度底色上只按 luminance>0.5 选黑/白会翻车：底色偏亮时往白混只会更近，
+    // 怎么混都到不了 4.5（#B3B3B3 就是这种）。所以两个方向都要试。
+    test('中等亮度底色也达标（#B3B3B3 这一类，单方向会失败）', () {
+      const bg = Color(0xFFB3B3B3);
+      expect(bg.computeLuminance(), lessThan(0.5));
+      expect(contrast(disabledInkOn(bg), bg), greaterThanOrEqualTo(4.5));
+    });
+
+    test('取最小达标混比，不会一律压成纯黑', () {
+      const bg = Color(0xFFF2F2F2);
+      final ink = disabledInkOn(bg);
+      expect(ink, isNot(Colors.black));
+      // 更亮的底色应当得到更浅的字（离达标线更近）
+      expect(
+        disabledInkOn(const Color(0xFFFFFFFF)).computeLuminance(),
+        greaterThan(ink.computeLuminance()),
+      );
+    });
+
+    test('墨水带着主题色的色相，不是与主题无关的 foreign gray', () {
+      final blueBg = resolveThemeSeedDisabled(
+        resolveThemeSeedAccent('#3482FF', Brightness.light),
+        Brightness.light,
+      )!;
+      final blueInk = disabledInkOn(blueBg);
+      expect(blueInk.b, greaterThan(blueInk.r));
+    });
+  });
+
   group('Miuix 被屏蔽开关（disabled）：开启侧轨道 = 主题色浅色状态', () {
     testWidgets('屏蔽开关开/关两侧轨道均为绿浅色，可操作关轨道仍中性', (tester) async {
       late MiuixColors colors;
