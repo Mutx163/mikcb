@@ -291,5 +291,56 @@ void main() {
     test('空数组返回空列表', () {
       expect(_parse([]), isEmpty);
     });
+
+    group('courseNature（必修/选修）', () {
+      Course parseOne(Object? nature) => _parse([
+            {
+              'name': '大学英语',
+              'day': 1,
+              'startSection': 1,
+              'endSection': 2,
+              'weeks': [1, 2],
+              'courseNature': ?nature,
+            },
+          ]).single;
+
+      test('选修被如实保留（上游 CQUET 从课程名 [选修] 提取后下发）', () {
+        expect(parseOne('elective').courseNature, CourseNature.elective);
+      });
+
+      test('必修被如实保留', () {
+        expect(parseOne('required').courseNature, CourseNature.required);
+      });
+
+      test('字段缺省时按必修处理（与旧行为一致）', () {
+        expect(parseOne(null).courseNature, CourseNature.required);
+      });
+
+      test('未知取值不得把课变成选修 —— 静默误标会污染学分统计', () {
+        // statistics_service 按 CourseNature.required 累计必修学分。
+        // 若把解析失败默认成 elective（或 elective），用户的必修学分会凭空少掉。
+        expect(parseOne('必选').courseNature, CourseNature.required);
+        expect(parseOne('').courseNature, CourseNature.required);
+        expect(parseOne('ELECTIVE').courseNature, CourseNature.required);
+      });
+
+      test('不与自定义钟点互相干扰', () {
+        final courses = _parse([
+          {
+            'name': '早读英语[选修]',
+            'day': 1,
+            'weeks': [1, 2, 3],
+            'isCustomTime': true,
+            'customStartTime': '07:30',
+            'customEndTime': '08:00',
+            'courseNature': 'elective',
+          },
+        ]);
+        final c = courses.single;
+        expect(c.courseNature, CourseNature.elective);
+        expect(c.hasCustomTime, isTrue);
+        expect(c.startTime, '07:30');
+      });
+    });
   });
 }

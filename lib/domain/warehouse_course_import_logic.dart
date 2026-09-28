@@ -157,6 +157,13 @@ class WarehouseCourseImportLogic {
           endTime: hasCustomTime ? customEnd : '',
           hasCustomTime: hasCustomTime,
           customWeeks: weeks,
+          // Adapters that know 必修/选修 send `courseNature: 'required' |
+          // 'elective'`（上游 CQUET 会先把课程名里的 `[必修]`/`[选修]` 抠出来）。
+          // Previously dropped, so every 选修 course imported as 必修 — which
+          // mislabels the course card / overview and, worse, feeds
+          // `statistics_service` a required course, skewing credit totals.
+          // Unknown/absent values fall back to 必修 via CourseNatureX.
+          courseNature: CourseNatureX.fromValue(map['courseNature']?.toString()),
         ),
       );
     }
