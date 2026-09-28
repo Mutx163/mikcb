@@ -302,11 +302,47 @@ void main() {
       // No credentials at all.
       expect(rememberedLoginAllowsUrl(null, 'https://jw.example.edu.cn'),
           isFalse);
-      // Legacy entries without bound host keep legacy behavior.
+      // Legacy entries without a bound host are NOT waved through: every login
+      // saved before `host` started being persisted looks like this, so
+      // allowing them unconditionally left the gate open for exactly the users
+      // it was written to protect.
       expect(
           rememberedLoginAllowsUrl(
               unboundLegacy, 'https://evil.example.com/login'),
-          isTrue);
+          isFalse);
+      // They may still autofill on the hosts the app itself navigates to.
+      expect(
+        rememberedLoginAllowsUrl(
+          unboundLegacy,
+          'https://jw.example.edu.cn/login',
+          trustedHosts: const ['jw.example.edu.cn', '  ', 'mirror.example.cn'],
+        ),
+        isTrue,
+      );
+      // A trusted host that is only a substring/suffix must not pass.
+      expect(
+        rememberedLoginAllowsUrl(
+          unboundLegacy,
+          'https://jw.example.edu.cn.evil.io/login',
+          trustedHosts: const ['jw.example.edu.cn'],
+        ),
+        isFalse,
+      );
+      // Subdomains of a trusted host pass: school logins commonly bounce
+      // across them.
+      expect(
+        rememberedLoginAllowsUrl(
+          unboundLegacy,
+          'https://a.jw.example.edu.cn/login',
+          trustedHosts: const ['jw.example.edu.cn'],
+        ),
+        isTrue,
+      );
+      // With no trusted hosts at all, an unbound login goes nowhere.
+      expect(
+          rememberedLoginAllowsUrl(
+              unboundLegacy, 'https://jw.example.edu.cn/login'),
+          isFalse);
       // Same-host pages pass.
       expect(
           rememberedLoginAllowsUrl(bound, 'https://jw.example.edu.cn/login'),
@@ -315,12 +351,28 @@ void main() {
           rememberedLoginAllowsUrl(
               bound, 'https://jw.example.edu.cn:8080/login'),
           isTrue);
-      // Cross-origin pages are denied.
+      // Subdomains of the *bound* host pass too.
+      expect(
+        rememberedLoginAllowsUrl(
+            bound, 'https://a.jw.example.edu.cn/login'),
+        isTrue,
+      );
+      // Cross-origin pages are denied — and a bound host wins over the trusted
+      // list, so widening the list cannot re-open a bound credential.
       expect(
           rememberedLoginAllowsUrl(bound, 'https://evil.example.com/login'),
           isFalse);
       expect(
-          rememberedLoginAllowsUrl(bound, 'https://jw.example.edu.cn.evil.io'),
+        rememberedLoginAllowsUrl(
+          bound,
+          'https://evil.example.com/login',
+          trustedHosts: const ['evil.example.com'],
+        ),
+        isFalse,
+      );
+      expect(
+          rememberedLoginAllowsUrl(
+              bound, 'https://jw.example.edu.cn.evil.io'),
           isFalse);
       // Unknown current URL cannot prove same origin.
       expect(rememberedLoginAllowsUrl(bound, null), isFalse);

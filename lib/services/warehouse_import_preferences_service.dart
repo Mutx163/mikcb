@@ -565,22 +565,51 @@ String? extractUrlHost(String? url) {
   return host.isEmpty ? null : host;
 }
 
-/// 自动填充门禁（凭据绑定站点）：已绑定 host 的凭据只允许在
-/// 同一站点页面自动填充；未绑定 host 的旧数据按旧契约放行。
-/// [login] 为 null 时视为无可填充凭据。
+/// 自动填充门禁（凭据绑定站点）：自动填充只允许发生在 **App 自己会把
+/// WebView 带过去的站点** 上 —— 凭据绑定的 host、该适配器在仓库里登记的登录
+/// 地址、以及用户为该适配器自定义的登录地址。跨源页面（钓鱼页 / 换站）不提示
+/// 也不回放填充；手动「填充」菜单属于用户看清当前页面后的显式动作，不受此
+/// 门禁限制。
+///
+/// [trustedHosts] 是上面后两项的域名集合（可含空串，会被忽略）。传空集合时
+/// 只认凭据绑定的 host。
+///
+/// Why the empty-host fallback is a whitelist and not "allow everything":
+/// `host` only started being persisted in v2.1.3.2, so on any install older
+/// than that **every** remembered login has an empty host. Allowing those
+/// unconditionally left the gate open for exactly the users it was written to
+/// protect — the fix was live but inert. The same entry re-binds its host the
+/// first time the user saves a password, so the legacy shape is transient.
 bool rememberedLoginAllowsUrl(
   WarehouseRememberedLogin? login,
-  String? currentUrl,
-) {
+  String? currentUrl, {
+  Iterable<String> trustedHosts = const <String>{},
+}) {
   if (login == null) {
     return false;
   }
-  final boundHost = login.host.trim().toLowerCase();
-  if (boundHost.isEmpty) {
-    return true;
+  final currentHost = extractUrlHost(currentUrl);
+  if (currentHost == null) {
+    return false;
   }
-  return extractUrlHost(currentUrl) == boundHost;
+  final boundHost = login.host.trim().toLowerCase();
+  if (boundHost.isNotEmpty) {
+    return _hostMatches(currentHost, boundHost);
+  }
+  return trustedHosts
+      .map((host) => host.trim().toLowerCase())
+      .where((host) => host.isNotEmpty)
+      .any((host) => _hostMatches(currentHost, host));
 }
+
+/// Exact host match, or a subdomain of it.
+///
+/// Subdomains matter because a 教务 login commonly bounces across
+/// `jw.x.edu` / `a.jw.x.edu` within the same school domain; rejecting those
+/// would lock out legitimate users. The `.$host` form cannot be spoofed by
+/// suffix games: `jw.x.edu.evil.com` does not end with `.jw.x.edu`.
+bool _hostMatches(String currentHost, String trustedHost) =>
+    currentHost == trustedHost || currentHost.endsWith('.$trustedHost');
 
 /// Cloud restore / sync import: prefer non-empty remote password; otherwise
 /// keep the local password when the account still looks like the same user.
@@ -625,10 +654,17 @@ WarehouseRememberedLogin resolveRememberedLoginForImport({
   // 只有在「云端没给密码、且确实从本地留下了非空密码」时才把 host 一并留在本地。
   // localLogin 为空（或本地也没密码）时 password 为 ''，此时不存在真密码外泄，
   // host 照常采用云端的，否则无谓地把用户的绑定站点清掉。
-  final keptLocalPassword = incoming.password.isEmpty &&
-      password.isNotEmpty &&
-      password == localLogin!.password;
-  final host = keptLocalPassword ? localLogin.host : incoming.host;
+  //
+  // 判空写成显式的 `localLogin != null`，并靠条件表达式的分支收窄取值，不靠
+  // `!`。原先那行 `!` 的安全来自「上一个函数在 null 时恰好返回空串」——
+  // 那是它的实现细节而不是契约，本函数第一版就因此踩过一次：两边都空被误判成
+  // 「留下了本地密码」，结果把云端的 host 也一起丢了。
+  final host = (incoming.password.isEmpty &&
+          localLogin != null &&
+          localLogin.password.isNotEmpty &&
+          password == localLogin.password)
+      ? localLogin.host
+      : incoming.host;
   return WarehouseRememberedLogin(
     username: incoming.username,
     password: password,
