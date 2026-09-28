@@ -22,13 +22,11 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../models/course.dart';
-import '../models/location_time_group.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../models/warehouse_macro_models.dart';
 import '../models/warehouse_repository_models.dart';
 import '../providers/timetable_provider.dart';
-import '../domain/location_time_scheme_import_logic.dart';
 import '../domain/warehouse_course_import_logic.dart';
 import '../services/ai_course_import_service.dart';
 import '../services/ics_import_service.dart';
@@ -4900,17 +4898,6 @@ class _WarehouseAdapterWebLoginScreenState
         }));
       });
     },
-    saveLocationTimeSchemes: async (json) => {
-      const requestId = 'location_time_schemes_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-      return await new Promise((resolve) => {
-        window.__qingyuResolvers[requestId] = resolve;
-        QingyuBridge.postMessage(JSON.stringify({
-          type: 'saveLocationTimeSchemes',
-          requestId,
-          payload: String(json ?? '{}')
-        }));
-      });
-    },
     saveImportedCourses: async (json) => {
       QingyuBridge.postMessage(JSON.stringify({type: 'courses', payload: String(json ?? '[]')}));
       return true;
@@ -5032,15 +5019,6 @@ $kWarehouseBridgeCompatShim  try {
           break;
         }
         await _handleSavePresetTimeSlots(message);
-        break;
-      case 'saveLocationTimeSchemes':
-        if (!_isPrivilegedBridgeContextActive) {
-          _debugImportLog(
-            'bridge saveLocationTimeSchemes ignored outside import execution',
-          );
-          break;
-        }
-        await _handleSaveLocationTimeSchemes(message);
         break;
       case 'error':
         if (!mounted) return;
@@ -5339,127 +5317,6 @@ $kWarehouseBridgeCompatShim  try {
     }
   }
 
-  /// Creates or updates a time scheme named [name] and returns its id.
-  ///
-  /// Mirrors the find-by-name-then-upsert behavior of [_applyImportedSections]
-  /// so re-running an import refreshes the same scheme instead of piling up
-  /// near-duplicates.
-  Future<String> _upsertImportedTimeScheme(
-    String name,
-    List<SectionTime> sections,
-  ) async {
-    final provider = context.read<TimetableProvider>();
-    for (final scheme in provider.timeSchemes) {
-      if (scheme.name != name) {
-        continue;
-      }
-      final result = await provider.updateTimeScheme(
-        schemeId: scheme.id,
-        name: scheme.name,
-        sections: sections,
-      );
-      if (result != null) {
-        throw FormatException(result);
-      }
-      return scheme.id;
-    }
-    final created = await provider.createTimeScheme(
-      name: name,
-      sections: sections,
-    );
-    return created.id;
-  }
-
-  /// Imports one fallback time scheme plus per-teaching-building schemes, each
-  /// bound to a location group, so every course resolves its own clock time
-  /// from its classroom name.
-  ///
-  /// This is a protocol **extension**, not part of the upstream v2 bridge API.
-  /// Scripts must feature-detect `saveLocationTimeSchemes` and fall back to
-  /// `savePresetTimeSlots` when it is absent so they stay submittable upstream.
-  ///
-  /// Payload:
-  /// ```json
-  /// {
-  ///   "default": {"name": "…", "sections": [{"startTime": "08:20", "endTime": "09:05"}]},
-  ///   "groups": [
-  ///     {
-  ///       "name": "…",
-  ///       "keywords": [{"pattern": "A主", "mode": "prefix"}],
-  ///       "sections": [{"startTime": "08:20", "endTime": "09:05"}]
-  ///     }
-  ///   ]
-  /// }
-  /// ```
-  /// [default] is the fallback for classrooms matching no group. Groups are
-  /// upserted by name and location groups the script did not mention are kept,
-  /// so hand-made rules are never wiped by an import.
-  Future<void> _handleSaveLocationTimeSchemes(
-    Map<String, dynamic> message,
-  ) async {
-    final requestId = (message['requestId'] as String?) ?? '';
-    try {
-      final spec = LocationTimeSchemeImportLogic.parse(
-        jsonDecode((message['payload'] as String?) ?? '{}'),
-      );
-
-      final provider = context.read<TimetableProvider>();
-      if (_isBackgroundImportCancelled) {
-        await _resolveJavaScriptRequest(requestId, false);
-        return;
-      }
-      _markBackgroundWriteStarted();
-
-      final incoming = <LocationTimeGroup>[];
-      for (final group in spec.groups) {
-        final schemeId = await _upsertImportedTimeScheme(
-          group.name,
-          group.sections,
-        );
-        incoming.add(
-          LocationTimeGroup(
-            id: const Uuid().v4(),
-            name: group.name,
-            timeSchemeId: schemeId,
-            priority: incoming.length,
-            keywords: group.keywords,
-          ),
-        );
-      }
-
-      final defaultSchemeId = await _upsertImportedTimeScheme(
-        spec.defaultName,
-        spec.defaultSections,
-      );
-
-      // Replace same-named groups and keep every group the script did not
-      // mention, so hand-made rules survive an import.
-      final replacedNames = spec.groups.map((group) => group.name).toSet();
-      final merged = <LocationTimeGroup>[
-        for (final existing in provider.locationTimeGroups)
-          if (!replacedNames.contains(existing.name)) existing,
-        ...incoming,
-      ];
-      await provider.replaceLocationTimeGroups(merged);
-
-      final applyError = await provider.applyTimeScheme(defaultSchemeId);
-      if (applyError != null) {
-        throw FormatException(applyError);
-      }
-      await _resolveJavaScriptRequest(requestId, true);
-    } catch (error) {
-      if (widget.runInBackground) {
-        widget.onBackgroundFinished?.call(false);
-      }
-      if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
-      _showLightTip(
-        context,
-        l10n.saveSectionTimesFailedWithError(localizeServiceError(l10n, error)),
-      );
-      await _resolveJavaScriptRequest(requestId, false);
-    }
-  }
 
   Future<void> _resolveJavaScriptRequest(
     String requestId,
