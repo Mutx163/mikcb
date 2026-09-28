@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-27T06:59:00+00:00",
+  "updatedAt": "2026-09-28T07:27:00+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 228,
-    "schools": 223,
+    "total": 229,
+    "schools": 224,
     "generic": 5
   },
   "schools": [
@@ -328,6 +328,13 @@
       "name": "福州理工学院",
       "initial": "F",
       "resourceFolder": "FIT",
+      "category": "school"
+    },
+    {
+      "id": "FJPIT",
+      "name": "福建信息职业技术学院",
+      "initial": "F",
+      "resourceFolder": "FJPIT",
       "category": "school"
     },
     {
