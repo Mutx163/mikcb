@@ -23,12 +23,14 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../models/course.dart';
+import '../models/location_time_group.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../models/warehouse_macro_models.dart';
 import '../models/warehouse_repository_models.dart';
 import '../providers/timetable_provider.dart';
 import '../domain/warehouse_course_import_logic.dart';
+import '../domain/warehouse_location_time_schemes.dart';
 import '../services/ai_course_import_service.dart';
 import '../services/ics_import_service.dart';
 import '../services/import_random_color_preferences.dart';
@@ -2921,11 +2923,7 @@ class _WarehouseSchoolAdaptersScreenState
   @override
   void initState() {
     super.initState();
-    _adaptersFuture = _repositoryService.fetchAdaptersIndex(
-      widget.source,
-      widget.school,
-      options: widget.fetchOptions,
-    );
+    _adaptersFuture = _loadAdapters();
   }
 
   @override
@@ -3032,13 +3030,51 @@ class _WarehouseSchoolAdaptersScreenState
     );
   }
 
+  /// 学校适配器列表 = `resources/` 下的标准适配器 + `qingyu_only/` 下的轻屿专属条目。
+  ///
+  /// 专属条目**追加在后面**，标准条目永远排在前面、也永远可用：它在任何仓库（含
+  /// 上游仓、他人 fork、镜像的旧快照）里都存在，而专属条目只在我们的仓里有。
+  /// 探测失败一律降级为「没有专属条目」，不抛——绝大多数学校本来就没有这个目录。
+  ///
+  /// 旧版 App 从不请求 `qingyu_only/`，所以它们看到的列表与今天完全一致。
+  Future<WarehouseAdaptersIndex> _loadAdapters() async {
+    final standard = _repositoryService.fetchAdaptersIndex(
+      widget.source,
+      widget.school,
+      options: widget.fetchOptions,
+    );
+    final extras = _repositoryService.fetchQingyuOnlyAdapters(
+      widget.source,
+      widget.school,
+      options: widget.fetchOptions,
+    );
+    // 两条并行，且专属那条失败不影响标准那条：先等标准结果（它是必须的），
+    // 专属结果无论成功失败都只是追加。
+    final base = await standard;
+    List<WarehouseAdapterEntry> extrasList = const [];
+    try {
+      extrasList = await extras;
+    } catch (error) {
+      // 这一层没有 _debugImportLog（那是导入执行页的诊断通道）；降级本身对用户
+      // 不可见，所以一句注释足够说明为什么静默。
+      debugPrint('qingyu_only adapters unavailable: $error');
+    }
+    if (extrasList.isEmpty) {
+      return base;
+    }
+    return WarehouseAdaptersIndex(
+      adapters: [
+        ...base.adapters,
+        for (final adapter in extrasList)
+          if (!base.adapters.any((it) => it.adapterId == adapter.adapterId))
+            adapter,
+      ],
+    );
+  }
+
   void _reloadAdapters() {
     setState(() {
-      _adaptersFuture = _repositoryService.fetchAdaptersIndex(
-        widget.source,
-        widget.school,
-        options: widget.fetchOptions,
-      );
+      _adaptersFuture = _loadAdapters();
     });
   }
 
@@ -3774,7 +3810,14 @@ class _WarehouseAdapterWebLoginScreenState
   /// 而不是让它们无声消失。见 [WarehouseCourseSkipReason]。
   final Map<WarehouseCourseSkipReason, int> _warehouseCourseSkips = {};
   List<SectionTime>? _pendingImportedSections;
-  String? _pendingImportedSectionsSignature;
+
+  /// 脚本通过 `savePresetTimeSlots` 下发的那套作息（apply 之后仍保留）。
+  ///
+  /// 轻屿专属条目用它反推用户选了哪一套：脚本在「选择学校作息时间表」里给的是
+  /// 节次时间，数据文件里也是节次时间，两边逐节相同即同一个方案。这样专属条目
+  /// **不额外问一句**，复用脚本已经问过的那一次——两个问题问同一个用户是本轮
+  /// 方案设计里明确要避开的。
+  List<SectionTime>? _scriptSuppliedSections;  String? _pendingImportedSectionsSignature;
   String? _appliedImportedSectionsSignature;
   Future<void>? _pendingImportedSectionsApplyFuture;
   WarehouseRememberedLogin? _rememberedLogin;
@@ -5475,6 +5518,12 @@ $kWarehouseBridgeCompatShim  try {
       );
       _pendingImportedSections = sections;
       _pendingImportedSectionsSignature = _buildSectionSignature(sections);
+      // 脚本自己选中的那套作息留一份副本。轻屿专属条目（`qingyu_only/`）靠它
+      // 判断用户在脚本的「选择作息」里选的是哪一套 —— 见
+      // `_applyQingyuOnlyLocationTimeSchemes`。放在这里而不是等要用时再从
+      // _pendingImportedSections 取，是因为那套 pending 生命周期很短，apply 之后
+      // 就不在了。
+      _scriptSuppliedSections = List<SectionTime>.from(sections);
       if (_isBackgroundImportCancelled) {
         await _resolveJavaScriptRequest(requestId, false);
         return;
@@ -5673,6 +5722,16 @@ $kWarehouseBridgeCompatShim  try {
           );
         }
       }
+      // 轻屿专属作息：脚本那套全局作息只覆盖校区/教学楼都相同的情形，这里按
+      // 教室名把每门课分到各自那套。放在脚本那套之后 —— 专属数据要覆盖它，
+      // 否则课程会读到脚本选的那一套。
+      //
+      // 失败不中断导入：脚本已经下发了一套可用作息，退回那套比整次导入失败好。
+      try {
+        await _applyQingyuOnlyLocationTimeSchemes();
+      } catch (error) {
+        _debugImportLog('qingyu_only time schemes skipped: $error');
+      }
       final requiredSectionCount = provider
           .previewImportedCourseRequiredSectionCount(
             alignedCourses,
@@ -5821,8 +5880,122 @@ $kWarehouseBridgeCompatShim  try {
     }
   }
 
-  /// 教务凭据允许自动填充的站点：适配器在仓库里登记的登录地址，加上用户为它
-  /// 自定义的地址。两者都是 App 自己会把 WebView 带过去的地方。
+  /// 按名 upsert 一条时间模板，返回它的 id。名字相同视为同一套（重复导入不会
+  /// 攒出一堆同名模板）。
+  Future<String> _upsertImportedTimeScheme(
+    String name,
+    List<SectionTime> sections,
+  ) async {
+    final provider = context.read<TimetableProvider>();
+    for (final scheme in provider.timeSchemes) {
+      if (scheme.name != name) {
+        continue;
+      }
+      final result = await provider.updateTimeScheme(
+        schemeId: scheme.id,
+        name: scheme.name,
+        sections: sections,
+      );
+      if (result != null) {
+        throw FormatException(result);
+      }
+      return scheme.id;
+    }
+    final created = await provider.createTimeScheme(
+      name: name,
+      sections: sections,
+    );
+    return created.id;
+  }
+
+  /// 应用轻屿专属作息（`qingyu_only/<目录>/time_schemes.json`）。
+  ///
+  /// 做三件事：把该校区下每套作息各存成一条时间模板；给带关键词的那几套建「地点
+  /// 时间分组」，按教室名路由；最后套用兜底那套作为课表默认。
+  ///
+  /// **校区不问用户**：脚本自己已经问过「选择学校作息时间表」，这里用脚本下发的
+  /// 节次时间与数据文件逐节比对反推（见 `campusForSections`）。判不出来时按
+  /// 「唯一校区直接用，否则不套用专属作息」处理——宁可退回脚本那套全局作息，
+  /// 也不要替用户猜一个校区然后把作息套错。
+  ///
+  /// 分组按名 upsert：脚本提到的同名分组被覆盖，**用户自建的其它分组一律保留**。
+  Future<void> _applyQingyuOnlyLocationTimeSchemes() async {
+    final adapter = widget.adapter;
+    if (!adapter.isQingyuOnly || adapter.timeSchemesFile.isEmpty) {
+      return;
+    }
+    final raw = await _repositoryService.fetchQingyuOnlyText(
+      widget.source,
+      widget.school,
+      adapter.timeSchemesFile,
+      options: widget.fetchOptions,
+    );
+    final parsed = QingyuOnlyTimeSchemesLogic.parse(jsonDecode(raw));
+    final campus =
+        parsed.campusForSections(_scriptSuppliedSections ?? const []) ??
+        parsed.soleCampus;
+    if (campus == null) {
+      _debugImportLog(
+        'qingyu_only campus undetermined campuses=${parsed.campuses.length} '
+        'scriptSections=${_scriptSuppliedSections?.length ?? 0}',
+      );
+      return;
+    }
+    _debugImportLog(
+      'qingyu_only applying campus=${campus.id} schemes=${campus.schemes.length}',
+    );
+
+    if (!mounted) {
+      return;
+    }
+    final provider = context.read<TimetableProvider>();
+    if (_isBackgroundImportCancelled) {
+      return;
+    }
+    _markBackgroundWriteStarted();
+
+    final incoming = <LocationTimeGroup>[];
+    String? fallbackSchemeId;
+    for (final scheme in campus.schemes) {
+      final schemeId = await _upsertImportedTimeScheme(scheme.name, scheme.sections);
+      if (scheme.isFallback) {
+        fallbackSchemeId = schemeId;
+        continue;
+      }
+      incoming.add(
+        LocationTimeGroup(
+          id: const Uuid().v4(),
+          name: scheme.name,
+          timeSchemeId: schemeId,
+          priority: incoming.length,
+          keywords: scheme.keywords,
+        ),
+      );
+    }
+    if (fallbackSchemeId == null) {
+      // 解析层已保证每校区恰好一套兜底，走到这里说明数据与代码的约定脱节了。
+      // 什么都不改比只改一半好。
+      _debugImportLog('qingyu_only campus has no fallback scheme, skipped');
+      return;
+    }
+
+    final replacedNames = campus.schemes
+        .where((scheme) => !scheme.isFallback)
+        .map((scheme) => scheme.name)
+        .toSet();
+    final merged = <LocationTimeGroup>[
+      for (final existing in provider.locationTimeGroups)
+        if (!replacedNames.contains(existing.name)) existing,
+      ...incoming,
+    ];
+    await provider.replaceLocationTimeGroups(merged);
+    final applyError = await provider.applyTimeScheme(fallbackSchemeId);
+    if (applyError != null) {
+      throw FormatException(applyError);
+    }
+  }
+
+  /// 教务凭据允许自动填充的站点：适配器在仓库里登记的登录地址，加上用户为它  /// 自定义的地址。两者都是 App 自己会把 WebView 带过去的地方。
   ///
   /// Why this exists: `host` 从 v2.1.3.2 起才随凭据一起落盘，在那之前
   /// 存下的每一条凭据 host 都是空的。门禁原本对空 host 一律放行，于是**升级

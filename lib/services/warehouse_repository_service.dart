@@ -126,6 +126,80 @@ class WarehouseRepositoryService {
     return WarehouseAdaptersIndex(adapters: adapters);
   }
 
+  /// 拉取轻屿专属适配条目（`qingyu_only/<目录>/adapters.yaml`）。
+  ///
+  /// 这个目录是本仓自有的，永不参与上游同步、也永不打进任何索引
+  /// （`build_search_index.py` 只聚合 `resources/*/adapters.yaml`）。因此：
+  ///
+  /// - **旧版 App 完全不受影响** —— 它从不请求这个路径，只看 `resources/`，看到的
+  ///   仍是一切如常的标准适配器。
+  /// - 新版 App 对没有该目录的仓库（任何镜像的旧快照、上游仓、他人 fork）会拿到
+  ///   404，这里**降级为「没有专属适配」**而不是报错。
+  ///
+  /// 逐个学校按需探测（1 次请求），不引入新的全局索引 —— 多一个索引就多一件要维护
+  /// 且要防同步的东西，而学校数量有界。
+  Future<List<WarehouseAdapterEntry>> fetchQingyuOnlyAdapters(
+    WarehouseRepositorySource source,
+    WarehouseSchoolEntry school, {
+    WarehouseFetchOptions? options,
+  }) async {
+    final path = 'qingyu_only/${school.resourceFolder}/adapters.yaml';
+    String content;
+    try {
+      content = await _fetchText(source, path, options: options);
+    } on WarehouseRepositoryException {
+      // 绝大多数学校没有这个目录，属正常情况。
+      return const [];
+    }
+    return _parseQingyuOnlyAdapterEntries(content);
+  }
+
+  /// 拉取 `qingyu_only/<目录>/` 下的一个文件（作息数据、或专属脚本副本）。
+  ///
+  /// 404 / 解析失败一律抛出 [WarehouseRepositoryException]，由调用方决定降级方式；
+  /// 「取不到就按标准流程继续」这个决定不应该藏在拉取层。
+  Future<String> fetchQingyuOnlyText(
+    WarehouseRepositorySource source,
+    WarehouseSchoolEntry school,
+    String relativeName, {
+    WarehouseFetchOptions? options,
+  }) async {
+    // 目录穿越：仓库内容是远端数据，文件名必须限制在同目录内。
+    if (relativeName.isEmpty ||
+        relativeName.contains('/') ||
+        relativeName.contains('\\') ||
+        relativeName.contains('..')) {
+      throw const WarehouseRepositoryException('qingyu_only_bad_relative_name');
+    }
+    return _fetchText(
+      source,
+      'qingyu_only/${school.resourceFolder}/$relativeName',
+      options: options,
+    );
+  }
+
+  List<WarehouseAdapterEntry> _parseQingyuOnlyAdapterEntries(String content) {
+    final maps = _parseYamlListMaps(content, topLevelKey: 'adapters');
+    return maps
+        .map(
+          (item) => WarehouseAdapterEntry(
+            adapterId: item['adapter_id'] ?? '',
+            adapterName: item['adapter_name'] ?? '',
+            category: item['category'] ?? '',
+            assetJsPath: item['asset_js_path'] ?? '',
+            importUrl: item['import_url'] ?? '',
+            maintainer: item['maintainer'] ?? '',
+            description: item['description'] ?? '',
+            sha256: item['sha256'] ?? '',
+            timeSchemesFile: item['time_schemes_file'] ?? '',
+            campusPrompt: item['campus_prompt'] ?? '',
+            isQingyuOnly: true,
+          ),
+        )
+        .where((item) => item.adapterId.isNotEmpty && item.assetJsPath.isNotEmpty)
+        .toList(growable: false);
+  }
+
   /// 拉取教务导入「按适配器（脚本）名称搜索」的全局索引。
   /// 旧版适配仓没有该文件（404）或网络失败时抛 WarehouseRepositoryException，
   /// 调用方捕获后降级为仅按学校字段搜索，不影响正常流程。
@@ -147,9 +221,40 @@ class WarehouseRepositoryService {
     required WarehouseSchoolEntry school,
     required WarehouseAdapterEntry adapter,
     WarehouseFetchOptions? options,
+    bool preferQingyuOnlyAsset = false,
   }) async {
-    final path = 'resources/${school.resourceFolder}/${adapter.assetJsPath}';
-    final bytes = await _fetchBytes(source, path, options: options);
+    // 轻屿专属条目声明的 `asset_js_path` 通常指向 `resources/` 下那份**同一份**
+    // 上游标准脚本（刻意不另存副本，避免两份解析逻辑漂移）。所以顺序是：先在
+    // `qingyu_only/` 本目录找，找不到回落 `resources/`。标准适配器完全不受影响。
+    final candidates = preferQingyuOnlyAsset || adapter.isQingyuOnly
+        ? <String>[
+            'qingyu_only/${school.resourceFolder}/${adapter.assetJsPath}',
+            'resources/${school.resourceFolder}/${adapter.assetJsPath}',
+          ]
+        : <String>['resources/${school.resourceFolder}/${adapter.assetJsPath}'];
+
+    List<int> bytes;
+    if (candidates.length == 1) {
+      bytes = await _fetchBytes(source, candidates.single, options: options);
+    } else {
+      // 本目录找不到就回落 `resources/` 下那份同一脚本。全部候选都失败时以最后一次
+      // 的错误为准——那才是用户真正会看到的那个 host 的失败原因。
+      List<int>? resolved;
+      WarehouseRepositoryException? lastError;
+      for (final path in candidates) {
+        try {
+          resolved = await _fetchBytes(source, path, options: options);
+          break;
+        } on WarehouseRepositoryException catch (error) {
+          lastError = error;
+        }
+      }
+      if (resolved == null) {
+        throw lastError ??
+            const WarehouseRepositoryException('warehouse_script_fetch_failed');
+      }
+      bytes = resolved;
+    }
     // Integrity gate: when the index declares a SHA-256 for the script, the
     // fetched bytes must match before the script is ever handed to WebView.
     //

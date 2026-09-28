@@ -197,6 +197,34 @@ class WarehouseAdapterEntry {
   /// `WarehouseRepositoryService.fetchAdapterScript` 的说明。
   final String sha256;
 
+  /// 轻屿专属字段（`qingyu_only/<学校ID>/adapters.yaml`），上游 schema 未定义。
+  ///
+  /// Why it lives here and not in the script: the upstream protocol can only
+  /// carry **one** global 作息 per import (`savePresetTimeSlots`), so a school
+  /// that publishes different 作息 per campus / teaching building cannot be
+  /// expressed by any script. Extending the bridge would have broken the rule
+  /// that our scripts stay submittable upstream, so that knowledge moved to a
+  /// data file next to the script and the script stayed 100% standard.
+  ///
+  /// Empty on every `resources/` adapter, and on every App that predates this
+  /// field: those Apps never read these keys, so adding them changes nothing
+  /// for them.
+  ///
+  /// 学校作息数据文件名（同目录下），例如 `time_schemes.json`。为空表示这个
+  /// 适配器没有专属作息数据。
+  final String timeSchemesFile;
+
+  /// 这一条是否来自 `qingyu_only/` 而非 `resources/`。
+  ///
+  /// 决定脚本的查找顺序：专属条目声明的 `asset_js_path` 通常指向 `resources/` 下
+  /// 那份**同一份**上游标准脚本（刻意不另存副本），所以要先在 `qingyu_only/` 本
+  /// 目录找、找不到再回落。标准适配器恒为 false，走原来的单路径，行为不变。
+  final bool isQingyuOnly;
+
+  /// 仅当同一所学校有多套作息时才需要：导入前问用户「你在哪个校区？」。
+  /// 为空则直接用唯一那套。
+  final String campusPrompt;
+
   const WarehouseAdapterEntry({
     required this.adapterId,
     required this.adapterName,
@@ -206,6 +234,9 @@ class WarehouseAdapterEntry {
     required this.maintainer,
     required this.description,
     this.sha256 = '',
+    this.timeSchemesFile = '',
+    this.campusPrompt = '',
+    this.isQingyuOnly = false,
   });
 }
 
