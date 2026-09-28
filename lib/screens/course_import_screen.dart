@@ -5766,13 +5766,19 @@ $kWarehouseBridgeCompatShim  try {
     );
     _isPromptShowing = false;
     if (shouldPersist == true) {
+      // 存盘与内存必须放同一份「已绑定 host」的副本。之前这里存的是
+      // _bindCurrentHostToLogin(candidate)（对的），却把未绑定的 candidate
+      // 留在 _rememberedLogin 里 —— 而 rememberedLoginAllowsUrl 对空 host
+      // 的旧数据是放行的，于是用户刚存完密码，门禁当场失效：任何站点都能
+      // 触发自动填充。手动录入路径（下方）本来就是用 boundLogin，没有这个问题。
+      final boundLogin = await _bindCurrentHostToLogin(candidate);
       await _preferencesService.setRememberedLogin(
         widget.adapter.adapterId,
-        await _bindCurrentHostToLogin(candidate),
+        boundLogin,
       );
       if (!mounted) return;
       setState(() {
-        _rememberedLogin = candidate;
+        _rememberedLogin = boundLogin;
         _lastScriptStatus = AppLocalizations.of(
           context,
         )!.savedRememberedLoginStatus;

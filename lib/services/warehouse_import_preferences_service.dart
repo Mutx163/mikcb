@@ -481,17 +481,18 @@ class WarehouseImportPreferencesService {
       if (entry.adapterId.isEmpty) {
         continue;
       }
-      final resolvedPassword = resolveRememberedLoginPasswordForImport(
-        incomingPassword: entry.login.password,
-        incomingUsername: entry.login.username,
+      // 密码与绑定站点必须作为一对一起解析：保留本地密码时若沿用云端的 host，
+      // 等于把用户真密码配到备份指定的域名上（见 resolveRememberedLoginForImport）。
+      final resolved = resolveRememberedLoginForImport(
+        incoming: entry.login,
         localLogin: localRememberedLogins[entry.adapterId],
       );
       await setRememberedLogin(
         entry.adapterId,
         WarehouseRememberedLogin(
-          username: entry.login.username,
-          password: resolvedPassword,
-          host: entry.login.host,
+          username: resolved.username,
+          password: resolved.password,
+          host: resolved.host,
         ),
       );
     }
@@ -598,6 +599,41 @@ String resolveRememberedLoginPasswordForImport({
     return localLogin.password;
   }
   return '';
+}
+
+/// Cloud restore: resolve the remembered login as a (password, host) **pair**.
+///
+/// [resolveRememberedLoginPasswordForImport] deliberately keeps the local
+/// password when the snapshot ships an empty one. Pairing that kept password
+/// with the snapshot's `host` handed the user's real password to whatever
+/// domain the snapshot named: a crafted backup made autofill offer the real
+/// credentials on an attacker's site while blocking it on the real 教务 site.
+///
+/// So whenever the local password survives, the local host must survive with
+/// it — the two were bound together at save time and must not be separable.
+/// A non-empty remote password is self-consistent (its own host comes with
+/// it) and is adopted as-is.
+WarehouseRememberedLogin resolveRememberedLoginForImport({
+  required WarehouseRememberedLogin incoming,
+  WarehouseRememberedLogin? localLogin,
+}) {
+  final password = resolveRememberedLoginPasswordForImport(
+    incomingPassword: incoming.password,
+    incomingUsername: incoming.username,
+    localLogin: localLogin,
+  );
+  // 只有在「云端没给密码、且确实从本地留下了非空密码」时才把 host 一并留在本地。
+  // localLogin 为空（或本地也没密码）时 password 为 ''，此时不存在真密码外泄，
+  // host 照常采用云端的，否则无谓地把用户的绑定站点清掉。
+  final keptLocalPassword = incoming.password.isEmpty &&
+      password.isNotEmpty &&
+      password == localLogin!.password;
+  final host = keptLocalPassword ? localLogin.host : incoming.host;
+  return WarehouseRememberedLogin(
+    username: incoming.username,
+    password: password,
+    host: host,
+  );
 }
 
 /// Prefers a user-set custom import URL, otherwise falls back to [defaultUrl].

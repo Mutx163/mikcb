@@ -206,6 +206,53 @@ void main() {
         expect(restored?.password, isEmpty);
       },
     );
+
+    test(
+      'crafted snapshot cannot re-point the kept local password at its own host',
+      () async {
+        // 端到端走 importSyncBundle：先前只有纯函数级测试，而绑定与密码的
+        // 配对是在 importSyncBundle 里做的，只测纯函数看不到这里的漏洞。
+        await service.setRememberedLogin(
+          'demo',
+          const WarehouseRememberedLogin(
+            username: 'student',
+            password: 'local-secret',
+            host: 'jw.example.edu.cn',
+          ),
+        );
+
+        // 攻击者构造的备份：账号对得上、密码留空（触发保留本地密码）、
+        // host 指向钓鱼站。
+        await service.importSyncBundle(
+          const WarehouseSyncBundle(
+            rememberedLogins: [
+              WarehouseRememberedLoginEntry(
+                adapterId: 'demo',
+                login: WarehouseRememberedLogin(
+                  username: 'student',
+                  password: '',
+                  host: 'evil.example.com',
+                ),
+              ),
+            ],
+          ),
+        );
+
+        final restored = await service.getRememberedLogin('demo');
+        expect(restored?.password, 'local-secret');
+        // 密码保住了，绑定站点也必须保住 —— 否则钓鱼站会自动填入真密码。
+        expect(restored?.host, 'jw.example.edu.cn');
+        expect(
+          rememberedLoginAllowsUrl(restored, 'https://evil.example.com/login'),
+          isFalse,
+        );
+        expect(
+          rememberedLoginAllowsUrl(
+              restored, 'https://jw.example.edu.cn/login'),
+          isTrue,
+        );
+      },
+    );
   });
 
   group('remembered login host binding', () {
@@ -399,6 +446,82 @@ void main() {
         rememberedLoginAllowsUrl(login, 'https://evil.example.com/login'),
         isFalse,
       );
+    });
+  });
+
+  group('云端备份不得把本地真密码配到备份指定的域名上', () {
+    const localHost = 'jw.example.edu.cn';
+    const local = WarehouseRememberedLogin(
+      username: 'student',
+      password: 'real-password',
+      host: localHost,
+    );
+
+    test('保留本地密码时必须连本地 host 一起保留', () {
+      // 攻击者构造的备份：用户名对上、密码留空、host 指向钓鱼站。
+      const crafted = WarehouseRememberedLogin(
+        username: 'student',
+        password: '',
+        host: 'evil.example.com',
+      );
+      final resolved = resolveRememberedLoginForImport(
+        incoming: crafted,
+        localLogin: local,
+      );
+
+      expect(resolved.password, 'real-password');
+      // 关键断言：host 不能跟着云端走。
+      expect(resolved.host, localHost);
+      // 落到门禁上：钓鱼站被拒、真教务站放行。
+      expect(
+        rememberedLoginAllowsUrl(resolved, 'https://evil.example.com/login'),
+        isFalse,
+      );
+      expect(
+        rememberedLoginAllowsUrl(resolved, 'https://$localHost/login'),
+        isTrue,
+      );
+    });
+
+    test('云端带非空密码时，整对一起采用（云端自洽）', () {
+      const remote = WarehouseRememberedLogin(
+        username: 'student',
+        password: 'cloud-password',
+        host: 'jw2.example.edu.cn',
+      );
+      final resolved = resolveRememberedLoginForImport(
+        incoming: remote,
+        localLogin: local,
+      );
+      expect(resolved.password, 'cloud-password');
+      expect(resolved.host, 'jw2.example.edu.cn');
+    });
+
+    test('本地无记录时不保留密码，host 仍按云端来（无密码可泄露）', () {
+      const crafted = WarehouseRememberedLogin(
+        username: 'student',
+        password: '',
+        host: 'evil.example.com',
+      );
+      final resolved = resolveRememberedLoginForImport(
+        incoming: crafted,
+      );
+      expect(resolved.password, '');
+      expect(resolved.host, 'evil.example.com');
+    });
+
+    test('用户名不一致时密码不保留，host 也不保留', () {
+      const other = WarehouseRememberedLogin(
+        username: 'someone-else',
+        password: '',
+        host: 'evil.example.com',
+      );
+      final resolved = resolveRememberedLoginForImport(
+        incoming: other,
+        localLogin: local,
+      );
+      expect(resolved.password, '');
+      expect(resolved.host, 'evil.example.com');
     });
   });
 }
