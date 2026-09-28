@@ -126,6 +126,16 @@ void main() {
       expect(WarehouseCourseImportLogic.normalizeClock('08:99'), isNull);
       expect(WarehouseCourseImportLogic.normalizeClock('0800'), isNull);
     });
+
+    test('分钟一位两位都收（8:05 与 8:5 不该一个成一个否）', () {
+      // 此前只接受两位分钟：'8:05' 通过而 '8:5' 被拒，这种不对称对调用方
+      // 毫无意义，而适配脚本确实会发短写法。
+      expect(WarehouseCourseImportLogic.normalizeClock('8:5'), '08:05');
+      expect(WarehouseCourseImportLogic.normalizeClock('07:5'), '07:05');
+      expect(WarehouseCourseImportLogic.normalizeClock('8:05'), '08:05');
+      expect(WarehouseCourseImportLogic.normalizeClock('08:05'), '08:05');
+      expect(WarehouseCourseImportLogic.normalizeClock('8:0'), '08:00');
+    });
   });
 
   group('parse', () {
@@ -462,6 +472,76 @@ void main() {
           },
         ]);
         expect(courses.single.location, '215');
+      });
+    });
+
+    group('时间倒挂必须被拒（审核第 11 条）', () {
+      test('结束早于开始 → 不采纳自定义时间，回落模板', () {
+        final courses = _parse([
+          {
+            'name': '晚到早退的课',
+            'day': 2,
+            'startSection': 1,
+            'endSection': 2,
+            'weeks': [1],
+            'isCustomTime': true,
+            'customStartTime': '18:00',
+            'customEndTime': '07:00',
+          },
+        ]);
+        // 倒挂时间会让「正在上课」判断永不命中、闹钟不响，且在课表上看不出来。
+        // 拒掉自定义时间后这门课退回模板时间：看起来普通，但至少是自洽的。
+        expect(courses.single.hasCustomTime, isFalse);
+        expect(courses.single.startTime, '');
+        expect(courses.single.endTime, '');
+      });
+
+      test('结束等于开始同样不可用', () {
+        final courses = _parse([
+          {
+            'name': '零长度',
+            'day': 2,
+            'startSection': 1,
+            'endSection': 1,
+            'weeks': [1],
+            'isCustomTime': true,
+            'customStartTime': '08:20',
+            'customEndTime': '08:20',
+          },
+        ]);
+        expect(courses.single.hasCustomTime, isFalse);
+      });
+
+      test('正常区间不受影响', () {
+        final courses = _parse([
+          {
+            'name': '正常连堂',
+            'day': 2,
+            'startSection': 1,
+            'endSection': 4,
+            'weeks': [1],
+            'isCustomTime': true,
+            'customStartTime': '08:20',
+            'customEndTime': '12:10',
+          },
+        ]);
+        expect(courses.single.hasCustomTime, isTrue);
+        expect(courses.single.startTime, '08:20');
+        expect(courses.single.endTime, '12:10');
+      });
+
+      test('只给了一端钟点 → 不算自定义时间', () {
+        final courses = _parse([
+          {
+            'name': '只有起点',
+            'day': 2,
+            'startSection': 1,
+            'endSection': 2,
+            'weeks': [1],
+            'customStartTime': '08:20',
+          },
+        ]);
+        expect(courses.single.hasCustomTime, isFalse);
       });
     });
 

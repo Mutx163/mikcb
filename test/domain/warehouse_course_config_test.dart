@@ -48,16 +48,46 @@ void main() {
     });
 
     test('总周数为 0 或负数视为未下发，不写入', () {
+      // 这条测试此前把生产条件 `(n != null && n > 0) ? n : null` 在测试里
+      // 重新写了一遍，所以把生产逻辑反过来测试照样绿。现改为调用真正的
+      // 解析函数，断言落在 settings 上。
+      for (final raw in <Object?>[0, -1, '0', '-1', null, 'garbage']) {
+        final resolved = WarehouseCourseConfigLogic.resolve(
+          <String, dynamic>{'semesterTotalWeeks': raw},
+        );
+        expect(resolved.semesterWeekCount, isNull, reason: 'raw=$raw');
+        final base = TimetableSettings.defaults().copyWith(
+          semesterWeekCount: 16,
+        );
+        final next = base.copyWith(semesterWeekCount: resolved.semesterWeekCount);
+        expect(next.semesterWeekCount, 16, reason: 'raw=$raw');
+      }
+    });
+
+    test('总周数传字符串照样生效（适配脚本常这么发）', () {
+      final resolved = WarehouseCourseConfigLogic.resolve(
+        <String, dynamic>{'semesterTotalWeeks': '20'},
+      );
+      expect(resolved.semesterWeekCount, 20);
+    });
+
+    test('越界开学日期不覆盖用户原值', () {
       final base = TimetableSettings.defaults().copyWith(
-        semesterWeekCount: 16,
+        semesterStartDate: DateTime(2026, 3, 2),
       );
-      final hasWeekCount = (0 as num?)?.toInt();
-      final next = base.copyWith(
-        semesterWeekCount: (hasWeekCount != null && hasWeekCount > 0)
-            ? hasWeekCount
-            : null,
+      final resolved = WarehouseCourseConfigLogic.resolve(
+        <String, dynamic>{'semesterStartDate': '2026-13-45'},
       );
-      expect(next.semesterWeekCount, 16);
+      expect(resolved.semesterStartDate, isNull);
+      final next = base.copyWith(semesterStartDate: resolved.semesterStartDate);
+      expect(next.semesterStartDate, DateTime(2026, 3, 2));
+    });
+
+    test('两项都没下发时不触发任何写入', () {
+      final resolved = WarehouseCourseConfigLogic.resolve(
+        <String, dynamic>{'firstDayOfWeek': 7},
+      );
+      expect(resolved.hasAnything, isFalse);
     });
 
     test('开学日期持久化后能原样读回（周次计算的输入）', () {

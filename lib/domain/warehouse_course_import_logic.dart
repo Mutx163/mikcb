@@ -58,6 +58,47 @@ DateTime? warehouseSemesterStartDate(Object? raw) {
   return built;
 }
 
+/// What `saveCourseConfig` should write into `TimetableSettings`.
+///
+/// `null` means "script did not supply a usable value" and the caller must keep
+/// whatever the user already has.
+class WarehouseCourseConfigResolution {
+  final int? semesterWeekCount;
+  final DateTime? semesterStartDate;
+
+  const WarehouseCourseConfigResolution({
+    this.semesterWeekCount,
+    this.semesterStartDate,
+  });
+
+  bool get hasAnything => semesterWeekCount != null || semesterStartDate != null;
+}
+
+/// Resolves an adapter's `saveCourseConfig` payload into settings to apply.
+///
+/// Extracted so the "invalid value must not overwrite the user's setting"
+/// contract is directly testable. It used to live inline in the import screen,
+/// and the test that covered it re-implemented the same condition — so flipping
+/// the production behaviour left the test green.
+class WarehouseCourseConfigLogic {
+  const WarehouseCourseConfigLogic._();
+
+  static WarehouseCourseConfigResolution resolve(Map<String, dynamic> decoded) {
+    // coerceInt, not a bare `as num?`: an adapter sending
+    // `semesterTotalWeeks: "20"` would throw and take the whole import with it,
+    // same class of bug as the course-array parser.
+    final weekCount = WarehouseCourseImportLogic.coerceInt(
+      decoded['semesterTotalWeeks'],
+    );
+    final startDate = warehouseSemesterStartDate(decoded['semesterStartDate']);
+    return WarehouseCourseConfigResolution(
+      // 0 / negative means "not supplied" rather than a literal 0-week term.
+      semesterWeekCount: (weekCount != null && weekCount > 0) ? weekCount : null,
+      semesterStartDate: startDate,
+    );
+  }
+}
+
 /// Pure parser for 教务适配脚本下发的课程数组（`saveImportedCourses` 的入参）。
 ///
 /// Why this exists: the warehouse protocol lets an adapter attach a real clock
@@ -106,15 +147,17 @@ class WarehouseCourseImportLogic {
 
   /// Normalizes an adapter-supplied `HH:mm` clock value, or null when unusable.
   ///
-  /// Tolerates `H:mm`, surrounding whitespace and a trailing `:ss` from
-  /// adapters that serialize a `DateTime`; rejects out-of-range values so a
-  /// malformed clock can never be persisted.
+  /// Tolerates `H:mm`/`H:m` and surrounding whitespace, plus a trailing `:ss`
+  /// from adapters that serialize a `DateTime`; rejects out-of-range values so
+  /// a malformed clock can never be persisted. Minutes accept 1–2 digits on
+  /// purpose: accepting `8:05` while rejecting `8:5` is an asymmetry no caller
+  /// could act on, and adapters do emit the short form.
   static String? normalizeClock(Object? raw) {
     final text = raw?.toString().trim() ?? '';
     if (text.isEmpty) {
       return null;
     }
-    final match = RegExp(r'^(\d{1,2}):(\d{2})').firstMatch(text);
+    final match = RegExp(r'^(\d{1,2}):(\d{1,2})').firstMatch(text);
     if (match == null) {
       return null;
     }
@@ -125,6 +168,24 @@ class WarehouseCourseImportLogic {
     }
     return '${hour.toString().padLeft(2, '0')}:'
         '${minute.toString().padLeft(2, '0')}';
+  }
+
+  /// Minutes since midnight for a normalized `HH:mm`, or null when unusable.
+  static int? clockMinutes(String? normalized) {
+    final text = normalized?.trim() ?? '';
+    if (text.isEmpty) {
+      return null;
+    }
+    final match = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(text);
+    if (match == null) {
+      return null;
+    }
+    final hour = int.tryParse(match.group(1)!);
+    final minute = int.tryParse(match.group(2)!);
+    if (hour == null || minute == null || hour > 23 || minute > 59) {
+      return null;
+    }
+    return hour * 60 + minute;
   }
 
   /// Parses [rawCourses] into [Course]s, skipping unusable records.
@@ -194,13 +255,27 @@ class WarehouseCourseImportLogic {
 
     final customStart = normalizeClock(map['customStartTime']);
     final customEnd = normalizeClock(map['customEndTime']);
+    // A range whose end is not after its start is unusable, not merely odd:
+    // an inverted clock makes the "in progress" check never match and leaves
+    // alarms silent, and it is invisible on the timetable. Rejecting it here
+    // means such a course falls back to template times — a wrong-looking but
+    // *consistent* entry — instead of a permanently broken one.
+    //
+    // Courses that genuinely cross midnight cannot be represented anyway:
+    // `Course` stores `HH:mm` with no day component.
+    final startMinutes = clockMinutes(customStart);
+    final endMinutes = clockMinutes(customEnd);
+    final clockRangeUsable = startMinutes == null ||
+        endMinutes == null ||
+        endMinutes > startMinutes;
     // `isCustomTime` absent → infer from the presence of a usable clock pair,
     // so adapters that only send the times still work.
     final hasCustomTime =
         (coerceBool(map['isCustomTime']) ??
             (customStart != null && customEnd != null)) &&
         customStart != null &&
-        customEnd != null;
+        customEnd != null &&
+        clockRangeUsable;
 
     // No section but a real clock range (早读 etc.): seat it in section 1 so
     // the record survives; the pinned clock drives display and alarms.

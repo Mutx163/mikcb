@@ -5233,11 +5233,11 @@ $kWarehouseBridgeCompatShim  try {
         );
       }
       final provider = context.read<TimetableProvider>();
-      final semesterTotalWeeks = (decoded['semesterTotalWeeks'] as num?)
-          ?.toInt();
-      final semesterStartDate = warehouseSemesterStartDate(
-        decoded['semesterStartDate'],
-      );
+      // 解析与「无效值不覆盖用户设置」的判定都在纯函数里（此前这段逻辑内联在
+      // 屏幕上，配套测试又把同样的判断在测试里重写了一遍，生产逻辑改反也照样绿）。
+      final resolvedConfig = WarehouseCourseConfigLogic.resolve(decoded);
+      final semesterTotalWeeks = resolvedConfig.semesterWeekCount;
+      final semesterStartDate = resolvedConfig.semesterStartDate;
       // 上游 184 个脚本还会下发这三项，但本 App 没有对应设置可落：
       // firstDayOfWeek —— 周起始日在 week_calculator / statistics / 考试排期
       //   三处均硬编码为周一，没有可配置项；
@@ -5252,9 +5252,8 @@ $kWarehouseBridgeCompatShim  try {
           'courseConfig received-but-unsupported keys=$ignoredKeys',
         );
       }
-      final hasWeekCount =
-          semesterTotalWeeks != null && semesterTotalWeeks > 0;
-      if (hasWeekCount || semesterStartDate != null) {
+      final hasWeekCount = semesterTotalWeeks != null;
+      if (resolvedConfig.hasAnything) {
         if (_isBackgroundImportCancelled) {
           await _resolveJavaScriptRequest(requestId, false);
           return;
