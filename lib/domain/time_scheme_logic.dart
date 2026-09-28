@@ -386,6 +386,12 @@ class TimeSchemeLogic {
   /// 单节课钟点同步：课程无生效模板或节次越界时原样返回（带覆盖字段
   /// 的 copyWith 以保持引用语义），钟点已一致时原样返回，否则改写
   /// startTime/endTime。[onDate] 仅限运行时预览路径，持久化路径禁止传。
+  ///
+  /// [Course.hasCustomTime] 的课程**不改写钟点**：脚本下发的真实时间是权威值，
+  /// 「这节课有自定义时间」的标记必须与它所描述的时间一起存活。之前只在
+  /// 地点分组的重算循环里跳过（provider 的 1 个调用点），而本函数有 9 个调用点
+  /// —— 导入、切换档案、切换模板全都会走到，于是标记存活而时间被模板覆盖，
+  /// 产出「标记说有自定义时间、时间却是模板的」这种自相矛盾的课程。
   static Course syncCourseWithEffectiveTimeScheme(
     Course course, {
     required List<TimeScheme> schemes,
@@ -425,6 +431,13 @@ class TimeSchemeLogic {
         );
       }
       return course.copyWith(timeSchemeIdOverride: course.timeSchemeIdOverride);
+    }
+
+    if (course.hasCustomTime) {
+      // 权威时间来自适配脚本，模板不得覆盖（见上方说明）。
+      return course.copyWith(
+        timeSchemeIdOverride: course.timeSchemeIdOverride,
+      );
     }
 
     final startTime = sections[startIndex].startTime;

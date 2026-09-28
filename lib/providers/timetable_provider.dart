@@ -1194,6 +1194,14 @@ class TimetableProvider with ChangeNotifier {
       return base;
     }
     final pinned = List<SectionTime>.from(base);
+    if (startIndex == endIndex) {
+      // 单节课（早读最常见）：两个下标是同一格，先后写两次会让后一次用
+      // base 的 startTime 覆盖掉刚写进去的自定义起点，产出「开始晚于结束」的
+      // 倒挂时间（脚本给 07:30–08:00，模板第一节 08:20–09:05 → 08:20–08:00）。
+      // 这种情况必须一次写完两端。
+      pinned[startIndex] = SectionTime(startTime: startTime, endTime: endTime);
+      return pinned;
+    }
     pinned[startIndex] = SectionTime(
       startTime: startTime,
       endTime: base[startIndex].endTime,
