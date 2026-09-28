@@ -2384,6 +2384,25 @@
       }
     }
   },
+  "importCourseRecordsDropped": "그중 {dropped}개는 데이터에 문제가 있어 가져오지 못했습니다(총 {imported}개)",
+  "@importCourseRecordsDropped": {
+    "placeholders": {
+      "dropped": {
+        "type": "int"
+      },
+      "imported": {
+        "type": "int"
+      }
+    }
+  },
+  "importCourseWeeksTrimmed": "또한 {count}개 과목의 주차 중 일부를 인식하지 못했습니다.教务 시스템과 대조해 주세요.",
+  "@importCourseWeeksTrimmed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "importNoCourseChanges": "추가 또는 업데이트할 수업이 없습니다",
   "aiImportTitle": "이미지 인식 가져오기",
   "aiPreviewSummary": "{courseCount}과목 인식, 최대 제{sectionCount}교시{warningSuffix}",
@@ -6190,6 +6209,8 @@
   "homePageBackgroundImageTitle": "배경 이미지",
   "homePageBackgroundImageSubtitle": "'이미지' 모드에서 아래에서 선택한 표시 영역에 적용됩니다",
   "homePageWallpaperTitle": "배경 이미지",
+  "wallpaperSheetTabPicker": "배경화면",
+  "wallpaperSheetTabSettings": "설정",
   "homePageWallpaperSubtitle": "전체 배경. 아래서 영역 선택",
   "homePageBackdropFollowsWeekPagerTitle": "배경이 주차 스와이프를 따라감",
   "homePageBackdropFollowsWeekPagerSubtitle": "배경이 페이지와 함께 이동",

@@ -3470,6 +3470,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePageWallpaperTitle => 'Background image';
 
   @override
+  String get wallpaperSheetTabPicker => 'Wallpaper';
+
+  @override
+  String get wallpaperSheetTabSettings => 'Settings';
+
+  @override
   String get homePageWallpaperSubtitle =>
       'Full-screen image; pick regions below';
 
@@ -4923,6 +4929,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String importUpdatedCount(int count) {
     return 'Timetable updated: added or updated $count course entries';
+  }
+
+  @override
+  String importCourseRecordsDropped(int dropped, int imported) {
+    return '$dropped of the $imported course entries had bad data and could not be imported';
+  }
+
+  @override
+  String importCourseWeeksTrimmed(int count) {
+    return 'Some weeks of $count courses could not be read — check them against your school system';
   }
 
   @override

@@ -2384,6 +2384,25 @@
       }
     }
   },
+  "importCourseRecordsDropped": "うち {dropped} 件はデータに問題があり取り込めませんでした（合計 {imported} 件）",
+  "@importCourseRecordsDropped": {
+    "placeholders": {
+      "dropped": {
+        "type": "int"
+      },
+      "imported": {
+        "type": "int"
+      }
+    }
+  },
+  "importCourseWeeksTrimmed": "また {count} 件の科目の週のうち一部を認識できませんでした。教务の画面と照合してください。",
+  "@importCourseWeeksTrimmed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "importNoCourseChanges": "新規追加または更新が必要な授業なし",
   "aiImportTitle": "画像認識インポート",
   "aiPreviewSummary": "{courseCount}科目を認識。最大第{sectionCount}時限{warningSuffix}",
@@ -6190,6 +6209,8 @@
   "homePageBackgroundImageTitle": "背景画像",
   "homePageBackgroundImageSubtitle": "「画像」モードでは、下で選択した表示領域に適用されます",
   "homePageWallpaperTitle": "背景画像",
+  "wallpaperSheetTabPicker": "壁紙",
+  "wallpaperSheetTabSettings": "設定",
   "homePageWallpaperSubtitle": "全面背景。下で領域を選ぶ",
   "homePageBackdropFollowsWeekPagerTitle": "背景を週送りに追従",
   "homePageBackdropFollowsWeekPagerSubtitle": "背景がページと一緒に動く",

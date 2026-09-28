@@ -92,6 +92,21 @@ Future<bool> _shouldPreserveLocalColorsOnImport({
 
 enum _WarehouseImportMenuAction { feedback, customDebug, executionLog }
 
+/// 把一个已挂载控件的窗口坐标量出来（上游 OS4 玻璃弹层按它定位面板）。
+///
+/// 量不到（还没 layout / 已销毁）就返回 null —— 宁可这次不打开菜单，
+/// 也不让面板贴到 (0,0)。
+Rect? measurePopupAnchorRect(GlobalKey key) {
+  final renderObject = key.currentContext?.findRenderObject();
+  if (renderObject is! RenderBox || !renderObject.hasSize) {
+    return null;
+  }
+  return MatrixUtils.transformRect(
+    renderObject.getTransformTo(null),
+    Offset.zero & renderObject.size,
+  );
+}
+
 Future<void> openWarehouseImportExecutionLogViewer(BuildContext context) =>
     openLogViewer(context, AppLogSource.warehouseImport);
 
@@ -1834,6 +1849,17 @@ class _WarehouseCourseImportScreenState
   final WarehouseMacroService _macroService = WarehouseMacroService();
   final TextEditingController _searchController = TextEditingController();
   final GlobalKey _warehouseMoreMenuKey = GlobalKey();
+
+  /// 仓库页「更多」菜单（上游 OS4 玻璃弹层，常驻挂载）。2026-09-28 从
+  /// `showHyperosListPopup`（手搓旧实现）迁来。
+  bool _warehouseMenuVisible = false;
+
+  /// 冻结的条目。弹层常驻挂载，条目若随 build 现算会在退场途中跳内容；
+  /// 冻结成「点开那一刻」也保住了旧实现的语义（禁用态是点开时的状态）。
+  List<HyperosAnchorMenuEntry> _warehouseMenuEntries = const [];
+
+  /// 锚点（更多按钮）窗口坐标，收起后**保留**到退场结束。
+  Rect? _warehouseMenuAnchorBounds;
   late Future<WarehouseRootIndex> _rootIndexFuture;
   List<String> _recentSchoolIds = const [];
   String _searchQuery = '';
@@ -1904,27 +1930,54 @@ class _WarehouseCourseImportScreenState
 
   Future<void> _showWarehouseMoreMenu() async {
     final l10n = AppLocalizations.of(context)!;
-    final action = await showHyperosListPopup<_WarehouseImportMenuAction>(
-      context: context,
-      position: hyperosPopupPositionBelow(context, _warehouseMoreMenuKey),
-      items: [
-        HyperosPopupMenuItem(
+    final anchorRect = measurePopupAnchorRect(_warehouseMoreMenuKey);
+    if (!mounted || anchorRect == null) {
+      return;
+    }
+    setState(() {
+      _warehouseMenuVisible = true;
+      _warehouseMenuAnchorBounds = anchorRect;
+      _warehouseMenuEntries = [
+        HyperosAnchorMenuEntry(
           label: l10n.warehouseFeedbackMissingSchoolTitle,
           value: _WarehouseImportMenuAction.feedback,
         ),
-        HyperosPopupMenuItem(
+        HyperosAnchorMenuEntry(
           label: l10n.warehouseCustomDebugTitle,
           value: _WarehouseImportMenuAction.customDebug,
         ),
-        HyperosPopupMenuItem(
+        HyperosAnchorMenuEntry(
           label: l10n.warehouseImportExecutionLogMenuLabel,
           value: _WarehouseImportMenuAction.executionLog,
         ),
-      ],
-    );
-    if (action != null && mounted) {
-      await _handleMoreAction(action);
+      ];
+    });
+  }
+
+  void _closeWarehouseMenu() {
+    if (!_warehouseMenuVisible) {
+      return;
     }
+    setState(() => _warehouseMenuVisible = false);
+  }
+
+  /// 菜单收完后执行被点的那一项（时序由 `HyperosAnchorMenuPopup` 内置）。
+  Future<void> _handleWarehouseMenuSelection(Object value) async {
+    if (!mounted || value is! _WarehouseImportMenuAction) {
+      return;
+    }
+    await _handleMoreAction(value);
+  }
+
+  Widget _buildWarehouseMenu() {
+    return HyperosAnchorMenuPopup(
+      show: _warehouseMenuVisible,
+      anchorBounds: _warehouseMenuAnchorBounds,
+      entries: _warehouseMenuEntries,
+      onCollapseRequested: _closeWarehouseMenu,
+      onDismissRequest: _closeWarehouseMenu,
+      onSelected: _handleWarehouseMenuSelection,
+    );
   }
 
   Future<void> _handleQuickImport() async {
@@ -2100,6 +2153,16 @@ class _WarehouseCourseImportScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    return Stack(
+      children: [
+        Positioned.fill(child: _buildWarehouseBody(l10n)),
+        // ⚠️ 常驻挂载，条件插拔会让上游 presenter 的 State 重建、入场动画重放。
+        _buildWarehouseMenu(),
+      ],
+    );
+  }
+
+  Widget _buildWarehouseBody(AppLocalizations l10n) {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.importMethodWarehouseTitle),
@@ -3691,12 +3754,25 @@ class _WarehouseAdapterWebLoginScreenState
   late final TextEditingController _addressController;
   final FocusNode _addressFocusNode = FocusNode();
   final GlobalKey _webLoginMoreMenuKey = GlobalKey();
+
+  /// 教务登录页「更多」菜单（上游 OS4 玻璃弹层，常驻挂载）。2026-09-28 从
+  /// `showHyperosListPopup`（手搓旧实现）迁来。
+  bool _webLoginMenuVisible = false;
+
+  /// 锚点窗口坐标 + 冻结的条目，收起后**保留**到退场结束。条目冻结是必须的：
+  /// 「填入 / 清除」两行的禁用态依赖 [_rememberedLogin]，现算的话它一变，
+  /// 退场中的菜单会当场改内容。
+  Rect? _webLoginMenuAnchorBounds;
+  List<HyperosAnchorMenuEntry> _webLoginMenuEntries = const [];
   int _loadingProgress = 0;
   String? _currentUrl;
   bool _isExecutingImport = false;
   Timer? _importTimeoutTimer;
   static const _importTimeout = Duration(seconds: 30);
   String? _lastScriptStatus;
+  /// 本次导入里没能进来的课程记录（按原因计数），用于如实告诉用户少了课，
+  /// 而不是让它们无声消失。见 [WarehouseCourseSkipReason]。
+  final Map<WarehouseCourseSkipReason, int> _warehouseCourseSkips = {};
   List<SectionTime>? _pendingImportedSections;
   String? _pendingImportedSectionsSignature;
   String? _appliedImportedSectionsSignature;
@@ -4199,44 +4275,59 @@ class _WarehouseAdapterWebLoginScreenState
 
   Future<void> _showWebLoginMoreMenu() async {
     final l10n = AppLocalizations.of(context)!;
-    final value = await showHyperosListPopup<String>(
-      context: context,
-      position: hyperosPopupPositionBelow(context, _webLoginMoreMenuKey),
-      // 悬在 WebView 上方：玻璃背景采集不到平台视图内容会渲染成黑块，用实色。
-      opaqueSurface: true,
-      items: [
-        HyperosPopupMenuItem(
+    final anchorRect = measurePopupAnchorRect(_webLoginMoreMenuKey);
+    if (!mounted || anchorRect == null) {
+      return;
+    }
+    final hasRemembered = _rememberedLogin != null;
+    setState(() {
+      _webLoginMenuVisible = true;
+      _webLoginMenuAnchorBounds = anchorRect;
+      _webLoginMenuEntries = [
+        HyperosAnchorMenuEntry(
           label: l10n.executeImportScriptAction,
           value: 'execute',
           enabled: !_isExecutingImport,
         ),
-        HyperosPopupMenuItem(
+        HyperosAnchorMenuEntry(
           label: l10n.rememberCurrentInputTooltip,
           value: 'remember',
         ),
-        HyperosPopupMenuItem(
+        HyperosAnchorMenuEntry(
           label: l10n.fillRememberedTooltip,
           value: 'fill',
-          enabled: _rememberedLogin != null,
+          enabled: hasRemembered,
         ),
-        HyperosPopupMenuItem(
+        HyperosAnchorMenuEntry(
           label: l10n.clearRememberedTooltip,
           value: 'clear',
-          enabled: _rememberedLogin != null,
+          enabled: hasRemembered,
         ),
-        HyperosPopupMenuItem(
+        HyperosAnchorMenuEntry(
           label: l10n.copyCurrentAddressTooltip,
           value: 'copy',
         ),
-        HyperosPopupMenuItem(
+        HyperosAnchorMenuEntry(
           label: l10n.warehouseImportExecutionLogMenuLabel,
           value: 'executionLog',
         ),
-      ],
-    );
-    if (!mounted || value == null) {
+      ];
+    });
+  }
+
+  void _closeWebLoginMenu() {
+    if (!_webLoginMenuVisible) {
       return;
     }
+    setState(() => _webLoginMenuVisible = false);
+  }
+
+  /// 菜单收完后执行被点的那一项（时序由 `HyperosAnchorMenuPopup` 内置）。
+  Future<void> _handleWebLoginMenuSelection(Object value) async {
+    if (!mounted) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
     switch (value) {
       case 'execute':
         _executeImportScript();
@@ -4267,6 +4358,19 @@ class _WarehouseAdapterWebLoginScreenState
     }
   }
 
+  Widget _buildWebLoginMenu() {
+    return HyperosAnchorMenuPopup(
+      show: _webLoginMenuVisible,
+      anchorBounds: _webLoginMenuAnchorBounds,
+      entries: _webLoginMenuEntries,
+      // 悬在 WebView 上方：玻璃背景采集不到平台视图内容会渲染成黑块，用实底。
+      opaqueSurface: true,
+      onCollapseRequested: _closeWebLoginMenu,
+      onDismissRequest: _closeWebLoginMenu,
+      onSelected: _handleWebLoginMenuSelection,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -4290,6 +4394,26 @@ class _WarehouseAdapterWebLoginScreenState
         ),
       );
     }
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: _buildWebLoginBody(
+            l10n,
+            effectiveDebugScriptName,
+            currentStatus,
+          ),
+        ),
+        // ⚠️ 常驻挂载，条件插拔会让上游 presenter 的 State 重建、入场动画重放。
+        _buildWebLoginMenu(),
+      ],
+    );
+  }
+
+  Widget _buildWebLoginBody(
+    AppLocalizations l10n,
+    String effectiveDebugScriptName,
+    String? currentStatus,
+  ) {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(widget.title),
@@ -5396,6 +5520,10 @@ $kWarehouseBridgeCompatShim  try {
 
   Future<void> _handleImportedCoursesJson(String payload) async {
     _debugImportLog('handle courses start payloadLength=${payload.length}');
+    // 每次课程导入重新计数。这里是协议里唯一的课程入口
+    // （`saveImportedCourses`），所以在它开头清零比在解析函数里清零更准确：
+    // 即使某个脚本连发两次，第二次的计数也会累加上来而不是覆盖掉。
+    _warehouseCourseSkips.clear();
     try {
       final decoded = jsonDecode(payload);
       _debugImportLog('courses decoded type=${decoded.runtimeType}');
@@ -5610,21 +5738,21 @@ $kWarehouseBridgeCompatShim  try {
         }
         return;
       }
+      final l10n = AppLocalizations.of(context)!;
+      final baseStatus = importedCount > 0
+          ? l10n.importUpdatedCount(importedCount)
+          : l10n.importNoCourseChanges;
+      // 如实补一句少了什么。「一门课数据脏一点」不该由用户在课表上凭空发现。
+      final skipNotice = _warehouseSkipNotice(l10n, importedCount);
+      final status = skipNotice == null ? baseStatus : '$baseStatus $skipNotice';
       setState(() {
-        _lastScriptStatus = importedCount > 0
-            ? AppLocalizations.of(context)!.importUpdatedCount(importedCount)
-            : AppLocalizations.of(context)!.importNoCourseChanges;
+        _lastScriptStatus = status;
       });
       final navigator = Navigator.of(context);
       // Quick-import replay already shows a completion sheet with the same
       // status text; skip the 2s light tip to avoid a double toast.
       if (!replaying) {
-        _showLightTip(
-          context,
-          importedCount > 0
-              ? AppLocalizations.of(context)!.importUpdatedCount(importedCount)
-              : AppLocalizations.of(context)!.importNoCourseChanges,
-        );
+        _showLightTip(context, status);
       }
       _cancelImportTimeout();
       _debugImportLog('courses import success path -> set executing false');
@@ -5672,6 +5800,83 @@ $kWarehouseBridgeCompatShim  try {
     }
   }
 
+  /// 教务凭据允许自动填充的站点：适配器在仓库里登记的登录地址，加上用户为它
+  /// 自定义的地址。两者都是 App 自己会把 WebView 带过去的地方。
+  ///
+  /// Why this exists: `host` 从 v2.1.3.2 起才随凭据一起落盘，在那之前
+  /// 存下的每一条凭据 host 都是空的。门禁原本对空 host 一律放行，于是**升级
+  /// 到修好之后的版本的老用户，门禁依然是全开的**。改成"只认 App 会导航过去
+  /// 的站点"之后，存量数据也纳入了保护；用户下次保存密码时 host 会自动补上。
+  Future<List<String>> _warehouseAutofillTrustedHosts() async {
+    final hosts = <String>[];
+    final registered = extractUrlHost(widget.adapter.importUrl);
+    if (registered != null) {
+      hosts.add(registered);
+    }
+    try {
+      final custom = await _preferencesService.getCustomImportUrl(
+        widget.adapter.adapterId,
+      );
+      final customHost = extractUrlHost(custom);
+      if (customHost != null) {
+        hosts.add(customHost);
+      }
+    } catch (_) {
+      // 读不到自定义地址就只认登记地址。门禁因此更严，不会更松。
+    }
+    return hosts;
+  }
+
+  void _recordWarehouseCourseSkip(
+    WarehouseCourseSkipReason reason,
+    String? name,
+  ) {
+    _warehouseCourseSkips.update(
+      reason,
+      (count) => count + 1,
+      ifAbsent: () => 1,
+    );
+    _debugImportLog(
+      'course record skipped reason=${reason.name} name=${name ?? '-'}',
+    );
+  }
+
+  /// 本次导入里「整条没进来」的条数（[WarehouseCourseSkipReason.unusable] 与
+  /// [WarehouseCourseSkipReason.malformed]），以及「进来了但周次被削」的条数。
+  ///
+  /// 两者分开报：前者是课表上凭空少课，后者是课上着但少显示几周——后者更隐蔽，
+  /// 学生只会以为自己那几周没课。
+  ({int dropped, int trimmedWeeks}) _warehouseSkipSummary() {
+    var dropped = 0;
+    var trimmed = 0;
+    _warehouseCourseSkips.forEach((reason, count) {
+      if (reason == WarehouseCourseSkipReason.partialWeeks) {
+        trimmed += count;
+      } else {
+        dropped += count;
+      }
+    });
+    return (dropped: dropped, trimmedWeeks: trimmed);
+  }
+
+  /// 在导入结果后面如实补一句少了什么。返回 null 表示没什么要补的。
+  String? _warehouseSkipNotice(AppLocalizations l10n, int importedCount) {
+    final summary = _warehouseSkipSummary();
+    if (summary.dropped == 0 && summary.trimmedWeeks == 0) {
+      return null;
+    }
+    final parts = <String>[];
+    if (summary.dropped > 0) {
+      parts.add(
+        l10n.importCourseRecordsDropped(summary.dropped, importedCount),
+      );
+    }
+    if (summary.trimmedWeeks > 0) {
+      parts.add(l10n.importCourseWeeksTrimmed(summary.trimmedWeeks));
+    }
+    return parts.join(' ');
+  }
+
   List<Course> _parseWarehouseCourses(List<dynamic> rawCourses) {
     final l10n = AppLocalizations.of(context)!;
     return WarehouseCourseImportLogic.parse(
@@ -5679,6 +5884,7 @@ $kWarehouseBridgeCompatShim  try {
       idFactory: () => const Uuid().v4(),
       unknownTeacher: l10n.unknownTeacher,
       unknownLocation: l10n.unknownLocation,
+      onSkip: _recordWarehouseCourseSkip,
     );
   }
 
@@ -5720,6 +5926,7 @@ $kWarehouseBridgeCompatShim  try {
     final gateAllows = rememberedLoginAllowsUrl(
       _rememberedLogin,
       await _resolveCurrentUrl(),
+      trustedHosts: await _warehouseAutofillTrustedHosts(),
     );
     _logLoginStateAutofillDecision(
       gateAllows: gateAllows,
@@ -6284,6 +6491,7 @@ $kWarehouseBridgeCompatShim  try {
             if (!rememberedLoginAllowsUrl(
               remembered,
               await _resolveCurrentUrl(),
+              trustedHosts: await _warehouseAutofillTrustedHosts(),
             )) {
               _debugImportLog(
                 'playback password step autofill blocked by host gate '

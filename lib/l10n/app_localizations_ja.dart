@@ -3326,6 +3326,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePageWallpaperTitle => '背景画像';
 
   @override
+  String get wallpaperSheetTabPicker => '壁紙';
+
+  @override
+  String get wallpaperSheetTabSettings => '設定';
+
+  @override
   String get homePageWallpaperSubtitle => '全面背景。下で領域を選ぶ';
 
   @override
@@ -4713,6 +4719,16 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String importUpdatedCount(int count) {
     return '時間割更新済み：$count件の授業を新規追加または更新';
+  }
+
+  @override
+  String importCourseRecordsDropped(int dropped, int imported) {
+    return 'うち $dropped 件はデータに問題があり取り込めませんでした（合計 $imported 件）';
+  }
+
+  @override
+  String importCourseWeeksTrimmed(int count) {
+    return 'また $count 件の科目の週のうち一部を認識できませんでした。教务の画面と照合してください。';
   }
 
   @override

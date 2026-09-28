@@ -99,6 +99,27 @@ class WarehouseCourseConfigLogic {
   }
 }
 
+/// Why one record from an adapter's course array did not make it in.
+///
+/// Reported through `WarehouseCourseImportLogic.parse`'s `onSkip` rather than
+/// dropped silently. A course that vanishes with no explanation is the exact
+/// failure users complained about when 早读-style records were being dropped;
+/// trading "the whole batch fails" for "one record disappears quietly" only
+/// moved the same problem somewhere harder to see.
+enum WarehouseCourseSkipReason {
+  /// Neither a usable section pair nor a usable clock pair — nothing to seat
+  /// the course on.
+  unusable,
+
+  /// The record threw while being read: unexpected field types, or a map with
+  /// non-string keys. Other records in the same batch are unaffected.
+  malformed,
+
+  /// The course was imported, but non-numeric or out-of-range week numbers
+  /// were stripped from its week list, so it shows fewer weeks than it meets.
+  partialWeeks,
+}
+
 /// Pure parser for 教务适配脚本下发的课程数组（`saveImportedCourses` 的入参）。
 ///
 /// Why this exists: the warehouse protocol lets an adapter attach a real clock
@@ -152,12 +173,21 @@ class WarehouseCourseImportLogic {
   /// a malformed clock can never be persisted. Minutes accept 1–2 digits on
   /// purpose: accepting `8:05` while rejecting `8:5` is an asymmetry no caller
   /// could act on, and adapters do emit the short form.
+  ///
+  /// The whole value is anchored. An unanchored `^(\d{1,2}):(\d{1,2})` silently
+  /// accepted `8:555` as `08:55` and `8:5:30` as `08:05` once minutes went to
+  /// two widths — a wrong clock is worse than a rejected one, because a rejected
+  /// clock falls back to the template while a mangled one is persisted. The
+  /// seconds group stays exactly two digits: every producer that emits seconds
+  /// (ISO, `toISOString`, `Date#toTimeString`) zero-pads them.
   static String? normalizeClock(Object? raw) {
     final text = raw?.toString().trim() ?? '';
     if (text.isEmpty) {
       return null;
     }
-    final match = RegExp(r'^(\d{1,2}):(\d{1,2})').firstMatch(text);
+    final match = RegExp(
+      r'^(\d{1,2}):(\d{1,2})(?::(\d{2}))?$',
+    ).firstMatch(text);
     if (match == null) {
       return null;
     }
@@ -193,19 +223,30 @@ class WarehouseCourseImportLogic {
   /// [idFactory] keeps this pure w.r.t. identity so callers control ids.
   /// [unknownTeacher] / [unknownLocation] supply the placeholders the widget
   /// would otherwise pull from localisation.
+  ///
+  /// [onSkip] reports every record that did not make it in, together with a
+  /// best-effort [name]. It exists because the alternative is worse on both
+  /// ends: throwing used to cost the user *every* course in the batch, and
+  /// skipping quietly costs them one course with no explanation — which is
+  /// exactly the complaint that started this funnel ("a course just isn't on
+  /// my timetable and nothing says why"). Callers should both log the count and
+  /// show it; a skip that nobody is told about is the bug, not the fix.
   static List<Course> parse(
     List<dynamic> rawCourses, {
     required String Function() idFactory,
     required String unknownTeacher,
     required String unknownLocation,
     int maxWeek = ImportExportLogic.maxAllowedSemesterWeekCount,
+    void Function(WarehouseCourseSkipReason reason, String? name)? onSkip,
   }) {
     final courses = <Course>[];
     for (final item in rawCourses) {
       if (item is! Map) {
+        onSkip?.call(WarehouseCourseSkipReason.malformed, null);
         continue;
       }
       Course? parsed;
+      var weeksTrimmed = false;
       try {
         parsed = _parseOne(
           item,
@@ -213,18 +254,49 @@ class WarehouseCourseImportLogic {
           unknownTeacher: unknownTeacher,
           unknownLocation: unknownLocation,
           maxWeek: maxWeek,
+          onWeeksTrimmed: () => weeksTrimmed = true,
         );
       } catch (_) {
         // One malformed record must never cost the user the whole batch.
         // `parse` is the single funnel for every adapter's output, so a throw
         // here used to surface as "import failed" with nothing saved.
+        onSkip?.call(
+          WarehouseCourseSkipReason.malformed,
+          _bestEffortName(item),
+        );
         continue;
+      }
+      if (weeksTrimmed) {
+        onSkip?.call(
+          WarehouseCourseSkipReason.partialWeeks,
+          parsed?.name,
+        );
       }
       if (parsed != null) {
         courses.add(parsed);
+      } else {
+        onSkip?.call(
+          WarehouseCourseSkipReason.unusable,
+          _bestEffortName(item),
+        );
       }
     }
     return courses;
+  }
+
+  /// Reads a record's `name` without the `cast<String, dynamic>()` that
+  /// `_parseOne` does — that cast is precisely what can throw on a map with
+  /// non-string keys, so it is no use inside the `catch` that reports it.
+  static String? _bestEffortName(Object? item) {
+    if (item is Map) {
+      for (final entry in item.entries) {
+        if (entry.key == 'name') {
+          final name = coerceText(entry.value);
+          return name.isEmpty ? null : name;
+        }
+      }
+    }
+    return null;
   }
 
   static Course? _parseOne(
@@ -233,6 +305,7 @@ class WarehouseCourseImportLogic {
     required String unknownTeacher,
     required String unknownLocation,
     required int maxWeek,
+    void Function()? onWeeksTrimmed,
   }) {
     final map = Map<String, dynamic>.from(item.cast<String, dynamic>());
     final name = coerceText(map['name']);
@@ -243,15 +316,21 @@ class WarehouseCourseImportLogic {
     final startSection = coerceInt(map['startSection']);
     final endSection = coerceInt(map['endSection']);
     final rawWeeks = map['weeks'];
-    final weeks = rawWeeks is List
-        ? (rawWeeks
-                .map(coerceInt)
-                .whereType<int>()
-                .where((week) => week > 0 && week <= maxWeek)
-                .toSet()
-                .toList()
-              ..sort())
-        : null;
+    final rawWeekList = rawWeeks is List ? rawWeeks : null;
+    final inRangeWeeks = rawWeekList
+        ?.map(coerceInt)
+        .whereType<int>()
+        .where((week) => week > 0 && week <= maxWeek)
+        .toList();
+    final weeks = inRangeWeeks?.toSet().toList();
+    weeks?.sort();
+    // Losing a week number is not a silent no-op: the course still shows up,
+    // just with fewer weeks than it actually meets, and the student has no way
+    // to notice. Compared *before* de-duplication on purpose — adapters may
+    // legitimately repeat a week, and a repeat loses nothing.
+    if (inRangeWeeks != null && inRangeWeeks.length < rawWeekList!.length) {
+      onWeeksTrimmed?.call();
+    }
 
     final customStart = normalizeClock(map['customStartTime']);
     final customEnd = normalizeClock(map['customEndTime']);
@@ -263,11 +342,16 @@ class WarehouseCourseImportLogic {
     //
     // Courses that genuinely cross midnight cannot be represented anyway:
     // `Course` stores `HH:mm` with no day component.
-    final startMinutes = clockMinutes(customStart);
-    final endMinutes = clockMinutes(customEnd);
-    final clockRangeUsable = startMinutes == null ||
-        endMinutes == null ||
-        endMinutes > startMinutes;
+    //
+    // `clockMinutes` cannot return null for either end here: `normalizeClock`
+    // already produced `HH:mm` or null, and a non-null `HH:mm` always parses.
+    // So the `?? 0` is a bug-guard, not a data rule — it keeps this expression
+    // to the single reachable comparison instead of carrying two `== null`
+    // branches that no input can ever take. (A previous revision had those
+    // branches; they read as a second, stricter policy that did not exist.)
+    final startMinutes = clockMinutes(customStart) ?? 0;
+    final endMinutes = clockMinutes(customEnd) ?? 0;
+    final clockRangeUsable = endMinutes > startMinutes;
     // `isCustomTime` absent → infer from the presence of a usable clock pair,
     // so adapters that only send the times still work.
     final hasCustomTime =

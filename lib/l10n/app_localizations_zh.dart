@@ -3265,6 +3265,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageWallpaperTitle => '背景图片';
 
   @override
+  String get wallpaperSheetTabPicker => '壁纸';
+
+  @override
+  String get wallpaperSheetTabSettings => '设置';
+
+  @override
   String get homePageWallpaperSubtitle => '全屏铺底；下方勾选透出区域';
 
   @override
@@ -4605,6 +4611,16 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String importUpdatedCount(int count) {
     return '已更新课表：新增或更新 $count 条课程';
+  }
+
+  @override
+  String importCourseRecordsDropped(int dropped, int imported) {
+    return '其中 $dropped 门课的数据有问题没能导入（共收到 $imported 门）';
+  }
+
+  @override
+  String importCourseWeeksTrimmed(int count) {
+    return '另有 $count 门课的部分周次没能识别，请对照教务系统核对';
   }
 
   @override
@@ -14331,6 +14347,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homePageWallpaperTitle => '背景圖片';
 
   @override
+  String get wallpaperSheetTabPicker => '桌布';
+
+  @override
+  String get wallpaperSheetTabSettings => '設定';
+
+  @override
   String get homePageWallpaperSubtitle => '全屏鋪底；下方勾選透出區域';
 
   @override
@@ -15671,6 +15693,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String importUpdatedCount(int count) {
     return '已更新課表：新增或更新 $count 條課程';
+  }
+
+  @override
+  String importCourseRecordsDropped(int dropped, int imported) {
+    return '其中 $dropped 門課的資料有問題未能匯入（共收到 $imported 門）';
+  }
+
+  @override
+  String importCourseWeeksTrimmed(int count) {
+    return '另有 $count 門課的部分週次未能識別，請對照教務系統核對';
   }
 
   @override
@@ -25437,6 +25469,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homePageWallpaperTitle => '背景圖片';
 
   @override
+  String get wallpaperSheetTabPicker => '桌布';
+
+  @override
+  String get wallpaperSheetTabSettings => '設定';
+
+  @override
   String get homePageWallpaperSubtitle => '全屏鋪底；下方勾選透出區域';
 
   @override
@@ -26777,6 +26815,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String importUpdatedCount(int count) {
     return '已更新課表：新增或更新 $count 條課程';
+  }
+
+  @override
+  String importCourseRecordsDropped(int dropped, int imported) {
+    return '其中 $dropped 門課的資料有問題沒有匯入（共收到 $imported 門）';
+  }
+
+  @override
+  String importCourseWeeksTrimmed(int count) {
+    return '另有 $count 門課的部分週次無法辨識，請對照教務系統核對';
   }
 
   @override

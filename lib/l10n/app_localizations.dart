@@ -6033,6 +6033,18 @@ abstract class AppLocalizations {
   /// **'背景图片'**
   String get homePageWallpaperTitle;
 
+  /// No description provided for @wallpaperSheetTabPicker.
+  ///
+  /// In zh, this message translates to:
+  /// **'壁纸'**
+  String get wallpaperSheetTabPicker;
+
+  /// No description provided for @wallpaperSheetTabSettings.
+  ///
+  /// In zh, this message translates to:
+  /// **'设置'**
+  String get wallpaperSheetTabSettings;
+
   /// No description provided for @homePageWallpaperSubtitle.
   ///
   /// In zh, this message translates to:
@@ -8480,6 +8492,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'已更新课表：新增或更新 {count} 条课程'**
   String importUpdatedCount(int count);
+
+  /// No description provided for @importCourseRecordsDropped.
+  ///
+  /// In zh, this message translates to:
+  /// **'其中 {dropped} 门课的数据有问题没能导入（共收到 {imported} 门）'**
+  String importCourseRecordsDropped(int dropped, int imported);
+
+  /// No description provided for @importCourseWeeksTrimmed.
+  ///
+  /// In zh, this message translates to:
+  /// **'另有 {count} 门课的部分周次没能识别，请对照教务系统核对'**
+  String importCourseWeeksTrimmed(int count);
 
   /// No description provided for @importNoCourseChanges.
   ///

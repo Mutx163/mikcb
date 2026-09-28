@@ -136,6 +136,20 @@ void main() {
       expect(WarehouseCourseImportLogic.normalizeClock('08:05'), '08:05');
       expect(WarehouseCourseImportLogic.normalizeClock('8:0'), '08:00');
     });
+
+    test('整串锚定：多出来的数字不再被悄悄截断', () {
+      // 分钟放宽到 1–2 位之后，未锚定的 `^(\d{1,2}):(\d{1,2})` 会把
+      // '8:555' 读成 08:55。被误读的钟点比被拒的钟点更糟：拒了会退回模板
+      // 时间，误读了会被存下来。
+      expect(WarehouseCourseImportLogic.normalizeClock('8:555'), isNull);
+      expect(WarehouseCourseImportLogic.normalizeClock('08:05:0'), isNull);
+      expect(WarehouseCourseImportLogic.normalizeClock('08:05am'), isNull);
+      expect(WarehouseCourseImportLogic.normalizeClock('08:05:000'), isNull);
+      // 秒段照旧只取前两位丢掉——App 只存 HH:mm，这与 '10:30:00' → '10:30'
+      // 是同一条规则，只是现在要求秒段真的是两位。
+      expect(WarehouseCourseImportLogic.normalizeClock('08:05:00'), '08:05');
+      expect(WarehouseCourseImportLogic.normalizeClock('8:5:30'), '08:05');
+    });
   });
 
   group('parse', () {
@@ -593,6 +607,145 @@ void main() {
         expect(c.courseNature, CourseNature.elective);
         expect(c.hasCustomTime, isTrue);
         expect(c.startTime, '07:30');
+      });
+    });
+
+    group('onSkip：少了课必须说得出来', () {
+      // Why this group exists: `parse` swallowing a bad record is right (one
+      // dirty course must not cost the user the whole batch) but it must not be
+      // *silent* — the original complaint about this funnel was a course that
+      // simply was not on the timetable with nothing saying why.
+      ({List<Course> courses, List<(WarehouseCourseSkipReason, String?)> skips})
+          parseWithSkips(List<dynamic> items) {
+        final skips = <(WarehouseCourseSkipReason, String?)>[];
+        final courses = WarehouseCourseImportLogic.parse(
+          items,
+          idFactory: _nextId,
+          unknownTeacher: '未知教师',
+          unknownLocation: '未知地点',
+          onSkip: (reason, name) => skips.add((reason, name)),
+        );
+        return (courses: courses, skips: skips);
+      }
+
+      Map<WarehouseCourseSkipReason, int> tally(
+        List<(WarehouseCourseSkipReason, String?)> skips,
+      ) {
+        final counts = <WarehouseCourseSkipReason, int>{};
+        for (final (reason, _) in skips) {
+          counts.update(reason, (n) => n + 1, ifAbsent: () => 1);
+        }
+        return counts;
+      }
+
+      test('正常批次一条都不报', () {
+        final result = parseWithSkips([
+          {
+            'name': '高数',
+            'day': 1,
+            'startSection': 1,
+            'endSection': 2,
+            'weeks': [1, 2],
+          },
+        ]);
+        expect(result.courses, hasLength(1));
+        expect(result.skips, isEmpty);
+      });
+
+      test('既无节次又无钟点 → unusable，并带上课程名', () {
+        final result = parseWithSkips([
+          {'name': '没有落点', 'day': 1, 'weeks': [1]},
+        ]);
+        expect(result.courses, isEmpty);
+        expect(result.skips, [
+          (WarehouseCourseSkipReason.unusable, '没有落点'),
+        ]);
+      });
+
+      test('非 Map 记录 → malformed，名字取不到就是 null', () {
+        final result = parseWithSkips(['不是对象', 42]);
+        expect(result.courses, isEmpty);
+        expect(tally(result.skips), {WarehouseCourseSkipReason.malformed: 2});
+        expect(result.skips.every((s) => s.$2 == null), isTrue);
+      });
+
+      test('周次里有非数字 → 课还在，但报 partialWeeks', () {
+        final result = parseWithSkips([
+          {
+            'name': '周次不干净',
+            'day': 1,
+            'startSection': 1,
+            'endSection': 2,
+            'weeks': [1, 'abc', 5],
+          },
+        ]);
+        expect(result.courses, hasLength(1));
+        expect(result.courses.single.customWeeks, [1, 5]);
+        expect(result.skips, [
+          (WarehouseCourseSkipReason.partialWeeks, '周次不干净'),
+        ]);
+      });
+
+      test('周次里越界的值被削掉也要报（否则学生会以为那几周没课）', () {
+        final result = parseWithSkips([
+          {
+            'name': '越界周次',
+            'day': 1,
+            'startSection': 1,
+            'endSection': 2,
+            'weeks': [1, 9999],
+          },
+        ]);
+        expect(tally(result.skips),
+            {WarehouseCourseSkipReason.partialWeeks: 1});
+      });
+
+      test('重复周次不算被削 —— 重复不丢任何东西', () {
+        final result = parseWithSkips([
+          {
+            'name': '重复周次',
+            'day': 1,
+            'startSection': 1,
+            'endSection': 2,
+            'weeks': [1, 1, 2],
+          },
+        ]);
+        expect(result.courses.single.customWeeks, [1, 2]);
+        expect(result.skips, isEmpty);
+      });
+
+      test('整条丢掉与周次被削分开计，前端要分开说', () {
+        final result = parseWithSkips([
+          {'name': '整条没了', 'day': 1, 'weeks': [1]},
+          {
+            'name': '削了周次',
+            'day': 1,
+            'startSection': 1,
+            'endSection': 2,
+            'weeks': [1, 'x'],
+          },
+        ]);
+        expect(tally(result.skips), {
+          WarehouseCourseSkipReason.unusable: 1,
+          WarehouseCourseSkipReason.partialWeeks: 1,
+        });
+      });
+
+      test('一条脏记录不影响同批其他课，且脏的那条会被点名', () {
+        final result = parseWithSkips([
+          {
+            'name': '好的',
+            'day': 1,
+            'startSection': 1,
+            'endSection': 2,
+            'weeks': [1, 2],
+          },
+          {'name': '坏的', 'day': 1, 'weeks': []},
+        ]);
+        expect(result.courses.map((c) => c.name), ['好的']);
+        expect(result.skips, [
+          (WarehouseCourseSkipReason.unusable, '坏的'),
+        ]);
       });
     });
   });

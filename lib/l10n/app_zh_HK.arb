@@ -2376,6 +2376,25 @@
       }
     }
   },
+  "importCourseRecordsDropped": "其中 {dropped} 門課的資料有問題未能匯入（共收到 {imported} 門）",
+  "@importCourseRecordsDropped": {
+    "placeholders": {
+      "dropped": {
+        "type": "int"
+      },
+      "imported": {
+        "type": "int"
+      }
+    }
+  },
+  "importCourseWeeksTrimmed": "另有 {count} 門課的部分週次未能識別，請對照教務系統核對",
+  "@importCourseWeeksTrimmed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "importNoCourseChanges": "沒有需要新增或更新的課程",
   "aiImportTitle": "識圖匯入",
   "aiPreviewSummary": "識別到 {courseCount} 門課，最高到第 {sectionCount} 節{warningSuffix}",
@@ -6169,6 +6188,8 @@
   "homePageBackgroundImageTitle": "背景圖",
   "homePageBackgroundImageSubtitle": "在「圖片」模式下，套用於下方勾選的顯示區域",
   "homePageWallpaperTitle": "背景圖片",
+  "wallpaperSheetTabPicker": "桌布",
+  "wallpaperSheetTabSettings": "設定",
   "homePageWallpaperSubtitle": "全屏鋪底；下方勾選透出區域",
   "homePageBackdropFollowsWeekPagerTitle": "背景隨週次滑動",
   "homePageBackdropFollowsWeekPagerSubtitle": "切週時背景同課表一齊移動",

@@ -3344,6 +3344,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homePageWallpaperTitle => '배경 이미지';
 
   @override
+  String get wallpaperSheetTabPicker => '배경화면';
+
+  @override
+  String get wallpaperSheetTabSettings => '설정';
+
+  @override
   String get homePageWallpaperSubtitle => '전체 배경. 아래서 영역 선택';
 
   @override
@@ -4741,6 +4747,16 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String importUpdatedCount(int count) {
     return '시간표 업데이트: $count건 수업을 새로 추가 또는 업데이트';
+  }
+
+  @override
+  String importCourseRecordsDropped(int dropped, int imported) {
+    return '그중 $dropped개는 데이터에 문제가 있어 가져오지 못했습니다(총 $imported개)';
+  }
+
+  @override
+  String importCourseWeeksTrimmed(int count) {
+    return '또한 $count개 과목의 주차 중 일부를 인식하지 못했습니다.教务 시스템과 대조해 주세요.';
   }
 
   @override

@@ -1907,6 +1907,8 @@
   "homePageBackgroundImageTitle": "背景图",
   "homePageBackgroundImageSubtitle": "在“图片”模式下，作用于下方勾选的显示区域",
   "homePageWallpaperTitle": "背景图片",
+  "wallpaperSheetTabPicker": "壁纸",
+  "wallpaperSheetTabSettings": "设置",
   "homePageWallpaperSubtitle": "全屏铺底；下方勾选透出区域",
   "homePageBackdropFollowsWeekPagerTitle": "背景随周次滑动",
   "homePageBackdropFollowsWeekPagerSubtitle": "切周时背景与课表一起移动",
@@ -2587,6 +2589,25 @@
   },
   "importUpdatedCount": "已更新课表：新增或更新 {count} 条课程",
   "@importUpdatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importCourseRecordsDropped": "其中 {dropped} 门课的数据有问题没能导入（共收到 {imported} 门）",
+  "@importCourseRecordsDropped": {
+    "placeholders": {
+      "dropped": {
+        "type": "int"
+      },
+      "imported": {
+        "type": "int"
+      }
+    }
+  },
+  "importCourseWeeksTrimmed": "另有 {count} 门课的部分周次没能识别，请对照教务系统核对",
+  "@importCourseWeeksTrimmed": {
     "placeholders": {
       "count": {
         "type": "int"

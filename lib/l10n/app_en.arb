@@ -1872,6 +1872,8 @@
   "homePageBackgroundImageTitle": "Background image",
   "homePageBackgroundImageSubtitle": "In image mode, applies to the display regions selected below",
   "homePageWallpaperTitle": "Background image",
+  "wallpaperSheetTabPicker": "Wallpaper",
+  "wallpaperSheetTabSettings": "Settings",
   "homePageWallpaperSubtitle": "Full-screen image; pick regions below",
   "homePageBackdropFollowsWeekPagerTitle": "Background follows week swipe",
   "homePageBackdropFollowsWeekPagerSubtitle": "Background moves with the page",
@@ -2573,6 +2575,25 @@
   },
   "importUpdatedCount": "Timetable updated: added or updated {count} course entries",
   "@importUpdatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importCourseRecordsDropped": "{dropped} of the {imported} course entries had bad data and could not be imported",
+  "@importCourseRecordsDropped": {
+    "placeholders": {
+      "dropped": {
+        "type": "int"
+      },
+      "imported": {
+        "type": "int"
+      }
+    }
+  },
+  "importCourseWeeksTrimmed": "Some weeks of {count} courses could not be read — check them against your school system",
+  "@importCourseWeeksTrimmed": {
     "placeholders": {
       "count": {
         "type": "int"
