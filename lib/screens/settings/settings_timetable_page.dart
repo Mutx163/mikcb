@@ -326,15 +326,9 @@ class _TimetablePageSettingsScreenState
                 },
               ),
               _buildRecentWallpaperTile(context, l10n: l10n),
-              HyperosSwitchTile(
-                title: l10n.homePageBackdropFollowsWeekPagerTitle,
-                value: _draft.homePageBackdropFollowsWeekPager,
-                onChanged: (value) {
-                  _updateDraft(
-                    _draft.copyWith(homePageBackdropFollowsWeekPager: value),
-                  );
-                },
-              ),
+              // 「背景随周次滑动」与壁纸弹窗里那颗是**同一个开关**（同一个
+              // builder、同一份设置，见 [_buildBackdropFollowsWeekPagerTile]）。
+              _buildBackdropFollowsWeekPagerTile(context, l10n: l10n),
               // 「壁纸透出范围」与「顶栏玻璃」开关已下线（2026-09-12）：
               // 壁纸有就整体透出；顶栏玻璃改用材质五档（不想要玻璃选实体），
               // 入口在下面「玻璃 / 材质」区块里，此处不再保留重复入口。

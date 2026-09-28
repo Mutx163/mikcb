@@ -1676,6 +1676,14 @@ class TimetableSettings {
   }
 
   final bool homePageTimeColumnBlurEnabled;
+
+  /// 首页背景是否跟着周次翻页一起滑动。
+  ///
+  /// **默认关**（2026-09-28 用户口径）：背景不动更稳，切周时画面不整片横移；
+  /// 想要"背景跟课表一起走"的人自己开。入口有两处、同一颗开关：外观编辑页底部
+  /// 「调整壁纸」弹窗，与「设置 → 课表页面 → 页面背景」（见
+  /// `_buildBackdropFollowsWeekPagerTile`）。渲染侧判据在 `timetable_screen.dart`
+  /// 的 `followsWeekPager`（还要 `hasBackdrop` 才生效）。
   final bool homePageBackdropFollowsWeekPager;
   final List<SavedTheme> savedThemes; // 保存的主题列表
   final String? themeCheckpointName; // 当前主题来源名称（预设或保存的主题）
@@ -1866,7 +1874,7 @@ class TimetableSettings {
     this.homePageWeekdayBarBlurEnabled = true,
     this.homeBandGlassMaterial = defaultHomeBandGlassMaterial,
     this.homePageTimeColumnBlurEnabled = false,
-    this.homePageBackdropFollowsWeekPager = true,
+    this.homePageBackdropFollowsWeekPager = false,
     this.savedThemes = const [],
     this.themeCheckpointName,
     this.themeCheckpointConfig,
@@ -2609,8 +2617,11 @@ class TimetableSettings {
       ),
       homePageTimeColumnBlurEnabled:
           json['homePageTimeColumnBlurEnabled'] as bool? ?? false,
+      // ⚠️ 缺键按**默认关**处理（不是默认开）：缺键只可能来自 2026-07-06 引入这个
+      // 字段之前存下的老存档，等价于"从没主动选过"，应落在新默认上。`toJson` 一直
+      // 写这个键，所以此后存过档的用户（无论开或关）都读自己存的值，不受影响。
       homePageBackdropFollowsWeekPager:
-          json['homePageBackdropFollowsWeekPager'] as bool? ?? true,
+          json['homePageBackdropFollowsWeekPager'] as bool? ?? false,
       savedThemes: (() {
         final raw = json['savedThemes'];
         if (raw is! List) return const <SavedTheme>[];

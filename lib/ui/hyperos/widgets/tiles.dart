@@ -390,6 +390,7 @@ class HyperosSwitchTile extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.iconAccent,
+    this.backgroundColor,
   });
 
   final IconData? icon;
@@ -399,6 +400,13 @@ class HyperosSwitchTile extends StatelessWidget {
   final ValueChanged<bool>? onChanged;
   final Color? iconAccent;
 
+  /// 行底色；null（默认）= [HyperosColors.card]，即"这行住在设置卡片里"。
+  ///
+  /// 传 [Colors.transparent] 给**整段无容器**的宿主（例如底部弹层里那份
+  /// 「无卡片」设置正文，见 `_HomeBackdropFlow.backdropRowsHaveCardBackground`）：
+  /// 默认色会在磨砂面板上凭空糊出一块不透明圆角色块，读起来像"屏内嵌屏"。
+  final Color? backgroundColor;
+
   void _toggle() {
     onChanged?.call(!value);
   }
@@ -407,6 +415,7 @@ class HyperosSwitchTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cardColor = HyperosColors.card(context);
     final highlightColor = HyperosColors.rowHighlight(context);
+    final rowBackground = backgroundColor ?? cardColor;
     final enabled = onChanged != null;
     final primaryText = HyperosColors.primaryText(context);
     final titleStyle = HyperosTypography.listTitle(context).copyWith(
@@ -464,7 +473,7 @@ class HyperosSwitchTile extends StatelessWidget {
 
     return HyperosPressableRow(
       onTap: enabled ? _toggle : null,
-      backgroundColor: cardColor,
+      backgroundColor: rowBackground,
       highlightColor: highlightColor,
       child: row,
     );

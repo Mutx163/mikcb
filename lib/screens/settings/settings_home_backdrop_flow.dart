@@ -70,6 +70,16 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// ⚠️ 只动**左右**；上下由各块自己排（14/14），别一起改。
   double get backdropRowHorizontalInset => 16;
 
+  /// 宿主放壁纸那几块的正文里**有没有卡片底**。
+  ///
+  /// 「课表页面」那几块在 [HyperosListGroup] 卡片里（默认 true）；「外观编辑」的
+  /// 壁纸弹窗整段刻意无容器（false，见 [backdropRowHorizontalInset] 的说明）。
+  ///
+  /// 只有开关行需要它：[HyperosSwitchTile] 默认会画一层卡片色的行底（"这行住在设置
+  /// 卡片里"的意思），在无容器那一侧要显式关掉，否则磨砂面板上凭空多出一块不透明
+  /// 色块 —— 就是这块壁纸弹窗一直在消的那种不协调。
+  bool get backdropRowsHaveCardBackground => true;
+
   /// 宿主把壁纸 UI 放在**底部弹层**里时，返回该弹层的「请求收起」口子；
   /// 内联在设置页里的宿主返回 null（默认）。
   ///
@@ -376,6 +386,10 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 内容与「课表页面」设置里的壁纸行**同一套 builder**：改一行两边一起改，
   /// 不存在「设置页能切历史、编辑页不能」这种分叉。左右内缩由
   /// [backdropRowHorizontalInset] 按宿主给（弹窗这一侧是 0，见那里的注释）。
+  ///
+  /// 底部那颗「背景随周次滑动」开关（[_buildBackdropFollowsWeekPagerTile]）同样
+  /// 走这条路：2026-09-28 起在「调壁纸」的地方就能决定背景要不要跟着周次动，
+  /// 不必先跳去「课表页面」设置才找得到。
   Widget buildWallpaperSheetBody(
     BuildContext context, {
     required AppLocalizations l10n,
@@ -409,7 +423,40 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
           },
         ),
         _buildRecentWallpaperTile(context, l10n: l10n),
+        _buildBackdropFollowsWeekPagerTile(context, l10n: l10n),
       ],
+    );
+  }
+
+  /// 「背景随周次滑动」开关行 —— 与「课表页面」设置里的那行**同一个 builder、
+  /// 同一份设置**（2026-09-28 用户要求：外观编辑页的壁纸弹窗里也要有这开关，
+  /// 且默认关）。
+  ///
+  /// 挂在 mixin 上而不是各宿主各抄一份，理由和上面两块一样：它是**同一个开关**，
+  /// 在弹窗里切了，课表页面那行立刻跟上（反之亦然）。两个宿主都要它，也就顺带拿到
+  /// 了各自的版式（行高与内缩由 [HyperosSwitchTile] 自己按行位算）。
+  Widget _buildBackdropFollowsWeekPagerTile(
+    BuildContext context, {
+    required AppLocalizations l10n,
+  }) {
+    return Padding(
+      // ⚠️ **左右不要再垫** [backdropRowHorizontalInset]：[HyperosSwitchTile] 自己带
+      // `hyperosRowPadding`（16），而上面两块的文字是从 0 起算的 —— 这里再垫一层
+      // 16，开关标题就会比「背景图片」「最近使用」多缩 16，两个宿主（设置页卡片内
+      // / 弹窗面板内）都错开。这里只补上下的 14，与那两块齐平。
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: HyperosSwitchTile(
+        title: l10n.homePageBackdropFollowsWeekPagerTitle,
+        subtitle: l10n.homePageBackdropFollowsWeekPagerSubtitle,
+        // 无容器那一侧要关掉行底色（见 [backdropRowsHaveCardBackground]）。
+        backgroundColor: backdropRowsHaveCardBackground
+            ? null
+            : Colors.transparent,
+        value: backdropDraft.homePageBackdropFollowsWeekPager,
+        onChanged: (value) => applyBackdropDraft(
+          backdropDraft.copyWith(homePageBackdropFollowsWeekPager: value),
+        ),
+      ),
     );
   }
 
