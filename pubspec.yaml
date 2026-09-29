@@ -153,14 +153,14 @@ dependency_overrides:
   # fork 自 inspirestack/inspire_blur，分支 mikcb/distribution-pixels-cache，
   # 基线 tag v0.4.1（a44d40c）；改补丁请改 C:/cursor/inspire_blur 那份克隆。
   # 全部理由与删除清单见 test/architecture/inspire_blur_patch_test.dart。
-  # 2026-09-29：ref 指向含**四个**补丁的提交 e850e72（6247f02 = 补丁 1；75442c3 =
-  # 补丁 1+2；60c211b = 再放出 toDistributionMap 扩展；7333834 = 再放出声明
-  # intensityAt 的 IntensityBasedDistributionMap；0b84c9c = 补丁 3 显式设 u_size；
-  # e850e72 = 补丁 4 材料矩形外输出透明）。
+  # 2026-09-29：ref 指向含**四个**补丁 + 临时诊断日志的提交 0d7614c（6247f02 =
+  # 补丁 1；75442c3 = 补丁 1+2；60c211b = 再放出 toDistributionMap 扩展；7333834 =
+  # 再放出声明 intensityAt 的 IntensityBasedDistributionMap；0b84c9c = 补丁 3 显式设
+  # u_size；e850e72 = 补丁 4 材料矩形外输出透明；0d7614c = 临时诊断日志，定位后撤）。
   inspire_blur:
     git:
       url: https://github.com/Mutx163/inspire_blur.git
-      ref: e850e7262e9e10a77a21c69c93e812316ec0a056
+      ref: 0d7614c39151eac32a2f08cc3efb9a535ff36966
 
 flutter:
   uses-material-design: true
