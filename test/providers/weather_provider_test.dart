@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -481,6 +482,88 @@ void main() {
       final server = _Server();
       final provider = WeatherProvider(service: server.service);
       expect(_summaryOf(provider), isNull);
+    });
+  });
+
+  group('预留位判据 isAwaitingData', () {
+    /// 一次永不返回的请求，用来把 provider 停在「正在加载」上。
+    WeatherProvider hangingProvider({Completer<http.Response>? pending}) {
+      final gate = pending ?? Completer<http.Response>();
+      return WeatherProvider(
+        service: WeatherService(client: MockClient((_) => gate.future)),
+      );
+    }
+
+    test('已选城市、正在拉、没有预报 → true（界面据此留位）', () async {
+      await _seed();
+      final gate = Completer<http.Response>();
+      final provider = hangingProvider(pending: gate);
+
+      await provider.initialize();
+
+      expect(provider.forecast, isNull);
+      expect(provider.status, WeatherStatus.loading);
+      expect(provider.isAwaitingData, isTrue);
+
+      // 数据到了就不再留位：那一行本来就画得出内容，留着只是白占地方。
+      gate.complete(
+        http.Response(jsonEncode(_payload()), 200, headers: _jsonHeaders),
+      );
+      await provider.ensureFresh();
+
+      expect(provider.status, WeatherStatus.ready);
+      expect(provider.isAwaitingData, isFalse);
+    });
+
+    test('没选城市 → false（数据不会自己来，留位会变成永久空行）', () async {
+      await _seed(location: null);
+      final provider = hangingProvider();
+
+      await provider.initialize();
+
+      expect(provider.isAwaitingData, isFalse);
+    });
+
+    test('总开关关着 → false', () async {
+      await _seed(enabled: false);
+      final provider = hangingProvider();
+
+      await provider.initialize();
+
+      expect(provider.isAwaitingData, isFalse);
+    });
+
+    test('请求失败且无缓存 → false（退避期内那 15 分钟不会自己好）', () async {
+      await _seed();
+      final server = _Server(fail: true);
+      final provider = WeatherProvider(service: server.service);
+
+      await provider.initialize();
+      await provider.ensureFresh();
+
+      expect(provider.status, WeatherStatus.failed);
+      expect(provider.forecast, isNull);
+      expect(provider.isAwaitingData, isFalse);
+    });
+
+    test('有缓存预报时即便正在刷新也是 false（画得出内容就不留位）', () async {
+      final cached = WeatherForecast.fromOpenMeteoResponse(
+        _payload(),
+        fetchedAt: DateTime.now(),
+      );
+      await _seed(forecast: cached);
+      final provider = hangingProvider();
+
+      await provider.initialize();
+
+      expect(provider.forecast, isNotNull);
+      expect(provider.isAwaitingData, isFalse);
+    });
+
+    test('未 initialize 时为 false（开关还没读出来，不给没开天气的人凭空留空行）',
+        () {
+      final provider = hangingProvider();
+      expect(provider.isAwaitingData, isFalse);
     });
   });
 

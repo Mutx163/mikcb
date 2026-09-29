@@ -194,4 +194,34 @@ void main() {
     );
     expect(_lineHeight(tester, longLocation), greaterThan(oneLine));
   });
+
+  testWidgets('预留的空位与真天气行等高（数据到达时整卡不会顶一下）', (tester) async {
+    // 判据是**几何**：整块内容被 `FittedBox(scaleDown)` 等比缩放，所以多一行少一行
+    // 都会改掉缩放系数、进而改掉课名的位置。这里要求「留位」与「有内容」两种状态下
+    // 课名的 y 完全相同——数据到达时整卡不会先缩一下再长回去。
+    await tester.pumpWidget(_wrap(course: _course(), weather: _rain));
+    final withWeather = tester.getTopLeft(find.text('高等数学')).dy;
+
+    await tester.pumpWidget(
+      _wrap(
+        course: _course(),
+        weather: const CourseWeatherDisplay.reserved(),
+      ),
+    );
+    final reserved = tester.getTopLeft(find.text('高等数学')).dy;
+
+    // 留位时什么都不画：只有占位图标，没有温度文字。
+    expect(find.byIcon(weatherPlaceholderIcon), findsOneWidget);
+    expect(find.textContaining('23'), findsNothing);
+
+    expect(reserved, withWeather);
+
+    // 顺带钉住「留位确实占了一行」：不传天气时课名的位置必须与上面两种都不同，
+    // 否则这条断言会因为「三处一样」而空转。
+    await tester.pumpWidget(_wrap(course: _course()));
+    expect(
+      tester.getTopLeft(find.text('高等数学')).dy,
+      isNot(withWeather),
+    );
+  });
 }

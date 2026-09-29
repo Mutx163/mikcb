@@ -515,20 +515,25 @@ class CourseCard extends StatelessWidget {
       maxLines: icon == null ? null : 1,
       overflow: icon == null ? null : TextOverflow.ellipsis,
     );
+    // 「先占位、内容到了再填」：这一行照常占高度（所以整卡的缩放系数与真天气行
+    // 完全一致，数据到达时不会先缩一下再长回去），只是不画出来。
+    final Widget lineChild;
     if (icon == null) {
-      return text;
+      lineChild = text;
+    } else {
+      final fontSize = line.style.fontSize ?? 9;
+      lineChild = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: fontSize * 1.25, color: line.style.color),
+          SizedBox(width: fontSize * 0.5),
+          // Flexible 而不是 Expanded：文字按自身宽度收紧，短文案不会把整行撑满，
+          // 横向对齐（左/中/右）仍由外层 Column 的 crossAxisAlignment 决定。
+          Flexible(child: text),
+        ],
+      );
     }
-    final fontSize = line.style.fontSize ?? 9;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: fontSize * 1.25, color: line.style.color),
-        SizedBox(width: fontSize * 0.5),
-        // Flexible 而不是 Expanded：文字按自身宽度收紧，短文案不会把整行撑满，
-        // 横向对齐（左/中/右）仍由外层 Column 的 crossAxisAlignment 决定。
-        Flexible(child: text),
-      ],
-    );
+    return reserveWeatherSpace(reserved: line.reserved, child: lineChild);
   }
 
   /// Circular outlined badge used for per-session homework marks.
@@ -900,6 +905,8 @@ class CourseCard extends StatelessWidget {
           text: weather.text,
           flex: 2,
           icon: weather.icon,
+          // 预留的空位：照样占一行（内容没到时卡片不再长高一格），但不画。
+          reserved: weather.isReserved,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
             fontWeight: detailWeight,
@@ -962,10 +969,17 @@ class _CompactTextLine {
   /// 行首图标；null = 纯文字行（绝大多数字段）。目前只有天气行会带。
   final IconData? icon;
 
+  /// 这是不是「先占位、内容到了再填」的空位（见 `reserveWeatherSpace`）。
+  ///
+  /// 它照常参与高度计算，只是那一行不被画出来——数据到达时整卡不会先缩一下
+  /// 再长回去。
+  final bool reserved;
+
   const _CompactTextLine({
     required this.text,
     required this.flex,
     required this.style,
     this.icon,
+    this.reserved = false,
   });
 }

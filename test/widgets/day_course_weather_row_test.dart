@@ -16,6 +16,7 @@ import 'package:university_timetable/widgets/day_agenda_info_row.dart';
 import 'package:university_timetable/widgets/day_course_weather_row.dart';
 
 import '../helpers_test_app.dart';
+import '../helpers_weather.dart';
 
 const _jsonHeaders = {'content-type': 'application/json; charset=utf-8'};
 
@@ -108,6 +109,21 @@ Widget _wrap(
     ),
   );
 }
+
+/// 这一行（含自带的上间距）的布局高度。
+///
+/// 量的是根部那个 `Padding`：它是 `SingleChildRenderObjectWidget`，所以量到的
+/// 就是这一行自己的高度（`Padding` 是普通的 `EdgeInsets`，行高由里面的图标与文字
+/// 撑开）。`Visibility(maintainSize)` 不改布局，所以预留位与真天气行量出来的数
+/// 应当完全相等——不相等就意味着数据到达时卡片还会顶一下。
+double _rowHeight(WidgetTester tester) => tester
+    .getSize(
+      find.descendant(
+        of: find.byType(DayCourseWeatherRow),
+        matching: find.byType(Padding),
+      ),
+    )
+    .height;
 
 void main() {
   setUp(() {
@@ -326,32 +342,40 @@ void main() {
     expect(find.byType(SizedBox), findsWidgets);
   });
 
-  testWidgets('预报到达后从「不渲染」变为「渲染」，无需重建外层', (tester) async {
-    late WeatherProvider provider;
-    await tester.runAsync(() async {
-      await WeatherPreferences.setEnabled(true);
-      await WeatherPreferences.saveLocation(_hangzhou);
-      provider = WeatherProvider(
-        service: WeatherService(
-          client: MockClient(
-            (_) async => http.Response(
-              jsonEncode(_payload()),
-              200,
-              headers: _jsonHeaders,
-            ),
-          ),
-        ),
-      );
-      await provider.initialize();
-    });
+  testWidgets('预报没到时先留一行的空位：高度不变、什么都不画', (tester) async {
+    // 用户反馈的那个窗口：刚进 App，预报还在路上。数据到达时卡片**不能**长高一格
+    // 把下方的课卡顶一下（那就是「闪一下」）。所以留位必须在，且必须与真天气行等高。
+    final pending = await pendingWeatherProvider(tester);
 
-    await tester.pumpWidget(_wrap(provider));
-    await tester.pump();
-    expect(find.byType(DayAgendaInfoRow), findsNothing);
-
-    await tester.runAsync(() => provider.ensureFresh());
+    await tester.pumpWidget(_wrap(pending.provider));
     await tester.pump();
 
-    expect(find.byType(DayAgendaInfoRow), findsOneWidget);
+    // 位置留住了：一个 Padding 顶着（连自带的上间距一起）。
+    final reserved = _rowHeight(tester);
+    expect(reserved, greaterThan(0));
+    // 但什么都不画：只有占位图标，没有「现象 · 温度」这样的文字。
+    expect(find.byIcon(weatherPlaceholderIcon), findsOneWidget);
+    expect(find.textContaining('°'), findsNothing);
+
+    await pending.awaitArrival(tester);
+    expect(find.text('小雨 · 23°'), findsOneWidget);
+    // 这条就是本次改动的全部意义：内容换了几何没动。
+    expect(_rowHeight(tester), reserved);
+  });
+
+  testWidgets('天气没开 / 失败退避中不留位（空位会变成永久空行）', (tester) async {
+    final pending = await pendingWeatherProvider(tester, enabled: false);
+
+    await tester.pumpWidget(_wrap(pending.provider));
+    await tester.pump();
+
+    expect(
+      find.descendant(
+        of: find.byType(DayCourseWeatherRow),
+        matching: find.byType(Padding),
+      ),
+      findsNothing,
+    );
+    // 天气总开关关着 → provider 压根不发请求，没有「等它到货」这回事。
   });
 }

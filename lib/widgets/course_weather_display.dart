@@ -38,21 +38,39 @@ IconData weatherIconFor(WeatherCategory category) => switch (category) {
 /// 做成值对象而不是两个并列参数（`weatherIcon` + `weatherText`），是因为它俩必须
 /// 同进同出——三个渲染面（日视图课卡、周视图课卡、课程详情弹窗）都只判断
 /// 「有没有这个对象」，不会出现「有文字没图标」的半截状态。
+///
+/// [isReserved] 为 true 时表示「先占住位置、内容到了再填」：数据还没到手，但这一格
+/// 确实该有天气（判据是 `WeatherProvider.isAwaitingData`）。见 [CourseWeatherDisplay.reserved]
+/// 与 [reserveWeatherSpace]。
 @immutable
 class CourseWeatherDisplay {
-  const CourseWeatherDisplay({required this.icon, required this.text});
+  const CourseWeatherDisplay({required this.icon, required this.text})
+    : isReserved = false;
+
+  /// 预留的空位：图标用来撑高度、文字留空，整体由调用方包进 [reserveWeatherSpace]。
+  ///
+  /// 文字给**空串**而不是空格：三个面给文字的约束都不看内容（等宽栅格 / 单行
+  /// 省略号 / 单行标题），一个空串照样占一行高度，与真行等高。
+  const CourseWeatherDisplay.reserved()
+    : icon = weatherPlaceholderIcon,
+      text = '',
+      isReserved = true;
 
   final IconData icon;
   final String text;
+
+  /// 这是不是一块「先占位置、内容到了再填」的空位。
+  final bool isReserved;
 
   @override
   bool operator ==(Object other) =>
       other is CourseWeatherDisplay &&
       other.icon == icon &&
-      other.text == text;
+      other.text == text &&
+      other.isReserved == isReserved;
 
   @override
-  int get hashCode => Object.hash(icon, text);
+  int get hashCode => Object.hash(icon, text, isReserved);
 }
 
 /// 这一行的图标：由**第一个勾上的内容项**认领（「认领」原则见
@@ -79,6 +97,40 @@ IconData _iconFor({
   // 用百分号而不是水滴：水滴在 `weatherIconFor` 里是「下雨」那一族现象的图标，
   // 用户刚把现象关掉，再画个水滴等于把现象从后门放回来。
   return Icons.percent;
+}
+
+/// 「数据还没到、但这一格该留位置」时占位用的图标。
+///
+/// **它永远不会被画出来**（调用点把整行包进 [reserveWeatherSpace]），存在的唯一
+/// 理由是撑住与真天气行一样的高度：三个面的行高都由图标决定（日视图与详情弹层
+/// 是固定图标，周视图是 `字号 × 1.25`，都高于同行文字），所以「图标 + 空文字」
+/// 与「图标 + 真文字」必然等高。
+const IconData weatherPlaceholderIcon = Icons.cloud_outlined;
+
+/// 把一行天气包成「预留的空位」：**留着位置，但不画、不出声、不接触摸**。
+///
+/// [reserved] 为 false 时原样返回 [child]，所以调用点可以直接把真行/占位行一起
+/// 传进来，不必写条件展开。
+///
+/// 为什么用 [Visibility] 而不是 `SizedBox(height: …)`：这一行的高度在三个面各不
+/// 相同（日视图是 5.5 上间距 + 14 图标，周视图按字号推导），写死数字必然有某个面
+/// 对不上，而「对不上」的表现正是这次要消灭的那一下顶动。
+///
+/// 三个 maintain 标记必须一起给（本版 Flutter 的 `Visibility` 有断言：
+/// `maintainSize` 要求 `maintainAnimation`，后者要求 `maintainState`）。真正起作用的
+/// 是 `maintainSize`——它让子树照常参与布局却整棵跳过绘制。语义与触摸**刻意**用
+/// 默认值（false）：空位对读屏软件不存在，也点不到。
+Widget reserveWeatherSpace({required bool reserved, required Widget child}) {
+  if (!reserved) {
+    return child;
+  }
+  return Visibility(
+    visible: false,
+    maintainState: true,
+    maintainAnimation: true,
+    maintainSize: true,
+    child: child,
+  );
 }
 
 /// 这一行的文字写多长。
@@ -114,7 +166,10 @@ enum WeatherTextDensity {
 /// - 三个开关全关 —— 没有任何勾上的项；
 /// - 只勾了降水概率而它不可用（全缺报 / 低于显示阈值）—— 唯一勾上的项产不出东西。
 ///
-/// 调用方一律据此**整行不渲染**，不留空档。
+/// 调用方据此**整行不渲染**，不留空档。唯一的例外是「这一格确实该有天气、只是数据
+/// 还没到」（`WeatherProvider.isAwaitingData`）：那时调用点改画一块**等高但看不见**
+/// 的空位（`CourseWeatherDisplay.reserved()` + [reserveWeatherSpace]），数据到达时
+/// 只换内容、不动几何。
 ///
 /// [textDensity] 只改**文字写几项**，不改「画不画」——两种密度下整行消失的条件、
 /// 以及图标认领的结果完全一致（见 [WeatherTextDensity]）。所以它不影响任何

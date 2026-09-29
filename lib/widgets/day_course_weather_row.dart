@@ -14,8 +14,11 @@ import 'day_agenda_info_row.dart';
 /// 里只需要在地点行后面插一个无参部件，不必把天气一路透过列表、分发器、
 /// 两张卡片的签名传下来。
 ///
-/// 任何前提下拿不到数据都返回 [SizedBox.shrink]（连同自带的上间距一起消失），
-/// 所以调用点不必写条件展开，失败时也不会在卡片上留下半格空隙。
+/// 拿不到数据时返回 [SizedBox.shrink]（连同自带的上间距一起消失），所以调用点不必
+/// 写条件展开，失败时也不会在卡片上留下半格空隙。**唯一的例外**是「这一格确实该有
+/// 天气、只是数据还没到」（`WeatherProvider.isAwaitingData`）：那时先画一块等高但
+/// 看不见的空位（见 `reserveWeatherSpace`），预报到达时只换内容，卡片不会长高一格
+/// 把下方的课卡顶一下。
 ///
 /// 「显示哪几项」由调用方把设置里的三个开关传进来，不在内部读 `TimetableProvider`：
 /// 这个部件因此可以脱离课表 provider 单独测，也不多一条隐式依赖。
@@ -95,33 +98,47 @@ class _DayCourseWeatherRowState extends State<DayCourseWeatherRow> {
       startTime: widget.startTime,
       endTime: widget.endTime,
     );
+    final CourseWeatherDisplay display;
     if (summary == null) {
-      return const SizedBox.shrink();
+      // 没有数据。只有「数据会自己来」（开关开着、已选城市、正在拉、没有预报、
+      // 不在失败退避里）时才先留一块等高的空位——否则预报到达的那一瞬间这张卡会
+      // 当场长高一格，把下方的课卡顶一下（用户反馈的「闪现」）。其余情形
+      // （没开天气 / 没城市 / 失败退避中 / 该日超出 16 天窗口）数据不会自己来，
+      // 留位就成了一排永久空行，连同自带的上间距一起消失。
+      if (!(provider?.isAwaitingData ?? false)) {
+        return const SizedBox.shrink();
+      }
+      display = const CourseWeatherDisplay.reserved();
+    } else {
+      // 只有在真的有数据时才取 l10n：上面的分支已经把「没挂 provider /
+      // 超出预报窗口 / 还在加载」的情形挡掉，不会去碰可能缺失的
+      // AppLocalizations。占位行同样不需要 l10n（文字是空的）。
+      final l10n = AppLocalizations.of(context);
+      if (l10n == null) {
+        return const SizedBox.shrink();
+      }
+      final resolved = courseWeatherDisplayFor(
+        l10n: l10n,
+        summary: summary,
+        showPhenomenon: widget.showPhenomenon,
+        showTemperature: widget.showTemperature,
+        showProbability: widget.showProbability,
+      );
+      if (resolved == null) {
+        return const SizedBox.shrink();
+      }
+      display = resolved;
     }
 
-    // 只有在真的有数据时才取 l10n：上面的 null 分支已经把「没挂 provider /
-    // 超出预报窗口」的情形挡掉，不会去碰可能缺失的 AppLocalizations。
-    final l10n = AppLocalizations.of(context);
-    if (l10n == null) {
-      return const SizedBox.shrink();
-    }
-    final display = courseWeatherDisplayFor(
-      l10n: l10n,
-      summary: summary,
-      showPhenomenon: widget.showPhenomenon,
-      showTemperature: widget.showTemperature,
-      showProbability: widget.showProbability,
-    );
-    if (display == null) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(top: DayCourseWeatherRow.topGap),
-      child: DayAgendaInfoRow(
-        icon: display.icon,
-        text: display.text,
-        ink: widget.ink,
+    return reserveWeatherSpace(
+      reserved: display.isReserved,
+      child: Padding(
+        padding: const EdgeInsets.only(top: DayCourseWeatherRow.topGap),
+        child: DayAgendaInfoRow(
+          icon: display.icon,
+          text: display.text,
+          ink: widget.ink,
+        ),
       ),
     );
   }

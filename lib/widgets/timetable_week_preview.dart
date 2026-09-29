@@ -1027,6 +1027,9 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
   ///
   /// 判据与首页周网格逐条对齐（开关 → 这一周真的上 → 才查摘要），
   /// 唯一的差别是预览里只有用户自己的课，没有「情侣对方课程」这一档。
+  ///
+  /// 「数据还没到」时同样返回预留的空位：预览画的就是首页那张窄卡，两边占位口径
+  /// 必须一致，否则用户在设置里看到的是「不占位」、回到首页却是「占位」。
   CourseWeatherDisplay? _weatherDisplay(
     BuildContext context,
     Course course,
@@ -1042,7 +1045,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
         !course.isActiveInWeek(week)) {
       return null;
     }
-    return courseWeatherDisplayFor(
+    final display = courseWeatherDisplayFor(
       l10n: l10n,
       summary: weather.summaryForCourse(
         date: date,
@@ -1056,6 +1059,10 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       // 看到的和回到课表看到的是两行字。
       textDensity: WeatherTextDensity.compact,
     );
+    if (display != null) {
+      return display;
+    }
+    return weather.isAwaitingData ? const CourseWeatherDisplay.reserved() : null;
   }
 
   Widget _buildDayColumn({

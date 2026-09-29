@@ -6781,6 +6781,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 三道闸按「成本从低到高」排：先看开关与课程状态（纯内存判断），都过了才去
   /// 查预报摘要。判据与日视图完全一致：**天气是「那一天」的属性**，只有这节课
   /// 这一周真的要上才有意义；对方课程在别的城市，拿本地天气同样不对。
+  ///
+  /// 摘要为空但「数据会自己来」时返回**预留的空位**（`CourseWeatherDisplay.reserved`）
+  /// 而不是 null：这一格确实该有天气，先按真行占好位置，预报到达时卡片不会长高一格
+  /// 把整屏内容顶一下。
   CourseWeatherDisplay? _weekCardWeatherDisplay({
     required AppLocalizations? l10n,
     required WeatherProvider? weather,
@@ -6798,7 +6802,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         !course.isActiveInWeek(week)) {
       return null;
     }
-    return courseWeatherDisplayFor(
+    final display = courseWeatherDisplayFor(
       l10n: l10n,
       summary: weather.summaryForCourse(
         date: date,
@@ -6813,6 +6817,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       // 这里只写一项，详见 `WeatherTextDensity.compact`。
       textDensity: WeatherTextDensity.compact,
     );
+    if (display != null) {
+      return display;
+    }
+    return weather.isAwaitingData ? const CourseWeatherDisplay.reserved() : null;
   }
 
   Widget _buildDayColumn(

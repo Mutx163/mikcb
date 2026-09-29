@@ -558,6 +558,9 @@ class _CourseActionSheetContent extends StatelessWidget {
   /// 测试）或天气功能没开时为 null，详情照常打开。日期复用文件内的
   /// `_dateForWeekDay`——学期开始日没设时为 null，那本来就没有「哪一天」可言，
   /// 不显示天气是对的。
+  ///
+  /// 「数据还没到」（`WeatherProvider.isAwaitingData`）时返回**预留的空位**：弹层
+  /// 一打开就摆好那一格，预报到达时下面的格子不会被顶下去。
   CourseWeatherDisplay? _weatherDisplay({
     required WeatherProvider? weather,
     required AppLocalizations l10n,
@@ -576,7 +579,7 @@ class _CourseActionSheetContent extends StatelessWidget {
     if (date == null) {
       return null;
     }
-    return courseWeatherDisplayFor(
+    final display = courseWeatherDisplayFor(
       l10n: l10n,
       summary: weather?.summaryForCourse(
         date: date,
@@ -587,6 +590,12 @@ class _CourseActionSheetContent extends StatelessWidget {
       showTemperature: settings.weatherShowTemperature,
       showProbability: settings.weatherShowProbability,
     );
+    if (display != null) {
+      return display;
+    }
+    return (weather?.isAwaitingData ?? false)
+        ? const CourseWeatherDisplay.reserved()
+        : null;
   }
 
   @override
@@ -765,12 +774,17 @@ class _CourseActionSheetContent extends StatelessWidget {
         ),
         if (weatherDisplay != null) ...[
           const SizedBox(height: 8),
-          _CourseDetailTile(
-            icon: weatherDisplay.icon,
-            title: weatherDisplay.text,
-            // 副题说明这几个数取的是「这节课的时段」而不是全天，否则用户会以为
-            // 那是当日天气。
-            subtitle: l10n.weatherCourseTileSubtitle,
+          // 预留的空位与真格子等高（副题照常参与排版），只是整格不画——预报到达时
+          // 下面的格子不会被顶下去。
+          reserveWeatherSpace(
+            reserved: weatherDisplay.isReserved,
+            child: _CourseDetailTile(
+              icon: weatherDisplay.icon,
+              title: weatherDisplay.text,
+              // 副题说明这几个数取的是「这节课的时段」而不是全天，否则用户会以为
+              // 那是当日天气。
+              subtitle: l10n.weatherCourseTileSubtitle,
+            ),
           ),
         ],
         const SizedBox(height: 8),
