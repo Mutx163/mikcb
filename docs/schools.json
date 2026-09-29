@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-25T06:29:26+00:00",
+  "updatedAt": "2026-09-29T07:23:05+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 224,
-    "schools": 219,
+    "total": 233,
+    "schools": 228,
     "generic": 5
   },
   "schools": [
@@ -275,6 +275,13 @@
       "category": "school"
     },
     {
+      "id": "NEFU",
+      "name": "东北林业大学",
+      "initial": "D",
+      "resourceFolder": "NEFU",
+      "category": "school"
+    },
+    {
       "id": "DLU",
       "name": "大连大学",
       "initial": "D",
@@ -331,6 +338,13 @@
       "category": "school"
     },
     {
+      "id": "FJPIT",
+      "name": "福建信息职业技术学院",
+      "initial": "F",
+      "resourceFolder": "FJPIT",
+      "category": "school"
+    },
+    {
       "id": "FAFU",
       "name": "福建农林大学",
       "initial": "F",
@@ -384,6 +398,13 @@
       "name": "广东科技学院",
       "initial": "G",
       "resourceFolder": "GDUST",
+      "category": "school"
+    },
+    {
+      "id": "GDKM",
+      "name": "广东科贸职业学院",
+      "initial": "G",
+      "resourceFolder": "GDKM",
       "category": "school"
     },
     {
@@ -681,6 +702,13 @@
       "category": "school"
     },
     {
+      "id": "SANYEDU",
+      "name": "湖南三一工业职业技术学院",
+      "initial": "H",
+      "resourceFolder": "SANYEDU",
+      "category": "school"
+    },
+    {
       "id": "HNIU",
       "name": "湖南信息职业技术学院",
       "initial": "H",
@@ -720,6 +748,13 @@
       "name": "湖南科技学院",
       "initial": "H",
       "resourceFolder": "HUSE",
+      "category": "school"
+    },
+    {
+      "id": "HNPTC",
+      "name": "湖南邮电职业技术学院",
+      "initial": "H",
+      "resourceFolder": "HNPTC",
       "category": "school"
     },
     {
@@ -975,6 +1010,13 @@
       "category": "school"
     },
     {
+      "id": "NUSTTI",
+      "name": "南京理工大学泰州科技学院",
+      "initial": "N",
+      "resourceFolder": "NUSTTI",
+      "category": "school"
+    },
+    {
       "id": "NUAA",
       "name": "南京航空航天大学",
       "initial": "N",
@@ -1112,6 +1154,20 @@
       "name": "上海中侨职业技术大学",
       "initial": "S",
       "resourceFolder": "SHZQ",
+      "category": "school"
+    },
+    {
+      "id": "SHNU",
+      "name": "上海师范大学",
+      "initial": "S",
+      "resourceFolder": "SHNU",
+      "category": "school"
+    },
+    {
+      "id": "SHIEP",
+      "name": "上海电力大学",
+      "initial": "S",
+      "resourceFolder": "SHIEP",
       "category": "school"
     },
     {
@@ -1427,6 +1483,13 @@
       "name": "西安科技大学",
       "initial": "X",
       "resourceFolder": "XUST",
+      "category": "school"
+    },
+    {
+      "id": "XCU",
+      "name": "许昌学院",
+      "initial": "X",
+      "resourceFolder": "XCU",
       "category": "school"
     },
     {
