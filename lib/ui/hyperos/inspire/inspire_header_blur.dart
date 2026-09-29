@@ -73,9 +73,17 @@ class InspireHeaderBlur extends StatelessWidget {
   final bool opaqueAtRest;
 
   /// 让开宿主**两个上角**的横向让位区（逻辑 px）。**默认 0 = 逐字旧行为**（子页顶栏 /
-  /// 首页玻璃带走这支，连 `LayoutBuilder` 都不多插，观感一个像素不变，守卫在
-  /// `header_blur_style_wiring_test.dart`）。**现在只有弹窗面板的顶部渐变带
-  /// （`HyperosSheetBlurTop`）开 = 面板圆角半径 28。**
+  /// 首页玻璃带走这支）。**现在只有弹窗面板的顶部渐变带开 = 面板圆角半径 28。**
+  ///
+  /// ## ⚠️ 第九轮定案（2026-09-29）：本参数现在**只管白纱的自绘圆角**
+  ///
+  /// 第六版曾让它同时管三件事：模糊层矩形左右内缩、横向渐隐宽度、白纱形状。
+  /// 真机探针 + 日志定位后，它的两个防护对象都被真正的根因修复取代：
+  /// 采样退化（fork 补丁 3，`u_size` 从未设置）、白纱越出圆弧（白纱自绘圆角，
+  /// 见 [shapeTopInset]）。按用户口径「不是应该是上下渐变吗」，模糊层回到满宽
+  /// 纯竖直（横向渐隐机制保留但休眠，见 [sideTaperFractionFor]），本参数只剩
+  /// 白纱自绘圆角这一个职责（[_veilRadius]）。历史版本表见
+  /// `.agents/notes/implemented/bug-fix/2026-09-28-sheet-top-band-corner-ramp.md`。
   ///
   /// ## 一个旋钮管两件事（2026-09-28 第六版定稿）
   ///
@@ -423,28 +431,13 @@ class InspireHeaderBlur extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final useBlur = blurEnabled && canRender(context);
-    if (cornerRampIn <= 0) {
-      // 未开让位的宿主（子页顶栏 / 首页玻璃带）：只有竖直那一份，逐字旧行为，
-      // 连 `LayoutBuilder` 都不插。
-      return _buildBand(context, useBlur: useBlur, sideTaperFraction: 0);
-    }
-    // 横向渐隐要占**比例**，分母只有布局定下来才知道：材料盒宽 = 带宽 −
-    // 2×[cornerRampIn]（`_bandLayer` 的 `Positioned` 左右各让开的那截）。
-    //
-    // 爬升宽度取 [cornerRampIn] 自己（一个旋钮管几何与强度，见 [cornerRampIn]）：
-    // 让开多少，就在多宽里从 0 爬进场 —— 内缩边不断料，弧线相切点上强度也归零。
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return _buildBand(
-          context,
-          useBlur: useBlur,
-          sideTaperFraction: sideTaperFractionFor(
-            materialWidth: constraints.maxWidth - cornerRampIn * 2,
-            taperIn: cornerRampIn,
-          ),
-        );
-      },
-    );
+    // ⚠️ 第九轮定案（2026-09-29，用户口径「不是应该是上下渐变吗」）：模糊层回到
+    // **满宽 + 纯竖直渐变**。第六版的「左右内缩 + 横向渐隐」是为防圆角越界加的
+    // 保护，但它防的两笔（`u_size` 采样退化 = fork 补丁 3、白纱越出圆弧 = 白纱
+    // 自绘圆角）都已真正修掉，保护成了多余的观感负担，按口径撤除。横向渐隐的
+    // 机制（[sideTaperFractionFor] / [sideTaperProfile]）保留但休眠，见
+    // `_buildBand`。`cornerRampIn` 现在只喂白纱的自绘圆角（[_veilRadius]）。
+    return _buildBand(context, useBlur: useBlur, sideTaperFraction: 0);
   }
 
   /// **横向**渐变的爬升段占材料盒宽度的比例 —— [sideTaperFraction] 的推导，纯函数。
@@ -490,9 +483,10 @@ class InspireHeaderBlur extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         if (useBlur)
-          // 模糊层：唯一吃 [cornerRampIn] 内缩 + 横向渐隐的一层（见 [_bandLayer]）。
+          // 模糊层：**满宽**（第九轮定案，见 build 的说明）——第六版的内缩让位
+          // 随真实根因修掉而撤除；`insetCorners` 参数保留但休眠。
           _bandLayer(
-            insetCorners: true,
+            insetCorners: false,
             child: IgnorePointer(
               child: Inspire.backdropBlur(
                 config: configFor(

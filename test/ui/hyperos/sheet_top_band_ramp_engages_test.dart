@@ -1,4 +1,4 @@
-// 顶部渐变带的**新契约**回归（2026-09-28 第六版；原文件名保留，内容已换）。
+// 顶部渐变带的**新契约**回归（2026-09-29 第九轮；原文件名保留，内容随契约演进）。
 //
 // ## 这个文件历史上钉过什么、为什么换
 //
@@ -10,13 +10,17 @@
 // 之后爬升接通了，真机复验却是**三段式**（上面透明、中间浓、下面透明）+ 拉杆区
 // 透明 —— 用户打回，`topRampIn` 参数整个删除。
 //
-// 现在钉的是删除之后的契约：
+// 第六版钉的「模糊层内缩让位 + 横向渐隐」在 2026-09-29 被第九轮推翻：它防的两笔
+// （`u_size` 采样退化 = fork 补丁 3、白纱越出圆弧 = 白纱自绘圆角）都已真正修掉，
+// 用户口径「不是应该是上下渐变吗」—— 模糊层回到**满宽 + 纯竖直**。
 //
-// 1. **衬底竖直渐变 = 两段 [满, 透明]**（顶浓底清，用户口径「渐变模糊应该是顶部浓，
-//    下面透明」）—— 谁再把四段爬升接回来，这条立刻红；
-// 2. **带子的让位接线是活的**（`InspireHeaderBlur.cornerRampIn` = 面板圆角半径，
-//    模糊层矩形与圆弧相切）—— 治「滑到中间时面板圆角外面出现模糊」的那条几何；
-// 3. 白纱不吃横向渐隐（带子树里不许有 `ShaderMask`，第二版保留）。
+// 现在钉的是第九轮契约：
+//
+// 1. **衬底竖直渐变 = 两段 [满, 透明]**（顶浓底清）—— 谁再把四段爬升接回来，立刻红；
+// 2. **白纱自绘圆角的接线是活的**（`InspireHeaderBlur.cornerRampIn` = 面板圆角半径，
+//    `shapeTopInset` = 带盒上移量）—— 白纱的形状不依赖引擎裁剪的 Replacement 钉；
+// 3. 白纱不吃横向渐隐（带子树里不许有 `ShaderMask`）；
+// 4. **模糊层满宽、分布纯竖直**（第六版的内缩 + 横向渐隐已撤）。
 //
 // 「约束必须有界」这条教训仍然有效：带子的 `Positioned` 继续显式给 `height`
 // （`hyperos_sheet_blur_top.dart` 里那条注释），只是它现在服务的是几何稳定性。
@@ -80,14 +84,14 @@ void main() {
     );
   });
 
-  testWidgets('带子的让位接线是活的：InspireHeaderBlur.cornerRampIn = 面板圆角半径', (
+  testWidgets('白纱自绘圆角的接线是活的：cornerRampIn = 半径、shapeTopInset = 带盒上移量', (
     tester,
   ) async {
-    // 治「页面滑动到中间位置时，面板右上角左上角在圆角外面出现模糊」的那条几何：
-    // 模糊层矩形左右各内缩一个半径、与上沿圆弧相切，圆角区域里没有模糊材料。
-    // 断链的历史形态是「常量在、转发断了」——所以这条要在**泵出来的树**上钉
-    // （纯常量测试 corner_ramp_test 替代不了：它看不到 HyperosSheetBlurTop →
-    // FrostedHeaderBackground → InspireHeaderBlur 这两跳转发）。
+    // 治「有内容滚到带下时，面板圆角外面出现填充」的真凶（白纱普通绘制越出
+    // 面板圆弧，引擎对 BackdropFilter 兄弟内容的圆弧裁剪不总可靠）的那笔修复：
+    // 白纱的形状自己画。断链的历史形态是「常量在、转发断了」——所以这条要在
+    // **泵出来的树**上钉（纯常量测试 corner_ramp_test 替代不了：它看不到
+    // HyperosSheetBlurTop → FrostedHeaderBackground → InspireHeaderBlur 这两跳转发）。
     await tester.pumpWidget(harness());
     await tester.pump();
 
@@ -97,7 +101,37 @@ void main() {
     expect(
       band.cornerRampIn,
       hyperosMiuixBottomSheetCornerRadius,
-      reason: '带子的模糊层要与圆弧相切，否则圆角区域还有模糊材料',
+      reason: '白纱的圆弧半径 = 面板圆角半径',
+    );
+    expect(
+      band.shapeTopInset,
+      0,
+      reason: '本宿主 bleedTop = 0（把手条悬浮后带子不再上移），'
+          '若将来恢复上移，这里应跟着等于 bleedTop',
+    );
+  });
+
+  testWidgets('模糊层满宽、分布纯竖直（第六版的内缩+横向渐隐已撤，第九轮口径）', (
+    tester,
+  ) async {
+    await tester.pumpWidget(harness());
+    await tester.pump();
+
+    // 模糊层的 Positioned 必须满宽（left/right 都是 0）：用户口径「不是应该是
+    // 上下渐变吗」—— 左右渐隐是第六版为防圆角越界加的保护，根因修掉后已撤。
+    final blurPositioned = tester
+        .widgetList<Positioned>(find.byType(Positioned))
+        .where((p) => p.left == 0 && p.right == 0 && p.top == 0)
+        .toList();
+    expect(
+      blurPositioned,
+      isNotEmpty,
+      reason: '模糊层应该是一条满宽、从带顶铺下来的 Positioned',
+    );
+    expect(
+      blurPositioned.any((p) => p.left != 0 || p.right != 0),
+      isFalse,
+      reason: '不许再出现左右内缩的模糊层（内缩 + 横向渐隐已随根因修复撤除）',
     );
   });
 
