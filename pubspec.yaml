@@ -146,16 +146,21 @@ dependency_overrides:
   #      —— 单向渐变分布在那点 = 1（顶栏碰巧接近正确，bug 被衬底掩盖）；乘积分布
   #      在那点 = 1×0 = 0（弹窗顶部渐变带的模糊整条死掉，真机口径「渐变模糊变成
   #      透明的，只剩顶部一层白雾」）。修法：显式设 u_size = 物理屏幕尺寸。
+  #   4.（修复，2026-09-29）材料矩形外一律输出透明：引擎对 BackdropFilter 的裁剪
+  #      并不总可靠，真机实测模糊效果在有内容滚到带下时越出面板圆角，在角外方形
+  #      区域留下亮色填充（「圆角外面会出现东西，顶部/底部又正常」）。着色器用
+  #      clamp 前的 areaUV 判定内外，矩形外强制 alpha=0，矩形内逐像素不变。
   # fork 自 inspirestack/inspire_blur，分支 mikcb/distribution-pixels-cache，
   # 基线 tag v0.4.1（a44d40c）；改补丁请改 C:/cursor/inspire_blur 那份克隆。
   # 全部理由与删除清单见 test/architecture/inspire_blur_patch_test.dart。
-  # 2026-09-29：ref 指向含**三个**补丁的提交 0b84c9c（6247f02 = 补丁 1；75442c3 =
+  # 2026-09-29：ref 指向含**四个**补丁的提交 e850e72（6247f02 = 补丁 1；75442c3 =
   # 补丁 1+2；60c211b = 再放出 toDistributionMap 扩展；7333834 = 再放出声明
-  # intensityAt 的 IntensityBasedDistributionMap；0b84c9c = 补丁 3 显式设 u_size）。
+  # intensityAt 的 IntensityBasedDistributionMap；0b84c9c = 补丁 3 显式设 u_size；
+  # e850e72 = 补丁 4 材料矩形外输出透明）。
   inspire_blur:
     git:
       url: https://github.com/Mutx163/inspire_blur.git
-      ref: 0b84c9cdc094cea72318660c9ca6337767cbdb72
+      ref: e850e7262e9e10a77a21c69c93e812316ec0a056
 
 flutter:
   uses-material-design: true
