@@ -20159,6 +20159,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'整页微缩预览，改壁纸与材质'**
   String get appearanceEditorEntrySubtitle;
+
+  /// No description provided for @commonLoadingLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'加载中'**
+  String get commonLoadingLabel;
+
+  /// No description provided for @warehouseSessionAlreadyActive.
+  ///
+  /// In zh, this message translates to:
+  /// **'教务仍处于登录状态，可直接导入'**
+  String get warehouseSessionAlreadyActive;
 }
 
 class _AppLocalizationsDelegate

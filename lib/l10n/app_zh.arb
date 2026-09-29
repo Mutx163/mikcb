@@ -6604,5 +6604,7 @@
   "appearanceEditorDoneAction": "完成",
   "appearanceEditorWallpaperAction": "调整壁纸",
   "appearanceEditorMaterialAction": "材质",
-  "appearanceEditorEntrySubtitle": "整页微缩预览，改壁纸与材质"
+  "appearanceEditorEntrySubtitle": "整页微缩预览，改壁纸与材质",
+  "commonLoadingLabel": "加载中",
+  "warehouseSessionAlreadyActive": "教务仍处于登录状态，可直接导入"
 }

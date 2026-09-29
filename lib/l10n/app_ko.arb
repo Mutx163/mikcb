@@ -6513,5 +6513,7 @@
   "appearanceEditorDoneAction": "완료",
   "appearanceEditorWallpaperAction": "배경화면 조정",
   "appearanceEditorMaterialAction": "재질",
-  "appearanceEditorEntrySubtitle": "전체 페이지 축소 미리보기에서 배경화면과 재질 조정"
+  "appearanceEditorEntrySubtitle": "전체 페이지 축소 미리보기에서 배경화면과 재질 조정",
+  "commonLoadingLabel": "불러오는 중",
+  "warehouseSessionAlreadyActive": "교무 시스템에 아직 로그인되어 있습니다. 바로 가져올 수 있습니다"
 }

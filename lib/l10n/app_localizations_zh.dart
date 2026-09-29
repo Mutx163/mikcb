@@ -11084,6 +11084,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get appearanceEditorEntrySubtitle => '整页微缩预览，改壁纸与材质';
+
+  @override
+  String get commonLoadingLabel => '加载中';
+
+  @override
+  String get warehouseSessionAlreadyActive => '教务仍处于登录状态，可直接导入';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -22206,6 +22212,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get appearanceEditorEntrySubtitle => '整頁縮小預覽，改桌布與材質';
+
+  @override
+  String get commonLoadingLabel => '載入中';
+
+  @override
+  String get warehouseSessionAlreadyActive => '教務仍處於登入狀態，可直接匯入';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -33329,4 +33341,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get appearanceEditorEntrySubtitle => '整頁縮小預覽，改桌布與材質';
+
+  @override
+  String get commonLoadingLabel => '載入中';
+
+  @override
+  String get warehouseSessionAlreadyActive => '教務仍處於登入狀態，可直接匯入';
 }

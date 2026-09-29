@@ -219,6 +219,38 @@ class WarehouseRepositoryService {
     );
   }
 
+  /// 拉取 `qingyu_only/<目录>/session_probe.json`（会话探针配置），**取不到返回
+  /// `null`**，不抛错。
+  ///
+  /// 与 [fetchQingyuOnlyText] 的区别有两条，都是为「开网页登录页时顺手问一次」
+  /// 这个用法服务的：
+  ///
+  /// - 走 [_fetchProbeText]（单请求 + 6s 超时），不进「主地址 + 4 个镜像」的候选链。
+  ///   绝大多数学校没有这个目录（222 所里目前 1 所），完整候选链等于为一次必然的
+  ///   404 花掉 5 个来回。
+  /// - 404 / 超时 / 网络失败一律降级为 `null`（「这所学校没有探针配置」），不把
+  ///   异常抛给调用方。探针是锦上添花，取不到就必须安静退让。
+  ///
+  /// 返回原始文本，解析交给调用方（[parseWarehouseSessionProbeConfig]），
+  /// 免得这一层知道数据长什么样。
+  Future<String?> fetchQingyuOnlySessionProbeText(
+    WarehouseRepositorySource source,
+    WarehouseSchoolEntry school,
+  ) async {
+    // 目录穿越：仓库内容是远端数据，文件名必须限制在同目录内。
+    const name = 'session_probe.json';
+    try {
+      return await _fetchProbeText(
+        source,
+        'qingyu_only/${school.resourceFolder}/$name',
+      );
+    } on WarehouseRepositoryException {
+      return null;
+    } on TimeoutException {
+      return null;
+    }
+  }
+
   List<WarehouseAdapterEntry> _parseQingyuOnlyAdapterEntries(String content) {
     final maps = _parseYamlListMaps(content, topLevelKey: 'adapters');
     return maps

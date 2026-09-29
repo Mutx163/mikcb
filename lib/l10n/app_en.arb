@@ -6516,5 +6516,7 @@
   "appearanceEditorDoneAction": "Done",
   "appearanceEditorWallpaperAction": "Adjust wallpaper",
   "appearanceEditorMaterialAction": "Material",
-  "appearanceEditorEntrySubtitle": "Full-page mini preview — adjust the wallpaper and the material"
+  "appearanceEditorEntrySubtitle": "Full-page mini preview — adjust the wallpaper and the material",
+  "commonLoadingLabel": "Loading…",
+  "warehouseSessionAlreadyActive": "Your school account is still signed in, so you can import right away"
 }

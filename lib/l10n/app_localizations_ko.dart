@@ -11453,4 +11453,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get appearanceEditorEntrySubtitle => '전체 페이지 축소 미리보기에서 배경화면과 재질 조정';
+
+  @override
+  String get commonLoadingLabel => '불러오는 중';
+
+  @override
+  String get warehouseSessionAlreadyActive =>
+      '교무 시스템에 아직 로그인되어 있습니다. 바로 가져올 수 있습니다';
 }

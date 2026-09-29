@@ -11403,4 +11403,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get appearanceEditorEntrySubtitle => 'ページ全体の縮小プレビューで壁紙とマテリアルを調整';
+
+  @override
+  String get commonLoadingLabel => '読み込み中';
+
+  @override
+  String get warehouseSessionAlreadyActive =>
+      '教务システムにはまだログインしています。そのままインポートできます';
 }

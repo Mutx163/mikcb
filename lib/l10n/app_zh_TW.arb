@@ -6513,5 +6513,7 @@
   "appearanceEditorDoneAction": "完成",
   "appearanceEditorWallpaperAction": "調整桌布",
   "appearanceEditorMaterialAction": "材質",
-  "appearanceEditorEntrySubtitle": "整頁縮小預覽，改桌布與材質"
+  "appearanceEditorEntrySubtitle": "整頁縮小預覽，改桌布與材質",
+  "commonLoadingLabel": "載入中",
+  "warehouseSessionAlreadyActive": "教務仍處於登入狀態，可直接匯入"
 }

@@ -11741,4 +11741,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get appearanceEditorEntrySubtitle =>
       'Full-page mini preview — adjust the wallpaper and the material';
+
+  @override
+  String get commonLoadingLabel => 'Loading…';
+
+  @override
+  String get warehouseSessionAlreadyActive =>
+      'Your school account is still signed in, so you can import right away';
 }
