@@ -313,6 +313,94 @@ void main() {
     await _pumpUntilSettled(tester);
   });
 
+  // 回归（2026-09-29 真机反馈）：没课那天在日视图里换天，"暂无课程"会在滑动
+  // 落定、整屏重建那一刻**往上跳一下**。
+  //
+  // 根因：空态那列的底部 padding 把「回今日」浮钮的滚动余量也算进去了
+  // （`_backToTodayButtonScrollInset`）。浮钮只在"当前不是今天"时存在，于是
+  // 今天 ↔ 非今天之间底距差一整段（玻璃坞 58px），而空态是**居中块**——
+  // 底距一变，居中的文字就被顶掉一半（29px）。有课那天同一份余量只是列表
+  // 底部看不见的滚动空间，所以只有没课时才看得到。
+  //
+  // 那份余量的存在前提是"最后一张卡要能滑到浮钮上方"，对居中块既不必要
+  // （中间那两行字离屏幕底部的浮钮还有大半屏）又会害它跳位置。改为：空态只
+  // 留药丸避让，与是否今天无关。
+  for (final form in HomeNavigationForm.values) {
+    testWidgets('空态(${form.name})：没课时换天，"暂无课程"不跳位置', (tester) async {
+      final provider = await createInitializedTestProvider(tester);
+      final today = DateTime.now();
+      final otherDay = today.weekday == 1 ? 2 : today.weekday - 1;
+
+      await tester.runAsync(() async {
+        await provider.updateTimetableSettings(
+          provider.settings.copyWith(
+            semesterStartDate: _startOfCurrentWeek(today),
+            semesterWeekCount: 20,
+            timetableHideWeekends: false,
+            homeNavigationForm: form,
+          ),
+        );
+        await provider.setCurrentWeek(1);
+        // 全天不排课 ⇒ 两天都走空态分支。
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+      });
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: provider,
+          child: const TestApp(
+            home: TimetableScreen(
+              enableUpdateCheck: false,
+              enableProgressTimer: false,
+            ),
+          ),
+        ),
+      );
+      await _pumpTimetableFrame(tester);
+
+      // 停在今天：没有「回今日」，记下空态的位置。
+      await tester.tap(
+        find.byKey(ValueKey('weekday-header-1-${today.weekday}')),
+      );
+      await _pumpTimetableFrame(tester);
+      await _pumpUntilSettled(tester);
+      expect(find.byKey(const ValueKey('back-to-today-button')), findsNothing);
+      final emptyOnToday = tester.getRect(find.text('暂无课程'));
+
+      // 切到另一天：浮钮冒出来了（这是余量变化的唯一来源），空态不许动。
+      await tester.tap(find.byKey(ValueKey('weekday-header-1-$otherDay')));
+      await _pumpUntilSettled(tester);
+      final buttonFinder = find.byKey(const ValueKey('back-to-today-button'));
+      expect(buttonFinder, findsOneWidget, reason: '不是今天时应出现「回今日」');
+
+      final emptyOnOtherDay = tester.getRect(find.text('暂无课程'));
+      expect(
+        emptyOnOtherDay.top,
+        closeTo(emptyOnToday.top, 0.5),
+        reason:
+            '空态是居中块：跨过"今天"不该改变它的纵向位置'
+            '（改前这里差半个浮钮余量，玻璃坞 29px）',
+      );
+      // 反向：滑回今天也要回到原位。
+      await tester.tap(buttonFinder);
+      await _pumpUntilSettled(tester);
+      expect(find.byKey(const ValueKey('back-to-today-button')), findsNothing);
+      expect(
+        tester.getRect(find.text('暂无课程')).top,
+        closeTo(emptyOnToday.top, 0.5),
+        reason: '回今天后空态仍要停在同一处',
+      );
+      // 少掉的那份余量不能换来"字被浮钮压住"：空态远在浮钮上方。
+      await tester.tap(find.byKey(ValueKey('weekday-header-1-$otherDay')));
+      await _pumpUntilSettled(tester);
+      expect(
+        tester.getRect(find.text('暂无课程')).bottom,
+        lessThan(tester.getRect(buttonFinder).top),
+        reason: '不避让浮钮也不能让空态被它盖住',
+      );
+    });
+  }
+
   // 采样源：这颗钮在 `homeStack` 的 `BackdropGroup` 里，但**不能**跟组采样。
   //
   // 组里那张快照是**壁纸**（`UndimmedBackdropCapture` 画在页面主体之前，见

@@ -5237,7 +5237,16 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 时滑到底的最后一张卡会被它压住（同底栏遮内容的道理，见
     // [_backToTodayButtonScrollInset]）。
     final todayButtonAvoidance = _backToTodayButtonScrollInset(provider);
-    final bottomContentInset = 8 + dockScrollAvoidance + todayButtonAvoidance;
+    final listBottomContentInset =
+        8 + dockScrollAvoidance + todayButtonAvoidance;
+    // 空态是**居中块**，不是能滚的列表：那份浮钮余量存在的前提是"最后一张卡
+    // 要能滑到钮上方"，而空态里唯一的像素是屏幕中间那两行字，离屏幕底部的
+    // 浮钮还有大半屏，避让与否都碰不到。带上它反而害它在**今天 ↔ 非今天**之间
+    // 换位置：浮钮只在非今天出现，那多出来的余量在滑动落定、整屏重建那一刻
+    // 才被算进去，把居中的文字往上顶掉半个余量（玻璃坞 29px），用户读到的
+    // 就是"没课那天滑过去，加载一结束'暂无课程'往上跳一下"
+    // （2026-09-29 真机反馈）。所以空态只留药丸避让——与它是否今天无关。
+    final emptyBottomContentInset = 8 + dockScrollAvoidance;
     // 预览那份要按宿主给的滚动位置起步（见 [_previewControllerFor]）。
     final scrollKey = _dayAgendaScrollKey(week, dayOfWeek);
     final scrollController = _previewControllerFor(scrollKey);
@@ -5260,7 +5269,12 @@ class _TimetableScreenState extends State<TimetableScreen>
             SliverFillRemaining(
               hasScrollBody: false,
               child: Padding(
-                padding: EdgeInsets.fromLTRB(14, 0, 14, bottomContentInset),
+                padding: EdgeInsets.fromLTRB(
+                  14,
+                  0,
+                  14,
+                  emptyBottomContentInset,
+                ),
                 child: _buildDayViewEmptyColumn(week: week, settings: settings),
               ),
             ),
@@ -5273,7 +5287,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final agendaList = ListView.separated(
       key: PageStorageKey<String>(scrollKey),
       controller: scrollController,
-      padding: EdgeInsets.fromLTRB(14, 0, 14, bottomContentInset),
+      padding: EdgeInsets.fromLTRB(14, 0, 14, listBottomContentInset),
       // 下拉开着时冻结纵向滚动（见 _HomePullFreezeScrollPhysics）：
       // 回拉取消只收下拉，不把列表一起滚走。
       physics: _homePullVerticalPhysics,
