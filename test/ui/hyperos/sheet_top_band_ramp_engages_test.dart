@@ -45,7 +45,7 @@ void main() {
         ),
       );
 
-  testWidgets('衬底是顶浓底清两段形，不许再出现四段爬升（三段式回归钉）', (tester) async {
+  testWidgets('衬底 = [满, 补浓, 透明] 三段（带底恒透明，中下段补浓防「三段式透底」）', (tester) async {
     await tester.pumpWidget(harness());
     await tester.pump();
 
@@ -66,22 +66,14 @@ void main() {
     );
 
     final tint = tintGradients.single;
-    expect(
-      tint.colors.length,
-      2,
-      reason: '三段式回归：衬底只许 [满浓度, 透明] 两段 —— 四段 [透明, 满, 收, 透明] '
-          '就是「上面透明、中间浓、下面透明 + 拉杆区透明」的成因（topRampIn 已删）',
-    );
-    expect(
-      tint.colors.first.a,
-      1.0,
-      reason: '顶边必须满浓度（用户口径：渐变模糊应该是顶部浓）',
-    );
-    expect(
-      tint.stops,
-      isNull,
-      reason: '两段渐变没有显式 stops；有 stops 就是接回了爬升形状',
-    );
+    // 2026-09-29 用户口径「三段式透底」：中下段补浓（tintBottomScale = 0.4），
+    // 渐变 = [满浓度, 75% 高度处 0.4×满, 带底透明]。带底仍恒为透明（不切硬边），
+    // 顶部仍满浓度 —— 变的只是中下段的雾密度。
+    expect(tint.colors.length, 3);
+    expect(tint.colors.first.a, 1.0, reason: '顶边必须满浓度（顶部浓）');
+    expect(tint.stops, [0, 0.75, 1]);
+    expect(tint.colors[1].a, closeTo(0.4, 1e-6), reason: '中段补浓系数 = tintBottomScale');
+    expect(tint.colors.last.a, 0, reason: '带底恒透明，不切横向硬边');
   });
 
   testWidgets('白纱自绘圆角的接线是活的：cornerRampIn = 半径、shapeTopInset = 带盒上移量', (

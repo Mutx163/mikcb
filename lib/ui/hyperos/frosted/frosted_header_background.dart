@@ -34,6 +34,7 @@ class FrostedHeaderBackground extends StatelessWidget {
     this.bottomOverhang = 0,
     this.cornerRampIn = 0,
     this.shapeTopInset = 0,
+    this.tintBottomScale = 0,
     super.key,
   });
 
@@ -64,6 +65,10 @@ class FrostedHeaderBackground extends StatelessWidget {
   /// the panel's top edge).
   final double shapeTopInset;
 
+  /// See [InspireHeaderBlur.tintBottomScale]. Only the bottom-sheet top band
+  /// passes a non-zero value.
+  final double tintBottomScale;
+
   @override
   Widget build(BuildContext context) {
     return InspireHeaderBlur(
@@ -75,6 +80,7 @@ class FrostedHeaderBackground extends StatelessWidget {
       bottomOverhang: bottomOverhang,
       cornerRampIn: cornerRampIn,
       shapeTopInset: shapeTopInset,
+      tintBottomScale: tintBottomScale,
       child: child,
     );
   }

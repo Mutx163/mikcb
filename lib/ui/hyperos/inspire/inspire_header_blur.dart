@@ -31,6 +31,7 @@ class InspireHeaderBlur extends StatelessWidget {
     this.bottomOverhang = 0,
     this.cornerRampIn = 0,
     this.shapeTopInset = 0,
+    this.tintBottomScale = progressiveTintBottomScale,
     super.key,
   });
 
@@ -138,6 +139,15 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 守得住。与其赌引擎裁剪状态，白纱直接把形状画出来——普通绘制的圆角矩形，
   /// 不经过任何裁剪。见 `2026-09-28-sheet-top-band-corner-ramp.md` 第八轮。
   final double shapeTopInset;
+
+  /// 白纱中下段的**补浓系数**（0 = 出厂的两段形 [满, 透明]）。
+  ///
+  /// 弹窗渐变带浮在屏幕中部、上下都有内容对比，半透明雾底下的**内容空隙**
+  /// （卡片之间的深色间隔）会透过雾读成「透明」，整条带被内容切成三段观感
+  /// （用户口径 2026-09-29「顶部透明、中间模糊、往下又变透明」）。补浓后中段
+  /// （75% 高度处）的雾 = 满浓度 × 本系数，带底仍恒为透明、不切横向硬边。
+  /// 默认 = [progressiveTintBottomScale]（= 0，子页顶栏 / 首页玻璃带逐字不变）。
+  final double tintBottomScale;
 
   /// 设备是否支持 shader filter（Inspire Blur 的兜底条件）。
   static bool get _shaderFilterSupported => ImageFilter.isShaderFilterSupported;
@@ -353,7 +363,7 @@ class InspireHeaderBlur extends StatelessWidget {
     }
     final vertical = _veilTop(DecoratedBox(
       decoration: BoxDecoration(
-        gradient: tintGradient(tint, progressiveTintBottomScale),
+        gradient: tintGradient(tint, tintBottomScale),
         borderRadius: _veilRadius,
       ),
     ));
