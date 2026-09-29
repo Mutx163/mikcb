@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
@@ -137,6 +139,193 @@ void main() {
       ),
       isFalse,
     );
+  });
+
+  group('实体档：带子不采样，但必须上屏（真机 2026-09-30）', () {
+    // 这组钉的是「带子画不画」与「有没有玻璃」必须分成两问。合成一问的代价：
+    // 实体档下带子整条不挂 ⇒ 星期栏（自己那份区域底色让成全透明、日视图更是零底色）
+    // 直接透出壁纸，而标题行另有 [resolveHomePageHeaderBackground] 兜底看着正常 ——
+    // 真机读作「标题实心、星期栏一层壁纸颗粒」。
+    test('实体档 + 有壁纸 → 带子要画（那条实心条是星期栏唯一的底色）', () {
+      expect(
+        homePageChromeBandPaints(
+          settingsWith(bandMaterial: 'solid'),
+          hasBackdrop: true,
+        ),
+        isTrue,
+      );
+    });
+
+    test('实体档 + 两个旧开关都关 → 整条不画（与带子自己的 _hasAnyBand 同口径）', () {
+      expect(
+        homePageChromeBandPaints(
+          settingsWith(
+            bandMaterial: 'solid',
+            headerBlur: false,
+            weekdayBarBlur: false,
+          ),
+          hasBackdrop: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('没有壁纸时不画：页面本来就不透明，画了只是白搭一层', () {
+      for (final material in ['solid', 'liquid', 'frost']) {
+        expect(
+          homePageChromeBandPaints(
+            settingsWith(bandMaterial: material),
+            hasBackdrop: false,
+          ),
+          isFalse,
+          reason: material,
+        );
+      }
+    });
+
+    test('玻璃档口径不变：带子照画（这条判据是修 bug，不是改行为）', () {
+      for (final material in ['liquid', 'frost']) {
+        expect(
+          homePageChromeBandPaints(
+            settingsWith(bandMaterial: material),
+            hasBackdrop: true,
+          ),
+          isTrue,
+          reason: material,
+        );
+      }
+    });
+
+    test('实体档下星期栏不算压在壁纸上 ⇒ 墨色不再按壁纸亮度翻黑白', () {
+      expect(
+        homePageWeekdayBarOverWallpaper(
+          settings: settingsWith(bandMaterial: 'solid'),
+          hasBackdrop: true,
+        ),
+        isFalse,
+        reason: '实心条把壁纸整个盖住，再按壁纸判墨色就是浅底白字',
+      );
+      for (final material in ['liquid', 'frost']) {
+        expect(
+          homePageWeekdayBarOverWallpaper(
+            settings: settingsWith(bandMaterial: material),
+            hasBackdrop: true,
+          ),
+          isTrue,
+          reason: material,
+        );
+      }
+    });
+
+    test('星期行玻璃带关着：星期栏画自己那份区域底色，壁纸在范围内就是裸壁纸', () {
+      // 得有**真在的**壁纸文件：`hasHomePageBackdrop` 会同步 stat 一次路径
+      // （文件丢了就算没壁纸），所以这里现造一个空文件。
+      final dir = Directory.systemTemp.createTempSync('mikcb_band_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final wallpaper = File('${dir.path}/wallpaper.png')
+        ..writeAsBytesSync(const [0x89, 0x50, 0x4E, 0x47]);
+      final blurOff = settingsWith(
+        bandMaterial: 'solid',
+        weekdayBarBlur: false,
+      ).copyWith(homePageWallpaperPath: wallpaper.path);
+      expect(
+        homePageWeekdayBarOverWallpaper(settings: blurOff, hasBackdrop: true),
+        isTrue,
+      );
+      // 作用范围不含星期栏 ⇒ 那份区域底色是不透明页面底色，不算壁纸上。
+      expect(
+        homePageWeekdayBarOverWallpaper(
+          settings: blurOff.copyWith(
+            homePageBackgroundScope:
+                HomePageBackgroundScope.timetable |
+                HomePageBackgroundScope.header |
+                HomePageBackgroundScope.statusBar,
+          ),
+          hasBackdrop: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('状态栏：带子盖住时实体档按页面底色判图标极性，玻璃档按壁纸', () {
+      expect(
+        homePageStatusBarOverWallpaper(
+          settings: settingsWith(bandMaterial: 'solid'),
+          statusBarShowsBackdrop: true,
+          bandPaints: true,
+        ),
+        isFalse,
+        reason: '带子连状态栏一起盖成实底 ⇒ 图标极性跟页面底色走，否则浅底白图标',
+      );
+      expect(
+        homePageStatusBarOverWallpaper(
+          settings: settingsWith(bandMaterial: 'liquid'),
+          statusBarShowsBackdrop: true,
+          bandPaints: true,
+        ),
+        isTrue,
+      );
+      expect(
+        homePageStatusBarOverWallpaper(
+          settings: settingsWith(bandMaterial: 'solid'),
+          statusBarShowsBackdrop: true,
+          bandPaints: false,
+        ),
+        isTrue,
+        reason: '带子没挂（总开关关着）时状态栏是裸壁纸',
+      );
+      expect(
+        homePageStatusBarOverWallpaper(
+          settings: settingsWith(bandMaterial: 'solid'),
+          statusBarShowsBackdrop: false,
+          bandPaints: false,
+        ),
+        isFalse,
+      );
+    });
+
+    testWidgets('实体档那条实心条用宿主页传进来的页面底色', (tester) async {
+      // 标题行刷的是页面底色（[resolveHomePageHeaderBackground]），带子若退回主题
+      // 底色，用户自定义过「页面背景色」时两段之间会差出一条色带。
+      const pageBg = Color(0xFF102030);
+      await tester.pumpWidget(
+        const FrostedAppearanceScope(
+          appearance: FrostedAppearance(
+            sheetBlurSigma: kDefaultFrostedSheetBlurSigma,
+            sheetTintAlpha: kDefaultFrostedSheetTintAlpha,
+            sheetBarrierAlpha: kDefaultFrostedSheetBarrierAlpha,
+            homeBandGlassMaterial: 'solid',
+          ),
+          child: MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 400,
+                height: 800,
+                child: Stack(
+                  children: [
+                    HomePageContinuousChromeFrostedOverlay(
+                      headerBlurEnabled: true,
+                      weekdayBarBlurEnabled: true,
+                      includeStatusBar: false,
+                      weekdayBarHeight: 40,
+                      solidColor: pageBg,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final fill = find.byType(HomePageChromeGlassFill);
+      expect(fill, findsOneWidget, reason: '实体档也走这一段渲染，不是空挂');
+      final box = tester.widget<ColoredBox>(
+        find.descendant(of: fill, matching: find.byType(ColoredBox)),
+      );
+      expect(box.color, pageBg);
+      expect(box.color.a, 1, reason: '实体档必须完全不透明，否则还是透出壁纸');
+    });
   });
 
   group('玻璃带的上下两条直边按材质决定外溢多少', () {

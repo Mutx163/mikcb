@@ -11,7 +11,10 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/services/storage_service.dart';
+import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
+import 'package:university_timetable/utils/hex_color.dart';
 import 'package:university_timetable/utils/home_page_background.dart';
+import 'package:university_timetable/widgets/home_page_region_blur.dart';
 
 import '../helpers_test_app.dart';
 
@@ -115,6 +118,9 @@ Future<void> _pumpHome(
   bool headerBlur = false,
   bool weekdayBlur = false,
   String? weekdayHex,
+  String? bandMaterial,
+  String? pageBgHex,
+  bool wrapFrostedScope = false,
 }) async {
   await tester.runAsync(() async {
     await provider.updateTimetableSettings(
@@ -124,20 +130,29 @@ Future<void> _pumpHome(
         homePageHeaderBlurEnabled: headerBlur,
         homePageWeekdayBarBlurEnabled: weekdayBlur,
         weekdayBarFontColorLight: weekdayHex,
+        homeBandGlassMaterial: bandMaterial,
+        timetablePageBackgroundColor: pageBgHex,
         semesterStartDate: _nextWeekMonday(),
       ),
     );
   });
-  await tester.pumpWidget(
-    ChangeNotifierProvider.value(
-      value: provider,
-      child: const TestApp(
-        home: TimetableScreen(
-          enableUpdateCheck: false,
-          enableProgressTimer: false,
-        ),
-      ),
+  const app = TestApp(
+    home: TimetableScreen(
+      enableUpdateCheck: false,
+      enableProgressTimer: false,
     ),
+  );
+  // 顶栏玻璃带的**材质**是从 `FrostedAppearanceScope` 读的（app 根部按设置下发，
+  // 见 `main.dart`），不是从 TimetableSettings 直接读 —— 只有要验材质分支的用例
+  // 才需要把这层补上（其余用例沿用「无 scope ⇒ 出厂液态档」的既有前提）。
+  final Widget root = ChangeNotifierProvider.value(value: provider, child: app);
+  await tester.pumpWidget(
+    wrapFrostedScope
+        ? FrostedAppearanceScope(
+            appearance: provider.settings.frostedAppearance,
+            child: root,
+          )
+        : root,
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
@@ -281,6 +296,60 @@ void main() {
     // black, not the wallpaper-flipped white.
     expect(_textColor(tester, '周一'), const Color(0xFF000000));
     expect(_textColor(tester, '1 周'), const Color(0xFF000000));
+  });
+
+  testWidgets('实体顶栏：带子照画、星期栏压在实底上，日期照旧不翻白', (
+    tester,
+  ) async {
+    _seedInitializedPrefs();
+    final dir = Directory.systemTemp.createTempSync('mikcb_solid_band_');
+    addTearDown(() {
+      PaintingBinding.instance.imageCache.clear();
+      try {
+        dir.deleteSync(recursive: true);
+      } on FileSystemException {
+        // ignored
+      }
+    });
+    // 全黑壁纸 + 顶栏材质选「实体」+ 自定义页面底色。真机 2026-09-30 报的就是
+    // 这一格：标题行因为另有兜底看着实心，星期栏却把底色让给了那条**根本没挂上**
+    // 的带子，于是直接透出壁纸（截图里那层颗粒）。三条断言分别钉住根因与两个
+    // 连带项：带子必须挂、实底颜色与标题行同源、墨色不再按壁纸翻黑白。
+    final wallpaper = await tester.runAsync(
+      () => _writeWallpaper(dir, topLightFraction: 0),
+    );
+    // 页面背景色只认 6 位 hex（`tryParseHexColor` 拒 8 位），所以用深蓝这一档，
+    // 与黑壁纸差得开。
+    const pageBg = '#102030';
+    final provider = await createInitializedTestProvider(tester);
+    await _pumpHome(
+      tester,
+      provider,
+      wallpaper!.path,
+      _scopeAll,
+      headerBlur: true,
+      weekdayBlur: true,
+      bandMaterial: 'solid',
+      pageBgHex: pageBg,
+      wrapFrostedScope: true,
+    );
+
+    // ① 带子必须挂上（此前实体档整条不挂 ⇒ `HomePageChromeGlassFill` 查不到）。
+    final bandFill = find.byType(HomePageChromeGlassFill);
+    expect(bandFill, findsOneWidget);
+    // ② 实底颜色 = 页面底色（与标题行那份 `resolveHomePageHeaderBackground` 同源；
+    // 退回主题底色的话，用户自定义过页面背景色时两段之间会差出一条色带）。
+    final solid = tester.widget<ColoredBox>(
+      find.descendant(of: bandFill, matching: find.byType(ColoredBox)),
+    );
+    expect(solid.color, parseHexColorOrFallback(pageBg, fallback: Colors.white));
+    expect(solid.color.a, 1, reason: '实体档必须完全不透明，否则还是透出壁纸');
+
+    // ③ 墨色：实体档下星期栏不在壁纸上 ⇒ 保持配置墨色（默认黑），不跟着黑壁纸翻白。
+    expect(_textColor(tester, '周一'), const Color(0xFF000000));
+    expect(_textColor(tester, '1 周'), const Color(0xFF000000));
+    // 那条「文字对比度不足」提醒是拿壁纸亮度判的，实体档下不该弹。
+    expect(find.text('文字对比度不足'), findsNothing);
   });
 
   testWidgets(

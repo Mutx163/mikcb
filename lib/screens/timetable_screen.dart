@@ -807,6 +807,15 @@ class _TimetableScreenState extends State<TimetableScreen>
           darkFallback: darkFallback,
         );
         final headerBarColor = headerBackground.color;
+        // 带子「要不要上屏」与「是不是玻璃」是两个问题（真机 2026-09-30 修）：
+        // 实体档不采样（组捕获 / 预模糊位图都不需要，见下面 `continuousChromeBlur`），
+        // 但**要画** —— 那条不透明实心条是星期栏唯一的底色，星期栏自己那份区域底色
+        // 在玻璃开着时会让成全透明（日视图的星期栏更是自己一点底色都不画）。不画它
+        // 就是「标题实心、星期栏直接透出壁纸」。
+        final chromeBandPaints = homePageChromeBandPaints(
+          settings,
+          hasBackdrop: hasBackdrop,
+        );
         final scaffoldBackgroundColor = timetableShowsBackdrop
             ? Colors.transparent
             : timetableBackground.color;
@@ -814,7 +823,13 @@ class _TimetableScreenState extends State<TimetableScreen>
         // status-bar icon polarity from the sampled top band when available.
         final systemOverlayBackground = resolveHomePageStatusBarBackground(
           pageBackground: pageBackgroundColor,
-          statusBarShowsBackdrop: statusBarShowsBackdrop,
+          // 实体档那条实心条会连状态栏一起盖住 ⇒ 状态栏不再透出壁纸，图标极性跟
+          // 页面底色走，否则浅底页面 + 深色壁纸会读成浅底白图标。
+          statusBarShowsBackdrop: homePageStatusBarOverWallpaper(
+            settings: settings,
+            statusBarShowsBackdrop: statusBarShowsBackdrop,
+            bandPaints: chromeBandPaints,
+          ),
           hasBackdrop: hasBackdrop,
           isDark: isDark,
           usesFrostedChrome: headerUsesFrostedChrome,
@@ -966,12 +981,14 @@ class _TimetableScreenState extends State<TimetableScreen>
               // Single continuous glass for title + weekday (no time-column blur).
               // Stays fixed above the sliding wallpaper so chrome text stays sharp
               // while the photo moves as one continuous sheet.
-              if (continuousChromeBlur)
+              if (chromeBandPaints)
                 HomePageContinuousChromeFrostedOverlay(
                   headerBlurEnabled: settings.homePageHeaderBlurEnabled,
                   weekdayBarBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
                   includeStatusBar: statusBarShowsBackdrop,
                   weekdayBarHeight: _weekDayHeaderHeight,
+                  // 实体档那条实心条要与标题行同一个底色来源（页面底色）。
+                  solidColor: pageBackgroundColor,
                 ),
               HyperosRootPage(
                 overlayHeader: false,
@@ -2434,6 +2451,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (!hasHomePageBackdrop(settings)) {
       return;
     }
+    // 实体档那条带是不透明实心条，星期栏压根不在壁纸上 ⇒ 这条「对比度不够」的
+    // 提醒在实体档下是假的（拿壁纸亮度去判一张实底上的字），别弹。
+    if (!homePageWeekdayBarOverWallpaper(
+      settings: settings,
+      hasBackdrop: true,
+    )) {
+      return;
+    }
     final configuredHex = isDark
         ? settings.weekdayBarFontColorDark
         : settings.weekdayBarFontColorLight;
@@ -2654,14 +2679,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     final dividerWidth = hasBackdrop ? 1.0 : 0.5;
     // Only flip by wallpaper luminance when this band actually shows the
     // wallpaper / frosted glass; with the scope toggled off it paints the
-    // opaque page background and must use the theme / configured ink.
-    final weekdayChromeOverWallpaper =
-        hasBackdrop &&
-        (homePageRegionShowsBackdrop(
-              settings,
-              HomePageBackgroundScope.weekdayBar,
-            ) ||
-            settings.homePageWeekdayBarBlurEnabled);
+    // opaque page background and must use the theme / configured ink. 实体档
+    // 那条不透明实心条同样不属于「压在壁纸上」（真机 2026-09-30 修）。
+    final weekdayChromeOverWallpaper = homePageWeekdayBarOverWallpaper(
+      settings: settings,
+      hasBackdrop: hasBackdrop,
+    );
     // Judge ink from the band actually behind the weekday bar, not the
     // status/title strip above it — the two can differ on the same photo.
     // With the weekday glass band on, follow the band's scrim polarity (the
