@@ -12,9 +12,9 @@ import '../hyperos_blurred_header.dart';
 /// `Inspire.backdropBlur` 的自定义 GPU shader 做**变量**模糊：模糊强度
 /// 在玻璃带内按方向连续变化，观感更接近 iOS 系统栏。
 ///
-/// 两个调用点共享同一份配置与降级判定：
-/// - 首页玻璃带（`HomePageChromeGlassFill`）
-/// - 子页顶栏外壳（`HyperosFrostedHeaderShell`）
+/// 共享这一份实现的调用点（都经 `FrostedHeaderBackground` 进来）：首页玻璃带
+/// （`HomePageChromeGlassFill`）、子页顶栏外壳（`HyperosFrostedHeaderShell`）、
+/// 弹窗面板的顶部渐变带（`HyperosSheetBlurTop`）。
 ///
 /// 降级链与既有材质保持一致：系统无障碍 / 降动效 / 高对比度、全局模糊
 /// 开关关闭、Web / 桌面（[HyperosBlurredHeader.liveBlurSupported]）、或
@@ -29,6 +29,7 @@ class InspireHeaderBlur extends StatelessWidget {
     this.blurSigma = HyperosBlurredHeader.blurSigma,
     this.opaqueAtRest = false,
     this.bottomOverhang = 0,
+    this.cornerRampIn = 0,
     super.key,
   });
 
@@ -70,6 +71,49 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 不透明衬底完全盖住，翻转点只剩一次衬底切换。
   final bool opaqueAtRest;
 
+  /// 让开宿主**两个上角**的横向让位区（逻辑 px）。**默认 0 = 逐字旧行为**（子页顶栏 /
+  /// 首页玻璃带走这支，连 `LayoutBuilder` 都不多插，观感一个像素不变，守卫在
+  /// `header_blur_style_wiring_test.dart`）。**现在只有弹窗面板的顶部渐变带
+  /// （`HyperosSheetBlurTop`）开 = 面板圆角半径 28。**
+  ///
+  /// ## 一个旋钮管两件事（2026-09-28 第六版定稿）
+  ///
+  /// 1. **几何**：**模糊层**（`Inspire.backdropBlur` 那层）的矩形左右各内缩这么多。
+  ///    内缩后的矩形与面板上沿圆弧**相切**（矩形两个上角正好落在弧线与直边的交点），
+  ///    两个圆角区域里没有模糊材料：材料不再压着轮廓的方角，着色器取样范围
+  ///    （`u_area` = 部件矩形 ← `InspireBlurWrapper.globalBounds`）也整体落在面板内 ——
+  ///    「矩形与圆弧相交的那两块采到空样本、模糊跨弧把外面的东西拖进来」
+  ///    （用户：「渐变模糊跑到了圆角外面」）这条路径**从机制上不存在**。
+  /// 2. **强度**：横向渐隐（[sideTaperFractionFor]）的爬升宽度取**同一个数**。矩形
+  ///    内缩后若不渐隐，材料会在离边 [cornerRampIn] 处齐刷刷断掉，切出一条竖直接缝
+  ///    （仓里有过「顶栏一条 1px 竖线」的投诉）；渐隐让强度在矩形边缘正好归零，
+  ///    接缝与「矩形自己的方角」一起消失，弧线交界处（相切点）强度也是 0。
+  ///
+  /// ## ⚠️ 只缩模糊，**白纱（衬底）不缩**（第六版的关键分家）
+  ///
+  /// 白纱走**满宽**的 `Positioned`：它的方角是普通绘图，交由面板的 `ClipRRect` 裁
+  /// （这条路可靠），圆角处白纱边界跟着弧线走，两端一分料都不少。第三版（09-28 上午）
+  /// 把白纱一起缩了，两端各空一截、深色壁纸上读成「透明」被真机打回 —— 那笔账缩的是
+  /// 白纱，不是模糊；白纱满宽之后「每端 56px 无料」这条反对理由不再成立。
+  ///
+  /// ## 竖直方向：**上沿满强度，一点不压**
+  ///
+  /// 上沿必须满强度（滚上去的行在那儿化开，09-26 定、09-27「拉杆底下不能没有模糊」
+  /// 那条的正解），竖直曲线就是渐进档原样：自顶边满 → 带底 0（设置页顶栏同一份观感，
+  /// 用户口径「设置页面顶部的渐变模糊视觉效果是非常好的，不要去改动导致他坏掉」）。
+  /// 曾试过在上沿加一道「0 → 满」的竖直爬升（`topRampIn`，治「角被读成平铺」），
+  /// 接通生效后真机复验是**三段式**（上面透明、中间浓、下面透明）+ 拉杆区透明，
+  /// 用户打回 —— 圆角的账归本参数的几何 + 横向渐隐管，竖直曲线不许再动。
+  ///
+  /// ## 历史账（版本表见 `.agents/notes/implemented/bug-fix/2026-09-28-sheet-top-band-corner-ramp.md`）
+  ///
+  /// 这个旋钮三启三废，每次废掉的原因都不是「内缩本身错了」：第三版内缩开，但当时
+  /// 横向渐隐是死代码（`configFor` 收下参数没接进 `distribution`）⇒ 内缩边切硬缝 +
+  /// 相切角满强度，真机仍报圆角异常，随后连内缩一起归零；第四版误信「ClipRRect 恒赢、
+  /// 带子画不到圆角外」全靠裁剪 —— 圆角问题一直在。第六版 = 内缩只缩模糊 + 渐隐接活 +
+  /// 白纱满宽 + 竖直顶浓底清，四件同时成立才是完整解。
+  final double cornerRampIn;
+
   /// 设备是否支持 shader filter（Inspire Blur 的兜底条件）。
   static bool get _shaderFilterSupported => ImageFilter.isShaderFilterSupported;
 
@@ -107,22 +151,29 @@ class InspireHeaderBlur extends StatelessWidget {
   ///
   /// 纯函数便于测试：渐进档的 sigma / extent 全部来自上面的固定常量，
   /// 高斯档用 [gaussianSigma]（全局「模糊强度」）并整带均匀。
+  ///
+  /// [sideTaperFraction] 是**横向**渐变的爬升段占材料盒宽度的比例（0..1，见
+  /// [InspireHeaderBlur.cornerRampIn]）。0 = 旧行为（只有竖直那一份，逐字不变）。
+  /// 大于 0 时渐进档的分布变成「竖直渐变 × 横向渐变」：**上沿仍是满强度**（滚上去
+  /// 的行照旧化开），而材料盒左右两端在 [sideTaperFraction] 之内从 0 爬到满
+  /// （内缩出来的那条竖边因此是渐隐的）。
+  ///
+  /// 竖直那份**逐字复用** [InspireBlurConfig.topToBottom] 的分布，不另写一套值 ——
+  /// `progressiveExtent` 那条「带底恒为 0」是这块带子的地基，改常量时两边必须一起走。
+  /// 高斯档是均匀分布、没有方向可乘，忽略该参数。
   static InspireBlurConfig configFor(
     HeaderBlurStyle style, {
     required double gaussianSigma,
+    double sideTaperFraction = 0,
   }) {
+    final taper = sideTaperFraction.clamp(0.0, 1.0);
     return switch (style) {
-      // 渐进档：模糊自顶边满强度向下按 extent 衰减到 0。
-      // extent = 1：完全清晰正好落在**带底**（已含 overhang），与下方内容
-      // 衔接处无残留模糊切边。
-      HeaderBlurStyle.inspire => InspireBlurConfig.topToBottom(
-        sigma: progressiveSigma,
-        // 故意写死 1.0：这是"边界正好落在带底"的契约本身，后面调 sigma 时
-        // 不该顺手把它当成可省的默认值。
-        // ignore: avoid_redundant_argument_values
-        extent: progressiveExtent,
-      ),
-      // 高斯档：整带均匀模糊，粗细走全局模糊强度。
+      // 渐进档：形状 = 竖直那份 × 横向那份，见 [_inspireDistribution]。
+      HeaderBlurStyle.inspire => InspireBlurConfig(
+          sigma: progressiveSigma,
+          distribution: _inspireDistribution(taper: taper),
+        ),
+      // 高斯档：整带均匀模糊，粗走全局模糊强度（两个方向渐变都忽略）。
       HeaderBlurStyle.gaussian => InspireBlurConfig(
         distribution: const UniformDistribution(),
         sigma: gaussianSigma,
@@ -130,7 +181,68 @@ class InspireHeaderBlur extends StatelessWidget {
     };
   }
 
-  /// 渐进档衬底渐变：顶边满浓度，沿方向衰减，**带底恒为全透明**。
+  /// 渐进档的**分布形状**：竖直那份 [vertical] × 横向那份 [taper] 的乘积
+  /// （[ProductDistribution] = `first(u,v) × second(u,v)`，本仓 fork 补丁 2）。
+  ///
+  /// ## 两份各自的形状
+  ///
+  /// * **竖直**：恒为 [verticalProgressiveProfile]（= `topToBottom` 那份，模糊自顶边
+  ///   满强度、按 extent 衰减到 0；`extent` 写死 1.0 是「完全清晰正好落在**带底**
+  ///   （已含 overhang），与下方内容衔接处无残留模糊切边」这条契约本身）。**上沿就是
+  ///   满强度，不许再加竖直爬升** —— 曾试过「上沿 0 → 往下爬满」（`topRampFraction`），
+  ///   接通生效后真机是三段式（上透明 / 中间浓 / 下透明）+ 拉杆区透明，用户打回，
+  ///   参数已删（历史见 [cornerRampIn] 与 09-28 笔记的版本表）。
+  /// * **横向**（`taper` > 0）：材料盒两端 0 → [cornerRampIn] 段满，见 [sideTaperProfile]
+  ///   —— 治的是「模糊矩形内缩后在边上断出一条竖直接缝」，也让相切点强度归零。
+  ///   `taper` = 0（子页顶栏 / 首页玻璃带）时直接返回竖直那一份，与改动前逐字一致。
+  ///
+  /// ## 为什么在这里乘，而不是只给衬底加横向渐隐
+  ///
+  /// ⚠️ 2026-09-28 踩过：`configFor` 收下了 `sideTaperFraction` 却没把它接进
+  /// `distribution`，于是**模糊那侧的横向渐隐静默消失** —— 第三版（内缩开着）真机
+  /// 仍报「圆角外面有奇怪的东西」就是这笔（内缩边硬缝 + 相切角满强度）。测试
+  /// `sheet_top_band_corner_ramp_test.dart` 的「分布 = 竖直 × 横向」钉的就是这条。
+  /// 上游每个分布只能表达**一个方向**的形状，说不了「沿这条轴满强度、沿那条轴渐隐」
+  /// —— [ProductDistribution] 就是干这个的。
+  static BlurDistribution _inspireDistribution({required double taper}) {
+    final vertical = verticalProgressiveProfile;
+    if (taper <= 0) {
+      return vertical;
+    }
+    return ProductDistribution(
+      first: vertical,
+      second: sideTaperProfile(taper),
+    );
+  }
+
+  /// 渐进档的**竖直**那一份渐变（上沿满 → 带底 0）。
+  ///
+  /// 抽出来是因为 [configFor] 与测试都要用同一份：模糊与衬底是两层独立绘制，
+  /// 各自重写一遍值迟早漂。
+  @visibleForTesting
+  static DirectionalDistribution get verticalProgressiveProfile =>
+      InspireBlurConfig.topToBottom(
+        sigma: progressiveSigma,
+        // ignore: avoid_redundant_argument_values
+        extent: progressiveExtent,
+      ).distribution as DirectionalDistribution;
+
+  /// **横向**那一份渐变：材料盒左端 0 → [fraction] 处满 → 右对称 → 右端 0。
+  ///
+  /// [fraction] 是爬升段占盒宽的比例。纯函数便于测试：与衬底那份 [tintSideTaper]
+  /// 的 stops 必须是同一组数（模糊与衬底是同一块材料）。
+  @visibleForTesting
+  static DirectionalDistribution sideTaperProfile(double fraction) {
+    final f = fraction.clamp(0.0, 1.0);
+    return DirectionalDistribution(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      values: const <double>[0, 1, 1, 0],
+      stops: <double>[0, f, 1 - f, 1],
+    );
+  }
+
+  /// 渐进档衬底的**竖直**渐变：顶边满浓度，沿方向衰减，**带底恒为全透明**。
   ///
   /// 带底必须是 0：玻璃带外面是清晰内容，衬底只要在交界处还不是透明，就会
   /// 切出一条横向硬边（真机口径「最浓状态下底部出现一条横向」）。所以
@@ -139,6 +251,13 @@ class InspireHeaderBlur extends StatelessWidget {
   ///
   /// [bottomScale] = 0（默认）时退化成 [top, 透明] 两段，与接入调参前的观感
   /// 逐像素一致。
+  ///
+  /// ⚠️ **上沿就是满浓度，不许再加「上沿 0 → 往下爬满」的竖直爬升**（曾以
+  /// `topRampFraction` 四段渐变的形式存在，真机复验是三段式 + 拉杆区透明，用户
+  /// 打回后参数已删）。圆角的账归 [cornerRampIn] 的几何 + 横向渐隐管。
+  ///
+  /// 形状**只有竖直这一份**。横向那一份由 [tintSideTaper] 以 `ShaderMask` 的
+  /// `dstIn` 叠上去（两段相乘），而不是在这里写多段 —— 见 [cornerRampIn]。
   @visibleForTesting
   static LinearGradient tintGradient(Color top, double bottomScale) {
     final transparent = top.withValues(alpha: 0);
@@ -158,35 +277,99 @@ class InspireHeaderBlur extends StatelessWidget {
     );
   }
 
+  /// 衬底那份**横向**渐变：与 [sideTaperProfile] 的 stops 必须是同一组数
+  /// （模糊与衬底是同一块材料，两处各写一遍必然漂）。
+  ///
+  /// 抽出来是因为它被 `ShaderMask` 用：把竖直渐变按它裁一次 = 两段相乘，而**不**
+  /// 需要给 `BackdropFilter` 套离屏层（本仓的硬纪律，见 [cornerRampIn]）。
+  @visibleForTesting
+  static LinearGradient tintSideTaper(double fraction) {
+    final f = fraction.clamp(0.0, 1.0);
+    // 方向就是 `LinearGradient` 的默认（centerLeft → centerRight，即横向）。
+    return LinearGradient(
+      colors: const <Color>[
+        Colors.transparent,
+        Colors.white,
+        Colors.white,
+        Colors.transparent,
+      ],
+      stops: <double>[0, f, 1 - f, 1],
+    );
+  }
+
   /// 渐进档衬底：随方向上浓下淡，与模糊强度梯度对齐；带底恒为透明。
   ///
   /// 高斯档保持均匀 [tint]。渐进档若继续盖一层整幅半透明色，观感会退化
   /// 成「一致的半透明条」，完全看不出 iOS 式的顶浓底清。
-  Widget _tintLayer() {
+  ///
+  /// [sideTaperFraction] > 0 时再叠一层**横向**渐变（`ShaderMask` 的 `dstIn`），
+  /// 于是白纱与模糊拿到**同一个**两段相乘的形状（stops 与 [sideTaperProfile] 逐字
+  /// 同源）。**当前唯一调用方传 0**：白纱不横向收，只留竖直那一份（见
+  /// [sideTaperFractionFor] 的分家说明）。这层留着是为了将来要「两层同形」时
+  /// 有个不踩离屏层的写法可抄 —— 千万别把它套到 `BackdropFilter` 外面。
+  Widget _tintLayer({required double sideTaperFraction}) {
     final useGradient = style == HeaderBlurStyle.inspire && !opaqueAtRest;
     if (!useGradient) {
-      return _bandLayer(child: ColoredBox(color: tint));
+      // ⚠️ 白纱走**满宽**定位（`insetCorners: false`）：只有模糊层左右让开
+      // [cornerRampIn]，白纱跟着缩两端就会空掉一截料（第三版真机打回的账）。
+      return _bandLayer(insetCorners: false, child: ColoredBox(color: tint));
     }
+    final vertical = DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: tintGradient(tint, progressiveTintBottomScale),
+      ),
+    );
+    if (sideTaperFraction <= 0) {
+      return _bandLayer(insetCorners: false, child: vertical);
+    }
+    final mask = tintSideTaper(sideTaperFraction);
     return _bandLayer(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: tintGradient(tint, progressiveTintBottomScale),
-        ),
+      insetCorners: false,
+      child: ShaderMask(
+        blendMode: BlendMode.dstIn,
+        shaderCallback: mask.createShader,
+        // ⚠️ 这个 `ShaderMask` **只**包住上面那个纯渐变的衬底层。千万别把它扩到
+        // `BackdropFilter` 那层：本仓记过「给模糊套离屏层会把模糊降级成透明」，
+        // 那正是这里要绕开的坑（模糊的横向淡出由 `InspireBlurConfig.product` 做）。
+        child: vertical,
       ),
     );
   }
 
-  /// 把一层铺满整条带，并按 [bottomOverhang] 往下多画一截。
+  /// 把一层铺满整条带（[insetCorners] 时左右各让开 [cornerRampIn]、下沿外推
+  /// [bottomOverhang]）。
   ///
-  /// Stack 的高度由非定位的 [child] 决定，所以这两层撑出去的部分**不参与布局**
+  /// Stack 的高度由非定位的 [child] 决定，所以下沿撑出去的部分**不参与布局**
   /// —— 下沿能往下走，标题与外壳高度都不动。
-  Widget _bandLayer({required Widget child}) {
-    if (bottomOverhang <= 0) {
+  ///
+  /// [insetCorners] **只有模糊层传 `true`**（见 [cornerRampIn] 的第六版分家）：
+  /// 模糊的取样范围是本部件自己的矩形（着色器 `u_area_origin/u_area_size` ←
+  /// `InspireBlurWrapper.globalBounds`），矩形还压着宿主的圆弧时，相交的那两块
+  /// 着色器以为采得到、引擎按裁剪区掐过之后其实没有 ⇒ 模糊跨弧把外面的东西拖进来
+  /// （症状「渐变模糊跑到了圆角外面」）。内缩让矩形与弧相切，这条路径从机制上断掉；
+  /// 竖直方向**一点不动**：上沿仍贴着宿主上沿，化开不减。
+  ///
+  /// 白纱传 `false`：普通绘图的裁剪可靠，满宽白纱的方角由宿主 `ClipRRect` 交代，
+  /// 两端的料一分不少。
+  ///
+  /// ⚠️ 内缩后**必须**有横向渐隐（`build` 里 `sideTaperFractionFor` 的 `taperIn` 取
+  /// 同一个 [cornerRampIn]），否则材料在边上齐刷刷断掉、切出竖直接缝 —— 第三版的
+  /// 渐隐当时是死代码，这笔账就是那么欠下的。
+  Widget _bandLayer({required Widget child, required bool insetCorners}) {
+    final inset = insetCorners ? cornerRampIn : 0.0;
+    if (inset <= 0 && bottomOverhang <= 0) {
       return Positioned.fill(child: child);
     }
+    // ⚠️ `left` 与 `right` **必须同号**（都是 `+inset` = 左右各往内缩）。
+    // 曾经写成 `right: -cornerRampIn`，于是「左边缩进去、右边伸出来」，材料盒整体
+    // 往右偏了一个 cornerRampIn：左上角那截没人画 → 透出后面的壁纸（读成透明），
+    // 右上角反而多盖到面板外 → 模糊跨过圆角弧、把圆角盖成平的。
+    // 三种现象是同一个符号错误，与「渐变模糊偏向右边」是同一件事。
+    // 宽度的账也要跟着这条：`left+right` 同号才是「窄 2×inset」，
+    // `build` 里 `constraints.maxWidth - cornerRampIn * 2` 就是按这个契约算材料盒宽的。
     return Positioned(
-      left: 0,
-      right: 0,
+      left: inset,
+      right: inset,
       top: 0,
       bottom: -bottomOverhang,
       child: child,
@@ -196,7 +379,66 @@ class InspireHeaderBlur extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final useBlur = blurEnabled && canRender(context);
+    if (cornerRampIn <= 0) {
+      // 未开让位的宿主（子页顶栏 / 首页玻璃带）：只有竖直那一份，逐字旧行为，
+      // 连 `LayoutBuilder` 都不插。
+      return _buildBand(context, useBlur: useBlur, sideTaperFraction: 0);
+    }
+    // 横向渐隐要占**比例**，分母只有布局定下来才知道：材料盒宽 = 带宽 −
+    // 2×[cornerRampIn]（`_bandLayer` 的 `Positioned` 左右各让开的那截）。
+    //
+    // 爬升宽度取 [cornerRampIn] 自己（一个旋钮管几何与强度，见 [cornerRampIn]）：
+    // 让开多少，就在多宽里从 0 爬进场 —— 内缩边不断料，弧线相切点上强度也归零。
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return _buildBand(
+          context,
+          useBlur: useBlur,
+          sideTaperFraction: sideTaperFractionFor(
+            materialWidth: constraints.maxWidth - cornerRampIn * 2,
+            taperIn: cornerRampIn,
+          ),
+        );
+      },
+    );
+  }
 
+  /// **横向**渐变的爬升段占材料盒宽度的比例 —— [sideTaperFraction] 的推导，纯函数。
+  ///
+  /// 爬升段的**物理宽度就等于 [taperIn]**，所以分母必须是**实际画的那个材料盒**宽
+  /// （调用点传 `constraints.maxWidth - 2 × cornerRampIn`：`_bandLayer` 的 `Positioned`
+  /// 左右各让开 [cornerRampIn]，让出来的那一截要正好被渐隐吃掉，两处同一个数）。
+  /// 现网弹窗带 `taperIn = cornerRampIn`；未开让位的宿主不进这条推导。
+  ///
+  /// ⚠️ 分母曾写成 `width + cornerRampIn * 2`，与这份契约正好相反：算出来的爬升段
+  /// 只有 21px 而不是 28px（393 宽的屏），即渐隐比让位区**先**收尾、末尾留了一条满
+  /// 强度的窄边。观感只差一点点所以真机看不出来，但代码与注释已经对不上，且没有
+  /// 任何用例覆盖这个推导 —— 现在抽成纯函数并由
+  /// `sheet_top_band_corner_ramp_test.dart` 钉住。
+  ///
+  /// [taperIn] ≤ 0 或材料盒不剩正宽度时返回 0：横向渐变无处可爬，退回
+  /// 「只有竖直那一份」= 逐字旧行为。
+  ///
+  /// ## 这份横向渐隐**只喂给模糊**（2026-09-28 分家）
+  ///
+  /// 白纱不横向渐隐、也不随矩形内缩（满宽）：一旦跟着收，两端就只剩玻璃、深色壁纸上
+  /// 读成「透明」（第三版真机打回的账）。**只有模糊收** —— 圆角那两块的取样不跨过
+  /// 弧线，两端的白纱一分不少。
+  @visibleForTesting
+  static double sideTaperFractionFor({
+    required double materialWidth,
+    required double taperIn,
+  }) {
+    if (taperIn <= 0) return 0;
+    if (materialWidth <= 0) return 0;
+    return (taperIn / materialWidth).clamp(0.0, 1.0);
+  }
+
+  Widget _buildBand(
+    BuildContext context, {
+    required bool useBlur,
+    required double sideTaperFraction,
+  }) {
     final band = Stack(
       fit: StackFit.passthrough,
       // Positioned bottom=-overhang 的模糊/衬底层要越过原始带高；
@@ -204,17 +446,27 @@ class InspireHeaderBlur extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         if (useBlur)
+          // 模糊层：唯一吃 [cornerRampIn] 内缩 + 横向渐隐的一层（见 [_bandLayer]）。
           _bandLayer(
+            insetCorners: true,
             child: IgnorePointer(
               child: Inspire.backdropBlur(
-                config: configFor(style, gaussianSigma: blurSigma),
+                config: configFor(
+                  style,
+                  gaussianSigma: blurSigma,
+                  sideTaperFraction: sideTaperFraction,
+                ),
                 // 顶栏不参与手势，无需截获指针；自身已经裁剪在带内。
                 child: const SizedBox.expand(),
               ),
             ),
           ),
         // 衬底画在模糊之上：模糊负责「糊」，衬底负责可读对比度。
-        _tintLayer(),
+        //
+        // ⚠️ 白纱**不吃**横向渐隐、也**不左右内缩**（满宽）：2026-09-28 分家，理由
+        // 见 [sideTaperFractionFor] / [_bandLayer] —— 白纱一旦跟着收，两端就只剩
+        // 玻璃、深色壁纸上读成「透明」，第三版就是这么被打回的。
+        _tintLayer(sideTaperFraction: 0),
         child,
       ],
     );

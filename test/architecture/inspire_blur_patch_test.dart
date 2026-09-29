@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inspire_blur/inspire_blur.dart';
 
@@ -107,6 +108,71 @@ void main() {
     BlurDistributionPixelsCache.pixelsFor(otherShape, 64, gen); // 形状不同
 
     expect(calls[0], 3);
+  });
+
+  group('补丁 2：ProductDistribution（两个方向渐变的乘积）', () {
+    // 形状补丁。见 `.agents/notes/implemented/bug-fix/2026-09-28-sheet-top-band-corner-ramp.md`：
+    // 弹窗面板顶部渐变带要「上沿满强度化开 + 两个上角那一段淡到 0」，而上游每个分布
+    // 都是单一形状（整带均匀 / 一条方向渐变 / 椭圆 / 圆角矩形 / 自带图），表达不了。
+    // 少了它，这一处只能在「角上被压平」与「上沿读成透明」之间二选一 —— 两条都被
+    // 真机打回过（2026-09-28 三轮）。
+    //
+    // 同样地，本文件 import 了 `ProductDistribution`：`pubspec.yaml` 的
+    // `dependency_overrides.inspire_blur` 换回 pub.dev（或换成不含本补丁的旧 pin）
+    // ⇒ 这个名字不存在、**本文件直接编译失败**。
+
+    test('强度 = 两个方向渐变逐点相乘', () {
+      final config = InspireBlurConfig.product(
+        sigma: 22,
+        first: InspireBlurConfig.topToBottom(sigma: 22).distribution
+            as DirectionalDistribution,
+        second: DirectionalDistribution(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          values: const <double>[0, 1, 1, 0],
+          stops: const <double>[0, 0.2, 0.8, 1],
+        ),
+      );
+      final product = config.distribution as ProductDistribution;
+      // `toDistributionMap()` 的静态返回类型是基类 [BlurDistributionMap]，而
+      // `intensityAt` 声明在子类 [IntensityBasedDistributionMap] 上 ⇒ 要转一下。
+      final map =
+          product.toDistributionMap(size: 64) as IntensityBasedDistributionMap;
+
+      // 上沿正中：竖直 1 × 横向 1 = 满强度（上沿必须仍是满的）。
+      expect(map.intensityAt(0.5, 0), closeTo(1, 1e-9));
+      // 上沿最左端：竖直 1 × 横向 0 = 0（面板上角那一段）。
+      expect(map.intensityAt(0, 0), closeTo(0, 1e-9));
+      expect(map.intensityAt(1, 0), closeTo(0, 1e-9));
+      // 横向爬升段的中间：0.2 归一化处横向正好 1。
+      expect(map.intensityAt(0.2, 0), closeTo(1, 1e-9));
+      // 带底：竖直那份衰减到 0 ⇒ 乘积也 0（带底恒为 0 是这块带子的地基）。
+      expect(map.intensityAt(0.5, 1), closeTo(0, 1e-9));
+    });
+
+    test('形状进缓存键：值相等即命中，不必逐帧重新生成', () {
+      final calls = <int>[0];
+      // 逐帧重建出来的两份配置（顶栏每帧都新建对象），值必须相等。
+      InspireBlurConfig product() => InspireBlurConfig.product(
+        sigma: 22,
+        first: InspireBlurConfig.topToBottom(sigma: 22).distribution
+            as DirectionalDistribution,
+        second: DirectionalDistribution(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          values: const <double>[0, 1, 1, 0],
+          stops: const <double>[0, 0.2, 0.8, 1],
+        ),
+      );
+      final a = product().distribution;
+      final b = product().distribution;
+      expect(identical(a, b), isFalse, reason: '前提：两份是不同实例');
+      expect(a == b, isTrue, reason: '前提：值相等，否则缓存等于没有');
+
+      BlurDistributionPixelsCache.pixelsFor(a, 64, countingGenerator(calls));
+      BlurDistributionPixelsCache.pixelsFor(b, 64, countingGenerator(calls));
+      expect(calls[0], 1);
+    });
   });
 
   test('缓存有上限：条目多了按插入顺序丢最旧的', () {

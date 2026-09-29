@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/header_blur_style.dart';
 import 'hyperos_blurred_header.dart';
+import 'miuix_bottom_sheet.dart';
 
 /// 弹窗顶部的「渐变模糊」带 —— 与设置页顶栏同一个观感，搬进弹窗里用。
 ///
@@ -92,6 +93,34 @@ class HyperosSheetBlurTop extends StatefulWidget {
     this.bleedTop = 0,
     super.key,
   });
+
+  /// 让开面板**两个上角**的横向让位区（逻辑 px）= 面板上角的圆角半径。
+  ///
+  /// ## 第六版定稿（2026-09-28）：内缩只缩模糊 + 渐隐接活 + 白纱满宽 + 竖直顶浓底清
+  ///
+  /// 本控件的带子**从面板上沿起**，带子的模糊材料矩形原本满宽铺到面板两边，两个上角
+  /// 的圆弧正压在矩形的两个**方角**上。三件事同时成立才不出问题（缺一件都会复现
+  /// 前面某一次的返工，完整版本表见
+  /// `.agents/notes/implemented/bug-fix/2026-09-28-sheet-top-band-corner-ramp.md`）：
+  ///
+  /// 1. **模糊层矩形左右各内缩本值**（= 半径 28，与圆弧相切）：圆角区域里没有模糊
+  ///    材料 —— 材料不再压轮廓的方角，着色器取样范围也整体落在面板内，「模糊跨弧
+  ///    把外面的东西拖进来」（用户：「渐变模糊跑到了圆角外面」）从机制上断掉。
+  /// 2. **横向渐隐的爬升宽度取同一个数**（`InspireHeaderBlur.sideTaperFractionFor`
+  ///    的 `taperIn = cornerRampIn`）：内缩边强度从 0 爬进场，不切竖直接缝，弧线
+  ///    相切点上强度也是 0。第三版内缩开着、渐隐却是死代码（参数没接进
+  ///    `distribution`），硬缝 + 相切角满强度就是那版真机失败的账。
+  /// 3. **白纱（衬底）不内缩**：满宽铺，方角交面板 `ClipRRect` 裁，两端一分料不少
+  ///    —— 「每端 56px 无料、深色壁纸读成透明」缩的是白纱，不是模糊。
+  ///
+  /// ## 竖直曲线不许动：顶浓底清 = 设置页顶栏同一份观感
+  ///
+  /// 上沿满强度（滚上去的行在那儿化开，09-26 定；09-27「拉杆底下不能没有模糊」那条
+  /// 的正解），向下一路衰减到带底 0。曾给上沿加过一道「0 → 满」的竖直爬升
+  /// （`topRampIn`，治「角被读成平铺」），约束断线修通、真的生效之后，真机复验是
+  /// **三段式**（上面透明、中间浓、下面透明）+ 拉杆区透明 —— 用户 2026-09-28 打回：
+  /// 「渐变模糊应该是顶部浓，下面透明」。该参数已删，圆角的账全部归上面三条。
+  static const double cornerRampIn = hyperosMiuixBottomSheetCornerRadius;
 
   /// 带内容（`header`）的高度。带高按它夹死，正文让位也用它。
   final double headerHeight;
@@ -340,9 +369,12 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
         // 带没画模糊时没有下沿可谈（见 InspireHeaderBlur.bottomOverhang：模糊关掉还
         // 外推会盖住正文第一行）。
         bottomOverhang: useBlur ? widget.fadeExtent : 0,
-        // 模糊层与衬底都是 `Positioned.fill`（铺满整条带 = 满宽），而带上那个控件
-        // 要**跟正文对齐** —— 带满宽、控件不跟着变宽，否则控件会比底下正文宽出去
-        // [bleed]×2，两边对不齐。所以横向让位加在这里，不加在带盒上。
+        // 圆角的账一条链走完（第六版，见 [HyperosSheetBlurTop.cornerRampIn]）：
+        // 模糊层矩形左右内缩本值（与圆弧相切）+ 横向渐隐爬升宽度取同一个数 +
+        // 白纱满宽不缩 + 竖直曲线就是渐进档原样（顶浓底清，设置页同一份观感）。
+        cornerRampIn: HyperosSheetBlurTop.cornerRampIn,
+        // 带上那个控件要**跟正文对齐** —— 带满宽、控件不跟着变宽，否则控件会比底下
+        // 正文宽出去 [bleed]×2，两边对不齐。所以横向让位加在这里，不加在带盒上。
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: widget.bleed),
           child: SizedBox(height: widget.headerHeight, child: widget.header),
@@ -391,6 +423,14 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
         top: -widget.bleedTop,
         left: -widget.bleed,
         right: -widget.bleed,
+        // 显式给 `height` = 带盒高：`RenderStack` 对只有 `top` 的定位子节点给的是
+        // **高度无界**约束（`positionedChildConstraints` 里 `tightFor(height: null)`），
+        // 带子内容靠自己的 SizedBox 量回同高只是巧合，钉死之后带盒与 `headerHeight`
+        // 不可能漂（带高由 `_mainBand` 的 `SizedBox` 按 `headerHeight` 夹死）。
+        // 历史上这还是治过一处真 bug：竖直爬升靠 `LayoutBuilder` 拿高度算比例，无界
+        // 约束让 `topRampFractionFor` 恒 0、爬升成死代码（2026-09-28 实测；爬升本身
+        // 后来被用户打回删除，但「约束必须有界」这条教训留着）。
+        height: bandBoxHeight,
         child: reveal
             ? band
             : IgnorePointer(

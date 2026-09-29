@@ -66,6 +66,45 @@ void main() {
     expect(bg.blurStyle, HeaderBlurStyle.inspire);
   });
 
+  testWidgets('共享带子默认不设「让开圆角」：子页顶栏 / 首页玻璃带逐像素不变', (
+    tester,
+  ) async {
+    // 用户 2026-09-28 明确口径：「设置页面顶部的渐变模糊视觉效果是非常好的，不要去
+    // 改动导致他坏掉」。所以「带子不铺到宿主圆角上」这条能力**默认关**，只有上沿
+    // 真的是圆角轮廓的宿主（弹窗面板那条）才开 —— 其它调用方走的是改动前那条
+    // `Positioned.fill` + 单一竖直渐变的路，连 `LayoutBuilder` 都不多插一个。
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: FrostedAppearanceScope(
+          appearance: _appearance,
+          child: HyperosFrostedHeaderShell(child: SizedBox(height: 56)),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final band = tester.widget<InspireHeaderBlur>(
+      find.byType(InspireHeaderBlur),
+    );
+    expect(band.cornerRampIn, 0, reason: '子页顶栏的上沿是屏幕直边，没有圆角要保');
+    // 横向渐隐是套在衬底上的 ShaderMask；没开让位区就不该有它（有的话会给整条带子
+    // 多一层离屏合成）。
+    expect(
+      find.descendant(
+        of: find.byType(InspireHeaderBlur),
+        matching: find.byType(ShaderMask),
+      ),
+      findsNothing,
+    );
+    // 竖直那份渐变仍是接入调参前那条两段形（上沿满浓度 → 带底全透明）。
+    final gradient = InspireHeaderBlur.tintGradient(
+      const Color(0xB3FFFFFF),
+      InspireHeaderBlur.progressiveTintBottomScale,
+    );
+    expect(gradient.colors.length, 2);
+    expect(gradient.stops, isNull);
+  });
+
   testWidgets('模糊下沿按 bottomOverhang 往下多画，带子本身高度不变', (tester) async {
     // 用户口径 2026-09-23：「让模糊靠下一点，最底下模糊的边界再往下，超过标题
     // 底部一个字空间」。这条钉的是**只往下多画**：标题行（带子本体）的高度一点

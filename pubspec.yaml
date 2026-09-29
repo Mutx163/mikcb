@@ -131,15 +131,31 @@ dependency_overrides:
     git:
       url: https://github.com/Mutx163/flutter_miuix.git
       ref: 614bf04249542f0c002ee5d95b057f2bad5dd506
-  # inspire_blur：分布图像素记忆化——上游每个新挂载的顶栏都同步重算一张
-  # 674k 像素的分布图（真机实测 36~49ms），这里按 (distribution, size) 记住像素。
+  # inspire_blur：**三个补丁**——
+  #   1.（性能）分布图像素记忆化——上游每个新挂载的顶栏都同步重算一张 674k 像素的
+  #      分布图（真机实测 36~49ms），这里按 (distribution, size) 记住像素。
+  #   2.（形状，2026-09-28）`ProductDistribution`：两个方向渐变的**乘积**。上游每个
+  #      分布都是「单一形状」（整带均匀 / 一条方向渐变 / 椭圆 / 圆角矩形 / 自带图），
+  #      表达不了「沿一条轴满强度、沿另一条轴在两端淡出」—— 弹窗面板顶部渐变带要的
+  #      正是那个：上沿（面板轮廓那条边线）满强度化开，同时在面板两个上角那一段淡到
+  #      0，好让面板自己的边光继续把圆角读成圆的。少了它，这一处只能在「角上被压平」
+  #      与「上沿读成透明」之间二选一，两条都真机被打回过（2026-09-28 三轮）。
+  #      详见 `.agents/notes/implemented/bug-fix/2026-09-28-sheet-top-band-corner-ramp.md`。
+  #   3.（修复，2026-09-29）背景模糊着色器的 `u_size`（画布尺寸，float 0/1）上游从未
+  #      设置，恒为 (0,0)：采样坐标全部退化，强度图实际只采到**左上角一个点**且恒定
+  #      —— 单向渐变分布在那点 = 1（顶栏碰巧接近正确，bug 被衬底掩盖）；乘积分布
+  #      在那点 = 1×0 = 0（弹窗顶部渐变带的模糊整条死掉，真机口径「渐变模糊变成
+  #      透明的，只剩顶部一层白雾」）。修法：显式设 u_size = 物理屏幕尺寸。
   # fork 自 inspirestack/inspire_blur，分支 mikcb/distribution-pixels-cache，
   # 基线 tag v0.4.1（a44d40c）；改补丁请改 C:/cursor/inspire_blur 那份克隆。
   # 全部理由与删除清单见 test/architecture/inspire_blur_patch_test.dart。
+  # 2026-09-29：ref 指向含**三个**补丁的提交 0b84c9c（6247f02 = 补丁 1；75442c3 =
+  # 补丁 1+2；60c211b = 再放出 toDistributionMap 扩展；7333834 = 再放出声明
+  # intensityAt 的 IntensityBasedDistributionMap；0b84c9c = 补丁 3 显式设 u_size）。
   inspire_blur:
     git:
       url: https://github.com/Mutx163/inspire_blur.git
-      ref: 6247f025b5b6fdb8700d3f6e2728bef04b658d3d
+      ref: 0b84c9cdc094cea72318660c9ca6337767cbdb72
 
 flutter:
   uses-material-design: true

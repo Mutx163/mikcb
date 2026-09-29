@@ -32,6 +32,7 @@ class FrostedHeaderBackground extends StatelessWidget {
     this.blurStyle = HeaderBlurStyle.gaussian,
     this.opaqueAtRest = false,
     this.bottomOverhang = 0,
+    this.cornerRampIn = 0,
     super.key,
   });
 
@@ -50,6 +51,13 @@ class FrostedHeaderBackground extends StatelessWidget {
   /// passes a non-zero value.
   final double bottomOverhang;
 
+  /// See [InspireHeaderBlur.cornerRampIn]. Only the bottom-sheet top band turns
+  /// this on (= the panel's corner radius) — it is the one band whose top edge
+  /// **is** the panel's own outline. Defaults to 0 so the subpage top bar and
+  /// home glass band stay byte-identical to the settings-page look the user
+  /// asked to keep.
+  final double cornerRampIn;
+
   @override
   Widget build(BuildContext context) {
     return InspireHeaderBlur(
@@ -59,6 +67,7 @@ class FrostedHeaderBackground extends StatelessWidget {
       style: blurStyle,
       opaqueAtRest: opaqueAtRest,
       bottomOverhang: bottomOverhang,
+      cornerRampIn: cornerRampIn,
       child: child,
     );
   }
