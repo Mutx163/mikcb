@@ -292,7 +292,10 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
   }
 
   Widget _buildBanded(BuildContext context) {
-    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+    // ⚠️⚠️ 临时诊断（2026-09-29 角外平铺定位用，确认后删除）：
+    // 强制关闭带子的模糊层（白纱/圆角不变），用于区分角外平铺的来源：
+    // 关掉后角外若干净 = 模糊层越界采样；若依旧 = 另有其人（面板玻璃/捕获层）。
+    const useBlur = false;
     // 带盒 = 盖住的那截空占位（[bleedTop]）+ 带上内容那一段。带子整体**上移**
     // [bleedTop]，把把手与带之间那段空档收掉。
     //
@@ -378,11 +381,9 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
         // 有内容滚到带下时白纱越出面板圆弧、角外留下满浓度填充，白纱的形状
         // 从此自绘、不依赖引擎裁剪）。
         shapeTopInset: widget.bleedTop,
-        // 白纱中下段补浓（2026-09-29 用户口径「三段式」）：带子浮在屏幕中部、
-        // 上下都有对比，卡片之间的空隙透过半透明雾读成「透明」，整条被内容
-        // 切成三段。补浓后中下段雾密度上来，整条读成连续一段磨砂；带底仍
-        // 恒为透明、不切硬边。
-        tintBottomScale: 0.4,
+        // 白纱浓度与设置页顶栏**完全一致**（tintBottomScale 保持出厂 0）。
+        // 2026-09-29 曾按「三段式透底」口径补浓 0.4，用户打回：本带的观感
+        // 本来就是跟踪设置页做的，不许差异化。参数保留作卧底旋钮。
         // 带上那个控件要**跟正文对齐** —— 带满宽、控件不跟着变宽，否则控件会比底下
         // 正文宽出去 [bleed]×2，两边对不齐。所以横向让位加在这里，不加在带盒上。
         child: Padding(

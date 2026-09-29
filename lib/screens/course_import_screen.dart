@@ -31,6 +31,7 @@ import '../models/warehouse_repository_models.dart';
 import '../providers/timetable_provider.dart';
 import '../domain/warehouse_course_import_logic.dart';
 import '../domain/warehouse_location_time_schemes.dart';
+import '../domain/warehouse_session_probe.dart';
 import '../services/ai_course_import_service.dart';
 import '../services/ics_import_service.dart';
 import '../services/import_random_color_preferences.dart';
@@ -134,8 +135,13 @@ bool shouldPromptRememberedLoginAutofill({
   required WarehouseRememberedLogin candidate,
   required bool hasPromptedAutofill,
   required bool isPromptShowing,
+  bool sessionActive = false,
 }) {
+  // sessionActive：探针已确认教务会话还在。此时屏幕上那张登录框是假的（强智登录页
+  // 不看会话，无条件返回登录表单），弹「要不要帮你填密码」纯属噪音——用户点了也
+  // 没地方填，填了也不会被用到。判据见 domain/warehouse_session_probe.dart。
   return hasPasswordField &&
+      !sessionActive &&
       rememberedLogin != null &&
       rememberedLogin.password.isNotEmpty &&
       candidate.password.isEmpty &&
@@ -3799,6 +3805,32 @@ class _WarehouseAdapterWebLoginScreenState
   static const String _desktopUserAgent =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+  // --- 教务会话探针（qingyu_only/<学校>/session_probe.json）---
+  //
+  // 目的：让 App 说出「其实还登录着」。强智一类系统的登录页不看会话，无条件返回
+  // 登录表单，光看页面永远只能得出「请登录」这个错误结论；而适配脚本抓课表用的
+  // 是带 Cookie 的 fetch，会话还在就照样抓得到。探针把这件事提前问出来。
+  //
+  // 三条自律：
+  // 1. **不自动跳转**。判错了把人从登录页踹走比让人多登一次糟得多，跳不跳交给用户。
+  // 2. **判不出来就闭嘴**。取不到配置 / 网络失败 / 被跨源重定向一律 unavailable，
+  //    行为与今天完全一致（200+ 所没配这个文件）。
+  // 3. **不多打请求**。每次开页最多探一次，换站才重探，同站翻页不再探。
+  WarehouseSessionProbeConfig? _sessionProbeConfig;
+  WarehouseSessionProbeVerdict _sessionProbeVerdict =
+      WarehouseSessionProbeVerdict.unknown;
+  String? _sessionProbeOrigin;
+  bool _sessionProbeInFlight = false;
+  DateTime? _sessionProbeLastAttemptAt;
+  Timer? _sessionProbeTimer;
+
+  /// 两次探活之间的最小间隔。探活是**自动发起**的请求，学校站点有限流/验证码的
+  /// 可能性存在，失败重试也不能连着打。
+  static const Duration _sessionProbeCooldown = Duration(seconds: 20);
+
+  /// 等页面回话的上限。超时后不算「没登录」，只算这次没探成（见 [_maybeRunSessionProbe]）。
+  static const Duration _sessionProbeTimeout = Duration(seconds: 12);
+
   static const String _mobileUserAgent =
       'Mozilla/5.0 (Linux; Android 14; 25060RK16C) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36';
@@ -3925,6 +3957,7 @@ class _WarehouseAdapterWebLoginScreenState
 
   String _bridgeMessageSummary(Map<String, dynamic> message) {
     final type = message['type'];
+    _startSessionProbeConfigLoad();
     final keys = message.keys.join(',');
     final payload = message['payload'];
     final payloadLength = payload is String ? payload.length : null;
@@ -4021,6 +4054,7 @@ class _WarehouseAdapterWebLoginScreenState
               _loadingProgress = progress;
             });
           },
+            _maybeRunSessionProbe(url);
           onPageStarted: (url) {
             if (!mounted) {
               return;
@@ -4164,6 +4198,7 @@ class _WarehouseAdapterWebLoginScreenState
       return;
     }
     _unbindExitRouteAnimation();
+    _disposeSessionProbe();
     if (animation == null) {
       return;
     }
@@ -4615,17 +4650,39 @@ class _WarehouseAdapterWebLoginScreenState
                       top: false,
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                        child: HyperosButton(
-                          label: _isExecutingImport
-                              ? l10n.importingAction
-                              : (_isUsingLocalDebugScript
-                                    ? l10n.executeLocalDebugScriptAction
-                                    : l10n.executeImportScriptAction),
-                          expand: true,
-                          loading: _isExecutingImport,
-                          onPressed: _isExecutingImport
-                              ? null
-                              : _executeImportScript,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // 探针确认会话还在时的一句话说明。放在按钮正上方而不是
+                            // 顶部状态行：状态行归导入过程所有，而这条说的是「你现在
+                            // 不必登录」，两者混在一行会互相覆盖。
+                            if (_isSessionActive) ...[
+                              Text(
+                                l10n.warehouseSessionAlreadyActive,
+                                style: HyperosTypography.listDetail(
+                                  context,
+                                ).copyWith(
+                                  color: HyperosColors.primary(context),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                            HyperosButton(
+                              label: _isExecutingImport
+                                  ? l10n.importingAction
+                                  : (_isUsingLocalDebugScript
+                                        ? l10n.executeLocalDebugScriptAction
+                                        : l10n.executeImportScriptAction),
+                              expand: true,
+                              loading: _isExecutingImport,
+                              onPressed: _isExecutingImport
+                                  ? null
+                                  : _executeImportScript,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -4811,6 +4868,215 @@ class _WarehouseAdapterWebLoginScreenState
       if (event.target && event.target.tagName === 'INPUT') collect();
     }, true);
     document.addEventListener('change', (event) => {
+  /// 探针配置的读取时机。
+  ///
+  /// 绝大多数学校没有 `session_probe.json`（222 所里目前 1 所），这一次读取对它们
+  /// 是一次必然的 404。所以它**不在渲染关键路径上**：开页就发起、回来再判有没有
+  /// 配置，绝不让整个登录页陪着这一次探测等。读失败一律降级为「没配置」。
+  void _startSessionProbeConfigLoad() {
+    if (widget.runInBackground) {
+      // 后台导入没有界面、也没有人需要看「你还登录着」这句提示，别为它多打请求。
+      return;
+    }
+    _repositoryService
+        .fetchQingyuOnlySessionProbeText(widget.source, widget.school)
+        .then((raw) {
+      if (!mounted) {
+        return;
+      }
+      final config = parseWarehouseSessionProbeConfig(raw);
+      setState(() {
+        _sessionProbeConfig = config;
+      });
+      _debugImportLog(
+        'session probe config loaded configured=${config != null}',
+        level: 'debug',
+      );
+    }, onError: (Object error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _sessionProbeConfig = null;
+      });
+      _debugImportLog('session probe config load failed: $error', level: 'warn');
+    });
+  }
+
+  /// 页面加载完就问一次「会话还在吗」。判据与取舍见
+  /// `lib/domain/warehouse_session_probe.dart`。
+  Future<void> _maybeRunSessionProbe(String pageUrl) async {
+    final config = _sessionProbeConfig;
+    if (config == null) {
+      // 没配置 = 这所学校不探，行为与今天完全一致。
+      return;
+    }
+    if (widget.runInBackground ||
+        _isMacroReplay ||
+        _macroRecordingState == MacroRecordingState.recording) {
+      // 宏回放按录制好的步骤自己走；录制中更不能有外来脚本在页面上活动。
+      return;
+    }
+    if (_sessionProbeInFlight) {
+      return;
+    }
+    final origin = warehouseSessionProbeOrigin(pageUrl);
+    if (origin == null) {
+      return;
+    }
+    if (_sessionProbeOrigin != null && _sessionProbeOrigin != origin) {
+      // 换站了：之前那份结论作数不得，重新探。
+      setState(() {
+        _sessionProbeVerdict = WarehouseSessionProbeVerdict.unknown;
+      });
+    }
+    _sessionProbeOrigin = origin;
+    if (_sessionProbeVerdict != WarehouseSessionProbeVerdict.unknown) {
+      // 同一站里翻页不会让会话凭空消失，不重复探。
+      return;
+    }
+    final lastAttempt = _sessionProbeLastAttemptAt;
+    if (lastAttempt != null &&
+        DateTime.now().difference(lastAttempt) < _sessionProbeCooldown) {
+      return;
+    }
+    final target = resolveWarehouseSessionProbeTarget(
+      entryUrl: widget.initialUrl,
+      pageUrl: pageUrl,
+      probeUrl: config.probeUrl,
+    );
+    if (target == null) {
+      _debugImportLog(
+        'session probe skipped: target not same-origin page=$pageUrl '
+        'probe=${config.probeUrl}',
+        level: 'debug',
+      );
+      return;
+    }
+    _sessionProbeLastAttemptAt = DateTime.now();
+    _sessionProbeInFlight = true;
+    _debugImportLog('session probe start target=$target');
+    try {
+      await _controller.runJavaScript(_sessionProbeScript(target));
+    } catch (e) {
+      _sessionProbeInFlight = false;
+      _debugImportLog('session probe inject failed: $e', level: 'warn');
+      return;
+    }
+    // 兜底：页面脚本可能因为导航/销毁而永远不回调。没有这个计时器，
+    // _sessionProbeInFlight 会一直挂着，本次开页再也不会探第二次。
+    _sessionProbeTimer?.cancel();
+    _sessionProbeTimer = Timer(_sessionProbeTimeout, () {
+      _sessionProbeInFlight = false;
+      // 判为 unknown 而不是 unavailable：网络抖动、页面还没稳住都可能造成超时，
+      // 留给下一次翻页重试（冷却期挡住立刻重打）。
+      _debugImportLog('session probe timeout', level: 'warn');
+    });
+  }
+
+  /// 页面内发起探活请求，只回传**最小信号**，判定留给 Dart（那边才能单测）。
+  ///
+  /// 结果走既有 [QingyuBridge] 通道、以 `sessionProbe` 类型回来：这是**宿主自己
+  /// 注入的**脚本，不是学校适配脚本，因此不碰上游协议——脚本保持 100% 上游标准、
+  /// 可原样回馈的约定不受影响。
+  String _sessionProbeScript(String target) {
+    return '''
+(() => {
+  const target = ${jsonEncode(target)};
+  const post = (payload) => {
+    try {
+      QingyuBridge.postMessage(JSON.stringify({
+        type: 'sessionProbe',
+        payload: JSON.stringify(payload)
+      }));
+    } catch (e) { /* 桥已销毁：本次探活作废，不影响导入 */ }
+  };
+  (async () => {
+    try {
+      const resp = await fetch(target, {
+        credentials: 'include',
+        redirect: 'follow',
+        cache: 'no-store'
+      });
+      let html = '';
+      try { html = await resp.text(); } catch (e) { html = ''; }
+      let hasPasswordField = false;
+      try {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        hasPasswordField = !!doc.querySelector('input[type="password"]');
+      } catch (e) { /* 解析不了就当没有密码框，交给 Dart 侧的长度校验兜底 */ }
+      post({
+        ok: true,
+        status: Number(resp.status || 0),
+        finalUrl: String(resp.url || ''),
+        hasPasswordField: hasPasswordField,
+        bodyLength: html.length
+      });
+    } catch (e) {
+      post({
+        ok: false,
+        status: 0,
+        finalUrl: '',
+        hasPasswordField: false,
+        bodyLength: 0,
+        error: String((e && e.message) || e)
+      });
+    }
+  })();
+  return true;
+})();
+''';
+  }
+
+  void _handleSessionProbeMessage(Map<String, dynamic> message) {
+    _sessionProbeTimer?.cancel();
+    _sessionProbeTimer = null;
+    if (!_sessionProbeInFlight) {
+      return;
+    }
+    _sessionProbeInFlight = false;
+    final signal = parseWarehouseSessionProbeSignal(
+      message['payload'] as String?,
+    );
+    final verdict = classifyWarehouseSessionProbe(
+      signal: signal,
+      pageUrl: _currentUrl ?? widget.initialUrl,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _sessionProbeVerdict = verdict;
+    });
+    _debugImportLog(
+      'session probe verdict=${verdict.name} '
+      'status=${signal?.status} bytes=${signal?.bodyLength} '
+      'passwordField=${signal?.hasPasswordField}',
+    );
+  }
+
+  /// 用户刚尝试过登录，旧结论立刻作废（登录成功与否都要重探）。
+  void _invalidateSessionProbeVerdict() {
+    if (_sessionProbeVerdict == WarehouseSessionProbeVerdict.unknown) {
+      return;
+    }
+    _sessionProbeOrigin = null;
+    if (mounted) {
+      setState(() {
+        _sessionProbeVerdict = WarehouseSessionProbeVerdict.unknown;
+      });
+    }
+  }
+
+  void _disposeSessionProbe() {
+    _sessionProbeTimer?.cancel();
+    _sessionProbeTimer = null;
+  }
+
+  /// 会话确实还在（探针判的，不是看页面猜的）。
+  bool get _isSessionActive =>
+      _sessionProbeVerdict == WarehouseSessionProbeVerdict.loggedIn;
+
       if (event.target && event.target.tagName === 'INPUT') collect();
     }, true);
     document.addEventListener('click', (event) => {
@@ -5164,6 +5430,10 @@ $kWarehouseBridgeCompatShim  try {
       _debugImportLog('run import script injected');
       setState(() {
         _lastScriptStatus = _isUsingLocalDebugScript
+      case 'sessionProbe':
+        // 宿主自己注入的探活脚本回话（不是学校脚本发的，见 [_sessionProbeScript]）。
+        _handleSessionProbeMessage(message);
+        break;
             ? AppLocalizations.of(context)!.localDebugScriptInjected
             : AppLocalizations.of(context)!.scriptInjected;
       });
@@ -6069,6 +6339,7 @@ $kWarehouseBridgeCompatShim  try {
   /// 两者分开报：前者是课表上凭空少课，后者是课上着但少显示几周——后者更隐蔽，
   /// 学生只会以为自己那几周没课。
   ({int dropped, int trimmedWeeks}) _warehouseSkipSummary() {
+    required bool sessionActive,
     var dropped = 0;
     var trimmed = 0;
     _warehouseCourseSkips.forEach((reason, count) {
@@ -6106,6 +6377,7 @@ $kWarehouseBridgeCompatShim  try {
       idFactory: () => const Uuid().v4(),
       unknownTeacher: l10n.unknownTeacher,
       unknownLocation: l10n.unknownLocation,
+      sessionActive: _isSessionActive,
       onSkip: _recordWarehouseCourseSkip,
     );
   }
@@ -6120,13 +6392,15 @@ $kWarehouseBridgeCompatShim  try {
     required bool rememberedExists,
     required bool rememberedPasswordEmpty,
     required bool candidatePasswordEmpty,
+      sessionActive: _isSessionActive,
     required bool hasPromptedAutofill,
   }) {
     final key = 'gateAllows=$gateAllows hasPasswordField=$hasPasswordField '
         'remembered=$rememberedExists '
         'rememberedPasswordEmpty=$rememberedPasswordEmpty '
         'candidatePasswordEmpty=$candidatePasswordEmpty '
-        'hasPromptedAutofill=$hasPromptedAutofill';
+        'hasPromptedAutofill=$hasPromptedAutofill '
+        'sessionActive=$sessionActive';
     if (key == _lastLoginStateDecisionKey) {
       return;
     }
@@ -6144,6 +6418,9 @@ $kWarehouseBridgeCompatShim  try {
 
     // W7 凭据绑定站点：自动填充只允许发生在凭据来源的同一 host。
     // 跨源页面（钓鱼页 / 换站）不提示也不回放填充；手动「填充」菜单
+    // 登录动作（点登录 / 提交表单）之后，之前那份「会话还在不在」的结论就过期了：
+    // 登录可能成功、也可能失败。无论哪种，都得让下一次探活重新判。
+    _invalidateSessionProbeVerdict();
     // 属于用户看清当前页面后的显式动作，不受此门禁限制。
     final gateAllows = rememberedLoginAllowsUrl(
       _rememberedLogin,
