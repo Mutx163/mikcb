@@ -450,10 +450,6 @@ class InspireHeaderBlur extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final useBlur = blurEnabled && canRender(context);
-    // ⚠️ 临时探针（2026-09-29 开窗无模糊排查，定位后删除）
-    // ignore: avoid_print
-    print('band-probe: build useBlur=$useBlur blurEnabled=$blurEnabled '
-        'canRender=${canRender(context)} cornerRampIn=$cornerRampIn');
     // ⚠️ 第九轮定案（2026-09-29，用户口径「不是应该是上下渐变吗」）：模糊层回到
     // **满宽 + 纯竖直渐变**。第六版的「左右内缩 + 横向渐隐」是为防圆角越界加的
     // 保护，但它防的两笔（`u_size` 采样退化 = fork 补丁 3、白纱越出圆弧 = 白纱
@@ -516,28 +512,18 @@ class InspireHeaderBlur extends StatelessWidget {
           // 下沉到面板上沿起画后，矩形顶边与白纱的弧线基准同一条线；配合
           // fork 补丁 5 的 `topCornerRadius`（着色器按面板半径在上角走弧、
           // 弧外一律不画），材料形状与面板轮廓严丝合缝。
-          _BlurRerunProbe(
-            builder: (tick) {
-              // ignore: unused_local_variable
-              final t = tick; // tick 变化驱动本闭包重跑，生成新的模糊层 widget 实例
-              return _bandLayer(
-                insetCorners: false,
-                topInset: shapeTopInset,
-                child: IgnorePointer(
-                  child: Inspire.backdropBlur(
-                    config: configFor(
-                      style,
-                      gaussianSigma: blurSigma,
-                      sideTaperFraction: sideTaperFraction,
-                      topCornerRadius: cornerRampIn,
-                    ),
-                    // 顶栏不参与手势，无需截获指针；自身已经裁剪在带内。
-                    child: const SizedBox.expand(),
-                  ),
-                ),
-              );
-            },
-          ),
+          //
+          // ⚠️ 弹窗带（cornerRampIn > 0 的唯一宿主）外面套
+          // [_SheetEntranceReregister]：开窗动画期间第一次进场的滤镜在引擎侧
+          // 登记坏损，事后原地重登记能修（2026-09-29 探针实锤，见该类注释）。
+          if (cornerRampIn > 0)
+            _SheetEntranceReregister(
+              builder: () => _buildBlurLayer(
+                sideTaperFraction: sideTaperFraction,
+              ),
+            )
+          else
+            _buildBlurLayer(sideTaperFraction: sideTaperFraction),
         // 衬底画在模糊之上：模糊负责「糊」，衬底负责可读对比度。
         //
         // ⚠️ 白纱**不吃**横向渐隐、也**不左右内缩**（满宽）：2026-09-28 分家，理由
@@ -559,6 +545,28 @@ class InspireHeaderBlur extends StatelessWidget {
     // 放到带底（左右与上方仍是原框），其余行为不变。
     return ClipRect(clipper: _BandOverhangClipper(bottomOverhang), child: band);
   }
+  /// 模糊层本体（满宽 + 纯竖直分布 + 顶角圆弧，见 [build] 里的说明）。
+  ///
+  /// 抽出来是因为 [_SheetEntranceReregister] 每次「重登记」都要**重新构造**
+  /// 这棵子树（新 widget 实例才会触发引擎重登记），不能复用同一个实例。
+  Widget _buildBlurLayer({required double sideTaperFraction}) {
+    return _bandLayer(
+      insetCorners: false,
+      topInset: shapeTopInset,
+      child: IgnorePointer(
+        child: Inspire.backdropBlur(
+          config: configFor(
+            style,
+            gaussianSigma: blurSigma,
+            sideTaperFraction: sideTaperFraction,
+            topCornerRadius: cornerRampIn,
+          ),
+          // 顶栏不参与手势，无需截获指针；自身已经裁剪在带内。
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
+  }
 }
 
 /// 把裁剪框按 [overhang] 往下扩一截的裁剪器（见 [InspireHeaderBlur.bottomOverhang]）。
@@ -576,23 +584,36 @@ class _BandOverhangClipper extends CustomClipper<Rect> {
       oldClipper.overhang != overhang;
 }
 
-/// ⚠️⚠️ 临时诊断部件（2026-09-29 开窗无模糊排查，定位后删除）：
-/// 挂载 1.5 秒后把子树原地重建一次（重跑 [builder] 生成**新的**模糊层 widget
-/// 实例、element 原地 update → `didUpdateWidget` → 重写 uniforms + 新的
-/// ImageFilter 实例 → 引擎重新登记）——与「切页签」对模糊层做的事完全一样。
-/// 用于验证假设：开窗动画期间第一次进场的 BackdropFilter 在引擎侧登记坏了，
-/// 事后的原地重登记能修。若延迟重录后不切页签模糊也活了，病根即确认。
-class _BlurRerunProbe extends StatefulWidget {
-  const _BlurRerunProbe({required this.builder});
+/// 弹窗顶部渐变带的**开窗重登记**（2026-09-29 真机定案的引擎层绕行）。
+///
+/// ## 病根（真机日志 + 延迟重录探针两轮实锤）
+///
+/// 开窗动画期间第一次进场的 [BackdropFilter]，引擎对它的**背景绑定**是坏的：
+/// Dart 侧一切参数正确（着色器已装载、取景框 = 面板终位、sigma/强度图/圆角
+/// 全对），但之后每帧都沿用坏绑定——内容滚到带下也不出模糊；任何一次原地
+/// 重建（重跑 builder 生成新的模糊层实例 → `didUpdateWidget` → 新的
+/// `ImageFilter` 实例 → 引擎重新登记）立刻恢复。探针验证：开窗后延迟一次
+/// 原地重建，不切页签模糊即活。
+///
+/// ## 做法
+///
+/// 挂载后 **700ms / 1600ms** 各把子树原地重建一次（重跑 [builder]）。开窗时
+/// 列表在顶部、带子底下没有内容，重登记零观感代价；两次是兜底开窗动画被
+/// 卡顿拖长的情形（动画约 620ms）。只在弹窗带启用（`cornerRampIn > 0` 的
+/// 唯一宿主）——子页顶栏/首页玻璃带走路由转场进场，无此症状，不碰。
+class _SheetEntranceReregister extends StatefulWidget {
+  const _SheetEntranceReregister({required this.builder});
 
-  final Widget Function(int tick) builder;
+  /// 每次重登记都要**重新构造**子树（新 widget 实例才会触发引擎重登记）。
+  final Widget Function() builder;
 
   @override
-  State<_BlurRerunProbe> createState() => _BlurRerunProbeState();
+  State<_SheetEntranceReregister> createState() =>
+      _SheetEntranceReregisterState();
 }
 
-class _BlurRerunProbeState extends State<_BlurRerunProbe> {
-  int _tick = 0;
+class _SheetEntranceReregisterState extends State<_SheetEntranceReregister> {
+  static const _delays = <Duration>[Duration(milliseconds: 700), Duration(milliseconds: 1600)];
 
   @override
   void initState() {
@@ -601,16 +622,14 @@ class _BlurRerunProbeState extends State<_BlurRerunProbe> {
     if (Platform.environment.containsKey('FLUTTER_TEST')) {
       return;
     }
-    Future<void>.delayed(const Duration(milliseconds: 1500), () {
-      if (!mounted) return;
-      setState(() => _tick++);
-      // ignore: avoid_print
-      print('band-probe: 延迟重录触发 tick=$_tick');
-    });
+    for (final delay in _delays) {
+      Future<void>.delayed(delay, () {
+        if (!mounted) return;
+        setState(() {});
+      });
+    }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return widget.builder(_tick);
-  }
+  Widget build(BuildContext context) => widget.builder();
 }
