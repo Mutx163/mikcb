@@ -150,17 +150,24 @@ dependency_overrides:
   #      并不总可靠，真机实测模糊效果在有内容滚到带下时越出面板圆角，在角外方形
   #      区域留下亮色填充（「圆角外面会出现东西，顶部/底部又正常」）。着色器用
   #      clamp 前的 areaUV 判定内外，矩形外强制 alpha=0，矩形内逐像素不变。
+  #   5.（修复，2026-09-29）顶角圆弧遮罩接线：`InspireBlurConfig.topCornerRadius`
+  #      （逻辑 px）贯通到着色器 `u_corner_radius`，材料矩形两个**上角**按面板
+  #      半径走弧、弧外一律不输出（含无模糊的输出路径）；补丁 4 只能堵矩形外，
+  #      矩形内、圆弧外的那块（角外平铺的真身）由它堵。与主仓「模糊矩形下沉到
+  #      面板上沿起画」配合，材料形状与面板轮廓严丝合缝。同提交撤掉全部分布图
+  #      加载链路的临时诊断日志。
   # fork 自 inspirestack/inspire_blur，分支 mikcb/distribution-pixels-cache，
   # 基线 tag v0.4.1（a44d40c）；改补丁请改 C:/cursor/inspire_blur 那份克隆。
   # 全部理由与删除清单见 test/architecture/inspire_blur_patch_test.dart。
-  # 2026-09-29：ref 指向含**四个**补丁 + 临时诊断日志的提交 0d7614c（6247f02 =
-  # 补丁 1；75442c3 = 补丁 1+2；60c211b = 再放出 toDistributionMap 扩展；7333834 =
-  # 再放出声明 intensityAt 的 IntensityBasedDistributionMap；0b84c9c = 补丁 3 显式设
-  # u_size；e850e72 = 补丁 4 材料矩形外输出透明；0d7614c = 临时诊断日志，定位后撤）。
+  # 2026-09-29：ref 指向含**五个**补丁的提交 ea18035（6247f02 = 补丁 1；75442c3 =
+  # 补丁 1+2；60c211b = 再放出 toDistributionMap 扩展；7333834 = 再放出声明
+  # intensityAt 的 IntensityBasedDistributionMap；0b84c9c = 补丁 3 显式设 u_size；
+  # e850e72 = 补丁 4 材料矩形外输出透明；0d7614c = 临时诊断日志（已撤）；
+  # ea18035 = 补丁 5 顶角圆弧遮罩接线 + 撤诊断日志）。
   inspire_blur:
     git:
       url: https://github.com/Mutx163/inspire_blur.git
-      ref: 0d7614c39151eac32a2f08cc3efb9a535ff36966
+      ref: ea18035222066bb57f5687e3b4e1b870f7ee2e3b
 
 flutter:
   uses-material-design: true

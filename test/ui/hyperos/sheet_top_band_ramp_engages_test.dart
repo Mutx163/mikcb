@@ -45,7 +45,9 @@ void main() {
         ),
       );
 
-  testWidgets('衬底 = [满, 补浓, 透明] 三段（带底恒透明，中下段补浓防「三段式透底」）', (tester) async {
+  testWidgets('衬底 = [满, 透明] 两段，与设置页顶栏同一份形状（tintBottomScale 出厂 0）', (
+    tester,
+  ) async {
     await tester.pumpWidget(harness());
     await tester.pump();
 
@@ -66,13 +68,12 @@ void main() {
     );
 
     final tint = tintGradients.single;
-    // 2026-09-29 用户口径「三段式透底」：中下段补浓（tintBottomScale = 0.4），
-    // 渐变 = [满浓度, 75% 高度处 0.4×满, 带底透明]。带底仍恒为透明（不切硬边），
-    // 顶部仍满浓度 —— 变的只是中下段的雾密度。
-    expect(tint.colors.length, 3);
+    // 2026-09-29 用户口径定案（撤回 a5c437fc 的 0.4 补浓）：弹窗带的白纱浓度
+    // 必须与设置页顶栏**完全一致**（tintBottomScale = 出厂 0），渐变就是
+    // [满浓度, 带底透明] 两段。谁再把补浓接回来（三段/带 stops），这条立刻红。
+    expect(tint.colors.length, 2);
     expect(tint.colors.first.a, 1.0, reason: '顶边必须满浓度（顶部浓）');
-    expect(tint.stops, [0, 0.75, 1]);
-    expect(tint.colors[1].a, closeTo(0.4, 1e-6), reason: '中段补浓系数 = tintBottomScale');
+    expect(tint.stops, isNull, reason: '两段形没有显式 stops；有 stops 就是接回了补浓/爬升形状');
     expect(tint.colors.last.a, 0, reason: '带底恒透明，不切横向硬边');
   });
 

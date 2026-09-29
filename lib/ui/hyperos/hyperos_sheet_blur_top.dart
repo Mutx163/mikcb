@@ -292,10 +292,7 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
   }
 
   Widget _buildBanded(BuildContext context) {
-    // ⚠️⚠️ 临时诊断（2026-09-29 角外平铺定位用，确认后删除）：
-    // 强制关闭带子的模糊层（白纱/圆角不变），用于区分角外平铺的来源：
-    // 关掉后角外若干净 = 模糊层越界采样；若依旧 = 另有其人（面板玻璃/捕获层）。
-    const useBlur = false;
+    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
     // 带盒 = 盖住的那截空占位（[bleedTop]）+ 带上内容那一段。带子整体**上移**
     // [bleedTop]，把把手与带之间那段空档收掉。
     //

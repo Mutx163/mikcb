@@ -200,6 +200,7 @@ class InspireHeaderBlur extends StatelessWidget {
     HeaderBlurStyle style, {
     required double gaussianSigma,
     double sideTaperFraction = 0,
+    double topCornerRadius = 0,
   }) {
     final taper = sideTaperFraction.clamp(0.0, 1.0);
     return switch (style) {
@@ -207,11 +208,14 @@ class InspireHeaderBlur extends StatelessWidget {
       HeaderBlurStyle.inspire => InspireBlurConfig(
           sigma: progressiveSigma,
           distribution: _inspireDistribution(taper: taper),
+          // mikcb 补丁 5：材料形状两个上角按面板圆角走弧（0 = 关）。
+          topCornerRadius: topCornerRadius,
         ),
       // 高斯档：整带均匀模糊，粗走全局模糊强度（两个方向渐变都忽略）。
       HeaderBlurStyle.gaussian => InspireBlurConfig(
         distribution: const UniformDistribution(),
         sigma: gaussianSigma,
+        topCornerRadius: topCornerRadius,
       ),
     };
   }
@@ -417,9 +421,13 @@ class InspireHeaderBlur extends StatelessWidget {
   /// ⚠️ 内缩后**必须**有横向渐隐（`build` 里 `sideTaperFractionFor` 的 `taperIn` 取
   /// 同一个 [cornerRampIn]），否则材料在边上齐刷刷断掉、切出竖直接缝 —— 第三版的
   /// 渐隐当时是死代码，这笔账就是那么欠下的。
-  Widget _bandLayer({required Widget child, required bool insetCorners}) {
+  Widget _bandLayer({
+    required Widget child,
+    required bool insetCorners,
+    double topInset = 0,
+  }) {
     final inset = insetCorners ? cornerRampIn : 0.0;
-    if (inset <= 0 && bottomOverhang <= 0) {
+    if (inset <= 0 && bottomOverhang <= 0 && topInset <= 0) {
       return Positioned.fill(child: child);
     }
     // ⚠️ `left` 与 `right` **必须同号**（都是 `+inset` = 左右各往内缩）。
@@ -432,7 +440,7 @@ class InspireHeaderBlur extends StatelessWidget {
     return Positioned(
       left: inset,
       right: inset,
-      top: 0,
+      top: topInset,
       bottom: -bottomOverhang,
       child: child,
     );
@@ -495,14 +503,24 @@ class InspireHeaderBlur extends StatelessWidget {
         if (useBlur)
           // 模糊层：**满宽**（第九轮定案，见 build 的说明）——第六版的内缩让位
           // 随真实根因修掉而撤除；`insetCorners` 参数保留但休眠。
+          //
+          // ⚠️ `topInset: shapeTopInset`（2026-09-29 定案）：带盒整体上移了
+          // [shapeTopInset]，模糊矩形若也从盒顶起，它的两个上角方区就压在面板
+          // 圆角**之外**——引擎对 BackdropFilter 的圆角裁剪不总可靠（真机探针
+          // 实锤：模糊层一关角外就干净），角外的方形区就是从这儿漏出来的。
+          // 下沉到面板上沿起画后，矩形顶边与白纱的弧线基准同一条线；配合
+          // fork 补丁 5 的 `topCornerRadius`（着色器按面板半径在上角走弧、
+          // 弧外一律不画），材料形状与面板轮廓严丝合缝。
           _bandLayer(
             insetCorners: false,
+            topInset: shapeTopInset,
             child: IgnorePointer(
               child: Inspire.backdropBlur(
                 config: configFor(
                   style,
                   gaussianSigma: blurSigma,
                   sideTaperFraction: sideTaperFraction,
+                  topCornerRadius: cornerRampIn,
                 ),
                 // 顶栏不参与手势，无需截获指针；自身已经裁剪在带内。
                 child: const SizedBox.expand(),
