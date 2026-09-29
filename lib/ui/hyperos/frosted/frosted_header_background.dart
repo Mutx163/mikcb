@@ -33,6 +33,7 @@ class FrostedHeaderBackground extends StatelessWidget {
     this.opaqueAtRest = false,
     this.bottomOverhang = 0,
     this.cornerRampIn = 0,
+    this.shapeTopInset = 0,
     super.key,
   });
 
@@ -58,6 +59,11 @@ class FrostedHeaderBackground extends StatelessWidget {
   /// asked to keep.
   final double cornerRampIn;
 
+  /// See [InspireHeaderBlur.shapeTopInset]. Only the bottom-sheet top band
+  /// passes a non-zero value (= the drag-handle strip the band shifted above
+  /// the panel's top edge).
+  final double shapeTopInset;
+
   @override
   Widget build(BuildContext context) {
     return InspireHeaderBlur(
@@ -68,6 +74,7 @@ class FrostedHeaderBackground extends StatelessWidget {
       opaqueAtRest: opaqueAtRest,
       bottomOverhang: bottomOverhang,
       cornerRampIn: cornerRampIn,
+      shapeTopInset: shapeTopInset,
       child: child,
     );
   }

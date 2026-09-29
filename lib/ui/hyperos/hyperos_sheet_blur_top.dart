@@ -373,6 +373,11 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
         // 模糊层矩形左右内缩本值（与圆弧相切）+ 横向渐隐爬升宽度取同一个数 +
         // 白纱满宽不缩 + 竖直曲线就是渐进档原样（顶浓底清，设置页同一份观感）。
         cornerRampIn: HyperosSheetBlurTop.cornerRampIn,
+        // 白纱自绘圆角的弧要落在面板上沿：带盒整体上移了 [bleedTop]，白纱
+        // 盒顶在面板上沿之上，圆弧基准线随之下沉这段（2026-09-29 探针定案：
+        // 有内容滚到带下时白纱越出面板圆弧、角外留下满浓度填充，白纱的形状
+        // 从此自绘、不依赖引擎裁剪）。
+        shapeTopInset: widget.bleedTop,
         // 带上那个控件要**跟正文对齐** —— 带满宽、控件不跟着变宽，否则控件会比底下
         // 正文宽出去 [bleed]×2，两边对不齐。所以横向让位加在这里，不加在带盒上。
         child: Padding(

@@ -1,7 +1,5 @@
-import 'dart:io' show Platform;
 import 'dart:ui' show ImageFilter;
 
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:inspire_blur/inspire_blur.dart';
 
@@ -32,6 +30,7 @@ class InspireHeaderBlur extends StatelessWidget {
     this.opaqueAtRest = false,
     this.bottomOverhang = 0,
     this.cornerRampIn = 0,
+    this.shapeTopInset = 0,
     super.key,
   });
 
@@ -115,6 +114,22 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 带子画不到圆角外」全靠裁剪 —— 圆角问题一直在。第六版 = 内缩只缩模糊 + 渐隐接活 +
   /// 白纱满宽 + 竖直顶浓底清，四件同时成立才是完整解。
   final double cornerRampIn;
+
+  /// 白纱自绘圆角的**圆弧基准线**距本部件盒顶的距离（逻辑 px）。
+  ///
+  /// 带盒整体上移了宿主的顶部空占位（弹窗渐变带的 `bleedTop` = 18），白纱盒顶
+  /// 落在面板上沿**之上**；白纱自绘圆角（见下）的弧要对准面板轮廓，就得先下沉
+  /// 这段。默认 0 = 盒顶即形状边（子页顶栏 / 首页玻璃带，逐字不变）。
+  ///
+  /// ## 为什么白纱要**自己**画圆角（2026-09-29 探针定案）
+  ///
+  /// 带子里有 BackdropFilter，引擎对其**兄弟内容**的圆角裁剪并不总是可靠：
+  /// 真机探针（白纱染绿）证实，有内容滚到带下时白纱越出面板 `ClipRRect` 的
+  /// 圆弧，在两个角外的方形区域留下满浓度填充（用户口径「圆角外面会出现
+  /// 东西」），滚动到带下无内容时又恢复正常；而直边一侧（面板上沿以上）始终
+  /// 守得住。与其赌引擎裁剪状态，白纱直接把形状画出来——普通绘制的圆角矩形，
+  /// 不经过任何裁剪。见 `2026-09-28-sheet-top-band-corner-ramp.md` 第八轮。
+  final double shapeTopInset;
 
   /// 设备是否支持 shader filter（Inspire Blur 的兜底条件）。
   static bool get _shaderFilterSupported => ImageFilter.isShaderFilterSupported;
@@ -311,22 +326,29 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 有个不踩离屏层的写法可抄 —— 千万别把它套到 `BackdropFilter` 外面。
   Widget _tintLayer({required double sideTaperFraction}) {
     final useGradient = style == HeaderBlurStyle.inspire && !opaqueAtRest;
-    // ⚠️ 临时诊断探针（2026-09-29，定位后删除）：白纱染绿。角外平板若变绿 = 白纱漏。
-    final tint = cornerRampIn > 0 &&
-            kDebugMode &&
-            !Platform.environment.containsKey('FLUTTER_TEST')
-        ? const Color(0xB400FF00)
-        : this.tint;
     if (!useGradient) {
       // ⚠️ 白纱走**满宽**定位（`insetCorners: false`）：只有模糊层左右让开
       // [cornerRampIn]，白纱跟着缩两端就会空掉一截料（第三版真机打回的账）。
-      return _bandLayer(insetCorners: false, child: ColoredBox(color: tint));
+      // 未开让位的宿主保持逐字不变的 ColoredBox；开了让位的用带圆角的
+      // DecoratedBox（白纱自绘形状，不依赖裁剪）。
+      return _bandLayer(
+        insetCorners: false,
+        child: _veilRadius == null
+            ? ColoredBox(color: tint)
+            : _veilTop(DecoratedBox(
+                decoration: BoxDecoration(
+                  color: tint,
+                  borderRadius: _veilRadius,
+                ),
+              )),
+      );
     }
-    final vertical = DecoratedBox(
+    final vertical = _veilTop(DecoratedBox(
       decoration: BoxDecoration(
         gradient: tintGradient(tint, progressiveTintBottomScale),
+        borderRadius: _veilRadius,
       ),
-    );
+    ));
     if (sideTaperFraction <= 0) {
       return _bandLayer(insetCorners: false, child: vertical);
     }
@@ -343,6 +365,20 @@ class InspireHeaderBlur extends StatelessWidget {
       ),
     );
   }
+
+  /// 白纱的**自绘圆角**形状（2026-09-29 探针定案，见 [shapeTopInset] 的说明）。
+  ///
+  /// 开了让位的宿主，白纱的弧必须与面板轮廓同一条：圆角半径取 [cornerRampIn]
+  /// （= 面板圆角半径），弧顶下沉 [shapeTopInset]（带盒上移的那段）。未开让位
+  /// 的宿主返回 null，盒子方角、逐字不变。
+  BorderRadius? get _veilRadius => cornerRampIn > 0
+      ? BorderRadius.vertical(top: Radius.circular(cornerRampIn))
+      : null;
+
+  /// 白纱盒顶下沉 [shapeTopInset]：圆弧要落在面板上沿（宿主形状边）上。
+  Widget _veilTop(Widget box) => shapeTopInset > 0
+      ? Padding(padding: EdgeInsets.only(top: shapeTopInset), child: box)
+      : box;
 
   /// 把一层铺满整条带（[insetCorners] 时左右各让开 [cornerRampIn]、下沿外推
   /// [bottomOverhang]）。
@@ -447,13 +483,6 @@ class InspireHeaderBlur extends StatelessWidget {
     required bool useBlur,
     required double sideTaperFraction,
   }) {
-    // ⚠️⚠️ 临时诊断探针（2026-09-29 角外平铺排查，定位后整段删除）：
-    // 给带子各层染不同颜色 + 打印真实几何，一次构建区分「谁在漏」：
-    //   * 角外平板变绿      → 白纱（tint）漏；
-    //   * 角外平板带品红    → 模糊层整体（含 child）越界；
-    //   * 角外平板仍是灰    → 模糊的过滤输出在越界采样（着色器/捕获坐标问题）。
-    final debugProbe =
-        kDebugMode && cornerRampIn > 0 && !Platform.environment.containsKey('FLUTTER_TEST');
     final band = Stack(
       fit: StackFit.passthrough,
       // Positioned bottom=-overhang 的模糊/衬底层要越过原始带高；
@@ -472,10 +501,7 @@ class InspireHeaderBlur extends StatelessWidget {
                   sideTaperFraction: sideTaperFraction,
                 ),
                 // 顶栏不参与手势，无需截获指针；自身已经裁剪在带内。
-                // child: const SizedBox.expand(),
-                child: debugProbe
-                    ? const ColoredBox(color: Color(0x30FF00FF))
-                    : const SizedBox.expand(),
+                child: const SizedBox.expand(),
               ),
             ),
           ),
@@ -484,25 +510,14 @@ class InspireHeaderBlur extends StatelessWidget {
         // ⚠️ 白纱**不吃**横向渐隐、也**不左右内缩**（满宽）：2026-09-28 分家，理由
         // 见 [sideTaperFractionFor] / [_bandLayer] —— 白纱一旦跟着收，两端就只剩
         // 玻璃、深色壁纸上读成「透明」，第三版就是这么被打回的。
+        // ⚠️ 白纱**自己带圆角**（`_veilTop` / `_veilRadius`）：带子里有
+        // BackdropFilter 时，引擎对兄弟内容的圆角裁剪不总可靠（2026-09-29 真机
+        // 探针实锤：有内容滚到带下时白纱越出面板圆弧、角外留下满浓度填充），
+        // 白纱的形状从此不依赖任何裁剪。
         _tintLayer(sideTaperFraction: 0),
         child,
       ],
     );
-    if (debugProbe) {
-      // 打印带盒与模糊层的真实全局矩形（ LayoutBuilder 之上是带盒本身）。
-      // ignore: avoid_print
-      print('band-probe: cornerRampIn=$cornerRampIn style=$style '
-          'taper=$sideTaperFraction dpr=${MediaQuery.of(context).devicePixelRatio} '
-          'screen=${MediaQuery.of(context).size}');
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final ro = context.findRenderObject();
-        if (ro is RenderBox && ro.hasSize) {
-          // ignore: avoid_print
-          print('band-probe: bandBox global=${ro.localToGlobal(Offset.zero)} '
-              'size=${ro.size}');
-        }
-      });
-    }
 
     if (bottomOverhang <= 0) {
       return ClipRect(child: band);
