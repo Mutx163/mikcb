@@ -1,5 +1,7 @@
+import 'dart:io' show Platform;
 import 'dart:ui' show ImageFilter;
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:inspire_blur/inspire_blur.dart';
 
@@ -309,6 +311,12 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 有个不踩离屏层的写法可抄 —— 千万别把它套到 `BackdropFilter` 外面。
   Widget _tintLayer({required double sideTaperFraction}) {
     final useGradient = style == HeaderBlurStyle.inspire && !opaqueAtRest;
+    // ⚠️ 临时诊断探针（2026-09-29，定位后删除）：白纱染绿。角外平板若变绿 = 白纱漏。
+    final tint = cornerRampIn > 0 &&
+            kDebugMode &&
+            !Platform.environment.containsKey('FLUTTER_TEST')
+        ? const Color(0xB400FF00)
+        : this.tint;
     if (!useGradient) {
       // ⚠️ 白纱走**满宽**定位（`insetCorners: false`）：只有模糊层左右让开
       // [cornerRampIn]，白纱跟着缩两端就会空掉一截料（第三版真机打回的账）。
@@ -439,6 +447,13 @@ class InspireHeaderBlur extends StatelessWidget {
     required bool useBlur,
     required double sideTaperFraction,
   }) {
+    // ⚠️⚠️ 临时诊断探针（2026-09-29 角外平铺排查，定位后整段删除）：
+    // 给带子各层染不同颜色 + 打印真实几何，一次构建区分「谁在漏」：
+    //   * 角外平板变绿      → 白纱（tint）漏；
+    //   * 角外平板带品红    → 模糊层整体（含 child）越界；
+    //   * 角外平板仍是灰    → 模糊的过滤输出在越界采样（着色器/捕获坐标问题）。
+    final debugProbe =
+        kDebugMode && cornerRampIn > 0 && !Platform.environment.containsKey('FLUTTER_TEST');
     final band = Stack(
       fit: StackFit.passthrough,
       // Positioned bottom=-overhang 的模糊/衬底层要越过原始带高；
@@ -457,7 +472,10 @@ class InspireHeaderBlur extends StatelessWidget {
                   sideTaperFraction: sideTaperFraction,
                 ),
                 // 顶栏不参与手势，无需截获指针；自身已经裁剪在带内。
-                child: const SizedBox.expand(),
+                // child: const SizedBox.expand(),
+                child: debugProbe
+                    ? const ColoredBox(color: Color(0x30FF00FF))
+                    : const SizedBox.expand(),
               ),
             ),
           ),
@@ -470,6 +488,21 @@ class InspireHeaderBlur extends StatelessWidget {
         child,
       ],
     );
+    if (debugProbe) {
+      // 打印带盒与模糊层的真实全局矩形（ LayoutBuilder 之上是带盒本身）。
+      // ignore: avoid_print
+      print('band-probe: cornerRampIn=$cornerRampIn style=$style '
+          'taper=$sideTaperFraction dpr=${MediaQuery.of(context).devicePixelRatio} '
+          'screen=${MediaQuery.of(context).size}');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ro = context.findRenderObject();
+        if (ro is RenderBox && ro.hasSize) {
+          // ignore: avoid_print
+          print('band-probe: bandBox global=${ro.localToGlobal(Offset.zero)} '
+              'size=${ro.size}');
+        }
+      });
+    }
 
     if (bottomOverhang <= 0) {
       return ClipRect(child: band);
