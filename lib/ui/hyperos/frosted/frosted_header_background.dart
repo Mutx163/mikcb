@@ -4,6 +4,8 @@ import '../../../models/header_blur_style.dart';
 import '../hyperos_blurred_header.dart';
 import '../hyperos_sheet.dart';
 import '../inspire/inspire_header_blur.dart';
+// HyperosFlatBackdropScope is exported via hyperos_blurred_header.dart above
+// (与 HyperosFrostedPanelScope 同一条路子：单一入口，不在这里二次 import)。
 import 'liquid_glass_degradation.dart';
 
 /// 本格是否浮在一块**液态玻璃**弹窗面板上。
@@ -172,13 +174,20 @@ class HyperosFrostedSurface extends StatelessWidget {
     final useBlur =
         HyperosBlurredHeader.backdropBlurEnabled(context) &&
         (blurEnabled ?? true);
-    // 与面板材质同步：面板被**技术 / 系统门禁**（平台视图、无障碍降级）摘成
-    // 实体卡片时，白色水洗叠白底会让嵌套 tile 整个隐形（只剩文字）。改走
-    // withBlur:false 的中性水洗（亮色黑 5% / 暗色白 10%），与实体面板同框。
+    // 「面板读作不透明浅色卡片」有**两种**成因，都得换掉白色水洗：
+    // 1. 面板被**技术 / 系统门禁**（平台视图、无障碍降级）摘成实体卡片；
+    // 2. 背后是**平色底**（没壁纸）—— 玻璃采不到任何东西，出图与实底无异，
+    //    白 0.28 叠在近白面板上只差 1~2 个色阶（课程弹窗的「时间 / 老师 / 地点」
+    //    几行整块隐形，用户口径 2026-09-29）。
+    // 两者都走 withBlur:false 的中性水洗（亮色黑 5% / 暗色白 10%），同一份数值。
+    //
     // 只作用于 sheet 面板内（PanelScope 标记）；面板外的菜单/井保持原判。
+    // ⚠️ 液态面板那条不走这里 —— 它在上面的 `inLiquidPanel` 分支里已经经
+    // `nestedLiquidTileTintColor` 判过同一件事，两处判据是同一个作用域。
     final sheetPanelFellBackSolid =
         HyperosFrostedPanelScope.of(context) &&
-        LiquidGlassDegradation.shouldDegrade(context);
+        (LiquidGlassDegradation.shouldDegrade(context) ||
+            HyperosFlatBackdropScope.isFlatOf(context));
     final resolvedTint =
         tint ??
         HyperosBlurredHeader.nestedSurfaceTintColor(

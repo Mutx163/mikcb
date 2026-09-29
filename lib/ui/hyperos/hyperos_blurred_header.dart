@@ -7,10 +7,12 @@ import 'package:flutter/material.dart';
 import '../../models/header_blur_style.dart';
 import 'frosted/frosted_appearance.dart';
 import 'frosted/frosted_header_background.dart';
+import 'frosted/flat_backdrop_scope.dart';
 import 'frosted/liquid_glass_degradation.dart';
 export 'frosted/frosted_appearance.dart';
 export 'frosted/frosted_header_background.dart'
     show FrostedHeaderBackground, HyperosFrostedSurface;
+export 'frosted/flat_backdrop_scope.dart';
 // HyperosFrostedPanelScope is exported via frosted_appearance.dart above.
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
@@ -414,7 +416,18 @@ abstract final class HyperosBlurredHeader {
   /// Nested tile wash when the parent sheet already uses liquid glass.
   ///
   /// Must stay translucent — solid secondaryVariant reads as dead blocks.
+  ///
+  /// **背后是平色底时改走中性水洗**（[nestedSurfaceTintColor] 的 `withBlur: false`
+  /// 分支），与「面板被技术 / 系统门禁摘成实底」同一个出口、同一份数值：
+  /// 白色水洗的分层**靠玻璃采到有颜色的背景**成立，采不到就是白叠白
+  /// （算术与取舍见 [HyperosFlatBackdropScope] 的类注释）。
+  ///
+  /// 这是两条消费路径（[HyperosFrostedSurface] 与 `HyperosAdaptiveCard`）共用的
+  /// 唯一出口 —— **不要**在调用方各自加判据，两处一漂又是「同一材质两种观感」。
   static Color nestedLiquidTileTintColor(BuildContext context) {
+    if (HyperosFlatBackdropScope.isFlatOf(context)) {
+      return nestedSurfaceTintColor(context, withBlur: false);
+    }
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isDark) {
       return Colors.white.withValues(alpha: 0.12);

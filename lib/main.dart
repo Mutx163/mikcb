@@ -32,6 +32,7 @@ import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
 import 'utils/first_frame_probe.dart';
 import 'utils/frame_perf_probe.dart';
+import 'utils/home_page_background.dart';
 import 'utils/home_startup_visual_primer.dart';
 import 'utils/theme_seed_accent.dart';
 import 'widgets/app_startup_splash.dart';
@@ -571,27 +572,35 @@ class MyApp extends StatelessWidget {
                   }
                   return BlackBoxOverlayHost(
                     child: HyperosMotionHost(
-                      child: FrostedAppearanceScope(
-                        appearance: frostedAppearance,
-                        child: ThemeSeedScope(
-                          // 根部下发主题 seed：HyperosColors.primary 等静态
-                          // 取色入口经它读取；seed 变化时依赖组件精准重建。
-                          seedHex: settings.themeSeedColor,
-                          child: ScaffoldMessenger(
-                            child: Scaffold(
-                              backgroundColor: Colors.transparent,
-                              resizeToAvoidBottomInset: false,
-                              // 平台视图玻璃闸门以 InheritedNotifier 挂在所有路由
-                              // 之上：WebView 路由 begin/end 闸门时，依赖它的全部
-                              // 玻璃表面在下一帧重建，导入返回后首页玻璃立即恢复
-                              // （而不是等下一次任意重建才恢复）。
-                              body: LiquidGlassDegradationScope(
-                                notifier: LiquidGlassDegradation
-                                    .platformViewUnsafeDepthNotifier,
-                                child: MiuixFontWeightScope(
-                                  userFontWeight: settings.appFontWeight,
-                                  fontSpec: settings.appFontMode.fontSpec,
-                                  child: appRoot,
+                      // 「背后是平色底」这条全局事实。没设壁纸时全 app 的页面都是
+                      // 平色，玻璃采不到任何东西，面板内嵌的白色水洗卡片会白叠白
+                      // 整个隐形（课程弹窗的「时间 / 老师 / 地点」几行）。挂位与
+                      // FrostedAppearanceScope 同高：弹窗在根 Overlay 里，挂在页面
+                      // 上读不到。
+                      child: HyperosFlatBackdropScope(
+                        isFlat: !hasHomePageBackdrop(settings),
+                        child: FrostedAppearanceScope(
+                          appearance: frostedAppearance,
+                          child: ThemeSeedScope(
+                            // 根部下发主题 seed：HyperosColors.primary 等静态
+                            // 取色入口经它读取；seed 变化时依赖组件精准重建。
+                            seedHex: settings.themeSeedColor,
+                            child: ScaffoldMessenger(
+                              child: Scaffold(
+                                backgroundColor: Colors.transparent,
+                                resizeToAvoidBottomInset: false,
+                                // 平台视图玻璃闸门以 InheritedNotifier 挂在所有路由
+                                // 之上：WebView 路由 begin/end 闸门时，依赖它的全部
+                                // 玻璃表面在下一帧重建，导入返回后首页玻璃立即恢复
+                                // （而不是等下一次任意重建才恢复）。
+                                body: LiquidGlassDegradationScope(
+                                  notifier: LiquidGlassDegradation
+                                      .platformViewUnsafeDepthNotifier,
+                                  child: MiuixFontWeightScope(
+                                    userFontWeight: settings.appFontWeight,
+                                    fontSpec: settings.appFontMode.fontSpec,
+                                    child: appRoot,
+                                  ),
                                 ),
                               ),
                             ),
