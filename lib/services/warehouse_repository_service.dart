@@ -233,7 +233,6 @@ class WarehouseRepositoryService {
             description: item['description'] ?? '',
             sha256: item['sha256'] ?? '',
             timeSchemesFile: item['time_schemes_file'] ?? '',
-            campusPrompt: item['campus_prompt'] ?? '',
             isQingyuOnly: true,
           ),
         )

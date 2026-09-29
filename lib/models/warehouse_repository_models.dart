@@ -221,10 +221,6 @@ class WarehouseAdapterEntry {
   /// 目录找、找不到再回落。标准适配器恒为 false，走原来的单路径，行为不变。
   final bool isQingyuOnly;
 
-  /// 仅当同一所学校有多套作息时才需要：导入前问用户「你在哪个校区？」。
-  /// 为空则直接用唯一那套。
-  final String campusPrompt;
-
   const WarehouseAdapterEntry({
     required this.adapterId,
     required this.adapterName,
@@ -235,7 +231,6 @@ class WarehouseAdapterEntry {
     required this.description,
     this.sha256 = '',
     this.timeSchemesFile = '',
-    this.campusPrompt = '',
     this.isQingyuOnly = false,
   });
 }
