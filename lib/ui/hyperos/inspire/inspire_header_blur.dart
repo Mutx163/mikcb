@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
@@ -515,21 +516,27 @@ class InspireHeaderBlur extends StatelessWidget {
           // 下沉到面板上沿起画后，矩形顶边与白纱的弧线基准同一条线；配合
           // fork 补丁 5 的 `topCornerRadius`（着色器按面板半径在上角走弧、
           // 弧外一律不画），材料形状与面板轮廓严丝合缝。
-          _bandLayer(
-            insetCorners: false,
-            topInset: shapeTopInset,
-            child: IgnorePointer(
-              child: Inspire.backdropBlur(
-                config: configFor(
-                  style,
-                  gaussianSigma: blurSigma,
-                  sideTaperFraction: sideTaperFraction,
-                  topCornerRadius: cornerRampIn,
+          _BlurRerunProbe(
+            builder: (tick) {
+              // ignore: unused_local_variable
+              final t = tick; // tick 变化驱动本闭包重跑，生成新的模糊层 widget 实例
+              return _bandLayer(
+                insetCorners: false,
+                topInset: shapeTopInset,
+                child: IgnorePointer(
+                  child: Inspire.backdropBlur(
+                    config: configFor(
+                      style,
+                      gaussianSigma: blurSigma,
+                      sideTaperFraction: sideTaperFraction,
+                      topCornerRadius: cornerRampIn,
+                    ),
+                    // 顶栏不参与手势，无需截获指针；自身已经裁剪在带内。
+                    child: const SizedBox.expand(),
+                  ),
                 ),
-                // 顶栏不参与手势，无需截获指针；自身已经裁剪在带内。
-                child: const SizedBox.expand(),
-              ),
-            ),
+              );
+            },
           ),
         // 衬底画在模糊之上：模糊负责「糊」，衬底负责可读对比度。
         //
@@ -567,4 +574,43 @@ class _BandOverhangClipper extends CustomClipper<Rect> {
   @override
   bool shouldReclip(_BandOverhangClipper oldClipper) =>
       oldClipper.overhang != overhang;
+}
+
+/// ⚠️⚠️ 临时诊断部件（2026-09-29 开窗无模糊排查，定位后删除）：
+/// 挂载 1.5 秒后把子树原地重建一次（重跑 [builder] 生成**新的**模糊层 widget
+/// 实例、element 原地 update → `didUpdateWidget` → 重写 uniforms + 新的
+/// ImageFilter 实例 → 引擎重新登记）——与「切页签」对模糊层做的事完全一样。
+/// 用于验证假设：开窗动画期间第一次进场的 BackdropFilter 在引擎侧登记坏了，
+/// 事后的原地重登记能修。若延迟重录后不切页签模糊也活了，病根即确认。
+class _BlurRerunProbe extends StatefulWidget {
+  const _BlurRerunProbe({required this.builder});
+
+  final Widget Function(int tick) builder;
+
+  @override
+  State<_BlurRerunProbe> createState() => _BlurRerunProbeState();
+}
+
+class _BlurRerunProbeState extends State<_BlurRerunProbe> {
+  int _tick = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // 测试环境不排期（pending Timer 会挂住 testWidgets）。
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return;
+    }
+    Future<void>.delayed(const Duration(milliseconds: 1500), () {
+      if (!mounted) return;
+      setState(() => _tick++);
+      // ignore: avoid_print
+      print('band-probe: 延迟重录触发 tick=$_tick');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(_tick);
+  }
 }
