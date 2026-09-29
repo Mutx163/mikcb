@@ -60,6 +60,7 @@ import 'ui/hyperos/hyperos.dart';
 import 'ui/hyperos/hyperos_motion.dart';
 import 'ui/hyperos/liquid/liquid_glass_shader.dart';
 import 'ui/hyperos_motion_bridge.dart';
+import 'services/unified_transfer_service.dart';
 import 'utils/import_file_reader.dart';
 
 ThemeMode _themeModeFromSettings(AppThemeMode mode) {
@@ -1189,15 +1190,34 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       } else {
         final result = await FilePicker.pickFiles(
           type: FileType.custom,
-          withData: true,
           allowedExtensions: const ['json', 'mikcb'],
         );
         final file = result?.files.single;
         if (file == null) {
           return false;
         }
-        final bytes = file.bytes;
-        content = bytes == null ? '' : utf8.decode(bytes);
+        final path = file.path;
+        if (path == null) {
+          throw FormatException(l10n.importFileReadFailed);
+        }
+
+        // Measure before reading: withData: true would already have the whole
+        // file in memory, and Android kills the process on OOM instead of
+        // raising something catchable.
+        final Uint8List bytes;
+        try {
+          bytes = await readImportFileBytes(
+            path,
+            maxBytes: UnifiedTransferService.maxImportFileBytes,
+          );
+        } on ImportFileTooLarge {
+          throw FormatException(
+            l10n.importFileTooLarge(
+              formatByteBudget(UnifiedTransferService.maxImportFileBytes),
+            ),
+          );
+        }
+        content = utf8.decode(bytes);
       }
       if (content.isEmpty) {
         throw FormatException(l10n.importFileReadFailed);
