@@ -98,6 +98,46 @@ void main() {
         );
       },
     );
+
+    // 探针确认会话还在时，屏幕上那张登录框是假的（强智登录页不看会话）。这时弹
+    // 「要不要帮你填密码」纯属噪音：用户点了也没地方填，填了也不会被用到。
+    test('stays silent when the session probe says the session is alive', () {
+      const emptyPassword = WarehouseRememberedLogin(
+        username: 'user',
+        password: '',
+      );
+
+      expect(
+        shouldPromptRememberedLoginAutofill(
+          hasPasswordField: true,
+          rememberedLogin: remembered,
+          candidate: emptyPassword,
+          hasPromptedAutofill: false,
+          isPromptShowing: false,
+          sessionActive: true,
+        ),
+        isFalse,
+      );
+    });
+
+    // 默认值必须是 false：200+ 所学校没有探针配置，行为一个字都不能变。
+    test('defaults to the pre-probe behaviour', () {
+      const emptyPassword = WarehouseRememberedLogin(
+        username: 'user',
+        password: '',
+      );
+
+      expect(
+        shouldPromptRememberedLoginAutofill(
+          hasPasswordField: true,
+          rememberedLogin: remembered,
+          candidate: emptyPassword,
+          hasPromptedAutofill: false,
+          isPromptShowing: false,
+        ),
+        isTrue,
+      );
+    });
   });
 
   group('shouldPromptRememberedLoginSave', () {
