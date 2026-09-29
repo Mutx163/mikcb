@@ -449,6 +449,10 @@ class InspireHeaderBlur extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final useBlur = blurEnabled && canRender(context);
+    // ⚠️ 临时探针（2026-09-29 开窗无模糊排查，定位后删除）
+    // ignore: avoid_print
+    print('band-probe: build useBlur=$useBlur blurEnabled=$blurEnabled '
+        'canRender=${canRender(context)} cornerRampIn=$cornerRampIn');
     // ⚠️ 第九轮定案（2026-09-29，用户口径「不是应该是上下渐变吗」）：模糊层回到
     // **满宽 + 纯竖直渐变**。第六版的「左右内缩 + 横向渐隐」是为防圆角越界加的
     // 保护，但它防的两笔（`u_size` 采样退化 = fork 补丁 3、白纱越出圆弧 = 白纱

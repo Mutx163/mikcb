@@ -167,7 +167,7 @@ dependency_overrides:
   inspire_blur:
     git:
       url: https://github.com/Mutx163/inspire_blur.git
-      ref: ea18035222066bb57f5687e3b4e1b870f7ee2e3b
+      ref: 0f27e910ecbabb6bf4a27656a9dcb19c252f809f
 
 flutter:
   uses-material-design: true
