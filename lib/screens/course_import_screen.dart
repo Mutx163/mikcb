@@ -31,6 +31,7 @@ import '../models/warehouse_repository_models.dart';
 import '../providers/timetable_provider.dart';
 import '../domain/warehouse_course_import_logic.dart';
 import '../domain/warehouse_location_time_schemes.dart';
+import '../domain/warehouse_macro_dialog_replay.dart';
 import '../domain/warehouse_session_probe.dart';
 import '../services/ai_course_import_service.dart';
 import '../services/ics_import_service.dart';
@@ -5689,13 +5690,36 @@ $kWarehouseBridgeCompatShim  try {
     if (macroRecord != null) {
       final key = _dialogResponseKey('singleSelection', message);
       final recorded = macroRecord.dialogResponses[key];
+      final optionsRaw = (message['optionsJson'] as String?) ?? '[]';
+      final selectedIndex = (message['selectedIndex'] as num?)?.toInt() ?? 0;
+      List<String> options = const [];
+      try {
+        final decoded = jsonDecode(optionsRaw);
+        if (decoded is List) {
+          options = decoded.map((item) => item.toString()).toList(growable: false);
+        }
+      } catch (_) {
+        // 与下方正式弹窗同一套兜底：解析失败按空选项处理，不中断导入。
+      }
       if (recorded != null) {
-        await _resolveJavaScriptRequest(requestId, '$recorded');
+        // 录制侧存的是**用户选的那一项的文字**（这样宿主调整选项顺序也不会选错），
+        // 而脚本要的是**序号**。直接回文字会让每个按序号解析的脚本在录制导入下立刻
+        // 变成「导入已取消」（2026-09-29 城科真机：弹窗出现后 10ms 就返回取消）。
+        // 这里把文字还原成下标；答案已过期（选项变了）时退回脚本给的默认值。
+        final resolved = resolveRecordedSelectionIndex(
+          recorded: recorded,
+          options: options,
+          fallbackIndex: selectedIndex,
+        );
+        _debugImportLog(
+          'singleSelection replay recorded=$recorded options=${options.length} '
+          'resolved=$resolved fallback=$selectedIndex',
+        );
+        await _resolveJavaScriptRequest(requestId, resolved);
         return;
       }
       if (widget.runInBackground) {
         // Prefer the script-provided selection; fall back to first option.
-        final selectedIndex = (message['selectedIndex'] as num?)?.toInt() ?? 0;
         await _resolveJavaScriptRequest(requestId, selectedIndex);
         return;
       }
