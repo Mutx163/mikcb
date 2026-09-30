@@ -9879,6 +9879,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String coursesBeyondSchemeExtraSuffix(int count, int sections) {
+    return ', 다만 $count개는 현재 시간 템플릿(총 $sections교시)을 벗어나 시간표에 표시되지 않습니다';
+  }
+
+  @override
   String get locationTimeMatchEmpty => 'No place groups yet';
 
   @override

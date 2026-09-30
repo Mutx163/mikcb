@@ -5912,6 +5912,17 @@
       }
     }
   },
+  "coursesBeyondSchemeExtraSuffix": "，另有 {count} 节超出当前时间模板（共 {sections} 节），课表上看不到",
+  "@coursesBeyondSchemeExtraSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "sections": {
+        "type": "int"
+      }
+    }
+  },
   "locationTimeMatchEmpty": "还没有地点组",
   "locationTimeMatchCreateGroup": "新建地点组",
   "locationTimeMatchEditGroup": "编辑地点组",

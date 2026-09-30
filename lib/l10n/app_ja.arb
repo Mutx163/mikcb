@@ -5636,6 +5636,17 @@
       }
     }
   },
+  "coursesBeyondSchemeExtraSuffix": "、ただし{count}限は現在の時間テンプレート（全{sections}限）を超えており時間割に表示されません",
+  "@coursesBeyondSchemeExtraSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "sections": {
+        "type": "int"
+      }
+    }
+  },
   "locationTimeMatchEmpty": "No place groups yet",
   "locationTimeMatchCreateGroup": "New place group",
   "locationTimeMatchEditGroup": "Edit place group",

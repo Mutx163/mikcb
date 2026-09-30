@@ -1881,6 +1881,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         : _descriptionController.text;
 
     // Validate all entries.
+    //
+    // 表单这里的口径**故意比数据层严**：手动加课录的是节次区间，钟点由解析出来的
+    // 时间模板给（见 _resolveEntryTimeScheme）。未绑定模板的课一旦放进超出当前模板
+    // 的节次，既没钟点可取、课表上也画不出那一行，所以这里当场拦。
+    // 数据层（timetable_provider.addCourse）只校验显式绑定了模板的课，是因为它服务的
+    // 导入/恢复路径自带钟点——两条路的真源不同，不是这两处该改成一样。
     for (var i = 0; i < _scheduleEntries.length; i++) {
       final entry = _scheduleEntries[i];
       // Sync teacher/location from controllers.

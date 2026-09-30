@@ -10,6 +10,7 @@ import 'package:university_timetable/domain/time_scheme_logic.dart';
 Course _course({
   required String id,
   String? timeSchemeIdOverride,
+  int startSection = 1,
   int endSection = 4,
   int dayOfWeek = 1,
   String location = 'L',
@@ -20,7 +21,7 @@ Course _course({
     teacher: 'T',
     location: location,
     dayOfWeek: dayOfWeek,
-    startSection: 1,
+    startSection: startSection,
     endSection: endSection,
     startTime: '08:00',
     endTime: '09:40',
@@ -492,6 +493,53 @@ void main() {
       expect(blockers.locationCourseCount, 2);
       expect(blockers.overrideCourseCount, 0);
       expect(blockers.isNotEmpty, isTrue);
+    });
+  });
+
+  group('countCoursesWithoutVisibleRow', () {
+    // 写入侧只挡显式绑定模板的课（未绑定时课程自带钟点为真源），所以「节次超出
+    // 当前模板」的课改由提示告知。这里的判据必须与地点分组套用的溢出统计
+    // （timetable/schedule_rule_apply.dart）是同一条，不能两套说法。
+    test('超出当前模板行数的课计入，落在行内的不计', () {
+      final courses = [
+        _course(id: 'fit', endSection: 2),
+        _course(id: 'over', endSection: 5),
+      ];
+
+      expect(
+        TimeSchemeLogic.countCoursesWithoutVisibleRow(
+          courses,
+          sectionCount: 4,
+        ),
+        1,
+      );
+    });
+
+    test('节次倒挂、起始节小于 1 都算拿不到格子', () {
+      expect(
+        TimeSchemeLogic.countCoursesWithoutVisibleRow(
+          [_course(id: 'reversed', startSection: 3, endSection: 2)],
+          sectionCount: 4,
+        ),
+        1,
+      );
+      expect(
+        TimeSchemeLogic.countCoursesWithoutVisibleRow(
+          [_course(id: 'zero', startSection: 0, endSection: 2)],
+          sectionCount: 4,
+        ),
+        1,
+      );
+    });
+
+    test('模板行数为 0 时不报，那是「配置不可用」另一条错误路径', () {
+      expect(
+        TimeSchemeLogic.countCoursesWithoutVisibleRow(
+          [_course(id: 'over', endSection: 5)],
+          sectionCount: 0,
+        ),
+        0,
+      );
     });
   });
 }

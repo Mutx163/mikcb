@@ -5629,6 +5629,17 @@
       }
     }
   },
+  "coursesBeyondSchemeExtraSuffix": "，另有 {count} 節超出當前時間範本（共 {sections} 節），課表上看不到",
+  "@coursesBeyondSchemeExtraSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "sections": {
+        "type": "int"
+      }
+    }
+  },
   "locationTimeMatchEmpty": "還沒有地點組",
   "locationTimeMatchCreateGroup": "新增地點群組",
   "locationTimeMatchEditGroup": "編輯地點群組",

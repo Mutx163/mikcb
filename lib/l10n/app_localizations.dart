@@ -17263,6 +17263,12 @@ abstract class AppLocalizations {
   /// **'未套用示例：{names}'**
   String locationTimeMatchApplyOverflowHint(String names);
 
+  /// No description provided for @coursesBeyondSchemeExtraSuffix.
+  ///
+  /// In zh, this message translates to:
+  /// **'，另有 {count} 节超出当前时间模板（共 {sections} 节），课表上看不到'**
+  String coursesBeyondSchemeExtraSuffix(int count, int sections);
+
   /// No description provided for @locationTimeMatchEmpty.
   ///
   /// In zh, this message translates to:

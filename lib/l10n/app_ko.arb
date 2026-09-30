@@ -5636,6 +5636,17 @@
       }
     }
   },
+  "coursesBeyondSchemeExtraSuffix": ", 다만 {count}개는 현재 시간 템플릿(총 {sections}교시)을 벗어나 시간표에 표시되지 않습니다",
+  "@coursesBeyondSchemeExtraSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "sections": {
+        "type": "int"
+      }
+    }
+  },
   "locationTimeMatchEmpty": "No place groups yet",
   "locationTimeMatchCreateGroup": "New place group",
   "locationTimeMatchEditGroup": "Edit place group",

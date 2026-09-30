@@ -9540,6 +9540,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String coursesBeyondSchemeExtraSuffix(int count, int sections) {
+    return '，另有 $count 节超出当前时间模板（共 $sections 节），课表上看不到';
+  }
+
+  @override
   String get locationTimeMatchEmpty => '还没有地点组';
 
   @override
@@ -20670,6 +20675,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String locationTimeMatchApplyOverflowHint(String names) {
     return '未套用示例：$names';
+  }
+
+  @override
+  String coursesBeyondSchemeExtraSuffix(int count, int sections) {
+    return '，另有 $count 節超出當前時間模板（共 $sections 節），課表上看不到';
   }
 
   @override
@@ -31804,6 +31814,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String locationTimeMatchApplyOverflowHint(String names) {
     return '未套用示例：$names';
+  }
+
+  @override
+  String coursesBeyondSchemeExtraSuffix(int count, int sections) {
+    return '，另有 $count 節超出當前時間範本（共 $sections 節），課表上看不到';
   }
 
   @override

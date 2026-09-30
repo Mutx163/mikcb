@@ -5873,6 +5873,17 @@
       }
     }
   },
+  "coursesBeyondSchemeExtraSuffix": ", but {count} fall outside the current time template ({sections} periods) and won't show on the timetable",
+  "@coursesBeyondSchemeExtraSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "sections": {
+        "type": "int"
+      }
+    }
+  },
   "locationTimeMatchEmpty": "No place groups yet",
   "locationTimeMatchCreateGroup": "New place group",
   "locationTimeMatchEditGroup": "Edit place group",

@@ -10128,6 +10128,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String coursesBeyondSchemeExtraSuffix(int count, int sections) {
+    return ', but $count fall outside the current time template ($sections periods) and won\'t show on the timetable';
+  }
+
+  @override
   String get locationTimeMatchEmpty => 'No place groups yet';
 
   @override

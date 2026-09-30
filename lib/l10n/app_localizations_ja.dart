@@ -9833,6 +9833,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String coursesBeyondSchemeExtraSuffix(int count, int sections) {
+    return '、ただし$count限は現在の時間テンプレート（全$sections限）を超えており時間割に表示されません';
+  }
+
+  @override
   String get locationTimeMatchEmpty => 'No place groups yet';
 
   @override
