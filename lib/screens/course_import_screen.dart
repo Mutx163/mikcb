@@ -2319,6 +2319,9 @@ class _WarehouseCourseImportScreenState
                       _recentSchoolIds,
                     );
                     final sections = _schoolsToSections(beans);
+                    final indexTags = sections
+                        .map((section) => section.tag)
+                        .toList(growable: false);
                     final isSearching = _searchQuery.trim().isNotEmpty;
                     if (sections.isEmpty) {
                       // Non-scroll centered view: inset below the bar manually.
@@ -2347,41 +2350,94 @@ class _WarehouseCourseImportScreenState
                         ),
                       );
                     }
-                    // 诊断用（2026-09-28）：这一页原本用 azlistview 的 AzListView
-                    // （字母索引条 + 底层 scrollable_positioned_list 的自定义视口），
-                    // 是全 App 唯一一处。先换成普通列表，看「进入学校页时底下这页
-                    // 全黑」是不是这个第三方视口引起的。
-                    //
-                    // 换掉的东西只有右侧的字母索引条；分组、行、间距、顶栏内衬
-                    // 全部照旧（HyperosListView 默认就带顶栏内衬，见它的
-                    // includeHeaderInset）。若黑还在，说明与它无关。
-                    return HyperosListView(
-                      children: [
-                        for (var index = 0; index < sections.length; index++) ...[
-                          HyperosChoiceGroup(
-                            children: [
-                              for (final bean in sections[index].items)
-                                HyperosChoiceTile(
-                                  prefix: _ImportInitialBadge(
-                                    label: bean.school.initial,
-                                  ),
-                                  title: bean.school.name,
-                                  subtitle: Text(
-                                    _schoolRowSubtitle(
-                                      bean,
-                                      adapterMatches,
-                                      l10n,
+                    // 字母索引条 + 分组列表。2026-09-28 曾为排查「进学校页底下
+                    // 整页黑」临时换成普通列表；黑带真因后来定案在转场视差补底
+                    // （hyperos_navigation.dart 的零尺寸常驻子级塌高），与本页
+                    // 视口无关，索引条在此恢复。
+                    // Header inset inside the scrollable so rows slide under
+                    // the frosted bar (mirrors HyperosListView's default).
+                    final headerInset = HyperosBlurredHeaderScope.insetOf(
+                      context,
+                    );
+                    return AzListView(
+                      data: sections,
+                      itemCount: sections.length,
+                      padding: EdgeInsets.fromLTRB(16, headerInset, 16, 16),
+                      indexBarData: isSearching ? const [] : indexTags,
+                      indexBarOptions: IndexBarOptions(
+                        needRebuild: true,
+                        hapticFeedback: true,
+                        textStyle: HyperosTypography.listDetail(context)
+                            .copyWith(
+                              fontSize: HyperosMiuixTypography.footnote2,
+                              color: HyperosColors.secondaryText(context),
+                            ),
+                        selectTextStyle: HyperosTypography.listDetail(context)
+                            .copyWith(
+                              fontSize: HyperosMiuixTypography.footnote2,
+                              color: HyperosColors.primary(context),
+                            ),
+                        selectItemDecoration: BoxDecoration(
+                          color: HyperosColors.primary(
+                            context,
+                          ).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        indexHintDecoration: BoxDecoration(
+                          color: HyperosColors.card(context),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        indexHintTextStyle: HyperosTypography.title(
+                          context,
+                        ).copyWith(color: HyperosColors.primary(context)),
+                      ),
+                      indexHintBuilder: (context, tag) => Container(
+                        width: 72,
+                        height: 72,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: HyperosColors.card(context),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          tag,
+                          style: HyperosTypography.title(
+                            context,
+                          ).copyWith(color: HyperosColors.primary(context)),
+                        ),
+                      ),
+                      itemBuilder: (context, index) {
+                        final section = sections[index];
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            HyperosChoiceGroup(
+                              children: [
+                                for (final bean in section.items)
+                                  HyperosChoiceTile(
+                                    prefix: _ImportInitialBadge(
+                                      label: bean.school.initial,
                                     ),
+                                    title: bean.school.name,
+                                    subtitle: Text(
+                                      _schoolRowSubtitle(
+                                        bean,
+                                        adapterMatches,
+                                        l10n,
+                                      ),
+                                    ),
+                                    trailing: const HyperosChevron(),
+                                    onTap: () =>
+                                        _openWarehouseSchool(bean.school),
                                   ),
-                                  trailing: const HyperosChevron(),
-                                  onTap: () => _openWarehouseSchool(bean.school),
-                                ),
-                            ],
-                          ),
-                          if (index < sections.length - 1)
-                            const HyperosSectionGap(),
-                        ],
-                      ],
+                              ],
+                            ),
+                            if (index < sections.length - 1)
+                              const HyperosSectionGap(),
+                          ],
+                        );
+                      },
                     );
                   },
                 ),
