@@ -167,18 +167,12 @@ void main() {
     );
   });
 
-  testWidgets('探测到达后，专属条目追加在标准条目之后', (tester) async {
+  testWidgets('探测到达后，专属内容并入标准条目，页面仍只有一条', (tester) async {
     await _pump(tester, _StubClient(ProbeBehavior.found));
 
+    // 页面只保留标准那一条 —— 它已经带上专属字段，用户不需要（也不该）二选一。
+    // 合并带过去的字段由 domain 层测试守住，这里断言的是「不出现第二条」。
     expect(find.text(_standardAdapterName), findsOneWidget);
-    expect(find.text(_extrasAdapterName), findsOneWidget);
-
-    final standard = tester.getTopLeft(find.text(_standardAdapterName));
-    final extras = tester.getTopLeft(find.text(_extrasAdapterName));
-    expect(
-      standard.dy,
-      lessThan(extras.dy),
-      reason: '专属条目必须追加在标准条目之后，标准那条永远排在前面',
-    );
+    expect(find.text(_extrasAdapterName), findsNothing);
   });
 }

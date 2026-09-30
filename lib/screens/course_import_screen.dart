@@ -30,6 +30,7 @@ import '../models/warehouse_macro_models.dart';
 import '../models/warehouse_repository_models.dart';
 import '../providers/timetable_provider.dart';
 import '../domain/warehouse_course_import_logic.dart';
+import '../domain/warehouse_adapter_upgrade.dart';
 import '../domain/warehouse_location_time_schemes.dart';
 import '../domain/warehouse_macro_dialog_replay.dart';
 import '../domain/warehouse_session_probe.dart';
@@ -2941,6 +2942,13 @@ class _WarehouseSchoolAdaptersScreenState
   List<WarehouseAdapterEntry> _qingyuOnlyAdapters = const [];
   Future<List<WarehouseAdapterEntry>>? _extrasFuture;
 
+  /// 探测是否已有结论（含失败）。
+  ///
+  /// 导入入口要用它：探测还在飞的时候用户就点了导入，那一刻拿到的适配器还没有专属
+  /// 字段，于是「自动应用专属内容」这次就落空了。入口等一下这个已在途的请求就行——
+  /// 不新增任何网络往返（它本来就发过了），最多等它自己那个 6 秒超时。
+  bool _extrasResolved = false;
+
   @override
   void initState() {
     super.initState();
@@ -3073,28 +3081,32 @@ class _WarehouseSchoolAdaptersScreenState
       widget.school,
     );
     _extrasFuture!.then((list) {
+      _extrasResolved = true;
       if (!mounted || list.isEmpty) {
         return;
       }
       setState(() => _qingyuOnlyAdapters = list);
     }, onError: (Object _) {
       // 降级本身对用户不可见（一所没有专属条目的学校看起来和以前一样），不必打扰。
+      _extrasResolved = true;
     });
   }
 
-  /// 专属条目在标准列表之后追加。标准条目永远排在前面、也永远可用：它在任何仓库
-  /// （含上游仓、他人 fork、镜像的旧快照）里都存在，而专属条目只在我们的仓里有。
+  /// 专属条目不再单列，而是把专属字段并进同一份脚本的标准条目。
+  ///
+  /// 用户看到的是一条：同一所学校的「标准版 / 专属版」在用户眼里是同一件事，让 ta
+  /// 做二选一等于先逼 ta 知道学校有没有做增强；挑了没增强的那条还会白丢「按教学楼
+  /// 分流作息」。合并规则见 `mergeQingyuOnlyUpgrades`。
+  ///
+  /// 标准条目永远排在前面、也永远可用：它在任何仓库（含上游仓、他人 fork、镜像的旧
+  /// 快照）里都存在，而专属条目只在我们的仓里有——探测失败时这一层原样不动。
   List<WarehouseAdapterEntry> _mergeQingyuOnlyAdapters(
     List<WarehouseAdapterEntry> standard,
   ) {
-    if (_qingyuOnlyAdapters.isEmpty) {
-      return standard;
-    }
-    return [
-      ...standard,
-      for (final adapter in _qingyuOnlyAdapters)
-        if (!standard.any((it) => it.adapterId == adapter.adapterId)) adapter,
-    ];
+    return mergeQingyuOnlyUpgrades(
+      standard: standard,
+      extras: _qingyuOnlyAdapters,
+    );
   }
 
   void _reloadAdapters() {
@@ -3116,10 +3128,44 @@ class _WarehouseSchoolAdaptersScreenState
         null;
   }
 
+  /// 导入前把「专属增强」落到手上这条适配器上。
+  ///
+  /// 学校页渲染时专属探测是异步的（刻意不挂在渲染路径上），用户可能在它落地之前就
+  /// 点了导入。此处在探测**还在途**时等它一下（复用同一个 Future，不新增网络往返），
+  /// 拿到结论后按合并规则重算这条适配器；已经落地或已失败都直接返回，什么都不等。
+  ///
+  /// 等不到就返回原样：专属内容缺席只是「回到脚本下发的全局作息」，不是失败。
+  Future<WarehouseAdapterEntry> _resolveAdapterWithExtras(
+    WarehouseAdapterEntry adapter,
+  ) async {
+    if (_extrasResolved) {
+      return adapter;
+    }
+    final pending = _extrasFuture;
+    if (pending == null) {
+      return adapter;
+    }
+    try {
+      final extras = await pending;
+      if (!mounted || extras.isEmpty) {
+        return adapter;
+      }
+      final merged = mergeQingyuOnlyUpgrades(
+        standard: [adapter],
+        extras: extras,
+      );
+      return merged.first;
+    } on Object {
+      // 探测失败等价于「这所学校没有专属增强」，与拿到空列表同义。
+      return adapter;
+    }
+  }
+
   Future<void> _openAdapterImport(
     WarehouseAdapterEntry adapter, {
     bool autoRecord = false,
   }) async {
+    adapter = await _resolveAdapterWithExtras(adapter);
     final initialUrl = await _resolveAdapterImportUrl(adapter);
     if (initialUrl == null || !mounted) {
       return;
