@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'app_log_service.dart';
+import '../utils/timed_method_channel.dart';
 
 typedef DiagnosticLogLevel = String;
 
@@ -17,7 +18,7 @@ abstract final class DiagnosticLogLevels {
 class UmengAnalyticsService {
   UmengAnalyticsService._();
 
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     'com.mutx163.qingyu/umeng_analytics',
   );
 

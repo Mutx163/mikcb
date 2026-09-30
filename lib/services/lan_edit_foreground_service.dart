@@ -2,12 +2,13 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import '../utils/timed_method_channel.dart';
 
 typedef LanEditNotificationTapCallback = void Function();
 
 /// Android foreground service bridge for LAN edit sessions.
 class LanEditForegroundBridge {
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     'com.mutx163.qingyu/lan_edit',
   );
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import '../utils/timed_method_channel.dart';
 
 /// 截屏检测（Android 14+ 官方 `Activity.ScreenCaptureCallback`）。
 ///
@@ -12,7 +13,7 @@ import 'package:flutter/services.dart';
 /// Android 14 以下没有该回调，[isSupported] 为 false；调用方据此隐藏相关
 /// 设置项，手动分享入口不受影响。
 abstract final class ScreenCaptureService {
-  static const _channel = MethodChannel('com.mutx163.qingyu/screen_capture');
+  static const _channel = TimedMethodChannel('com.mutx163.qingyu/screen_capture');
 
   static final _controller = StreamController<void>.broadcast();
 

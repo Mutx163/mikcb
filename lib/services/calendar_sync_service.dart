@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import '../utils/timed_method_channel.dart';
 
 /// 要写入系统日历的单个日程（一次具体出现，非重复规则）。
 @immutable
@@ -55,7 +56,7 @@ enum CalendarDeleteResult { deleted, notSynced, failed }
 class CalendarSyncService {
   CalendarSyncService({MethodChannel? channel})
       : _channel = channel ??
-            const MethodChannel('com.mutx163.qingyu/calendar_sync');
+            const TimedMethodChannel('com.mutx163.qingyu/calendar_sync');
 
   final MethodChannel _channel;
 

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 import '../models/course.dart';
+import '../utils/timed_method_channel.dart';
 import 'statistics_service.dart';
 
 /// 统计小组件（桌面）快照：由课表数据计算后同步给原生渲染。
@@ -94,7 +95,7 @@ class StatsWidgetSnapshot {
 class StatsWidgetService {
   StatsWidgetService._();
 
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     'com.mutx163.qingyu/home_widget',
   );
 

@@ -1,11 +1,12 @@
 import 'package:flutter/services.dart';
+import '../utils/timed_method_channel.dart';
 
 class AppMigrationService {
   static const String oldReleasePackage = 'com.example.university_timetable';
   static const String oldDebugPackage =
       'com.example.university_timetable.debug';
 
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     'com.mutx163.qingyu/migration',
   );
 

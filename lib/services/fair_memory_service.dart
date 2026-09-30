@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../logging/app_log_messages.dart';
+import '../utils/timed_method_channel.dart';
 import 'app_log_service.dart';
 
 /// 金标联盟「公平运行内存」Flutter 侧钩子。
@@ -20,7 +21,7 @@ class FairMemoryService {
 
   static final FairMemoryService instance = FairMemoryService._();
 
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     'com.mutx163.qingyu/fair_memory',
   );
   static const String _recoverySnapshotKey = 'fair_memory_recovery_snapshot_v1';

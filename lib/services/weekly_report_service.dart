@@ -2,13 +2,14 @@ import 'package:flutter/services.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/course.dart';
+import '../utils/timed_method_channel.dart';
 import 'statistics_service.dart';
 
 /// 每周周报通知：计算下次触发时间与正文，同步给原生 AlarmManager 调度。
 class WeeklyReportService {
   WeeklyReportService._();
 
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     'com.mutx163.qingyu/weekly_report',
   );
 

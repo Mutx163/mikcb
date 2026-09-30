@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../logging/app_debug_log.dart';
 import '../logging/app_log_messages.dart';
+import '../utils/timed_method_channel.dart';
 import 'app_log_service.dart';
 import 'home_widget_snapshot_service.dart';
 
@@ -72,7 +73,7 @@ class HomeWidgetInstance {
 class HomeWidgetBindingService {
   const HomeWidgetBindingService();
 
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     'com.mutx163.qingyu/home_widget',
   );
 
