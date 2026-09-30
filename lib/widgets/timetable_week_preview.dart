@@ -661,11 +661,16 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       settings: settings,
       hasBackdrop: hasBackdrop,
       headerShowsBackdrop: headerShowsBackdrop,
+      // 与首页同口径：液态 / 磨砂带在模糊管线不在时降级为实心条。
+      blurPipelineOn:
+          hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context),
     );
     final headerBackground = resolveHomePageHeaderBackground(
       settings: settings,
       hasBackdrop: hasBackdrop,
       headerShowsBackdrop: headerShowsBackdrop,
+      blurPipelineOn:
+          hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context),
       isDark: isDark,
       darkFallback: darkFallback,
     );
@@ -794,10 +799,13 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final visibleDays = _visibleDayNumbers(settings);
     // 内嵌小字入口已移除（回本周唯一入口是右下浮钮）。
     // 实体档那条不透明实心条把壁纸盖住 ⇒ 不算「压在壁纸上」，墨色走主题 / 配置色
-    // （与首页 [homePageWeekdayBarOverWallpaper] 同口径）。
+    // （与首页 [homePageWeekdayBarOverWallpaper] 同口径）；液态 / 磨砂带在模糊
+    // 管线不在时降级的实心条亦然。
     final weekdayChromeOverWallpaper = homePageWeekdayBarOverWallpaper(
       settings: settings,
       hasBackdrop: hasBackdrop,
+      blurPipelineOn:
+          hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context),
     );
     // Judge ink from the band actually behind the weekday bar, not the
     // status/title strip above it. With the weekday glass band on, follow the

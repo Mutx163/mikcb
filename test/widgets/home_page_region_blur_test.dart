@@ -89,6 +89,7 @@ void main() {
         settings: solid,
         hasBackdrop: true,
         headerShowsBackdrop: true,
+        blurPipelineOn: true,
       ),
       isFalse,
       reason: '实体顶栏必须画实体底色，不能只把标题栏设成透明',
@@ -100,11 +101,25 @@ void main() {
       settings: settingsWith(bandMaterial: 'solid'),
       hasBackdrop: true,
       headerShowsBackdrop: true,
+      blurPipelineOn: true,
       isDark: false,
       darkFallback: Colors.white,
     );
 
     expect(background.color.a, 1);
+  });
+
+  test('液态带 + 模糊管线不在：标题行也走不透明页面底色（降级实心条同源）', () {
+    final background = resolveHomePageHeaderBackground(
+      settings: settingsWith(bandMaterial: 'liquid'),
+      hasBackdrop: true,
+      headerShowsBackdrop: true,
+      blurPipelineOn: false,
+      isDark: false,
+      darkFallback: Colors.white,
+    );
+
+    expect(background.color.a, 1, reason: '降级实心条与标题行之间不能透出壁纸');
   });
 
   test('顶栏材质还是玻璃档时口径不变', () {
@@ -201,6 +216,7 @@ void main() {
         homePageWeekdayBarOverWallpaper(
           settings: settingsWith(bandMaterial: 'solid'),
           hasBackdrop: true,
+          blurPipelineOn: true,
         ),
         isFalse,
         reason: '实心条把壁纸整个盖住，再按壁纸判墨色就是浅底白字',
@@ -210,9 +226,21 @@ void main() {
           homePageWeekdayBarOverWallpaper(
             settings: settingsWith(bandMaterial: material),
             hasBackdrop: true,
+            blurPipelineOn: true,
           ),
           isTrue,
           reason: material,
+        );
+        // 2026-09-30 起：模糊管线不在（实体卡片档关掉总开关 / 系统降级）时
+        // 液态 / 磨砂带降级为实心条，同样不算「压在壁纸上」。
+        expect(
+          homePageWeekdayBarOverWallpaper(
+            settings: settingsWith(bandMaterial: material),
+            hasBackdrop: true,
+            blurPipelineOn: false,
+          ),
+          isFalse,
+          reason: '$material 带在模糊管线不在时是实心条，墨色不该跟壁纸翻',
         );
       }
     });
@@ -229,7 +257,11 @@ void main() {
         weekdayBarBlur: false,
       ).copyWith(homePageWallpaperPath: wallpaper.path);
       expect(
-        homePageWeekdayBarOverWallpaper(settings: blurOff, hasBackdrop: true),
+        homePageWeekdayBarOverWallpaper(
+          settings: blurOff,
+          hasBackdrop: true,
+          blurPipelineOn: true,
+        ),
         isTrue,
       );
       // 作用范围不含星期栏 ⇒ 那份区域底色是不透明页面底色，不算壁纸上。
@@ -242,6 +274,7 @@ void main() {
                 HomePageBackgroundScope.statusBar,
           ),
           hasBackdrop: true,
+          blurPipelineOn: true,
         ),
         isFalse,
       );
@@ -253,6 +286,7 @@ void main() {
           settings: settingsWith(bandMaterial: 'solid'),
           statusBarShowsBackdrop: true,
           bandPaints: true,
+          blurPipelineOn: true,
         ),
         isFalse,
         reason: '带子连状态栏一起盖成实底 ⇒ 图标极性跟页面底色走，否则浅底白图标',
@@ -262,14 +296,27 @@ void main() {
           settings: settingsWith(bandMaterial: 'liquid'),
           statusBarShowsBackdrop: true,
           bandPaints: true,
+          blurPipelineOn: true,
         ),
         isTrue,
+      );
+      // 2026-09-30 起：模糊管线不在时液态带也是实心条 ⇒ 图标极性跟页面底色走。
+      expect(
+        homePageStatusBarOverWallpaper(
+          settings: settingsWith(bandMaterial: 'liquid'),
+          statusBarShowsBackdrop: true,
+          bandPaints: true,
+          blurPipelineOn: false,
+        ),
+        isFalse,
+        reason: '液态带降级实心条后状态栏不再是裸壁纸',
       );
       expect(
         homePageStatusBarOverWallpaper(
           settings: settingsWith(bandMaterial: 'solid'),
           statusBarShowsBackdrop: true,
           bandPaints: false,
+          blurPipelineOn: true,
         ),
         isTrue,
         reason: '带子没挂（总开关关着）时状态栏是裸壁纸',
@@ -279,6 +326,7 @@ void main() {
           settings: settingsWith(bandMaterial: 'solid'),
           statusBarShowsBackdrop: false,
           bandPaints: false,
+          blurPipelineOn: true,
         ),
         isFalse,
       );
@@ -325,6 +373,55 @@ void main() {
       );
       expect(box.color, pageBg);
       expect(box.color.a, 1, reason: '实体档必须完全不透明，否则还是透出壁纸');
+    });
+
+    testWidgets('液态带 + 模糊管线不在 ⇒ 也画实心条，不再退半透明水洗（真机 2026-09-30）', (
+      tester,
+    ) async {
+      // 用户报的就是这一格：默认材质选「实体卡片」（= 模糊总开关关），顶栏带
+      // 出厂单独钉在「液态」。旧渲染在此降级成一层半透明水洗，壁纸清晰透出，
+      // 读作「实体档顶栏是透明的」；材质地图此时报的是 solid，渲染是说谎的
+      // 一方。修后与实体档同一段实心条。
+      const pageBg = Color(0xFF102030);
+      await tester.pumpWidget(
+        const FrostedAppearanceScope(
+          appearance: FrostedAppearance(
+            sheetBlurSigma: kDefaultFrostedSheetBlurSigma,
+            sheetTintAlpha: kDefaultFrostedSheetTintAlpha,
+            sheetBarrierAlpha: kDefaultFrostedSheetBarrierAlpha,
+            blurEnabled: false,
+            // homeBandGlassMaterial 省略 = 出厂默认 'liquid'（顶栏带单独钉液态），
+            // 正是要复现的用户配置。
+          ),
+          child: MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 400,
+                height: 800,
+                child: Stack(
+                  children: [
+                    HomePageContinuousChromeFrostedOverlay(
+                      headerBlurEnabled: true,
+                      weekdayBarBlurEnabled: true,
+                      includeStatusBar: false,
+                      weekdayBarHeight: 40,
+                      solidColor: pageBg,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final fill = find.byType(HomePageChromeGlassFill);
+      expect(fill, findsOneWidget, reason: '带子照挂（星期栏的底色全指望它）');
+      final box = tester.widget<ColoredBox>(
+        find.descendant(of: fill, matching: find.byType(ColoredBox)),
+      );
+      expect(box.color, pageBg);
+      expect(box.color.a, 1, reason: '降级实心条必须完全不透明');
     });
   });
 

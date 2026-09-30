@@ -278,9 +278,13 @@ bool homePageChromeBandPaints(
 /// * 星期行玻璃带关着 ⇒ 星期栏画的是自己那份区域底色，壁纸在作用范围内就是裸壁纸；
 /// * 开着 ⇒ 底色让给带子，玻璃带（含液态降级成的半透明衬底）都透得出壁纸，
 ///   **只有实体档那条不透明实心条把它盖住** ⇒ 走主题 / 配置墨色。
+/// * 2026-09-30 起液态 / 磨砂带在模糊管线不在时也降级为实心条（见
+///   [HomePageChromeGlassFill.build]），同样不算「压在壁纸上」——[blurPipelineOn]
+///   就是这个判据（[HyperosBlurredHeader.backdropBlurEnabled] 的现成读数）。
 bool homePageWeekdayBarOverWallpaper({
   required TimetableSettings settings,
   required bool hasBackdrop,
+  required bool blurPipelineOn,
 }) {
   if (!hasBackdrop) {
     return false;
@@ -291,7 +295,7 @@ bool homePageWeekdayBarOverWallpaper({
       HomePageBackgroundScope.weekdayBar,
     );
   }
-  return settings.homeBandGlassMaterialEffective != 'solid';
+  return blurPipelineOn && settings.homeBandGlassMaterialEffective != 'solid';
 }
 
 /// 状态栏那一条此刻是不是**压在壁纸上**（系统图标黑白极性按它判，见
@@ -300,11 +304,13 @@ bool homePageWeekdayBarOverWallpaper({
 /// 壁纸作用范围含状态栏时，带子会连它一起盖住（`includeStatusBar`），于是答案与
 /// 标题栏那条同源：玻璃档透出壁纸 ⇒ 按壁纸亮度翻黑白；**实体档是不透明实心条 ⇒
 /// 按页面底色走**。带子没盖住（实体档但「顶栏玻璃」总开关关着、或作用范围不含状态栏）
-/// 时状态栏画的是裸壁纸，仍然算压在壁纸上。
+/// 时状态栏画的是裸壁纸，仍然算压在壁纸上。2026-09-30 起液态 / 磨砂带在模糊管线
+/// 不在时也降级为实心条（[blurPipelineOn] 为假），同样按页面底色走。
 bool homePageStatusBarOverWallpaper({
   required TimetableSettings settings,
   required bool statusBarShowsBackdrop,
   required bool bandPaints,
+  required bool blurPipelineOn,
 }) {
   if (!statusBarShowsBackdrop) {
     return false;
@@ -312,7 +318,7 @@ bool homePageStatusBarOverWallpaper({
   if (!bandPaints) {
     return true;
   }
-  return settings.homeBandGlassMaterialEffective != 'solid';
+  return blurPipelineOn && settings.homeBandGlassMaterialEffective != 'solid';
 }
 
 /// Whether the real home header should keep a transparent/frosted background.
@@ -320,12 +326,18 @@ bool homePageStatusBarOverWallpaper({
 /// A solid home band must paint the resolved header color even when the
 /// wallpaper scope still says "header shows backdrop"; otherwise the title bar
 /// is transparent over the wallpaper with no solid fill behind it.
+/// 2026-09-30 起液态 / 磨砂带在模糊管线不在时降级为实心条（[blurPipelineOn]
+/// 为假），标题行同样画不透明页面底色、吃主题墨，不再透壁纸。
 bool homePageHeaderUsesFrostedChrome({
   required TimetableSettings settings,
   required bool hasBackdrop,
   required bool headerShowsBackdrop,
+  required bool blurPipelineOn,
 }) {
   if (!hasBackdrop || settings.homeBandGlassMaterialEffective == 'solid') {
+    return false;
+  }
+  if (!blurPipelineOn) {
     return false;
   }
   return headerShowsBackdrop || settings.homePageHeaderBlurEnabled;
@@ -335,11 +347,13 @@ bool homePageHeaderUsesFrostedChrome({
 ///
 /// A solid band must stay opaque even when the wallpaper scope includes the
 /// header. Glass keeps the existing transparent/region-aware background so the
-/// wallpaper and sampled chrome remain visible.
+/// wallpaper and sampled chrome remain visible. 液态 / 磨砂带在模糊管线不在时
+/// 降级为实心条（[blurPipelineOn] 为假），同样走不透明页面底色。
 HomePageBackgroundVisual resolveHomePageHeaderBackground({
   required TimetableSettings settings,
   required bool hasBackdrop,
   required bool headerShowsBackdrop,
+  required bool blurPipelineOn,
   required bool isDark,
   required Color darkFallback,
 }) {
@@ -347,6 +361,7 @@ HomePageBackgroundVisual resolveHomePageHeaderBackground({
     settings: settings,
     hasBackdrop: hasBackdrop,
     headerShowsBackdrop: headerShowsBackdrop,
+    blurPipelineOn: blurPipelineOn,
   )) {
     return resolveHomePageRegionBackground(
       settings: settings,
@@ -694,6 +709,24 @@ class HomePageChromeGlassFill extends StatelessWidget {
     final material = HyperosBlurredHeader.homeBandGlassMaterialOf(context);
     const fill = SizedBox.expand();
 
+    // 实心条：实体档本体，也是液态 / 磨砂带在模糊管线不可用时的降级态。
+    // 底色优先取宿主页传进来的页面底色（见 [solidColor]），null 才退回主题底色
+    // —— 与标题行那份 [resolveHomePageHeaderBackground] 同源，用户自定义过
+    // 「页面背景色」时两段之间不会差出一条色带。
+    Widget solidBand() {
+      final solid = ColoredBox(
+        color: solidColor ?? HyperosColors.scaffoldBackground(context),
+        child: fill,
+      );
+      if (borderRadius <= 0) {
+        return solid;
+      }
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: solid,
+      );
+    }
+
     // 液态玻璃在引擎没有 shader filter 后端 / 着色器未就绪时的回落：仍是磨砂玻璃
     // 观感（就是这条带 2026-09-20 之前一直画的那条渐进模糊链路）。
     Widget frostBand() {
@@ -716,6 +749,17 @@ class HomePageChromeGlassFill extends StatelessWidget {
       );
     }
 
+    // 模糊管线不在（「实体卡片」档关掉模糊总开关 / 系统降级 / 平台没有 blur
+    // 后端）：液态与磨砂带都退**实心条**，不再退半透明水洗。旧口径「模糊关 =
+    // 只剩纯色衬底」出在总开关还不是用户档位的年代；「实体卡片」成为用户档
+    // 之后，水洗是谁都没选过的第三种样子——材质地图（homeBandSurfaceMaterial）
+    // 对「液态带 + 总开关关」早就报 solid，渲染是最后一块说谎的板子（真机
+    // 2026-09-30：用户选实体卡片后顶栏透出壁纸）。系统降级契约同样是「所有面
+    // 回 solid material」（见 HyperosBlurredHeader.modalBarrierColor 注释）。
+    if (!useBlur && material != 'solid') {
+      return solidBand();
+    }
+
     if (material == 'frost') {
       // 磨砂玻璃带（跟随默认 + 默认档高斯）：渐进模糊链路，与液态档的着色器
       // 回落同一条路。磨砂不需要折射位移的 overdraw / capture margin（见
@@ -724,19 +768,6 @@ class HomePageChromeGlassFill extends StatelessWidget {
     }
 
     if (material == 'liquid') {
-      // 液态玻璃。模糊总开关关闭（或系统降级）时回落实底衬底：保留既有口径的
-      // 淡色半透明衬底（「模糊关 = 只剩纯色衬底」），与旧高级材质路径一致。
-      if (!useBlur) {
-        return FrostedHeaderBackground(
-          blurEnabled: false,
-          blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-          tint: HyperosBlurredHeader.homePageRegionTintColor(
-            context,
-            withBlur: false,
-          ),
-          child: fill,
-        );
-      }
       return LiquidGlassSurface(
         borderRadius: borderRadius,
         // 首页带上自己那块 bounds 就够宽；设置页预览里它是小矩形，
@@ -748,22 +779,8 @@ class HomePageChromeGlassFill extends StatelessWidget {
       );
     }
 
-    // 实体档：用户显式选择的不透明顶栏——页面底色实心条，完全遮住
-    // 壁纸。与上面那个「淡色衬底」是两回事：那是不模糊时的降级态水洗
-    // （半透明），这不是。
-    //
-    // 底色优先取宿主页传进来的页面底色（见 [solidColor]），null 才退回主题底色。
-    final solid = ColoredBox(
-      color: solidColor ?? HyperosColors.scaffoldBackground(context),
-      child: fill,
-    );
-    if (borderRadius <= 0) {
-      return solid;
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: solid,
-    );
+    // 实体档：用户显式选择的不透明顶栏——页面底色实心条，完全遮住壁纸。
+    return solidBand();
   }
 }
 

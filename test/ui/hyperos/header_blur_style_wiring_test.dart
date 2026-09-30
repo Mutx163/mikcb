@@ -21,6 +21,7 @@ import 'package:university_timetable/ui/hyperos/frosted/frosted_header_backgroun
 import 'package:university_timetable/ui/hyperos/hyperos_blurred_header.dart';
 import 'package:university_timetable/ui/hyperos/inspire/inspire_header_blur.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_theme.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
 import 'package:university_timetable/widgets/home_page_region_blur.dart';
 
 const _appearance = FrostedAppearance(
@@ -153,23 +154,21 @@ void main() {
   });
 
   group('首页玻璃带按材质分派（HomePageChromeGlassFill）', () {
-    testWidgets('液态走液态玻璃（测试环境降级为水洗），frost 走磨砂带', (tester) async {
+    testWidgets('管线可用：液态走液态玻璃，frost 走磨砂带', (tester) async {
       // 渲染侧只消费**生效值**：存量 progressive / gaussian / soft 在设置层就
       // 归到液态、'follow' 解析成 frost/liquid/solid（2026-09-23 起），永远不会
       // 以原始值进入这里 —— 所以候选只有 liquid / frost / solid 三个。
       //
-      // VM liveBlurSupported=false ⇒ 液态玻璃按降级口径回落到衬底（半透明水洗、
-      // 不渲染磨砂模糊）。真实玻璃面由液态玻璃自己的 widget 测试覆盖，这里只钉
-      // 「分派到哪一支」。
+      // VM 默认 liveBlurSupported=false ⇒ 整条带降级为实心条（见下一条）；要钉
+      // 「分派到哪一支」得先把管线补成真机口径。
+      HyperosBlurredHeader.liveBlurSupportedOverride = true;
+      addTearDown(() => HyperosBlurredHeader.liveBlurSupportedOverride = null);
       await _pumpFill(tester, 'liquid');
-      final wash = tester.widget<ColoredBox>(
-        find.descendant(
-          of: find.byType(HomePageChromeGlassFill),
-          matching: find.byType(ColoredBox),
-        ),
+      expect(
+        find.byType(LiquidGlassSurface),
+        findsOneWidget,
+        reason: '液态档在管线可用时走折射玻璃本体',
       );
-      // 降级态是**均匀的半透明水洗**，不是实体档那条不透明实心条。
-      expect(wash.color.a, lessThan(1.0));
 
       // 'frost'（跟随默认 + 默认档高斯）→ 磨砂带：渐进模糊链路（inspire 风格），
       // 不再被吞进液态分支 —— 它没有折射，也不吃液态调参。
@@ -177,10 +176,34 @@ void main() {
       final bg = tester.widget<FrostedHeaderBackground>(
         find.byType(FrostedHeaderBackground),
       );
-      expect(bg.blurEnabled, isFalse);
+      expect(bg.blurEnabled, isTrue);
       expect(bg.blurStyle, HeaderBlurStyle.inspire);
-      // 磨砂带的水洗色就是降级液态那条（同一取色口径），只是形状/风格不同。
-      expect(bg.tint, wash.color);
+    });
+
+    testWidgets('管线不可用 ⇒ 液态 / 磨砂带都降级为不透明实心条（2026-09-30）', (
+      tester,
+    ) async {
+      // 旧口径在这里降级成半透明水洗；「实体卡片」成为用户档之后，水洗是谁都
+      // 没选过的第三种样子，且材质地图对「液态带 + 总开关关」报的是 solid ——
+      // 渲染改成与地图、与实体档同一条实心条。
+      await _pumpFill(tester, 'liquid');
+      final liquidBox = tester.widget<ColoredBox>(
+        find.descendant(
+          of: find.byType(HomePageChromeGlassFill),
+          matching: find.byType(ColoredBox),
+        ),
+      );
+      expect(liquidBox.color.a, 1.0, reason: '降级实心条必须完全不透明');
+
+      await _pumpFill(tester, 'frost');
+      final frostBox = tester.widget<ColoredBox>(
+        find.descendant(
+          of: find.byType(HomePageChromeGlassFill),
+          matching: find.byType(ColoredBox),
+        ),
+      );
+      expect(frostBox.color.a, 1.0);
+      expect(find.byType(FrostedHeaderBackground), findsNothing);
     });
 
     testWidgets('实体 → 不透明纯色条，完全遮住壁纸', (tester) async {

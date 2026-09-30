@@ -11,7 +11,7 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/services/storage_service.dart';
-import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_blurred_header.dart';
 import 'package:university_timetable/utils/hex_color.dart';
 import 'package:university_timetable/utils/home_page_background.dart';
 import 'package:university_timetable/widgets/home_page_region_blur.dart';
@@ -117,6 +117,7 @@ Future<void> _pumpHome(
   int scope, {
   bool headerBlur = false,
   bool weekdayBlur = false,
+  bool masterBlurOn = true,
   String? weekdayHex,
   String? bandMaterial,
   String? pageBgHex,
@@ -129,6 +130,7 @@ Future<void> _pumpHome(
         homePageBackgroundScope: scope,
         homePageHeaderBlurEnabled: headerBlur,
         homePageWeekdayBarBlurEnabled: weekdayBlur,
+        frostedBlurEnabled: masterBlurOn,
         weekdayBarFontColorLight: weekdayHex,
         homeBandGlassMaterial: bandMaterial,
         timetablePageBackgroundColor: pageBgHex,
@@ -164,6 +166,13 @@ void main() {
 
   setUp(() {
     StorageService().resetForTesting();
+    // VM 上 liveBlurSupported=false；这些端到端用例钉的是真机墨色口径，把管线
+    // 补成「支持」。要模拟降级（管线不可用）的用例走 masterBlurOn: false。
+    HyperosBlurredHeader.liveBlurSupportedOverride = true;
+  });
+
+  tearDown(() {
+    HyperosBlurredHeader.liveBlurSupportedOverride = null;
   });
 
   testWidgets('dark wallpaper + all regions + no blur: chrome ink flips white '
@@ -349,6 +358,55 @@ void main() {
     expect(_textColor(tester, '周一'), const Color(0xFF000000));
     expect(_textColor(tester, '1 周'), const Color(0xFF000000));
     // 那条「文字对比度不足」提醒是拿壁纸亮度判的，实体档下不该弹。
+    expect(find.text('文字对比度不足'), findsNothing);
+  });
+
+  testWidgets('液态带 + 模糊总开关关：降级实心条，顶栏不再透壁纸（真机 2026-09-30）', (
+    tester,
+  ) async {
+    // 用户实际配置的复现：默认材质「实体卡片」（frostedBlurEnabled = false），
+    // 顶栏带出厂单独钉「液态」。旧渲染把带子降级成半透明水洗——壁纸清晰透出，
+    // 读作「实体档顶栏是透明的」。修后与实体档同口径：实心条 + 墨色不跟壁纸翻。
+    _seedInitializedPrefs();
+    final dir = Directory.systemTemp.createTempSync('mikcb_liquid_master_off_');
+    addTearDown(() {
+      PaintingBinding.instance.imageCache.clear();
+      try {
+        dir.deleteSync(recursive: true);
+      } on FileSystemException {
+        // ignored
+      }
+    });
+    final wallpaper = await tester.runAsync(
+      () => _writeWallpaper(dir, topLightFraction: 0),
+    );
+    const pageBg = '#102030';
+    final provider = await createInitializedTestProvider(tester);
+    await _pumpHome(
+      tester,
+      provider,
+      wallpaper!.path,
+      _scopeAll,
+      headerBlur: true,
+      weekdayBlur: true,
+      masterBlurOn: false,
+      bandMaterial: 'liquid',
+      pageBgHex: pageBg,
+      wrapFrostedScope: true,
+    );
+
+    // ① 带子照挂（星期栏的底色全指望它）。
+    final bandFill = find.byType(HomePageChromeGlassFill);
+    expect(bandFill, findsOneWidget);
+    // ② 渲染的是不透明实心条（= 页面底色），不再是那层谁都没选过的水洗。
+    final solid = tester.widget<ColoredBox>(
+      find.descendant(of: bandFill, matching: find.byType(ColoredBox)),
+    );
+    expect(solid.color, parseHexColorOrFallback(pageBg, fallback: Colors.white));
+    expect(solid.color.a, 1, reason: '降级实心条必须完全不透明');
+    // ③ 墨色：星期栏压在实底上 ⇒ 保持默认黑，不跟着黑壁纸翻白；对比度提醒也不弹。
+    expect(_textColor(tester, '周一'), const Color(0xFF000000));
+    expect(_textColor(tester, '1 周'), const Color(0xFF000000));
     expect(find.text('文字对比度不足'), findsNothing);
   });
 

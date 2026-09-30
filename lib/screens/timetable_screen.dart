@@ -794,15 +794,22 @@ class _TimetableScreenState extends State<TimetableScreen>
           settings,
           HomePageBackgroundScope.header,
         );
+        // 模糊管线总闸（用户「实体卡片」档关掉总开关 / 系统降级 / 平台不支持）。
+        // 液态 / 磨砂带在管线不在时降级为实心条（HomePageChromeGlassFill），
+        // 下面三个墨色 / 背景判据都要知道这件事。
+        final backdropBlurOn =
+            hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context);
         final headerUsesFrostedChrome = homePageHeaderUsesFrostedChrome(
           settings: settings,
           hasBackdrop: hasBackdrop,
           headerShowsBackdrop: headerShowsBackdrop,
+          blurPipelineOn: backdropBlurOn,
         );
         final headerBackground = resolveHomePageHeaderBackground(
           settings: settings,
           hasBackdrop: hasBackdrop,
           headerShowsBackdrop: headerShowsBackdrop,
+          blurPipelineOn: backdropBlurOn,
           isDark: isDark,
           darkFallback: darkFallback,
         );
@@ -829,6 +836,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             settings: settings,
             statusBarShowsBackdrop: statusBarShowsBackdrop,
             bandPaints: chromeBandPaints,
+            blurPipelineOn: backdropBlurOn,
           ),
           hasBackdrop: hasBackdrop,
           isDark: isDark,
@@ -903,9 +911,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         );
         // Cards fall back to solid when blur is off, so building the
         // pre-blurred bitmap would decode and Gaussian-blur the whole
-        // wallpaper for nothing.
-        final backdropBlurOn =
-            hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context);
+        // wallpaper for nothing.（backdropBlurOn 已在带子判据前算好。）
         // No wallpaper or no blur pipeline (global solid / degraded) ->
         // cards render solid regardless of what the surface-style switch is
         // set to; ink rules follow the same resolution.
@@ -2452,10 +2458,12 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     // 实体档那条带是不透明实心条，星期栏压根不在壁纸上 ⇒ 这条「对比度不够」的
-    // 提醒在实体档下是假的（拿壁纸亮度去判一张实底上的字），别弹。
+    // 提醒在实体档下是假的（拿壁纸亮度去判一张实底上的字），别弹。液态 / 磨砂
+    // 带在模糊管线不在时同样降级为实心条，也不弹。
     if (!homePageWeekdayBarOverWallpaper(
       settings: settings,
       hasBackdrop: true,
+      blurPipelineOn: HyperosBlurredHeader.backdropBlurEnabled(context),
     )) {
       return;
     }
@@ -2680,10 +2688,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     // Only flip by wallpaper luminance when this band actually shows the
     // wallpaper / frosted glass; with the scope toggled off it paints the
     // opaque page background and must use the theme / configured ink. 实体档
-    // 那条不透明实心条同样不属于「压在壁纸上」（真机 2026-09-30 修）。
+    // 那条不透明实心条同样不属于「压在壁纸上」（真机 2026-09-30 修）；液态 /
+    // 磨砂带在模糊管线不在时降级的实心条亦然。
     final weekdayChromeOverWallpaper = homePageWeekdayBarOverWallpaper(
       settings: settings,
       hasBackdrop: hasBackdrop,
+      blurPipelineOn:
+          hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context),
     );
     // Judge ink from the band actually behind the weekday bar, not the
     // status/title strip above it — the two can differ on the same photo.
