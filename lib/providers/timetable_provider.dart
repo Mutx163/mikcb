@@ -2461,13 +2461,20 @@ class TimetableProvider with ChangeNotifier {
 
   Future<void> addCourse(Course course) {
     return _runMutation(() async {
-      final validationMessage = validateCourseTimeSchemeOverride(
-        timeSchemeId: course.timeSchemeIdOverride,
-        startSection: course.startSection,
-        endSection: course.endSection,
-      );
-      if (validationMessage != null) {
-        throw ArgumentError(validationMessage);
+      // 只有课程**显式绑定**时间方案时才做节次校验：绑定方案缺节次是
+      // 「写不进」的硬错误（课卡无处取钟点）。未绑定时课程自带钟点是唯一
+      // 真源，地点分组/日期规则/激活方案都只是 apply 时的**建议**——溢出
+      // 由 applyLocationTimeRulesToActiveProfile 计数报告，不在写入时拒绝
+      // （否反正课时钟点齐全、只是不匹配当前方案的课会被莫名拒掉）。
+      if (course.timeSchemeIdOverride != null) {
+        final validationMessage = validateCourseTimeSchemeOverride(
+          timeSchemeId: course.timeSchemeIdOverride,
+          startSection: course.startSection,
+          endSection: course.endSection,
+        );
+        if (validationMessage != null) {
+          throw ArgumentError(validationMessage);
+        }
       }
       final normalized = _normalizeCourse(course);
       final normalizedCourse = _isLiveTestingFixture(normalized)
@@ -2512,13 +2519,15 @@ class TimetableProvider with ChangeNotifier {
     return _runMutation(() async {
       final index = _courses.indexWhere((c) => c.id == course.id);
       if (index != -1) {
-        final validationMessage = validateCourseTimeSchemeOverride(
-          timeSchemeId: course.timeSchemeIdOverride,
-          startSection: course.startSection,
-          endSection: course.endSection,
-        );
-        if (validationMessage != null) {
-          throw ArgumentError(validationMessage);
+        if (course.timeSchemeIdOverride != null) {
+          final validationMessage = validateCourseTimeSchemeOverride(
+            timeSchemeId: course.timeSchemeIdOverride,
+            startSection: course.startSection,
+            endSection: course.endSection,
+          );
+          if (validationMessage != null) {
+            throw ArgumentError(validationMessage);
+          }
         }
         final normalized = _normalizeCourse(course);
         final normalizedCourse = _isLiveTestingFixture(normalized)
@@ -2882,13 +2891,15 @@ class TimetableProvider with ChangeNotifier {
       final teachers = <String>{};
       final locations = <String>{};
       for (final course in courses) {
-        final validationMessage = validateCourseTimeSchemeOverride(
-          timeSchemeId: course.timeSchemeIdOverride,
-          startSection: course.startSection,
-          endSection: course.endSection,
-        );
-        if (validationMessage != null) {
-          throw ArgumentError(validationMessage);
+        if (course.timeSchemeIdOverride != null) {
+          final validationMessage = validateCourseTimeSchemeOverride(
+            timeSchemeId: course.timeSchemeIdOverride,
+            startSection: course.startSection,
+            endSection: course.endSection,
+          );
+          if (validationMessage != null) {
+            throw ArgumentError(validationMessage);
+          }
         }
         final normalized = _syncCourseWithEffectiveTimeScheme(
           _normalizeCourse(CourseDomain.applySharedFields(course, shared)),
@@ -3847,14 +3858,19 @@ class TimetableProvider with ChangeNotifier {
       throw ArgumentError('target_week_out_of_range');
     }
 
-    final validationMessage = validateCourseTimeSchemeOverride(
-      timeSchemeId:
-          targetTimeSchemeIdOverride ?? originalCourse.timeSchemeIdOverride,
-      startSection: targetStartSection,
-      endSection: targetEndSection,
-    );
-    if (validationMessage != null) {
-      throw ArgumentError(validationMessage);
+    // 与 addCourse 同一契约：只校验**显式绑定**的方案；未绑定时目标钟点
+    // 由改课入口按当前生效方案推导，方案本身不是这里的拒绝对象。
+    final rescheduleOverride =
+        targetTimeSchemeIdOverride ?? originalCourse.timeSchemeIdOverride;
+    if (rescheduleOverride != null) {
+      final validationMessage = validateCourseTimeSchemeOverride(
+        timeSchemeId: rescheduleOverride,
+        startSection: targetStartSection,
+        endSection: targetEndSection,
+      );
+      if (validationMessage != null) {
+        throw ArgumentError(validationMessage);
+      }
     }
 
     final normalizedLocation =
