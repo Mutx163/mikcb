@@ -224,7 +224,13 @@ class _HyperosParallaxBleed extends StatelessWidget {
                 width: bleedWidth - width,
                 child: ColoredBox(color: surface),
               ),
-              SizedBox(width: width, child: child),
+              // 高度必须顶死：外层 Stack 给非定位子级的是**放宽后**的约束
+              // （min=0）。路由静止时给页面的是撑满视口的紧约束；这里若只锁
+              // 宽不锁高，根节点是「Stack + 零尺寸常驻子级（挂载态弹层）」的
+              // 页面（如教务仓库页）会按子级塌成高度 0 —— 整页不画，
+              // 转场露出的那条就是黑带（2026-09-28 真机现象）。∞ 经 enforce
+              // 收成 incoming 的 max，正好还原静止时的紧约束。
+              SizedBox(width: width, height: double.infinity, child: child),
             ],
           ),
         );
