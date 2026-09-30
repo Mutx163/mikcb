@@ -226,6 +226,10 @@ void main() {
     // 顶栏分段是内联控件：点「实体」段直接写回，不存在「弹层被面板压在
     // 背面、点按落空」的层级问题（2026-09-19 真机实锤的回归钉）。
     await _scrollPanelTo(tester, find.text('首页顶栏玻璃'));
+    // scrollUntilVisible 只滚到「刚好可见」——目标行贴在面板上沿渐变带的可点
+    // 区之下，点按会被带子的 DecoratedBox 吃掉。再往回推一截让行落在可点区。
+    await tester.drag(_panelScrollable(), const Offset(0, 150));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('实体').first);
     await tester.pumpAndSettle();
     expect(provider.settings.homeBandGlassMaterial, 'solid');
