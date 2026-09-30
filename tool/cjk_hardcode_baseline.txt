@@ -15,7 +15,8 @@ lib/models/timetable_settings.dart:5
 lib/models/warehouse_macro_models.dart:3
 lib/providers/timetable/import_export_service.dart:4
 lib/providers/timetable/time_scheme_repository.dart:1
-lib/providers/timetable_provider.dart:22
+lib/providers/timetable_provider.dart:4
+lib/providers/timetable/schedule_rule_apply.dart:18
 lib/screens/course_import_screen.dart:15
 lib/screens/feedback_screen.dart:1
 lib/screens/hyperos_showcase_screen.dart:24
@@ -64,6 +65,7 @@ lib/ui/hyperos/soft_glass/soft_glass_refraction.dart:1
 lib/ui/hyperos/soft_glass/soft_glass_surface.dart:7
 lib/utils/course_color_palette.dart:19
 lib/utils/locale_utils.dart:4
+lib/utils/timed_method_channel.dart:2
 lib/widgets/app_startup_splash.dart:1
 lib/widgets/class_reminder_sheet.dart:2
 lib/widgets/glass_shader_program.dart:1
