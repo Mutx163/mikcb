@@ -5,7 +5,6 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/widgets/miuix_date_picker_sheet.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:azlistview/azlistview.dart';
 import 'package:file_picker/file_picker.dart';
@@ -167,6 +166,25 @@ bool shouldPromptRememberedLoginSave({
       candidateUsername.isNotEmpty &&
       candidatePassword.isNotEmpty &&
       (rememberedLogin == null || rememberedLogin.password.isEmpty);
+}
+
+/// 「要不要帮你填密码」的决定是否应该等一等在途的会话探针。
+///
+/// onPageFinished 同一帧里背靠背发出两件事：收集登录框状态（纯 DOM，毫秒级
+/// 回话）与会话探针（fetch 内页，一次网络往返）。弹窗判定若不等探针，「会话
+/// 还在 → 不弹」的抑制就永远输给网络往返——入口页即登录页（强智标准形态）
+/// 时，弹窗几乎必然在探针结论到达前弹出，而 _hasPromptedAutofill 置位后
+/// 迟到的结论再也用不上。三个条件缺一不可：没配置的学校（200+ 所）探针根本
+/// 不存在，行为必须与从前逐字节一致；非 unknown 的结论已经可以判；不在途
+/// 说明这次探不动（跳过/冷却/超时已收），等不到结论。
+bool sessionProbeMayStillSettle({
+  required WarehouseSessionProbeConfig? config,
+  required WarehouseSessionProbeVerdict verdict,
+  required bool inFlight,
+}) {
+  return config != null &&
+      verdict == WarehouseSessionProbeVerdict.unknown &&
+      inFlight;
 }
 
 /// Whether ordinary web-login import should start background path recording.
@@ -382,8 +400,8 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
         allowedExtensions: const ['ics'],
         // withData: true would already have the whole file in memory, and on
         // Android an OOM kills the process instead of raising something
-        // catchable — so the ceiling has to be enforced before the read.
-        withData: false,
+        // catchable — so the ceiling has to be enforced before the read
+        // (the picker only returns bytes on demand; nothing is pre-loaded).
       );
       if (result == null || result.files.isEmpty || !mounted) return;
 
@@ -2301,9 +2319,6 @@ class _WarehouseCourseImportScreenState
                       _recentSchoolIds,
                     );
                     final sections = _schoolsToSections(beans);
-                    final indexTags = sections
-                        .map((section) => section.tag)
-                        .toList(growable: false);
                     final isSearching = _searchQuery.trim().isNotEmpty;
                     if (sections.isEmpty) {
                       // Non-scroll centered view: inset below the bar manually.
@@ -2332,90 +2347,41 @@ class _WarehouseCourseImportScreenState
                         ),
                       );
                     }
-                    // Header inset inside the scrollable so rows slide under
-                    // the frosted bar (mirrors HyperosListView's default).
-                    final headerInset = HyperosBlurredHeaderScope.insetOf(
-                      context,
-                    );
-                    return AzListView(
-                      data: sections,
-                      itemCount: sections.length,
-                      padding: EdgeInsets.fromLTRB(16, headerInset, 16, 16),
-                      indexBarData: isSearching ? const [] : indexTags,
-                      indexBarOptions: IndexBarOptions(
-                        needRebuild: true,
-                        hapticFeedback: true,
-                        textStyle: HyperosTypography.listDetail(context)
-                            .copyWith(
-                              fontSize: HyperosMiuixTypography.footnote2,
-                              color: HyperosColors.secondaryText(context),
-                            ),
-                        selectTextStyle: HyperosTypography.listDetail(context)
-                            .copyWith(
-                              fontSize: HyperosMiuixTypography.footnote2,
-                              color: HyperosColors.primary(context),
-                            ),
-                        selectItemDecoration: BoxDecoration(
-                          color: HyperosColors.primary(
-                            context,
-                          ).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        indexHintDecoration: BoxDecoration(
-                          color: HyperosColors.card(context),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        indexHintTextStyle: HyperosTypography.title(
-                          context,
-                        ).copyWith(color: HyperosColors.primary(context)),
-                      ),
-                      indexHintBuilder: (context, tag) => Container(
-                        width: 72,
-                        height: 72,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: HyperosColors.card(context),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          tag,
-                          style: HyperosTypography.title(
-                            context,
-                          ).copyWith(color: HyperosColors.primary(context)),
-                        ),
-                      ),
-                      itemBuilder: (context, index) {
-                        final section = sections[index];
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            HyperosChoiceGroup(
-                              children: [
-                                for (final bean in section.items)
-                                  HyperosChoiceTile(
-                                    prefix: _ImportInitialBadge(
-                                      label: bean.school.initial,
-                                    ),
-                                    title: bean.school.name,
-                                    subtitle: Text(
-                                      _schoolRowSubtitle(
-                                        bean,
-                                        adapterMatches,
-                                        l10n,
-                                      ),
-                                    ),
-                                    trailing: const HyperosChevron(),
-                                    onTap: () =>
-                                        _openWarehouseSchool(bean.school),
+                    // 诊断用（2026-09-28）：这一页原本用 azlistview 的 AzListView
+                    // （字母索引条 + 底层 scrollable_positioned_list 的自定义视口），
+                    // 是全 App 唯一一处。先换成普通列表，看「进入学校页时底下这页
+                    // 全黑」是不是这个第三方视口引起的。
+                    //
+                    // 换掉的东西只有右侧的字母索引条；分组、行、间距、顶栏内衬
+                    // 全部照旧（HyperosListView 默认就带顶栏内衬，见它的
+                    // includeHeaderInset）。若黑还在，说明与它无关。
+                    return HyperosListView(
+                      children: [
+                        for (var index = 0; index < sections.length; index++) ...[
+                          HyperosChoiceGroup(
+                            children: [
+                              for (final bean in sections[index].items)
+                                HyperosChoiceTile(
+                                  prefix: _ImportInitialBadge(
+                                    label: bean.school.initial,
                                   ),
-                              ],
-                            ),
-                            if (index < sections.length - 1)
-                              const HyperosSectionGap(),
-                          ],
-                        );
-                      },
+                                  title: bean.school.name,
+                                  subtitle: Text(
+                                    _schoolRowSubtitle(
+                                      bean,
+                                      adapterMatches,
+                                      l10n,
+                                    ),
+                                  ),
+                                  trailing: const HyperosChevron(),
+                                  onTap: () => _openWarehouseSchool(bean.school),
+                                ),
+                            ],
+                          ),
+                          if (index < sections.length - 1)
+                            const HyperosSectionGap(),
+                        ],
+                      ],
                     );
                   },
                 ),
@@ -2726,8 +2692,8 @@ class _WarehouseCustomDebugEditScreenState
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['js', 'txt'],
-        // Measure before reading; see the .ics picker above for why.
-        withData: false,
+        // Nothing is pre-loaded here (picker default), so measure before reading;
+        // see the .ics picker above for why.
       );
       if (result == null || result.files.isEmpty || !mounted) {
         return;
@@ -3930,6 +3896,12 @@ class _WarehouseAdapterWebLoginScreenState
   /// 等页面回话的上限。超时后不算「没登录」，只算这次没探成（见 [_maybeRunSessionProbe]）。
   static const Duration _sessionProbeTimeout = Duration(seconds: 12);
 
+  /// 探针在途时被推迟的「要不要帮你填密码」决定（最近一条 loginState 消息）。
+  ///
+  /// 探针出结论（或 12s 超时）时补判；页销毁即弃。只留最新一条——探针在途
+  /// 期间 MutationObserver 可能连发多条，旧的那条没有判的价值。
+  Map<String, dynamic>? _pendingAutofillLoginState;
+
   /// 后台导入是否已经进入不可安全取消的写入阶段。
   ///
   /// 这不等同于「课程列表正在写」：时间方案、节次容量和学期设置也可能
@@ -5070,6 +5042,8 @@ class _WarehouseAdapterWebLoginScreenState
       // 判为 unknown 而不是 unavailable：网络抖动、页面还没稳住都可能造成超时，
       // 留给下一次翻页重试（冷却期挡住立刻重打）。
       _debugImportLog('session probe timeout', level: 'warn');
+      // 等探针等到了超时：被推迟的弹窗决定此刻放行（按「没探成」原行为）。
+      unawaited(_evaluatePendingAutofillPrompt());
     });
   }
 
@@ -5088,7 +5062,7 @@ class _WarehouseAdapterWebLoginScreenState
         type: 'sessionProbe',
         payload: JSON.stringify(payload)
       }));
-    } catch (e) { /* 桥已销毁：本次探活作废，不影响导入 */ }
+    } catch (e) { /* bridge torn down: probe result dropped, import unaffected */ }
   };
   (async () => {
     try {
@@ -5103,7 +5077,7 @@ class _WarehouseAdapterWebLoginScreenState
       try {
         const doc = new DOMParser().parseFromString(html, 'text/html');
         hasPasswordField = !!doc.querySelector('input[type="password"]');
-      } catch (e) { /* 解析不了就当没有密码框，交给 Dart 侧的长度校验兜底 */ }
+      } catch (e) { /* unparseable HTML counts as no password field; the Dart-side length check is the backstop */ }
       post({
         ok: true,
         status: Number(resp.status || 0),
@@ -5152,6 +5126,23 @@ class _WarehouseAdapterWebLoginScreenState
       'status=${signal?.status} bytes=${signal?.bodyLength} '
       'passwordField=${signal?.hasPasswordField}',
     );
+    // 结论落地：补判探针在途期间被推迟的弹窗决定（verdict 已非 unknown，
+    // 重入 _handleLoginStateMessage 不会再被推迟）。
+    unawaited(_evaluatePendingAutofillPrompt());
+  }
+
+  /// 探针出结论（或超时）后，补判被推迟的「要不要帮你填密码」决定。
+  ///
+  /// 超时路径的 verdict 仍是 unknown、inFlight 已收：重入时
+  /// [sessionProbeMayStillSettle] 为假，按「这次没探成」的原行为放行弹窗——
+  /// 等不到结论就退回今天的做法，绝不会把决定永远悬着。
+  Future<void> _evaluatePendingAutofillPrompt() async {
+    final pending = _pendingAutofillLoginState;
+    if (pending == null) {
+      return;
+    }
+    _pendingAutofillLoginState = null;
+    await _handleLoginStateMessage(pending);
   }
 
   /// 用户刚尝试过登录，旧结论立刻作废（登录成功与否都要重探）。
@@ -5170,6 +5161,8 @@ class _WarehouseAdapterWebLoginScreenState
   void _disposeSessionProbe() {
     _sessionProbeTimer?.cancel();
     _sessionProbeTimer = null;
+    // 页面在销毁，被推迟的弹窗决定随之作废——绝不能在 dispose 后弹对话框。
+    _pendingAutofillLoginState = null;
   }
 
   /// 会话确实还在（探针判的，不是看页面猜的）。
@@ -6281,7 +6274,9 @@ $kWarehouseBridgeCompatShim  try {
   /// 「唯一校区直接用，否则不套用专属作息」处理——宁可退回脚本那套全局作息，
   /// 也不要替用户猜一个校区然后把作息套错。
   ///
-  /// 分组按名 upsert：脚本提到的同名分组被覆盖，**用户自建的其它分组一律保留**。
+  /// 分组按名 upsert：脚本提到的同名分组被覆盖；**他校自动建的分组一并清除**
+  /// （教学楼名跨校撞车，留着会把新校教室错分到旧校作息——组上带来源标记，
+  /// 见 [mergeLocationTimeGroupsForImport]）；用户手建的分组不带标记，一律保留。
   Future<void> _applyQingyuOnlyLocationTimeSchemes() async {
     final adapter = widget.adapter;
     if (!adapter.isQingyuOnly || adapter.timeSchemesFile.isEmpty) {
@@ -6332,6 +6327,9 @@ $kWarehouseBridgeCompatShim  try {
           timeSchemeId: schemeId,
           priority: incoming.length,
           keywords: scheme.keywords,
+          // 来源标记：换校导入时据此清掉他校自动组（教学楼名跨校撞车）。
+          // 手建组不带标记、永不清理。见 mergeLocationTimeGroupsForImport。
+          sourceSchoolId: widget.school.id,
         ),
       );
     }
@@ -6342,15 +6340,11 @@ $kWarehouseBridgeCompatShim  try {
       return;
     }
 
-    final replacedNames = campus.schemes
-        .where((scheme) => !scheme.isFallback)
-        .map((scheme) => scheme.name)
-        .toSet();
-    final merged = <LocationTimeGroup>[
-      for (final existing in provider.locationTimeGroups)
-        if (!replacedNames.contains(existing.name)) existing,
-      ...incoming,
-    ];
+    final merged = mergeLocationTimeGroupsForImport(
+      existing: provider.locationTimeGroups,
+      incoming: incoming,
+      schoolId: widget.school.id,
+    );
     await provider.replaceLocationTimeGroups(merged);
     final applyError = await provider.applyTimeScheme(fallbackSchemeId);
     if (applyError != null) {
@@ -6505,6 +6499,17 @@ $kWarehouseBridgeCompatShim  try {
       return;
     }
     if (!mounted) {
+      return;
+    }
+    // 探针还在路上：把弹窗决定推迟到它出结论（或超时）再判，否则「会话还在
+    // → 不弹」的抑制永远输给网络往返（见 sessionProbeMayStillSettle）。
+    if (sessionProbeMayStillSettle(
+      config: _sessionProbeConfig,
+      verdict: _sessionProbeVerdict,
+      inFlight: _sessionProbeInFlight,
+    )) {
+      _pendingAutofillLoginState = message;
+      _debugImportLog('autofill prompt deferred: session probe in flight');
       return;
     }
 
