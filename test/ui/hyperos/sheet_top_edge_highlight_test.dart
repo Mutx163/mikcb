@@ -20,13 +20,16 @@ void main() {
   test('路径只覆盖「上沿 + 两个上角」，不画左右与底边', () {
     const size = Size(400, 600);
     const r = 28.0;
-    final bounds = HyperosSheetTopEdgePainter.topEdgePath(size, r).getBounds();
+    // 几何测试用典型线宽（rimWidth = 1.5），路径会往内缩 strokeWidth/2。
+    const strokeWidth = 1.5;
+    final bounds = HyperosSheetTopEdgePainter.topEdgePath(size, r, strokeWidth).getBounds();
 
+    // 路径往内缩了 strokeWidth/2 = 0.75，所以左/上边界在 0.75 处。
     // 通栏弹窗左右两条边贴着屏幕边，画出来是两条贴屏线的竖线；底边在屏幕外。
     // 所以这条笔只能占住最上面那一条 —— 这条判据挡住「顺手改成整圈描边」。
-    expect(bounds.left, closeTo(0, 0.01));
-    expect(bounds.right, closeTo(size.width, 0.01));
-    expect(bounds.top, closeTo(0, 0.01));
+    expect(bounds.left, closeTo(strokeWidth / 2, 0.01));
+    expect(bounds.right, closeTo(size.width - strokeWidth / 2, 0.01));
+    expect(bounds.top, closeTo(strokeWidth / 2, 0.01));
     expect(
       bounds.bottom,
       closeTo(r, 0.6),

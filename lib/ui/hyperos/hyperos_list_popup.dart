@@ -11,6 +11,20 @@ import 'hyperos_widgets.dart';
 import 'frosted/liquid_glass_degradation.dart';
 import 'liquid/liquid_glass_surface.dart' show UndimmedBackdropCapture;
 
+/// ⚠️ **2026-09-28 起无正式调用方，请勿在新页面使用。**
+///
+/// 新的锚定式菜单一律用 `HyperosAnchorMenuPopup`（上游
+/// `MiuixGlassDropdownPopup`，从按钮旁弧线展开、GPU 取材质）。本文件的
+/// 弹出路径是 0.15 倍缩放弹出 + 共享组逐帧重采整页的液态玻璃（每次打开瞬时
+/// 分配 100~140MB 离屏目标），观感与性能都已被官方实现取代。
+///
+/// 正式调用点已全部迁走：时间模板页卡片菜单、课表导入页（仓库 / 教务登录）、
+/// ICS 导出页，组件展示页里的演示项也已删除。
+///
+/// **本文件仍不能删**：[HyperosPopupMenuItem] 还被 `home_top_menu.dart` 当
+/// 二级子菜单的**数据容器**用（首页菜单的一级/二级面板早就是上游组件了，
+/// 那条路径不走本文件的弹层）。
+///
 /// Single item in [showHyperosListPopup].
 class HyperosPopupMenuItem<T> {
   const HyperosPopupMenuItem({

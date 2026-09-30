@@ -3459,11 +3459,11 @@
   "guidePersonalizeSubtitle": "選択はすぐに反映され、後から「設定 → 外観」でいつでも変更できます",
   "guidePersonalizeMenuStyleTitle": "メニュー形式",
   "guidePersonalizeNavFormTitle": "ナビゲーション形態",
-  "guidePersonalizeVisualEffectTitle": "視覚効果",
   "guidePersonalizeVisualEffectSolid": "ソリッドカード",
   "guideVisualEffectGaussianDesc": "背景をリアルタイムにぼかし、透明感と奥行きを演出",
   "guideVisualEffectLiquidDesc": "リキッドグラスの屈折で質感をプラス",
-  "guideVisualEffectSolidDesc": "ぼかしを使用しない、最も高いパフォーマンス",
+  "guideVisualEffectSolidDesc": "トップバー・ドック・コースカードはソリッドで最も高いパフォーマンス。ダイアログなどの固定パーツはガラスのまま",
+  "guideVisualEffectWallpaperHint": "ガラス素材は壁紙を設定するとより映えます",
   "guidePersonalizeThemeModeTitle": "テーマモード",
   "guidePersonalizeSeedColorTitle": "テーマカラー",
   "guidePrevButton": "前へ",
@@ -6515,5 +6515,13 @@
   "appearanceEditorMaterialAction": "マテリアル",
   "appearanceEditorEntrySubtitle": "ページ全体の縮小プレビューで壁紙とマテリアルを調整",
   "commonLoadingLabel": "読み込み中",
-  "warehouseSessionAlreadyActive": "教务システムにはまだログインしています。そのままインポートできます"
+  "warehouseSessionAlreadyActive": "教务システムにはまだログインしています。そのままインポートできます",
+  "underlineTabSemanticsLabel": "{text}タブ",
+  "@underlineTabSemanticsLabel": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  }
 }

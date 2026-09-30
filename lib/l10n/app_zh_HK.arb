@@ -3459,11 +3459,11 @@
   "guidePersonalizeSubtitle": "以下選擇立即生效，之後可隨時在「設定 → 外觀」中調整",
   "guidePersonalizeMenuStyleTitle": "選單樣式",
   "guidePersonalizeNavFormTitle": "導覽形態",
-  "guidePersonalizeVisualEffectTitle": "視覺效果",
   "guidePersonalizeVisualEffectSolid": "實體卡片",
   "guideVisualEffectGaussianDesc": "背景即時高斯模糊，通透有層次",
   "guideVisualEffectLiquidDesc": "液態玻璃折射，更具質感",
-  "guideVisualEffectSolidDesc": "不啟用模糊效果，效能最佳",
+  "guideVisualEffectSolidDesc": "頂欄、玻璃塢與課程卡片回到實體，最省效能；彈窗等固定小件保持玻璃",
+  "guideVisualEffectWallpaperHint": "玻璃材質配上首頁壁紙後效果更明顯",
   "guidePersonalizeThemeModeTitle": "深淺色模式",
   "guidePersonalizeSeedColorTitle": "主題色",
   "guidePrevButton": "上一步",
@@ -6515,5 +6515,13 @@
   "appearanceEditorMaterialAction": "材質",
   "appearanceEditorEntrySubtitle": "整頁縮小預覽，改桌布與材質",
   "commonLoadingLabel": "載入中",
-  "warehouseSessionAlreadyActive": "教務仍處於登入狀態，可直接匯入"
+  "warehouseSessionAlreadyActive": "教務仍處於登入狀態，可直接匯入",
+  "underlineTabSemanticsLabel": "{text}，標籤",
+  "@underlineTabSemanticsLabel": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  }
 }

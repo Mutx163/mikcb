@@ -6516,9 +6516,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guidePersonalizeNavFormTitle => '탐색 형태';
 
   @override
-  String get guidePersonalizeVisualEffectTitle => '시각 효과';
-
-  @override
   String get guidePersonalizeVisualEffectSolid => '솔리드 카드';
 
   @override
@@ -6528,7 +6525,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guideVisualEffectLiquidDesc => '리퀴드 글래스 굴절로 질감을 더함';
 
   @override
-  String get guideVisualEffectSolidDesc => '블러 없음 — 최고의 성능';
+  String get guideVisualEffectSolidDesc =>
+      '상단 바와 독, 강의 카드는 솔리드로 그려져 성능이 가장 좋고, 다이얼로그 등 고정 요소는 유리로 유지됩니다';
+
+  @override
+  String get guideVisualEffectWallpaperHint => '유리 재질은 배경화면을 설정하면 더 돋보입니다';
 
   @override
   String get guidePersonalizeThemeModeTitle => '테마 모드';
@@ -11460,4 +11461,9 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get warehouseSessionAlreadyActive =>
       '교무 시스템에 아직 로그인되어 있습니다. 바로 가져올 수 있습니다';
+
+  @override
+  String underlineTabSemanticsLabel(String text) {
+    return '$text 탭';
+  }
 }

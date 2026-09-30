@@ -355,13 +355,17 @@ void main() {
     expect(find.text('4 / 5'), findsOneWidget);
     // 菜单样式卡随「列表/八宫格」双形态恢复而回归引导页。
     expect(find.text('菜单样式'), findsOneWidget);
-    expect(find.text('视觉效果'), findsOneWidget);
+    // 卡片标题与设置页材质面板总闸同词（2026-09-30 起，原「视觉效果」）。
+    expect(find.text('默认材质'), findsOneWidget);
     expect(find.text('高斯模糊'), findsOneWidget);
     expect(find.text('液态玻璃'), findsOneWidget);
     expect(find.text('实体卡片'), findsOneWidget);
     // 柔光玻璃 2026-09-22 从引导页撤下（它此前是唯一还能选到柔光的入口，
     // 存量值改读作液态）。这里钉住它不再作为一档出现。
     expect(find.text('柔光玻璃'), findsNothing);
+    // 出厂默认高斯（玻璃档）：壁纸提示可见——首启无壁纸，课程卡片此刻
+    // 全按实体渲染，不提示会被当成「选了没生效」。
+    expect(find.text('玻璃材质配上首页壁纸后效果更明显'), findsOneWidget);
 
     // 按目标当前位置精确补偿，把它挪到屏幕竖直 45% 处：既脱离底边
     // 裁剪区，也避开顶部悬浮折叠栏的遮挡区（行高变化时不再依赖
@@ -389,7 +393,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(provider.settings.homeMenuStyle, HomeMenuStyle.list);
 
-    // 视觉效果三档映射。统一走 tapEffect（按目标位置精确居中），
+    // 默认材质三档映射。统一走 tapEffect（按目标位置精确居中），
     // 避免目标落入悬浮折叠顶栏遮挡区导致点击丢失。
     await tapEffect('高斯模糊');
     expect(provider.settings.frostedBlurEnabled, isTrue);
@@ -398,11 +402,15 @@ void main() {
     await tapEffect('液态玻璃');
     expect(provider.settings.frostedBlurEnabled, isTrue);
     expect(provider.settings.frostedGlassMode, FrostedGlassMode.liquidGlass);
+    // 玻璃档始终显示壁纸提示。
+    expect(find.text('玻璃材质配上首页壁纸后效果更明显'), findsOneWidget);
 
     await tapEffect('实体卡片');
     expect(provider.settings.frostedBlurEnabled, isFalse);
     // 实体卡片同时把玻璃模式归位非液态：液态面不受模糊总开关约束。
     expect(provider.settings.frostedGlassMode, FrostedGlassMode.gaussian);
+    // 实体档不吃壁纸，提示只留给玻璃两档。
+    expect(find.text('玻璃材质配上首页壁纸后效果更明显'), findsNothing);
   });
 
   testWidgets('personalize theme mode and seed color persist', (tester) async {

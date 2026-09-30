@@ -171,9 +171,10 @@ await HyperosNavigation.push(
 | `HyperosNavTile` / `HyperosDangerTile` | 纯文字导航 / 红色警示行 | ✅ |
 | `HyperosSwitchListGroup` | 多开关分组 | ✅ |
 | `HyperosIconButton` | 图标按钮 | ✅ |
-| `HyperosCircularProgress` / `HyperosLinearProgress` | 进度指示 | ✅ |
+| `HyperosCircularProgress` / `HyperosLinearProgress` / `HyperosInfiniteProgress` | 进度指示（扫弧 / 线性 / 环+绕行点） | ✅ |
 | `HyperosBadge` | 角标 | ✅ |
-| `showHyperosListPopup` | 列表弹出菜单 | ✅ |
+| `showHyperosListPopup` | 列表弹出菜单（手搓旧版，**已退休，零正式调用方**；条目类仍被首页二级菜单当数据容器用） | ⚠️ |
+| `HyperosAnchorMenuPopup` | 锚定式玻璃菜单（上游 OS4 弧线展开，与下拉选择弹层同族；支持图标 / 禁用项 / 实底面板 / 二级子菜单无）。**新的三个点菜单一律用它** | ✅ |
 | `HyperosFloatingToolbar` | 浮动工具条 | ✅ |
 | `HyperosColorChip` / `HyperosHexColorChipGroup` | 色块选择 | ✅ |
 | `HyperosFab` | FAB | ✅ |

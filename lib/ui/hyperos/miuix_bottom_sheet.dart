@@ -94,6 +94,21 @@ typedef MiuixBottomSheetBuilder =
 /// 记得**：漏一个就是一个「最上面那颗按钮点不动」的弹窗（本仓真踩过 —— 弹层自测里那个
 /// 「关闭」按钮正好落在那 24 里）。自带顶部控件、已经把这 24 排进自己布局的弹窗
 /// （材质面板的顶部渐变模糊带）传 `false`。
+///
+/// ## 底部那截留白：为什么**滚动**的弹窗要把它挪进滚动内容里
+///
+/// 承载壳默认在内容**外面**垫一层「系统安全区 + [hyperosMiuixBottomSheetContentBottomGap]」。
+/// 对**不滚动**的弹窗这是对的：内容就那么高，垫在外面等于给最后一行留出呼吸。
+///
+/// 但对**能滚动**的弹窗（材质面板是全 App 唯一一个）它是错的：垫在滚动视口**外面**，
+/// 视口就会在离屏幕底「安全区 + 16」的地方停住，内容**滚不进去**——那一整截只能是一块
+/// 空玻璃。内容多的时候它读起来就是「面板底下多了一块空白板」，也正是设置页面不会有的
+/// 那种效果（设置页的列表是一路铺到屏幕底、从小白条底下穿过去的）。
+///
+/// 所以这类弹窗传 [scrollableBottomGap] = true：承载壳**不再垫底部**，滚动视口一路铺到
+/// 屏幕底，让内容从 gesture bar 底下滚过去，由**滚动内容自己**带
+/// `padding.bottom = 安全区 + 呼吸`（见 [bottomGapInsetOf]）。这样面板高度不变、最后一项
+/// 仍然离小白条足够远，但中间不再有一段永远空的板。
 Future<T?> showMiuixBottomSheet<T>({
   required BuildContext context,
   required MiuixBottomSheetBuilder builder,
@@ -101,6 +116,7 @@ Future<T?> showMiuixBottomSheet<T>({
   bool useRootNavigator = false,
   Color? barrierColor,
   bool reserveDragHandleStrip = true,
+  bool scrollableBottomGap = false,
 }) {
   // 诊断标记沿用 `sheet:open`（这个弹窗就是「弹层开场」那一类，改用上游组件不换口径，
   // 历史读数仍然可比）。见 utils/frame_perf_probe.dart。
@@ -116,6 +132,7 @@ Future<T?> showMiuixBottomSheet<T>({
             barrierDismissible: barrierDismissible,
             barrierColor: barrierColor,
             reserveDragHandleStrip: reserveDragHandleStrip,
+            scrollableBottomGap: scrollableBottomGap,
           ),
     ),
   );
@@ -154,6 +171,7 @@ Future<T?> showHomeHyperosSheet<T>({
   Color? barrierColor,
   SheetCloseRef? closeRef,
   bool reserveDragHandleStrip = true,
+  bool scrollableBottomGap = false,
 }) {
   return showMiuixBottomSheet<T>(
     context: context,
@@ -161,6 +179,7 @@ Future<T?> showHomeHyperosSheet<T>({
     barrierDismissible: isDismissible,
     barrierColor: barrierColor,
     reserveDragHandleStrip: reserveDragHandleStrip,
+    scrollableBottomGap: scrollableBottomGap,
     builder: (sheetContext, close) {
       closeRef?.call(close);
       return builder(sheetContext);
@@ -228,6 +247,7 @@ class _MiuixBottomSheetPage extends StatefulWidget {
     required this.barrierDismissible,
     this.barrierColor,
     this.reserveDragHandleStrip = true,
+    this.scrollableBottomGap = false,
   });
 
   final ValueNotifier<bool> barrierActive;
@@ -237,6 +257,10 @@ class _MiuixBottomSheetPage extends StatefulWidget {
 
   /// 内容是否自带「让开把手条」的顶部留白（见 [showMiuixBottomSheet] 同名参数）。
   final bool reserveDragHandleStrip;
+
+  /// 内容**能滚动**、底部留白改由滚动内容自己带（见 [showMiuixBottomSheet]
+  /// 同名参数与那节说明）。
+  final bool scrollableBottomGap;
 
   @override
   State<_MiuixBottomSheetPage> createState() => _MiuixBottomSheetPageState();
@@ -401,13 +425,18 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
               // 统一加，别让每个调用方各自记得 —— 漏一个就是一个「按钮点不动」的弹窗。
               // 自带顶部控件的弹窗（材质面板：顶部渐变模糊带自己把这段高度排掉了）传
               // `reserveDragHandleStrip: false`。
+              //
+              // 底部那层是系统手势区 + 呼吸。`scrollableBottomGap` 的弹窗**内容能滚动**，
+              // 这里垫 0，让视口一路铺到屏幕底、内容从 gesture bar 底下滚过去，改由
+              // 滚动内容自己带 [bottomGapInsetOf]（否则那一截永远是一块空玻璃板 ——
+              // 见 [showMiuixBottomSheet] 那节说明）。
               padding: EdgeInsets.only(
                 top: widget.reserveDragHandleStrip
                     ? hyperosMiuixBottomSheetDragHandleHeight
                     : 0,
-                bottom:
-                    MediaQuery.paddingOf(context).bottom +
-                    hyperosMiuixBottomSheetContentBottomGap,
+                bottom: widget.scrollableBottomGap
+                    ? 0
+                    : bottomGapInsetOf(context),
               ),
               child: widget.builder(context, _requestClose),
             ),
@@ -420,6 +449,16 @@ class _MiuixBottomSheetPageState extends State<_MiuixBottomSheetPage> {
 
 /// 内容底部额外留的呼吸（系统安全区之外）。与改动前 edge sheet 的 16 一致。
 const double hyperosMiuixBottomSheetContentBottomGap = 16;
+
+/// 底部那截留白的**唯一真源**：系统手势区 + 上面那份呼吸。
+///
+/// 承载壳自己在内容外面垫它（[showMiuixBottomSheet] 的 `scrollableBottomGap` 为假时）；
+/// 内容能滚动的弹窗传 `scrollableBottomGap: true` 改由**滚动内容**带，于是同一个数要从
+/// 这里取（加在 `ScrollView.padding` 上，**不是**加在 body 外面 —— 加在外面视口不会延伸，
+/// 那一截仍然是空板）。
+double bottomGapInsetOf(BuildContext context) =>
+    MediaQuery.paddingOf(context).bottom +
+    hyperosMiuixBottomSheetContentBottomGap;
 
 /// 面板内容的**左右**内边距（逻辑 px）。
 ///
@@ -683,21 +722,34 @@ class HyperosSheetTopEdgePainter extends CustomPainter {
 
   /// 上沿 + 两个上角的路径。四分之一圆用三次贝塞尔逼近（k = 0.5523）：面板的圆角是
   /// 上游那条贝塞尔曲线，用 `arcTo` 的正圆去描会在角上差 1.35px（见本文件「轮廓」一节）。
+  ///
+  /// **关键**：路径必须**往内缩 `strokeWidth/2`**。描边是居中的，若路径落在裁剪框边上，
+  /// 外半边会被父级 `ClipRRect` 裁掉，实际只剩 `strokeWidth/2` 可见（rimWidth=1.5 时仅 0.75px）。
+  /// 往内让 `strokeWidth/2` 后，完整的 1.5px 全落在裁剪框内，圆角在内容滑过时依然读得出弧度。
   @visibleForTesting
-  static Path topEdgePath(Size size, double cornerRadius) {
+  static Path topEdgePath(Size size, double cornerRadius, double strokeWidth) {
     final r = math.min(cornerRadius, math.min(size.width, size.height) / 2);
+    // 往内缩半个线宽，让描边完整落在裁剪框内。
+    final inset = strokeWidth / 2;
+    final ri = r - inset;
+    if (ri <= 0) {
+      // 线宽比圆角还大时退回直线（极端情况不该发生，防御性编码）。
+      return Path()
+        ..moveTo(inset, inset)
+        ..lineTo(size.width - inset, inset);
+    }
     const k = 0.5523;
     return Path()
-      ..moveTo(0, r)
-      ..cubicTo(0, r - r * k, r - r * k, 0, r, 0)
-      ..lineTo(size.width - r, 0)
-      ..cubicTo(size.width - r + r * k, 0, size.width, r - r * k, size.width, r);
+      ..moveTo(inset, inset + ri)
+      ..cubicTo(inset, inset + ri - ri * k, inset + ri - ri * k, inset, inset + ri, inset)
+      ..lineTo(size.width - inset - ri, inset)
+      ..cubicTo(size.width - inset - ri + ri * k, inset, size.width - inset, inset + ri - ri * k, size.width - inset, inset + ri);
   }
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawPath(
-      topEdgePath(size, cornerRadius),
+      topEdgePath(size, cornerRadius, strokeWidth),
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth

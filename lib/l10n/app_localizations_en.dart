@@ -6743,9 +6743,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guidePersonalizeNavFormTitle => 'Navigation form';
 
   @override
-  String get guidePersonalizeVisualEffectTitle => 'Visual effect';
-
-  @override
   String get guidePersonalizeVisualEffectSolid => 'Solid cards';
 
   @override
@@ -6757,7 +6754,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Liquid glass refraction with extra depth';
 
   @override
-  String get guideVisualEffectSolidDesc => 'No blur effects — best performance';
+  String get guideVisualEffectSolidDesc =>
+      'Top bar, glass dock and course cards turn solid for the best performance; pinned pieces like dialogs stay glass';
+
+  @override
+  String get guideVisualEffectWallpaperHint =>
+      'Glass materials stand out most with a wallpaper set';
 
   @override
   String get guidePersonalizeThemeModeTitle => 'Theme mode';
@@ -11748,4 +11750,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get warehouseSessionAlreadyActive =>
       'Your school account is still signed in, so you can import right away';
+
+  @override
+  String underlineTabSemanticsLabel(String text) {
+    return '$text tab';
+  }
 }

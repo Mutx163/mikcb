@@ -6478,9 +6478,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get guidePersonalizeNavFormTitle => 'ナビゲーション形態';
 
   @override
-  String get guidePersonalizeVisualEffectTitle => '視覚効果';
-
-  @override
   String get guidePersonalizeVisualEffectSolid => 'ソリッドカード';
 
   @override
@@ -6490,7 +6487,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get guideVisualEffectLiquidDesc => 'リキッドグラスの屈折で質感をプラス';
 
   @override
-  String get guideVisualEffectSolidDesc => 'ぼかしを使用しない、最も高いパフォーマンス';
+  String get guideVisualEffectSolidDesc =>
+      'トップバー・ドック・コースカードはソリッドで最も高いパフォーマンス。ダイアログなどの固定パーツはガラスのまま';
+
+  @override
+  String get guideVisualEffectWallpaperHint => 'ガラス素材は壁紙を設定するとより映えます';
 
   @override
   String get guidePersonalizeThemeModeTitle => 'テーマモード';
@@ -11410,4 +11411,9 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get warehouseSessionAlreadyActive =>
       '教务システムにはまだログインしています。そのままインポートできます';
+
+  @override
+  String underlineTabSemanticsLabel(String text) {
+    return '$textタブ';
+  }
 }

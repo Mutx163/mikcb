@@ -11615,12 +11615,6 @@ abstract class AppLocalizations {
   /// **'导航形态'**
   String get guidePersonalizeNavFormTitle;
 
-  /// No description provided for @guidePersonalizeVisualEffectTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'视觉效果'**
-  String get guidePersonalizeVisualEffectTitle;
-
   /// No description provided for @guidePersonalizeVisualEffectSolid.
   ///
   /// In zh, this message translates to:
@@ -11642,8 +11636,14 @@ abstract class AppLocalizations {
   /// No description provided for @guideVisualEffectSolidDesc.
   ///
   /// In zh, this message translates to:
-  /// **'不启用模糊效果，性能最好'**
+  /// **'顶栏、玻璃坞与课程卡片回到实体，最省性能；弹窗等固定小件保持玻璃'**
   String get guideVisualEffectSolidDesc;
+
+  /// No description provided for @guideVisualEffectWallpaperHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'玻璃材质配上首页壁纸后效果更明显'**
+  String get guideVisualEffectWallpaperHint;
 
   /// No description provided for @guidePersonalizeThemeModeTitle.
   ///
@@ -20171,6 +20171,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'教务仍处于登录状态，可直接导入'**
   String get warehouseSessionAlreadyActive;
+
+  /// No description provided for @underlineTabSemanticsLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'{text}，标签'**
+  String underlineTabSemanticsLabel(String text);
 }
 
 class _AppLocalizationsDelegate

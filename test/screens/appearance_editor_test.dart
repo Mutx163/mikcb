@@ -27,6 +27,7 @@ import 'package:university_timetable/services/app_global_settings_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/services/wallpaper_history_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/ui/hyperos/inspire/inspire_header_blur.dart';
 import 'package:university_timetable/ui/hyperos/preview_bake_boundary.dart';
 import 'package:university_timetable/widgets/timetable_home_preview_scope.dart';
 import 'package:university_timetable/widgets/preblurred_wallpaper_glass.dart';
@@ -64,6 +65,24 @@ void _seedInitializedPrefs([
   });
 }
 
+/// 切壁纸弹窗的页签（2026-09-28 双页改造：左边「壁纸」、右边「设置」）。
+///
+/// 按**页签文字**找而不是按 `PageController`：这是 widget 测试，动画与翻页状态都在
+/// widget 树里，直接点页签就够。限定在 `HyperosChipRow` 内，免得命中编辑器页面背后
+/// 那些同样叫「设置」的文字。
+Future<void> _switchWallpaperSheetPage(
+  WidgetTester tester,
+  String tabLabel,
+) async {
+  final tab = find.descendant(
+    of: find.byType(HyperosChipRow),
+    matching: find.text(tabLabel),
+  );
+  expect(tab, findsOneWidget, reason: '壁纸弹窗顶部应有「$tabLabel」这个页签');
+  await tester.tap(tab);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -93,6 +112,22 @@ void main() {
     }
   });
 
+  /// 「外观编辑」页的整页加载罩（`_previewCoverPhase`，见设置里那个文件的注释）。
+  ///
+  /// 它是不透明的一整页、也挡点按，所以 pumpWidget 之后直接 tap 底部按钮会被它
+  /// 吃掉 —— 得先等它撤。真机上就是路由落定 + 烤出第一张图那几帧。
+  Finder previewCover() =>
+      find.byKey(const ValueKey('appearance-editor-loading-cover'));
+
+  /// 推进到加载罩撤掉为止（罩子淡出 180ms + 一帧重建）。
+  Future<void> pumpUntilPreviewCoverGone(WidgetTester tester) async {
+    for (var i = 0; i < 40; i++) {
+      if (previewCover().evaluate().isEmpty) return;
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    fail('加载罩一直没撤：第一张预览图没烤出来（_previewBake 停在 null）');
+  }
+
   Future<TimetableProvider> pumpEditor(WidgetTester tester) async {
     final provider = await createInitializedTestProvider(tester);
     final page = settingsSubpageById('appearanceEditor');
@@ -108,6 +143,7 @@ void main() {
       ),
     );
     await tester.pump();
+    await pumpUntilPreviewCoverGone(tester);
     return provider;
   }
 
@@ -202,6 +238,139 @@ void main() {
     expect(find.byType(RawImage), findsOneWidget);
     final raw = tester.widget<RawImage>(find.byType(RawImage));
     expect(raw.image, isNotNull, reason: '渲染源首帧后必须烤出快照图');
+  });
+
+  testWidgets('从设置页进来：第一张预览图出炉前整页盖着加载罩（2026-09-28）', (
+    tester,
+  ) async {
+    // 用户反馈原文：「在设置页面进入外观编辑页面的时候……现在页面进来了，然后画面
+    // 是隔了几秒突然出现的预览」。从设置页这条路进来**没有首页快照可顶替**，卡片
+    // 在自家烤出第一张图之前是空的 —— 那个空档必须被一个加载态讲清楚。
+    final provider = await createInitializedTestProvider(tester);
+    final page = settingsSubpageById('appearanceEditor')!;
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<TimetableProvider>.value(value: provider),
+          ChangeNotifierProvider<WeatherProvider?>.value(value: null),
+        ],
+        child: TestApp(home: page),
+      ),
+    );
+    await tester.pump();
+
+    expect(previewCover(), findsOneWidget, reason: '没图可显示时必须盖住整页');
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('appearance-editor-preview-card')),
+        matching: find.byType(RawImage),
+      ),
+      findsNothing,
+      reason: '卡片此刻确实还没有图 —— 这正是「突然出现」的那个空档',
+    );
+    // 盖住整页 = 上下 chrome 也在底下（Stack 的最后一项）。
+    expect(
+      find.descendant(of: previewCover(), matching: find.byType(Center)),
+      findsWidgets,
+      reason: '加载态整体居中',
+    );
+    // 转圈 + 「加载中」三字（2026-09-28 用户口径：光一个圈看不懂在干嘛）。
+    expect(
+      find.descendant(
+        of: previewCover(),
+        matching: find.byType(HyperosInfiniteProgress),
+      ),
+      findsOneWidget,
+      reason: '用环 + 绕行小圆点那款转圈（不可测进度，转圈感最强）',
+    );
+    expect(
+      find.descendant(of: previewCover(), matching: find.text('加载中')),
+      findsOneWidget,
+      reason: '转圈下面要有一行文案说明这是加载态',
+    );
+    // 转圈在上、文字在下（用户拍板的摆法）。
+    final ring = tester.getRect(
+      find.descendant(
+        of: previewCover(),
+        matching: find.byType(HyperosInfiniteProgress),
+      ),
+    );
+    final label = tester.getRect(
+      find.descendant(of: previewCover(), matching: find.text('加载中')),
+    );
+    expect(
+      label.top,
+      greaterThan(ring.top),
+      reason: '文字在转圈下方，不是并排',
+    );
+    expect(
+      label.center.dx,
+      closeTo(ring.center.dx, 1),
+      reason: '两者中线对齐',
+    );
+
+    await pumpUntilPreviewCoverGone(tester);
+
+    expect(previewCover(), findsNothing, reason: '第一张图到位后必须撤掉罩子');
+    expect(
+      tester.widget<RawImage>(find.byType(RawImage)).image,
+      isNotNull,
+      reason: '撤罩子的那一刻卡片上必须已经有图',
+    );
+  });
+
+  test('加载文案六语齐全，且英文环境不是中文（2026-09-28）', () async {
+    // 本仓有「展示文案一律走 arb」的规矩（2026-09-25 那篇笔记），所以「加载中」
+    // 是个新键。真正的风险是**漏一个语种**（漏了那个语言的设备上会退回模板语言
+    // 或露出键名），所以这里直接把每个受支持语种都 load 一遍。
+    //
+    // ⚠️ 刻意**不**做成 widget 用例：预览里那份真首页的周视图在英文下本身就容易
+    // RenderFlex 溢出（英文课程名比中文高，与本条无关），拿它当载体会把这条用例
+    // 绑在一个别人的脆弱点上。查文案不需要渲染整棵首页。
+    // ⚠️ 键必须是 `Locale.toString()`（`zh_TW` / `zh_HK`），不是 `languageCode`
+    // —— 后者对这两个都只给 `zh`，会把繁简两个语种算成一个。
+    final expected = <String, String>{
+      'zh': '加载中',
+      'zh_TW': '載入中',
+      'zh_HK': '載入中',
+      'en': 'Loading…',
+      'ja': '読み込み中',
+      'ko': '불러오는 중',
+    };
+    expect(
+      AppLocalizations.supportedLocales.map((l) => l.toString()).toSet(),
+      expected.keys.toSet(),
+      reason: '语种清单变了就同步改这张表，别让新语种静默漏掉',
+    );
+    for (final entry in expected.entries) {
+      final l10n = await AppLocalizations.delegate.load(
+        Locale.fromSubtags(
+          languageCode: entry.key.split('_').first,
+          countryCode: entry.key.contains('_') ? entry.key.split('_').last : null,
+        ),
+      );
+      expect(
+        l10n.commonLoadingLabel,
+        entry.value,
+        reason: '${entry.key} 的「加载中」译文不对',
+      );
+    }
+  });
+
+  testWidgets('从首页菜单进来：缩放转场全程不盖加载罩（快照有图可接力）', (
+    tester,
+  ) async {
+    // 反向守卫：首页菜单那条路首页正缩进预览卡片、全程有图，盖一层等于把这条
+    // 转场废掉（`shrinkT` 那套观感全没了）。
+    await pumpEditorViaZoomRoute(tester);
+    for (var i = 0; i < 20; i++) {
+      expect(
+        previewCover().evaluate(),
+        isEmpty,
+        reason: '第 $i 帧：缩放转场里不该出现加载罩',
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+    }
   });
 
   testWidgets('顶部日 / 周切换驱动嵌进来的首页（不是本地替身）', (tester) async {
@@ -313,6 +482,38 @@ void main() {
     expect(find.text('质感方案'), findsNothing);
     expect(find.text('弹窗与对话框'), findsNothing);
     expect(find.text('经典磨砂'), findsNothing);
+  });
+
+  testWidgets('材质面板的顶部模糊带：模糊层让开圆角，白纱满宽（2026-09-28 第六版）', (
+    tester,
+  ) async {
+    await pumpEditor(tester);
+    await tester.tap(find.text('材质'));
+    await tester.pumpAndSettle();
+
+    // 接线钉：面板顶部那条带子的**模糊层**矩形左右各内缩一个圆角半径（与上沿
+    // 圆弧相切），圆角区域里没有模糊材料 —— 治用户口径「页面滑动到中间位置的时候，
+    // 卡片（面板）的右上角左上角还会在圆角外面出现模糊效果」。
+    //
+    // ⚠️ 期望值随修订翻过两次：第三版钉 `> 0`（内缩+白纱一起缩，真机打回：两端无料），
+    // 第二次修订钉 `== 0`（归零、全靠 ClipRRect —— 圆角问题一直没修掉），**第六版
+    // 钉回半径**，但这次只缩模糊、白纱满宽（白纱的钉在
+    // sheet_top_band_ramp_engages_test.dart 的「树里不许有 ShaderMask」）。
+    //
+    // ⚠️ 与此同时**别的带子不许开**（用户 2026-09-28：「设置页面顶部的渐变模糊
+    // 视觉效果非常好，不要改动导致它坏掉」）—— 那条守卫在
+    // header_blur_style_wiring_test.dart。
+    final band = tester.widget<InspireHeaderBlur>(
+      find.ancestor(
+        of: find.byType(HyperosChipRow),
+        matching: find.byType(InspireHeaderBlur),
+      ),
+    );
+    expect(
+      band.cornerRampIn,
+      hyperosMiuixBottomSheetCornerRadius,
+      reason: '模糊层必须与面板圆弧相切（内缩一个半径），否则圆角区域还有模糊材料',
+    );
   });
 
   testWidgets('材质面板第二页：左右滑得过去，分段跟着同步（2026-09-22 翻页）', (
@@ -564,6 +765,20 @@ void main() {
     expect(find.text('wall.png'), findsOneWidget);
     expect(find.text('清除图片'), findsOneWidget);
 
+    // 面板改成「最多半屏」之后（双页 + 顶部渐变模糊带），第一页的按钮可能落在折叠
+    // 线以下，`tester.tap` 对屏幕外的东西点不到 —— 症状是 "would not hit test"。
+    //
+    // 必须用 alignment: 0.5（滚到视口中间）而不是 `tester.ensureVisible` 的默认 0：
+    // 默认对齐把目标的**顶边**贴到视口顶边，而那一截正压在顶部模糊带的**着色层**底下 ——
+    // 着色层没包 IgnorePointer、而渐变末端全透明照样吃命中（`BoxDecoration.hitTest` 对
+    // 无圆角矩形恒为 true），点下去什么都不会发生。滚到中间就离开了那条命中区。
+    // 同一条陷阱见 test/widgets/appearance_glass_rows_test.dart。
+    await Scrollable.ensureVisible(
+      tester.element(find.text('清除图片')),
+      alignment: 0.5,
+    );
+    await tester.pumpAndSettle();
+
     await tester.tap(find.text('清除图片'));
     await tester.pumpAndSettle();
 
@@ -735,6 +950,111 @@ void main() {
     expect(find.text('选择图片'), findsOneWidget);
     expect(find.text('调整位置'), findsNothing);
     expect(find.text('清除图片'), findsNothing);
+  });
+
+  testWidgets('壁纸弹窗底部有「背景随周次滑动」开关：默认关，切了写进同一份设置', (
+    tester,
+  ) async {
+    // 2026-09-28 用户口径：调壁纸的地方就能决定背景要不要跟着周次动，不必先去
+    // 「设置 → 课表页面」找；而且默认**关**（背景不再整片横移）。
+    final provider = await pumpEditor(tester);
+    expect(
+      provider.settings.homePageBackdropFollowsWeekPager,
+      isFalse,
+      reason: '默认必须是关',
+    );
+
+    await tester.tap(find.text('调整壁纸'));
+    await tester.pumpAndSettle();
+
+    // 2026-09-28 双页改造：开关在**第二页「设置」**，第一页只有选图与最近使用。
+    await _switchWallpaperSheetPage(tester, '设置');
+
+    final tile = find.ancestor(
+      of: find.text('背景随周次滑动'),
+      matching: find.byType(HyperosSwitchTile),
+    );
+    expect(tile, findsOneWidget, reason: '壁纸弹窗里必须有这颗开关');
+    expect(
+      tester.widget<HyperosSwitchTile>(tile).value,
+      isFalse,
+      reason: '弹窗里读的就是同一份设置，默认关',
+    );
+
+    await tester.tap(tile);
+    await tester.pumpAndSettle();
+
+    // 同一个字段：「设置 → 课表页面」那行读的就是它，所以两处永远同进同退。
+    expect(provider.settings.homePageBackdropFollowsWeekPager, isTrue);
+    // 弹层正文不在本页 widget 树下，靠草稿版本号订阅重画（见上面那几条回归钉）。
+    expect(tester.widget<HyperosSwitchTile>(tile).value, isTrue);
+  });
+
+  testWidgets('开关搬到第二页，且那行外面不再垫一层留白', (tester) async {
+    // 2026-09-28 两件事：
+    //
+    // ① 壁纸弹窗改成「壁纸 / 设置」两页（与材质面板同形状），开关从「最近使用」下面
+    //    挪到**第二页**。原先钉的「开关紧接在最近使用之后、只隔 14」测的是**同页相邻**
+    //    ——两页之后这个关系不存在了，坐标钉法作废。
+    // ② 但它当初要治的病还在：那行外面**不能**再垫一层 `Padding`（行自己已经带
+    //    `hyperosRowPadding` 的 13/13）。所以改成钉结构 + 钉「行顶正好落在页面让位处」：
+    //    页面顶部让位由 `topInsetFor` 给死，行就该紧接着它开始；多垫一层这里就多一截。
+    final dir = Directory.systemTemp.createTempSync('appearance_wall_switch_gap');
+    final current = File('${dir.path}/current.png')
+      ..writeAsBytesSync(const [1, 2, 3, 4]);
+    final older = File('${dir.path}/older.png')
+      ..writeAsBytesSync(const [5, 6, 7, 8]);
+    addTearDown(() {
+      try {
+        dir.deleteSync(recursive: true);
+      } on FileSystemException {
+        // Windows 上解码器可能短暂锁着（errno 32）；断言不依赖这次清理。
+      }
+    });
+    _seedInitializedPrefs(
+      TimetableSettings.defaults().copyWith(
+        homePageWallpaperPath: current.path,
+      ),
+      [
+        WallpaperHistoryEntry(key: current.path, usedAt: 200),
+        WallpaperHistoryEntry(key: older.path, usedAt: 100),
+      ],
+    );
+    await pumpEditor(tester);
+    await tester.tap(find.text('调整壁纸'));
+    await tester.pumpAndSettle();
+
+    // 分页胶囊就在顶部渐变模糊带上（与材质面板同款形状）。
+    final chips = find.byType(HyperosChipRow);
+    expect(chips, findsOneWidget);
+    expect(
+      find.descendant(of: chips, matching: find.text('壁纸')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: chips, matching: find.text('设置')),
+      findsOneWidget,
+    );
+
+    // 切到第二页。
+    await _switchWallpaperSheetPage(tester, '设置');
+
+    final row = find.ancestor(
+      of: find.text('背景随周次滑动'),
+      matching: find.byType(HyperosSwitchTile),
+    );
+    expect(row, findsOneWidget);
+
+    // 行顶 = 第二页视口顶 + 该页的顶部让位。外面多垫一层留白这条就会红。
+    final page = find.byKey(const ValueKey('wallpaper-page-settings'));
+    final inset = HyperosSheetBlurTop.topInsetFor(
+      headerHeight: hyperosMiuixBottomSheetDragHandleHeight + 40,
+    );
+    expect(
+      tester.getTopLeft(row).dy - tester.getTopLeft(page).dy,
+      closeTo(inset, 0.5),
+      reason: '行自己已经带 hyperosRowPadding，外面不该再垫一层',
+    );
   });
 
   testWidgets('弹层正文跟着草稿走：材质面板拖滑杆面板自己刷新（回归钉）', (tester) async {

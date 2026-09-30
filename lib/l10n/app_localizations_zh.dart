@@ -6358,9 +6358,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guidePersonalizeNavFormTitle => '导航形态';
 
   @override
-  String get guidePersonalizeVisualEffectTitle => '视觉效果';
-
-  @override
   String get guidePersonalizeVisualEffectSolid => '实体卡片';
 
   @override
@@ -6370,7 +6367,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guideVisualEffectLiquidDesc => '液态玻璃折射，更具质感';
 
   @override
-  String get guideVisualEffectSolidDesc => '不启用模糊效果，性能最好';
+  String get guideVisualEffectSolidDesc => '顶栏、玻璃坞与课程卡片回到实体，最省性能；弹窗等固定小件保持玻璃';
+
+  @override
+  String get guideVisualEffectWallpaperHint => '玻璃材质配上首页壁纸后效果更明显';
 
   @override
   String get guidePersonalizeThemeModeTitle => '深浅色模式';
@@ -11090,6 +11090,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get warehouseSessionAlreadyActive => '教务仍处于登录状态，可直接导入';
+
+  @override
+  String underlineTabSemanticsLabel(String text) {
+    return '$text，标签';
+  }
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -17446,9 +17451,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guidePersonalizeNavFormTitle => '導覽形態';
 
   @override
-  String get guidePersonalizeVisualEffectTitle => '視覺效果';
-
-  @override
   String get guidePersonalizeVisualEffectSolid => '實體卡片';
 
   @override
@@ -17458,7 +17460,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感';
 
   @override
-  String get guideVisualEffectSolidDesc => '不啟用模糊效果，效能最佳';
+  String get guideVisualEffectSolidDesc => '頂欄、玻璃塢與課程卡片回到實體，最省效能；彈窗等固定小件保持玻璃';
+
+  @override
+  String get guideVisualEffectWallpaperHint => '玻璃材質配上首頁壁紙後效果更明顯';
 
   @override
   String get guidePersonalizeThemeModeTitle => '深淺色模式';
@@ -22218,6 +22223,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get warehouseSessionAlreadyActive => '教務仍處於登入狀態，可直接匯入';
+
+  @override
+  String underlineTabSemanticsLabel(String text) {
+    return '$text，標籤';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -28574,9 +28584,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guidePersonalizeNavFormTitle => '導覽形態';
 
   @override
-  String get guidePersonalizeVisualEffectTitle => '視覺效果';
-
-  @override
   String get guidePersonalizeVisualEffectSolid => '實體卡片';
 
   @override
@@ -28586,7 +28593,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感';
 
   @override
-  String get guideVisualEffectSolidDesc => '不啟用模糊效果，效能最佳';
+  String get guideVisualEffectSolidDesc => '頂欄、玻璃塢與課程卡片回到實體，最省效能；彈窗等固定小件保持玻璃';
+
+  @override
+  String get guideVisualEffectWallpaperHint => '玻璃材質配上首頁壁紙後效果更明顯';
 
   @override
   String get guidePersonalizeThemeModeTitle => '深淺色模式';
@@ -33347,4 +33357,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get warehouseSessionAlreadyActive => '教務仍處於登入狀態，可直接匯入';
+
+  @override
+  String underlineTabSemanticsLabel(String text) {
+    return '$text，標籤';
+  }
 }

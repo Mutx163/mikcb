@@ -37,7 +37,6 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
   Color _selectedChipColor = HyperosIconColors.blue;
   Color _singleChipColor = HyperosIconColors.green;
   String _selectedHexColor = '#3482FF';
-  final _popupAnchorKey = GlobalKey();
   final _selectPopupAnchorKey = GlobalKey();
   final _textController = TextEditingController();
   final _searchController = TextEditingController();
@@ -923,13 +922,6 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
                           .key,
                 onTap: _demoSelectPopup,
               ),
-              HyperosListTile(
-                key: _popupAnchorKey,
-                icon: Icons.more_horiz,
-                iconAccent: HyperosIconColors.yellow,
-                title: 'showHyperosListPopup',
-                onTap: _demoListPopup,
-              ),
             ],
           ),
           const HyperosSectionGap(),
@@ -1197,31 +1189,6 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
     );
     if (!mounted || picked == null) return;
     setState(() => _selectValue = picked);
-  }
-
-  Future<void> _demoListPopup() async {
-    final l10n = AppLocalizations.of(context)!;
-    final picked = await showHyperosListPopup<String>(
-      context: context,
-      position: hyperosPopupPositionBelow(context, _popupAnchorKey),
-      items: [
-        HyperosPopupMenuItem(
-          label: l10n.hyperosShowcaseMenuCopy,
-          value: 'copy',
-        ),
-        HyperosPopupMenuItem(
-          label: l10n.hyperosShowcaseMenuShare,
-          value: 'share',
-        ),
-        HyperosPopupMenuItem(
-          label: l10n.hyperosShowcaseMenuDelete,
-          value: 'delete',
-          destructive: true,
-        ),
-      ],
-    );
-    if (!mounted || picked == null) return;
-    _demoSnackBar('ListPopup: $picked');
   }
 
   Future<void> _demoRefresh() async {

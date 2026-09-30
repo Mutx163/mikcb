@@ -3740,11 +3740,11 @@
   "guidePersonalizeSubtitle": "以下选择立即生效，之后可随时在“设置 → 外观”中调整",
   "guidePersonalizeMenuStyleTitle": "菜单样式",
   "guidePersonalizeNavFormTitle": "导航形态",
-  "guidePersonalizeVisualEffectTitle": "视觉效果",
   "guidePersonalizeVisualEffectSolid": "实体卡片",
   "guideVisualEffectGaussianDesc": "背景实时高斯模糊，通透有层次",
   "guideVisualEffectLiquidDesc": "液态玻璃折射，更具质感",
-  "guideVisualEffectSolidDesc": "不启用模糊效果，性能最好",
+  "guideVisualEffectSolidDesc": "顶栏、玻璃坞与课程卡片回到实体，最省性能；弹窗等固定小件保持玻璃",
+  "guideVisualEffectWallpaperHint": "玻璃材质配上首页壁纸后效果更明显",
   "guidePersonalizeThemeModeTitle": "深浅色模式",
   "guidePersonalizeSeedColorTitle": "主题色",
   "guidePrevButton": "上一步",
@@ -6606,5 +6606,13 @@
   "appearanceEditorMaterialAction": "材质",
   "appearanceEditorEntrySubtitle": "整页微缩预览，改壁纸与材质",
   "commonLoadingLabel": "加载中",
-  "warehouseSessionAlreadyActive": "教务仍处于登录状态，可直接导入"
+  "warehouseSessionAlreadyActive": "教务仍处于登录状态，可直接导入",
+  "underlineTabSemanticsLabel": "{text}，标签",
+  "@underlineTabSemanticsLabel": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  }
 }

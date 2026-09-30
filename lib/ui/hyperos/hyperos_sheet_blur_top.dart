@@ -236,8 +236,8 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
     }
     assert(
       widget.scrollController != null,
-      'revealOnScroll 需要正文那个滚动视图的 ScrollController —— 带在正文之上，'
-      '拿不到滚动位置',
+      'revealOnScroll needs the body scroll view\'s ScrollController — the '
+      'band sits above the body and cannot track scroll position itself',
     );
     final controller = widget.scrollController;
     _observed = controller;
@@ -274,7 +274,8 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
   Widget build(BuildContext context) {
     assert(
       widget.headerHeight > 0,
-      'headerHeight 必须是带内容的真实高度，带高按它夹死',
+      'headerHeight must be the real height of the band content; the band '
+      'height is clamped to it',
     );
     // 高度契约在 LayoutBuilder 里查得到真凭据（约束而不是猜），报错也说得出是哪一层
     // 没夹住 —— 这是最容易被后来者踩的一条（放进 Column 的非 Expanded 位置就中招）。
@@ -282,9 +283,10 @@ class _HyperosSheetBlurTopState extends State<HyperosSheetBlurTop> {
       builder: (context, constraints) {
         assert(
           constraints.hasBoundedHeight,
-          'HyperosSheetBlurTop 要放在有确定高度的位置（Expanded 或被 maxHeight 夹住）'
-          '—— 正文要拿「带底以下」的剩余高度，高度不定就无从谈起；'
-          '放进 Column 的非 Expanded 位置就会踩到这条',
+          'HyperosSheetBlurTop must be placed where its height is bounded '
+          '(Expanded, or clamped by maxHeight) — the body derives the remaining '
+          'height below the band bottom, and an unbounded height leaves nothing '
+          'to compute. A non-Expanded slot inside a Column hits this assert',
         );
         return _buildBanded(context);
       },
