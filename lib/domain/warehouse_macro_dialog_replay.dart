@@ -48,7 +48,8 @@ int? _matchByIndex(Object? recorded, int length) {
   if (recorded is int) {
     index = recorded;
   } else if (recorded is num) {
-    if (recorded != recorded.roundToDouble()) return null; // 小数不是合法下标
+    // 小数不是合法下标。
+    if (recorded != recorded.roundToDouble()) return null;
     index = recorded.toInt();
   } else if (recorded is String) {
     // 宿主回放时可能把值包成字符串。必须 tryParse 后再比：`0 == '0'` 在 Dart 里是

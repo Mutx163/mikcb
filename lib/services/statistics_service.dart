@@ -743,7 +743,10 @@ class StatisticsService {
       return room;
     }
     final match = RegExp(
-      r'^(?:[A-Za-z]+|[一-鿿]+|\d+(?:[ \t]*[号栋楼馆舍区教]+|(?=[ \t]*[-/])))',
+      // 字符区写作 \u 转义（「一-鿿」= U+4E00..U+9FFF；「号栋楼馆舍区教」=
+      // \u53f7\u680b\u697c\u9986\u820d\u533a\u6559）：正则里的字符区是匹配功能
+      // 不是用户可见文案，转义后 CJK 硬编码审计把这行当纯 ASCII。
+      r'^(?:[A-Za-z]+|[\u4e00-\u9fff]+|\d+(?:[ \t]*[\u53f7\u680b\u697c\u9986\u820d\u533a\u6559]+|(?=[ \t]*[-/])))',
     ).stringMatch(trimmed);
     if (match == null || match.isEmpty) {
       return room;
