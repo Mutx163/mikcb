@@ -3805,32 +3805,6 @@ class _WarehouseAdapterWebLoginScreenState
   static const String _desktopUserAgent =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
-  // --- 教务会话探针（qingyu_only/<学校>/session_probe.json）---
-  //
-  // 目的：让 App 说出「其实还登录着」。强智一类系统的登录页不看会话，无条件返回
-  // 登录表单，光看页面永远只能得出「请登录」这个错误结论；而适配脚本抓课表用的
-  // 是带 Cookie 的 fetch，会话还在就照样抓得到。探针把这件事提前问出来。
-  //
-  // 三条自律：
-  // 1. **不自动跳转**。判错了把人从登录页踹走比让人多登一次糟得多，跳不跳交给用户。
-  // 2. **判不出来就闭嘴**。取不到配置 / 网络失败 / 被跨源重定向一律 unavailable，
-  //    行为与今天完全一致（200+ 所没配这个文件）。
-  // 3. **不多打请求**。每次开页最多探一次，换站才重探，同站翻页不再探。
-  WarehouseSessionProbeConfig? _sessionProbeConfig;
-  WarehouseSessionProbeVerdict _sessionProbeVerdict =
-      WarehouseSessionProbeVerdict.unknown;
-  String? _sessionProbeOrigin;
-  bool _sessionProbeInFlight = false;
-  DateTime? _sessionProbeLastAttemptAt;
-  Timer? _sessionProbeTimer;
-
-  /// 两次探活之间的最小间隔。探活是**自动发起**的请求，学校站点有限流/验证码的
-  /// 可能性存在，失败重试也不能连着打。
-  static const Duration _sessionProbeCooldown = Duration(seconds: 20);
-
-  /// 等页面回话的上限。超时后不算「没登录」，只算这次没探成（见 [_maybeRunSessionProbe]）。
-  static const Duration _sessionProbeTimeout = Duration(seconds: 12);
-
   static const String _mobileUserAgent =
       'Mozilla/5.0 (Linux; Android 14; 25060RK16C) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36';
@@ -3882,6 +3856,32 @@ class _WarehouseAdapterWebLoginScreenState
   bool _isPromptShowing = false;
   String? _lastLoginStateDecisionKey;
   bool _useDesktopMode = true;
+
+  // --- 教务会话探针（qingyu_only/<学校>/session_probe.json）---
+  //
+  // 目的：让 App 说出「其实还登录着」。强智一类系统的登录页不看会话，无条件返回
+  // 登录表单，光看页面永远只能得出「请登录」这个错误结论；而适配脚本抓课表用的
+  // 是带 Cookie 的 fetch，会话还在就照样抓得到。探针把这件事提前问出来。
+  //
+  // 三条自律：
+  // 1. **不自动跳转**。判错了把人从登录页踹走比让人多登一次糟得多，跳不跳交给用户。
+  // 2. **判不出来就闭嘴**。取不到配置 / 网络失败 / 被跨源重定向一律 unavailable，
+  //    行为与今天完全一致（200+ 所没配这个文件）。
+  // 3. **不多打请求**。每次开页最多探一次，换站才重探，同站翻页不再探。
+  WarehouseSessionProbeConfig? _sessionProbeConfig;
+  WarehouseSessionProbeVerdict _sessionProbeVerdict =
+      WarehouseSessionProbeVerdict.unknown;
+  String? _sessionProbeOrigin;
+  bool _sessionProbeInFlight = false;
+  DateTime? _sessionProbeLastAttemptAt;
+  Timer? _sessionProbeTimer;
+
+  /// 两次探活之间的最小间隔。探活是**自动发起**的请求，学校站点有限流/验证码的
+  /// 可能性存在，失败重试也不能连着打。
+  static const Duration _sessionProbeCooldown = Duration(seconds: 20);
+
+  /// 等页面回话的上限。超时后不算「没登录」，只算这次没探成（见 [_maybeRunSessionProbe]）。
+  static const Duration _sessionProbeTimeout = Duration(seconds: 12);
 
   /// 后台导入是否已经进入不可安全取消的写入阶段。
   ///
@@ -3957,7 +3957,6 @@ class _WarehouseAdapterWebLoginScreenState
 
   String _bridgeMessageSummary(Map<String, dynamic> message) {
     final type = message['type'];
-    _startSessionProbeConfigLoad();
     final keys = message.keys.join(',');
     final payload = message['payload'];
     final payloadLength = payload is String ? payload.length : null;
@@ -4010,6 +4009,7 @@ class _WarehouseAdapterWebLoginScreenState
     _useDesktopMode = widget.macroRecord?.useDesktopMode ?? true;
     _currentUrl = widget.initialUrl;
     _addressController = TextEditingController(text: widget.initialUrl);
+    _startSessionProbeConfigLoad();
     WarehouseImportSessionLog.instance.append(
       message:
           'open web login school=${widget.school.name}(${widget.school.id}) '
@@ -4054,7 +4054,6 @@ class _WarehouseAdapterWebLoginScreenState
               _loadingProgress = progress;
             });
           },
-            _maybeRunSessionProbe(url);
           onPageStarted: (url) {
             if (!mounted) {
               return;
@@ -4107,6 +4106,7 @@ class _WarehouseAdapterWebLoginScreenState
             _injectImeScrollHelperJs();
             _applyViewportOverrideJs();
             _requestLoginStateProbe();
+            _maybeRunSessionProbe(url);
           },
           onWebResourceError: (error) {
             // 安全配置收紧后（release 仅放行 NSC 白名单内的 HTTP 域），
@@ -4198,7 +4198,6 @@ class _WarehouseAdapterWebLoginScreenState
       return;
     }
     _unbindExitRouteAnimation();
-    _disposeSessionProbe();
     if (animation == null) {
       return;
     }
@@ -4251,6 +4250,7 @@ class _WarehouseAdapterWebLoginScreenState
     _replayContinueCompleter?.complete(false);
     _replayContinueCompleter = null;
     _importTimeoutTimer?.cancel();
+    _disposeSessionProbe();
     _addressController.dispose();
     _addressFocusNode.dispose();
     // 与 initState 的置位对称：runInBackground 实例从未置位，不得复位别人
@@ -4868,6 +4868,58 @@ class _WarehouseAdapterWebLoginScreenState
       if (event.target && event.target.tagName === 'INPUT') collect();
     }, true);
     document.addEventListener('change', (event) => {
+      if (event.target && event.target.tagName === 'INPUT') collect();
+    }, true);
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const text = (target.innerText || target.textContent || target.value || '').trim().toLowerCase();
+      if (/登录|login|sign in|signin|进入教务|提交/.test(text)) {
+        collect();
+        QingyuBridge.postMessage(JSON.stringify({ type: 'loginAttempt' }));
+      }
+    }, true);
+    document.addEventListener('submit', () => {
+      collect();
+      QingyuBridge.postMessage(JSON.stringify({ type: 'loginAttempt' }));
+    }, true);
+    let loginProbeTimer = null;
+    const scheduleCollect = () => {
+      window.clearTimeout(loginProbeTimer);
+      loginProbeTimer = window.setTimeout(collect, 120);
+    };
+    const observer = new MutationObserver(scheduleCollect);
+    observer.observe(document.documentElement || document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['type', 'disabled', 'style', 'class']
+    });
+  }
+  collect();
+  window.setTimeout(collect, 0);
+  window.setTimeout(collect, 300);
+  window.setTimeout(collect, 1000);
+  window.setTimeout(collect, 2000);
+})();
+''');
+    } catch (e) {
+      // WebView 已销毁或桥不可用：登录探测整条链路失效，但导入主流程
+      // 会按超时兜底。留痕便于排查「登录探测不工作」类反馈。
+      _debugImportLog('login watcher inject failed: $e', level: 'warn');
+    }
+  }
+
+  Future<void> _requestLoginStateProbe() async {
+    await _installLoginWatcher();
+    try {
+      await _controller.runJavaScript('window.__qingyuCollectLoginState?.();');
+    } catch (e) {
+      // 同上：探测脚本执行失败不影响导入主流程，留痕即可。
+      _debugImportLog('login state probe failed: $e', level: 'warn');
+    }
+  }
+
   /// 探针配置的读取时机。
   ///
   /// 绝大多数学校没有 `session_probe.json`（222 所里目前 1 所），这一次读取对它们
@@ -5076,58 +5128,6 @@ class _WarehouseAdapterWebLoginScreenState
   /// 会话确实还在（探针判的，不是看页面猜的）。
   bool get _isSessionActive =>
       _sessionProbeVerdict == WarehouseSessionProbeVerdict.loggedIn;
-
-      if (event.target && event.target.tagName === 'INPUT') collect();
-    }, true);
-    document.addEventListener('click', (event) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
-      const text = (target.innerText || target.textContent || target.value || '').trim().toLowerCase();
-      if (/登录|login|sign in|signin|进入教务|提交/.test(text)) {
-        collect();
-        QingyuBridge.postMessage(JSON.stringify({ type: 'loginAttempt' }));
-      }
-    }, true);
-    document.addEventListener('submit', () => {
-      collect();
-      QingyuBridge.postMessage(JSON.stringify({ type: 'loginAttempt' }));
-    }, true);
-    let loginProbeTimer = null;
-    const scheduleCollect = () => {
-      window.clearTimeout(loginProbeTimer);
-      loginProbeTimer = window.setTimeout(collect, 120);
-    };
-    const observer = new MutationObserver(scheduleCollect);
-    observer.observe(document.documentElement || document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['type', 'disabled', 'style', 'class']
-    });
-  }
-  collect();
-  window.setTimeout(collect, 0);
-  window.setTimeout(collect, 300);
-  window.setTimeout(collect, 1000);
-  window.setTimeout(collect, 2000);
-})();
-''');
-    } catch (e) {
-      // WebView 已销毁或桥不可用：登录探测整条链路失效，但导入主流程
-      // 会按超时兜底。留痕便于排查「登录探测不工作」类反馈。
-      _debugImportLog('login watcher inject failed: $e', level: 'warn');
-    }
-  }
-
-  Future<void> _requestLoginStateProbe() async {
-    await _installLoginWatcher();
-    try {
-      await _controller.runJavaScript('window.__qingyuCollectLoginState?.();');
-    } catch (e) {
-      // 同上：探测脚本执行失败不影响导入主流程，留痕即可。
-      _debugImportLog('login state probe failed: $e', level: 'warn');
-    }
-  }
 
   bool get _isBackgroundImportCancelled =>
       widget.runInBackground &&
@@ -5430,10 +5430,6 @@ $kWarehouseBridgeCompatShim  try {
       _debugImportLog('run import script injected');
       setState(() {
         _lastScriptStatus = _isUsingLocalDebugScript
-      case 'sessionProbe':
-        // 宿主自己注入的探活脚本回话（不是学校脚本发的，见 [_sessionProbeScript]）。
-        _handleSessionProbeMessage(message);
-        break;
             ? AppLocalizations.of(context)!.localDebugScriptInjected
             : AppLocalizations.of(context)!.scriptInjected;
       });
@@ -5485,6 +5481,10 @@ $kWarehouseBridgeCompatShim  try {
         break;
       case 'loginState':
         await _handleLoginStateMessage(message);
+        break;
+      case 'sessionProbe':
+        // 宿主自己注入的探活脚本回话（不是学校脚本发的，见 [_sessionProbeScript]）。
+        _handleSessionProbeMessage(message);
         break;
       case 'loginAttempt':
         await _handleLoginAttempt();
@@ -6339,7 +6339,6 @@ $kWarehouseBridgeCompatShim  try {
   /// 两者分开报：前者是课表上凭空少课，后者是课上着但少显示几周——后者更隐蔽，
   /// 学生只会以为自己那几周没课。
   ({int dropped, int trimmedWeeks}) _warehouseSkipSummary() {
-    required bool sessionActive,
     var dropped = 0;
     var trimmed = 0;
     _warehouseCourseSkips.forEach((reason, count) {
@@ -6377,7 +6376,6 @@ $kWarehouseBridgeCompatShim  try {
       idFactory: () => const Uuid().v4(),
       unknownTeacher: l10n.unknownTeacher,
       unknownLocation: l10n.unknownLocation,
-      sessionActive: _isSessionActive,
       onSkip: _recordWarehouseCourseSkip,
     );
   }
@@ -6392,8 +6390,8 @@ $kWarehouseBridgeCompatShim  try {
     required bool rememberedExists,
     required bool rememberedPasswordEmpty,
     required bool candidatePasswordEmpty,
-      sessionActive: _isSessionActive,
     required bool hasPromptedAutofill,
+    required bool sessionActive,
   }) {
     final key = 'gateAllows=$gateAllows hasPasswordField=$hasPasswordField '
         'remembered=$rememberedExists '
@@ -6418,9 +6416,6 @@ $kWarehouseBridgeCompatShim  try {
 
     // W7 凭据绑定站点：自动填充只允许发生在凭据来源的同一 host。
     // 跨源页面（钓鱼页 / 换站）不提示也不回放填充；手动「填充」菜单
-    // 登录动作（点登录 / 提交表单）之后，之前那份「会话还在不在」的结论就过期了：
-    // 登录可能成功、也可能失败。无论哪种，都得让下一次探活重新判。
-    _invalidateSessionProbeVerdict();
     // 属于用户看清当前页面后的显式动作，不受此门禁限制。
     final gateAllows = rememberedLoginAllowsUrl(
       _rememberedLogin,
@@ -6434,6 +6429,7 @@ $kWarehouseBridgeCompatShim  try {
       rememberedPasswordEmpty: _rememberedLogin?.password.isEmpty ?? true,
       candidatePasswordEmpty: candidate.password.isEmpty,
       hasPromptedAutofill: _hasPromptedAutofill,
+      sessionActive: _isSessionActive,
     );
     if (!gateAllows) {
       return;
@@ -6448,6 +6444,7 @@ $kWarehouseBridgeCompatShim  try {
       candidate: candidate,
       hasPromptedAutofill: _hasPromptedAutofill,
       isPromptShowing: _isPromptShowing,
+      sessionActive: _isSessionActive,
     )) {
       _hasPromptedAutofill = true;
       // 回放模式：直接填充，不弹对话框
@@ -6473,6 +6470,9 @@ $kWarehouseBridgeCompatShim  try {
   }
 
   Future<void> _handleLoginAttempt() async {
+    // 登录动作（点登录 / 提交表单）之后，之前那份「会话还在不在」的结论就过期了：
+    // 登录可能成功、也可能失败。无论哪种，都得让下一次探活重新判。
+    _invalidateSessionProbeVerdict();
     final candidate = _latestLoginCandidate;
     if (candidate == null) {
       return;
