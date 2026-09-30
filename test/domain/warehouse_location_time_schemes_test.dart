@@ -555,4 +555,78 @@ void main() {
       expect(sectionsOf(parsed, 0), hasLength(2));
     });
   });
+
+  group('mergeLocationTimeGroupsForImport', () {
+    LocationTimeGroup group(
+      String name, {
+      String? sourceSchoolId,
+      String timeSchemeId = 'scheme-1',
+    }) {
+      return LocationTimeGroup(
+        id: 'id-$name-$sourceSchoolId',
+        name: name,
+        timeSchemeId: timeSchemeId,
+        keywords: const [LocationKeyword(pattern: 'A栋')],
+        sourceSchoolId: sourceSchoolId,
+      );
+    }
+
+    // 教学楼名跨校撞车（「A栋」谁家都有）而分组是全局存储：换校导入时他校
+    // 自动组不清掉，就会把新校教室错分到旧校的作息上——这是本函数存在的理由。
+    test('drops auto-created groups from other schools', () {
+      final merged = mergeLocationTimeGroupsForImport(
+        existing: [
+          group('A栋 · 主教学楼', sourceSchoolId: 'school-A'),
+          group('B栋 · 实验楼', sourceSchoolId: 'school-A'),
+        ],
+        incoming: [group('C栋 · 主教学楼', sourceSchoolId: 'school-B')],
+        schoolId: 'school-B',
+      );
+
+      expect(merged.map((g) => g.name), ['C栋 · 主教学楼']);
+    });
+
+    test('keeps manual groups and same-school groups untouched', () {
+      final merged = mergeLocationTimeGroupsForImport(
+        existing: [
+          group('自习室'),
+          group('A栋 · 主教学楼', sourceSchoolId: 'school-B'),
+        ],
+        incoming: [group('C栋 · 主教学楼', sourceSchoolId: 'school-B')],
+        schoolId: 'school-B',
+      );
+
+      expect(merged.map((g) => g.name), [
+        '自习室',
+        'A栋 · 主教学楼',
+        'C栋 · 主教学楼',
+      ]);
+    });
+
+    test('replaces a same-name group instead of stacking a duplicate', () {
+      final merged = mergeLocationTimeGroupsForImport(
+        existing: [
+          group('A栋 · 主教学楼', sourceSchoolId: 'school-B',
+              timeSchemeId: 'old-scheme'),
+        ],
+        incoming: [group('A栋 · 主教学楼', sourceSchoolId: 'school-B',
+              timeSchemeId: 'new-scheme')],
+        schoolId: 'school-B',
+      );
+
+      expect(merged, hasLength(1));
+      expect(merged.single.timeSchemeId, 'new-scheme');
+    });
+
+    test('legacy groups without a source marker are treated as manual', () {
+      // 存量数据没有 sourceSchoolId 字段：视为手建、永不清理——迁移必须零损失。
+      final merged = mergeLocationTimeGroupsForImport(
+        existing: [group('A栋 · 主教学楼')],
+        incoming: [group('C栋 · 主教学楼', sourceSchoolId: 'school-B')],
+        schoolId: 'school-B',
+      );
+
+      expect(merged.map((g) => g.name), ['A栋 · 主教学楼', 'C栋 · 主教学楼']);
+    });
+  });
 }

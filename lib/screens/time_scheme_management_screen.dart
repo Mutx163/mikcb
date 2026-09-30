@@ -51,8 +51,45 @@ class _TimeSchemeManagementScreenState
   int _usageSnapshotSignature = 0;
   Map<String, _TimeSchemeUsageSummary> _usageSummaries = const {};
 
-  /// Stable menu anchors per scheme card (must not be recreated each build).
+  /// 每个模板卡片三个点按钮的定位 key（**只是拿来量矩形**，不绑
+  /// `MiuixGlassAnchor` —— 绑了上游会在弹层期间把图标设成 `contentHidden`，
+  /// 复位要等退场动画播完 ≈670ms，用户读到的就是「关弹窗后三个点消失半秒多
+  /// 才回来」，见 `HyperosAnchorMenuPopup.anchorBounds`）。
   final Map<String, GlobalKey> _schemeMenuAnchorKeys = {};
+
+  /// 卡片右上角三个点菜单的显隐（弹层 [show] 的唯一来源）。
+  bool _schemeMenuVisible = false;
+
+  /// 最近一次打开的菜单会话，**收起后刻意保留**。
+  ///
+  /// 弹层常驻挂载、靠 [show] 切显隐，退场动画期间上游 presenter 仍要拿同一份
+  /// 矩形与条目：任一变 null，presenter 的 State 会重建、入场动画当场重放。
+  /// 下一张卡片打开时整体替换即可（只多留一份 [TimeScheme] 引用）。
+  ///
+  /// 进页面时它是 null（没打开过任何菜单）——传 null 没问题，弹层内部会兜底成
+  /// `Rect.zero`，见 [HyperosAnchorMenuPopup.anchorBounds]。
+  _SchemeMenuSession? _schemeMenuSession;
+
+  /// 量出三个点按钮的**窗口坐标**（上游弹层按它定位面板）。
+  ///
+  /// 量不到（按钮还没 layout / 已滚出屏幕销毁）就返回 null —— 宁可这次不打开，
+  /// 也不让面板贴到 (0,0)。
+  Rect? _measureMenuAnchorRect(String schemeId) {
+    final renderObject = _schemeMenuAnchorKeys[schemeId]
+        ?.currentContext
+        ?.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) {
+      return null;
+    }
+    return MatrixUtils.transformRect(
+      renderObject.getTransformTo(null),
+      Offset.zero & renderObject.size,
+    );
+  }
+
+  /// 「等菜单收完再执行动作」的时序已经收进 [HyperosAnchorMenuPopup]
+  /// （`onCollapseRequested` → 退场走完 → `onSelected`），页面这侧不需要
+  /// 再自己 `Future.delayed`。
 
   @override
   void didChangeDependencies() {
@@ -89,37 +126,122 @@ class _TimeSchemeManagementScreenState
         final activeDateRule = provider.matchScheduleDateRule(DateTime.now());
         _syncUsageSnapshot(provider, schemes);
 
-        return HyperosSubpage(
-          onBack: () => Navigator.pop(context),
-          title: Text(l10n.timeSchemeTitle),
-          suffixes: [
-            FHeaderAction(
-              icon: const Icon(Icons.add_rounded),
-              semanticsLabel: l10n.newSchemeTooltip,
-              onPress: () => _createScheme(context),
+        return Stack(
+          children: [
+            // 弹层是 OverlayPortal，自身不占位；页面显式铺满，别让它按
+            // Stack 的 loose 约束去猜尺寸。
+            Positioned.fill(
+              child: HyperosSubpage(
+                onBack: () => Navigator.pop(context),
+                title: Text(l10n.timeSchemeTitle),
+                suffixes: [
+                  FHeaderAction(
+                    icon: const Icon(Icons.add_rounded),
+                    semanticsLabel: l10n.newSchemeTooltip,
+                    onPress: () => _createScheme(context),
+                  ),
+                ],
+                child: HyperosListView(
+                  // Keep the first frame light.  Building every scheme card
+                  // here also calculates every card's usage summary before
+                  // the route transition has had a chance to paint its first
+                  // frame.  When that synchronous work is large, the route
+                  // animation skips frames and looks as if it suddenly
+                  // accelerates.
+                  itemCount: _timeSchemeListItemCount(schemes.length),
+                  itemBuilder: (context, index) => _buildTimeSchemeListItem(
+                    context,
+                    index,
+                    l10n: l10n,
+                    provider: provider,
+                    schemes: schemes,
+                    activeSchemeId: activeSchemeId,
+                    dateRules: dateRules,
+                    activeDateRule: activeDateRule,
+                  ),
+                ),
+              ),
             ),
+            // ⚠️ 必须**常驻挂载**（不要按 `!= null` 条件插拔）：上游弹层是
+            // OverlayPortal + 声明式 show，插拔会让 presenter 的 State 重建、
+            // 入场形变动画重放一遍（首页菜单 2026-09-20 实测踩过）。
+            _buildSchemeMenuPopup(),
           ],
-          child: HyperosListView(
-            // Keep the first frame light.  Building every scheme card here
-            // also calculates every card's usage summary before the route
-            // transition has had a chance to paint its first frame.  When
-            // that synchronous work is large, the route animation skips
-            // frames and looks as if it suddenly accelerates.
-            itemCount: _timeSchemeListItemCount(schemes.length),
-            itemBuilder: (context, index) => _buildTimeSchemeListItem(
-              context,
-              index,
-              l10n: l10n,
-              provider: provider,
-              schemes: schemes,
-              activeSchemeId: activeSchemeId,
-              dateRules: dateRules,
-              activeDateRule: activeDateRule,
-            ),
-          ),
         );
       },
     );
+  }
+
+  /// 卡片右上角三个点菜单：上游 OS4 玻璃弹层（从按钮连续变形长出）。
+  Widget _buildSchemeMenuPopup() {
+    final session = _schemeMenuSession;
+    return HyperosAnchorMenuPopup(
+      show: _schemeMenuVisible,
+      anchorBounds: session?.anchorBounds,
+      entries: session?.entries ?? const [],
+      onCollapseRequested: _closeSchemeMenu,
+      onDismissRequest: _closeSchemeMenu,
+      onSelected: (value) {
+        final target = _schemeMenuSession;
+        if (target != null) {
+          _dispatchSchemeMenuAction(target, value);
+        }
+      },
+    );
+  }
+
+  void _closeSchemeMenu() {
+    if (!_schemeMenuVisible) {
+      return;
+    }
+    // 只收显隐，会话（锚点 + 条目）留着给退场动画用。
+    setState(() => _schemeMenuVisible = false);
+  }
+
+  /// 执行被点的那一项。**不需要自己等菜单收完** —— [HyperosAnchorMenuPopup]
+  /// 已经在退场走完之后才回调这里（不等就会踩首页菜单 2026-09-15 那个坑：本页被
+  /// 新路由压住后 TickerMode 被关，菜单退场动画冻在半透明）。
+  Future<void> _dispatchSchemeMenuAction(
+    _SchemeMenuSession session,
+    Object value,
+  ) async {
+    if (!mounted) {
+      return;
+    }
+    final context = this.context;
+    final scheme = session.scheme;
+    final usage = session.usage;
+    switch (value) {
+      case 'usage':
+        await _showUsageDetails(context, scheme, usage);
+        break;
+      case 'edit':
+        await _openEditor(scheme.id);
+        break;
+      case 'rename':
+        await _renameScheme(context, scheme);
+        break;
+      case 'share':
+        await _shareTimeScheme(context, scheme);
+        break;
+      case 'delete':
+        await _deleteScheme(context, scheme);
+        break;
+      // 只弹 toast：不盖住本页，弹层已经收得差不多了，提示可以立刻给。
+      case 'apply':
+        await _applyScheme(context, scheme);
+        break;
+      case 'duplicate':
+        await context.read<TimetableProvider>().duplicateTimeScheme(scheme.id);
+        if (context.mounted) {
+          showAppToast(
+            context,
+            message: AppLocalizations.of(context)!.copiedTimeSchemeMessage,
+            kind: AppToastKind.success,
+          );
+        }
+        break;
+    }
   }
 
   void _syncUsageSnapshot(
@@ -144,6 +266,70 @@ class _TimeSchemeManagementScreenState
     _usageSnapshotProvider = provider;
     _usageSnapshotSignature = signature;
     _usageSummaries = const {};
+  }
+
+  /// 打开某张卡片右上角的菜单：条目在这里**冻结**成一份会话。
+  ///
+  /// 冻结而不是每次 build 现算：弹层常驻挂载，收起后要继续拿同一份条目播
+  /// 退场动画（`HyperosAnchorMenuPopup` 的类注释），现算会随 provider 通知变化。
+  void _openSchemeMenu(
+    TimeScheme scheme,
+    _TimeSchemeUsageSummary usage,
+    bool isActive,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final schemeId = scheme.id;
+    // 再点同一个按钮 = 收起（系统菜单的常规手感）。
+    if (_schemeMenuVisible && _schemeMenuSession?.schemeId == schemeId) {
+      _closeSchemeMenu();
+      return;
+    }
+    final anchorRect = _measureMenuAnchorRect(schemeId);
+    if (anchorRect == null) {
+      return;
+    }
+    setState(() {
+      _schemeMenuVisible = true;
+      _schemeMenuSession = _SchemeMenuSession(
+        schemeId: schemeId,
+        anchorBounds: anchorRect,
+        scheme: scheme,
+        usage: usage,
+        entries: [
+          if (!usage.isUnused)
+            HyperosAnchorMenuEntry(
+              label: l10n.viewUsageAction,
+              value: 'usage',
+            ),
+          if (!isActive)
+            HyperosAnchorMenuEntry(
+              label: l10n.applyToCurrentTimetable,
+              value: 'apply',
+            ),
+          HyperosAnchorMenuEntry(
+            label: l10n.editSectionsAction,
+            value: 'edit',
+          ),
+          HyperosAnchorMenuEntry(label: l10n.renameAction, value: 'rename'),
+          HyperosAnchorMenuEntry(
+            label: l10n.duplicateAction,
+            value: 'duplicate',
+          ),
+          HyperosAnchorMenuEntry(
+            label: l10n.shareTimeSchemeAction,
+            value: 'share',
+          ),
+          // 删除行永远可点：上游没有 disabled 语义，禁掉反而会读成
+          // "红字却点不动"。点它一定开对话框 —— 无引用时是真确认，
+          // 有引用时说明是什么挡住了删除。
+          HyperosAnchorMenuEntry(
+            label: l10n.deleteAction,
+            value: 'delete',
+            destructive: true,
+          ),
+        ],
+      );
+    });
   }
 
   _TimeSchemeUsageSummary _usageSummaryForScheme(
@@ -257,10 +443,6 @@ class _TimeSchemeManagementScreenState
     required bool isActive,
   }) {
     final l10n = AppLocalizations.of(context)!;
-    final menuAnchorKey = _schemeMenuAnchorKeys.putIfAbsent(
-      scheme.id,
-      GlobalKey.new,
-    );
     return HyperosControlCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -302,89 +484,12 @@ class _TimeSchemeManagementScreenState
                 ),
               ),
               IconButton(
-                key: menuAnchorKey,
+                key: _schemeMenuAnchorKeys.putIfAbsent(
+                  scheme.id,
+                  GlobalKey.new,
+                ),
                 tooltip: l10n.moreActionsTooltip,
-                onPressed: () async {
-                  final value = await showHyperosListPopup<String>(
-                    context: context,
-                    position: hyperosPopupPositionBelow(context, menuAnchorKey),
-                    items: [
-                      if (!usage.isUnused)
-                        HyperosPopupMenuItem(
-                          label: l10n.viewUsageAction,
-                          value: 'usage',
-                        ),
-                      if (!isActive)
-                        HyperosPopupMenuItem(
-                          label: l10n.applyToCurrentTimetable,
-                          value: 'apply',
-                        ),
-                      HyperosPopupMenuItem(
-                        label: l10n.editSectionsAction,
-                        value: 'edit',
-                      ),
-                      HyperosPopupMenuItem(
-                        label: l10n.renameAction,
-                        value: 'rename',
-                      ),
-                      HyperosPopupMenuItem(
-                        label: l10n.duplicateAction,
-                        value: 'duplicate',
-                      ),
-                      HyperosPopupMenuItem(
-                        label: l10n.shareTimeSchemeAction,
-                        value: 'share',
-                      ),
-                      HyperosPopupMenuItem(
-                        label: l10n.deleteAction,
-                        value: 'delete',
-                        destructive: true,
-                        // Never disable this row.  A disabled row paints in
-                        // the destructive red (the popup checks `destructive`
-                        // before `enabled`), so it reads as a normal delete
-                        // button while swallowing the tap — no prompt, no
-                        // toast, nothing.  Tapping always opens a dialog: a
-                        // real confirm when nothing references the scheme,
-                        // otherwise an explanation of what blocks it.
-                      ),
-                    ],
-                  );
-                  if (!context.mounted || value == null) {
-                    return;
-                  }
-                  switch (value) {
-                    case 'usage':
-                      await _showUsageDetails(context, scheme, usage);
-                      break;
-                    case 'apply':
-                      await _applyScheme(context, scheme);
-                      break;
-                    case 'edit':
-                      await _openEditor(scheme.id);
-                      break;
-                    case 'rename':
-                      await _renameScheme(context, scheme);
-                      break;
-                    case 'duplicate':
-                      await context
-                          .read<TimetableProvider>()
-                          .duplicateTimeScheme(scheme.id);
-                      if (context.mounted) {
-                        showAppToast(
-                          context,
-                          message: l10n.copiedTimeSchemeMessage,
-                          kind: AppToastKind.success,
-                        );
-                      }
-                      break;
-                    case 'share':
-                      await _shareTimeScheme(context, scheme);
-                      break;
-                    case 'delete':
-                      await _deleteScheme(context, scheme);
-                      break;
-                  }
-                },
+                onPressed: () => _openSchemeMenu(scheme, usage, isActive),
                 icon: const Icon(Icons.more_horiz_rounded),
               ),
             ],
@@ -1019,6 +1124,30 @@ class _TimeSchemeManagementScreenState
         return dayOfWeek.toString();
     }
   }
+}
+
+/// 卡片右上角三个点菜单的**一次打开会话**。
+///
+/// 为什么要冻结成一份（而不是每次 build 现算）：弹层常驻挂载、靠 `show` 切显隐
+/// （上游 OS4 玻璃弹层是声明式组件，条件插拔会让 State 重建、入场形变重放），
+/// 收起后的退场动画期间还要继续拿同一份矩形与条目。
+class _SchemeMenuSession {
+  const _SchemeMenuSession({
+    required this.schemeId,
+    required this.anchorBounds,
+    required this.scheme,
+    required this.usage,
+    required this.entries,
+  });
+
+  final String schemeId;
+
+  /// 打开瞬间量到的按钮窗口坐标（退场期间面板仍按它定位，故不重新量）。
+  final Rect anchorBounds;
+
+  final TimeScheme scheme;
+  final _TimeSchemeUsageSummary usage;
+  final List<HyperosAnchorMenuEntry> entries;
 }
 
 class _TimeSchemeEditorScreen extends StatefulWidget {
