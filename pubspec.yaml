@@ -163,7 +163,7 @@ dependency_overrides:
   # 补丁 1+2；60c211b = 再放出 toDistributionMap 扩展；7333834 = 再放出声明
   # intensityAt 的 IntensityBasedDistributionMap；0b84c9c = 补丁 3 显式设 u_size；
   # e850e72 = 补丁 4 材料矩形外输出透明；0d7614c = 临时诊断日志（已撤）；
-  # ea18035 = 补丁 5 顶角圆弧遮罩接线 + 撤诊断日志）。
+  # ea18035 = 补丁 5 顶角圆弧遮罩接线；762d126 = 撤加载链路诊断探针，本 pin 所指）。
   inspire_blur:
     git:
       url: https://github.com/Mutx163/inspire_blur.git

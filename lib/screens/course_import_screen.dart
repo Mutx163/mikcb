@@ -5058,12 +5058,17 @@ class _WarehouseAdapterWebLoginScreenState
       });
     }
     _sessionProbeOrigin = origin;
-    if (_sessionProbeVerdict != WarehouseSessionProbeVerdict.unknown) {
-      // 同一站里翻页不会让会话凭空消失，不重复探。
+    final hasVerdict = _sessionProbeVerdict != WarehouseSessionProbeVerdict.unknown;
+    if (hasVerdict && _sessionProbeVerdict != WarehouseSessionProbeVerdict.unavailable) {
+      // 登录中/未登录是可信结论：同一站里翻页不会让会话凭空消失，不重复探。
       return;
     }
+    // unavailable（网络失败 / 403 一类）只是「这次没探成」：允许冷却期后重试，
+    // 否则一次偶发失败就把「已登录」提示永久关掉。可信结论不受冷却限制。
     final lastAttempt = _sessionProbeLastAttemptAt;
     if (lastAttempt != null &&
+        (!hasVerdict ||
+            _sessionProbeVerdict == WarehouseSessionProbeVerdict.unavailable) &&
         DateTime.now().difference(lastAttempt) < _sessionProbeCooldown) {
       return;
     }

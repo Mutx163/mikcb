@@ -116,15 +116,12 @@ void main() {
         .widgetList<Positioned>(find.byType(Positioned))
         .where((p) => p.left == 0 && p.right == 0 && p.top == 0)
         .toList();
+    // 「不许再出现左右内缩的模糊层」由上面的过滤条件自证（筛的就是
+    // left==0 && right==0），再断言一遍是永假式，不写。
     expect(
       blurPositioned,
       isNotEmpty,
       reason: '模糊层应该是一条满宽、从带顶铺下来的 Positioned',
-    );
-    expect(
-      blurPositioned.any((p) => p.left != 0 || p.right != 0),
-      isFalse,
-      reason: '不许再出现左右内缩的模糊层（内缩 + 横向渐隐已随根因修复撤除）',
     );
   });
 
