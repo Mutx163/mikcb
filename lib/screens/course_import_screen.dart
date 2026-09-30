@@ -5088,15 +5088,12 @@ class _WarehouseAdapterWebLoginScreenState
     _sessionProbeLastAttemptAt = DateTime.now();
     _sessionProbeInFlight = true;
     _debugImportLog('session probe start target=$target');
-    try {
-      await _controller.runJavaScript(_sessionProbeScript(target));
-    } catch (e) {
-      _sessionProbeInFlight = false;
-      _debugImportLog('session probe inject failed: $e', level: 'warn');
-      return;
-    }
     // 兜底：页面脚本可能因为导航/销毁而永远不回调。没有这个计时器，
     // _sessionProbeInFlight 会一直挂着，本次开页再也不会探第二次。
+    //
+    // ⚠️ 必须装在注入**之前**：runJavaScript 的 Future 挂住时既不完成也不抛，
+    // catch 走不到，装在它后面就等于「注入一卡住就没有任何兜底 → 在途标记永不
+    // 清 → 本次开页「要不要帮你填密码」再也不弹」。
     _sessionProbeTimer?.cancel();
     _sessionProbeTimer = Timer(_sessionProbeTimeout, () {
       _sessionProbeInFlight = false;
@@ -5106,6 +5103,15 @@ class _WarehouseAdapterWebLoginScreenState
       // 等探针等到了超时：被推迟的弹窗决定此刻放行（按「没探成」原行为）。
       unawaited(_evaluatePendingAutofillPrompt());
     });
+    try {
+      await _controller.runJavaScript(_sessionProbeScript(target));
+    } catch (e) {
+      _sessionProbeTimer?.cancel();
+      _sessionProbeTimer = null;
+      _sessionProbeInFlight = false;
+      _debugImportLog('session probe inject failed: $e', level: 'warn');
+      return;
+    }
   }
 
   /// 页面内发起探活请求，只回传**最小信号**，判定留给 Dart（那边才能单测）。
