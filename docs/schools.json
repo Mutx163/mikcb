@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-09-30T07:13:18+00:00",
+  "updatedAt": "2026-10-01T07:37:31+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 233,
-    "schools": 228,
+    "total": 238,
+    "schools": 233,
     "generic": 5
   },
   "schools": [
@@ -716,6 +716,13 @@
       "category": "school"
     },
     {
+      "id": "HUNAU",
+      "name": "湖南农业大学",
+      "initial": "H",
+      "resourceFolder": "HUNAU",
+      "category": "school"
+    },
+    {
       "id": "HNVCC",
       "name": "湖南商务职业技术学院",
       "initial": "H",
@@ -982,6 +989,13 @@
       "category": "school"
     },
     {
+      "id": "NJCIT",
+      "name": "南京信息职业技术学院",
+      "initial": "N",
+      "resourceFolder": "NJCIT",
+      "category": "school"
+    },
+    {
       "id": "NJTECH",
       "name": "南京工业大学",
       "initial": "N",
@@ -1094,6 +1108,13 @@
       "category": "school"
     },
     {
+      "id": "QVTU",
+      "name": "泉州职业技术大学",
+      "initial": "Q",
+      "resourceFolder": "QVTU",
+      "category": "school"
+    },
+    {
       "id": "QAU",
       "name": "青岛农业大学",
       "initial": "Q",
@@ -1185,6 +1206,13 @@
       "category": "school"
     },
     {
+      "id": "SCETOP",
+      "name": "四川托普信息技术职业学院",
+      "initial": "S",
+      "resourceFolder": "SCETOP",
+      "category": "school"
+    },
+    {
       "id": "SCEMI",
       "name": "四川机电职业技术学院",
       "initial": "S",
@@ -1231,6 +1259,13 @@
       "name": "山东药品食品职业学院",
       "initial": "S",
       "resourceFolder": "SDDFVC",
+      "category": "school"
+    },
+    {
+      "id": "YSSDUFE",
+      "name": "山东财经大学燕山学院",
+      "initial": "S",
+      "resourceFolder": "YSSDUFE",
       "category": "school"
     },
     {
