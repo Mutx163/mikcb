@@ -221,13 +221,8 @@ class StorageService {
     return journal;
   }
 
-  Future<void> _writeSettingsMirrorJournal(
-    Map<String, dynamic> journal,
-  ) async {
-    await _setStringChecked(
-      settingsMirrorTransactionKey,
-      jsonEncode(journal),
-    );
+  Future<void> _writeSettingsMirrorJournal(Map<String, dynamic> journal) async {
+    await _setStringChecked(settingsMirrorTransactionKey, jsonEncode(journal));
   }
 
   Future<void> _reloadSettingsCachesAfterRecovery() async {
@@ -243,9 +238,7 @@ class StorageService {
     AppGlobalSettingsService.restoreCacheAfterStorageRecovery(prefs);
   }
 
-  Future<void> _restoreSettingsMirrorBefore(
-    Map<String, dynamic> before,
-  ) async {
+  Future<void> _restoreSettingsMirrorBefore(Map<String, dynamic> before) async {
     final profilesSchemaVersion = before['profilesSchemaVersion'];
     final activeProfileId = before['activeProfileId'];
     final profiles = before['profiles'];
@@ -305,7 +298,9 @@ class StorageService {
       // way out was clearing app data. Quarantine it and carry on booting.
       await _backupAndRemoveCorruptString(settingsMirrorTransactionKey, raw);
       if (kDebugMode) {
-        debugPrint('StorageService: corrupt settings journal quarantined: $error');
+        debugPrint(
+          'StorageService: corrupt settings journal quarantined: $error',
+        );
       }
       return;
     }
@@ -316,7 +311,9 @@ class StorageService {
       } catch (error) {
         // 新数据已经确认落盘；下次启动继续清理，不能因此回滚。
         if (kDebugMode) {
-          debugPrint('StorageService: committed settings journal cleanup failed: $error');
+          debugPrint(
+            'StorageService: committed settings journal cleanup failed: $error',
+          );
         }
       }
       return;
@@ -404,7 +401,9 @@ class StorageService {
         } catch (error) {
           // 目标数据和完成标记都已成功；清理失败留给下次启动重试。
           if (kDebugMode) {
-            debugPrint('StorageService: settings journal cleanup failed: $error');
+            debugPrint(
+              'StorageService: settings journal cleanup failed: $error',
+            );
           }
         }
         return result;
@@ -448,7 +447,9 @@ class StorageService {
       await prefs.reload();
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('StorageService: failed to reload after write error: $error');
+        debugPrint(
+          'StorageService: failed to reload after write error: $error',
+        );
       }
     }
     _invalidateProfilesListCache();
@@ -533,7 +534,9 @@ class StorageService {
       return true;
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('StorageService: corrupt-data backup failed for $key: $error');
+        debugPrint(
+          'StorageService: corrupt-data backup failed for $key: $error',
+        );
       }
       return false;
     }
@@ -558,7 +561,9 @@ class StorageService {
       return true;
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('StorageService: corrupt-list backup failed for $key: $error');
+        debugPrint(
+          'StorageService: corrupt-list backup failed for $key: $error',
+        );
       }
       return false;
     }
@@ -896,12 +901,11 @@ class StorageService {
     // （copyWith(activeTimeSchemeId: null) 自 1079212e 起就是死代码）。
     TimetableSettings normalize(TimetableSettings s) =>
         TimetableSettings.fromJson(s.toJson());
-    final normalizedSettings =
-        normalize(settings).toJson()..remove('activeTimeSchemeId');
-    final normalizedDefaults =
-        normalize(defaults).toJson()..remove('activeTimeSchemeId');
-    return jsonEncode(normalizedSettings) ==
-        jsonEncode(normalizedDefaults);
+    final normalizedSettings = normalize(settings).toJson()
+      ..remove('activeTimeSchemeId');
+    final normalizedDefaults = normalize(defaults).toJson()
+      ..remove('activeTimeSchemeId');
+    return jsonEncode(normalizedSettings) == jsonEncode(normalizedDefaults);
   }
 
   // 获取指定周次的课程
@@ -963,15 +967,29 @@ class StorageService {
 
     final parseResult = await _parseProfilesFromDisk();
     if (parseResult.didDrop && parseResult.profiles.isNotEmpty) {
-      // Self-heal under the write chain so concurrent puts cannot be clobbered
-      // by a stale cleaned snapshot.
+      // 自愈在写链内进行，避免陈旧的清洗快照覆盖并发写入。
       await runProfilesWrite(() async {
         final lockedResult = await _parseProfilesFromDisk();
-        if (lockedResult.didDrop && lockedResult.profiles.isNotEmpty) {
-          await _writeProfilesWithoutLock(lockedResult.profiles);
-        } else if (!lockedResult.didDrop) {
-          _profilesListCache = _snapshotProfiles(lockedResult.profiles);
+        if (!(lockedResult.didDrop && lockedResult.profiles.isNotEmpty)) {
+          if (!lockedResult.didDrop) {
+            _profilesListCache = _snapshotProfiles(lockedResult.profiles);
+          }
+          return;
         }
+        // 坏条目一律先留档，再决定要不要写回。
+        await _archiveUnparsedProfileItems(lockedResult.quarantined);
+        if (lockedResult.itemLevelOnlyDrop) {
+          // 只是个别课程/考试/日程读坏了（或整份设置被回落成默认值），课表记录
+          // 本身仍然可用。这种情况**不写回**：写回等于把「当前版本的解析器读不懂」
+          // 变成永久删除，原字节被清洗结果覆盖之后，即便解析逻辑修好了也救不回来，
+          // 而用户只会看到「莫名少了一节课」。内存里给出可用视图即可。
+          _profilesListCache = _snapshotProfiles(lockedResult.profiles);
+          return;
+        }
+        // 整条课表记录坏掉：那条记录不可用，留在盘上每次启动都会重新踩，维持既有
+        // 的「移出列表并写回」（被移出的原始记录已由上面的留档与
+        // _backupAndRemoveCorruptString 保存）。
+        await _writeProfilesWithoutLock(lockedResult.profiles);
       });
       final healed = _profilesListCache;
       if (healed != null) {
@@ -983,18 +1001,65 @@ class StorageService {
     return _snapshotProfiles(parseResult.profiles);
   }
 
-  /// Disk parse only (no write chain). Safe to call under [runProfilesWrite].
-  Future<({List<TimetableProfile> profiles, bool didDrop})>
+  static const String _unparsedProfileItemsKey =
+      'timetable_profiles_unparsed_items';
+
+  /// 把解析失败的原始条目留档到**单个滚动 key**（覆盖写，条数上限见
+  /// [TimetableProfile.maxQuarantinedItems]）。
+  ///
+  /// 之所以不每次追加 `*_corrupt_backup_<ts>`：条目级损坏在每次冷启动都会重现
+  /// （我们刻意不把清洗结果写回磁盘），追加会把留档本身长成新的存储问题。
+  /// 留档失败不阻断启动：坏条目已经进不了内存视图，这里只是尽力保留找回的可能。
+  Future<void> _archiveUnparsedProfileItems(List<String> items) async {
+    if (items.isEmpty) {
+      return;
+    }
+    try {
+      final payload = jsonEncode({
+        'archivedAt': DateTime.now().toIso8601String(),
+        'count': items.length,
+        'items': items,
+      });
+      await _setStringChecked(_unparsedProfileItemsKey, payload);
+    } catch (error) {
+      debugPrint('[Storage] 坏条目留档失败：$error');
+    }
+  }
+
+  /// 盘上解析（不入写链）。可在 [runProfilesWrite] 内安全调用。
+  ///
+  /// [itemLevelOnlyDrop] 为 true 表示只是个别课程/考试/日程读坏了（或整份设置被
+  /// 回落成默认值），整条课表记录本身仍然可用 —— 调用方此时**不能**把清洗结果写回
+  /// 磁盘，否则「解析器一时读不懂」就变成永久删除。[quarantined] 是这些坏条目的
+  /// 原始 JSON，由调用方留档。
+  Future<
+    ({
+      List<TimetableProfile> profiles,
+      bool didDrop,
+      bool itemLevelOnlyDrop,
+      List<String> quarantined,
+    })
+  >
   _parseProfilesFromDisk() async {
     if (_prefs == null) await init();
     final profilesJson = _prefs?.getString(_profilesKey);
     if (profilesJson == null || profilesJson.isEmpty) {
-      return (profiles: const <TimetableProfile>[], didDrop: false);
+      return (
+        profiles: const <TimetableProfile>[],
+        didDrop: false,
+        itemLevelOnlyDrop: false,
+        quarantined: const <String>[],
+      );
     }
 
     final rawProfiles = await _readJsonListPreference(_profilesKey);
     if (rawProfiles == null) {
-      return (profiles: const <TimetableProfile>[], didDrop: false);
+      return (
+        profiles: const <TimetableProfile>[],
+        didDrop: false,
+        itemLevelOnlyDrop: false,
+        quarantined: const <String>[],
+      );
     }
 
     final parsed = TimetableProfile.parseProfilesPayload(rawProfiles);
@@ -1004,10 +1069,20 @@ class StorageService {
       if (raw != null) {
         await _backupAndRemoveCorruptString(_profilesKey, raw);
       }
-      return (profiles: const <TimetableProfile>[], didDrop: true);
+      return (
+        profiles: const <TimetableProfile>[],
+        didDrop: true,
+        itemLevelOnlyDrop: false,
+        quarantined: const <String>[],
+      );
     }
 
-    return (profiles: parsed.profiles, didDrop: parsed.didDrop);
+    return (
+      profiles: parsed.profiles,
+      didDrop: parsed.didDrop,
+      itemLevelOnlyDrop: parsed.hasItemLevelOnlyDrops,
+      quarantined: parsed.quarantinedItems,
+    );
   }
 
   Future<List<TimetableProfile>> _readProfilesWithoutLock() async {
@@ -1144,9 +1219,7 @@ class StorageService {
       for (final item in decoded) {
         try {
           if (item is! Map) continue;
-          schemes.add(
-            TimeScheme.fromJson(Map<String, dynamic>.from(item)),
-          );
+          schemes.add(TimeScheme.fromJson(Map<String, dynamic>.from(item)));
         } catch (_) {
           continue;
         }
@@ -1410,7 +1483,8 @@ class StorageService {
                 _profilesKey,
                 raw,
               );
-              if (!removed && (_prefs?.getString(_profilesKey)?.isNotEmpty ?? false)) {
+              if (!removed &&
+                  (_prefs?.getString(_profilesKey)?.isNotEmpty ?? false)) {
                 // 备份失败时保留原 key，绝不拿新建默认课表覆盖它。
                 _profilesEnsured = true;
                 return;
@@ -1424,7 +1498,9 @@ class StorageService {
               await setActiveProfileId(profiles.first.id);
             } catch (error) {
               if (kDebugMode) {
-                debugPrint('StorageService: active profile id repair deferred: $error');
+                debugPrint(
+                  'StorageService: active profile id repair deferred: $error',
+                );
               }
             }
           }
@@ -1494,8 +1570,7 @@ class StorageService {
         storedSchemesJson == null || storedSchemesJson.isEmpty
         ? null
         : await _readJsonListPreference(_timeSchemesKey);
-    if (rawStoredSchemes == null &&
-        (storedSchemesJson?.isNotEmpty ?? false)) {
+    if (rawStoredSchemes == null && (storedSchemesJson?.isNotEmpty ?? false)) {
       // 时间模板损坏且备份/删除失败时保留原 key，不自动覆盖。
       _timeSchemesEnsured = true;
       return;
@@ -1529,7 +1604,10 @@ class StorageService {
       _timeSchemesEnsured = true;
       return;
     }
-    final profiles = _parseStoredProfiles(rawProfileList);
+    final profilesPayload = TimetableProfile.parseProfilesPayload(
+      rawProfileList,
+    );
+    final profiles = profilesPayload.profiles;
     if (profiles.isEmpty) {
       _timeSchemesEnsured = true;
       return;
@@ -1582,12 +1660,26 @@ class StorageService {
       try {
         await saveTimeSchemes(storedSchemes);
         if (hasProfileChanges) {
-          await saveProfiles(profiles);
+          if (profilesPayload.hasItemLevelOnlyDrops) {
+            // 条目级损坏时不回填：这次写回会用「清洗后的课程列表」整份覆盖
+            // timetable_profiles，等于把解析器一时读不懂的记录永久抹掉（同
+            // getProfiles 自愈分支里的判断）。等盘上数据正常后再收敛。
+            if (kDebugMode) {
+              debugPrint(
+                'StorageService: time-scheme profile backfill deferred by '
+                'item-level parse drops',
+              );
+            }
+          } else {
+            await saveProfiles(profiles);
+          }
         }
       } catch (error) {
         writeSucceeded = false;
         if (kDebugMode) {
-          debugPrint('StorageService: time-scheme bootstrap write deferred: $error');
+          debugPrint(
+            'StorageService: time-scheme bootstrap write deferred: $error',
+          );
         }
       }
     }
@@ -1607,9 +1699,7 @@ class StorageService {
     for (final item in rawSchemes) {
       try {
         if (item is! Map) continue;
-        schemes.add(
-          TimeScheme.fromJson(Map<String, dynamic>.from(item)),
-        );
+        schemes.add(TimeScheme.fromJson(Map<String, dynamic>.from(item)));
       } catch (_) {
         continue;
       }
@@ -1656,10 +1746,25 @@ class StorageService {
         _hidePrefixMigrated = true;
         return;
       }
-      final profiles = _parseStoredProfiles(rawProfileList);
+      final profilesPayload = TimetableProfile.parseProfilesPayload(
+        rawProfileList,
+      );
+      final profiles = profilesPayload.profiles;
       if (profiles.isEmpty) {
         await _setBoolChecked(_hidePrefixDefaultMigrationKey, true);
         _hidePrefixMigrated = true;
+        return;
+      }
+      if (profilesPayload.hasItemLevelOnlyDrops) {
+        // 与上面「原始坏数据还在时不要写迁移标记，也不要覆盖它」同一条规矩：
+        // 存在条目级损坏时，写回会用清洗后的课程列表整份覆盖 timetable_profiles，
+        // 把解析器读不懂的记录永久抹掉。留待盘上数据正常时再迁移。
+        if (kDebugMode) {
+          debugPrint(
+            'StorageService: hide-prefix migration deferred by item-level '
+            'parse drops',
+          );
+        }
         return;
       }
 

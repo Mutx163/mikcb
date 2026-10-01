@@ -53,10 +53,7 @@ void main() {
         {
           'id': 'profile-1',
           'name': '默认课表',
-          'courses': [
-            good.toJson(),
-            'not-a-course-object',
-          ],
+          'courses': [good.toJson(), 'not-a-course-object'],
           'settings': TimetableSettings.defaults().toJson(),
           'currentWeek': 1,
           'createdAt': DateTime(2026, 3).toIso8601String(),
@@ -90,10 +87,7 @@ void main() {
         name: '保留',
         courses: [_course('c1')],
       );
-      final raw = [
-        goodProfile.toJson(),
-        'broken-profile',
-      ];
+      final raw = [goodProfile.toJson(), 'broken-profile'];
       SharedPreferences.setMockInitialValues({
         'timetable_profiles': jsonEncode(raw),
         'active_timetable_profile_id': 'keep-me',
@@ -105,6 +99,76 @@ void main() {
 
       expect(profiles.map((p) => p.id), ['keep-me']);
       expect(profiles.single.courses, hasLength(1));
+    });
+
+    test('条目级损坏只留档不写回，坏记录原始字节仍在盘上', () async {
+      // 回归钉（CODE_REVIEW 2026-10-01 A4）：冷启动自愈此前会在「个别条目读坏」时
+      // 把清洗结果整份写回磁盘，等于把「当前解析器读不懂」变成永久删除 —— 用户只
+      // 看到莫名少了一节课，原始字节既不留档也无法找回，且此后每次启动都继续踩。
+      final good = _course('good', name: '高等数学');
+      final badCourse = <String, dynamic>{
+        'id': 'ghost',
+        'name': '会被读坏的课',
+        // teacher 缺失 → Course.fromJson 抛错 → 条目级丢弃
+      };
+      final raw = [
+        {
+          'id': 'profile-1',
+          'name': '默认课表',
+          'courses': [good.toJson(), badCourse],
+          'settings': TimetableSettings.defaults().toJson(),
+          'currentWeek': 1,
+          'createdAt': DateTime(2026, 3).toIso8601String(),
+          'lastUsedAt': DateTime(2026, 3).toIso8601String(),
+        },
+      ];
+      SharedPreferences.setMockInitialValues({
+        'timetable_profiles': jsonEncode(raw),
+        'active_timetable_profile_id': 'profile-1',
+      });
+
+      final storage = StorageService();
+      await storage.init();
+      final profiles = await storage.getProfiles();
+      final prefs = await SharedPreferences.getInstance();
+
+      // 内存视图仍然可用：坏课被排除，好课保留。
+      expect(profiles.single.courses.map((c) => c.id), ['good']);
+
+      // 盘上原文不能被清洗结果覆盖 —— 解析器修好后这条记录还救得回来。
+      final onDisk = jsonDecode(prefs.getString('timetable_profiles')!) as List;
+      expect((onDisk.single as Map)['courses'], hasLength(2));
+
+      // 坏条目本身要留档，否则「不写回」只是把问题推到下一次保存。
+      final quarantine = prefs.getString('timetable_profiles_unparsed_items');
+      expect(quarantine, isNotNull);
+      expect(quarantine, contains('ghost'));
+    });
+
+    test('整条记录坏掉仍然写回（该记录本身不可用）', () async {
+      // 与上一条对照：整条 profile 坏掉时留在盘上每次启动都会重新踩，
+      // 维持既有的「移出列表并写回」行为。
+      final goodProfile = _profile(
+        'keep-me',
+        name: '保留',
+        courses: [_course('c1')],
+      );
+      SharedPreferences.setMockInitialValues({
+        'timetable_profiles': jsonEncode([
+          goodProfile.toJson(),
+          'broken-profile',
+        ]),
+        'active_timetable_profile_id': 'keep-me',
+      });
+
+      final storage = StorageService();
+      await storage.init();
+      await storage.getProfiles();
+      final prefs = await SharedPreferences.getInstance();
+
+      final onDisk = jsonDecode(prefs.getString('timetable_profiles')!) as List;
+      expect(onDisk, hasLength(1));
+      expect((onDisk.single as Map)['id'], 'keep-me');
     });
   });
 
@@ -122,17 +186,13 @@ void main() {
         storage.updateProfiles((current) async {
           final profile = current.single;
           return [
-            profile.copyWith(
-              courses: [...profile.courses, _course('a')],
-            ),
+            profile.copyWith(courses: [...profile.courses, _course('a')]),
           ];
         }),
         storage.updateProfiles((current) async {
           final profile = current.single;
           return [
-            profile.copyWith(
-              courses: [...profile.courses, _course('b')],
-            ),
+            profile.copyWith(courses: [...profile.courses, _course('b')]),
           ];
         }),
       ]);
