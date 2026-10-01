@@ -658,7 +658,12 @@ class HolidayService {
     try {
       final prefs = await _ensurePrefs();
       final json = jsonEncode(entries.map((e) => e.toJson()).toList());
-      await prefs.setString(_customHolidaysKey, json);
+      // Android 侧 `commit()` 失败是**返回 false**，不抛异常：只看 try/catch 的话，
+      // 磁盘满这种最常见的写失败会走到「通知同步链路说数据已变更」，而盘上其实还是
+      // 旧值 —— 与函数注释承诺的「写入失败时抛出、钩子只在写成功后触发」相反。
+      if (!await prefs.setString(_customHolidaysKey, json)) {
+        throw StateError('holiday_setString_returned_false');
+      }
     } catch (e, stackTrace) {
       // error() 自身失败（如磁盘满）不能掩盖真正的写盘异常，
       // 故单独兜底，确保 HolidayCustomSaveException 必然抛出。

@@ -8,9 +8,15 @@ class ImportWeekAlignmentService {
     required DateTime semesterStartDate,
     required DateTime firstCourseDate,
   }) {
-    final days = WeekCalculator.startOfWeek(
-      firstCourseDate,
-    ).difference(WeekCalculator.startOfWeek(semesterStartDate)).inDays;
+    final from = WeekCalculator.startOfWeek(semesterStartDate);
+    final to = WeekCalculator.startOfWeek(firstCourseDate);
+    // 按「日历日」而不是「绝对经过时间」算跨度：本地 DateTime 直接相减在夏令时
+    // 那一周会拿到 167h（inDays == 6），于是 7 天被算成 6 天、整门课被提前一周
+    // 对齐，单双周标志也随之错位。WeekCalculator.getWeekIndex 内部正是用
+    // DateTime.utc 重算来绕开这个坑，这里保持同一口径。
+    final days = DateTime.utc(to.year, to.month, to.day).difference(
+      DateTime.utc(from.year, from.month, from.day),
+    ).inDays;
     if (days <= 0) {
       return 1;
     }

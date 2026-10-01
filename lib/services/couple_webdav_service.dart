@@ -143,8 +143,32 @@ class CoupleWebdavService {
       );
     }
 
-    final content = utf8.decode(resolvedBytes);
-    if (_dataTransferService.isFullBackupJson(content)) {
+    // 解码与「是不是完整备份」判定此前在 try 之外：远端 slot 文件被塞进非 UTF-8
+    // 字节、HTML 错误页或截断 JSON 时（本服务的载荷没有任何完整性保护，见
+    // CODE_REVIEW 2026-10-01），FormatException/ArgumentError 会一路冒出这个
+    // 设计上「只返回错误码、从不抛」的方法，再冒出 UI 调用方（那边只有
+    // try/finally，没有 catch），落到 zone 的未处理异步异常 —— 用户表现为点了
+    // 「拉取」毫无反应。
+    final String content;
+    try {
+      content = utf8.decode(resolvedBytes);
+    } catch (_) {
+      return const CoupleWebdavPullResult(
+        status: CoupleWebdavPullStatus.failed,
+        errorCode: 'couple_webdav_partner_file_not_utf8',
+      );
+    }
+
+    final bool isFullBackup;
+    try {
+      isFullBackup = _dataTransferService.isFullBackupJson(content);
+    } catch (_) {
+      return const CoupleWebdavPullResult(
+        status: CoupleWebdavPullStatus.failed,
+        errorCode: 'couple_webdav_partner_file_not_json',
+      );
+    }
+    if (isFullBackup) {
       return const CoupleWebdavPullResult(
         status: CoupleWebdavPullStatus.failed,
         errorCode: 'partner_import_requires_single_profile',

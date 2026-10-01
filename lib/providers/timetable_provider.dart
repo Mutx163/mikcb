@@ -225,6 +225,10 @@ class TimetableProvider with ChangeNotifier {
   final HomeWidgetBindingService _homeWidgetBindingService;
   final ExamReminderService _examReminderService;
   final HolidayService _holidayService;
+
+  /// `_holidayService` 是否由本 provider 自己创建。注入进来的实例归注入方所有，
+  /// 我们在 dispose 里关掉它会误伤共享调用方（测试与未来的复用场景）。
+  final bool _ownsHolidayService;
   final AppAnalytics _analytics;
   final bool _enableLiveActivitySync;
 
@@ -546,6 +550,7 @@ class TimetableProvider with ChangeNotifier {
            homeWidgetBindingService ?? const HomeWidgetBindingService(),
        _examReminderService = examReminderService ?? ExamReminderService(),
        _holidayService = holidayService ?? HolidayService(),
+       _ownsHolidayService = holidayService == null,
        _analytics = analytics ?? AppAnalytics.instance {
     _holidayService.onRemoteHolidayDataUpdated = (_) {
       unawaited(_loadHolidayData());
@@ -965,6 +970,13 @@ class TimetableProvider with ChangeNotifier {
   @override
   void dispose() {
     _holidayService.onRemoteHolidayDataUpdated = null;
+    // HolidayService.dispose 的注释写着「释放 HTTP 客户端资源」，但此前全仓零调用
+    // —— 一个带注释承诺的死 API。provider 每个实例自带一个 HolidayService，不释放
+    // 就是每实例泄漏一个 http.Client 与连接池（生产路径是 app 级单例，hot restart
+    // 与测试套里会稳定累积）。注入进来的实例由注入方负责释放。
+    if (_ownsHolidayService) {
+      _holidayService.dispose();
+    }
     _liveActivityTimer?.cancel();
     _undoTimer?.cancel();
     super.dispose();
