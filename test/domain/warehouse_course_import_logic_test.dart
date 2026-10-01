@@ -662,6 +662,23 @@ void main() {
         ]);
       });
 
+      test('day 越界（周日=0 / 8）拒收为 unusable，不夹到相邻一天', () {
+        // 回归钉（CODE_REVIEW 2026-10-02）：JS 适配器常用 Date#getDay()，周日是 0。
+        // 旧写法把 day 交给 Course.normalizeDayOfWeek 夹取 → 0 变成周一：周日的课
+        // 从此消失，用户周一白跑一趟、周日真课没有任何提醒，而且一声不响。
+        // AI 导入（ai_course_import_service.dart:194）与表格导入
+        // （spreadsheet_import_service.dart:329）都是越界即拒收，这里对齐同一口径。
+        final result = parseWithSkips([
+          {'name': '周日轮值', 'day': 0, 'startSection': 1, 'weeks': [1]},
+          {'name': '第八天', 'day': 8, 'startSection': 1, 'weeks': [1]},
+        ]);
+        expect(result.courses, isEmpty);
+        expect(result.skips, [
+          (WarehouseCourseSkipReason.unusable, '周日轮值'),
+          (WarehouseCourseSkipReason.unusable, '第八天'),
+        ]);
+      });
+
       test('非 Map 记录 → malformed，名字取不到就是 null', () {
         final result = parseWithSkips(['不是对象', 42]);
         expect(result.courses, isEmpty);

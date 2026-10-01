@@ -384,6 +384,13 @@ class WarehouseCourseImportLogic {
 
     if (name.isEmpty ||
         day == null ||
+        // 越界的星期不能像 Course.normalizeDayOfWeek 那样夹到相邻一天：JS 适配器用
+        // Date#getDay() 时周日是 0，夹成周一会让周日的课从此消失（周一白跑一趟、
+        // 周日真课没提醒）。与 ai_course_import_service.dart:194 和
+        // spreadsheet_import_service.dart:329 的口径统一：越界即拒收，由外层
+        // onSkip 报成 unusable，不静默丢。
+        day < 1 ||
+        day > 7 ||
         effectiveStartSection == null ||
         effectiveEndSection == null ||
         weeks == null ||
