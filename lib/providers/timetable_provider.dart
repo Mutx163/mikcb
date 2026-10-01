@@ -287,9 +287,6 @@ class TimetableProvider with ChangeNotifier {
   String? _undoThemeName;
   Timer? _undoTimer;
 
-  /// 持久化写入纪元，用于检测 write-after-write 竞争
-  int _writeEpoch = 0;
-
   /// 是否有待撤销的主题变更
   bool get hasPendingUndo => _undoThemeConfig != null;
 
@@ -328,14 +325,28 @@ class TimetableProvider with ChangeNotifier {
       final previous = _settings;
       _settings = _normalizeSettingsWithTimeScheme(newSettings);
       hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
-      _writeEpoch++;
-      final epoch = _writeEpoch;
       await _persistActiveProfileState();
-      if (_writeEpoch == epoch) {
-        notifyListeners();
-        _logPerformanceSnapshotIfChanged(previous);
-      }
+      notifyListeners();
+      _logPerformanceSnapshotIfChanged(previous);
     });
+  }
+
+  /// 主题列表写入的共用收口：先改内存，落库失败则回滚内存并上抛。
+  ///
+  /// 此前 save/delete/rename 三处都是「改内存 → await 落库 → notify」，落库抛错
+  /// （磁盘满、`commit()` 失败）时内存已带新主题列表、盘上没有、UI 也没刷新，
+  /// 用户看到的就是「点了没反应」；而下一次任意成功写入会通过
+  /// `_mergeActiveProfileIntoProfilesList` 把这份从未落库的改动当成既有状态落盘。
+  Future<void> _applySavedThemes(List<SavedTheme> Function() build) async {
+    final previousSettings = _settings;
+    _settings = _settings.copyWith(savedThemes: build());
+    try {
+      await _persistActiveProfileState();
+    } catch (_) {
+      _settings = previousSettings;
+      rethrow;
+    }
+    notifyListeners();
   }
 
   /// 保存主题
@@ -347,42 +358,36 @@ class TimetableProvider with ChangeNotifier {
         config: ThemeConfig.fromJson(themeData),
         createdAt: DateTime.now(),
       );
-      final updatedThemes = [..._settings.savedThemes, theme];
-      _settings = _settings.copyWith(savedThemes: updatedThemes);
-      await _persistActiveProfileState();
-      notifyListeners();
+      await _applySavedThemes(() => [..._settings.savedThemes, theme]);
     });
   }
 
   /// 删除主题
   Future<void> deleteTheme(String themeId) {
-    return _runMutation(() async {
-      final updatedThemes = _settings.savedThemes
-          .where((theme) => theme.id != themeId)
-          .toList();
-      _settings = _settings.copyWith(savedThemes: updatedThemes);
-      await _persistActiveProfileState();
-      notifyListeners();
-    });
+    return _runMutation(
+      () => _applySavedThemes(
+        () =>
+            _settings.savedThemes.where((theme) => theme.id != themeId).toList(),
+      ),
+    );
   }
 
   /// 重命名主题
   Future<void> renameTheme(String themeId, String newName) {
     return _runMutation(() async {
-      final updatedThemes = _settings.savedThemes.map((theme) {
-        if (theme.id == themeId) {
-          return SavedTheme(
-            id: theme.id,
-            name: newName,
-            config: theme.config,
-            createdAt: theme.createdAt,
-          );
-        }
-        return theme;
-      }).toList();
-      _settings = _settings.copyWith(savedThemes: updatedThemes);
-      await _persistActiveProfileState();
-      notifyListeners();
+      await _applySavedThemes(
+        () => _settings.savedThemes.map((theme) {
+          if (theme.id == themeId) {
+            return SavedTheme(
+              id: theme.id,
+              name: newName,
+              config: theme.config,
+              createdAt: theme.createdAt,
+            );
+          }
+          return theme;
+        }).toList(),
+      );
     });
   }
 
@@ -2837,6 +2842,14 @@ class TimetableProvider with ChangeNotifier {
   ) {
     return _runMutation(() async {
       final key = buildSharedCourseNameKey(originalName);
+      if (updatedCourses.isEmpty) {
+        // 必须挡在 removeWhere 之前：空集合会让下面的 `updatedCourses.first` 抛
+        // StateError，而那时整组课程已经被摘掉——既没落库也没 notify，界面仍显示
+        // 旧组、内存里整组消失，下一次任意成功写入就把「整组没了」落盘。
+        // 与 addCourseGroup 的 isEmpty 守卫同一口径（调用方目前都自带非空保证，
+        // 这里是 provider 侧的兜底，防未来新调用方直接踩）。
+        return;
+      }
       // Remove old entries for this group.
       _courses.removeWhere((c) => buildSharedCourseNameKey(c.name) == key);
       // Add the updated entries, applying shared fields.

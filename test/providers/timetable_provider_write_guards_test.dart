@@ -1,0 +1,112 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/providers/timetable_provider.dart';
+import 'package:university_timetable/services/storage_service.dart';
+
+/// 回归钉（CODE_REVIEW 2026-10-02，provider 写入收口）：
+///
+/// 1. `updateCourseGroup` 原先在 `removeWhere` 摘掉整组之后才取
+///    `updatedCourses.first`。传入空列表时 StateError 在删除之后抛出：既没落库也
+///    没 notify，界面显示旧组、内存里整组已消失，下一次任意成功写入会把「整组没了」
+///    落盘 —— 用户视角是「某天的课莫名全消失了」。同文件 `addCourseGroup`
+///    （:2889）与 `addCourseGroup` 的 isEmpty 守卫早就存在，只是 update 侧漏了。
+/// 2. 主题 save/delete/rename 原先是「改内存 → await 落库 → notify」，落库抛错时
+///    内存已变、盘上没变、UI 不刷新，且这份未落库的改动会被下一次成功写入当成
+///    既有状态落盘。现在统一走带回滚的 `_applySavedThemes`。
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  Course course(String id, {required String name, required int day}) => Course(
+    id: id,
+    name: name,
+    teacher: '张老师',
+    location: 'A101',
+    dayOfWeek: day,
+    startSection: 1,
+    endSection: 2,
+    startTime: '08:00',
+    endTime: '09:40',
+  );
+
+  Future<TimetableProvider> booted() async {
+    SharedPreferences.setMockInitialValues({});
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    return provider;
+  }
+
+  group('updateCourseGroup 空集合守卫', () {
+    test('空列表不会把已有的整组课程抹掉', () async {
+      final provider = await booted();
+      addTearDown(provider.dispose);
+
+      await provider.addCourseGroup([
+        course('g1', name: '篮球', day: 1),
+        course('g2', name: '篮球', day: 3),
+      ]);
+      expect(provider.courses, hasLength(2));
+
+      await provider.updateCourseGroup('篮球', const <Course>[]);
+
+      // 修复前：整组被 removeWhere 摘掉后 .first 抛错，这里会看到 0 门课。
+      expect(provider.courses, hasLength(2));
+      expect(provider.courses.map((c) => c.dayOfWeek), [1, 3]);
+    });
+
+    test('非空列表仍然照常整组替换', () async {
+      final provider = await booted();
+      addTearDown(provider.dispose);
+
+      await provider.addCourseGroup([
+        course('g1', name: '篮球', day: 1),
+        course('g2', name: '篮球', day: 3),
+      ]);
+
+      await provider.updateCourseGroup('篮球', [
+        course('g1', name: '篮球', day: 2),
+      ]);
+
+      expect(provider.courses, hasLength(1));
+      expect(provider.courses.single.dayOfWeek, 2);
+    });
+  });
+
+  group('主题写入收口', () {
+    test('save / rename / delete 走完整落库链路', () async {
+      final provider = await booted();
+      addTearDown(provider.dispose);
+
+      var notifications = 0;
+      provider.addListener(() => notifications++);
+
+      await provider.saveTheme('我的主题', const <String, dynamic>{
+        'v': 2,
+        'seed': '#FF0000',
+      });
+      expect(provider.settings.savedThemes, hasLength(1));
+      expect(notifications, greaterThan(0), reason: '成功后必须通知监听者');
+
+      final id = provider.settings.savedThemes.single.id;
+      await provider.renameTheme(id, '改名后');
+      expect(provider.settings.savedThemes.single.name, '改名后');
+
+      // 落库验证：换一个 provider 从盘上重读，确认不是只改了内存。
+      StorageService().resetForTesting();
+      final reopened = TimetableProvider(
+        autoInitialize: false,
+        enableLiveActivitySync: false,
+      );
+      addTearDown(reopened.dispose);
+      await reopened.initialize();
+      expect(reopened.settings.savedThemes, hasLength(1));
+      expect(reopened.settings.savedThemes.single.name, '改名后');
+
+      await reopened.deleteTheme(reopened.settings.savedThemes.single.id);
+      expect(reopened.settings.savedThemes, isEmpty);
+    });
+  });
+}
