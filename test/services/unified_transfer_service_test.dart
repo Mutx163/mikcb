@@ -89,7 +89,7 @@ void main() {
     final incoming = UnifiedTransferService()
         .buildCurrentPackage(
           provider: provider,
-          scope: TransferScope.currentTimetable,
+          // scope 默认即 currentTimetable（属于 carriesSettings），只显式给通道。
           channel: TransferChannel.lan,
         )
         .copyWith(
