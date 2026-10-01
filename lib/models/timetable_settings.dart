@@ -2223,6 +2223,28 @@ class TimetableSettings {
           ? TimetableSettings.defaults().sections
           : parsed.sections;
     }
+
+    /// 嵌套对象解析失败只丢这一个字段，不牵连同一条记录里的其它设置。
+    ///
+    /// 此前这三处是 `json[key] as Map<String, dynamic>` 硬转且外层没有 try：一个
+    /// 类型不对的嵌套值会抛出并冒到 `TimetableProfile.fromJsonLenient` 的 catch，
+    /// 把**整份**设置换成 defaults —— 学期起始日、节次表、主题、超级岛开关一起被
+    /// 清零，再经 provider 的 `AppGlobalSettingsService.syncFrom` 当作「用户刚改了
+    /// 全局设置」写进设备级全局键，波及本机所有课表。同文件里 savedThemes 与
+    /// themeCheckpointConfig 都有逐条 try，只有这三处口径不一致。
+    T? parseNestedObject<T>(
+      Object? raw,
+      T Function(Map<String, dynamic> map) parse,
+    ) {
+      if (raw is! Map) {
+        return null;
+      }
+      try {
+        return parse(Map<String, dynamic>.from(raw));
+      } catch (_) {
+        return null;
+      }
+    }
     final rawAppUpdateMirrorUrlPrefix =
         json['appUpdateMirrorUrlPrefix'] as String? ??
         defaultAppUpdateMirrorUrlPrefix;
@@ -2621,27 +2643,24 @@ class TimetableSettings {
       liquidGlassPreset: LiquidGlassPresetX.fromValue(
         json['liquidGlassPreset'] as String?,
       ),
-      liquidGlassTuning: json['liquidGlassTuning'] != null
-          ? LiquidGlassTuning.fromJson(
-              json['liquidGlassTuning'] as Map<String, dynamic>,
-            )
-          : null,
-      liquidGlassTuningDark: json['liquidGlassTuningDark'] != null
-          ? LiquidGlassTuning.fromJson(
-              json['liquidGlassTuningDark'] as Map<String, dynamic>,
-            )
-          : null,
+      liquidGlassTuning: parseNestedObject(
+        json['liquidGlassTuning'],
+        LiquidGlassTuning.fromJson,
+      ),
+      liquidGlassTuningDark: parseNestedObject(
+        json['liquidGlassTuningDark'],
+        LiquidGlassTuning.fromJson,
+      ),
       linkLiquidGlassTuning:
           json['linkLiquidGlassTuning'] as bool? ??
           defaultLinkLiquidGlassTuning,
       darkGlassBoostEnabled:
           json['darkGlassBoostEnabled'] as bool? ??
           defaultDarkGlassBoostEnabled,
-      courseCardGlassTuning: json['courseCardGlassTuning'] != null
-          ? CourseGlassTuning.fromJson(
-              json['courseCardGlassTuning'] as Map<String, dynamic>,
-            )
-          : null,
+      courseCardGlassTuning: parseNestedObject(
+        json['courseCardGlassTuning'],
+        CourseGlassTuning.fromJson,
+      ),
       // 两个玻璃带显示开关已下线（顶栏玻璃归外观页材质五档），恒为开。
       // ignore: avoid_redundant_argument_values -- 故意写死默认值（下线旧开关）。
       homePageHeaderBlurEnabled: true,

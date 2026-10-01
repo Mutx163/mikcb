@@ -251,6 +251,37 @@ void main() {
     });
 
     test(
+      'bad nested glass tuning drops only that field, not whole settings',
+      () {
+        // 回归钉（CODE_REVIEW 2026-10-01 A6）：这三处曾是
+        // `json[key] as Map<String, dynamic>` 硬转且外层没有 try，一个类型不对的
+        // 嵌套值会冒到 TimetableProfile.fromJsonLenient 的 catch，把整份设置换成
+        // defaults（学期起始日、节次表、主题、超级岛开关一起清零），再经
+        // AppGlobalSettingsService.syncFrom 扩散成设备级全局键。
+        final s = TimetableSettings.fromJson({
+          'liquidGlassTuning': 'not-a-map',
+          'liquidGlassTuningDark': [1, 2, 3],
+          'courseCardGlassTuning': 7,
+          'semesterWeekCount': 22,
+          'themeSeedColor': '#123456',
+          'sections': [
+            {'startTime': '08:00', 'endTime': '08:45'},
+            {'startTime': '08:55', 'endTime': '09:40'},
+          ],
+        });
+
+        expect(s.liquidGlassTuning, isNull);
+        expect(s.liquidGlassTuningDark, isNull);
+        expect(s.courseCardGlassTuning, isNull);
+        // 其余字段必须原样保留，而不是被 defaults 覆盖。
+        expect(s.semesterWeekCount, 22);
+        expect(s.themeSeedColor, '#123456');
+        expect(s.sections.length, 2);
+        expect(s.sections[1].startTime, '08:55');
+      },
+    );
+
+    test(
       'TimetableSettings falls back to defaults when all sections malformed',
       () {
         final s = TimetableSettings.fromJson({
