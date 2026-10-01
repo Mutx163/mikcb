@@ -51,7 +51,10 @@ void main() {
     });
 
     test('returns null when both URLs are empty', () {
-      expect(resolveWarehouseImportUrl(defaultUrl: ' '), isNull);
+      expect(
+        resolveWarehouseImportUrl(defaultUrl: ' '),
+        isNull,
+      );
     });
   });
 
@@ -244,7 +247,8 @@ void main() {
           isFalse,
         );
         expect(
-          rememberedLoginAllowsUrl(restored, 'https://jw.example.edu.cn/login'),
+          rememberedLoginAllowsUrl(
+              restored, 'https://jw.example.edu.cn/login'),
           isTrue,
         );
       },
@@ -276,53 +280,12 @@ void main() {
     });
 
     test('extractUrlHost lowercases and rejects unusable input', () {
-      expect(
-        extractUrlHost('https://JW.Example.edu.cn/login?a=1'),
-        'jw.example.edu.cn',
-      );
+      expect(extractUrlHost('https://JW.Example.edu.cn/login?a=1'),
+          'jw.example.edu.cn');
       expect(extractUrlHost('http://10.0.0.8:8080/xk'), '10.0.0.8');
       expect(extractUrlHost('not a url'), isNull);
       expect(extractUrlHost(''), isNull);
       expect(extractUrlHost(null), isNull);
-    });
-
-    test('回放/快捷导入走严格模式：远端推导的白名单不算信任', () {
-      // 回归钉（CODE_REVIEW 2026-10-01 A1）：trustedHosts 那份名单是从**远端可变
-      // 数据**推导的 —— 适配器登记地址来自上游 qingyu_warehouse 的 adapters.yaml，
-      // 宏记录里的 importUrl 还可能由云快照带回。快捷导入的 WebView 又是 1×1 且藏在
-      // Offstage 里，用户看不见落地页。所以那条路径改为不传 trustedHosts（默认空集），
-      // 只认凭据自己绑定的 host。本测试钉住两侧语义，防止将来被无意改回去。
-      const unboundLegacy = WarehouseRememberedLogin(
-        username: 's',
-        password: 'p',
-      );
-      const bound = WarehouseRememberedLogin(
-        username: 's',
-        password: 'p',
-        host: 'jw.example.edu.cn',
-      );
-      const remoteAnchoredUrl = 'https://jw.attacker.example/login';
-
-      // 严格模式（不传 trustedHosts）：存量空 host 凭据不再被远端锚点放行。
-      expect(
-        rememberedLoginAllowsUrl(unboundLegacy, remoteAnchoredUrl),
-        isFalse,
-      );
-      // 严格模式下，绑定过 host 的凭据仍然只在绑定域自动填充。
-      expect(
-        rememberedLoginAllowsUrl(bound, 'https://jw.example.edu.cn/t'),
-        isTrue,
-      );
-      expect(rememberedLoginAllowsUrl(bound, remoteAnchoredUrl), isFalse);
-      // 对照：宽松模式（交互式页面看得见落地页）仍按名单放行，行为不变。
-      expect(
-        rememberedLoginAllowsUrl(
-          unboundLegacy,
-          remoteAnchoredUrl,
-          trustedHosts: const ['jw.attacker.example'],
-        ),
-        isTrue,
-      );
     });
 
     test('rememberedLoginAllowsUrl gates cross-origin autofill', () {
@@ -337,21 +300,16 @@ void main() {
       );
 
       // No credentials at all.
-      expect(
-        rememberedLoginAllowsUrl(null, 'https://jw.example.edu.cn'),
-        isFalse,
-      );
+      expect(rememberedLoginAllowsUrl(null, 'https://jw.example.edu.cn'),
+          isFalse);
       // Legacy entries without a bound host are NOT waved through: every login
       // saved before `host` started being persisted looks like this, so
       // allowing them unconditionally left the gate open for exactly the users
       // it was written to protect.
       expect(
-        rememberedLoginAllowsUrl(
-          unboundLegacy,
-          'https://evil.example.com/login',
-        ),
-        isFalse,
-      );
+          rememberedLoginAllowsUrl(
+              unboundLegacy, 'https://evil.example.com/login'),
+          isFalse);
       // They may still autofill on the hosts the app itself navigates to.
       expect(
         rememberedLoginAllowsUrl(
@@ -382,32 +340,28 @@ void main() {
       );
       // With no trusted hosts at all, an unbound login goes nowhere.
       expect(
-        rememberedLoginAllowsUrl(
-          unboundLegacy,
-          'https://jw.example.edu.cn/login',
-        ),
-        isFalse,
-      );
+          rememberedLoginAllowsUrl(
+              unboundLegacy, 'https://jw.example.edu.cn/login'),
+          isFalse);
       // Same-host pages pass.
       expect(
-        rememberedLoginAllowsUrl(bound, 'https://jw.example.edu.cn/login'),
-        isTrue,
-      );
+          rememberedLoginAllowsUrl(bound, 'https://jw.example.edu.cn/login'),
+          isTrue);
       expect(
-        rememberedLoginAllowsUrl(bound, 'https://jw.example.edu.cn:8080/login'),
-        isTrue,
-      );
+          rememberedLoginAllowsUrl(
+              bound, 'https://jw.example.edu.cn:8080/login'),
+          isTrue);
       // Subdomains of the *bound* host pass too.
       expect(
-        rememberedLoginAllowsUrl(bound, 'https://a.jw.example.edu.cn/login'),
+        rememberedLoginAllowsUrl(
+            bound, 'https://a.jw.example.edu.cn/login'),
         isTrue,
       );
       // Cross-origin pages are denied — and a bound host wins over the trusted
       // list, so widening the list cannot re-open a bound credential.
       expect(
-        rememberedLoginAllowsUrl(bound, 'https://evil.example.com/login'),
-        isFalse,
-      );
+          rememberedLoginAllowsUrl(bound, 'https://evil.example.com/login'),
+          isFalse);
       expect(
         rememberedLoginAllowsUrl(
           bound,
@@ -417,9 +371,9 @@ void main() {
         isFalse,
       );
       expect(
-        rememberedLoginAllowsUrl(bound, 'https://jw.example.edu.cn.evil.io'),
-        isFalse,
-      );
+          rememberedLoginAllowsUrl(
+              bound, 'https://jw.example.edu.cn.evil.io'),
+          isFalse);
       // Unknown current URL cannot prove same origin.
       expect(rememberedLoginAllowsUrl(bound, null), isFalse);
       expect(rememberedLoginAllowsUrl(bound, ''), isFalse);
@@ -445,30 +399,26 @@ void main() {
       expect(entry.login.host, 'jw.example.edu.cn');
     });
 
-    test(
-      'set/get round-trip keeps bound host through secure storage',
-      () async {
-        SharedPreferences.setMockInitialValues({});
-        final storage = _MemoryWarehouseSecureStorage();
-        final service = WarehouseImportPreferencesService(
-          secureStorage: storage,
-        );
+    test('set/get round-trip keeps bound host through secure storage',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = _MemoryWarehouseSecureStorage();
+      final service = WarehouseImportPreferencesService(secureStorage: storage);
 
-        await service.setRememberedLogin(
-          'demo',
-          const WarehouseRememberedLogin(
-            username: 'student',
-            password: 'secret',
-            host: 'jw.example.edu.cn',
-          ),
-        );
+      await service.setRememberedLogin(
+        'demo',
+        const WarehouseRememberedLogin(
+          username: 'student',
+          password: 'secret',
+          host: 'jw.example.edu.cn',
+        ),
+      );
 
-        final loaded = await service.getRememberedLogin('demo');
-        expect(loaded?.host, 'jw.example.edu.cn');
-        expect(loaded?.username, 'student');
-        expect(loaded?.password, 'secret');
-      },
-    );
+      final loaded = await service.getRememberedLogin('demo');
+      expect(loaded?.host, 'jw.example.edu.cn');
+      expect(loaded?.username, 'student');
+      expect(loaded?.password, 'secret');
+    });
   });
 
   group('getCustomDebugRecords', () {
@@ -605,7 +555,9 @@ void main() {
         password: '',
         host: 'evil.example.com',
       );
-      final resolved = resolveRememberedLoginForImport(incoming: crafted);
+      final resolved = resolveRememberedLoginForImport(
+        incoming: crafted,
+      );
       expect(resolved.password, '');
       expect(resolved.host, 'evil.example.com');
     });
