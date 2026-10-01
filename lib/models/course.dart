@@ -175,6 +175,34 @@ class Course {
     return (startWeek: normalizedStart, endWeek: normalizedEnd);
   }
 
+  /// 周次数量级上限：钳制后最多 `maxWeek` 项，任何远超该量级的列表都只会是
+  /// 畸形/被灌入的外部数据，不做无界遍历。
+  static const int maxWeekListEntries = 512;
+
+  /// 周次列表归一：丢弃越界项、去重、升序。与 [normalizeWeeks] 同口径。
+  ///
+  /// 必须在解析与消费两侧都钳：`activeWeeks` 会原样吐出 customWeeks，而导入去重键
+  /// （import_export_logic 的 `weeks.join(',')`）与按周展开都遍历它。此前
+  /// startWeek/endWeek 走 normalizeWeeks 被夹到 1..30，customWeeks/suspendedWeeks
+  /// 却是裸列表，一份备份就能塞进任意多个/任意大的周次值。
+  static List<int>? normalizeWeekList(List<int>? weeks, {int maxWeek = 30}) {
+    if (weeks == null || weeks.isEmpty || weeks.length > maxWeekListEntries) {
+      return null;
+    }
+    final safeMaxWeek = maxWeek < 1 ? 1 : maxWeek;
+    final normalized = <int>{};
+    for (final week in weeks) {
+      if (week < 1 || week > safeMaxWeek) {
+        continue;
+      }
+      normalized.add(week);
+    }
+    if (normalized.isEmpty) {
+      return null;
+    }
+    return normalized.toList()..sort();
+  }
+
   Map<String, dynamic> toJson() {
     final normalizedSessionNotes = normalizedSessionNotesMap;
     return {
@@ -229,15 +257,24 @@ class Course {
       if (raw is! List) {
         return null;
       }
-      return raw.map((item) {
+      if (raw.length > maxWeekListEntries) {
+        // 畸形/被灌入的备份：钳制后最多 maxWeek 项，量级远超即判无效，
+        // 不去遍历一个百万元素的数组。
+        return null;
+      }
+      final values = <int>[];
+      for (final item in raw) {
         if (item is num) {
-          return item.toInt();
+          values.add(item.toInt());
+        } else if (item is String) {
+          final parsed = int.tryParse(item);
+          if (parsed != null) {
+            values.add(parsed);
+          }
         }
-        if (item is String) {
-          return int.tryParse(item) ?? 0;
-        }
-        return 0;
-      }).toList();
+        // 其他类型忽略。旧实现把它们记作 0，会让脏数据伪装成「第 0 周」。
+      }
+      return values;
     }
 
     final sections = normalizeSections(
@@ -267,8 +304,8 @@ class Course {
       endWeek: weeks.endWeek,
       isOddWeek: json['isOddWeek'] as bool? ?? false,
       isEvenWeek: json['isEvenWeek'] as bool? ?? false,
-      customWeeks: readIntList('customWeeks'),
-      suspendedWeeks: readIntList('suspendedWeeks'),
+      customWeeks: normalizeWeekList(readIntList('customWeeks')),
+      suspendedWeeks: normalizeWeekList(readIntList('suspendedWeeks')),
       courseNature: CourseNatureX.fromValue(json['courseNature'] as String?),
       description: json['description'] as String? ?? json['note'] as String?,
       note: json['note'] as String?,
@@ -473,25 +510,11 @@ class Course {
     return normalizeSessionNotes({targetWeek: source});
   }
 
-  List<int>? get normalizedCustomWeeks {
-    final source = customWeeks;
-    if (source == null || source.isEmpty) {
-      return null;
-    }
-    final normalized = source.toSet().toList()..sort();
-    return normalized;
-  }
+  List<int>? get normalizedCustomWeeks => normalizeWeekList(customWeeks);
 
   bool get hasCustomWeeks => normalizedCustomWeeks != null;
 
-  List<int>? get normalizedSuspendedWeeks {
-    final source = suspendedWeeks;
-    if (source == null || source.isEmpty) {
-      return null;
-    }
-    final normalized = source.toSet().toList()..sort();
-    return normalized;
-  }
+  List<int>? get normalizedSuspendedWeeks => normalizeWeekList(suspendedWeeks);
 
   bool isSuspendedInWeek(int week) => suspendedWeeks?.contains(week) ?? false;
 

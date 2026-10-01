@@ -117,6 +117,82 @@ void main() {
     expect(course.endWeek, 30);
   });
 
+  test(
+    'fromJson clamps customWeeks and suspendedWeeks like the week range',
+    () {
+      // 回归钉：startWeek/endWeek 一直被 normalizeWeeks 夹到 1..30，而
+      // customWeeks/suspendedWeeks 曾是裸列表 —— 一份外部备份可以塞进任意多个、
+      // 任意大的周次值，activeWeeks 原样吐出，导入去重键 weeks.join(',')
+      // 与按周展开都会被放大。
+      final course = Course.fromJson({
+        'id': 'course-week-list',
+        'name': '周次列表课',
+        'teacher': '老师',
+        'location': 'A1',
+        'dayOfWeek': 1,
+        'startSection': 1,
+        'endSection': 1,
+        'startTime': '08:00',
+        'endTime': '09:40',
+        'customWeeks': [37, 2, 0, -5, 2, 1000000000, 3, '4', 'x', 3.9, null],
+        'suspendedWeeks': [31, 4, 999],
+      });
+
+      // 越界项丢弃、去重、升序；非数字项被忽略，而不是记作「第 0 周」。
+      expect(course.customWeeks, [2, 3, 4]);
+      expect(course.normalizedCustomWeeks, [2, 3, 4]);
+      expect(course.suspendedWeeks, [4]);
+      expect(course.normalizedSuspendedWeeks, [4]);
+      expect(course.isSuspendedInWeek(4), isTrue);
+      // 第 4 周同时被停课，activeWeeks 正确地把它排除（语义保持不变）。
+      expect(course.activeWeeks, [2, 3]);
+    },
+  );
+
+  test('fromJson rejects absurdly long week lists without traversing them', () {
+    final course = Course.fromJson({
+      'id': 'course-week-flood',
+      'name': '洪水课',
+      'teacher': '老师',
+      'location': 'A1',
+      'dayOfWeek': 1,
+      'startSection': 1,
+      'endSection': 1,
+      'startTime': '08:00',
+      'endTime': '09:40',
+      'customWeeks': List<int>.generate(
+        Course.maxWeekListEntries + 1,
+        (index) => index,
+      ),
+    });
+
+    expect(course.customWeeks, isNull);
+    expect(course.hasCustomWeeks, isFalse);
+    // 回落到 startWeek..endWeek 区间，长度有界。
+    expect(course.activeWeeks.length, lessThanOrEqualTo(30));
+  });
+
+  test('week lists clamp at consumption too, for code-constructed courses', () {
+    // 有些调用点直接读裸字段（timetable_provider.toggleCourseSuspension、
+    // course_import_screen 的周次展示），所以解析侧钳了一遍；这里守住消费侧，
+    // 覆盖不经 fromJson、直接构造的 Course。
+    final course = Course(
+      id: 'course-direct',
+      name: '直接构造',
+      teacher: '老师',
+      location: 'A1',
+      dayOfWeek: 1,
+      startSection: 1,
+      endSection: 1,
+      startTime: '08:00',
+      endTime: '09:40',
+      customWeeks: [1, 4, 999999, 4, -1],
+    );
+
+    expect(course.normalizedCustomWeeks, [1, 4]);
+    expect(course.activeWeeks, [1, 4]);
+  });
+
   test('session notes serialize and support homework helpers', () {
     final course = Course(
       id: 'course-notes',
