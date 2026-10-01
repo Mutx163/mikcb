@@ -550,12 +550,14 @@ class UnifiedTransferService {
       incoming.courses,
       timeSchemeIdMap,
     );
+    // 设备级信任锚（更新镜像）保留本机取值：incoming 可能来自局域网配对端、
+    // 二维码或云快照，都不该能改机主的自动更新通道。
     final settings = incoming.settings == null
         ? provider.settings
         : _remapSettingsTimeSchemeReference(
             incoming.settings!,
             timeSchemeIdMap,
-          );
+          ).keepingDeviceTrustAnchorsFrom(provider.settings);
     final scheduleDateRules = _remapScheduleDateRules(
       incoming.scheduleDateRules,
       timeSchemeIdMap,
@@ -645,7 +647,10 @@ class UnifiedTransferService {
     }
     if (incoming.settings != null && incoming.scope.carriesSettings) {
       await provider.updateSettings(
-        _remapSettingsTimeSchemeReference(incoming.settings!, timeSchemeIdMap),
+        _remapSettingsTimeSchemeReference(
+          incoming.settings!,
+          timeSchemeIdMap,
+        ).keepingDeviceTrustAnchorsFrom(provider.settings),
       );
     }
     if (incoming.currentWeek != null &&

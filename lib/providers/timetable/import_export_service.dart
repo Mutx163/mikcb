@@ -94,20 +94,13 @@ class _FullBackupRestoreSnapshot {
     final repository = host._profileRepository;
     final failures = <_FullBackupRollbackFailure>[];
 
-    Future<void> step(
-      String name,
-      Future<void> Function() operation,
-    ) async {
+    Future<void> step(String name, Future<void> Function() operation) async {
       try {
         await operation();
       } catch (error, stackTrace) {
-        failures.add(
-          _FullBackupRollbackFailure(name, error, stackTrace),
-        );
+        failures.add(_FullBackupRollbackFailure(name, error, stackTrace));
         if (kDebugMode) {
-          debugPrint(
-            'Full backup rollback step "$name" failed: $error',
-          );
+          debugPrint('Full backup rollback step "$name" failed: $error');
         }
       }
     }
@@ -374,7 +367,11 @@ Future<String?> _timetableImportAppDataBackup(
         .toList();
     host._exams = List<Exam>.from(backup.exams);
     host._scheduleItems = List<ScheduleItem>.from(backup.scheduleItems);
-    host._settings = resolvedSettings;
+    // 设备级信任锚（更新镜像）保持本机取值：这条路径的入参是外部文件/局域网
+    // 请求体，不该能改机主的更新通道。
+    host._settings = resolvedSettings.keepingDeviceTrustAnchorsFrom(
+      host._settings,
+    );
     host._currentWeek = clampCurrentWeekToSettings(
       backup.currentWeek,
       host._settings,
@@ -501,7 +498,10 @@ Future<String?> _timetableImportFullAppDataBackup(
       host._profiles = backup.profiles
           .map(
             (profile) => profile.copyWith(
-              settings: host._normalizeSettingsWithTimeScheme(profile.settings),
+              // 设备级信任锚不随备份/云快照外来数据改写，见该方法注释。
+              settings: host
+                  ._normalizeSettingsWithTimeScheme(profile.settings)
+                  .keepingDeviceTrustAnchorsFrom(host._settings),
             ),
           )
           .toList();
@@ -574,7 +574,9 @@ Future<String?> _timetableImportFullAppDataBackup(
         host,
         snapshot,
       );
-      return rollbackFailures.isEmpty ? e.message : 'import_rollback_incomplete';
+      return rollbackFailures.isEmpty
+          ? e.message
+          : 'import_rollback_incomplete';
     } catch (_) {
       final rollbackFailures = await _restoreAfterFullBackupFailure(
         host,
@@ -602,9 +604,7 @@ Future<List<_FullBackupRollbackFailure>> _restoreAfterFullBackupFailure(
   try {
     await host._updateLiveActivity();
   } catch (error, stackTrace) {
-    failures.add(
-      _FullBackupRollbackFailure('live_surface', error, stackTrace),
-    );
+    failures.add(_FullBackupRollbackFailure('live_surface', error, stackTrace));
     if (kDebugMode) {
       debugPrint('Full backup rollback live-surface refresh failed: $error');
     }

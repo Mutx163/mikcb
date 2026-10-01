@@ -1938,6 +1938,29 @@ class TimetableSettings {
     );
   }
 
+  /// 外来传输数据不得改写的**设备级信任锚**，一律保留本机 [local] 的取值。
+  ///
+  /// `appUpdateMirrorPreset` / `appUpdateMirrorUrlPrefix` 决定「自动更新的清单从
+  /// 哪个地址取」以及「APK 允许从哪个主机下载」（isTrustedApkDownloadUrl 直接把
+  /// 这个设置值当作可信主机白名单的一项，见 lib/utils/async_utils.dart）。它们却
+  /// 夹在 TimetableSettings 里，于是任何携带 settings 的导入路径都能顺手改掉它：
+  /// 局域网配对端一次 `POST /api/v1/import/apply`（scope=currentTimetable 属于
+  /// carriesSettings）、一份被篡改的云快照、或别人分享的 .mikcb 文件，都能把机主
+  /// 的更新通道指向攻击者域名。而清单里的摘要与下载地址又同时出自那个域名，
+  /// 「摘要与 URL 同源」的完整性校验就此变成自证 —— 攻击者只需返回一份自洽的响应。
+  ///
+  /// 这两个键不是课表数据，而是本机的安全输入，因此不接受外来数据设定。
+  TimetableSettings keepingDeviceTrustAnchorsFrom(TimetableSettings local) {
+    if (appUpdateMirrorPreset == local.appUpdateMirrorPreset &&
+        appUpdateMirrorUrlPrefix == local.appUpdateMirrorUrlPrefix) {
+      return this;
+    }
+    return copyWith(
+      appUpdateMirrorPreset: local.appUpdateMirrorPreset,
+      appUpdateMirrorUrlPrefix: local.appUpdateMirrorUrlPrefix,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'sections': sections.map((section) => section.toJson()).toList(),

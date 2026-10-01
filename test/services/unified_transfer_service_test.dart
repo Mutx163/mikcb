@@ -72,6 +72,55 @@ void main() {
     expect(current.settings?.appLocaleTag, 'ja');
   });
 
+  test('跨设备导入不得改写设备级更新信任锚', () async {
+    // 回归钉（CODE_REVIEW 2026-10-01 A3）：appUpdateMirrorPreset /
+    // appUpdateMirrorUrlPrefix 夹在 TimetableSettings 里，而 scope=currentTimetable
+    // 的传输包允许携带 settings（TransferScope.carriesSettings）。于是局域网配对端
+    // 一次 import/apply、一份被篡改的云快照，都能把机主的自动更新通道指向攻击者
+    // 域名；而清单摘要与 APK 下载地址又同时出自那个域名，完整性校验变成自证。
+    final provider = await createProvider();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appUpdateMirrorPreset: 'custom',
+        appUpdateMirrorUrlPrefix: 'https://mirror.my-school.example',
+      ),
+    );
+
+    final incoming = UnifiedTransferService()
+        .buildCurrentPackage(
+          provider: provider,
+          scope: TransferScope.currentTimetable,
+          channel: TransferChannel.lan,
+        )
+        .copyWith(
+          settings: provider.settings.copyWith(
+            appUpdateMirrorUrlPrefix: 'https://evil.example',
+            appLocaleTag: 'en',
+          ),
+        );
+    expect(
+      incoming.settings?.appUpdateMirrorUrlPrefix,
+      'https://evil.example',
+      reason: '构造用例本身要成立：外来包里确实带着攻击者域名',
+    );
+
+    final result = await UnifiedTransferService().applyToProvider(
+      provider: provider,
+      incoming: incoming,
+      mode: TransferApplyMode.overwrite,
+    );
+
+    expect(result.applied, isTrue, reason: result.error);
+    // 信任锚保持本机值……
+    expect(provider.settings.appUpdateMirrorPreset, 'custom');
+    expect(
+      provider.settings.appUpdateMirrorUrlPrefix,
+      'https://mirror.my-school.example',
+    );
+    // ……而同包的普通设置照常应用，说明不是整份拒绝导入。
+    expect(provider.settings.appLocaleTag, 'en');
+  });
+
   test('merge ignores settings on a legacy scoped package', () async {
     final provider = await createProvider();
     final before = provider.settings.appLocaleTag;
@@ -363,9 +412,7 @@ void main() {
       );
       final evening = await provider.createTimeScheme(
         name: '冬季作息',
-        sections: const [
-          SectionTime(startTime: '19:00', endTime: '19:45'),
-        ],
+        sections: const [SectionTime(startTime: '19:00', endTime: '19:45')],
       );
       await provider.addCourse(
         Course(
@@ -418,10 +465,10 @@ void main() {
         scope: TransferScope.timeTemplate,
       );
 
-      expect(package.timeSchemes.map((scheme) => scheme.id), containsAll([
-        first.id,
-        second.id,
-      ]));
+      expect(
+        package.timeSchemes.map((scheme) => scheme.id),
+        containsAll([first.id, second.id]),
+      );
     },
   );
 }
