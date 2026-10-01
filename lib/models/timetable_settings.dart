@@ -2245,6 +2245,7 @@ class TimetableSettings {
         return null;
       }
     }
+
     final rawAppUpdateMirrorUrlPrefix =
         json['appUpdateMirrorUrlPrefix'] as String? ??
         defaultAppUpdateMirrorUrlPrefix;
