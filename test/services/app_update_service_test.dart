@@ -448,6 +448,83 @@ void main() {
     },
   );
 
+  group('APK 直链必须限定到本仓库自己的 release 资产', () {
+    // 回归钉（CODE_REVIEW 2026-10-01 A2）：isTrustedApkDownloadUrl 只看主机，
+    // github.com/githubusercontent.com/gitcode.com 全域 + 四个第三方镜像 + 用户自填
+    // 前缀都算可信。镜像是 TLS 终止点，对响应有完全控制权，所以「digest 与
+    // browser_download_url 同源」自证：返回别人仓库的 URL + 配套摘要即可通过两处校验。
+    const official =
+        'https://github.com/Mutx163/mikcb/releases/download/'
+        'v2.1.3.1/mikcb-2.1.3.1-arm64-v8a.apk';
+    const gitcode =
+        'https://gitcode.com/mutx/qingyu/releases/download/'
+        'v2.1.3.1/mikcb-2.1.3.1-arm64-v8a.apk';
+    const cdn =
+        'https://objects.githubusercontent.com/github-production-release-asset/'
+        '123?token=x';
+
+    test('接受官方仓库、GitCode 以及镜像外壳包着的官方仓库', () {
+      expect(AppUpdateService.isOfficialApkAssetUrl(official), isTrue);
+      expect(AppUpdateService.isOfficialApkAssetUrl(gitcode), isTrue);
+      // 镜像把原 URL 整段拼在路径里（buildMirrorCandidateUrls），不能因此误杀。
+      expect(
+        AppUpdateService.isOfficialApkAssetUrl('https://ghfast.top/$official'),
+        isTrue,
+      );
+      expect(
+        AppUpdateService.isOfficialApkAssetUrl('https://gh-proxy.com/$gitcode'),
+        isTrue,
+      );
+    });
+
+    test('拒绝同主机上的别人仓库与镜像外壳里的别人仓库', () {
+      expect(
+        AppUpdateService.isOfficialApkAssetUrl(
+          'https://github.com/attacker/mikcb/releases/download/v9/a.apk',
+        ),
+        isFalse,
+      );
+      expect(
+        AppUpdateService.isOfficialApkAssetUrl(
+          'https://github.com/Mutx163/other/releases/download/v9/a.apk',
+        ),
+        isFalse,
+      );
+      expect(
+        AppUpdateService.isOfficialApkAssetUrl(
+          'https://ghfast.top/https://github.com/attacker/x/releases/download/v9/a.apk',
+        ),
+        isFalse,
+      );
+      // 仓库路径之外（含把官方路径塞进查询串的伪饰形态）
+      expect(
+        AppUpdateService.isOfficialApkAssetUrl(
+          'https://github.com/Mutx163/mikcb/releases/latest?x=/Mutx163/mikcb/releases/download/v9/a.apk',
+        ),
+        isFalse,
+      );
+    });
+
+    test('重定向只放行 GitHub 资产 CDN 或仍是官方资产', () {
+      // release 资产会 302 到签名短链，这条必须放过，否则更新通道被自己掐死。
+      expect(AppUpdateService.isRedirectTargetAllowed(cdn), isTrue);
+      expect(AppUpdateService.isRedirectTargetAllowed(official), isTrue);
+      // 但跨主机送到攻击者域名、或送到别人仓库，都要拒。
+      expect(
+        AppUpdateService.isRedirectTargetAllowed(
+          'https://evil.example.com/a.apk',
+        ),
+        isFalse,
+      );
+      expect(
+        AppUpdateService.isRedirectTargetAllowed(
+          'https://github.com/attacker/repo/releases/download/v9/a.apk',
+        ),
+        isFalse,
+      );
+    });
+  });
+
   test('download rejects untrusted remote url', () async {
     final service = AppUpdateService();
     final result = await service.downloadAndInstallUpdate(
@@ -498,8 +575,20 @@ void main() {
       controller,
       // 看门狗：无官方 digest 的下载在入口即被拒绝，取消清理路径
       // 需要一个合法 digest 才能走到下载阶段。
-      expectedApkSha256:
-          sha256.convert(<int>[1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3]).toString(),
+      expectedApkSha256: sha256.convert(<int>[
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+      ]).toString(),
     );
 
     final result = await downloadFuture;
@@ -560,10 +649,7 @@ void main() {
         final result = await downloadFuture.timeout(const Duration(seconds: 2));
 
         expect(result, AppUpdateService.downloadCancelledMessage);
-        expect(
-          File('${tempDir.path}/mikcb_update.apk').existsSync(),
-          isFalse,
-        );
+        expect(File('${tempDir.path}/mikcb_update.apk').existsSync(), isFalse);
       } finally {
         await server.close(force: true);
         await tempDir.delete(recursive: true);
@@ -987,82 +1073,91 @@ void main() {
     await tempDir.delete(recursive: true);
   });
 
-  test('download rejects apk when sha256 mismatch and deletes the file', () async {
-    final tempDir = await Directory.systemTemp.createTemp('mikcb_update_test_');
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    unawaited(() async {
-      await for (final request in server) {
-        request.response.statusCode = 200;
-        request.response.headers.contentType = ContentType.binary;
-        request.response.add(List<int>.filled(6, 7));
-        await request.response.close();
-      }
-    }());
+  test(
+    'download rejects apk when sha256 mismatch and deletes the file',
+    () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'mikcb_update_test_',
+      );
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      unawaited(() async {
+        await for (final request in server) {
+          request.response.statusCode = 200;
+          request.response.headers.contentType = ContentType.binary;
+          request.response.add(List<int>.filled(6, 7));
+          await request.response.close();
+        }
+      }());
 
-    final service = AppUpdateService(
-      temporaryDirectoryProvider: () async => tempDir,
-      openInstaller: (path) async {
-        fail('tampered apk must not reach the installer');
-      },
-    );
+      final service = AppUpdateService(
+        temporaryDirectoryProvider: () async => tempDir,
+        openInstaller: (path) async {
+          fail('tampered apk must not reach the installer');
+        },
+      );
 
-    final wrongSha =
-        sha256.convert(<int>[1, 2, 3]).toString();
-    final result = await service.downloadAndInstallUpdate(
-      'http://${server.address.host}:${server.port}/app.apk',
-      (_, _) {},
-      null,
-      expectedApkSha256: wrongSha,
-    );
+      final wrongSha = sha256.convert(<int>[1, 2, 3]).toString();
+      final result = await service.downloadAndInstallUpdate(
+        'http://${server.address.host}:${server.port}/app.apk',
+        (_, _) {},
+        null,
+        expectedApkSha256: wrongSha,
+      );
 
-    expect(result, 'update_download_hash_mismatch');
-    expect(File('${tempDir.path}/mikcb_update.apk').existsSync(), isFalse);
+      expect(result, 'update_download_hash_mismatch');
+      expect(File('${tempDir.path}/mikcb_update.apk').existsSync(), isFalse);
 
-    await server.close(force: true);
-    await tempDir.delete(recursive: true);
-  });
+      await server.close(force: true);
+      await tempDir.delete(recursive: true);
+    },
+  );
 
-  test('download refuses to install when no expected digest is available', () async {
-    // Release 页面回退链路（含第三方镜像前缀）拿不到 GitHub API digest；
-    // 无 digest 的 APK 一律拒绝在应用内安装（镜像投毒最需要兜底的路径），
-    // 由 UI 引导用户前往 Release 页面手动下载。
-    final tempDir = await Directory.systemTemp.createTemp('mikcb_update_test_');
-    var requestCount = 0;
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    unawaited(() async {
-      await for (final request in server) {
-        requestCount++;
-        request.response.statusCode = 200;
-        request.response.headers.contentType = ContentType.binary;
-        request.response.add(List<int>.filled(6, 7));
-        await request.response.close();
-      }
-    }());
+  test(
+    'download refuses to install when no expected digest is available',
+    () async {
+      // Release 页面回退链路（含第三方镜像前缀）拿不到 GitHub API digest；
+      // 无 digest 的 APK 一律拒绝在应用内安装（镜像投毒最需要兜底的路径），
+      // 由 UI 引导用户前往 Release 页面手动下载。
+      final tempDir = await Directory.systemTemp.createTemp(
+        'mikcb_update_test_',
+      );
+      var requestCount = 0;
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      unawaited(() async {
+        await for (final request in server) {
+          requestCount++;
+          request.response.statusCode = 200;
+          request.response.headers.contentType = ContentType.binary;
+          request.response.add(List<int>.filled(6, 7));
+          await request.response.close();
+        }
+      }());
 
-    String? openedPath;
-    final service = AppUpdateService(
-      temporaryDirectoryProvider: () async => tempDir,
-      openInstaller: (path) async {
-        openedPath = path;
-        return OpenResult();
-      },
-    );
+      String? openedPath;
+      final service = AppUpdateService(
+        temporaryDirectoryProvider: () async => tempDir,
+        openInstaller: (path) async {
+          openedPath = path;
+          return OpenResult();
+        },
+      );
 
-    final result = await service.downloadAndInstallUpdate(
-      'http://${server.address.host}:${server.port}/app.apk',
-      (_, _) {},
-      null,
-    );
+      final result = await service.downloadAndInstallUpdate(
+        'http://${server.address.host}:${server.port}/app.apk',
+        (_, _) {},
+        null,
+      );
 
-    expect(result, 'update_sha256_unverified_install_refused');
-    expect(openedPath, isNull);
-    // 下载根本不应发起：拒绝发生在任何网络请求之前
-    expect(requestCount, 0);
-    expect(File('${tempDir.path}/mikcb_update.apk').existsSync(), isFalse);
+      expect(result, 'update_sha256_unverified_install_refused');
+      expect(openedPath, isNull);
+      // 下载根本不应发起：拒绝发生在任何网络请求之前
+      expect(requestCount, 0);
+      expect(File('${tempDir.path}/mikcb_update.apk').existsSync(), isFalse);
 
-    await server.close(force: true);
-    await tempDir.delete(recursive: true);
-  });
+      await server.close(force: true);
+      await tempDir.delete(recursive: true);
+    },
+  );
 
   test('empty expected digest is also refused', () async {
     final service = AppUpdateService();
@@ -1241,69 +1336,72 @@ void main() {
     );
   });
 
-  test('digest is merged from slower github api when gitcode wins race', () async {
-    const digest =
-        '8462404415ac3b4480ee5f8c893676054b82b90076b715203771246ae6a7ce96';
-    final client = MockClient((request) async {
-      if (request.url.host == 'api.gitcode.com') {
-        // GitCode 先返回，但正文没有内嵌摘要
-        return http.Response(
-          jsonEncode([
-            {
-              'tag_name': 'v2.1.1.4',
-              'name': 'v2.1.1.4',
-              'prerelease': false,
-              'body': 'v2.1.1.4',
-              'created_at': '2026-09-03T11:10:15+08:00',
-              'assets': const [
-                {
-                  'name': 'mikcb-2.1.1.4-arm64-v8a.apk',
-                  'type': 'attach',
-                  'browser_download_url':
-                      'https://gitcode.com/mutx/qingyu/releases/download/v2.1.1.4/mikcb-2.1.1.4-arm64-v8a.apk',
-                },
-              ],
-            },
-          ]),
-          200,
-        );
-      }
-      if (request.url.host == 'api.github.com') {
-        // GitHub API 稍慢返回，携带官方 asset digest
-        await Future<void>.delayed(const Duration(milliseconds: 300));
-        return http.Response(
-          jsonEncode([
-            {
-              'tag_name': 'v2.1.1.4',
-              'name': 'v2.1.1.4',
-              'draft': false,
-              'prerelease': false,
-              'html_url': 'https://example.com/v2.1.1.4',
-              'assets': const [
-                {
-                  'name': 'mikcb-2.1.1.4-arm64-v8a.apk',
-                  'browser_download_url': 'https://example.com/v2.1.1.4.apk',
-                  'digest': 'sha256:$digest',
-                },
-              ],
-              'updated_at': '2026-08-30T10:57:20Z',
-            },
-          ]),
-          200,
-        );
-      }
-      return http.Response('', 503);
-    });
+  test(
+    'digest is merged from slower github api when gitcode wins race',
+    () async {
+      const digest =
+          '8462404415ac3b4480ee5f8c893676054b82b90076b715203771246ae6a7ce96';
+      final client = MockClient((request) async {
+        if (request.url.host == 'api.gitcode.com') {
+          // GitCode 先返回，但正文没有内嵌摘要
+          return http.Response(
+            jsonEncode([
+              {
+                'tag_name': 'v2.1.1.4',
+                'name': 'v2.1.1.4',
+                'prerelease': false,
+                'body': 'v2.1.1.4',
+                'created_at': '2026-09-03T11:10:15+08:00',
+                'assets': const [
+                  {
+                    'name': 'mikcb-2.1.1.4-arm64-v8a.apk',
+                    'type': 'attach',
+                    'browser_download_url':
+                        'https://gitcode.com/mutx/qingyu/releases/download/v2.1.1.4/mikcb-2.1.1.4-arm64-v8a.apk',
+                  },
+                ],
+              },
+            ]),
+            200,
+          );
+        }
+        if (request.url.host == 'api.github.com') {
+          // GitHub API 稍慢返回，携带官方 asset digest
+          await Future<void>.delayed(const Duration(milliseconds: 300));
+          return http.Response(
+            jsonEncode([
+              {
+                'tag_name': 'v2.1.1.4',
+                'name': 'v2.1.1.4',
+                'draft': false,
+                'prerelease': false,
+                'html_url': 'https://example.com/v2.1.1.4',
+                'assets': const [
+                  {
+                    'name': 'mikcb-2.1.1.4-arm64-v8a.apk',
+                    'browser_download_url': 'https://example.com/v2.1.1.4.apk',
+                    'digest': 'sha256:$digest',
+                  },
+                ],
+                'updated_at': '2026-08-30T10:57:20Z',
+              },
+            ]),
+            200,
+          );
+        }
+        return http.Response('', 503);
+      });
 
-    final service = AppUpdateService(client: client);
-    final result = await service.checkForUpdates(currentVersion: '2.1.1.3');
+      final service = AppUpdateService(client: client);
+      final result = await service.checkForUpdates(currentVersion: '2.1.1.3');
 
-    expect(result.hasRelease, isTrue);
-    expect(result.latestRelease?.version, '2.1.1.4');
-    expect(result.latestRelease?.gitcodeDownloadUrl, isNotNull);
-    // 竞争胜出的 GitCode 缺摘要，应从稍慢的 GitHub 策略补齐
-    expect(result.latestRelease?.expectedApkSha256, digest);
-  });
+      expect(result.hasRelease, isTrue);
+      expect(result.latestRelease?.version, '2.1.1.4');
+      expect(result.latestRelease?.gitcodeDownloadUrl, isNotNull);
+      // 竞争胜出的 GitCode 缺摘要，应从稍慢的 GitHub 策略补齐
+      expect(result.latestRelease?.expectedApkSha256, digest);
+    },
+  );
 
   test('gitcode channel falls back to constructed download url', () async {
     const release = AppReleaseInfo(
@@ -1315,9 +1413,11 @@ void main() {
       updatedAt: null,
       isPrerelease: false,
     );
-    final service = AppUpdateService(client: MockClient((request) async {
-      return http.Response('', 404);
-    }));
+    final service = AppUpdateService(
+      client: MockClient((request) async {
+        return http.Response('', 404);
+      }),
+    );
 
     expect(
       service.getEffectiveDownloadUrl(
@@ -1337,10 +1437,10 @@ void main() {
       ),
       isTrue,
     );
-    expect(const TimetableSettings(sections: []).appUpdateDownloadChannel, 'gitcode');
     expect(
-      AppUpdateDownloadChannelX.fromValue('gitcode').value,
+      const TimetableSettings(sections: []).appUpdateDownloadChannel,
       'gitcode',
     );
+    expect(AppUpdateDownloadChannelX.fromValue('gitcode').value, 'gitcode');
   });
 }

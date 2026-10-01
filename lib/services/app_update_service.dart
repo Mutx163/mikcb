@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import 'package:http/http.dart' as http;
 import 'package:open_filex/open_filex.dart';
@@ -218,7 +219,8 @@ class AppUpdateService {
     AppUpdateOpenInstaller? openInstaller,
     Duration? releaseApiRequestTimeout,
   }) : _client = client ?? createAppHttpClient(),
-       _releaseApiRequestTimeout = releaseApiRequestTimeout ?? _releaseRequestTimeout,
+       _releaseApiRequestTimeout =
+           releaseApiRequestTimeout ?? _releaseRequestTimeout,
        _temporaryDirectoryProvider =
            temporaryDirectoryProvider ?? getTemporaryDirectory,
        _openInstaller = openInstaller ?? OpenFilex.open;
@@ -258,9 +260,9 @@ class AppUpdateService {
         );
         return outcome;
       }),
-      _fetchFromGitCodeApi(
-        includePrerelease: includePrerelease,
-      ).then((outcome) {
+      _fetchFromGitCodeApi(includePrerelease: includePrerelease).then((
+        outcome,
+      ) {
         gitcodeOutcome = outcome;
         _log(
           'GitCode API done, hit: ${outcome.release != null}, status: ${outcome.statusCode}',
@@ -277,7 +279,10 @@ class AppUpdateService {
         winner.release!,
         outcomes: () => [apiOutcome, pageOutcome, gitcodeOutcome],
       );
-      return _buildCheckResult(currentVersion: currentVersion, release: release);
+      return _buildCheckResult(
+        currentVersion: currentVersion,
+        release: release,
+      );
     }
 
     // 所有策略都没有结果，汇总错误信息
@@ -377,6 +382,85 @@ class AppUpdateService {
     return winner;
   }
 
+  /// APK 必须是**本仓库自己的** release 资产。
+  ///
+  /// [isTrustedApkDownloadUrl] 只判定主机：`github.com`/`githubusercontent.com`/
+  /// `gitcode.com` 的**全域**都算可信，外加四个第三方加速镜像与用户自填前缀。镜像
+  /// 是 TLS 终止点，对响应内容有完全控制权，所以「digest 与 browser_download_url
+  /// 同源」证明不了来源 —— 攻击者只要返回 `https://github.com/<别人的仓库>/x.apk`
+  /// 配上自洽摘要，主机白名单与常量时间摘要比对两处会同时通过（旧审计把这组校验评
+  /// 为「即使 GitHub 和所有镜像全被攻陷也装不进恶意包」，漏的正是这里）。
+  ///
+  /// 两种真实形态必须同时放过，否则会误杀更新通道：
+  /// 1. 加速镜像把原 URL 整段拼在路径里（`https://ghfast.top/https://github.com/…`，
+  ///    见 buildMirrorCandidateUrls），所以要先剥掉镜像外壳再判断；
+  /// 2. GitHub 的 release 资产会 302 到 objects.githubusercontent.com 的签名短链，
+  ///    那条路径不含仓库名 —— 因此重定向终点走 [isRedirectTargetAllowed]，不复用
+  ///    本判断。
+  @visibleForTesting
+  static bool isOfficialApkAssetUrl(String url) {
+    // 与 isTrustedApkDownloadUrl 一致：自动化测试用本地 HTTP 服务当下载源。
+    if (Platform.environment['FLUTTER_TEST'] == 'true') {
+      final host = Uri.tryParse(url)?.host.toLowerCase();
+      if (host == 'localhost' || host == '127.0.0.1' || host == '::1') {
+        return true;
+      }
+    }
+    var candidate = url;
+    // 最多剥 3 层镜像外壳，防御套娃 URL 造成的无界解析。
+    for (var depth = 0; depth < 3; depth++) {
+      final uri = Uri.tryParse(candidate);
+      if (uri == null) {
+        return false;
+      }
+      final path = uri.path;
+      if (path.startsWith(_githubAssetPathPrefix) ||
+          path.startsWith(_gitcodeAssetPathPrefix)) {
+        return true;
+      }
+      // 镜像形态：path 里嵌着被代理的原始 URL（部分镜像会塌成一个斜杠）。
+      final embedded = RegExp(
+        r'^/?(https?:/{1,2}[^/].*)$',
+      ).firstMatch(path)?.group(1);
+      if (embedded == null) {
+        return false;
+      }
+      // 斜杠归一为恰好两个：`https:/host` 与 `https://host` 都还原成标准形态。
+      candidate = embedded.replaceFirstMapped(
+        RegExp(r'^(https?:)/+'),
+        (match) => '${match.group(1)}//',
+      );
+    }
+    return false;
+  }
+
+  /// 重定向终点是否允许继续下载。
+  ///
+  /// 终点必须仍然是「本仓库的 release 资产」，或者跳到 GitHub 自己的资产 CDN
+  /// （objects.githubusercontent.com 等 githubusercontent 域）—— 后者是 release
+  /// 资产的真实跳转形态，其签名短链由 GitHub 按资产签发，不接受跨主机的其它落点，
+  /// 否则受信任主机就能用一条 302 把流量送到攻击者域名。
+  @visibleForTesting
+  static bool isRedirectTargetAllowed(
+    String targetUrl, {
+    String? mirrorUrlPrefix,
+  }) {
+    if (!isTrustedApkDownloadUrl(targetUrl, mirrorUrlPrefix: mirrorUrlPrefix)) {
+      return false;
+    }
+    final host = Uri.tryParse(targetUrl)?.host.toLowerCase() ?? '';
+    if (host == 'objects.githubusercontent.com' ||
+        host.endsWith('.githubusercontent.com')) {
+      return true;
+    }
+    return isOfficialApkAssetUrl(targetUrl);
+  }
+
+  static final String _githubAssetPathPrefix =
+      '${Uri.parse(repositoryUrl).path}/releases/download/';
+  static final String _gitcodeAssetPathPrefix =
+      '${Uri.parse(gitcodeRepositoryUrl).path}/releases/download/';
+
   Future<String?> downloadAndInstallUpdate(
     String url,
     void Function(int downloadedBytes, int? totalBytes) onProgress,
@@ -386,6 +470,11 @@ class AppUpdateService {
   }) async {
     if (!isTrustedApkDownloadUrl(url, mirrorUrlPrefix: mirrorUrlPrefix)) {
       _log('拒绝不受信任的更新下载地址：$url');
+      return 'update_download_url_untrusted';
+    }
+    // 主机白名单之外再限定到本仓库的 release 资产路径（理由见 isOfficialApkAssetUrl）。
+    if (!isOfficialApkAssetUrl(url)) {
+      _log('拒绝非本仓库 release 资产的更新下载地址：$url');
       return 'update_download_url_untrusted';
     }
     // 无官方 digest 可校验时拒绝在应用内安装：Release 页面回退链路构造的
@@ -412,8 +501,47 @@ class AppUpdateService {
 
       client = HttpClient();
       controller?._setCancelHandler(() => client?.close(force: true));
-      final request = await client.getUrl(Uri.parse(url));
-      final response = await request.close();
+
+      // 逐跳校验重定向终点。Dart HttpClient 默认自动跟随最多 5 次重定向，而入口那
+      // 两处校验看的都是**初始 URL**：受信任主机只要返回一个 302 → 攻击者域名，就能
+      // 同时绕过 https 限定与主机白名单，之后所有跳数都不再受 isTrustedApkDownloadUrl
+      // 约束。这里关掉自动跟随，自己逐跳走，每一跳都重新过同样的两条校验。
+      const maxRedirectHops = 5;
+      var currentUrl = url;
+      HttpClientResponse? settledResponse;
+      for (var hop = 0; hop <= maxRedirectHops; hop++) {
+        final request = await client.getUrl(Uri.parse(currentUrl));
+        request.followRedirects = false;
+        final hopResponse = await request.close();
+        final status = hopResponse.statusCode;
+        if (status >= 300 && status < 400) {
+          final location = hopResponse.headers.value(
+            HttpHeaders.locationHeader,
+          );
+          await hopResponse.drain<void>();
+          if (location == null || location.isEmpty) {
+            _log('更新下载重定向缺少 Location');
+            return 'update_download_url_untrusted';
+          }
+          final next = Uri.parse(currentUrl).resolve(location).toString();
+          if (!isRedirectTargetAllowed(
+            next,
+            mirrorUrlPrefix: mirrorUrlPrefix,
+          )) {
+            _log('拒绝不受信任的更新下载重定向终点：$next');
+            return 'update_download_url_untrusted';
+          }
+          currentUrl = next;
+          continue;
+        }
+        settledResponse = hopResponse;
+        break;
+      }
+      final response = settledResponse;
+      if (response == null) {
+        _log('更新下载重定向次数超限');
+        return 'update_download_url_untrusted';
+      }
 
       if (response.statusCode != 200) {
         _log('下载失败，HTTP ${response.statusCode}');
@@ -447,7 +575,9 @@ class AppUpdateService {
         return downloadCancelledMessage;
       }
 
-      _log('update_download_completed: ${(downloaded / 1024 / 1024).toStringAsFixed(1)} MB');
+      _log(
+        'update_download_completed: ${(downloaded / 1024 / 1024).toStringAsFixed(1)} MB',
+      );
 
       // 第二道防线：官方 SHA-256 已在入口强制非空（无 digest 的下载在
       // 入口即被拒绝），此处对下载产物做完整性核验，镜像链路的完整性
@@ -691,7 +821,10 @@ class AppUpdateService {
           break;
         }
       }
-      gitcodeUrl ??= _constructGitcodeApkDownloadUrl(tag: rawTag, version: version);
+      gitcodeUrl ??= _constructGitcodeApkDownloadUrl(
+        tag: rawTag,
+        version: version,
+      );
       if (gitcodeUrl == null || gitcodeUrl.isEmpty) {
         return const _AppUpdateFetchOutcome(saw404: true, statusCode: 404);
       }
@@ -735,8 +868,7 @@ class AppUpdateService {
       return null;
     }
     final fileName = 'mikcb-$normalizedVersion-arm64-v8a.apk';
-    return
-        '$gitcodeRepositoryUrl/releases/download/${Uri.encodeComponent(tag.trim())}/$fileName';
+    return '$gitcodeRepositoryUrl/releases/download/${Uri.encodeComponent(tag.trim())}/$fileName';
   }
 
   /// 从发行版正文中解析 CI 写入的 `SHA-256: <hex>` 行。
@@ -1049,7 +1181,9 @@ class AppUpdateService {
         return null;
       }
       final value = digest.toLowerCase();
-      return value.startsWith('sha256:') ? value.substring('sha256:'.length) : null;
+      return value.startsWith('sha256:')
+          ? value.substring('sha256:'.length)
+          : null;
     }
 
     String? urlOf(Map<String, dynamic> asset) =>
