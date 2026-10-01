@@ -37,17 +37,14 @@ class TimeScheme {
     final rawSections = json['sections'] is List
         ? json['sections'] as List<dynamic>
         : const <dynamic>[];
-    final sections = <SectionTime>[];
-    for (final item in rawSections) {
-      try {
-        if (item is! Map) {
-          continue;
-        }
-        sections.add(SectionTime.fromJson(Map<String, dynamic>.from(item)));
-      } catch (_) {
-        continue;
-      }
-    }
+    // 坏条目按位补空，不能让后面的节次前移：Course.startSection 是把这张表
+    // 当位置下标用的（见 SectionTime.parseListAligned 的说明）。这里刻意不拿
+    // 内置默认模板补位 —— 用户自定义作息的空格若填进别校的铃点，会变成「看着
+    // 合理其实全错」，留空反而能被作息管理页（渲染为 `-`）发现。
+    final sections = SectionTime.parseListAligned(
+      rawSections,
+      fallbackTemplate: () => const <SectionTime>[],
+    ).sections;
     return TimeScheme(
       id: rawId,
       name: json['name'] as String? ?? '未命名时间模板',

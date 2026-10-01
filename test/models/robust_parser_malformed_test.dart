@@ -121,26 +121,36 @@ void main() {
   });
 
   group('D5 TimeScheme robust parsing', () {
-    test('skips malformed SectionTime, keeps valid; preserves required id', () {
-      final scheme = TimeScheme.fromJson({
-        'id': 'scheme-1',
-        'name': 'test',
-        'sections': [
-          {'startTime': '08:00', 'endTime': '08:45'},
-          {'startTime': '', 'endTime': '09:40'}, // bad
-          {'startTime': '10:00', 'endTime': '10:45'},
-          'bad',
-          {'startTime': '11:00'}, // missing end
-        ],
-        'createdAt': '2026-01-01T00:00:00.000',
-        'updatedAt': '2026-01-01T00:00:00.000',
-      });
-      expect(scheme.sections.length, 2);
-      expect(scheme.sections.map((s) => s.displayText), [
-        '08:00-08:45',
-        '10:00-10:45',
-      ]);
-    });
+    test(
+      'heals malformed SectionTime in place; keeps valid and required id',
+      () {
+        final scheme = TimeScheme.fromJson({
+          'id': 'scheme-1',
+          'name': 'test',
+          'sections': [
+            {'startTime': '08:00', 'endTime': '08:45'},
+            {'startTime': '', 'endTime': '09:40'}, // bad
+            {'startTime': '10:00', 'endTime': '10:45'},
+            'bad',
+            {'startTime': '11:00'}, // missing end
+          ],
+          'createdAt': '2026-01-01T00:00:00.000',
+          'updatedAt': '2026-01-01T00:00:00.000',
+        });
+        // 节次表按位置被消费（Course.startSection 是下标），所以坏条目必须补位
+        // 而不是删除：这里原本会把 10:00 那节从第 3 节塌成第 2 节，于是第 3 节
+        // 起所有课程都指向后一节的时间，而界面看不出任何异常。
+        expect(scheme.sections.length, 5);
+        expect(scheme.sections.map((s) => s.displayText), [
+          '08:00-08:45',
+          '-',
+          '10:00-10:45',
+          '-',
+          '-',
+        ]);
+        expect(scheme.id, 'scheme-1');
+      },
+    );
     test('TimeScheme rejects missing id (no silent invention)', () {
       expect(
         () => TimeScheme.fromJson({'name': 'x', 'sections': []}),
@@ -197,7 +207,7 @@ void main() {
       );
     });
     test(
-      'TimetableSettings skips malformed sections/themes, preserves semester/theme',
+      'TimetableSettings heals malformed sections in place, skips bad themes',
       () {
         final s = TimetableSettings.fromJson({
           'sections': [
@@ -218,7 +228,17 @@ void main() {
             'not-a-map',
           ],
         });
-        expect(s.sections.length, 1);
+
+        // 节次表是位置表：坏条目必须按位补，不能删掉让后面的节次前移，
+        // 否则 Course.startSection 会从这一节起全部指向错误的时间。
+        final defaultSections = TimetableSettings.defaults().sections;
+        expect(s.sections.length, 3);
+        expect(s.sections[0].startTime, '08:00');
+        expect(s.sections[0].endTime, '08:45');
+        expect(s.sections[1].startTime, defaultSections[1].startTime);
+        expect(s.sections[2].startTime, defaultSections[2].startTime);
+
+        // 主题列表不是位置表，仍按「跳过坏条目」处理。
         expect(s.semesterWeekCount, 24);
         expect(s.themeSeedColor, '#FF0000');
         expect(s.savedThemes.length, 1);

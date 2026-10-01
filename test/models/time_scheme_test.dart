@@ -98,4 +98,51 @@ void main() {
       contains('section_end_must_after_start'),
     );
   });
+
+  test('fromJson keeps section positions when an entry is malformed', () {
+    // 回归钉（CODE_REVIEW 2026-10-01 A5）：Course.startSection 是把节次表当
+    // 位置下标用的（time_scheme_logic 的 sections[startIndex]）。此前一条坏
+    // 记录被直接跳过，12 节的模板丢掉第 4 节后，第 4 节起每门课都显示后一节的
+    // 时间，界面看不出异常，学生按错时间到教室。
+    final scheme = TimeScheme.fromJson({
+      'id': 'scheme-align',
+      'name': '对齐测试',
+      'sections': [
+        {'startTime': '08:00', 'endTime': '08:45'},
+        {'startTime': '09:00'}, // bad：缺 endTime
+        'not-a-map',
+        {'startTime': '10:00', 'endTime': '10:45'},
+      ],
+    });
+
+    // 位置必须保持：第 4 节仍是第 4 节，而不是被前移成第 2 节。
+    expect(scheme.sections.length, 4);
+    expect(scheme.sections[0].startTime, '08:00');
+    expect(scheme.sections[3].startTime, '10:00');
+    expect(scheme.sections[3].endTime, '10:45');
+    // 补出来的空洞留空时间（作息管理页渲染为 `-`），不拿别处模板冒充真实铃点。
+    expect(scheme.sections[1].startTime, isEmpty);
+    expect(scheme.sections[1].endTime, isEmpty);
+    expect(scheme.sections[2].startTime, isEmpty);
+  });
+
+  test('well-formed section tables round-trip unchanged', () {
+    final original = TimeScheme.fromJson({
+      'id': 'scheme-clean',
+      'name': '正常模板',
+      'sections': [
+        {'startTime': '08:00', 'endTime': '08:45'},
+        {'startTime': '08:55', 'endTime': '09:40'},
+        {'startTime': '10:00', 'endTime': '10:45'},
+      ],
+    });
+
+    expect(original.sections.length, 3);
+    expect(
+      TimeScheme.fromJsonString(
+        original.toJsonString(),
+      ).sections.map((s) => s.displayText),
+      original.sections.map((s) => s.displayText),
+    );
+  });
 }

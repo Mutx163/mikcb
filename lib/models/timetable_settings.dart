@@ -992,6 +992,47 @@ class SectionTime {
   }
 
   String get displayText => '$startTime-$endTime';
+
+  /// 逐条解析节次表，**坏条目补位而不是跳过**。
+  ///
+  /// 本课程把 `Course.startSection` 当作这张表的**位置下标**使用
+  /// （`time_scheme_logic` 的 `sections[startIndex]`、provider 的 `sections[index]`），
+  /// 所以「跳过一条坏记录」会让它之后的每一节全部指向相邻后一节的时间：12 节的
+  /// 模板丢掉第 4 节，第 4 节起每门课都显示后一节的时间，用户会按错时间到教室，
+  /// 而界面看起来完全正常。同仓 `warehouse_location_time_schemes` 的
+  /// `requireContiguousFromOne` 已经在守这个不变量（注释原话「节次按位置对齐，
+  /// 缺一节会让『第 3 节』指向错误的时间」），只有这两条解析链没接上。
+  ///
+  /// 补位值优先取 [fallbackTemplate] 的同位节次（懒取，正常数据不付构造代价）；
+  /// 越界则留空时间。空时间在作息管理页渲染为 `-`，即只有那一格显示异常，其余
+  /// 节次保持正确 —— 比整表平移更容易被发现。
+  ///
+  /// 返回值里的 [healedCount] 用于让调用方区分「部分坏」（按位补）与
+  /// 「整表都坏」（没有信息可对齐，只能整套回落）。
+  static ({List<SectionTime> sections, int healedCount}) parseListAligned(
+    List<dynamic> rawSections, {
+    required List<SectionTime> Function() fallbackTemplate,
+  }) {
+    final parsed = <SectionTime>[];
+    var healedCount = 0;
+    for (final (index, item) in rawSections.indexed) {
+      try {
+        if (item is! Map) {
+          throw const FormatException('section entry is not a map');
+        }
+        parsed.add(SectionTime.fromJson(Map<String, dynamic>.from(item)));
+      } catch (_) {
+        healedCount += 1;
+        final template = fallbackTemplate();
+        parsed.add(
+          index < template.length
+              ? template[index]
+              : const SectionTime(startTime: '', endTime: ''),
+        );
+      }
+    }
+    return (sections: parsed, healedCount: healedCount);
+  }
 }
 
 class SavedTheme {
@@ -2165,23 +2206,22 @@ class TimetableSettings {
         : const <dynamic>[];
     // Empty sections fall back to defaults only for the section list; other
     // fields must still parse so a corrupt sections array does not wipe theme /
-    // semester / live settings. Malformed SectionTime entries are skipped.
+    // semester / live settings. Malformed entries are position-preserved (see
+    // SectionTime.parseListAligned) — skipping them would shift every later
+    // section against the positional Course.startSection.
     List<SectionTime> resolvedSections;
     if (rawSections.isEmpty) {
       resolvedSections = TimetableSettings.defaults().sections;
     } else {
-      final parsed = <SectionTime>[];
-      for (final item in rawSections) {
-        try {
-          if (item is! Map) continue;
-          parsed.add(SectionTime.fromJson(Map<String, dynamic>.from(item)));
-        } catch (_) {
-          continue;
-        }
-      }
-      resolvedSections = parsed.isEmpty
+      final parsed = SectionTime.parseListAligned(
+        rawSections,
+        fallbackTemplate: () => TimetableSettings.defaults().sections,
+      );
+      // 整表一条都没解析出来时没有位置信息可对齐，只能整套回落内置模板
+      // （保持既有行为）；部分坏才按位补，避免后面的节次整体前移。
+      resolvedSections = parsed.healedCount == parsed.sections.length
           ? TimetableSettings.defaults().sections
-          : parsed;
+          : parsed.sections;
     }
     final rawAppUpdateMirrorUrlPrefix =
         json['appUpdateMirrorUrlPrefix'] as String? ??
