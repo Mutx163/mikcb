@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -711,6 +712,61 @@ void main() {
       expect(onDisk, isNotNull);
       expect(onDisk!.latitude, closeTo(_chengdu.latitude, 1e-6));
       expect(onDisk.longitude, closeTo(_chengdu.longitude, 1e-6));
+    });
+
+    test('换城市时在飞的旧城市响应不得冒充新城市', () async {
+      // provider 自己的注释说这是「最坏的一种错」（:111-113）：跨启动那一道
+      // matchesLocation 守卫能挡住，同一次会话里挡不住 —— 因为
+      // `ensureFresh` 的单飞槽还挂着旧城市那条请求，
+      // setLocation 拿到的就是它，旧响应回来后既进内存又落盘。
+      await _seed();
+      final firstStarted = Completer<void>();
+      final releaseFirst = Completer<void>();
+      var calls = 0;
+      final service = WeatherService(
+        client: MockClient((request) async {
+          calls++;
+          final params = request.url.queryParameters;
+          final payload = _payload(
+            latitude: double.parse(params['latitude']!),
+            longitude: double.parse(params['longitude']!),
+          );
+          if (calls == 1) {
+            if (!firstStarted.isCompleted) {
+              firstStarted.complete();
+            }
+            await releaseFirst.future;
+          }
+          return http.Response(
+            jsonEncode(payload),
+            200,
+            headers: _jsonHeaders,
+          );
+        }),
+      );
+      final provider = WeatherProvider(service: service);
+
+      await provider.initialize();
+      await firstStarted.future;
+      await provider.setLocation(_chengdu);
+      // 旧城市（杭州）的响应现在才到达。
+      releaseFirst.complete();
+      await provider.ensureFresh();
+
+      final memory = provider.forecast;
+      expect(memory, isNotNull);
+      expect(
+        memory!.latitude,
+        closeTo(_chengdu.latitude, 1e-6),
+        reason: '在飞的旧城市响应被写进内存，课表卡会拿杭州的天气冒充成都',
+      );
+      final onDisk = await WeatherPreferences.loadForecast();
+      expect(
+        onDisk!.latitude,
+        closeTo(_chengdu.latitude, 1e-6),
+        reason: '同样那份旧城市数据还会落盘',
+      );
+      expect(calls, greaterThanOrEqualTo(2));
     });
 
     test('选同一个地点不重拉（幂等）', () async {

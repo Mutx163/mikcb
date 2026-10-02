@@ -283,6 +283,17 @@ class WeatherProvider extends ChangeNotifier {
     notifyListeners();
 
     final forecast = await _service.fetchForecast(location);
+    final selected = _location;
+    if (selected != null && !location.isSamePlaceAs(selected)) {
+      // 等这条响应的时候用户换了城市。旧城市的预报既不能进内存也不能落盘：
+      // 显示层与 `summaryForCourse` 都只认 `_forecast` 不为空，会把杭州的数
+      // 字挂在成都的标题下；而 :111-113 那道 matchesLocation 守卫只在下次
+      // 启动生效，救不了当前这次会话。
+      // `ensureFresh` 的单飞槽就是本条请求，所以 setLocation 没能发出新请求 ——
+      // 这里就地按新城市重发（链式 return，让 _inFlight 覆盖整条重试链，
+      // 也保证外部 await ensureFresh() 拿到的是新城市的数据）。
+      return _refresh();
+    }
     if (forecast == null) {
       // 失败降级：有旧缓存就继续用它（哪怕过期），卡片上不显示任何错误。
       _status = WeatherStatus.failed;
