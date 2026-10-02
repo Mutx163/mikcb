@@ -4246,17 +4246,8 @@ class _WarehouseAdapterWebLoginScreenState
         AppLocalizations.of(context)!.invalidSectionTimeFormat,
       );
     }
-    final sections = decoded
-        .whereType<Map<String, dynamic>>()
-        .map(
-          (item) => SectionTime(
-            startTime: item['startTime']?.toString() ?? '',
-            endTime: item['endTime']?.toString() ?? '',
-          ),
-        )
-        .where((item) => item.startTime.isNotEmpty && item.endTime.isNotEmpty)
-        .toList(growable: false);
-    if (sections.isEmpty) {
+    final sections = decodeAlignedImportedSections(decoded);
+    if (sections == null) {
       throw FormatException(AppLocalizations.of(context)!.noSectionTimesToSave);
     }
     return sections;
@@ -7668,4 +7659,30 @@ Future<String?> _promptWarehouseImportUrl(
 
 void _showLightTip(BuildContext context, String message) {
   showAppLightTip(context, message: message);
+}
+
+/// 教务页下发的节次 JSON → **按位对齐**的节次表；`null` 表示没有可用节次。
+///
+/// 这里原来是 `whereType<Map>()` + `where(时间非空)` 的压缩式解析：一条坏记录会
+/// 把它之后每一节的时间整体前移一档（`Course.startSection` 是这张表的**位置
+/// 下标**），而界面看起来完全正常、用户会按错时间去教室。本仓已经用
+/// [SectionTime.parseListAligned] 修掉过读取侧的同一个不变量违反，只有这个外部
+/// 写入入口漏了。
+///
+/// 现在坏位留空（作息页把空时间渲染成 `-`），并且 `validateSectionTimes` 会在
+/// createTimeScheme/updateTimeScheme 里明确报出是第几节 —— 让问题出在哪一格可见，
+/// 而不是悄悄挪走整表。
+List<SectionTime>? decodeAlignedImportedSections(Object? decoded) {
+  if (decoded is! List) {
+    return null;
+  }
+  final aligned = SectionTime.parseListAligned(
+    decoded,
+    fallbackTemplate: () => const <SectionTime>[],
+  );
+  final sections = aligned.sections;
+  if (sections.isEmpty || aligned.healedCount == sections.length) {
+    return null;
+  }
+  return sections;
 }
