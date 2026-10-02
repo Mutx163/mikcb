@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
+import '../domain/week_calculator.dart';
 import '../models/timetable_profile.dart';
 import '../providers/timetable_provider.dart';
 import '../services/calendar_sync_service.dart';
@@ -276,7 +277,7 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
       final weeks = profile!.settings.semesterWeekCount < 1
           ? 1
           : profile.settings.semesterWeekCount;
-      return (from, from.add(Duration(days: weeks * 7 - 1)));
+      return (from, WeekCalculator.addDays(from, weeks * 7 - 1));
     }
 
     final from = _dateOnly(DateTime.now());

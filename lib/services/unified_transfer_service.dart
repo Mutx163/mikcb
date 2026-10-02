@@ -872,7 +872,7 @@ class _TransferScopeWindow {
     final firstWeek = weeks.reduce(
       (left, right) => left < right ? left : right,
     );
-    return semesterStartWeek!.add(Duration(days: (firstWeek - 1) * 7));
+    return WeekCalculator.addDays(semesterStartWeek!, (firstWeek - 1) * 7);
   }
 
   DateTime get endDate {
@@ -880,7 +880,7 @@ class _TransferScopeWindow {
       return fallbackWeekStart.add(const Duration(days: 6));
     }
     final lastWeek = weeks.reduce((left, right) => left > right ? left : right);
-    return semesterStartWeek!.add(Duration(days: lastWeek * 7 - 1));
+    return WeekCalculator.addDays(semesterStartWeek!, lastWeek * 7 - 1);
   }
 
   bool containsDate(DateTime value) {
@@ -926,7 +926,10 @@ class _TransferScopeWindow {
     }
 
     for (final week in weeks) {
-      final weekStart = semesterStartWeek!.add(Duration(days: (week - 1) * 7));
+      final weekStart = WeekCalculator.addDays(
+        semesterStartWeek!,
+        (week - 1) * 7,
+      );
       final weekEnd = weekStart.add(const Duration(days: 6));
       if (!rangeEnd.isBefore(weekStart) && !rangeStart.isAfter(weekEnd)) {
         return true;

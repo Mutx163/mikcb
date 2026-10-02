@@ -269,6 +269,10 @@ class Exam {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final examDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
-    return examDate.difference(today).inDays;
+    return DateTime.utc(
+      examDate.year,
+      examDate.month,
+      examDate.day,
+    ).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
   }
 }

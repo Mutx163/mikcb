@@ -41,6 +41,7 @@ import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../domain/couple_timetable_logic.dart';
 import '../domain/day_course_display_logic.dart';
+import '../domain/week_calculator.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
 import '../services/app_log_service.dart';
@@ -7515,7 +7516,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       semesterStart.day,
     ).subtract(Duration(days: semesterStart.weekday - 1));
 
-    return normalizedStart.add(Duration(days: (week - 1) * 7 + dayOfWeek - 1));
+    return WeekCalculator.addDays(
+      normalizedStart,
+      (week - 1) * 7 + dayOfWeek - 1,
+    );
   }
 
   /// Calendar week of today relative to [TimetableSettings.semesterStartDate].
@@ -7541,7 +7545,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       semesterStart.month,
       semesterStart.day,
     ).subtract(Duration(days: semesterStart.weekday - 1));
-    final week = (normalizedToday.difference(normalizedStart).inDays ~/ 7) + 1;
+    final week =
+        (WeekCalculator.daysBetween(normalizedStart, normalizedToday) ~/ 7) + 1;
     if (week < 1 || week > settings.semesterWeekCount) {
       return null;
     }

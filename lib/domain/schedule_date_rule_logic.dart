@@ -1,4 +1,5 @@
 import '../models/schedule_date_rule.dart';
+import 'week_calculator.dart';
 
 /// Outcome of attempting a seasonal bulk-apply after a date rule save.
 ///
@@ -202,8 +203,8 @@ class ScheduleDateRuleLogic {
       }
       final leftEnd = parseIsoDate(left.endDate)!;
       final rightEnd = parseIsoDate(right.endDate)!;
-      final leftSpan = leftEnd.difference(leftStart).inDays;
-      final rightSpan = rightEnd.difference(rightStart).inDays;
+      final leftSpan = WeekCalculator.daysBetween(leftStart, leftEnd);
+      final rightSpan = WeekCalculator.daysBetween(rightStart, rightEnd);
       final spanCompare = leftSpan.compareTo(rightSpan);
       if (spanCompare != 0) {
         return spanCompare;

@@ -32,7 +32,7 @@ void main() {
     expect(
       service.inferFirstCourseWeek(
         semesterStartDate: DateTime(2026, 9, 7),
-        firstCourseDate: DateTime(2026, 9, 1),
+        firstCourseDate: DateTime(2026, 8, 31),
       ),
       1,
     );

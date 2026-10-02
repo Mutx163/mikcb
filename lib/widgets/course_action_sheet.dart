@@ -6,6 +6,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../domain/couple_timetable_logic.dart';
+import '../domain/week_calculator.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
 import '../utils/hex_color.dart';
@@ -1124,7 +1125,10 @@ DateTime? _dateForWeekDay(TimetableSettings settings, int week, int dayOfWeek) {
     semesterStart.day,
   ).subtract(Duration(days: semesterStart.weekday - 1));
 
-  return normalizedStart.add(Duration(days: (week - 1) * 7 + dayOfWeek - 1));
+  return WeekCalculator.addDays(
+    normalizedStart,
+    (week - 1) * 7 + dayOfWeek - 1,
+  );
 }
 
 bool _isAlarmAvailable({

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../domain/week_calculator.dart';
 import '../models/course.dart';
 import '../models/statistics_models.dart';
 
@@ -456,7 +457,7 @@ class StatisticsService {
           ? DateTime(reference.year, reference.month, reference.day)
           : null,
       semesterEndDate: hasCalendar
-          ? semesterStartDate.add(Duration(days: totalWeeks * 7 - 1))
+          ? WeekCalculator.addDays(semesterStartDate, totalWeeks * 7 - 1)
           : null,
       weeksElapsed: weeksElapsed,
       totalWeeks: totalWeeks,
@@ -497,8 +498,9 @@ class StatisticsService {
       semesterStart.day,
     );
     final todayDay = DateTime(today.year, today.month, today.day);
-    final weekStart = _weekStart(semesterStart).add(
-      Duration(days: (calendarWeek - 1) * 7),
+    final weekStart = WeekCalculator.addDays(
+      _weekStart(semesterStart),
+      (calendarWeek - 1) * 7,
     );
 
     var done = 0;

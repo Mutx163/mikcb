@@ -7,6 +7,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../domain/day_course_display_logic.dart';
+import '../domain/week_calculator.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
 import '../ui/hyperos/hyperos.dart';
@@ -1354,7 +1355,10 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       semesterStart.day,
     ).subtract(Duration(days: semesterStart.weekday - 1));
 
-    return normalizedStart.add(Duration(days: (week - 1) * 7 + dayOfWeek - 1));
+    return WeekCalculator.addDays(
+      normalizedStart,
+      (week - 1) * 7 + dayOfWeek - 1,
+    );
   }
 
   /// Calendar week of today within the configured semester, or null if unset /
@@ -1377,7 +1381,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       semesterStart.day,
     ).subtract(Duration(days: semesterStart.weekday - 1));
     final resolvedWeek =
-        (normalizedToday.difference(normalizedStart).inDays ~/ 7) + 1;
+        (WeekCalculator.daysBetween(normalizedStart, normalizedToday) ~/ 7) + 1;
     if (resolvedWeek < 1 || resolvedWeek > settings.semesterWeekCount) {
       return null;
     }

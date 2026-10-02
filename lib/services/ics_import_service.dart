@@ -396,6 +396,10 @@ class IcsImportService {
       return _weekIndex(startDateTime, semesterStart);
     }
 
+    // 这里保持**绝对时长**语义而不是日历日：ICS 的 UNTIL 是一个具体时刻，
+    // 「最后一次实例」必须以 `时刻 ≤ UNTIL` 为准。改成日历日跨度会把「UNTIL 当天
+    // 早于上课时刻」的那次也算进来（实测多算一周：期望第 5 周得到第 6 周），
+    // test/services/ics_import_service_test.dart 的三条钉子正是钉这个边界。
     final occurrenceOffset =
         difference.inMicroseconds ~/ repeatDuration.inMicroseconds;
     final lastOccurrence = startDateTime.add(
@@ -441,9 +445,10 @@ class IcsImportService {
   }
 
   int _weekIndex(DateTime date, DateTime semesterStart) {
-    final days = WeekCalculator.startOfWeek(
-      date,
-    ).difference(WeekCalculator.startOfWeek(semesterStart)).inDays;
+    final days = WeekCalculator.daysBetween(
+      WeekCalculator.startOfWeek(semesterStart),
+      WeekCalculator.startOfWeek(date),
+    );
     return days ~/ 7 + 1;
   }
 

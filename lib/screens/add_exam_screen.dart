@@ -4,6 +4,7 @@ import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../domain/week_calculator.dart';
 import '../models/exam.dart';
 import '../models/timetable_settings.dart';
 import 'package:intl/intl.dart';
@@ -720,7 +721,10 @@ class _AddExamScreenState extends State<AddExamScreen> {
       );
       // 目标日期 = 对齐后的起始日 + (周数-1)*7 + (星期几 - weekStartDay)
       final dayOffset = (dayOfWeek - weekStartDay + 7) % 7;
-      return alignedStart.add(Duration(days: (week - 1) * 7 + dayOffset));
+      return WeekCalculator.addDays(
+        alignedStart,
+        (week - 1) * 7 + dayOffset,
+      );
     }
 
     final result = await showHyperosSheet<DateTime>(

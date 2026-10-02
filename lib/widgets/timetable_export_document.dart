@@ -314,9 +314,10 @@ class TimetableExportDocument extends StatelessWidget {
     if (semesterStart == null) {
       return null;
     }
-    final date = WeekCalculator.startOfWeek(
-      semesterStart,
-    ).add(Duration(days: (week - 1) * 7 + dayOfWeek - 1));
+    final date = WeekCalculator.addDays(
+      WeekCalculator.startOfWeek(semesterStart),
+      (week - 1) * 7 + dayOfWeek - 1,
+    );
     final localeName = Localizations.localeOf(context).toString();
     return DateFormat.MMMd(localeName).format(date);
   }

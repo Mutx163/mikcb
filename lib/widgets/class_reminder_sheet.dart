@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:university_timetable/domain/week_calculator.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/class_reminder.dart';
 import 'package:university_timetable/models/course.dart';
@@ -41,7 +42,10 @@ DateTime? _occurrenceDateFor(TimetableSettings settings, int week, int dayOfWeek
     semesterStart.month,
     semesterStart.day,
   ).subtract(Duration(days: semesterStart.weekday - 1));
-  return normalizedStart.add(Duration(days: (week - 1) * 7 + dayOfWeek - 1));
+  return WeekCalculator.addDays(
+    normalizedStart,
+    (week - 1) * 7 + dayOfWeek - 1,
+  );
 }
 
 String _weeksSummary(Course course) {

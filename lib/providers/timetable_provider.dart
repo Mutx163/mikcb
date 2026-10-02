@@ -2682,8 +2682,9 @@ class TimetableProvider with ChangeNotifier {
       return null;
     }
     final startOfSemesterWeek = WeekCalculator.startOfWeek(semesterStart);
-    return startOfSemesterWeek.add(
-      Duration(days: (week - 1) * 7 + course.dayOfWeek - 1),
+    return WeekCalculator.addDays(
+      startOfSemesterWeek,
+      (week - 1) * 7 + course.dayOfWeek - 1,
     );
   }
 

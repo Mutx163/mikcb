@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/week_calculator.dart';
 import '../logging/app_debug_log.dart';
 import 'app_log_service.dart';
 import '../services/app_http_client.dart';
@@ -548,9 +549,10 @@ class HolidayService {
     return _convertApiEntries(list, year);
   }
 
-  bool _isConsecutive(DateTime a, DateTime b) => b.difference(a).inDays == 1;
+  bool _isConsecutive(DateTime a, DateTime b) =>
+      WeekCalculator.daysBetween(a, b) == 1;
 
-  int _absDays(DateTime a, DateTime b) => a.difference(b).inDays.abs();
+  int _absDays(DateTime a, DateTime b) => WeekCalculator.daysBetween(b, a).abs();
 
   String _nameForGroup(List<DateTime> group) {
     final first = group.first;
