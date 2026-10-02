@@ -728,34 +728,40 @@ class UnifiedTransferService {
 
     for (final incomingScheme in incoming) {
       final incomingSignature = _timeSchemeSectionsSignature(incomingScheme);
-      final existingSchemeId = localSchemeIdsBySignature[incomingSignature];
-      final existingScheme =
-          localSchemesById[incomingScheme.id] ??
-          (existingSchemeId == null
-              ? null
-              : localSchemesById[existingSchemeId]);
-
-      if (existingScheme == null) {
-        final createdScheme = await provider.createTimeScheme(
+      // id 相同 = 同一张表的另一份内容（同一台设备导出、或上次导入留下的引用），
+      // 名字与节次都按外来值更新。
+      final sameIdScheme = localSchemesById[incomingScheme.id];
+      if (sameIdScheme != null) {
+        final error = await provider.updateTimeScheme(
+          schemeId: sameIdScheme.id,
           name: incomingScheme.name,
           sections: incomingScheme.sections,
         );
-        localSchemesById[createdScheme.id] = createdScheme;
-        localSchemeIdsBySignature[incomingSignature] = createdScheme.id;
-        resolvedSchemeIds[incomingScheme.id] = createdScheme.id;
+        if (error != null) {
+          throw StateError(error);
+        }
+        resolvedSchemeIds[incomingScheme.id] = sameIdScheme.id;
+        localSchemeIdsBySignature[incomingSignature] = sameIdScheme.id;
         continue;
       }
-
-      final error = await provider.updateTimeScheme(
-        schemeId: existingScheme.id,
+      // 只有节次签名相同、id 不同：那是另一台设备上的**另一张表**，只是长得一样。
+      // 复用它的 id 正是签名匹配的用途（避免同一台机器上堆重复表），
+      // 但不该把机主自己起的名字顶掉 —— 签名相等时节次本来就相同，
+      // 于是这里连一次写都不用。原先无条件 updateTimeScheme(name: 外来名)
+      // 会让「合并同学发来的课表」把本机作息标题改名，而其它课表档里
+      // 引用同一张表的课也跟着换了叫法。
+      final twinSchemeId = localSchemeIdsBySignature[incomingSignature];
+      if (twinSchemeId != null) {
+        resolvedSchemeIds[incomingScheme.id] = twinSchemeId;
+        continue;
+      }
+      final createdScheme = await provider.createTimeScheme(
         name: incomingScheme.name,
         sections: incomingScheme.sections,
       );
-      if (error != null) {
-        throw StateError(error);
-      }
-      resolvedSchemeIds[incomingScheme.id] = existingScheme.id;
-      localSchemeIdsBySignature[incomingSignature] = existingScheme.id;
+      localSchemesById[createdScheme.id] = createdScheme;
+      localSchemeIdsBySignature[incomingSignature] = createdScheme.id;
+      resolvedSchemeIds[incomingScheme.id] = createdScheme.id;
     }
 
     return resolvedSchemeIds;

@@ -193,6 +193,16 @@ void main() {
       provider.timeSchemes.where((scheme) => scheme.id == sourceScheme.id),
       isEmpty,
     );
+    // 合并按"节次签名"认表（跨设备的 id 不是身份），但签名相同、名字不同的
+    // 两张表是**两张表**：机主自己命名的那张不该被对端的叫法顶掉。
+    // 课程/规则/地点分组都只是改指向，没有任何东西依赖这个名字，
+    // 改名只会把本机别的课表档里同一张表的标题一起换掉。
+    expect(
+      provider.timeSchemes.firstWhere((scheme) => scheme.id == localScheme.id)
+          .name,
+      '目标设备模板',
+      reason: '按签名复用本机作息时不得用外来的名字覆盖',
+    );
   });
 
   test(
