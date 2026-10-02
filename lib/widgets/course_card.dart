@@ -241,36 +241,25 @@ class CourseCard extends StatelessWidget {
             left: 8,
             child: _buildHomeworkIndicator(size: 18, iconSize: 11),
           ),
-        if (topRightBadgeText != null || hasReminder)
+        // 右上角是「一行角标」，不是三选一：提醒铃铛 / 放假 / 停课 / 备注角标
+        // 要并排出现（`_buildBadgeRow` 本就支持多枚，`hasReminder` 的注释也写着
+        // 「与备注角标并排展示」）。修复前这里是三个互斥的 Positioned：只要
+        // hasReminder 或备注角标存在，「假」「停」就整条不画 —— 日课表
+        // （timetable_screen.dart:6911/6922）同时传这两个标志，用户给已放假的
+        // 课设过单节课提醒后，卡片只剩铃铛，看着像照常上。
+        if (topRightBadgeText != null ||
+            hasReminder ||
+            isHoliday ||
+            isSuspended)
           Positioned(
             top: 8,
             right: 8,
             child: _buildBadgeRow(
               context,
               customBadgeText: topRightBadgeText,
-              showReminderBell: hasReminder,
-            ),
-          ),
-        if (isHoliday && topRightBadgeText == null && !hasReminder)
-          Positioned(
-            top: 8,
-            right: 8,
-            child: _buildBadgeRow(
-              context,
-              showHoliday: true,
-              showReminderBell: hasReminder,
-            ),
-          ),
-        if (isSuspended &&
-            topRightBadgeText == null &&
-            !isHoliday &&
-            !hasReminder)
-          Positioned(
-            top: 8,
-            right: 8,
-            child: _buildBadgeRow(
-              context,
-              showSuspended: true,
+              showHoliday: isHoliday,
+              // 放假与停课同时命中时以放假为准（外层变淡也走放假档）。
+              showSuspended: isSuspended && !isHoliday,
               showReminderBell: hasReminder,
             ),
           ),
@@ -446,36 +435,19 @@ class CourseCard extends StatelessWidget {
                 left: 4,
                 child: _buildHomeworkIndicator(size: 15, iconSize: 9),
               ),
-            if (topRightBadgeText != null || hasReminder)
+            // 同完整卡：一行角标可并存，提醒/备注不再吞掉「假」「停」。
+            if (topRightBadgeText != null ||
+                hasReminder ||
+                isHoliday ||
+                isSuspended)
               Positioned(
                 top: 6,
                 right: 6,
                 child: _buildBadgeRow(
                   context,
                   customBadgeText: topRightBadgeText,
-                  showReminderBell: hasReminder,
-                ),
-              ),
-            if (isHoliday && topRightBadgeText == null && !hasReminder)
-              Positioned(
-                top: 6,
-                right: 6,
-                child: _buildBadgeRow(
-                  context,
-                  showHoliday: true,
-                  showReminderBell: hasReminder,
-                ),
-              ),
-            if (isSuspended &&
-                topRightBadgeText == null &&
-                !isHoliday &&
-                !hasReminder)
-              Positioned(
-                top: 6,
-                right: 6,
-                child: _buildBadgeRow(
-                  context,
-                  showSuspended: true,
+                  showHoliday: isHoliday,
+                  showSuspended: isSuspended && !isHoliday,
                   showReminderBell: hasReminder,
                 ),
               ),
@@ -654,14 +626,21 @@ class CourseCard extends StatelessWidget {
     }
     if (badges.isEmpty) return const SizedBox.shrink();
     if (badges.length == 1) return badges.first;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < badges.length; i++) ...[
-          if (i > 0) const SizedBox(width: 3),
-          badges[i],
+    // 日课表一格只有约 50 逻辑像素宽，「铃铛 + 假 + 备注」三枚并排时可能超出。
+    // 用 scaleDown 让角标整体缩小而不是溢出卡片或抛 RenderFlex 越界告警：
+    // 装得下时与原来逐像素一致，装不下时仍然全部可读。
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerRight,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < badges.length; i++) ...[
+            if (i > 0) const SizedBox(width: 3),
+            badges[i],
+          ],
         ],
-      ],
+      ),
     );
   }
 
