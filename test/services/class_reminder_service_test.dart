@@ -158,6 +158,37 @@ void main() {
       );
     });
 
+    // 原生侧把 offsetMinutes 当「提前量」用：开机/换时区重建时按
+    // `examStartMillis - offsetMinutes*60_000` 反推响点
+    // （ExamReminderScheduler.kt:186-187），并在解析入参时按
+    // `fireAtMillis + offsetMinutes*60_000` 反推上课时刻（:426-427）。
+    // 单节课提醒没有「上课时刻 + 提前量」这一对概念——entry.minuteOfDay 就是
+    // 响点本身——原先却把 minuteOfDay 原样填进 offsetMinutes：22:00 的提醒
+    // (minuteOfDay=1320) 在 10-08 09:00 开机后被反推成 10-08 00:00（已过期但在
+    // 24h 宽限内）→ 改排到 now+1s，用户当场收到一条提前 22 小时的提醒，而这条
+    // fire 投递后就从快照删除（:283-287），22:00 的真提醒不再来。
+    // 这里钉住契约：这两个字段必须让原生的加减法退化成「响点就是绝对时刻」。
+    test('leaves the native offset arithmetic as a no-op', () {
+      final fires = ClassReminderService.buildFires(
+        entries: const [
+          ClassReminderEntry(
+            courseId: 'c1',
+            date: '2099-09-07',
+            minuteOfDay: 22 * 60,
+          ),
+        ],
+        resolveCourse: (_) => _course(),
+        now: DateTime(2099, 9),
+      );
+      final fire = fires.single;
+
+      expect(fire.offsetMinutes, 0, reason: 'offsetMinutes 是提前量，不是当日分钟数');
+      expect(fire.examStartMillis, fire.fireAtMillis);
+      // 原生的两个反推公式在 offsetMinutes=0 时都必须回到同一个响点。
+      expect(fire.examStartMillis - fire.offsetMinutes * 60, fire.fireAtMillis);
+      expect(fire.fireAtMillis + fire.offsetMinutes * 60, fire.fireAtMillis);
+    });
+
     test('drops deleted courses, past fires and invalid entries', () {
       final fires = ClassReminderService.buildFires(
         entries: const [

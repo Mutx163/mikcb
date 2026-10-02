@@ -84,7 +84,16 @@ abstract final class ClassReminderService {
       fires.add(
         ExamReminderFire(
           examId: entry.id,
-          offsetMinutes: entry.minuteOfDay,
+          // offsetMinutes 是「提前量」，原生侧会拿它做减法反推响点
+          // （ExamReminderScheduler.kt:186-187）与加法反推上课时刻（:426-427）。
+          // 本条目的 minuteOfDay **就是响点本身**，把它当提前量填进去，开机或
+          // 换时区后响点就会前移「当日分钟数」那么多——22:00 的提醒在早上开机后
+          // 立刻弹出，并且这条 fire 投递完就从快照里删掉，真正的提醒再也不会来。
+          // 填 0 让两套加减都退化成恒等：响点就是 fireAtMillis。
+          // 身份不靠这个字段：examId 已经是 `classreminder:<courseId>@<date>`，
+          // requestCode 另含 minuteOfDay（见上面 requestCode() 的注释），
+          // 改时间后旧 PendingIntent 依旧会被换掉。
+          offsetMinutes: 0,
           fireAtMillis: fireAt.millisecondsSinceEpoch,
           examStartMillis: fireAt.millisecondsSinceEpoch,
           title: course.name.trim(),

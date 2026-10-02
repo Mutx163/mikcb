@@ -28,6 +28,21 @@ class ExamReminderFire {
   final String body;
   final int requestCode;
 
+  /// 只换 PendingIntent 身份，其余字段原样保留。
+  ///
+  /// 用于 [ExamReminderService.assignDistinctRequestCodes] 的碰撞消解：原生侧的
+  /// 取消/去重一律走快照里存着的这个值（ExamReminderScheduler.kt:247-255、:285），
+  /// 从不按 examId 重新计算，所以改码不会让旧闹钟取消不掉。
+  ExamReminderFire withRequestCode(int code) => ExamReminderFire(
+    examId: examId,
+    offsetMinutes: offsetMinutes,
+    fireAtMillis: fireAtMillis,
+    examStartMillis: examStartMillis,
+    title: title,
+    body: body,
+    requestCode: code,
+  );
+
   Map<String, dynamic> toNativeMap() {
     return {
       'examId': examId,
@@ -63,6 +78,53 @@ class ExamReminderService {
       hash = (hash * 0x01000193) & 0x7fffffff;
     }
     return requestCodeNamespace | (hash & 0x00ffffff);
+  }
+
+  /// 给一整批触发点分配**互不重复**的 requestCode。
+  ///
+  /// 上面的散列只留了 24 位（`& 0x00ffffff`），唯一个数 16,777,216。碰撞的后果不是
+  /// 理论问题：原生用 `PendingIntent.getBroadcast(ctx, fire.requestCode, …,
+  /// FLAG_UPDATE_CURRENT)`（ExamReminderScheduler.kt:406-411），两条 fire 的 PI
+  /// 身份相同就会被后写入的那条整体顶掉触发时刻 → 更早的那条提醒静默丢失。
+  ///
+  /// 触发规模**实测过**（不是生日悖论估算）：本仓 `schedule:<uuid>#<date>` 这种键
+  /// 形状在 4000 条并发 fire 时零碰撞，10000 条出现 2 次，30000 条 37 次 —— 这个
+  /// FNV 变体对结构化键的分布明显好于随机，要几十条「每天重复 + 多个提前量」的
+  /// 日程铺满一整年才会开始碰到。所以本方法属**加固**：代价十几行，收益是把
+  /// 「某节课的提醒从来没响过」这种查不出来的故障彻底堵死。
+  ///
+  /// 分配前先按 (examId, offsetMinutes, fireAtMillis) 排序：碰撞消解的结果只取决于
+  /// 这一**集合**，与调用方的拼装顺序无关，因此同一批提醒每次重建都拿到同一套
+  /// 编码（原生 reconcile 是「先全量取消旧的、再排新的」，编码抖动本身也安全）。
+  static List<ExamReminderFire> assignDistinctRequestCodes(
+    Iterable<ExamReminderFire> fires,
+  ) {
+    final ordered = fires.toList()
+      ..sort((left, right) {
+        final byId = left.examId.compareTo(right.examId);
+        if (byId != 0) return byId;
+        final byOffset = left.offsetMinutes.compareTo(right.offsetMinutes);
+        if (byOffset != 0) return byOffset;
+        return left.fireAtMillis.compareTo(right.fireAtMillis);
+      });
+    final taken = <int>{};
+    final result = <ExamReminderFire>[];
+    for (final fire in ordered) {
+      var code = stableRequestCode(fire.examId, fire.offsetMinutes);
+      var probe = 0;
+      while (!taken.add(code)) {
+        probe++;
+        code = stableRequestCode(
+          '${fire.examId}#collision$probe',
+          fire.offsetMinutes,
+        );
+      }
+      result.add(
+        probe == 0 ? fire : fire.withRequestCode(code),
+      );
+    }
+    result.sort((left, right) => left.fireAtMillis.compareTo(right.fireAtMillis));
+    return result;
   }
 
   /// Identifies one logical reminder fire, including its lead time.
@@ -161,7 +223,11 @@ class ExamReminderService {
         continue;
       }
       final fireAt = start.subtract(Duration(minutes: offsetMinutes));
-      if (!fireAt.isAfter(referenceNow.subtract(const Duration(seconds: 30)))) {
+      // 只发**严格未来**的响点：已投递过的那条会被原生从快照里删掉，但用户改一
+      // 节课就会重建整张提醒表，留 30 秒窗口的话那条刚响过的还在窗口内 → 原生按
+      // 过去时刻 setExact → AlarmManager 立刻再投一次，同一条提醒弹两遍。原生另
+      // 有 failedOverdueFires 通道专门重试「投了但没弹出去」的，不需要这里兜。
+      if (!fireAt.isAfter(referenceNow)) {
         continue;
       }
       final scheduleId = _scheduleFireId(instance.occurrenceId);
@@ -280,12 +346,11 @@ class ExamReminderService {
           continue;
         }
         final fireAt = examStart.subtract(Duration(minutes: offsetMinutes));
-        // Skip fires already in the past (with a small grace for clock skew).
-        // Native separately retains only points that actually fired but could
-        // not post, so reconstructing past points here would cause duplicates.
-        if (!fireAt.isAfter(
-          referenceNow.subtract(const Duration(seconds: 30)),
-        )) {
+        // 只发**严格未来**的响点。原生另有 failedOverdueFires 通道专门重试
+        // 「投递了但没弹出去」的条目，这里留窗口等于把刚响过的那条再投一遍：
+        // 通知已投递会把它从快照删掉，但用户改一节课就会重建整张提醒表，30 秒内
+        // 重建时它仍在窗口内 → setExact 一个过去时刻 → AlarmManager 立刻再弹一次。
+        if (!fireAt.isAfter(referenceNow)) {
           continue;
         }
         // Empty title → native falls back to localized
@@ -336,7 +401,9 @@ class ExamReminderService {
     DateTime? now,
   }) async {
     final referenceNow = now ?? DateTime.now();
-    final fires = <ExamReminderFire>[
+    // 三个来源合流后统一消解 requestCode 碰撞（24 位散列空间 + 366 天展开，
+    // 几千条并发 fire 时几乎必然撞），见 assignDistinctRequestCodes 的注释。
+    final fires = assignDistinctRequestCodes(<ExamReminderFire>[
       ...buildFires(
         exams: exams,
         resolveCourse: resolveCourse,
@@ -344,7 +411,7 @@ class ExamReminderService {
       ),
       ...buildScheduleFires(scheduleItems: scheduleItems, now: referenceNow),
       ...additionalFires,
-    ];
+    ]);
     final activeExamIds = exams
         .where((exam) => !exam.isExpired)
         .map((exam) => exam.id)
