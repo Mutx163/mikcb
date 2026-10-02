@@ -409,28 +409,9 @@ object TodayWidgetSupport {
                 }
             }
             if (bestDate != null) {
-                // Calculate daysUntil
-                val examCal = Calendar.getInstance().apply {
-                    val parts = bestDate!!.split("-")
-                    if (parts.size == 3) {
-                        set(Calendar.YEAR, parts[0].toInt())
-                        set(Calendar.MONTH, parts[1].toInt() - 1)
-                        set(Calendar.DAY_OF_MONTH, parts[2].toInt())
-                        set(Calendar.HOUR_OF_DAY, 0)
-                        set(Calendar.MINUTE, 0)
-                        set(Calendar.SECOND, 0)
-                        set(Calendar.MILLISECOND, 0)
-                    }
-                }
-                val todayCal = Calendar.getInstance().apply {
-                    timeInMillis = nowMillis
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }
-                val diffDays = ((examCal.timeInMillis - todayCal.timeInMillis) / 86_400_000L).toInt()
-                nextExamDaysUntil = diffDays.coerceAtLeast(0)
+                // 按日历日算「还有几天」，并让畸形日期安全地当成「没有考试」，
+                // 见 widgetExamDaysUntil 的注释。
+                nextExamDaysUntil = widgetExamDaysUntil(bestDate!!, nowMillis)
             }
         }
 
