@@ -406,56 +406,78 @@ class UnifiedTransferService {
       );
     }
 
-    final backupJson = _dataTransferService.buildFullBackupJson(
-      profiles: provider.profiles,
-      activeProfileId: provider.activeProfileId,
-      timeSchemes: provider.timeSchemes,
-      scheduleDateRules: provider.scheduleDateRules,
-      locationTimeGroups: provider.locationTimeGroups,
-      channel: incoming.channel,
-    );
-    final token = undoService.create(
-      backupJson: backupJson,
-      incoming: incoming,
-      mode: mode,
-      preview: preview,
-    );
-
+    // 快照 → 应用 → 失败回滚必须在**同一次持锁**里完成。
+    //
+    // 原来快照在 `runMutationExclusive` 门外生成，catch 里的 `_restore` 也在门外
+    // 执行，而 `_restore` 自己是三次各自独立的加锁写。后果是可测的：另一台设备
+    // （局域网标签页）的一条写入只要落在「取快照之后、回滚结束之前」，就会被按
+    // 更早的快照整表覆盖掉 —— 而它的 HTTP 请求早就返回 200 了。
+    // 失败测试：test/services/transfer_rollback_atomicity_test.dart
+    // 「回滚期间到达的并发写入不被抹掉」。
+    Object? failure;
+    StackTrace? failureStack;
+    TransferUndoToken? undoToken;
     try {
       await provider.runMutationExclusive(() async {
-        if (mode == TransferApplyMode.overwrite) {
-          await _overwrite(provider, incoming);
-        } else {
-          await _merge(provider, incoming);
+        final backupJson = _dataTransferService.buildFullBackupJson(
+          profiles: provider.profiles,
+          activeProfileId: provider.activeProfileId,
+          timeSchemes: provider.timeSchemes,
+          scheduleDateRules: provider.scheduleDateRules,
+          locationTimeGroups: provider.locationTimeGroups,
+          channel: incoming.channel,
+        );
+        final token = undoService.create(
+          backupJson: backupJson,
+          incoming: incoming,
+          mode: mode,
+          preview: preview,
+        );
+        undoToken = token;
+        try {
+          if (mode == TransferApplyMode.overwrite) {
+            await _overwrite(provider, incoming);
+          } else {
+            await _merge(provider, incoming);
+          }
+        } catch (error, stackTrace) {
+          try {
+            await _restore(provider, token);
+            undoService.clear();
+          } catch (rollbackError, rollbackStack) {
+            // 回滚自己也失败时不能把异常抛出去：调用方约定 applyToProvider
+            // 只返回 TransferApplyResult，不抛异常（LAN/二维码/云都按此调用）。
+            await AppLogService.instance.error(
+              'transfer_rollback_failed',
+              'transfer rollback failed',
+              error: rollbackError,
+              stackTrace: rollbackStack,
+              extras: {
+                'undoId': token.id,
+                'transferId': incoming.packageId,
+                'channel': incoming.channel.value,
+                'scope': incoming.scope.value,
+                'mode': mode.name,
+              },
+            );
+          }
+          failure = error;
+          failureStack = stackTrace;
         }
       });
-      await AppLogService.instance.info(
-        'transfer_import_completed',
-        'transfer import completed',
-        extras: {
-          'transferId': incoming.packageId,
-          'channel': incoming.channel.value,
-          'scope': incoming.scope.value,
-          'mode': mode.name,
-          'added': preview.addedCount,
-          'updated': preview.updatedCount,
-          'removed': preview.removedCount,
-          'undoId': token.id,
-        },
-      );
-      return TransferApplyResult(
-        applied: true,
-        preview: preview,
-        undoToken: token,
-      );
     } catch (error, stackTrace) {
-      await _restore(provider, token);
-      undoService.clear();
+      // 锁内没被接住的异常（取快照或建令牌失败）走这里。
+      failure ??= error;
+      failureStack ??= stackTrace;
+    }
+
+    final applyError = failure;
+    if (applyError != null) {
       await AppLogService.instance.error(
         'transfer_import_failed',
         'transfer import failed',
-        error: error,
-        stackTrace: stackTrace,
+        error: applyError,
+        stackTrace: failureStack,
         extras: {
           'transferId': incoming.packageId,
           'channel': incoming.channel.value,
@@ -469,6 +491,26 @@ class UnifiedTransferService {
         preview: preview,
       );
     }
+
+    await AppLogService.instance.info(
+      'transfer_import_completed',
+      'transfer import completed',
+      extras: {
+        'transferId': incoming.packageId,
+        'channel': incoming.channel.value,
+        'scope': incoming.scope.value,
+        'mode': mode.name,
+        'added': preview.addedCount,
+        'updated': preview.updatedCount,
+        'removed': preview.removedCount,
+        'undoId': undoToken?.id,
+      },
+    );
+    return TransferApplyResult(
+      applied: true,
+      preview: preview,
+      undoToken: undoToken,
+    );
   }
 
   Future<bool> undoLast(TimetableProvider provider) async {

@@ -27,7 +27,9 @@ class LanEditSession {
   String? boundProfileId;
 
   final Map<String, _PinAttemptState> _pinAttempts = {};
-  final Set<String> _connectedClientIps = {};
+
+  /// 客户端 IP → 最近一次成功授权的时间。
+  final Map<String, DateTime> _connectedClientSeenAt = {};
 
   LanEditSession._({
     required this.pin,
@@ -79,14 +81,28 @@ class LanEditSession {
     return now.difference(lastActivityAt) > idleTimeout;
   }
 
-  int get connectedClientCount => _connectedClientIps.length;
+  int get connectedClientCount => connectedClientCountAt(DateTime.now());
+
+  /// 只 add 不清的计数会把「已连接 N 台」变成**历史累计**：浏览器关标签页、
+  /// 手机走出宿舍，都不会有任何断开回调（HTTP 没有连接生命周期可依赖），
+  /// 机主看到的数字只增不减，无法据此判断此刻是否还有人正在编辑课表。
+  ///
+  /// 「离线」判据沿用会话自己的 [idleTimeout]：超过它没再请求的客户端
+  /// 已经拿不到写授权（`verifyToken` 会因 [isExpiredAt] 为真而拒），
+  /// 因此它不该再被算作在线。
+  int connectedClientCountAt(DateTime now) {
+    _connectedClientSeenAt.removeWhere(
+      (_, seenAt) => now.difference(seenAt) > idleTimeout,
+    );
+    return _connectedClientSeenAt.length;
+  }
 
   void markClientConnected(String clientIp) {
     final ip = clientIp.trim();
     if (ip.isEmpty) {
       return;
     }
-    _connectedClientIps.add(ip);
+    _connectedClientSeenAt[ip] = DateTime.now();
     touch();
   }
 
@@ -145,15 +161,15 @@ class LanEditSession {
 
   void _trimClientBookkeeping() {
     if (_pinAttempts.length <= maxTrackedClients &&
-        _connectedClientIps.length <= maxTrackedClients) {
+        _connectedClientSeenAt.length <= maxTrackedClients) {
       return;
     }
     _pinAttempts.removeWhere((_, state) => state.isIdleFor(pinAttemptWindow));
     while (_pinAttempts.length > maxTrackedClients) {
       _pinAttempts.remove(_pinAttempts.keys.first);
     }
-    while (_connectedClientIps.length > maxTrackedClients) {
-      _connectedClientIps.remove(_connectedClientIps.first);
+    while (_connectedClientSeenAt.length > maxTrackedClients) {
+      _connectedClientSeenAt.remove(_connectedClientSeenAt.keys.first);
     }
   }
 
