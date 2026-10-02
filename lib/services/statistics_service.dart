@@ -564,6 +564,8 @@ class StatisticsService {
   }) {
     String? earliest;
     String? latest;
+    int? earliestMinutes;
+    int? latestMinutes;
     int morningSections = 0;
     int noonSections = 0;
     int eveningSections = 0;
@@ -577,19 +579,37 @@ class StatisticsService {
       if (_countActiveWeeks(course, currentWeek) == 0) continue;
       final start = course.startTime;
       final end = course.endTime;
-      if (earliest == null || start.compareTo(earliest) < 0) {
+      // 一律按**分钟数**比，不再用 `String.compareTo`（同文件 `_startMinutes`
+      // 的注释与本函数在 :139-145 的同类改动就是这个口径；2026-10-02 修
+      // achievements / morning_ratio 时漏了这一条路径）。字符串比有三种确定错法：
+      // 未补零的 `8:00` 比 `12:00` 大（早八被算进晚间，`8:00` 与 `09:00` 并存时
+      // 「最早上课」报成 09:00）；空钟点（作息按位补空的洞）比任何值都小（撑大
+      // 上午并把读数压成空串）；`26:00` 这类畸形串还能赢下「最晚下课」。
+      final startMinutes = _startMinutes(course);
+      // 末节课 / 晚自习写 `24:00` 是本仓认可的「当天结束」（time_scheme.dart 的
+      // _clockMinutes 专门放行），这里同样允许它参与比较，否则晚间课时与
+      // 最晚下课会少算。
+      final endMinutes = ClockTime.tryParse(end, allowEndOfDay: true)?.totalMinutes;
+      if (startMinutes != null &&
+          (earliestMinutes == null || startMinutes < earliestMinutes)) {
+        earliestMinutes = startMinutes;
         earliest = start;
       }
-      if (latest == null || end.compareTo(latest) > 0) {
+      if (endMinutes != null &&
+          (latestMinutes == null || endMinutes > latestMinutes)) {
+        latestMinutes = endMinutes;
         latest = end;
       }
-      if (start.compareTo('12:00') < 0) {
+      if (startMinutes != null && startMinutes < 12 * 60) {
         morningSections += course.sectionCount;
       }
-      if (start.compareTo('14:00') < 0 && end.compareTo('12:00') > 0) {
+      if (startMinutes != null &&
+          endMinutes != null &&
+          startMinutes < 14 * 60 &&
+          endMinutes > 12 * 60) {
         noonSections += course.sectionCount;
       }
-      if (end.compareTo('18:00') > 0) {
+      if (endMinutes != null && endMinutes > 18 * 60) {
         eveningSections += course.sectionCount;
       }
       if (course.dayOfWeek >= 6) {
