@@ -4,11 +4,11 @@ import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/services/class_reminder_service.dart';
 import 'package:university_timetable/services/exam_reminder_service.dart';
 
-Course _course({String id = 'c1'}) => Course(
+Course _course({String id = 'c1', String location = '教一 101'}) => Course(
       id: id,
       name: '高等数学',
       teacher: '张三',
-      location: '教一 101',
+      location: location,
       dayOfWeek: 1,
       startSection: 1,
       endSection: 2,
@@ -155,6 +155,31 @@ void main() {
       expect(
         DateTime.fromMillisecondsSinceEpoch(fires.single.fireAtMillis),
         DateTime(2099, 9, 7, 8),
+      );
+    });
+
+    test('课程没有教室时正文用响点钟点，不能留空', () {
+      // 原生侧对空白正文有兜底文案「你有一场即将开始的考试」
+      // （ExamReminderScheduler.kt:265-267，R.string.notification_exam_reminder_default_body），
+      // 而这条链与考试提醒共用同一个投递口 —— 线上课/体测这类没有教室的课
+      // 一旦 body 为空，用户收到的就是一句"你有考试"。
+      final fires = ClassReminderService.buildFires(
+        entries: const [
+          ClassReminderEntry(
+            courseId: 'c1',
+            date: '2099-09-07',
+            minuteOfDay: 8 * 60,
+          ),
+        ],
+        resolveCourse: (_) => _course(location: '  '),
+        now: DateTime(2099, 9),
+      );
+
+      expect(fires.single.body, isNotEmpty);
+      expect(
+        fires.single.body,
+        '08:00',
+        reason: '正文回落成上课钟点，标题已是课程名，两者不引入本地化文案',
       );
     });
 

@@ -28,6 +28,25 @@ object ExamReminderScheduler {
     private const val KEY_SNAPSHOT_JSON = "snapshot_json"
     const val CHANNEL_ID = "exam_reminder_channel"
     const val ACTION_FIRE = "com.mutx163.qingyu.ACTION_EXAM_REMINDER_FIRE"
+
+    /**
+     * 这条通知系统是否真的可能投递。三个条件缺一，`notify()` 就会被静默丢弃：
+     * POST_NOTIFICATIONS 未授予、用户在系统设置里关掉本应用通知、
+     * 或把「考试提醒」这个渠道调成"不显示/静默"。
+     *
+     * 原先只看第一项：Android 13+ 上用户关掉通知或渠道时权限依旧是 granted，
+     * `notify()` 什么也不做而函数照样 `return true`，调用方于是按"投递成功"
+     * 把这条 fire 从快照删掉（见 :277-279 的注释意图恰恰相反：投不出去要留着），
+     * 那次考试/上课提醒就永久消失了，开机重排也救不回来。
+     * 同仓的 `LiveUpdateService.kt:184-200` 本来就三处都查。
+     */
+    internal fun examReminderCanPostNotification(
+        permissionGranted: Boolean,
+        appNotificationsEnabled: Boolean,
+        channelImportance: Int,
+    ): Boolean = permissionGranted &&
+        appNotificationsEnabled &&
+        channelImportance > NotificationManager.IMPORTANCE_NONE
     private const val EXTRA_REQUEST_CODE = "requestCode"
     private const val EXTRA_EXAM_ID = "examId"
     private const val EXTRA_OFFSET_MINUTES = "offsetMinutes"
@@ -294,14 +313,35 @@ object ExamReminderScheduler {
         body: String,
     ): Boolean {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return false
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val granted = context.checkSelfPermission(
+        val permissionGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.checkSelfPermission(
                 android.Manifest.permission.POST_NOTIFICATIONS,
             ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-            if (!granted) {
-                Log.w(TAG, "skip notify: POST_NOTIFICATIONS not granted")
-                return false
-            }
+        } else {
+            true
+        }
+        val channelImportance = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // ensureChannel() 在本接收器 :243 已调过，渠道必然存在；
+            // 取不到只能是被系统回收，按"不能投递"处理更安全。
+            manager.getNotificationChannel(CHANNEL_ID)?.importance
+                ?: NotificationManager.IMPORTANCE_NONE
+        } else {
+            NotificationManager.IMPORTANCE_DEFAULT
+        }
+        if (!examReminderCanPostNotification(
+                permissionGranted = permissionGranted,
+                appNotificationsEnabled = manager.areNotificationsEnabled(),
+                channelImportance = channelImportance,
+            )
+        ) {
+            Log.w(
+                TAG,
+                "skip notify: not deliverable " +
+                    "granted=$permissionGranted " +
+                    "appEnabled=${manager.areNotificationsEnabled()} " +
+                    "importance=$channelImportance",
+            )
+            return false
         }
 
         val contentIntent = PendingIntent.getActivity(
@@ -332,8 +372,16 @@ object ExamReminderScheduler {
             .setPriority(Notification.PRIORITY_DEFAULT)
             .build()
 
-        manager.notify(notificationId, notification)
-        return true
+        return try {
+            manager.notify(notificationId, notification)
+            true
+        } catch (error: Exception) {
+            // 与 WeeklyReportScheduler.kt:259 同口径：notify 抛异常既不能把接收器带崩，
+            // 也不能当成投递成功 —— 返回 true 的话 onReceive 会把这条 fire
+            // 从快照里删掉，那次提醒就再也没有了。
+            Log.w(TAG, "notify threw", error)
+            false
+        }
     }
 
     private fun scheduleAlarm(context: Context, fire: Fire) {

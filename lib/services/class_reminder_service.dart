@@ -81,6 +81,15 @@ abstract final class ClassReminderService {
         continue;
       }
       final location = course.location.trim();
+      // 原生侧对空白正文有一条兜底文案「你有一场即将开始的考试」
+      // （ExamReminderScheduler.kt:265-267 的 notification_exam_reminder_default_body），
+      // 而单节课提醒与考试提醒共用同一个投递口。没有教室的课
+      // （线上课、体测、实验室未填）正文就会是空串，于是用户收到的通知
+      // 标题是课程名、正文写着"你有考试"。这里自己填响点钟点：
+      // 纯数字，不涉及本地化文案，也与标题不重复。
+      final body = location.isNotEmpty
+          ? location
+          : formatClock(entry.minuteOfDay);
       fires.add(
         ExamReminderFire(
           examId: entry.id,
@@ -97,7 +106,7 @@ abstract final class ClassReminderService {
           fireAtMillis: fireAt.millisecondsSinceEpoch,
           examStartMillis: fireAt.millisecondsSinceEpoch,
           title: course.name.trim(),
-          body: location,
+          body: body,
           requestCode: requestCode(entry),
         ),
       );
