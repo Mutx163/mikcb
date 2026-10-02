@@ -18,7 +18,15 @@ Future<TimeScheme> _timetableCreateTimeScheme(
     updatedAt: now,
   );
   host._timeSchemes.add(scheme);
-  await host._persistTimeSchemes();
+  try {
+    await host._persistTimeSchemes();
+  } catch (_) {
+    // 落库失败必须把刚加进内存的那条摘掉：本类大量入口是「先改内存、后写盘」，
+    // 幻影作息会被下一次任意成功写入经 `_mergeActiveProfileIntoProfilesList`
+    // 当成既有状态永久落盘。形状同 `_applySavedThemes`（主题族已收口）。
+    host._timeSchemes.removeWhere((item) => item.id == scheme.id);
+    rethrow;
+  }
   if (applyToActiveProfile) {
     await _timetableApplyTimeScheme(host, scheme.id);
   } else {
@@ -79,12 +87,18 @@ Future<TimeScheme?> _timetableRenameTimeScheme(
     return null;
   }
 
-  final updated = host._timeSchemes[index].copyWith(
+  final original = host._timeSchemes[index];
+  final updated = original.copyWith(
     name: name.trim(),
     updatedAt: DateTime.now(),
   );
   host._timeSchemes[index] = updated;
-  await host._persistTimeSchemes();
+  try {
+    await host._persistTimeSchemes();
+  } catch (_) {
+    host._timeSchemes[index] = original;
+    rethrow;
+  }
   host._notifyStateChanged();
   return updated;
 }
@@ -109,7 +123,12 @@ Future<TimeScheme?> _timetableDuplicateTimeScheme(
     sections: List<SectionTime>.from(source.sections),
   );
   host._timeSchemes.add(duplicated);
-  await host._persistTimeSchemes();
+  try {
+    await host._persistTimeSchemes();
+  } catch (_) {
+    host._timeSchemes.removeWhere((item) => item.id == duplicated.id);
+    rethrow;
+  }
   host._notifyStateChanged();
   return duplicated;
 }
@@ -157,6 +176,13 @@ Future<String?> _timetableUpdateTimeScheme(
     sections: List<SectionTime>.from(sections),
     updatedAt: DateTime.now(),
   );
+  // 本函数会同时改四份内存状态（作息表 / 全部档案 / 设置 / 当前课表），再分两次
+  // await 落盘。任一步失败都必须整体退回，否则「内存已是新课表、盘上还是旧的」
+  // 会被下一次成功写入当成既有状态落盘 —— 用户看到的是改了作息却只生效一半。
+  final snapshotSchemes = List<TimeScheme>.from(host._timeSchemes);
+  final snapshotProfiles = List<TimetableProfile>.from(host._profiles);
+  final snapshotSettings = host._settings;
+  final snapshotCourses = List<Course>.from(host._courses);
   host._timeSchemes[index] = updatedScheme;
 
   for (var i = 0; i < host._profiles.length; i++) {
@@ -199,8 +225,16 @@ Future<String?> _timetableUpdateTimeScheme(
     host._mergeActiveProfileIntoProfilesList();
   }
 
-  await host._persistTimeSchemes();
-  await host._profileRepository.saveProfiles(host._profiles);
+  try {
+    await host._persistTimeSchemes();
+    await host._profileRepository.saveProfiles(host._profiles);
+  } catch (_) {
+    host._timeSchemes = snapshotSchemes;
+    host._profiles = snapshotProfiles;
+    host._settings = snapshotSettings;
+    host._courses = snapshotCourses;
+    rethrow;
+  }
   host._currentLiveCourseId = null;
   host._notifyStateChanged();
   await host._updateLiveActivity();
@@ -226,9 +260,13 @@ Future<bool> _timetableDeleteTimeScheme(
   if (index == -1) {
     return false;
   }
-  host._timeSchemes.removeAt(index);
-
-  await host._persistTimeSchemes();
+  final removed = host._timeSchemes.removeAt(index);
+  try {
+    await host._persistTimeSchemes();
+  } catch (_) {
+    host._timeSchemes.insert(index, removed);
+    rethrow;
+  }
   host._notifyStateChanged();
   return true;
 }

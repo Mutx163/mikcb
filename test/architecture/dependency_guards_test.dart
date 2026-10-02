@@ -82,7 +82,12 @@ void main() {
     // · updateCourseGroup 空集合守卫、主题族 _applySavedThemes 回滚、
     //   HolidayService 注入所有权、_syncCourseWithEffectiveTimeScheme 越界星期拒收。
     // 按测试约定同步真实值；拆分仍归阶段 3。
-    const baselineLines = 4875;
+    // 4875→4912：地点分组的落盘失败回滚。新增 `_commitLocationGroupChange`
+    // （25 行：抓 4 份内存快照 + 失败退回 + 尽力把旧分组重新落盘 + rethrow），
+    // 三个入口各改成"抓旧列表 → 改内存 → 交给收口函数写"。与已经收口的
+    // `_applySavedThemes`（主题族）、`_timetableUpdateTimeScheme`（作息）同形，
+    // 不是新业务状态机；作息/导入那两处的同类收口在 part 文件里，不占本数字。
+    const baselineLines = 4912;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

@@ -1458,6 +1458,35 @@ class TimetableProvider with ChangeNotifier {
   /// LocationRules` 会按「自己读到的分组」重算**每个课表**的 courses 并全量覆写
   /// profiles 键（:1448），还会用那份结果反向覆盖 `_courses`/`_settings`（:1445）。
   /// 中途让出时门内写者（updateCourse 等）刚落的盘会被这份旧口径重算结果盖掉。
+  /// 地点分组写入的收口：任一步 await 失败就把四份内存状态整体退回，并尽力把旧
+  /// 分组列表重新落盘（补偿），最后 rethrow。
+  ///
+  /// 形状同 `_applySavedThemes`（主题族）与 `_timetableUpdateTimeScheme`（作息）。
+  /// 分组写成功但 `_resyncAllProfilesWithLocationRules` 失败时也必须退：否则盘上是
+  /// 新分组、课表钟点还是旧口径，下一次任意成功写入会把这份不一致永久坐实。
+  Future<void> _commitLocationGroupChange(
+    List<LocationTimeGroup> previousGroups,
+    Future<void> Function() write,
+  ) async {
+    final snapshotProfiles = List<TimetableProfile>.from(_profiles);
+    final snapshotSettings = _settings;
+    final snapshotCourses = List<Course>.from(_courses);
+    try {
+      await write();
+    } catch (_) {
+      _locationTimeGroups = previousGroups;
+      _profiles = snapshotProfiles;
+      _settings = snapshotSettings;
+      _courses = snapshotCourses;
+      try {
+        await _persistLocationTimeGroups();
+      } catch (_) {
+        // 补偿失败不遮住原始错误：与 updateTimetableSettings 的旧路径同处理。
+      }
+      rethrow;
+    }
+  }
+
   Future<LocationTimeGroup> createLocationTimeGroup({
     required String name,
     required String timeSchemeId,
@@ -1483,9 +1512,12 @@ class TimetableProvider with ChangeNotifier {
         priority: priority,
         keywords: List<LocationKeyword>.from(keywords),
       );
+      final previousGroups = List<LocationTimeGroup>.from(_locationTimeGroups);
       _locationTimeGroups = [..._locationTimeGroups, group];
-      await _persistLocationTimeGroups();
-      await _resyncAllProfilesWithLocationRules();
+      await _commitLocationGroupChange(previousGroups, () async {
+        await _persistLocationTimeGroups();
+        await _resyncAllProfilesWithLocationRules();
+      });
       return group;
     });
   }
@@ -1513,11 +1545,14 @@ class TimetableProvider with ChangeNotifier {
         name: trimmedName,
         keywords: List<LocationKeyword>.from(group.keywords),
       );
+      final previousGroups = List<LocationTimeGroup>.from(_locationTimeGroups);
       final next = List<LocationTimeGroup>.from(_locationTimeGroups);
       next[index] = updated;
       _locationTimeGroups = next;
-      await _persistLocationTimeGroups();
-      await _resyncAllProfilesWithLocationRules();
+      await _commitLocationGroupChange(previousGroups, () async {
+        await _persistLocationTimeGroups();
+        await _resyncAllProfilesWithLocationRules();
+      });
       return updated;
     });
   }
@@ -1525,15 +1560,17 @@ class TimetableProvider with ChangeNotifier {
   Future<bool> deleteLocationTimeGroup(String groupId) {
     return _runMutation(() async {
       await initialize();
-      final beforeCount = _locationTimeGroups.length;
+      final previousGroups = List<LocationTimeGroup>.from(_locationTimeGroups);
       _locationTimeGroups = _locationTimeGroups
           .where((group) => group.id != groupId)
           .toList();
-      if (_locationTimeGroups.length == beforeCount) {
+      if (_locationTimeGroups.length == previousGroups.length) {
         return false;
       }
-      await _persistLocationTimeGroups();
-      await _resyncAllProfilesWithLocationRules();
+      await _commitLocationGroupChange(previousGroups, () async {
+        await _persistLocationTimeGroups();
+        await _resyncAllProfilesWithLocationRules();
+      });
       return true;
     });
   }

@@ -413,11 +413,15 @@ Future<String?> _timetableImportAppDataBackupAsNewProfile(
   String content, {
   String? profileName,
 }) async {
+  _FullBackupRestoreSnapshot? snapshot;
   try {
     if (host._dataTransferService.isFullBackupJson(content)) {
       return 'import_use_overwrite_for_full_backup';
     }
     final backup = host._dataTransferService.parseBackupJson(content);
+    // 快照必须在第一次改动之前抓：下面 `_resolveSettingsAgainstTimeSchemes` 就会
+    // 创建并落盘新作息，之后还要 add 新档案、切激活档案、`_applyProfileState`。
+    snapshot = _FullBackupRestoreSnapshot(host);
     final nextName = (profileName ?? backup.profileName ?? '导入课表').trim();
     final resolvedSettings = await host._resolveSettingsAgainstTimeSchemes(
       backup.settings,
@@ -469,8 +473,22 @@ Future<String?> _timetableImportAppDataBackupAsNewProfile(
     await host._updateLiveActivity();
     return null;
   } on FormatException catch (e) {
-    return e.message;
+    // 与整表覆盖那条路径同款：失败要按快照把内存与盘都退回去。这里原先直接
+    // return 错误串，内存里却已经 add 了新档案并切了激活档案（`_applyProfileState`
+    // 还不 notify，UI 仍显示旧课表），随后任意一次成功写入会把这份幻影档案永久落盘。
+    final rollbackFailures = await _restoreAfterFullBackupFailure(
+      host,
+      snapshot,
+    );
+    return rollbackFailures.isEmpty ? e.message : 'import_rollback_incomplete';
   } catch (_) {
+    final rollbackFailures = await _restoreAfterFullBackupFailure(
+      host,
+      snapshot,
+    );
+    if (rollbackFailures.isNotEmpty) {
+      return 'import_rollback_incomplete';
+    }
     return 'import_file_unrecognized';
   }
 }
