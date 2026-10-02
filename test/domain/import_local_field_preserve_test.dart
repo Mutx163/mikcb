@@ -38,8 +38,6 @@ void main() {
     endSection: endSection,
     startTime: '08:00',
     endTime: '09:40',
-    startWeek: 1,
-    endWeek: 16,
     suspendedWeeks: suspendedWeeks,
     note: note,
     sessionNotes: sessionNotes,

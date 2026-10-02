@@ -136,8 +136,30 @@ class _AppTextInputSheetState extends State<_AppTextInputSheet> {
     text: widget.initialValue,
   );
 
+  /// 校验是否通过。只在「通过 ⇄ 不通过」翻转时重建，避免每次按键都重画弹层。
+  late bool _isValid;
+
+  bool get _computeValid =>
+      widget.validate == null || widget.validate!(_controller.text.trim());
+
+  @override
+  void initState() {
+    super.initState();
+    _isValid = _computeValid;
+    _controller.addListener(_handleTextChanged);
+  }
+
+  void _handleTextChanged() {
+    final next = _computeValid;
+    if (next == _isValid) {
+      return;
+    }
+    setState(() => _isValid = next);
+  }
+
   @override
   void dispose() {
+    _controller.removeListener(_handleTextChanged);
     _controller.dispose();
     super.dispose();
   }
@@ -145,6 +167,10 @@ class _AppTextInputSheetState extends State<_AppTextInputSheet> {
   void _submit() {
     final value = _controller.text.trim();
     if (widget.validate != null && !widget.validate!(value)) {
+      // 兜底：确认按钮在校验不过时已经是禁用态（onPressed: null），这里不再
+      // 是唯一的守门人。修复前只有这一句静默 return —— 课表档/作息模板/主题
+      // 命名的调用方传的都是 `value.isNotEmpty`，名字留空点「创建」界面一动
+      // 不动，用户只能反复点或以为 app 卡死。
       return;
     }
     Navigator.pop(context, value);
@@ -177,7 +203,7 @@ class _AppTextInputSheetState extends State<_AppTextInputSheet> {
                 child: HyperosButton(
                   label: widget.confirmLabel,
                   expand: true,
-                  onPressed: _submit,
+                  onPressed: _isValid ? _submit : null,
                 ),
               ),
             ],

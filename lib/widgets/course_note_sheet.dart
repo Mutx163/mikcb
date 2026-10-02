@@ -5,6 +5,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../models/course.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../utils/app_toast.dart';
 
 /// Opens the dual-type course note editor as a home HyperOS sheet.
 ///
@@ -178,6 +179,16 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
         return;
       }
       setState(() => _isSaving = false);
+      // `provider.updateCourse` 是「改内存 → await 落库 → 失败回滚并 rethrow」
+      // 的收口形状（本仓 _applySavedThemes / runSettingsMirrorTransaction 同形），
+      // 所以磁盘写失败与作息校验失败都会落到这里。修复前只把按钮的转圈停下：
+      // 用户写完备注/作业点「保存」毫无反馈，划走弹层内容就丢了。
+      // 弹层保持打开、内容留在输入框里，用户可以直接重试。
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
     }
   }
 

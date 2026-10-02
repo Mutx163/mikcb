@@ -49,10 +49,33 @@ class _CoupleWebdavConnectSheetState extends State<CoupleWebdavConnectSheet> {
     _usernameController = TextEditingController(text: widget.config.username);
     _passwordController = TextEditingController();
     _mySlot = widget.config.normalizedMySlot;
+    _credentialsFilled = _hasBothCredentials;
+    _usernameController.addListener(_syncCredentialsFilled);
+    _passwordController.addListener(_syncCredentialsFilled);
+  }
+
+  /// 用户名与密码是否都填了。修复前这里没有任何可见反馈：
+  /// `_testConnection` 开头 `if (username.isEmpty || password.isEmpty) return false;`，
+  /// `_confirmConnect` 拿到 false 就 return —— 点「连接并拉取」只让按钮闪一下
+  /// 转圈态，页面不说为什么，用户以为是网络或服务端问题。
+  bool _credentialsFilled = false;
+
+  bool get _hasBothCredentials =>
+      _usernameController.text.trim().isNotEmpty &&
+      _passwordController.text.isNotEmpty;
+
+  void _syncCredentialsFilled() {
+    final next = _hasBothCredentials;
+    if (next == _credentialsFilled) {
+      return;
+    }
+    setState(() => _credentialsFilled = next);
   }
 
   @override
   void dispose() {
+    _usernameController.removeListener(_syncCredentialsFilled);
+    _passwordController.removeListener(_syncCredentialsFilled);
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -134,7 +157,9 @@ class _CoupleWebdavConnectSheetState extends State<CoupleWebdavConnectSheet> {
               label: l10n.cloudSyncTestConnection,
               variant: HyperosButtonVariant.secondary,
               loading: _testing,
-              onPressed: _testing || _connecting ? null : _testConnection,
+              onPressed: _testing || _connecting || !_credentialsFilled
+                  ? null
+                  : _testConnection,
             ),
           ),
           const SizedBox(width: 12),
@@ -142,7 +167,9 @@ class _CoupleWebdavConnectSheetState extends State<CoupleWebdavConnectSheet> {
             child: HyperosButton(
               label: l10n.coupleWebdavConfirmConnect,
               loading: _connecting,
-              onPressed: _connecting ? null : _confirmConnect,
+              onPressed: _connecting || !_credentialsFilled
+                  ? null
+                  : _confirmConnect,
             ),
           ),
         ],
