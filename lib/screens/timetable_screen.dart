@@ -9149,7 +9149,16 @@ class _TimetableScreenState extends State<TimetableScreen>
     final settings = provider.settings;
     final weekdayLabels = _weekdayLabels(context);
     final scheme = provider.resolveCourseTimeScheme(course);
-    final sectionTimes = scheme?.sections ?? settings.sections;
+    // 必须用课程解析后的节次表：`_applyCourseCustomTime` 会把自定义钟点钉回它
+    // 自己那两节，闹钟、课表卡、进度里程碑读的都是这份结果（见
+    // TimetableProvider.resolvedSectionsForCourse 的注释）。这里原先直接取模板
+    // `scheme.sections`，于是钉过钟点的课（例如教务导入把早读 07:00-07:40 钉在
+    // 第 1 节）在本弹层显示成模板的 08:00-08:45 —— 用户照弹层上的时间行动就会错，
+    // 而同一个 App 里卡片与闹钟都显示 07:00。
+    final sectionTimes =
+        provider.resolvedSectionsForCourse(course) ??
+        scheme?.sections ??
+        settings.sections;
 
     final draft = await showCourseRescheduleSheet(
       context,
