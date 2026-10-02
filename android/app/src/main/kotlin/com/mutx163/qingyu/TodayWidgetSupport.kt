@@ -638,7 +638,38 @@ object TodayWidgetSupport {
         return array
     }
 
-    internal fun findNextRefreshAtMillis(
+    /**
+ * 筛"今天有哪些课"时该用的周次；返回 null 表示这天不在教学周内，不该排任何刷新/闹钟。
+ *
+ * 关键点：**不能钳到最后一周**。快照侧 :285-288 的注释已经把这条口径写死了
+ * （"Clamping to the last teaching week after the term ends would revive
+ * endWeek=N courses on every matching weekday forever"），
+ * 而刷新排程那侧原先调的是 `calculateWeekForDate`，它把周次钳进 `1..semesterWeekCount`，
+ * 并且把"开学日之前"强行算成第 1 周（那是给卡片显示用的 UI 兜底）。
+ * 后果：放假以后，每个与最后一周课表星期相符的日子都照样按那天的铃点
+ * 逐个排精确闹钟与倒计时刷新 —— 学期已经结束，卡片写着"无课"，闹钟却天天排。
+ *
+ * 与 Dart 侧 `WeekCalculator` 一样：学期未设置开学日时退回档内 currentWeek。
+ */
+internal fun widgetScheduleWeekForFiltering(
+    semesterStartMillis: Long?,
+    fallbackWeek: Int,
+    semesterWeekCount: Int,
+    scheduleWeek: Int,
+): Int? {
+    if (semesterWeekCount < 1) {
+        return null
+    }
+    if (semesterStartMillis == null) {
+        return fallbackWeek.coerceIn(1, semesterWeekCount)
+    }
+    if (scheduleWeek < 1 || scheduleWeek > semesterWeekCount) {
+        return null
+    }
+    return scheduleWeek
+}
+
+internal fun findNextRefreshAtMillis(
         context: Context,
         nowMillis: Long = System.currentTimeMillis(),
         profileJson: JSONObject? = null,
@@ -679,12 +710,18 @@ object TodayWidgetSupport {
             return if (tomorrowStart > nowMillis) tomorrowStart else null
         }
         val semesterWeekCount = settingsJson.optInt("semesterWeekCount", 20).coerceAtLeast(1)
-        val currentWeek = calculateWeekForDate(
-            semesterStartMillis = settingsJson.optLong("semesterStartDate").takeIf { it > 0L },
-            fallbackWeek = profile.optInt("currentWeek", 1).coerceAtLeast(1),
+        val semesterStartMillis = settingsJson.optLong("semesterStartDate").takeIf { it > 0L }
+        val fallbackWeek = profile.optInt("currentWeek", 1).coerceAtLeast(1)
+        val currentWeek = widgetScheduleWeekForFiltering(
+            semesterStartMillis = semesterStartMillis,
+            fallbackWeek = fallbackWeek,
             semesterWeekCount = semesterWeekCount,
-            nowMillis = nowMillis,
-        )
+            scheduleWeek = liveSchedulerCalculateCalendarWeekForDate(
+                semesterStartMillis = semesterStartMillis,
+                currentWeek = fallbackWeek,
+                dateMillis = nowMillis,
+            ),
+        ) ?: return null
         val weekday = Calendar.getInstance().apply {
             timeInMillis = nowMillis
         }.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)
@@ -1620,30 +1657,6 @@ object TodayWidgetSupport {
                 )
             }
         }
-    }
-
-    private fun calculateWeekForDate(
-        semesterStartMillis: Long?,
-        fallbackWeek: Int,
-        semesterWeekCount: Int,
-        nowMillis: Long,
-    ): Int {
-        if (semesterStartMillis == null) {
-            return fallbackWeek.coerceIn(1, semesterWeekCount)
-        }
-        // Align to Monday like Flutter getWeekIndex / LiveUpdateScheduler so
-        // desktop widgets do not show the wrong week when semesterStart is mid-week.
-        val week = liveSchedulerCalculateWeekForDate(
-            semesterStartMillis = semesterStartMillis,
-            currentWeek = fallbackWeek,
-            dateMillis = nowMillis,
-            semesterWeekCount = semesterWeekCount,
-        )
-        if (week < 1) {
-            // Before semester start: show week 1 content rather than empty (UI clamp).
-            return 1
-        }
-        return week.coerceIn(1, semesterWeekCount)
     }
 
     /** Returns null if the string is null, blank, or the literal "null". */
