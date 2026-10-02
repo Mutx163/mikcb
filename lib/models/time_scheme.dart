@@ -234,6 +234,16 @@ int _clockMinutes(String value) {
 }
 
 String _minutesToClock(int minutes) {
+  // 1440 必须写成 "24:00"，不能被 `% 1440` 回绕成 "00:00"：`_clockMinutes` 专门
+  // 允许 24:00（"晚自习/末节课的合法写法，语义是当天结束"），手工填的
+  // 22:00-24:00 由 test/models/time_scheme_test.dart 钉着合法，ClockTime 的
+  // allowEndOfDay 与原生 LiveClock 也都按次日零点解释。而 `越界判定` 用的是
+  // `> 24*60`，所以 1440 是本函数允许的收尾；一旦回绕成 00:00，紧接着的
+  // validateSectionTimes 就报「第 N 节结束时间必须晚于开始时间」——
+  // 用户在快速生成抽屉里按这句提示怎么改都存不下（22:00 起、单节 120 分钟即触发）。
+  if (minutes == 24 * 60) {
+    return '24:00';
+  }
   final normalized = minutes % (24 * 60);
   final hour = normalized ~/ 60;
   final minute = normalized % 60;
