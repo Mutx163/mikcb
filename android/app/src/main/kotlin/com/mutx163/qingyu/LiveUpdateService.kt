@@ -297,6 +297,8 @@ class LiveUpdateService : Service() {
     private var lastCriticalTimeText = ""
     private var cachedIslandBitmapKey: String? = null
     private var cachedIslandBitmap: Bitmap? = null
+    private var cachedExpandedIconKey: String? = null
+    private var cachedExpandedIconBitmap: Bitmap? = null
     private var hasStartedForeground = false
     private var lastTickerStage: String? = null
     private var validateAgainstSchedule = true
@@ -1719,7 +1721,28 @@ class LiveUpdateService : Service() {
     }
 
     private fun decodeSquareBitmap(path: String, targetSize: Int): Bitmap? {
-        val source = BitmapFactory.decodeFile(path) ?: return null
+        val resolvedTargetSize = targetSize.coerceAtLeast(1)
+        // 先只读边界，再按目标尺寸取 2 的幂采样。
+        // 原来直接 BitmapFactory.decodeFile(path)：超级岛的大图标是
+        // dp(56)（≈96-168px）的一张小方图，却要先把用户相册里
+        // 4000×3000 的原件（ARGB_8888 约 46MB）整张解进内存，
+        // 而 computeNextTickDelayMillis 在课前/课末的一分钟里返回 1000L
+        // （:2613），:2135 每次重建通知都会再解一遍 —— 主线程每秒一次全尺寸解码。
+        // 解码失败（含 OOM 守卫返回 null）时 BitmapFactory 不抛异常，只返回 null，
+        // 表现就是图标静默消失。
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(path, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+            return null
+        }
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = computeSquareBitmapSampleSize(
+                bounds.outWidth,
+                bounds.outHeight,
+                resolvedTargetSize,
+            )
+        }
+        val source = BitmapFactory.decodeFile(path, options) ?: return null
         val side = minOf(source.width, source.height)
         if (side <= 0) {
             source.recycle()
@@ -1731,11 +1754,15 @@ class LiveUpdateService : Service() {
         if (cropped != source) {
             source.recycle()
         }
-        val resolvedTargetSize = targetSize.coerceAtLeast(1)
         if (cropped.width == resolvedTargetSize && cropped.height == resolvedTargetSize) {
             return cropped
         }
-        val scaled = Bitmap.createScaledBitmap(cropped, resolvedTargetSize, resolvedTargetSize, true)
+        val scaled = Bitmap.createScaledBitmap(
+            cropped,
+            resolvedTargetSize,
+            resolvedTargetSize,
+            true,
+        )
         if (scaled != cropped) {
             cropped.recycle()
         }
@@ -1744,7 +1771,17 @@ class LiveUpdateService : Service() {
 
     private fun decodeExpandedIconBitmap(path: String): Bitmap? {
         val targetSize = dp(56f).toInt().coerceAtLeast(96)
-        return decodeSquareBitmap(path, targetSize)
+        val cacheKey = "$path|$targetSize"
+        // 与同文件 resolveIslandLabelBitmap 的 cacheKey 同款做法：
+        // 每秒重建通知时不该反复解码同一张图。只留一份、按引用替换，
+        // 不 recycle —— 旧图可能仍被已 posted 的通知引用着。
+        if (cachedExpandedIconKey == cacheKey) {
+            return cachedExpandedIconBitmap
+        }
+        val bitmap = decodeSquareBitmap(path, targetSize)
+        cachedExpandedIconKey = cacheKey
+        cachedExpandedIconBitmap = bitmap
+        return bitmap
     }
 
     private fun applyExpandedLargeIcon(builder: Notification.Builder) {
@@ -2655,4 +2692,30 @@ class LiveUpdateService : Service() {
         }
         return stageDelay.coerceIn(1_000L, 60_000L)
     }
+}
+
+/**
+ * 方图缩略采样比（2 的幂，BitmapFactory 只认 2 的幂）。
+ *
+ * 按**短边**算，因为调用方会先裁成正方形：长边被裁掉，短边才是有效信息量。
+ * 返回值保证 `side / sample >= targetSize`，即采样后仍不小于目标尺寸，
+ * 不会出现放大导致的模糊；已经够小的图返回 1（不采样）。
+ */
+internal fun computeSquareBitmapSampleSize(
+    sourceWidth: Int,
+    sourceHeight: Int,
+    targetSize: Int,
+): Int {
+    if (sourceWidth <= 0 || sourceHeight <= 0 || targetSize <= 0) {
+        return 1
+    }
+    val side = minOf(sourceWidth, sourceHeight)
+    if (side <= targetSize) {
+        return 1
+    }
+    var sample = 1
+    while (side / (sample * 2) >= targetSize) {
+        sample *= 2
+    }
+    return sample
 }
