@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
+import 'package:university_timetable/utils/clock_time.dart';
 import 'package:provider/provider.dart';
 
 import 'package:share_plus/share_plus.dart';
@@ -130,11 +131,7 @@ class _TimeSchemeManagementScreenState
     final locationTimeGroups = provider.locationTimeGroups;
     final signature = Object.hash(
       Object.hashAll(profiles.map(identityHashCode)),
-      Object.hashAll(
-        locationTimeGroups.map(
-          identityHashCode,
-        ),
-      ),
+      Object.hashAll(locationTimeGroups.map(identityHashCode)),
       Object.hashAll(schemes.map(identityHashCode)),
     );
     if (identical(_usageSnapshotProvider, provider) &&
@@ -559,13 +556,9 @@ class _TimeSchemeManagementScreenState
     final separator = l10n.timeSchemeBlockerListSeparator;
     final lines = <String>[
       if (blockers.profileNames.isNotEmpty)
-        l10n.timeSchemeBlockedByProfiles(
-          blockers.profileNames.join(separator),
-        ),
+        l10n.timeSchemeBlockedByProfiles(blockers.profileNames.join(separator)),
       if (blockers.overrideCourseCount > 0)
-        l10n.timeSchemeBlockedByOverrideCourses(
-          blockers.overrideCourseCount,
-        ),
+        l10n.timeSchemeBlockedByOverrideCourses(blockers.overrideCourseCount),
       if (blockers.locationCourseCount > 0)
         l10n.timeSchemeBlockedByLocationCourses(blockers.locationCourseCount),
       if (blockers.locationGroupNames.isNotEmpty)
@@ -594,9 +587,9 @@ class _TimeSchemeManagementScreenState
               // title above).  The blocker list below is the part that opts out
               // via TextAlign.start, because a list reads wrong centered.
               textAlign: TextAlign.center,
-              style: HyperosTypography.listDetail(context).copyWith(
-                color: HyperosColors.primaryText(context),
-              ),
+              style: HyperosTypography.listDetail(
+                context,
+              ).copyWith(color: HyperosColors.primaryText(context)),
             ),
             const SizedBox(height: 12),
             // No leading dot here.  This dialog almost always has a single
@@ -667,10 +660,7 @@ class _TimeSchemeManagementScreenState
   }
 
   /// 分享单个时间模板：弹窗选择「系统分享 / 二维码分享」。
-  Future<void> _shareTimeScheme(
-    BuildContext context,
-    TimeScheme scheme,
-  ) async {
+  Future<void> _shareTimeScheme(BuildContext context, TimeScheme scheme) async {
     final l10n = AppLocalizations.of(context)!;
     final choice = await showHyperosDialog<String>(
       context: context,
@@ -680,9 +670,9 @@ class _TimeSchemeManagementScreenState
       body: Text(
         scheme.name,
         textAlign: TextAlign.center,
-        style: HyperosTypography.listDetail(context).copyWith(
-          color: HyperosColors.primaryText(context),
-        ),
+        style: HyperosTypography.listDetail(
+          context,
+        ).copyWith(color: HyperosColors.primaryText(context)),
       ),
       actions: [
         HyperosDialogAction(
@@ -1554,8 +1544,13 @@ class _TimeSchemeBadge extends StatelessWidget {
 }
 
 TimeOfDay _parseTimeOfDay(String value) {
-  final parts = value.split(':');
-  return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+  // 容错解析：坏值退回 00:00，让时间选择器仍能打开、用户改完保存即修复这一格。
+  // 旧写法是裸 `int.parse(parts[0])`，而 SectionTime.fromJson 只要求"非空字符串"，
+  // 外来作息/备份里的 `"08.30"`、`"8"`、`"上午8点"` 都能进库；一到这里就抛
+  // FormatException/RangeError，被 async 吞掉后表现为「点某一节的时间没反应」，
+  // 用户既改不动也看不到原因。
+  final clock = ClockTime.tryParse(value) ?? const ClockTime(0, 0);
+  return TimeOfDay(hour: clock.hour, minute: clock.minute);
 }
 
 String _formatTimeOfDay(TimeOfDay time) {
@@ -1563,8 +1558,7 @@ String _formatTimeOfDay(TimeOfDay time) {
 }
 
 int _parseTimeMinutes(String value) {
-  final parts = value.split(':');
-  return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+  return (ClockTime.tryParse(value) ?? const ClockTime(0, 0)).totalMinutes;
 }
 
 SectionTime _buildNextSection(SectionTime last) {

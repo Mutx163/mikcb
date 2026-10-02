@@ -4,6 +4,7 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../models/time_scheme.dart';
 import '../utils/app_toast.dart';
+import '../utils/clock_time.dart';
 import 'miuix_time_picker_sheet.dart';
 
 /// Preset values returned by [showTimeSchemeQuickGenerateSheet].
@@ -443,8 +444,10 @@ class _BreakOverrideDraft {
 }
 
 TimeOfDay _parseTimeOfDay(String value) {
-  final parts = value.split(':');
-  return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+  // 容错解析，理由同 time_scheme_management_screen 里的同名辅助：裸 int.parse
+  // 会让外来的 `"08.30"` / `"8"` 抛错并表现为点了没反应。
+  final clock = ClockTime.tryParse(value) ?? const ClockTime(0, 0);
+  return TimeOfDay(hour: clock.hour, minute: clock.minute);
 }
 
 String _formatTimeOfDay(TimeOfDay time) {

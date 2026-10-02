@@ -90,10 +90,10 @@ String _stageWord(AppLocalizations l10n, _PreviewStage stage) {
 /// 对应原生 ic_upcoming / ic_course / ic_countdown 三枚白色矢量图标的
 /// 最接近的 Material 字形。
 IconData _stageSmallIconData(_PreviewStage stage) => switch (stage) {
-      _PreviewStage.beforeClass => Icons.access_time,
-      _PreviewStage.duringClass => Icons.import_contacts,
-      _PreviewStage.beforeEnd => Icons.check_circle_outline,
-    };
+  _PreviewStage.beforeClass => Icons.access_time,
+  _PreviewStage.duringClass => Icons.import_contacts,
+  _PreviewStage.beforeEnd => Icons.check_circle_outline,
+};
 
 class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
   static const _pillColor = Color(0xFF060608);
@@ -124,8 +124,8 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
   /// 预览同样按机型能力展示。
   Future<void> _detectXiaomiFamily() async {
     try {
-      final status =
-          await MiuiLiveActivitiesService().getLiveUpdateDebugStatus();
+      final status = await MiuiLiveActivitiesService()
+          .getLiveUpdateDebugStatus();
       final environment = status['environment'];
       final flag = environment is Map
           ? environment['isXiaomiFamilyDevice']
@@ -237,8 +237,7 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
         : l10n.liveIslandPreviewSampleCourse;
     final labelText = switch (d.miuiIslandLabelContent) {
       MiuiIslandLabelContent.courseName => nameToUse,
-      MiuiIslandLabelContent.location =>
-        l10n.liveIslandPreviewSampleLocation,
+      MiuiIslandLabelContent.location => l10n.liveIslandPreviewSampleLocation,
       MiuiIslandLabelContent.courseNameAndLocation =>
         '$nameToUse ${l10n.liveIslandPreviewSampleLocation}',
     };
@@ -248,21 +247,21 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
       MiuiIslandLabelFontWeight.regular => FontWeight.w400,
     };
     final label = FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.centerLeft,
-        child: Text(
-          labelText,
-          maxLines: 1,
-          style: TextStyle(
-            color: parseHexColorOrFallback(
-              d.miuiIslandLabelFontColor,
-              fallback: _defaultLabelColor,
-            ),
-            fontSize: d.miuiIslandLabelFontSize.clamp(4.0, 32.0),
-            fontWeight: fontWeight,
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Text(
+        labelText,
+        maxLines: 1,
+        style: TextStyle(
+          color: parseHexColorOrFallback(
+            d.miuiIslandLabelFontColor,
+            fallback: _defaultLabelColor,
           ),
+          fontSize: d.miuiIslandLabelFontSize.clamp(4.0, 32.0),
+          fontWeight: fontWeight,
         ),
-      );
+      ),
+    );
     if (!includeIcon) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -281,6 +280,10 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
                   File(logoPath),
                   width: 22,
                   height: 22,
+                  // 同上：不限制 cache* 会按原图解码，22px 的角标位图解一张
+                  // 相机原图约 48MB RGBA。
+                  cacheWidth: 66,
+                  cacheHeight: 66,
                   fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => _appIconImage(22),
                 )
@@ -294,14 +297,14 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
 
   /// 应用图标圆角位图（对应原生 buildRoundedLauncherIcon）。
   Widget _appIconImage(double size) => ClipRRect(
-        borderRadius: BorderRadius.circular(size * 0.24),
-        child: Image.asset(
-          BundledAssets.launcherIcon,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-        ),
-      );
+    borderRadius: BorderRadius.circular(size * 0.24),
+    child: Image.asset(
+      BundledAssets.launcherIcon,
+      width: size,
+      height: size,
+      fit: BoxFit.cover,
+    ),
+  );
 
   // --- Right critical text (islandCriticalText) ---------------------------
 
@@ -394,7 +397,6 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     final remaining = _endWindow.end.difference(DateTime.now());
     return _formatIslandCountdown(remaining, d.countdownTextStyle, 60);
   }
-
 }
 
 /// 展开态预览卡片：模拟提升通知被展开后的真实排版。
@@ -536,16 +538,13 @@ class _LiveIslandExpandedPreviewCardState
   }
 
   /// `notificationTitle`：课前/下课提醒带阶段前缀，课中只有课程名。
-  String _title(
-    AppLocalizations l10n,
-    _PreviewStage stage,
-  ) {
+  String _title(AppLocalizations l10n, _PreviewStage stage) {
     final course = _titleCourseName(l10n);
     return switch (stage) {
-      _PreviewStage.beforeClass =>
-        l10n.liveIslandPreviewTitleBeforeClass(course),
-      _PreviewStage.beforeEnd =>
-        l10n.liveIslandPreviewTitleBeforeEnd(course),
+      _PreviewStage.beforeClass => l10n.liveIslandPreviewTitleBeforeClass(
+        course,
+      ),
+      _PreviewStage.beforeEnd => l10n.liveIslandPreviewTitleBeforeEnd(course),
       _PreviewStage.duringClass => course,
     };
   }
@@ -639,7 +638,8 @@ class _LiveIslandExpandedPreviewCardState
     _PreviewStage stage,
     LiveDisplaySettings d,
   ) {
-    final order = d.expandedDetailFields ??
+    final order =
+        d.expandedDetailFields ??
         const [
           LiveExpandedDetailField.progress,
           LiveExpandedDetailField.status,
@@ -661,24 +661,30 @@ class _LiveIslandExpandedPreviewCardState
             lines.add(_stageWord(l10n, stage));
           }
         case LiveExpandedDetailField.shortName:
-          lines.add(l10n.liveExpandedDetailLineShortName(
-            l10n.liveIslandPreviewSampleCourseShort,
-          ));
+          lines.add(
+            l10n.liveExpandedDetailLineShortName(
+              l10n.liveIslandPreviewSampleCourseShort,
+            ),
+          );
         case LiveExpandedDetailField.progress:
           // 原生 showProgressBlock = (课中 || 临近下课) && classProgress != null
           // && showCountdown；beforeEnd 阶段 classProgress == null，因此只有
           // 课中且显示倒计时时才出进度行。
           if (stage == _PreviewStage.duringClass && d.showCountdown) {
-            lines.add(l10n.liveExpandedDetailLineProgressNext(
-              l10n.liveIslandPreviewStageBeforeEnd,
-            ));
-            lines.add(l10n.liveExpandedDetailLineProgressFinal(
-              _formatIslandCountdown(
-                _endWindow.end.difference(DateTime.now()),
-                d.countdownTextStyle,
-                60,
+            lines.add(
+              l10n.liveExpandedDetailLineProgressNext(
+                l10n.liveIslandPreviewStageBeforeEnd,
               ),
-            ));
+            );
+            lines.add(
+              l10n.liveExpandedDetailLineProgressFinal(
+                _formatIslandCountdown(
+                  _endWindow.end.difference(DateTime.now()),
+                  d.countdownTextStyle,
+                  60,
+                ),
+              ),
+            );
           }
         case LiveExpandedDetailField.status:
           // 原生 detailStatusText = visibleStatusText.isNotBlank() &&
@@ -698,21 +704,27 @@ class _LiveIslandExpandedPreviewCardState
           // expandedDetailLineList 只判断 `location.isNotBlank()`，不看
           // showLocationInIsland（设计文档 §10.3）。此处不能再套 showLocation，
           // 否则折叠态关掉地点时预览会少一行、实际展开却照旧显示。
-          lines.add(l10n.liveExpandedDetailLineLocation(
-            l10n.liveIslandPreviewSampleLocation,
-          ));
+          lines.add(
+            l10n.liveExpandedDetailLineLocation(
+              l10n.liveIslandPreviewSampleLocation,
+            ),
+          );
         case LiveExpandedDetailField.teacher:
-          lines.add(l10n.liveExpandedDetailLineTeacher(
-            l10n.liveIslandPreviewSampleTeacher,
-          ));
+          lines.add(
+            l10n.liveExpandedDetailLineTeacher(
+              l10n.liveIslandPreviewSampleTeacher,
+            ),
+          );
         case LiveExpandedDetailField.nextCourse:
-          lines.add(l10n.liveExpandedDetailLineNext(
-            l10n.liveIslandPreviewSampleNextClass,
-          ));
+          lines.add(
+            l10n.liveExpandedDetailLineNext(
+              l10n.liveIslandPreviewSampleNextClass,
+            ),
+          );
         case LiveExpandedDetailField.note:
-          lines.add(l10n.liveExpandedDetailLineNote(
-            l10n.liveIslandPreviewSampleNote,
-          ));
+          lines.add(
+            l10n.liveExpandedDetailLineNote(l10n.liveIslandPreviewSampleNote),
+          );
       }
     }
     return lines;
@@ -845,10 +857,7 @@ class _IslandCapsule extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(13, 0, 4, 0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: iconSlot,
-              ),
+              child: Align(alignment: Alignment.centerLeft, child: iconSlot),
             ),
           ),
           const _CameraHole(),
@@ -917,8 +926,11 @@ String _islandUntilClassStart(
   Duration remaining,
   int thresholdSeconds,
 ) {
-  final text =
-      _formatIslandCountdown(remaining, d.countdownTextStyle, thresholdSeconds);
+  final text = _formatIslandCountdown(
+    remaining,
+    d.countdownTextStyle,
+    thresholdSeconds,
+  );
   return d.hidePrefixText ? text : l10n.liveIslandPreviewUntilClassStart(text);
 }
 
@@ -928,8 +940,11 @@ String _islandUntilClassEnd(
   Duration remaining,
   int thresholdSeconds,
 ) {
-  final text =
-      _formatIslandCountdown(remaining, d.countdownTextStyle, thresholdSeconds);
+  final text = _formatIslandCountdown(
+    remaining,
+    d.countdownTextStyle,
+    thresholdSeconds,
+  );
   return d.hidePrefixText ? text : l10n.liveIslandPreviewUntilClassEnd(text);
 }
 
@@ -965,7 +980,8 @@ String _formatIslandCountdown(
       return '$totalSeconds秒';
     case LiveCountdownTextStyle.secondOnlyShort:
       // 相邻字面量拼接：'59s'，避免 's' 并入标识符触发插值花括号 lint。
-      return '$totalSeconds' 's';
+      return '$totalSeconds'
+          's';
     case LiveCountdownTextStyle.secondOnlySlash:
       return '$totalSeconds/s';
     case LiveCountdownTextStyle.smart:

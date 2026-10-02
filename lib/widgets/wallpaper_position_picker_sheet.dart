@@ -333,8 +333,11 @@ class _WallpaperPositionPickerPageState
         }
         return;
       }
-      final bytes = await file.readAsBytes();
-      final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
+      // 只为拿宽高就把整张原图读进 Dart 堆（相机原图 20-30MB → Uint8List 与
+      // native ImmutableBuffer 两份拷贝），而这段还在 initState 的关键路径上，
+      // 低配机直接顶到 GC 甚至被杀。fromFilePath 让引擎自己按需读头部，
+      // 与上面的注释承诺一致；同仓正解见 lib/utils/home_page_background.dart:908。
+      final buffer = await ui.ImmutableBuffer.fromFilePath(_imagePath);
       final descriptor = await ui.ImageDescriptor.encoded(buffer);
       final width = descriptor.width;
       final height = descriptor.height;

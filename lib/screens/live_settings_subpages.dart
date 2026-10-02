@@ -16,6 +16,8 @@ import '../services/miui_live_activities_service.dart';
 import '../services/app_log_service.dart';
 import '../utils/hex_color.dart';
 import '../utils/app_toast.dart';
+import '../utils/import_file_reader.dart';
+import '../services/unified_transfer_service.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../widgets/live_island_preview.dart';
 
@@ -801,7 +803,9 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       const HyperosSectionGap(),
       HyperosSectionLabel(text: l10n.liveIslandExpandedPreviewTitle),
       LiveIslandExpandedPreviewCard(
-        display: _followBeforeClass ? _draft.beforeClassDisplaySettings : display,
+        display: _followBeforeClass
+            ? _draft.beforeClassDisplaySettings
+            : display,
         forDuringEnd: widget.forDuringEnd,
         followBeforeClass: _followBeforeClass,
         endSecondsCountdownThresholdSeconds:
@@ -886,10 +890,9 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   /// 展开详情当前工作顺序（默认 = 全部字段默认顺序）。
   List<LiveExpandedDetailField> _expandedFieldWorkOrder(
     LiveDisplaySettings display,
-  ) =>
-      display.expandedDetailFields == null
-          ? List.of(LiveExpandedDetailField.values)
-          : List.of(display.expandedDetailFields!);
+  ) => display.expandedDetailFields == null
+      ? List.of(LiveExpandedDetailField.values)
+      : List.of(display.expandedDetailFields!);
 
   /// [ReorderableListView] 的落位回调：把 [oldIndex] 处的字段挪到 [newIndex]。
   ///
@@ -1002,16 +1005,32 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     required String directoryName,
     required String filePrefix,
   }) async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.image,
-      withData: true,
-    );
+    // 刻意不用 withData: true —— 那会在任何体积检查之前把整个文件读进内存，而
+    // Android 内存不足是直接杀进程、不抛可捕获异常。c461c54 / d6f772f 已按这条
+    // 口径给四条文件入口补了 20MB 上限，超级岛这两个图片入口是漏网的：用户选一张
+    // 相机原图就会当场被杀，表现为「点了没反应」。
+    final result = await FilePicker.pickFiles(type: FileType.image);
     if (!mounted || result == null || result.files.isEmpty) return null;
     final file = result.files.single;
-    final bytes =
-        file.bytes ??
-        (file.path == null ? null : await File(file.path!).readAsBytes());
-    if (bytes == null || bytes.isEmpty) return null;
+    final sourcePath = file.path;
+    if (sourcePath == null) return null;
+    final source = File(sourcePath);
+    if (!source.existsSync()) return null;
+    final tooLarge =
+        await source.length() > UnifiedTransferService.maxImportFileBytes;
+    if (tooLarge) {
+      // 又一次 await 之后才用 context：先确认组件还挂载着。
+      if (!mounted) return null;
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.importFileTooLarge(
+          formatByteBudget(UnifiedTransferService.maxImportFileBytes),
+        ),
+      );
+      return null;
+    }
+    final bytes = await source.readAsBytes();
+    if (bytes.isEmpty) return null;
     final ext = (file.extension?.isNotEmpty ?? false)
         ? file.extension!.toLowerCase()
         : 'png';
@@ -1338,6 +1357,11 @@ class _ImagePreview extends StatelessWidget {
                     file,
                     width: 56,
                     height: 56,
+                    // width/height 只是布局尺寸；不给 cache* 就按原图全尺寸解码，
+                    // 一张 12MP 照片约 48MB RGBA 会整个进 ImageCache（同仓正解见
+                    // settings_timetable_page.dart:582 的 cacheWidth: 240）。
+                    cacheWidth: 168,
+                    cacheHeight: 168,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
@@ -1472,8 +1496,8 @@ class _ExpandedDetailGroup extends StatelessWidget {
 
   List<LiveExpandedDetailField> get _enabledFields =>
       display.expandedDetailFields == null
-          ? List.of(LiveExpandedDetailField.values)
-          : List.of(display.expandedDetailFields!);
+      ? List.of(LiveExpandedDetailField.values)
+      : List.of(display.expandedDetailFields!);
 
   List<LiveExpandedDetailField> _hiddenFields(
     List<LiveExpandedDetailField> enabledFields,
@@ -1500,9 +1524,9 @@ class _HiddenFieldsCaption extends StatelessWidget {
           padding: hyperosRowPadding(context),
           child: Text(
             title,
-            style: HyperosTypography.listDetail(context).copyWith(
-              color: HyperosColors.secondaryText(context),
-            ),
+            style: HyperosTypography.listDetail(
+              context,
+            ).copyWith(color: HyperosColors.secondaryText(context)),
           ),
         ),
       ],
@@ -1551,9 +1575,9 @@ class _ExpandedDetailFieldRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = HyperosColors.primaryText(context);
-    final titleStyle = HyperosTypography.listTitle(context).copyWith(
-      color: enabled ? primary : primary.withValues(alpha: 0.45),
-    );
+    final titleStyle = HyperosTypography.listTitle(
+      context,
+    ).copyWith(color: enabled ? primary : primary.withValues(alpha: 0.45));
 
     final row = hyperosListRowShell(
       padding: hyperosRowPadding(context),
@@ -1586,9 +1610,9 @@ class _ExpandedDetailFieldRow extends StatelessWidget {
               style: titleStyle,
             ),
           ),
+
           // 与 HyperosSwitchTile 一致：整行是唯一开关目标，避免行与开关
           // 在同一处触点上抢手势。
-
           AbsorbPointer(
             child: HyperosSwitch(value: enabled, onChanged: (_) => onToggle()),
           ),
@@ -1614,9 +1638,6 @@ class _ExpandedDetailFieldRow extends StatelessWidget {
     if (actions.isEmpty) {
       return pressable;
     }
-    return Semantics(
-      customSemanticsActions: actions,
-      child: pressable,
-    );
+    return Semantics(customSemanticsActions: actions, child: pressable);
   }
 }
