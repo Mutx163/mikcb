@@ -305,8 +305,32 @@ class _CourseRescheduleSheetBodyState
 
   List<int> get _availableWeeks => widget.settings.availableWeeks;
 
-  List<int> get _sectionNumbers =>
-      List.generate(widget.settings.sectionCount, (index) => index + 1);
+  /// 可选节次的范围。
+  ///
+  /// 必须跟着**这门课自己的**节次表走（调用方传的是
+  /// `resolvedSectionsForCourse(course) ?? scheme?.sections ?? settings.sections`，
+  /// 见 `timetable_screen.dart:9153-9158`），而不是全局 `settings.sectionCount`：
+  /// 同一个弹层里预览钟点（[_timeRangeForSections]）与写回判据
+  /// （provider `validateCourseTimeSchemeOverride`）用的都是这份表。
+  /// 钉了别的作息模板（`timeSchemeIdOverride`）的课因此会出现两种错：
+  /// 模板比全局长 → 那几节压根选不到；模板比全局短 → 选到越界节后目标时间行整条
+  /// 消失、「→ …」回落到原课钟点（看着像改成了），点确认才被抛错拒绝。
+  /// 节次表为空（异常状态）时退回全局节数，避免选择器整个空掉。
+  /// 另：课程现存的起止节次一定要出现在选项里 —— 幻影节次的课（节次越出它自己
+  /// 的作息模板，`_syncCoursesWithEffectiveTimeSchemes` 对这类课原样返回不改写）
+  /// 若被范围卡掉，「结束节次」的候选会滤成空表，弹层里那节课的当前值也显示不出来。
+  List<int> get _sectionNumbers {
+    final count = widget.sectionTimes.isNotEmpty
+        ? widget.sectionTimes.length
+        : widget.settings.sectionCount;
+    final numbers = <int>{
+      for (var index = 1; index <= count; index++) index,
+      widget.course.startSection,
+      widget.course.endSection,
+    }.where((value) => value >= 1).toList()
+      ..sort();
+    return numbers;
+  }
 
   @override
   void initState() {
