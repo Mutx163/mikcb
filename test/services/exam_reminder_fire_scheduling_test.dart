@@ -92,7 +92,6 @@ void main() {
         location: 'A-301',
         seatNumber: '12',
         reminderPreset: ExamReminderPreset.hour1,
-        customReminderMinutes: const [],
         createdAt: DateTime(2026, 4),
         updatedAt: DateTime(2026, 4),
       );

@@ -1979,6 +1979,56 @@ class TimetableSettings {
     );
   }
 
+  /// 开学日的文本（`yyyy-MM-dd`）形态；见 [parseSemesterStartDate] 为什么需要它。
+  static String? formatSemesterStartDateText(DateTime? date) {
+    if (date == null) {
+      return null;
+    }
+    return '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
+  }
+
+  /// 读回开学日：**文本键优先**，毫秒只作为旧存档的回落。
+  ///
+  /// `semesterStartDate` 历史上只存 `millisecondsSinceEpoch`，那是个瞬时，隐含了
+  /// 写入方的时区：在 Asia/Shanghai 设的 2026-09-07 存成 2026-09-06T16:00Z，云同步
+  /// 到 UTC-5 的设备后 `DateTime.fromMillisecondsSinceEpoch` 还原成 09-06 11:00，
+  /// 于是 `WeekCalculator.startOfWeek` 得到 08-31，整个学期的周次 +1、单双周翻转
+  /// —— 用户看到「课表整体差一周」，而设置页显示的日期看起来是对的。
+  ///
+  /// 毫秒回落分支把结果归一到**本地零点**：读取方只用日期（周次、倒计时、统计都
+  /// 只取 y/m/d），留着时分会让比较 `semesterStartDate` 是否变化时产生假阳性。
+  /// 文本键存在但畸形时一律返回 null 而不回落到毫秒：两份键出自同一次写入，文本
+  /// 坏了说明这份存档本身不可信，宁可让用户重设开学时间，也不要悄悄用一周错误的
+  /// 课表。
+  static DateTime? parseSemesterStartDate(Object? text, Object? millis) {
+    if (text is String) {
+      final trimmed = text.trim();
+      if (trimmed.isEmpty) {
+        return null;
+      }
+      final match = RegExp(r'^(\d{4})-(\d{1,2})-(\d{1,2})$').firstMatch(
+        trimmed,
+      );
+      if (match == null) {
+        return null;
+      }
+      final year = int.parse(match.group(1)!);
+      final month = int.parse(match.group(2)!);
+      final day = int.parse(match.group(3)!);
+      if (month < 1 || month > 12 || day < 1 || day > 31) {
+        return null;
+      }
+      return DateTime(year, month, day);
+    }
+    if (millis is num) {
+      final restored = DateTime.fromMillisecondsSinceEpoch(millis.toInt());
+      return DateTime(restored.year, restored.month, restored.day);
+    }
+    return null;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'sections': sections.map((section) => section.toJson()).toList(),
@@ -1988,6 +2038,12 @@ class TimetableSettings {
       'timetableAutoFitSectionHeight': timetableAutoFitSectionHeight,
       'semesterWeekCount': semesterWeekCount,
       'semesterStartDate': semesterStartDate?.millisecondsSinceEpoch,
+      // 开学日是一个**日历日期**，不是时刻。毫秒瞬时隐含写入方的时区，换到别的
+      // 时区恢复就会挪天：Asia/Shanghai 的 2026-09-07 00:00 存成 2026-09-06T16:00Z，
+      // 在 UTC-5 的设备上还原成 09-06 11:00 → 那一周的周一变成 08-31 → 整个学期的
+      // 周次 +1、单双周整体翻转（情侣同步、跨设备云同步、备份还原都会踩到）。
+      // 文本键优先读，毫秒键继续写给旧版本与旧存档。
+      'semesterStartDateText': formatSemesterStartDateText(semesterStartDate),
       'weeklyReportEnabled': weeklyReportEnabled,
       'enableHolidayMarking': enableHolidayMarking,
       'timetableShowCurrentWeekCourses': timetableShowCurrentWeekCourses,
@@ -2300,11 +2356,10 @@ class TimetableSettings {
       timetableAutoFitSectionHeight:
           json['timetableAutoFitSectionHeight'] as bool? ?? false,
       semesterWeekCount: (json['semesterWeekCount'] as num?)?.toInt() ?? 20,
-      semesterStartDate: (json['semesterStartDate'] as num?) != null
-          ? DateTime.fromMillisecondsSinceEpoch(
-              (json['semesterStartDate'] as num).toInt(),
-            )
-          : null,
+      semesterStartDate: parseSemesterStartDate(
+        json['semesterStartDateText'],
+        json['semesterStartDate'],
+      ),
       weeklyReportEnabled: json['weeklyReportEnabled'] as bool? ?? false,
       enableHolidayMarking: json['enableHolidayMarking'] as bool? ?? true,
       timetableShowNonCurrentWeekCourses:

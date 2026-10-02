@@ -1607,4 +1607,96 @@ void main() {
       expect(merged.semesterWeekCount, live.semesterWeekCount);
     });
   });
+
+  group('semesterStartDate 持久化形态', () {
+    // 开学日是**日历日期**，历史上却只存 millisecondsSinceEpoch —— 那是个隐含
+    // 写入方时区的瞬时。跨时区恢复（云同步到另一台设备、出国换了时区、备份还原）
+    // 会把 09-07 还原成 09-06，于是 startOfWeek 挪一周：整学期周次 +1、单双周
+    // 翻转，而设置页看起来一切正常。现在加写 `semesterStartDateText` 并以它为准。
+    test('toJson 同时写文本键与毫秒键，文本键是 yyyy-MM-dd', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        semesterStartDate: DateTime(2026, 9, 7),
+      );
+
+      expect(settings.toJson()['semesterStartDateText'], '2026-09-07');
+      expect(
+        settings.toJson()['semesterStartDate'],
+        DateTime(2026, 9, 7).millisecondsSinceEpoch,
+      );
+    });
+
+    test('未设置开学日时两个键都是 null', () {
+      // defaults() 的 semesterStartDate 就是 null（见上一条测试对它的断言）。
+      final settings = TimetableSettings.defaults();
+
+      expect(settings.toJson()['semesterStartDateText'], isNull);
+      expect(settings.toJson()['semesterStartDate'], isNull);
+      expect(
+        TimetableSettings.fromJson(Map<String, dynamic>.from(settings.toJson()))
+            .semesterStartDate,
+        isNull,
+      );
+    });
+
+    test('文本键优先于毫秒键', () {
+      final restored = TimetableSettings.fromJson({
+        'semesterStartDateText': '2026-09-07',
+        'semesterStartDate': DateTime(2026, 3).millisecondsSinceEpoch,
+      });
+
+      expect(restored.semesterStartDate, DateTime(2026, 9, 7));
+    });
+
+    test('旧存档只有毫秒键时按本地日历日恢复，抹掉时分秒', () {
+      // 存档里带着 21:30 这种时刻（旧版本从别处写入、或手改），只会让
+      // 「开学日有没有变」的比较产生假阳性：日期才是被使用的信息。
+      final restored = TimetableSettings.fromJson({
+        'semesterStartDate': DateTime(
+          2026,
+          9,
+          7,
+          21,
+          30,
+          5,
+        ).millisecondsSinceEpoch,
+      });
+
+      expect(restored.semesterStartDate, DateTime(2026, 9, 7));
+      expect(restored.semesterStartDate!.hour, 0);
+      expect(restored.semesterStartDate!.minute, 0);
+    });
+
+    test('文本键畸形就判为未设置，不退回毫秒那份', () {
+      for (final bad in ['', '  ', '2026/09/07', '2026-13-01', '2026-09-00']) {
+        expect(
+          TimetableSettings.parseSemesterStartDate(
+            bad,
+            DateTime(2026, 9, 7).millisecondsSinceEpoch,
+          ),
+          isNull,
+          reason: bad,
+        );
+      }
+    });
+
+    test('文本键接受未补零的月日', () {
+      expect(
+        TimetableSettings.parseSemesterStartDate('2026-9-7', null),
+        DateTime(2026, 9, 7),
+      );
+    });
+
+    test('round trip 保住日历日期', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        semesterStartDate: DateTime(2027, 1, 31),
+      );
+
+      expect(
+        TimetableSettings.fromJson(
+          Map<String, dynamic>.from(settings.toJson()),
+        ).semesterStartDate,
+        DateTime(2027, 1, 31),
+      );
+    });
+  });
 }
