@@ -99,10 +99,21 @@ String? validateSectionTimes(List<SectionTime> sections) {
   }
 
   var previousEndMinutes = -1;
+  var usableCount = 0;
   for (var index = 0; index < sections.length; index++) {
     final section = sections[index];
+    // 整条空 = 补出来的占位。节次表是按**位置下标**被 `Course.startSection` 使用的，
+    // 坏条目必须补位而不能删（删了会让后面每一节指向相邻后一节的时间），所以
+    // `SectionTime('','')` 是本仓认可的形状（作息页渲染成 `-`）。校验必须放过它，
+    // 否则含洞的作息根本存不进去：`updateTimeScheme`（作息管理页 :1223、教务导入
+    // 的更新分支）会因为自己的补位策略抛 invalid_time_format。
+    // 半空（只填了一半）不是占位而是真错误，继续走下面的 _clockMinutes 抛错。
+    if (section.startTime.trim().isEmpty && section.endTime.trim().isEmpty) {
+      continue;
+    }
     final startMinutes = _clockMinutes(section.startTime);
     final endMinutes = _clockMinutes(section.endTime);
+    usableCount++;
 
     if (endMinutes <= startMinutes) {
       return encodeServiceMessage('section_end_must_after_start', {
@@ -117,6 +128,11 @@ String? validateSectionTimes(List<SectionTime> sections) {
     }
 
     previousEndMinutes = endMinutes;
+  }
+
+  // 全是占位等于没有可用的节次表 —— 应用它会让整张课表没有任何时间。
+  if (usableCount == 0) {
+    return 'at_least_one_section_required';
   }
 
   return null;
