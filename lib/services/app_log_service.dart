@@ -412,8 +412,15 @@ class AppLogService {
   void notifyLogChangedForTesting() => _notifyLogChanged();
 
   bool _shouldRecord({required bool force}) {
-    if (force && !_loggingEnabled) {
-      return false;
+    if (force) {
+      // 调用点把 force 解释成「框架级异常必须留下痕迹」——main.dart:297 的
+      // FlutterError.onError 写着「这里强制落盘（force: true）」，用来查
+      // 「UI 卡死但看起来没报错」。原来的写法
+      // `if (force && !_loggingEnabled) return false;` 让 force 在任何分支都
+      // 改变不了结果（force 为真时等价于非 force），于是线上崩溃一条都存不下来。
+      // force 跳过的是「本地诊断日志」这个开关，不是隐私同意：
+      // 未同意隐私政策时写盘本身就是越界。
+      return _privacyAccepted;
     }
     return _privacyAccepted && _loggingEnabled;
   }

@@ -205,7 +205,7 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
         .take(12)
         .map(
           (course) =>
-              '${course.name}|${course.id}|override=${course.timeSchemeIdOverride ?? "null"}|${course.startTime}-${course.endTime}|loc=${course.location}',
+              'name=${course.name}|id=${course.id}|override=${course.timeSchemeIdOverride ?? "null"}|${course.startTime}-${course.endTime}|loc=${course.location}',
         )
         .join(' || ');
     appDebugLog(

@@ -71,6 +71,47 @@ Widget _buildViewer(BuildContext context, AppLogSource source) {
   };
 }
 
+/// 分享**用户当前看到的那份**日志。
+///
+/// `text` 是查看器的 `_buildFullLogText()`
+/// （live_diagnostics_log_viewer_screen.dart:969-973），它已经按当前等级筛选：
+/// `buildFilteredDiagnosticsRawText(parsed, filterDiagnosticsEntries(..., _selectedLevel))`，
+/// 并保留头部设备信息段。复制按钮用的就是同一份文本。
+///
+/// 这里原先的两个回调把参数丢掉、改成重新读全量文件
+/// （`exportMergedLogsFile` / `exportLiveDiagnosticsFile`），于是
+/// 「只看错误 → 分享」发出去的仍是含课程名与教室的 info 全文：
+/// 屏幕上没有的内容被当作可分享内容交了出去。
+Future<void> _shareViewedLogText(
+  BuildContext context, {
+  required String text,
+  required String fileName,
+  required String shareText,
+  required String shareSubject,
+  required String emptyMessage,
+}) async {
+  if (text.trim().isEmpty) {
+    if (context.mounted) {
+      showAppToast(
+        context,
+        message: emptyMessage,
+        kind: AppToastKind.warning,
+      );
+    }
+    return;
+  }
+  final directory = await getTemporaryDirectory();
+  final file = File('${directory.path}/$fileName');
+  await file.writeAsString(text, flush: true);
+  await SharePlus.instance.share(
+    ShareParams(
+      files: [XFile(file.path)],
+      text: shareText,
+      subject: shareSubject,
+    ),
+  );
+}
+
 Widget _buildMergedViewer(BuildContext context, AppLocalizations l10n) {
   final liveService = MiuiLiveActivitiesService();
   final settings = context.read<TimetableProvider>().settings;
@@ -81,27 +122,15 @@ Widget _buildMergedViewer(BuildContext context, AppLocalizations l10n) {
       loadNativeRawLog: liveService.readLiveDiagnosticsText,
     ),
     isRecordingEnabled: settings.liveEnableLocalDiagnostics,
-    onExport: (_) async {
-      final nativeRawLog = await liveService.readLiveDiagnosticsText();
-      final path = await AppLogService.instance.exportMergedLogsFile(
-        nativeRawLog: nativeRawLog,
-      );
-      if (path == null || path.isEmpty) {
-        if (context.mounted) {
-          showAppToast(
-            context,
-            message: l10n.aboutNoDiagnosticsExportYet,
-            kind: AppToastKind.warning,
-          );
-        }
-        return;
-      }
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(path)],
-          text: l10n.appLogsShareText,
-          subject: l10n.appLogsShareSubject,
-        ),
+    onExport: (text) async {
+      await _shareViewedLogText(
+        context,
+        text: text,
+        fileName:
+            'mikcb-app-logs-${DateTime.now().millisecondsSinceEpoch}.log',
+        shareText: l10n.appLogsShareText,
+        shareSubject: l10n.appLogsShareSubject,
+        emptyMessage: l10n.aboutNoDiagnosticsExportYet,
       );
     },
     // No toast here — the viewer reports the outcome itself. Returning a toast
@@ -136,23 +165,14 @@ Widget _buildLiveViewer(BuildContext context, AppLocalizations l10n) {
       Navigator.of(context).pop();
     },
     onExport: (text) async {
-      final path = await liveService.exportLiveDiagnosticsFile();
-      if (path == null || path.isEmpty) {
-        if (context.mounted) {
-          showAppToast(
-            context,
-            message: l10n.liveDiagnosticsNothingToExport,
-            kind: AppToastKind.warning,
-          );
-        }
-        return;
-      }
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(path)],
-          text: l10n.liveDiagnosticsShareText,
-          subject: l10n.liveDiagnosticsShareSubject,
-        ),
+      await _shareViewedLogText(
+        context,
+        text: text,
+        fileName:
+            'mikcb-live-diagnostics-${DateTime.now().millisecondsSinceEpoch}.log',
+        shareText: l10n.liveDiagnosticsShareText,
+        shareSubject: l10n.liveDiagnosticsShareSubject,
+        emptyMessage: l10n.liveDiagnosticsNothingToExport,
       );
     },
     // Deliberately no onClear: this feed pops itself via [onLoadEmpty] the

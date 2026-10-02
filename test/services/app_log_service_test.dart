@@ -100,4 +100,85 @@ void main() {
     expect(emissions.length, 2);
     expect(emissions.last, contains('entry-2'));
   });
+
+  group('force 落盘语义', () {
+    /// path_provider 指到临时目录，写入走真实文件（本文件其它用例同款做法）。
+    void useTempLogDirectory() {
+      final tempDir = Directory.systemTemp.createTempSync('mikcb-log-force-');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      const channel = MethodChannel('plugins.flutter.io/path_provider');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            channel,
+            (call) async => tempDir.path,
+          );
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null);
+      });
+    }
+
+    test('本地诊断开关关闭时，force 的框架异常仍必须落盘', () async {
+      useTempLogDirectory();
+      SharedPreferences.setMockInitialValues({
+        'accepted_privacy_policy': true,
+      });
+      await AppLogService.instance.initialize();
+      await AppLogService.instance.updatePrivacyAccepted(true);
+      await AppLogService.instance.updateLoggingEnabled(false);
+
+      // main.dart:297 的 FlutterError.onError 写着「这里强制落盘（force: true）」，
+      // 用来查线上「UI 卡死但看起来没报错」。
+      await AppLogService.instance.error(
+        'flutter_framework_error',
+        'force-marker',
+        error: StateError('boom'),
+        stackTrace: StackTrace.current,
+        force: true,
+      );
+
+      expect(
+        await AppLogService.instance.readAppLogsText(),
+        contains('force-marker'),
+        reason: 'force 必须越过 liveEnableLocalDiagnostics 开关；'
+            '原实现里 force 在任何分支都改变不了结果，线上崩溃一条都存不下',
+      );
+    });
+
+    test('force 不能越过隐私同意', () async {
+      useTempLogDirectory();
+      SharedPreferences.setMockInitialValues({});
+      await AppLogService.instance.initialize();
+      await AppLogService.instance.updatePrivacyAccepted(false);
+      await AppLogService.instance.updateLoggingEnabled(true);
+
+      await AppLogService.instance.error(
+        'flutter_framework_error',
+        'no-consent-marker',
+        force: true,
+      );
+
+      expect(
+        await AppLogService.instance.readAppLogsText(),
+        isNot(contains('no-consent-marker')),
+      );
+    });
+
+    test('普通日志仍受开关约束', () async {
+      useTempLogDirectory();
+      SharedPreferences.setMockInitialValues({
+        'accepted_privacy_policy': true,
+      });
+      await AppLogService.instance.initialize();
+      await AppLogService.instance.updatePrivacyAccepted(true);
+      await AppLogService.instance.updateLoggingEnabled(false);
+
+      await AppLogService.instance.info('force_test', 'plain-marker');
+
+      expect(
+        await AppLogService.instance.readAppLogsText(),
+        isNot(contains('plain-marker')),
+      );
+    });
+  });
 }
