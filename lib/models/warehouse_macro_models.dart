@@ -375,11 +375,16 @@ String? sanitizeWarehouseScriptPageUrl(String? rawUrl) {
   final keptQueryParameters = <String, String>{};
   uri.queryParameters.forEach((key, value) {
     final lowerKey = key.toLowerCase();
+    // 光靠精确名单会漏掉**带前缀**的会话参数：PHP 的 `PHPSESSID`、ASP.NET 的
+    // `ASP.NET_SessionId` 才是这些教务站真正会发的名字，精确名单里一个都没有
+    // （2026-10-02 的随机属性测试抓到）。本函数对 token/ticket/jsession 已经在用
+    // 子串口径，这里把同样的口径扩到 'sess'。
     if (volatileQueryKeys.contains(key) ||
         volatileQueryKeys.contains(lowerKey) ||
         lowerKey.contains('token') ||
         lowerKey.contains('ticket') ||
-        lowerKey.contains('jsession')) {
+        lowerKey.contains('jsession') ||
+        lowerKey.contains('sess')) {
       return;
     }
     keptQueryParameters[key] = value;
@@ -391,9 +396,19 @@ String? sanitizeWarehouseScriptPageUrl(String? rawUrl) {
     '',
   );
 
+  // `http://host;jsessionid=ABC/path`（ROOT 应用把矩阵参数挂在空路径上）里，
+  // Dart 的 Uri 会把 `;jsessionid=ABC` 整段并进 **host**（实测：host 变成
+  // `jw.example.edu.cn;jsessionid=abc123def`），上面那条 path 正则根本碰不到它：
+  // 既把会话值留在了保存的宏 URL 与导出日志里，又拼出一个域名非法、导航必失败的
+  // 地址。域名里永远不该有 ';'，直接从第一个 ';' 截断。
+  final cleanedHost = uri.host.split(';').first;
+  if (cleanedHost.isEmpty) {
+    return null;
+  }
+
   return Uri(
     scheme: uri.scheme,
-    host: uri.host,
+    host: cleanedHost,
     port: uri.hasPort ? uri.port : null,
     path: cleanedPath.isEmpty ? '/' : cleanedPath,
     queryParameters: keptQueryParameters.isEmpty ? null : keptQueryParameters,
