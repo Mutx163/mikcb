@@ -1454,90 +1454,104 @@ class TimetableProvider with ChangeNotifier {
     await _updateLiveActivity();
   }
 
+  /// 地点时间分组的四个写入口同样收进 `_mutationGate`：`_resyncAllProfilesWith
+  /// LocationRules` 会按「自己读到的分组」重算**每个课表**的 courses 并全量覆写
+  /// profiles 键（:1448），还会用那份结果反向覆盖 `_courses`/`_settings`（:1445）。
+  /// 中途让出时门内写者（updateCourse 等）刚落的盘会被这份旧口径重算结果盖掉。
   Future<LocationTimeGroup> createLocationTimeGroup({
     required String name,
     required String timeSchemeId,
     List<LocationKeyword> keywords = const [],
     bool enabled = true,
     int priority = 0,
-  }) async {
-    await initialize();
-    final trimmedName = name.trim();
-    if (trimmedName.isEmpty) {
-      throw ArgumentError('location_time_group_name_required');
-    }
-    if (_getTimeSchemeById(timeSchemeId) == null) {
-      throw ArgumentError('time_scheme_not_found');
-    }
+  }) {
+    return _runMutation(() async {
+      await initialize();
+      final trimmedName = name.trim();
+      if (trimmedName.isEmpty) {
+        throw ArgumentError('location_time_group_name_required');
+      }
+      if (_getTimeSchemeById(timeSchemeId) == null) {
+        throw ArgumentError('time_scheme_not_found');
+      }
 
-    final group = LocationTimeGroup(
-      id: const Uuid().v4(),
-      name: trimmedName,
-      timeSchemeId: timeSchemeId,
-      enabled: enabled,
-      priority: priority,
-      keywords: List<LocationKeyword>.from(keywords),
-    );
-    _locationTimeGroups = [..._locationTimeGroups, group];
-    await _persistLocationTimeGroups();
-    await _resyncAllProfilesWithLocationRules();
-    return group;
+      final group = LocationTimeGroup(
+        id: const Uuid().v4(),
+        name: trimmedName,
+        timeSchemeId: timeSchemeId,
+        enabled: enabled,
+        priority: priority,
+        keywords: List<LocationKeyword>.from(keywords),
+      );
+      _locationTimeGroups = [..._locationTimeGroups, group];
+      await _persistLocationTimeGroups();
+      await _resyncAllProfilesWithLocationRules();
+      return group;
+    });
   }
 
   Future<LocationTimeGroup?> updateLocationTimeGroup(
     LocationTimeGroup group,
-  ) async {
-    await initialize();
-    final index = _locationTimeGroups.indexWhere((item) => item.id == group.id);
-    if (index == -1) {
-      return null;
-    }
-    final trimmedName = group.name.trim();
-    if (trimmedName.isEmpty) {
-      throw ArgumentError('location_time_group_name_required');
-    }
-    if (_getTimeSchemeById(group.timeSchemeId) == null) {
-      throw ArgumentError('time_scheme_not_found');
-    }
+  ) {
+    return _runMutation(() async {
+      await initialize();
+      final index = _locationTimeGroups.indexWhere(
+        (item) => item.id == group.id,
+      );
+      if (index == -1) {
+        return null;
+      }
+      final trimmedName = group.name.trim();
+      if (trimmedName.isEmpty) {
+        throw ArgumentError('location_time_group_name_required');
+      }
+      if (_getTimeSchemeById(group.timeSchemeId) == null) {
+        throw ArgumentError('time_scheme_not_found');
+      }
 
-    final updated = group.copyWith(
-      name: trimmedName,
-      keywords: List<LocationKeyword>.from(group.keywords),
-    );
-    final next = List<LocationTimeGroup>.from(_locationTimeGroups);
-    next[index] = updated;
-    _locationTimeGroups = next;
-    await _persistLocationTimeGroups();
-    await _resyncAllProfilesWithLocationRules();
-    return updated;
+      final updated = group.copyWith(
+        name: trimmedName,
+        keywords: List<LocationKeyword>.from(group.keywords),
+      );
+      final next = List<LocationTimeGroup>.from(_locationTimeGroups);
+      next[index] = updated;
+      _locationTimeGroups = next;
+      await _persistLocationTimeGroups();
+      await _resyncAllProfilesWithLocationRules();
+      return updated;
+    });
   }
 
-  Future<bool> deleteLocationTimeGroup(String groupId) async {
-    await initialize();
-    final beforeCount = _locationTimeGroups.length;
-    _locationTimeGroups = _locationTimeGroups
-        .where((group) => group.id != groupId)
-        .toList();
-    if (_locationTimeGroups.length == beforeCount) {
-      return false;
-    }
-    await _persistLocationTimeGroups();
-    await _resyncAllProfilesWithLocationRules();
-    return true;
+  Future<bool> deleteLocationTimeGroup(String groupId) {
+    return _runMutation(() async {
+      await initialize();
+      final beforeCount = _locationTimeGroups.length;
+      _locationTimeGroups = _locationTimeGroups
+          .where((group) => group.id != groupId)
+          .toList();
+      if (_locationTimeGroups.length == beforeCount) {
+        return false;
+      }
+      await _persistLocationTimeGroups();
+      await _resyncAllProfilesWithLocationRules();
+      return true;
+    });
   }
 
   Future<void> replaceLocationTimeGroups(
     List<LocationTimeGroup> groups, {
     bool resync = true,
-  }) async {
-    await initialize();
-    _locationTimeGroups = List<LocationTimeGroup>.from(groups);
-    await _persistLocationTimeGroups();
-    if (resync) {
-      await _resyncAllProfilesWithLocationRules();
-    } else {
-      _notifyStateChanged();
-    }
+  }) {
+    return _runMutation(() async {
+      await initialize();
+      _locationTimeGroups = List<LocationTimeGroup>.from(groups);
+      await _persistLocationTimeGroups();
+      if (resync) {
+        await _resyncAllProfilesWithLocationRules();
+      } else {
+        _notifyStateChanged();
+      }
+    });
   }
 
   Future<void> _persistScheduleDateRules() async {
@@ -2266,39 +2280,50 @@ class TimetableProvider with ChangeNotifier {
 
   void _notifyStateChanged() => notifyListeners();
 
+  /// 作息（时间模板）族的全部写入口都必须走 `_mutationGate`：本类的落盘是
+  /// 「抓 t0 快照 → await 写 → 失败按 t0 回滚」，门内写者（addCourse / 导入 /
+  /// 云恢复）中途 await 让出时，门外这些入口改内存并落盘，会被那次失败回滚
+  /// 当成「恢复前的旧数据」一起抹掉，而本入口的 await 早已正常返回、没有任何
+  /// 报错。与 `createProfile`（:2303）同一形态收口。
   Future<TimeScheme> createTimeScheme({
     required String name,
     List<SectionTime>? sections,
     bool applyToActiveProfile = false,
-  }) => _timetableCreateTimeScheme(
-    this,
-    name: name,
-    sections: sections,
-    applyToActiveProfile: applyToActiveProfile,
+  }) => _runMutation(
+    () => _timetableCreateTimeScheme(
+      this,
+      name: name,
+      sections: sections,
+      applyToActiveProfile: applyToActiveProfile,
+    ),
   );
 
   Future<String?> applyTimeScheme(String schemeId) =>
-      _timetableApplyTimeScheme(this, schemeId);
+      _runMutation(() => _timetableApplyTimeScheme(this, schemeId));
 
   Future<TimeScheme?> renameTimeScheme(String schemeId, String name) =>
-      _timetableRenameTimeScheme(this, schemeId, name);
+      _runMutation(() => _timetableRenameTimeScheme(this, schemeId, name));
 
   Future<TimeScheme?> duplicateTimeScheme(String schemeId, {String? name}) =>
-      _timetableDuplicateTimeScheme(this, schemeId, name: name);
+      _runMutation(
+        () => _timetableDuplicateTimeScheme(this, schemeId, name: name),
+      );
 
   Future<String?> updateTimeScheme({
     required String schemeId,
     required String name,
     required List<SectionTime> sections,
-  }) => _timetableUpdateTimeScheme(
-    this,
-    schemeId: schemeId,
-    name: name,
-    sections: sections,
+  }) => _runMutation(
+    () => _timetableUpdateTimeScheme(
+      this,
+      schemeId: schemeId,
+      name: name,
+      sections: sections,
+    ),
   );
 
   Future<bool> deleteTimeScheme(String schemeId) =>
-      _timetableDeleteTimeScheme(this, schemeId);
+      _runMutation(() => _timetableDeleteTimeScheme(this, schemeId));
 
   Future<TimetableProfile> createProfile({required String name}) {
     return _runMutation(() async {
@@ -3991,19 +4016,34 @@ class TimetableProvider with ChangeNotifier {
   Future<void> persistHomeViewState({
     required TimetableHomeViewMode mode,
     required int dayOfWeek,
-  }) async {
-    if (_settings.timetableHomeViewMode == mode &&
-        _settings.timetableLastViewedDayOfWeek == dayOfWeek) {
-      return;
-    }
-    _settings = _settings.copyWith(
-      timetableHomeViewMode: mode,
-      timetableLastViewedDayOfWeek: dayOfWeek,
-    );
-    await _persistActiveProfileState();
+  }) {
+    return _runMutation(() async {
+      if (_settings.timetableHomeViewMode == mode &&
+          _settings.timetableLastViewedDayOfWeek == dayOfWeek) {
+        return;
+      }
+      _settings = _settings.copyWith(
+        timetableHomeViewMode: mode,
+        timetableLastViewedDayOfWeek: dayOfWeek,
+      );
+      await _persistActiveProfileState();
+    });
   }
 
-  Future<String?> updateTimetableSettings(TimetableSettings settings) async {
+  /// 全部设置子页的唯一写入口，必须与其它写者串行（见 `_mutationGate`）。
+  ///
+  /// 这里原先完全没有门：它自己就在 :4021 抓 `previousProfiles` 之类的回滚快照，
+  /// 并 `await _persistActiveProfileState()`；门内写者（导入 / 云恢复 / addCourse）
+  /// 也在抓完 t0 快照后中途让出。两边都能落进对方的窗口，任一侧失败回滚都会把
+  /// 另一侧「已经 await 成功、UI 已 notify」的改动从盘上抹掉，表现为「设置改了又
+  /// 莫名变回去」。抽成私有方法只是为了让包门的形状一眼可辨，无行为改动。
+  Future<String?> updateTimetableSettings(TimetableSettings settings) {
+    return _runMutation(() => _updateTimetableSettingsGated(settings));
+  }
+
+  Future<String?> _updateTimetableSettingsGated(
+    TimetableSettings settings,
+  ) async {
     final sectionConfigChanged =
         settings.sectionCount != _settings.sectionCount ||
         _sectionSignature(settings.sections) !=

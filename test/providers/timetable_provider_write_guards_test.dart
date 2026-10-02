@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/location_time_group.dart';
+import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/storage_service.dart';
 
@@ -107,6 +111,108 @@ void main() {
 
       await reopened.deleteTheme(reopened.settings.savedThemes.single.id);
       expect(reopened.settings.savedThemes, isEmpty);
+    });
+  });
+
+  // 3. 写入互斥门。课表/设置的「读快照 → await 落盘 → 回滚」全套都建立在
+  //    `_mutationGate` 串行化之上：门内写者（addCourse / 导入 / 云恢复）在
+  //    :4021 这类位置抓 t0 全量快照，中途 await 让出，失败时按 t0 回滚。
+  //    门外的写者插进这个窗口改内存并落盘，就会在回滚时被当成"恢复前的旧数据"
+  //    一起抹掉 —— 而它自己的 await 早已正常返回，UI 只会在下次重建时静默退回。
+  group('写入互斥门', () {
+    Future<void> holdGate(
+      TimetableProvider provider,
+      Completer<void> started,
+      Completer<void> blocker,
+    ) async {
+      unawaited(
+        provider.runMutationExclusive(() {
+          started.complete();
+          return blocker.future;
+        }),
+      );
+      await started.future;
+    }
+
+    test('updateTimetableSettings 门被持有时排队，不插进窗口改写', () async {
+      final provider = await booted();
+      addTearDown(provider.dispose);
+      expect(provider.settings.enableHaptics, isTrue);
+
+      final started = Completer<void>();
+      final blocker = Completer<void>();
+      await holdGate(provider, started, blocker);
+
+      var settled = false;
+      final write = provider
+          .updateTimetableSettings(
+            provider.settings.copyWith(enableHaptics: false),
+          )
+          .whenComplete(() => settled = true);
+      await Future<void>.delayed(Duration.zero);
+
+      // 修复前这里已经是 false：整份回写在门被持有时就完成了。
+      expect(settled, isFalse, reason: '门外写者必须排队等门');
+      expect(provider.settings.enableHaptics, isTrue);
+
+      blocker.complete();
+      await write;
+      expect(provider.settings.enableHaptics, isFalse);
+    });
+
+    test('persistHomeViewState 同样串行', () async {
+      final provider = await booted();
+      addTearDown(provider.dispose);
+
+      final started = Completer<void>();
+      final blocker = Completer<void>();
+      await holdGate(provider, started, blocker);
+
+      var settled = false;
+      final write = provider
+          .persistHomeViewState(
+            mode: TimetableHomeViewMode.day,
+            dayOfWeek: 5,
+          )
+          .whenComplete(() => settled = true);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(settled, isFalse);
+      expect(provider.settings.timetableLastViewedDayOfWeek, isNot(5));
+
+      blocker.complete();
+      await write;
+      expect(provider.settings.timetableLastViewedDayOfWeek, 5);
+    });
+
+    test('地点分组入口跨 await 的校验-写入序列不许被插队', () async {
+      final provider = await booted();
+      addTearDown(provider.dispose);
+      final scheme = await provider.createTimeScheme(
+        name: '作息',
+        sections: const [SectionTime(startTime: '08:00', endTime: '08:45')],
+      );
+
+      final started = Completer<void>();
+      final blocker = Completer<void>();
+      await holdGate(provider, started, blocker);
+
+      var settled = false;
+      final create = provider
+          .createLocationTimeGroup(
+            name: '教学楼A',
+            timeSchemeId: scheme.id,
+            keywords: const [LocationKeyword(pattern: 'A')],
+          )
+          .whenComplete(() => settled = true);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(settled, isFalse, reason: '门被持有时分组写入必须排队');
+      expect(provider.locationTimeGroups, isEmpty);
+
+      blocker.complete();
+      await create;
+      expect(provider.locationTimeGroups, hasLength(1));
     });
   });
 }
