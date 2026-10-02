@@ -38,14 +38,20 @@ jobs:
           token: ${{ secrets.DOCS_PUSH_TOKEN != '' && secrets.DOCS_PUSH_TOKEN || github.token }}
 
       - name: Fetch Latest Releases and Generate JSON
+        env:
+          # secret 不能内插进 run：它会出现在 runner 的进程 argv 里（同机其他进程
+          # 可读到），并且下一步的 curl --location 会把自定义 Authorization 头在
+          # 重定向后继续重放。改为走 env，并显式禁止跟随重定向 —— GitHub Releases
+          # API 对这些端点不做跳转。
+          GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Fetching latest releases from GitHub API..."
           mkdir -p docs/releases
           : > /tmp/releases.jsonl
           page=1
           while :; do
-            curl --fail --silent --show-error --location \
-                 -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            curl --fail --silent --show-error --max-redirs 0 \
+                 -H "Authorization: Bearer $GH_API_TOKEN" \
                  -H "Accept: application/vnd.github.v3+json" \
                  "https://api.github.com/repos/${{ github.repository }}/releases?per_page=100&page=$page" \
                  > "/tmp/releases-page.json"

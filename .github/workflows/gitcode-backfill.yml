@@ -39,10 +39,20 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          # workflow_dispatch 的输入必须走 env，不能内插进 shell：内插等于把用户
+          # 输入拼进脚本，同仓 sync-release-channel-to-gitcode.yml 就是正确范本。
+          # 这里再加一道字符白名单，防手滑写出 `v1.0; curl …|sh` 这种 tag。
+          TAG: ${{ inputs.tag }}
         run: |
           set -ex
+          case "$TAG" in
+            '' | *[!A-Za-z0-9._-]*)
+              echo "非法 tag 输入：[$TAG]" >&2
+              exit 1
+              ;;
+          esac
           mkdir -p dist
-          gh release download "${{ inputs.tag }}" --repo "${{ github.repository }}" --pattern 'mikcb-*.apk' --dir dist
+          gh release download "$TAG" --repo "${{ github.repository }}" --pattern 'mikcb-*.apk' --dir dist
           ls -lh dist
 
       - name: Extract release notes and channel
@@ -50,22 +60,34 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
         run: |
           set -ex
-          TAG="${{ inputs.tag }}"
           VERSION_NAME="${TAG#v}"
           NOTES_FILE="docs/releases/v${VERSION_NAME}.md"
           if [[ -f "${NOTES_FILE}" ]]; then
             cp "${NOTES_FILE}" /tmp/body.md
           else
-            gh release view "${TAG}" --repo "${{ github.repository }}" --json body --jq .body > /tmp/body.md
+            gh release view "$TAG" --repo "${{ github.repository }}" --json body --jq .body > /tmp/body.md
           fi
-          # 应用内 GitCode 渠道的完整性校验依赖正文内嵌摘要（GitCode 无 asset digest）
-          SHA256=$(sha256sum dist/mikcb-*.apk | awk '{print $1}')
+          # 应用内 GitCode 渠道的完整性校验依赖正文内嵌摘要（GitCode 无 asset digest）。
+          # 摘要必须与「实际发布的那一个文件」绑定：原先写成
+          # `sha256sum dist/mikcb-*.apk | awk '{print $1}'`，一旦某个 tag 带了第二个
+          # mikcb-*.apk，sha256sum 输出多行、awk 打出多个哈希，正文首个哈希与被下载的
+          # 文件不对不上号，GitCode 渠道必然拒装（可用性故障），而且摘要与产物之间
+          # 没有任何名字绑定。这里改成：不恰好一个就直接失败。
+          APK_FILES=(dist/mikcb-*.apk)
+          if [[ ${#APK_FILES[@]} -ne 1 ]]; then
+            echo "期望恰好一个 mikcb-*.apk，实际 ${#APK_FILES[@]} 个：${APK_FILES[*]}" >&2
+            exit 1
+          fi
+          APK="${APK_FILES[0]}"
+          SHA256=$(sha256sum "$APK" | awk '{print $1}')
           {
             echo ""
             echo "---"
             echo "SHA-256: ${SHA256}"
+            echo "SHA-256-File: $(basename "$APK")"
           } >> /tmp/body.md
           echo "body<<EOF" >> "$GITHUB_OUTPUT"
           cat /tmp/body.md >> "$GITHUB_OUTPUT"
