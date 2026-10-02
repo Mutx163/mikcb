@@ -2512,6 +2512,19 @@ class TimetableProvider with ChangeNotifier {
       } else {
         _mergeActiveProfileIntoProfilesList();
       }
+      // 回滚快照：删除是"从列表里摘掉一个档案"，写盘失败时若不回滚，
+      // 内存里这份课表已经没了，而下一次任意成功写入会把"它不存在"当成
+      // 既有状态落盘 —— 用户视角是"删除失败的课表过一会儿自己消失了"。
+      // 同文件 switchProfile（:2445-2459）已经是这个形状。
+      final profilesBeforeDelete = List<TimetableProfile>.of(_profiles);
+      final activeProfileIdBeforeDelete = _activeProfileId;
+      final TimetableProfile? activeProfileBeforeDelete =
+          activeProfileIdBeforeDelete == null
+          ? null
+          : profilesBeforeDelete.cast<TimetableProfile?>().firstWhere(
+              (profile) => profile!.id == activeProfileIdBeforeDelete,
+              orElse: () => null,
+            );
       _profiles.removeAt(index);
       if (isActive) {
         final fallbackProfile = _profiles
@@ -2524,9 +2537,25 @@ class TimetableProvider with ChangeNotifier {
         _mergeActiveProfileIntoProfilesList();
         _currentLiveCourseId = null;
       }
-      await _profileRepository.saveProfiles(_profiles);
-      if (_activeProfileId != null) {
-        await _profileRepository.setActiveProfileId(_activeProfileId!);
+      try {
+        await _profileRepository.saveProfiles(_profiles);
+        if (_activeProfileId != null) {
+          await _profileRepository.setActiveProfileId(_activeProfileId!);
+        }
+      } catch (_) {
+        // 落盘失败：整份档案列表与激活指针原样放回，激活档案被删时
+        // 还要把它的内容重新灌回内存（刚才已经切到备用课表的显示了）。
+        _profiles
+          ..clear()
+          ..addAll(profilesBeforeDelete);
+        _activeProfileId = activeProfileIdBeforeDelete;
+        if (isActive && activeProfileBeforeDelete != null) {
+          _applyProfileState(activeProfileBeforeDelete);
+          _currentLiveCourseId = null;
+        }
+        _lastLiveSnapshotSignature = null;
+        notifyListeners();
+        rethrow;
       }
       notifyUserDataChangedForSync();
       notifyListeners();

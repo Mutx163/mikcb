@@ -278,4 +278,62 @@ void main() {
       expect(json['app'], 'mikcb');
     });
   });
+
+  group('删除课表档的落盘失败回滚', () {
+    test('删除激活档案时写盘失败，档案与显示内容都要回到删除前', () async {
+      final activeId = provider.activeProfile?.id;
+      expect(activeId, isNotNull);
+      await provider.addCourse(
+        Course(
+          id: 'keep-1',
+          name: '线性代数',
+          teacher: '李老师',
+          location: 'B301',
+          dayOfWeek: 3,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      );
+      await provider.createProfile(name: '另一份课表');
+      await provider.switchProfile(activeId!);
+
+      storage.profileFailures = 1;
+      await expectLater(
+        provider.deleteProfile(activeId),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(
+        provider.profiles.map((profile) => profile.id),
+        contains(activeId),
+        reason: '写盘失败后内存里那份档案不该已被摘掉：'
+            '下一次任意成功写入会把"它不存在"当成既有状态落盘，'
+            '用户视角是"删除失败的课表过一会儿自己消失了"',
+      );
+      expect(provider.activeProfile?.id, activeId);
+      expect(
+        provider.courses.map((course) => course.id),
+        contains('keep-1'),
+        reason: '删除激活档案时会先切到备用课表并把它的内容灌进内存，'
+            '回滚必须连显示内容一起还原',
+      );
+    });
+
+    test('删除非激活档案写盘失败时档案仍在', () async {
+      final activeId = provider.activeProfile!.id;
+      final other = await provider.createProfile(name: '另一份课表');
+      await provider.switchProfile(activeId);
+
+      storage.profileFailures = 1;
+      await expectLater(
+        provider.deleteProfile(other.id),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(provider.profiles.map((profile) => profile.id), contains(other.id));
+      expect(provider.activeProfile?.id, activeId);
+    });
+  });
 }

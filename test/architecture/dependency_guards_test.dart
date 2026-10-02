@@ -96,7 +96,12 @@ void main() {
     //   并落盘，与同文件其它导入入口的加锁口径相反，改为走
     //   `runMutationExclusive`（+10，含注释）。
     // 都不是新业务状态机，是把已认定的门纪律补到漏掉的写入口。
-    const baselineLines = 4943;
+    // 4943→4972：deleteProfile 的落盘失败回滚（+29，其中 14 行是注释）。
+    // 删除激活档案时它会先 removeAt + 切到备用课表并 _applyProfileState，
+    // 两次 saveProfiles/setActiveProfileId 都在门外无 try/catch：抛错就是
+    // "内存里课表已经没了、盘上还在"，而下一次任意成功写入会把删除坐实。
+    // 回滚形状与同文件 switchProfile（:2445-2459）一致，不是新业务状态机。
+    const baselineLines = 4972;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

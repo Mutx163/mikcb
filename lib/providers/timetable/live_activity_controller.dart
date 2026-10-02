@@ -127,10 +127,24 @@ Future<void> _liveHandleAppResumed(TimetableProvider host) async {
 }
 
 void _liveScheduleActivityTick(TimetableProvider host) {
-  host._liveActivityTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-    unawaited(host.syncTemporalContext());
-    _liveCheckActivityStageTransition(host);
-  });
+  // Timer 的回调跑在**创建它的那个 Zone**里，而写锁的"同一 Zone 可重入"
+  // 判据读的正是 Zone 里的 token（sync_operation_gate.dart:19/24）。
+  // 本函数有一条会被持锁 Zone 调到的路径：`_init()` 抛错时
+  // `_initializationFuture` 被重置（timetable_provider.dart:576-578），
+  // 于是下一次用户写入会在 `_runMutation` 内重跑 `_init` →
+  // `_bootstrapHolidayAwareSurfaces` → `_liveStartActivityTick` → 这里。
+  // 那样这个 30 秒 tick 就永久带着 token：它每次调的
+  // `syncTemporalContext()`（内部走 `_runMutation`）命中
+  // `isHeldByCurrentZone` → `Future.sync` 立即执行、完全不排队，
+  // 跨日/跨周 tick 覆写 `_currentWeek` 与全量 profiles 时就能与
+  // 真正持锁的写入交错 —— 丢写且没有任何报错。
+  // 用 Zone.root 建表，回调落回无 token 的普通 Zone，门重新生效。
+  host._liveActivityTimer = Zone.root.run(
+    () => Timer.periodic(const Duration(seconds: 30), (_) {
+      unawaited(host.syncTemporalContext());
+      _liveCheckActivityStageTransition(host);
+    }),
+  );
 }
 
 void _liveCheckActivityStageTransition(TimetableProvider host) {
