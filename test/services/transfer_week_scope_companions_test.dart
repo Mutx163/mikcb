@@ -165,9 +165,9 @@ void main() {
       ),
     );
 
+    // scope 默认即 currentTimetable：整表导出必须带上全部考试与任务。
     final pack = UnifiedTransferService().buildCurrentPackage(
       provider: provider,
-      scope: TransferScope.currentTimetable,
     );
 
     expect(pack.courses.map((item) => item.id), ['c4']);

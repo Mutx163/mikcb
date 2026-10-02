@@ -72,9 +72,9 @@ void main() {
     addTearDown(receiver.dispose);
     addTearDown(sender.dispose);
 
+    // scope 默认即 currentTimetable（整表当前课表），这里不再显式重复。
     final incoming = UnifiedTransferService().buildCurrentPackage(
       provider: sender,
-      scope: TransferScope.currentTimetable,
     );
     final result = await UnifiedTransferService().applyToProvider(
       provider: receiver,
