@@ -36,12 +36,7 @@ class LanEditApiHandlers {
     // Count from the first line so a slow body cannot dodge the cap by never
     // reaching the route table.
     if (_inFlight >= _maxConcurrentRequests) {
-      await _writeError(
-        request,
-        503,
-        'too_many_requests',
-        'Too many requests',
-      );
+      await _writeError(request, 503, 'too_many_requests', 'Too many requests');
       return;
     }
     _inFlight += 1;
@@ -64,12 +59,7 @@ class LanEditApiHandlers {
       // cannot burn the owner's PIN attempts or drive the API. Requests with no
       // Origin come from the native client, which never sends one.
       if (!await _isSameOrigin(request)) {
-        await _writeError(
-          request,
-          403,
-          'cross_origin_forbidden',
-          'Forbidden',
-        );
+        await _writeError(request, 403, 'cross_origin_forbidden', 'Forbidden');
         return;
       }
 
@@ -222,13 +212,11 @@ class LanEditApiHandlers {
         'invalid_request',
         error.message,
       );
-    } catch (error) {
-      await _writeError(
-        request,
-        500,
-        'internal_error',
-        error is ArgumentError ? (error.message as Object?)?.toString() ?? '$error' : '$error',
-      );
+    } catch (_) {
+      // 未鉴权路径上的兜底分支也会走到这里：Dart 异常原文（类型名、provider 内部
+      // 结构、偶发的绝对路径）不能回给同网段的任意请求方，那等于一台没配对成功
+      // 的设备也能拿本 App 做指纹。对端只需要知道「服务端出错」，细节留在本机日志。
+      await _writeError(request, 500, 'internal_error', 'internal_error');
     }
   }
 
@@ -857,9 +845,11 @@ class LanEditApiHandlers {
     if (originHost.isEmpty) {
       return false;
     }
-    final requestHost = Uri.tryParse(
-      'http://${request.headers.value(HttpHeaders.hostHeader) ?? ''}',
-    )?.host.trim().toLowerCase() ?? '';
+    final requestHost =
+        Uri.tryParse(
+          'http://${request.headers.value(HttpHeaders.hostHeader) ?? ''}',
+        )?.host.trim().toLowerCase() ??
+        '';
     if (requestHost.isEmpty) {
       return false;
     }

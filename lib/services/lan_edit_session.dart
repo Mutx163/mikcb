@@ -10,6 +10,14 @@ class LanEditSession {
   static const int maxPinAttemptsPerIp = 5;
   static const Duration pinAttemptWindow = Duration(minutes: 5);
 
+  /// 限流表与已连接客户端集合的容量上限。
+  ///
+  /// 此前两张表只增不减：`prune` 只在**同一个 IP 再来一次**时执行，也没有总量
+  /// 上限。同网段里大量不同源地址（或伪造地址）各试一次错 PIN，就能在会话的
+  /// 2 小时内攒出无上限的 `String -> List<DateTime>` 条目。上限取到远大于正常
+  /// 使用（一个房间里不会有 128 台设备配对），触发时先丢过期项、再按插入序丢最旧。
+  static const int maxTrackedClients = 128;
+
   final String pin;
   final String token;
   final DateTime createdAt;
@@ -95,13 +103,14 @@ class LanEditSession {
     if (isPinRateLimited(clientIp)) {
       return false;
     }
-    if (pin == submittedPin.trim()) {
+    if (_constantTimeEquals(pin, submittedPin.trim())) {
       _pinAttempts.remove(clientIp);
       markClientConnected(clientIp);
       return true;
     }
     final state = _pinAttempts.putIfAbsent(clientIp, _PinAttemptState.new);
     state.recordFailure(DateTime.now());
+    _trimClientBookkeeping();
     return false;
   }
 
@@ -109,7 +118,9 @@ class LanEditSession {
     if (bearerToken == null || bearerToken.isEmpty) {
       return false;
     }
-    if (token != bearerToken) {
+    // 局域网内的逐字符计时探测需要数千次低抖动往返，实际不可行；但既然这里比较的
+    // 是唯一的写授权凭据，就用与 app_update_service 校验 APK 摘要同一套写法。
+    if (!_constantTimeEquals(token, bearerToken)) {
       return false;
     }
     if (isExpired) {
@@ -117,6 +128,33 @@ class LanEditSession {
     }
     touch();
     return true;
+  }
+
+  /// 长度不等直接拒（只泄露定长凭据的长度），逐字符用异或累积，避免短路比较
+  /// 让命中前缀数被计时差读出来。
+  static bool _constantTimeEquals(String expected, String actual) {
+    if (expected.length != actual.length) {
+      return false;
+    }
+    var diff = 0;
+    for (var index = 0; index < expected.length; index++) {
+      diff |= expected.codeUnitAt(index) ^ actual.codeUnitAt(index);
+    }
+    return diff == 0;
+  }
+
+  void _trimClientBookkeeping() {
+    if (_pinAttempts.length <= maxTrackedClients &&
+        _connectedClientIps.length <= maxTrackedClients) {
+      return;
+    }
+    _pinAttempts.removeWhere((_, state) => state.isIdleFor(pinAttemptWindow));
+    while (_pinAttempts.length > maxTrackedClients) {
+      _pinAttempts.remove(_pinAttempts.keys.first);
+    }
+    while (_connectedClientIps.length > maxTrackedClients) {
+      _connectedClientIps.remove(_connectedClientIps.first);
+    }
   }
 
   bool verifyTokenForRequest(String? bearerToken, String clientIp) {
@@ -145,5 +183,11 @@ class _PinAttemptState {
   void prune(Duration window) {
     final cutoff = DateTime.now().subtract(window);
     failures.removeWhere((time) => time.isBefore(cutoff));
+  }
+
+  /// 窗口内已无可计数的失败记录，可以整条回收。
+  bool isIdleFor(Duration window) {
+    prune(window);
+    return failures.isEmpty;
   }
 }
