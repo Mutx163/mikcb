@@ -201,7 +201,6 @@ void main() {
               startSection: 1 + random.nextInt(3),
               endSection: 1 + random.nextInt(3) + 1,
               startWeek: 1 + random.nextInt(3),
-              endWeek: 16,
             ),
           );
         }
