@@ -358,21 +358,7 @@ internal fun liveSchedulerFindActiveSelection(
 private fun liveSchedulerBuildCourseDateTimeMillis(
     dateCalendar: Calendar,
     courseTime: String,
-): Long? {
-    val parts = courseTime.split(":")
-    if (parts.size != 2) {
-        return null
-    }
-    val hour = parts[0].toIntOrNull() ?: return null
-    val minute = parts[1].toIntOrNull() ?: return null
-    return Calendar.getInstance().apply {
-        timeInMillis = dateCalendar.timeInMillis
-        set(Calendar.HOUR_OF_DAY, hour)
-        set(Calendar.MINUTE, minute)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }.timeInMillis
-}
+): Long? = LiveClock.toMillis(dateCalendar, courseTime)
 
 private fun liveSchedulerBuildCorrectedCourseDateTimeMillis(
     dateCalendar: Calendar,
@@ -2495,21 +2481,7 @@ object LiveUpdateScheduler {
     private fun buildCourseDateTimeMillis(
         dateCalendar: Calendar,
         courseTime: String,
-    ): Long? {
-        val parts = courseTime.split(":")
-        if (parts.size != 2) {
-            return null
-        }
-        val hour = parts[0].toIntOrNull() ?: return null
-        val minute = parts[1].toIntOrNull() ?: return null
-        return Calendar.getInstance().apply {
-            timeInMillis = dateCalendar.timeInMillis
-            set(Calendar.HOUR_OF_DAY, hour)
-            set(Calendar.MINUTE, minute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-    }
+    ): Long? = LiveClock.toMillis(dateCalendar, courseTime)
 
     private fun buildProgressMilestones(
         context: Context,
@@ -2562,15 +2534,8 @@ object LiveUpdateScheduler {
         return milestones.sortedBy { it.first }
     }
 
-    private fun parseClockMinutes(value: String): Int? {
-        val parts = value.split(":")
-        if (parts.size != 2) {
-            return null
-        }
-        val hour = parts[0].toIntOrNull() ?: return null
-        val minute = parts[1].toIntOrNull() ?: return null
-        return hour * 60 + minute
-    }
+    private fun parseClockMinutes(value: String): Int? =
+        LiveClock.minutesOfDay(value)
 
     private fun scheduleAlarm(context: Context, triggerAtMillis: Long) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return

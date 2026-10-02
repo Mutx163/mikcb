@@ -1636,21 +1636,7 @@ object TodayWidgetSupport {
     private fun buildCourseDateTimeMillis(
         nowMillis: Long,
         courseTime: String,
-    ): Long? {
-        val parts = courseTime.split(":")
-        if (parts.size != 2) {
-            return null
-        }
-        val hour = parts[0].toIntOrNull() ?: return null
-        val minute = parts[1].toIntOrNull() ?: return null
-        return Calendar.getInstance().apply {
-            timeInMillis = nowMillis
-            set(Calendar.HOUR_OF_DAY, hour)
-            set(Calendar.MINUTE, minute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-    }
+    ): Long? = LiveClock.toMillis(nowMillis, courseTime)
 
     private fun buildNextMidnightMillis(nowMillis: Long): Long {
         return Calendar.getInstance().apply {

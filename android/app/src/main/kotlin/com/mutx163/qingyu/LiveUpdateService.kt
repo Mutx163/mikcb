@@ -2442,22 +2442,8 @@ class LiveUpdateService : Service() {
         stopSelf()
     }
 
-    private fun buildCourseTimeMillis(timeText: String): Long? {
-        val parts = timeText.split(":")
-        if (parts.size != 2) {
-            return null
-        }
-
-        val hour = parts[0].toIntOrNull() ?: return null
-        val minute = parts[1].toIntOrNull() ?: return null
-
-        return Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, hour)
-            set(Calendar.MINUTE, minute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-    }
+    private fun buildCourseTimeMillis(timeText: String): Long? =
+        LiveClock.toTodayMillis(timeText)
 
     private fun formatCountdownDuration(
         durationMillis: Long,
