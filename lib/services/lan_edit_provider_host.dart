@@ -181,6 +181,16 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
   @override
   Future<void> updateCourse(Course course) async {
     await _provider.updateCourse(course);
+    // provider.updateCourse 对找不到的 id 是**静默 return**
+    // （`timetable_provider.dart:2592-2593` 的 `if (index != -1)`，
+    // 返回类型 Future<void>，没有错误通道）。触发路径：手机停在编辑页时
+    // 另一台设备把这门课删了，或一次「覆盖」导入重建了 id ——
+    // 于是 PATCH 什么都没改，HTTP 却回 200 并把请求体原样回显，
+    // 浏览器显示"已保存"、手机上一切如旧。
+    // 写入是否落地用事后置条件判，不去动上帝类的返回类型。
+    if (findCourse(course.id) == null) {
+      throw StateError('course_not_found');
+    }
   }
 
   @override

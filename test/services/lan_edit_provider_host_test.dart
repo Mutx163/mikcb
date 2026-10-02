@@ -446,6 +446,32 @@ void main() {
       expect(course.suspendedWeeks, <int>[4]);
     });
 
+    test('PATCH 一门已被删掉的课要抛错，不能静默成功', () async {
+      final (provider, host) = await seedHost();
+      await provider.addCourse(buildTestCourse(id: 'gone', color: '#2196F3'));
+      final draft = LanEditProviderHost.courseFromApiJson(
+        {'id': 'gone', 'name': '改名试试', 'location': 'B301'},
+        sections: provider.settings.sections,
+        semesterWeekCount: provider.settings.semesterWeekCount,
+      );
+      // 预检之后、写入之前，另一台设备删掉了这门课。
+      await provider.deleteCourse('gone');
+
+      await expectLater(
+        host.updateCourse(draft),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            'course_not_found',
+          ),
+        ),
+        reason: 'provider.updateCourse 对缺失 id 静默 return，'
+            '不加事后置条件就会回 200 并把请求体原样回显',
+      );
+      expect(provider.courses, isEmpty);
+    });
+
     test('客户端自带的课程 id 不能撞车也不能留空', () async {
       final (provider, host) = await seedHost();
       await provider.addCourse(buildTestCourse(id: 'dup', color: '#2196F3'));

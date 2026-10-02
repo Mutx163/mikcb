@@ -355,6 +355,14 @@ class LanEditApiHandlers {
         extras: {'courseId': updated.id, 'courseName': updated.name},
       );
       await _writeJson(request, 200, updated.toJson());
+    } on StateError catch (error) {
+      // 预检（existing == null → 404）之后到真正写入之间课程被删掉时，
+      // provider 是静默 return 的；host.updateCourse 用事后置条件补上这个信号，
+      // 这里把它落成 404，而不是继续回 200 让浏览器显示"已保存"。
+      if (error.message != 'course_not_found') {
+        rethrow;
+      }
+      await _writeError(request, 404, 'not_found', 'Course not found');
     } on ArgumentError catch (error) {
       await _writeError(
         request,
