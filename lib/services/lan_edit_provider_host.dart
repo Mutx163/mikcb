@@ -479,6 +479,32 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
     for (final entry in patch.entries) {
       merged[entry.key] = entry.value;
     }
+    // 合并 existing.toJson() 会带来两类过期值，必须显式作废，
+    // 否则客户端的意图会被旧标志/旧钟点吃掉：
+    // 1) 补丁自带钟点（用户在网页上改了时间）：existing 的 hasCustomTime
+    //    可能是 false，留着它 courseFromApiJson 就只会取 false，
+    //    provider 随即按模板把客户端给的时间重烤掉 ——
+    //    响应 200 回显 07:15、手机上却是 08:00，正是本文件要避免的"响应≠落库"。
+    // 2) 补丁只改了节次：merged 里留的是**旧节次**的钟点与旧标志，
+    //    移课就等于"跟着新节次的铃点走"，旧的自定义钉法不该跟过去。
+    // 两种情况都把钟点/标志交回 courseFromApiJson 重新推导
+    // （它与模板一致就 false，客户端显式送了不同时间就 true）。
+    final suppliesClock =
+        patch['startTime'] != null || patch['endTime'] != null;
+    final requestedStartSection = (patch['startSection'] as num?)?.toInt();
+    final requestedEndSection = (patch['endSection'] as num?)?.toInt();
+    final sectionsChanged =
+        (requestedStartSection != null &&
+            requestedStartSection != existing.startSection) ||
+        (requestedEndSection != null &&
+            requestedEndSection != existing.endSection);
+    if (suppliesClock) {
+      merged.remove('hasCustomTime');
+    } else if (sectionsChanged) {
+      merged.remove('startTime');
+      merged.remove('endTime');
+      merged.remove('hasCustomTime');
+    }
     return courseFromApiJson(
       merged,
       sections: sections,

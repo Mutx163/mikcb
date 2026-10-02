@@ -276,6 +276,102 @@ void main() {
       expect(after.endTime, '07:40');
     });
 
+    test('PATCH 改节次时不得把旧节次的钟点当成自定义钉住', () async {
+      final (provider, host) = await seedHost();
+      await provider.addCourse(
+        Course(
+          id: 'plain-1',
+          name: '体育',
+          teacher: '赵老师',
+          location: '体育馆',
+          dayOfWeek: 4,
+          startSection: 1,
+          endSection: 1,
+          startTime: '08:00',
+          endTime: '08:45',
+        ),
+      );
+
+      // 浏览器只提交改了的那一格：{startSection: 5}。
+      // existing.toJson() 里带着第 1 节的 08:00-08:45，合并后就是过期值。
+      final patched = LanEditProviderHost.mergeCoursePatch(
+        host.findCourse('plain-1')!,
+        {'startSection': 5, 'endSection': 5},
+        sections: provider.settings.sections,
+        semesterWeekCount: provider.settings.semesterWeekCount,
+      );
+      await host.updateCourse(patched);
+
+      final stored = provider.courses.firstWhere((c) => c.id == 'plain-1');
+      expect(stored.startSection, 5);
+      expect(
+        stored.hasCustomTime,
+        isFalse,
+        reason: '补丁没带钟点，过期值不该被推导成"用户自定义"',
+      );
+      // 默认模板第 5 节是 14:00-14:45。
+      expect(stored.startTime, '14:00');
+      expect(stored.endTime, '14:45');
+
+      // 被钉过自定义钟点的课移节次时，同样跟着新节次的铃点走：
+      // 那条 pin 属于"第 1 节 07:00 早读"这个取景，不该跟到第 5 节去。
+      await provider.addCourse(
+        Course(
+          id: 'pinned-1',
+          name: '早读',
+          teacher: '周老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 1,
+          startTime: '07:00',
+          endTime: '07:40',
+          hasCustomTime: true,
+        ),
+      );
+      await host.updateCourse(
+        LanEditProviderHost.mergeCoursePatch(
+          host.findCourse('pinned-1')!,
+          {'startSection': 5, 'endSection': 5},
+          sections: provider.settings.sections,
+          semesterWeekCount: provider.settings.semesterWeekCount,
+        ),
+      );
+      final moved = provider.courses.firstWhere((c) => c.id == 'pinned-1');
+      expect(moved.hasCustomTime, isFalse);
+      expect(moved.startTime, '14:00');
+      expect(moved.endTime, '14:45');
+    });
+
+    test('PATCH 显式送来与模板不同的钟点时按客户端说的算', () async {
+      final (provider, host) = await seedHost();
+      await provider.addCourse(
+        Course(
+          id: 'explicit-1',
+          name: '实验',
+          teacher: '孙老师',
+          location: 'C202',
+          dayOfWeek: 5,
+          startSection: 1,
+          endSection: 1,
+          startTime: '08:00',
+          endTime: '08:45',
+        ),
+      );
+
+      final patched = LanEditProviderHost.mergeCoursePatch(
+        host.findCourse('explicit-1')!,
+        {'startSection': 5, 'endSection': 5, 'startTime': '15:00'},
+        sections: provider.settings.sections,
+        semesterWeekCount: provider.settings.semesterWeekCount,
+      );
+      await host.updateCourse(patched);
+
+      final stored = provider.courses.firstWhere((c) => c.id == 'explicit-1');
+      expect(stored.hasCustomTime, isTrue);
+      expect(stored.startTime, '15:00');
+    });
+
     test('显式送来与模板不同的钟点才算自定义', () {
       final settings = TimetableSettings.defaults();
       final custom = LanEditProviderHost.courseFromApiJson(
