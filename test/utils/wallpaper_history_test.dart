@@ -101,6 +101,34 @@ void main() {
       expect(result.history.last.alignX, 0.2);
     });
 
+    test('批量补记不得丢掉缩放与使用时间', () {
+      final result = rememberWallpaperHistoryBatch(
+        history: const [],
+        entries: const [
+          WallpaperHistoryEntry(
+            key: '/zoom.png',
+            alignX: 0.3,
+            alignY: -0.4,
+            scale: 1.8,
+            usedAt: 1760000000000,
+          ),
+        ],
+      );
+      final entry = result.history.single;
+
+      expect(entry.alignX, 0.3);
+      expect(entry.alignY, -0.4);
+      expect(entry.usedAt, 1760000000000);
+      expect(
+        entry.scale,
+        1.8,
+        reason: 'WallpaperHistoryEntry.scale 的文档承诺「切回最近使用时'
+            '连缩放一起还原」，但批量补记转调 pushWallpaperHistory 时没把 '
+            'scale 传下去，条目落库永远是 1（生产路径：'
+            'settings_home_backdrop_flow.dart:224）',
+      );
+    });
+
     test('批量挤出时累计所有待删路径', () {
       var history = <WallpaperHistoryEntry>[];
       for (var i = 0; i < kMaxWallpaperHistoryEntries; i++) {

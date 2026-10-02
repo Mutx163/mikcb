@@ -48,6 +48,7 @@ WallpaperHistoryPushResult pushWallpaperHistory({
   required String key,
   double alignX = 0,
   double alignY = 0,
+  double scale = 1,
   int? usedAt,
 }) {
   final trimmedKey = key.trim();
@@ -63,6 +64,7 @@ WallpaperHistoryPushResult pushWallpaperHistory({
       key: trimmedKey,
       alignX: alignX,
       alignY: alignY,
+      scale: scale,
       usedAt: usedAt ?? DateTime.now().millisecondsSinceEpoch,
     ),
     for (final entry in history)
@@ -170,6 +172,11 @@ WallpaperHistoryPushResult rememberWallpaperHistoryBatch({
       key: entry.key,
       alignX: entry.alignX,
       alignY: entry.alignY,
+      // 缩放也是"当时那个取景"的一部分。漏传这一行会让条目落库永远是 1
+      // （默认值），于是从「最近使用」切回去时用户的放大被静默重置 ——
+      // 而 WallpaperHistoryEntry.scale 的文档与 applyWallpaperHistoryEntry
+      // （`homePageWallpaperScale: entry.scale`）都按"连缩放一起还原"承诺。
+      scale: entry.scale,
       usedAt: entry.usedAt == 0 ? null : entry.usedAt,
     );
     current = result.history;
