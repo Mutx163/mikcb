@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../domain/week_calculator.dart';
 import '../models/course.dart';
 import '../models/statistics_models.dart';
+import '../utils/clock_time.dart';
 
 /// 课程统计计算服务
 class StatisticsService {
@@ -130,11 +131,20 @@ class StatisticsService {
         .length;
 
     // 早八 / 晚间 / 周末 课时（周排课口径）
+    //
+    // 按**分钟数**比，不按字符串比：`''.compareTo('08:00') <= 0` 恒成立，作息按位
+    // 补空出来的空钟点课会被算进早八；而未补零的 `8:00`（'8' > '0'）反而不算早八。
     final earlyBirdSections = allCourses
-        .where((c) => c.startTime.compareTo('08:00') <= 0)
+        .where((c) {
+          final minutes = _startMinutes(c);
+          return minutes != null && minutes <= 8 * 60;
+        })
         .fold<int>(0, (sum, c) => sum + c.sectionCount);
     final eveningSections = allCourses
-        .where((c) => c.endTime.compareTo('18:00') > 0)
+        .where((c) {
+          final minutes = _endMinutes(c);
+          return minutes != null && minutes > 18 * 60;
+        })
         .fold<int>(0, (sum, c) => sum + c.sectionCount);
     final weekendSections = allCourses
         .where((c) => c.dayOfWeek >= 6)
@@ -629,12 +639,19 @@ class StatisticsService {
     required int currentWeek,
   }) {
     final roomCounts = <String, int>{};
+    // 楼栋行是**课时**（卡面单位是「节」，模型字段也叫 sections），不能拿教室行的
+    // 到访周数往上累：两节大课连上 16 周，到访 16 次会被显示成「16 节」，正确值是
+    // 32。口径与教师行/课程行一致：sectionCount × activeWeeks。
+    final buildingSections = <String, int>{};
     for (final course in allCourses) {
       if (course.location.isEmpty) continue;
       final activeWeeks = _countActiveWeeks(course, currentWeek);
       if (activeWeeks == 0) continue;
       roomCounts[course.location] =
           (roomCounts[course.location] ?? 0) + activeWeeks;
+      final building = _buildingOf(course.location);
+      buildingSections[building] =
+          (buildingSections[building] ?? 0) + course.sectionCount * activeWeeks;
     }
 
     final topRooms = roomCounts.entries
@@ -642,12 +659,6 @@ class StatisticsService {
         .toList()
       ..sort((a, b) => b.visits.compareTo(a.visits));
 
-    final buildingSections = <String, int>{};
-    for (final entry in roomCounts.entries) {
-      final building = _buildingOf(entry.key);
-      buildingSections[building] =
-          (buildingSections[building] ?? 0) + entry.value;
-    }
     final buildings = buildingSections.entries
         .map((e) => BuildingStat(name: e.key, sections: e.value))
         .toList()
@@ -739,6 +750,16 @@ class StatisticsService {
   /// 已知残留：非楼栋的中文名也认整段中文，所以 `自习室301` 与 `自习室402`
   /// 仍会并成「自习室」一栋。要把「这是楼还是房间」彻底分清，得引入楼栋词
   /// 词典，超出此处范围。
+  /// 上课开始/结束的分钟数；钟点缺失或畸形时返回 null。
+  ///
+  /// 统计里有好几处「按时间归类」的判断，用 `String.compareTo` 会有两种错：
+  /// 空串（作息按位补空的洞）比任何值都小，未补零的 `8:00` 又比 `08:00` 大。
+  static int? _startMinutes(Course course) =>
+      ClockTime.tryParse(course.startTime)?.totalMinutes;
+
+  static int? _endMinutes(Course course) =>
+      ClockTime.tryParse(course.endTime)?.totalMinutes;
+
   static String _buildingOf(String room) {
     final trimmed = room.trim();
     if (trimmed.isEmpty) {
@@ -757,7 +778,12 @@ class StatisticsService {
   static int _calculateDailyMaxBuildings(List<Course> allCourses) {
     final byDay = <int, Set<String>>{};
     for (final course in allCourses) {
-      byDay.putIfAbsent(course.dayOfWeek, () => {}).add(_buildingOf(course.location));
+      // 无教室（线上/自習）不是一栋楼：不过滤会让 building_hopper 提前解锁、
+      // 进度虚高，口径也和同文件 :633、:302 两处 `location.isEmpty continue` 不一致。
+      if (course.location.trim().isEmpty) continue;
+      byDay
+          .putIfAbsent(course.dayOfWeek, () => {})
+          .add(_buildingOf(course.location));
     }
     var max = 0;
     for (final buildings in byDay.values) {
@@ -773,7 +799,7 @@ class StatisticsService {
   ) {
     if (totalWeeklySections <= 0) return 0;
     final morning = allCourses
-        .where((c) => c.startTime.compareTo('12:00') < 0)
+        .where((c) => (_startMinutes(c) ?? 24 * 60) < 12 * 60)
         .fold<int>(0, (sum, c) => sum + c.sectionCount);
     return morning / totalWeeklySections;
   }
