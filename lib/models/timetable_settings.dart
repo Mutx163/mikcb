@@ -1938,6 +1938,24 @@ class TimetableSettings {
     );
   }
 
+  /// 用**当前真源** [live] 的节次表与激活作息覆盖本对象里的这两项。
+  ///
+  /// 设置子页普遍把 `provider.settings` 取一份快照当草稿（`late TimetableSettings
+  /// _draft`），改完再整份写回。问题是写回期间还有别的写入者在动同一份设置：
+  /// 换季日期规则的批量套用会重写所有课表的 `activeTimeSchemeId` 与 `sections`
+  /// （timetable_provider 的批量套用路径），首页视图状态写入也走同一条持久化。
+  /// 草稿里那两项是"进页面那一刻"的旧值 —— 用户拨一下超级岛开关，就能把刚生效的
+  /// 新作息连同整张节次表回滚掉，而界面显示的仍是旧时间，属于最难查的
+  /// 「改了又莫名变回去」。
+  ///
+  /// 这两个字段不属于子页的可编辑内容，所以一律以真源为准；其余字段保留草稿
+  /// （那才是用户这次要改的东西）。
+  TimetableSettings withLiveScheduleFieldsFrom(TimetableSettings live) =>
+      copyWith(
+        sections: List<SectionTime>.from(live.sections),
+        activeTimeSchemeId: live.activeTimeSchemeId,
+      );
+
   /// 外来传输数据不得改写的**设备级信任锚**，一律保留本机 [local] 的取值。
   ///
   /// `appUpdateMirrorPreset` / `appUpdateMirrorUrlPrefix` 决定「自动更新的清单从

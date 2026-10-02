@@ -288,7 +288,11 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
 
   Future<void> _persistDraft(TimetableSettings next) async {
     final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(next);
+    // 草稿快照可能比真源旧：节次表与激活作息一律回灌，避免把换季批量套用的
+    // 结果顺手回滚（见 TimetableSettings.withLiveScheduleFieldsFrom）。
+    final message = await provider.updateTimetableSettings(
+      next.withLiveScheduleFieldsFrom(provider.settings),
+    );
     if (!mounted) return;
     if (message != null) {
       showAppToast(
@@ -963,7 +967,11 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
 
   Future<void> _persistDraft(TimetableSettings next) async {
     final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(next);
+    // 草稿快照可能比真源旧：节次表与激活作息一律回灌，避免把换季批量套用的
+    // 结果顺手回滚（见 TimetableSettings.withLiveScheduleFieldsFrom）。
+    final message = await provider.updateTimetableSettings(
+      next.withLiveScheduleFieldsFrom(provider.settings),
+    );
     if (!mounted) return;
     if (message != null) {
       showAppToast(

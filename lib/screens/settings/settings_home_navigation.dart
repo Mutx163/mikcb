@@ -340,7 +340,11 @@ class _HomeNavigationSettingsScreenState
     // Use the cached provider — dispose may fire after the Element is unmounted.
     final provider = _timetableProvider;
     try {
-      final message = await provider.updateTimetableSettings(next);
+      // 草稿快照可能比真源旧：节次表与激活作息一律回灌（见
+      // TimetableSettings.withLiveScheduleFieldsFrom）。
+      final message = await provider.updateTimetableSettings(
+        next.withLiveScheduleFieldsFrom(provider.settings),
+      );
       if (!mounted) {
         return;
       }

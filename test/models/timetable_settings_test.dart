@@ -1553,4 +1553,58 @@ void main() {
       expect(toggled.sectionCount, base.sectionCount);
     });
   });
+
+  group('withLiveScheduleFieldsFrom', () {
+    // 设置页普遍按「进页抓一份 settings 快照 → 改字段 → 整体写回」的写法实现。
+    // 节次表和生效作息却不止由设置页写：换季日期规则的批量套用会重写所有课表的
+    // activeTimeSchemeId 与 sections。用户在页面里停留期间外部套用了夏令时，页面
+    // 保存时就会用它进页时那份旧快照把夏令时**原地回滚成冬季时间**，而且不报任何
+    // 错。所以写回前要把这两项实时字段取自当前生效值，而不是取自页面的旧快照。
+
+    test('keeps the live schedule fields over the stale draft values', () {
+      final live = TimetableSettings.defaults().copyWith(
+        sections: const [
+          SectionTime(startTime: '08:30', endTime: '09:15'),
+          SectionTime(startTime: '09:25', endTime: '10:10'),
+        ],
+        activeTimeSchemeId: 'summer',
+      );
+      final draft = live.copyWith(
+        sections: const [SectionTime(startTime: '08:00', endTime: '08:45')],
+        activeTimeSchemeId: 'winter',
+        showConflictBadgeOnTimetable: false,
+      );
+
+      final merged = draft.withLiveScheduleFieldsFrom(live);
+
+      expect(merged.sections, live.sections);
+      expect(merged.activeTimeSchemeId, 'summer');
+      expect(merged.showConflictBadgeOnTimetable, isFalse);
+    });
+
+    test('the draft owns every non-schedule field', () {
+      final live = TimetableSettings.defaults().copyWith(
+        activeTimeSchemeId: 'summer',
+      );
+      final draft = live.copyWith(
+        semesterWeekCount: 24,
+        courseCardShowTime: true,
+      );
+
+      final merged = draft.withLiveScheduleFieldsFrom(live);
+
+      expect(merged.semesterWeekCount, 24);
+      expect(merged.courseCardShowTime, isTrue);
+      expect(merged.activeTimeSchemeId, live.activeTimeSchemeId);
+    });
+
+    test('an untouched draft round-trips unchanged', () {
+      final live = TimetableSettings.defaults();
+      final merged = live.withLiveScheduleFieldsFrom(live);
+
+      expect(merged.sections, live.sections);
+      expect(merged.activeTimeSchemeId, live.activeTimeSchemeId);
+      expect(merged.semesterWeekCount, live.semesterWeekCount);
+    });
+  });
 }

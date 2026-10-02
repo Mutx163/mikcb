@@ -50,7 +50,11 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
   Future<void> _persistDraft(TimetableSettings next) async {
     final provider = _timetableProvider;
     try {
-      await provider.updateTimetableSettings(next);
+      // 草稿快照可能比真源旧：节次表与激活作息一律回灌（见
+      // TimetableSettings.withLiveScheduleFieldsFrom）。
+      await provider.updateTimetableSettings(
+        next.withLiveScheduleFieldsFrom(provider.settings),
+      );
     } catch (_) {
       // 落盘失败：provider 已回滚内存与课表镜像并 rethrow，不接就没人提示。
       reportSettingsPersistFailure(this, resetDraft: () {
