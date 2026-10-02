@@ -96,14 +96,21 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
                 emptyList()
             } else {
                 val highlighted = snapshot.highlightedCourse
-                val nowTime = java.text.SimpleDateFormat(
-                    "HH:mm", java.util.Locale.getDefault()
-                ).format(java.util.Date())
+                val now = java.util.Calendar.getInstance()
+                val nowMinutes =
+                    now.get(java.util.Calendar.HOUR_OF_DAY) * 60 +
+                        now.get(java.util.Calendar.MINUTE)
                 val ordered = mutableListOf<TodayWidgetCourseInfo>()
                 if (highlighted != null) ordered.add(highlighted)
                 for (c in snapshot.visibleTodayCourses) {
                     if (c.id == highlighted?.id) continue
-                    if (c.endTime > nowTime) ordered.add(c)
+                    if (TodayWidgetSupport.miniListShouldListCourse(
+                            c.endTime,
+                            nowMinutes,
+                        )
+                    ) {
+                        ordered.add(c)
+                    }
                 }
                 ordered.take(maxRows)
             }

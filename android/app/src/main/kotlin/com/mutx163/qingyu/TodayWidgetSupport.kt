@@ -810,6 +810,26 @@ object TodayWidgetSupport {
         }
     }
 
+    /**
+     * 迷你列表卡要不要把这门课列进"今天还剩几节"。
+     *
+     * 原先是 `c.endTime > nowTime`，而 `nowTime` 来自
+     * `SimpleDateFormat("HH:mm", Locale.getDefault())`（TodayMiniListWidgetProvider.kt:99-106），
+     * 两个问题：
+     * 1) 默认 Locale 用阿拉伯-印度数字时（ar 等），格式化出来的是 `١٠:٣٠`
+     *    而快照里的 endTime 是 ASCII `10:30`，字典序比较整体失真 ——
+     *    全天课程都被判成"已结束"，卡上只剩主角课，而"还有 N 门"仍按真实数显示；
+     * 2) 教务适配器下发的钟点可能没补零（`8:00`，见
+     *    `test/services/statistics_metric_scope_test.dart:99`），
+     *    `'8' > '1'` 让已结束的课继续占位。
+     * 改成按"当日分钟数"比较（与 Dart 侧 ClockTime 同一口径），
+     * 解析不了的 endTime 一律保留该行 —— 宁可多列一行，也不把用户的课吞掉。
+     */
+    fun miniListShouldListCourse(endTime: String?, nowMinutes: Int): Boolean {
+        val endMinutes = LiveClock.minutesOfDay(endTime) ?: return true
+        return endMinutes > nowMinutes
+    }
+
     fun mediumVisibleRows(profile: TodayWidgetSizeProfile): Int {
         return when {
             profile.heightDp >= 250 -> 3
