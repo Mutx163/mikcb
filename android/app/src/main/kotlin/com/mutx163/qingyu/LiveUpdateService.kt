@@ -894,13 +894,15 @@ class LiveUpdateService : Service() {
     }
 
     private fun maybeApplyAutoQuickAction(nowMillis: Long) {
-        if (quickActionAutoLeadMillis <= 0L ||
-            beforeClassQuickAction == BeforeClassQuickActionRestore.ACTION_NONE
+        // 时间窗交给 liveSchedulerAutoQuickActionIsDue 判：它和调度侧
+        // liveSchedulerQuickActionIsDue 一样带上界，课后起岛不再补做课前动作。
+        if (!liveSchedulerAutoQuickActionIsDue(
+                leadMillis = quickActionAutoLeadMillis,
+                action = beforeClassQuickAction,
+                startAtMillis = startAtMillis,
+                nowMillis = nowMillis,
+            )
         ) {
-            return
-        }
-        val dueAtMillis = startAtMillis - quickActionAutoLeadMillis
-        if (nowMillis < dueAtMillis) {
             return
         }
         BeforeClassQuickActionRestore.applyAutoQuickAction(

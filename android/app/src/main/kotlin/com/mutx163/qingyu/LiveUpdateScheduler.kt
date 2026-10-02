@@ -632,6 +632,29 @@ internal fun liveSchedulerQuickActionTriggerAt(
 
 /** Whether the auto quick action window [startAt - lead, startAt) already
  *  covers [nowMillis] (due to apply now, e.g. after an alarm or app open). */
+/**
+ * 服务侧自动课前动作的触发窗：**只在 [startAtMillis - leadMillis, startAtMillis) 内**成立。
+ *
+ * 与 [liveSchedulerQuickActionIsDue] 同判据（那里写的是 `nowMillis >= startAtMillis →
+ * false`，注释原话 "Window closed"）。服务侧原来只判下界，于是用户**上课之后**才把
+ * 岛拉起来时，它会立刻执行课前动作：08:00-09:40 的课、自动静音提前 20 分钟，09:00
+ * 起岛 → 当场把铃声设为静音，恢复点排在 09:40，用户正在上课却被静音半节课。
+ */
+internal fun liveSchedulerAutoQuickActionIsDue(
+    leadMillis: Long,
+    action: String,
+    startAtMillis: Long,
+    nowMillis: Long,
+): Boolean {
+    if (leadMillis <= 0L || action == BeforeClassQuickActionRestore.ACTION_NONE) {
+        return false
+    }
+    if (nowMillis >= startAtMillis) {
+        return false
+    }
+    return nowMillis >= startAtMillis - leadMillis
+}
+
 internal fun liveSchedulerQuickActionIsDue(
     autoMinutes: Int,
     action: String,
@@ -1912,7 +1935,11 @@ object LiveUpdateScheduler {
         val targetWeek = calculateCalendarWeekForDate(snapshot, nowCalendar)
         val todayCourses = snapshot.courses
             .filter { it.dayOfWeek == nowCalendar.get(Calendar.DAY_OF_WEEK).toWeekday() && it.isInWeek(targetWeek) }
-            .sortedBy { it.startSection }
+            // 键必须与桌面卡片一致：只按 startSection 排，同一节次的两门课（早读
+            // 07:00 与第一大节 08:00 都被钉在第 1 节）谁在前取决于导入数组顺序，
+            // 于是「下节课」会取到 getOrNull(index + 1) = null，岛上干脆不显示
+            // 下节课；课前 blockedUntil 与自动课前动作的窗口也跟着错。
+            .sortedWith(compareBy({ it.startSection }, { it.startTime }))
         if (todayCourses.isEmpty()) {
             return null
         }
