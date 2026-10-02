@@ -39,7 +39,7 @@ class ClockTime {
       return null;
     }
     if (allowEndOfDay && hour == 24 && minute == 0) {
-      return ClockTime(24, 0);
+      return const ClockTime(24, 0);
     }
     if (hour < 0 || hour > 23) {
       return null;

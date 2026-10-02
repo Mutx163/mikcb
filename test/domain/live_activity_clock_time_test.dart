@@ -61,7 +61,7 @@ void main() {
     test('24:00 表示当天结束，即次日零点', () {
       expect(
         LiveActivityLogic.buildCourseDateTime(day, '24:00'),
-        DateTime(2026, 10, 3, 0, 0),
+        DateTime(2026, 10, 3),
       );
     });
 
