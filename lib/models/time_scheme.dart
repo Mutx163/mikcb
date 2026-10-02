@@ -203,6 +203,17 @@ int _clockMinutes(String value) {
   if (hour == null || minute == null) {
     throw const FormatException('invalid_time_format');
   }
+  // 范围守卫。缺它时 `25:00` 只是被算成 1500 分钟，于是「25:00 - 26:00」这种
+  // 根本不存在的节次也能通过 validateSectionTimes 落库并被应用；而超级岛与闹钟
+  // 那两条链各自都判它无效 —— 结果是课表上有这一节，时间对不上，也永远不会通知。
+  // 24:00 例外放行：晚自习/末节课的合法写法，语义是「当天结束」。
+  final inRange =
+      minute >= 0 &&
+      minute <= 59 &&
+      (hour == 24 ? minute == 0 : hour >= 0 && hour <= 23);
+  if (!inRange) {
+    throw const FormatException('invalid_time_format');
+  }
   return hour * 60 + minute;
 }
 

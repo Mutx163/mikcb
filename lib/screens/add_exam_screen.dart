@@ -1069,10 +1069,19 @@ class _AddExamScreenState extends State<AddExamScreen> {
   TimeOfDay _parseTime(String value) {
     final parts = value.split(':');
     if (parts.length == 2) {
-      return TimeOfDay(
-        hour: int.tryParse(parts[0]) ?? 8,
-        minute: int.tryParse(parts[1]) ?? 0,
-      );
+      final hour = int.tryParse(parts[0]);
+      final minute = int.tryParse(parts[1]);
+      // 越界值不能直接喂给 TimeOfDay：它的构造断言要求 0<=hour<24，debug/profile
+      // 下会抛异常（表现是「点这一项的时间没反应」），release 下则带着错值继续
+      // 参与算时间。导入/旧存档里的考试时间是外部字符串，必须按范围判。
+      if (hour != null &&
+          minute != null &&
+          hour >= 0 &&
+          hour < 24 &&
+          minute >= 0 &&
+          minute < 60) {
+        return TimeOfDay(hour: hour, minute: minute);
+      }
     }
     return const TimeOfDay(hour: 8, minute: 0);
   }

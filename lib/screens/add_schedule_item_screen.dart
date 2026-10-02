@@ -902,6 +902,11 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
     if (hour == null || minute == null) {
       return null;
     }
+    // 同 add_exam_screen：TimeOfDay 的构造断言要求 0<=hour<24、0<=minute<60，
+    // 外部数据里的 `25:00` / `08:75` 在 debug 下会直接抛，表现是打不开时间选择器。
+    if (hour < 0 || hour >= 24 || minute < 0 || minute >= 60) {
+      return null;
+    }
     return TimeOfDay(hour: hour, minute: minute);
   }
 

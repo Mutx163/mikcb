@@ -145,4 +145,61 @@ void main() {
       original.sections.map((s) => s.displayText),
     );
   });
+
+  // `_clockMinutes` 原先只检查「两段 + 是数字」，不检查范围，于是 `25:00` 被算成
+  // 1500 分钟、`26:00` 被算成 1560 分钟 —— 「25:00 - 26:00」这种墙上不存在的节次
+  // 也能通过 validateSectionTimes 落库并被应用。而超级岛（LiveActivityLogic）与
+  // 闹钟（ClassReminderService / SystemAlarmLogic）各自都判它无效：课表上挂着这一节，
+  // 显示的时间对不上，也永远不会通知。
+  group('validateSectionTimes 的范围守卫', () {
+    test('越界钟点被判为非法时间格式', () {
+      for (final bad in [
+        ['25:00', '26:00'],
+        ['08:00', '08:75'],
+        ['-1:00', '02:00'],
+        ['08:00', '09:60'],
+      ]) {
+        expect(
+          () => validateSectionTimes([
+            SectionTime(startTime: bad[0], endTime: bad[1]),
+          ]),
+          throwsFormatException,
+          reason: '${bad[0]}-${bad[1]} 不是合法节次时间',
+        );
+      }
+    });
+
+    test('24:00 作为当天结束仍然合法', () {
+      expect(
+        validateSectionTimes(const [
+          SectionTime(startTime: '22:00', endTime: '24:00'),
+        ]),
+        isNull,
+      );
+      // 24:30 不是「当天结束」的写法，仍然拒绝。
+      expect(
+        () => validateSectionTimes(const [
+          SectionTime(startTime: '22:00', endTime: '24:30'),
+        ]),
+        throwsFormatException,
+      );
+    });
+
+    test('正常节次表与顺序校验不受影响', () {
+      expect(
+        validateSectionTimes(const [
+          SectionTime(startTime: '08:00', endTime: '08:45'),
+          SectionTime(startTime: '09:00', endTime: '09:45'),
+        ]),
+        isNull,
+      );
+      expect(
+        validateSectionTimes(const [
+          SectionTime(startTime: '08:00', endTime: '09:00'),
+          SectionTime(startTime: '08:30', endTime: '09:30'),
+        ]),
+        contains('section_start_before_previous_end'),
+      );
+    });
+  });
 }
