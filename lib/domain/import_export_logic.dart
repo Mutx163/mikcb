@@ -201,6 +201,13 @@ Course mergeImportedCourseWithExisting(
     note: existing.note,
     sessionNotes: existing.sessionNotes,
     timeSchemeIdOverride: existing.timeSchemeIdOverride,
+    // 停课周是用户在编辑课程页加的本地标注（运动会 / 周测），而 ICS / AI /
+    // 教务解析器都不产出它 —— 只有表格导入的「停课周」列会填值。本函数以
+    // imported 为基底 copyWith，不显式兜回就会把本地停课周静默清空，那周的课
+    // 连同课前提醒、超级岛一起复活。导入真带得动停课周时仍以导入为准。
+    suspendedWeeks: (imported.suspendedWeeks?.isNotEmpty ?? false)
+        ? imported.suspendedWeeks
+        : existing.suspendedWeeks,
   );
 }
 
@@ -223,6 +230,15 @@ Course preserveImportedCourseLocalSharedFields(
     textColor: preserveLocalColors ? existing.textColor : imported.textColor,
     courseNature: existing.courseNature,
     description: existing.description,
+    // 与 mergeImportedCourseWithExisting 同口径：覆盖导入（按名复用本地字段）
+    // 同样要留住备注、每周作业、自定义钟点与停课周。漏 timeSchemeIdOverride
+    // 会让课程钟点回落到全局作息模板，用户按错误的时间去教室。
+    note: existing.note,
+    sessionNotes: existing.sessionNotes,
+    timeSchemeIdOverride: existing.timeSchemeIdOverride,
+    suspendedWeeks: (imported.suspendedWeeks?.isNotEmpty ?? false)
+        ? imported.suspendedWeeks
+        : existing.suspendedWeeks,
   );
 }
 

@@ -276,12 +276,24 @@ Future<int> _timetableImportParsedCourses(
         importedCourses: importedCourses,
         preserveLocalColors: preserveLocalColors,
       );
-      if (courseListsEqual(host._courses, result.mergedCourses)) {
+      // 「课程一字不差」不等于「这次导入无事可做」：开学日期的唯一写入口在
+      // 下面（`semesterStartDate: semesterStart ?? …`）以及随后的周次重算。
+      // 早退会把用户在这一次导入里确认的学期开始日期整个丢掉 —— 面板提示
+      // 「课表没有变化」，首页周次、选课提醒、超级岛、桌面卡却仍按旧日期排。
+      final coursesUnchanged = courseListsEqual(
+        host._courses,
+        result.mergedCourses,
+      );
+      if (coursesUnchanged && semesterStart == null) {
         return 0;
       }
       syncResult = result;
       mergedCourses = result.mergedCourses;
-      effectiveImportedCount = result.addedCount + result.updatedCount;
+      // 课程确实一门没变时，对外仍然报 0 变化（UI 据此提示「课表没有变化」），
+      // 不能因为 `updatedCount` 把「匹配上并重建了同值课程」算成更新。
+      effectiveImportedCount = coursesUnchanged
+          ? 0
+          : result.addedCount + result.updatedCount;
     }
 
     host._courses = host._syncCoursesWithEffectiveTimeSchemes(
