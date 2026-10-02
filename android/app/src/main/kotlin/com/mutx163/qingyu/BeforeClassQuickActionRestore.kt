@@ -265,7 +265,17 @@ internal object BeforeClassQuickActionRestore {
         if (!isPending(context)) {
             return false
         }
-        return restoreIfPending(context, reason = "boot")
+        // 开机重排（LiveUpdateScheduler.handleBootReschedule:1018-1021）也走同一条
+        // 「只有下课了才恢复」的判据。原先这里不看 KEY_RESTORE_AT_MILLIS 就直接恢复，
+        // 于是上课期间设备重启（系统更新、厂商定时重启），铃声被立刻放回课前那档、
+        // pending 连同去重用的 KEY_LAST_AUTO_TRIGGER_MILLIS 一起被清；而自动静音的执行
+        // 窗口上界是 startAt（LiveUpdateService.kt:901-907、LiveUpdateScheduler.kt:1391
+        // 「Window closed」），这节课不会再补做 —— 用户看到的是课上来电外放响铃，
+        // 只有 :275 那条诊断记录，界面上没有任何解释。
+        // 留 pending 是安全的：Android 会跨重启保留铃声模式，ticker 与应用启动
+        // （LiveUpdateService.kt:950/1017、UmengApplication.kt:16）都会再试
+        // restoreIfClassEnded，到点自然恢复。
+        return restoreIfClassEnded(context)
     }
 
     fun restoreIfClassEnded(context: Context, nowMillis: Long = System.currentTimeMillis()): Boolean {
