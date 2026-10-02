@@ -280,9 +280,30 @@ void main() {
     'week package keeps only in-week records and referenced schemes',
     () async {
       final provider = await createProvider();
+      // 所有日期锚在「本周一」，不写死 2026-09：createScheduleDateRule 会对
+      // **区间覆盖今天**的那条规则立即批量套用作息，写死的 09-28~10-04 只有在不
+      // 含今天时才无害 —— 2026-10-02 跑这条测试时，那条只有 1 节的「其他作息」
+      // 被设成了生效作息，随后 addCourse(endSection: 2) 抛
+      // time_scheme_sections_insufficient，等于「一年里有一周会红」。锚到今天之后
+      // 两条规则的区间都在未来，批量套用不会触发，周次过滤仍然只认 currentWeek。
+      final now = DateTime.now();
+      final weekAnchor = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(Duration(days: now.weekday - 1));
+      DateTime dayOf(int offset) =>
+          DateTime(weekAnchor.year, weekAnchor.month, weekAnchor.day + offset);
+      String textOf(int offset) {
+        final date = dayOf(offset);
+        return '${date.year.toString().padLeft(4, '0')}-'
+            '${date.month.toString().padLeft(2, '0')}-'
+            '${date.day.toString().padLeft(2, '0')}';
+      }
+
       await provider.updateTimetableSettings(
         provider.settings.copyWith(
-          semesterStartDate: DateTime(2026, 9, 7),
+          semesterStartDate: dayOf(0),
           semesterWeekCount: 16,
         ),
       );
@@ -309,30 +330,30 @@ void main() {
       final inWeekRule = await provider.createScheduleDateRule(
         name: '本周规则',
         timeSchemeId: inWeekScheme.id,
-        startDate: '2026-09-14',
-        endDate: '2026-09-20',
+        startDate: textOf(7),
+        endDate: textOf(13),
       );
       final outOfWeekRule = await provider.createScheduleDateRule(
         name: '其他规则',
         timeSchemeId: outOfWeekScheme.id,
-        startDate: '2026-09-28',
-        endDate: '2026-10-04',
+        startDate: textOf(21),
+        endDate: textOf(27),
       );
       final inWeekItem = ScheduleItem(
         id: 'in-week-item',
         title: '本周日程',
-        startDate: DateTime(2026, 9, 15),
-        endDate: DateTime(2026, 9, 15),
+        startDate: dayOf(8),
+        endDate: dayOf(8),
         startTime: '10:00',
         endTime: '11:00',
-        createdAt: DateTime(2026, 9),
-        updatedAt: DateTime(2026, 9),
+        createdAt: dayOf(0),
+        updatedAt: dayOf(0),
       );
       final outOfWeekItem = inWeekItem.copyWith(
         id: 'out-of-week-item',
         title: '其他日程',
-        startDate: DateTime(2026, 9, 29),
-        endDate: DateTime(2026, 9, 29),
+        startDate: dayOf(22),
+        endDate: dayOf(22),
       );
       await provider.addScheduleItem(inWeekItem);
       await provider.addScheduleItem(outOfWeekItem);

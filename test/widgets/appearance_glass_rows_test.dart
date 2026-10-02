@@ -108,6 +108,18 @@ Finder _panelScrollable() => find
 
 Future<void> _scrollPanelTo(WidgetTester tester, Finder target) async {
   await tester.scrollUntilVisible(target, 200, scrollable: _panelScrollable());
+  // scrollUntilVisible 命中之后，flutter_test 恒定再调一次
+  // `Scrollable.ensureVisible(..., alignment: 0.0)`（见
+  // flutter_test 的 scrollUntilVisible 实现），于是目标**节标题**的顶边被钉死在
+  // 面板视口上沿。它下方约 45px 的内联分段控件正好落进面板顶部那条渐变模糊带
+  // （HyperosSheetBlurTop 的着色层是 DecoratedBox，没有 IgnorePointer）—— 点按被
+  // 带子吃掉，报 "would not hit test on the specified widget"，写成断言就是
+  // 「点了没反应」。滚到视口中部避开这条带；本文件另一处（恢复默认那两条）用的
+  // 就是这个机制。
+  await Scrollable.ensureVisible(
+    tester.element(target.first),
+    alignment: 0.5,
+  );
   await tester.pumpAndSettle();
 }
 

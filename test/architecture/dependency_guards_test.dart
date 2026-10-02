@@ -72,7 +72,17 @@ void main() {
     // ~/ 7，跨夏令时少算一周）换成既有的 WeekCalculator.getWeekIndex。业务行数
     // 净减（3 行推导换成 2 行调用），+6 全是解释「为什么不能用 difference()」的
     // 注释——这类注释正是本基线想留下的可追溯性。按测试约定同步真实值。
-    const baselineLines = 4653;
+    // 4653→4809：本基线在上游就已经被突破（18e95da 实测 4809 > 4653），也就是说
+    // main 分支这条棘轮一直是红的 —— 记录在案，避免下一个人以为是审计改坏的。
+    // 4809→4875：本轮修复的正当增长，全部是守门与回滚接线，无新增业务状态机：
+    // · 11 个写入口收进 _mutationGate（作息 6 + 地点分组 4 + persistHomeViewState），
+    //   每个入口 +2~3 行的包装与闭合；
+    // · updateTimetableSettings 抽出 _updateTimetableSettingsGated 以便一眼看出包门
+    //   形状（+6，含说明注释）；
+    // · updateCourseGroup 空集合守卫、主题族 _applySavedThemes 回滚、
+    //   HolidayService 注入所有权、_syncCourseWithEffectiveTimeScheme 越界星期拒收。
+    // 按测试约定同步真实值；拆分仍归阶段 3。
+    const baselineLines = 4875;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
