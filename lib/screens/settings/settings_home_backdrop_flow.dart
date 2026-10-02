@@ -329,6 +329,15 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
 
   /// 撤销最近一次「长按删除」：整份历史原样放回，并把这张图从待删清单里摘掉。
   void _undoRemoveBackdropHistoryEntry() {
+    // toast 的 actionLabel 活在本页之外（2s 反悔窗口），页面被 pop 之后
+    // 它仍然可点：宿主 dispose 时 `_flushBackdropFileDeletions` 已经把文件删了，
+    // 而这里第 3、4 步会先把全局历史放回、指向那个已经不存在的文件，
+    // 第 5 步 `applyBackdropDraft` 才在宿主的 setState 上抛
+    // —— 结果正是本文件注释说最忌讳的状态：「最近使用」里留一条打不开的死路径。
+    // 页面都没了，撤销无处可放，整条跳过才是自洽的（全局历史保持删除后的样子）。
+    if (!mounted) {
+      return;
+    }
     if (_pendingRemovals.isEmpty) {
       return;
     }

@@ -301,4 +301,26 @@ void main() {
     expect(result.homeNavigationForm, dirty.homeNavigationForm);
     expectUntouchedEssentials(result);
   });
+
+  test('桌面小组件恢复默认要覆盖本页那四个可调项', () {
+    // 确认弹窗写的是「显示项与外观恢复为默认值」，
+    // 提前量/样式/高度/圆角都在同一页上可调，原先漏在作用域外。
+    final defaults = TimetableSettings.defaults();
+    final dirty = defaults.copyWith(
+      widgetCountdownLeadMinutes: 45,
+      widgetCountdownTextStyle: LiveCountdownTextStyle.minuteSecondCn,
+      widgetHeightAdjustment: 6,
+      widgetCornerRadius: 4,
+    );
+
+    final result = applySettingsReset(
+      dirty,
+      SettingsResetScope.homeWidget,
+    );
+
+    expect(result.widgetCountdownLeadMinutes, defaults.widgetCountdownLeadMinutes);
+    expect(result.widgetCountdownTextStyle, defaults.widgetCountdownTextStyle);
+    expect(result.widgetHeightAdjustment, defaults.widgetHeightAdjustment);
+    expect(result.widgetCornerRadius, defaults.widgetCornerRadius);
+  });
 }

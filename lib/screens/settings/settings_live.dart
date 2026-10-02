@@ -173,6 +173,50 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   Timer? _courseTestEndTimer;
   bool _courseTestBusy = false;
 
+  /// 「忽略假日」开关。写失败或被拒时必须把开关拨回真源。
+  ///
+  /// 原先是乐观 setState + 既不接返回值也不 catch：
+  /// [TimetableProvider.updateTimetableSettings] 会返回一条拒绝消息，
+  /// 落盘失败时还会回滚内存并 rethrow —— 两者在这里都被丢掉，于是
+  /// 开关显示"已开启"而真源是关（`value:` 读的就是这个本地字段），
+  /// 异常成了没人接的 zone 错误，要退出重进本页才会回正。
+  /// 同目录 settings_diagnostics.dart:110-136 就是这个完整写法。
+  Future<void> _setHolidayOverrideEnabled(bool value) async {
+    final provider = context.read<TimetableProvider>();
+    setState(() {
+      _holidayOverrideEnabled = value;
+    });
+    try {
+      final message = await provider.updateTimetableSettings(
+        provider.settings.copyWith(holidayOverrideEnabled: value),
+      );
+      if (message != null) {
+        _restoreHolidayOverrideFromSource(provider);
+        if (mounted) {
+          reportSettingsPersistRejected(this, message);
+        }
+        return;
+      }
+    } catch (_) {
+      _restoreHolidayOverrideFromSource(provider);
+      if (mounted) {
+        reportSettingsPersistFailure(this);
+      }
+      return;
+    }
+    provider.refreshLiveActivityNow(forceSnapshotSync: true);
+  }
+
+  /// provider 已把内存回滚，这里按真源把开关摆回去。
+  void _restoreHolidayOverrideFromSource(TimetableProvider provider) {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _holidayOverrideEnabled = provider.settings.holidayOverrideEnabled;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -592,14 +636,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
               HyperosSwitchTile(
                 value: _holidayOverrideEnabled,
                 onChanged: (value) {
-                  setState(() {
-                    _holidayOverrideEnabled = value;
-                  });
-                  final provider = context.read<TimetableProvider>();
-                  provider.updateTimetableSettings(
-                    provider.settings.copyWith(holidayOverrideEnabled: value),
-                  );
-                  provider.refreshLiveActivityNow(forceSnapshotSync: true);
+                  unawaited(_setHolidayOverrideEnabled(value));
                 },
                 title: _holidayOverrideEnabled
                     ? l10n.liveTestingHolidayModeEnabled

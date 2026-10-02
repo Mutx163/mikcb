@@ -160,6 +160,13 @@ TimetableSettings applySettingsReset(
       widgetShowCountdown: d.widgetShowCountdown,
       widgetHideCompletedCourses: d.widgetHideCompletedCourses,
       widgetShowTomorrowCourses: d.widgetShowTomorrowCourses,
+      // 本页另外四个可调项（倒计时提前量/样式、高度、圆角）原先漏在范围外：
+      // 确认弹窗写的是「显示项与外观恢复为默认值」，用户在同一个「恢复默认」
+      // 里拨过的这四项却原地不动，等于按声明的范围少清了 4 个。
+      widgetCountdownLeadMinutes: d.widgetCountdownLeadMinutes,
+      widgetCountdownTextStyle: d.widgetCountdownTextStyle,
+      widgetHeightAdjustment: d.widgetHeightAdjustment,
+      widgetCornerRadius: d.widgetCornerRadius,
     ),
   };
 }
