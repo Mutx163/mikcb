@@ -77,11 +77,19 @@ class UnifiedTransferService {
         ? sourceCourses
         : sourceCourses.where((item) => selected.contains(item.id)).toList();
     final courseIds = courses.map((item) => item.id).toSet();
+    // 附属数据必须跟课程一起收窄。`weekTimetable` 也在这里：它上面刚按
+    // `isActiveInWeek(currentWeek)` 筛过课程，若走「全带」分支就会把**别周的课**
+    // 的任务与考试一起打包过去 —— 接收端 `_diffService.validate` 会报
+    // `exam_course_missing` 判为 error，整单导入被拒（分享本周课表直接不可用）；
+    // 若接收端恰好有同 id 的那门课，还会导入包外数据。
+    final keepsAllCourses =
+        selected.isEmpty &&
+        scope != TransferScope.selectedCourses &&
+        scope != TransferScope.selectedCourse &&
+        scope != TransferScope.weekTimetable;
     final tasks = scope == TransferScope.timeTemplate
         ? const <CourseTask>[]
-        : selected.isEmpty &&
-              scope != TransferScope.selectedCourses &&
-              scope != TransferScope.selectedCourse
+        : keepsAllCourses
         ? provider.tasks
         : provider.tasks
               .where(
@@ -91,9 +99,7 @@ class UnifiedTransferService {
               .toList();
     final exams = scope == TransferScope.timeTemplate
         ? const <Exam>[]
-        : selected.isEmpty &&
-              scope != TransferScope.selectedCourses &&
-              scope != TransferScope.selectedCourse
+        : keepsAllCourses
         ? provider.exams
         : provider.exams
               .where((item) => courseIds.contains(item.courseId))
