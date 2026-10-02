@@ -66,30 +66,64 @@ void main() {
     expect(backup.currentWeek, 16);
   });
 
-  test('backup parser skips malformed optional entries', () {
+  // 这条钉子原本断言「畸形条目一律跳过、结果就是空列表」，而那正是数据丢失的
+  // 入口：单课表导入把 `backup.courses` 整份替换进课表
+  // （lib/providers/timetable/import_export_service.dart:358），一份课程全部
+  // 解析不出来的 .mikcb 会被当成合法的**空课表**导入 —— 用户原课表被清空并写盘，
+  // 界面报「导入成功」。现在「原始非空 / 解析全空」直接拒收（与同文件 :293 完整
+  // 备份路径同款守卫）；逐条畸形仍然跳过，能救回的部分照救。
+  test('backup parser rejects a list where every entry is malformed', () {
     final service = DataTransferService();
     final json = service.buildBackupJson(
       courses: const [],
       settings: TimetableSettings.defaults(),
       currentWeek: 1,
     );
-    final payload = Map<String, dynamic>.from(jsonDecode(json) as Map)
-      ..['courses'] = ['bad']
-      ..['tasks'] = [42]
-      ..['scheduleItems'] = ['bad']
-      ..['exams'] = [null]
-      ..['timeSchemes'] = ['bad']
-      ..['scheduleDateRules'] = [null]
-      ..['locationTimeGroups'] = [42];
+
+    for (final key in [
+      'courses',
+      'tasks',
+      'scheduleItems',
+      'exams',
+      'timeSchemes',
+      'scheduleDateRules',
+      'locationTimeGroups',
+    ]) {
+      final payload = Map<String, dynamic>.from(jsonDecode(json) as Map)
+        ..[key] = ['bad'];
+
+      expect(
+        () => service.parseBackupJson(jsonEncode(payload)),
+        throwsFormatException,
+        reason: '$key 原始非空却一条都读不出来，必须拒收而不是当成空列表',
+      );
+    }
+  });
+
+  test('backup parser still skips partially malformed entries', () {
+    final service = DataTransferService();
+    final json = service.buildBackupJson(
+      courses: const [],
+      tasks: [
+        CourseTask(
+          id: 'task-1',
+          title: '完成作业',
+          dueDate: DateTime(2026, 4, 7),
+          createdAt: DateTime(2026, 4),
+          updatedAt: DateTime(2026, 4),
+        ),
+      ],
+      settings: TimetableSettings.defaults(),
+      currentWeek: 1,
+    );
+    final payload = Map<String, dynamic>.from(jsonDecode(json) as Map);
+    payload['tasks'] = [42, ...(payload['tasks'] as List), 'bad'];
 
     final backup = service.parseBackupJson(jsonEncode(payload));
-    expect(backup.courses, isEmpty);
-    expect(backup.tasks, isEmpty);
-    expect(backup.scheduleItems, isEmpty);
-    expect(backup.exams, isEmpty);
-    expect(backup.timeSchemes, isEmpty);
-    expect(backup.scheduleDateRules, isEmpty);
-    expect(backup.locationTimeGroups, isEmpty);
+
+    // 只要还剩一条读得出来就不是「整份清零」，逐条畸形继续跳过。
+    expect(backup.tasks, hasLength(1));
+    expect(backup.tasks.single.title, '完成作业');
   });
 
   test('full backup parser rejects completely malformed core lists', () {

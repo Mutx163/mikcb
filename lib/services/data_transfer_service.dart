@@ -90,6 +90,25 @@ class DataTransferService {
     return result;
   }
 
+  /// 「原始非空、解析全空」守卫，同款见 :293 的完整备份路径。
+  ///
+  /// `.mikcb` 的 `schemaVersion` 不匹配就直接拒收（:180），所以进到这里的文件
+  /// 一定是**本机同版本**写出来的：条目解析不出来只可能是文件被截断/手改/损坏。
+  /// 单课表导入路径把 `backup.courses` **整份替换**进课表
+  /// （import_export_service.dart:358），于是一份「课程全解析失败」的文件会被
+  /// 当成一份合法的**空课表**：用户原课表被清空、写盘、界面报「导入成功」。
+  /// 允许逐条跳过（部分损坏仍能救回能读的部分），但不允许整列表清零。
+  static List<T> _parseListWithTotalLossGuard<T>(
+    Object? raw,
+    T Function(Map<String, dynamic>) parse,
+  ) {
+    final items = _parseOptionalList<T>(raw, parse);
+    if (raw is List && raw.isNotEmpty && items.isEmpty) {
+      throw const FormatException('unrecognized_mikcb_data_file');
+    }
+    return items;
+  }
+
   static const int schemaVersion = TransferPackage.schemaVersion;
   static const String fileExtension = 'mikcb';
 
@@ -181,15 +200,15 @@ class DataTransferService {
       throw const FormatException('unrecognized_mikcb_data_file');
     }
 
-    final rawCourses = _parseOptionalList(
+    final rawCourses = _parseListWithTotalLossGuard(
       json['courses'],
       Course.fromJson,
     );
-    final rawTasks = _parseOptionalList(
+    final rawTasks = _parseListWithTotalLossGuard(
       json['tasks'],
       CourseTask.fromJson,
     );
-    final rawScheduleItems = _parseOptionalList(
+    final rawScheduleItems = _parseListWithTotalLossGuard(
       json['scheduleItems'],
       ScheduleItem.fromJson,
     );
@@ -208,16 +227,16 @@ class DataTransferService {
       courses: rawCourses,
       tasks: rawTasks,
       scheduleItems: rawScheduleItems,
-      exams: _parseOptionalList(json['exams'], Exam.fromJson),
-      timeSchemes: _parseOptionalList(
+      exams: _parseListWithTotalLossGuard(json['exams'], Exam.fromJson),
+      timeSchemes: _parseListWithTotalLossGuard(
         json['timeSchemes'],
         TimeScheme.fromJson,
       ),
-      scheduleDateRules: _parseOptionalList(
+      scheduleDateRules: _parseListWithTotalLossGuard(
         json['scheduleDateRules'],
         ScheduleDateRule.fromJson,
       ),
-      locationTimeGroups: _parseOptionalList(
+      locationTimeGroups: _parseListWithTotalLossGuard(
         json['locationTimeGroups'],
         LocationTimeGroup.fromJson,
       ),
