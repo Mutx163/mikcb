@@ -41,17 +41,34 @@ internal object BeforeClassQuickActionRestore {
             audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
             // setRingerMode 在缺 MODIFY_AUDIO_SETTINGS 权限时会被框架静默丢弃（不抛
             // 异常、不生效），必须回读校验，否则「静音」按钮点了毫无反应却当成功。
-            audioManager.ringerMode == AudioManager.RINGER_MODE_SILENT
+            val applied = audioManager.ringerMode == AudioManager.RINGER_MODE_SILENT
+            if (!applied) {
+                // 没真的静音就不能把 pending 留在盘上：pending 还挂着时下一次
+                // markPending 会跳过 saveOriginalStates（:347），于是这节课恢复用的是
+                // 好几节课之前那次的原始模式 —— 用户中途自己改成的振动被静默覆盖。
+                abandonAppliedFlag(context, KEY_APPLIED_SILENT)
+            }
+            applied
         } catch (e: SecurityException) {
             if (!silentAccessDeniedWarnedOnce) {
                 silentAccessDeniedWarnedOnce = true
                 Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_SILENT_MODE_DIRECT_FAILED, e)
             }
+            abandonAppliedFlag(context, KEY_APPLIED_SILENT)
             false
         } catch (e: Exception) {
             Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_SILENT_MODE_FAILED, e)
+            abandonAppliedFlag(context, KEY_APPLIED_SILENT)
             false
         }
+    }
+
+    /**
+     * 应用失败时回收刚写下的"已生效"标记：另一个动作若仍生效，pending 与它保存的
+     * 原始状态必须留着（下课还得恢复它）；两个标记都撤掉了才整份清 pending。
+     */
+    private fun abandonAppliedFlag(context: Context, key: String) {
+        clearAppliedFlagAndMaybeClearPending(context, key)
     }
 
     fun enableDoNotDisturbMode(context: Context, restoreAtMillis: Long): Boolean {
@@ -68,9 +85,11 @@ internal object BeforeClassQuickActionRestore {
             true
         } catch (e: SecurityException) {
             Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_DND_DIRECT_FAILED, e)
+            abandonAppliedFlag(context, KEY_APPLIED_DND)
             false
         } catch (e: Exception) {
             Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_DND_FAILED, e)
+            abandonAppliedFlag(context, KEY_APPLIED_DND)
             false
         }
     }
@@ -267,8 +286,17 @@ internal object BeforeClassQuickActionRestore {
         }
 
         val appliedAction = prefs.getString(KEY_APPLIED_ACTION, "").orEmpty()
-        val silentRestored = restoreSilentMode(context, prefs)
+        // 顺序必须是「先解勿扰，再恢复铃声」，与本文件 cancelSilentMode:178-185 的
+        // 处理同口径：勿扰档位（NONE / SILENCE_INTERUPTIONS）会把铃声模式强制压成
+        // 静音，这是本仓已经钉住的结论（LiveUpdateServiceLogicTest.kt:117-126 的
+        // dndFilterSuppressesRinger）。restoreSilentMode 还带写后回读校验（:298，
+        // 注释写明"写入被框架静默丢弃时不能当成功"），所以在 ACTION_BOTH 下
+        // 先恢复铃声必然回读失败 → silentRestored=false → restored=false →
+        // 不 clearPending。表现是下课铃后手机一直静音：ticker 随后就
+        // stopAndRemoveNotification（LiveUpdateService.kt:1022-1029），通知栏连可点的
+        // 按钮都没了，重试走的也是同一对顺序，只能等下次打开 App 才恢复。
         val dndRestored = restoreDoNotDisturbMode(context, prefs)
+        val silentRestored = restoreSilentMode(context, prefs)
         val restored = silentRestored && dndRestored
         if (restored) {
             clearPending(context)
