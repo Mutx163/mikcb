@@ -7,10 +7,14 @@ import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/spreadsheet_import_service.dart';
 
+/// Excel「CSV UTF-8」导出会在最前面写 EF BB BF（UTF-8 BOM），这里按**字节**复刻
+/// 那个签名，避免把不可见的 U+FEFF 直接写进源码。
+List<int> csvBytesWithBom(String csv) =>
+    const <int>[0xEF, 0xBB, 0xBF] + utf8.encode(csv);
+
 void main() {
   final service = SpreadsheetImportService();
   final settings = TimetableSettings.defaults();
-
   const mikcbFullSample = '''
 # mikcb-course-import-v1
 课程名,星期,开始节,结束节,教师,教室,上课周
@@ -262,8 +266,69 @@ void main() {
     expect(result.warnings.first, contains('spreadsheet_row_warning|rowNumber=3'));
   });
 
-  test('rejects unknown header format', () {
+  // UTF-8 BOM 是 Excel「CSV UTF-8」导出的固定签名（EF BB BF）。这条只钉行为：
+  // 带 BOM 时格式识别与列名匹配必须照常成立（将来换解析器或改解码顺序时它会
+  // 立刻变红）。
+  test('strips a UTF-8 BOM before header detection', () {
     const csv = '''
+课程名,星期,开始节,结束节,上课周
+线性代数,2,3,4,1-16
+''';
+
+    final result = service.parseBytes(
+      csvBytesWithBom(csv),
+      fileName: 'courses.csv',
+      settings: settings,
+    );
+
+    expect(result.format, SpreadsheetImportService.formatMikcb);
+    expect(result.courses.single.name, '线性代数');
+  });
+
+  // TableParser.decodeCsv 的引号处理整块都在 `if (_textDelimiter != null)` 里
+  // （table_parser-1.0.1/lib/src/csv.dart:86-118），而本服务调用时没传该参数
+  // （spreadsheet_import_service.dart:244），默认就是 null。于是 RFC4180 的带引号
+  // 字段被当成普通字符：引号留在值里、引号内的逗号照样切分 —— 用户看到教师变成
+  // `"王`、教室变成 `老师"`，且没有任何警告。
+  test('honours quoted CSV fields, including commas and doubled quotes', () {
+    const csv = '''
+课程名,星期,开始节,结束节,教师,教室,上课周
+"数据结构,进阶",1,1,2,"王,老师","C302",1-8
+"编译原理""实验",2,3,4,周老师,D001,1-8
+''';
+
+    final result = service.parseBytes(
+      utf8.encode(csv),
+      fileName: 'courses.csv',
+      settings: settings,
+    );
+
+    expect(result.courses, hasLength(2));
+    expect(result.courses[0].name, '数据结构,进阶');
+    expect(result.courses[0].teacher, '王,老师');
+    expect(result.courses[0].location, 'C302');
+    expect(result.courses[1].name, '编译原理"实验');
+  });
+
+  // shouldParseNumbers 默认为 true：纯数字单元格会先转成 num 再 toString 回来，
+  // 于是 Excel 里存成文本的教室号 `007` 变成 `7`、`1.10` 变成 `1.1`。本服务随后
+  // 自己按文本解析每一列，数值化没有任何收益，只会静默改数据。
+  test('keeps numeric-looking cells as literal text', () {
+    const csv = '''
+课程名,星期,开始节,结束节,教师,教室,上课周
+数值分析,1,1,2,吴老师,007,1-8
+''';
+
+    final result = service.parseBytes(
+      utf8.encode(csv),
+      fileName: 'courses.csv',
+      settings: settings,
+    );
+
+    expect(result.courses.single.location, '007');
+  });
+
+  test('rejects unknown header format', () {    const csv = '''
 name,teacher,day,section,room,weeks
 Course A,Teacher,1,1-2,Room,1-16
 ''';

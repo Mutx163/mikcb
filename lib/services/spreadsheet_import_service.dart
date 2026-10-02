@@ -241,7 +241,21 @@ class SpreadsheetImportService {
 
   List<List<String>>? _tryParseCsvContent(String content) {
     try {
-      final decoder = TableParser.decodeCsv(content);
+      // textDelimiter 必须显式给：TableParser 的引号处理整块都在
+      // `if (_textDelimiter != null)` 里（table_parser-1.0.1/lib/src/csv.dart:86-118），
+      // 默认 null 意味着 RFC4180 的带引号字段被当成普通文本 —— 引号留在值里，
+      // 引号内的逗号照样当分隔符切。Excel/WakeUp 导出的
+      // `"王,老师"` 于是变成 `"王` + `老师"` 两格，教师与教室串到别的列上，
+      // 而且全程没有任何警告。
+      //
+      // shouldParseNumbers 关掉：本服务随后自己按文本解析每一列，数值化只会
+      // 静默改数据 —— Excel 里存成文本的教室号 `007` 会变成 `7`、`1.10` 变成
+      // `1.1`（实测见 test/services/spreadsheet_import_service_test.dart）。
+      final decoder = TableParser.decodeCsv(
+        content,
+        textDelimiter: '"',
+        shouldParseNumbers: false,
+      );
       if (decoder.tables.isEmpty) {
         return null;
       }
