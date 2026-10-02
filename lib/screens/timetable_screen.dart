@@ -41,6 +41,7 @@ import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../domain/couple_timetable_logic.dart';
 import '../domain/day_course_display_logic.dart';
+import '../domain/day_view_paging.dart';
 import '../domain/week_calculator.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
@@ -756,6 +757,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
         _syncViewStateIfNeeded(provider);
+        // 必须在表头与日面板读 `_selectedDayOfWeek` 之前归一（方法注释里有
+        // 不改会错在哪三处的说明）。
+        _syncDayViewSelectionWithVisibleDays(provider.settings);
         _scheduleUpdateCheckIfNeeded(provider);
         _syncWeekPageWithProvider(provider.currentWeek, provider.settings);
         _syncScreenshotListener(provider.settings);
@@ -1311,11 +1315,38 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   int _resolveStoredDayOfWeek(TimetableSettings settings, int storedDayOfWeek) {
-    final visibleDays = _visibleDayNumbers(settings);
-    if (visibleDays.contains(storedDayOfWeek)) {
-      return storedDayOfWeek;
+    // 与分页共用同一个归一口径（domain/day_view_paging.dart）。
+    return normalizeDayOfWeekForVisibleDays(
+      _visibleDayNumbers(settings),
+      storedDayOfWeek,
+    );
+  }
+
+  /// 把日视图的选中日收进"当前可见的那些星期"。
+  ///
+  /// 「隐藏周末」是在设置页改的，而首页 State 常驻：改完回到首页时
+  /// `_selectedDayOfWeek` 可能还是 6/7。页号那边即使归一了（见
+  /// `_dayViewPageIndexForDay`），状态这份不归一就会继续错位 ——
+  /// `_isSelectedDay` 拿 6/7 比可见的 5 格 → 表头一格都不亮；
+  /// `_addCourseInitialDayOfWeek` 把周六预填进「添加课程」→ 存下来的课在
+  /// 5 列周视图里根本不显示。
+  ///
+  /// 必须在 build 顶部、表头与日面板读它之前调用。这里**不** setState：
+  /// 本帧就是用归一后的值构建的，且只有真的越界才会发生一次。落盘的
+  /// `timetableLastViewedDayOfWeek` 不动 —— 恢复时本来就会过一遍同样口径
+  /// （`_resolveStoredDayOfWeek`）。
+  void _syncDayViewSelectionWithVisibleDays(TimetableSettings settings) {
+    final selected = _selectedDayOfWeek;
+    if (!_isDayView || selected == null) {
+      return;
     }
-    return visibleDays.first;
+    final normalized = normalizeDayOfWeekForVisibleDays(
+      _visibleDayNumbers(settings),
+      selected,
+    );
+    if (normalized != selected) {
+      _selectedDayOfWeek = normalized;
+    }
   }
 
   void _restoreViewStateFromProvider(TimetableProvider provider) {
@@ -1681,11 +1712,16 @@ class _TimetableScreenState extends State<TimetableScreen>
     int week,
     int dayOfWeek,
   ) {
-    final visibleDays = _visibleDayNumbers(settings);
-    final dayIndex = math.max(0, visibleDays.indexOf(dayOfWeek));
-    // Globally continuous across weeks: no edge pages, crossing a week is a
-    // normal one-page transition on the single day pager.
-    return (week - 1) * visibleDays.length + dayIndex;
+    // 原来是 `math.max(0, visibleDays.indexOf(dayOfWeek))`：越界星期（开着
+    // 「隐藏周末」而选中日还是 6/7）被静默折成 0，也就是周一那一页，但状态里
+    // 仍写着 6 —— 于是同一帧内内容显示周一、表头拿 6 去比 1..5 一格都不亮、
+    // 「添加课程」还继续预填周六（5 列周视图里看不见那门课）。口径搬到
+    // domain/day_view_paging.dart：先归一星期再算页号，并与逆运算严格互逆。
+    return dayViewGlobalPage(
+      visibleDays: _visibleDayNumbers(settings),
+      week: week,
+      dayOfWeek: dayOfWeek,
+    );
   }
 
   int _dayViewPageCount(TimetableSettings settings) {
@@ -1696,10 +1732,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     TimetableSettings settings,
     int page,
   ) {
-    final visibleDays = _visibleDayNumbers(settings);
-    final count = visibleDays.length;
-    final week = (page ~/ count) + 1;
-    return _DayViewPageTarget(week: week, dayOfWeek: visibleDays[page % count]);
+    final target = dayViewTargetForGlobalPage(_visibleDayNumbers(settings), page);
+    // 可见日表恒为 1..5 或 1..7，null 分支只是防呆回落。
+    return _DayViewPageTarget(
+      week: target?.$1 ?? 1,
+      dayOfWeek: target?.$2 ?? 1,
+    );
   }
 
   PageController _ensureDayViewPageController(TimetableSettings settings) {
