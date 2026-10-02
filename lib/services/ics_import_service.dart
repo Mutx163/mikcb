@@ -16,6 +16,15 @@ class IcsImportService {
   /// this is far more than any real calendar export needs.
   static const int maxFileBytes = 20 * 1024 * 1024;
 
+  /// RFC 5545 里值为 TEXT 类型的属性 —— 只有这些需要反转义。
+  static const Set<String> _icsTextProperties = {
+    'SUMMARY',
+    'DESCRIPTION',
+    'LOCATION',
+    'CATEGORIES',
+    'COMMENT',
+  };
+
   IcsImportResult parseWakeUpSchedule(String content) {
     final events = _parseEvents(content);
     if (events.isEmpty) {
@@ -93,10 +102,56 @@ class IcsImportService {
       final key = rawKey.split(';').first;
       final value = line.substring(separatorIndex + 1);
 
-      currentEvent.putIfAbsent(key, () => value);
+      // RFC 5545 §3.3.11：TEXT 值里的 `\,` `\;` `\:` `\\` `\n` 是转义序列，读进来
+      // 必须还原。原先只手工处理了 DESCRIPTION 的 `\n`，其余一律原样入库 ——
+      // `SUMMARY:高等数学\, 实验` 的课程名变成 `高等数学\, 实验`（反斜杠留在名字里，
+      // 也污染按课程名去重的合并键）。
+      //
+      // 只对文本类属性反转义：DTSTART/RRULE 的值本身带冒号和分号（`TZID=...:`、
+      // `FREQ=WEEKLY;UNTIL=...`），全局反转义会把它们改坏。
+      currentEvent.putIfAbsent(
+        key,
+        () => _icsTextProperties.contains(key) ? unescapeIcsText(value) : value,
+      );
     }
 
     return events;
+  }
+
+  /// 还原 RFC 5545 文本转义。
+  ///
+  /// 逐字符扫描而不是 `replaceAll` 链：`\\,` 表示「一个字面反斜杠 + 一个普通逗号」，
+  /// 先替换 `\,` 再替换 `\\` 会把它错解析成「转义反斜杠 + 什么都不剩」，反之则会把
+  /// `\,` 二次解释。一趟扫描天然处理正确的优先级。
+  String unescapeIcsText(String value) {
+    if (!value.contains(r'\')) {
+      return value;
+    }
+    final buffer = StringBuffer();
+    var index = 0;
+    while (index < value.length) {
+      final char = value[index];
+      if (char == r'\' && index + 1 < value.length) {
+        final next = value[index + 1];
+        switch (next) {
+          case 'n':
+          case 'N':
+            buffer.write('\n');
+            index += 2;
+            continue;
+          case ',':
+          case ';':
+          case ':':
+          case r'\':
+            buffer.write(next);
+            index += 2;
+            continue;
+        }
+      }
+      buffer.write(char);
+      index += 1;
+    }
+    return buffer.toString();
   }
 
   List<String> _unfoldLines(String content) {
@@ -132,8 +187,10 @@ class IcsImportService {
       return null;
     }
 
+    // `\n` 已经在 _parseEvents 里由 unescapeIcsText 还原成真换行（连同 `\,` `\;`
+    // `\:` `\\`），这里不能再 replaceAll 一次：那会把源文件里 `\\n`（字面反斜杠
+    // 后跟字母 n）这份合法内容错误地二次展开成换行。
     final descriptionLines = description
-        .replaceAll(r'\n', '\n')
         .split('\n')
         .map((line) => line.trim())
         .where((line) => line.isNotEmpty)
