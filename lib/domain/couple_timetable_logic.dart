@@ -1,6 +1,7 @@
 import 'course_domain.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import '../utils/clock_time.dart';
 
 /// Semantic category for a course in couple overlay view.
 enum CoupleCourseKind { mine, partner, together }
@@ -160,7 +161,7 @@ class CoupleTimetableLogic {
   ) {
     final clockStart = _clockToMinutes(course.startTime);
     final clockEnd = _clockToMinutes(course.endTime);
-    if (clockEnd > clockStart) {
+    if (clockStart != null && clockEnd != null && clockEnd > clockStart) {
       return MinuteInterval(startMinutes: clockStart, endMinutes: clockEnd);
     }
     final sectionStart = _sectionStartMinutes(sections, course.startSection);
@@ -255,7 +256,7 @@ class CoupleTimetableLogic {
     }
     final dayStart = _clockToMinutes(sections.first.startTime);
     final dayEnd = _clockToMinutes(sections.last.endTime);
-    if (dayEnd <= dayStart) {
+    if (dayStart == null || dayEnd == null || dayEnd <= dayStart) {
       return null;
     }
     return MinuteInterval(startMinutes: dayStart, endMinutes: dayEnd);
@@ -407,14 +408,16 @@ class CoupleTimetableLogic {
     return _clockToMinutes(sections[index].endTime);
   }
 
-  static int _clockToMinutes(String clock) {
-    final parts = clock.split(':');
-    if (parts.length != 2) {
-      return 0;
-    }
-    final hour = int.tryParse(parts[0]) ?? 0;
-    final minute = int.tryParse(parts[1]) ?? 0;
-    return hour * 60 + minute;
+  /// 畸形或越界的钟点串返回 null，调用方必须据此回落或放弃。
+  ///
+  /// 原先返回 `0`：配合调用方的 `clockEnd > clockStart` 守卫，
+  /// 只要另一端是正常时间，`0` 就被当成"这节课从 00:00 开始"，
+  /// 那条"fall back to owner section table"的分支反而永远走不到 ——
+  /// 对方的课表里这门课从午夜开始占用，空闲时间也凭空多出一整段。
+  /// 钟点串可以停在 `SectionTime`/`Course` 里（`SectionTime.fromJson`
+  /// 只要求非空字符串），云同步与手改备份都能送进来。
+  static int? _clockToMinutes(String clock) {
+    return ClockTime.tryParse(clock, allowEndOfDay: true)?.totalMinutes;
   }
 
   static String _minutesToClock(int minutes) {
