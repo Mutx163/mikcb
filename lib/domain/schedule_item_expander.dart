@@ -36,8 +36,13 @@ class ScheduleItemExpander {
 
   /// 按显示日去重：key = `sourceItemId@yyyy-MM-dd`。
   ///
-  /// 稳定的 occurrence id 仍指向系列原始日期（供持久化），但同一系列
-  /// 被移动（例外覆盖）后，覆盖实例在同一天显示时优先于原系列实例。
+  /// 稳定的 occurrence id 仍指向系列原始日期（供持久化），但同一系列被移动
+  /// （例外覆盖）后，覆盖实例在同一天显示时优先于原系列实例。
+  ///
+  /// 例外与例外之间**不互相覆盖**：两条不同的例外被移到同一天（把 09-01 那次
+  /// 改到 09-08，又把 09-15 那次也改到 09-08）是两个真实存在、可分别撤销的条目，
+  /// 持久层各占一条记录；原先它们 key 相同，后一条被直接丢弃 —— 界面上少一张卡，
+  /// 而且那条日程再也点不到、删不掉（只剩另一条的入口）。
   static void putByDisplayDate(
     Map<String, ScheduleItemInstance> instancesByDisplayDate,
     ScheduleItemInstance instance,
@@ -48,7 +53,13 @@ class ScheduleItemExpander {
     if (existing == null ||
         (instance.isSeriesOverride && !existing.isSeriesOverride)) {
       instancesByDisplayDate[key] = instance;
+      return;
     }
+    if (existing.isSeriesOverride && instance.isSeriesOverride) {
+      // 用 occurrenceId 做兄弟键：它天然指向各自的原始日期，两条不同的例外不会撞。
+      instancesByDisplayDate['$key#${instance.occurrenceId}'] = instance;
+    }
+    // 同为非例外的同系列同显示日 = 同一个自然实例被展开两次，丢弃即正确。
   }
 
   /// 多键排序：日期 → 系列开始日 → 开始时间 → 结束时间 → occurrenceId；

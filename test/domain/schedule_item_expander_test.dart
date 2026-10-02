@@ -131,6 +131,45 @@ void main() {
       expect(result.single.occurrenceId, contains('2026-09-01'));
     });
 
+    test('两条不同的例外移到同一天时都必须显示', () {
+      // 覆盖项之间不该互相吞：它们是两个可分别撤销的真实条目，持久层各占一条。
+      // 修复前 key 相同（series@2026-09-08），后一条被丢弃，界面上少一张卡，
+      // 而且被吞的那条日程再也点不到、删不掉。
+      final series = _item(
+        id: 'series',
+        startDate: DateTime(2026, 9),
+        endDate: DateTime(2026, 9, 30),
+        recurrence: ScheduleRecurrence.weekly,
+      );
+      final movedFrom0901 = _item(
+        id: 'ov-a',
+        title: '从 09-01 移来',
+        startDate: DateTime(2026, 9, 8),
+        endDate: DateTime(2026, 9, 8),
+        seriesId: 'series',
+        occurrenceDate: DateTime(2026, 9),
+      );
+      final movedFrom0915 = _item(
+        id: 'ov-b',
+        title: '从 09-15 移来',
+        startDate: DateTime(2026, 9, 8),
+        endDate: DateTime(2026, 9, 8),
+        seriesId: 'series',
+        occurrenceDate: DateTime(2026, 9, 15),
+      );
+
+      final result = ScheduleItemExpander.instancesForRange(
+        [series, movedFrom0901, movedFrom0915],
+        DateTime(2026, 9, 8),
+        DateTime(2026, 9, 8),
+      );
+
+      expect(result, hasLength(2));
+      expect(result.map((r) => r.item.id).toList(), ['ov-a', 'ov-b']);
+      // 自然展开的那一次仍被覆盖项压住，不会多出第三张卡。
+      expect(result.any((r) => !r.isSeriesOverride), isFalse);
+    });
+
     test('多键排序：日期 → 开始时间 → occurrenceId', () {
       final early = _item(
         id: 'b',
