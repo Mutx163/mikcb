@@ -62,8 +62,16 @@ class ImportExportLogic {
     final defaultDuration = _inferSectionDurationMinutes(expanded);
     final defaultBreak = _inferBreakDurationMinutes(expanded);
     while (expanded.length < requiredSectionCount) {
-      final last = expanded.last;
-      final lastEndMinutes = _parseClockToMinutes(last.endTime);
+      // 锚点必须是**能解析**的结束时间：`_parseClockToMinutes` 对畸形串返回 -1
+      // （SectionTime.fromJson 只要求非空串），照 -1 当锚点就会补出
+      // 「-1 + 课间 10 = 00:09」这种凌晨节次，而导入侧会按这份表
+      // 烤第 3、4 节课的钟点（import_export_service.dart:171）。
+      final lastEndMinutes = _lastParseableEndMinutes(expanded);
+      if (lastEndMinutes == null) {
+        // 一条都解析不出来时停止补节：没有可靠锚点，继续下去只能凭空编时间。
+        // 剩下的节数不足由导入侧的校验与提示处理。
+        break;
+      }
       final nextStartMinutes = lastEndMinutes + defaultBreak;
       final nextEndMinutes = nextStartMinutes + defaultDuration;
       expanded.add(
@@ -102,6 +110,17 @@ class ImportExportLogic {
       }
     }
     return 10;
+  }
+
+  /// 从后往前取第一条能解析的结束时间（分钟）。全都不合法时返回 null。
+  static int? _lastParseableEndMinutes(List<SectionTime> sections) {
+    for (var index = sections.length - 1; index >= 0; index--) {
+      final minutes = _parseClockToMinutes(sections[index].endTime);
+      if (minutes >= 0) {
+        return minutes;
+      }
+    }
+    return null;
   }
 
   static int _parseClockToMinutes(String value) {
