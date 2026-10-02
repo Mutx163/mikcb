@@ -110,4 +110,46 @@ class CourseDomain {
   /// [course] 名称对应的共享 key。
   static String sharedKey(Course course) =>
       buildSharedCourseNameKey(course.name);
+
+  /// 编辑一门课时，它最终该用哪个钟点。
+  ///
+  /// 适配脚本/教务导入钉住的权威时间记在 [Course.hasCustomTime] 上，
+  /// `TimeSchemeLogic` 明确要求"权威时间来自适配脚本，模板不得覆盖"
+  /// （`lib/domain/time_scheme_logic.dart:436`）。而编辑课程页只让用户改
+  /// **节次**，钟点一律由模板算出来 —— 于是"改个教师/教室"再保存就会把
+  /// 早读 07:00-07:40 静默改回模板的 08:00-08:45，闹钟、超级岛、进度
+  /// 里程碑全部跟着变（同一 App 里课程卡显示的仍是 07:00）。
+  ///
+  /// 口径与局域网 PATCH 的修复一致（`lan_edit_provider_host.dart:mergeCoursePatch`）：
+  /// 节次没动 → 原样保留那条 pin；节次动了 → 交回模板，
+  /// 因为那条 pin 讲的是"第 1 节 07:00 早读"这个取景，挪到第 5 节就不成立。
+  static ({
+    String startTime,
+    String endTime,
+    bool hasCustomTime,
+  }) editCourseClock({
+    Course? original,
+    required int startSection,
+    required int endSection,
+    required String templateStartTime,
+    required String templateEndTime,
+  }) {
+    final keepsPinnedClock =
+        original != null &&
+        original.hasCustomTime &&
+        original.startSection == startSection &&
+        original.endSection == endSection;
+    if (keepsPinnedClock) {
+      return (
+        startTime: original.startTime,
+        endTime: original.endTime,
+        hasCustomTime: true,
+      );
+    }
+    return (
+      startTime: templateStartTime,
+      endTime: templateEndTime,
+      hasCustomTime: false,
+    );
+  }
 }

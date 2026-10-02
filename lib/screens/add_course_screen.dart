@@ -4,6 +4,7 @@ import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import '../domain/course_domain.dart';
 import '../models/course.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
@@ -63,6 +64,12 @@ class _ScheduleEntryData {
   Map<int, CourseSessionNote>? sessionNotes;
   String? timeSchemeIdOverride;
 
+  /// 编辑既有课程时带来的那一份原值。
+  ///
+  /// 只用于把适配脚本/教务导入钉住的权威钟点（`Course.hasCustomTime`）
+  /// 穿过"按节次算钟点"的保存流程，见 [CourseDomain.editCourseClock]。
+  Course? originalCourse;
+
   _ScheduleEntryData({
     required this.id,
     this.dayOfWeek = 1,
@@ -80,6 +87,7 @@ class _ScheduleEntryData {
     this.note,
     this.sessionNotes,
     this.timeSchemeIdOverride,
+    this.originalCourse,
   }) : selectedCustomWeeks = selectedCustomWeeks ?? <int>{};
 
   static _ScheduleEntryData fromCourse(Course course) {
@@ -103,6 +111,7 @@ class _ScheduleEntryData {
       note: course.note,
       sessionNotes: course.sessionNotes,
       timeSchemeIdOverride: course.timeSchemeIdOverride,
+      originalCourse: course,
     );
   }
 
@@ -114,6 +123,7 @@ class _ScheduleEntryData {
     String? description,
     required String startTime,
     required String endTime,
+    bool hasCustomTime = false,
   }) {
     List<int>? customWeeks;
     if (weekSelectionMode == _WeekSelectionMode.custom &&
@@ -131,6 +141,7 @@ class _ScheduleEntryData {
       endSection: endSection,
       startTime: startTime,
       endTime: endTime,
+      hasCustomTime: hasCustomTime,
       color: color,
       startWeek: customWeeks == null ? startWeek : customWeeks.first,
       endWeek: customWeeks == null ? endWeek : customWeeks.last,
@@ -1188,13 +1199,25 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       locationOverride: locationText,
     );
     final sectionCount = resolvedScheme?.sections.length ?? 0;
-    final clockHint =
-        resolvedScheme != null &&
-            entry.startSection >= 1 &&
-            entry.endSection <= sectionCount
-        ? '${resolvedScheme.sections[entry.startSection - 1].startTime}'
-              '-${resolvedScheme.sections[entry.endSection - 1].endTime}'
-        : null;
+    String? clockHint;
+    if (resolvedScheme != null &&
+        entry.startSection >= 1 &&
+        entry.endSection <= sectionCount) {
+      // 这一行必须显示"保存后真正会用的钟点"：适配脚本钉过时间的课程
+      // 在节次没变时用的是那份权威时间而不是模板铃点，
+      // 否则这里写着 08:00-08:45，课表卡与闹钟却是 07:00-07:40
+      // （与改课弹层同一处口径，见 timetable_screen 的 resolvedSectionsForCourse）。
+      final clock = CourseDomain.editCourseClock(
+        original: entry.originalCourse,
+        startSection: entry.startSection,
+        endSection: entry.endSection,
+        templateStartTime: resolvedScheme
+            .sections[entry.startSection - 1]
+            .startTime,
+        templateEndTime: resolvedScheme.sections[entry.endSection - 1].endTime,
+      );
+      clockHint = '${clock.startTime}-${clock.endTime}';
+    }
 
     // Always surface the *effective* scheme name. "Follow auto" is a mode, not
     // a scheme — users expect to see which template will actually be used.
@@ -1919,12 +1942,22 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final courses = <Course>[];
     for (final entry in _scheduleEntries) {
       final resolvedScheme = _resolveEntryTimeScheme(provider, entry);
-      final startTime = resolvedScheme == null
+      final templateStartTime = resolvedScheme == null
           ? settings.sectionAt(entry.startSection).startTime
           : resolvedScheme.sections[entry.startSection - 1].startTime;
-      final endTime = resolvedScheme == null
+      final templateEndTime = resolvedScheme == null
           ? settings.sectionAt(entry.endSection).endTime
           : resolvedScheme.sections[entry.endSection - 1].endTime;
+      // 条目模型只有节次，钟点一律由模板算出来；不先把适配脚本钉住的那份
+      // 权威时间接回来，"改个教师再保存"就会把早读 07:00 静默改回 08:00
+      // （TimeSchemeLogic:436 写明模板不得覆盖 hasCustomTime 的时间）。
+      final clock = CourseDomain.editCourseClock(
+        original: entry.originalCourse,
+        startSection: entry.startSection,
+        endSection: entry.endSection,
+        templateStartTime: templateStartTime,
+        templateEndTime: templateEndTime,
+      );
 
       courses.add(
         entry.toCourse(
@@ -1933,8 +1966,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           color: _selectedColor,
           courseNature: _courseNature,
           description: description,
-          startTime: startTime,
-          endTime: endTime,
+          startTime: clock.startTime,
+          endTime: clock.endTime,
+          hasCustomTime: clock.hasCustomTime,
         ),
       );
     }

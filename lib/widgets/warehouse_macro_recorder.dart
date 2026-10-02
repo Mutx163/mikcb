@@ -34,7 +34,11 @@ class MacroRecorderJs {
     var id = (input.id || '').toLowerCase();
     var placeholder = (input.placeholder || '').toLowerCase();
     var ariaLabel = (input.getAttribute('aria-label') || '').toLowerCase();
-    var combined = name + ' ' + id + ' ' + placeholder + ' ' + ariaLabel;
+    // 教务站常见的规避手法是把 type 改成 text、name 换成混淆串（kmbm 一类）。
+    // autocomplete 是标准属性，current-password / new-password 出现即口令框，
+    // 把它并进来不会误伤普通字段（这些 token 只由页面自己声明用途）。
+    var autocomplete = (input.getAttribute('autocomplete') || '').toLowerCase();
+    var combined = name + ' ' + id + ' ' + placeholder + ' ' + ariaLabel + ' ' + autocomplete;
     var looksLikeVerificationCode = combined.indexOf('code') !== -1 &&
       (combined.indexOf('verify') !== -1 || combined.indexOf('verification') !== -1 ||
        combined.indexOf('captcha') !== -1 || combined.indexOf('auth') !== -1 ||
