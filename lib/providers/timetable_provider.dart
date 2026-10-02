@@ -3644,42 +3644,63 @@ class TimetableProvider with ChangeNotifier {
     return null;
   }
 
+  /// 以「当前真源」为基准做一次读-改-写，整段在同一次持锁里完成。
+  ///
+  /// 原先的写法是在门外先 `final current = settings;`，算好新值再
+  /// `await updateSettings(current.copyWith(...))`；而 [updateSettings]
+  /// 在门内把 `_settings` **整份替换**，于是从取快照到真正拿到锁之间
+  /// 落地的任何写入（另一节课的提醒、日期规则自动套用、外观 250ms 防抖保存）
+  /// 都会被这份旧快照覆盖，而两个调用方都收到"成功"返回。
+  /// 门内再读一次才是唯一安全的基准。
+  Future<void> _mutateSettings(
+    TimetableSettings Function(TimetableSettings current) update
+  ) {
+    return _runMutation(() => updateSettings(update(_settings)));
+  }
+
   /// 设置（或覆盖）某节课某天的提醒；同课同日只保留一条。
   Future<void> setClassReminder(ClassReminderEntry entry) async {
-    final current = settings;
-    final rest =
-        current.classReminders
-            .where(
-              (existing) =>
-                  !(existing.courseId == entry.courseId &&
-                      existing.date == entry.date),
-            )
-            .toList()
-          ..add(entry)
-          ..sort((a, b) {
-            final byDate = a.date.compareTo(b.date);
-            if (byDate != 0) {
-              return byDate;
-            }
-            return a.minuteOfDay.compareTo(b.minuteOfDay);
-          });
-    await updateSettings(current.copyWith(classReminders: rest));
+    await _mutateSettings((current) {
+      final rest =
+          current.classReminders
+              .where(
+                (existing) =>
+                    !(existing.courseId == entry.courseId &&
+                        existing.date == entry.date),
+              )
+              .toList()
+            ..add(entry)
+            ..sort((a, b) {
+              final byDate = a.date.compareTo(b.date);
+              if (byDate != 0) {
+                return byDate;
+              }
+              return a.minuteOfDay.compareTo(b.minuteOfDay);
+            });
+      return current.copyWith(classReminders: rest);
+    });
     unawaited(_syncExamReminders());
   }
 
   /// 取消某节课某天的提醒；不存在时静默幂等。
   Future<void> removeClassReminder(String courseId, String date) async {
-    final current = settings;
-    final rest = current.classReminders
-        .where(
-          (existing) =>
-              !(existing.courseId == courseId && existing.date == date),
-        )
-        .toList();
-    if (rest.length == current.classReminders.length) {
+    var changed = false;
+    await _mutateSettings((current) {
+      final rest = current.classReminders
+          .where(
+            (existing) =>
+                !(existing.courseId == courseId && existing.date == date),
+          )
+          .toList();
+      changed = rest.length != current.classReminders.length;
+      if (!changed) {
+        return current;
+      }
+      return current.copyWith(classReminders: rest);
+    });
+    if (!changed) {
       return;
     }
-    await updateSettings(current.copyWith(classReminders: rest));
     unawaited(_syncExamReminders());
   }
 
@@ -4192,8 +4213,18 @@ class TimetableProvider with ChangeNotifier {
     currentSectionCount: _settings.sectionCount,
   );
 
+  /// 导入前把节次表扩到需要的节数。整段必须独占写锁：
+  /// `_timetableEnsureSectionCapacityForImport` 会直接改 `_settings`/`_timeSchemes`
+  /// 并落盘（`timetable/import_export_service.dart:162-228`），原先全程在门外，
+  /// 与同文件其它导入入口（`importParsedCourses`、`importWakeUpCalendar`）
+  /// 的加锁口径相反 —— 并发时它会和门内那份 t0 快照的作息回滚互相覆盖。
   Future<String?> ensureSectionCapacityForImport(int requiredSectionCount) =>
-      _timetableEnsureSectionCapacityForImport(this, requiredSectionCount);
+      runMutationExclusive(
+        () => _timetableEnsureSectionCapacityForImport(
+          this,
+          requiredSectionCount,
+        ),
+      );
 
   Future<int> importWakeUpCalendar(
     String content, {

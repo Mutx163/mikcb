@@ -87,7 +87,16 @@ void main() {
     // 三个入口各改成"抓旧列表 → 改内存 → 交给收口函数写"。与已经收口的
     // `_applySavedThemes`（主题族）、`_timetableUpdateTimeScheme`（作息）同形，
     // 不是新业务状态机；作息/导入那两处的同类收口在 part 文件里，不占本数字。
-    const baselineLines = 4912;
+    // 4912→4943：提醒与导入的两处写锁收口。
+    // · `setClassReminder`/`removeClassReminder` 原先在门外读 `settings` 整份快照、
+    //   再 `await updateSettings(...)` 在门内整表替换 —— 并发设两节课的提醒时
+    //   后完成者把前者抹掉且双方都报成功。新增 `_mutateSettings`（读-改-写在同一次
+    //   持锁里完成，10 行含注释），两个入口改用（+21）。
+    // · `ensureSectionCapacityForImport` 全程在门外改 `_settings`/`_timeSchemes`
+    //   并落盘，与同文件其它导入入口的加锁口径相反，改为走
+    //   `runMutationExclusive`（+10，含注释）。
+    // 都不是新业务状态机，是把已认定的门纪律补到漏掉的写入口。
+    const baselineLines = 4943;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

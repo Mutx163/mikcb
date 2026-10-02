@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/models/class_reminder.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/location_time_group.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
@@ -213,6 +214,43 @@ void main() {
       blocker.complete();
       await create;
       expect(provider.locationTimeGroups, hasLength(1));
+    });
+
+    test('并发给两节课设提醒不会互相覆盖', () async {
+      final provider = await booted();
+      addTearDown(provider.dispose);
+
+      // setClassReminder 原先在门外 `final current = settings;`，
+      // 而 updateSettings 在门内把 _settings 整份替换 ——
+      // 两次调用都以同一份 t0 快照为基准，后完成的那次把前一次的提醒抹掉，
+      // 双方都收到成功返回（日期规则自动套用、外观防抖保存落在同一窗口时同理）。
+      await Future.wait([
+        provider.setClassReminder(
+          const ClassReminderEntry(
+            courseId: 'c1',
+            date: '2026-09-07',
+            minuteOfDay: 480,
+          ),
+        ),
+        provider.setClassReminder(
+          const ClassReminderEntry(
+            courseId: 'c2',
+            date: '2026-09-07',
+            minuteOfDay: 570,
+          ),
+        ),
+      ]);
+
+      expect(
+        provider.settings.classReminders.map((entry) => entry.courseId),
+        containsAll(<String>['c1', 'c2']),
+      );
+
+      await provider.removeClassReminder('c1', '2026-09-07');
+      expect(
+        provider.settings.classReminders.map((entry) => entry.courseId),
+        <String>['c2'],
+      );
     });
   });
 }
