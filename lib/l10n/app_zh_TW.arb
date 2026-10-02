@@ -5255,6 +5255,11 @@
   "logLiveUpdateTestStarting": "手動超級島測試：正在啟動原生超級島",
   "logLiveUpdateTestStarted": "手動超級島測試：已成功請求原生超級島",
   "logLiveUpdateTestFailed": "手動超級島測試：原生超級島出現前失敗",
+  "logLiveUpdateTestPresetArmed": "手動超級島測試：已注入自檢預設課程",
+  "logLiveUpdateTestPresetSkipped": "手動超級島測試：跳過自檢預設課程",
+  "logWallpaperHistoryGlobalMigrationFailed": "壁紙「最近使用」全域遷移失敗（下次載入會重試）",
+  "logWallpaperHistoryImportMergeFailed": "匯入的壁紙「最近使用」歷史合併失敗",
+  "logAppGlobalSettingsMigrationFailed": "應用級偏好（外觀/語言等）遷移失敗",
   "logLiveUpdateSettingsSynced": "Flutter 超級島設定已同步：課前={beforeClass}，課中={duringClass}，下課前={beforeEnd}，提升={promote}，通知={notification}，倒數計時={countdown}，課程名={courseName}，地點={location}",
   "@logLiveUpdateSettingsSynced": {
     "placeholders": {

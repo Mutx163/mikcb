@@ -9333,6 +9333,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'Manual Live Island test: failed before Live Island appeared';
 
   @override
+  String get logLiveUpdateTestPresetArmed =>
+      'Manual Live Island test: self-test preset courses injected';
+
+  @override
+  String get logLiveUpdateTestPresetSkipped =>
+      'Manual Live Island test: self-test preset courses skipped';
+
+  @override
+  String get logWallpaperHistoryGlobalMigrationFailed =>
+      'Wallpaper history global migration failed (retried on next load)';
+
+  @override
+  String get logWallpaperHistoryImportMergeFailed =>
+      'Failed to merge wallpaper history from the imported snapshot';
+
+  @override
+  String get logAppGlobalSettingsMigrationFailed =>
+      'App-level preferences migration failed';
+
+  @override
   String logLiveUpdateSettingsSynced(
     String beforeClass,
     String duringClass,

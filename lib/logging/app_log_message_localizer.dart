@@ -99,6 +99,21 @@ abstract final class AppLogMessageLocalizer {
       'log_live_update_test_starting' => l10n.logLiveUpdateTestStarting,
       'log_live_update_test_started' => l10n.logLiveUpdateTestStarted,
       'log_live_update_test_failed' => l10n.logLiveUpdateTestFailed,
+      // 兜底是 `_ => message`（下面第 3 行），漏分支的键会**原样显示**在
+      // 「设置 → 应用日志」与导出的 txt 里。下面这 5 条都是失败/异常类事件，
+      // 由 `AppLogMessages` 声明、`wallpaper_history_service` /
+      // `app_global_settings_service` / `live_testing_trigger` 实际写入，
+      // 却漏了分支（2026-10-02 用机械对照全仓 229 个键查出这 5 条）。
+      'log_live_update_test_preset_armed' =>
+        l10n.logLiveUpdateTestPresetArmed,
+      'log_live_update_test_preset_skipped' =>
+        l10n.logLiveUpdateTestPresetSkipped,
+      'log_wallpaper_history_global_migration_failed' =>
+        l10n.logWallpaperHistoryGlobalMigrationFailed,
+      'log_wallpaper_history_import_merge_failed' =>
+        l10n.logWallpaperHistoryImportMergeFailed,
+      'log_app_global_settings_migration_failed' =>
+        l10n.logAppGlobalSettingsMigrationFailed,
       'log_export_title' => l10n.logExportTitle,
       _ => message,
     };

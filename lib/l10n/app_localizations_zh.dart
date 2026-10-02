@@ -8811,6 +8811,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get logLiveUpdateTestFailed => '手动超级岛测试：原生超级岛出现前失败';
 
   @override
+  String get logLiveUpdateTestPresetArmed => '手动超级岛测试：已注入自检预设课程';
+
+  @override
+  String get logLiveUpdateTestPresetSkipped => '手动超级岛测试：跳过自检预设课程';
+
+  @override
+  String get logWallpaperHistoryGlobalMigrationFailed =>
+      '壁纸「最近使用」全局迁移失败（下次载入会重试）';
+
+  @override
+  String get logWallpaperHistoryImportMergeFailed => '导入的壁纸「最近使用」历史合并失败';
+
+  @override
+  String get logAppGlobalSettingsMigrationFailed => '应用级偏好（外观/语言等）迁移失败';
+
+  @override
   String logLiveUpdateSettingsSynced(
     String beforeClass,
     String duringClass,
@@ -19931,6 +19947,22 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get logLiveUpdateTestFailed => '手動超級島測試：原生超級島出現前失敗';
+
+  @override
+  String get logLiveUpdateTestPresetArmed => '手動超級島測試：已注入自檢預設課程';
+
+  @override
+  String get logLiveUpdateTestPresetSkipped => '手動超級島測試：跳過自檢預設課程';
+
+  @override
+  String get logWallpaperHistoryGlobalMigrationFailed =>
+      '壁紙「最近使用」全域遷移失敗（下次載入會重試）';
+
+  @override
+  String get logWallpaperHistoryImportMergeFailed => '匯入的壁紙「最近使用」歷史合併失敗';
+
+  @override
+  String get logAppGlobalSettingsMigrationFailed => '應用級偏好（外觀/語言等）遷移失敗';
 
   @override
   String logLiveUpdateSettingsSynced(
@@ -31054,6 +31086,22 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get logLiveUpdateTestFailed => '手動超級島測試：原生超級島出現前失敗';
+
+  @override
+  String get logLiveUpdateTestPresetArmed => '手動超級島測試：已注入自檢預設課程';
+
+  @override
+  String get logLiveUpdateTestPresetSkipped => '手動超級島測試：跳過自檢預設課程';
+
+  @override
+  String get logWallpaperHistoryGlobalMigrationFailed =>
+      '壁紙「最近使用」全域遷移失敗（下次載入會重試）';
+
+  @override
+  String get logWallpaperHistoryImportMergeFailed => '匯入的壁紙「最近使用」歷史合併失敗';
+
+  @override
+  String get logAppGlobalSettingsMigrationFailed => '應用級偏好（外觀/語言等）遷移失敗';
 
   @override
   String logLiveUpdateSettingsSynced(

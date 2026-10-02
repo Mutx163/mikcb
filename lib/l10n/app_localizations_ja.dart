@@ -9039,6 +9039,26 @@ class AppLocalizationsJa extends AppLocalizations {
       'Manual Live Island test: failed before Live Island appeared';
 
   @override
+  String get logLiveUpdateTestPresetArmed =>
+      '手動ライブアイランドテスト：自己テスト用のプリセット授業を投入しました';
+
+  @override
+  String get logLiveUpdateTestPresetSkipped =>
+      '手動ライブアイランドテスト：自己テスト用のプリセット授業をスキップしました';
+
+  @override
+  String get logWallpaperHistoryGlobalMigrationFailed =>
+      '壁紙「最近使用」のグローバル移行に失敗しました（次回読み込み時に再試行）';
+
+  @override
+  String get logWallpaperHistoryImportMergeFailed =>
+      '読み込んだ壁紙「最近使用」履歴の統合に失敗しました';
+
+  @override
+  String get logAppGlobalSettingsMigrationFailed =>
+      'アプリ全体の設定（外観/言語など）の移行に失敗しました';
+
+  @override
   String logLiveUpdateSettingsSynced(
     String beforeClass,
     String duringClass,

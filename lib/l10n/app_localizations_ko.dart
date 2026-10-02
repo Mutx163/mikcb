@@ -9085,6 +9085,26 @@ class AppLocalizationsKo extends AppLocalizations {
       'Manual Live Island test: failed before Live Island appeared';
 
   @override
+  String get logLiveUpdateTestPresetArmed =>
+      '수동 라이브 아일랜드 테스트: 자체 점검용 미리보기 수업을 적용했습니다';
+
+  @override
+  String get logLiveUpdateTestPresetSkipped =>
+      '수동 라이브 아일랜드 테스트: 자체 점검용 미리보기 수업을 건너뛰었습니다';
+
+  @override
+  String get logWallpaperHistoryGlobalMigrationFailed =>
+      '배경화면 \'최근 사용\' 전역 이동에 실패했습니다(다음 불러오기 시 재시도)';
+
+  @override
+  String get logWallpaperHistoryImportMergeFailed =>
+      '가져온 배경화면 \'최근 사용\' 기록 병합에 실패했습니다';
+
+  @override
+  String get logAppGlobalSettingsMigrationFailed =>
+      '앱 수준 설정(외관/언어 등) 이동에 실패했습니다';
+
+  @override
   String logLiveUpdateSettingsSynced(
     String beforeClass,
     String duringClass,

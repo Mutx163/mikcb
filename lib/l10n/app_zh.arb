@@ -5538,6 +5538,11 @@
   "logLiveUpdateTestStarting": "手动超级岛测试：正在启动原生超级岛",
   "logLiveUpdateTestStarted": "手动超级岛测试：已成功请求原生超级岛",
   "logLiveUpdateTestFailed": "手动超级岛测试：原生超级岛出现前失败",
+  "logLiveUpdateTestPresetArmed": "手动超级岛测试：已注入自检预设课程",
+  "logLiveUpdateTestPresetSkipped": "手动超级岛测试：跳过自检预设课程",
+  "logWallpaperHistoryGlobalMigrationFailed": "壁纸「最近使用」全局迁移失败（下次载入会重试）",
+  "logWallpaperHistoryImportMergeFailed": "导入的壁纸「最近使用」历史合并失败",
+  "logAppGlobalSettingsMigrationFailed": "应用级偏好（外观/语言等）迁移失败",
   "logLiveUpdateSettingsSynced": "Flutter 超级岛设置已同步：课前={beforeClass}，课中={duringClass}，下课前={beforeEnd}，提升={promote}，通知={notification}，倒计时={countdown}，课程名={courseName}，地点={location}",
   "@logLiveUpdateSettingsSynced": {
     "placeholders": {

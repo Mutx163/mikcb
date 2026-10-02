@@ -5499,6 +5499,11 @@
   "logLiveUpdateTestStarting": "Manual Live Island test: starting native Live Island",
   "logLiveUpdateTestStarted": "Manual Live Island test: native Live Island requested successfully",
   "logLiveUpdateTestFailed": "Manual Live Island test: failed before Live Island appeared",
+  "logLiveUpdateTestPresetArmed": "Manual Live Island test: self-test preset courses injected",
+  "logLiveUpdateTestPresetSkipped": "Manual Live Island test: self-test preset courses skipped",
+  "logWallpaperHistoryGlobalMigrationFailed": "Wallpaper history global migration failed (retried on next load)",
+  "logWallpaperHistoryImportMergeFailed": "Failed to merge wallpaper history from the imported snapshot",
+  "logAppGlobalSettingsMigrationFailed": "App-level preferences migration failed",
   "logLiveUpdateSettingsSynced": "Flutter Live Island settings synced: beforeClass={beforeClass}, duringClass={duringClass}, beforeEnd={beforeEnd}, promote={promote}, notification={notification}, countdown={countdown}, courseName={courseName}, location={location}",
   "@logLiveUpdateSettingsSynced": {
     "placeholders": {

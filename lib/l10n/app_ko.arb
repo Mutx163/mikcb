@@ -5255,6 +5255,11 @@
   "logLiveUpdateTestStarting": "Manual Live Island test: starting native Live Island",
   "logLiveUpdateTestStarted": "Manual Live Island test: native Live Island requested successfully",
   "logLiveUpdateTestFailed": "Manual Live Island test: failed before Live Island appeared",
+  "logLiveUpdateTestPresetArmed": "수동 라이브 아일랜드 테스트: 자체 점검용 미리보기 수업을 적용했습니다",
+  "logLiveUpdateTestPresetSkipped": "수동 라이브 아일랜드 테스트: 자체 점검용 미리보기 수업을 건너뛰었습니다",
+  "logWallpaperHistoryGlobalMigrationFailed": "배경화면 '최근 사용' 전역 이동에 실패했습니다(다음 불러오기 시 재시도)",
+  "logWallpaperHistoryImportMergeFailed": "가져온 배경화면 '최근 사용' 기록 병합에 실패했습니다",
+  "logAppGlobalSettingsMigrationFailed": "앱 수준 설정(외관/언어 등) 이동에 실패했습니다",
   "logLiveUpdateSettingsSynced": "Flutter Live Island settings synced: beforeClass={beforeClass}, duringClass={duringClass}, beforeEnd={beforeEnd}, promote={promote}, notification={notification}, countdown={countdown}, courseName={courseName}, location={location}",
   "@logLiveUpdateSettingsSynced": {
     "placeholders": {

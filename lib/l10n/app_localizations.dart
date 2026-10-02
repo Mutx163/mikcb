@@ -15885,6 +15885,36 @@ abstract class AppLocalizations {
   /// **'手动超级岛测试：原生超级岛出现前失败'**
   String get logLiveUpdateTestFailed;
 
+  /// No description provided for @logLiveUpdateTestPresetArmed.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动超级岛测试：已注入自检预设课程'**
+  String get logLiveUpdateTestPresetArmed;
+
+  /// No description provided for @logLiveUpdateTestPresetSkipped.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动超级岛测试：跳过自检预设课程'**
+  String get logLiveUpdateTestPresetSkipped;
+
+  /// No description provided for @logWallpaperHistoryGlobalMigrationFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'壁纸「最近使用」全局迁移失败（下次载入会重试）'**
+  String get logWallpaperHistoryGlobalMigrationFailed;
+
+  /// No description provided for @logWallpaperHistoryImportMergeFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入的壁纸「最近使用」历史合并失败'**
+  String get logWallpaperHistoryImportMergeFailed;
+
+  /// No description provided for @logAppGlobalSettingsMigrationFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用级偏好（外观/语言等）迁移失败'**
+  String get logAppGlobalSettingsMigrationFailed;
+
   /// No description provided for @logLiveUpdateSettingsSynced.
   ///
   /// In zh, this message translates to:
