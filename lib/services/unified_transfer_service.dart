@@ -820,9 +820,14 @@ class UnifiedTransferService {
   ) async {
     if (incoming.locationTimeGroups.isNotEmpty ||
         incoming.scope == TransferScope.allData) {
+      // resync 必须为真。覆盖导入的顺序是「先 importAppDataBackup，后换分组」，
+      // 而 `_timetableImportAppDataBackup` 烤钟点用的是**接收方原有**的地点分组
+      // （`_syncCoursesWithEffectiveTimeSchemes`），它全程不碰分组。留着 false 的
+      // 结果：课程时间按旧楼的教学节次落盘，盘上分组却已经是新的 —— 用户按
+      // 发来的课表看不到，要到下一次任意地点规则改动才被静默改对。
+      // 合并分支走的是 provider.replaceLocationTimeGroups 的默认 resync: true。
       await provider.replaceLocationTimeGroups(
         incoming.locationTimeGroups,
-        resync: false,
       );
     }
     if (incoming.scheduleDateRules.isNotEmpty ||
