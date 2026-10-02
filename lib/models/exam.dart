@@ -90,6 +90,37 @@ class Exam {
     };
   }
 
+  /// 归一自定义提醒偏移：丢掉非正数与非数值条目，重复值只留一份（保持先来后到的顺序）。
+  ///
+  /// 与写侧同口径：`add_exam_screen.dart:561` 拒 `totalMinutes <= 0`，
+  /// :575 挡重复偏移；调度侧 `exam_reminder_service.dart:345` 也 `<= 0 continue`。
+  /// 原先 `Exam.fromJson` 是裸 `(item as num).toInt()`：
+  /// - 类型不对（云端 / 备份 / 局域网写来的 `"x"`）直接抛 TypeError；
+  /// - 0 与负数则原样留在列表里，而考试卡的偏移标签用
+  ///   `(minutes % 1440) ~/ 60`（`exam_list_screen.dart:232`）算分量，Dart 的 `%`
+  ///   恒非负，`-30` 被渲染成「23 小时 + 30 分钟」—— 用户看到"会提前提醒"，
+  ///   实际一条通知都不会排。
+  static List<int> normalizeReminderOffsets(Object? raw) {
+    if (raw is! List) {
+      return const [];
+    }
+    final seen = <int>{};
+    for (final item in raw) {
+      if (item is! num) {
+        continue;
+      }
+      final minutes = item.toInt();
+      if (minutes <= 0) {
+        continue;
+      }
+      seen.add(minutes);
+    }
+    if (seen.isEmpty) {
+      return const [];
+    }
+    return List<int>.unmodifiable(seen.toList(growable: false));
+  }
+
   /// Normalizes free-form time text into `HH:mm`, or returns [fallback].
   static String normalizeTimeOfDay(String? raw, {String fallback = '08:30'}) {
     final value = (raw ?? '').trim();
@@ -147,11 +178,9 @@ class Exam {
       reminderPreset: ExamReminderPresetX.fromValue(
         json['reminderPreset'] as String?,
       ),
-      customReminderMinutes:
-          (json['customReminderMinutes'] as List<dynamic>?)
-              ?.map((item) => (item as num).toInt())
-              .toList() ??
-          const [],
+      customReminderMinutes: normalizeReminderOffsets(
+        json['customReminderMinutes'],
+      ),
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? now,
       updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? now,
     );
