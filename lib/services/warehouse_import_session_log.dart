@@ -1,6 +1,69 @@
 import 'dart:async';
 import 'dart:collection';
 
+import '../models/warehouse_macro_models.dart';
+
+/// 写进导入执行日志的 URL：走仓库里**已有**的那套会话参数剥离。
+///
+/// 这份日志是给用户导出发给维护者的明文文本
+/// （`log_viewer_entry.dart` 的 `onExport` 落 `qingyu-warehouse-import-log-*.txt`
+/// 再 SharePlus 分享），而教务系统登录后的地址常带
+/// `JSESSIONID` / `ticket` / `token` / `sid` / `xh=学号` 这类查询参数或
+/// 路径里的 `;jsessionid=`。保存宏时已经用
+/// [sanitizeWarehouseScriptPageUrl] 剥过一遍（`warehouse_macro_models.dart:342`，
+/// 调用点 :286/:427/:428 与 `course_import_screen.dart:4967/6528/6635`），
+/// 日志这一路原先是把 `_currentUrl` 原样写进去，同一份数据两种口径。
+///
+/// 日志比宏存储再严一档：宏要能重放就得留下业务查询参数（`?xh=…`、`?type=kcb`），
+/// 而定位"是哪个教务系统的哪个页面"只需要 scheme + host + port + path，
+/// 所以这里在剥掉会话参数之后，把剩下的查询串与 fragment 也一并去掉。
+/// 解析不出可用的 http(s) 绝对地址时返回空串（畸形地址本身可能就是被塞进来的可疑内容）。
+String sanitizeWarehouseLogUrl(String? rawUrl) {
+  final trimmed = rawUrl?.trim() ?? '';
+  if (trimmed.isEmpty) {
+    return '';
+  }
+  final withoutSession = sanitizeWarehouseScriptPageUrl(trimmed) ?? trimmed;
+  final uri = Uri.tryParse(withoutSession);
+  if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+    return '';
+  }
+  if (uri.scheme != 'http' && uri.scheme != 'https') {
+    return '';
+  }
+  // 重建而不是 replace(query: '')：后者会留下光杆的 `?`。
+  // 重建同时也丢掉了 authority 里的 userinfo（`https://user:pass@host` 这种
+  // 把凭据写进地址的形态本来就不该出现在可分享的日志里）。
+  return Uri(
+    scheme: uri.scheme,
+    host: uri.host,
+    port: uri.hasPort ? uri.port : null,
+    path: uri.path.isEmpty ? '/' : uri.path,
+  ).toString();
+}
+
+/// 日志文本里出现的每个 http(s) 地址都按上面的口径脱敏。
+final RegExp _warehouseLogUrlPattern = RegExp(r'''https?://[^\s"'<>]+''');
+
+String _scrubUrlsInLogText(String text) {
+  return text.replaceAllMapped(
+    _warehouseLogUrlPattern,
+    (Match match) => sanitizeWarehouseLogUrl(match.group(0)),
+  );
+}
+
+/// extras 里 key 含 "url" 的值一律按 URL 处理；其余值原样保留
+/// （日志还要能看出 schoolId / adapterId / macroReplay 这些定位信息）。
+Object? _scrubLogExtra(String key, Object? value) {
+  if (!key.toLowerCase().contains('url')) {
+    return value;
+  }
+  if (value is! String) {
+    return value == null ? null : '';
+  }
+  return sanitizeWarehouseLogUrl(value);
+}
+
 /// In-memory ring buffer for warehouse course-import execution traces.
 ///
 /// Entries are formatted like [AppLogService] diagnostics blocks so they can be
@@ -37,7 +100,7 @@ class WarehouseImportSessionLog {
     String level = 'info',
     Map<String, Object?> extras = const {},
   }) {
-    final normalizedMessage = message.trim();
+    final normalizedMessage = _scrubUrlsInLogText(message.trim());
     if (normalizedMessage.isEmpty) {
       return;
     }
@@ -50,7 +113,7 @@ class WarehouseImportSessionLog {
     if (extras.isNotEmpty) {
       buffer.writeln('extras=');
       extras.forEach((key, value) {
-        buffer.writeln('  $key=${value ?? 'null'}');
+        buffer.writeln('  $key=${_scrubLogExtra(key, value) ?? 'null'}');
       });
     }
     buffer.writeln();
