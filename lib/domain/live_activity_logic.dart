@@ -1,5 +1,6 @@
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import '../utils/clock_time.dart';
 
 /// Stable label key for the "most recent class ended" break milestone.
 ///
@@ -36,34 +37,22 @@ enum LiveActivityStage {
 class LiveActivityLogic {
   LiveActivityLogic._();
 
-  static int? parseClockMinutes(String value) {
-    final parts = value.split(':');
-    if (parts.length != 2) {
-      return null;
-    }
-
-    final hour = int.tryParse(parts[0]);
-    final minute = int.tryParse(parts[1]);
-    if (hour == null || minute == null) {
-      return null;
-    }
-
-    return hour * 60 + minute;
-  }
+  /// `"HH:MM"` → 相对当天 00:00 的分钟数。
+  ///
+  /// 收口到 [ClockTime.tryParse]：原来这里只做 `parts.length != 2` + tryParse，
+  /// **不查范围**，于是 `25:00` 会被 [buildCourseDateTime] 里的 `DateTime(y,m,d,25,0)`
+  /// 静默归一成**次日 01:00** —— 超级岛/自动响点的日期挪了一天，界面无异常。
+  /// 同仓 `ClassReminderService.parseClockMinutes`（:25-27）与
+  /// `SystemAlarmLogic.parseClockMinutes`（:90）都有范围守卫，只有这条链漏了。
+  static int? parseClockMinutes(String value) =>
+      ClockTime.tryParse(value, allowEndOfDay: true)?.totalMinutes;
 
   static DateTime? buildCourseDateTime(DateTime date, String courseTime) {
-    final parts = courseTime.split(':');
-    if (parts.length != 2) {
+    final parsed = ClockTime.tryParse(courseTime, allowEndOfDay: true);
+    if (parsed == null) {
       return null;
     }
-
-    final hour = int.tryParse(parts[0]);
-    final minute = int.tryParse(parts[1]);
-    if (hour == null || minute == null) {
-      return null;
-    }
-
-    return DateTime(date.year, date.month, date.day, hour, minute);
+    return DateTime(date.year, date.month, date.day, parsed.hour, parsed.minute);
   }
 
   static String resolveRealTime(

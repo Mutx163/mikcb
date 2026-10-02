@@ -1,6 +1,7 @@
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/timetable_settings.dart';
+import '../utils/clock_time.dart';
 import '../utils/widget_course_accent.dart';
 
 enum HomeWidgetSnapshotState { noCourse, upcoming, ongoing, completed, holiday }
@@ -394,15 +395,19 @@ class HomeWidgetSnapshotService {
   }
 
   DateTime? _buildCourseDateTime(DateTime now, String clock) {
-    final parts = clock.split(':');
-    if (parts.length != 2) {
+    // 与 LiveActivityLogic.buildCourseDateTime 同一口径：越界的钟点串必须解析失败，
+    // 不能交给 DateTime 静默归一 —— `25:00` 会变成**次日** 01:00，桌面卡片上
+    // 「下一节课/倒计时」的日期就挪了一天。
+    final parsed = ClockTime.tryParse(clock, allowEndOfDay: true);
+    if (parsed == null) {
       return null;
     }
-    final hour = int.tryParse(parts[0]);
-    final minute = int.tryParse(parts[1]);
-    if (hour == null || minute == null) {
-      return null;
-    }
-    return DateTime(now.year, now.month, now.day, hour, minute);
+    return DateTime(
+      now.year,
+      now.month,
+      now.day,
+      parsed.hour,
+      parsed.minute,
+    );
   }
 }

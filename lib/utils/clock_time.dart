@@ -15,7 +15,13 @@ class ClockTime {
   final int minute;
 
   /// 解析失败（缺列、非数字、越界）返回 null，由调用方决定兜底值。
-  static ClockTime? tryParse(String? value) {
+  ///
+  /// [allowEndOfDay] 只额外放行 `24:00` 这一个值：作息表里晚自习/末节课常写成
+  /// 24:00 表示「当天结束」，它不是一个合法的钟表时刻，但换算成日期是精确的
+  /// （次日 00:00）。其余 hour=24 的组合（`24:30`）以及 25 点、60 分一律拒绝 ——
+  /// 它们会被 `DateTime(y,m,d,hour,minute)` **静默归一**到别的日子（`25:00` →
+  /// 次日 01:00、`08:75` → 09:15），界面看不出来，用户却按错的时间到教室。
+  static ClockTime? tryParse(String? value, {bool allowEndOfDay = false}) {
     final text = value?.trim() ?? '';
     if (text.isEmpty) {
       return null;
@@ -29,7 +35,13 @@ class ClockTime {
     if (hour == null || minute == null) {
       return null;
     }
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    if (minute < 0 || minute > 59) {
+      return null;
+    }
+    if (allowEndOfDay && hour == 24 && minute == 0) {
+      return ClockTime(24, 0);
+    }
+    if (hour < 0 || hour > 23) {
       return null;
     }
     return ClockTime(hour, minute);
