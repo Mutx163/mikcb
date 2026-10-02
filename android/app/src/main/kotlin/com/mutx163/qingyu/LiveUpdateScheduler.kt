@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Calendar
+import java.util.Locale
 
 internal fun liveSchedulerCourseIsInWeek(
     week: Int,
@@ -85,7 +86,17 @@ internal fun liveSchedulerIsLegacyHolidayFlagActive(
     if (isHolidayDate.isNullOrBlank()) {
         return false
     }
-    return isHolidayDate == String.format("%04d-%02d-%02d", year, month, dayOfMonth)
+    // Locale.US：设备语言为阿语/波斯语时，不带 Locale 的 String.format 会产出
+    // ٢٠٢٦-١٠-٠٢ / ۲۰۲۶-۱۰-۰۲，而 Flutter 下发的假期键恒为 ASCII，两边永不相等
+    // → 假期当天超级岛照开、自动静音照跑。同仓 ExamReminderScheduler.kt:226 对
+    // 同一个格式串已经写了 Locale.US。
+    return isHolidayDate == String.format(
+        Locale.US,
+        "%04d-%02d-%02d",
+        year,
+        month,
+        dayOfMonth,
+    )
 }
 
 /**
@@ -104,7 +115,13 @@ internal fun liveSchedulerIsDateHoliday(
     dayOfMonth: Int,
     adjustedWorkdayDates: Set<String> = emptySet(),
 ): Boolean {
-    val dateStr = String.format("%04d-%02d-%02d", year, month, dayOfMonth)
+    val dateStr = String.format(
+        Locale.US,
+        "%04d-%02d-%02d",
+        year,
+        month,
+        dayOfMonth,
+    )
     if (adjustedWorkdayDates.contains(dateStr)) {
         return false
     }

@@ -3,6 +3,7 @@ package com.mutx163.qingyu
 import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.Locale
 
 /**
  * Mirrors Flutter [HolidayEntry] / [HolidayData] / [TimetableProvider.isHoliday]
@@ -173,7 +174,15 @@ internal fun widgetParseHolidayEntriesFromCustomJson(raw: String?): List<WidgetH
 }
 
 internal fun widgetFormatDate(year: Int, month: Int, dayOfMonth: Int): String {
-    return String.format("%04d-%02d-%02d", year, month, dayOfMonth)
+    // Locale.US：假期键要和 Flutter 下发的 ASCII `yyyy-MM-dd` 逐字比对，默认 Locale
+    // 在阿语/波斯语设备上会产出非 ASCII 数字，比对永不成立 → 小组件假期标记失效。
+    return String.format(
+        Locale.US,
+        "%04d-%02d-%02d",
+        year,
+        month,
+        dayOfMonth,
+    )
 }
 
 private fun parseHolidayEntryArray(array: JSONArray): List<WidgetHolidayEntry> {
