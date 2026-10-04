@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-03T06:58:14+00:00",
+  "updatedAt": "2026-10-04T07:18:23+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 239,
-    "schools": 234,
+    "total": 240,
+    "schools": 235,
     "generic": 5
   },
   "schools": [
@@ -1651,6 +1651,13 @@
       "name": "浙江工业大学",
       "initial": "Z",
       "resourceFolder": "ZJUT",
+      "category": "school"
+    },
+    {
+      "id": "ZJBTI",
+      "name": "浙江工商职业技术学院",
+      "initial": "Z",
+      "resourceFolder": "ZJBTI",
       "category": "school"
     },
     {
