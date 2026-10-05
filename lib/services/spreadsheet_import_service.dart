@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../l10n/service_message_localizer.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import '../utils/clock_time.dart';
 import 'week_expression_parser.dart';
 
 class SpreadsheetImportResult {
@@ -635,7 +636,17 @@ class SpreadsheetImportService {
     if (trimmed.isEmpty || trimmed == '无' || trimmed == '-') {
       return fallback;
     }
-    return trimmed;
+    // 校验 + 写入边界归一。原先只处理 `''/无/-`，其余**原样入库**：Excel 的
+    // 时间格是数值，`_cellToString`(:732-740) 会烤成 `0.3333333333333333`
+    // 或 `12月30日` 这类串，而同一个 `_buildCourse` 里周次(:446-497)、整数(:696)
+    // 都有校验，只有这两列没有。畸形钟点入库后不报错，只是被统计「时间利用」
+    // 静默剔除（早八不算上午）、在「即将到来」与日视图里被 `compareClockText`
+    // 排到末尾 —— 用户看不出原因，重导多少次都一样。
+    // 归一成 `HH:mm` 与局域网编辑写入口同一做法
+    // （`lan_edit_provider_host.dart:58-64` 的 `parsed?.formatted ?? fallback`）：
+    // 补零只发生在**写入边界**，不是读路径回写。
+    final parsed = ClockTime.tryParse(trimmed, allowEndOfDay: true);
+    return parsed?.formatted ?? fallback;
   }
 
   String _normalizeColor(String raw) {
@@ -643,15 +654,26 @@ class SpreadsheetImportService {
     if (trimmed.isEmpty || trimmed == '无' || trimmed == '-') {
       return _defaultColor;
     }
-    final color = trimmed.startsWith('#') ? trimmed : '#$trimmed';
-    // 校验 hex 颜色格式：#RGB、#RRGGBB 或 #AARRGGBB
-    final hexPattern = RegExp(
-      r'^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?([0-9a-fA-F]{2})?$',
-    );
-    if (!hexPattern.hasMatch(color)) {
+    final hex = trimmed.startsWith('#') ? trimmed.substring(1) : trimmed;
+    // 只放行**渲染侧解得出来**的形状。原先那条正则
+    // `^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?([0-9a-fA-F]{2})?$` 按分组组合实际接受
+    // 3/5/6/8 位：5 位不在任何承诺里，8 位按分组顺序是 `#RRGGBBAA`，与注释写的
+    // `#AARRGGBB` 相反（`course_color_palette.dart` 那一份又按 AARRGGBB 解），
+    // 而全仓着色一律走 `tryParseHexColor`（utils/hex_color.dart:9-11 只认 6 位），
+    // `test/utils/hex_color_test.dart:32,52` 更把 `#12345`、`#FFF` 断言为 null。
+    // 于是导入零警告收下、原样写进 `Course.color`、卡片一律显示默认蓝。
+    // `#RGB` 是唯一的例外：它按 CSS 规则能无歧义展开成 6 位，展开后入库。
+    if (hex.length == 3 && RegExp(r'^[0-9a-fA-F]{3}$').hasMatch(hex)) {
+      final buffer = StringBuffer('#');
+      for (final digit in hex.split('')) {
+        buffer.write(digit * 2);
+      }
+      return buffer.toString();
+    }
+    if (!RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(hex)) {
       return _defaultColor;
     }
-    return color;
+    return '#$hex';
   }
 
   CourseNature _parseCourseNature(String raw) {
