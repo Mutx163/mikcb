@@ -235,17 +235,27 @@ class WeatherProvider extends ChangeNotifier {
     _lastLocateFailure = null;
     notifyListeners();
 
-    final outcome = await _locationService.locate();
-    final located = outcome.location;
-    if (located != null) {
-      // 复用选城市那条路：落盘、作废旧城市缓存、重拉天气。
-      await setLocation(located);
+    try {
+      final outcome = await _locationService.locate();
+      final located = outcome.location;
+      if (located != null) {
+        // 复用选城市那条路：落盘、作废旧城市缓存、重拉天气。
+        await setLocation(located);
+      }
+      _lastLocateFailure = outcome.failure;
+      _lastLocateWasEstimated = outcome.estimated;
+      return _lastLocateFailure;
+    } finally {
+      // 复位必须放在 finally：原先只在正常返回路径上写 `_isLocating = false`，
+      // 而中间那句 `setLocation` 会 await WeatherPreferences 的落盘
+      // （`preferences.setString/remove`，平台通道失败时是会抛的）。一抛之后
+      // 标志永远停在 true —— 选城市页的「定位」入口从此永久置灰
+      // （weather_city_picker_screen.dart:116 用它做 enabled），而且
+      // `_lastLocateFailure` 还是 null，用户既点不动也看不到任何错误，
+      // 只能杀掉 App 重来。
+      _isLocating = false;
+      notifyListeners();
     }
-    _lastLocateFailure = outcome.failure;
-    _lastLocateWasEstimated = outcome.estimated;
-    _isLocating = false;
-    notifyListeners();
-    return _lastLocateFailure;
   }
 
   /// 是否需要刷新。
