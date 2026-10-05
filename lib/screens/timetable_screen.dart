@@ -39,6 +39,7 @@ import '../models/exam.dart';
 import '../models/schedule_item.dart';
 import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
+import '../domain/clock_order.dart';
 import '../domain/couple_timetable_logic.dart';
 import '../domain/day_course_display_logic.dart';
 import '../domain/day_view_paging.dart';
@@ -4549,11 +4550,17 @@ class _TimetableScreenState extends State<TimetableScreen>
     ];
 
     items.sort((left, right) {
-      final startCompare = left.startTime.compareTo(right.startTime);
+      // 当日议程是**课程 + 考试 + 日程**的混排，而 `Course.fromJson`
+      // （models/course.dart:298）与 `ScheduleItem.fromJson`（:226）都原样收下钟点串：
+      // 外来存档里的 `9:00` 在字典序下比 `10:00` 大，同一天会排反。
+      // 正源是 `domain/clock_order.dart` 的 `compareClockText`；
+      // 这条规则在本仓已经修过三轮，剩下的位置由
+      // `test/architecture/clock_field_compare_guard_test.dart` 钉住。
+      final startCompare = compareClockText(left.startTime, right.startTime);
       if (startCompare != 0) {
         return startCompare;
       }
-      final endCompare = left.endTime.compareTo(right.endTime);
+      final endCompare = compareClockText(left.endTime, right.endTime);
       if (endCompare != 0) {
         return endCompare;
       }
