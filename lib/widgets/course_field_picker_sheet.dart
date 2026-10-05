@@ -41,6 +41,23 @@ class CourseFieldPickerTile extends StatelessWidget {
   }
 }
 
+/// 历史建议项过滤：**大小写不敏感**的子串匹配。
+///
+/// 教室与老师名常是中英混排（`A101`、`B-302`、拼音教师名），按原样 `contains`
+/// 会让输入小写 `a101` 的人看到「无历史记录」——他会以为记录丢了，于是手打一份
+/// 小写的存进去，同一个教室从此裂成两条（还往下影响楼栋聚类与场所统计）。
+/// 仓内其余过滤都先归一侧大小写：`open_source_licenses_screen.dart:116`、
+/// `settings_glass_dock_icon_editor.dart:82`、`warehouse_repository_models.dart:277/327`。
+List<String> filterFieldSuggestions(List<String> suggestions, String query) {
+  final normalized = query.trim().toLowerCase();
+  if (normalized.isEmpty) {
+    return suggestions;
+  }
+  return suggestions
+      .where((item) => item.toLowerCase().contains(normalized))
+      .toList();
+}
+
 /// Picker sheet with search + history chips, using Forui bottom sheet styling.
 Future<void> showCourseFieldPickerSheet(
   BuildContext context, {
@@ -93,9 +110,7 @@ class _CourseFieldPickerSheetBody extends StatelessWidget {
       listenable: controller,
       builder: (context, _) {
         final query = controller.text.trim();
-        final filtered = query.isEmpty
-            ? suggestions
-            : suggestions.where((s) => s.contains(query)).toList();
+        final filtered = filterFieldSuggestions(suggestions, query);
 
         // Fixed-height sheet + lazy ListView. Never paint every suggestion as a
         // chip in one frame (uniqueLocations can be huge and freeze the UI).
