@@ -177,6 +177,80 @@ void main() {
         '11:00',
       );
     });
+
+    test('applyTimeScheme 写盘失败后，活动作息与课程钟点都必须回到旧值', () async {
+      // 作息族里唯一漏掉回滚形状的入口：它同时改 `_settings`（活动作息 + 节次表）
+      // 和 `_courses`（按新节次表重排出来的钟点），再 `_persistActiveProfileState`
+      // 落盘 —— 而落盘前还会先把这两份并进 `_profiles`。
+      await provider.addCourse(
+        Course(
+          id: 'ts-1',
+          name: '早八体育',
+          teacher: '教练',
+          location: '场馆',
+          dayOfWeek: 2,
+          startSection: 1,
+          endSection: 1,
+          startTime: '08:00',
+          endTime: '08:45',
+        ),
+      );
+      final schemeBefore = provider.settings.activeTimeSchemeId;
+      final sectionsBefore = provider.settings.sections
+          .map((section) => section.startTime)
+          .toList();
+      String courseStart() => provider.courses
+          .firstWhere((course) => course.id == 'ts-1')
+          .startTime;
+      final courseStartBefore = courseStart();
+
+      final schemeB = await provider.createTimeScheme(
+        name: '方案B',
+        sections: const [
+          SectionTime(startTime: '18:00', endTime: '18:45'),
+          SectionTime(startTime: '19:00', endTime: '19:45'),
+        ],
+      );
+
+      storage.profileFailures = 1;
+      await expectLater(
+        provider.applyTimeScheme(schemeB.id),
+        throwsA(isA<StateError>()),
+        reason: '注入的那一次 saveProfiles 失败必须正好落在应用作息的落盘上',
+      );
+
+      expect(
+        provider.settings.activeTimeSchemeId,
+        schemeBefore,
+        reason: '没落成功的切换不能留在内存里：UI 还显示旧作息，getter 却已是新的',
+      );
+      expect(
+        provider.settings.sections.map((section) => section.startTime).toList(),
+        sectionsBefore,
+      );
+      expect(
+        courseStart(),
+        courseStartBefore,
+        reason: '课程钟点是按新作息重排出来的，回滚必须连它一起还原',
+      );
+
+      // 幻影状态真正狠的地方：下一次任意成功写入会把它当成既有状态落盘。
+      await provider.addCourse(
+        Course(
+          id: 'ts-2',
+          name: '晚自习',
+          teacher: '班主任',
+          location: '教室',
+          dayOfWeek: 4,
+          startSection: 2,
+          endSection: 2,
+          startTime: '19:00',
+          endTime: '19:45',
+        ),
+      );
+      expect(provider.settings.activeTimeSchemeId, schemeBefore);
+      expect(courseStart(), courseStartBefore);
+    });
   });
 
   group('地点时间分组的落盘失败回滚', () {

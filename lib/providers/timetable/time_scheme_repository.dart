@@ -61,6 +61,17 @@ Future<String?> _timetableApplyTimeScheme(
     });
   }
 
+  // 本函数改两份内存状态（活动作息 + 按新作息重排出来的课程钟点），再 await 落盘，
+  // 而 `_persistActiveProfileState` 还会先把它们并进 `_profiles`。任一步失败都必须
+  // 整体退回：本类其余写入（create / rename / duplicate / delete / updateTimeScheme）
+  // 都已按这个形状收口，只有这里是「先改内存、裸 await」——一旦 saveProfiles 或
+  // AppGlobalSettingsService.syncFrom 抛错，磁盘回滚了而内存停在方案 B，并且下面那句
+  // notify 被跳过：UI 还显示 A，getter 已经是 B；下一次任意成功写入（加课、切周、
+  // 30 秒一次的 syncTemporalContext 心跳）都会把 B 当成既有状态落盘 —— 用户的上课
+  // 时间在一次"失败"提示之后被真的改掉。
+  final snapshotSettings = host._settings;
+  final snapshotCourses = List<Course>.from(host._courses);
+  final snapshotProfiles = List<TimetableProfile>.from(host._profiles);
   host._settings = host._settings.copyWith(
     activeTimeSchemeId: scheme.id,
     sections: List<SectionTime>.from(scheme.sections),
@@ -69,7 +80,14 @@ Future<String?> _timetableApplyTimeScheme(
     List<Course>.from(host._courses),
     settings: host._settings,
   );
-  await host._persistActiveProfileState();
+  try {
+    await host._persistActiveProfileState();
+  } catch (_) {
+    host._settings = snapshotSettings;
+    host._courses = snapshotCourses;
+    host._profiles = snapshotProfiles;
+    rethrow;
+  }
   host._currentLiveCourseId = null;
   host._notifyStateChanged();
   await host._updateLiveActivity();
