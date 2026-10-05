@@ -1,4 +1,5 @@
 import '../models/schedule_item.dart';
+import 'clock_order.dart';
 
 /// 日程项实例展开领域服务（纯 Dart，无 Flutter / IO 依赖）。
 ///
@@ -78,11 +79,17 @@ class ScheduleItemExpander {
       if (sourceDateCompare != 0) {
         return sourceDateCompare;
       }
-      final startCompare = left.item.startTime.compareTo(right.item.startTime);
+      final startCompare = compareClockText(
+        left.item.startTime,
+        right.item.startTime,
+      );
       if (startCompare != 0) {
         return startCompare;
       }
-      final endCompare = left.item.endTime.compareTo(right.item.endTime);
+      final endCompare = compareClockText(
+        left.item.endTime,
+        right.item.endTime,
+      );
       if (endCompare != 0) {
         return endCompare;
       }

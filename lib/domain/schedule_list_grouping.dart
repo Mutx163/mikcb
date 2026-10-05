@@ -1,4 +1,5 @@
 import '../models/schedule_item.dart';
+import 'clock_order.dart';
 
 /// 日程列表页的一行数据：系列根条目 + 解析后的时间状态。
 ///
@@ -103,11 +104,17 @@ abstract final class ScheduleListGrouper {
       if (dateCompare != 0) {
         return dateCompare;
       }
-      final startCompare = left.item.startTime.compareTo(right.item.startTime);
+      final startCompare = compareClockText(
+        left.item.startTime,
+        right.item.startTime,
+      );
       if (startCompare != 0) {
         return startCompare;
       }
-      final endCompare = left.item.endTime.compareTo(right.item.endTime);
+      final endCompare = compareClockText(
+        left.item.endTime,
+        right.item.endTime,
+      );
       if (endCompare != 0) {
         return endCompare;
       }
