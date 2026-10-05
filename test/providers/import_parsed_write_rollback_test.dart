@@ -70,8 +70,8 @@ void main() {
     startTime: '14:00',
     endTime: '15:00',
     date: DateTime(2026, 10, 12),
-    createdAt: DateTime(2026, 10, 1),
-    updatedAt: DateTime(2026, 10, 1),
+    createdAt: DateTime(2026, 10),
+    updatedAt: DateTime(2026, 10),
   );
 
   setUp(() async {
