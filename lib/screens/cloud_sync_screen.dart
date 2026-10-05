@@ -63,6 +63,14 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
 
   @override
   void dispose() {
+    // 协调器是单例，回调挂在它身上不会随本页消失：离开这里之后别处（自动同步、
+    // 首页）触发的冲突仍会打到这个已 dispose 的 State 上，而 `_resolveConflict`
+    // 里是 `if (!mounted) return cancel` —— 冲突被静默判成"取消"，用户既没看到
+    // 弹窗也不知道同步停在哪。只在回调仍然是自己时清空，避免两个实例先后进入时
+    // 误摘对方的。
+    if (_coordinator.onConflict == _resolveConflict) {
+      _coordinator.onConflict = null;
+    }
     _baseUrlController.dispose();
     _remoteFolderController.dispose();
     _deviceLabelController.dispose();
