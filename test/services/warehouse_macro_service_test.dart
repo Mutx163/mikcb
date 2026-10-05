@@ -200,4 +200,121 @@ void main() {
     final restored = await service.getMacro('school-1', 'adapter-1');
     expect(restored?.useDesktopMode, isFalse);
   });
+
+  test('recordSuccessfulImport 累加次数并存回最新的脚本页地址', () async {
+    final service = WarehouseMacroService();
+    final now = DateTime(2024, 1, 2, 3, 4, 5);
+    await service.saveMacro(
+      WarehouseMacroRecord(
+        schoolId: 'school-1',
+        adapterId: 'adapter-1',
+        schoolName: '测试学校',
+        adapterName: '测试教务',
+        importUrl: 'https://example.com/login',
+        schoolResourceFolder: 'school-1',
+        adapterAssetJsPath: 'adapter.js',
+        steps: const [],
+        createdAt: now,
+        updatedAt: now,
+        successfulImportCount: 2,
+        scriptPageUrl: 'https://example.com/old',
+      ),
+    );
+
+    final updated = await service.recordSuccessfulImport(
+      schoolId: 'school-1',
+      adapterId: 'adapter-1',
+      scriptPageUrl: 'https://example.com/portal#/schedule',
+    );
+    expect(updated, isTrue);
+
+    final restored = await service.getMacro('school-1', 'adapter-1');
+    expect(restored?.successfulImportCount, 3);
+    expect(restored?.scriptPageUrl, 'https://example.com/portal#/schedule');
+  });
+
+  test('没给新地址时沿用记录里原有的，不能被 null 清空', () async {
+    final service = WarehouseMacroService();
+    final now = DateTime(2024);
+    await service.saveMacro(
+      WarehouseMacroRecord(
+        schoolId: 'school-1',
+        adapterId: 'adapter-2',
+        schoolName: '测试学校',
+        adapterName: '测试教务',
+        importUrl: 'https://example.com/login',
+        schoolResourceFolder: 'school-1',
+        adapterAssetJsPath: 'adapter.js',
+        steps: const [],
+        createdAt: now,
+        updatedAt: now,
+        scriptPageUrl: 'https://example.com/keep#/me',
+      ),
+    );
+
+    expect(
+      await service.recordSuccessfulImport(
+        schoolId: 'school-1',
+        adapterId: 'adapter-2',
+      ),
+      isTrue,
+    );
+    final restored = await service.getMacro('school-1', 'adapter-2');
+    expect(restored?.scriptPageUrl, 'https://example.com/keep#/me');
+    expect(restored?.successfulImportCount, 1);
+  });
+
+  test('记账写失败绝不冒到调用方，否则成功的导入会被外层报成失败', () async {
+    // 调用点在「课程已经写完」之后，外层是 `catch (error) -> 导入失败`。
+    // 记账（计数 + 存回地址）失败时这里必须返回 false 而不是抛。
+    final seeder = WarehouseMacroService();
+    final now = DateTime(2024);
+    await seeder.saveMacro(
+      WarehouseMacroRecord(
+        schoolId: 'school-1',
+        adapterId: 'adapter-3',
+        schoolName: '测试学校',
+        adapterName: '测试教务',
+        importUrl: 'https://example.com/login',
+        schoolResourceFolder: 'school-1',
+        adapterAssetJsPath: 'adapter.js',
+        steps: const [],
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+
+    final failing = _SaveFailingMacroService();
+    expect(
+      await failing.recordSuccessfulImport(
+        schoolId: 'school-1',
+        adapterId: 'adapter-3',
+      ),
+      isFalse,
+    );
+    // 记录本体没被写坏：原样还在，计数停在旧值。
+    final restored = await seeder.getMacro('school-1', 'adapter-3');
+    expect(restored, isNotNull);
+    expect(restored!.successfulImportCount, 0);
+  });
+
+  test('没有记录时返回 false，不抛也不凭空造一条', () async {
+    final service = WarehouseMacroService();
+    expect(
+      await service.recordSuccessfulImport(
+        schoolId: 'school-1',
+        adapterId: 'never-saved',
+      ),
+      isFalse,
+    );
+    expect(await service.hasMacro('school-1', 'never-saved'), isFalse);
+  });
+}
+
+/// 存盘总是失败的 service，用来逼出「记账失败」这条路径。
+class _SaveFailingMacroService extends WarehouseMacroService {
+  @override
+  Future<void> saveMacro(WarehouseMacroRecord record) async {
+    throw Exception('shared_preferences write failed');
+  }
 }

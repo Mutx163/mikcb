@@ -4955,21 +4955,20 @@ class _WarehouseAdapterWebLoginScreenState
     );
     if (!_isMacroReplay) return;
     if (countSuccessfulImport) {
-      final existing = await _macroService.getMacro(
-        widget.school.id,
-        widget.adapter.adapterId,
+      // 记账走服务里那条「绝不抛出」的口子：这一刻课程已经写好了，共享首选项
+      // 写失败最多让成功次数停在旧值；原先 getMacro/saveMacro 的异常会顺着
+      // await 冒到外层那个把异常一律翻成「导入失败」的 catch，于是成功的导入
+      // 被报成失败、完成 sheet 也不出现。
+      final bookkeepingUpdated = await _macroService.recordSuccessfulImport(
+        schoolId: widget.school.id,
+        adapterId: widget.adapter.adapterId,
+        scriptPageUrl: sanitizeWarehouseScriptPageUrl(
+          _currentUrl ?? widget.initialUrl,
+        ),
       );
-      if (existing != null) {
-        await _macroService.saveMacro(
-          existing.copyWith(
-            successfulImportCount: existing.successfulImportCount + 1,
-            updatedAt: DateTime.now(),
-            scriptPageUrl:
-                sanitizeWarehouseScriptPageUrl(
-                  _currentUrl ?? widget.initialUrl,
-                ) ??
-                existing.scriptPageUrl,
-          ),
+      if (!bookkeepingUpdated) {
+        _debugImportLog(
+          'macro import bookkeeping skipped: record missing or write failed',
         );
       }
     }

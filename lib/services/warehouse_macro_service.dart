@@ -54,6 +54,36 @@ class WarehouseMacroService {
     }
   }
 
+  /// 导入成功后的记账：读回记录、累加成功次数、把最新的脚本页地址一并存回。
+  ///
+  /// **绝不抛出**。调用点在「课程已经写完」之后（`_markMacroImportCompleted`），
+  /// 而那里外层是一个把异常一律翻成「导入失败」的 catch —— 原先 `getMacro` /
+  /// `saveMacro` 任何一步出错（共享首选项写失败、记录里有编码不了的值、
+  /// 同步钩子抛异常……）都会顺着 await 冒上去，于是**一次其实已经成功的导入被
+  /// 报成失败**：状态写「导入失败」、弹错误提示、后台模式还回 `false`，而
+  /// 「导入完成」的 sheet 永远不出现。这一步最多让计数停在旧值，不该影响结论。
+  /// 返回是否真的更新了。
+  Future<bool> recordSuccessfulImport({
+    required String schoolId,
+    required String adapterId,
+    String? scriptPageUrl,
+  }) async {
+    try {
+      final existing = await getMacro(schoolId, adapterId);
+      if (existing == null) return false;
+      await saveMacro(
+        existing.copyWith(
+          successfulImportCount: existing.successfulImportCount + 1,
+          updatedAt: DateTime.now(),
+          scriptPageUrl: scriptPageUrl,
+        ),
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// 删除宏录制记录
   Future<void> deleteMacro(String schoolId, String adapterId) async {
     final prefs = await _prefs;
