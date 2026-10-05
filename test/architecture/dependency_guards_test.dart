@@ -129,7 +129,10 @@ void main() {
     // （同一个 library，调用点不用改写法；日程的存量顺序本来就和那两个写入口同族）。
     // 起因是这条修复本身让父文件从 4649 涨到 4654、把棘轮判红：正确做法不是抬高基线，
     // 而是把新写的规则放回它该在的分片里。
-    const baselineLines = 4631;
+    // 4631→4630：周报钩子收口 —— `_persistActiveProfileState` 的镜像分支原先手工
+    // 只补 `notifyUserDataChangedForSync()`，两条分支的「落盘成功后副作用」现在统一
+    // 走 `timetable/live_activity_controller.dart` 里的 `_afterProfilePersisted`。
+    const baselineLines = 4630;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

@@ -1400,9 +1400,7 @@ class TimetableProvider with ChangeNotifier {
         () => _persistActiveProfileStateToDisk(notifySync: false),
       );
       // 只有恢复记录已提交并清理后，才通知其它同步入口看到这次保存。
-      if (notifySync) {
-        notifyUserDataChangedForSync();
-      }
+      _afterProfilePersisted(this, notifySync: notifySync);
     } else {
       await _persistActiveProfileStateToDisk(notifySync: notifySync);
     }
@@ -1417,8 +1415,9 @@ class TimetableProvider with ChangeNotifier {
     if (_activeProfileId != null) {
       await _profileRepository.setActiveProfileId(_activeProfileId!);
     }
-    // 定义与理由见 timetable/live_activity_controller.dart（棘轮要求本类只减不增）。
-    if (notifySync) { notifyUserDataChangedForSync(); _syncWeeklyReportContent(this); }
+    // 落盘成功后的副作用只有一份定义，见 timetable/live_activity_controller.dart
+    // （棘轮要求本类只减不增；镜像分支走 :1403 的同一个函数）。
+    _afterProfilePersisted(this, notifySync: notifySync);
   }
 
   Future<void> _persistTimeSchemes() async {

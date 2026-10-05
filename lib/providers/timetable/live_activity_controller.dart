@@ -10,8 +10,8 @@ part of '../timetable_provider.dart';
 /// 于是正文永久冻结在拨开关那一周 —— 学期第 16 周还弹"第 8 周 · 共 12 节"，
 /// 换课表、导新课表后照旧。
 ///
-/// 收在这里（而不是散到各个写入口）的理由：`_persistActiveProfileStateToDisk`
-/// 是所有课表/设置落盘的唯一收口，而**补偿写**（回滚路径，`notifySync: false`）
+/// 收在这里（而不是散到各个写入口）的理由：落盘成功之后的同步副作用只有一份定义
+/// （见 `_afterProfilePersisted`），而**补偿写**（回滚路径，`notifySync: false`）
 /// 不该触发重推。去重与 locale 解析都在 `weekly_report_service.dart`：
 /// 拼出真正要下发的标题+正文比对，内容没变就不碰通道，所以这里可以每次保存都调。
 void _syncWeeklyReportContent(TimetableProvider host) {
@@ -26,6 +26,26 @@ void _syncWeeklyReportContent(TimetableProvider host) {
       semesterWeekCount: host._settings.semesterWeekCount,
     ),
   );
+}
+
+/// 一次课表/设置落盘成功之后必须跟着跑的副作用 —— **只有这一份定义**。
+///
+/// `_persistActiveProfileState` 有两条分支：普通落盘直接走
+/// `_persistActiveProfileStateToDisk(notifySync: notifySync)`，而含全局镜像键
+/// （`appLocaleTag`、`savedThemes`、`appThemeMode`… 见 `AppGlobalSettingsService.keys`）
+/// 的保存要走 `runSettingsMirrorTransaction` 那份，事务里强制 `notifySync: false`
+/// （恢复记录提交前不能让别的同步入口看见），提交后由调用方补通知。
+///
+/// 第 26 轮把周报钩子只挂在带 `notifySync` 的那一份里，于是「改语言」这类写入
+/// 整条钩子被跳过 —— 周报正文本身是按 l10n 渲染的，切完语言通知仍停在旧语言。
+/// 两条分支现在都调本函数，新增副作用不可能再漏一侧。
+/// 回归钉：`test/services/weekly_report_refresh_test.dart`。
+void _afterProfilePersisted(TimetableProvider host, {required bool notifySync}) {
+  if (!notifySync) {
+    return;
+  }
+  notifyUserDataChangedForSync();
+  _syncWeeklyReportContent(host);
 }
 
 String _liveResolveRealTime(

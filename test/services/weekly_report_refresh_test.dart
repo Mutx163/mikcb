@@ -105,6 +105,41 @@ void main() {
     await pumpChannelQueue();
     expect(scheduleNextCalls, 0);
   });
+
+  // 第二十七轮回归钉：`_persistActiveProfileState` 有两条分支 —— 普通落盘走
+  // `_persistActiveProfileStateToDisk(notifySync: notifySync)`，而**全局镜像键**
+  // （`appLocaleTag`、`savedThemes`、`appThemeMode`… 见
+  // `AppGlobalSettingsService.keys`）走 `runSettingsMirrorTransaction` 那份，
+  // 并在 :1403-1405 手工补一次 `notifyUserDataChangedForSync()`。第 26 轮把周报
+  // 钩子只挂在 `_persistActiveProfileStateToDisk` 的 `notifySync` 那行上，于是
+  // 「改语言」这类写入整条钩子被跳过 —— 而周报正文本身是按 l10n 渲染的（标题、
+  // 星期名、节数文案都本地化），切语言后通知仍停在旧语言。
+  test('改语言这类全局镜像键的保存也要重推周报正文', () async {
+    await provider.updateSettings(
+      provider.settings.copyWith(weeklyReportEnabled: true),
+    );
+    await pumpChannelQueue();
+    final before = scheduleNextCalls;
+    final beforeBody = bodies.last;
+    expect(beforeBody, isNotNull, reason: '前置条件：开关那次保存已经推过正文');
+
+    // `appLocaleTag` 在 `AppGlobalSettingsService.keys` 里（:59-110），这次保存走
+    // `runSettingsMirrorTransaction` 那一条分支（timetable_provider.dart:1397-1403）。
+    await provider.updateSettings(provider.settings.copyWith(appLocaleTag: 'zh'));
+    await pumpChannelQueue();
+
+    expect(
+      scheduleNextCalls,
+      greaterThan(before),
+      reason: '镜像分支绕过了周报钩子，正文停在旧语言（修复前这里相等）',
+    );
+    expect(
+      bodies.last,
+      matches(RegExp(r'[一-鿿]')),
+      reason: '正文必须换成新语言渲染的结果，而不是沿用上一次那份',
+    );
+    expect(bodies.last, isNot(beforeBody));
+  });
 }
 
 /// 让 `unawaited` 的通道调用跑到完成：微任务队列排空即可（MockHandler 是同步返回）。
