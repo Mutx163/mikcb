@@ -1,4 +1,5 @@
 import '../models/holiday_entry.dart';
+import 'week_calculator.dart';
 
 /// 节假日展示判定领域服务（纯 Dart，无 Flutter / IO 依赖）。
 ///
@@ -27,6 +28,44 @@ class HolidayResolver {
   static bool isAdjustedWorkday(DateTime date, {required HolidayData? data}) {
     return data?.isAdjustedWorkday(date) ?? false;
   }
+}
+
+/// 把一组假期日期先按日期升序，再切成"连续段"。
+///
+/// 远程接口**不保证**按日期升序返回。旧实现直接在原顺序上判断
+/// `_isConsecutive(current.last, date)`，乱序时一段七天假会被拆成好几组：
+/// banner 名字取错组、`groupId` 被分散，之后"调休上班挂到最近的一组"也跟着错
+/// （它按 group.first / group.last 算距离，组被切碎后距离就不对了）。
+/// 排序是这里正确性的前置条件，不是可选优化。
+List<List<DateTime>> groupConsecutiveHolidayDates(List<DateTime> dates) {
+  if (dates.isEmpty) return const [];
+  // 先去重并归一到"当天 00:00"：远程响应里同一天可能重复出现（多源合并、接口
+  // 重发），而重复值与前一天的天数差是 0，会被判成"不连续"从而**新起一组** ——
+  // 一段假被拆成两组后，组名、groupId 以及"调休挂到最近的一组"全都会错。
+  // 带时分秒的输入也在这里归一，避免同一天的两个时刻被当成两天。
+  final byDay = <String, DateTime>{};
+  for (final date in dates) {
+    byDay.putIfAbsent(
+      '${date.year}-${date.month}-${date.day}',
+      () => DateTime(date.year, date.month, date.day),
+    );
+  }
+  final sorted = byDay.values.toList()..sort((a, b) => a.compareTo(b));
+  final groups = <List<DateTime>>[];
+  List<DateTime>? current;
+  for (final date in sorted) {
+    final previous = current;
+    if (previous != null &&
+        WeekCalculator.daysBetween(previous.last, date) == 1) {
+      previous.add(date);
+    } else {
+      if (previous != null) groups.add(previous);
+      current = [date];
+    }
+  }
+  final last = current;
+  if (last != null) groups.add(last);
+  return groups;
 }
 
 /// 该加载哪几年的节假日数据。

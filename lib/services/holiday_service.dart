@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/holiday_resolver.dart';
 import '../domain/week_calculator.dart';
 import '../logging/app_debug_log.dart';
 import 'app_log_service.dart';
@@ -144,7 +145,15 @@ class HolidayService {
     _logKey('holiday_log_remote_failed_builtin', params: {'year': year});
     final builtin = await _loadBuiltin(year);
     _memoryCache[year] = builtin;
-    await _saveToLocalCache(year, builtin);
+    // 空兜底**不落盘**：内置资产可能没有这一年的文件（仓库目前只带 2026.json），
+    // 此时 entries 是空的。把"空"写进 SharedPreferences 就等于宣布"这一年确定
+    // 没有假期"，之后每次启动都在「本地缓存命中」那一步短路返回空、只发一次后台
+    // 刷新；远程一直失败时（离线 / 被墙 / 接口变更），后续版本新带的该年内置假期
+    // 数据就永远读不到了。内存里本次仍返回空结果（不假装成功，也不影响本会话
+    // 不再重复阻塞网络），只是不把它固化成"已知事实"。
+    if (builtin.entries.isNotEmpty) {
+      await _saveToLocalCache(year, builtin);
+    }
     _logKey(
       'holiday_log_builtin_loaded',
       params: {'year': year, 'count': builtin.entries.length},
@@ -383,18 +392,9 @@ class HolidayService {
       }
     }
 
-    // Group consecutive holidays
-    final groups = <List<DateTime>>[];
-    List<DateTime>? current;
-    for (final date in holidayDates) {
-      if (current != null && _isConsecutive(current.last, date)) {
-        current.add(date);
-      } else {
-        if (current != null) groups.add(current);
-        current = [date];
-      }
-    }
-    if (current != null) groups.add(current);
+    // 先按日期升序再切"连续段"：远程不保证升序，乱序会把一段假拆成多组，
+    // 组名/groupId/"调休挂到最近一组"的距离全错（见 groupConsecutiveHolidayDates）。
+    final groups = groupConsecutiveHolidayDates(holidayDates);
 
     // Build entries — vacation groups first, then assign makeup workdays
     // to the nearest holiday group.
@@ -485,18 +485,9 @@ class HolidayService {
       }
     }
 
-    // Group consecutive holidays
-    final groups = <List<DateTime>>[];
-    List<DateTime>? current;
-    for (final date in holidayDates) {
-      if (current != null && _isConsecutive(current.last, date)) {
-        current.add(date);
-      } else {
-        if (current != null) groups.add(current);
-        current = [date];
-      }
-    }
-    if (current != null) groups.add(current);
+    // 先按日期升序再切"连续段"：远程不保证升序，乱序会把一段假拆成多组，
+    // 组名/groupId/"调休挂到最近一组"的距离全错（见 groupConsecutiveHolidayDates）。
+    final groups = groupConsecutiveHolidayDates(holidayDates);
 
     // Build entries
     final entries = <HolidayEntry>[];
@@ -548,9 +539,6 @@ class HolidayService {
   List<HolidayEntry> convertApiEntriesForTest(List<dynamic> list, int year) {
     return _convertApiEntries(list, year);
   }
-
-  bool _isConsecutive(DateTime a, DateTime b) =>
-      WeekCalculator.daysBetween(a, b) == 1;
 
   int _absDays(DateTime a, DateTime b) => WeekCalculator.daysBetween(b, a).abs();
 
