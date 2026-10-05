@@ -867,6 +867,34 @@ internal fun findNextRefreshAtMillis(
         return endMinutes > nowMinutes
     }
 
+    /**
+     * 迷你列表卡的「显示哪几行」与「还剩 N 门」必须同源。
+     *
+     * 旧实现里 rows 来自按 [miniListShouldListCourse] 过滤后的列表，而剩余数用的是
+     * snapshot.visibleTodayCourses.size - rows.size（TodayMiniListWidgetProvider.kt:132）
+     * —— 那份是**没过滤**的全天课表（widgetHideCompletedCourses 默认 false，:329）。
+     * 于是当天 5 节里 3 节已经上完、maxRows=2 时，卡片显示「+3 门」而实际一门都不剩，
+     * 点进去什么也没有。:856-863 那段注释当年正是把这种数字不一致当成旧 bug 的证据，
+     * 却只修了行的过滤、没修计数。
+     */
+    fun miniListLayout(
+        courses: List<TodayWidgetCourseInfo>,
+        highlighted: TodayWidgetCourseInfo?,
+        nowMinutes: Int,
+        maxRows: Int,
+    ): Pair<List<TodayWidgetCourseInfo>, Int> {
+        val ordered = mutableListOf<TodayWidgetCourseInfo>()
+        if (highlighted != null) ordered.add(highlighted)
+        for (course in courses) {
+            if (course.id == highlighted?.id) continue
+            if (miniListShouldListCourse(course.endTime, nowMinutes)) {
+                ordered.add(course)
+            }
+        }
+        val rows = ordered.take(maxRows)
+        return rows to (ordered.size - rows.size).coerceAtLeast(0)
+    }
+
     fun mediumVisibleRows(profile: TodayWidgetSizeProfile): Int {
         return when {
             profile.heightDp >= 250 -> 3

@@ -90,6 +90,7 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
                 }
             )
             val maxRows = TodayWidgetSupport.miniListVisibleRows(profile)
+            var pendingRemaining = -1
             val rows = if (isShowingTomorrow) {
                 snapshot.tomorrowCourses.take(maxRows)
             } else if (snapshot.state == "completed") {
@@ -100,19 +101,15 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
                 val nowMinutes =
                     now.get(java.util.Calendar.HOUR_OF_DAY) * 60 +
                         now.get(java.util.Calendar.MINUTE)
-                val ordered = mutableListOf<TodayWidgetCourseInfo>()
-                if (highlighted != null) ordered.add(highlighted)
-                for (c in snapshot.visibleTodayCourses) {
-                    if (c.id == highlighted?.id) continue
-                    if (TodayWidgetSupport.miniListShouldListCourse(
-                            c.endTime,
-                            nowMinutes,
-                        )
-                    ) {
-                        ordered.add(c)
-                    }
-                }
-                ordered.take(maxRows)
+                // 行与「还剩 N 门」出自同一个过滤后的列表（见 miniListLayout 的注释）。
+                val layout = TodayWidgetSupport.miniListLayout(
+                    snapshot.visibleTodayCourses,
+                    highlighted,
+                    nowMinutes,
+                    maxRows,
+                )
+                pendingRemaining = layout.second
+                layout.first
             }
             val emptyText = when {
                 rows.isNotEmpty() -> ""
@@ -129,7 +126,7 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
             val remainingCount = when {
                 isShowingTomorrow -> (snapshot.tomorrowCourses.size - rows.size).coerceAtLeast(0)
                 snapshot.state == "completed" -> 0
-                else -> (snapshot.visibleTodayCourses.size - rows.size).coerceAtLeast(0)
+                else -> pendingRemaining.coerceAtLeast(0)
             }
             views.setViewVisibility(
                 R.id.widget_mini_more,
