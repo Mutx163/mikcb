@@ -466,8 +466,17 @@ class StatisticsService {
       currentDate: hasCalendar
           ? DateTime(reference.year, reference.month, reference.day)
           : null,
+      // 与周次判定同一口径：先对齐到本周周一再数 totalWeeks 周。原先从**原始
+      // 开学日**数 `totalWeeks*7-1` 天，开学日不是周一时就比最后一个教学周的
+      // 周日多出 weekday-1 天（最多 6 天）：卡片会出现「phase 已经是 ended、
+      // 印着的结束日却还在未来」这种自相矛盾，而且与 ICS 导出（`_mondayOf`，
+      // ics_export_screen.dart:278）、传输预览（`semesterStartWeek`，
+      // unified_transfer_service.dart:942）对同一份数据算出的结束日不一致。
       semesterEndDate: hasCalendar
-          ? WeekCalculator.addDays(semesterStartDate, totalWeeks * 7 - 1)
+          ? WeekCalculator.addDays(
+              _weekStart(semesterStartDate),
+              totalWeeks * 7 - 1,
+            )
           : null,
       weeksElapsed: weeksElapsed,
       totalWeeks: totalWeeks,
