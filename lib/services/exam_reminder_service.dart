@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../domain/schedule_item_expander.dart';
 import '../logging/app_debug_log.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
@@ -172,14 +173,12 @@ class ExamReminderService {
         fromDate: fromDate,
         toDate: toDate,
       )) {
-        final key =
-            '${instance.sourceItemId}@${ScheduleItem.formatCalendarDate(instance.date)}';
-        final existing = instancesByDisplayDate[key];
-        if (existing == null ||
-            (instance.item.seriesId != null &&
-                existing.item.seriesId == null)) {
-          instancesByDisplayDate[key] = instance;
-        }
+        // 与首页展开器共用同一条去重口径（以前这里是一份独立副本）：
+        // 同一系列的两条不同例外被移到同一显示日时，两条都是真实存在、可分别
+        // 撤销的条目。副本用的是覆盖式 key，后一条被直接丢弃 —— 界面上两张卡
+        // 都在，提醒表里只有一条，被吞的那条不进 buildScheduleActiveIds，
+        // 原生对账看到"这个 id 不活跃"就把用户已经设好的闹钟取消了。
+        ScheduleItemExpander.putByDisplayDate(instancesByDisplayDate, instance);
       }
     }
     return instancesByDisplayDate;
