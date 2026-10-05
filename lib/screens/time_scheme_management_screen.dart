@@ -1144,7 +1144,7 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
                       HyperosButton(
                         label: l10n.addSectionAction,
                         variant: HyperosButtonVariant.secondary,
-                        onPressed: _sections.length >= 20 ? null : _addSection,
+                        onPressed: canAppendSection(_sections) ? _addSection : null,
                       ),
                       HyperosButton(
                         label: l10n.removeLastSectionAction,
@@ -1239,6 +1239,11 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
   }
 
   void _addSection() {
+    // 与按钮的置灰条件同源于 `canAppendSection`：入口若被别的路径（未来加个
+    // 快捷动作等）绕过按钮，也不能造出 _buildNextSection 那节 00:10 的幽灵课。
+    if (!canAppendSection(_sections)) {
+      return;
+    }
     setState(() {
       _sections.add(_buildNextSection(_sections.last));
     });
@@ -1596,6 +1601,29 @@ SectionTime _buildNextSection(SectionTime last) {
     startTime: _minutesToTime(startMinutes),
     endTime: _minutesToTime(endMinutes),
   );
+}
+
+/// 还能不能再追加一节：除了数量上限，还要看**这一天有没有余地**。
+///
+/// `_buildNextSection` 用 `_parseTimeOfDay(last.endTime)`（不带 `allowEndOfDay`）
+/// 推算下一节，于是末节是 `24:00`（本仓认可的「当天结束」，快速生成作息就会写成这样，
+/// 见 `test/models/time_scheme_quick_generate_midnight_test.dart:41-50`）时被兜底成
+/// `00:00` → 追加出一节 **00:10-00:55** 的幽灵课；节次必须递增，这张作息从此
+/// 保存不了（`validateSectionTimes` 会拒）。原先按钮只按 `_sections.length >= 20`
+/// 计数封顶，完全没有时间余量这一维。
+///
+/// 处置是**置灰**而不是弹错：与「已满 20 节」共用同一条既有语义，且仓库里没有
+/// 「没有余地追加」这类文案，为一条 UI 守卫新造六个语言的字符串不划算。
+bool canAppendSection(List<SectionTime> sections, {int maxSections = 20}) {
+  if (sections.length >= maxSections || sections.isEmpty) {
+    return false;
+  }
+  final lastEnd = ClockTime.tryParse(
+    sections.last.endTime,
+    allowEndOfDay: true,
+  );
+  // 畸形存量值不猜语义：只有确实读到「当天结束」才禁掉追加。
+  return lastEnd == null || lastEnd.totalMinutes < 24 * 60;
 }
 
 String _minutesToTime(int minutes) {
