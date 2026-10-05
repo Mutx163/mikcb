@@ -2007,6 +2007,12 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('同步后课程'), findsWidgets);
+    // 第 29 轮实跑核对过这条 skip（原先无理由）：摘掉 `skip: true` 后
+    // `flutter test test/widgets/timetable_day_view_test.dart` 12 分钟不再有任何输出
+    // （连后续用例名都不打印），只能终止进程 —— 与本仓既知的「整页 pump 日视图会挂死」
+    // 同一失效面（这条走 `provider.setCurrentWeek(2)` + `_pumpFiniteFrames` 之后
+    // 还要断言 key 与文本）。属夹具限制，不是产品缺陷；保留 skip 并写明原因，
+    // 免得下一轮再花 12 分钟重新发现一次。
   }, skip: true);
 
   testWidgets('day view summary drag follows the same in-week pager', (
