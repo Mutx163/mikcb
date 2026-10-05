@@ -117,7 +117,14 @@ void main() {
     // 前者连带摘掉该课名下的考试与作业，后者把共享字段广播给同组其它课次 —— 改的
     // 不全是用户正在编辑的那一条，落盘失败时必须一起退回（`addCourse` 仍不回滚，
     // 口径同上）。本文件只留两层委托（19 行）。
-    const baselineLines = 4716;
+    // 4716→4649：写入纪律的最后两处"会波及其它记录"的入口，同批收口（一个提交里两条
+    // 修复，判据与注释口径共用）：`_clearActiveProfileCoursesImpl`（原 :3821-3839，
+    // 清整份课程 + 全部挂课作业，影响面最大）移入 `timetable/course_repository.dart`，
+    // `updateScheduleItem`（原 :2960-2997，改系列根会连带销毁该系列全部单次覆盖行）与
+    // `deleteScheduleItem`（原 :2999-3023，整系列摘除）移入新 part 文件
+    // `timetable/schedule_item_repository.dart`。`addScheduleItem` 与 occurrence 级的
+    // 编辑/删除仍不回滚（改的就是用户这次确认的内容），理由写在两个 part 文件开头。
+    const baselineLines = 4649;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

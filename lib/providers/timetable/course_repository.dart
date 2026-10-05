@@ -115,3 +115,47 @@ Future<void> _timetableDeleteCourse(TimetableProvider host, String courseId) asy
   );
   host._updateLiveActivity();
 }
+
+/// 「清空当前课表」（原 `timetable_provider.dart:3821-3839`）—— 本族影响面最大的写入口。
+///
+/// `_courses = []` 清掉整份课表，再 `_tasks.removeWhere((task) => task.courseId != null)`
+/// 顺手摘掉所有挂在课程上的作业，然后 `await _persistActiveProfileState()`。原先没有
+/// try/catch，而调用方 `timetable_profiles_screen.dart:204-216` 也没有 try/catch：
+/// 落盘失败时既没有「已清空」也没有失败提示（用户只看到"点了没反应"），内存却是空的、
+/// 盘上还是满的，而 `_persistActiveProfileState()` 开头已经把空课程与空作业并进了
+/// `_profiles` —— 下一次任意成功写入（切周、加课、30 秒一次的 `syncTemporalContext`
+/// 心跳）会把「整份课表没了 + 全部课程作业没了」永久坐实。一次没落成功的"清空"
+/// 会延迟成真，而用户从来没第二次确认过它。
+///
+/// 考试（`_exams`）这里刻意**不**跟着清：`deleteCourse` 会连带删考试，而"清空课表"后
+/// 用户往往马上要重新导入课表，考试条目留着才可能接得上。这条差异是有意的，不动语义，
+/// 只补回滚。
+Future<bool> _timetableClearActiveProfileCourses(TimetableProvider host) async {
+  await host.initialize();
+  final clearedCourseCount = host._courses.length;
+  if (clearedCourseCount == 0) {
+    return false;
+  }
+
+  final snapshotCourses = List<Course>.from(host._courses);
+  final snapshotTasks = List<CourseTask>.from(host._tasks);
+  final snapshotProfiles = List<TimetableProfile>.from(host._profiles);
+  host._courses = [];
+  host._tasks.removeWhere((task) => task.courseId != null);
+  try {
+    await host._persistActiveProfileState();
+  } catch (_) {
+    host._courses = snapshotCourses;
+    host._tasks = snapshotTasks;
+    host._profiles = snapshotProfiles;
+    rethrow;
+  }
+  host._currentLiveCourseId = null;
+  host._notifyStateChanged();
+  host._analytics.logEventLater(
+    name: 'courses_cleared',
+    parameters: {'cleared_course_count': clearedCourseCount},
+  );
+  await host._updateLiveActivity();
+  return true;
+}

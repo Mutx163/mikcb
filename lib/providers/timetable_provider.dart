@@ -80,6 +80,7 @@ part 'timetable/time_scheme_repository.dart';
 part 'timetable/schedule_date_rule_repository.dart';
 part 'timetable/course_group_repository.dart';
 part 'timetable/course_repository.dart';
+part 'timetable/schedule_item_repository.dart';
 part 'timetable/import_export_service.dart';
 part 'timetable/live_activity_controller.dart';
 
@@ -2958,68 +2959,15 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> updateScheduleItem(ScheduleItem item) {
-    return _runMutation(() async {
-      await initialize();
-      final index = _scheduleItems.indexWhere(
-        (existing) => existing.id == item.id,
-      );
-      if (index == -1) {
-        return;
-      }
-
-      final normalizedItem = _normalizeScheduleItem(item);
-      final nextItems = List<ScheduleItem>.from(_scheduleItems);
-      final existing = nextItems[index];
-      if (existing.seriesId == null) {
-        // Updating a root item means "all occurrences". Single-occurrence
-        // overrides are intentionally discarded by this series operation.
-        nextItems.removeWhere((candidate) => candidate.seriesId == existing.id);
-      }
-      final nextIndex = nextItems.indexWhere(
-        (candidate) => candidate.id == existing.id,
-      );
-      if (nextIndex == -1) {
-        return;
-      }
-      nextItems[nextIndex] = normalizedItem;
-      _scheduleItems = _sortScheduleItems(nextItems);
-      await _persistActiveProfileState();
-      notifyListeners();
-      _analytics.logEventLater(
-        name: 'schedule_item_updated',
-        parameters: {
-          'has_location': normalizedItem.location?.isNotEmpty == true ? 1 : 0,
-          'has_note': normalizedItem.note?.isNotEmpty == true ? 1 : 0,
-        },
-      );
-      unawaited(_syncExamReminders());
-    });
+    // 实现与落盘失败回滚见 `timetable/schedule_item_repository.dart`：改系列根会
+    // 连带摘掉该系列的全部单次覆盖行，失败时那些必须一起退回。
+    return _runMutation(() => _timetableUpdateScheduleItem(this, item));
   }
 
   Future<void> deleteScheduleItem(String itemId) {
-    return _runMutation(() async {
-      await initialize();
-      final target = _findScheduleItem(itemId);
-      if (target == null) {
-        return;
-      }
-      final seriesId = target.seriesId ?? target.id;
-      final previousCount = _scheduleItems.length;
-      _scheduleItems = _scheduleItems
-          .where((item) => item.id != seriesId && item.seriesId != seriesId)
-          .toList(growable: false);
-      if (_scheduleItems.length == previousCount) {
-        return;
-      }
-
-      await _persistActiveProfileState();
-      notifyListeners();
-      _analytics.logEventLater(
-        name: 'schedule_item_deleted',
-        parameters: {'remaining_schedule_item_count': _scheduleItems.length},
-      );
-      unawaited(_syncExamReminders());
-    });
+    // 实现与落盘失败回滚见 `timetable/schedule_item_repository.dart`：这里按
+    // `seriesId ?? id` 整系列摘除，落盘失败就一行都不该少。
+    return _runMutation(() => _timetableDeleteScheduleItem(this, itemId));
   }
 
   /// Deletes one occurrence while leaving the rest of its series intact.
@@ -3818,25 +3766,10 @@ class TimetableProvider with ChangeNotifier {
     return _runMutation(_clearActiveProfileCoursesImpl);
   }
 
-  Future<bool> _clearActiveProfileCoursesImpl() async {
-    await initialize();
-    final clearedCourseCount = _courses.length;
-    if (clearedCourseCount == 0) {
-      return false;
-    }
-
-    _courses = [];
-    _tasks.removeWhere((task) => task.courseId != null);
-    await _persistActiveProfileState();
-    _currentLiveCourseId = null;
-    notifyListeners();
-    _analytics.logEventLater(
-      name: 'courses_cleared',
-      parameters: {'cleared_course_count': clearedCourseCount},
-    );
-    await _updateLiveActivity();
-    return true;
-  }
+  Future<bool> _clearActiveProfileCoursesImpl() =>
+      // 实现与落盘失败回滚见 `timetable/course_repository.dart`：这里一次清掉整份
+      // 课程列表与所有挂在课程上的作业，落盘失败必须整体退回。
+      _timetableClearActiveProfileCourses(this);
 
   /// Persists home view mode / last viewed day without the full settings
   /// pipeline: no notifyListeners (the home State owns this UI state locally),
