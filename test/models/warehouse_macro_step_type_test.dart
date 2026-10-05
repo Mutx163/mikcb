@@ -72,4 +72,55 @@ void main() {
       MacroStepType.click,
     ]);
   });
+
+  group('parseWarehouseMacroStepsWithDiagnostics 报告丢没丢', () {
+    test('认不出的类型计入丢弃条数，其余照常返回', () {
+      final parsed = parseWarehouseMacroStepsWithDiagnostics(<dynamic>[
+        stepJson('click'),
+        stepJson('waitForPageTitle'),
+        stepJson('navigate'),
+      ]);
+      expect(parsed.steps.map((step) => step.type), [
+        MacroStepType.click,
+        MacroStepType.navigate,
+      ]);
+      expect(parsed.droppedStepCount, 1);
+    });
+
+    test('敏感填充是被「转换」不是被丢弃：计数为 0，脱敏回写照常能落盘', () {
+      final parsed = parseWarehouseMacroStepsWithDiagnostics(<dynamic>[
+        <String, dynamic>{
+          'type': 'fillField',
+          'fieldType': 'password',
+          'selector': '#password',
+          'value': 'secret',
+        },
+      ]);
+      expect(parsed.steps.single.type, MacroStepType.waitForManualInput);
+      expect(parsed.droppedStepCount, 0);
+    });
+
+    test('非 Map 条目与坏字段类型都计入丢弃，坏 list 本身不算丢步骤', () {
+      expect(
+        parseWarehouseMacroStepsWithDiagnostics(<dynamic>['oops'])
+            .droppedStepCount,
+        1,
+      );
+      expect(
+        parseWarehouseMacroStepsWithDiagnostics(<dynamic>[
+          <String, dynamic>{'type': 'click', 'waitMs': '1000'},
+        ]).droppedStepCount,
+        1,
+      );
+      expect(
+        parseWarehouseMacroStepsWithDiagnostics('not a list').steps,
+        isEmpty,
+      );
+      expect(
+        parseWarehouseMacroStepsWithDiagnostics('not a list').droppedStepCount,
+        0,
+      );
+      expect(parseWarehouseMacroStepsWithDiagnostics(null).steps, isEmpty);
+    });
+  });
 }

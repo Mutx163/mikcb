@@ -262,23 +262,7 @@ class WarehouseMacroRecord {
           json['schoolId'] as String? ??
           '',
       adapterAssetJsPath: json['adapterAssetJsPath'] as String? ?? '',
-      steps: (() {
-        final rawSteps = json['steps'] is List
-            ? json['steps'] as List<dynamic>
-            : const <dynamic>[];
-        final out = <MacroStep>[];
-        for (final s in rawSteps) {
-          try {
-            if (s is! Map) {
-              continue;
-            }
-            out.add(MacroStep.fromJson(Map<String, dynamic>.from(s)));
-          } catch (_) {
-            continue;
-          }
-        }
-        return out;
-      })(),
+      steps: parseWarehouseMacroStepsWithDiagnostics(json['steps']).steps,
       dialogResponses: (() {
         final raw = json['dialogResponses'];
         if (raw is Map) {
@@ -351,6 +335,87 @@ class WarehouseMacroRecord {
   static const String indexKey = 'warehouse_macro_record_index';
 }
 
+/// 解析宏记录里的步骤列表（带丢弃计数）。
+///
+/// 坏条目整条丢弃是本仓库既有的口径（`s is! Map → continue`、`catch (_) → continue`），
+/// 但调用方必须知道**丢没丢**：`WarehouseMacroService.getMacro` 会在读路径上把
+/// 重新编码的结果写回磁盘（目的是顺手洗掉旧记录里存过的密码）。它原先无从分辨
+/// 「只是脱敏」和「真的丢了步骤」，于是用户录的宏少几步会被当成脱敏结果永久存盘 ——
+/// 仅仅是打开一次宏列表就会触发，升级 App 也回不来。
+({List<MacroStep> steps, int droppedStepCount})
+    parseWarehouseMacroStepsWithDiagnostics(Object? rawStepsJson) {
+  final rawSteps = rawStepsJson is List ? rawStepsJson : const <dynamic>[];
+  final out = <MacroStep>[];
+  var dropped = 0;
+  for (final s in rawSteps) {
+    try {
+      if (s is! Map) {
+        dropped++;
+        continue;
+      }
+      out.add(MacroStep.fromJson(Map<String, dynamic>.from(s)));
+    } catch (_) {
+      dropped++;
+    }
+  }
+  return (steps: out, droppedStepCount: dropped);
+}
+
+/// 一次性/会话类参数名。精确名单之外还要有子串口径：PHP 的 `PHPSESSID`、
+/// ASP.NET 的 `ASP.NET_SessionId` 才是这些教务站真正会发的名字，精确名单里
+/// 一个都没有（2026-10-02 的随机属性测试抓到）。
+const warehouseVolatileUrlParamKeys = <String>{
+  'jsessionid',
+  'jsessionId',
+  'JSESSIONID',
+  'ticket',
+  'token',
+  'access_token',
+  'refresh_token',
+  'state',
+  'nonce',
+  'timestamp',
+  'ts',
+  't',
+  'random',
+  'rnd',
+  'sid',
+  'sessionid',
+  'sessionId',
+};
+
+/// 某个 URL 参数名是不是「换一次会话就失效、而且可能是凭据」的那一类。
+///
+/// query 和 fragment 共用这一份判据，避免两边口径又分叉。密码类键名补进来是
+/// 有意的扩围：这条函数存在的目的就是把不该被存进宏、导进云同步、写进日志的
+/// 值摘掉，`?password=` 与 `?token=` 在这里是同一件事。
+bool isWarehouseVolatileUrlParamKey(String key) {
+  if (warehouseVolatileUrlParamKeys.contains(key)) return true;
+  final lowerKey = key.toLowerCase();
+  if (warehouseVolatileUrlParamKeys.contains(lowerKey)) return true;
+  return lowerKey.contains('token') ||
+      lowerKey.contains('ticket') ||
+      lowerKey.contains('jsession') ||
+      lowerKey.contains('sess') ||
+      lowerKey.contains('pwd') ||
+      lowerKey.contains('passwd') ||
+      lowerKey.contains('password');
+}
+
+/// fragment 里有没有夹带会话/凭据参数（OAuth 回调风格的 `#access_token=…`）。
+///
+/// 只要出现一个命中判据的键名，就整个 fragment 都不要了：那种 fragment 本身就是
+/// 一次性回调载荷，留着半截也没意义。纯路由（`#/schedule/semester`）不受影响。
+bool warehouseFragmentCarriesVolatileParam(String fragment) {
+  for (final match
+      in RegExp(r'(?:^|[?&#;/])\s*([A-Za-z_][A-Za-z0-9_.\-]*)\s*=').allMatches(
+        fragment,
+      )) {
+    if (isWarehouseVolatileUrlParamKey(match.group(1) ?? '')) return true;
+  }
+  return false;
+}
+
 /// Strips one-time / session query params so a saved script page URL can be
 /// reused across sessions. Returns null when the URL is not a usable absolute
 /// http(s) location.
@@ -367,39 +432,9 @@ String? sanitizeWarehouseScriptPageUrl(String? rawUrl) {
     return null;
   }
 
-  const volatileQueryKeys = <String>{
-    'jsessionid',
-    'jsessionId',
-    'JSESSIONID',
-    'ticket',
-    'token',
-    'access_token',
-    'refresh_token',
-    'state',
-    'nonce',
-    'timestamp',
-    'ts',
-    't',
-    'random',
-    'rnd',
-    'sid',
-    'sessionid',
-    'sessionId',
-  };
-
   final keptQueryParameters = <String, String>{};
   uri.queryParameters.forEach((key, value) {
-    final lowerKey = key.toLowerCase();
-    // 光靠精确名单会漏掉**带前缀**的会话参数：PHP 的 `PHPSESSID`、ASP.NET 的
-    // `ASP.NET_SessionId` 才是这些教务站真正会发的名字，精确名单里一个都没有
-    // （2026-10-02 的随机属性测试抓到）。本函数对 token/ticket/jsession 已经在用
-    // 子串口径，这里把同样的口径扩到 'sess'。
-    if (volatileQueryKeys.contains(key) ||
-        volatileQueryKeys.contains(lowerKey) ||
-        lowerKey.contains('token') ||
-        lowerKey.contains('ticket') ||
-        lowerKey.contains('jsession') ||
-        lowerKey.contains('sess')) {
+    if (isWarehouseVolatileUrlParamKey(key)) {
       return;
     }
     keptQueryParameters[key] = value;
@@ -421,12 +456,23 @@ String? sanitizeWarehouseScriptPageUrl(String? rawUrl) {
     return null;
   }
 
+  // hash 路由的教务站（Vue/React SPA：`#/schedule/semester`）把目标页整个写在
+  // fragment 里。原来重建 Uri 时没带 fragment，这一截被无声丢掉：保存的
+  // scriptPageUrl、加速回放要导航的入口、以及导入日志里的地址都退化成站点外壳
+  // 的默认页，后续选择器自然找不到。fragment 也可能夹一次性回调凭据，所以按与
+  // query 同一份键名判据检查，命中就整段丢。
+  final keptFragment = uri.fragment.isNotEmpty &&
+          !warehouseFragmentCarriesVolatileParam(uri.fragment)
+      ? uri.fragment
+      : null;
+
   return Uri(
     scheme: uri.scheme,
     host: cleanedHost,
     port: uri.hasPort ? uri.port : null,
     path: cleanedPath.isEmpty ? '/' : cleanedPath,
     queryParameters: keptQueryParameters.isEmpty ? null : keptQueryParameters,
+    fragment: keptFragment,
   ).toString();
 }
 

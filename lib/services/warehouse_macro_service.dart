@@ -38,7 +38,15 @@ class WarehouseMacroService {
       );
       final sanitizedRaw = jsonEncode(record.toJson());
       if (sanitizedRaw != raw) {
-        await prefs.setString(key, sanitizedRaw);
+        // 这条读路径的回写只为**脱敏**（旧记录里存过密码之类），不能顺手把结构
+        // 改动也落盘：一旦解析真的丢过步骤，写回去就等于把「用户录的宏少了几步」
+        // 永久存下来 —— 打开一次宏列表就会触发，升级 App 也恢复不回来。
+        final droppedStepCount =
+            parseWarehouseMacroStepsWithDiagnostics(decoded['steps'])
+                .droppedStepCount;
+        if (droppedStepCount == 0) {
+          await prefs.setString(key, sanitizedRaw);
+        }
       }
       return record;
     } catch (_) {
