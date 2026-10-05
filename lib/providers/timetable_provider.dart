@@ -4219,29 +4219,6 @@ class TimetableProvider with ChangeNotifier {
         left.day == right.day;
   }
 
-  List<ScheduleItem> _sortScheduleItems(List<ScheduleItem> source) {
-    source.sort((left, right) {
-      final dateCompare = left.startDate.compareTo(right.startDate);
-      if (dateCompare != 0) {
-        return dateCompare;
-      }
-      // 钟点一律按分钟数比（`domain/clock_order.dart`）：`ScheduleItem.fromJson`
-      // （models/schedule_item.dart:226）原样收下外来存档里的 `9:00`，而
-      // `_normalizeScheduleItem`（:4098-4120）只 trim 文本、归一日期，**不碰钟点**，
-      // 所以字符串序（'10:00' < '9:00'）会把同一天两条日程排反。
-      final startCompare = compareClockText(left.startTime, right.startTime);
-      if (startCompare != 0) {
-        return startCompare;
-      }
-      final endCompare = compareClockText(left.endTime, right.endTime);
-      if (endCompare != 0) {
-        return endCompare;
-      }
-      return left.id.compareTo(right.id);
-    });
-    return source;
-  }
-
   int _calculateWeekForDate(DateTime date, {int? fallbackWeek}) {
     return WeekCalculator.weekForDate(
       date,

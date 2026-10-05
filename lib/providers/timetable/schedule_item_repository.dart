@@ -1,5 +1,40 @@
 part of '../timetable_provider.dart';
 
+/// 日程列表的**存量顺序**（写入口与读盘装配都会经过它）。
+///
+/// 从 `TimetableProvider` 挪进本 part 文件有两个理由：一是行数棘轮要求那个
+/// 上帝类只减不增（见 `test/architecture/dependency_guards_test.dart`）；
+/// 二是这条排序规则本来就和下面两个写入口是同一族。
+///
+/// `compareClockText` 的 import 挂在父文件上：part 文件里不允许写任何指令
+/// （`The part-of directive must be the only directive in a part`），
+/// 库级导入只能由父文件提供。
+///
+/// 钟点一律按分钟数比（`domain/clock_order.dart` 的正源）：
+/// `ScheduleItem.fromJson`（models/schedule_item.dart:226）原样收下外来存档里的
+/// `9:00`，而 `_normalizeScheduleItem` 只 trim 文本、归一日期，**不碰钟点**，
+/// 所以字典序（'10:00' < '9:00'）会把同一天的两条日程排反。钉它的用例是
+/// `test/domain/clock_order_sort_sites_test.dart`（含"重开存档后仍然有序"那条，
+/// 证明外来钟点确实能进库并参与排序）。
+List<ScheduleItem> _sortScheduleItems(List<ScheduleItem> source) {
+  source.sort((left, right) {
+    final dateCompare = left.startDate.compareTo(right.startDate);
+    if (dateCompare != 0) {
+      return dateCompare;
+    }
+    final startCompare = compareClockText(left.startTime, right.startTime);
+    if (startCompare != 0) {
+      return startCompare;
+    }
+    final endCompare = compareClockText(left.endTime, right.endTime);
+    if (endCompare != 0) {
+      return endCompare;
+    }
+    return left.id.compareTo(right.id);
+  });
+  return source;
+}
+
 /// 安排事项（日程）族里"一次动多行"的两个写入口。
 ///
 /// 判据与本族其它批一致（见 `course_group_repository.dart` 开头）：**内存里被改掉的
@@ -44,7 +79,7 @@ Future<void> _timetableUpdateScheduleItem(
   nextItems[nextIndex] = normalizedItem;
   final snapshotItems = List<ScheduleItem>.from(host._scheduleItems);
   final snapshotProfiles = List<TimetableProfile>.from(host._profiles);
-  host._scheduleItems = host._sortScheduleItems(nextItems);
+  host._scheduleItems = _sortScheduleItems(nextItems);
   try {
     await host._persistActiveProfileState();
   } catch (_) {

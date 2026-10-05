@@ -124,7 +124,12 @@ void main() {
     // `deleteScheduleItem`（原 :2999-3023，整系列摘除）移入新 part 文件
     // `timetable/schedule_item_repository.dart`。`addScheduleItem` 与 occurrence 级的
     // 编辑/删除仍不回滚（改的就是用户这次确认的内容），理由写在两个 part 文件开头。
-    const baselineLines = 4649;
+    // 4649→4631：钟点排序规则收口时顺手做的正当瘦身 —— `_sortScheduleItems`
+    // 从类成员改成 `timetable/schedule_item_repository.dart` 里的库级私有函数
+    // （同一个 library，调用点不用改写法；日程的存量顺序本来就和那两个写入口同族）。
+    // 起因是这条修复本身让父文件从 4649 涨到 4654、把棘轮判红：正确做法不是抬高基线，
+    // 而是把新写的规则放回它该在的分片里。
+    const baselineLines = 4631;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
