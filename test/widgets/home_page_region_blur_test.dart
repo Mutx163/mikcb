@@ -448,7 +448,9 @@ void main() {
       //   ⚠️ 2026-09-21 之后，这条"下边偏移 = 0"要读成"**形状底边落在可见带底**"：
       //   盒子被撑高了采样余量，偏移里就带着那一截（见下面那条断言）。
       final dflt = await bandGlassPositioned(tester);
-      expect(dflt.top, -8.0);
+      // 上边外溢 = 作用带 + 1（出厂作用带 11 ⇒ 12；2026-10-05 之前是 7 ⇒ 8）。
+      // 别写死数字：作用带一改这里就得跟着改，而它只要求"盖过作用带"这一条。
+      expect(dflt.top, -(LiquidGlassTuning.defaultRefractionBand + 1));
       // 盒子被撑高了采样余量（[homePageChromeGlassCaptureMargin]），填充层要把那一截
       // 补回来 ⇒ 下边偏移**等于余量**（形状底边因此仍落在可见带底，不往外画）。
       expect(

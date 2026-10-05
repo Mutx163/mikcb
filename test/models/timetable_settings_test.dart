@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/models/course_glass_tuning.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
@@ -548,6 +549,29 @@ void main() {
     expect(legacy.liquidGlassTuningDark, isNull);
     expect(legacy.linkLiquidGlassTuning, isTrue);
     expect(legacy.darkGlassBoostEnabled, isTrue);
+  });
+
+  test('课程卡片那套档位 survive json round trip', () {
+    // 2026-10-05 加的 `courseCardGlassPreset`：卡片那页也摆档位胶囊之后，档名
+    // 成了独立存档字段。落盘格式的错是静默的 —— 漏一个就是「选了档、重启回标准」。
+    final settings = TimetableSettings.defaults().copyWith(
+      courseCardGlassPreset: LiquidGlassPreset.dense,
+      courseCardGlassTuning: CourseGlassTuning.presetDense,
+    );
+    final restored = TimetableSettings.fromJson(settings.toJson());
+    expect(restored.courseCardGlassPreset, LiquidGlassPreset.dense);
+    expect(restored.courseCardGlassTuning, CourseGlassTuning.presetDense);
+
+    // 老档案缺键 → 标准档（不能是 custom：那会让「从没调过」显示成自定义）。
+    final legacy = TimetableSettings.fromJson(<String, dynamic>{});
+    expect(legacy.courseCardGlassPreset, LiquidGlassPreset.standard);
+    // 存了「自定义」也必须原样读回来 —— 这是不反推档位的全部理由。
+    final custom = TimetableSettings.fromJson(
+      TimetableSettings.defaults()
+          .copyWith(courseCardGlassPreset: LiquidGlassPreset.custom)
+          .toJson(),
+    );
+    expect(custom.courseCardGlassPreset, LiquidGlassPreset.custom);
   });
 
   test('成对字段随 frostedAppearance 一起交给渲染层', () {

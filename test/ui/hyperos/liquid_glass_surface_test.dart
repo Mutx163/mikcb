@@ -80,13 +80,13 @@ void main() {
       final at2 = style.scaledLengths(2);
       expect(at2.radius, 24);
       expect(at2.refract, 16);
-      expect(at2.band, 14);
+      expect(at2.band, 22);
       expect(at2.rimWidth, 3);
       // dpr 为 1 时换算必须是恒等，否则桌面/低密度设备上玻璃会整体缩水。
       final at1 = style.scaledLengths(1);
       expect(at1.radius, 12);
       expect(at1.refract, 8);
-      expect(at1.band, 7);
+      expect(at1.band, 11);
       expect(at1.rimWidth, 1.5);
       // 祖先缩放（入场变形动画）也要一起乘：着色器里的坐标是屏幕物理像素，表面被
       // 缩放时它在屏幕上占的范围也缩了，长度不跟着缩就会出现「形状满尺寸、面板
@@ -94,7 +94,7 @@ void main() {
       final shrunk = style.scaledLengths(2, scale: 0.25);
       expect(shrunk.radius, 6);
       expect(shrunk.refract, 4);
-      expect(shrunk.band, 3.5);
+      expect(shrunk.band, 5.5);
       expect(shrunk.rimWidth, 0.75);
     });
 

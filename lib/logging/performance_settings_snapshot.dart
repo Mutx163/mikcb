@@ -154,6 +154,9 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
     'ccTuningSource': appearance.courseCardGlassTuning == null
         ? 'builtin'
         : 'custom',
+    // 卡片自己的档位（2026-10-05）。和上面 `lgPreset` 一样必须报：档名与旋钮
+    // 对不上时（「胶囊亮着标准、滑杆停在自定义」），只有这两行能定位。
+    'ccPreset': s.courseCardGlassPreset.name,
     'ccRefraction': card.refraction,
     'ccRefractionBand': card.refractionBand,
     'ccRefractionEdgePow': card.refractionEdgePow,

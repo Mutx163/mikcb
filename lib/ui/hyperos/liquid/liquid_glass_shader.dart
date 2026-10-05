@@ -34,9 +34,9 @@ class LiquidGlassStyle {
   const LiquidGlassStyle({
     required this.borderRadius,
     required this.tint,
-    this.blurSigma = 15,
+    this.blurSigma = 5,
     this.refraction = 8,
-    this.refractionBand = 7,
+    this.refractionBand = 11,
     this.refractionEdgePow = 2.5,
     this.dispersion = 0,
     this.rimStrength = 0.2,

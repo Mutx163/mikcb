@@ -82,6 +82,62 @@ void main() {
         expect(ladder[i].tintAlpha, greaterThan(ladder[i - 1].tintAlpha));
       }
     });
+
+    test('2026-10-05 用户钉的那几个值不许被顺手改掉', () {
+      // 这条钉的是**产品口径**本身：标准档 = 折射 8 / 作用带 11 / 模糊 5 /
+      // 染色 20%，清澈档的染色与模糊都归零。当时是口头拍板，没有别处留档，
+      // 将来谁"看着不顺眼"调一下，这里会红。
+      const std = LiquidGlassTuning.presetStandard;
+      expect(std.refraction, 8);
+      expect(std.refractionBand, 11);
+      expect(std.blurSigma, 5);
+      expect(std.tintAlpha, 0.20);
+
+      const clear = LiquidGlassTuning.presetClear;
+      expect(clear.blurSigma, 0);
+      expect(clear.tintAlpha, 0);
+
+      // 「清澈」的 0 是**有效取值**不是"没配"：反推仍要认得出它就是清澈档。
+      expect(LiquidGlassTuning.matchPreset(clear), LiquidGlassPreset.clear);
+    });
+
+    test('每档每一项都落在自己那根滑杆的格点上', () {
+      // 预设值必须是用户拖得到、也看得见的数，否则会出现「档位写着模糊 5，切到
+      // 自定义却停在 4」这种对不上的半失效状态。格点数见设置页 `_glassSliderTiles`
+      // 的 `divisions`（折射 40 / 作用带 46 / 陡缓 20 / 色散 20 / 边光 20 /
+      // 边光带 30 / 模糊 整数 / 染色 20）。
+      void onGrid(double value, double min, double max, int divisions) {
+        final step = (max - min) / divisions;
+        final steps = (value - min) / step;
+        expect(
+          (steps - steps.round()).abs(),
+          lessThan(1e-9),
+          reason: '$value 不是 $min~$max 分 $divisions 格上的点',
+        );
+      }
+
+      for (final preset in LiquidGlassPresetX.builtIns) {
+        final t = preset.recommendedTuning;
+        onGrid(t.refraction, 0, LiquidGlassTuning.maxRefraction, 40);
+        onGrid(
+          t.refractionBand,
+          LiquidGlassTuning.minRefractionBand,
+          LiquidGlassTuning.maxRefractionBand,
+          46,
+        );
+        onGrid(
+          t.refractionEdgePow,
+          LiquidGlassTuning.minRefractionEdgePow,
+          LiquidGlassTuning.maxRefractionEdgePow,
+          20,
+        );
+        onGrid(t.dispersion, 0, 1, 20);
+        onGrid(t.rimStrength, 0, 1, 20);
+        onGrid(t.rimWidth, 0, LiquidGlassTuning.maxRimWidth, 30);
+        onGrid(t.blurSigma, 0, LiquidGlassTuning.maxBlurSigma, 40);
+        onGrid(t.tintAlpha, 0, 1, 20);
+      }
+    });
   });
 
   group('LiquidGlassTuning 默认值', () {
@@ -208,7 +264,7 @@ void main() {
       expect(style.rimStrength, 0.3);
       expect(style.rimWidth, 2.5);
       expect(style.blurSigma, 18);
-      expect(style.tint, Colors.white.withValues(alpha: 0.70));
+      expect(style.tint, Colors.white.withValues(alpha: 0.20));
     });
 
     test('深色下底色收 15%，与液态玻璃同口径', () {

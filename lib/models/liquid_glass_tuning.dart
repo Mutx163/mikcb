@@ -2,23 +2,24 @@ import 'package:flutter/material.dart';
 
 import '../ui/hyperos/liquid/liquid_glass_shader.dart';
 
-/// 全局「液态玻璃」的观感档位。
+/// 「液态玻璃」的观感档位。**全局与课程卡片共用同一套**（2026-10-05：卡片那页也
+/// 摆出这排胶囊，两边推荐值引的是同一批常量，所以不可能漂）。
 ///
 /// 与旧的渐进模糊预设体系同构（那一套 2026-09-23 已随子页顶栏锁定删除）：前四档是内置观感，
 /// [custom] 保留用户自己拖出来的参数。档位名沿用同一套「清透 → 轻盈 → 标准 →
 /// 厚重」阶梯，用户在三套高级材质之间迁移时不用重新学。
 enum LiquidGlassPreset {
-  /// 最薄：折射浅、作用带窄、几乎不染色。
+  /// 最薄（清澈）：折射浅、作用带窄，**染色与模糊都归零** —— 背景一块都不挡。
   clear,
 
-  /// 偏薄：仍明显透出背景。
+  /// 偏薄（轻雾）：清透与标准之间那一格。
   light,
 
-  /// 标准档 —— **必须逐字段等于课程卡片液态玻璃档的默认值**，见
+  /// 标准档 —— **必须逐字段等于课程卡片标准档的默认值**，见
   /// [LiquidGlassTuning.defaults] 的说明。
   standard,
 
-  /// 最厚：折射深、作用带宽、底色更实。
+  /// 最厚（浓密）：折射深、作用带宽、底色更实。
   dense,
 
   /// 用户自己拖出来的参数。
@@ -61,15 +62,15 @@ extension LiquidGlassPresetX on LiquidGlassPreset {
 
 /// 用户可调的液态玻璃参数（逻辑像素口径）。
 ///
-/// 只有 [LiquidGlassTuning.defaults] 这一档的折射旋钮**逐字段等于**
-/// `CourseGlassStyle` 的默认值（折射 8 / 作用带 7 / 陡缓 2.5 / 高光 0.2 /
-/// 高光带 1.5）：全局液态玻璃与课程卡片液态玻璃是两条独立链路（卡片不受全局档位
-/// 约束），但出厂观感必须一样，否则用户会在两个页面看到两种玻璃。
+/// 本类的 [defaults] 就是**标准档**，课程卡片那份出厂档**逐字段等于**它
+/// （折射 8 / 作用带 11 / 陡缓 2.5 / 高光 0.2 / 高光带 1.5 / 模糊 5 / 染色 20%）。
+/// 两者是两条独立链路（卡片不跟随全局档位，见 `CourseGlassTuning`），但**出厂观感
+/// 必须一样**，否则用户会在两个页面看到两种玻璃 —— 2026-10-05 起这条不再靠两处
+/// 人肉同步维持：卡片那份的出厂值直接引用本类的常量，四档预设也直接引用下面这四个。
 ///
-/// 模糊量与底色深浅没有卡片对应项（卡片吃的是预先糊好的位图、染的是课程色），
-/// 因此取的是**现有磨砂面板**已经调好的那两个值（sigma 15 / alpha 0.70）：
-/// 从「高斯模糊」切到「液态玻璃」时，只该多出边缘折射与受光高光，不该顺带
-/// 把整块面板的奶白程度也换掉。
+/// 模糊量与底色深浅的**语义**两边不同（全局染「玻璃底色白」、卡片染「课程色」），
+/// 但取值口径已统一（2026-10-05 用户拍板：「卡片完全跟通用一样」）。注意卡片那份
+/// 的模糊只喂它那张预糊位图、逐帧的光照配方对它不生效（见 `CourseGlassTuning`）。
 ///
 /// 这些参数由 `TimetableSettings` 持久化，并在渲染期经 [toStyle] 合成
 /// [LiquidGlassStyle]。**表面自己不得再传折射参数**：全 app 只此一套，历史上
@@ -89,43 +90,69 @@ class LiquidGlassTuning {
 
   static const defaults = LiquidGlassTuning();
 
-  /// 标准档（同 [defaults]）。
+  // ── 四档阶梯怎么排的（2026-10-05）──────────────────────────────────────────
+  //
+  // 用户只钉了**两端**：清澈的染色与模糊都归 0，标准是折射 8 / 作用带 11 /
+  // 模糊 5 / 染色 20%。剩下两格按「同一个旋钮上取两端的中点」补齐，而不是各写
+  // 一个看起来好看的数：
+  //
+  //   presetClear  = 标准 **减去**一整格（折射 8→6、作用带 11→8……）
+  //   presetLight  = 清澈与标准之间各让一半
+  //   presetDense  = 标准 **加上**一整格（作用带 11→15、模糊 5→12……）
+  //
+  // 这样排的结果是「厚度感」那几个旋钮全部单调递增（测试
+  // `test/models/liquid_glass_tuning_test.dart` 的「四档的厚度感单调递增」钉的就是
+  // 它）：用户一路往右点，玻璃只会**越来越厚**，不会出现某一项反而变薄。
+  //
+  // 陡缓 refractionEdgePow 反着走（越薄越陡）—— 位移集中在最外圈，薄的玻璃若还
+  // 铺满整条作用带就看不出"边"了。
+  //
+  // 每一项都落在**自己那根滑杆的格点**上（区间见本类下方，分格数见
+  // `settings_appearance_editor.dart` 的 `_glassSliderTiles`）：预设值必须是用户拖得
+  // 到、也看得见的数，否则会出现「档位写着模糊 5，切到自定义却停在 4」这种对不上
+  // 的半失效状态。
+  //
+  // ⚠️ 课程卡片那四档**不是**另抄一份数，而是直接引用下面这四个（见
+  // `course_glass_tuning.dart` 的 `presetClear` 等），所以两边不可能漂。
+
+  /// 标准档（同 [defaults]）：**整条阶梯的基准**。
   static const presetStandard = defaults;
 
-  /// 偏薄档：只把三个「厚度感」旋钮往薄里调，高光与染色同步收一点。
+  /// 清澈档（最薄）：染色与模糊都归零，只剩边缘折射、色散与边光。
   static const presetClear = LiquidGlassTuning(
     refraction: 6,
-    refractionBand: 6,
-    refractionEdgePow: 3,
-    dispersion: 0.25,
-    rimStrength: 0.14,
-    rimWidth: 1.1,
-    blurSigma: 8,
-    tintAlpha: 0.35,
+    refractionBand: 8,
+    refractionEdgePow: 3.25,
+    dispersion: 0.15,
+    rimStrength: 0.1,
+    rimWidth: 1.2,
+    // 0 是**有效**取值，不是"没配"：背景一块都不挡，整块玻璃只剩边缘在动。
+    blurSigma: 0,
+    tintAlpha: 0,
   );
 
-  /// 轻盈档。
+  /// 轻雾档：清透与标准之间那一格。
   static const presetLight = LiquidGlassTuning(
     refraction: 7,
-    refractionBand: 6.5,
-    refractionEdgePow: 2.7,
-    dispersion: 0.3,
-    rimStrength: 0.17,
+    refractionBand: 9.5,
+    refractionEdgePow: 2.75,
+    dispersion: 0.25,
+    rimStrength: 0.15,
     rimWidth: 1.3,
-    blurSigma: 12,
-    tintAlpha: 0.55,
+    blurSigma: 2,
+    tintAlpha: 0.1,
   );
 
-  /// 厚重档。
+  /// 浓密档：标准之上那一格。
   static const presetDense = LiquidGlassTuning(
     refraction: 11,
-    refractionBand: 9,
-    refractionEdgePow: 2.2,
+    refractionBand: 15,
+    refractionEdgePow: 2.25,
     dispersion: 0.5,
-    rimStrength: 0.26,
+    rimStrength: 0.25,
     rimWidth: 2,
-    blurSigma: 22,
-    tintAlpha: 0.85,
+    blurSigma: 12,
+    tintAlpha: 0.4,
   );
 
   /// 反推 [tuning] 属于哪一档；都不匹配时返回 [LiquidGlassPreset.custom]。
@@ -138,10 +165,17 @@ class LiquidGlassTuning {
     return LiquidGlassPreset.custom;
   }
 
-  // --- 默认值 ---
+  // --- 默认值（即标准档）---
   // 前五项必须与 CourseGlassStyle 的默认值一致（有测试断言）。
   static const double defaultRefraction = 8;
-  static const double defaultRefractionBand = 7;
+  // 作用带 7 → 11（2026-10-05 用户拍板，与折射 8 一起给的两项）。
+  //
+  // 作用带是**绝对值**（逻辑 px），不随表面大小缩放，所以它同时是"边有多宽"的
+  // 观感参数和"要外溢多少才采得到背景"的布局参数：首页顶栏玻璃带上边按
+  // `max(作用带, 边光带) + 1` 外溢（`homePageChromeGlassVerticalOverhang`），
+  // 窄件另有一道按短边封顶折射位移的适配（`narrowSurfaceMaxRefraction`）。
+  // 7 → 11 之后前者自动跟着涨，不用在这里额外改任何布局常量。
+  static const double defaultRefractionBand = 11;
   static const double defaultRefractionEdgePow = 2.5;
   // 边缘高光：宽度 1.5 逻辑 px（≈ 4.5 物理 px）、强度 0.2。
   //
@@ -157,10 +191,19 @@ class LiquidGlassTuning {
   //      在抗锯齿那一圈"。强度随宽度回调（0.28 → 0.2），峰值亮度降下来。
   static const double defaultRimStrength = 0.2;
   static const double defaultRimWidth = 1.5;
-  // 后两项对齐现有磨砂面板的默认值（kDefaultFrostedSheetBlurSigma /
-  // kDefaultFrostedSheetTintAlpha），理由见类注释。
-  static const double defaultBlurSigma = 15;
-  static const double defaultTintAlpha = 0.70;
+  // 模糊 15 → 5、染色 0.70 → 0.20（2026-10-05 用户拍板，与折射/作用带一起给的）。
+  //
+  // 这两个数原来是**对齐旧磨砂面板**的取值（kDefaultFrostedSheetBlurSigma /
+  // kDefaultFrostedSheetTintAlpha），理由是「从高斯模糊切到液态玻璃时只该多出边缘
+  // 折射与受光高光」。现在口径反过来了：液态玻璃要的是**看得见背景在边缘被掰弯**，
+  // 15 的模糊 + 70% 的白底正好把折射和高光一起盖掉（所以那档的卖点一直读不出来），
+  // 于是往「清澈」那一头收。清澈档的 0 / 0 是这条线的另一端 —— 见上面的阶梯说明。
+  //
+  // ⚠️ 改这两个数会**同时**改课程卡片的出厂档（那边直接引用本类的默认值，见
+  // `CourseGlassTuning.defaultBlurSigma` / `defaultTintAlpha`）。这是有意的：
+  // 用户要的是两个页面同一种玻璃。
+  static const double defaultBlurSigma = 5;
+  static const double defaultTintAlpha = 0.2;
   // 色散是 2026-09-19 借 Kyant0 Backdrop 加的第八个旋钮：标准档取克制的
   // 0.35（边缘 1~2px 的彩虹镶边），课程卡那份没有这个旋钮（卡片是独立链路）。
   static const double defaultDispersion = 0.35;
