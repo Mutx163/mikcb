@@ -317,9 +317,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               value: normalizeLocaleTagForDropdown(
                 provider.settings.appLocaleTag,
               ),
-              onChanged: (value) {
+              onChanged: (value) async {
                 final next = provider.settings.copyWith(appLocaleTag: value);
-                provider.updateTimetableSettings(next);
+                // 同 `_persistSettings`：这里原先既不 await 也不 catch，
+                // 落盘失败时语言选择静默回弹。
+                await _persistSettings(provider, next);
               },
             ),
           ],
@@ -772,7 +774,23 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   void _updateSettings(TimetableSettings next) {
     final provider = context.read<TimetableProvider?>();
     if (provider == null) return;
-    unawaited(provider.updateTimetableSettings(next));
+    unawaited(_persistSettings(provider, next));
+  }
+
+  /// `updateTimetableSettings` 在落盘失败时**回滚内存并 rethrow**
+  /// （timetable_provider.dart:3848-3867），`unawaited` 就等于把这条文档化的
+  /// 失败丢掉：用户的语言/主题选择自己跳回旧值、零提示，异常还落进 zone。
+  /// 设置页六个站点都用 `reportSettingsPersistFailure` 接了它，引导页不能例外
+  /// —— 首次启动的用户此刻还没有"去设置页重试"的意识。
+  Future<void> _persistSettings(
+    TimetableProvider provider,
+    TimetableSettings next,
+  ) async {
+    try {
+      await provider.updateTimetableSettings(next);
+    } catch (_) {
+      reportSettingsPersistFailure(this);
+    }
   }
 
   void _applyAppThemeMode(AppThemeMode mode) =>
