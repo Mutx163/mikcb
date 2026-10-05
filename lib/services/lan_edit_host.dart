@@ -36,6 +36,19 @@ abstract class LanEditHost {
 
   Future<void> updateCourse(Course course);
 
+  /// 锁内读-改-写：PATCH 这类"先读基线、再把整份记录覆盖回去"的入口必须用它。
+  ///
+  /// HTTP 侧从 `findCourse` 到写入之间至少有两个真实 await（读请求体，最长 20 秒
+  /// 预算；以及课表目标检查）。在那段窗口里本机（手机编辑页、导入、云同步）改了
+  /// 同一门课，就会被"过期基线 + 整份覆盖"静默抹掉，而 HTTP 还回 200 并把请求体
+  /// 原样回显 —— 网页显示"已保存"，手机上那次改动凭空消失。
+  /// 回调只负责**算出新值**，读基线与写入都由宿主在同一次持锁里完成；
+  /// 返回 null 表示这条记录已经不在了（回调不会执行）。
+  Future<Course?> mutateCourse(
+    String courseId,
+    Future<Course> Function(Course existing) mutate,
+  );
+
   Future<void> deleteCourse(String courseId);
 
   /// Deletes multiple courses by id; returns number removed.

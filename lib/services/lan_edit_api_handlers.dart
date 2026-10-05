@@ -333,22 +333,28 @@ class LanEditApiHandlers {
         return;
       }
       final context = _courseContext();
-      final updated = LanEditProviderHost.mergeCoursePatch(
-        existing,
-        patch,
-        sections: context.sections,
-        semesterWeekCount: context.semesterWeekCount,
-      );
-      if (updated.name.trim().isEmpty) {
-        await _writeError(
-          request,
-          400,
-          'invalid_request',
-          'course_name_required',
+      // 合并基线在写锁内重新取（`host.mutateCourse`）。原先这里是
+      // `existing = host.findCourse(id)`（上面那次读）→ await 请求体（最长 20 秒）
+      // → await 课表目标检查 → `mergeCoursePatch(existing, ...)` → `updateCourse`
+      // 整份覆盖：窗口里本机改的字段被过期基线抹掉，HTTP 却回 200 原样回显。
+      final updated = await host.mutateCourse(courseId, (baseline) async {
+        final merged = LanEditProviderHost.mergeCoursePatch(
+          baseline,
+          patch,
+          sections: context.sections,
+          semesterWeekCount: context.semesterWeekCount,
         );
+        if (merged.name.trim().isEmpty) {
+          // 交给外层 `on ArgumentError` 统一回 400 invalid_request，
+          // 与原来的内联 `_writeError(..., 'course_name_required')` 同一份响应体。
+          throw ArgumentError('course_name_required');
+        }
+        return merged;
+      });
+      if (updated == null) {
+        await _writeError(request, 404, 'not_found', 'Course not found');
         return;
       }
-      await host.updateCourse(updated);
       lanEditAuditInfo(
         'lan_edit_course_updated',
         AppLogMessages.lanEditCourseUpdated,

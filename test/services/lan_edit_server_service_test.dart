@@ -143,6 +143,21 @@ class _FakeLanEditHost implements LanEditHost {
   }
 
   @override
+  Future<Course?> mutateCourse(
+    String courseId,
+    Future<Course> Function(Course existing) mutate,
+  ) async {
+    final existing = findCourse(courseId);
+    if (existing == null) {
+      return null;
+    }
+    final updated = await mutate(existing);
+    // 与 `LanEditProviderHost` 同形：写由宿主做，回调只算新值。
+    await updateCourse(updated);
+    return updated;
+  }
+
+  @override
   String buildProfileBackupJson() => jsonEncode({
     'app': 'mikcb',
     'schemaVersion': 1,

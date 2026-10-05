@@ -194,6 +194,28 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
   }
 
   @override
+  Future<Course?> mutateCourse(
+    String courseId,
+    Future<Course> Function(Course existing) mutate,
+  ) {
+    // 基线在门内读，覆盖写也在门内完成：`runMutationExclusive` 对同区是重入的，
+    // 所以回调里继续用 `updateCourse`（含它的事后置条件）不会被自己挡住。
+    return _provider.runMutationExclusive(() async {
+      final existing = findCourse(courseId);
+      if (existing == null) {
+        return null;
+      }
+      final updated = await mutate(existing);
+      // 写也放在这里做，而不是交给回调：读-改-写三段必须在同一次持锁里，
+      // 且回调只负责"算出新值"。让回调自己写，漏写一次就变成"返回了却什么都没落"
+      // 的静默失败（本仓第一轮写这版时就是这样，被 `lan_edit_patch_lock_test` 的
+      // "网页改的老师"断言当场抓到）。
+      await updateCourse(updated);
+      return updated;
+    });
+  }
+
+  @override
   Future<void> deleteCourse(String courseId) async {
     await _provider.deleteCourse(courseId);
   }
