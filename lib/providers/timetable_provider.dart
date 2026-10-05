@@ -79,6 +79,7 @@ export '../domain/import_export_logic.dart'
 part 'timetable/time_scheme_repository.dart';
 part 'timetable/schedule_date_rule_repository.dart';
 part 'timetable/course_group_repository.dart';
+part 'timetable/course_repository.dart';
 part 'timetable/import_export_service.dart';
 part 'timetable/live_activity_controller.dart';
 
@@ -2515,79 +2516,21 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> updateCourse(Course course, {String? previousSharedName}) {
-    return _runMutation(() async {
-      final index = _courses.indexWhere((c) => c.id == course.id);
-      if (index != -1) {
-        final validationMessage = validateCourseTimeSchemeOverride(
-          timeSchemeId: course.timeSchemeIdOverride,
-          startSection: course.startSection,
-          endSection: course.endSection,
-        );
-        if (validationMessage != null) {
-          throw ArgumentError(validationMessage);
-        }
-        final normalized = _normalizeCourse(course);
-        final normalizedCourse = _isLiveTestingFixture(normalized)
-            ? normalized
-            : _syncCourseWithEffectiveTimeScheme(normalized);
-        final originalCourse = _courses[index];
-        final previousKey = buildSharedCourseNameKey(
-          previousSharedName ?? originalCourse.name,
-        );
-        final newKey = CourseDomain.sharedKey(normalizedCourse);
-
-        _courses[index] = normalizedCourse;
-        await _recordTeacherImpl(normalizedCourse.teacher);
-        await _recordLocationImpl(normalizedCourse.location);
-        for (var i = 0; i < _courses.length; i++) {
-          if (i == index) {
-            continue;
-          }
-          final current = _courses[i];
-          final currentKey = CourseDomain.sharedKey(current);
-          if (currentKey == previousKey || currentKey == newKey) {
-            _courses[i] = CourseDomain.applySharedFields(
-              current,
-              normalizedCourse,
-            );
-          }
-        }
-
-        await _syncHomeworkTasksWithCourses();
-        await _persistActiveProfileState();
-        _currentLiveCourseId = null;
-        notifyListeners();
-        unawaited(_syncExamReminders());
-        _analytics.logEventLater(
-          name: 'course_updated',
-          parameters: {
-            'day_of_week': normalizedCourse.dayOfWeek,
-            'section_count': normalizedCourse.sectionCount,
-            'has_short_name': normalizedCourse.shortName?.isNotEmpty == true
-                ? 1
-                : 0,
-          },
-        );
-        _updateLiveActivity();
-      }
-    });
+    // 实现与落盘失败回滚见 `timetable/course_repository.dart`：改一条会把共享字段
+    // 广播给同组其它课次，失败时那些都要退回。
+    return _runMutation(
+      () => _timetableUpdateCourse(
+        this,
+        course,
+        previousSharedName: previousSharedName,
+      ),
+    );
   }
 
   Future<void> deleteCourse(String courseId) {
-    return _runMutation(() async {
-      _courses.removeWhere((c) => c.id == courseId);
-      _exams.removeWhere((e) => e.courseId == courseId);
-      _tasks.removeWhere((task) => task.courseId == courseId);
-      await _persistActiveProfileState();
-      _currentLiveCourseId = null;
-      notifyListeners();
-      unawaited(_syncExamReminders());
-      _analytics.logEventLater(
-        name: 'course_deleted',
-        parameters: {'remaining_course_count': _courses.length},
-      );
-      _updateLiveActivity();
-    });
+    // 实现与落盘失败回滚见 `timetable/course_repository.dart`：删课程会连带摘掉它
+    // 名下的考试与作业，落盘失败时那些必须一起退回。
+    return _runMutation(() => _timetableDeleteCourse(this, courseId));
   }
 
   /// Delete all schedule entries (courses) for a given course name.

@@ -112,7 +112,12 @@ void main() {
     // :2888-2935 add），同时给 delete/update 补上落盘失败回滚 —— 这两处会连带摘掉挂在
     // 这组课上的考试与作业，而用户点的是"删课程"，失败后必须一起退回；add 刻意不回滚
     // （内存里正是用户刚填的内容），判据写在 part 文件开头。本文件净减 96 行。
-    const baselineLines = 4773;
+    // 4773→4716：同一族再往下收。`deleteCourse`（原 :2576-2591）与 `updateCourse`
+    // （原 :2517-2574）移出 part 文件 `timetable/course_repository.dart` 并补回滚：
+    // 前者连带摘掉该课名下的考试与作业，后者把共享字段广播给同组其它课次 —— 改的
+    // 不全是用户正在编辑的那一条，落盘失败时必须一起退回（`addCourse` 仍不回滚，
+    // 口径同上）。本文件只留两层委托（19 行）。
+    const baselineLines = 4716;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
