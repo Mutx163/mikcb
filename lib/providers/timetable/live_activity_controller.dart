@@ -1,5 +1,33 @@
 part of '../timetable_provider.dart';
 
+/// 课表写盘成功之后重推一次**桌面周报通知的正文**。
+///
+/// 为什么需要这一步：原生 `WeeklyReportScheduler` 投递成功后只把
+/// `fireAtMillis` 往后推一周（`WeeklyReportScheduler.kt:164-171`），
+/// `KEY_TITLE`/`KEY_BODY` 原样留着，而它自己的契约注释（同文件 :17-20）要求
+/// Flutter "whenever the toggle **or the timetable changes**" 都重推。
+/// Dart 侧原先只有设置页拨开关那一处在推（`statistics_settings_screen.dart:69-86`），
+/// 于是正文永久冻结在拨开关那一周 —— 学期第 16 周还弹"第 8 周 · 共 12 节"，
+/// 换课表、导新课表后照旧。
+///
+/// 收在这里（而不是散到各个写入口）的理由：`_persistActiveProfileStateToDisk`
+/// 是所有课表/设置落盘的唯一收口，而**补偿写**（回滚路径，`notifySync: false`）
+/// 不该触发重推。去重与 locale 解析都在 `weekly_report_service.dart`：
+/// 拼出真正要下发的标题+正文比对，内容没变就不碰通道，所以这里可以每次保存都调。
+void _syncWeeklyReportContent(TimetableProvider host) {
+  if (!host._settings.weeklyReportEnabled) {
+    return;
+  }
+  unawaited(
+    refreshWeeklyReportForSettings(
+      localeTag: host._settings.appLocaleTag,
+      allCourses: host._courses,
+      currentWeek: host.currentWeek,
+      semesterWeekCount: host._settings.semesterWeekCount,
+    ),
+  );
+}
+
 String _liveResolveRealTime(
   TimetableProvider host,
   Course course,

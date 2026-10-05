@@ -33,6 +33,7 @@ import 'utils/app_toast.dart';
 import 'utils/first_frame_probe.dart';
 import 'utils/frame_perf_probe.dart';
 import 'utils/home_startup_visual_primer.dart';
+import 'utils/locale_utils.dart';
 import 'utils/theme_seed_accent.dart';
 import 'widgets/app_startup_splash.dart';
 import 'widgets/course_glass_shader.dart';
@@ -139,28 +140,8 @@ TextTheme _applyTextThemeFontWeight(TextTheme textTheme, FontWeight weight) {
   );
 }
 
-Locale? _localeFromSettings(String localeTag) {
-  final normalized = localeTag.trim();
-  if (normalized.isEmpty) {
-    return null;
-  }
-  final canonical = normalized.replaceAll('-', '_');
-  for (final locale in AppLocalizations.supportedLocales) {
-    final tag = locale.countryCode?.isNotEmpty == true
-        ? '${locale.languageCode}_${locale.countryCode}'
-        : locale.languageCode;
-    if (tag.toLowerCase() == canonical.toLowerCase()) {
-      return locale;
-    }
-  }
-  final languageCode = canonical.split('_').first.toLowerCase();
-  for (final locale in AppLocalizations.supportedLocales) {
-    if (locale.languageCode.toLowerCase() == languageCode) {
-      return locale;
-    }
-  }
-  return Locale(languageCode);
-}
+Locale? _localeFromSettings(String localeTag) =>
+    localeFromSettingsTag(localeTag);
 
 String _bootSwitcherLabel(PackageInfo packageInfo, AppLocalizations l10n) {
   if (packageInfo.packageName.endsWith('.profile')) {

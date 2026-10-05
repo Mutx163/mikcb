@@ -43,6 +43,7 @@ import '../services/class_reminder_service.dart';
 import '../services/exam_reminder_service.dart';
 import '../services/partner_timetable_service.dart';
 import '../services/stats_widget_service.dart';
+import '../services/weekly_report_service.dart';
 import '../services/storage_service.dart';
 import '../services/sync_operation_gate.dart';
 import '../services/user_data_sync_hooks.dart';
@@ -1416,9 +1417,8 @@ class TimetableProvider with ChangeNotifier {
     if (_activeProfileId != null) {
       await _profileRepository.setActiveProfileId(_activeProfileId!);
     }
-    if (notifySync) {
-      notifyUserDataChangedForSync();
-    }
+    // 定义与理由见 timetable/live_activity_controller.dart（棘轮要求本类只减不增）。
+    if (notifySync) { notifyUserDataChangedForSync(); _syncWeeklyReportContent(this); }
   }
 
   Future<void> _persistTimeSchemes() async {
