@@ -48,7 +48,7 @@ void main() {
         DateTime(2026, 12, 30),
         DateTime(2027, 1, 2),
         DateTime(2026, 12, 31),
-        DateTime(2027, 1, 1),
+        DateTime(2027),
       ]);
       expect(groups, hasLength(1));
       expect(groups.first.first, DateTime(2026, 12, 30));
