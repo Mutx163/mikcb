@@ -132,7 +132,14 @@ abstract final class ScheduleListGrouper {
       if (endCompare != 0) {
         return endCompare;
       }
-      final startCompare = right.item.startTime.compareTo(left.item.startTime);
+      // 与上面 `_sortUpcoming`（:107/:114）同一个正源：这里原先是
+      // `String.compareTo`，于是**同一个类里**"即将到来"按分钟序、"已过期"按字典序
+      // —— 外来存档里的 `9:00`（`ScheduleItem.fromJson` 原样收下，
+      // models/schedule_item.dart:226）会让倒序排反。
+      final startCompare = compareClockText(
+        right.item.startTime,
+        left.item.startTime,
+      );
       if (startCompare != 0) {
         return startCompare;
       }

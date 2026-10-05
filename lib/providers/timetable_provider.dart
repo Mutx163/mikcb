@@ -20,6 +20,7 @@ import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../data/timetable_repository.dart';
 import '../domain/week_calculator.dart';
+import '../domain/clock_order.dart';
 import '../domain/holiday_resolver.dart';
 import '../domain/course_domain.dart';
 import '../domain/schedule_item_expander.dart';
@@ -4224,11 +4225,15 @@ class TimetableProvider with ChangeNotifier {
       if (dateCompare != 0) {
         return dateCompare;
       }
-      final startCompare = left.startTime.compareTo(right.startTime);
+      // 钟点一律按分钟数比（`domain/clock_order.dart`）：`ScheduleItem.fromJson`
+      // （models/schedule_item.dart:226）原样收下外来存档里的 `9:00`，而
+      // `_normalizeScheduleItem`（:4098-4120）只 trim 文本、归一日期，**不碰钟点**，
+      // 所以字符串序（'10:00' < '9:00'）会把同一天两条日程排反。
+      final startCompare = compareClockText(left.startTime, right.startTime);
       if (startCompare != 0) {
         return startCompare;
       }
-      final endCompare = left.endTime.compareTo(right.endTime);
+      final endCompare = compareClockText(left.endTime, right.endTime);
       if (endCompare != 0) {
         return endCompare;
       }

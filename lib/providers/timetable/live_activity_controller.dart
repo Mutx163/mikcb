@@ -626,7 +626,9 @@ List<Course> _liveCoupleMergedDayCourses(
     if (bySection != 0) {
       return bySection;
     }
-    return a.startTime.compareTo(b.startTime);
+    // 同一节次内的次序按分钟数比：钟点串可能来自外来存档（`9:00` 不补零），
+    // 字典序下 '10:00' < '9:00' 会把情侣合并后的同节次课程排反。
+    return compareClockText(a.startTime, b.startTime);
   });
 }
 
