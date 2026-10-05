@@ -653,26 +653,58 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
     if (!confirmed || !context.mounted) {
       return;
     }
-    context.read<TimetableProvider>().deleteTheme(theme.id);
+    // `deleteTheme` 走 `_applySavedThemes`：落盘失败时**回滚并 rethrow**
+    // （timetable_provider.dart:349-356）。不接的话列表当场少一项、看起来删掉了，
+    // 重启后那条主题又回来，而且没有任何提示。
+    try {
+      await context.read<TimetableProvider>().deleteTheme(theme.id);
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+    }
   }
-
-  void _applyThemeWithUndo(
+  Future<void> _applyThemeWithUndo(
     BuildContext context,
     ThemeConfig config, {
     String? themeName,
-  }) {
+  }) async {
     final provider = Provider.of<TimetableProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
 
     final newSettings = config.applyToSettings(provider.settings);
-    provider.applyThemeWithUndo(
-      newSettings.copyWith(
-        themeCheckpointName: themeName,
-        themeCheckpointConfig: config,
-      ),
-      themeName: themeName,
-    );
+    // `applyThemeWithUndo` → `updateSettings` → `await _persistActiveProfileState()`
+    // 且中间没有 try/catch（timetable_provider.dart:306-337），落盘失败会 reject。
+    // 原先这里发了不管，还**紧跟着弹"已更改 + 撤销"**：失败时用户看到的是
+    // "改好了"，重启后主题回到旧值，撤销按钮也只是撤销一份没存下的改动。
+    try {
+      await provider.applyThemeWithUndo(
+        newSettings.copyWith(
+          themeCheckpointName: themeName,
+          themeCheckpointConfig: config,
+        ),
+        themeName: themeName,
+      );
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
 
+    if (!context.mounted) {
+      return;
+    }
     showThemeFeedbackToast(
       context,
       message: l10n.themeChanged(themeName ?? l10n.themeManageTitle),
@@ -680,18 +712,34 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
     );
   }
 
-  void _applyForuiTheme(BuildContext context, ForuiTheme theme) {
+  Future<void> _applyForuiTheme(BuildContext context, ForuiTheme theme) async {
     final provider = Provider.of<TimetableProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
     final name = foruiThemeLabel(l10n, theme);
-    provider.applyThemeWithUndo(
-      provider.settings.copyWith(
-        foruiTheme: theme,
-        themeSeedColor: theme.seedHex,
-        clearThemeCheckpoint: true,
-      ),
-      themeName: name,
-    );
+    // 同 `_applyThemeWithUndo`：写入失败要提示，不能在失败时还弹"已更改"。
+    try {
+      await provider.applyThemeWithUndo(
+        provider.settings.copyWith(
+          foruiTheme: theme,
+          themeSeedColor: theme.seedHex,
+          clearThemeCheckpoint: true,
+        ),
+        themeName: name,
+      );
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
+    if (!context.mounted) {
+      return;
+    }
     showThemeFeedbackToast(
       context,
       message: l10n.themeChanged(name),
@@ -705,10 +753,23 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
       context,
       title: l10n.themeSaveCurrent,
       initialName: '',
-      onSubmit: (name) {
+      onSubmit: (name) async {
         final provider = Provider.of<TimetableProvider>(context, listen: false);
         final themeConfig = ThemeConfig.fromSettings(provider.settings);
-        provider.saveTheme(name, themeConfig.toJson());
+        // 同 `_deleteSavedTheme`：`saveTheme` 失败会回滚 + rethrow，
+        // 对话框已经关了、列表里却没这条主题，用户只当自己没保存成功过一次。
+        try {
+          await provider.saveTheme(name, themeConfig.toJson());
+        } catch (_) {
+          if (!context.mounted) {
+            return;
+          }
+          showAppToast(
+            context,
+            message: AppLocalizations.of(context)!.saveFailed,
+            kind: AppToastKind.error,
+          );
+        }
       },
     );
   }
@@ -719,8 +780,22 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
       context,
       title: l10n.themeRename,
       initialName: theme.name,
-      onSubmit: (newName) {
-        context.read<TimetableProvider>().renameTheme(theme.id, newName);
+      onSubmit: (newName) async {
+        // 同 `_deleteSavedTheme`：改名失败会回滚 + rethrow，不接就是"改了又回来"。
+        try {
+          await context
+              .read<TimetableProvider>()
+              .renameTheme(theme.id, newName);
+        } catch (_) {
+          if (!context.mounted) {
+            return;
+          }
+          showAppToast(
+            context,
+            message: AppLocalizations.of(context)!.saveFailed,
+            kind: AppToastKind.error,
+          );
+        }
       },
     );
   }
@@ -728,10 +803,24 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
   void _duplicateTheme(BuildContext context, SavedTheme theme) {
     final l10n = AppLocalizations.of(context)!;
     final provider = Provider.of<TimetableProvider>(context, listen: false);
-    provider.saveTheme(
-      l10n.themeDuplicateCopyName(theme.name),
-      theme.themeData,
-    );
+    // 同 `_deleteSavedTheme`：副本写入失败也会回滚 + rethrow。
+    unawaited(() async {
+      try {
+        await provider.saveTheme(
+          l10n.themeDuplicateCopyName(theme.name),
+          theme.themeData,
+        );
+      } catch (_) {
+        if (!context.mounted) {
+          return;
+        }
+        showAppToast(
+          context,
+          message: AppLocalizations.of(context)!.saveFailed,
+          kind: AppToastKind.error,
+        );
+      }
+    }());
   }
 
   void _exportTheme(BuildContext context) {

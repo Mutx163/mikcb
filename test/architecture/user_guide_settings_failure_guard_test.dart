@@ -97,4 +97,72 @@ void main() {
           '${offenders.join('\n')}',
     );
   });
+
+  test('天气与主题设置里的 provider 写入都不能发了不管', () {
+    // 契约核对过：`updateSettings`（timetable_provider.dart:332-337）
+    // `await _persistActiveProfileState()` 且**无 try/catch** → reject；
+    // `saveTheme`/`renameTheme`/`deleteTheme` 走 `_applySavedThemes`（:349-356），
+    // 失败时**回滚内存 + rethrow**；`applyThemeWithUndo`（:306-319）await updateSettings
+    // → 同样 reject。原先这些点在 UI 里都是裸调用或 unawaited：
+    // 天气六个开关按下去当场生效、重启回旧值且零提示；主题更糟 ——
+    // `_applyThemeWithUndo` 在写入 future 都没接的情况下紧接着弹"已更改 + 撤销"，
+    // 失败时用户看到"改好了"，撤销按钮撤销的是一份根本没存下的改动。
+    final targets = <String, RegExp>{
+      'lib/screens/settings/settings_weather.dart': RegExp(
+        r'\.(updateSettings|updateTimetableSettings)\s*\(',
+      ),
+      'lib/screens/settings/settings_appearance.dart': RegExp(
+        r'\.(updateSettings|applyThemeWithUndo|saveTheme|deleteTheme|renameTheme)\s*\(',
+      ),
+    };
+
+    final allOffenders = <String>[];
+    for (final entry in targets.entries) {
+      final file = File(entry.key);
+      expect(file.existsSync(), isTrue, reason: entry.key);
+      final lines = file.readAsLinesSync();
+      final offenders = <String>[];
+      for (var i = 0; i < lines.length; i++) {
+        final line = lines[i].trim();
+        if (!entry.value.hasMatch(line) ||
+            line.startsWith('//') ||
+            line.startsWith('///')) {
+          continue;
+        }
+        // 方法定义行（如 `Future<void> saveTheme(...)`）不是调用点。
+        if (line.startsWith('Future<') || line.startsWith('void ')) {
+          continue;
+        }
+        // 只看"同一条语句"的片段：往前推到语句边界（空行、`{`、`}`、`;`），
+        // 这样 `await provider\n  .saveTheme(...)` 这种折行仍然算 awaited，
+        // 而上一个 if 里有 await、本行裸调用的情况不会被误判为已处理。
+        var start = i;
+        while (start > 0) {
+          final prev = lines[start - 1].trim();
+          if (prev.isEmpty ||
+              prev.endsWith('{') ||
+              prev.endsWith('}') ||
+              prev.endsWith(';')) {
+            break;
+          }
+          start--;
+        }
+        final statement = lines.sublist(start, i + 1).join(' ');
+        final awaited = statement.contains('await ');
+        if (!awaited || line.startsWith('unawaited(')) {
+          offenders.add('${entry.key}:${i + 1}: $line');
+        }
+      }
+      allOffenders.addAll(offenders);
+    }
+    // 两个文件一起判：否则第一个文件失败就把第二个文件的违规点藏住了
+    // （第一版就是这样，撤掉修复时只看到天气那一行）。
+    expect(
+      allOffenders,
+      isEmpty,
+      reason:
+          '这些写入在落盘失败时会 reject；不 await 也不提示，就等于把用户的设置'
+          '改动吞成"看起来生效了"：\n${allOffenders.join('\n')}',
+    );
+  });
 }

@@ -27,8 +27,23 @@ class _WeatherSettingsScreen extends StatelessWidget {
     // 天气没开时下面那些显示项一律无效（数据都不会拉），整组禁用而不是藏起来：
     // 用户能看到「原来还有这些选项」，也知道为什么点不动。
     final enabled = weather?.enabled ?? false;
-    void update(TimetableSettings next) {
-      unawaited(timetable.updateSettings(next));
+    // `updateSettings`（timetable_provider.dart:332-337）里是
+    // `await _persistActiveProfileState()` 且没有 try/catch → 落盘失败会 reject。
+    // 原先写的是 `unawaited(...)`：六个天气开关按下去看起来生效（内存里已经改了），
+    // 失败既不提示也没回滚，重启后全部回到旧值 —— 用户只会觉得"开关不记住我选的"。
+    Future<void> update(TimetableSettings next) async {
+      try {
+        await timetable.updateSettings(next);
+      } catch (_) {
+        if (!context.mounted) {
+          return;
+        }
+        showAppToast(
+          context,
+          message: l10n.saveFailed,
+          kind: AppToastKind.error,
+        );
+      }
     }
 
     return HyperosSubpage(
