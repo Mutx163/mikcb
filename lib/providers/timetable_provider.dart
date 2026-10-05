@@ -3746,10 +3746,10 @@ class TimetableProvider with ChangeNotifier {
       final now = DateTime.now();
       final data = await _holidayService.getDataForYear(now.year);
       final allEntries = <HolidayEntry>[...data.entries];
-      // If semester spans two years, also load next year
-      if (now.month >= 11) {
-        final nextYearData = await _holidayService.getDataForYear(now.year + 1);
-        allEntries.addAll(nextYearData.entries);
+      // 跨年那一周的假期可能整段挂在邻年响应里（本仓库 fixture 的元旦就是
+      // 2026-12-31..2027-01-02），只取 now.year 会把 12 月末当上课日排课。
+      for (final year in holidayYearsToLoad(now).where((y) => y != now.year)) {
+        allEntries.addAll((await _holidayService.getDataForYear(year)).entries);
       }
       // Merge user-defined custom holidays. Null means the persisted data is
       // corrupted (logged inside the service): skip merging instead of
@@ -3797,7 +3797,7 @@ class TimetableProvider with ChangeNotifier {
 
   /// Refresh holiday data (clear cache and reload)
   Future<void> refreshHolidayData() async {
-    await _holidayService.clearCache(DateTime.now().year);
+    await Future.wait(holidayYearsToLoad(DateTime.now()).map(_holidayService.clearCache));
     await _loadHolidayData();
   }
 
