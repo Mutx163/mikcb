@@ -132,7 +132,11 @@ void main() {
     // 4631→4630：周报钩子收口 —— `_persistActiveProfileState` 的镜像分支原先手工
     // 只补 `notifyUserDataChangedForSync()`，两条分支的「落盘成功后副作用」现在统一
     // 走 `timetable/live_activity_controller.dart` 里的 `_afterProfilePersisted`。
-    const baselineLines = 4630;
+    // 4630→4622：`updateSettings` 补落盘失败回滚时，把节次表归一规则
+    // `_normalizeSettingsWithTimeScheme` 与快照/回滚 helper 一起移进新分片
+    // `timetable/settings_repository.dart`（棘轮的既定做法：规则放回它该在的分片，
+    // 不是抬基线）。
+    const baselineLines = 4622;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

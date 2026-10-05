@@ -85,6 +85,7 @@ part 'timetable/course_repository.dart';
 part 'timetable/schedule_item_repository.dart';
 part 'timetable/import_export_service.dart';
 part 'timetable/live_activity_controller.dart';
+part 'timetable/settings_repository.dart';
 
 bool _isLiveTestingFixture(Course course) => course.id.startsWith('live_test_');
 
@@ -329,15 +330,24 @@ class TimetableProvider with ChangeNotifier {
     await updateSettings(restored);
   }
 
-  /// 批量更新设置（用于主题导入）
+  /// 批量更新设置（主题导入、上课提醒开关、天气与统计设置、撤销主题变更、传输层写入）。
+  ///
+  /// 落盘失败按本仓写入契约退回内存并刷新界面后上抛，形状见
+  /// `timetable/settings_repository.dart` 的 `_rollbackSettingsWrite`。
   Future<void> updateSettings(TimetableSettings newSettings) {
     return _runMutation(() async {
-      final previous = _settings;
-      _settings = _normalizeSettingsWithTimeScheme(newSettings);
+      final snapshot = _SettingsWriteSnapshot(this);
+      _settings = _normalizeSettingsWithTimeScheme(this, newSettings);
       hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
-      await _persistActiveProfileState();
+      try {
+        await _persistActiveProfileState();
+      } catch (_) {
+        _rollbackSettingsWrite(this, snapshot);
+        notifyListeners();
+        rethrow;
+      }
       notifyListeners();
-      _logPerformanceSnapshotIfChanged(previous);
+      _logPerformanceSnapshotIfChanged(snapshot.settings);
     });
   }
 
@@ -1018,6 +1028,7 @@ class TimetableProvider with ChangeNotifier {
   /// 当成用户改动写回全局。
   TimetableSettings _settingsFromProfile(TimetableProfile profile) =>
       _normalizeSettingsWithTimeScheme(
+        this,
         AppGlobalSettingsService.overlay(profile.settings),
       );
 
@@ -1056,25 +1067,6 @@ class TimetableProvider with ChangeNotifier {
     );
     await _liveActivitiesService.setHideFromRecents(
       _settings.liveHideFromRecents,
-    );
-  }
-
-  TimetableSettings _normalizeSettingsWithTimeScheme(
-    TimetableSettings settings,
-  ) {
-    final scheme = _getTimeSchemeById(settings.activeTimeSchemeId);
-    if (scheme == null) {
-      return settings;
-    }
-    final hasSameSections =
-        _sectionSignature(settings.sections) ==
-        _sectionSignature(scheme.sections);
-    if (hasSameSections) {
-      return settings;
-    }
-    return settings.copyWith(
-      sections: List<SectionTime>.from(scheme.sections),
-      activeTimeSchemeId: scheme.id,
     );
   }
 
@@ -3829,7 +3821,7 @@ class TimetableProvider with ChangeNotifier {
     final previousCurrentCalendarWeek = _currentCalendarWeek;
     final semesterStartChanged =
         settings.semesterStartDate != _settings.semesterStartDate;
-    _settings = _normalizeSettingsWithTimeScheme(settings);
+    _settings = _normalizeSettingsWithTimeScheme(this, settings);
     hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
     _currentCalendarWeek = _resolveCurrentCalendarWeek();
     _currentDateWeek = clampCurrentWeekToSettings(
