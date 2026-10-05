@@ -78,6 +78,7 @@ export '../domain/import_export_logic.dart'
 
 part 'timetable/time_scheme_repository.dart';
 part 'timetable/schedule_date_rule_repository.dart';
+part 'timetable/course_group_repository.dart';
 part 'timetable/import_export_service.dart';
 part 'timetable/live_activity_controller.dart';
 
@@ -2591,25 +2592,8 @@ class TimetableProvider with ChangeNotifier {
 
   /// Delete all schedule entries (courses) for a given course name.
   Future<void> deleteCourseGroup(String name) {
-    return _runMutation(() async {
-      final key = buildSharedCourseNameKey(name);
-      final deletedCourseIds = _courses
-          .where((c) => buildSharedCourseNameKey(c.name) == key)
-          .map((c) => c.id)
-          .toSet();
-      _courses.removeWhere((c) => deletedCourseIds.contains(c.id));
-      _exams.removeWhere((e) => deletedCourseIds.contains(e.courseId));
-      _tasks.removeWhere((task) => deletedCourseIds.contains(task.courseId));
-      await _persistActiveProfileState();
-      _currentLiveCourseId = null;
-      notifyListeners();
-      unawaited(_syncExamReminders());
-      _analytics.logEventLater(
-        name: 'course_group_deleted',
-        parameters: {'remaining_course_count': _courses.length},
-      );
-      _updateLiveActivity();
-    });
+    // 实现与落盘失败回滚见 `timetable/course_group_repository.dart`。
+    return _runMutation(() => _timetableDeleteCourseGroup(this, name));
   }
 
   // ---- 课程任务 CRUD ----
@@ -2841,97 +2825,17 @@ class TimetableProvider with ChangeNotifier {
     String originalName,
     List<Course> updatedCourses,
   ) {
-    return _runMutation(() async {
-      final key = buildSharedCourseNameKey(originalName);
-      if (updatedCourses.isEmpty) {
-        // 必须挡在 removeWhere 之前：空集合会让下面的 `updatedCourses.first` 抛
-        // StateError，而那时整组课程已经被摘掉——既没落库也没 notify，界面仍显示
-        // 旧组、内存里整组消失，下一次任意成功写入就把「整组没了」落盘。
-        // 与 addCourseGroup 的 isEmpty 守卫同一口径（调用方目前都自带非空保证，
-        // 这里是 provider 侧的兜底，防未来新调用方直接踩）。
-        return;
-      }
-      // Remove old entries for this group.
-      _courses.removeWhere((c) => buildSharedCourseNameKey(c.name) == key);
-      // Add the updated entries, applying shared fields.
-      final shared = updatedCourses.first;
-      for (final course in updatedCourses) {
-        final normalized = _normalizeCourse(
-          CourseDomain.applySharedFields(course, shared),
-        );
-        _courses.add(normalized);
-        await _recordTeacherImpl(normalized.teacher);
-        await _recordLocationImpl(normalized.location);
-      }
-      _tasks.removeWhere(
-        (task) =>
-            task.courseId != null &&
-            !_courses.any((course) => course.id == task.courseId),
-      );
-      await _syncHomeworkTasksWithCourses();
-      await _persistActiveProfileState();
-      _currentLiveCourseId = null;
-      notifyListeners();
-      unawaited(_syncExamReminders());
-      _analytics.logEventLater(
-        name: 'course_group_updated',
-        parameters: {
-          'schedule_count': updatedCourses.length,
-          'remaining_course_count': _courses.length,
-        },
-      );
-      _updateLiveActivity();
-    });
+    // 实现与落盘失败回滚见 `timetable/course_group_repository.dart`。
+    return _runMutation(
+      () => _timetableUpdateCourseGroup(this, originalName, updatedCourses),
+    );
   }
 
   /// Add multiple schedule entries for a new course group in one persist.
   Future<void> addCourseGroup(List<Course> courses) {
-    return _runMutation(() async {
-      if (courses.isEmpty) {
-        return;
-      }
-      final shared = courses.first;
-      // 先收集到临时列表，验证全部通过后再批量添加，避免中途失败导致状态不一致
-      final normalizedCourses = <Course>[];
-      final teachers = <String>{};
-      final locations = <String>{};
-      for (final course in courses) {
-        final validationMessage = validateCourseTimeSchemeOverride(
-          timeSchemeId: course.timeSchemeIdOverride,
-          startSection: course.startSection,
-          endSection: course.endSection,
-        );
-        if (validationMessage != null) {
-          throw ArgumentError(validationMessage);
-        }
-        final normalized = _syncCourseWithEffectiveTimeScheme(
-          _normalizeCourse(CourseDomain.applySharedFields(course, shared)),
-        );
-        normalizedCourses.add(normalized);
-        if (normalized.teacher.isNotEmpty) teachers.add(normalized.teacher);
-        if (normalized.location.isNotEmpty) locations.add(normalized.location);
-      }
-      // 所有验证通过，批量添加
-      _courses.addAll(normalizedCourses);
-      await _syncHomeworkTasksWithCourses();
-      for (final teacher in teachers) {
-        await _recordTeacherImpl(teacher);
-      }
-      for (final location in locations) {
-        await _recordLocationImpl(location);
-      }
-      await _persistActiveProfileState();
-      _currentLiveCourseId = null;
-      notifyListeners();
-      _analytics.logEventLater(
-        name: 'course_group_created',
-        parameters: {
-          'schedule_count': courses.length,
-          'remaining_course_count': _courses.length,
-        },
-      );
-      _updateLiveActivity();
-    });
+    // 实现见 `timetable/course_group_repository.dart`；这一条刻意**不**回滚 ——
+    // 内存里那些正是用户刚填的内容，判据见该文件开头的口径说明。
+    return _runMutation(() => _timetableAddCourseGroup(this, courses));
   }
 
   /// 一键重刷整份课表颜色（导入后随时可用，无需重新导入）。

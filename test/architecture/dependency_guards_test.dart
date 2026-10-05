@@ -106,9 +106,13 @@ void main() {
     // （原 :1751-1896，本类里最长的写路径之一）。移出不是为绕开本棘轮：它原本就该和
     // 作息族 `_timetableApplyTimeScheme`、地点分组族 `_commitLocationGroupChange` 同处
     // ——三族做的是同一件事（改默认作息 + 重写未锁课程钟点 + 落盘），回滚形状也必须
-    // 一起改。本文件里只留一层委托（7 行），四个 CRUD 入口各加一段"规则没落成功就退回
-    // 原列表"（+45），净减 103 行。按棘轮"只减不增"的约定把基线钉到实测值。
-    const baselineLines = 4869;
+    // 一起改。本文件里只留一层委托（7 行），四个 CRUD 入口各加一段"规则没落成功就退回原列表"。
+    // 4869→4773：课程组（同名多课次）的三个整组写入口移出 part 文件
+    // `timetable/course_group_repository.dart`（原 :2593-2613 delete、:2840-2878 update、
+    // :2888-2935 add），同时给 delete/update 补上落盘失败回滚 —— 这两处会连带摘掉挂在
+    // 这组课上的考试与作业，而用户点的是"删课程"，失败后必须一起退回；add 刻意不回滚
+    // （内存里正是用户刚填的内容），判据写在 part 文件开头。本文件净减 96 行。
+    const baselineLines = 4773;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
