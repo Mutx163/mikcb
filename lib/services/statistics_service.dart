@@ -815,8 +815,16 @@ class StatisticsService {
   static int? _startMinutes(Course course) =>
       ClockTime.tryParse(course.startTime)?.totalMinutes;
 
-  static int? _endMinutes(Course course) =>
-      ClockTime.tryParse(course.endTime)?.totalMinutes;
+  /// 结束钟点的分钟数；缺失或畸形时返回 null。
+  ///
+  /// 必须与 `calculateTimeUtilization`（:626-630）、数据故事卡（:365-368）同一口径：
+  /// 末节课 / 晚自习写 `24:00` 是本仓认可的「当天结束」（`time_scheme.dart` 的
+  /// `_clockMinutes` 专门放行），这里漏掉 `allowEndOfDay` 会让整门课从「晚间课时」
+  /// 里消失 —— 同一页的「时间利用」卡算了、「夜猫子」成就没算，两张卡数字互相打脸。
+  static int? _endMinutes(Course course) => ClockTime.tryParse(
+    course.endTime,
+    allowEndOfDay: true,
+  )?.totalMinutes;
 
   static String _buildingOf(String room) {
     final trimmed = room.trim();
