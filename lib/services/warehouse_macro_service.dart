@@ -101,24 +101,14 @@ class WarehouseMacroService {
 
   Future<List<WarehouseMacroIndexEntry>> getAllMacroEntries() async {
     final prefs = await _prefs;
-    final raw = prefs.getString(WarehouseMacroRecord.indexKey);
-    if (raw == null || raw.isEmpty) return const [];
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! List) return const [];
-      final entries = decoded
-          .whereType<Map<String, dynamic>>()
-          .map(
-            (m) =>
-                WarehouseMacroIndexEntry.fromJson(Map<String, dynamic>.from(m)),
-          )
-          .where((e) => e.schoolId.isNotEmpty && e.adapterId.isNotEmpty)
-          .toList();
-      entries.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      return entries;
-    } catch (_) {
-      return const [];
+    final current = _currentIndexEntries(prefs);
+    final entries = current.entries
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    if (current.shouldPersist) {
+      // 目录坏了或漏了条目：把修好的目录落盘，别让下一次读再扫一遍本体。
+      await _persistIndex(prefs, entries);
     }
+    return entries;
   }
 
   /// 添加或更新索引条目
@@ -127,7 +117,7 @@ class WarehouseMacroService {
     String schoolId,
     String adapterId,
   ) async {
-    final existing = await _loadIndexList(prefs);
+    final existing = _currentIndexEntries(prefs).entries;
     final now = DateTime.now();
     final updated = [
       WarehouseMacroIndexEntry(
@@ -139,10 +129,7 @@ class WarehouseMacroService {
         (e) => e.schoolId != schoolId || e.adapterId != adapterId,
       ),
     ];
-    await prefs.setString(
-      WarehouseMacroRecord.indexKey,
-      jsonEncode(updated.map((e) => e.toJson()).toList()),
-    );
+    await _persistIndex(prefs, updated);
   }
 
   /// 从索引中移除
@@ -151,34 +138,119 @@ class WarehouseMacroService {
     String schoolId,
     String adapterId,
   ) async {
-    final existing = await _loadIndexList(prefs);
+    final existing = _currentIndexEntries(prefs).entries;
     final updated = existing
         .where((e) => e.schoolId != schoolId || e.adapterId != adapterId)
         .toList();
-    await prefs.setString(
-      WarehouseMacroRecord.indexKey,
-      jsonEncode(updated.map((e) => e.toJson()).toList()),
-    );
+    await _persistIndex(prefs, updated);
   }
 
-  Future<List<WarehouseMacroIndexEntry>> _loadIndexList(
-    SharedPreferences prefs,
-  ) async {
-    final raw = prefs.getString(WarehouseMacroRecord.indexKey);
+  /// 解析目录。**null 表示目录读坏了**（坏 JSON、不是数组），与「目录是空的」
+  /// 必须区分开：前者被当成后者时，下一次保存会把「只剩自己这一条」的目录写回去，
+  /// 其它宏的记录本体还好好躺在磁盘上，却再也不会出现在宏列表里，而且
+  /// `exportAllMacros` 也是按目录导出的 —— 残缺的目录会跟着进云快照，把别的设备
+  /// 一起刷成"没这些宏"。
+  List<WarehouseMacroIndexEntry>? _parseIndexEntries(String? raw) {
     if (raw == null || raw.isEmpty) return const [];
     try {
       final decoded = jsonDecode(raw);
-      if (decoded is! List) return const [];
+      if (decoded is! List) return null;
       return decoded
           .whereType<Map<String, dynamic>>()
           .map(
             (m) =>
                 WarehouseMacroIndexEntry.fromJson(Map<String, dynamic>.from(m)),
           )
+          .where((e) => e.schoolId.isNotEmpty && e.adapterId.isNotEmpty)
           .toList();
     } catch (_) {
-      return const [];
+      return null;
     }
+  }
+
+  /// 从单个记录本体取目录条目；本体读不动就返回 null（不删它，只是列不出来）。
+  WarehouseMacroIndexEntry? _entryFromRecordBlob(
+    SharedPreferences prefs,
+    String key,
+  ) {
+    final raw = prefs.getString(key);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return null;
+      final record = WarehouseMacroRecord.fromJson(
+        Map<String, dynamic>.from(decoded),
+      );
+      if (record.schoolId.isEmpty || record.adapterId.isEmpty) return null;
+      return WarehouseMacroIndexEntry(
+        schoolId: record.schoolId,
+        adapterId: record.adapterId,
+        updatedAt: record.updatedAt,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<WarehouseMacroIndexEntry> _allEntriesFromRecordBlobs(
+    SharedPreferences prefs,
+  ) {
+    return _recordBlobKeys(prefs, listed: const {})
+        .map((key) => _entryFromRecordBlob(prefs, key))
+        .whereType<WarehouseMacroIndexEntry>()
+        .toList();
+  }
+
+  /// 记录本体的 key 集合。注意 `indexKey` 本身也以同一个前缀开头，必须排掉。
+  Iterable<String> _recordBlobKeys(
+    SharedPreferences prefs, {
+    required Set<String> listed,
+  }) {
+    return prefs.getKeys().where(
+      (key) =>
+          key.startsWith(WarehouseMacroRecord.recordKeyPrefix) &&
+          key != WarehouseMacroRecord.indexKey &&
+          !listed.contains(key),
+    );
+  }
+
+  /// 当前目录 = 目录文件 ∪ 目录里漏掉的记录本体。
+  ///
+  /// 后者覆盖「本体写完、目录写失败」这种半途中断（进程被杀 / 存储异常）：宏
+  /// 还在，只是没进目录，列不出来也导不出去，而 `hasMacro`（直接查本体）又说
+  /// 有，于是自动录制被抑制 —— 用户两头对不上，也没有任何路径能自愈。
+  /// 目录坏了则整份从本体重建。`shouldPersist` 告诉调用方这次读出了出入，
+  /// 值得把修好的目录写回去（只在真的有出入时才付出解码与一次落盘）。
+  ({List<WarehouseMacroIndexEntry> entries, bool shouldPersist})
+      _currentIndexEntries(SharedPreferences prefs) {
+    final parsed = _parseIndexEntries(
+      prefs.getString(WarehouseMacroRecord.indexKey),
+    );
+    if (parsed == null) {
+      final rebuilt = _allEntriesFromRecordBlobs(prefs);
+      return (entries: rebuilt, shouldPersist: rebuilt.isNotEmpty);
+    }
+    final listed = parsed
+        .map((e) => WarehouseMacroRecord.storageKey(e.schoolId, e.adapterId))
+        .toSet();
+    final orphans = _recordBlobKeys(prefs, listed: listed)
+        .map((key) => _entryFromRecordBlob(prefs, key))
+        .whereType<WarehouseMacroIndexEntry>()
+        .toList();
+    return (
+      entries: [...parsed, ...orphans],
+      shouldPersist: orphans.isNotEmpty,
+    );
+  }
+
+  Future<void> _persistIndex(
+    SharedPreferences prefs,
+    List<WarehouseMacroIndexEntry> entries,
+  ) async {
+    await prefs.setString(
+      WarehouseMacroRecord.indexKey,
+      jsonEncode(entries.map((e) => e.toJson()).toList()),
+    );
   }
 
   Future<List<WarehouseMacroRecord>> exportAllMacros() async {
@@ -199,15 +271,22 @@ class WarehouseMacroService {
     // （磁盘满 / 进程被杀）时会留下本地宏被清空、远端记录只落一半的
     // 两头丢状态。字符串全部就绪后，删除+写入阶段只剩纯 key-value 落盘，
     // 失败窗口收窄到单条写入，不再有「整库已清、数据未落」的中间态。
-    final serialized = <String, String>{
+    // 先按存储 key 收敛一份：导入的 records 里若有两所学校/适配器拼出同一个
+    // key（同名重复项、或上游导出带了重复行），本体天然只留一条，而目录原先是
+    // 逐条 records 生成的，于是同一个宏会在列表里出现两遍，删一次还删不干净。
+    final byKey = <String, WarehouseMacroRecord>{
       for (final record in records)
         WarehouseMacroRecord.storageKey(
           record.schoolId,
           record.adapterId,
-        ): jsonEncode(record.toJson()),
+        ): record,
+    };
+    final serialized = <String, String>{
+      for (final entry in byKey.entries)
+        entry.key: jsonEncode(entry.value.toJson()),
     };
     final indexJson = jsonEncode([
-      for (final record in records)
+      for (final record in byKey.values)
         WarehouseMacroIndexEntry(
           schoolId: record.schoolId,
           adapterId: record.adapterId,

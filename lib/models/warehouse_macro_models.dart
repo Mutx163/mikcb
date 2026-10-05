@@ -329,7 +329,10 @@ class WarehouseMacroRecord {
 
   /// 用于 SharedPreferences 的存储 key
   static String storageKey(String schoolId, String adapterId) =>
-      'warehouse_macro_record_${schoolId}_$adapterId';
+      '$recordKeyPrefix${schoolId}_$adapterId';
+
+  /// 记录本体的 key 前缀。注意 [indexKey] 也以它开头，按前缀扫描时必须排掉。
+  static const String recordKeyPrefix = 'warehouse_macro_record_';
 
   /// 所有宏记录索引的 key
   static const String indexKey = 'warehouse_macro_record_index';
