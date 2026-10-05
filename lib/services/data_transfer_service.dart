@@ -310,7 +310,21 @@ class DataTransferService {
       TimeScheme.fromJson,
     );
     if ((rawProfiles.isNotEmpty && profiles.isEmpty) ||
-        (rawTimeSchemes.isNotEmpty && timeSchemes.isEmpty)) {
+        (rawTimeSchemes.isNotEmpty && timeSchemes.isEmpty) ||
+        // 容器级条目不许"静默变少"：一档课表 = 它的课 + 考试 + 作业，一条作息 = 整张
+        // 节次表。上面那条守卫只挡"全丢光"，而 `_parseOptionalList` 是逐条
+        // `catch (_) { continue; }`，`TimetableProfile.fromJson`
+        // （`timetable_profile.dart:92` 硬转 `json['id'] as String`）或
+        // `TimeScheme.fromJson` 里任何一处畸形都会让**一整档**被丢掉而其余照常被读到。
+        // 下游 `import_export_service.dart:515-520` 是 `host._profiles = backup.profiles`
+        // 整表替换并落盘、`importFullAppDataBackup` 返回 null（成功），撤销同源
+        // （`unified_transfer_service.dart:894`）—— 用户视角是"导入成功后某一整份课表
+        // 自己消失了"，下一次云同步还会把这份残缺刷给另一台设备。
+        // 与本文件 :92-110 对 `.mikcb` 单课表立下的口径一致：允许条目级逐条跳过
+        // （课程/任务/考试，`data_transfer_service_test.dart:104-126` 把它钉成了设计），
+        // 但容器不许被静默丢弃 —— 宁可整份拒收，让用户拿到一份完整的文件重试或换一份。
+        rawProfiles.length != profiles.length ||
+        rawTimeSchemes.length != timeSchemes.length) {
       throw const FormatException('missing_full_backup_data');
     }
 
