@@ -295,6 +295,89 @@ void main() {
       expect(provider.locationTimeGroups, hasLength(1));
       expect(provider.locationTimeGroups.single.id, group.id);
     });
+
+    // 第 27 轮回归钉：四个分组写入口里只有 `replaceLocationTimeGroups`
+    // （timetable_provider.dart:1574-1588）没走 `_commitLocationGroupChange`，
+    // 它是「改内存 → 裸 await 落盘 → 重算」。传输层应用（unified_transfer_service.dart:850/877/899）、
+    // 教务导入（course_import_screen.dart:6018）、云快照恢复
+    // （app_sync_snapshot_service.dart:908）都调它。
+    test('replaceLocationTimeGroups 写盘失败后分组列表必须整体退回', () async {
+      final scheme = await provider.createTimeScheme(
+        name: '分组用的作息3',
+        sections: const [SectionTime(startTime: '08:00', endTime: '08:45')],
+      );
+      final kept = await provider.createLocationTimeGroup(
+        name: '五教',
+        timeSchemeId: scheme.id,
+        keywords: const [LocationKeyword(pattern: '五教')],
+      );
+
+      storage.groupFailures = 1;
+      await expectLater(
+        provider.replaceLocationTimeGroups(
+          const <LocationTimeGroup>[],
+          resync: false,
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(
+        provider.locationTimeGroups.map((item) => item.id),
+        [kept.id],
+        reason: '修复前这里为空的：内存停在没落库的分组列表上',
+      );
+    });
+
+    test('replaceLocationTimeGroups 连重算一起退回', () async {
+      await provider.createTimeScheme(
+        name: '分组用的作息4',
+        sections: const [SectionTime(startTime: '08:00', endTime: '08:45')],
+      );
+      await provider.addCourse(
+        Course(
+          id: 'loc1',
+          name: '结构化面试',
+          teacher: '王老师',
+          location: '六教101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 1,
+          startTime: '08:00',
+          endTime: '08:45',
+        ),
+      );
+      final coursesBefore = provider.courses
+          .map((course) => '${course.startTime}/${course.startSection}')
+          .toList();
+      final profilesBefore = provider.profiles.length;
+
+      final other = await provider.createTimeScheme(
+        name: '分组用的作息5',
+        sections: const [SectionTime(startTime: '16:00', endTime: '16:45')],
+      );
+      storage.groupFailures = 2;
+      await expectLater(
+        provider.replaceLocationTimeGroups([
+          LocationTimeGroup(
+            id: 'g-replace',
+            name: '六教',
+            timeSchemeId: other.id,
+            keywords: const [LocationKeyword(pattern: '六教')],
+          ),
+        ]),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(
+        provider.courses
+            .map((course) => '${course.startTime}/${course.startSection}')
+            .toList(),
+        coursesBefore,
+        reason: '`_resyncAllProfilesWithLocationRules` 改掉的钟点要一起退',
+      );
+      expect(provider.profiles.length, profilesBefore);
+      expect(provider.locationTimeGroups, isEmpty);
+    });
   });
 
   group('导入为新课表的落盘失败回滚', () {

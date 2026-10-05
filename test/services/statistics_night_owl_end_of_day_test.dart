@@ -57,7 +57,7 @@ void main() {
     final courses = [
       lesson('owl', endTime: '24:00'),
       lesson('normal', endTime: '21:30'),
-      lesson('morning', endTime: '08:45', startSection: 1, endSection: 1),
+      lesson('morning', endTime: '08:45'),
     ];
 
     final utilization = StatisticsService.calculateTimeUtilization(

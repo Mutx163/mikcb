@@ -86,6 +86,7 @@ part 'timetable/schedule_item_repository.dart';
 part 'timetable/import_export_service.dart';
 part 'timetable/live_activity_controller.dart';
 part 'timetable/settings_repository.dart';
+part 'timetable/location_group_repository.dart';
 
 bool _isLiveTestingFixture(Course course) => course.id.startsWith('live_test_');
 
@@ -1450,39 +1451,6 @@ class TimetableProvider with ChangeNotifier {
     await _updateLiveActivity();
   }
 
-  /// 地点时间分组的四个写入口同样收进 `_mutationGate`：`_resyncAllProfilesWith
-  /// LocationRules` 会按「自己读到的分组」重算**每个课表**的 courses 并全量覆写
-  /// profiles 键（:1448），还会用那份结果反向覆盖 `_courses`/`_settings`（:1445）。
-  /// 中途让出时门内写者（updateCourse 等）刚落的盘会被这份旧口径重算结果盖掉。
-  /// 地点分组写入的收口：任一步 await 失败就把四份内存状态整体退回，并尽力把旧
-  /// 分组列表重新落盘（补偿），最后 rethrow。
-  ///
-  /// 形状同 `_applySavedThemes`（主题族）与 `_timetableUpdateTimeScheme`（作息）。
-  /// 分组写成功但 `_resyncAllProfilesWithLocationRules` 失败时也必须退：否则盘上是
-  /// 新分组、课表钟点还是旧口径，下一次任意成功写入会把这份不一致永久坐实。
-  Future<void> _commitLocationGroupChange(
-    List<LocationTimeGroup> previousGroups,
-    Future<void> Function() write,
-  ) async {
-    final snapshotProfiles = List<TimetableProfile>.from(_profiles);
-    final snapshotSettings = _settings;
-    final snapshotCourses = List<Course>.from(_courses);
-    try {
-      await write();
-    } catch (_) {
-      _locationTimeGroups = previousGroups;
-      _profiles = snapshotProfiles;
-      _settings = snapshotSettings;
-      _courses = snapshotCourses;
-      try {
-        await _persistLocationTimeGroups();
-      } catch (_) {
-        // 补偿失败不遮住原始错误：与 updateTimetableSettings 的旧路径同处理。
-      }
-      rethrow;
-    }
-  }
-
   Future<LocationTimeGroup> createLocationTimeGroup({
     required String name,
     required String timeSchemeId,
@@ -1510,7 +1478,7 @@ class TimetableProvider with ChangeNotifier {
       );
       final previousGroups = List<LocationTimeGroup>.from(_locationTimeGroups);
       _locationTimeGroups = [..._locationTimeGroups, group];
-      await _commitLocationGroupChange(previousGroups, () async {
+      await _commitLocationGroupChange(this, previousGroups, () async {
         await _persistLocationTimeGroups();
         await _resyncAllProfilesWithLocationRules();
       });
@@ -1545,7 +1513,7 @@ class TimetableProvider with ChangeNotifier {
       final next = List<LocationTimeGroup>.from(_locationTimeGroups);
       next[index] = updated;
       _locationTimeGroups = next;
-      await _commitLocationGroupChange(previousGroups, () async {
+      await _commitLocationGroupChange(this, previousGroups, () async {
         await _persistLocationTimeGroups();
         await _resyncAllProfilesWithLocationRules();
       });
@@ -1563,7 +1531,7 @@ class TimetableProvider with ChangeNotifier {
       if (_locationTimeGroups.length == previousGroups.length) {
         return false;
       }
-      await _commitLocationGroupChange(previousGroups, () async {
+      await _commitLocationGroupChange(this, previousGroups, () async {
         await _persistLocationTimeGroups();
         await _resyncAllProfilesWithLocationRules();
       });
@@ -1571,19 +1539,26 @@ class TimetableProvider with ChangeNotifier {
     });
   }
 
+  /// 整份替换分组列表（传输层应用、教务导入、云快照恢复都走这里）。
+  ///
+  /// 与另外三个入口同一个收口 `_commitLocationGroupChange`：落盘或重算任一步失败，
+  /// 分组、课表、设置、课程四份内存状态整体退回并补偿落盘后上抛。
   Future<void> replaceLocationTimeGroups(
     List<LocationTimeGroup> groups, {
     bool resync = true,
   }) {
     return _runMutation(() async {
       await initialize();
+      final previousGroups = List<LocationTimeGroup>.from(_locationTimeGroups);
       _locationTimeGroups = List<LocationTimeGroup>.from(groups);
-      await _persistLocationTimeGroups();
-      if (resync) {
-        await _resyncAllProfilesWithLocationRules();
-      } else {
+      await _commitLocationGroupChange(this, previousGroups, () async {
+        await _persistLocationTimeGroups();
+        if (resync) {
+          await _resyncAllProfilesWithLocationRules();
+          return;
+        }
         _notifyStateChanged();
-      }
+      });
     });
   }
 

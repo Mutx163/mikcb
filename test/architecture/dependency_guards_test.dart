@@ -136,7 +136,10 @@ void main() {
     // `_normalizeSettingsWithTimeScheme` 与快照/回滚 helper 一起移进新分片
     // `timetable/settings_repository.dart`（棘轮的既定做法：规则放回它该在的分片，
     // 不是抬基线）。
-    const baselineLines = 4622;
+    // 4622→4597：第四个分组写入口 `replaceLocationTimeGroups` 接进
+    // `_commitLocationGroupChange` 时，把该收口整体移进新分片
+    // `timetable/location_group_repository.dart`（同上一条规矩，不抬基线）。
+    const baselineLines = 4597;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
@@ -191,6 +194,8 @@ void main() {
       File('lib/providers/timetable/import_export_service.dart'),
       File('lib/providers/timetable/time_scheme_repository.dart'),
       File('lib/providers/timetable/live_activity_controller.dart'),
+      File('lib/providers/timetable/settings_repository.dart'),
+      File('lib/providers/timetable/location_group_repository.dart'),
     ];
     const marker = '_persistActiveProfileState(';
     var callSites = 0;
