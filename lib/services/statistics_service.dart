@@ -346,15 +346,44 @@ class StatisticsService {
     }
 
     // 时间跨度
-    final allStartTimes = allCourses.map((c) => c.startTime).toList()..sort();
-    final allEndTimes = allCourses.map((c) => c.endTime).toList()..sort();
-    if (allStartTimes.isNotEmpty && allEndTimes.isNotEmpty) {
+    //
+    // 按**分钟数**取最早/最晚，不再排钟点串的字典序。这是同文件
+    // `calculateTimeUtilization`（:591-601）已经改过的同一处规则的第 4 份副本，
+    // 故事卡这一份漏改，`statistics_time_utilization_clock_test.dart` 钉住的
+    // 只有那边。字典序有四种确定错法：未补零的 `8:00`（'8' > '0'）会当上
+    // 「最晚下课」；`''`（作息按位补空的洞，timetable_settings.dart:1030）
+    // 会当上「最早」并让卡片渲染出空读数；`26:00` 这类畸形串赢下「最晚」；
+    // 全表都是坏钟点时还会照样产出一条两个读数都空的故事卡。
+    // 与那条路径一致：只比较，不回写存储值。
+    String? earliestStart;
+    String? latestEnd;
+    int? earliestMinutes;
+    int? latestMinutes;
+    for (final course in allCourses) {
+      final startMinutes = ClockTime.tryParse(course.startTime)?.totalMinutes;
+      // 末节课 / 晚自习写 `24:00` 是本仓认可的「当天结束」，允许它参与比较。
+      final endMinutes = ClockTime.tryParse(
+        course.endTime,
+        allowEndOfDay: true,
+      )?.totalMinutes;
+      if (startMinutes != null &&
+          (earliestMinutes == null || startMinutes < earliestMinutes)) {
+        earliestMinutes = startMinutes;
+        earliestStart = course.startTime;
+      }
+      if (endMinutes != null &&
+          (latestMinutes == null || endMinutes > latestMinutes)) {
+        latestMinutes = endMinutes;
+        latestEnd = course.endTime;
+      }
+    }
+    if (earliestStart != null && latestEnd != null) {
       stories.add(
         DataStory(
           type: StoryType.timeRange,
           icon: Icons.access_time_rounded,
-          earliestTime: allStartTimes.first,
-          latestTime: allEndTimes.last,
+          earliestTime: earliestStart,
+          latestTime: latestEnd,
         ),
       );
     }
