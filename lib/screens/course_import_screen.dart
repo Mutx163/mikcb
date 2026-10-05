@@ -5032,6 +5032,11 @@ class _WarehouseAdapterWebLoginScreenState
     final l10n = AppLocalizations.of(context)!;
     _debugImportLog('execute import script start');
     _resetPendingImportedArtifacts();
+    // 每次执行重新起算。这个标记的含义是「本轮的导入结果 sheet 已经弹过了」，
+    // 用来防止 sheet 弹两次；但它原先置 true 之后再没有任何复位点，于是同一个
+    // 页面里第二次快速导入时 _showQuickImportFinishedSheet 直接 early return，
+    // 成功也不再给完成提示 —— 用户只能靠状态栏那行小字猜这次到底成没成。
+    _quickImportResultHandled = false;
     setState(() {
       _isExecutingImport = true;
       _lastScriptStatus = _isUsingLocalDebugScript
@@ -6622,7 +6627,15 @@ $kWarehouseBridgeCompatShim  try {
       confirmLabel: l10n.saveAction,
     );
 
-    if (shouldSave != true || !mounted) {
+    // `mounted` 必须先判：原来写成 `if (shouldSave != true || !mounted)`，
+    // 页面已销毁而用户点了「保存」时条件同样为真，于是这个分支会在 defunct 的
+    // State 上调 setState（debug 下直接抛「setState() called after dispose()」，
+    // 而且异常发生在 await 之后，没人接）。
+    if (!mounted) {
+      _macroDialogResponses.clear();
+      return;
+    }
+    if (shouldSave != true) {
       setState(() {
         _macroRecordingState = MacroRecordingState.idle;
         _macroRawEvents = [];
@@ -6734,6 +6747,9 @@ $kWarehouseBridgeCompatShim  try {
               );
               return false;
             }
+            // 上面为了拿 host 门禁又 await 了两回（_resolveCurrentUrl 与
+            // trustedHosts），下面那句 setState 之前必须重新确认页面还在。
+            if (!mounted) return false;
             if (remembered != null && remembered.password.isNotEmpty) {
               if (_rememberedLogin == null) {
                 setState(() {
