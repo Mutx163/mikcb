@@ -101,7 +101,14 @@ void main() {
     // 两次 saveProfiles/setActiveProfileId 都在门外无 try/catch：抛错就是
     // "内存里课表已经没了、盘上还在"，而下一次任意成功写入会把删除坐实。
     // 回滚形状与同文件 switchProfile（:2445-2459）一致，不是新业务状态机。
-    const baselineLines = 4972;
+    // 4972→4869（本仓第一次往下调）：日期规则族补落盘失败回滚时，顺手把
+    // 「到点批量套用」的 146 行主体移入 part 文件 `timetable/schedule_date_rule_repository.dart`
+    // （原 :1751-1896，本类里最长的写路径之一）。移出不是为绕开本棘轮：它原本就该和
+    // 作息族 `_timetableApplyTimeScheme`、地点分组族 `_commitLocationGroupChange` 同处
+    // ——三族做的是同一件事（改默认作息 + 重写未锁课程钟点 + 落盘），回滚形状也必须
+    // 一起改。本文件里只留一层委托（7 行），四个 CRUD 入口各加一段"规则没落成功就退回
+    // 原列表"（+45），净减 103 行。按棘轮"只减不增"的约定把基线钉到实测值。
+    const baselineLines = 4869;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

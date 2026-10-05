@@ -77,6 +77,7 @@ export '../domain/import_export_logic.dart'
         syncImportedCourses;
 
 part 'timetable/time_scheme_repository.dart';
+part 'timetable/schedule_date_rule_repository.dart';
 part 'timetable/import_export_service.dart';
 part 'timetable/live_activity_controller.dart';
 
@@ -1630,8 +1631,17 @@ class TimetableProvider with ChangeNotifier {
         throw ArgumentError(validationError);
       }
 
+      final previousRules = _scheduleDateRules;
       _scheduleDateRules = next;
-      await _persistScheduleDateRules();
+      try {
+        await _persistScheduleDateRules();
+      } catch (_) {
+        // 规则没落成功就不该留在内存里：幻影规则会被下一次任意成功写入当成
+        // 既有状态落盘，而它指向的作息改动还会被"到点批量套用"顺带坐实。
+        // 形状同 `_commitLocationGroupChange`（地点分组族）。
+        _scheduleDateRules = previousRules;
+        rethrow;
+      }
       // Nested under the same mutation gate (re-entrant).
       final applyResult = await applyDueScheduleDateRulesDetailed();
       if (!applyResult.didApply) {
@@ -1666,8 +1676,16 @@ class TimetableProvider with ChangeNotifier {
         throw ArgumentError(validationError);
       }
 
+      final previousRules = _scheduleDateRules;
       _scheduleDateRules = next;
-      await _persistScheduleDateRules();
+      try {
+        await _persistScheduleDateRules();
+      } catch (_) {
+        // 同 createScheduleDateRule：改名单/日期没落成功就要连列表一起退回，
+        // 否则下一次成功写入会把这份"盘上没有的改动"永久坐实。
+        _scheduleDateRules = previousRules;
+        rethrow;
+      }
       final applyResult = await applyDueScheduleDateRulesDetailed();
       if (!applyResult.didApply) {
         _notifyStateChanged();
@@ -1683,13 +1701,21 @@ class TimetableProvider with ChangeNotifier {
     return _runMutation(() async {
       await initialize();
       final beforeCount = _scheduleDateRules.length;
+      final previousRules = _scheduleDateRules;
       _scheduleDateRules = _scheduleDateRules
           .where((rule) => rule.id != ruleId)
           .toList();
       if (_scheduleDateRules.length == beforeCount) {
         return false;
       }
-      await _persistScheduleDateRules();
+      try {
+        await _persistScheduleDateRules();
+      } catch (_) {
+        // 删除没落成功却已在内存里生效，会被下一次任意成功写入坐实成永久删除
+        // —— 用户视角是"删除失败的规则过两天自己没了"。
+        _scheduleDateRules = previousRules;
+        rethrow;
+      }
       _notifyStateChanged();
       return true;
     });
@@ -1709,8 +1735,18 @@ class TimetableProvider with ChangeNotifier {
       if (validationError != null) {
         throw ArgumentError(validationError);
       }
+      final previousRules = _scheduleDateRules;
       _scheduleDateRules = next;
-      await _persistScheduleDateRules();
+      try {
+        await _persistScheduleDateRules();
+      } catch (_) {
+        // 本入口是导入/恢复走的路径：规则没落成功就退回原列表，否则内存里
+        // 那份"备份带来的规则"会被下一次成功写入永久落盘。规则落成功之后
+        // 的批量套用若失败，由它自己的回滚负责，这里不能再把规则摘掉
+        // （盘上已经有了，摘掉就是双向错配）。
+        _scheduleDateRules = previousRules;
+        rethrow;
+      }
       if (resync) {
         final didApply = await applyDueScheduleDateRules();
         if (!didApply) {
@@ -1748,152 +1784,13 @@ class TimetableProvider with ChangeNotifier {
     return applyResult.didApply;
   }
 
-  /// Single implementation of seasonal bulk-apply. Returns structured outcome
-  /// for UI toasts; [applyDueScheduleDateRules] maps [didApply] to bool.
+  /// Single implementation of seasonal bulk-apply lives in
+  /// `timetable/schedule_date_rule_repository.dart` —— 批量套用会重写**每一个**课表的
+  /// 默认作息、节次表与未锁课程钟点，它的落盘失败整体回滚也在那里，与作息族
+  /// (`_timetableApplyTimeScheme`)、地点分组族 (`_commitLocationGroupChange`) 同形。
   Future<ScheduleDateRuleApplyResult> _applyDueScheduleDateRulesDetailed({
     DateTime? now,
-  }) async {
-    await initialize();
-    final reference = now ?? DateTime.now();
-    final matched = ScheduleDateRuleLogic.match(reference, _scheduleDateRules);
-    if (!ScheduleDateRuleLogic.shouldBulkApply(
-      matchedRule: matched,
-      lastAppliedSignature: _scheduleDateRuleLastAppliedSignature,
-    )) {
-      return const ScheduleDateRuleApplyResult(
-        outcome: ScheduleDateRuleApplyOutcome.notDue,
-      );
-    }
-
-    final rule = matched!;
-    final scheme = _getTimeSchemeById(rule.timeSchemeId);
-    if (scheme == null) {
-      appDebugLog(
-        'ScheduleDateRule',
-        '跳过批量套用: 模板不存在 rule=${rule.name} schemeId=${rule.timeSchemeId}',
-      );
-      await AppLogService.instance.warn(
-        'schedule_date_rule',
-        '日期规则批量套用失败：时间模板不存在',
-        extras: {
-          'ruleId': rule.id,
-          'ruleName': rule.name,
-          'schemeId': rule.timeSchemeId,
-        },
-      );
-      return const ScheduleDateRuleApplyResult(
-        outcome: ScheduleDateRuleApplyOutcome.schemeMissing,
-      );
-    }
-
-    // Validate every profile before rewriting clocks; active-only checks can
-    // leave inactive profiles pointing at a scheme that cannot represent them.
-    var requiredMaxSection = 0;
-    for (final profile in _profiles) {
-      for (final course in profile.courses) {
-        if (course.endSection > requiredMaxSection) {
-          requiredMaxSection = course.endSection;
-        }
-      }
-    }
-    for (final course in _courses) {
-      if (course.endSection > requiredMaxSection) {
-        requiredMaxSection = course.endSection;
-      }
-    }
-    if (requiredMaxSection > scheme.sections.length) {
-      appDebugLog(
-        'ScheduleDateRule',
-        '跳过批量套用: 节次超出模板 rule=${rule.name} need=$requiredMaxSection '
-            'has=${scheme.sections.length}',
-      );
-      await AppLogService.instance.warn(
-        'schedule_date_rule',
-        '日期规则批量套用失败：节次超出模板',
-        extras: {
-          'ruleId': rule.id,
-          'ruleName': rule.name,
-          'schemeId': scheme.id,
-          'requiredMaxSection': requiredMaxSection,
-          'schemeSections': scheme.sections.length,
-        },
-      );
-      return ScheduleDateRuleApplyResult(
-        outcome: ScheduleDateRuleApplyOutcome.sectionOverflow,
-        requiredMaxSection: requiredMaxSection,
-        schemeSectionCount: scheme.sections.length,
-      );
-    }
-
-    final signature = ScheduleDateRuleLogic.appliedSignature(rule);
-    appDebugLog(
-      'ScheduleDateRule',
-      '批量套用作息: rule=${rule.name} scheme=${scheme.name} '
-          'range=${rule.startDate}~${rule.endDate} signature=$signature',
-    );
-
-    for (var index = 0; index < _profiles.length; index++) {
-      final profile = _profiles[index];
-      final nextSettings = profile.settings.copyWith(
-        activeTimeSchemeId: scheme.id,
-        sections: List<SectionTime>.from(scheme.sections),
-      );
-      final syncedCourses = _syncCoursesWithEffectiveTimeSchemes(
-        List<Course>.from(profile.courses),
-        settings: nextSettings,
-      );
-      _profiles[index] = profile.copyWith(
-        settings: nextSettings,
-        courses: syncedCourses,
-      );
-    }
-
-    final activeIndex = _profiles.indexWhere(
-      (profile) => profile.id == _activeProfileId,
-    );
-    if (activeIndex != -1) {
-      _courses = List<Course>.from(_profiles[activeIndex].courses);
-      _settings = _settingsFromProfile(_profiles[activeIndex]);
-    } else {
-      _settings = _settings.copyWith(
-        activeTimeSchemeId: scheme.id,
-        sections: List<SectionTime>.from(scheme.sections),
-      );
-      _courses = _syncCoursesWithEffectiveTimeSchemes(
-        List<Course>.from(_courses),
-        settings: _settings,
-      );
-    }
-
-    await _profileRepository.saveProfiles(_profiles);
-    _scheduleDateRuleLastAppliedSignature = signature;
-    await _profileRepository.saveScheduleDateRuleLastAppliedSignature(
-      signature,
-    );
-    notifyUserDataChangedForSync();
-    _currentLiveCourseId = null;
-    _notifyStateChanged();
-    await _updateLiveActivity();
-
-    unawaited(
-      AppLogService.instance.info(
-        'schedule_date_rule',
-        '已按日期规则批量套用作息',
-        extras: {
-          'ruleId': rule.id,
-          'ruleName': rule.name,
-          'schemeId': scheme.id,
-          'schemeName': scheme.name,
-          'startDate': rule.startDate,
-          'endDate': rule.endDate,
-          'signature': signature,
-        },
-      ),
-    );
-    return const ScheduleDateRuleApplyResult(
-      outcome: ScheduleDateRuleApplyOutcome.applied,
-    );
-  }
+  }) async => _timetableApplyDueScheduleDateRulesDetailed(this, now: now);
 
   /// Apply location routing to unlocked courses on the active profile.
   ///

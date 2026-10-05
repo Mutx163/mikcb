@@ -9,7 +9,9 @@ import 'dart:convert';
 /// - Afterwards users may manually edit courses; daily opens do not re-apply.
 /// - Course override and location groups still win for individual courses.
 ///
-/// Product cap: at most 2 enabled rules per device (enforced by provider).
+/// Product cap: at most 2 rules per device，**含停用的**（`maxRulesPerDevice`
+/// 由 `validateRules` 与 `createScheduleDateRule` 按列表总长把关，UI 文案也是
+/// "最多只能添加 2 条日期规则"）；日期区间不得重叠这一条只对启用中的规则检查。
 class ScheduleDateRule {
   final String id;
   final String name;
