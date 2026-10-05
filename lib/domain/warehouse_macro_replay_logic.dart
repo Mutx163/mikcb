@@ -24,6 +24,46 @@ Map<String, dynamic>? decodeBridgeMessage(String rawMessage) {
   return null;
 }
 
+/// 脚本发来 `complete` 时该怎么收尾。
+enum ImportCompletionAction {
+  /// 正常收尾：取消超时、复位执行中、状态写「导入流程已完成」。
+  finalize,
+
+  /// 宏回放还在等课程数据：只更新状态文字，不动执行中标记、不取消超时。
+  showStatusOnly,
+
+  /// 本轮导入已经定局（被取消/失败/超时/写完），不再由 complete 改写。
+  ignore,
+}
+
+/// `complete` 的处置判定。
+///
+/// 关键点：`saveImportedCourses` 在 JS 侧是 fire-and-forget —— 它 postMessage
+/// 之后就立刻 `return true`，课程数据到底解没解出来、用户选没选覆盖、写库成没
+/// 成功，Dart 那边还在异步跑。所以脚本随后发的 `complete` 完全可能落在「本轮
+/// 已经定局」之后：用户在「替换还是合并」里点了取消，屏幕已经把状态写成
+/// 「导入已取消」并弹出错误提示，紧接着这条 `complete` 又把状态改成
+/// 「导入流程已完成」—— 取消掉的导入在状态栏里显示成功。
+///
+/// 因此只要 `_isExecutingImport` 已经是 false（取消、失败、超时、写完四条路径
+/// 都会先复位它），`complete` 就只能被忽略；判定顺序也排在宏回放之前，避免
+/// 「已定局 + 仍在等课程」并存时反而写出成功文案。
+ImportCompletionAction importCompletionAction({
+  required bool isExecutingImport,
+  required bool isMacroReplay,
+  required bool playbackWaitingForCourses,
+  required bool quickResultHandled,
+}) {
+  if (!isExecutingImport) return ImportCompletionAction.ignore;
+  if (isMacroReplay && playbackWaitingForCourses) {
+    return ImportCompletionAction.showStatusOnly;
+  }
+  if (isMacroReplay && quickResultHandled) {
+    return ImportCompletionAction.ignore;
+  }
+  return ImportCompletionAction.finalize;
+}
+
 /// 归一化 `runJavaScriptReturningResult` / `evaluateJavascript` 的返回值。
 ///
 /// 平台对**字符串型**表达式的返回值是按 JSON 编码送回来的，例如 JS 里

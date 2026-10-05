@@ -5287,30 +5287,37 @@ $kWarehouseBridgeCompatShim  try {
       case 'complete':
         if (!mounted) return;
         final status = AppLocalizations.of(context)!.importFlowFinished;
-        _debugImportLog('bridge complete entered');
-        if (_isMacroReplay) {
-          if (_playbackState == PlaybackUiState.executingImport) {
+        final action = importCompletionAction(
+          isExecutingImport: _isExecutingImport,
+          isMacroReplay: _isMacroReplay,
+          playbackWaitingForCourses:
+              _playbackState == PlaybackUiState.executingImport,
+          quickResultHandled: _quickImportResultHandled,
+        );
+        switch (action) {
+          case ImportCompletionAction.showStatusOnly:
             _debugImportLog(
-              'bridge complete ignored for macro replay while waiting for courses',
+              'bridge complete status-only: macro replay still waiting for courses',
             );
             setState(() {
               _lastScriptStatus = status;
             });
-            break;
-          }
-          if (_quickImportResultHandled) {
+          case ImportCompletionAction.ignore:
+            // 本轮导入已经定局（取消 / 失败 / 超时 / 写完都会先把
+            // _isExecutingImport 复位），这条迟到的 complete 不能再把
+            // 「导入已取消」刷成「导入流程已完成」。
             _debugImportLog(
-              'bridge complete ignored because quick import result already shown',
+              'bridge complete ignored: import already settled '
+              'macro=$_isMacroReplay quickHandled=$_quickImportResultHandled',
             );
-            break;
-          }
+          case ImportCompletionAction.finalize:
+            _debugImportLog('bridge complete -> finish import flow');
+            _cancelImportTimeout();
+            setState(() {
+              _isExecutingImport = false;
+              _lastScriptStatus = status;
+            });
         }
-        _debugImportLog('bridge complete -> finish non-macro import flow');
-        _cancelImportTimeout();
-        setState(() {
-          _isExecutingImport = false;
-          _lastScriptStatus = status;
-        });
         break;
     }
   }

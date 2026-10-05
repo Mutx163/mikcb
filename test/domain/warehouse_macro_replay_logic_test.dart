@@ -367,4 +367,113 @@ void main() {
       );
     });
   });
+
+  group('importCompletionAction', () {
+    // 旧判定（course_import_screen.dart 的 case 'complete'）只看宏回放的两种
+    // 情形，其余一律 finalize，完全不看本轮导入是否已经定局。
+    ImportCompletionAction legacy({
+      required bool isMacroReplay,
+      required bool waitingForCourses,
+      required bool quickResultHandled,
+    }) {
+      if (isMacroReplay) {
+        if (waitingForCourses) return ImportCompletionAction.showStatusOnly;
+        if (quickResultHandled) return ImportCompletionAction.ignore;
+      }
+      return ImportCompletionAction.finalize;
+    }
+
+    test('取消之后迟到的 complete 不再把状态刷成已完成', () {
+      // 用户在「替换还是合并」里点了取消：屏幕把 _isExecutingImport 复位、
+      // 状态写成「导入已取消」并弹错误提示。而 saveImportedCourses 在 JS 侧是
+      // fire-and-forget（postMessage 后立刻 return true），脚本接着就发 complete
+      // —— 旧口径据此把状态改成「导入流程已完成」，取消掉的导入在状态栏里
+      // 显示成功。
+      expect(
+        importCompletionAction(
+          isExecutingImport: false,
+          isMacroReplay: false,
+          playbackWaitingForCourses: false,
+          quickResultHandled: false,
+        ),
+        ImportCompletionAction.ignore,
+      );
+      expect(
+        legacy(
+          isMacroReplay: false,
+          waitingForCourses: false,
+          quickResultHandled: false,
+        ),
+        ImportCompletionAction.finalize,
+      );
+    });
+
+    test('失败/超时后同样忽略；定局判定排在宏回放之前', () {
+      expect(
+        importCompletionAction(
+          isExecutingImport: false,
+          isMacroReplay: true,
+          playbackWaitingForCourses: true,
+          quickResultHandled: false,
+        ),
+        ImportCompletionAction.ignore,
+      );
+    });
+
+    test('正常执行中仍照常收尾，宏回放的两种既有分支不变', () {
+      expect(
+        importCompletionAction(
+          isExecutingImport: true,
+          isMacroReplay: false,
+          playbackWaitingForCourses: false,
+          quickResultHandled: false,
+        ),
+        ImportCompletionAction.finalize,
+      );
+      expect(
+        importCompletionAction(
+          isExecutingImport: true,
+          isMacroReplay: true,
+          playbackWaitingForCourses: true,
+          quickResultHandled: false,
+        ),
+        ImportCompletionAction.showStatusOnly,
+      );
+      expect(
+        importCompletionAction(
+          isExecutingImport: true,
+          isMacroReplay: true,
+          playbackWaitingForCourses: false,
+          quickResultHandled: true,
+        ),
+        ImportCompletionAction.ignore,
+      );
+    });
+
+    test('全组合不变量：不在执行中就一定忽略；非宏回放绝不只刷状态', () {
+      for (final executing in [true, false]) {
+        for (final macro in [true, false]) {
+          for (final waiting in [true, false]) {
+            for (final quickHandled in [true, false]) {
+              final action = importCompletionAction(
+                isExecutingImport: executing,
+                isMacroReplay: macro,
+                playbackWaitingForCourses: waiting,
+                quickResultHandled: quickHandled,
+              );
+              if (!executing) {
+                expect(action, ImportCompletionAction.ignore);
+              }
+              if (!macro) {
+                expect(action, isNot(ImportCompletionAction.showStatusOnly));
+              }
+              if (executing && macro && waiting) {
+                expect(action, ImportCompletionAction.showStatusOnly);
+              }
+            }
+          }
+        }
+      }
+    });
+  });
 }
