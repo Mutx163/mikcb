@@ -7,6 +7,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 
+import '../domain/warehouse_macro_replay_logic.dart';
 import '../models/warehouse_macro_models.dart';
 import 'warehouse_macro_recorder.dart';
 
@@ -272,30 +273,27 @@ class WarehouseMacroReplayer {
       );
     }
 
-    final completer = Completer<void>();
     final timeout = step.waitMs > 0 ? step.waitMs : 15000;
 
-    late final NavigationDelegate delegate;
-    delegate = NavigationDelegate(
-      onPageFinished: (url) {
-        _controller.setNavigationDelegate(delegate); // no-op, just to keep ref
-        if (!completer.isCompleted) completer.complete();
-      },
-    );
+    // 导航前先读一次当前文档地址：判据要比的是「文档换没换」，不是「有没有读到
+    // URL」。旧实现把这两件事混了：轮询条件是 currentUrl 非空，而导航前旧页面的
+    // URL 本来就非空 —— 第一拍就通过，15 秒超时形同虚设，只有末尾固定 500ms 在等。
+    // 更糟的是它顺手 new 了一个 NavigationDelegate，却只在它自己的 onPageFinished
+    // 里 setNavigationDelegate，等于从未注册，那个 completer 也就永远完不成（而且
+    // 根本没人 await 它）。这里不能提前替换代理：宿主屏幕的导航代理在驱动导入状态机。
+    final beforeHref = await _currentDocumentHref();
 
-    // 替换导航代理来监听完成
-    // 但由于无法直接替换，改用轮询方式
     _controller.loadRequest(uri);
 
-    // 轮询等待页面加载
     await _pollCondition(
       check: () async {
-        try {
-          final currentUrl = await _controller.currentUrl();
-          return currentUrl != null && currentUrl.isNotEmpty;
-        } catch (_) {
-          return false;
-        }
+        final document = await _currentDocumentState();
+        return isTargetDocumentLoaded(
+          beforeHref: beforeHref,
+          currentHref: document?.$1,
+          readyState: document?.$2,
+          targetHref: url,
+        );
       },
       timeout: Duration(milliseconds: timeout),
       stepLabel: _l10n.macroReplayNavigateTo(url),
@@ -303,6 +301,31 @@ class WarehouseMacroReplayer {
 
     // 额外等待确保页面完全渲染
     await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  /// 当前文档的 `location.href` 与 `document.readyState`。
+  ///
+  /// 导航提交的那一瞬间 JS 上下文可能不可用，或者返回的是旧文档 —— 一律回 null，
+  /// 由 [_pollCondition] 下一拍重试，绝不当成「加载好了」。
+  Future<(String? href, String? readyState)?> _currentDocumentState() async {
+    try {
+      final hrefResult = await _controller.runJavaScriptReturningResult(
+        'location.href',
+      );
+      final readyResult = await _controller.runJavaScriptReturningResult(
+        'document.readyState',
+      );
+      final href = _normalizeJsResult(hrefResult);
+      if (href.isEmpty) return null;
+      return (href, _normalizeJsResult(readyResult));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<String?> _currentDocumentHref() async {
+    final state = await _currentDocumentState();
+    return state?.$1;
   }
 
   Future<void> _executeFillField(MacroStep step) async {
@@ -560,15 +583,11 @@ bool shouldUseRememberedPasswordForManualStep(
               reason == l10n.macroReplayManualActionRequired);
 }
 
-/// 标准化 JS 返回值
-String _normalizeJsResult(Object? raw) {
-  if (raw == null) return '';
-  final s = raw.toString().trim();
-  // webview_flutter 有时会用引号包裹返回值
-  if (s.length >= 2 &&
-      ((s.startsWith('"') && s.endsWith('"')) ||
-          (s.startsWith("'") && s.endsWith("'")))) {
-    return s.substring(1, s.length - 1);
-  }
-  return s;
-}
+/// 标准化 JS 返回值。
+///
+/// 口径与屏幕侧统一到一个实现里（`normalizeWebScriptResult`）：平台把字符串型
+/// 返回值按 JSON 编码送回，必须整体解码才能还原 `\"`。旧实现只切首尾引号，
+/// 留下 `{\\"found\\":false}` 这种半截转义，`ensureMacroElementFound` 里的
+/// `jsonDecode` 必然抛 → 被 `on FormatException` 当成「非 JSON，忽略」→
+/// 填充/点击没找到元素却被判成功，宏继续往下跑。
+String _normalizeJsResult(Object? raw) => normalizeWebScriptResult(raw);
