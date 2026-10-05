@@ -39,7 +39,7 @@ void main() {
 
   group('单节课提醒的码与重算值不同源', () {
     test('buildFires 产出的码不等于 stableRequestCode(examId, offsetMinutes)', () {
-      final entry = ClassReminderEntry(
+      const entry = ClassReminderEntry(
         courseId: 'course-1',
         date: '2026-03-01',
         minuteOfDay: 540,
@@ -59,7 +59,7 @@ void main() {
           startTime: '09:00',
           endTime: '10:40',
         ),
-        now: DateTime(2026, 1, 1),
+        now: DateTime(2026), // 2026-01-01 本地零点
       );
 
       expect(built, hasLength(1));
