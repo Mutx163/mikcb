@@ -1633,7 +1633,7 @@ class TimetableSettings {
   /// [CourseGlassTuning.courseCard]。
   ///
   /// 刻意与 [liquidGlassTuning] 分开：卡片与全局是两套独立配置，共享的只有解析入口、
-  /// 深浅配方与**档位表**（四档预设引的是同一批常量，见 [courseCardGlassPreset]）。
+  /// 深浅配方与**档位表**（那 10 格预设引的是同一批常量，见 [courseCardGlassPreset]）。
   /// 为什么不是「另一个 [LiquidGlassTuning] 实例」这类复用：那份的 `fromJson` 缺键
   /// 无法区分"卡片的出厂值"，而卡片要有自己的存档键与自己的档位胶囊 ——
   /// 详见 `lib/models/course_glass_tuning.dart` 的类注释。

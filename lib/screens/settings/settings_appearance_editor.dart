@@ -891,75 +891,69 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
             const SizedBox(height: 20),
             HyperosSectionLabel(text: l10n.advancedMaterialTitle),
             const SizedBox(height: 8),
-            // 液态预设：快捷档位胶囊（内联，不开二级弹层）；自定义
-            // 时展开 8 项调参滑杆（从「高级材质」页直接搬入）。
-            _MaterialChoiceChips<LiquidGlassPreset>(
-              items: {
-                for (final preset in LiquidGlassPreset.values)
-                  liquidGlassPresetLabel(l10n, preset): preset,
-              },
-              value: _draft.liquidGlassPreset,
-              onChanged: (preset) {
-                if (preset == LiquidGlassPreset.custom) {
-                  _updateDraft(
-                    _draft.copyWith(
-                      liquidGlassPreset: LiquidGlassPreset.custom,
-                    ),
-                  );
-                  return;
-                }
-                _updateDraft(
-                  _draft.copyWith(
-                    liquidGlassPreset: preset,
-                    liquidGlassTuning: preset.recommendedTuning,
-                  ),
-                );
-              },
+            // 液态档位：**一根 10 格的节点滑杆**（2026-10-05 取代原先那排胶囊）。
+            // 下面八根旋钮**一直显示** —— 动任何一根就把档位打成「自定义」，
+            // 滑杆停在最近的那一格（见 [LiquidGlassTuning.nearestPreset]）。
+            HyperosListGroup(
+              children: [
+                _glassPresetSliderTile(
+                  l10n,
+                  preset: _draft.liquidGlassPreset,
+                  nearest:
+                      LiquidGlassTuning.nearestPreset(liquidTuning),
+                  onChanged: (preset) {
+                    _updateDraft(
+                      _draft.copyWith(
+                        liquidGlassPreset: preset,
+                        liquidGlassTuning: preset.recommendedTuning,
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             HyperosListGroup(
               children: [
-                if (_draft.liquidGlassPreset == LiquidGlassPreset.custom) ...[
-                  // 浅色档的八根旋钮（与深色档共用同一份渲染）。
-                  ..._glassSliderTiles(
-                    l10n,
-                    tuning: liquidTuning,
-                    onUpdate: _updateLiquidTuning,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        HyperosButton(
-                          label: l10n.liquidGlassResetAction,
-                          variant: HyperosButtonVariant.secondary,
-                          expand: true,
-                          onPressed: () {
-                            _updateDraft(
-                              _draft.copyWith(
-                                liquidGlassPreset: LiquidGlassPreset.standard,
-                                liquidGlassTuning: LiquidGlassTuning.defaults,
+                // 浅色档的八根旋钮（与深色档共用同一份渲染）。
+                ..._glassSliderTiles(
+                  l10n,
+                  tuning: liquidTuning,
+                  onUpdate: _updateLiquidTuning,
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      HyperosButton(
+                        label: l10n.liquidGlassResetAction,
+                        variant: HyperosButtonVariant.secondary,
+                        expand: true,
+                        onPressed: () {
+                          _updateDraft(
+                            _draft.copyWith(
+                              liquidGlassPreset: LiquidGlassPreset.standard,
+                              liquidGlassTuning: LiquidGlassTuning.defaults,
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      // 一句范围说明（2026-09-25 审计采纳）：这颗按钮只动液态
+                      // 调参，别让人以为会把整体材质也一起恢复了。
+                      Text(
+                        l10n.liquidGlassResetScopeNotice,
+                        style: HyperosTypography.listDetail(sheetContext)
+                            .copyWith(
+                              color: HyperosColors.secondaryText(
+                                sheetContext,
                               ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        // 一句范围说明（2026-09-25 审计采纳）：这颗按钮只动液态
-                        // 调参，别让人以为会把整体材质也一起恢复了。
-                        Text(
-                          l10n.liquidGlassResetScopeNotice,
-                          style: HyperosTypography.listDetail(sheetContext)
-                              .copyWith(
-                                color: HyperosColors.secondaryText(
-                                  sheetContext,
-                                ),
-                              ),
-                        ),
-                      ],
-                    ),
+                            ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -1001,10 +995,10 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
               ],
             ),
             // 深色档的八根旋钮：与浅色档同构、共用同一个渲染函数
-            // （[_glassSliderTiles]）。只在「自定义 + 深色独立」时出现 ——
-            // 预设档下旋钮本就不可调，列出来只会误导。
-            if (_draft.liquidGlassPreset == LiquidGlassPreset.custom &&
-                !_draft.linkLiquidGlassTuning) ...[
+            // （[_glassSliderTiles]）。**深浅开关一开就显示**，不再等「自定义」——
+            // 浅色档那边 2026-10-05 起旋钮常显，这里跟着，否则"开了深色独立却
+            // 一根旋钮都没有"会变成另一个半失效状态。
+            if (!_draft.linkLiquidGlassTuning) ...[
               const SizedBox(height: 12),
               HyperosListGroup(
                 children: _glassSliderTiles(
@@ -1137,67 +1131,56 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
               ),
             ),
           ],
-          // 卡片自己那套八根旋钮 + 与第一页同款的档位胶囊：只在卡片档为液态时出现
-          // （实体 / 高斯档没有折射可调）。建议点位与档位数与第一页**完全相同**
-          // —— 两页既然共用一套档位预设，就得共用一套分格数，否则同一个档在两页
-          // 拖出来的值不一样。
+          // 卡片自己那套八根旋钮 + 与第一页同款的 10 格档位滑杆：只在卡片档为液态时
+          // 出现（实体 / 高斯档没有折射可调）。建议点位与分格数与第一页**完全相同**
+          // —— 两页既然共用一套档位预设，就得共用一套分格，否则同一格在两页拖出来
+          // 的值不一样。
           if (_draft.courseCardSurfaceStyle ==
               CourseCardSurfaceStyle.liquidGlass) ...[
             const SizedBox(height: 20),
             HyperosSectionLabel(text: l10n.advancedMaterialTitle),
             const SizedBox(height: 8),
-            // 档位胶囊：与 [_buildGeneralMaterialPage] 同一枚部件、同一份枚举，
+            // 档位滑杆：与 [_buildGeneralMaterialPage] 同一枚部件、同一份枚举，
             // 差别只在落地口（写卡片那套参数 + 卡片自己的档位字段）。
-            _MaterialChoiceChips<LiquidGlassPreset>(
-              items: {
-                for (final preset in LiquidGlassPreset.values)
-                  liquidGlassPresetLabel(l10n, preset): preset,
-              },
-              value: _draft.courseCardGlassPreset,
-              onChanged: (preset) {
-                if (preset == LiquidGlassPreset.custom) {
-                  // 只拨档位、不动参数：用户想看旋钮，一个旋钮都没动时不该变脸。
-                  _updateDraft(
-                    _draft.copyWith(courseCardGlassPreset: preset),
-                  );
-                  return;
-                }
-                _updateDraft(
-                  _draft.copyWith(
-                    courseCardGlassPreset: preset,
-                    courseCardGlassTuning: preset.recommendedCourseTuning,
-                  ),
-                );
-              },
+            HyperosListGroup(
+              children: [
+                _glassPresetSliderTile(
+                  l10n,
+                  preset: _draft.courseCardGlassPreset,
+                  nearest: CourseGlassTuning.nearestPreset(cardTuning),
+                  onChanged: (preset) {
+                    _updateDraft(
+                      _draft.copyWith(
+                        courseCardGlassPreset: preset,
+                        courseCardGlassTuning: preset.recommendedCourseTuning,
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 12),
-            // 内置档不列旋钮（与第一页同一条规矩：预设档下旋钮本就不可调，
-            // 列出来只会误导）。
-            if (_draft.courseCardGlassPreset == LiquidGlassPreset.custom)
-              HyperosListGroup(
-                children: _glassSliderTiles(
-                  l10n,
-                  tuning: cardTuning.toLiquidGlassTuning(),
-                  showKeyPoints: true,
-                  // 卡片的磨砂量只喂它那张预糊位图，出图侧夹到 kPreblurMaxSigma：
-                  // 滑杆上限取同一个常量，0 是有效的「清」档（出原图、不跑高斯）。
-                  blurSigmaMax: kPreblurMaxSigma,
-                  // 滑杆改的是「等价全局档」，写回卡片那套要过一趟抄写：两套类型
-                  // 各自的出厂档与染色语义不同（见 `CourseGlassTuning` 的注释），
-                  // 不能就地换类型。
-                  //
-                  // 落地口**不碰档位**：旋钮只在内置档之外露出来（与第一页同一
-                  // 条规矩），所以拖到这里时档位本来就已是「自定义」。反过来，
-                  // 用户拖回恰好等于某一档的值时也**不**自动把胶囊拨回内置档 ——
-                  // 第一页就是这个行为，两页保持一致（自动反推会让「滑杆在用户
-                  // 眼前消失」）。
-                  onUpdate: (update) => _updateCardTuning(
-                    (base) => CourseGlassTuning.fromLiquidGlassTuning(
-                      update(base.toLiquidGlassTuning()),
-                    ),
+            // 旋钮**一直显示**（与第一页同一条规矩）：动任何一根就把档位打成
+            // 「自定义」，滑杆停在最近的那一格。
+            HyperosListGroup(
+              children: _glassSliderTiles(
+                l10n,
+                tuning: cardTuning.toLiquidGlassTuning(),
+                showKeyPoints: true,
+                // 卡片的磨砂量只喂它那张预糊位图，出图侧夹到 kPreblurMaxSigma：
+                // 滑杆上限取同一个常量，0 是有效的「清」档（出原图、不跑高斯）。
+                // 最厚那一格的模糊（24）正好卡在这个上限上，不会拖到一个到不了的数。
+                blurSigmaMax: kPreblurMaxSigma,
+                // 滑杆改的是「等价全局档」，写回卡片那套要过一趟抄写：两套类型
+                // 各自的出厂档与染色语义不同（见 `CourseGlassTuning` 的注释），
+                // 不能就地换类型。
+                onUpdate: (update) => _updateCardTuning(
+                  (base) => CourseGlassTuning.fromLiquidGlassTuning(
+                    update(base.toLiquidGlassTuning()),
                   ),
                 ),
               ),
+            ),
           ],
         ],
       ),
@@ -1248,6 +1231,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
         liquidGlassTuning: update(
           _draft.liquidGlassTuning ?? LiquidGlassTuning.defaults,
         ),
+        // 同 [_updateCardTuning]：旋钮常显之后，档位必须跟着变成「自定义」，
+        // 否则档位滑杆会停在一个已经不准的格子上。
+        liquidGlassPreset: LiquidGlassPreset.custom,
       ),
       debounce: true,
     );
@@ -1274,13 +1260,62 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
 
   /// 卡片那套液态参数的滑杆落地口。回落链 = `卡片档 ?? 卡片出厂档`
   /// （模型字段可空，与卡片设置页原实现同口径）。
+  ///
+  /// **顺带把档位打成「自定义」**：旋钮常显之后，档位与旋钮之间必须有这条通路，
+  /// 否则"拖了旋钮、档位滑杆还停在某一格"就成了半失效状态（滑杆会说谎）。
+  /// 打完 custom 之后滑杆显示的那一格由 [LiquidGlassTuning.nearestPreset] 算，
+  /// 不是上一次选的 —— 参数真的变厚了，滑杆就该往右走。
   void _updateCardTuning(
     CourseGlassTuning Function(CourseGlassTuning tuning) update,
   ) {
     final base = _draft.courseCardGlassTuning ?? CourseGlassTuning.courseCard;
     _updateDraft(
-      _draft.copyWith(courseCardGlassTuning: update(base)),
+      _draft.copyWith(
+        courseCardGlassTuning: update(base),
+        courseCardGlassPreset: LiquidGlassPreset.custom,
+      ),
       debounce: true,
+    );
+  }
+
+  /// 档位滑杆那一行：**一根 10 格、每格一个节点的滑杆**，取代 2026-10-05 之前那排
+  /// 档位胶囊（用户口径：「把整个全部的档位，换成拉杆条，带节点的那种」）。
+  ///
+  /// * [min] 1 / [max] 10 / `divisions` 9 ⇒ miuix 那侧量化为 10 个位置、每格一次
+  ///   触感（`hapticEffect` 在 `divisions > 0` 时就是 `step`）；
+  /// * `keyPoints` 给全部 10 格 ⇒ 轨道上画满节点，于是「带节点」这件事是控件自己
+  ///   画的，不是我们另外拼一排小圆点；
+  /// * 读数只给**数字**（第几格），不给名字 —— 用户口径「不要名字，只用节点 + 数字」，
+  ///   也顺带避开了给 10 格补 6 份多语言词。
+  ///
+  /// [preset] 是当前档位；`custom` 时滑杆显示 [nearest] 那一格（调用方用
+  /// `nearestPreset` 算好传进来 —— 全局与卡片各用自己的类型，那两个
+  /// `nearestPreset` 才是同口径的算法）。
+  Widget _glassPresetSliderTile(
+    AppLocalizations l10n, {
+    required LiquidGlassPreset preset,
+    required LiquidGlassPreset nearest,
+    required ValueChanged<LiquidGlassPreset> onChanged,
+  }) {
+    final steps = LiquidGlassPresetX.builtIns.length;
+    final shown = (preset.step ?? nearest.step) ?? 1;
+    return HyperosSliderTile(
+      // 本面板是根覆盖层自插条目，点标题弹数字输入框会被压在背面（2026-09-19 实锤）。
+      tapToEdit: false,
+      title: l10n.liquidGlassPresetLabel,
+      value: shown.toDouble(),
+      min: 1,
+      max: steps.toDouble(),
+      divisions: steps - 1,
+      // 只给数字：10 格的名字要补 6 份多语言词，而这一格的信息量就是「第几格」。
+      valueLabel: '$shown',
+      showKeyPoints: true,
+      keyPoints: [
+        for (var i = 1; i <= steps; i++) i.toDouble(),
+      ],
+      onChanged: (value) => onChanged(
+        LiquidGlassPresetX.fromStep(value.round()),
+      ),
     );
   }
 
@@ -1294,10 +1329,11 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 画点、划过变亮、经过一次触感）—— 只有卡片档要它（2026-09-21 用户口径：在那几根
   /// 可见性最强的旋钮上给建议值）。
   ///
-  /// [tintDivisions] 默认 20（步长 0.05）。**两页都必须用这个默认**：四档预设的
-  /// 染色（0 / 0.35 / 0.70 / 0.85）全都落在它上面，卡片那份 2026-10-05 之前单独
-  /// 用过 25（步长 0.04），那是为了迁就当时出厂的 0.32 —— 卡片改成与全局同数
-  /// 之后那条理由消失，跟着全局走即可（两页共用一套档位，就得共用一套分格）。
+  /// [tintDivisions] 默认 20（步长 0.05）。**两页都必须用这个默认**：10 格预设的
+  /// 染色（0 / 0.10 / 0.20 / 0.30 / 0.40 / 0.55 / 0.70 / 0.75 / 0.80 / 0.90）全都落在
+  /// 它上面，卡片那份 2026-10-05 之前单独用过 25（步长 0.04），那是为了迁就当时出厂的
+  /// 0.32 —— 卡片改成与全局同数之后那条理由消失，跟着全局走即可（两页共用一套档位，
+  /// 就得共用一套分格）。
   ///
   /// [blurSigmaMax] 是按档走的**上限**：全局 / 深色两档是 0~40（那些面走实时模糊，
   /// 量程就是它），卡片档是 0~24 —— 卡片的磨砂量只喂那张预糊位图，而出图侧把它夹在

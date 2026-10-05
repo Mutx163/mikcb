@@ -48,14 +48,14 @@ void main() {
       expect(t.dispersion, 0.35);
       expect(t.rimStrength, 0.2);
       expect(t.rimWidth, 1.5);
-      expect(t.blurSigma, 5);
+      expect(t.blurSigma, 15);
       expect(t.tintAlpha, 0.70);
     });
 
     test('出厂值逐字段等于全局标准档，且是**引用**而非抄一份', () {
       // 这条取代了旧的「CourseGlassStyle 默认值必须逐字段等于全局默认值」约束：
       // 那条靠两个文件里的人肉同步维持。2026-10-05 起卡片那份的出厂值直接引用
-      // 全局常量、四档预设也直接引用全局那四个，所以这条钉的是**结果**
+      // 全局常量、那 10 格预设也直接引用全局那十个，所以这条钉的是**结果**
       // （两个页面必须是同一种玻璃），而「不会漂」由实现保证。
       expect(
         CourseGlassTuning.courseCard.toLiquidGlassTuning(),
@@ -96,33 +96,29 @@ void main() {
       );
     });
 
-    test('四档预设与全局那四档同值（两个页面的档位表是同一份）', () {
-      expect(
-        CourseGlassTuning.presetClear.toLiquidGlassTuning(),
-        LiquidGlassTuning.presetClear,
-      );
-      expect(
-        CourseGlassTuning.presetLight.toLiquidGlassTuning(),
-        LiquidGlassTuning.presetLight,
-      );
-      expect(CourseGlassTuning.presetStandard, CourseGlassTuning.courseCard);
-      expect(
-        CourseGlassTuning.presetDense.toLiquidGlassTuning(),
-        LiquidGlassTuning.presetDense,
-      );
-      // 档位 → 卡片参数的映射，两个 getter 必须给出同一份（设置页两页都靠它）。
+    test('10 格预设与全局那 10 格同值（两个页面的档位表是同一份）', () {
+      // 卡片那 10 格**不是**另抄一份数，而是直接引用 `LiquidGlassTuning` 的那几个
+      // （`CourseGlassTuning.presetLevelN` = `fromLiquidGlassTuning(presetLevelN)`），
+      // 所以这条不是"两边碰巧一样"，是"结构上不可能不一样"。
       for (final preset in LiquidGlassPresetX.builtIns) {
+        expect(
+          preset.recommendedCourseTuning.toLiquidGlassTuning(),
+          preset.recommendedTuning,
+          reason: '${preset.name}：卡片档与全局档必须是同一个数',
+        );
         expect(
           CourseGlassTuning.matchPreset(preset.recommendedCourseTuning),
           preset,
           reason: '${preset.name} 的卡片档必须能被反推回自己',
         );
         expect(
-          preset.recommendedCourseTuning.toLiquidGlassTuning(),
-          preset.recommendedTuning,
-          reason: '${preset.name}：卡片档与全局档必须是同一个数',
+          CourseGlassTuning.nearestPreset(preset.recommendedCourseTuning),
+          preset,
+          reason: '${preset.name}：最近档也必须是自己（滑杆读数）',
         );
       }
+      // 出厂档 = 第 7 格（标准）。
+      expect(CourseGlassTuning.presetStandard, CourseGlassTuning.courseCard);
       // 自定义不是一组推荐值，回落标准档（与全局同口径）。
       expect(
         LiquidGlassPreset.custom.recommendedCourseTuning,
@@ -130,7 +126,7 @@ void main() {
       );
     });
 
-    test('四档预设也落在卡片页自己的滑杆格点上', () {
+    test('10 格预设也落在卡片页自己的滑杆格点上', () {
       // 卡片那根模糊滑杆的量程与全局不同（上限 = kPreblurMaxSigma，见设置页的
       // `blurSigmaMax`），染色分格数 2026-10-05 起与全局统一为 20（步长 0.05）。
       // 档位值必须同时落在两页的格点上，否则「同一个档在两页拖出来的数不一样」。
@@ -154,6 +150,12 @@ void main() {
         );
         onGrid(t.tintAlpha, 0, 1, 20);
       }
+      // 最厚那格的模糊正好落在卡片那根滑杆的上限上，不是越界取不到的值 ——
+      // 越界的话卡片页会显示一个拖不到、也出不来的数字。
+      expect(
+        LiquidGlassTuning.presetDense.blurSigma,
+        lessThanOrEqualTo(kPreblurMaxSigma),
+      );
     });
 
     test('缺键回落的是**卡片**默认，不是全局默认（本类独立存在的头号理由）', () {

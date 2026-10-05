@@ -651,13 +651,9 @@ void main() {
     // 这八根原先在「课程卡片设置页」（那边单开一节的唯一理由是材质面板塞不下），
     // 2026-09-22 面板分页之后搬到第二页。这条用例钉两件事：旋钮真的在这一页，
     // 且写的是 `courseCardGlassTuning` —— 不是全局那份。
-    //
-    // ⚠️ 必须先落到「自定义」档：2026-10-05 起这一页也摆档位胶囊，内置档**不列
-    // 旋钮**（与第一页同一条规矩，见下一条用例钉的那个行为）。
     _seedInitializedPrefs(
       TimetableSettings.defaults().copyWith(
         courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
-        courseCardGlassPreset: LiquidGlassPreset.custom,
       ),
     );
     final provider = await pumpEditor(tester);
@@ -667,8 +663,10 @@ void main() {
     await tester.tap(panelPageTab('课程卡片'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(HyperosSlider), findsNWidgets(8), reason: '卡片这套八根');
-    // 没设过卡片档 ⇒ 显示卡片出厂档：折射强度 8.0（与全局标准档同值）。
+    // 2026-10-05 起旋钮**常显**（原来内置档不露），所以这一页有 9 根：
+    // 8 根细调 + 1 根 10 格档位滑杆。
+    expect(find.byType(HyperosSlider), findsNWidgets(9));
+    // 没设过卡片档 ⇒ 显示卡片出厂档（第 7 格 = 标准）：折射强度 8.0。
     expect(find.text('8.0'), findsOneWidget);
 
     // 「磨砂强度」这根的量程跟出图侧同口径：0 是有效的「清」档（出原图、不跑高斯），
@@ -687,7 +685,17 @@ void main() {
 
     // 走滑杆自己的回调（拖动时走的就是这条）。
     tester
-        .widget<HyperosSlider>(find.byType(HyperosSlider).first)
+        .widget<HyperosSlider>(
+          find
+              .descendant(
+                of: find.ancestor(
+                  of: find.text('折射强度'),
+                  matching: find.byType(HyperosSliderTile),
+                ),
+                matching: find.byType(HyperosSlider),
+              )
+              .first,
+        )
         .onChanged!(13);
     // 滑杆落盘是 debounce 的（250ms），推帧要推过那个窗口才看得到
     // provider.settings；不用 pumpAndSettle —— 这一档会让渲染源重烤，
@@ -702,14 +710,22 @@ void main() {
       isNull,
       reason: '卡片那八根不能顺手把全局那份也写掉',
     );
+    // 旋钮一动，档位必须让位给「自定义」——否则档位滑杆会停在一个已经不准的格子上。
+    expect(
+      provider.settings.courseCardGlassPreset,
+      LiquidGlassPreset.custom,
+    );
   });
 
-  testWidgets('材质面板第二页也有与第一页同款的档位胶囊（2026-10-05）', (
+  testWidgets('材质面板第二页也有与第一页同款的 10 格档位滑杆（2026-10-05）', (
     tester,
   ) async {
-    // 用户口径「把档位也做到课程卡片里面，实现和通用一样的预设」。这条钉三件事：
-    // ① 五个档位都在；② 内置档**不列**旋钮（预设档下旋钮不可调，列出来误导）；
-    // ③ 点档位写的是**卡片那套**参数 + 卡片自己的档位字段，不碰全局那份。
+    // 用户口径「把整个全部的档位，换成拉杆条，带节点的那种，然后在中间加上五个
+    // 档位，标准档位在第七档，一共十个档位」。这条钉四件事：
+    // ① 滑杆是 10 格、每格一个节点、读数就是「第几格」；
+    // ② 出厂读数是 7（标准在第 7 格）；
+    // ③ 拖到第 1 格写的是**卡片那套**参数 + 卡片自己的档位字段，不碰全局那份；
+    // ④ 旋钮常显（9 根滑杆 = 8 根旋钮 + 这根档位滑杆）。
     _seedInitializedPrefs(
       TimetableSettings.defaults().copyWith(
         courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
@@ -722,23 +738,35 @@ void main() {
     await tester.pumpAndSettle();
 
     final page = find.byKey(const ValueKey('material-page-course-card'));
-    for (final label in ['清澈', '轻雾', '标准', '浓密', '自定义']) {
-      expect(
-        find.descendant(of: page, matching: find.text(label)),
-        findsOneWidget,
-        reason: '卡片页也要有「$label」这一档',
-      );
-    }
+    final presetSlider = find.descendant(
+      of: page,
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget is HyperosSliderTile &&
+            widget.title == '液态玻璃预设',
+      ),
+    );
+    expect(presetSlider, findsOneWidget);
+    final slider = tester.widget<HyperosSliderTile>(presetSlider);
+    expect(slider.min, 1, reason: '第 1 格 = 最薄');
+    expect(slider.max, 10, reason: '一共十格');
+    expect(slider.divisions, 9, reason: '10 格 = 9 段');
     expect(
-      find.byType(HyperosSlider),
-      findsNothing,
-      reason: '出厂是标准档，旋钮不该露出来',
+      slider.keyPoints,
+      [for (var i = 1; i <= 10; i++) i.toDouble()],
+      reason: '每一格都要有一个节点',
     );
+    expect(slider.valueLabel, '7', reason: '出厂是标准 = 第 7 格');
+    expect(find.byType(HyperosSlider), findsNWidgets(9), reason: '8 旋钮 + 1 档位');
 
-    // 点「清澈」⇒ 档位与参数都落到卡片那套，旋钮仍不露（清澈也是内置档）。
-    await tester.tap(
-      find.descendant(of: page, matching: find.text('清澈')),
-    );
+    // 拖到第 1 格 ⇒ 档位与参数都落到卡片那套，不碰全局那份。
+    tester
+        .widget<HyperosSlider>(
+          find
+              .descendant(of: presetSlider, matching: find.byType(HyperosSlider))
+              .first,
+        )
+        .onChanged!(1);
     await tester.pumpAndSettle();
     expect(provider.settings.courseCardGlassPreset, LiquidGlassPreset.clear);
     expect(
@@ -747,20 +775,12 @@ void main() {
     );
     expect(provider.settings.liquidGlassTuning, isNull, reason: '不碰全局那份');
     expect(provider.settings.liquidGlassPreset, LiquidGlassPreset.standard);
-    expect(find.byType(HyperosSlider), findsNothing);
 
-    // 点「自定义」⇒ 只拨档名、不动参数（一个旋钮都没动就不该变脸），旋钮露出来。
-    await tester.tap(
-      find.descendant(of: page, matching: find.text('自定义')),
-    );
-    await tester.pumpAndSettle();
-    expect(provider.settings.courseCardGlassPreset, LiquidGlassPreset.custom);
+    // 档位滑杆读数跟着走（第 1 格），旋钮里的值也同步成清澈那一套。
     expect(
-      provider.settings.courseCardGlassTuning,
-      CourseGlassTuning.presetClear,
-      reason: '点自定义不该顺手改参数',
+      tester.widget<HyperosSliderTile>(presetSlider).valueLabel,
+      '1',
     );
-    expect(find.byType(HyperosSlider), findsNWidgets(8));
   });
 
   testWidgets('从「设置 → 课表页面」的材质区块一键进得来（入口行必须常驻）', (
@@ -1121,39 +1141,43 @@ void main() {
   testWidgets('弹层正文跟着草稿走：材质面板拖滑杆面板自己刷新（回归钉）', (tester) async {
     // 面板曾经是「每个控件各喊一声重画」，滑杆那条路径漏喊了：拖动只把设置
     // 写进去，面板上数字和滑块纹丝不动（松手还会弹回旧位置）。
-    _seedInitializedPrefs(
-      TimetableSettings.defaults().copyWith(
-        liquidGlassPreset: LiquidGlassPreset.custom,
-        liquidGlassTuning: LiquidGlassTuning.defaults,
-      ),
-    );
+    _seedInitializedPrefs(TimetableSettings.defaults());
     final provider = await pumpEditor(tester);
     await tester.tap(find.text('材质'));
     await tester.pumpAndSettle();
 
-    // 自定义档下 8 个旋钮全在，折射强度默认 8.0（其它旋钮的显示值都不是它）。
-    expect(find.byType(HyperosSlider), findsNWidgets(8));
+    // 旋钮常显（2026-10-05）：9 根 = 8 根细调 + 1 根 10 格档位滑杆。
+    // 折射强度默认 8.0（其它旋钮的显示值都不是它）。
+    expect(find.byType(HyperosSlider), findsNWidgets(9));
     expect(find.text('8.0'), findsOneWidget);
 
-    // 走滑杆自己的回调（拖动时走的就是这条）。
+    // 走「折射强度」那根自己的回调（拖动时走的就是这条）。
     tester
-        .widget<HyperosSlider>(find.byType(HyperosSlider).first)
+        .widget<HyperosSlider>(
+          find
+              .descendant(
+                of: find.ancestor(
+                  of: find.text('折射强度'),
+                  matching: find.byType(HyperosSliderTile),
+                ),
+                matching: find.byType(HyperosSlider),
+              )
+              .first,
+        )
         .onChanged!(13);
     await tester.pumpAndSettle();
 
     expect(find.text('13.0'), findsOneWidget);
     expect(find.text('8.0'), findsNothing);
     expect(provider.settings.liquidGlassTuning!.refraction, 13);
+    // 旋钮一动，档位必须让位给「自定义」。
+    expect(provider.settings.liquidGlassPreset, LiquidGlassPreset.custom);
   });
 
   testWidgets('材质面板里点滑杆标题不开二级弹层（回归钉）', (tester) async {
     // 面板是根覆盖层自插条目，嵌套弹层会被压在背面（2026-09-19 真机实锤），
     // 所以面板里的可调项一律内联：滑杆行自带的「点击改值」必须关掉。
-    _seedInitializedPrefs(
-      TimetableSettings.defaults().copyWith(
-        liquidGlassPreset: LiquidGlassPreset.custom,
-      ),
-    );
+    _seedInitializedPrefs(TimetableSettings.defaults());
     await pumpEditor(tester);
     await tester.tap(find.text('材质'));
     await tester.pumpAndSettle();

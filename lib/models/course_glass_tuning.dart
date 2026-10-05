@@ -10,7 +10,7 @@ import 'liquid_glass_tuning.dart';
 ///   深浅配方（`darkBoost`）也照吃，所以两个页面看到的玻璃不会因为"另一套参数"而分叉；
 /// * **值各存各的** —— 卡片不跟随用户在全局那 8 根滑杆上调出来的档位，反之亦然。
 ///   用户 2026-09-21 的原话是「这个玻璃跟全局的玻璃还是不同的，所以单独给他一套自定义配置」。
-/// * **出厂值与四档预设跟全局完全一样**（2026-10-05 用户拍板：「卡片完全跟通用一样」）。
+/// * **出厂值与那 10 格预设跟全局完全一样**（2026-10-05 用户拍板：「卡片完全跟通用一样」）。
 ///   实现上不是抄一份数，而是**直接引用** [LiquidGlassTuning] 的那些常量与预设 ——
 ///   两边同改一处就够，不可能漂。真正属于卡片自己的只剩**语义**：这里 [tintAlpha]
 ///   染的是**课程色**（全局那份染玻璃底色白）。
@@ -69,34 +69,64 @@ class CourseGlassTuning {
   /// 这个值算过。
   static const double defaultTintAlpha = LiquidGlassTuning.defaultTintAlpha;
 
-  // --- 四档预设（与全局同一批常量，见 [LiquidGlassPreset]）---
+  // --- 10 格预设（与全局同一批常量，见 [LiquidGlassPreset]）---
   //
   // `static final` 而不是 `const`：[fromLiquidGlassTuning] 是工厂（八行构造），
   // const 表达式里调不了。读取时机是首次访问，对象不可变，语义上没有差别。
 
-  /// 标准档（= [courseCard]）。
+  /// 第 7 格（标准，= [courseCard]）。
   static const presetStandard = courseCard;
 
-  /// 清澈档。染色与模糊都归零 —— 见 [LiquidGlassTuning.presetClear]。
+  /// 第 1 格。染色与模糊都归零 —— 见 [LiquidGlassTuning.presetClear]。
   static final presetClear = CourseGlassTuning.fromLiquidGlassTuning(
     LiquidGlassTuning.presetClear,
   );
 
-  /// 轻雾档。见 [LiquidGlassTuning.presetLight]。
+  /// 第 2 格。见 [LiquidGlassTuning.presetLevel2]。
+  static final presetLevel2 = CourseGlassTuning.fromLiquidGlassTuning(
+    LiquidGlassTuning.presetLevel2,
+  );
+
+  /// 第 3 格。见 [LiquidGlassTuning.presetLevel3]。
+  static final presetLevel3 = CourseGlassTuning.fromLiquidGlassTuning(
+    LiquidGlassTuning.presetLevel3,
+  );
+
+  /// 第 4 格。见 [LiquidGlassTuning.presetLevel4]。
+  static final presetLevel4 = CourseGlassTuning.fromLiquidGlassTuning(
+    LiquidGlassTuning.presetLevel4,
+  );
+
+  /// 第 5 格。见 [LiquidGlassTuning.presetLevel5]。
+  static final presetLevel5 = CourseGlassTuning.fromLiquidGlassTuning(
+    LiquidGlassTuning.presetLevel5,
+  );
+
+  /// 第 6 格。见 [LiquidGlassTuning.presetLight]。
   static final presetLight = CourseGlassTuning.fromLiquidGlassTuning(
     LiquidGlassTuning.presetLight,
   );
 
-  /// 浓密档。见 [LiquidGlassTuning.presetDense]。
+  /// 第 8 格。见 [LiquidGlassTuning.presetLevel8]。
+  static final presetLevel8 = CourseGlassTuning.fromLiquidGlassTuning(
+    LiquidGlassTuning.presetLevel8,
+  );
+
+  /// 第 9 格。见 [LiquidGlassTuning.presetLevel9]。
+  static final presetLevel9 = CourseGlassTuning.fromLiquidGlassTuning(
+    LiquidGlassTuning.presetLevel9,
+  );
+
+  /// 第 10 格。见 [LiquidGlassTuning.presetDense]。
   static final presetDense = CourseGlassTuning.fromLiquidGlassTuning(
     LiquidGlassTuning.presetDense,
   );
 
-  /// 反推 [tuning] 属于哪一档；都不匹配时返回 [LiquidGlassPreset.custom]。
+  /// 反推 [tuning] 属于哪一格；都不匹配时返回 [LiquidGlassPreset.custom]。
   ///
-  /// 与 [LiquidGlassTuning.matchPreset] 同构，但比的是**卡片这套**的值：档位胶囊
-  /// 要靠它把"用户拖到刚好等于某一档"的状态认回来（设置页的滑杆回调直接把档位
-  /// 打成 custom，这里反推才能在重新打开面板时还原成内置档）。
+  /// 与 [LiquidGlassTuning.matchPreset] 同构，但比的是**卡片这套**的值：设置页的
+  /// 档位滑杆要靠它把"用户拖到刚好等于某一格"的状态认回来（旋钮回调直接把档位打成
+  /// custom，这里反推才能在重新打开面板时还原成内置档）。
   static LiquidGlassPreset matchPreset(CourseGlassTuning tuning) {
     for (final preset in LiquidGlassPresetX.builtIns) {
       if (preset.recommendedCourseTuning == tuning) {
@@ -105,6 +135,13 @@ class CourseGlassTuning {
     }
     return LiquidGlassPreset.custom;
   }
+
+  /// [tuning] 最接近哪一格 —— 卡片页那根档位滑杆在"自定义"状态下停在哪用。
+  ///
+  /// 直接借 [LiquidGlassTuning.nearestPreset]：卡片那 10 格与全局同值（见本类的
+  /// `presetLevelN`），所以最近的那一格必然是同一个答案，不必再写一遍距离算式。
+  static LiquidGlassPreset nearestPreset(CourseGlassTuning tuning) =>
+      LiquidGlassTuning.nearestPreset(tuning.toLiquidGlassTuning());
 
   /// 边缘处的最大折射位移（逻辑 px）。
   final double refraction;
@@ -296,8 +333,14 @@ class CourseGlassTuning {
 extension CourseGlassPresetTuningX on LiquidGlassPreset {
   CourseGlassTuning get recommendedCourseTuning => switch (this) {
     LiquidGlassPreset.clear => CourseGlassTuning.presetClear,
+    LiquidGlassPreset.level2 => CourseGlassTuning.presetLevel2,
+    LiquidGlassPreset.level3 => CourseGlassTuning.presetLevel3,
+    LiquidGlassPreset.level4 => CourseGlassTuning.presetLevel4,
+    LiquidGlassPreset.level5 => CourseGlassTuning.presetLevel5,
     LiquidGlassPreset.light => CourseGlassTuning.presetLight,
     LiquidGlassPreset.standard => CourseGlassTuning.presetStandard,
+    LiquidGlassPreset.level8 => CourseGlassTuning.presetLevel8,
+    LiquidGlassPreset.level9 => CourseGlassTuning.presetLevel9,
     LiquidGlassPreset.dense => CourseGlassTuning.presetDense,
     // 自定义不是一组推荐值，回落到标准档（与全局那份同口径）。
     LiquidGlassPreset.custom => CourseGlassTuning.presetStandard,
