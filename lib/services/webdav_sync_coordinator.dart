@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../logging/app_debug_log.dart';
 import '../providers/timetable_provider.dart';
 import 'app_sync_snapshot_service.dart';
 import 'sync_operation_gate.dart';
@@ -60,11 +61,14 @@ class WebdavSyncCoordinator extends ChangeNotifier {
     await _syncGate.runExclusive(() async {
       _setStatus(_status.copyWith(isSyncing: true, clearError: true));
       try {
-        final result = await _syncService.downloadAndApply(
-          provider: provider,
-          allowConflictPrompt: false,
+        _applyResult(
+          await _collapseSyncFailure(
+            () => _syncService.downloadAndApply(
+              provider: provider,
+              allowConflictPrompt: false,
+            ),
+          ),
         );
-        _applyResult(result);
       } finally {
         _setStatus(_status.copyWith(isSyncing: false));
       }
@@ -83,9 +87,11 @@ class WebdavSyncCoordinator extends ChangeNotifier {
     return _syncGate.runExclusive(() async {
       _setStatus(_status.copyWith(isSyncing: true, clearError: true));
       try {
-        final result = await _syncService.syncNow(
-          provider: provider,
-          allowConflictPrompt: allowConflictPrompt,
+        final result = await _collapseSyncFailure(
+          () => _syncService.syncNow(
+            provider: provider,
+            allowConflictPrompt: allowConflictPrompt,
+          ),
         );
         _applyResult(result);
         return result;
@@ -93,6 +99,33 @@ class WebdavSyncCoordinator extends ChangeNotifier {
         _setStatus(_status.copyWith(isSyncing: false));
       }
     });
+  }
+
+  /// 跑一次同步动作，并把**抛出来**的异常也折叠成 failed 结果。
+  ///
+  /// 三个入口（自动拉取、防抖自动上传、手动 syncNow）原先都只有
+  /// `try { ... } finally { isSyncing = false }`，没有 catch。而 `_applyResult`
+  /// 是全类唯一写 `lastError` 的地方 —— `downloadAndApply` / `syncNow` /
+  /// `uploadSnapshot` 只要抛（凭证读取、`buildConnectionParams` 的远端前置、
+  /// config 解析都会抛），这次云同步失败就完全没有落点：状态徽章永远干净，而
+  /// 自动同步其实已经停了。两个后台入口还是 `unawaited(...)`（main.dart 的
+  /// maybePullRemote、本文件的防抖上传），异常连日志都不留。
+  ///
+  /// 折叠成稳定的 `sync_failed` 而不是把异常原文塞进 `lastError`：那个字段会被
+  /// `localizeSyncError` 查表后显示给用户，异常原文可能含 URL / 用户名，不该进
+  /// UI —— 与仓库里"500 不回显内部异常"同一口径。原始异常只在 debug 日志留痕。
+  Future<WebdavSyncResult> _collapseSyncFailure(
+    Future<WebdavSyncResult> Function() action,
+  ) async {
+    try {
+      return await action();
+    } catch (error) {
+      appDebugLog('webdav_sync_coordinator', 'sync action threw: $error');
+      return const WebdavSyncResult(
+        kind: WebdavSyncResultKind.failed,
+        message: 'sync_failed',
+      );
+    }
   }
 
   Future<void> refreshStatus() async {
@@ -245,11 +278,14 @@ class WebdavSyncCoordinator extends ChangeNotifier {
     await _syncGate.runExclusive(() async {
       _setStatus(_status.copyWith(isSyncing: true, clearError: true));
       try {
-        final result = await _syncService.uploadSnapshot(
-          provider: provider,
-          conflictPolicy: WebdavUploadConflictPolicy.requireUnchangedRemote,
+        _applyResult(
+          await _collapseSyncFailure(
+            () => _syncService.uploadSnapshot(
+              provider: provider,
+              conflictPolicy: WebdavUploadConflictPolicy.requireUnchangedRemote,
+            ),
+          ),
         );
-        _applyResult(result);
       } finally {
         _setStatus(_status.copyWith(isSyncing: false));
       }
