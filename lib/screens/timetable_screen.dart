@@ -9960,16 +9960,31 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     if (_useSystemUpdateDownloader(settings)) {
       final version = release.version.trim().replaceAll(' ', '_');
-      final downloadId = await _supportCreatorService.enqueueSystemDownload(
-        url: downloadUrl,
-        fileName: version.isEmpty ? 'mikcb_update.apk' : 'mikcb_v$version.apk',
-        title: AppLocalizations.of(context)!.aboutUpdatePackageTitle,
-        description: AppLocalizations.of(
-          context,
-        )!.aboutUpdatePackageDescription,
-      );
+      final int? downloadId;
+      try {
+        downloadId = await _supportCreatorService.enqueueSystemDownload(
+          url: downloadUrl,
+          fileName: version.isEmpty ? 'mikcb_update.apk' : 'mikcb_v$version.apk',
+          title: AppLocalizations.of(context)!.aboutUpdatePackageTitle,
+          description: AppLocalizations.of(
+            context,
+          )!.aboutUpdatePackageDescription,
+        );
+      } catch (_) {
+        // 原生确实会 `result.error("DOWNLOAD_ENQUEUE_FAILED" / "DOWNLOAD_QUERY_FAILED")`
+        // （`MainActivity.kt:1119/1132`）。原先这里没有 try：异常穿过弹窗 `onPressed`
+        // 那个没人 await 的 Future 落进 zone，用户点「立即下载」什么都不发生
+        // （无进度条、无报错、弹窗原样），只会反复点。关于页的同一调用
+        // （`about_screen.dart:1387-1409`）是有 catch + toast 的。
+        // 原因码留空是对的：这一条真的是"调用系统下载管理器失败"。
+        _updatePromptController.finishInAppDownload(success: false);
+        return true;
+      }
       if (downloadId == null) {
-        return false;
+        // 原先 `return false` 会让弹窗静默关掉（`onDownload` 返回 false 即 dismiss），
+        // 用户看不到任何"没成功"的信号。
+        _updatePromptController.finishInAppDownload(success: false);
+        return true;
       }
       final initialProgress = await _supportCreatorService
           .querySystemDownloadProgress(downloadId);
@@ -9998,6 +10013,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       candidates.add(githubUrl);
     }
     var cancelled = false;
+    // 换源重试期间留住最后一次真实失败原因：弹窗的失败条要靠它区分
+    // "摘要不匹配 / SHA-256 拒装"与被它原先谎报成"调用系统下载管理器失败"。
+    String? lastFailureReason;
     for (var index = 0; index < candidates.length; index++) {
       final candidate = candidates[index];
       final controller = AppUpdateDownloadController();
@@ -10026,6 +10044,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           error.startsWith('update_download_url_untrusted') ||
           error.startsWith('update_sha256_unverified_install_refused') ||
           error.startsWith('update_open_installer_failed');
+      lastFailureReason = error;
       if (notRetryable || index == candidates.length - 1) {
         break;
       }
@@ -10033,6 +10052,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     _updatePromptController.finishInAppDownload(
       success: false,
       cancelled: cancelled,
+      error: lastFailureReason,
     );
     return true;
   }
@@ -10042,20 +10062,30 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   void _watchSystemUpdateDownload(int downloadId) {
-    unawaited(() async {
-      try {
-        await for (final progress
-            in _supportCreatorService.watchSystemDownloadProgress(downloadId)) {
-          if (!mounted) {
-            return;
-          }
-          _updatePromptController.updateSystemDownload(progress);
-        }
-      } catch (_) {
-        // The system queue can briefly disappear while the provider starts;
-        // keep the prompt visible and let the next observation recover.
-      }
-    }());
+    // `_systemDownloadSubscription` 原先只有两处出现：声明（:311）与 dispose 里的
+    // `cancel()`（:703），**全仓从未被赋值** —— 起流的地方是 `unawaited(() async {
+    // await for ... }())`，句柄被丢掉，所以旧 watcher 一条都关不掉。pending/paused 不是
+    // settled（`support_creator_service.dart:143-144`），于是关掉弹窗后这条下载仍以
+    // 350ms 一次的频率查平台通道，直到整页销毁；若期间再发起一次（应用内→取消→改用
+    // 系统下载器→点「继续下载」），两条 watcher 交替写同一个控制器字段，新的百分比
+    // 会被旧那条的"排队中"覆盖回去、数字来回跳。
+    _systemDownloadSubscription?.cancel();
+    _systemDownloadSubscription = _supportCreatorService
+        .watchSystemDownloadProgress(downloadId)
+        .listen(
+          (progress) {
+            if (!mounted) {
+              return;
+            }
+            // 带上 downloadId：只有仍属于当前这条下载的进度才写进控制器。
+            _updatePromptController.updateSystemDownload(downloadId, progress);
+          },
+          // 下载行在 provider 接手前会短暂查不到 —— 服务层现在自己重试若干次
+          // （`maxTransientFailures`，默认 3）。走到这里就是真的读不到了：保持弹窗可见，
+          // 由失败条/清理逻辑去表达，不再像旧注释那样假装"下一次观察会恢复"。
+          onError: (Object error, StackTrace stackTrace) {},
+          cancelOnError: false,
+        );
   }
 
   void _cancelHomeUpdateDownload() {

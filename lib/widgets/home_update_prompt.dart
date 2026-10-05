@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/app_update_service.dart';
@@ -19,6 +20,16 @@ class HomeUpdatePromptController extends ChangeNotifier {
   bool isInAppCancelled = false;
   int downloadedBytes = 0;
   int? totalBytes;
+
+  /// 应用内下载失败的真实原因码（`update_download_hash_mismatch` 等）。
+  ///
+  /// 视图原先只有一句 `isFailed = isInAppFailed || systemFailed` 后面硬写的
+  /// 「调用系统下载管理器失败」：首页把 `error` 交进来之后它就被丢掉了，于是
+  /// **镜像被篡改、SHA-256 拒绝安装**这种安全问题也报成"系统下载器调不动"，
+  /// 旁边还留着一个「继续下载」，用户只会反复重试同一个污染源。原因码由视图经
+  /// `localizeServiceMessage` 本地化后显示；成功、取消、重开、整体复位都要清空它。
+  String? inAppFailureReason;
+
   int? systemDownloadId;
   SystemDownloadProgress? systemDownloadProgress;
 
@@ -28,6 +39,7 @@ class HomeUpdatePromptController extends ChangeNotifier {
     isInAppComplete = false;
     isInAppFailed = false;
     isInAppCancelled = false;
+    inAppFailureReason = null;
     downloadedBytes = 0;
     totalBytes = null;
     // 用户改走应用内下载时，必须忘掉系统下载器留下的那一份：见
@@ -47,12 +59,18 @@ class HomeUpdatePromptController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void finishInAppDownload({required bool success, bool cancelled = false}) {
+  void finishInAppDownload({
+    required bool success,
+    bool cancelled = false,
+    String? error,
+  }) {
     isInAppDownloading = false;
     isCancellingDownload = false;
     isInAppComplete = success;
     isInAppFailed = !success && !cancelled;
     isInAppCancelled = cancelled;
+    // 只有真的失败才留原因；取消与成功都要清空，免得下一次弹窗顶着旧的错误码。
+    inAppFailureReason = isInAppFailed ? error : null;
     notifyListeners();
   }
 
@@ -62,6 +80,7 @@ class HomeUpdatePromptController extends ChangeNotifier {
     isInAppComplete = false;
     isInAppFailed = false;
     isInAppCancelled = false;
+    inAppFailureReason = null;
     downloadedBytes = 0;
     totalBytes = null;
     // "整体复位"就要连系统下载器那一份一起复位：原先只清 in-app 字段，
@@ -75,13 +94,38 @@ class HomeUpdatePromptController extends ChangeNotifier {
     required SystemDownloadProgress progress,
   }) {
     systemDownloadId = downloadId;
-    systemDownloadProgress = progress;
+    _applySystemProgress(progress);
     notifyListeners();
   }
 
-  void updateSystemDownload(SystemDownloadProgress progress) {
-    systemDownloadProgress = progress;
+  /// [downloadId] 必须仍是控制器记住的那一条：首页的
+  /// `_systemDownloadSubscription`（`timetable_screen.dart:311`）原先只声明 + dispose
+  /// 里 cancel，**从未被赋值**（起流处用 `unawaited` 闭包丢了句柄），所以旧 watcher
+  /// 关不掉；不带 id 校验时，新旧两条 watcher 会交替写同一个字段，新下载的百分比被
+  /// 旧那条的"排队中"覆盖回去、数字来回跳。
+  void updateSystemDownload(int downloadId, SystemDownloadProgress progress) {
+    if (systemDownloadId != downloadId) {
+      return;
+    }
+    _applySystemProgress(progress);
     notifyListeners();
+  }
+
+  /// 系统下载进度的唯一口径：`unknown` 当成"这条记录已经不在了"直接清掉。
+  ///
+  /// `watchSystemDownloadProgress` 现在到 `isSettled` 就收流（含 unknown），而视图里
+  /// `_systemProgressLabel` 那份 `unknown => aboutSystemDownloaderQueued` 是同一规则的
+  /// 第四份副本：留着这条死记录，弹窗就会同时显示 0% 进度条 +「请在系统下载列表里查看
+  /// 进度」（轮询已停，永远不动）+ 还能点的「立即下载」，再点就是第二条重复下载。
+  /// 清掉之后 UI 自然退回正常动作行，不需要新文案、也不留第四份判断。
+  /// successful / failed 要照常留着，弹窗靠它们显示"可安装"或失败条，
+  /// 由 [discardStaleSystemDownload] 在下次打开时清理。
+  void _applySystemProgress(SystemDownloadProgress progress) {
+    if (progress.isSettled && !progress.isFinished) {
+      _clearSystemDownload();
+      return;
+    }
+    systemDownloadProgress = progress;
   }
 
   void _clearSystemDownload() {
@@ -336,7 +380,7 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
                 )
               else if (isFailed) ...[
                 MiuixText(
-                  l10n.aboutSystemDownloaderFailed,
+                  _failureMessage(l10n),
                   style: textStyles.body2,
                   color: colors.error,
                   textAlign: TextAlign.center,
@@ -481,6 +525,19 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
       );
     }
     return l10n.aboutDownloadingPercent((progress * 100).toStringAsFixed(1));
+  }
+
+  /// 失败条文案。`isFailed` 是「应用内失败 OR 系统终态失败」两件事，原先这里一律
+  /// 渲染 `aboutSystemDownloaderFailed`（「调用系统下载管理器失败」），于是
+  /// **摘要不匹配 / SHA-256 校验拒绝安装** 这类安全问题也被报成"系统下载器调不动"，
+  /// 用户只会反复重试同一个污染源。控制器现在带着原因码，优先按它本地化；
+  /// 没有原因码（真的走系统下载器失败）时保持原文案。
+  String _failureMessage(AppLocalizations l10n) {
+    final reason = controller.inAppFailureReason;
+    if (controller.isInAppFailed && reason != null && reason.isNotEmpty) {
+      return localizeServiceMessage(l10n, reason);
+    }
+    return l10n.aboutSystemDownloaderFailed;
   }
 
   String _systemProgressLabel(
