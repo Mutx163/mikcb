@@ -254,6 +254,14 @@ Future<int> _timetableImportParsedCourses(
       return 0;
     }
 
+    // 快照必须抓在第一次改动之前：下面 `host._scheduleItems = []`（覆盖式导入）
+    // 与 `_courses`/`_settings`/周次的整份替换都靠它退回。理由同 :359 与 :519
+    // 那两条导入路径 —— 「先换内存、后写盘」一旦落盘失败而不退回，内存里就是
+    // 一份从未落库的课表，而 `_persistActiveProfileState` 第一步
+    // `_mergeActiveProfileIntoProfilesList` 已经把它并进了 `_profiles`，
+    // 下一次任意成功写入会替用户坐实「日程整份没了」。
+    final snapshot = _FullBackupRestoreSnapshot(host);
+
     final ImportedCourseSyncResult? syncResult;
     final List<Course> mergedCourses;
     final int effectiveImportedCount;
@@ -323,7 +331,15 @@ Future<int> _timetableImportParsedCourses(
     }
     host._currentDateWeek = host._resolveCurrentDateWeek();
     // Persist once at end of import; suppress mid-import cloud sync notify.
-    await host._persistActiveProfileState(notifySync: false);
+    try {
+      await host._persistActiveProfileState(notifySync: false);
+    } catch (error, stackTrace) {
+      // 回滚里的补偿写入同样可能失败（磁盘本来就写不进去），那些失败由
+      // `_restoreAfterFullBackupFailure` 收进返回值；原始错误更有诊断价值，
+      // 保留栈原样上抛，与 :406/:412 那两条导入路径同处理。
+      await _restoreAfterFullBackupFailure(host, snapshot);
+      Error.throwWithStackTrace(error, stackTrace);
+    }
     notifyUserDataChangedForSync();
     host._currentLiveCourseId = null;
     host._notifyStateChanged();
