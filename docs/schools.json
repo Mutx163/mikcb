@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-04T07:18:23+00:00",
+  "updatedAt": "2026-10-05T07:33:55+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 240,
-    "schools": 235,
+    "total": 241,
+    "schools": 236,
     "generic": 5
   },
   "schools": [
@@ -433,6 +433,13 @@
       "name": "广州华立学院",
       "initial": "G",
       "resourceFolder": "HUALIXY",
+      "category": "school"
+    },
+    {
+      "id": "XHSYSU",
+      "name": "广州新华学院",
+      "initial": "G",
+      "resourceFolder": "XHSYSU",
       "category": "school"
     },
     {
