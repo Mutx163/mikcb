@@ -2322,6 +2322,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       viewportSize: viewportSize,
       alignX: settings.homePageWallpaperAlignX,
       alignY: settings.homePageWallpaperAlignY,
+      scale: settings.homePageWallpaperScale,
     );
     if (_wallpaperLuminanceRequestedKey == key &&
         (_wallpaperLuminanceSampleKey == key ||
@@ -2351,19 +2352,28 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 采样缓存 key：`路径|视口宽x高|alignX|alignY`。
+  /// 采样缓存 key：`路径|视口宽x高|alignX|alignY|scale`（构造器只有一份，见
+  /// `homePageBackdropSampleKey`）。
   ///
-  /// 组成字段均为可枚举的有限来源（壁纸路径来自 managed storage、视口来自
-  /// MediaQuery、对齐值来自 -1.0~1.0 的滑杆），调用方不会注入意外分隔符。
-  /// 用 `|` 分隔足以避免歧义，无需哈希或结构化 key。
+  /// scale 这一维不能省：亮度带是按「可见比例 ÷ 倍数」采的
+  /// （`home_page_background.dart` 的 `homePageWallpaperVisibleSourceRect`，
+  /// 上限 `kWallpaperMaxScale = 4`），取景页双指**原地捏合**只动倍数不动对齐，
+  /// 键里没它就不会重采 —— 首页顶栏/星期条/卡片区墨色的极性会停在放大前那一条带上，
+  /// 且要等下一次拖动位置或冷启动才纠正。
   String _wallpaperLuminanceKey({
     required String path,
     required Size viewportSize,
     required double alignX,
     required double alignY,
+    required double scale,
   }) {
-    return '$path|${viewportSize.width}x${viewportSize.height}|'
-        '${alignX.clamp(-1.0, 1.0)}|${alignY.clamp(-1.0, 1.0)}';
+    return homePageBackdropSampleKey(
+      path: path,
+      viewportKey: homePageBackdropViewportKey(viewportSize),
+      alignX: alignX,
+      alignY: alignY,
+      scale: scale,
+    );
   }
 
   Future<void> _ensureWallpaperLuminanceForPath(

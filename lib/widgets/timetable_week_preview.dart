@@ -115,13 +115,15 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
       return;
     }
     final viewport = _validSamplingViewport(viewportSize);
-    final viewportKey = viewport == null
-        ? 'full-image'
-        : '${viewport.width}x${viewport.height}';
-    final key =
-        '$path|$viewportKey|'
-        '${widget.settings.homePageWallpaperAlignX}|'
-        '${widget.settings.homePageWallpaperAlignY}';
+    // 键的唯一构造器（含 scale）：亮度带按「可见比例 ÷ 倍数」采样，
+    // 只改放大倍数也必须重采，理由见 `homePageBackdropSampleKey`。
+    final key = homePageBackdropSampleKey(
+      path: path,
+      viewportKey: homePageBackdropViewportKey(viewport),
+      alignX: widget.settings.homePageWallpaperAlignX,
+      alignY: widget.settings.homePageWallpaperAlignY,
+      scale: widget.settings.homePageWallpaperScale,
+    );
     if (key == _sampledKey) {
       return;
     }

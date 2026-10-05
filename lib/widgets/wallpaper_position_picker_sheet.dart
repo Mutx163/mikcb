@@ -386,9 +386,13 @@ class _WallpaperPositionPickerPageState
       return;
     }
     final viewportSize = MediaQuery.sizeOf(context);
-    final key =
-        '$_imagePath|${viewportSize.width}x${viewportSize.height}|'
-        '$_alignX|$_alignY|$_scale';
+    final key = homePageBackdropSampleKey(
+      path: _imagePath,
+      viewportKey: homePageBackdropViewportKey(viewportSize),
+      alignX: _alignX,
+      alignY: _alignY,
+      scale: _scale,
+    );
     if (_luminanceSampleKey == key) {
       return;
     }

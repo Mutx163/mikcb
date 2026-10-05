@@ -420,6 +420,39 @@ Widget? homePageBackdropImageWidget({required TimetableSettings settings}) {
 const double kWallpaperMinScale = 1;
 const double kWallpaperMaxScale = 4;
 
+/// 壁纸亮度带采样的缓存键 —— 三个消费点（首页 chrome 墨色、外观编辑页预览带、
+/// 取景页实时纠正）共用这一个构造器。
+///
+/// 取景的三个自由度都必须进键：`alignX`/`alignY` 决定看到哪一段，`scale` 决定那一段
+/// 被放大成什么（采样几何按「可见比例 ÷ 倍数」收缩，见
+/// [homePageWallpaperVisibleSourceRect] 与 `Transform.scale` 那套等价推导）。
+/// 漏掉任何一维，「取景其实已经变了」就会继续复用旧的亮度带 —— 首页顶栏标题、
+/// 状态栏图标、星期条与卡片区墨色的极性因此停在旧取景上，且不会自愈。
+/// 只改放大倍数（取景页双指原地捏合）是真实路径，所以 scale 这一维不能省。
+///
+/// 三个入参都先按采样端的口径钳制，避免越界值凭空多出档位。
+String homePageBackdropSampleKey({
+  required String path,
+  required String viewportKey,
+  required double alignX,
+  required double alignY,
+  required double scale,
+}) {
+  return '$path|$viewportKey|'
+      '${alignX.clamp(-1.0, 1.0).toDouble()}|'
+      '${alignY.clamp(-1.0, 1.0).toDouble()}|'
+      '${scale.clamp(kWallpaperMinScale, kWallpaperMaxScale).toDouble()}';
+}
+
+/// 采样键里的视口段：拿不到有效视口时统一记成「整图采样」，与
+/// [sampleHomePageWallpaperLuminanceBands] 的降级路径同口径。
+String homePageBackdropViewportKey(Size? viewportSize) {
+  if (viewportSize == null) {
+    return 'full-image';
+  }
+  return '${viewportSize.width}x${viewportSize.height}';
+}
+
 /// Title row height under the status bar on the home timetable header.
 ///
 /// 就是根标题栏自己的最小高度（`HyperosRootHeader.minHeight` = 44）：星期行紧接着
