@@ -1561,6 +1561,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                 kind: AppToastKind.error,
               );
             }
+            // 同上：Future<String?> 的 onError 要有返回值。
+            return null;
           }),
     );
   }

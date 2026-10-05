@@ -968,6 +968,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                                   kind: AppToastKind.error,
                                 );
                               }
+                              // updateTimetableSettings 的返回类型是 Future<String?>
+                              // （非空 = 两条守卫的拒绝文案），onError 必须补一个同类型返回值。
+                              return null;
                             }),
                       );
                     },
