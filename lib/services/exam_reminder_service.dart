@@ -111,14 +111,26 @@ class ExamReminderService {
     final taken = <int>{};
     final result = <ExamReminderFire>[];
     for (final fire in ordered) {
-      var code = stableRequestCode(fire.examId, fire.offsetMinutes);
+      // 候选码取 **fire 自己携带的那一个**，不能按 (examId, offsetMinutes)
+      // 重算：三个生产源里日程（:241）与考试（:365）恰好等于重算值，单节课
+      // 提醒不是 —— 它的真实码含 `minuteOfDay`（class_reminder_service.dart:110），
+      // `offsetMinutes` 则被刻意填成 0（同文件 :100-107 解释了为什么必须这样填），
+      // 而它经 `reconcile` 的 `additionalFires`（:405-413）合进同一个批次。
+      // 重算的后果是登记表记了一个**根本不会发出去**的码：`probe == 0` 时原样
+      // 返回 `fire`，实际发出去的码从未进 `taken`，别的 fire 撞上它时不被判为
+      // 冲突 → 两条同一 PendingIntent 身份 → 原生 `getBroadcast
+      // (FLAG_UPDATE_CURRENT)` 让后写入的整条顶掉前一条，正是上面声称要堵死的故障。
+      var code = fire.requestCode;
       var probe = 0;
-      while (!taken.add(code)) {
-        probe++;
-        code = stableRequestCode(
-          '${fire.examId}#collision$probe',
-          fire.offsetMinutes,
-        );
+      final registered = taken.add(code);
+      if (!registered) {
+        do {
+          probe++;
+          code = stableRequestCode(
+            '${fire.examId}#collision$probe',
+            fire.offsetMinutes,
+          );
+        } while (!taken.add(code));
       }
       result.add(
         probe == 0 ? fire : fire.withRequestCode(code),
