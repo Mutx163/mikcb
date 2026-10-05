@@ -44,6 +44,22 @@ int _simulateTransfer(
       }
     }
   }
+  // 还没解完就继续收**新符号**：真实场景里发送端会一直循环出帧，扫描端接着扫
+  // 就行。原来只有上面那段「重交前 64 帧」的补救 —— 那些帧大多在上一轮已经交过、
+  // 会被按 seed 去重，对 sourceSymbolCount 远大于 64 的大文件等于没有补救，
+  // 少收几个符号就只能靠运气（2026-10-05 全量跑时「大文件跨多符号粒度往返一致」
+  // 就在负载下偶发失败过，单独复跑 14 次全绿，复现不了）。
+  // 计入 submitted：调用方用 `receivedSymbols <= submitted + 64` 卡过去重余量。
+  if (!decoder.isComplete) {
+    for (var extra = 0; extra < frameBudget && !decoder.isComplete; extra++) {
+      try {
+        decoder.submitFrame(encoder.nextFrame());
+        submitted++;
+      } on StateError {
+        break; // 帧预算（maxUniqueSeedCount）用尽
+      }
+    }
+  }
   return submitted;
 }
 
