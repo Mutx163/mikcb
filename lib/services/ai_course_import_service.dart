@@ -233,12 +233,24 @@ class AiCourseImportService {
       index: index,
     );
 
-    final startTime = startSection <= settings.sectionCount
-        ? settings.sections[startSection - 1].startTime
-        : '00:00';
-    final endTime = endSection <= settings.sectionCount
-        ? settings.sections[endSection - 1].endTime
-        : '00:00';
+    // 上界校验与上面的 dayOfWeek / startSection / endSection 是同一族：越界是必须拒收的
+    // 畸形输入，不是可以糊过去的情况。原先这里在 `startSection`/`endSection` 超出课表
+    // 节数时**给这门课编一个 '00:00' 钟点**收下：一门挂在不存在节次上的假时间课，
+    // 日视图/时间轴/统计都按它算；更糟的是之后用户想改节次数会被
+    // `updateTimetableSettings` 的 `settings.sectionCount < maxUsedSection` 守卫拒绝
+    // （"有课排到第 12 节"），而那门课在界面上根本不存在第 12 节 —— 永久卡住。
+    // 复用既有话术 `section_count_below_usage`（四语本地化都在；AI 解析错误在
+    // `course_import_screen.dart:1448` 就是走 `localizeServiceMessage`），不新增文案。
+    if (endSection > settings.sectionCount) {
+      throw FormatException(
+        encodeServiceMessage('section_count_below_usage', {
+          'requiredMaxSection': endSection,
+        }),
+      );
+    }
+
+    final startTime = settings.sections[startSection - 1].startTime;
+    final endTime = settings.sections[endSection - 1].endTime;
 
     return Course(
       id: 'ai-${_uuid.v4()}',
