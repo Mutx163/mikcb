@@ -127,6 +127,21 @@ class SystemDownloadProgress {
   bool get isFinished =>
       status == SystemDownloadStatus.successful ||
       status == SystemDownloadStatus.failed;
+
+  /// 「这条记录不会再有进展」—— 成功、失败，以及 unknown。
+  ///
+  /// unknown 只有一个来源：原生侧**查不到这条下载**。`MainActivity.kt:1724-1731` 在
+  /// cursor 为空时返回 `{status:"unknown", downloadedBytes:0, totalBytes:-1}`（不是 null），
+  /// 而 DownloadManager 的五个真实状态都已映射，`else -> unknown` 实际走不到。
+  /// 典型触发是用户把这条下载从系统「下载管理」里删掉，或行被系统清理。
+  ///
+  /// 这个判断必须轮询侧、组件的"进行中"判定、控制器重开弹窗时的清理三处共用：
+  /// 历史上三处各不相同（轮询与组件当它"还在跑"、控制器当它"已结束"），后果是
+  /// `watchSystemDownloadProgress` 每 350 毫秒查一次平台通道、**永不停止**（唯一订阅方
+  /// 在首页，`if (!mounted) return` 要等整页销毁，而首页活满整个会话），弹窗进度条
+  /// 同时永远停在 0%「下载中」。
+  bool get isSettled =>
+      isFinished || status == SystemDownloadStatus.unknown;
 }
 
 typedef SystemDownloadProgressReader =
@@ -333,17 +348,45 @@ class SupportCreatorService {
     );
   }
 
+  /// 轮询系统下载器的进度，直到这条记录"settled"（成功 / 失败 / unknown）。
+  ///
+  /// 两条停止条件都是这一族唯一的口径（[SystemDownloadProgress.isSettled]）：
+  ///  - unknown 表示原生已经查不到这条下载（用户在系统「下载管理」里删掉、或行被清理），
+  ///    它不会再变成 pending/running；原先只认 [isFinished]，于是这条流每
+  ///    `interval` 毫秒问一次平台通道、**永不停止**（唯一订阅方在首页，只有整页销毁
+  ///    才会 `return`，而首页活满整个会话），组件同时按"进行中"渲染，进度条卡在 0%。
+  ///  - 查询抛错时先重试 [maxTransientFailures] 次再放弃：订阅方的注释一直写着
+  ///    "下载行在 provider 接手前会短暂查不到……让下一次观察恢复"，但旧实现第一次抛错
+  ///    就把流结束掉，没有任何"下一次"，进度从此冻在最后一个值上。
+  /// [reader] 是可注入的进度读取口，默认走平台通道（[querySystemDownloadProgress]）；
+  /// [SystemDownloadProgressReader] 这个 typedef 在本仓声明多年却没人用，这次把它接到
+  /// 实处 —— "什么时候该停止轮询"这条规则必须有办法被单测钉住。
   Stream<SystemDownloadProgress> watchSystemDownloadProgress(
     int downloadId, {
     Duration interval = const Duration(milliseconds: 350),
+    int maxTransientFailures = 3,
+    SystemDownloadProgressReader? reader,
   }) async* {
+    final read = reader ?? querySystemDownloadProgress;
+    var consecutiveFailures = 0;
     while (true) {
-      final progress = await querySystemDownloadProgress(downloadId);
+      final SystemDownloadProgress? progress;
+      try {
+        progress = await read(downloadId);
+        consecutiveFailures = 0;
+      } catch (_) {
+        consecutiveFailures++;
+        if (consecutiveFailures >= maxTransientFailures) {
+          rethrow;
+        }
+        await Future<void>.delayed(interval);
+        continue;
+      }
       if (progress == null) {
         return;
       }
       yield progress;
-      if (progress.isFinished) {
+      if (progress.isSettled) {
         return;
       }
       await Future<void>.delayed(interval);

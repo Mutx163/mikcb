@@ -107,17 +107,13 @@ class HomeUpdatePromptController extends ChangeNotifier {
     if (progress == null) {
       return;
     }
-    switch (progress.status) {
-      case SystemDownloadStatus.pending:
-      case SystemDownloadStatus.running:
-      case SystemDownloadStatus.paused:
-        return;
-      case SystemDownloadStatus.successful:
-      case SystemDownloadStatus.failed:
-      case SystemDownloadStatus.unknown:
-        _clearSystemDownload();
-        notifyListeners();
+    // 用与服务层轮询、组件"进行中"判定同一个口径（`SystemDownloadProgress.isSettled`）：
+    // 这三处历史上各不相同，正是"下载行没了之后轮询永不停 + 进度条永远显示进行中"的根因。
+    if (!progress.isSettled) {
+      return;
     }
+    _clearSystemDownload();
+    notifyListeners();
   }
 }
 
@@ -423,13 +419,12 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
     if (progress == null) {
       return false;
     }
-    return switch (progress.status) {
-      SystemDownloadStatus.pending ||
-      SystemDownloadStatus.running ||
-      SystemDownloadStatus.paused ||
-      SystemDownloadStatus.unknown => true,
-      SystemDownloadStatus.successful || SystemDownloadStatus.failed => false,
-    };
+    // 口径与服务层的轮询停止条件、控制器重开弹窗时的清理完全一致：
+    // settled（成功 / 失败 / unknown）之后就再也没有"进行中"这回事。
+    // 原先这里把 unknown 也算 busy，于是下载行被用户从系统「下载管理」里删掉之后，
+    // 弹窗的进度条永远停在 0%「下载中」，而轮询本身也在每 350 毫秒空转（见
+    // `SystemDownloadProgress.isSettled`）。
+    return !progress.isSettled;
   }
 
   Widget _buildActions({
