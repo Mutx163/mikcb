@@ -17,8 +17,8 @@ void main() {
   );
 
   Iterable<DateTime> daily(int from, int to) sync* {
-    var cursor = DateTime(from, 1);
-    final stop = DateTime(to, 1);
+    var cursor = DateTime(from);
+    final stop = DateTime(to);
     while (cursor.isBefore(stop)) {
       yield cursor;
       cursor = cursor.add(const Duration(days: 1));
@@ -43,7 +43,7 @@ void main() {
 
   test('元旦跨年那一周：2027-01-01 必须连 2026 一起加载', () {
     // 2027-01-01 是周五，这一周为 2026-12-28 .. 2027-01-03。
-    expect(holidayYearsToLoad(DateTime(2027, 1)), {2026, 2027});
+    expect(holidayYearsToLoad(DateTime(2027)), {2026, 2027});
     expect(holidayYearsToLoad(DateTime(2027, 1, 3)), {2026, 2027});
   });
 
