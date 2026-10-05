@@ -40,7 +40,7 @@ void main() {
   test('只改放大倍数也必须换键（亮度带依赖它）', () {
     expect(
       key(scale: 3),
-      isNot(key(scale: 1)),
+      isNot(key()),
       reason: '修复前首页与预览页的键里没有 scale，纯缩放不会重采',
     );
     expect(key(scale: 1.0001), isNot(key(scale: 1.0002)));
@@ -75,8 +75,7 @@ void main() {
       if (!source.contains('homePageBackdropSampleKey(')) {
         offenders.add(path);
       }
-      if (RegExp(r"viewportSize\.width\}x").hasMatch(source) ||
-          RegExp(r"viewport\.width\}x").hasMatch(source)) {
+      if (RegExp(r'viewport(Size)?\.width\}x').hasMatch(source)) {
         offenders.add('$path（仍在手工拼视口段）');
       }
     }
