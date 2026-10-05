@@ -56,12 +56,17 @@ class CourseGlassTuning {
   /// 且**不吃深色配方**（机制见下面 [blurSigma] 那条）。
   static const double defaultBlurSigma = LiquidGlassTuning.defaultBlurSigma;
 
-  /// 课程色的不透明度（出厂 0.20，与全局同数）。
+  /// 课程色的不透明度（出厂 0.70，与全局同数）。
   ///
-  /// ⚠️ 注意这里比「高斯档」的 0.42 低一大截：这一档的卖点是「能看见背景在边缘被掰弯」，
-  /// 染色压太实会把折射和高光一起盖掉。课程颜色仍然可辨 —— 冲突/放假压暗那一道 4%
-  /// 兜底（`minCourseGlassFillAlpha`）与 `contentCardInkOverWallpaper` 的字色判据
-  /// 都按这个值算过。
+  /// ⚠️ 这里的**数**与全局那份一样，但**语义不同**：全局那份染的是玻璃底色白，
+  /// 这份染的是**课程色**。所以同一个 0.70 在两个页面读起来完全不是一回事 ——
+  /// 全局是"白底盖到背景上的厚度"，卡片是"课程色盖到玻璃上的厚度"。
+  /// 课程颜色因此仍然强烈可辨（正是这一档要保住的东西），代价是折射与边光被压掉一截。
+  ///
+  /// 用户若嫌卡片太实，只有两条路：改用更薄的一档（清澈档染色 0、模糊 0），
+  /// 或在这八根旋钮里自己把染色拖下来。冲突/放假压暗那一道 4% 兜底
+  /// （`minCourseGlassFillAlpha`）与 `contentCardInkOverWallpaper` 的字色判据都按
+  /// 这个值算过。
   static const double defaultTintAlpha = LiquidGlassTuning.defaultTintAlpha;
 
   // --- 四档预设（与全局同一批常量，见 [LiquidGlassPreset]）---

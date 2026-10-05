@@ -49,7 +49,7 @@ void main() {
       expect(t.rimStrength, 0.2);
       expect(t.rimWidth, 1.5);
       expect(t.blurSigma, 5);
-      expect(t.tintAlpha, 0.20);
+      expect(t.tintAlpha, 0.70);
     });
 
     test('出厂值逐字段等于全局标准档，且是**引用**而非抄一份', () {
@@ -190,7 +190,7 @@ void main() {
   });
 
   group('courseGlassStyleFor', () {
-    test('没有自定义档时 = 出厂档，染色是课程色 × 0.20', () {
+    test('没有自定义档时 = 出厂档，染色是课程色 × 0.70', () {
       final glass = _resolve();
       expect(glass.borderRadius, 12);
       expect(glass.refraction, CourseGlassTuning.defaultRefraction);

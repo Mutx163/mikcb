@@ -84,20 +84,29 @@ void main() {
     });
 
     test('2026-10-05 用户钉的那几个值不许被顺手改掉', () {
-      // 这条钉的是**产品口径**本身：标准档 = 折射 8 / 作用带 11 / 模糊 5 /
-      // 染色 20%，清澈档的染色与模糊都归零。当时是口头拍板，没有别处留档，
-      // 将来谁"看着不顺眼"调一下，这里会红。
+      // 这条钉的是**产品口径**本身：
+      //   标准档 = 折射 8 / 作用带 11 / 模糊 5 / 染色 **70%**
+      //   清澈档 = 染色与模糊**都归零**
+      // 染色 70% 是当天**第二稿**才定下来的（第一稿是 20%，当天退回）：本类的
+      // [defaults] 同时是全 app 的基准（弹窗家族恒锁标准档、顶栏带、玻璃坞都跟它
+      // 走），动它等于把软件全局的玻璃底色一起换掉。这条就是防止又一次"看着不顺眼
+      // 就改一改"。
       const std = LiquidGlassTuning.presetStandard;
       expect(std.refraction, 8);
       expect(std.refractionBand, 11);
       expect(std.blurSigma, 5);
-      expect(std.tintAlpha, 0.20);
+      expect(std.tintAlpha, 0.70);
 
       const clear = LiquidGlassTuning.presetClear;
       expect(clear.blurSigma, 0);
       expect(clear.tintAlpha, 0);
 
-      // 「清澈」的 0 是**有效取值**不是"没配"：反推仍要认得出它就是清澈档。
+      // 染色那一列的两端由用户钉死，中间两格是补齐出来的：补齐口径 = 取两端中点
+      // / 上一整格，且必须落在染色那根滑杆的格点（步长 0.05）上。
+      expect(LiquidGlassTuning.presetLight.tintAlpha, 0.35);
+      expect(LiquidGlassTuning.presetDense.tintAlpha, 0.85);
+
+      // 「清澈」那两个 0 是**有效取值**不是"没配"：反推仍要认得出它就是清澈档。
       expect(LiquidGlassTuning.matchPreset(clear), LiquidGlassPreset.clear);
     });
 
@@ -264,7 +273,7 @@ void main() {
       expect(style.rimStrength, 0.3);
       expect(style.rimWidth, 2.5);
       expect(style.blurSigma, 18);
-      expect(style.tint, Colors.white.withValues(alpha: 0.20));
+      expect(style.tint, Colors.white.withValues(alpha: 0.70));
     });
 
     test('深色下底色收 15%，与液态玻璃同口径', () {

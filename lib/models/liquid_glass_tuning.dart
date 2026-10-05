@@ -90,15 +90,22 @@ class LiquidGlassTuning {
 
   static const defaults = LiquidGlassTuning();
 
-  // ── 四档阶梯怎么排的（2026-10-05）──────────────────────────────────────────
+  // ── 四档阶梯怎么排的（2026-10-05 定，当天分两步回退过染色那一列）──────────
   //
-  // 用户只钉了**两端**：清澈的染色与模糊都归 0，标准是折射 8 / 作用带 11 /
-  // 模糊 5 / 染色 20%。剩下两格按「同一个旋钮上取两端的中点」补齐，而不是各写
-  // 一个看起来好看的数：
+  // 用户先钉两端，又在当天分两步回头调。原因是
+  // 标准档同时是**全 app 的基准**：弹窗家族（小件）恒锁标准档、首页顶栏带、玻璃坞
+  // 全都跟它走，所以动标准档的染色不是"改一个档"，是**把软件全局的玻璃底色一起换掉**
+  // ——用户原话：「标准档位改了导致软件全局的标准变了」。于是"看得见折射"这件事
+  // 只靠**模糊**（15→5）去让，底色白保持原来的厚度；随后第二步又把**清澈档的染色
+  // 归零**（「在这个档位，要把染色改到 0」），把"零染色"这一头留给最薄的那一档。
+  // 染色那一列因此是 0 / 0.35 / 0.70 / 0.85 —— 两端由用户钉死，中间两格按
+  // 「同一个旋钮上取两端的中点 / 上一整格」补齐，而不是各写一个看起来好看的数：
   //
-  //   presetClear  = 标准 **减去**一整格（折射 8→6、作用带 11→8……）
+  //   presetClear  = 染色 0 + 标准**减去**一整格（折射 8→6、作用带 11→8……）
   //   presetLight  = 清澈与标准之间各让一半
-  //   presetDense  = 标准 **加上**一整格（作用带 11→15、模糊 5→12……）
+  //   presetDense  = 标准**加上**一整格（作用带 11→15、模糊 5→12……）
+  //
+  // 其余六项（折射 / 作用带 / 陡缓 / 色散 / 边光 / 边光带 / 模糊）保留本轮的新值。
   //
   // 这样排的结果是「厚度感」那几个旋钮全部单调递增（测试
   // `test/models/liquid_glass_tuning_test.dart` 的「四档的厚度感单调递增」钉的就是
@@ -118,7 +125,8 @@ class LiquidGlassTuning {
   /// 标准档（同 [defaults]）：**整条阶梯的基准**。
   static const presetStandard = defaults;
 
-  /// 清澈档（最薄）：染色与模糊都归零，只剩边缘折射、色散与边光。
+  /// 清澈档（最薄）：**染色与模糊都归零**，折射浅、作用带窄 —— 背景一块都不挡，
+  /// 整块玻璃只剩边缘折射、色散与边光在动。
   static const presetClear = LiquidGlassTuning(
     refraction: 6,
     refractionBand: 8,
@@ -126,12 +134,14 @@ class LiquidGlassTuning {
     dispersion: 0.15,
     rimStrength: 0.1,
     rimWidth: 1.2,
-    // 0 是**有效**取值，不是"没配"：背景一块都不挡，整块玻璃只剩边缘在动。
+    // 两个 0 都是**有效**取值，不是"没配"：着色器那条 mix 在 α=0 时逐像素恒等、
+    // 背景原样透出。深色配方是乘性的（×0.85），0 × 0.85 仍是 0，所以深色下也照旧
+    // 全透 —— 由 `liquid_glass_dark_recipe_test.dart` 的「0 安全」钉着。
     blurSigma: 0,
     tintAlpha: 0,
   );
 
-  /// 轻雾档：清透与标准之间那一格。
+  /// 轻雾档：清透与标准之间那一格（染色取两端中点：0 → 0.70 的一半）。
   static const presetLight = LiquidGlassTuning(
     refraction: 7,
     refractionBand: 9.5,
@@ -140,7 +150,7 @@ class LiquidGlassTuning {
     rimStrength: 0.15,
     rimWidth: 1.3,
     blurSigma: 2,
-    tintAlpha: 0.1,
+    tintAlpha: 0.35,
   );
 
   /// 浓密档：标准之上那一格。
@@ -152,7 +162,9 @@ class LiquidGlassTuning {
     rimStrength: 0.25,
     rimWidth: 2,
     blurSigma: 12,
-    tintAlpha: 0.4,
+    // 刻意不到 1：全不透明就不是玻璃了，折射与高光会被彻底盖掉。这一档的卖点
+    // 是"厚"，不是"实"。
+    tintAlpha: 0.85,
   );
 
   /// 反推 [tuning] 属于哪一档；都不匹配时返回 [LiquidGlassPreset.custom]。
@@ -191,19 +203,22 @@ class LiquidGlassTuning {
   //      在抗锯齿那一圈"。强度随宽度回调（0.28 → 0.2），峰值亮度降下来。
   static const double defaultRimStrength = 0.2;
   static const double defaultRimWidth = 1.5;
-  // 模糊 15 → 5、染色 0.70 → 0.20（2026-10-05 用户拍板，与折射/作用带一起给的）。
+  // 模糊 15 → 5、**染色照旧 0.70**（2026-10-05 用户拍板，当天回退了一列）。
   //
-  // 这两个数原来是**对齐旧磨砂面板**的取值（kDefaultFrostedSheetBlurSigma /
-  // kDefaultFrostedSheetTintAlpha），理由是「从高斯模糊切到液态玻璃时只该多出边缘
-  // 折射与受光高光」。现在口径反过来了：液态玻璃要的是**看得见背景在边缘被掰弯**，
-  // 15 的模糊 + 70% 的白底正好把折射和高光一起盖掉（所以那档的卖点一直读不出来），
-  // 于是往「清澈」那一头收。清澈档的 0 / 0 是这条线的另一端 —— 见上面的阶梯说明。
+  // 模糊：原来对齐旧磨砂面板的 15（kDefaultFrostedSheetBlurSigma），理由是「从高斯
+  // 模糊切到液态玻璃时只该多出边缘折射与受光高光」。这次口径反过来了：液态玻璃要的
+  // 是**看得见背景在边缘被掰弯**，15 的模糊正好把折射和高光一起糊掉，于是收到 5。
+  //
+  // ⚠️ 染色**当天退回 0.70**，理由是本类的 [defaults] 同时是**全 app 的基准**：弹窗
+  // 家族（小件恒锁标准档）、首页顶栏带、玻璃坞全都跟它走，动它等于把软件全局的玻璃
+  // 底色一起换掉（用户原话：「标准档位改了导致软件全局的标准变了」）。所以"看得见
+  // 折射"这件事只靠**模糊**这一项去让，底色白保持原来的厚度。
   //
   // ⚠️ 改这两个数会**同时**改课程卡片的出厂档（那边直接引用本类的默认值，见
   // `CourseGlassTuning.defaultBlurSigma` / `defaultTintAlpha`）。这是有意的：
   // 用户要的是两个页面同一种玻璃。
   static const double defaultBlurSigma = 5;
-  static const double defaultTintAlpha = 0.2;
+  static const double defaultTintAlpha = 0.70;
   // 色散是 2026-09-19 借 Kyant0 Backdrop 加的第八个旋钮：标准档取克制的
   // 0.35（边缘 1~2px 的彩虹镶边），课程卡那份没有这个旋钮（卡片是独立链路）。
   static const double defaultDispersion = 0.35;
