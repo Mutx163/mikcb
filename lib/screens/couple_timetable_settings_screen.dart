@@ -393,7 +393,7 @@ class _CoupleTimetableSettingsScreenState
           label: l10n.coupleTimetableLegendMine,
           selectedHex: binding.mineColorHex,
           onSelected: (color) =>
-              provider.updatePartnerCoupleColors(mineColorHex: color),
+              _applyCoupleColor(context, provider, mineColorHex: color),
         ),
         const SizedBox(height: 14),
         _buildCoupleColorRow(
@@ -401,7 +401,7 @@ class _CoupleTimetableSettingsScreenState
           label: l10n.coupleTimetableLegendPartner,
           selectedHex: binding.partnerColorHex,
           onSelected: (color) =>
-              provider.updatePartnerCoupleColors(partnerColorHex: color),
+              _applyCoupleColor(context, provider, partnerColorHex: color),
         ),
         const SizedBox(height: 14),
         _buildCoupleColorRow(
@@ -409,10 +409,40 @@ class _CoupleTimetableSettingsScreenState
           label: l10n.coupleTimetableLegendTogether,
           selectedHex: binding.togetherColorHex,
           onSelected: (color) =>
-              provider.updatePartnerCoupleColors(togetherColorHex: color),
+              _applyCoupleColor(context, provider, togetherColorHex: color),
         ),
       ],
     );
+  }
+
+  /// `updatePartnerCoupleColors`（timetable_provider.dart:4581-4601）是
+  /// **先改内存 `_partnerBinding`、再 `await savePartnerTimetableBinding(...)` 且没有
+  /// try/catch** → 落盘失败会 reject 且不回滚。原先三处 `onSelected` 直接把返回的
+  /// Future 丢掉：颜色当场看到变了、重启回旧值、零提示 —— 与 `settings_weather.dart:31`
+  /// 同一形状的谎报成功（那批在 9345fa80 修掉）。
+  Future<void> _applyCoupleColor(
+    BuildContext context,
+    TimetableProvider provider, {
+    String? mineColorHex,
+    String? partnerColorHex,
+    String? togetherColorHex,
+  }) async {
+    try {
+      await provider.updatePartnerCoupleColors(
+        mineColorHex: mineColorHex,
+        partnerColorHex: partnerColorHex,
+        togetherColorHex: togetherColorHex,
+      );
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+    }
   }
 
   Widget _buildCoupleColorRow(

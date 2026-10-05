@@ -114,6 +114,10 @@ void main() {
       'lib/screens/settings/settings_appearance.dart': RegExp(
         r'\.(updateSettings|applyThemeWithUndo|saveTheme|deleteTheme|renameTheme)\s*\(',
       ),
+      // 9345fa80 之后的第三个宿主：情侣三色写入先改内存再 await 落盘、失败不回滚。
+      'lib/screens/couple_timetable_settings_screen.dart': RegExp(
+        r'\.updatePartnerCoupleColors\s*\(',
+      ),
     };
 
     final allOffenders = <String>[];
