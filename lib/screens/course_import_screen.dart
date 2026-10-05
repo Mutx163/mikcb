@@ -31,6 +31,7 @@ import '../models/warehouse_repository_models.dart';
 import '../providers/timetable_provider.dart';
 import '../domain/warehouse_course_import_logic.dart';
 import '../domain/warehouse_location_time_schemes.dart';
+import '../domain/warehouse_macro_replay_logic.dart';
 import '../services/ai_course_import_service.dart';
 import '../services/ics_import_service.dart';
 import '../services/import_random_color_preferences.dart';
@@ -5191,15 +5192,17 @@ $kWarehouseBridgeCompatShim  try {
       return;
     }
     _notifyBackgroundProgress();
-    Map<String, dynamic>? message;
-    try {
-      message = jsonDecode(rawMessage) as Map<String, dynamic>;
-    } catch (_) {
+    final message = decodeBridgeMessage(rawMessage);
+    if (message == null) {
+      // 只记长度，不把原始载荷写进日志（脚本消息里可能带凭据）。
+      _debugImportLog(
+        'bridge message dropped: not a json object length=${rawMessage.length}',
+      );
       return;
     }
 
     _debugImportLog('bridge ${_bridgeMessageSummary(message)}');
-    final type = message['type'] as String? ?? '';
+    final type = bridgeOptionalString(message['type']) ?? '';
     switch (type) {
       case 'macro:event':
         _handleMacroEvent(message);
@@ -5212,7 +5215,7 @@ $kWarehouseBridgeCompatShim  try {
         break;
       case 'toast':
         if (!mounted) return;
-        final toastMessage = (message['message'] as String?)?.trim() ?? '';
+        final toastMessage = bridgeOptionalString(message['message'])?.trim() ?? '';
         if (toastMessage.isEmpty) {
           break;
         }
@@ -5260,7 +5263,7 @@ $kWarehouseBridgeCompatShim  try {
         if (!mounted) return;
         final l10n = AppLocalizations.of(context)!;
         final errorMessage =
-            (message['message'] as String?) ?? l10n.courseImportScriptFailed;
+            bridgeOptionalString(message['message']) ?? l10n.courseImportScriptFailed;
         _debugImportLog('bridge error -> mark failed message="$errorMessage"');
         _cancelImportTimeout();
         setState(() {
@@ -5275,7 +5278,7 @@ $kWarehouseBridgeCompatShim  try {
           _debugImportLog('bridge courses ignored outside import execution');
           break;
         }
-        final payload = (message['payload'] as String?) ?? '[]';
+        final payload = bridgeOptionalString(message['payload']) ?? '[]';
         _debugImportLog(
           'bridge courses -> handle payloadLength=${payload.length}',
         );
@@ -5316,7 +5319,7 @@ $kWarehouseBridgeCompatShim  try {
     if (!mounted) {
       return;
     }
-    final requestId = (message['requestId'] as String?) ?? '';
+    final requestId = bridgeOptionalString(message['requestId']) ?? '';
     // 回放模式：使用录制的响应或自动确认
     final macroRecord = widget.macroRecord;
     if (macroRecord != null) {
@@ -5329,14 +5332,16 @@ $kWarehouseBridgeCompatShim  try {
       return;
     }
     final l10n = AppLocalizations.of(context)!;
+    // 原来 true 分支写的是 `(message['title'] as String)`：判据用可空转换、
+    // 取值用非空转换，脚本发来非字符串 title 时前一行只是走 else，后一行却
+    // 在同一个表达式里抛 TypeError，整条桥回调被打断。
+    final confirmTitle = bridgeOptionalString(message['title'])?.trim() ?? '';
     final confirmed = await showAppConfirmDialog(
       context,
-      title: (message['title'] as String?)?.trim().isNotEmpty == true
-          ? (message['title'] as String)
-          : l10n.confirmImportAction,
-      message: (message['message'] as String?) ?? l10n.defaultContinuePrompt,
+      title: confirmTitle.isNotEmpty ? confirmTitle : l10n.confirmImportAction,
+      message: bridgeOptionalString(message['message']) ?? l10n.defaultContinuePrompt,
       confirmLabel:
-          (message['confirmText'] as String?) ?? l10n.confirmImportAction,
+          bridgeOptionalString(message['confirmText']) ?? l10n.confirmImportAction,
     );
     // 录制模式：记住用户的选择
     if (_macroRecordingState == MacroRecordingState.recording) {
@@ -5350,7 +5355,7 @@ $kWarehouseBridgeCompatShim  try {
     if (!mounted) {
       return;
     }
-    final requestId = (message['requestId'] as String?) ?? '';
+    final requestId = bridgeOptionalString(message['requestId']) ?? '';
     // 回放模式：使用录制的响应或默认值
     final macroRecord = widget.macroRecord;
     if (macroRecord != null) {
@@ -5358,17 +5363,17 @@ $kWarehouseBridgeCompatShim  try {
       final recorded = macroRecord.dialogResponses[key];
       await _resolveJavaScriptRequest(
         requestId,
-        '${recorded ?? (message['defaultValue'] as String? ?? '')}',
+        '${recorded ?? (bridgeOptionalString(message['defaultValue']) ?? '')}',
       );
       return;
     }
-    final validatorName = (message['validatorName'] as String?) ?? '';
+    final validatorName = bridgeOptionalString(message['validatorName']) ?? '';
     final l10n = AppLocalizations.of(context)!;
     final result = await showAppTextInputDialog(
       context,
-      title: (message['title'] as String?) ?? l10n.inputRequiredTitle,
+      title: bridgeOptionalString(message['title']) ?? l10n.inputRequiredTitle,
       confirmLabel: l10n.saveAction,
-      initialValue: (message['defaultValue'] as String?) ?? '',
+      initialValue: bridgeOptionalString(message['defaultValue']) ?? '',
       validate: (text) {
         if (validatorName == 'validateYearInput' &&
             !RegExp(r'^[0-9]{4}$').hasMatch(text)) {
@@ -5381,7 +5386,7 @@ $kWarehouseBridgeCompatShim  try {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text((message['message'] as String?) ?? ''),
+          Text(bridgeOptionalString(message['message']) ?? ''),
           const SizedBox(height: 12),
           HyperosTextField(
             controller: controller,
@@ -5405,44 +5410,41 @@ $kWarehouseBridgeCompatShim  try {
     if (!mounted) {
       return;
     }
-    final requestId = (message['requestId'] as String?) ?? '';
+    final requestId = bridgeOptionalString(message['requestId']) ?? '';
+    // 选项要在回放分支之前就解析好：录制存进去的是**标签**（见下方
+    // `options[result]`），而脚本契约要的是**下标**，回放时必须换算。
+    final options = parseScriptOptionLabels(message['optionsJson']);
+    final scriptSelectedIndex =
+        (message['selectedIndex'] as num?)?.toInt() ?? 0;
     final macroRecord = widget.macroRecord;
     if (macroRecord != null) {
       final key = _dialogResponseKey('singleSelection', message);
       final recorded = macroRecord.dialogResponses[key];
       if (recorded != null) {
-        await _resolveJavaScriptRequest(requestId, '$recorded');
+        // 原先这里 resolve 的是 `'$recorded'` —— 一个标签字符串。脚本按真人
+        // 路径写的是 `const i = await showSingleSelection(...); options[i]`，
+        // 回放时 `options["周三"]` 在 JS 里是 undefined，于是宏会静默选错校区/
+        // 学期并把错的数据导进来（不报错，最难查的那种）。
+        final recordedIndex =
+            matchRecordedOptionIndex(options, recorded) ?? scriptSelectedIndex;
+        await _resolveJavaScriptRequest(requestId, recordedIndex);
         return;
       }
       if (widget.runInBackground) {
         // Prefer the script-provided selection; fall back to first option.
-        final selectedIndex = (message['selectedIndex'] as num?)?.toInt() ?? 0;
-        await _resolveJavaScriptRequest(requestId, selectedIndex);
+        await _resolveJavaScriptRequest(requestId, scriptSelectedIndex);
         return;
       }
     }
-    final optionsRaw = (message['optionsJson'] as String?) ?? '[]';
-    final selectedIndex = (message['selectedIndex'] as num?)?.toInt() ?? 0;
-    List<String> options = const [];
-    try {
-      final decoded = jsonDecode(optionsRaw);
-      if (decoded is List) {
-        options = decoded
-            .map((item) => item.toString())
-            .toList(growable: false);
-      }
-    } catch (_) {
-      // 解析失败按空选项兜底（下方对话框以空列表呈现），此处属脚本侧
-      // 数据异常而非关键路径，留兜底不中断导入。
-    }
-    final currentSelection = selectedIndex.clamp(
+    final currentSelection = scriptSelectedIndex.clamp(
       0,
       options.isEmpty ? 0 : options.length - 1,
     );
     final l10n = AppLocalizations.of(context)!;
     final result = await showAppSingleChoiceDialog(
       context,
-      title: (message['title'] as String?) ?? l10n.pleaseChooseTitle,
+      title:
+          bridgeOptionalString(message['title']) ?? l10n.pleaseChooseTitle,
       options: options,
       initialIndex: currentSelection,
       confirmLabel: l10n.saveAction,
@@ -5460,9 +5462,9 @@ $kWarehouseBridgeCompatShim  try {
   }
 
   Future<void> _handleSaveCourseConfig(Map<String, dynamic> message) async {
-    final requestId = (message['requestId'] as String?) ?? '';
+    final requestId = bridgeOptionalString(message['requestId']) ?? '';
     try {
-      final decoded = jsonDecode((message['payload'] as String?) ?? '{}');
+      final decoded = jsonDecode(bridgeOptionalString(message['payload']) ?? '{}');
       if (decoded is! Map) {
         throw FormatException(
           AppLocalizations.of(context)!.invalidCourseConfigFormat,
@@ -5525,10 +5527,10 @@ $kWarehouseBridgeCompatShim  try {
   }
 
   Future<void> _handleSavePresetTimeSlots(Map<String, dynamic> message) async {
-    final requestId = (message['requestId'] as String?) ?? '';
+    final requestId = bridgeOptionalString(message['requestId']) ?? '';
     try {
       final sections = _decodeImportedSections(
-        (message['payload'] as String?) ?? '[]',
+        bridgeOptionalString(message['payload']) ?? '[]',
       );
       _pendingImportedSections = sections;
       _pendingImportedSectionsSignature = _buildSectionSignature(sections);
@@ -6128,8 +6130,8 @@ $kWarehouseBridgeCompatShim  try {
   Future<void> _handleLoginStateMessage(Map<String, dynamic> message) async {
     final hasPasswordField = message['hasPasswordField'] == true;
     final candidate = WarehouseRememberedLogin(
-      username: (message['username'] as String? ?? '').trim(),
-      password: (message['password'] as String? ?? '').trim(),
+      username: (bridgeOptionalString(message['username']) ?? '').trim(),
+      password: (bridgeOptionalString(message['password']) ?? '').trim(),
     );
     _latestLoginCandidate = candidate;
 
@@ -6416,7 +6418,7 @@ $kWarehouseBridgeCompatShim  try {
   void _handleMacroEvent(Map<String, dynamic> message) {
     if (_macroRecordingState != MacroRecordingState.recording) return;
     try {
-      final payloadRaw = message['payload'] as String?;
+      final payloadRaw = bridgeOptionalString(message['payload']);
       if (payloadRaw == null || payloadRaw.isEmpty) return;
       final decoded = jsonDecode(payloadRaw);
       if (decoded is! Map) return;
@@ -7592,22 +7594,11 @@ String _formatDate(DateTime date) {
   return '$year-$month-$day';
 }
 
-String _normalizeJavaScriptResult(Object? raw) {
-  if (raw == null) {
-    return '';
-  }
-  final text = raw.toString();
-  try {
-    final decoded = jsonDecode(text);
-    if (decoded is String) {
-      return decoded;
-    }
-  } catch (_) {
-    // WebView 返回的字符串可能带外层引号；解码失败说明本就是裸文本，
-    // 原样返回属预期分支，不是错误。
-  }
-  return text;
-}
+/// WebView 返回值归一化：与宏回放引擎共用 `domain/warehouse_macro_replay_logic.dart`
+/// 里那一份实现。以前两处各写一版，回放那版只切首尾引号、没还原转义，
+/// 导致「元素没找到」被当成成功。
+String _normalizeJavaScriptResult(Object? raw) =>
+    normalizeWebScriptResult(raw);
 
 Future<String?> _promptWarehouseImportUrl(
   BuildContext context, {

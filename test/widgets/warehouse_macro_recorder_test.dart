@@ -252,6 +252,32 @@ void main() {
 
       expect(key, 'singleSelection|选择学期|["2024春","2024秋"]');
     });
+
+    test('脚本把字段发成对象/数组/数字时不抛，按「没给」处理', () {
+      // 旧写法是 `message['title'] as String?`：脚本把 title/message/dialogId
+      // 发成对象或数组时直接抛 TypeError，而这个函数位于桥消息处理的最开头，
+      // 一抛整条回调就断了（该 Future 既没 await 也没 catch）。
+      final mistyped = <String, dynamic>{
+        'dialogId': 42,
+        'title': {'zh': '确认'},
+        'message': ['a', 'b'],
+      };
+      expect(() => warehouseDialogResponseKey('confirm', mistyped), returnsNormally);
+      expect(warehouseDialogResponseKey('confirm', mistyped), 'confirm||');
+
+      // dialogId 只有真的是字符串时才走 id 口径。
+      expect(
+        warehouseDialogResponseKey('prompt', {'dialogId': 1, 'title': '年份'}),
+        'prompt|年份|',
+      );
+      expect(
+        warehouseDialogResponseKey(
+          'prompt',
+          {'dialogId': ' year-picker ', 'title': '年份'},
+        ),
+        'prompt|id:year-picker',
+      );
+    });
   });
 
   group('WarehouseMacroRecord', () {

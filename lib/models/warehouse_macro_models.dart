@@ -12,14 +12,22 @@ String manualInputReasonForFieldType(String? fieldType) {
 /// Builds a stable key for matching script dialog responses during macro replay.
 /// Prefer [dialogId] when the adapter script provides one.
 String warehouseDialogResponseKey(String type, Map<String, dynamic> message) {
-  final dialogId = (message['dialogId'] as String?)?.trim();
+  // 每个字段都在这里被读一遍，而且这个函数在桥消息处理的最开头就会被调用，
+  // 所以取值口径必须和 `domain/warehouse_macro_replay_logic.dart` 里的
+  // `bridgeOptionalString` 一致：不是字符串就当作没给。原先写 `as String?`，
+  // 脚本把 title/optionsJson 发成对象或数组时会直接抛 TypeError，把整条
+  // 桥回调打断（该函数的 Future 没被 await、也没有 catch）。
+  String? text(String key) {
+    final value = message[key];
+    return value is String ? value : null;
+  }
+
+  final dialogId = text('dialogId')?.trim();
   if (dialogId != null && dialogId.isNotEmpty) {
     return '$type|id:$dialogId';
   }
-  final title = (message['title'] as String? ?? '').trim();
-  final body =
-      (message['message'] as String? ?? message['optionsJson'] as String? ?? '')
-          .trim();
+  final title = (text('title') ?? '').trim();
+  final body = (text('message') ?? text('optionsJson') ?? '').trim();
   return '$type|$title|$body';
 }
 
