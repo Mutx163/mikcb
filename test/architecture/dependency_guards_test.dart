@@ -139,7 +139,9 @@ void main() {
     // 4622→4597：第四个分组写入口 `replaceLocationTimeGroups` 接进
     // `_commitLocationGroupChange` 时，把该收口整体移进新分片
     // `timetable/location_group_repository.dart`（同上一条规矩，不抬基线）。
-    const baselineLines = 4597;
+    // 4597→4569：`deleteTask` 的实现（含新补的落盘失败回滚）抽进
+    // `timetable/course_repository.dart`，与 `_timetableDeleteCourse` 同一族同放处。
+    const baselineLines = 4569;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
@@ -188,14 +190,19 @@ void main() {
 
   test('_persistActiveProfileState 调用点棘轮：写放大只减不增', () {
     // 48→49：设置保存失败时需要一次补偿性持久化，把两份存储都拉回旧值。
-    const baselineCallSites = 49;
+    //
+    // 第 28 轮改法：**统计范围扩到全部 part 分片**（原来是手工列 4 个文件）。
+    // 起因是把 `deleteTask` 从父文件抽到 `timetable/course_repository.dart`
+    // 补回滚 —— 调用点从「被计数的文件」挪进「没被计数的文件」，棘轮读数会凭空
+    // 下降，等于自己把守卫废掉。改成 glob 之后父文件与 9 个分片一起数，
+    // 基线按当前实测 53 收紧（原来 4 文件的读数是 40，口径不同不能直接比较）。
+    const baselineCallSites = 53;
     final partFiles = [
       providerFile,
-      File('lib/providers/timetable/import_export_service.dart'),
-      File('lib/providers/timetable/time_scheme_repository.dart'),
-      File('lib/providers/timetable/live_activity_controller.dart'),
-      File('lib/providers/timetable/settings_repository.dart'),
-      File('lib/providers/timetable/location_group_repository.dart'),
+      ...Directory('lib/providers/timetable')
+          .listSync()
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.dart')),
     ];
     const marker = '_persistActiveProfileState(';
     var callSites = 0;

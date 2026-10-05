@@ -2598,37 +2598,9 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> deleteTask(String taskId) {
-    return _runMutation(() async {
-      final index = _tasks.indexWhere((task) => task.id == taskId);
-      if (index == -1) {
-        return;
-      }
-      final task = _tasks[index];
-      if (task.source == CourseTaskSource.homeworkMark &&
-          task.courseId != null &&
-          task.sourceWeek != null) {
-        final courseIndex = _courses.indexWhere((c) => c.id == task.courseId);
-        if (courseIndex != -1) {
-          final course = _courses[courseIndex];
-          final note = course.sessionNoteForWeek(task.sourceWeek!);
-          if (note != null) {
-            _courses[courseIndex] = course.copyWith(
-              sessionNotes: course.withSessionNote(
-                task.sourceWeek!,
-                note.copyWith(hasHomework: false),
-              ),
-            );
-          }
-        }
-      }
-      _tasks.removeAt(index);
-      await _persistActiveProfileState();
-      notifyListeners();
-      _analytics.logEventLater(
-        name: 'task_deleted',
-        parameters: {'remaining_task_count': _tasks.length},
-      );
-    });
+    // 实现与落盘失败回滚见 `timetable/course_repository.dart`：删一条作业会顺手
+    // 改掉那门课的周作业标记，落盘失败时它必须一起退回。
+    return _runMutation(() => _timetableDeleteTask(this, taskId));
   }
 
   CourseTask _normalizeTask(CourseTask task) {

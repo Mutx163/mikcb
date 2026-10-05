@@ -159,3 +159,61 @@ Future<bool> _timetableClearActiveProfileCourses(TimetableProvider host) async {
   await host._updateLiveActivity();
   return true;
 }
+
+/// 删一条作业（原 `timetable_provider.dart:2600-2632`）—— 落盘失败要整体退回。
+///
+/// 这个写入口的越界处在下面那段「作业标记来源」的处理：用户点的是「删这条作业」，
+/// 但它会顺手把**另一条记录**（那门课 `sessionNotes` 里对应周的 `hasHomework`）
+/// 改成 false，然后才 `await _persistActiveProfileState()`。按
+/// `course_group_repository.dart:15` 与 `schedule_item_repository.dart:52` 写明的
+/// 边界 —— 只有「内存里被改掉的不是用户刚亲口确认的那一条」才需要回滚 ——
+/// 这里必须回滚（`toggleTaskCompleted` / `updateTask` 改的都是用户点名那条，
+/// 按同一条判据**不该**回滚，缺的只是把落盘失败报给用户）。
+///
+/// 不回滚的后果与 `_timetableDeleteCourse` 同族：作业停在「已删」而盘上还有，
+/// 那门课的周标记停在「没作业」而盘上还是 true，而 `_persistActiveProfileState`
+/// 第一步的 `_mergeActiveProfileIntoProfilesList` 已经把改过的课程并进 `_profiles`，
+/// 下一次任意成功写入把「这门课从来没布置过作业」坐实。
+Future<void> _timetableDeleteTask(TimetableProvider host, String taskId) async {
+  final index = host._tasks.indexWhere((task) => task.id == taskId);
+  if (index == -1) {
+    return;
+  }
+  final snapshotTasks = List<CourseTask>.from(host._tasks);
+  final snapshotCourses = List<Course>.from(host._courses);
+  final snapshotProfiles = List<TimetableProfile>.from(host._profiles);
+  final task = host._tasks[index];
+  if (task.source == CourseTaskSource.homeworkMark &&
+      task.courseId != null &&
+      task.sourceWeek != null) {
+    final courseIndex = host._courses.indexWhere(
+      (course) => course.id == task.courseId,
+    );
+    if (courseIndex != -1) {
+      final course = host._courses[courseIndex];
+      final note = course.sessionNoteForWeek(task.sourceWeek!);
+      if (note != null) {
+        host._courses[courseIndex] = course.copyWith(
+          sessionNotes: course.withSessionNote(
+            task.sourceWeek!,
+            note.copyWith(hasHomework: false),
+          ),
+        );
+      }
+    }
+  }
+  host._tasks.removeAt(index);
+  try {
+    await host._persistActiveProfileState();
+  } catch (_) {
+    host._tasks = snapshotTasks;
+    host._courses = snapshotCourses;
+    host._profiles = snapshotProfiles;
+    rethrow;
+  }
+  host._notifyStateChanged();
+  host._analytics.logEventLater(
+    name: 'task_deleted',
+    parameters: {'remaining_task_count': host._tasks.length},
+  );
+}
