@@ -30,6 +30,9 @@ class HomeUpdatePromptController extends ChangeNotifier {
     isInAppCancelled = false;
     downloadedBytes = 0;
     totalBytes = null;
+    // 用户改走应用内下载时，必须忘掉系统下载器留下的那一份：见
+    // discardStaleSystemDownload 的说明。
+    _clearSystemDownload();
     notifyListeners();
   }
 
@@ -61,6 +64,9 @@ class HomeUpdatePromptController extends ChangeNotifier {
     isInAppCancelled = false;
     downloadedBytes = 0;
     totalBytes = null;
+    // "整体复位"就要连系统下载器那一份一起复位：原先只清 in-app 字段，
+    // 系统那两条字段没有任何清理点，会把上一次的终态带到下一次弹窗里。
+    _clearSystemDownload();
     notifyListeners();
   }
 
@@ -77,6 +83,42 @@ class HomeUpdatePromptController extends ChangeNotifier {
     systemDownloadProgress = progress;
     notifyListeners();
   }
+
+  void _clearSystemDownload() {
+    systemDownloadId = null;
+    systemDownloadProgress = null;
+  }
+
+  /// 丢弃**已进入终态**的系统下载器记录。
+  ///
+  /// 系统下载器的进度轮询到终态就停了（`watchSystemDownloadProgress` 在
+  /// successful/failed 后关闭流），而 `systemDownloadId` / `systemDownloadProgress`
+  /// 这两个字段除了这里没有任何清理点 —— 上一次下载的结果会永久留在控制器里。
+  /// 控制器又是首页 State 的字段（活过每一次弹窗），而 build 里
+  /// `hasSystemProgress` 优先于应用内进度、`isFailed`/`isComplete` 又把系统终态
+  /// OR 进来，于是：用完一次系统下载器（失败或成功）后再点更新提示，弹窗一打开
+  /// 就是红色"下载失败"，按钮也变成 忽略/继续下载；更糟的是接着改走应用内下载时，
+  /// 进度条读的还是那条早已死掉的系统下载，永远不动。
+  ///
+  /// 正在进行（pending / running / paused）的一律保留：那种情况下重开弹窗不该把
+  /// 还在跑的下载进度清零。
+  void discardStaleSystemDownload() {
+    final progress = systemDownloadProgress;
+    if (progress == null) {
+      return;
+    }
+    switch (progress.status) {
+      case SystemDownloadStatus.pending:
+      case SystemDownloadStatus.running:
+      case SystemDownloadStatus.paused:
+        return;
+      case SystemDownloadStatus.successful:
+      case SystemDownloadStatus.failed:
+      case SystemDownloadStatus.unknown:
+        _clearSystemDownload();
+        notifyListeners();
+    }
+  }
 }
 
 /// Displays a Miuix update dialog over the home page.
@@ -92,6 +134,11 @@ Future<void> showHomeUpdatePrompt(
   required VoidCallback onCancelDownload,
   required Future<bool> Function() onResumeDownload,
 }) {
+  // 每次打开弹窗都清掉上一次系统下载器的**终态**记录：控制器属于首页 State，
+  // 活过每一次弹窗，而进度轮询在终态就停了，那两个字段再没人写。不清的话，
+  // 上一次"用系统下载器下载失败"会让这一次弹窗一开就是红色失败条。
+  // 仍在进行的下载（pending/running/paused）会被保留。
+  controller.discardStaleSystemDownload();
   return _showHomeUpdatePromptDialog(
     context,
     release: release,
