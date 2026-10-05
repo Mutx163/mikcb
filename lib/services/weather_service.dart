@@ -265,13 +265,40 @@ class WeatherService {
       await AppLogService.instance.warn(
         event,
         'weather request failed',
-        error: error,
+        // 不能把异常对象原样交出去：见 [_withoutCoordinates]。
+        error: _withoutCoordinates('$error'),
         stackTrace: stackTrace,
       );
     } catch (_) {
       // 日志通道不可用时不外抛：与 holiday_service 的失败路径一致。
     }
   }
+
+  /// 查询串里的坐标值，形如 `?latitude=30.2936` / `&lon=120.16`。
+  /// 值截到下一个 `&` 或空白为止，其它参数原样保留。
+  static final RegExp _coordinateQueryPair = RegExp(
+    r'([?&](?:latitude|longitude|lat|lon)=)[^&\s]*',
+    caseSensitive: false,
+  );
+
+  /// 抹掉异常文本中的坐标，其余诊断信息一律保留。
+  ///
+  /// 为什么必须有这一步：`AppLogService` 的落盘就是把 `'$error'` 原样写进
+  /// `error=` 行（app_log_service.dart:549-551），而 http 的异常 `toString()`
+  /// 会把**完整请求 URL**拼进去 —— `ClientException`
+  /// （http 1.6.0 `src/exception.dart:15-21`）返回
+  /// `'ClientException: $message, uri=$uri'`，`IOClient` 又把 SocketException
+  /// 包成 `_ClientSocketException(e, request.url)`（`src/io_client.dart:44`）
+  /// 返回 `'ClientException with $cause, uri=$uri'`。本服务的 URL 查询串就是
+  /// `latitude=&longitude=`（:203-205 预报、:129-132 反查），而反查拿的是
+  /// **设备定位**。落盘的 `app_runtime.log` 又正是 `exportMergedLogsFile`
+  /// （app_log_service.dart:363）让用户导出、发群、附在 issue 里的那份文件，
+  /// 于是弱网下每次刷新天气就往可外流的附件里写一行家/学校的精确坐标。
+  ///
+  /// 只抹坐标值，不动域名、状态原因与不带坐标的 URL：否则这条日志就失去
+  /// 诊断价值（本仓已因"日志过度脱敏答非所问"返工过）。
+  static String _withoutCoordinates(String text) =>
+      text.replaceAllMapped(_coordinateQueryPair, (match) => '${match.group(1)}**');
 
   Future<void> _logMessage(String event, String message) async {
     try {
