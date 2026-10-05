@@ -45,6 +45,7 @@ import '../services/warehouse_macro_service.dart';
 import '../services/warehouse_repository_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/course_color_palette.dart';
+import '../utils/external_import_cleanup.dart';
 import '../utils/import_random_course_colors.dart';
 import '../utils/import_file_reader.dart';
 import '../utils/import_result_message.dart';
@@ -717,6 +718,12 @@ class _SpreadsheetCourseImportScreenState
         );
       }
     } finally {
+      // 原生把外部分享的表格复制进 <cacheDir>/external_imports/ 后就交给我们
+      // （MainActivity.kt:1546-1548），它自己不留引用（getPendingExternalImport
+      // :797-799 交接即清空），而全仓只有这一处消费点 —— 不在这里删，
+      // 这份含课程·教师·教室的明文副本就永久留在缓存里，每次分享还多一份。
+      // 判定限定在那个缓存目录：用户自己挑的文件（FilePicker 那条路）一律不碰。
+      await deleteExternalImportCopy(filePath);
       if (mounted) {
         setState(() {
           _isImporting = false;
