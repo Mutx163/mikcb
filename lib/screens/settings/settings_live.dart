@@ -292,20 +292,37 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     setState(() {
       _exportingDiagnostics = true;
     });
-    final logPath = await _liveService.exportLiveDiagnosticsFile();
-    if (!mounted) return;
-    var exportPath = logPath;
+    String? exportPath;
     var shareText = l10n.liveDiagnosticsShareText;
     var shareSubject = l10n.liveDiagnosticsShareSubject;
-    if ((exportPath == null || exportPath.isEmpty) && _debugStatus != null) {
-      exportPath = await _exportCurrentDebugSnapshot();
-      shareText = l10n.liveDiagnosticsSnapshotShareText;
-      shareSubject = l10n.liveDiagnosticsSnapshotShareSubject;
+    // 复位必须放进 finally：这条路径上有两个真会抛的 await ——
+    // `exportLiveDiagnosticsFile()` 是平台通道（原生 `result.error(...)` 直接变
+    // PlatformException），`_exportCurrentDebugSnapshot()` 里是
+    // `file.writeAsString`（磁盘满 / 目录不可写）。原先 `_exportingDiagnostics = false`
+    // 只出现在正常路径的中段，抛错之后那颗按钮永久转圈（本页把
+    // `loading: _exportingDiagnostics` 绑在按钮上），而开头的
+    // `if (_exportingDiagnostics) return` 让再点下去完全静默 —— 只能退出重进这一页。
+    // 同文件 `_refreshDebugStatus` / `_toggleTestSession` / `_startCourseIslandTest` /
+    // `_stopCourseIslandTest` 四个兄弟全是 try/finally，只有导出与清除这两处漏了。
+    try {
+      exportPath = await _liveService.exportLiveDiagnosticsFile();
+      if (mounted &&
+          (exportPath == null || exportPath.isEmpty) &&
+          _debugStatus != null) {
+        exportPath = await _exportCurrentDebugSnapshot();
+        shareText = l10n.liveDiagnosticsSnapshotShareText;
+        shareSubject = l10n.liveDiagnosticsSnapshotShareSubject;
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _exportingDiagnostics = false;
+        });
+      }
     }
-    if (!mounted) return;
-    setState(() {
-      _exportingDiagnostics = false;
-    });
+    if (!mounted) {
+      return;
+    }
     if (exportPath == null || exportPath.isEmpty) {
       showAppToast(
         context,
@@ -348,11 +365,21 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     setState(() {
       _clearingDiagnostics = true;
     });
-    final cleared = await _liveService.clearLiveDiagnostics();
-    if (!mounted) return;
-    setState(() {
-      _clearingDiagnostics = false;
-    });
+    bool? cleared;
+    // 同 `_exportLiveDiagnostics`：`clearLiveDiagnostics()` 是平台通道调用，原生报错
+    // 就是异常；原先只有正常路径复位，抛一次之后"清除"按钮永久禁用且再点静默。
+    try {
+      cleared = await _liveService.clearLiveDiagnostics();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _clearingDiagnostics = false;
+        });
+      }
+    }
+    if (!mounted) {
+      return;
+    }
     showAppToast(
       context,
       message: cleared

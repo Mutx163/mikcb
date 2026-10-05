@@ -78,6 +78,11 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   }
 
   Future<void> _loadBackups() async {
+    // 本方法被 `_loadConfig` 在两个 await 之后调用（`refreshStatus` 与它自己），
+    // 那时这一页可能已经被 pop；开头的 setState 因此必须先确认还挂着。
+    if (!mounted) {
+      return;
+    }
     if (!_isAccountConnected || !_config.enabled) {
       return;
     }
@@ -216,13 +221,19 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       enabled: true,
     );
     await _saveConfig(nextConfig);
+    // 守卫必须在 `setState` 与写 TextEditingController **之前**：到这里为止已经
+    // await 了四次（凭据写入、设备名解析、凭据再写、_saveConfig），期间用户完全
+    // 可能把这一页 pop 掉。原顺序是 setState 在前、`if (!mounted) return` 在后
+    // （也就是守卫写在用完之后），于是命中
+    // "A TextEditingController was used after being disposed" 与 setState-after-dispose。
+    // `_saveConfig` 自己按"未挂载就静默 return"设计，收尾责任被交回这段当时没有守卫的代码。
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _hasStoredPassword = true;
       _deviceLabelController.text = deviceLabel;
     });
-    if (!mounted) {
-      return;
-    }
     showAppToast(
       context,
       message: l10n.cloudSyncConnectSuccess,
