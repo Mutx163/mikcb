@@ -1080,6 +1080,11 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 卡片设置页」搬到这里（写 `TimetableSettings.courseCardGlassTuning`）：那边当初
   /// 单开一节的唯一理由是「材质面板塞不下八行滑杆」，分页之后这条理由消失。
   ///
+  /// **2026-10-05：这一页也摆出与第一页同款的那排档位胶囊**（用户口径「把档位也
+  /// 做到课程卡片里面，实现和通用一样的预设」）。两边引的是同一批常量
+  /// （`LiquidGlassTuning.preset*` → `CourseGlassTuning.preset*`），所以「一样的预设」
+  /// 是结构保证，不靠两处同步。行为与第一页同构：内置档不列旋钮，自定义档才展开。
+  ///
   /// ⚠️ **整机总闸会盖过这一页**：`effectiveCourseCardSurfaceStyle` 在模糊总开关
   /// 关掉（= 整体材质「实体卡片」）时一律回落实体卡片 —— 这里选了液态也不生效。
   /// 总闸在第一页，用户站在这一页看不到它，所以这一页必须把那句话说出来（用户口径
@@ -1132,33 +1137,67 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
               ),
             ),
           ],
-          // 卡片自己那套八根旋钮：只在卡片档为液态时出现（实体 / 高斯档没有折射
-          // 可调）。建议点位与档位数**沿用它在课程卡片设置页那一套** —— 出厂值
-          // 必须落在格点上，否则第一次拖动就把染色 0.32 吸成 0.30 / 0.35。
+          // 卡片自己那套八根旋钮 + 与第一页同款的档位胶囊：只在卡片档为液态时出现
+          // （实体 / 高斯档没有折射可调）。建议点位与档位数与第一页**完全相同**
+          // —— 两页既然共用一套档位预设，就得共用一套分格数，否则同一个档在两页
+          // 拖出来的值不一样。
           if (_draft.courseCardSurfaceStyle ==
               CourseCardSurfaceStyle.liquidGlass) ...[
             const SizedBox(height: 20),
             HyperosSectionLabel(text: l10n.advancedMaterialTitle),
             const SizedBox(height: 8),
-            HyperosListGroup(
-              children: _glassSliderTiles(
-                l10n,
-                tuning: cardTuning.toLiquidGlassTuning(),
-                showKeyPoints: true,
-                tintDivisions: 25,
-                // 卡片的磨砂量只喂它那张预糊位图，出图侧夹到 kPreblurMaxSigma：
-                // 滑杆上限取同一个常量，0 是有效的「清」档（出原图、不跑高斯）。
-                blurSigmaMax: kPreblurMaxSigma,
-                // 滑杆改的是「等价全局档」，写回卡片那套要过一趟抄写：两套类型
-                // 各自的出厂档与染色语义不同（见 `CourseGlassTuning` 的注释），
-                // 不能就地换类型。
-                onUpdate: (update) => _updateCardTuning(
-                  (base) => CourseGlassTuning.fromLiquidGlassTuning(
-                    update(base.toLiquidGlassTuning()),
+            // 档位胶囊：与 [_buildGeneralMaterialPage] 同一枚部件、同一份枚举，
+            // 差别只在落地口（写卡片那套参数 + 卡片自己的档位字段）。
+            _MaterialChoiceChips<LiquidGlassPreset>(
+              items: {
+                for (final preset in LiquidGlassPreset.values)
+                  liquidGlassPresetLabel(l10n, preset): preset,
+              },
+              value: _draft.courseCardGlassPreset,
+              onChanged: (preset) {
+                if (preset == LiquidGlassPreset.custom) {
+                  // 只拨档位、不动参数：用户想看旋钮，一个旋钮都没动时不该变脸。
+                  _updateDraft(
+                    _draft.copyWith(courseCardGlassPreset: preset),
+                  );
+                  return;
+                }
+                _updateDraft(
+                  _draft.copyWith(
+                    courseCardGlassPreset: preset,
+                    courseCardGlassTuning: preset.recommendedCourseTuning,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            // 内置档不列旋钮（与第一页同一条规矩：预设档下旋钮本就不可调，
+            // 列出来只会误导）。
+            if (_draft.courseCardGlassPreset == LiquidGlassPreset.custom)
+              HyperosListGroup(
+                children: _glassSliderTiles(
+                  l10n,
+                  tuning: cardTuning.toLiquidGlassTuning(),
+                  showKeyPoints: true,
+                  // 卡片的磨砂量只喂它那张预糊位图，出图侧夹到 kPreblurMaxSigma：
+                  // 滑杆上限取同一个常量，0 是有效的「清」档（出原图、不跑高斯）。
+                  blurSigmaMax: kPreblurMaxSigma,
+                  // 滑杆改的是「等价全局档」，写回卡片那套要过一趟抄写：两套类型
+                  // 各自的出厂档与染色语义不同（见 `CourseGlassTuning` 的注释），
+                  // 不能就地换类型。
+                  //
+                  // 落地口**不碰档位**：旋钮只在内置档之外露出来（与第一页同一
+                  // 条规矩），所以拖到这里时档位本来就已是「自定义」。反过来，
+                  // 用户拖回恰好等于某一档的值时也**不**自动把胶囊拨回内置档 ——
+                  // 第一页就是这个行为，两页保持一致（自动反推会让「滑杆在用户
+                  // 眼前消失」）。
+                  onUpdate: (update) => _updateCardTuning(
+                    (base) => CourseGlassTuning.fromLiquidGlassTuning(
+                      update(base.toLiquidGlassTuning()),
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ],
       ),
@@ -1255,8 +1294,10 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 画点、划过变亮、经过一次触感）—— 只有卡片档要它（2026-09-21 用户口径：在那几根
   /// 可见性最强的旋钮上给建议值）。
   ///
-  /// [tintDivisions] 默认 20；卡片档必须是 25（步长 0.04），否则出厂染色 0.32
-  /// 不落在格点上，第一次拖动就会被吸成 0.30 / 0.35。
+  /// [tintDivisions] 默认 20（步长 0.05）。**两页都必须用这个默认**：四档预设的
+  /// 染色（0 / 0.10 / 0.20 / 0.40）全都落在它上面，卡片那份 2026-10-05 之前单独
+  /// 用过 25（步长 0.04），那是为了迁就当时出厂的 0.32 —— 出厂值改成 0.20 之后
+  /// 那条理由消失，跟着全局走即可（两页共用一套档位，就得共用一套分格）。
   ///
   /// [blurSigmaMax] 是按档走的**上限**：全局 / 深色两档是 0~40（那些面走实时模糊，
   /// 量程就是它），卡片档是 0~24 —— 卡片的磨砂量只喂那张预糊位图，而出图侧把它夹在

@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/models/course_glass_tuning.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
@@ -650,9 +651,13 @@ void main() {
     // 这八根原先在「课程卡片设置页」（那边单开一节的唯一理由是材质面板塞不下），
     // 2026-09-22 面板分页之后搬到第二页。这条用例钉两件事：旋钮真的在这一页，
     // 且写的是 `courseCardGlassTuning` —— 不是全局那份。
+    //
+    // ⚠️ 必须先落到「自定义」档：2026-10-05 起这一页也摆档位胶囊，内置档**不列
+    // 旋钮**（与第一页同一条规矩，见下一条用例钉的那个行为）。
     _seedInitializedPrefs(
       TimetableSettings.defaults().copyWith(
         courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
+        courseCardGlassPreset: LiquidGlassPreset.custom,
       ),
     );
     final provider = await pumpEditor(tester);
@@ -663,7 +668,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(HyperosSlider), findsNWidgets(8), reason: '卡片这套八根');
-    // 没设过卡片档 ⇒ 显示卡片出厂档：折射强度 8.0（前五项与全局标准档同值）。
+    // 没设过卡片档 ⇒ 显示卡片出厂档：折射强度 8.0（与全局标准档同值）。
     expect(find.text('8.0'), findsOneWidget);
 
     // 「磨砂强度」这根的量程跟出图侧同口径：0 是有效的「清」档（出原图、不跑高斯），
@@ -697,6 +702,65 @@ void main() {
       isNull,
       reason: '卡片那八根不能顺手把全局那份也写掉',
     );
+  });
+
+  testWidgets('材质面板第二页也有与第一页同款的档位胶囊（2026-10-05）', (
+    tester,
+  ) async {
+    // 用户口径「把档位也做到课程卡片里面，实现和通用一样的预设」。这条钉三件事：
+    // ① 五个档位都在；② 内置档**不列**旋钮（预设档下旋钮不可调，列出来误导）；
+    // ③ 点档位写的是**卡片那套**参数 + 卡片自己的档位字段，不碰全局那份。
+    _seedInitializedPrefs(
+      TimetableSettings.defaults().copyWith(
+        courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
+      ),
+    );
+    final provider = await pumpEditor(tester);
+    await tester.tap(find.text('材质'));
+    await tester.pumpAndSettle();
+    await tester.tap(panelPageTab('课程卡片'));
+    await tester.pumpAndSettle();
+
+    final page = find.byKey(const ValueKey('material-page-course-card'));
+    for (final label in ['清澈', '轻雾', '标准', '浓密', '自定义']) {
+      expect(
+        find.descendant(of: page, matching: find.text(label)),
+        findsOneWidget,
+        reason: '卡片页也要有「$label」这一档',
+      );
+    }
+    expect(
+      find.byType(HyperosSlider),
+      findsNothing,
+      reason: '出厂是标准档，旋钮不该露出来',
+    );
+
+    // 点「清澈」⇒ 档位与参数都落到卡片那套，旋钮仍不露（清澈也是内置档）。
+    await tester.tap(
+      find.descendant(of: page, matching: find.text('清澈')),
+    );
+    await tester.pumpAndSettle();
+    expect(provider.settings.courseCardGlassPreset, LiquidGlassPreset.clear);
+    expect(
+      provider.settings.courseCardGlassTuning,
+      CourseGlassTuning.presetClear,
+    );
+    expect(provider.settings.liquidGlassTuning, isNull, reason: '不碰全局那份');
+    expect(provider.settings.liquidGlassPreset, LiquidGlassPreset.standard);
+    expect(find.byType(HyperosSlider), findsNothing);
+
+    // 点「自定义」⇒ 只拨档名、不动参数（一个旋钮都没动就不该变脸），旋钮露出来。
+    await tester.tap(
+      find.descendant(of: page, matching: find.text('自定义')),
+    );
+    await tester.pumpAndSettle();
+    expect(provider.settings.courseCardGlassPreset, LiquidGlassPreset.custom);
+    expect(
+      provider.settings.courseCardGlassTuning,
+      CourseGlassTuning.presetClear,
+      reason: '点自定义不该顺手改参数',
+    );
+    expect(find.byType(HyperosSlider), findsNWidgets(8));
   });
 
   testWidgets('从「设置 → 课表页面」的材质区块一键进得来（入口行必须常驻）', (
