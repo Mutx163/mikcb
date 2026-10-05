@@ -31,6 +31,26 @@ object WeeklyReportScheduler {
     private const val REQUEST_CODE = 0x5701
     private const val WEEK_MILLIS = 7L * 24L * 60L * 60L * 1000L
 
+    /**
+     * 这条通知系统是否真的可能投递。三个条件缺一，`notify()` 就会被静默丢弃：
+     * POST_NOTIFICATIONS 未授予、用户在系统设置里关掉本应用通知、
+     * 或把「周报」这个渠道调成"不显示/静默"。
+     *
+     * 原先只看第一项（同仓的 `ExamReminderScheduler.kt:33-49` 与
+     * `LiveUpdateService.kt:184-200` 都是三处都查，只有这里没跟上）。
+     * Android 13+ 上用户关掉通知或渠道时权限依旧是 granted，于是
+     * `notify()` 什么也不做而 `postNotification` 照样返回 true，
+     * 调用方 :163-170 按"投递成功"把 `KEY_FIRE_AT` 往后推一整周并重排闹钟 ——
+     * 这一周的周报就永久消失，用户重新打开通知也要等下周才收到。
+     */
+    internal fun weeklyReportCanPostNotification(
+        permissionGranted: Boolean,
+        appNotificationsEnabled: Boolean,
+        channelImportance: Int,
+    ): Boolean = permissionGranted &&
+        appNotificationsEnabled &&
+        channelImportance > NotificationManager.IMPORTANCE_NONE
+
     private data class ScheduledReport(
         val enabled: Boolean,
         val fireAtMillis: Long,
@@ -222,14 +242,33 @@ object WeeklyReportScheduler {
         body: String,
     ): Boolean {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return false
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val granted = context.checkSelfPermission(
+        val permissionGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.checkSelfPermission(
                 android.Manifest.permission.POST_NOTIFICATIONS,
             ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-            if (!granted) {
-                Log.w(TAG, "skip notify: POST_NOTIFICATIONS not granted")
-                return false
-            }
+        } else {
+            true
+        }
+        val channelImportance = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            manager.getNotificationChannel(CHANNEL_ID)?.importance
+                ?: NotificationManager.IMPORTANCE_NONE
+        } else {
+            NotificationManager.IMPORTANCE_DEFAULT
+        }
+        if (!weeklyReportCanPostNotification(
+                permissionGranted = permissionGranted,
+                appNotificationsEnabled = manager.areNotificationsEnabled(),
+                channelImportance = channelImportance,
+            )
+        ) {
+            Log.w(
+                TAG,
+                "skip notify: not deliverable " +
+                    "granted=$permissionGranted " +
+                    "appEnabled=${manager.areNotificationsEnabled()} " +
+                    "importance=$channelImportance",
+            )
+            return false
         }
 
         val contentIntent = PendingIntent.getActivity(
