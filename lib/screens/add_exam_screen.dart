@@ -975,12 +975,29 @@ class _AddExamScreenState extends State<AddExamScreen> {
       destructive: true,
     );
     if (confirmed == true && mounted) {
-      context.read<TimetableProvider>().deleteExam(widget.exam!.id);
+      // 同 `_saveExam`：`deleteExam` 落盘失败会 reject，不接就是"看着删掉了、
+      // 重启后考试又回来了"。失败时留在本页并提示。
+      try {
+        await context.read<TimetableProvider>().deleteExam(widget.exam!.id);
+      } catch (_) {
+        if (!mounted) {
+          return;
+        }
+        showAppToast(
+          context,
+          message: AppLocalizations.of(context)!.saveFailed,
+          kind: AppToastKind.error,
+        );
+        return;
+      }
+      if (!mounted) {
+        return;
+      }
       Navigator.pop(context);
     }
   }
 
-  void _saveExam() {
+  Future<void> _saveExam() async {
     final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
 
@@ -1053,12 +1070,34 @@ class _AddExamScreenState extends State<AddExamScreen> {
       updatedAt: now,
     );
 
-    if (_isEditing) {
-      provider.updateExam(exam);
-    } else {
-      provider.addExam(exam);
+    // `addExam`/`updateExam` 里是 `await _persistActiveProfileState()` 且**没有
+    // try/catch**（timetable_provider.dart:3239-3280），落盘失败会直接 reject。
+    // 原先这里既不 await 又紧接着 `Navigator.pop`：页面照常关闭、看起来保存成功，
+    // 异常落进 zone，考试只在内存里（本族刻意不回滚 add 路径），用户杀掉 app
+    // 就没了 —— 而同一个函数对校验失败（没选课程/没选日期）都会弹 toast，
+    // 说明"失败要让用户看见"是这个页面的既定意图。
+    try {
+      if (_isEditing) {
+        await provider.updateExam(exam);
+      } else {
+        await provider.addExam(exam);
+      }
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.saveFailed,
+        kind: AppToastKind.error,
+      );
+      // 失败就不关页面：填好的内容还在，用户能立刻重试或改别的路径。
+      return;
     }
 
+    if (!mounted) {
+      return;
+    }
     Navigator.pop(context);
   }
 

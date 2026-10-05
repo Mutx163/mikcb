@@ -64,4 +64,37 @@ void main() {
       reason: '失败必须让用户看见（同仓六个设置站点都用这个 helper）',
     );
   });
+
+  test('考试页的三处写入也必须被 await（同一形状的第二个宿主）', () {
+    // `addExam`/`updateExam`/`deleteExam`（timetable_provider.dart:3239-3280）
+    // 内部都是 `await _persistActiveProfileState()` 且没有 try/catch → 落盘失败会
+    // reject。`add_exam_screen.dart` 原先写完就 `Navigator.pop`：页面照常关闭、
+    // 看起来成功，异常落进 zone，考试只在内存里（add 路径刻意不回滚），杀掉 app 就没了。
+    // 同一个函数对"没选课程/没选日期"都会弹 toast，说明失败可见是这页的既定意图。
+    final target = File('lib/screens/add_exam_screen.dart');
+    expect(target.existsSync(), isTrue);
+    final lines = target.readAsLinesSync();
+    final mutating = RegExp(
+      r'\.(addExam|updateExam|deleteExam)\s*\(',
+    );
+    final offenders = <String>[];
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i].trim();
+      if (!mutating.hasMatch(line) ||
+          line.startsWith('//') ||
+          line.startsWith('///')) {
+        continue;
+      }
+      if (!line.contains('await ') || line.startsWith('unawaited(')) {
+        offenders.add('${i + 1}: $line');
+      }
+    }
+    expect(
+      offenders,
+      isEmpty,
+      reason:
+          '考试写入失败会 reject，必须 await + try/catch 提示，失败时不要 pop：\n'
+          '${offenders.join('\n')}',
+    );
+  });
 }
