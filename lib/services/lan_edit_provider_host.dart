@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import '../domain/course_domain.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
@@ -249,6 +250,20 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
       }
       await _provider.addCourseGroup(slots);
     } else {
+      // 改组分支同样要撞车检查：slot 可以把 id 写成**另一门不相干课程**的 id，
+      // 整组替换后就出现两行同 id —— 删除按 id 等值摘除，"删一次掉两行"，
+      // 与 :161-176 新建分支拒绝的是同一件事（那边漏了这个分支）。
+      // 属于本组自己的 id 不算冲突（改课次、改组名都沿用原 id）。
+      final groupKey = buildSharedCourseNameKey(trimmedOriginal);
+      final ownedIds = <String>{
+        for (final course in _provider.courses)
+          if (buildSharedCourseNameKey(course.name) == groupKey) course.id,
+      };
+      for (final slot in slots) {
+        if (!ownedIds.contains(slot.id)) {
+          _rejectIdConflict(slot.id);
+        }
+      }
       await _provider.updateCourseGroup(trimmedOriginal, slots);
     }
     return slots;
@@ -474,7 +489,14 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
     );
 
     return Course(
-      id: existingId ?? _suppliedCourseId(json['id']) ?? const Uuid().v4(),
+      // `existingId` 是 handler 从请求体里原样取的（`slotMap['id'] as String?`），
+      // 空串是非 null → 旧写法 `existingId ?? _suppliedCourseId(...)` 会让归一函数
+      // 根本没机会跑，于是造出 id 为空的行：`/api/v1/courses/([^/]+)` 永远寻址不到它，
+      // 而删除按 id 等值摘除（`timetable/course_repository.dart` 的
+      // `removeWhere((c) => c.id == courseId)`）会一次删掉所有空 id 行。
+      // 两个来源统一过一次归一才是对的口径。
+      id:
+          _suppliedCourseId(existingId ?? json['id']) ?? const Uuid().v4(),
       name: (json['name'] as String?)?.trim() ?? '',
       shortName: json['shortName'] as String?,
       teacher: (json['teacher'] as String?)?.trim() ?? '',
