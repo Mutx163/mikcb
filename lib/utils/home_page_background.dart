@@ -108,6 +108,16 @@ Future<void> precacheHomePageBackdropImage(TimetableSettings settings) async {
       if (!completer.isCompleted) {
         completer.complete();
       }
+      // 必须释放这一次投递的句柄：`ImageStreamCompleter` 给每个监听方的都是
+      // `_currentImage!.clone()`（framework image_stream.dart:539），而 dart:ui
+      // 的契约是「所有 outstanding handle 都 dispose 之后底层位图才会释放」
+      // （sky_engine painting.dart:2016-2025）。框架的 `precacheImage` 正是这么
+      // 做的（image.dart:139-142 的 `image?.dispose()`），本函数是它的手写副本，
+      // 原先只有 `removeListener` —— 于是每次预缓存都留下一个永不释放的解码位图，
+      // `ImageCache` 与 `evictHomePageImageCache` 都放不掉那张像素。
+      // 实测在测试里数得出来：同一张底图的 `debugGetOpenHandleStackTraces()`
+      // 每调用一次 +1（见 test/utils/home_page_backdrop_precache_handle_test.dart）。
+      image.dispose();
       stream.removeListener(listener);
     },
     onError: (Object error, StackTrace? stackTrace) {

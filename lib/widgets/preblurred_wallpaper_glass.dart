@@ -277,8 +277,14 @@ class PreblurredWallpaperCache {
     listener = ImageStreamListener(
       (ImageInfo info, bool synchronousCall) {
         if (!completer.isCompleted) {
+          // 交给调用方的是**另**一个句柄（clone），所以这一次投递的句柄必须由
+          // 我们自己释放：`ImageStreamCompleter` 每次都给监听方 `_currentImage!.clone()`
+          // （framework image_stream.dart:539），而 dart:ui 要求每个 outstanding
+          // handle 都 dispose（sky_engine painting.dart:2016-2025）。原先只 clone
+          // 不 dispose，每换一次磨砂值/每张新壁纸就留下一张永不回收的源位图。
           completer.complete(info.image.clone());
         }
+        info.dispose();
         removeListener();
       },
       onError: (Object error, StackTrace? stackTrace) {
