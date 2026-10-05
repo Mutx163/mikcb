@@ -804,6 +804,13 @@ class MainActivity : FlutterActivity() {
                                     "fileName" to it.fileName,
                                     "textContent" to it.textContent,
                                     "filePath" to it.filePath,
+                                    // Dart 侧（`lib/main.dart:1332`）写着「原生侧一定会带
+                                    // maxBytes」并用它拼「文件过大（上限 X）」这句话；
+                                    // 这个键漏了的时候它会静默回落到 Dart 自己那份
+                                    // 20MB 常量。今天两侧数值相同所以看不出来，只要哪一侧
+                                    // 调整上限，提示就开始谎报另一个数字 —— 又是「一条规则
+                                    // 两份副本、通道少传一个」的形状。
+                                    "maxBytes" to it.maxBytes,
                                 )
                             },
                         )
