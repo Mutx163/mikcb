@@ -8,6 +8,7 @@ import '../models/course.dart';
 import '../models/course_task.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../utils/app_toast.dart';
 import 'add_course_screen.dart';
 import 'add_task_screen.dart';
 
@@ -283,8 +284,22 @@ class _TaskListScreenState extends State<TaskListScreen> {
       confirmLabel: l10n.deleteAction,
       destructive: true,
     );
-    if (confirmed == true && mounted) {
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    try {
       await context.read<TimetableProvider>().deleteTask(task.id);
+    } catch (_) {
+      // 落盘失败已回滚内存（见 _timetableDeleteTask），这里必须报出来：原先 await
+      // 没有 catch，抛出的错误变成未处理异步异常，列表也原地不动。
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.saveFailed,
+        kind: AppToastKind.error,
+      );
     }
   }
 }

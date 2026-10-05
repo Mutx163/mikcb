@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../providers/timetable_provider.dart';
+import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import 'add_exam_screen.dart';
 
@@ -66,7 +67,7 @@ class ExamListScreen extends StatelessWidget {
                             isPast: false,
                             dateLabel: _formatExamDate(exam, provider, l10n),
                             onTap: () => _navigateToEditExam(context, exam),
-                            onDismissed: () => provider.deleteExam(exam.id),
+                            onDismissed: () => _deleteExam(context, provider, exam),
                             confirmDismiss: () =>
                                 _confirmDelete(context, exam, l10n),
                           ),
@@ -85,7 +86,7 @@ class ExamListScreen extends StatelessWidget {
                             isPast: true,
                             dateLabel: _formatExamDate(exam, provider, l10n),
                             onTap: () => _navigateToEditExam(context, exam),
-                            onDismissed: () => provider.deleteExam(exam.id),
+                            onDismissed: () => _deleteExam(context, provider, exam),
                             confirmDismiss: () =>
                                 _confirmDelete(context, exam, l10n),
                           ),
@@ -156,6 +157,35 @@ class ExamListScreen extends StatelessWidget {
       confirmLabel: l10n.deleteAction,
       destructive: true,
     );
+  }
+
+  /// 滑动删除考试：落盘失败必须提示，也不能让抛出的错误变成未处理异步错误。
+  ///
+  /// `Dismissible.onDismissed` 的签名是 `void Function(DismissDirection)`，
+  /// 原先两个调用点写成 `() => provider.deleteExam(exam.id)` —— 返回的 Future
+  /// 被丢掉。`deleteExam`（provider :3281-3295）在落盘失败时按本仓写入契约
+  /// **回滚内存并 rethrow**（第 25 轮收口），于是这里同时踩两件事：
+  /// ① 错误没人接 → 未处理异步异常；
+  /// ② 行已经被 Dismissible 摘掉、内存也已退回 → 用户以为删掉了，
+  ///    下次进这个页面（或重启）那条考试又回来，且没有任何提示。
+  /// 收敛成一个自己吃掉错误并报失败的辅助函数，调用点直接用它。
+  Future<void> _deleteExam(
+    BuildContext context,
+    TimetableProvider provider,
+    Exam exam,
+  ) async {
+    try {
+      await provider.deleteExam(exam.id);
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+    }
   }
 
   void _navigateToAddExam(BuildContext context) {

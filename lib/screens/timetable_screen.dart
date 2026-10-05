@@ -1547,9 +1547,21 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     unawaited(
-      provider.updateTimetableSettings(
-        provider.settings.copyWith(coupleTimetableOverlayEnabled: enabled),
-      ),
+      provider
+          .updateTimetableSettings(
+            provider.settings.copyWith(coupleTimetableOverlayEnabled: enabled),
+          )
+          // 「先改内存、后异步落盘」是这里的既定乐观语义，但落盘失败不能无声：
+          // 契约里的 rethrow 没人接就是未处理异步异常，用户只看到开关自己弹回去。
+          .catchError((Object _) {
+            if (mounted) {
+              showAppToast(
+                context,
+                message: AppLocalizations.of(context)!.saveFailed,
+                kind: AppToastKind.error,
+              );
+            }
+          }),
     );
   }
 
@@ -2563,17 +2575,31 @@ class _TimetableScreenState extends State<TimetableScreen>
           HyperosDialogAction(
             label: l10n.resetDefaultAction,
             isPrimary: true,
-            onPressed: () {
+            onPressed: () async {
               // Re-read the live settings: they may have changed while the
               // dialog was up, and only this one field should be touched.
               final current = provider.settings;
-              unawaited(
-                provider.updateSettings(
+              try {
+                await provider.updateSettings(
                   isDarkTheme
                       ? current.copyWith(weekdayBarFontColorDark: defaultHex)
                       : current.copyWith(weekdayBarFontColorLight: defaultHex),
-                ),
-              );
+                );
+              } catch (_) {
+                // 失败不关弹层（与 add_exam_screen 同口径）：用户要看得见「没改成」。
+                if (!mounted) {
+                  return;
+                }
+                showAppToast(
+                  context,
+                  message: AppLocalizations.of(context)!.saveFailed,
+                  kind: AppToastKind.error,
+                );
+                return;
+              }
+              if (!mounted) {
+                return;
+              }
               Navigator.pop(context);
             },
           ),

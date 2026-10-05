@@ -947,12 +947,28 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                     max: 30,
                     divisions: 60,
                     onChanged: (value) {
+                      // 落盘失败按本仓写入契约回滚内存并 rethrow
+                      // （updateTimetableSettings，timetable_provider.dart:3848-3867），
+                      // 裸 unawaited 会把这份 rethrow 变成未处理异步异常：每拖一格喷一次，
+                      // 界面停在没落库的值上且没有任何提示。
                       unawaited(
-                        provider.updateTimetableSettings(
-                          provider.settings.copyWith(
-                            liveTimeCorrectionSeconds: value.round(),
-                          ),
-                        ),
+                        provider
+                            .updateTimetableSettings(
+                              provider.settings.copyWith(
+                                liveTimeCorrectionSeconds: value.round(),
+                              ),
+                            )
+                            .catchError((Object _) {
+                              if (context.mounted) {
+                                showAppToast(
+                                  context,
+                                  message: AppLocalizations.of(
+                                    context,
+                                  )!.saveFailed,
+                                  kind: AppToastKind.error,
+                                );
+                              }
+                            }),
                       );
                     },
                   ),

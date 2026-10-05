@@ -351,7 +351,22 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     if (confirmed != true || !mounted) {
       return;
     }
-    await context.read<TimetableProvider>().deleteTask(widget.task!.id);
+    try {
+      await context.read<TimetableProvider>().deleteTask(widget.task!.id);
+    } catch (_) {
+      // deleteTask 现在会在落盘失败时回滚内存并 rethrow（course_repository.dart 的
+      // _timetableDeleteTask）。原先 await 完就无条件 pop(true)：
+      // 作业一条没删，弹层却报「已删除」，重启后它又回来。
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (mounted) {
       Navigator.pop(context, true);
     }

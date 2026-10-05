@@ -118,6 +118,20 @@ void main() {
       'lib/screens/couple_timetable_settings_screen.dart': RegExp(
         r'\.updatePartnerCoupleColors\s*\(',
       ),
+      // —— 第 28 轮补的五个宿主（b7782890 让 deleteExam/deleteTask 会 rethrow，
+      // 而这几处当时要么把 Future 直接丢掉、要么 await 完照样报成功）——
+      // 考试页两处滑动删除：`_ExamListRow.onDismissed` 是 VoidCallback，
+      // `() => provider.deleteExam(...)` 返回的 Future 没人接。
+      'lib/screens/exam_list_screen.dart': RegExp(r'\.deleteExam\s*\('),
+      'lib/screens/task_list_screen.dart': RegExp(r'\.deleteTask\s*\('),
+      'lib/screens/add_task_screen.dart': RegExp(r'\.deleteTask\s*\('),
+      'lib/screens/settings/settings_live.dart': RegExp(
+        r'\.updateTimetableSettings\s*\(',
+      ),
+      // 首页两个：情侣覆盖层开关（乐观语义）与星期条文字色重置（原先失败也 pop）。
+      'lib/screens/timetable_screen.dart': RegExp(
+        r'\.(updateTimetableSettings|updateSettings)\s*\(',
+      ),
     };
 
     final allOffenders = <String>[];
@@ -153,7 +167,14 @@ void main() {
         }
         final statement = lines.sublist(start, i + 1).join(' ');
         final awaited = statement.contains('await ');
-        if (!awaited || line.startsWith('unawaited(')) {
+        // 第 28 轮加的第二种"已处理"形状：滑杆/开关这类**故意不阻塞 UI** 的写入
+        // 走 `unawaited(future.catchError(...))`（链式写法里 `.catchError(` 落在
+        // 调用行之后几行，所以往后再看 12 行）。它同样保证错误不会变成未处理异常，
+        // 并把失败报给用户；裸 `unawaited(...)` 依然判红。
+        final lookahead = lines.skip(i).take(12).join(' ');
+        final caughtInline = lookahead.contains('.catchError(');
+        if ((!awaited && !caughtInline) ||
+            (line.startsWith('unawaited(') && !caughtInline)) {
           offenders.add('${entry.key}:${i + 1}: $line');
         }
       }
