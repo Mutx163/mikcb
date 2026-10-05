@@ -1,8 +1,6 @@
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
-import 'frosted_appearance.dart';
-
 /// Inherited scope that makes [LiquidGlassDegradation] reactive.
 ///
 /// Placed above the app's route stack (see MyApp.builder inside lib/main.dart).
@@ -80,29 +78,28 @@ abstract final class LiquidGlassDegradation {
   static bool shouldDegradeFor(MediaQueryData mq) =>
       mq.disableAnimations || mq.highContrast;
 
-  /// 关闭某个表面家族的「高级材质」后，该表面是否应直接退化为
-  /// **不透明实体卡片**。
+  /// 某个表面家族「要不要液态玻璃」的开关关掉时，它是否应退化为**不透明实体
+  /// 卡片**。
   ///
-  /// 语义（2026-09-11 定稿）：作用范围开关是
-  /// 「**要不要高级材质**」的开关，不是「要不要玻璃」的开关。关掉 = 这面
-  /// 改为实体卡片，而不是降一级去用高斯磨砂。理由：
+  /// 语义（2026-09-11 定稿）：这把开关是「**要不要液态玻璃**」的开关。关掉 =
+  /// 这面改为实体卡片，而不是降一级去用高斯磨砂。理由：
   ///
-  /// 1. 磨砂档走实时 BackdropFilter，而高级材质档走包内隔离组 + 稳定整页
-  ///    捕获。降级到磨砂后，入场/揭示动画期间 BackdropFilter 采不到稳定
-  ///    背景（动画中的层尚未落到屏幕上），面板在整段动画里渲染为透明，
-  ///    动画结束才「啪」地出现——读起来就是**弹窗没有动画**。实体卡片
-  ///    不依赖背景采样，动画全程正常（同一机制记在
-  ///    `hyperos_select.dart` 的 Transform.scale 注释里）。
-  /// 2. 全局「材质」已经提供实体卡片 / 高斯模糊 / 液态玻璃
-  ///    三个档位。用家族开关再退化一层材质，等于两个地方控制同一件事，
-  ///    且第二处的行为（磨砂）与它的标签（关闭高级材质）不符。
+  /// 1. 磨砂档走实时 BackdropFilter，而液态档走包内隔离组 + 稳定整页捕获。
+  ///    降级到磨砂后，入场/揭示动画期间 BackdropFilter 采不到稳定背景
+  ///    （动画中的层尚未落到屏幕上），面板在整段动画里渲染为透明，动画结束才
+  ///    「啪」地出现——读起来就是**弹窗没有动画**。实体卡片不依赖背景采样，
+  ///    动画全程正常（同一机制记在 `hyperos_select.dart` 的 Transform.scale
+  ///    注释里）。
+  /// 2. 全局「默认材质」已经提供实体卡片 / 液态玻璃两档。用家族开关再退化
+  ///    一层材质，等于两个地方控制同一件事。
   ///
-  /// **判据只看「是不是高级材质 + 家族开关有没有开」**：早先把非液态一律判成
-  /// 「不需要开关」，导致非液态的高级材质档下作用范围开关整体失效；已修正。
+  /// 2026-09-30 高斯模糊档退场后，这把开关成了液态档下**唯一**能让某个表面
+  /// 退回磨砂 / 实体的口子（此前高斯档也管这件事，那条路已合并到本函数）。
   ///
-  /// 例外：**首页玻璃带**有自己的「玻璃材质」档位（渐进模糊 / 高斯模糊 /
-  /// 高级材质跟随全局），其家族开关只在高级材质与用户选定的衰减风格
-  /// 之间切换，不适用本判定——否则关掉高级材质会把顶栏玻璃整个拿掉。
+  /// **判据只看「系统有没有降级 + 家族开关有没有开」**。
+  ///
+  /// 例外：**首页玻璃带**有自己的「玻璃材质」档位（跟随全局 / 实体 / 液态），
+  /// 不走本函数——否则这把开关会顺手把顶栏带整个拿掉。
   static bool familyFallsBackToSolid(
     BuildContext context, {
     required bool advancedFamilyEnabled,
@@ -112,13 +109,6 @@ abstract final class LiquidGlassDegradation {
       // 与家族开关无关；一并返回 true 让调用方走同一条分支。
       return true;
     }
-    final mode = FrostedAppearanceScope.maybeOf(context)?.appearance.glassMode;
-    if (!isAdvancedGlassMode(mode)) {
-      // 基础材质（实体卡片 / 高斯模糊）：作用范围开关本就不参与，
-      // 各自走自己的既有分支。
-      return false;
-    }
-    // 全局高级材质 + 该家族关闭 → 实体卡片。
     return !advancedFamilyEnabled;
   }
 

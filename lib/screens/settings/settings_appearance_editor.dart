@@ -805,14 +805,15 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     // 模型里 liquidGlassTuning 可空（存量数据兼容）：面板统一用兜底后的局部量，
     // 滑杆读写都不会踩空。
     final liquidTuning = _draft.liquidGlassTuning ?? LiquidGlassTuning.defaults;
-    // 顶部那一格是**默认材质**（三档：实体卡片 / 高斯模糊 / 液态玻璃）——
-    // 与下面「高级材质」那一节的开关共用这一个值（单一来源）：上面写着液态
-    // 玻璃，下面就一定给液态的设置。
+    // 顶部那一格是**默认材质**（两档：实体卡片 / 液态玻璃）—— 与下面
+    // 「液态玻璃」那一节的调参共用这一个值（单一来源）：上面写着液态玻璃，
+    // 下面就一定给液态的设置。
     //
     // 2026-09-22 之前这里只画两格，且显示走"就近归桶"、给不给设置走原始字段，
     // 于是存量柔光档成了「显示液态玻璃、下面什么都没有」；更早的中间档（磨砂）
-    // 则是被谎报成「实体卡片」选中。2026-09-23 名字统一后，三档与
-    // [glassModeChoiceOf] 一一对应，**不再需要归桶**，两处判据天然同源。
+    // 则是被谎报成「实体卡片」选中。2026-09-23 名字统一后，两档与
+    // [glassModeChoiceOf] 一一对应，**不再需要归桶**，两处判据天然同源；
+    // 2026-09-30 高斯模糊退场，这格只剩两档。
     final displayedChoice = glassModeChoiceOf(_draft);
     return SingleChildScrollView(
       // ⚠️ 面板里第一个 `Scrollable` 是外面那层**横向翻页** —— 测试要按这个 key
@@ -838,12 +839,12 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           // 都会被压在它背面（2026-09-19 真机实锤）──
           HyperosSectionLabel(text: l10n.frostedGlassModeLabel),
           const SizedBox(height: 8),
-          // 默认材质三档：不模糊（实体）/ 模糊（高斯）/ 模糊 + 折射（液态）。
-          // 这三档就是引导页「视觉效果」那三档（[GlassModeChoice] 是唯一写入口）。
+          // 默认材质两档：不模糊（实体）/ 模糊 + 折射（液态）。高斯模糊档
+          // 2026-09-30 退场（它承诺的「全局磨砂」从来不存在）。
+          // 这两档就是引导页「视觉效果」那两档（[GlassModeChoice] 是唯一写入口）。
           _MaterialSegmented<GlassModeChoice>(
             items: {
               l10n.frostedGlassModeSolid: GlassModeChoice.solid,
-              l10n.frostedGlassModeGaussian: GlassModeChoice.gaussian,
               l10n.frostedGlassModeLiquid: GlassModeChoice.liquidGlass,
             },
             value: displayedChoice,
@@ -865,11 +866,15 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           HyperosSectionLabel(text: l10n.homeBandGlassMaterialLabel),
           const SizedBox(height: 8),
           // 首页顶栏玻璃：卡片顶部即反馈区。2026-09-23 起三档：「跟随默认」
-          // （默认档高斯→磨砂带、液态→液态带、实体→实心带，渲染与只读推导都
-          // 走 homeBandGlassMaterialEffective 的生效值）+「实体 / 液态」单独
+          // （模糊开 → 液态带、模糊关 → 实心带，渲染与只读推导都走
+          // homeBandGlassMaterialEffective 的生效值）+「实体 / 液态」单独
           // 指定（存量渐进/高斯/柔光在读取时已归到液态，见
           // `TimetableSettings.sanitizeHomeBandGlassMaterial`）。出厂值仍是
-          // 单独指定液态，观感与引入「跟随」之前一致。
+          // 单独指定液态。
+          //
+          // ⚠️ 这把轴与上面那格**互不影响**：高斯模糊 2026-09-30 退场后，上面
+          // 那格已不再有「另一种材质」可选，所以「跟随默认」现在等价于「跟随
+          // 模糊总开关」。
           _MaterialSegmented<String>(
             items: {
               l10n.homeBandGlassMaterialFollow: 'follow',
@@ -1014,6 +1019,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
               children: [
                 // 作用范围 → 玻璃坞：液态档下坞是否跟随液态（弹窗家族
                 // 已锁标准档，无开关可调，不再显示）。
+                //
+                // ⚠️ 高斯模糊 2026-09-30 退场后这把开关改了角色：此前全局那一档
+                // 也能让坞退回磨砂，现在它是**液态档下唯一**的例外口。
                 HyperosSwitchTile(
                   title: l10n.liquidGlassScopeDockTitle,
                   subtitle: l10n.liquidGlassScopeDockSubtitle,

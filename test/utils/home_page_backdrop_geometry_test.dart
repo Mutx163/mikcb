@@ -118,7 +118,6 @@ void main() {
         homePageWallpaperPath: r'C:\does\not\exist\wallpaper.jpg',
         homePageHeaderBlurEnabled: true,
         frostedBlurEnabled: true,
-        frostedGlassMode: FrostedGlassMode.liquidGlass,
       );
       final readiness = await prepareHomePageVisualReadiness(settings);
       // hasHomePageBackdropImage uses existsSync; missing file → empty.

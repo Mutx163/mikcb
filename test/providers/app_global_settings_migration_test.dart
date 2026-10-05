@@ -9,7 +9,6 @@ import 'package:university_timetable/services/app_global_settings_service.dart';
 import 'package:university_timetable/services/data_transfer_service.dart';
 import 'package:university_timetable/services/miui_live_activities_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
-import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 
 /// 应用级偏好（导航 / 材质 / 主题外观 / 通用）改成全局之后，从**用户看得见的行为**
 /// 这一层锁住：切课表不再换材质与导航形态、新建课表继承当前那套、备份恢复能把它们
@@ -63,7 +62,9 @@ void main() {
           settings: TimetableSettings.defaults().copyWith(
             homeBandGlassMaterial: 'liquid',
             appLocaleTag: 'en',
-            frostedGlassMode: FrostedGlassMode.gaussian,
+            // 模糊总开关：整机材质档的唯一输入（高斯模糊 2026-09-30 退场后，
+            // 原来的 frostedGlassMode 字段已删，这里换它当设备级那一档的代表）。
+            frostedBlurEnabled: false,
           ),
         ),
         profileJson(
@@ -71,7 +72,6 @@ void main() {
           settings: TimetableSettings.defaults().copyWith(
             homeBandGlassMaterial: 'solid',
             appLocaleTag: 'ja',
-            frostedGlassMode: FrostedGlassMode.liquidGlass,
           ),
         ),
       ]),
@@ -95,9 +95,9 @@ void main() {
     );
     expect(provider.settings.appLocaleTag, 'ja');
     expect(
-      provider.settings.frostedGlassMode,
-      FrostedGlassMode.liquidGlass,
-      reason: '整体材质档同样不许跟着换',
+      provider.settings.frostedBlurEnabled,
+      isTrue,
+      reason: '整机材质档同样不许跟着换（A 那份把它关掉了）',
     );
   });
 

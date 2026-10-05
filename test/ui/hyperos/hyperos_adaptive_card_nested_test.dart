@@ -20,7 +20,6 @@ Widget _harness({required bool flatBackdrop, bool inPanel = true}) {
     sheetBlurSigma: 18,
     sheetTintAlpha: 0.5,
     sheetBarrierAlpha: 0.4,
-    glassMode: FrostedGlassMode.liquidGlass,
   );
   const card = HyperosAdaptiveCard(child: Text('card'));
   return MaterialApp(

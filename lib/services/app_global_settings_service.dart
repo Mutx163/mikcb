@@ -72,7 +72,6 @@ class AppGlobalSettingsService {
     'glassDockShowWeekTab',
     'glassDockShowSettingsTab',
     // —— 材质（外观编辑 → 材质面板）——
-    'frostedGlassMode',
     'frostedBlurEnabled',
     'liquidGlassPreset',
     'liquidGlassTuning',

@@ -11621,12 +11621,6 @@ abstract class AppLocalizations {
   /// **'实体卡片'**
   String get guidePersonalizeVisualEffectSolid;
 
-  /// No description provided for @guideVisualEffectGaussianDesc.
-  ///
-  /// In zh, this message translates to:
-  /// **'背景实时高斯模糊，通透有层次'**
-  String get guideVisualEffectGaussianDesc;
-
   /// No description provided for @guideVisualEffectLiquidDesc.
   ///
   /// In zh, this message translates to:
@@ -17868,12 +17862,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'液态玻璃'**
   String get frostedGlassModeLiquid;
-
-  /// No description provided for @frostedGlassModeGaussian.
-  ///
-  /// In zh, this message translates to:
-  /// **'高斯模糊'**
-  String get frostedGlassModeGaussian;
 
   /// No description provided for @frostedGlassModeSolid.
   ///

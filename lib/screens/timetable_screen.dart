@@ -7659,28 +7659,32 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 由**全局材质**（外观编辑 → 材质）+ 「作用范围 → 玻璃坞导航」推导：
   ///
   /// - 实体卡片（模糊总开关关）→ [_DockMaterial.solid]；
-  /// - 高斯模糊 → [_DockMaterial.frosted]；
   /// - 液态玻璃 + 作用范围开 → [_DockMaterial.liquid]；
-  /// - 液态玻璃但该家族作用范围关（或系统降级）→ [_DockMaterial.solid]。
+  /// - 液态玻璃但该家族作用范围关（或系统降级）→ [_DockMaterial.frosted]。
   ///
   /// 底栏不再有独立的「底栏材质」开关：同一份默认材质驱动所有表面，用户
   /// 不必在两个地方对齐同一种玻璃（历史上「全局高斯 + 底栏液态」这类组合
   /// 就是把开关拆到两处造成的）。
-  /// 高级材质关闭时统一走实体卡片而非降低一档高斯：高斯的实时
+  /// 作用范围关闭时统一走磨砂而非实心圆片：磨砂的实时
   /// BackdropFilter 在坞的滑入/合并动画期间采不到稳定背景，药丸会整段
   /// 透明（见 [LiquidGlassDegradation.familyFallsBackToSolid]）。
+  ///
+  /// ⚠️ **模糊总开关排在最前**：高斯档存在时它同时兼作「关掉液态」的信号
+  /// （实体卡片档会把全局档位归位成非液态），2026-09-30 高斯退场后那层归位没了，
+  /// 这里必须自己先判一次，否则实体卡片档下坞仍会被派成液态 —— 与渲染侧
+  /// [LiquidGlassSurface.isAvailable] 的 `backdropBlurEnabled` 判据直接矛盾。
   _DockMaterial _resolveDockMaterial(BuildContext context) {
+    if (!HyperosBlurredHeader.backdropBlurEnabled(context)) {
+      return _DockMaterial.solid;
+    }
     final appearance = FrostedAppearanceScope.of(context);
-    final familySolid = LiquidGlassDegradation.familyFallsBackToSolid(
+    if (!LiquidGlassDegradation.familyFallsBackToSolid(
       context,
       advancedFamilyEnabled: appearance.liquidGlassDockEnabled,
-    );
-    if (isAdvancedGlassMode(appearance.glassMode) && !familySolid) {
+    )) {
       return _DockMaterial.liquid;
     }
-    return HyperosBlurredHeader.backdropBlurEnabled(context)
-        ? _DockMaterial.frosted
-        : _DockMaterial.solid;
+    return _DockMaterial.frosted;
   }
 
   /// 经典形态直接返回原内容，行为与之前完全一致。
@@ -8137,9 +8141,16 @@ class _TimetableScreenState extends State<TimetableScreen>
     final dockAppearance = FrostedAppearanceScope.of(context);
     // 「液态玻璃作用范围 → 玻璃坞导航」关闭时回浮按钮回磨砂圆片。
     final useLiquidGlassMaterial =
-        dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
         dockAppearance.liquidGlassDockEnabled &&
         !LiquidGlassDegradation.shouldDegrade(context);
+    // ⚠️ **描边必须按「液态是否真的画得出来」判，不是按「用户要不要液态」判**
+    // （2026-09-30）。[LiquidGlassSurface] 在着色器后端缺失时会整层走
+    // `fallbackBuilder`，画出来的是磨砂片；而 [HyperosFrostedSurface] 自己不画边，
+    // 于是按 `useLiquidGlassMaterial` 判掉的描边会让回落态变成一颗**没有边界**的
+    // 磨砂胶囊（桌面 / 测试环境恒定命中这条）。这两个判据此前恰好一致，因为那时
+    // 出厂档是高斯、液态要用户显式选；高斯退场后默认值就是液态，两者分了家。
+    final liquidActuallyRenders =
+        useLiquidGlassMaterial && LiquidGlassSurface.isAvailable(context);
 
     // 按钮内容（图标 + 文字）。液态 / 磨砂两条材质分支共用它，只有「底」不同
     // ——以前两条分支各写一份内容，改一处文字要改两遍。
@@ -8216,7 +8227,10 @@ class _TimetableScreenState extends State<TimetableScreen>
                 // 液态档不叠描边，避免与玻璃自己的折射带叠成两层圈圈；
                 // 浮影统一由外层 [HyperosGlassShadow.wrap] 负责，且只落在外圈。
                 // 磨砂档留着描边 —— 磨砂片自己不画边。
-                border: useLiquidGlassMaterial
+                //
+                // ⚠️ 按「液态是否真的画得出来」判（见上面 `liquidActuallyRenders`
+                // 那条）：着色器后端缺失时表面整层回落成磨砂片，此时描边必须回来。
+                border: liquidActuallyRenders
                     ? null
                     : Border.all(
                         color: foruiColors.border.withValues(
@@ -8380,10 +8394,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     final accent = HyperosColors.primary(context);
     final borderRadius = BorderRadius.circular(_backToTodayButtonRadius);
     final dockAppearance = FrostedAppearanceScope.of(context);
+    // 同 [_buildFloatingBackButton] 那条：作用范围开关 + 系统降级。
     final useLiquidGlassMaterial =
-        dockAppearance.glassMode == FrostedGlassMode.liquidGlass &&
         dockAppearance.liquidGlassDockEnabled &&
         !LiquidGlassDegradation.shouldDegrade(context);
+    // 描边按「液态是否真的画得出来」判，不是按「用户要不要液态」判（2026-09-30）。
+    final liquidActuallyRenders =
+        useLiquidGlassMaterial && LiquidGlassSurface.isAvailable(context);
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
     final tint = HyperosBlurredHeader.homePageRegionTintColor(
       context,
@@ -8479,7 +8496,10 @@ class _TimetableScreenState extends State<TimetableScreen>
               // 浮影统一由外层 [HyperosGlassShadow.wrap] 负责，且只落在外圈；
               // 液态档不叠描边，避免与玻璃自己的折射带叠成两层圈圈。磨砂档必须
               // 留着描边 —— [HyperosFrostedSurface] 自己不画边。
-              border: useLiquidGlassMaterial
+              //
+              // ⚠️ 按「液态是否真的画得出来」判（着色器后端缺失时表面整层回落成
+              // 磨砂片，此时描边必须回来），理由见上面 `liquidActuallyRenders`。
+              border: liquidActuallyRenders
                   ? null
                   : Border.all(color: foruiColors.border),
             ),

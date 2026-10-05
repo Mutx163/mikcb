@@ -24,63 +24,15 @@ const kDefaultHomeBandGlassMaterial = 'liquid';
 /// 让用户以为改得动。坞跟随用户档位，故保留。
 const kDefaultLiquidGlassDockEnabled = true;
 
-/// User-tunable frosted glass appearance for home sheets and related surfaces.
-///
-/// 这里只有**两种真实材质**：高斯模糊与液态玻璃。「实体卡片」不是第三种材质，
-/// 它是「模糊总开关关掉」（[FrostedAppearance.blurEnabled]）这件事 —— 所以
-/// 不在枚举里占位。三档的完整语义见 `GlassModeChoice`。
-enum FrostedGlassMode {
-  /// 高斯模糊：实时背景上做均匀 BackdropFilter 模糊 + tint。
-  ///
-  /// 整机的**默认**材质；也是锁定的弹窗家族被技术 / 系统门禁摘下来时的回落
-  /// 观感。存量数据里的 `frosted` / `translucent` 一律读作它（渲染等价，见
-  /// [FrostedGlassModeX.fromValue]）。
-  gaussian,
-
-  /// 液态玻璃：实时背景上做圆角 SDF 边缘折射 + 受光边缘高光（见
-  /// `shaders/glass_surface_refraction.frag` 与 `LiquidGlassSurface`）。
-  /// 参数由 `LiquidGlassTuning` 统一提供，全 app 只此一套。
-  liquidGlass,
-}
-
-extension FrostedGlassModeX on FrostedGlassMode {
-  String get value => name;
-
-  static FrostedGlassMode fromValue(String? value) {
-    // 存量迁移：折射档曾与液态档并列，现合并为一档（液态玻璃由本仓着色器
-    // 实现）。老数据里写着 'refractionGlass' 的一律读作液态玻璃。
-    if (value == 'refractionGlass') {
-      return FrostedGlassMode.liquidGlass;
-    }
-    // 存量迁移（2026-09-22）：柔光档已从产品里退场（枚举值本身在当天晚些时候
-    // 一并删除），老数据里写着 'softGlass' 的一律读作液态玻璃 —— 这正是外观
-    // 编辑器当年对它的**显示口径**（归桶成液态），改成读入即迁移之后，界面说
-    // 液态、渲染就真的画液态。
-    // 迁移是懒迁移：不重写盘上的旧值，用户下次落盘时自然被写成 'liquidGlass'。
-    if (value == 'softGlass') {
-      return FrostedGlassMode.liquidGlass;
-    }
-    // 存量迁移（2026-09-23）：'frosted'（旧 translucent 也归到它）曾是「模糊
-    // 开着、但不是液态」这个状态的内部存值，与高斯模糊走的是同一条
-    // BackdropFilter 链路、渲染逐像素一致。既然界面上只有「高斯模糊」这一个
-    // 词，枚举里就不留第二个同义值 —— 老值一律读作高斯模糊。同样是懒迁移。
-    if (value == 'frosted') {
-      return FrostedGlassMode.gaussian;
-    }
-    return FrostedGlassMode.values.firstWhere(
-      (item) => item.value == value,
-      orElse: () => FrostedGlassMode.gaussian,
-    );
-  }
-}
-
-/// 是否为「高级材质」档位（只有液态玻璃一种）。
-///
-/// 高级材质共享那组「作用范围」开关（见
-/// [LiquidGlassDegradation.familyFallsBackToSolid]），也才会驱动首页玻璃带与玻璃坞
-/// 脱离基础模糊档。实体卡片与高斯模糊是基础材质，不受开关约束。
-bool isAdvancedGlassMode(FrostedGlassMode? mode) =>
-    mode == FrostedGlassMode.liquidGlass;
+// 2026-09-30：「高斯模糊」这一档退场，连枚举值一起删（`FrostedGlassMode` 本体
+// 随之消失，见 `.agents/notes/implemented/simplification/
+// 2026-09-30-retire-gaussian-material-tier.md`）。它承诺的「全局都是磨砂」从来
+// 不成立：子页顶栏锁死渐进模糊、弹窗家族锁标准液态、课程卡片另有自己一档，
+// 真正被它切换的只有玻璃坞与弹窗遮罩深浅 —— 而这两处液态档下也各有开关。
+//
+// 现在整机的玻璃材质只有一种（液态玻璃），用户选的是**要不要玻璃**：
+// `GlassModeChoice` 的两档「实体卡片 / 液态玻璃」，实体卡片 = 模糊总开关关掉
+// （[FrostedAppearance.blurEnabled]），不是第三种材质。
 
 class FrostedAppearance {
   const FrostedAppearance({
@@ -88,7 +40,6 @@ class FrostedAppearance {
     required this.sheetTintAlpha,
     required this.sheetBarrierAlpha,
     this.blurEnabled = kDefaultFrostedBlurEnabled,
-    this.glassMode = FrostedGlassMode.gaussian,
     this.homeBandGlassMaterial = kDefaultHomeBandGlassMaterial,
     this.liquidGlassTuning,
     this.liquidGlassTuningDark,
@@ -116,24 +67,14 @@ class FrostedAppearance {
   /// Global backdrop blur master switch.
   final bool blurEnabled;
 
-  /// 子页顶栏（设置等 HyperosSubpage 页）的模糊材质风格（渐进 / 高斯）。
+  /// 首页顶栏玻璃带材质，独立自由选择：`follow`（跟随模糊总开关）/
+  /// `liquid` / `solid`（2026-09-30 收成三档，与外观编辑器里那三个选项逐字
+  /// 一致，见 [kDefaultHomeBandGlassMaterial]）。
   ///
-  /// 独立于首页玻璃带材质（[homeBandGlassMaterial]）：子页顶栏永不走高级
-  /// 材质，此风格始终生效。
-
-  /// 首页顶栏玻璃带材质，独立自由选择（2026-09-12）：`liquid` / `solid`
-  /// （2026-09-20 起收成两档，与外观编辑器里那两个选项逐字一致，见
-  /// [kDefaultHomeBandGlassMaterial]）。
-  ///
-  /// 不跟随 [glassMode] 或「作用范围」开关——液态只作用弹窗、玻璃坞
-  /// 等其他表面，顶栏选什么渲染什么。
+  /// 只被本字段自己那把轴决定，不受「玻璃坞作用范围」开关影响。
   final String homeBandGlassMaterial;
 
-  /// Glass surface rendering mode.
-  final FrostedGlassMode glassMode;
-
-  /// 液态玻璃参数（[glassMode] 为 [FrostedGlassMode.liquidGlass] 时生效）。
-  /// 非空即用户调过的档；null = 出厂标准档（渲染期回落到
+  /// 液态玻璃参数。非空即用户调过的档；null = 出厂标准档（渲染期回落到
   /// [LiquidGlassTuning.defaults]，其折射旋钮与课程卡片液态档逐字段一致）。
   ///
   /// **2026-09-21 起语义明确为「浅色档」**（存储 key 未变，存量零迁移）。
@@ -180,7 +121,6 @@ class FrostedAppearance {
           sheetBlurSigma == other.sheetBlurSigma &&
           sheetTintAlpha == other.sheetTintAlpha &&
           sheetBarrierAlpha == other.sheetBarrierAlpha &&
-          glassMode == other.glassMode &&
           liquidGlassTuning == other.liquidGlassTuning &&
           liquidGlassTuningDark == other.liquidGlassTuningDark &&
           linkLiquidGlassTuning == other.linkLiquidGlassTuning &&
@@ -195,7 +135,6 @@ class FrostedAppearance {
     sheetBlurSigma,
     sheetTintAlpha,
     sheetBarrierAlpha,
-    glassMode,
     liquidGlassTuning,
     liquidGlassTuningDark,
     linkLiquidGlassTuning,

@@ -22,20 +22,15 @@ const _panelReplayShrinkForTest = 0.05;
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  // 高斯磨砂定值外观：测试环境无真实玻璃采样，固定参数保证确定性。
-  const gaussianAppearance = FrostedAppearance(
+  // 固定参数的外观：测试环境无真实玻璃采样，定值保证确定性。
+  //
+  // 2026-09-30 高斯模糊退场后，这里原本的 `gaussianAppearance` 与
+  // `liquidAppearance` 变成同一个对象（两者只差一个 `glassMode` 实参），
+  // 合成一份，名字也不再提任何材质档。
+  const testAppearance = FrostedAppearance(
     sheetBlurSigma: 15,
     sheetTintAlpha: 0.7,
     sheetBarrierAlpha: 0.2,
-  );
-
-  // 液态玻璃外观：用于验证共享组捕获垫层随液态子卡一起挂载（测试机
-  // 无 shader，液态面自动走包内轻量回退，不影响树结构断言）。
-  const liquidAppearance = FrostedAppearance(
-    sheetBlurSigma: 15,
-    sheetTintAlpha: 0.7,
-    sheetBarrierAlpha: 0.2,
-    glassMode: FrostedGlassMode.liquidGlass,
   );
 
   group('hyperos list popup submenu', () {
@@ -59,7 +54,7 @@ void main() {
     Future<List<Future<String?>?>> pumpPopup(
       WidgetTester tester, {
       required List<HyperosPopupMenuItem<String>> items,
-      FrostedAppearance appearance = gaussianAppearance,
+      FrostedAppearance appearance = testAppearance,
     }) async {
       final opened = <Future<String?>?>[];
       final host = FrostedAppearanceScope(
@@ -194,7 +189,7 @@ void main() {
       // hyperos_list_popup.dart 的注释），改成 Transform.scale：缩放只影响
       // 绘制、不改布局，所以这里锁的是「玻璃面布局尺寸全程不变」——
       // 一旦有谁把动画改成逐帧改玻璃尺寸，就会逐帧重采样，这条会红。
-      await pumpPopup(tester, items: items, appearance: liquidAppearance);
+      await pumpPopup(tester, items: items);
 
       await tester.tap(find.text('视图父项'));
       await tester.pump(); // 展开首帧（构建 + 布局 + 绘制）
@@ -226,15 +221,14 @@ void main() {
       tester,
     ) async {
       // 液态外观下子卡走「共享组磨砂底 + premium 液态面」路径，垫层随
-      // 弹窗挂载（高斯/实底环境无 grouped 消费者，不插，见
+      // 弹窗挂载（实底环境无 grouped 消费者，不插，见
       // liquid_glass_consistency_test 的无冗余垫层断言）。垫底必须是
       // **实时合成器捕获**：曾经那种「整页同步快照」垫底会让子卡变成
       // 一张跟着卡片走的静态照片。
-      await pumpPopup(
-        tester,
-        items: items,
-        appearance: liquidAppearance,
-      );
+      //
+      // 2026-09-30：高斯模糊退场后「液态外观」就是默认外观，下面三处
+      // 显式传 appearance 的调用与默认值完全相同，删掉即可。
+      await pumpPopup(tester, items: items);
 
       expect(find.byType(UndimmedBackdropCapture), findsOneWidget);
       expect(find.text('普通项'), findsOneWidget);
@@ -260,11 +254,7 @@ void main() {
       // 只在几何变化时重拍、稳定后停摆），展开时照片跟着卡片走；②按表面
       // 单独分档——于是同一个材质出现「顶栏一种观感、弹窗另一种观感」。
       // 两条路与它们依赖的第三方包都已删除。
-      await pumpPopup(
-        tester,
-        items: items,
-        appearance: liquidAppearance,
-      );
+      await pumpPopup(tester, items: items);
 
       await tester.tap(find.text('视图父项'));
       await tester.pumpAndSettle();
@@ -280,7 +270,6 @@ void main() {
           HyperosPopupMenuItem(label: '普通项', value: 'a'),
           HyperosPopupMenuItem(label: '尾项', value: 'c'),
         ],
-        appearance: liquidAppearance,
       );
 
       expect(find.byType(UndimmedBackdropCapture), findsNothing);

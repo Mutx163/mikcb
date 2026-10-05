@@ -11,9 +11,6 @@ import '../ui/hyperos/hyperos_theme.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart';
 import '../utils/home_page_background.dart';
 
-// Course chrome tests reference the glass mode through this library.
-export '../ui/hyperos/frosted/frosted_appearance.dart' show FrostedGlassMode;
-
 /// Reserved clearance between the weekday chrome band and the course grid.
 ///
 /// Also used historically as frosted-band seam overlap between header and

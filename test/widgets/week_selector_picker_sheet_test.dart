@@ -13,21 +13,23 @@ import '../helpers_test_app.dart';
 /// （见 `LiquidGlassRole.pinnedChrome`），不再跟随全局玻璃模式 —— 所以
 /// 「磨砂档仍是老平涂样式」这条老口径没了，格子样式在任何全局档位下都走
 /// 通透分支。
+///
+/// 2026-09-30 变化：高斯模糊全局档退场（`FrostedGlassMode` 枚举一并删除），
+/// 于是「换个全局档位面板会变吗」这个问题本身消失了：`pumpSheet` 的 `mode`
+/// 参数与两条只为了切档位而存在的用例一并删除，剩下的用例不再需要它。
 void main() {
   Future<void> pumpSheet(
     WidgetTester tester, {
-    required FrostedGlassMode mode,
     int visibleWeek = 2,
     int? currentSemesterWeek = 2,
     EdgeInsets mediaQueryPadding = EdgeInsets.zero,
   }) async {
     await tester.pumpWidget(
       FrostedAppearanceScope(
-        appearance: FrostedAppearance(
+        appearance: const FrostedAppearance(
           sheetBlurSigma: 15,
           sheetTintAlpha: 0.7,
           sheetBarrierAlpha: 0.2,
-          glassMode: mode,
         ),
         child: MediaQuery(
           // 本用例只注入 padding；但 **size 必须给真实值** —— MediaQueryData 默认
@@ -82,7 +84,7 @@ void main() {
   testWidgets('liquid glass: cells use translucent well + edge + black ink', (
     tester,
   ) async {
-    await pumpSheet(tester, mode: FrostedGlassMode.liquidGlass);
+    await pumpSheet(tester);
 
     // 非选中格子：白井 + 描边 + 纯黑墨（用户预期「显示为黑色」）。
     final material = cellMaterial(tester, '第 1 周');
@@ -107,26 +109,11 @@ void main() {
     );
   });
 
-  testWidgets('全局高斯档：面板仍是标准档液态玻璃，格子跟着走通透样式', (
-    tester,
-  ) async {
-    await pumpSheet(tester, mode: FrostedGlassMode.gaussian);
-
-    // 面板不跟随全局档位 —— 格子的老平涂样式（#E8E8E8 + 灰墨）不再出现。
-    expect(cellMaterial(tester, '第 1 周').color, Colors.white.withValues(alpha: 0.55));
-    expect(cellInk(tester, '第 1 周')!.decoration, isA<BoxDecoration>());
-    expect(cellTextColor(tester, '第 1 周'), const Color(0xFF000000));
-
-    expect(find.byType(HyperosSectionDescription), findsNothing);
-  });
-
   testWidgets('selected week gets solid highlight, current week gets tint', (
     tester,
   ) async {
     await pumpSheet(
       tester,
-      // 面板锁标准档，全局档位对这里的样式已经无影响；两格的可辨性才是被测对象。
-      mode: FrostedGlassMode.gaussian,
       // 浏览第 1 周、实际身处第 3 周：两格须同时可辨。
       visibleWeek: 1,
       currentSemesterWeek: 3,
@@ -161,7 +148,6 @@ void main() {
     // 曾被 ScrollView 自动 padding 吃掉变成格子顶上 ~50dp 透明空隙。
     await pumpSheet(
       tester,
-      mode: FrostedGlassMode.gaussian,
       mediaQueryPadding: const EdgeInsets.only(top: 51, bottom: 17),
     );
 

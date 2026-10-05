@@ -41,14 +41,22 @@ String _clock(int hour, int minute) =>
 
 /// 浮钮的材质读的是 [FrostedAppearanceScope]，**不是** provider 里的设置
 /// （真机上由 `main.dart` 用 `settings.frostedAppearance` 下发这一份）。
-/// `TestApp` 不装这个 scope，缺了它 `of(context)` 会回落到 [FrostedAppearance.defaults]
-/// 的基础档 —— 那时这颗钮走磨砂片、树里根本没有 [LiquidGlassSurface]。
+/// `TestApp` 不装这个 scope，缺了它 `of(context)` 会回落到 [FrostedAppearance.defaults]。
 FrostedAppearance _liquidGlassAppearance() => FrostedAppearance(
   sheetBlurSigma: FrostedAppearance.defaults.sheetBlurSigma,
   sheetTintAlpha: FrostedAppearance.defaults.sheetTintAlpha,
   sheetBarrierAlpha: FrostedAppearance.defaults.sheetBarrierAlpha,
-  glassMode: FrostedGlassMode.liquidGlass,
 );
+
+/// 让 [LiquidGlassSurface.isAvailable] 在测试里返回给定值。
+///
+/// 测试环境跑软件后端，`isShaderFilterSupported` 恒为 false ⇒ 表面永远回落成
+/// `fallbackBuilder` 的磨砂片。真机上液态玻璃画得出来时描边是去掉的、回落时描边
+/// 必须回来（磨砂面自己不画边），这两半都靠这道缝才能分别钉住。
+void _useShaderFilterSupport(bool supported) {
+  LiquidGlassSurface.availabilityOverride = supported;
+  addTearDown(() => LiquidGlassSurface.availabilityOverride = null);
+}
 
 void _seedInitializedPrefs() {
   final now = DateTime(2026, 4, 12);
@@ -115,6 +123,9 @@ void main() {
   });
 
   testWidgets('回今日浮钮：底部居中、跟随主题色、不遮列表最后一项', (tester) async {
+    // 默认档 2026-09-30 起是液态玻璃，但测试环境画不出折射 → 表面回落成磨砂片，
+    // 于是描边必须留着（[HyperosFrostedSurface] 自己不画边）。
+    _useShaderFilterSupport(false);
     final provider = await createInitializedTestProvider(tester);
     final today = DateTime.now();
     final otherDay = today.weekday == 1 ? 2 : today.weekday - 1;
@@ -215,9 +226,9 @@ void main() {
     final decoration =
         tester.widget<DecoratedBox>(buttonFinder).decoration as BoxDecoration;
     expect(decoration.borderRadius, BorderRadius.circular(19));
-    // 这条用例跑在默认档（≈磨砂）：描边**必须留着** —— `HyperosFrostedSurface`
-    // 只是一层模糊 + 水洗，自己不画边，去掉这颗钮就没边界了。液态档不画描边，
-    // 见「回今日浮钮：液态档不画描边、按窄件压折射」。
+    // 液态真的画得出来时描边才去掉；回落成磨砂片时描边必须回来 ——
+    // [HyperosFrostedSurface] 自己不画边，去掉这颗钮就没边界了。本用例停在回落那半
+    // （测试环境恒定），画得出来那半见下面「液态档不画描边」一例。
     expect(decoration.border, isNotNull);
     debugPrint('[back-to-today] size=${buttonRect.size}');
     expect(
@@ -475,7 +486,12 @@ void main() {
   // 折射/色散带（绝对 14.5dp，在这颗 38dp 高的钮上占 38%，上下两条几乎连起来）。
   // 同族的底栏药丸 / 坞内圆钮都不画描边、短边 56dp 也不被压折射 —— 所以这颗钮
   // 要同时改两样，只改一样就还差一圈（用户拍板「去描边 + 压折射」）。
-  testWidgets('回今日浮钮：液态档不画描边、按窄件压折射', (tester) async {
+  testWidgets('回今日浮钮：液态真画得出来时不画描边、按窄件压折射', (tester) async {
+    // 这条钉的是「液态真的画出来了」那一半：描边去掉、折射按窄件压。
+    // 测试环境跑软件后端（折射恒画不出来），所以用 [LiquidGlassSurface
+    // .availabilityOverride] 这道缝把它拨成真机状态；回落那半由上面
+    // 「底部居中、跟随主题色」那条钉着。
+    _useShaderFilterSupport(true);
     final provider = await createInitializedTestProvider(tester);
     final today = DateTime.now();
     final otherDay = today.weekday == 1 ? 2 : today.weekday - 1;

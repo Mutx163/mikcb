@@ -308,19 +308,15 @@ abstract final class HyperosBlurredHeader {
 
   /// Modal scrim shared by home menu, sheets, dialogs, and select popups.
   ///
-  /// - **Gaussian**: black scrim from [FrostedAppearance.sheetBarrierAlpha]
-  ///   (外观与配色), matching the home top-right menu.
-  /// - **Liquid glass**: fixed light dim ([liquidGlassModalBarrierAlpha]).
-  ///   Just enough hierarchy that every popup reads as the same modal, without
-  ///   a heavy grey wash that flattens the refractive glass.
+  /// Black scrim from [FrostedAppearance.sheetBarrierAlpha] (外观与配色),
+  /// matching the home top-right menu.
+  ///
+  /// ⚠️ 2026-09-30 高斯模糊档退场后，液态玻璃是唯一的玻璃材质，于是这层遮罩
+  /// 只剩**两种**取值：系统降级时用 [liquidGlassModalBarrierAlpha] 那层轻纱
+  /// （液态折射还在用它采样背景，遮罩一重折射就浑），其余时候用配置里的
+  /// [FrostedAppearance.sheetBarrierAlpha]。别再加第三个分支。
   static Color modalBarrierColor(BuildContext context) {
-    final appearance = _appearanceOf(context);
-    // Keep the liquid-glass light scrim only while the real refractive glass
-    // is in use; once the system degrades glass to a solid (accessibility /
-    // reduce-motion / high-contrast), the heavier gaussian scrim gives the
-    // now-opaque modal the hierarchy it needs.
-    if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
-        !LiquidGlassDegradation.shouldDegrade(context)) {
+    if (!LiquidGlassDegradation.shouldDegrade(context)) {
       return Colors.black.withValues(alpha: liquidGlassModalBarrierAlpha);
     }
     return Colors.black.withValues(alpha: sheetBarrierAlphaOf(context));

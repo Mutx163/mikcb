@@ -6746,10 +6746,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guidePersonalizeVisualEffectSolid => 'Solid cards';
 
   @override
-  String get guideVisualEffectGaussianDesc =>
-      'Live gaussian blur behind surfaces — layered and translucent';
-
-  @override
   String get guideVisualEffectLiquidDesc =>
       'Liquid glass refraction with extra depth';
 
@@ -10475,9 +10471,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frostedGlassModeLiquid => 'Liquid Glass';
-
-  @override
-  String get frostedGlassModeGaussian => 'Gaussian Blur';
 
   @override
   String get frostedGlassModeSolid => 'Solid cards';

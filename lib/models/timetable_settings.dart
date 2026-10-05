@@ -1265,10 +1265,6 @@ class TimetableSettings {
 
   static const bool defaultFrostedBlurEnabled = true;
 
-  /// 旧版「作用范围 → 首页玻璃带」开关的默认值。该开关已随顶栏材质自由
-  /// 选择下线（2026-09-12），常量仅用于读取旧存档做迁移判定。
-  static const bool defaultLiquidGlassHomeChromeEnabled = true;
-
   /// 玻璃坞（含坞内圆钮）要不要走高级材质。
   ///
   /// 这是**硕果仅存**的作用范围开关：弹窗家族（下拉小弹窗 / 全屏选择面板 /
@@ -1580,7 +1576,6 @@ class TimetableSettings {
   /// 值（渲染注入口），但只能取内置常量（`kDefaultFrostedSheet*`）。
   FrostedAppearance get frostedAppearance => FrostedAppearance(
     blurEnabled: frostedBlurEnabled,
-    glassMode: frostedGlassMode,
     sheetBlurSigma: kDefaultFrostedSheetBlurSigma,
     sheetTintAlpha: kDefaultFrostedSheetTintAlpha,
     sheetBarrierAlpha: kDefaultFrostedSheetBarrierAlpha,
@@ -1591,18 +1586,23 @@ class TimetableSettings {
     courseCardGlassTuning: courseCardGlassTuning,
     liquidGlassDockEnabled: liquidGlassDockEnabled,
     // 外观对象只带**生效值**：`follow` 在这里就解析掉，下游（渲染、预热、
-    // 预览）拿到的永远是 solid / frost / liquid 三者之一。
+    // 预览）拿到的永远是 solid / liquid 两者之一。
     homeBandGlassMaterial: homeBandGlassMaterialEffective,
   );
 
   final bool linkCourseCardColors; // 标题和详情颜色是否关联
+
+  /// 模糊总开关：关掉即整机「实体卡片」档。
+  ///
+  /// **它就是全局材质档**（`GlassModeChoice` 两档里较钝的那一档）：2026-09-30
+  /// 高斯模糊退场后，整机不再有第二种玻璃材质，「实体卡片 / 液态玻璃」只剩
+  /// 「不模糊 / 模糊 + 折射」这一个区别。
   final bool frostedBlurEnabled;
 
-  final FrostedGlassMode frostedGlassMode;
-
-  /// 玻璃坞（含坞内圆钮）要不要走高级材质（见 [FrostedAppearance] 同名字段）。
+  /// 玻璃坞（含坞内圆钮）要不要走液态玻璃（见 [FrostedAppearance] 同名字段）。
   ///
-  /// 弹窗家族那四个同族开关已随「小件永远锁标准档」删除，只剩这一个。
+  /// 弹窗家族那四个同族开关已随「小件永远锁标准档」删除，只剩这一个 ——
+  /// 高斯模糊档同日退场后，它成了液态档下**唯一**能让某个表面退回磨砂的开关。
   final bool liquidGlassDockEnabled;
   final CourseCardSurfaceStyle courseCardSurfaceStyle;
 
@@ -1642,37 +1642,30 @@ class TimetableSettings {
   final bool homePageWeekdayBarBlurEnabled;
 
   /// 首页顶栏玻璃带材质（用户 2026-09-12 拍板独立选择）：
-  /// `follow`（跟随默认材质）/ `liquid`（液态）/ `solid`（实体）三档；
+  /// `follow`（跟随全局）/ `liquid`（液态）/ `solid`（实体）三档；
   /// 写入口一律过 [sanitizeHomeBandGlassMaterial]，存量的 progressive /
   /// gaussian / soft 在读取时已归到液态。
   ///
   /// `follow` 是 2026-09-23 用户口径「顶栏带改成跟随主材质」的存储值：渲染与
-  /// 只读推导一律走 [homeBandGlassMaterialEffective] 的**生效值**（默认档高斯
-  /// → 磨砂带、液态 → 液态带、实体 → 实心带），不要直接拿本字段判断分支 ——
-  /// 那会让「跟随」在渲染层不知所云。出厂值仍是 [defaultHomeBandGlassMaterial]
-  /// （单独指定液态），观感与引入本档之前逐像素一致。
+  /// 只读推导一律走 [homeBandGlassMaterialEffective] 的**生效值**（模糊开 → 液态带、
+  /// 模糊关 → 实心带），不要直接拿本字段判断分支 —— 那会让「跟随」在渲染层不知所云。
+  /// 出厂值仍是 [defaultHomeBandGlassMaterial]（单独指定液态）。
   ///
   /// 子页顶栏永不吃这里的取值（它按 2026-09-23 口径锁死为渐进模糊，见
   /// `HyperosBlurredHeader.subpageHeaderBlurStyleOf`）。
   final String homeBandGlassMaterial;
 
-  /// [homeBandGlassMaterial] 的**生效值**：`follow` 按当前默认材质解析成
-  /// `solid` / `frost` / `liquid`，其余取值原样返回。
+  /// [homeBandGlassMaterial] 的**生效值**：`follow` 按当前模糊总开关解析成
+  /// `solid` / `liquid`，其余取值原样返回。
   ///
   /// 渲染侧（`HomePageChromeGlassFill`）、预热判据、只读材质地图都必须消费
-  /// 这里而不是原字段。`frost` 是本函数引入的**内部渲染档**：磨砂玻璃带
-  /// （渐进模糊链路，即该带在液态化之前一直画的那条），不出现在任何存储或
-  /// 界面候选里。
+  /// 这里而不是原字段。液态带在引擎没有 shader 后端时自己回落成磨砂带
+  /// （`frostBand`），所以生效值只有 `solid` / `liquid` 两种。
   String get homeBandGlassMaterialEffective {
     if (homeBandGlassMaterial != 'follow') {
       return homeBandGlassMaterial;
     }
-    if (!frostedBlurEnabled) {
-      return 'solid';
-    }
-    return frostedGlassMode == FrostedGlassMode.liquidGlass
-        ? 'liquid'
-        : 'frost';
+    return frostedBlurEnabled ? 'liquid' : 'solid';
   }
 
   final bool homePageTimeColumnBlurEnabled;
@@ -1861,7 +1854,6 @@ class TimetableSettings {
     this.timeAxisFontColorDark = defaultTimeAxisFontColorDark,
     this.linkCourseCardColors = true,
     this.frostedBlurEnabled = defaultFrostedBlurEnabled,
-    this.frostedGlassMode = FrostedGlassMode.gaussian,
     this.liquidGlassDockEnabled = defaultLiquidGlassDockEnabled,
     this.courseCardSurfaceStyle = CourseCardSurfaceStyle.solid,
     this.liquidGlassPreset = LiquidGlassPreset.standard,
@@ -2086,7 +2078,6 @@ class TimetableSettings {
       'timeAxisFontColorDark': timeAxisFontColorDark,
       'linkCourseCardColors': linkCourseCardColors,
       'frostedBlurEnabled': frostedBlurEnabled,
-      'frostedGlassMode': frostedGlassMode.value,
       'liquidGlassDockEnabled': liquidGlassDockEnabled,
       'courseCardSurfaceStyle': courseCardSurfaceStyle.value,
       'liquidGlassPreset': liquidGlassPreset.value,
@@ -2115,36 +2106,14 @@ class TimetableSettings {
     // 联动开时详情字色回填为标题字色，规则与 copyWith 的联动回填一致：
     // 旧版本数据 / 主题备份可能残留「联动开、详情色不同」的脏状态（白标题
     // +黑简介混色卡的根源）；独立模式（联动关）保留用户显式选择。
-    // 存量迁移判定（详见下方 frostedGlassMode 处）。
-    final legacyChromeLiquid =
-        (json['homeChromeGlassMaterial'] as String?) == 'liquid' &&
-        (json['frostedBlurEnabled'] as bool? ?? defaultFrostedBlurEnabled);
-    // 全局材质档（legacyChromeLiquid 上提为液态，见下方 frostedGlassMode）。
-    final resolvedFrostedGlassMode = legacyChromeLiquid
-        ? FrostedGlassMode.liquidGlass
-        : FrostedGlassModeX.fromValue(json['frostedGlassMode'] as String?);
-    // 首页顶栏材质迁移（旧轴 → 独立自由选择，2026-09-12）：
-    // - 旧「独立三档写死 liquid」→ 上提全局液态的同时顶栏取液态（观感不变）；
-    // - 旧「作用范围 → 首页玻璃带」开且全局为液态 → 顶栏跟随该高级材质；
-    // - 其余 → 旧 homeChromeGlassMaterial 镜像（与 headerBlurStyle 同步写）
-    //   映射为磨砂两档。
     //
-    // ⚠️ 2026-09-20 起下面算出的 soft / gaussian / progressive 都会被
-    // [sanitizeHomeBandGlassMaterial] 统一归到液态（口径收成「实体 / 液态」两档）。
-    // 分支保留是为了让「当年怎么迁的」可读，不要再按它去区分渲染。
-    String legacyHomeBandGlassMaterial;
-    if (legacyChromeLiquid) {
-      legacyHomeBandGlassMaterial = 'liquid';
-    } else if ((json['liquidGlassHomeChromeEnabled'] as bool? ??
-            defaultLiquidGlassHomeChromeEnabled) &&
-        resolvedFrostedGlassMode == FrostedGlassMode.liquidGlass) {
-      legacyHomeBandGlassMaterial = 'liquid';
-    } else {
-      legacyHomeBandGlassMaterial =
-          (json['homeChromeGlassMaterial'] as String?) == 'gaussian'
-          ? 'gaussian'
-          : 'progressive';
-    }
+    // ⚠️ 这里曾有一段「旧轴 → homeBandGlassMaterial」的迁移（2026-09-12 写，
+    // 输入是 `homeChromeGlassMaterial` / `liquidGlassHomeChromeEnabled` /
+    // `frostedGlassMode`）。它的三个分支在 2026-09-30 高斯模糊退场后**全部收敛到
+    // 同一个值** `liquid` —— 而 `liquid` 恰好就是 [sanitizeHomeBandGlassMaterial]
+    // 对一切非法值的默认归宿，所以整段连同那两个只被它读过的旧键一起删除。
+    // 那两个旧键现在按未知键忽略（与 `headerBlurStyle` / `subpageHeaderBlurStyle`
+    // 同一条规矩）。
     final linkedCardTextColors = json['linkCourseCardColors'] as bool? ?? true;
     final parsedTitleColorLight =
         json['courseCardTitleColorLight'] as String? ??
@@ -2564,14 +2533,6 @@ class TimetableSettings {
           defaultTimeAxisFontColorDark,
       frostedBlurEnabled:
           json['frostedBlurEnabled'] as bool? ?? defaultFrostedBlurEnabled,
-      // 存量迁移：旧版「玻璃材质」独立三档里写死 `liquid` 的用户，
-      // 其首页玻璃带在旧模型下走折射。新模型只有「全局材质 +
-      // 作用范围」一个轴，这里把这份选择**上提为全局液态**并打开
-      // 首页玻璃带作用范围（观感不变），消除第二个材质轴。
-      // 模糊总开关关掉时不上提：那是「实体卡片」档，适用所有表面。
-      frostedGlassMode: legacyChromeLiquid
-          ? FrostedGlassMode.liquidGlass
-          : FrostedGlassModeX.fromValue(json['frostedGlassMode'] as String?),
       liquidGlassDockEnabled:
           json['liquidGlassDockEnabled'] as bool? ??
           defaultLiquidGlassDockEnabled,
@@ -2607,13 +2568,13 @@ class TimetableSettings {
       homePageHeaderBlurEnabled: true,
       // ignore: avoid_redundant_argument_values -- 故意写死默认值（下线旧开关）。
       homePageWeekdayBarBlurEnabled: true,
-      // 首页顶栏材质：独立自由选择（2026-09-12）。新键缺失时按旧轴迁移
-      //（见上方 legacyHomeBandGlassMaterial）。2026-09-20 起口径只有
+      // 首页顶栏材质：独立自由选择（2026-09-12）。缺新键 = 从没单独指定过，
+      // 按出厂值液态（2026-09-30 高斯模糊退场后，「旧轴迁移」与默认值同值，
+      // 那段迁移已删，见本方法开头）。2026-09-20 起口径只有
       //「液态 / 实体」两档：存量 progressive / gaussian / soft 与一切非法值
       // 都在 sanitize 里归到液态，与界面那两个选项同口径。
       homeBandGlassMaterial: sanitizeHomeBandGlassMaterial(
-        (json['homeBandGlassMaterial'] as String?) ??
-            legacyHomeBandGlassMaterial,
+        json['homeBandGlassMaterial'] as String?,
       ),
       homePageTimeColumnBlurEnabled:
           json['homePageTimeColumnBlurEnabled'] as bool? ?? false,
@@ -2832,7 +2793,6 @@ class TimetableSettings {
     String? timeAxisFontColorDark,
     bool? linkCourseCardColors,
     bool? frostedBlurEnabled,
-    FrostedGlassMode? frostedGlassMode,
     bool? liquidGlassDockEnabled,
     CourseCardSurfaceStyle? courseCardSurfaceStyle,
     LiquidGlassPreset? liquidGlassPreset,
@@ -3196,7 +3156,6 @@ class TimetableSettings {
           timeAxisFontColorDark ?? this.timeAxisFontColorDark,
       linkCourseCardColors: linkCourseCardColors ?? this.linkCourseCardColors,
       frostedBlurEnabled: frostedBlurEnabled ?? this.frostedBlurEnabled,
-      frostedGlassMode: frostedGlassMode ?? this.frostedGlassMode,
       liquidGlassDockEnabled:
           liquidGlassDockEnabled ?? this.liquidGlassDockEnabled,
       courseCardSurfaceStyle:

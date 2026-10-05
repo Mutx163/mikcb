@@ -12,10 +12,12 @@ import 'liquid_glass_degradation.dart';
 ///
 /// 弹窗家族锁标准档之后不再有开关可看：面板出图恒为液态玻璃，唯一能让它改成
 /// 实底的是技术 / 系统门禁（[LiquidGlassDegradation.shouldDegrade]）。
+///
+/// 2026-09-30 高斯模糊档退场后，这里原本还并列着一个「全局档位是不是液态」的
+/// 判据 —— 那让「面板是液态玻璃、内里小格却按磨砂上水洗」成为可能（同一块面板
+/// 两种观感）。液态档成为唯一玻璃档之后判据只剩门禁这一条。
 bool _isLiquidSheetPanel(BuildContext context) {
-  if (LiquidGlassDegradation.shouldDegrade(context)) return false;
-  final scope = FrostedAppearanceScope.maybeOf(context);
-  return scope?.appearance.glassMode == FrostedGlassMode.liquidGlass;
+  return !LiquidGlassDegradation.shouldDegrade(context);
 }
 
 /// Frosted top bar: progressive blur + tint scrim (via [InspireHeaderBlur]).

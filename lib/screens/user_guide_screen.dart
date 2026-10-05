@@ -1141,13 +1141,12 @@ class _PermissionItem {
   });
 }
 
-/// 引导页「默认材质」三档的展示顺序：模糊（高斯）→ 模糊+折射（液态）→
-/// 不模糊（实体）。与设置页材质面板总闸同一套 [GlassModeChoice]——选中项
+/// 引导页「默认材质」两档的展示顺序：模糊+折射（液态）→ 不模糊（实体）。
+/// 与设置页材质面板总闸同一套 [GlassModeChoice]——选中项
 /// 推导用 [glassModeChoiceOf]、写入用 [applyGlassModeChoice]，引导页不再
-/// 私养一份映射。柔光玻璃 2026-09-22 撤下（详见 `_applyVisualEffect`），
-/// 存量柔光值在读盘时已归到液态。
+/// 私养一份映射。柔光玻璃 2026-09-22 撤下、高斯模糊 2026-09-30 撤下
+/// （两者存量值都在读盘时归到液态）。
 const List<GlassModeChoice> _guideVisualEffectOptions = <GlassModeChoice>[
-  GlassModeChoice.gaussian,
   GlassModeChoice.liquidGlass,
   GlassModeChoice.solid,
 ];
@@ -1156,7 +1155,6 @@ String _guideVisualEffectLabel(
   AppLocalizations l10n,
   GlassModeChoice effect,
 ) => switch (effect) {
-  GlassModeChoice.gaussian => l10n.frostedGlassModeGaussian,
   GlassModeChoice.liquidGlass => l10n.frostedGlassModeLiquid,
   GlassModeChoice.solid => l10n.guidePersonalizeVisualEffectSolid,
 };
@@ -1165,7 +1163,6 @@ String _guideVisualEffectDescription(
   AppLocalizations l10n,
   GlassModeChoice effect,
 ) => switch (effect) {
-  GlassModeChoice.gaussian => l10n.guideVisualEffectGaussianDesc,
   GlassModeChoice.liquidGlass => l10n.guideVisualEffectLiquidDesc,
   GlassModeChoice.solid => l10n.guideVisualEffectSolidDesc,
 };

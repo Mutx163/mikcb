@@ -21,6 +21,9 @@
 // 总览里那个渲染状态词，现在与高斯模糊同叫一个名字）。
 // 2026-09-25 十一次调整：课程卡片设置页那三档选择也撤下，改成一行跳转牌
 // （显示当前值、整行跳到面板第二页）—— 同一开关只留材质面板一扇门（入口收敛）。
+// 2026-09-30 十二次调整：高斯模糊作为**全局档**退场（枚举 `FrostedGlassMode`
+// 一并删除，出厂档变成液态玻璃）。本文件里所有「从高斯出发」的用例改成
+// 「从实体卡片出发」—— 判据同源，所以「细项随总闸出现」那条依然钉得住。
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -156,7 +159,7 @@ void main() {
 
     await _openMaterialPanel(tester);
 
-    // 默认材质三档置顶（出厂默认档 = 高斯模糊，显示成它就是它，不再归桶）。
+    // 默认材质两档置顶（2026-09-30 高斯模糊退场后，出厂默认档 = 液态玻璃）。
     expect(find.text('默认材质'), findsOneWidget);
     // 面板顶上是「通用 / 课程卡片」两页的翻页分段（2026-09-22），默认停在「通用」页：
     // 所以「实体卡片」这一屏只有一处（默认材质那一段的选中态那三格之一）—— 卡片
@@ -183,32 +186,35 @@ void main() {
     expect(find.text('实体'), findsWidgets);
   });
 
-  testWidgets('默认材质三格：出厂档（高斯模糊）就在候选里，点它不改状态', (tester) async {
-    // 2026-09-23 回归钉。此前这里只有两格，出厂档（模糊开着、非液态）被**谎报**
-    // 成「实体卡片」选中 —— 用户看到「界面说我选的是实体卡片」，而点它会真的把
-    // 全局模糊关掉（看着像"确认当前档"，其实是"换成那样"）。
-    // 现在三格与 `GlassModeChoice` 一一对应，出厂档自己有位置：点它就是它本身。
+  testWidgets('默认材质两格：出厂档（液态玻璃）点自己不改状态', (
+    tester,
+  ) async {
+    // 2026-09-23 回归钉的延续：那时三格（实体 / 高斯 / 液态），出厂档「模糊开着、
+    // 非液态」曾被**谎报**成「实体卡片」选中，而点它会真的把全局模糊关掉。
+    // 2026-09-30 高斯模糊退场，出厂档就是液态，这格只剩两档。
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(TimetableSettings.defaults());
 
     final provider = await _openMaterialPanel(tester);
 
-    // 三格都在候选里。
+    // 两格都在候选里。⚠️ 不要断言「高斯模糊」findsNothing：本文件里另有几处
+    // 只读总览会显示课程卡片那一档的**渲染状态**「高斯模糊」（那是课程卡片自己
+    // 的档，与全局档无关，且是本义的渲染状态词），它不出现反而说明总览缺行。
+    // 全局那一档已退场这件事由 `glass_mode_choice_test` 的
+    // 「只有两档，且与模糊总开关一一对应」钉住。
     expect(find.text('实体卡片'), findsOneWidget);
-    expect(find.text('高斯模糊'), findsWidgets);
     expect(find.text('液态玻璃'), findsWidgets);
 
-    // 点「默认材质」那一段里的「高斯模糊」（树序上它是第一处；第二处是子页顶栏
-    // 模糊风格，第三处是只读总览里玻璃坞那一行）。
-    await tester.tap(find.text('高斯模糊').first);
+    // 点「默认材质」那一段里的「液态玻璃」（树序上第一处；后面几处是顶栏带那一
+    // 段的同名项与只读总览）。
+    await tester.tap(find.text('液态玻璃').first);
     await tester.pumpAndSettle();
 
-    // 状态不变：模糊仍开着、档位仍是高斯 —— 出厂档点自己不会把模糊关掉。
+    // 状态不变：模糊仍开着 —— 出厂档点自己不会把模糊关掉。
     expect(provider.settings.frostedBlurEnabled, isTrue);
-    expect(provider.settings.frostedGlassMode, FrostedGlassMode.gaussian);
-    // 高斯档没有细项可调（折射参数只属于液态），所以「高级材质」那一节不出现。
-    expect(find.text('高级材质'), findsNothing);
+    // 液态档有细项可调（折射参数属于液态），所以「高级材质」那一节出现。
+    expect(find.text('高级材质'), findsOneWidget);
   });
 
   testWidgets('全局液态下顶栏内联点选直接生效（层级回归钉）', (tester) async {
@@ -216,7 +222,6 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     _seedPrefs(
       TimetableSettings.defaults().copyWith(
-        frostedGlassMode: FrostedGlassMode.liquidGlass,
         homeBandGlassMaterial: 'liquid',
       ),
     );
@@ -243,22 +248,24 @@ void main() {
     // 玻璃相关设置」。根因是两处判据不同源 —— 顶部分段按显示归桶、下面给不给
     // 「高级材质」那一节看的是原始字段。
     //
-    // 存量柔光那条读盘迁移的钉子在本轮单测里（`glass_mode_choice_test` 的
-    // `fromValue('softGlass')` 一例）；这条钉的是用户直接操作后的自洽性。
+    // 起点用实体卡片档（模糊总开关关），这样「细项该不该出现」才有 0 → 1 的
+    // 变化可看；出厂档 2026-09-30 起本身就是液态，那条路上一开始就有细项。
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    _seedPrefs(TimetableSettings.defaults());
+    _seedPrefs(
+      TimetableSettings.defaults().copyWith(frostedBlurEnabled: false),
+    );
 
     final provider = await _openMaterialPanel(tester);
 
-    // 出厂默认是高斯模糊档：此时下面不该有液态细项。
-    expect(provider.settings.frostedGlassMode, FrostedGlassMode.gaussian);
+    // 实体卡片档：此时下面不该有液态细项。
+    expect(provider.settings.frostedBlurEnabled, isFalse);
     expect(find.text('高级材质'), findsNothing);
 
     // 点顶部分段的「液态玻璃」：设置写回，**下面立刻给液态细项**。
     await tester.tap(find.text('液态玻璃').first);
     await tester.pumpAndSettle();
-    expect(provider.settings.frostedGlassMode, FrostedGlassMode.liquidGlass);
+    expect(provider.settings.frostedBlurEnabled, isTrue);
     expect(find.text('高级材质'), findsOneWidget, reason: '上面选液态，下面必须给细项');
     expect(find.text('柔光玻璃'), findsNothing);
   });
@@ -285,7 +292,7 @@ void main() {
 
     final provider = await _openMaterialPanel(tester);
 
-    // 出厂档是高斯：不加任何灰字。
+    // 出厂档是液态玻璃：不加任何灰字。
     expect(find.textContaining('已关闭全 App 模糊'), findsNothing);
 
     // 切到实体卡片：唯一与直觉不符的档才给一行提示。
@@ -294,8 +301,8 @@ void main() {
     expect(find.textContaining('已关闭全 App 模糊'), findsOneWidget);
     expect(provider.settings.frostedBlurEnabled, isFalse);
 
-    // 切回高斯：提示消失。
-    await tester.tap(find.text('高斯模糊').first);
+    // 切回液态玻璃：提示消失。
+    await tester.tap(find.text('液态玻璃').first);
     await tester.pumpAndSettle();
     expect(find.textContaining('已关闭全 App 模糊'), findsNothing);
 
@@ -308,11 +315,13 @@ void main() {
   testWidgets('液态「恢复默认」只在自定义档出现，并自带一句范围说明', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    _seedPrefs(TimetableSettings.defaults());
+    // 从实体卡片档起步：实体档下「高级材质」整节不渲染，恢复按钮自然不在
+    //（find.text 只认全文，页尾的「恢复默认设置」不算它）。
+    _seedPrefs(
+      TimetableSettings.defaults().copyWith(frostedBlurEnabled: false),
+    );
 
     await _openMaterialPanel(tester);
-    // 出厂高斯：「高级材质」整节不渲染（液态才显示），恢复按钮自然不在
-    //（find.text 只认全文，页尾的「恢复默认设置」不算它）。
     expect(find.text('高级材质'), findsNothing);
     expect(find.text('恢复默认'), findsNothing);
 

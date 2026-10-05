@@ -445,26 +445,23 @@ void main() {
     expect(dayViewPanel(), findsOneWidget, reason: '转场途中的点按不能被吞掉');
   });
 
-  testWidgets('底部「材质」打开材质面板（默认材质三档内联控件）', (tester) async {
+  testWidgets('底部「材质」打开材质面板（默认材质两档内联控件）', (tester) async {
     await pumpEditor(tester);
     await tester.tap(find.text('材质'));
     await tester.pumpAndSettle();
 
     // 面板 = 标题行（「材质」+ 通用 / 课程卡片 两格翻页分段）+ 第一页正文。
-    // 出厂默认档 = 高斯模糊（三档之一，显示成它就是它，不再归桶）；液态调校
-    // 分区只在选到液态时出现，此时隐藏。
+    // 出厂默认档 = 液态玻璃（2026-09-30 高斯模糊退场后整机只剩这一种玻璃
+    // 材质），所以液态调校分区**默认就展开**。
     expect(find.text('材质'), findsWidgets);
     expect(find.text('通用'), findsOneWidget);
     // 「课程卡片」两处：翻页分段标签 + 末尾只读总览里那一行。
     expect(find.text('课程卡片'), findsNWidgets(2));
     expect(find.text('默认材质'), findsOneWidget);
-    // 三档全在候选里，「实体卡片」这一屏只有分段里那一处（只读总览那几行写的是
+    // 两档全在候选里，「实体卡片」这一屏只有分段里那一处（只读总览那几行写的是
     // 「实体」而不是「实体卡片」，卡片出厂档正是实体）。
     expect(find.text('实体卡片'), findsOneWidget);
     expect(find.text('液态玻璃'), findsWidgets);
-    // 「高斯模糊」两处：默认材质那一格 + 只读总览里玻璃坞那一行（模糊开着、
-    // 非液态）。子页顶栏那把轴 2026-09-23 起锁死为渐进，所以不再有第三处。
-    expect(find.text('高斯模糊'), findsNWidgets(2));
     expect(
       find.text('子页顶栏模糊风格'),
       findsNothing,
@@ -473,7 +470,8 @@ void main() {
     expect(find.text('首页顶栏玻璃'), findsOneWidget);
     expect(find.text('各表面当前材质'), findsOneWidget);
     expect(find.text('首页玻璃带'), findsWidgets);
-    expect(find.text('高级材质'), findsNothing);
+    // 出厂就是液态档 → 细项默认展开。
+    expect(find.text('高级材质'), findsOneWidget);
     // 第二页的内容在翻过去之前不在树上（翻页层只建当前那一页）。
     expect(find.text('卡片外观'), findsNothing);
 
@@ -654,7 +652,6 @@ void main() {
     // 且写的是 `courseCardGlassTuning` —— 不是全局那份。
     _seedInitializedPrefs(
       TimetableSettings.defaults().copyWith(
-        frostedGlassMode: FrostedGlassMode.liquidGlass,
         courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
       ),
     );
@@ -1062,7 +1059,6 @@ void main() {
     // 写进去，面板上数字和滑块纹丝不动（松手还会弹回旧位置）。
     _seedInitializedPrefs(
       TimetableSettings.defaults().copyWith(
-        frostedGlassMode: FrostedGlassMode.liquidGlass,
         liquidGlassPreset: LiquidGlassPreset.custom,
         liquidGlassTuning: LiquidGlassTuning.defaults,
       ),
@@ -1091,7 +1087,6 @@ void main() {
     // 所以面板里的可调项一律内联：滑杆行自带的「点击改值」必须关掉。
     _seedInitializedPrefs(
       TimetableSettings.defaults().copyWith(
-        frostedGlassMode: FrostedGlassMode.liquidGlass,
         liquidGlassPreset: LiquidGlassPreset.custom,
       ),
     );

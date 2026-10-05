@@ -21,7 +21,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart' show MiuixGlassEdgeFade;
 
-import 'hyperos_blurred_header.dart';
 import 'hyperos_theme.dart';
 import 'frosted/liquid_glass_degradation.dart';
 import 'liquid/liquid_glass_surface.dart';
@@ -177,11 +176,10 @@ class HyperosPopupYieldBus {
 
 /// Glass background for the select popup.
 ///
-/// Renders the appropriate surface based on [FrostedGlassMode]:
-/// - **liquidGlass**: [LiquidGlassSurface] with the shared modal material.
-/// - **frosted / gaussian**: [BackdropFilter] blur + tint scrim.
-/// - **translucent**: lighter blur + minimal tint.
-/// - **blur disabled**: solid [HyperosColors.surfaceContainer].
+/// Renders [LiquidGlassSurface] with the shared modal material; when the system
+/// degrades glass (reduce-motion / high-contrast / a platform view above it) or
+/// the engine has no shader backend, it falls back to a solid
+/// [HyperosColors.surfaceContainer] fill.
 class HyperosSelectPopupGlass extends StatelessWidget {
   const HyperosSelectPopupGlass({
     super.key,

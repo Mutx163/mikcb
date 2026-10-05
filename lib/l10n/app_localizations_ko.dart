@@ -6519,9 +6519,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guidePersonalizeVisualEffectSolid => '솔리드 카드';
 
   @override
-  String get guideVisualEffectGaussianDesc => '배경에 실시간 가우시안 블러로 깊이감 있는 투명 효과';
-
-  @override
   String get guideVisualEffectLiquidDesc => '리퀴드 글래스 굴절로 질감을 더함';
 
   @override
@@ -10223,9 +10220,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get frostedGlassModeLiquid => '리퀴드 글래스';
-
-  @override
-  String get frostedGlassModeGaussian => '가우시안 블러';
 
   @override
   String get frostedGlassModeSolid => '솔리드 카드';

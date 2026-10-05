@@ -6361,9 +6361,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guidePersonalizeVisualEffectSolid => '实体卡片';
 
   @override
-  String get guideVisualEffectGaussianDesc => '背景实时高斯模糊，通透有层次';
-
-  @override
   String get guideVisualEffectLiquidDesc => '液态玻璃折射，更具质感';
 
   @override
@@ -9872,9 +9869,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get frostedGlassModeLiquid => '液态玻璃';
-
-  @override
-  String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
   String get frostedGlassModeSolid => '实体卡片';
@@ -17459,9 +17453,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guidePersonalizeVisualEffectSolid => '實體卡片';
 
   @override
-  String get guideVisualEffectGaussianDesc => '背景即時高斯模糊，通透有層次';
-
-  @override
   String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感';
 
   @override
@@ -21010,9 +21001,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get frostedGlassModeLiquid => '液態玻璃';
-
-  @override
-  String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
   String get frostedGlassModeSolid => '實體卡片';
@@ -28597,9 +28585,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guidePersonalizeVisualEffectSolid => '實體卡片';
 
   @override
-  String get guideVisualEffectGaussianDesc => '背景即時高斯模糊，通透有層次';
-
-  @override
   String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感';
 
   @override
@@ -32149,9 +32134,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get frostedGlassModeLiquid => '液態玻璃';
-
-  @override
-  String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
   String get frostedGlassModeSolid => '實體卡片';

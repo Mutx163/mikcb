@@ -123,7 +123,6 @@ TimetableSettings applySettingsReset(
       clearLiquidGlassTuningDark: true,
       // 卡片那套同病同治：可空字段必须走 clear 标记，传 null 等于「不改」。
       clearCourseCardGlassTuning: true,
-      frostedGlassMode: d.frostedGlassMode,
       frostedBlurEnabled: d.frostedBlurEnabled,
       // `liquidGlassPreset` 此前不在任何作用域里，从没被「恢复默认」覆盖过 ——
       // 随本次搬家一并补上，否则预设档名与旋钮会对不上（旋钮清了、档名还停在
