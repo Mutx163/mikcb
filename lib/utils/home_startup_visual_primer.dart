@@ -84,9 +84,22 @@ abstract final class HomeStartupVisualPrimer {
           : null;
 
       // 亮度带单独 await：避免用列表下标对齐可选的预模糊任务。
+      //
+      // align 必须传：这个函数的注释（home_page_background.dart:947-948）写明
+      // 三个调用点「本来就该按**当前取景**采样，多一个参数只会有人漏传」，
+      // `scale` 正因为这个道理才不发参数、直接读 settings，而 align 这一对
+      // 原先就是**被漏传**的那个 —— 于是预热采的是「居中取景」那条带。
+      // 消费方恰恰是首页自己（timetable_screen.dart:2273-2289 把它写成顶栏/
+      // 星期条/卡片区的墨色极性），而本页精确采样的缓存键里含 alignX/alignY，
+      // 理由写的是"a cover crop change cannot keep using a sample from an
+      // off-screen part of the image"。拖动过壁纸的用户因此在冷启动首帧按一条
+      // 不在这屏上的带定极性，精确采样落地后再硬翻一次（取景页有淡入纠正，
+      // 首页 chrome 没有）。
       final bandsFuture = sampleHomePageBackdropLuminanceBands(
         settings,
         viewportSize: _viewportSize(),
+        alignX: settings.homePageWallpaperAlignX,
+        alignY: settings.homePageWallpaperAlignY,
       );
       final jobs = <Future<Object?>>[
         // 全尺寸壁纸进 ImageCache：首页背景 Image 首帧即有像素。

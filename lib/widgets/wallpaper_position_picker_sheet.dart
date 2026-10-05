@@ -285,10 +285,13 @@ class _WallpaperPositionPickerPageState
     // 首帧极性直接用启动期预热好的亮度带（与首页首帧同一条口径，
     // `HomeStartupVisualPrimer` 的注释里就叫它"消除墨色极性闪变"）。
     //
+    // 预热按**落盘的取景**（alignX/alignY + scale）采样，而本页的初值就是那一份
+    // （`_alignX = widget.initialAlignX`），所以打开瞬间的极性判定与屏幕上的画面同源。
+    //
     // 不这么做的话：亮度只能异步采样（要解码一次壁纸），落地前按主题明暗猜一个
     // 极性、落地后再修正 —— 那次修正就是真机反馈"进 / 出页面闪一下"（浅色实底
-    // → 玻璃，见 [SoftGlassPolarityFade]）。预热是按居中采样的，拖动过壁纸时这里
-    // 可能与实际不符，随后的精确采样会带着渐变平滑纠正。
+    // → 玻璃，见 [SoftGlassPolarityFade]）。拖动滑杆之后草稿取景与预热那份会不符，
+    // 随后的精确采样会带着渐变平滑纠正。
     _topLuminance = HomeStartupVisualPrimer.seededBandsFor(_imagePath)?.top;
     _resolveImageSize();
     _scheduleTopLuminanceSample();
