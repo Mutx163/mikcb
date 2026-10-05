@@ -107,7 +107,14 @@ class MacroStep {
   factory MacroStep.fromJson(Map<String, dynamic> json) {
     final type = MacroStepType.values.firstWhere(
       (t) => t.name == json['type'],
-      orElse: () => MacroStepType.delay,
+      // 认不出的 type 不能兜成 `delay`：那等于凭空造出一条本来不存在的步骤
+      // （仓库下载的宏、别人分享的文件、新版本写出的新步骤类型都会走到这里）。
+      // 回放时它被静默跳过，步骤列表与"第 N 步"进度却照旧，用户看不出少做了什么；
+      // 更糟的是不可逆 —— `toJson()` 会把 type 写成 'delay'，用户"另存为我的宏"
+      // 或应用一次，原始类型就永久丢了，之后升级 App 也恢复不回来。
+      // 抛出去让上层按既有口径处理：本文件 :253-264 的 loader 对坏条目就是
+      // 整条丢弃、其余照常（`s is! Map → continue`、`catch (_) → continue`）。
+      orElse: () => throw const FormatException('macro_step_type_unrecognized'),
     );
     final fieldType = json['fieldType'] as String?;
     if (type == MacroStepType.fillField &&
