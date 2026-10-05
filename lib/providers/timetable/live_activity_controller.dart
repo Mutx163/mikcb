@@ -163,16 +163,40 @@ void _liveStartActivityTick(TimetableProvider host) {
 
 Future<void> _liveHandleAppResumed(TimetableProvider host) async {
   host._liveActivityTimer?.cancel();
-  await host.syncTemporalContext();
-  // Clear + push under one exclusive section so a concurrent WebDAV apply
-  // cannot interleave a half-updated native snapshot.
-  await host._runLiveSurfaceExclusive(() async {
-    host._lastLiveSnapshotSignature = null;
-    host._currentLiveCourseId = null;
-    await _liveUpdateActivityBody(host);
-  });
-  _liveScheduleActivityTick(host);
+  // 续排必须放在 finally：本函数一开始就无条件摘掉了 30 秒心跳，而
+  // `syncTemporalContext()` 与 `_runLiveSurfaceExclusive(...)` 都会外抛
+  // （季节日期规则到点批量套用时 `schedule_date_rule_repository.dart:141-146`
+  // 对 saveProfiles 是 catch→回滚→rethrow；`StorageService._setStringChecked`
+  // 在 commit 返回 false 时抛 `StateError('storage_write_failed')`；原生通道
+  // 调用也可能 MissingPluginException）。原先重排只写在 happy path 末句，
+  // 一旦抛出就永久没有心跳 —— 而 `handleAppResumed`
+  // （timetable_provider.dart:645-659）把异常吞进日志
+  // `live_activity_resume_recovery_failed`，用户看不到任何提示。
+  // 后果覆盖整个会话：跨日/跨周不再切周次、超级岛不再随课程边界切换、
+  // 桌面卡片的刷新触发点不再补排，只能杀 App 恢复
+  // （`_liveScheduleActivityTick` 全仓只有两个调用点：:161 与这里）。
+  try {
+    await host.syncTemporalContext();
+    // Clear + push under one exclusive section so a concurrent WebDAV apply
+    // cannot interleave a half-updated native snapshot.
+    await host._runLiveSurfaceExclusive(() async {
+      host._lastLiveSnapshotSignature = null;
+      host._currentLiveCourseId = null;
+      await _liveUpdateActivityBody(host);
+    });
+  } finally {
+    _liveScheduleActivityTick(host);
+  }
 }
+
+/// 测试缝：30 秒心跳当前是否挂着。
+///
+/// 回归钉 `test/providers/live_activity_resume_tick_test.dart` —— 要钉的就是
+/// 「回前台链路抛错之后心跳仍在」，没有别的观察点（`_liveActivityTimer` 是私有字段，
+/// 而整页 pump 在本仓会挂死）。
+@visibleForTesting
+bool hasLiveActivityTickForTesting(TimetableProvider host) =>
+    host._liveActivityTimer?.isActive == true;
 
 void _liveScheduleActivityTick(TimetableProvider host) {
   // Timer 的回调跑在**创建它的那个 Zone**里，而写锁的"同一 Zone 可重入"
