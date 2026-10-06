@@ -620,6 +620,44 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 落定才跳成新的（真机反馈 2026-09-22）。
   void _finish() {
     _publishExitSource();
+    _popSelf();
+  }
+
+  /// 退出本页（保留改动走 [_finish]、回滚走 [_cancel]，两者共用这一条）。
+  ///
+  /// ## ⚠️ 为什么不能直接 `Navigator.pop`（2026-10-06 实报「完成要点两次」）
+  ///
+  /// `Navigator.pop` 摘的是**栈顶**那条。本页自己开的弹窗（壁纸 / 材质面板）
+  /// 由承载壳压了一条路由在**本页之上**（`showMiuixBottomSheet` → `Navigator.push`），
+  /// 那条路由要等面板的退场弹簧**数学收敛**才离栈 —— 面板约 320ms 就滑出屏幕了，
+  /// 状态却要约 832ms（容差 1e-4）。于是：
+  ///
+  /// * 收起后约 0～800ms 这段，栈顶是**弹窗那条**，用户点「完成」pop 掉的是它，
+  ///   本页纹丝不动 —— 画面上什么都没发生，读起来就是「第一下没反应、要点两次」；
+  /// * 更糟的是那次 pop 把弹窗路由摘走后，承载壳的收尾再去 `removeRoute` 它就会抛
+  ///   `Bad state: No element`（`NavigatorState.removeRoute` 对不在 history 里的
+  ///   路由做 `firstWhere`）。
+  ///
+  /// 2026-09-23 那条笔记把「收起一开始就还输入」当作修复（见
+  /// `.agents/notes/implemented/bug-fix/2026-09-23-popup-input-visual-split.md`），
+  /// 那条没错 —— 「关掉这节课、马上点下一节」确实好了。但它留下的这段窗口对
+  /// **「退的是本页」**这一类动作是错的：push 会把新路由叠上去（不受影响），
+  /// pop 却摘错了对象。
+  ///
+  /// 修法：**先把残留的承载路由摘掉，再摘自己这条**。摘弹窗那条用承载壳自己的
+  /// `immediate` 收尾（面板此刻已经在滑出屏幕，视觉上无差别，且它的 `_popped`
+  /// 标记会让后面的收尾不再重复摘）；摘自己这条仍走 `Navigator.pop`，
+  /// 所以 zoom 的反向转场照常播（换成 `removeRoute` 会把退场动画整段吃掉）。
+  void _popSelf() {
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) {
+      // 本页的弹窗还压在上面（且正在退场）。`immediate` 是承载壳为「关弹层、
+      // 立刻切整页」准备的那条路：不播动画、直接摘路由。
+      _sheetClose?.call(immediate: true);
+      if (!mounted) {
+        return;
+      }
+    }
     Navigator.pop(context);
   }
 
@@ -633,7 +671,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     if (_draft != _openedWith) {
       _updateDraft(_openedWith);
     }
-    Navigator.pop(context);
+    _popSelf();
   }
 
   /// 把当前烤图交给退场动画（见 [hyperosZoomExitSource]）。
@@ -680,12 +718,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     final future = showHomeHyperosSheet<void>(
       context: context,
       // 收下收起口子：弹窗里那颗「选择图片」/「调整位置」要推整页（位置编辑页），
-      // 必须先收起本弹层再推（理由见 [_sheetClose]）。
-      closeRef: (close) {
-        if (generation == _sheetGeneration) {
-          _sheetClose = close;
-        }
-      },
+      // 必须先收起本弹层再推（理由见 [_sheetClose]）；本页自己退出时也靠它摘掉
+      // 退场期间仍压在栈上的那条路由（见 [_popSelf]）。
+      closeRef: _trackSheetClose(generation),
       // 顶部渐变模糊带自己排掉把手条那 24（理由同 [_openMaterialSheet]）。
       reserveDragHandleStrip: false,
       // 内容能滚动，底部留白由滚动内容自己带（理由同 [_openMaterialSheet]）。
@@ -708,6 +743,22 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
 
   @override
   MiuixBottomSheetClose? get backdropHostSheetClose => _sheetClose;
+
+  /// 本页开弹层时统一登记收起口子的 `closeRef`。
+  ///
+  /// 两个弹层（壁纸 / 材质）共用 [_sheetClose] 一个字段：同一时刻只可能有一个开着，
+  /// 而承载壳压的那条路由要等退场弹簧收敛（约 832ms）才离栈 —— [_popSelf] 靠这个
+  /// 口子把残留路由摘掉（不然点「完成」会 pop 掉弹窗那条），混层里的
+  /// [_HomeBackdropFlow._withHostSheetClosed] 也靠它「先收弹层再推整页」。
+  ///
+  /// 代数是为了挡住上一个弹层迟到的 `closeRef`（构建期回调）与 `whenComplete`。
+  SheetCloseRef _trackSheetClose(int generation) {
+    return (close) {
+      if (generation == _sheetGeneration) {
+        _sheetClose = close;
+      }
+    };
+  }
 
   /// 壁纸弹窗内容的高度上限。
   ///
@@ -753,13 +804,17 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     int initialPage = _MaterialSheetBodyState._generalPage,
   }) {
     final l10n = AppLocalizations.of(context)!;
+    final generation = ++_sheetGeneration;
     // chrome 常显口径同 [_openWallpaperSheet]。
     // ⚠️ **最多半屏**（用户口径 2026-09-20）：这块面板改之前会长到 76% 屏高，
     // 把上面那张预览小屏盖掉 —— 而它存在的意义就是「改一处、看预览」。超出的
     // 内容由**每一页自己的内部滚动**承担，不再靠长高来全显示。
     final contentMaxHeight = _materialSheetContentMaxHeight(context);
-    return showHomeHyperosSheet<void>(
+    final future = showHomeHyperosSheet<void>(
       context: context,
+      // 收起口子与壁纸弹窗共用一个字段（口径见 [_trackSheetClose]）：本页自己
+      // 退出时靠它摘掉退场期间仍压在栈上的那条路由（见 [_popSelf]）。
+      closeRef: _trackSheetClose(generation),
       // 顶部渐变模糊带**自己**把把手条那 24 排掉了（带子从面板上沿起、里面第一格就是
       // 让给把手的那 24），所以不要承载壳再统一加一段 —— 否则顶部凭空多出 24 的空档，
       // 正是这一带在返工的那件事。
@@ -787,6 +842,12 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
         ),
       ),
     );
+    // 与 [_openWallpaperSheet] 同形：弹层真的离栈之后才把口子摘掉。
+    return future.whenComplete(() {
+      if (generation == _sheetGeneration) {
+        _sheetClose = null;
+      }
+    });
   }
 
   /// 「通用」页正文：整机总闸 + 卡片以外的表面。

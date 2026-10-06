@@ -5,6 +5,7 @@
 //
 // 关键口径（用户 2026-09-19 明确）：预览**直接用首页那份页面**缩尺，而不是另写一套
 // 小屏布局 —— 所以这里断言的是 `TimetableScreen` 本体嵌在里面，不是预览替身。
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -82,6 +83,38 @@ Future<void> _switchWallpaperSheetPage(
   expect(tab, findsOneWidget, reason: '壁纸弹窗顶部应有「$tabLabel」这个页签');
   await tester.tap(tab);
   await tester.pumpAndSettle();
+}
+
+/// 把自己推到**当前那条路由之上**，底下留着首页那条（验「退出本页」用）。
+class _PushOnFirstFrame extends StatefulWidget {
+  const _PushOnFirstFrame({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_PushOnFirstFrame> createState() => _PushOnFirstFrameState();
+}
+
+class _PushOnFirstFrameState extends State<_PushOnFirstFrame> {
+  @override
+  void initState() {
+    super.initState();
+    // 帧末推：那时本页的 context 已经挂好，`Navigator.of` 才找得到栈。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(
+        Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(builder: (_) => widget.child),
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      const Scaffold(body: Center(child: Text('底层页面')));
 }
 
 void main() {
@@ -1208,5 +1241,93 @@ void main() {
     expect(find.byType(HyperosSheetFrame), findsOneWidget);
     // 面板本身还开着（点空白处不该把面板关掉）。
     expect(find.text('默认材质'), findsOneWidget);
+  });
+
+  /// 把编辑页**推在一条占位路由之上**。
+  ///
+  /// 「完成 / 取消」都是 `Navigator.pop`，底下得真有东西可回退，否则
+  /// 「有没有退出本页」根本验不出来（[pumpEditor] 把编辑页摆成了唯一一条路由）。
+  ///
+  /// 走 [TestApp] 而不是裸 `MaterialApp`：编辑页里嵌着**真首页**那份页面，它构建时
+  /// 读的东西不少（`ScaffoldMessenger` 等），外壳得跟别处一致。
+  Future<TimetableProvider> pumpEditorAsPushedRoute(
+    WidgetTester tester,
+  ) async {
+    final provider = await createInitializedTestProvider(tester);
+    final page = settingsSubpageById('appearanceEditor')!;
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<TimetableProvider>.value(value: provider),
+          ChangeNotifierProvider<WeatherProvider?>.value(value: null),
+        ],
+        child: TestApp(home: _PushOnFirstFrame(child: page)),
+      ),
+    );
+    await tester.pump();
+    // 推页那条路由有进场转场，转场期间整条路由是 offstage，而 `find.text` 默认
+    // `skipOffstage: true` —— 不等它落定就按文字找，一个都找不到。
+    for (var i = 0; i < 40 && find.text('调整壁纸').evaluate().isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(find.text('调整壁纸'), findsOneWidget, reason: '编辑页的底部入口没出场');
+    await pumpUntilPreviewCoverGone(tester);
+    return provider;
+  }
+
+  testWidgets('壁纸弹窗收起后立刻点「完成」：第一下就退出本页（2026-10-06 回归钉）', (
+    tester,
+  ) async {
+    // 用户实报：「壁纸弹窗设置完、关掉弹窗、点右上角的完成，有时候要点两次」。
+    //
+    // 机制（见 `_popSelf` 的注释）：弹窗的承载路由要等退场弹簧**数学收敛**
+    // （约 832ms，面板 320ms 就滑出屏幕了）才离栈，那段时间里栈顶是**弹窗那条**，
+    // `Navigator.pop` 摘的是它 —— 本页纹丝不动，读起来就是「第一下没反应」。
+    await pumpEditorAsPushedRoute(tester);
+
+    await tester.tap(find.text('调整壁纸'));
+    await tester.pumpAndSettle();
+    expect(find.text('背景图片'), findsOneWidget, reason: '先确认壁纸弹窗真的开着');
+
+    // 收起弹窗：点面板上方的压暗蒙层（用户「关掉弹窗」的常规手势之一）。
+    // 面板最多占半屏，屏幕上部那一段就是蒙层。
+    final sheetSize = tester.getSize(find.byType(HyperosSheetFrame));
+    await tester.tapAt(Offset(sheetSize.width / 2, 8));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // 此刻面板早已滑出屏幕、页面看起来是空的，但承载路由还在栈上。
+    await tester.tap(find.text('完成'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(PreviewBakeBoundary),
+      findsNothing,
+      reason: '第一下点「完成」就该退出本页，不能被弹窗的残留路由吃掉',
+    );
+    expect(find.text('底层页面'), findsOneWidget, reason: '真的退回到底层那条路由');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('材质面板收起后立刻点「取消」：第一下就退出本页', (tester) async {
+    // 与上一条同根（`_popSelf` 是「完成 / 取消」共用的），但走材质面板这条路径：
+    // 材质面板原先**没有**登记收起口子（只有壁纸弹窗登记了），修的时候一并补上。
+    await pumpEditorAsPushedRoute(tester);
+
+    await tester.tap(find.text('材质'));
+    await tester.pumpAndSettle();
+    expect(find.byType(HyperosSheetFrame), findsOneWidget);
+
+    final sheetSize = tester.getSize(find.byType(HyperosSheetFrame));
+    await tester.tapAt(Offset(sheetSize.width / 2, 8));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PreviewBakeBoundary), findsNothing);
+    expect(find.text('底层页面'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
