@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/warehouse_repository_models.dart';
-import 'package:university_timetable/screens/course_import_screen.dart';
+import 'package:university_timetable/screens/import/warehouse/warehouse_school_adapters_screen.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/services/warehouse_repository_service.dart';
 import '../helpers_test_app.dart';
@@ -176,3 +176,4 @@ void main() {
     expect(find.text(_extrasAdapterName), findsNothing);
   });
 }
+

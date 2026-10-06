@@ -86,7 +86,7 @@ import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
 import 'add_task_screen.dart';
 import 'about_screen.dart';
-import 'course_import_screen.dart';
+import 'import/home_pull_quick_import.dart';
 import 'timetable_profiles_screen.dart';
 
 /// 玻璃坞底栏实际生效的材质。
@@ -10715,3 +10715,4 @@ class _DashedRRectBorderPainter extends CustomPainter {
   bool shouldRepaint(covariant _DashedRRectBorderPainter oldDelegate) =>
       oldDelegate.color != color || oldDelegate.fill != fill;
 }
+

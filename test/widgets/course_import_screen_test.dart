@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:university_timetable/screens/course_import_screen.dart';
+import 'package:university_timetable/screens/import/ai_image_course_import_screen.dart';
+import 'package:university_timetable/screens/import/import_shared.dart';
+import 'package:university_timetable/screens/import/warehouse/warehouse_import_policy.dart';
 import 'package:university_timetable/domain/warehouse_session_probe.dart';
 import 'package:university_timetable/services/warehouse_import_preferences_service.dart';
 import '../helpers_test_app.dart';
@@ -457,3 +459,4 @@ void main() {
     expect(scaffold.resizeToAvoidBottomInset, isTrue);
   });
 }
+

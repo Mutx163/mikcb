@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:university_timetable/screens/course_import_screen.dart';
+import 'package:university_timetable/screens/import/warehouse/warehouse_shared.dart';
 
 void main() {
   group('warehouseDocumentKey', () {
@@ -71,3 +71,4 @@ void main() {
     });
   });
 }
+

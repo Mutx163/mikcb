@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/warehouse_repository_models.dart';
-import 'package:university_timetable/screens/course_import_screen.dart';
+import 'package:university_timetable/screens/import/warehouse/warehouse_adapter_web_login_screen.dart';
 import 'package:university_timetable/services/warehouse_repository_service.dart';
 import 'package:university_timetable/ui/hyperos/frosted/liquid_glass_degradation.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_navigation.dart';
@@ -395,3 +395,4 @@ class _FakeSecureStoragePlatform extends FlutterSecureStoragePlatform {
     required Map<String, String> options,
   }) => Future<bool>.value(false);
 }
+

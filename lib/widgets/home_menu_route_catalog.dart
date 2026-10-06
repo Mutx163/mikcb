@@ -11,7 +11,7 @@ import 'package:university_timetable/screens/changelog_screen.dart';
 import 'package:university_timetable/screens/cloud_sync_screen.dart';
 import 'package:university_timetable/screens/couple_timetable_settings_screen.dart';
 import 'package:university_timetable/screens/course_conflict_screen.dart';
-import 'package:university_timetable/screens/course_import_screen.dart';
+import 'package:university_timetable/screens/import/course_import_entry_screen.dart';
 import 'package:university_timetable/screens/course_overview_screen.dart';
 import 'package:university_timetable/screens/course_statistics_screen.dart';
 import 'package:university_timetable/screens/data_transfer_screen.dart';
@@ -168,3 +168,4 @@ Widget _buildSettingsScreen() {
   }
   return builder();
 }
+
