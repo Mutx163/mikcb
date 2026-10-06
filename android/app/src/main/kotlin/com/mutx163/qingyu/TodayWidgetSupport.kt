@@ -415,12 +415,13 @@ object TodayWidgetSupport {
             }
         }
 
-        // 今天课程已结束时，计算明天的课程
+        // 明天课程：算数据的口径见 shouldBuildTomorrowCourses（比"卡片切到明天"更宽，
+        // 长条高卡在上课中途也要拿到明日首课）。
         var tomorrowCourses: List<TodayWidgetCourseInfo> = emptyList()
         var tomorrowWeek = currentWeek
         var tomorrowDayOfWeek = 0
         val showTomorrowCourses = settingsJson.optBoolean("widgetShowTomorrowCourses", true)
-        if ((state == "completed" || state == "no_course") && !isHoliday && showTomorrowCourses) {
+        if (shouldBuildTomorrowCourses(state, isHoliday, showTomorrowCourses)) {
             val tomorrowCal = Calendar.getInstance().apply {
                 timeInMillis = nowMillis
                 add(Calendar.DAY_OF_YEAR, 1)
@@ -1153,6 +1154,30 @@ internal fun findNextRefreshAtMillis(
         }
         return snapshot.state
     }
+
+    /**
+     * 「明天课程」这份数据要不要算进快照。
+     *
+     * 与下面的展示门禁 `isShowingTomorrowCourses` 是**两条**规则：那条决定卡片整体
+     * 切到明天（只在今天上完/今天没课时成立），这条只决定快照里带不带明天的列表。
+     * 分开是因为长条高卡 `TodayStripWidgetProvider.kt:227-230` 在"今天还在上课"时
+     * 也要读这份数据放"明日首课预告"。
+     */
+    private val tomorrowCourseDataStates = setOf(
+        "completed",
+        "no_course",
+        // 修 2026-10-06：长条高卡（`TodayStripWidgetProvider.kt:227-230`）在"今天还在
+        // 上课"时也要放明日首课预告，而原先这条门禁与展示门禁是同一条，这两个状态
+        // 下 `tomorrowCourses` 恒为空 → 那一行永远空白。
+        "ongoing",
+        "upcoming",
+    )
+
+    internal fun shouldBuildTomorrowCourses(
+        state: String,
+        isHoliday: Boolean,
+        settingEnabled: Boolean,
+    ): Boolean = state in tomorrowCourseDataStates && !isHoliday && settingEnabled
 
     /** Returns true when today is done or has no courses AND tomorrow has courses to show. */
     fun isShowingTomorrowCourses(
