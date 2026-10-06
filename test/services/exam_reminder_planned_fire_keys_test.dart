@@ -67,7 +67,7 @@ void main() {
       final keys = ExamReminderService.buildPlannedFireKeys(
         exams: [oneHourPresetExam()],
         resolveCourse: noCourse,
-        now: DateTime(2026, 7, 20, 7, 0),
+        now: DateTime(2026, 7, 20, 7),
       );
 
       expect(keys, contains('exam-1#60'));
@@ -78,7 +78,7 @@ void main() {
       final keys = ExamReminderService.buildPlannedFireKeys(
         exams: [oneHourPresetExam()],
         resolveCourse: noCourse,
-        now: DateTime(2026, 7, 20, 11, 0),
+        now: DateTime(2026, 7, 20, 11),
       );
 
       expect(keys, isEmpty);

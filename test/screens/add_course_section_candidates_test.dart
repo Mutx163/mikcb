@@ -33,10 +33,10 @@ void main() {
 
     test('课程现存的越界节次一定并进候选（不让 clamp 抛）', () {
       // 模板解析不出来（null / 空表）时退回全局节数，但课程现存值仍必须在集合里，
-      // 否则 minValue=startSection 又会大于 maxValue。
+      // 否则 minValue=startSection 又会大于 maxValue。courseSchemeSectionCount 不传
+      // 即为 null。
       final numbers = editableSectionNumbers(
         globalSectionCount: 10,
-        courseSchemeSectionCount: null,
         currentStartSection: 11,
         currentEndSection: 12,
       );

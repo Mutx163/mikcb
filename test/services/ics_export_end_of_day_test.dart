@@ -38,7 +38,7 @@ void main() {
           endSection: 9,
           startTime: startTime,
           endTime: endTime,
-          startWeek: 1,
+          // startWeek 默认就是 1，不重复传（analyze 的 avoid_redundant_argument_values）。
           endWeek: 1,
         ),
       ],
