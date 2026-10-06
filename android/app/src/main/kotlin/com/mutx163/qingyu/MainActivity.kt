@@ -86,7 +86,8 @@ class MainActivity : FlutterActivity() {
     }
 
     private var notificationManager: NotificationManager? = null
-    private var permissionResult: MethodChannel.Result? = null
+    /** 通知权限那条 MethodChannel 回调的登记处（换槽与销毁都必须收束旧槽）。 */
+    private val notificationPermissionSlot = PendingResultSlot()
     private data class PendingExternalImport(
         val kind: String,
         val fileName: String,
@@ -241,6 +242,12 @@ class MainActivity : FlutterActivity() {
         // 系统权限对话框随 Activity 一起消失时，日历权限等待者若不收束，
         // Dart 侧 Future 会永挂（onRequestPermissionsResult 可能再也不来）。
         CalendarSync.onHostDestroyed()
+        // 通知权限这条是完全同形的路径，原先没人收束：`permissionResult` 只在
+        // :715 存、只在 onRequestPermissionsResult 消费，而对话框期间 Activity
+        // 被销毁/重建时那个回调可能再也不来 —— Dart 侧
+        // requestNotificationPermission() 就永远停在"请求中"，旧 Result 也被持有。
+        // 按"用户没授予"收束，与日历同口径。
+        notificationPermissionSlot.take()?.success(false)
         super.onDestroy()
     }
 
@@ -712,7 +719,9 @@ class MainActivity : FlutterActivity() {
                         if (hasNotificationPermission()) {
                             result.success(true)
                         } else {
-                            permissionResult = result
+                            // 只有一个槽：上一次请求还没被系统回调消费就再点一次时，
+                            // 必须先把旧槽回 false，否则那个 Dart 调用永远等不到结果。
+                            notificationPermissionSlot.replace(result)?.success(false)
                             requestNotificationPermission()
                         }
                     }
@@ -1835,8 +1844,7 @@ class MainActivity : FlutterActivity() {
                 // （同一文件 :135-143），用户刚点"允许"反而错过补投。
                 WeeklyReportScheduler.handlePermissionGranted(applicationContext)
             }
-            permissionResult?.success(granted)
-            permissionResult = null
+            notificationPermissionSlot.take()?.success(granted)
         } else if (requestCode == CalendarSync.PERMISSION_REQUEST_CODE) {
             CalendarSync.onRequestPermissionsResult(requestCode, grantResults)
         }
