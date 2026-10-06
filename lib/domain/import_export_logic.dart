@@ -4,6 +4,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import '../utils/clock_time.dart';
 
 class ImportedCourseSyncResult {
   final List<Course> mergedCourses;
@@ -23,6 +24,9 @@ class ImportExportLogic {
 
   /// Hard cap for semester week count expansion during import.
   static const int maxAllowedSemesterWeekCount = 30;
+
+  /// 一天的分钟数；`24:00` == 1440 == 当天结束（与 `ClockTime` 的 `allowEndOfDay` 同口径）。
+  static const int minutesPerDay = 24 * 60;
 
   static int previewImportedCourseRequiredSectionCount({
     required List<Course> importedCourses,
@@ -74,6 +78,13 @@ class ImportExportLogic {
       }
       final nextStartMinutes = lastEndMinutes + defaultBreak;
       final nextEndMinutes = nextStartMinutes + defaultDuration;
+      if (nextEndMinutes > minutesPerDay) {
+        // 补不下去就停：`_formatClockMinutes` 用 `% 1440` 归一，
+        // 继续补会造出"第 6 节 23:45-00:25"这种绕回凌晨的节次，
+        // 而它排在已有节次之前（分钟数更小），导入侧烤出来的钟点整段错位。
+        // 节数不够由导入侧的校验与提示处理（与 lastEndMinutes == null 同一处置）。
+        break;
+      }
       expanded.add(
         SectionTime(
           startTime: _formatClockMinutes(nextStartMinutes),
@@ -124,25 +135,15 @@ class ImportExportLogic {
   }
 
   static int _parseClockToMinutes(String value) {
-    final parts = value.split(':');
-    if (parts.length != 2) {
-      return -1;
-    }
-    final hour = int.tryParse(parts[0]);
-    final minute = int.tryParse(parts[1]);
-    if (hour == null ||
-        minute == null ||
-        hour < 0 ||
-        hour > 23 ||
-        minute < 0 ||
-        minute > 59) {
-      return -1;
-    }
-    return hour * 60 + minute;
+    // 与 lib/utils/clock_time.dart 同一份实现（这里原先自己抄了一遍 `hour > 23`，
+    // 于是把本仓合法的"当天结束" `24:00` 判成非法）：`allowEndOfDay` 只额外放行
+    // 恰好 `24:00`（记为 1440），`24:30`/`25:00`/`08:75` 仍一律拒绝 ——
+    // 它们会被 `DateTime` 静默归一到别的日子，补出来的节次看着正常却排错时间。
+    return ClockTime.tryParse(value, allowEndOfDay: true)?.totalMinutes ?? -1;
   }
 
   static String _formatClockMinutes(int minutes) {
-    final normalized = minutes % (24 * 60);
+    final normalized = minutes % minutesPerDay;
     final hour = normalized ~/ 60;
     final minute = normalized % 60;
     return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
