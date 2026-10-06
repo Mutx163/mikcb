@@ -146,6 +146,39 @@ object WeeklyReportScheduler {
         Log.d(TAG, "boot reschedule fireAt=$fireAt")
     }
 
+    /**
+     * 用户在系统对话框里刚授予通知权限时的补投重排：按**存量 fireAt 原值**重排闹钟。
+     *
+     * 为什么不能直接调 [handleBootReschedule]：它一进来就把 `fireAt <= now` 的待投
+     * 时间点直接 `+N 周` 顺延（:135-143），而 `handleFire` 投不出去时是**故意不推进**
+     * `KEY_FIRE_AT` 的（:158-162 保留条目等重试）—— 也就是说用户刚点"允许"，
+     * 这一次该补的周报会被顺延到下周，等于授权白给。
+     *
+     * 重排后 AlarmManager 对已过期的触发点会立刻回调 `handleFire`，
+     * "还能不能补投"（24h 窗口）与"过期就顺延"仍由 `handleFire` 自己判（:138-144），
+     * 这里不把窗口边界抄成第二份。
+     */
+    fun handlePermissionGranted(context: Context) {
+        ensureChannel(context)
+        val appContext = context.applicationContext
+        val report = readPrefs(appContext)
+        val fireAt = pendingFireMillisForGrant(
+            enabled = report.enabled,
+            fireAtMillis = report.fireAtMillis,
+        ) ?: return
+        scheduleAlarm(appContext, fireAt)
+        Log.d(TAG, "permission granted; re-arm pending fireAt=$fireAt")
+    }
+
+    /** 补投重排的决策：只对"开着且确实排过一次"的周报重排，且**不顺延**。 */
+    internal fun pendingFireMillisForGrant(
+        enabled: Boolean,
+        fireAtMillis: Long,
+    ): Long? {
+        if (!enabled || fireAtMillis <= 0L) return null
+        return fireAtMillis
+    }
+
     fun handleFire(context: Context, intent: Intent) {
         ensureChannel(context)
         val appContext = context.applicationContext

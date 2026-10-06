@@ -1829,6 +1829,11 @@ class MainActivity : FlutterActivity() {
                 // permission was denied, without rebuilding past fires in
                 // Flutter (which could duplicate successful notifications).
                 ExamReminderScheduler.handleBootReschedule(applicationContext)
+                // 周报也在这里补投：`handleFire` 投不出去时故意不推进 KEY_FIRE_AT
+                // （WeeklyReportScheduler.kt:158-162），所以刚授权的这一次还能赶得上。
+                // 不能调 handleBootReschedule —— 它会把已过期的时间点直接顺延一周
+                // （同一文件 :135-143），用户刚点"允许"反而错过补投。
+                WeeklyReportScheduler.handlePermissionGranted(applicationContext)
             }
             permissionResult?.success(granted)
             permissionResult = null
