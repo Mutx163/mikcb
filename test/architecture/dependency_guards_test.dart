@@ -83,7 +83,7 @@ void main() {
     );
   });
 
-  test('timetable_provider 的 lib 扇入棘轮：只减不增', () {
+  test('timetable_provider 的 lib 扇入棘轮：只减不增（按去重调用点计）', () {
     // 48→51：扇入检测原先只匹配相对路径 import，package:university_timetable/
     // 与 lib 根相对路径可绕过守卫（实际漏网 3 处：main.dart、class_reminder_sheet.dart、
     // home_menu_catalog.dart）。补漏后按真实扇入 51 设基线，后续只许下降。
@@ -100,33 +100,46 @@ void main() {
     // 两者都是「读当前课表状态出图」的同形依赖，属于该功能的必要读取面，
     // Provider 本身零改动，按测试约定同步真实值。若要收回这两个名额，
     // 需把 TimetableWeekPreview 改成接收数据快照而非 Provider，属阶段 3 解耦范围。
-    // 54→56：course_import_screen.dart 拆成 lib/screens/import/ 下 13 个文件后，
-    // 同一个逻辑单元从 1 个文件变成 5 个直接依赖 Provider 的文件——依赖边一条没
-    // 增，只是从「按文件计」变成按拆分后的文件分别计。其中 3 条已在拆分当天收掉：
-    // 仓库主流程 / 调试记录 / 首页下拉快捷导入原本各自逐字重复一份
-    // `WarehouseFetchOptions.fromSettings(context.read<TimetableProvider>().settings)`，
-    // 合并为 import_shared 的 currentWarehouseFetchOptions() 后那三个文件不再
-    // 直接依赖 Provider。剩下 5 个（ics / 表格 / AI 图片 / 仓库网页登录 /
+    //
+    // 2026-10-06 换计数单位：原指标数的是「有多少个文件 import 了 Provider」。
+    // 该指标对文件布局敏感——把一个文件拆成 5 个、5 个都需要 Provider，计数就
+    // 从 1 涨到 5，而依赖边一条没多。于是拆分这种**改善**动作会让门禁转红，
+    // 逼着下一个动它的人二选一：不拆（退回巨型文件），或再抬一次基线。
+    // 等于用制度给「不拆分」发奖金。2026-10-06 那次拆分就被迫把 54 抬到 56，
+    // 而拆分前真实扇入只有 52 —— 名额从「剩 2 格」变成「一格不剩」。
+    //
+    // 改为数 `read/watch/select/of<TimetableProvider>(` 的**调用点总数**：
+    // 它只统计实际发生的读取，与文件怎么切分完全无关。实测拆分前后都是 224
+    // （纯搬移不改调用点数），把三处逐字重复的
+    // `WarehouseFetchOptions.fromSettings(context.read<TimetableProvider>().settings)`
+    // 合并进 import_shared 的 currentWarehouseFetchOptions() 后降到 222 ——
+    // 说明这个指标既不会被拆分误伤，也能如实捕捉真实的耦合下降。
+    //
+    // 旧的 48→51→52→54 那串数字记的是文件数，与本指标不同量纲，不可直接比较。
+    // 拆分剩下的 5 个 import/ 文件（ics / 表格 / AI 图片 / 仓库网页登录 /
     // import_shared 的 ensureImportSectionCapacity）都要经 Provider 写课表，
-    // 是导入链路的必要写入面，Provider 本身零改动，按测试约定同步真实值。
-    // 若要收回这 5 个名额，需把导入写入改成接收课表写入接口而非 Provider，
-    // 与上面 TimetableWeekPreview 那条同属阶段 3 解耦范围。
-    const baselineFanIn = 56;
-    final importers = libDartFiles()
-        .where(
-          (file) =>
-              !file.path.replaceAll('\\', '/').endsWith(providerPath) &&
-              RegExp(
-                "import\\s+['\"][^'\"]*providers/timetable_provider\\.dart['\"]",
-              ).hasMatch(file.readAsStringSync()),
-        )
-        .length;
+    // 是导入链路的必要写入面。要收回它们，需把导入写入改成接收「课表写入接口」
+    // 而非 Provider，与上面 TimetableWeekPreview 那条同属阶段 3 解耦范围。
+    const baselineProviderCallSites = 222;
+    final callSitePattern = RegExp(
+      r'\b(?:read|watch|select|of)<TimetableProvider>\s*\(',
+    );
+    var callSites = 0;
+    final touchedFiles = <String>[];
+    for (final file in libDartFiles()) {
+      if (file.path.replaceAll('\\', '/').endsWith(providerPath)) continue;
+      final hits = callSitePattern.allMatches(file.readAsStringSync()).length;
+      if (hits > 0) {
+        callSites += hits;
+        touchedFiles.add(file.path);
+      }
+    }
     expect(
-      importers,
-      lessThanOrEqualTo(baselineFanIn),
+      callSites,
+      lessThanOrEqualTo(baselineProviderCallSites),
       reason:
-          '新文件不应再直接依赖 TimetableProvider；'
-          '确需依赖时同步调高本基线并说明理由。',
+          '新代码不应再直接读取 TimetableProvider（共 ${touchedFiles.length} 个文件、'
+          '$callSites 处调用）；确需依赖时同步调高本基线并说明理由。',
     );
   });
 

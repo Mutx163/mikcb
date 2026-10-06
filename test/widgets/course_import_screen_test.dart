@@ -459,4 +459,3 @@ void main() {
     expect(scaffold.resizeToAvoidBottomInset, isTrue);
   });
 }
-

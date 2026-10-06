@@ -176,4 +176,3 @@ void main() {
     expect(find.text(_extrasAdapterName), findsNothing);
   });
 }
-

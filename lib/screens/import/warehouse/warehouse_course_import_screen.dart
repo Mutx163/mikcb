@@ -14,7 +14,6 @@ import '../../../models/warehouse_repository_models.dart';
 import '../../../services/warehouse_import_preferences_service.dart';
 import '../../../services/warehouse_macro_service.dart';
 import '../../../services/warehouse_repository_service.dart';
-import '../../../utils/app_toast.dart';
 import '../../feedback_screen.dart';
 import '../import_shared.dart';
 import 'warehouse_shared.dart';
@@ -286,10 +285,6 @@ class _WarehouseCourseImportScreenState
     if (imported == true && mounted) {
       Navigator.of(context).pop(true);
     }
-  }
-
-  void showImportLightTip(BuildContext context, String message) {
-    showAppLightTip(context, message: message);
   }
 
   Future<void> _openMissingSchoolFeedbackGuide() async {

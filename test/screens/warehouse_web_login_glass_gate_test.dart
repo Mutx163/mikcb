@@ -395,4 +395,3 @@ class _FakeSecureStoragePlatform extends FlutterSecureStoragePlatform {
     required Map<String, String> options,
   }) => Future<bool>.value(false);
 }
-

@@ -113,4 +113,3 @@ void main() {
     expect(settled.left, 0, reason: '落定后视差归零');
   });
 }
-

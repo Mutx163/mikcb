@@ -10715,4 +10715,3 @@ class _DashedRRectBorderPainter extends CustomPainter {
   bool shouldRepaint(covariant _DashedRRectBorderPainter oldDelegate) =>
       oldDelegate.color != color || oldDelegate.fill != fill;
 }
-

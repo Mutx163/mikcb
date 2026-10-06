@@ -168,4 +168,3 @@ Widget _buildSettingsScreen() {
   }
   return builder();
 }
-
