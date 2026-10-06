@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/services.dart';
 
 import '../providers/timetable_provider.dart';
 import 'couple_webdav_config.dart';
@@ -69,8 +70,20 @@ class CoupleWebdavService {
     );
   }
 
+  /// 断开情侣云盘：清配置是主体，删密码尽力而为。
+  ///
+  /// 原先第一跳就是 `_credentialsStore.deletePassword()`，而 keystore 条目失效时
+  /// （换机恢复、系统升级、凭证变化）它抛 `PlatformException`
+  /// （`couple_webdav_credentials_store.dart:24-27` 的注释记的就是这个失效面，
+  /// 那次只给**读**加了容错，写与删仍把异常交出去）。抛出后用户名没清、
+  /// `lastPulledAt` 也没清 → 页面按 `username` 非空判"仍已连接"
+  /// （couple_timetable_settings_screen.dart:65-67），而按钮写的是
+  /// `onPressed: _disconnectCoupleWebdav`（:240，tear-off 丢掉 Future）——
+  /// 用户反复点「断开连接」零反应，异常还没人接。
+  ///
+  /// 删不掉密码不影响"已断开"的语义：下次保存账号会覆盖它，
+  /// 而读密码的地方本来就按"没有密码"处理。
   Future<void> disconnect() async {
-    await _credentialsStore.deletePassword();
     final config = await loadConfig();
     await saveConfig(
       config.copyWith(
@@ -79,6 +92,11 @@ class CoupleWebdavService {
         clearLastRemoteContentHash: true,
       ),
     );
+    try {
+      await _credentialsStore.deletePassword();
+    } on PlatformException {
+      // 密码此刻已经不可操作（连删都删不掉），不因此把用户卡在"已连接"状态。
+    }
   }
 
   Future<void> testConnection({

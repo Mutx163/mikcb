@@ -284,7 +284,21 @@ class _CoupleTimetableSettingsScreenState
   }
 
   Future<void> _disconnectCoupleWebdav() async {
-    await _coupleWebdavService.disconnect();
+    // 服务侧现在只剩"清配置"这一条会失败的路径（prefs 写失败），仍要接住并说出来：
+    // 这个按钮是 `onPressed: _disconnectCoupleWebdav` 的 tear-off，抛出去就没人接。
+    try {
+      await _coupleWebdavService.disconnect();
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     await _loadCoupleWebdavState();
   }
 
@@ -319,10 +333,7 @@ class _CoupleTimetableSettingsScreenState
             kind: AppToastKind.success,
           );
         case CoupleWebdavPullStatus.unchanged:
-          showAppToast(
-            context,
-            message: l10n.coupleWebdavPullUnchanged,
-          );
+          showAppToast(context, message: l10n.coupleWebdavPullUnchanged);
         case CoupleWebdavPullStatus.failed:
           showAppToast(
             context,
