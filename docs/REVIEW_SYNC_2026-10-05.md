@@ -53,6 +53,48 @@ main 的 `6e8248d4`（节次校验只对**显式绑定**方案的课生效）改
 
 若漏了后两处，这次同步会把 main 的修复吃掉（未绑定方案但钟点齐全的课会被莫名拒写）。
 
+## 验证与测试状态（重要）
+
+| 检查 | 结果 |
+|---|---|
+| `flutter analyze` | 2 条问题，均来自本分支 `a7f4b108`（情侣云盘那次），**合并零引入** |
+| `test/architecture/`（含行数棘轮） | 28 例全过 |
+| `test/domain` + `test/providers` | 671 例全过 |
+| 全量套件（本分支） | 3272 过 / 8 跳 / **144 挂** |
+| 全量套件（纯 `origin/main`） | 2789 过 / 8 跳 / **143 挂** |
+| 本分支改动的 115 个测试文件：合并前 | 884 过 / **0 挂** |
+| 本分支改动的 115 个测试文件：合并后 | 838 过 / **52 挂** |
+
+**这 52 个失败不是合并引入的缺陷，而是从 `main` 继承的。** 三方对照：合并后失败的 52 个里，51 个在纯 `origin/main` 上以同名同因失败；剩下的 1 个（`test/widgets/sheet_failure_feedback_test.dart`）报的是同一句
+`A Timer is still pending even after the widget tree was disposed.`，
+它没出现在 main 的名单里只是因为该文件是本分支新增、main 从未运行过。
+
+### 根因（在 main 侧，不在本分支）
+
+`main` 的 `fb8f1258 fix(平台通道): 71 处原生调用加默认超时` 引入 `utils/timed_method_channel.dart`：
+每次 `invokeMethod` 都 `.timeout(kPlatformChannelTimeout)`（实测 10 秒）。widget 测试通常在远不到 10 秒时结束，
+`testWidgets`  teardown 时发现定时器仍挂着的就判失败。典型栈：
+
+```
+TimedMethodChannel.invokeMethod (utils/timed_method_channel.dart:65)
+  ← ScreenCaptureService.ensureSupported / start / stop
+  ← _TimetableScreenState.build / dispose
+```
+
+失败集中在 `test/widgets/timetable_day_view_test.dart`、`test/screens/appearance_editor_*`、
+`test/services/holiday_service_test.dart` 等会 pump 屏级 widget 的用例。
+
+### 建议 main 侧的处理方向（本分支未擅自修改）
+
+任选其一即可让这批转绿，且都不改变运行时语义：
+
+1. `TimedMethodChannel` 把 timeout 定时器做成可取消，在宿主 dispose 时 `Timer.cancel()`
+2. 测试侧统一在 teardown 前 `await tester.pump(kPlatformChannelTimeout + buffer)` 把定时器烧掉，
+   或给 `ScreenCaptureService` 的通道注册 mock handler（`test/services/screen_capture_service_test.dart` 已有先例）
+3. 在测试环境（`kDebugMode` + `AutomatedTestWidgetsFlutterBinding`）把默认超时缩到毫秒级
+
+本分支保持 `main` 的实现原样，避免在审查分支里夹带对 main 平台层行为的改动。
+
 ## 复核时建议重点看
 
 1. 宏回放单选项那处：main 与本分支两套 helper 语义是否真的等价，`fallbackIndex` 取 `scriptSelectedIndex` 是否符合预期
