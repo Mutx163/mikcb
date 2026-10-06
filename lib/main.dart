@@ -37,6 +37,7 @@ import 'utils/frame_perf_probe.dart';
 import 'utils/home_page_background.dart';
 import 'utils/home_startup_visual_primer.dart';
 import 'utils/theme_seed_accent.dart';
+import 'utils/timed_method_channel.dart';
 import 'utils/wallpaper_history.dart';
 import 'widgets/app_startup_splash.dart';
 import 'widgets/course_glass_shader.dart';
@@ -674,6 +675,9 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   bool _homeRevealed = false;
   bool _revealScheduled = false;
   final Stopwatch _splashClock = Stopwatch()..start();
+  // 冷启动与回前台两条路径会并发调自动换：先读后写（`lastAutoAppliedDate`）
+  // 无互斥会下两遍、写两遍。第二次直接等第一次的结果。
+  Future<void>? _bingAutoApplyInFlight;
 
   void _allowFirstFrameOnce() {
     if (_allowFirstFrameCalled) return;
@@ -766,7 +770,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   }
 
   Future<void> _installSharedMethodChannelHandler() async {
-    const channel = MethodChannel('com.mutx163.qingyu/miui_live');
+    const channel = TimedMethodChannel('com.mutx163.qingyu/miui_live');
     channel.setMethodCallHandler((call) async {
       if (call.method == 'onExternalImportReceived') {
         await Future.delayed(const Duration(milliseconds: 300));
@@ -847,6 +851,23 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   ///
   /// [BingWallpaperStore.autoApplyEnabled] 默认 false，未开的用户连网络都不碰。
   Future<void> _maybeAutoApplyDailyBingWallpaper(
+    TimetableProvider provider,
+  ) {
+    final inFlight = _bingAutoApplyInFlight;
+    if (inFlight != null) {
+      return inFlight;
+    }
+    final future = _maybeAutoApplyDailyBingWallpaperImpl(provider);
+    _bingAutoApplyInFlight = future;
+    future.whenComplete(() {
+      if (identical(_bingAutoApplyInFlight, future)) {
+        _bingAutoApplyInFlight = null;
+      }
+    });
+    return future;
+  }
+
+  Future<void> _maybeAutoApplyDailyBingWallpaperImpl(
     TimetableProvider provider,
   ) async {
     try {
@@ -1398,7 +1419,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
 
   Future<void> _checkPendingExternalImport() async {
     try {
-      const channel = MethodChannel('com.mutx163.qingyu/miui_live');
+      const channel = TimedMethodChannel('com.mutx163.qingyu/miui_live');
       final payload = await channel.invokeMethod<Map<Object?, Object?>>(
         'getPendingExternalImport',
       );
