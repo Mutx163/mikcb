@@ -6348,7 +6348,7 @@ abstract class AppLocalizations {
   /// No description provided for @bingWallpaperAutoApplySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'每天首次打开时换成当天的壁纸'**
+  /// **'所有课表共用，只换当前这份'**
   String get bingWallpaperAutoApplySubtitle;
 
   /// No description provided for @bingWallpaperAutoApplyApplying.

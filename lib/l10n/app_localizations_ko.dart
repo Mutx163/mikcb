@@ -3516,7 +3516,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get bingWallpaperAutoApplyTitle => '매일 자동 변경';
 
   @override
-  String get bingWallpaperAutoApplySubtitle => '앱을 처음 열 때 그날의 배경화면으로 바꿉니다';
+  String get bingWallpaperAutoApplySubtitle => '모든 시간표 공용, 현재 시간표만 변경';
 
   @override
   String get bingWallpaperAutoApplyApplying => '오늘의 배경화면으로 바꾸는 중';

@@ -1985,7 +1985,7 @@
     }
   },
   "bingWallpaperAutoApplyTitle": "每天自动更换",
-  "bingWallpaperAutoApplySubtitle": "每天首次打开时换成当天的壁纸",
+  "bingWallpaperAutoApplySubtitle": "所有课表共用，只换当前这份",
   "bingWallpaperAutoApplyApplying": "正在换成今天的壁纸",
   "bingWallpaperAutoApplyAlreadyDone": "今天已经换过啦",
   "@bingWallpaperAutoApplyStale": {

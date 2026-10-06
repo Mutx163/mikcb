@@ -6297,7 +6297,7 @@
   "bingWallpaperDateYesterday": "昨日",
   "bingWallpaperDateMonthDay": "{month} 月 {day} 日",
   "bingWallpaperAutoApplyTitle": "毎日自動で変更",
-  "bingWallpaperAutoApplySubtitle": "その日の壁紙を、アプリを最初に開いたときに適用します",
+  "bingWallpaperAutoApplySubtitle": "すべての時間割で共有、現在のものだけ変更",
   "bingWallpaperAutoApplyApplying": "今日の壁紙に切り替えています",
   "bingWallpaperAutoApplyAlreadyDone": "今日の壁紙にはすでに切り替え済みです",
   "@bingWallpaperAutoApplyStale": {

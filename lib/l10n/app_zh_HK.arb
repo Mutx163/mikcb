@@ -6276,7 +6276,7 @@
   "bingWallpaperDateYesterday": "尋日",
   "bingWallpaperDateMonthDay": "{month} 月 {day} 日",
   "bingWallpaperAutoApplyTitle": "每日自動更換",
-  "bingWallpaperAutoApplySubtitle": "每日首次開啟時換成當日桌布",
+  "bingWallpaperAutoApplySubtitle": "所有課表共用，只換目前這份",
   "bingWallpaperAutoApplyApplying": "正在換成今日桌布",
   "bingWallpaperAutoApplyAlreadyDone": "今日已經換過啦",
   "@bingWallpaperAutoApplyStale": {

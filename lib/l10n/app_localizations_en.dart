@@ -3648,7 +3648,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bingWallpaperAutoApplySubtitle =>
-      'Switch to that day\'s wallpaper the first time you open the app';
+      'Shared by all timetables, changes the current one only';
 
   @override
   String get bingWallpaperAutoApplyApplying =>

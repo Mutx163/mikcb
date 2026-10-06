@@ -3429,7 +3429,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get bingWallpaperAutoApplyTitle => '每天自动更换';
 
   @override
-  String get bingWallpaperAutoApplySubtitle => '每天首次打开时换成当天的壁纸';
+  String get bingWallpaperAutoApplySubtitle => '所有课表共用，只换当前这份';
 
   @override
   String get bingWallpaperAutoApplyApplying => '正在换成今天的壁纸';
@@ -14594,7 +14594,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get bingWallpaperAutoApplyTitle => '每日自動更換';
 
   @override
-  String get bingWallpaperAutoApplySubtitle => '每日首次開啟時換成當日桌布';
+  String get bingWallpaperAutoApplySubtitle => '所有課表共用，只換目前這份';
 
   @override
   String get bingWallpaperAutoApplyApplying => '正在換成今日桌布';
@@ -25799,7 +25799,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get bingWallpaperAutoApplyTitle => '每天自動更換';
 
   @override
-  String get bingWallpaperAutoApplySubtitle => '每天首次開啟時換成當天的桌布';
+  String get bingWallpaperAutoApplySubtitle => '所有課表共用，只換目前這份';
 
   @override
   String get bingWallpaperAutoApplyApplying => '正在換成今天的桌布';

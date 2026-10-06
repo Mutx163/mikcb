@@ -1949,7 +1949,7 @@
   "bingWallpaperDateYesterday": "Yesterday",
   "bingWallpaperDateMonthDay": "{month}/{day}",
   "bingWallpaperAutoApplyTitle": "Change daily",
-  "bingWallpaperAutoApplySubtitle": "Switch to that day's wallpaper the first time you open the app",
+  "bingWallpaperAutoApplySubtitle": "Shared by all timetables, changes the current one only",
   "bingWallpaperAutoApplyApplying": "Switching to today's wallpaper",
   "bingWallpaperAutoApplyAlreadyDone": "Already switched to today's wallpaper",
   "@bingWallpaperAutoApplyStale": {

@@ -3497,7 +3497,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get bingWallpaperAutoApplyTitle => '毎日自動で変更';
 
   @override
-  String get bingWallpaperAutoApplySubtitle => 'その日の壁紙を、アプリを最初に開いたときに適用します';
+  String get bingWallpaperAutoApplySubtitle => 'すべての時間割で共有、現在のものだけ変更';
 
   @override
   String get bingWallpaperAutoApplyApplying => '今日の壁紙に切り替えています';
