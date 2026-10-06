@@ -2008,9 +2008,9 @@ class TimetableSettings {
       if (trimmed.isEmpty) {
         return null;
       }
-      final match = RegExp(r'^(\d{4})-(\d{1,2})-(\d{1,2})$').firstMatch(
-        trimmed,
-      );
+      final match = RegExp(
+        r'^(\d{4})-(\d{1,2})-(\d{1,2})$',
+      ).firstMatch(trimmed);
       if (match == null) {
         return null;
       }
@@ -2020,7 +2020,15 @@ class TimetableSettings {
       if (month < 1 || month > 12 || day < 1 || day > 31) {
         return null;
       }
-      return DateTime(year, month, day);
+      final built = DateTime(year, month, day);
+      // `DateTime(2026, 4, 31)` 不报错，它**顺延**成 5 月 1 日 —— 而开学日挪几天
+      // 就会让 startOfWeek 落到别的星期：整学期周次 +1/−1、单双周翻转，设置页上
+      // 还显示着用户认得的那个日期。判"这天真的存在"要靠 round-trip
+      // （同 warehouse_course_import_logic.dart:44-56 的口径与本函数注释的承诺）。
+      if (built.year != year || built.month != month || built.day != day) {
+        return null;
+      }
+      return built;
     }
     if (millis is num) {
       final restored = DateTime.fromMillisecondsSinceEpoch(millis.toInt());
@@ -2355,7 +2363,9 @@ class TimetableSettings {
       compactFontSize: (json['compactFontSize'] as num?)?.toDouble() ?? 9,
       timetableAutoFitSectionHeight:
           json['timetableAutoFitSectionHeight'] as bool? ?? false,
-      semesterWeekCount: (json['semesterWeekCount'] as num?)?.toInt() ?? 20,
+      semesterWeekCount: _atLeastOneWeek(
+        (json['semesterWeekCount'] as num?)?.toInt() ?? 20,
+      ),
       semesterStartDate: parseSemesterStartDate(
         json['semesterStartDateText'],
         json['semesterStartDate'],
@@ -3568,8 +3578,15 @@ class TimetableSettings {
     );
   }
 
+  /// 学期周数至少 1 周。`timetable_profile.dart:24-27` 与
+  /// `lan_edit_provider_host.dart:475` 早已守过这条不变式（说明存量数据里确实会出现
+  /// 0/负数：老版本、手改备份、跨端同步），但 `fromJson` 与本 getter 是漏的两处 ——
+  /// 空表会让 `availableWeeks.first` 抛 StateError（add_course_screen.dart:1584、:1762，
+  /// timetable_screen.dart:7355），表现为**添加课程页整页打不开**。
+  static int _atLeastOneWeek(int weekCount) => weekCount < 1 ? 1 : weekCount;
+
   List<int> get availableWeeks =>
-      List.generate(semesterWeekCount, (index) => index + 1);
+      List.generate(_atLeastOneWeek(semesterWeekCount), (index) => index + 1);
 
   SectionTime sectionAt(int section) => sections[section - 1];
 }
