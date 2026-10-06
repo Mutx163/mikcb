@@ -57,11 +57,14 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       );
     } catch (_) {
       // 落盘失败：provider 已回滚内存与课表镜像并 rethrow，不接就没人提示。
-      reportSettingsPersistFailure(this, resetDraft: () {
-        setState(() {
-          _draft = provider.settings;
-        });
-      });
+      reportSettingsPersistFailure(
+        this,
+        resetDraft: () {
+          setState(() {
+            _draft = provider.settings;
+          });
+        },
+      );
     }
   }
 
@@ -108,6 +111,9 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                           );
                           return;
                         }
+                        // 两个调用点现在都保证有日期（编辑传 existing.date、新增预填今天），
+                        // 这条只作防御：真拿不到日期时不能写出一条没有范围的记录，
+                        // 也不能让下面 pop 的 'save' 分支把空区间当"今天"。
                         if (startDate == null || endDate == null) {
                           return;
                         }
@@ -288,11 +294,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       );
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
-      showAppToast(
-        context,
-        message: l10n.saveFailed,
-        kind: AppToastKind.error,
-      );
+      showAppToast(context, message: l10n.saveFailed, kind: AppToastKind.error);
       return;
     }
     await _loadCustomHolidays();
@@ -563,7 +565,14 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                 label: l10n.customHolidayAdd,
                 variant: HyperosButtonVariant.secondary,
                 expand: true,
-                onPressed: _showCustomHolidayDialog,
+                // 必须显式传初值：`_showCustomHolidayDialog` 的参数全是可选具名参数，
+                // 直接 tear-off 会让 initialStart/initialEnd 都是 null，
+                // 用户只填名字点"保存"就撞上下面那个 `startDate == null` 的静默 return
+                // —— 不关弹层、不提示，看起来像按钮坏了。（紧邻的名字为空分支是有 toast 的。）
+                onPressed: () => _showCustomHolidayDialog(
+                  initialStart: DateTime.now(),
+                  initialEnd: DateTime.now(),
+                ),
               ),
             ),
           ),
