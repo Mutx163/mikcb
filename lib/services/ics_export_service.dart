@@ -454,7 +454,8 @@ class IcsExportService {
     String? description,
   }) {
     final startParts = _parseTime(startTime);
-    final endParts = _parseTime(endTime);
+    // 只有结束时间有"当天结束"的语义；`24:00` 当开始时间仍然非法。
+    final endParts = _parseTime(endTime, allowEndOfDay: true);
     if (startParts == null || endParts == null) {
       return null;
     }
@@ -615,7 +616,7 @@ bool _dateRangesOverlap(
   return !normalizedEnd.isBefore(from) && !normalizedStart.isAfter(to);
 }
 
-_TimeOfDay? _parseTime(String raw) {
+_TimeOfDay? _parseTime(String raw, {bool allowEndOfDay = false}) {
   final match = RegExp(
     r'^\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*$',
   ).firstMatch(raw);
@@ -627,6 +628,13 @@ _TimeOfDay? _parseTime(String raw) {
   final second = int.tryParse(match.group(3) ?? '0');
   if (hour == null || minute == null || second == null) {
     return null;
+  }
+  // 只额外放行**恰好** `24:00`（当天结束），与 lib/utils/clock_time.dart:20-27
+  // 立的同一条口径：`24:30`、`25:00` 一律拒绝，否则 DateTime(y,m,d,hour,minute)
+  // 会把它们静默归一到别的日子/钟点，日历上看着正常、课却上错时间。
+  if (allowEndOfDay && hour == 24 && minute == 0 && second == 0) {
+    // _dateTimeAt(:593) 用的是多参构造，DateTime(…, 24, 0, 0) 精确落到次日 00:00。
+    return const _TimeOfDay(24, 0, 0);
   }
   if (hour > 23 || minute > 59 || second > 59) {
     return null;
