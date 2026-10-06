@@ -309,11 +309,19 @@ class StatisticsService {
     // 最常去的教室（口径：排课条目数 × 各条目 activeWeeks 之和）
     final roomCounts = <String, int>{};
     for (final course in allCourses) {
-      if (course.location.isNotEmpty) {
-        roomCounts[course.location] =
-            (roomCounts[course.location] ?? 0) +
-            _countActiveWeeks(course, currentWeek);
+      if (course.location.isEmpty) {
+        continue;
       }
+      // 与同文件 calculateVenueStats 的 `if (activeWeeks == 0) continue` 同一条过滤：
+      // 本周还没开课的课到访次数是 0，进候选集会让卡片写着「你最常去的教室是 B101，
+      // 共去了 0 次」，全为 0 时 sortedRooms.first 退化成"取第一条课程"，
+      // 下面的楼栋数也会把没开课的教室算进去、与同一页那张卡互相打脸。
+      final activeWeeks = _countActiveWeeks(course, currentWeek);
+      if (activeWeeks == 0) {
+        continue;
+      }
+      roomCounts[course.location] =
+          (roomCounts[course.location] ?? 0) + activeWeeks;
     }
     if (roomCounts.isNotEmpty) {
       final sortedRooms = roomCounts.entries.toList()
@@ -402,9 +410,7 @@ class StatisticsService {
 
     return List.generate(semesterWeekCount, (index) {
       final week = index + 1;
-      final active = allCourses
-          .where((c) => c.isActiveInWeek(week))
-          .toList();
+      final active = allCourses.where((c) => c.isActiveInWeek(week)).toList();
 
       int sections = 0;
       int requiredSections = 0;
@@ -520,9 +526,11 @@ class StatisticsService {
   static int _calendarWeekForDate(DateTime date, DateTime semesterStart) {
     final start = _weekStart(semesterStart);
     final target = _weekStart(date);
-    final diffDays = DateTime.utc(target.year, target.month, target.day)
-        .difference(DateTime.utc(start.year, start.month, start.day))
-        .inDays;
+    final diffDays = DateTime.utc(
+      target.year,
+      target.month,
+      target.day,
+    ).difference(DateTime.utc(start.year, start.month, start.day)).inDays;
     if (diffDays < 0) return 0;
     return diffDays ~/ 7 + 1;
   }
@@ -573,7 +581,10 @@ class StatisticsService {
     required List<Course> allCourses,
     required int semesterWeekCount,
   }) {
-    final rows = List.generate(7, (_) => List<int>.filled(semesterWeekCount, 0));
+    final rows = List.generate(
+      7,
+      (_) => List<int>.filled(semesterWeekCount, 0),
+    );
     var maxSections = 0;
 
     for (final course in allCourses) {
@@ -627,7 +638,10 @@ class StatisticsService {
       // 末节课 / 晚自习写 `24:00` 是本仓认可的「当天结束」（time_scheme.dart 的
       // _clockMinutes 专门放行），这里同样允许它参与比较，否则晚间课时与
       // 最晚下课会少算。
-      final endMinutes = ClockTime.tryParse(end, allowEndOfDay: true)?.totalMinutes;
+      final endMinutes = ClockTime.tryParse(
+        end,
+        allowEndOfDay: true,
+      )?.totalMinutes;
       if (startMinutes != null &&
           (earliestMinutes == null || startMinutes < earliestMinutes)) {
         earliestMinutes = startMinutes;
@@ -660,9 +674,7 @@ class StatisticsService {
       final sorted = [...slots]
         ..sort((a, b) => a.startSection.compareTo(b.startSection));
       for (var i = 1; i < sorted.length; i++) {
-        final gap = sorted[i].startSection -
-            sorted[i - 1].endSection -
-            1;
+        final gap = sorted[i].startSection - sorted[i - 1].endSection - 1;
         if (gap > 0) {
           gapsByDay.putIfAbsent(sorted[i].dayOfWeek, () => []).add(gap);
         }
@@ -712,15 +724,17 @@ class StatisticsService {
           (buildingSections[building] ?? 0) + course.sectionCount * activeWeeks;
     }
 
-    final topRooms = roomCounts.entries
-        .map((e) => RoomVisitStat(name: e.key, visits: e.value))
-        .toList()
-      ..sort((a, b) => b.visits.compareTo(a.visits));
+    final topRooms =
+        roomCounts.entries
+            .map((e) => RoomVisitStat(name: e.key, visits: e.value))
+            .toList()
+          ..sort((a, b) => b.visits.compareTo(a.visits));
 
-    final buildings = buildingSections.entries
-        .map((e) => BuildingStat(name: e.key, sections: e.value))
-        .toList()
-      ..sort((a, b) => b.sections.compareTo(a.sections));
+    final buildings =
+        buildingSections.entries
+            .map((e) => BuildingStat(name: e.key, sections: e.value))
+            .toList()
+          ..sort((a, b) => b.sections.compareTo(a.sections));
 
     return VenueStats(
       topRooms: topRooms.take(5).toList(growable: false),
@@ -777,7 +791,9 @@ class StatisticsService {
       currentWeek: currentWeek,
       semesterWeekCount: semesterWeekCount,
     );
-    final average = currentWeek > 0 ? semester.totalSections / currentWeek : 0.0;
+    final average = currentWeek > 0
+        ? semester.totalSections / currentWeek
+        : 0.0;
 
     return WeeklyComparison(
       weekSections: weekSections,
@@ -821,10 +837,8 @@ class StatisticsService {
   /// 末节课 / 晚自习写 `24:00` 是本仓认可的「当天结束」（`time_scheme.dart` 的
   /// `_clockMinutes` 专门放行），这里漏掉 `allowEndOfDay` 会让整门课从「晚间课时」
   /// 里消失 —— 同一页的「时间利用」卡算了、「夜猫子」成就没算，两张卡数字互相打脸。
-  static int? _endMinutes(Course course) => ClockTime.tryParse(
-    course.endTime,
-    allowEndOfDay: true,
-  )?.totalMinutes;
+  static int? _endMinutes(Course course) =>
+      ClockTime.tryParse(course.endTime, allowEndOfDay: true)?.totalMinutes;
 
   static String _buildingOf(String room) {
     final trimmed = room.trim();
@@ -881,9 +895,7 @@ class StatisticsService {
       final sorted = [...slots]
         ..sort((a, b) => a.startSection.compareTo(b.startSection));
       for (var i = 1; i < sorted.length; i++) {
-        final gap = sorted[i].startSection -
-            sorted[i - 1].endSection -
-            1;
+        final gap = sorted[i].startSection - sorted[i - 1].endSection - 1;
         if (gap > maxGap) maxGap = gap;
       }
     }
