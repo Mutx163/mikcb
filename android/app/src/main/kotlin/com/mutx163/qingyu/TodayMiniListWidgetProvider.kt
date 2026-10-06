@@ -60,9 +60,11 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
             TodayWidgetSupport.statusBackgroundRes(displayState, style)
         )
 
-        val isShowingTomorrow = snapshot != null
-            && (snapshot.state == "completed" || snapshot.state == "no_course")
-            && snapshot.tomorrowCourses.isNotEmpty()
+        // 与其余 6 张今日卡用同一份实现。共享函数里还有一道"考试进行中不得被明日
+        // 预告顶掉"（isShowingTomorrowCourses），原先这里内联抄了一份、少了那一维：
+        // 考试日课程已上完时会整张切成明天课表，而状态胶囊 :31 仍按"考试中"渲染。
+        val isShowingTomorrow =
+            snapshot != null && TodayWidgetSupport.isShowingTomorrowCourses(snapshot)
         if (snapshot == null) {
             views.setTextViewText(R.id.widget_mini_heading, context.getString(R.string.widget_today_courses))
             views.setTextViewText(R.id.widget_mini_week, context.getString(R.string.widget_app_name))
