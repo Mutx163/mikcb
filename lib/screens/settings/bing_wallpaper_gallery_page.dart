@@ -71,7 +71,8 @@ class BingWallpaperGalleryPage extends StatefulWidget {
 
   /// 台账溢出要删文件时**绝不能删**的路径。
   ///
-  /// 宿主必须把「当前正在显示的那张壁纸」传进来：自动换写下的那张壁纸只在
+  /// 宿主必须把「所有课表正在用的壁纸 + 草稿那张」传进来（见
+  /// `_HomeBackdropFlow._inUseWallpaperPaths`）：自动换写下的那张壁纸只在
   /// 台账（缓存）里、**不在「最近使用」里**（自动换不补记历史，见笔记），所以只按
   /// 历史当白名单会把它删掉 —— 首页当场裂图。「最近使用」那层白名单本页自己会读。
   final List<String> protectedPaths;

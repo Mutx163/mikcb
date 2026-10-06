@@ -93,6 +93,10 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 只有「要推整页」的动作需要它，理由见 [_withHostSheetClosed]。
   MiuixBottomSheetClose? get backdropHostSheetClose => null;
 
+  /// 宿主正在退出（`_popSelf` 已置位）：等待弹层收起的推页必须放弃，
+  /// 否则会在已退栈的页面上再推一页（「回魂」）。
+  bool get backdropFlowExiting => false;
+
   /// 推整页之前先把宿主弹层收起来；宿主没有弹层就直接执行。
   ///
   /// **为什么必须等它收完**：弹层面板是上游 `MiuixWindowBottomSheet` 插进**根覆盖层**
@@ -123,7 +127,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
       },
     );
     final superseded = await closed.future;
-    if (!mounted || superseded) {
+    if (!mounted || superseded || backdropFlowExiting) {
       return null;
     }
     return push();
@@ -633,11 +637,10 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
       await pushBingWallpaperGalleryPage(
         context,
         onImageDownloaded: _applyBingDownloadedImage,
-        // 当前正在显示的那张必须保护：自动换写下的壁纸**不在「最近使用」里**，
-        // 只按历史当白名单会在台账溢出时把它删掉，首页当场裂图。
-        protectedPaths: <String>[
-          ?resolveHomePageBackdropImagePath(backdropDraft),
-        ],
+        // 白名单必须与 `_inUseWallpaperPaths` 同口径（所有课表 + 草稿）：
+        // 自动换写下的壁纸**不在「最近使用」里**，只传当前这一张会在台账溢出时
+        // 删掉别的课表正在用的那张，首页当场裂图。
+        protectedPaths: _inUseWallpaperPaths(),
       );
     });
   }

@@ -80,6 +80,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 的时候在弹窗背后，什么东西都点不到」）。机制详见 `showHomeHyperosSheet` 的注释。
   MiuixBottomSheetClose? _sheetClose;
   int _sheetGeneration = 0;
+  // `_popSelf` 的连点守门：第一次点后置 true，本页离栈前第二次点直接吞掉，
+  // 免得多退一层。页面离栈即 dispose，无需复位。
+  bool _exiting = false;
 
   /// 面板里**内容之外**、在内容上方的那一圈。**现在是 0。**
   ///
@@ -649,14 +652,28 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 标记会让后面的收尾不再重复摘）；摘自己这条仍走 `Navigator.pop`，
   /// 所以 zoom 的反向转场照常播（换成 `removeRoute` 会把退场动画整段吃掉）。
   void _popSelf() {
+    if (_exiting) {
+      return;
+    }
     final route = ModalRoute.of(context);
     if (route != null && !route.isCurrent) {
       // 本页的弹窗还压在上面（且正在退场）。`immediate` 是承载壳为「关弹层、
       // 立刻切整页」准备的那条路：不播动画、直接摘路由。
-      _sheetClose?.call(immediate: true);
+      final close = _sheetClose;
+      if (close == null) {
+        // 收起口子还没登记（弹层刚开、closeRef 回调没到）：此时裸 `pop` 只会
+        // 摘掉弹窗那条、老 bug 复活。宁可不动，等口子到了再点一次。
+        return;
+      }
+      // 先置位再关：等着「关完推整页」的 `_withHostSheetClosed` 醒来时会看到
+      // 已在退出而放弃推页，不会在退栈的页面上回魂一页。
+      _exiting = true;
+      close(immediate: true);
       if (!mounted) {
         return;
       }
+    } else {
+      _exiting = true;
     }
     Navigator.pop(context);
   }
@@ -743,6 +760,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
 
   @override
   MiuixBottomSheetClose? get backdropHostSheetClose => _sheetClose;
+
+  @override
+  bool get backdropFlowExiting => _exiting;
 
   /// 本页开弹层时统一登记收起口子的 `closeRef`。
   ///
