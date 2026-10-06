@@ -7,14 +7,28 @@ name: Sync main to GitCode
 # 就会一直停在上一个版本，国内渠道（更新源选 GitCode 时读的是
 # GitCode 的文件接口）就看不到新名单。
 #
-# 这里订阅 main 的 push 事件：GitHub 一有新提交就把 main（含全部 tag）
-# 推到 GitCode 镜像仓，和发版时的同步用的是同一个可复用工作流，
-# 行为一致、幂等。tag 推送走原链路，本文件只管分支推送，不重复。
+# 这里订阅三类事件，保证 GitHub 一变、GitCode 马上跟上：
+# 1) push 到 main：人推的代码，实时同步；
+# 2) workflow_run：机器人定时任务（每天自动更新文档）用系统钥匙推的
+#    提交不会再触发 push 事件（GitHub 防循环规定），所以等那两个
+#    文档工作流跑完就跟一次，只跟成功的；
+# 3) schedule：每天兜底一次，防止事件偶发漏触发（和 update-docs-releases
+#    的 6 小时 cron 同一个思路）。推送本身幂等，无新提交就是空转。
+#
+# 发版打 tag 时的同步仍走 android-build.yml 原链路，本文件不管 tag
+# 推送，只管分支内容，不重复。
 
 on:
   push:
     branches:
       - main
+  workflow_run:
+    workflows: ['Update Docs Releases JSON', 'Update Docs Schools JSON']
+    types: [completed]
+    branches: [main]
+  schedule:
+    # 每天 10:00（北京时间）兜底，与文档定时任务错开
+    - cron: "0 2 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -26,8 +40,9 @@ jobs:
   sync-main:
     name: Push main to GitCode
     # 与 android-build.yml 的 GitCode 任务同款门禁：没配 GitCode 就整条跳过，
-    # Fork 仓库未配置也不会失败。
-    if: ${{ vars.GITCODE_USERNAME }}
+    # Fork 仓库未配置也不会失败。workflow_run 只跟成功的，避免把失败的
+    # 中间态推过去；其他事件（push/定时/手动）直接跑。
+    if: ${{ vars.GITCODE_USERNAME && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') }}
     permissions:
       contents: read
     uses: nvdacn/sync_to_gitcode/.github/workflows/PushToGitCode.yaml@18b70112d0e62260bc54085028e5510bbc6323b2 # sync_to_gitcode@master
