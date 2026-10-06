@@ -52,6 +52,12 @@ List<int> weeksFromRangeSelection({
   return weeks;
 }
 
+/// 新建条目时周次范围的默认值（一门课默认从第 1 周排到第 16 周）。
+/// 抽出来是因为"表单初值"有两处要写同一个默认（`_ScheduleEntryData` 的形参默认值
+/// 与 initState 的新建分支），而 `initialWeek` 传进来时起始周要跟着那一周走。
+const int _defaultEntryStartWeek = 1;
+const int _defaultEntryEndWeek = 16;
+
 enum _WeekSelectionMode { range, custom }
 
 /// 这门课能选到哪些节次。
@@ -144,8 +150,8 @@ class _ScheduleEntryData {
     this.endSection = 2,
     this.teacher = '',
     this.location = '',
-    this.startWeek = 1,
-    this.endWeek = 16,
+    this.startWeek = _defaultEntryStartWeek,
+    this.endWeek = _defaultEntryEndWeek,
     this.isOddWeek = false,
     this.isEvenWeek = false,
     this.weekSelectionMode = _WeekSelectionMode.range,
@@ -284,6 +290,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         _scheduleEntries = [_ScheduleEntryData.fromCourse(widget.course!)];
       } else {
         // Adding new course: start with one empty schedule entry.
+        // `initialWeek` 是课表虚线框/空格带进来的那一周（timetable_screen.dart:7344、
+        // :8832、:9751 与 task_list_screen.dart:272 都在传），原先这个分支根本不读它：
+        // 在第 8 周的空格里加课，周次仍是 1..16，用户不改就从第 1 周开始排课，
+        // 而 `initialDayOfWeek` / `initialStartSection` 两个同族参数都是生效的。
+        final initialStartWeek = widget.initialWeek ?? _defaultEntryStartWeek;
         _scheduleEntries = [
           _ScheduleEntryData(
             id: const Uuid().v4(),
@@ -292,6 +303,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             endSection:
                 widget.initialEndSection ??
                 (widget.initialStartSection ?? 1) + 1,
+            startWeek: initialStartWeek,
+            // 结束周不能低于起始周，否则第 33 轮那道"空集不许保存"的守卫会把
+            // 这张表单直接锁死。
+            endWeek: initialStartWeek > _defaultEntryEndWeek
+                ? initialStartWeek
+                : _defaultEntryEndWeek,
           ),
         ];
       }
