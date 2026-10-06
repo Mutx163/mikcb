@@ -10,9 +10,11 @@ import 'package:university_timetable/widgets/miuix_date_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import '../../models/course.dart';
+import 'package:provider/provider.dart';
 import '../../providers/timetable_provider.dart';
 import '../../services/import_random_color_preferences.dart';
 import '../../services/import_week_alignment_service.dart';
+import '../../services/warehouse_repository_service.dart';
 import '../../utils/app_toast.dart';
 import '../../utils/course_color_palette.dart';
 import '../../utils/import_random_course_colors.dart';
@@ -560,3 +562,15 @@ void showImportLightTip(BuildContext context, String message) {
   showAppLightTip(context, message: message);
 }
 
+/// 仓库抓取选项的当前值：从课表设置里派生，仓库侧三条调用点共用同一份读法。
+///
+/// 2026-10-06 拆分时原本是三个文件里逐字重复的 `_currentFetchOptions()`
+/// （仓库主流程 / 调试记录 / 首页下拉快捷导入），这里收成一处。
+/// 收拢的另一个作用：这三个文件原本各自 import `TimetableProvider` 就只为这四行，
+/// 合并后它们不再直接依赖那个巨型 Provider（见
+/// `test/architecture/dependency_guards_test.dart` 的扇入棘轮）。
+WarehouseFetchOptions currentWarehouseFetchOptions(BuildContext context) {
+  return WarehouseFetchOptions.fromSettings(
+    context.read<TimetableProvider>().settings,
+  );
+}

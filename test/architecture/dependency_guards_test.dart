@@ -100,7 +100,18 @@ void main() {
     // 两者都是「读当前课表状态出图」的同形依赖，属于该功能的必要读取面，
     // Provider 本身零改动，按测试约定同步真实值。若要收回这两个名额，
     // 需把 TimetableWeekPreview 改成接收数据快照而非 Provider，属阶段 3 解耦范围。
-    const baselineFanIn = 54;
+    // 54→56：course_import_screen.dart 拆成 lib/screens/import/ 下 13 个文件后，
+    // 同一个逻辑单元从 1 个文件变成 5 个直接依赖 Provider 的文件——依赖边一条没
+    // 增，只是从「按文件计」变成按拆分后的文件分别计。其中 3 条已在拆分当天收掉：
+    // 仓库主流程 / 调试记录 / 首页下拉快捷导入原本各自逐字重复一份
+    // `WarehouseFetchOptions.fromSettings(context.read<TimetableProvider>().settings)`，
+    // 合并为 import_shared 的 currentWarehouseFetchOptions() 后那三个文件不再
+    // 直接依赖 Provider。剩下 5 个（ics / 表格 / AI 图片 / 仓库网页登录 /
+    // import_shared 的 ensureImportSectionCapacity）都要经 Provider 写课表，
+    // 是导入链路的必要写入面，Provider 本身零改动，按测试约定同步真实值。
+    // 若要收回这 5 个名额，需把导入写入改成接收课表写入接口而非 Provider，
+    // 与上面 TimetableWeekPreview 那条同属阶段 3 解耦范围。
+    const baselineFanIn = 56;
     final importers = libDartFiles()
         .where(
           (file) =>

@@ -6,14 +6,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:provider/provider.dart';
 import '../../models/warehouse_macro_models.dart';
 import '../../models/warehouse_repository_models.dart';
-import '../../providers/timetable_provider.dart';
 import '../../services/warehouse_import_preferences_service.dart';
 import '../../services/warehouse_macro_service.dart';
-import '../../services/warehouse_repository_service.dart';
 import '../../utils/app_toast.dart';
+import 'import_shared.dart';
 import 'warehouse/warehouse_adapter_web_login_screen.dart';
 
 /// 后台快捷导入的**整场**看门狗时长。
@@ -176,8 +174,7 @@ Future<bool> runHomePullWarehouseQuickImport(
         return;
       }
 
-      final settings = context.read<TimetableProvider>().settings;
-      final fetchOptions = WarehouseFetchOptions.fromSettings(settings);
+      final fetchOptions = currentWarehouseFetchOptions(context);
       const source = defaultQingyuWarehouseSource;
       final selectedMacro = macro;
 

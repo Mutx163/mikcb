@@ -9,10 +9,8 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../../models/warehouse_repository_models.dart';
-import '../../../providers/timetable_provider.dart';
 import '../../../services/unified_transfer_service.dart';
 import '../../../services/warehouse_import_preferences_service.dart';
 import '../../../services/warehouse_repository_service.dart';
@@ -41,8 +39,7 @@ class _WarehouseCustomDebugRecordsScreenState
   bool _isLoading = true;
 
   WarehouseFetchOptions _currentFetchOptions() {
-    final settings = context.read<TimetableProvider>().settings;
-    return WarehouseFetchOptions.fromSettings(settings);
+    return currentWarehouseFetchOptions(context);
   }
 
   @override

@@ -9,10 +9,8 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:azlistview/azlistview.dart';
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:provider/provider.dart';
 import '../../../models/warehouse_macro_models.dart';
 import '../../../models/warehouse_repository_models.dart';
-import '../../../providers/timetable_provider.dart';
 import '../../../services/warehouse_import_preferences_service.dart';
 import '../../../services/warehouse_macro_service.dart';
 import '../../../services/warehouse_repository_service.dart';
@@ -63,8 +61,7 @@ class _WarehouseCourseImportScreenState
   /// 索引时为 null，搜索退化为仅按学校名称/ID/首字母/代码匹配。
   WarehouseSearchIndex? _searchIndex;
   WarehouseFetchOptions _currentFetchOptions() {
-    final settings = context.read<TimetableProvider>().settings;
-    return WarehouseFetchOptions.fromSettings(settings);
+    return currentWarehouseFetchOptions(context);
   }
 
   @override
