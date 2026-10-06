@@ -41,6 +41,7 @@ import '../services/bing_wallpaper_store.dart';
 import '../services/wallpaper_history_service.dart';
 import '../screens/settings/bing_wallpaper_gallery_page.dart';
 import '../utils/app_toast.dart';
+import '../utils/bing_wallpaper_date_label.dart';
 import '../utils/hex_color.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';

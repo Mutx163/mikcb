@@ -6357,6 +6357,18 @@ abstract class AppLocalizations {
   /// **'正在换成今天的壁纸'**
   String get bingWallpaperAutoApplyApplying;
 
+  /// No description provided for @bingWallpaperAutoApplyAlreadyDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'今天已经换过啦'**
+  String get bingWallpaperAutoApplyAlreadyDone;
+
+  /// 自动换时 Bing 还没放出当天那张，于是改用它现有最新一张的提示。占位符是那张图**自己**的日期标签（如「昨天」「10 月 5 日」），如实说明换的是哪一天，避免用户以为程序出错。
+  ///
+  /// In zh, this message translates to:
+  /// **'Bing 还没放出今天的图，先用 {date} 那张顶一下'**
+  String bingWallpaperAutoApplyStale(String date);
+
   /// No description provided for @appearanceTextColorsSectionTitle.
   ///
   /// In zh, this message translates to:

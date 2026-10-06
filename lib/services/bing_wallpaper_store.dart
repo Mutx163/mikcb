@@ -229,46 +229,6 @@ class BingWallpaperStore {
     return evicted;
   }
 
-  /// 撤回 [dateKey] 那一天的「今天已自动换过」标记，**保留**下载台账。
-  ///
-  /// ## 为什么需要它
-  ///
-  /// `maybeApplyDaily` 在**下载成功之后**就写下了 `autoApplied`，而真正把壁纸落到
-  /// 设置里还差一步用户确认（设置页那条路径要过「调整位置」页，用户可能点「退出」）。
-  /// 用户一旦退出，那一天就被判成「已换过」，当天剩下的启动/回前台全部被跳过 ——
-  /// 表现是「我明明开了自动换，什么都没发生」，而且要等到第二天才恢复。
-  ///
-  /// 只翻标记、**不删台账条目**：文件已经下好了，保留它才能让用户再点一次时直接复用
-  /// （[findExisting] 命中，不重新下），也仍在封顶清理的白名单里（不会被当垃圾删掉）。
-  ///
-  /// 幂等：当天没有自动换记录时什么都不做。
-  Future<void> releaseAutoApplyClaim(String dateKey) async {
-    final current = _downloaded;
-    if (!current.any(
-      (entry) => entry.dateKey == dateKey && entry.autoApplied,
-    )) {
-      return;
-    }
-    final next = <_DownloadedEntry>[
-      for (final entry in current)
-        if (entry.dateKey == dateKey && entry.autoApplied)
-          _DownloadedEntry(
-            dateKey: entry.dateKey,
-            resolution: entry.resolution,
-            path: entry.path,
-            autoApplied: false,
-          )
-        else
-          entry,
-    ];
-    _downloadedOverride = next;
-    notifier.value++;
-    await _persistString(
-      _preferenceKey,
-      jsonEncode([for (final entry in next) entry.toJson()]),
-    );
-  }
-
   /// 找一张已下过的图（同一张 + 同一档位），文件仍在就返回其路径。
   ///
   /// 避免同一天反复点同一张时重复下载。文件可能已被历史淘汰删掉，所以查存在性。

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/painting.dart';
 import 'package:http/http.dart' as http;
@@ -207,26 +208,23 @@ Future<ManagedImageDownloadResult> downloadToManagedImage({
   // 临时名与最终名同目录，保证 [File.rename] 不跨卷；`.part` 后缀同时让人工翻目录时
   // 一眼看出「这是没写完的残留」，不会误当成一张可用壁纸。
   //
-  // ⚠️ 每次尝试用**独立**的临时名（`最终名 + 序号 + .part`），不要图省事写成固定的
-  // `最终名 + .part`：同一张图同一档位可能被并发下两次 —— 冷启动的「每天自动换」与
-  // 用户在图库里手动点同一张能撞在一起（`maybeApplyDaily` 与图库的 `_pick` 各走各的，
-  // 谁都不知道对方在下载）。共用一个临时名时两个 writer 会往同一路径交错写，最后
-  // `rename` 出来的 .jpg 就是**坏图**，而它随后会被当成合法壁纸交给首页（2026-10-06
-  // review 实测的口径）。序号单调递增且跳过已存在的名字，同名重试各自落到不同文件；
-  // 谁先 rename 谁生效，字节完整的那份胜出（rename 在同卷内是原子的）。
-  // ⚠️ 每次尝试用**独立**的临时名（`最终名 + 序号 + .part`），不要图省事写成固定的
-  // `最终名 + .part`：同一张图同一档位可能被并发下两次 —— 冷启动的「每天自动换」与
-  // 用户在图库里手动点同一张能撞在一起（`maybeApplyDaily` 与图库的 `_pick` 各走各的，
-  // 谁都不知道对方在下载）。共用一个临时名时，后一个 writer 会把前一个的中间产物
-  // 截断重写、或在对方 rename 之后再去 rename 一个已经不存在的文件，于是要么得到
-  // **坏图**、要么让其中一次白失败，而它随后会被当成合法壁纸交给首页（2026-10-06
-  // review 的口径）。序号单调递增且跳过已存在的名字，同名重试各自落到不同文件；
-  // 谁先 rename 谁生效，字节完整的那份胜出（rename 在同卷内是原子的）。
-  var tempSeq = 0;
-  File temp;
-  do {
-    temp = File('${target.path}.${tempSeq++}.part');
-  } while (temp.existsSync());
+  // ⚠️ 临时名必须**每次尝试都不同**，且**不许靠「看文件在不在」来挑**。
+  //
+  // 同一张图同一档位可能被并发下两次 —— 冷启动的「每天自动换」与用户在图库里手动点
+  // 同一张能撞在一起（`maybeApplyDaily` 与图库的 `_pick` 各走各的，谁都不知道对方在
+  // 下载）。共用一个临时名时两个 writer 往同一路径交错写，`rename` 出来的 .jpg 就是
+  // **坏图**，而它随后会被当成合法壁纸交给首页。
+  //
+  // ⚠️ 早先的实现是「序号 + `existsSync()` 跳过已存在的名字」，那**看着安全、其实不
+  // 安全**：`existsSync()` 是同步的，而它与 `writeAsBytes` 真正建文件之间隔着 await，
+  // 两个并发下载完全可能都看到 `.0.part` 不存在、然后都往它身上写。这不是纸上推演
+  // —— `test/services/bing_wallpaper_service_test.dart` 里那条并发用例**独立跑 4 次
+  // 全过、跟着 780 例的整目录跑就挂过一次**，正是这条竞态（2026-10-06）。
+  //
+  // 所以改成**不依赖任何观察**的唯一名：Dart 单 isolate 的同步代码不会被抢占，
+  // 进程内自增计数器足以区分并发者；再拼一段随机数覆盖「多 isolate / 上次崩溃留下的
+  // 残留」这两种情况。谁先 `rename` 谁生效，字节完整的那份胜出（rename 在同卷内原子）。
+  final temp = File('${target.path}.${_nextTempToken()}.part');
   try {
     await temp.writeAsBytes(bytes, flush: true);
     await temp.rename(target.path);
@@ -237,7 +235,7 @@ Future<ManagedImageDownloadResult> downloadToManagedImage({
       }
     } on Object {
       // 临时文件删不掉不阻断：它仍以 `filePrefix` 开头，被当成壁纸目录里的残留扫掉，
-      // 下次同名下载也不会再选中它（上面的 while 会跳过已存在的名字）。
+      // 而下次下载不会再挑中同一个名字（名字每次都不一样）。
     }
     return const ManagedImageDownloadResult.failed(
       ManagedImageDownloadFailure.write,
@@ -246,6 +244,21 @@ Future<ManagedImageDownloadResult> downloadToManagedImage({
   PaintingBinding.instance.imageCache.evict(FileImage(target));
   return ManagedImageDownloadResult.success(target.path);
 }
+
+/// 拼一段保证「同一 isolate 内互不相同」的临时名后缀。
+///
+/// 见 [downloadToManagedImage] 里那段⚠️：这里**不能**退回「看文件在不在再决定序号」，
+/// 那个做法本身就有竞态。计数器走同步代码，而同步代码在 Dart 单 isolate 里不会被抢占，
+/// 所以 `++` 本身就是原子的；随机数那半段只用来躲开「上次崩溃留下的同号残留」。
+String _nextTempToken() {
+  final seq = _tempSeq++;
+  final salt = _tempSalt.nextInt(1 << 32);
+  return '$seq-$salt';
+}
+
+int _tempSeq = 0;
+
+final Random _tempSalt = Random();
 
 /// 删除一张受管图片。
 ///

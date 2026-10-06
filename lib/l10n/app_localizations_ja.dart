@@ -3503,6 +3503,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String get bingWallpaperAutoApplyApplying => '今日の壁紙に切り替えています';
 
   @override
+  String get bingWallpaperAutoApplyAlreadyDone => '今日の壁紙にはすでに切り替え済みです';
+
+  @override
+  String bingWallpaperAutoApplyStale(String date) {
+    return 'Bing はまだ今日の画像を公開していないため、$date の画像を使います';
+  }
+
+  @override
   String get appearanceTextColorsSectionTitle => 'テキストの色';
 
   @override

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -17,6 +18,9 @@ import '../utils/wallpaper_history.dart';
 import 'app_http_client.dart';
 import 'app_log_service.dart';
 import 'bing_wallpaper_store.dart';
+// 只为清理台账溢出文件时取全局「最近使用」当白名单（见 [_deleteEvictedWallpapers]）。
+// 不走 `TimetableProvider` 是刻意的，见本类顶部注释。
+import 'wallpaper_history_service.dart';
 
 /// 一次下载的**结果**：成功给 [path]，失败给 [failure] / [statusCode]。
 ///
@@ -100,6 +104,52 @@ class BingWallpaperDownload {
       ? 'ok tier=${resolution?.name} downgraded=$downgraded path=$path'
       : 'failed=$failure status=$statusCode contentType=$contentType '
             'detail=$detail';
+}
+
+/// 「今天自动换」这一次尝试的**结局**。
+///
+/// ## 为什么不让 [BingWallpaperService.maybeApplyDaily] 继续只回 `String?`
+///
+/// 早先的签名是「成功给路径、其余一律 null」，而 null 压着五种对用户意义完全不同的
+/// 结局：没开 / 今天已换过 / 换上了 / 换上的是旧图 / 没换成。调用方拿到 null 只能
+/// 什么都不做，于是 2026-10-06 用户报「点了开关没反应」——真凶是
+/// [appliedStale]（Bing 还没放出今天那张），而它和「网络断了」在界面上长得一模一样。
+/// 拆开之后，设置页能给每一种该说话的场景一句话，启动路径也能照样把图换上。
+enum BingAutoApplyOutcome {
+  /// 功能没开（`autoApplyEnabled` 为 false）。
+  disabled,
+
+  /// 这张图今天已经换过了，判据在下载之前就拦住了（幂等）。
+  alreadyApplied,
+
+  /// 换上了**今天**那张。
+  appliedToday,
+
+  /// 换上了 Bing 手上**最新**的那张，但它并不是今天的图。
+  ///
+  /// 2026-10-06 实测：北京时间 19:20（Bing 服务器的 HTTP `Date` 头与本机时钟核对过，
+  /// 差 1 秒内），Bing 列表首项**仍是 10-05**。Bing 什么时候放出当天那张不由本 App
+  /// 控制，所以「首项不是今天」在绝大多数日子里根本不是「错」，只是「还没轮到」。
+  appliedStale,
+
+  /// 拉不到清单，或图没下下来。
+  failed,
+}
+
+/// 一次自动换的结果：[outcome] 说明发生了什么；[path] 只在真的换上时非空。
+class BingAutoApplyResult {
+  const BingAutoApplyResult(this.outcome, [this.path, this.dateKey]);
+
+  final BingAutoApplyOutcome outcome;
+
+  /// 换上去那张图的本地路径。
+  final String? path;
+
+  /// 换上去那张图**自己**的 `dateKey`。**可能不是今天**（见
+  /// [BingAutoApplyOutcome.appliedStale]）。
+  final String? dateKey;
+
+  bool get succeeded => path != null;
 }
 
 /// Bing 每日壁纸的拉取与下载。
@@ -353,81 +403,154 @@ BingWallpaperService._internal(this._client, bool ownsCandidate)
     }
   }
 
-  /// 自动换的判据 + 下载，返回该用的本地路径。
+  /// 自动换的判据 + 下载。
   ///
-  /// 返回 null 的每一种情况都意味着「别动用户的壁纸」：
-  /// * 开关关着；
-  /// * 今天已经换过（`lastAutoAppliedDate` 等于今天那天的 `dateKey`）；
-  /// * 清单里**没有今天那张**（见 [_isToday]）；
-  /// * 拉不到清单 / 下载失败。
+  /// ## 「今天还没有」不等于「什么都不做」
+  ///
+  /// 早先这里在「清单首项不是今天」时直接 `return null`，理由是「宁可今天不换，也不能
+  /// 替用户挂一张隔夜的图」。方向没错，但**手段错了**：它把「Bing 还没出今天的图」判成
+  /// 了终局，于是从那一刻起到当天结束，自动换一直是死的，而且**静默无反馈**（2026-10-06
+  /// 用户报「点了开关没反应」正是这条）。现在改成：
+  ///
+  /// * 先强制重拉一次，去掉「3 小时旧缓存」这个原因；
+  /// * 重拉之后首项**仍然**不是今天，就**用它顶上**；
+  /// * 记账用的是**那张图自己的** `dateKey`，不是「今天」—— 所以 Bing 之后真的放出
+  ///   今天那张时，判据（`lastAutoAppliedDate` ≠ 最新那张的 `dateKey`）会自然放行，
+  ///   当天再换一次正确的。**一天最多换两次，不会重复、也不会错过。**
   ///
   /// 成功时**只**记 [BingWallpaperStore.lastAutoAppliedDate] 与文件台账，
   /// **不碰「最近使用」历史**（理由见笔记「自动换不进历史」）。
   ///
   /// [now] 只给测试用：单测把「今天」钉在固定日期上，不必跟着测试运行时刻漂
-  /// （与 `bingWallpaperDateLabel` 的 `now` 同一口径）。
-  static Future<String?> maybeApplyDaily({DateTime? now}) async {
+/// （与 `bingWallpaperDateLabel` 的 `now` 同一口径）。
+///
+/// [inUsePaths] 请传**所有课表**当前的壁纸路径（见 `inUseWallpaperPaths`）：清理
+/// 台账溢出的文件时要用它当白名单。本服务刻意不依赖 `TimetableProvider`（见类注释），
+/// 所以这个集合只能由调用方给 —— 传空集合的后果是「某张正被当壁纸的图被删掉」，
+/// 表现为首页当场裂图。加载与历史那份由本方法自己取。
+static Future<BingAutoApplyResult> maybeApplyDaily({
+  DateTime? now,
+  Set<String> inUsePaths = const <String>{},
+}) async {
     final store = BingWallpaperStore.instance;
     if (!store.autoApplyEnabled) {
-      return null;
+      return const BingAutoApplyResult(BingAutoApplyOutcome.disabled);
     }
     final clock = now ?? DateTime.now();
     final items = await loadItems();
     if (items.isEmpty) {
-      return null;
+      return const BingAutoApplyResult(BingAutoApplyOutcome.failed);
     }
-    // 清单按新→旧排（Bing 的 `idx=0` 就是今天），首项即当天 —— 但**必须验**，见
-    // [_isToday]：清单有 3 小时缓存而 Bing 按本地零点换图，跨零点后首项可能还是昨天。
-    var today = items.first;
-    if (!_isToday(today, clock)) {
-      // 命中的多半是「跨了零点但仍在 TTL 内」的旧缓存：强制重拉一次再验。
+    // 清单按新→旧排，首项就是 Bing 手上最新那张。
+    //
+    // ⚠️ 首项**不保证**是今天：清单有 3 小时缓存，而 Bing 何时放出当天那张不由本 App
+    // 控制（实测晚到十几个小时是常态，见 [BingAutoApplyOutcome.appliedStale]）。所以
+    // 首项验不过时先强制重拉一次，去掉「旧缓存」这个原因；**重拉后仍不是今天就用它顶上**。
+    var newest = items.first;
+    if (!_isToday(newest, clock)) {
       // 注意空清单**不写缓存**（见 [loadItems]），所以这里不会把一次失败缓存住。
       final refreshed = await loadItems(forceRefresh: true);
-      if (refreshed.isEmpty || !_isToday(refreshed.first, clock)) {
-        // 还是没有今天那张：宁可今天不换（下一次启动会再试），也不能替用户挂一张
-        // 隔夜的图、还把昨天记成「今天已换过」——那会让今天真正的图当天再也上不来。
-        appDebugLog(_tag, 'daily skipped: no entry for today');
-        return null;
+      if (refreshed.isNotEmpty) {
+        newest = refreshed.first;
       }
-      today = refreshed.first;
     }
-    if (store.lastAutoAppliedDate == today.dateKey) {
-      return null;
+    final isToday = _isToday(newest, clock);
+    if (store.lastAutoAppliedDate == newest.dateKey) {
+      return const BingAutoApplyResult(BingAutoApplyOutcome.alreadyApplied);
     }
     final resolution = store.resolution;
     final service = _createInternal();
     final BingWallpaperDownload result;
     try {
-      result = await service.download(today, resolution);
+      result = await service.download(newest, resolution);
     } finally {
       service.dispose();
     }
     if (!result.succeeded) {
-      return null;
+      return const BingAutoApplyResult(BingAutoApplyOutcome.failed);
     }
     // 下载成功**之后**才记日期：记早了会在下载失败时把当天判成「已换过」，
     // 于是这一天再也不会重试（要等用户下次手动进设置页才可能补上）。
     //
-    // 记的是**实际**那档（退档后就是 standard）：文件名与台账键都由它决定，
+    // ⭐ 记的是**那张图自己的** `dateKey`，**不是**本机今天 —— 这是「拿旧图顶上」能够
+    // 自愈的**全部**原因：之后 Bing 放出今天那张时，判据会自然放行并再换一次。
+    //
+    // 记的也是**实际**那档（退档后就是 standard）：文件名与台账键都由它决定，
     // 记用户选的那档会让「同一张图两档」共用一个文件名并被去重掉一次。
-    await store.recordApplied(
-      dateKey: today.dateKey,
+    // 台账挤出去的图要真删（见 [_deleteEvictedWallpapers]）。**不 await**：这是启动 /
+    // 回前台路径，删文件是收尾工作，不该让用户等。
+    final evicted = await store.recordApplied(
+      dateKey: newest.dateKey,
       resolution: result.resolution!,
       path: result.path!,
     );
-    return result.path;
+    unawaited(_deleteEvictedWallpapers(evicted, inUsePaths: inUsePaths));
+    appDebugLog(_tag, 'daily applied date=${newest.dateKey} isToday=$isToday');
+    return BingAutoApplyResult(
+      isToday
+          ? BingAutoApplyOutcome.appliedToday
+          : BingAutoApplyOutcome.appliedStale,
+      result.path,
+      newest.dateKey,
+    );
+  }
+
+  /// 删掉台账挤出去的图，并按「谁还在用」加白名单。
+  ///
+  /// ⚠️ **必须删**，否则自动换这条路等于只写不收：每天换一张就永久多留一个文件，
+  /// 而 [BingWallpaperStore.kMaxDownloadedEntries] 只卡住**记账条目**（`recordApplied`
+  /// 的注释也写明「只记账，不碰磁盘」）。攒下来的量按实测体积算是一年 365 张、约
+  /// 118 MB（标准档）到 279 MB（高清档）—— 那个上限当初就是为这件事设的。
+  ///
+  /// 图库手动挑那条路早就接住溢出清单在删（`bing_wallpaper_gallery_page.dart` 的
+  /// `_deleteEvicted`），只有这里漏了，于是磁盘在自动换用户身上无上限地涨。
+  ///
+  /// 白名单三路并集，口径与图库页和 `_HomeBackdropFlow._inUseWallpaperPaths` 一致：
+  /// 调用方给的**所有课表**当前壁纸（[inUsePaths]）、刚换上去的这张、以及全局
+  /// 「最近使用」——历史是设备级共享而壁纸每份课表各自一张，"被台账挤出去"并不等于
+  /// "没人用"。
+  static Future<void> _deleteEvictedWallpapers(
+    List<String> paths, {
+    required Set<String> inUsePaths,
+  }) async {
+    if (paths.isEmpty) {
+      return;
+    }
+    try {
+      final history = await WallpaperHistoryService.load();
+      await deleteEvictedWallpaperFiles(
+        paths,
+        inUsePaths: <String>{
+          ...inUsePaths,
+          // 台账仍记着的路径一律不删：这条是双保险（挤出去的路径按定义已不在台账里，
+          // 所以正常走不到这里；真走到了，说明记账与清理的假设出了偏差，宁可留着）。
+          ...BingWallpaperStore.instance.downloadedPaths,
+          for (final entry in history) entry.key,
+        },
+      );
+    } on Object catch (error) {
+      // 清缓存失败不该波及自动换：最坏就是文件多留一份，下一次记账时它还会被再判
+      // 一次（那一次名单更旧，白名单更齐，删得掉）。
+      appDebugLog(_tag, 'daily evict failed: ${error.runtimeType}: $error');
+    }
   }
 
   /// [item] 是不是**今天**（按本机日期）那一张。
   ///
-  /// ## 为什么必须验，而不能信「首项即今天」
+  /// ## 这个判据现在只决定「算不算今天」，不再决定「要不要换」
   ///
-  /// 清单有 3 小时缓存（[_listCacheTtl]），Bing 却是按**本地零点**换图的。晚上 23:50
-  /// 缓存下的清单，到 00:10 仍算「新鲜」，首项却已经是**昨天**那张。若直接拿它当今天
-  /// 换上，顺带把昨天记成「今天已换过」，真正的今日壁纸当天就再也上不来了 ——
-  /// 而且这个错**没有任何症状**：图库、日期标签、台账全都自洽，只有内容错了一天。
+  /// 它最初是一道**硬闸门**：验不过就整段放弃，于是「Bing 还没放出今天那张」会
+  /// 让自动换在当天剩下的时间全程静默失效（2026-10-06 用户报「点了开关没反应」）。
+  /// 现在它只用来决定两件事：要不要强制重拉一次、以及换完之后报
+  /// [BingAutoApplyOutcome.appliedToday] 还是 [BingAutoApplyOutcome.appliedStale]。
   ///
-  /// 解析不了 `dateKey` 一律按「不是今天」处理：宁可今天不换，也不要在脏数据上赌。
+  /// 清单有 3 小时缓存（[_listCacheTtl]）而 Bing 何时放图不由本 App 控制，两边随时
+  /// 可能错开（实测晚到十几个小时是常态）。「缓存里的昨天」与「Bing 真就只有昨天」
+  /// 都靠这道判断**分不开**，所以代码里不再据此放弃 —— 换成图并如实告诉用户是哪一天，
+  /// 记账用图自己的 `dateKey`（见 [maybeApplyDaily]）。
+  ///
+  /// 解析不了 `dateKey` 一律按「不是今天」处理：宁可标成「不是今天」如实说一句，
+  /// 也不在脏数据上赌它是今天。
   ///
   /// [now] 由 [maybeApplyDaily] 统一注入（生产取 `DateTime.now()`，测试取固定日期），
   /// 所以判据在单测里可复现。

@@ -37,6 +37,7 @@ import 'utils/frame_perf_probe.dart';
 import 'utils/home_page_background.dart';
 import 'utils/home_startup_visual_primer.dart';
 import 'utils/theme_seed_accent.dart';
+import 'utils/wallpaper_history.dart';
 import 'widgets/app_startup_splash.dart';
 import 'widgets/course_glass_shader.dart';
 import 'widgets/home_menu_route_catalog.dart';
@@ -852,12 +853,24 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       if (!BingWallpaperStore.instance.autoApplyEnabled) {
         return;
       }
-      final path = await BingWallpaperService.maybeApplyDaily();
-      // null = 今天换过 / 没开 / 拉不到 / 下载失败。都是静默的正常结局：
-      // 一次壁纸下载失败不该在用户面前弹任何东西。
-      if (path == null || !mounted) {
+      final result = await BingWallpaperService.maybeApplyDaily(
+        // 清台账溢出文件时要拿「所有课表」的当前壁纸当白名单 —— 本方法不依赖
+        // `TimetableProvider`（见 `BingWallpaperService` 类注释），只能由这里给。
+        inUsePaths: inUseWallpaperPaths([
+          for (final profile in provider.profiles) profile.settings,
+        ]),
+      );
+      // disabled / alreadyApplied / failed 都是静默的正常结局：一次壁纸下载失败
+      // 不该在用户面前弹任何东西（这里是启动 / 回前台路径，没有交互上下文）。
+      //
+      // ⚠️ appliedStale（Bing 还没放出今天那张）**照样换上**：这条路径上没有用户
+      // 在等一个确认，而早先的「验不过就放弃」会让自动换在当天剩余时间全程死掉
+      // （2026-10-06 用户报「点了开关没反应」）。换成哪一天的那张，由它自己的
+      // `dateKey` 记账，Bing 之后放出今天那张时会自然再换一次。
+      if (!result.succeeded || !mounted) {
         return;
       }
+      final path = result.path!;
       // 换一张 = 壁纸身份变了，三处按路径缓存的产物（图片缓存 / 文件存在性 memo /
       // 预模糊位图）都要先失效，否则首页会继续画旧位图直到重启。
       evictHomePageImageCache(path);

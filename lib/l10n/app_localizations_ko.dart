@@ -3522,6 +3522,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get bingWallpaperAutoApplyApplying => '오늘의 배경화면으로 바꾸는 중';
 
   @override
+  String get bingWallpaperAutoApplyAlreadyDone => '오늘의 배경화면으로 이미 바꿨어요';
+
+  @override
+  String bingWallpaperAutoApplyStale(String date) {
+    return 'Bing 이 아직 오늘 이미지를 공개하지 않아 $date 이미지를 사용합니다';
+  }
+
+  @override
   String get appearanceTextColorsSectionTitle => '텍스트 색상';
 
   @override

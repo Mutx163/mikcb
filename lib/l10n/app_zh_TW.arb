@@ -6278,6 +6278,14 @@
   "bingWallpaperAutoApplyTitle": "每天自動更換",
   "bingWallpaperAutoApplySubtitle": "每天首次開啟時換成當天的桌布",
   "bingWallpaperAutoApplyApplying": "正在換成今天的桌布",
+  "bingWallpaperAutoApplyAlreadyDone": "今天已經換過了",
+  "@bingWallpaperAutoApplyStale": {
+    "description": "自動換時 Bing 還沒放出當天那張，於是改用它現有最新一張的提示。佔位符是那張圖**自己**的日期標籤（如「昨天」「10 月 5 日」）。",
+    "placeholders": {
+      "date": { "type": "String", "example": "昨天" }
+    }
+  },
+  "bingWallpaperAutoApplyStale": "Bing 還沒放出今天的圖，先用 {date} 那張頂一下",
   "appearanceTextColorsSectionTitle": "文字顏色",
   "appearanceTextColorsSectionSubtitle": "自訂課程卡片、星期欄與時間軸文字顏色",
   "pageTransitionSpeedTitle": "頁面轉場速度",

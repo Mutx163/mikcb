@@ -6299,6 +6299,14 @@
   "bingWallpaperAutoApplyTitle": "毎日自動で変更",
   "bingWallpaperAutoApplySubtitle": "その日の壁紙を、アプリを最初に開いたときに適用します",
   "bingWallpaperAutoApplyApplying": "今日の壁紙に切り替えています",
+  "bingWallpaperAutoApplyAlreadyDone": "今日の壁紙にはすでに切り替え済みです",
+  "@bingWallpaperAutoApplyStale": {
+    "description": "Bing がまだ今日の画像を公開していないため、ある中で最も新しいものを代わりに使うときの案内。{date} はその画像自身の日付ラベル（例: 「昨日」「10 月 5 日」）。",
+    "placeholders": {
+      "date": { "type": "String", "example": "昨日" }
+    }
+  },
+  "bingWallpaperAutoApplyStale": "Bing はまだ今日の画像を公開していないため、{date} の画像を使います",
   "appearanceTextColorsSectionTitle": "テキストの色",
   "appearanceTextColorsSectionSubtitle": "授業カード、曜日バー、時間軸のテキストの色をカスタマイズします",
   "pageTransitionSpeedTitle": "ページ遷移の速度",

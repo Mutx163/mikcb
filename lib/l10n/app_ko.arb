@@ -6299,6 +6299,14 @@
   "bingWallpaperAutoApplyTitle": "매일 자동 변경",
   "bingWallpaperAutoApplySubtitle": "앱을 처음 열 때 그날의 배경화면으로 바꿉니다",
   "bingWallpaperAutoApplyApplying": "오늘의 배경화면으로 바꾸는 중",
+  "bingWallpaperAutoApplyAlreadyDone": "오늘의 배경화면으로 이미 바꿨어요",
+  "@bingWallpaperAutoApplyStale": {
+    "description": "Bing 이 아직 오늘 이미지를 공개하지 않아 가장 최근 이미지를 대신 쓸 때의 안내. {date} 은 그 이미지 자체의 날짜 라벨(예: \"어제\", \"10월 5일\").",
+    "placeholders": {
+      "date": { "type": "String", "example": "어제" }
+    }
+  },
+  "bingWallpaperAutoApplyStale": "Bing 이 아직 오늘 이미지를 공개하지 않아 {date} 이미지를 사용합니다",
   "appearanceTextColorsSectionTitle": "텍스트 색상",
   "appearanceTextColorsSectionSubtitle": "수업 카드, 요일 바, 시간 축의 텍스트 색상을 설정합니다",
   "pageTransitionSpeedTitle": "페이지 전환 속도",

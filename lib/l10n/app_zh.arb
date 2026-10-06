@@ -1987,6 +1987,14 @@
   "bingWallpaperAutoApplyTitle": "每天自动更换",
   "bingWallpaperAutoApplySubtitle": "每天首次打开时换成当天的壁纸",
   "bingWallpaperAutoApplyApplying": "正在换成今天的壁纸",
+  "bingWallpaperAutoApplyAlreadyDone": "今天已经换过啦",
+  "@bingWallpaperAutoApplyStale": {
+    "description": "自动换时 Bing 还没放出当天那张，于是改用它现有最新一张的提示。占位符是那张图**自己**的日期标签（如「昨天」「10 月 5 日」），如实说明换的是哪一天，避免用户以为程序出错。",
+    "placeholders": {
+      "date": { "type": "String", "example": "昨天" }
+    }
+  },
+  "bingWallpaperAutoApplyStale": "Bing 还没放出今天的图，先用 {date} 那张顶一下",
   "appearanceTextColorsSectionTitle": "文字颜色",
   "appearanceTextColorsSectionSubtitle": "自定义课程卡片、星期栏与时间轴文字颜色",
   "defaultTimetablePreviewName": "默认课表",

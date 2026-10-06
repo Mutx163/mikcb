@@ -3655,6 +3655,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Switching to today\'s wallpaper';
 
   @override
+  String get bingWallpaperAutoApplyAlreadyDone =>
+      'Already switched to today\'s wallpaper';
+
+  @override
+  String bingWallpaperAutoApplyStale(String date) {
+    return 'Bing hasn\'t posted today\'s image yet — using the one from $date';
+  }
+
+  @override
   String get appearanceTextColorsSectionTitle => 'Text colors';
 
   @override

@@ -1951,6 +1951,14 @@
   "bingWallpaperAutoApplyTitle": "Change daily",
   "bingWallpaperAutoApplySubtitle": "Switch to that day's wallpaper the first time you open the app",
   "bingWallpaperAutoApplyApplying": "Switching to today's wallpaper",
+  "bingWallpaperAutoApplyAlreadyDone": "Already switched to today's wallpaper",
+  "@bingWallpaperAutoApplyStale": {
+    "description": "Shown when Bing has not posted today's image yet and the newest available one is used instead. {date} is that image's own date label (e.g. \"Yesterday\", \"Oct 5\").",
+    "placeholders": {
+      "date": { "type": "String", "example": "Yesterday" }
+    }
+  },
+  "bingWallpaperAutoApplyStale": "Bing hasn't posted today's image yet — using the one from {date}",
   "appearanceTextColorsSectionTitle": "Text colors",
   "appearanceTextColorsSectionSubtitle": "Customize course card, weekday bar, and time axis text colors",
   "defaultTimetablePreviewName": "Default timetable",

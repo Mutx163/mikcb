@@ -407,10 +407,12 @@ void main() {
       // 白失败，而它随后会被当成合法壁纸交给首页。
       //
       // ⚠️ 本条是**兜底断言**，不是那条竞态的精确复现：真实交错依赖内核文件锁与
-      // 调度顺序，`flutter test` 里很难稳定造出来（试过：不加门时两次写盘会被排成
-      // 前后脚，共用临时名也能过）。所以这里钉的是「无论怎么交错，结果都必须自洽」
-      // 这条不变量 —— 真出问题时它会给出线索（哪一次失败 / 字节混了），而不是保证
-      // 每次都能复现那次竞态。
+      // 调度顺序。但它**确实抓到过** —— 2026-10-06 那天这条独立跑 4 次全过，跟着
+      // 780 例的整目录跑就挂了一次。所以它是「负载越高越容易复现」的那一类，
+      // 而临时名一旦退回「看文件在不在再挑序号」就一定会挂（见
+      // `managed_image_storage.dart` 里 `_nextTempToken` 上方那段⚠️）。
+      // 这里钉的是「无论怎么交错，结果都必须自洽」这条不变量 —— 真出问题时它会给出
+      // 线索（哪一次失败 / 字节混了），而不是保证每次都能复现那次竞态。
       final bodies = <List<int>>[
         List<int>.filled(4096, 0x11),
         List<int>.filled(4096, 0x22),
@@ -494,10 +496,11 @@ void main() {
         return utf8Json(listBody());
       });
       try {
-        expect(
-          await BingWallpaperService.maybeApplyDaily(now: _pinnedNow),
-          isNull,
+        final result = await BingWallpaperService.maybeApplyDaily(
+          now: _pinnedNow,
         );
+        expect(result.outcome, BingAutoApplyOutcome.disabled);
+        expect(result.succeeded, isFalse);
       } finally {
         BingWallpaperService.testClientFactory = null;
       }
@@ -510,7 +513,7 @@ void main() {
 
     test('开着且今天没换过 → 下到本地并返回路径', () async {
       await BingWallpaperStore.instance.setAutoApplyEnabled(true);
-      final path = await _runMaybeApplyDaily(
+      final result = await _runMaybeApplyDaily(
         listResponse: () => utf8Json(listBody()),
         imageResponse: () => http.Response.bytes(
           <int>[0xFF, 0xD8],
@@ -518,12 +521,12 @@ void main() {
           headers: <String, String>{'content-type': 'image/jpeg'},
         ),
       );
-      expect(path, isNotNull);
-      expect(path, contains('wallpaper_bing_20261005_standard.jpg'));
+      expect(result.outcome, BingAutoApplyOutcome.appliedToday);
+      expect(result.path, contains('wallpaper_bing_20261005_standard.jpg'));
       expect(BingWallpaperStore.instance.lastAutoAppliedDate, '20261005');
     });
 
-    test('同一天再跑一次 → 直接返回 null，不重复下载', () async {
+    test('同一天再跑一次 → alreadyApplied，不重复下载', () async {
       await BingWallpaperStore.instance.setAutoApplyEnabled(true);
       var imageRequests = 0;
       await _runMaybeApplyDaily(
@@ -540,31 +543,31 @@ void main() {
       expect(imageRequests, 1);
 
       // 第二次：同一天
-      expect(
-        await BingWallpaperService.maybeApplyDaily(now: _pinnedNow),
-        isNull,
+      final again = await BingWallpaperService.maybeApplyDaily(
+        now: _pinnedNow,
       );
+      expect(again.outcome, BingAutoApplyOutcome.alreadyApplied);
       expect(imageRequests, 1, reason: '判据在下载之前，不该重复下同一张');
     });
 
-    test('拉不到清单 → null，且不记「今天已换过」（明天还能重试）', () async {
+    test('拉不到清单 → failed，且不记「今天已换过」（明天还能重试）', () async {
       await BingWallpaperStore.instance.setAutoApplyEnabled(true);
-      final path = await _runMaybeApplyDaily(
+      final result = await _runMaybeApplyDaily(
         listResponse: () => http.Response('err', 503),
         imageResponse: () => http.Response('', 500),
       );
-      expect(path, isNull);
+      expect(result.outcome, BingAutoApplyOutcome.failed);
       expect(BingWallpaperStore.instance.lastAutoAppliedDate, isNull);
     });
 
-    test('图片下载失败 → null，也不记「今天已换过」', () async {
+    test('图片下载失败 → failed，也不记「今天已换过」', () async {
       // ⚠️ 记早了这一天就再也不会重试（要等用户手动进设置页才可能补上）。
       await BingWallpaperStore.instance.setAutoApplyEnabled(true);
-      final path = await _runMaybeApplyDaily(
+      final result = await _runMaybeApplyDaily(
         listResponse: () => utf8Json(listBody()),
         imageResponse: () => http.Response('', 404),
       );
-      expect(path, isNull);
+      expect(result.outcome, BingAutoApplyOutcome.failed);
       expect(
         BingWallpaperStore.instance.lastAutoAppliedDate,
         isNull,
@@ -572,15 +575,111 @@ void main() {
       );
     });
 
-    test('清单首项不是今天 → 强制重拉；重拉后仍没有今天那张就不换', () async {
-      // 跨零点场景：23:50 缓存的清单到 00:10 仍在 3 小时 TTL 内，首项已经是**昨天**。
-      // 直接信「首项即今天」会把隔夜的图挂上去、还把昨天记成「今天已换过」，
-      // 于是今天真正的壁纸当天再也上不来。
+    test('连续换 N 天 → 台账溢出时把旧文件真删掉（磁盘不跟着涨）', () async {
+      // ⭐ 这条盯的是一个曾经**完全没有测试**的不变量：`recordApplied` 只记账、不碰
+      // 磁盘，而自动换这条路上没人接住它返回的溢出清单，于是每天一个文件永久堆积
+      // （一年 365 张、约 118 MB ~ 279 MB）。图库手动挑那条路早就删了，只有自动换漏了。
+      //
+      // 跑 [kMaxDownloadedEntries] + 4 天，断言目录里的文件数**不超过台账上限**。
+      await BingWallpaperStore.instance.setAutoApplyEnabled(true);
+      const days = BingWallpaperStore.kMaxDownloadedEntries + 4;
+      final allPaths = <String>[];
+      for (var day = 1; day <= days; day++) {
+        final dateKey = _dateKeyOf(DateTime(2026, 10, day));
+        // 每次都换一份清单：缓存 TTL 3 小时，第二次起就会直接命中上一份，
+        // 不重铺的话 dateKey 一直是同一天、后面 15 天全被判成 alreadyApplied。
+        await _seedCacheFor(dateKey);
+        final result = await _runMaybeApplyDaily(
+          listResponse: () => utf8Json(listBody(startDate: dateKey)),
+          imageResponse: _okJpeg,
+          now: DateTime(2026, 10, day),
+        );
+        expect(
+          result.outcome,
+          BingAutoApplyOutcome.appliedToday,
+          reason: '第 $day 天应当真的换一张（dateKey=$dateKey）',
+        );
+        allPaths.add(result.path!);
+      }
+      await _waitForFileCount(BingWallpaperStore.kMaxDownloadedEntries);
+
+      expect(
+        BingWallpaperStore.instance.downloadedPaths,
+        hasLength(BingWallpaperStore.kMaxDownloadedEntries),
+        reason: '台账条目应当被卡在上限',
+      );
+      expect(
+        _wallpaperFiles(),
+        hasLength(BingWallpaperStore.kMaxDownloadedEntries),
+        reason:
+            '⭐ 磁盘上的文件数必须跟着台账一起封顶。早先自动换只记账不删文件，'
+            '这里会是 $days 个（约 $days × 322 KB 起，一年上百 MB）。',
+      );
+      // 最早那几张应当真的没了，最近几张还在（缓存的意义就是回头看不用重下）。
+      expect(File(allPaths.first).existsSync(), isFalse, reason: '最旧那张应已删');
+      expect(File(allPaths.last).existsSync(), isTrue, reason: '最新那张必须还在');
+    });
+
+    test('台账溢出时不删「正被当壁纸」的那张（白名单）', () async {
+      // 白名单是这套清理唯一的刹车：漏了就会把用户当前的壁纸删掉、首页当场裂图。
+      //
+      // 构造：先换满 12 天（台账上限，正好还不淘汰任何一张），再换第 13 天 ——
+      // 这一轮会把**第 1 天**那张挤出去。此刻把第 1 天那张当作「某份课表当前的壁纸」
+      // 传进 inUsePaths，断言它活下来。
+      await BingWallpaperStore.instance.setAutoApplyEnabled(true);
+      const cap = BingWallpaperStore.kMaxDownloadedEntries;
+      final allPaths = <String>[];
+      for (var day = 1; day <= cap; day++) {
+        await _seedCacheFor(_dateKeyOf(DateTime(2026, 10, day)));
+        allPaths.add((await _runMaybeApplyDaily(
+          listResponse: () => utf8Json(
+            listBody(startDate: _dateKeyOf(DateTime(2026, 10, day))),
+          ),
+          imageResponse: _okJpeg,
+          now: DateTime(2026, 10, day),
+        )).path!);
+      }
+      expect(_wallpaperFiles(), hasLength(cap), reason: '此时还不该淘汰任何一张');
+      final pinned = allPaths.first;
+
+      const day = cap + 1;
+      final result = await _runMaybeApplyDaily(
+        listResponse: () => utf8Json(listBody(startDate: _dateKeyOf(
+          DateTime(2026, 10, day),
+        ))),
+        imageResponse: _okJpeg,
+        now: DateTime(2026, 10, day),
+        inUsePaths: <String>{pinned},
+      );
+      expect(result.outcome, BingAutoApplyOutcome.appliedToday);
+      await _waitForFileCount(cap + 1);
+
+      expect(
+        File(pinned).existsSync(),
+        isTrue,
+        reason: '⚠️ 白名单里的壁纸绝不能被清理删掉 —— 删了首页当场裂图',
+      );
+      expect(
+        _wallpaperFiles(),
+        hasLength(cap + 1),
+        reason:
+            '台账仍留 $cap 条（第 2 ~ ${cap + 1} 天），加上被白名单护住的第 1 天那张，'
+            '一共 ${cap + 1} 个。少了就说明白名单没生效（正被当壁纸的图被删了）。',
+      );
+    });
+
+    test('Bing 还没放出今天那张 → 强制重拉一次，然后用最新那张顶上', () async {
+      // ⭐ 2026-10-06 用户报「点了开关没反应」的真凶。实测：北京时间 19:20，
+      // Bing 列表首项**仍是 10-05**（本机时钟与 Bing 服务器的 HTTP `Date` 头核对过）。
+      //
+      // 早先的实现在这里直接 return，于是从那一刻起到当天结束，自动换全程是死的
+      // 而且**一个字都不说**。现在必须换成最新的那张，并如实报出是「旧图顶替」。
       await BingWallpaperStore.instance.setAutoApplyEnabled(true);
       var listRequests = 0;
       BingWallpaperService.testClientFactory = () => MockClient((request) async {
         if (request.url.path.contains('HPImageArchive')) {
           listRequests++;
+          // 接口只给得到 10-05 那张。
           return utf8Json(listBody());
         }
         return http.Response.bytes(
@@ -589,24 +688,80 @@ void main() {
           headers: <String, String>{'content-type': 'image/jpeg'},
         );
       });
-      String? path;
+      BingAutoApplyResult result;
       try {
         // 「今天」是 10-06，接口只给得到 10-05 那张。
-        path = await BingWallpaperService.maybeApplyDaily(
+        result = await BingWallpaperService.maybeApplyDaily(
           now: DateTime(2026, 10, 6),
         );
       } finally {
         BingWallpaperService.testClientFactory = null;
       }
 
-      expect(listRequests, 2, reason: '首项验不过必须强制重拉一次再验');
-      expect(path, isNull, reason: '宁可今天不换，也不能挂一张隔夜的图');
+      expect(listRequests, 2, reason: '首项验不过必须强制重拉一次');
+      expect(
+        result.outcome,
+        BingAutoApplyOutcome.appliedStale,
+        reason: 'Bing 没有今天那张时换最新的那张，而不是静默放弃',
+      );
+      expect(result.path, contains('wallpaper_bing_20261005_standard.jpg'));
+      expect(result.dateKey, '20261005');
       expect(
         BingWallpaperStore.instance.lastAutoAppliedDate,
-        isNull,
-        reason: '没换上就绝不记「今天已换过」',
+        '20261005',
+        reason: '⭐ 记的是**那张图自己的**日期，不是本机今天 —— 这是之后能自愈的关键',
       );
-      expect(_wallpaperFiles(), isEmpty, reason: '判据就该拦在下载之前');
+    });
+
+    test('Bing 之后放出今天那张 → 同一天再跑一次会换上正确的（自愈）', () async {
+      // 接着上一条：先拿 10-05 顶上，等 Bing 真的放出 10-06 之后，判据
+      // （lastAutoAppliedDate ≠ 最新那张的 dateKey）必须自然放行，当天再换一次。
+      // 不这么做就会退化成「一天最多换一次」，而顶上去那张可能就是隔天的。
+      await BingWallpaperStore.instance.setAutoApplyEnabled(true);
+
+      BingWallpaperService.testClientFactory = () => MockClient((request) async {
+        if (request.url.path.contains('HPImageArchive')) {
+          return utf8Json(listBody());
+        }
+        return http.Response.bytes(
+          <int>[0xFF, 0xD8],
+          200,
+          headers: <String, String>{'content-type': 'image/jpeg'},
+        );
+      });
+      BingAutoApplyResult stale;
+      try {
+        stale = await BingWallpaperService.maybeApplyDaily(
+          now: DateTime(2026, 10, 6),
+        );
+      } finally {
+        BingWallpaperService.testClientFactory = null;
+      }
+      expect(stale.outcome, BingAutoApplyOutcome.appliedStale);
+
+      // Bing 现在放出 10-06 了。
+      BingWallpaperService.testClientFactory = () => MockClient((request) async {
+        if (request.url.path.contains('HPImageArchive')) {
+          return utf8Json(listBody(startDate: '20261006'));
+        }
+        return http.Response.bytes(
+          <int>[0xFF, 0xD8],
+          200,
+          headers: <String, String>{'content-type': 'image/jpeg'},
+        );
+      });
+      BingAutoApplyResult caughtUp;
+      try {
+        caughtUp = await BingWallpaperService.maybeApplyDaily(
+          now: DateTime(2026, 10, 6),
+        );
+      } finally {
+        BingWallpaperService.testClientFactory = null;
+      }
+
+      expect(caughtUp.outcome, BingAutoApplyOutcome.appliedToday);
+      expect(caughtUp.path, contains('wallpaper_bing_20261006_standard.jpg'));
+      expect(BingWallpaperStore.instance.lastAutoAppliedDate, '20261006');
     });
 
     test('清单首项不是今天但重拉后有了 → 用今天那张', () async {
@@ -627,9 +782,9 @@ void main() {
           headers: <String, String>{'content-type': 'image/jpeg'},
         );
       });
-      String? path;
+      BingAutoApplyResult result;
       try {
-        path = await BingWallpaperService.maybeApplyDaily(
+        result = await BingWallpaperService.maybeApplyDaily(
           now: DateTime(2026, 10, 6),
         );
       } finally {
@@ -637,7 +792,8 @@ void main() {
       }
 
       expect(listRequests, 1, reason: '命中旧缓存不该发请求，强制重拉才发');
-      expect(path, contains('wallpaper_bing_20261006_standard.jpg'));
+      expect(result.outcome, BingAutoApplyOutcome.appliedToday);
+      expect(result.path, contains('wallpaper_bing_20261006_standard.jpg'));
       expect(BingWallpaperStore.instance.lastAutoAppliedDate, '20261006');
     });
   });
@@ -695,19 +851,66 @@ List<File> _wallpaperFiles() {
   return dir.listSync().whereType<File>().toList();
 }
 
-/// 用一个「按路径分流」的 MockClient 跑一次自动换，返回下载到的路径。
+/// 一次成功的图片下载响应（够 `downloadToManagedImage` 认成 JPEG 就行）。
+http.Response _okJpeg() => http.Response.bytes(
+  <int>[0xFF, 0xD8],
+  200,
+  headers: <String, String>{'content-type': 'image/jpeg'},
+);
+
+/// `DateTime` → Bing 的 `dateKey`（`YYYYMMDD`），与 [listBody] 的首项同一形状。
+String _dateKeyOf(DateTime date) =>
+    '${date.year}${date.month.toString().padLeft(2, '0')}'
+    '${date.day.toString().padLeft(2, '0')}';
+
+/// 把缓存铺成「[dateKey] 那张是最新」的现场。
+///
+/// 必须逐天重铺：[loadItems] 的缓存 TTL 是 3 小时，第二次调用就会直接命中上一份，
+/// 不重铺的话 dateKey 一直是同一天，后面 15 天全被判成 `alreadyApplied`。
+///
+/// 直接写 [BingWallpaperStore.saveCachedItems] 而不塞 `listBody()` 那串 JSON：
+/// [listBody] 是 `main()` 里的局部闭包（它要读文件级的 [utf8Json]），顶层助手看不到它。
+Future<void> _seedCacheFor(String dateKey) =>
+    BingWallpaperStore.instance.saveCachedItems(<BingWallpaperItem>[
+      BingWallpaperItem(
+        dateKey: dateKey,
+        urlBase: '/th?id=OHR.Daily_EN-US1',
+        title: '',
+        copyright: '',
+      ),
+    ]);
+
+/// 等后台那次清理落定。
+///
+/// 生产上删除是**故意不 await** 的（启动 / 回前台路径不该为删文件等一下，见
+/// `BingWallpaperService._deleteEvictedWallpapers`），所以断言前要自己等。
+/// 真等不到就把实际数量打进失败信息，比固定 sleep 可靠。
+Future<void> _waitForFileCount(int expected) async {
+  for (var attempt = 0; attempt < 100; attempt++) {
+    if (_wallpaperFiles().length == expected) {
+      return;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+  }
+  fail(
+    '等 2 秒后壁纸目录里仍有 ${_wallpaperFiles().length} 个文件，期望 $expected',
+  );
+}
+
+/// 用一个「按路径分流」的 MockClient 跑一次自动换，返回这次尝试的**结局**。
 ///
 /// 靠 [BingWallpaperService.testClientFactory] 把 service 内部自建的 client 换成
 /// MockClient —— 那两个入口刻意自建 service（自动换没有调用方持有 client 可传），
 /// 所以只能这样注入。跑完必须清钩子，否则后续用例会串到这个 client 上。
 ///
-/// [now] 默认钉在 `listBody()` 首项那个日期（2026-10-05）上：`maybeApplyDaily` 会验
-/// 「清单首项真的是今天吗」（跨零点的旧缓存防护），不钉住的话这些用例会随测试运行
-/// 时刻漂移，今天早上跑和明年跑结论完全不同。
-Future<String?> _runMaybeApplyDaily({
+/// [now] 默认钉在 `listBody()` 首项那个日期（2026-10-05）上：`maybeApplyDaily` 会拿它
+/// 和清单首项的 `dateKey` 比对，不钉住的话这些用例会随测试运行时刻漂移，今天早上跑和
+/// 明年跑结论完全不同。
+Future<BingAutoApplyResult> _runMaybeApplyDaily({
   required http.Response Function() listResponse,
   required http.Response Function() imageResponse,
   DateTime? now,
+  Set<String> inUsePaths = const <String>{},
 }) async {
   BingWallpaperService.testClientFactory = () => MockClient((request) async {
     if (request.url.path.contains('HPImageArchive')) {
@@ -718,6 +921,7 @@ Future<String?> _runMaybeApplyDaily({
   try {
     return await BingWallpaperService.maybeApplyDaily(
       now: now ?? _pinnedNow,
+      inUsePaths: inUsePaths,
     );
   } finally {
     BingWallpaperService.testClientFactory = null;

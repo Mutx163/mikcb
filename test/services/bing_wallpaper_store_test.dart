@@ -111,67 +111,6 @@ void main() {
       expect(store.lastAutoAppliedDate, '20261004');
     });
 
-    test('撤回自动换的认领 → 判据放开，但台账与文件都留着可复用', () async {
-      // 场景：自动换下好了图、也记了「今天已换过」，用户却在「调整位置」页点了退出。
-      // 若不撤回，当天剩下的启动/回前台全被跳过 ——「开了自动换却什么都没发生」。
-      final store = BingWallpaperStore.instance;
-      await store.recordApplied(
-        dateKey: '20261005',
-        resolution: BingWallpaperResolution.high,
-        path: '/tmp/wallpaper_bing_20261005_high.jpg',
-      );
-      expect(store.lastAutoAppliedDate, '20261005');
-
-      await store.releaseAutoApplyClaim('20261005');
-      expect(
-        store.lastAutoAppliedDate,
-        isNull,
-        reason: '壁纸没真的换上，就不该判成「今天已换过」',
-      );
-      expect(
-        store.downloadedPaths,
-        contains('/tmp/wallpaper_bing_20261005_high.jpg'),
-        reason: '文件已经下好了，必须留在台账里：既能被 findExisting 复用，'
-            '也在封顶清理的白名单上（不会被当垃圾删掉）',
-      );
-
-      // 撤回之后还能再认领一次（当天稍后重试）。
-      await store.recordApplied(
-        dateKey: '20261005',
-        resolution: BingWallpaperResolution.high,
-        path: '/tmp/wallpaper_bing_20261005_high.jpg',
-      );
-      expect(store.lastAutoAppliedDate, '20261005');
-    });
-
-    test('撤回不存在的认领 → 幂等，不抛错也不写盘', () async {
-      final store = BingWallpaperStore.instance;
-      await store.releaseAutoApplyClaim('20261005');
-      await store.releaseAutoApplyClaim('20261005');
-      expect(store.lastAutoAppliedDate, isNull);
-      expect(store.downloadedPaths, isEmpty);
-    });
-
-    test('撤回只影响那一天，别天的自动换记录照旧算数', () async {
-      final store = BingWallpaperStore.instance;
-      await store.recordApplied(
-        dateKey: '20261005',
-        resolution: BingWallpaperResolution.standard,
-        path: '/tmp/wallpaper_bing_20261005_standard.jpg',
-      );
-      await store.recordApplied(
-        dateKey: '20261004',
-        resolution: BingWallpaperResolution.standard,
-        path: '/tmp/wallpaper_bing_20261004_standard.jpg',
-      );
-      await store.releaseAutoApplyClaim('20261005');
-      expect(
-        store.lastAutoAppliedDate,
-        '20261004',
-        reason: '撤回 10-05 不该把 10-04 的记录也抹掉',
-      );
-    });
-
     test('同一天重复记账不产生第二条，lastAutoAppliedDate 仍是那天', () async {
       final store = BingWallpaperStore.instance;
       for (var i = 0; i < 3; i++) {

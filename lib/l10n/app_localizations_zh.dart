@@ -3435,6 +3435,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get bingWallpaperAutoApplyApplying => '正在换成今天的壁纸';
 
   @override
+  String get bingWallpaperAutoApplyAlreadyDone => '今天已经换过啦';
+
+  @override
+  String bingWallpaperAutoApplyStale(String date) {
+    return 'Bing 还没放出今天的图，先用 $date 那张顶一下';
+  }
+
+  @override
   String get appearanceTextColorsSectionTitle => '文字颜色';
 
   @override
@@ -14590,6 +14598,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get bingWallpaperAutoApplyApplying => '正在換成今日桌布';
+
+  @override
+  String get bingWallpaperAutoApplyAlreadyDone => '今日已經換過啦';
+
+  @override
+  String bingWallpaperAutoApplyStale(String date) {
+    return 'Bing 仲未放出今日嘅圖，先用 $date 嗰張頂一下';
+  }
 
   @override
   String get appearanceTextColorsSectionTitle => '文字顏色';
@@ -25787,6 +25803,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get bingWallpaperAutoApplyApplying => '正在換成今天的桌布';
+
+  @override
+  String get bingWallpaperAutoApplyAlreadyDone => '今天已經換過了';
+
+  @override
+  String bingWallpaperAutoApplyStale(String date) {
+    return 'Bing 還沒放出今天的圖，先用 $date 那張頂一下';
+  }
 
   @override
   String get appearanceTextColorsSectionTitle => '文字顏色';
