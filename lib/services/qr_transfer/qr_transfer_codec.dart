@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
@@ -263,7 +264,13 @@ class QrTransferEncoder {
   }
 
   /// 用原始（未压缩）字节构建编码器；空数据不允许传输。
-  factory QrTransferEncoder.prepare(Uint8List rawBytes) {
+  ///
+  /// [random] 只给测试用：喷泉码的「度」取自 `RobustSoliton` 内部一个**共享的**
+  /// 随机流，而那个流默认是 `Random()`——没有种子。所以同一 [seed] 在不同调用
+  /// 顺序下会得到不同的度数、于是帧字节不同（见 [frameTextFor] 的说明）。
+  /// 传一个播了种的进来，整段编码就可在**相同调用顺序**下复现；生产路径留 null
+  /// 保持现状。
+  factory QrTransferEncoder.prepare(Uint8List rawBytes, {Random? random}) {
     final prepared = _preparePayload(rawBytes);
     final compressedPayload = prepared.compressedPayload;
     final symbolSize = pickSymbolSize(compressedPayload.length);
@@ -280,6 +287,7 @@ class QrTransferEncoder {
       maxDegree: QrTransferLimits.maxDegreeForSourceSymbolCount(
         sourceSymbolCount,
       ),
+      random: random,
     )..setSourceData(compressedPayload);
 
     return QrTransferEncoder._(info: info, codec: codec);
@@ -297,9 +305,18 @@ class QrTransferEncoder {
 
   /// 生成指定 seed 的帧文本（不推进内部计数器）。
   ///
-  /// LT 编码对同一 seed 是确定性的，因此发送端可以借此**预先**生成
-  /// 未来几帧的文本（再交给 QR 矩阵计算），把耗时移出 setState 的
-  /// 关键路径——帧间隔缩短后仍能保持 UI 流畅。
+  /// ⚠️ **同一个 seed 不保证得到同一段文本**，此前这里写的是「LT 编码对同一 seed
+  /// 是确定性的」，那句话是错的：`LTCodec.encode` 里邻居选取确实按 `Random(seed)`
+  /// 推导，但**度数取自 `RobustSoliton` 内部一个共享的随机流**（默认 `Random()`，
+  /// 无种子），它每 `sample()` 一次就前进一格 —— 于是同一 seed 的度数取决于它
+  /// 之前被采样过几次。
+  ///
+  /// 这**不影响传输正确性**：帧里带着自己的度数（`meta['degree']`），接收端
+  /// `submit` 优先读它，解码永远跟着帧走。代价只是同一个 seed 若被生成两次
+  /// （后台预生成的帧与前台回退路径撞上），两次内容不同，而接收端按 seed 去重会
+  /// 丢掉后到的那一帧 —— 白费一次扫描，不是数据损坏。
+  ///
+  /// 预生成仍然值得做：它把耗时移出关键路径，这与「同 seed 字节相同」无关。
   String frameTextFor(int seed) {
     if (seed < 0 || seed >= QrTransferLimits.maxUniqueSeedCount) {
       throw StateError('qr_transfer_frame_budget_exceeded');
@@ -331,8 +348,12 @@ class QrTransferDecoder {
   String? _terminalError;
   final DateTime Function() _now;
   DateTime? _sessionStartedAt;
+  final Random? _random;
 
-  QrTransferDecoder({DateTime Function()? now}) : _now = now ?? DateTime.now;
+  /// [random] 与 [QrTransferEncoder.prepare] 同义，只给测试用。正常解码几乎用不到
+  /// 它 —— 帧自带度数，`submit` 只在帧缺 `meta['degree']` 时才退回采样。
+  QrTransferDecoder({DateTime Function()? now, this._random})
+    : _now = now ?? DateTime.now;
 
   /// 会话信息；收到第一帧后可用。
   QrTransferSessionInfo? get sessionInfo => _info;
@@ -504,6 +525,7 @@ class QrTransferDecoder {
       maxDegree: QrTransferLimits.maxDegreeForSourceSymbolCount(
         info.sourceSymbolCount,
       ),
+      random: _random,
     );
     _codec = codec;
     return codec;
