@@ -19,6 +19,39 @@ import '../ui/hyperos/hyperos.dart';
 import '../widgets/miuix_number_picker_sheet.dart';
 import '../widgets/time_scheme_picker_sheet.dart';
 
+/// 「按范围选周」叠加单/双周时，这门课究竟排在哪些周。
+///
+/// 本仓认可同时勾上单周与双周（`isOddWeek` 与 `isEvenWeek` 可以都为 true，
+/// 两个筛选条件是按周逐个 continue 的），所以两种情况会算出**空集**：
+/// ① 范围收在一周上（开始周 == 结束周）又只勾了与之相反的那一侧 ——
+/// 例如第 2 周 + 单周；② 单周与双周同时勾上（每一条都被某个条件滤掉）。
+/// 空集存进去后 `Course.activeWeeks`/`isInWeek` 对任何一周都是 false：
+/// **这门课在课表上任何一周都不出现**，却仍留在数据里、仍计入统计与伴侣同步，
+/// 而当时界面报的是"添加成功"。
+///
+/// 抽成公有纯函数有两个理由：① 摘要显示（`_buildEntryWeeksFromRange`）与弹层里的
+/// 临时计算原先各抄了一份同样的循环，两份都可能出现"过滤做一半"；
+/// ② 空集这件事必须由**确定按钮与保存校验共用同一个判据**拦住，
+/// 不能只在自定义模式上挡（`selectedCustomWeeks.isEmpty`）。
+List<int> weeksFromRangeSelection({
+  required int startWeek,
+  required int endWeek,
+  required bool isOddWeek,
+  required bool isEvenWeek,
+}) {
+  final weeks = <int>[];
+  for (var week = startWeek; week <= endWeek; week++) {
+    if (isOddWeek && week.isEven) {
+      continue;
+    }
+    if (isEvenWeek && week.isOdd) {
+      continue;
+    }
+    weeks.add(week);
+  }
+  return weeks;
+}
+
 enum _WeekSelectionMode { range, custom }
 
 /// 这门课能选到哪些节次。
@@ -818,10 +851,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       currentEndSection: entry.endSection,
     );
     final hasMultipleEntries = _scheduleEntries.length > 1;
-    final entrySelectedWeeks =
-        entry.weekSelectionMode == _WeekSelectionMode.range
-        ? _buildEntryWeeksFromRange(entry)
-        : (entry.selectedCustomWeeks.toList()..sort());
+    final entrySelectedWeeks = _selectedWeeksFor(entry);
     final entryWeekSummary = _selectedWeeksSummaryText(
       entrySelectedWeeks,
       availableWeeks,
@@ -1479,13 +1509,22 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   }
 
   List<int> _buildEntryWeeksFromRange(_ScheduleEntryData entry) {
-    final weeks = <int>[];
-    for (var w = entry.startWeek; w <= entry.endWeek; w++) {
-      if (entry.isOddWeek && w.isEven) continue;
-      if (entry.isEvenWeek && w.isOdd) continue;
-      weeks.add(w);
+    return weeksFromRangeSelection(
+      startWeek: entry.startWeek,
+      endWeek: entry.endWeek,
+      isOddWeek: entry.isOddWeek,
+      isEvenWeek: entry.isEvenWeek,
+    );
+  }
+
+  /// 该条目最终会排到哪些周（范围模式按单双周过滤，自定义模式取勾选集）。
+  /// 摘要显示与保存校验必须用同一个表达式 —— 原先只有自定义模式被挡，
+  /// 范围 + 单/双周算出空集照样保存（理由见 `weeksFromRangeSelection`）。
+  List<int> _selectedWeeksFor(_ScheduleEntryData entry) {
+    if (entry.weekSelectionMode == _WeekSelectionMode.range) {
+      return _buildEntryWeeksFromRange(entry);
     }
-    return weeks;
+    return entry.selectedCustomWeeks.toList()..sort();
   }
 
   String _formatWeekList(List<int> weeks) {
@@ -1637,13 +1676,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     var tempCustomWeeks = Set<int>.from(entry.selectedCustomWeeks);
 
     List<int> buildTempWeeksFromRange() {
-      final weeks = <int>[];
-      for (var w = tempStartWeek; w <= tempEndWeek; w++) {
-        if (tempIsOddWeek && w.isEven) continue;
-        if (tempIsEvenWeek && w.isOdd) continue;
-        weeks.add(w);
-      }
-      return weeks;
+      return weeksFromRangeSelection(
+        startWeek: tempStartWeek,
+        endWeek: tempEndWeek,
+        isOddWeek: tempIsOddWeek,
+        isEvenWeek: tempIsEvenWeek,
+      );
     }
 
     final confirmed = await showDialog<bool>(
@@ -1876,7 +1914,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                 child: HyperosButton(
                                   label: l10n.confirmAction,
                                   expand: true,
-                                  onPressed: () => Navigator.pop(context, true),
+                                  // 算出来的周次为空（第 2 周 + 单周、或单双周同时勾）时
+                                  // 不许确认：这样存进去的课在任何一周都不出现，
+                                  // 却仍计入统计与伴侣同步，而界面当时报"添加成功"。
+                                  onPressed: selectedWeeks.isEmpty
+                                      ? null
+                                      : () => Navigator.pop(context, true),
                                 ),
                               ),
                             ],
@@ -1966,8 +2009,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         return;
       }
 
-      if (entry.weekSelectionMode == _WeekSelectionMode.custom &&
-          entry.selectedCustomWeeks.isEmpty) {
+      // 两种模式都要挡：范围模式叠上单/双周也能算出空集（见 weeksFromRangeSelection），
+      // 原先只挡自定义模式，于是"第 2 周 + 单周"照样保存成功，而这门课在课表上
+      // 任何一周都不出现，却仍留在数据里计入统计与伴侣同步。
+      if (_selectedWeeksFor(entry).isEmpty) {
         showAppToast(
           context,
           message:
