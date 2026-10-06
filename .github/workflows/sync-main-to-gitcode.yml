@@ -1,0 +1,38 @@
+name: Sync main to GitCode
+
+# 为什么需要这一条：
+# android-build.yml 里的 GitCode 代码同步只在**推送 v* tag** 时跑。
+# 平时往 main 的提交（比如 docs/donors.json 加一条请喝咖啡、
+# 机器人自动更新文档、常规修复）不会触发，GitCode 上的 main
+# 就会一直停在上一个版本，国内渠道（更新源选 GitCode 时读的是
+# GitCode 的文件接口）就看不到新名单。
+#
+# 这里订阅 main 的 push 事件：GitHub 一有新提交就把 main（含全部 tag）
+# 推到 GitCode 镜像仓，和发版时的同步用的是同一个可复用工作流，
+# 行为一致、幂等。tag 推送走原链路，本文件只管分支推送，不重复。
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  # push 是 force 推送，中断会留下两边不一致，必须串行跑完。
+  group: sync-main-to-gitcode
+  cancel-in-progress: false
+
+jobs:
+  sync-main:
+    name: Push main to GitCode
+    # 与 android-build.yml 的 GitCode 任务同款门禁：没配 GitCode 就整条跳过，
+    # Fork 仓库未配置也不会失败。
+    if: ${{ vars.GITCODE_USERNAME }}
+    permissions:
+      contents: read
+    uses: nvdacn/sync_to_gitcode/.github/workflows/PushToGitCode.yaml@18b70112d0e62260bc54085028e5510bbc6323b2 # sync_to_gitcode@master
+    with:
+      default_branch: main
+      gitcode_username: ${{ vars.GITCODE_USERNAME }}
+    secrets:
+      GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
