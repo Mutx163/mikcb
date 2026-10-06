@@ -21,12 +21,46 @@ import '../widgets/time_scheme_picker_sheet.dart';
 
 enum _WeekSelectionMode { range, custom }
 
+/// 这门课能选到哪些节次。
+///
+/// 必须跟着**这门课自己的**节次表走，与改课弹层里那份 `_sectionNumbers`
+/// （`course_followup_sheets.dart:306-333`，第 6 轮修的同一处）同一口径：
+/// 保存时算钟点（`_resolveEntryTimeScheme` → `CourseDomain.editCourseClock`）与
+/// `validateCourseTimeSchemeOverride` 校验用的都是解析出来的那份模板，
+/// 而 `settings.sectionCount` 是**全局**作息的节数。
+///
+/// 用全局数会出两种错：模板比全局长时那几节压根选不到；更糟的是
+/// 「结束节次」的 `minValue` 取的是课程现存的 `startSection`，一旦它大于全局节数
+/// （课程钉着 12 节模板、全局只有 10 节，`TimeSchemeLogic` 对越界节次原样保留），
+/// `showMiuixNumberPickerSheet` 的 `currentValue.clamp(minValue, maxValue)`
+/// （`miuix_number_picker_sheet.dart:20`）会直接抛 ArgumentError ——
+/// 点那一行在 release 里毫无反应、在 debug 里断言崩。
+/// 因此候选集是"该课模板的 1..N"并上"课程现存的起止节次"，回写一定能落回范围内。
+List<int> editableSectionNumbers({
+  required int globalSectionCount,
+  int? courseSchemeSectionCount,
+  required int currentStartSection,
+  required int currentEndSection,
+}) {
+  final count =
+      courseSchemeSectionCount == null || courseSchemeSectionCount <= 0
+      ? globalSectionCount
+      : courseSchemeSectionCount;
+  final numbers = <int>{
+    for (var index = 1; index <= count; index++) index,
+    if (currentStartSection >= 1) currentStartSection,
+    if (currentEndSection >= 1) currentEndSection,
+  }.toList()..sort();
+  return numbers;
+}
+
 class AddCourseScreen extends StatefulWidget {
   final Course? course;
   final CourseGroup? courseGroup;
   final Course? initialCourse;
   final int? initialDayOfWeek;
   final int? initialStartSection;
+
   /// 从课表虚线框进来时框住的末节次（含）：框拉到几节，表单就预填几节。
   final int? initialEndSection;
   final int? initialWeek;
@@ -210,9 +244,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         _courseNature = first.courseNature;
         _selectedColor = first.color;
         // Build per-schedule entries from all courses.
-        _scheduleEntries = ordered
-            .map(_ScheduleEntryData.fromCourse)
-            .toList();
+        _scheduleEntries = ordered.map(_ScheduleEntryData.fromCourse).toList();
       } else if (widget.course != null) {
         // Editing a single existing course in group mode: wrap as one entry.
         _loadCourseData(widget.course!);
@@ -225,7 +257,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             dayOfWeek: widget.initialDayOfWeek ?? 1,
             startSection: widget.initialStartSection ?? 1,
             endSection:
-                widget.initialEndSection ?? (widget.initialStartSection ?? 1) + 1,
+                widget.initialEndSection ??
+                (widget.initialStartSection ?? 1) + 1,
           ),
         ];
       }
@@ -537,9 +570,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     decoration: BoxDecoration(
                       color: _parseColor(_selectedColor),
                       borderRadius: BorderRadius.circular(5),
-                      border: Border.all(
-                        color: HyperosColors.outline(context),
-                      ),
+                      border: Border.all(color: HyperosColors.outline(context)),
                     ),
                   ),
                   onTap: _showFullColorPalette,
@@ -772,10 +803,20 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   ) {
     final entry = _scheduleEntries[index];
     final weekDays = _weekdayLabels(l10n);
-    final sectionNumbers = List.generate(settings.sectionCount, (i) => i + 1);
     final availableWeeks = settings.availableWeeks;
     final teacherText = _entryTeacherControllers[index].text;
     final locationText = _entryLocationControllers[index].text;
+    // 候选节次跟着这门课解析出的作息模板，理由见 editableSectionNumbers。
+    final sectionNumbers = editableSectionNumbers(
+      globalSectionCount: settings.sectionCount,
+      courseSchemeSectionCount: _resolveEntryTimeScheme(
+        provider,
+        entry,
+        locationOverride: locationText,
+      )?.sections.length,
+      currentStartSection: entry.startSection,
+      currentEndSection: entry.endSection,
+    );
     final hasMultipleEntries = _scheduleEntries.length > 1;
     final entrySelectedWeeks =
         entry.weekSelectionMode == _WeekSelectionMode.range
@@ -1211,9 +1252,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         original: entry.originalCourse,
         startSection: entry.startSection,
         endSection: entry.endSection,
-        templateStartTime: resolvedScheme
-            .sections[entry.startSection - 1]
-            .startTime,
+        templateStartTime:
+            resolvedScheme.sections[entry.startSection - 1].startTime,
         templateEndTime: resolvedScheme.sections[entry.endSection - 1].endTime,
       );
       clockHint = '${clock.startTime}-${clock.endTime}';
