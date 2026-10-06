@@ -111,6 +111,12 @@ class WebdavSyncCoordinator extends ChangeNotifier {
   /// 自动同步其实已经停了。两个后台入口还是 `unawaited(...)`（main.dart 的
   /// maybePullRemote、本文件的防抖上传），异常连日志都不留。
   ///
+  /// 第 32 轮补上另外三个同形入口（手动备份 `createManualBackup`、恢复
+  /// `restoreFromBackup`、删除 `deleteBackup`）：它们也只有 try/finally，
+  /// 而调用点 `cloud_sync_screen.dart:429` 同样只有 `try { } finally { }`，
+  /// 所以 keystore 读密码抛 PlatformException 时用户看到的是
+  /// "按钮转一下就完事了、徽章干净、其实没备份成功"。
+  ///
   /// 折叠成稳定的 `sync_failed` 而不是把异常原文塞进 `lastError`：那个字段会被
   /// `localizeSyncError` 查表后显示给用户，异常原文可能含 URL / 用户名，不该进
   /// UI —— 与仓库里"500 不回显内部异常"同一口径。原始异常只在 debug 日志留痕。
@@ -155,8 +161,8 @@ class WebdavSyncCoordinator extends ChangeNotifier {
     return _syncGate.runExclusive(() async {
       _setStatus(_status.copyWith(isSyncing: true, clearError: true));
       try {
-        final result = await _syncService.createManualBackup(
-          provider: provider,
+        final result = await _collapseSyncFailure(
+          () => _syncService.createManualBackup(provider: provider),
         );
         _applyResult(result);
         return result;
@@ -221,10 +227,12 @@ class WebdavSyncCoordinator extends ChangeNotifier {
     return _syncGate.runExclusive(() async {
       _setStatus(_status.copyWith(isSyncing: true, clearError: true));
       try {
-        final result = await _syncService.restoreFromBackup(
-          provider: provider,
-          entryId: entryId,
-          uploadAsCurrent: uploadAsCurrent,
+        final result = await _collapseSyncFailure(
+          () => _syncService.restoreFromBackup(
+            provider: provider,
+            entryId: entryId,
+            uploadAsCurrent: uploadAsCurrent,
+          ),
         );
         _applyResult(result);
         return result;
@@ -248,7 +256,9 @@ class WebdavSyncCoordinator extends ChangeNotifier {
     return _syncGate.runExclusive(() async {
       _setStatus(_status.copyWith(isSyncing: true, clearError: true));
       try {
-        final result = await _syncService.deleteBackup(entryId: entryId);
+        final result = await _collapseSyncFailure(
+          () => _syncService.deleteBackup(entryId: entryId),
+        );
         _applyResult(result);
         return result;
       } finally {

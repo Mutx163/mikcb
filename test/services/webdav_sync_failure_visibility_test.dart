@@ -20,6 +20,25 @@ class _ThrowingSyncService extends WebdavSyncService {
     required TimetableProvider provider,
     bool allowConflictPrompt = true,
   }) => throw StateError('test_sync_now_threw_with_a_secret_url');
+
+  // 第 32 轮补的三个同形入口：真实抛源是 keystore 读密码（
+  // webdav_sync_credentials_store.dart:18 的裸 FlutterSecureStorage.read 会抛
+  // PlatformException），且它发生在 uploadSnapshot 自己的 try 之前。
+  @override
+  Future<WebdavSyncResult> createManualBackup({
+    required TimetableProvider provider,
+  }) => throw StateError('test_manual_backup_threw_with_a_secret_url');
+
+  @override
+  Future<WebdavSyncResult> restoreFromBackup({
+    required TimetableProvider provider,
+    required String entryId,
+    bool uploadAsCurrent = true,
+  }) => throw StateError('test_restore_threw_with_a_secret_url');
+
+  @override
+  Future<WebdavSyncResult> deleteBackup({required String entryId}) =>
+      throw StateError('test_delete_threw_with_a_secret_url');
 }
 
 void main() {
@@ -64,5 +83,34 @@ void main() {
 
     expect(coordinator.status.lastError ?? '', isNot(contains('secret_url')));
     expect(coordinator.status.lastError ?? '', isNot(contains('StateError')));
+  });
+
+  // 第 32 轮：另外三个同形入口（手动备份 / 恢复 / 删除）此前只有 try/finally，
+  // 抛出来就是"转一下、徽章干净、其实没成"。三者都要走同一个折叠。
+  group('手动备份 / 恢复 / 删除也要把抛出的异常折叠成可见失败', () {
+    test('手动备份抛异常时结果与 lastError 都要落下来', () async {
+      final result = await coordinator.createManualBackup();
+
+      expect(result.kind, WebdavSyncResultKind.failed);
+      expect(coordinator.status.isSyncing, isFalse);
+      expect(coordinator.status.lastError, 'sync_failed');
+      expect(coordinator.status.lastError ?? '', isNot(contains('secret_url')));
+    });
+
+    test('恢复抛异常时结果与 lastError 都要落下来', () async {
+      final result = await coordinator.restoreBackup('entry-1');
+
+      expect(result.kind, WebdavSyncResultKind.failed);
+      expect(coordinator.status.isSyncing, isFalse);
+      expect(coordinator.status.lastError, 'sync_failed');
+    });
+
+    test('删除抛异常时结果与 lastError 都要落下来', () async {
+      final result = await coordinator.deleteBackup('entry-1');
+
+      expect(result.kind, WebdavSyncResultKind.failed);
+      expect(coordinator.status.isSyncing, isFalse);
+      expect(coordinator.status.lastError, 'sync_failed');
+    });
   });
 }
