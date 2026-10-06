@@ -301,14 +301,8 @@ class DataTransferService {
     if (rawProfiles is! List || rawTimeSchemes is! List) {
       throw const FormatException('missing_full_backup_data');
     }
-    final profiles = _parseOptionalList(
-      rawProfiles,
-      TimetableProfile.fromJson,
-    );
-    final timeSchemes = _parseOptionalList(
-      rawTimeSchemes,
-      TimeScheme.fromJson,
-    );
+    final profiles = _parseOptionalList(rawProfiles, TimetableProfile.fromJson);
+    final timeSchemes = _parseOptionalList(rawTimeSchemes, TimeScheme.fromJson);
     if ((rawProfiles.isNotEmpty && profiles.isEmpty) ||
         (rawTimeSchemes.isNotEmpty && timeSchemes.isEmpty) ||
         // 容器级条目不许"静默变少"：一档课表 = 它的课 + 考试 + 作业，一条作息 = 整张
@@ -332,11 +326,11 @@ class DataTransferService {
       profiles: profiles,
       activeProfileId: json['activeProfileId'] as String?,
       timeSchemes: timeSchemes,
-      scheduleDateRules: _parseOptionalList(
+      scheduleDateRules: _parseListWithTotalLossGuard(
         json['scheduleDateRules'],
         ScheduleDateRule.fromJson,
       ),
-      locationTimeGroups: _parseOptionalList(
+      locationTimeGroups: _parseListWithTotalLossGuard(
         json['locationTimeGroups'],
         LocationTimeGroup.fromJson,
       ),
