@@ -124,6 +124,13 @@ object ExamReminderScheduler {
                 // Successful notifications remove themselves from oldFires.
                 // Only a retained entry can represent a permission/posting
                 // failure, so retry it once the app reconciles again.
+                //
+                // 2026-10-06：这条通道原先实际拿不到货 —— Dart 交上来的
+                // activeFireKeys 来自"只含严格未来响点"的投递列表，已过点的 fire
+                // 键必然缺席 → isActive 恒 false → 下面 persistFires 整份覆盖把它删掉。
+                // Dart 侧现在交"计划键"（exam_reminder_service.dart 的
+                // buildPlannedFireKeys，含已到点的提前量），改动别退回旧写法，
+                // test/services/exam_reminder_planned_fire_keys_test.dart 钉着。
                 fire.copy(fireAtMillis = nowMillis + 1_000L)
             }
         }

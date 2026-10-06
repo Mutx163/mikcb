@@ -132,11 +132,11 @@ class ExamReminderService {
           );
         } while (!taken.add(code));
       }
-      result.add(
-        probe == 0 ? fire : fire.withRequestCode(code),
-      );
+      result.add(probe == 0 ? fire : fire.withRequestCode(code));
     }
-    result.sort((left, right) => left.fireAtMillis.compareTo(right.fireAtMillis));
+    result.sort(
+      (left, right) => left.fireAtMillis.compareTo(right.fireAtMillis),
+    );
     return result;
   }
 
@@ -150,6 +150,47 @@ class ExamReminderService {
 
   static Set<String> buildActiveFireKeys(Iterable<ExamReminderFire> fires) {
     return fires.map(fireKey).toSet();
+  }
+
+  /// 交给原生的"这条逻辑提醒仍在用户的计划里"键集。
+  ///
+  /// 与投递列表不同：**必须包含已经到点、但可能没弹出去的那些提前量**。
+  /// 原生 `ExamReminderScheduler.kt:112-131` 靠 `fireKey(fire) in activeFireKeys`
+  /// 判定一条逾期未投递的 fire 要不要重试一次；而投递列表刻意只收严格未来的响点
+  /// （`buildFires` / `buildScheduleFires` 里那两处注释都写着"原生另有
+  /// failedOverdueFires 通道专门重试"）—— 两边各指认对方兜底，结果是这个通道
+  /// 从来拿不到货： overdue fire 的键永远不在键集里 → 判"不再活跃" → :134
+  /// `persistFires` 整份覆盖把它删掉。用户在通知权限被拒/勿扰期间没弹出去的
+  /// 那条考试提醒，就这么在下一次冷启动 reconcile 时永久消失。
+  ///
+  /// 键集仍然保留"改了提前量就别重试旧的"这层原意：`exam#30` 在用户把提前量
+  /// 从 30 改成 60 之后不再出现在计划里，旧的那条依旧不会被重试。
+  ///
+  /// 单节课提醒（`additionalFires`）刻意**不**放宽：它的 id 只含课程与日期、
+  /// 不含钟点（`class_reminder.dart:28`），`offsetMinutes` 又被固定成 0
+  /// （同文件 :100-107），放宽会让"改了上课时间"的旧条目也被判成仍在计划里，
+  /// 与新的那条一起重投 —— 与第 22 轮 requestCode 那一族同形。
+  static Set<String> buildPlannedFireKeys({
+    required List<Exam> exams,
+    required Course? Function(Exam exam) resolveCourse,
+    List<ScheduleItem> scheduleItems = const [],
+    List<ExamReminderFire> additionalFires = const [],
+    DateTime? now,
+  }) {
+    return buildActiveFireKeys(<ExamReminderFire>[
+      ...buildFires(
+        exams: exams,
+        resolveCourse: resolveCourse,
+        now: now,
+        includePastOffsets: true,
+      ),
+      ...buildScheduleFires(
+        scheduleItems: scheduleItems,
+        now: now,
+        includePastOffsets: true,
+      ),
+      ...additionalFires,
+    ]);
   }
 
   static const Duration _scheduleReminderHorizon = Duration(days: 366);
@@ -205,6 +246,7 @@ class ExamReminderService {
   static List<ExamReminderFire> buildScheduleFires({
     required List<ScheduleItem> scheduleItems,
     DateTime? now,
+    bool includePastOffsets = false,
   }) {
     final referenceNow = now ?? DateTime.now();
     final fromDate = ScheduleItem.dateOnly(
@@ -238,7 +280,8 @@ class ExamReminderService {
       // 节课就会重建整张提醒表，留 30 秒窗口的话那条刚响过的还在窗口内 → 原生按
       // 过去时刻 setExact → AlarmManager 立刻再投一次，同一条提醒弹两遍。原生另
       // 有 failedOverdueFires 通道专门重试「投了但没弹出去」的，不需要这里兜。
-      if (!fireAt.isAfter(referenceNow)) {
+      // 计划键那一支要的就是这些已过点的条目，见 buildPlannedFireKeys。
+      if (!includePastOffsets && !fireAt.isAfter(referenceNow)) {
         continue;
       }
       final scheduleId = _scheduleFireId(instance.occurrenceId);
@@ -317,10 +360,16 @@ class ExamReminderService {
   }
 
   /// Expands [exams] into future fire points. Pure function for unit tests.
+  ///
+  /// [includePastOffsets] 只给 `buildPlannedFireKeys` 用：计划键要覆盖**当前配置的
+  /// 全部提前量**，哪怕响点已经过去 —— 否则原生那条"投递了但没弹出去就重试一次"
+  /// 的通道（`ExamReminderScheduler.kt:112-131`）永远判不出"仍在计划里"。
+  /// 排程本身（投递列表）不受它影响，仍然只有严格未来的响点。
   static List<ExamReminderFire> buildFires({
     required List<Exam> exams,
     required Course? Function(Exam exam) resolveCourse,
     DateTime? now,
+    bool includePastOffsets = false,
   }) {
     final referenceNow = now ?? DateTime.now();
     final fires = <ExamReminderFire>[];
@@ -361,7 +410,9 @@ class ExamReminderService {
         // 「投递了但没弹出去」的条目，这里留窗口等于把刚响过的那条再投一遍：
         // 通知已投递会把它从快照删掉，但用户改一节课就会重建整张提醒表，30 秒内
         // 重建时它仍在窗口内 → setExact 一个过去时刻 → AlarmManager 立刻再弹一次。
-        if (!fireAt.isAfter(referenceNow)) {
+        // 例外：计划键那一支（includePastOffsets）要的就是"已经到点但可能没弹出去"
+        // 的那些，见 buildPlannedFireKeys。
+        if (!includePastOffsets && !fireAt.isAfter(referenceNow)) {
           continue;
         }
         // Empty title → native falls back to localized
@@ -433,7 +484,15 @@ class ExamReminderService {
     return syncFires(
       fires,
       activeExamIds: activeExamIds,
-      activeFireKeys: buildActiveFireKeys(fires),
+      // 计划键单独算，含已过点的提前量：见 buildPlannedFireKeys 的注释，
+      // 这是原生逾期未投递重试通道唯一的入口。
+      activeFireKeys: buildPlannedFireKeys(
+        exams: exams,
+        resolveCourse: resolveCourse,
+        scheduleItems: scheduleItems,
+        additionalFires: additionalFires,
+        now: referenceNow,
+      ),
     );
   }
 
