@@ -3,10 +3,11 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
+import '../utils/timed_method_channel.dart';
 
 /// Android-native RGBA blur (RenderEffect API 31+) with Dart Gaussian fallback.
 abstract final class FrostedBlurService {
-  static const _channel = MethodChannel('com.mutx163.qingyu/frosted_blur');
+  static const _channel = TimedMethodChannel('com.mutx163.qingyu/frosted_blur');
 
   static bool? _nativeSupportedCache;
   static bool _nativeBlurUnavailable = false;

@@ -13,14 +13,14 @@ import '../../helpers_test_app.dart';
 /// 玻璃坞 / 壁纸选点按钮）。弹窗家族的四个整体删除 —— 那些表面锁成「永远液态
 /// 玻璃的标准档」（[LiquidGlassRole.pinnedChrome]），用户改不动，开关存不存在
 /// 都不影响出图；「首页玻璃带」开关更早（2026-09-12）随顶栏材质五档自由选择
-/// 退役。坞跟随用户档位，故保留。
+/// 退役。坞跟随液态档，故保留 —— 高斯模糊全局档 2026-09-30 退场后，它成了
+/// 液态档下**唯一**能让某个表面退回磨砂的开关。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   FrostedAppearance liquidAppearance({bool dock = true}) {
     final settings = TimetableSettings.defaults().copyWith(
       frostedBlurEnabled: true,
-      frostedGlassMode: FrostedGlassMode.liquidGlass,
       liquidGlassDockEnabled: dock,
     );
     return settings.frostedAppearance;
@@ -32,11 +32,16 @@ void main() {
       expect(d.liquidGlassDockEnabled, isTrue);
     });
 
-    test('frostedAppearance 映射底栏开关', () {
+    test('frostedAppearance 映射模糊总开关与底栏开关', () {
       final a = liquidAppearance(dock: false);
-      expect(a.glassMode, FrostedGlassMode.liquidGlass);
+      expect(a.blurEnabled, isTrue);
       expect(a.liquidGlassDockEnabled, isFalse);
       expect(liquidAppearance().liquidGlassDockEnabled, isTrue);
+
+      final off = TimetableSettings.defaults()
+          .copyWith(frostedBlurEnabled: false)
+          .frostedAppearance;
+      expect(off.blurEnabled, isFalse);
     });
 
     test('JSON 往返保留开关；老档案缺键回退默认值', () {

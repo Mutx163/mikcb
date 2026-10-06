@@ -7,10 +7,12 @@ import 'package:flutter/material.dart';
 import '../../models/header_blur_style.dart';
 import 'frosted/frosted_appearance.dart';
 import 'frosted/frosted_header_background.dart';
+import 'frosted/flat_backdrop_scope.dart';
 import 'frosted/liquid_glass_degradation.dart';
 export 'frosted/frosted_appearance.dart';
 export 'frosted/frosted_header_background.dart'
     show FrostedHeaderBackground, HyperosFrostedSurface;
+export 'frosted/flat_backdrop_scope.dart';
 // HyperosFrostedPanelScope is exported via frosted_appearance.dart above.
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
@@ -306,19 +308,15 @@ abstract final class HyperosBlurredHeader {
 
   /// Modal scrim shared by home menu, sheets, dialogs, and select popups.
   ///
-  /// - **Gaussian**: black scrim from [FrostedAppearance.sheetBarrierAlpha]
-  ///   (外观与配色), matching the home top-right menu.
-  /// - **Liquid glass**: fixed light dim ([liquidGlassModalBarrierAlpha]).
-  ///   Just enough hierarchy that every popup reads as the same modal, without
-  ///   a heavy grey wash that flattens the refractive glass.
+  /// Black scrim from [FrostedAppearance.sheetBarrierAlpha] (外观与配色),
+  /// matching the home top-right menu.
+  ///
+  /// ⚠️ 2026-09-30 高斯模糊档退场后，液态玻璃是唯一的玻璃材质，于是这层遮罩
+  /// 只剩**两种**取值：系统降级时用 [liquidGlassModalBarrierAlpha] 那层轻纱
+  /// （液态折射还在用它采样背景，遮罩一重折射就浑），其余时候用配置里的
+  /// [FrostedAppearance.sheetBarrierAlpha]。别再加第三个分支。
   static Color modalBarrierColor(BuildContext context) {
-    final appearance = _appearanceOf(context);
-    // Keep the liquid-glass light scrim only while the real refractive glass
-    // is in use; once the system degrades glass to a solid (accessibility /
-    // reduce-motion / high-contrast), the heavier gaussian scrim gives the
-    // now-opaque modal the hierarchy it needs.
-    if (appearance.glassMode == FrostedGlassMode.liquidGlass &&
-        !LiquidGlassDegradation.shouldDegrade(context)) {
+    if (!LiquidGlassDegradation.shouldDegrade(context)) {
       return Colors.black.withValues(alpha: liquidGlassModalBarrierAlpha);
     }
     return Colors.black.withValues(alpha: sheetBarrierAlphaOf(context));
@@ -414,7 +412,18 @@ abstract final class HyperosBlurredHeader {
   /// Nested tile wash when the parent sheet already uses liquid glass.
   ///
   /// Must stay translucent — solid secondaryVariant reads as dead blocks.
+  ///
+  /// **背后是平色底时改走中性水洗**（[nestedSurfaceTintColor] 的 `withBlur: false`
+  /// 分支），与「面板被技术 / 系统门禁摘成实底」同一个出口、同一份数值：
+  /// 白色水洗的分层**靠玻璃采到有颜色的背景**成立，采不到就是白叠白
+  /// （算术与取舍见 [HyperosFlatBackdropScope] 的类注释）。
+  ///
+  /// 这是两条消费路径（[HyperosFrostedSurface] 与 `HyperosAdaptiveCard`）共用的
+  /// 唯一出口 —— **不要**在调用方各自加判据，两处一漂又是「同一材质两种观感」。
   static Color nestedLiquidTileTintColor(BuildContext context) {
+    if (HyperosFlatBackdropScope.isFlatOf(context)) {
+      return nestedSurfaceTintColor(context, withBlur: false);
+    }
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isDark) {
       return Colors.white.withValues(alpha: 0.12);

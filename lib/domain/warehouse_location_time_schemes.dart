@@ -337,3 +337,30 @@ class QingyuOnlyTimeSchemesLogic {
     return hour * 60 + minute;
   }
 }
+
+/// 导入一套专属作息时，现有地点分组与新分组怎么合。
+///
+/// 三条规则，优先级从高到低：
+///
+/// 1. **同名替换**：脚本/数据文件提到的组名直接顶掉旧组——重复导入不攒重名组。
+/// 2. **他校自动组清除**：来源标记是**别的学校**的自动分组（教学楼名跨校撞车
+///    太常见，「A栋」谁家都有），留着只会把新校教室错分到旧校的作息上。
+/// 3. **其余一律保留**：用户手建的组（无来源标记）与本校旧组。手建组不属于
+///    任何一次导入的清理范围；本校旧组随后会被同名替换或继续生效。
+///
+/// 抽成纯函数的原因与 `_parseSectionMap` 等一致：合并策略是「清错一组比少清
+/// 一组更糟」的判断，必须能直接单测，不该埋在屏幕的 async 流程里。
+List<LocationTimeGroup> mergeLocationTimeGroupsForImport({
+  required List<LocationTimeGroup> existing,
+  required List<LocationTimeGroup> incoming,
+  required String schoolId,
+}) {
+  final replacedNames = incoming.map((group) => group.name).toSet();
+  return [
+    for (final group in existing)
+      if (!replacedNames.contains(group.name) &&
+          (group.sourceSchoolId == null || group.sourceSchoolId == schoolId))
+        group,
+    ...incoming,
+  ];
+}

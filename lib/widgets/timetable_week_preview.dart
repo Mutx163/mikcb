@@ -252,6 +252,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     required BuildContext context,
     required double appHeaderHeight,
     required double gridClearance,
+    required Color solidColor,
   }) {
     final hasHeaderBand =
         settings.homePageHeaderBlurEnabled && appHeaderHeight > 0;
@@ -343,6 +344,9 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                       // "能采到多大范围"** —— 2026-09-21 真机确认把它关掉（改实时采样）
                       // 那条黑边没有任何变化；范围由上面的 `captureMargin` 负责。
                       useAncestorBackdropGroup: true,
+                      // 实体档那条实心条与标题行同源（页面底色），见
+                      // [HomePageChromeGlassFill.solidColor]。
+                      solidColor: solidColor,
                     ),
                   ),
                 ),
@@ -577,6 +581,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                         context: context,
                         appHeaderHeight: appHeaderHeight,
                         gridClearance: chromeGridClearance,
+                        solidColor: backgroundColor,
                       ),
                     Column(
                       children: [
@@ -659,11 +664,16 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       settings: settings,
       hasBackdrop: hasBackdrop,
       headerShowsBackdrop: headerShowsBackdrop,
+      // 与首页同口径：液态 / 磨砂带在模糊管线不在时降级为实心条。
+      blurPipelineOn:
+          hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context),
     );
     final headerBackground = resolveHomePageHeaderBackground(
       settings: settings,
       hasBackdrop: hasBackdrop,
       headerShowsBackdrop: headerShowsBackdrop,
+      blurPipelineOn:
+          hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context),
       isDark: isDark,
       darkFallback: darkFallback,
     );
@@ -791,13 +801,15 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final dividerWidth = hasBackdropForBorder ? 1.0 : 0.5;
     final visibleDays = _visibleDayNumbers(settings);
     // 内嵌小字入口已移除（回本周唯一入口是右下浮钮）。
-    final weekdayChromeOverWallpaper =
-        hasBackdrop &&
-        (homePageRegionShowsBackdrop(
-              settings,
-              HomePageBackgroundScope.weekdayBar,
-            ) ||
-            settings.homePageWeekdayBarBlurEnabled);
+    // 实体档那条不透明实心条把壁纸盖住 ⇒ 不算「压在壁纸上」，墨色走主题 / 配置色
+    // （与首页 [homePageWeekdayBarOverWallpaper] 同口径）；液态 / 磨砂带在模糊
+    // 管线不在时降级的实心条亦然。
+    final weekdayChromeOverWallpaper = homePageWeekdayBarOverWallpaper(
+      settings: settings,
+      hasBackdrop: hasBackdrop,
+      blurPipelineOn:
+          hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context),
+    );
     // Judge ink from the band actually behind the weekday bar, not the
     // status/title strip above it. With the weekday glass band on, follow the
     // band's scrim polarity (derived from the top sample) so ink and wash
@@ -1030,6 +1042,9 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
   ///
   /// 判据与首页周网格逐条对齐（开关 → 这一周真的上 → 才查摘要），
   /// 唯一的差别是预览里只有用户自己的课，没有「情侣对方课程」这一档。
+  ///
+  /// 「数据还没到」时同样返回预留的空位：预览画的就是首页那张窄卡，两边占位口径
+  /// 必须一致，否则用户在设置里看到的是「不占位」、回到首页却是「占位」。
   CourseWeatherDisplay? _weatherDisplay(
     BuildContext context,
     Course course,
@@ -1045,7 +1060,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
         !course.isActiveInWeek(week)) {
       return null;
     }
-    return courseWeatherDisplayFor(
+    final display = courseWeatherDisplayFor(
       l10n: l10n,
       summary: weather.summaryForCourse(
         date: date,
@@ -1059,6 +1074,10 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
       // 看到的和回到课表看到的是两行字。
       textDensity: WeatherTextDensity.compact,
     );
+    if (display != null) {
+      return display;
+    }
+    return weather.isAwaitingData ? const CourseWeatherDisplay.reserved() : null;
   }
 
   Widget _buildDayColumn({

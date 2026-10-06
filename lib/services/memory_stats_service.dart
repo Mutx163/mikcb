@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../utils/timed_method_channel.dart';
 
 /// 公平运行内存 / 全应用内存监控（仅调试版、性能版入口使用）。
 class MemoryStatsService {
@@ -11,7 +12,7 @@ class MemoryStatsService {
 
   static final MemoryStatsService instance = MemoryStatsService._();
 
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     'com.mutx163.qingyu/memory_stats',
   );
 

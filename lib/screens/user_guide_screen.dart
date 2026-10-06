@@ -644,7 +644,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     );
   }
 
-  /// 个性化定制页：首次进入引导时即可选择视觉效果、深浅色与主题色。
+  /// 个性化定制页：首次进入引导时即可选择默认材质、深浅色与主题色。
   /// 所有选择直接写入 [TimetableProvider] 并立即生效，之后仍可在
   /// 「设置 → 外观」中修改。选项行 / 分段 / 色板全部使用组件库现成
   /// 组件（HyperosChoiceTile 单选行、HyperosTabRow 分段、HyperOS 色板）。
@@ -653,7 +653,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     // 与欢迎页语言选择器同策略：Provider 不在树上（裸测试宿主）时整页隐藏。
     if (provider == null) return const SizedBox.shrink();
     final settings = provider.settings;
-    final currentEffect = _guideVisualEffectOf(settings);
+    final currentEffect = glassModeChoiceOf(settings);
 
     return _buildGuideList(
       storageId: 'personalize',
@@ -702,7 +702,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         ),
         const HyperosSectionGap(),
         HyperosControlCard(
-          title: l10n.guidePersonalizeVisualEffectTitle,
+          title: l10n.frostedGlassModeLabel,
           child: HyperosControlCardInset(
             child: Column(
               children: [
@@ -717,6 +717,19 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                     showDivider: index < _guideVisualEffectOptions.length - 1,
                     onTap: () => _applyVisualEffect(effect),
                   ),
+                // 玻璃两档专属提示：首启没有壁纸，玻璃面没有可采样的背景，
+                // 课程卡片此刻全按实体渲染——不提示会被当成「选了没生效」。
+                // 实体档不吃壁纸，覆盖面已写进描述，不再加字。
+                if (currentEffect != GlassModeChoice.solid) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      l10n.guideVisualEffectWallpaperHint,
+                      style: _guideMutedBodyStyle(),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -809,23 +822,15 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     _applyForuiTheme(theme);
   }
 
-  /// 视觉效果档位与设置字段的映射。
-  ///
-  /// 委派给 [applyGlassModeChoice]（设置页「材质」两格分段的唯一写入口），
-  /// 避免引导页与设置页各自维护一套映射、日后再漂移。
-  /// 两者档位对应：gaussian / liquidGlass / solid。
+  /// 「默认材质」三档写入：直接委派给 [applyGlassModeChoice]（设置页材质
+  /// 面板「默认材质」三格分段的唯一写入口），避免引导页与设置页各自维护
+  /// 一套映射、日后再漂移。
   ///
   /// **柔光玻璃 2026-09-22 从引导页撤下**（整机只认实体 / 液态两种材质，
   /// 而它此前是唯一还能选到柔光的入口）；存量柔光值读盘即归液态，见
   /// `.agents/notes/implemented/simplification/2026-09-22-retire-soft-glass-mode.md`。
-  void _applyVisualEffect(_GuideVisualEffect effect) {
-    _updateSettings(
-      applyGlassModeChoice(_currentSettings, switch (effect) {
-        _GuideVisualEffect.gaussian => GlassModeChoice.gaussian,
-        _GuideVisualEffect.liquidGlass => GlassModeChoice.liquidGlass,
-        _GuideVisualEffect.solid => GlassModeChoice.solid,
-      }),
-    );
+  void _applyVisualEffect(GlassModeChoice effect) {
+    _updateSettings(applyGlassModeChoice(_currentSettings, effect));
   }
 
   Widget _buildTipsPage(AppLocalizations l10n) {
@@ -1154,48 +1159,30 @@ class _PermissionItem {
   });
 }
 
-/// 引导页「视觉效果」三档选择，与设置页「材质」面板的默认材质三格同一套
-/// 映射（[GlassModeChoice] / [applyGlassModeChoice] 是唯一写入口）——
-/// 名字也是同一套：实体卡片 / 高斯模糊 / 液态玻璃。
-///
-/// 柔光玻璃 2026-09-22 撤下（详见 `_applyVisualEffect`）。
-enum _GuideVisualEffect { gaussian, liquidGlass, solid }
-
-const List<_GuideVisualEffect> _guideVisualEffectOptions = <_GuideVisualEffect>[
-  _GuideVisualEffect.gaussian,
-  _GuideVisualEffect.liquidGlass,
-  _GuideVisualEffect.solid,
+/// 引导页「默认材质」两档的展示顺序：模糊+折射（液态）→ 不模糊（实体）。
+/// 与设置页材质面板总闸同一套 [GlassModeChoice]——选中项
+/// 推导用 [glassModeChoiceOf]、写入用 [applyGlassModeChoice]，引导页不再
+/// 私养一份映射。柔光玻璃 2026-09-22 撤下、高斯模糊 2026-09-30 撤下
+/// （两者存量值都在读盘时归到液态）。
+const List<GlassModeChoice> _guideVisualEffectOptions = <GlassModeChoice>[
+  GlassModeChoice.liquidGlass,
+  GlassModeChoice.solid,
 ];
-
-/// 从当前设置推导引导页视觉效果选中项。
-///
-/// 柔光玻璃撤下之后，能落到这里的三档之外的值只剩「存量档」——
-/// 但存量柔光在读盘时已归到液态（[FrostedGlassModeX.fromValue]），
-/// 所以这里不再需要单独认它。
-_GuideVisualEffect _guideVisualEffectOf(TimetableSettings settings) {
-  if (!settings.frostedBlurEnabled) return _GuideVisualEffect.solid;
-  return switch (settings.frostedGlassMode) {
-    FrostedGlassMode.liquidGlass => _GuideVisualEffect.liquidGlass,
-    _ => _GuideVisualEffect.gaussian,
-  };
-}
 
 String _guideVisualEffectLabel(
   AppLocalizations l10n,
-  _GuideVisualEffect effect,
+  GlassModeChoice effect,
 ) => switch (effect) {
-  _GuideVisualEffect.gaussian => l10n.frostedGlassModeGaussian,
-  _GuideVisualEffect.liquidGlass => l10n.frostedGlassModeLiquid,
-  _GuideVisualEffect.solid => l10n.guidePersonalizeVisualEffectSolid,
+  GlassModeChoice.liquidGlass => l10n.frostedGlassModeLiquid,
+  GlassModeChoice.solid => l10n.guidePersonalizeVisualEffectSolid,
 };
 
 String _guideVisualEffectDescription(
   AppLocalizations l10n,
-  _GuideVisualEffect effect,
+  GlassModeChoice effect,
 ) => switch (effect) {
-  _GuideVisualEffect.gaussian => l10n.guideVisualEffectGaussianDesc,
-  _GuideVisualEffect.liquidGlass => l10n.guideVisualEffectLiquidDesc,
-  _GuideVisualEffect.solid => l10n.guideVisualEffectSolidDesc,
+  GlassModeChoice.liquidGlass => l10n.guideVisualEffectLiquidDesc,
+  GlassModeChoice.solid => l10n.guideVisualEffectSolidDesc,
 };
 
 /// 个性化页通用单选偏好行：组件库 [HyperosChoiceTile]（radio 变体）。

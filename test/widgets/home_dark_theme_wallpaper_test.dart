@@ -269,6 +269,10 @@ void main() {
           // ignored
         }
       });
+      // 墨色按壁纸亮度翻转是玻璃带的行为：测试环境模糊管线默认不在
+      // （liveBlurSupported 读平台能力），打开 override 才能进玻璃分支。
+      HyperosBlurredHeader.liveBlurSupportedOverride = true;
+      addTearDown(() => HyperosBlurredHeader.liveBlurSupportedOverride = null);
       final wallpaper = await tester.runAsync(
         () => _writeWallpaper(dir),
       );
@@ -304,6 +308,10 @@ void main() {
           // ignored
         }
       });
+      // 墨色按壁纸亮度翻转是玻璃带的行为：测试环境模糊管线默认不在
+      // （liveBlurSupported 读平台能力），打开 override 才能进玻璃分支。
+      HyperosBlurredHeader.liveBlurSupportedOverride = true;
+      addTearDown(() => HyperosBlurredHeader.liveBlurSupportedOverride = null);
       final wallpaper = await tester.runAsync(
         () => _writeWallpaper(dir, topLightFraction: 1),
       );

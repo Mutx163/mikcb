@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../models/weather_forecast.dart';
+import '../utils/timed_method_channel.dart';
 import 'app_log_service.dart';
 
 /// 与 `android/app/src/main/kotlin/com/mutx163/qingyu/LocationFix.kt` 的 `CHANNEL`
@@ -121,7 +122,7 @@ class NativeDeviceLocationSource implements DeviceLocationSource {
   /// 是为了避免两边默认值各改各的、悄悄漂移。
   static const Duration budget = Duration(seconds: 12);
 
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     deviceLocationChannelName,
   );
 

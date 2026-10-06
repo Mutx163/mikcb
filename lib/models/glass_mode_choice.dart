@@ -1,57 +1,40 @@
-import '../ui/hyperos/frosted/frosted_appearance.dart';
-
 import 'timetable_settings.dart';
 
-/// 玻璃模式三档选择（设置页「默认材质」与引导页「视觉效果」共用的映射
-/// 语义）：**实体卡片 / 高斯模糊 / 液态玻璃**。
+/// 玻璃材质档（设置页「默认材质」与引导页「视觉效果」共用的映射语义）：
+/// **实体卡片 / 液态玻璃**。
 ///
-/// 这三档正好覆盖两种真实材质加一种「没有模糊」的状态：
-/// 不模糊（实体）/ 模糊（高斯）/ 模糊 + 折射（液态）。
-/// `FrostedGlassMode` 里只有后两种 —— 实体卡片不是第三种材质，是模糊总开关关。
-enum GlassModeChoice { solid, gaussian, liquidGlass }
+/// 整机只剩**一种**玻璃材质（液态玻璃）：2026-09-30 高斯模糊档退场，那一档承诺的
+/// 「全局都是磨砂」从来不存在（子页顶栏锁死渐进模糊、弹窗家族锁标准液态、课程
+/// 卡片另有自己一档）。所以这两档问的其实是「要不要玻璃」——不模糊（实体卡片）
+/// / 模糊 + 圆角 SDF 边缘折射（液态玻璃）。「磨砂」仍作为**渲染回落与个别表面**
+/// 存在（着色器不可用时的回落带、子页顶栏、课程卡片自己那档），只是不再是整机档位。
+enum GlassModeChoice { solid, liquidGlass }
 
-/// 从当前设置推导玻璃模式档位：模糊关 → 实体卡片；液态 → 液态玻璃；
-/// 其余 → 高斯模糊。
-GlassModeChoice glassModeChoiceOf(TimetableSettings settings) {
-  if (!settings.frostedBlurEnabled) {
-    return GlassModeChoice.solid;
-  }
-  if (settings.frostedGlassMode == FrostedGlassMode.liquidGlass) {
-    return GlassModeChoice.liquidGlass;
-  }
-  return GlassModeChoice.gaussian;
-}
+/// 从当前设置推导玻璃材质档：模糊关 → 实体卡片；否则 → 液态玻璃。
+GlassModeChoice glassModeChoiceOf(TimetableSettings settings) =>
+    settings.frostedBlurEnabled
+    ? GlassModeChoice.liquidGlass
+    : GlassModeChoice.solid;
 
-/// 把玻璃模式档位写回设置。
+/// 把玻璃材质档写回设置。
 ///
-/// 实体卡片在关闭模糊总开关的同时把玻璃模式归位非液态（高斯）：
-/// 液态面自带模糊、不受模糊总开关约束，不归位会出现「选了实体卡片，
-/// 弹窗仍是液态」的残留。高斯 / 液态玻璃档均保证模糊开启。
+/// 实体卡片 = 关闭模糊总开关；液态玻璃 = 打开它。仅此两件事。
 ///
-/// 底栏不再由这里写入独立材质：底栏材质现在**跟随全局**
-/// （见 `_buildGlassDockBar`），不再会出现「全局高斯 + 底栏液态」这类脱钩。
+/// 底栏材质跟随全局（见 `_buildGlassDockBar`），不再有独立开关：想让坞单独走
+/// 磨砂，用唯一留着的「作用范围 → 玻璃坞」开关（液态档下它是唯一的例外口）。
 ///
-/// 液态档额外打开唯一保留的「作用范围 → 底栏」开关（见分支内注释）；**顶栏两处的写穿**
-/// （首页玻璃带材质、子页顶栏风格）与液态的顶栏渲染分支同批落地，见
-/// `.agents/notes/implemented/architecture/2026-09-18-liquid-glass-surface.md`。
+/// 液态档顺带打开那把开关（见分支内注释）；顶栏带那把轴不参与本函数，由
+/// [applyHomeBandGlassMaterial] 单独写。
 TimetableSettings applyGlassModeChoice(
   TimetableSettings settings,
   GlassModeChoice choice,
 ) => switch (choice) {
-  GlassModeChoice.solid => settings.copyWith(
-    frostedBlurEnabled: false,
-    frostedGlassMode: FrostedGlassMode.gaussian,
-  ),
-  GlassModeChoice.gaussian => settings.copyWith(
-    frostedBlurEnabled: true,
-    frostedGlassMode: FrostedGlassMode.gaussian,
-  ),
+  GlassModeChoice.solid => settings.copyWith(frostedBlurEnabled: false),
   GlassModeChoice.liquidGlass => settings.copyWith(
     frostedBlurEnabled: true,
-    frostedGlassMode: FrostedGlassMode.liquidGlass,
     // 液态是「整机材质」，选中它时用户期待整个软件都变：连同唯一保留的
     // 「作用范围 → 底栏」开关一起打开。弹窗家族的四个开关已删除（那些表面
-    // 锁标准档，恒为玻璃，没有开关可开）。其余两档不动坞的取舍。
+    // 锁标准档，恒为玻璃，没有开关可开）。另一档不动坞的取舍。
     liquidGlassDockEnabled: true,
   ),
 };

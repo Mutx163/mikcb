@@ -6358,19 +6358,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guidePersonalizeNavFormTitle => '导航形态';
 
   @override
-  String get guidePersonalizeVisualEffectTitle => '视觉效果';
-
-  @override
   String get guidePersonalizeVisualEffectSolid => '实体卡片';
-
-  @override
-  String get guideVisualEffectGaussianDesc => '背景实时高斯模糊，通透有层次';
 
   @override
   String get guideVisualEffectLiquidDesc => '液态玻璃折射，更具质感';
 
   @override
-  String get guideVisualEffectSolidDesc => '不启用模糊效果，性能最好';
+  String get guideVisualEffectSolidDesc => '顶栏、玻璃坞与课程卡片回到实体，最省性能；弹窗等固定小件保持玻璃';
+
+  @override
+  String get guideVisualEffectWallpaperHint => '玻璃材质配上首页壁纸后效果更明显';
 
   @override
   String get guidePersonalizeThemeModeTitle => '深浅色模式';
@@ -9556,6 +9553,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String coursesBeyondSchemeExtraSuffix(int count, int sections) {
+    return '，另有 $count 节超出当前时间模板（共 $sections 节），课表上看不到';
+  }
+
+  @override
   String get locationTimeMatchEmpty => '还没有地点组';
 
   @override
@@ -9883,9 +9885,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get frostedGlassModeLiquid => '液态玻璃';
-
-  @override
-  String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
   String get frostedGlassModeSolid => '实体卡片';
@@ -11100,6 +11099,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get appearanceEditorEntrySubtitle => '整页微缩预览，改壁纸与材质';
+
+  @override
+  String get commonLoadingLabel => '加载中';
+
+  @override
+  String get warehouseSessionAlreadyActive => '教务仍处于登录状态，可直接导入';
+
+  @override
+  String underlineTabSemanticsLabel(String text) {
+    return '$text，标签';
+  }
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -17456,19 +17466,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guidePersonalizeNavFormTitle => '導覽形態';
 
   @override
-  String get guidePersonalizeVisualEffectTitle => '視覺效果';
-
-  @override
   String get guidePersonalizeVisualEffectSolid => '實體卡片';
-
-  @override
-  String get guideVisualEffectGaussianDesc => '背景即時高斯模糊，通透有層次';
 
   @override
   String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感';
 
   @override
-  String get guideVisualEffectSolidDesc => '不啟用模糊效果，效能最佳';
+  String get guideVisualEffectSolidDesc => '頂欄、玻璃塢與課程卡片回到實體，最省效能；彈窗等固定小件保持玻璃';
+
+  @override
+  String get guideVisualEffectWallpaperHint => '玻璃材質配上首頁壁紙後效果更明顯';
 
   @override
   String get guidePersonalizeThemeModeTitle => '深淺色模式';
@@ -20694,6 +20701,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String coursesBeyondSchemeExtraSuffix(int count, int sections) {
+    return '，另有 $count 節超出當前時間模板（共 $sections 節），課表上看不到';
+  }
+
+  @override
   String get locationTimeMatchEmpty => '還沒有地點組';
 
   @override
@@ -21021,9 +21033,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get frostedGlassModeLiquid => '液態玻璃';
-
-  @override
-  String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
   String get frostedGlassModeSolid => '實體卡片';
@@ -22238,6 +22247,17 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get appearanceEditorEntrySubtitle => '整頁縮小預覽，改桌布與材質';
+
+  @override
+  String get commonLoadingLabel => '載入中';
+
+  @override
+  String get warehouseSessionAlreadyActive => '教務仍處於登入狀態，可直接匯入';
+
+  @override
+  String underlineTabSemanticsLabel(String text) {
+    return '$text，標籤';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -28594,19 +28614,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guidePersonalizeNavFormTitle => '導覽形態';
 
   @override
-  String get guidePersonalizeVisualEffectTitle => '視覺效果';
-
-  @override
   String get guidePersonalizeVisualEffectSolid => '實體卡片';
-
-  @override
-  String get guideVisualEffectGaussianDesc => '背景即時高斯模糊，通透有層次';
 
   @override
   String get guideVisualEffectLiquidDesc => '液態玻璃折射，更具質感';
 
   @override
-  String get guideVisualEffectSolidDesc => '不啟用模糊效果，效能最佳';
+  String get guideVisualEffectSolidDesc => '頂欄、玻璃塢與課程卡片回到實體，最省效能；彈窗等固定小件保持玻璃';
+
+  @override
+  String get guideVisualEffectWallpaperHint => '玻璃材質配上首頁壁紙後效果更明顯';
 
   @override
   String get guidePersonalizeThemeModeTitle => '深淺色模式';
@@ -31833,6 +31850,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String coursesBeyondSchemeExtraSuffix(int count, int sections) {
+    return '，另有 $count 節超出當前時間範本（共 $sections 節），課表上看不到';
+  }
+
+  @override
   String get locationTimeMatchEmpty => '還沒有地點組';
 
   @override
@@ -32160,9 +32182,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get frostedGlassModeLiquid => '液態玻璃';
-
-  @override
-  String get frostedGlassModeGaussian => '高斯模糊';
 
   @override
   String get frostedGlassModeSolid => '實體卡片';
@@ -33377,4 +33396,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get appearanceEditorEntrySubtitle => '整頁縮小預覽，改桌布與材質';
+
+  @override
+  String get commonLoadingLabel => '載入中';
+
+  @override
+  String get warehouseSessionAlreadyActive => '教務仍處於登入狀態，可直接匯入';
+
+  @override
+  String underlineTabSemanticsLabel(String text) {
+    return '$text，標籤';
+  }
 }

@@ -7,13 +7,14 @@ import 'package:flutter_miuix/miuix.dart';
 
 import '../ui/app_fonts.dart';
 import '../utils/theme_seed_accent.dart';
+import '../utils/timed_method_channel.dart';
 
 /// 读取 Android 系统字体粗细增量（`Configuration.fontWeightAdjustment`）。
 ///
 /// Android 12+ 返回该增量；低版本、未定义或非 Android 返回 null，交由调用方
 /// 回退到 [MediaQueryData.boldText]。
 abstract final class SystemFontWeightService {
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     'com.mutx163.qingyu/system_ui',
   );
 

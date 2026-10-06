@@ -67,7 +67,6 @@ void main() {
             sheetTintAlpha: kDefaultFrostedSheetTintAlpha,
             sheetBarrierAlpha: kDefaultFrostedSheetBarrierAlpha,
             blurEnabled: settings.frostedBlurEnabled,
-            glassMode: settings.frostedGlassMode,
             homeBandGlassMaterial:
                 homeBandGlassMaterial ?? kDefaultHomeBandGlassMaterial,
             liquidGlassTuning: settings.liquidGlassTuning,
@@ -342,7 +341,6 @@ void main() {
         settings: TimetableSettings.defaults().copyWith(
           homePageWallpaperPath: wallpaper.path,
           homePageWeekdayBarBlurEnabled: true,
-          frostedGlassMode: FrostedGlassMode.liquidGlass,
         ),
       );
 

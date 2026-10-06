@@ -108,14 +108,22 @@ String _formatClock(int hour, int minute) {
 
 /// 浮钮的材质读的是 [FrostedAppearanceScope]，**不是** provider 里的设置
 /// （真机上由 `main.dart` 用 `settings.frostedAppearance` 下发这一份）。
-/// `TestApp` 不装这个 scope，缺了它 `of(context)` 会回落到 [FrostedAppearance.defaults]
-/// 的基础档 —— 那时这颗钮走磨砂片、树里根本没有 [LiquidGlassSurface]。
+/// `TestApp` 不装这个 scope，缺了它 `of(context)` 会回落到 [FrostedAppearance.defaults]。
 FrostedAppearance _liquidGlassAppearance() => FrostedAppearance(
   sheetBlurSigma: FrostedAppearance.defaults.sheetBlurSigma,
   sheetTintAlpha: FrostedAppearance.defaults.sheetTintAlpha,
   sheetBarrierAlpha: FrostedAppearance.defaults.sheetBarrierAlpha,
-  glassMode: FrostedGlassMode.liquidGlass,
 );
+
+/// 让 [LiquidGlassSurface.isAvailable] 在测试里返回给定值（null = 真实判据）。
+///
+/// 测试环境跑软件后端，折射恒画不出来 ⇒ 表面永远回落成磨砂片。真机上液态画得出来
+/// 时描边去掉、回落时描边回来，这两半都靠这道缝分别钉住（同
+/// `day_view_floating_back_to_today_test.dart` 的同名辅助）。
+void _useShaderFilterSupport(bool? supported) {
+  LiquidGlassSurface.availabilityOverride = supported;
+  addTearDown(() => LiquidGlassSurface.availabilityOverride = null);
+}
 
 List<SectionTime> _inProgressSections(DateTime now) {
   final currentMinutes = now.hour * 60 + now.minute;
@@ -1772,6 +1780,9 @@ void main() {
   // 底栏药丸之所以会跟着内容变，是因为坞层被摆在这个组**之外**。
   // 用户 2026-09-20 拍板「对齐药丸实时采样」，两颗悬浮钮一并改。
   testWidgets('回本周浮钮走实时采样：在组里但不跟组采样', (tester) async {
+    // 采样源这条断言只在液态真的画出来时成立（回落成磨砂片时树里没有
+    // LiquidGlassSurface），所以把判据拨成真机状态。
+    _useShaderFilterSupport(true);
     final now = DateTime.now();
     final currentWeekStart = _startOfCurrentWeek(now);
     final provider = await createInitializedTestProvider(tester);

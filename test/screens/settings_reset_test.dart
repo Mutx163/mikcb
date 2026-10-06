@@ -3,7 +3,6 @@ import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
-import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
 
 /// 「恢复默认」必须只动本页字段。这些用例守的是两件事：
@@ -47,7 +46,6 @@ void main() {
       appFontWeight: 700,
       appTextScale: 1.3,
       themeSeedColor: '#FF0000',
-      frostedGlassMode: FrostedGlassMode.liquidGlass,
       frostedBlurEnabled: false,
       liquidGlassDockEnabled: false,
       liquidGlassPreset: LiquidGlassPreset.dense,
@@ -190,7 +188,6 @@ void main() {
     // 真源见 `AppGlobalSettingsService`），本页点恢复默认不该改掉别的课表也在用的
     // 那套材质。控件也一直不在本页（在「外观编辑」的材质面板里）。
     expect(result.homeBandGlassMaterial, dirty.homeBandGlassMaterial);
-    expect(result.frostedGlassMode, dirty.frostedGlassMode);
     expect(result.frostedBlurEnabled, dirty.frostedBlurEnabled);
     expect(result.liquidGlassDockEnabled, dirty.liquidGlassDockEnabled);
     expect(result.liquidGlassTuning, dirty.liquidGlassTuning);
@@ -216,7 +213,6 @@ void main() {
 
     // 材质轴 2026-09-22 起归本作用域（控件在「外观编辑」的材质面板里，本页是它的
     // 入口；且材质是设备级设置，得有个能回到出厂的口子）。
-    expect(result.frostedGlassMode, defaults.frostedGlassMode);
     expect(result.frostedBlurEnabled, defaults.frostedBlurEnabled);
     expect(result.liquidGlassDockEnabled, defaults.liquidGlassDockEnabled);
     expect(result.liquidGlassPreset, defaults.liquidGlassPreset);

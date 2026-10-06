@@ -81,21 +81,38 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   MiuixBottomSheetClose? _sheetClose;
   int _sheetGeneration = 0;
 
-  /// 面板里**内容之外**、在内容上方的那一圈（上沿把手栏）。
+  /// 面板里**内容之外**、在内容上方的那一圈。**现在是 0。**
   ///
-  /// 实测值：同一套真机视口下，面板顶到内容顶差 42.0（把手 + 面板自己的上内边距）。
-  /// 内容的高度上限要把它（以及下方的安全区 + 呼吸）扣掉，**面板整体**才是
-  /// [_materialSheetMaxHeightFactor]。这个数是量出来的，改承载壳的把手要重新量
-  /// （`appearance_editor_layout_test` 里那条面板高度用例会跟着红）。
-  static const _materialSheetTopChromeHeight = 42.0;
+  /// 2026-09-27 之前这里是 42（把手条 24 + 上游无标题时照样插的空占位 18），当时内容
+  /// 从 42 才开始，扣掉它面板整体才等于 [_materialSheetMaxHeightFactor]。上游把手条改成
+  /// **悬浮**（`dragHandleOverlaysContent`，见 `showMiuixBottomSheet`）之后，那 42 没有了：
+  /// 承载壳的 `reserveDragHandleStrip: false` 让顶部不留白，正文直接铺到面板上沿 ——
+  /// `test/ui/hyperos/hyperos_sheet_test.dart` 用「内容顶 − 面板顶 ≈ 0」钉住了这一条。
+  ///
+  /// 那 42 没有跟着归零，于是**面板凭空比「最多半屏」矮 42，正文也凭空少 42 的可视高度**
+  ///（真机 393×852 下第一眼能看到的正文从 300.65 掉到 258.65）。
+  ///
+  /// ⚠️ **顶部那条渐变模糊带（24 把手 + 40 胶囊 + 20 渐隐 = 84）不算在这里**：它在内容盒
+  /// **内部**，已经被 [_materialSheetContentMaxHeight] 的 maxHeight 一起管住了。
+  ///
+  /// ⚠️ 这个数当时写着「改承载壳的把手要重新量，那条测试会跟着红」——**但那条测试只断言
+  /// `panel.height <= 屏高 × 0.5`，是单向不等式，面板比目标矮永远绿**，所以它从来没响过。
+  /// 改成双向断言才有守门作用（`appearance_editor_layout_test`）。
+  ///
+  /// 若哪天上游把手不再悬浮（`dragHandleOverlaysContent` 退回 false 且本仓重新传标题），
+  /// 这个数要跟着回到 42。
+  static const _materialSheetTopChromeHeight = 0.0;
 
   /// 材质面板内容的高度上限（面板整体 = 内容 + 上把手栏 + 底部安全区 + 呼吸）。
+  ///
+  /// ⚠️ 底部安全区 + 呼吸**不在这里扣**了：这两个页面开了 `scrollableBottomGap`，那截留白
+  /// 由滚动内容自己带（`padding.bottom = bottomGapInsetOf(...)`，见 `_buildGeneralMaterialPage`
+  /// / `_buildCourseCardMaterialPage`）。承载壳不再垫底部，所以视口高度就等于面板高度，
+  /// 这里只要扣顶部那一圈（现在是 0）就够。
   static double _materialSheetContentMaxHeight(BuildContext context) {
     final media = MediaQuery.of(context);
     return media.size.height * _materialSheetMaxHeightFactor -
-        _materialSheetTopChromeHeight -
-        media.padding.bottom -
-        hyperosMiuixBottomSheetContentBottomGap;
+        _materialSheetTopChromeHeight;
   }
 
   /// 本页自己的玻璃采样源。
@@ -207,6 +224,32 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     hyperosZoomHomeSnapshot,
   ]);
 
+  /// 整页加载罩走到哪一步了（见 [_buildPreviewCover]）。
+  ///
+  /// 为什么需要：卡片上那张图要**烤**出来才有，而烤图得等两件事 —— 路由落定后
+  /// 渲染源才挂载（[_routeSettled]），挂上再烤一张整屏 dpr 的图。那之前卡片上
+  /// 是空的。从设置页进来（**不走缩放转场**）时没有首页快照可顶替，于是屏幕上是
+  /// 一片空暗底直到图出炉，设备慢一点就是好几秒（用户 2026-09-28 反馈「页面进来
+  /// 了，然后画面隔了几秒突然出现」）。罩一颗加载转圈就把它讲清楚了。
+  ///
+  /// 三态而不是「显隐」两个值：淡出这一段必须**留在树上**（`AnimatedOpacity` 到 0
+  /// 仍参与命中测试，而这里要靠它把底下那半张页面挡住），所以多一个中间态。
+  _PreviewCoverPhase _previewCoverPhase = _PreviewCoverPhase.gone;
+
+  /// 加载罩是否已经布防（只为不重复订阅 [_previewImageSources] 与重复起定时器）。
+  bool _previewCoverArmed = false;
+
+  /// 加载罩的兜底收起定时器（见 [_onPreviewCoverTimeout]）。
+  Timer? _previewCoverTimer;
+
+  /// 加载罩最多挂这么久。
+  ///
+  /// 烤图这条路出问题时是**静默**的：出不了图就只是"这次没出"，卡片继续空着，
+  /// 日志干净得像没事发生（见 `PreviewBakeBoundary._reportBlocked` 的说明）。真
+  /// 卡住时不能让用户对着一颗永远转的圈干等 —— 退回「卡片空着但页面能用」，比把
+  /// 人锁在加载态里好。真机上正常那几百毫秒就等到图了，这个数只兜底。
+  static const _previewCoverMaxWait = Duration(seconds: 6);
+
   /// 渲染源「内容脏了」的显式信号：喂给 [PreviewBakeBoundary.repaintSignal]。
   ///
   /// 列的就是渲染源的**全部**输入 —— 这不是"多喊几声保险"，是几条输入各自异步：
@@ -261,6 +304,15 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 和同一颗按钮旁边的「材质」弹窗也对不上（用户口径 2026-09-27）。
   @override
   double get backdropRowHorizontalInset => 0;
+
+  /// 「背景随周次滑动」开关行**要**自带那块行底色，与「课表页面」设置里的那行一致
+  /// （2026-09-28 用户口径：「加上一个白卡片，不然现在按下的效果有点丑」，参照设置页）。
+  ///
+  /// 此前是 `false`、整段无卡片底，理由是「磨砂面板上会糊出一块不透明色块」——但那是
+  /// **整段无容器**的诉求，代价是开关行在裸面板上按下时只有一层行高光、没有卡边，
+  /// 读起来很脏。设置页那侧一直是 `true`（见 [_HomeBackdropFlow]），两边本来就该一样。
+  @override
+  bool get backdropRowsHaveCardBackground => true;
 
   @override
   void initState() {
@@ -363,6 +415,8 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           animation == null ||
           (!offstagePlaceholder && animation.status == AnimationStatus.completed);
     }
+    // 判完 [_zoomDriven] 才能决定要不要盖加载罩（理由见 [_armPreviewCover]）。
+    _armPreviewCover();
     if (identical(animation, _routeAnimation)) return;
     _routeAnimation?.removeStatusListener(_onRouteAnimationStatus);
     _routeAnimation?.removeListener(_onRouteAnimationTick);
@@ -370,6 +424,48 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     _routeAnimation?.addStatusListener(_onRouteAnimationStatus);
     _routeAnimation?.addListener(_onRouteAnimationTick);
     _onRouteAnimationTick();
+  }
+
+  /// 给**不走缩放转场**的入口布上加载罩（见 [_previewCoverPhase]）。
+  ///
+  /// 判据是 [_zoomDriven] 而不是「此刻有没有图」：首页菜单那条路上，快照
+  /// （[hyperosZoomHomeSnapshot]）是 `HyperosZoomShrinkScope` 在推页那一帧末发的
+  /// —— 比本页 `initState` 晚半拍，此刻去读必然是 null，拿它当判据会让罩子盖上
+  /// 那条转场（然后立刻自己撤掉），等于把首页缩进预览的观感废了一半。
+  ///
+  /// 只能在 [_syncRouteAnimationListener] 之后判，而不必 `setState`：
+  /// `didChangeDependencies` 紧接着就是本次的 `build`，字段值当帧就被读走；
+  /// 之后再被调（换 MediaQuery 之类）时 [_previewCoverArmed] 已经挡着重入。
+  void _armPreviewCover() {
+    if (_previewCoverArmed || _zoomDriven) return;
+    _previewCoverArmed = true;
+    _previewCoverPhase = _PreviewCoverPhase.showing;
+    _previewImageSources.addListener(_onPreviewImageReady);
+    _previewCoverTimer = Timer(_previewCoverMaxWait, _onPreviewCoverTimeout);
+  }
+
+  /// 第一张预览图落地：收起加载罩（见 [_previewCoverPhase]）。
+  void _onPreviewImageReady() {
+    if (!mounted || _previewCoverPhase != _PreviewCoverPhase.showing) return;
+    if (_previewBake.value == null && hyperosZoomHomeSnapshot.value == null) {
+      return;
+    }
+    _previewCoverTimer?.cancel();
+    _previewCoverTimer = null;
+    setState(() => _previewCoverPhase = _PreviewCoverPhase.fading);
+  }
+
+  /// 兜底：罩子挂满 [_previewCoverMaxWait] 仍没等到图就强制收起。
+  ///
+  /// 见该常量的注释：这是给「烤图这条路静默失败」留的退路，不是正常节奏的一部分。
+  void _onPreviewCoverTimeout() {
+    _previewCoverTimer = null;
+    if (!mounted || _previewCoverPhase != _PreviewCoverPhase.showing) return;
+    debugPrint(
+      '[appearance-editor] loading cover hit its ${_previewCoverMaxWait.inSeconds}s '
+      'ceiling without a preview image; force-dismissing',
+    );
+    setState(() => _previewCoverPhase = _PreviewCoverPhase.fading);
   }
 
   /// 转场逐帧：把进度递给出场层（见 [_zoomProgress]）。
@@ -427,6 +523,12 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     _clearExitSource();
     _previewBake.value?.dispose();
     _previewBake.dispose();
+    // 退场期间盖着加载罩等于把「缩回全屏」那一段也糊掉（见 [_routeSettled]
+    // 注释里同一族的退场纪律），顺带这一页的定时器都得在 dispose 里清干净 ——
+    // 测试框架在树被拆掉后会断言没有遗留的 Timer。
+    _previewImageSources.removeListener(_onPreviewImageReady);
+    _previewCoverTimer?.cancel();
+    _previewCoverTimer = null;
     _draftRevision.dispose();
     _timetableProvider.removeListener(_onProviderSettingsChanged);
     _persistedSettingsDirty.dispose();
@@ -584,17 +686,17 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           _sheetClose = close;
         }
       },
+      // 顶部渐变模糊带自己排掉把手条那 24（理由同 [_openMaterialSheet]）。
+      reserveDragHandleStrip: false,
+      // 内容能滚动，底部留白由滚动内容自己带（理由同 [_openMaterialSheet]）。
+      scrollableBottomGap: true,
       builder: (_) => HyperosSheetFrame(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        child: SingleChildScrollView(
-          // 订阅草稿版本号：选图 / 清除 / 切「最近使用」之后，弹窗里这两行
-          // 立刻跟着变（弹层正文不在本页 widget 树下，页面 setState 带不动它）。
-          child: ValueListenableBuilder<int>(
-            valueListenable: _draftRevision,
-            builder: (sheetContext, _, _) =>
-                buildWallpaperSheetBody(sheetContext, l10n: l10n),
-          ),
-        ),
+        // ⚠️ 这里原来挂着的 `padding: fromLTRB(16, 16, 16, 24)` 在托管模式下会被**整个
+        // 丢弃**（`HyperosSheetFrame` 的 hosted 分支只保留 `maxHeight`），真正的左右
+        // 内缩来自上游 `insideMargin`、底部来自承载壳或滚动内容。留着它只会让人以为
+        // 底部留白是那个 24 造成的。
+        maxHeight: _wallpaperSheetContentMaxHeight(context),
+        child: _WallpaperSheetBody(editor: this, l10n: l10n),
       ),
     );
     return future.whenComplete(() {
@@ -606,6 +708,18 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
 
   @override
   MiuixBottomSheetClose? get backdropHostSheetClose => _sheetClose;
+
+  /// 壁纸弹窗内容的高度上限。
+  ///
+  /// 口径与材质面板一致（「最多半屏」，同一个 [_materialSheetMaxHeightFactor]），原因
+  /// 也一样：改成双页 + 顶部渐变模糊带之后面板**必须**有确定高度——带子靠 `LayoutBuilder`
+  /// 拿有界高度（见 `HyperosSheetBlurTop` 里那条 assert），正文也要按「带底 + 渐隐区」让位。
+  ///
+  /// 顶部那圈现在是 0（把手悬浮，见 [_materialSheetTopChromeHeight]）；底部安全区
+  /// **不在这里扣**——开了 `scrollableBottomGap`，那截留白由滚动内容自己带。
+  static double _wallpaperSheetContentMaxHeight(BuildContext context) {
+    return MediaQuery.of(context).size.height * _materialSheetMaxHeightFactor;
+  }
 
   /// 材质面板（「材质」弹窗正文）：**左右两页**（2026-09-22 第九轮改结构）——
   /// 顶上「通用 / 课程卡片」翻页分段自己当标题（2026-09-26），下面一层可左右滑的页面。
@@ -650,8 +764,21 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       // 让给把手的那 24），所以不要承载壳再统一加一段 —— 否则顶部凭空多出 24 的空档，
       // 正是这一带在返工的那件事。
       reserveDragHandleStrip: false,
+      // 这两页**能滚动**，底部留白必须由滚动内容自己带（见 `showHomeHyperosSheet` 那节
+      // 说明）：承载壳垫在视口外面的话，视口会停在离屏幕底「安全区 + 16」的地方，
+      // 内容永远滚不进去，那一整截只能是一块空玻璃 —— 也就是设置页面上不会有的那种
+      // 「面板底下多一块空白板」。
+      scrollableBottomGap: true,
       builder: (sheetContext) => HyperosSheetFrame(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        // ⚠️ **不要**在这里加 `padding`：`HyperosSheetFrame` 在托管模式（`showHomeHyperosSheet`
+        // 走的那条）下**整个丢弃** `padding`，只保留 `maxHeight`（见 `hyperos_sheet.dart`
+        // 里 `HyperosHostedSheetScope` 那个分支）。这里原来挂着的
+        // `EdgeInsets.fromLTRB(16, 16, 16, 24)` 是个**看着像生效、实际没生效**的参数：
+        //
+        //   · 左右 16 其实来自上游的 `insideMargin`（`hyperosMiuixBottomSheetInsideMargin`）；
+        //   · 底部来自承载壳统一给的「系统安全区 + `hyperosMiuixBottomSheetContentBottomGap`」。
+        //
+        // 留着它会让人以为底部那截留白是这个 24 造成的，去改它却什么都不会变。
         maxHeight: contentMaxHeight,
         child: _MaterialSheetBody(
           editor: this,
@@ -678,14 +805,15 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     // 模型里 liquidGlassTuning 可空（存量数据兼容）：面板统一用兜底后的局部量，
     // 滑杆读写都不会踩空。
     final liquidTuning = _draft.liquidGlassTuning ?? LiquidGlassTuning.defaults;
-    // 顶部那一格是**默认材质**（三档：实体卡片 / 高斯模糊 / 液态玻璃）——
-    // 与下面「高级材质」那一节的开关共用这一个值（单一来源）：上面写着液态
-    // 玻璃，下面就一定给液态的设置。
+    // 顶部那一格是**默认材质**（两档：实体卡片 / 液态玻璃）—— 与下面
+    // 「液态玻璃」那一节的调参共用这一个值（单一来源）：上面写着液态玻璃，
+    // 下面就一定给液态的设置。
     //
     // 2026-09-22 之前这里只画两格，且显示走"就近归桶"、给不给设置走原始字段，
     // 于是存量柔光档成了「显示液态玻璃、下面什么都没有」；更早的中间档（磨砂）
-    // 则是被谎报成「实体卡片」选中。2026-09-23 名字统一后，三档与
-    // [glassModeChoiceOf] 一一对应，**不再需要归桶**，两处判据天然同源。
+    // 则是被谎报成「实体卡片」选中。2026-09-23 名字统一后，两档与
+    // [glassModeChoiceOf] 一一对应，**不再需要归桶**，两处判据天然同源；
+    // 2026-09-30 高斯模糊退场，这格只剩两档。
     final displayedChoice = glassModeChoiceOf(_draft);
     return SingleChildScrollView(
       // ⚠️ 面板里第一个 `Scrollable` 是外面那层**横向翻页** —— 测试要按这个 key
@@ -693,10 +821,13 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
       key: const ValueKey('material-page-general'),
       // 顶部让位加在**滚动内容**里（不是外面）：外面那份已被 `HyperosSheetBlurTop`
       // 接管，见 `topInsetFor` 的注释。
+      // 底部那截同理：面板开了 `scrollableBottomGap`，承载壳不垫底部，所以必须由这里带，
+      // 视口才会一路铺到屏幕底、内容从小白条底下滚过去（否则面板底下是一块空玻璃）。
       padding: EdgeInsets.only(
         top: HyperosSheetBlurTop.topInsetFor(
           headerHeight: hyperosMiuixBottomSheetDragHandleHeight + 40,
         ),
+        bottom: bottomGapInsetOf(sheetContext),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -708,12 +839,12 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           // 都会被压在它背面（2026-09-19 真机实锤）──
           HyperosSectionLabel(text: l10n.frostedGlassModeLabel),
           const SizedBox(height: 8),
-          // 默认材质三档：不模糊（实体）/ 模糊（高斯）/ 模糊 + 折射（液态）。
-          // 这三档就是引导页「视觉效果」那三档（[GlassModeChoice] 是唯一写入口）。
+          // 默认材质两档：不模糊（实体）/ 模糊 + 折射（液态）。高斯模糊档
+          // 2026-09-30 退场（它承诺的「全局磨砂」从来不存在）。
+          // 这两档就是引导页「视觉效果」那两档（[GlassModeChoice] 是唯一写入口）。
           _MaterialSegmented<GlassModeChoice>(
             items: {
               l10n.frostedGlassModeSolid: GlassModeChoice.solid,
-              l10n.frostedGlassModeGaussian: GlassModeChoice.gaussian,
               l10n.frostedGlassModeLiquid: GlassModeChoice.liquidGlass,
             },
             value: displayedChoice,
@@ -735,11 +866,15 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           HyperosSectionLabel(text: l10n.homeBandGlassMaterialLabel),
           const SizedBox(height: 8),
           // 首页顶栏玻璃：卡片顶部即反馈区。2026-09-23 起三档：「跟随默认」
-          // （默认档高斯→磨砂带、液态→液态带、实体→实心带，渲染与只读推导都
-          // 走 homeBandGlassMaterialEffective 的生效值）+「实体 / 液态」单独
+          // （模糊开 → 液态带、模糊关 → 实心带，渲染与只读推导都走
+          // homeBandGlassMaterialEffective 的生效值）+「实体 / 液态」单独
           // 指定（存量渐进/高斯/柔光在读取时已归到液态，见
           // `TimetableSettings.sanitizeHomeBandGlassMaterial`）。出厂值仍是
-          // 单独指定液态，观感与引入「跟随」之前一致。
+          // 单独指定液态。
+          //
+          // ⚠️ 这把轴与上面那格**互不影响**：高斯模糊 2026-09-30 退场后，上面
+          // 那格已不再有「另一种材质」可选，所以「跟随默认」现在等价于「跟随
+          // 模糊总开关」。
           _MaterialSegmented<String>(
             items: {
               l10n.homeBandGlassMaterialFollow: 'follow',
@@ -884,6 +1019,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
               children: [
                 // 作用范围 → 玻璃坞：液态档下坞是否跟随液态（弹窗家族
                 // 已锁标准档，无开关可调，不再显示）。
+                //
+                // ⚠️ 高斯模糊 2026-09-30 退场后这把开关改了角色：此前全局那一档
+                // 也能让坞退回磨砂，现在它是**液态档下唯一**的例外口。
                 HyperosSwitchTile(
                   title: l10n.liquidGlassScopeDockTitle,
                   subtitle: l10n.liquidGlassScopeDockSubtitle,
@@ -960,11 +1098,12 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
     return SingleChildScrollView(
       key: const ValueKey('material-page-course-card'),
       // 顶部让位加在**滚动内容**里（不是外面）：外面那份已被 `HyperosSheetBlurTop`
-      // 接管，见 `topInsetFor` 的注释。
+      // 接管，见 `topInsetFor` 的注释。底部那截见上面第一页的同一条说明。
       padding: EdgeInsets.only(
         top: HyperosSheetBlurTop.topInsetFor(
           headerHeight: hyperosMiuixBottomSheetDragHandleHeight + 40,
         ),
+        bottom: bottomGapInsetOf(sheetContext),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1397,6 +1536,11 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
                       ),
                       _buildTopChrome(context, l10n, topInset),
                       _buildBottomChrome(context, l10n, bottomInset),
+                      // 整页加载罩，**最后**一个子节点 = 盖住上下 chrome 与卡片
+                      // （「整体盖住」）。走缩放转场那条入口全程是
+                      // [._PreviewCoverPhase.gone]，压根不进这个列表。
+                      if (_previewCoverPhase != _PreviewCoverPhase.gone)
+                        _buildPreviewCover(),
                     ],
                   );
                 },
@@ -1493,6 +1637,30 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           child: child,
         );
       },
+    );
+  }
+
+  /// 整页加载罩：第一张预览图落地之前盖住整个页面（见 [_previewCoverPhase]）。
+  ///
+  /// 放在 Stack 的**最后**一项，所以盖的是卡片 + 上下 chrome 全部内容 ——
+  /// 「页面进来了但预览还没出来」那段就只剩一颗转圈，用户不会误以为页面已经就绪、
+  /// 预览却是空的。
+  Widget _buildPreviewCover() {
+    return Positioned.fill(
+      child: _PreviewLoadingCover(
+        key: const ValueKey('appearance-editor-loading-cover'),
+        phase: _previewCoverPhase,
+        // 淡出走完才从树上摘掉：不定进度圈只要还在树上就一直在转，整页永远不空闲。
+        onFadedOut: () {
+          if (mounted && _previewCoverPhase != _PreviewCoverPhase.gone) {
+            setState(() => _previewCoverPhase = _PreviewCoverPhase.gone);
+          }
+        },
+        color: _scrimColor,
+        // 「加载中」多语言（2026-09-28 用户口径）。不写死中文：本仓有「展示文案一律
+        // 走 arb」这条规矩（见 2026-09-25 那篇笔记）。
+        label: AppLocalizations.of(context)!.commonLoadingLabel,
+      ),
     );
   }
 
@@ -1712,6 +1880,139 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 壁纸弹窗的正文：顶上「壁纸 / 设置」翻页胶囊（自己就是标题），下面一层可左右滑
+/// 的两页 —— 与 [_MaterialSheetBody] **同一个形状**（2026-09-28 用户口径：「这个弹窗
+/// 可以参考材质那边的，做切换」，左边壁纸选择、右边设置）。
+///
+/// * **第一页「壁纸」**（[_HomeBackdropFlow.buildWallpaperSheetSelectionPage]）：
+///   选图行 + 「最近使用」缩略图条；
+/// * **第二页「设置」**（[_HomeBackdropFlow.buildWallpaperSheetSettingsPage]）：
+///   「背景随周次滑动」那类开关。
+///
+/// 同样是 StatefulWidget，理由与 [_MaterialSheetBody] 一致：翻页要一个跨重建存活的
+/// [PageController]，而正文由草稿版本号订阅重画。
+class _WallpaperSheetBody extends StatefulWidget {
+  const _WallpaperSheetBody({required this.editor, required this.l10n});
+
+  final _AppearanceEditorScreenState editor;
+  final AppLocalizations l10n;
+
+  @override
+  State<_WallpaperSheetBody> createState() => _WallpaperSheetBodyState();
+}
+
+class _WallpaperSheetBodyState extends State<_WallpaperSheetBody> {
+  /// 页 0 = 壁纸、页 1 = 设置（与下面 `PageView.children` 一一对应）。
+  static const int _wallpaperPage = 0;
+  static const int _settingsPage = 1;
+
+  /// 与材质面板同数：把手条 24 + 胶囊 40。三处（headerHeight / 两页 topInsetFor）同源。
+  static const double _bandHeight =
+      hyperosMiuixBottomSheetDragHandleHeight + 40;
+
+  late int _page = _wallpaperPage;
+
+  late final PageController _pages = PageController(initialPage: _page);
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  /// 胶囊点选翻页。**不能**只改 `_page`：手势滑动与点选会各走各的。
+  ///
+  /// 越界直接忽略：页数由 `PageView.children` 决定，而回调传进来的是标签下标，越界
+  /// 会让 [PageController] 抛「no page」而不是安静地不动。
+  void _goToPage(int page) {
+    if (page < _wallpaperPage || page > _settingsPage || page == _page) {
+      return;
+    }
+    setState(() => _page = page);
+    _pages.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final editor = widget.editor;
+    final l10n = widget.l10n;
+    // 订阅草稿版本号：选图 / 清除 / 切「最近使用」/ 切开关之后弹窗里立刻跟着变
+    // （弹层正文不在本页 widget 树下，页面 setState 带不动它）。
+    return ValueListenableBuilder<int>(
+      valueListenable: editor._draftRevision,
+      builder: (sheetContext, _, _) {
+        return HyperosSheetBlurTop(
+          headerHeight: _bandHeight,
+          bleed: hyperosMiuixBottomSheetInsideMargin,
+          header: Padding(
+            // 顶部让出把手条那 24（画得到、点不到的那层），胶囊从它下面开始。
+            padding: const EdgeInsets.only(
+              top: hyperosMiuixBottomSheetDragHandleHeight,
+            ),
+            child: Center(
+              child: HyperosChipRow(
+                // 用新加的短标签，**不要**复用 `homePageWallpaperTitle`（背景图片）或
+                // `settingsTitle`（课表设置）：前者是这一页里那张卡自己的标题，复用会
+                // 在同一页出现两个一模一样的「背景图片」；后者是整页标题，四个字也塞不进
+                // 胶囊当页签。
+                labels: [
+                  l10n.wallpaperSheetTabPicker,
+                  l10n.wallpaperSheetTabSettings,
+                ],
+                selectedIndex: _page,
+                onChanged: _goToPage,
+              ),
+            ),
+          ),
+          // 两页等高、各页自己竖向滚动：面板总高由外层 `maxHeight`（半屏）顶住。
+          body: PageView(
+            controller: _pages,
+            onPageChanged: (page) {
+              if (page != _page) {
+                setState(() => _page = page);
+              }
+            },
+            children: [
+              _pageShell(
+                key: const ValueKey('wallpaper-page-picker'),
+                child: editor.buildWallpaperSheetSelectionPage(
+                  sheetContext,
+                  l10n: l10n,
+                ),
+              ),
+              _pageShell(
+                key: const ValueKey('wallpaper-page-settings'),
+                child: editor.buildWallpaperSheetSettingsPage(
+                  sheetContext,
+                  l10n: l10n,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// 一页 = 一层竖向滚动。**顶部让位与底部留白都加在滚动内容里**（不是 body 外面）：
+  /// 加在外面视口不会延伸，那一截就成了一块永远空着的板（见 `showMiuixBottomSheet` 的
+  /// `scrollableBottomGap` 一节）。
+  Widget _pageShell({required Key key, required Widget child}) {
+    return SingleChildScrollView(
+      key: key,
+      padding: EdgeInsets.only(
+        top: HyperosSheetBlurTop.topInsetFor(headerHeight: _bandHeight),
+        bottom: bottomGapInsetOf(context),
+      ),
+      child: child,
     );
   }
 }
@@ -1999,6 +2300,147 @@ class _ZoomChromeReveal extends StatelessWidget {
           child: IgnorePointer(ignoring: t <= 0, child: child),
         );
       },
+    );
+  }
+}
+
+/// 「外观编辑」页加载罩的三个阶段（见
+/// [_AppearanceEditorScreenState._previewCoverPhase]）。
+enum _PreviewCoverPhase {
+  /// 盖住整页：第一张预览图还没到位。
+  showing,
+
+  /// 图到位了，罩子正在淡出。
+  fading,
+
+  /// 淡出走完，罩子已经从树上摘掉。
+  gone,
+}
+
+/// 「外观编辑」页的**整页加载罩**：第一张预览图落地之前盖住整个页面。
+///
+/// 底色是页面自己的暗底（不是半透明）：加载期间底下那半张页面（顶部日 / 周、
+/// 底部按钮）还不该被点 —— 顺带那张卡上还没有任何东西，点它等于点了个寂寞。
+///
+/// 淡出而不是硬切：换成预览那一帧只要留一丁点半透明，底下的暗底就会从图上透上来
+/// （同 [_buildPreviewCard] 记的那个「暗闪一下」）；180ms 足够短，读不出二次闪动。
+class _PreviewLoadingCover extends StatefulWidget {
+  const _PreviewLoadingCover({
+    super.key,
+    required this.phase,
+    required this.onFadedOut,
+    required this.color,
+    required this.label,
+  });
+
+  final _PreviewCoverPhase phase;
+  final VoidCallback onFadedOut;
+  final Color color;
+
+  /// 「加载中」那行字。由宿主传入而不是这里取 `AppLocalizations`：
+  /// 宿主那边已经把 `l10n` 拿在手上了，省一次依赖查找。
+  final String label;
+
+  @override
+  State<_PreviewLoadingCover> createState() => _PreviewLoadingCoverState();
+}
+
+class _PreviewLoadingCoverState extends State<_PreviewLoadingCover>
+    with SingleTickerProviderStateMixin {
+  static const _fade = Duration(milliseconds: 180);
+
+  /// 转圈与「加载中」三字的墨色。
+  ///
+  /// 白 92%：跟页面 chrome 那套（胶囊文字、圆钮名字）读起来是同一支笔，但压低一档
+  /// 让它明确是「次要信息」——加载态是过程，不是页面内容。
+  static const _coverInk = Color(0xEBFFFFFF);
+
+  /// 1 = 完全盖住，0 = 撤净（所以要 `reverse`，见 [_fadeOut]）。
+  late final AnimationController _opacity = AnimationController(
+    vsync: this,
+    value: 1,
+    duration: _fade,
+  );
+
+  /// 是否已经起过淡出。用 `[_opacity.isCompleted]` 判是错的：它初始就停在上界上，
+  /// 一上来就是 completed（2026-09-28 实锤：那样 `_fadeOut` 每次都在第一行返回，
+  /// 罩子永远撤不掉）。
+  bool _fadingOut = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 挂上来就已经在淡出（宿主在同一次 build 里换的 phase）：自己起跑。
+    if (widget.phase == _PreviewCoverPhase.fading) {
+      _fadeOut();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_PreviewLoadingCover oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.phase == _PreviewCoverPhase.fading &&
+        oldWidget.phase == _PreviewCoverPhase.showing) {
+      _fadeOut();
+    }
+  }
+
+  void _fadeOut() {
+    if (_fadingOut) return;
+    _fadingOut = true;
+    // **倒放**：初始值就是上界（完全盖住），`forward` 会原地不动 —— 要的是
+    // 1 → 0 把罩子撤掉。
+    _opacity.reverse().whenComplete(() {
+      if (mounted) widget.onFadedOut();
+    });
+  }
+
+  @override
+  void dispose() {
+    _opacity.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      // ⚠️ **只**在完全盖住时挡。淡出期间底层已经是终态内容，挡着就是「看得见、
+      // 点不动」（同 [_ZoomChromeReveal] 的第三条纪律）。`FadeTransition` 只改
+      // 绘制不改命中测试，所以这一层必须显式写。
+      ignoring: widget.phase == _PreviewCoverPhase.fading,
+      child: FadeTransition(
+        opacity: _opacity,
+        // [ColoredBox] 的命中测试是 opaque 的（只有 alpha 0 才不挡），加载期间
+        // 底下那半张页面就靠它挡住点按。
+        child: ColoredBox(
+          color: widget.color,
+          child: Center(
+            child: Column(
+              // 转圈在上、文字在下（用户 2026-09-28 拍板）。`mainAxisSize.min` 是
+              // 关键：这一列在整页 `Center` 里，不收紧的话 Column 会去抢满高。
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 环 + 绕行小圆点（`HyperosInfiniteProgress`），不是扫弧的
+                // `HyperosCircularProgress` —— 不可测进度时前者转圈感更强。
+                const HyperosInfiniteProgress(color: _coverInk, size: 28),
+                const SizedBox(height: 14),
+                Text(
+                  widget.label,
+                  style: const TextStyle(
+                    // 暗底上的浅色字：跟本页 chrome（胶囊、名字）同一套墨色，见
+                    // `_capsuleButton`。**不能**走 HyperosColors.primaryText ——
+                    // 那一套跟应用明暗主题联动，而本页永远是暗底（见文件头）。
+                    color: _coverInk,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

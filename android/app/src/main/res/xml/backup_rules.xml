@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 11 及以下（API 26~30，本项目 minSdk = 26）生效的备份规则，挂在
+  <application android:fullBackupContent>。API 31+ 走 data_extraction_rules.xml。
+
+  这套格式**分不出「云备份」与「换机直传」**（D2D 分段是 Android 12 才引入的），
+  所以这里只能在两者之间二选一。取「只排凭据」而不是「整段关掉」，理由是
+  关掉会让 Android 8~11 用户换手机时丢掉全部课表，代价远大于上传。
+
+  代价要说清：这批系统上的课表仍会进系统云备份。若要彻底关掉云端，把下面
+  唯一的 <exclude> 换成 `<exclude domain="root" path="." />` 即可（凭据也随之
+  一并不备份），代价是这批用户换机丢数据。
+
+  只写 <exclude> 不写 <include>：Auto Backup 的语义是「出现任意 <include> 就变成
+  白名单」，不写 <include> 才是「默认全备、排除列出的」。
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+</full-backup-content>

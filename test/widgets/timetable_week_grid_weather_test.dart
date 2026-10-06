@@ -20,6 +20,7 @@ import 'package:university_timetable/providers/weather_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 import 'package:university_timetable/services/holiday_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
+import 'package:university_timetable/widgets/course_weather_display.dart';
 
 import '../helpers_test_app.dart';
 import '../helpers_weather.dart';
@@ -219,5 +220,26 @@ void main() {
     await _pumpTimetableFrame(tester);
 
     expect(find.text('23°'), findsNothing);
+  });
+
+  testWidgets('周网格：预报没到时先占位，到货后课名的位置不动', (tester) async {
+    // 用户反馈的那个「闪一下」：周网格的天气是**卡内最后一行**，它一冒出来整块
+    // 内容就变高、外层 `FittedBox` 随即把卡里所有字（含课名）等比缩小一次。
+    // 所以要钉的是「占位与有内容两种状态下课名的位置完全相同」。
+    final provider = await _providerWithTodayCourses(tester);
+    final pending = await pendingWeatherProvider(tester);
+
+    await tester.pumpWidget(_wrap(provider, weather: pending.provider));
+    await _pumpTimetableFrame(tester);
+
+    // 还没到货：卡上有一行占位，但没有任何文字画出来。
+    expect(find.text('23°'), findsNothing);
+    expect(find.byIcon(weatherPlaceholderIcon), findsNWidgets(1));
+    final reserved = tester.getTopLeft(find.text('本周实验').first).dy;
+
+    await pending.awaitArrival(tester);
+
+    expect(find.text('23°'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('本周实验').first).dy, reserved);
   });
 }

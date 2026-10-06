@@ -72,6 +72,15 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
   /// 开关只管文件，默认值也曾为关闭）。只影响课程，考试与自定义日程照常。
   bool _skipHolidayCourses = true;
 
+  /// 导出完成后的「分享 / 保存」去向菜单（上游 OS4 玻璃弹层，常驻挂载）。
+  ///
+  /// 2026-09-28 从 `showHyperosListPopup`（手搓旧实现）迁来。
+  bool _exportActionMenuVisible = false;
+
+  /// 菜单锚点（导出按钮）的窗口坐标 + 待处理结果，收起后**保留**到退场结束。
+  Rect? _exportActionAnchorBounds;
+  IcsExportResult? _pendingExportResult;
+
   @override
   void initState() {
     super.initState();
@@ -101,6 +110,43 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
     final provider = context.watch<TimetableProvider>();
     final profile = _profileForProvider(provider);
 
+    return Stack(
+      children: [
+        Positioned.fill(child: _buildBody(context, l10n, provider, profile)),
+        // ⚠️ 常驻挂载，条件插拔会让上游 presenter 的 State 重建、入场动画重放。
+        _buildExportActionMenu(l10n),
+      ],
+    );
+  }
+
+  Widget _buildExportActionMenu(AppLocalizations l10n) {
+    return HyperosAnchorMenuPopup(
+      show: _exportActionMenuVisible,
+      anchorBounds: _exportActionAnchorBounds,
+      entries: [
+        HyperosAnchorMenuEntry(
+          label: l10n.icsExportActionShare,
+          value: _IcsExportAction.share,
+          icon: const Icon(Icons.ios_share_rounded, size: 20),
+        ),
+        HyperosAnchorMenuEntry(
+          label: l10n.icsExportActionSave,
+          value: _IcsExportAction.save,
+          icon: const Icon(Icons.folder_outlined, size: 20),
+        ),
+      ],
+      onCollapseRequested: _closeExportActionMenu,
+      onDismissRequest: _closeExportActionMenu,
+      onSelected: _handleExportAction,
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    AppLocalizations l10n,
+    TimetableProvider provider,
+    TimetableProfile? profile,
+  ) {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.icsExportTitle),
@@ -466,31 +512,18 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
       // 分享面板里不保证有目标日历 App（它必须声明能接收 text/calendar
       // 的 SEND 才会出现，小米日历等只声明了「打开 .ics」），保存到目录
       // 是兜底路径：用户可从文件管理里用「打开方式」导入。
-      final action = await showHyperosListPopup<_IcsExportAction>(
-        context: context,
-        position: hyperosPopupPositionBelow(context, _exportButtonAnchorKey),
-        items: [
-          HyperosPopupMenuItem(
-            label: l10n.icsExportActionShare,
-            value: _IcsExportAction.share,
-            icon: Icons.ios_share_rounded,
-          ),
-          HyperosPopupMenuItem(
-            label: l10n.icsExportActionSave,
-            value: _IcsExportAction.save,
-            icon: Icons.folder_outlined,
-          ),
-        ],
-      );
-      if (!mounted || action == null) {
+      //
+      // 弹层本身常驻挂在页面里、由 [_exportActionMenuVisible] 切显隐，动作在
+      // 退场走完后由 [_handleExportAction] 执行 —— 组件内置了那段时序。
+      final anchorRect = _measureExportButtonRect();
+      if (!mounted || anchorRect == null) {
         return;
       }
-      switch (action) {
-        case _IcsExportAction.share:
-          await _shareResult(l10n, result);
-        case _IcsExportAction.save:
-          await _saveResult(l10n, result);
-      }
+      setState(() {
+        _exportActionMenuVisible = true;
+        _exportActionAnchorBounds = anchorRect;
+        _pendingExportResult = result;
+      });
     } catch (_) {
       if (mounted) {
         showAppToast(
@@ -505,6 +538,44 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
           _isExporting = false;
         });
       }
+    }
+  }
+
+  /// 量出导出按钮的窗口坐标（弹层按它定位）。量不到就不开菜单。
+  Rect? _measureExportButtonRect() {
+    final renderObject = _exportButtonAnchorKey.currentContext
+        ?.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) {
+      return null;
+    }
+    return MatrixUtils.transformRect(
+      renderObject.getTransformTo(null),
+      Offset.zero & renderObject.size,
+    );
+  }
+
+  void _closeExportActionMenu() {
+    if (!_exportActionMenuVisible) {
+      return;
+    }
+    setState(() => _exportActionMenuVisible = false);
+  }
+
+  /// 菜单收完后执行被点的那一项。
+  Future<void> _handleExportAction(Object value) async {
+    if (!mounted) {
+      return;
+    }
+    final result = _pendingExportResult;
+    _pendingExportResult = null;
+    if (result == null) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
+    if (value == _IcsExportAction.share) {
+      await _shareResult(l10n, result);
+    } else if (value == _IcsExportAction.save) {
+      await _saveResult(l10n, result);
     }
   }
 

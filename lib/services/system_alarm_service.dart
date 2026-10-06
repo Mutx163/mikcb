@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import '../utils/timed_method_channel.dart';
 
 /// 系统时钟闹钟payload，通过 ACTION_SET_ALARM 写入。
 @immutable
@@ -36,7 +37,7 @@ class SystemAlarmResult {
 }
 
 class SystemAlarmService {
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     'com.mutx163.qingyu/system_alarm',
   );
 

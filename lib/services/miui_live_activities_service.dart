@@ -7,6 +7,7 @@ import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../logging/app_debug_log.dart';
 import '../logging/app_log_messages.dart';
+import '../utils/timed_method_channel.dart';
 import 'app_log_service.dart';
 import 'umeng_analytics_service.dart';
 
@@ -30,7 +31,7 @@ Map<String, Object?> buildLiveSnapshotSettingsJson(TimetableSettings settings) =
 };
 
 class MiuiLiveActivitiesService {
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     'com.mutx163.qingyu/miui_live',
   );
 

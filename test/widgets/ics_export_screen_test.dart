@@ -28,15 +28,18 @@ void main() {
 
   /// 点导出按钮并在弹出的去向菜单里选一项。
   ///
-  /// 弹窗锚定在导出按钮旁（showHyperosListPopup），选项文本即菜单行文本。
-  /// 注意：按钮在弹窗打开期间一直处于 loading 转圈（repeating 动画），
-  /// 弹窗打开阶段只能 pump 定长帧，不能用 pumpAndSettle。
+  /// 菜单是常驻挂载的 [HyperosAnchorMenuPopup]（锚定在导出按钮旁）。新流程里
+  /// 生成完成才开菜单（[finally] 先把按钮 loading 复位），开菜单阶段没有
+  /// repeating 动画，可以放心 pumpAndSettle 等入场弹簧收敛——收敛前 presenter
+  /// 挂 IgnorePointer，条目点不动；也不能用单次大步长 pump（弹簧大步长积分
+  /// 会停在未收敛态，点按照样落空，与 [HyperosSelect] 的 OS4 测试同款坑）。
+  /// 点中条目后组件先把 [show] 置 false、等 240ms 收场预算才回调 onSelected；
+  /// 第二次 pumpAndSettle 一并覆盖退场、动作链与结果提示。
   Future<void> tapExportAndPick(WidgetTester tester, String optionLabel) async {
     final button = find.byKey(const Key('ics-export-share'));
     await tester.ensureVisible(button);
     await tester.tap(button);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(optionLabel).last);
     await tester.pumpAndSettle();
   }

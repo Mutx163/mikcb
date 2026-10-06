@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import '../utils/timed_method_channel.dart';
 
 /// Debug-only deep-link bridge for adb / Android CLI automation.
 ///
@@ -20,7 +21,7 @@ import 'package:flutter/services.dart';
 class DebugDeepLinkService {
   DebugDeepLinkService._();
 
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     'com.mutx163.qingyu/miui_live',
   );
 

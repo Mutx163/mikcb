@@ -120,13 +120,17 @@ Future<void> _timetableAddCourseGroup(
   final teachers = <String>{};
   final locations = <String>{};
   for (final course in courses) {
-    final validationMessage = host.validateCourseTimeSchemeOverride(
-      timeSchemeId: course.timeSchemeIdOverride,
-      startSection: course.startSection,
-      endSection: course.endSection,
-    );
-    if (validationMessage != null) {
-      throw ArgumentError(validationMessage);
+    // 与 addCourse/updateCourse 同一契约：只校验**显式绑定**的方案，未绑定时
+    // 课程自带钟点是唯一真源，不在写入环节拒溢出。
+    if (course.timeSchemeIdOverride != null) {
+      final validationMessage = host.validateCourseTimeSchemeOverride(
+        timeSchemeId: course.timeSchemeIdOverride,
+        startSection: course.startSection,
+        endSection: course.endSection,
+      );
+      if (validationMessage != null) {
+        throw ArgumentError(validationMessage);
+      }
     }
     final normalized = host._syncCourseWithEffectiveTimeScheme(
       host._normalizeCourse(CourseDomain.applySharedFields(course, shared)),

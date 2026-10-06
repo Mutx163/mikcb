@@ -233,6 +233,31 @@ class WarehouseAdapterEntry {
     this.timeSchemesFile = '',
     this.isQingyuOnly = false,
   });
+
+  /// 复制一条并替换给定字段。
+  ///
+  /// 只为「把专属条目并进同一份脚本的标准条目」这一件事存在
+  /// （`warehouse_adapter_upgrade.dart`）：那一步要产出一条既保留标准条目的
+  /// id/名称/脚本路径、又带上专属字段的条目。为它给整个模型加一整套 withXxx 不划算，
+  /// 但复制构造的参数列表也容易和字段脱节，所以放在这里并由唯一调用方钉住。
+  WarehouseAdapterEntry copyWith({
+    String? sha256,
+    String? timeSchemesFile,
+    bool? isQingyuOnly,
+  }) {
+    return WarehouseAdapterEntry(
+      adapterId: adapterId,
+      adapterName: adapterName,
+      category: category,
+      assetJsPath: assetJsPath,
+      importUrl: importUrl,
+      maintainer: maintainer,
+      description: description,
+      sha256: sha256 ?? this.sha256,
+      timeSchemesFile: timeSchemesFile ?? this.timeSchemesFile,
+      isQingyuOnly: isQingyuOnly ?? this.isQingyuOnly,
+    );
+  }
 }
 
 class WarehouseAdaptersIndex {

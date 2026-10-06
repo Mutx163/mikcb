@@ -3,10 +3,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
+import '../utils/timed_method_channel.dart';
 
 /// Reads Android developer-option animation scales for Flutter transitions.
 abstract final class AndroidAnimationScaleService {
-  static const _channel = MethodChannel('com.mutx163.qingyu/system_ui');
+  static const _channel = TimedMethodChannel('com.mutx163.qingyu/system_ui');
 
   static double _transitionScale = 1;
   static double _userTransitionSpeed = 1;

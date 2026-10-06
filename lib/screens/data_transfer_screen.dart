@@ -9,6 +9,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:provider/provider.dart';
 
+import '../domain/time_scheme_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../services/data_transfer_service.dart';
 import '../services/transfer_package.dart';
@@ -633,20 +634,37 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       );
       return;
     }
+    // 恢复/传输由服务层直接写库，绕开导入页那道「节数不够先扩容」的前置闸门，
+    // 所以超出当前时间模板的节课在这里是真能落进来的：存得下来，但课表画不出
+    // 那一行。不说明的话用户看到的只是「课少了几节」。
+    final beyondScheme = TimeSchemeLogic.countCoursesWithoutVisibleRow(
+      provider.courses,
+      sectionCount: provider.settings.sectionCount,
+    );
+    final restoredMessage = beyondScheme > 0
+        ? l10n.backupRestoredSuccess +
+              l10n.coursesBeyondSchemeExtraSuffix(
+                beyondScheme,
+                provider.settings.sectionCount,
+              )
+        : l10n.backupRestoredSuccess;
+    final restoredKind = beyondScheme > 0
+        ? AppToastKind.warning
+        : AppToastKind.success;
     final token = result.undoToken;
     if (token == null) {
       showAppToast(
         context,
-        message: l10n.backupRestoredSuccess,
-        kind: AppToastKind.success,
+        message: restoredMessage,
+        kind: restoredKind,
       );
       return;
     }
     showAppToastWithAction(
       context,
-      message: l10n.backupRestoredSuccess,
+      message: restoredMessage,
       actionLabel: l10n.themeUndo,
-      kind: AppToastKind.success,
+      kind: restoredKind,
       onAction: () => unawaited(_undoTransfer(token)),
     );
   }

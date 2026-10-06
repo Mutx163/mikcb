@@ -216,7 +216,6 @@ void main() {
             sheetBlurSigma: 15,
             sheetTintAlpha: 0.70,
             sheetBarrierAlpha: 0.20,
-            glassMode: FrostedGlassMode.liquidGlass,
           ),
           child: HyperosGlassBackdropHost(
             controller: controller,

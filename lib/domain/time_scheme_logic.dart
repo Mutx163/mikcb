@@ -283,6 +283,31 @@ class TimeSchemeLogic {
     return null;
   }
 
+  /// 这批课里，在当前作息的课表上**拿不到格子**的那几节有多少。
+  ///
+  /// 周视图只画 `settings.sectionCount` 行（见 `timetable_week_preview` 的
+  /// `_resolveVisibleSectionCount`），节次落在行外的课存得下来、就是不显示。
+  /// 写入侧只挡显式绑定了时间模板的课（未绑定时课程自带钟点为真源，见
+  /// `timetable_provider.addCourse`），所以「超出当前作息」不再是不可能状态，
+  /// 界面必须把它说出来。判据与地点分组套用的溢出统计同一条
+  /// （`timetable/schedule_rule_apply.dart`），两处不许各说各话。
+  static int countCoursesWithoutVisibleRow(
+    Iterable<Course> courses, {
+    required int sectionCount,
+  }) {
+    if (sectionCount <= 0) {
+      return 0;
+    }
+    return courses
+        .where(
+          (course) =>
+              course.startSection < 1 ||
+              course.endSection < course.startSection ||
+              course.endSection > sectionCount,
+        )
+        .length;
+  }
+
   static bool isSchemeInUse(
     List<TimetableProfile> profiles,
     String schemeId, {

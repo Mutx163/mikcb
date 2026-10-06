@@ -15,6 +15,14 @@
 // 2026-09-23：子页顶栏那把轴（渐进 / 高斯两档）整体撤下 —— 用户口径
 // 「子页顶部可以锁定渐变模糊」，所以设置模型里不再有 subpageHeaderBlurStyle，
 // 渲染侧恒为渐进。本文件只剩顶栏材质那一轴。
+//
+// 2026-09-30：高斯模糊作为**全局档**退场（见
+// `.agents/notes/implemented/simplification/2026-09-30-retire-gaussian-material-tier.md`）。
+// 对本文件的两处影响：①「跟随默认」的解析只剩模糊总开关一个判据（原来还分
+// 「默认档高斯 → 磨砂带」那一支）；②2026-09-12 那段「旧轴 → homeBandGlassMaterial」
+// 迁移的三个分支全部收敛到缺键默认值 `liquid`，整段删除，只留一条
+// 「缺新键即液态」的正钉。老键 `frostedGlassMode` / `homeChromeGlassMaterial` /
+// `liquidGlassHomeChromeEnabled` 现在都按未知键忽略。
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/glass_mode_choice.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
@@ -90,38 +98,28 @@ void main() {
         }
       });
 
-      test('跟随默认：默认档高斯 → 磨砂带（frost），液态 → 液态带', () {
-        final gaussian = TimetableSettings.defaults().copyWith(
+      test('跟随默认：模糊开 → 液态带，模糊关 → 实心带', () {
+        // 2026-09-30 高斯模糊退场后「跟随」只剩这一个判据（此前还有「默认档是
+        // 高斯 → 磨砂带」那一支，那一支随枚举一起没了）。
+        final on = TimetableSettings.defaults().copyWith(
           homeBandGlassMaterial: 'follow',
           frostedBlurEnabled: true,
-          frostedGlassMode: FrostedGlassMode.gaussian,
         );
-        final liquid = gaussian.copyWith(
-          frostedGlassMode: FrostedGlassMode.liquidGlass,
-        );
-        expect(gaussian.homeBandGlassMaterialEffective, 'frost');
-        expect(liquid.homeBandGlassMaterialEffective, 'liquid');
-      });
-
-      test('跟随默认：默认档实体（模糊总开关关）→ 实心带', () {
-        final s = TimetableSettings.defaults().copyWith(
-          homeBandGlassMaterial: 'follow',
-          frostedBlurEnabled: false,
-        );
-        expect(s.homeBandGlassMaterialEffective, 'solid');
+        final off = on.copyWith(frostedBlurEnabled: false);
+        expect(on.homeBandGlassMaterialEffective, 'liquid');
+        expect(off.homeBandGlassMaterialEffective, 'solid');
       });
 
       test('跟随默认解析进外观对象：下游拿到的永远是生效值', () {
-        final frost = TimetableSettings.defaults().copyWith(
+        final follow = TimetableSettings.defaults().copyWith(
           homeBandGlassMaterial: 'follow',
           frostedBlurEnabled: true,
-          frostedGlassMode: FrostedGlassMode.gaussian,
         );
-        expect(frost.frostedAppearance.homeBandGlassMaterial, 'frost');
+        expect(follow.frostedAppearance.homeBandGlassMaterial, 'liquid');
         // 生效值不写回存储：原字段仍是 follow，JSON 往返不丢「跟随」这个选择。
-        expect(frost.homeBandGlassMaterial, 'follow');
+        expect(follow.homeBandGlassMaterial, 'follow');
         expect(
-          TimetableSettings.fromJson(frost.toJson()).homeBandGlassMaterial,
+          TimetableSettings.fromJson(follow.toJson()).homeBandGlassMaterial,
           'follow',
         );
       });
@@ -141,11 +139,15 @@ void main() {
 
     test('applyHomeBandGlassMaterial 只动顶栏材质，不碰全局', () {
       final base = TimetableSettings.defaults().copyWith(
-        frostedGlassMode: FrostedGlassMode.liquidGlass,
+        frostedBlurEnabled: false,
       );
       final s = applyHomeBandGlassMaterial(base, 'solid');
       expect(s.homeBandGlassMaterial, 'solid');
-      expect(s.frostedGlassMode, FrostedGlassMode.liquidGlass);
+      expect(
+        s.frostedBlurEnabled,
+        isFalse,
+        reason: '顶栏那把轴与模糊总开关互不影响',
+      );
     });
 
     test('applyHomeBandGlassMaterial 的写入口也过同一道收敛', () {
@@ -158,68 +160,38 @@ void main() {
     });
   });
 
-  group('顶栏材质迁移：旧轴 → homeBandGlassMaterial（中间档一律收敛到液态）', () {
-    test('旧「独立三档 liquid」+ 模糊开 → 上提全局液态 + 顶栏液态（观感不变）', () {
-      final json = TimetableSettings.defaults().toJson()
-        ..remove('homeBandGlassMaterial')
-        ..['homeChromeGlassMaterial'] = 'liquid';
-      final restored = TimetableSettings.fromJson(json);
-
-      expect(restored.frostedGlassMode, FrostedGlassMode.liquidGlass);
-      expect(restored.homeBandGlassMaterial, 'liquid');
-    });
-
-    test('旧 liquid + 模糊关（实体卡片档）不提升全局，顶栏仍是液态档', () {
-      final json = TimetableSettings.defaults().toJson()
-        ..remove('homeBandGlassMaterial')
-        ..['homeChromeGlassMaterial'] = 'liquid'
-        ..['frostedBlurEnabled'] = false;
-      final restored = TimetableSettings.fromJson(json);
-
-      expect(restored.frostedBlurEnabled, isFalse);
-      expect(restored.frostedGlassMode, isNot(FrostedGlassMode.liquidGlass));
-      // 顶栏材质与模糊总开关无关：模糊关只让渲染回落实底衬底，材质档仍是液态。
-      expect(restored.homeBandGlassMaterial, 'liquid');
-    });
-
-    test('旧范围开 + 全局柔光 / 旧镜像高斯：都收敛到液态', () {
-      final scopeOn = TimetableSettings.defaults()
-          .copyWith(frostedGlassMode: FrostedGlassMode.liquidGlass)
-          .toJson()
-        ..remove('homeBandGlassMaterial')
-        ..['liquidGlassHomeChromeEnabled'] = true;
-      expect(TimetableSettings.fromJson(scopeOn).homeBandGlassMaterial, 'liquid');
-
-      final scopeOff = Map<String, dynamic>.from(scopeOn)
-        ..['liquidGlassHomeChromeEnabled'] = false;
+  group('顶栏材质：缺新键即按出厂值（旧的「旧轴迁移」已删）', () {
+    // 2026-09-12 那段迁移（输入是 `homeChromeGlassMaterial` /
+    // `liquidGlassHomeChromeEnabled` / `frostedGlassMode`）的三个分支，在高斯模糊
+    // 2026-09-30 退场后**全部收敛到 `liquid`** —— 而 `liquid` 正是缺键时的出厂值，
+    // 于是整段迁移连同那两个只被它读过的旧键一起删除（见
+    // `TimetableSettings.fromJson` 开头）。这里留一条钉：老数据缺新键时读到的
+    // 仍是液态带，观感与迁移那套一模一样。
+    test('缺新键 + 各种旧轴组合，一律读成液态带', () {
+      final base = TimetableSettings.defaults().toJson()
+        ..remove('homeBandGlassMaterial');
       expect(
-        TimetableSettings.fromJson(scopeOff).homeBandGlassMaterial,
+        TimetableSettings.fromJson(base).homeBandGlassMaterial,
         'liquid',
+        reason: '全新安装',
       );
 
-      final mirrorGaussian = TimetableSettings.defaults().toJson()
-        ..remove('homeBandGlassMaterial')
-        ..['homeChromeGlassMaterial'] = 'gaussian';
-      expect(
-        TimetableSettings.fromJson(mirrorGaussian).homeBandGlassMaterial,
-        'liquid',
-      );
+      for (final legacy in ['liquid', 'gaussian', 'progressive', 'soft']) {
+        final json = Map<String, dynamic>.from(base)
+          ..['homeChromeGlassMaterial'] = legacy;
+        for (final scope in [true, false]) {
+          final scoped = Map<String, dynamic>.from(json)
+            ..['liquidGlassHomeChromeEnabled'] = scope;
+          expect(
+            TimetableSettings.fromJson(scoped).homeBandGlassMaterial,
+            'liquid',
+            reason: 'homeChromeGlassMaterial=$legacy, 范围开=$scope',
+          );
+        }
+      }
     });
 
-    test('全局液态 + 旧范围开 → 顶栏液态', () {
-      final json = TimetableSettings.defaults()
-          .copyWith(frostedGlassMode: FrostedGlassMode.liquidGlass)
-          .toJson()
-        ..remove('homeBandGlassMaterial')
-        ..['liquidGlassHomeChromeEnabled'] = true;
-      expect(
-        TimetableSettings.fromJson(json).homeBandGlassMaterial,
-        'liquid',
-      );
-    });
-
-    test('新键优先于旧轴，不被迁移覆盖', () {
-      // 新键取「实体」才与旧轴（会迁出液态）可区分，否则测不出优先级。
+    test('新键优先，不被任何旧轴覆盖', () {
       final json = TimetableSettings.defaults()
           .copyWith(homeBandGlassMaterial: 'solid')
           .toJson()

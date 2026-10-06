@@ -23,13 +23,19 @@ Future<void> _timetableUpdateCourse(
   if (index == -1) {
     return;
   }
-  final validationMessage = host.validateCourseTimeSchemeOverride(
-    timeSchemeId: course.timeSchemeIdOverride,
-    startSection: course.startSection,
-    endSection: course.endSection,
-  );
-  if (validationMessage != null) {
-    throw ArgumentError(validationMessage);
+  // 只有课程**显式绑定**时间方案时才做节次校验：绑定方案缺节次是「写不进」的硬错误
+  // （课卡无处取钟点）。未绑定时课程自带钟点是唯一真源，地点分组/日期规则/激活方案
+  // 都只是 apply 时的**建议**——溢出由 applyLocationTimeRulesToActiveProfile 计数
+  // 报告，不在写入时拒绝（否则钟点齐全、只是不匹配当前方案的课会被莫名拒掉）。
+  if (course.timeSchemeIdOverride != null) {
+    final validationMessage = host.validateCourseTimeSchemeOverride(
+      timeSchemeId: course.timeSchemeIdOverride,
+      startSection: course.startSection,
+      endSection: course.endSection,
+    );
+    if (validationMessage != null) {
+      throw ArgumentError(validationMessage);
+    }
   }
   final normalized = host._normalizeCourse(course);
   final normalizedCourse = _isLiveTestingFixture(normalized)

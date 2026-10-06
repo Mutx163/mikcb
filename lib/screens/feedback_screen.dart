@@ -6,10 +6,11 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../services/bundled_assets.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/app_toast.dart';
+import '../utils/timed_method_channel.dart';
 
 /// Native Android channel that fires `startActivity(Intent(ACTION_VIEW, uri))`
 /// directly, bypassing `url_launcher` which returns false-positive on MIUI.
-const _launchChannel = MethodChannel('com.mutx163.qingyu/launch_url');
+const _launchChannel = TimedMethodChannel('com.mutx163.qingyu/launch_url');
 
 /// Returns `true` if the native Intent was fired (app or browser opened).
 Future<bool> _nativeLaunchUrl(String url) async {

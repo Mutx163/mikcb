@@ -80,11 +80,18 @@
     <uses-permission android:name="android.permission.READ_CALENDAR"/>
     <uses-permission android:name="android.permission.WRITE_CALENDAR"/>
 
+    <!-- fullBackupContent / dataExtractionRules：系统备份规则，两套并存。
+         API 31+ 读 dataExtractionRules（分「云备份 / 换机直传」两段），
+         API 30 及以下读 fullBackupContent（本项目 minSdk = 26，两套都要）。
+         此前两个属性都没声明 = 走系统默认（全量备份），课表与三组加密凭据
+         一起进云。规则内容与取舍见 res/xml/ 下两个文件的注释。 -->
     <application
         android:name=".UmengApplication"
         android:label="${appLabel}"
         android:icon="@mipmap/ic_launcher"
-        android:networkSecurityConfig="@xml/network_security_config">
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -6743,21 +6743,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guidePersonalizeNavFormTitle => 'Navigation form';
 
   @override
-  String get guidePersonalizeVisualEffectTitle => 'Visual effect';
-
-  @override
   String get guidePersonalizeVisualEffectSolid => 'Solid cards';
-
-  @override
-  String get guideVisualEffectGaussianDesc =>
-      'Live gaussian blur behind surfaces — layered and translucent';
 
   @override
   String get guideVisualEffectLiquidDesc =>
       'Liquid glass refraction with extra depth';
 
   @override
-  String get guideVisualEffectSolidDesc => 'No blur effects — best performance';
+  String get guideVisualEffectSolidDesc =>
+      'Top bar, glass dock and course cards turn solid for the best performance; pinned pieces like dialogs stay glass';
+
+  @override
+  String get guideVisualEffectWallpaperHint =>
+      'Glass materials stand out most with a wallpaper set';
 
   @override
   String get guidePersonalizeThemeModeTitle => 'Theme mode';
@@ -10146,6 +10144,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String coursesBeyondSchemeExtraSuffix(int count, int sections) {
+    return ', but $count fall outside the current time template ($sections periods) and won\'t show on the timetable';
+  }
+
+  @override
   String get locationTimeMatchEmpty => 'No place groups yet';
 
   @override
@@ -10488,9 +10491,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frostedGlassModeLiquid => 'Liquid Glass';
-
-  @override
-  String get frostedGlassModeGaussian => 'Gaussian Blur';
 
   @override
   String get frostedGlassModeSolid => 'Solid cards';
@@ -11761,4 +11761,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get appearanceEditorEntrySubtitle =>
       'Full-page mini preview — adjust the wallpaper and the material';
+
+  @override
+  String get commonLoadingLabel => 'Loading…';
+
+  @override
+  String get warehouseSessionAlreadyActive =>
+      'Your school account is still signed in, so you can import right away';
+
+  @override
+  String underlineTabSemanticsLabel(String text) {
+    return '$text tab';
+  }
 }

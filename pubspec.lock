@@ -554,8 +554,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: e850e7262e9e10a77a21c69c93e812316ec0a056
-      resolved-ref: e850e7262e9e10a77a21c69c93e812316ec0a056
+      ref: "762d126ed3c55240d56cd8c0370e06938ee22a61"
+      resolved-ref: "762d126ed3c55240d56cd8c0370e06938ee22a61"
       url: "https://github.com/Mutx163/inspire_blur.git"
     source: git
     version: "0.4.1"

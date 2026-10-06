@@ -1,0 +1,75 @@
+#!/bin/sh
+# 提交前门禁：只跑「静默失效、CI 才发现」的那道架构守卫。
+#
+# 为什么需要它：CI 跑的是无过滤的 `flutter test`（.github/workflows/ci.yml），
+# `test/architecture/dependency_guards_test.dart` 的行数棘轮**确实**会被 CI 拦下。
+# 缺的不是强制点，是**推送前的本地反馈**——守卫被绕过时（2026-09-29 实测：
+# 三个提交净增 156 行、一次都没碰守卫测试），要等推送后 CI 变红才知道，
+# 而「CI 红了」很容易在忙的时候被当成「又红了一直红着」。
+#
+# 为什么只跑架构守卫、不跑全量 `flutter test`：全量要几分钟，一旦慢到让人
+# 养成 `--no-verify` 的习惯，这道门禁就等于不存在。`test/architecture/` 实测
+# 21 条 / 5.8 秒，且全是扫文件的纯逻辑测试，不 pump widget、不会挂住。
+#
+# 为什么不把 `tool/audit_cjk_hardcode.py` 也放进来（它同样是 CI 门禁、同样快）：
+# 棘轮模式在发现改善时会**自动改写** `tool/cjk_hardcode_baseline.txt`。放进钩子
+# 等于每次提交都可能把工作区弄脏出一个未暂存的改动，比它拦住的回归更烦人。
+#
+# 本钩子的定位是「快速本地反馈」，**不是第二道 CI**。所以工具链自己起不来的时候
+# 它选择放行并提醒，而不是拦住提交——见下面「工具链起不来就放行」一节。
+#
+# 逃生舱：git 约定俗成的 `--no-verify`（`git commit --no-verify`）。真被误伤时
+# 用它跳过，然后**立刻**手动补跑 `flutter test test/architecture/`。
+
+set -e
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+# 只在暂存区动到相关路径时才跑。守卫扫的是 lib/ 与 android/ 的源码与资源，
+# 纯文档/站点提交不必付这 6 秒。
+staged=$(git diff --cached --name-only)
+relevant=$(printf '%s\n' "$staged" | grep -E '^(lib/|test/architecture/|android/|pubspec\.yaml)' || true)
+
+if [ -z "$relevant" ]; then
+  exit 0
+fi
+
+if ! command -v flutter >/dev/null 2>&1; then
+  echo "pre-commit: 找不到 flutter，跳过架构守卫（CI 仍会兜住）。" >&2
+  exit 0
+fi
+
+echo "pre-commit: 跑架构守卫（test/architecture/，约 6 秒）..."
+
+out_file=$(mktemp)
+trap 'rm -f "$out_file"' EXIT
+
+set +e
+flutter test test/architecture/ --timeout 60s >"$out_file" 2>&1
+rc=$?
+set -e
+
+if [ "$rc" -eq 0 ]; then
+  exit 0
+fi
+
+# 工具链起不来 ≠ 守卫不过。这两种失败必须分开，否则本机 Flutter 一出毛病
+# 就会拦住所有提交，而那报错与代码无关、也没法就地修——门禁一旦这样就只会被
+# `--no-verify` 绕过，反而更糟。实测踩到过的签名见下。
+if grep -qE 'Unable to determine engine version|Error: Unable to|Could not find a command named|Error: .*not found' "$out_file"; then
+  echo "" >&2
+  echo "pre-commit: flutter 工具链自己没跑起来，跳过本次架构守卫（CI 仍会兜住）。" >&2
+  echo "pre-commit: 下面这段是工具链的报错，不是守卫结论：" >&2
+  sed 's/^/    /' "$out_file" >&2
+  exit 0
+fi
+
+echo "" >&2
+sed 's/^/    /' "$out_file" >&2
+echo "" >&2
+echo "pre-commit: 架构守卫没过，本次提交已拦下。" >&2
+echo "pre-commit: 行数/依赖扇入棘轮是**只降不升**的，改动该拆就拆，" >&2
+echo "           别用抬基线的方式把它变绿——抬之前先问这次增长能不能下沉。" >&2
+echo "pre-commit: 确认是误伤可用 git commit --no-verify，但请手动补跑本命令。" >&2
+exit 1

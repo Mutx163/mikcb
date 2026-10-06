@@ -8,6 +8,7 @@ import '../logging/app_debug_log.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/schedule_item.dart';
+import '../utils/timed_method_channel.dart';
 
 /// One scheduled fire point for an exam reminder (local wall clock).
 class ExamReminderFire {
@@ -59,7 +60,7 @@ class ExamReminderFire {
 
 /// Builds fire points and syncs them to the native AlarmManager scheduler.
 class ExamReminderService {
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     'com.mutx163.qingyu/exam_reminder',
   );
 

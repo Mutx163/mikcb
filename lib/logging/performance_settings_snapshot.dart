@@ -96,8 +96,10 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
 
   return <String, Object?>{
     // —— 一句话档位 ——
+    // 高斯模糊 2026-09-30 退场，`glassMode` 只剩 solid / liquidGlass 两值；
+    // 原来那条 `glassModeRaw`（枚举原名）随之删除——它与 `glassMode` 同源，
+    // 留两条读数只是让人怀疑「界面那档和实际那档是不是又错位了」。
     'glassMode': glassModeChoiceOf(s).name,
-    'glassModeRaw': s.frostedGlassMode.name,
     'blurEnabled': s.frostedBlurEnabled,
 
     // —— 各表面此刻实际是什么材质（渲染侧同口径）——

@@ -7,7 +7,6 @@ import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/app_global_settings_service.dart';
-import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 
 /// 应用级偏好（导航 / 材质 / 主题 / 通用）改全局之后，这份 service 是唯一真源。
 /// 这里锁三件事：清单与模型对得上、覆盖真的生效且只动清单里的键、迁移选激活课表那份。
@@ -35,7 +34,6 @@ void main() {
     glassDockButtonEntryId: 'weather',
     glassDockButtonIconName: 'cloudFill',
     // 材质
-    frostedGlassMode: FrostedGlassMode.liquidGlass,
     frostedBlurEnabled: false,
     liquidGlassPreset: LiquidGlassPreset.dense,
     liquidGlassTuning: LiquidGlassTuning.defaults,

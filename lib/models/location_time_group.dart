@@ -66,6 +66,13 @@ class LocationTimeGroup {
   final int priority;
   final List<LocationKeyword> keywords;
 
+  /// 创建来源的学校 ID；null = 用户手建（或本字段引入前的存量数据）。
+  ///
+  /// 专属作息导入（`qingyu_only/`）按教学楼自动建组，而组名（「A栋」一类）跨校
+  /// 撞车很常见、分组又是全局存储——不带来源标记，换校导入后旧校的组会继续
+  /// 拦截新校的教室。手建组没有学校归属，不属于任何一次导入的清理范围。
+  final String? sourceSchoolId;
+
   const LocationTimeGroup({
     required this.id,
     required this.name,
@@ -73,6 +80,7 @@ class LocationTimeGroup {
     this.enabled = true,
     this.priority = 0,
     this.keywords = const [],
+    this.sourceSchoolId,
   });
 
   Map<String, dynamic> toJson() {
@@ -83,6 +91,7 @@ class LocationTimeGroup {
       'enabled': enabled,
       'priority': priority,
       'keywords': keywords.map((keyword) => keyword.toJson()).toList(),
+      'sourceSchoolId': sourceSchoolId,
     };
   }
 
@@ -111,6 +120,7 @@ class LocationTimeGroup {
       enabled: json['enabled'] as bool? ?? true,
       priority: (json['priority'] as num?)?.toInt() ?? 0,
       keywords: keywords,
+      sourceSchoolId: _cleanOptional(json['sourceSchoolId'] as String?),
     );
   }
 
@@ -129,6 +139,7 @@ class LocationTimeGroup {
     bool? enabled,
     int? priority,
     List<LocationKeyword>? keywords,
+    String? sourceSchoolId,
   }) {
     return LocationTimeGroup(
       id: id ?? this.id,
@@ -137,7 +148,17 @@ class LocationTimeGroup {
       enabled: enabled ?? this.enabled,
       priority: priority ?? this.priority,
       keywords: keywords ?? this.keywords,
+      sourceSchoolId: sourceSchoolId ?? this.sourceSchoolId,
     );
+  }
+
+  /// 空白串归一为 null，避免「来源是空串」和「没有来源」两种状态并存。
+  static String? _cleanOptional(String? raw) {
+    if (raw == null) {
+      return null;
+    }
+    final trimmed = raw.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   String get keywordSummary {

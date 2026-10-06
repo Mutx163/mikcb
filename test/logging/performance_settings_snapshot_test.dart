@@ -15,10 +15,10 @@ void main() {
       buildPerformanceSettingsSnapshot(s);
 
   group('默认档位', () {
-    test('出厂默认是经典磨砂 + 高斯档', () {
+    test('出厂默认是液态玻璃档（高斯模糊 2026-09-30 退场）', () {
       final snapshot = snapshotOf(TimetableSettings.defaults());
 
-      expect(snapshot['glassMode'], 'gaussian');
+      expect(snapshot['glassMode'], 'liquidGlass');
       expect(snapshot['blurEnabled'], isTrue);
     });
 
@@ -26,12 +26,13 @@ void main() {
       final snapshot = snapshotOf(TimetableSettings.defaults());
 
       // 顶栏 2026-09-20 起只有「液态 / 实体」两档，出厂默认是液态玻璃；
-      // 子页顶栏是**另一根轴**（`subpageHeaderBlurStyle`），仍是渐进模糊；坞是
-      // 基础磨砂（跟随全局档位）；弹窗家族那四个读数 2026-09-19 起锁标准档，
-      // 恒为液态玻璃（与用户设置无关）；出厂卡片是实体（高斯卡要用户显式开）。
+      // 子页顶栏是**另一根轴**，仍是渐进模糊；坞跟随液态档（作用范围开），
+      // 2026-09-30 高斯模糊退场后它的出厂读数从「磨砂」变成「液态玻璃」；
+      // 弹窗家族那四个读数 2026-09-19 起锁标准档，恒为液态玻璃（与用户设置
+      // 无关）；出厂卡片是实体（玻璃卡要用户显式开）。
       expect(snapshot['surfaceHomeBand'], 'liquidGlass');
       expect(snapshot['surfaceSubpageHeader'], 'frostProgressive');
-      expect(snapshot['surfaceDock'], 'frost');
+      expect(snapshot['surfaceDock'], 'liquidGlass');
       expect(snapshot['surfaceSheetDialog'], 'liquidGlass');
       expect(snapshot['surfaceSelectSheet'], 'liquidGlass');
       expect(snapshot['surfacePopup'], 'liquidGlass');
@@ -45,7 +46,10 @@ void main() {
       );
 
       expect(snapshot['glassMode'], 'solid');
+      // 坞的作用范围开关仍开着，但模糊管线没了 → 实心。
       expect(snapshot['surfaceDock'], 'solid');
+      // 顶栏带：模糊关时即便材质是液态也走实心带（渲染同口径）。
+      expect(snapshot['surfaceHomeBand'], 'solid');
       // 弹窗家族锁标准档：模糊总开关不参与它的材质判定（唯一能摘下来的是
       // 设备级的技术 / 系统降级，不在本推导范围内）。
       expect(snapshot['surfacePopup'], 'liquidGlass');

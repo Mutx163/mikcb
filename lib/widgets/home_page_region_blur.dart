@@ -11,9 +11,6 @@ import '../ui/hyperos/hyperos_theme.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart';
 import '../utils/home_page_background.dart';
 
-// Course chrome tests reference the glass mode through this library.
-export '../ui/hyperos/frosted/frosted_appearance.dart' show FrostedGlassMode;
-
 /// Reserved clearance between the weekday chrome band and the course grid.
 ///
 /// Also used historically as frosted-band seam overlap between header and
@@ -243,17 +240,101 @@ bool homePageHasAnyChromeBlur(
       settings.homePageWeekdayBarBlurEnabled;
 }
 
+/// 首页那条连续顶栏带（标题栏 + 星期栏）**要不要上屏**。
+///
+/// 与 [homePageHasAnyChromeBlur] 的分工：那个问的是「带子是不是玻璃」（喂组捕获、
+/// 预热预模糊位图、摘要卡同款判据），这个问的是「带子画不画」。**实体档两个答案不同**：
+/// 它不采样，但**要画** —— 那条不透明实心条是**星期栏唯一的底色**（星期栏自己那份
+/// 区域底色在「玻璃开着」时会让成全透明，指望带子盖，见
+/// [homePageRegionChromeVisual]；日视图的星期栏更是自己一点底色都不画）。
+///
+/// ⚠️ 真机 2026-09-30 就是这两问被合成一问的代价：顶栏选「实体」后
+/// [HomePageChromeGlassFill] 里那段实心分支在首页成了死代码，标题行因为另有
+/// [resolveHomePageHeaderBackground] 兜底看着正常，星期栏却直接透出壁纸
+/// （截图：标题实心、星期栏一层壁纸颗粒）。
+bool homePageChromeBandPaints(
+  TimetableSettings settings, {
+  required bool hasBackdrop,
+}) {
+  if (homePageHasAnyChromeBlur(settings, hasBackdrop: hasBackdrop)) {
+    return true;
+  }
+  if (!hasBackdrop) {
+    return false;
+  }
+  // 「顶栏玻璃」总开关关掉时整条不渲染（与 [HomePageContinuousChromeFrostedOverlay]
+  // 的 `_hasAnyBand`、只读材质地图同口径）。
+  return settings.homeBandGlassMaterialEffective == 'solid' &&
+      (settings.homePageHeaderBlurEnabled ||
+          settings.homePageWeekdayBarBlurEnabled);
+}
+
+/// 星期栏此刻是不是**直接贴在壁纸上** —— 决定它的墨色要不要按壁纸亮度自动翻黑白。
+///
+/// 与 [homePageHeaderUsesFrostedChrome] 同构，只是判据换成星期行那份区域底色：
+/// * 星期行玻璃带关着 ⇒ 星期栏画的是自己那份区域底色，壁纸在作用范围内就是裸壁纸；
+/// * 开着 ⇒ 底色让给带子，玻璃带（含液态降级成的半透明衬底）都透得出壁纸，
+///   **只有实体档那条不透明实心条把它盖住** ⇒ 走主题 / 配置墨色。
+/// * 2026-09-30 起液态 / 磨砂带在模糊管线不在时也降级为实心条（见
+///   [HomePageChromeGlassFill.build]），同样不算「压在壁纸上」——[blurPipelineOn]
+///   就是这个判据（[HyperosBlurredHeader.backdropBlurEnabled] 的现成读数）。
+bool homePageWeekdayBarOverWallpaper({
+  required TimetableSettings settings,
+  required bool hasBackdrop,
+  required bool blurPipelineOn,
+}) {
+  if (!hasBackdrop) {
+    return false;
+  }
+  if (!settings.homePageWeekdayBarBlurEnabled) {
+    return homePageRegionShowsBackdrop(
+      settings,
+      HomePageBackgroundScope.weekdayBar,
+    );
+  }
+  return blurPipelineOn && settings.homeBandGlassMaterialEffective != 'solid';
+}
+
+/// 状态栏那一条此刻是不是**压在壁纸上**（系统图标黑白极性按它判，见
+/// [resolveHomePageStatusBarBackground]）。
+///
+/// 壁纸作用范围含状态栏时，带子会连它一起盖住（`includeStatusBar`），于是答案与
+/// 标题栏那条同源：玻璃档透出壁纸 ⇒ 按壁纸亮度翻黑白；**实体档是不透明实心条 ⇒
+/// 按页面底色走**。带子没盖住（实体档但「顶栏玻璃」总开关关着、或作用范围不含状态栏）
+/// 时状态栏画的是裸壁纸，仍然算压在壁纸上。2026-09-30 起液态 / 磨砂带在模糊管线
+/// 不在时也降级为实心条（[blurPipelineOn] 为假），同样按页面底色走。
+bool homePageStatusBarOverWallpaper({
+  required TimetableSettings settings,
+  required bool statusBarShowsBackdrop,
+  required bool bandPaints,
+  required bool blurPipelineOn,
+}) {
+  if (!statusBarShowsBackdrop) {
+    return false;
+  }
+  if (!bandPaints) {
+    return true;
+  }
+  return blurPipelineOn && settings.homeBandGlassMaterialEffective != 'solid';
+}
+
 /// Whether the real home header should keep a transparent/frosted background.
 ///
 /// A solid home band must paint the resolved header color even when the
 /// wallpaper scope still says "header shows backdrop"; otherwise the title bar
 /// is transparent over the wallpaper with no solid fill behind it.
+/// 2026-09-30 起液态 / 磨砂带在模糊管线不在时降级为实心条（[blurPipelineOn]
+/// 为假），标题行同样画不透明页面底色、吃主题墨，不再透壁纸。
 bool homePageHeaderUsesFrostedChrome({
   required TimetableSettings settings,
   required bool hasBackdrop,
   required bool headerShowsBackdrop,
+  required bool blurPipelineOn,
 }) {
   if (!hasBackdrop || settings.homeBandGlassMaterialEffective == 'solid') {
+    return false;
+  }
+  if (!blurPipelineOn) {
     return false;
   }
   return headerShowsBackdrop || settings.homePageHeaderBlurEnabled;
@@ -263,11 +344,13 @@ bool homePageHeaderUsesFrostedChrome({
 ///
 /// A solid band must stay opaque even when the wallpaper scope includes the
 /// header. Glass keeps the existing transparent/region-aware background so the
-/// wallpaper and sampled chrome remain visible.
+/// wallpaper and sampled chrome remain visible. 液态 / 磨砂带在模糊管线不在时
+/// 降级为实心条（[blurPipelineOn] 为假），同样走不透明页面底色。
 HomePageBackgroundVisual resolveHomePageHeaderBackground({
   required TimetableSettings settings,
   required bool hasBackdrop,
   required bool headerShowsBackdrop,
+  required bool blurPipelineOn,
   required bool isDark,
   required Color darkFallback,
 }) {
@@ -275,6 +358,7 @@ HomePageBackgroundVisual resolveHomePageHeaderBackground({
     settings: settings,
     hasBackdrop: hasBackdrop,
     headerShowsBackdrop: headerShowsBackdrop,
+    blurPipelineOn: blurPipelineOn,
   )) {
     return resolveHomePageRegionBackground(
       settings: settings,
@@ -400,6 +484,7 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
     required this.weekdayBarBlurEnabled,
     required this.includeStatusBar,
     required this.weekdayBarHeight,
+    this.solidColor,
     super.key,
   });
 
@@ -407,6 +492,13 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
   final bool weekdayBarBlurEnabled;
   final bool includeStatusBar;
   final double weekdayBarHeight;
+
+  /// 实体档那条不透明实心条的底色（见 [HomePageChromeGlassFill.solidColor]）。
+  ///
+  /// 首页与设置预览都传**页面底色**（`resolveHomePageBackgroundColor` 那一份），
+  /// 与标题行自己刷的那层同源 —— 否则用户自定义过「页面背景色」时，标题行与
+  /// 星期栏之间会差出一条色带。null = 退回主题底色。
+  final Color? solidColor;
 
   bool get _hasAnyBand => headerBlurEnabled || weekdayBarBlurEnabled;
 
@@ -460,7 +552,7 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
                 left: -homePageChromeGlassEdgeOverdraw,
                 right: -homePageChromeGlassEdgeOverdraw,
                 bottom: captureMargin + overhang.bottom,
-                child: const HomePageChromeGlassFill(
+                child: HomePageChromeGlassFill(
                   // ⚠️ 采**祖先组**那份捕获（2026-09-20）：采到的是组内
                   // `UndimmedBackdropCapture` 缓存下来的整屏壁纸，而不是带子自己那一小块
                   // 被压暗 / 裁过的内容。
@@ -471,6 +563,7 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
                   // 当成治黑线的药（09-20 打开它时这台机器渲染的还是渐进磨砂，液态那条
                   // 分支根本没被走到 ⇒ 那次"修好了"从没在液态玻璃上验证过）。
                   useAncestorBackdropGroup: true,
+                  solidColor: solidColor,
                 ),
               ),
             ],
@@ -493,8 +586,18 @@ class HomePageChromeGlassFill extends StatelessWidget {
     this.borderRadius = 0,
     this.useAncestorBackdropGroup = false,
     this.maxRefraction,
+    this.solidColor,
     super.key,
   });
+
+  /// 实体档那条不透明实心条的底色；null = 退回主题底色
+  /// （[HyperosColors.scaffoldBackground]）。
+  ///
+  /// 首页 / 设置预览都传**页面底色**（`resolveHomePageBackgroundColor` 那一份），
+  /// 与标题行自己刷的那层同源 —— 用户自定义过「页面背景色」时，标题行与星期栏之间
+  /// 否则会差出一条色带（标题行走 [resolveHomePageHeaderBackground]，实体档拿的也是
+  /// 页面底色）。玻璃档不吃这个值。
+  final Color? solidColor;
 
   /// Sample the nearest [BackdropGroup]'s full-size backdrop instead of the
   /// band's own clipped bounds.
@@ -603,6 +706,24 @@ class HomePageChromeGlassFill extends StatelessWidget {
     final material = HyperosBlurredHeader.homeBandGlassMaterialOf(context);
     const fill = SizedBox.expand();
 
+    // 实心条：实体档本体，也是液态 / 磨砂带在模糊管线不可用时的降级态。
+    // 底色优先取宿主页传进来的页面底色（见 [solidColor]），null 才退回主题底色
+    // —— 与标题行那份 [resolveHomePageHeaderBackground] 同源，用户自定义过
+    // 「页面背景色」时两段之间不会差出一条色带。
+    Widget solidBand() {
+      final solid = ColoredBox(
+        color: solidColor ?? HyperosColors.scaffoldBackground(context),
+        child: fill,
+      );
+      if (borderRadius <= 0) {
+        return solid;
+      }
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: solid,
+      );
+    }
+
     // 液态玻璃在引擎没有 shader filter 后端 / 着色器未就绪时的回落：仍是磨砂玻璃
     // 观感（就是这条带 2026-09-20 之前一直画的那条渐进模糊链路）。
     Widget frostBand() {
@@ -625,6 +746,17 @@ class HomePageChromeGlassFill extends StatelessWidget {
       );
     }
 
+    // 模糊管线不在（「实体卡片」档关掉模糊总开关 / 系统降级 / 平台没有 blur
+    // 后端）：液态与磨砂带都退**实心条**，不再退半透明水洗。旧口径「模糊关 =
+    // 只剩纯色衬底」出在总开关还不是用户档位的年代；「实体卡片」成为用户档
+    // 之后，水洗是谁都没选过的第三种样子——材质地图（homeBandSurfaceMaterial）
+    // 对「液态带 + 总开关关」早就报 solid，渲染是最后一块说谎的板子（真机
+    // 2026-09-30：用户选实体卡片后顶栏透出壁纸）。系统降级契约同样是「所有面
+    // 回 solid material」（见 HyperosBlurredHeader.modalBarrierColor 注释）。
+    if (!useBlur && material != 'solid') {
+      return solidBand();
+    }
+
     if (material == 'frost') {
       // 磨砂玻璃带（跟随默认 + 默认档高斯）：渐进模糊链路，与液态档的着色器
       // 回落同一条路。磨砂不需要折射位移的 overdraw / capture margin（见
@@ -633,19 +765,6 @@ class HomePageChromeGlassFill extends StatelessWidget {
     }
 
     if (material == 'liquid') {
-      // 液态玻璃。模糊总开关关闭（或系统降级）时回落实底衬底：保留既有口径的
-      // 淡色半透明衬底（「模糊关 = 只剩纯色衬底」），与旧高级材质路径一致。
-      if (!useBlur) {
-        return FrostedHeaderBackground(
-          blurEnabled: false,
-          blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-          tint: HyperosBlurredHeader.homePageRegionTintColor(
-            context,
-            withBlur: false,
-          ),
-          child: fill,
-        );
-      }
       return LiquidGlassSurface(
         borderRadius: borderRadius,
         // 首页带上自己那块 bounds 就够宽；设置页预览里它是小矩形，
@@ -657,20 +776,8 @@ class HomePageChromeGlassFill extends StatelessWidget {
       );
     }
 
-    // 实体档：用户显式选择的不透明顶栏——页面底色实心条，完全遮住
-    // 壁纸。与上面那个「淡色衬底」是两回事：那是不模糊时的降级态水洗
-    // （半透明），这不是。
-    final solid = ColoredBox(
-      color: HyperosColors.scaffoldBackground(context),
-      child: fill,
-    );
-    if (borderRadius <= 0) {
-      return solid;
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: solid,
-    );
+    // 实体档：用户显式选择的不透明顶栏——页面底色实心条，完全遮住壁纸。
+    return solidBand();
   }
 }
 

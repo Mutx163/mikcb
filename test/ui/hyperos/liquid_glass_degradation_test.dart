@@ -156,7 +156,6 @@ void main() {
       sheetBlurSigma: 15,
       sheetTintAlpha: 0.7,
       sheetBarrierAlpha: 0.2,
-      glassMode: FrostedGlassMode.liquidGlass,
     );
 
     // Sanity: without any accessibility flag the liquid-glass sheet still

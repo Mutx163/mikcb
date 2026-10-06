@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/screens/course_import_screen.dart';
+import 'package:university_timetable/domain/warehouse_session_probe.dart';
 import 'package:university_timetable/services/warehouse_import_preferences_service.dart';
 import '../helpers_test_app.dart';
 
@@ -98,6 +99,103 @@ void main() {
         );
       },
     );
+
+    // 探针确认会话还在时，屏幕上那张登录框是假的（强智登录页不看会话）。这时弹
+    // 「要不要帮你填密码」纯属噪音：用户点了也没地方填，填了也不会被用到。
+    test('stays silent when the session probe says the session is alive', () {
+      const emptyPassword = WarehouseRememberedLogin(
+        username: 'user',
+        password: '',
+      );
+
+      expect(
+        shouldPromptRememberedLoginAutofill(
+          hasPasswordField: true,
+          rememberedLogin: remembered,
+          candidate: emptyPassword,
+          hasPromptedAutofill: false,
+          isPromptShowing: false,
+          sessionActive: true,
+        ),
+        isFalse,
+      );
+    });
+
+    // 默认值必须是 false：200+ 所学校没有探针配置，行为一个字都不能变。
+    test('defaults to the pre-probe behaviour', () {
+      const emptyPassword = WarehouseRememberedLogin(
+        username: 'user',
+        password: '',
+      );
+
+      expect(
+        shouldPromptRememberedLoginAutofill(
+          hasPasswordField: true,
+          rememberedLogin: remembered,
+          candidate: emptyPassword,
+          hasPromptedAutofill: false,
+          isPromptShowing: false,
+        ),
+        isTrue,
+      );
+    });
+  });
+
+  group('sessionProbeMayStillSettle', () {
+    const config = WarehouseSessionProbeConfig(probeUrl: '/xskb_list.do');
+
+    // 探针在途时必须推迟弹窗决定：判定若不等探针，「会话还在 → 不弹」的抑制
+    // 永远输给网络往返（入口页即登录页时弹窗必然抢先，迟到的结论再也用不上）。
+    test('defers only while a configured probe is in flight and undecided', () {
+      expect(
+        sessionProbeMayStillSettle(
+          config: config,
+          verdict: WarehouseSessionProbeVerdict.unknown,
+          inFlight: true,
+        ),
+        isTrue,
+      );
+    });
+
+    test('never defers without a probe config', () {
+      expect(
+        sessionProbeMayStillSettle(
+          config: null,
+          verdict: WarehouseSessionProbeVerdict.unknown,
+          inFlight: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('does not defer once the probe has a verdict', () {
+      for (final verdict in WarehouseSessionProbeVerdict.values) {
+        if (verdict == WarehouseSessionProbeVerdict.unknown) {
+          continue;
+        }
+        expect(
+          sessionProbeMayStillSettle(
+            config: config,
+            verdict: verdict,
+            inFlight: true,
+          ),
+          isFalse,
+          reason: 'verdict=$verdict 已可判定，再等只会白拖',
+        );
+      }
+    });
+
+    test('does not defer when the probe is no longer in flight', () {
+      // 不在途 = 这次探不动（跳过/冷却/超时已收）：等不到结论，按原行为放行。
+      expect(
+        sessionProbeMayStillSettle(
+          config: config,
+          verdict: WarehouseSessionProbeVerdict.unknown,
+          inFlight: false,
+        ),
+        isFalse,
+      );
+    });
   });
 
   group('shouldPromptRememberedLoginSave', () {

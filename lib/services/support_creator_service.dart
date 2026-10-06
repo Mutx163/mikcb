@@ -7,6 +7,7 @@ import '../l10n/service_message_localizer.dart';
 import '../logging/app_debug_log.dart';
 import 'app_update_service.dart';
 import '../utils/async_utils.dart';
+import '../utils/timed_method_channel.dart';
 import 'app_http_client.dart';
 
 class SupportDonorEntry {
@@ -148,7 +149,7 @@ typedef SystemDownloadProgressReader =
     Future<SystemDownloadProgress?> Function(int downloadId);
 
 class SupportCreatorService {
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _channel = TimedMethodChannel(
     'com.mutx163.qingyu/support',
   );
   static const String _donorsUrl =

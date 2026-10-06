@@ -3703,11 +3703,10 @@
   "guidePersonalizeSubtitle": "These apply immediately and can be changed anytime in Settings → Appearance",
   "guidePersonalizeMenuStyleTitle": "Menu style",
   "guidePersonalizeNavFormTitle": "Navigation form",
-  "guidePersonalizeVisualEffectTitle": "Visual effect",
   "guidePersonalizeVisualEffectSolid": "Solid cards",
-  "guideVisualEffectGaussianDesc": "Live gaussian blur behind surfaces — layered and translucent",
   "guideVisualEffectLiquidDesc": "Liquid glass refraction with extra depth",
-  "guideVisualEffectSolidDesc": "No blur effects — best performance",
+  "guideVisualEffectSolidDesc": "Top bar, glass dock and course cards turn solid for the best performance; pinned pieces like dialogs stay glass",
+  "guideVisualEffectWallpaperHint": "Glass materials stand out most with a wallpaper set",
   "guidePersonalizeThemeModeTitle": "Theme mode",
   "guidePersonalizeSeedColorTitle": "Accent color",
   "guidePrevButton": "Previous",
@@ -5878,6 +5877,17 @@
       }
     }
   },
+  "coursesBeyondSchemeExtraSuffix": ", but {count} fall outside the current time template ({sections} periods) and won't show on the timetable",
+  "@coursesBeyondSchemeExtraSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "sections": {
+        "type": "int"
+      }
+    }
+  },
   "locationTimeMatchEmpty": "No place groups yet",
   "locationTimeMatchCreateGroup": "New place group",
   "locationTimeMatchEditGroup": "Edit place group",
@@ -6075,7 +6085,6 @@
   "liquidGlassScopePickerButtonsTitle": "Wallpaper picker buttons",
   "liquidGlassScopePickerButtonsSubtitle": "Floating glass buttons on the wallpaper position picker",
   "frostedGlassModeLiquid": "Liquid Glass",
-    "frostedGlassModeGaussian": "Gaussian Blur",
   "frostedGlassModeSolid": "Solid cards",
   "advancedMaterialTitle": "Advanced Material",
   "liquidGlassPresetLabel": "Liquid Glass Preset",
@@ -6521,5 +6530,15 @@
   "appearanceEditorDoneAction": "Done",
   "appearanceEditorWallpaperAction": "Adjust wallpaper",
   "appearanceEditorMaterialAction": "Material",
-  "appearanceEditorEntrySubtitle": "Full-page mini preview — adjust the wallpaper and the material"
+  "appearanceEditorEntrySubtitle": "Full-page mini preview — adjust the wallpaper and the material",
+  "commonLoadingLabel": "Loading…",
+  "warehouseSessionAlreadyActive": "Your school account is still signed in, so you can import right away",
+  "underlineTabSemanticsLabel": "{text} tab",
+  "@underlineTabSemanticsLabel": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  }
 }

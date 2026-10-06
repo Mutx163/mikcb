@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
@@ -30,6 +31,8 @@ class InspireHeaderBlur extends StatelessWidget {
     this.opaqueAtRest = false,
     this.bottomOverhang = 0,
     this.cornerRampIn = 0,
+    this.shapeTopInset = 0,
+    this.tintBottomScale = progressiveTintBottomScale,
     super.key,
   });
 
@@ -72,9 +75,17 @@ class InspireHeaderBlur extends StatelessWidget {
   final bool opaqueAtRest;
 
   /// 让开宿主**两个上角**的横向让位区（逻辑 px）。**默认 0 = 逐字旧行为**（子页顶栏 /
-  /// 首页玻璃带走这支，连 `LayoutBuilder` 都不多插，观感一个像素不变，守卫在
-  /// `header_blur_style_wiring_test.dart`）。**现在只有弹窗面板的顶部渐变带
-  /// （`HyperosSheetBlurTop`）开 = 面板圆角半径 28。**
+  /// 首页玻璃带走这支）。**现在只有弹窗面板的顶部渐变带开 = 面板圆角半径 28。**
+  ///
+  /// ## ⚠️ 第九轮定案（2026-09-29）：本参数现在**只管白纱的自绘圆角**
+  ///
+  /// 第六版曾让它同时管三件事：模糊层矩形左右内缩、横向渐隐宽度、白纱形状。
+  /// 真机探针 + 日志定位后，它的两个防护对象都被真正的根因修复取代：
+  /// 采样退化（fork 补丁 3，`u_size` 从未设置）、白纱越出圆弧（白纱自绘圆角，
+  /// 见 [shapeTopInset]）。按用户口径「不是应该是上下渐变吗」，模糊层回到满宽
+  /// 纯竖直（横向渐隐机制保留但休眠，见 [sideTaperFractionFor]），本参数只剩
+  /// 白纱自绘圆角这一个职责（[_veilRadius]）。历史版本表见
+  /// `.agents/notes/implemented/bug-fix/2026-09-28-sheet-top-band-corner-ramp.md`。
   ///
   /// ## 一个旋钮管两件事（2026-09-28 第六版定稿）
   ///
@@ -113,6 +124,31 @@ class InspireHeaderBlur extends StatelessWidget {
   /// 带子画不到圆角外」全靠裁剪 —— 圆角问题一直在。第六版 = 内缩只缩模糊 + 渐隐接活 +
   /// 白纱满宽 + 竖直顶浓底清，四件同时成立才是完整解。
   final double cornerRampIn;
+
+  /// 白纱自绘圆角的**圆弧基准线**距本部件盒顶的距离（逻辑 px）。
+  ///
+  /// 带盒整体上移了宿主的顶部空占位（弹窗渐变带的 `bleedTop` = 18），白纱盒顶
+  /// 落在面板上沿**之上**；白纱自绘圆角（见下）的弧要对准面板轮廓，就得先下沉
+  /// 这段。默认 0 = 盒顶即形状边（子页顶栏 / 首页玻璃带，逐字不变）。
+  ///
+  /// ## 为什么白纱要**自己**画圆角（2026-09-29 探针定案）
+  ///
+  /// 带子里有 BackdropFilter，引擎对其**兄弟内容**的圆角裁剪并不总是可靠：
+  /// 真机探针（白纱染绿）证实，有内容滚到带下时白纱越出面板 `ClipRRect` 的
+  /// 圆弧，在两个角外的方形区域留下满浓度填充（用户口径「圆角外面会出现
+  /// 东西」），滚动到带下无内容时又恢复正常；而直边一侧（面板上沿以上）始终
+  /// 守得住。与其赌引擎裁剪状态，白纱直接把形状画出来——普通绘制的圆角矩形，
+  /// 不经过任何裁剪。见 `2026-09-28-sheet-top-band-corner-ramp.md` 第八轮。
+  final double shapeTopInset;
+
+  /// 白纱中下段的**补浓系数**（0 = 出厂的两段形 [满, 透明]）。
+  ///
+  /// 弹窗渐变带浮在屏幕中部、上下都有内容对比，半透明雾底下的**内容空隙**
+  /// （卡片之间的深色间隔）会透过雾读成「透明」，整条带被内容切成三段观感
+  /// （用户口径 2026-09-29「顶部透明、中间模糊、往下又变透明」）。补浓后中段
+  /// （75% 高度处）的雾 = 满浓度 × 本系数，带底仍恒为透明、不切横向硬边。
+  /// 默认 = [progressiveTintBottomScale]（= 0，子页顶栏 / 首页玻璃带逐字不变）。
+  final double tintBottomScale;
 
   /// 设备是否支持 shader filter（Inspire Blur 的兜底条件）。
   static bool get _shaderFilterSupported => ImageFilter.isShaderFilterSupported;
@@ -165,6 +201,7 @@ class InspireHeaderBlur extends StatelessWidget {
     HeaderBlurStyle style, {
     required double gaussianSigma,
     double sideTaperFraction = 0,
+    double topCornerRadius = 0,
   }) {
     final taper = sideTaperFraction.clamp(0.0, 1.0);
     return switch (style) {
@@ -172,11 +209,14 @@ class InspireHeaderBlur extends StatelessWidget {
       HeaderBlurStyle.inspire => InspireBlurConfig(
           sigma: progressiveSigma,
           distribution: _inspireDistribution(taper: taper),
+          // mikcb 补丁 5：材料形状两个上角按面板圆角走弧（0 = 关）。
+          topCornerRadius: topCornerRadius,
         ),
       // 高斯档：整带均匀模糊，粗走全局模糊强度（两个方向渐变都忽略）。
       HeaderBlurStyle.gaussian => InspireBlurConfig(
         distribution: const UniformDistribution(),
         sigma: gaussianSigma,
+        topCornerRadius: topCornerRadius,
       ),
     };
   }
@@ -312,13 +352,26 @@ class InspireHeaderBlur extends StatelessWidget {
     if (!useGradient) {
       // ⚠️ 白纱走**满宽**定位（`insetCorners: false`）：只有模糊层左右让开
       // [cornerRampIn]，白纱跟着缩两端就会空掉一截料（第三版真机打回的账）。
-      return _bandLayer(insetCorners: false, child: ColoredBox(color: tint));
+      // 未开让位的宿主保持逐字不变的 ColoredBox；开了让位的用带圆角的
+      // DecoratedBox（白纱自绘形状，不依赖裁剪）。
+      return _bandLayer(
+        insetCorners: false,
+        child: _veilRadius == null
+            ? ColoredBox(color: tint)
+            : _veilTop(DecoratedBox(
+                decoration: BoxDecoration(
+                  color: tint,
+                  borderRadius: _veilRadius,
+                ),
+              )),
+      );
     }
-    final vertical = DecoratedBox(
+    final vertical = _veilTop(DecoratedBox(
       decoration: BoxDecoration(
-        gradient: tintGradient(tint, progressiveTintBottomScale),
+        gradient: tintGradient(tint, tintBottomScale),
+        borderRadius: _veilRadius,
       ),
-    );
+    ));
     if (sideTaperFraction <= 0) {
       return _bandLayer(insetCorners: false, child: vertical);
     }
@@ -335,6 +388,20 @@ class InspireHeaderBlur extends StatelessWidget {
       ),
     );
   }
+
+  /// 白纱的**自绘圆角**形状（2026-09-29 探针定案，见 [shapeTopInset] 的说明）。
+  ///
+  /// 开了让位的宿主，白纱的弧必须与面板轮廓同一条：圆角半径取 [cornerRampIn]
+  /// （= 面板圆角半径），弧顶下沉 [shapeTopInset]（带盒上移的那段）。未开让位
+  /// 的宿主返回 null，盒子方角、逐字不变。
+  BorderRadius? get _veilRadius => cornerRampIn > 0
+      ? BorderRadius.vertical(top: Radius.circular(cornerRampIn))
+      : null;
+
+  /// 白纱盒顶下沉 [shapeTopInset]：圆弧要落在面板上沿（宿主形状边）上。
+  Widget _veilTop(Widget box) => shapeTopInset > 0
+      ? Padding(padding: EdgeInsets.only(top: shapeTopInset), child: box)
+      : box;
 
   /// 把一层铺满整条带（[insetCorners] 时左右各让开 [cornerRampIn]、下沿外推
   /// [bottomOverhang]）。
@@ -355,9 +422,13 @@ class InspireHeaderBlur extends StatelessWidget {
   /// ⚠️ 内缩后**必须**有横向渐隐（`build` 里 `sideTaperFractionFor` 的 `taperIn` 取
   /// 同一个 [cornerRampIn]），否则材料在边上齐刷刷断掉、切出竖直接缝 —— 第三版的
   /// 渐隐当时是死代码，这笔账就是那么欠下的。
-  Widget _bandLayer({required Widget child, required bool insetCorners}) {
+  Widget _bandLayer({
+    required Widget child,
+    required bool insetCorners,
+    double topInset = 0,
+  }) {
     final inset = insetCorners ? cornerRampIn : 0.0;
-    if (inset <= 0 && bottomOverhang <= 0) {
+    if (inset <= 0 && bottomOverhang <= 0 && topInset <= 0) {
       return Positioned.fill(child: child);
     }
     // ⚠️ `left` 与 `right` **必须同号**（都是 `+inset` = 左右各往内缩）。
@@ -370,7 +441,7 @@ class InspireHeaderBlur extends StatelessWidget {
     return Positioned(
       left: inset,
       right: inset,
-      top: 0,
+      top: topInset,
       bottom: -bottomOverhang,
       child: child,
     );
@@ -379,28 +450,13 @@ class InspireHeaderBlur extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final useBlur = blurEnabled && canRender(context);
-    if (cornerRampIn <= 0) {
-      // 未开让位的宿主（子页顶栏 / 首页玻璃带）：只有竖直那一份，逐字旧行为，
-      // 连 `LayoutBuilder` 都不插。
-      return _buildBand(context, useBlur: useBlur, sideTaperFraction: 0);
-    }
-    // 横向渐隐要占**比例**，分母只有布局定下来才知道：材料盒宽 = 带宽 −
-    // 2×[cornerRampIn]（`_bandLayer` 的 `Positioned` 左右各让开的那截）。
-    //
-    // 爬升宽度取 [cornerRampIn] 自己（一个旋钮管几何与强度，见 [cornerRampIn]）：
-    // 让开多少，就在多宽里从 0 爬进场 —— 内缩边不断料，弧线相切点上强度也归零。
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return _buildBand(
-          context,
-          useBlur: useBlur,
-          sideTaperFraction: sideTaperFractionFor(
-            materialWidth: constraints.maxWidth - cornerRampIn * 2,
-            taperIn: cornerRampIn,
-          ),
-        );
-      },
-    );
+    // ⚠️ 第九轮定案（2026-09-29，用户口径「不是应该是上下渐变吗」）：模糊层回到
+    // **满宽 + 纯竖直渐变**。第六版的「左右内缩 + 横向渐隐」是为防圆角越界加的
+    // 保护，但它防的两笔（`u_size` 采样退化 = fork 补丁 3、白纱越出圆弧 = 白纱
+    // 自绘圆角）都已真正修掉，保护成了多余的观感负担，按口径撤除。横向渐隐的
+    // 机制（[sideTaperFractionFor] / [sideTaperProfile]）保留但休眠，见
+    // `_buildBand`。`cornerRampIn` 现在只喂白纱的自绘圆角（[_veilRadius]）。
+    return _buildBand(context, useBlur: useBlur, sideTaperFraction: 0);
   }
 
   /// **横向**渐变的爬升段占材料盒宽度的比例 —— [sideTaperFraction] 的推导，纯函数。
@@ -446,26 +502,37 @@ class InspireHeaderBlur extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         if (useBlur)
-          // 模糊层：唯一吃 [cornerRampIn] 内缩 + 横向渐隐的一层（见 [_bandLayer]）。
-          _bandLayer(
-            insetCorners: true,
-            child: IgnorePointer(
-              child: Inspire.backdropBlur(
-                config: configFor(
-                  style,
-                  gaussianSigma: blurSigma,
-                  sideTaperFraction: sideTaperFraction,
-                ),
-                // 顶栏不参与手势，无需截获指针；自身已经裁剪在带内。
-                child: const SizedBox.expand(),
+          // 模糊层：**满宽**（第九轮定案，见 build 的说明）——第六版的内缩让位
+          // 随真实根因修掉而撤除；`insetCorners` 参数保留但休眠。
+          //
+          // ⚠️ `topInset: shapeTopInset`（2026-09-29 定案）：带盒整体上移了
+          // [shapeTopInset]，模糊矩形若也从盒顶起，它的两个上角方区就压在面板
+          // 圆角**之外**——引擎对 BackdropFilter 的圆角裁剪不总可靠（真机探针
+          // 实锤：模糊层一关角外就干净），角外的方形区就是从这儿漏出来的。
+          // 下沉到面板上沿起画后，矩形顶边与白纱的弧线基准同一条线；配合
+          // fork 补丁 5 的 `topCornerRadius`（着色器按面板半径在上角走弧、
+          // 弧外一律不画），材料形状与面板轮廓严丝合缝。
+          //
+          // ⚠️ 弹窗带（cornerRampIn > 0 的唯一宿主）外面套
+          // [_SheetEntranceReregister]：开窗动画期间第一次进场的滤镜在引擎侧
+          // 登记坏损，事后原地重登记能修（2026-09-29 探针实锤，见该类注释）。
+          if (cornerRampIn > 0)
+            _SheetEntranceReregister(
+              builder: () => _buildBlurLayer(
+                sideTaperFraction: sideTaperFraction,
               ),
-            ),
-          ),
+            )
+          else
+            _buildBlurLayer(sideTaperFraction: sideTaperFraction),
         // 衬底画在模糊之上：模糊负责「糊」，衬底负责可读对比度。
         //
         // ⚠️ 白纱**不吃**横向渐隐、也**不左右内缩**（满宽）：2026-09-28 分家，理由
         // 见 [sideTaperFractionFor] / [_bandLayer] —— 白纱一旦跟着收，两端就只剩
         // 玻璃、深色壁纸上读成「透明」，第三版就是这么被打回的。
+        // ⚠️ 白纱**自己带圆角**（`_veilTop` / `_veilRadius`）：带子里有
+        // BackdropFilter 时，引擎对兄弟内容的圆角裁剪不总可靠（2026-09-29 真机
+        // 探针实锤：有内容滚到带下时白纱越出面板圆弧、角外留下满浓度填充），
+        // 白纱的形状从此不依赖任何裁剪。
         _tintLayer(sideTaperFraction: 0),
         child,
       ],
@@ -477,6 +544,28 @@ class InspireHeaderBlur extends StatelessWidget {
     // 默认 ClipRect 按自身尺寸裁剪，会把下沿那一截切掉 —— 这里把裁剪框往下
     // 放到带底（左右与上方仍是原框），其余行为不变。
     return ClipRect(clipper: _BandOverhangClipper(bottomOverhang), child: band);
+  }
+  /// 模糊层本体（满宽 + 纯竖直分布 + 顶角圆弧，见 [build] 里的说明）。
+  ///
+  /// 抽出来是因为 [_SheetEntranceReregister] 每次「重登记」都要**重新构造**
+  /// 这棵子树（新 widget 实例才会触发引擎重登记），不能复用同一个实例。
+  Widget _buildBlurLayer({required double sideTaperFraction}) {
+    return _bandLayer(
+      insetCorners: false,
+      topInset: shapeTopInset,
+      child: IgnorePointer(
+        child: Inspire.backdropBlur(
+          config: configFor(
+            style,
+            gaussianSigma: blurSigma,
+            sideTaperFraction: sideTaperFraction,
+            topCornerRadius: cornerRampIn,
+          ),
+          // 顶栏不参与手势，无需截获指针；自身已经裁剪在带内。
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
   }
 }
 
@@ -493,4 +582,54 @@ class _BandOverhangClipper extends CustomClipper<Rect> {
   @override
   bool shouldReclip(_BandOverhangClipper oldClipper) =>
       oldClipper.overhang != overhang;
+}
+
+/// 弹窗顶部渐变带的**开窗重登记**（2026-09-29 真机定案的引擎层绕行）。
+///
+/// ## 病根（真机日志 + 延迟重录探针两轮实锤）
+///
+/// 开窗动画期间第一次进场的 [BackdropFilter]，引擎对它的**背景绑定**是坏的：
+/// Dart 侧一切参数正确（着色器已装载、取景框 = 面板终位、sigma/强度图/圆角
+/// 全对），但之后每帧都沿用坏绑定——内容滚到带下也不出模糊；任何一次原地
+/// 重建（重跑 builder 生成新的模糊层实例 → `didUpdateWidget` → 新的
+/// `ImageFilter` 实例 → 引擎重新登记）立刻恢复。探针验证：开窗后延迟一次
+/// 原地重建，不切页签模糊即活。
+///
+/// ## 做法
+///
+/// 挂载后 **700ms / 1600ms** 各把子树原地重建一次（重跑 [builder]）。开窗时
+/// 列表在顶部、带子底下没有内容，重登记零观感代价；两次是兜底开窗动画被
+/// 卡顿拖长的情形（动画约 620ms）。只在弹窗带启用（`cornerRampIn > 0` 的
+/// 唯一宿主）——子页顶栏/首页玻璃带走路由转场进场，无此症状，不碰。
+class _SheetEntranceReregister extends StatefulWidget {
+  const _SheetEntranceReregister({required this.builder});
+
+  /// 每次重登记都要**重新构造**子树（新 widget 实例才会触发引擎重登记）。
+  final Widget Function() builder;
+
+  @override
+  State<_SheetEntranceReregister> createState() =>
+      _SheetEntranceReregisterState();
+}
+
+class _SheetEntranceReregisterState extends State<_SheetEntranceReregister> {
+  static const _delays = <Duration>[Duration(milliseconds: 700), Duration(milliseconds: 1600)];
+
+  @override
+  void initState() {
+    super.initState();
+    // 测试环境不排期（pending Timer 会挂住 testWidgets）。
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return;
+    }
+    for (final delay in _delays) {
+      Future<void>.delayed(delay, () {
+        if (!mounted) return;
+        setState(() {});
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder();
 }

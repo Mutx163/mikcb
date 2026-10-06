@@ -256,6 +256,24 @@ class LiquidGlassSurface extends StatefulWidget {
   /// 传 [LiquidGlassRole.pinnedChrome]，从此不受用户的材质设置影响。
   final LiquidGlassRole role;
 
+  /// 覆盖 [isAvailable] 的返回值，**只给测试用**（置 null 即恢复真实判据）。
+  ///
+  /// 为什么需要：真机判据读 `ImageFilter.isShaderFilterSupported` 与着色器加载态，
+  /// 而 `flutter test` 跑的是软件后端，这两条恒为 false —— 于是 widget test 里
+  /// [isAvailable] 永远是 false、`build` 一律走 `fallbackBuilder`。凡是「按
+  /// [isAvailable] 分派」的接线（当前是浮钮的**描边**：液态画得出来才去掉描边，
+  /// 回落成磨砂片时描边必须回来）在测试里都钉不住，只能靠真机。
+  ///
+  /// 与 `HyperosBlurredHeader.bandOverhangsOverride` 同一性质：真机判据里的平台
+  /// 读数在 widget test 恒定，给一道测试缝而不是把判据改软。
+  ///
+  /// ⚠️ **它只影响判据，不影响绘制**：[isAvailable] 被 [build] 用来决定「画玻璃
+  /// 还是走 fallbackBuilder」，而软件后端一旦真去构造 `ImageFilter.shader` 就会抛
+  /// `UnsupportedError`。所以 [build] 刻意走 [_isActuallyRenderable]（不读这条缝），
+  /// 置 true 时只适合断言**接线**（哪条分支被选中、描边在不在），不能断言实际像素。
+  @visibleForTesting
+  static bool? availabilityOverride;
+
   /// 现在能不能真的画出折射。
   ///
   /// **技术下限**（两个作用域都要过）：引擎得有 shader filter 后端（即 Impeller）、
@@ -265,13 +283,18 @@ class LiquidGlassSurface extends StatefulWidget {
   /// 往上的门禁按 [role] 分岔：
   /// * [LiquidGlassRole.pinnedChrome]：只再过一道**技术 / 系统**门禁
   ///   （[LiquidGlassDegradation.shouldDegrade]：平台视图上方、系统无障碍降级）。
-  ///   用户关模糊、选实体/高斯/柔光、关「作用范围」开关，**都不能**把这些小件从玻璃上摘下来。
+  ///   用户关模糊、选实体卡片、关「作用范围」开关，**都不能**把这些小件从玻璃上摘下来。
   /// * [LiquidGlassRole.followsUser]：与全 app 其他玻璃表面同一判据
   ///   （[HyperosBlurredHeader.backdropBlurEnabled] 已含用户模糊总开关与系统降级）。
-  static bool isAvailable(
-    BuildContext context, [
-    LiquidGlassRole role = LiquidGlassRole.followsUser,
-  ]) {
+  /// **不读** [availabilityOverride] 的真机判据。绘制侧（[build]）专用。
+  ///
+  /// 与 [isAvailable] 的区别就是那条测试缝：override 为 true 时 [isAvailable]
+  /// 返回 true，但软件后端构造 `ImageFilter.shader` 会抛 `UnsupportedError`，
+  /// 所以**画**这一侧必须永远走真实判据。
+  static bool _isActuallyRenderable(
+    BuildContext context,
+    LiquidGlassRole role,
+  ) {
     if (!ui.ImageFilter.isShaderFilterSupported ||
         !LiquidGlassSurfaceShader.instance.isLoaded) {
       return false;
@@ -280,6 +303,17 @@ class LiquidGlassSurface extends StatefulWidget {
       return !LiquidGlassDegradation.shouldDegrade(context);
     }
     return HyperosBlurredHeader.backdropBlurEnabled(context);
+  }
+
+  static bool isAvailable(
+    BuildContext context, [
+    LiquidGlassRole role = LiquidGlassRole.followsUser,
+  ]) {
+    final override = availabilityOverride;
+    if (override != null) {
+      return override;
+    }
+    return _isActuallyRenderable(context, role);
   }
 
   /// 解析某个角色**此刻真正会用的**渲染参数。
@@ -409,7 +443,12 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
       child: ListenableBuilder(
         listenable: LiquidGlassSurfaceShader.instance,
         builder: (context, _) {
-          if (!LiquidGlassSurface.isAvailable(context, widget.role)) {
+          // ⚠️ 这里**刻意走 [_isActuallyRenderable] 而不是 [isAvailable]**：
+          // [isAvailable] 读 [availabilityOverride] 那道测试缝，而软件后端真去
+          // 构造 `ImageFilter.shader` 会抛 `UnsupportedError` —— 那道缝只给
+          // 「判据接线」那条测试用（描边这类按 `isAvailable` 分派的地方），
+          // 绘制这一侧永远只认真机判据。
+          if (!LiquidGlassSurface._isActuallyRenderable(context, widget.role)) {
             return widget.fallbackBuilder(context);
           }
           // 两个作用域，各自只有一个出口：表面只提供自己的圆角与当前明暗，折射旋钮、

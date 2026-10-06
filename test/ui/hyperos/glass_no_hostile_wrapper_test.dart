@@ -31,7 +31,6 @@ void main() {
     sheetBlurSigma: 15,
     sheetTintAlpha: 0.7,
     sheetBarrierAlpha: 0.2,
-    glassMode: FrostedGlassMode.liquidGlass,
   );
 
   /// 从玻璃面往上收集「会隔离或重塑实时背景」的祖先，返回可读描述。

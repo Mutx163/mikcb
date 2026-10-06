@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+（API 31+）生效的备份规则，挂在 <application android:dataExtractionRules>。
+  API 30 及以下走 backup_rules.xml（full-backup-content），两套都要有。
+
+  策略分两段，理由不同：
+
+  · cloud-backup —— 整段关掉。本地优先、不联第三方账号，除 Google Play 换机助手外
+    课表没有任何理由上云；`domain="root" path="."` 覆盖应用数据目录整棵树。
+  · device-transfer —— 只排掉凭据。用户换手机时课表、课表方案、设置、壁纸应当
+    跟着走，丢了他会骂人。凭据（WebDAV / 情侣同步 / 教务导入会话）反而**不能**
+    带走：flutter_secure_storage 的密文由 AndroidKeyStore 里的设备绑定密钥保护，
+    那把密钥本身不会被备份，密文搬过去也解不开，搬了只是让新设备第一次读凭据
+    时走进「解不出来」的错误分支。
+
+  两条规则都只写 <exclude> 不写 <include>：Auto Backup 的语义是「出现任意
+  <include> 就变成白名单」，不写 <include> 才是「默认全备、排除列出的」。
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <!-- flutter_secure_storage 默认 prefs 名 = FlutterSecureStorage
+             （FlutterSecureStorageConfig.DEFAULT_PREF_NAME），全部三组凭据都在这一个文件里。 -->
+        <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    </device-transfer>
+</data-extraction-rules>

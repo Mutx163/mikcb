@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'dart:math' as math;
 
+import 'package:university_timetable/l10n/app_localizations.dart';
+
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
 
@@ -129,11 +131,14 @@ class _TabLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Semantics(
       button: true,
       selected: selected,
       inMutuallyExclusiveGroup: true,
-      label: '$text，标签',
+      // 读屏标签带「标签」身份后缀；l10n 不在树上（裸宿主测试）时退化为纯文字，
+      // 角色（button/selected/inMutuallyExclusiveGroup）语义不受影响。
+      label: l10n == null ? text : l10n.underlineTabSemanticsLabel(text),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,

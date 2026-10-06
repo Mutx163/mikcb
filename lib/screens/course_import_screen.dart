@@ -5,7 +5,6 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/widgets/miuix_date_picker_sheet.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:azlistview/azlistview.dart';
 import 'package:file_picker/file_picker.dart';
@@ -30,8 +29,11 @@ import '../models/warehouse_macro_models.dart';
 import '../models/warehouse_repository_models.dart';
 import '../providers/timetable_provider.dart';
 import '../domain/warehouse_course_import_logic.dart';
+import '../domain/warehouse_adapter_upgrade.dart';
 import '../domain/warehouse_location_time_schemes.dart';
 import '../domain/warehouse_macro_replay_logic.dart';
+import '../domain/warehouse_macro_dialog_replay.dart';
+import '../domain/warehouse_session_probe.dart';
 import '../services/ai_course_import_service.dart';
 import '../services/ics_import_service.dart';
 import '../services/import_random_color_preferences.dart';
@@ -160,8 +162,13 @@ bool shouldPromptRememberedLoginAutofill({
   required WarehouseRememberedLogin candidate,
   required bool hasPromptedAutofill,
   required bool isPromptShowing,
+  bool sessionActive = false,
 }) {
+  // sessionActive：探针已确认教务会话还在。此时屏幕上那张登录框是假的（强智登录页
+  // 不看会话，无条件返回登录表单），弹「要不要帮你填密码」纯属噪音——用户点了也
+  // 没地方填，填了也不会被用到。判据见 domain/warehouse_session_probe.dart。
   return hasPasswordField &&
+      !sessionActive &&
       rememberedLogin != null &&
       rememberedLogin.password.isNotEmpty &&
       candidate.password.isEmpty &&
@@ -185,6 +192,25 @@ bool shouldPromptRememberedLoginSave({
       candidateUsername.isNotEmpty &&
       candidatePassword.isNotEmpty &&
       (rememberedLogin == null || rememberedLogin.password.isEmpty);
+}
+
+/// 「要不要帮你填密码」的决定是否应该等一等在途的会话探针。
+///
+/// onPageFinished 同一帧里背靠背发出两件事：收集登录框状态（纯 DOM，毫秒级
+/// 回话）与会话探针（fetch 内页，一次网络往返）。弹窗判定若不等探针，「会话
+/// 还在 → 不弹」的抑制就永远输给网络往返——入口页即登录页（强智标准形态）
+/// 时，弹窗几乎必然在探针结论到达前弹出，而 _hasPromptedAutofill 置位后
+/// 迟到的结论再也用不上。三个条件缺一不可：没配置的学校（200+ 所）探针根本
+/// 不存在，行为必须与从前逐字节一致；非 unknown 的结论已经可以判；不在途
+/// 说明这次探不动（跳过/冷却/超时已收），等不到结论。
+bool sessionProbeMayStillSettle({
+  required WarehouseSessionProbeConfig? config,
+  required WarehouseSessionProbeVerdict verdict,
+  required bool inFlight,
+}) {
+  return config != null &&
+      verdict == WarehouseSessionProbeVerdict.unknown &&
+      inFlight;
 }
 
 /// Whether ordinary web-login import should start background path recording.
@@ -400,8 +426,8 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
         allowedExtensions: const ['ics'],
         // withData: true would already have the whole file in memory, and on
         // Android an OOM kills the process instead of raising something
-        // catchable — so the ceiling has to be enforced before the read.
-        withData: false,
+        // catchable — so the ceiling has to be enforced before the read
+        // (the picker only returns bytes on demand; nothing is pre-loaded).
       );
       if (result == null || result.files.isEmpty || !mounted) return;
 
@@ -2734,8 +2760,8 @@ class _WarehouseCustomDebugEditScreenState
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['js', 'txt'],
-        // Measure before reading; see the .ics picker above for why.
-        withData: false,
+        // Nothing is pre-loaded here (picker default), so measure before reading;
+        // see the .ics picker above for why.
       );
       if (result == null || result.files.isEmpty || !mounted) {
         return;
@@ -2946,6 +2972,13 @@ class _WarehouseSchoolAdaptersScreenState
   List<WarehouseAdapterEntry> _qingyuOnlyAdapters = const [];
   Future<List<WarehouseAdapterEntry>>? _extrasFuture;
 
+  /// 探测是否已有结论（含失败）。
+  ///
+  /// 导入入口要用它：探测还在飞的时候用户就点了导入，那一刻拿到的适配器还没有专属
+  /// 字段，于是「自动应用专属内容」这次就落空了。入口等一下这个已在途的请求就行——
+  /// 不新增任何网络往返（它本来就发过了），最多等它自己那个 6 秒超时。
+  bool _extrasResolved = false;
+
   @override
   void initState() {
     super.initState();
@@ -3075,32 +3108,33 @@ class _WarehouseSchoolAdaptersScreenState
       widget.source,
       widget.school,
     );
-    _extrasFuture!.then(
-      (list) {
-        if (!mounted || list.isEmpty) {
-          return;
-        }
-        setState(() => _qingyuOnlyAdapters = list);
-      },
-      onError: (Object _) {
-        // 降级本身对用户不可见（一所没有专属条目的学校看起来和以前一样），不必打扰。
-      },
-    );
+    _extrasFuture!.then((list) {
+      _extrasResolved = true;
+      if (!mounted || list.isEmpty) {
+        return;
+      }
+      setState(() => _qingyuOnlyAdapters = list);
+    }, onError: (Object _) {
+      // 降级本身对用户不可见（一所没有专属条目的学校看起来和以前一样），不必打扰。
+      _extrasResolved = true;
+    });
   }
 
-  /// 专属条目在标准列表之后追加。标准条目永远排在前面、也永远可用：它在任何仓库
-  /// （含上游仓、他人 fork、镜像的旧快照）里都存在，而专属条目只在我们的仓里有。
+  /// 专属条目不再单列，而是把专属字段并进同一份脚本的标准条目。
+  ///
+  /// 用户看到的是一条：同一所学校的「标准版 / 专属版」在用户眼里是同一件事，让 ta
+  /// 做二选一等于先逼 ta 知道学校有没有做增强；挑了没增强的那条还会白丢「按教学楼
+  /// 分流作息」。合并规则见 `mergeQingyuOnlyUpgrades`。
+  ///
+  /// 标准条目永远排在前面、也永远可用：它在任何仓库（含上游仓、他人 fork、镜像的旧
+  /// 快照）里都存在，而专属条目只在我们的仓里有——探测失败时这一层原样不动。
   List<WarehouseAdapterEntry> _mergeQingyuOnlyAdapters(
     List<WarehouseAdapterEntry> standard,
   ) {
-    if (_qingyuOnlyAdapters.isEmpty) {
-      return standard;
-    }
-    return [
-      ...standard,
-      for (final adapter in _qingyuOnlyAdapters)
-        if (!standard.any((it) => it.adapterId == adapter.adapterId)) adapter,
-    ];
+    return mergeQingyuOnlyUpgrades(
+      standard: standard,
+      extras: _qingyuOnlyAdapters,
+    );
   }
 
   void _reloadAdapters() {
@@ -3122,10 +3156,44 @@ class _WarehouseSchoolAdaptersScreenState
         null;
   }
 
+  /// 导入前把「专属增强」落到手上这条适配器上。
+  ///
+  /// 学校页渲染时专属探测是异步的（刻意不挂在渲染路径上），用户可能在它落地之前就
+  /// 点了导入。此处在探测**还在途**时等它一下（复用同一个 Future，不新增网络往返），
+  /// 拿到结论后按合并规则重算这条适配器；已经落地或已失败都直接返回，什么都不等。
+  ///
+  /// 等不到就返回原样：专属内容缺席只是「回到脚本下发的全局作息」，不是失败。
+  Future<WarehouseAdapterEntry> _resolveAdapterWithExtras(
+    WarehouseAdapterEntry adapter,
+  ) async {
+    if (_extrasResolved) {
+      return adapter;
+    }
+    final pending = _extrasFuture;
+    if (pending == null) {
+      return adapter;
+    }
+    try {
+      final extras = await pending;
+      if (!mounted || extras.isEmpty) {
+        return adapter;
+      }
+      final merged = mergeQingyuOnlyUpgrades(
+        standard: [adapter],
+        extras: extras,
+      );
+      return merged.first;
+    } on Object {
+      // 探测失败等价于「这所学校没有专属增强」，与拿到空列表同义。
+      return adapter;
+    }
+  }
+
   Future<void> _openAdapterImport(
     WarehouseAdapterEntry adapter, {
     bool autoRecord = false,
   }) async {
+    adapter = await _resolveAdapterWithExtras(adapter);
     final initialUrl = await _resolveAdapterImportUrl(adapter);
     if (initialUrl == null || !mounted) {
       return;
@@ -3860,6 +3928,38 @@ class _WarehouseAdapterWebLoginScreenState
   String? _lastLoginStateDecisionKey;
   bool _useDesktopMode = true;
 
+  // --- 教务会话探针（qingyu_only/<学校>/session_probe.json）---
+  //
+  // 目的：让 App 说出「其实还登录着」。强智一类系统的登录页不看会话，无条件返回
+  // 登录表单，光看页面永远只能得出「请登录」这个错误结论；而适配脚本抓课表用的
+  // 是带 Cookie 的 fetch，会话还在就照样抓得到。探针把这件事提前问出来。
+  //
+  // 三条自律：
+  // 1. **不自动跳转**。判错了把人从登录页踹走比让人多登一次糟得多，跳不跳交给用户。
+  // 2. **判不出来就闭嘴**。取不到配置 / 网络失败 / 被跨源重定向一律 unavailable，
+  //    行为与今天完全一致（200+ 所没配这个文件）。
+  // 3. **不多打请求**。每次开页最多探一次，换站才重探，同站翻页不再探。
+  WarehouseSessionProbeConfig? _sessionProbeConfig;
+  WarehouseSessionProbeVerdict _sessionProbeVerdict =
+      WarehouseSessionProbeVerdict.unknown;
+  String? _sessionProbeOrigin;
+  bool _sessionProbeInFlight = false;
+  DateTime? _sessionProbeLastAttemptAt;
+  Timer? _sessionProbeTimer;
+
+  /// 两次探活之间的最小间隔。探活是**自动发起**的请求，学校站点有限流/验证码的
+  /// 可能性存在，失败重试也不能连着打。
+  static const Duration _sessionProbeCooldown = Duration(seconds: 20);
+
+  /// 等页面回话的上限。超时后不算「没登录」，只算这次没探成（见 [_maybeRunSessionProbe]）。
+  static const Duration _sessionProbeTimeout = Duration(seconds: 12);
+
+  /// 探针在途时被推迟的「要不要帮你填密码」决定（最近一条 loginState 消息）。
+  ///
+  /// 探针出结论（或 12s 超时）时补判；页销毁即弃。只留最新一条——探针在途
+  /// 期间 MutationObserver 可能连发多条，旧的那条没有判的价值。
+  Map<String, dynamic>? _pendingAutofillLoginState;
+
   /// 后台导入是否已经进入不可安全取消的写入阶段。
   ///
   /// 这不等同于「课程列表正在写」：时间方案、节次容量和学期设置也可能
@@ -3986,6 +4086,7 @@ class _WarehouseAdapterWebLoginScreenState
     _useDesktopMode = widget.macroRecord?.useDesktopMode ?? true;
     _currentUrl = widget.initialUrl;
     _addressController = TextEditingController(text: widget.initialUrl);
+    _startSessionProbeConfigLoad();
     WarehouseImportSessionLog.instance.append(
       message:
           'open web login school=${widget.school.name}(${widget.school.id}) '
@@ -4082,6 +4183,7 @@ class _WarehouseAdapterWebLoginScreenState
             _injectImeScrollHelperJs();
             _applyViewportOverrideJs();
             _requestLoginStateProbe();
+            _maybeRunSessionProbe(url);
           },
           onWebResourceError: (error) {
             // 安全配置收紧后（release 仅放行 NSC 白名单内的 HTTP 域），
@@ -4225,6 +4327,7 @@ class _WarehouseAdapterWebLoginScreenState
     _replayContinueCompleter?.complete(false);
     _replayContinueCompleter = null;
     _importTimeoutTimer?.cancel();
+    _disposeSessionProbe();
     _addressController.dispose();
     _addressFocusNode.dispose();
     // 与 initState 的置位对称：runInBackground 实例从未置位，不得复位别人
@@ -4611,17 +4714,39 @@ class _WarehouseAdapterWebLoginScreenState
                       top: false,
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                        child: HyperosButton(
-                          label: _isExecutingImport
-                              ? l10n.importingAction
-                              : (_isUsingLocalDebugScript
-                                    ? l10n.executeLocalDebugScriptAction
-                                    : l10n.executeImportScriptAction),
-                          expand: true,
-                          loading: _isExecutingImport,
-                          onPressed: _isExecutingImport
-                              ? null
-                              : _executeImportScript,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // 探针确认会话还在时的一句话说明。放在按钮正上方而不是
+                            // 顶部状态行：状态行归导入过程所有，而这条说的是「你现在
+                            // 不必登录」，两者混在一行会互相覆盖。
+                            if (_isSessionActive) ...[
+                              Text(
+                                l10n.warehouseSessionAlreadyActive,
+                                style: HyperosTypography.listDetail(
+                                  context,
+                                ).copyWith(
+                                  color: HyperosColors.primary(context),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                            HyperosButton(
+                              label: _isExecutingImport
+                                  ? l10n.importingAction
+                                  : (_isUsingLocalDebugScript
+                                        ? l10n.executeLocalDebugScriptAction
+                                        : l10n.executeImportScriptAction),
+                              expand: true,
+                              loading: _isExecutingImport,
+                              onPressed: _isExecutingImport
+                                  ? null
+                                  : _executeImportScript,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -4858,6 +4983,247 @@ class _WarehouseAdapterWebLoginScreenState
       _debugImportLog('login state probe failed: $e', level: 'warn');
     }
   }
+
+  /// 探针配置的读取时机。
+  ///
+  /// 绝大多数学校没有 `session_probe.json`（222 所里目前 1 所），这一次读取对它们
+  /// 是一次必然的 404。所以它**不在渲染关键路径上**：开页就发起、回来再判有没有
+  /// 配置，绝不让整个登录页陪着这一次探测等。读失败一律降级为「没配置」。
+  void _startSessionProbeConfigLoad() {
+    if (widget.runInBackground) {
+      // 后台导入没有界面、也没有人需要看「你还登录着」这句提示，别为它多打请求。
+      return;
+    }
+    _repositoryService
+        .fetchQingyuOnlySessionProbeText(widget.source, widget.school)
+        .then((raw) {
+      if (!mounted) {
+        return;
+      }
+      final config = parseWarehouseSessionProbeConfig(raw);
+      setState(() {
+        _sessionProbeConfig = config;
+      });
+      _debugImportLog(
+        'session probe config loaded configured=${config != null}',
+        level: 'debug',
+      );
+    }, onError: (Object error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _sessionProbeConfig = null;
+      });
+      _debugImportLog('session probe config load failed: $error', level: 'warn');
+    });
+  }
+
+  /// 页面加载完就问一次「会话还在吗」。判据与取舍见
+  /// `lib/domain/warehouse_session_probe.dart`。
+  Future<void> _maybeRunSessionProbe(String pageUrl) async {
+    final config = _sessionProbeConfig;
+    if (config == null) {
+      // 没配置 = 这所学校不探，行为与今天完全一致。
+      return;
+    }
+    if (widget.runInBackground ||
+        _isMacroReplay ||
+        _macroRecordingState == MacroRecordingState.recording) {
+      // 宏回放按录制好的步骤自己走；录制中更不能有外来脚本在页面上活动。
+      return;
+    }
+    if (_sessionProbeInFlight) {
+      return;
+    }
+    final origin = warehouseSessionProbeOrigin(pageUrl);
+    if (origin == null) {
+      return;
+    }
+    if (_sessionProbeOrigin != null && _sessionProbeOrigin != origin) {
+      // 换站了：之前那份结论作数不得，重新探。
+      setState(() {
+        _sessionProbeVerdict = WarehouseSessionProbeVerdict.unknown;
+      });
+    }
+    _sessionProbeOrigin = origin;
+    final hasVerdict = _sessionProbeVerdict != WarehouseSessionProbeVerdict.unknown;
+    if (hasVerdict && _sessionProbeVerdict != WarehouseSessionProbeVerdict.unavailable) {
+      // 登录中/未登录是可信结论：同一站里翻页不会让会话凭空消失，不重复探。
+      return;
+    }
+    // unavailable（网络失败 / 403 一类）只是「这次没探成」：允许冷却期后重试，
+    // 否则一次偶发失败就把「已登录」提示永久关掉。可信结论不受冷却限制。
+    final lastAttempt = _sessionProbeLastAttemptAt;
+    if (lastAttempt != null &&
+        (!hasVerdict ||
+            _sessionProbeVerdict == WarehouseSessionProbeVerdict.unavailable) &&
+        DateTime.now().difference(lastAttempt) < _sessionProbeCooldown) {
+      return;
+    }
+    final target = resolveWarehouseSessionProbeTarget(
+      entryUrl: widget.initialUrl,
+      pageUrl: pageUrl,
+      probeUrl: config.probeUrl,
+    );
+    if (target == null) {
+      _debugImportLog(
+        'session probe skipped: target not same-origin page=$pageUrl '
+        'probe=${config.probeUrl}',
+        level: 'debug',
+      );
+      return;
+    }
+    _sessionProbeLastAttemptAt = DateTime.now();
+    _sessionProbeInFlight = true;
+    _debugImportLog('session probe start target=$target');
+    // 兜底：页面脚本可能因为导航/销毁而永远不回调。没有这个计时器，
+    // _sessionProbeInFlight 会一直挂着，本次开页再也不会探第二次。
+    //
+    // ⚠️ 必须装在注入**之前**：runJavaScript 的 Future 挂住时既不完成也不抛，
+    // catch 走不到，装在它后面就等于「注入一卡住就没有任何兜底 → 在途标记永不
+    // 清 → 本次开页「要不要帮你填密码」再也不弹」。
+    _sessionProbeTimer?.cancel();
+    _sessionProbeTimer = Timer(_sessionProbeTimeout, () {
+      _sessionProbeInFlight = false;
+      // 判为 unknown 而不是 unavailable：网络抖动、页面还没稳住都可能造成超时，
+      // 留给下一次翻页重试（冷却期挡住立刻重打）。
+      _debugImportLog('session probe timeout', level: 'warn');
+      // 等探针等到了超时：被推迟的弹窗决定此刻放行（按「没探成」原行为）。
+      unawaited(_evaluatePendingAutofillPrompt());
+    });
+    try {
+      await _controller.runJavaScript(_sessionProbeScript(target));
+    } catch (e) {
+      _sessionProbeTimer?.cancel();
+      _sessionProbeTimer = null;
+      _sessionProbeInFlight = false;
+      _debugImportLog('session probe inject failed: $e', level: 'warn');
+      return;
+    }
+  }
+
+  /// 页面内发起探活请求，只回传**最小信号**，判定留给 Dart（那边才能单测）。
+  ///
+  /// 结果走既有 [QingyuBridge] 通道、以 `sessionProbe` 类型回来：这是**宿主自己
+  /// 注入的**脚本，不是学校适配脚本，因此不碰上游协议——脚本保持 100% 上游标准、
+  /// 可原样回馈的约定不受影响。
+  String _sessionProbeScript(String target) {
+    return '''
+(() => {
+  const target = ${jsonEncode(target)};
+  const post = (payload) => {
+    try {
+      QingyuBridge.postMessage(JSON.stringify({
+        type: 'sessionProbe',
+        payload: JSON.stringify(payload)
+      }));
+    } catch (e) { /* bridge torn down: probe result dropped, import unaffected */ }
+  };
+  (async () => {
+    try {
+      const resp = await fetch(target, {
+        credentials: 'include',
+        redirect: 'follow',
+        cache: 'no-store'
+      });
+      let html = '';
+      try { html = await resp.text(); } catch (e) { html = ''; }
+      let hasPasswordField = false;
+      try {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        hasPasswordField = !!doc.querySelector('input[type="password"]');
+      } catch (e) { /* unparseable HTML counts as no password field; the Dart-side length check is the backstop */ }
+      post({
+        ok: true,
+        status: Number(resp.status || 0),
+        finalUrl: String(resp.url || ''),
+        hasPasswordField: hasPasswordField,
+        bodyLength: html.length
+      });
+    } catch (e) {
+      post({
+        ok: false,
+        status: 0,
+        finalUrl: '',
+        hasPasswordField: false,
+        bodyLength: 0,
+        error: String((e && e.message) || e)
+      });
+    }
+  })();
+  return true;
+})();
+''';
+  }
+
+  void _handleSessionProbeMessage(Map<String, dynamic> message) {
+    _sessionProbeTimer?.cancel();
+    _sessionProbeTimer = null;
+    if (!_sessionProbeInFlight) {
+      return;
+    }
+    _sessionProbeInFlight = false;
+    final signal = parseWarehouseSessionProbeSignal(
+      message['payload'] as String?,
+    );
+    final verdict = classifyWarehouseSessionProbe(
+      signal: signal,
+      pageUrl: _currentUrl ?? widget.initialUrl,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _sessionProbeVerdict = verdict;
+    });
+    _debugImportLog(
+      'session probe verdict=${verdict.name} '
+      'status=${signal?.status} bytes=${signal?.bodyLength} '
+      'passwordField=${signal?.hasPasswordField}',
+    );
+    // 结论落地：补判探针在途期间被推迟的弹窗决定（verdict 已非 unknown，
+    // 重入 _handleLoginStateMessage 不会再被推迟）。
+    unawaited(_evaluatePendingAutofillPrompt());
+  }
+
+  /// 探针出结论（或超时）后，补判被推迟的「要不要帮你填密码」决定。
+  ///
+  /// 超时路径的 verdict 仍是 unknown、inFlight 已收：重入时
+  /// [sessionProbeMayStillSettle] 为假，按「这次没探成」的原行为放行弹窗——
+  /// 等不到结论就退回今天的做法，绝不会把决定永远悬着。
+  Future<void> _evaluatePendingAutofillPrompt() async {
+    final pending = _pendingAutofillLoginState;
+    if (pending == null) {
+      return;
+    }
+    _pendingAutofillLoginState = null;
+    await _handleLoginStateMessage(pending);
+  }
+
+  /// 用户刚尝试过登录，旧结论立刻作废（登录成功与否都要重探）。
+  void _invalidateSessionProbeVerdict() {
+    if (_sessionProbeVerdict == WarehouseSessionProbeVerdict.unknown) {
+      return;
+    }
+    _sessionProbeOrigin = null;
+    if (mounted) {
+      setState(() {
+        _sessionProbeVerdict = WarehouseSessionProbeVerdict.unknown;
+      });
+    }
+  }
+
+  void _disposeSessionProbe() {
+    _sessionProbeTimer?.cancel();
+    _sessionProbeTimer = null;
+    // 页面在销毁，被推迟的弹窗决定随之作废——绝不能在 dispose 后弹对话框。
+    _pendingAutofillLoginState = null;
+  }
+
+  /// 会话确实还在（探针判的，不是看页面猜的）。
+  bool get _isSessionActive =>
+      _sessionProbeVerdict == WarehouseSessionProbeVerdict.loggedIn;
 
   bool get _isBackgroundImportCancelled =>
       widget.runInBackground &&
@@ -5218,6 +5584,10 @@ $kWarehouseBridgeCompatShim  try {
       case 'loginState':
         await _handleLoginStateMessage(message);
         break;
+      case 'sessionProbe':
+        // 宿主自己注入的探活脚本回话（不是学校脚本发的，见 [_sessionProbeScript]）。
+        _handleSessionProbeMessage(message);
+        break;
       case 'loginAttempt':
         await _handleLoginAttempt();
         break;
@@ -5441,13 +5811,24 @@ $kWarehouseBridgeCompatShim  try {
       final key = _dialogResponseKey('singleSelection', message);
       final recorded = macroRecord.dialogResponses[key];
       if (recorded != null) {
-        // 原先这里 resolve 的是 `'$recorded'` —— 一个标签字符串。脚本按真人
-        // 路径写的是 `const i = await showSingleSelection(...); options[i]`，
-        // 回放时 `options["周三"]` 在 JS 里是 undefined，于是宏会静默选错校区/
-        // 学期并把错的数据导进来（不报错，最难查的那种）。
-        final recordedIndex =
-            matchRecordedOptionIndex(options, recorded) ?? scriptSelectedIndex;
-        await _resolveJavaScriptRequest(requestId, recordedIndex);
+        // 录制侧存的是**用户选的那一项的文字**（宿主调整选项顺序也不会选错），而脚本
+        // 契约要的是**序号**，回放时必须换算；直接回文字会让按序号解析的脚本立刻变成
+        // 「导入已取消」（2026-09-29 城科真机：弹窗出现后 10ms 就返回取消）。
+        //
+        // 取 main 侧的 `resolveRecordedSelectionIndex`，不用本分支早先的
+        // `matchRecordedOptionIndex`：前者多覆盖「宿主把值包成数字字符串」这一路
+        // （Dart 里 `0 == '0'` 为 false，直接比会静默掉到 fallback）。选项与脚本默认
+        // 下标用外层的 `options` / `scriptSelectedIndex`，不在块内重复解析。
+        final resolved = resolveRecordedSelectionIndex(
+          recorded: recorded,
+          options: options,
+          fallbackIndex: scriptSelectedIndex,
+        );
+        _debugImportLog(
+          'singleSelection replay recorded=$recorded options=${options.length} '
+          'resolved=$resolved fallback=$scriptSelectedIndex',
+        );
+        await _resolveJavaScriptRequest(requestId, resolved);
         return;
       }
       if (widget.runInBackground) {
@@ -5956,7 +6337,9 @@ $kWarehouseBridgeCompatShim  try {
   /// 「唯一校区直接用，否则不套用专属作息」处理——宁可退回脚本那套全局作息，
   /// 也不要替用户猜一个校区然后把作息套错。
   ///
-  /// 分组按名 upsert：脚本提到的同名分组被覆盖，**用户自建的其它分组一律保留**。
+  /// 分组按名 upsert：脚本提到的同名分组被覆盖；**他校自动建的分组一并清除**
+  /// （教学楼名跨校撞车，留着会把新校教室错分到旧校作息——组上带来源标记，
+  /// 见 [mergeLocationTimeGroupsForImport]）；用户手建的分组不带标记，一律保留。
   Future<void> _applyQingyuOnlyLocationTimeSchemes() async {
     final adapter = widget.adapter;
     if (!adapter.isQingyuOnly || adapter.timeSchemesFile.isEmpty) {
@@ -6010,6 +6393,9 @@ $kWarehouseBridgeCompatShim  try {
           timeSchemeId: schemeId,
           priority: incoming.length,
           keywords: scheme.keywords,
+          // 来源标记：换校导入时据此清掉他校自动组（教学楼名跨校撞车）。
+          // 手建组不带标记、永不清理。见 mergeLocationTimeGroupsForImport。
+          sourceSchoolId: widget.school.id,
         ),
       );
     }
@@ -6020,15 +6406,11 @@ $kWarehouseBridgeCompatShim  try {
       return;
     }
 
-    final replacedNames = campus.schemes
-        .where((scheme) => !scheme.isFallback)
-        .map((scheme) => scheme.name)
-        .toSet();
-    final merged = <LocationTimeGroup>[
-      for (final existing in provider.locationTimeGroups)
-        if (!replacedNames.contains(existing.name)) existing,
-      ...incoming,
-    ];
+    final merged = mergeLocationTimeGroupsForImport(
+      existing: provider.locationTimeGroups,
+      incoming: incoming,
+      schoolId: widget.school.id,
+    );
     await provider.replaceLocationTimeGroups(merged);
     final applyError = await provider.applyTimeScheme(fallbackSchemeId);
     if (applyError != null) {
@@ -6139,13 +6521,15 @@ $kWarehouseBridgeCompatShim  try {
     required bool rememberedPasswordEmpty,
     required bool candidatePasswordEmpty,
     required bool hasPromptedAutofill,
+    required bool sessionActive,
   }) {
     final key =
         'gateAllows=$gateAllows hasPasswordField=$hasPasswordField '
         'remembered=$rememberedExists '
         'rememberedPasswordEmpty=$rememberedPasswordEmpty '
         'candidatePasswordEmpty=$candidatePasswordEmpty '
-        'hasPromptedAutofill=$hasPromptedAutofill';
+        'hasPromptedAutofill=$hasPromptedAutofill '
+        'sessionActive=$sessionActive';
     if (key == _lastLoginStateDecisionKey) {
       return;
     }
@@ -6176,11 +6560,23 @@ $kWarehouseBridgeCompatShim  try {
       rememberedPasswordEmpty: _rememberedLogin?.password.isEmpty ?? true,
       candidatePasswordEmpty: candidate.password.isEmpty,
       hasPromptedAutofill: _hasPromptedAutofill,
+      sessionActive: _isSessionActive,
     );
     if (!gateAllows) {
       return;
     }
     if (!mounted) {
+      return;
+    }
+    // 探针还在路上：把弹窗决定推迟到它出结论（或超时）再判，否则「会话还在
+    // → 不弹」的抑制永远输给网络往返（见 sessionProbeMayStillSettle）。
+    if (sessionProbeMayStillSettle(
+      config: _sessionProbeConfig,
+      verdict: _sessionProbeVerdict,
+      inFlight: _sessionProbeInFlight,
+    )) {
+      _pendingAutofillLoginState = message;
+      _debugImportLog('autofill prompt deferred: session probe in flight');
       return;
     }
 
@@ -6190,6 +6586,7 @@ $kWarehouseBridgeCompatShim  try {
       candidate: candidate,
       hasPromptedAutofill: _hasPromptedAutofill,
       isPromptShowing: _isPromptShowing,
+      sessionActive: _isSessionActive,
     )) {
       _hasPromptedAutofill = true;
       // 回放模式：直接填充，不弹对话框。
@@ -6228,6 +6625,9 @@ $kWarehouseBridgeCompatShim  try {
   }
 
   Future<void> _handleLoginAttempt() async {
+    // 登录动作（点登录 / 提交表单）之后，之前那份「会话还在不在」的结论就过期了：
+    // 登录可能成功、也可能失败。无论哪种，都得让下一次探活重新判。
+    _invalidateSessionProbeVerdict();
     final candidate = _latestLoginCandidate;
     if (candidate == null) {
       return;

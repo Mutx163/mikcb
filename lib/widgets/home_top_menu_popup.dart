@@ -15,19 +15,12 @@ import 'package:university_timetable/ui/hyperos/os4_glass_backdrop.dart';
 import 'package:university_timetable/utils/frame_perf_probe.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
 
-/// 主 / 二级面板共用的尺寸约束。
+/// 主 / 二级面板共用的尺寸约束 —— 走**全软件统一口径**
+/// （[os4GlassPopupStandardSizing]，理由与「为什么是 200」都写在那儿）。
 ///
-/// 上游默认是 `MiuixGlassPopupSizing(maxWidth: 288)`，而新条目
-///（`MiuixGlassPopupItem` 的文字样式 + 箭头 + 内边距）比旧实现的手搓条目宽，
-/// 面板会被顶到接近上限 —— 真机上就是"菜单比换实现前胖了一圈"。
-///
-/// 收到 **200** 即回到旧实现的**下界原宽**：旧公式
-/// `132 + HyperosMiuixDropdown.popupExtraLeadingWidth` 恰好 = 200，而旧条目更窄、
-/// 实际宽度一直停在这个下界。
-///
-/// ⚠️ **两块面板必须传同一份**：`sizing` 是各自独立的入参，只给一级会让
-/// 主面板 200、二级默认 288，两块宽度对不齐。
-const _popupSizing = MiuixGlassPopupSizing(maxWidth: 200);
+/// ⚠️ 这里是这个口径最早的落点，现在改成引用共享常量：私有副本迟早会和别的
+/// 锚定式菜单分叉（时间模板页一度私开 240，被用户当场打回）。
+const _popupSizing = os4GlassPopupStandardSizing;
 
 /// 二级展开 / 收起的时长：一级让位缩放、两侧箭头旋转共用同一长度。
 ///

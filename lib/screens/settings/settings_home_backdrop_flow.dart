@@ -390,16 +390,28 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     unawaited(deleteEvictedWallpaperFiles(paths, inUsePaths: _inUseWallpaperPaths()));
   }
 
-  /// 壁纸弹窗（「外观编辑」页底部按钮）的正文。
+  /// 壁纸弹窗的正文 —— 2026-09-28 起**分成两页**，见下面两个 builder。
   ///
-  /// 内容与「课表页面」设置里的壁纸行**同一套 builder**：改一行两边一起改，
+  /// 共同点：内容与「课表页面」设置里的壁纸行**同一套 builder**，改一行两边一起改，
   /// 不存在「设置页能切历史、编辑页不能」这种分叉。左右内缩由
   /// [backdropRowHorizontalInset] 按宿主给（弹窗这一侧是 0，见那里的注释）。
   ///
   /// 底部那颗「背景随周次滑动」开关（[_buildBackdropFollowsWeekPagerTile]）同样
   /// 走这条路：2026-09-28 起在「调壁纸」的地方就能决定背景要不要跟着周次动，
   /// 不必先跳去「课表页面」设置才找得到。
-  Widget buildWallpaperSheetBody(
+  ///
+  /// ## 为什么拆两页
+  ///
+  /// 外观编辑的壁纸弹窗改成**左右两页**（与材质面板同一个形状，见
+  /// `_WallpaperSheetBody`）：第一页放选图与「最近使用」，第二页放「背景随周次滑动」
+  /// 这类开关。原先三块挤在一页，弹窗被顶得很高，底下那颗开关永远要滚很久才够得着。
+  ///
+  /// 两页各一个入口、内容仍由下面这三个 builder 生成，所以换宿主不会让它们分叉。
+  /// （原先那个把三块合起来的 `buildWallpaperSheetBody` 已随之删除 —— 分页之后
+  /// 没有任何调用方，留着就是一份没人跑的「第三个版本」。）
+
+  /// 壁纸弹窗的**第一页「壁纸」**：选图行 + 「最近使用」缩略图条。
+  Widget buildWallpaperSheetSelectionPage(
     BuildContext context, {
     required AppLocalizations l10n,
   }) {
@@ -432,8 +444,19 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
           },
         ),
         _buildRecentWallpaperTile(context, l10n: l10n),
-        _buildBackdropFollowsWeekPagerTile(context, l10n: l10n),
       ],
+    );
+  }
+
+  /// 壁纸弹窗的**第二页「设置」**：开关类设置（目前只有「背景随周次滑动」）。
+  Widget buildWallpaperSheetSettingsPage(
+    BuildContext context, {
+    required AppLocalizations l10n,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [_buildBackdropFollowsWeekPagerTile(context, l10n: l10n)],
     );
   }
 

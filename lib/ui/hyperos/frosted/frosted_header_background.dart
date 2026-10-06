@@ -4,16 +4,20 @@ import '../../../models/header_blur_style.dart';
 import '../hyperos_blurred_header.dart';
 import '../hyperos_sheet.dart';
 import '../inspire/inspire_header_blur.dart';
+// HyperosFlatBackdropScope is exported via hyperos_blurred_header.dart above
+// (与 HyperosFrostedPanelScope 同一条路子：单一入口，不在这里二次 import)。
 import 'liquid_glass_degradation.dart';
 
 /// 本格是否浮在一块**液态玻璃**弹窗面板上。
 ///
 /// 弹窗家族锁标准档之后不再有开关可看：面板出图恒为液态玻璃，唯一能让它改成
 /// 实底的是技术 / 系统门禁（[LiquidGlassDegradation.shouldDegrade]）。
+///
+/// 2026-09-30 高斯模糊档退场后，这里原本还并列着一个「全局档位是不是液态」的
+/// 判据 —— 那让「面板是液态玻璃、内里小格却按磨砂上水洗」成为可能（同一块面板
+/// 两种观感）。液态档成为唯一玻璃档之后判据只剩门禁这一条。
 bool _isLiquidSheetPanel(BuildContext context) {
-  if (LiquidGlassDegradation.shouldDegrade(context)) return false;
-  final scope = FrostedAppearanceScope.maybeOf(context);
-  return scope?.appearance.glassMode == FrostedGlassMode.liquidGlass;
+  return !LiquidGlassDegradation.shouldDegrade(context);
 }
 
 /// Frosted top bar: progressive blur + tint scrim (via [InspireHeaderBlur]).
@@ -33,6 +37,8 @@ class FrostedHeaderBackground extends StatelessWidget {
     this.opaqueAtRest = false,
     this.bottomOverhang = 0,
     this.cornerRampIn = 0,
+    this.shapeTopInset = 0,
+    this.tintBottomScale = 0,
     super.key,
   });
 
@@ -58,6 +64,15 @@ class FrostedHeaderBackground extends StatelessWidget {
   /// asked to keep.
   final double cornerRampIn;
 
+  /// See [InspireHeaderBlur.shapeTopInset]. Only the bottom-sheet top band
+  /// passes a non-zero value (= the drag-handle strip the band shifted above
+  /// the panel's top edge).
+  final double shapeTopInset;
+
+  /// See [InspireHeaderBlur.tintBottomScale]. Only the bottom-sheet top band
+  /// passes a non-zero value.
+  final double tintBottomScale;
+
   @override
   Widget build(BuildContext context) {
     return InspireHeaderBlur(
@@ -68,6 +83,8 @@ class FrostedHeaderBackground extends StatelessWidget {
       opaqueAtRest: opaqueAtRest,
       bottomOverhang: bottomOverhang,
       cornerRampIn: cornerRampIn,
+      shapeTopInset: shapeTopInset,
+      tintBottomScale: tintBottomScale,
       child: child,
     );
   }
@@ -159,13 +176,20 @@ class HyperosFrostedSurface extends StatelessWidget {
     final useBlur =
         HyperosBlurredHeader.backdropBlurEnabled(context) &&
         (blurEnabled ?? true);
-    // 与面板材质同步：面板被**技术 / 系统门禁**（平台视图、无障碍降级）摘成
-    // 实体卡片时，白色水洗叠白底会让嵌套 tile 整个隐形（只剩文字）。改走
-    // withBlur:false 的中性水洗（亮色黑 5% / 暗色白 10%），与实体面板同框。
+    // 「面板读作不透明浅色卡片」有**两种**成因，都得换掉白色水洗：
+    // 1. 面板被**技术 / 系统门禁**（平台视图、无障碍降级）摘成实体卡片；
+    // 2. 背后是**平色底**（没壁纸）—— 玻璃采不到任何东西，出图与实底无异，
+    //    白 0.28 叠在近白面板上只差 1~2 个色阶（课程弹窗的「时间 / 老师 / 地点」
+    //    几行整块隐形，用户口径 2026-09-29）。
+    // 两者都走 withBlur:false 的中性水洗（亮色黑 5% / 暗色白 10%），同一份数值。
+    //
     // 只作用于 sheet 面板内（PanelScope 标记）；面板外的菜单/井保持原判。
+    // ⚠️ 液态面板那条不走这里 —— 它在上面的 `inLiquidPanel` 分支里已经经
+    // `nestedLiquidTileTintColor` 判过同一件事，两处判据是同一个作用域。
     final sheetPanelFellBackSolid =
         HyperosFrostedPanelScope.of(context) &&
-        LiquidGlassDegradation.shouldDegrade(context);
+        (LiquidGlassDegradation.shouldDegrade(context) ||
+            HyperosFlatBackdropScope.isFlatOf(context));
     final resolvedTint =
         tint ??
         HyperosBlurredHeader.nestedSurfaceTintColor(
