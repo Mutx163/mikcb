@@ -27,6 +27,10 @@ abstract final class AppLogMessages {
       'log_wallpaper_history_global_migration_failed';
   static const wallpaperHistoryImportMergeFailed =
       'log_wallpaper_history_import_merge_failed';
+  static const bingWallpaperRequestFailed =
+      'log_bing_wallpaper_request_failed';
+  static const bingWallpaperAutoApplyFailed =
+      'log_bing_wallpaper_auto_apply_failed';
   static const appGlobalSettingsMigrationFailed =
       'log_app_global_settings_migration_failed';
   static const homeWidgetScheduleFailed = 'log_home_widget_schedule_failed';

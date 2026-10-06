@@ -3461,6 +3461,67 @@ class AppLocalizationsKo extends AppLocalizations {
   String get wallpaperPositionPickerExit => '나가기';
 
   @override
+  String get bingWallpaperGalleryTitle => 'Bing 일일 배경화면';
+
+  @override
+  String get bingWallpaperGalleryFailed =>
+      'Bing 배경화면을 가져오지 못했습니다. 네트워크를 확인한 후 다시 시도하세요';
+
+  @override
+  String get bingWallpaperGalleryRetry => '다시 시도';
+
+  @override
+  String get bingWallpaperDownloadFailed =>
+      '이 배경화면을 다운로드하지 못했습니다. 잠시 후 다시 시도하세요';
+
+  @override
+  String bingWallpaperDownloadStatus(int status) {
+    return '이 배경화면을 다운로드하지 못했습니다($status)';
+  }
+
+  @override
+  String get bingWallpaperResolutionTitle => '다운로드 화질';
+
+  @override
+  String get bingWallpaperResolutionStandard => '표준';
+
+  @override
+  String get bingWallpaperResolutionTall => '화면 맞춤';
+
+  @override
+  String get bingWallpaperResolutionHigh => '고화질';
+
+  @override
+  String bingWallpaperResolutionFallback(String label) {
+    return 'Bing이 해당 화질을 제공하지 않아 \'$label\'을(를) 사용합니다';
+  }
+
+  @override
+  String bingWallpaperResolutionHint(int width, int height, String size) {
+    return '$width×$height, 장당 약 $size';
+  }
+
+  @override
+  String get bingWallpaperDateToday => '오늘';
+
+  @override
+  String get bingWallpaperDateYesterday => '어제';
+
+  @override
+  String bingWallpaperDateMonthDay(int month, int day) {
+    return '$month월 $day일';
+  }
+
+  @override
+  String get bingWallpaperAutoApplyTitle => '매일 자동 변경';
+
+  @override
+  String get bingWallpaperAutoApplySubtitle => '앱을 처음 열 때 그날의 배경화면으로 바꿉니다';
+
+  @override
+  String get bingWallpaperAutoApplyApplying => '오늘의 배경화면으로 바꾸는 중';
+
+  @override
   String get appearanceTextColorsSectionTitle => '텍스트 색상';
 
   @override
@@ -8954,6 +9015,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get logHomeWidgetClearFailed => 'Failed to clear home widget snapshot';
+
+  @override
+  String get logBingWallpaperRequestFailed =>
+      'Bing daily wallpaper: request failed';
+
+  @override
+  String get logBingWallpaperAutoApplyFailed =>
+      'Bing daily wallpaper: auto-apply failed';
 
   @override
   String get logHomeWidgetScheduleFailed =>

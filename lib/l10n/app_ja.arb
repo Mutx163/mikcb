@@ -5219,6 +5219,8 @@
   "logHomeWidgetPinRequestFailed": "Failed to request home widget pin",
   "logHomeWidgetSyncFailed": "Failed to sync home widget snapshot",
   "logHomeWidgetClearFailed": "Failed to clear home widget snapshot",
+  "logBingWallpaperRequestFailed": "Bing daily wallpaper: request failed",
+  "logBingWallpaperAutoApplyFailed": "Bing daily wallpaper: auto-apply failed",
   "logHomeWidgetScheduleFailed": "Failed to schedule home widget refresh",
   "logHomeWidgetExactAlarmCheckFailed": "正確なアラーム権限の確認に失敗しました",
   "logHomeWidgetExactAlarmRequestFailed": "正確なアラーム権限のリクエストに失敗しました",
@@ -6255,6 +6257,48 @@
   "wallpaperPositionPickerSwitchWallpaper": "壁紙を変更",
   "wallpaperPositionPickerDone": "完了",
   "wallpaperPositionPickerExit": "終了",
+  "@bingWallpaperResolutionHint": {
+    "placeholders": {
+      "width": { "type": "int" },
+      "height": { "type": "int" },
+      "size": { "type": "String" }
+    }
+  },
+  "@bingWallpaperDateMonthDay": {
+    "placeholders": {
+      "month": { "type": "int" },
+      "day": { "type": "int" }
+    }
+  },
+  "bingWallpaperGalleryTitle": "Bing の壁紙",
+  "bingWallpaperGalleryFailed": "Bing の壁紙を取得できませんでした。通信環境を確認して再試行してください",
+  "bingWallpaperGalleryRetry": "再試行",
+  "bingWallpaperDownloadFailed": "この壁紙のダウンロードに失敗しました。しばらくしてからお試しください",
+  "@bingWallpaperDownloadStatus": {
+    "description": "下载失败提示，附上 HTTP 状态码。占位符只在服务端回了响应时才有值；断网等情况用 bingWallpaperDownloadFailed 那条。",
+    "placeholders": {
+      "status": { "type": "int", "example": "404" }
+    }
+  },
+  "bingWallpaperDownloadStatus": "この壁紙のダウンロードに失敗しました（{status}）",
+  "bingWallpaperResolutionTitle": "ダウンロード画質",
+  "bingWallpaperResolutionStandard": "標準",
+  "bingWallpaperResolutionTall": "画面に合わせる",
+  "bingWallpaperResolutionHigh": "高画質",
+  "@bingWallpaperResolutionFallback": {
+    "description": "所选画质当天不可用、已退到默认档时的说明。占位符是实际拿到的那一档的文案。",
+    "placeholders": {
+      "label": { "type": "String", "example": "高清" }
+    }
+  },
+  "bingWallpaperResolutionFallback": "Bing はその画質を提供していないため、「{label}」を使用しました",
+  "bingWallpaperResolutionHint": "{width}×{height}、1 枚あたり約 {size}",
+  "bingWallpaperDateToday": "今日",
+  "bingWallpaperDateYesterday": "昨日",
+  "bingWallpaperDateMonthDay": "{month} 月 {day} 日",
+  "bingWallpaperAutoApplyTitle": "毎日自動で変更",
+  "bingWallpaperAutoApplySubtitle": "その日の壁紙を、アプリを最初に開いたときに適用します",
+  "bingWallpaperAutoApplyApplying": "今日の壁紙に切り替えています",
   "appearanceTextColorsSectionTitle": "テキストの色",
   "appearanceTextColorsSectionSubtitle": "授業カード、曜日バー、時間軸のテキストの色をカスタマイズします",
   "pageTransitionSpeedTitle": "ページ遷移の速度",

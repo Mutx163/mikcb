@@ -5219,6 +5219,8 @@
   "logHomeWidgetPinRequestFailed": "Failed to request home widget pin",
   "logHomeWidgetSyncFailed": "Failed to sync home widget snapshot",
   "logHomeWidgetClearFailed": "Failed to clear home widget snapshot",
+  "logBingWallpaperRequestFailed": "Bing daily wallpaper: request failed",
+  "logBingWallpaperAutoApplyFailed": "Bing daily wallpaper: auto-apply failed",
   "logHomeWidgetScheduleFailed": "Failed to schedule home widget refresh",
   "logHomeWidgetExactAlarmCheckFailed": "정확한 알람 권한 확인 실패",
   "logHomeWidgetExactAlarmRequestFailed": "정확한 알람 권한 요청 실패",
@@ -6255,6 +6257,48 @@
   "wallpaperPositionPickerSwitchWallpaper": "배경화면 바꾸기",
   "wallpaperPositionPickerDone": "완료",
   "wallpaperPositionPickerExit": "나가기",
+  "@bingWallpaperResolutionHint": {
+    "placeholders": {
+      "width": { "type": "int" },
+      "height": { "type": "int" },
+      "size": { "type": "String" }
+    }
+  },
+  "@bingWallpaperDateMonthDay": {
+    "placeholders": {
+      "month": { "type": "int" },
+      "day": { "type": "int" }
+    }
+  },
+  "bingWallpaperGalleryTitle": "Bing 일일 배경화면",
+  "bingWallpaperGalleryFailed": "Bing 배경화면을 가져오지 못했습니다. 네트워크를 확인한 후 다시 시도하세요",
+  "bingWallpaperGalleryRetry": "다시 시도",
+  "bingWallpaperDownloadFailed": "이 배경화면을 다운로드하지 못했습니다. 잠시 후 다시 시도하세요",
+  "@bingWallpaperDownloadStatus": {
+    "description": "下载失败提示，附上 HTTP 状态码。占位符只在服务端回了响应时才有值；断网等情况用 bingWallpaperDownloadFailed 那条。",
+    "placeholders": {
+      "status": { "type": "int", "example": "404" }
+    }
+  },
+  "bingWallpaperDownloadStatus": "이 배경화면을 다운로드하지 못했습니다({status})",
+  "bingWallpaperResolutionTitle": "다운로드 화질",
+  "bingWallpaperResolutionStandard": "표준",
+  "bingWallpaperResolutionTall": "화면 맞춤",
+  "bingWallpaperResolutionHigh": "고화질",
+  "@bingWallpaperResolutionFallback": {
+    "description": "所选画质当天不可用、已退到默认档时的说明。占位符是实际拿到的那一档的文案。",
+    "placeholders": {
+      "label": { "type": "String", "example": "高清" }
+    }
+  },
+  "bingWallpaperResolutionFallback": "Bing이 해당 화질을 제공하지 않아 '{label}'을(를) 사용합니다",
+  "bingWallpaperResolutionHint": "{width}×{height}, 장당 약 {size}",
+  "bingWallpaperDateToday": "오늘",
+  "bingWallpaperDateYesterday": "어제",
+  "bingWallpaperDateMonthDay": "{month}월 {day}일",
+  "bingWallpaperAutoApplyTitle": "매일 자동 변경",
+  "bingWallpaperAutoApplySubtitle": "앱을 처음 열 때 그날의 배경화면으로 바꿉니다",
+  "bingWallpaperAutoApplyApplying": "오늘의 배경화면으로 바꾸는 중",
   "appearanceTextColorsSectionTitle": "텍스트 색상",
   "appearanceTextColorsSectionSubtitle": "수업 카드, 요일 바, 시간 축의 텍스트 색상을 설정합니다",
   "pageTransitionSpeedTitle": "페이지 전환 속도",

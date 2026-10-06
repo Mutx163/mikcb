@@ -41,7 +41,10 @@ import 'widgets/app_startup_splash.dart';
 import 'widgets/course_glass_shader.dart';
 import 'widgets/home_menu_route_catalog.dart';
 import 'widgets/miuix_font_weight_scope.dart';
+import 'widgets/preblurred_wallpaper_glass.dart';
 import 'services/app_log_service.dart';
+import 'services/bing_wallpaper_service.dart';
+import 'services/bing_wallpaper_store.dart';
 import 'services/bundled_assets.dart';
 import 'services/fair_memory_service.dart';
 import 'services/memory_stats_service.dart';
@@ -791,17 +794,98 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       unawaited(refreshHyperosMotionFromAndroid());
       // Pull first, then live resync. Concurrent pull apply + handleAppResumed
       // can push stale schedule snapshots to the island / home widget.
+      //
+      // 顺带每天首次回到前台也检查一次自动换：用户可能整晚开着 App 而中途跨过零点
+      // （他一直在前台，自然也不会有"冷启动"）。判据仍是 service 里的
+      // `lastAutoAppliedDate`，所以同一天反复切前台不会重复下载。自动换在
+      // `_handleAppResumedWithCloudPull` 里**并行**发出（不排在云拉取之后），
+      // 但复用它已经取好的 provider —— 见那里的说明。
       unawaited(_handleAppResumedWithCloudPull());
     }
   }
 
   /// Serializes WebDAV auto-pull and live-activity resume recovery.
   Future<void> _handleAppResumedWithCloudPull() async {
+    // ⚠️ 这里**只取一次** provider，回前台这一轮里所有用途共用它：
+    // 云同步恢复与 Bing 自动换（`didChangeAppLifecycleState` 也需要 provider，但它
+    // 拿不到本方法的局部变量）。
+    //
+    // 为什么不写成在 `didChangeAppLifecycleState` 里单独取一次再传进来：那是**新增**
+    // 一处 Provider 读取调用点，会把 `dependency_guards_test.dart` 的「Provider 扇入
+    // 只减不增」棘轮顶破（2026-10-06 实测 222 → 223，红）。那个指标存在的意义就是
+    // 拦住「顺手多读一次 Provider」，这里正好撞上它 —— 于是复用，而不是抬基线。
+    //
+    // ⚠️ 上面这段注释**故意不写出那处调用的原文**：棘轮是按正则扫源码文本的，注释里
+    // 出现字面量会被一并计成调用点（写注释时踩过一次，223 → 224）。
+    final provider = context.read<TimetableProvider>();
+    unawaited(_maybeAutoApplyDailyBingWallpaper(provider));
     await _cloudSyncCoordinator.maybePullRemote();
     if (!mounted) {
       return;
     }
-    await context.read<TimetableProvider>().handleAppResumed();
+    await provider.handleAppResumed();
+  }
+
+  /// 「每天首次打开自动换成 Bing 当天壁纸」。
+  ///
+  /// ## 为什么放在启动流程里、而不是后台定时任务
+  ///
+  /// 用户 2026-10-05 明确要的是「每天第一次打开时换」，不是「到点了后台换 + 通知」。
+  /// 后者要新写 WorkManager worker 与通知渠道，且后台执行时机受系统摆布，解释成本高。
+  /// 这里挂在启动流程 `_revealMainContent()` 之后（与云同步拉取同一档 post-reveal），
+  /// 于是首帧一定由本地设置驱动，换上的图只在**下一次**冷启动才看得到。
+  ///
+  /// ## 幂等由 service 兜住
+  ///
+  /// [BingWallpaperService.maybeApplyDaily] 自己按 `lastAutoAppliedDate` 判「今天是否已
+  /// 换过」，所以同一天反复启动或切前台都不会重复下载。本方法只负责**把路径写进设置**，
+  /// 且刻意不碰「最近使用」历史（理由见 `.agents/notes/implemented/feature/
+  /// 2026-10-05-bing-daily-wallpaper-library.md`）。
+  ///
+  /// ## 开关关着时是一次纯本地判断
+  ///
+  /// [BingWallpaperStore.autoApplyEnabled] 默认 false，未开的用户连网络都不碰。
+  Future<void> _maybeAutoApplyDailyBingWallpaper(
+    TimetableProvider provider,
+  ) async {
+    try {
+      if (!BingWallpaperStore.instance.autoApplyEnabled) {
+        return;
+      }
+      final path = await BingWallpaperService.maybeApplyDaily();
+      // null = 今天换过 / 没开 / 拉不到 / 下载失败。都是静默的正常结局：
+      // 一次壁纸下载失败不该在用户面前弹任何东西。
+      if (path == null || !mounted) {
+        return;
+      }
+      // 换一张 = 壁纸身份变了，三处按路径缓存的产物（图片缓存 / 文件存在性 memo /
+      // 预模糊位图）都要先失效，否则首页会继续画旧位图直到重启。
+      evictHomePageImageCache(path);
+      invalidateHomePageBackdropFileExists(path);
+      PreblurredWallpaperCache.instance.evict(path);
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          homePageWallpaperPath: path,
+          // 新图从**居中**起步（与相册选图、图库页同一口径）：自动换不该替用户
+          // 猜取景，猜错了用户自己还能去「调整位置」。
+          homePageWallpaperAlignX: 0,
+          homePageWallpaperAlignY: 0,
+          homePageWallpaperScale: 1,
+          clearHomePageBackgroundImagePath: true,
+        ),
+      );
+    } on Object catch (error, stackTrace) {
+      // 挂在启动路径上：这里抛错会波及 `_handleStartupFlows`。壁纸是锦上添花，
+      // 记一笔就完事。
+      unawaited(
+        AppLogService.instance.error(
+          'bing_wallpaper_auto_apply_failed',
+          AppLogMessages.bingWallpaperAutoApplyFailed,
+          error: error,
+          stackTrace: stackTrace,
+        ),
+      );
+    }
   }
 
   Future<void> _handleStartupFlows() async {
@@ -821,6 +905,19 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       if (!mounted) {
         return;
       }
+
+      // Bing 壁纸的存档（画质档位 / 自动换开关 / 按天判据 / 图库清单缓存）必须在任何
+      // 读取它之前载入。`BingWallpaperStore.load()` 是**唯一**给 `_prefs` 赋值的地方，
+      // 不调它的话冷启动后 `autoApplyEnabled` 恒为 false（「每天自动更换」等于没开）、
+      // 画质档位每次都回到「标准」—— 而这些字段全是同步读的，UI 也不会等我们
+      // （2026-10-06 review 实测：全仓没有任何一处调过它）。
+      //
+      // 放在两个分支**之前**：老用户快速路径和首次引导路径都要拿到它，否则新用户
+      // 走完引导进设置页时看到的仍是未载入状态。
+      //
+      // ⚠️ 这一句**不能挪进「老用户快速路径」分支**：新用户走完引导后进设置页，
+      // 开关与档位同样要读到存档。
+      await BingWallpaperStore.instance.load();
 
       final hasAcceptedPrivacy = await _storageService
           .hasAcceptedPrivacyPolicy();
@@ -864,6 +961,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         // Remote sync is intentionally post-reveal: local data drives the
         // first correct frame, while network work can update it afterward.
         unawaited(_cloudSyncCoordinator.maybePullRemote());
+        unawaited(_maybeAutoApplyDailyBingWallpaper(provider));
         return;
       }
 
@@ -1520,3 +1618,4 @@ class _AppRouteLogObserver extends NavigatorObserver {
     return '<unnamed>';
   }
 }
+

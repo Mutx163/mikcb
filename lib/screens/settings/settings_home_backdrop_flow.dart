@@ -48,6 +48,13 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 当前草稿设置（宿主页面持有）。
   TimetableSettings get backdropDraft;
 
+  /// Bing 图库入口那一行的水平内缩。
+  ///
+  /// 默认**跟随** [backdropRowHorizontalInset]（两个宿主自然一致），但单独开一个口子：
+  /// 图库那一行内部要放一颗满宽按钮加一颗开关行，它与选图行/「最近使用」是一套版式，
+  /// 万一日后要把它挪到卡片里或挪到弹层外，不必再动 mixin 里那几块的公共逻辑。
+  double get bingWallpaperRowInset => backdropRowHorizontalInset;
+
   /// 宿主设置草稿的落盘入口（一般就是宿主的 `_updateDraft`）。
   void applyBackdropDraft(TimetableSettings next);
 
@@ -435,8 +442,195 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
           },
         ),
         _buildRecentWallpaperTile(context, l10n: l10n),
+        _buildBingWallpaperTile(context, l10n: l10n),
       ],
     );
+  }
+
+  /// 「Bing 每日壁纸」入口行 + 自动换开关。
+  ///
+  /// 放在「最近使用」之后：相册选图与历史回放是**用户自己的图**，Bing 是**外部来源**，
+  /// 顺序上后者在后。开关紧跟入口行 —— 用户在图库页挑上瘾了，顺手就能把自动换打开。
+  Widget _buildBingWallpaperTile(
+    BuildContext context, {
+    required AppLocalizations l10n,
+  }) {
+    final inset = bingWallpaperRowInset;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(inset, 4, inset, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: HyperosButton(
+              label: l10n.bingWallpaperGalleryTitle,
+              variant: HyperosButtonVariant.secondary,
+              onPressed: _openBingWallpaperGallery,
+            ),
+          ),
+          const SizedBox(height: 4),
+          HyperosSwitchTile(
+            title: l10n.bingWallpaperAutoApplyTitle,
+            subtitle: l10n.bingWallpaperAutoApplySubtitle,
+            backgroundColor: backdropRowsHaveCardBackground
+                ? null
+                : Colors.transparent,
+            value: BingWallpaperStore.instance.autoApplyEnabled,
+            onChanged: _setBingAutoApply,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 写自动换开关。
+  ///
+  /// **打开时立即换一次**（当场兑现承诺），不等下一次启动：用户刚打开这颗开关就看到
+  /// 壁纸变了，才知道它真的在工作；否则要等到下次打开 App 才有反馈，而那时他已经忘了
+  /// 刚才开了什么。换出来的图由 [_applyBingWallpaperPath] 落盘。
+  Future<void> _setBingAutoApply(bool value) async {
+    await BingWallpaperStore.instance.setAutoApplyEnabled(value);
+    // ⚠️ 必须重建：`HyperosSwitchTile` 是**无状态**组件，状态全靠父级传进去的
+    // `value`（`ui/hyperos/widgets/tiles.dart`）。而本 mixin 的两个宿主都没有订阅
+    // `BingWallpaperStore.notifier`，`setAutoApplyEnabled` 只 `notifier.value++`、
+    // 不碰任何 UI —— 于是不补这一句，用户点下去开关纹丝不动，要等别的原因触发
+    // 重建才对上（2026-10-06 review 实测）。
+    if (mounted) {
+      setState(() {});
+    }
+    if (!mounted || !value) {
+      return;
+    }
+    showAppToast(
+      context,
+      message: AppLocalizations.of(context)!.bingWallpaperAutoApplyApplying,
+    );
+    await _applyDailyBingWallpaper();
+  }
+
+  /// 自动换的执行体：拉当天那张 → 下到本地 → 走与手动选图完全相同的落盘路径。
+  ///
+  /// 复用 [_openBackdropPositionEditor] 而不是自己写一套：位置编辑、「最近使用」补记、
+  /// 三处缓存失效、无引用文件的清理由那里统一负责（理由见本文件顶部 mixin 的注释）。
+  ///
+  /// 自动换**不补记「被换下的那一张」**（[_openBackdropPositionEditor] 的 remembered
+  /// 只加新选中的那张）：历史是全局 10 条，若每天自动换都记两条，10 天后用户自己从
+  /// 相册存的那几张会被挤出并**连带删掉文件**。当前这张仍会出现在「最近使用」里 ——
+  /// [_buildRecentWallpaperTile] 会把「当前生效但历史里没有」那张补在最前。
+  Future<void> _applyDailyBingWallpaper() async {
+    final path = await BingWallpaperService.maybeApplyDaily();
+    if (!mounted) {
+      return;
+    }
+    if (path == null) {
+      // 今天换过 / 拉不到 / 下载失败。都由 service 自己记过日志，这里不再打扰用户：
+      // 「今天已经换过了」不是错误，而「拉不到」在断网时重试提示也只会更烦。
+      return;
+    }
+    // 记下这次自动换**认领**了哪一天：位置页可能被用户退出，那时要把它还回去。
+    final claimedDate = BingWallpaperStore.instance.lastAutoAppliedDate;
+    if (!await _applyBingWallpaperPath(path)) {
+      if (claimedDate != null) {
+        await BingWallpaperStore.instance.releaseAutoApplyClaim(claimedDate);
+      }
+      return;
+    }
+    // 落盘成功 → 标记保持不变（就是这次自动换认领的那天）。
+  }
+
+  /// 把一个已下好的 Bing 壁纸文件接进既有流程：新图从**居中**起步（与相册选图同一口径）。
+  ///
+  /// 返回是否真的落盘了（用户在位置页点「退出」为 false）。自动换靠它决定要不要撤回
+  /// 「今天已换过」—— 详见 [_applyDailyBingWallpaper]。
+  Future<bool> _applyBingWallpaperPath(String path) async {
+    if (!mounted) {
+      return false;
+    }
+    return _openBackdropPositionEditor(
+      imagePath: path,
+      initialAlignX: 0,
+      initialAlignY: 0,
+      pickedPaths: {path},
+    );
+  }
+
+  /// 推图库页 → 点一张 → **位置编辑页压在图库之上**。
+  ///
+  /// ## 退栈顺序（2026-10-06 用户口径）
+  ///
+  /// 「点完大屏、点退出，应该回到壁纸列表，而不是最开始的地方」—— 所以图库页**留在栈里**，
+  /// 由 [_applyBingDownloadedImage] 在它之上推位置编辑页：
+  /// * 位置页「退出」→ 回到图库，接着挑；
+  /// * 位置页「完成」→ 落盘并返回 true，图库页这才自己退出。
+  ///
+  /// 早先的实现是「选图后先弹掉图库、再推位置页」，退出就直接落回设置页，想换一张得
+  /// 重走一遍「设置 → Bing 每日壁纸」。那条推理写在代码注释里也留了记录，别再改回去。
+  ///
+  /// 必须走 [_withHostSheetClosed]：与 [_openBackdropPositionEditor] 同一个理由 ——
+  /// 壁纸弹窗那一侧若还开着，推上去的整页会落在弹层面板**下面**，被它的全屏透明屏障
+  /// 挡住（2026-09-20 真机口径：「页面在弹窗背后，什么都点不到」）。
+  Future<void> _openBingWallpaperGallery() async {
+    await _withHostSheetClosed(() async {
+      if (!mounted) {
+        return;
+      }
+      await pushBingWallpaperGalleryPage(
+        context,
+        onImageDownloaded: _applyBingDownloadedImage,
+        // 当前正在显示的那张必须保护：自动换写下的壁纸**不在「最近使用」里**，
+        // 只按历史当白名单会在台账溢出时把它删掉，首页当场裂图。
+        protectedPaths: <String>[
+          ?resolveHomePageBackdropImagePath(backdropDraft),
+        ],
+      );
+    });
+  }
+
+  /// 图库里点中一张之后的收尾：在**图库之上**推位置编辑页，返回是否已落盘。
+  ///
+  /// 用宿主自己的 [context] 推 —— 图库页是同一个 navigator 上更靠上的一条路由，从这里推
+  /// 自然落在它**之上**，于是「退出」回图库、「完成」关两张页。
+  Future<bool> _applyBingDownloadedImage(String imagePath) async {
+    final result = await pushWallpaperPositionPickerPage(
+      context,
+      imagePath: imagePath,
+      initialAlignX: 0,
+      initialAlignY: 0,
+    );
+    if (!mounted) {
+      return false;
+    }
+    // 本次交互可能产生的文件：新下的那张 + 页内「换壁纸」再选的那张。
+    final candidates = <String>{imagePath, ?result?.path};
+    if (result == null || !result.confirmed) {
+      // 退出：一张都没被采用 —— 删掉，别在壁纸目录里攒垃圾。图库页留着让用户再挑。
+      await _discardUnreferencedBackdrops(candidates);
+      return false;
+    }
+    final previous = _currentBackdropEntry();
+    _applyBackdropChange(
+      backdropDraft.copyWith(
+        homePageWallpaperPath: result.path,
+        homePageWallpaperAlignX: result.alignX,
+        homePageWallpaperAlignY: result.alignY,
+        homePageWallpaperScale: result.scale,
+        clearHomePageBackgroundImagePath: true,
+      ),
+      remembered: [
+        ?previous,
+        WallpaperHistoryEntry(
+          key: result.path,
+          alignX: result.alignX,
+          alignY: result.alignY,
+          scale: result.scale,
+        ),
+      ],
+    );
+    // 落盘**之后**才清：这时"在用的那张"已经是 result.path、前一张进了「最近
+    // 使用」，两者都会被下面的引用集合护住。
+    await _discardUnreferencedBackdrops(candidates);
+    return true;
   }
 
   /// 壁纸弹窗的**第二页「设置」**：开关类设置（目前只有「背景随周次滑动」）。
@@ -732,7 +926,11 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// [pickedPaths] 是进页**之前**由相册新产生的文件（就是刚选的那张）；页内
   /// 「换壁纸」再选的那张由页面返回的 path 带回来。两者合起来算"本次交互的产物"，
   /// 退出时凡是不被引用的都删掉 —— 否则壁纸目录里会攒下谁都不引用的垃圾。
-  Future<void> _openBackdropPositionEditor({
+  ///
+  /// 返回**是否真的落盘了**：自动换那条路径要靠它决定「今天已换过」的标记要不要
+  /// 撤回（用户在位置页点退出时，壁纸并没有换上，见 [_applyBingWallpaperPath]）。
+  /// 相册选图与「调整位置」两个调用方不需要这个返回值，直接忽略。
+  Future<bool> _openBackdropPositionEditor({
     required String imagePath,
     required double initialAlignX,
     required double initialAlignY,
@@ -751,13 +949,13 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
       ),
     );
     if (!mounted) {
-      return;
+      return false;
     }
     final candidates = <String>{...pickedPaths, ?result?.path};
     if (result == null || !result.confirmed) {
       // 取消：这次选的图一张都没被采用 —— 删掉，别留在壁纸目录里。
       await _discardUnreferencedBackdrops(candidates);
-      return;
+      return false;
     }
     final previous = _currentBackdropEntry();
     _applyBackdropChange(
@@ -781,13 +979,21 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     // 落盘**之后**才清：这时"在用的那张"已经是 result.path、前一张进了「最近
     // 使用」，两者都会被下面的引用集合护住。
     await _discardUnreferencedBackdrops(candidates);
+    return true;
   }
 
-  /// 清掉 [candidates] 里**没有任何设置 / 历史引用**的壁纸文件。
+  /// 清掉 [candidates] 里**没有任何设置 / 历史 / 图库缓存引用**的壁纸文件。
   ///
   /// 判据是「谁在引用它」，不是记「哪张是新的」：删错一张就是用户口径里的
   /// 「换过壁纸，但最近使用里那张打不开了」。所以正在用的那张（草稿里的）与
   /// 「最近使用」里的条目一律不动。
+  ///
+  /// ## 图库缓存里的也算「有人引用」（2026-10-06）
+  ///
+  /// 用户问「看过的图重新打开要重新下载吗」—— 早先这里会把「下过但没确认应用」的那张
+  /// 直接删掉（它既不在设置里也不在历史里），于是下次点回同一张必然重新下载一遍，
+  /// 白花流量。台账（`BingWallpaperStore`）就是**图库下载缓存**，它记着的路径一律
+  /// 视为被引用；真正该删的由台账自己的上限负责（`kMaxDownloadedEntries`）。
   Future<void> _discardUnreferencedBackdrops(Set<String> candidates) async {
     if (candidates.isEmpty) {
       return;
@@ -795,6 +1001,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     final referenced = <String>{
       ?resolveHomePageBackdropImagePath(backdropDraft),
       for (final entry in _wallpaperHistory) entry.key,
+      ...BingWallpaperStore.instance.downloadedPaths,
     };
     for (final path in candidates) {
       if (path.isEmpty || referenced.contains(path)) {

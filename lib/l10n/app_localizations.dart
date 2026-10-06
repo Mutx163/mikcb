@@ -6255,6 +6255,108 @@ abstract class AppLocalizations {
   /// **'退出'**
   String get wallpaperPositionPickerExit;
 
+  /// No description provided for @bingWallpaperGalleryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'Bing 每日壁纸'**
+  String get bingWallpaperGalleryTitle;
+
+  /// No description provided for @bingWallpaperGalleryFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能取到 Bing 每日壁纸，请检查网络后重试'**
+  String get bingWallpaperGalleryFailed;
+
+  /// No description provided for @bingWallpaperGalleryRetry.
+  ///
+  /// In zh, this message translates to:
+  /// **'重试'**
+  String get bingWallpaperGalleryRetry;
+
+  /// No description provided for @bingWallpaperDownloadFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'这张壁纸没能下载成功，请稍后再试'**
+  String get bingWallpaperDownloadFailed;
+
+  /// 下载失败提示，附上 HTTP 状态码。占位符只在服务端回了响应时才有值；断网等情况用 bingWallpaperDownloadFailed 那条。
+  ///
+  /// In zh, this message translates to:
+  /// **'这张壁纸没能下载成功（{status}）'**
+  String bingWallpaperDownloadStatus(int status);
+
+  /// No description provided for @bingWallpaperResolutionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'下载画质'**
+  String get bingWallpaperResolutionTitle;
+
+  /// No description provided for @bingWallpaperResolutionStandard.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准'**
+  String get bingWallpaperResolutionStandard;
+
+  /// No description provided for @bingWallpaperResolutionTall.
+  ///
+  /// In zh, this message translates to:
+  /// **'适配'**
+  String get bingWallpaperResolutionTall;
+
+  /// No description provided for @bingWallpaperResolutionHigh.
+  ///
+  /// In zh, this message translates to:
+  /// **'高清'**
+  String get bingWallpaperResolutionHigh;
+
+  /// 所选画质当天不可用、已退到默认档时的说明。占位符是实际拿到的那一档的文案。
+  ///
+  /// In zh, this message translates to:
+  /// **'Bing 当天没提供这一档，已改用「{label}」'**
+  String bingWallpaperResolutionFallback(String label);
+
+  /// 画质档位的副标题：报该档的实测像素与单张体积。占位符刻意用「像素宽×像素高」而不是「几倍高清」——Bing 三档比例并不一致（16:10 与 16:9 混着）。
+  ///
+  /// In zh, this message translates to:
+  /// **'{width}×{height}，每张约 {size}'**
+  String bingWallpaperResolutionHint(int width, int height, String size);
+
+  /// No description provided for @bingWallpaperDateToday.
+  ///
+  /// In zh, this message translates to:
+  /// **'今天'**
+  String get bingWallpaperDateToday;
+
+  /// No description provided for @bingWallpaperDateYesterday.
+  ///
+  /// In zh, this message translates to:
+  /// **'昨天'**
+  String get bingWallpaperDateYesterday;
+
+  /// No description provided for @bingWallpaperDateMonthDay.
+  ///
+  /// In zh, this message translates to:
+  /// **'{month} 月 {day} 日'**
+  String bingWallpaperDateMonthDay(int month, int day);
+
+  /// No description provided for @bingWallpaperAutoApplyTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'每天自动更换'**
+  String get bingWallpaperAutoApplyTitle;
+
+  /// No description provided for @bingWallpaperAutoApplySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'每天首次打开时换成当天的壁纸'**
+  String get bingWallpaperAutoApplySubtitle;
+
+  /// No description provided for @bingWallpaperAutoApplyApplying.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在换成今天的壁纸'**
+  String get bingWallpaperAutoApplyApplying;
+
   /// No description provided for @appearanceTextColorsSectionTitle.
   ///
   /// In zh, this message translates to:
@@ -15668,6 +15770,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'清空桌面小组件快照失败'**
   String get logHomeWidgetClearFailed;
+
+  /// No description provided for @logBingWallpaperRequestFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'Bing 每日壁纸：请求失败'**
+  String get logBingWallpaperRequestFailed;
+
+  /// No description provided for @logBingWallpaperAutoApplyFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'Bing 每日壁纸：自动更换失败'**
+  String get logBingWallpaperAutoApplyFailed;
 
   /// No description provided for @logHomeWidgetScheduleFailed.
   ///

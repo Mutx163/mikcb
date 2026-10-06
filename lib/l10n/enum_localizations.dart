@@ -7,17 +7,19 @@ import 'app_localizations.dart';
 
 /// Bing 壁纸画质档位的胶囊文案。
 ///
-/// 标成「高清 / 原生 / 超清」而不是「1x / 2x / 4x」：三档的**像素宽度**其实一样
-/// （1920 / 1920 / 3840），比例还混着 16:10 与 16:9（见
-/// [BingWallpaperResolution]），所以「几倍」是错的说法。副标题另有
-/// `bingWallpaperResolution*` 那条给出实测像素与体积。
+/// 三档**各叫各的**（标准 / 适配 / 高清）：曾经把横屏的「超清」也译成「高清」，
+/// 用户看到一排里出现两个「高清」直接问了「为啥有两个高清档位」（2026-10-06）。
+/// 根因不是文案而是**多了一档没用的横屏**——横屏已从枚举里删掉，这里也随之简化。
+///
+/// ⚠️ 不要写「1x / 2x / 4x」这类倍数：三档里 `standard` 与 `tall` **宽度相同**、
+/// 比例也不同（9:16 与 9:20），「几倍」是错的说法。
 String bingWallpaperResolutionLabel(
   AppLocalizations l10n,
   BingWallpaperResolution resolution,
 ) => switch (resolution) {
   BingWallpaperResolution.standard => l10n.bingWallpaperResolutionStandard,
-  BingWallpaperResolution.native => l10n.bingWallpaperResolutionNative,
-  BingWallpaperResolution.uhd => l10n.bingWallpaperResolutionUhd,
+  BingWallpaperResolution.tall => l10n.bingWallpaperResolutionTall,
+  BingWallpaperResolution.high => l10n.bingWallpaperResolutionHigh,
 };
 
 String courseNatureLabel(AppLocalizations l10n, CourseNature nature) =>
