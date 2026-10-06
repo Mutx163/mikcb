@@ -83,7 +83,7 @@ void main() {
     );
   });
 
-  test('timetable_provider 的 lib 扇入棘轮：只减不增（按去重调用点计）', () {
+  test('timetable_provider 的读取调用点棘轮：只减不增', () {
     // 48→51：扇入检测原先只匹配相对路径 import，package:university_timetable/
     // 与 lib 根相对路径可绕过守卫（实际漏网 3 处：main.dart、class_reminder_sheet.dart、
     // home_menu_catalog.dart）。补漏后按真实扇入 51 设基线，后续只许下降。
@@ -120,9 +120,41 @@ void main() {
     // import_shared 的 ensureImportSectionCapacity）都要经 Provider 写课表，
     // 是导入链路的必要写入面。要收回它们，需把导入写入改成接收「课表写入接口」
     // 而非 Provider，与上面 TimetableWeekPreview 那条同属阶段 3 解耦范围。
-    const baselineProviderCallSites = 222;
+    //
+    // 2026-10-06 补正则漏网：上面那个正则要求 `<TimetableProvider>` 紧跟 `(`，
+    // 于是 `context.select<TimetableProvider, TimetableSettings>((p) => p.settings)`
+    // 这类**带第二个类型实参**的写法一个都数不到——而它和 read<TimetableProvider>()
+    // 是完全同类的读取。实测漏了 3 处，全在 about_screen.dart（209 / 649 / 1567）。
+    // 这正是本仓审计笔记已记过一次的坑（`invokeMethod(` 漏掉 `invokeMethod<bool>(`，
+    // 见 notes/proposed/2026-09-29-full-architecture-audit-verified.md §4d）：
+    // 正则写窄 → 统计偏低 → 基线偏低 → 门禁形同虚设。故把类型实参写成可选。
+    //
+    // 222→225 不是耦合增长，是把本就存在、此前没被数到的 3 处读取补进计数。
+    //
+    // 本指标**已知不覆盖**的写法（有意不纳入，别拿它们当"没依赖"）：
+    //   - `Consumer<TimetableProvider>`（15 处，整棵子树订阅，是另一种机制）
+    //   - `required TimetableProvider provider` 这类把 Provider 当参数传递的位置
+    //     （如 import_shared 的 ensureImportSectionCapacity）
+    // 要覆盖它们需另立指标，别直接扩这个正则——会把不同性质的依赖混进一个数字。
+    //
+    // 2026-10-06 再补一处同类漏网：类型实参写死成 `<TimetableProvider>`，于是**可空**
+    // 读取 `context.read<TimetableProvider?>()` 一处都数不到——而这恰恰是弹窗 /
+    // 半屏 sheet 里最该用的写法（上层可能没注册这个 Provider，只能读可空再判空）。
+    // 实测漏 3 处，全在 user_guide_screen.dart（304 / 650 / 786）。
+    // 与上一条同源：正则写窄 → 统计偏低 → 基线偏低 → 门禁形同虚设，故一并放宽。
+    // 225→228 不是耦合增长，是把本就存在、此前没被数到的 3 处读取补进计数。
+    //
+    // 「扇入」这个名字如今名不副实：本指标数的是**读取次数**，不是依赖边。文件怎么拆
+    // 都不再影响它（这正是换单位的全部理由），代价是覆盖不到纯类型依赖——当前有 14
+    // 个文件 import 了 Provider 却没有一处匹配读取（同步 / WebDAV / 统一传输 /
+    // 课表分享 / 统计页等，它们把 Provider 当参数类型往下传或只取其类型）。新开一个
+    // 文件若只干这两件事，本指标不会响；要覆盖需另立「import 但零读取的文件数」
+    // 棘轮（当前真实值 14），同样别直接扩本正则。
+    //
+    // 余量为 0：基线就是当前实测值，正当新增读取时照例抬基线并说明理由。
+    const baselineProviderCallSites = 228;
     final callSitePattern = RegExp(
-      r'\b(?:read|watch|select|of)<TimetableProvider>\s*\(',
+      r'\b(?:read|watch|select|of)<TimetableProvider\??\s*(?:,[^>]*)?>\s*\(',
     );
     var callSites = 0;
     final touchedFiles = <String>[];
