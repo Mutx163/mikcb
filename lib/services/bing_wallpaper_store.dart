@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/bing_wallpaper.dart';
+import '../models/wallhaven_wallpaper.dart';
 import '../models/wallpaper_daily_source.dart';
 import '../utils/home_page_background.dart';
 
@@ -68,6 +69,8 @@ class BingWallpaperStore {
 
   List<BingWallpaperItem>? _cachedItems;
   DateTime? _cachedItemsFetchedAt;
+  List<WallhavenWallpaperItem>? _cachedWallhavenItems;
+  DateTime? _cachedWallhavenItemsFetchedAt;
   BingWallpaperResolution? _resolutionOverride;
   bool? _autoApplyOverride;
   List<_DownloadedEntry>? _downloadedOverride;
@@ -289,6 +292,40 @@ class BingWallpaperStore {
   /// 清单最后一次成功拉取的时间。
   DateTime? get cachedItemsFetchedAt => _cachedItemsFetchedAt;
 
+  /// Wallhaven 图库的缓存清单。
+  ///
+  /// ## 为什么两个源各存一份而不是合用 [cachedItems]
+  ///
+  /// 条目类型不同（Bing 是 [BingWallpaperItem]、以 `dateKey` 为身份；Wallhaven 是
+  /// [WallhavenWallpaperItem]、以 id 为身份且必须带尺寸字段），混在一份里就得按类型
+  /// 过滤，反而多一处能写错的地方。共用 `_downloaded` 那本台账是有道理的（它管的是
+  /// 「下过的文件」），**图库清单不是同一回事**。
+  List<WallhavenWallpaperItem> get cachedWallhavenItems =>
+      _cachedWallhavenItems ?? const [];
+
+  /// Wallhaven 清单最后一次成功拉取的时间。
+  DateTime? get cachedWallhavenItemsFetchedAt => _cachedWallhavenItemsFetchedAt;
+
+  /// 缓存 Wallhaven 图库清单（只在拉成功且**非空**时调用）。
+  ///
+  /// 空清单刻意不写：否则一次失败会被缓存住，用户当天再也看不到图库
+  /// （`BingWallpaperService.loadItems` 那边是同一条口径）。
+  Future<void> saveCachedWallhavenItems(
+    List<WallhavenWallpaperItem> items,
+  ) async {
+    _cachedWallhavenItems = items;
+    _cachedWallhavenItemsFetchedAt = DateTime.now();
+    notifier.value++;
+    await _persistString(
+      _cachedWallhavenItemsKey,
+      jsonEncode([for (final item in items) item.toJson()]),
+    );
+    await _persistInt(
+      _cachedWallhavenItemsAtKey,
+      _cachedWallhavenItemsFetchedAt!.millisecondsSinceEpoch,
+    );
+  }
+
   /// 进程内变更通知：设置页与图库页靠它刷新。
   static final ValueNotifier<int> notifier = ValueNotifier<int>(0);
 
@@ -320,6 +357,17 @@ class BingWallpaperStore {
       } else {
         _cachedItems = const [];
       }
+      _cachedWallhavenItemsFetchedAt = _fromEpoch(
+        _prefs!.getInt(_cachedWallhavenItemsAtKey),
+      );
+      final wallhavenRaw = _prefs!.getString(_cachedWallhavenItemsKey);
+      if (wallhavenRaw != null && wallhavenRaw.isNotEmpty) {
+        _cachedWallhavenItems = WallhavenWallpaperItem.listFromJson(
+          jsonDecode(wallhavenRaw),
+        );
+      } else {
+        _cachedWallhavenItems = const [];
+      }
       notifier.value++;
     } on Object {
       // 读失败保持默认值：功能降级为「档位默认、自动换关」，比抛错安全。
@@ -328,6 +376,11 @@ class BingWallpaperStore {
 
   static const String _cachedItemsKey = 'bing_wallpaper_items_v1';
   static const String _cachedAtKey = 'bing_wallpaper_items_at_v1';
+
+  static const String _cachedWallhavenItemsKey =
+      'wallhaven_wallpaper_items_v1';
+  static const String _cachedWallhavenItemsAtKey =
+      'wallhaven_wallpaper_items_at_v1';
 
   static DateTime? _fromEpoch(int? millis) =>
       millis == null ? null : DateTime.fromMillisecondsSinceEpoch(millis);

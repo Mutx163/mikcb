@@ -6282,6 +6282,7 @@
   "wallpaperDailySourceWallhaven": "直向高清",
   "wallhavenWallpaperGalleryTitle": "直向高清圖庫",
   "wallhavenGalleryFailed": "未能取得直向高清圖庫，請檢查網路後再試",
+  "wallpaperGalleryShowingCached": "網路不太順暢，下面顯示的是上次載入的圖",
   "bingWallpaperDateToday": "今天",
   "bingWallpaperDateYesterday": "昨天",
   "bingWallpaperDateMonthDay": "{month} 月 {day} 日",

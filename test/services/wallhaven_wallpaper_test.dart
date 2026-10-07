@@ -1,6 +1,8 @@
 ﻿import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:university_timetable/models/bing_wallpaper.dart';
 import 'package:university_timetable/models/wallhaven_wallpaper.dart';
 import 'package:university_timetable/models/wallpaper_daily_source.dart';
@@ -409,6 +411,99 @@ void main() {
       // 换成 null 要真的把存档清掉（否则判据会永远卡住）。
       await store.recordAutoAppliedItem(null);
       expect(store.lastAutoAppliedItemId, isNull);
+    });
+  });
+
+  group('图库清单：拉不到时回落到上次缓存', () {
+    // ⚠️ 纯 ASCII 的 JSON 字符串字面量，**不要**走 `jsonEncode(Map)` ——
+    // `http.Response(String, 200)` 的 `bodyBytes` 按 latin1 编码，中文会变成非法
+    // 字节，`utf8.decode` 抛错，于是 service 静默返回空清单（上一轮踩过，症状与
+    // 「图源拉不到」一模一样，只能靠猜）。
+    const itemJson =
+        '{"id":"w53vkq","dimension_x":2250,"dimension_y":4000,'
+        '"path":"https://w.wallhaven.cc/full/w5/wallhaven-w53vkq.jpg",'
+        '"file_size":100,"category":"general",'
+        '"thumbs":{"large":"https://th.wallhaven.cc/lg/w5/w53vkq.jpg"}}';
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      BingWallpaperStore.debugResetForTesting();
+      WallhavenWallpaperService.testClientFactory = null;
+    });
+
+    tearDown(() {
+      WallhavenWallpaperService.testClientFactory = null;
+    });
+
+    void mockList(bool ok) {
+      WallhavenWallpaperService.testClientFactory = () => MockClient(
+        (_) async => ok
+            ? http.Response('{"data":[$itemJson]}', 200)
+            : http.Response('boom', 500),
+      );
+    }
+
+    test('⭐ 网络挂了就给上次的清单，而不是空图库', () async {
+      mockList(true);
+      final first = await WallhavenWallpaperService.loadPortrait();
+      expect(first.map((e) => e.id), <String>['w53vkq']);
+
+      // 用 `forceRefresh` 绕过「命中就返回」那一段、再让网络失败 —— 这正是
+      // 「缓存过期后拉不到」的实际形状，不必去改时钟。
+      mockList(false);
+      final stale = await WallhavenWallpaperService.loadPortrait(
+        forceRefresh: true,
+      );
+      expect(
+        stale.map((e) => e.id),
+        <String>['w53vkq'],
+        reason:
+            '这个源在大陆是常态性慢（Cloudflare 是降级不是不通），'
+            '返回空等于每次都要让用户重新挑一遍',
+      );
+    });
+
+    test('一次都没成功过才返回空（图库页据此显示失败页 + 重试）', () async {
+      mockList(false);
+      final items = await WallhavenWallpaperService.loadPortrait(
+        forceRefresh: true,
+      );
+      expect(items, isEmpty);
+    });
+
+    test('拉成功会写缓存（供下次失败时回落）', () async {
+      mockList(true);
+      await WallhavenWallpaperService.loadPortrait();
+      final store = BingWallpaperStore.instance;
+      expect(store.cachedWallhavenItemsFetchedAt, isNotNull);
+      expect(store.cachedWallhavenItems.map((e) => e.id), <String>['w53vkq']);
+    });
+
+    test('⚠️ 自动换不吃缓存回落：它必须还能失败，才能换到另一个源', () async {
+      // 这条钉的是 `fetchPortrait` 本身（自动换走的那条路），不是 `loadPortrait`。
+      mockList(true);
+      await WallhavenWallpaperService.loadPortrait();
+      expect(
+        BingWallpaperStore.instance.cachedWallhavenItems,
+        isNotEmpty,
+        reason: '前提：缓存里确实有东西，否则这条用例等于没测',
+      );
+
+      mockList(false);
+      final service = WallhavenWallpaperService.createTransient();
+      final List<WallhavenWallpaperItem> items;
+      try {
+        items = await service.fetchPortrait();
+      } finally {
+        service.dispose();
+      }
+      expect(
+        items,
+        isEmpty,
+        reason:
+            '自动换拿到空清单才轮得到 `WallpaperSourceFallback` 换源；'
+            '喂它旧清单等于把换源机会抢掉',
+      );
     });
   });
 }

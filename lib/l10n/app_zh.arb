@@ -1980,6 +1980,7 @@
   "wallpaperDailySourceWallhaven": "竖版高清",
   "wallhavenWallpaperGalleryTitle": "竖版高清图库",
   "wallhavenGalleryFailed": "没能取到竖版高清图库，请检查网络后重试",
+  "wallpaperGalleryShowingCached": "网络不太顺畅，下面显示的是上次加载的图",
   "bingWallpaperDateToday": "今天",
   "bingWallpaperDateYesterday": "昨天",
   "bingWallpaperDateMonthDay": "{month} 月 {day} 日",

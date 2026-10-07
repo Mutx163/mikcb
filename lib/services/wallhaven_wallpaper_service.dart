@@ -220,6 +220,56 @@ class WallhavenWallpaperService {
     }
   }
 
+  /// 图库清单缓存多久就重新拉（与 `BingWallpaperService` 同档）。
+  static const Duration _listCacheTtl = Duration(hours: 3);
+
+  /// 要展示的清单；**网络拿不到时回落到上次缓存**。
+  ///
+  /// ## 为什么不能只靠 TTL
+  ///
+  /// 只有「命中缓存就给缓存，否则拉网络，拉不到就返回空」的话，**缓存过期后的那一次
+  /// 失败直接落到空列表** —— 用户对着空图库加一句「没能取到竖版高清图库」。而这个源
+  /// 的失败不是偶发断网、是常态（Cloudflare 在大陆是降级不是不通，见
+  /// [foregroundListTimeout]）：TTL 3 小时一过，下一次打开就可能整个空白。
+  ///
+  /// 所以是「宁可给旧的，不要给空」：有旧的就给旧的，图库页照常显示并提示「这是上次
+  /// 的结果」；一次都没成功过才返回空 —— 那才是真失败。
+  ///
+  /// **空清单不写缓存**（见 [BingWallpaperStore.saveCachedWallhavenItems]）：否则一次
+  /// 失败被缓存 3 小时。
+  static Future<List<WallhavenWallpaperItem>> loadPortrait({
+    bool forceRefresh = false,
+  }) async {
+    final store = BingWallpaperStore.instance;
+    if (!forceRefresh) {
+      final cached = store.cachedWallhavenItems;
+      final cachedAt = store.cachedWallhavenItemsFetchedAt;
+      final fresh = cachedAt != null &&
+          DateTime.now().difference(cachedAt) < _listCacheTtl;
+      if (cached.isNotEmpty && fresh) {
+        return cached;
+      }
+    }
+    final service = _createInternal();
+    final List<WallhavenWallpaperItem> items;
+    try {
+      // 前台预算：这条**只有图库页会走**（自动换走 [maybeApplyDaily] 里的
+      // [fetchPortrait] 默认档）。
+      items = await service.fetchPortrait(timeout: foregroundListTimeout);
+    } finally {
+      service.dispose();
+    }
+    if (items.isNotEmpty) {
+      await store.saveCachedWallhavenItems(items);
+      return items;
+    }
+    final stale = store.cachedWallhavenItems;
+    if (stale.isNotEmpty) {
+      appDebugLog(_tag, 'list failed, serving ${stale.length} cached items');
+    }
+    return stale;
+  }
+
   /// 下 [item] 的原图。
   ///
   /// ## 不按屏幕尺寸要图，也不退档

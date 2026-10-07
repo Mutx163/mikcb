@@ -6303,6 +6303,7 @@
   "wallpaperDailySourceWallhaven": "세로 고화질",
   "wallhavenWallpaperGalleryTitle": "세로 고화질 갤러리",
   "wallhavenGalleryFailed": "세로 고화질 갤러리를 불러오지 못했습니다. 네트워크를 확인한 뒤 다시 시도하세요",
+  "wallpaperGalleryShowingCached": "네트워크가 불안정하여上次 불러온 이미지를 표시합니다",
   "bingWallpaperDateToday": "오늘",
   "bingWallpaperDateYesterday": "어제",
   "bingWallpaperDateMonthDay": "{month}월 {day}일",

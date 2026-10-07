@@ -6351,6 +6351,12 @@ abstract class AppLocalizations {
   /// **'没能取到竖版高清图库，请检查网络后重试'**
   String get wallhavenGalleryFailed;
 
+  /// No description provided for @wallpaperGalleryShowingCached.
+  ///
+  /// In zh, this message translates to:
+  /// **'网络不太顺畅，下面显示的是上次加载的图'**
+  String get wallpaperGalleryShowingCached;
+
   /// No description provided for @bingWallpaperDateToday.
   ///
   /// In zh, this message translates to:

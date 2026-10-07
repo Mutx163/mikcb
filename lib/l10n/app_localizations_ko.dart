@@ -3518,6 +3518,9 @@ class AppLocalizationsKo extends AppLocalizations {
       '세로 고화질 갤러리를 불러오지 못했습니다. 네트워크를 확인한 뒤 다시 시도하세요';
 
   @override
+  String get wallpaperGalleryShowingCached => '네트워크가 불안정하여上次 불러온 이미지를 표시합니다';
+
+  @override
   String get bingWallpaperDateToday => '오늘';
 
   @override

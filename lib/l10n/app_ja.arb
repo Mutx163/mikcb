@@ -6303,6 +6303,7 @@
   "wallpaperDailySourceWallhaven": "縦長高画質",
   "wallhavenWallpaperGalleryTitle": "縦長高画質ギャラリー",
   "wallhavenGalleryFailed": "縦長高画質ギャラリーを読み込めませんでした。ネットワークを確認して再試行してください",
+  "wallpaperGalleryShowingCached": "ネットワークが不安定なため、前回読み込んだ画像を表示しています",
   "bingWallpaperDateToday": "今日",
   "bingWallpaperDateYesterday": "昨日",
   "bingWallpaperDateMonthDay": "{month} 月 {day} 日",

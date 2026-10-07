@@ -1950,6 +1950,7 @@
   "wallpaperDailySourceWallhaven": "Portrait HD",
   "wallhavenWallpaperGalleryTitle": "Portrait HD gallery",
   "wallhavenGalleryFailed": "Couldn't load the portrait gallery. Check your connection and retry.",
+  "wallpaperGalleryShowingCached": "Network's being slow — showing the last images that loaded.",
   "bingWallpaperDateToday": "Today",
   "bingWallpaperDateYesterday": "Yesterday",
   "bingWallpaperDateMonthDay": "{month}/{day}",

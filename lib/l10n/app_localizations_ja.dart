@@ -3499,6 +3499,9 @@ class AppLocalizationsJa extends AppLocalizations {
       '縦長高画質ギャラリーを読み込めませんでした。ネットワークを確認して再試行してください';
 
   @override
+  String get wallpaperGalleryShowingCached => 'ネットワークが不安定なため、前回読み込んだ画像を表示しています';
+
+  @override
   String get bingWallpaperDateToday => '今日';
 
   @override

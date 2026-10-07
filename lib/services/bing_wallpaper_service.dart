@@ -386,8 +386,19 @@ BingWallpaperService._internal(this._client, bool ownsCandidate)
   /// 缓存是**设备级全局**（存 `BingWallpaperStore`）而不是每个课表一份：图库内容与
   /// 用哪份课表无关。命中的判据是「缓存时间在 TTL 内且非空」—— 空列表也算未命中，
   /// 否则一次失败会被缓存 3 小时，用户当天再也看不到图库。
+  ///
+  /// ## [allowStaleFallback]：只给**展示**用，不给自动换用
+  ///
+  /// 默认关着。开着时，缓存过期且网络拉不到会**返回过期缓存**而不是空列表 ——
+  /// 宁可给旧的，不要给空图库。
+  ///
+  /// ⚠️ 自动换那条路径**不能**开：`maybeApplyDaily` 拿到空清单时返回 `failed`，
+  /// 外层 `DailyWallpaperService` 才有机会按 `WallpaperSourceFallback` 换到 Wallhaven
+  /// 那个更好的源。开了回落就等于用一张隔夜甚至隔几天的 Bing 图把换源机会抢掉 ——
+  /// 那是拿「有图」换「更好的图」，方向错了。所以只有图库页显式传 true。
   static Future<List<BingWallpaperItem>> loadItems({
     bool forceRefresh = false,
+    bool allowStaleFallback = false,
   }) async {
     final store = BingWallpaperStore.instance;
     if (!forceRefresh) {
@@ -400,15 +411,19 @@ BingWallpaperService._internal(this._client, bool ownsCandidate)
       }
     }
     final service = _createInternal();
+    final List<BingWallpaperItem> fetched;
     try {
-      final items = await service.fetchRecent();
-      if (items.isNotEmpty) {
-        await store.saveCachedItems(items);
-      }
-      return items;
+      fetched = await service.fetchRecent();
     } finally {
       service.dispose();
     }
+    if (fetched.isNotEmpty) {
+      await store.saveCachedItems(fetched);
+      return fetched;
+    }
+    // 拉不到：展示路径给过期缓存（宁可旧的不要空图库）；
+    // 自动换路径宁可空 —— 空才轮得到外层按 `WallpaperSourceFallback` 换源。
+    return allowStaleFallback ? store.cachedItems : const [];
   }
 
   /// 自动换的判据 + 下载。

@@ -3649,6 +3649,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t load the portrait gallery. Check your connection and retry.';
 
   @override
+  String get wallpaperGalleryShowingCached =>
+      'Network\'s being slow — showing the last images that loaded.';
+
+  @override
   String get bingWallpaperDateToday => 'Today';
 
   @override

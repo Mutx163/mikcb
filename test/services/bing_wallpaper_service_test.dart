@@ -865,6 +865,42 @@ void main() {
       expect(BingWallpaperStore.instance.cachedItems, isEmpty);
       expect(BingWallpaperStore.instance.cachedItemsFetchedAt, isNull);
     });
+
+    group('⚠️ 过期缓存回落只给展示路径', () {
+      // 现象：图库页因为缓存过期而拉不到 → 白屏一次，用户得重来。
+      // 解法是「宁可给旧的不要给空」，但**只对图库页** —— 自动换必须还能失败，
+      // 否则 `DailyWallpaperService` 没机会按 `WallpaperSourceFallback` 换到
+      // Wallhaven（那才是更清晰的那个源）。用隔夜 Bing 图抢掉换源是亏的。
+      test('图库页（allowStaleFallback）拉到失败时给旧清单', () async {
+        await _runLoadItems(listResponse: () => utf8Json(listBody()));
+        final stale = await _runLoadItems(
+          listResponse: () => http.Response('boom', 503),
+          forceRefresh: true,
+          allowStaleFallback: true,
+        );
+        expect(stale, isNotEmpty);
+      });
+
+      test('⭐ 自动换那条路（默认）拉到失败仍返回空，好让外层换源', () async {
+        await _runLoadItems(listResponse: () => utf8Json(listBody()));
+        expect(
+          BingWallpaperStore.instance.cachedItems,
+          isNotEmpty,
+          reason: '前提：缓存里确实有东西',
+        );
+        final failed = await _runLoadItems(
+          listResponse: () => http.Response('boom', 503),
+          forceRefresh: true,
+        );
+        expect(
+          failed,
+          isEmpty,
+          reason:
+              '空清单才是 `WallpaperAutoApplyOutcome.failed` 的入口；'
+              '喂它旧清单会把换源机会抢掉',
+        );
+      });
+    });
   });
 }
 
@@ -963,11 +999,15 @@ final DateTime _pinnedNow = DateTime(2026, 10, 5);
 Future<List<BingWallpaperItem>> _runLoadItems({
   required http.Response Function() listResponse,
   bool forceRefresh = false,
+  bool allowStaleFallback = false,
 }) async {
   BingWallpaperService.testClientFactory = () =>
       MockClient((request) async => listResponse());
   try {
-    return await BingWallpaperService.loadItems(forceRefresh: forceRefresh);
+    return await BingWallpaperService.loadItems(
+      forceRefresh: forceRefresh,
+      allowStaleFallback: allowStaleFallback,
+    );
   } finally {
     BingWallpaperService.testClientFactory = null;
   }

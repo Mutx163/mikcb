@@ -98,6 +98,12 @@ class _BingWallpaperGalleryPageState
   /// 拉取失败。给一条可重试的提示而不是空白页 —— 断网时的空白页最像「功能坏了」。
   bool _failed = false;
 
+  /// 当前显示的是**上次拉到的清单**（这次网络没给新数据）。
+  ///
+  /// 与 `_failed` 分开：「一次都没成功过」才是失败；「上次成功过、这次没拿到」该照常
+  /// 显示旧的并说明来路 —— 否则网络一抖用户就得重新挑一遍。
+  bool _showingCached = false;
+
   @override
   void initState() {
     super.initState();
@@ -124,17 +130,26 @@ class _BingWallpaperGalleryPageState
         _failed = false;
       });
     }
+    // 拉取**开始**的时刻。结束后拿它与缓存时间戳比就知道这次是不是白等了 ——
+    // 时间戳没被刷新 = 网络没给新数据 = 下面显示的是上次的。
+    final startedAt = DateTime.now();
     final items = await BingWallpaperService.loadItems(
       forceRefresh: forceRefresh,
+      // 展示路径才允许回落到过期缓存；自动换那条路**不能**开（会把换源机会抢掉，
+      // 见 `loadItems` 上面对 `allowStaleFallback` 的说明）。
+      allowStaleFallback: true,
     );
     if (!mounted) {
       return;
     }
+    final cachedAt = BingWallpaperStore.instance.cachedItemsFetchedAt;
     setState(() {
       _items = items;
+      _showingCached =
+          items.isNotEmpty && (cachedAt == null || cachedAt.isBefore(startedAt));
       _loading = false;
-      // 空清单 = 拉不到（断网 / Bing 改格式）。「缓存过期」与「拉失败」在这一层
-      // 分不开，也不必分：给同一条重试入口即可。
+      // 空清单 = 一次都没成功过（断网 / Bing 改格式），这时才真的没东西可显示。
+      // 「有过缓存但这次没拿到」走上面那条 `_showingCached` 提示条，不算失败。
       _failed = items.isEmpty;
     });
   }
@@ -328,7 +343,21 @@ class _BingWallpaperGalleryPageState
               hasScrollBody: false,
               child: _bodyArea(context, _buildFailure(context)),
             )
-          else
+          else ... <Widget>[
+            // 「显示的是上次结果」提示条。与 Wallhaven 图库页同一句文案、同一位置 ——
+            // 两页的差别只在卡片内容，不该在「来路说明」上也分叉。
+            if (_showingCached)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: Text(
+                    l10n.wallpaperGalleryShowingCached,
+                    style: HyperosTypography.listDetail(
+                      context,
+                    ).copyWith(color: HyperosColors.secondaryText(context)),
+                  ),
+                ),
+              ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
               sliver: SliverGrid(
@@ -348,6 +377,7 @@ class _BingWallpaperGalleryPageState
                 ),
               ),
             ),
+          ],
         ],
       ),
     );

@@ -68,6 +68,13 @@ class _WallhavenWallpaperGalleryPageState
   bool _loading = true;
   bool _failed = false;
 
+  /// 当前显示的是**上次拉到的清单**（这次网络没给新数据）。
+  ///
+  /// 不做成错误页：这个源在大陆是常态性慢（见
+  /// `WallhavenWallpaperService.foregroundListTimeout` 的注释），把「旧的」当成
+  /// 「坏的」处理，用户每次都得重挑一遍图才知道有没有用。
+  bool _showingCached = false;
+
   /// 正在下载的那张的 id；null = 没在下载。
   String? _downloadingId;
 
@@ -97,26 +104,20 @@ class _WallhavenWallpaperGalleryPageState
         _failed = false;
       });
     }
-    final service = WallhavenWallpaperService.createTransient();
-    final List<WallhavenWallpaperItem> items;
-    try {
-      // `forceRefresh` 在这个接口上**没有对应语义**（它不是日历源，没有缓存可清），
-      // 所以保留参数只为与 Bing 那页的调用签名一致；下拉刷新就真的重拉一次。
-      //
-      // ⚠️ 超时必须显式给**前台**档，不能吃 `fetchPortrait` 的 8 秒默认值 ——
-      // 用户正盯着这一页，而 Wallhaven 挂 Cloudflare（大陆是降级不是不通），
-      // 8 秒会把「慢」误判成「坏」。理由见 `foregroundListTimeout` 的注释。
-      items = await service.fetchPortrait(
-        timeout: WallhavenWallpaperService.foregroundListTimeout,
-      );
-    } finally {
-      service.dispose();
-    }
+    // 拉取**开始**的时刻。结束后拿它与缓存时间戳比就知道这次是不是白等了 ——
+    // 时间戳没被刷新 = 网络没给新数据 = 下面显示的是上次的。
+    final startedAt = DateTime.now();
+    final items = await WallhavenWallpaperService.loadPortrait(
+      forceRefresh: forceRefresh,
+    );
     if (!mounted) {
       return;
     }
+    final cachedAt = BingWallpaperStore.instance.cachedWallhavenItemsFetchedAt;
     setState(() {
       _items = items;
+      _showingCached =
+          items.isNotEmpty && (cachedAt == null || cachedAt.isBefore(startedAt));
       _loading = false;
       _failed = items.isEmpty;
     });
@@ -229,7 +230,21 @@ class _WallhavenWallpaperGalleryPageState
                 child: _buildFailure(),
               ),
             )
-          else
+          else ... <Widget>[
+            // 「显示的是上次结果」提示条。放在网格**外面**而不是塞进卡片里：
+            // 它说的是**整份清单**的来路，不该只挂在某一张卡片上。
+            if (_showingCached)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: Text(
+                    l10n.wallpaperGalleryShowingCached,
+                    style: HyperosTypography.listDetail(
+                      context,
+                    ).copyWith(color: HyperosColors.secondaryText(context)),
+                  ),
+                ),
+              ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
               sliver: SliverGrid(
@@ -247,6 +262,7 @@ class _WallhavenWallpaperGalleryPageState
                 ),
               ),
             ),
+          ],
         ],
       ),
     );
