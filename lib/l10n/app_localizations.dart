@@ -6567,6 +6567,18 @@ abstract class AppLocalizations {
   /// **'后台保活辅助'**
   String get guideStatusKeepAlive;
 
+  /// No description provided for @guideStatusDoNotDisturbAccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'勿扰模式访问权限'**
+  String get guideStatusDoNotDisturbAccess;
+
+  /// No description provided for @guideStatusDoNotDisturbAccessHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课前的静音 / 免打扰快捷操作需要它，未授权时点了没反应'**
+  String get guideStatusDoNotDisturbAccessHint;
+
   /// No description provided for @guideStatusAndroidVersion.
   ///
   /// In zh, this message translates to:
@@ -13657,6 +13669,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'打开免打扰'**
   String get liveBeforeClassQuickActionDoNotDisturb;
+
+  /// No description provided for @liveBeforeClassQuickActionPriorityOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅放行优先通知'**
+  String get liveBeforeClassQuickActionPriorityOnly;
 
   /// No description provided for @liveBeforeClassQuickActionBoth.
   ///

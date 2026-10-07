@@ -268,7 +268,18 @@ enum MiuiIslandLabelRenderQuality { standard, high, ultra }
 
 enum MiuiIslandExpandedIconMode { appIcon, customImage, hidden }
 
-enum LiveBeforeClassQuickAction { none, silent, doNotDisturb, both }
+/// 上课前通知里能一键执行的系统静音动作。
+///
+/// [priorityOnly] 是「仅允许优先通知」档（INTERRUPTION_FILTER_PRIORITY）：
+/// 只放行星标联系人，闹钟照响。比 [doNotDisturb]（完全勿扰）温和，
+/// 适合「想屏蔽普通通知但别漏掉家人来电」的场景。
+enum LiveBeforeClassQuickAction {
+  none,
+  silent,
+  doNotDisturb,
+  priorityOnly,
+  both,
+}
 
 const String defaultAppUpdateMirrorUrlPrefix = 'https://ghfast.top/';
 const String ghLlkkMirrorUrlPrefix = 'https://gh.llkk.cc/';
@@ -560,7 +571,18 @@ extension LiveBeforeClassQuickActionX on LiveBeforeClassQuickAction {
     LiveBeforeClassQuickAction.none => 'none',
     LiveBeforeClassQuickAction.silent => 'silent',
     LiveBeforeClassQuickAction.doNotDisturb => 'do_not_disturb',
+    LiveBeforeClassQuickAction.priorityOnly => 'priority_only',
     LiveBeforeClassQuickAction.both => 'both',
+  };
+
+  /// 该动作是否需要「勿扰模式访问权限」。Android 13+ 连静音档
+  /// （setRingerMode(SILENT)）也被并入这套策略，未授权直接抛异常。
+  bool get requiresDoNotDisturbAccess => switch (this) {
+    LiveBeforeClassQuickAction.none => false,
+    LiveBeforeClassQuickAction.silent => false,
+    LiveBeforeClassQuickAction.doNotDisturb => true,
+    LiveBeforeClassQuickAction.priorityOnly => true,
+    LiveBeforeClassQuickAction.both => true,
   };
 
   static LiveBeforeClassQuickAction fromValue(String? value) {

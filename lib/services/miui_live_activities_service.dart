@@ -177,6 +177,37 @@ class MiuiLiveActivitiesService {
     }
   }
 
+  Future<void> openDoNotDisturbAccessSettings() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod('openDoNotDisturbAccessSettings');
+    } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'miui_live_open_dnd_settings_failed',
+          AppLogMessages.miuiLiveOpenDndSettingsFailed,
+          extras: {'error': '$e'},
+        ),
+      );
+      appDebugLog('MiuiLive', '打开勿扰模式访问权限设置失败：$e');
+    }
+  }
+
+  /// 静音与免打扰两个课前快捷操作都依赖「勿扰模式访问权限」：
+  /// Android 13+ 连 [AudioManager.setRingerMode] 的静音档也被并入这套策略，
+  /// 未授权时静默失败。权限清单用它把状态显式摊开。
+  Future<bool> isDoNotDisturbAccessGranted() async {
+    if (!Platform.isAndroid) return false;
+    try {
+      final result = await _channel.invokeMethod(
+        'isDoNotDisturbAccessGranted',
+      );
+      return result == true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<bool> isAutoStartEnabled() async {
     if (!Platform.isAndroid) return true;
     try {

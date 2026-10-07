@@ -749,6 +749,13 @@ class MainActivity : FlutterActivity() {
                         openAccessibilitySettings()
                         result.success(true)
                     }
+                    "openDoNotDisturbAccessSettings" -> {
+                        openDoNotDisturbAccessSettings()
+                        result.success(true)
+                    }
+                    "isDoNotDisturbAccessGranted" -> {
+                        result.success(isDoNotDisturbAccessGranted())
+                    }
                     "isAutoStartEnabled" -> {
                         result.success(isAutoStartEnabled())
                     }
@@ -2300,6 +2307,31 @@ class MainActivity : FlutterActivity() {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             startActivity(fallbackIntent)
+        }
+    }
+
+    /** 「勿扰模式访问权限」：静音与免打扰两个快捷操作都靠它写系统状态。
+     *  Android 13+ 连 setRingerMode(SILENT) 都被并入这套策略，未授权时
+     *  直接抛 SecurityException——所以权限状态必须在设置页显式可见，
+     *  而不是等用户点了通知按钮才靠 Toast 解释。 */
+    private fun isDoNotDisturbAccessGranted(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return true
+        }
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+        return manager?.isNotificationPolicyAccessGranted == true
+    }
+
+    private fun openDoNotDisturbAccessSettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+        } catch (e: Exception) {
+            Log.w(
+                "MainActivity",
+                DiagnosticLogMessages.LOG_OPEN_DND_POLICY_SETTINGS_FAILED,
+                e,
+            )
+            openAppDetailsSettings()
         }
     }
 

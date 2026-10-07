@@ -3771,6 +3771,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideStatusKeepAlive => 'Background keep-alive helper';
 
   @override
+  String get guideStatusDoNotDisturbAccess => 'Do Not Disturb access';
+
+  @override
+  String get guideStatusDoNotDisturbAccessHint =>
+      'Required by the before-class silent / DND quick actions; without it the buttons do nothing';
+
+  @override
   String get guideStatusAndroidVersion => 'Android version';
 
   @override
@@ -7921,6 +7928,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveBeforeClassQuickActionDoNotDisturb => 'Turn on Do Not Disturb';
+
+  @override
+  String get liveBeforeClassQuickActionPriorityOnly => 'Priority contacts only';
 
   @override
   String get liveBeforeClassQuickActionBoth => 'Silent + Do Not Disturb';

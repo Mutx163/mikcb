@@ -25,6 +25,8 @@
     <string name="action_enable_dnd">おやすみモード</string>
     <string name="action_cancel_silent">ミュート解除</string>
     <string name="action_cancel_dnd">おやすみモード解除</string>
+    <string name="action_enable_priority_only">優先連絡のみ許可</string>
+    <string name="action_cancel_priority_only">優先連絡のみを解除</string>
     <string name="action_close">閉じる</string>
     <string name="quick_action_silent_failed">サイレントモードを変更できません。システムのサウンド設定で権限を確認してください</string>
     <string name="quick_action_dnd_failed">おやすみモードを変更できません。システム設定でアクセス権限を許可してください</string>

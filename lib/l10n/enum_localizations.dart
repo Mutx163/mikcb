@@ -222,6 +222,8 @@ String liveBeforeClassQuickActionLabel(
   LiveBeforeClassQuickAction.silent => l10n.liveBeforeClassQuickActionSilent,
   LiveBeforeClassQuickAction.doNotDisturb =>
     l10n.liveBeforeClassQuickActionDoNotDisturb,
+  LiveBeforeClassQuickAction.priorityOnly =>
+    l10n.liveBeforeClassQuickActionPriorityOnly,
   LiveBeforeClassQuickAction.both => l10n.liveBeforeClassQuickActionBoth,
 };
 

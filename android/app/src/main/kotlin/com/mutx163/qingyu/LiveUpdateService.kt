@@ -54,6 +54,8 @@ class LiveUpdateService : Service() {
             "com.mutx163.qingyu.action.ENABLE_SILENT_MODE"
         private const val ACTION_ENABLE_DO_NOT_DISTURB =
             "com.mutx163.qingyu.action.ENABLE_DO_NOT_DISTURB"
+        private const val ACTION_ENABLE_PRIORITY_ONLY =
+            "com.mutx163.qingyu.action.ENABLE_PRIORITY_ONLY"
         private const val ACTION_CANCEL_SILENT_MODE =
             "com.mutx163.qingyu.action.CANCEL_SILENT_MODE"
         private const val ACTION_CANCEL_DO_NOT_DISTURB =
@@ -317,6 +319,13 @@ class LiveUpdateService : Service() {
                     readQuickActionTimingExtra(intent)
                     handleBeforeClassQuickAction(
                         BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB
+                    )
+                    START_NOT_STICKY
+                }
+                ACTION_ENABLE_PRIORITY_ONLY -> {
+                    readQuickActionTimingExtra(intent)
+                    handleBeforeClassQuickAction(
+                        BeforeClassQuickActionRestore.ACTION_PRIORITY_ONLY
                     )
                     START_NOT_STICKY
                 }
@@ -719,16 +728,26 @@ class LiveUpdateService : Service() {
                 getString(R.string.action_cancel_silent),
             )
         }
+        // 「仅允许优先通知」档复用同一组开关位，但点的不是完全勿扰：
+        // intent 与文案都要跟着配置走，否则用户选了优先档却被静默改成完全勿扰。
+        val priorityOnly =
+            beforeClassQuickAction == BeforeClassQuickActionRestore.ACTION_PRIORITY_ONLY
         if (buttons.dndEnable) {
             actions += buildQuickActionNotificationAction(
-                ACTION_ENABLE_DO_NOT_DISTURB,
-                getString(R.string.action_enable_dnd),
+                if (priorityOnly) ACTION_ENABLE_PRIORITY_ONLY else ACTION_ENABLE_DO_NOT_DISTURB,
+                getString(
+                    if (priorityOnly) R.string.action_enable_priority_only
+                    else R.string.action_enable_dnd,
+                ),
             )
         }
         if (buttons.dndCancel) {
             actions += buildQuickActionNotificationAction(
                 ACTION_CANCEL_DO_NOT_DISTURB,
-                getString(R.string.action_cancel_dnd),
+                getString(
+                    if (priorityOnly) R.string.action_cancel_priority_only
+                    else R.string.action_cancel_dnd,
+                ),
             )
         }
         return actions
@@ -839,6 +858,8 @@ class LiveUpdateService : Service() {
                 applyQuickActionMode(enableDoNotDisturb = false, restoreAtMillis)
             BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB ->
                 applyQuickActionMode(enableDoNotDisturb = true, restoreAtMillis)
+            BeforeClassQuickActionRestore.ACTION_PRIORITY_ONLY ->
+                applyPriorityOnlyQuickActionMode(restoreAtMillis)
             BeforeClassQuickActionRestore.ACTION_BOTH -> {
                 val silentApplied =
                     applyQuickActionMode(enableDoNotDisturb = false, restoreAtMillis)
@@ -893,6 +914,19 @@ class LiveUpdateService : Service() {
             }
             enabled
         }
+    }
+
+    /** 「仅允许优先通知」档：与免打扰同权限门槛，失败提示也共用一条。 */
+    private fun applyPriorityOnlyQuickActionMode(restoreAtMillis: Long): Boolean {
+        val enabled = BeforeClassQuickActionRestore.enablePriorityOnlyMode(
+            this,
+            restoreAtMillis,
+        )
+        if (!enabled) {
+            showQuickActionFailureToast(R.string.quick_action_dnd_failed)
+            openNotificationPolicyAccessSettings()
+        }
+        return enabled
     }
 
     private fun maybeApplyAutoQuickAction(nowMillis: Long) {

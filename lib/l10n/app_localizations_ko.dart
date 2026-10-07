@@ -3635,6 +3635,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guideStatusKeepAlive => '백그라운드 상주 보조';
 
   @override
+  String get guideStatusDoNotDisturbAccess => '방해 금지 접근 권한';
+
+  @override
+  String get guideStatusDoNotDisturbAccessHint =>
+      '수업 전 사이런트 / 방해 금지 빠른 작업에 필요합니다. 허용하지 않으면 버튼이 작동하지 않습니다';
+
+  @override
   String get guideStatusAndroidVersion => 'Android 버전';
 
   @override
@@ -7671,6 +7678,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveBeforeClassQuickActionDoNotDisturb => 'Turn on Do Not Disturb';
+
+  @override
+  String get liveBeforeClassQuickActionPriorityOnly => '중요 연락만 허용';
 
   @override
   String get liveBeforeClassQuickActionBoth => '무음과 방해 금지';

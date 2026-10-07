@@ -17,6 +17,10 @@ internal object BeforeClassQuickActionRestore {
     private const val KEY_LAST_AUTO_TRIGGER_MILLIS = "last_auto_trigger_millis"
     private const val KEY_APPLIED_SILENT = "applied_silent"
     private const val KEY_APPLIED_DND = "applied_dnd"
+    // 写入后回读到的系统真实值。下课恢复前拿它和当前值比对：不相等说明用户
+    // 课中自己动过（自己开了勿扰准备睡午觉），这时保持现状，不替他写回。
+    private const val KEY_APPLIED_SILENT_STATE = "applied_silent_state"
+    private const val KEY_APPLIED_DND_STATE = "applied_dnd_state"
 
     /** 已按课上报过失败的 triggerKey（进程内存）：自动执行失败会随 ticker
      *  每拍重试，上报必须去重，避免诊断日志被同一节课刷爆。 */
@@ -32,6 +36,9 @@ internal object BeforeClassQuickActionRestore {
     const val ACTION_DO_NOT_DISTURB = "do_not_disturb"
     const val ACTION_BOTH = "both"
 
+    /** 「仅允许优先通知」：INTERRUPTION_FILTER_PRIORITY，只放行星标联系人。 */
+    const val ACTION_PRIORITY_ONLY = "priority_only"
+
     fun enableSilentMode(context: Context, restoreAtMillis: Long): Boolean {
         val audioManager = context.getSystemService(AudioManager::class.java) ?: return false
         return try {
@@ -41,8 +48,12 @@ internal object BeforeClassQuickActionRestore {
             audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
             // setRingerMode 在缺 MODIFY_AUDIO_SETTINGS 权限时会被框架静默丢弃（不抛
             // 异常、不生效），必须回读校验，否则「静音」按钮点了毫无反应却当成功。
-            val applied = audioManager.ringerMode == AudioManager.RINGER_MODE_SILENT
-            if (!applied) {
+            val appliedState = audioManager.ringerMode
+            val applied = appliedState == AudioManager.RINGER_MODE_SILENT
+            if (applied) {
+                // 记下系统实际呈现的值：下课恢复前据此判断用户有没有自己动过。
+                recordAppliedState(context, KEY_APPLIED_SILENT, KEY_APPLIED_SILENT_STATE, appliedState)
+            } else {
                 // 没真的静音就不能把 pending 留在盘上：pending 还挂着时下一次
                 // markPending 会跳过 saveOriginalStates（:347），于是这节课恢复用的是
                 // 好几节课之前那次的原始模式 —— 用户中途自己改成的振动被静默覆盖。
@@ -71,7 +82,42 @@ internal object BeforeClassQuickActionRestore {
         clearAppliedFlagAndMaybeClearPending(context, key)
     }
 
-    fun enableDoNotDisturbMode(context: Context, restoreAtMillis: Long): Boolean {
+    /** 写入成功后回读系统实际呈现的值，留给下课恢复做一致性校验。 */
+    private fun recordAppliedState(
+        context: Context,
+        appliedFlagKey: String,
+        stateKey: String,
+        appliedState: Int,
+    ) {
+        prefs(context).edit()
+            .putBoolean(appliedFlagKey, true)
+            .putInt(stateKey, appliedState)
+            .apply()
+    }
+
+    private fun android.content.SharedPreferences.readAppliedState(key: String): Int? =
+        if (contains(key)) getInt(key, Int.MIN_VALUE) else null
+
+    fun enableDoNotDisturbMode(context: Context, restoreAtMillis: Long): Boolean =
+        applyInterruptionFilter(
+            context,
+            restoreAtMillis,
+            NotificationManager.INTERRUPTION_FILTER_NONE,
+        )
+
+    /** 「仅允许优先通知」档：只放行 starred contacts，闹钟照响。 */
+    fun enablePriorityOnlyMode(context: Context, restoreAtMillis: Long): Boolean =
+        applyInterruptionFilter(
+            context,
+            restoreAtMillis,
+            NotificationManager.INTERRUPTION_FILTER_PRIORITY,
+        )
+
+    private fun applyInterruptionFilter(
+        context: Context,
+        restoreAtMillis: Long,
+        interruptionFilter: Int,
+    ): Boolean {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return false
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
             !manager.isNotificationPolicyAccessGranted
@@ -79,10 +125,21 @@ internal object BeforeClassQuickActionRestore {
             return false
         }
         return try {
-            // Capture pre-change DND filter before applying NONE.
+            // Capture pre-change DND filter before applying.
             markPending(context, restoreAtMillis, ACTION_DO_NOT_DISTURB)
-            manager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
-            true
+            manager.setInterruptionFilter(interruptionFilter)
+            // 与静音同口径回读：部分 ROM 会静默丢弃这次写入，不校验就会把
+            // 「没生效」当成成功，用户看到的是按钮点了没反应。
+            val appliedState = manager.currentInterruptionFilter
+            if (appliedState == interruptionFilter) {
+                recordAppliedState(context, KEY_APPLIED_DND, KEY_APPLIED_DND_STATE, appliedState)
+                true
+            } else {
+                Log.w(TAG, "${DiagnosticLogMessages.LOG_ENABLE_DND_FAILED}: " +
+                    "expected=$interruptionFilter actual=$appliedState")
+                abandonAppliedFlag(context, KEY_APPLIED_DND)
+                false
+            }
         } catch (e: SecurityException) {
             Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_DND_DIRECT_FAILED, e)
             abandonAppliedFlag(context, KEY_APPLIED_DND)
@@ -113,6 +170,7 @@ internal object BeforeClassQuickActionRestore {
         val applied = when (action) {
             ACTION_SILENT -> enableSilentMode(context, restoreAtMillis)
             ACTION_DO_NOT_DISTURB -> enableDoNotDisturbMode(context, restoreAtMillis)
+            ACTION_PRIORITY_ONLY -> enablePriorityOnlyMode(context, restoreAtMillis)
             ACTION_BOTH -> {
                 val silentApplied = enableSilentMode(context, restoreAtMillis)
                 val dndApplied = enableDoNotDisturbMode(context, restoreAtMillis)
@@ -324,7 +382,26 @@ internal object BeforeClassQuickActionRestore {
     }
 
     private fun restoreSilentMode(context: Context, prefs: android.content.SharedPreferences): Boolean {
+        // 本次没开过静音（只选了勿扰，或开静音失败已回收标记）：铃声不是本应用
+        // 动的，无条件写回快照就是在覆盖用户课中自己改的振动/静音。
+        if (!prefs.getBoolean(KEY_APPLIED_SILENT, false)) {
+            return true
+        }
         val audioManager = context.getSystemService(AudioManager::class.java) ?: return false
+        val currentMode = try {
+            audioManager.ringerMode
+        } catch (e: Exception) {
+            Log.w(TAG, DiagnosticLogMessages.LOG_RESTORE_SILENT_MODE_FAILED, e)
+            null
+        }
+        if (quickActionRestoreOwnedByUser(
+                appliedState = prefs.readAppliedState(KEY_APPLIED_SILENT_STATE),
+                currentState = currentMode,
+            )
+        ) {
+            Log.d(TAG, "skip restoring ringer: user owns state now ($currentMode)")
+            return true
+        }
         val savedMode = prefs.getInt(
             KEY_SAVED_RINGER_MODE,
             AudioManager.RINGER_MODE_NORMAL,
@@ -350,12 +427,31 @@ internal object BeforeClassQuickActionRestore {
         if (!prefs.contains(KEY_SAVED_DND_FILTER)) {
             return true
         }
+        // 同 restoreSilentMode：勿扰不是本应用开的就别写回，别把用户自己开的
+        // 勿扰在下课铃响时关掉。
+        if (!prefs.getBoolean(KEY_APPLIED_DND, false)) {
+            return true
+        }
         val manager = context.getSystemService(NotificationManager::class.java) ?: return false
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
             !manager.isNotificationPolicyAccessGranted
         ) {
             // Permission was revoked; retry will never succeed — treat as handled
             // so pending restore state can clear instead of blocking forever.
+            return true
+        }
+        val currentFilter = try {
+            manager.currentInterruptionFilter
+        } catch (e: Exception) {
+            Log.w(TAG, DiagnosticLogMessages.LOG_RESTORE_DND_FAILED, e)
+            null
+        }
+        if (quickActionRestoreOwnedByUser(
+                appliedState = prefs.readAppliedState(KEY_APPLIED_DND_STATE),
+                currentState = currentFilter,
+            )
+        ) {
+            Log.d(TAG, "skip restoring dnd: user owns state now ($currentFilter)")
             return true
         }
         val savedFilter = prefs.getInt(
@@ -434,6 +530,24 @@ internal object BeforeClassQuickActionRestore {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 }
 
+/**
+ * 下课恢复前的一致性校验：系统当前值不再等于本应用写入的值，说明用户在课中
+ * 自己动过（例如自己开了勿扰想睡午觉），这时保持现状，不替他写回快照。
+ *
+ * [appliedState] 为 null（旧版本 pending 没有这个键）或 [currentState] 为 null
+ * （读不到系统值）时一律按「仍是本应用的状态」处理，照常恢复——宁可多恢复一次，
+ * 也不能让手机停在静音/勿扰里。
+ */
+internal fun quickActionRestoreOwnedByUser(
+    appliedState: Int?,
+    currentState: Int?,
+): Boolean {
+    if (appliedState == null || currentState == null) {
+        return false
+    }
+    return appliedState != currentState
+}
+
 internal fun beforeClassQuickActionShouldRestoreAfterClassEnd(
     nowMillis: Long,
     restoreAtMillis: Long,
@@ -474,7 +588,8 @@ internal fun beforeClassQuickActionButtons(
     val showSilent = action == BeforeClassQuickActionRestore.ACTION_SILENT ||
         action == BeforeClassQuickActionRestore.ACTION_BOTH
     val showDnd = action == BeforeClassQuickActionRestore.ACTION_DO_NOT_DISTURB ||
-        action == BeforeClassQuickActionRestore.ACTION_BOTH
+        action == BeforeClassQuickActionRestore.ACTION_BOTH ||
+        action == BeforeClassQuickActionRestore.ACTION_PRIORITY_ONLY
     return BeforeClassQuickActionButtons(
         silentEnable = showSilent && !silentCurrentlyActive,
         silentCancel = showSilent && silentCurrentlyActive,

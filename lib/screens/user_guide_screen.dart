@@ -49,6 +49,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   bool _isIgnoringBatteryOptimizations = false;
   bool _isKeepAliveAccessibilityEnabled = false;
   bool _isAutoStartEnabled = false;
+  bool _hasDoNotDisturbAccess = false;
   late bool _privacyChecked;
   Timer? _settingsPollTimer;
 
@@ -86,6 +87,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       _isAutoStartEnabled,
       _isIgnoringBatteryOptimizations,
       _isKeepAliveAccessibilityEnabled,
+      _hasDoNotDisturbAccess,
     ].join(',');
   }
 
@@ -149,6 +151,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     final isKeepAliveAccessibilityEnabled = await _service
         .isKeepAliveAccessibilityEnabled();
     final isAutoStartEnabled = await _service.isAutoStartEnabled();
+    final hasDoNotDisturbAccess = await _service.isDoNotDisturbAccessGranted();
 
     if (!mounted) {
       return;
@@ -162,6 +165,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       _isIgnoringBatteryOptimizations = isIgnoringBatteryOptimizations;
       _isKeepAliveAccessibilityEnabled = isKeepAliveAccessibilityEnabled;
       _isAutoStartEnabled = isAutoStartEnabled;
+      _hasDoNotDisturbAccess = hasDoNotDisturbAccess;
       _isLoading = false;
     });
   }
@@ -628,6 +632,18 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         disabledLabel: l10n.guideStatusDisabled,
         onTap: () => _runAction(_service.openAccessibilitySettings),
       ),
+      // 勿扰权限原先没有任何入口：用户只能在点了课前通知上的静音/免打扰
+      // 按钮、什么都没发生之后，才从 Toast 里知道还缺这项授权。
+      _PermissionItem(
+        icon: Icons.do_not_disturb_on_outlined,
+        accent: HyperosIconColors.indigo,
+        title: l10n.guideStatusDoNotDisturbAccess,
+        subtitle: l10n.guideStatusDoNotDisturbAccessHint,
+        enabled: _hasDoNotDisturbAccess,
+        enabledLabel: l10n.guideStatusEnabled,
+        disabledLabel: l10n.guideStatusDisabled,
+        onTap: () => _runAction(_service.openDoNotDisturbAccessSettings),
+      ),
     ];
   }
 
@@ -635,10 +651,12 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     // HyperOS 设置行范式：彩底圆角方徽章 + 标题 + 右侧灰色状态字 + 细
     // chevron（同系统权限管理）。状态不再用自绘描边胶囊表达，避免与
     // 尾部勾/箭头形成双重状态指示器。
+    final subtitle = item.subtitle;
     return HyperosListTile(
       icon: item.icon,
       iconAccent: item.accent,
       title: item.title,
+      subtitle: subtitle,
       details: item.enabled == true ? item.enabledLabel : item.disabledLabel,
       onTap: item.onTap,
     );
@@ -1143,6 +1161,10 @@ class _PermissionItem {
   /// 徽章底色，取自 HyperOS 图标彩板（[HyperosIconColors]）。
   final Color accent;
   final String title;
+
+  /// 行内补充说明。只在「为什么要点这一项」不 obvious 时给（目前只有勿扰权限），
+  /// 其余行保持单行标题，避免权限清单被说明文字压长。
+  final String? subtitle;
   final bool? enabled;
   final String enabledLabel;
   final String disabledLabel;
@@ -1155,6 +1177,7 @@ class _PermissionItem {
     required this.enabled,
     required this.enabledLabel,
     required this.disabledLabel,
+    this.subtitle,
     this.onTap,
   });
 }

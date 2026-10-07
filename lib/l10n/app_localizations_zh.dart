@@ -3546,6 +3546,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guideStatusKeepAlive => '后台保活辅助';
 
   @override
+  String get guideStatusDoNotDisturbAccess => '勿扰模式访问权限';
+
+  @override
+  String get guideStatusDoNotDisturbAccessHint =>
+      '上课前的静音 / 免打扰快捷操作需要它，未授权时点了没反应';
+
+  @override
   String get guideStatusAndroidVersion => 'Android 版本';
 
   @override
@@ -7489,6 +7496,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveBeforeClassQuickActionDoNotDisturb => '打开免打扰';
+
+  @override
+  String get liveBeforeClassQuickActionPriorityOnly => '仅放行优先通知';
 
   @override
   String get liveBeforeClassQuickActionBoth => '静音和免打扰';
@@ -14745,6 +14755,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guideStatusKeepAlive => '後台保活輔助';
 
   @override
+  String get guideStatusDoNotDisturbAccess => '勿擾模式存取權限';
+
+  @override
+  String get guideStatusDoNotDisturbAccessHint =>
+      '上課前的靜音 / 免打擾快捷操作需要它，未授權時點了沒反應';
+
+  @override
   String get guideStatusAndroidVersion => 'Android 版本';
 
   @override
@@ -18688,6 +18705,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveBeforeClassQuickActionDoNotDisturb => '打開免打擾';
+
+  @override
+  String get liveBeforeClassQuickActionPriorityOnly => '僅放行優先通知';
 
   @override
   String get liveBeforeClassQuickActionBoth => '靜音和免打擾';
@@ -25984,6 +26004,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guideStatusKeepAlive => '後台保活輔助';
 
   @override
+  String get guideStatusDoNotDisturbAccess => '勿擾模式存取權限';
+
+  @override
+  String get guideStatusDoNotDisturbAccessHint =>
+      '上課前的靜音 / 免打擾快捷操作需要它，未授權時點了沒反應';
+
+  @override
   String get guideStatusAndroidVersion => 'Android 版本';
 
   @override
@@ -29927,6 +29954,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveBeforeClassQuickActionDoNotDisturb => '開啟勿擾模式';
+
+  @override
+  String get liveBeforeClassQuickActionPriorityOnly => '僅放行優先通知';
 
   @override
   String get liveBeforeClassQuickActionBoth => '靜音和免打擾';

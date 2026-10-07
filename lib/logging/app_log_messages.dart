@@ -51,6 +51,8 @@ abstract final class AppLogMessages {
       'log_miui_live_open_battery_settings_failed';
   static const miuiLiveOpenAccessibilitySettingsFailed =
       'log_miui_live_open_accessibility_settings_failed';
+  static const miuiLiveOpenDndSettingsFailed =
+      'log_miui_live_open_dnd_settings_failed';
   static const miuiLiveHideFromRecentsFailed =
       'log_miui_live_hide_from_recents_failed';
   static const liveUpdateStartFailed = 'log_live_update_start_failed';

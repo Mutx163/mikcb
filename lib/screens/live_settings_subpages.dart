@@ -452,6 +452,14 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   _draft.copyWith(liveBeforeClassQuickActionAutoMinutes: value),
                 ),
               ),
+            // 免打扰档需要「勿扰模式访问权限」，没授权时通知上的按钮点了
+            // 不报错也没反应。这里直接把缺什么、怎么去授说清楚。
+            if (_draft.liveBeforeClassQuickAction
+                .requiresDoNotDisturbAccess)
+              _DoNotDisturbAccessTile(
+                onOpenSettings: () => MiuiLiveActivitiesService()
+                    .openDoNotDisturbAccessSettings(),
+              ),
           ],
         ),
       ],
@@ -1232,6 +1240,122 @@ class _LiveKeepAliveSettingsScreenState
     setState(() {
       _enabled = enabled;
     });
+  }
+}
+
+/// 「勿扰模式访问权限」提示行：只在选了免打扰档时出现。
+///
+/// 缺这项权限时通知上的按钮既不报错也没反应，用户没有任何线索知道
+/// 该去哪里授权，所以把状态与入口直接摆在设置项下面。
+class _DoNotDisturbAccessTile extends StatefulWidget {
+  const _DoNotDisturbAccessTile({required this.onOpenSettings});
+
+  final VoidCallback onOpenSettings;
+
+  @override
+  State<_DoNotDisturbAccessTile> createState() =>
+      _DoNotDisturbAccessTileState();
+}
+
+class _DoNotDisturbAccessTileState extends State<_DoNotDisturbAccessTile>
+    with WidgetsBindingObserver {
+  bool _granted = false;
+  bool _checked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(_refresh());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 从系统设置页返回时重新读一次，授权完立刻变绿。
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refresh());
+    }
+  }
+
+  Future<void> _refresh() async {
+    final granted = await MiuiLiveActivitiesService()
+        .isDoNotDisturbAccessGranted();
+    if (!mounted) return;
+    setState(() {
+      _granted = granted;
+      _checked = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final cardColor = HyperosColors.card(context);
+    final highlightColor = HyperosColors.rowHighlight(context);
+    // 未探到状态前不猜：宁可显示中性色，也不要在权限其实已授予时
+    // 摆一条橙色的「未开启」吓人。
+    final unknown = !_checked;
+    final iconAccent = unknown
+        ? HyperosIconColors.blue
+        : (_granted ? HyperosIconColors.green : HyperosIconColors.orange);
+    final statusLabel = unknown
+        ? l10n.guideStatusSuggestedCheck
+        : (_granted ? l10n.guideStatusEnabled : l10n.guideStatusDisabled);
+
+    final row = ConstrainedBox(
+      constraints: const BoxConstraints(
+        minHeight: HyperosTokens.listRowMinHeight,
+      ),
+      child: Padding(
+        padding: HyperosTokens.rowPaddingUniform,
+        child: Row(
+          children: [
+            HyperosIconBadge(
+              icon: _granted
+                  ? Icons.check_circle_rounded
+                  : Icons.do_not_disturb_on_outlined,
+              accent: iconAccent,
+            ),
+            const SizedBox(width: HyperosTokens.rowContentGap),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    l10n.guideStatusDoNotDisturbAccess,
+                    style: HyperosTypography.listTitle(context),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.guideStatusDoNotDisturbAccessHint,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: HyperosTokens.rowContentGap),
+            Text(
+              statusLabel,
+              style: HyperosTypography.listDetail(context),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return HyperosPressableRow(
+      onTap: widget.onOpenSettings,
+      backgroundColor: cardColor,
+      highlightColor: highlightColor,
+      child: row,
+    );
   }
 }
 

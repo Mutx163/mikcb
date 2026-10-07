@@ -1456,6 +1456,45 @@ void main() {
       );
     });
 
+    test('liveBeforeClassQuickAction priorityOnly value round-trips', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        liveBeforeClassQuickAction: LiveBeforeClassQuickAction.priorityOnly,
+        liveBeforeClassQuickActionAutoMinutes: 10,
+      );
+      expect(settings.liveBeforeClassQuickAction.value, 'priority_only');
+      final restored = TimetableSettings.fromJson(settings.toJson());
+      expect(
+        restored.liveBeforeClassQuickAction,
+        LiveBeforeClassQuickAction.priorityOnly,
+      );
+      expect(restored.liveBeforeClassQuickActionAutoMinutes, 10);
+    });
+
+    test('only dnd-based quick actions require policy access', () {
+      // 免打扰两档要「勿扰模式访问权限」，静音档不据此提示。映射改动时
+      // 会被这条测试拦下，避免设置页的授权提示和实际写入要求对不上。
+      expect(
+        LiveBeforeClassQuickAction.none.requiresDoNotDisturbAccess,
+        isFalse,
+      );
+      expect(
+        LiveBeforeClassQuickAction.silent.requiresDoNotDisturbAccess,
+        isFalse,
+      );
+      expect(
+        LiveBeforeClassQuickAction.doNotDisturb.requiresDoNotDisturbAccess,
+        isTrue,
+      );
+      expect(
+        LiveBeforeClassQuickAction.priorityOnly.requiresDoNotDisturbAccess,
+        isTrue,
+      );
+      expect(
+        LiveBeforeClassQuickAction.both.requiresDoNotDisturbAccess,
+        isTrue,
+      );
+    });
+
     test('live expanded detail fields default null and round-trip as null', () {
       final settings = TimetableSettings.defaults();
       expect(settings.liveExpandedDetailFields, isNull);

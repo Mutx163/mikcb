@@ -3616,6 +3616,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get guideStatusKeepAlive => 'バックグラウンド常駐補助';
 
   @override
+  String get guideStatusDoNotDisturbAccess => 'おやすみモードのアクセス権限';
+
+  @override
+  String get guideStatusDoNotDisturbAccessHint =>
+      '授業前のサイレント／おやすみモードのクイック操作に必要です。許可されていないとボタンが効きません';
+
+  @override
   String get guideStatusAndroidVersion => 'Androidバージョン';
 
   @override
@@ -7625,6 +7632,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveBeforeClassQuickActionDoNotDisturb => 'Turn on Do Not Disturb';
+
+  @override
+  String get liveBeforeClassQuickActionPriorityOnly => '優先連絡のみ許可';
 
   @override
   String get liveBeforeClassQuickActionBoth => 'サイレントとおやすみモード';
