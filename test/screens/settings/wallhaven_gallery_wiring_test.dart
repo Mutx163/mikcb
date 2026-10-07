@@ -34,52 +34,58 @@ String memberBody(String source, String name) {
 }
 
 void main() {
-  group('前台 / 后台超时是两个档，不能塌回一个', () {
-    test('前台预算明显大于后台预算', () {
+  group('清单超时是一档 8 秒（曾拆成两档，已按实测合回）', () {
+    test('预算是 8 秒', () {
       expect(
-        WallhavenWallpaperService.foregroundListTimeout,
-        greaterThan(WallhavenWallpaperService.backgroundListTimeout),
-        reason:
-            'Wallhaven 挂在 Cloudflare 后面，大陆是「降级」不是「不通」；'
-            '图库页是用户盯着等的界面，预算必须比后台自动换宽',
-      );
-    });
-
-    test('后台预算仍是 8 秒（它挂在启动路径上，不能拖慢启动）', () {
-      expect(
-        WallhavenWallpaperService.backgroundListTimeout,
+        WallhavenWallpaperService.listTimeout,
         const Duration(seconds: 8),
-        reason: '每天自动换走后台路径，宁可失败也不该让 App 启动变慢',
+        reason: '与 BingWallpaperService 同档',
       );
     });
 
-    test('展示路径用前台档：loadPortrait 显式传它', () {
-      // ⚠️ 这里钉的是 **loadPortrait**（而不是图库页）：图库页不再直接调
-      // `fetchPortrait`，它调的是带缓存回落的 `loadPortrait`。于是「谁传前台档」
-      // 这件事落到了 service 里 —— 钉错地方会让人以为页面漏传而白改页面。
+    test('⭐ 不许再拆成「前台更宽」的两档', () {
+      // 拆成两档的理由是「前台是用户盯着等的界面，而这个源只是慢」。**实测否掉了
+      // 这个理由**：2026-10-07 分段探测显示 DNS 返回 `103.97.3.19` 与
+      // `2a03:2880:…face:b00c…`（Facebook 段），而权威答案是三个 Cloudflare IP
+      // —— 域名在中国大陆被 **DNS 污染**，请求压根没发到图源服务器。
+      //
+      // 「慢」与「被拦」的处理是相反的：慢 → 多等划算；被拦 → 等多久都没用，
+      // 让用户白等 25 秒比白等 8 秒更糟。所以合并回一档。
+      //
+      // 这条钉的是「别凭猜测又拆开」：要让某个源更宽，必须有实测的「它确实慢」，
+      // 而判断慢/被拦只能靠 probeReachability 比对 DNS 答案与权威答案。
       expect(
-        memberBody(
-          serviceSource,
-          'static Future<List<WallhavenWallpaperItem>> loadPortrait(',
-        ),
-        contains('timeout: foregroundListTimeout'),
-        reason:
-            '漏了就等于又回到 8 秒 —— 2026-10-07 用户两次图库拉取都在第 8 秒整'
-            '被判失败（同一台手机同一次会话里 Bing 拉取成功）',
+        serviceSource,
+        isNot(contains('foregroundListTimeout')),
+        reason: '前台更宽的档只对「慢」成立，对「被 DNS 拦」是纯粹的浪费',
+      );
+      expect(
+        serviceSource,
+        isNot(contains('backgroundListTimeout')),
+        reason: '两档已合并成单一的 listTimeout',
       );
     });
 
-    test('自动换那条路径仍吃 8 秒默认值', () {
-      final body = memberBody(
+    test('两条路径都吃那一个默认值', () {
+      final loadBody = memberBody(
+        serviceSource,
+        'static Future<List<WallhavenWallpaperItem>> loadPortrait(',
+      );
+      final applyBody = memberBody(
         serviceSource,
         'static Future<WallhavenAutoApplyResult> maybeApplyDaily(',
       );
       expect(
-        body,
+        loadBody,
+        contains('service.fetchPortrait()'),
+        reason: '图库页吃默认值',
+      );
+      expect(
+        applyBody,
         contains('service.fetchPortrait()'),
         reason:
-            '自动换必须吃 fetchPortrait 的默认档（后台 8 秒）。显式传参说明有人'
-            '把前台预算漏到了启动路径上，会让 App 开机变慢',
+            '自动换也吃默认值（它挂在启动路径上，显式传参说明有人把宽预算'
+            '漏进了启动流程）',
       );
     });
   });

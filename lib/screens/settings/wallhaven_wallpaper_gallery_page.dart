@@ -70,9 +70,9 @@ class _WallhavenWallpaperGalleryPageState
 
   /// 当前显示的是**上次拉到的清单**（这次网络没给新数据）。
   ///
-  /// 不做成错误页：这个源在大陆是常态性慢（见
-  /// `WallhavenWallpaperService.foregroundListTimeout` 的注释），把「旧的」当成
-  /// 「坏的」处理，用户每次都得重挑一遍图才知道有没有用。
+  /// 不做成错误页：这个源的失败在大陆**是常态**（实测 DNS 被污染，见
+  /// `WallhavenWallpaperService.listTimeout` 与 `probeReachability` 的注释），
+  /// 把「旧的」当成「坏的」处理，用户每次都得重挑一遍图才知道有没有用。
   bool _showingCached = false;
 
   /// 正在下载的那张的 id；null = 没在下载。

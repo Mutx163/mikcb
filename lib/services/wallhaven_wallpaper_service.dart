@@ -111,24 +111,28 @@ class WallhavenWallpaperService {
 
   static const String _searchEndpoint = 'https://wallhaven.cc/api/v1/search';
 
-  /// **后台**（每天自动换）用的清单超时：8 秒，与 `BingWallpaperService` 同档。
+  /// 清单超时：8 秒，与 `BingWallpaperService` 同档。
   ///
-  /// 那是挂在启动路径上的锦上添花请求，宁可失败也不该让 App 启动变慢。
-  static const Duration backgroundListTimeout = Duration(seconds: 8);
-
-  /// **前台**（图库页）用的清单超时：25 秒。
+  /// ## 曾按「前台 / 后台」分成两档（8 秒 / 25 秒），现已合并回一档
   ///
-  /// ## ⚠️ 这两个预算不能取同一个值
+  /// 拆开的理由是「前台是用户盯着等的界面，而这个源在大陆只是**慢**」——
+  /// 慢的站点会给数据，不通的才一个字不说，所以多等一会儿是划算的。
   ///
-  /// 8 秒对 Bing 成立（微软国内有节点），对 Wallhaven **不成立** —— 它挂在 Cloudflare
-  /// 后面，而 Cloudflare 在大陆是「**降级**」而不是「不通」：线路差的手机上光是
-  /// TLS 握手就要好几秒。实测 2026-10-07 有用户的两次图库拉取都在第 8 秒整被判失败
-  /// （日志 `TimeoutException after 0:00:08`），而**同一台手机同一次会话里 Bing
-  /// 拉取成功** —— 所以那不是断网，是这一个源慢。
+  /// **那个理由是错的。** 2026-10-07 分段探测实测（见 `probeReachability` 的日志）：
+  /// DNS 88ms 就返回了 `103.97.3.19` 与 `2a03:2880:…face:b00c…`，而
+  /// Google DoH 给出的权威答案是 `104.26.11.35 / 172.67.74.111 / 104.26.10.35`
+  /// （全 Cloudflare）。也就是说**域名在中国大陆被 DNS 污染**，请求压根发不到
+  /// wallhaven 的服务器，而是发给了那台不相关的机器 —— TCP 握手必然超时。
   ///
-  /// 而图库页是**用户正盯着等**的界面：他多等十几秒还会回来接着用，弹一句
-  /// 「没能取到」他只会以为 App 坏了（2026-10-07 实测）。
-  static const Duration foregroundListTimeout = Duration(seconds: 25);
+  /// 于是「慢」与「被拦」必须分开对待：
+  ///
+  /// * **慢** → 多等一会儿划算，前台就该给更宽的预算；
+  /// * **被拦** → 等多久都没用，用户白等 25 秒比白等 8 秒更糟。
+  ///
+  /// 本源是后者，所以回到 8 秒。**真要给某个源更宽的预算，判断依据只能是实测的
+  /// 「慢」，不能是猜测** —— 而判断「慢 / 被拦」的唯一办法是
+  /// [probeReachability]：DNS 返回的地址对不上权威答案，就是被拦。
+  static const Duration listTimeout = Duration(seconds: 8);
 
   final http.Client _client;
   final bool _ownsClient;
@@ -167,12 +171,12 @@ class WallhavenWallpaperService {
 
   /// 拉竖版清单；失败返回空列表（**不抛**）。
   ///
-  /// [timeout] 默认给 [backgroundListTimeout]（后台那条路径）。图库页要显式传
-  /// [foregroundListTimeout] —— 理由见那两个常量的注释。
+  /// [timeout] 默认给 [listTimeout]；真要更宽的预算必须有「这个源确实慢」的实测
+  /// 依据，理由见那个常量的注释。
   Future<List<WallhavenWallpaperItem>> fetchPortrait({
     WallhavenSort sort = WallhavenSort.toplist,
     int page = 1,
-    Duration timeout = backgroundListTimeout,
+    Duration timeout = listTimeout,
   }) async {
     final query = WallhavenQuery(
       ratios: kPortraitRatios,
@@ -233,9 +237,7 @@ class WallhavenWallpaperService {
   /// ## 为什么不能只靠 TTL
   ///
   /// 只有「命中缓存就给缓存，否则拉网络，拉不到就返回空」的话，**缓存过期后的那一次
-  /// 失败直接落到空列表** —— 用户对着空图库加一句「没能取到竖版高清图库」。而这个源
-  /// 的失败不是偶发断网、是常态（Cloudflare 在大陆是降级不是不通，见
-  /// [foregroundListTimeout]）：TTL 3 小时一过，下一次打开就可能整个空白。
+  /// 失败直接落到空列表** —— 用户对着空图库加一句「没能取到竖版高清图库」。
   ///
   /// 所以是「宁可给旧的，不要给空」：有旧的就给旧的，图库页照常显示并提示「这是上次
   /// 的结果」；一次都没成功过才返回空 —— 那才是真失败。
@@ -258,9 +260,7 @@ class WallhavenWallpaperService {
     final service = _createInternal();
     final List<WallhavenWallpaperItem> items;
     try {
-      // 前台预算：这条**只有图库页会走**（自动换走 [maybeApplyDaily] 里的
-      // [fetchPortrait] 默认档）。
-      items = await service.fetchPortrait(timeout: foregroundListTimeout);
+      items = await service.fetchPortrait();
     } finally {
       service.dispose();
     }
