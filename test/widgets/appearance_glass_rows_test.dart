@@ -31,6 +31,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
@@ -324,7 +325,7 @@ void main() {
     expect(find.text('首页玻璃带'), findsWidgets);
   });
 
-  testWidgets('液态「恢复默认」只在自定义档出现，并自带一句范围说明', (tester) async {
+  testWidgets('液态「恢复默认」在旋钮区常显，并自带一句范围说明', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     // 从实体卡片档起步：实体档下「高级材质」整节不渲染，恢复按钮自然不在
@@ -342,35 +343,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('高级材质'), findsOneWidget);
 
-    // 标准档：按钮与提示还不在。
-    expect(find.text('恢复默认'), findsNothing);
-
-    // 自定义档：按钮出现，并自带一句范围说明。
+    // 出厂是第 7 格（标准），但旋钮与恢复按钮**常显**（2026-10-05：旋钮从"只在
+    // 自定义档露出"改成一直显示，好让"拖旋钮 → 自动变成自定义"这条通路成立）。
+    // 于是按钮不再受档位约束。
     //
-    // 必须用 alignment: 0.5（滚到视口中间），不能用 tester.ensureVisible 的默认
-    // 对齐。两个原因叠加，tap 才会打偏：
-    //
-    // 1) Flutter 的 ensureVisible 默认 alignment=0，是把目标的**顶边**对齐到视口
-    //    顶边（RenderViewport.getOffsetToReveal:
-    //    `targetOffset = leadingScrollOffset - … * alignment`），不是「滚到刚
-    //    可见就停」。于是「自定义」那枚胶囊会正好停在面板正文的最顶端。
-    // 2) 面板正文最顶端 headerHeight 那一段被模糊带的**着色层**盖住。模糊层
-    //    自己包了 IgnorePointer（不吃点击），但着色层没包——它就是
-    //    `_bandLayer(child: ColoredBox(...))` / `DecoratedBox`（见
-    //    inspire_header_blur.dart 的 _tintLayer），而 ColoredBox.hitTestSelf
-    //    恒为 true、BoxDecoration.hitTest 也为 true，且 _bandLayer 是
-    //    Positioned.fill，盖满整条带。于是顶边那枚胶囊整枚落在着色层的命中区
-    //    里，点击被吃掉，预设切不过去、「恢复默认」按钮自然不出现。滚到中间
-    //    就离开了那条命中区。
-    //
-    // 症状是框架的 "would not hit test" 警告 + hitTestResult 落在 Theater 背板上。
+    // 按钮在页面很靠后的位置，必须先滚进视野；用 alignment 0.5 滚到视口**中间**，
+    // 别用 ensureVisible 的默认对齐 —— 面板正文最顶端 headerHeight 那一段被顶部渐变
+    // 模糊带的**着色层**盖住（`_bandLayer(child: ColoredBox(...))` 是
+    // Positioned.fill 且 ColoredBox.hitTestSelf 恒为 true），停在那儿点不到。
     await Scrollable.ensureVisible(
-      tester.element(find.text('自定义')),
+      tester.element(find.text('恢复默认')),
       alignment: 0.5,
     );
-    await tester.pumpAndSettle();
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('自定义'));
     await tester.pumpAndSettle();
 
     expect(find.text('恢复默认'), findsOneWidget);
@@ -379,6 +363,16 @@ void main() {
       findsOneWidget,
       reason: '按钮自带作用范围：别让人以为整体材质也会被一起恢复',
     );
+
+    // 按一下真的回到第 7 格（标准）。
+    await tester.tap(find.text('恢复默认'));
+    await tester.pumpAndSettle();
+    final provider = Provider.of<TimetableProvider>(
+      tester.element(find.byType(HyperosSheetFrame)),
+      listen: false,
+    );
+    expect(provider.settings.liquidGlassPreset, LiquidGlassPreset.standard);
+    expect(provider.settings.liquidGlassTuning, isNull);
   });
 
   testWidgets('课表页面页尾「恢复默认」带一句范围说明（含清除壁纸）', (tester) async {

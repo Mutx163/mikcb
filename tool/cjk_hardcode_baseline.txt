@@ -17,8 +17,11 @@ lib/providers/timetable/import_export_service.dart:4
 lib/providers/timetable/time_scheme_repository.dart:1
 lib/providers/timetable_provider.dart:4
 lib/providers/timetable/schedule_rule_apply.dart:18
-lib/screens/course_import_screen.dart:15
 lib/screens/feedback_screen.dart:1
+lib/screens/import/ai_image_course_import_screen.dart:1
+lib/screens/import/import_shared.dart:2
+lib/screens/import/warehouse/warehouse_adapter_web_login_screen.dart:10
+lib/screens/import/warehouse/warehouse_course_import_screen.dart:2
 lib/screens/hyperos_showcase_screen.dart:24
 lib/screens/live_testing_fixture_screen.dart:27
 lib/screens/location_time_match_screen.dart:4

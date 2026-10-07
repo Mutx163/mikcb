@@ -10,7 +10,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/timetable_provider.dart';
 import '../screens/couple_timetable_settings_screen.dart';
-import '../screens/course_import_screen.dart';
+import '../screens/import/course_import_entry_screen.dart';
 import '../screens/lan_edit_screen.dart';
 import '../screens/live_settings_subpages.dart';
 import '../screens/timetable_settings_screen.dart';

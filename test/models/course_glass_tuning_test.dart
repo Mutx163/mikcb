@@ -6,6 +6,7 @@ import 'package:university_timetable/models/course_glass_tuning.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
 import 'package:university_timetable/widgets/course_glass_shader.dart';
+import 'package:university_timetable/widgets/preblurred_wallpaper_glass.dart';
 
 const _courseColor = Color(0xFF2563EB);
 
@@ -39,38 +40,127 @@ CourseGlassStyle _resolve({
 
 void main() {
   group('CourseGlassTuning 出厂档', () {
-    test('八项就是改动前卡片的行为（默认状态观感逐位不变）', () {
+    test('八项就是全局标准档（用户 2026-10-05：「卡片完全跟通用一样」）', () {
       const t = CourseGlassTuning.courseCard;
       expect(t.refraction, 8);
-      expect(t.refractionBand, 7);
+      expect(t.refractionBand, 11);
       expect(t.refractionEdgePow, 2.5);
       expect(t.dispersion, 0.35);
       expect(t.rimStrength, 0.2);
       expect(t.rimWidth, 1.5);
       expect(t.blurSigma, 15);
-      // 卡片染的是**课程色**，所以是 0.32（改动前 CourseSurface 里那个值），
-      // 不是全局那份的「底色白」0.70。
-      expect(t.tintAlpha, 0.32);
+      expect(t.tintAlpha, 0.70);
     });
 
-    test('与全局标准档只差「染色」一项 —— 出厂观感必须一样', () {
-      // 这条取代了旧的「CourseGlassStyle 默认值必须逐字段等于 LiquidGlassTuning」
-      // 约束：那条靠两个文件里的人肉同步维持，现在卡片有自己的档，数值一致
-      // 本身就是出厂档的定义。这里钉的是**结果**，不是实现。
-      const card = CourseGlassTuning.courseCard;
-      const global = LiquidGlassTuning.defaults;
-      expect(card.refraction, global.refraction);
-      expect(card.refractionBand, global.refractionBand);
-      expect(card.refractionEdgePow, global.refractionEdgePow);
-      expect(card.dispersion, global.dispersion);
-      expect(card.rimStrength, global.rimStrength);
-      expect(card.rimWidth, global.rimWidth);
-      expect(card.blurSigma, global.blurSigma);
-      expect(card.tintAlpha, isNot(global.tintAlpha));
+    test('出厂值逐字段等于全局标准档，且是**引用**而非抄一份', () {
+      // 这条取代了旧的「CourseGlassStyle 默认值必须逐字段等于全局默认值」约束：
+      // 那条靠两个文件里的人肉同步维持。2026-10-05 起卡片那份的出厂值直接引用
+      // 全局常量、那 10 格预设也直接引用全局那十个，所以这条钉的是**结果**
+      // （两个页面必须是同一种玻璃），而「不会漂」由实现保证。
+      expect(
+        CourseGlassTuning.courseCard.toLiquidGlassTuning(),
+        LiquidGlassTuning.defaults,
+      );
+      // 八个出厂常量本身也都指着全局那几个（改一处即两边同时改）。
+      expect(
+        CourseGlassTuning.defaultRefraction,
+        LiquidGlassTuning.defaultRefraction,
+      );
+      expect(
+        CourseGlassTuning.defaultRefractionBand,
+        LiquidGlassTuning.defaultRefractionBand,
+      );
+      expect(
+        CourseGlassTuning.defaultRefractionEdgePow,
+        LiquidGlassTuning.defaultRefractionEdgePow,
+      );
+      expect(
+        CourseGlassTuning.defaultDispersion,
+        LiquidGlassTuning.defaultDispersion,
+      );
+      expect(
+        CourseGlassTuning.defaultRimStrength,
+        LiquidGlassTuning.defaultRimStrength,
+      );
+      expect(
+        CourseGlassTuning.defaultRimWidth,
+        LiquidGlassTuning.defaultRimWidth,
+      );
+      expect(
+        CourseGlassTuning.defaultBlurSigma,
+        LiquidGlassTuning.defaultBlurSigma,
+      );
+      expect(
+        CourseGlassTuning.defaultTintAlpha,
+        LiquidGlassTuning.defaultTintAlpha,
+      );
+    });
+
+    test('10 格预设与全局那 10 格同值（两个页面的档位表是同一份）', () {
+      // 卡片那 10 格**不是**另抄一份数，而是直接引用 `LiquidGlassTuning` 的那几个
+      // （`CourseGlassTuning.presetLevelN` = `fromLiquidGlassTuning(presetLevelN)`），
+      // 所以这条不是"两边碰巧一样"，是"结构上不可能不一样"。
+      for (final preset in LiquidGlassPresetX.builtIns) {
+        expect(
+          preset.recommendedCourseTuning.toLiquidGlassTuning(),
+          preset.recommendedTuning,
+          reason: '${preset.name}：卡片档与全局档必须是同一个数',
+        );
+        expect(
+          CourseGlassTuning.matchPreset(preset.recommendedCourseTuning),
+          preset,
+          reason: '${preset.name} 的卡片档必须能被反推回自己',
+        );
+        expect(
+          CourseGlassTuning.nearestPreset(preset.recommendedCourseTuning),
+          preset,
+          reason: '${preset.name}：最近档也必须是自己（滑杆读数）',
+        );
+      }
+      // 出厂档 = 第 7 格（标准）。
+      expect(CourseGlassTuning.presetStandard, CourseGlassTuning.courseCard);
+      // 自定义不是一组推荐值，回落标准档（与全局同口径）。
+      expect(
+        LiquidGlassPreset.custom.recommendedCourseTuning,
+        CourseGlassTuning.presetStandard,
+      );
+    });
+
+    test('10 格预设也落在卡片页自己的滑杆格点上', () {
+      // 卡片那根模糊滑杆的量程与全局不同（上限 = kPreblurMaxSigma，见设置页的
+      // `blurSigmaMax`），染色分格数 2026-10-05 起与全局统一为 20（步长 0.05）。
+      // 档位值必须同时落在两页的格点上，否则「同一个档在两页拖出来的数不一样」。
+      void onGrid(double value, double min, double max, int divisions) {
+        final step = (max - min) / divisions;
+        final steps = (value - min) / step;
+        expect(
+          (steps - steps.round()).abs(),
+          lessThan(1e-9),
+          reason: '$value 不是 $min~$max 分 $divisions 格上的点',
+        );
+      }
+
+      for (final preset in LiquidGlassPresetX.builtIns) {
+        final t = preset.recommendedCourseTuning;
+        onGrid(
+          t.blurSigma,
+          LiquidGlassTuning.minBlurSigma,
+          kPreblurMaxSigma,
+          kPreblurMaxSigma.round(),
+        );
+        onGrid(t.tintAlpha, 0, 1, 20);
+      }
+      // 最厚那格的模糊正好落在卡片那根滑杆的上限上，不是越界取不到的值 ——
+      // 越界的话卡片页会显示一个拖不到、也出不来的数字。
+      expect(
+        LiquidGlassTuning.presetDense.blurSigma,
+        lessThanOrEqualTo(kPreblurMaxSigma),
+      );
     });
 
     test('缺键回落的是**卡片**默认，不是全局默认（本类独立存在的头号理由）', () {
-      // 复用 LiquidGlassTuning 的话，这里会静默变成 0.70（卡片发浑且不报错）。
+      // 复用 LiquidGlassTuning 的话，这里无法区分「卡片的出厂值」，将来两边数值
+      // 一旦分家就会静默取错（卡片发浑且不报错）。
       final restored = CourseGlassTuning.fromJson(
         const <String, dynamic>{'refraction': 12},
       );
@@ -102,7 +192,7 @@ void main() {
   });
 
   group('courseGlassStyleFor', () {
-    test('没有自定义档时 = 出厂档，染色是课程色 × 0.32', () {
+    test('没有自定义档时 = 出厂档，染色是课程色 × 0.70', () {
       final glass = _resolve();
       expect(glass.borderRadius, 12);
       expect(glass.refraction, CourseGlassTuning.defaultRefraction);
@@ -124,6 +214,9 @@ void main() {
       final glass = _resolve(
         cardTuning: const CourseGlassTuning(
           refraction: 14,
+          // 11 是出厂作用带（2026-10-05 从 7 改过来），故意写成默认值：
+          // 这条用例要证明"出厂那一项照传"，而不是"某个别的值照传"。
+          // ignore: avoid_redundant_argument_values
           refractionBand: 11,
           refractionEdgePow: 4,
           dispersion: 0.8,

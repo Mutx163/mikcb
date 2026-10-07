@@ -1,9 +1,26 @@
+import '../models/bing_wallpaper.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
-import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../utils/widget_course_accent.dart';
 import 'app_localizations.dart';
+
+/// Bing 壁纸画质档位的胶囊文案。
+///
+/// 三档**各叫各的**（标准 / 适配 / 高清）：曾经把横屏的「超清」也译成「高清」，
+/// 用户看到一排里出现两个「高清」直接问了「为啥有两个高清档位」（2026-10-06）。
+/// 根因不是文案而是**多了一档没用的横屏**——横屏已从枚举里删掉，这里也随之简化。
+///
+/// ⚠️ 不要写「1x / 2x / 4x」这类倍数：三档里 `standard` 与 `tall` **宽度相同**、
+/// 比例也不同（9:16 与 9:20），「几倍」是错的说法。
+String bingWallpaperResolutionLabel(
+  AppLocalizations l10n,
+  BingWallpaperResolution resolution,
+) => switch (resolution) {
+  BingWallpaperResolution.standard => l10n.bingWallpaperResolutionStandard,
+  BingWallpaperResolution.tall => l10n.bingWallpaperResolutionTall,
+  BingWallpaperResolution.high => l10n.bingWallpaperResolutionHigh,
+};
 
 String courseNatureLabel(AppLocalizations l10n, CourseNature nature) =>
     switch (nature) {
@@ -281,16 +298,12 @@ String appUpdateMirrorPresetDescription(
   AppUpdateMirrorPreset.custom => l10n.appUpdateMirrorPresetCustomDescription,
 };
 
-String liquidGlassPresetLabel(
-  AppLocalizations l10n,
-  LiquidGlassPreset preset,
-) => switch (preset) {
-  LiquidGlassPreset.clear => l10n.liquidGlassPresetClear,
-  LiquidGlassPreset.light => l10n.liquidGlassPresetLight,
-  LiquidGlassPreset.standard => l10n.liquidGlassPresetStandard,
-  LiquidGlassPreset.dense => l10n.liquidGlassPresetDense,
-  LiquidGlassPreset.custom => l10n.liquidGlassPresetCustom,
-};
+// 档位**名字**的映射在 2026-10-05 删掉了：那一排胶囊换成了一根 10 格的节点滑杆，
+// 读数只给「第几格」（用户口径：「不要名字，只用节点 + 数字」）。
+// `l10n.liquidGlassPresetLabel`（"液态玻璃预设"）还在用 —— 它是滑杆那行的标题。
+// `liquidGlassPreset{Clear,Light,Standard,Dense,Custom}` 五个词条随之无人引用，
+// 但**故意留着**：删它们要重跑 l10n 生成，而生成文件此刻正被另一个会话改着。
+// 等那边收工后连带这五个键一起清（连同 arb 里的六份翻译）。
 
 String courseCardSurfaceStyleLabel(
   AppLocalizations l10n,

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:university_timetable/screens/course_import_screen.dart';
+import 'package:university_timetable/screens/import/import_shared.dart';
 
 /// 导入预览的周次摘要必须是本地化的（第 34 轮）。
 ///
@@ -81,7 +81,7 @@ void main() {
 
   test('接线棘：写死的"（共 N 周）"不得回来', () {
     final source = File(
-      'lib/screens/course_import_screen.dart',
+      'lib/screens/import/ai_image_course_import_screen.dart',
     ).readAsStringSync();
 
     expect(

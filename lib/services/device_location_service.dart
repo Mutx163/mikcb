@@ -124,6 +124,9 @@ class NativeDeviceLocationSource implements DeviceLocationSource {
 
   static const MethodChannel _channel = TimedMethodChannel(
     deviceLocationChannelName,
+    // Dart 侧超时必须比原生预算（12 秒）留余量：10 秒会把 10~12 秒拿到的
+    // 正常坐标砍成超时，再走一次 12 秒兜底。
+    timeout: Duration(seconds: 15),
   );
 
   @override

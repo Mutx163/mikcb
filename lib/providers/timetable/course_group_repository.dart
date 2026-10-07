@@ -131,6 +131,15 @@ Future<void> _timetableAddCourseGroup(
       if (validationMessage != null) {
         throw ArgumentError(validationMessage);
       }
+    } else {
+      // main 侧合入的最小健全性：只拦写不进的脏数据，不拦超作息（见上注）。
+      final minimalMessage = TimetableProvider._validateUnboundCourseSections(
+        startSection: course.startSection,
+        endSection: course.endSection,
+      );
+      if (minimalMessage != null) {
+        throw ArgumentError(minimalMessage);
+      }
     }
     final normalized = host._syncCourseWithEffectiveTimeScheme(
       host._normalizeCourse(CourseDomain.applySharedFields(course, shared)),

@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
-import 'package:university_timetable/screens/course_import_screen.dart';
+import 'package:university_timetable/screens/import/import_shared.dart';
 
 /// 教务页 → WebView 脚本 → `postMessage` 的节次表解析（回归钉，2026-10-02）。
 ///

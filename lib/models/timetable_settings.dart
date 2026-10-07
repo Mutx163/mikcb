@@ -1673,11 +1673,22 @@ class TimetableSettings {
   /// **课程卡片自己那套**液态玻璃参数。null = 出厂卡片档
   /// [CourseGlassTuning.courseCard]。
   ///
-  /// 刻意与 [liquidGlassTuning] 分开：卡片与全局是两套独立配置，共享的只有解析入口
-  /// 与深浅配方。为什么不是「另一个 [LiquidGlassTuning] 实例」这类复用：那份的
-  /// `fromJson` 缺键会回落到**全局**默认（染色 0.70），坏档会把卡片染色从 0.32
-  /// 静默改掉 —— 详见 `lib/models/course_glass_tuning.dart` 的类注释。
+  /// 刻意与 [liquidGlassTuning] 分开：卡片与全局是两套独立配置，共享的只有解析入口、
+  /// 深浅配方与**档位表**（那 10 格预设引的是同一批常量，见 [courseCardGlassPreset]）。
+  /// 为什么不是「另一个 [LiquidGlassTuning] 实例」这类复用：那份的 `fromJson` 缺键
+  /// 无法区分"卡片的出厂值"，而卡片要有自己的存档键与自己的档位胶囊 ——
+  /// 详见 `lib/models/course_glass_tuning.dart` 的类注释。
   final CourseGlassTuning? courseCardGlassTuning;
+
+  /// 课程卡片那一档的**档位**（2026-10-05 加，与 [liquidGlassPreset] 同构）。
+  ///
+  /// 存档语义与非空枚举字段一致：缺键回 [LiquidGlassPreset.standard]，
+  /// 「恢复默认」会把旋钮清空、档名一并拨回标准（见 `settings_reset.dart`）。
+  ///
+  /// **为什么不靠 [CourseGlassTuning.matchPreset] 反推**：反推认不出"用户点了自定义
+  /// 但一个旋钮都没动"这种状态 —— 那种状态下参数恰好等于某一档，反推会把胶囊拨回
+  /// 内置档、滑杆当场消失，用户想调也没处调。跟全局那份一样把档名单独存。
+  final LiquidGlassPreset courseCardGlassPreset;
 
   final bool homePageHeaderBlurEnabled;
   final bool homePageWeekdayBarBlurEnabled;
@@ -1903,6 +1914,7 @@ class TimetableSettings {
     this.linkLiquidGlassTuning = defaultLinkLiquidGlassTuning,
     this.darkGlassBoostEnabled = defaultDarkGlassBoostEnabled,
     this.courseCardGlassTuning,
+    this.courseCardGlassPreset = LiquidGlassPreset.standard,
     this.homePageHeaderBlurEnabled = true,
     this.homePageWeekdayBarBlurEnabled = true,
     this.homeBandGlassMaterial = defaultHomeBandGlassMaterial,
@@ -2235,6 +2247,7 @@ class TimetableSettings {
       'darkGlassBoostEnabled': darkGlassBoostEnabled,
       if (courseCardGlassTuning != null)
         'courseCardGlassTuning': courseCardGlassTuning!.toJson(),
+      'courseCardGlassPreset': courseCardGlassPreset.value,
       'homePageHeaderBlurEnabled': homePageHeaderBlurEnabled,
       'homePageWeekdayBarBlurEnabled': homePageWeekdayBarBlurEnabled,
       'homeBandGlassMaterial': homeBandGlassMaterial,
@@ -2729,6 +2742,9 @@ class TimetableSettings {
         json['courseCardGlassTuning'],
         CourseGlassTuning.fromJson,
       ),
+      courseCardGlassPreset: LiquidGlassPresetX.fromValue(
+        json['courseCardGlassPreset'] as String?,
+      ),
       // 两个玻璃带显示开关已下线（顶栏玻璃归外观页材质五档），恒为开。
       // ignore: avoid_redundant_argument_values -- 故意写死默认值（下线旧开关）。
       homePageHeaderBlurEnabled: true,
@@ -2970,6 +2986,7 @@ class TimetableSettings {
     bool? darkGlassBoostEnabled,
     CourseGlassTuning? courseCardGlassTuning,
     bool clearCourseCardGlassTuning = false,
+    LiquidGlassPreset? courseCardGlassPreset,
     bool? homePageHeaderBlurEnabled,
     bool? homePageWeekdayBarBlurEnabled,
     String? homeBandGlassMaterial,
@@ -3340,6 +3357,8 @@ class TimetableSettings {
       courseCardGlassTuning: clearCourseCardGlassTuning
           ? null
           : courseCardGlassTuning ?? this.courseCardGlassTuning,
+      courseCardGlassPreset:
+          courseCardGlassPreset ?? this.courseCardGlassPreset,
       homePageHeaderBlurEnabled:
           homePageHeaderBlurEnabled ?? this.homePageHeaderBlurEnabled,
       homePageWeekdayBarBlurEnabled:

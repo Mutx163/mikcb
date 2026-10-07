@@ -5219,6 +5219,8 @@
   "logHomeWidgetPinRequestFailed": "請求固定桌面小組件失敗",
   "logHomeWidgetSyncFailed": "同步桌面小組件快照失敗",
   "logHomeWidgetClearFailed": "清空桌面小組件快照失敗",
+  "logBingWallpaperRequestFailed": "Bing 每日桌布：請求失敗",
+  "logBingWallpaperAutoApplyFailed": "Bing 每日桌布：自動更換失敗",
   "logHomeWidgetScheduleFailed": "調度桌面小組件刷新失敗",
   "logHomeWidgetExactAlarmCheckFailed": "檢查精確鬧鐘權限失敗",
   "logHomeWidgetExactAlarmRequestFailed": "請求精確鬧鐘授權失敗",
@@ -6239,6 +6241,56 @@
   "wallpaperPositionPickerSwitchWallpaper": "更換桌布",
   "wallpaperPositionPickerDone": "完成",
   "wallpaperPositionPickerExit": "退出",
+  "@bingWallpaperResolutionHint": {
+    "placeholders": {
+      "width": { "type": "int" },
+      "height": { "type": "int" },
+      "size": { "type": "String" }
+    }
+  },
+  "@bingWallpaperDateMonthDay": {
+    "placeholders": {
+      "month": { "type": "int" },
+      "day": { "type": "int" }
+    }
+  },
+  "bingWallpaperGalleryTitle": "Bing 每日桌布",
+  "bingWallpaperGalleryFailed": "無法取得 Bing 每日桌布，請檢查網絡後再試",
+  "bingWallpaperGalleryRetry": "再試",
+  "bingWallpaperDownloadFailed": "呢張桌布下載失敗，請稍後再試",
+  "@bingWallpaperDownloadStatus": {
+    "description": "下载失败提示，附上 HTTP 状态码。占位符只在服务端回了响应时才有值；断网等情况用 bingWallpaperDownloadFailed 那条。",
+    "placeholders": {
+      "status": { "type": "int", "example": "404" }
+    }
+  },
+  "bingWallpaperDownloadStatus": "呢張桌布下載失敗（{status}）",
+  "bingWallpaperResolutionTitle": "下載畫質",
+  "bingWallpaperResolutionStandard": "標準",
+  "bingWallpaperResolutionTall": "符合屏幕",
+  "bingWallpaperResolutionHigh": "高畫質",
+  "@bingWallpaperResolutionFallback": {
+    "description": "所选画质当天不可用、已退到默认档时的说明。占位符是实际拿到的那一档的文案。",
+    "placeholders": {
+      "label": { "type": "String", "example": "高清" }
+    }
+  },
+  "bingWallpaperResolutionFallback": "Bing 當日沒有提供呢個畫質，已改用「{label}」",
+  "bingWallpaperResolutionHint": "{width}×{height}，每張約 {size}",
+  "bingWallpaperDateToday": "今日",
+  "bingWallpaperDateYesterday": "尋日",
+  "bingWallpaperDateMonthDay": "{month} 月 {day} 日",
+  "bingWallpaperAutoApplyTitle": "每日自動更換",
+  "bingWallpaperAutoApplySubtitle": "所有課表共用，只換目前這份",
+  "bingWallpaperAutoApplyApplying": "正在換成今日桌布",
+  "bingWallpaperAutoApplyAlreadyDone": "今日已經換過啦",
+  "@bingWallpaperAutoApplyStale": {
+    "description": "自動換嗰陣 Bing 仲未放出當日嗰張，於是改用它現有最新一張嘅提示。佔位符係嗰張圖**自己**嘅日期標籤（如「昨日」「10 月 5 日」）。",
+    "placeholders": {
+      "date": { "type": "String", "example": "昨日" }
+    }
+  },
+  "bingWallpaperAutoApplyStale": "Bing 仲未放出今日嘅圖，先用 {date} 嗰張頂一下",
   "appearanceTextColorsSectionTitle": "文字顏色",
   "appearanceTextColorsSectionSubtitle": "自訂課程卡片、星期欄與時間軸文字顏色",
   "pageTransitionSpeedTitle": "頁面轉場速度",

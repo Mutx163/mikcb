@@ -69,17 +69,160 @@ void main() {
           .map((preset) => preset.recommendedTuning)
           .toList();
       for (var i = 1; i < ladder.length; i++) {
-        expect(ladder[i].refraction, greaterThan(ladder[i - 1].refraction));
+        // 折射与边光是**非严格**递增：清澈（第 1 格）到标准（第 7 格）之间折射只有
+        // 6 → 8 两个逻辑 px 的余地，10 格塞不下 7 个互不相同的值（滑杆步长 0.5）。
+        // 厚薄差主要由模糊与染色拉出来 —— 那两项是严格递增，下面单独钉。
+        expect(
+          ladder[i].refraction,
+          greaterThanOrEqualTo(ladder[i - 1].refraction),
+        );
         expect(
           ladder[i].refractionBand,
-          greaterThan(ladder[i - 1].refractionBand),
+          greaterThanOrEqualTo(ladder[i - 1].refractionBand),
         );
         expect(
           ladder[i].dispersion,
-          greaterThan(ladder[i - 1].dispersion),
+          greaterThanOrEqualTo(ladder[i - 1].dispersion),
         );
         expect(ladder[i].blurSigma, greaterThan(ladder[i - 1].blurSigma));
         expect(ladder[i].tintAlpha, greaterThan(ladder[i - 1].tintAlpha));
+      }
+    });
+
+    test('2026-10-05 用户钉的那几个值不许被顺手改掉', () {
+      // 这条钉的是**产品口径**本身：
+      //   第 7 格（标准）= 折射 8 / 作用带 11 / 模糊 **15** / 染色 **70%**
+      //   第 1 格（清澈）= 染色与模糊**都归零**，且自始至终**一个数都没动过**
+      //
+      // 模糊与染色当天都被降过一次（15→5、0.70→0.20）又都退了回来，理由同一个：
+      // 本类的 [defaults] 同时是**全 app 的基准**（弹窗家族恒锁标准档且用户没有开关
+      // 可调，顶栏带、玻璃坞都跟它走），动它等于把软件全局的玻璃底色与磨砂程度一起
+      // 换掉（用户原话：「标准档位改了导致软件全局的标准变了」）。这条就是防止又一次
+      // "看着不顺眼就改一改"——要更清透只能往下选那 10 格阶梯里更薄的几格。
+      const std = LiquidGlassTuning.presetStandard;
+      expect(std.refraction, 8);
+      expect(std.refractionBand, 11);
+      expect(std.blurSigma, 15);
+      expect(std.tintAlpha, 0.70);
+
+      const clear = LiquidGlassTuning.presetClear;
+      expect(clear.refraction, 6);
+      expect(clear.refractionBand, 8);
+      expect(clear.blurSigma, 0);
+      expect(clear.tintAlpha, 0);
+
+      // 最厚那一格的模糊封在 24：卡片那根滑杆的上限就是 `kPreblurMaxSigma` = 24，
+      // 再高卡片会显示一个拖不到的数。
+      expect(LiquidGlassTuning.presetDense.blurSigma, 24);
+
+      // 「清澈」那两个 0 是**有效取值**不是"没配"：反推仍要认得出它就是清澈档。
+      expect(LiquidGlassTuning.matchPreset(clear), LiquidGlassPreset.clear);
+    });
+
+    test('10 格阶梯：清澈是第 1 格、标准是第 7 格', () {
+      // 用户 2026-10-05 原话：「标准档位在第七档，一共十个档位」。滑杆的读数就是
+      // 这个数字，所以「第几格 ↔ 哪一档」必须双向钉死。
+      expect(LiquidGlassPresetX.builtIns.length, 10);
+      expect(LiquidGlassPreset.clear.step, 1);
+      expect(LiquidGlassPreset.standard.step, 7);
+      expect(LiquidGlassPreset.dense.step, 10);
+
+      for (final preset in LiquidGlassPresetX.builtIns) {
+        expect(preset.step, isNotNull);
+        expect(
+          LiquidGlassPresetX.fromStep(preset.step!),
+          preset,
+          reason: '${preset.name} 的第几格必须能反查回自己',
+        );
+      }
+      // 滑杆只可能给 1~10；越界与坏值回落到标准，别把渲染层带崩。
+      expect(LiquidGlassPresetX.fromStep(0), LiquidGlassPreset.standard);
+      expect(LiquidGlassPresetX.fromStep(11), LiquidGlassPreset.standard);
+      expect(LiquidGlassPreset.custom.step, isNull, reason: '自定义不在阶梯上');
+    });
+
+    test('四个老存档值仍落在老位置上（升级不能改档名）', () {
+      // 2026-10-05 之前只有四档，老存档里就是这四个 value。扩到 10 格之后**仍然
+      // 沿用**：老用户升级后档位名不会被静默改成「标准」，参数也不会掉进 custom。
+      expect(
+        LiquidGlassPresetX.fromValue('clear'),
+        LiquidGlassPreset.clear,
+      );
+      expect(LiquidGlassPresetX.fromValue('light'), LiquidGlassPreset.light);
+      expect(
+        LiquidGlassPresetX.fromValue('standard'),
+        LiquidGlassPreset.standard,
+      );
+      expect(LiquidGlassPresetX.fromValue('dense'), LiquidGlassPreset.dense);
+      // 老的 `light`（四档里的第 2 档）在新阶梯上落在偏薄一侧。
+      expect(LiquidGlassPreset.light.step, 6);
+    });
+
+    test('nearestPreset：动过旋钮之后滑杆停在最近的那一格', () {
+      // 参数精确等于某一格时，最近的那格必然是它自己 —— 滑杆读数不会说谎。
+      for (final preset in LiquidGlassPresetX.builtIns) {
+        expect(
+          LiquidGlassTuning.nearestPreset(preset.recommendedTuning),
+          preset,
+        );
+      }
+      // 它存在的理由：用户动过旋钮之后，滑杆要能反映**当前参数的真实厚薄**，
+      // 而不是停在"上一次选的那一格"。
+      const std = LiquidGlassTuning.presetStandard;
+      expect(
+        LiquidGlassTuning.nearestPreset(std.copyWith(blurSigma: 26)).step,
+        greaterThan(LiquidGlassPreset.standard.step!),
+        reason: '模糊拖大之后滑杆必须往右',
+      );
+      expect(
+        LiquidGlassTuning.nearestPreset(std.copyWith(blurSigma: 2)).step,
+        lessThan(LiquidGlassPreset.standard.step!),
+        reason: '模糊拖小之后滑杆必须往左',
+      );
+      // 就近的一格自己胜出（模糊挪一格、其余不动）。
+      expect(
+        LiquidGlassTuning.nearestPreset(
+          LiquidGlassTuning.presetLevel3.copyWith(blurSigma: 4),
+        ),
+        LiquidGlassPreset.level3,
+      );
+    });
+
+    test('每档每一项都落在自己那根滑杆的格点上', () {
+      // 预设值必须是用户拖得到、也看得见的数，否则会出现「档位写着模糊 5，切到
+      // 自定义却停在 4」这种对不上的半失效状态。格点数见设置页 `_glassSliderTiles`
+      // 的 `divisions`（折射 40 / 作用带 46 / 陡缓 20 / 色散 20 / 边光 20 /
+      // 边光带 30 / 模糊 整数 / 染色 20）。
+      void onGrid(double value, double min, double max, int divisions) {
+        final step = (max - min) / divisions;
+        final steps = (value - min) / step;
+        expect(
+          (steps - steps.round()).abs(),
+          lessThan(1e-9),
+          reason: '$value 不是 $min~$max 分 $divisions 格上的点',
+        );
+      }
+
+      for (final preset in LiquidGlassPresetX.builtIns) {
+        final t = preset.recommendedTuning;
+        onGrid(t.refraction, 0, LiquidGlassTuning.maxRefraction, 40);
+        onGrid(
+          t.refractionBand,
+          LiquidGlassTuning.minRefractionBand,
+          LiquidGlassTuning.maxRefractionBand,
+          46,
+        );
+        onGrid(
+          t.refractionEdgePow,
+          LiquidGlassTuning.minRefractionEdgePow,
+          LiquidGlassTuning.maxRefractionEdgePow,
+          20,
+        );
+        onGrid(t.dispersion, 0, 1, 20);
+        onGrid(t.rimStrength, 0, 1, 20);
+        onGrid(t.rimWidth, 0, LiquidGlassTuning.maxRimWidth, 30);
+        onGrid(t.blurSigma, 0, LiquidGlassTuning.maxBlurSigma, 40);
+        onGrid(t.tintAlpha, 0, 1, 20);
       }
     });
   });

@@ -357,13 +357,17 @@ void main() {
       final glassRect = tester.getRect(find.byType(HomePageChromeGlassFill));
       final previewRect = tester.getRect(find.byType(TimetableWeekPreview));
       const headerHeight = 40.0;
-      // 本用例是液态玻璃：**上边**按「作用带宽度」推出去（默认调参作用带 7、边光带宽 3
-      // ⇒ max(8, 7+1) = 8），让可见区最上一行不再朝形状外采样（那会读成一条发丝线）。
-      // 下边仍是 0（见下一条用例）。顺带钉住「默认材质就是液态」这个口径：界面只有
-      // 「液态 / 实体」两档，默认档不允许再回落到渐进磨砂（那会让上边外溢变 0）。
+      // 本用例是液态玻璃：**上边**按「作用带宽度」推出去（出厂作用带 11 ⇒ 11+1 = 12；
+      // 2026-10-05 之前是作用带 7 ⇒ 8），让可见区最上一行不再朝形状外采样
+      // （那会读成一条发丝线）。下边仍是 0（见下一条用例）。顺带钉住「默认材质就是
+      // 液态」这个口径：界面只有「液态 / 实体」两档，默认档不允许再回落到渐进磨砂
+      //（那会让上边外溢变 0）。
       expect(
         glassRect.top,
-        closeTo(previewRect.top - 8, 0.5),
+        closeTo(
+          previewRect.top - (LiquidGlassTuning.defaultRefractionBand + 1),
+          0.5,
+        ),
         reason: '液态档上边必须推出可见区：可见区第一行还在作用带里就会读成一条发丝线',
       );
       expect(

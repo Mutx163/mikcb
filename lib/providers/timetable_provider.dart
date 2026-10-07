@@ -1373,6 +1373,23 @@ class TimetableProvider with ChangeNotifier {
     // location / active), not today's date-rule scheme.
   );
 
+  /// 未绑定时间模板时的最小健全性：只拦「写不进 / 算不动」的脏数据，
+  /// 不拦「超出当前作息」（未绑定时课程自带钟点为真源，溢出由界面计数报告）。
+  static const int _maxUnboundEndSection = 30;
+
+  static String? _validateUnboundCourseSections({
+    required int startSection,
+    required int endSection,
+  }) {
+    if (startSection < 1 || endSection < startSection) {
+      return 'course_sections_invalid';
+    }
+    if (endSection > _maxUnboundEndSection) {
+      return 'course_sections_invalid';
+    }
+    return null;
+  }
+
   Future<void> _persistActiveProfileState({
     bool touchLastUsedAt = false,
     bool notifySync = true,
@@ -2115,6 +2132,8 @@ class TimetableProvider with ChangeNotifier {
       // 真源，地点分组/日期规则/激活方案都只是 apply 时的**建议**——溢出
       // 由 applyLocationTimeRulesToActiveProfile 计数报告，不在写入时拒绝
       // （否反正课时钟点齐全、只是不匹配当前方案的课会被莫名拒掉）。
+      // 未绑定只跳过「模板容量」检查，仍保留最小健全性（开始>=1、结束>=开始、
+      // 结束<=硬上限），免得脏数据入库后在别处越界。
       if (course.timeSchemeIdOverride != null) {
         final validationMessage = validateCourseTimeSchemeOverride(
           timeSchemeId: course.timeSchemeIdOverride,
@@ -2123,6 +2142,14 @@ class TimetableProvider with ChangeNotifier {
         );
         if (validationMessage != null) {
           throw ArgumentError(validationMessage);
+        }
+      } else {
+        final minimalMessage = _validateUnboundCourseSections(
+          startSection: course.startSection,
+          endSection: course.endSection,
+        );
+        if (minimalMessage != null) {
+          throw ArgumentError(minimalMessage);
         }
       }
       final normalized = _normalizeCourse(course);
@@ -3299,6 +3326,7 @@ class TimetableProvider with ChangeNotifier {
 
     // 与 addCourse 同一契约：只校验**显式绑定**的方案；未绑定时目标钟点
     // 由改课入口按当前生效方案推导，方案本身不是这里的拒绝对象。
+    // 未绑定仍保留最小健全性，免得脏数据入库后在别处越界。
     final rescheduleOverride =
         targetTimeSchemeIdOverride ?? originalCourse.timeSchemeIdOverride;
     if (rescheduleOverride != null) {
@@ -3309,6 +3337,14 @@ class TimetableProvider with ChangeNotifier {
       );
       if (validationMessage != null) {
         throw ArgumentError(validationMessage);
+      }
+    } else {
+      final minimalMessage = _validateUnboundCourseSections(
+        startSection: targetStartSection,
+        endSection: targetEndSection,
+      );
+      if (minimalMessage != null) {
+        throw ArgumentError(minimalMessage);
       }
     }
 

@@ -3376,6 +3376,73 @@ class AppLocalizationsZh extends AppLocalizations {
   String get wallpaperPositionPickerExit => '退出';
 
   @override
+  String get bingWallpaperGalleryTitle => 'Bing 每日壁纸';
+
+  @override
+  String get bingWallpaperGalleryFailed => '没能取到 Bing 每日壁纸，请检查网络后重试';
+
+  @override
+  String get bingWallpaperGalleryRetry => '重试';
+
+  @override
+  String get bingWallpaperDownloadFailed => '这张壁纸没能下载成功，请稍后再试';
+
+  @override
+  String bingWallpaperDownloadStatus(int status) {
+    return '这张壁纸没能下载成功（$status）';
+  }
+
+  @override
+  String get bingWallpaperResolutionTitle => '下载画质';
+
+  @override
+  String get bingWallpaperResolutionStandard => '标准';
+
+  @override
+  String get bingWallpaperResolutionTall => '适配';
+
+  @override
+  String get bingWallpaperResolutionHigh => '高清';
+
+  @override
+  String bingWallpaperResolutionFallback(String label) {
+    return 'Bing 当天没提供这一档，已改用「$label」';
+  }
+
+  @override
+  String bingWallpaperResolutionHint(int width, int height, String size) {
+    return '$width×$height，每张约 $size';
+  }
+
+  @override
+  String get bingWallpaperDateToday => '今天';
+
+  @override
+  String get bingWallpaperDateYesterday => '昨天';
+
+  @override
+  String bingWallpaperDateMonthDay(int month, int day) {
+    return '$month 月 $day 日';
+  }
+
+  @override
+  String get bingWallpaperAutoApplyTitle => '每天自动更换';
+
+  @override
+  String get bingWallpaperAutoApplySubtitle => '所有课表共用，只换当前这份';
+
+  @override
+  String get bingWallpaperAutoApplyApplying => '正在换成今天的壁纸';
+
+  @override
+  String get bingWallpaperAutoApplyAlreadyDone => '今天已经换过啦';
+
+  @override
+  String bingWallpaperAutoApplyStale(String date) {
+    return 'Bing 还没放出今天的图，先用 $date 那张顶一下';
+  }
+
+  @override
   String get appearanceTextColorsSectionTitle => '文字颜色';
 
   @override
@@ -8701,6 +8768,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get logHomeWidgetClearFailed => '清空桌面小组件快照失败';
+
+  @override
+  String get logBingWallpaperRequestFailed => 'Bing 每日壁纸：请求失败';
+
+  @override
+  String get logBingWallpaperAutoApplyFailed => 'Bing 每日壁纸：自动更换失败';
 
   @override
   String get logHomeWidgetScheduleFailed => '调度桌面小组件刷新失败';
@@ -14484,6 +14557,73 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get wallpaperPositionPickerExit => '退出';
 
   @override
+  String get bingWallpaperGalleryTitle => 'Bing 每日桌布';
+
+  @override
+  String get bingWallpaperGalleryFailed => '無法取得 Bing 每日桌布，請檢查網絡後再試';
+
+  @override
+  String get bingWallpaperGalleryRetry => '再試';
+
+  @override
+  String get bingWallpaperDownloadFailed => '呢張桌布下載失敗，請稍後再試';
+
+  @override
+  String bingWallpaperDownloadStatus(int status) {
+    return '呢張桌布下載失敗（$status）';
+  }
+
+  @override
+  String get bingWallpaperResolutionTitle => '下載畫質';
+
+  @override
+  String get bingWallpaperResolutionStandard => '標準';
+
+  @override
+  String get bingWallpaperResolutionTall => '符合屏幕';
+
+  @override
+  String get bingWallpaperResolutionHigh => '高畫質';
+
+  @override
+  String bingWallpaperResolutionFallback(String label) {
+    return 'Bing 當日沒有提供呢個畫質，已改用「$label」';
+  }
+
+  @override
+  String bingWallpaperResolutionHint(int width, int height, String size) {
+    return '$width×$height，每張約 $size';
+  }
+
+  @override
+  String get bingWallpaperDateToday => '今日';
+
+  @override
+  String get bingWallpaperDateYesterday => '尋日';
+
+  @override
+  String bingWallpaperDateMonthDay(int month, int day) {
+    return '$month 月 $day 日';
+  }
+
+  @override
+  String get bingWallpaperAutoApplyTitle => '每日自動更換';
+
+  @override
+  String get bingWallpaperAutoApplySubtitle => '所有課表共用，只換目前這份';
+
+  @override
+  String get bingWallpaperAutoApplyApplying => '正在換成今日桌布';
+
+  @override
+  String get bingWallpaperAutoApplyAlreadyDone => '今日已經換過啦';
+
+  @override
+  String bingWallpaperAutoApplyStale(String date) {
+    return 'Bing 仲未放出今日嘅圖，先用 $date 嗰張頂一下';
+  }
+
+  @override
   String get appearanceTextColorsSectionTitle => '文字顏色';
 
   @override
@@ -19849,6 +19989,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get logHomeWidgetClearFailed => '清空桌面小組件快照失敗';
+
+  @override
+  String get logBingWallpaperRequestFailed => 'Bing 每日桌布：請求失敗';
+
+  @override
+  String get logBingWallpaperAutoApplyFailed => 'Bing 每日桌布：自動更換失敗';
 
   @override
   String get logHomeWidgetScheduleFailed => '調度桌面小組件刷新失敗';
@@ -25632,6 +25778,73 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get wallpaperPositionPickerExit => '退出';
 
   @override
+  String get bingWallpaperGalleryTitle => 'Bing 每日桌布';
+
+  @override
+  String get bingWallpaperGalleryFailed => '無法取得 Bing 每日桌布，請檢查網路後重試';
+
+  @override
+  String get bingWallpaperGalleryRetry => '重試';
+
+  @override
+  String get bingWallpaperDownloadFailed => '這張桌布下載失敗，請稍後再試';
+
+  @override
+  String bingWallpaperDownloadStatus(int status) {
+    return '這張桌布下載失敗（$status）';
+  }
+
+  @override
+  String get bingWallpaperResolutionTitle => '下載畫質';
+
+  @override
+  String get bingWallpaperResolutionStandard => '標準';
+
+  @override
+  String get bingWallpaperResolutionTall => '符合螢幕';
+
+  @override
+  String get bingWallpaperResolutionHigh => '高畫質';
+
+  @override
+  String bingWallpaperResolutionFallback(String label) {
+    return 'Bing 當天沒有提供這個畫質，已改用「$label」';
+  }
+
+  @override
+  String bingWallpaperResolutionHint(int width, int height, String size) {
+    return '$width×$height，每張約 $size';
+  }
+
+  @override
+  String get bingWallpaperDateToday => '今天';
+
+  @override
+  String get bingWallpaperDateYesterday => '昨天';
+
+  @override
+  String bingWallpaperDateMonthDay(int month, int day) {
+    return '$month 月 $day 日';
+  }
+
+  @override
+  String get bingWallpaperAutoApplyTitle => '每天自動更換';
+
+  @override
+  String get bingWallpaperAutoApplySubtitle => '所有課表共用，只換目前這份';
+
+  @override
+  String get bingWallpaperAutoApplyApplying => '正在換成今天的桌布';
+
+  @override
+  String get bingWallpaperAutoApplyAlreadyDone => '今天已經換過了';
+
+  @override
+  String bingWallpaperAutoApplyStale(String date) {
+    return 'Bing 還沒放出今天的圖，先用 $date 那張頂一下';
+  }
+
+  @override
   String get appearanceTextColorsSectionTitle => '文字顏色';
 
   @override
@@ -30998,6 +31211,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get logHomeWidgetClearFailed => '清空桌面小工具快照失敗';
+
+  @override
+  String get logBingWallpaperRequestFailed => 'Bing 每日桌布：請求失敗';
+
+  @override
+  String get logBingWallpaperAutoApplyFailed => 'Bing 每日桌布：自動更換失敗';
 
   @override
   String get logHomeWidgetScheduleFailed => '調度桌面小工具刷新失敗';

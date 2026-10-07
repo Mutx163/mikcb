@@ -43,6 +43,13 @@ LiquidGlassStyle _style(
   brightness: brightness,
 );
 
+/// 深色独立档：染色 0.2 是**故意**写死的（它恰好等于 2026-10-05 之后的出厂值）。
+const LiquidGlassTuning kUserDarkTuning = LiquidGlassTuning(
+  blurSigma: 30,
+  // ignore: avoid_redundant_argument_values -- 故意写死 0.2：要的是"深色档是用户自己调的那一套"这个语义。
+  tintAlpha: 0.2,
+);
+
 void main() {
   const tuning = LiquidGlassTuning(tintAlpha: 0.5, blurSigma: 10, rimStrength: 0.5);
 
@@ -86,7 +93,7 @@ void main() {
       final style = _style(
         _appearance(
           tuning: tuning,
-          dark: const LiquidGlassTuning(tintAlpha: 0.2, blurSigma: 30),
+          dark: kUserDarkTuning,
           link: false,
         ),
       );
@@ -98,7 +105,7 @@ void main() {
       final style = _style(
         _appearance(
           tuning: tuning,
-          dark: const LiquidGlassTuning(tintAlpha: 0.2, blurSigma: 30),
+          dark: kUserDarkTuning,
         ),
       );
       expect(style.blurSigma, closeTo(10 * 1.3, 1e-9));
@@ -111,12 +118,18 @@ void main() {
       final style = _style(
         _appearance(
           tuning: tuning,
-          dark: const LiquidGlassTuning(tintAlpha: 0.2, blurSigma: 30),
+          dark: kUserDarkTuning,
           link: false,
         ),
         role: LiquidGlassRole.pinnedChrome,
       );
-      expect(style.blurSigma, closeTo(15 * 1.3, 1e-9), reason: '小件该拿标准档 15');
+      // 小件的形状与模糊锁**标准档**（出厂模糊 5，2026-10-05 从 15 改过来），
+      // 用户那套与深色档都不参与。
+      expect(
+        style.blurSigma,
+        closeTo(LiquidGlassTuning.defaultBlurSigma * 1.3, 1e-9),
+        reason: '小件该拿标准档的模糊量',
+      );
       expect(style.refraction, LiquidGlassPreset.standard.recommendedTuning.refraction);
     });
 

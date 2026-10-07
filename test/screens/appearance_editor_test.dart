@@ -5,6 +5,7 @@
 //
 // 关键口径（用户 2026-09-19 明确）：预览**直接用首页那份页面**缩尺，而不是另写一套
 // 小屏布局 —— 所以这里断言的是 `TimetableScreen` 本体嵌在里面，不是预览替身。
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -15,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/models/course_glass_tuning.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
@@ -81,6 +83,38 @@ Future<void> _switchWallpaperSheetPage(
   expect(tab, findsOneWidget, reason: '壁纸弹窗顶部应有「$tabLabel」这个页签');
   await tester.tap(tab);
   await tester.pumpAndSettle();
+}
+
+/// 把自己推到**当前那条路由之上**，底下留着首页那条（验「退出本页」用）。
+class _PushOnFirstFrame extends StatefulWidget {
+  const _PushOnFirstFrame({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_PushOnFirstFrame> createState() => _PushOnFirstFrameState();
+}
+
+class _PushOnFirstFrameState extends State<_PushOnFirstFrame> {
+  @override
+  void initState() {
+    super.initState();
+    // 帧末推：那时本页的 context 已经挂好，`Navigator.of` 才找得到栈。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(
+        Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(builder: (_) => widget.child),
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      const Scaffold(body: Center(child: Text('底层页面')));
 }
 
 void main() {
@@ -662,8 +696,10 @@ void main() {
     await tester.tap(panelPageTab('课程卡片'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(HyperosSlider), findsNWidgets(8), reason: '卡片这套八根');
-    // 没设过卡片档 ⇒ 显示卡片出厂档：折射强度 8.0（前五项与全局标准档同值）。
+    // 2026-10-05 起旋钮**常显**（原来内置档不露），所以这一页有 9 根：
+    // 8 根细调 + 1 根 10 格档位滑杆。
+    expect(find.byType(HyperosSlider), findsNWidgets(9));
+    // 没设过卡片档 ⇒ 显示卡片出厂档（第 7 格 = 标准）：折射强度 8.0。
     expect(find.text('8.0'), findsOneWidget);
 
     // 「磨砂强度」这根的量程跟出图侧同口径：0 是有效的「清」档（出原图、不跑高斯），
@@ -682,7 +718,17 @@ void main() {
 
     // 走滑杆自己的回调（拖动时走的就是这条）。
     tester
-        .widget<HyperosSlider>(find.byType(HyperosSlider).first)
+        .widget<HyperosSlider>(
+          find
+              .descendant(
+                of: find.ancestor(
+                  of: find.text('折射强度'),
+                  matching: find.byType(HyperosSliderTile),
+                ),
+                matching: find.byType(HyperosSlider),
+              )
+              .first,
+        )
         .onChanged!(13);
     // 滑杆落盘是 debounce 的（250ms），推帧要推过那个窗口才看得到
     // provider.settings；不用 pumpAndSettle —— 这一档会让渲染源重烤，
@@ -696,6 +742,77 @@ void main() {
       provider.settings.liquidGlassTuning,
       isNull,
       reason: '卡片那八根不能顺手把全局那份也写掉',
+    );
+    // 旋钮一动，档位必须让位给「自定义」——否则档位滑杆会停在一个已经不准的格子上。
+    expect(
+      provider.settings.courseCardGlassPreset,
+      LiquidGlassPreset.custom,
+    );
+  });
+
+  testWidgets('材质面板第二页也有与第一页同款的 10 格档位滑杆（2026-10-05）', (
+    tester,
+  ) async {
+    // 用户口径「把整个全部的档位，换成拉杆条，带节点的那种，然后在中间加上五个
+    // 档位，标准档位在第七档，一共十个档位」。这条钉四件事：
+    // ① 滑杆是 10 格、每格一个节点、读数就是「第几格」；
+    // ② 出厂读数是 7（标准在第 7 格）；
+    // ③ 拖到第 1 格写的是**卡片那套**参数 + 卡片自己的档位字段，不碰全局那份；
+    // ④ 旋钮常显（9 根滑杆 = 8 根旋钮 + 这根档位滑杆）。
+    _seedInitializedPrefs(
+      TimetableSettings.defaults().copyWith(
+        courseCardSurfaceStyle: CourseCardSurfaceStyle.liquidGlass,
+      ),
+    );
+    final provider = await pumpEditor(tester);
+    await tester.tap(find.text('材质'));
+    await tester.pumpAndSettle();
+    await tester.tap(panelPageTab('课程卡片'));
+    await tester.pumpAndSettle();
+
+    final page = find.byKey(const ValueKey('material-page-course-card'));
+    final presetSlider = find.descendant(
+      of: page,
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget is HyperosSliderTile &&
+            widget.title == '液态玻璃预设',
+      ),
+    );
+    expect(presetSlider, findsOneWidget);
+    final slider = tester.widget<HyperosSliderTile>(presetSlider);
+    expect(slider.min, 1, reason: '第 1 格 = 最薄');
+    expect(slider.max, 10, reason: '一共十格');
+    expect(slider.divisions, 9, reason: '10 格 = 9 段');
+    expect(
+      slider.keyPoints,
+      [for (var i = 1; i <= 10; i++) i.toDouble()],
+      reason: '每一格都要有一个节点',
+    );
+    expect(slider.valueLabel, '7', reason: '出厂是标准 = 第 7 格');
+    expect(find.byType(HyperosSlider), findsNWidgets(9), reason: '8 旋钮 + 1 档位');
+
+    // 拖到第 1 格 ⇒ 档位与参数都落到卡片那套，不碰全局那份。
+    tester
+        .widget<HyperosSlider>(
+          find
+              .descendant(of: presetSlider, matching: find.byType(HyperosSlider))
+              .first,
+        )
+        .onChanged!(1);
+    await tester.pumpAndSettle();
+    expect(provider.settings.courseCardGlassPreset, LiquidGlassPreset.clear);
+    expect(
+      provider.settings.courseCardGlassTuning,
+      CourseGlassTuning.presetClear,
+    );
+    expect(provider.settings.liquidGlassTuning, isNull, reason: '不碰全局那份');
+    expect(provider.settings.liquidGlassPreset, LiquidGlassPreset.standard);
+
+    // 档位滑杆读数跟着走（第 1 格），旋钮里的值也同步成清澈那一套。
+    expect(
+      tester.widget<HyperosSliderTile>(presetSlider).valueLabel,
+      '1',
     );
   });
 
@@ -1057,39 +1174,43 @@ void main() {
   testWidgets('弹层正文跟着草稿走：材质面板拖滑杆面板自己刷新（回归钉）', (tester) async {
     // 面板曾经是「每个控件各喊一声重画」，滑杆那条路径漏喊了：拖动只把设置
     // 写进去，面板上数字和滑块纹丝不动（松手还会弹回旧位置）。
-    _seedInitializedPrefs(
-      TimetableSettings.defaults().copyWith(
-        liquidGlassPreset: LiquidGlassPreset.custom,
-        liquidGlassTuning: LiquidGlassTuning.defaults,
-      ),
-    );
+    _seedInitializedPrefs(TimetableSettings.defaults());
     final provider = await pumpEditor(tester);
     await tester.tap(find.text('材质'));
     await tester.pumpAndSettle();
 
-    // 自定义档下 8 个旋钮全在，折射强度默认 8.0（其它旋钮的显示值都不是它）。
-    expect(find.byType(HyperosSlider), findsNWidgets(8));
+    // 旋钮常显（2026-10-05）：9 根 = 8 根细调 + 1 根 10 格档位滑杆。
+    // 折射强度默认 8.0（其它旋钮的显示值都不是它）。
+    expect(find.byType(HyperosSlider), findsNWidgets(9));
     expect(find.text('8.0'), findsOneWidget);
 
-    // 走滑杆自己的回调（拖动时走的就是这条）。
+    // 走「折射强度」那根自己的回调（拖动时走的就是这条）。
     tester
-        .widget<HyperosSlider>(find.byType(HyperosSlider).first)
+        .widget<HyperosSlider>(
+          find
+              .descendant(
+                of: find.ancestor(
+                  of: find.text('折射强度'),
+                  matching: find.byType(HyperosSliderTile),
+                ),
+                matching: find.byType(HyperosSlider),
+              )
+              .first,
+        )
         .onChanged!(13);
     await tester.pumpAndSettle();
 
     expect(find.text('13.0'), findsOneWidget);
     expect(find.text('8.0'), findsNothing);
     expect(provider.settings.liquidGlassTuning!.refraction, 13);
+    // 旋钮一动，档位必须让位给「自定义」。
+    expect(provider.settings.liquidGlassPreset, LiquidGlassPreset.custom);
   });
 
   testWidgets('材质面板里点滑杆标题不开二级弹层（回归钉）', (tester) async {
     // 面板是根覆盖层自插条目，嵌套弹层会被压在背面（2026-09-19 真机实锤），
     // 所以面板里的可调项一律内联：滑杆行自带的「点击改值」必须关掉。
-    _seedInitializedPrefs(
-      TimetableSettings.defaults().copyWith(
-        liquidGlassPreset: LiquidGlassPreset.custom,
-      ),
-    );
+    _seedInitializedPrefs(TimetableSettings.defaults());
     await pumpEditor(tester);
     await tester.tap(find.text('材质'));
     await tester.pumpAndSettle();
@@ -1120,5 +1241,93 @@ void main() {
     expect(find.byType(HyperosSheetFrame), findsOneWidget);
     // 面板本身还开着（点空白处不该把面板关掉）。
     expect(find.text('默认材质'), findsOneWidget);
+  });
+
+  /// 把编辑页**推在一条占位路由之上**。
+  ///
+  /// 「完成 / 取消」都是 `Navigator.pop`，底下得真有东西可回退，否则
+  /// 「有没有退出本页」根本验不出来（[pumpEditor] 把编辑页摆成了唯一一条路由）。
+  ///
+  /// 走 [TestApp] 而不是裸 `MaterialApp`：编辑页里嵌着**真首页**那份页面，它构建时
+  /// 读的东西不少（`ScaffoldMessenger` 等），外壳得跟别处一致。
+  Future<TimetableProvider> pumpEditorAsPushedRoute(
+    WidgetTester tester,
+  ) async {
+    final provider = await createInitializedTestProvider(tester);
+    final page = settingsSubpageById('appearanceEditor')!;
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<TimetableProvider>.value(value: provider),
+          ChangeNotifierProvider<WeatherProvider?>.value(value: null),
+        ],
+        child: TestApp(home: _PushOnFirstFrame(child: page)),
+      ),
+    );
+    await tester.pump();
+    // 推页那条路由有进场转场，转场期间整条路由是 offstage，而 `find.text` 默认
+    // `skipOffstage: true` —— 不等它落定就按文字找，一个都找不到。
+    for (var i = 0; i < 40 && find.text('调整壁纸').evaluate().isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(find.text('调整壁纸'), findsOneWidget, reason: '编辑页的底部入口没出场');
+    await pumpUntilPreviewCoverGone(tester);
+    return provider;
+  }
+
+  testWidgets('壁纸弹窗收起后立刻点「完成」：第一下就退出本页（2026-10-06 回归钉）', (
+    tester,
+  ) async {
+    // 用户实报：「壁纸弹窗设置完、关掉弹窗、点右上角的完成，有时候要点两次」。
+    //
+    // 机制（见 `_popSelf` 的注释）：弹窗的承载路由要等退场弹簧**数学收敛**
+    // （约 832ms，面板 320ms 就滑出屏幕了）才离栈，那段时间里栈顶是**弹窗那条**，
+    // `Navigator.pop` 摘的是它 —— 本页纹丝不动，读起来就是「第一下没反应」。
+    await pumpEditorAsPushedRoute(tester);
+
+    await tester.tap(find.text('调整壁纸'));
+    await tester.pumpAndSettle();
+    expect(find.text('背景图片'), findsOneWidget, reason: '先确认壁纸弹窗真的开着');
+
+    // 收起弹窗：点面板上方的压暗蒙层（用户「关掉弹窗」的常规手势之一）。
+    // 面板最多占半屏，屏幕上部那一段就是蒙层。
+    final sheetSize = tester.getSize(find.byType(HyperosSheetFrame));
+    await tester.tapAt(Offset(sheetSize.width / 2, 8));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // 此刻面板早已滑出屏幕、页面看起来是空的，但承载路由还在栈上。
+    await tester.tap(find.text('完成'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(PreviewBakeBoundary),
+      findsNothing,
+      reason: '第一下点「完成」就该退出本页，不能被弹窗的残留路由吃掉',
+    );
+    expect(find.text('底层页面'), findsOneWidget, reason: '真的退回到底层那条路由');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('材质面板收起后立刻点「取消」：第一下就退出本页', (tester) async {
+    // 与上一条同根（`_popSelf` 是「完成 / 取消」共用的），但走材质面板这条路径：
+    // 材质面板原先**没有**登记收起口子（只有壁纸弹窗登记了），修的时候一并补上。
+    await pumpEditorAsPushedRoute(tester);
+
+    await tester.tap(find.text('材质'));
+    await tester.pumpAndSettle();
+    expect(find.byType(HyperosSheetFrame), findsOneWidget);
+
+    final sheetSize = tester.getSize(find.byType(HyperosSheetFrame));
+    await tester.tapAt(Offset(sheetSize.width / 2, 8));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PreviewBakeBoundary), findsNothing);
+    expect(find.text('底层页面'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

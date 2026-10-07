@@ -1944,6 +1944,57 @@
   "wallpaperPositionPickerSwitchWallpaper": "换壁纸",
   "wallpaperPositionPickerDone": "完成",
   "wallpaperPositionPickerExit": "退出",
+  "bingWallpaperGalleryTitle": "Bing 每日壁纸",
+  "bingWallpaperGalleryFailed": "没能取到 Bing 每日壁纸，请检查网络后重试",
+  "bingWallpaperGalleryRetry": "重试",
+  "bingWallpaperDownloadFailed": "这张壁纸没能下载成功，请稍后再试",
+  "@bingWallpaperDownloadStatus": {
+    "description": "下载失败提示，附上 HTTP 状态码。占位符只在服务端回了响应时才有值；断网等情况用 bingWallpaperDownloadFailed 那条。",
+    "placeholders": {
+      "status": { "type": "int", "example": "404" }
+    }
+  },
+  "bingWallpaperDownloadStatus": "这张壁纸没能下载成功（{status}）",
+  "@bingWallpaperResolutionHint": {
+    "description": "画质档位的副标题：报该档的实测像素与单张体积。占位符刻意用「像素宽×像素高」而不是「几倍高清」——Bing 三档比例并不一致（16:10 与 16:9 混着）。",
+    "placeholders": {
+      "width": { "type": "int", "example": "1920" },
+      "height": { "type": "int", "example": "1080" },
+      "size": { "type": "String", "example": "325 KB" }
+    }
+  },
+  "bingWallpaperResolutionTitle": "下载画质",
+  "bingWallpaperResolutionStandard": "标准",
+  "bingWallpaperResolutionTall": "适配",
+  "bingWallpaperResolutionHigh": "高清",
+  "@bingWallpaperResolutionFallback": {
+    "description": "所选画质当天不可用、已退到默认档时的说明。占位符是实际拿到的那一档的文案。",
+    "placeholders": {
+      "label": { "type": "String", "example": "高清" }
+    }
+  },
+  "bingWallpaperResolutionFallback": "Bing 当天没提供这一档，已改用「{label}」",
+  "bingWallpaperResolutionHint": "{width}×{height}，每张约 {size}",
+  "bingWallpaperDateToday": "今天",
+  "bingWallpaperDateYesterday": "昨天",
+  "bingWallpaperDateMonthDay": "{month} 月 {day} 日",
+  "@bingWallpaperDateMonthDay": {
+    "placeholders": {
+      "month": { "type": "int", "example": "10" },
+      "day": { "type": "int", "example": "5" }
+    }
+  },
+  "bingWallpaperAutoApplyTitle": "每天自动更换",
+  "bingWallpaperAutoApplySubtitle": "所有课表共用，只换当前这份",
+  "bingWallpaperAutoApplyApplying": "正在换成今天的壁纸",
+  "bingWallpaperAutoApplyAlreadyDone": "今天已经换过啦",
+  "@bingWallpaperAutoApplyStale": {
+    "description": "自动换时 Bing 还没放出当天那张，于是改用它现有最新一张的提示。占位符是那张图**自己**的日期标签（如「昨天」「10 月 5 日」），如实说明换的是哪一天，避免用户以为程序出错。",
+    "placeholders": {
+      "date": { "type": "String", "example": "昨天" }
+    }
+  },
+  "bingWallpaperAutoApplyStale": "Bing 还没放出今天的图，先用 {date} 那张顶一下",
   "appearanceTextColorsSectionTitle": "文字颜色",
   "appearanceTextColorsSectionSubtitle": "自定义课程卡片、星期栏与时间轴文字颜色",
   "defaultTimetablePreviewName": "默认课表",
@@ -5502,6 +5553,8 @@
   "logHomeWidgetPinRequestFailed": "请求固定桌面小组件失败",
   "logHomeWidgetSyncFailed": "同步桌面小组件快照失败",
   "logHomeWidgetClearFailed": "清空桌面小组件快照失败",
+  "logBingWallpaperRequestFailed": "Bing 每日壁纸：请求失败",
+  "logBingWallpaperAutoApplyFailed": "Bing 每日壁纸：自动更换失败",
   "logHomeWidgetScheduleFailed": "调度桌面小组件刷新失败",
   "logHomeWidgetExactAlarmCheckFailed": "检查精确闹钟权限失败",
   "logHomeWidgetExactAlarmRequestFailed": "请求精确闹钟授权失败",

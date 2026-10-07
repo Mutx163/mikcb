@@ -1909,6 +1909,56 @@
   "wallpaperPositionPickerSwitchWallpaper": "Change wallpaper",
   "wallpaperPositionPickerDone": "Done",
   "wallpaperPositionPickerExit": "Exit",
+  "@bingWallpaperResolutionHint": {
+    "placeholders": {
+      "width": { "type": "int" },
+      "height": { "type": "int" },
+      "size": { "type": "String" }
+    }
+  },
+  "@bingWallpaperDateMonthDay": {
+    "placeholders": {
+      "month": { "type": "int" },
+      "day": { "type": "int" }
+    }
+  },
+  "bingWallpaperGalleryTitle": "Bing daily wallpaper",
+  "bingWallpaperGalleryFailed": "Couldn't load Bing wallpapers. Check your connection and retry.",
+  "bingWallpaperGalleryRetry": "Retry",
+  "bingWallpaperDownloadFailed": "This wallpaper couldn't be downloaded. Try again later.",
+  "@bingWallpaperDownloadStatus": {
+    "description": "下载失败提示，附上 HTTP 状态码。占位符只在服务端回了响应时才有值；断网等情况用 bingWallpaperDownloadFailed 那条。",
+    "placeholders": {
+      "status": { "type": "int", "example": "404" }
+    }
+  },
+  "bingWallpaperDownloadStatus": "Couldn't download this wallpaper ({status})",
+  "bingWallpaperResolutionTitle": "Download quality",
+  "bingWallpaperResolutionStandard": "Standard",
+  "bingWallpaperResolutionTall": "Fit screen",
+  "bingWallpaperResolutionHigh": "High",
+  "@bingWallpaperResolutionFallback": {
+    "description": "所选画质当天不可用、已退到默认档时的说明。占位符是实际拿到的那一档的文案。",
+    "placeholders": {
+      "label": { "type": "String", "example": "高清" }
+    }
+  },
+  "bingWallpaperResolutionFallback": "Bing didn't offer that quality today — using {label} instead",
+  "bingWallpaperResolutionHint": "{width}×{height}, about {size} each",
+  "bingWallpaperDateToday": "Today",
+  "bingWallpaperDateYesterday": "Yesterday",
+  "bingWallpaperDateMonthDay": "{month}/{day}",
+  "bingWallpaperAutoApplyTitle": "Change daily",
+  "bingWallpaperAutoApplySubtitle": "Shared by all timetables, changes the current one only",
+  "bingWallpaperAutoApplyApplying": "Switching to today's wallpaper",
+  "bingWallpaperAutoApplyAlreadyDone": "Already switched to today's wallpaper",
+  "@bingWallpaperAutoApplyStale": {
+    "description": "Shown when Bing has not posted today's image yet and the newest available one is used instead. {date} is that image's own date label (e.g. \"Yesterday\", \"Oct 5\").",
+    "placeholders": {
+      "date": { "type": "String", "example": "Yesterday" }
+    }
+  },
+  "bingWallpaperAutoApplyStale": "Bing hasn't posted today's image yet — using the one from {date}",
   "appearanceTextColorsSectionTitle": "Text colors",
   "appearanceTextColorsSectionSubtitle": "Customize course card, weekday bar, and time axis text colors",
   "defaultTimetablePreviewName": "Default timetable",
@@ -5463,6 +5513,8 @@
   "logHomeWidgetPinRequestFailed": "Failed to request home widget pin",
   "logHomeWidgetSyncFailed": "Failed to sync home widget snapshot",
   "logHomeWidgetClearFailed": "Failed to clear home widget snapshot",
+  "logBingWallpaperRequestFailed": "Bing daily wallpaper: request failed",
+  "logBingWallpaperAutoApplyFailed": "Bing daily wallpaper: auto-apply failed",
   "logHomeWidgetScheduleFailed": "Failed to schedule home widget refresh",
   "logHomeWidgetExactAlarmCheckFailed": "Failed to check exact alarm permission",
   "logHomeWidgetExactAlarmRequestFailed": "Failed to request exact alarm permission",

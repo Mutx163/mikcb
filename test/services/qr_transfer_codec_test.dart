@@ -10,6 +10,15 @@ import 'package:university_timetable/services/qr_transfer/qr_transfer_session.da
 /// 模拟一轮「发送端逐帧播放，接收端扫码」：
 /// 打乱帧序、丢弃一部分帧、重复若干帧（模拟反复扫同一屏），
 /// 返回解码完成的帧数，供测试断言。
+///
+/// ⚠️ 这里播的种子**只管住本函数里的打乱与丢包**（`Random(42)`）。编码器吐出来的
+/// 帧本身另有一处随机：`LTCodec` 挑「度」用的是 `RobustSoliton` 内部一个共享的
+/// 随机流，默认 `Random()` 没有种子 —— 所以同一个 seed 每次跑出的字节都不一样。
+/// 换句话说：**光靠这里的 `Random(42)`，这个文件本来就是必然偶发的**（实测约
+/// 25%）。必须由调用方往 `QrTransferEncoder.prepare(random:, random: Random(kCodecSeed))` 注入同一个种子，
+/// 整段编码才在相同调用顺序下可复现。传 `kCodecSeed` 就是为这件事。
+const int kCodecSeed = 42;
+
 int _simulateTransfer(
   QrTransferEncoder encoder,
   QrTransferDecoder decoder, {
@@ -72,10 +81,56 @@ String _replaceFrameField(String frameText, int index, String value) {
 void main() {
   Uint8List utf8Bytes(String text) => Uint8List.fromList(utf8.encode(text));
 
+  group('编码可复现性（这条是整个文件不偶发的前提）', () {
+    // 载荷必须是**不可压缩**的：喷泉码的度数上限是 min(k, 100)，而 k 由压缩后的
+    // 长度决定。用一段短文本的话 gzip 一下就剩几十字节、k≈1，于是每个种子都被
+    // 钳成同一个度数、所有帧逐字相同 —— 那时上面那条断言会**恒真**，护栏等于没写。
+    // 随机字节 gzip 不动，k 才够大、度数才有得挑。
+    final payload = Uint8List.fromList(
+      List<int>.generate(2000, (i) => (i * 37 + 11) & 0xff),
+    );
+
+    List<String> frames(int codecSeed) {
+      final encoder = QrTransferEncoder.prepare(
+        payload,
+        random: Random(codecSeed),
+      );
+      return [for (var s = 1; s <= 24; s++) encoder.frameTextFor(s)];
+    }
+
+    // 钉住 `prepare(random:)` 这个缝。少了它，下面那些 dropRate 用例会退回
+    // 「编码器每次吐的帧都不一样」，实测约 25% 概率红（2026-10-06 CI 上就是这么
+    // 红的：3.44.2 红、3.44.8 绿，而那两条跑的是同一份代码）。
+    test('同一个种子 + 同样调用顺序 → 两个编码器吐出逐字相同的帧', () {
+      expect(frames(kCodecSeed), equals(frames(kCodecSeed)));
+    });
+
+    test('换种子就换出另一套帧（证明上面那条不是恒真的空断言）', () {
+      expect(frames(1), isNot(equals(frames(2))));
+    });
+
+    test('不传种子时帧会变（这就是本文件原先偶发的来源，钉住它免得被忽略）', () {
+      // 只能断言「大多数时候不同」而不是「一定不同」—— 概率性断言不能反过来
+      // 把偶发红重新引进来。这里连取 5 组，只要有一组不同就说明确实不确定。
+      final unseeded = <List<String>>[
+        for (var i = 0; i < 5; i++) () {
+          final encoder = QrTransferEncoder.prepare(payload);
+          return [for (var s = 1; s <= 24; s++) encoder.frameTextFor(s)];
+        }(),
+      ];
+      expect(
+        unseeded.toSet().length,
+        greaterThan(1),
+        reason: '不传种子时若所有次都一样，说明度数的随机源已经没了，'
+            '此时上面两条断言会变成空断言',
+      );
+    });
+  });
+
   test('小数据往返一致（k 较小）', () {
     final original = utf8Bytes('轻屿课表备份演示数据');
-    final encoder = QrTransferEncoder.prepare(original);
-    final decoder = QrTransferDecoder();
+    final encoder = QrTransferEncoder.prepare(original, random: Random(kCodecSeed));
+    final decoder = QrTransferDecoder(random: Random(kCodecSeed));
 
     _simulateTransfer(encoder, decoder, dropRate: 0.2);
 
@@ -105,10 +160,10 @@ void main() {
       }),
     );
 
-    final encoder = QrTransferEncoder.prepare(original);
+    final encoder = QrTransferEncoder.prepare(original, random: Random(kCodecSeed));
     expect(encoder.info.sourceSymbolCount, greaterThan(1));
 
-    final decoder = QrTransferDecoder();
+    final decoder = QrTransferDecoder(random: Random(kCodecSeed));
     final submitted = _simulateTransfer(encoder, decoder, dropRate: 0.3);
 
     expect(decoder.isComplete, isTrue);
@@ -120,8 +175,8 @@ void main() {
 
   test('无丢包时也能按序解码', () {
     final original = utf8Bytes('按序传输：第一个二维码扫完立即扫第二个');
-    final encoder = QrTransferEncoder.prepare(original);
-    final decoder = QrTransferDecoder();
+    final encoder = QrTransferEncoder.prepare(original, random: Random(kCodecSeed));
+    final decoder = QrTransferDecoder(random: Random(kCodecSeed));
 
     _simulateTransfer(encoder, decoder);
 
@@ -131,7 +186,7 @@ void main() {
 
   test('帧文本可放入二维码且可解析', () {
     final original = utf8Bytes('二维码容量检查' * 20);
-    final encoder = QrTransferEncoder.prepare(original);
+    final encoder = QrTransferEncoder.prepare(original, random: Random(kCodecSeed));
     final frameText = encoder.nextFrame();
 
     // 帧文本必须远小于 QR 版本 40 的 2953 字符上限。
@@ -151,9 +206,9 @@ void main() {
       return Uint8List.fromList(List.generate(length, (_) => rng.nextInt(256)));
     }
 
-    final encoderA = QrTransferEncoder.prepare(randomBytes(2000, 1));
-    final encoderB = QrTransferEncoder.prepare(randomBytes(2000, 2));
-    final decoder = QrTransferDecoder();
+    final encoderA = QrTransferEncoder.prepare(randomBytes(2000, 1), random: Random(kCodecSeed));
+    final encoderB = QrTransferEncoder.prepare(randomBytes(2000, 2), random: Random(kCodecSeed));
+    final decoder = QrTransferDecoder(random: Random(kCodecSeed));
 
     // 坏帧在任何会话建立前就必须被拒绝。
     expect(() => decoder.submitFrame('not a qr frame'), throwsFormatException);
@@ -168,7 +223,7 @@ void main() {
 
   test('frameTextFor 与 nextFrame 序列一致且可重复生成', () {
     final original = utf8Bytes('预生成帧测试数据，验证 frameTextFor 的确定性。' * 20);
-    final encoder = QrTransferEncoder.prepare(original);
+    final encoder = QrTransferEncoder.prepare(original, random: Random(kCodecSeed));
 
     final sequential = <String>[
       encoder.nextFrame(),
@@ -192,10 +247,10 @@ void main() {
     final original = Uint8List.fromList(
       List.generate(700, (_) => rng.nextInt(256)),
     );
-    final encoder = QrTransferEncoder.prepare(original);
+    final encoder = QrTransferEncoder.prepare(original, random: Random(kCodecSeed));
     expect(encoder.info.sourceSymbolCount, greaterThan(1));
 
-    final decoder = QrTransferDecoder();
+    final decoder = QrTransferDecoder(random: Random(kCodecSeed));
     final frame0 = encoder.nextFrame();
     final frame1 = encoder.nextFrame();
 
@@ -214,8 +269,8 @@ void main() {
 
   test('会话信息携带原始大小 rawLength', () {
     final original = utf8Bytes('原始大小随帧传输，接收端无需解压即可展示文件信息。' * 30);
-    final encoder = QrTransferEncoder.prepare(original);
-    final decoder = QrTransferDecoder();
+    final encoder = QrTransferEncoder.prepare(original, random: Random(kCodecSeed));
+    final decoder = QrTransferDecoder(random: Random(kCodecSeed));
 
     decoder.submitFrame(encoder.nextFrame());
 
@@ -224,7 +279,7 @@ void main() {
   });
 
   test('恶意帧元数据与哈希字段被安全拒绝', () {
-    final encoder = QrTransferEncoder.prepare(utf8Bytes('边界校验'));
+    final encoder = QrTransferEncoder.prepare(utf8Bytes('边界校验'), random: Random(kCodecSeed));
     final frame = encoder.nextFrame();
 
     expect(
@@ -285,8 +340,8 @@ void main() {
     final original = Uint8List.fromList(
       List<int>.generate(2400, (index) => (index * 17) & 0xff),
     );
-    final encoder = QrTransferEncoder.prepare(original);
-    final decoder = QrTransferDecoder();
+    final encoder = QrTransferEncoder.prepare(original, random: Random(kCodecSeed));
+    final decoder = QrTransferDecoder(random: Random(kCodecSeed));
     final invalidHash = base64Url.encode(List<int>.filled(32, 0));
     StateError? checksumError;
 
@@ -304,7 +359,7 @@ void main() {
     expect(checksumError?.message, 'qr_transfer_checksum_failed');
     expect(decoder.isComplete, isFalse);
 
-    final replacement = QrTransferEncoder.prepare(utf8Bytes('reset 后的新传输'));
+    final replacement = QrTransferEncoder.prepare(utf8Bytes('reset 后的新传输'), random: Random(kCodecSeed));
     decoder.reset();
     _simulateTransfer(replacement, decoder);
     expect(decoder.isComplete, isTrue);
@@ -313,8 +368,8 @@ void main() {
 
   test('完成后校验原始长度，长度篡改不会进入导入', () {
     final original = utf8Bytes('原始长度校验');
-    final encoder = QrTransferEncoder.prepare(original);
-    final decoder = QrTransferDecoder();
+    final encoder = QrTransferEncoder.prepare(original, random: Random(kCodecSeed));
+    final decoder = QrTransferDecoder(random: Random(kCodecSeed));
     StateError? lengthError;
 
     for (var i = 0; i < encoder.info.sourceSymbolCount * 5; i++) {
@@ -422,7 +477,7 @@ void main() {
   });
 
   test('未完成会话不会进入解压阶段', () {
-    final decoder = QrTransferDecoder();
+    final decoder = QrTransferDecoder(random: Random(kCodecSeed));
 
     expect(
       decoder.decodeRawPayload,
@@ -441,9 +496,9 @@ void main() {
     final original = Uint8List.fromList(
       List.generate(700, (_) => rng.nextInt(256)),
     );
-    final encoder = QrTransferEncoder.prepare(original);
+    final encoder = QrTransferEncoder.prepare(original, random: Random(kCodecSeed));
     var now = DateTime.utc(2026, 8, 3);
-    final decoder = QrTransferDecoder(now: () => now);
+    final decoder = QrTransferDecoder(now: () => now, random: Random(kCodecSeed));
 
     decoder.submitFrame(encoder.nextFrame());
     now = now.add(
@@ -467,7 +522,7 @@ void main() {
   });
 
   test('接收端限制唯一 seed，避免无限增长的会话', () {
-    final decoder = QrTransferDecoder();
+    final decoder = QrTransferDecoder(random: Random(kCodecSeed));
     final hash = base64Url.encode(List<int>.filled(32, 0));
 
     String frameFor(int seed) {
@@ -501,7 +556,7 @@ void main() {
   });
 
   test('接收端限制单帧 degree 与累计邻接边，避免图结构无限增长', () {
-    final decoder = QrTransferDecoder();
+    final decoder = QrTransferDecoder(random: Random(kCodecSeed));
     final hash = base64Url.encode(List<int>.filled(32, 0));
     const degree = QrTransferLimits.maxDegree;
     const sourceSymbolCount = 100;
@@ -543,7 +598,7 @@ void main() {
   });
 
   test('发送端拒绝超过唯一 seed/frame 预算的帧', () {
-    final encoder = QrTransferEncoder.prepare(utf8Bytes('frame budget'));
+    final encoder = QrTransferEncoder.prepare(utf8Bytes('frame budget'), random: Random(kCodecSeed));
 
     expect(
       () => encoder.frameTextFor(QrTransferLimits.maxUniqueSeedCount),
@@ -564,8 +619,8 @@ void main() {
     final original = utf8Bytes(builder.toString());
     expect(original.length, greaterThan(100000));
 
-    final encoder = QrTransferEncoder.prepare(original);
-    final decoder = QrTransferDecoder();
+    final encoder = QrTransferEncoder.prepare(original, random: Random(kCodecSeed));
+    final decoder = QrTransferDecoder(random: Random(kCodecSeed));
 
     _simulateTransfer(encoder, decoder, dropRate: 0.25);
 

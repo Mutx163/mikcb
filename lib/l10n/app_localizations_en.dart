@@ -3592,6 +3592,78 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wallpaperPositionPickerExit => 'Exit';
 
   @override
+  String get bingWallpaperGalleryTitle => 'Bing daily wallpaper';
+
+  @override
+  String get bingWallpaperGalleryFailed =>
+      'Couldn\'t load Bing wallpapers. Check your connection and retry.';
+
+  @override
+  String get bingWallpaperGalleryRetry => 'Retry';
+
+  @override
+  String get bingWallpaperDownloadFailed =>
+      'This wallpaper couldn\'t be downloaded. Try again later.';
+
+  @override
+  String bingWallpaperDownloadStatus(int status) {
+    return 'Couldn\'t download this wallpaper ($status)';
+  }
+
+  @override
+  String get bingWallpaperResolutionTitle => 'Download quality';
+
+  @override
+  String get bingWallpaperResolutionStandard => 'Standard';
+
+  @override
+  String get bingWallpaperResolutionTall => 'Fit screen';
+
+  @override
+  String get bingWallpaperResolutionHigh => 'High';
+
+  @override
+  String bingWallpaperResolutionFallback(String label) {
+    return 'Bing didn\'t offer that quality today — using $label instead';
+  }
+
+  @override
+  String bingWallpaperResolutionHint(int width, int height, String size) {
+    return '$width×$height, about $size each';
+  }
+
+  @override
+  String get bingWallpaperDateToday => 'Today';
+
+  @override
+  String get bingWallpaperDateYesterday => 'Yesterday';
+
+  @override
+  String bingWallpaperDateMonthDay(int month, int day) {
+    return '$month/$day';
+  }
+
+  @override
+  String get bingWallpaperAutoApplyTitle => 'Change daily';
+
+  @override
+  String get bingWallpaperAutoApplySubtitle =>
+      'Shared by all timetables, changes the current one only';
+
+  @override
+  String get bingWallpaperAutoApplyApplying =>
+      'Switching to today\'s wallpaper';
+
+  @override
+  String get bingWallpaperAutoApplyAlreadyDone =>
+      'Already switched to today\'s wallpaper';
+
+  @override
+  String bingWallpaperAutoApplyStale(String date) {
+    return 'Bing hasn\'t posted today\'s image yet — using the one from $date';
+  }
+
+  @override
   String get appearanceTextColorsSectionTitle => 'Text colors';
 
   @override
@@ -9200,6 +9272,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get logHomeWidgetClearFailed => 'Failed to clear home widget snapshot';
+
+  @override
+  String get logBingWallpaperRequestFailed =>
+      'Bing daily wallpaper: request failed';
+
+  @override
+  String get logBingWallpaperAutoApplyFailed =>
+      'Bing daily wallpaper: auto-apply failed';
 
   @override
   String get logHomeWidgetScheduleFailed =>

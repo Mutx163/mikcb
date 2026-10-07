@@ -152,7 +152,7 @@ void main() {
     );
   });
 
-  test('timetable_provider 的 lib 扇入棘轮：只减不增', () {
+  test('timetable_provider 的读取调用点棘轮：只减不增', () {
     // 48→51：扇入检测原先只匹配相对路径 import，package:university_timetable/
     // 与 lib 根相对路径可绕过守卫（实际漏网 3 处：main.dart、class_reminder_sheet.dart、
     // home_menu_catalog.dart）。补漏后按真实扇入 51 设基线，后续只许下降。
@@ -169,22 +169,78 @@ void main() {
     // 两者都是「读当前课表状态出图」的同形依赖，属于该功能的必要读取面，
     // Provider 本身零改动，按测试约定同步真实值。若要收回这两个名额，
     // 需把 TimetableWeekPreview 改成接收数据快照而非 Provider，属阶段 3 解耦范围。
-    const baselineFanIn = 54;
-    final importers = libDartFiles()
-        .where(
-          (file) =>
-              !file.path.replaceAll('\\', '/').endsWith(providerPath) &&
-              RegExp(
-                "import\\s+['\"][^'\"]*providers/timetable_provider\\.dart['\"]",
-              ).hasMatch(file.readAsStringSync()),
-        )
-        .length;
+    //
+    // 2026-10-06 换计数单位：原指标数的是「有多少个文件 import 了 Provider」。
+    // 该指标对文件布局敏感——把一个文件拆成 5 个、5 个都需要 Provider，计数就
+    // 从 1 涨到 5，而依赖边一条没多。于是拆分这种**改善**动作会让门禁转红，
+    // 逼着下一个动它的人二选一：不拆（退回巨型文件），或再抬一次基线。
+    // 等于用制度给「不拆分」发奖金。2026-10-06 那次拆分就被迫把 54 抬到 56，
+    // 而拆分前真实扇入只有 52 —— 名额从「剩 2 格」变成「一格不剩」。
+    //
+    // 改为数 `read/watch/select/of<TimetableProvider>(` 的**调用点总数**：
+    // 它只统计实际发生的读取，与文件怎么切分完全无关。实测拆分前后都是 224
+    // （纯搬移不改调用点数），把三处逐字重复的
+    // `WarehouseFetchOptions.fromSettings(context.read<TimetableProvider>().settings)`
+    // 合并进 import_shared 的 currentWarehouseFetchOptions() 后降到 222 ——
+    // 说明这个指标既不会被拆分误伤，也能如实捕捉真实的耦合下降。
+    //
+    // 旧的 48→51→52→54 那串数字记的是文件数，与本指标不同量纲，不可直接比较。
+    // 拆分剩下的 5 个 import/ 文件（ics / 表格 / AI 图片 / 仓库网页登录 /
+    // import_shared 的 ensureImportSectionCapacity）都要经 Provider 写课表，
+    // 是导入链路的必要写入面。要收回它们，需把导入写入改成接收「课表写入接口」
+    // 而非 Provider，与上面 TimetableWeekPreview 那条同属阶段 3 解耦范围。
+    //
+    // 2026-10-06 补正则漏网：上面那个正则要求 `<TimetableProvider>` 紧跟 `(`，
+    // 于是 `context.select<TimetableProvider, TimetableSettings>((p) => p.settings)`
+    // 这类**带第二个类型实参**的写法一个都数不到——而它和 read<TimetableProvider>()
+    // 是完全同类的读取。实测漏了 3 处，全在 about_screen.dart（209 / 649 / 1567）。
+    // 这正是本仓审计笔记已记过一次的坑（`invokeMethod(` 漏掉 `invokeMethod<bool>(`，
+    // 见 notes/proposed/2026-09-29-full-architecture-audit-verified.md §4d）：
+    // 正则写窄 → 统计偏低 → 基线偏低 → 门禁形同虚设。故把类型实参写成可选。
+    //
+    // 222→225 不是耦合增长，是把本就存在、此前没被数到的 3 处读取补进计数。
+    //
+    // 本指标**已知不覆盖**的写法（有意不纳入，别拿它们当"没依赖"）：
+    //   - `Consumer<TimetableProvider>`（15 处，整棵子树订阅，是另一种机制）
+    //   - `required TimetableProvider provider` 这类把 Provider 当参数传递的位置
+    //     （如 import_shared 的 ensureImportSectionCapacity）
+    // 要覆盖它们需另立指标，别直接扩这个正则——会把不同性质的依赖混进一个数字。
+    //
+    // 2026-10-06 再补一处同类漏网：类型实参写死成 `<TimetableProvider>`，于是**可空**
+    // 读取 `context.read<TimetableProvider?>()` 一处都数不到——而这恰恰是弹窗 /
+    // 半屏 sheet 里最该用的写法（上层可能没注册这个 Provider，只能读可空再判空）。
+    // 实测漏 3 处，全在 user_guide_screen.dart（304 / 650 / 786）。
+    // 与上一条同源：正则写窄 → 统计偏低 → 基线偏低 → 门禁形同虚设，故一并放宽。
+    // 225→228 不是耦合增长，是把本就存在、此前没被数到的 3 处读取补进计数。
+    //
+    // 「扇入」这个名字如今名不副实：本指标数的是**读取次数**，不是依赖边。文件怎么拆
+    // 都不再影响它（这正是换单位的全部理由），代价是覆盖不到纯类型依赖——当前有 14
+    // 个文件 import 了 Provider 却没有一处匹配读取（同步 / WebDAV / 统一传输 /
+    // 课表分享 / 统计页等，它们把 Provider 当参数类型往下传或只取其类型）。新开一个
+    // 文件若只干这两件事，本指标不会响；要覆盖需另立「import 但零读取的文件数」
+    // 棘轮（当前真实值 14），同样别直接扩本正则。
+    //
+    // 余量为 0：基线就是当前实测值，正当新增读取时照例抬基线并说明理由。
+    const baselineProviderCallSites = 228;
+    final callSitePattern = RegExp(
+      r'\b(?:read|watch|select|of)<TimetableProvider\??\s*(?:,[^>]*)?>\s*\(',
+    );
+    var callSites = 0;
+    final touchedFiles = <String>[];
+    for (final file in libDartFiles()) {
+      if (file.path.replaceAll('\\', '/').endsWith(providerPath)) continue;
+      final hits = callSitePattern.allMatches(file.readAsStringSync()).length;
+      if (hits > 0) {
+        callSites += hits;
+        touchedFiles.add(file.path);
+      }
+    }
     expect(
-      importers,
-      lessThanOrEqualTo(baselineFanIn),
+      callSites,
+      lessThanOrEqualTo(baselineProviderCallSites),
       reason:
-          '新文件不应再直接依赖 TimetableProvider；'
-          '确需依赖时同步调高本基线并说明理由。',
+          '新代码不应再直接读取 TimetableProvider（共 ${touchedFiles.length} 个文件、'
+          '$callSites 处调用）；确需依赖时同步调高本基线并说明理由。',
     );
   });
 

@@ -155,6 +155,12 @@ void main() {
     expect(find.text('下一套'), findsOneWidget);
 
     await tester.tap(find.text('换一批颜色'));
+    // 判据是「配色与换之前**不同**」，而不是「某个具体颜色消失」。
+    //
+    // 原来等的是「没有一门课是 #E91E63」—— 可 #E91E63 就在正式色板里
+    // （course_color_palette.dart:44 与 :139），换一批完全可能合法地把它分给某门课，
+    // 于是这个哨兵**本来就可达**，多门课时大概率等不到 → 偶发红（实测全量负载下
+    // 约 1/15，单独跑 8 次不现形）。拿可达的颜色当哨兵，测的就不是「有没有换」。
     var applied = false;
     for (var i = 0; i < 60 && !applied; i++) {
       // pump 排空 FakeAsync 微任务（mutation gate 空闲快路径同步落色后的
@@ -164,14 +170,11 @@ void main() {
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );
-      applied = provider.courses
-          .map((c) => c.color)
-          .toList()
-          .toString()
-          .contains('#E91E63') ==
-          false;
+      applied =
+          provider.courses.map((c) => c.color).toList().toString() !=
+          originalColors.toString();
     }
-    expect(applied, true, reason: '换一批必须真的改掉全部课程颜色');
+    expect(applied, true, reason: '换一批必须真的改掉课程颜色');
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
