@@ -8,6 +8,7 @@ import 'package:university_timetable/l10n/app_localizations_ko.dart';
 import 'package:university_timetable/l10n/app_localizations_zh.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:university_timetable/models/bing_wallpaper.dart';
+import 'package:university_timetable/models/wallpaper_daily_source.dart';
 
 /// 防回归：ARB 里同一个键只能出现一次。
 ///
@@ -62,10 +63,14 @@ void main() {
     }
   });
 
-  group('Bing 壁纸三档画质的名字互不重名', () {
-    /// 界面症状的直接断言：胶囊一行三个，名字必须能区分开。
+  group('界面上的胶囊文案不能重名', () {
+    /// 界面症状的直接断言：胶囊一行几个，名字就必须能区分开。
     ///
     /// 六个语言都要过 —— 重复键是**逐语言**写进去的，只查中文会漏掉另外五个。
+    ///
+    /// ⚠️ 断言必须钉在 `bingWallpaperResolutionLabel(...)` 这种**用户看得见的返回值**上。
+    /// 早先那条断言查的是枚举内部键 `value.storageKey`，内部键当然互不相同，于是恒绿
+    /// 而界面上真的出现了两个「高清」（见文件头那段说明）。
     Map<String, AppLocalizations> allLocales() => <String, AppLocalizations>{
       'zh': AppLocalizationsZh(),
       'zh_TW': AppLocalizationsZhTw(),
@@ -75,7 +80,7 @@ void main() {
       'ko': AppLocalizationsKo(),
     };
 
-    test('每种语言下三个档位都给出三个不同的名字', () {
+    test('每种语言下三个画质档位都给出三个不同的名字', () {
       for (final entry in allLocales().entries) {
         final labels = <String>[
           for (final value in BingWallpaperResolution.values)
@@ -87,6 +92,42 @@ void main() {
           reason:
               '${entry.key}：${labels.join(' / ')} —— 有重名，用户分不清选的是哪一档。',
         );
+      }
+    });
+
+    test('⭐ 每种语言下两个图源都给出两个不同的名字', () {
+      // 2026-10-07 加第二个图源时新踩的同一个坑：图源胶囊是两个，若文案重名，用户
+      // 完全不知道自己切的是哪个源（而「切了源没反应」正是最难查的一类报障）。
+      for (final entry in allLocales().entries) {
+        final labels = <String>[
+          for (final value in WallpaperDailySource.values)
+            wallpaperDailySourceLabel(entry.value, value),
+        ];
+        expect(
+          labels.toSet().length,
+          labels.length,
+          reason: '${entry.key}：${labels.join(' / ')} —— 两个图源重名了。',
+        );
+      }
+    });
+
+    test('图库入口行标题随图源变（两源不能共用同一个标题）', () {
+      // 入口行原来写死「Bing 每日壁纸」。加了第二个源之后那行会说谎：用户点进去看到
+      // 的是另一个图库，标题却还写着 Bing。
+      for (final entry in allLocales().entries) {
+        final labels = <String>[
+          for (final value in WallpaperDailySource.values)
+            wallpaperDailySourceGalleryLabel(entry.value, value),
+        ];
+        expect(
+          labels.toSet().length,
+          labels.length,
+          reason: '${entry.key}：两个图源共用同一个图库标题，点进去会认不出来。',
+        );
+        // 且不得为空串 —— 空标题在按钮上就是一片空白。
+        for (final label in labels) {
+          expect(label.trim(), isNotEmpty, reason: '${entry.key}：图库标题是空的。');
+        }
       }
     });
   });

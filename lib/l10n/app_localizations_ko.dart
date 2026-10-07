@@ -3502,6 +3502,18 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get wallpaperDailySourceTitle => '갤러리 출처';
+
+  @override
+  String get wallpaperDailySourceBing => '매일 업데이트';
+
+  @override
+  String get wallpaperDailySourceWallhaven => '세로 고화질';
+
+  @override
+  String get wallhavenWallpaperGalleryTitle => '세로 고화질 갤러리';
+
+  @override
   String get bingWallpaperDateToday => '오늘';
 
   @override

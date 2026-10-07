@@ -13,6 +13,7 @@ import '../models/bing_wallpaper.dart';
 // 依赖 l10n，正确做法是把这个解析函数搬进 `bing_wallpaper.dart`（model 自己解析
 // 自己的字段），而不是让 service 反向依赖界面层。
 import '../utils/bing_wallpaper_date_label.dart';
+import '../utils/home_page_background.dart';
 import '../utils/managed_image_storage.dart';
 import '../utils/wallpaper_history.dart';
 import 'app_http_client.dart';
@@ -327,14 +328,21 @@ BingWallpaperService._internal(this._client, bool ownsCandidate)
       failure == ManagedImageDownloadFailure.notImage;
 
   /// 只下一档，不做退档重试。失败时结果里带原因（不抛）。
+  ///
+  /// [target] 是**实际要下的像素**（默认按 [BingWallpaperResolution.downloadTargetSize]
+  /// = 屏幕分辨率与档位下限取大者）。它参与文件名与台账键 —— 换了设备或换了档位就落到
+  /// 不同文件上，不会把「按 1080×1920 下过的那张」当成「按 1206×2622 下过」。
   Future<ManagedImageDownloadResult> _downloadAt(
     BingWallpaperItem item,
-    BingWallpaperResolution resolution,
-  ) async {
-    final url = item.fullUrl(resolution);
+    BingWallpaperResolution resolution, {
+    WallpaperTargetSize? target,
+  }) async {
+    final size = target ?? resolution.downloadTargetSize;
+    final url = item.fullUrl(resolution, target: size);
     appDebugLog(
       _tag,
-      'download start date=${item.dateKey} tier=${resolution.name} $url',
+      'download start date=${item.dateKey} tier=${resolution.name} '
+      'target=${size.width}x${size.height} $url',
     );
     try {
       final result = await downloadToManagedImage(
@@ -343,7 +351,7 @@ BingWallpaperService._internal(this._client, bool ownsCandidate)
         // ⭐ 前缀必须是 `wallpaper`：既有的 `deleteEvictedWallpaperFiles` 按这个前缀
         // 判定「这张图归我管」，改名成别的开头会导致它被挤出历史后删不掉（见
         // `BingWallpaperItem.fileName` 的注释）。
-        fileName: item.fileName(resolution),
+        fileName: item.fileName(resolution, target: size),
         client: _client,
       );
       // 每一次尝试都留一行 —— 2026-10-06 用户报「点大图下载失败」而四条分支全都只回
@@ -483,6 +491,9 @@ static Future<BingAutoApplyResult> maybeApplyDaily({
       dateKey: newest.dateKey,
       resolution: result.resolution!,
       path: result.path!,
+      // 记**实际**下的那组像素（见 [BingWallpaperResolution.downloadTargetSize]）：
+      // 台账键含尺寸，不记就会把「按旧尺寸下过」误判成「按屏幕尺寸下过了」。
+      targetSize: resolution.downloadTargetSize,
     );
     unawaited(_deleteEvictedWallpapers(evicted, inUsePaths: inUsePaths));
     appDebugLog(_tag, 'daily applied date=${newest.dateKey} isToday=$isToday');

@@ -70,6 +70,118 @@ ImageProvider? homePageImageProvider(String? path) {
   return FileImage(File(path));
 }
 
+/// 壁纸**下载**该按多大的像素要——按这台设备的真实物理分辨率，而不是写死的档位尺寸。
+///
+/// ## 为什么要这个
+///
+/// 壁纸是 `BoxFit.cover` 铺满整屏的，所以只要图片**小于**屏幕，App 就得**再放大一次**。
+/// 写死的三档尺寸（1080×1920 / 1080×2400 / 1440×3200）跟绝大多数真机的比例都不一致
+/// （实测常见机是 1206×2622、1264×2780、1440×3200），于是每次都要在图源放大之外
+/// **再多叠一次 App 侧放大**——两段放大比一段更糊（见
+/// `.agents/notes/implemented/feature/2026-10-05-bing-daily-wallpaper-library.md`）。
+///
+/// 更糟的是比例对不上还会留出**多余的竖向余量**：1440×3200（9:20）铺到 9:19.5 的屏上，
+/// 解码后比屏高多几十像素，于是位置编辑页**上下能拖**，而拖到的每一段都是被放大过的
+/// 最糊的部分（用户 2026-10-07 原话：「上下也缩小了，留下了最糊的画面」）。
+///
+/// ## 返回值
+///
+/// 物理像素，宽高各自**对齐到偶数**（JPEG 换色度采样要偶数）。拿不到真实视口时
+/// 回退到 1080×2400（9:20，最常见的中端机比例），宁可如此也不要 0。
+///
+/// 只给「下载尺寸」用；**渲染**那侧仍走 [homePageBackdropDecodeWidth]（按宽解码，
+/// 省显存），两者不是一回事。
+@immutable
+class WallpaperTargetSize {
+  const WallpaperTargetSize(this.width, this.height);
+
+  final int width;
+  final int height;
+
+  /// 屏幕比例（宽/高）。
+  double get aspectRatio => width / height;
+
+  /// 按 [aspectRatio] 由 [height] 反推宽度，并对齐偶数。
+  ///
+  /// 「要 2622 高、比例 0.46」时宽度不能瞎取：图源是按**比例**裁的（`c=4` 填满裁切），
+  /// 比例给错就会裁掉不该裁的构图，或者反过来留边。
+  WallpaperTargetSize withHeight(int newHeight) {
+    final raw = (newHeight * aspectRatio).round();
+    return WallpaperTargetSize(_even(raw), _even(newHeight));
+  }
+
+  /// 按 [aspectRatio] 由 [width] 反推高度，并对齐偶数。
+  WallpaperTargetSize withWidth(int newWidth) =>
+      withHeight((newWidth / aspectRatio).round());
+
+  /// 不小于给定下限的尺寸：档位是「保底质量」，但**永远不小于屏幕**。
+  ///
+  /// 于是低档位不会退化成「让 App 二次放大」——那正是我们要消除的那一层。
+  WallpaperTargetSize atLeast(int minWidth, int minHeight) {
+    if (width >= minWidth && height >= minHeight) {
+      return this;
+    }
+    // 不足的那一维按比例补齐；两维都不足时以**高度**为准（cover 的瓶颈永远是高度）。
+    if (height < minHeight) {
+      return withHeight(minHeight);
+    }
+    return withWidth(minWidth);
+  }
+
+  static int _even(int value) => value.isEven ? value : value + 1;
+
+  @override
+  bool operator ==(Object other) =>
+      other is WallpaperTargetSize &&
+      other.width == width &&
+      other.height == height;
+
+  @override
+  int get hashCode => Object.hash(width, height);
+
+  @override
+  String toString() => '${width}x$height';
+}
+
+/// 这台设备的壁纸目标像素（见 [WallpaperTargetSize] 的说明）。
+///
+/// 直接读 `PlatformDispatcher` 而不是 `MediaQuery`：壁纸下载发生在
+/// **启动流程与图库页**（两条都不在 widget 树里），拿不到 context，也就不该依赖
+/// `WidgetsBinding.instance` —— 那会让「App 刚起来还没绑定」时读到一个 0 尺寸。
+///
+/// ## ⚠️ 视口是横的时也要给**竖**尺寸
+///
+/// 本 App 的首页是竖屏（壁纸 `cover` 铺满竖屏，这是全篇的前提，见笔记「我们软件都是
+/// 竖图」）。而 `physicalSize` 会跟着设备当前朝向变：折叠屏展开、横屏游戏、全屏视频、
+/// 甚至单测环境（`flutter test` 的默认视口是 2400×1800）都可能是横的。
+///
+/// 直接照抄会得到 2160×1800 这种**横**的目标，于是：文件名带上横尺寸、图源按横比例
+/// 去裁、而首页是竖屏 —— 结果是「一张横图铺在竖屏上」，正是 2026-10-06 用户拍板删掉
+/// 横屏档位要避免的那个结局。
+///
+/// 所以 `width` 压到不超过 `height`。横屏时取哪一维作基准不重要（那个朝向下画出来的
+/// 结果是一样的），重要的是**别让下下来的图与 App 的竖屏前提矛盾**。
+WallpaperTargetSize wallpaperTargetSize() {
+  final views = ui.PlatformDispatcher.instance.views;
+  if (views.isEmpty) {
+    return const WallpaperTargetSize(1080, 2400);
+  }
+  final size = views.first.physicalSize;
+  // 上限 2160×3840：再高的机（折叠屏展开、内屏 2K+）拿到的源图也没那么多像素，
+  // 要更大的只会让图源**返回压缩得更狠**的同一张图，白白多下几 MB。
+  var width = size.width.round().clamp(720, 2160);
+  var height = size.height.round().clamp(1280, 3840);
+  if (width > height) {
+    final swap = width;
+    width = height;
+    height = swap;
+  }
+  return WallpaperTargetSize(
+    WallpaperTargetSize._even(width),
+    WallpaperTargetSize._even(height),
+  );
+}
+
 /// Decode width for full-screen wallpaper (matches device, capped for memory).
 int homePageBackdropDecodeWidth() {
   final views = ui.PlatformDispatcher.instance.views;

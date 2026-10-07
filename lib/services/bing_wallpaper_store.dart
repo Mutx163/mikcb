@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/bing_wallpaper.dart';
+import '../models/wallpaper_daily_source.dart';
+import '../utils/home_page_background.dart';
 
 /// Bing 每日壁纸的**设备级**存储：画质档位、自动换开关与按天判据、已下文件的台账。
 ///
@@ -39,6 +41,9 @@ class BingWallpaperStore {
 
   /// 自动换开关的偏好键。
   static const String autoApplyKey = 'bing_wallpaper_auto_apply_v1';
+
+  /// 每日壁纸**图源**的偏好键（2026-10-07 新增）。
+  static const String sourceKey = 'wallpaper_daily_source_v1';
 
   /// 台账（= 图库下载缓存）保留的条数。
   ///
@@ -121,6 +126,153 @@ class BingWallpaperStore {
 
   bool? _autoApplyCache;
 
+  /// 每日壁纸用哪个图源。
+  ///
+  /// ## 默认仍是 Bing，不是 Wallhaven
+  ///
+  /// 理由是「每天真的换一张」：Bing 是**日历驱动**的，同一天 worldwide 一张、内容
+  /// 当天固定；Wallhaven 没有每日端点（`random`/`featured` 实测 404），「每天一张」
+  /// 只能靠翻页偏移去凑，一旦用户装了 App 之后没几天、或他手动翻过图库，「今天那张」
+  /// 就可能与昨天重复。**先能用上竖图**的价值高于「每天一定换新的」。
+  ///
+  /// 用户可在设置里切过去；切过去之后「每天自动更换」走 [WallhavenWallpaperService]。
+  WallpaperDailySource get dailySource =>
+      _sourceOverride ?? _sourceCache ?? WallpaperDailySource.bing;
+
+  WallpaperDailySource? _sourceOverride;
+  WallpaperDailySource? _sourceCache;
+
+  Future<void> setDailySource(WallpaperDailySource value) async {
+    // 真切换才自增世代号（重复设同一个值不算切换）：判据见 [sourceEpoch]。
+    if ((_sourceOverride ?? _sourceCache ?? WallpaperDailySource.bing) !=
+        value) {
+      _sourceEpochOverride = sourceEpoch + 1;
+    }
+    _sourceOverride = value;
+    notifier.value++;
+    await _persistString(sourceKey, value.storageKey);
+    await _persistInt(epochKey, sourceEpoch);
+  }
+
+  /// 图源世代号的存档键。
+  static const String epochKey = 'wallpaper_daily_source_epoch_v1';
+
+  /// 「最近一次自动换成功时的图源世代号」的存档键。
+  static const String autoAppliedEpochKey = 'wallpaper_auto_applied_epoch_v1';
+
+  /// 换源行为的存档键。
+  static const String sourceFallbackKey = 'wallpaper_source_fallback_v1';
+
+  /// 「Bing 失败时要不要换源」（见 [WallpaperSourceFallback]）。
+  WallpaperSourceFallback get sourceFallback =>
+      _sourceFallbackOverride ??
+      _sourceFallbackCache ??
+      WallpaperSourceFallback.onAutoApplyOnly;
+
+  WallpaperSourceFallback? _sourceFallbackOverride;
+  WallpaperSourceFallback? _sourceFallbackCache;
+
+  Future<void> setSourceFallback(WallpaperSourceFallback value) async {
+    _sourceFallbackOverride = value;
+    notifier.value++;
+    await _persistString(sourceFallbackKey, value.storageKey);
+  }
+
+  /// 图源切换的**世代号**：每次真切换（不是每次调用）自增 1。
+  ///
+  /// ## 为什么需要它
+  ///
+  /// [lastAutoAppliedDate] 是「今天已经换过了」的**唯一**判据，而它的键只由
+  /// `dateKey + 档位 + 尺寸` 构成。于是用户上午用 Bing 自动换过、下午切到 Wallhaven，
+  /// 那天会被判成「已换过」而**静默跳过** —— 看起来就是「我切了图源但什么都没发生」。
+  ///
+  /// 不删台账（删了会让已下的图被当成没下过、白重下一次，5–11 MB 的竖图代价太大），
+  /// 改成在判据里再加一维：`lastAutoAppliedSourceEpoch == sourceEpoch` 才算「今天
+  /// 换过」。切源让两者不等 → 当天立刻可以再换一次，且换完记下新的 epoch。
+  int get sourceEpoch => _sourceEpochOverride ?? _sourceEpochCache ?? 0;
+
+  int? _sourceEpochOverride;
+  int? _sourceEpochCache;
+
+  /// 最近一次自动换成功时的图源世代号；没换过为 null。
+  int? get lastAutoAppliedSourceEpoch => _lastAutoAppliedSourceEpochOverride;
+
+  int? _lastAutoAppliedSourceEpochOverride;
+
+  /// 记下「最近一次自动换成功时图源世代号」。判据见 [sourceEpoch]。
+  Future<void> recordAutoAppliedEpoch(int epoch) async {
+    _lastAutoAppliedSourceEpochOverride = epoch;
+    notifier.value++;
+    await _persistInt(autoAppliedEpochKey, epoch);
+  }
+
+  /// 记一条 Wallhaven 台账（键 `wh:<id>`）。
+  ///
+  /// 尺寸记**这张图自己的**尺寸（而不是「按屏幕要的尺寸」）：台账键含尺寸，而这里的
+  /// 作用是「这张图下过了没有」，必须是能唯一认出这张图的那一组。
+  ///
+  /// ## ⚠️ 一律 `autoApplied: false`（不是漏写，是刻意的）
+  ///
+  /// [lastAutoAppliedDate] 只认台账里 `autoApplied` 的那一条，而它是 **Bing 的按天
+  /// 判据**。Wallhaven 若在这里也留一条 `autoApplied: true`，那个 getter 就会返回
+  /// `wh:w53vkq` 这种值 —— 于是**切回 Bing 之后**「今天已换过」永远判不成立
+  /// （Bing 的 `dateKey` 是 `20261007` 那种 8 位数，与 `wh:…` 永不相等），表现是
+  /// 「切回 Bing 之后它每天都在重新下载同一天那张」。
+  ///
+  /// Wallhaven 的按天判据走另一条路：`lastAutoAppliedItemId` + 图源世代号
+  /// （见 `WallhavenWallpaperService.maybeApplyDaily`）。
+  Future<List<String>> recordWallhaven({
+    required String id,
+    required WallpaperTargetSize sourceSize,
+    required String path,
+  }) => recordApplied(
+    // 前缀**写进 dateKey 本身**（不是只在算键时临时加）：台账条目的 [key] 是
+    // `dateKey@档位@尺寸` 拼出来的，而 [findExistingWallhaven] 要用同一个字符串去
+    // 比对，所以它必须存在条目里。只在算键时加前缀的话，两边算出来的键不一致，
+    // 复用永远命中不了（症状：同一天反复下同一张 5–11 MB 的图）。
+    dateKey: 'wh:$id',
+    resolution: BingWallpaperResolution.standard,
+    path: path,
+    autoApplied: false,
+    targetSize: sourceSize,
+  );
+
+  /// Wallhaven 那边的「今天该换的那张」是否已经换过。
+  ///
+  /// ## 与台账键的关系
+  ///
+  /// 这里存的是**裸 id**（`w53vkq`），而台账里存的是带前缀的 `wh:w53vkq`
+  /// （见 [recordWallhaven]）。两处刻意不同：这里要比的是「哪一张」，前缀只是台账里
+  /// 避免与 Bing 的 `dateKey` 撞键的手段。
+  ///
+  /// ## 为什么这里要比 **id** 而不是日期
+  ///
+  /// Bing 的「今天」是它自己的日历（`dateKey` 天然就是那天的图），所以比日期。
+  /// Wallhaven **没有**每日端点，「今天该换哪张」是**我们**按 `dailyIndex(now)`
+  /// 算出来的（见 `WallhavenWallpaperService.dailyIndex`）—— 那个映射是确定的，
+  /// 于是同一天算出的 id 相同、隔天不同，所以比 id 就等于比「哪一天」。
+  ///
+  /// 只对 [WallpaperDailySource.wallhaven] 有意义；切到 Bing 时这个字段不参与判据。
+  String? get lastAutoAppliedItemId =>
+      _lastAutoAppliedItemIdOverride ?? _lastAutoAppliedItemIdCache;
+
+  String? _lastAutoAppliedItemIdOverride;
+  String? _lastAutoAppliedItemIdCache;
+
+  /// 记下「最近一次 Wallhaven 自动换用掉的 id」。
+  Future<void> recordAutoAppliedItem(String? id) async {
+    _lastAutoAppliedItemIdOverride = id;
+    notifier.value++;
+    if (id == null) {
+      await _persistStringRemove(autoAppliedItemKey);
+    } else {
+      await _persistString(autoAppliedItemKey, id);
+    }
+  }
+
+  /// Wallhaven 自动换 id 的存档键。
+  static const String autoAppliedItemKey = 'wallhaven_auto_applied_id_v1';
+
   /// 最近一次自动换用掉的那天的 `dateKey`；没换过为 null。
   String? get lastAutoAppliedDate {
     for (final entry in _downloaded) {
@@ -150,6 +302,17 @@ class BingWallpaperStore {
         _prefs!.getString(resolutionKey),
       );
       _autoApplyCache = _prefs!.getBool(autoApplyKey) ?? false;
+      _sourceCache = WallpaperDailySource.fromStorageKey(
+        _prefs!.getString(sourceKey),
+      );
+      _sourceEpochCache = _prefs!.getInt(epochKey);
+      _sourceFallbackCache = WallpaperSourceFallback.fromStorageKey(
+        _prefs!.getString(sourceFallbackKey),
+      );
+      _lastAutoAppliedItemIdCache = _prefs!.getString(autoAppliedItemKey);
+      _lastAutoAppliedSourceEpochOverride = _prefs!.getInt(
+        autoAppliedEpochKey,
+      );
       _cachedItemsFetchedAt = _fromEpoch(_prefs!.getInt(_cachedAtKey));
       final raw = _prefs!.getString(_cachedItemsKey);
       if (raw != null && raw.isNotEmpty) {
@@ -193,23 +356,31 @@ class BingWallpaperStore {
     await _persistInt(_cachedAtKey, DateTime.now().millisecondsSinceEpoch);
   }
 
-  /// 记一次「这张 / 这个档位已经下到 [path]」，并返回应当删除的溢出路径。
+  /// 记一次「这张 / 这个档位（/ 这个实际尺寸）已经下到 [path]」，并返回应当删除的溢出路径。
   ///
   /// 同键去重后置顶（最新在前），超出 [kMaxDownloadedEntries] 的返回给调用方去真删。
   /// **只记账，不碰磁盘** —— 与 `pushWallpaperHistory` 同一分工：调用方知道「还有谁在用
   /// 这张图」（别的课表可能正拿它当壁纸），所以删除必须走
   /// `deleteEvictedWallpaperFiles` 的白名单。
+  ///
+  /// [targetSize] 必须**跟着 [path] 一起记**：2026-10-07 起实际下载尺寸随设备变化，
+  /// 而台账键原本只由 `dateKey + 档位` 组成 —— 于是「按 1080×1920 下过的那张」会被
+  /// 误判成「按 1206×2622 也下过了」，`findExisting` 直接复用旧尺寸，那份本该去掉的
+  /// 二次放大就又回来了（症状：换了设备仍是糊的，且没有任何报错）。
   Future<List<String>> recordApplied({
     required String dateKey,
     required BingWallpaperResolution resolution,
     required String path,
     bool autoApplied = true,
+    WallpaperTargetSize? targetSize,
   }) async {
-    final key = _DownloadedEntry.makeKey(dateKey, resolution);
+    final size = targetSize ?? resolution.downloadTargetSize;
+    final key = _DownloadedEntry.makeKey(dateKey, resolution, size);
     final next = <_DownloadedEntry>[
       _DownloadedEntry(
         dateKey: dateKey,
         resolution: resolution,
+        targetSize: size,
         path: path,
         autoApplied: autoApplied,
       ),
@@ -229,14 +400,49 @@ class BingWallpaperStore {
     return evicted;
   }
 
-  /// 找一张已下过的图（同一张 + 同一档位），文件仍在就返回其路径。
+  /// 找一张已下过的 **Wallhaven** 图（按它的 id），文件仍在就返回其路径。
+  ///
+  /// ## 为什么单独一条而不用 [findExisting]
+  ///
+  /// Wallhaven 那边的「档位」是占位的（取图不看档位，见
+  /// `WallhavenWallpaperItem` 的注释），尺寸也是**那张图自己的**尺寸而不是「按屏幕要的
+  /// 尺寸」。所以调用方传的语义与 Bing 那条不同（`id` vs `dateKey` + 档位 + 目标尺寸），
+  /// 硬套进同一个方法只会让两边各自带一段 if。
+  ///
+  /// 键用 `wh:<id>`：Bing 的 `dateKey` 是 8 位数字（`20261005`），不可能与 `wh:xxx`
+  /// 撞上，于是两边共用同一张表而互不顶替。
+  Future<String?> findExistingWallhaven(String id) async {
+    // ⚠️ 比对的是**前缀** `wh:<id>@` 而不是整个键：台账键是
+    // `dateKey@档位@尺寸`（`makeKey`），而尺寸是**那张图自己的**尺寸、调用方未必
+    // 手里有。所以按前缀找，命中任一即算「这张下过了」。
+    //
+    // 早先拿 `'wh:$id'` 去**整键**比对，永远命中不了 —— 症状是同一天反复下载同一张
+    // 5–11 MB 的图，而台账里明明记着它。
+    final prefix = 'wh:$id@';
+    for (final entry in _downloaded) {
+      if (!entry.key.startsWith(prefix)) {
+        continue;
+      }
+      if (File(entry.path).existsSync()) {
+        return entry.path;
+      }
+    }
+    return null;
+  }
+
+  /// 找一张已下过的图（同一张 + 同一档位 + 同一实际尺寸），文件仍在就返回其路径。
   ///
   /// 避免同一天反复点同一张时重复下载。文件可能已被历史淘汰删掉，所以查存在性。
+  ///
+  /// [targetSize] 要与当初下载时**一致**（见 [recordApplied]）：尺寸对不上就该重下，
+  /// 不能拿旧尺寸那张糊的顶替。
   Future<String?> findExisting(
     String dateKey,
-    BingWallpaperResolution resolution,
-  ) async {
-    final key = _DownloadedEntry.makeKey(dateKey, resolution);
+    BingWallpaperResolution resolution, {
+    WallpaperTargetSize? targetSize,
+  }) async {
+    final size = targetSize ?? resolution.downloadTargetSize;
+    final key = _DownloadedEntry.makeKey(dateKey, resolution, size);
     for (final entry in _downloaded) {
       if (entry.key != key) {
         continue;
@@ -276,6 +482,15 @@ class BingWallpaperStore {
     }
   }
 
+  Future<void> _persistStringRemove(String key) async {
+    try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
+      await prefs.remove(key);
+    } on Object {
+      // 同上。
+    }
+  }
+
   /// 单测用的重置：丢掉缓存的单例（**不清**持久化数据，prefs 由测试自己 mock）。
   @visibleForTesting
   static void debugResetForTesting() {
@@ -284,18 +499,39 @@ class BingWallpaperStore {
   }
 }
 
-/// 台账里的一条：`dateKey@档位` → 本地路径。
+/// 台账里的一条：`dateKey@档位@尺寸` → 本地路径。
+///
+/// 键**不含图源**：Bing 与 Wallhaven 走同一张表，于是「同一张图两个源」会互相顶掉
+/// —— 而那正是我们要的（Bing 那张与 Wallhaven 那张尺寸与构图都不同，但**同一天同一档**
+/// 只会留一份文件，留最新的即可）。图源只影响文件名（`wallpaper_bing_…` /
+/// `wallpaper_wh_…`），所以顶替是安全的。
 @immutable
 class _DownloadedEntry {
   const _DownloadedEntry({
     required this.dateKey,
     required this.resolution,
+    required this.targetSize,
     required this.path,
     required this.autoApplied,
   });
 
   final String dateKey;
+
+  /// 档位。
+  ///
+  /// Wallhaven 那边的图**没有档位概念**（原图就是原生竖图，直接下），但仍要占一个位置：
+  /// 存 [BingWallpaperResolution.standard] 即可 —— 取图时不看这个字段（URL 由
+  /// `WallhavenWallpaperItem` 自己带），它只参与键的去重与封顶。
   final BingWallpaperResolution resolution;
+
+  /// 实际下载时用的像素尺寸（2026-10-07 起进键，见 [recordApplied]）。
+  ///
+  /// **旧存档没有这个字段**：那些条目是「按写死档位尺寸下的」，语义等价于
+  /// 「尺寸 = 该档默认尺寸」，所以反序列化时回退到
+  /// `WallpaperTargetSize(resolution.width, resolution.height)` 而不是当前屏幕 ——
+  /// 否则同一条目每次启动键都不一样，台账去重与封顶清理全失效。
+  final WallpaperTargetSize targetSize;
+
   final String path;
 
   /// 是不是「自动换」写下的。
@@ -304,14 +540,19 @@ class _DownloadedEntry {
   /// 挑一张也算用上了今天那张，若把它算进「今天已换过」，自动换就会误以为已完成而跳过。
   final bool autoApplied;
 
-  static String makeKey(String dateKey, BingWallpaperResolution resolution) =>
-      '$dateKey@${resolution.storageKey}';
+  static String makeKey(
+    String dateKey,
+    BingWallpaperResolution resolution,
+    WallpaperTargetSize size,
+  ) => '$dateKey@${resolution.storageKey}@${size.width}x${size.height}';
 
-  String get key => makeKey(dateKey, resolution);
+  String get key => makeKey(dateKey, resolution, targetSize);
 
   Map<String, Object?> toJson() => <String, Object?>{
     'dateKey': dateKey,
     'resolution': resolution.storageKey,
+    'targetWidth': targetSize.width,
+    'targetHeight': targetSize.height,
     'path': path,
     'autoApplied': autoApplied,
   };
@@ -329,14 +570,23 @@ class _DownloadedEntry {
     if (dateKey.trim().isEmpty || path.trim().isEmpty) {
       return null;
     }
-    final resolution = raw['resolution'];
+    final resolutionKey = raw['resolution'];
+    final resolution = BingWallpaperResolution.fromStorageKey(
+      resolutionKey is String ? resolutionKey : null,
+    );
+    // 旧存档没有尺寸字段 → 回退到**该档默认尺寸**（见 [targetSize] 的说明），
+    // 绝不回退到当前屏幕：那条目是按写死尺寸下的，用屏幕尺寸去找它必然找不到，
+    // 一次白下不说，还会让台账里留两条指向同一张图的不同尺寸记录。
+    final defaultSize = WallpaperTargetSize(resolution.width, resolution.height);
+    final tw = raw['targetWidth'];
+    final th = raw['targetHeight'];
+    final hasSize = tw is int && th is int && tw > 0 && th > 0;
     return _DownloadedEntry(
       dateKey: dateKey.trim(),
       // 未知档位回退默认：宁可用错档位复用一张图，也不要因为存档里一个陌生字符串
       // 而把已下的图当成没下过、白白重下一遍。
-      resolution: BingWallpaperResolution.fromStorageKey(
-        resolution is String ? resolution : null,
-      ),
+      resolution: resolution,
+      targetSize: hasSize ? WallpaperTargetSize(tw, th) : defaultSize,
       path: path.trim(),
       autoApplied: raw['autoApplied'] is bool
           ? raw['autoApplied']! as bool

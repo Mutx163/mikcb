@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/bing_wallpaper.dart';
+import 'package:university_timetable/utils/home_page_background.dart';
 
 /// 钉住三件事（每一条都对应一个真实踩过的坑）：
 ///
@@ -205,9 +206,106 @@ void main() {
         );
         expect(name, endsWith('.jpg'));
       }
+      // ⚠️ 这里要**显式**给 target：省略时 `fileName` 取的是
+      // `downloadTargetSize`（屏幕分辨率与档位取大者），在测试环境（视口 2400×1800）
+      // 下那不是 1080×1920 —— 那是 2026-10-07 起的**新行为**，本条钉的是「默认尺寸
+      // 时名字保持旧形态、存量文件与台账不受影响」。
       expect(
-        item.fileName(BingWallpaperResolution.standard),
+        item.fileName(
+          BingWallpaperResolution.standard,
+          target: const WallpaperTargetSize(1080, 1920),
+        ),
         'wallpaper_bing_20261005_standard.jpg',
+      );
+    });
+
+    test('⭐ 实际请求尺寸 = 屏幕分辨率与档位下限取大者（2026-10-07）', () {
+      // 早先直接用档位的写死尺寸，于是只要屏幕比它大，App 就得为铺满**再放大一次**
+      // —— 图源那次放大之外又叠一段（用户 2026-10-07：「也太糊了」）。
+      final screen = wallpaperTargetSize();
+      for (final value in BingWallpaperResolution.values) {
+        final target = value.downloadTargetSize;
+        expect(
+          target.width,
+          greaterThanOrEqualTo(screen.width),
+          reason: '${value.storageKey}: 下载尺寸永远不小于屏幕宽度，否则 App 会二次放大',
+        );
+        expect(
+          target.height,
+          greaterThanOrEqualTo(screen.height),
+          reason: '${value.storageKey}: 同上，高度更关键（cover 的瓶颈是高度）',
+        );
+        expect(
+          target.height,
+          greaterThanOrEqualTo(value.height),
+          reason: '${value.storageKey}: 档位下限也不能丢，用户选它是为了保底质量',
+        );
+      }
+    });
+
+    test('fullUrl：目标比预生成档更大时改走 resize，且按屏幕比例', () {
+      // 预生成后缀是**固定**尺寸（`_1080x1920.jpg`），所以只要目标更大就不能用它 ——
+      // 否则等于主动要一张更小的图，App 还得再放大。
+      const url0 = BingWallpaperItem(
+        dateKey: '20261005',
+        urlBase: '/th?id=OHR.X_EN-US1',
+        title: '',
+        copyright: '',
+      );
+      final url = url0.fullUrl(
+        BingWallpaperResolution.standard,
+        target: const WallpaperTargetSize(1206, 2622),
+      );
+      expect(url, contains('w=1206'));
+      expect(url, contains('h=2622'));
+      expect(url, contains('c=4'), reason: '缺 c=4 会得到白边图，不是裁切图');
+      expect(
+        url,
+        isNot(contains('_1080x1920.jpg')),
+        reason: '预生成尺寸比目标小，用它就是主动降级',
+      );
+
+      // 目标与预生成档同大小时仍走后缀。
+      expect(
+        url0.fullUrl(
+          BingWallpaperResolution.standard,
+          target: const WallpaperTargetSize(1080, 1920),
+        ),
+        contains('_1080x1920.jpg'),
+      );
+    });
+
+    test('fileName：实际尺寸与档位默认不同时写进名字', () {
+      const entry = BingWallpaperItem(
+        dateKey: '20261005',
+        urlBase: '/th?id=OHR.X_EN-US1',
+        title: '',
+        copyright: '',
+      );
+      // 默认尺寸 → 名字保持旧形态（存量文件与台账不受影响）。
+      expect(
+        entry.fileName(
+          BingWallpaperResolution.standard,
+          target: const WallpaperTargetSize(1080, 1920),
+        ),
+        'wallpaper_bing_20261005_standard.jpg',
+      );
+      // 按屏幕尺寸下过 → 名字里必须能认出那一组，否则台账认为是两张、磁盘上是同一个
+      // 文件，后写的那份覆盖先写的，而**正在显示的**可能正是被覆盖掉的那张尺寸。
+      expect(
+        entry.fileName(
+          BingWallpaperResolution.standard,
+          target: const WallpaperTargetSize(1206, 2622),
+        ),
+        'wallpaper_bing_20261005_standard_1206x2622.jpg',
+      );
+      expect(
+        entry.fileName(
+          BingWallpaperResolution.standard,
+          target: const WallpaperTargetSize(1206, 2622),
+        ),
+        startsWith('wallpaper'),
+        reason: '删除守卫按 wallpaper 前缀判归属',
       );
     });
 

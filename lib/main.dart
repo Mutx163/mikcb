@@ -46,9 +46,9 @@ import 'widgets/home_menu_route_catalog.dart';
 import 'widgets/miuix_font_weight_scope.dart';
 import 'widgets/preblurred_wallpaper_glass.dart';
 import 'services/app_log_service.dart';
-import 'services/bing_wallpaper_service.dart';
 import 'services/bing_wallpaper_store.dart';
 import 'services/bundled_assets.dart';
+import 'services/daily_wallpaper_service.dart';
 import 'services/fair_memory_service.dart';
 import 'services/memory_stats_service.dart';
 import 'services/debug_deep_link_navigator.dart';
@@ -812,7 +812,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     await provider.handleAppResumed();
   }
 
-  /// 「每天首次打开自动换成 Bing 当天壁纸」。
+  /// 「每天首次打开自动换成当天壁纸」。
   ///
   /// ## 为什么放在启动流程里、而不是后台定时任务
   ///
@@ -821,12 +821,18 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   /// 这里挂在启动流程 `_revealMainContent()` 之后（与云同步拉取同一档 post-reveal），
   /// 于是首帧一定由本地设置驱动，换上的图只在**下一次**冷启动才看得到。
   ///
+  /// ## 图源由 [DailyWallpaperService] 调度（2026-10-07）
+  ///
+  /// 早先这里直接调 [BingWallpaperService.maybeApplyDaily]，所以只有 Bing 一个源。
+  /// 现在交给调度层，它按用户在设置里选的图源执行、必要时换源重试 —— 本方法的其余
+  /// 职责（写设置 / 缓存失效 / 不碰历史）一个字都没变。
+  ///
   /// ## 幂等由 service 兜住
   ///
-  /// [BingWallpaperService.maybeApplyDaily] 自己按 `lastAutoAppliedDate` 判「今天是否已
-  /// 换过」，所以同一天反复启动或切前台都不会重复下载。本方法只负责**把路径写进设置**，
-  /// 且刻意不碰「最近使用」历史（理由见 `.agents/notes/implemented/feature/
-  /// 2026-10-05-bing-daily-wallpaper-library.md`）。
+  /// 各源的 service 自己判「今天是否已换过」（Bing 比 `lastAutoAppliedDate`、
+  /// Wallhaven 比当天算出的 id + 图源世代号），所以同一天反复启动或切前台都不会重复
+  /// 下载。本方法只负责**把路径写进设置**，且刻意不碰「最近使用」历史（理由见
+  /// `.agents/notes/implemented/feature/2026-10-05-bing-daily-wallpaper-library.md`）。
   ///
   /// ## 开关关着时是一次纯本地判断
   ///
@@ -855,9 +861,9 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       if (!BingWallpaperStore.instance.autoApplyEnabled) {
         return;
       }
-      final result = await BingWallpaperService.maybeApplyDaily(
-        // 清台账溢出文件时要拿「所有课表」的当前壁纸当白名单 —— 本方法不依赖
-        // `TimetableProvider`（见 `BingWallpaperService` 类注释），只能由这里给。
+      final result = await DailyWallpaperService.applyDaily(
+        // 清台账溢出文件时要拿「所有课表」的当前壁纸当白名单 —— 调度层不依赖
+        // `TimetableProvider`（见 `DailyWallpaperService` 类注释），只能由这里给。
         inUsePaths: inUseWallpaperPaths([
           for (final profile in provider.profiles) profile.settings,
         ]),

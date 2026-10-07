@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/bing_wallpaper.dart';
 import 'package:university_timetable/services/bing_wallpaper_service.dart';
 import 'package:university_timetable/services/bing_wallpaper_store.dart';
+import 'package:university_timetable/utils/home_page_background.dart';
 import 'package:university_timetable/utils/managed_image_storage.dart';
 
 /// 钉住拉列表与下载的行为，重点是**失败一律静默**。
@@ -174,14 +175,16 @@ void main() {
 
   group('download', () {
     test('下载成功落到受管目录，文件名以 wallpaper 开头', () async {
+      String? capturedUrl;
       final service = BingWallpaperService(
-        client: MockClient(
-          (request) async => http.Response.bytes(
+        client: MockClient((request) async {
+          capturedUrl = request.url.toString();
+          return http.Response.bytes(
             <int>[0xFF, 0xD8, 0xFF, 0xE0],
             200,
             headers: <String, String>{'content-type': 'image/jpeg'},
-          ),
-        ),
+          );
+        }),
       );
       addTearDown(service.dispose);
 
@@ -200,20 +203,39 @@ void main() {
       expect(result.path, contains('home_page_wallpaper'));
       expect(
         result.path,
-        endsWith('wallpaper_bing_20261005_standard.jpg'),
-        reason: '前缀必须是 wallpaper，否则 deleteEvictedWallpaperFiles 的守卫放行它',
+        contains('wallpaper_bing_20261005_standard'),
+        reason: '前缀必须是 wallpaper，否则 deleteEvictedWallpaperFiles 的守卫放行它；'
+            '⚠️ 这里刻意**不**钉整串相等 —— 2026-10-07 起文件名可能带实际像素后缀'
+            '（按设备分辨率取尺寸），钉成整串等于把新行为锁死成回归',
       );
+      expect(result.path, endsWith('.jpg'));
       expect(File(result.path!).existsSync(), isTrue);
+
+      // ⭐ 请求尺寸按**屏幕**走，不按档位的写死尺寸（否则 App 要为铺满再放大一次）。
+      expect(capturedUrl, isNotNull, reason: '要抓到实际请求的 URL');
+      final params = Uri.parse(capturedUrl!).queryParameters;
+      expect(params['c'], '4', reason: '缺 c=4 会得到上下留白边的图');
+      final screen = wallpaperTargetSize();
+      expect(
+        '${params['w']}x${params['h']}',
+        '${screen.width}x${screen.height}',
+        reason: '实际请求尺寸必须等于这台设备的目标尺寸（= 屏幕分辨率与档位取大者）',
+      );
     });
 
     test('所选档位 404 → 退到本朝向下一档并如实标记 downgraded', () async {
-      // 竖屏 1080×2400 走 resize 接口；某天 Bing 给不出那个尺寸时不能直接失败。
+      // 竖屏档走 resize 接口；某天 Bing 给不出那个尺寸时不能直接失败。
+      //
+      // ⚠️ 判「哪个尺寸缺了」必须按 `downloadTargetSize` 算，**不能**写死 `h=2400`：
+      // 2026-10-07 起请求尺寸跟着设备分辨率走（测试环境视口 2400×1800 → 竖屏取
+      // 1800×2160），写死的话这个「404」一次都进不去，测试会假绿。
+      final tallTarget = BingWallpaperResolution.tall.downloadTargetSize;
       final service = BingWallpaperService(
         client: MockClient((request) async {
-          // ⚠️ 目标尺寸在**查询串**里（`?w=1080&h=2400&…`），不在 path 里 ——
-          // 按 `url.path` 判会永远不匹配，于是这个「404」分支一次都进不去，
-          // 测试会假绿。
-          if (request.url.queryParameters['h'] == '2400') {
+          // ⚠️ 目标尺寸在**查询串**里（`?w=…&h=…&…`），不在 path 里 ——
+          // 按 `url.path` 判会永远不匹配。
+          final h = request.url.queryParameters['h'];
+          if (h == '${tallTarget.height}') {
             return http.Response('not found', 404);
           }
           return http.Response.bytes(
@@ -246,7 +268,13 @@ void main() {
         BingWallpaperResolution.standard,
         reason: '实际档位必须是退到的 portraitStandard（台账与文件名都按它算）',
       );
-      expect(result.path, endsWith('_standard.jpg'));
+      expect(
+        result.path,
+        contains('_standard'),
+        reason: '⚠️ 不能 endsWith("_standard.jpg") —— 2026-10-07 起文件名可能带实际'
+            '像素后缀（`_standard_1800x2160.jpg`），那是按设备分辨率取尺寸的结果',
+      );
+      expect(result.path, endsWith('.jpg'));
     });
 
     test('断网（超时）→ 不退档重试：换尺寸也救不了，只会让用户白等两个超时', () async {
@@ -522,7 +550,7 @@ void main() {
         ),
       );
       expect(result.outcome, BingAutoApplyOutcome.appliedToday);
-      expect(result.path, contains('wallpaper_bing_20261005_standard.jpg'));
+      expect(result.path, contains('wallpaper_bing_20261005_standard'));
       expect(BingWallpaperStore.instance.lastAutoAppliedDate, '20261005');
     });
 
@@ -704,7 +732,7 @@ void main() {
         BingAutoApplyOutcome.appliedStale,
         reason: 'Bing 没有今天那张时换最新的那张，而不是静默放弃',
       );
-      expect(result.path, contains('wallpaper_bing_20261005_standard.jpg'));
+      expect(result.path, contains('wallpaper_bing_20261005_standard'));
       expect(result.dateKey, '20261005');
       expect(
         BingWallpaperStore.instance.lastAutoAppliedDate,
@@ -760,7 +788,7 @@ void main() {
       }
 
       expect(caughtUp.outcome, BingAutoApplyOutcome.appliedToday);
-      expect(caughtUp.path, contains('wallpaper_bing_20261006_standard.jpg'));
+      expect(caughtUp.path, contains('wallpaper_bing_20261006_standard'));
       expect(BingWallpaperStore.instance.lastAutoAppliedDate, '20261006');
     });
 
@@ -793,7 +821,7 @@ void main() {
 
       expect(listRequests, 1, reason: '命中旧缓存不该发请求，强制重拉才发');
       expect(result.outcome, BingAutoApplyOutcome.appliedToday);
-      expect(result.path, contains('wallpaper_bing_20261006_standard.jpg'));
+      expect(result.path, contains('wallpaper_bing_20261006_standard'));
       expect(BingWallpaperStore.instance.lastAutoAppliedDate, '20261006');
     });
   });

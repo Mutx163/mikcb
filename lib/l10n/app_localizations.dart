@@ -6321,6 +6321,30 @@ abstract class AppLocalizations {
   /// **'{width}×{height}，每张约 {size}'**
   String bingWallpaperResolutionHint(int width, int height, String size);
 
+  /// No description provided for @wallpaperDailySourceTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'图库来源'**
+  String get wallpaperDailySourceTitle;
+
+  /// No description provided for @wallpaperDailySourceBing.
+  ///
+  /// In zh, this message translates to:
+  /// **'每日更新'**
+  String get wallpaperDailySourceBing;
+
+  /// No description provided for @wallpaperDailySourceWallhaven.
+  ///
+  /// In zh, this message translates to:
+  /// **'竖版高清'**
+  String get wallpaperDailySourceWallhaven;
+
+  /// No description provided for @wallhavenWallpaperGalleryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'竖版高清图库'**
+  String get wallhavenWallpaperGalleryTitle;
+
   /// No description provided for @bingWallpaperDateToday.
   ///
   /// In zh, this message translates to:

@@ -2,6 +2,7 @@ import '../models/bing_wallpaper.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/timetable_settings.dart';
+import '../models/wallpaper_daily_source.dart';
 import '../utils/widget_course_accent.dart';
 import 'app_localizations.dart';
 
@@ -20,6 +21,34 @@ String bingWallpaperResolutionLabel(
   BingWallpaperResolution.standard => l10n.bingWallpaperResolutionStandard,
   BingWallpaperResolution.tall => l10n.bingWallpaperResolutionTall,
   BingWallpaperResolution.high => l10n.bingWallpaperResolutionHigh,
+};
+
+/// 每日壁纸**图源**的胶囊文案。
+///
+/// 两档各叫各的，且**不能**只用「高清 / 超清」那种画质词 —— 两者的差别**不在清晰度
+/// 一项**：Wallhaven 更清晰（原生竖图、放大 1.0），Bing 是每天必换。所以名字各自点出
+/// 自己那一项优势，用户一眼知道自己换来的是什么。
+///
+/// 同 `bingWallpaperResolutionLabel` 那条纪律：断言要钉在**用户看得见的这个值**上，
+/// 别只钉枚举内部键（见 `test/l10n/arb_duplicate_key_test.dart` 里那次「两个高清」）。
+String wallpaperDailySourceLabel(
+  AppLocalizations l10n,
+  WallpaperDailySource source,
+) => switch (source) {
+  WallpaperDailySource.bing => l10n.wallpaperDailySourceBing,
+  WallpaperDailySource.wallhaven => l10n.wallpaperDailySourceWallhaven,
+};
+
+/// 图库入口行的标题**随图源变**。
+///
+/// 加了第二个源之后那行不能再说死「Bing 每日壁纸」—— 否则选 Wallhaven 的用户点进去
+/// 看到的是另一个图库，而那一行还在说 Bing。
+String wallpaperDailySourceGalleryLabel(
+  AppLocalizations l10n,
+  WallpaperDailySource source,
+) => switch (source) {
+  WallpaperDailySource.bing => l10n.bingWallpaperGalleryTitle,
+  WallpaperDailySource.wallhaven => l10n.wallhavenWallpaperGalleryTitle,
 };
 
 String courseNatureLabel(AppLocalizations l10n, CourseNature nature) =>

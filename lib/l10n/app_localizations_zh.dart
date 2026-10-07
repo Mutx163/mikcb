@@ -3415,6 +3415,18 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get wallpaperDailySourceTitle => '图库来源';
+
+  @override
+  String get wallpaperDailySourceBing => '每日更新';
+
+  @override
+  String get wallpaperDailySourceWallhaven => '竖版高清';
+
+  @override
+  String get wallhavenWallpaperGalleryTitle => '竖版高清图库';
+
+  @override
   String get bingWallpaperDateToday => '今天';
 
   @override
@@ -14594,6 +14606,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String bingWallpaperResolutionHint(int width, int height, String size) {
     return '$width×$height，每張約 $size';
   }
+
+  @override
+  String get wallpaperDailySourceTitle => '圖庫來源';
+
+  @override
+  String get wallpaperDailySourceBing => '每日更新';
+
+  @override
+  String get wallpaperDailySourceWallhaven => '直向高清';
+
+  @override
+  String get wallhavenWallpaperGalleryTitle => '直向高清圖庫';
 
   @override
   String get bingWallpaperDateToday => '今日';
@@ -25815,6 +25839,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String bingWallpaperResolutionHint(int width, int height, String size) {
     return '$width×$height，每張約 $size';
   }
+
+  @override
+  String get wallpaperDailySourceTitle => '圖庫來源';
+
+  @override
+  String get wallpaperDailySourceBing => '每日更新';
+
+  @override
+  String get wallpaperDailySourceWallhaven => '直向高清';
+
+  @override
+  String get wallhavenWallpaperGalleryTitle => '直向高清圖庫';
 
   @override
   String get bingWallpaperDateToday => '今天';

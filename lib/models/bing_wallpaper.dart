@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../utils/home_page_background.dart';
+
 /// resize 接口的**取图源**后缀：`_UHD.jpg`。
 ///
 /// 竖屏三档里有两档 Bing 没预生成（`_1080x2400` / `_1440x2560` 都是 404），只能让它
@@ -86,6 +88,26 @@ enum BingWallpaperResolution {
   BingWallpaperResolution? get fallbackResolution =>
       index == 0 ? null : BingWallpaperResolution.values[index - 1];
 
+  /// 实际该向 Bing 要的像素尺寸（2026-10-07 起）。
+  ///
+  /// ## 口径：档位是**下限**，屏幕是**下限之上**
+  ///
+  /// 早先直接用 `width`/`height`（1080×1920 这类写死值），于是只要屏幕比它大，
+  /// App 就得为铺满**再放大一次** —— 图源那次放大之外又叠一段，两段放大比一段更糊
+  /// （用户 2026-10-07：「也太糊了」）。更要命的是比例对不上会留出多余的竖向余量：
+  /// 9:20 的图铺到 9:19.5 的屏上会**上下能拖**，而拖到的每段都是被放大过的最糊处。
+  ///
+  /// 所以：**先按屏幕真实分辨率取尺寸，再按当前档位抬到不低于档位**。用户选低档位
+  /// 省流量 / 省空间的意图仍然成立（档位下限在），但不会换来「让 App 二次放大」——
+  /// 那从来不是「清晰度低」，只是**多糊一段**。
+  ///
+  /// 仍要保留 [width] / [pixelHeight] 作为**档位下限**与界面文案里的实测值，
+  /// 不要因为「实际请求尺寸不再等于它」就把这两个字段改掉。
+  WallpaperTargetSize get downloadTargetSize => wallpaperTargetSize().atLeast(
+    width,
+    height,
+  );
+
   /// [kilobytes] 的人类可读写法（l10n 的 `size` 占位符要 String）。
   ///
   /// 「0.3 MB」这种数在选画质时反而不如「322 KB」有概念，所以不到 1 MB 保留 KB。
@@ -161,12 +183,23 @@ class BingWallpaperItem {
   ///
   /// 两条路（见 [BingWallpaperResolution] 的说明）：预生成尺寸走后缀，Bing 没预生成
   /// 的尺寸走 resize 接口**并且必须带 `c=4`**，否则 Bing 会补白边而不是裁切。
-  String fullUrl(BingWallpaperResolution resolution) {
+  ///
+  /// [target] 给定时按它要尺寸（见 [bingWallpaperDownloadTargetSize]）：档位只当**保底**，
+  /// 实际请求不小于屏幕，于是 App 侧不再二次放大。
+  String fullUrl(
+    BingWallpaperResolution resolution, {
+    WallpaperTargetSize? target,
+  }) {
     final suffix = resolution.sizeSuffix;
-    if (suffix != null) {
+    // 预生成档只在「尺寸刚好够」时走后缀：档位尺寸小于屏幕时走后缀等于**主动**要一张
+    // 更小的图，App 还得再放大一次 —— 正是要消除的那一层。
+    if (suffix != null &&
+        (target == null || target.height <= resolution.height)) {
       return '$absoluteUrlBase$suffix';
     }
-    return resizeUrl(width: resolution.width, height: resolution.height);
+    final size =
+        target ?? WallpaperTargetSize(resolution.width, resolution.height);
+    return resizeUrl(width: size.width, height: size.height);
   }
 
   /// 让 Bing 按 [width]×[height] **填满裁切**出一张。
@@ -203,8 +236,24 @@ class BingWallpaperItem {
   ///
   /// 用 [dateKey] 与档位而不是时间戳，于是「同一天同一档位」天然落在同一个文件名上，
   /// 重复下载会直接覆盖而不是攒出一串重复图 —— 这是台账之外的一道保险。
-  String fileName(BingWallpaperResolution resolution) =>
-      'wallpaper_bing_${dateKey}_${resolution.storageKey}.jpg';
+  ///
+  /// [target] 非空时把**实际像素**也写进文件名（2026-10-07）。原因见
+  /// [BingWallpaperResolution.downloadTargetSize]：实际请求尺寸已经跟着设备变了，
+  /// 文件名再只按档位区分，就会让「1080 宽那张」和「1206 宽那张」共用一个名字 ——
+  /// 台账（键含尺寸）认为是两张，磁盘上却是同一个文件，后者覆盖前者，
+  /// 而**正在显示的**首页壁纸可能正是被覆盖掉的那张尺寸。
+  ///
+  /// 尺寸只在与该档**默认**尺寸不同时才写进名字：绝大多数设备用默认尺寸，
+  /// 保持旧名字不变，存量文件与台账不受影响。
+  String fileName(
+    BingWallpaperResolution resolution, {
+    WallpaperTargetSize? target,
+  }) {
+    final size = target ?? resolution.downloadTargetSize;
+    final base = WallpaperTargetSize(resolution.width, resolution.height);
+    final suffix = size == base ? '' : '_${size.width}x${size.height}';
+    return 'wallpaper_bing_${dateKey}_${resolution.storageKey}$suffix.jpg';
+  }
 
   /// 非法输入返回 null 而不是抛错：接口 JSON 可能被 Bing 改字段或手改存档。
   static BingWallpaperItem? fromJson(Object? raw) {

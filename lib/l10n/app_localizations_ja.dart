@@ -3483,6 +3483,18 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get wallpaperDailySourceTitle => 'ギャラリーの提供元';
+
+  @override
+  String get wallpaperDailySourceBing => '毎日更新';
+
+  @override
+  String get wallpaperDailySourceWallhaven => '縦長高画質';
+
+  @override
+  String get wallhavenWallpaperGalleryTitle => '縦長高画質ギャラリー';
+
+  @override
   String get bingWallpaperDateToday => '今日';
 
   @override
