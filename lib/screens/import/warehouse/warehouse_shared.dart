@@ -401,18 +401,3 @@ WarehouseIndexBarGeometry warehouseIndexBarGeometry({
     width: kIndexBarWidth,
   );
 }
-
-/// 学校列表的右边距：字母条可见时把它占的宽度让出来。
-///
-/// 上游 `BaseIndexBar` 的手势是 `HitTestBehavior.translucent`，条子从
-/// `W-30` 起铺到右边缘；右边距只有 16px 时，条子会压住每行最右 14px，点
-/// 那一竖不会打开学校而是跳到某个字母组（行根本收不到指针，Stack 从上往
-/// 下第一个命中就是条子）。行的箭头不受影响（实测右缘在 W-32）。
-/// 搜索态字母条是空数据、不渲染，不占位。
-double warehouseSchoolListRightInset({
-  double baseInset = 16,
-  double indexBarWidth = kIndexBarWidth,
-  required bool indexBarVisible,
-}) {
-  return baseInset + (indexBarVisible ? indexBarWidth : 0);
-}

@@ -200,15 +200,5 @@ void main() {
       expect(geometry.height, 0);
       expect(geometry.itemHeight, greaterThan(0));
     });
-
-    test('字母条可见时列表右边距让出整条宽度，不留死区', () {
-      // 条子从 W-30 起铺到右边缘，右距只有 16px 时会压住每行最右 14px，
-      // 点那一竖条收不到行的指针、只会跳组。
-      final visible = warehouseSchoolListRightInset(indexBarVisible: true);
-      expect(visible, greaterThanOrEqualTo(16 + kIndexBarWidth));
-      // 搜索态字母条是空数据、不渲染，不该白白缩窄列表。
-      final hidden = warehouseSchoolListRightInset(indexBarVisible: false);
-      expect(hidden, 16);
-    });
   });
 }

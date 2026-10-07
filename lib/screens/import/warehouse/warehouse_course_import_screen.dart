@@ -731,14 +731,6 @@ class _WarehouseCourseImportScreenState
                       tagCount: indexTags.length,
                       availableHeight: viewportHeight,
                     );
-                    // 字母条可见时把列表右边距让出来：BaseIndexBar 手势是
-                    // HitTestBehavior.translucent，原来只有 16px 右距，
-                    // 条子压住每行最右 14px，点那一竖不会打开学校而是跳组
-                    // （行根本收不到指针）。搜索时条子空数据、不占位。
-                    final rightInset = warehouseSchoolListRightInset(
-                      indexBarWidth: barGeometry.width,
-                      indexBarVisible: !isSearching,
-                    );
                     return Stack(
                       children: [
                         AzListView(
@@ -746,12 +738,12 @@ class _WarehouseCourseImportScreenState
                           itemCount: sections.length,
                           itemScrollController: _schoolItemScrollController,
                           itemPositionsListener: _schoolItemPositionsListener,
-                          padding: EdgeInsets.fromLTRB(
-                            16,
-                            headerInset,
-                            rightInset,
-                            16,
-                          ),
+                          // 右边距保持 16。字母条的手势区是 translucent，Stack
+                          // 从上往下第一个命中就是它，会吃掉每行最右 14px——但
+                          // **不能**为此把右距让成 16+条宽，那会把整张列表挤窄、
+                          // 行整体偏左，比被吃掉的那一竖难看得多。行的箭头右缘
+                          // 在 W-32、条子从 W-30 起，点箭头不受影响。
+                          padding: EdgeInsets.fromLTRB(16, headerInset, 16, 16),
                           indexBarData: const [],
                           itemBuilder: (context, index) {
                             final section = sections[index];
