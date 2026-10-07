@@ -2743,7 +2743,11 @@ class TimetableSettings {
         CourseGlassTuning.fromJson,
       ),
       courseCardGlassPreset: LiquidGlassPresetX.fromValue(
-        json['courseCardGlassPreset'] as String?,
+        // 非字符串坏值按缺键处理（回 standard），不抛，否则坏一键触发整份回退。
+        // 审计算出来的同族缺口，见 b0f3589f 的 parseNestedObject 口径。
+        json['courseCardGlassPreset'] is String
+            ? json['courseCardGlassPreset'] as String
+            : null,
       ),
       // 两个玻璃带显示开关已下线（顶栏玻璃归外观页材质五档），恒为开。
       // ignore: avoid_redundant_argument_values -- 故意写死默认值（下线旧开关）。
