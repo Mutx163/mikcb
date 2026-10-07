@@ -3495,6 +3495,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get wallhavenWallpaperGalleryTitle => '縦長高画質ギャラリー';
 
   @override
+  String get wallhavenGalleryFailed =>
+      '縦長高画質ギャラリーを読み込めませんでした。ネットワークを確認して再試行してください';
+
+  @override
   String get bingWallpaperDateToday => '今日';
 
   @override

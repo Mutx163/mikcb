@@ -6345,6 +6345,12 @@ abstract class AppLocalizations {
   /// **'竖版高清图库'**
   String get wallhavenWallpaperGalleryTitle;
 
+  /// No description provided for @wallhavenGalleryFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能取到竖版高清图库，请检查网络后重试'**
+  String get wallhavenGalleryFailed;
+
   /// No description provided for @bingWallpaperDateToday.
   ///
   /// In zh, this message translates to:

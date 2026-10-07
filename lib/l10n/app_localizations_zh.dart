@@ -3427,6 +3427,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get wallhavenWallpaperGalleryTitle => '竖版高清图库';
 
   @override
+  String get wallhavenGalleryFailed => '没能取到竖版高清图库，请检查网络后重试';
+
+  @override
   String get bingWallpaperDateToday => '今天';
 
   @override
@@ -14618,6 +14621,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get wallhavenWallpaperGalleryTitle => '直向高清圖庫';
+
+  @override
+  String get wallhavenGalleryFailed => '未能取得直向高清圖庫，請檢查網絡後再試';
 
   @override
   String get bingWallpaperDateToday => '今日';
@@ -25851,6 +25857,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get wallhavenWallpaperGalleryTitle => '直向高清圖庫';
+
+  @override
+  String get wallhavenGalleryFailed => '未能取得直向高清圖庫，請檢查網路後再試';
 
   @override
   String get bingWallpaperDateToday => '今天';

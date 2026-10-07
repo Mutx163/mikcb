@@ -1979,6 +1979,7 @@
   "wallpaperDailySourceBing": "每日更新",
   "wallpaperDailySourceWallhaven": "竖版高清",
   "wallhavenWallpaperGalleryTitle": "竖版高清图库",
+  "wallhavenGalleryFailed": "没能取到竖版高清图库，请检查网络后重试",
   "bingWallpaperDateToday": "今天",
   "bingWallpaperDateYesterday": "昨天",
   "bingWallpaperDateMonthDay": "{month} 月 {day} 日",

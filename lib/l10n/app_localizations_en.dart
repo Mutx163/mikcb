@@ -3645,6 +3645,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wallhavenWallpaperGalleryTitle => 'Portrait HD gallery';
 
   @override
+  String get wallhavenGalleryFailed =>
+      'Couldn\'t load the portrait gallery. Check your connection and retry.';
+
+  @override
   String get bingWallpaperDateToday => 'Today';
 
   @override

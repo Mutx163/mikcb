@@ -110,8 +110,24 @@ class WallhavenWallpaperService {
 
   static const String _searchEndpoint = 'https://wallhaven.cc/api/v1/search';
 
-  /// 清单超时：与 `BingWallpaperService` 同档（8 秒），这是锦上添花的请求。
-  static const Duration _listTimeout = Duration(seconds: 8);
+  /// **后台**（每天自动换）用的清单超时：8 秒，与 `BingWallpaperService` 同档。
+  ///
+  /// 那是挂在启动路径上的锦上添花请求，宁可失败也不该让 App 启动变慢。
+  static const Duration backgroundListTimeout = Duration(seconds: 8);
+
+  /// **前台**（图库页）用的清单超时：25 秒。
+  ///
+  /// ## ⚠️ 这两个预算不能取同一个值
+  ///
+  /// 8 秒对 Bing 成立（微软国内有节点），对 Wallhaven **不成立** —— 它挂在 Cloudflare
+  /// 后面，而 Cloudflare 在大陆是「**降级**」而不是「不通」：线路差的手机上光是
+  /// TLS 握手就要好几秒。实测 2026-10-07 有用户的两次图库拉取都在第 8 秒整被判失败
+  /// （日志 `TimeoutException after 0:00:08`），而**同一台手机同一次会话里 Bing
+  /// 拉取成功** —— 所以那不是断网，是这一个源慢。
+  ///
+  /// 而图库页是**用户正盯着等**的界面：他多等十几秒还会回来接着用，弹一句
+  /// 「没能取到」他只会以为 App 坏了（2026-10-07 实测）。
+  static const Duration foregroundListTimeout = Duration(seconds: 25);
 
   final http.Client _client;
   final bool _ownsClient;
@@ -149,9 +165,13 @@ class WallhavenWallpaperService {
   );
 
   /// 拉竖版清单；失败返回空列表（**不抛**）。
+  ///
+  /// [timeout] 默认给 [backgroundListTimeout]（后台那条路径）。图库页要显式传
+  /// [foregroundListTimeout] —— 理由见那两个常量的注释。
   Future<List<WallhavenWallpaperItem>> fetchPortrait({
     WallhavenSort sort = WallhavenSort.toplist,
     int page = 1,
+    Duration timeout = backgroundListTimeout,
   }) async {
     final query = WallhavenQuery(
       ratios: kPortraitRatios,
@@ -168,7 +188,7 @@ class WallhavenWallpaperService {
       appDebugLog(_tag, 'list start page=$page sort=${sort.wire}');
       final response = await _client
           .get(uri, headers: const {'User-Agent': 'mikcb-wallpaper'})
-          .timeout(_listTimeout);
+          .timeout(timeout);
       if (response.statusCode != 200) {
         appDebugLog(_tag, 'list failed status=${response.statusCode}');
         await _logWarn('wallhaven_wallpaper_list_failed', 'status=${response.statusCode}');

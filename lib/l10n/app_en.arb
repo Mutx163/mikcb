@@ -1949,6 +1949,7 @@
   "wallpaperDailySourceBing": "Updated daily",
   "wallpaperDailySourceWallhaven": "Portrait HD",
   "wallhavenWallpaperGalleryTitle": "Portrait HD gallery",
+  "wallhavenGalleryFailed": "Couldn't load the portrait gallery. Check your connection and retry.",
   "bingWallpaperDateToday": "Today",
   "bingWallpaperDateYesterday": "Yesterday",
   "bingWallpaperDateMonthDay": "{month}/{day}",

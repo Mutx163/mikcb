@@ -6281,6 +6281,7 @@
   "wallpaperDailySourceBing": "每日更新",
   "wallpaperDailySourceWallhaven": "直向高清",
   "wallhavenWallpaperGalleryTitle": "直向高清圖庫",
+  "wallhavenGalleryFailed": "未能取得直向高清圖庫，請檢查網絡後再試",
   "bingWallpaperDateToday": "今日",
   "bingWallpaperDateYesterday": "尋日",
   "bingWallpaperDateMonthDay": "{month} 月 {day} 日",

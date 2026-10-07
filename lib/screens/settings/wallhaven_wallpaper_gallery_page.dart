@@ -102,7 +102,13 @@ class _WallhavenWallpaperGalleryPageState
     try {
       // `forceRefresh` 在这个接口上**没有对应语义**（它不是日历源，没有缓存可清），
       // 所以保留参数只为与 Bing 那页的调用签名一致；下拉刷新就真的重拉一次。
-      items = await service.fetchPortrait();
+      //
+      // ⚠️ 超时必须显式给**前台**档，不能吃 `fetchPortrait` 的 8 秒默认值 ——
+      // 用户正盯着这一页，而 Wallhaven 挂 Cloudflare（大陆是降级不是不通），
+      // 8 秒会把「慢」误判成「坏」。理由见 `foregroundListTimeout` 的注释。
+      items = await service.fetchPortrait(
+        timeout: WallhavenWallpaperService.foregroundListTimeout,
+      );
     } finally {
       service.dispose();
     }
@@ -260,7 +266,9 @@ class _WallhavenWallpaperGalleryPageState
             ),
             const SizedBox(height: 12),
             Text(
-              l10n.bingWallpaperGalleryFailed,
+              // ⚠️ 这里曾复用 `bingWallpaperGalleryFailed`，于是用户在「竖版高清图库」
+              // 页看到「没能取到 **Bing** 每日壁纸」—— 分不清是选错图源还是 App 坏了。
+              l10n.wallhavenGalleryFailed,
               textAlign: TextAlign.center,
               style: HyperosTypography.listDetail(
                 context,

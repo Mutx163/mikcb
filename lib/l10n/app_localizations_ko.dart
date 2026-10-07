@@ -3514,6 +3514,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get wallhavenWallpaperGalleryTitle => '세로 고화질 갤러리';
 
   @override
+  String get wallhavenGalleryFailed =>
+      '세로 고화질 갤러리를 불러오지 못했습니다. 네트워크를 확인한 뒤 다시 시도하세요';
+
+  @override
   String get bingWallpaperDateToday => '오늘';
 
   @override
