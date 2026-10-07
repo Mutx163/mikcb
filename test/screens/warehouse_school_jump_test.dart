@@ -37,13 +37,12 @@ void main() {
       }
 
       final base = await read(1);
-      // 大标题本身（title1 * 1.2 = 38.4）加上它下面那点间距、减去折叠行自己的
-      // 4px 下边距 ≈ 46。上下界只是防呆，真正要紧的是它随字号变。
-      expect(base, greaterThan(30));
-      expect(base, lessThan(80));
+      // 就是大标题那一行的高度：title1(32) × height 1.2 = 38.4。折叠量必须
+      // **恰好**是这个数——多减会让落点偏高、把目标组的字母切掉上半截
+      // （2026-10-07 实机），少减会让上一组露在顶栏下沿之下。
+      expect(base, closeTo(38.4, 0.01));
       // 字号放大时折叠量必须跟着放大，否则换算出来仍会露出上一组。
-      expect(await read(1.5), greaterThan(base));
-      expect(base, closeTo(46.4, 1));
+      expect(await read(1.5), closeTo(57.6, 0.01));
     });
 
     testWidgets('collapsedContentTopInset 扣掉折叠量且不为负', (tester) async {

@@ -202,19 +202,23 @@ abstract final class HyperosBlurredHeader {
   ///   只画到折叠高度，展开高度与实际之间就空出这一截，上一节的行会露在顶栏
   ///   下沿之下。这时必须减掉它。
   ///
-  /// 数值与 [contentTopInsetCollapsible] 同一套公式：展开 = 安全区 + 折叠行 +
-  /// 大标题 + 大标题下边距 + 大标题与内容的间距；折叠后少了后三项，换回折叠
-  /// 行自身那点下边距。
+  /// 数值取 `title1 × 1.2 × 系统字号`，**就是大标题实际占的高度**：
+  /// `HyperosCollapsibleTopAppBar` 的 `_largeTitleStyle` 写死了 `height: 1.2`，
+  /// 那行字画出来多高、`scale(title1 * 1.2)` 就是多高。它把顶栏布成
+  /// `max(折叠行 52 + expandedBottomPadding 4, 小标题…) + 扩展行`——折叠时
+  /// `barHeight` 回到 52、展开时是 `52 + 大标题高`，两者**只差大标题那一项**
+  /// （hyperos_collapsible_top_app_bar.dart:1166-1168 与 1236-1242）。
+  ///
+  /// ⚠️ 别把 [HyperosMiuixTopAppBar.largeTitleContentGap] 也算进来：它是顶栏
+  /// **盒子之外**为正文预留的间距（`bandBottomOverhang` 用的就是它），不在顶栏
+  /// 高度里。2026-10-07 第一版多减了它（连同 `largeTitleBottomPadding` 与折叠
+  /// 行自己的 4px 抵消后净多 8px），实测就是目标组的字母被顶栏切掉上半截。
+  /// [contentTopInsetCollapsible] 里那两项是它作为**未测量前的估算**额外加的
+  /// 余量，不能拿来当折叠量。
   static double collapsibleLargeTitleCollapsedHeight(BuildContext context) {
-    final scaledLargeTitleHeight = MediaQuery.textScalerOf(
+    return MediaQuery.textScalerOf(
       context,
     ).scale(HyperosMiuixTypography.title1 * 1.2);
-    return scaledLargeTitleHeight +
-        HyperosMiuixTopAppBar.largeTitleBottomPadding +
-        HyperosMiuixTopAppBar.largeTitleContentGap -
-        // 折叠行自己也有这 4px 下边距（见 [contentTopInset] 的
-        // headerPaddingBottom），减掉上面两项时要还回来。
-        _headerPaddingBottom;
   }
 
   /// 折叠后正文应该停在的高度：从展开的 [expandedTopInset] 里扣掉大标题收起
