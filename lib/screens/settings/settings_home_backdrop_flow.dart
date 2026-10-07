@@ -460,15 +460,22 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     );
   }
 
-  /// 「Bing 每日壁纸」入口行 + 自动换开关。
+  /// 「每日壁纸」入口行 + 图源选择 + 自动换开关。
   ///
-  /// 放在「最近使用」之后：相册选图与历史回放是**用户自己的图**，Bing 是**外部来源**，
+  /// 放在「最近使用」之后：相册选图与历史回放是**用户自己的图**，图库是**外部来源**，
   /// 顺序上后者在后。开关紧跟入口行 —— 用户在图库页挑上瘾了，顺手就能把自动换打开。
+  ///
+  /// ## 入口行的文案随图源走（2026-10-07）
+  ///
+  /// 入口行原来写死「Bing 每日壁纸」，加了第二个源之后那行会说谎。改成
+  /// [wallpaperDailySourceGalleryLabel]：选 Bing 时仍叫「Bing 每日壁纸」，选
+  /// Wallhaven 时叫「竖版高清图库」—— 用户按这行字找得到自己选的那个源。
   Widget _buildBingWallpaperTile(
     BuildContext context, {
     required AppLocalizations l10n,
   }) {
     final inset = bingWallpaperRowInset;
+    final source = BingWallpaperStore.instance.dailySource;
     return Padding(
       padding: EdgeInsets.fromLTRB(inset, 4, inset, 14),
       child: Column(
@@ -477,12 +484,20 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
           SizedBox(
             width: double.infinity,
             child: HyperosButton(
-              label: l10n.bingWallpaperGalleryTitle,
+              label: wallpaperDailySourceGalleryLabel(l10n, source),
               variant: HyperosButtonVariant.secondary,
               onPressed: _openBingWallpaperGallery,
             ),
           ),
           const SizedBox(height: 4),
+          // 图源选择。放在**入口行正下方**而不是图库页顶部，理由与画质档位那句
+          // ⚠️ 相反：画质只影响「下载那一刻」且已默认能用，而**图源决定用户进的是哪个
+          // 图库** —— 藏进图库页就意味着「用户得先知道自己选了什么才能看到自己选了什么」。
+          // ⚠️ 与下面的自动换开关一样必须自己订阅 notifier（理由见那段注释）。
+          ValueListenableBuilder<int>(
+            valueListenable: BingWallpaperStore.notifier,
+            builder: (context, _, _) => _buildWallpaperSourcePicker(context),
+          ),
           // ⚠️ 这颗开关**必须自己订阅台账通知**，不能靠宿主 `setState`。
           //
           // 壁纸弹层的正文插在**根覆盖层**里，**不在宿主的 widget 树下**（见
@@ -507,6 +522,41 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
                   : Colors.transparent,
               value: BingWallpaperStore.instance.autoApplyEnabled,
               onChanged: _setBingAutoApply,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 图源选择那一排胶囊。
+  ///
+  /// 只有两档，所以排**一排**（与 `HyperosChipRow` 的用法一致）。副标题只说「哪个
+  /// 更清晰、哪个每天必换」—— 这是用户选它时唯一需要的取舍，不放长解释（页面不放
+  /// 解释性灰字这条规矩见 `_buildResolutionSection` 里那段⚠️）。
+  Widget _buildWallpaperSourcePicker(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final store = BingWallpaperStore.instance;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.wallpaperDailySourceTitle,
+            style: HyperosTypography.listDetail(
+              context,
+            ).copyWith(color: HyperosColors.secondaryText(context)),
+          ),
+          const SizedBox(height: 6),
+          HyperosChipRow(
+            labels: <String>[
+              for (final value in WallpaperDailySource.values)
+                wallpaperDailySourceLabel(l10n, value),
+            ],
+            selectedIndex: store.dailySource.index,
+            onChanged: (index) => unawaited(
+              store.setDailySource(WallpaperDailySource.values[index]),
             ),
           ),
         ],
@@ -555,7 +605,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 这张仍会出现在「最近使用」里 —— [_buildRecentWallpaperTile] 会把「当前生效但
   /// 历史里没有」那张补在最前。
   Future<void> _applyDailyBingWallpaper() async {
-    final result = await BingWallpaperService.maybeApplyDaily(
+    final result = await DailyWallpaperService.applyDaily(
       // 白名单三路已在 `_deleteEvictedWallpapers` 里并起来，这里给"所有课表当前壁纸
       // + 本页草稿那张"那一路。新图由那个方法自己加进白名单。
       inUsePaths: _inUseWallpaperPaths(),
@@ -564,8 +614,10 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
       return;
     }
     final l10n = AppLocalizations.of(context)!;
+    // 判据用的是**归一后**的结局（`DailyWallpaperApplyOutcome`），所以这一处 switch
+    // 与图源无关：将来加第三个源也不必改它（理由见 `DailyWallpaperService`）。
     switch (result.outcome) {
-      case BingAutoApplyOutcome.failed:
+      case DailyWallpaperApplyOutcome.failed:
         // ⚠️ 这里**必须**出声。用户刚点了开关、亲眼看过「正在换成今天的壁纸」，
         // 早先的实现在这里直接 return，于是无论断网、拉不到、还是「Bing 还没出今天的
         // 图」，用户看到的都是同一句提示之后**什么都没有** —— 也就是用户报的原话
@@ -577,7 +629,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
           showKindIcon: true,
         );
         return;
-      case BingAutoApplyOutcome.alreadyApplied:
+      case DailyWallpaperApplyOutcome.alreadyApplied:
         // 今天已经换过了。这不是错误，但用户是**刚点了开关**才走到这里的，
         // 同样不能一句话都不给。
         showAppToast(
@@ -585,16 +637,19 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
           message: l10n.bingWallpaperAutoApplyAlreadyDone,
         );
         return;
-      case BingAutoApplyOutcome.appliedStale:
+      case DailyWallpaperApplyOutcome.appliedStale:
         // 换成了，只是换的不是今天那张 —— 说清楚是哪一天，别让用户以为程序出错。
+        //
+        // ⚠️ 这一档**只有 Bing 会有**（Wallhaven 没有「今天那张还没放出来」这回事），
+        // 所以这里用 `bingWallpaperDateLabel` 把 `dateKey` 讲成日期是安全的。
         showAppToast(
           context,
           message: l10n.bingWallpaperAutoApplyStale(
-            bingWallpaperDateLabel(l10n, result.dateKey ?? ''),
+            bingWallpaperDateLabel(l10n, result.itemId ?? ''),
           ),
         );
-      case BingAutoApplyOutcome.disabled:
-      case BingAutoApplyOutcome.appliedToday:
+      case DailyWallpaperApplyOutcome.disabled:
+      case DailyWallpaperApplyOutcome.appliedToday:
         break;
     }
     final path = result.path!;
@@ -643,14 +698,27 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
       if (!mounted) {
         return;
       }
-      await pushBingWallpaperGalleryPage(
-        context,
-        onImageDownloaded: _applyBingDownloadedImage,
-        // 白名单必须与 `_inUseWallpaperPaths` 同口径（所有课表 + 草稿）：
-        // 自动换写下的壁纸**不在「最近使用」里**，只传当前这一张会在台账溢出时
-        // 删掉别的课表正在用的那张，首页当场裂图。
-        protectedPaths: _inUseWallpaperPaths(),
-      );
+      // 白名单必须与 `_inUseWallpaperPaths` 同口径（所有课表 + 草稿）：自动换写下的
+      // 壁纸**不在「最近使用」里**，只传当前这一张会在台账溢出时删掉别的课表正在用的
+      // 那张，首页当场裂图。
+      final protected = _inUseWallpaperPaths();
+      // ⚠️ 两页的 `onImageDownloaded` **共用同一个宿主方法**：位置编辑页 → 落盘 →
+      // 补记历史 → 三处缓存失效这一整套流程与图源无关，抄第二遍只会多出一条
+      // 「能下载但没补记历史」的旁路（那正是这套流程最忌讳的分叉，见图库页类注释）。
+      switch (BingWallpaperStore.instance.dailySource) {
+        case WallpaperDailySource.bing:
+          await pushBingWallpaperGalleryPage(
+            context,
+            onImageDownloaded: _applyBingDownloadedImage,
+            protectedPaths: protected,
+          );
+        case WallpaperDailySource.wallhaven:
+          await pushWallhavenWallpaperGalleryPage(
+            context,
+            onImageDownloaded: _applyBingDownloadedImage,
+            protectedPaths: protected,
+          );
+      }
     });
   }
 

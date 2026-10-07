@@ -12,6 +12,7 @@ import '../../services/wallpaper_history_service.dart';
 import '../../utils/bing_wallpaper_date_label.dart';
 import '../../ui/hyperos/hyperos.dart';
 import '../../utils/app_toast.dart';
+import '../../utils/home_page_background.dart';
 import '../../utils/wallpaper_history.dart';
 
 /// 图库里点中一张、已下好本地之后的收尾，由宿主实现。
@@ -145,10 +146,15 @@ class _BingWallpaperGalleryPageState
       return;
     }
     final resolution = BingWallpaperStore.instance.resolution;
-    setState(() => _downloadingKey = _entryKey(item, resolution));
+    // 实际要下的像素（屏幕分辨率与档位下限取大者，见
+    // [BingWallpaperResolution.downloadTargetSize]）。查询台账与下载都要用**这一组**，
+    // 否则会拿旧尺寸那张糊的当命中、或下到与文件名不一致的尺寸。
+    final targetSize = resolution.downloadTargetSize;
+    setState(() => _downloadingKey = _entryKey(item, resolution, targetSize));
     var path = await BingWallpaperStore.instance.findExisting(
       item.dateKey,
       resolution,
+      targetSize: targetSize,
     );
     // 命中已下过的复用路径时，「实际那一档」就是当初记账的那一档；只有真去下载
     // 才可能退档，所以初值取所选档。
@@ -176,6 +182,7 @@ class _BingWallpaperGalleryPageState
             resolution: result.resolution!,
             path: result.path!,
             autoApplied: false,
+            targetSize: resolution.downloadTargetSize,
           );
           unawaited(_deleteEvicted(evicted, keep: result.path));
         } else {
@@ -242,10 +249,18 @@ class _BingWallpaperGalleryPageState
     );
   }
 
+  /// 「正在下载这张」的键。
+  ///
+  /// 必须带**实际尺寸**（2026-10-07）：同一天同一档位在换设备/改设置后可能对应两组像素，
+  /// 只按 `dateKey@档位` 判 busy 会让正在下的那一张**不再显示转圈**（用户会以为可以再点，
+  /// 于是并发下两次同一张 —— 那正是 `downloadToManagedImage` 临时名事故的来源）。
   static String _entryKey(
     BingWallpaperItem item,
     BingWallpaperResolution resolution,
-  ) => '${item.dateKey}@${resolution.storageKey}';
+    WallpaperTargetSize targetSize,
+  ) =>
+      '${item.dateKey}@${resolution.storageKey}'
+      '@${targetSize.width}x${targetSize.height}';
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
@@ -394,9 +409,13 @@ class _BingWallpaperGalleryPageState
           // （讲清「总放大倍数 = 屏幕高 / 原图高」这个上限）。**需要解释的，放注释和笔记，
           // 不放页面。**
           Text(
+            // ⚠️ 报的是**实际要下的那组像素**，不是档位的写死尺寸（2026-10-07）：
+            // 用户看到的是真会拿到的那张，而那一组已经跟着这台设备变过了。若继续报
+            // 「1080×1920」，选了档位却在 1206×2622 的机上拿到更大的图，反过来也一样 ——
+            // 数字与实际不符就等于没有。
             l10n.bingWallpaperResolutionHint(
-              current.pixelWidth,
-              current.pixelHeight,
+              current.downloadTargetSize.width,
+              current.downloadTargetSize.height,
               current.approximateSizeLabel,
             ),
             style: HyperosTypography.listDetail(context).copyWith(
@@ -443,7 +462,9 @@ class _BingWallpaperGalleryPageState
   Widget _buildTile(BuildContext context, BingWallpaperItem item) {
     final l10n = AppLocalizations.of(context)!;
     final resolution = BingWallpaperStore.instance.resolution;
-    final busy = _downloadingKey == _entryKey(item, resolution);
+    final busy =
+        _downloadingKey ==
+        _entryKey(item, resolution, resolution.downloadTargetSize);
     return MiuixPressable(
       onPressed: busy ? null : () => _pick(item),
       borderRadius: BorderRadius.circular(12),

@@ -80,9 +80,12 @@ void main() {
 
     test('失败与「不是今天」两条结局都必须给用户出声', () {
       final body = _applyDailyBingWallpaperBody();
-      expect(body, contains('BingAutoApplyOutcome.failed'));
-      expect(body, contains('BingAutoApplyOutcome.alreadyApplied'));
-      expect(body, contains('BingAutoApplyOutcome.appliedStale'));
+      // ⚠️ 断言钉的是**归一后**的 `DailyWallpaperApplyOutcome`（2026-10-07 加第二个
+      // 图源时引入）：那一层 `switch` 与图源无关，所以这里也跟着改。钉旧的
+      // `BingAutoApplyOutcome` 会让「界面只处理一个源的结局」这种分叉悄悄回来。
+      expect(body, contains('DailyWallpaperApplyOutcome.failed'));
+      expect(body, contains('DailyWallpaperApplyOutcome.alreadyApplied'));
+      expect(body, contains('DailyWallpaperApplyOutcome.appliedStale'));
       // 三种结局各自都要有话可说。
       expect(
         RegExp('showAppToast').allMatches(body).length,
