@@ -365,8 +365,9 @@ class WallhavenWallpaperService {
           .timeout(const Duration(seconds: 8));
       req.headers.set('User-Agent', _browserLikeUserAgent);
       req.headers.set('Accept', 'application/json');
-      req.close();
-      final res = await req.timeout(const Duration(seconds: 10));
+      // 超时挂在 close() 的 Future 上，不是挂在 HttpClientRequest 上——后者
+      // 没有 timeout 方法（编译期就会报 undefined）。
+      final res = await req.close().timeout(const Duration(seconds: 10));
       final ms = sw.elapsedMilliseconds;
       appDebugLog(_tag, 'probe http(browserUA) ${res.statusCode} in ${ms}ms');
       // 必须把响应体读完：不读会让连接悬着，而 HttpClient.close() 只是不等它。
