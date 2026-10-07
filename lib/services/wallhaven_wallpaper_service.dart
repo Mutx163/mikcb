@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -186,6 +187,10 @@ class WallhavenWallpaperService {
     );
     try {
       appDebugLog(_tag, 'list start page=$page sort=${sort.wire}');
+      if (kDebugMode) {
+        // 与主请求**并行**，不占用户等待时间；正式版不跑。
+        unawaited(probeReachability());
+      }
       final response = await _client
           .get(uri, headers: const {'User-Agent': 'mikcb-wallpaper'})
           .timeout(timeout);
@@ -269,6 +274,118 @@ class WallhavenWallpaperService {
     }
     return stale;
   }
+
+  /// debug 专用：把「能不能连上」拆成 DNS / TCP / HTTP 三段分别计时。
+  ///
+  /// ## 为什么需要它
+  ///
+  /// 2026-10-07 实测：把前台超时从 8 秒放宽到 25 秒之后，请求**仍然**在 25 秒整超时、
+  /// 一个字节没回来。这说明不是「慢」而是「不通」——但**卡在哪一步**看不出来：
+  /// DNS 被拖住、TCP SYN 被丢进黑洞（于是永远连不上）、还是连上了不回话，
+  /// 三种情况的修法完全不同。而 `package:http` 不暴露这些阶段，只能自己测。
+  ///
+  /// ## 三条纪律
+  ///
+  /// * **只在 debug 构建跑**（[kDebugMode]）：正式版没有这段探测，也没有它的日志；
+  /// * **并行跑**（调用方 `unawaited`）：不占用户等待时间，主请求该超时还是超时；
+  /// * **自己不抛**：探测失败本身就是它要报告的结论。
+  ///
+  /// ## 怎么读它的输出
+  ///
+  /// | DNS | TCP | 浏览器 UA 的 HTTPS | 结论 |
+  /// |---|---|---|---|
+  /// | 挂 | — | — | DNS/解析器问题，与图源无关 |
+  /// | 过 | 挂 | — | 出口链路断了（运营商/黑洞），App 侧无解 |
+  /// | 过 | 过 | 通，但本请求超时 | **我们的请求被区别对待**（UA 之类），可改 |
+  /// | 过 | 过 | 也挂 | Cloudflare 对该来源整体不可达，App 侧无解 |
+  ///
+  /// 刻意**不加** `@visibleForTesting`：它由 [fetchPortrait] 在 `kDebugMode` 守卫下
+  /// 调用，那是生产代码路径，标成仅测试可见会被分析器判成误用。
+  static Future<void> probeReachability() async {
+    final host = Uri.parse(_searchEndpoint).host;
+    final sw = Stopwatch()..start();
+
+    // ① DNS 解析
+    final List<InternetAddress> addresses;
+    try {
+      addresses = await InternetAddress.lookup(host).timeout(
+        const Duration(seconds: 6),
+      );
+    } on Object catch (error) {
+      appDebugLog(
+        _tag,
+        'probe dns FAIL after ${sw.elapsedMilliseconds}ms: $error',
+      );
+      return;
+    }
+    if (addresses.isEmpty) {
+      appDebugLog(_tag, 'probe dns ok but returned 0 address');
+      return;
+    }
+    appDebugLog(
+      _tag,
+      'probe dns ok in ${sw.elapsedMilliseconds}ms -> '
+      '${addresses.map((a) => '${a.address}/${a.type.name}').join(' ')}',
+    );
+
+    // ② TCP 握手。**只试第一个地址**：连不上就是真不通，不必挨个试完再报。
+    final first = addresses.firstWhere(
+      (a) => a.type == InternetAddressType.IPv4,
+      orElse: () => addresses.first,
+    );
+    sw.reset();
+    try {
+      final socket = await Socket.connect(
+        first.address,
+        443,
+        timeout: const Duration(seconds: 8),
+      );
+      socket.destroy();
+      appDebugLog(_tag, 'probe tcp ok in ${sw.elapsedMilliseconds}ms');
+    } on Object catch (error) {
+      appDebugLog(
+        _tag,
+        'probe tcp FAIL after ${sw.elapsedMilliseconds}ms: $error',
+      );
+      return;
+    }
+
+    // ③ 同一个地址，用**浏览器身份**发一次 HTTPS。
+    //
+    // 这一段是整个探测的**关键**：它把「网络不通」和「我们的请求被区别对待」切开 ——
+    // 用户反馈中国人能在浏览器里打开 wallhaven.cc，而浏览器与本 App 的差别不只在
+    // 传输层，还在请求头（UA 尤其明显）。这一步通、而正文那种请求超时，就说明
+    // 病根在我们发出的东西，那是能改的。
+    sw.reset();
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 8);
+    try {
+      final req = await client
+          .getUrl(Uri.parse('$_searchEndpoint?page=1'))
+          .timeout(const Duration(seconds: 8));
+      req.headers.set('User-Agent', _browserLikeUserAgent);
+      req.headers.set('Accept', 'application/json');
+      req.close();
+      final res = await req.timeout(const Duration(seconds: 10));
+      final ms = sw.elapsedMilliseconds;
+      appDebugLog(_tag, 'probe http(browserUA) ${res.statusCode} in ${ms}ms');
+      // 必须把响应体读完：不读会让连接悬着，而 HttpClient.close() 只是不等它。
+      await res.drain<void>().timeout(const Duration(seconds: 5));
+    } on Object catch (error) {
+      final ms = sw.elapsedMilliseconds;
+      appDebugLog(_tag, 'probe http(browserUA) FAIL after ${ms}ms: $error');
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  /// 探测第三段用的「像浏览器」UA。
+  ///
+  /// 刻意给一个**普通桌面浏览器**的 UA，而不是 `mikcb-wallpaper`：这一段的意义就是
+  /// 「让服务端把我们当成浏览器对待」，那样才能看出差别到底出在请求头上。
+  static const String _browserLikeUserAgent =
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+      '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
   /// 下 [item] 的原图。
   ///
