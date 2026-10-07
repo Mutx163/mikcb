@@ -689,18 +689,12 @@ class _WarehouseCourseImportScreenState
                     ).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  // 平时一层薄衬底：条子 30×336 就压在十几行学校名上，
-                  // 完全透明时深色主题下两边糊成一团（Container 的 color
-                  // 与 decoration 互斥，只能给 decoration）。
-                  decoration: BoxDecoration(
-                    color: HyperosColors.card(context).withValues(alpha: 0.72),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  downDecoration: BoxDecoration(
-                    color: HyperosColors.card(context).withValues(alpha: 0.92),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  // indexHintDecoration / indexHintTextStyle 不给了：传了
+                  // 刻意不给底衬（decoration / downDecoration 全 null）：
+                  // 试过半透明卡片色 + 圆角，30×336 的框压在列表上非常显眼，
+                  // 反而像一个多余的控件。保持透明，只靠字母本身的颜色区分。
+                  // 上游 Container 的 color 与 decoration 互斥，将来要加也只能
+                  // 走 decoration。
+                  // indexHintDecoration / indexHintTextStyle 同样不给：传了
                   // indexHintBuilder 后上游 _buildIndexHint 直接短路返回
                   // builder（index_bar.dart:326-329），这两项是死配置。
                   // 真正生效的配色统一写在下面的 schoolIndexHint 里。
