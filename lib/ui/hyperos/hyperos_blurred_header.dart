@@ -146,12 +146,15 @@ abstract final class HyperosBlurredHeader {
     return Platform.isAndroid || Platform.isIOS;
   }
 
+  /// 折叠行下边距（[contentTopInset] 与
+  /// [collapsibleLargeTitleCollapsedHeight] 都要用，别各写一个 4）。
+  static const double _headerPaddingBottom = 4;
+
   /// Approximate body top inset matching [FHeader] + [SafeArea] on HyperOS pages.
   static double contentTopInset(BuildContext context) {
     final safeTop = MediaQuery.paddingOf(context).top;
-    const headerPaddingBottom = 4.0;
     const minHeaderHeight = 44.0;
-    return safeTop + minHeaderHeight + headerPaddingBottom;
+    return safeTop + minHeaderHeight + _headerPaddingBottom;
   }
 
   /// Approximate body top inset for expanded [HyperosCollapsibleTopAppBar]
@@ -163,9 +166,9 @@ abstract final class HyperosBlurredHeader {
     // title's height must follow the same system text scale as the real bar;
     // using the unscaled 32sp estimate makes the first list card overlap the
     // title on devices with enlarged system text.
-    final scaledLargeTitleHeight = MediaQuery.textScalerOf(context).scale(
-      HyperosMiuixTypography.title1 * 1.2,
-    );
+    final scaledLargeTitleHeight = MediaQuery.textScalerOf(
+      context,
+    ).scale(HyperosMiuixTypography.title1 * 1.2);
     final expandedContentHeight =
         HyperosMiuixTopAppBar.collapsedHeight +
         scaledLargeTitleHeight +
@@ -184,6 +187,46 @@ abstract final class HyperosBlurredHeader {
     double extensionHeight = defaultExtensionHeight,
   }) {
     return contentTopInset(context) + extensionHeight;
+  }
+
+  /// 可折叠大标题栏**收起来之后**比展开状态矮的那一截。
+  ///
+  /// 为什么需要它：浮层顶栏的高度只在「展开且静止」时量一次
+  /// （hyperos_page_collaborators.dart 的 `requestOverlayHeaderMeasure` 在
+  /// `collapsibleBarSettled` 为 false 时直接 return），所以
+  /// [HyperosBlurredHeaderScope.contentTopInset] 拿到的永远是**展开**高度，
+  /// 滚动之后也不会变小。
+  ///
+  /// - **当列表自身的上边距**：静止时展开高度正好等于顶栏实际高度，用它对；
+  /// - **当「跳到某一节」的落点**：跳转会让列表滚起来、大标题随之折叠，顶栏
+  ///   只画到折叠高度，展开高度与实际之间就空出这一截，上一节的行会露在顶栏
+  ///   下沿之下。这时必须减掉它。
+  ///
+  /// 数值与 [contentTopInsetCollapsible] 同一套公式：展开 = 安全区 + 折叠行 +
+  /// 大标题 + 大标题下边距 + 大标题与内容的间距；折叠后少了后三项，换回折叠
+  /// 行自身那点下边距。
+  static double collapsibleLargeTitleCollapsedHeight(BuildContext context) {
+    final scaledLargeTitleHeight = MediaQuery.textScalerOf(
+      context,
+    ).scale(HyperosMiuixTypography.title1 * 1.2);
+    return scaledLargeTitleHeight +
+        HyperosMiuixTopAppBar.largeTitleBottomPadding +
+        HyperosMiuixTopAppBar.largeTitleContentGap -
+        // 折叠行自己也有这 4px 下边距（见 [contentTopInset] 的
+        // headerPaddingBottom），减掉上面两项时要还回来。
+        _headerPaddingBottom;
+  }
+
+  /// 折叠后正文应该停在的高度：从展开的 [expandedTopInset] 里扣掉大标题收起
+  /// 的那一截。给「跳转对齐」用，不要拿去当列表 padding。
+  static double collapsedContentTopInset(
+    BuildContext context, {
+    required double expandedTopInset,
+  }) {
+    return math.max(
+      0,
+      expandedTopInset - collapsibleLargeTitleCollapsedHeight(context),
+    );
   }
 
   /// Miuix collapsed top bar content height (excluding status bar).
@@ -488,12 +531,12 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
     // true so bare showcase usages without a page scope keep the old default.
     final underHeader =
         context
-                .dependOnInheritedWidgetOfExactType<
-                  HyperosHeaderUnderContentScope
-                >()
-                ?.contentUnderHeader ??
-            scope?.contentUnderHeader ??
-            true;
+            .dependOnInheritedWidgetOfExactType<
+              HyperosHeaderUnderContentScope
+            >()
+            ?.contentUnderHeader ??
+        scope?.contentUnderHeader ??
+        true;
     // Keep the GPU blur layer mounted whenever the platform can frost — not
     // only after content tucks under the band. Mounting Inspire.backdropBlur
     // on the first under-header frame hitched the small-title join. Frost and

@@ -94,10 +94,19 @@ class _WarehouseCourseImportScreenState
   /// `insetOfUntracked`）。
   double _schoolViewportHeight = 0;
 
-  /// 顶栏实测高度（列表自己的 padding 用的就是这个值）。跳转对齐必须跟它
-  /// 同源，不能用 `contentTopInsetWithExtension` 那个写死估算
-  /// （44+4+68）——系统字号放大把搜索框撑高时估算不会跟着变。
-  double _schoolHeaderInset = 0;
+  /// 顶栏实测高度（列表自己的 padding 用的就是这个值，见 build 里的
+  /// `headerInset`）。
+  ///
+  /// 跳转落点该用的顶栏高度，**不是**它。
+  ///
+  /// 差别只有大标题折叠这一截：本页顶栏是可折叠大标题栏，它的高度只在
+  /// 「展开且静止」时量一次（hyperos_page_collaborators.dart 的
+  /// `requestOverlayHeaderMeasure` 在 `collapsibleBarSettled` 为 false 时
+  /// 直接 return），所以实测值永远是展开高度。列表 padding 用展开高度没问题
+  /// （静止时二者相等），但跳转会让列表滚起来、大标题随之折叠，顶栏只画到
+  /// 折叠高度 —— 中间空出的那一截正好露出上一组的行（上一组的底边落在展开
+  /// 高度处，而那里已经没有顶栏了）。
+  double _schoolJumpTopInset = 0;
 
   WarehouseFetchOptions _currentFetchOptions() {
     return currentWarehouseFetchOptions(context);
@@ -187,12 +196,12 @@ class _WarehouseCourseImportScreenState
       return;
     }
     // 视口高与顶栏高都在 build 里量好存字段（见 [_schoolViewportHeight] /
-    // [_schoolHeaderInset]）：alignment 的分母是视口不是屏幕，顶栏高要与
-    // 列表 padding 同源，都不能在这里现算。
+    // [_schoolJumpTopInset]）：alignment 的分母是视口不是屏幕，而且**不能**
+    // 在手势回调里读 MediaQuery（那会注册继承依赖）。
     final viewportHeight = _schoolViewportHeight;
     final alignment = viewportHeight <= 0
         ? 0.0
-        : (_schoolHeaderInset / viewportHeight).clamp(0.0, 0.9);
+        : (_schoolJumpTopInset / viewportHeight).clamp(0.0, 0.9);
     _schoolItemScrollController.jumpTo(index: index, alignment: alignment);
   }
 
@@ -717,10 +726,16 @@ class _WarehouseCourseImportScreenState
                 // 置空），另叠一个自建条，跳转时按顶栏高度留位。
                 return LayoutBuilder(
                   builder: (context, constraints) {
-                    // 视口高、顶栏高写进字段供手势回调读（见字段注释）。
+                    // 视口高写进字段供手势回调读（见字段注释）。顶栏高要量两个：
+                    // 列表 padding 用展开高度（静止时与实际一致），跳转对齐用
+                    // 折叠高度（大标题收起来之后顶栏只画到那儿）。
                     final viewportHeight = constraints.maxHeight;
                     _schoolViewportHeight = viewportHeight;
-                    _schoolHeaderInset = headerInset;
+                    _schoolJumpTopInset =
+                        HyperosBlurredHeader.collapsedContentTopInset(
+                          context,
+                          expandedTopInset: headerInset,
+                        );
                     // 条子高度按可用高度封顶：真实数据 20~21 组 × 默认 16px
                     // = 320~336px，横屏视口（约 360px）已在边缘，再多几个
                     // 首字母或分屏小窗就 RenderFlex overflow，超出父盒的
@@ -828,10 +843,21 @@ class _WarehouseCourseImportScreenState
   /// 没用 AzListView 的 `susItemBuilder`：它的吸顶副本只可能落在视口 top
   /// （suspension_view.dart:114-128 里 top 恒 ≤ 0），正好被本页悬浮顶栏盖住，
   /// 等于多画一份看不见的 widget。就地放在组首行，简单也够用。
+  ///
+  /// 自己写而不是复用 `HyperosSectionLabel`：那个是给设置页分组标题用的，左右
+  /// 各缩进 16、下边距 8，叠上列表自己的 padding 后字母和下方卡片能空出四十
+  /// 多像素，看着像多了一行。这里压成贴着卡片的一行，字号跟字母条一致。
   Widget _buildSchoolGroupHeader(String tag) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: HyperosSectionLabel(text: tag),
+      padding: const EdgeInsets.only(bottom: 6, left: 4),
+      child: Text(
+        tag,
+        style: HyperosTypography.listDetail(context).copyWith(
+          fontSize: HyperosMiuixTypography.footnote2,
+          fontWeight: FontWeight.w600,
+          color: HyperosColors.secondaryText(context),
+        ),
+      ),
     );
   }
 
