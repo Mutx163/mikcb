@@ -35,20 +35,38 @@ class PartnerTimetableBinding {
   };
 
   factory PartnerTimetableBinding.fromJson(Map<String, dynamic> json) {
+    // 这份绑定来自**云同步 / 备份恢复**（外部数据），原先六处 `as String`
+    // 裸转换：任何一项类型不对都抛 TypeError，情侣绑定这条数据直接读不出来。
+    // 口径与 `Course.fromJson` / `TimetableProfile.fromJson` 同款（2026-10-08 统一）：
+    // 取不到就退回安全默认，不让一条脏数据带走整个绑定。
+    String readStr(String key, {String fallback = ''}) {
+      final raw = json[key];
+      if (raw is String) {
+        return raw;
+      }
+      return raw == null ? fallback : raw.toString();
+    }
+
+    String? readStrOrNull(String key) {
+      final raw = json[key];
+      if (raw == null) {
+        return null;
+      }
+      return raw is String ? raw : raw.toString();
+    }
+
     return PartnerTimetableBinding(
-      partnerProfileId: json['partnerProfileId'] as String,
-      partnerName: json['partnerName'] as String? ?? 'TA的课表',
-      linkedAt:
-          DateTime.tryParse(json['linkedAt'] as String? ?? '') ??
-          DateTime.now(),
+      partnerProfileId: readStr('partnerProfileId'),
+      partnerName: readStr('partnerName', fallback: 'TA的课表'),
+      linkedAt: DateTime.tryParse(readStr('linkedAt')) ?? DateTime.now(),
       lastImportedAt: json['lastImportedAt'] == null
           ? null
-          : DateTime.tryParse(json['lastImportedAt'] as String),
-      sourceFileHash: json['sourceFileHash'] as String?,
+          : DateTime.tryParse(readStr('lastImportedAt')),
+      sourceFileHash: readStrOrNull('sourceFileHash'),
       weekOffset: (json['weekOffset'] as num?)?.toInt() ?? 0,
-      mineColorHex: json['mineColorHex'] as String? ?? '#2196F3',
-      partnerColorHex: json['partnerColorHex'] as String? ?? '#E91E63',
-      togetherColorHex: json['togetherColorHex'] as String? ?? '#9C27B0',
+      mineColorHex: readStr('mineColorHex', fallback: '#2196F3'),
+      partnerColorHex: readStr('partnerColorHex', fallback: '#E91E63'),
+      togetherColorHex: readStr('togetherColorHex', fallback: '#9C27B0'),
     );
   }
 

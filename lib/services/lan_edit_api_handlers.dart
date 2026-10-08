@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../logging/app_log_messages.dart';
@@ -1061,9 +1063,48 @@ class LanEditApiHandlers {
                 SectionTime.fromJson(Map<String, dynamic>.from(item as Map)),
           )
           .toList(),
-      semesterWeekCount: meta['semesterWeekCount'] as int? ?? 20,
+      // ⚠️ 这条是**局域网上的对端发来的值**，不能直接当成可信 int 用：
+      // 1. `as int?` 遇到 `"20"`（字符串）会抛 TypeError，把一次合法请求打成 500；
+      // 2. 就算类型对，`0` / 负数也会被原样带出去 —— 而
+      //    `TimetableSettings.fromJson`（:3626 的 `_atLeastOneWeek`）本来会把
+      //    小于 1 的周数归一，这条路径不走 fromJson 就漏掉了那道护栏。
+      // 于是「周数至少为 1」这个校验在局域网编辑入口形同虚设：
+      // 对端发 `{"semesterWeekCount": 0}` 就能把 0 写进课表。
+      semesterWeekCount: _safeSemesterWeekCount(meta['semesterWeekCount']),
     );
   }
+
+  /// 从对端 payload 里取学期周数，取不到 / 类型不对 / 越界都退回默认 20。
+  ///
+  /// 与 `TimetableSettings._atLeastOneWeek`（下界 1）同口径，另加一道上限：
+  /// 上界同样重要 —— `List.generate(_atLeastOneWeek(weekCount))`（:3629）
+  /// 会按周数生成整表，给个 10^9 就是一次 OOM。
+  ///
+  /// `visibleForTesting`：这是**对端可控**的输入收敛点，测试要能直接打它 ——
+  /// 在测试里复刻一份同样的算术只会证明复刻本身是对的。
+  @visibleForTesting
+  static int safeSemesterWeekCountForTesting(Object? raw) =>
+      _safeSemesterWeekCount(raw);
+
+  static int _safeSemesterWeekCount(Object? raw) {
+    if (raw is! num) {
+      return _defaultSemesterWeekCount;
+    }
+    final value = raw.toInt();
+    if (value < _minSemesterWeekCount) {
+      return _minSemesterWeekCount;
+    }
+    return value > _maxSemesterWeekCount
+        ? _maxSemesterWeekCount
+        : value;
+  }
+
+  /// 与 `TimetableSettings` 的默认学期周数保持一致。
+  static const int _defaultSemesterWeekCount = 20;
+  static const int _minSemesterWeekCount = 1;
+
+  /// 上限 60 学期周足够覆盖任何真实学期，同时给 `List.generate` 兜住上界。
+  static const int _maxSemesterWeekCount = 60;
 }
 
 class _CourseBuildContext {

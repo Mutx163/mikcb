@@ -89,8 +89,13 @@ class TimetableProfile {
         : TimetableSettings.defaults();
 
     return TimetableProfile(
-      id: json['id'] as String,
-      name: json['name'] as String? ?? '未命名课表',
+      // 2026-10-08：`id` 原先是 `json['id'] as String` 裸转换，而档案来自
+      // 恢复的备份 / 云同步的 WebDAV 文件 —— 数字型 id 会抛 TypeError，
+      // 整份课表列表直接加载不出来（本仓早就知道这件事，见
+      // `data_transfer_service.dart:311` 的注释）。类型不对就退回空 id：
+      // 空 id 的档案会被上层按「未保存」处理，不会去覆盖别的课表。
+      id: json['id'] is String ? json['id'] as String : '',
+      name: json['name'] is String ? json['name'] as String : '未命名课表',
       courses: _parseListLenient(
         json['courses'],
         Course.fromJson,

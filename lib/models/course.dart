@@ -277,6 +277,39 @@ class Course {
       return values;
     }
 
+    // 2026-10-08 补：下面六个字段原先是 `json[k] as String` 的**裸强制转换**。
+    // Course.fromJson 是**所有**导入面的唯一入口（教务 CSV / ICS / .mikcb 备份 /
+    // WebDAV 恢复），而这些 JSON 全是外部来的：一个字段类型不对就抛 TypeError，
+    // 单条课程坏掉会让整份备份恢复失败
+    // （`data_transfer_service.dart` 的 `_parseListWithTotalLossGuard` 把空结果
+    // 当「全损」抛 `unrecognized_mikcb_data_file`）。
+    // 局域网那条路早就改成了 `(json[k] as String?)?.trim() ?? ''`
+    // （`lan_edit_provider_host.dart:522-525`），两个解析器此前并不一致。
+    //
+    // 口径：`null` / 类型不对 → 走 [fallback]（必填字段给空串），
+    // 而不是让一条脏数据带走整份备份。取证号 `id` 同样给空串：
+    // 空 id 的后续风险由写入侧（LAN 的 `_rejectIdConflict`）负责拦。
+    String readString(String key, {String fallback = ''}) {
+      final raw = json[key];
+      if (raw is String) {
+        return raw;
+      }
+      if (raw == null) {
+        return fallback;
+      }
+      // 数字/布尔被写成字符串是常见的导入器行为（如 `name: 123`），
+      // 这里收下它而不是让整份备份失败。
+      return raw.toString();
+    }
+
+    String? readStringOrNull(String key) {
+      final raw = json[key];
+      if (raw == null) {
+        return null;
+      }
+      return raw is String ? raw : raw.toString();
+    }
+
     final sections = normalizeSections(
       startSection: readInt('startSection', fallback: 1),
       endSection: readInt('endSection', fallback: 1),
@@ -287,30 +320,32 @@ class Course {
     );
 
     return Course(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      shortName: json['shortName'] as String?,
-      teacher: json['teacher'] as String,
-      location: json['location'] as String,
+      id: readString('id'),
+      name: readString('name'),
+      shortName: readStringOrNull('shortName'),
+      teacher: readString('teacher'),
+      location: readString('location'),
       dayOfWeek: normalizeDayOfWeek(readInt('dayOfWeek', fallback: 1)),
       startSection: sections.startSection,
       endSection: sections.endSection,
-      startTime: json['startTime'] as String,
-      endTime: json['endTime'] as String,
+      startTime: readString('startTime'),
+      endTime: readString('endTime'),
       hasCustomTime: json['hasCustomTime'] as bool? ?? false,
-      color: json['color'] as String? ?? '#2196F3',
-      textColor: json['textColor'] as String?,
+      color: readStringOrNull('color') ?? '#2196F3',
+      textColor: readStringOrNull('textColor'),
       startWeek: weeks.startWeek,
       endWeek: weeks.endWeek,
       isOddWeek: json['isOddWeek'] as bool? ?? false,
       isEvenWeek: json['isEvenWeek'] as bool? ?? false,
       customWeeks: normalizeWeekList(readIntList('customWeeks')),
       suspendedWeeks: normalizeWeekList(readIntList('suspendedWeeks')),
-      courseNature: CourseNatureX.fromValue(json['courseNature'] as String?),
-      description: json['description'] as String? ?? json['note'] as String?,
-      note: json['note'] as String?,
+      courseNature: CourseNatureX.fromValue(readStringOrNull('courseNature')),
+      // `description` 先试自己、再回落旧键 `note`；两处都用 [readStringOrNull]，
+      // 原来的 `json['note'] as String?` 同样是裸转换（数字型 note 会抛）。
+      description: readStringOrNull('description') ?? readStringOrNull('note'),
+      note: readStringOrNull('note'),
       sessionNotes: parseSessionNotes(json['sessionNotes']),
-      timeSchemeIdOverride: json['timeSchemeIdOverride'] as String?,
+      timeSchemeIdOverride: readStringOrNull('timeSchemeIdOverride'),
     );
   }
 
