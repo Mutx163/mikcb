@@ -14,6 +14,15 @@ import 'package:flutter_test/flutter_test.dart';
 /// 第二十二轮统计一处、第二十四轮三处），所以用一个棘把它钉死：以后谁再写
 /// `xxx.startTime.compareTo(yyy.startTime)`，这个测试就红，而不是等下一轮审查。
 ///
+/// **第三十六轮补**：第一版正则只认「字段在左」，于是
+/// `currentTime.compareTo(course.startTime)` 这一种一条都数不到 ——
+/// `getCurrentCourse` / `getNextCourse` 在 `timetable_provider.dart` 与
+/// `storage_service.dart` 各有一份副本，共 4 处都是这个写法。它们目前零调用方
+/// （复核记录见 `test/domain/clock_order_sort_sites_test.dart`），所以当时被判为
+/// 「死代码、不是可达缺陷」而放过；但被放过的是**形状**，不是那 4 行：
+/// 谁接上这两个入口，或照着抄进活跃代码，字典序就会把外来存档里不补零的
+/// `9:00` 判成「还没上课」（`"09:30" < "9:00"`）。现在两个方向都抓。
+///
 /// 允许清单里只有一处，且**已逐行核过安全**：
 /// `timetable_screen.dart` 的当日考试排序排的是 `Exam.startTime`，
 /// 而 `Exam.fromJson`（models/exam.dart:168）走 `normalizeTimeOfDay(...)`，
@@ -21,8 +30,12 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final libDir = Directory('lib');
 
+  // 两个方向都要抓：
+  //   · 字段在左 —— `course.startTime.compareTo(x)`；
+  //   · 字段在右 —— `currentTime.compareTo(course.startTime)`。
   final forbidden = RegExp(
-    r'\.\s*(?:startTime|endTime)\s*\.\s*compareTo\s*\(',
+    r'\.\s*(?:startTime|endTime)\s*\.\s*compareTo\s*\('
+    r'|\.\s*compareTo\s*\(\s*[\w.]*\.\s*(?:startTime|endTime)\s*[,)]',
   );
   const allowedLine =
       '..sort((a, b) => a.startTime.compareTo(b.startTime));';

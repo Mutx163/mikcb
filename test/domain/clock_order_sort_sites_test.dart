@@ -24,9 +24,12 @@ import 'package:university_timetable/services/storage_service.dart';
 /// 复核后**排除**的两处（避免误修）：
 /// * `timetable_screen.dart:4627` 排的是 `Exam.startTime`，而 `Exam.fromJson`
 ///   （models/exam.dart:168）走 `normalizeTimeOfDay(...)` → 恒为补零串，安全；
-/// * `timetable_provider.dart:4312 getCurrentCourse()` / `:4375 getNextCourse()`
-///   确实用字典序比钟点，但**全仓零调用方**（`storage_service.dart:925/941` 那两个
-///   同名方法是另一个类的另一个签名）→ 属死代码，不是可达缺陷。
+/// * `timetable_provider.dart:4001 getCurrentCourse()` / `:4064 getNextCourse()`
+///   与 `storage_service.dart:925/941` 的同名方法确实用字典序比钟点，但**全仓零
+///   调用方** → 属死代码，不是可达缺陷。第三十六轮把这 4 处一并改成了
+///   `compareClockText`（不删公共 API），并把架构棘扩成双向 —— 放过的是「死代码」
+///   这个事实，不该放过那个形状，见
+///   `test/architecture/clock_field_compare_guard_test.dart`。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

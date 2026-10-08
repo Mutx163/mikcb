@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app_global_settings_service.dart';
+import '../domain/clock_order.dart';
 import '../models/partner_timetable_binding.dart';
 import '../models/course.dart';
 import '../models/location_time_group.dart';
@@ -922,6 +923,11 @@ class StorageService {
   }
 
   // 获取当前正在进行的课程
+  //
+  // 这两个方法与 `TimetableProvider` 里的同名方法都是**零调用方**（复核记录见
+  // `test/domain/clock_order_sort_sites_test.dart`），保留是为了不删公共 API。
+  // 钟点比较一律走 `compareClockText`：存档里的 `9:00` 不补零，字典序下
+  // `"09:30" < "9:00"`，直连 `compareTo` 会让 9 点那节永远查不到。
   Future<Course?> getCurrentCourse(int week, int dayOfWeek) async {
     final todayCourses = await getTodayCourses(week, dayOfWeek);
     final now = DateTime.now();
@@ -929,8 +935,8 @@ class StorageService {
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
     for (final course in todayCourses) {
-      if (currentTime.compareTo(course.startTime) >= 0 &&
-          currentTime.compareTo(course.endTime) < 0) {
+      if (compareClockText(currentTime, course.startTime) >= 0 &&
+          compareClockText(currentTime, course.endTime) < 0) {
         return course;
       }
     }
@@ -945,7 +951,7 @@ class StorageService {
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
     for (final course in todayCourses) {
-      if (currentTime.compareTo(course.startTime) < 0) {
+      if (compareClockText(currentTime, course.startTime) < 0) {
         return course;
       }
     }

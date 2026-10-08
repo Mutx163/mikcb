@@ -2950,10 +2950,14 @@ class TimetableProvider with ChangeNotifier {
   ///
   /// 落盘失败必须整体退回并上抛（2026-10-07 补）。`_runMutation` 只是互斥锁
   /// （`_mutationGate.runExclusive`），不含回滚；原先这里是裸的
-  /// `removeWhere` → `await _persistActiveProfileState()` → `notifyListeners()`：
+  /// `removeWhere` → await 落盘 → `notifyListeners()`：
   /// 落盘抛错时条目已从 `_exams` 摘掉、`notifyListeners()` 被跳过，于是界面仍
   /// 显示着这一条、用户收到「保存失败」，而删除其实已经进了内存 —— 此后任意一次
   /// 成功写入（切周、加课、30 秒心跳）把它永久坐实。
+  ///
+  /// ⚠️ 写这类注释时**别把方法名连左括号一起写出来**：
+  /// `test/architecture/dependency_guards_test.dart` 的写放大棘轮按原始文本数
+  /// 调用点（注释也算进去），凭空多一处就会红在「你并没有加调用点」上。
   ///
   /// 契约见 `course_repository.dart` 开头的判据：**内存里被改掉的是不是用户刚
   /// 亲口确认的那一条**。这里用户确认的就是「删掉这条考试」，所以失败要退回去。
@@ -3998,6 +4002,11 @@ class TimetableProvider with ChangeNotifier {
     return getCoursesForDay(_currentDayOfWeek, week: targetWeek);
   }
 
+  /// 当前正在上的那节课。**目前全仓零调用方**（见
+  /// `test/domain/clock_order_sort_sites_test.dart` 的复核记录），保留是为了不删
+  /// 公共 API；但钟点比较已经改成 `compareClockText` —— 外来存档里的 `9:00`
+  /// 是不补零的，字典序下 `"09:30" < "9:00"`，一旦有人接上这个入口就会得到
+  /// 「9 点那节明明在上课却查不到」。同族的 `getCoursesInProgress` 走的是分钟数。
   Course? getCurrentCourse() {
     final todayCourses = getTodayCourses();
     final now = DateTime.now();
@@ -4005,8 +4014,8 @@ class TimetableProvider with ChangeNotifier {
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
     for (final course in todayCourses) {
-      if (currentTime.compareTo(course.startTime) >= 0 &&
-          currentTime.compareTo(course.endTime) < 0) {
+      if (compareClockText(currentTime, course.startTime) >= 0 &&
+          compareClockText(currentTime, course.endTime) < 0) {
         return course;
       }
     }
@@ -4061,6 +4070,8 @@ class TimetableProvider with ChangeNotifier {
     return matches;
   }
 
+  /// 下一节课。与 [getCurrentCourse] 一样目前零调用方；同样把字典序换成了
+  /// `compareClockText`（不补零的 `9:00` 会让 9 点那节被误判成"还没开始"）。
   Course? getNextCourse() {
     final todayCourses = getTodayCourses();
     final now = DateTime.now();
@@ -4068,7 +4079,7 @@ class TimetableProvider with ChangeNotifier {
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
     for (final course in todayCourses) {
-      if (currentTime.compareTo(course.startTime) < 0) {
+      if (compareClockText(currentTime, course.startTime) < 0) {
         return course;
       }
     }
