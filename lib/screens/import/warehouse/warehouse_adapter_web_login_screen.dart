@@ -2677,9 +2677,22 @@ $kWarehouseBridgeCompatShim  try {
       final custom = await _preferencesService.getCustomImportUrl(
         widget.adapter.adapterId,
       );
-      final customHost = extractUrlHost(custom);
-      if (customHost != null) {
-        hosts.add(customHost);
+      // ⚠️ 2026-08~10 补这道校验：自定义地址**随云同步下发**
+      // （`WarehouseSyncBundle.customImportUrls` → `AppSyncSnapshot.warehouse`），
+      // 而 `setCustomImportUrl` 原本只 `trim()` 就落盘。原先这里无条件把它的
+      // host 加进自动填充白名单 ⇒ 一份构造过的云端快照就能让已保存的教务
+      // 密码自动填到攻击者站点上。
+      // 判据见 `isTrustedCustomImportUrl`：必须 https，且必须是登记地址本身
+      // 或其子域（学校常把教务挂在 `jwxt.example.edu.cn`，登记的是
+      // `example.edu.cn`；`example.edu.cn.evil.com` 这种后缀伪装则被拒）。
+      if (isTrustedCustomImportUrl(
+        url: custom ?? '',
+        registeredHost: registered,
+      )) {
+        final customHost = extractUrlHost(custom);
+        if (customHost != null) {
+          hosts.add(customHost);
+        }
       }
     } catch (_) {
       // 读不到自定义地址就只认登记地址。门禁因此更严，不会更松。

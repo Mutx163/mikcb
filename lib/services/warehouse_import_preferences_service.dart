@@ -260,6 +260,7 @@ class WarehouseImportPreferencesService {
 
   Future<SharedPreferences> get _prefs async => SharedPreferences.getInstance();
 
+
   Future<String?> getCustomImportUrl(String adapterId) async {
     final prefs = await _prefs;
     final value = prefs.getString('$_customImportUrlPrefix$adapterId');
@@ -497,7 +498,14 @@ class WarehouseImportPreferencesService {
       );
     }
     for (final entry in bundle.customImportUrls.entries) {
-      await setCustomImportUrl(entry.key, entry.value);
+      // 2026-10-08：云端下发的自定义地址**必须过 https 校验**才落盘。
+      // 这是第二道闸（第一道在 `_warehouseAutofillTrustedHosts`，那边还多一道
+      // 「与登记地址同域」的判定，那才是自动填充白名单真正依赖的判据）。
+      // 在这里先挡掉明文 http 与不可解析的地址，恶意主机名连 prefs 都进不去；
+      // 同域判定放在白名单那一侧，因为它才知道该适配器登记的是哪个主机。
+      if (isTrustedCustomImportUrl(url: entry.value, registeredHost: null)) {
+        await setCustomImportUrl(entry.key, entry.value);
+      }
     }
     if (bundle.recentSchoolIds.isNotEmpty) {
       await prefs.setStringList(_recentSchoolIdsKey, bundle.recentSchoolIds);
@@ -683,4 +691,47 @@ String? resolveWarehouseImportUrl({
   }
   final fallback = defaultUrl.trim();
   return fallback.isNotEmpty ? fallback : null;
+}
+
+/// 自定义导入地址是否**可以进自动填充白名单**。
+///
+/// 2026-10-08 补这道校验。此前 `setCustomImportUrl` 只 `trim()` 就落盘，
+/// 而 `customImportUrls` **随云同步下发**
+/// （`AppSyncSnapshot.warehouse`，`app_sync_snapshot_service.dart` 的
+/// `exportSyncBundle`）⇒ 一份构造过的云端快照就能把自动填充白名单换成
+/// 攻击者的主机名，于是已保存的教务密码会被自动填到钓鱼页上
+/// （`warehouse_adapter_web_login_screen.dart` 的
+/// `_warehouseAutofillTrustedHosts` 把这个地址的 host 直接加进白名单）。
+///
+/// 规则（与 `isTrustedApkDownloadUrl` 同一口径，见 `async_utils.dart:108`）：
+/// - 必须是 `https`（教务登录要提交账号密码，明文 http 绝不放行；
+///   本地调试用的 `localhost` 在测试环境下由调用方单独处理）；
+/// - 必须能解析出主机名；
+/// - 必须是**子域**形态之一：与 [registeredHost] 完全相同，或以
+///   `.<registeredHost>` 结尾 —— 学校把教务挂在
+///   `jwxt.example.edu.cn` 而 App 登记的是 `example.edu.cn` 是常见的，
+///   这一点要留；反过来 `example.edu.cn.evil.com` 这种后缀伪装则会被拒。
+bool isTrustedCustomImportUrl({
+  required String url,
+  required String? registeredHost,
+}) {
+  final trimmed = url.trim();
+  if (trimmed.isEmpty) {
+    return false;
+  }
+  final uri = Uri.tryParse(trimmed);
+  if (uri == null || uri.scheme.toLowerCase() != 'https') {
+    return false;
+  }
+  final host = uri.host.trim().toLowerCase();
+  if (host.isEmpty) {
+    return false;
+  }
+  // 没有登记地址可对（适配器本身没配 importUrl）：只放行 https，
+  // 但**不**进自动填充白名单 —— 那由调用方按「没有基准就不自动填」处理。
+  if (registeredHost == null || registeredHost.trim().isEmpty) {
+    return true;
+  }
+  final base = registeredHost.trim().toLowerCase();
+  return host == base || host.endsWith('.$base');
 }
