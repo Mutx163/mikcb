@@ -2892,6 +2892,8 @@ class TimetableProvider with ChangeNotifier {
     });
   }
 
+  /// 失败**不**回滚是刻意的（与 `addCourse` 同口径）：内存里这条正是用户刚填完的
+  /// 内容，表单已弹「保存失败」，回滚等于把他填的一屏清空，比留下它更糟。
   Future<void> addExam(Exam exam) {
     return _runMutation(() async {
       await initialize();
@@ -2916,13 +2918,23 @@ class TimetableProvider with ChangeNotifier {
     });
   }
 
+  /// 与 [deleteExam] 同一条契约：改内存 → await 落盘 → 失败整体退回并上抛。
+  /// 只退 `_exams` 不够，`_profiles` 里那份幻影也要退（理由见 [deleteExam]）。
   Future<void> updateExam(Exam exam) {
     return _runMutation(() async {
       await initialize();
       final index = _exams.indexWhere((e) => e.id == exam.id);
       if (index == -1) return;
+      final snapshotExams = List<Exam>.from(_exams);
+      final snapshotProfiles = List<TimetableProfile>.from(_profiles);
       _exams[index] = exam;
-      await _persistActiveProfileState();
+      try {
+        await _persistActiveProfileState();
+      } catch (_) {
+        _exams = snapshotExams;
+        _profiles = snapshotProfiles;
+        rethrow;
+      }
       notifyListeners();
       unawaited(_syncExamReminders());
       _lastHomeWidgetSnapshotSignature = null;
@@ -2934,11 +2946,36 @@ class TimetableProvider with ChangeNotifier {
     });
   }
 
+  /// 删除考试。
+  ///
+  /// 落盘失败必须整体退回并上抛（2026-10-07 补）。`_runMutation` 只是互斥锁
+  /// （`_mutationGate.runExclusive`），不含回滚；原先这里是裸的
+  /// `removeWhere` → `await _persistActiveProfileState()` → `notifyListeners()`：
+  /// 落盘抛错时条目已从 `_exams` 摘掉、`notifyListeners()` 被跳过，于是界面仍
+  /// 显示着这一条、用户收到「保存失败」，而删除其实已经进了内存 —— 此后任意一次
+  /// 成功写入（切周、加课、30 秒心跳）把它永久坐实。
+  ///
+  /// 契约见 `course_repository.dart` 开头的判据：**内存里被改掉的是不是用户刚
+  /// 亲口确认的那一条**。这里用户确认的就是「删掉这条考试」，所以失败要退回去。
+  /// （`addExam` 失败**不**回滚是刻意的：内存里那条正是用户刚填完的内容，
+  /// 表单已提示保存失败，回滚等于清空他一屏。）
+  ///
+  /// `_profiles` 也要一起退：`_persistActiveProfileState` 的**第一步**就是
+  /// `_mergeActiveProfileIntoProfilesList`（早于任何磁盘写入），落盘失败时
+  /// `_profiles[active]` 里已经是那份没存下的状态，只退 `_exams` 会留下幻影。
   Future<void> deleteExam(String examId) {
     return _runMutation(() async {
       await initialize();
+      final snapshotExams = List<Exam>.from(_exams);
+      final snapshotProfiles = List<TimetableProfile>.from(_profiles);
       _exams.removeWhere((e) => e.id == examId);
-      await _persistActiveProfileState();
+      try {
+        await _persistActiveProfileState();
+      } catch (_) {
+        _exams = snapshotExams;
+        _profiles = snapshotProfiles;
+        rethrow;
+      }
       notifyListeners();
       unawaited(_syncExamReminders());
       _lastHomeWidgetSnapshotSignature = null;
