@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-06T07:59:51+00:00",
+  "updatedAt": "2026-10-07T07:37:46+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 241,
-    "schools": 236,
+    "total": 243,
+    "schools": 238,
     "generic": 5
   },
   "schools": [
@@ -1136,6 +1136,13 @@
       "category": "school"
     },
     {
+      "id": "QDU",
+      "name": "青岛大学",
+      "initial": "Q",
+      "resourceFolder": "QDU",
+      "category": "school"
+    },
+    {
       "id": "QUT",
       "name": "青岛理工大学",
       "initial": "Q",
@@ -1672,6 +1679,13 @@
       "name": "浙江树人学院",
       "initial": "Z",
       "resourceFolder": "ZJSRU",
+      "category": "school"
+    },
+    {
+      "id": "ZQU",
+      "name": "肇庆学院",
+      "initial": "Z",
+      "resourceFolder": "ZQU",
       "category": "school"
     },
     {
