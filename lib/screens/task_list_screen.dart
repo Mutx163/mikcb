@@ -119,6 +119,23 @@ class _TaskListScreenState extends State<TaskListScreen> {
     };
   }
 
+  /// 勾选 / 取消勾选。落盘失败要说出来：勾选框会自己弹回去，用户不点第二下
+  /// 就以为没生效，而异常落进 zone 什么也看不见。
+  Future<void> _toggleTask(TimetableProvider provider, CourseTask task) async {
+    try {
+      await provider.toggleTaskCompleted(task.id);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+    }
+  }
+
   Widget _buildCourseFilter(BuildContext context, TimetableProvider provider) {
     final l10n = AppLocalizations.of(context)!;
     final courseGroup = _courseGroupForFilter(provider);
@@ -167,7 +184,10 @@ class _TaskListScreenState extends State<TaskListScreen> {
                 task: task,
                 course: provider.getCourseForTask(task),
                 onEdit: () => _editTask(task),
-                onToggle: () => provider.toggleTaskCompleted(task.id),
+                // `toggleTaskCompleted` 落盘失败会回滚并 rethrow，而
+                // `onToggle` 是 VoidCallback、返回的 Future 没人接 —— 勾选框
+                // 弹回去、用户零提示，异常落进 zone。
+                onToggle: () => _toggleTask(provider, task),
                 onDelete: () => _confirmDelete(task),
                 onViewCourse: provider.getCourseForTask(task) == null
                     ? null

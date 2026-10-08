@@ -888,9 +888,22 @@ class _SemesterSettingsScreen extends StatelessWidget {
       return;
     }
 
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(semesterStartDate: selected),
-    );
+    final String? message;
+    try {
+      message = await provider.updateTimetableSettings(
+        provider.settings.copyWith(semesterStartDate: selected),
+      );
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     // 改开学日后按新日期对齐当前周，避免「日期已改、周次仍旧」。
     if (context.mounted) {
       await provider.syncCurrentWeekWithSemesterStart();
@@ -933,9 +946,24 @@ class _SemesterSettingsScreen extends StatelessWidget {
       return;
     }
 
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(semesterWeekCount: selected),
-    );
+    // 返回值管校验失败（如「节次数低于课表实际用量」），写入失败走 rethrow，
+    // 两条都要有出口 —— 否则周数改了没存上、界面照常显示新值，重启后变回去。
+    final String? message;
+    try {
+      message = await provider.updateTimetableSettings(
+        provider.settings.copyWith(semesterWeekCount: selected),
+      );
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (message != null) {
       if (!context.mounted) {
         return;

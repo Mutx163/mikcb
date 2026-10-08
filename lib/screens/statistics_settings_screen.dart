@@ -74,9 +74,25 @@ class StatisticsSettingsScreen extends StatelessWidget {
     bool enabled,
   ) async {
     final l10n = AppLocalizations.of(context)!;
-    await provider.updateSettings(
-      provider.settings.copyWith(weeklyReportEnabled: enabled),
-    );
+    // 落盘失败回滚并 rethrow（`settings_repository.dart` 的 `_rollbackSettingsWrite`）。
+    // 不接的话：开关弹回去了但用户什么都不知道，而周报**其实被排上了**
+    // （下面 `WeeklyReportService.schedule` 用的是新值），下次开机用户收到一份
+    // 他明明关掉过的周报。
+    try {
+      await provider.updateSettings(
+        provider.settings.copyWith(weeklyReportEnabled: enabled),
+      );
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     await WeeklyReportService.schedule(
       enabled: enabled,
       l10n: l10n,

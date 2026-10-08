@@ -66,8 +66,24 @@ class TimetableProfilesScreen extends StatelessWidget {
                       onDuplicate: profiles[index].isPartnerImported
                           ? () {}
                           : () async {
-                              await provider.switchProfile(profiles[index].id);
-                              await provider.duplicateActiveProfile();
+                              // 切档案 + 复制档案两次写入都可能是裸的；复制失败
+                              // 回滚并 rethrow，不接的话用户看到「已复制」而
+                              // 课表根本没多出来。
+                              try {
+                                await provider.switchProfile(
+                                  profiles[index].id,
+                                );
+                                await provider.duplicateActiveProfile();
+                              } catch (_) {
+                                if (context.mounted) {
+                                  showAppToast(
+                                    context,
+                                    message: l10n.saveFailed,
+                                    kind: AppToastKind.error,
+                                  );
+                                }
+                                return;
+                              }
                               if (context.mounted) {
                                 showAppToast(
                                   context,
@@ -173,7 +189,21 @@ class TimetableProfilesScreen extends StatelessWidget {
       return;
     }
 
-    await context.read<TimetableProvider>().renameProfile(profileId, name);
+    // 落盘失败回滚并 rethrow（`timetable_provider.dart` 的 `renameProfile` 有快照）。
+    // 不接就是「改完名、界面报已改名、重启后又变回去」，且异常落进 zone。
+    try {
+      await context.read<TimetableProvider>().renameProfile(profileId, name);
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!context.mounted) {
       return;
     }

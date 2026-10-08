@@ -576,9 +576,24 @@ class _TimeSchemeManagementScreenState
       return;
     }
 
-    final scheme = await context.read<TimetableProvider>().createTimeScheme(
-      name: name,
-    );
+    // 建档失败会回滚并 rethrow（`time_scheme_repository.dart`）。不接就是异常落进
+    // zone，而下面还拿一个不存在的 scheme.id 去开编辑页。
+    final TimeScheme scheme;
+    try {
+      scheme = await context.read<TimetableProvider>().createTimeScheme(
+        name: name,
+      );
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!context.mounted) {
       return;
     }
@@ -787,9 +802,23 @@ class _TimeSchemeManagementScreenState
 
   Future<void> _applyScheme(BuildContext context, TimeScheme scheme) async {
     final l10n = AppLocalizations.of(context)!;
-    final error = await context.read<TimetableProvider>().applyTimeScheme(
-      scheme.id,
-    );
+    // 返回值是校验失败的拒绝码；写入失败走的是 rethrow（下面 catch 兜住）。
+    final String? error;
+    try {
+      error = await context.read<TimetableProvider>().applyTimeScheme(
+        scheme.id,
+      );
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!context.mounted) {
       return;
     }
@@ -1547,11 +1576,26 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
 
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context)!;
-    final message = await context.read<TimetableProvider>().updateTimeScheme(
-      schemeId: widget.schemeId,
-      name: _nameController.text.trim(),
-      sections: _sections,
-    );
+    // 同上：返回值管校验失败，写入失败走 rethrow。作息是**先落盘**的那一份，
+    // 不接的话盘上已改、内存没改，重启后用户"没改成"的节次自己生效。
+    final String? message;
+    try {
+      message = await context.read<TimetableProvider>().updateTimeScheme(
+        schemeId: widget.schemeId,
+        name: _nameController.text.trim(),
+        sections: _sections,
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!mounted) {
       return;
     }

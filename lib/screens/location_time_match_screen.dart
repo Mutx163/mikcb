@@ -117,9 +117,22 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
                   '${l10n.locationTimeMatchKeywordsLine(keywordText)}',
               value: group.enabled,
               onChanged: (value) async {
-                await provider.updateLocationTimeGroup(
-                  group.copyWith(enabled: value),
-                );
+                // 走 `_commitLocationGroupChange`，落盘失败会回滚内存并 rethrow。
+                // 不接的话开关弹回去、用户零提示，而地点分组的启停其实还在改。
+                try {
+                  await provider.updateLocationTimeGroup(
+                    group.copyWith(enabled: value),
+                  );
+                } catch (_) {
+                  if (!context.mounted) {
+                    return;
+                  }
+                  showAppToast(
+                    context,
+                    message: AppLocalizations.of(context)!.saveFailed,
+                    kind: AppToastKind.error,
+                  );
+                }
               },
             ),
           ),
