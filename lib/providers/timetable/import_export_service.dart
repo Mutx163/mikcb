@@ -175,12 +175,32 @@ Future<String?> _timetableEnsureSectionCapacityForImport(
   final currentScheme = host.activeTimeScheme;
 
   if (currentScheme == null) {
+    // 形状：改 `_settings` / `_courses` → await 落盘 → notify。落盘抛错（磁盘满、
+    // `commit()` 失败）时内存停在没落库的扩节结果上，而 `_persistActiveProfileState`
+    // 的第一步 `_mergeActiveProfileIntoProfilesList` 已把它并进 `_profiles` ——
+    // 下一次任意成功写入（切课表、加课、心跳）就把「导入失败」时的课表表头坐实。
+    //
+    // 契约与 `updateTimetableSettings` / `course_repository.dart` 的课程更新族、
+    // `time_scheme_repository.dart` 的 `updateTimeScheme` 一致：抓快照 + catch 里
+    // 整体退回 + `Error.throwWithStackTrace` 保留原始栈上抛（`import_shared.dart`
+    // 的 `ensureImportSectionCapacity` 会把它当 `ensureMessage` 显示给用户，
+    // 不能吞）。
+    final snapshotSettings = host._settings;
+    final snapshotCourses = List<Course>.from(host._courses);
+    final snapshotProfiles = List<TimetableProfile>.from(host._profiles);
     host._settings = host._settings.copyWith(sections: expandedSections);
     host._courses = host._syncCoursesWithEffectiveTimeSchemes(
       List<Course>.from(host._courses),
       settings: host._settings,
     );
-    await host._persistActiveProfileState();
+    try {
+      await host._persistActiveProfileState();
+    } catch (error, stackTrace) {
+      host._settings = snapshotSettings;
+      host._courses = snapshotCourses;
+      host._profiles = snapshotProfiles;
+      Error.throwWithStackTrace(error, stackTrace);
+    }
     host._currentLiveCourseId = null;
     host._notifyStateChanged();
     await host._updateLiveActivity();
@@ -209,18 +229,44 @@ Future<String?> _timetableEnsureSectionCapacityForImport(
     createdAt: now,
     updatedAt: now,
   );
+  // 这条分支比上面那条多改一份 `_timeSchemes`，而且**分三次落盘**
+  // （作息表 → 课表档案 → 活动课表镜像）。快照要覆盖全部四份内存状态，
+  // catch 里也要把已成功落盘的那几次补偿回写，否则留下一半成功的状态：
+  // 只退内存的话盘上留着「导入补齐」那份作息，冷启动的 `_ensureTimeSchemes`
+  // 会把它对齐进各课表，用户视角是「导入失败了但作息自己多出一套」。
+  //
+  // 契约与 `time_scheme_repository.dart` 的 `updateTimeScheme` 一致（那份也是两次
+  // 落盘、catch 里补一次 `_persistTimeSchemes`）。
+  final snapshotSchemes = List<TimeScheme>.from(host._timeSchemes);
+  final snapshotSettings = host._settings;
+  final snapshotCourses = List<Course>.from(host._courses);
+  final snapshotProfiles = List<TimetableProfile>.from(host._profiles);
   host._timeSchemes.add(duplicatedScheme);
-  await host._persistTimeSchemes();
+  try {
+    await host._persistTimeSchemes();
 
-  host._settings = host._settings.copyWith(
-    activeTimeSchemeId: duplicatedScheme.id,
-    sections: expandedSections,
-  );
-  host._courses = host._syncCoursesWithEffectiveTimeSchemes(
-    List<Course>.from(host._courses),
-    settings: host._settings,
-  );
-  await host._persistActiveProfileState();
+    host._settings = host._settings.copyWith(
+      activeTimeSchemeId: duplicatedScheme.id,
+      sections: expandedSections,
+    );
+    host._courses = host._syncCoursesWithEffectiveTimeSchemes(
+      List<Course>.from(host._courses),
+      settings: host._settings,
+    );
+    await host._persistActiveProfileState();
+  } catch (error, stackTrace) {
+    host._timeSchemes = snapshotSchemes;
+    host._settings = snapshotSettings;
+    host._courses = snapshotCourses;
+    host._profiles = snapshotProfiles;
+    // 补偿已成功落盘的作息表；失败不遮住原始错误。
+    try {
+      await host._persistTimeSchemes();
+    } catch (_) {
+      // 回滚本身失败只留在存储层，原始失败对用户更有价值。
+    }
+    Error.throwWithStackTrace(error, stackTrace);
+  }
   host._currentLiveCourseId = null;
   host._notifyStateChanged();
   await host._updateLiveActivity();

@@ -128,4 +128,85 @@ void main() {
     expect(provider.profiles.first.settings.weeklyReportEnabled, isTrue);
     expect(storage.profilesWrites, greaterThan(0));
   });
+
+  // 主题族走的是另一个收口：`_applySavedThemes`（timetable_provider.dart，
+  // saveTheme / deleteTheme / renameTheme 三处共用）。它原先只把 `_settings`
+  // 退回旧值 —— 但 `_persistActiveProfileState` 的第一步就是
+  // `_mergeActiveProfileIntoProfilesList`，落盘抛错时 `_profiles[active]` 里
+  // 已经是那份从未落库的新主题列表。此后任何一条直接 `saveProfiles(_profiles)`
+  // 的路径（切课表、加课、30 秒一次的心跳）都会把「保存失败」的主题坐实成
+  // 盘上数据，用户视角是「刚报了失败，之后它自己又出现了」。
+  group('主题列表的落盘失败回滚', () {
+    test('saveTheme 失败：幻影主题不能留在 _profiles 里', () async {
+      storage.profilesFailures = 5;
+
+      await expectLater(
+        provider.saveTheme('深色', {'seed': '#FF0000'}),
+        throwsStateError,
+      );
+
+      expect(provider.settings.savedThemes, isEmpty, reason: '内存必须退回旧值');
+      expect(
+        provider.profiles.first.settings.savedThemes,
+        isEmpty,
+        reason: '修复前这里有 1 条：合并进 _profiles 的幻影没被退回',
+      );
+    });
+
+    test('saveTheme 失败后，下一次成功写入落的是空主题列表', () async {
+      storage.profilesFailures = 5;
+      await expectLater(
+        provider.saveTheme('深色', {'seed': '#FF0000'}),
+        throwsStateError,
+      );
+      storage.profilesFailures = 0;
+
+      await provider.addCourse(lesson('c1'));
+
+      expect(
+        provider.profiles.first.settings.savedThemes,
+        isEmpty,
+        reason: '这条就是用户视角的「失败之后它自己又出现了」',
+      );
+      expect(provider.settings.savedThemes, isEmpty);
+    });
+
+    test('deleteTheme 失败：被删的主题要回到 _profiles', () async {
+      await provider.saveTheme('深色', {'seed': '#FF0000'});
+      final themeId = provider.settings.savedThemes.single.id;
+
+      storage.profilesFailures = 5;
+      await expectLater(provider.deleteTheme(themeId), throwsStateError);
+
+      expect(provider.settings.savedThemes, hasLength(1));
+      expect(
+        provider.profiles.first.settings.savedThemes,
+        hasLength(1),
+        reason: '修复前这里为 0：删除虽然「失败」了幻影却已进 _profiles，'
+            '下一次写入就把它永久删掉',
+      );
+    });
+
+    test('renameTheme 失败：旧名字要回到 _profiles', () async {
+      await provider.saveTheme('深色', {'seed': '#FF0000'});
+      final themeId = provider.settings.savedThemes.single.id;
+
+      storage.profilesFailures = 5;
+      await expectLater(provider.renameTheme(themeId, '浅色'), throwsStateError);
+
+      expect(provider.settings.savedThemes.single.name, '深色');
+      expect(
+        provider.profiles.first.settings.savedThemes.single.name,
+        '深色',
+        reason: '修复前这里是「浅色」：改名失败了但幻影留在 _profiles 里',
+      );
+    });
+
+    test('主题落盘成功时照常生效', () async {
+      await provider.saveTheme('深色', {'seed': '#FF0000'});
+      expect(provider.settings.savedThemes, hasLength(1));
+      expect(provider.profiles.first.settings.savedThemes, hasLength(1));
+      expect(storage.profilesWrites, greaterThan(0));
+    });
+  });
 }

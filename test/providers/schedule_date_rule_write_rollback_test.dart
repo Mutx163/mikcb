@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/location_time_group.dart';
 import 'package:university_timetable/models/schedule_date_rule.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
@@ -353,6 +354,100 @@ void main() {
       expect(provider.scheduleDateRules, hasLength(1));
       expect(provider.scheduleDateRules.single.id, original.id);
       expect(provider.scheduleDateRules.single.name, original.name);
+    });
+  });
+
+  // 地点规则族（`_applyLocationTimeRulesToActiveProfileImpl`，在
+  // `timetable/schedule_rule_apply.dart`）与上面刚修好的日期规则族是**同一种**整表
+  // 重写：改全部课程的钟点 + 释放全部 `timeSchemeIdOverride`（不可逆），再
+  // `await _persistActiveProfileState()`。它原先没有快照也没有 catch，而调用点
+  // `location_time_match_screen.dart:197` 也没有 try/catch。
+  group('地点规则套用的落盘失败回滚', () {
+    // 前置状态要凑出 `updatedCount > 0`（那条 `if (updatedCount > 0)` 里才有落盘）。
+    // 实测两条容易踩空的门：
+    //   · 只建一套作息 + 一个分组 ⇒ 课程钟点**已经**等于那套作息，apply 走
+    //     `alreadySameClock` 分支（updated=0），一次落盘都不发生；
+    //   · 课程不带 `timeSchemeIdOverride` ⇒ 命中分组后 override 与钟点都没变，
+    //     同样 updated=0。
+    // 所以：两套作息（早 / 晚）+ 课程显式绑早作息 + 分组指向晚作息。
+    // 匹配后 override 被释放、钟点从 08:00 改写成 21:00，两样都不可逆。
+    Future<List<Course>> stageMatchable({required String building}) async {
+      final morning = await provider.createTimeScheme(
+        name: '早作息-$building',
+        sections: sections(firstStartMinute: '480'),
+      );
+      final evening = await provider.createTimeScheme(
+        name: '晚作息-$building',
+        sections: sections(firstStartMinute: '1260'),
+      );
+      await provider.applyTimeScheme(morning.id);
+      await provider.addCourse(
+        courseAt('loc-$building', day: 1, section: 1).copyWith(
+          location: '${building}101',
+          timeSchemeIdOverride: morning.id,
+        ),
+      );
+      await provider.createLocationTimeGroup(
+        name: '分组-$building',
+        timeSchemeId: evening.id,
+        keywords: [LocationKeyword(pattern: building)],
+      );
+      return provider.courses;
+    }
+
+    test('重新匹配失败后课程钟点与 override 都要回到匹配前', () async {
+      await stageMatchable(building: '晚楼');
+      final clocksBefore = clocksOf(provider.courses);
+      final overridesBefore = provider.courses
+          .map((course) => course.timeSchemeIdOverride)
+          .toList();
+      expect(overridesBefore.single, isNotNull, reason: '前置状态：课程显式绑早作息');
+
+      storage.profilesFailures = 1;
+      await expectLater(
+        provider.applyLocationTimeRulesToActiveProfile(),
+        throwsA(isA<StateError>()),
+        reason: 'updatedCount>0 时才会走落盘；前置状态错了这条就测不到任何东西',
+      );
+
+      expect(
+        clocksOf(provider.courses),
+        clocksBefore,
+        reason: '修复前这里是改写后的钟点（08:00→21:00），而快照一份都没退',
+      );
+      expect(
+        provider.courses.map((course) => course.timeSchemeIdOverride).toList(),
+        overridesBefore,
+        reason: '释放全部 override 是不可逆的，回滚必须连它一起还原',
+      );
+      expect(
+        provider.profiles.first.courses.map((course) => course.startTime).toList(),
+        clocksBefore.values.toList(),
+        reason: '连课表镜像一起退：幻影会被下一次任意成功写入坐实',
+      );
+    });
+
+    test('失败之后再成功匹配一次，落的是匹配前的状态', () async {
+      await stageMatchable(building: '晚楼');
+      final clocksBefore = clocksOf(provider.courses);
+      final courseId = provider.courses.single.id;
+
+      storage.profilesFailures = 1;
+      await expectLater(
+        provider.applyLocationTimeRulesToActiveProfile(),
+        throwsA(isA<StateError>()),
+      );
+      storage.profilesFailures = 0;
+
+      await provider.addCourse(courseAt('loc-bystander', day: 3, section: 1));
+
+      expect(
+        provider.courses
+            .where((course) => course.id == courseId)
+            .map((course) => course.startTime),
+        [clocksBefore[courseId]],
+        reason: '这条就是用户视角的「匹配报了失败，之后课程时间自己变了」',
+      );
     });
   });
 }

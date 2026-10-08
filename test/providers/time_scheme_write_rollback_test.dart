@@ -178,6 +178,56 @@ void main() {
       );
     });
 
+    // `updateTimeScheme` 分两次 await 落盘：先 `_persistTimeSchemes()`（作息表
+    // 先落），再 `saveProfiles()`（档案后落）。第二次失败时第一次**已经成功写进
+    // 盘上**了，只退内存会留下一半成功的状态：盘上是新节次表、内存是旧节次表。
+    // 后果具体是「重启后作息自己变了」——冷启动的 `_ensureTimeSchemes` 会把盘上
+    // 那份作息对齐进各课表，于是用户被告知「没改成」的节次在下次开 App 时生效。
+    //
+    // 同族两处都补了补偿：`_commitLocationGroupChange`（补一次
+    // `_persistLocationTimeGroups`）与 `updateTimetableSettings`（补一次
+    // `_persistActiveProfileState(notifySync: false)`），只有这里漏了。
+    test('updateTimeScheme 第二次落盘失败要把已写盘的新作息补偿回旧值', () async {
+      final scheme = await provider.createTimeScheme(
+        name: '分两次落盘',
+        sections: const [SectionTime(startTime: '11:00', endTime: '11:45')],
+      );
+
+      // 只让 saveProfiles 失败 —— 它正是本函数**第二次**落盘（第一次是
+      // `_persistTimeSchemes`，它不碰 profiles）。所以这里不跳任何一次。
+      storage.profileFailures = 1;
+      await expectLater(
+        provider.updateTimeScheme(
+          schemeId: scheme.id,
+          name: '分两次落盘',
+          sections: const [SectionTime(startTime: '20:00', endTime: '20:45')],
+        ),
+        throwsA(isA<StateError>()),
+        reason: '注入的那一次 saveProfiles 失败必须正好落在第二次落盘上',
+      );
+
+      expect(
+        provider.timeSchemes
+            .firstWhere((item) => item.id == scheme.id)
+            .sections
+            .single
+            .startTime,
+        '11:00',
+        reason: '内存必须退回旧值',
+      );
+
+      // 真正的断言在盘上：新作息曾经成功落过盘，不补偿就被冷启动读回来。
+      final onDisk = await storage.getTimeSchemes();
+      expect(
+        onDisk.firstWhere((item) => item.id == scheme.id).sections.single.startTime,
+        '11:00',
+        reason: '修复前这里是 20:00：作息表先落盘成功、档案后落盘失败，'
+            'catch 只退内存不补偿，于是盘上留着新节次表；'
+            '重启时 _ensureTimeSchemes 把它对齐进各课表，'
+            '用户视角是「我明明改了却没改成，过一天自己变了」',
+      );
+    });
+
     test('applyTimeScheme 写盘失败后，活动作息与课程钟点都必须回到旧值', () async {
       // 作息族里唯一漏掉回滚形状的入口：它同时改 `_settings`（活动作息 + 节次表）
       // 和 `_courses`（按新节次表重排出来的钟点），再 `_persistActiveProfileState`
@@ -433,6 +483,69 @@ void main() {
       // 幻影档案一旦留下，下一次任意成功写入会把它永久坐实到盘上。
       final json = jsonDecode(backupContent()) as Map<String, dynamic>;
       expect(json['app'], 'mikcb');
+    });
+  });
+
+  // `ensureSectionCapacityForImport`（`import_export_service.dart`，
+// `import_shared.dart:475` 的 `ensureImportSectionCapacity` 调它）是导入链上
+// 唯一一处「先扩节、后写课程」的写入口。本周 b86f5878 给它加了锁、6ff942c1
+// 声明要补导入回滚，唯独漏了它：改完 `_settings` / `_courses` / `_timeSchemes`
+// 直接裸 await，没有快照也没有 catch。
+//
+// 两条分支的落盘次数不同，所以钉两条：无作息方案时一次 `_persistActiveProfileState`，
+// 有多课表共用作息时三次（作息表 → 档案 → 活动课表镜像）。
+group('导入扩节容量的落盘失败回滚', () {
+    // 只钉 `currentScheme != null` 那条（复制方案）分支 —— 下面这三条
+    // `usageCount <= 1` / `> 1` 的分支划分只有在有活动作息时才走得到。
+    // 另一条 `currentScheme == null` 的分支（`import_export_service.dart`）
+    // 一并补了同样的快照 + catch，但**没有回归钉**：`StorageService
+    // ._ensureTimeSchemesInitialized` 在启动时无条件给默认课表回填
+    // `activeTimeSchemeId`，所以 provider 起来之后 `activeTimeScheme`
+    // 基本不可能为 null，本文件造不出那个前置状态（实测：
+    // `expect(provider.activeTimeScheme, isNull)` 直接红）。这条分支的
+    // 正确性靠与另两条分支同形状来保证，不是靠测试。
+    test('复制作息那条分支：盘上不能留下「导入补齐」那份作息', () async {
+      // 两张课表共用同一个作息 ⇒ 走复制方案那条分支（usageCount > 1）。
+      final scheme = await provider.createTimeScheme(
+        name: '两表共用',
+        sections: const [
+          SectionTime(startTime: '08:00', endTime: '08:45'),
+          SectionTime(startTime: '09:00', endTime: '09:45'),
+        ],
+      );
+      await provider.applyTimeScheme(scheme.id);
+      await provider.createProfile(name: '第二份课表');
+      final otherSchemeId = provider.activeProfile!.settings.activeTimeSchemeId;
+      expect(otherSchemeId, scheme.id);
+      await provider.switchProfile(provider.profiles.first.id);
+      await provider.applyTimeScheme(scheme.id);
+
+      final schemeCountBefore = provider.timeSchemes.length;
+      final sectionsBefore = provider.settings.sectionCount;
+
+      // 让第二次落盘（saveProfiles）失败：作息表那一次已经成功写进盘上了。
+      storage.profileFailures = 1;
+      await expectLater(
+        provider.ensureSectionCapacityForImport(sectionsBefore + 4),
+        throwsStateError,
+      );
+
+      expect(provider.timeSchemes, hasLength(schemeCountBefore));
+      expect(
+        provider.timeSchemes.any((item) => item.name.contains('导入补齐')),
+        isFalse,
+        reason: '内存必须退回：修复前这里多出 1 条',
+      );
+      final onDisk = await storage.getTimeSchemes();
+      expect(
+        onDisk.any((item) => item.name.contains('导入补齐')),
+        isFalse,
+        reason: '修复前这里是 true：作息表先落盘成功、档案后落盘失败，'
+            'catch 只退内存不补偿，盘上留下「导入补齐」那份作息；'
+            '冷启动的 _ensureTimeSchemes 会把它对齐进各课表',
+      );
+      expect(provider.settings.sectionCount, sectionsBefore);
+      expect(provider.profiles.first.settings.sectionCount, sectionsBefore);
     });
   });
 

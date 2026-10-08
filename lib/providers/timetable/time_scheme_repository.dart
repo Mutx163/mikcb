@@ -251,6 +251,20 @@ Future<String?> _timetableUpdateTimeScheme(
     host._profiles = snapshotProfiles;
     host._settings = snapshotSettings;
     host._courses = snapshotCourses;
+    // 上面那次 `_persistTimeSchemes` 已经**成功落盘**了（作息表是先写的那一份），
+    // 所以光退内存会留下一半成功的状态：盘上是新节次表，内存是旧节次表。
+    // 后果具体是「重启后作息自己变了」——`_ensureTimeSchemes` 在启动时会把盘上
+    // 那份作息对齐进各课表，于是用户被告知「没改成」的节次在下次冷启动时生效。
+    //
+    // 必须补偿回写旧作息表，形状同 `_commitLocationGroupChange`
+    // （`location_group_repository.dart`：catch 里补一次 `_persistLocationTimeGroups`）
+    // 与 `updateTimetableSettings`（catch 里补一次补偿性持久化，notifySync: false）。
+    // 补偿失败不遮住原始错误：原始失败对用户更有价值。
+    try {
+      await host._persistTimeSchemes();
+    } catch (_) {
+      // 与 updateTimetableSettings 的旧路径同处理：回滚本身失败只留在存储层。
+    }
     rethrow;
   }
   host._currentLiveCourseId = null;

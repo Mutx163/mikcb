@@ -29,6 +29,34 @@ class _FailingStorage extends StorageService {
   int profilesFailures = 0;
   int profilesWrites = 0;
 
+  /// 教师/地点名册的写盘失败注入（2026-10-07 新增）。
+  ///
+  /// 这两条不是装饰：`updateCourse` / `updateCourseGroup` 里的
+  /// `_recordTeacherImpl` / `_recordLocationImpl` 各自 `await` 一次名册落盘，
+  /// 而保护区原先从它们**之后**才开始（见
+  /// `course_repository.dart` 函数体顶部那条注）。名册写盘失败时课程已被替换、
+  /// 共享字段已广播，三份快照一份都不退。
+  int teacherFailures = 0;
+  int locationFailures = 0;
+
+  @override
+  Future<void> saveTeacherRecords(List<String> teachers) {
+    if (teacherFailures > 0) {
+      teacherFailures--;
+      return Future<void>.error(StateError('test_teacher_records_failed'));
+    }
+    return super.saveTeacherRecords(teachers);
+  }
+
+  @override
+  Future<void> saveLocationRecords(List<String> locations) {
+    if (locationFailures > 0) {
+      locationFailures--;
+      return Future<void>.error(StateError('test_location_records_failed'));
+    }
+    return super.saveLocationRecords(locations);
+  }
+
   @override
   Future<void> saveProfiles(List<TimetableProfile> profiles) {
     profilesWrites++;
@@ -227,6 +255,101 @@ void main() {
         contains('added'),
         reason: '这条正是用户刚填的内容，表单已经报错；回滚等于清空整张表单。'
             '这是刻意口径，见 course_group_repository.dart 开头的说明。',
+      );
+    });
+
+    // 保护区起点太晚导致的三个洞（2026-10-07）。`_recordTeacherImpl` /
+    // `_recordLocationImpl` 自己要落盘（`saveTeacherRecords` /
+    // `saveLocationRecords`），而保护区原先从它们之后才开始：这两条 await 抛错时
+    // 课程已替换、共享字段已广播给同组其它课次，三份快照一份都不退、也不 notify。
+    test('updateCourse：教师名册写盘失败要把整组课次退回', () async {
+      await provider.addCourse(lesson('m1', 1));
+      await provider.addCourse(lesson('m2', 2));
+      final before = provider.courses
+          .map((course) => '${course.id}/${course.teacher}/${course.location}')
+          .toList();
+
+      storage.teacherFailures = 1;
+      await expectLater(
+        provider.updateCourse(
+          provider.courses.firstWhere((course) => course.id == 'm1').copyWith(
+            teacher: '新老师',
+          ),
+        ),
+        throwsStateError,
+      );
+
+      expect(
+        provider.courses
+            .map((course) => '${course.id}/${course.teacher}/${course.location}')
+            .toList(),
+        before,
+        reason: '修复前课程已被替换、共享字段已广播，而快照一份都没退',
+      );
+      expect(
+        provider.profiles.first.courses
+            .map((course) => '${course.id}/${course.teacher}')
+            .toList(),
+        before.map((entry) => entry.split('/').take(2).join('/')).toList(),
+        reason: '连课表镜像一起退：幻影会被下一次写入坐实',
+      );
+    });
+
+    test('updateCourse：地点名册写盘失败同样要退回', () async {
+      await provider.addCourse(lesson('l1', 1));
+      final before = provider.courses
+          .map((course) => '${course.id}/${course.location}')
+          .toList();
+
+      storage.locationFailures = 1;
+      await expectLater(
+        provider.updateCourse(
+          provider.courses.firstWhere((course) => course.id == 'l1').copyWith(
+            location: '新楼302',
+          ),
+        ),
+        throwsStateError,
+      );
+
+      expect(
+        provider.courses
+            .map((course) => '${course.id}/${course.location}')
+            .toList(),
+        before,
+      );
+    });
+
+    test('updateCourseGroup：名册写盘失败要整组退回', () async {
+      // 组更新的循环体里每条课次各 await 一次名册写盘。第一条课次的教师名
+      // 「王老师」已在名册里（幂等短路，不落盘），所以改成新名字才会真的走到
+      // saveTeacherRecords —— 这正是要注入失败的那一次。
+      await provider.addCourseGroup([
+        lesson('g1', 1),
+        lesson('g2', 2),
+      ]);
+      final before = provider.courses
+          .map((course) => '${course.id}/${course.teacher}')
+          .toList();
+      expect(before, hasLength(2));
+
+      storage.teacherFailures = 1;
+      await expectLater(
+        provider.updateCourseGroup(
+          lesson('g1', 1).name,
+          [
+            lesson('g1', 1).copyWith(teacher: '组新老师'),
+            lesson('g2', 2),
+          ],
+        ),
+        throwsStateError,
+      );
+
+      expect(
+        provider.courses
+            .map((course) => '${course.id}/${course.teacher}')
+            .toList(),
+        before,
+        reason: '修复前这里是一套半新半旧的课次：三份快照都没退',
       );
     });
   });

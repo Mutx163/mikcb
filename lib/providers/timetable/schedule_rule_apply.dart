@@ -6,6 +6,10 @@ part of '../timetable_provider.dart';
 // 日期规则那条 `_applyDueScheduleDateRulesDetailed` 没有搬进来：它在本分支已移入
 // `schedule_date_rule_repository.dart` 并补上「落盘失败整体回滚」，provider 侧只留
 // 转发壳。两处都留会撞成同库重复定义，故这里只保留地点族。
+//
+// 2026-10-07：地点族自己原来也没有回滚（整表重写 + 裸 await），现在与日期规则族
+// 同形状 —— 快照 `_courses` / `_profiles`，catch 里整体退回并
+// `Error.throwWithStackTrace` 保留原始栈。
 extension _ScheduleRuleApply on TimetableProvider {
     Future<LocationTimeApplyStats>
     _applyLocationTimeRulesToActiveProfileImpl() async {
@@ -265,8 +269,27 @@ extension _ScheduleRuleApply on TimetableProvider {
       }
 
       if (updatedCount > 0) {
+        // 形状：整份课程表按地点规则重写（钟点改写 + 释放全部
+        // `timeSchemeIdOverride`，不可逆）后裸 await 落盘。落盘抛错时内存停在
+        // 没落库的新表上，而 `_persistActiveProfileState` 的第一步
+        // `_mergeActiveProfileIntoProfilesList` 已把它并进 `_profiles` ——
+        // 下一次任意成功写入（加课、切课表、30 秒一次的心跳）就把这份规则
+        // 坐实，用户视角是「重新匹配报了失败，但课程时间自己变了」。
+        //
+        // 这条的影响面与已修好的 `_applyDueScheduleDateRulesDetailed`（在
+        // `schedule_date_rule_repository.dart`，同样整表重写）同级，之前只修了那一个。
+        // 调用点 `location_time_match_screen.dart:197` 没有 try/catch，异常会一路
+        // 冒到那一层的最外层，用户看不到「什么都没改成」的明确提示。
+        final snapshotCourses = List<Course>.from(_courses);
+        final snapshotProfiles = List<TimetableProfile>.from(_profiles);
         _courses = synced;
-        await _persistActiveProfileState();
+        try {
+          await _persistActiveProfileState();
+        } catch (error, stackTrace) {
+          _courses = snapshotCourses;
+          _profiles = snapshotProfiles;
+          Error.throwWithStackTrace(error, stackTrace);
+        }
         _currentLiveCourseId = null;
         _notifyStateChanged();
         await _updateLiveActivity();

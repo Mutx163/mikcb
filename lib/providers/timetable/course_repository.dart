@@ -14,6 +14,10 @@ part of '../timetable_provider.dart';
 ///   所以落盘失败之后内存里连课表镜像都是改过的状态：抛错跳过了 `_notifyStateChanged()`，
 ///   界面显示旧的、getter 是新的，而下一次任意成功写入（切周、加课、30 秒一次的
 ///   `syncTemporalContext` 心跳）会把这份从未落库的改动当成既有状态永久落盘。
+///
+/// 2026-10-07：保护区原本从 `_persistActiveProfileState` 那一行才开始，而上面两条
+/// `_recordTeacherImpl` / `_recordLocationImpl` **自己也要落盘**（见函数体里的注）。
+/// 现在 try 从动内存的第一行就覆盖到落盘完成。
 Future<void> _timetableUpdateCourse(
   TimetableProvider host,
   Course course, {
@@ -61,25 +65,35 @@ Future<void> _timetableUpdateCourse(
   final snapshotTasks = List<CourseTask>.from(host._tasks);
   final snapshotProfiles = List<TimetableProfile>.from(host._profiles);
 
-  host._courses[index] = normalizedCourse;
-  await host._recordTeacherImpl(normalizedCourse.teacher);
-  await host._recordLocationImpl(normalizedCourse.location);
-  for (var i = 0; i < host._courses.length; i++) {
-    if (i == index) {
-      continue;
-    }
-    final current = host._courses[i];
-    final currentKey = CourseDomain.sharedKey(current);
-    if (currentKey == previousKey || currentKey == newKey) {
-      host._courses[i] = CourseDomain.applySharedFields(
-        current,
-        normalizedCourse,
-      );
-    }
-  }
-
-  await host._syncHomeworkTasksWithCourses();
+  // ⚠️ 保护区要从这里开始（2026-10-07 补）。`_recordTeacherImpl` /
+  // `_recordLocationImpl` 各自会 `await _profileRepository.saveTeacherRecords` /
+  // `saveLocationRecords`（`timetable_provider.dart`），也就是说**它们自己也要落盘**。
+  // 原先把 try 放在它们之后，于是这两条 await 抛错时：课程已替换、共享字段已广播给
+  // 同组其它课次、`_teacherRecords` / `_locationRecords` 已追加进内存（那两个
+  // `List.add` 在 await 之前），而三份快照一份都不退、也不 notify。
+  // 用户看到的是「更新课程报错了，但课已经变了，而且没有任何提示」。
+  //
+  // 这两个函数是幂等的（`if (_teacherRecords.contains(teacher)) return;`），
+  // 把它们纳入保护区不需要额外补偿：退回去之后再调一次是同参no-op。
   try {
+    host._courses[index] = normalizedCourse;
+    await host._recordTeacherImpl(normalizedCourse.teacher);
+    await host._recordLocationImpl(normalizedCourse.location);
+    for (var i = 0; i < host._courses.length; i++) {
+      if (i == index) {
+        continue;
+      }
+      final current = host._courses[i];
+      final currentKey = CourseDomain.sharedKey(current);
+      if (currentKey == previousKey || currentKey == newKey) {
+        host._courses[i] = CourseDomain.applySharedFields(
+          current,
+          normalizedCourse,
+        );
+      }
+    }
+
+    await host._syncHomeworkTasksWithCourses();
     await host._persistActiveProfileState();
   } catch (_) {
     host._courses = snapshotCourses;

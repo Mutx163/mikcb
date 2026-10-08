@@ -359,13 +359,23 @@ class TimetableProvider with ChangeNotifier {
   /// （磁盘满、`commit()` 失败）时内存已带新主题列表、盘上没有、UI 也没刷新，
   /// 用户看到的就是「点了没反应」；而下一次任意成功写入会通过
   /// `_mergeActiveProfileIntoProfilesList` 把这份从未落库的改动当成既有状态落盘。
+  ///
+  /// ⚠️ 回滚必须连 `_profiles` 一起退（2026-10-07 补），只退 `_settings` 会留下
+  /// 一份「幻影主题」：`_persistActiveProfileState` 的**第一步**就是
+  /// `_mergeActiveProfileIntoProfilesList`（它把新设置并进 `_profiles`，且这一步
+  /// 在任何磁盘写入之前、前面不许插 await），所以落盘抛错时 `_profiles[active]`
+  /// 里已经是那份从未落库的新主题列表。此处只把 `_settings` 退回旧值，`_profiles`
+  /// 仍留着幻影 —— 此后任何一条直接 `saveProfiles(_profiles)` 的路径（切课表、
+  /// 加课、30 秒一次的 `syncTemporalContext`）都会把它坐实成盘上的数据。
+  /// 契约与 `settings_repository.dart` 的 `_rollbackSettingsWrite` 一致：
+  /// 「为什么连 `_profiles` 也要退」的完整论证写在那里的注释里。
   Future<void> _applySavedThemes(List<SavedTheme> Function() build) async {
-    final previousSettings = _settings;
+    final snapshot = _SettingsWriteSnapshot(this);
     _settings = _settings.copyWith(savedThemes: build());
     try {
       await _persistActiveProfileState();
     } catch (_) {
-      _settings = previousSettings;
+      _rollbackSettingsWrite(this, snapshot);
       rethrow;
     }
     notifyListeners();

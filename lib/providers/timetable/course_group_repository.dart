@@ -66,25 +66,32 @@ Future<void> _timetableUpdateCourseGroup(
   final snapshotCourses = List<Course>.from(host._courses);
   final snapshotTasks = List<CourseTask>.from(host._tasks);
   final snapshotProfiles = List<TimetableProfile>.from(host._profiles);
-  // Remove old entries for this group.
-  host._courses.removeWhere((c) => buildSharedCourseNameKey(c.name) == key);
-  // Add the updated entries, applying shared fields.
-  final shared = updatedCourses.first;
-  for (final course in updatedCourses) {
-    final normalized = host._normalizeCourse(
-      CourseDomain.applySharedFields(course, shared),
-    );
-    host._courses.add(normalized);
-    await host._recordTeacherImpl(normalized.teacher);
-    await host._recordLocationImpl(normalized.location);
-  }
-  host._tasks.removeWhere(
-    (task) =>
-        task.courseId != null &&
-        !host._courses.any((course) => course.id == task.courseId),
-  );
-  await host._syncHomeworkTasksWithCourses();
+  // ⚠️ 保护区要覆盖 `_recordTeacherImpl` / `_recordLocationImpl`
+  // （2026-10-07 补，与 `course_repository.dart` 的 `_timetableUpdateCourse` 同因）：
+  // 它们各自会 `await saveTeacherRecords` / `saveLocationRecords`，**自己也要落盘**。
+  // 原先把 try 放在循环之后，于是第二条课次的教师名写盘失败时：旧课次已经整组摘掉、
+  // 新课次只加了一半、作业还没剪，而三份快照一份都不退、也不 notify。
+  // 这两个函数幂等（`if (_teacherRecords.contains(teacher)) return;`），纳入保护区
+  // 不需要额外补偿。
   try {
+    // Remove old entries for this group.
+    host._courses.removeWhere((c) => buildSharedCourseNameKey(c.name) == key);
+    // Add the updated entries, applying shared fields.
+    final shared = updatedCourses.first;
+    for (final course in updatedCourses) {
+      final normalized = host._normalizeCourse(
+        CourseDomain.applySharedFields(course, shared),
+      );
+      host._courses.add(normalized);
+      await host._recordTeacherImpl(normalized.teacher);
+      await host._recordLocationImpl(normalized.location);
+    }
+    host._tasks.removeWhere(
+      (task) =>
+          task.courseId != null &&
+          !host._courses.any((course) => course.id == task.courseId),
+    );
+    await host._syncHomeworkTasksWithCourses();
     await host._persistActiveProfileState();
   } catch (_) {
     // 整组替换是「改一批 + 剪孤儿作业」，失败就要一起退回：留下的只会是
