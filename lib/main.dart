@@ -32,6 +32,7 @@ import 'screens/timetable_screen.dart';
 import 'screens/timetable_settings_screen.dart';
 import 'screens/lan_edit_screen.dart';
 import 'utils/app_toast.dart';
+import 'utils/external_import_cleanup.dart';
 import 'utils/first_frame_probe.dart';
 import 'utils/frame_perf_probe.dart';
 import 'utils/home_page_background.dart';
@@ -1405,11 +1406,27 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   }
 
   Future<void> _checkPendingExternalImport() async {
+    // 分享进来的**表格**副本是我们自己落到 `<cacheDir>/external_imports/` 的
+    // （`MainActivity.kt:1374` 的 `copyBytesToImportCache`，:1562 那个目录），
+    // 而两侧原先都不删：含课程·教师·教室的明文副本长期留在应用缓存里，每次分享
+    // 还多一份（毫秒前缀不覆盖），只有系统清缓存或用户手动清缓存才消失。
+    // 清理工具早就写好并配了测试（`utils/external_import_cleanup.dart`，9 条），
+    // 就是**没人调用** —— 这里补上调用点。
+    //
+    // 收尾放在外层 finally：导入页开着的时候文件还得在，页面一关（用户看完了 /
+    // 取消 / 中途返回）就删；`!mounted` 之类早退路径同样收得到。删的是不是
+    // "我们自己那份"由 `deleteExternalImportCopy` 的目录判据决定 —— 用户自己挑的
+    // 文件不在这个目录下，会被它拒绝。
+    String? externalFilePath;
     try {
       const channel = TimedMethodChannel('com.mutx163.qingyu/miui_live');
       final payload = await channel.invokeMethod<Map<Object?, Object?>>(
         'getPendingExternalImport',
       );
+      // 先取出副本路径**再**判挂载：原生侧交接时就把 pending 清空了
+      // （`MainActivity.kt:813-816`），这里若因 `!mounted` 早退而没删，
+      // 那份明文副本就永久留在缓存里。
+      externalFilePath = payload?['filePath'] as String?;
       if (payload == null || !mounted) {
         return;
       }
@@ -1479,6 +1496,11 @@ class _AppEntryScreenState extends State<AppEntryScreen>
           stackTrace: stackTrace,
         ),
       );
+    } finally {
+      final path = externalFilePath;
+      if (path != null && path.isNotEmpty) {
+        await deleteExternalImportCopy(path);
+      }
     }
   }
 
