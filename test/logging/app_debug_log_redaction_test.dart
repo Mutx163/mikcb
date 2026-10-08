@@ -59,4 +59,31 @@ void main() {
     const raw = '套用完成 matched=3 updated=2 overflow=0';
     expect(redactPersonalFields(raw), raw);
   });
+
+  test('名字列表字段（overflowNames / changeSamples）也要抹掉', () {
+    // 2026-10-08 补：这两个键原先一条都匹配不上，而值里就是课程名
+    // （`schedule_rule_apply.dart:314-315`、`location_time_match_screen.dart:216`），
+    // 于是 release 日志里课程名原样落盘。
+    const raw =
+        '应用结束 overflow=3 overflowNames=高等数学,大学英语 '
+        'changeSamples=高等数学|id-1|clock 08:00-09:40';
+    final redacted = redactPersonalFields(raw);
+
+    expect(redacted, isNot(contains('高等数学')));
+    expect(redacted, isNot(contains('大学英语')));
+    expect(redacted, contains('overflow=3'), reason: '计数是取证信息，必须留着');
+    expect(redacted, contains('overflowNames=**'));
+    expect(redacted, contains('changeSamples=**'));
+    // 值到空格或 `|` 为止：名字后面的 id 与钟点保留下来对号。
+    expect(redacted, contains('id-1|clock 08:00-09:40'));
+  });
+
+  test('性能探针的 samples 计数不在表里，不能被误伤', () {
+    // `timetable_screen.dart:4321` 的 `samples=${probe.samples}` 是计数。
+    // 为了盖住审计日志里的名字列表而把 `samples` 加进表，会连它一起抹掉 ——
+    // "过度脱敏答非所问"，本仓为这件事返工过（`weather_service.dart:298`）。
+    const raw =
+        '[DayPager] lift(p75): vx=0.0 dx=0.0 dur=0ms samples=1 gapBeforeUp=0ms';
+    expect(redactPersonalFields(raw), raw);
+  });
 }

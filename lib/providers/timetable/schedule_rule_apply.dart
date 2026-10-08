@@ -312,7 +312,10 @@ extension _ScheduleRuleApply on TimetableProvider {
         'overridesInMemoryAfter=$overridesAfter overridesInActiveProfile=$profileOverrides '
         'didPersist=${updatedCount > 0} '
         'overflowNames=${sectionOverflowCourseNames.join(",")} '
-        'samples=${changeSamples.take(12).join(" || ")}',
+        // 键名用 `changeSamples`（受脱敏表覆盖）而不是 `samples`：
+        // 值里是 `课程名|id|…`，而 `samples` 是性能探针的计数键名，
+        // 不能为了这一个字段把计数也抹掉（见 `app_debug_log.dart` 的口径说明）。
+        'changeSamples=${changeSamples.take(12).join(" || ")}',
         extras: {
           'unlocked': unlockedCount,
           'matched': matchedCount,

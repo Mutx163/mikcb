@@ -7,6 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../logging/app_debug_log.dart';
 import '../logging/app_log_messages.dart';
 import '../logging/diagnostics_log_parser.dart';
 import '../models/timetable_settings.dart';
@@ -538,12 +539,26 @@ class AppLogService {
       ..writeln('level=$level')
       ..writeln('source=app')
       ..writeln('category=$category')
-      ..writeln('message=$message');
+      // 与 `appDebugLog` 那条出口**同口径**（2026-10-08 补）：这个文件是
+      // `exportMergedLogsFile` 让用户**导出、发群、附在 issue 里**的那一份，
+      // 而它此前一条 redact 都没有 —— 缺口早就记在
+      // `test/services/weather_failure_log_privacy_test.dart:18-19`。
+      // 抹的只是 `app_debug_log.dart` 里那份**人工维护的**个人信息字段表；
+      // 域名 / id / 计数 / 钟点这些取证信息一个字不动。
+      ..writeln('message=${redactPersonalFields(message)}');
 
     if (extras.isNotEmpty) {
       buffer.writeln('extras=');
       extras.forEach((key, value) {
-        buffer.writeln('  $key=${value ?? 'null'}');
+        if (personalLogFieldKeys.contains(key)) {
+          // 名字型字段**整值**抹掉：值里是一串课程名（`overflowNames` /
+          // `changeSamples`），逐段匹配盖不全 —— `([^\s|]*)` 遇到第一个 `|`
+          // 就停，列表里后面那些名字会原样漏出去。键留着，说明"这里有一份
+          // 名字列表被抹了"。
+          buffer.writeln('  $key=**');
+          return;
+        }
+        buffer.writeln(redactPersonalFields('  $key=${value ?? 'null'}'));
       });
     }
     if (error != null) {

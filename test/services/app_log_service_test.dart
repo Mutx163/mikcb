@@ -56,8 +56,51 @@ void main() {
     );
   });
 
-  test('watchMergedLogsText emits on appends and stays quiet while idle', () async {
-    // path_provider 指到临时目录，写入走真实文件（plugin_boundary_smoke_test 同款做法）。
+  test('持久化日志与 debugPrint 同口径脱敏（含 extras 里的名字列表）', () async {
+    // 这份文件是 `exportMergedLogsFile` 让用户导出、发群、附在 issue 里的那一份，
+    // 而它此前一条 redact 都没有（缺口记在
+    // `weather_failure_log_privacy_test.dart:18-19`）。2026-10-08 接上同一份字段表。
+    final tempDir = await Directory.systemTemp.createTemp('mikcb-log-redact-');
+    addTearDown(() => tempDir.delete(recursive: true));
+    const pathProviderChannel = MethodChannel(
+      'plugins.flutter.io/path_provider',
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathProviderChannel, (call) async => tempDir.path);
+    addTearDown(() async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(pathProviderChannel, null);
+    });
+    SharedPreferences.setMockInitialValues({
+      'accepted_privacy_policy': true,
+      'timetable_profiles':
+          '[{"id":"p1","settings":{"liveEnableLocalDiagnostics":true}}]',
+    });
+
+    await AppLogService.instance.info(
+      'location_time_apply',
+      '应用结束 overflow=3 overflowNames=高等数学,大学英语',
+      extras: {
+        'overflowNames': const ['高等数学', '大学英语'],
+        'changeSamples': const ['高等数学|id-1|clock 08:00-09:40'],
+        'updated': 2,
+      },
+    );
+
+    final logs = await AppLogService.instance.readAppLogsText();
+
+    expect(
+      logs,
+      isNot(contains('高等数学')),
+      reason: '课程名是个人信息，不能落进这份会被导出发群的日志',
+    );
+    expect(logs, isNot(contains('大学英语')));
+    expect(logs, contains('overflowNames=**'));
+    expect(logs, contains('updated=2'), reason: '计数等取证信息一个字不能少');
+    expect(logs, contains('overflow=3'));
+  });
+
+  test('watchMergedLogsText emits on appends and stays quiet while idle', () async {    // path_provider 指到临时目录，写入走真实文件（plugin_boundary_smoke_test 同款做法）。
     final tempDir = await Directory.systemTemp.createTemp('mikcb-log-watch-');
     addTearDown(() => tempDir.delete(recursive: true));
     const pathProviderChannel = MethodChannel(
