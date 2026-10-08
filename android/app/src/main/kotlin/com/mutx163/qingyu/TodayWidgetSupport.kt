@@ -722,7 +722,23 @@ internal fun findNextRefreshAtMillis(
                 currentWeek = fallbackWeek,
                 dateMillis = nowMillis,
             ),
-        ) ?: return null
+        )
+        if (currentWeek == null) {
+            // 学期外（寒暑假 / 开学前）：今天没有课，但**午夜刷新不能跟着一起丢**。
+            // 原先这里是 `?: return null`，整条刷新链在假期从头断到尾，首页卡只能靠
+            // 15 分钟的 WorkManager 兜底 —— 开学第一天会长时间顶着假期/旧周次的内容。
+            // 与上面 :700-712 的假日分支同口径：连"今天是假日"都特意保留午夜刷新
+            // （好让卡片第二天自己离开假日态），学期外更没有理由不留。
+            val tomorrowStart = Calendar.getInstance().apply {
+                timeInMillis = nowMillis
+                add(Calendar.DAY_OF_YEAR, 1)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            return if (tomorrowStart > nowMillis) tomorrowStart else null
+        }
         val weekday = Calendar.getInstance().apply {
             timeInMillis = nowMillis
         }.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)

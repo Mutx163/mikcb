@@ -314,7 +314,11 @@ internal fun liveSchedulerFindActiveSelection(
                     customWeeks = course.customWeeks,
                 )
         }
-        .sortedBy { it.startSection }
+        // 键必须与桌面卡片一致：同一节次的两门课（早读 07:00 与第一大节 08:00
+        // 都被钉在第 1 节）只按 startSection 排，谁在前取决于导入数组顺序，
+        // 于是"下节课"会取错、课前 blockedUntil 的窗口也跟着错。口径同 :1924-1928
+        // ——那里改了一处，同族这三处当时漏了。
+        .sortedWith(compareBy({ it.startSection }, { it.startTime }))
     if (todayCourses.isEmpty()) {
         return null
     }
@@ -1380,7 +1384,8 @@ object LiveUpdateScheduler {
                 it.dayOfWeek == nowCalendar.get(Calendar.DAY_OF_WEEK).toWeekday() &&
                     it.isInWeek(targetWeek)
             }
-            .sortedBy { it.startSection }
+            // 同 :1924-1928：节次相同再按钟点，别让导入数组顺序决定"下一节"。
+            .sortedWith(compareBy({ it.startSection }, { it.startTime }))
         if (todayCourses.isEmpty()) {
             return
         }
@@ -2027,7 +2032,9 @@ object LiveUpdateScheduler {
                     ) ?: continue
                 val sameDayCourses = snapshot.courses
                     .filter { it.dayOfWeek == course.dayOfWeek && it.isInWeek(week) }
-                    .sortedBy { it.startSection }
+                    // 同 :1924-1928：这一份直接喂 `resolveBeforeClassBlockedUntil`，
+                    // 顺序错 = 课前静音 / 自动课前动作的窗口提前进状态。
+                    .sortedWith(compareBy({ it.startSection }, { it.startTime }))
                 val currentIndex = sameDayCourses.indexOfFirst { it.id == course.id }
                 if (currentIndex == -1) {
                     continue

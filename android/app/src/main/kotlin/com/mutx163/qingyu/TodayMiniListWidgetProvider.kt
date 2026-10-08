@@ -113,12 +113,19 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
                 pendingRemaining = layout.second
                 layout.first
             }
+            // 三行全 GONE、占位文案又落进 `else -> ""` 的组合 = 一张只剩标题与周号的
+            // 空白卡。这条路是上面那道共享门禁引出来的：考试进行中时
+            // `isShowingTomorrowCourses` 否决「切明日课表」，而
+            // `snapshot.state == "completed"` 又让 rows 为空 —— 于是既没有今日课、
+            // 也不换明天，正文一个控件都不显示。其余 6 张今日卡在这个状态下都有
+            // 考试兜底（`TodayCompactWidgetProvider.kt:106-119`），迷你列表漏了。
+            val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
             val emptyText = when {
                 rows.isNotEmpty() -> ""
                 snapshot.state == "completed" && snapshot.tomorrowCourses.isEmpty() ->
                     context.getString(R.string.widget_today_ended)
                 snapshot.state == "no_course" -> context.getString(R.string.widget_no_course_today)
-                else -> ""
+                else -> examText.orEmpty()
             }
             views.setViewVisibility(
                 R.id.widget_mini_empty,

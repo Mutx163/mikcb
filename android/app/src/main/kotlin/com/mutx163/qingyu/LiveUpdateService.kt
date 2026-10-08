@@ -1809,7 +1809,12 @@ class LiveUpdateService : Service() {
         // 与同文件 resolveIslandLabelBitmap 的 cacheKey 同款做法：
         // 每秒重建通知时不该反复解码同一张图。只留一份、按引用替换，
         // 不 recycle —— 旧图可能仍被已 posted 的通知引用着。
-        if (cachedExpandedIconKey == cacheKey) {
+        // 与同文件 resolveIslandLabelBitmap 的守卫同款（:1310 的
+        // `&& cachedIslandBitmap != null`）：**解码失败（null）不许进缓存**。
+        // 只比 key 的话，一次瞬时失败（文件正被写入、解码器忙）会被钉成整个
+        // Service 生命周期都没有大图标 —— 缓存命中时直接返回 null，连重试的机会
+        // 都没有，用户看到的是通知大图标一直空着，直到杀进程重开。
+        if (cachedExpandedIconKey == cacheKey && cachedExpandedIconBitmap != null) {
             return cachedExpandedIconBitmap
         }
         val bitmap = decodeSquareBitmap(path, targetSize)
