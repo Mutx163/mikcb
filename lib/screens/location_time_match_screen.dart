@@ -214,7 +214,12 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
           'unlocked=${stats.unlockedCount} sameClock=${stats.alreadySameClockCount} '
           'overflow=${stats.sectionOverflowCount} '
           'overflowNames=${stats.sectionOverflowCourseNames.join(",")} '
-          'overridesAfter=$overridesAfter samples=$sampleOverrides',
+          // 键名用 `sampleOverrides`（已进脱敏表）而不是 `samples=`：值里是一串
+          // `name=课程名|id=…`，而 `samples` 是性能探针的**计数**键，不能进表
+          // （见 `app_debug_log.dart` 的口径说明）——挂在那儿只能靠内层 `name=`
+          // 逐段命中，而值到空格为止，第一段的课名正好从 `samples=` 边界起算，
+          // 整段漏出去（2026-10-08 复核实测）。
+          'overridesAfter=$overridesAfter sampleOverrides=$sampleOverrides',
     );
     unawaited(
       AppLogService.instance.info(
@@ -229,7 +234,7 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
           'overflow': stats.sectionOverflowCount,
           'overflowNames': stats.sectionOverflowCourseNames,
           'overridesAfter': overridesAfter,
-          'samples': sampleOverrides,
+          'sampleOverrides': sampleOverrides,
         },
       ),
     );

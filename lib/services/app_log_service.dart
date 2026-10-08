@@ -562,7 +562,13 @@ class AppLogService {
       });
     }
     if (error != null) {
-      buffer.writeln('error=$error');
+      // 与 message / extras 同一口径（2026-10-08 补）：这个文件是用户**导出、发群、
+      // 附在 issue 里**的那一份，而 `error` 是 `Object?`，`'$error'` 走的是
+      // `toString()` —— `webdav_plus` 的 `WebDAVException.toString()` 会把服务端
+      // 返回的 DAV 错误正文整段带出来（见其 `webdav_exception.dart`），
+      // 异常里也可能带请求 URL。用户反馈问题时随手导出，密码改过的 URL、
+      // 学校名、课程名就跟着出去了。
+      buffer.writeln('error=${redactPersonalFields('$error')}');
     }
     if (stackTrace != null) {
       buffer.writeln('stackTrace=');

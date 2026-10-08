@@ -74,8 +74,15 @@ void main() {
     expect(redacted, contains('overflow=3'), reason: '计数是取证信息，必须留着');
     expect(redacted, contains('overflowNames=**'));
     expect(redacted, contains('changeSamples=**'));
-    // 值到空格或 `|` 为止：名字后面的 id 与钟点保留下来对号。
-    expect(redacted, contains('id-1|clock 08:00-09:40'));
+    // ⚠️ 2026-10-08 改口径：`changeSamples` 的每个元素是
+    // `课程名|id|说明`（`schedule_rule_apply.dart:191-194`），元素内部没有 `key=`
+    // 可供逐段匹配 —— 原先「值到空格或 | 为止」只能盖住第 1 门课名，
+    // 第 2~12 门连同课程 id 原样进了用户导出的那份日志（实测 7/8 绕过）。
+    // 所以这里**整值盖住**，id 不再保留：这份文件会被导出发群，
+    // 宁可少几个对号用的 id，也不能把 12 门课名交出去。
+    // 样本行的完整内容在应用内仍然可见（UI 摘要 / debug 构建的 logcat）。
+    expect(redacted, isNot(contains('id-1')),
+        reason: '样本行的 id 与课名同属一个元素，保住 id 就等于保住课名');
   });
 
   test('性能探针的 samples 计数不在表里，不能被误伤', () {
