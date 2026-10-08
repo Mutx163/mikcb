@@ -11,6 +11,7 @@ import '../ui/hyperos/hyperos.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
+import '../utils/luminance_sample_gate.dart';
 import 'home_page_region_blur.dart' show HomePageChromeGlassFill;
 
 /// 壁纸位置选择页的返回结果。
@@ -169,6 +170,10 @@ class _WallpaperPositionPickerPageState
   bool _switching = false;
   double? _topLuminance;
   String? _luminanceSampleKey;
+
+  /// 采样失败的限次重试闸门（按 key）。与首页墨色、设置页周预览共用一份实现，
+  /// 理由见 [LuminanceSampleGate]。
+  final _luminanceGate = LuminanceSampleGate();
 
   /// 诊断时间线（定位玻璃闪变用；问题收敛后可整块删）。
   ///
@@ -393,7 +398,10 @@ class _WallpaperPositionPickerPageState
       alignY: _alignY,
       scale: _scale,
     );
-    if (_luminanceSampleKey == key) {
+    // `_luminanceSampleKey` 管「这份 key 正在采」，闸门管「失败过还要不要再试」：
+    // 只有单个 key 的话，一次采样失败会被当成"采过了"，预览极性/墨色此后永久停在
+    // 主题默认色（与首页墨色、设置页周预览同一个病）。理由见 [LuminanceSampleGate]。
+    if (_luminanceSampleKey == key || !_luminanceGate.needsSample(key)) {
       return;
     }
     _luminanceSampleKey = key;
@@ -404,7 +412,15 @@ class _WallpaperPositionPickerPageState
       alignY: _alignY,
       scale: _scale,
     );
-    if (!mounted || _luminanceSampleKey != key || luminance == null) {
+    if (!mounted || _luminanceSampleKey != key) {
+      return;
+    }
+    _luminanceGate.record(key, succeeded: luminance != null);
+    if (luminance == null) {
+      if (_luminanceGate.needsSample(key)) {
+        // 放行下一次重试：清掉「在采」标记。
+        _luminanceSampleKey = null;
+      }
       _traceGlass('sample dropped (luminance=$luminance)');
       return;
     }

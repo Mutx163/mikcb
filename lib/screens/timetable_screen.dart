@@ -61,6 +61,7 @@ import '../utils/frame_perf_probe.dart';
 import '../widgets/home_page_region_blur.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
+import '../utils/luminance_sample_gate.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
     show
         LiquidGlassSurface,
@@ -494,16 +495,14 @@ class _TimetableScreenState extends State<TimetableScreen>
   String? _wallpaperLuminanceRequestedKey;
   bool _wallpaperLuminanceFileExists = false;
 
-  /// 采样失败的重试配额（按 key 计数）。
+  /// 采样失败的限次重试闸门（按 key 计数）。
   ///
   /// 一次采样失败不能继续把 `_wallpaperLuminanceSampleKey` 当成「已经采过」：
   /// 守卫（`_scheduleWallpaperLuminanceSampleIfNeeded`）看到它就会每帧早退，
   /// 顶栏 / 星期栏 / 卡片的墨色从此停在主题默认色，直到换壁纸或冷启动。
   /// 但也不能无条件重试 —— 解不开的图会变成每帧重解码一张大图。
-  /// 所以同 key 只给有限次机会，换了 key（换壁纸 / 视口 / 对齐变了）重新计数。
-  String? _wallpaperLuminanceRetryKey;
-  int _wallpaperLuminanceRetryCount = 0;
-  static const int _wallpaperLuminanceMaxRetries = 3;
+  /// 实现（含三处调用点共用的那份）见 [LuminanceSampleGate]。
+  final _wallpaperLuminanceGate = LuminanceSampleGate();
 
   /// Last "custom weekday ink is unreadable" combination already warned about
   /// this session; the persisted twin lives in SharedPreferences.
@@ -2361,6 +2360,9 @@ class _TimetableScreenState extends State<TimetableScreen>
             _wallpaperLuminanceRequestedKey = null;
             _wallpaperLuminanceFileExists = false;
           });
+          // 背景整个没了：失败配额一并清掉，下次换回壁纸要重新采（否则会带着
+          // "同一份 key 已经试满"的旧账直接认输）。
+          _wallpaperLuminanceGate.reset();
         });
       }
       return;
@@ -2497,23 +2499,18 @@ class _TimetableScreenState extends State<TimetableScreen>
       // 采样失败（解码不出来 / 文件正被写 / 尺寸读到 0）。**不能**继续装着
       // 「已采过」—— 守卫看到 `sampleKey == key` 会每帧早退，顶栏 / 星期栏 /
       // 卡片的墨色此后一直停在主题默认色，直到换壁纸或冷启动。
-      // 也不能无条件重试（解不开的图 = 每帧重解码一张大图），所以同 key 限次：
-      // 清掉 sampleKey 让守卫放行下一次，超过上限才认输。
-      final sameKey = _wallpaperLuminanceRetryKey == key;
-      _wallpaperLuminanceRetryKey = key;
-      _wallpaperLuminanceRetryCount = sameKey
-          ? _wallpaperLuminanceRetryCount + 1
-          : 1;
-      if (_wallpaperLuminanceRetryCount <= _wallpaperLuminanceMaxRetries) {
+      // 也不能无条件重试（解不开的图 = 每帧重解码一张大图），所以交给闸门：
+      // 它按 key 限次决定要不要清掉 sampleKey 放行下一次。
+      _wallpaperLuminanceGate.record(key, succeeded: false);
+      if (_wallpaperLuminanceGate.needsSample(key)) {
         setState(() {
           _wallpaperLuminanceSampleKey = null;
         });
       }
       return;
     }
-    // 采到了：这一份 key 的失败配额归零。
-    _wallpaperLuminanceRetryKey = null;
-    _wallpaperLuminanceRetryCount = 0;
+    // 采到了：这一份 key 永久命中，失败配额归零。
+    _wallpaperLuminanceGate.record(key, succeeded: true);
     if (_wallpaperTopLuminance == bands.top &&
         _wallpaperWeekdayLuminance == bands.weekday &&
         _wallpaperBodyLuminance == bands.body) {

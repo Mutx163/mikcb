@@ -16,6 +16,7 @@ import 'home_page_region_blur.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
 import '../utils/home_page_background.dart';
+import '../utils/luminance_sample_gate.dart';
 import 'course_card.dart';
 import 'course_grid_surface_host.dart';
 import 'course_weather_display.dart';
@@ -96,6 +97,10 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
   double? _bodyLuminance;
   String? _sampledKey;
 
+  /// 采样失败的限次重试闸门（按 key）。与首页墨色、壁纸位置页极性共用一份实现，
+  /// 理由（"失败被当成采过了"会让极性永久停在主题默认色）见 [LuminanceSampleGate]。
+  final _luminanceGate = LuminanceSampleGate();
+
   @override
   void initState() {
     super.initState();
@@ -109,6 +114,7 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
     final path = homePageBackdropKey(widget.settings);
     if (path == null || path.isEmpty) {
       _sampledKey = null;
+      _luminanceGate.reset();
       _topLuminance = null;
       _weekdayLuminance = null;
       _bodyLuminance = null;
@@ -124,7 +130,10 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
       alignY: widget.settings.homePageWallpaperAlignY,
       scale: widget.settings.homePageWallpaperScale,
     );
-    if (key == _sampledKey) {
+    // `_sampledKey` 管「这份 key 正在采」，闸门管「失败过还要不要再试」：
+    // 只有单个 key 的话，一次采样失败会被当成"采过了"，预览极性此后永久停在
+    // 主题默认色（与首页墨色同一个病）；反过来无条件重试会让每帧重解码一张大图。
+    if (key == _sampledKey || !_luminanceGate.needsSample(key)) {
       return;
     }
     _sampledKey = key;
@@ -138,11 +147,16 @@ class _TimetableWeekPreviewState extends State<TimetableWeekPreview> {
         if (!mounted || _sampledKey != key) {
           return;
         }
+        _luminanceGate.record(key, succeeded: value != null);
         setState(() {
           _topLuminance = value?.top;
           _weekdayLuminance = value?.weekday;
           _bodyLuminance = value?.body;
         });
+        if (value == null && _luminanceGate.needsSample(key)) {
+          // 放行下一次重试：清掉「在采」标记，下一次 build 会重新排一次采样。
+          _sampledKey = null;
+        }
       }),
     );
   }
