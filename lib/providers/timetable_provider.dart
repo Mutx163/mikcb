@@ -4321,6 +4321,28 @@ class TimetableProvider with ChangeNotifier {
     });
   }
 
+  /// 把情侣绑定写回保存点里那一份（导入撤销 / 自动回滚用）。
+  ///
+  /// 为什么需要单独一个入口：全量备份的 schema **不含**情侣绑定，而导入路径在恢复出的
+  /// 课表里找不到情侣档时会把它清掉并落盘（`import_export_service.dart:650-658`）。
+  /// 撤销时重新导入那份快照自然带不回绑定 —— 保存点里单独存了一份，由这里写回。
+  /// 传 null 表示「快照里本来就没有绑定」。
+  ///
+  /// 与 `updatePartnerWeekOffset` / `updatePartnerCoupleColors` 同一把门与落盘链路。
+  Future<void> restorePartnerBinding(PartnerTimetableBinding? binding) {
+    return _runMutation(() async {
+      await initialize();
+      if (_partnerBinding == binding) {
+        return;
+      }
+      _partnerBinding = binding;
+      await _profileRepository.savePartnerTimetableBinding(binding);
+      notifyUserDataChangedForSync();
+      notifyListeners();
+      unawaited(_updateLiveActivity(syncScheduleSnapshot: false));
+    });
+  }
+
   Future<void> unlinkPartner() {
     return _runMutation(() async {
       await initialize();

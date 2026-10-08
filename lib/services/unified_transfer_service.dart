@@ -432,6 +432,9 @@ class UnifiedTransferService {
           incoming: incoming,
           mode: mode,
           preview: preview,
+          // 快照里额外带上情侣绑定：全量备份的 schema 不含它
+          // （见 `TransferUndoToken.partnerBinding` 的注释）。
+          partnerBinding: provider.partnerBinding,
         );
         undoToken = token;
         try {
@@ -904,6 +907,10 @@ class UnifiedTransferService {
       backup.scheduleDateRules,
       resync: false,
     );
+    // 情侣绑定单独写回：它不在 `backupJson` 里，而导入路径在恢复出的课表里
+    // 找不到情侣档时会把它清成 null 并落盘。少了这一步，一次失败的导入（或用户
+    // 主动撤销）就把周偏移与情侣三色永久吃掉，而界面报的是「导入失败 / 已撤销」。
+    await provider.restorePartnerBinding(token.partnerBinding);
   }
 }
 

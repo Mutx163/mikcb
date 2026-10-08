@@ -171,12 +171,19 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
 
   @override
   Future<Course> createCourse(Course draft) async {
-    _rejectIdConflict(draft.id);
-    await _provider.addCourse(draft);
-    return _provider.courses.firstWhere(
-      (course) => course.id == draft.id,
-      orElse: () => draft,
-    );
+    // 撞车检查与插入必须在**同一次持锁**里：`_rejectIdConflict` 读的是
+    // `_provider.courses`，而锁原先在 `addCourse` 里才拿 —— 两个标签页同时新建
+    // 同一个 id 时双双通过检查，造出两行同 id（删除按 id 等值摘除 ⇒ 删一次掉两行）。
+    // 形状与 `mutateCourse`（:198-217）一致：`runMutationExclusive` 对同区可重入，
+    // 所以回调里继续用 `addCourse` 不会被自己挡住。
+    return _provider.runMutationExclusive(() async {
+      _rejectIdConflict(draft.id);
+      await _provider.addCourse(draft);
+      return _provider.courses.firstWhere(
+        (course) => course.id == draft.id,
+        orElse: () => draft,
+      );
+    });
   }
 
   @override
@@ -243,30 +250,45 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
       throw ArgumentError('at_least_one_schedule_slot');
     }
     final trimmedOriginal = originalName?.trim();
-    if (trimmedOriginal == null || trimmedOriginal.isEmpty) {
-      // 新建分组：整组都是插入，id 撞车同样会造出重复行。
+    // 请求内自查（同 id 两个 slot）+ 查库 + 写库三段必须在**同一次持锁**里完成
+    // （2026-10-08 收口）。原先 `ownedIds` 是裸读 `_provider.courses`，锁要到
+    // `updateCourseGroup` / `addCourseGroup` 里才拿：另一个标签页（或本机别处的写）
+    // 落在「已读完、未加锁」这个窗口里，两边都判「不冲突」，于是同 id 两行、
+    // 删一次掉两行。形状与 `mutateCourse`（:198-217）同一份判据。
+    return _provider.runMutationExclusive(() async {
+      // 同一请求里两个 slot 用同一个 id 也要拦：`_rejectIdConflict` 只查
+      // 「库里有没有」，两个新 id 互相撞它一条都看不见（两道检查原本都漏这一维）。
+      final seen = <String>{};
       for (final slot in slots) {
-        _rejectIdConflict(slot.id);
-      }
-      await _provider.addCourseGroup(slots);
-    } else {
-      // 改组分支同样要撞车检查：slot 可以把 id 写成**另一门不相干课程**的 id，
-      // 整组替换后就出现两行同 id —— 删除按 id 等值摘除，"删一次掉两行"，
-      // 与 :161-176 新建分支拒绝的是同一件事（那边漏了这个分支）。
-      // 属于本组自己的 id 不算冲突（改课次、改组名都沿用原 id）。
-      final groupKey = buildSharedCourseNameKey(trimmedOriginal);
-      final ownedIds = <String>{
-        for (final course in _provider.courses)
-          if (buildSharedCourseNameKey(course.name) == groupKey) course.id,
-      };
-      for (final slot in slots) {
-        if (!ownedIds.contains(slot.id)) {
-          _rejectIdConflict(slot.id);
+        if (!seen.add(slot.id.trim())) {
+          throw ArgumentError('course_id_conflict');
         }
       }
-      await _provider.updateCourseGroup(trimmedOriginal, slots);
-    }
-    return slots;
+      if (trimmedOriginal == null || trimmedOriginal.isEmpty) {
+        // 新建分组：整组都是插入，id 撞车同样会造出重复行。
+        for (final slot in slots) {
+          _rejectIdConflict(slot.id);
+        }
+        await _provider.addCourseGroup(slots);
+      } else {
+        // 改组分支同样要撞车检查：slot 可以把 id 写成**另一门不相干课程**的 id，
+        // 整组替换后就出现两行同 id —— 删除按 id 等值摘除，"删一次掉两行"，
+        // 与新建分支拒绝的是同一件事。
+        // 属于本组自己的 id 不算冲突（改课次、改组名都沿用原 id）。
+        final groupKey = buildSharedCourseNameKey(trimmedOriginal);
+        final ownedIds = <String>{
+          for (final course in _provider.courses)
+            if (buildSharedCourseNameKey(course.name) == groupKey) course.id,
+        };
+        for (final slot in slots) {
+          if (!ownedIds.contains(slot.id)) {
+            _rejectIdConflict(slot.id);
+          }
+        }
+        await _provider.updateCourseGroup(trimmedOriginal, slots);
+      }
+      return slots;
+    });
   }
 
   /// 局域网会话只绑定一个课表档（`_ensureWriteProfileTarget` 逐请求校验），

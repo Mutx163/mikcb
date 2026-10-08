@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/lan_edit_provider_host.dart';
+import 'package:university_timetable/services/storage_service.dart';
 
 /// 局域网"整组替换"接口的 id 守卫（2026-10-05 审查）。
 ///
@@ -33,6 +34,10 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     provider = TimetableProvider(
+      // 每个用例一份独立存储：原先用的是共享单例，前一个用例的课程会漏进下一个
+      // （新 provider `initialize()` 从同一个单例里读到上一轮的内存态），
+      // 于是「库里已有几个同 id」变成隐性依赖 —— 新加的用例单跑绿、全跑红。
+      storageService: StorageService.forTesting(),
       autoInitialize: false,
       enableLiveActivitySync: false,
     );
@@ -126,6 +131,44 @@ void main() {
           slots: [slot(id: 'taken-1', name: '新名字课程')],
         ),
         throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('同一请求里两个 slot 用同一个 id 必须被拒（两道检查都漏这一维）', () async {
+      await provider.addCourse(slot(id: 'g1', name: '高等数学'));
+
+      await expectLater(
+        host.replaceCourseGroup(
+          originalName: '高等数学',
+          slots: [
+            slot(id: 'g1', name: '高等数学'),
+            slot(id: 'g1', name: '高等数学'),
+          ],
+        ),
+        throwsA(isA<ArgumentError>()),
+        reason: '两个 slot 互相撞车时「库里有没有」一条都查不出来（本组 id 本来就算合法），'
+            '整组替换后会留下两行同 id',
+      );
+      expect(
+        provider.courses.where((course) => course.id == 'g1'),
+        hasLength(1),
+        reason: '拒单不得留下半单：整组替换必须整体不发生',
+      );
+    });
+
+    test('对照：请求内 id 各不相同照常整组新建', () async {
+      final saved = await host.replaceCourseGroup(
+        originalName: null,
+        slots: [
+          slot(id: 'n1', name: '新组课程'),
+          slot(id: 'n2', name: '新组课程'),
+        ],
+      );
+
+      expect(saved, hasLength(2));
+      expect(
+        provider.courses.where((course) => course.name == '新组课程'),
+        hasLength(2),
       );
     });
   });

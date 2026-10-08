@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/partner_timetable_binding.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/services/transfer_package.dart';
@@ -165,6 +166,40 @@ void main() {
       provider.courses.map((c) => c.id),
       isNot(contains('new-in-package')),
     );
+  });
+
+  test('回滚要把情侣绑定一起带回来（它不在全量备份的 schema 里）', () async {
+    final provider = await booted();
+    addTearDown(provider.dispose);
+    // 建立一份带周偏移的绑定，等价于「用户连过 TA 的课表」。
+    await provider.restorePartnerBinding(
+      PartnerTimetableBinding(
+        partnerProfileId: 'partner',
+        partnerName: 'TA的课表',
+        linkedAt: DateTime(2026, 9, 1, 9, 30),
+        weekOffset: 3,
+      ),
+    );
+    expect(provider.partnerBinding, isNotNull);
+
+    final service = UnifiedTransferService();
+    final incoming = threeRulePackage(service, provider);
+
+    final result = await service.applyToProvider(
+      provider: provider,
+      incoming: incoming,
+      mode: TransferApplyMode.merge,
+    );
+
+    expect(result.applied, isFalse);
+    expect(
+      provider.partnerBinding,
+      isNotNull,
+      reason: '全量备份的 schema 不含情侣绑定，而导入路径在恢复出的课表里找不到'
+          '情侣档时会把它清成 null 并落盘。撤销令牌里不单独存一份，一次失败的导入'
+          '就把周偏移与情侣三色永久吃掉了，而界面报的是「导入失败」',
+    );
+    expect(provider.partnerWeekOffset, 3);
   });
 
   test('失败导入不留撤销令牌，成功导入才留', () async {

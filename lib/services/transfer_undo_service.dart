@@ -1,3 +1,4 @@
+import '../models/partner_timetable_binding.dart';
 import 'transfer_diff_service.dart';
 import 'transfer_package.dart';
 
@@ -14,6 +15,15 @@ class TransferUndoToken {
   final TransferDiff preview;
   final DateTime createdAt;
 
+  /// 取快照那一刻的情侣绑定。
+  ///
+  /// **不能靠 `backupJson` 带回来**：全量备份的 schema 不含情侣绑定，而
+  /// `importFullAppDataBackup` 在恢复出的课表里找不到情侣档时会主动把绑定清成
+  /// null 并落盘（`import_export_service.dart:650-658`）。于是「导入失败 → 自动
+  /// 回滚」这条路走完，绑定连快照里都没有，用户的周偏移与情侣三色就永久没了，
+  /// 而界面报的是「导入失败」。所以在这里单独存一份，撤销时写回。
+  final PartnerTimetableBinding? partnerBinding;
+
   const TransferUndoToken({
     required this.id,
     required this.backupJson,
@@ -22,6 +32,7 @@ class TransferUndoToken {
     required this.mode,
     required this.preview,
     required this.createdAt,
+    this.partnerBinding,
   });
 }
 
@@ -40,6 +51,7 @@ class TransferUndoService {
     required TransferPackage incoming,
     required TransferApplyMode mode,
     required TransferDiff preview,
+    PartnerTimetableBinding? partnerBinding,
     DateTime? createdAt,
   }) {
     final token = TransferUndoToken(
@@ -49,6 +61,7 @@ class TransferUndoService {
       channel: incoming.channel,
       mode: mode,
       preview: preview,
+      partnerBinding: partnerBinding,
       createdAt: createdAt ?? DateTime.now(),
     );
     _pending = token;

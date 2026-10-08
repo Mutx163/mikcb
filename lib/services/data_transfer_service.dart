@@ -326,6 +326,10 @@ class DataTransferService {
       profiles: profiles,
       activeProfileId: json['activeProfileId'] as String?,
       timeSchemes: timeSchemes,
+      // 日期规则与地点分组**刻意留在条目级 salvage 语义**里（逐条跳过、坏一条救其余），
+      // 与课程/任务/考试同档；`data_transfer_full_backup_loss_guard_test.dart:68-100`
+      // 把它钉成了设计（"守卫不误伤逐条跳过"）。2026-10-08 审查曾按"容器不许变少"
+      // 报过它，实为设计选择而非缺陷，故此处维持原样、不改判据。
       scheduleDateRules: _parseListWithTotalLossGuard(
         json['scheduleDateRules'],
         ScheduleDateRule.fromJson,
