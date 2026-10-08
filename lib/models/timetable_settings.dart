@@ -2759,7 +2759,12 @@ class TimetableSettings {
           json['liquidGlassDockEnabled'] as bool? ??
           defaultLiquidGlassDockEnabled,
       courseCardSurfaceStyle: CourseCardSurfaceStyleX.fromValue(
-        json['courseCardSurfaceStyle'] as String?,
+        // 非字符串坏值按缺键处理（走 null → 出厂档），不抛：坏一个键不该把整份设置
+        // 拉回默认值（学期起始日、节次表、主题一起清零）。同族的
+        // `liquidGlassPreset` / `courseCardGlassPreset` 2026-10-07 已补，这一处当时漏了。
+        json['courseCardSurfaceStyle'] is String
+            ? json['courseCardSurfaceStyle'] as String
+            : null,
       ),
       liquidGlassPreset: LiquidGlassPresetX.reconcileStoredPreset(
         // 非字符串坏值按缺键处理（rawStored 走 null 分支），不抛，否则坏一键

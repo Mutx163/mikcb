@@ -1887,12 +1887,23 @@ void main() {
 
     test('坏值（数字）按缺键处理，不触发整份设置回退', () {
       // d0d2cb1b 钉的边界：非字符串坏值不能抛，否则一个坏键清零整份设置。
+      // `courseCardSurfaceStyle` 是 2026-10-08 补上的同族最后一个（材料那批修了两处、
+      // 漏了这一处，而它同样坐在 fromJson 的裸 `as String?` 上）。
       final settings = TimetableSettings.fromJson(
-        jsonWith(const {'liquidGlassPreset': 7, 'courseCardGlassPreset': 7}),
+        jsonWith(const {
+          'liquidGlassPreset': 7,
+          'courseCardGlassPreset': 7,
+          'courseCardSurfaceStyle': 7,
+        }),
       );
 
       expect(settings.liquidGlassPreset, LiquidGlassPreset.standard);
       expect(settings.courseCardGlassPreset, LiquidGlassPreset.standard);
+      expect(
+        settings.courseCardSurfaceStyle,
+        CourseCardSurfaceStyle.solid,
+        reason: '坏值按缺键走，不是抛异常',
+      );
       expect(settings.semesterWeekCount, isNotNull, reason: '整份设置没有回退');
     });
   });
