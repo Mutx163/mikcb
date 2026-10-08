@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/models/course_glass_tuning.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 
 void main() {
@@ -24,6 +25,118 @@ void main() {
         LiquidGlassPreset.standard,
         reason: '旧档位名（已并入液态玻璃）不能被当成本档的预设值',
       );
+    });
+
+    // 档位键与参数键是两个字段，来源与生命周期都不同：参数键从液态玻璃落地那天
+    // 就在，档位键是 2026-10-05 扩成 10 格时才加的；而且扩格时 clear / light /
+    // dense 三档的推荐参数被改过。于是「档位键说第 N 格、参数键存着另一组值」
+    // 在真实存档里必然出现，而渲染只吃参数键 —— 不收敛就是面板在说谎。
+    group('档位与参数对不上时以参数为准', () {
+      LiquidGlassPreset reconcile(String? raw, LiquidGlassTuning? tuning) =>
+          LiquidGlassPresetX.reconcileStoredPreset(
+            rawStored: raw,
+            stored: LiquidGlassPresetX.fromValue(raw),
+            tuning: tuning,
+          );
+
+      test('没有参数键时不动档位键（缺键仍是标准档）', () {
+        expect(reconcile(null, null), LiquidGlassPreset.standard);
+        expect(
+          reconcile(LiquidGlassPreset.clear.value, null),
+          LiquidGlassPreset.clear,
+          reason: '没有参数就没有任何东西与档位键矛盾，别把内置档打成 custom',
+        );
+      });
+
+      test('档位键缺失 + 参数是自定义 ⇒ 认出 custom，不谎报第 7 格', () {
+        // 老存档形态：用户拖过旋钮，那时还没有档位键。裸 fromValue 会显示第 7 格，
+        // 而下面 8 根旋钮显示的是那份自定义参数。
+        final dragged = LiquidGlassTuning.defaults.copyWith(
+          refraction: 13,
+          blurSigma: 9,
+        );
+        expect(reconcile(null, dragged), LiquidGlassPreset.custom);
+      });
+
+      test('档位键缺失 + 参数恰好等于某一格 ⇒ 认出那一格', () {
+        for (final preset in LiquidGlassPresetX.builtIns) {
+          expect(
+            reconcile(null, preset.recommendedTuning),
+            preset,
+            reason: '${preset.name}：参数正好是它的推荐值，不该打成 custom',
+          );
+        }
+      });
+
+      test('档位键缺失 + 参数是出厂值 ⇒ 仍是第 7 格', () {
+        // 这条守着 fromValue 那句注释的顾虑："从没调过"的老用户不该被显示成自定义。
+        expect(
+          reconcile(null, LiquidGlassTuning.defaults),
+          LiquidGlassPreset.standard,
+        );
+        expect(
+          reconcile(null, CourseGlassTuning.courseCard.toLiquidGlassTuning()),
+          LiquidGlassPreset.standard,
+        );
+      });
+
+      test('档位键说第 N 格但参数是别的 ⇒ 以参数为准', () {
+        // 用户拖过旋钮，旋钮回调把档位打成 custom —— 这里模拟「档位键被留在某个
+        // 内置档、参数已被拖走」的组合（老版本没有这条回写路径时会真的出现）。
+        final dragged = LiquidGlassTuning.defaults.copyWith(blurSigma: 9);
+        expect(
+          reconcile(LiquidGlassPreset.clear.value, dragged),
+          LiquidGlassPreset.custom,
+        );
+        expect(
+          reconcile(LiquidGlassPreset.custom.value, dragged),
+          LiquidGlassPreset.custom,
+        );
+      });
+
+      test('档位键与参数一致时原样保留（不要反向改写用户的显式选择）', () {
+        for (final preset in LiquidGlassPresetX.builtIns) {
+          expect(
+            reconcile(preset.value, preset.recommendedTuning),
+            preset,
+            reason: '${preset.name}：两边本来就一致',
+          );
+        }
+      });
+
+      test('custom + 参数恰好等于某一格 ⇒ 认回那一格', () {
+        // 面板打开时靠这个把"用户拖到刚好等于某一格"的状态还原成内置档
+        // （`CourseGlassTuning.matchPreset` 的注释写了同一个理由）。
+        expect(
+          reconcile(LiquidGlassPreset.custom.value, LiquidGlassTuning.presetClear),
+          LiquidGlassPreset.clear,
+        );
+      });
+
+      test('老推荐值与新推荐值确实不同（否则上面几条测不到东西）', () {
+        // 2026-10-05 扩格前的值：clear 模糊 8 / 染色 0.35，dense 模糊 22 /
+        // 染色 0.85。这两条是「档位键说第 1 格、参数键存老值」的真实来源。
+        const oldClear = LiquidGlassTuning(
+          refraction: 6,
+          refractionBand: 6,
+          refractionEdgePow: 3,
+          dispersion: 0.25,
+          rimStrength: 0.14,
+          rimWidth: 1.1,
+          blurSigma: 8,
+          tintAlpha: 0.35,
+        );
+        expect(
+          oldClear,
+          isNot(LiquidGlassTuning.presetClear),
+          reason: '清澈档的推荐参数确实被改过（模糊 8→0、染色 0.35→0）',
+        );
+        expect(
+          reconcile(LiquidGlassPreset.clear.value, oldClear),
+          LiquidGlassPreset.custom,
+          reason: '用户手上还是那份 35% 白底玻璃，滑杆就不该显示第 1 格',
+        );
+      });
     });
 
     test('builtIns 不含 custom', () {

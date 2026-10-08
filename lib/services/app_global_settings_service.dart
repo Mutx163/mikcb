@@ -81,6 +81,10 @@ class AppGlobalSettingsService {
     'liquidGlassDockEnabled',
     'courseCardSurfaceStyle',
     'courseCardGlassTuning',
+    // 与上面那根成对：档位滑杆读的就是它，旋钮读的是上面那根。少一个就变成
+    // 「档位每课表一份、旋钮整机一份」——多课表用户切课表后，面板上档位滑杆的
+    // 读数与下面 8 根旋钮对不上（2026-10-07 补）。
+    'courseCardGlassPreset',
     'homeBandGlassMaterial',
     'homePageTimeColumnBlurEnabled',
     // —— 主题与外观（「外观」页）——

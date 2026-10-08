@@ -71,8 +71,63 @@ extension LiquidGlassPresetX on LiquidGlassPreset {
       (item) => item.value == value,
       // 缺键与不认识的值都归第 7 格（标准），**不能是 custom** —— 否则"从没调过"
       // 的老用户会被显示成自定义，参数区莫名其妙展开一屏。
+      //
+      // 但这只在「参数侧也是标准档」时才对，见 [reconcileStoredPreset]：老存档
+      // 里档位键与参数键的生命周期不同，只看档位键会让面板显示的格号与实际
+      // 渲染的参数对不上。
       orElse: () => LiquidGlassPreset.standard,
     );
+  }
+
+  /// 存档里「档位」与「参数」对不上时，以谁为准。
+  ///
+  /// 这两个字段是**分别**存下来的，来源与生命周期都不同：
+  ///
+  /// - 参数键（`liquidGlassTuning` / `courseCardGlassTuning`）从液态玻璃落地那天
+  ///   就在，用户拖旋钮会写它；
+  /// - 档位键（`liquidGlassPreset` / `courseCardGlassPreset`）是 2026-10-05 把
+  ///   阶梯扩成 10 格时才加的。
+  ///
+  /// 于是两种「对不上」都会真实存在，且都必须在读取时收敛，否则**面板在说谎**
+  /// （渲染只吃参数键，`liquid_glass_surface.dart` / `frosted_appearance.dart`
+  /// 都只读 `liquidGlassTuning`）：
+  ///
+  /// 1. **档位键缺失、参数键有值。** 老存档在档位键存在之前用户拖过旋钮。裸
+  ///    [fromValue] 会按「缺键回标准」显示第 7 格，而旋钮显示的是那份自定义参数
+  ///    —— 档位滑杆与下面 8 根旋钮读数对不上。
+  /// 2. **档位键有值、参数键与之不符。** 2026-10-05 扩格时 `clear` / `light` /
+  ///    `dense` 三档的推荐参数被改过（`clear` 的模糊 8→0、染色 0.35→0；
+  ///    `dense` 的模糊 22→24、染色 0.85→0.9；`light` 改的是折射 7→7.5 与作用带
+  ///    6.5→10.5，模糊与染色没变）。用户在那之前选的就是档位键写着、参数键存着
+  ///    **老推荐值**。这时滑杆显示的格号对应的推荐值已经不是他手上那份参数，
+  ///    而渲染仍按老参数走 —— 同样是面板说谎。
+  ///
+  /// 规则（参数侧永远是真源）：
+  ///
+  /// - 没有参数键 ⇒ 没有任何东西与档位键矛盾，返回 [fromValue] 的结果（缺键 → 标准）。
+  /// - 参数键逐字段等于某一格 ⇒ 返回那一格。缺键的情况在这里也就落到标准档
+  ///   （"从没调过"的用户参数键同样是出厂值），[fromValue] 那条注释里的顾虑不受影响。
+  /// - 否则 ⇒ [matchPreset] 的结果，即 `custom`（老参数不精确等于任何一格时）
+  ///   或恰好等于的那一格。
+  ///
+  /// [stored] 已经是 [fromValue] 归一过的值；[rawStored] 是存档里的原始字符串，
+  /// 只用于区分「缺键」与「真的写了某一档」。卡片那套用
+  /// [CourseGlassTuning.matchPreset] 反推自己那份参数，等价做法是本函数在
+  /// `TimetableSettings.fromJson` 里对两种类型分别调用。
+  static LiquidGlassPreset reconcileStoredPreset({
+    required String? rawStored,
+    required LiquidGlassPreset stored,
+    required LiquidGlassTuning? tuning,
+  }) {
+    if (tuning == null) {
+      return stored;
+    }
+    if (rawStored != null &&
+        stored != LiquidGlassPreset.custom &&
+        stored.recommendedTuning == tuning) {
+      return stored;
+    }
+    return LiquidGlassTuning.matchPreset(tuning);
   }
 
   /// 内置观感（不含 [custom]），**顺序就是厚度从薄到厚**，也就是滑杆从左到右。

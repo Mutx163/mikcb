@@ -2360,6 +2360,24 @@ class TimetableSettings {
         defaultAppUpdateMirrorUrlPrefix;
     final rawAppUpdateMirrorPreset = json['appUpdateMirrorPreset'] as String?;
 
+    // 档位与参数分别在两个字段里存，读取时必须收敛成一致（2026-10-07）。
+    // 渲染只吃参数键（`liquid_glass_surface.dart` / `frosted_appearance.dart` 都只读
+    // `liquidGlassTuning`），所以参数侧是真源；档位键只用于设置页那根滑杆显示。
+    // 两种「对不上」都真实存在，判据与理由见
+    // [LiquidGlassPresetX.reconcileStoredPreset]：
+    //   · 档位键 2026-10-05 才加，之前的存档只有参数键（用户拖过旋钮）；
+    //   · 扩格时 clear / light / dense 三档的推荐参数被改过，老存档里档位键写着
+    //     某一档、参数键存着**那一档的老推荐值**。
+    // 两种情况下裸 fromValue 都会让滑杆显示的格号与旋钮读数对不上 —— 面板在说谎。
+    final parsedLiquidGlassTuning = parseNestedObject(
+      json['liquidGlassTuning'],
+      LiquidGlassTuning.fromJson,
+    );
+    final parsedCourseCardGlassTuning = parseNestedObject(
+      json['courseCardGlassTuning'],
+      CourseGlassTuning.fromJson,
+    );
+
     return TimetableSettings(
       sections: resolvedSections,
       activeTimeSchemeId: json['activeTimeSchemeId'] as String?,
@@ -2743,13 +2761,20 @@ class TimetableSettings {
       courseCardSurfaceStyle: CourseCardSurfaceStyleX.fromValue(
         json['courseCardSurfaceStyle'] as String?,
       ),
-      liquidGlassPreset: LiquidGlassPresetX.fromValue(
-        json['liquidGlassPreset'] as String?,
+      liquidGlassPreset: LiquidGlassPresetX.reconcileStoredPreset(
+        // 非字符串坏值按缺键处理（rawStored 走 null 分支），不抛，否则坏一键
+        // 触发整份设置回退（同 d0d2cb1b 为卡片那份补的口径）。
+        rawStored: json['liquidGlassPreset'] is String
+            ? json['liquidGlassPreset'] as String
+            : null,
+        stored: LiquidGlassPresetX.fromValue(
+          json['liquidGlassPreset'] is String
+              ? json['liquidGlassPreset'] as String
+              : null,
+        ),
+        tuning: parsedLiquidGlassTuning,
       ),
-      liquidGlassTuning: parseNestedObject(
-        json['liquidGlassTuning'],
-        LiquidGlassTuning.fromJson,
-      ),
+      liquidGlassTuning: parsedLiquidGlassTuning,
       liquidGlassTuningDark: parseNestedObject(
         json['liquidGlassTuningDark'],
         LiquidGlassTuning.fromJson,
@@ -2760,16 +2785,22 @@ class TimetableSettings {
       darkGlassBoostEnabled:
           json['darkGlassBoostEnabled'] as bool? ??
           defaultDarkGlassBoostEnabled,
-      courseCardGlassTuning: parseNestedObject(
-        json['courseCardGlassTuning'],
-        CourseGlassTuning.fromJson,
-      ),
-      courseCardGlassPreset: LiquidGlassPresetX.fromValue(
-        // 非字符串坏值按缺键处理（回 standard），不抛，否则坏一键触发整份回退。
-        // 审计算出来的同族缺口，见 b0f3589f 的 parseNestedObject 口径。
-        json['courseCardGlassPreset'] is String
+      courseCardGlassTuning: parsedCourseCardGlassTuning,
+      courseCardGlassPreset: LiquidGlassPresetX.reconcileStoredPreset(
+        // 非字符串坏值按缺键处理（rawStored 走 null 分支），不抛，否则坏一键
+        // 触发整份回退。审计算出来的同族缺口，见 b0f3589f 的 parseNestedObject 口径。
+        rawStored: json['courseCardGlassPreset'] is String
             ? json['courseCardGlassPreset'] as String
             : null,
+        stored: LiquidGlassPresetX.fromValue(
+          json['courseCardGlassPreset'] is String
+              ? json['courseCardGlassPreset'] as String
+              : null,
+        ),
+        // 卡片那 10 格与全局同值（`CourseGlassTuning` 的 presetLevelN 全部由
+        // `fromLiquidGlassTuning` 派生），所以直接把参数转成全局那份再走同一个
+        // 收敛，不必在 `CourseGlassTuning` 上重写一遍。
+        tuning: parsedCourseCardGlassTuning?.toLiquidGlassTuning(),
       ),
       // 两个玻璃带显示开关已下线（顶栏玻璃归外观页材质五档），恒为开。
       // ignore: avoid_redundant_argument_values -- 故意写死默认值（下线旧开关）。

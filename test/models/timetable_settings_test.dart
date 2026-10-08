@@ -1762,4 +1762,138 @@ void main() {
       );
     });
   });
+
+  // 档位键与参数键是两个字段，读取时必须收敛（2026-10-07）。
+  // 渲染只吃参数键（`liquid_glass_surface.dart` / `frosted_appearance.dart`），
+  // 档位键只喂设置页那根滑杆 —— 不收敛就是滑杆显示的格号与旋钮读数对不上。
+  // 纯逻辑断言在 `liquid_glass_tuning_test.dart` 的
+  // 「档位与参数对不上时以参数为准」组；这里钉的是 `fromJson` 真的接上了它。
+  group('fromJson 让档位与参数收敛', () {
+    Map<String, dynamic> jsonWith(Map<String, Object?> extra) =>
+        <String, dynamic>{...TimetableSettings.defaults().toJson(), ...extra};
+
+    test('全局：档位键缺失而参数被拖过 ⇒ 认 custom，不谎报第 7 格', () {
+      final dragged = LiquidGlassTuning.defaults.copyWith(
+        refraction: 13,
+        blurSigma: 9,
+      );
+      final settings = TimetableSettings.fromJson(
+        jsonWith({'liquidGlassTuning': dragged.toJson()}),
+      );
+
+      expect(settings.liquidGlassTuning, dragged);
+      expect(
+        settings.liquidGlassPreset,
+        LiquidGlassPreset.custom,
+        reason: '修复前这里是 standard：滑杆显示第 7 格，旋钮显示那份自定义参数',
+      );
+    });
+
+    test('全局：档位键说第 1 格而参数是老推荐值 ⇒ 以参数为准', () {
+      // 2026-10-05 扩格前的清澈档（模糊 8 / 染色 0.35）。
+      const oldClear = LiquidGlassTuning(
+        refraction: 6,
+        refractionBand: 6,
+        refractionEdgePow: 3,
+        dispersion: 0.25,
+        rimStrength: 0.14,
+        rimWidth: 1.1,
+        blurSigma: 8,
+        tintAlpha: 0.35,
+      );
+      final settings = TimetableSettings.fromJson(
+        jsonWith({
+          'liquidGlassPreset': LiquidGlassPreset.clear.value,
+          'liquidGlassTuning': oldClear.toJson(),
+        }),
+      );
+
+      expect(settings.liquidGlassTuning, oldClear, reason: '参数不能被改写');
+      expect(
+        settings.liquidGlassPreset,
+        LiquidGlassPreset.custom,
+        reason: '修复前这里是 clear：用户手上还是 35% 白底玻璃，滑杆却说第 1 格',
+      );
+    });
+
+    test('卡片：档位键缺失而旋钮被拖过 ⇒ 认 custom', () {
+      final dragged = CourseGlassTuning.courseCard.copyWith(refraction: 13);
+      final settings = TimetableSettings.fromJson(
+        jsonWith({'courseCardGlassTuning': dragged.toJson()}),
+      );
+
+      expect(settings.courseCardGlassTuning, dragged);
+      expect(
+        settings.courseCardGlassPreset,
+        LiquidGlassPreset.custom,
+        reason: '修复前这里是 standard：第二页的档位滑杆与下面 8 根旋钮对不上',
+      );
+    });
+
+    test('卡片：档位键说第 1 格而参数是老推荐值 ⇒ 以参数为准', () {
+      const oldClear = LiquidGlassTuning(
+        refraction: 6,
+        refractionBand: 6,
+        refractionEdgePow: 3,
+        dispersion: 0.25,
+        rimStrength: 0.14,
+        rimWidth: 1.1,
+        blurSigma: 8,
+        tintAlpha: 0.35,
+      );
+      final settings = TimetableSettings.fromJson(
+        jsonWith({
+          'courseCardGlassPreset': LiquidGlassPreset.clear.value,
+          'courseCardGlassTuning':
+              CourseGlassTuning.fromLiquidGlassTuning(oldClear).toJson(),
+        }),
+      );
+
+      expect(
+        settings.courseCardGlassPreset,
+        LiquidGlassPreset.custom,
+        reason: '修复前这里是 clear',
+      );
+    });
+
+    test('两边本来就一致时原样保留（别反向改写用户的显式选择）', () {
+      for (final preset in LiquidGlassPresetX.builtIns) {
+        final settings = TimetableSettings.fromJson(
+          jsonWith({
+            'liquidGlassPreset': preset.value,
+            'liquidGlassTuning': preset.recommendedTuning.toJson(),
+            'courseCardGlassPreset': preset.value,
+            'courseCardGlassTuning': preset.recommendedCourseTuning.toJson(),
+          }),
+        );
+
+        expect(settings.liquidGlassPreset, preset, reason: '全局 ${preset.name}');
+        expect(
+          settings.courseCardGlassPreset,
+          preset,
+          reason: '卡片 ${preset.name}',
+        );
+      }
+    });
+
+    test('出厂值不受影响（"从没调过"的用户不该被显示成自定义）', () {
+      final settings = TimetableSettings.fromJson(
+        jsonWith(const <String, Object?>{}),
+      );
+
+      expect(settings.liquidGlassPreset, LiquidGlassPreset.standard);
+      expect(settings.courseCardGlassPreset, LiquidGlassPreset.standard);
+    });
+
+    test('坏值（数字）按缺键处理，不触发整份设置回退', () {
+      // d0d2cb1b 钉的边界：非字符串坏值不能抛，否则一个坏键清零整份设置。
+      final settings = TimetableSettings.fromJson(
+        jsonWith(const {'liquidGlassPreset': 7, 'courseCardGlassPreset': 7}),
+      );
+
+      expect(settings.liquidGlassPreset, LiquidGlassPreset.standard);
+      expect(settings.courseCardGlassPreset, LiquidGlassPreset.standard);
+      expect(settings.semesterWeekCount, isNotNull, reason: '整份设置没有回退');
+    });
+  });
 }

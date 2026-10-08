@@ -35,8 +35,11 @@ void main() {
     glassDockButtonIconName: 'cloudFill',
     // 材质
     frostedBlurEnabled: false,
+    // 档位与参数必须成对给（2026-10-07）：`TimetableSettings.fromJson` 会按
+    // 「参数侧是真源」收敛两者，档位说 dense 而参数是 defaults（= standard）
+    // 这种自相矛盾的组合会被读成 standard，于是这份夹具 round trip 后对不上。
     liquidGlassPreset: LiquidGlassPreset.dense,
-    liquidGlassTuning: LiquidGlassTuning.defaults,
+    liquidGlassTuning: LiquidGlassTuning.presetDense,
     liquidGlassTuningDark: LiquidGlassTuning.defaults,
     courseCardSurfaceStyle: CourseCardSurfaceStyle.gaussian,
     courseCardGlassTuning: CourseGlassTuning.courseCard,
@@ -173,6 +176,26 @@ void main() {
           anyOf('homePageHeaderBlurEnabled', 'homePageWeekdayBarBlurEnabled'),
         ),
       ),
+    );
+  });
+
+  // 卡片档位滑杆与卡片那 8 根旋钮读的是两个字段（`courseCardGlassPreset` /
+  // `courseCardGlassTuning`），设置页把它们并排显示。少一个进清单就变成
+  // 「档位每课表一份、旋钮整机一份」：多课表用户切课表后，面板上档位滑杆的
+  // 读数与下面旋钮对不上。这条钉的是「成对」，防止下一次只加旋钮那根。
+  test('卡片档位与卡片旋钮必须成对进清单', () {
+    expect(
+      AppGlobalSettingsService.keys,
+      containsAll(<String>['courseCardGlassPreset', 'courseCardGlassTuning']),
+      reason: '档位滑杆与旋钮读的是两个字段，只有一个进清单就会出现'
+          '「档位每课表一份、旋钮整机一份」',
+    );
+  });
+
+  test('全局档位与全局旋钮也成对进清单', () {
+    expect(
+      AppGlobalSettingsService.keys,
+      containsAll(<String>['liquidGlassPreset', 'liquidGlassTuning']),
     );
   });
 
