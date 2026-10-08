@@ -165,14 +165,29 @@ void main() {
           }
           start--;
         }
-        final statement = lines.sublist(start, i + 1).join(' ');
-        final awaited = statement.contains('await ');
+        // 第 36 轮（2026-10-08）：`caughtInline` 原先用「从本行往后看 12 行」判定，
+        // 与语句边界无关 —— 同一文件紧挨着再加一个**裸** `unawaited(...)`，只要那 12 行
+        // 里出现过任意一个 `.catchError(`（哪怕是另一次调用的），这条棘照样绿。
+        // 改成与 `awaited` 同口径：把语句**往后也推到收尾的 `;`**，
+        // 链式写法里的 `.catchError(` 本来就在同一条语句内。
+        var end = i;
+        while (end + 1 < lines.length && !lines[end].trim().endsWith(';')) {
+          end++;
+          // 兜底：畸形/超长语句不至于把整个文件吞进来。
+          if (end - start > 40) {
+            break;
+          }
+        }
+        final head = lines.sublist(start, i + 1).join(' ');
+        final statement = lines.sublist(start, end + 1).join(' ');
+        // `awaited` 只认调用点**之前（含本行）**的部分：整条语句里出现的 await 可能
+        // 属于后半段（如 `.then((_) { await foo(); })`），拿它当"这次调用被 await 了"
+        // 就是新的误判。
+        final awaited = head.contains('await ');
         // 第 28 轮加的第二种"已处理"形状：滑杆/开关这类**故意不阻塞 UI** 的写入
-        // 走 `unawaited(future.catchError(...))`（链式写法里 `.catchError(` 落在
-        // 调用行之后几行，所以往后再看 12 行）。它同样保证错误不会变成未处理异常，
+        // 走 `unawaited(future.catchError(...))`。它同样保证错误不会变成未处理异常，
         // 并把失败报给用户；裸 `unawaited(...)` 依然判红。
-        final lookahead = lines.skip(i).take(12).join(' ');
-        final caughtInline = lookahead.contains('.catchError(');
+        final caughtInline = statement.contains('.catchError(');
         if ((!awaited && !caughtInline) ||
             (line.startsWith('unawaited(') && !caughtInline)) {
           offenders.add('${entry.key}:${i + 1}: $line');
