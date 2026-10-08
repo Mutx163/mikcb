@@ -85,6 +85,7 @@
   "cloudSyncBaseUrlLabel": "WebDAV URL",
   "cloudSyncBaseUrlSecurityNote": "HTTPS 暗号化接続を推奨します。HTTP 平文接続は信頼できるネットワークでのみ使用してください",
   "cloudSyncRemoteFolderLabel": "リモートフォルダ",
+  "cloudSyncConfigLoadFailed": "クラウド同期の設定を読み込めませんでした。アプリパスワードを再入力してください。",
   "cloudSyncStatusTitle": "同期状態",
   "cloudSyncLastSyncedLabel": "最終同期",
   "cloudSyncLastErrorLabel": "最新のエラー",
@@ -442,6 +443,7 @@
     }
   },
   "clearCurrentTimetableTitle": "現在の時間割をクリア",
+  "clearFailed": "時間割を空にできませんでした。内容は変更されていません。",
   "clearCurrentTimetableMessage": "「{name}」の全授業をクリアしますか？時間割設定は保持されます",
   "@clearCurrentTimetableMessage": {
     "placeholders": {

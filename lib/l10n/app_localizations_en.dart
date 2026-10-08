@@ -514,6 +514,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSyncRemoteFolderLabel => 'Remote folder';
 
   @override
+  String get cloudSyncConfigLoadFailed =>
+      'Couldn\'t load cloud sync settings. Please re-enter your app password.';
+
+  @override
   String get cloudSyncStatusTitle => 'Status';
 
   @override
@@ -1243,6 +1247,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clearCurrentTimetableTitle => 'Clear Current Timetable';
+
+  @override
+  String get clearFailed =>
+      'Couldn\'t clear the timetable. Nothing was changed.';
 
   @override
   String clearCurrentTimetableMessage(String name) {

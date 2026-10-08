@@ -201,9 +201,26 @@ class TimetableProfilesScreen extends StatelessWidget {
       return;
     }
 
-    final cleared = await context
-        .read<TimetableProvider>()
-        .clearActiveProfileCourses();
+    // 清空是整份课表 + 挂在课程上的全部作业一起没，落盘失败时 provider 会整体
+    // 退回并 rethrow（`course_repository.dart` 的 `_timetableClearActiveProfileCourses`）。
+    // 不接这个异常的话：错误落进 zone、页面零提示，用户以为「点了没反应」，
+    // 而内存当时已是空的 —— 下一次任意成功写入就把「课表没了」永久坐实。
+    final bool cleared;
+    try {
+      cleared = await context
+          .read<TimetableProvider>()
+          .clearActiveProfileCourses();
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.clearFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!context.mounted) {
       return;
     }

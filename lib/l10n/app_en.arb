@@ -218,6 +218,7 @@
     "description": "Security note: explains that release builds only support HTTPS encrypted connections, HTTP cleartext protocol has been disabled"
   },
   "cloudSyncRemoteFolderLabel": "Remote folder",
+  "cloudSyncConfigLoadFailed": "Couldn't load cloud sync settings. Please re-enter your app password.",
   "cloudSyncStatusTitle": "Status",
   "cloudSyncLastSyncedLabel": "Last synced",
   "cloudSyncLastErrorLabel": "Latest error",
@@ -575,6 +576,7 @@
     }
   },
   "clearCurrentTimetableTitle": "Clear Current Timetable",
+  "clearFailed": "Couldn't clear the timetable. Nothing was changed.",
   "clearCurrentTimetableMessage": "Clear all courses in “{name}”? Timetable settings will be kept",
   "@clearCurrentTimetableMessage": {
     "placeholders": {

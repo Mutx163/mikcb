@@ -138,7 +138,21 @@ class ScheduleListScreen extends StatelessWidget {
     AppLocalizations l10n,
   ) async {
     final provider = context.read<TimetableProvider>();
-    await provider.deleteScheduleItem(entry.item.id);
+    // provider 侧落盘失败会回滚并 rethrow（`schedule_item_repository.dart`）：
+    // 不接这个异常就是「点了删除、零提示」，而错误还落进 zone。
+    try {
+      await provider.deleteScheduleItem(entry.item.id);
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.deleteFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!context.mounted) {
       return;
     }

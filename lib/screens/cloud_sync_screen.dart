@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
+import '../services/app_log_service.dart';
 import '../services/app_sync_snapshot_service.dart';
 import '../services/cloud_backup_index_service.dart';
 import '../services/webdav_sync_config.dart';
@@ -131,22 +133,54 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   ) => CloudBackupUiHelpers.buildBackupSubtitle(context, entry);
 
   Future<void> _loadConfig() async {
-    final config = await _coordinator.syncService.loadConfig();
-    final password = await _credentialsStore.readPassword();
-    final deviceLabel = await _credentialsStore.readDeviceLabel();
-    if (!mounted) {
-      return;
+    try {
+      final config = await _coordinator.syncService.loadConfig();
+      final password = await _credentialsStore.readPassword();
+      final deviceLabel = await _credentialsStore.readDeviceLabel();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _config = config;
+        _hasStoredPassword = password?.trim().isNotEmpty ?? false;
+        _baseUrlController.text = config.baseUrl;
+        _remoteFolderController.text = config.remoteFolder;
+        _deviceLabelController.text = deviceLabel ?? '';
+      });
+      await _coordinator.refreshStatus();
+      await _loadBackups();
+    } catch (error, stackTrace) {
+      // 读密码这一跳会因 keystore 条目失效抛 PlatformException（换机恢复、系统升级、
+      // 用户凭证变化都会命中；同一个失效面记在
+      // `couple_webdav_credentials_store.dart:17-27`，那次只给「读」加了容错）。
+      //
+      // 本方法原先没有 try/finally，而 `_loading` 只在成功路径复位、build 又拿它当
+      // 门禁 —— 一抛就是**整页永久转圈**：用户进不去、改不了任何设置，连
+      // 「重新输入密码」这条唯一的自救路径都被堵死。
+      //
+      // 处置：降级可用 + 说明原因。配置按空值渲染（页面回到「未连接」的样子），
+      // 失败同时报给用户与诊断日志，不静默。
+      await AppLogService.instance.error(
+        'cloud_sync_config_load_failed',
+        'load cloud sync config failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.cloudSyncConfigLoadFailed,
+        kind: AppToastKind.error,
+      );
+    } finally {
+      if (mounted && _loading) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
-    setState(() {
-      _config = config;
-      _hasStoredPassword = password?.trim().isNotEmpty ?? false;
-      _baseUrlController.text = config.baseUrl;
-      _remoteFolderController.text = config.remoteFolder;
-      _deviceLabelController.text = deviceLabel ?? '';
-      _loading = false;
-    });
-    await _coordinator.refreshStatus();
-    await _loadBackups();
   }
 
   Future<void> _saveConfig(WebdavSyncConfig nextConfig) async {
@@ -254,8 +288,13 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       return;
     }
 
-    await _credentialsStore.deletePassword();
-    await _credentialsStore.deleteDeviceLabel();
+    // 顺序与情侣云盘的同形修复一致（`couple_webdav_service.dart:73-99`）：
+    // **先清配置，再尽力删凭据**。原先第一跳就是裸的 `deletePassword`，
+    // keystore 条目失效时它抛 PlatformException，后面清用户名、清 lastPulledAt、
+    // 复位界面状态全部不执行 —— 用户反复点「断开连接」零反应，页面仍显示「已连接」。
+    //
+    // 删不掉密码不影响「已断开」的语义：下次保存账号会覆盖它，而读密码的地方
+    // 本来就按「没有密码」处理。
     final nextConfig = _config.copyWith(
       username: '',
       enabled: false,
@@ -264,6 +303,12 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       clearLastSyncedAt: true,
     );
     await _saveConfig(nextConfig);
+    try {
+      await _credentialsStore.deletePassword();
+      await _credentialsStore.deleteDeviceLabel();
+    } on PlatformException {
+      // 密码/设备名此刻已不可操作，不因此把用户卡在「已连接」。
+    }
     if (!mounted) {
       return;
     }

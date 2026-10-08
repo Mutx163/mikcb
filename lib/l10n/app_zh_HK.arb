@@ -85,6 +85,7 @@
   "cloudSyncBaseUrlLabel": "WebDAV 網址",
   "cloudSyncBaseUrlSecurityNote": "建議使用 HTTPS 加密連線；HTTP 明文連線僅建議在可信網路環境下使用",
   "cloudSyncRemoteFolderLabel": "遠端目錄",
+  "cloudSyncConfigLoadFailed": "雲端同步設定讀取失敗，請重新輸入應用專用密碼",
   "cloudSyncStatusTitle": "同步狀態",
   "cloudSyncLastSyncedLabel": "上次同步",
   "cloudSyncLastErrorLabel": "最近錯誤",
@@ -441,6 +442,7 @@
     }
   },
   "clearCurrentTimetableTitle": "清空目前課表",
+  "clearFailed": "清空失敗，課表內容沒有變化",
   "clearCurrentTimetableMessage": "確定清空“{name}”的全部課程嗎？課表設定會保留",
   "@clearCurrentTimetableMessage": {
     "placeholders": {

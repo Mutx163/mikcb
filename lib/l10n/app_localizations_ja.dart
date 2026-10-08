@@ -491,6 +491,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudSyncRemoteFolderLabel => 'リモートフォルダ';
 
   @override
+  String get cloudSyncConfigLoadFailed =>
+      'クラウド同期の設定を読み込めませんでした。アプリパスワードを再入力してください。';
+
+  @override
   String get cloudSyncStatusTitle => '同期状態';
 
   @override
@@ -1191,6 +1195,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get clearCurrentTimetableTitle => '現在の時間割をクリア';
+
+  @override
+  String get clearFailed => '時間割を空にできませんでした。内容は変更されていません。';
 
   @override
   String clearCurrentTimetableMessage(String name) {

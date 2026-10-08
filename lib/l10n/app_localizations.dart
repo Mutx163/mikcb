@@ -998,6 +998,12 @@ abstract class AppLocalizations {
   /// **'远程目录'**
   String get cloudSyncRemoteFolderLabel;
 
+  /// No description provided for @cloudSyncConfigLoadFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'云同步设置读取失败，请重新输入应用专用密码'**
+  String get cloudSyncConfigLoadFailed;
+
   /// No description provided for @cloudSyncStatusTitle.
   ///
   /// In zh, this message translates to:
@@ -2263,6 +2269,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'清空当前课表'**
   String get clearCurrentTimetableTitle;
+
+  /// No description provided for @clearFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'清空失败，课表内容没有变化'**
+  String get clearFailed;
 
   /// No description provided for @clearCurrentTimetableMessage.
   ///

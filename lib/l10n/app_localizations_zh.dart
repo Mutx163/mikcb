@@ -478,6 +478,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncRemoteFolderLabel => '远程目录';
 
   @override
+  String get cloudSyncConfigLoadFailed => '云同步设置读取失败，请重新输入应用专用密码';
+
+  @override
   String get cloudSyncStatusTitle => '同步状态';
 
   @override
@@ -1163,6 +1166,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get clearCurrentTimetableTitle => '清空当前课表';
+
+  @override
+  String get clearFailed => '清空失败，课表内容没有变化';
 
   @override
   String clearCurrentTimetableMessage(String name) {
@@ -11687,6 +11693,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudSyncRemoteFolderLabel => '遠端目錄';
 
   @override
+  String get cloudSyncConfigLoadFailed => '雲端同步設定讀取失敗，請重新輸入應用專用密碼';
+
+  @override
   String get cloudSyncStatusTitle => '同步狀態';
 
   @override
@@ -12372,6 +12381,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get clearCurrentTimetableTitle => '清空目前課表';
+
+  @override
+  String get clearFailed => '清空失敗，課表內容沒有變化';
 
   @override
   String clearCurrentTimetableMessage(String name) {
@@ -22936,6 +22948,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudSyncRemoteFolderLabel => '遠端目錄';
 
   @override
+  String get cloudSyncConfigLoadFailed => '雲端同步設定讀取失敗，請重新輸入應用專用密碼';
+
+  @override
   String get cloudSyncStatusTitle => '同步狀態';
 
   @override
@@ -23621,6 +23636,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get clearCurrentTimetableTitle => '清空目前課表';
+
+  @override
+  String get clearFailed => '清空失敗，課表內容沒有變化';
 
   @override
   String clearCurrentTimetableMessage(String name) {

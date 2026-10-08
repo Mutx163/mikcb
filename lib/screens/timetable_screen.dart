@@ -494,6 +494,17 @@ class _TimetableScreenState extends State<TimetableScreen>
   String? _wallpaperLuminanceRequestedKey;
   bool _wallpaperLuminanceFileExists = false;
 
+  /// 采样失败的重试配额（按 key 计数）。
+  ///
+  /// 一次采样失败不能继续把 `_wallpaperLuminanceSampleKey` 当成「已经采过」：
+  /// 守卫（`_scheduleWallpaperLuminanceSampleIfNeeded`）看到它就会每帧早退，
+  /// 顶栏 / 星期栏 / 卡片的墨色从此停在主题默认色，直到换壁纸或冷启动。
+  /// 但也不能无条件重试 —— 解不开的图会变成每帧重解码一张大图。
+  /// 所以同 key 只给有限次机会，换了 key（换壁纸 / 视口 / 对齐变了）重新计数。
+  String? _wallpaperLuminanceRetryKey;
+  int _wallpaperLuminanceRetryCount = 0;
+  static const int _wallpaperLuminanceMaxRetries = 3;
+
   /// Last "custom weekday ink is unreadable" combination already warned about
   /// this session; the persisted twin lives in SharedPreferences.
   String? _weekdayInkWarnedSignature;
@@ -2482,15 +2493,36 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (!mounted || _wallpaperLuminanceSampleKey != key) {
       return;
     }
-    if (_wallpaperTopLuminance == bands?.top &&
-        _wallpaperWeekdayLuminance == bands?.weekday &&
-        _wallpaperBodyLuminance == bands?.body) {
+    if (bands == null) {
+      // 采样失败（解码不出来 / 文件正被写 / 尺寸读到 0）。**不能**继续装着
+      // 「已采过」—— 守卫看到 `sampleKey == key` 会每帧早退，顶栏 / 星期栏 /
+      // 卡片的墨色此后一直停在主题默认色，直到换壁纸或冷启动。
+      // 也不能无条件重试（解不开的图 = 每帧重解码一张大图），所以同 key 限次：
+      // 清掉 sampleKey 让守卫放行下一次，超过上限才认输。
+      final sameKey = _wallpaperLuminanceRetryKey == key;
+      _wallpaperLuminanceRetryKey = key;
+      _wallpaperLuminanceRetryCount = sameKey
+          ? _wallpaperLuminanceRetryCount + 1
+          : 1;
+      if (_wallpaperLuminanceRetryCount <= _wallpaperLuminanceMaxRetries) {
+        setState(() {
+          _wallpaperLuminanceSampleKey = null;
+        });
+      }
+      return;
+    }
+    // 采到了：这一份 key 的失败配额归零。
+    _wallpaperLuminanceRetryKey = null;
+    _wallpaperLuminanceRetryCount = 0;
+    if (_wallpaperTopLuminance == bands.top &&
+        _wallpaperWeekdayLuminance == bands.weekday &&
+        _wallpaperBodyLuminance == bands.body) {
       return;
     }
     setState(() {
-      _wallpaperTopLuminance = bands?.top;
-      _wallpaperWeekdayLuminance = bands?.weekday;
-      _wallpaperBodyLuminance = bands?.body;
+      _wallpaperTopLuminance = bands.top;
+      _wallpaperWeekdayLuminance = bands.weekday;
+      _wallpaperBodyLuminance = bands.body;
     });
   }
 
@@ -9224,7 +9256,21 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
 
-    await context.read<TimetableProvider>().deleteCourse(course.id);
+    // 与 `add_course_screen` 的同名入口同因：provider 删除失败会回滚并 rethrow，
+    // 不接就是「点了删除、零提示、未处理异步错误」。
+    try {
+      await context.read<TimetableProvider>().deleteCourse(course.id);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.deleteFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!mounted) {
       return;
     }

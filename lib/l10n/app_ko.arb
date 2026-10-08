@@ -85,6 +85,7 @@
   "cloudSyncBaseUrlLabel": "WebDAV 주소",
   "cloudSyncBaseUrlSecurityNote": "HTTPS 암호화 연결을 권장합니다. HTTP 평문 연결은 신뢰할 수 있는 네트워크에서만 사용하세요",
   "cloudSyncRemoteFolderLabel": "원격 폴더",
+  "cloudSyncConfigLoadFailed": "클라우드 동기화 설정을 불러오지 못했습니다. 앱 비밀번호를 다시 입력해 주세요.",
   "cloudSyncStatusTitle": "동기화 상태",
   "cloudSyncLastSyncedLabel": "마지막 동기화",
   "cloudSyncLastErrorLabel": "최근 오류",
@@ -442,6 +443,7 @@
     }
   },
   "clearCurrentTimetableTitle": "현재 시간표 비우기",
+  "clearFailed": "시간표를 비우지 못했습니다. 내용은 변경되지 않았습니다.",
   "clearCurrentTimetableMessage": "\"{name}\"의 모든 수업을 비우시겠습니까? 시간표 설정은 유지됩니다",
   "@clearCurrentTimetableMessage": {
     "placeholders": {

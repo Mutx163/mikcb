@@ -490,6 +490,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudSyncRemoteFolderLabel => '원격 폴더';
 
   @override
+  String get cloudSyncConfigLoadFailed =>
+      '클라우드 동기화 설정을 불러오지 못했습니다. 앱 비밀번호를 다시 입력해 주세요.';
+
+  @override
   String get cloudSyncStatusTitle => '동기화 상태';
 
   @override
@@ -1193,6 +1197,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get clearCurrentTimetableTitle => '현재 시간표 비우기';
+
+  @override
+  String get clearFailed => '시간표를 비우지 못했습니다. 내용은 변경되지 않았습니다.';
 
   @override
   String clearCurrentTimetableMessage(String name) {

@@ -218,6 +218,7 @@
     "description": "安全提示：说明正式版仅支持HTTPS加密连接，HTTP明文协议已被禁用"
   },
   "cloudSyncRemoteFolderLabel": "远程目录",
+  "cloudSyncConfigLoadFailed": "云同步设置读取失败，请重新输入应用专用密码",
   "cloudSyncStatusTitle": "同步状态",
   "cloudSyncLastSyncedLabel": "上次同步",
   "cloudSyncLastErrorLabel": "最近错误",
@@ -581,6 +582,7 @@
     }
   },
   "clearCurrentTimetableTitle": "清空当前课表",
+  "clearFailed": "清空失败，课表内容没有变化",
   "clearCurrentTimetableMessage": "确定清空“{name}”的全部课程吗？课表设置会保留",
   "@clearCurrentTimetableMessage": {
     "placeholders": {

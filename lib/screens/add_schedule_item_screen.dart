@@ -880,7 +880,21 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
       return;
     }
 
-    await provider.deleteScheduleItem(scheduleItem.id);
+    // 与日程列表页同因：provider 落盘失败会回滚并 rethrow，不接就是
+    // 「点了删除、零提示、未处理异步错误」，而且这里还会**照常关页**。
+    try {
+      await provider.deleteScheduleItem(scheduleItem.id);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.deleteFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!mounted) {
       return;
     }

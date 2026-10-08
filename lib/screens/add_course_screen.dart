@@ -394,7 +394,23 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       return;
     }
 
-    await context.read<TimetableProvider>().deleteCourse(course.id);
+    // provider 侧落盘失败会**回滚内存并 rethrow**（`course_repository.dart` 的
+    // `_timetableDeleteCourse`）。这里不接这个异常就是三件事同时发生：错误落进
+    // zone 成为未处理异步错误、用户零提示，而确认弹窗已经关掉 ——
+    // 用户看到的就是「点了删除，什么也没发生」。失败必须说出来，且不报成功、不关页。
+    try {
+      await context.read<TimetableProvider>().deleteCourse(course.id);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.deleteFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!mounted) {
       return;
     }
