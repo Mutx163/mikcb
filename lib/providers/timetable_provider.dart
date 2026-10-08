@@ -2046,8 +2046,17 @@ class TimetableProvider with ChangeNotifier {
         return;
       }
 
+      // 落盘失败要整体退回（`_runMutation` 只是互斥锁，不含回滚）。改名是本族
+      // 唯一没保护的一处 —— 删除档案、切档案这周都补了：失败时不退，
+      // 下一次任意 `saveProfiles` 就把「改了名」坐实，而用户收到的是「保存失败」。
+      final snapshotProfiles = List<TimetableProfile>.from(_profiles);
       _profiles[index] = _profiles[index].copyWith(name: name.trim());
-      await _profileRepository.saveProfiles(_profiles);
+      try {
+        await _profileRepository.saveProfiles(_profiles);
+      } catch (_) {
+        _profiles = snapshotProfiles;
+        rethrow;
+      }
       notifyUserDataChangedForSync();
       notifyListeners();
     });
@@ -2476,8 +2485,19 @@ class TimetableProvider with ChangeNotifier {
       if (updatedCount == 0) {
         return 0;
       }
+      // 改颜色是整表重写：落盘失败必须整体退回（`_runMutation` 只是互斥锁，不含回滚）。
+      // 不退的话，用户看到「保存失败」，而那个 30 秒一次的 `syncTemporalContext`
+      // 心跳会把这次没落成的配色写进盘 —— 课自己变了色、再也回不来。
+      final snapshotCourses = List<Course>.from(_courses);
+      final snapshotProfiles = List<TimetableProfile>.from(_profiles);
       _courses = nextCourses;
-      await _persistActiveProfileState();
+      try {
+        await _persistActiveProfileState();
+      } catch (_) {
+        _courses = snapshotCourses;
+        _profiles = snapshotProfiles;
+        rethrow;
+      }
       _currentLiveCourseId = null;
       notifyListeners();
       _analytics.logEventLater(
@@ -2507,10 +2527,23 @@ class TimetableProvider with ChangeNotifier {
     } else {
       newSuspended = [...currentSuspended, week]..sort();
     }
+    // 停课/复课一族（`_toggleCourseSuspensionImpl` / `_suspendAllWeeksImpl` /
+    // `_unsuspendAllWeeksImpl`）都是「改内存 → 落盘 → notify」，而 `_runMutation`
+    // 只是互斥锁。落盘失败时不退的话，用户看到「保存失败」，随后任意一次成功写入
+    // （切周、加课、30 秒心跳）会把这次停课坐实 —— 课自己变灰、再也回不来。
+    // 形状与 `course_repository.dart` 的课程写入族一致。
+    final snapshotCourses = List<Course>.from(_courses);
+    final snapshotProfiles = List<TimetableProfile>.from(_profiles);
     _courses[index] = course.copyWith(
       suspendedWeeks: newSuspended.isEmpty ? null : newSuspended,
     );
-    await _persistActiveProfileState();
+    try {
+      await _persistActiveProfileState();
+    } catch (_) {
+      _courses = snapshotCourses;
+      _profiles = snapshotProfiles;
+      rethrow;
+    }
     notifyListeners();
     _analytics.logEventLater(
       name: 'course_suspension_toggled',
@@ -2534,8 +2567,17 @@ class TimetableProvider with ChangeNotifier {
     if (index == -1) return;
     final course = _courses[index];
     final allWeeks = course.activeWeeks;
+    // 同 `_toggleCourseSuspensionImpl`：失败整体退回，别让心跳把「全停」坐实。
+    final snapshotCourses = List<Course>.from(_courses);
+    final snapshotProfiles = List<TimetableProfile>.from(_profiles);
     _courses[index] = course.copyWith(suspendedWeeks: allWeeks);
-    await _persistActiveProfileState();
+    try {
+      await _persistActiveProfileState();
+    } catch (_) {
+      _courses = snapshotCourses;
+      _profiles = snapshotProfiles;
+      rethrow;
+    }
     notifyListeners();
     _analytics.logEventLater(
       name: 'course_all_weeks_suspended',
@@ -2553,8 +2595,17 @@ class TimetableProvider with ChangeNotifier {
     await initialize();
     final index = _courses.indexWhere((c) => c.id == courseId);
     if (index == -1) return;
+    // 同 `_suspendAllWeeksImpl`：失败整体退回。
+    final snapshotCourses = List<Course>.from(_courses);
+    final snapshotProfiles = List<TimetableProfile>.from(_profiles);
     _courses[index] = _courses[index].copyWith(suspendedWeeks: null);
-    await _persistActiveProfileState();
+    try {
+      await _persistActiveProfileState();
+    } catch (_) {
+      _courses = snapshotCourses;
+      _profiles = snapshotProfiles;
+      rethrow;
+    }
     notifyListeners();
     _analytics.logEventLater(
       name: 'course_all_weeks_unsuspended',
@@ -4286,8 +4337,17 @@ class TimetableProvider with ChangeNotifier {
       if (clamped == binding.weekOffset) {
         return;
       }
+      // 情侣绑定一族（周偏移 / 三色 / 恢复保存点）同一条契约：改内存 → await 落盘 →
+      // 失败整体退回并上抛。`_runMutation` 只是互斥锁，原先三处都没有 try/catch ——
+      // 失败时内存留着没存下的绑定，下一次任意保存把它坐实，而界面报的是「保存失败」。
+      final previousBinding = _partnerBinding;
       _partnerBinding = binding.copyWith(weekOffset: clamped);
-      await _profileRepository.savePartnerTimetableBinding(_partnerBinding);
+      try {
+        await _profileRepository.savePartnerTimetableBinding(_partnerBinding);
+      } catch (_) {
+        _partnerBinding = previousBinding;
+        rethrow;
+      }
       notifyUserDataChangedForSync();
       notifyListeners();
       // 周偏移改变 TA 课的对应周次：情侣绑定卡片立即重推（同上跳过
@@ -4308,12 +4368,19 @@ class TimetableProvider with ChangeNotifier {
       if (binding == null) {
         return;
       }
+      // 同 `updatePartnerWeekOffset`：失败整体退回。
+      final previousBinding = _partnerBinding;
       _partnerBinding = binding.copyWith(
         mineColorHex: mineColorHex,
         partnerColorHex: partnerColorHex,
         togetherColorHex: togetherColorHex,
       );
-      await _profileRepository.savePartnerTimetableBinding(_partnerBinding);
+      try {
+        await _profileRepository.savePartnerTimetableBinding(_partnerBinding);
+      } catch (_) {
+        _partnerBinding = previousBinding;
+        rethrow;
+      }
       notifyUserDataChangedForSync();
       notifyListeners();
       // 情侣三色改变 TA/一起课的着色：情侣绑定卡片立即重推。
@@ -4335,8 +4402,16 @@ class TimetableProvider with ChangeNotifier {
       if (_partnerBinding == binding) {
         return;
       }
+      // 同族（本方法就是本轮为「导入回滚」加的入口，所以更不能自己漏掉回滚）：
+      // 落盘失败要把内存退回原来那份绑定，否则「恢复失败」反而把绑定留在半路上。
+      final previousBinding = _partnerBinding;
       _partnerBinding = binding;
-      await _profileRepository.savePartnerTimetableBinding(binding);
+      try {
+        await _profileRepository.savePartnerTimetableBinding(binding);
+      } catch (_) {
+        _partnerBinding = previousBinding;
+        rethrow;
+      }
       notifyUserDataChangedForSync();
       notifyListeners();
       unawaited(_updateLiveActivity(syncScheduleSnapshot: false));

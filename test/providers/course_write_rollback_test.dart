@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/course_task.dart';
 import 'package:university_timetable/models/exam.dart';
+import 'package:university_timetable/models/partner_timetable_binding.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/storage_service.dart';
@@ -65,6 +66,19 @@ class _FailingStorage extends StorageService {
       return Future<void>.error(StateError('test_profiles_write_failed'));
     }
     return super.saveProfiles(profiles);
+  }
+
+  /// 情侣绑定的写盘失败注入（2026-10-08）：周偏移 / 三色 / 「恢复保存点」三处
+  /// 共用这一条落盘，原先都没有 try/catch。
+  int partnerBindingFailures = 0;
+
+  @override
+  Future<void> savePartnerTimetableBinding(PartnerTimetableBinding? binding) {
+    if (partnerBindingFailures > 0) {
+      partnerBindingFailures--;
+      return Future<void>.error(StateError('test_partner_binding_failed'));
+    }
+    return super.savePartnerTimetableBinding(binding);
   }
 }
 
@@ -350,6 +364,134 @@ void main() {
             .toList(),
         before,
         reason: '修复前这里是一套半新半旧的课次：三份快照都没退',
+      );
+    });
+  });
+
+  /// 停课 / 改色 / 改名 / 情侣绑定：同一族、同一把锁、原先同样没有回滚
+  /// （2026-10-08 收口）。共同后果：用户看到「保存失败」，而内存里那份没存下的
+  /// 改动会在**下一次任意成功写入**（切周、加课、30 秒一次的 `syncTemporalContext`
+  /// 心跳）被坐实 —— 课自己变灰、名字自己变了，都回不来。
+  group('课程族与档案族的落盘失败回滚', () {
+    test('toggleCourseSuspension 写盘失败后停课状态必须退回', () async {
+      await seedPair();
+      expect(
+        provider.courses.firstWhere((course) => course.id == 'g1').suspendedWeeks,
+        isNull,
+      );
+
+      storage.profilesFailures = 1;
+      await expectLater(
+        provider.toggleCourseSuspension('g1', 3),
+        throwsStateError,
+      );
+
+      expect(
+        provider.courses.firstWhere((course) => course.id == 'g1').suspendedWeeks,
+        isNull,
+        reason: '不退的话，下一次成功写入就把「这周停课」坐实，课自己变灰',
+      );
+    });
+
+    test('suspendAllWeeks / unsuspendAllWeeks 写盘失败后都要退回', () async {
+      await seedPair();
+
+      storage.profilesFailures = 1;
+      await expectLater(provider.suspendAllWeeks('g1'), throwsStateError);
+      expect(
+        provider.courses.firstWhere((course) => course.id == 'g1').suspendedWeeks,
+        isNull,
+      );
+
+      // 先真的全停一次，再验「取消全停」的失败路径。
+      await provider.suspendAllWeeks('g1');
+      final suspended = provider.courses
+          .firstWhere((course) => course.id == 'g1')
+          .suspendedWeeks;
+      expect(suspended, isNotNull);
+
+      storage.profilesFailures = 1;
+      await expectLater(provider.unsuspendAllWeeks('g1'), throwsStateError);
+      expect(
+        provider.courses.firstWhere((course) => course.id == 'g1').suspendedWeeks,
+        suspended,
+        reason: '取消全停失败后必须还是「全停」，不能变成半停',
+      );
+    });
+
+    test('applyCourseRecolors 写盘失败后配色必须退回', () async {
+      await seedPair();
+      final recolored = [
+        for (final course in provider.courses)
+          course.copyWith(color: '#abcdef'),
+      ];
+
+      storage.profilesFailures = 1;
+      await expectLater(
+        provider.applyCourseRecolors(recolored),
+        throwsStateError,
+      );
+
+      expect(
+        provider.courses.every((course) => course.color != '#abcdef'),
+        isTrue,
+        reason: '整表重写失败后配色要整体退回，否则心跳把没落成的配色写进盘',
+      );
+    });
+
+    test('renameProfile 写盘失败后名字必须退回', () async {
+      // 先落一次再测：`initialize()` 之后可能还有启动期的后台写没结算，
+      // 它会吃掉这一次注入的失败（同文件其余用例也都先 seed 一轮）。
+      await seedPair();
+      final before = provider.activeProfile!.name;
+
+      storage.profilesFailures = 1;
+      await expectLater(
+        provider.renameProfile(provider.activeProfile!.id, '新名字'),
+        throwsStateError,
+      );
+
+      expect(
+        provider.activeProfile!.name,
+        before,
+        reason: '改名是本族唯一漏保护的一处：失败后名字不该在内存里已经变了',
+      );
+    });
+
+    test('情侣绑定三处（周偏移 / 三色 / 恢复保存点）写盘失败都要退回', () async {
+      final binding = PartnerTimetableBinding(
+        partnerProfileId: 'partner',
+        partnerName: 'TA的课表',
+        linkedAt: DateTime(2026, 9, 1, 9, 30),
+        weekOffset: 2,
+      );
+      await provider.restorePartnerBinding(binding);
+      expect(provider.partnerWeekOffset, 2);
+
+      storage.partnerBindingFailures = 1;
+      await expectLater(provider.updatePartnerWeekOffset(5), throwsStateError);
+      expect(
+        provider.partnerWeekOffset,
+        2,
+        reason: '周偏移没落成就不该留在内存里',
+      );
+
+      storage.partnerBindingFailures = 1;
+      await expectLater(
+        provider.updatePartnerCoupleColors(mineColorHex: '#123456'),
+        throwsStateError,
+      );
+      expect(provider.partnerBinding!.mineColorHex, binding.mineColorHex);
+
+      storage.partnerBindingFailures = 1;
+      await expectLater(
+        provider.restorePartnerBinding(null),
+        throwsStateError,
+      );
+      expect(
+        provider.partnerBinding,
+        isNotNull,
+        reason: '「恢复保存点自己失败」时更不能把绑定抹掉',
       );
     });
   });
