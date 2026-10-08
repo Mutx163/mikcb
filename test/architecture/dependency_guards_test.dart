@@ -222,8 +222,17 @@ void main() {
     //
     // 余量为 0：基线就是当前实测值，正当新增读取时照例抬基线并说明理由。
     const baselineProviderCallSites = 228;
+    // 2026-10-08 第三次收窄：第二段类型实参原先写的是 `(?:,[^>]*)?`，**跨不过嵌套泛型**
+    // 里的 `>` ——  `context.select<TimetableProvider, Map<String, Course>>(…)` 这类
+    // 一个都数不到（`[^>]*` 在 `Map<String` 的第一个 `>` 之前就停了）。同样的坑本仓
+    // 已经踩过两次（`invokeMethod(` 漏掉 `invokeMethod<bool>(`、`<TimetableProvider>`
+    // 漏掉 `<TimetableProvider?>`），每次都是"正则写窄 → 统计偏低 → 基线偏低 → 门禁
+    // 形同虚设"。改用 `[^()]*`：允许实参里出现 `<>`，但**不许跨越括号**（不会把后面
+    // 另一次调用的 `(` 也吞进来）。
+    // 实测口径放宽后计数仍是 228（当前没有这种写法），所以基线不动 —— 这里补的是
+    // 「下一个人这么写就静默失效」的漏洞，不是当下少数的几处。
     final callSitePattern = RegExp(
-      r'\b(?:read|watch|select|of)<TimetableProvider\??\s*(?:,[^>]*)?>\s*\(',
+      r'\b(?:read|watch|select|of)<TimetableProvider\??(?:\s*,\s*[^()]*)?>\s*\(',
     );
     var callSites = 0;
     final touchedFiles = <String>[];
