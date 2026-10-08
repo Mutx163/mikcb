@@ -78,6 +78,32 @@ void main() {
     expect(text, contains('url=null'));
   });
 
+  test('课程名 / 教师 / 教室不收（个人字段表同样覆盖这个出口）', () {
+    // 2026-10-08 审核补：这份日志原先只洗 URL，个人字段一个都没盖。而它
+    // 是仓库里第三个可分享出口（另外两个是 app_runtime.log 与原生那份），
+    // WebView console 消息与脚本状态串里常夹着课表内容，用户导出发群时
+    // 就跟着出去了。字段表真源是 `app_debug_log.dart` 的 personalLogFieldKeys。
+    log.append(
+      message: '匹配 course=高等数学 teacher=王老师 loc=三教201 sections=1-2',
+      extras: const <String, Object?>{
+        'location': ['A101', 'B202'],
+        'schoolId': '10',
+        'count': 3,
+      },
+    );
+
+    final text = log.readText();
+    expect(text, isNot(contains('高等数学')), reason: '课程名');
+    expect(text, isNot(contains('王老师')), reason: '教师名');
+    expect(text, isNot(contains('三教201')), reason: '教室');
+    expect(text, isNot(contains('A101')), reason: 'extras 列表里的教室');
+    expect(text, isNot(contains('B202')));
+    // 取证信息必须留住：节次、脚本 id、计数都不是个人信息。
+    expect(text, contains('sections=1-2'));
+    expect(text, contains('schoolId=10'));
+    expect(text, contains('count=3'));
+  });
+
   test('sanitizeWarehouseLogUrl 只留 scheme+host+path（比宏存储更严）', () {
     expect(
       sanitizeWarehouseLogUrl(

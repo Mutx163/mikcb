@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import '../logging/app_debug_log.dart';
 import '../models/warehouse_macro_models.dart';
 
 /// 写进导入执行日志的 URL：走仓库里**已有**的那套会话参数剥离。
@@ -55,13 +56,19 @@ String _scrubUrlsInLogText(String text) {
 /// extras 里 key 含 "url" 的值一律按 URL 处理；其余值原样保留
 /// （日志还要能看出 schoolId / adapterId / macroReplay 这些定位信息）。
 Object? _scrubLogExtra(String key, Object? value) {
-  if (!key.toLowerCase().contains('url')) {
-    return value;
+  if (key.toLowerCase().contains('url')) {
+    if (value is! String) {
+      return value == null ? null : '';
+    }
+    return sanitizeWarehouseLogUrl(value);
   }
-  if (value is! String) {
-    return value == null ? null : '';
-  }
-  return sanitizeWarehouseLogUrl(value);
+  // ⚠️ 其余值并不是"原样保留"就安全：WebView console 消息、脚本状态串里
+  // 常夹着课程名 / 教师 / 教室。这份日志是用户导出发给维护者的明文文本
+  // （`log_viewer_entry.dart` 的 onExport → SharePlus），而它是仓库里第三个
+  // 可分享出口 —— 之前只做了 URL 清洗，个人字段一个都没盖，与
+  // `app_debug_log.dart` 那份被声明为「唯一来源」的字段表完全脱钩。
+  // 所以接上同一份表（key 命中即整值盖住，嵌套值按结构脱敏）。
+  return redactPersonalFieldValue(key, value);
 }
 
 /// In-memory ring buffer for warehouse course-import execution traces.
@@ -100,7 +107,12 @@ class WarehouseImportSessionLog {
     String level = 'info',
     Map<String, Object?> extras = const {},
   }) {
-    final normalizedMessage = _scrubUrlsInLogText(message.trim());
+    // 两层：先剥 URL 会话参数（这份日志比宏存储更严，见上），再过个人字段表。
+    // 顺序不能反 —— `key=value` 正则对已剥过的文本一样有效，但反过来会让
+    // URL 里的 `name=` 之类片段被当成个人字段先抹掉，破坏取证信息。
+    final normalizedMessage = redactPersonalFields(
+      _scrubUrlsInLogText(message.trim()),
+    );
     if (normalizedMessage.isEmpty) {
       return;
     }
