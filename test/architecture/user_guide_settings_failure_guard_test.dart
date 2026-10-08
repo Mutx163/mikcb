@@ -41,6 +41,12 @@ void main() {
       }
       final awaited = line.contains('await ');
       final discarded = line.startsWith('unawaited(');
+      // ⚠️ 第 36 轮（2026-10-08）试过在这里补「必须被 try/catch 包着」，**未采纳**：
+      // 现有的写法是 `try { if (…) { await provider.updateExam(x); } else { … } }
+      // catch (_) { … }`（`add_exam_screen.dart:1079-1096`），只按"最近一层块边界"
+      // 判会把 if 块当成"没有出口"而误报。要判准得写一个花括号感知的小解析器，
+      // 收益（守住"删掉 try/catch 只留 await"这一维）不值这个复杂度 ——
+      // 同文件第三条棘的"语句内兜底"已经收紧了真正会静默回归的那一半。
       if (!awaited || discarded) {
         offenders.add('${i + 1}: $line');
       }
