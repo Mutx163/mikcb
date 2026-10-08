@@ -508,7 +508,11 @@ static Future<BingAutoApplyResult> maybeApplyDaily({
       path: result.path!,
       // 记**实际**下的那组像素（见 [BingWallpaperResolution.downloadTargetSize]）：
       // 台账键含尺寸，不记就会把「按旧尺寸下过」误判成「按屏幕尺寸下过了」。
-      targetSize: resolution.downloadTargetSize,
+      // ⚠️ 必须是 `result.resolution`（实际那档，退档后就是 standard）而不是上面
+      // 那个 `resolution`（**用户选的那档**）：记错的话，同一天反复点同一张会重复下载，
+      // 而且台账里会永远留一个指向不存在文件的条目 —— 上面那行注释写的就是这件事，
+      // 代码原先没照做。
+      targetSize: result.resolution!.downloadTargetSize,
     );
     unawaited(_deleteEvictedWallpapers(evicted, inUsePaths: inUsePaths));
     appDebugLog(_tag, 'daily applied date=${newest.dateKey} isToday=$isToday');

@@ -191,13 +191,15 @@ class _BingWallpaperGalleryPageState
           downgraded = result.downgraded;
           // 手动挑的也记账：目的是**封顶清理**（不记账的文件没人回收）与去重，
           // 但标记 `autoApplied: false`，免得顶掉自动换「今天已换过」的判据。
-          // 记的是**实际**那档（退档后就是 standard），与文件名一致。
+          // 记的是**实际**那档（退档后就是 standard），与文件名一致；
+          // 两个字段都必须取 `result.resolution`，写成外面那个 `resolution`
+          // （用户选的那档）会让台账记着一个不存在的文件尺寸。
           final evicted = await BingWallpaperStore.instance.recordApplied(
             dateKey: item.dateKey,
             resolution: result.resolution!,
             path: result.path!,
             autoApplied: false,
-            targetSize: resolution.downloadTargetSize,
+            targetSize: result.resolution!.downloadTargetSize,
           );
           unawaited(_deleteEvicted(evicted, keep: result.path));
         } else {
