@@ -550,7 +550,11 @@ class AppLogService {
     if (extras.isNotEmpty) {
       buffer.writeln('extras=');
       extras.forEach((key, value) {
-        if (personalLogFieldKeys.contains(key)) {
+        // ⚠️ 大小写不敏感：之前这里是 `personalLogFieldKeys.contains(key)`，
+        // 与 message 那条出口（内部走小写索引）对同一个键的判断不一致 ——
+        // 表里有 camelCase 的键（overflowNames / changeSamples），只查
+        // 原样键就等于给大小写变体开了后门。两条出口必须同口径。
+        if (isPersonalLogFieldKey(key)) {
           // 名字型字段**整值**抹掉：值里是一串课程名（`overflowNames` /
           // `changeSamples`），逐段匹配盖不全 —— `([^\s|]*)` 遇到第一个 `|`
           // 就停，列表里后面那些名字会原样漏出去。键留着，说明"这里有一份
@@ -558,7 +562,10 @@ class AppLogService {
           buffer.writeln('  $key=**');
           return;
         }
-        buffer.writeln(redactPersonalFields('  $key=${value ?? 'null'}'));
+        // 值本身是嵌套 Map / List 时走查表：`redactPersonalFields` 的正则只认
+        // `key=value`，序列化后是 `"name": "高等数学"`，一个都匹配不上，
+        // 实测课程名 / 教师 / 教室三个字段全部漏出。
+        buffer.writeln('  $key=${redactPersonalFieldValue(key, value)}');
       });
     }
     if (error != null) {
@@ -571,8 +578,12 @@ class AppLogService {
       buffer.writeln('error=${redactPersonalFields('$error')}');
     }
     if (stackTrace != null) {
+      // 与 message / extras / error 同一口径：这份文件是用户导出、发群、附在
+      // issue 里的那一份，而栈里常带着异常消息的原文 —— `FormatException` /
+      // `StateError` 会把 schoolName、课程名、URL 一并带进来，而 `error=` 那一行
+      // 已经洗过了，紧挨着的这行却是原样写出，等于白洗。
       buffer.writeln('stackTrace=');
-      buffer.writeln(stackTrace.toString().trimRight());
+      buffer.writeln(redactPersonalFields(stackTrace.toString().trimRight()));
     }
     buffer.writeln();
     return buffer.toString();

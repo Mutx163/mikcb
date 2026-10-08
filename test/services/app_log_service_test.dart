@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -98,6 +99,91 @@ void main() {
     expect(logs, contains('overflowNames=**'));
     expect(logs, contains('updated=2'), reason: '计数等取证信息一个字不能少');
     expect(logs, contains('overflow=3'));
+  });
+
+  test('嵌套 Map / List 型 extras 也要脱敏，stackTrace 同口径', () async {
+    // 2026-10-08 审核复现：`redactPersonalFields` 的正则只认 `key=value`，
+    // 序列化后的嵌套值是 `"name": "高等数学"`，一个都匹配不上，实测课程名 /
+    // 教师 / 教室三个字段**全部**漏出。stackTrace 那行则紧挨着已脱敏的
+    // `error=` 却是原样写出，等于白洗。
+    final tempDir = await Directory.systemTemp.createTemp('mikcb-log-nested-');
+    addTearDown(() => tempDir.delete(recursive: true));
+    const pathProviderChannel = MethodChannel(
+      'plugins.flutter.io/path_provider',
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathProviderChannel, (call) async => tempDir.path);
+    addTearDown(() async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(pathProviderChannel, null);
+    });
+    SharedPreferences.setMockInitialValues({
+      'accepted_privacy_policy': true,
+      'timetable_profiles':
+          '[{"id":"p1","settings":{"liveEnableLocalDiagnostics":true}}]',
+    });
+
+    await AppLogService.instance.error(
+      'nested_redaction',
+      '状态快照',
+      extras: {
+        'statusJson': const JsonEncoder.withIndent('  ').convert({
+          'currentCourse': {
+            'name': '高等数学',
+            'teacher': '王老师',
+            'location': 'A101',
+          },
+        }),
+        'location': const ['A101', 'B202'],
+        'page': 3,
+      },
+      stackTrace: StackTrace.fromString(
+        // `course=` 是个人字段、必须被盖；`school=` 按本仓口径**故意不盖**
+        // （`app_debug_log.dart` 字段表头的说明：机构名不是个人信息，且
+        // `schoolName` 是教务适配器定位的关键取证信息）。所以断言里不出现它。
+        'FormatException: course=高等数学\n#0 main (package:x/y.dart:1)',
+      ),
+    );
+
+    final logs = await AppLogService.instance.readAppLogsText();
+
+    expect(logs, isNot(contains('高等数学')), reason: '嵌套值里的课程名');
+    expect(logs, isNot(contains('王老师')), reason: '嵌套值里的教师名');
+    expect(logs, isNot(contains('A101')), reason: '嵌套值里的教室');
+    expect(logs, contains('page=3'), reason: '计数等取证信息一个字不能少');
+  });
+
+  test('extras 查表大小写不敏感，与 message 出口同口径', () async {
+    final tempDir = await Directory.systemTemp.createTemp('mikcb-log-case-');
+    addTearDown(() => tempDir.delete(recursive: true));
+    const pathProviderChannel = MethodChannel(
+      'plugins.flutter.io/path_provider',
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathProviderChannel, (call) async => tempDir.path);
+    addTearDown(() async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(pathProviderChannel, null);
+    });
+    SharedPreferences.setMockInitialValues({
+      'accepted_privacy_policy': true,
+      'timetable_profiles':
+          '[{"id":"p1","settings":{"liveEnableLocalDiagnostics":true}}]',
+    });
+
+    await AppLogService.instance.info(
+      'case_insensitive_keys',
+      '大小写变体',
+      extras: {
+        // 表里是 camelCase 的 `overflowNames`，大小写变体必须同样命中。
+        'OVERFLOWNAMES': const ['高等数学'],
+        'Teacher': '王老师',
+      },
+    );
+
+    final logs = await AppLogService.instance.readAppLogsText();
+    expect(logs, isNot(contains('高等数学')));
+    expect(logs, isNot(contains('王老师')));
   });
 
   test('watchMergedLogsText emits on appends and stays quiet while idle', () async {    // path_provider 指到临时目录，写入走真实文件（plugin_boundary_smoke_test 同款做法）。

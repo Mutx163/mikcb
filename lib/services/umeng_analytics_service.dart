@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'app_log_service.dart';
+import '../logging/app_debug_log.dart';
 import '../utils/timed_method_channel.dart';
 
 typedef DiagnosticLogLevel = String;
@@ -116,9 +117,12 @@ class UmengAnalyticsService {
     try {
       await _channel.invokeMethod<void>('reportCustomLog', {
         'category': category,
-        'message': message,
-        'error': error,
-        'stackTrace': stackTrace,
+        // 同 recordDiagnosticEvent：原生侧没有脱敏，送出前先过一遍。
+        'message': redactPersonalFields(message),
+        'error': error == null ? null : redactPersonalFields(error),
+        'stackTrace': stackTrace == null
+            ? null
+            : redactPersonalFields(stackTrace),
         'dedupeKey': dedupeKey,
         'level': level,
       });
@@ -160,8 +164,14 @@ class UmengAnalyticsService {
     try {
       await _channel.invokeMethod<void>('recordDiagnosticEvent', {
         'category': category,
-        'message': message,
-        'extras': extras,
+        'message': redactPersonalFields(message),
+        // ⚠️ 这一份原生落进 `live_update_diagnostics.log`，而它和 Dart 那份
+        // app_runtime.log 一起被 `exportMergedLogsFile` 合并导出、用户发群。
+        // 原生侧（UmengDiagnosticReporter.kt）没有任何脱敏，也不共享
+        // `personalLogFieldKeys` 这份表，所以**送出前必须先过一遍** ——
+        // 之前只送了 AppLogService.log（那条已脱敏），原生这条整份原样出仓，
+        // `extras` 里的 `courseName` 明文进用户导出的文件。
+        'extras': redactPersonalFieldMap(extras),
         'level': level,
       });
     } on MissingPluginException {

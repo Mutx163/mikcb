@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
 /// Unified debug console logging with Chinese messages.
@@ -135,6 +137,101 @@ final RegExp _personalFieldPattern = RegExp(
 final Set<String> _personalFieldKeysLower = {
   for (final key in personalLogFieldKeys) key.toLowerCase(),
 };
+
+/// 这个键是不是可识别到人的字段（大小写不敏感）。
+///
+/// 供跨文件的调用点查表用，避免每处各写一份大小写策略 —— message 那条出口
+/// 内部用小写索引、extras 那条出口曾经用区分大小写的 `contains`，同一个键
+/// 两边判断不一致，正是这类「改了这份、漏了那份」的来源。
+bool isPersonalLogFieldKey(String key) =>
+    _personalFieldKeysLower.contains(key.toLowerCase());
+
+/// 一个结构化诊断字段（通常是 `extras` 里的 `Map<String, Object?>`）。
+///
+/// 结构化字段没法靠 [redactPersonalFields] 的 `key=value` 正则去盖：
+/// 序列化后是 `"name": "高等数学"` 这种形状，一个 `key=` 都匹配不上，实测
+/// 课程名 / 教师 / 教室三个字段**全部**漏出（见
+/// `test/logging/app_debug_log_redaction_bypass_test.dart`）。所以走查表。
+///
+/// 查表大小写不敏感，与 [redactPersonalFields] 内部那条路径同口径 —— 之前
+/// extras 那条出口用的是 `personalLogFieldKeys.contains(key)`（区分大小写），
+/// 于是 `courseName` 之外的写法能绕过，两条出口对同一个键判断不一致。
+/// 真源是同一份表，**大小写策略也必须一致**，否则又是一处「改了这份、
+/// 漏了那份」。
+String redactPersonalFieldValue(String key, Object? value) {
+  if (isPersonalLogFieldKey(key)) {
+    return '**';
+  }
+  if (value is Map) {
+    return redactPersonalFieldMap(value).toString();
+  }
+  if (value is Iterable) {
+    return redactPersonalFieldList(value);
+  }
+  // 值是**已经序列化好的 JSON 文本**（典型形态：调试快照把整个状态
+  // `JsonEncoder.convert` 成字符串塞进一个非个人字段的键，如 `statusJson`）。
+  // 它不是 Map，走不到上面两条；而 `redactPersonalFields` 的正则只认
+  // `key=value`，JSON 里全是 `"name": "…"` 形状，一条都匹配不上 ——
+  // 实测课程名 / 教师 / 教室三个字段全部原样漏出。
+  // 所以这里先试着把它当结构化数据脱敏，能解析就按解析结果走一遍，
+  // 不能解析（普通文本）才退回正则，两种都不损失。
+  final text = '$value';
+  final decoded = _tryDecodeJsonContainer(text);
+  if (decoded is Map) {
+    return redactPersonalFieldMap(decoded).toString();
+  }
+  if (decoded is Iterable) {
+    return redactPersonalFieldList(decoded);
+  }
+  return redactPersonalFields(text);
+}
+
+/// 只在**看起来确实是 JSON 容器**时才解析，避免把任意文本喂给解码器。
+Object? _tryDecodeJsonContainer(String text) {
+  final trimmed = text.trim();
+  if (trimmed.isEmpty || trimmed.length > 200000) {
+    return null;
+  }
+  final startsLikeJson =
+      (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+      (trimmed.startsWith('[') && trimmed.endsWith(']'));
+  if (!startsLikeJson) {
+    return null;
+  }
+  try {
+    return jsonDecode(trimmed);
+  } catch (_) {
+    return null;
+  }
+}
+
+/// 整份 [extras] 过一遍 [redactPersonalFieldValue]；键原样保留、值可能变短。
+Map<String, Object?> redactPersonalFieldMap(Map<Object?, Object?> source) {
+  final out = <String, Object?>{};
+  source.forEach((key, value) {
+    final name = '$key';
+    out[name] = redactPersonalFieldValue(name, value);
+  });
+  return out;
+}
+
+/// 列表里的每一项都脱敏；元素本身是嵌套结构就递归，元素是名字列表整项盖住
+/// （`[a, b]` 打成 `**` 而不是 `'[高等数学, 大学英语]'` 的字符串）。
+String redactPersonalFieldList(Iterable<Object?> source) {
+  final items = <Object?>[];
+  for (final item in source) {
+    if (item is Map) {
+      items.add(redactPersonalFieldMap(item));
+    } else if (item is Iterable) {
+      items.add(redactPersonalFieldList(item));
+    } else {
+      // 标量元素没有键，只能按文本形态过一遍正则（`"高等数学"` 这种裸值
+      // 本身不含 key=，无法定位；调用点应改用带键的 map 形态）。
+      items.add(redactPersonalFields('${item ?? 'null'}'));
+    }
+  }
+  return items.isEmpty ? '[]' : items.toString();
+}
 
 /// 把个人信息字段改成 `key=**`，其余文本原样保留。
 ///
