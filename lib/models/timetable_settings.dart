@@ -2818,7 +2818,14 @@ class TimetableSettings {
       //「液态 / 实体」两档：存量 progressive / gaussian / soft 与一切非法值
       // 都在 sanitize 里归到液态，与界面那两个选项同口径。
       homeBandGlassMaterial: sanitizeHomeBandGlassMaterial(
-        json['homeBandGlassMaterial'] as String?,
+        // 非字符串坏值按缺键处理（走 null → 出厂档），不抛。同族三个键
+        // （liquidGlassPreset / courseCardGlassPreset / courseCardSurfaceStyle）
+        // 已于 2026-10-07~08 补齐，这一处当时漏了 —— 而它比那三个更要紧：
+        // 它在**全局设置**键表里（`app_global_settings_service.dart`），
+        // 坏一个档位会让整机所有课表的顶栏材质一起回落出厂。
+        json['homeBandGlassMaterial'] is String
+            ? json['homeBandGlassMaterial'] as String
+            : null,
       ),
       homePageTimeColumnBlurEnabled:
           json['homePageTimeColumnBlurEnabled'] as bool? ?? false,

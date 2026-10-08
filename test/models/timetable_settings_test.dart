@@ -1889,11 +1889,15 @@ void main() {
       // d0d2cb1b 钉的边界：非字符串坏值不能抛，否则一个坏键清零整份设置。
       // `courseCardSurfaceStyle` 是 2026-10-08 补上的同族最后一个（材料那批修了两处、
       // 漏了这一处，而它同样坐在 fromJson 的裸 `as String?` 上）。
+      // `homeBandGlassMaterial` 是 2026-10-08 22:xx 补上的**最后一个**同族漏网：
+      // 它紧挨在 courseCardSurfaceStyle 下方 4 行，同样是裸 `as String?`，
+      // 而且它坐在全局设置键表里，坏值清零的是整机所有课表的顶栏材质。
       final settings = TimetableSettings.fromJson(
         jsonWith(const {
           'liquidGlassPreset': 7,
           'courseCardGlassPreset': 7,
           'courseCardSurfaceStyle': 7,
+          'homeBandGlassMaterial': 7,
         }),
       );
 
@@ -1902,6 +1906,11 @@ void main() {
       expect(
         settings.courseCardSurfaceStyle,
         CourseCardSurfaceStyle.solid,
+        reason: '坏值按缺键走，不是抛异常',
+      );
+      expect(
+        settings.homeBandGlassMaterial,
+        TimetableSettings.defaults().homeBandGlassMaterial,
         reason: '坏值按缺键走，不是抛异常',
       );
       expect(settings.semesterWeekCount, isNotNull, reason: '整份设置没有回退');
