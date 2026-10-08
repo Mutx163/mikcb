@@ -3359,6 +3359,17 @@ class TimetableProvider with ChangeNotifier {
         originalCourse.activeWeeks.where((week) => week != sourceWeek).toList()
           ..sort();
 
+    // 判据与本族其它批一致（见 `course_group_repository.dart` 开头）：**内存里被改掉的
+    // 是不是用户刚刚亲口确认的那一条**。用户点的是「删这一周」，而这里连带改掉的
+    // 是——① 课程自身的周次范围与 `sessionNotes`（去掉那一周的记录），
+    // ② `_syncHomeworkTasksWithCourses()` 按新周次重算出来的**作业**。
+    // 作业不是他要删的东西，落盘失败时必须一起退回，否则作业会停在"那周没作业"
+    // 而课程还留着 —— 而下一次任意成功写入（切周、加课、30 秒心跳）就把这份
+    // 从未落库的改动永久坐实。
+    final snapshotCourses = List<Course>.from(_courses);
+    final snapshotTasks = List<CourseTask>.from(_tasks);
+    final snapshotProfiles = List<TimetableProfile>.from(_profiles);
+
     if (remainingWeeks.isEmpty) {
       _courses.removeAt(index);
     } else {
@@ -3376,8 +3387,15 @@ class TimetableProvider with ChangeNotifier {
       );
     }
 
-    await _syncHomeworkTasksWithCourses();
-    await _persistActiveProfileState();
+    try {
+      await _syncHomeworkTasksWithCourses();
+      await _persistActiveProfileState();
+    } catch (_) {
+      _courses = snapshotCourses;
+      _tasks = snapshotTasks;
+      _profiles = snapshotProfiles;
+      rethrow;
+    }
     _currentLiveCourseId = null;
     notifyListeners();
     _analytics.logEventLater(
