@@ -30,8 +30,51 @@ void main() {
   });
 
   test('末节还在当天之内时照常可以追加', () {
-    expect(canAppendSection(dayEndingAt('23:59')), isTrue);
     expect(canAppendSection(dayEndingAt('21:30')), isTrue);
+    // 2026-10-08 审核改判：末节结束 23:59 原先断言 isTrue（"照常可以追加"），
+    // 那与实现矛盾 —— `_buildNextSection` 是「+10 开始 / +45 结束」，需要的是
+    // **55 分钟余量**，而不是「当天还没用完」。于是 23:06~23:59 这一段守卫放行、
+    // 实际造出 23:16-00:01 这种**结束早于开始**的畸形节次（`_minutesToTime` 用
+    // `%1440` 回绕），整张作息从此存不下。这条断言当时守的不是「可以追加」，
+    // 是把 bug 背书成了期望 —— 守卫一收窄它就红，看起来像回归。
+    // 现在钉的是守卫的真实语义：**够不够再放一整节**。
+    expect(canAppendSection(dayEndingAt('23:59')), isFalse);
+    expect(canAppendSection(dayEndingAt('23:30')), isFalse);
+    expect(canAppendSection(dayEndingAt('23:06')), isFalse);
+    expect(canAppendSection(dayEndingAt('22:00')), isTrue, reason: '还剩 2 小时余量');
+    expect(canAppendSection(dayEndingAt('23:05')), isTrue, reason: '正好剩 55 分钟');
+  });
+
+  test('守卫的判据与 _buildNextSection 的实际跨度同源（跨不过午夜就置灰）', () {
+    // 独立复算一遍：守卫说能追加的那些末节，推算出来的下一节确实不跨天；
+    // 守卫说不能的那些，推算出来确实跨天。两条边都要钉，否则改一边另一边
+    // 不会红 —— 而这正是同一个提交里导入侧与界面侧分叉的原因。
+    SectionTime span(String start, String end) =>
+        SectionTime(startTime: start, endTime: end);
+
+    int minutesOf(String hhmm) {
+      final parts = hhmm.split(':');
+      return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    }
+
+    // 与 _buildNextSection 同款：start = lastEnd + 10，end = start + 45。
+    final candidates = <String>['21:30', '22:00', '23:05', '23:06', '23:30', '23:59'];
+    for (final end in candidates) {
+      final sections = [
+        span('08:00', '08:45'),
+        span('09:00', '09:45'),
+        span('19:00', end),
+      ];
+      final start = minutesOf(end) + 10;
+      final finish = start + 45;
+      final crossesMidnight = finish > 24 * 60;
+      expect(
+        canAppendSection(sections),
+        isNot(crossesMidnight),
+        reason: '末节 $end → 下一节 $start~$finish，'
+            '跨午夜=$crossesMidnight，守卫必须与它一致',
+      );
+    }
   });
 
   test('数量上限仍然生效', () {

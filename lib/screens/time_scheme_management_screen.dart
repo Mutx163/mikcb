@@ -1849,7 +1849,24 @@ bool canAppendSection(List<SectionTime> sections, {int maxSections = 20}) {
     sections.last.endTime,
     allowEndOfDay: true,
   );
-  return lastEnd != null && lastEnd.totalMinutes < 24 * 60;
+  if (lastEnd == null) {
+    return false;
+  }
+  // ⚠️ 判据必须与 `_buildNextSection` 的实际跨度**同源**（2026-10-08 审核补）。
+  // 那一节是「末节结束 +10 分钟开始、+45 分钟结束」，所以需要的是
+  // **55 分钟余量**，不是「当天还没用完」。原先只判 `lastEnd < 1440`，于是
+  // 末节结束于 23:06~23:59 这一段（共 54 分钟）守卫放行，而构造出来的是
+  // 23:16-00:01 这种**结束早于开始**的畸形节次（`_minutesToTime` 用 `%1440`
+  // 回绕）—— 整张作息从此存不下（`validateSectionTimes` 拒），且再点还会继续
+  // 追加更多畸形节次。用户看到的正是提交注释里描述过的那个报障，只是换成了
+  // 「我明明只点了一下添加，整个作息改不动了」。
+  //
+  // 322ec75b 修掉的是导入侧那条补节路径（`buildExpandedSections` 有
+  // `nextEndMinutes > minutesPerDay → break`），界面这条同名不同源的判据漏了。
+  const nextSectionStartGapMinutes = 10;
+  const nextSectionSpanMinutes = 45;
+  return lastEnd.totalMinutes + nextSectionStartGapMinutes + nextSectionSpanMinutes <=
+      24 * 60;
 }
 
 String _minutesToTime(int minutes) {
