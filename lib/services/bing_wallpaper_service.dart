@@ -478,7 +478,19 @@ static Future<BingAutoApplyResult> maybeApplyDaily({
       }
     }
     final isToday = _isToday(newest, clock);
-    if (store.lastAutoAppliedDate == newest.dateKey) {
+    // ⚠️ 判据必须带**图源世代号**这一维（与 `wallhaven_wallpaper_service.dart:471`
+    // 同口径）。`lastAutoAppliedDate` 的键只由 `dateKey + 档位 + 尺寸` 构成，
+    // 而 Bing 是按天判定的：当天用 Bing 自动换过一次、下午切到 Wallhaven（它走
+    // `recordWallhaven`，**刻意**不留 autoApplied 标记，所以 Bing 那条 true 记录
+    // 原样留着）、傍晚再切回 Bing —— 此时世代号已经变了，`lastAutoAppliedDate`
+    // 仍是当天那张 Bing 的 dateKey，判据成立 → 直接 alreadyApplied。
+    // 用户视角就是 [BingWallpaperStore.sourceEpoch] 注释里点名要消灭的那句报障：
+    // 「我切了图源但什么都没发生」。
+    //
+    // `recordAutoAppliedEpoch` 此前**只有 Wallhaven 那一个调用点**，Bing 这条路
+    // 从没读过也没写过世代号 —— 于是该承诺只在 Bing→Wallhaven 方向兑现。
+    if (store.lastAutoAppliedDate == newest.dateKey &&
+        store.lastAutoAppliedSourceEpoch == store.sourceEpoch) {
       return const BingAutoApplyResult(BingAutoApplyOutcome.alreadyApplied);
     }
     final resolution = store.resolution;
@@ -514,6 +526,10 @@ static Future<BingAutoApplyResult> maybeApplyDaily({
       // 代码原先没照做。
       targetSize: result.resolution!.downloadTargetSize,
     );
+    // 记下「这次自动换发生在第几代图源」——与 Wallhaven 那侧同一份键
+    // （`wallhaven_wallpaper_service.dart:495`）。不记的话上面那个判据永远不成立，
+    // 当天 Bing 换过一次之后就再也换不动。
+    await store.recordAutoAppliedEpoch(store.sourceEpoch);
     unawaited(_deleteEvictedWallpapers(evicted, inUsePaths: inUsePaths));
     appDebugLog(_tag, 'daily applied date=${newest.dateKey} isToday=$isToday');
     return BingAutoApplyResult(

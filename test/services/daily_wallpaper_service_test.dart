@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -305,6 +305,75 @@ void main() {
       expect(
         (await DailyWallpaperService.applyDaily(now: now)).outcome,
         DailyWallpaperApplyOutcome.appliedToday,
+      );
+    });
+
+    test('⭐ 来回切：Bing 换过 → Wallhaven 换过 → 再切回 Bing，当天要能再换', () async {
+      // 2026-10-08 审核补：本文件上面那两条各自只走了**一个方向**，都从
+      // 「对方没留下 autoApplied 标记」的干净状态起步，恰好绕开了真正坏掉的那条路。
+      //
+      // 坏法：Bing 当天换过一次（台账里那条 autoApplied:true 的 dateKey 留着）
+      // → 切到 Wallhaven 换过一次（走 recordWallhaven，**刻意** autoApplied:false，
+      // 所以 Bing 那条 true 记录原样保留、lastAutoAppliedDate 仍是当天的 dateKey）
+      // → 再切回 Bing。Bing 侧判据原先只比 lastAutoAppliedDate，完全不看世代号，
+      // 于是判据成立 → alreadyApplied → 壁纸纹丝不动，而设置页照常把图源切成 Bing。
+      // 用户视角正是 BingWallpaperStore.sourceEpoch 注释里点名要消灭的那句：
+      // 「我切了图源但什么都没发生」。
+      final store = BingWallpaperStore.instance;
+      await enableAutoApply(store);
+      await store.setDailySource(WallpaperDailySource.bing);
+      BingWallpaperService.testClientFactory =
+          () => clientFor(bingOk: true, wallhavenOk: true);
+      WallhavenWallpaperService.testClientFactory =
+          () => clientFor(bingOk: true, wallhavenOk: true);
+
+      final now = DateTime(2026, 10, 7, 9);
+      expect(
+        (await DailyWallpaperService.applyDaily(now: now)).outcome,
+        DailyWallpaperApplyOutcome.appliedToday,
+      );
+
+      // 中途切到 Wallhaven 换一次 —— 它不会动 Bing 那条 autoApplied 记录。
+      await store.setDailySource(WallpaperDailySource.wallhaven);
+      expect(
+        (await DailyWallpaperService.applyDaily(now: now)).outcome,
+        DailyWallpaperApplyOutcome.appliedToday,
+      );
+      expect(
+        store.lastAutoAppliedDate,
+        isNotNull,
+        reason: '前提：Bing 那天的 autoApplied 记录还在，所以只比日期判不出差别',
+      );
+
+      // 再切回 Bing：世代号已经变了，必须能换。
+      await store.setDailySource(WallpaperDailySource.bing);
+      final back = await DailyWallpaperService.applyDaily(now: now);
+      expect(
+        back.outcome,
+        DailyWallpaperApplyOutcome.appliedToday,
+        reason: '来回切之后切回 Bing 却被判「今天已换过」＝ 我切了图源但什么都没发生',
+      );
+      expect(back.source, WallpaperDailySource.bing);
+    });
+
+    test('切回 Bing 后同一天不反复重下（世代号判据的另一半）', () async {
+      // 上一条只钉「切源后要能换」；这条钉「换完之后又要恢复幂等」——
+      // 否则把判据改成「永不 alreadyApplied」也能让上面那条变绿。
+      final store = BingWallpaperStore.instance;
+      await enableAutoApply(store);
+      await store.setDailySource(WallpaperDailySource.bing);
+      BingWallpaperService.testClientFactory =
+          () => clientFor(bingOk: true, wallhavenOk: true);
+
+      final now = DateTime(2026, 10, 7, 9);
+      expect(
+        (await DailyWallpaperService.applyDaily(now: now)).outcome,
+        DailyWallpaperApplyOutcome.appliedToday,
+      );
+      expect(
+        (await DailyWallpaperService.applyDaily(now: now)).outcome,
+        DailyWallpaperApplyOutcome.alreadyApplied,
+        reason: '没切源时必须幂等，否则每次冷启动都重下一次 5~11MB 的图',
       );
     });
   });
