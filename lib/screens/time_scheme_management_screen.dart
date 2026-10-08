@@ -1745,6 +1745,14 @@ SectionTime _buildNextSection(SectionTime last) {
 ///
 /// 处置是**置灰**而不是弹错：与「已满 20 节」共用同一条既有语义，且仓库里没有
 /// 「没有余地追加」这类文案，为一条 UI 守卫新造六个语言的字符串不划算。
+///
+/// **畸形末节结束时间同样置灰**（2026-10-08 收口）。原先这里放行（`lastEnd == null`
+/// 时返回 true，理由写的是「不猜语义，交给保存时的校验处理」），但那个理由与
+/// `_buildNextSection` 的实际行为矛盾：它拿同一个解析器把畸形串兜底成 `00:00`，
+/// 照样凭空造出一节 00:10-00:55 —— 与「末节 24:00」那条**一模一样的幽灵课**，
+/// 而这张作息本来就已经因为那处畸形存不下（`validateSectionTimes` 抛
+/// `invalid_time_format`）。所以「不猜语义」在这里的唯一正确落点是**不给追加**：
+/// 按钮置灰，用户先去把那一节改成合法时间。两端判据必须同源，否则守了个寂寞。
 bool canAppendSection(List<SectionTime> sections, {int maxSections = 20}) {
   if (sections.length >= maxSections || sections.isEmpty) {
     return false;
@@ -1753,8 +1761,7 @@ bool canAppendSection(List<SectionTime> sections, {int maxSections = 20}) {
     sections.last.endTime,
     allowEndOfDay: true,
   );
-  // 畸形存量值不猜语义：只有确实读到「当天结束」才禁掉追加。
-  return lastEnd == null || lastEnd.totalMinutes < 24 * 60;
+  return lastEnd != null && lastEnd.totalMinutes < 24 * 60;
 }
 
 String _minutesToTime(int minutes) {

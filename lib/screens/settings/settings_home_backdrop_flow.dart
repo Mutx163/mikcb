@@ -1134,8 +1134,13 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     if (candidates.isEmpty) {
       return;
     }
+    // 引用集合必须与 [_inUseWallpaperPaths] 同口径（**所有课表**当前壁纸 + 草稿 +
+    // 历史 + 图库台账）。原先这里手抄了一份、漏掉「别的课表正在用的那张」：
+    // 历史是全局的、壁纸每个课表各自一张，同一张图完全可能既是 A 课表的在用图、
+    // 又是本次交互里的候选 —— 少算这一路，切一次壁纸就把另一份课表的首页图片
+    // 删掉，那份课表当场裂图（判据的完整论证见 :250-259 与 :225-227）。
     final referenced = <String>{
-      ?resolveHomePageBackdropImagePath(backdropDraft),
+      ..._inUseWallpaperPaths(),
       for (final entry in _wallpaperHistory) entry.key,
       ...BingWallpaperStore.instance.downloadedPaths,
     };
@@ -1143,11 +1148,13 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
       if (path.isEmpty || referenced.contains(path)) {
         continue;
       }
-      final file = File(path);
-      if (!file.existsSync()) {
-        continue;
-      }
-      await file.delete();
+      // 走受管删除的双保险（必须在壁纸目录内、文件名带前缀），不用裸
+      // `File.delete()`：这一路是批量清理，判错一次就是用户的图片真没了。
+      await deleteManagedImage(
+        path,
+        directoryName: kHomePageWallpaperDirectoryName,
+        filePrefix: kHomePageWallpaperFilePrefix,
+      );
       _evictBackdropCaches(path);
     }
   }

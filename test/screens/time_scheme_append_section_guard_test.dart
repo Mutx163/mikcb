@@ -43,10 +43,16 @@ void main() {
     expect(canAppendSection(twenty.take(19).toList()), isTrue);
   });
 
-  test('畸形存量值不猜语义（照旧允许追加，交给保存时的校验处理）', () {
-    expect(canAppendSection(dayEndingAt('25:00')), isTrue);
-    expect(canAppendSection(dayEndingAt('')), isTrue);
-    expect(canAppendSection(dayEndingAt('上午8点')), isTrue);
+  test('畸形存量值不猜语义：不许追加，否则造出的正是同一节幽灵课', () {
+    // 2026-10-08 改判（原断言是 isTrue，"照旧允许追加，交给保存时的校验处理"）。
+    // 那个理由与实现矛盾：`_buildNextSection` 用的就是同一个不带 `allowEndOfDay`
+    // 的解析器，畸形串照样被兜底成 00:00 → 追加出 00:10-00:55 一节，
+    // 与「末节 24:00」那条是**一模一样的幽灵课**；而这张作息本来就已经因为那处
+    // 畸形存不下（`validateSectionTimes` 抛 invalid_time_format）。
+    // 原来这条断言守的不是「不猜语义」，是把坏行为钉成了期望。
+    expect(canAppendSection(dayEndingAt('25:00')), isFalse);
+    expect(canAppendSection(dayEndingAt('')), isFalse);
+    expect(canAppendSection(dayEndingAt('上午8点')), isFalse);
   });
 
   test('上限可配（快速生成用的 30 节口径不会与这里分叉）', () {
