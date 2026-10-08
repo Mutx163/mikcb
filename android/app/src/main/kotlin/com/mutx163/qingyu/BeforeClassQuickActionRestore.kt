@@ -76,10 +76,29 @@ internal object BeforeClassQuickActionRestore {
 
     /**
      * 应用失败时回收刚写下的"已生效"标记：另一个动作若仍生效，pending 与它保存的
-     * 原始状态必须留着（下课还得恢复它）；两个标记都撤掉了才整份清 pending。
+     * 原始状态必须留着（下课还得恢复它）；两个标记都撤掉了才清掉 pending 记账。
+     *
+     * ⚠️ 这里**不能**走 [clearPending]：它是 `prefs.edit().clear()`，会把
+     * `KEY_SAVED_RINGER_MODE` / `KEY_SAVED_DND_FILTER`（**用户课前的**原始铃声与
+     * 勿扰档）连同去重用的 `KEY_LAST_AUTO_TRIGGER_MILLIS` 一起抹掉。而"回读校验
+     * 判失败"只是个启发式：框架在缺权限时确实会静默丢弃，但也可能读到过期值 ——
+     * 一旦把"其实已经生效"误判成失败，整份清空之后下课就再也恢复不回用户的原始状态，
+     * 手机就那么一直静音着。所以只清 pending 这一族的记账。
      */
     private fun abandonAppliedFlag(context: Context, key: String) {
-        clearAppliedFlagAndMaybeClearPending(context, key)
+        val prefs = prefs(context)
+        if (!prefs.getBoolean(KEY_PENDING, false)) {
+            return
+        }
+        prefs.edit().putBoolean(key, false).apply()
+        if (!prefs.getBoolean(KEY_APPLIED_SILENT, false) &&
+            !prefs.getBoolean(KEY_APPLIED_DND, false)
+        ) {
+            prefs.edit()
+                .remove(KEY_PENDING)
+                .remove(KEY_APPLIED_ACTION)
+                .apply()
+        }
     }
 
     /** 写入成功后回读系统实际呈现的值，留给下课恢复做一致性校验。 */
