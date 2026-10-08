@@ -233,7 +233,20 @@ class _TimeSchemeManagementScreenState
         await _applyScheme(context, scheme);
         break;
       case 'duplicate':
-        await context.read<TimetableProvider>().duplicateTimeScheme(scheme.id);
+        // 原先是裸 await + 无条件弹「已复制」：落盘失败时模板没多出来，界面却
+        // 报复制成功，异常还落进 zone 成为未处理异步错误。
+        try {
+          await context.read<TimetableProvider>().duplicateTimeScheme(scheme.id);
+        } catch (_) {
+          if (context.mounted) {
+            showAppToast(
+              context,
+              message: AppLocalizations.of(context)!.saveFailed,
+              kind: AppToastKind.error,
+            );
+          }
+          break;
+        }
         if (context.mounted) {
           showAppToast(
             context,
@@ -593,7 +606,21 @@ class _TimeSchemeManagementScreenState
       return;
     }
 
-    await context.read<TimetableProvider>().renameTimeScheme(scheme.id, name);
+    // 落盘失败回滚并 rethrow（`time_scheme_repository.dart` 形状：作息是先落盘的
+    // 那一份，不退回会留下「盘上已是新名、内存还是旧名」的一半成功状态）。
+    try {
+      await context.read<TimetableProvider>().renameTimeScheme(scheme.id, name);
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!context.mounted) {
       return;
     }

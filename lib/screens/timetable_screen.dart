@@ -9221,15 +9221,31 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
 
-    switch (selected) {
-      case CourseSuspendMode.thisWeek:
-        await provider.toggleCourseSuspension(course.id, week);
-      case CourseSuspendMode.allWeeks:
-        if (hasAnySuspended) {
-          await provider.unsuspendAllWeeks(course.id);
-        } else {
-          await provider.suspendAllWeeks(course.id);
-        }
+    // 停课/复课一族落盘失败会**回滚并 rethrow**（`_toggleCourseSuspensionImpl` 的
+    // 快照 + catch + rethrow，注释里写明「不退的话心跳会把这次停课坐实」）。
+    // 不接就是零提示 + 未处理异步错误，而这几条正是"课自己变灰、再也回不来"。
+    final l10nSuspend = AppLocalizations.of(context);
+    try {
+      switch (selected) {
+        case CourseSuspendMode.thisWeek:
+          await provider.toggleCourseSuspension(course.id, week);
+        case CourseSuspendMode.allWeeks:
+          if (hasAnySuspended) {
+            await provider.unsuspendAllWeeks(course.id);
+          } else {
+            await provider.suspendAllWeeks(course.id);
+          }
+      }
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10nSuspend?.saveFailed ?? '',
+        kind: AppToastKind.error,
+      );
+      return;
     }
   }
 
@@ -9323,6 +9339,20 @@ class _TimetableScreenState extends State<TimetableScreen>
         message: error.message != null
             ? localizeServiceMessage(l10n, error.message!.toString())
             : AppLocalizations.of(context)!.deleteFailed,
+        kind: AppToastKind.error,
+      );
+    } catch (_) {
+      // ⚠️ 落盘失败抛的是 StateError（storage_service.dart 的
+      // `throw StateError('storage_write_failed:…')`），**不是** ArgumentError，
+      // 所以上面那个 on 子句根本接不到 —— 异常落进 zone 成为未处理异步错误，
+      // 而 `deleteCourseOccurrence` 失败时**不回滚**（内存里那一次已经被摘掉），
+      // 下一次任意成功写入就把"这周没上过课"坐实。用户零提示。
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.deleteFailed,
         kind: AppToastKind.error,
       );
     }
