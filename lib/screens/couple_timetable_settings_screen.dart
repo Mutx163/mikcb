@@ -456,6 +456,27 @@ class _CoupleTimetableSettingsScreenState
     }
   }
 
+  // +/- 按钮原本是 `() => provider.updatePartnerWeekOffset(...)`，返回的 Future
+  // 直接丢弃：落盘失败 rethrow 出去没有任何人接，既没有提示也不会回滚显示。
+  Future<void> _shiftPartnerWeekOffset(
+    BuildContext context,
+    TimetableProvider provider,
+    int nextOffset,
+  ) async {
+    try {
+      await provider.updatePartnerWeekOffset(nextOffset);
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+    }
+  }
+
   Widget _buildCoupleColorRow(
     BuildContext context, {
     required String label,
@@ -514,7 +535,7 @@ class _CoupleTimetableSettingsScreenState
               icon: Icons.remove_rounded,
               enabled: canDecrement,
               onPressed: canDecrement
-                  ? () => provider.updatePartnerWeekOffset(weekOffset - 1)
+                  ? () => _shiftPartnerWeekOffset(context, provider, weekOffset - 1)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -530,7 +551,7 @@ class _CoupleTimetableSettingsScreenState
               icon: Icons.add_rounded,
               enabled: canIncrement,
               onPressed: canIncrement
-                  ? () => provider.updatePartnerWeekOffset(weekOffset + 1)
+                  ? () => _shiftPartnerWeekOffset(context, provider, weekOffset + 1)
                   : null,
             ),
           ],

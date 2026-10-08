@@ -776,17 +776,31 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
       enabled: _enabled,
     );
 
-    if (existing == null) {
-      await provider.addScheduleItem(item);
-    } else if (_isOccurrenceEditing && applyToAll != true) {
-      await provider.updateScheduleItemOccurrence(
-        existing.id,
-        widget.occurrenceDate!,
-        item,
-        dateWasExplicitlyEdited: _dateWasExplicitlyEdited,
+    // 与下面两条删除路径同因：provider 落盘失败会回滚并 rethrow，
+    // 不接就是零提示 + 未处理异步错误，而这里还会**照常关页并报「已保存」**。
+    try {
+      if (existing == null) {
+        await provider.addScheduleItem(item);
+      } else if (_isOccurrenceEditing && applyToAll != true) {
+        await provider.updateScheduleItemOccurrence(
+          existing.id,
+          widget.occurrenceDate!,
+          item,
+          dateWasExplicitlyEdited: _dateWasExplicitlyEdited,
+        );
+      } else {
+        await provider.updateScheduleItem(item);
+      }
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.saveFailed,
+        kind: AppToastKind.error,
       );
-    } else {
-      await provider.updateScheduleItem(item);
+      return;
     }
     if (!mounted) {
       return;

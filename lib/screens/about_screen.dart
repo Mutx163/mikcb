@@ -1087,9 +1087,21 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
   Future<void> _persistSystemDownloaderPreference(bool value) async {
     final provider = context.read<TimetableProvider>();
-    await provider.updateTimetableSettings(
-      provider.settings.copyWith(appUpdateUseSystemDownloader: value),
-    );
+    try {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(appUpdateUseSystemDownloader: value),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
   }
 
   void _refreshUpdate() {
@@ -1120,9 +1132,22 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
   Future<void> _updateDownloadSource(AppUpdateDownloadSource source) async {
     final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(appUpdateDownloadSource: source.value),
-    );
+    String? message;
+    try {
+      message = await provider.updateTimetableSettings(
+        provider.settings.copyWith(appUpdateDownloadSource: source.value),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!mounted) {
       return;
     }
@@ -1141,9 +1166,22 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
   Future<void> _updateMirrorPreset(AppUpdateMirrorPreset preset) async {
     final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(appUpdateMirrorPreset: preset.value),
-    );
+    String? message;
+    try {
+      message = await provider.updateTimetableSettings(
+        provider.settings.copyWith(appUpdateMirrorPreset: preset.value),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!mounted) {
       return;
     }
@@ -1872,9 +1910,20 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
 
   Future<void> _updateDownloadChannel(AppUpdateDownloadChannel channel) async {
     final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(appUpdateDownloadChannel: channel.value),
-    );
+    String? message;
+    try {
+      message = await provider.updateTimetableSettings(
+        provider.settings.copyWith(appUpdateDownloadChannel: channel.value),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!mounted) return;
     if (message != null) {
       showAppToast(
@@ -1886,9 +1935,20 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
 
   Future<void> _updatePromptPreference(bool value) async {
     final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(appUpdatePromptEnabled: value),
-    );
+    String? message;
+    try {
+      message = await provider.updateTimetableSettings(
+        provider.settings.copyWith(appUpdatePromptEnabled: value),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!mounted) return;
     if (message != null) {
       showAppToast(
@@ -1900,9 +1960,20 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
 
   Future<void> _updatePrereleasePreference(bool value) async {
     final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(appUpdateIncludePrerelease: value),
-    );
+    String? message;
+    try {
+      message = await provider.updateTimetableSettings(
+        provider.settings.copyWith(appUpdateIncludePrerelease: value),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!mounted) return;
     if (message != null) {
       showAppToast(
@@ -1917,9 +1988,20 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     TimetableSettings settings,
   ) async {
     final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(appUpdateMirrorPreset: preset.value),
-    );
+    String? message;
+    try {
+      message = await provider.updateTimetableSettings(
+        provider.settings.copyWith(appUpdateMirrorPreset: preset.value),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!mounted) return;
     if (message != null) {
       showAppToast(
@@ -1991,9 +2073,19 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
       });
       if (recommended != null) {
         final provider = context.read<TimetableProvider>();
-        await provider.updateTimetableSettings(
-          provider.settings.copyWith(appUpdateMirrorPreset: recommended.value),
-        );
+        try {
+          await provider.updateTimetableSettings(
+            provider.settings.copyWith(appUpdateMirrorPreset: recommended.value),
+          );
+        } catch (_) {
+          if (!mounted) return;
+          showAppToast(
+            context,
+            message: AppLocalizations.of(context)!.saveFailed,
+            kind: AppToastKind.error,
+          );
+          return;
+        }
       }
     } finally {
       if (mounted) setState(() => _isProbingMirrors = false);
@@ -2016,9 +2108,19 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     );
     if (result == null || !mounted) return;
     final provider = context.read<TimetableProvider>();
-    await provider.updateTimetableSettings(
-      provider.settings.copyWith(appUpdateMirrorUrlPrefix: result),
-    );
+    try {
+      await provider.updateTimetableSettings(
+        provider.settings.copyWith(appUpdateMirrorUrlPrefix: result),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
   }
 }
 

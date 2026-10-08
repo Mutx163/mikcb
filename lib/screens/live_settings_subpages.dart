@@ -290,9 +290,20 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
     final provider = context.read<TimetableProvider>();
     // 草稿快照可能比真源旧：节次表与激活作息一律回灌，避免把换季批量套用的
     // 结果顺手回滚（见 TimetableSettings.withLiveScheduleFieldsFrom）。
-    final message = await provider.updateTimetableSettings(
-      next.withLiveScheduleFieldsFrom(provider.settings),
-    );
+    String? message;
+    try {
+      message = await provider.updateTimetableSettings(
+        next.withLiveScheduleFieldsFrom(provider.settings),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!mounted) return;
     if (message != null) {
       showAppToast(
@@ -977,9 +988,20 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final provider = context.read<TimetableProvider>();
     // 草稿快照可能比真源旧：节次表与激活作息一律回灌，避免把换季批量套用的
     // 结果顺手回滚（见 TimetableSettings.withLiveScheduleFieldsFrom）。
-    final message = await provider.updateTimetableSettings(
-      next.withLiveScheduleFieldsFrom(provider.settings),
-    );
+    String? message;
+    try {
+      message = await provider.updateTimetableSettings(
+        next.withLiveScheduleFieldsFrom(provider.settings),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!mounted) return;
     if (message != null) {
       showAppToast(
@@ -1184,9 +1206,20 @@ class _LiveKeepAliveSettingsScreenState
                 value: _draft.liveHideFromRecents,
                 onChanged: (value) async {
                   final provider = context.read<TimetableProvider>();
-                  final message = await provider.updateTimetableSettings(
-                    _draft.copyWith(liveHideFromRecents: value),
-                  );
+                  String? message;
+                  try {
+                    message = await provider.updateTimetableSettings(
+                      _draft.copyWith(liveHideFromRecents: value),
+                    );
+                  } catch (_) {
+                    if (!context.mounted) return;
+                    showAppToast(
+                      context,
+                      message: l10n.saveFailed,
+                      kind: AppToastKind.error,
+                    );
+                    return;
+                  }
                   if (!context.mounted) return;
                   if (message != null) {
                     showAppToast(
