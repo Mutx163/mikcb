@@ -113,19 +113,21 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
                 pendingRemaining = layout.second
                 layout.first
             }
-            // 三行全 GONE、占位文案又落进 `else -> ""` 的组合 = 一张只剩标题与周号的
-            // 空白卡。这条路是上面那道共享门禁引出来的：考试进行中时
-            // `isShowingTomorrowCourses` 否决「切明日课表」，而
-            // `snapshot.state == "completed"` 又让 rows 为空 —— 于是既没有今日课、
-            // 也不换明天，正文一个控件都不显示。其余 6 张今日卡在这个状态下都有
-            // 考试兜底（`TodayCompactWidgetProvider.kt:106-119`），迷你列表漏了。
+            // 三行全 GONE、占位文案又落进空串的组合 = 一张只剩标题与周号的空白卡。
+            // 上一轮只补了「考试进行中 + 今日课上完」那一条，`else` 仍可能落空；
+            // 这里按同族其他今日卡的阶梯补齐（`TodayCompactWidgetProvider.kt:87-104`
+            // 的 holiday / no_course / completed 三档都是「考试文案 ?: 一句兜底」）：
+            // 有考试就顶考试，没考试也一定给出一句话 —— 任何状态都不许渲染成空白。
             val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
             val emptyText = when {
                 rows.isNotEmpty() -> ""
                 snapshot.state == "completed" && snapshot.tomorrowCourses.isEmpty() ->
-                    context.getString(R.string.widget_today_ended)
-                snapshot.state == "no_course" -> context.getString(R.string.widget_no_course_today)
-                else -> examText.orEmpty()
+                    examText ?: context.getString(R.string.widget_today_ended)
+                snapshot.state == "no_course" ->
+                    examText ?: context.getString(R.string.widget_no_course_today)
+                snapshot.state == "holiday" ->
+                    examText ?: context.getString(R.string.widget_rest_well)
+                else -> examText ?: context.getString(R.string.widget_take_a_break)
             }
             views.setViewVisibility(
                 R.id.widget_mini_empty,
