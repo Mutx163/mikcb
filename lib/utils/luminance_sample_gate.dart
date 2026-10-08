@@ -16,7 +16,7 @@
 /// 一个能落钉子的地方 —— 三个调用点都在 widget 里，没有合规的单测落点。
 class LuminanceSampleGate {
   LuminanceSampleGate({this.maxRetries = 3})
-    : assert(maxRetries > 0, 'maxRetries 至少为 1，否则一次都不会采');
+    : assert(maxRetries > 0, 'maxRetries must be >= 1, or nothing is ever sampled');
 
   /// 同一份 key 最多尝试几次（含第一次）。
   final int maxRetries;
