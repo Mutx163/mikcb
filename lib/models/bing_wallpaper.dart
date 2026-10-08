@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../utils/home_page_background.dart';
+import '../utils/wallpaper_file_name.dart';
 
 /// resize 接口的**取图源**后缀：`_UHD.jpg`。
 ///
@@ -252,7 +253,13 @@ class BingWallpaperItem {
     final size = target ?? resolution.downloadTargetSize;
     final base = WallpaperTargetSize(resolution.width, resolution.height);
     final suffix = size == base ? '' : '_${size.width}x${size.height}';
-    return 'wallpaper_bing_${dateKey}_${resolution.storageKey}$suffix.jpg';
+    // ⚠️ `dateKey` 来自服务端响应 / 同步下来的图库台账，落盘时靠字符串拼接
+    // （`managed_image_storage.dart`），必须先净化 ——
+    // `'../../x'` 这类值能把文件写到壁纸目录之外（2026-10-08 实测）。
+    // 口径见 `safeWallpaperNameSegment`。
+    return 'wallpaper_bing_'
+        '${safeWallpaperNameSegment(dateKey, fallback: 'day')}'
+        '_${resolution.storageKey}$suffix.jpg';
   }
 
   /// 非法输入返回 null 而不是抛错：接口 JSON 可能被 Bing 改字段或手改存档。

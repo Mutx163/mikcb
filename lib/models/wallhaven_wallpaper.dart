@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../utils/home_page_background.dart';
+import '../utils/wallpaper_file_name.dart';
 
 /// Wallhaven 免费图源的一条竖版壁纸。
 ///
@@ -83,7 +84,13 @@ class WallhavenWallpaperItem {
   /// 判定「这张图归我管」，换个开头就会变成永不回收的孤儿文件。
   ///
   /// 用 [id] 而不是时间戳，于是同一天重复下载直接覆盖，不攒重复图。
-  String get fileName => 'wallpaper_wh_$id.jpg';
+  ///
+  /// ⚠️ `id` 是**服务端返回的**（也可能来自同步下来的图库台账），落盘时靠
+  /// 字符串拼接（`managed_image_storage.dart`），所以必须先净化 ——
+  /// `id = '/../../x'` 在 Windows 上能把文件写到壁纸目录之外（2026-10-08 实测）。
+  /// 口径见 `safeWallpaperNameSegment`。
+  String get fileName =>
+      'wallpaper_wh_${safeWallpaperNameSegment(id, fallback: 'wh')}.jpg';
 
   /// 非法输入返回 null 而不是抛错：接口 JSON 可能被改字段或存档被手改。
   static WallhavenWallpaperItem? fromJson(Object? raw) {
