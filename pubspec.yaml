@@ -44,7 +44,7 @@ dependencies:
   flutter_markdown: ^0.7.7+1
   flutter_secure_storage: ^10.3.1
   webview_flutter: 4.14.1
-  webview_flutter_android: 4.13.0
+  webview_flutter_android: 4.14.1
   azlistview: ^2.0.0
   # 学校列表自建字母条要直接驱动滚动落点（AzListView 内置跳转对齐到视口
   # 顶部，会被悬浮顶栏盖住），此前是 azlistview 的传递依赖，这里转正。
