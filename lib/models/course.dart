@@ -286,20 +286,25 @@ class Course {
     // 局域网那条路早就改成了 `(json[k] as String?)?.trim() ?? ''`
     // （`lan_edit_provider_host.dart:522-525`），两个解析器此前并不一致。
     //
-    // 口径：`null` / 类型不对 → 走 [fallback]（必填字段给空串），
-    // 而不是让一条脏数据带走整份备份。取证号 `id` 同样给空串：
-    // 空 id 的后续风险由写入侧（LAN 的 `_rejectIdConflict`）负责拦。
-    String readString(String key, {String fallback = ''}) {
+    // ⚠️ 但**不能一律放宽**：本仓有一条「坏条目留档、不写回」的机制
+    // （`storage_service.dart` 的 `timetable_profiles_unparsed_items` +
+    // `storage_service_profiles_integrity_test.dart:104` 钉着）——
+    // 它靠「`Course.fromJson` 对结构性缺失抛错」把可疑记录留档，等解析器修好后
+    // 还能救回来。若 `teacher` 缺失也收下，这条课就会带着空教师名混进课表、
+    // 且**不留任何档**，用户永远不知道自己丢过东西。
+    //
+    // 所以分两类：
+    // - **必填**（id / name / teacher / location / startTime / endTime）：
+    //   缺失 → 抛 `FormatException`（让留档机制接住）；类型不对但有值
+    //   （`name: 123` 这类导入器手滑）→ 收下并 toString，不抛。
+    // - **可选**（shortName / color / textColor / note / description /
+    //   courseNature / timeSchemeIdOverride）：缺失或类型不对都收下、退回默认。
+    String readRequired(String key) {
       final raw = json[key];
-      if (raw is String) {
-        return raw;
-      }
       if (raw == null) {
-        return fallback;
+        throw FormatException('Course.$key is missing');
       }
-      // 数字/布尔被写成字符串是常见的导入器行为（如 `name: 123`），
-      // 这里收下它而不是让整份备份失败。
-      return raw.toString();
+      return raw is String ? raw : raw.toString();
     }
 
     String? readStringOrNull(String key) {
@@ -320,16 +325,16 @@ class Course {
     );
 
     return Course(
-      id: readString('id'),
-      name: readString('name'),
+      id: readRequired('id'),
+      name: readRequired('name'),
       shortName: readStringOrNull('shortName'),
-      teacher: readString('teacher'),
-      location: readString('location'),
+      teacher: readRequired('teacher'),
+      location: readRequired('location'),
       dayOfWeek: normalizeDayOfWeek(readInt('dayOfWeek', fallback: 1)),
       startSection: sections.startSection,
       endSection: sections.endSection,
-      startTime: readString('startTime'),
-      endTime: readString('endTime'),
+      startTime: readRequired('startTime'),
+      endTime: readRequired('endTime'),
       hasCustomTime: json['hasCustomTime'] as bool? ?? false,
       color: readStringOrNull('color') ?? '#2196F3',
       textColor: readStringOrNull('textColor'),

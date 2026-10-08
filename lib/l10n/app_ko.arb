@@ -5658,6 +5658,14 @@
       }
     }
   },
+  "importPartialSkippedSuffix": ", 그중 {count}건은 형식이 손상되어 건너뛰었습니다",
+  "@importPartialSkippedSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "locationTimeMatchEmpty": "No place groups yet",
   "locationTimeMatchCreateGroup": "New place group",
   "locationTimeMatchEditGroup": "Edit place group",

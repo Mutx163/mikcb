@@ -89,12 +89,16 @@ class TimetableProfile {
         : TimetableSettings.defaults();
 
     return TimetableProfile(
-      // 2026-10-08：`id` 原先是 `json['id'] as String` 裸转换，而档案来自
-      // 恢复的备份 / 云同步的 WebDAV 文件 —— 数字型 id 会抛 TypeError，
-      // 整份课表列表直接加载不出来（本仓早就知道这件事，见
-      // `data_transfer_service.dart:311` 的注释）。类型不对就退回空 id：
-      // 空 id 的档案会被上层按「未保存」处理，不会去覆盖别的课表。
-      id: json['id'] is String ? json['id'] as String : '',
+      // ⚠️ `id` 必须是真字符串，**缺失/类型不对一律拒收**（抛 FormatException）——
+      // 这一点刻意保持原样，不要为了「宽松解析」改成空 id：
+      // 一份课表 = 课 + 考试 + 作业 + 设置，静默丢掉整档比拒收整份危险得多
+      // （`full_backup_profile_salvage_test.dart:72` 钉着这条）。
+      // 本次只把原来的裸 `as String` 换成显式类型判定，让「数字型 id」
+      // 与「id 缺失」走**同一条**拒收路径，TypeError → FormatException。
+      id: switch (json['id']) {
+        final String value => value,
+        _ => throw const FormatException('profile_id_invalid'),
+      },
       name: json['name'] is String ? json['name'] as String : '未命名课表',
       courses: _parseListLenient(
         json['courses'],

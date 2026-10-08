@@ -5658,6 +5658,14 @@
       }
     }
   },
+  "importPartialSkippedSuffix": "、うち {count} 件は形式が壊れていたためスキップされました",
+  "@importPartialSkippedSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "locationTimeMatchEmpty": "No place groups yet",
   "locationTimeMatchCreateGroup": "New place group",
   "locationTimeMatchEditGroup": "Edit place group",

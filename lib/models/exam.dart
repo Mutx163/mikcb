@@ -160,29 +160,59 @@ class Exam {
 
   factory Exam.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now();
+    // 2026-10-08：与 `Course.fromJson` / `TimetableProfile.fromJson` 同款口径。
+    // 考试来自备份恢复与云同步（外部数据），原先十处 `as String` 裸转换，
+    // 任一字段类型不对就抛 TypeError，而恢复路径会把「解析结果为空」
+    // 当成整份文件全损 → 一条坏考试让整份备份恢复不出来。
+    //
+    // ⚠️ 同 `Course`：**必填字段缺失要抛**，好让「坏条目留档、不写回」那条
+    // 自愈机制接住（`storage_service_profiles_integrity_test.dart:104`）；
+    // 只有「类型不对但有值」（`name: 123` 这类导入器手滑）才收下。
+    String readRequired(String key) {
+      final raw = json[key];
+      if (raw == null) {
+        throw FormatException('Exam.$key is missing');
+      }
+      return raw is String ? raw : raw.toString();
+    }
+
+    String readStr(String key, {String fallback = ''}) {
+      final raw = json[key];
+      if (raw is String) {
+        return raw;
+      }
+      return raw == null ? fallback : raw.toString();
+    }
+
+    String? readStrOrNull(String key) {
+      final raw = json[key];
+      if (raw == null) {
+        return null;
+      }
+      return raw is String ? raw : raw.toString();
+    }
+
     return Exam(
-      id: json['id'] as String,
-      courseId: json['courseId'] as String,
-      name: json['name'] as String? ?? '',
-      dateTime: DateTime.tryParse(json['dateTime'] as String? ?? '') ?? now,
-      startTime: normalizeTimeOfDay(
-        json['startTime'] as String?,
-      ),
+      id: readRequired('id'),
+      courseId: readRequired('courseId'),
+      name: readStr('name'),
+      dateTime: DateTime.tryParse(readStr('dateTime')) ?? now,
+      startTime: normalizeTimeOfDay(readStrOrNull('startTime')),
       endTime: normalizeTimeOfDay(
-        json['endTime'] as String?,
+        readStrOrNull('endTime'),
         fallback: '10:30',
       ),
-      location: json['location'] as String?,
-      seatNumber: json['seatNumber'] as String?,
-      note: json['note'] as String?,
+      location: readStrOrNull('location'),
+      seatNumber: readStrOrNull('seatNumber'),
+      note: readStrOrNull('note'),
       reminderPreset: ExamReminderPresetX.fromValue(
-        json['reminderPreset'] as String?,
+        readStrOrNull('reminderPreset'),
       ),
       customReminderMinutes: normalizeReminderOffsets(
         json['customReminderMinutes'],
       ),
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? now,
-      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? now,
+      createdAt: DateTime.tryParse(readStr('createdAt')) ?? now,
+      updatedAt: DateTime.tryParse(readStr('updatedAt')) ?? now,
     );
   }
 

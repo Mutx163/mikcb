@@ -5991,6 +5991,14 @@
       }
     }
   },
+  "importPartialSkippedSuffix": "，其中 {count} 条格式损坏已跳过",
+  "@importPartialSkippedSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "locationTimeMatchEmpty": "还没有地点组",
   "locationTimeMatchCreateGroup": "新建地点组",
   "locationTimeMatchEditGroup": "编辑地点组",

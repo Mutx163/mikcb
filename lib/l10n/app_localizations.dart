@@ -2720,6 +2720,17 @@ abstract class AppLocalizations {
   /// **'导入失败，请确认文件有效'**
   String get importFailedInvalidFile;
 
+  /// 导入**部分成功**时追加在成功提示后面的说明（2026-10-08）。
+  ///
+  /// 为什么需要它：`data_transfer_service.dart` 的 `_parseListWithTotalLossGuard`
+  /// 只在「原始非空 + 解析全空」时抛，中间那档（100 门里坏 40 门）会安静地
+  /// 导入 60 门并报「导入成功」。逐条跳过是对的（能救回多少救多少），
+  /// 但不能一声不响 —— 尤其原文件已被覆盖、用户没有第二次机会核对。
+  ///
+  /// In zh, this message translates to:
+  /// **'，其中 {count} 条格式损坏已跳过'**
+  String importPartialSkippedSuffix(int count);
+
   /// No description provided for @welcomeTitle.
   ///
   /// In zh, this message translates to:

@@ -1457,6 +1457,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importFailedInvalidFile => 'インポート失敗、ファイルが有効か確認してください';
 
   @override
+  String importPartialSkippedSuffix(int count) =>
+      '、うち $count 件は形式が壊れていたためスキップされました';
+
+  @override
   String get welcomeTitle => 'ようこそ';
 
   @override

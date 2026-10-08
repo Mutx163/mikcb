@@ -1422,6 +1422,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importFailedInvalidFile => '导入失败，请确认文件有效';
 
   @override
+  String importPartialSkippedSuffix(int count) => '，其中 $count 条格式损坏已跳过';
+
+  @override
   String get welcomeTitle => '欢迎使用';
 
   @override
@@ -12635,6 +12638,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get importFailedInvalidFile => '匯入失敗，請確認檔案有效';
+
+  @override
+  String importPartialSkippedSuffix(int count) => '，其中 $count 條格式損壞已跳過';
 
   @override
   String get welcomeTitle => '歡迎使用';
@@ -23890,6 +23896,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get importFailedInvalidFile => '匯入失敗，請確認檔案有效';
+
+  @override
+  String importPartialSkippedSuffix(int count) => '，其中 $count 條格式損壞已跳過';
 
   @override
   String get welcomeTitle => '歡迎使用';

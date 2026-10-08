@@ -1462,6 +1462,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importFailedInvalidFile => '가져오기 실패, 파일이 유효한지 확인하세요';
 
   @override
+  String importPartialSkippedSuffix(int count) =>
+      ', 그중 $count건은 형식이 손상되어 건너뛰었습니다';
+
+  @override
   String get welcomeTitle => '환영합니다';
 
   @override

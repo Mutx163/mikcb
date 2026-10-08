@@ -5951,6 +5951,14 @@
       }
     }
   },
+  "importPartialSkippedSuffix": ", {count} entries were corrupted and skipped",
+  "@importPartialSkippedSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "locationTimeMatchEmpty": "No place groups yet",
   "locationTimeMatchCreateGroup": "New place group",
   "locationTimeMatchEditGroup": "Edit place group",

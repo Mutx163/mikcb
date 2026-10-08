@@ -438,6 +438,13 @@ Future<String?> _timetableImportAppDataBackup(
     }
     final backup = host._dataTransferService.parseBackupJson(content);
     snapshot = _FullBackupRestoreSnapshot(host);
+    // 2026-10-08：`parseBackupJson` 现在会带回「跳过了多少条」（部分损坏）。
+    // 原先这一档被静默吞掉：100 门课里坏 40 门会安静地导入 60 门、写盘、
+    // 界面报「导入成功」，用户下次打开才发现少了几十节。
+    // 这里把它挂到 host 上，由调用方（`data_transfer_screen.dart`）在成功提示里
+    // 如实追加「跳过了 N 条」—— 覆盖写入照常发生（能救回 60 门比整份拒收友好），
+    // 但不再谎报。
+    host._lastImportDroppedCounts = Map<String, int>.of(backup.droppedCounts);
     final resolvedSettings = await host._resolveSettingsAgainstTimeSchemes(
       backup.settings,
       fallbackName: '${host.activeProfile?.name ?? "导入课表"} 时间',

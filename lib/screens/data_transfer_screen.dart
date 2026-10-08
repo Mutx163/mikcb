@@ -641,14 +641,22 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       provider.courses,
       sectionCount: provider.settings.sectionCount,
     );
+    // 2026-10-08：导入过程里被跳过的条目（部分损坏）。原先这一档完全静默 ——
+    // `parseBackupJson` 只在「全部解析失败」时抛，中间那档（100 门里坏 40 门）
+    // 会导入 60 门、写盘、报「导入成功」，而原文件已被覆盖。
+    // 能救回多少救多少比整份拒收友好，但必须如实说。
+    final dropped = provider.lastImportDroppedTotal;
+    final partialSuffix =
+        dropped > 0 ? l10n.importPartialSkippedSuffix(dropped) : '';
     final restoredMessage = beyondScheme > 0
         ? l10n.backupRestoredSuccess +
               l10n.coursesBeyondSchemeExtraSuffix(
                 beyondScheme,
                 provider.settings.sectionCount,
-              )
-        : l10n.backupRestoredSuccess;
-    final restoredKind = beyondScheme > 0
+              ) +
+              partialSuffix
+        : l10n.backupRestoredSuccess + partialSuffix;
+    final restoredKind = (beyondScheme > 0 || dropped > 0)
         ? AppToastKind.warning
         : AppToastKind.success;
     final token = result.undoToken;

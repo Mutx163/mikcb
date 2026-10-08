@@ -1521,6 +1521,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Import failed. Please check whether the file is valid.';
 
   @override
+  String importPartialSkippedSuffix(int count) =>
+      ', $count entries were corrupted and skipped';
+
+  @override
   String get welcomeTitle => 'Welcome';
 
   @override

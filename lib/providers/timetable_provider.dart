@@ -289,6 +289,23 @@ class TimetableProvider with ChangeNotifier {
   List<String> _locationRecords = [];
   PartnerTimetableBinding? _partnerBinding;
 
+  /// 最近一次**单课表**导入里被跳过的条目数（按来源分组），2026-10-08 补。
+  ///
+  /// 之前这一档完全没有出口：`data_transfer_service.dart` 的
+  /// `_parseListWithTotalLossGuard` 只在「原始非空 + 解析全空」时抛，
+  /// 于是「100 门里坏 40 门」会安静地导入 60 门、写盘、界面报「导入成功」。
+  /// 逐条跳过本身是对的（能救回多少救多少，比整份拒收友好），
+  /// 但**不能一声不响** —— 调用方在成功提示里如实追加「跳过了 N 条」。
+  Map<String, int> _lastImportDroppedCounts = const {};
+
+  /// 最近一次导入跳过的总条数（0 = 没跳过任何条目）。
+  int get lastImportDroppedTotal =>
+      _lastImportDroppedCounts.values.fold(0, (sum, c) => sum + c);
+
+  /// 最近一次导入跳过条目的分组明细（course / tasks / exams / …）。
+  Map<String, int> get lastImportDroppedCounts =>
+      Map<String, int>.unmodifiable(_lastImportDroppedCounts);
+
   List<Course> get courses => List.unmodifiable(_courses);
   List<CourseTask> get tasks => List.unmodifiable(_tasks);
   List<ScheduleItem> get scheduleItems => List.unmodifiable(_scheduleItems);

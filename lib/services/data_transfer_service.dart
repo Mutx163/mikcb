@@ -30,6 +30,20 @@ class AppDataBackup {
   final TransferScope? scope;
   final TransferChannel channel;
 
+  /// 本次导入里**被跳过**的条目数，按来源分组（课程 / 作业 / 日程 / 考试 / …）。
+  ///
+  /// 为什么要记它：`_parseListWithTotalLossGuard` 只在「原始非空 + 解析全空」
+  /// 时才抛，100 门课里坏掉 40 门的情形会安静地返回 60 门，而导入路径把
+  /// `backup.courses` **整份替换**进课表并写盘、界面报「导入成功」——
+  /// 用户只在下次打开课表时才发现少了几十节，且原始文件已被覆盖。
+  /// 逐条跳过本身是对的（部分损坏仍要能救回能读的部分），但**不能无声**：
+  /// 计数交给上层，导入完成提示里如实说「跳过了 N 条」。
+  final Map<String, int> droppedCounts;
+
+  /// 跳过的总条数（各来源之和）。
+  int get droppedTotal =>
+      droppedCounts.values.fold(0, (sum, count) => sum + count);
+
   const AppDataBackup({
     this.profileName,
     required this.courses,
@@ -45,6 +59,7 @@ class AppDataBackup {
     this.packageId,
     this.scope,
     this.channel = TransferChannel.file,
+    this.droppedCounts = const {},
   });
 }
 
@@ -98,13 +113,27 @@ class DataTransferService {
   /// （import_export_service.dart:358），于是一份「课程全解析失败」的文件会被
   /// 当成一份合法的**空课表**：用户原课表被清空、写盘、界面报「导入成功」。
   /// 允许逐条跳过（部分损坏仍能救回能读的部分），但不允许整列表清零。
+  ///
+  /// 2026-10-08 补 `[dropped]`：**部分**丢也要能被上层知道。
+  /// 原实现只区分「全丢」与「没丢」，中间那档（100 门里坏 40 门）一路静默
+  /// 走进「导入成功」。调用方把它汇总进 [AppDataBackup.droppedCounts]，
+  /// 由导入完成提示如实报「跳过了 N 条」——比整份拒收友好，
+  /// 比谎报成功诚实。
   static List<T> _parseListWithTotalLossGuard<T>(
     Object? raw,
-    T Function(Map<String, dynamic>) parse,
-  ) {
+    T Function(Map<String, dynamic>) parse, {
+    void Function(int dropped)? onDropped,
+  }) {
     final items = _parseOptionalList<T>(raw, parse);
-    if (raw is List && raw.isNotEmpty && items.isEmpty) {
-      throw const FormatException('unrecognized_mikcb_data_file');
+    if (raw is List && raw.isNotEmpty) {
+      final dropped = raw.length - items.length;
+      if (dropped <= 0) {
+        return items;
+      }
+      if (items.isEmpty) {
+        throw const FormatException('unrecognized_mikcb_data_file');
+      }
+      onDropped?.call(dropped);
     }
     return items;
   }
@@ -200,17 +229,27 @@ class DataTransferService {
       throw const FormatException('unrecognized_mikcb_data_file');
     }
 
+    final droppedCounts = <String, int>{};
+    void noteDropped(String key, int count) {
+      if (count > 0) {
+        droppedCounts[key] = count;
+      }
+    }
+
     final rawCourses = _parseListWithTotalLossGuard(
       json['courses'],
       Course.fromJson,
+      onDropped: (count) => noteDropped('courses', count),
     );
     final rawTasks = _parseListWithTotalLossGuard(
       json['tasks'],
       CourseTask.fromJson,
+      onDropped: (count) => noteDropped('tasks', count),
     );
     final rawScheduleItems = _parseListWithTotalLossGuard(
       json['scheduleItems'],
       ScheduleItem.fromJson,
+      onDropped: (count) => noteDropped('scheduleItems', count),
     );
     final rawSettings = json['settings'];
     if (rawSettings is! Map) {
@@ -227,18 +266,25 @@ class DataTransferService {
       courses: rawCourses,
       tasks: rawTasks,
       scheduleItems: rawScheduleItems,
-      exams: _parseListWithTotalLossGuard(json['exams'], Exam.fromJson),
+      exams: _parseListWithTotalLossGuard(
+        json['exams'],
+        Exam.fromJson,
+        onDropped: (count) => noteDropped('exams', count),
+      ),
       timeSchemes: _parseListWithTotalLossGuard(
         json['timeSchemes'],
         TimeScheme.fromJson,
+        onDropped: (count) => noteDropped('timeSchemes', count),
       ),
       scheduleDateRules: _parseListWithTotalLossGuard(
         json['scheduleDateRules'],
         ScheduleDateRule.fromJson,
+        onDropped: (count) => noteDropped('scheduleDateRules', count),
       ),
       locationTimeGroups: _parseListWithTotalLossGuard(
         json['locationTimeGroups'],
         LocationTimeGroup.fromJson,
+        onDropped: (count) => noteDropped('locationTimeGroups', count),
       ),
       settings: settings,
       currentWeek: clampCurrentWeekToSettings(
@@ -248,11 +294,12 @@ class DataTransferService {
       exportedAt:
           DateTime.tryParse((json['exportedAt'] as String?) ?? '') ??
           DateTime.now(),
-      packageId: json['packageId'] as String?,
+      packageId: json['packageId'] is String ? json['packageId'] as String : null,
       scope: json['packageType'] == TransferPackage.packageType
           ? TransferScope.fromValue(json['scope'])
           : null,
       channel: TransferChannelX.fromValue(json['channel']),
+      droppedCounts: Map<String, int>.unmodifiable(droppedCounts),
     );
   }
 

@@ -40,16 +40,30 @@ void main() {
       expect(c.name, '123');
     });
 
-    test('location 是 null 时退回空串', () {
-      final json = base()..remove('location');
-      expect(Course.fromJson(json).location, '');
+    test('整份坏字段缺失会抛（好让「坏条目留档」自愈机制接住）', () {
+      // ⚠️ 必填字段缺失**不能**一律放宽：本仓有一条「坏条目留档、不写回」的
+      // 自愈机制（storage_service_profiles_integrity_test.dart:104 钉着），
+      // 它靠「解析器对结构性缺失抛错」把可疑记录留档。放宽了就再也留不下档。
+      expect(
+        () => Course.fromJson(<String, dynamic>{}),
+        throwsA(isA<FormatException>()),
+      );
     });
 
-    test('整份坏字段缺失也不抛（只剩默认值）', () {
-      final c = Course.fromJson(<String, dynamic>{});
-      expect(c.id, '');
-      expect(c.name, '');
-      expect(c.startTime, '');
+    test('location 缺失抛错（必填字段，不是空串）', () {
+      final json = base()..remove('location');
+      expect(
+        () => Course.fromJson(json),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('teacher 缺失同样抛错', () {
+      final json = base()..remove('teacher');
+      expect(
+        () => Course.fromJson(json),
+        throwsA(isA<FormatException>()),
+      );
     });
 
     test('description 缺失时回落到旧键 note（且 note 是数字也不抛）', () {
@@ -69,17 +83,42 @@ void main() {
     });
   });
 
-  group('TimetableProfile.fromJson：数字型 id 不再让整份课表加载失败', () {
-    test('id 类型不对退回空 id，档案仍能构造出来', () {
+  group('TimetableProfile.fromJson：id 缺失/类型不对一律拒收（口径刻意）', () {
+    // ⚠️ 与 Course 的宽松口径**相反**，这是刻意的：一份课表 = 课 + 考试 +
+    // 作业 + 设置，静默丢掉整档比拒收整份危险得多
+    // （`full_backup_profile_salvage_test.dart:72` 钉着这条）。
+    // 本次只把裸 `as String` 换成显式类型判定 ——
+    // TypeError 变成可读的 FormatException，拒收的口径一个字没放松。
+    test('数字型 id 抛 FormatException（不是 TypeError）', () {
+      expect(
+        () => TimetableProfile.fromJson(<String, dynamic>{
+          'id': 12345,
+          'name': '我的课表',
+        }),
+        throwsA(
+          isA<FormatException>()
+              .having((e) => e.message, 'message', 'profile_id_invalid'),
+        ),
+      );
+    });
+
+    test('id 缺失同样拒收', () {
+      expect(
+        () => TimetableProfile.fromJson(<String, dynamic>{'name': '我的课表'}),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('id 是字符串时正常解析', () {
       final p = TimetableProfile.fromJson(<String, dynamic>{
-        'id': 12345,
+        'id': 'p-1',
         'name': '我的课表',
       });
-      expect(p.id, '');
+      expect(p.id, 'p-1');
       expect(p.name, '我的课表');
     });
 
-    test('name 类型不对退回「未命名课表」', () {
+    test('name 类型不对退回「未命名课表」（这条仍是宽松的）', () {
       final p = TimetableProfile.fromJson(<String, dynamic>{
         'id': 'p-1',
         'name': 42,
@@ -89,7 +128,7 @@ void main() {
   });
 
   group('PartnerTimetableBinding.fromJson：脏数据不再让绑定读不出来', () {
-    test('全是数字也能构造', () {
+    test('类型不对（有值）也能构造', () {
       final b = PartnerTimetableBinding.fromJson(<String, dynamic>{
         'partnerProfileId': 123,
         'partnerName': 456,

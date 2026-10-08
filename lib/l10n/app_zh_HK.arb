@@ -5651,6 +5651,14 @@
       }
     }
   },
+  "importPartialSkippedSuffix": "，其中 {count} 條格式損壞已跳過",
+  "@importPartialSkippedSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "locationTimeMatchEmpty": "還沒有地點組",
   "locationTimeMatchCreateGroup": "新建地點組",
   "locationTimeMatchEditGroup": "編輯地點組",
