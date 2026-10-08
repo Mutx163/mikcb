@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/domain/import_export_logic.dart';
+import 'package:university_timetable/models/time_scheme.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/utils/clock_time.dart';
 
@@ -107,5 +108,44 @@ void main() {
     ], 5);
 
     expect(expanded.length, 1);
+  });
+
+  group('补出的末节正好收在当天结束（1440）', () {
+    // 课间 15 / 单节 45、末节 22:15-23:00 ⇒ 补出来的是 23:15-24:00，正好压在边界上。
+    // （课间取自**末两个节次之间**那个正间隔，所以第三、四节要挨着写。）
+    //
+    // 原先 `_formatClockMinutes` 只有 `% 1440` 归一（`import_export_logic.dart` 里
+    // 那份是 `models/time_scheme.dart` 的 `_minutesToClock` 的**第二份副本**，且少了
+    // 后者专门写的 1440 例外），于是这一节被写成 `00:00`：结束时间解析回 0 分钟，
+    // 比开始时间还小 —— 紧接着 `validateSectionTimes` 报「第 N 节结束时间必须晚于
+    // 开始时间」，用户按提示怎么改都存不下，而导入侧还在拿这张畸形表烤课程钟点。
+    List<SectionTime> template() => const [
+      SectionTime(startTime: '08:00', endTime: '08:45'),
+      SectionTime(startTime: '09:00', endTime: '09:45'),
+      SectionTime(startTime: '21:15', endTime: '22:00'),
+      SectionTime(startTime: '22:15', endTime: '23:00'),
+    ];
+
+    test('末节写成 24:00 而不是回绕成 00:00', () {
+      final expanded = ImportExportLogic.buildExpandedSections(template(), 5);
+
+      expect(expanded, hasLength(5));
+      expect(expanded.last.startTime, '23:15');
+      expect(
+        expanded.last.endTime,
+        '24:00',
+        reason: '1440 回绕成 00:00 会让这一节的结束时间小于开始时间，整张作息存不下',
+      );
+    });
+
+    test('补出来的表能通过 validateSectionTimes', () {
+      final expanded = ImportExportLogic.buildExpandedSections(template(), 5);
+
+      expect(
+        validateSectionTimes(expanded),
+        isNull,
+        reason: '补节的目标是让导入的课次有时间可用；补出一张自己都存不下的表没有意义',
+      );
+    });
   });
 }

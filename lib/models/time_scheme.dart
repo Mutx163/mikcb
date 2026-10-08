@@ -138,6 +138,33 @@ String? validateSectionTimes(List<SectionTime> sections) {
   return null;
 }
 
+/// 单节时间的跨天判定：结束时间必须**严格**晚于开始时间，`24:00`（当天结束）按
+/// 1440 计。与 [validateSectionTimes] 同一口径（都走放行 24:00 的 [_clockMinutes]）。
+///
+/// 作息管理页「改某一节时间」那一跳原先自带一份**不带 `allowEndOfDay`** 的解析
+/// （`time_scheme_management_screen.dart` 的 `_parseTimeMinutes`），于是末节写着
+/// `24:00` 的作息**哪怕只想改开始时间**也会被判「时间段不能跨天」拒绝保存 ——
+/// 同文件里 `resolveSectionEndTimeEdit` 专门保住那个 24:00 的努力被这一步抵消，
+/// 用户点多少次都改不动。修法不是再补一个兜底，而是让这里和保存时的校验只留一份
+/// 判据：`24:00` 合不合法，全仓只由 [_clockMinutes] 说了算。
+///
+/// 解析不出来的串按 0 分钟处理（与改动前的兜底一致）：畸形存量值不在这里猜语义，
+/// 由调用方决定要不要提示。
+bool isSectionTimeSpanValid({
+  required String startTime,
+  required String endTime,
+}) {
+  int minutesOrZero(String value) {
+    try {
+      return _clockMinutes(value);
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  return minutesOrZero(endTime) > minutesOrZero(startTime);
+}
+
 List<SectionTime> buildQuickSectionTimes({
   required int morningCount,
   required int afternoonCount,

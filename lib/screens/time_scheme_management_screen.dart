@@ -1339,9 +1339,14 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
         pickedEndTime: _formatTimeOfDay(end),
       ),
     );
-    final startMinutes = _parseTimeMinutes(editedSection.startTime);
-    final endMinutes = _parseTimeMinutes(editedSection.endTime);
-    if (endMinutes <= startMinutes) {
+    // 判据只有一份：`isSectionTimeSpanValid` 与保存时的 `validateSectionTimes`
+    // 同口径（都放行 `24:00`）。这里原先自带一份不带 `allowEndOfDay` 的解析，
+    // 末节是 24:00 的作息只要走到这一跳就被判「不能跨天」——上面
+    // `resolveSectionEndTimeEdit` 刚把那个 24:00 保住，立刻又被这一步否掉。
+    if (!isSectionTimeSpanValid(
+      startTime: editedSection.startTime,
+      endTime: editedSection.endTime,
+    )) {
       showAppToast(
         context,
         message: l10n.timeRangeValidationNoCrossDay,
@@ -1694,22 +1699,19 @@ String _formatTimeOfDay(TimeOfDay time) {
   return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 }
 
-int _parseTimeMinutes(String value) {
-  return (ClockTime.tryParse(value) ?? const ClockTime(0, 0)).totalMinutes;
-}
-
 /// 把「结束时间选择器返回的值」折叠回这一节实际要存的 endTime。
 ///
 /// `showMiuixTimePickerSheet` 的小时上限是 23（`miuix_time_picker_sheet.dart:88`），
 /// 表达不了本仓认可的「当天结束」`24:00`（`ClockTime.tryParse` 的 `allowEndOfDay`、
-/// `models/time_scheme.dart` 的 `_clockMinutes` 都专门放行它）。于是原先只要这一节的
+/// `models/time_scheme.dart` 的 `_clockMinutes` 都专门放行它）。于是只要这一节的
 /// endTime 是 `24:00`：`_parseTimeOfDay` 把它兜底成 `00:00` 显示，用户哪怕**只想改开始时间**，
-/// 第二个弹层直接确认就会算出 `endMinutes(0) <= startMinutes` → 弹「时间段不能跨天」，
-/// 这一节的开始时间永远改不动；真去选个新结束时间，`24:00` 也再也选不回来。
+/// 第二个弹层直接确认也会把结束时间算错。这一跳与调用点的跨天判定是**一对**：
+/// 这里把 24:00 认回来，调用点用 `isSectionTimeSpanValid`（同口径放行 24:00）判合法；
+/// 缺任何一半，这一节的开始时间就永远改不动，真去选个新结束时间 `24:00` 也再也选不回来。
 ///
 /// 这里把「选择器返回 00:00 且这一节原本就是 24:00」解释成「结束时间没改」，保留 `24:00`。
 /// 用户显式选别的值照常生效 —— 而 `00:00` 当作结束时间本来就是非法输入，
-/// 会由下面的跨天校验拒掉，所以这个哨兵没有真实语义损失。
+/// 会由调用点的 `isSectionTimeSpanValid` 拒掉，所以这个哨兵没有真实语义损失。
 String resolveSectionEndTimeEdit({
   required String storedEndTime,
   required String pickedEndTime,

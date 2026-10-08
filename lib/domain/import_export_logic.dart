@@ -143,6 +143,16 @@ class ImportExportLogic {
   }
 
   static String _formatClockMinutes(int minutes) {
+    // 1440 必须写成 `24:00`：它是本仓认可的「当天结束」（`ClockTime` 的
+    // `allowEndOfDay`、`models/time_scheme.dart` 的 `_clockMinutes` 都专门放行）。
+    // 只是 `% 1440` 归一的话会回绕成 `00:00`，于是补出来的节次**结束时间小于开始
+    // 时间**，`validateSectionTimes` 立刻报「第 N 节结束时间必须晚于开始时间」——
+    // 用户按提示怎么改都存不下，而导入侧还在拿这张畸形表烤课程钟点。
+    // 同款例外 `models/time_scheme.dart:236-251` 的 `_minutesToClock` 早就写了，
+    // 这里是它的第二份副本，此前漏了这个分支。
+    if (minutes == minutesPerDay) {
+      return '24:00';
+    }
     final normalized = minutes % minutesPerDay;
     final hour = normalized ~/ 60;
     final minute = normalized % 60;

@@ -202,4 +202,58 @@ void main() {
       );
     });
   });
+
+  /// 作息管理页「改某一节时间」这一跳的跨天判定（第 36 轮）。
+  ///
+  /// 那一跳原来自己算 `_parseTimeMinutes`（`ClockTime.tryParse` 不带
+  /// `allowEndOfDay`），于是末节 24:00 的作息**哪怕只想改开始时间**也会被判
+  /// 「时间段不能跨天」——同屏的 `resolveSectionEndTimeEdit` 刚把 24:00 认回来，
+  /// 紧接着又被这一步否掉，用户点多少次都改不动。判据收进
+  /// `isSectionTimeSpanValid`，与保存时的 `validateSectionTimes` 同一口径。
+  group('单节时间的跨天判定', () {
+    test('末节 24:00 时，只改开始时间也必须放行', () {
+      expect(
+        isSectionTimeSpanValid(startTime: '08:00', endTime: '24:00'),
+        isTrue,
+        reason: '24:00 是本仓认可的当天结束，不能被当成 0 分钟',
+      );
+      expect(
+        isSectionTimeSpanValid(startTime: '23:00', endTime: '24:00'),
+        isTrue,
+      );
+      // 整节都在 24:00 上不是合法时段。
+      expect(
+        isSectionTimeSpanValid(startTime: '24:00', endTime: '24:00'),
+        isFalse,
+      );
+    });
+
+    test('跨天与零长度仍然拒绝', () {
+      expect(
+        isSectionTimeSpanValid(startTime: '08:00', endTime: '00:00'),
+        isFalse,
+        reason: '00:00 当作结束时间是跨天，不是当天结束',
+      );
+      expect(
+        isSectionTimeSpanValid(startTime: '08:00', endTime: '08:00'),
+        isFalse,
+      );
+      expect(
+        isSectionTimeSpanValid(startTime: '23:30', endTime: '24:30'),
+        isFalse,
+      );
+    });
+
+    test('正常时段与畸形串的兜底不变', () {
+      expect(
+        isSectionTimeSpanValid(startTime: '08:00', endTime: '08:45'),
+        isTrue,
+      );
+      // 解析不出来的串按 0 分钟处理（与改动前的兜底一致）：畸形值不在这里猜语义。
+      expect(
+        isSectionTimeSpanValid(startTime: '上午8点', endTime: ''),
+        isFalse,
+      );
+    });
+  });
 }
