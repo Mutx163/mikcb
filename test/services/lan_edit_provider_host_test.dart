@@ -118,6 +118,9 @@ void main() {
       autoInitialize: false,
       enableLiveActivitySync: false,
     );
+    // 本文件造了 3 个 provider 却一个都不释放（该文件自己的注释就写着不释放会
+    // "稳定累积"）：dispose 才收掉 provider 挂的监听与定时器 —— 2026-10-08 补。
+    addTearDown(provider.dispose);
     await provider.initialize();
     final host = LanEditProviderHost(provider);
 
@@ -151,6 +154,7 @@ void main() {
       autoInitialize: false,
       enableLiveActivitySync: false,
     );
+    addTearDown(provider.dispose);
     await provider.initialize();
     await provider.addCourse(
       buildScheduleSlot(id: 'old', name: '离散数学', teacher: '旧老师'),
@@ -188,6 +192,7 @@ void main() {
         autoInitialize: false,
         enableLiveActivitySync: false,
       );
+      addTearDown(provider.dispose);
       await provider.initialize();
       return (provider, LanEditProviderHost(provider));
     }
