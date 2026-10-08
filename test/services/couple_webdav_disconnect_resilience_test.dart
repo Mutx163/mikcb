@@ -1,7 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:university_timetable/services/couple_webdav_config.dart';
 import 'package:university_timetable/services/couple_webdav_credentials_store.dart';
 import 'package:university_timetable/services/couple_webdav_service.dart';
 
