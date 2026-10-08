@@ -370,5 +370,35 @@ void main() {
         reason: '${entry.key} 的 ref 不是钉死的 40 位 commit：$block',
       );
     }
+
+    // 2026-10-08 补：上面看的全是 `pubspec.lock` 里的**解析结果**，而
+    // `pubspec.yaml` 里**声明**的 ref 一个字都没查。声明写成浮动分支名
+    // （`ref: glassy-surface`）时，`pub get` 照样会把它解析成一个具体 commit 写进
+    // lock —— 于是这条守卫全绿，而依赖实际会跟着分支漂（下一次 pub get 就换代码）。
+    // 两个文件都要看：lock 证明「当前解析成了哪个 commit」，yaml 证明「声明的是哪个」。
+    final pubspecLines = File('pubspec.yaml').readAsLinesSync();
+    final entryStartYaml = RegExp(r'^  \S');
+    for (final name in expected.keys) {
+      final start = pubspecLines.indexWhere((line) => line == '  $name:');
+      expect(
+        start,
+        isNonNegative,
+        reason: 'pubspec.yaml 的 dependency_overrides 里没有 $name',
+      );
+      var end = start + 1;
+      while (end < pubspecLines.length &&
+          !entryStartYaml.hasMatch(pubspecLines[end])) {
+        end++;
+      }
+      final block = pubspecLines.sublist(start, end).join('\n');
+      expect(
+        RegExp(r'ref: "?[0-9a-f]{40}"?').hasMatch(block),
+        isTrue,
+        reason:
+            '$name 在 pubspec.yaml 里声明的 ref 不是钉死的 40 位 commit。'
+            '写成分支名 / tag 会跟着上游漂，而 lock 里仍是某个具体 commit —— '
+            '只查 lock 看不出来：$block',
+      );
+    }
   });
 }
