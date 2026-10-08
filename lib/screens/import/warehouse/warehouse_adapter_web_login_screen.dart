@@ -27,6 +27,7 @@ import '../../../domain/warehouse_course_import_logic.dart';
 import '../../../domain/warehouse_location_time_schemes.dart';
 import '../../../domain/warehouse_macro_dialog_replay.dart';
 import '../../../domain/warehouse_session_probe.dart';
+import '../../../services/import_time_scheme_restore_point.dart';
 import '../../../services/import_week_alignment_service.dart';
 import '../../../services/warehouse_bridge_compat.dart';
 import '../../../services/warehouse_import_preferences_service.dart';
@@ -2233,7 +2234,12 @@ $kWarehouseBridgeCompatShim  try {
     // （`saveImportedCourses`），所以在它开头清零比在解析函数里清零更准确：
     // 即使某个脚本连发两次，第二次的计数也会累加上来而不是覆盖掉。
     _warehouseCourseSkips.clear();
-    try {
+    // 作息恢复点 + 「课程是否真的落地」标志：教务脚本下发的作息表在**课程写库之前**
+    // 就被切/建成当前生效的那套，所以只要课程没落地，下面 finally 就必须把作息切回去
+    // （否则用户什么都没干，作息却被永久换成了教务那套）。理由见
+    // [_TimeSchemeRestorePoint] 的注释。
+    ImportTimeSchemeRestorePoint? schemeRestorePoint;
+    var coursesImported = false;    try {
       final decoded = jsonDecode(payload);
       _debugImportLog('courses decoded type=${decoded.runtimeType}');
       if (decoded is! List) {
@@ -2355,6 +2361,8 @@ $kWarehouseBridgeCompatShim  try {
         widget.onBackgroundFinished?.call(false);
         return;
       }
+      // 记下"切作息之前"那份设置：后面任何一条中止路径都靠它把作息切回来。
+      schemeRestorePoint = ImportTimeSchemeRestorePoint.capture(provider);
       try {
         await _applyPendingImportedSectionsIfNeeded();
       } catch (error) {
@@ -2449,6 +2457,8 @@ $kWarehouseBridgeCompatShim  try {
         preserveLocalColors: preserveLocalColors,
       );
       _debugImportLog('importParsedCourses done importedCount=$importedCount');
+      // 课程已经落库：这套作息就是它们的依据，之后任何失败都不再回滚作息。
+      coursesImported = true;
       _notifyBackgroundProgress();
       if (!mounted) {
         if (widget.runInBackground) {
@@ -2523,6 +2533,15 @@ $kWarehouseBridgeCompatShim  try {
       });
       _showMacroReplayImportError(message);
       showImportLightTip(context, message);
+    } finally {
+      // 中止路径统一收口：课程没落地就把作息切回去。放在 finally 而不是逐个 return
+      // 加一句，是因为这个函数有 8 个提前 return（未挂载 / 取消 / 容量弹窗 false /
+      // 学期映射取消 …），逐处补一定会漏一处 —— 漏掉的那条就是"什么都没干但作息被
+      // 换掉"。
+      final point = schemeRestorePoint;
+      if (!coursesImported && point != null) {
+        await point.restore();
+      }
     }
   }
 
@@ -3513,4 +3532,5 @@ String _normalizeJavaScriptResult(Object? raw) {
   }
   return text;
 }
+
 
