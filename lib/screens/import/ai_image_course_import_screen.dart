@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import '../../models/course.dart';
 import '../../providers/timetable_provider.dart';
 import '../../services/ai_course_import_service.dart';
+import '../../services/import_time_scheme_restore_point.dart';
 import '../../services/import_week_alignment_service.dart';
 import '../../utils/app_toast.dart';
 import '../../utils/import_result_message.dart';
@@ -554,6 +555,11 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
 
   Future<void> _importAiResult() async {
     final l10n = AppLocalizations.of(context)!;
+    // 扩容（下面那次预扫，或解析之后那次容量确认）会**先扩表并落盘**：任何一条
+    // 中止路径都要把作息退回去 —— 用户什么都没干，作息却被永久换成 AI 那套。
+    // 与教务导入 / ICS / 表格三条路共用同一份实现（有 3 条单测）。
+    ImportTimeSchemeRestorePoint? restorePoint;
+    var coursesImported = false;
     setState(() {
       _isImporting = true;
     });
@@ -566,6 +572,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
       // 收到一句「节次数不足」，却没有任何办法把这批课导进来。
       // 预扫只看 `endSection`、读不到就跳过（返回 null），真正的校验仍由 parse 负责。
       final provider = context.read<TimetableProvider>();
+      restorePoint = ImportTimeSchemeRestorePoint.capture(provider);
       final previewMaxSection = _aiImportService.maxSectionIn(_aiController.text);
       if (previewMaxSection != null &&
           previewMaxSection > provider.settings.sectionCount) {
@@ -645,6 +652,8 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
           replaceExisting: replaceExisting,
         ),
       );
+      // 课程已经落库：这套作息就是它们的依据，之后任何失败都不再回滚作息。
+      coursesImported = true;
       if (!mounted) {
         return;
       }
@@ -663,6 +672,10 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         Navigator.of(context).pop(true);
       }
     } finally {
+      final point = restorePoint;
+      if (!coursesImported && point != null) {
+        await point.restore();
+      }
       if (mounted) {
         setState(() {
           _isImporting = false;

@@ -16,6 +16,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../models/course.dart';
 import '../../providers/timetable_provider.dart';
+import '../../services/import_time_scheme_restore_point.dart';
 import '../../services/spreadsheet_import_service.dart';
 import '../../utils/app_toast.dart';
 import '../../utils/import_file_reader.dart';
@@ -373,39 +374,52 @@ Future<void> _completeParsedCourseImport({
         replaceExisting: replaceExisting,
       );
   if (!context.mounted) return;
-  final capacityReady = await ensureImportSectionCapacity(
-    context,
-    requiredSectionCount: requiredSectionCount,
-    provider: provider,
-  );
-  if (!capacityReady || !context.mounted) return;
+  // 同 ICS / AI 导入：「自动补齐节次」会先扩表并落盘，而下面每条中止路径
+  // （用户取消、未挂载、写盘抛错）原先都不回滚 —— 作息被永久换掉。
+  // 恢复点与教务导入那条路共用同一份实现（有 3 条单测）。
+  final restorePoint = ImportTimeSchemeRestorePoint.capture(provider);
+  var coursesImported = false;
+  try {
+    final capacityReady = await ensureImportSectionCapacity(
+      context,
+      requiredSectionCount: requiredSectionCount,
+      provider: provider,
+    );
+    if (!capacityReady || !context.mounted) return;
 
-  final coursesToImport = await coursesWithOptionalRandomColors(courses);
-  if (!context.mounted) return;
+    final coursesToImport = await coursesWithOptionalRandomColors(courses);
+    if (!context.mounted) return;
 
-  final importedCount = await provider.importParsedCourses(
-    coursesToImport,
-    replaceExisting: replaceExisting,
-    semesterStart: semesterStart,
-    source: source,
-    preserveLocalColors: await shouldPreserveLocalColorsOnImport(
+    final importedCount = await provider.importParsedCourses(
+      coursesToImport,
       replaceExisting: replaceExisting,
-    ),
-  );
-  if (!context.mounted) return;
+      semesterStart: semesterStart,
+      source: source,
+      preserveLocalColors: await shouldPreserveLocalColorsOnImport(
+        replaceExisting: replaceExisting,
+      ),
+    );
+    // 课程已经落库：这套作息就是它们的依据，之后任何失败都不再回滚作息。
+    coursesImported = true;
+    if (!context.mounted) return;
 
-  showAppToast(
-    context,
-    message: buildImportResultMessage(
-      l10n: l10n,
-      importedCount: importedCount,
-      replaceExisting: replaceExisting,
-      warningCount: warningCount,
-    ),
-    kind: importedCount > 0 ? AppToastKind.success : AppToastKind.info,
-  );
-  if (importedCount > 0) {
-    Navigator.of(context).pop(true);
+    showAppToast(
+      context,
+      message: buildImportResultMessage(
+        l10n: l10n,
+        importedCount: importedCount,
+        replaceExisting: replaceExisting,
+        warningCount: warningCount,
+      ),
+      kind: importedCount > 0 ? AppToastKind.success : AppToastKind.info,
+    );
+    if (importedCount > 0) {
+      Navigator.of(context).pop(true);
+    }
+  } finally {
+    if (!coursesImported) {
+      await restorePoint.restore();
+    }
   }
 }
 
