@@ -444,7 +444,22 @@ Future<void> _deleteScheduleDateRule(
   if (confirmed != true || !context.mounted) {
     return;
   }
-  await context.read<TimetableProvider>().deleteScheduleDateRule(rule.id);
+  // 落盘失败会回滚并 rethrow（`timetable_provider.dart` 的
+  // `deleteScheduleDateRule`：不退回的话「删除失败的规则过两天自己没了」）。
+  // 不接就是「点了删除、零提示、未处理异步错误」，而下面还照常报成功。
+  try {
+    await context.read<TimetableProvider>().deleteScheduleDateRule(rule.id);
+  } catch (_) {
+    if (!context.mounted) {
+      return;
+    }
+    showAppToast(
+      context,
+      message: l10n.deleteFailed,
+      kind: AppToastKind.error,
+    );
+    return;
+  }
   if (!context.mounted) {
     return;
   }

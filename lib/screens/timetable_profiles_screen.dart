@@ -252,9 +252,25 @@ class TimetableProfilesScreen extends StatelessWidget {
       return;
     }
 
-    final success = await context.read<TimetableProvider>().deleteProfile(
-      profileId,
-    );
+    // `deleteProfile` 落盘失败会**回滚内存并 rethrow**（`timetable_provider.dart`
+    // 自己的快照，`profilesBeforeDelete`），不接这个异常就是三件事同时发生：
+    // 错误落进 zone 成为未处理异步错误、界面零提示，而确认弹窗已经关掉 ——
+    // 用户看到的就是「点了删除，什么也没发生」，重启后课表还在。
+    // 同文件 :209 的 `clearActiveProfileCourses` 已经是这个形状。
+    final bool success;
+    try {
+      success = await context.read<TimetableProvider>().deleteProfile(profileId);
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.deleteFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!context.mounted) {
       return;
     }

@@ -311,7 +311,22 @@ class _LocationTimeMatchScreenState extends State<LocationTimeMatchScreen> {
     if (confirmed != true) {
       return;
     }
-    await provider.deleteLocationTimeGroup(group.id);
+    // `deleteLocationTimeGroup` 走 `_commitLocationGroupChange`，落盘失败会回滚
+    // 内存并 rethrow（`location_group_repository.dart:38`）。不接就是「点了删除、
+    // 零提示、未处理异步错误」，而下面还照常报「已删除」。
+    try {
+      await provider.deleteLocationTimeGroup(group.id);
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.deleteFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!context.mounted) {
       return;
     }

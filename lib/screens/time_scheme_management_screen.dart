@@ -635,7 +635,24 @@ class _TimeSchemeManagementScreenState
       return;
     }
 
-    final deleted = await provider.deleteTimeScheme(scheme.id);
+    // `deleteTimeScheme` 走 `time_scheme_repository.dart` 的快照 + catch + rethrow，
+    // 落盘失败时回滚内存并上抛（该仓库里作息是**先落盘**的那一份，不退回会留下
+    // 一半成功状态，重启后作息自己变了）。不接就是「点了删除、零提示、未处理
+    // 异步错误」，而下面还照常弹「已删除」。
+    final bool deleted;
+    try {
+      deleted = await provider.deleteTimeScheme(scheme.id);
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: l10n.deleteFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!context.mounted) {
       return;
     }

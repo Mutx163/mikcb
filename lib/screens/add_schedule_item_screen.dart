@@ -847,13 +847,27 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
       if (applyToAll == null) {
         return;
       }
-      if (applyToAll) {
-        await provider.deleteScheduleItemSeries(scheduleItem.id);
-      } else {
-        await provider.deleteScheduleItemOccurrence(
-          scheduleItem.id,
-          widget.occurrenceDate!,
+      // 与下面 :886 的整条删除同因：provider 落盘失败会回滚并 rethrow，
+      // 不接就是零提示 + 未处理异步错误，而这里还会**照常关页并报「已删除」**。
+      try {
+        if (applyToAll) {
+          await provider.deleteScheduleItemSeries(scheduleItem.id);
+        } else {
+          await provider.deleteScheduleItemOccurrence(
+            scheduleItem.id,
+            widget.occurrenceDate!,
+          );
+        }
+      } catch (_) {
+        if (!mounted) {
+          return;
+        }
+        showAppToast(
+          context,
+          message: l10n.deleteFailed,
+          kind: AppToastKind.error,
         );
+        return;
       }
       if (!mounted) {
         return;

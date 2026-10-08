@@ -1452,7 +1452,21 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
 
     if (confirmed != true || !mounted) return;
 
-    await context.read<TimetableProvider>().deleteCourseGroup(name);
+    // 同本文件 :397 的删单门课：provider 侧 `_timetableDeleteCourseGroup` 落盘失败
+    // 会回滚内存并 rethrow（它连带摘掉的考试/作业必须一起退回）。原先这里是
+    // 裸 await：不接就是「点了删除、零提示、未处理异步错误」，而且下面还会
+    // **照常弹成功 toast 并关页** —— 用户被告知「已删除」，课表却原封不动。
+    try {
+      await context.read<TimetableProvider>().deleteCourseGroup(name);
+    } catch (_) {
+      if (!mounted) return;
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.deleteFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!mounted) return;
     showAppToast(
       context,
