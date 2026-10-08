@@ -608,6 +608,21 @@ class _WarehouseAdapterWebLoginScreenState
     }
   }
 
+  /// 作息写盘失败时 provider 会回滚内存并 rethrow（这几个写入口都走
+  /// `_mutationGate`，见 `createTimeScheme` 上的说明）。这条链上的调用点一律用
+  /// `FormatException` + `showImportLightTip` 报失败，所以把异常收敛成一条
+  /// 能显示给人看的消息再上抛：既不让它变成未处理的异步错误，提示里也不会只剩
+  /// 一句 `Exception: ...`。已经是我们要的错误形状就原样带过去，别套两层。
+  String _timeSchemeWriteFailureMessage(Object error) {
+    if (error is FormatException) {
+      return error.message.toString();
+    }
+    if (!mounted) {
+      return '$error';
+    }
+    return localizeServiceError(AppLocalizations.of(context)!, error);
+  }
+
   Future<void> _applyImportedSections(List<SectionTime> sections) async {
     _markBackgroundWriteStarted();
     final provider = context.read<TimetableProvider>();
@@ -622,26 +637,46 @@ class _WarehouseAdapterWebLoginScreenState
       }
     }
     if (existingScheme == null) {
-      final created = await provider.createTimeScheme(
-        name: schemeName,
-        sections: sections,
-        applyToActiveProfile: true,
-      );
-      final applyError = await provider.applyTimeScheme(created.id);
+      final TimeScheme created;
+      try {
+        created = await provider.createTimeScheme(
+          name: schemeName,
+          sections: sections,
+          applyToActiveProfile: true,
+        );
+      } catch (error) {
+        throw FormatException(_timeSchemeWriteFailureMessage(error));
+      }
+      final String? applyError;
+      try {
+        applyError = await provider.applyTimeScheme(created.id);
+      } catch (error) {
+        throw FormatException(_timeSchemeWriteFailureMessage(error));
+      }
       if (applyError != null) {
         throw FormatException(applyError);
       }
       return;
     }
-    final result = await provider.updateTimeScheme(
-      schemeId: existingScheme.id,
-      name: existingScheme.name,
-      sections: sections,
-    );
+    final String? result;
+    try {
+      result = await provider.updateTimeScheme(
+        schemeId: existingScheme.id,
+        name: existingScheme.name,
+        sections: sections,
+      );
+    } catch (error) {
+      throw FormatException(_timeSchemeWriteFailureMessage(error));
+    }
     if (result != null) {
       throw FormatException(result);
     }
-    final applyError = await provider.applyTimeScheme(existingScheme.id);
+    final String? applyError;
+    try {
+      applyError = await provider.applyTimeScheme(existingScheme.id);
+    } catch (error) {
+      throw FormatException(_timeSchemeWriteFailureMessage(error));
+    }
     if (applyError != null) {
       throw FormatException(applyError);
     }
@@ -2556,20 +2591,30 @@ $kWarehouseBridgeCompatShim  try {
       if (scheme.name != name) {
         continue;
       }
-      final result = await provider.updateTimeScheme(
-        schemeId: scheme.id,
-        name: scheme.name,
-        sections: sections,
-      );
+      final String? result;
+      try {
+        result = await provider.updateTimeScheme(
+          schemeId: scheme.id,
+          name: scheme.name,
+          sections: sections,
+        );
+      } catch (error) {
+        throw FormatException(_timeSchemeWriteFailureMessage(error));
+      }
       if (result != null) {
         throw FormatException(result);
       }
       return scheme.id;
     }
-    final created = await provider.createTimeScheme(
-      name: name,
-      sections: sections,
-    );
+    final TimeScheme created;
+    try {
+      created = await provider.createTimeScheme(
+        name: name,
+        sections: sections,
+      );
+    } catch (error) {
+      throw FormatException(_timeSchemeWriteFailureMessage(error));
+    }
     return created.id;
   }
 
@@ -2654,8 +2699,17 @@ $kWarehouseBridgeCompatShim  try {
       incoming: incoming,
       schoolId: widget.school.id,
     );
-    await provider.replaceLocationTimeGroups(merged);
-    final applyError = await provider.applyTimeScheme(fallbackSchemeId);
+    try {
+      await provider.replaceLocationTimeGroups(merged);
+    } catch (error) {
+      throw FormatException(_timeSchemeWriteFailureMessage(error));
+    }
+    final String? applyError;
+    try {
+      applyError = await provider.applyTimeScheme(fallbackSchemeId);
+    } catch (error) {
+      throw FormatException(_timeSchemeWriteFailureMessage(error));
+    }
     if (applyError != null) {
       throw FormatException(applyError);
     }
