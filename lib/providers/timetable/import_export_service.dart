@@ -172,6 +172,19 @@ Future<String?> _timetableEnsureSectionCapacityForImport(
     host._settings.sections,
     requiredSectionCount,
   );
+  // 补不满就必须如实报错（2026-10-08）。`buildExpandedSections` 在
+  // 「一条结束时间都解析不出来」或「当天已无余量」时会提前 `break`，返回的表**比
+  // 要求短**；而下面两条分支都不检查长度，直接用这张短表去改作息、随后照常导入 ——
+  // 界面拿到 null 以为补齐了，越界的那些课却拿不到钟点（读侧守卫
+  // `resolvedCourseStartTime` / `time_scheme_logic.dart:446` 会静默跳过它们），
+  // 用户看到的是"导入成功"而部分课在时间轴/超级岛里没有时间。
+  // `buildExpandedSections` 自己那条注释承诺"节数不够由导入侧的校验与提示处理"，
+  // 而这份校验此前并不存在 —— 这里补上，复用既有话术，不做任何写入。
+  if (expandedSections.length < requiredSectionCount) {
+    return encodeServiceMessage('section_count_below_usage', {
+      'requiredMaxSection': requiredSectionCount,
+    });
+  }
   final currentScheme = host.activeTimeScheme;
 
   if (currentScheme == null) {

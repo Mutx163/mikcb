@@ -1182,6 +1182,41 @@ void main() {
     },
   );
 
+  test('补不满节次时必须如实报错，不许拿一张短表继续导入', () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    // 造一张「当天已无余量」的作息：末节收在 23:50，后面补不出任何一节，于是
+    // `buildExpandedSections` 提前 break、返回的表比要求的短。
+    await provider.createTimeScheme(
+      name: '无余量作息',
+      sections: const [
+        SectionTime(startTime: '08:00', endTime: '08:45'),
+        SectionTime(startTime: '23:10', endTime: '23:50'),
+      ],
+      applyToActiveProfile: true,
+    );
+    expect(provider.settings.sectionCount, 2);
+
+    final message = await provider.ensureSectionCapacityForImport(6);
+
+    expect(
+      message,
+      isNotNull,
+      reason: '补不满却返回 null，界面就以为补齐了并继续导入；越界的课拿不到钟点'
+          '（读侧守卫会静默跳过它们），而用户看到的是「导入成功」',
+    );
+    expect(message, contains('section_count_below_usage'));
+    expect(
+      provider.settings.sectionCount,
+      2,
+      reason: '既然补不满，就一点都不该动用户的作息',
+    );
+  });
+
   test('editing one course syncs shared fields to same-name courses', () async {
     final provider = TimetableProvider(
       autoInitialize: false,
