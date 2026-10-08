@@ -6,7 +6,13 @@
   策略分两段，理由不同：
 
   · cloud-backup —— 整段关掉。本地优先、不联第三方账号，除 Google Play 换机助手外
-    课表没有任何理由上云；`domain="root" path="."` 覆盖应用数据目录整棵树。
+    课表没有任何理由上云。
+    ⚠️ **光写 `domain="root" path="."` 是关不掉的**（2026-10-07 实锤）：框架
+    `BackupAgent.onFullBackup` 在遍历 root 域**之前**就把 `files` / `database` /
+    `sharedpref` 三个目录塞进 `traversalExcludeSet`，之后它们各自独立遍历、
+    只受自己域的规则约束。本 App 的课表 JSON 与三组凭据全在 `shared_prefs`
+    （`storage_service.dart` 走 `SharedPreferences.getInstance()`），所以必须
+    逐域排除，少一条就等于没关。
   · device-transfer —— 只排掉凭据。用户换手机时课表、课表方案、设置、壁纸应当
     跟着走，丢了他会骂人。凭据（WebDAV / 情侣同步 / 教务导入会话）反而**不能**
     带走：flutter_secure_storage 的密文由 AndroidKeyStore 里的设备绑定密钥保护，
@@ -18,7 +24,19 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
+        <!-- 逐域排除，缺一条就漏一棵树（理由见文件头）。path="." 命中的是该域
+             目录本身，fullBackupFileTree 扫描到它就整棵剪掉。device_* 四条是
+             防御性的：本 App 没用设备保护存储，那几个目录理应为空，但规则
+             写全比"靠目录恰好是空的"可靠。 -->
         <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+        <exclude domain="device_root" path="." />
+        <exclude domain="device_file" path="." />
+        <exclude domain="device_database" path="." />
+        <exclude domain="device_sharedpref" path="." />
     </cloud-backup>
     <device-transfer>
         <!-- flutter_secure_storage 默认 prefs 名 = FlutterSecureStorage

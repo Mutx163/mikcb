@@ -12,7 +12,9 @@
 //   1. 有人把 `fullBackupContent` / `dataExtractionRules` 删掉（= 静默回到全量备份）；
 //   2. 有人在规则里加 `<include>` —— Auto Backup 的语义是「出现任意 `<include>`
 //      就整体翻成白名单」，手滑加一条会让备份范围整个变质，且不报错；
-//   3. 有人把 `FlutterSecureStorage.xml` 的排除删掉（凭据回到备份范围）。
+//   3. 有人把 `FlutterSecureStorage.xml` 的排除删掉（凭据回到备份范围）；
+//   4. `cloud-backup` 段被"简化"回只有 `domain="root"` 一条 —— 看着像关掉了，
+//      实际上一棵树都没排掉（这条是 2026-10-07 才发现的静默失效）。
 //
 // 策略本身（云端全关 / 换机带走数据但不带凭据）写在两个规则文件的注释里，
 // 改动前先读那里的理由。
@@ -88,21 +90,50 @@ void main() {
       }
     });
 
-    test('API 31+ 规则：云备份整段关掉，换机直传只排凭据', () {
+    test('API 31+ 规则：换机直传只排凭据', () {
       final xml = _read(_modernRulesPath);
       expect(xml, contains('<data-extraction-rules>'));
       expect(xml, contains('<cloud-backup>'));
       expect(xml, contains('<device-transfer>'));
       expect(
         xml,
-        contains('<exclude domain="root" path="."'),
-        reason: '云备份没整段关掉：课表会进系统云备份，与隐私定位相悖',
-      );
-      expect(
-        xml,
         contains('<exclude domain="sharedpref" path="$_secureStoragePrefs"'),
         reason: '换机直传没排掉凭据文件',
       );
+    });
+
+    test('API 31+ 云备份：九个域逐个排掉，漏一条就漏一棵树', () {
+      // 只写 `domain="root" path="."` **关不掉云备份**（2026-10-07 实锤）。
+      // 框架 `BackupAgent.onFullBackup` 在遍历 root 域之前就把 files / database /
+      // sharedpref 塞进 `traversalExcludeSet`，之后三者各自独立遍历、只认自己
+      // 域的规则。本 App 的课表 JSON 与三组凭据全在 `shared_prefs`
+      // （`storage_service.dart` 走 `SharedPreferences.getInstance()`），
+      // 于是只排 root 等于什么都没排，课表与凭据照旧上 Google 云。
+      //
+      // 这条断言在修复前是红的：当时 `cloud-backup` 段只有 root 一条 exclude。
+      final xml = _read(_modernRulesPath);
+      final cloudSection = xml.substring(
+        xml.indexOf('<cloud-backup>'),
+        xml.indexOf('</cloud-backup>'),
+      );
+      const requiredDomains = [
+        'root',
+        'file',
+        'database',
+        'sharedpref',
+        'external',
+        'device_root',
+        'device_file',
+        'device_database',
+        'device_sharedpref',
+      ];
+      for (final domain in requiredDomains) {
+        expect(
+          cloudSection,
+          contains('<exclude domain="$domain" path="."'),
+          reason: 'cloud-backup 段没排掉 $domain 域：这棵树的内容仍会进云备份',
+        );
+      }
     });
 
     test('API 30- 规则：排掉凭据文件', () {
