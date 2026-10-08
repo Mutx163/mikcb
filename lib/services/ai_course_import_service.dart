@@ -167,6 +167,46 @@ class AiCourseImportService {
     return AiCourseImportParseResult(courses: courses, warnings: warnings);
   }
 
+  /// 预扫：这份 AI 结果里用到的**最大节次**（读不到任何节次时返回 null）。
+  ///
+  /// 只为一件事存在：`parse` 对超出当前作息节数的课次会直接抛
+  /// `section_count_below_usage`（越界是必须拒收的畸形输入，见 `_parseCourse` 顶部的
+  /// 理由），而界面必须在**解析之前**先弹「要不要自动补齐节次」那个补救出口
+  /// （`ensureImportSectionCapacity`）——否则用户只会收到一句「节次数不足」，
+  /// 然后没有任何办法把这批课导进来，那个弹窗永远到不了。
+  ///
+  /// 宽容口径**故意与 `parse` 不同**：这里只回答「要不要先扩节」，任何读不出来的项
+  /// 一律跳过；一项都读不到就返回 null（交给 `parse` 去报真正的错），本方法不抛。
+  int? maxSectionIn(String content) {
+    Object? decoded;
+    try {
+      decoded = jsonDecode(_normalizeJsonPayload(content));
+    } catch (_) {
+      return null;
+    }
+    if (decoded is! Map) {
+      return null;
+    }
+    final rawCourses = decoded['courses'];
+    if (rawCourses is! List) {
+      return null;
+    }
+    int? maxSection;
+    for (final item in rawCourses) {
+      if (item is! Map) {
+        continue;
+      }
+      final value = _readInt(item['endSection']);
+      if (value == null || value < 1) {
+        continue;
+      }
+      if (maxSection == null || value > maxSection) {
+        maxSection = value;
+      }
+    }
+    return maxSection;
+  }
+
   Course _parseCourse(
     Map<String, dynamic> json, {
     required int index,

@@ -558,12 +558,32 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
       _isImporting = true;
     });
     try {
+      // 先按 AI 结果里的最大节次把作息对齐，**再**解析。
+      //
+      // `parse` 遇到超出当前作息节数的课次会直接抛 `section_count_below_usage`
+      // （越界是该拒的畸形输入），而「要不要自动补齐节次」那个弹窗在解析之后的
+      // `ensureImportSectionCapacity` 才弹 —— 于是补救出口永远到不了，用户只会
+      // 收到一句「节次数不足」，却没有任何办法把这批课导进来。
+      // 预扫只看 `endSection`、读不到就跳过（返回 null），真正的校验仍由 parse 负责。
+      final provider = context.read<TimetableProvider>();
+      final previewMaxSection = _aiImportService.maxSectionIn(_aiController.text);
+      if (previewMaxSection != null &&
+          previewMaxSection > provider.settings.sectionCount) {
+        final preExpanded = await ensureImportSectionCapacity(
+          context,
+          requiredSectionCount: previewMaxSection,
+          provider: provider,
+        );
+        if (!preExpanded || !mounted) {
+          return;
+        }
+      }
+
       final result = _parseAiResult(showError: true);
       if (result == null || !mounted) {
         return;
       }
 
-      final provider = context.read<TimetableProvider>();
       final replaceExisting = provider.courses.isEmpty
           ? true
           : await askImportReplaceExisting(
