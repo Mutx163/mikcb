@@ -1,5 +1,14 @@
 part of '../timetable_provider.dart';
 
+/// 导入扩节为「多张课表共用同一套作息」新建的作息副本的后缀。
+///
+/// 生成处在下面 `（导入补齐）` 分支，识别处在
+/// `lib/services/import_time_scheme_restore_point.dart` 的 `_importSupplementSchemes`
+/// （按名字含此后缀判定「导入自己造的副本」）。**判据必须同源**：两处若各写一份
+/// 字面量，改一处漏一处就会漏删副本（中止导入后模板列表越攒越多）或误删用户作息。
+/// 所以后缀只在这里定义一次，两边都引用它。
+const importSupplementNameSuffix = '（导入补齐）';
+
 /// 完整备份导入失败时使用的内存快照。
 ///
 /// SharedPreferences 没有跨多个 key 的事务；这个对象先把 provider 的旧状态
@@ -237,7 +246,7 @@ Future<String?> _timetableEnsureSectionCapacityForImport(
   final now = DateTime.now();
   final duplicatedScheme = currentScheme.copyWith(
     id: const Uuid().v4(),
-    name: '${currentScheme.name}（导入补齐）',
+    name: '${currentScheme.name}$importSupplementNameSuffix',
     sections: expandedSections,
     createdAt: now,
     updatedAt: now,
@@ -513,6 +522,11 @@ Future<String?> _timetableImportAppDataBackupAsNewProfile(
       return 'import_use_overwrite_for_full_backup';
     }
     final backup = host._dataTransferService.parseBackupJson(content);
+    // 2026-10-08：与「覆盖导入」那条路同款，把「跳过了多少条」挂到 host 上，
+    // 由 `main.dart` 在成功提示里如实追加「跳过了 N 条」。这条路径原先也静默
+    // 吞掉部分损坏：100 门里坏 40 门会安静导入 60 门、报「已创建新课表」——
+    // 用户看到「成功」却少了几十节。整份拒收不友好，能救多少救多少，但不谎报。
+    host._lastImportDroppedCounts = Map<String, int>.of(backup.droppedCounts);
     // 快照必须在第一次改动之前抓：下面 `_resolveSettingsAgainstTimeSchemes` 就会
     // 创建并落盘新作息，之后还要 add 新档案、切激活档案、`_applyProfileState`。
     snapshot = _FullBackupRestoreSnapshot(host);

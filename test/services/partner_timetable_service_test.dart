@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
@@ -6,6 +8,7 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/data_transfer_service.dart';
 import 'package:university_timetable/services/partner_timetable_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
+import 'package:university_timetable/services/transfer_package.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -178,5 +181,47 @@ void main() {
       isFalse,
     );
     expect(await storageService.getPartnerTimetableBinding(), isNull);
+  });
+
+  // 2026-10-08 审核修复：情侣课表导入原先也静默吞掉部分损坏 —— 100 门里坏
+  // 40 门会安静导入 60 门、报「已导入」，用户下次打开才发现少了几十节。
+  // 现在 `parseBackupJson` 带回的跳过条数必须透传到 `PartnerImportResult`，
+  // 让调用方如实提示。
+  test('部分损坏：救回能读的部分，并把跳过条数透传出来', () async {
+    Map<String, dynamic> goodCourse(String id, String name) => <String, dynamic>{
+          'id': id,
+          'name': name,
+          'teacher': '王老师',
+          'location': 'A101',
+          'dayOfWeek': 1,
+          'startSection': 1,
+          'endSection': 2,
+          'startTime': '08:00',
+          'endTime': '09:40',
+        };
+    final content = jsonEncode(<String, dynamic>{
+      'app': 'mikcb',
+      'schemaVersion': DataTransferService.schemaVersion,
+      'profileName': 'TA的课表',
+      'courses': <Object?>[
+        goodCourse('c-1', '高等数学'),
+        'garbage', // 非 Map 条目 → 解析时跳过
+        goodCourse('c-2', '线性代数'),
+        42,
+      ],
+      'exams': const <Object?>[],
+      'settings': <String, dynamic>{},
+      'currentWeek': 1,
+      'exportedAt': '2026-10-08T00:00:00.000',
+      'packageType': TransferPackage.packageType,
+      'scope': 'all_data',
+      'channel': 'file',
+    });
+
+    final result = await partnerService.importFromContent(content);
+
+    // 救回 2 门能读的，坏掉的 2 条如实记进 droppedTotal。
+    expect(result.profile.courses.length, 2);
+    expect(result.droppedTotal, 2);
   });
 }

@@ -1365,13 +1365,19 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       if (!mounted) {
         return false;
       }
+      // 2026-10-08：导入被跳过的条目（部分损坏）。「导入为新课表」这条路原先报
+      // 「已创建新课表」却不提少了几节 —— provider 已把 dropped 挂上，这里如实追加。
+      final dropped = provider.lastImportDroppedTotal;
+      final partialSuffix =
+          dropped > 0 ? l10n.importPartialSkippedSuffix(dropped) : '';
       showAppToast(
         context,
         message: message != null
             ? localizeServiceMessage(l10n, message)
-            : (importMode == _BackupImportMode.importAsNew
-                  ? l10n.createdNewTimetableAfterImport
-                  : l10n.backupRestoredSuccess),
+            : ((importMode == _BackupImportMode.importAsNew
+                      ? l10n.createdNewTimetableAfterImport
+                      : l10n.backupRestoredSuccess) +
+                  partialSuffix),
         kind: message != null ? AppToastKind.error : AppToastKind.success,
       );
       return message == null;

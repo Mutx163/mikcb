@@ -658,11 +658,17 @@ class _CoupleTimetableSettingsScreenState
       if (!mounted) {
         return;
       }
+      // 2026-10-08：导入被跳过的条目（部分损坏）。情侣课表这条路原先也静默吞掉
+      // 部分损坏：报「已导入」却少了几十节。provider 已把 dropped 透传，如实追加。
+      final droppedSuffix = importResult.droppedTotal > 0
+          ? l10n.importPartialSkippedSuffix(importResult.droppedTotal)
+          : '';
       showAppToast(
         context,
-        message: importResult.kind == PartnerImportResultKind.updated
-            ? l10n.coupleTimetableImportUpdated
-            : l10n.coupleTimetableImportSuccess,
+        message: (importResult.kind == PartnerImportResultKind.updated
+                ? l10n.coupleTimetableImportUpdated
+                : l10n.coupleTimetableImportSuccess) +
+            droppedSuffix,
         kind: AppToastKind.success,
       );
     } on FormatException catch (error) {

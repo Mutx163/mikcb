@@ -19,10 +19,16 @@ class PartnerImportResult {
   final PartnerTimetableBinding binding;
   final TimetableProfile profile;
 
+  /// 2026-10-08：导入时被跳过的条目数（部分损坏）。`parseBackupJson` 现在会
+  /// 带回它，这条路径原先也静默吞掉：100 门里坏 40 门会安静导入 60 门、报
+  /// 「已导入」，用户下次打开才发现少了几十节。这里透传给调用方如实提示。
+  final int droppedTotal;
+
   const PartnerImportResult({
     required this.kind,
     required this.binding,
     required this.profile,
+    this.droppedTotal = 0,
   });
 }
 
@@ -119,6 +125,7 @@ class PartnerTimetableService {
           : PartnerImportResultKind.created,
       binding: binding,
       profile: partnerProfile,
+      droppedTotal: backup.droppedTotal,
     );
   }
 
