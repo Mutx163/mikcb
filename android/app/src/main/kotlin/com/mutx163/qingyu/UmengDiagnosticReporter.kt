@@ -60,7 +60,7 @@ object UmengDiagnosticReporter {
                 if (extras.isNotEmpty()) {
                     appendLine("extras=")
                     extras.forEach { (key, value) ->
-                        appendLine("  $key=${value ?: "null"}")
+                        appendLine("  $key=${redactExtrasValue(key, value)}")
                     }
                 }
             }.trim()
@@ -115,7 +115,7 @@ object UmengDiagnosticReporter {
                 if (extras.isNotEmpty()) {
                     appendLine("extras=")
                     extras.forEach { (key, value) ->
-                        appendLine("  $key=${value ?: "null"}")
+                        appendLine("  $key=${redactExtrasValue(key, value)}")
                     }
                 }
                 if (!stackTrace.isNullOrBlank()) {
@@ -291,6 +291,30 @@ object UmengDiagnosticReporter {
         lastReportedAt[dedupeKey] = now
         return false
     }
+
+    /**
+     * 会认到人的字段（值要盖成 `**`），与 Dart 侧
+     * `lib/logging/app_debug_log.dart` 的 `personalLogFieldKeys` 对齐。
+     *
+     * ⚠️ 两边各维护一份、无法共享代码：改这份表时**必须同步** Dart 那份，
+     * 否则又变成「改了这份、漏了那份」。2026-10-08 审核实测的泄漏正是这么来的 ——
+     * Dart 侧 fd4aa078 只把 `recordDiagnosticEvent` 送出前脱敏了，而 Kotlin 自己调
+     * `record()` / `report()` 的这些点（例如实时活动启动失败打 `courseName=高等数学`）
+     * 整份原样进了用户导出的 `live_update_diagnostics.log`。查表大小写不敏感，
+     * 与 Dart 侧 `isPersonalLogFieldKey` 同口径。
+     */
+    private val personalLogFieldKeysLower: Set<String> = setOf(
+        "course", "coursename", "name", "shortname", "teacher", "loc", "location",
+        "groupname", "group", "keyword", "keywords", "classname", "studentname",
+        "overflownames", "changesamples", "sampleoverrides",
+    )
+
+    internal fun isPersonalLogFieldKey(key: String): Boolean =
+        personalLogFieldKeysLower.contains(key.lowercase())
+
+    /** extras 里命中敏感键的值盖成 `**`，其余原样。 */
+    internal fun redactExtrasValue(key: String, value: Any?): String =
+        if (isPersonalLogFieldKey(key)) "**" else "${value ?: "null"}"
 
     private fun normalizeLevel(
         level: String?,
