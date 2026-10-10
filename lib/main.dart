@@ -652,7 +652,22 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   final WebdavSyncCoordinator _cloudSyncCoordinator =
       WebdavSyncCoordinator.instance();
   bool _startupHandled = false;
-  bool _fairMemoryRecoveryHandled = false;
+  /// KILL 恢复拆两阶段：业务态（档案/周次）在换入首页**之前**恢复
+  /// （[_restoreFairMemoryBusinessStateOnce]），路由盖回留在换入
+  /// 之后（[_revealMainContent] → [_restoreFairMemoryRouteOnly]）。
+  bool _fairMemoryBusinessRestoreHandled = false;
+  bool _fairMemoryRouteRestoreHandled = false;
+  /// 业务半场 take 出的快照（take 即从 prefs 移除，只能读一次），交接给
+  /// 路由半场消费；若业务半场没跑到（启动早期失败），路由半场自己 take。
+  FairMemoryRecoverySnapshot? _fairMemoryRecoverySnapshot;
+  bool _fairMemoryRecoverySnapshotTaken = false;
+  /// KILL 快照读取的预算：只护平台通道这一段（prefs 读取 + JSON 解码）。
+  /// 业务写（switchProfile/setCurrentWeek 的落盘与原生推送）不套超时——
+  /// 中途放弃会把「已换内存、未落盘」的半截状态留给 UI，且写本身经
+  /// mutation gate 串行有界；整段若真挂死，6s 首页看门狗兜底强制换入。
+  static const Duration _fairMemorySnapshotReadBudget = Duration(
+    milliseconds: 1500,
+  );
   bool _allowFirstFrameCalled = false;
   bool _homeRevealed = false;
   bool _revealScheduled = false;
@@ -953,6 +968,10 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       if (hasAcceptedPrivacy && hasSeenGuide) {
         _cloudSyncCoordinator.bindProvider(provider);
         await provider.initialize();
+        // KILL 恢复（业务半场：档案 / 周次）在预热与换入**之前**：预热按
+        // 恢复后的设置烤视觉资产，首页换入时第一帧即终态。路由盖回仍留在
+        // 换入后的 _revealMainContent（见 _restoreFairMemoryRouteOnly）。
+        await _restoreFairMemoryBusinessStateOnce();
         // 启动画面保持到首页视觉资产（壁纸位图 / 预模糊磨砂 / 墨色亮度采样）
         // 就绪：放行后的第一帧必须是完整界面，不允许露出主题兜底的半成品
         // 底色。prime 内部有预算与异常兜底，不会拖死启动管线。
@@ -1147,31 +1166,109 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     }
   }
 
-  /// 自绘启动画面已让位（_revealHomeOnce 换入首页），恢复记忆场景。
+  /// 自绘启动画面已让位（_revealHomeOnce 换入首页）后，收尾 KILL 恢复。
+  ///
+  /// 老用户快速路径里，业务半场已提前到换入**之前**跑完（见
+  /// [_restoreFairMemoryBusinessStateOnce] 在 [_handleStartupFlows] 里的
+  /// 调用点），这里的一次性守卫让它立即返回，只剩路由盖回。引导路径与
+  /// 启动失败兜底路径没跑过业务半场，在此补齐（与拆分前行为一致：那两条
+  /// 路径换入早已发生，恢复必然后置）。
   Future<void> _revealMainContent() async {
     if (!mounted) {
       return;
     }
-    await _restoreFairMemoryScene();
-  }
-
-  Future<void> _restoreFairMemoryScene() async {
-    if (_fairMemoryRecoveryHandled) {
-      return;
-    }
-    _fairMemoryRecoveryHandled = true;
-    final snapshot = await FairMemoryService.instance
-        .takePendingRecoverySnapshot();
+    await _restoreFairMemoryBusinessStateOnce();
     if (!mounted) {
       return;
     }
-    if (snapshot != null) {
+    await _restoreFairMemoryRouteOnly();
+  }
+
+  /// 恢复 KILL 前的业务状态（激活档案 / 当前周次）。
+  ///
+  /// 快速路径在换入首页**之前**调用：`switchProfile` / `setCurrentWeek`
+  /// 各 `notifyListeners()` 一次并整文件写盘，若放在换入之后，用户会看到
+  /// 首页内容连续跳变再被路由盖页（触发条件：后台驻留被系统 KILL 后重开，
+  /// 且 KILL 前停留的档案 / 周次与落盘默认态不一致）。挪到换入前，首页
+  /// 第一帧即终态；`HomeStartupVisualPrimer.prime` 也因此按恢复后的设置
+  /// 烤壁纸 / 预模糊 / 墨色，不会烤错对象。`provider.initialize()` 幂等，
+  /// 重复调用几乎免费。
+  ///
+  /// 引导路径与启动失败兜底路径在 `_revealMainContent` 里补调本方法：
+  /// 那两条路径换入早已发生，恢复必然后置（与拆分前行为一致）。
+  ///
+  /// 快照读取受 [_fairMemorySnapshotReadBudget] 预算约束；业务写不套超时
+  /// （见字段注释）。整段异常时回落正常启动状态，与拆分前实现一致。
+  Future<void> _restoreFairMemoryBusinessStateOnce() async {
+    if (_fairMemoryBusinessRestoreHandled) {
+      return;
+    }
+    _fairMemoryBusinessRestoreHandled = true;
+    try {
+      final snapshot = await FairMemoryService.instance
+          .takePendingRecoverySnapshot()
+          .timeout(
+            _fairMemorySnapshotReadBudget,
+            onTimeout: () {
+              unawaited(
+                AppLogService.instance.warn(
+                  'fair_memory_restore_timeout',
+                  AppLogMessages.fairMemoryRestoreSnapshotTimeout,
+                ),
+              );
+              return null;
+            },
+          );
+      _fairMemoryRecoverySnapshot = snapshot;
+      _fairMemoryRecoverySnapshotTaken = true;
+      if (!mounted || snapshot == null) {
+        return;
+      }
+      final startedAt = DateTime.now();
       await _restoreFairMemoryBusinessState(snapshot.businessState);
       if (!mounted) {
         return;
       }
+      final profileId = snapshot.businessState['activeProfileId'];
+      final weekValue = snapshot.businessState['currentWeek'];
+      unawaited(
+        AppLogService.instance.info(
+          'fair_memory_restored',
+          AppLogMessages.fairMemoryBusinessRestored,
+          extras: <String, Object?>{
+            'profileId': profileId is String ? profileId : null,
+            'currentWeek': weekValue is num ? weekValue.toInt() : null,
+            'elapsedMs': DateTime.now().difference(startedAt).inMilliseconds,
+          },
+        ),
+      );
+    } catch (error, stackTrace) {
+      // 恢复不完整时回落正常启动状态；留痕便于诊断为何第一帧不是终态。
+      unawaited(
+        AppLogService.instance.error(
+          'fair_memory_restore_failed',
+          AppLogMessages.fairMemoryBusinessRestoreFailed,
+          error: error,
+          stackTrace: stackTrace,
+        ),
+      );
     }
-    final lastRoute = snapshot?.lastNamedRoute;
+  }
+
+  /// 换入首页之后：盖回 KILL 前停留的命名路由。业务态由前置阶段负责。
+  Future<void> _restoreFairMemoryRouteOnly() async {
+    if (_fairMemoryRouteRestoreHandled) {
+      return;
+    }
+    _fairMemoryRouteRestoreHandled = true;
+    final snapshot = _fairMemoryRecoverySnapshotTaken
+        ? _fairMemoryRecoverySnapshot
+        : await FairMemoryService.instance.takePendingRecoverySnapshot();
+    _fairMemoryRecoverySnapshot = null;
+    if (!mounted || snapshot == null) {
+      return;
+    }
+    final lastRoute = snapshot.lastNamedRoute;
     if (lastRoute == null || lastRoute == '/') {
       return;
     }

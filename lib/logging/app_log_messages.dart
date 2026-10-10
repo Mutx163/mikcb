@@ -96,6 +96,11 @@ abstract final class AppLogMessages {
   static const fairMemoryTrimHandled = '公平运行内存 TRIM：已清理内存图片缓存（未触碰超级岛/桌面小组件）';
   static const fairMemoryKillHandled = '公平运行内存 KILL：已确认并清理内存缓存（未触碰超级岛/桌面小组件）';
 
+  /// KILL 恢复两阶段拆分（启动优化 2026-10-10；同样直出中文）
+  static const fairMemoryBusinessRestored = '公平运行内存恢复：业务状态已换入首页前恢复（首页第一帧即终态）';
+  static const fairMemoryRestoreSnapshotTimeout = '公平运行内存恢复：快照读取超预算，本次启动放弃恢复';
+  static const fairMemoryBusinessRestoreFailed = '公平运行内存恢复：业务状态恢复失败，已回落正常启动状态';
+
   static String liveUpdateSettingsSynced({
     required bool beforeClass,
     required bool duringClass,
