@@ -61,6 +61,7 @@ import '../utils/frame_perf_probe.dart';
 import '../widgets/home_page_region_blur.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
+import '../utils/home_wallpaper_luminance_share.dart';
 import '../utils/luminance_sample_gate.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
     show
@@ -779,13 +780,17 @@ class _TimetableScreenState extends State<TimetableScreen>
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final darkFallback = colorScheme.surface;
         final settings = provider.settings;
-        // 启动预热器若已完成亮度采样，首帧直接采用：标题/状态栏/星期栏的
-        // 黑白墨极性第一帧即正确，不出现「按主题兜底再翻面」的闪变。仅在本页
+        final viewportSize = MediaQuery.sizeOf(context);
+        // 启动预热器 / 本进程里任意一份首页采过的亮度带，只要这一份键对得上就
+        // 首帧直接采用：标题/状态栏/星期栏/底栏的黑白墨极性第一帧即正确，不出现
+        // 「按主题兜底再翻面」的闪变（缩尺预览那份首页靠的就是这条）。仅在本页
         // 尚未开始采样时生效；异步精确采样照常运行并以同值幂等收敛。
-        _seedWallpaperLuminanceFromStartupPrimer(settings);
+        _seedWallpaperLuminanceFromPrimerOrShare(
+          settings,
+          viewportSize: viewportSize,
+        );
         final glassDockForm =
             settings.homeNavigationForm == HomeNavigationForm.glassDock;
-        final viewportSize = MediaQuery.sizeOf(context);
         final hasBackdrop = hasHomePageBackdrop(settings);
         final statusBarShowsBackdrop = homePageRegionShowsBackdrop(
           settings,
@@ -2314,20 +2319,41 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// File existence is checked asynchronously; results are cached per path,
   /// viewport and wallpaper alignment so a cover crop change cannot keep using
   /// a sample from an off-screen part of the image.
-  /// 采用启动预热器（HomeStartupVisualPrimer）缓存的壁纸亮度带作初值。
+  /// 采用**已经采到过**的壁纸亮度带作初值，不让首帧按主题猜墨色极性。
   ///
-  /// 只在冷启动首帧前的空窗期生效一次：本页任何亮度字段已被赋值或常规
-  /// 异步采样已启动（requestedKey 非空）时直接返回，绝不覆盖精确采样结果。
-  void _seedWallpaperLuminanceFromStartupPrimer(TimetableSettings settings) {
+  /// 两个来源，按精度优先：
+  /// 1. [HomeWallpaperLuminanceShare] —— 本进程里任意一份首页（通常是真首页）
+  ///    真的采到过的结果，键是采样缓存键本身。缩尺预览那份首页就是靠它取到
+  ///    真首页此刻用的同一份值；
+  /// 2. [HomeStartupVisualPrimer] —— 冷启动预热的那一份，只按路径索引（拿不到
+  ///    这份首页当前的取景），所以排在后面。
+  ///
+  /// 只在首帧前的空窗期生效一次：本页任何亮度字段已被赋值或常规异步采样已启动
+  /// （requestedKey 非空）时直接返回，绝不覆盖精确采样结果。
+  void _seedWallpaperLuminanceFromPrimerOrShare(
+    TimetableSettings settings, {
+    required Size viewportSize,
+  }) {
     if (_wallpaperTopLuminance != null ||
         _wallpaperWeekdayLuminance != null ||
         _wallpaperBodyLuminance != null ||
         _wallpaperLuminanceRequestedKey != null) {
       return;
     }
-    final bands = HomeStartupVisualPrimer.seededBandsFor(
-      homePageBackdropKey(settings),
+    final path = homePageBackdropKey(settings);
+    if (path == null || path.isEmpty) {
+      return;
+    }
+    final key = _wallpaperLuminanceKey(
+      path: path,
+      viewportSize: viewportSize,
+      alignX: settings.homePageWallpaperAlignX,
+      alignY: settings.homePageWallpaperAlignY,
+      scale: settings.homePageWallpaperScale,
     );
+    final bands =
+        HomeWallpaperLuminanceShare.bandsFor(key) ??
+        HomeStartupVisualPrimer.seededBandsFor(path);
     if (bands == null) {
       return;
     }
@@ -2511,6 +2537,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
     // 采到了：这一份 key 永久命中，失败配额归零。
     _wallpaperLuminanceGate.record(key, succeeded: true);
+    // 登记给同进程里此后新建的首页实例（缩尺预览那份），让它首帧直接用这份
+    // 极性而不是按主题猜（见 HomeWallpaperLuminanceShare 类注释）。放在
+    // 「值没变就早退」之前：登记的是「这个键上的已知值」，与本页要不要重绘无关。
+    HomeWallpaperLuminanceShare.publish(key, bands);
     if (_wallpaperTopLuminance == bands.top &&
         _wallpaperWeekdayLuminance == bands.weekday &&
         _wallpaperBodyLuminance == bands.body) {
