@@ -352,7 +352,23 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     final payload = <String, dynamic>{
       'exportedAtMillis': DateTime.now().millisecondsSinceEpoch,
       'source': 'live_testing_screen_snapshot',
-      'debugStatus': snapshot,
+      // 2026-10-10 补（10-09 隐私审查发现 1，high）：这份 JSON 是「导出日志
+      // 拿不到」时的静默回退，跟同一个分享面板出去 —— 但 `debugStatus` 带着
+      // 明文的课程名 / 教师 / 教室 / 备注 / 下一门课快照（`LiveUpdateService.kt`
+      // 的 `snapshot["course"]` 与 `snapshot["notification"]`，通知正文本身就是
+      // 拼好的「课程名 · 教室」）。应用内导出日志早已全部脱敏，唯独这条出口
+      // 一个都没盖。
+      //
+      // 两层处理：
+      // 1. `redactPersonalFieldMap` 递归查表 —— `course` 整棵子树被盖
+      //    （键在表里），id / 计数 / 时间戳等取证量原样保留；
+      // 2. `notification` / `summary` 子树的值是**自由文本**（拼好的句子，
+      //    没有 `key=` 形态），查表与正则都定位不到，必须按子树整棵拿掉 ——
+      //    这两棵的内容全部派生自课程数据（`LiveUpdateService.kt:2443-2450`
+      //    的 title/contentText 就是 `shortCourseName + location`），
+      //    保留它们等于把课名教室原样交出去。开关 / 计数类诊断量在
+      //    `switches` / `display` / `service` / `timing` 子树里，不受影响。
+      'debugStatus': redactedLiveDebugSnapshot(snapshot),
     };
     await file.writeAsString(
       const JsonEncoder.withIndent('  ').convert(payload),

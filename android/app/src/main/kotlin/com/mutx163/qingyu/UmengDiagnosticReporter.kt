@@ -56,7 +56,9 @@ object UmengDiagnosticReporter {
                     "level=${normalizeLevel(level, category = category, message = message, defaultLevel = LEVEL_INFO)}"
                 )
                 appendLine("category=$category")
-                appendLine("message=$message")
+                // message 是调用方拼的自由文本（可能带 `course=…` 形态的课名），
+                // 与 extras 同口径过一遍字段表 —— 审查确认这条出口原先零防线。
+                appendLine("message=${redactPersonalFields(message)}")
                 if (extras.isNotEmpty()) {
                     appendLine("extras=")
                     extras.forEach { (key, value) ->
@@ -104,7 +106,7 @@ object UmengDiagnosticReporter {
                     )}"
                 )
                 appendLine("category=$category")
-                appendLine("message=$message")
+                appendLine("message=${redactPersonalFields(message)}")
                 val diagnosticContext = buildDiagnosticContext(context)
                 if (diagnosticContext.isNotEmpty()) {
                     appendLine("context=")
@@ -120,11 +122,13 @@ object UmengDiagnosticReporter {
                 }
                 if (!stackTrace.isNullOrBlank()) {
                     appendLine("stackTrace=")
-                    appendLine(stackTrace)
+                    // 栈文本里常带异常消息原文（schoolName / 课名 / URL 都进过栈），
+                    // 紧挨着的 `message=` 洗过而这行原样 = 白洗。同口径过字段表。
+                    appendLine(redactPersonalFields(stackTrace))
                 }
                 if (throwable != null) {
                     appendLine("throwable=")
-                    appendLine(Log.getStackTraceString(throwable))
+                    appendLine(redactPersonalFields(Log.getStackTraceString(throwable)))
                 }
             }.trim()
 
@@ -307,6 +311,9 @@ object UmengDiagnosticReporter {
         "course", "coursename", "name", "shortname", "teacher", "loc", "location",
         "groupname", "group", "keyword", "keywords", "classname", "studentname",
         "overflownames", "changesamples", "sampleoverrides",
+        // 2026-10-10 补（10-09 隐私审查发现 2），与 Dart 侧同步：
+        // 用户可见的课表名 / 改名前的课程名 / 局域网客户端 IP。
+        "profilename", "originalname", "clientip",
     )
 
     internal fun isPersonalLogFieldKey(key: String): Boolean =
@@ -315,6 +322,37 @@ object UmengDiagnosticReporter {
     /** extras 里命中敏感键的值盖成 `**`，其余原样。 */
     internal fun redactExtrasValue(key: String, value: Any?): String =
         if (isPersonalLogFieldKey(key)) "**" else "${value ?: "null"}"
+
+    /**
+     * 自由文本行（`message=` / `stackTrace=` / `throwable=`）的 `key=value` 脱敏。
+     *
+     * 为什么必须要有它：extras 那条出口（[redactExtrasValue]）只管**结构化**的
+     * `Map` 入参，而 2026-10-09 审查确认这三行**至今没有任何防线** ——
+     * 任何人在原生侧写一句 `record(..., "起岛失败：course=$courseName")`，
+     * 课程名就整份进了用户导出的 `live_update_diagnostics.log`，Dart 侧那份
+     * 洗过的代码完全拦不住。与 Dart 侧 `redactPersonalFields` 同口径：
+     * `key` 大小写不敏感、允许 `=` 前后空格、行首可命中、值吃到下一个
+     * 空白 / `&` / `|` 为止（id / 计数 / 钟点这些取证量原样保留）。
+     */
+    internal fun redactPersonalFields(message: String): String {
+        // 前置边界比 Dart 侧多认 `(` / `[` / `,`：Kotlin 这条出口大头是
+        // stackTrace / throwable，栈帧形态 `at Course.from(name=高等数学)` 里
+        // key 紧贴 `(`，按 Dart 的 `(^|[\s&|])` 边界一条都命中不了
+        // （10-09 审查发现 4 记过这条机制缺口，Dart 侧暂未放宽）。
+        val pattern = Regex("(^|[\\s&|(,])([A-Za-z_][A-Za-z0-9_]*)\\s*=\\s*([^\\s&|]*)", setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE))
+        val out = StringBuilder()
+        var cursor = 0
+        for (match in pattern.findAll(message)) {
+            val key = match.groupValues[2]
+            if (!isPersonalLogFieldKey(key)) continue
+            if (match.range.first < cursor) continue
+            out.append(message, cursor, match.range.first)
+            out.append(match.groupValues[1]).append(key).append("=**")
+            cursor = match.range.last + 1
+        }
+        out.append(message, cursor, message.length)
+        return out.toString()
+    }
 
     private fun normalizeLevel(
         level: String?,

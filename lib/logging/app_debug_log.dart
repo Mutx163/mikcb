@@ -66,6 +66,24 @@ const Set<String> personalLogFieldKeys = <String>{
   // 逐段命中 —— 而值到空格为止，`name=高等数学|id=…` 这种以 `name=` 开头的
   // **第一段**命中的却是 `samples=` 的边界，整段漏出去。改成语义明确的键。
   'sampleOverrides',
+  // 2026-10-10 补（10-09 隐私审查发现 2）：三个**真实在用**却漏掉的键。
+  //
+  // - `profileName`：用户给课表起的名字，习惯写姓名/专业/年级（自由输入）。
+  //   `time_scheme_repository.dart:174` 把它拼进 `section_count_below_usage_detail`
+  //   的服务消息，经 `error=` 出口时 `courseName=` 被盖、它原样漏出。
+  // - `originalName`：课程改名前的真名。`lan_edit_api_handlers.dart:485` 的审计
+  //   日志里 `courseName` 被盖、它原样漏出 —— 同一行两把尺子。
+  // - `clientIp`：局域网客户端 IP，`lan_edit_api_handlers.dart` 五处鉴权失败
+  //   记录都带它。既暴露内网网段，也是常见准标识符，而这份日志可被用户导出。
+  //
+  // ⚠️ 加进这份表的同时**必须**同步 Kotlin 侧
+  // `UmengDiagnosticReporter.kt` 的 `personalLogFieldKeysLower`（两边各维护
+  // 一份、无法共享代码），并同步那份表的两处测试
+  // （`test/logging/app_debug_log_redaction_test.dart` 与
+  // `UmengDiagnosticRedactionTest.kt`）。
+  'profileName',
+  'originalName',
+  'clientIp',
 };
 
 /// 名字**列表**型字段：值是「一串用分隔符连起来的名字」。
@@ -213,6 +231,38 @@ Map<String, Object?> redactPersonalFieldMap(Map<Object?, Object?> source) {
     out[name] = redactPersonalFieldValue(name, value);
   });
   return out;
+}
+
+/// 超级岛调试快照里「内容**全部派生自课程数据**、但形态是自由文本」的子树。
+///
+/// `notification` 的 title / contentText / expandedText / criticalText 是
+/// `shortCourseName + location` 拼的句子（`LiveUpdateService.kt:2005-2008` 与
+/// `:2164-2170`），`summary.statusText` 同理可能是「课程 · 教室」。它们没有
+/// `key=` 形态，查表与正则都定位不到，导出时只能整棵拿掉 —— 键本身保留为
+/// `**`，说明「这里有一棵被拿掉了」。开关 / 计数 / 时间戳类诊断量在
+/// `switches` / `display` / `service` / `timing` 子树里，不受影响。
+const List<String> liveSnapshotCourseDerivedSubtrees = <String>[
+  'notification',
+  'summary',
+];
+
+/// 导出超级岛调试快照前的两层脱敏（2026-10-10，10-09 隐私审查发现 1）：
+///
+/// 1. [redactPersonalFieldMap] 递归查表 —— 结构化个人字段（`course` 整棵子树、
+///    嵌套 JSON 文本）全覆盖，id / 计数 / 时间戳等取证量原样保留；
+/// 2. [liveSnapshotCourseDerivedSubtrees] 名单里的子树整棵置 `**` ——
+///    自由文本形态查表无效，内容又全部派生自课程数据。
+///
+/// 摘成独立函数：`settings_live.dart` 的导出回退路径与
+/// `test/logging/live_debug_snapshot_redaction_test.dart` 共用同一份判据。
+Map<String, Object?> redactedLiveDebugSnapshot(Map<Object?, Object?> snapshot) {
+  final redacted = redactPersonalFieldMap(snapshot);
+  for (final key in liveSnapshotCourseDerivedSubtrees) {
+    if (redacted.containsKey(key)) {
+      redacted[key] = '**';
+    }
+  }
+  return redacted;
 }
 
 /// 列表里的每一项都脱敏；元素本身是嵌套结构就递归，元素是名字列表整项盖住

@@ -93,4 +93,38 @@ void main() {
         '[DayPager] lift(p75): vx=0.0 dx=0.0 dur=0ms samples=1 gapBeforeUp=0ms';
     expect(redactPersonalFields(raw), raw);
   });
+
+  test('2026-10-10 补的三个键：profileName / originalName / clientIp', () {
+    // 10-09 隐私审查发现 2 的三个真实漏点，逐条对应生产代码：
+    // - `profileName`：`time_scheme_repository.dart:174` 拼进服务消息、
+    //   经 `error=` 出口落盘（courseName 同行被盖，它原样漏出）；
+    // - `originalName`：`lan_edit_api_handlers.dart:485` 审计日志（同上）；
+    // - `clientIp`：`lan_edit_api_handlers.dart:241/250/262/881/896` 五处
+    //   鉴权失败记录，暴露内网网段。
+    const raw = 'lan_edit_course_group_saved originalName=高等数学 '
+        'courseName=高等数学(周二) scheduleCount=3 clientIp=192.168.1.23';
+    final redacted = redactPersonalFields(raw);
+
+    expect(redacted, isNot(contains('高等数学')));
+    expect(redacted, isNot(contains('192.168.1.23')));
+    expect(redacted, contains('originalName=**'));
+    expect(redacted, contains('courseName=**'));
+    expect(redacted, contains('clientIp=**'));
+    // 计数字段是取证信息，必须留着。
+    expect(redacted, contains('scheduleCount=3'));
+
+    // `profileName` 走 extras 查表那条出口（服务消息序列化成
+    // `code|profileName=…|courseName=…`，`|` 是边界，`|profileName=` 能命中）。
+    const serviceMessage =
+        'section_count_below_usage_detail|profileName=张三的课表|courseName=高等数学';
+    final redactedMessage = redactPersonalFields(serviceMessage);
+    expect(redactedMessage, isNot(contains('张三的课表')));
+    expect(redactedMessage, contains('profileName=**'));
+    expect(redactedMessage, contains('courseName=**'));
+
+    // extras 结构化出口同样要盖（`redactPersonalFieldValue` 查的是同一份表）。
+    expect(redactPersonalFieldValue('profileName', '张三的课表'), '**');
+    expect(redactPersonalFieldValue('originalName', '高等数学'), '**');
+    expect(redactPersonalFieldValue('clientIp', '192.168.1.23'), '**');
+  });
 }

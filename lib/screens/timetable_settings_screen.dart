@@ -18,6 +18,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../logging/app_debug_log.dart';
 import '../logging/performance_settings_snapshot.dart';
 import '../models/course_glass_tuning.dart';
 import '../models/glass_mode_choice.dart';
