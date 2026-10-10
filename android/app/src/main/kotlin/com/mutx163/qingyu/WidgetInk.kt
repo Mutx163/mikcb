@@ -31,11 +31,19 @@ internal fun chipInkRole(state: String): WidgetInk =
  *
  * - 渐变风格（`gradient`）是日夜同底的亮色卡，字色与深浅档无关（芯片恒深、正文恒白），
  *   继续下发渲染时算好的固定值即可，走属性反而会跟着系统档变错；
- * - Android 12 以下没有 `RemoteViews.setColorAttr`，回落固定值（那批设备上仍会错位，
- *   见 `.agents/notes/implemented/bug-fix/2026-10-10-widget-night-mode-stale-ink.md`）。
+ * - Android 12 以下没有 `RemoteViews.setColorAttr`。
+ *
+ * ⚠️ 2026-10-10 真机证伪，属性通道**停用**（恒 false）：HyperOS 桌面解析这四个属性时
+ * 拿到的是**白天档**——同一渲染里，课程色固定值（App 侧按夜间算）是亮的，而走
+ * setColorAttr 的主字/次字/芯片字全部是深色（用户截图 2026-10-10 20:06：2×4 概览的
+ * 「16:00 - 17:40 / 未知地点 / 默认课表·明日1节」与迷你列表「第5周 / 16:00·未知地点」，
+ * 恰好全是属性路径；课程名/色条/芯片文字全是课程色路径）。即宿主解析属性所用
+ * 的资源/主题在 day-night 选择上没有跟桌面当前的夜间档走（成因在宿主侧，App 无法控制）。
+ * 字色回到渲染时算的固定值（[TodayWidgetSupport.inkFallback]），见
+ * .agents/notes/rejected/bug-fix/2026-10-10-widget-ink-host-theme-attr.md。
  */
-internal fun shouldResolveInkFromTheme(style: String, sdkInt: Int): Boolean =
-    style != "gradient" && sdkInt >= Build.VERSION_CODES.S
+@Suppress("UNUSED_PARAMETER")
+internal fun shouldResolveInkFromTheme(style: String, sdkInt: Int): Boolean = false
 
 /**
  * 给卡片上的中性文字上色。

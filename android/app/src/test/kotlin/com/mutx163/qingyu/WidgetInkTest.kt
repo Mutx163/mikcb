@@ -21,15 +21,14 @@ import java.io.File
 class WidgetInkTest {
 
     @Test
-    fun themeInkOnlyForNonGradientOnApi31AndAbove() {
-        assertTrue(shouldResolveInkFromTheme("solid", 31))
-        assertTrue(shouldResolveInkFromTheme("glass", 34))
-        assertTrue(shouldResolveInkFromTheme("solid", 36))
-        // 渐变风格日夜同底（亮青→蓝），字色与深浅档无关，走属性反而会跟着换错档。
+    fun themeInkChannelIsDisabledOnHyperOs() {
+        // 2026-10-10 真机证伪：HyperOS 桌面解析主题属性拿到白天档（深底压深字），
+        // 属性通道整体停用、字色一律由渲染时算的固定值下发。这条钉子防止有人
+        // 只改开关忘了同步注释与笔记。
+        assertFalse(shouldResolveInkFromTheme("solid", 31))
+        assertFalse(shouldResolveInkFromTheme("glass", 34))
+        assertFalse(shouldResolveInkFromTheme("solid", 36))
         assertFalse(shouldResolveInkFromTheme("gradient", 34))
-        // Android 12（API 31）以下没有 RemoteViews.setColorAttr。
-        assertFalse(shouldResolveInkFromTheme("solid", 30))
-        assertFalse(shouldResolveInkFromTheme("glass", 26))
     }
 
     @Test
