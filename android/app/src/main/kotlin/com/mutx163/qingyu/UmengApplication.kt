@@ -10,6 +10,9 @@ class UmengApplication : Application() {
 
         // 金标联盟公平运行内存：进程级动态注册，不依赖 Flutter 引擎是否存活。
         FairMemoryAdapter.initialize(this)
+        // 系统深浅模式换档后重画桌面卡片：平台不会把这种变化回调给卡片 Provider，
+        // 不补这一步会出现「浅底 + 浅字」的错位卡片。见 WidgetThemeWatcher。
+        WidgetThemeWatcher.initialize(this)
         // 调试版 / 性能版：启动内存会话采样（正式版 no-op）。
         MemoryStatsCollector.initializeIfAllowed(this)
 
