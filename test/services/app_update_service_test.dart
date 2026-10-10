@@ -1343,4 +1343,97 @@ void main() {
       'gitcode',
     );
   });
+
+  // 2026-10-10 信任根收紧：digest 只能来自不经镜像的渠道。
+  // 镜像对响应有完全控制权，可以同时提供假清单（含假 digest）与假 APK，
+  // 让「下载后哈希比对」对自洽投毒完全失效。两条用例分别钉住两条路径：
+  // asset digest / 正文内嵌摘要。
+  group('digest 只信直连渠道（2026-10-10）', () {
+    const mirrorPrefix = 'https://mirror.example/';
+    const assetDigest =
+        'b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1';
+
+    test('经镜像取得的 API 清单：asset digest 不到达检查结果', () async {
+      final client = MockClient((request) async {
+        final url = request.url.toString();
+        // 直连 GitHub API 不可达（镜像场景的前提）。
+        if (url == AppUpdateService.releasesApiUrl) {
+          return http.Response('', 503);
+        }
+        // 镜像返回带 asset digest 的清单 —— 攻击者可控。
+        if (url ==
+            '$mirrorPrefix${AppUpdateService.releasesApiUrl}') {
+          return http.Response(
+            jsonEncode([
+              {
+                'tag_name': 'v1.5.0',
+                'name': 'v1.5.0',
+                'draft': false,
+                'prerelease': false,
+                'html_url': 'https://example.com/1.5.0',
+                'body': 'SHA-256: $assetDigest',
+                'assets': const [
+                  {
+                    'name': 'mikcb-1.5.0-arm64-v8a.apk',
+                    'browser_download_url': 'https://example.com/1.5.0.apk',
+                    'digest': 'sha256:$assetDigest',
+                  },
+                ],
+                'updated_at': '2026-04-20T09:00:00Z',
+              },
+            ]),
+            200,
+          );
+        }
+        return http.Response('', 404);
+      });
+
+      final service = AppUpdateService(client: client);
+      final result = await service.checkForUpdates(
+        currentVersion: '1.3.0',
+        mirrorUrlPrefix: mirrorPrefix,
+      );
+
+      expect(result.hasUpdate, isTrue);
+      expect(result.latestRelease?.version, '1.5.0');
+      expect(result.latestRelease?.expectedApkSha256, isNull);
+      // 标志本身也必须是 false —— 防止将来有人只改期望漏改标记。
+      expect(result.latestRelease?.digestFromDirectChannel, isFalse);
+    });
+
+    test('直连 API 清单：asset digest 正常保留', () async {
+      final client = MockClient((request) async {
+        if (request.url.toString() == AppUpdateService.releasesApiUrl) {
+          return http.Response(
+            jsonEncode([
+              {
+                'tag_name': 'v1.5.0',
+                'name': 'v1.5.0',
+                'draft': false,
+                'prerelease': false,
+                'html_url': 'https://example.com/1.5.0',
+                'assets': const [
+                  {
+                    'name': 'mikcb-1.5.0-arm64-v8a.apk',
+                    'browser_download_url': 'https://example.com/1.5.0.apk',
+                    'digest': 'sha256:$assetDigest',
+                  },
+                ],
+                'updated_at': '2026-04-20T09:00:00Z',
+              },
+            ]),
+            200,
+          );
+        }
+        return http.Response('', 404);
+      });
+
+      final service = AppUpdateService(client: client);
+      final result = await service.checkForUpdates(currentVersion: '1.3.0');
+
+      expect(result.hasUpdate, isTrue);
+      expect(result.latestRelease?.expectedApkSha256, assetDigest);
+      expect(result.latestRelease?.digestFromDirectChannel, isTrue);
+    });
+  });
 }

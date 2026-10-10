@@ -952,6 +952,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                         } else {
                           _downloadAndInstall(
                             effectiveDownloadUrl,
+                            // 2026-10-10 信任根收紧：digest 的镜像剥离统一在
+                            // 服务层出口（checkForUpdates 返回前）执行，
+                            // 这里直接透传。见 app_update_service.dart。
                             expectedApkSha256:
                                 release?.expectedApkSha256,
                             fallbackUrl:

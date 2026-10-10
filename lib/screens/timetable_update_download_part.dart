@@ -249,6 +249,9 @@ extension _TimetableScreenUpdateDownload on _TimetableScreenState {
         _updatePromptController.updateInAppProgress,
         controller,
         mirrorUrlPrefix: mirrorPrefix,
+        // 2026-10-10 信任根收紧：digest 的镜像剥离统一在服务层出口
+        // （checkForUpdates 返回前）执行，这里直接透传。见
+        // app_update_service.dart 的 AppReleaseInfo.digestFromDirectChannel。
         expectedApkSha256: release.expectedApkSha256,
       );
       if (!mounted) {

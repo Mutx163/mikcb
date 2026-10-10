@@ -46,6 +46,16 @@ class AppReleaseInfo {
   /// Release 页面回退链路拿不到该字段，此时跳过校验（保持旧行为）。
   final String? expectedApkSha256;
 
+  /// digest 是否取自**不经镜像**的渠道（2026-10-10 加）。
+  ///
+  /// 镜像是 TLS 终止点，对响应内容有完全控制权：经镜像取得的清单里，
+  /// asset digest 与正文内嵌摘要都可能被替换成攻击者 APK 的自洽摘要 ——
+  /// 「摘要与下载同源校验」防不了同源投毒。因此只有**直连 GitHub API /
+  /// 直连 Release 页面 / GitCode API（独立主机，不经第三方镜像）**取得的
+  /// 摘要才允许参与安装前的完整性判定；镜像渠道提供的清单仍可参与版本
+  /// 竞争（保可用性），但其 digest 一律视为缺失（无 digest 时安装闸门本就拒装）。
+  final bool digestFromDirectChannel;
+
   const AppReleaseInfo({
     required this.version,
     required this.title,
@@ -57,6 +67,7 @@ class AppReleaseInfo {
     required this.updatedAt,
     required this.isPrerelease,
     this.expectedApkSha256,
+    this.digestFromDirectChannel = false,
   });
 }
 
@@ -279,9 +290,16 @@ class AppUpdateService {
         winner.release!,
         outcomes: () => [apiOutcome, pageOutcome, gitcodeOutcome],
       );
+      // 2026-10-10 信任根收紧：digest 只能来自不经镜像的渠道。镜像渠道
+      // 胜出时按「无摘要」交出 —— 安装闸门随即拒装并引导用户去 Release
+      // 页面（浏览器下载由 GitHub 页面背书）。镜像清单仍参与版本竞争，
+      // 版本号/标题等非安全字段不受影响。
+      final trustedRelease = release.digestFromDirectChannel
+          ? release
+          : _withDigestTrustMark(release, digestFromDirectChannel: false);
       return _buildCheckResult(
         currentVersion: currentVersion,
-        release: release,
+        release: trustedRelease,
       );
     }
 
@@ -345,6 +363,9 @@ class AppUpdateService {
   /// 没有 asset digest，胜出策略是 GitCode 时正文也未必有摘要（旧版同步的
   /// 发行版）。此时短暂等待其余策略返回，用同版本发行版携带的摘要补齐——
   /// 各渠道上传的是同一份 APK，摘要天然一致。
+  ///
+  /// 2026-10-10 收紧：只从**直连渠道**的兄弟策略借摘要。镜像渠道的清单
+  /// 摘要可能被镜像整体替换（自洽投毒），借来即等于绕过完整性校验。
   Future<AppReleaseInfo> _mergeDigestFromOtherStrategies(
     AppReleaseInfo winner, {
     required List<_AppUpdateFetchOutcome?> Function() outcomes,
@@ -360,6 +381,7 @@ class AppUpdateService {
         final candidate = outcome?.release;
         if (candidate == null ||
             candidate.version != winner.version ||
+            !candidate.digestFromDirectChannel ||
             candidate.expectedApkSha256 == null) {
           continue;
         }
@@ -375,6 +397,8 @@ class AppUpdateService {
           updatedAt: winner.updatedAt,
           isPrerelease: winner.isPrerelease,
           expectedApkSha256: candidate.expectedApkSha256,
+          // 摘要来自直连渠道的兄弟策略，信任标记随之传递。
+          digestFromDirectChannel: true,
         );
       }
       await Future<void>.delayed(pollInterval);
@@ -842,6 +866,9 @@ class AppUpdateService {
           gitcodeDownloadUrl: gitcodeUrl,
           // GitCode 无官方 asset digest，用发行版正文内嵌的 SHA-256（CI 同步时写入）。
           expectedApkSha256: _extractSha256FromBody(body),
+          // GitCode API 是维护者自己的仓库主机（api.gitcode.com），不经第三方
+          // 镜像，正文摘要按直连渠道对待（2026-10-10）。
+          digestFromDirectChannel: true,
           updatedAt: DateTime.tryParse(
             (picked['created_at'] as String?) ?? '',
           )?.toLocal(),
@@ -963,7 +990,12 @@ class AppUpdateService {
         mirrorUrlPrefix: mirrorUrlPrefix,
       );
       if (release != null) {
-        return _AppUpdateFetchOutcome(release: release);
+        return _AppUpdateFetchOutcome(
+          release: _withDigestTrustMark(
+            release,
+            digestFromDirectChannel: _isDirectGitHubUrl(candidate),
+          ),
+        );
       }
 
       return const _AppUpdateFetchOutcome(saw404: true, statusCode: 404);
@@ -1062,7 +1094,14 @@ class AppUpdateService {
       }
 
       return _AppUpdateFetchOutcome(
-        release: _releaseFromGitHubJson(releaseJson),
+        release: _releaseFromGitHubJson(
+          releaseJson,
+          // 2026-10-10：清单可能经第三方镜像取得（镜像竞争见
+          // _buildGitHubApiCandidates）。镜像对响应有完全控制权，其 digest
+          // 不可信 —— 只有直连 api.github.com 取得的清单才标记为
+          // 「digest 来自直连渠道」，参与安装前完整性判定。
+          digestFromDirectChannel: _isDirectGitHubUrl(candidate),
+        ),
       );
     } on TimeoutException {
       return const _AppUpdateFetchOutcome(hadRetryableFailure: true);
@@ -1116,7 +1155,10 @@ class AppUpdateService {
     );
   }
 
-  AppReleaseInfo _releaseFromGitHubJson(Map<String, dynamic> releaseJson) {
+  AppReleaseInfo _releaseFromGitHubJson(
+    Map<String, dynamic> releaseJson, {
+    required bool digestFromDirectChannel,
+  }) {
     final latestVersion = _normalizeVersion(
       (releaseJson['tag_name'] as String?) ??
           (releaseJson['name'] as String?) ??
@@ -1128,6 +1170,11 @@ class AppUpdateService {
     );
     final rawTag = (releaseJson['tag_name'] as String?)?.trim() ?? '';
     final body = (releaseJson['body'] as String?)?.trim() ?? '';
+    // 正文内嵌摘要（CI 写入的 SHA-256 行）与 asset digest 同权重：正文经镜像
+    // 取得时同样可被整体替换，只在直连渠道启用这个兜底。
+    final bodyDigest = digestFromDirectChannel
+        ? _extractSha256FromBody(body)
+        : null;
     return AppReleaseInfo(
       version: latestVersion,
       title: (releaseJson['name'] as String?)?.trim().isNotEmpty == true
@@ -1141,7 +1188,8 @@ class AppUpdateService {
         version: latestVersion,
       ),
       expectedApkSha256:
-          apkDownload.expectedApkSha256 ?? _extractSha256FromBody(body),
+          apkDownload.expectedApkSha256 ?? bodyDigest,
+      digestFromDirectChannel: digestFromDirectChannel,
       updatedAt: DateTime.tryParse(
         (releaseJson['updated_at'] as String?) ??
             (releaseJson['published_at'] as String?) ??
@@ -1161,6 +1209,47 @@ class AppUpdateService {
       return null;
     }
     return candidate;
+  }
+
+  /// 该候选 URL 是否为**不经第三方镜像**的直连渠道（2026-10-10）。
+  ///
+  /// 两个直连主机：api.github.com（GitHub API）与 github.com（Release 页面）。
+  /// 镜像候选都是「镜像前缀 + 原始 URL」拼接（见 buildMirrorCandidateUrls），
+  /// 其 host 是镜像主机而不是 api.github.com/github.com 本身，据此区分。
+  /// 注意不能用「URL 里含 github.com」判定 —— 镜像外壳里恰好整段包含原始
+  /// URL（`https://ghfast.top/https://api.github.com/...`）。
+  static bool _isDirectGitHubUrl(String candidate) {
+    final uri = Uri.tryParse(candidate.trim());
+    if (uri == null) {
+      return false;
+    }
+    final host = uri.host.toLowerCase();
+    return host == 'api.github.com' || host == 'github.com';
+  }
+
+  /// 给页面链路产出的 release 补打 digest 信任标记（页面链路在解析完成时
+  /// 并不知道自己是不是直连，由候选请求层传入）。
+  static AppReleaseInfo _withDigestTrustMark(
+    AppReleaseInfo release, {
+    required bool digestFromDirectChannel,
+  }) {
+    if (digestFromDirectChannel) {
+      return release;
+    }
+    // 镜像渠道：正文摘要兜底不可信。expectedApkSha256 与 digestFromDirectChannel
+    // 均取默认值（null / false）—— 这两处「缺省即剥离」是本函数的存在意义，
+    // 刻意不写实参， avoid_redundant_argument_values 才能过 --fatal-infos。
+    return AppReleaseInfo(
+      version: release.version,
+      title: release.title,
+      body: release.body,
+      releaseUrl: release.releaseUrl,
+      downloadUrl: release.downloadUrl,
+      gitcodeDownloadUrl: release.gitcodeDownloadUrl,
+      pgyerDownloadUrl: release.pgyerDownloadUrl,
+      updatedAt: release.updatedAt,
+      isPrerelease: release.isPrerelease,
+    );
   }
 
   /// 取下载地址与官方 SHA-256 摘要（GitHub API `digest` 字段，形如 `sha256:...`）。
