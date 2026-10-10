@@ -169,9 +169,27 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   bool _holidayOverrideEnabled = false;
   bool? _lastKnownTestSessionActive;
   // 选课测试（强制起岛）会话：芯片文案 + 到点自动摘除的定时器。
+  // 会话本体记录在全局 activeLiveCourseTestSession，重进页面时据此恢复。
   String? _courseTestLabel;
   Timer? _courseTestEndTimer;
   bool _courseTestBusy = false;
+
+  /// 按全局会话恢复选课测试芯片：会话仍在（含显示设置页速览起的会话）→
+  /// 显示芯片并对齐摘除定时器；已过期 → 读侧惰性清槽、不显示。
+  void _restoreCourseTestFromGlobalSession() {
+    final session = currentLiveCourseTestSession();
+    if (session == null) return;
+    _courseTestLabel = session.courseName;
+    _courseTestEndTimer?.cancel();
+    _courseTestEndTimer = Timer(
+      session.sessionEnd.difference(DateTime.now()),
+      () {
+        if (mounted) {
+          setState(() => _courseTestLabel = null);
+        }
+      },
+    );
+  }
 
   /// 「忽略假日」开关。写失败或被拒时必须把开关拨回真源。
   ///
@@ -224,6 +242,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     final provider = context.read<TimetableProvider>();
     _holidayOverrideEnabled = provider.settings.holidayOverrideEnabled;
     _lastKnownTestSessionActive = provider.hasLiveTestFixtureCourses;
+    _restoreCourseTestFromGlobalSession();
     unawaited(_refreshDebugStatus(showLoading: true));
     _autoRefreshTimer = Timer.periodic(_autoRefreshInterval, (_) {
       if (!mounted || !_isAppResumed) {

@@ -36,6 +36,41 @@ class LiveTestingTriggerResult {
 
 bool liveTestingTriggerInFlight = false;
 
+/// 当前进行中的强制起岛会话（选课测试 / 显示页速览共用）。
+///
+/// 单槽全局：新会话覆盖旧会话，[cancelLiveUpdateCourseTest] 与正式路径刷新
+/// （[triggerLiveUpdateProductionRefresh]）清空。会话终点后原生自动收岛，
+/// 记录不再有意义——读取一律走 [currentLiveCourseTestSession]，它把已过期
+/// 的记录惰性清掉，无需定时器兜底。此前会话状态只存页面内存，返回再进
+/// 页面按钮就「忘了」测试还在跑（2026-10-10 用户反馈），故上收到这里。
+LiveCourseTestSession? activeLiveCourseTestSession;
+
+/// 读取当前会话；已过暂停终点（岛已被原生收尾）视为无会话并顺手清槽。
+LiveCourseTestSession? currentLiveCourseTestSession() {
+  final session = activeLiveCourseTestSession;
+  if (session == null) return null;
+  if (session.sessionEnd.isBefore(DateTime.now())) {
+    activeLiveCourseTestSession = null;
+    return null;
+  }
+  return session;
+}
+
+/// 强制起岛会话的跨页面记录：UI 据此在重进页面时恢复「停止测试」态。
+class LiveCourseTestSession {
+  final LiveCourseTestStage stage;
+  final String courseName;
+
+  /// 与原生暂停终点对齐的摘除时刻（end + 缓冲）。
+  final DateTime sessionEnd;
+
+  const LiveCourseTestSession({
+    required this.stage,
+    required this.courseName,
+    required this.sessionEnd,
+  });
+}
+
 /// 选课测试的合成时间窗：由基准时刻、阶段变体与会话长度唯一决定，是纯可
 /// 推导逻辑（独立成值对象以便无 widget 树直接测试）。
 class LiveCourseTestWindow {
@@ -155,6 +190,8 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
     // must not inherit that pause or the real path appears broken.
     provider.clearLiveActivitySyncSuspend();
     await liveService.suspendScheduleTriggers(0);
+    // 正式路径刷新会解除暂停并重选真实课，强制起岛会话随之失效。
+    activeLiveCourseTestSession = null;
 
     // Same entry used after resume / settings changes: re-select from courses.
     await provider.refreshLiveActivityNow(forceSnapshotSync: true);
@@ -331,6 +368,11 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
       endTime: LiveTestingFixtureService.formatClock(window.clockEnd),
     ),
   );
+  final testSession = LiveCourseTestSession(
+    stage: stage,
+    courseName: displayCourse.name,
+    sessionEnd: end.add(suspendBuffer),
+  );
   final displaySettings = isBeforeClass
       ? settings.beforeClassDisplaySettings
       : settings.duringEndDisplaySettings;
@@ -436,6 +478,10 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
       },
     );
 
+    // 成功起岛后登记跨页面会话：任何页面（含返回重进的显示设置页）都能
+    // 据此恢复「停止测试」态并正确取消。
+    activeLiveCourseTestSession = testSession;
+
     return LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.success,
       // 芯片/按钮摘除终点与原生暂停终点对齐（end + 缓冲）：岛最迟在暂停
@@ -456,9 +502,11 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
       stackTrace: stackTrace,
       dedupeKey: 'live_update_test_failed',
     );
-    // 失败时立刻解除双路暂停，避免把正式调度吊死到会话终点。
+    // 失败时立刻解除双路暂停，避免把正式调度吊死到会话终点；并清掉可能
+    // 残留的旧会话记录（新会话没起来，不能让旧记录误导 UI）。
     provider.clearLiveActivitySyncSuspend();
     await liveService.suspendScheduleTriggers(0);
+    activeLiveCourseTestSession = null;
     return LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.error,
       message: l10n.sendFailedWithError('$error'),
@@ -475,6 +523,7 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
 /// 停止选课测试：解除双路暂停并按正式路径重刷（真实课在窗则立即接管）。
 Future<void> cancelLiveUpdateCourseTest(TimetableProvider provider) async {
   final liveService = MiuiLiveActivitiesService();
+  activeLiveCourseTestSession = null;
   provider.clearLiveActivitySyncSuspend();
   await liveService.suspendScheduleTriggers(0);
   await liveService.stopLiveUpdate();

@@ -339,8 +339,9 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   Future<void> _saveQueue = Future<void>.value();
 
   // 底部悬浮「速览」按钮的会话状态：测试中 → 按钮变「停止测试」，到点
-  // （约 30 秒）或手动停止后回到「试弹」态。与自检页的选课测试共用同一
-  // 套触发/取消通道（liveTestingTriggerInFlight 全局在飞标记互斥）。
+  // （约 30 秒）或手动停止后回到「试弹」态。会话本体记录在全局
+  // activeLiveCourseTestSession（返回重进页面要能恢复按钮态），这里只持有
+  // 翻面定时器；进入页面时按全局会话恢复。
   bool _stagePreviewBusy = false;
   bool _stagePreviewActive = false;
   Timer? _stagePreviewEndTimer;
@@ -349,10 +350,28 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   void initState() {
     super.initState();
     _draft = context.read<TimetableProvider>().settings;
+    _restoreStagePreviewFromGlobalSession();
     unawaited(
       context.read<TimetableProvider>().refreshLiveActivityNow(
         forceSnapshotSync: true,
       ),
+    );
+  }
+
+  /// 按全局会话恢复按钮态：会话仍在（含其他入口起的选课测试）→ 直接进
+  /// 「停止测试」态，并把翻面定时器对齐到会话终点；已过期 → 读侧惰性清槽。
+  void _restoreStagePreviewFromGlobalSession() {
+    final session = currentLiveCourseTestSession();
+    if (session == null) return;
+    _stagePreviewActive = true;
+    _stagePreviewEndTimer?.cancel();
+    _stagePreviewEndTimer = Timer(
+      session.sessionEnd.difference(DateTime.now()),
+      () {
+        if (mounted) {
+          setState(() => _stagePreviewActive = false);
+        }
+      },
     );
   }
 
@@ -417,8 +436,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             }
           },
         );
-      }
-    } finally {
+      }    } finally {
       if (mounted) {
         setState(() => _stagePreviewBusy = false);
       }

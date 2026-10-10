@@ -8,6 +8,7 @@ import 'package:university_timetable/services/live_testing_trigger.dart';
 /// 只验 Dart 侧可推导字段；原生实际起岛/收岛行为不在此层（integration_test
 /// 职责）。
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   final base = DateTime(2026, 3, 23, 10, 15);
 
   group('classic windows (sessionLength == null)', () {
@@ -117,6 +118,38 @@ void main() {
         LiveTestingFixtureService.formatClock(window.clockEnd),
         '10:19',
       );
+    });
+  });
+
+  group('global session slot (cross-page state)', () {
+    test(
+      'currentLiveCourseTestSession lazily clears an expired session',
+      () {
+        final past = DateTime(2026, 3, 23, 10, 15);
+        activeLiveCourseTestSession = LiveCourseTestSession(
+          stage: LiveCourseTestStage.beforeClass,
+          courseName: '高数',
+          sessionEnd: past,
+        );
+
+        // 已过期：读侧清槽并视为无会话（岛已被原生收尾）。
+        expect(currentLiveCourseTestSession(), isNull);
+        expect(activeLiveCourseTestSession, isNull);
+      },
+    );
+
+    test('currentLiveCourseTestSession keeps an in-flight session', () {
+      addTearDown(() => activeLiveCourseTestSession = null);
+      final future = DateTime.now().add(const Duration(seconds: 30));
+      final session = LiveCourseTestSession(
+        stage: LiveCourseTestStage.duringClass,
+        courseName: '大物',
+        sessionEnd: future,
+      );
+      activeLiveCourseTestSession = session;
+
+      expect(currentLiveCourseTestSession(), same(session));
+      expect(activeLiveCourseTestSession, same(session));
     });
   });
 }
