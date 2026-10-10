@@ -274,11 +274,18 @@ abstract final class HyperosBlurredHeader {
   /// 第一行（小标题只剩下上半截，2026-09-25 桌面小组件页「快速添加到桌面」）。
   static const subpageBandBottomOverhang = 20.0;
 
-  /// 子页顶栏玻璃带此刻是否真的会往下外推那一截。
+  /// 子页顶栏玻璃带此刻是否真的会画（含下沿外推）。
+  ///
+  /// ⚠️ **2026-10-10 起深浅色同构**：这里不再看主题亮度。旧版在判据里挡深色，
+  /// 是 9-26 之前「深色顶栏 = 纯不透明、不做玻璃」旧口径的遗产；2026-09-27 用户
+  /// 口径已改成「暗色模式渐变模糊也要显示」（亮 veil，见 [_frostedScrimColor]），
+  /// 但这个门禁没跟着拆 —— 于是深色下子页顶栏模糊层不挂、衬底换成页面底色，
+  /// 又因大标题页 `opaqueAtRest=false` 被画成渐隐到透明的渐变，整条带读成透明片
+  /// （2026-10-10 用户再报「切深色后渐变模糊变成透明的」，根因即此）。
   ///
   /// 判据必须与 [HyperosFrostedHeaderShell] 里 `bottomOverhang: useBlur ? … : 0`
-  /// 的 `useBlur` **同源**：带画了才有下沿可谈；带没画（深色顶栏规范 / 模糊总开关
-  /// 关 / 平台不支持 / 无障碍降级）就是页面原样。改这里必须同时看那一处。
+  /// 的 `useBlur` **同源**：带画了才有下沿可谈；带没画（模糊总开关关 / 平台
+  /// 不支持 / 无障碍降级）就是页面原样。改这里必须同时看那一处。
   ///
   /// [bandOverhangsOverride] 只给测试用：真机判据里的 [liveBlurSupported] 读的是
   /// `dart:io` 的 `Platform.isAndroid/isIOS`，widget test 跑在宿主平台上（这里是
@@ -287,9 +294,7 @@ abstract final class HyperosBlurredHeader {
   static bool? bandOverhangsOverride;
 
   static bool bandOverhangs(BuildContext context) =>
-      bandOverhangsOverride ??
-      (Theme.of(context).brightness != Brightness.dark &&
-          backdropBlurEnabledUntracked(context));
+      bandOverhangsOverride ?? backdropBlurEnabledUntracked(context);
 
   /// [backdropBlurEnabled] but reads [FrostedAppearanceScope] **untracked**.
   ///

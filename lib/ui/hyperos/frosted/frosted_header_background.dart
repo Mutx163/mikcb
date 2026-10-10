@@ -110,9 +110,11 @@ class HyperosFrostedHeaderShell extends StatelessWidget {
 
   /// 模糊下沿往下多画多少（见 [InspireHeaderBlur.bottomOverhang]）。
   ///
-  /// **只在真的画模糊时生效**：模糊关掉（深色顶栏规范、系统无障碍降级、平台
-  /// 不支持）时衬底是**不透明的页面底色**，把它往下延 20dp 会盖住正文顶部那
-  /// 一条 —— 那就不是"模糊靠下"，而是"内容被切"。所以按 [useBlur] 门控。
+  /// **只在真的画模糊时生效**：模糊关掉（系统无障碍降级、平台不支持、用户关掉
+  /// 模糊总开关）时衬底是**不透明的页面底色**，把它往下延 20dp 会盖住正文顶部
+  /// 那一条 —— 那就不是"模糊靠下"，而是"内容被切"。所以按 [useBlur] 门控。
+  /// （深色模式 2026-10-10 起与浅色同构，不再是关模糊的情形之一，见
+  /// [HyperosBlurredHeader.bandOverhangs]。）
   final double bottomOverhang;
 
   @override

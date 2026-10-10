@@ -227,11 +227,52 @@ void main() {
     );
   });
 
-  testWidgets('深色模式 / 关模糊：带不画，下沿也不画', (tester) async {
-    // 深色顶栏规范走纯不透明深色、不做模糊（[HyperosBlurredHeaderShell]），
-    // 页面壳的判据与外壳的 `useBlur` 同源，于是都不外推。override 只顶「平台
-    // 支持」那一项，这里清掉它走真实判据。
+  testWidgets('深色模式与浅色同构：带与下沿外推都画（2026-10-10 拆深色门禁）', (tester) async {
+    // 旧规范「深色顶栏 = 纯不透明、不做玻璃」的门禁 2026-10-10 拆除：用户口径
+    // 2026-09-27「暗色模式渐变模糊也要显示」，当时只修了取色（_frostedScrimColor
+    // 亮 veil）、门禁漏了，深色下模糊层不挂、衬底换成页面底色又渐隐到透明，
+    // 整条带读成透明片。现在深色必须与浅色画出同一条带。
+    HyperosBlurredHeader.bandOverhangsOverride = true;
+    double shellOverhang() => tester
+        .widget<HyperosFrostedHeaderShell>(find.byType(HyperosFrostedHeaderShell))
+        .bottomOverhang;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.light(),
+        darkTheme: ThemeData.dark(),
+        themeMode: ThemeMode.light,
+        home: subpage(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    final lightOverhang = shellOverhang();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.light(),
+        darkTheme: ThemeData.dark(),
+        themeMode: ThemeMode.dark,
+        home: subpage(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(lightOverhang, HyperosMiuixTopAppBar.largeTitleContentGap);
+    expect(
+      shellOverhang(),
+      lightOverhang,
+      reason: '深色不再被门禁挡：玻璃带与下沿外推必须与浅色一致',
+    );
+  });
+
+  testWidgets('平台不支持：带不画，下沿也不画（真实判据，不顶 override）', (tester) async {
+    // 宿主是 Windows：清掉 override 后 `liveBlurSupported` 恒 false，
+    // 深浅色都不画带 —— 平台门禁是深浅色共用的最后一道。
     HyperosBlurredHeader.bandOverhangsOverride = null;
+    HyperosBlurredHeader.liveBlurSupportedOverride = null;
     await tester.pumpWidget(
       MaterialApp(
         theme: ThemeData.light(),
