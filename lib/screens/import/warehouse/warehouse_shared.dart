@@ -401,3 +401,39 @@ WarehouseIndexBarGeometry warehouseIndexBarGeometry({
     width: kIndexBarWidth,
   );
 }
+
+/// 把页面壳的可折叠大标题同步到给定可滚动内容的真实位置。
+///
+/// 为什么需要它：字母条跳转走的是 `ScrollablePositionedList` 的「视口锚点」—
+/// `ItemScrollController.jumpTo` 先把内部 ScrollController 归零，再用 viewport
+/// 的 `anchor` 把目标组摆到顶栏之下（见 scrollable_positioned_list 的
+/// `_jumpTo`）。整个过程 `ScrollPosition.pixels` 始终是 0，`jumpTo(0)` 又因为
+/// `pixels == value` 而跳过通知分发，于是**一个滚动通知都不发**。页面壳的可折叠
+/// 大标题只认滚动通知（hyperos_page.dart 的 `_handleBodyScrollForBlur` →
+/// `HyperosExitUntilCollapsedScrollBehavior.handleScroll`），跳转后大标题不收、
+/// 正文却已经滚到它下面去；手动滑动则一切正常（2026-10-10 实机反馈）。
+///
+/// 这里借目标滚动位补发一条真实的滚动通知：`anchor` 会把
+/// `minScrollExtent` 压成很负的值，`pixels - minScrollExtent` 足够大，顶栏就按
+/// 内容的实际位置落到完全折叠态，正文位移与平时一致（都是 0）。
+///
+/// 返回是否真的补发了通知。
+bool warehouseResyncCollapsibleTitleFromListScroll(
+  ScrollableState listScrollable,
+) {
+  final position = listScrollable.position;
+  if (!position.hasPixels) {
+    return false;
+  }
+  // 出界说明滚动位正在自己弹回（例如跳到第一组时 anchor 为正、pixels 越过
+  // minScrollExtent，视图会开一段滚动弹簧），真通知已经在发，别再补一条。
+  if (position.pixels < position.minScrollExtent - 0.5 ||
+      position.pixels > position.maxScrollExtent + 0.5) {
+    return false;
+  }
+  ScrollUpdateNotification(
+    metrics: position,
+    context: listScrollable.context,
+  ).dispatch(listScrollable.context);
+  return true;
+}

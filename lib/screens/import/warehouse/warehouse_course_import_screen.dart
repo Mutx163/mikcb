@@ -10,6 +10,7 @@ import 'package:azlistview/azlistview.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import '../../../models/warehouse_macro_models.dart';
 import '../../../models/warehouse_repository_models.dart';
@@ -77,6 +78,18 @@ class _WarehouseCourseImportScreenState
   /// 当前渲染的分组（build 里更新），字母条跳转与高亮联动读它。
   List<WarehouseSchoolSection> _currentSections = const [];
   String _schoolSelectedTag = '';
+
+  /// 学校列表的滚动位（在 `itemBuilder` 里顺手拿到）。
+  ///
+  /// 字母条跳转不产生任何滚动通知（见
+  /// [warehouseResyncCollapsibleTitleFromListScroll]），顶栏的可折叠大标题
+  /// 不会跟着收起来。这里记下列表的滚动位，跳转后借它把顶栏同步到列表的
+  /// 真实位置。`ScrollableState` 在列表存活期间不会更换，只有列表被换掉
+  /// （重建出新的 Scrollable）时才需要重新取。
+  ScrollableState? _schoolListScrollable;
+
+  /// 折叠同步的 post-frame 回调是否已排上（一次跳转只排一次）。
+  bool _schoolTitleSyncScheduled = false;
 
   /// 上一次 build 的索引 tag 表。搜索会让上游 `data.indexOf(tag)` 返回 -1，
   /// 字母条整体熄灭；清空搜索后若首组 tag 与搜索前相同，
@@ -203,6 +216,30 @@ class _WarehouseCourseImportScreenState
         ? 0.0
         : (_schoolJumpTopInset / viewportHeight).clamp(0.0, 0.9);
     _schoolItemScrollController.jumpTo(index: index, alignment: alignment);
+    // 跳转不改变滚动偏移、也不发滚动通知，大标题不会跟着收起来（见
+    // [_schoolListScrollable]）。补一次同步。
+    _scheduleSchoolTitleSyncAfterJump();
+  }
+
+  /// 跳转后把可折叠大标题同步到学校列表的真实位置。
+  ///
+  /// 排在 post-frame：`jumpTo` 里的 `setState` 只标记脏树，`anchor` 要等下一帧
+  /// 布局才生效，`minScrollExtent` 也要那时才反映新落点——提前发通知用的是旧值。
+  void _scheduleSchoolTitleSyncAfterJump() {
+    if (_schoolTitleSyncScheduled) {
+      return;
+    }
+    _schoolTitleSyncScheduled = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _schoolTitleSyncScheduled = false;
+      if (!mounted) {
+        return;
+      }
+      final scrollable = _schoolListScrollable;
+      if (scrollable != null && scrollable.mounted) {
+        warehouseResyncCollapsibleTitleFromListScroll(scrollable);
+      }
+    });
   }
 
   /// 随列表滚动高亮字母条当前字母（与 AzListView 内置逻辑一致）。
@@ -755,6 +792,15 @@ class _WarehouseCourseImportScreenState
                           padding: EdgeInsets.fromLTRB(16, headerInset, 16, 16),
                           indexBarData: const [],
                           itemBuilder: (context, index) {
+                            // 记下学校列表的滚动位（见
+                            // [_schoolListScrollable]）。只在还没拿到或已
+                            // 卸载时找一遍，不让每个 item 每次 build 都向
+                            // 上遍历。
+                            if (_schoolListScrollable?.mounted != true) {
+                              _schoolListScrollable = Scrollable.maybeOf(
+                                context,
+                              );
+                            }
                             final section = sections[index];
                             return Column(
                               mainAxisSize: MainAxisSize.min,
