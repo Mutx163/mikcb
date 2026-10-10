@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-07T07:37:46+00:00",
+  "updatedAt": "2026-10-10T07:38:20+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 243,
-    "schools": 238,
+    "total": 251,
+    "schools": 246,
     "generic": 5
   },
   "schools": [
@@ -72,6 +72,13 @@
       "category": "school"
     },
     {
+      "id": "BNUZH",
+      "name": "北京师范大学珠海校区",
+      "initial": "B",
+      "resourceFolder": "BNUZH",
+      "category": "school"
+    },
+    {
       "id": "BUPT",
       "name": "北京邮电大学",
       "initial": "B",
@@ -90,6 +97,13 @@
       "name": "北部湾大学",
       "initial": "B",
       "resourceFolder": "BBGU",
+      "category": "school"
+    },
+    {
+      "id": "CAU",
+      "name": "中国农业大学",
+      "initial": "C",
+      "resourceFolder": "CAU",
       "category": "school"
     },
     {
@@ -590,6 +604,13 @@
       "category": "school"
     },
     {
+      "id": "HEBAU",
+      "name": "河北农业大学",
+      "initial": "H",
+      "resourceFolder": "HEBAU",
+      "category": "school"
+    },
+    {
       "id": "HBGUHX",
       "name": "河北地质大学华信学院",
       "initial": "H",
@@ -776,6 +797,13 @@
       "name": "湖南邮电职业技术学院",
       "initial": "H",
       "resourceFolder": "HNPTC",
+      "category": "school"
+    },
+    {
+      "id": "HZU",
+      "name": "菏泽学院",
+      "initial": "H",
+      "resourceFolder": "HZU",
       "category": "school"
     },
     {
@@ -1059,6 +1087,13 @@
       "category": "school"
     },
     {
+      "id": "USC",
+      "name": "南华大学",
+      "initial": "N",
+      "resourceFolder": "USC",
+      "category": "school"
+    },
+    {
       "id": "NANKAI",
       "name": "南开大学",
       "initial": "N",
@@ -1217,6 +1252,13 @@
       "name": "上海财经大学浙江学院",
       "initial": "S",
       "resourceFolder": "SHUFEZJ",
+      "category": "school"
+    },
+    {
+      "id": "SCTBC",
+      "name": "四川工商职业技术学院",
+      "initial": "S",
+      "resourceFolder": "SCTBC",
       "category": "school"
     },
     {
@@ -1451,6 +1493,13 @@
       "category": "school"
     },
     {
+      "id": "XHKJZYXY",
+      "name": "宣化科技职业学院",
+      "initial": "X",
+      "resourceFolder": "XHKJZYXY",
+      "category": "school"
+    },
+    {
       "id": "XZHMU",
       "name": "徐州医科大学",
       "initial": "X",
@@ -1567,6 +1616,13 @@
       "name": "扬州大学",
       "initial": "Y",
       "resourceFolder": "YZU",
+      "category": "school"
+    },
+    {
+      "id": "YSU",
+      "name": "燕山大学",
+      "initial": "Y",
+      "resourceFolder": "YSU",
       "category": "school"
     },
     {
