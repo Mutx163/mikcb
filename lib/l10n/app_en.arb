@@ -2183,6 +2183,19 @@
     }
   },
   "liveTestingCourseTestStoppedToast": "Course test stopped; normal scheduling restored.",
+  "liveStagePreviewBeforeClassAction": "Preview before-class island",
+  "liveStagePreviewDuringClassAction": "Preview in-class island",
+  "liveStagePreviewStoppedToast": "Preview stopped; normal scheduling restored.",
+  "liveStagePreviewStartedToast": "\"{stage}\" island preview started; the island auto-dismisses in about 30 seconds. Press Home to view it.",
+  "@liveStagePreviewStartedToast": {
+    "placeholders": {
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "liveStagePreviewStageBeforeClass": "before class",
+  "liveStagePreviewStageDuringClass": "in class",
   "liveTestingInFlight": "Test in progress. Please wait before tapping again.",
   "liveTestingProductionHomeHint": "Used the production island selection path. Press Home to watch it; it usually will not pop while the app stays open.",
   "liveTestingPresetFallbackNote": "(No testable real course found; used self-check preset courses instead, nothing was written to your timetable.)",

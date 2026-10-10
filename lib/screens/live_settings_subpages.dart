@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
@@ -12,9 +13,11 @@ import 'package:provider/provider.dart';
 
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../services/live_testing_trigger.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/app_log_service.dart';
 import '../utils/hex_color.dart';
+import '../utils/theme_seed_accent.dart';
 import '../utils/app_toast.dart';
 import '../utils/import_file_reader.dart';
 import '../services/unified_transfer_service.dart';
@@ -335,6 +338,13 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   Timer? _autoSaveTimer;
   Future<void> _saveQueue = Future<void>.value();
 
+  // 底部悬浮「速览」按钮的会话状态：测试中 → 按钮变「停止测试」，到点
+  // （约 30 秒）或手动停止后回到「试弹」态。与自检页的选课测试共用同一
+  // 套触发/取消通道（liveTestingTriggerInFlight 全局在飞标记互斥）。
+  bool _stagePreviewBusy = false;
+  bool _stagePreviewActive = false;
+  Timer? _stagePreviewEndTimer;
+
   @override
   void initState() {
     super.initState();
@@ -354,7 +364,87 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     } else {
       _autoSaveTimer?.cancel();
     }
+    _stagePreviewEndTimer?.cancel();
     super.dispose();
+  }
+
+  LiveCourseTestStage get _previewStage => widget.forDuringEnd
+      ? LiveCourseTestStage.duringClass
+      : LiveCourseTestStage.beforeClass;
+
+  /// 速览：直接弹本页对应阶段的岛（约 30 秒自动收岛），成功后按钮翻到
+  /// 「停止测试」态，到点由会话终点驱动自动翻回。
+  Future<void> _startStagePreview() async {
+    if (_stagePreviewBusy) return;
+    final provider = context.read<TimetableProvider>();
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _stagePreviewBusy = true);
+    try {
+      final result = await triggerLiveStagePreviewTest(
+        context: context,
+        provider: provider,
+        stage: _previewStage,
+      );
+      if (!mounted) return;
+      showAppToast(
+        context,
+        message: switch (result.status) {
+          LiveTestingTriggerStatus.success => l10n.liveStagePreviewStartedToast(
+            widget.forDuringEnd
+                ? l10n.liveStagePreviewStageDuringClass
+                : l10n.liveStagePreviewStageBeforeClass,
+          ),
+          LiveTestingTriggerStatus.inFlight ||
+          LiveTestingTriggerStatus.error => result.message ?? '',
+        },
+        kind: switch (result.status) {
+          LiveTestingTriggerStatus.success => AppToastKind.success,
+          LiveTestingTriggerStatus.inFlight => AppToastKind.warning,
+          LiveTestingTriggerStatus.error => AppToastKind.error,
+        },
+      );
+      if (result.status == LiveTestingTriggerStatus.success) {
+        _stagePreviewEndTimer?.cancel();
+        setState(() => _stagePreviewActive = true);
+        final sessionEnd =
+            result.sessionEnd ??
+            DateTime.now().add(const Duration(seconds: 35));
+        _stagePreviewEndTimer = Timer(
+          sessionEnd.difference(DateTime.now()),
+          () {
+            if (mounted) {
+              setState(() => _stagePreviewActive = false);
+            }
+          },
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _stagePreviewBusy = false);
+      }
+    }
+  }
+
+  /// 停止速览：立即收岛并恢复正式调度（与自检页停止选课测试同路）。
+  Future<void> _stopStagePreview() async {
+    if (_stagePreviewBusy) return;
+    final provider = context.read<TimetableProvider>();
+    setState(() => _stagePreviewBusy = true);
+    try {
+      await cancelLiveUpdateCourseTest(provider);
+      _stagePreviewEndTimer?.cancel();
+      if (!mounted) return;
+      setState(() => _stagePreviewActive = false);
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.liveStagePreviewStoppedToast,
+        kind: AppToastKind.success,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _stagePreviewBusy = false);
+      }
+    }
   }
 
   LiveDisplaySettings get _display => widget.forDuringEnd
@@ -836,52 +926,76 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         promoteDuringClass: _draft.livePromoteDuringClass,
       ),
     ];
+    final previewLabel = widget.forDuringEnd
+        ? l10n.liveStagePreviewDuringClassAction
+        : l10n.liveStagePreviewBeforeClassAction;
     return HyperosSubpage(
       // 排序后待落盘的状态已在 dispose 补写；maybePop 同时兼容
       // 返回键与系统返回手势。
       onBack: () => Navigator.maybePop(context),
       title: Text(widget.title),
-      child: HyperosListView(
+      child: Stack(
         children: [
-          if (widget.forDuringEnd) ...[
-            HyperosSectionLabel(text: l10n.liveDisplayConfigModeTitle),
-            HyperosListGroup(
-              children: [
-                HyperosSwitchTile(
-                  title: l10n.followBeforeClassDisplayTitle,
-                  value: _draft.liveDuringEndFollowBeforeClass,
-                  onChanged: (value) => _updateDraft(
-                    _draft.copyWith(liveDuringEndFollowBeforeClass: value),
-                  ),
+          HyperosListView(
+            // 底部留出悬浮按钮的高度，末尾卡片不被遮住。
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+            children: [
+              if (widget.forDuringEnd) ...[
+                HyperosSectionLabel(text: l10n.liveDisplayConfigModeTitle),
+                HyperosListGroup(
+                  children: [
+                    HyperosSwitchTile(
+                      title: l10n.followBeforeClassDisplayTitle,
+                      value: _draft.liveDuringEndFollowBeforeClass,
+                      onChanged: (value) => _updateDraft(
+                        _draft.copyWith(liveDuringEndFollowBeforeClass: value),
+                      ),
+                    ),
+                  ],
                 ),
+                const HyperosSectionGap(),
               ],
-            ),
-            const HyperosSectionGap(),
-          ],
-          HyperosSectionLabel(text: l10n.liveIslandPreviewTitle),
-          LiveIslandPreviewCard(
-            display: _followBeforeClass
-                ? _draft.beforeClassDisplaySettings
-                : display,
-            forDuringEnd: widget.forDuringEnd,
-            followBeforeClass: _followBeforeClass,
-            endSecondsCountdownThresholdSeconds:
-                _draft.liveEndSecondsCountdownThreshold,
-          ),
-          const HyperosSectionGap(),
-          if (_followBeforeClass)
-            IgnorePointer(
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 180),
-                opacity: 0.5,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: sectionCards,
-                ),
+              HyperosSectionLabel(text: l10n.liveIslandPreviewTitle),
+              LiveIslandPreviewCard(
+                display: _followBeforeClass
+                    ? _draft.beforeClassDisplaySettings
+                    : display,
+                forDuringEnd: widget.forDuringEnd,
+                followBeforeClass: _followBeforeClass,
+                endSecondsCountdownThresholdSeconds:
+                    _draft.liveEndSecondsCountdownThreshold,
               ),
-            )
-          else
-            ...sectionCards,
+              const HyperosSectionGap(),
+              if (_followBeforeClass)
+                IgnorePointer(
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 180),
+                    opacity: 0.5,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: sectionCards,
+                    ),
+                  ),
+                )
+              else
+                ...sectionCards,
+            ],
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _LiveStagePreviewFab(
+              label: _stagePreviewActive
+                  ? l10n.liveTestingCourseTestStopAction
+                  : previewLabel,
+              active: _stagePreviewActive,
+              busy: _stagePreviewBusy,
+              onTap: _stagePreviewActive
+                  ? _stopStagePreview
+                  : _startStagePreview,
+            ),
+          ),
         ],
       ),
     );
@@ -1153,9 +1267,101 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   }
 }
 
+/// 底部悬浮「速览」按钮：Miuix 加长圆药丸（extended FAB 形态），idle 态
+/// 主题强调色 + 试弹文案；会话进行中翻成红色破坏性 + 「停止测试」。
+/// 悬浮于列表之上，安全区之下留常规间距。
+class _LiveStagePreviewFab extends StatelessWidget {
+  const _LiveStagePreviewFab({
+    required this.label,
+    required this.active,
+    required this.busy,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final bool busy;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null && !busy;
+    final fill = active
+        ? HyperosColors.error(context)
+        : HyperosColors.primarySurface(context);
+    final ink = active
+        ? HyperosColors.onError(context)
+        : onAccentInk(fill);
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Material(
+              color: enabled ? fill : fill.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(28),
+              clipBehavior: Clip.antiAlias,
+              elevation: enabled ? 4 : 0,
+              shadowColor: Colors.black.withValues(alpha: 0.28),
+              child: InkWell(
+                onTap: enabled
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        onTap!();
+                      }
+                    : null,
+                borderRadius: BorderRadius.circular(28),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 22,
+                    vertical: 13,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (busy)
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: ink,
+                          ),
+                        )
+                      else
+                        Icon(
+                          active
+                              ? Icons.stop_rounded
+                              : Icons.play_arrow_rounded,
+                          size: 20,
+                          color: ink,
+                        ),
+                      const SizedBox(width: 8),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          color: enabled ? ink : ink.withValues(alpha: 0.7),
+                          fontSize: HyperosMiuixTypography.button,
+                          fontWeight: FontWeight.w500,
+                          height: 1.1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class LiveKeepAliveSettingsScreen extends StatefulWidget {
   const LiveKeepAliveSettingsScreen({super.key});
-
   @override
   State<LiveKeepAliveSettingsScreen> createState() =>
       _LiveKeepAliveSettingsScreenState();

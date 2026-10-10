@@ -2198,6 +2198,19 @@
     }
   },
   "liveTestingCourseTestStoppedToast": "已停止选课测试，正式调度已恢复",
+  "liveStagePreviewBeforeClassAction": "试弹上课前岛",
+  "liveStagePreviewDuringClassAction": "试弹课中岛",
+  "liveStagePreviewStoppedToast": "已停止预览，正式调度已恢复",
+  "liveStagePreviewStartedToast": "已弹出「{stage}」超级岛预览，约 30 秒后自动收岛；请按 Home 键回桌面查看",
+  "@liveStagePreviewStartedToast": {
+    "placeholders": {
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "liveStagePreviewStageBeforeClass": "上课前",
+  "liveStagePreviewStageDuringClass": "课中",
   "liveTestingInFlight": "测试进行中，请勿重复点击，请稍后再试",
   "liveTestingProductionHomeHint": "已走正式超级岛选课路径。请按 Home 键回到桌面查看（停留在应用内时系统通常不会弹出）",
   "liveTestingPresetFallbackNote": "（未检测到可测试的真实课程，已改用自检预设课程，不会写入课表）",

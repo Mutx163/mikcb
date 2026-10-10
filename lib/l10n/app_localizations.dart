@@ -2720,17 +2720,6 @@ abstract class AppLocalizations {
   /// **'导入失败，请确认文件有效'**
   String get importFailedInvalidFile;
 
-  /// 导入**部分成功**时追加在成功提示后面的说明（2026-10-08）。
-  ///
-  /// 为什么需要它：`data_transfer_service.dart` 的 `_parseListWithTotalLossGuard`
-  /// 只在「原始非空 + 解析全空」时抛，中间那档（100 门里坏 40 门）会安静地
-  /// 导入 60 门并报「导入成功」。逐条跳过是对的（能救回多少救多少），
-  /// 但不能一声不响 —— 尤其原文件已被覆盖、用户没有第二次机会核对。
-  ///
-  /// In zh, this message translates to:
-  /// **'，其中 {count} 条格式损坏已跳过'**
-  String importPartialSkippedSuffix(int count);
-
   /// No description provided for @welcomeTitle.
   ///
   /// In zh, this message translates to:
@@ -7309,6 +7298,42 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'已停止选课测试，正式调度已恢复'**
   String get liveTestingCourseTestStoppedToast;
+
+  /// No description provided for @liveStagePreviewBeforeClassAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'试弹上课前岛'**
+  String get liveStagePreviewBeforeClassAction;
+
+  /// No description provided for @liveStagePreviewDuringClassAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'试弹课中岛'**
+  String get liveStagePreviewDuringClassAction;
+
+  /// No description provided for @liveStagePreviewStoppedToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'已停止预览，正式调度已恢复'**
+  String get liveStagePreviewStoppedToast;
+
+  /// No description provided for @liveStagePreviewStartedToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'已弹出「{stage}」超级岛预览，约 30 秒后自动收岛；请按 Home 键回桌面查看'**
+  String liveStagePreviewStartedToast(String stage);
+
+  /// No description provided for @liveStagePreviewStageBeforeClass.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课前'**
+  String get liveStagePreviewStageBeforeClass;
+
+  /// No description provided for @liveStagePreviewStageDuringClass.
+  ///
+  /// In zh, this message translates to:
+  /// **'课中'**
+  String get liveStagePreviewStageDuringClass;
 
   /// No description provided for @liveTestingInFlight.
   ///
@@ -17495,6 +17520,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'，另有 {count} 节超出当前时间模板（共 {sections} 节），课表上看不到'**
   String coursesBeyondSchemeExtraSuffix(int count, int sections);
+
+  /// No description provided for @importPartialSkippedSuffix.
+  ///
+  /// In zh, this message translates to:
+  /// **'，其中 {count} 条格式损坏已跳过'**
+  String importPartialSkippedSuffix(int count);
 
   /// No description provided for @locationTimeMatchEmpty.
   ///

@@ -1936,6 +1936,19 @@
     }
   },
   "liveTestingCourseTestStoppedToast": "授業テストを停止しました。通常のスケジュールに戻りました",
+  "liveStagePreviewBeforeClassAction": "授業前アイランドをプレビュー",
+  "liveStagePreviewDuringClassAction": "授業中アイランドをプレビュー",
+  "liveStagePreviewStoppedToast": "プレビューを停止しました。通常のスケジュールに戻りました",
+  "liveStagePreviewStartedToast": "「{stage}」アイランドのプレビューを開始しました。約30秒後に自動的に消えます。Homeキーでホーム画面に戻ってご確認ください",
+  "@liveStagePreviewStartedToast": {
+    "placeholders": {
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "liveStagePreviewStageBeforeClass": "授業前",
+  "liveStagePreviewStageDuringClass": "授業中",
   "liveTestingInFlight": "テスト実行中です。連続タップせず、しばらく待ってからもう一度お試しください",
   "liveTestingProductionHomeHint": "正規のスーパーアイランド選択パスを使用しました。Home キーでホーム画面に戻って確認してください（アプリを開いたままにしていると通常は表示されません）",
   "liveTestingPresetFallbackNote": "（テスト可能な実際の授業が見つからなかったため、自己診断のプリセット授業を使用しました。時間割には書き込まれません）",

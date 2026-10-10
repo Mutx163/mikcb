@@ -1457,10 +1457,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importFailedInvalidFile => 'インポート失敗、ファイルが有効か確認してください';
 
   @override
-  String importPartialSkippedSuffix(int count) =>
-      '、うち $count 件は形式が壊れていたためスキップされました';
-
-  @override
   String get welcomeTitle => 'ようこそ';
 
   @override
@@ -4030,6 +4026,26 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get liveTestingCourseTestStoppedToast =>
       '授業テストを停止しました。通常のスケジュールに戻りました';
+
+  @override
+  String get liveStagePreviewBeforeClassAction => '授業前アイランドをプレビュー';
+
+  @override
+  String get liveStagePreviewDuringClassAction => '授業中アイランドをプレビュー';
+
+  @override
+  String get liveStagePreviewStoppedToast => 'プレビューを停止しました。通常のスケジュールに戻りました';
+
+  @override
+  String liveStagePreviewStartedToast(String stage) {
+    return '「$stage」アイランドのプレビューを開始しました。約30秒後に自動的に消えます。Homeキーでホーム画面に戻ってご確認ください';
+  }
+
+  @override
+  String get liveStagePreviewStageBeforeClass => '授業前';
+
+  @override
+  String get liveStagePreviewStageDuringClass => '授業中';
 
   @override
   String get liveTestingInFlight => 'テスト実行中です。連続タップせず、しばらく待ってからもう一度お試しください';
@@ -9969,6 +9985,11 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String coursesBeyondSchemeExtraSuffix(int count, int sections) {
     return '、ただし$count限は現在の時間テンプレート（全$sections限）を超えており時間割に表示されません';
+  }
+
+  @override
+  String importPartialSkippedSuffix(int count) {
+    return '、うち $count 件は形式が壊れていたためスキップされました';
   }
 
   @override

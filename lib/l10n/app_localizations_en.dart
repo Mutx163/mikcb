@@ -1521,10 +1521,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Import failed. Please check whether the file is valid.';
 
   @override
-  String importPartialSkippedSuffix(int count) =>
-      ', $count entries were corrupted and skipped';
-
-  @override
   String get welcomeTitle => 'Welcome';
 
   @override
@@ -4206,6 +4202,27 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get liveTestingCourseTestStoppedToast =>
       'Course test stopped; normal scheduling restored.';
+
+  @override
+  String get liveStagePreviewBeforeClassAction => 'Preview before-class island';
+
+  @override
+  String get liveStagePreviewDuringClassAction => 'Preview in-class island';
+
+  @override
+  String get liveStagePreviewStoppedToast =>
+      'Preview stopped; normal scheduling restored.';
+
+  @override
+  String liveStagePreviewStartedToast(String stage) {
+    return '\"$stage\" island preview started; the island auto-dismisses in about 30 seconds. Press Home to view it.';
+  }
+
+  @override
+  String get liveStagePreviewStageBeforeClass => 'before class';
+
+  @override
+  String get liveStagePreviewStageDuringClass => 'in class';
 
   @override
   String get liveTestingInFlight =>
@@ -10268,6 +10285,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String coursesBeyondSchemeExtraSuffix(int count, int sections) {
     return ', but $count fall outside the current time template ($sections periods) and won\'t show on the timetable';
+  }
+
+  @override
+  String importPartialSkippedSuffix(int count) {
+    return ', $count entries were corrupted and skipped';
   }
 
   @override

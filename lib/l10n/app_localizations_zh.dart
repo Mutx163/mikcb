@@ -1422,9 +1422,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importFailedInvalidFile => '导入失败，请确认文件有效';
 
   @override
-  String importPartialSkippedSuffix(int count) => '，其中 $count 条格式损坏已跳过';
-
-  @override
   String get welcomeTitle => '欢迎使用';
 
   @override
@@ -3946,6 +3943,26 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveTestingCourseTestStoppedToast => '已停止选课测试，正式调度已恢复';
+
+  @override
+  String get liveStagePreviewBeforeClassAction => '试弹上课前岛';
+
+  @override
+  String get liveStagePreviewDuringClassAction => '试弹课中岛';
+
+  @override
+  String get liveStagePreviewStoppedToast => '已停止预览，正式调度已恢复';
+
+  @override
+  String liveStagePreviewStartedToast(String stage) {
+    return '已弹出「$stage」超级岛预览，约 30 秒后自动收岛；请按 Home 键回桌面查看';
+  }
+
+  @override
+  String get liveStagePreviewStageBeforeClass => '上课前';
+
+  @override
+  String get liveStagePreviewStageDuringClass => '课中';
 
   @override
   String get liveTestingInFlight => '测试进行中，请勿重复点击，请稍后再试';
@@ -9668,6 +9685,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String importPartialSkippedSuffix(int count) {
+    return '，其中 $count 条格式损坏已跳过';
+  }
+
+  @override
   String get locationTimeMatchEmpty => '还没有地点组';
 
   @override
@@ -12640,9 +12662,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get importFailedInvalidFile => '匯入失敗，請確認檔案有效';
 
   @override
-  String importPartialSkippedSuffix(int count) => '，其中 $count 條格式損壞已跳過';
-
-  @override
   String get welcomeTitle => '歡迎使用';
 
   @override
@@ -15164,6 +15183,26 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveTestingCourseTestStoppedToast => '已停止選課測試，正式調度已恢復';
+
+  @override
+  String get liveStagePreviewBeforeClassAction => '試彈上課前島';
+
+  @override
+  String get liveStagePreviewDuringClassAction => '試彈課中島';
+
+  @override
+  String get liveStagePreviewStoppedToast => '已停止預覽，正式調度已恢復';
+
+  @override
+  String liveStagePreviewStartedToast(String stage) {
+    return '已彈出「$stage」超級島預覽，約 30 秒後自動收島；請按 Home 鍵回桌面查看';
+  }
+
+  @override
+  String get liveStagePreviewStageBeforeClass => '上課前';
+
+  @override
+  String get liveStagePreviewStageDuringClass => '課中';
 
   @override
   String get liveTestingInFlight => '測試進行中，請勿重複點擊，請稍後再試';
@@ -20926,6 +20965,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String importPartialSkippedSuffix(int count) {
+    return '，其中 $count 條格式損壞已跳過';
+  }
+
+  @override
   String get locationTimeMatchEmpty => '還沒有地點組';
 
   @override
@@ -23898,9 +23942,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get importFailedInvalidFile => '匯入失敗，請確認檔案有效';
 
   @override
-  String importPartialSkippedSuffix(int count) => '，其中 $count 條格式損壞已跳過';
-
-  @override
   String get welcomeTitle => '歡迎使用';
 
   @override
@@ -26422,6 +26463,26 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveTestingCourseTestStoppedToast => '已停止選課測試，正式調度已恢復';
+
+  @override
+  String get liveStagePreviewBeforeClassAction => '試彈上課前島';
+
+  @override
+  String get liveStagePreviewDuringClassAction => '試彈課中島';
+
+  @override
+  String get liveStagePreviewStoppedToast => '已停止預覽，正式調度已恢復';
+
+  @override
+  String liveStagePreviewStartedToast(String stage) {
+    return '已彈出「$stage」超級島預覽，約 30 秒後自動收島；請按 Home 鍵回桌面查看';
+  }
+
+  @override
+  String get liveStagePreviewStageBeforeClass => '上課前';
+
+  @override
+  String get liveStagePreviewStageDuringClass => '課中';
 
   @override
   String get liveTestingInFlight => '測試進行中，請勿重複點擊，請稍後再試';
@@ -32182,6 +32243,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String coursesBeyondSchemeExtraSuffix(int count, int sections) {
     return '，另有 $count 節超出當前時間範本（共 $sections 節），課表上看不到';
+  }
+
+  @override
+  String importPartialSkippedSuffix(int count) {
+    return '，其中 $count 條格式損壞已跳過';
   }
 
   @override

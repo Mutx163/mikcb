@@ -36,6 +36,81 @@ class LiveTestingTriggerResult {
 
 bool liveTestingTriggerInFlight = false;
 
+/// 选课测试的合成时间窗：由基准时刻、阶段变体与会话长度唯一决定，是纯可
+/// 推导逻辑（独立成值对象以便无 widget 树直接测试）。
+class LiveCourseTestWindow {
+  /// 会话起点（课前变体 = now+lead，课中变体 = 已开课锚点）。
+  final DateTime start;
+
+  /// 会话终点（到点后原生 ticker 因 stage→null / end 收尾）。
+  final DateTime end;
+
+  /// 岛上「开始-结束」钟面用的结束时刻：分钟精度显示，速览窗口不足 1 分钟
+  /// 时拉到 start+1min，避免「10:16 - 10:16」的零时长观感。真实起止毫秒
+  /// 仍用 [start]/[end]。
+  final DateTime clockEnd;
+
+  /// Dart tick 与原生闹钟共同的暂停缓冲（终点 = end + buffer）。
+  final Duration suspendBuffer;
+
+  const LiveCourseTestWindow({
+    required this.start,
+    required this.end,
+    required this.clockEnd,
+    required this.suspendBuffer,
+  });
+
+  /// UI 芯片/按钮的摘除终点（= 原生暂停终点）。
+  DateTime sessionEndFrom(DateTime now) => now.add(
+    end.difference(now) + suspendBuffer,
+  );
+}
+
+/// 合成选课测试窗口。
+///
+/// 经典变体（sessionLength == null）：课前 3 分钟倒计时 + 3 分钟课程，
+/// 课中锚定已开课 1 分钟 + 4 分钟后收尾，缓冲 20 秒。
+/// 速览变体（sessionLength 非空，如 30 秒）：整段窗口锁在单一阶段——
+/// 课前 = 25 秒倒计时 + 5 秒课程尾巴；课中 = 已开课 2 秒、sessionLength
+/// 后收尾；缓冲收窄到 5 秒以加快收岛（仍覆盖 Dart 30s tick 的影响窗）。
+LiveCourseTestWindow buildCourseTestWindow({
+  required DateTime now,
+  required LiveCourseTestStage stage,
+  Duration? sessionLength,
+}) {
+  final isBeforeClass = stage == LiveCourseTestStage.beforeClass;
+  final DateTime start;
+  final DateTime end;
+  final Duration suspendBuffer;
+  if (sessionLength != null) {
+    if (isBeforeClass) {
+      start = now.add(sessionLength - const Duration(seconds: 5));
+      end = start.add(const Duration(seconds: 5));
+    } else {
+      start = now.subtract(const Duration(seconds: 2));
+      end = now.add(sessionLength);
+    }
+    suspendBuffer = const Duration(seconds: 5);
+  } else {
+    start = isBeforeClass
+        ? now.add(const Duration(minutes: 3))
+        : now.subtract(const Duration(minutes: 1));
+    end = isBeforeClass
+        ? start.add(const Duration(minutes: 3))
+        : now.add(const Duration(minutes: 4));
+    suspendBuffer = const Duration(seconds: 20);
+  }
+  final clockEnd = end.difference(start) < const Duration(minutes: 1)
+      ? start.add(const Duration(minutes: 1))
+      : end;
+  return LiveCourseTestWindow(
+    start: start,
+    end: end,
+    clockEnd: clockEnd,
+    suspendBuffer: suspendBuffer,
+  );
+}
+
 /// Runs the same production live-update path used after normal course edits.
 ///
 /// Does **not** force-start the island, suspend schedule triggers, or invent a
@@ -213,12 +288,16 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTest({
 ///
 /// [stage] 决定预览哪个阶段的显示（课前倒计时 / 上课中），全程恒定，原因见
 /// [LiveCourseTestStage] 注释。
+///
+/// [sessionLength] 控制整个强制会话的时长；缺省时用经典变体窗口（课前
+/// 3+3 分钟 / 课中 1+4 分钟）。显示设置页的「速览」入口传固定 30 秒。
 Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
   required BuildContext context,
   required TimetableProvider provider,
   required Course course,
   required LiveCourseTestStage stage,
   String source = 'settings_screen',
+  Duration? sessionLength,
 }) async {
   if (liveTestingTriggerInFlight) {
     return LiveTestingTriggerResult(
@@ -235,17 +314,21 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
 
   // 合成时间窗：课前变体 3 分钟倒计时；课中变体把开课锚定在 1 分钟前，
   // 已上课 4 分钟后自动收岛。时间只属于本次会话，与课程真实时间无关。
+  // 速览变体（sessionLength 非空）：整段窗口锁在单一阶段（见
+  // [buildCourseTestWindow]）。窗口合成是纯逻辑，已抽到该函数并单测覆盖。
   final now = DateTime.now();
-  final start = isBeforeClass
-      ? now.add(const Duration(minutes: 3))
-      : now.subtract(const Duration(minutes: 1));
-  final end = isBeforeClass
-      ? start.add(const Duration(minutes: 3))
-      : now.add(const Duration(minutes: 4));
+  final window = buildCourseTestWindow(
+    now: now,
+    stage: stage,
+    sessionLength: sessionLength,
+  );
+  final start = window.start;
+  final end = window.end;
+  final suspendBuffer = window.suspendBuffer;
   final displayCourse = provider.resolveCourseDisplayName(
     course.copyWith(
       startTime: LiveTestingFixtureService.formatClock(start),
-      endTime: LiveTestingFixtureService.formatClock(end),
+      endTime: LiveTestingFixtureService.formatClock(window.clockEnd),
     ),
   );
   final displaySettings = isBeforeClass
@@ -268,10 +351,10 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
     );
 
     provider.suspendLiveActivitySyncFor(
-      end.difference(now) + const Duration(seconds: 20),
+      end.difference(now) + suspendBuffer,
     );
     await liveService.suspendScheduleTriggers(
-      end.add(const Duration(seconds: 20)).millisecondsSinceEpoch,
+      end.add(suspendBuffer).millisecondsSinceEpoch,
     );
 
     final milestones = provider.buildLiveProgressMilestones(
@@ -355,9 +438,9 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
 
     return LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.success,
-      // 芯片摘除终点与原生暂停终点对齐（end + 20 秒缓冲）：岛最迟在暂停
+      // 芯片/按钮摘除终点与原生暂停终点对齐（end + 缓冲）：岛最迟在暂停
       // 到点时被收尾，UI 此刻强制摘芯片，两者不再各写各的时间。
-      sessionEnd: end.add(const Duration(seconds: 20)),
+      sessionEnd: end.add(suspendBuffer),
       message: l10n.liveTestingCourseTestStartedToast(
         displayCourse.name,
         isBeforeClass
@@ -396,6 +479,49 @@ Future<void> cancelLiveUpdateCourseTest(TimetableProvider provider) async {
   await liveService.suspendScheduleTriggers(0);
   await liveService.stopLiveUpdate();
   await provider.refreshLiveActivityNow(forceSnapshotSync: true);
+}
+
+/// 显示设置页「速览」：跳过选课单，直接对指定阶段强制起岛约 [sessionLength]。
+///
+/// 课程取课表第一组；课表为空时用自检预设课（只进超级岛内存层，不写入
+/// 课表）。核心窗口/暂停机制与 [triggerLiveUpdateCourseTest] 完全同路。
+Future<LiveTestingTriggerResult> triggerLiveStagePreviewTest({
+  required BuildContext context,
+  required TimetableProvider provider,
+  required LiveCourseTestStage stage,
+  Duration sessionLength = const Duration(seconds: 30),
+  String source = 'display_settings_preview',
+}) async {
+  final l10n = AppLocalizations.of(context)!;
+  final groups = provider.courseGroups;
+  Course course;
+  if (groups.isNotEmpty) {
+    course = groups.first.courses.first;
+  } else {
+    // 无课表兜底：借自检预设课的构造规则造一门单节测试课。跨日约束同源
+    // （课表不支持隔夜课），午夜附近退回「无课」提示而不是半途崩给用户。
+    try {
+      final presets = LiveTestingFixtureService.buildPresetCourses(
+        now: DateTime.now(),
+        targetWeek: provider.liveSelectionCalendarWeek,
+        semesterWeekCount: provider.settings.semesterWeekCount,
+      );
+      course = presets.first;
+    } catch (_) {
+      return LiveTestingTriggerResult(
+        status: LiveTestingTriggerStatus.error,
+        message: l10n.liveTestingNoCourseAvailable,
+      );
+    }
+  }
+  return triggerLiveUpdateCourseTest(
+    context: context,
+    provider: provider,
+    course: course,
+    stage: stage,
+    source: source,
+    sessionLength: sessionLength,
+  );
 }
 
 /// Fixture slot entry: write a normal course time change, then production refresh.

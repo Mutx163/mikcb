@@ -1462,10 +1462,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importFailedInvalidFile => '가져오기 실패, 파일이 유효한지 확인하세요';
 
   @override
-  String importPartialSkippedSuffix(int count) =>
-      ', 그중 $count건은 형식이 손상되어 건너뛰었습니다';
-
-  @override
   String get welcomeTitle => '환영합니다';
 
   @override
@@ -4052,6 +4048,26 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get liveTestingCourseTestStoppedToast =>
       '과목 테스트를 중지했습니다. 일정 예약이 복구되었습니다';
+
+  @override
+  String get liveStagePreviewBeforeClassAction => '수업 전 아일랜드 미리보기';
+
+  @override
+  String get liveStagePreviewDuringClassAction => '수업 중 아일랜드 미리보기';
+
+  @override
+  String get liveStagePreviewStoppedToast => '미리보기를 중지했습니다. 일정 예약이 복구되었습니다';
+
+  @override
+  String liveStagePreviewStartedToast(String stage) {
+    return '\"$stage\" 아일랜드 미리보기를 시작했습니다. 약 30초 후 자동으로 사라집니다. Home 키로 홈 화면에서 확인하세요';
+  }
+
+  @override
+  String get liveStagePreviewStageBeforeClass => '수업 전';
+
+  @override
+  String get liveStagePreviewStageDuringClass => '수업 중';
 
   @override
   String get liveTestingInFlight => '테스트가 진행 중입니다. 중복으로 탭하지 말고 잠시 후 다시 시도해 주세요';
@@ -10015,6 +10031,11 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String coursesBeyondSchemeExtraSuffix(int count, int sections) {
     return ', 다만 $count개는 현재 시간 템플릿(총 $sections교시)을 벗어나 시간표에 표시되지 않습니다';
+  }
+
+  @override
+  String importPartialSkippedSuffix(int count) {
+    return ', 그중 $count건은 형식이 손상되어 건너뛰었습니다';
   }
 
   @override

@@ -1935,6 +1935,19 @@
     }
   },
   "liveTestingCourseTestStoppedToast": "已停止選課測試，正式調度已恢復",
+  "liveStagePreviewBeforeClassAction": "試彈上課前島",
+  "liveStagePreviewDuringClassAction": "試彈課中島",
+  "liveStagePreviewStoppedToast": "已停止預覽，正式調度已恢復",
+  "liveStagePreviewStartedToast": "已彈出「{stage}」超級島預覽，約 30 秒後自動收島；請按 Home 鍵回桌面查看",
+  "@liveStagePreviewStartedToast": {
+    "placeholders": {
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "liveStagePreviewStageBeforeClass": "上課前",
+  "liveStagePreviewStageDuringClass": "課中",
   "liveTestingInFlight": "測試進行中，請勿重複點擊，請稍後再試",
   "liveTestingProductionHomeHint": "已走正式超級島選課路徑。請按 Home 鍵回到桌面查看（停留在應用內時系統通常不會彈出）",
   "liveTestingPresetFallbackNote": "（未檢測到可測試的真實課程，已改用自檢預設課程，不會寫入課表）",
