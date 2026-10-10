@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:university_timetable/screens/import/warehouse/warehouse_shared.dart';
@@ -136,5 +137,126 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_headerHeight(tester), expandedHeight);
+  });
+
+  testWidgets('下滑→滑回第一组→再下滑，第二次也要收起（用户实机序列）', (tester) async {
+    final controller = await _pumpPage(tester);
+    final expandedHeight = _headerHeight(tester);
+    final scrollable = tester.state<ScrollableState>(
+      find.byType(Scrollable).first,
+    );
+
+    // ① 下滑到第 20 项：第一次，正常收起。
+    controller.jumpTo(index: 20, alignment: 0.2);
+    await tester.pumpAndSettle();
+    expect(warehouseResyncCollapsibleTitleFromListScroll(scrollable), isTrue);
+    await tester.pumpAndSettle();
+    expect(_headerHeight(tester), lessThan(expandedHeight - 30));
+    final firstDownHeight = _headerHeight(tester);
+
+    // ② 滑回第一组（index 0）。这一跳 anchor 为正、pixels 会越过
+    //    minScrollExtent，滚动位自己开弹簧回弹，补同步按设计不发通知。
+    controller.jumpTo(index: 0, alignment: 0.2);
+    await tester.pumpAndSettle();
+    expect(_headerHeight(tester), expandedHeight, reason: '回到第一组应重新展开');
+
+    // ③ 再下滑到第 20 项：第二次，也必须收起。
+    controller.jumpTo(index: 20, alignment: 0.2);
+    await tester.pumpAndSettle();
+    expect(
+      warehouseResyncCollapsibleTitleFromListScroll(scrollable),
+      isTrue,
+      reason: '第二次下滑后滚动位仍在界内，必须能补发通知',
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      _headerHeight(tester),
+      firstDownHeight,
+      reason: '第二次下滑后大标题必须和第一次一样收起',
+    );
+    expect(find.text('item 20'), findsOneWidget);
+  });
+
+  testWidgets('post-frame 回调里补同步，第二次下滑也要收起', (tester) async {
+    final controller = await _pumpPage(tester);
+    final expandedHeight = _headerHeight(tester);
+    final scrollable = tester.state<ScrollableState>(
+      find.byType(Scrollable).first,
+    );
+
+    // 真实页面的接线方式：跳转后不直接同步，而是排一个 post-frame 回调
+    // （anchor 要下一帧布局才生效）。这条测试钉住那条链路的终态。
+    void jumpAndSync(int index) {
+      controller.jumpTo(index: index, alignment: 0.2);
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        warehouseResyncCollapsibleTitleFromListScroll(scrollable);
+      });
+    }
+
+    jumpAndSync(20);
+    await tester.pumpAndSettle();
+    expect(_headerHeight(tester), lessThan(expandedHeight - 30));
+    final firstDownHeight = _headerHeight(tester);
+
+    // 滑回第一组后重新展开，再下滑第二次。
+    jumpAndSync(0);
+    await tester.pumpAndSettle();
+    expect(_headerHeight(tester), expandedHeight);
+
+    jumpAndSync(20);
+    await tester.pumpAndSettle();
+    expect(
+      _headerHeight(tester),
+      firstDownHeight,
+      reason: 'post-frame 链路上第二次下滑也必须收起',
+    );
+    expect(find.text('item 20'), findsOneWidget);
+  });
+
+  testWidgets('手指连续滑动（中间不落定）跨过第一组再折返，也要收起', (tester) async {
+    // 真实手势里手指划过一串字母，每个 actionUpdate 都是一次 jumpTo，
+    // 中间没有 pumpAndSettle：跳到第一组会开一段回弹弹簧，弹簧还没跑完
+    // 手指已经折返下滑、把弹簧中途掐死。这条测试复现这个时序。
+    final controller = await _pumpPage(tester);
+    final expandedHeight = _headerHeight(tester);
+    final scrollable = tester.state<ScrollableState>(
+      find.byType(Scrollable).first,
+    );
+
+    void jumpAndSync(int index) {
+      controller.jumpTo(index: index, alignment: 0.2);
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        warehouseResyncCollapsibleTitleFromListScroll(scrollable);
+      });
+    }
+
+    // ① 下滑：正常收起。
+    jumpAndSync(20);
+    await tester.pumpAndSettle();
+    expect(_headerHeight(tester), lessThan(expandedHeight - 30));
+    final collapsedHeight = _headerHeight(tester);
+
+    // ② 滑上去：一路划回第一组（不 settle，弹簧中途被掐死的时序）。
+    for (var i = 19; i >= 0; i--) {
+      jumpAndSync(i);
+      await tester.pump();
+    }
+    await tester.pumpAndSettle();
+    expect(_headerHeight(tester), expandedHeight, reason: '回到第一组应重新展开');
+
+    // ③ 再下滑第二次：也必须收起。
+    for (var i = 1; i <= 20; i++) {
+      jumpAndSync(i);
+      await tester.pump();
+    }
+    await tester.pumpAndSettle();
+
+    expect(
+      _headerHeight(tester),
+      collapsedHeight,
+      reason: '连续手势折返后，第二次下滑大标题必须照常收起',
+    );
+    expect(find.text('item 20'), findsOneWidget);
   });
 }

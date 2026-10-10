@@ -79,13 +79,14 @@ class _WarehouseCourseImportScreenState
   List<WarehouseSchoolSection> _currentSections = const [];
   String _schoolSelectedTag = '';
 
-  /// 学校列表的滚动位（在 `itemBuilder` 里顺手拿到）。
+  /// 学校列表的滚动位。抓取点在 `itemBuilder` 内容外再包的一层 `Builder`
+  /// 里（见 build 中的 itemBuilder）——`itemBuilder` 本身拿到的 context 是
+  /// `PositionedList` State 的 context，在 `Scrollable` **上方**，
+  /// `Scrollable.maybeOf` 只向上找、永远返回 null（2026-10-10 第二轮实机
+  /// 复现：页面同步回调每帧都跑，但滚动位恒 null，大标题不收）。
   ///
-  /// 字母条跳转不产生任何滚动通知（见
-  /// [warehouseResyncCollapsibleTitleFromListScroll]），顶栏的可折叠大标题
-  /// 不会跟着收起来。这里记下列表的滚动位，跳转后借它把顶栏同步到列表的
-  /// 真实位置。`ScrollableState` 在列表存活期间不会更换，只有列表被换掉
-  /// （重建出新的 Scrollable）时才需要重新取。
+  /// `ScrollableState` 在列表存活期间不会更换，只有列表被换掉（重建出新的
+  /// Scrollable）时才需要重新取。
   ScrollableState? _schoolListScrollable;
 
   /// 折叠同步的 post-frame 回调是否已排上（一次跳转只排一次）。
@@ -792,48 +793,56 @@ class _WarehouseCourseImportScreenState
                           padding: EdgeInsets.fromLTRB(16, headerInset, 16, 16),
                           indexBarData: const [],
                           itemBuilder: (context, index) {
-                            // 记下学校列表的滚动位（见
-                            // [_schoolListScrollable]）。只在还没拿到或已
-                            // 卸载时找一遍，不让每个 item 每次 build 都向
-                            // 上遍历。
-                            if (_schoolListScrollable?.mounted != true) {
-                              _schoolListScrollable = Scrollable.maybeOf(
-                                context,
-                              );
-                            }
                             final section = sections[index];
-                            return Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // 组首字母。字母条是唯一的「我在哪组」线索，
-                                // 没有它跳到 H 之后屏幕上没有任何 H 字样
-                                // （组间只有 HyperosSectionGap）。
-                                _buildSchoolGroupHeader(section.tag),
-                                HyperosChoiceGroup(
+                            return Builder(
+                              // 这层 Builder 的 context 才在 Scrollable
+                              // 内部：itemBuilder 的 context 是
+                              // PositionedList State 的、在 Scrollable
+                              // 上方，Scrollable.maybeOf 从那里向上找永远
+                              // 落空（见 [_schoolListScrollable]）。
+                              builder: (itemContext) {
+                                if (_schoolListScrollable?.mounted != true) {
+                                  _schoolListScrollable = Scrollable.maybeOf(
+                                    itemContext,
+                                  );
+                                }
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
-                                    for (final bean in section.items)
-                                      HyperosChoiceTile(
-                                        prefix: ImportInitialBadge(
-                                          label: bean.school.initial,
-                                        ),
-                                        title: bean.school.name,
-                                        subtitle: Text(
-                                          _schoolRowSubtitle(
-                                            bean,
-                                            adapterMatches,
-                                            l10n,
+                                    // 组首字母。字母条是唯一的「我在哪组」线索，
+                                    // 没有它跳到 H 之后屏幕上没有任何 H 字样
+                                    // （组间只有 HyperosSectionGap）。
+                                    _buildSchoolGroupHeader(section.tag),
+                                    HyperosChoiceGroup(
+                                      children: [
+                                        for (final bean in section.items)
+                                          HyperosChoiceTile(
+                                            prefix: ImportInitialBadge(
+                                              label: bean.school.initial,
+                                            ),
+                                            title: bean.school.name,
+                                            subtitle: Text(
+                                              _schoolRowSubtitle(
+                                                bean,
+                                                adapterMatches,
+                                                l10n,
+                                              ),
+                                            ),
+                                            trailing: const HyperosChevron(),
+                                            onTap: () =>
+                                                _openWarehouseSchool(
+                                                  bean.school,
+                                                ),
                                           ),
-                                        ),
-                                        trailing: const HyperosChevron(),
-                                        onTap: () =>
-                                            _openWarehouseSchool(bean.school),
-                                      ),
+                                      ],
+                                    ),
+                                    if (index < sections.length - 1)
+                                      const HyperosSectionGap(),
                                   ],
-                                ),
-                                if (index < sections.length - 1)
-                                  const HyperosSectionGap(),
-                              ],
+                                );
+                              },
                             );
                           },
                         ),
