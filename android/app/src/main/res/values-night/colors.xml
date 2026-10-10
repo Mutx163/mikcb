@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="splash_background">#FF121212</color>
+
+    <!--
+      卡片中性字色（夜间档）。芯片两档在夜间是同一个近白色：#2C4A73 / #324561
+      两种夜间芯片底都比白天深得多，白天分档的深蓝/深灰在它们上面不可读。
+    -->
+    <color name="widget_ink_primary">#FFE2E8F0</color>
+    <color name="widget_ink_secondary">#FF94A3B8</color>
+    <color name="widget_ink_chip_strong">#FFE2E8F0</color>
+    <color name="widget_ink_chip_dim">#FFE2E8F0</color>
 </resources>

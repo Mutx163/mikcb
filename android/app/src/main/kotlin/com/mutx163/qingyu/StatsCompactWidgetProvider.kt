@@ -69,9 +69,11 @@ class StatsCompactWidgetProvider : BaseQingyuWidgetProvider() {
             "setBackgroundResource",
             TodayWidgetSupport.statusBackgroundRes("upcoming", chrome.backgroundStyle),
         )
-        views.setTextColor(
+        views.applyInk(
             R.id.stats_week,
-            TodayWidgetSupport.statusChipTextColor("upcoming", chrome.backgroundStyle, context)
+            WidgetInk.CHIP_STRONG,
+            chrome.backgroundStyle,
+            context,
         )
 
         if (snapshot == null) {
@@ -104,10 +106,34 @@ class StatsCompactWidgetProvider : BaseQingyuWidgetProvider() {
                 context.getString(R.string.widget_stats_nature, snapshot.requiredCount, snapshot.electiveCount),
             )
         }
-        views.setTextColor(R.id.stats_sections, primaryColor)
-        views.setTextColor(R.id.stats_delta, secondaryColor)
-        views.setTextColor(R.id.stats_nature, secondaryColor)
-        views.setTextColor(R.id.stats_extra_pct, secondaryColor)
+        views.applyInk(
+            R.id.stats_sections,
+            WidgetInk.PRIMARY,
+            chrome.backgroundStyle,
+            context,
+            fallback = primaryColor,
+        )
+        views.applyInk(
+            R.id.stats_delta,
+            WidgetInk.SECONDARY,
+            chrome.backgroundStyle,
+            context,
+            fallback = secondaryColor,
+        )
+        views.applyInk(
+            R.id.stats_nature,
+            WidgetInk.SECONDARY,
+            chrome.backgroundStyle,
+            context,
+            fallback = secondaryColor,
+        )
+        views.applyInk(
+            R.id.stats_extra_pct,
+            WidgetInk.SECONDARY,
+            chrome.backgroundStyle,
+            context,
+            fallback = secondaryColor,
+        )
 
         // gradient 背景下进度条换白色系（RemoteViews.setColorStateList 需 API 31+，
         // 低版本保留布局里的蓝色兜底；反射 setter 名必须是 *TintList 形式）。

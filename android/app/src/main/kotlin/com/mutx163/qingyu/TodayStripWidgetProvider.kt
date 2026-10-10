@@ -72,9 +72,11 @@ class TodayStripWidgetProvider : BaseQingyuWidgetProvider() {
             "setBackgroundResource",
             TodayWidgetSupport.statusBackgroundRes(displayState, style),
         )
-        views.setTextColor(
+        views.applyInk(
             R.id.widget_strip_status,
-            TodayWidgetSupport.statusChipTextColor(displayState, style, context)
+            chipInkRole(displayState),
+            style,
+            context,
         )
 
         // 主课程名（信息优先级最高，宽度不足时最后截断）
@@ -101,15 +103,20 @@ class TodayStripWidgetProvider : BaseQingyuWidgetProvider() {
             R.id.widget_strip_course_accent,
             TodayWidgetSupport.accentBar(snapshot, accentCourse, style, context),
         )
-        views.setTextColor(
+        views.applyInk(
             R.id.widget_strip_course,
-            TodayWidgetSupport.accentText(snapshot, accentCourse, style, context)
-                ?: primaryColor,
+            WidgetInk.PRIMARY,
+            style,
+            context,
+            accent = TodayWidgetSupport.accentText(snapshot, accentCourse, style, context),
+            fallback = primaryColor,
         )
-        views.setTextColor(
+        views.applyInk(
             R.id.widget_strip_status,
-            TodayWidgetSupport.accentText(snapshot, accentCourse, style, context)
-                ?: TodayWidgetSupport.statusChipTextColor(displayState, style, context),
+            chipInkRole(displayState),
+            style,
+            context,
+            accent = TodayWidgetSupport.accentText(snapshot, accentCourse, style, context),
         )
 
         // 时间 / 倒计时
@@ -134,7 +141,7 @@ class TodayStripWidgetProvider : BaseQingyuWidgetProvider() {
                 ?: TodayWidgetSupport.heroTimeText(context, snapshot)
         }
         views.setTextViewText(R.id.widget_strip_meta, metaText)
-        views.setTextColor(R.id.widget_strip_meta, secondaryColor)
+        views.applyInk(R.id.widget_strip_meta, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
 
         // 周数（最次要信息，窄宽度时隐藏）
         views.setTextViewText(
@@ -145,7 +152,7 @@ class TodayStripWidgetProvider : BaseQingyuWidgetProvider() {
                 context.getString(R.string.widget_week_number, snapshot?.currentWeek ?: 1)
             }
         )
-        views.setTextColor(R.id.widget_strip_week, secondaryColor)
+        views.applyInk(R.id.widget_strip_week, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
 
         // 横条自适应：矮高度降字号；窄宽度先隐藏周数、再隐藏时间。
         val compact = profile.isShort
@@ -204,7 +211,7 @@ class TodayStripWidgetProvider : BaseQingyuWidgetProvider() {
                 else -> TodayWidgetSupport.rightInfoText(context, snapshot)
             }
             views.setTextViewText(R.id.strip_sub_left, subLeft)
-            views.setTextColor(R.id.strip_sub_left, secondaryColor)
+            views.applyInk(R.id.strip_sub_left, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
         }
         TodayWidgetSupport.setTextSizeSp(
             views,
@@ -240,7 +247,7 @@ class TodayStripWidgetProvider : BaseQingyuWidgetProvider() {
             if (sub2Text.isNotBlank()) View.VISIBLE else View.GONE,
         )
         views.setTextViewText(R.id.strip_sub2, sub2Text)
-        views.setTextColor(R.id.strip_sub2, secondaryColor)
+        views.applyInk(R.id.strip_sub2, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
         TodayWidgetSupport.setTextSizeSp(views, R.id.strip_sub2, if (compact) 10f else 11f)
 
         views.setOnClickPendingIntent(

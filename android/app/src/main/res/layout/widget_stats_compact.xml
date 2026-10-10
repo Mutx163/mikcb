@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -24,7 +24,7 @@
             android:paddingRight="10dp"
             android:paddingBottom="4dp"
             android:text="第 1 周"
-            android:textColor="#64748B"
+            android:textColor="@color/widget_ink_secondary"
             android:textSize="11sp"
             android:textStyle="bold" />
 
@@ -46,7 +46,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text="本周 12 节"
-            android:textColor="#0F172A"
+            android:textColor="@color/widget_ink_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -58,7 +58,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text="较上周 +2 节"
-            android:textColor="#64748B"
+            android:textColor="@color/widget_ink_secondary"
             android:textSize="12sp" />
 
         <TextView
@@ -69,7 +69,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text="必修 4 · 选修 2"
-            android:textColor="#64748B"
+            android:textColor="@color/widget_ink_secondary"
             android:textSize="11sp" />
 
         <!-- 单行只放学期进度百分比：合并长句在 2 列宽摆位会被截断。 -->
@@ -81,7 +81,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text="已上 18%"
-            android:textColor="#64748B"
+            android:textColor="@color/widget_ink_secondary"
             android:textSize="11sp" />
 
     </LinearLayout>

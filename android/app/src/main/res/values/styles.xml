@@ -15,4 +15,22 @@
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">@color/splash_background</item>
     </style>
+
+    <!--
+      桌面卡片主题：只用来承载卡片的那几个字色属性（见 values/attrs.xml）。
+
+      声明在 <appwidget-provider android:theme>（Android 12+ 支持），同时挂到
+      <application android:theme> 做兜底——万一某个 ROM 不认卡片自己的主题，
+      宿主给卡片开的是「应用主题」，属性也照样解析得到。父主题必须是完整主题：
+      三个统计卡片的进度条用了 ?android:attr/progressBarStyleHorizontal。
+
+      属性值引用 @color/widget_ink_*，白天/夜间的差异由颜色资源按配置解析，
+      不需要再写一份 values-night/styles.xml。
+    -->
+    <style name="QingyuWidgetTheme" parent="@android:style/Theme.DeviceDefault">
+        <item name="widgetInkPrimary">@color/widget_ink_primary</item>
+        <item name="widgetInkSecondary">@color/widget_ink_secondary</item>
+        <item name="widgetInkChipStrong">@color/widget_ink_chip_strong</item>
+        <item name="widgetInkChipDim">@color/widget_ink_chip_dim</item>
+    </style>
 </resources>

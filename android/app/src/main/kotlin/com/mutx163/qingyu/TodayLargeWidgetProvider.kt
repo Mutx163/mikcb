@@ -44,19 +44,21 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
                 snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
             targetAspect = 1f,
         )
-        views.setTextColor(R.id.widget_large_week, secondaryColor)
-        views.setTextColor(R.id.widget_large_title, primaryColor)
-        views.setTextColor(R.id.widget_large_subtitle, secondaryColor)
-        views.setTextColor(R.id.widget_large_exam, secondaryColor)
-        views.setTextColor(R.id.widget_large_empty, secondaryColor)
+        views.applyInk(R.id.widget_large_week, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
+        views.applyInk(R.id.widget_large_title, WidgetInk.PRIMARY, style, context, fallback = primaryColor)
+        views.applyInk(R.id.widget_large_subtitle, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
+        views.applyInk(R.id.widget_large_exam, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
+        views.applyInk(R.id.widget_large_empty, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
         val largeStatusState = if (snapshot != null) {
             TodayWidgetSupport.displayStatusState(snapshot)
         } else {
             "no_course"
         }
-        views.setTextColor(
+        views.applyInk(
             R.id.widget_large_heading,
-            TodayWidgetSupport.statusChipTextColor(largeStatusState, style, context)
+            chipInkRole(largeStatusState),
+            style,
+            context,
         )
         views.setInt(
             R.id.widget_large_heading,
@@ -213,7 +215,7 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
                 TodayWidgetSupport.applyAccentBar(views, accentBarId, null)
             } else {
                 views.setViewVisibility(rowId, View.VISIBLE)
-                views.setTextColor(timeId, secondaryColor)
+                views.applyInk(timeId, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
                 TodayWidgetSupport.applyAccentBar(
                     views,
                     accentBarId,
@@ -223,14 +225,17 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
                         TodayWidgetSupport.accentBar(snapshot, course, style, context)
                     },
                 )
-                views.setTextColor(
+                views.applyInk(
                     titleId,
-                    if (context == null) {
-                        primaryColor
+                    WidgetInk.PRIMARY,
+                    style,
+                    context,
+                    accent = if (context == null) {
+                        null
                     } else {
                         TodayWidgetSupport.accentText(snapshot, course, style, context)
-                            ?: primaryColor
                     },
+                    fallback = primaryColor,
                 )
                 views.setTextViewText(timeId, "${course.startTime} - ${course.endTime}")
                 val title = if (course.location.isNotBlank()) {

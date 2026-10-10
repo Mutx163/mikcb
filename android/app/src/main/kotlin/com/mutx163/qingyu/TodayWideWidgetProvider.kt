@@ -75,9 +75,11 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
             "setBackgroundResource",
             TodayWidgetSupport.statusBackgroundRes(displayState, style),
         )
-        views.setTextColor(
+        views.applyInk(
             R.id.widget_wide_status,
-            TodayWidgetSupport.statusChipTextColor(displayState, style, context)
+            chipInkRole(displayState),
+            style,
+            context,
         )
 
         val heroName = when {
@@ -100,15 +102,20 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
             R.id.widget_wide_course_accent,
             TodayWidgetSupport.accentBar(snapshot, accentCourse, style, context),
         )
-        views.setTextColor(
+        views.applyInk(
             R.id.widget_wide_course,
-            TodayWidgetSupport.accentText(snapshot, accentCourse, style, context)
-                ?: primaryColor,
+            WidgetInk.PRIMARY,
+            style,
+            context,
+            accent = TodayWidgetSupport.accentText(snapshot, accentCourse, style, context),
+            fallback = primaryColor,
         )
-        views.setTextColor(
+        views.applyInk(
             R.id.widget_wide_status,
-            TodayWidgetSupport.accentText(snapshot, accentCourse, style, context)
-                ?: TodayWidgetSupport.statusChipTextColor(displayState, style, context),
+            chipInkRole(displayState),
+            style,
+            context,
+            accent = TodayWidgetSupport.accentText(snapshot, accentCourse, style, context),
         )
 
         val timePart = when {
@@ -141,7 +148,7 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
             timePart
         }
         views.setTextViewText(R.id.widget_wide_meta, metaText)
-        views.setTextColor(R.id.widget_wide_meta, secondaryColor)
+        views.applyInk(R.id.widget_wide_meta, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
 
         // 右栏：接下来两节课 + 周数
         views.setTextViewText(
@@ -162,8 +169,8 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
                 context.getString(R.string.widget_week_number, snapshot?.currentWeek ?: 1)
             }
         )
-        views.setTextColor(R.id.widget_wide_right_label, secondaryColor)
-        views.setTextColor(R.id.widget_wide_week, secondaryColor)
+        views.applyInk(R.id.widget_wide_right_label, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
+        views.applyInk(R.id.widget_wide_week, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
 
         // 右栏列宽实测：卡片左右内边距共 32dp，两栏等分后再扣掉 16dp 栏间距。
         val rightColumnWidthDp = (profile.widthDp - 48) / 2f
@@ -246,7 +253,7 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
                 context.getString(R.string.widget_tap_to_open)
             },
         )
-        views.setTextColor(R.id.widget_wide_footer, secondaryColor)
+        views.applyInk(R.id.widget_wide_footer, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
         TodayWidgetSupport.setTextSizeSp(views, R.id.widget_wide_footer, if (profile.isShort) 10f else 11f)
 
         views.setOnClickPendingIntent(
@@ -278,16 +285,19 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
         views.setViewVisibility(rowId, View.VISIBLE)
         views.setTextViewText(timeId, course.startTime + " - " + course.endTime)
         views.setTextViewText(titleId, course.name)
-        views.setTextColor(timeId, secondaryColor)
+        views.applyInk(timeId, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
         TodayWidgetSupport.applyAccentBar(
             views,
             accentBarId,
             TodayWidgetSupport.accentBar(snapshot, course, style, context),
         )
-        views.setTextColor(
+        views.applyInk(
             titleId,
-            TodayWidgetSupport.accentText(snapshot, course, style, context)
-                ?: primaryColor,
+            WidgetInk.PRIMARY,
+            style,
+            context,
+            accent = TodayWidgetSupport.accentText(snapshot, course, style, context),
+            fallback = primaryColor,
         )
     }
 }

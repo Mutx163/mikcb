@@ -145,21 +145,28 @@ class TodayCompactWidgetProvider : BaseQingyuWidgetProvider() {
             R.id.widget_course_name_accent,
             TodayWidgetSupport.accentBar(snapshot, accentCourse, backgroundStyle, context),
         )
-        views.setTextColor(
+        views.applyInk(
             R.id.widget_status,
-            TodayWidgetSupport.accentText(snapshot, accentCourse, backgroundStyle, context)
-                ?: TodayWidgetSupport.statusChipTextColor(
-                    displayState,
-                    backgroundStyle,
-                    context,
-                )
+            chipInkRole(displayState),
+            backgroundStyle,
+            context,
+            accent = TodayWidgetSupport.accentText(snapshot, accentCourse, backgroundStyle, context),
         )
-        views.setTextColor(
+        views.applyInk(
             R.id.widget_course_name,
-            TodayWidgetSupport.accentText(snapshot, accentCourse, backgroundStyle, context)
-                ?: primaryTextColor,
+            WidgetInk.PRIMARY,
+            backgroundStyle,
+            context,
+            accent = TodayWidgetSupport.accentText(snapshot, accentCourse, backgroundStyle, context),
+            fallback = primaryTextColor,
         )
-        views.setTextColor(R.id.widget_meta, secondaryTextColor)
+        views.applyInk(
+            R.id.widget_meta,
+            WidgetInk.SECONDARY,
+            backgroundStyle,
+            context,
+            fallback = secondaryTextColor,
+        )
         views.setInt(
             R.id.widget_status,
             "setBackgroundResource",

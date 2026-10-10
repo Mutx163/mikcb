@@ -47,13 +47,15 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
                 snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
             targetAspect = 1f,
         )
-        views.setTextColor(
+        views.applyInk(
             R.id.widget_mini_heading,
-            TodayWidgetSupport.statusChipTextColor(displayState, style, context)
+            chipInkRole(displayState),
+            style,
+            context,
         )
-        views.setTextColor(R.id.widget_mini_week, secondaryColor)
-        views.setTextColor(R.id.widget_mini_empty, secondaryColor)
-        views.setTextColor(R.id.widget_mini_more, secondaryColor)
+        views.applyInk(R.id.widget_mini_week, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
+        views.applyInk(R.id.widget_mini_empty, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
+        views.applyInk(R.id.widget_mini_more, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
         views.setInt(
             R.id.widget_mini_heading,
             "setBackgroundResource",
@@ -182,14 +184,17 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
             )
             // 状态胶囊文字跟随首行（主角课）课程色：与色条同一门课，
             // 关闭档/缺色时回落到状态色。
-            views.setTextColor(
+            views.applyInk(
                 R.id.widget_mini_heading,
-                TodayWidgetSupport.accentText(
+                chipInkRole(displayState),
+                style,
+                context,
+                accent = TodayWidgetSupport.accentText(
                     snapshot,
                     rows.firstOrNull(),
                     style,
                     context,
-                ) ?: TodayWidgetSupport.statusChipTextColor(displayState, style, context),
+                ),
             )
         }
 
@@ -253,7 +258,13 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
                 else -> R.drawable.widget_row_highlight
             }
         )
-        views.setTextColor(timeId, if (isHighlighted) primaryColor else secondaryColor)
+        views.applyInk(
+            timeId,
+            if (isHighlighted) WidgetInk.PRIMARY else WidgetInk.SECONDARY,
+            style,
+            context,
+            fallback = if (isHighlighted) primaryColor else secondaryColor,
+        )
         // 课程色贯穿：每行前加课程色竖条，档位允许时课程名也换课程色。
         val barId = when (index) {
             0 -> R.id.widget_mini_row_1_accent
@@ -269,14 +280,17 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
                 TodayWidgetSupport.accentBar(snapshot, course, style, context)
             },
         )
-        views.setTextColor(
+        views.applyInk(
             titleId,
-            if (context == null) {
-                primaryColor
+            WidgetInk.PRIMARY,
+            style,
+            context,
+            accent = if (context == null) {
+                null
             } else {
                 TodayWidgetSupport.accentText(snapshot, course, style, context)
-                    ?: primaryColor
             },
+            fallback = primaryColor,
         )
         TodayWidgetSupport.setTextSizeSp(views, timeId, 9f)
         TodayWidgetSupport.setTextSizeSp(views, titleId, 11f)

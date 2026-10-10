@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      桌面卡片的日/夜两档字色，声明成主题属性。
+
+      为什么要走主题属性而不是直接下发算好的颜色值：卡片的**底色**是
+      drawable/ 与 drawable-night/ 两套资源，由桌面在画的时候按它当时的配置现挑；
+      而字色若在 App 渲染时算成固定值，两条通道就分别听两个时钟——系统换档后
+      桌面把底换成新一档、字色留在旧一档，出现「深底 + 深字」这类看不清的卡片。
+      走属性后，由桌面在应用 RemoteViews 的那一刻解析（`RemoteViews.setColorAttr`），
+      与底色同一次解析，两边不可能错开。
+
+      值本身引用 @color/widget_ink_*（见 values/ 与 values-night/colors.xml），
+      所以这里只声明一次：白天/夜间的差异由颜色资源自己按配置解析。
+    -->
+    <attr name="widgetInkPrimary" format="reference|color" />
+    <attr name="widgetInkSecondary" format="reference|color" />
+    <attr name="widgetInkChipStrong" format="reference|color" />
+    <attr name="widgetInkChipDim" format="reference|color" />
+</resources>

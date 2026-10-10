@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -33,7 +33,7 @@
                 android:paddingRight="9dp"
                 android:paddingBottom="3dp"
                 android:text="第 6 周"
-                android:textColor="#64748B"
+                android:textColor="@color/widget_ink_secondary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
@@ -46,7 +46,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="本周 12 节"
-                android:textColor="#0F172A"
+                android:textColor="@color/widget_ink_primary"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
@@ -58,7 +58,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="较上周 +2 节"
-                android:textColor="#64748B"
+                android:textColor="@color/widget_ink_secondary"
                 android:textSize="12sp" />
 
             <ProgressBar
@@ -91,7 +91,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text=""
-                android:textColor="#64748B"
+                android:textColor="@color/widget_ink_secondary"
                 android:textSize="11sp" />
 
             <TextView
@@ -102,7 +102,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text=""
-                android:textColor="#64748B"
+                android:textColor="@color/widget_ink_secondary"
                 android:textSize="11sp" />
 
         </LinearLayout>
@@ -116,7 +116,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text=""
-            android:textColor="#64748B"
+            android:textColor="@color/widget_ink_secondary"
             android:textSize="11sp"
             android:visibility="gone" />
 

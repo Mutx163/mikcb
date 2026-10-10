@@ -73,9 +73,11 @@ class StatsStripWidgetProvider : BaseQingyuWidgetProvider() {
             "setBackgroundResource",
             TodayWidgetSupport.statusBackgroundRes("upcoming", chrome.backgroundStyle),
         )
-        views.setTextColor(
+        views.applyInk(
             R.id.stats_strip_week,
-            TodayWidgetSupport.statusChipTextColor("upcoming", chrome.backgroundStyle, context)
+            WidgetInk.CHIP_STRONG,
+            chrome.backgroundStyle,
+            context,
         )
 
         // 本周节数 + 环比
@@ -96,8 +98,20 @@ class StatsStripWidgetProvider : BaseQingyuWidgetProvider() {
             val done = snapshot.semesterDone.coerceIn(0, max)
             views.setProgressBar(R.id.stats_strip_progress, max, done, false)
         }
-        views.setTextColor(R.id.stats_strip_sections, primaryColor)
-        views.setTextColor(R.id.stats_strip_delta, secondaryColor)
+        views.applyInk(
+            R.id.stats_strip_sections,
+            WidgetInk.PRIMARY,
+            chrome.backgroundStyle,
+            context,
+            fallback = primaryColor,
+        )
+        views.applyInk(
+            R.id.stats_strip_delta,
+            WidgetInk.SECONDARY,
+            chrome.backgroundStyle,
+            context,
+            fallback = secondaryColor,
+        )
 
         // gradient 背景下进度条换白色系（RemoteViews.setColorStateList 需 API 31+，
         // 低版本保留蓝色兜底）。
@@ -157,7 +171,13 @@ class StatsStripWidgetProvider : BaseQingyuWidgetProvider() {
                     StatsWidgetSupport.deltaShortLabel(context, snapshot.deltaVsLastWeek)
                 },
             )
-            views.setTextColor(R.id.stats_strip_delta, secondaryColor)
+            views.applyInk(
+                R.id.stats_strip_delta,
+                WidgetInk.SECONDARY,
+                chrome.backgroundStyle,
+                context,
+                fallback = secondaryColor,
+            )
         }
         views.setViewVisibility(
             R.id.stats_strip_delta,
@@ -186,8 +206,20 @@ class StatsStripWidgetProvider : BaseQingyuWidgetProvider() {
                 context.getString(R.string.widget_stats_percent, percent) + " · " +
                     context.getString(R.string.widget_stats_daily, dailyAvg),
             )
-            views.setTextColor(R.id.stats_strip_sub_left, secondaryColor)
-            views.setTextColor(R.id.stats_strip_sub_right, secondaryColor)
+            views.applyInk(
+                R.id.stats_strip_sub_left,
+                WidgetInk.SECONDARY,
+                chrome.backgroundStyle,
+                context,
+                fallback = secondaryColor,
+            )
+            views.applyInk(
+                R.id.stats_strip_sub_right,
+                WidgetInk.SECONDARY,
+                chrome.backgroundStyle,
+                context,
+                fallback = secondaryColor,
+            )
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.stats_strip_sub_left,
@@ -213,7 +245,13 @@ class StatsStripWidgetProvider : BaseQingyuWidgetProvider() {
             if (sub2Text.isNotBlank()) View.VISIBLE else View.GONE,
         )
         views.setTextViewText(R.id.stats_strip_sub2, sub2Text)
-        views.setTextColor(R.id.stats_strip_sub2, secondaryColor)
+        views.applyInk(
+            R.id.stats_strip_sub2,
+            WidgetInk.SECONDARY,
+            chrome.backgroundStyle,
+            context,
+            fallback = secondaryColor,
+        )
         TodayWidgetSupport.setTextSizeSp(views, R.id.stats_strip_sub2, if (compact) 10f else 11f)
 
         views.setOnClickPendingIntent(

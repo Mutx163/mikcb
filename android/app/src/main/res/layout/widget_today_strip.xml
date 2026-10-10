@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -33,7 +33,7 @@
                 android:paddingRight="9dp"
                 android:paddingBottom="3dp"
                 android:text="下一节课"
-                android:textColor="#64748B"
+                android:textColor="@color/widget_ink_secondary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
@@ -67,7 +67,7 @@
                 android:maxLines="1"
                 android:minWidth="48dp"
                 android:text="高等数学"
-                android:textColor="#0F172A"
+                android:textColor="@color/widget_ink_primary"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
@@ -80,7 +80,7 @@
                 android:maxEms="10"
                 android:maxLines="1"
                 android:text="08:00 - 09:40"
-                android:textColor="#64748B"
+                android:textColor="@color/widget_ink_secondary"
                 android:textSize="12sp" />
 
             <TextView
@@ -91,7 +91,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="第6周"
-                android:textColor="#64748B"
+                android:textColor="@color/widget_ink_secondary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
@@ -116,7 +116,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text=""
-                android:textColor="#64748B"
+                android:textColor="@color/widget_ink_secondary"
                 android:textSize="11sp" />
 
             <TextView
@@ -127,7 +127,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text=""
-                android:textColor="#64748B"
+                android:textColor="@color/widget_ink_secondary"
                 android:textSize="11sp" />
 
         </LinearLayout>
@@ -141,7 +141,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text=""
-            android:textColor="#64748B"
+            android:textColor="@color/widget_ink_secondary"
             android:textSize="11sp"
             android:visibility="gone" />
 

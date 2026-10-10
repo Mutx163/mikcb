@@ -1,4 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="splash_background">#FFFFFFFF</color>
+
+    <!--
+      桌面卡片中性字色（白天档），与 TodayWidgetSupport.primaryTextColor /
+      secondaryTextColor / statusChipTextColor 的取值一致。夜间档见 values-night/colors.xml。
+      布局里也用这几个名字，保证卡片刚被创建、还没等到第一次 updateAppWidget 时，
+      字色和已经按配置解析好的底色就是同一档。
+    -->
+    <color name="widget_ink_primary">#FF0F172A</color>
+    <color name="widget_ink_secondary">#FF64748B</color>
+    <color name="widget_ink_chip_strong">#FF1D4ED8</color>
+    <color name="widget_ink_chip_dim">#FF334155</color>
 </resources>

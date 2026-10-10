@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -25,7 +25,7 @@
             android:paddingRight="10dp"
             android:paddingBottom="4dp"
             android:text="考试倒计时"
-            android:textColor="#64748B"
+            android:textColor="@color/widget_ink_secondary"
             android:textSize="11sp"
             android:textStyle="bold" />
 
@@ -44,7 +44,7 @@
                 android:includeFontPadding="false"
                 android:maxLines="1"
                 android:text="12"
-                android:textColor="#0F172A"
+                android:textColor="@color/widget_ink_primary"
                 android:textSize="44sp"
                 android:textStyle="bold" />
 
@@ -56,7 +56,7 @@
                 android:layout_marginBottom="6dp"
                 android:maxLines="1"
                 android:text="天"
-                android:textColor="#64748B"
+                android:textColor="@color/widget_ink_secondary"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
@@ -71,7 +71,7 @@
             android:gravity="center"
             android:maxLines="1"
             android:text="高等数学期末"
-            android:textColor="#0F172A"
+            android:textColor="@color/widget_ink_primary"
             android:textSize="14sp"
             android:textStyle="bold" />
 
@@ -84,7 +84,7 @@
             android:gravity="center"
             android:maxLines="1"
             android:text="06-25 · 一教C104"
-            android:textColor="#64748B"
+            android:textColor="@color/widget_ink_secondary"
             android:textSize="11sp" />
 
     </LinearLayout>

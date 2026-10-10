@@ -57,28 +57,29 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
             R.id.widget_medium_title_accent,
             TodayWidgetSupport.accentBar(snapshot, accentCourse, style, context),
         )
-        views.setTextColor(
+        views.applyInk(
             R.id.widget_medium_title,
-            TodayWidgetSupport.accentText(snapshot, accentCourse, style, context)
-                ?: primaryColor,
+            WidgetInk.PRIMARY,
+            style,
+            context,
+            accent = TodayWidgetSupport.accentText(snapshot, accentCourse, style, context),
+            fallback = primaryColor,
         )
-        views.setTextColor(R.id.widget_medium_time, primaryColor)
-        views.setTextColor(R.id.widget_medium_meta, secondaryColor)
-        views.setTextColor(R.id.widget_medium_exam, secondaryColor)
-        views.setTextColor(R.id.widget_medium_footer, secondaryColor)
+        views.applyInk(R.id.widget_medium_time, WidgetInk.PRIMARY, style, context, fallback = primaryColor)
+        views.applyInk(R.id.widget_medium_meta, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
+        views.applyInk(R.id.widget_medium_exam, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
+        views.applyInk(R.id.widget_medium_footer, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
         val mediumStatusState = if (snapshot != null) {
             TodayWidgetSupport.displayStatusState(snapshot)
         } else {
             "no_course"
         }
-        views.setTextColor(
+        views.applyInk(
             R.id.widget_medium_label,
-            TodayWidgetSupport.accentText(snapshot, accentCourse, style, context)
-                ?: TodayWidgetSupport.statusChipTextColor(
-                    mediumStatusState,
-                    style,
-                    context,
-                )
+            chipInkRole(mediumStatusState),
+            style,
+            context,
+            accent = TodayWidgetSupport.accentText(snapshot, accentCourse, style, context),
         )
         views.setInt(
             R.id.widget_medium_label,
@@ -217,7 +218,7 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
             return
         }
         views.setViewVisibility(rowId, View.VISIBLE)
-        views.setTextColor(timeId, secondaryColor)
+        views.applyInk(timeId, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
         val barId = when (index) {
             0 -> R.id.widget_medium_row_1_accent
             1 -> R.id.widget_medium_row_2_accent
@@ -232,14 +233,17 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
                 TodayWidgetSupport.accentBar(snapshot, course, style, context)
             },
         )
-        views.setTextColor(
+        views.applyInk(
             titleId,
-            if (context == null) {
-                primaryColor
+            WidgetInk.PRIMARY,
+            style,
+            context,
+            accent = if (context == null) {
+                null
             } else {
                 TodayWidgetSupport.accentText(snapshot, course, style, context)
-                    ?: primaryColor
             },
+            fallback = primaryColor,
         )
         views.setTextViewText(timeId, "${course.startTime} - ${course.endTime}")
         views.setTextViewText(titleId, course.name)

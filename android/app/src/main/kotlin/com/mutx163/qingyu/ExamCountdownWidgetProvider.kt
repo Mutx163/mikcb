@@ -77,13 +77,11 @@ class ExamCountdownWidgetProvider : BaseQingyuWidgetProvider() {
                 style,
             ),
         )
-        views.setTextColor(
+        views.applyInk(
             R.id.exam_chip,
-            TodayWidgetSupport.statusChipTextColor(
-                if (isExamOngoing) "ongoing" else "upcoming",
-                style,
-                context
-            )
+            chipInkRole(if (isExamOngoing) "ongoing" else "upcoming"),
+            style,
+            context,
         )
 
         // 大字区：常规显示天数，今天考试显示"今天"，进行中显示结束时间，无数据显示占位。
@@ -122,10 +120,10 @@ class ExamCountdownWidgetProvider : BaseQingyuWidgetProvider() {
             snapshot?.takeIf { !noExam }?.let { examMeta(it) }
                 ?: context.getString(R.string.widget_tap_to_open),
         )
-        views.setTextColor(R.id.exam_days, primaryColor)
-        views.setTextColor(R.id.exam_day_unit, secondaryColor)
-        views.setTextColor(R.id.exam_name, primaryColor)
-        views.setTextColor(R.id.exam_meta, secondaryColor)
+        views.applyInk(R.id.exam_days, WidgetInk.PRIMARY, style, context, fallback = primaryColor)
+        views.applyInk(R.id.exam_day_unit, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
+        views.applyInk(R.id.exam_name, WidgetInk.PRIMARY, style, context, fallback = primaryColor)
+        views.applyInk(R.id.exam_meta, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)
 
         // 单位行只服务「数字 + 天」形态，其余形态隐藏避免空行占位。
         views.setViewVisibility(

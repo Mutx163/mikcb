@@ -971,11 +971,35 @@ internal fun findNextRefreshAtMillis(
      * [state] 决定浅色模式 strong/dim 芯片的文字分档，与背景资源保持一致。
      */
     fun statusChipTextColor(state: String, style: String, context: Context? = null): Int {
+        return chipTextColor(isStrongChipState(state), style, context)
+    }
+
+    /**
+     * 芯片文字色的唯一事实来源：[statusChipTextColor] 按状态分档，[inkFallback] 按角色分档，
+     * 两处都走这里，避免「背景用 strong 档、文字按 dim 档」这种分档漂移。
+     */
+    fun chipTextColor(strong: Boolean, style: String, context: Context? = null): Int {
         return when {
             style == "gradient" -> Color.parseColor("#0F172A")
             context != null && isDarkMode(context) -> Color.parseColor("#E2E8F0")
-            !isStrongChipState(state) -> Color.parseColor("#334155")
+            !strong -> Color.parseColor("#334155")
             else -> Color.parseColor("#1D4ED8")
+        }
+    }
+
+    /**
+     * [WidgetInk] 在「不能走主题属性」那条路上的回落值（渐变风格 / Android 12 以下）。
+     *
+     * 必须与 `values/colors.xml` 与 `values-night/colors.xml` 里的四个 `widget_ink_*` 同值：
+     * 那四个是宿主解析属性时用的，这里是 App 渲染时算的，两条路在不同机型/API 上生效。
+     * 只改一边就会出现「同一个角色在两台设备上不是一个颜色」。
+     */
+    fun inkFallback(role: WidgetInk, style: String, context: Context? = null): Int {
+        return when (role) {
+            WidgetInk.PRIMARY -> primaryTextColor(style, context)
+            WidgetInk.SECONDARY -> secondaryTextColor(style, context)
+            WidgetInk.CHIP_STRONG -> chipTextColor(strong = true, style, context)
+            WidgetInk.CHIP_DIM -> chipTextColor(strong = false, style, context)
         }
     }
 

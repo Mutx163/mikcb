@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_today_medium_name"
     android:initialLayout="@layout/widget_today_medium"
@@ -10,4 +10,5 @@
     android:targetCellWidth="2"
     android:targetCellHeight="4"
     android:updatePeriodMillis="0"
-    android:widgetCategory="home_screen" />
+    android:widgetCategory="home_screen"
+    android:theme="@style/QingyuWidgetTheme" />
