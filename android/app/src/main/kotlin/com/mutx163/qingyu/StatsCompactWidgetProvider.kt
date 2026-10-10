@@ -150,11 +150,18 @@ class StatsCompactWidgetProvider : BaseQingyuWidgetProvider() {
             )
         }
 
-        // 明细行按高度/宽度分档：矮卡只留核心三行，正常方卡全量显示。
-        // 无数据时文本已置空，保持 GONE，避免空行高+边距在小卡上白占高度。
-        val showDetail = snapshot != null && !profile.isShort && !profile.isNarrow
-        views.setViewVisibility(R.id.stats_nature, if (showDetail) View.VISIBLE else View.GONE)
-        views.setViewVisibility(R.id.stats_extra_pct, if (showDetail) View.VISIBLE else View.GONE)
+        // 明细行按「内容真实需要的高度 vs 格位可用高度」分档，不再拍固定阈值：
+        // isShort/isNarrow 直接 0 行；其余按格位高度 − 双层内边距算可用空间，
+        // 取能装下的最多明细行数（2=必修·选修+已上%，1=只留必修·选修，0=全收），
+        // 避免最后一行被垂直居中布局裁出卡外（用户 2×2 格位实测被裁）。
+        // 判据与预算口径见 TodayWidgetSupport.statsCompactDetailRowCount。
+        val detailRows = if (snapshot != null && !profile.isShort && !profile.isNarrow) {
+            TodayWidgetSupport.statsCompactDetailRowCount(profile, chrome.heightAdjustment)
+        } else {
+            0
+        }
+        views.setViewVisibility(R.id.stats_nature, if (detailRows >= 1) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.stats_extra_pct, if (detailRows >= 2) View.VISIBLE else View.GONE)
 
         // 按实际尺寸画像自适应字号（对齐 TodayCompact 的分档）。
         TodayWidgetSupport.setTextSizeSp(

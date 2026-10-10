@@ -830,7 +830,28 @@ internal fun findNextRefreshAtMillis(
         targetAspect: Float = 1f,
         maxAdaptiveInsetDp: Int = 18,
     ) {
-        val horizontal = 0
+        val vertical = adaptiveVerticalPaddingValue(
+            profile,
+            baseVerticalDp,
+            heightAdjustmentDp,
+            targetAspect,
+            maxAdaptiveInsetDp,
+        )
+        views.setViewPadding(rootId, 0, vertical, 0, vertical)
+    }
+
+    /**
+     * [applyAdaptiveVerticalPadding] 的纯计算部分：只算根视图该用的垂直内边距，
+     * 不触碰 RemoteViews。供需要在「下发前」先拿边距值做内容适配预算的卡片
+     * （如统计方卡按可用高度裁明细行）复用，公式必须与原实现逐位一致。
+     */
+    fun adaptiveVerticalPaddingValue(
+        profile: TodayWidgetSizeProfile,
+        baseVerticalDp: Int,
+        heightAdjustmentDp: Int,
+        targetAspect: Float = 1f,
+        maxAdaptiveInsetDp: Int = 18,
+    ): Int {
         var vertical = baseVerticalDp
 
         val targetHeight = profile.widthDp / targetAspect
@@ -842,15 +863,52 @@ internal fun findNextRefreshAtMillis(
             vertical = (baseVerticalDp - 6).coerceAtLeast(0)
         }
         vertical = (vertical - heightAdjustmentDp).coerceIn(0, baseVerticalDp + maxAdaptiveInsetDp + 24)
-
-        views.setViewPadding(
-            rootId,
-            horizontal,
-            vertical,
-            horizontal,
-            vertical,
-        )
+        return vertical
     }
+
+    /**
+     * 统计方卡（2×2）的「明细行显示几行」判据，返回 0/1/2。
+     *
+     * 原先只按 profile.isShort（高度 <150dp）拍阈值，用户的 2×2 格位实测高度落在
+     * 阈值之上但内容装不下：六行内容约 138dp（chip ~24 + bar 6+10 + sections ~25+12 +
+     * delta ~17+2 + nature ~15+9 + extra ~15+3），叠加双层内边距（根视图自适应边距
+     * 25×2 + 卡片静态 padding 14×2 = 78dp），共约 216dp —— 格位高度不足时最后一行
+     * 「已上 N%」先被垂直居中布局裁出卡外。
+     *
+     * 预算口径：可用高度 = 格位高 − 双层内边距（根视图自适应边距按
+     * [adaptiveVerticalPaddingValue] 现算，与 Provider 实际下发的一致；
+     * 注意它会随「格位比方格高多少」增长、并被「高度微调」平移）；
+     * 需要高度分两档：全量六行 [STATS_CONTENT_ALL_DP]、只留「必修·选修」一行明细
+     * [STATS_CONTENT_NATURE_ONLY_DP]（少一行 extra ≈ 20dp）。取能装下的最多明细行数。
+     * 估高是 dp 口径的经验值（sp 行高随系统字体缩放），常量取「悲观整值」与
+     * 「真机裁切反推」的中间偏紧档：宁可多收一行明细，也不让文字再被裁。
+     * [heightAdjustmentDp] 是用户设置的「高度微调」，同样参与预算。
+     */
+    fun statsCompactDetailRowCount(
+        profile: TodayWidgetSizeProfile,
+        heightAdjustmentDp: Int,
+    ): Int {
+        val baseVerticalDp = 14
+        val cardPaddingDp = 14
+        val adaptive = adaptiveVerticalPaddingValue(
+            profile,
+            baseVerticalDp,
+            heightAdjustmentDp,
+            targetAspect = 1f,
+        )
+        val available = profile.heightDp - 2 * (adaptive + cardPaddingDp)
+        return when {
+            available >= STATS_CONTENT_ALL_DP -> 2
+            available >= STATS_CONTENT_NATURE_ONLY_DP -> 1
+            else -> 0
+        }
+    }
+
+    /** 统计方卡六行全量（chip+bar+节数+环比+必修选修+已上%）的内容估高，含行间距。 */
+    private const val STATS_CONTENT_ALL_DP = 130
+
+    /** 统计方卡五行（无「已上%」）的内容估高。 */
+    private const val STATS_CONTENT_NATURE_ONLY_DP = 108
 
     fun setTextSizeSp(views: RemoteViews, viewId: Int, sizeSp: Float) {
         views.setTextViewTextSize(viewId, TypedValue.COMPLEX_UNIT_SP, sizeSp)
