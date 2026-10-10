@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../services/android_move_to_back_service.dart';
 import '../services/live_testing_trigger.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/app_log_service.dart';
@@ -436,6 +437,10 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             }
           },
         );
+        // 岛只在桌面/状态栏可见：起岛成功后自动退后台（等效按 Home），
+        // 省去用户手动按。失败（MIUI 分屏等非常规形态）不打断流程，
+        // toast 里本就引导按 Home 查看。
+        unawaited(AndroidMoveToBackService.moveTaskToBack());
       }    } finally {
       if (mounted) {
         setState(() => _stagePreviewBusy = false);

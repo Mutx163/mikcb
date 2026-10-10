@@ -509,6 +509,17 @@ class MainActivity : FlutterActivity() {
                             }
                         result.success(value)
                     }
+                    "moveTaskToBack" -> {
+                        // 应用自行请求回后台（等效按 Home）：超级岛测试起岛后
+                        // 引导用户回桌面看岛。仅当本 Activity 处于运行态时生效，
+                        // 失败/不支持时回 false 由 Dart 侧自行兜底提示。
+                        try {
+                            result.success(moveTaskToBack(true))
+                        } catch (error: Exception) {
+                            Log.w("MainActivity", "moveTaskToBack failed", error)
+                            result.success(false)
+                        }
+                    }
                     else -> result.notImplemented()
                 }
             }
