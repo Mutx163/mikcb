@@ -23,8 +23,8 @@ import android.util.Log
  *
  * 字色现在由 [TodayWidgetSupport.isDarkMode] 直读系统设置（`UiModeManager`），不再依赖
  * 本进程的 `resources.configuration`——后者在 MIUI/HyperOS 后台保活下可能长期不更新，
- * 会出现「每次后台重画都继续用旧档字色」的卡死。这里的重画只负责让 RemoteViews 收到
- * 新值；真正决定颜色的那一层已经不依赖进程配置的时效。
+ * 会出现「每次后台重画都继续用旧档字色」的卡死。这里的换档判据也必须用同一来源：
+ * 否则字色已经会画新档、却因为判据仍读到旧进程配置而不触发重画，卡片继续停在旧配色。
  *
  * 平台不允许用 manifest 声明 `ACTION_CONFIGURATION_CHANGED`（收不到），所以这里在进程活着时
  * 动态注册。进程已经死了不用管：下一次唤醒（闹钟 / Worker / 打开 App）起来时，进程配置本来
@@ -59,7 +59,7 @@ object WidgetThemeWatcher {
             }
             val applicationContext = context.applicationContext
             appContext = applicationContext
-            lastNightMode = nightModeMask(applicationContext.resources.configuration.uiMode)
+            lastNightMode = currentNightModeMask(applicationContext)
             val filter = IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 applicationContext.registerReceiver(
@@ -90,7 +90,7 @@ object WidgetThemeWatcher {
 
     private fun rerenderAllWidgetsIfNightModeChanged() {
         val context = appContext ?: return
-        val current = nightModeMask(context.resources.configuration.uiMode)
+        val current = currentNightModeMask(context)
         val changed = synchronized(this) {
             val previous = lastNightMode
             lastNightMode = current
@@ -113,6 +113,20 @@ object WidgetThemeWatcher {
 
 /** 只取 uiMode 里的深浅档那一位（UI_MODE_NIGHT_NO / YES / UNDEFINED）。 */
 internal fun nightModeMask(uiMode: Int): Int = uiMode and Configuration.UI_MODE_NIGHT_MASK
+
+/**
+ * 监听器自己的深浅档口径。
+ *
+ * 不直接读 `resources.configuration`：后台进程的这份配置可能长期停在旧档，让监听器误以为
+ * 「没换档」而不重画。复用 [TodayWidgetSupport.isDarkMode] 后，监听器和实际渲染字色永远
+ * 看到同一个答案；这里只把它映射回夜档掩码，继续复用上面的纯函数判断。
+ */
+private fun currentNightModeMask(context: Context): Int =
+    if (TodayWidgetSupport.isDarkMode(context)) {
+        Configuration.UI_MODE_NIGHT_YES
+    } else {
+        Configuration.UI_MODE_NIGHT_NO
+    }
 
 /**
  * 深浅档是否真的换了一档。
