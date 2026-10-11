@@ -57,7 +57,7 @@ void main() {
     endSection: 2,
     startTime: '08:00',
     endTime: '09:40',
-    startWeek: 1,
+    // startWeek 默认就是 1，不重复传（avoid_redundant_argument_values）；重点是上满 3 周。
     endWeek: 3,
     sessionNotes: const {
       2: CourseSessionNote(text: '第 2 周布置了习题集', hasHomework: true),

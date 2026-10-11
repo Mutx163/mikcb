@@ -125,8 +125,9 @@ void main() {
   });
 
   test('干净文件不会往 droppedCounts 里塞 0 项', () {
+    // exams 不传，走 buildJson 默认的空列表（显式写会撞 avoid_redundant_argument_values）。
     final backup = service.parseBackupJson(
-      buildJson(courses: [goodCourse('c-1', '高等数学')], exams: const []),
+      buildJson(courses: [goodCourse('c-1', '高等数学')]),
     );
     expect(backup.droppedCounts.containsKey('exams'), isFalse);
     expect(backup.droppedCounts.containsKey('courses'), isFalse);
