@@ -24,7 +24,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// `9:00` 判成「还没上课」（`"09:30" < "9:00"`）。现在两个方向都抓。
 ///
 /// 允许清单里只有一处，且**已逐行核过安全**：
-/// `timetable_screen.dart` 的当日考试排序排的是 `Exam.startTime`，
+/// `timetable_day_view_part.dart`（主文件 `timetable_screen.dart` 的功能域分片）
+/// 的当日考试排序排的是 `Exam.startTime`，
 /// 而 `Exam.fromJson`（models/exam.dart:168）走 `normalizeTimeOfDay(...)`，
 /// 恒为补零的 `HH:mm`，字典序与分钟序同序。
 void main() {
@@ -64,9 +65,12 @@ void main() {
           continue;
         }
         // 允许清单按**整行内容**匹配，不按文件放行：否则同一个文件里新加的
-        // 课程/日程排序会被一起放过（第一版就犯了这个错）。
-        if (normalizedPath.endsWith('screens/timetable_screen.dart') &&
-            trimmed == allowedLine) {
+        // 课程/日程排序会被一起放过（第一版就犯了这个错）。父文件与功能域
+        // 分片一起放行，是为了避免把同一段代码搬进 part 文件误判成新违规。
+        final allowedFile =
+            normalizedPath.endsWith('screens/timetable_screen.dart') ||
+            normalizedPath.endsWith('screens/timetable_day_view_part.dart');
+        if (allowedFile && trimmed == allowedLine) {
           continue;
         }
         hits.add('$normalizedPath:${i + 1}: $trimmed');
@@ -84,7 +88,7 @@ void main() {
   });
 
   test('允许清单里的那一处仍然是考试排序，没有变成课程或日程', () {
-    final file = File('lib/screens/timetable_screen.dart');
+    final file = File('lib/screens/timetable_day_view_part.dart');
     expect(file.existsSync(), isTrue);
     expect(allowedNote, isNotEmpty);
     final offending = file.readAsLinesSync().where((line) {
