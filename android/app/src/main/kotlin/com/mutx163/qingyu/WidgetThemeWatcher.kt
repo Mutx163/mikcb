@@ -21,6 +21,11 @@ import android.util.Log
  * 「底色是浅的、字也是浅的」这类半对半错、看不清的卡片，一直卡到下一次有人触发重画
  * （打开 App、闹钟刷新、Worker 到点）。
  *
+ * 字色现在由 [TodayWidgetSupport.isDarkMode] 直读系统设置（`UiModeManager`），不再依赖
+ * 本进程的 `resources.configuration`——后者在 MIUI/HyperOS 后台保活下可能长期不更新，
+ * 会出现「每次后台重画都继续用旧档字色」的卡死。这里的重画只负责让 RemoteViews 收到
+ * 新值；真正决定颜色的那一层已经不依赖进程配置的时效。
+ *
  * 平台不允许用 manifest 声明 `ACTION_CONFIGURATION_CHANGED`（收不到），所以这里在进程活着时
  * 动态注册。进程已经死了不用管：下一次唤醒（闹钟 / Worker / 打开 App）起来时，进程配置本来
  * 就是当前档，那一轮渲染直接是对的。
@@ -31,10 +36,7 @@ import android.util.Log
 object WidgetThemeWatcher {
     private const val TAG = "WidgetThemeWatcher"
 
-    /**
-     * 换档常伴随一串配置变化广播（有时还会紧接着再来一次），延迟一小会儿合并成一次重画；
-     * 顺带等进程的配置落地——收到广播时 `resources.configuration` 才是新档。
-     */
+    /** 换档常伴随一串配置变化广播（有时还会紧接着再来一次），延迟一小会儿合并成一次重画。 */
     private const val SETTLE_DELAY_MILLIS = 300L
 
     @Volatile

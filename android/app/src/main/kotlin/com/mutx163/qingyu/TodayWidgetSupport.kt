@@ -2,6 +2,7 @@ package com.mutx163.qingyu
 
 import android.appwidget.AppWidgetManager
 import android.app.PendingIntent
+import android.app.UiModeManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -995,7 +996,36 @@ internal fun findNextRefreshAtMillis(
         }
     }
 
-    fun isDarkMode(context: Context): Boolean {
+    /**
+     * 小组件渲染用的「系统当下深浅档」，**不能**读 `context.resources.configuration`。
+     *
+     * 进程自己的配置要等 `ACTION_CONFIGURATION_CHANGED` 真正派发给本进程才会更新；
+     * MIUI/HyperOS 在后台保活下可能长期不派发，于是系统已换档、进程档还停在旧档。
+     * 卡片底色由桌面按系统当下档解析（drawable-night），字色若按进程旧档现算，
+     * 就会出现「深底深字 / 浅底浅字」，直到打开 App 让进程配置追上才恢复。
+     * `UiModeManager.getNightMode` 反映系统设置里**当下**的档，不走进程本地配置缓存。
+     * 定时切换（AUTO/CUSTOM）时系统档随时间变化，这里退回进程配置做兜底——
+     * 手动切深浅（用户主诉场景）恒为 YES/NO，直读即可，不受进程配置过期影响。
+     */
+    fun isDarkMode(context: Context): Boolean = currentSystemNightMode(context) ==
+        UiModeManager.MODE_NIGHT_YES
+
+    private fun currentSystemNightMode(context: Context): Int {
+        val uiModeManager = context.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
+        val configured = uiModeManager?.nightMode
+            ?: UiModeManager.MODE_NIGHT_AUTO
+        return if (configured == UiModeManager.MODE_NIGHT_AUTO) {
+            if (isNightNow(context)) {
+                UiModeManager.MODE_NIGHT_YES
+            } else {
+                UiModeManager.MODE_NIGHT_NO
+            }
+        } else {
+            configured
+        }
+    }
+
+    private fun isNightNow(context: Context): Boolean {
         val uiMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
         return uiMode == Configuration.UI_MODE_NIGHT_YES
     }
