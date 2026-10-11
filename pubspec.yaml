@@ -49,7 +49,7 @@ dependencies:
   # 学校列表自建字母条要直接驱动滚动落点（AzListView 内置跳转对齐到视口
   # 顶部，会被悬浮顶栏盖住），此前是 azlistview 的传递依赖，这里转正。
   scrollable_positioned_list: ^0.2.3
-  animations: ^2.0.11
+  animations: ^3.0.0
   table_parser: ^1.0.1
   qr: ^3.0.2
   qr_flutter: ^4.1.0
