@@ -23,12 +23,16 @@ git config core.hooksPath
 
 ## 现在拦什么
 
-只有 `test/architecture/`（实测 21 条 / 5.8 秒，全是扫文件的纯逻辑测试）：
-行数棘轮、依赖扇入棘轮、模糊出界、液态玻璃单入口、第三方模糊库补丁的锁定
-commit、以及备份规则等新增守卫。
+1. `test/architecture/`（实测 21 条 / 5.8 秒，全是扫文件的纯逻辑测试）：
+   行数棘轮、依赖扇入棘轮、模糊出界、液态玻璃单入口、第三方模糊库补丁的锁定
+   commit、以及备份规则等新增守卫。
+2. **analyze 门禁**（2026-10-11 新增）：暂存的 `.dart` 文件逐个过
+   `dart analyze --fatal-infos`（info 级也算失败，与 CI 同一口径）。首跑约 20 秒、
+   之后快；只分析暂存的文件，不碰其他 Agent 正在改的半成品。起因是 10-08 两个
+   测试提交带进两条 info 级 lint，本地没人跑 analyze，CI 从 10-09 连红十几次。
 
-触发条件：暂存区动到 `lib/`、`test/architecture/`、`android/` 或 `pubspec.yaml`。
-纯文档/站点提交不付这 6 秒。
+触发条件：暂存区动到 `lib/`、`test/`、`android/` 或 `pubspec.yaml`
+（Dart 文件才会触发 analyze；纯文档/站点提交不付这几秒）。
 
 ## 为什么不跑全量 `flutter test`
 
@@ -40,6 +44,12 @@ commit、以及备份规则等新增守卫。
 `tool/cjk_hardcode_baseline.txt`。放进钩子会让每次提交都可能把工作区弄脏出一个
 未暂存的改动，比它拦住的回归更烦人。它留在 CI 里。
 
+## 为什么 analyze 只跑暂存文件
+
+全仓 `dart analyze` 约 21 秒，而且会把**其他 Agent 正在改的半成品**也报出来——
+在这个约 5 个 Agent 并行的共享工作区里，那等于用别人的未完成代码拦你的提交。
+只分析暂存文件：自己的改动自己负责，CI 照旧全量兜底。
+
 ## 逃生舱
 
 ```bash
@@ -50,6 +60,7 @@ git commit --no-verify
 
 ```bash
 flutter test test/architecture/ --timeout 60s
+dart analyze --fatal-infos <刚才暂存的 .dart 文件>
 ```
 
 ## 工具链起不来时会放行
