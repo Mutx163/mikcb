@@ -868,22 +868,17 @@ internal fun findNextRefreshAtMillis(
     }
 
     /**
-     * 统计方卡（2×2）的「明细行显示几行」判据，返回 0/1/2。
+     * 统计方卡（2×2）的「必修·选修」明细行显示判据，返回 0 或 1。
      *
-     * 原先只按 profile.isShort（高度 <150dp）拍阈值，用户的 2×2 格位实测高度落在
-     * 阈值之上但内容装不下：六行内容约 138dp（chip ~24 + bar 6+10 + sections ~25+12 +
-     * delta ~17+2 + nature ~15+9 + extra ~15+3），叠加双层内边距（根视图自适应边距
-     * 25×2 + 卡片静态 padding 14×2 = 78dp），共约 216dp —— 格位高度不足时最后一行
-     * 「已上 N%」先被垂直居中布局裁出卡外。
-     *
-     * 预算口径：可用高度 = 格位高 − 双层内边距（根视图自适应边距按
-     * [adaptiveVerticalPaddingValue] 现算，与 Provider 实际下发的一致；
-     * 注意它会随「格位比方格高多少」增长、并被「高度微调」平移）；
-     * 需要高度分两档：全量六行 [STATS_CONTENT_ALL_DP]、只留「必修·选修」一行明细
-     * [STATS_CONTENT_NATURE_ONLY_DP]（少一行 extra ≈ 20dp）。取能装下的最多明细行数。
-     * 估高是 dp 口径的经验值（sp 行高随系统字体缩放），常量取「悲观整值」与
-     * 「真机裁切反推」的中间偏紧档：宁可多收一行明细，也不让文字再被裁。
-     * [heightAdjustmentDp] 是用户设置的「高度微调」，同样参与预算。
+     * 学期进度百分比已并入进度条同一行，不再按整行参与高度预算。剩下的
+     * 预算口径是：可用高度 = 格位高 − 双层内边距（根视图自适应边距按
+     * [adaptiveVerticalPaddingValue] 现算，与 Provider 实际下发一致；它会随
+     * 「格位比方格高多少」增长、并被「高度微调」平移）− 系统字体缩放放大倍数
+     * [STATS_FONT_SCALE_EXTRA_DP]（dp 估高对大字体会偏乐观，宁可先收明细行）。
+     * 核心四行（chip / 进度行 / 节数 / 环比）按 [STATS_CONTENT_CORE_DP] 估，
+     * 加「必修·选修」一行按 [STATS_CONTENT_CORE_PLUS_NATURE_DP] 估；装不下就收起，
+     * 也不让最后一行被垂直居中布局裁出卡外。极端字体缩放（>150%）不冒裁切风险，
+     * 直接按 150% 兜底。[heightAdjustmentDp] 是用户设置的「高度微调」，同样参与预算。
      */
     fun statsCompactDetailRowCount(
         profile: TodayWidgetSizeProfile,
@@ -897,19 +892,21 @@ internal fun findNextRefreshAtMillis(
             heightAdjustmentDp,
             targetAspect = 1f,
         )
-        val available = profile.heightDp - 2 * (adaptive + cardPaddingDp)
-        return when {
-            available >= STATS_CONTENT_ALL_DP -> 2
-            available >= STATS_CONTENT_NATURE_ONLY_DP -> 1
-            else -> 0
-        }
+        val available = profile.heightDp -
+            2 * (adaptive + cardPaddingDp) -
+            STATS_FONT_SCALE_EXTRA_DP
+        return if (available >= STATS_CONTENT_CORE_PLUS_NATURE_DP) 1 else 0
     }
 
-    /** 统计方卡六行全量（chip+bar+节数+环比+必修选修+已上%）的内容估高，含行间距。 */
-    private const val STATS_CONTENT_ALL_DP = 130
+    /** 统计方卡核心四行（chip+进度行+节数+环比）的内容估高，含行间距。 */
+    private const val STATS_CONTENT_CORE_DP = 71
 
-    /** 统计方卡五行（无「已上%」）的内容估高。 */
-    private const val STATS_CONTENT_NATURE_ONLY_DP = 108
+    /** 统计方卡五行（核心四行 + 必修·选修）的内容估高，含行间距。 */
+    private const val STATS_CONTENT_CORE_PLUS_NATURE_DP = 95
+
+    /** 默认字体缩放下系统会给 dp 内容额外长出来的高度；大字体超支从这里预留。 */
+    private const val STATS_FONT_SCALE_EXTRA_DP = 12
+
 
     fun setTextSizeSp(views: RemoteViews, viewId: Int, sizeSp: Float) {
         views.setTextViewTextSize(viewId, TypedValue.COMPLEX_UNIT_SP, sizeSp)
