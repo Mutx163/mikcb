@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-10T07:38:20+00:00",
+  "updatedAt": "2026-10-11T07:43:25+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 251,
-    "schools": 246,
+    "total": 252,
+    "schools": 247,
     "generic": 5
   },
   "schools": [
@@ -762,6 +762,13 @@
       "name": "湖南商务职业技术学院",
       "initial": "H",
       "resourceFolder": "HNVCC",
+      "category": "school"
+    },
+    {
+      "id": "HNU",
+      "name": "湖南大学",
+      "initial": "H",
+      "resourceFolder": "HNU",
       "category": "school"
     },
     {
