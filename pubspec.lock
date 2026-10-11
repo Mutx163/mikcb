@@ -287,8 +287,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "614bf04249542f0c002ee5d95b057f2bad5dd506"
-      resolved-ref: "614bf04249542f0c002ee5d95b057f2bad5dd506"
+      ref: "4d6992645c38e11195e2f576397202fbd0922670"
+      resolved-ref: "4d6992645c38e11195e2f576397202fbd0922670"
       url: "https://github.com/Mutx163/flutter_miuix.git"
     source: git
     version: "1.2.0"
@@ -304,10 +304,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_secure_storage
-      sha256: fe638107c5f69119156ada2db5a57734385fac3f64430bd7252a00d3ead2ca4b
+      sha256: "7686b1d6a29985dcbb808c59518226e603e3bfa7c0ddfd1a0d00e4cda77c868e"
       url: "https://pub.dev"
     source: hosted
-    version: "10.3.4"
+    version: "10.3.1"
   flutter_secure_storage_darwin:
     dependency: transitive
     description:
@@ -382,78 +382,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
-  geoclue:
-    dependency: transitive
-    description:
-      name: geoclue
-      sha256: c2a998c77474fc57aa00c6baa2928e58f4b267649057a1c76738656e9dbd2a7f
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.1"
-  geolocator:
-    dependency: "direct main"
-    description:
-      name: geolocator
-      sha256: "79939537046c9025be47ec645f35c8090ecadb6fe98eba146a0d25e8c1357516"
-      url: "https://pub.dev"
-    source: hosted
-    version: "14.0.2"
-  geolocator_android:
-    dependency: transitive
-    description:
-      name: geolocator_android
-      sha256: "86ea1654e4f61ff51466848e91c116b422d6010ea269fda0fbe1af7e9e742ce1"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.0.3"
-  geolocator_apple:
-    dependency: transitive
-    description:
-      name: geolocator_apple
-      sha256: "853803d6bb1713c094e935b4a5ae5f19c0308acf81da13fa9ff84fb4c70c0b73"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.3.14"
-  geolocator_linux:
-    dependency: transitive
-    description:
-      name: geolocator_linux
-      sha256: d64112a205931926f4363bb6bd48f14cb38e7326833041d170615586cd143797
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.4"
-  geolocator_platform_interface:
-    dependency: transitive
-    description:
-      name: geolocator_platform_interface
-      sha256: "94db8255dc183d268765df682580440617ca35877fc82cacb5420ad03b86198d"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.3.0"
-  geolocator_web:
-    dependency: transitive
-    description:
-      name: geolocator_web
-      sha256: "19e485a0f8d6a88abcf9c53cba3a4105e14b7435ed8ac1c108c067b938fe8429"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.1.4"
-  geolocator_windows:
-    dependency: transitive
-    description:
-      name: geolocator_windows
-      sha256: "175435404d20278ffd220de83c2ca293b73db95eafbdc8131fe8609be1421eb6"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.5"
-  gsettings:
-    dependency: transitive
-    description:
-      name: gsettings
-      sha256: "1b0ce661f5436d2db1e51f3c4295a49849f03d304003a7ba177d01e3a858249c"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.8"
   hooks:
     dependency: transitive
     description:
@@ -482,10 +410,10 @@ packages:
     dependency: "direct main"
     description:
       name: image
-      sha256: a1e7f4951e538a568e14b856702afc9ae1d2f4b202daced8d22c1b9cd211ce89
+      sha256: f9881ff4998044947ec38d098bc7c8316ae1186fa786eddffdb867b9bc94dfce
       url: "https://pub.dev"
     source: hosted
-    version: "4.10.1"
+    version: "4.8.0"
   image_picker:
     dependency: "direct main"
     description:
@@ -554,8 +482,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "762d126ed3c55240d56cd8c0370e06938ee22a61"
-      resolved-ref: "762d126ed3c55240d56cd8c0370e06938ee22a61"
+      ref: "6247f025b5b6fdb8700d3f6e2728bef04b658d3d"
+      resolved-ref: "6247f025b5b6fdb8700d3f6e2728bef04b658d3d"
       url: "https://github.com/Mutx163/inspire_blur.git"
     source: git
     version: "0.4.1"
@@ -615,6 +543,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.0"
+  liquid_glass_widgets:
+    dependency: "direct main"
+    description:
+      name: liquid_glass_widgets
+      sha256: "6eb319af884c7269403089873dfe7a2d948cbbf384b856ea3518d4a187aa5314"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.30.2"
   logging:
     dependency: transitive
     description:
@@ -667,10 +603,10 @@ packages:
     dependency: "direct main"
     description:
       name: mobile_scanner
-      sha256: "5a51ea79f0cf8293f616a5d08baae185b59b5e6bb24df01f2a63037ade0bade0"
+      sha256: ce3f059ebd6dbfab7292bba0e893e354b46730636820d3c9ef69005ce2d55bce
       url: "https://pub.dev"
     source: hosted
-    version: "7.4.2"
+    version: "7.4.0"
   nested:
     dependency: transitive
     description:
@@ -864,7 +800,7 @@ packages:
     source: hosted
     version: "0.6.0"
   scrollable_positioned_list:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: scrollable_positioned_list
       sha256: "9566352ab9ba05794ee6c8864f154afba5d36c5637d0e3e32c615ba4ceb92772"
@@ -1112,10 +1048,10 @@ packages:
     dependency: transitive
     description:
       name: vector_math
-      sha256: "92b9910f66ed1057fd4da7b040ae7c74cafacf885bdc81be496928d5049b032d"
+      sha256: f36f9f3be64c6198714492bb455c11056e33e2f85d9a0b676a48301e44fdcf47
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.3"
+    version: "2.4.2"
   vm_service:
     dependency: transitive
     description:
@@ -1152,10 +1088,10 @@ packages:
     dependency: "direct main"
     description:
       name: webview_flutter_android
-      sha256: a97db7a44f8e71af2f3971c45550a08cce1fb60059c1b8e534251e6cfb753490
+      sha256: "4de8b3d1ff4ebe1bdb42e68a5e4f809194a3cb0117a8f495f590004f00da3964"
       url: "https://pub.dev"
     source: hosted
-    version: "4.13.0"
+    version: "4.14.1"
   webview_flutter_platform_interface:
     dependency: transitive
     description:
