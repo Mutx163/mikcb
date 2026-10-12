@@ -18,11 +18,12 @@ import '../services/live_testing_trigger.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/app_log_service.dart';
 import '../utils/hex_color.dart';
-import '../utils/theme_seed_accent.dart';
 import '../utils/app_toast.dart';
 import '../utils/import_file_reader.dart';
 import '../services/unified_transfer_service.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../ui/hyperos/liquid/liquid_glass_surface.dart'
+    show LiquidGlassSurface, LiquidGlassRole, narrowSurfaceMaxRefraction;
 import '../widgets/live_island_preview.dart';
 
 const String _expandedIconDir = 'miui_expanded_icons';
@@ -1290,9 +1291,18 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   }
 }
 
-/// 底部悬浮「速览」按钮：Miuix 加长圆药丸（extended FAB 形态），idle 态
-/// 主题强调色 + 试弹文案；会话进行中翻成红色破坏性 + 「停止测试」。
-/// 悬浮于列表之上，安全区之下留常规间距。
+/// 底部悬浮「速览」按钮：首页「回本周 / 回今日」浮钮同款的标准玻璃胶囊。
+///
+/// 材质**锁液态玻璃的标准档**（[LiquidGlassRole.pinnedChrome]，与弹窗家族 /
+/// 设置页返回键同一档）：全局材质档位、模糊总开关都不参与 —— 固定小件的
+/// 观感必须与其他固定小件一致。门禁回落链与弹层族同口径：
+///
+/// - 采不到背景（平台视图上方 / 系统无障碍降级）→ 实体卡片；
+/// - 只是画不出折射（无 shader 后端，如桌面 / 测试环境）→ 实时磨砂玻璃 + 描边。
+///
+/// 浮影用 [HyperosGlassShadow.compactShadow]（玻璃坞药丸与两颗浮钮同款）：
+/// 浅色页面底上轻轻分开边界，不把大范围阴影铺进旁边的模糊区。液态档
+/// 不叠描边（玻璃自带折射带），磨砂回落必须描边（磨砂片自己不画边）。
 class _LiveStagePreviewFab extends StatelessWidget {
   const _LiveStagePreviewFab({
     required this.label,
@@ -1306,15 +1316,103 @@ class _LiveStagePreviewFab extends StatelessWidget {
   final bool busy;
   final VoidCallback? onTap;
 
+  /// 成品高度 = 圆角直径（48 = 审计 pill 豁免线，胶囊形）。
+  static const double _height = 48;
+
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null && !busy;
-    final fill = active
-        ? HyperosColors.error(context)
-        : HyperosColors.primarySurface(context);
+    // 玻璃底上的墨色走全 app 主题色口径（回今日浮钮同款）：idle 主题色、
+    // 停止态红色 —— 底是玻璃，"跟随主题色"落在内容上。
     final ink = active
-        ? HyperosColors.onError(context)
-        : onAccentInk(fill);
+        ? HyperosColors.error(context)
+        : HyperosColors.primary(context);
+    final radius = BorderRadius.circular(_height / 2);
+
+    // 按压内容：图标 + 文字，两条材质分支共用，只有「底」不同。
+    Widget chipBody() => Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: enabled
+            ? () {
+                HapticFeedback.lightImpact();
+                onTap!();
+              }
+            : null,
+        borderRadius: radius,
+        child: Opacity(
+          // busy 时内容压半透（底仍是玻璃），与磨砂/液态两档都兼容。
+          opacity: busy ? 0.55 : 1.0,
+          child: SizedBox(
+            height: _height,
+            child: Padding(
+              // 4dp 网格口径：24 = 16 + 8（settingsRowPadding 同源）。
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (busy)
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: ink,
+                      ),
+                    )
+                  else
+                    Icon(
+                      active ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                      size: 20,
+                      color: ink,
+                    ),
+                  const SizedBox(width: 8),
+                  Text(label, style: HyperosTypography.title(context)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // 磨砂回落：既是"画不出折射"时的玻璃观感，与玻璃坞磨砂底同参。
+    Widget frostedChip() => ClipRRect(
+      borderRadius: radius,
+      child: HyperosFrostedSurface(
+        borderRadius: radius,
+        tint: HyperosBlurredHeader.sheetTintColor(context, withBlur: true),
+        child: chipBody(),
+      ),
+    );
+
+    // 描边按「液态是否真的画得出来」判：着色器后端缺失时表面整层回落成
+    // 磨砂片，此时描边必须回来（磨砂片自己不画边）；液态档不描边，避免
+    // 与玻璃自己的折射带叠成两层圈圈。
+    final liquidActuallyRenders = LiquidGlassSurface.isAvailable(
+      context,
+      LiquidGlassRole.pinnedChrome,
+    );
+
+    final surface = LiquidGlassSurface(
+      borderRadius: _height / 2,
+      role: LiquidGlassRole.pinnedChrome,
+      // 窄件几何适配：48dp 短边 < 52 窄件阈值，全量折射带会连成一整圈
+      // 轮廓（见 [narrowSurfaceMaxRefraction]）。
+      maxRefraction: narrowSurfaceMaxRefraction(_height),
+      // 采不到背景（平台视图上方 / 系统无障碍降级）→ 实体卡片，不再透明。
+      fallbackBuilder: (fallbackContext) =>
+          LiquidGlassDegradation.shouldDegrade(fallbackContext)
+          ? Material(
+              color: HyperosColors.surfaceContainer(fallbackContext),
+              borderRadius: radius,
+              clipBehavior: Clip.antiAlias,
+              child: chipBody(),
+            )
+          : frostedChip(),
+      child: chipBody(),
+    );
+
     return SafeArea(
       top: false,
       child: Padding(
@@ -1322,58 +1420,18 @@ class _LiveStagePreviewFab extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Material(
-              color: enabled ? fill : fill.withValues(alpha: 0.55),
-              borderRadius: BorderRadius.circular(28),
-              clipBehavior: Clip.antiAlias,
-              elevation: enabled ? 4 : 0,
-              shadowColor: Colors.black.withValues(alpha: 0.28),
-              child: InkWell(
-                onTap: enabled
-                    ? () {
-                        HapticFeedback.lightImpact();
-                        onTap!();
-                      }
-                    : null,
-                borderRadius: BorderRadius.circular(28),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 22,
-                    vertical: 13,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (busy)
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: ink,
-                          ),
-                        )
-                      else
-                        Icon(
-                          active
-                              ? Icons.stop_rounded
-                              : Icons.play_arrow_rounded,
-                          size: 20,
-                          color: ink,
-                        ),
-                      const SizedBox(width: 8),
-                      Text(
-                        label,
-                        style: TextStyle(
-                          color: enabled ? ink : ink.withValues(alpha: 0.7),
-                          fontSize: HyperosMiuixTypography.button,
-                          fontWeight: FontWeight.w500,
-                          height: 1.1,
-                        ),
-                      ),
-                    ],
-                  ),
+            HyperosGlassShadow.wrap(
+              borderRadius: radius,
+              shadowOverride: HyperosGlassShadow.compactShadow,
+              shadowKey: const ValueKey('live-stage-preview-fab-shadow'),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: radius,
+                  border: liquidActuallyRenders
+                      ? null
+                      : Border.all(color: HyperosColors.outline(context)),
                 ),
+                child: surface,
               ),
             ),
           ],
