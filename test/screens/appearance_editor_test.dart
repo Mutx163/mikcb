@@ -1138,8 +1138,12 @@ void main() {
     await tester.tap(find.text('调整壁纸'));
     await tester.pumpAndSettle();
 
-    // 分页胶囊就在顶部渐变模糊带上（与材质面板同款形状）。
-    final chips = find.byType(HyperosChipRow);
+    // 分页胶囊在弹窗 header，用它的第一个页签文字定位（正文里的图源胶囊
+    // 用的是「每日更新 / 更清晰」这类图源文案，不会撞上「壁纸 / 设置」）。
+    final chips = find.ancestor(
+      of: find.text('壁纸'),
+      matching: find.byType(HyperosChipRow),
+    );
     expect(chips, findsOneWidget);
     expect(
       find.descendant(of: chips, matching: find.text('壁纸')),
