@@ -23,9 +23,10 @@ import '../helpers_test_app.dart';
 /// 用真实 `WarehouseCourseImportScreen` + 桩 HTTP + `TestGesture` 在真实字母
 /// 条上拖动，钉住「Builder 包裹后的 context 抓取」这条链路不再回归。
 ///
-/// ⚠️ 本文件曾以 `warehouse_school_index_drag_title_sync_test.dart` 为名开发，
-/// 该文件名被反复中断的测试进程污染（同名必挂、内容相同改名即过），故改用
-/// 现名。若未来此文件莫名挂起，先换个文件名再怀疑代码。
+/// ⚠️→✅ 本文件曾以 `warehouse_school_index_drag_title_sync_test.dart` 为名开发，
+/// 当时「同名必挂、改名即过」，曾以为是文件名缓存污染。2026-10-12 已查明真因：
+/// `_pumpScreen` 在测试体（FakeAsync 区）内调了 `resetForTesting()`，与文件名无关
+/// （详见 2026-10-12 笔记与下方 `_pumpScreen` 注释）。
 ///
 /// 判据：顶栏（`HyperosCollapsibleTopAppBar`）的实际盒子高。展开 ≈ 折叠行
 /// 52 + 大标题 38.4 + 4（实测 172），折叠 ≈ 56（实测 134，含 SafeArea 状态栏
@@ -65,8 +66,13 @@ class _StubClient extends http.BaseClient {
 }
 
 Future<void> _pumpScreen(WidgetTester tester) async {
-  SharedPreferences.setMockInitialValues(<String, Object>{});
-  StorageService().resetForTesting();
+  // 隶属器状态已在 setUp 里重置过；这里不能再调 resetForTesting ——
+  // 本测试体跑在 FakeAsync 区里，此刻重置把五条写链换成新的 Future.value()，
+  // 它们的完成微任务排在 FakeAsync 区里；随后 createInitializedTestProvider
+  // 的 runAsync（真实异步区）去 await 这条链，永远等不到那个没人泵的
+  // 微任务 → 整条测试挂到 10 分钟看门狗。2026-10-10 首跑通过的「改名即过」
+  // 迷信与 CI 自引入即红，都是这两行造成的（详见 2026-10-12 笔记）。
+  // SharedPreferences.setMockInitialValues 幂等且无此跨区问题，仅从原样保留。
   // Provider 先建：它自己的 HTTP 在测试环境即时失败，不能被共享桩截胡。
   final provider = await createInitializedTestProvider(tester);
   // 页面的 WarehouseRepositoryService 在首次 build 时才 createAppHttpClient()；
