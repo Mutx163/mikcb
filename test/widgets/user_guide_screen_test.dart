@@ -174,7 +174,9 @@ void main() {
     expect(find.text('已开启'), findsNWidgets(2));
     expect(find.text('系统已允许'), findsOneWidget);
     expect(find.text('无限制'), findsOneWidget);
-    expect(find.text('未开启'), findsOneWidget);
+    // 自启动 mock 已开启；未开启的是「后台保活辅助」与 205d6ec1 新增的
+    // 「勿扰模式访问权限」，新增行让全局数量从 1 变 2。
+    expect(find.text('未开启'), findsNWidgets(2));
   });
 
   testWidgets('agree and start returns GuideAction.startUsing', (tester) async {
