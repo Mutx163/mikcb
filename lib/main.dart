@@ -197,6 +197,13 @@ Future<void> _glassShadersWarm = Future.value();
 /// 顶栏按未预热降级（首帧略掉帧），绝不因此卡死换页。
 Future<void> _inspireBlurShadersWarm = Future.value();
 
+/// 首页换入的交叉淡入时长（毫秒）。
+///
+/// 见 `_AppEntryScreenState.build` 里 [AnimatedSwitcher] 那一段的说明：
+/// 消掉「静止品牌画面 → 满屏动效首页」的硬切。经
+/// [HyperosMotionPlatform.scaledDuration] 跟随用户的过渡速度设置。
+const int kHomeRevealFadeMs = 150;
+
 void _releaseFirstFrame({required bool forced}) {
   if (_firstFrameReleased.isCompleted) return;
   _firstFrameReleased.complete();
@@ -671,6 +678,9 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   bool _allowFirstFrameCalled = false;
   bool _homeRevealed = false;
   bool _revealScheduled = false;
+  /// 首页在 [AnimatedSwitcher] 里的身份键：必须稳定，否则每次重建都会被
+  /// 当成「换了一个孩子」而重放一次淡入。
+  final _homeKey = const ValueKey('home');
   final Stopwatch _splashClock = Stopwatch()..start();
   // 冷启动与回前台两条路径会并发调自动换：先读后写（`lastAutoAppliedDate`）
   // 无互斥会下两遍、写两遍。第二次直接等第一次的结果。
@@ -689,6 +699,9 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   /// 跑完时（release 热缓存可 <16ms）首页会先于任何投递帧就位，启动画面
   /// 一帧都上不了屏。按启动计时器剩余时间延迟换入，快设备强制可感知、
   /// 慢设备零额外等待。
+  ///
+  /// 换入本身还带一次交叉淡入（见 [build]）：品牌画面是静止的，直接换成
+  /// 满屏动效的首页会有一道硬切。
   void _revealHomeOnce() {
     if (_revealScheduled || !mounted) {
       return;
@@ -1683,11 +1696,44 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     // HyperosZoomShrinkScope：首页菜单里 zoom 条目（外观编辑）进页时把
     // 首页整页缩小沉底、返回还原（见 hyperos_zoom_route.dart）；无 zoom
     // 路由在飞时零包装。编辑页里嵌的那份预览渲染源不走这里，不会被连带缩放。
-    return _homeRevealed
-        ? const RepaintBoundary(
-            child: HyperosZoomShrinkScope(child: TimetableScreen()),
-          )
-        : const AppStartupSplash();
+    const home = RepaintBoundary(
+      child: HyperosZoomShrinkScope(child: TimetableScreen()),
+    );
+    // 换入首页时做一次交叉淡入：消掉「静止品牌画面 → 完整首页」那道硬切。
+    //
+    // 为什么不是直接换 widget：启动画面是**静止**的品牌图，首页是**满屏
+    // 动效**的课表，两者直接互换用户会看到一次生硬的跳变（此前真机反馈
+    // 「启动完突然蹦出来」）。叠加 150ms 淡入后，跳变被读作「进场」。
+    //
+    // ⚠️ 两个分支**必须都留在本 AnimatedSwitcher 里**，不能在它上面加
+    // `if (!_homeRevealed) return ...` 的快路径：那样 _homeRevealed 翻转时
+    // 换的是 `AppStartupSplash` → `AnimatedSwitcher` 两个不同类型的 widget，
+    // 整棵子树直接重建，一次淡入都不会发生（而且下面是死代码）。交叠淡入
+    // 的前提是「同一个 AnimatedSwitcher 里的两个孩子互换」。
+    //
+    // 为什么淡入只挂在首页上、且时长压到 150ms：启动画面此时已经在做自己
+    // 的入场动效，再让它淡出会让品牌字出现「淡入→淡出」的闪回。只让首页
+    // 淡入、启动画面原地被盖住，品牌字就停在它该在的位置。150ms 短到不会
+    // 让人觉得「首页还要等一下」，又足够遮住转场那一帧的底色差异。
+    return AnimatedSwitcher(
+      duration: HyperosMotionPlatform.scaledDuration(
+        kHomeRevealFadeMs,
+      ),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeOut,
+      // 默认的 FadeThrough 会先把 outgoing 淡出再淡入 incoming，中间空一帧
+      // 底色；这里要的是两者交叠，所以自定义成纯淡入淡出。
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: child,
+      ),
+      child: _homeRevealed
+          ? KeyedSubtree(key: _homeKey, child: home)
+          : const KeyedSubtree(
+              key: ValueKey('splash'),
+              child: AppStartupSplash(),
+            ),
+    );
   }
 }
 
