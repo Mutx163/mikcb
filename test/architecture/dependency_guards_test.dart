@@ -213,6 +213,12 @@ void main() {
     // 与上一条同源：正则写窄 → 统计偏低 → 基线偏低 → 门禁形同虚设，故一并放宽。
     // 225→228 不是耦合增长，是把本就存在、此前没被数到的 3 处读取补进计数。
     //
+    // 228→230：10 月 10 日的两组提交留下的真实差值——
+    // `a7b6e0db`（超级岛显示设置页悬浮「速览」）新增 live_settings_subpages.dart
+    // 里的开始/停止速览读取 2 处；`ec5f2f1c` 把主文件既有读取搬进两个 part 分片
+    //（timetable_day_view_part.dart 4 处 + timetable_update_download_part.dart 2 处，
+    // 主文件 37→31），本指标按调用点计数，搬移净变化为 0。按测试约定同步真实值。
+    //
     // 「扇入」这个名字如今名不副实：本指标数的是**读取次数**，不是依赖边。文件怎么拆
     // 都不再影响它（这正是换单位的全部理由），代价是覆盖不到纯类型依赖——当前有 14
     // 个文件 import 了 Provider 却没有一处匹配读取（同步 / WebDAV / 统一传输 /
@@ -221,7 +227,7 @@ void main() {
     // 棘轮（当前真实值 14），同样别直接扩本正则。
     //
     // 余量为 0：基线就是当前实测值，正当新增读取时照例抬基线并说明理由。
-    const baselineProviderCallSites = 228;
+    const baselineProviderCallSites = 230;
     // 2026-10-08 第三次收窄：第二段类型实参原先写的是 `(?:,[^>]*)?`，**跨不过嵌套泛型**
     // 里的 `>` ——  `context.select<TimetableProvider, Map<String, Course>>(…)` 这类
     // 一个都数不到（`[^>]*` 在 `Map<String` 的第一个 `>` 之前就停了）。同样的坑本仓
@@ -305,9 +311,10 @@ void main() {
 
   test('两个 fork 补丁依赖不许被摘掉或换回 pub.dev', () {
     // 这两条 override 背的是「不修就复现」的性能修复，摘掉不会让任何行为测试变红：
-    //   flutter_miuix（Mutx163/flutter_miuix，分支 glassy-surface）
+    //   flutter_miuix（Mutx163/flutter_miuix，分支 mikcb/glassy-1.3.0，基线 1.3.0）
     //     · 形变动效期间不逐帧模糊内容与来源卡片；
-    //     · 非着色器档位降离屏倍率 + 叠色合进同一张画布（见
+    //     · 非着色器档位降离屏倍率（叠色合并一半已由上游 1.3.0 的 blendLayersNatively
+    //       覆盖，重放时改用上游实现，见
     //       .agents/notes/implemented/process/2026-09-17-miuix-glass-offscreen-and-blend-patch.md）；
     //     · 底部弹窗（MiuixOverlayBottomSheet / MiuixWindowBottomSheet）的面板材质
     //       注入点 `surfaceBuilder` + 蒙层之前的前置层 `scrimUnderlay` + 蒙层色
