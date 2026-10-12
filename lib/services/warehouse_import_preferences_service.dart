@@ -246,6 +246,8 @@ class WarehouseSyncBundle {
 
 class WarehouseImportPreferencesService {
   static const String _customImportUrlPrefix = 'warehouse_custom_import_url_';
+  static const String _customImportUrlSourcePrefix =
+      'warehouse_custom_import_url_source_';
   static const String _rememberedLoginPrefix = 'warehouse_remembered_login_';
   static const String _secureRememberedLoginPrefix =
       'warehouse_secure_remembered_login_';
@@ -267,15 +269,39 @@ class WarehouseImportPreferencesService {
     return (value == null || value.trim().isEmpty) ? null : value.trim();
   }
 
-  Future<void> setCustomImportUrl(String adapterId, String url) async {
+  /// 这个自定义地址是**用户在本机亲手填的**，还是**从云快照还原来的**。
+  ///
+  /// 两者在自动填充白名单那道闸上待遇不同（见 `isTrustedCustomImportUrl`）：
+  /// 用户亲手填的，落地页就在眼前，http 也放行；云快照下发的，用户没看见
+  /// 过那个页面，必须是 https 且与登记地址同域。
+  Future<CustomImportUrlSource> getCustomImportUrlSource(
+    String adapterId,
+  ) async {
+    final prefs = await _prefs;
+    final raw = prefs.getString('$_customImportUrlSourcePrefix$adapterId');
+    return raw == 'cloud'
+        ? CustomImportUrlSource.cloud
+        : CustomImportUrlSource.userEntered;
+  }
+
+  Future<void> setCustomImportUrl(
+    String adapterId,
+    String url, {
+    CustomImportUrlSource source = CustomImportUrlSource.userEntered,
+  }) async {
     final prefs = await _prefs;
     await prefs.setString('$_customImportUrlPrefix$adapterId', url.trim());
+    await prefs.setString(
+      '$_customImportUrlSourcePrefix$adapterId',
+      source == CustomImportUrlSource.cloud ? 'cloud' : 'user',
+    );
     notifyUserDataChangedForSync();
   }
 
   Future<void> clearCustomImportUrl(String adapterId) async {
     final prefs = await _prefs;
     await prefs.remove('$_customImportUrlPrefix$adapterId');
+    await prefs.remove('$_customImportUrlSourcePrefix$adapterId');
   }
 
   Future<WarehouseRememberedLogin?> getRememberedLogin(String adapterId) async {
@@ -439,6 +465,10 @@ class WarehouseImportPreferencesService {
       if (!key.startsWith(_customImportUrlPrefix)) {
         continue;
       }
+      // 来源标记键（`..._source_<adapterId>`）也是这个前缀开头的，别把它当成地址收走。
+      if (key.startsWith(_customImportUrlSourcePrefix)) {
+        continue;
+      }
       final adapterId = key.substring(_customImportUrlPrefix.length);
       final value = prefs.getString(key)?.trim();
       if (adapterId.isEmpty || value == null || value.isEmpty) {
@@ -498,14 +528,18 @@ class WarehouseImportPreferencesService {
       );
     }
     for (final entry in bundle.customImportUrls.entries) {
-      // 2026-10-08：云端下发的自定义地址**必须过 https 校验**才落盘。
-      // 这是第二道闸（第一道在 `_warehouseAutofillTrustedHosts`，那边还多一道
-      // 「与登记地址同域」的判定，那才是自动填充白名单真正依赖的判据）。
-      // 在这里先挡掉明文 http 与不可解析的地址，恶意主机名连 prefs 都进不去；
-      // 同域判定放在白名单那一侧，因为它才知道该适配器登记的是哪个主机。
-      if (isTrustedCustomImportUrl(url: entry.value, registeredHost: null)) {
-        await setCustomImportUrl(entry.key, entry.value);
+      // 2026-10-10：云端下发的地址照原样存下来（**不再按协议丢**——那会让只支持
+      // 明文 http 的学校在换机还原后丢掉自己配的地址，导航退化成站点外壳），
+      // 但来源记为 cloud：它进自动填充白名单时要按 https + 同域复核。
+      // 只挡解析不出主机、或不是 http(s) 的（`javascript:`/`file:`/`data:` 这类）。
+      if (!isNavigableWarehouseImportUrl(entry.value)) {
+        continue;
       }
+      await setCustomImportUrl(
+        entry.key,
+        entry.value,
+        source: CustomImportUrlSource.cloud,
+      );
     }
     if (bundle.recentSchoolIds.isNotEmpty) {
       await prefs.setStringList(_recentSchoolIdsKey, bundle.recentSchoolIds);
@@ -680,6 +714,17 @@ WarehouseRememberedLogin resolveRememberedLoginForImport({
   );
 }
 
+/// 一个自定义登录地址是谁填的。
+///
+/// 2026-10-10 引入。此前自动填充白名单按「是不是 https」判真假，只支持明文
+/// http 的教务学校一律拿不到自动填充——按 http 判真假是判错了维度。但 2026-10-08
+/// 堵的那个洞（云端快照可污染白名单）是真的，所以换成按**来源**判：
+///
+/// - [userEntered]：用户在本机亲手填的。填的时候 WebView 就摆在他眼前，落地页
+///   是他自己认得的，http 一样放行。
+/// - [cloud]：随云同步快照下发的。用户从没见过那个页面，来源不可信。
+enum CustomImportUrlSource { userEntered, cloud }
+
 /// Prefers a user-set custom import URL, otherwise falls back to [defaultUrl].
 String? resolveWarehouseImportUrl({
   String? customImportUrl,
@@ -693,45 +738,78 @@ String? resolveWarehouseImportUrl({
   return fallback.isNotEmpty ? fallback : null;
 }
 
-/// 自定义导入地址是否**可以进自动填充白名单**。
+/// 这个地址是不是一个 WebView 能打开的 http(s) 站点。
 ///
-/// 2026-10-08 补这道校验。此前 `setCustomImportUrl` 只 `trim()` 就落盘，
-/// 而 `customImportUrls` **随云同步下发**
-/// （`AppSyncSnapshot.warehouse`，`app_sync_snapshot_service.dart` 的
-/// `exportSyncBundle`）⇒ 一份构造过的云端快照就能把自动填充白名单换成
-/// 攻击者的主机名，于是已保存的教务密码会被自动填到钓鱼页上
-/// （`warehouse_adapter_web_login_screen.dart` 的
-/// `_warehouseAutofillTrustedHosts` 把这个地址的 host 直接加进白名单）。
-///
-/// 规则（与 `isTrustedApkDownloadUrl` 同一口径，见 `async_utils.dart:108`）：
-/// - 必须是 `https`（教务登录要提交账号密码，明文 http 绝不放行；
-///   本地调试用的 `localhost` 在测试环境下由调用方单独处理）；
-/// - 必须能解析出主机名；
-/// - 必须是**子域**形态之一：与 [registeredHost] 完全相同，或以
-///   `.<registeredHost>` 结尾 —— 学校把教务挂在
-///   `jwxt.example.edu.cn` 而 App 登记的是 `example.edu.cn` 是常见的，
-///   这一点要留；反过来 `example.edu.cn.evil.com` 这种后缀伪装则会被拒。
-bool isTrustedCustomImportUrl({
-  required String url,
-  required String? registeredHost,
-}) {
-  final trimmed = url.trim();
+/// 只查「能不能导航」，**不看协议安不安全**——那是自动填充那道闸的事
+/// （见 [isTrustedCustomImportUrl]）。本函数用来挡 `javascript:`/`file:`/`data:`
+/// 这类连主机都没有的，以及 `ftp://` 之类 WebView 打不开的。
+bool isNavigableWarehouseImportUrl(String? url) {
+  final trimmed = (url ?? '').trim();
   if (trimmed.isEmpty) {
     return false;
   }
   final uri = Uri.tryParse(trimmed);
-  if (uri == null || uri.scheme.toLowerCase() != 'https') {
+  if (uri == null) {
+    return false;
+  }
+  final scheme = uri.scheme.toLowerCase();
+  if (scheme != 'http' && scheme != 'https') {
+    return false;
+  }
+  return uri.host.trim().isNotEmpty;
+}
+
+/// 自定义导入地址是否**可以进自动填充白名单**。
+///
+/// 2026-10-10 重写判据。此前（2026-10-08）要求 `https`，于是**只支持明文 http
+/// 的教务学校一律拿不到自动填充**——协议在这里判错了维度：攻击面来自「这个地址
+/// 是谁提供的」，不是「它用什么协议」。而原来要堵的洞是真的，不能撤：
+/// `customImportUrls` 随云快照上下行（`AppSyncSnapshot.warehouse`），一份构造过
+/// 的快照就能把自动填充白名单换成攻击者主机，让已保存的教务密码自动填到钓鱼页上
+/// （见 `warehouse_adapter_web_login_screen.dart` 的 `_warehouseAutofillTrustedHosts`）。
+///
+/// 新判据：
+/// - [CustomImportUrlSource.userEntered]（本机亲手填的）：只要能解析出主机就放行，
+///   **明文 http 一样放行**。落地页就在用户眼前，这个选择是他自己做的。
+/// - [CustomImportUrlSource.cloud]（云快照下发的）：必须是 `https`，且与
+///   [registeredHost] 同域（本身或子域）——用户没看见过那个页面，不予采信。
+///   学校把教务挂在 `jwxt.example.edu.cn` 而 App 登记的是 `example.edu.cn` 是常见
+///   形态，要留；`example.edu.cn.evil.com` 这种后缀伪装则被拒（判据是
+///   `endsWith('.base')`，不是裸 `endsWith`）。大小写不敏感。
+bool isTrustedCustomImportUrl({
+  required String? url,
+  required String? registeredHost,
+  required CustomImportUrlSource source,
+}) {
+  final trimmed = (url ?? '').trim();
+  if (trimmed.isEmpty) {
+    return false;
+  }
+  final uri = Uri.tryParse(trimmed);
+  if (uri == null) {
     return false;
   }
   final host = uri.host.trim().toLowerCase();
   if (host.isEmpty) {
     return false;
   }
-  // 没有登记地址可对（适配器本身没配 importUrl）：只放行 https，
-  // 但**不**进自动填充白名单 —— 那由调用方按「没有基准就不自动填」处理。
-  if (registeredHost == null || registeredHost.trim().isEmpty) {
+  if (source == CustomImportUrlSource.userEntered) {
+    // 本机填的：不再要求 https —— **明文 http 放行正是本次修改的目的**，
+    // 只支持 http 的教务站很多，不该因此丢掉自动填充。
+    // 但协议仍须是 http(s)：`ftp://host/x` 这类有主机名、WebView 却打不开的，
+    // 不该拿到「可以自动填密码」的信任。
+    final scheme = uri.scheme.toLowerCase();
+    return scheme == 'http' || scheme == 'https';
+  }
+  // 云端下发的：先要求 https，再要求同域。
+  if (uri.scheme.toLowerCase() != 'https') {
+    return false;
+  }
+  final base = (registeredHost ?? '').trim().toLowerCase();
+  if (base.isEmpty) {
+    // 没有登记地址可对（适配器本身没配 importUrl）：https 就放行。这一支只由
+    // 云端来源走到，本机填写的在上面已经返回。
     return true;
   }
-  final base = registeredHost.trim().toLowerCase();
   return host == base || host.endsWith('.$base');
 }

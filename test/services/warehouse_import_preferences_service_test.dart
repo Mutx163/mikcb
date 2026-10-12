@@ -501,6 +501,145 @@ void main() {
     });
   });
 
+  group('自定义地址的来源标记（自动填充白名单按来源判，不按协议判）', () {
+    WarehouseImportPreferencesService newService() =>
+        WarehouseImportPreferencesService(
+          secureStorage: _MemoryWarehouseSecureStorage(),
+        );
+
+    test('本机填写 → 记为本机，明文 http 一样能进白名单', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = newService();
+
+      await service.setCustomImportUrl('a', 'http://jw.example.edu.cn/login');
+
+      expect(await service.getCustomImportUrl('a'),
+          'http://jw.example.edu.cn/login');
+      expect(
+        await service.getCustomImportUrlSource('a'),
+        CustomImportUrlSource.userEntered,
+      );
+      expect(
+        isTrustedCustomImportUrl(
+          url: await service.getCustomImportUrl('a'),
+          registeredHost: 'example.edu.cn',
+          source: await service.getCustomImportUrlSource('a'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('存量地址（没有来源键）按本机填写处理', () async {
+      // 升级上来的用户：这个改动之前存的地址没有来源键。按本机处理，
+      // 否则他们配好的 http 地址会在升级当天丢掉自动填充。
+      SharedPreferences.setMockInitialValues({
+        'warehouse_custom_import_url_a': 'http://jw.example.edu.cn/login',
+      });
+      final service = newService();
+
+      expect(
+        await service.getCustomImportUrlSource('a'),
+        CustomImportUrlSource.userEntered,
+      );
+    });
+
+    test('清空地址时来源标记一起清掉', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = newService();
+      await service.setCustomImportUrl('a', 'https://x.example.cn/');
+
+      await service.clearCustomImportUrl('a');
+
+      expect(await service.getCustomImportUrl('a'), isNull);
+      // 重新填入时不该继承上一次的来源。
+      expect(
+        await service.getCustomImportUrlSource('a'),
+        CustomImportUrlSource.userEntered,
+      );
+    });
+
+    test('导出不把来源标记当成一条地址收走', () async {
+      // 来源键也是 `warehouse_custom_import_url_` 前缀开头。若不过滤，
+      // adapterId 会变成 `source_a`，快照里多出一条垃圾条目。
+      SharedPreferences.setMockInitialValues({});
+      final service = newService();
+      await service.setCustomImportUrl('a', 'http://jw.example.edu.cn/login');
+
+      final bundle = await service.exportSyncBundle();
+
+      expect(bundle.customImportUrls.keys, ['a']);
+      expect(bundle.customImportUrls['a'], 'http://jw.example.edu.cn/login');
+    });
+
+    test('从云快照还原：明文 http 地址不再被丢弃，但来源记为云端', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = newService();
+
+      await service.importSyncBundle(
+        const WarehouseSyncBundle(
+          customImportUrls: {'a': 'http://jw.example.edu.cn/login'},
+        ),
+      );
+
+      // 地址本身留下来（2026-10-10 之前会被丢掉，换机后导航退化成站点外壳）。
+      expect(await service.getCustomImportUrl('a'), 'http://jw.example.edu.cn/login');
+      // 但来源是云端：进白名单要按 https + 同域复核。
+      expect(
+        await service.getCustomImportUrlSource('a'),
+        CustomImportUrlSource.cloud,
+      );
+      expect(
+        isTrustedCustomImportUrl(
+          url: await service.getCustomImportUrl('a'),
+          registeredHost: 'example.edu.cn',
+          source: await service.getCustomImportUrlSource('a'),
+        ),
+        isFalse,
+        reason: '云快照下发的明文地址不进自动填充白名单',
+      );
+    });
+
+    test('从云快照还原：javascript: / 无主机 仍然被挡掉', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = newService();
+
+      await service.importSyncBundle(
+        const WarehouseSyncBundle(
+          customImportUrls: {
+            'a': 'javascript:alert(1)',
+            'b': 'not a url',
+            'c': 'ftp://files.example.cn/x',
+          },
+        ),
+      );
+
+      expect(await service.getCustomImportUrl('a'), isNull);
+      expect(await service.getCustomImportUrl('b'), isNull);
+      expect(await service.getCustomImportUrl('c'), isNull);
+    });
+
+    test('换机往返：本机填的 http 地址还原后仍是 http，只是不再自动填密码', () async {
+      // 完整往返：A 机本机填写 → 导出 → B 机还原。
+      SharedPreferences.setMockInitialValues({});
+      final deviceA = newService();
+      await deviceA.setCustomImportUrl('a', 'http://jw.example.edu.cn/login');
+
+      final bundle = await deviceA.exportSyncBundle();
+      // 快照上行走一趟（云备份会剥密码，地址字段不动）。
+      final overTheWire = WarehouseSyncBundle.fromJson(bundle.toJson());
+
+      SharedPreferences.setMockInitialValues({});
+      final deviceB = newService();
+      await deviceB.importSyncBundle(overTheWire);
+
+      // B 机仍导航到真正的课表页，而不是站点外壳。
+      expect(await deviceB.getCustomImportUrl('a'), 'http://jw.example.edu.cn/login');
+      // B 机按云端来源对待：不自动填密码，但地址在、页面能开。
+      expect(await deviceB.getCustomImportUrlSource('a'),
+          CustomImportUrlSource.cloud);
+    });
+  });
+
   group('云端备份不得把本地真密码配到备份指定的域名上', () {
     const localHost = 'jw.example.edu.cn';
     const local = WarehouseRememberedLogin(

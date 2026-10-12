@@ -2715,12 +2715,17 @@ $kWarehouseBridgeCompatShim  try {
     }
   }
 
-  /// 教务凭据允许自动填充的站点：适配器在仓库里登记的登录地址，加上用户为它  /// 自定义的地址。两者都是 App 自己会把 WebView 带过去的地方。
+  /// 教务凭据允许自动填充的站点：适配器在仓库里登记的登录地址，加上用户为它
+  /// 自定义的地址。两者都是 App 自己会把 WebView 带过去的地方。
   ///
   /// Why this exists: `host` 从 v2.1.3.2 起才随凭据一起落盘，在那之前
   /// 存下的每一条凭据 host 都是空的。门禁原本对空 host 一律放行，于是**升级
   /// 到修好之后的版本的老用户，门禁依然是全开的**。改成"只认 App 会导航过去
   /// 的站点"之后，存量数据也纳入了保护；用户下次保存密码时 host 会自动补上。
+  ///
+  /// 自定义地址那道闸按**来源**判，不按协议（2026-10-10）：用户在本机亲手填的，
+  /// 落地页就在他眼前，明文 http 一样放行——只支持 http 的教务学校不该因此
+  /// 拿不到自动填充。云快照下发的则要 https + 与登记地址同域。
   Future<List<String>> _warehouseAutofillTrustedHosts() async {
     final hosts = <String>[];
     final registered = extractUrlHost(widget.adapter.importUrl);
@@ -2731,17 +2736,13 @@ $kWarehouseBridgeCompatShim  try {
       final custom = await _preferencesService.getCustomImportUrl(
         widget.adapter.adapterId,
       );
-      // ⚠️ 2026-08~10 补这道校验：自定义地址**随云同步下发**
-      // （`WarehouseSyncBundle.customImportUrls` → `AppSyncSnapshot.warehouse`），
-      // 而 `setCustomImportUrl` 原本只 `trim()` 就落盘。原先这里无条件把它的
-      // host 加进自动填充白名单 ⇒ 一份构造过的云端快照就能让已保存的教务
-      // 密码自动填到攻击者站点上。
-      // 判据见 `isTrustedCustomImportUrl`：必须 https，且必须是登记地址本身
-      // 或其子域（学校常把教务挂在 `jwxt.example.edu.cn`，登记的是
-      // `example.edu.cn`；`example.edu.cn.evil.com` 这种后缀伪装则被拒）。
+      final customSource = await _preferencesService.getCustomImportUrlSource(
+        widget.adapter.adapterId,
+      );
       if (isTrustedCustomImportUrl(
         url: custom ?? '',
         registeredHost: registered,
+        source: customSource,
       )) {
         final customHost = extractUrlHost(custom);
         if (customHost != null) {
