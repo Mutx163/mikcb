@@ -151,6 +151,32 @@ flutter build apk --release --flavor prod --target-platform android-arm64
 
 近期主要在做：玻璃与壁纸的稳定性（进场闪变、静止时的性能开销）、首页菜单与弹层的交互细节、桌面小组件配色，以及发版与官网数据同步的自动化。
 
+## 贡献者
+
+感谢每一位让轻屿课表变得更好的人。
+
+<a href="https://github.com/Mutx163/mikcb/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Mutx163/mikcb" alt="轻屿课表贡献者" />
+</a>
+
+### 教务适配贡献者
+
+教务适配脚本来自 [qingyu_warehouse](https://github.com/Mutx163/qingyu_warehouse)，感谢这些参与学校适配的同学：
+
+<a href="https://github.com/Mutx163/qingyu_warehouse/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Mutx163/qingyu_warehouse" alt="教务适配仓库贡献者" />
+</a>
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=mutx163%2Fmikcb&type=timeline&logscale=&releases=&legend=bottom-right">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=mutx163/mikcb&type=timeline&theme=dark&legend=bottom-right" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=mutx163/mikcb&type=timeline&legend=bottom-right" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=mutx163/mikcb&type=timeline&legend=bottom-right" />
+ </picture>
+</a>
+
 ## 许可证
 
 本仓库源码使用 [GNU General Public License v3.0](./LICENSE)（SPDX: `GPL-3.0-or-later`）。
