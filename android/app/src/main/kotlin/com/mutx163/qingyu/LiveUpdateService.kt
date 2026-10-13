@@ -320,6 +320,7 @@ class LiveUpdateService : Service() {
         /** 当前运行中的服务实例；转后台补发时用它调实例方法。 */
         @Volatile
         private var foregroundServiceRef: LiveUpdateService? = null
+    }
 
     private val handler = Handler(Looper.getMainLooper())
     private var ticker: Runnable? = null
