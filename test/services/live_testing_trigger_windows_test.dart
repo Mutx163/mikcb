@@ -1,7 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/live_testing_fixture_service.dart';
 import 'package:university_timetable/services/live_testing_trigger.dart';
+import 'package:university_timetable/services/storage_service.dart';
 
 /// `buildCourseTestWindow` 是纯可推导逻辑：合成窗口、钟面跨度、暂停缓冲
 /// 全部由输入唯一决定，期望值按注释规则人工推算（不从实现抄）。
@@ -201,6 +205,47 @@ void main() {
       );
 
       expect(sigBefore, isNot(equals(sigDuring)));
+    });
+  });
+
+  group('resolveLivePreviewTestCourse', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    test('empty timetable falls back to preset course A with short name', () {
+      final provider = TimetableProvider(
+        storageService: StorageService.forTesting(),
+        autoInitialize: false,
+      );
+      final course = resolveLivePreviewTestCourse(provider, now: base);
+      expect(course.name, contains('自检'));
+      expect(course.shortName, isNotEmpty);
+    });
+
+    test('timetable with course resolves course and respects short name', () async {
+      final provider = TimetableProvider(
+        storageService: StorageService.forTesting(),
+        autoInitialize: false,
+      );
+      await provider.initialize();
+      final testCourse = Course(
+        id: 'c1',
+        name: '线性代数',
+        shortName: '线代',
+        teacher: '张老师',
+        location: '教学楼 101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      );
+      await provider.addCourse(testCourse);
+
+      final course = resolveLivePreviewTestCourse(provider, now: base);
+      expect(course.name, equals('线性代数'));
+      expect(course.shortName, equals('线代'));
     });
   });
 }

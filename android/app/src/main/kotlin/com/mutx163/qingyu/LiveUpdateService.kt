@@ -1,6 +1,8 @@
 package com.mutx163.qingyu
 
 import android.Manifest
+import android.app.Activity
+import android.app.Application
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -36,6 +38,7 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import org.json.JSONObject
 import java.util.Calendar
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.ceil
 
@@ -69,6 +72,13 @@ class LiveUpdateService : Service() {
             "android.permission.POST_PROMOTED_NOTIFICATIONS"
 
         private val miuiSequenceCounter = AtomicLong(System.currentTimeMillis() / 1000)
+
+        private const val BACKGROUND_FLOAT_REFRESH_DELAY_MILLIS = 500L
+
+        private val startedActivityCount = AtomicInteger(0)
+
+        @Volatile
+        private var backgroundRefreshCallbacksRegistered = false
 
         @Volatile
         private var isServiceRunning = false
@@ -174,6 +184,7 @@ class LiveUpdateService : Service() {
             lastDebugUpdatedAtMillis = System.currentTimeMillis()
             // 停止后同负载再启动应重新记录（状态迁移恢复）。
             lastStartedLogSignature = null
+            foregroundServiceRef = null
         }
 
         private fun hasNotificationPermissionCompat(context: Context): Boolean {
@@ -246,7 +257,69 @@ class LiveUpdateService : Service() {
                 brand.contains("redmi") ||
                 brand.contains("poco")
         }
-    }
+
+        /**
+         * App 转后台的瞬间补发一次超级岛通知。
+         *
+         * HyperOS 的焦点通知只在「发通知时 App 处于后台」才浮出岛：点击测试 /
+         * 起岛都发生在 App 前台，用户随后回桌面时通知早已发过，岛要等下一次
+         * ticker 刷新（分钟精度的倒计时文本最长 1~2 分钟不变）才浮出。此处
+         * 监听最后一个 Activity stop，防抖后仍在后台则立即 notify 一次，
+         * 让岛在回桌面的瞬间就出现。
+         */
+        fun ensureBackgroundFloatRefreshRegistered(application: Application) {
+            if (backgroundRefreshCallbacksRegistered) {
+                return
+            }
+            backgroundRefreshCallbacksRegistered = true
+            // 注册发生在服务启动（首个 Activity 已 onStart 之后），计数从 0 起会
+            // 偏低 1：先补上当前前台的 Activity，App 内导航才不会提前归零误判。
+            startedActivityCount.incrementAndGet()
+            application.registerActivityLifecycleCallbacks(
+                object : Application.ActivityLifecycleCallbacks {
+                    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+                    override fun onActivityStarted(activity: Activity) {
+                        startedActivityCount.incrementAndGet()
+                    }
+
+                    override fun onActivityResumed(activity: Activity) = Unit
+                    override fun onActivityPaused(activity: Activity) = Unit
+
+                    override fun onActivityStopped(activity: Activity) {
+                        val remaining = startedActivityCount.decrementAndGet().coerceAtLeast(0)
+                        if (remaining > 0 || !isServiceRunning) {
+                            return
+                        }
+                        // 防抖：Activity 切换瞬间 stopped 计数可能短暂归零，
+                        // 确认真的转后台再补发；补发本身幂等（同一条通知刷新）。
+                        Handler(Looper.getMainLooper()).postDelayed(
+                            {
+                                if (startedActivityCount.get() <= 0 && isServiceRunning) {
+                                    val service = foregroundServiceRef
+                                    service?.refreshNotificationForIslandFloat()
+                                }
+                            },
+                            BACKGROUND_FLOAT_REFRESH_DELAY_MILLIS,
+                        )
+                    }
+
+                    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+                    override fun onActivityDestroyed(activity: Activity) = Unit
+                },
+            )
+        }
+
+        /**
+         * ticker 走进 reschedule 分支且结果为 RETRY_PENDING/SUSPENDED 时的兜底
+         * 心跳间隔：这些状态下无人接管 ticker，固定 60s 后重新评估一次；
+         * 测试会话的 suspend 到期收尾（≤20s）由闹钟先行完成，本回调随后被
+         * stopTicker 移除。
+         */
+        private const val KEEP_ALIVE_TICK_DELAY_MILLIS = 60_000L
+
+        /** 当前运行中的服务实例；转后台补发时用它调实例方法。 */
+        @Volatile
+        private var foregroundServiceRef: LiveUpdateService? = null
 
     private val handler = Handler(Looper.getMainLooper())
     private var ticker: Runnable? = null
@@ -311,6 +384,29 @@ class LiveUpdateService : Service() {
     private var validateAgainstSchedule = true
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /**
+     * App 转后台瞬间由生命周期回调调用：立即重发当前通知，让 HyperOS 在
+     * 回桌面时立刻浮出超级岛，而不是等下一次倒计时文本变化（分钟精度下
+     * 最长可拖 1~2 分钟）。见 [Companion.ensureBackgroundFloatRefreshRegistered]。
+     */
+    fun refreshNotificationForIslandFloat() {
+        try {
+            if (!hasStartedForeground || !isServiceRunning) {
+                return
+            }
+            val text = computeRemainingText(System.currentTimeMillis())
+            getSystemService(NotificationManager::class.java)
+                ?.notify(NOTIFICATION_ID, buildNotification(text))
+            UmengDiagnosticReporter.record(
+                context = applicationContext,
+                category = "live_update_island_background_refresh",
+                message = DiagnosticLogMessages.LIVE_UPDATE_ISLAND_BACKGROUND_REFRESH,
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, DiagnosticLogMessages.LOG_ISLAND_BACKGROUND_REFRESH_FAILED, e)
+        }
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         return try {
@@ -507,6 +603,11 @@ class LiveUpdateService : Service() {
             lastCriticalTimeText = ""
             val wasRunning = isServiceRunning
             markServiceRunning()
+            foregroundServiceRef = this
+
+            // 转后台补发岛浮出通知的生命周期回调是应用级的，注册一次即可；
+            // 服务实例会被重建，Application 不会。
+            (application as? Application)?.let(::ensureBackgroundFloatRefreshRegistered)
 
             // 一次打开 App 有多个启动入口（Flutter startLiveUpdate /
             // syncSnapshot→reschedule / 测试路径）各自投递 payload，若每次
@@ -1073,8 +1174,12 @@ class LiveUpdateService : Service() {
                         LiveUpdateRescheduleOutcome.SCHEDULED,
                         LiveUpdateRescheduleOutcome.IDLE,
                         -> stopAndRemoveNotification()
-                        // STARTED/RETRY_PENDING/SUSPENDED：岛保持（新负载已达或退避重试已排）
-                        else -> {}
+                        // STARTED：新负载已送达，onStartCommand 会 startTicker 顶替本
+                        // ticker（stopTicker 移除下方兜底回调）；RETRY_PENDING/
+                        // SUSPENDED：无人接管 ticker，静默 return 会把通知冻结在旧
+                        // 文本（测试会话到点收尾尤其明显）。续排一次心跳兜底，
+                        // suspend 到期由闹钟收尾，停止路径会移除本回调不泄漏。
+                        else -> handler.postDelayed(this, KEEP_ALIVE_TICK_DELAY_MILLIS)
                     }
                     return
                 }
@@ -1090,8 +1195,12 @@ class LiveUpdateService : Service() {
                         LiveUpdateRescheduleOutcome.SCHEDULED,
                         LiveUpdateRescheduleOutcome.IDLE,
                         -> stopAndRemoveNotification()
-                        // STARTED/RETRY_PENDING/SUSPENDED：岛保持（新负载已达或退避重试已排）
-                        else -> {}
+                        // STARTED：新负载已送达，onStartCommand 会 startTicker 顶替本
+                        // ticker（stopTicker 移除下方兜底回调）；RETRY_PENDING/
+                        // SUSPENDED：无人接管 ticker，静默 return 会把通知冻结在旧
+                        // 文本（测试会话到点收尾尤其明显）。续排一次心跳兜底，
+                        // suspend 到期由闹钟收尾，停止路径会移除本回调不泄漏。
+                        else -> handler.postDelayed(this, KEEP_ALIVE_TICK_DELAY_MILLIS)
                     }
                     return
                 }
@@ -1105,8 +1214,12 @@ class LiveUpdateService : Service() {
                         LiveUpdateRescheduleOutcome.SCHEDULED,
                         LiveUpdateRescheduleOutcome.IDLE,
                         -> stopAndRemoveNotification()
-                        // STARTED/RETRY_PENDING/SUSPENDED：岛保持（新负载已达或退避重试已排）
-                        else -> {}
+                        // STARTED：新负载已送达，onStartCommand 会 startTicker 顶替本
+                        // ticker（stopTicker 移除下方兜底回调）；RETRY_PENDING/
+                        // SUSPENDED：无人接管 ticker，静默 return 会把通知冻结在旧
+                        // 文本（测试会话到点收尾尤其明显）。续排一次心跳兜底，
+                        // suspend 到期由闹钟收尾，停止路径会移除本回调不泄漏。
+                        else -> handler.postDelayed(this, KEEP_ALIVE_TICK_DELAY_MILLIS)
                     }
                     return
                 }
@@ -1123,8 +1236,12 @@ class LiveUpdateService : Service() {
                         LiveUpdateRescheduleOutcome.SCHEDULED,
                         LiveUpdateRescheduleOutcome.IDLE,
                         -> stopAndRemoveNotification()
-                        // STARTED/RETRY_PENDING/SUSPENDED：岛保持（新负载已达或退避重试已排）
-                        else -> {}
+                        // STARTED：新负载已送达，onStartCommand 会 startTicker 顶替本
+                        // ticker（stopTicker 移除下方兜底回调）；RETRY_PENDING/
+                        // SUSPENDED：无人接管 ticker，静默 return 会把通知冻结在旧
+                        // 文本（测试会话到点收尾尤其明显）。续排一次心跳兜底，
+                        // suspend 到期由闹钟收尾，停止路径会移除本回调不泄漏。
+                        else -> handler.postDelayed(this, KEEP_ALIVE_TICK_DELAY_MILLIS)
                     }
                     return
                 }
@@ -1139,8 +1256,12 @@ class LiveUpdateService : Service() {
                         LiveUpdateRescheduleOutcome.SCHEDULED,
                         LiveUpdateRescheduleOutcome.IDLE,
                         -> stopAndRemoveNotification()
-                        // STARTED/RETRY_PENDING/SUSPENDED：岛保持（新负载已达或退避重试已排）
-                        else -> {}
+                        // STARTED：新负载已送达，onStartCommand 会 startTicker 顶替本
+                        // ticker（stopTicker 移除下方兜底回调）；RETRY_PENDING/
+                        // SUSPENDED：无人接管 ticker，静默 return 会把通知冻结在旧
+                        // 文本（测试会话到点收尾尤其明显）。续排一次心跳兜底，
+                        // suspend 到期由闹钟收尾，停止路径会移除本回调不泄漏。
+                        else -> handler.postDelayed(this, KEEP_ALIVE_TICK_DELAY_MILLIS)
                     }
                     return
                 }
@@ -2150,7 +2271,13 @@ class LiveUpdateService : Service() {
         val classProgress = if (stage == "duringClass") buildDuringClassProgress(now) else null
         val usesProgressExpandedStyle = Build.VERSION.SDK_INT >= 36 && classProgress != null
 
-        val shortCourseName = if (courseName.length > 8) courseName.substring(0, 8) + ".." else courseName
+        val titleCourseName = if (useShortNameInIsland && shortCourseNameRaw.isNotBlank()) {
+            shortCourseNameRaw
+        } else if (courseName.length > 8) {
+            courseName.substring(0, 8) + ".."
+        } else {
+            courseName
+        }
         val nameToUse = if (useShortNameInIsland && shortCourseNameRaw.isNotBlank()) shortCourseNameRaw else courseName
         val islandCourseName = if (showCourseNameInIsland) {
             if (nameToUse.length > 5) nameToUse.substring(0, 5) else nameToUse
@@ -2184,9 +2311,9 @@ class LiveUpdateService : Service() {
             else -> remainingText.ifBlank { stageTitle }
         }
         val title = when (stage) {
-            "beforeClass" -> getString(R.string.title_before_class, shortCourseName)
-            "beforeEnd" -> getString(R.string.title_before_end, shortCourseName)
-            else -> shortCourseName
+            "beforeClass" -> getString(R.string.title_before_class, titleCourseName)
+            "beforeEnd" -> getString(R.string.title_before_end, titleCourseName)
+            else -> titleCourseName
         }
         val shortNameLabel = shortCourseNameRaw.takeIf { it.isNotBlank() && it != courseName }
         val timeRangeText = if (startTimeText.isNotBlank() || endTimeText.isNotBlank()) {

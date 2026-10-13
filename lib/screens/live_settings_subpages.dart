@@ -11,6 +11,7 @@ import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
+import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/android_move_to_back_service.dart';
@@ -348,13 +349,17 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   bool _stagePreviewActive = false;
   Timer? _stagePreviewEndTimer;
 
+  late final Course _sampleCourse;
+
   @override
   void initState() {
     super.initState();
-    _draft = context.read<TimetableProvider>().settings;
+    final provider = context.read<TimetableProvider>();
+    _draft = provider.settings;
+    _sampleCourse = resolveLivePreviewTestCourse(provider);
     _restoreStagePreviewFromGlobalSession();
     unawaited(
-      context.read<TimetableProvider>().refreshLiveActivityNow(
+      provider.refreshLiveActivityNow(
         forceSnapshotSync: true,
       ),
     );
@@ -507,6 +512,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final sampleCourse = _sampleCourse;
     final display = _display;
     final sectionCards = <Widget>[
       HyperosSectionLabel(text: l10n.liveDisplayContentTitle),
@@ -1015,6 +1021,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             ? _draft.beforeClassDisplaySettings
             : display,
         forDuringEnd: widget.forDuringEnd,
+        sampleCourse: sampleCourse,
         followBeforeClass: _followBeforeClass,
         endSecondsCountdownThresholdSeconds:
             _draft.liveEndSecondsCountdownThreshold,
@@ -1056,6 +1063,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                     ? _draft.beforeClassDisplaySettings
                     : display,
                 forDuringEnd: widget.forDuringEnd,
+                sampleCourse: sampleCourse,
                 followBeforeClass: _followBeforeClass,
                 endSecondsCountdownThresholdSeconds:
                     _draft.liveEndSecondsCountdownThreshold,

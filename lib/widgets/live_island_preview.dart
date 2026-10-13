@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
+import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../services/bundled_assets.dart';
 import '../ui/hyperos/hyperos.dart';
@@ -49,11 +50,13 @@ class LiveIslandPreviewCard extends StatefulWidget {
     super.key,
     required this.display,
     required this.forDuringEnd,
+    this.sampleCourse,
     this.followBeforeClass = false,
     this.endSecondsCountdownThresholdSeconds = 60,
   });
 
   final LiveDisplaySettings display;
+  final Course? sampleCourse;
 
   /// 课中/下课提醒页传 true：该页同时预览「上课中」与「下课提醒」两个岛；
   /// 课前提醒页传 false：只预览「即将上课」岛。
@@ -203,14 +206,25 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     // 原生 buildIslandLabelBitmap：可选图标部分 + 自动缩放的标签文字。
     final includeIcon =
         d.miuiIslandLabelStyle == MiuiIslandLabelStyle.iconAndText;
-    final nameToUse = d.useShortName
-        ? l10n.liveIslandPreviewSampleCourseShort
+    final course = widget.sampleCourse;
+    final fullName = course?.name.isNotEmpty == true
+        ? course!.name
         : l10n.liveIslandPreviewSampleCourse;
+    final shortName = course?.shortName?.trim();
+    final nameToUse =
+        (d.useShortName && shortName != null && shortName.isNotEmpty)
+            ? shortName
+            : (d.useShortName && course == null)
+            ? l10n.liveIslandPreviewSampleCourseShort
+            : fullName;
+    final sampleLoc = course?.location.isNotEmpty == true
+        ? course!.location
+        : l10n.liveIslandPreviewSampleLocation;
     final labelText = switch (d.miuiIslandLabelContent) {
       MiuiIslandLabelContent.courseName => nameToUse,
-      MiuiIslandLabelContent.location => l10n.liveIslandPreviewSampleLocation,
+      MiuiIslandLabelContent.location => sampleLoc,
       MiuiIslandLabelContent.courseNameAndLocation =>
-        '$nameToUse ${l10n.liveIslandPreviewSampleLocation}',
+        '$nameToUse $sampleLoc',
     };
     final fontWeight = switch (d.miuiIslandLabelFontWeight) {
       MiuiIslandLabelFontWeight.medium => FontWeight.w500,
@@ -288,7 +302,11 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     LiveDisplaySettings d,
   ) {
     final name = _islandCourseName(l10n, d);
-    final location = d.showLocation ? l10n.liveIslandPreviewSampleLocation : '';
+    final course = widget.sampleCourse;
+    final sampleLoc = course?.location.isNotEmpty == true
+        ? course!.location
+        : l10n.liveIslandPreviewSampleLocation;
+    final location = d.showLocation ? sampleLoc : '';
     final status = _statusLine(l10n, stage, d);
     return [name, location, status].where((part) => part.isNotEmpty).join(' ');
   }
@@ -298,9 +316,17 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     if (!d.showCourseName) {
       return '';
     }
-    final name = d.useShortName
-        ? l10n.liveIslandPreviewSampleCourseShort
+    final course = widget.sampleCourse;
+    final fullName = course?.name.isNotEmpty == true
+        ? course!.name
         : l10n.liveIslandPreviewSampleCourse;
+    final shortName = course?.shortName?.trim();
+    final name =
+        (d.useShortName && shortName != null && shortName.isNotEmpty)
+            ? shortName
+            : (d.useShortName && course == null)
+            ? l10n.liveIslandPreviewSampleCourseShort
+            : fullName;
     return name.length > 5 ? name.substring(0, 5) : name;
   }
 
@@ -392,6 +418,7 @@ class LiveIslandExpandedPreviewCard extends StatefulWidget {
     super.key,
     required this.display,
     required this.forDuringEnd,
+    this.sampleCourse,
     this.followBeforeClass = false,
     this.endSecondsCountdownThresholdSeconds = 60,
     this.promoteDuringClass = true,
@@ -399,6 +426,7 @@ class LiveIslandExpandedPreviewCard extends StatefulWidget {
 
   final LiveDisplaySettings display;
   final bool forDuringEnd;
+  final Course? sampleCourse;
   final bool followBeforeClass;
   final int endSecondsCountdownThresholdSeconds;
 
@@ -484,7 +512,7 @@ class _LiveIslandExpandedPreviewCardState
               ),
             ),
           _ExpandedNotificationCard(
-            title: _title(l10n, stages[index]),
+            title: _title(l10n, stages[index], d),
             summary: _summaryLine(l10n, stages[index], d),
             detailLines: _detailLines(l10n, stages[index], d),
             emptyHint: l10n.liveIslandExpandedPreviewEmptyHint,
@@ -498,19 +526,30 @@ class _LiveIslandExpandedPreviewCardState
 
   /// `notificationTitle` 用的课程名。
   ///
-  /// 原生 title 由 `shortCourseName` 拼出，而 `shortCourseName` 只做「超过 8 字
-  /// 截断 + `..`」，**不看 useShortNameInIsland**（简称只进岛内文本 / A 区
-  /// islandName）。所以这里不能用 `_islandCourseName` 那套简称逻辑，否则开了
-  /// 「简称」后预览标题会变成「高数」而真机仍是「高等数学」。
-  /// 课程名超过 8 字时同样要截断，保持与原生逐字一致。
-  String _titleCourseName(AppLocalizations l10n) {
-    final course = l10n.liveIslandPreviewSampleCourse;
-    return course.length > 8 ? '${course.substring(0, 8)}..' : course;
+  /// 原生 title 优先遵从 useShortName（若开启且有简称则显示简称，否则回退全称截断）。
+  /// 课程名超过 8 字时截断，保持与原生逐字一致。
+  String _titleCourseName(AppLocalizations l10n, LiveDisplaySettings d) {
+    final course = widget.sampleCourse;
+    final fullName = course?.name.isNotEmpty == true
+        ? course!.name
+        : l10n.liveIslandPreviewSampleCourse;
+    final shortName = course?.shortName?.trim();
+    final nameToUse =
+        (d.useShortName && shortName != null && shortName.isNotEmpty)
+            ? shortName
+            : (d.useShortName && course == null)
+            ? l10n.liveIslandPreviewSampleCourseShort
+            : fullName;
+    return nameToUse.length > 8 ? '${nameToUse.substring(0, 8)}..' : nameToUse;
   }
 
   /// `notificationTitle`：课前/下课提醒带阶段前缀，课中只有课程名。
-  String _title(AppLocalizations l10n, _PreviewStage stage) {
-    final course = _titleCourseName(l10n);
+  String _title(
+    AppLocalizations l10n,
+    _PreviewStage stage,
+    LiveDisplaySettings d,
+  ) {
+    final course = _titleCourseName(l10n, d);
     return switch (stage) {
       _PreviewStage.beforeClass => l10n.liveIslandPreviewTitleBeforeClass(
         course,
@@ -533,6 +572,13 @@ class _LiveIslandExpandedPreviewCardState
     // 课中带进度块时正文只留倒计时与地点；示例课的字面值相同。
     final hasProgressBlock =
         stage == _PreviewStage.duringClass && d.showCountdown;
+    final course = widget.sampleCourse;
+    final sampleLoc = course?.location.isNotEmpty == true
+        ? course!.location
+        : l10n.liveIslandPreviewSampleLocation;
+    final sampleTeacher = course?.teacher.isNotEmpty == true
+        ? course!.teacher
+        : l10n.liveIslandPreviewSampleTeacher;
     final parts = hasProgressBlock
         ? <String>[
             _formatIslandCountdown(
@@ -540,13 +586,13 @@ class _LiveIslandExpandedPreviewCardState
               d.countdownTextStyle,
               60,
             ),
-            if (d.showLocation) l10n.liveIslandPreviewSampleLocation,
+            if (d.showLocation) sampleLoc,
           ]
         : <String>[
             _expandedStatusText(l10n, stage, d),
             _timeRangeText(),
-            if (d.showLocation) l10n.liveIslandPreviewSampleLocation,
-            l10n.liveIslandPreviewSampleTeacher,
+            if (d.showLocation) sampleLoc,
+            sampleTeacher,
           ];
     return parts.where((part) => part.isNotEmpty).join(' · ');
   }
@@ -584,9 +630,16 @@ class _LiveIslandExpandedPreviewCardState
     }
   }
 
-  /// 原生 `timeRangeText`：`"$startTimeText - $endTimeText"`。示例课统一
-  /// 08:00-08:45，三个阶段的展开卡片都用同一个时间串。
-  String _timeRangeText() => '08:00 - 08:45';
+  /// 原生 `timeRangeText`：`"$startTimeText - $endTimeText"`。
+  String _timeRangeText() {
+    final course = widget.sampleCourse;
+    if (course != null &&
+        course.startTime.isNotEmpty &&
+        course.endTime.isNotEmpty) {
+      return '${course.startTime} - ${course.endTime}';
+    }
+    return '08:00 - 08:45';
+  }
 
   /// 原生 `shouldPromote`：课前与下课提醒恒定提升，课中看「提升通知」开关。
   bool _isPromoted(_PreviewStage stage) =>
@@ -632,11 +685,17 @@ class _LiveIslandExpandedPreviewCardState
             lines.add(_stageWord(l10n, stage));
           }
         case LiveExpandedDetailField.shortName:
-          lines.add(
-            l10n.liveExpandedDetailLineShortName(
-              l10n.liveIslandPreviewSampleCourseShort,
-            ),
-          );
+          final course = widget.sampleCourse;
+          final shortName = course?.shortName?.trim();
+          final displayShort =
+              (shortName != null && shortName.isNotEmpty)
+                  ? shortName
+                  : (course == null
+                      ? l10n.liveIslandPreviewSampleCourseShort
+                      : null);
+          if (displayShort != null) {
+            lines.add(l10n.liveExpandedDetailLineShortName(displayShort));
+          }
         case LiveExpandedDetailField.progress:
           // 原生 showProgressBlock = (课中 || 临近下课) && classProgress != null
           // && showCountdown；beforeEnd 阶段 classProgress == null，因此只有
@@ -675,17 +734,15 @@ class _LiveIslandExpandedPreviewCardState
           // expandedDetailLineList 只判断 `location.isNotBlank()`，不看
           // showLocationInIsland（设计文档 §10.3）。此处不能再套 showLocation，
           // 否则折叠态关掉地点时预览会少一行、实际展开却照旧显示。
-          lines.add(
-            l10n.liveExpandedDetailLineLocation(
-              l10n.liveIslandPreviewSampleLocation,
-            ),
-          );
+          final sampleLoc = widget.sampleCourse?.location.isNotEmpty == true
+              ? widget.sampleCourse!.location
+              : l10n.liveIslandPreviewSampleLocation;
+          lines.add(l10n.liveExpandedDetailLineLocation(sampleLoc));
         case LiveExpandedDetailField.teacher:
-          lines.add(
-            l10n.liveExpandedDetailLineTeacher(
-              l10n.liveIslandPreviewSampleTeacher,
-            ),
-          );
+          final sampleTeacher = widget.sampleCourse?.teacher.isNotEmpty == true
+              ? widget.sampleCourse!.teacher
+              : l10n.liveIslandPreviewSampleTeacher;
+          lines.add(l10n.liveExpandedDetailLineTeacher(sampleTeacher));
         case LiveExpandedDetailField.nextCourse:
           lines.add(
             l10n.liveExpandedDetailLineNext(

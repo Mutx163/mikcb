@@ -377,6 +377,6 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('正在跟随“课前提醒显示”设置，调整课前提醒即可生效'), findsOneWidget);
+    expect(find.text('跟随课前提醒设置，修改课前提醒即生效'), findsOneWidget);
   });
 }

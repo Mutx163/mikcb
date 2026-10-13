@@ -691,10 +691,126 @@ Future<bool> hotUpdateLiveCourseTestSession(TimetableProvider provider) async {
   }
 }
 
+/// 解析提醒显示设置页预览以及速览测试所用的目标课程。
+///
+/// 选课规则与用户认知对齐：
+/// 1. 优先查「当前正在上」或「今天接下来最近」的课程（通过 [provider.getLiveActivityCourseSelection]）；
+/// 2. 若今天无活跃课程，扫描课表内日历时间最接近当前时间的未来课程（按周次、星期与节次排序）；
+/// 3. 若课表内所有课程周次均已过期（如已结课或已放假），从已有课程中挑选（优先保留填有简称者，若无则取首门）；
+/// 4. 若课表完全为空（无任何课程），使用 [LiveTestingFixtureService.buildPresetCourses]
+///    构造的「自检预设课 A」（自带简称「自检A」）。
+Course resolveLivePreviewTestCourse(
+  TimetableProvider provider, {
+  DateTime? now,
+}) {
+  final currentTime = now ?? DateTime.now();
+
+  // 1. 优先取当前活跃或今天接下来的课程
+  final currentSelection = provider.getLiveActivityCourseSelection(
+    now: currentTime,
+    allowUpcomingFallback: true,
+  );
+  if (currentSelection != null) {
+    return provider.resolveCourseDisplayName(currentSelection.currentCourse);
+  }
+
+  // 2. 今天无课时，扫描课表内接下来时间最近的课程
+  final courses = provider.courses;
+  if (courses.isNotEmpty) {
+    final targetWeek = provider.liveSelectionCalendarWeek;
+    final maxWeek = courses
+        .map((c) => c.endWeek)
+        .fold<int>(targetWeek, (a, b) => a > b ? a : b);
+    final today = DateTime(currentTime.year, currentTime.month, currentTime.day);
+
+    Course? nearestFutureCourse;
+    Duration? nearestFutureDelta;
+
+    for (final c in courses) {
+      for (var week = targetWeek; week <= maxWeek; week++) {
+        if (!c.isInWeek(week)) continue;
+        final dayOffset =
+            (week - targetWeek) * 7 + c.dayOfWeek - currentTime.weekday;
+        if (dayOffset < 0) continue;
+
+        // 估算上课起始时间（优先取课程实际 startTime，若无则按节次）
+        final courseDate = today.add(Duration(days: dayOffset));
+        DateTime? candidateStart;
+        final rawStart = c.startTime;
+        if (rawStart.contains(':')) {
+          final parts = rawStart.split(':');
+          final h = int.tryParse(parts[0]);
+          final m = int.tryParse(parts[1]);
+          if (h != null && m != null) {
+            candidateStart = DateTime(
+              courseDate.year,
+              courseDate.month,
+              courseDate.day,
+              h,
+              m,
+            );
+          }
+        }
+        candidateStart ??= DateTime(
+          courseDate.year,
+          courseDate.month,
+          courseDate.day,
+          8 + (c.startSection - 1),
+        );
+
+        if (candidateStart.isAfter(currentTime)) {
+          final delta = candidateStart.difference(currentTime);
+          if (nearestFutureDelta == null || delta < nearestFutureDelta) {
+            nearestFutureDelta = delta;
+            nearestFutureCourse = c;
+          }
+        }
+        break; // 找到该课程的最近可用周即可
+      }
+    }
+
+    if (nearestFutureCourse != null) {
+      return provider.resolveCourseDisplayName(nearestFutureCourse);
+    }
+
+    // 3. 课表有课但都在过去（例如学期结束），挑选填有简称者，若无则取首门
+    for (final c in courses) {
+      final resolved = provider.resolveCourseDisplayName(c);
+      if (resolved.shortName != null && resolved.shortName!.trim().isNotEmpty) {
+        return resolved;
+      }
+    }
+    return provider.resolveCourseDisplayName(courses.first);
+  }
+
+  // 4. 课表完全为空时，用自检预设课 A 兜底
+  try {
+    final presets = LiveTestingFixtureService.buildPresetCourses(
+      now: currentTime,
+      targetWeek: provider.liveSelectionCalendarWeek,
+      semesterWeekCount: provider.settings.semesterWeekCount,
+    );
+    return provider.resolveCourseDisplayName(presets.first);
+  } catch (_) {
+    return Course(
+      id: 'fixture_preset_fallback',
+      name: '自检预设课 A',
+      shortName: '自检A',
+      teacher: '自检教师',
+      location: '自检教室 101',
+      dayOfWeek: 1,
+      startSection: 1,
+      endSection: 2,
+      startTime: '08:00',
+      endTime: '09:40',
+    );
+  }
+}
+
 /// 显示设置页「速览」：跳过选课单，直接对指定阶段强制起岛约 [sessionLength]。
 ///
-/// 课程取课表第一组；课表为空时用自检预设课（只进超级岛内存层，不写入
-/// 课表）。核心窗口/暂停机制与 [triggerLiveUpdateCourseTest] 完全同路。
+/// 智能挑选当前或最近一门课程；课表为空时用自检预设课（只进超级岛内存层，
+/// 不写入课表）。核心窗口/暂停机制与 [triggerLiveUpdateCourseTest] 完全同路。
 Future<LiveTestingTriggerResult> triggerLiveStagePreviewTest({
   required BuildContext context,
   required TimetableProvider provider,
@@ -702,28 +818,7 @@ Future<LiveTestingTriggerResult> triggerLiveStagePreviewTest({
   Duration sessionLength = const Duration(seconds: 30),
   String source = 'display_settings_preview',
 }) async {
-  final l10n = AppLocalizations.of(context)!;
-  final groups = provider.courseGroups;
-  Course course;
-  if (groups.isNotEmpty) {
-    course = groups.first.courses.first;
-  } else {
-    // 无课表兜底：借自检预设课的构造规则造一门单节测试课。跨日约束同源
-    // （课表不支持隔夜课），午夜附近退回「无课」提示而不是半途崩给用户。
-    try {
-      final presets = LiveTestingFixtureService.buildPresetCourses(
-        now: DateTime.now(),
-        targetWeek: provider.liveSelectionCalendarWeek,
-        semesterWeekCount: provider.settings.semesterWeekCount,
-      );
-      course = presets.first;
-    } catch (_) {
-      return LiveTestingTriggerResult(
-        status: LiveTestingTriggerStatus.error,
-        message: l10n.liveTestingNoCourseAvailable,
-      );
-    }
-  }
+  final course = resolveLivePreviewTestCourse(provider);
   return triggerLiveUpdateCourseTest(
     context: context,
     provider: provider,
