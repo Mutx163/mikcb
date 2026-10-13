@@ -208,349 +208,473 @@
 
   initHeroTitle();
 
-  /* ---------- 界面展示交互逻辑 ---------- */
+  /* ---------- 界面展示交互逻辑 (旗舰大片级展台) ---------- */
   const SHOWCASE_DATA = {
     "zh-CN": [
       {
-        badge: "核心视图",
-        title: "全景周课表",
-        desc: "全景俯瞰一周日程，课卡呼吸层次分明。支持自定义壁纸与拖拽微调，液态玻璃底部导航沉浸交互。",
-        points: [
-          "单双周智能过滤与空课时段高亮",
-          "毛玻璃卡片与自研液态玻璃底栏",
-          "壁纸位置独立微调与平滑手势缩放"
+        num: "01",
+        badge: "核心全景",
+        headline: "把整周节奏，化作桌面风景",
+        subline: "全景壁纸 · 毛玻璃课卡 · 液态玻璃底栏",
+        desc: "全景俯瞰一周日程分布，课卡层次清晰分明。单双周智能过滤，空余时段一目了然；壁纸支持拖拽与平滑手势缩放，让课表成为真正赏心悦目的日常工具。",
+        tiles: [
+          { tag: "自研 Shader", text: "液态玻璃底部导航坞" },
+          { tag: "智能排布", text: "单双周过滤与空课高亮" },
+          { tag: "手势调配", text: "壁纸位置独立自由拖拽" }
         ],
+        glow: "rgba(41, 121, 255, 0.45)",
         webp: "./screenshots/01-week-timetable.webp",
         png: "./screenshots/01-week-timetable.png",
-        alt: "轻屿课表全景周课表界面"
+        name: "周课表"
       },
       {
-        badge: "日视图",
-        title: "今日日程流转",
-        desc: "专注当天日程节奏，分阶段悬浮卡片展示。距离下一节课剩余时间、教学场地一目了然。",
-        points: [
-          "上课倒计时毫秒级动态追踪",
-          "课程时间段与作息节次精准对齐",
-          "下课与转场状态无缝衔接"
+        num: "02",
+        badge: "当日流转",
+        headline: "聚焦当下，从容掌控每节作息",
+        subline: "分阶段卡片 · 精准节次 · 毫秒级倒计时",
+        desc: "自动收拢非今日日程，专注此时此刻的教学节奏。下一节课去哪个校区教室、还有多久打铃、课后去向何处，悬浮卡片自然连续衔接。",
+        tiles: [
+          { tag: "动态流转", text: "上课倒计时毫秒级追踪" },
+          { tag: "精准节次", text: "教学楼与作息无缝对齐" },
+          { tag: "无感承接", text: "课前课中下课状态流转" }
         ],
+        glow: "rgba(20, 184, 166, 0.42)",
         webp: "./screenshots/02-day-agenda.webp",
         png: "./screenshots/02-day-agenda.png",
-        alt: "轻屿课表今日日程流转界面"
+        name: "今日日程"
       },
       {
-        badge: "系统协同",
-        title: "HyperOS 超级岛联动",
-        desc: "深度接入小米 HyperOS 焦点通知架构。状态栏灵动胶囊与大卡片展开，课前课中无需频繁解锁查看。",
-        points: [
-          "灵动胶囊镜头挖孔毫秒级调度",
-          "大卡片展开自定义字段与顺序",
-          "课前自动静音与免打扰联动"
+        num: "03",
+        badge: "系统级协同",
+        headline: "状态栏灵动流转，抬眼即知",
+        subline: "深度接入小米 HyperOS 焦点通知架构",
+        desc: "与状态栏镜头挖孔浑然一体。灵动胶囊毫秒级倒计时，下拉大卡片清晰展现课程详情与授课教师。上课无需反复解锁点开 App，信息自然生长在系统里。",
+        tiles: [
+          { tag: "灵动胶囊", text: "镜头挖孔毫秒级调度" },
+          { tag: "卡片展开", text: "支持自定义字段与排序" },
+          { tag: "免打扰联动", text: "课前自动静音课后恢复" }
         ],
+        glow: "rgba(0, 122, 255, 0.52)",
         webp: "./screenshots/03-super-island.webp",
         png: "./screenshots/03-super-island.png",
-        alt: "HyperOS 超级岛灵动胶囊与焦点卡片"
+        name: "超级岛"
       },
       {
-        badge: "原生组件",
-        title: "桌面小组件矩阵",
-        desc: "覆盖 2×2 主卡、迷你日程、整周概览、倒计时横条等全套规格。秒级快照更新，免开 App 即知日程。",
-        points: [
-          "丰富尺寸自由混搭排版",
-          "原生数据快照高效省电渲染",
-          "支持情侣课表双人日程透出"
+        num: "04",
+        badge: "桌面组件生态",
+        headline: "全尺寸矩阵，自由编排主屏",
+        subline: "2×2 主卡 · 迷你日程 · 课程概览 · 倒计时条",
+        desc: "全套小组件覆盖各种屏幕排版需求。采用原生数据快照高效秒级渲染，极低电量消耗；还支持情侣课表双人日程透出，抬眼即见彼此安排。",
+        tiles: [
+          { tag: "全套规格", text: "2×2 / 概览 / 倒计时混搭" },
+          { tag: "原生快照", text: "极低能耗后台秒级响应" },
+          { tag: "情侣协同", text: "双人课表同屏即时透出" }
         ],
+        glow: "rgba(139, 92, 246, 0.45)",
         webp: "./screenshots/04-home-widgets.webp",
         png: "./screenshots/04-home-widgets.png",
-        alt: "桌面小组件矩阵多尺寸展示"
+        name: "桌面组件"
       },
       {
-        badge: "智能场景",
-        title: "天气与日程感知",
-        desc: "课卡深度整合实时气温与降雨概率预报。出门前智能提示携带雨具与温差变化，日程更具温度。",
-        points: [
-          "基于地理位置的精准实时天气",
-          "降雨概率与出行建议直观透出",
-          "不增加系统功耗的轻量轮询"
+        num: "05",
+        badge: "场景感知",
+        headline: "知晓晴雨温差，从容出门上课",
+        subline: "实时气温 · 降水预报 · 出行贴心建议",
+        desc: "课程卡片内嵌实时气象信息。清晨出门前智能提示是否携带雨具与温差变化，将气象感知与日程结合，让工具具备生活温度。",
+        tiles: [
+          { tag: "精准气象", text: "基于地理位置实时气温" },
+          { tag: "出行建议", text: "降雨概率与雨具携带提示" },
+          { tag: "轻量轮询", text: "不增加额外功耗与负担" }
         ],
+        glow: "rgba(56, 189, 248, 0.45)",
         webp: "./screenshots/05-weather-integration.webp",
         png: "./screenshots/05-weather-integration.png",
-        alt: "天气与日程深度联动界面"
+        name: "天气联动"
       },
       {
-        badge: "视觉个性",
-        title: "外观与液态材质",
-        desc: "实体卡片、高斯磨砂、柔光玻璃及基于 Impeller Fragment Shader 自研的液态玻璃材质随心切换。",
-        points: [
-          "多层次毛玻璃与自研 Shader",
-          "卡片圆角、透明度与字重微调",
-          "暗色与亮色模式高对比度适配"
+        num: "06",
+        badge: "视觉美学",
+        headline: "质感定制，触手可及的液态美",
+        subline: "实体卡片 · 高斯磨砂 · 自研 Shader",
+        desc: "内置多种视觉材质风格：实体卡片、高斯磨砂柔光以及基于 Impeller Fragment Shader 自研的液态玻璃材质，圆角、字重、透明度随心微调。",
+        tiles: [
+          { tag: "自研 Shader", text: "Impeller 液态玻璃材质" },
+          { tag: "细节微调", text: "卡片圆角、透明度与字重" },
+          { tag: "色彩适配", text: "深浅模式高对比度校准" }
         ],
+        glow: "rgba(236, 72, 153, 0.45)",
         webp: "./screenshots/06-appearance-customization.webp",
         png: "./screenshots/06-appearance-customization.png",
-        alt: "外观定制与液态材质调节界面"
+        name: "液态外观"
       },
       {
-        badge: "教务配置",
-        title: "课表设置中心",
-        desc: "支持学期周次设置、开学日期推算、节次作息时间模板与法定节假日调休排课，适配各类复杂学制。",
-        points: [
-          "多套时间模板灵活切换",
-          "支持单双周跨周连续排课",
-          "法定假期与补课日自动适配"
+        num: "07",
+        badge: "教务配置中心",
+        headline: "化繁为简，轻松驾驭复杂学制",
+        subline: "学期周历 · 作息模板 · 法定节假日排课",
+        desc: "支持多套节次作息时间模板切换、开学周次智能推算、单双周连续排课以及法定节假日调休自动避让，全面兼容各大高校的特殊排课规则。",
+        tiles: [
+          { tag: "作息模板", text: "多套时间作息灵活切换" },
+          { tag: "调休排课", text: "法定假期与补课自动适配" },
+          { tag: "多课表隔离", text: "沙箱数据毫秒级无感切换" }
         ],
+        glow: "rgba(245, 158, 11, 0.45)",
         webp: "./screenshots/07-timetable-settings.webp",
         png: "./screenshots/07-timetable-settings.png",
-        alt: "课表设置中心与学期配置界面"
+        name: "课表设置"
       },
       {
+        num: "08",
         badge: "产品理念",
-        title: "纯粹克制与开源",
-        desc: "基于 GPL-3.0 协议开源。坚持零广告、无需注册账号、无冗余后台驻留，还课表以工具纯粹本质。",
-        points: [
-          "数据完全本地加密或 WebDAV 掌控",
-          "代码透明可审计，社区协同进化",
-          "尊重系统规范，杜绝流氓常驻"
+        headline: "零广告、无注册，回归工具纯粹",
+        subline: "GPL-3.0 协议 · 本地优先 · 隐私完全掌控",
+        desc: "代码完全开源透明，杜绝流氓常驻与隐私获取。数据完全由你掌控，支持本地全量加密备份与 WebDAV 云同步，纯粹无负担，做最可靠的大学伴侣。",
+        tiles: [
+          { tag: "开源透明", text: "GPL-3.0 协议可独立审计" },
+          { tag: "零骚扰", text: "无开屏广告、无需注册账号" },
+          { tag: "本地掌控", text: "WebDAV 与全量数据加密" }
         ],
+        glow: "rgba(34, 197, 94, 0.45)",
         webp: "./screenshots/08-about-app.webp",
         png: "./screenshots/08-about-app.png",
-        alt: "关于轻屿课表与开源协议界面"
+        name: "纯粹开源"
       }
     ],
     "zh-HK": [
       {
-        badge: "核心視圖",
-        title: "全景周課表",
-        desc: "全景俯瞰一週日程，課卡呼吸層次分明。支援自訂桌布與拖曳微調，液態玻璃底部導航沉浸互動。",
-        points: [
-          "單雙週智慧過濾與空堂時段突顯",
-          "毛玻璃卡片與自研液態玻璃底欄",
-          "桌布位置獨立微調與平滑手勢縮放"
+        num: "01",
+        badge: "核心全景",
+        headline: "把整週節奏，化作桌面風景",
+        subline: "全景桌布 · 毛玻璃課卡 · 液態玻璃底欄",
+        desc: "全景俯瞰一週日程分佈，課卡層次清晰分明。單雙週智慧過濾，空堂時段一目了然；桌布支援拖曳與平滑手勢縮放，讓課表成為真正賞心悅目的日常工具。",
+        tiles: [
+          { tag: "自研 Shader", text: "液態玻璃底部導航塢" },
+          { tag: "智慧排布", text: "單雙週過濾與空堂高亮" },
+          { tag: "手勢調配", text: "桌布位置獨立自由拖曳" }
         ],
+        glow: "rgba(41, 121, 255, 0.45)",
         webp: "./screenshots/01-week-timetable.webp",
         png: "./screenshots/01-week-timetable.png",
-        alt: "輕嶼課表全景周課表介面"
+        name: "週課表"
       },
       {
-        badge: "日視圖",
-        title: "今日日程流轉",
-        desc: "專注當天日程節奏，分階段懸浮卡片展示。距離下一節課剩餘時間、教學場地一目了然。",
-        points: [
-          "上課倒數毫秒級動態追蹤",
-          "課程時間段與作息節次精準對齊",
-          "下課與轉場狀態無縫銜接"
+        num: "02",
+        badge: "當日流轉",
+        headline: "聚焦當下，從容掌控每節作息",
+        subline: "分階段卡片 · 精準節次 · 毫秒級倒數",
+        desc: "自動收攏非今日日程，專注此時此刻的教學節奏。下一節課去哪個校區教室、還有多久打鈴、課後去向何處，懸浮卡片自然連續銜接。",
+        tiles: [
+          { tag: "動態流轉", text: "上課倒數毫秒級追蹤" },
+          { tag: "精準節次", text: "教學樓與作息無縫對齊" },
+          { tag: "無感承接", text: "課前課中下課狀態流轉" }
         ],
+        glow: "rgba(20, 184, 166, 0.42)",
         webp: "./screenshots/02-day-agenda.webp",
         png: "./screenshots/02-day-agenda.png",
-        alt: "輕嶼課表今日日程流轉介面"
+        name: "今日日程"
       },
       {
-        badge: "系統協同",
-        title: "HyperOS 超級島聯動",
-        desc: "深度接入小米 HyperOS 焦點通知架構。狀態欄靈動膠囊與大卡片展開，課前課中無需頻繁解鎖查看。",
-        points: [
-          "靈動膠囊鏡頭挖孔毫秒級調度",
-          "大卡片展開自訂欄位與順序",
-          "課前自動靜音與勿擾聯動"
+        num: "03",
+        badge: "系統級協同",
+        headline: "狀態欄靈動流轉，抬眼即知",
+        subline: "深度接入小米 HyperOS 焦點通知架構",
+        desc: "與狀態欄鏡頭挖孔渾然一體。靈動膠囊毫秒級倒數，下拉大卡片清晰展現課程詳情與授課教師。上課無需反覆解鎖點開 App，資訊自然生長在系統裏。",
+        tiles: [
+          { tag: "靈動膠囊", text: "鏡頭挖孔毫秒級調度" },
+          { tag: "卡片展開", text: "支援自訂欄位與排序" },
+          { tag: "勿擾聯動", text: "課前自動靜音課後恢復" }
         ],
+        glow: "rgba(0, 122, 255, 0.52)",
         webp: "./screenshots/03-super-island.webp",
         png: "./screenshots/03-super-island.png",
-        alt: "HyperOS 超級島靈動膠囊與焦點卡片"
+        name: "超級島"
       },
       {
-        badge: "原生組件",
-        title: "桌面小組件矩陣",
-        desc: "涵蓋 2×2 主卡、迷你日程、整週概覽、倒數橫條等全套規格。秒級快照更新，免開 App 即知日程。",
-        points: [
-          "豐富尺寸自由混搭排版",
-          "原生數據快照高效省電渲染",
-          "支援情侶課表雙人日程透出"
+        num: "04",
+        badge: "桌面組件生態",
+        headline: "全尺寸矩陣，自由編排主屏",
+        subline: "2×2 主卡 · 迷你日程 · 課程概覽 · 倒數條",
+        desc: "全套小組件覆蓋各種螢幕排版需求。採用原生數據快照高效秒級渲染，極低電量消耗；還支援情侶課表雙人日程透出，抬眼即見彼此安排。",
+        tiles: [
+          { tag: "全套規格", text: "2×2 / 概覽 / 倒數混搭" },
+          { tag: "原生快照", text: "極低能耗背景秒級回應" },
+          { tag: "情侶協同", text: "雙人課表同屏即時透出" }
         ],
+        glow: "rgba(139, 92, 246, 0.45)",
         webp: "./screenshots/04-home-widgets.webp",
         png: "./screenshots/04-home-widgets.png",
-        alt: "桌面小組件矩陣多尺寸展示"
+        name: "桌面組件"
       },
       {
-        badge: "智慧場景",
-        title: "天氣與日程感知",
-        desc: "課卡深度整合即時氣溫與降雨機率預報。出門前智慧提示攜帶雨具與溫差變化，日程更具溫度。",
-        points: [
-          "基於地理位置的精準即時天氣",
-          "降雨機率與出行建議直觀呈現",
-          "不增加系統功耗的輕量輪詢"
+        num: "05",
+        badge: "場景感知",
+        headline: "知曉晴雨溫差，從容出門上課",
+        subline: "即時氣溫 · 降水預報 · 出行貼心建議",
+        desc: "課程卡片內嵌即時氣象資訊。清晨出門前智慧提示是否攜帶雨具與溫差變化，將氣象感知與日程結合，讓工具具備生活溫度。",
+        tiles: [
+          { tag: "精準氣象", text: "基於地理位置即時氣溫" },
+          { tag: "出行建議", text: "降雨機率與雨具攜帶提示" },
+          { tag: "輕量輪詢", text: "不增加額外功耗與負擔" }
         ],
+        glow: "rgba(56, 189, 248, 0.45)",
         webp: "./screenshots/05-weather-integration.webp",
         png: "./screenshots/05-weather-integration.png",
-        alt: "天氣與日程深度聯動介面"
+        name: "天氣聯動"
       },
       {
-        badge: "視覺個性",
-        title: "外觀與液態材質",
-        desc: "實體卡片、高斯磨砂、柔光玻璃及基於 Impeller Fragment Shader 自研的液態玻璃材質隨心切換。",
-        points: [
-          "多層次毛玻璃與自研 Shader",
-          "卡片圓角、透明度與字重微調",
-          "深色與淺色模式高對比度適配"
+        num: "06",
+        badge: "視覺美學",
+        headline: "質感訂製，觸手可及的液態美",
+        subline: "實體卡片 · 高斯磨砂 · 自研 Shader",
+        desc: "內建多種視覺材質風格：實體卡片、高斯磨砂柔光以及基於 Impeller Fragment Shader 自研的液態玻璃材質，圓角、字重、透明度隨心微調。",
+        tiles: [
+          { tag: "自研 Shader", text: "Impeller 液態玻璃材質" },
+          { tag: "細節微調", text: "卡片圓角、透明度與字重" },
+          { tag: "色彩適配", text: "深淺模式高對比度校準" }
         ],
+        glow: "rgba(236, 72, 153, 0.45)",
         webp: "./screenshots/06-appearance-customization.webp",
         png: "./screenshots/06-appearance-customization.png",
-        alt: "外觀訂製與液態材質調節介面"
+        name: "液態外觀"
       },
       {
-        badge: "教務配置",
-        title: "課表設定中心",
-        desc: "支援學期週次設定、開學日期推算、節次作息時間範本與法定節假日調休排課，適配各類複雜學制。",
-        points: [
-          "多套時間範本靈活切換",
-          "支援單雙週跨週連續排課",
-          "法定假期與補課日自動適配"
+        num: "07",
+        badge: "教務配置中心",
+        headline: "化繁為簡，輕鬆駕馭複雜學制",
+        subline: "學期週歷 · 作息範本 · 法定節假日排課",
+        desc: "支援多套節次作息時間範本切換、開學週次智慧推算、單雙週連續排課以及法定節假日調休自動避讓，全面相容各大高校的特殊排課規則。",
+        tiles: [
+          { tag: "作息範本", text: "多套時間作息靈活切換" },
+          { tag: "調休排課", text: "法定假期與補課自動適配" },
+          { tag: "多課表隔離", text: "沙箱數據毫秒級無感切換" }
         ],
+        glow: "rgba(245, 158, 11, 0.45)",
         webp: "./screenshots/07-timetable-settings.webp",
         png: "./screenshots/07-timetable-settings.png",
-        alt: "課表設定中心與學期配置介面"
+        name: "課表設定"
       },
       {
+        num: "08",
         badge: "產品理念",
-        title: "純粹克制與開源",
-        desc: "基於 GPL-3.0 協議開源。堅持零廣告、無需註冊帳號、無冗餘背景駐留，還課表以工具純粹本質。",
-        points: [
-          "數據完全本地加密或 WebDAV 掌控",
-          "代碼透明可審計，社群協同進化",
-          "尊重系統規範，杜絕流氓常駐"
+        headline: "零廣告、無註冊，回歸工具純粹",
+        subline: "GPL-3.0 協議 · 本地優先 · 隱私完全掌控",
+        desc: "代碼完全開源透明，杜絕流氓常駐與隱私獲取。數據完全由你掌控，支援本地全量加密備份與 WebDAV 雲同步，純粹無負擔，做最可靠的大學伴侶。",
+        tiles: [
+          { tag: "開源透明", text: "GPL-3.0 協議可獨立審計" },
+          { tag: "零騷擾", text: "無開屏廣告、無需註冊帳號" },
+          { tag: "本地掌控", text: "WebDAV 與全量數據加密" }
         ],
+        glow: "rgba(34, 197, 94, 0.45)",
         webp: "./screenshots/08-about-app.webp",
         png: "./screenshots/08-about-app.png",
-        alt: "關於輕嶼課表與開源協議介面"
+        name: "純粹開源"
       }
     ],
     "en": [
       {
+        num: "01",
         badge: "Core View",
-        title: "Panoramic Week Timetable",
-        desc: "Overview of your full week schedule with distinct frosted glass card layers. Custom wallpaper repositioning and liquid glass bottom navigation.",
-        points: [
-          "Odd/even week filter and free time highlights",
-          "Frosted glass cards with custom shader liquid dock",
-          "Wallpaper position fine-tuning with smooth gestures"
+        headline: "Turn your weekly rhythm into a living view",
+        subline: "Panoramic wallpaper · Frosted cards · Liquid glass dock",
+        desc: "Get an aerial perspective of your weekly course distribution with tactile glass layers. Smart odd/even week filtering and free time detection. Smooth gesture zoom and wallpaper panning.",
+        tiles: [
+          { tag: "Custom Shader", text: "Impeller liquid glass dock" },
+          { tag: "Smart Layout", text: "Odd/even & free time highlights" },
+          { tag: "Gesture Control", text: "Independent wallpaper drag & zoom" }
         ],
+        glow: "rgba(41, 121, 255, 0.45)",
         webp: "./screenshots/01-week-timetable.webp",
         png: "./screenshots/01-week-timetable.png",
-        alt: "Qingyu Timetable panoramic week view"
+        name: "Week View"
       },
       {
-        badge: "Day Agenda",
-        title: "Daily Schedule Flow",
-        desc: "Focus on today's rhythm with floating staged cards. Class countdowns and exact classroom locations at a glance.",
-        points: [
-          "Millisecond-level class countdown tracking",
-          "Precision period timetable alignment",
-          "Seamless handoff between periods"
+        num: "02",
+        badge: "Daily Flow",
+        headline: "Focus on today, in sync with every bell",
+        subline: "Staged cards · Precision periods · Millisecond countdown",
+        desc: "Seamlessly collapses non-today courses to focus on your immediate class progression. Exact campus, classroom, time left, and post-class schedule flow naturally.",
+        tiles: [
+          { tag: "Dynamic Flow", text: "Millisecond countdown tracking" },
+          { tag: "Precision Bell", text: "Classroom and period alignment" },
+          { tag: "Smooth Handoff", text: "Pre-class, in-class, and dismissal" }
         ],
+        glow: "rgba(20, 184, 166, 0.42)",
         webp: "./screenshots/02-day-agenda.webp",
         png: "./screenshots/02-day-agenda.png",
-        alt: "Daily schedule flow view"
+        name: "Daily Flow"
       },
       {
-        badge: "System Integration",
-        title: "HyperOS Super Island",
-        desc: "Deep integration with Xiaomi HyperOS Focus Notifications. Dynamic capsules around camera cutout and expandable cards without unlocking.",
-        points: [
-          "Millisecond scheduling around camera punch-hole",
-          "Customizable expanded card rows and order",
-          "Automatic pre-class mute and DND automation"
+        num: "03",
+        badge: "System Focus",
+        headline: "Dynamic island flow right in your status bar",
+        subline: "Deep Xiaomi HyperOS Focus Notification integration",
+        desc: "Seamlessly wraps around the front camera punch-hole. Millisecond status bar countdown capsule and expandable focus cards—glance at your class without unlocking your phone.",
+        tiles: [
+          { tag: "Live Capsule", text: "Punch-hole camera scheduling" },
+          { tag: "Card Expand", text: "Customizable fields & ordering" },
+          { tag: "Auto DND", text: "Pre-class mute & post-class restore" }
         ],
+        glow: "rgba(0, 122, 255, 0.52)",
         webp: "./screenshots/03-super-island.webp",
         png: "./screenshots/03-super-island.png",
-        alt: "HyperOS Super Island dynamic capsule"
+        name: "Super Island"
       },
       {
-        badge: "Home Widgets",
-        title: "Widget Ecosystem",
-        desc: "Full matrix covering 2x2 cards, mini agendas, weekly overviews, and countdown strips with instant snapshot updates.",
-        points: [
-          "Flexible grid arrangement for any home screen",
-          "Battery-efficient native snapshot rendering",
-          "Couple timetable dual schedule support"
+        num: "04",
+        badge: "Widget Suite",
+        headline: "Full widget matrix, tailor your home screen",
+        subline: "2×2 Hero · Mini Agenda · Week Overview · Countdown Strip",
+        desc: "Every standard widget size for creative home screen setups. Powered by native OS snapshot rendering for instant zero-lag updates and remarkable battery efficiency.",
+        tiles: [
+          { tag: "Full Sizes", text: "2×2 / Overview / Countdown mix" },
+          { tag: "Native Snapshot", text: "Ultra-low battery background sync" },
+          { tag: "Couples Mode", text: "Dual schedule side-by-side" }
         ],
+        glow: "rgba(139, 92, 246, 0.45)",
         webp: "./screenshots/04-home-widgets.webp",
         png: "./screenshots/04-home-widgets.png",
-        alt: "Android home widget matrix"
+        name: "Widgets"
       },
       {
-        badge: "Smart Context",
-        title: "Weather & Schedule",
-        desc: "Integrated real-time temperature and precipitation forecasts directly on course cards for timely departure advice.",
-        points: [
-          "Location-based accurate live weather updates",
-          "Precipitation probability & travel recommendations",
-          "Battery-conscious lightweight scheduling"
+        num: "05",
+        badge: "Context Aware",
+        headline: "Weather forecasts tailored to your class walks",
+        subline: "Real-time temp · Rain probability · Departure tips",
+        desc: "Embedded live weather radar on course cards. Know whether to pack an umbrella or an extra jacket before stepping out to morning lectures.",
+        tiles: [
+          { tag: "Live Weather", text: "Location-based precision climate" },
+          { tag: "Travel Advice", text: "Precipitation & umbrella alerts" },
+          { tag: "Lightweight", text: "Zero impact on system performance" }
         ],
+        glow: "rgba(56, 189, 248, 0.45)",
         webp: "./screenshots/05-weather-integration.webp",
         png: "./screenshots/05-weather-integration.png",
-        alt: "Weather and course integration"
+        name: "Weather"
       },
       {
-        badge: "Visual Craft",
-        title: "Liquid Glass & Themes",
-        desc: "Solid cards, gaussian blur, soft frosted glass, and proprietary Impeller Fragment Shader liquid glass materials.",
-        points: [
-          "Multi-layer frosted glass and custom shaders",
-          "Adjustable corner radius, opacity, and font weights",
-          "High contrast dark & light mode adaptation"
+        num: "06",
+        badge: "Aesthetics",
+        headline: "Custom liquid textures at your fingertips",
+        subline: "Solid cards · Gaussian blur · Custom Fragment Shader",
+        desc: "Multiple visual design philosophies: from minimalist solid cards to soft frosted glass and custom Impeller Fragment Shader liquid glass dock.",
+        tiles: [
+          { tag: "Custom Shader", text: "Impeller liquid glass dock" },
+          { tag: "Precision Tuning", text: "Corner radius, opacity & weights" },
+          { tag: "High Contrast", text: "Calibrated dark and light modes" }
         ],
+        glow: "rgba(236, 72, 153, 0.45)",
         webp: "./screenshots/06-appearance-customization.webp",
         png: "./screenshots/06-appearance-customization.png",
-        alt: "Appearance customization and liquid glass"
+        name: "Appearance"
       },
       {
-        badge: "Academic Setup",
-        title: "Timetable Settings",
-        desc: "Semester week management, start date calculation, period templates, and holiday shift compensation.",
-        points: [
-          "Multiple flexible period templates",
-          "Odd/even and continuous session rules",
-          "Statutory holiday and makeup day handling"
+        num: "07",
+        badge: "Setup Hub",
+        headline: "Tame complex semester schedules with ease",
+        subline: "Semester calendar · Period templates · Holiday shifts",
+        desc: "Multi-period timetable templates, automatic start date calculation, odd/even week patterns, and statutory holiday shift compensation.",
+        tiles: [
+          { tag: "Period Templates", text: "Quickly swap custom bell schedules" },
+          { tag: "Holiday Shift", text: "Statutory make-up day support" },
+          { tag: "Multi Schedule", text: "Sandboxed instant profile switching" }
         ],
+        glow: "rgba(245, 158, 11, 0.45)",
         webp: "./screenshots/07-timetable-settings.webp",
         png: "./screenshots/07-timetable-settings.png",
-        alt: "Timetable settings and semester configuration"
+        name: "Settings"
       },
       {
+        num: "08",
         badge: "Philosophy",
-        title: "Clean, Focused & Open Source",
-        desc: "Open source under GPL-3.0. Zero ads, zero accounts required, and zero background clutter—pure utility at its best.",
-        points: [
-          "Locally encrypted data or WebDAV cloud control",
-          "Auditable code built with open community",
-          "Respects system lifecycle without intrusive services"
+        headline: "Zero ads, no accounts, pure utility",
+        subline: "GPL-3.0 License · Local-first · Total privacy control",
+        desc: "100% open source and auditable. No tracking, no startup popups. All data stays securely on your device, with optional WebDAV cloud sync and encrypted backups.",
+        tiles: [
+          { tag: "Open Source", text: "GPL-3.0 auditable codebase" },
+          { tag: "Zero Clutter", text: "No ads, no accounts required" },
+          { tag: "Local Control", text: "Encrypted backups & WebDAV sync" }
         ],
+        glow: "rgba(34, 197, 94, 0.45)",
         webp: "./screenshots/08-about-app.webp",
         png: "./screenshots/08-about-app.png",
-        alt: "About app and open source license"
+        name: "Open Source"
       }
     ]
   };
   SHOWCASE_DATA["zh-TW"] = SHOWCASE_DATA["zh-HK"];
 
   function initShowcase() {
-    const stage = document.querySelector(".showcase-container");
+    const stage = document.querySelector(".section-showcase");
     if (!stage) return;
 
     let currentIndex = 0;
-    const tabs = Array.from(document.querySelectorAll(".showcase-tab"));
-    const thumbs = Array.from(document.querySelectorAll(".showcase-thumb-btn"));
+    const pills = Array.from(document.querySelectorAll(".showcase-nav-pill"));
+    const deviceMockup = document.getElementById("sc-device-mockup");
+    const ambientGlow = document.getElementById("sc-ambient-glow");
+    const watermark = document.getElementById("sc-watermark");
+    const badgeText = document.getElementById("sc-badge-text");
+    const headline = document.getElementById("sc-headline");
+    const subline = document.getElementById("sc-subline");
+    const narrative = document.getElementById("sc-narrative");
+    const tilesWrap = document.getElementById("sc-tiles");
     const prevBtn = document.getElementById("sc-prev");
     const nextBtn = document.getElementById("sc-next");
-    const badgeEl = document.getElementById("sc-badge");
-    const titleEl = document.getElementById("sc-title");
-    const descEl = document.getElementById("sc-desc");
-    const pointsEl = document.getElementById("sc-points");
+    const progressBar = document.getElementById("sc-progress");
     const counterEl = document.getElementById("sc-counter");
+    const filmstrip = document.getElementById("sc-filmstrip");
+    const zoomBtn = document.getElementById("sc-open-zoom");
     const mainWebp = document.getElementById("sc-main-webp");
     const mainImg = document.getElementById("sc-main-img");
+
+    // Lightbox elements
+    const lightbox = document.getElementById("sc-lightbox");
+    const lightboxImg = document.getElementById("sc-lightbox-img");
+    const lightboxCaption = document.getElementById("sc-lightbox-caption");
+    const lightboxClose = document.getElementById("sc-lightbox-close");
+    const lightboxBackdrop = document.getElementById("sc-lightbox-backdrop");
 
     function getItems() {
       const locale = window.I18n?.getLocale?.() || "zh-CN";
       return SHOWCASE_DATA[locale] || SHOWCASE_DATA["zh-CN"] || SHOWCASE_DATA["en"];
+    }
+
+    // Build Progress Segments & Filmstrip Cards dynamically
+    function setupFilmstripAndProgress() {
+      const items = getItems();
+      if (!items) return;
+
+      if (progressBar) {
+        progressBar.innerHTML = "";
+        items.forEach((_, idx) => {
+          const seg = document.createElement("button");
+          seg.type = "button";
+          seg.className = `sc-prog-seg ${idx === currentIndex ? "is-active" : ""}`;
+          seg.setAttribute("aria-label", `界面 ${idx + 1}`);
+          seg.addEventListener("click", () => renderItem(idx));
+          progressBar.appendChild(seg);
+        });
+      }
+
+      if (filmstrip) {
+        filmstrip.innerHTML = "";
+        items.forEach((item, idx) => {
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = `showcase-filmstrip-card ${idx === currentIndex ? "is-active" : ""}`;
+          card.setAttribute("data-index", String(idx));
+          card.innerHTML = `
+            <div class="showcase-filmstrip-thumb">
+              <img src="${item.webp}" alt="${item.name}" loading="lazy" />
+            </div>
+            <div class="showcase-filmstrip-meta">
+              <span class="showcase-filmstrip-num">${item.num}</span>
+              <span class="showcase-filmstrip-name">${item.name}</span>
+            </div>
+          `;
+          card.addEventListener("click", () => renderItem(idx));
+          filmstrip.appendChild(card);
+        });
+      }
     }
 
     function renderItem(index) {
@@ -559,36 +683,64 @@
       currentIndex = index;
       const item = items[index];
 
-      // Update tabs
-      tabs.forEach((tab, i) => {
+      // Update Top Nav Pills
+      pills.forEach((pill, i) => {
         const active = i === index;
-        tab.classList.toggle("is-active", active);
-        tab.setAttribute("aria-selected", active ? "true" : "false");
+        pill.classList.toggle("is-active", active);
+        pill.setAttribute("aria-selected", active ? "true" : "false");
       });
 
-      // Update thumbs
-      thumbs.forEach((thumb, i) => {
-        thumb.classList.toggle("is-active", i === index);
+      // Update Filmstrip cards
+      const filmCards = document.querySelectorAll(".showcase-filmstrip-card");
+      filmCards.forEach((card, i) => {
+        card.classList.toggle("is-active", i === index);
       });
 
-      // Update text
-      if (badgeEl) badgeEl.textContent = item.badge;
-      if (titleEl) titleEl.textContent = item.title;
-      if (descEl) descEl.textContent = item.desc;
-      if (counterEl) counterEl.textContent = `${index + 1} / ${items.length}`;
+      // Update Progress segments
+      const segs = document.querySelectorAll(".sc-prog-seg");
+      segs.forEach((seg, i) => {
+        seg.classList.toggle("is-active", i === index);
+      });
 
-      if (pointsEl && Array.isArray(item.points)) {
-        pointsEl.innerHTML = item.points
-          .map((p) => `<li><span class="sc-bullet"></span><span>${p}</span></li>`)
+      // Update Counter
+      if (counterEl) {
+        counterEl.textContent = `${item.num} / 0${items.length}`;
+      }
+
+      // Update Ambient Glow color
+      if (ambientGlow) {
+        ambientGlow.style.background = `radial-gradient(circle, ${item.glow} 0%, rgba(20, 184, 166, 0.12) 50%, transparent 72%)`;
+      }
+      if (deviceMockup) {
+        deviceMockup.style.setProperty("--sc-glow", item.glow);
+      }
+
+      // Update Editorial Text
+      if (watermark) watermark.textContent = item.num;
+      if (badgeText) badgeText.textContent = item.badge;
+      if (headline) headline.textContent = item.headline;
+      if (subline) subline.textContent = item.subline;
+      if (narrative) narrative.textContent = item.desc;
+
+      // Update Feature Tiles
+      if (tilesWrap && Array.isArray(item.tiles)) {
+        tilesWrap.innerHTML = item.tiles
+          .map(
+            (t) => `
+              <div class="showcase-tile">
+                <div class="showcase-tile-tag">${t.tag}</div>
+                <div class="showcase-tile-text">${t.text}</div>
+              </div>`
+          )
           .join("");
       }
 
-      // Smooth image transition
+      // Smooth Device Screen Crossfade
       if (mainImg) {
         mainImg.classList.add("is-changing");
         if (mainWebp) mainWebp.srcset = item.webp;
         mainImg.src = item.png;
-        mainImg.alt = item.alt;
+        mainImg.alt = `${item.headline} - ${item.name}`;
 
         const handleLoad = () => {
           mainImg.classList.remove("is-changing");
@@ -597,19 +749,70 @@
         mainImg.addEventListener("load", handleLoad);
         window.setTimeout(() => mainImg.classList.remove("is-changing"), 220);
       }
+
+      // Scroll active filmstrip card into view smoothly
+      if (filmCards[index]) {
+        filmCards[index].scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center"
+        });
+      }
     }
 
-    // Bind tabs
-    tabs.forEach((tab, i) => {
-      tab.addEventListener("click", () => renderItem(i));
+    // Lightbox Controls
+    function openLightbox() {
+      const items = getItems();
+      const item = items[currentIndex];
+      if (!item || !lightbox || !lightboxImg) return;
+
+      lightboxImg.src = item.png;
+      lightboxImg.alt = item.headline;
+      if (lightboxCaption) {
+        lightboxCaption.textContent = `${item.num} · ${item.headline} (${item.subline})`;
+      }
+      lightbox.hidden = false;
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeLightbox() {
+      if (!lightbox) return;
+      lightbox.hidden = true;
+      document.body.style.overflow = "";
+    }
+
+    if (deviceMockup) {
+      deviceMockup.addEventListener("click", openLightbox);
+      deviceMockup.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openLightbox();
+        }
+      });
+    }
+
+    if (zoomBtn) {
+      zoomBtn.addEventListener("click", openLightbox);
+    }
+
+    if (lightboxClose) {
+      lightboxClose.addEventListener("click", closeLightbox);
+    }
+    if (lightboxBackdrop) {
+      lightboxBackdrop.addEventListener("click", closeLightbox);
+    }
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && lightbox && !lightbox.hidden) {
+        closeLightbox();
+      }
     });
 
-    // Bind thumbs
-    thumbs.forEach((thumb, i) => {
-      thumb.addEventListener("click", () => renderItem(i));
+    // Bind Top Nav Pills
+    pills.forEach((pill, i) => {
+      pill.addEventListener("click", () => renderItem(i));
     });
 
-    // Bind prev / next
+    // Bind Prev / Next
     if (prevBtn) {
       prevBtn.addEventListener("click", () => {
         const items = getItems();
@@ -626,8 +829,9 @@
       });
     }
 
-    // Keyboard navigation within showcase
+    // Keyboard Arrow Controls
     stage.addEventListener("keydown", (e) => {
+      if (lightbox && !lightbox.hidden) return;
       if (e.key === "ArrowLeft") {
         const items = getItems();
         renderItem((currentIndex - 1 + items.length) % items.length);
@@ -637,9 +841,14 @@
       }
     });
 
+    // Initial setup
+    setupFilmstripAndProgress();
+    renderItem(0);
+
     // Re-render when i18n locale changes
     if (window.I18n && typeof window.I18n.onChange === "function") {
       window.I18n.onChange(() => {
+        setupFilmstripAndProgress();
         renderItem(currentIndex);
       });
     }
