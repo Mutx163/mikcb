@@ -7,7 +7,7 @@
 ![CI](https://img.shields.io/github/actions/workflow/status/Mutx163/mikcb/ci.yml?branch=main&label=CI)
 
 <p align="center">
-  <img src="https://163366.xyz/app-icon.png" width="96" alt="轻屿课表">
+  <img src="docs/app-icon.svg" width="96" alt="轻屿课表">
 </p>
 
 一个面向校园场景的 Android 课表应用，优先适配小米 / HyperOS。
