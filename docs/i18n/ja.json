@@ -15,6 +15,7 @@
   "brand.tagline": "時間割をスーパーアイランドへ",
   "brand.homeAria": "軽嶼時間割 ホーム",
   "brand.iconAlt": "軽嶼時間割 アイコン",
+  "nav.showcase": "画面",
   "nav.features": "機能",
   "nav.home": "ホーム",
   "nav.updates": "更新",
@@ -53,6 +54,12 @@
   "marquee.ai": "AI 画像認識インポート",
   "marquee.multi": "複数時間割",
   "marquee.free": "無料・オープンソース",
+
+  "showcase.label": "UIプレビュー",
+  "showcase.title": "洗練された質感、",
+  "showcase.titleGrad": "深い没入感。",
+  "showcase.desc": "パノラマ週間時間割、デスクトップウィジェット、HyperOSスーパーアイランドのリアルタイム連携。明瞭さと集中力を追求したデザイン。",
+
   "features.title": "ただの時間割ではなく、",
   "features.titleGrad": "システム体験の一式。",
   "features.desc": "スーパーアイランドからホームウィジェットまで、二人の時間割から一学期のレポートまで——スマホを見る回数を減らし、今日を少しでも理解するために、どの機能も存在します。",

@@ -150,6 +150,7 @@
           <span class="nav-brand-text" data-i18n="brand.name">轻屿课表</span>
         </a>
         <nav id="nav-menu" class="nav-links" aria-label="站点导航" data-i18n-attr="aria-label:nav.siteAria">
+          <a href="#showcase" data-i18n="nav.showcase">界面</a>
           <a href="#features" data-i18n="nav.features">功能</a>
           <a href="#schools" data-i18n="nav.schools">适配学校</a>
           <a href="#changelog" data-i18n="nav.updates">更新</a>
@@ -268,11 +269,147 @@
               </div>
             </dl>
           </div>
+        </div>
 
         <div class="marquee" aria-hidden="true">
           <div class="marquee-track">
             <span data-i18n="marquee.island">HyperOS 超级岛</span><span data-i18n="marquee.couple">情侣课表</span><span data-i18n="marquee.import">教务一键导入</span><span data-i18n="marquee.webdav">WebDAV 云同步</span><span data-i18n="marquee.bill">课程统计</span><span data-i18n="marquee.widget">桌面小组件</span><span data-i18n="marquee.remind">分阶段提醒</span><span data-i18n="marquee.lan">局域网编辑</span><span data-i18n="marquee.template">时间模板</span><span data-i18n="marquee.ics">.ics 导入</span><span data-i18n="marquee.ai">识图导入</span><span data-i18n="marquee.multi">多课表</span><span data-i18n="marquee.free">免费开源</span>
             <span data-i18n="marquee.island">HyperOS 超级岛</span><span data-i18n="marquee.couple">情侣课表</span><span data-i18n="marquee.import">教务一键导入</span><span data-i18n="marquee.webdav">WebDAV 云同步</span><span data-i18n="marquee.bill">课程统计</span><span data-i18n="marquee.widget">桌面小组件</span><span data-i18n="marquee.remind">分阶段提醒</span><span data-i18n="marquee.lan">局域网编辑</span><span data-i18n="marquee.template">时间模板</span><span data-i18n="marquee.ics">.ics 导入</span><span data-i18n="marquee.ai">识图导入</span><span data-i18n="marquee.multi">多课表</span><span data-i18n="marquee.free">免费开源</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== SHOWCASE ===================== -->
+      <section id="showcase" class="section section-showcase">
+        <div class="section-shell">
+          <div class="section-head reveal">
+            <span class="section-label" data-i18n="showcase.label">界面预览</span>
+            <h2>
+              <span data-i18n="showcase.title">原生质感，</span><span data-i18n="showcase.titleGrad">沉浸克制。</span>
+            </h2>
+            <p class="section-desc" data-i18n="showcase.desc">
+              全景周课表、桌面小组件矩阵、深度接入 HyperOS 超级岛实时流转。每一像素都为清晰专注而设计。
+            </p>
+          </div>
+
+          <div class="showcase-container reveal" data-spotlight>
+            <!-- 分类切换标签 -->
+            <div class="showcase-tabs" role="tablist" aria-label="界面预览分类">
+              <button type="button" role="tab" class="showcase-tab is-active" data-index="0" aria-selected="true" id="sc-tab-0">
+                周课表全貌
+              </button>
+              <button type="button" role="tab" class="showcase-tab" data-index="1" aria-selected="false" id="sc-tab-1">
+                今日日程
+              </button>
+              <button type="button" role="tab" class="showcase-tab" data-index="2" aria-selected="false" id="sc-tab-2">
+                超级岛联动
+              </button>
+              <button type="button" role="tab" class="showcase-tab" data-index="3" aria-selected="false" id="sc-tab-3">
+                桌面小组件
+              </button>
+              <button type="button" role="tab" class="showcase-tab" data-index="4" aria-selected="false" id="sc-tab-4">
+                天气与日程
+              </button>
+              <button type="button" role="tab" class="showcase-tab" data-index="5" aria-selected="false" id="sc-tab-5">
+                液态外观
+              </button>
+              <button type="button" role="tab" class="showcase-tab" data-index="6" aria-selected="false" id="sc-tab-6">
+                课表设置
+              </button>
+              <button type="button" role="tab" class="showcase-tab" data-index="7" aria-selected="false" id="sc-tab-7">
+                纯粹开源
+              </button>
+            </div>
+
+            <!-- 主舞台（机型框 + 说明卡片） -->
+            <div class="showcase-stage">
+              <div class="showcase-device-wrap">
+                <div class="device-mockup">
+                  <div class="device-camera-cutout" aria-hidden="true"></div>
+                  <div class="device-screen-inner">
+                    <picture>
+                      <source id="sc-main-webp" srcset="./screenshots/01-week-timetable.webp" type="image/webp" />
+                      <img id="sc-main-img" src="./screenshots/01-week-timetable.png" alt="轻屿课表全景周课表界面" width="720" height="1559" loading="eager" />
+                    </picture>
+                  </div>
+                  <div class="device-reflection" aria-hidden="true"></div>
+                </div>
+              </div>
+
+              <div class="showcase-info">
+                <div class="showcase-badge" id="sc-badge">核心视图</div>
+                <h3 class="showcase-title" id="sc-title">全景周课表</h3>
+                <p class="showcase-desc" id="sc-desc">
+                  全景俯瞰一周日程，课卡呼吸层次分明。支持自定义壁纸与拖拽微调，液态玻璃底部导航沉浸交互。
+                </p>
+                <ul class="showcase-points" id="sc-points">
+                  <li><span class="sc-bullet"></span><span>单双周智能过滤与空课时段高亮</span></li>
+                  <li><span class="sc-bullet"></span><span>毛玻璃卡片与自研液态玻璃底栏</span></li>
+                  <li><span class="sc-bullet"></span><span>壁纸位置独立微调与平滑手势缩放</span></li>
+                </ul>
+                <div class="showcase-nav-arrows">
+                  <button type="button" class="sc-nav-btn" id="sc-prev" aria-label="上一个界面">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+                  </button>
+                  <span class="sc-counter" id="sc-counter">1 / 8</span>
+                  <button type="button" class="sc-nav-btn" id="sc-next" aria-label="下一个界面">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 缩略图一览导航 -->
+            <div class="showcase-thumbnails" id="sc-thumbs" role="region" aria-label="所有界面缩略图">
+              <button type="button" class="showcase-thumb-btn is-active" data-index="0">
+                <div class="showcase-thumb-media">
+                  <img src="./screenshots/01-week-timetable.webp" alt="周课表全貌" loading="lazy" />
+                </div>
+                <span class="showcase-thumb-label">周课表全貌</span>
+              </button>
+              <button type="button" class="showcase-thumb-btn" data-index="1">
+                <div class="showcase-thumb-media">
+                  <img src="./screenshots/02-day-agenda.webp" alt="今日日程" loading="lazy" />
+                </div>
+                <span class="showcase-thumb-label">今日日程</span>
+              </button>
+              <button type="button" class="showcase-thumb-btn" data-index="2">
+                <div class="showcase-thumb-media">
+                  <img src="./screenshots/03-super-island.webp" alt="超级岛联动" loading="lazy" />
+                </div>
+                <span class="showcase-thumb-label">超级岛联动</span>
+              </button>
+              <button type="button" class="showcase-thumb-btn" data-index="3">
+                <div class="showcase-thumb-media">
+                  <img src="./screenshots/04-home-widgets.webp" alt="桌面小组件" loading="lazy" />
+                </div>
+                <span class="showcase-thumb-label">桌面小组件</span>
+              </button>
+              <button type="button" class="showcase-thumb-btn" data-index="4">
+                <div class="showcase-thumb-media">
+                  <img src="./screenshots/05-weather-integration.webp" alt="天气与日程" loading="lazy" />
+                </div>
+                <span class="showcase-thumb-label">天气与日程</span>
+              </button>
+              <button type="button" class="showcase-thumb-btn" data-index="5">
+                <div class="showcase-thumb-media">
+                  <img src="./screenshots/06-appearance-customization.webp" alt="液态外观" loading="lazy" />
+                </div>
+                <span class="showcase-thumb-label">液态外观</span>
+              </button>
+              <button type="button" class="showcase-thumb-btn" data-index="6">
+                <div class="showcase-thumb-media">
+                  <img src="./screenshots/07-timetable-settings.webp" alt="课表设置" loading="lazy" />
+                </div>
+                <span class="showcase-thumb-label">课表设置</span>
+              </button>
+              <button type="button" class="showcase-thumb-btn" data-index="7">
+                <div class="showcase-thumb-media">
+                  <img src="./screenshots/08-about-app.webp" alt="纯粹开源" loading="lazy" />
+                </div>
+                <span class="showcase-thumb-label">纯粹开源</span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -638,6 +775,7 @@
         <nav class="footer-cols" aria-label="页脚导航" data-i18n-attr="aria-label:nav.footerAria">
           <div class="footer-col">
             <small data-i18n="footer.product">产品</small>
+            <a href="#showcase" data-i18n="nav.showcase">界面</a>
             <a href="#features" data-i18n="nav.features">功能</a>
             <a href="#schools" data-i18n="nav.schools">适配学校</a>
             <a href="https://docs.163366.xyz/docs/guide/changelog/" data-i18n="footer.changelog">更新日志</a>

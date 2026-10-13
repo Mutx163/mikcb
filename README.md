@@ -19,6 +19,7 @@
 
 <p align="center">
   <a href="https://163366.xyz">官方站点</a> ·
+  <a href="#界面展示">界面展示</a> ·
   <a href="https://docs.163366.xyz/docs/">使用文档</a> ·
   <a href="#获取与安装">下载安装</a> ·
   <a href="https://github.com/Mutx163/mikcb/releases">版本发布</a> ·
@@ -32,6 +33,20 @@
 轻屿课表以「非侵入式日程感知」为核心设计理念，将教学周历、分阶段动态提醒、通知栏常驻、桌面小组件与系统级灵动胶囊紧密协同。无需频繁开启应用，即可在锁屏、状态栏与桌面上即时获取准确的课程进程。
 
 详细界面演示与设计规范请参阅 [官方站点](https://163366.xyz)。
+
+---
+
+## 界面展示
+
+| 周课表全貌 | 今日日程视图 | HyperOS 超级岛联动 | 桌面小组件矩阵 |
+| :---: | :---: | :---: | :---: |
+| <a href="docs/screenshots/01-week-timetable.png"><img src="docs/screenshots/01-week-timetable.png" width="220" alt="周课表全貌" /></a> | <a href="docs/screenshots/02-day-agenda.png"><img src="docs/screenshots/02-day-agenda.png" width="220" alt="今日日程视图" /></a> | <a href="docs/screenshots/03-super-island.png"><img src="docs/screenshots/03-super-island.png" width="220" alt="HyperOS 超级岛联动" /></a> | <a href="docs/screenshots/04-home-widgets.png"><img src="docs/screenshots/04-home-widgets.png" width="220" alt="桌面小组件矩阵" /></a> |
+| *毛玻璃课卡与自研液态底栏* | *分阶段流转与精准作息时段* | *状态栏灵动胶囊与焦点通知* | *2×2 / 迷你列表 / 概览 / 倒计时* |
+
+| 天气与日程感知 | 外观与液态材质 | 课表设置中心 | 纯粹克制与开源 |
+| :---: | :---: | :---: | :---: |
+| <a href="docs/screenshots/05-weather-integration.png"><img src="docs/screenshots/05-weather-integration.png" width="220" alt="天气与日程感知" /></a> | <a href="docs/screenshots/06-appearance-customization.png"><img src="docs/screenshots/06-appearance-customization.png" width="220" alt="外观与液态材质" /></a> | <a href="docs/screenshots/07-timetable-settings.png"><img src="docs/screenshots/07-timetable-settings.png" width="220" alt="课表设置中心" /></a> | <a href="docs/screenshots/08-about-app.png"><img src="docs/screenshots/08-about-app.png" width="220" alt="纯粹克制与开源" /></a> |
+| *实时气温、天气与出行建议* | *实体卡片、高斯磨砂与自研 Shader* | *学期周历、作息模板与调休排课* | *GPL-3.0 协议、无广告无冗余* |
 
 ---
 

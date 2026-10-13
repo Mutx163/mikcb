@@ -18,6 +18,7 @@
   "brand.homeAria": "轻屿课表首页",
   "brand.iconAlt": "轻屿课表图标",
 
+  "nav.showcase": "界面",
   "nav.features": "功能",
   "nav.home": "首页",
   "nav.updates": "更新",
@@ -58,6 +59,11 @@
   "marquee.ai": "识图导入",
   "marquee.multi": "多课表",
   "marquee.free": "免费开源",
+
+  "showcase.label": "界面预览",
+  "showcase.title": "原生质感，",
+  "showcase.titleGrad": "沉浸克制。",
+  "showcase.desc": "全景周课表、桌面小组件矩阵、深度接入 HyperOS 超级岛实时流转。每一像素都为清晰专注而设计。",
 
   "features.title": "不只是课表，",
   "features.titleGrad": "是一整套系统体验。",

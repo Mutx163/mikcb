@@ -15,6 +15,7 @@
   "brand.tagline": "把課表裝進超級島",
   "brand.homeAria": "輕嶼課表首頁",
   "brand.iconAlt": "輕嶼課表圖示",
+  "nav.showcase": "介面",
   "nav.features": "功能",
   "nav.home": "首頁",
   "nav.updates": "更新",
@@ -53,6 +54,12 @@
   "marquee.ai": "AI 識圖匯入",
   "marquee.multi": "多課表",
   "marquee.free": "免費開源",
+
+  "showcase.label": "介面預覽",
+  "showcase.title": "原生質感，",
+  "showcase.titleGrad": "沉浸克制。",
+  "showcase.desc": "全景周課表、桌面小組件矩陣、深度接入 HyperOS 超級島即時流轉。每一像素都為清晰專注而設計。",
+
   "features.title": "不只是課表，",
   "features.titleGrad": "是一整套系統體驗。",
   "features.desc": "從超級島到桌面小組件，從兩個人的課表到一學期的賬單——每個功能都為「少看一次手機、多懂一點今天」而存在。",

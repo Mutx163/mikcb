@@ -15,6 +15,7 @@
   "brand.tagline": "Put your schedule into Super Island",
   "brand.homeAria": "Qingyu Timetable home",
   "brand.iconAlt": "Qingyu Timetable icon",
+  "nav.showcase": "Screenshots",
   "nav.features": "Features",
   "nav.home": "Home",
   "nav.updates": "Updates",
@@ -53,6 +54,12 @@
   "marquee.ai": "AI image import",
   "marquee.multi": "Multiple schedules",
   "marquee.free": "Free & open source",
+
+  "showcase.label": "Visual Preview",
+  "showcase.title": "Native Aesthetics, ",
+  "showcase.titleGrad": "Refined and Focused.",
+  "showcase.desc": "Panoramic weekly timetable, desktop widget matrix, and seamless HyperOS Super Island integration. Designed for clarity and focus.",
+
   "features.title": "More than a timetable—",
   "features.titleGrad": "a full system experience.",
   "features.desc": "From Dynamic Island to home widgets, from two people's schedules to a full semester report—every feature exists so you check your phone less and understand today more.",

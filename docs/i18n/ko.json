@@ -15,6 +15,7 @@
   "brand.tagline": "시간표를 슈퍼 아일랜드에",
   "brand.homeAria": "청위 시간표 홈",
   "brand.iconAlt": "청위 시간표 아이콘",
+  "nav.showcase": "화면",
   "nav.features": "기능",
   "nav.home": "홈",
   "nav.updates": "업데이트",
@@ -53,6 +54,12 @@
   "marquee.ai": "AI 이미지 인식 가져오기",
   "marquee.multi": "다중 시간표",
   "marquee.free": "무료 오픈소스",
+
+  "showcase.label": "화면 미리보기",
+  "showcase.title": "네이티브 질감, ",
+  "showcase.titleGrad": "몰입과 절제.",
+  "showcase.desc": "파노라마 주간 시간표, 데스크톱 위젯 매트릭스, HyperOS 슈퍼 아일랜드 실시간 연동. 명확함과 집중을 위해 설계되었습니다.",
+
   "features.title": "단순한 시간표가 아니라,",
   "features.titleGrad": "시스템 경험 한 세트.",
   "features.desc": "슈퍼 아일랜드부터 홈 위젯까지, 두 사람의 시간표부터 한 학기 리포트까지——휴대폰을 덜 보고 오늘을 조금 더 이해하도록, 모든 기능이 존재합니다.",
