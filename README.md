@@ -161,17 +161,13 @@ flutter build apk --release --flavor prod --target-platform android-arm64
 
 ### 教务适配贡献者
 
-教务适配脚本来自 [qingyu_warehouse](https://github.com/Mutx163/qingyu_warehouse)，感谢这些参与学校适配的同学：
-
-<a href="https://github.com/Mutx163/qingyu_warehouse/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Mutx163/qingyu_warehouse" alt="教务适配仓库贡献者" />
-</a>
-
-同时感谢上游仓库 [shiguang_warehouse](https://github.com/XingHeYuZhuan/shiguang_warehouse)——大量学校适配在它那边完成，本仓库持续从中同步，感谢这些贡献者：
+教务适配脚本来自 [qingyu_warehouse](https://github.com/Mutx163/qingyu_warehouse)，其主体持续从上游 [shiguang_warehouse](https://github.com/XingHeYuZhuan/shiguang_warehouse) 同步——绝大多数学校适配在它那边完成，感谢这些贡献者：
 
 <a href="https://github.com/XingHeYuZhuan/shiguang_warehouse/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=XingHeYuZhuan/shiguang_warehouse" alt="上游教务仓库贡献者" />
 </a>
+
+同时感谢直接向教务仓库提交过的同学：[@jiqian-bbop](https://github.com/jiqian-bbop)、[@lmy18837613075](https://github.com/lmy18837613075)、[@mcxufly](https://github.com/mcxufly)。
 
 ## Star History
 
