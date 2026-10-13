@@ -91,10 +91,9 @@ class _LiveTestingFixtureScreenState extends State<LiveTestingFixtureScreen> {
           ),
           HyperosSectionDescription(
             text:
-                '当前方案：$activeSchemeName。安装会创建并自动套用「超级岛测试24时段」，按第 1～24 节生成普通课程数据'
-                '（写入当前课表、周次/放假/选课规则与正式课完全一致）。'
-                '一键发送只会改该节的起止时间，然后走正式超级岛刷新路径，不会强制弹岛。'
-                '测完请先「清除测试课表」再切回自己的时间方案；若仍有第 11 节及以后的课，系统会拒绝切到更短的方案。',
+                '当前方案：$activeSchemeName。安装后将创建并套用超级岛测试作息，按第 1 至 24 节生成测试课程数据。'
+                '一键发送将调整对应节次的起止时间并触发系统超级岛刷新。'
+                '测试完成后请先清除测试课表，再切换回原时间方案。',
           ),
           const HyperosSectionGap(),
           HyperosControlCard(
@@ -217,8 +216,7 @@ class _LiveTestingFixtureScreenState extends State<LiveTestingFixtureScreen> {
           LiveTestingFixtureService.timeSchemeName;
       showAppToast(
         context,
-        message:
-            '已套用「$schemeName」并安装 $count 门测试课（今天星期${DateTime.now().weekday}）',
+        message: '已套用 $schemeName 并添加 $count 门测试课，星期${DateTime.now().weekday}',
         kind: AppToastKind.success,
       );
     } catch (error) {

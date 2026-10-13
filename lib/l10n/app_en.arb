@@ -577,7 +577,7 @@
   },
   "clearCurrentTimetableTitle": "Clear Current Timetable",
   "clearFailed": "Couldn't clear the timetable. Nothing was changed.",
-  "clearCurrentTimetableMessage": "Clear all courses in “{name}”? Timetable settings will be kept",
+  "clearCurrentTimetableMessage": "Clear all courses in {name}? Timetable settings will be kept",
   "@clearCurrentTimetableMessage": {
     "placeholders": {
       "name": {
@@ -596,7 +596,7 @@
   },
   "noCoursesInCurrentProfile": "This timetable has no courses.",
   "deleteTimetableTitle": "Delete Timetable",
-  "deleteTimetableMessage": "Delete “{name}”?",
+  "deleteTimetableMessage": "Delete {name}?",
   "@deleteTimetableMessage": {
     "placeholders": {
       "name": {
@@ -782,7 +782,7 @@
   "migrationStep2Subtitle": "After exporting, the old app will open the system share sheet. Prefer Save to Files, and store it in the Download folder",
   "migrationStep3Title": "Return to this version and import",
   "migrationStep3Subtitle": "Return to the new version, choose the .mikcb backup file from Download, and restore it. Only uninstall the old app after confirming everything works here",
-  "migrationNoSaveToFilesTitle": "If “Save to Files” is unavailable",
+  "migrationNoSaveToFilesTitle": "If Save to Files is unavailable",
   "migrationNoSaveToFilesSubtitle": "You can first share the backup to any WeChat chat, then open the file in WeChat and save it. It usually ends up in Download or the WeiXin folder. Then return here and import that .mikcb file",
   "openingOldApp": "Opening old app...",
   "openOldAppForBackup": "Open old app for backup",
@@ -952,7 +952,7 @@
     }
   },
   "confirmDeleteTitle": "Confirm Delete",
-  "confirmDeleteCourseMessage": "Delete course “{name}”?",
+  "confirmDeleteCourseMessage": "Delete course {name}?",
   "@confirmDeleteCourseMessage": {
     "placeholders": {
       "name": {
@@ -1152,7 +1152,7 @@
     }
   },
   "deleteTimeSchemeTitle": "Delete Time Scheme",
-  "deleteTimeSchemeMessage": "Delete “{name}”? This cannot be undone",
+  "deleteTimeSchemeMessage": "Delete {name}? This cannot be undone",
   "@deleteTimeSchemeMessage": {
     "placeholders": {
       "name": {
@@ -1222,7 +1222,7 @@
       }
     }
   },
-  "timeSchemeUsageTitle": "Usage of “{name}”",
+  "timeSchemeUsageTitle": "Usage of {name}",
   "@timeSchemeUsageTitle": {
     "placeholders": {
       "name": {
@@ -1920,15 +1920,25 @@
   "wallpaperPositionPickerExit": "Exit",
   "@bingWallpaperResolutionHint": {
     "placeholders": {
-      "width": { "type": "int" },
-      "height": { "type": "int" },
-      "size": { "type": "String" }
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
     }
   },
   "@bingWallpaperDateMonthDay": {
     "placeholders": {
-      "month": { "type": "int" },
-      "day": { "type": "int" }
+      "month": {
+        "type": "int"
+      },
+      "day": {
+        "type": "int"
+      }
     }
   },
   "bingWallpaperGalleryTitle": "Bing daily wallpaper",
@@ -1938,7 +1948,10 @@
   "@bingWallpaperDownloadStatus": {
     "description": "下载失败提示，附上 HTTP 状态码。占位符只在服务端回了响应时才有值；断网等情况用 bingWallpaperDownloadFailed 那条。",
     "placeholders": {
-      "status": { "type": "int", "example": "404" }
+      "status": {
+        "type": "int",
+        "example": "404"
+      }
     }
   },
   "bingWallpaperDownloadStatus": "Couldn't download this wallpaper ({status})",
@@ -1949,7 +1962,10 @@
   "@bingWallpaperResolutionFallback": {
     "description": "所选画质当天不可用、已退到默认档时的说明。占位符是实际拿到的那一档的文案。",
     "placeholders": {
-      "label": { "type": "String", "example": "高清" }
+      "label": {
+        "type": "String",
+        "example": "高清"
+      }
     }
   },
   "bingWallpaperResolutionFallback": "Bing didn't offer that quality today — using {label} instead",
@@ -1970,7 +1986,10 @@
   "@bingWallpaperAutoApplyStale": {
     "description": "Shown when Bing has not posted today's image yet and the newest available one is used instead. {date} is that image's own date label (e.g. \"Yesterday\", \"Oct 5\").",
     "placeholders": {
-      "date": { "type": "String", "example": "Yesterday" }
+      "date": {
+        "type": "String",
+        "example": "Yesterday"
+      }
     }
   },
   "bingWallpaperAutoApplyStale": "Bing hasn't posted today's image yet — using the one from {date}",
@@ -2597,8 +2616,8 @@
   },
   "aboutMirrorUnknownSizeHint": "The mirror did not return a total file size yet, so only the downloaded size is shown for now",
   "aboutCancelDownloadAction": "Cancel download",
-"aboutContinueDownloadAction": "Resume download",
-"aboutDismissDialogAction": "Close dialog",
+  "aboutContinueDownloadAction": "Resume download",
+  "aboutDismissDialogAction": "Close dialog",
   "aboutContributorsScreenTitle": "Contributors",
   "aboutDevelopersTitle": "Developers",
   "aboutDeveloperMaintainerSubtitle": "Qingyu Timetable development and maintenance",
@@ -2977,7 +2996,7 @@
   "courseConflictDetailTitle": "Conflict details",
   "courseConflictDetailEntryTitle": "View conflict details",
   "courseConflictDetailEntrySubtitle": "See overlapping schedules and partners",
-  "courseConflictWithCourse": "Conflicts with “{name}”",
+  "courseConflictWithCourse": "Conflicts with {name}",
   "@courseConflictWithCourse": {
     "placeholders": {
       "name": {
@@ -4119,19 +4138,33 @@
   "weeklyReportBody": "Week {week} · {sections} sections · {courses} courses\n{delta} vs last week\nBusiest day: {busiestDay}",
   "@weeklyReportBody": {
     "placeholders": {
-      "week": { "type": "int" },
-      "sections": { "type": "int" },
-      "courses": { "type": "int" },
-      "delta": { "type": "String" },
-      "busiestDay": { "type": "String" }
+      "week": {
+        "type": "int"
+      },
+      "sections": {
+        "type": "int"
+      },
+      "courses": {
+        "type": "int"
+      },
+      "delta": {
+        "type": "String"
+      },
+      "busiestDay": {
+        "type": "String"
+      }
     }
   },
   "weeklyReportBodyEmpty": "No classes this week — enjoy the break",
   "weeklyReportNextFire": "Next: {date} {time}",
   "@weeklyReportNextFire": {
     "placeholders": {
-      "date": { "type": "String" },
-      "time": { "type": "String" }
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
     }
   },
   "weeklyReportEnabledHint": "Weekly report enabled",
@@ -4142,7 +4175,9 @@
   "statisticsCompareDelta": "{delta} vs active",
   "@statisticsCompareDelta": {
     "placeholders": {
-      "delta": { "type": "String" }
+      "delta": {
+        "type": "String"
+      }
     }
   },
   "statisticsCompareDetailTitle": "Comparison Details",
@@ -4189,22 +4224,34 @@
   "statisticsSemesterProgressRange": "Semester {start} - {end}",
   "@statisticsSemesterProgressRange": {
     "placeholders": {
-      "start": { "type": "String" },
-      "end": { "type": "String" }
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
     }
   },
   "statisticsSemesterProgressAsOf": "Today {date}",
   "@statisticsSemesterProgressAsOf": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "statisticsSemesterProgressDetail": "As of week {week}, {done} of {total} sections taken",
   "@statisticsSemesterProgressDetail": {
     "placeholders": {
-      "week": { "type": "int" },
-      "done": { "type": "int" },
-      "total": { "type": "int" }
+      "week": {
+        "type": "int"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "statisticsSemesterProgressNotStarted": "Semester hasn't started yet",
@@ -4212,15 +4259,21 @@
   "statisticsSemesterProgressRemaining": "{count} sections left",
   "@statisticsSemesterProgressRemaining": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "statisticsTrendTitle": "Weekly Sections Trend",
   "statisticsTrendTooltip": "Week {week} · {sections} sections",
   "@statisticsTrendTooltip": {
     "placeholders": {
-      "week": { "type": "int" },
-      "sections": { "type": "int" }
+      "week": {
+        "type": "int"
+      },
+      "sections": {
+        "type": "int"
+      }
     }
   },
   "statisticsComparisonTitle": "This Week at a Glance",
@@ -4229,13 +4282,17 @@
   "statisticsComparisonVsLastWeek": "{delta} vs last week",
   "@statisticsComparisonVsLastWeek": {
     "placeholders": {
-      "delta": { "type": "String" }
+      "delta": {
+        "type": "String"
+      }
     }
   },
   "statisticsComparisonVsAverage": "{delta} vs weekly avg",
   "@statisticsComparisonVsAverage": {
     "placeholders": {
-      "delta": { "type": "String" }
+      "delta": {
+        "type": "String"
+      }
     }
   },
   "statisticsComparisonNew": "First week of the semester",
@@ -4252,7 +4309,9 @@
   "statisticsTimeGapValue": "{sections} sections",
   "@statisticsTimeGapValue": {
     "placeholders": {
-      "sections": { "type": "int" }
+      "sections": {
+        "type": "int"
+      }
     }
   },
   "statisticsVenueTitle": "Rooms & Buildings",
@@ -4261,14 +4320,18 @@
   "statisticsVenueVisits": "{count} visits",
   "@statisticsVenueVisits": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "statisticsTeacherTitle": "Teacher Ranking",
   "statisticsTeacherCourseCount": "{count} courses",
   "@statisticsTeacherCourseCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "statisticsAchievementFullDayKingName": "Full-Day King",
@@ -4278,15 +4341,21 @@
   "statisticsAchievementProgress": "{current}/{target}",
   "@statisticsAchievementProgress": {
     "placeholders": {
-      "current": { "type": "int" },
-      "target": { "type": "int" }
+      "current": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
     }
   },
   "statisticsAchievementDone": "Unlocked",
   "statisticsWeekDailyHint": "Tap to view week {week} details",
   "@statisticsWeekDailyHint": {
     "placeholders": {
-      "week": { "type": "int" }
+      "week": {
+        "type": "int"
+      }
     }
   },
   "weekListSeparator": ", ",
@@ -6130,7 +6199,7 @@
   "scheduleDateRuleSavedButApplyFailed": "Date rule saved, but today's auto-apply failed (check scheme section count)",
   "scheduleDateRuleDeleted": "Date rule deleted",
   "scheduleDateRuleDeleteTitle": "Delete date rule?",
-  "scheduleDateRuleDeleteMessage": "Delete “{name}”? Already-applied schedules are not rolled back automatically; adjust them manually if needed.",
+  "scheduleDateRuleDeleteMessage": "Delete {name}? Already-applied schedules are not rolled back automatically; adjust them manually if needed.",
   "@scheduleDateRuleDeleteMessage": {
     "placeholders": {
       "name": {
@@ -6409,7 +6478,7 @@
   "glassDockButtonIconDefault": "Default (+)",
   "glassDockButtonIconSearchHint": "Search icons",
   "glassDockCustomizeSectionTitle": "Bottom dock",
-    "glassDockCustomizeTitle": "Customize dock buttons",
+  "glassDockCustomizeTitle": "Customize dock buttons",
   "homeDockEditorViewCategory": "View switching",
   "glassDockEntriesSectionTitle": "Dock entries",
   "glassDockShowDayTabTitle": "Show day view entry",
@@ -6417,7 +6486,7 @@
   "glassDockShowAddButtonTitle": "Show round button",
   "glassDockShowAddButtonSubtitle": "Show a separate round button to the right of the pill — function and icon customizable below",
   "glassDockButtonBackToWeekLabel": "Back to this week / today",
-    "glassDockExtraButtonSemanticLabel": "Add",
+  "glassDockExtraButtonSemanticLabel": "Add",
   "homeMenuStyleLabel": "Top-right menu style",
   "homeMenuStyleList": "List menu",
   "homeMenuStyleGrid": "Eight-tile grid menu",
@@ -6427,14 +6496,20 @@
   "homeGridCustomizeDetails": "{count}/{max} enabled",
   "@homeGridCustomizeDetails": {
     "placeholders": {
-      "count": { "type": "int" },
-      "max": { "type": "int" }
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "homeGridEditorHintBody": "Up to {max} buttons can be added; drag an item to reorder.",
   "@homeGridEditorHintBody": {
     "placeholders": {
-      "max": { "type": "int" }
+      "max": {
+        "type": "int"
+      }
     }
   },
   "homeGridEditorEnabledTitle": "Enabled",
@@ -6442,7 +6517,7 @@
   "homeGridEditorRemoveTooltip": "Remove",
   "homeGridEditorAddTooltip": "Add",
   "homeGridEditorResetAction": "Reset to default order",
-    "homeGridEditorAllAdded": "All entries are enabled",
+  "homeGridEditorAllAdded": "All entries are enabled",
   "homeGridEditorMaxReached": "Limit reached",
   "homeGridEditorPinnedTooltip": "This entry reopens this page and cannot be removed",
   "homeMenuCategoryFeatures": "Features",
@@ -6452,7 +6527,9 @@
   "classAlarmLeadMinutesLabel": "{minutes} min ahead",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "classAlarmInvalidTimeToast": "This class's period is outside the time scheme; cannot set an alarm",
@@ -6466,9 +6543,21 @@
   "classAlarmNoSemesterToast": "Set the semester start date in Settings first",
   "classAlarmActionLabel": "Set alarm for this class",
   "classAlarmConfirmMessage": "The system clock will create: {detail}. System alarms cannot recognize holidays or suspensions and ring anyway; delete them in the system clock.",
-  "@classAlarmConfirmMessage": {"placeholders":{"detail":{"type":"String"}}},
+  "@classAlarmConfirmMessage": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
   "classAlarmVariableSuffix": "Also, first-class times on {days} differ between weeks; no alarm covers these days.",
-  "@classAlarmVariableSuffix": {"placeholders":{"days":{"type":"String"}}},
+  "@classAlarmVariableSuffix": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
   "classAlarmEntryTitle": "Class alarms",
   "classAlarmGroupSetup": "Add alarms",
   "classAlarmGroupBehavior": "Ring behavior",
@@ -6489,7 +6578,22 @@
   "classAlarmLaunchFailedToast": "No clock app found to handle this",
   "classAlarmCourseConfirmTitle": "Add a repeating alarm for this class?",
   "classAlarmCourseConfirmMessage": "A weekly repeating alarm will be created in the system clock: every {weekday} at {time}, ringing {lead} minutes before this class starts (active weeks: {weeks}). It keeps ringing during holidays and off-weeks; delete it in the system clock.",
-  "@classAlarmCourseConfirmMessage": {"placeholders":{"weekday":{"type":"String"},"time":{"type":"String"},"lead":{"type":"int"},"weeks":{"type":"String"}}},
+  "@classAlarmCourseConfirmMessage": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "lead": {
+        "type": "int"
+      },
+      "weeks": {
+        "type": "String"
+      }
+    }
+  },
   "classAlarmDaySeparator": ", ",
   "classAlarmDetailSeparator": "; ",
   "liveExpandedDetailGroupTitle": "Expanded details",
@@ -6530,17 +6634,83 @@
   "liveExpandedDetailLineTeacher": "Teacher: {value}",
   "liveExpandedDetailLineNext": "Next: {value}",
   "liveExpandedDetailLineNote": "Note: {value}",
-  "@liveIslandPreviewTitleBeforeClass": {"placeholders": {"course": {"type": "String"}}},
-  "@liveIslandPreviewTitleBeforeEnd": {"placeholders": {"course": {"type": "String"}}},
-  "@liveExpandedDetailLineShortName": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineProgressNext": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineProgressFinal": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineStatus": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineTime": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineLocation": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineTeacher": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineNext": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineNote": {"placeholders": {"value": {"type": "String"}}},
+  "@liveIslandPreviewTitleBeforeClass": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveIslandPreviewTitleBeforeEnd": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineShortName": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineProgressNext": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineProgressFinal": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineStatus": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineTime": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineLocation": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineTeacher": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineNext": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineNote": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "weatherTemperatureValue": "{temperature}°",
   "@weatherTemperatureValue": {
     "placeholders": {
@@ -6600,7 +6770,7 @@
   "weatherShowOnSheetTitle": "Course detail sheet",
   "weatherSectionContentTitle": "What to show",
   "weatherShowPhenomenonTitle": "Condition",
-  "weatherShowPhenomenonSubtitle": "Such as “light rain”",
+  "weatherShowPhenomenonSubtitle": "Such as light rain",
   "weatherShowTemperatureTitle": "Temperature",
   "weatherShowProbabilityTitle": "Rain chance",
   "weatherShowProbabilitySubtitle": "Hidden below 30%",

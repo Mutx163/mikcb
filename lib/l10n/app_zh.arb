@@ -109,7 +109,7 @@
   },
   "coupleTimetableSharedFreeUnavailable": "暂时算不出共同空闲",
   "coupleTimetableSharedFreeStaleHint": "对方课表可能不是最新",
-  "coupleTimetablePartnerReadOnlyBadge": "对方课表（只读）",
+  "coupleTimetablePartnerReadOnlyBadge": "对方课表 只读",
   "coupleTimetableNotBoundMessage": "请先导入对方课表后再查看叠加视图",
   "coupleTimetableShareText": "这是我的课表，导入到轻屿课表的情侣课表即可一起查看",
   "coupleTimetableShareSubject": "轻屿课表 · 情侣课表分享",
@@ -136,10 +136,10 @@
     }
   },
   "coupleTimetableColorsTitle": "叠加颜色",
-  "coupleTimetableColorsSubtitle": "自定义“我的课”“TA的课”“一起上课”的叠加显示颜色",
+  "coupleTimetableColorsSubtitle": "自定义本人课程、对方课程及重合课程的显示颜色",
   "partnerImportRequiresSingleProfile": "请导入单课表备份文件，不支持全量备份",
   "coupleWebdavTitle": "坚果云拉取",
-  "coupleWebdavSubtitle": "登录对方的坚果云账号即可获取其课表，与“云同步”账号互不影响",
+  "coupleWebdavSubtitle": "登录对方坚果云账号获取课表，与个人云同步互不影响",
   "coupleWebdavNotConnected": "尚未连接坚果云",
   "coupleWebdavConnectedAs": "已连接：{username}",
   "@coupleWebdavConnectedAs": {
@@ -169,7 +169,7 @@
   "coupleWebdavDisconnect": "断开连接",
   "coupleWebdavPullNow": "立即拉取对方课表",
   "coupleWebdavUploadForPartner": "上传我的课表到坚果云",
-  "coupleWebdavLoginSheetTitle": "连接坚果云（情侣课表）",
+  "coupleWebdavLoginSheetTitle": "连接坚果云情侣课表",
   "coupleWebdavLoginSheetSubtitle": "请使用坚果云应用专用密码，对方需先将课表上传到约定路径",
   "coupleWebdavConfirmConnect": "连接并拉取",
   "coupleWebdavMySlotLabel": "本机槽位",
@@ -205,7 +205,7 @@
   "cloudSyncModeAuto": "自动同步",
   "cloudSyncModeManual": "手动同步",
   "cloudSyncAccountTitle": "账号配置",
-  "cloudSyncAccountSubtitle": "请使用坚果云应用专用密码（非登录密码），快照含仓库记住的学校账号",
+  "cloudSyncAccountSubtitle": "请使用坚果云应用专用密码，快照包含已保存的教务账号",
   "cloudSyncUsernameLabel": "邮箱 / 用户名",
   "cloudSyncUsernameHint": "坚果云注册邮箱",
   "cloudSyncPasswordLabel": "应用专用密码",
@@ -263,7 +263,7 @@
   "cloudSyncUseRemoteAction": "使用云端",
   "cloudSyncKeepLocalAction": "保留本机",
   "cloudSyncConflictFirstSyncTitle": "本机与云端数据不一致",
-  "cloudSyncConflictFirstSyncBody": "云端已有数据，与本机不一致。选“保留本机”会上传本机数据覆盖云端；选“使用云端”会下载云端数据替换本机。",
+  "cloudSyncConflictFirstSyncBody": "云端与本机数据不一致。保留本机将上传并覆盖云端，使用云端将下载并覆盖本机。",
   "cloudSyncKeepLocalBackupAction": "以本机为准备份",
   "cloudSyncAccountSectionTitle": "云账号",
   "cloudSyncNotConnectedHint": "连接坚果云后，可在多设备间同步课表与导入数据",
@@ -294,7 +294,7 @@
   "cloudBackupSourceManual": "手动备份",
   "cloudBackupDefaultDeviceLabel": "本机",
   "cloudBackupDeviceLabelTitle": "设备名称",
-  "cloudBackupDeviceLabelHint": "在备份列表中显示，例如“我的手机”",
+  "cloudBackupDeviceLabelHint": "在备份列表中显示的设备名称，例如 我的手机",
   "cloudBackupSummary": "{profileCount} 个课表 · {courseCount} 门课程",
   "@cloudBackupSummary": {
     "placeholders": {
@@ -373,7 +373,7 @@
   "lanEditCopyAddress": "复制地址",
   "lanEditCopied": "地址已复制",
   "lanEditHotspotHint": "如果宿舍 WiFi 无法访问，请尝试用手机开热点，再让电脑连接该热点",
-  "lanEditQrHint": "电脑浏览器扫描上方二维码可打开控制台（链接已含 PIN，需同一局域网）",
+  "lanEditQrHint": "电脑扫描二维码打开控制台，需处于同一局域网",
   "lanEditStartFailed": "启动失败",
   "lanEditConnectedClientsLabel": "已连接",
   "lanEditConnectedClientsNone": "暂无",
@@ -421,15 +421,19 @@
   "courseRecolorTileTitle": "课表重新配色",
   "courseRecolorTileSubtitle": "不用重新导入，随时一键给全部课程换套颜色",
   "courseRecolorSheetTitle": "课表重新配色",
-  "courseRecolorSheetDescription": "每次“换一批”都会给全部课程刷一套随机颜色；不满意可以切回上一套，或回到导入时的原色。",
+  "courseRecolorSheetDescription": "为全部课程生成一套配色。可随时撤销回上一套配色，或恢复初始颜色。",
   "courseRecolorNewBatchButton": "换一批颜色",
   "courseRecolorPrevious": "上一套",
   "courseRecolorNext": "下一套",
   "courseRecolorSchemePosition": "第 {index}/{total} 套",
   "@courseRecolorSchemePosition": {
     "placeholders": {
-      "index": { "type": "int" },
-      "total": { "type": "int" }
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "courseRecolorNoCoursesToast": "暂无课程，先导入或添加课程再换颜色",
@@ -450,10 +454,10 @@
   "importMethodSpreadsheetFooter": "支持 .csv 与 .xlsx，可下载官方模板填写后选择文件导入",
   "spreadsheetImportTitle": "表格导入",
   "spreadsheetScenarioIntro": "轻屿模板按表头识别列：必填列是课程名、星期、开始节、结束节和周次，其余列可选。模板可整体下载，也可以只留必要列导入；WakeUp 的 7 列格式同样兼容。",
-  "spreadsheetStep1Subtitle": "下载完整模板填写，或只保留必填列与上课周（或开始周+结束周）做最小导入",
+  "spreadsheetStep1Subtitle": "下载完整模板填写，或仅填写必填列与上课周导入",
   "spreadsheetStep2Subtitle": "填写完成后另存为 .csv 或直接保留 .xlsx",
   "spreadsheetStep3Subtitle": "选择文件导入；如有识别提醒会先展示，再选择追加或替换",
-  "spreadsheetSupportedFilesSuffix": "支持 .csv 与 .xlsx（仅读取第一个工作表）",
+  "spreadsheetSupportedFilesSuffix": "支持 .csv 与 .xlsx，仅读取首个工作表",
   "chooseSpreadsheetFileAction": "选择表格文件",
   "downloadSpreadsheetTemplateAction": "下载轻屿课表模板",
   "spreadsheetImportWarningsTitle": "导入提醒",
@@ -472,11 +476,11 @@
     }
   },
   "icsStep1Subtitle": "先在其他课表应用里导出 .ics 日历文件",
-  "icsStep2Subtitle": "回到这里选择文件，可选“追加导入”或“替换现有”",
+  "icsStep2Subtitle": "在此选择文件，可追加导入或替换现有课程",
   "icsStep3Subtitle": "导入前还会让你确认开学日期，以及课表第 1 周对应校历第几周",
   "supportedFilesTitle": "支持的文件",
   "supportedFilesSuffix": "文件后缀必须是 .ics",
-  "supportedFilesImageHint": "如果你手里只有截图，不要走这里，请返回上一页选择“识图导入”",
+  "supportedFilesImageHint": "课表截图请返回上一页使用识图导入",
   "chooseIcsFileAction": "选择 .ics 文件",
   "timetableAppName": "轻屿课表",
   "switchProfileHint": "点击切换课表",
@@ -583,7 +587,7 @@
   },
   "clearCurrentTimetableTitle": "清空当前课表",
   "clearFailed": "清空失败，课表内容没有变化",
-  "clearCurrentTimetableMessage": "确定清空“{name}”的全部课程吗？课表设置会保留",
+  "clearCurrentTimetableMessage": "确定清空 {name} 的全部课程？课表设置将保留",
   "@clearCurrentTimetableMessage": {
     "placeholders": {
       "name": {
@@ -602,7 +606,7 @@
   },
   "noCoursesInCurrentProfile": "当前课表已经没有课程",
   "deleteTimetableTitle": "删除课表",
-  "deleteTimetableMessage": "确定删除“{name}”吗？",
+  "deleteTimetableMessage": "确定删除课表 {name}？",
   "@deleteTimetableMessage": {
     "placeholders": {
       "name": {
@@ -636,7 +640,7 @@
       }
     }
   },
-  "qrTransferSendHint": "请对方打开“扫码接收”，将摄像头对准此屏幕，保持到接收完成",
+  "qrTransferSendHint": "请对方打开扫码接收并对准屏幕，保持直到传输完成",
   "qrTransferStop": "停止发送",
   "qrTransferScanTitle": "扫码接收",
   "qrTransferScanHint": "将摄像头对准对方手机屏幕，保持稳定，等待进度完成",
@@ -783,12 +787,12 @@
   "migrationSafeTitle": "别担心，这不是数据丢失",
   "migrationSafeSubtitle": "我们更换了应用包名，所以桌面上会暂时出现两个应用图标，这是正常现象，旧数据仍在旧版应用里，请先去旧版备份，再回到新版导入",
   "migrationStep1Title": "打开旧版应用",
-  "migrationStep1Subtitle": "进入“数据备份与迁移”页面后，请点“导出全部数据”，不要点“导出当前课表”，也不要先卸载旧版",
+  "migrationStep1Subtitle": "进入数据备份与迁移页面，选择导出全部数据。在新版恢复完成前请勿卸载旧版。",
   "migrationStep2Title": "保存备份文件",
-  "migrationStep2Subtitle": "旧版导出后会弹出系统分享面板，优先选择“保存到文件”，建议存到“下载 / Download”文件夹",
+  "migrationStep2Subtitle": "旧版导出后在系统面板选择保存到文件，建议存入系统下载目录",
   "migrationStep3Title": "回到当前版本导入",
-  "migrationStep3Subtitle": "回到新版后，通过系统文件选择器到“下载 / Download”文件夹选中 .mikcb 备份文件即可恢复，确认新版数据正常后，再卸载旧版应用",
-  "migrationNoSaveToFilesTitle": "如果没有“保存到文件”",
+  "migrationStep3Subtitle": "在新版中选择导出的 .mikcb 备份文件即可恢复。确认数据无误后再卸载旧版。",
+  "migrationNoSaveToFilesTitle": "未找到保存到文件选项",
   "migrationNoSaveToFilesSubtitle": "可以先分享到微信任意一个聊天，然后在微信里点开这个备份文件并保存，保存后通常会出现在 Download / WeiXin 文件夹里，再回到新版选择这个 .mikcb 文件导入",
   "openingOldApp": "正在打开旧版……",
   "openOldAppForBackup": "打开旧版去备份",
@@ -958,7 +962,7 @@
     }
   },
   "confirmDeleteTitle": "确认删除",
-  "confirmDeleteCourseMessage": "确定要删除课程“{name}”吗？",
+  "confirmDeleteCourseMessage": "确定删除课程 {name}？",
   "@confirmDeleteCourseMessage": {
     "placeholders": {
       "name": {
@@ -969,7 +973,7 @@
   "currentScheduleTitle": "当前排课",
   "currentScheduleSubtitle": "这里的星期、节次、教室、周次和单双周只影响当前这一条排课",
   "timeSchemeLabel": "时间模板",
-  "followCurrentTimetableWithName": "跟随当前课表（{name}）",
+  "followCurrentTimetableWithName": "跟随当前课表 {name}",
   "@followCurrentTimetableWithName": {
     "placeholders": {
       "name": {
@@ -1091,9 +1095,9 @@
   "aboutPositioningBullet4": "支持多课表、时间模板、主题色和卡片样式自定义",
   "aboutImportMigrationTitle": "导入与迁移",
   "aboutImportMigrationSubtitle": "当前导入方式、备份恢复和迁移建议",
-  "aboutImportMigrationBullet1": "当前版本已经支持适配学校的教务系统网页登录导入；进入“导入课程 > 教务系统导入”后选择学校和适配器即可",
+  "aboutImportMigrationBullet1": "支持教务系统网页登录导入。进入 导入课程 > 教务系统导入 选择学校即可。",
   "aboutImportMigrationBullet2": "如果你的学校暂时还没适配，仍然可以先在其他课表应用里导入课程，再导出为日历格式，然后在本应用导入",
-  "aboutImportMigrationBullet3": "如果其他人已经在用本应用，也可以直接让对方导出完整备份文件，你在“数据备份与迁移”里导入即可直接恢复",
+  "aboutImportMigrationBullet3": "若已有他人使用，可导出完整备份文件，在 数据备份与迁移 中导入恢复。",
   "aboutImportMigrationBullet4": "如果你会抓包、网页调试或 JavaScript，也欢迎去 qingyu_warehouse 参与教务适配补充",
   "aboutContributorsTitle": "代码贡献者",
   "aboutContributorsSubtitle": "开发人员与教务导入适配者名单",
@@ -1108,7 +1112,7 @@
   "aboutOpenSourceLicensesExtraSectionTitle": "许可说明",
   "aboutOpenSourceLicensesExtraUmeng": "友盟统计等分析服务仅在你同意隐私政策后启用，适用友盟自身的用户协议与隐私政策。",
   "aboutOpenSourceLicensesExtraNote": "",
-  "aboutOpenSourceLicensesPackagesSectionTitle": "开源组件（{count}）",
+  "aboutOpenSourceLicensesPackagesSectionTitle": "开源组件 {count}",
   "@aboutOpenSourceLicensesPackagesSectionTitle": {
     "placeholders": {
       "count": {
@@ -1147,7 +1151,7 @@
   "shareTimeSchemeTitle": "分享时间模板",
   "shareTimeSchemeViaSystem": "系统分享文件",
   "shareTimeSchemeViaQr": "二维码分享",
-  "timeSchemeShareText": "这是轻屿课表的时间模板（{name}），导入后即可使用",
+  "timeSchemeShareText": "轻屿课表时间模板 {name}，导入后即可使用",
   "@timeSchemeShareText": {
     "placeholders": {
       "name": {
@@ -1189,7 +1193,7 @@
     }
   },
   "deleteTimeSchemeTitle": "删除时间模板",
-  "deleteTimeSchemeMessage": "确定删除“{name}”吗？删除后无法恢复",
+  "deleteTimeSchemeMessage": "确定删除作息 {name}？删除后无法恢复",
   "@deleteTimeSchemeMessage": {
     "placeholders": {
       "name": {
@@ -1259,7 +1263,7 @@
       }
     }
   },
-  "timeSchemeUsageTitle": "“{name}”的使用情况",
+  "timeSchemeUsageTitle": "{name} 的使用情况",
   "@timeSchemeUsageTitle": {
     "placeholders": {
       "name": {
@@ -1296,7 +1300,7 @@
   "quickGenerateTimeSchemeTitle": "快捷生成课表时间",
   "addBreakRuleAction": "新增大课间规则",
   "afterSectionLabel": "第几节后",
-  "breakDurationMinutesLabel": "休息多久（分）",
+  "breakDurationMinutesLabel": "休息时长 分钟",
   "fillNumbersValidationMessage": "请把节数和时长填写为数字",
   "timeSchemeEditorActiveAndCoursesHint": "当前课表和部分课程正在使用这套时间模板，保存后会同步更新所有相关课表和课程",
   "timeSchemeEditorActiveHint": "当前课表正在使用这套时间模板，保存后会同步更新所有使用它的课表",
@@ -1341,8 +1345,8 @@
   "afternoonFirstSectionTimeLabel": "下午第一节时间",
   "eveningSectionCountLabel": "晚上几节",
   "eveningFirstSectionTimeLabel": "晚上第一节时间",
-  "classDurationMinutesLabel": "单节课时长（分钟）",
-  "smallBreakDurationMinutesLabel": "小课间时长（分钟）",
+  "classDurationMinutesLabel": "单节课时长 分钟",
+  "smallBreakDurationMinutesLabel": "小课间时长 分钟",
   "largeBreakRulesTitle": "大课间规则",
   "noLargeBreakRulesHint": "未设置大课间规则，将全部使用小课间时长",
   "deleteRuleTooltip": "删除规则",
@@ -1434,15 +1438,15 @@
   "countdownFormatLabel": "倒计时格式",
   "countdownFormatHelp": "纯分钟样式按分钟刷新，带秒样式按秒刷新",
   "showStageTextTitle": "显示阶段状态文案",
-  "showStageTextSubtitle": "关闭倒计时后，可继续显示“即将上课 / 上课中 / 下课提醒”",
-  "hidePrefixTextTitle": "隐藏“距上课 / 距下课”前缀",
-  "hidePrefixTextSubtitle": "开启倒计时时生效，仅保留倒计时数字（如隐藏“距上课”前缀）",
-  "hidePrefixTextInactiveHint": "当前未生效：需先开启上方“显示倒计时”",
+  "showStageTextSubtitle": "关闭倒计时后，仍可显示即将上课、上课中或下课提醒",
+  "hidePrefixTextTitle": "隐藏距上课与距下课前缀",
+  "hidePrefixTextSubtitle": "开启倒计时时生效，仅保留倒计时数字，隐藏距上课等前缀",
+  "hidePrefixTextInactiveHint": "未生效：需先开启显示倒计时",
   "showStageTextInactiveHint": "当前未生效：已由倒计时承载；关闭上方倒计时后生效",
   "courseNameDuplicatedHint": "左侧已选展示课程名，可关闭避免左右重复",
   "locationDuplicatedHint": "左侧已选展示地点，可关闭避免左右重复",
   "liveIslandPreviewTitle": "超级岛预览",
-  "liveIslandPreviewFollowBadge": "正在跟随“课前提醒显示”设置，调整课前提醒即可生效",
+  "liveIslandPreviewFollowBadge": "跟随课前提醒设置，修改课前提醒即生效",
   "liveIslandPreviewStageBeforeClass": "即将上课",
   "liveIslandPreviewStageInClass": "上课中",
   "liveIslandPreviewStageBeforeEnd": "下课提醒",
@@ -1496,7 +1500,7 @@
   "liveMiuiLabelContentLabel": "左侧文字内容",
   "liveMiuiLabelStyleLabel": "左侧图标样式",
   "liveMiuiLabelLogoTitle": "左侧图标 Logo",
-  "liveMiuiLabelLogoSubtitle": "仅在“图标+文字”样式下生效；未选择时继续使用应用图标",
+  "liveMiuiLabelLogoSubtitle": "仅在图标加文字样式下生效，未设置时使用应用图标",
   "liveMiuiLabelLogoCornerRadiusLabel": "左侧图标圆角 {value}",
   "@liveMiuiLabelLogoCornerRadiusLabel": {
     "placeholders": {
@@ -1551,7 +1555,7 @@
   "keepAliveServiceDisabledSubtitle": "当前未开启，可进入系统无障碍设置手动打开轻屿课表后台保活服务",
   "goEnableAction": "去开启",
   "keepAliveConfirmTitle": "开启后台保活服务",
-  "keepAliveConfirmBody": "该服务仅用于在后台刷新桌面小组件与重排课程提醒，不会读取屏幕内容，也不会代替你执行任何点击操作。开启需要在系统设置中授予“无障碍”权限，可随时关闭。",
+  "keepAliveConfirmBody": "用于后台更新桌面小组件和课程提醒，不会读取屏幕内容或代为点击。需要系统无障碍权限，可随时关闭。",
   "keepAliveConfirmGoAction": "去开启",
   "layoutEntryTitle": "布局与节次",
   "layoutEntrySubtitle": "节次时间、行高、时间列、周末显示与卡片布局",
@@ -1630,8 +1634,8 @@
     }
   },
   "diagnosticsNoMatchingTitle": "当前筛选下没有日志",
-  "diagnosticsNoMatchingSubtitle": "可以切换到“全部”，或改看原文继续排查",
-  "diagnosticsLoadEarlierLabel": "加载更早日志（还有 {count} 条）",
+  "diagnosticsNoMatchingSubtitle": "可切换到全部日志或查看原文排查",
+  "diagnosticsLoadEarlierLabel": "加载更早日志 剩余 {count} 条",
   "@diagnosticsLoadEarlierLabel": {
     "description": "日志查看器分页加载：在列表边缘加载更早日志的入口行文案，count 为尚未显示的更早日志条数",
     "placeholders": {
@@ -1710,7 +1714,7 @@
   "sharedInfoTitle": "共享信息",
   "sharedInfoHint": "查看共享字段说明",
   "sharedInfoSheetItemCourseName": "课程名称：课程唯一标识，名称相同的多条排课视为同一课程；更改名称将形成独立课程记录",
-  "sharedInfoSheetItemShortName": "课程简称：用于超级岛等场景的简短展示，需手动填写，系统不会自动生成，启用“优先显示课程简称”后生效；建议控制在 3 个汉字以内",
+  "sharedInfoSheetItemShortName": "课程简称：用于超级岛等精简展示，开启优先显示简称后生效，建议 3 字以内",
   "sharedInfoSheetItemSharedSync": "共享同步：课程简称、颜色、性质、简介等字段会同步给同名课程的其他排课记录",
   "reuseExistingCourseLabel": "沿用已有课程",
   "reuseExistingCourseHelper": "选一个已有课程，自动带入课程名、教师和其他共享信息",
@@ -1720,13 +1724,13 @@
   "courseNameHelper": "作为课程唯一标识；名称相同的多条排课将归为同一课程，请填写完整名称，请勿为界面显示而缩写",
   "pleaseEnterCourseName": "请输入课程名称",
   "courseShortNameOptional": "课程简称",
-  "courseShortNameHelper": "建议填写，用于超级岛等场景的简短展示，简称不会自动生成；启用“优先显示课程简称”后生效，建议控制在 3 个汉字以内",
+  "courseShortNameHelper": "用于超级岛等精简展示，开启优先显示简称后生效，建议 3 字以内",
   "courseShortNameAutoFillAction": "取前两字",
   "teacherLabel": "授课教师",
   "courseNatureLabel": "课程性质",
-  "courseDescriptionOptional": "课程简介 （可选）",
+  "courseDescriptionOptional": "课程简介 可选",
   "currentScheduleHint": "这里的星期、节次、教室、周次和单双周只影响当前这一条排课",
-  "followProfileTimeScheme": "跟随当前课表（{name}）",
+  "followProfileTimeScheme": "跟随当前课表 {name}",
   "@followProfileTimeScheme": {
     "placeholders": {
       "name": {
@@ -1799,7 +1803,7 @@
       }
     }
   },
-  "timeSchemeUsageReference": "{profileName} · {courseName}（周 {weekday} {startSection}～{endSection} 节，{usageType}）",
+  "timeSchemeUsageReference": "{profileName} · {courseName} 周 {weekday} 第 {startSection} 至 {endSection} 节 {usageType}",
   "@timeSchemeUsageReference": {
     "placeholders": {
       "profileName": {
@@ -1914,7 +1918,7 @@
   "homePageBackgroundFillColor": "纯色",
   "homePageBackgroundFillImage": "图片",
   "homePageBackgroundImageTitle": "背景图",
-  "homePageBackgroundImageSubtitle": "在“图片”模式下，作用于下方勾选的显示区域",
+  "homePageBackgroundImageSubtitle": "在图片模式下作用于下方勾选区域",
   "homePageWallpaperTitle": "背景图片",
   "wallpaperSheetTabPicker": "壁纸",
   "wallpaperSheetTabSettings": "设置",
@@ -1960,16 +1964,28 @@
   "@bingWallpaperDownloadStatus": {
     "description": "下载失败提示，附上 HTTP 状态码。占位符只在服务端回了响应时才有值；断网等情况用 bingWallpaperDownloadFailed 那条。",
     "placeholders": {
-      "status": { "type": "int", "example": "404" }
+      "status": {
+        "type": "int",
+        "example": "404"
+      }
     }
   },
-  "bingWallpaperDownloadStatus": "这张壁纸没能下载成功（{status}）",
+  "bingWallpaperDownloadStatus": "壁纸下载失败 {status}",
   "@bingWallpaperResolutionHint": {
     "description": "画质档位的副标题：报该档的实测像素与单张体积。占位符刻意用「像素宽×像素高」而不是「几倍高清」——Bing 三档比例并不一致（16:10 与 16:9 混着）。",
     "placeholders": {
-      "width": { "type": "int", "example": "1920" },
-      "height": { "type": "int", "example": "1080" },
-      "size": { "type": "String", "example": "325 KB" }
+      "width": {
+        "type": "int",
+        "example": "1920"
+      },
+      "height": {
+        "type": "int",
+        "example": "1080"
+      },
+      "size": {
+        "type": "String",
+        "example": "325 KB"
+      }
     }
   },
   "bingWallpaperResolutionTitle": "下载画质",
@@ -1979,10 +1995,13 @@
   "@bingWallpaperResolutionFallback": {
     "description": "所选画质当天不可用、已退到默认档时的说明。占位符是实际拿到的那一档的文案。",
     "placeholders": {
-      "label": { "type": "String", "example": "高清" }
+      "label": {
+        "type": "String",
+        "example": "高清"
+      }
     }
   },
-  "bingWallpaperResolutionFallback": "Bing 当天没提供这一档，已改用「{label}」",
+  "bingWallpaperResolutionFallback": "未提供所选画质，已切换为 {label}",
   "bingWallpaperResolutionHint": "{width}×{height}，每张约 {size}",
   "wallpaperDailySourceTitle": "图库来源",
   "wallpaperDailySourceBing": "每日更新",
@@ -1995,8 +2014,14 @@
   "bingWallpaperDateMonthDay": "{month} 月 {day} 日",
   "@bingWallpaperDateMonthDay": {
     "placeholders": {
-      "month": { "type": "int", "example": "10" },
-      "day": { "type": "int", "example": "5" }
+      "month": {
+        "type": "int",
+        "example": "10"
+      },
+      "day": {
+        "type": "int",
+        "example": "5"
+      }
     }
   },
   "bingWallpaperAutoApplyTitle": "每天自动更换",
@@ -2006,7 +2031,10 @@
   "@bingWallpaperAutoApplyStale": {
     "description": "自动换时 Bing 还没放出当天那张，于是改用它现有最新一张的提示。占位符是那张图**自己**的日期标签（如「昨天」「10 月 5 日」），如实说明换的是哪一天，避免用户以为程序出错。",
     "placeholders": {
-      "date": { "type": "String", "example": "昨天" }
+      "date": {
+        "type": "String",
+        "example": "昨天"
+      }
     }
   },
   "bingWallpaperAutoApplyStale": "Bing 还没放出今天的图，先用 {date} 那张顶一下",
@@ -2018,7 +2046,7 @@
   "liveDisplaySummaryShortName": "简称",
   "liveDisplaySummaryCourseName": "课程名",
   "liveDisplaySummaryLocation": "地点",
-  "liveDisplaySummaryCountdown": "倒计时（{style}）",
+  "liveDisplaySummaryCountdown": "倒计时 {style}",
   "@liveDisplaySummaryCountdown": {
     "placeholders": {
       "style": {
@@ -2084,13 +2112,13 @@
   "guideSetCourseShortNameAction": "去设置课程简称",
   "guideImportMethodsTitle": "课表导入方式",
   "guideImportMethodsSubtitle": "当前版本已经支持部分学校的教务系统网页登录导入；如果你的学校还没适配，也还有其他迁移方式",
-  "guideImportMethodStep1": "优先进入“导入课程 > 教务系统导入”，选择学校和适配器后，直接在应用内打开教务网页完成导入。",
+  "guideImportMethodStep1": "建议进入 导入课程 > 教务系统导入，选择学校并在应用内登录完成导入。",
   "guideImportMethodStep2": "如果你的学校暂时没有适配，可以先在其他课表应用里导入教务系统课程，再导出日历格式，最后回到本应用导入。",
   "guideImportMethodStep3": "如果别人已经在用本应用，也可以让对方导出完整备份文件，你直接导入就能恢复课程和设置。",
   "guideImportMethodExtra": "如果你会抓包、网页调试或 JavaScript，也欢迎参与学校教务适配补充，让更多学校能直接导入。",
   "guideFinalTipsTitle": "最后再看这 3 条",
   "guideFinalTip1": "1. HyperOS 3.0.300 及以上才支持超级岛；如果系统版本不够，应用仍可正常发普通提醒。",
-  "guideFinalTip2": "2. 先在设置页调整“上课前弹出”和“课中与临近下课提醒”的阈值。",
+  "guideFinalTip2": "2. 可在设置中调整上课前弹出与课中提醒时间。",
   "guideFinalTip3": "3. 完成系统权限设置后，再用测试通知验证；如果超级岛还是偶尔消失，优先检查自启动和省电策略。",
   "guidePrivacyHelperRequireConsent": "你勾选同意后，代表你已阅读并同意上述友盟相关说明、隐私内容与免责提示",
   "guidePrivacyHelperViewOnly": "这里保留与首次启动一致的隐私、第三方 SDK 与免责说明，方便你随时查看；当前页面不需要再次勾选同意",
@@ -2106,9 +2134,9 @@
   "guideUmengPrivacyLink": "友盟隐私政策：https://www.umeng.com/page/policy",
   "liveDiagnosticsUnavailable": "当前还没有可查看的应用日志",
   "liveDiagnosticsViewerTitle": "超级岛日志",
-  "liveDiagnosticsShareText": "这是轻屿课表导出的超级岛相关日志，可用于排查“超级岛没有弹出”等问题",
+  "liveDiagnosticsShareText": "轻屿课表超级岛运行日志，用于排查不显示等问题",
   "liveDiagnosticsShareSubject": "轻屿课表 - 超级岛日志",
-  "liveDiagnosticsSnapshotShareText": "这是轻屿课表当前测试诊断页导出的超级岛状态快照，可用于排查“超级岛没有弹出”等问题",
+  "liveDiagnosticsSnapshotShareText": "轻屿课表超级岛状态快照，用于排查不显示等问题",
   "liveDiagnosticsSnapshotShareSubject": "轻屿课表 - 超级岛状态快照",
   "liveDiagnosticsNothingToExport": "当前没有可导出的日志文件，也没有可导出的状态快照",
   "liveDiagnosticsCleared": "已清空应用日志",
@@ -2176,14 +2204,14 @@
   "liveTestingCrashSoon": "即将触发友盟 U-APM 测试崩溃，请重新打开应用查看后台是否收到上报",
   "liveTestingAnrSoon": "即将触发约 30 秒主线程卡死，请脱离 flutter run 测试，并在卡死后重新打开应用查看友盟后台",
   "liveTestingNoCourseAvailable": "当前没有可测试的课程",
-  "liveTestingPresetArmedButHidden": "已注入自检预设课程，但超级岛此刻不会弹出——若“上课前提醒”已关闭，岛会在课程真正开始后（约 1 分钟后）才出现",
-  "liveTestingHolidayBlocked": "当前在假期范围内，超级岛在假期期间不显示；如需测试，请先在“课表设置 → 节假日标记”中移除覆盖今天的假期",
-  "liveTestingNotIslandHoliday": "当前在假期范围内——超级岛在假期期间不显示，可在“课表设置 → 节假日标记”中管理假期",
+  "liveTestingPresetArmedButHidden": "已注入测试课程，若课前提醒已关闭，将在课程开始后显示",
+  "liveTestingHolidayBlocked": "当前处于假期范围，超级岛在假期期间不显示。如需测试，请在 课表设置 节假日标记 中调整",
+  "liveTestingNotIslandHoliday": "当前处于假期范围，超级岛在假期期间不显示，可在 课表设置 节假日标记 中管理",
   "liveTestingCourseTestAction": "选课测试",
   "liveTestingCourseTestPickerTitle": "选择要测试的课程",
   "liveTestingCourseTestStageTitle": "选择要预览的阶段",
-  "liveTestingCourseTestStageBeforeClass": "课前倒计时（岛保持约 3 分钟）",
-  "liveTestingCourseTestStageDuringClass": "上课中（岛保持约 4 分钟）",
+  "liveTestingCourseTestStageBeforeClass": "课前倒计时 保持约 3 分钟",
+  "liveTestingCourseTestStageDuringClass": "上课中 保持约 4 分钟",
   "liveTestingCourseTestActiveChip": "选课测试中 · {course}",
   "@liveTestingCourseTestActiveChip": {
     "placeholders": {
@@ -2219,8 +2247,8 @@
   "liveStagePreviewStageBeforeClass": "上课前",
   "liveStagePreviewStageDuringClass": "课中",
   "liveTestingInFlight": "测试进行中，请勿重复点击，请稍后再试",
-  "liveTestingProductionHomeHint": "已走正式超级岛选课路径。请按 Home 键回到桌面查看（停留在应用内时系统通常不会弹出）",
-  "liveTestingPresetFallbackNote": "（未检测到可测试的真实课程，已改用自检预设课程，不会写入课表）",
+  "liveTestingProductionHomeHint": "已触发超级岛更新。请返回桌面查看，应用处于前台时系统不弹出。",
+  "liveTestingPresetFallbackNote": "未检测到有效课程，使用自检预设课程，不写入课表",
   "liveTestingTestCourseNote": "此处显示备注，可以在课程编辑页设置",
   "liveTestingNotificationSent": "测试通知已发送",
   "sendFailedWithError": "发送失败：{error}",
@@ -2287,7 +2315,7 @@
   "homeWidgetCornerRadiusTitle": "卡片圆角",
   "homeWidgetDescriptionTitle": "说明",
   "homeWidgetDescriptionText": "小组件目前优先展示今日课程，无课状态会保持完整卡片，不会出现空白；如果你切换课表或修改样式，桌面小组件也会跟着刷新",
-  "homeWidgetPinRequested": "已发起“{label}”添加请求，请在系统弹窗里确认并放到桌面",
+  "homeWidgetPinRequested": "已发起 {label} 添加请求，请在系统弹窗中确认添加",
   "@homeWidgetPinRequested": {
     "placeholders": {
       "label": {
@@ -2295,7 +2323,7 @@
       }
     }
   },
-  "homeWidgetPinUnsupportedManual": "当前系统桌面不支持应用内直接添加小组件，请长按桌面 → 小组件 → 轻屿课表，再手动添加“{label}”",
+  "homeWidgetPinUnsupportedManual": "系统桌面不支持应用内添加组件，请长按桌面通过小组件菜单添加 {label}",
   "@homeWidgetPinUnsupportedManual": {
     "placeholders": {
       "label": {
@@ -2304,7 +2332,7 @@
     }
   },
   "homeWidgetInvalidType": "小组件类型无效，请稍后重试",
-  "homeWidgetPinFailedManual": "发起添加失败，请长按桌面 → 小组件 → 轻屿课表，再手动添加“{label}”",
+  "homeWidgetPinFailedManual": "添加失败，请长按桌面通过小组件菜单添加 {label}",
   "@homeWidgetPinFailedManual": {
     "placeholders": {
       "label": {
@@ -2319,10 +2347,10 @@
   "homeWidgetBindingSaveFailed": "保存卡片绑定失败，请稍后重试",
   "homeWidgetBindingMissingToast": "这张卡片绑定的课表已失效，已按普通方式打开",
   "homeWidgetExactAlarmBannerTitle": "精确闹钟权限未授予",
-  "homeWidgetExactAlarmBannerText": "未授予“闹钟和提醒”权限时，课程边界只能非精确刷新，桌面卡片可能延迟更新，建议授权以保证按课程时间精确刷新",
+  "homeWidgetExactAlarmBannerText": "缺少闹钟和提醒权限，桌面卡片刷新可能延迟，建议开启权限",
   "homeWidgetExactAlarmGrantAction": "去授权",
-  "homeWidgetExactAlarmOpenFailed": "打开授权页失败，请到系统设置中手动开启“闹钟和提醒”权限",
-  "homeWidgetExactAlarmFallbackHint": "已在系统设置中打开应用信息，请在其中开启“闹钟和提醒”权限",
+  "homeWidgetExactAlarmOpenFailed": "打开授权页失败，请前往系统设置开启闹钟和提醒权限",
+  "homeWidgetExactAlarmFallbackHint": "已打开应用设置，请开启闹钟和提醒权限",
   "layoutSettingsTitle": "布局与节次",
   "layoutDensityTitle": "课表密度",
   "layoutAutoFitHeightTitle": "自动充满屏幕高度",
@@ -2340,7 +2368,7 @@
     }
   },
   "pageTransitionSpeedTitle": "页面转场速度",
-  "pageTransitionSpeedSubtitle": "数值越大动画越快；实际速度会叠加系统“过渡动画缩放”",
+  "pageTransitionSpeedSubtitle": "数值越大动画越快，实际速度受系统过渡动画缩放影响",
   "pageTransitionSpeedDurationHint": "约 {milliseconds} 毫秒",
   "@pageTransitionSpeedDurationHint": {
     "placeholders": {
@@ -2351,7 +2379,7 @@
   },
   "layoutTimeColumnDisplayLabel": "首页时间列显示",
   "layoutTimeColumnWidthLabel": "时间栏宽度",
-  "layoutBackToCurrentWeekButtonStyleLabel": "“回本周”按钮样式",
+  "layoutBackToCurrentWeekButtonStyleLabel": "回到本周按钮样式",
   "layoutBackToCurrentWeekButtonStyleHelper": "默认保持现在的内嵌样式；也可以改成周视图右下角的小型悬浮按钮",
   "layoutBackToCurrentWeekButtonStyleInline": "时间栏内嵌",
   "layoutBackToCurrentWeekButtonStyleFloating": "右下角悬浮",
@@ -2407,7 +2435,7 @@
   "layoutShowClassroomTitle": "显示教室",
   "layoutShowTimeTitle": "显示时间",
   "layoutShowTimeLabelsTitle": "显示上下课字样",
-  "layoutShowTimeLabelsSubtitle": "关闭后仅显示时间点，不显示“上课”“下课”文字",
+  "layoutShowTimeLabelsSubtitle": "关闭后仅显示时间点，不显示上课和下课字样",
   "layoutShowWeeksTitle": "显示周数",
   "layoutShowWeeksSubtitle": "例如第 1～16 周、单双周",
   "layoutShowDescriptionTitle": "显示课程简介",
@@ -2417,7 +2445,7 @@
   "layoutVerticalAlignLabel": "垂直排版",
   "layoutHorizontalAlignLabel": "水平排版",
   "layoutShowConflictBadgeTitle": "首页显示冲突小胶囊",
-  "layoutShowConflictBadgeSubtitle": "关闭后，首页课表不再对冲突课程显示“冲突”小胶囊",
+  "layoutShowConflictBadgeSubtitle": "关闭后，首页课表不再对冲突课程显示冲突标识",
   "layoutConflictOpacityLabel": "冲突课程透明度 {value}%",
   "@layoutConflictOpacityLabel": {
     "placeholders": {
@@ -2463,7 +2491,7 @@
   "aboutUnreleasedLabel": "未发布",
   "aboutVersionChannelLabel": "版本通道",
   "aboutPrereleaseChannel": "测试版",
-  "aboutUpdateAvailableHint": "你现在只需要点下面的“立即下载”即可，测速、镜像和测试版都已经收进后面的高级选项里",
+  "aboutUpdateAvailableHint": "可直接点击立即下载。线路切换与高级选项已整合至下方。",
   "aboutUpdateNoUpdateHint": "当前版本已经可正常使用；如果你要体验测试版，可以在后面的高级选项里打开测试版检测",
   "aboutUpdatedAt": "更新时间：{time}",
   "@aboutUpdatedAt": {
@@ -2476,15 +2504,15 @@
   "aboutUpdateNowTitle": "立即更新",
   "aboutUpdateNowAndroidSubtitle": "下载慢或失败时，再用下方高级选项更换线路",
   "aboutUpdateNowOtherSubtitle": "当前平台会直接打开下载页面，不会在应用内安装",
-  "aboutMirrorDownloadHint": "默认优先国内线路，直接点“立即下载”即可",
-  "aboutOriginalDownloadHint": "当前会优先使用国际源下载，如果下载慢或打不开，建议先切回“国内下载”",
+  "aboutMirrorDownloadHint": "默认优先国内线路，可直接下载",
+  "aboutOriginalDownloadHint": "当前优先使用国际线路，如遇较慢可切换至国内线路",
   "aboutUseSystemDownloaderAction": "使用系统下载器下载",
   "aboutOpenReleasePageAction": "打开 Release 页面",
   "aboutDownloadMethodTitle": "下载方式",
   "aboutDownloadMethodSubtitle": "默认推荐国内线路，GitHub 访问稳定时可切换国际源",
   "aboutDownloadMethodMirror": "国内下载",
   "aboutDownloadMethodOriginal": "国际源下载",
-  "aboutMirrorModeHintRecommended": "当前使用国内下载 · {current}，系统最近测速更推荐“{recommended}”，需要时可在后面的高级选项里切换",
+  "aboutMirrorModeHintRecommended": "当前使用国内线路 {current}，推荐使用 {recommended}，可在高级选项中切换",
   "@aboutMirrorModeHintRecommended": {
     "placeholders": {
       "current": {
@@ -2510,7 +2538,7 @@
   "aboutAdvancedOptionsSubtitle": "只有下载慢、要手动切线路、或要检测测试版时再展开",
   "aboutMirrorSectionTitle": "下载线路与镜像",
   "aboutMirrorSectionMirrorHint": "当前使用国内下载，这里可以手动切线路、测速推荐，或填写自定义下载地址",
-  "aboutMirrorSectionOriginalHint": "你现在使用的是国际源下载，下面的线路设置只有在切回“国内下载”后才会生效",
+  "aboutMirrorSectionOriginalHint": "当前使用国际源下载，线路设置需切换至国内源后生效",
   "aboutFillCustomMirrorFirst": "先填写自定义下载地址",
   "aboutCurrentCustomMirrorTitle": "当前自定义下载地址",
   "aboutCurrentMirrorTitle": "当前下载线路地址",
@@ -2528,7 +2556,7 @@
       }
     }
   },
-  "aboutMirrorDisabledHint": "当前没有使用国内下载，所以这里的线路设置暂时不会生效，需要的话，请先在上面的“下载方式”里切回国内下载",
+  "aboutMirrorDisabledHint": "当前未启用国内下载，请先将下载方式切换为国内下载",
   "aboutRecentProbeResultsTitle": "最近测速结果",
   "aboutUnavailable": "不可用",
   "aboutRecommended": "推荐",
@@ -2537,7 +2565,7 @@
   "aboutUpdatePromptTitle": "弹窗提醒",
   "aboutUpdatePromptSubtitle": "发现新版本时在首页自动弹窗，关闭后仅显示红点角标",
   "aboutDiagnosticsTitle": "测试与诊断",
-  "aboutDiagnosticsSubtitle": "只有遇到“超级岛没弹出”或需要给开发者反馈时再展开",
+  "aboutDiagnosticsSubtitle": "用于排查超级岛状态或向开发者反馈问题",
   "aboutRecordDiagnosticsTitle": "记录应用日志",
   "aboutRecordDiagnosticsSubtitle": "开启后本地持续记录运行日志，超级岛日志单独标注",
   "aboutExportDiagnosticsAction": "导出应用日志",
@@ -2547,7 +2575,7 @@
   "aboutLiveDiagnosticsDisabled": "已关闭应用日志记录",
   "aboutNoDiagnosticsExportYet": "还没有可导出的应用日志",
   "aboutProbeNoMirrorFound": "测速完成，但暂时没有发现可用镜像线路",
-  "aboutProbeCurrentFastest": "测速完成，当前线路“{label}”已是最快可用线路",
+  "aboutProbeCurrentFastest": "测速完成，当前线路 {label} 最快",
   "@aboutProbeCurrentFastest": {
     "placeholders": {
       "label": {
@@ -2555,7 +2583,7 @@
       }
     }
   },
-  "aboutProbeRecommendSwitch": "测速完成，推荐切换到“{label}”",
+  "aboutProbeRecommendSwitch": "测速完成，建议切换至 {label}",
   "@aboutProbeRecommendSwitch": {
     "placeholders": {
       "label": {
@@ -2572,7 +2600,7 @@
       }
     }
   },
-  "aboutSwitchPresetAfterError": "{error}，建议切换到“{label}”后重试",
+  "aboutSwitchPresetAfterError": "{error}，建议切换至 {label} 重试",
   "@aboutSwitchPresetAfterError": {
     "placeholders": {
       "error": {
@@ -2612,8 +2640,8 @@
   },
   "aboutMirrorUnknownSizeHint": "镜像源未返回文件总大小，先显示已下载体积",
   "aboutCancelDownloadAction": "取消下载",
-"aboutContinueDownloadAction": "继续下载",
-"aboutDismissDialogAction": "关闭弹窗",
+  "aboutContinueDownloadAction": "继续下载",
+  "aboutDismissDialogAction": "关闭弹窗",
   "aboutContributorsScreenTitle": "代码贡献者",
   "aboutDevelopersTitle": "开发人员",
   "aboutDeveloperMaintainerSubtitle": "轻屿课表开发与维护",
@@ -2639,7 +2667,7 @@
   "aboutParticipateWarehouseTitle": "参与教务适配",
   "aboutParticipateWarehouseSubtitle": "如果你会抓包、网页调试、JavaScript，或者愿意长期维护自己学校的教务系统，欢迎去 qingyu_warehouse 提交新的学校适配与修复",
   "importFileReadFailed": "无法读取所选文件",
-  "importFileTooLarge": "所选文件过大（上限 {size}），请换一个较小的文件",
+  "importFileTooLarge": "文件超出大小上限 {size}，请选择较小的文件",
   "@importFileTooLarge": {
     "placeholders": {
       "size": {
@@ -2649,7 +2677,7 @@
   },
   "importCleartextBlockedHint": "该站点暂不支持 HTTPS 访问且未在明文白名单内，无法在此打开",
   "importReplaceExistingTitle": "导入课程",
-  "importReplaceExistingMessage": "导入 {name} 时，是否替换现有课程？此操作也会清空当前课表上的独立日程（如自习、会议等）。",
+  "importReplaceExistingMessage": "导入 {name} 时是否替换现有课程？此操作将同时清空自习等独立日程。",
   "@importReplaceExistingMessage": {
     "placeholders": {
       "name": {
@@ -2676,7 +2704,7 @@
       }
     }
   },
-  "importCourseRecordsDropped": "其中 {dropped} 门课的数据有问题没能导入（共收到 {imported} 门）",
+  "importCourseRecordsDropped": "共收到 {imported} 门课程，其中 {dropped} 门数据有误未能导入",
   "@importCourseRecordsDropped": {
     "placeholders": {
       "dropped": {
@@ -2756,7 +2784,7 @@
   "aiPasteJsonFirst": "请先粘贴 AI 返回的 JSON",
   "aiParseFailedIncompleteJson": "解析失败，请确认粘贴的是完整 JSON",
   "importAiResultTitle": "导入 AI 解析结果",
-  "importAiReplaceMessage": "是否用当前这份 AI 解析结果替换现有课程？此操作也会清空当前课表上的独立日程（如自习、会议等）。",
+  "importAiReplaceMessage": "是否使用解析结果替换现有课程？此操作将同时清空自习等独立日程。",
   "importConfirmSemesterMappingSubtitleAi": "请选择学校校历的开学日期，再确认课表里的第 1 周对应校历第几周，如果学校第一周没课，这里通常要改成第 2 周",
   "aiWarningExtraSuffix": "，另有 {count} 条识别提醒",
   "@aiWarningExtraSuffix": {
@@ -2767,7 +2795,7 @@
     }
   },
   "pasteAction": "粘贴",
-  "importConfirmSemesterMappingSubtitleWarehouse": "教务脚本已返回课程周次，请确认校历开学日期；如果学校前几周没有课，可把“课表第 1 周”对应到校历后面的周次",
+  "importConfirmSemesterMappingSubtitleWarehouse": "已获取课程周次，请确认校历开学日期。若开学前几周无课，可将第 1 周对应至校历实际周次。",
   "aiPreviewCourseCount": "课程数量：{count}",
   "@aiPreviewCourseCount": {
     "placeholders": {
@@ -2810,9 +2838,9 @@
   "clearSearchTooltip": "清空",
   "noMatchingSchools": "没有找到匹配的学校或适配器",
   "noAvailableSchools": "暂无可用学校",
-  "searchSchoolSuggestion": "试试学校全称、适配器名称（如 WakeUp）或学校代码",
+  "searchSchoolSuggestion": "可输入学校全称、适配器名称如 WakeUp 或学校代码",
   "deleteDebugRecordTitle": "删除调试记录",
-  "deleteDebugRecordMessage": "确认删除“{name}”？删除后不会影响已经导入的课程",
+  "deleteDebugRecordMessage": "确认删除记录 {name}？已导入课程不受影响",
   "@deleteDebugRecordMessage": {
     "placeholders": {
       "name": {
@@ -2992,7 +3020,7 @@
   "courseConflictDetailTitle": "冲突详情",
   "courseConflictDetailEntryTitle": "查看冲突详情",
   "courseConflictDetailEntrySubtitle": "查看互撞排课与重叠时段",
-  "courseConflictWithCourse": "与“{name}”冲突",
+  "courseConflictWithCourse": "与 {name} 冲突",
   "@courseConflictWithCourse": {
     "placeholders": {
       "name": {
@@ -3067,7 +3095,7 @@
       }
     }
   },
-  "courseDialogNotThisWeekHint": "当前查看第 {week} 周，这门课这周没有上课，因此不能按“本周这节”调课",
+  "courseDialogNotThisWeekHint": "当前查看第 {week} 周，本周无此课程，无法调整单周节次",
   "@courseDialogNotThisWeekHint": {
     "placeholders": {
       "week": {
@@ -3082,7 +3110,7 @@
   "deleteModeSubtitle": "你可以删掉整条排课，也可以只删当前看到的这一周这一节",
   "deleteCourseAction": "删这个课",
   "deleteOccurrenceAction": "删这节课",
-  "deleteModeHintCurrentWeek": "“删这个课”会删除这条排课的全部周次；“删这节课”只会删除第 {week} 周这一次",
+  "deleteModeHintCurrentWeek": "删除课程将移除全部周次，仅删除此节仅移除第 {week} 周课程",
   "@deleteModeHintCurrentWeek": {
     "placeholders": {
       "week": {
@@ -3098,7 +3126,7 @@
       }
     }
   },
-  "deleteScheduleConfirmMessage": "确定删除“{name}”这条排课吗？\n{detail}",
+  "deleteScheduleConfirmMessage": "确定删除 {name} 的排课？\n{detail}",
   "@deleteScheduleConfirmMessage": {
     "placeholders": {
       "name": {
@@ -3109,7 +3137,7 @@
       }
     }
   },
-  "deleteOccurrenceConfirmMessage": "确定删除“{name}”在第 {week} 周的这一节吗？\n{detail}",
+  "deleteOccurrenceConfirmMessage": "确定删除 {name} 第 {week} 周的此节课程？\n{detail}",
   "@deleteOccurrenceConfirmMessage": {
     "placeholders": {
       "name": {
@@ -3518,7 +3546,7 @@
   "scheduleTimeRangeInvalid": "结束时间必须晚于开始时间",
   "scheduleDateRangeInvalid": "结束日期不能早于开始日期",
   "scheduleSingleDayHint": "同日结束时，结束时间必须晚于开始时间",
-    "scheduleCrossDaySpanHint": "从 {start} 持续到 {end}",
+  "scheduleCrossDaySpanHint": "从 {start} 持续到 {end}",
   "@scheduleCrossDaySpanHint": {
     "placeholders": {
       "start": {},
@@ -3528,7 +3556,7 @@
   "scheduleSavedHint": "日程已添加",
   "scheduleUpdatedHint": "日程已更新",
   "crossDayBadgeLabel": "跨日",
-  "deleteScheduleMessage": "删除日程“{title}”？",
+  "deleteScheduleMessage": "确定删除日程 {title}？",
   "@deleteScheduleMessage": {
     "placeholders": {
       "title": {
@@ -3594,7 +3622,7 @@
   "examReminderLabel": "提醒设置",
   "examNoteLabel": "备注",
   "deleteExam": "删除考试",
-  "deleteExamConfirm": "删除考试“{name}”？",
+  "deleteExamConfirm": "确定删除考试 {name}？",
   "@deleteExamConfirm": {
     "placeholders": {
       "name": {
@@ -3721,7 +3749,7 @@
   "courseNoteTabWholeCourse": "课程简介",
   "courseNoteTabThisSession": "本节课",
   "courseNoteWholeCourseLabel": "课程简介",
-  "courseNoteWholeCourseHint": "同名课程共享，长期有效（例如课程说明、课堂注意点）。",
+  "courseNoteWholeCourseHint": "同名课程共享并长期保留，如课堂说明或要求。",
   "courseNoteWholeCoursePlaceholder": "例如：这位教师容易点名、教室在新楼……",
   "courseNoteSessionLabel": "本节课备注",
   "courseNoteSessionHint": "仅对第 {week} 周这一次课生效，适合记录作业或携带物品。",
@@ -3818,7 +3846,7 @@
   "guidePermissionsPageTitle": "系统权限",
   "guideTipsPageTitle": "使用技巧",
   "guidePersonalizePageTitle": "个性化定制",
-  "guidePersonalizeSubtitle": "以下选择立即生效，之后可随时在“设置 → 外观”中调整",
+  "guidePersonalizeSubtitle": "更改即时生效，可随时在 设置 外观 中调整",
   "guidePersonalizeMenuStyleTitle": "菜单样式",
   "guidePersonalizeNavFormTitle": "导航形态",
   "guidePersonalizeVisualEffectSolid": "实体卡片",
@@ -3833,7 +3861,7 @@
   "guidePermissionsSubtitle": "完成这些设置，超级岛和提醒才能正常使用",
   "guidePermissionsFooterHint": "点击后跳转到系统设置，返回应用后可识别的状态会自动刷新；自启动受系统限制，请以系统页面开关为准",
   "guideTipsHeader": "使用技巧",
-  "guideTipsSubtitle": "这些随时可以在“设置”里找到",
+  "guideTipsSubtitle": "可随时在设置中查看与修改",
   "guidePrivacyReadBeforeUse": "使用前请阅读并同意以下内容",
   "guidePrivacyViewOnly": "隐私、第三方 SDK 与免责说明",
   "holidayDataYearLabel": "{year} 年法定节假日",
@@ -3921,7 +3949,7 @@
   "themeSaveCurrent": "保存当前主题",
   "themeApply": "应用",
   "themeDelete": "删除",
-  "themeDeleteConfirmMessage": "确定要删除主题“{name}”吗？",
+  "themeDeleteConfirmMessage": "确定删除主题 {name}？",
   "@themeDeleteConfirmMessage": {
     "placeholders": {
       "name": {
@@ -3931,7 +3959,7 @@
   },
   "textColorLowContrastWarning": "颜色对比度较低，可能影响可读性",
   "themeCurrentTheme": "当前主题",
-  "themeBasedOnModified": "基于 {baseName}（已修改）",
+  "themeBasedOnModified": "基于 {baseName} 已修改",
   "@themeBasedOnModified": {
     "placeholders": {
       "baseName": {
@@ -4087,7 +4115,7 @@
   "statisticsExportTitle": "导出统计",
   "statisticsExportModulesSection": "包含模块",
   "statisticsExportFormatSection": "导出格式",
-  "statisticsExportFormatImage": "长图 （PNG）",
+  "statisticsExportFormatImage": "长图 PNG",
   "statisticsExportFormatPdf": "PDF 文档",
   "statisticsExportAction": "开始导出",
   "statisticsExportSelectModuleHint": "请至少选择一个模块",
@@ -4157,19 +4185,33 @@
   "weeklyReportBody": "第 {week} 周 · 共 {sections} 节 · {courses} 门课\n较上周 {delta} 节\n最忙的一天是 {busiestDay}",
   "@weeklyReportBody": {
     "placeholders": {
-      "week": { "type": "int" },
-      "sections": { "type": "int" },
-      "courses": { "type": "int" },
-      "delta": { "type": "String" },
-      "busiestDay": { "type": "String" }
+      "week": {
+        "type": "int"
+      },
+      "sections": {
+        "type": "int"
+      },
+      "courses": {
+        "type": "int"
+      },
+      "delta": {
+        "type": "String"
+      },
+      "busiestDay": {
+        "type": "String"
+      }
     }
   },
   "weeklyReportBodyEmpty": "本周暂无课程，好好休息吧",
   "weeklyReportNextFire": "下次推送 {date} {time}",
   "@weeklyReportNextFire": {
     "placeholders": {
-      "date": { "type": "String" },
-      "time": { "type": "String" }
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
     }
   },
   "weeklyReportEnabledHint": "已开启每周周报推送",
@@ -4180,7 +4222,9 @@
   "statisticsCompareDelta": "较当前 {delta} 节",
   "@statisticsCompareDelta": {
     "placeholders": {
-      "delta": { "type": "String" }
+      "delta": {
+        "type": "String"
+      }
     }
   },
   "statisticsCompareDetailTitle": "课表对比详情",
@@ -4207,8 +4251,8 @@
   "statisticsAchievementGapMasterName": "时间管理大师",
   "statisticsAchievementGapMasterDescription": "最长课间空档 ≤ 2 节",
   "statisticsAchievementEarlyBirdDetail": "解锁条件：课表中有 08:00 或更早开始的课程。",
-  "statisticsAchievementPerfectAttendanceDetail": "解锁条件：至少一门课程在开课周期内每周都有课（无停课、无单双周跳课）。",
-  "statisticsAchievementWeekendWarriorDetail": "解锁条件：周末（周六或周日）有课。",
+  "statisticsAchievementPerfectAttendanceDetail": "解锁条件：至少一门课程在学期内每周均有课，无停课或跳周。",
+  "statisticsAchievementWeekendWarriorDetail": "解锁条件：周六或周日有课。",
   "statisticsAchievementClassKingDetail": "解锁条件：某一天排课达到 6 节及以上。",
   "statisticsAchievementScholarDetail": "解锁条件：学期累计课时达到 100 节。",
   "statisticsAchievementBalancedDetail": "解锁条件：每天课时差距不超过 2 节，课表安排均衡。",
@@ -4216,7 +4260,7 @@
   "statisticsAchievementExplorerDetail": "解锁条件：使用过 5 个及以上不同的教室。",
   "statisticsAchievementFullDayKingDetail": "解锁条件：某一天排课达到 8 节及以上，全天满课。",
   "statisticsAchievementBuildingHopperDetail": "解锁条件：同一天内去过 3 栋及以上不同的教学楼。",
-  "statisticsAchievementMorningPersonDetail": "解锁条件：早间（12:00 前开始）课时占总课时的一半以上。",
+  "statisticsAchievementMorningPersonDetail": "解锁条件：12:00 前的课程节数占总节数一半以上。",
   "statisticsAchievementGapMasterDetail": "解锁条件：每天课间最长空档不超过 2 节，时间安排紧凑。",
   "statisticsAchievementDetailConfirm": "知道了",
   "statisticsAchievementLocked": "未达成",
@@ -4227,28 +4271,42 @@
   "statisticsSemesterProgressRange": "学期 {start} - {end}",
   "@statisticsSemesterProgressRange": {
     "placeholders": {
-      "start": { "type": "String" },
-      "end": { "type": "String" }
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
     }
   },
   "statisticsSemesterProgressAsOf": "今天 {date}",
   "@statisticsSemesterProgressAsOf": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "statisticsSemesterProgressDetail": "截至第 {week} 周，已上 {done} 节 / 共 {total} 节",
   "@statisticsSemesterProgressDetail": {
     "placeholders": {
-      "week": { "type": "int" },
-      "done": { "type": "int" },
-      "total": { "type": "int" }
+      "week": {
+        "type": "int"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "statisticsSemesterProgressRemaining": "剩余 {count} 节",
   "@statisticsSemesterProgressRemaining": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "statisticsSemesterProgressNotStarted": "还未开学，尚未上课",
@@ -4259,8 +4317,12 @@
   "statisticsTrendTooltip": "第 {week} 周 · {sections} 节",
   "@statisticsTrendTooltip": {
     "placeholders": {
-      "week": { "type": "int" },
-      "sections": { "type": "int" }
+      "week": {
+        "type": "int"
+      },
+      "sections": {
+        "type": "int"
+      }
     }
   },
   "statisticsComparisonTitle": "本周小结",
@@ -4269,13 +4331,17 @@
   "statisticsComparisonVsLastWeek": "较上周 {delta} 节",
   "@statisticsComparisonVsLastWeek": {
     "placeholders": {
-      "delta": { "type": "String" }
+      "delta": {
+        "type": "String"
+      }
     }
   },
   "statisticsComparisonVsAverage": "较周均 {delta} 节",
   "@statisticsComparisonVsAverage": {
     "placeholders": {
-      "delta": { "type": "String" }
+      "delta": {
+        "type": "String"
+      }
     }
   },
   "statisticsComparisonNew": "新学期第一周",
@@ -4292,7 +4358,9 @@
   "statisticsTimeGapValue": "{sections} 节",
   "@statisticsTimeGapValue": {
     "placeholders": {
-      "sections": { "type": "int" }
+      "sections": {
+        "type": "int"
+      }
     }
   },
   "statisticsVenueTitle": "教室与教学楼",
@@ -4301,14 +4369,18 @@
   "statisticsVenueVisits": "{count} 次",
   "@statisticsVenueVisits": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "statisticsTeacherTitle": "教师课时排行",
   "statisticsTeacherCourseCount": "{count} 门课",
   "@statisticsTeacherCourseCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "statisticsAchievementFullDayKingName": "满课日之王",
@@ -4318,15 +4390,21 @@
   "statisticsAchievementProgress": "{current}/{target}",
   "@statisticsAchievementProgress": {
     "placeholders": {
-      "current": { "type": "int" },
-      "target": { "type": "int" }
+      "current": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
     }
   },
   "statisticsAchievementDone": "已达成",
   "statisticsWeekDailyHint": "点击查看第 {week} 周详情",
   "@statisticsWeekDailyHint": {
     "placeholders": {
-      "week": { "type": "int" }
+      "week": {
+        "type": "int"
+      }
     }
   },
   "weekListSeparator": "、",
@@ -4454,18 +4532,18 @@
   "debugCopiedJson": "已复制 JSON",
   "liveDuringClassTimeNearest": "最近时间",
   "liveDuringClassTimeTotal": "总时间",
-  "liveCountdownTextStyleSmart": "智能（中文）",
-  "liveCountdownTextStyleSmartMinS": "智能（英文）",
-  "liveCountdownTextStyleMinuteSecondCn": "分秒（5 分钟 19 秒）",
-  "liveCountdownTextStyleMinuteSecondColon": "mm:ss（05:19）",
-  "liveCountdownTextStyleMinuteSecondMinS": "min+s（5min19s）",
-  "liveCountdownTextStyleMinuteSecondMinSlashS": "min/s（5min/19s）",
-  "liveCountdownTextStyleMinuteOnlyCn": "纯分钟（5 分钟）",
-  "liveCountdownTextStyleMinuteOnlyMin": "min（5min）",
-  "liveCountdownTextStyleMinuteOnlySlash": "/min（5/min）",
-  "liveCountdownTextStyleSecondOnlyCn": "纯秒（5 秒）",
-  "liveCountdownTextStyleSecondOnlyShort": "s（5s）",
-  "liveCountdownTextStyleSecondOnlySlash": "/s（5/s）",
+  "liveCountdownTextStyleSmart": "智能 中文",
+  "liveCountdownTextStyleSmartMinS": "智能 英文",
+  "liveCountdownTextStyleMinuteSecondCn": "分秒 5分19秒",
+  "liveCountdownTextStyleMinuteSecondColon": "分秒 05:19",
+  "liveCountdownTextStyleMinuteSecondMinS": "英文 5min19s",
+  "liveCountdownTextStyleMinuteSecondMinSlashS": "英文 5min/19s",
+  "liveCountdownTextStyleMinuteOnlyCn": "纯分钟 5分钟",
+  "liveCountdownTextStyleMinuteOnlyMin": "纯分钟 5min",
+  "liveCountdownTextStyleMinuteOnlySlash": "纯分钟 5/min",
+  "liveCountdownTextStyleSecondOnlyCn": "纯秒 5秒",
+  "liveCountdownTextStyleSecondOnlyShort": "纯秒 5s",
+  "liveCountdownTextStyleSecondOnlySlash": "纯秒 5/s",
   "miuiIslandLabelStyleTextOnly": "仅文字",
   "miuiIslandLabelStyleIconAndText": "图标+文字",
   "miuiIslandLabelContentCourseName": "课程名",
@@ -4506,7 +4584,7 @@
   "appUpdateDownloadChannelGitcodeDescription": "GitCode 发行版直连下载，国内速度快",
   "holidayStatutoryLabel": "法定节假日",
   "serviceMsgImportFileUnrecognized": "导入失败，文件内容无法识别",
-  "serviceMsgImportUseOverwriteForFullBackup": "这是全部数据备份，请使用“覆盖当前课表”方式导入",
+  "serviceMsgImportUseOverwriteForFullBackup": "此文件为完整备份，请使用覆盖方式导入",
   "serviceMsgImportNoProfilesInBackup": "备份文件中没有可恢复的课表",
   "serviceMsgImportRollbackIncomplete": "导入失败，导入前的数据未能完整恢复，请重试或检查设备存储",
   "serviceMsgUnrecognizedMikcbDataFile": "不是可识别的 mikcb 数据文件",
@@ -4541,7 +4619,7 @@
       }
     }
   },
-  "serviceMsgSectionCountBelowUsageDetail": "节次数量不能小于当前已使用的最大节次（第 {requiredMaxSection} 节），正在使用：{profileName} · {courseName}（周 {dayOfWeek} 第 {startSection}～{endSection} 节，{usageType}）",
+  "serviceMsgSectionCountBelowUsageDetail": "节次数不能小于已用最大节次 第 {requiredMaxSection} 节。正在使用：{profileName} · {courseName} 周 {dayOfWeek} 第 {startSection} 至 {endSection} 节 {usageType}",
   "@serviceMsgSectionCountBelowUsageDetail": {
     "placeholders": {
       "requiredMaxSection": {
@@ -4679,7 +4757,7 @@
       }
     }
   },
-  "serviceMsgSectionOutOfRange": "节次 {section} 超出时间模板范围（1～{maxSection}）",
+  "serviceMsgSectionOutOfRange": "节次 {section} 超出作息范围 1 至 {maxSection}",
   "@serviceMsgSectionOutOfRange": {
     "placeholders": {
       "section": {
@@ -4771,7 +4849,7 @@
       }
     }
   },
-  "serviceMsgWeeksExceedSemesterClamped": "{itemName} 含有超过学期周数 {semesterWeekCount} 的周次（{weeks}），已忽略超出部分",
+  "serviceMsgWeeksExceedSemesterClamped": "{itemName} 包含超出学期周数 {semesterWeekCount} 的周次 {weeks}，超出部分已忽略",
   "@serviceMsgWeeksExceedSemesterClamped": {
     "placeholders": {
       "itemName": {
@@ -4898,7 +4976,7 @@
   },
   "serviceMsgNoReleaseAvailable": "仓库还没有发布 Release",
   "serviceMsgNoReleaseWithPrerelease": "还没有可用的正式版或预发布版本",
-  "serviceMsgUpdateCheckHttpFailed": "检查更新失败（HTTP {statusCode}）",
+  "serviceMsgUpdateCheckHttpFailed": "检查更新失败 状态码 {statusCode}",
   "@serviceMsgUpdateCheckHttpFailed": {
     "placeholders": {
       "statusCode": {
@@ -4908,9 +4986,9 @@
   },
   "serviceMsgUpdateCheckNetworkFailed": "网络异常，暂时无法检查更新",
   "serviceMsgUpdateDownloadHashMismatch": "安装包校验失败，为防止安装被篡改的文件已取消本次更新",
-  "serviceMsgUpdateSha256UnverifiedRefused": "无法校验安装包完整性（缺少官方 SHA-256），已取消应用内更新，请前往发布页手动下载",
+  "serviceMsgUpdateSha256UnverifiedRefused": "安装包完整性校验失败，已取消更新，请前往发布页下载",
   "serviceMsgUpdateDownloadUrlUntrusted": "更新下载地址未通过安全校验",
-  "serviceMsgUpdateDownloadHttpFailed": "下载失败（HTTP {statusCode}）",
+  "serviceMsgUpdateDownloadHttpFailed": "下载失败 状态码 {statusCode}",
   "@serviceMsgUpdateDownloadHttpFailed": {
     "placeholders": {
       "statusCode": {
@@ -4963,7 +5041,7 @@
       }
     }
   },
-  "serviceMsgWarehouseFetchFailedMirror": "暂时无法读取适配仓，已尝试 {candidatesCount} 个镜像线路均失败，请检查网络，或到“版本更新”里切到其他镜像线路后重试",
+  "serviceMsgWarehouseFetchFailedMirror": "无法连接适配仓，已尝试 {candidatesCount} 条线路，请检查网络或切换镜像线路",
   "@serviceMsgWarehouseFetchFailedMirror": {
     "placeholders": {
       "candidatesCount": {
@@ -4971,7 +5049,7 @@
       }
     }
   },
-  "serviceMsgWarehouseFetchFailedGithub": "暂时无法读取适配仓，当前正在使用 GitHub 原始线路，请检查网络，或在“版本更新”里切到国内镜像后重试",
+  "serviceMsgWarehouseFetchFailedGithub": "无法连接适配仓 GitHub 线路，请检查网络或在更新设置中切换国内线路",
   "serviceMsgWarehouseScriptChecksumFailed": "适配器脚本完整性校验失败：下载内容与仓库声明的 SHA-256 不一致，已阻止执行。请刷新学校列表后重试；若反复出现，请到 qingyu_warehouse 反馈该适配器",
   "serviceMsgManualInputCaptcha": "请手动输入验证码；完成后点击继续",
   "serviceMsgManualInputPassword": "请手动输入密码；如已自动填充请直接继续",
@@ -5013,7 +5091,7 @@
   "serviceMsgMacroUrlPatternEmpty": "URL 模式为空",
   "serviceMsgMacroWaitSelectorEmpty": "等待元素的选择器为空",
   "serviceMsgMacroManualInputDefault": "需要手动操作",
-  "serviceMsgMacroPollTimeout": "{stepLabel} 超时（{timeoutSeconds} 秒）{lastError}",
+  "serviceMsgMacroPollTimeout": "{stepLabel} 超时 {timeoutSeconds} 秒 {lastError}",
   "@serviceMsgMacroPollTimeout": {
     "placeholders": {
       "stepLabel": {
@@ -5129,7 +5207,7 @@
     }
   },
   "courseWeekListSeparator": "、",
-  "holidayLogMemoryCacheHit": "{year} 年：命中内存缓存（{count} 条），后台刷新中……",
+  "holidayLogMemoryCacheHit": "{year} 年：命中内存缓存 {count} 条，后台刷新中",
   "@holidayLogMemoryCacheHit": {
     "placeholders": {
       "year": {
@@ -5140,7 +5218,7 @@
       }
     }
   },
-  "holidayLogLocalCacheHit": "{year} 年：命中本地缓存（{count} 条），后台刷新中……",
+  "holidayLogLocalCacheHit": "{year} 年：命中本地缓存 {count} 条，后台刷新中",
   "@holidayLogLocalCacheHit": {
     "placeholders": {
       "year": {
@@ -5159,7 +5237,7 @@
       }
     }
   },
-  "holidayLogRemoteSuccess": "{year} 年：远程拉取成功（{count} 条），已缓存",
+  "holidayLogRemoteSuccess": "{year} 年：远程拉取成功 {count} 条，已缓存",
   "@holidayLogRemoteSuccess": {
     "placeholders": {
       "year": {
@@ -5178,7 +5256,7 @@
       }
     }
   },
-  "holidayLogBuiltinLoaded": "{year} 年：加载内置资产（{count} 条）",
+  "holidayLogBuiltinLoaded": "{year} 年：加载内置数据 {count} 条",
   "@holidayLogBuiltinLoaded": {
     "placeholders": {
       "year": {
@@ -5189,7 +5267,7 @@
       }
     }
   },
-  "holidayLogBackgroundSuccess": "{year} 年：后台更新成功（{count} 条），已覆盖缓存",
+  "holidayLogBackgroundSuccess": "{year} 年：后台更新成功 {count} 条，已覆盖缓存",
   "@holidayLogBackgroundSuccess": {
     "placeholders": {
       "year": {
@@ -5430,7 +5508,7 @@
   "hyperosShowcaseSectionEmpty": "空态、分割线和装饰",
   "hyperosShowcaseEmptySubtitle": "列表无数据时的占位",
   "hyperosShowcaseActionButton": "操作按钮",
-  "hyperosShowcaseDividerRowTitle": "第二行（上方有缩进分割线）",
+  "hyperosShowcaseDividerRowTitle": "第二行 上方缩进分割线",
   "hyperosShowcaseSectionPressable": "底层行 · HyperosPressableRow",
   "hyperosShowcaseSectionShell": "页面壳层",
   "hyperosShowcaseRootPageDetails": "无返回键根页",
@@ -5488,7 +5566,7 @@
       }
     }
   },
-  "courseImportRecordingSavedStatus": "录制已保存（{count} 步）",
+  "courseImportRecordingSavedStatus": "录制已保存，共 {count} 步",
   "@courseImportRecordingSavedStatus": {
     "placeholders": {
       "count": {
@@ -5545,7 +5623,7 @@
     }
   },
   "courseImportContinueAction": "继续导入",
-  "courseImportUpdateRecommendedAction": "更新课表（推荐）",
+  "courseImportUpdateRecommendedAction": "更新课表 推荐",
   "courseImportOverwriteAction": "覆盖导入",
   "courseImportSectionCountInsufficientTitle": "时间模板节次不足",
   "courseImportSectionCountInsufficientMessage": "当前课表时间模板只有 {current} 节，但导入数据需要到第 {required} 节，是否自动补齐后继续导入？",
@@ -5570,8 +5648,8 @@
   "logAppLogRecordingEnabled": "应用日志记录已开启",
   "logAppLogRecordingRemainsEnabled": "应用日志记录保持开启",
   "logStartupFlowStarted": "启动流程处理已开始",
-  "logStartupFlowCompletedNoOnboarding": "启动流程已完成（无需引导页）",
-  "logStartupFlowCompletedAfterGuide": "启动流程已完成（经过引导页）",
+  "logStartupFlowCompletedNoOnboarding": "启动流程已完成 无需引导页",
+  "logStartupFlowCompletedAfterGuide": "启动流程已完成 经过引导页",
   "logStartupFlowFailed": "启动流程失败，进入降级模式",
   "logAppLifecycleChanged": "应用生命周期已变更",
   "logNavigatorRouteReplaced": "导航路由已替换",
@@ -5595,7 +5673,7 @@
   "logMiuiLiveOpenAutostartSettingsFailed": "打开自启动设置失败",
   "logMiuiLiveOpenBatterySettingsFailed": "打开电池优化设置失败",
   "logMiuiLiveOpenAccessibilitySettingsFailed": "打开无障碍设置失败",
-  "logMiuiLiveHideFromRecentsFailed": "更新“从最近任务隐藏”失败",
+  "logMiuiLiveHideFromRecentsFailed": "更新从任务列表隐藏失败",
   "logLiveUpdateStartFailed": "从 Flutter 启动超级岛失败",
   "logLiveUpdateStopFailed": "从 Flutter 停止超级岛失败",
   "logLiveUpdateDebugStatusFailed": "获取原生超级岛调试状态失败",
@@ -5623,9 +5701,9 @@
   "logLiveUpdateTestFailed": "手动超级岛测试：原生超级岛出现前失败",
   "logLiveUpdateTestPresetArmed": "手动超级岛测试：已注入自检预设课程",
   "logLiveUpdateTestPresetSkipped": "手动超级岛测试：跳过自检预设课程",
-  "logWallpaperHistoryGlobalMigrationFailed": "壁纸「最近使用」全局迁移失败（下次载入会重试）",
-  "logWallpaperHistoryImportMergeFailed": "导入的壁纸「最近使用」历史合并失败",
-  "logAppGlobalSettingsMigrationFailed": "应用级偏好（外观/语言等）迁移失败",
+  "logWallpaperHistoryGlobalMigrationFailed": "壁纸最近使用迁移失败 下次载入重试",
+  "logWallpaperHistoryImportMergeFailed": "导入壁纸历史合并失败",
+  "logAppGlobalSettingsMigrationFailed": "应用偏好设置迁移失败",
   "logLiveUpdateSettingsSynced": "Flutter 超级岛设置已同步：课前={beforeClass}，课中={duringClass}，下课前={beforeEnd}，提升={promote}，通知={notification}，倒计时={countdown}，课程名={courseName}，地点={location}",
   "@logLiveUpdateSettingsSynced": {
     "placeholders": {
@@ -5886,7 +5964,7 @@
   "aboutAlreadyLatestHeadline": "已是最新版本",
   "aboutDownloadChannelSectionTitle": "下载渠道",
   "aboutMirrorProbeFailedLabel": "失败",
-  "timeSchemeImportSupplementName": "{name}（导入补齐）",
+  "timeSchemeImportSupplementName": "{name} 导入补齐",
   "@timeSchemeImportSupplementName": {
     "placeholders": {
       "name": {
@@ -5906,7 +5984,7 @@
   "unnamedTimetableProfile": "未命名课表",
   "cloudBackupManualProtectedTitle": "手动备份永不过期",
   "cloudBackupManualProtectedSubtitle": "开启后，手动创建的备份不会被自动清理",
-  "courseImportPortalUrlMissingBody": "“{schoolName} / {adapterName}” 没有默认登录地址，请先输入学校教务系统网址",
+  "courseImportPortalUrlMissingBody": "{schoolName} {adapterName} 无默认登录地址，请先输入教务系统网址",
   "@courseImportPortalUrlMissingBody": {
     "placeholders": {
       "schoolName": {
@@ -5936,7 +6014,7 @@
   "locationTimeMatchPreviewLabel": "试匹配地点",
   "locationTimeMatchPreviewHint": "例如 A1062 或 A主201",
   "locationTimeMatchPreviewNoMatch": "未命中任何地点组，将使用课表默认时间模板",
-  "locationTimeMatchPreviewResult": "将匹配：{group} · {scheme}（关键词 {keyword}）",
+  "locationTimeMatchPreviewResult": "将匹配：{group} · {scheme}，关键词 {keyword}",
   "@locationTimeMatchPreviewResult": {
     "placeholders": {
       "group": {
@@ -5981,7 +6059,7 @@
     }
   },
   "locationTimeMatchApplyNoneMatched": "没有匹配到可套用的课程",
-  "locationTimeMatchApplyOverflowResult": "已匹配 {matched} 门课，另有 {count} 门课节次无法对号入座（模板节数不足），已拒绝套用",
+  "locationTimeMatchApplyOverflowResult": "已匹配 {matched} 门课程。另有 {count} 门超出模板节数，已取消套用",
   "@locationTimeMatchApplyOverflowResult": {
     "placeholders": {
       "matched": {
@@ -6000,7 +6078,7 @@
       }
     }
   },
-  "coursesBeyondSchemeExtraSuffix": "，另有 {count} 节超出当前时间模板（共 {sections} 节），课表上看不到",
+  "coursesBeyondSchemeExtraSuffix": "，另有 {count} 节超出当前作息范围 共 {sections} 节，课表暂不显示",
   "@coursesBeyondSchemeExtraSuffix": {
     "placeholders": {
       "count": {
@@ -6041,7 +6119,7 @@
     }
   },
   "locationTimeMatchDeleteTitle": "删除地点组？",
-  "locationTimeMatchDeleteMessage": "确定删除“{name}”？自动匹配的课程将恢复课表默认模板；手动指定模板的课程不受影响。",
+  "locationTimeMatchDeleteMessage": "确定删除匹配规则 {name}？自动匹配的课程将恢复默认作息，手动指定的课程不受影响。",
   "@locationTimeMatchDeleteMessage": {
     "placeholders": {
       "name": {
@@ -6056,7 +6134,7 @@
   "locationTimeMatchNeedTimeScheme": "请先创建至少一套时间模板",
   "locationTimeMatchEnabledLabel": "启用此地点组",
   "locationTimeMatchKeywordsSection": "地点关键词",
-  "locationTimeMatchKeywordsHelp": "可从课表地点一键识别楼栋，或手动填写关键词（如 A主、A1、A6）。匹配模式建议用“前缀”，更长的关键词优先。",
+  "locationTimeMatchKeywordsHelp": "可从地点识别楼栋或填写关键词如 A主、A1。建议采用前缀匹配，优先匹配较长关键词。",
   "locationTimeMatchSelectedKeywords": "已选关键词",
   "locationTimeMatchNoSelectedKeywords": "尚未添加关键词",
   "locationTimeMatchPickFromLocations": "从课表地点选择",
@@ -6089,7 +6167,7 @@
     }
   },
   "locationTimeMatchKeywordAlreadyExists": "关键词已存在",
-  "locationTimeMatchKeywordUsedByGroup": "关键词已被“{group}”使用",
+  "locationTimeMatchKeywordUsedByGroup": "关键词已被 {group} 使用",
   "@locationTimeMatchKeywordUsedByGroup": {
     "placeholders": {
       "group": {
@@ -6119,7 +6197,7 @@
       }
     }
   },
-  "locationTimeAutoResolvedByGroup": "地点组“{group}”→ {scheme}",
+  "locationTimeAutoResolvedByGroup": "地点组 {group} → {scheme}",
   "@locationTimeAutoResolvedByGroup": {
     "placeholders": {
       "group": {
@@ -6167,10 +6245,10 @@
   "scheduleDateRuleSaved": "日期规则已保存",
   "scheduleDateRuleSavedAndApplied": "日期规则已保存，今天已更新所有课表的默认作息",
   "scheduleDateRuleSavedForFuture": "日期规则已保存，将在开始日期更新所有课表的默认作息",
-  "scheduleDateRuleSavedButApplyFailed": "日期规则已保存，但今天自动套用失败（请检查模板节次是否足够）",
+  "scheduleDateRuleSavedButApplyFailed": "日期规则已保存，但今日自动套用失败，请检查模板节数是否充足",
   "scheduleDateRuleDeleted": "已删除日期规则",
   "scheduleDateRuleDeleteTitle": "删除日期规则？",
-  "scheduleDateRuleDeleteMessage": "确定删除“{name}”？删除后不会自动恢复已套用的作息，需手动调整。",
+  "scheduleDateRuleDeleteMessage": "确定删除日期规则 {name}？已套用的作息不会自动恢复，需手动调整。",
   "@scheduleDateRuleDeleteMessage": {
     "placeholders": {
       "name": {
@@ -6235,7 +6313,7 @@
   "courseCardSectionFields": "显示字段",
   "courseCardSectionLayout": "布局",
   "courseCardSurfaceStyleLabel": "卡片外观",
-  "courseCardMaterialMasterOffHint": "“整体材质”为“实体卡片”时，卡片一律按实体渲染，这里的选择暂不生效",
+  "courseCardMaterialMasterOffHint": "整体材质为实体卡片时按实体渲染，此设置暂不生效",
   "frostedGlassModeSolidNotice": "已关闭全 App 模糊：顶栏与玻璃坞按实体渲染，课程卡片的选择暂不生效",
   "courseCardSurfaceStyleSolid": "实体卡片",
   "courseCardSurfaceStyleGaussian": "高斯模糊",
@@ -6259,12 +6337,12 @@
   "settingsResetDefaultsTitle": "恢复默认设置",
   "settingsResetDefaultsConfirmTitle": "确认恢复",
   "settingsResetConfirmBodyCourseCard": "将把课程卡片的显示字段、布局与颜色恢复为默认值。",
-  "settingsResetConfirmBodyTimetablePage": "将把课表页面的密度、回到当前周按钮、背景（含清除壁纸）恢复为默认值。",
+  "settingsResetConfirmBodyTimetablePage": "课表密度、回到本周按钮及背景设置将恢复默认，并清除壁纸。",
   "settingsResetConfirmBodyAppearance": "将把主题模式、字体、主题色与玻璃质感恢复为默认值。",
   "settingsResetConfirmBodyHomeWidget": "将把桌面小组件的显示项与外观恢复为默认值。",
   "settingsResetConfirmBodyHomeNavigation": "将把底栏与首页标题设置恢复为默认值。",
   "settingsResetScopeNoticeAppearance": "主题、字体与玻璃质感",
-  "settingsResetScopeNoticeTimetablePage": "课表显示与背景（含清除壁纸）",
+  "settingsResetScopeNoticeTimetablePage": "课表显示与背景 含清除壁纸",
   "settingsResetDoneMessage": "设置已重置",
   "timetablePageSettingsTitle": "课表页面",
   "timetablePageSectionDensity": "密度",
@@ -6280,8 +6358,8 @@
   "selectStartTimeTitle": "选择开始时间",
   "selectEndTimeTitle": "选择结束时间",
   "weekdayInkContrastTitle": "文字对比度不足",
-  "weekdayInkContrastBodyDark": "你的信息栏文字颜色在深色壁纸上对比度不足，已自动调亮以免看不清（色系仍按你设置的保留）。可在“课表页面 → 文字颜色”中更换颜色或恢复默认。",
-  "weekdayInkContrastBodyLight": "你的信息栏文字颜色在浅色壁纸上对比度不足，已自动调暗以免看不清（色系仍按你设置的保留）。可在“课表页面 → 文字颜色”中更换颜色或恢复默认。",
+  "weekdayInkContrastBodyDark": "信息栏文字在深色背景下对比度不足，已自动提升亮度。可在 课表页面 文字颜色 中调整或恢复默认。",
+  "weekdayInkContrastBodyLight": "信息栏文字在浅色背景下对比度不足，已自动降低亮度。可在 课表页面 文字颜色 中调整或恢复默认。",
   "gotItAction": "知道了",
   "settingsTimetableSectionTitle": "课表",
   "liveIslandLabelEntryEnabled": "已开启",
@@ -6342,7 +6420,7 @@
   "taskTitleHint": "例如：完成第三章习题",
   "taskTitleRequired": "请输入任务标题",
   "taskNoteLabel": "备注",
-  "taskNoteHint": "补充说明（可选）",
+  "taskNoteHint": "补充说明 可选",
   "taskDueDateLabel": "截止日期",
   "taskNoDueDate": "无截止日期",
   "taskCourseLabel": "来源课程",
@@ -6414,7 +6492,7 @@
   "icsExportSaveFailed": "日历保存失败，请稍后重试",
   "icsExportSyncCalendarButton": "同步到系统日历",
   "icsExportSyncCalendarTitle": "同步到系统日历",
-  "icsExportSyncCalendarBody": "将在系统日历中创建专属日历“{calendarName}”，写入当前所选时间范围的全部日程；再次同步会覆盖上次写入的日程。假期中的课程默认不写入，如需保留可关闭“跳过节假日课程”开关。首次同步会请求日历权限。",
+  "icsExportSyncCalendarBody": "将在系统日历中创建日历 {calendarName} 并同步所选日程，重复同步将覆盖旧数据。首次同步需要日历权限。",
   "@icsExportSyncCalendarBody": {
     "placeholders": {
       "calendarName": {
@@ -6451,7 +6529,7 @@
   "icsExportSyncCalendarFailed": "同步到系统日历失败，请稍后重试",
   "icsExportRemoveCalendarButton": "移除已同步的日程",
   "icsExportRemoveCalendarTitle": "移除已同步的日程",
-  "icsExportRemoveCalendarBody": "将从系统日历中移除“轻屿课表”专属日历及其全部日程，你在日历里的其他内容不受影响。之后想再同步，点“同步到系统日历”即可。",
+  "icsExportRemoveCalendarBody": "将从系统日历中移除轻屿课表专属日历及全部日程，其他日程不受影响。",
   "icsExportRemoveCalendarConfirm": "移除",
   "icsExportRemoveCalendarSuccess": "已从系统日历移除全部同步日程",
   "icsExportRemoveCalendarNothing": "还没有同步过日程",
@@ -6474,7 +6552,7 @@
   "glassDockInsetClearanceLabel": "避让高度",
   "glassDockRoundActionLabel": "圆钮功能",
   "glassDockButtonIconTitle": "圆钮图标",
-  "glassDockButtonIconDefault": "默认（加号）",
+  "glassDockButtonIconDefault": "默认 加号",
   "glassDockButtonIconSearchHint": "搜索图标名称",
   "glassDockCustomizeSectionTitle": "底部导航栏",
   "glassDockCustomizeTitle": "自定义底栏按钮",
@@ -6485,7 +6563,7 @@
   "glassDockShowAddButtonTitle": "显示圆钮",
   "glassDockShowAddButtonSubtitle": "在药丸右侧显示独立圆钮，功能与图标可在下方自定义",
   "glassDockButtonBackToWeekLabel": "回本周 / 今天",
-    "glassDockExtraButtonSemanticLabel": "添加",
+  "glassDockExtraButtonSemanticLabel": "添加",
   "homeMenuStyleLabel": "右上角菜单样式",
   "homeMenuStyleList": "列表菜单",
   "homeMenuStyleGrid": "八宫格菜单",
@@ -6495,14 +6573,20 @@
   "homeGridCustomizeDetails": "已启用 {count}/{max} 个",
   "@homeGridCustomizeDetails": {
     "placeholders": {
-      "count": { "type": "int" },
-      "max": { "type": "int" }
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "homeGridEditorHintBody": "最多放置 {max} 个按钮；按住条目拖动即可排序。",
   "@homeGridEditorHintBody": {
     "placeholders": {
-      "max": { "type": "int" }
+      "max": {
+        "type": "int"
+      }
     }
   },
   "homeGridEditorEnabledTitle": "已启用",
@@ -6510,7 +6594,7 @@
   "homeGridEditorRemoveTooltip": "移除",
   "homeGridEditorAddTooltip": "添加",
   "homeGridEditorResetAction": "恢复默认排列",
-    "homeGridEditorAllAdded": "所有入口都已启用",
+  "homeGridEditorAllAdded": "所有入口都已启用",
   "homeGridEditorMaxReached": "已达上限",
   "homeGridEditorPinnedTooltip": "此入口用于重新打开本页，不能移除",
   "homeMenuCategoryFeatures": "功能入口",
@@ -6520,7 +6604,9 @@
   "classAlarmLeadMinutesLabel": "提前 {minutes} 分钟",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "classAlarmInvalidTimeToast": "这门课的节次超出时间模板，无法设置闹钟",
@@ -6544,9 +6630,21 @@
   "classAlarmNoSemesterToast": "请先在设置中填写学期开始日期",
   "classAlarmActionLabel": "设这节课的闹钟",
   "classAlarmConfirmMessage": "将在系统时钟创建：{detail}。系统闹钟无法识别假期与调休，停课期间照常响铃；删除请在系统时钟中完成。",
-  "@classAlarmConfirmMessage": {"placeholders":{"detail":{"type":"String"}}},
+  "@classAlarmConfirmMessage": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
   "classAlarmVariableSuffix": "另外，{days} 的第一节课时间在不同周不一致，这些天未创建闹钟。",
-  "@classAlarmVariableSuffix": {"placeholders":{"days":{"type":"String"}}},
+  "@classAlarmVariableSuffix": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
   "classAlarmEntryTitle": "上课闹钟",
   "classAlarmGroupSetup": "添加闹钟",
   "classAlarmGroupBehavior": "响铃行为",
@@ -6558,7 +6656,7 @@
   "classAlarmRangeWhole": "整学期",
   "classAlarmLeadTitle": "提前量",
   "classAlarmSkipUiTitle": "跳过确认页",
-  "classAlarmSkipUiSubtitle": "尝试直接写入闹钟，不弹出时钟确认页（部分机型不支持）",
+  "classAlarmSkipUiSubtitle": "直接写入闹钟，不弹出时钟确认页，部分机型可能不支持",
   "classAlarmOpenClock": "打开系统时钟",
   "classAlarmConfirmTitle": "创建重复闹钟？",
   "classAlarmNoSchemeToast": "请先在设置中选择时间模板",
@@ -6566,13 +6664,28 @@
   "classAlarmAddedToast": "已交给系统时钟处理",
   "classAlarmLaunchFailedToast": "未找到可处理的时钟应用",
   "classAlarmCourseConfirmTitle": "添加这节课的重复闹钟？",
-  "classAlarmCourseConfirmMessage": "将在系统时钟创建每周 {weekday} {time} 的重复闹钟（比上课提前 {lead} 分钟响铃；上课周次：{weeks}）。假期与非上课周仍会响铃，删除需在系统时钟中完成。",
-  "@classAlarmCourseConfirmMessage": {"placeholders":{"weekday":{"type":"String"},"time":{"type":"String"},"lead":{"type":"int"},"weeks":{"type":"String"}}},
+  "classAlarmCourseConfirmMessage": "将在系统时钟创建每周 {weekday} {time} 的闹钟，提前 {lead} 分钟响铃，上课周次 {weeks}。非上课周与假期仍会响铃，需在系统时钟中删除。",
+  "@classAlarmCourseConfirmMessage": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "lead": {
+        "type": "int"
+      },
+      "weeks": {
+        "type": "String"
+      }
+    }
+  },
   "classAlarmDaySeparator": "、",
   "classAlarmDetailSeparator": "；",
   "liveExpandedDetailGroupTitle": "展开详情",
   "liveExpandedDetailSubtitle": "长按拖动调整顺序，开关控制是否显示",
-  "liveExpandedDetailHint": "“进度”仅课中显示；展开态下“阶段”与“状态”已由标题承载，不独立成行",
+  "liveExpandedDetailHint": "进度仅课中显示。展开状态下阶段与状态合并至标题显示。",
   "liveExpandedDetailReorderHandleLabel": "拖动排序",
   "liveExpandedDetailMoveUpAction": "上移",
   "liveExpandedDetailMoveDownAction": "下移",
@@ -6614,17 +6727,83 @@
   "liveExpandedDetailLineTeacher": "教师：{value}",
   "liveExpandedDetailLineNext": "下一节：{value}",
   "liveExpandedDetailLineNote": "备注：{value}",
-  "@liveIslandPreviewTitleBeforeClass": {"placeholders": {"course": {"type": "String"}}},
-  "@liveIslandPreviewTitleBeforeEnd": {"placeholders": {"course": {"type": "String"}}},
-  "@liveExpandedDetailLineShortName": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineProgressNext": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineProgressFinal": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineStatus": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineTime": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineLocation": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineTeacher": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineNext": {"placeholders": {"value": {"type": "String"}}},
-  "@liveExpandedDetailLineNote": {"placeholders": {"value": {"type": "String"}}},
+  "@liveIslandPreviewTitleBeforeClass": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveIslandPreviewTitleBeforeEnd": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineShortName": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineProgressNext": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineProgressFinal": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineStatus": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineTime": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineLocation": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineTeacher": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineNext": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveExpandedDetailLineNote": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "weatherTemperatureValue": "{temperature}°",
   "@weatherTemperatureValue": {
     "description": "天气行里的温度一项",
@@ -6689,7 +6868,7 @@
   "weatherShowOnSheetTitle": "课程详情弹窗",
   "weatherSectionContentTitle": "显示内容",
   "weatherShowPhenomenonTitle": "天气现象",
-  "weatherShowPhenomenonSubtitle": "如“小雨”“多云”",
+  "weatherShowPhenomenonSubtitle": "例如 小雨、多云",
   "weatherShowTemperatureTitle": "温度",
   "weatherShowProbabilityTitle": "降水概率",
   "weatherShowProbabilitySubtitle": "低于 30% 时不显示",

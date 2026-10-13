@@ -300,7 +300,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get coupleTimetableColorsSubtitle =>
-      '「내 수업」「상대 수업」「같이 듣는 수업」의 표시 색상을 사용자 지정합니다';
+      '내 수업상대 수업같이 듣는 수업의 표시 색상을 사용자 지정합니다';
 
   @override
   String get partnerImportRequiresSingleProfile =>
@@ -1258,7 +1258,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get qrTransferSendHint => '상대방이 「스캔하여 받기」를 열고 이 화면에 카메라를 대고 있게 하세요';
+  String get qrTransferSendHint => '상대방이 스캔하여 받기를 열고 이 화면에 카메라를 대고 있게 하세요';
 
   @override
   String get qrTransferStop => '전송 중지';
@@ -3115,7 +3115,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get sharedInfoSheetItemShortName =>
-      '수업 약칭: 슈퍼아일랜드 등 간략 표시에 사용. 수동 입력 필요, 자동 생성되지 않음. 「수업 약칭 우선 표시」 활성화 시 적용. 3자 이내 권장.';
+      '수업 약칭: 슈퍼아일랜드 등 간략 표시에 사용. 수동 입력 필요, 자동 생성되지 않음. 수업 약칭 우선 표시 활성화 시 적용. 3자 이내 권장.';
 
   @override
   String get sharedInfoSheetItemSharedSync =>
@@ -3150,7 +3150,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get courseShortNameHelper =>
-      '슈퍼아일랜드 등 간략 표시에 권장. 약칭은 자동 생성되지 않으며 「수업 약칭 우선 표시」 활성화 시 적용. 3자 이내 권장';
+      '슈퍼아일랜드 등 간략 표시에 권장. 약칭은 자동 생성되지 않으며 수업 약칭 우선 표시 활성화 시 적용. 3자 이내 권장';
 
   @override
   String get courseShortNameAutoFillAction => '앞 2자';
@@ -5462,7 +5462,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String courseConflictWithCourse(String name) {
-    return '「$name」와 충돌';
+    return '$name와 충돌';
   }
 
   @override
@@ -10302,7 +10302,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String scheduleDateRuleDeleteMessage(String name) {
-    return 'Delete “$name”? Already-applied schedules are not rolled back automatically; adjust them manually if needed.';
+    return 'Delete $name? Already-applied schedules are not rolled back automatically; adjust them manually if needed.';
   }
 
   @override
@@ -11297,7 +11297,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveExpandedDetailHint =>
-      '「진행」은 수업 중에만 표시됩니다. 펼친 상태에서 「단계」와 「상태」는 제목에 포함되어 별도 줄로 나오지 않습니다';
+      '진행은 수업 중에만 표시됩니다. 펼친 상태에서 단계와 상태는 제목에 포함되어 별도 줄로 나오지 않습니다';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '순서 변경';
@@ -11569,7 +11569,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get weatherShowPhenomenonTitle => '날씨 현상';
 
   @override
-  String get weatherShowPhenomenonSubtitle => '「약한 비」 등';
+  String get weatherShowPhenomenonSubtitle => '약한 비 등';
 
   @override
   String get weatherShowTemperatureTitle => '기온';

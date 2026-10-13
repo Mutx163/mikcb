@@ -1254,7 +1254,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String clearCurrentTimetableMessage(String name) {
-    return 'Clear all courses in “$name”? Timetable settings will be kept';
+    return 'Clear all courses in $name? Timetable settings will be kept';
   }
 
   @override
@@ -1273,7 +1273,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteTimetableMessage(String name) {
-    return 'Delete “$name”?';
+    return 'Delete $name?';
   }
 
   @override
@@ -1594,7 +1594,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Return to the new version, choose the .mikcb backup file from Download, and restore it. Only uninstall the old app after confirming everything works here';
 
   @override
-  String get migrationNoSaveToFilesTitle => 'If “Save to Files” is unavailable';
+  String get migrationNoSaveToFilesTitle => 'If Save to Files is unavailable';
 
   @override
   String get migrationNoSaveToFilesSubtitle =>
@@ -1814,7 +1814,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String confirmDeleteCourseMessage(String name) {
-    return 'Delete course “$name”?';
+    return 'Delete course $name?';
   }
 
   @override
@@ -2246,7 +2246,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteTimeSchemeMessage(String name) {
-    return 'Delete “$name”? This cannot be undone';
+    return 'Delete $name? This cannot be undone';
   }
 
   @override
@@ -2308,7 +2308,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String timeSchemeUsageTitle(String name) {
-    return 'Usage of “$name”';
+    return 'Usage of $name';
   }
 
   @override
@@ -5673,7 +5673,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String courseConflictWithCourse(String name) {
-    return 'Conflicts with “$name”';
+    return 'Conflicts with $name';
   }
 
   @override
@@ -10555,7 +10555,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String scheduleDateRuleDeleteMessage(String name) {
-    return 'Delete “$name”? Already-applied schedules are not rolled back automatically; adjust them manually if needed.';
+    return 'Delete $name? Already-applied schedules are not rolled back automatically; adjust them manually if needed.';
   }
 
   @override
@@ -11857,7 +11857,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherShowPhenomenonTitle => 'Condition';
 
   @override
-  String get weatherShowPhenomenonSubtitle => 'Such as “light rain”';
+  String get weatherShowPhenomenonSubtitle => 'Such as light rain';
 
   @override
   String get weatherShowTemperatureTitle => 'Temperature';

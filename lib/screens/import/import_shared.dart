@@ -431,7 +431,7 @@ Future<bool?> askImportReplaceExisting(
   return showAppTripleActionDialog(
     context,
     title: title,
-    message: '$content\n\n建议日常更新课表时优先使用「更新课表」：会保留本地独有课程，并合并导入文件中的课程',
+    message: '$content\n\n日常更新建议优先选择更新课表，保留本地独有课程并合并新课程',
     cancelLabel: l10n.cancelAction,
     secondaryLabel: l10n.courseImportUpdateRecommendedAction,
     primaryLabel: l10n.courseImportOverwriteAction,
