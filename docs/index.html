@@ -150,7 +150,6 @@
           <span class="nav-brand-text" data-i18n="brand.name">轻屿课表</span>
         </a>
         <nav id="nav-menu" class="nav-links" aria-label="站点导航" data-i18n-attr="aria-label:nav.siteAria">
-          <a href="#showcase" data-i18n="nav.showcase">界面</a>
           <a href="#features" data-i18n="nav.features">功能</a>
           <a href="#schools" data-i18n="nav.schools">适配学校</a>
           <a href="#changelog" data-i18n="nav.updates">更新</a>
@@ -269,135 +268,11 @@
               </div>
             </dl>
           </div>
-        </div>
 
         <div class="marquee" aria-hidden="true">
           <div class="marquee-track">
             <span data-i18n="marquee.island">HyperOS 超级岛</span><span data-i18n="marquee.couple">情侣课表</span><span data-i18n="marquee.import">教务一键导入</span><span data-i18n="marquee.webdav">WebDAV 云同步</span><span data-i18n="marquee.bill">课程统计</span><span data-i18n="marquee.widget">桌面小组件</span><span data-i18n="marquee.remind">分阶段提醒</span><span data-i18n="marquee.lan">局域网编辑</span><span data-i18n="marquee.template">时间模板</span><span data-i18n="marquee.ics">.ics 导入</span><span data-i18n="marquee.ai">识图导入</span><span data-i18n="marquee.multi">多课表</span><span data-i18n="marquee.free">免费开源</span>
             <span data-i18n="marquee.island">HyperOS 超级岛</span><span data-i18n="marquee.couple">情侣课表</span><span data-i18n="marquee.import">教务一键导入</span><span data-i18n="marquee.webdav">WebDAV 云同步</span><span data-i18n="marquee.bill">课程统计</span><span data-i18n="marquee.widget">桌面小组件</span><span data-i18n="marquee.remind">分阶段提醒</span><span data-i18n="marquee.lan">局域网编辑</span><span data-i18n="marquee.template">时间模板</span><span data-i18n="marquee.ics">.ics 导入</span><span data-i18n="marquee.ai">识图导入</span><span data-i18n="marquee.multi">多课表</span><span data-i18n="marquee.free">免费开源</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- ===================== SHOWCASE ===================== -->
-      <section id="showcase" class="section section-showcase">
-        <div class="section-shell">
-          <div class="section-head reveal">
-            <span class="section-label" data-i18n="showcase.label">界面预览</span>
-            <h2>
-              <span data-i18n="showcase.title">原生质感，</span><span class="gradient-text" data-i18n="showcase.titleGrad">沉浸克制。</span>
-            </h2>
-            <p class="section-desc" data-i18n="showcase.desc">
-              全景周课表、桌面小组件矩阵、深度接入 HyperOS 超级岛实时流转。每一像素都为清晰专注而设计。
-            </p>
-          </div>
-
-          <!-- 顶部横排胶囊分类导航 (Apple Segmented Bar) -->
-          <div class="showcase-nav-bar reveal" role="tablist" aria-label="界面预览分类">
-            <button type="button" role="tab" class="showcase-nav-pill is-active" data-index="0" aria-selected="true" id="sc-pill-0">
-              <span class="sc-pill-num">01</span><span>周课表</span>
-            </button>
-            <button type="button" role="tab" class="showcase-nav-pill" data-index="1" aria-selected="false" id="sc-pill-1">
-              <span class="sc-pill-num">02</span><span>今日日程</span>
-            </button>
-            <button type="button" role="tab" class="showcase-nav-pill" data-index="2" aria-selected="false" id="sc-pill-2">
-              <span class="sc-pill-num">03</span><span>超级岛</span>
-            </button>
-            <button type="button" role="tab" class="showcase-nav-pill" data-index="3" aria-selected="false" id="sc-pill-3">
-              <span class="sc-pill-num">04</span><span>桌面组件</span>
-            </button>
-            <button type="button" role="tab" class="showcase-nav-pill" data-index="4" aria-selected="false" id="sc-pill-4">
-              <span class="sc-pill-num">05</span><span>天气联动</span>
-            </button>
-            <button type="button" role="tab" class="showcase-nav-pill" data-index="5" aria-selected="false" id="sc-pill-5">
-              <span class="sc-pill-num">06</span><span>液态外观</span>
-            </button>
-            <button type="button" role="tab" class="showcase-nav-pill" data-index="6" aria-selected="false" id="sc-pill-6">
-              <span class="sc-pill-num">07</span><span>课表设置</span>
-            </button>
-            <button type="button" role="tab" class="showcase-nav-pill" data-index="7" aria-selected="false" id="sc-pill-7">
-              <span class="sc-pill-num">08</span><span>纯粹开源</span>
-            </button>
-          </div>
-
-          <!-- 宏大沉浸主展台 (Apple Cinematic Grand Stage) -->
-          <div class="showcase-grand-stage reveal">
-            <!-- 动态环境背光 -->
-            <div class="showcase-ambient-glow" id="sc-ambient-glow" aria-hidden="true"></div>
-
-            <!-- 手机机模展示区 -->
-            <div class="showcase-device-col">
-              <div class="showcase-device" id="sc-device-mockup" role="button" tabindex="0" aria-label="点击查看高清原图">
-                <div class="device-dynamic-island" aria-hidden="true">
-                  <span class="island-camera-dot"></span>
-                </div>
-                <div class="device-screen-wrap">
-                  <picture>
-                    <source id="sc-main-webp" srcset="./screenshots/01-week-timetable.webp" type="image/webp" />
-                    <img id="sc-main-img" src="./screenshots/01-week-timetable.png" alt="轻屿课表全景周课表界面" width="720" height="1559" loading="eager" />
-                  </picture>
-                </div>
-                <div class="device-glass-glare" aria-hidden="true"></div>
-                <div class="showcase-zoom-hint" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6"/><path d="M8 11h6"/></svg>
-                  <span>点击查看大图</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- 右侧苹果级排版内容 -->
-            <div class="showcase-editorial">
-              <div class="showcase-pill-badge" id="sc-badge">
-                <span class="sc-badge-dot"></span>
-                <span id="sc-badge-text">核心全景</span>
-              </div>
-              <h3 class="showcase-headline" id="sc-headline">整周日程，一眼尽览。</h3>
-              <p class="showcase-subline" id="sc-subline">全景壁纸 · 毛玻璃课卡 · 液态玻璃底栏</p>
-              <p class="showcase-narrative" id="sc-narrative">
-                全景俯瞰一周日程分布，课卡层次清晰分明。单双周智能过滤，空余时段一目了然；壁纸支持手势平滑缩放与自由拖拽，让课表成为真正赏心悦目的日常风景。
-              </p>
-
-              <!-- 磨砂玻璃规格标签 Chips -->
-              <div class="showcase-chips" id="sc-tiles">
-                <span class="showcase-chip">自研 Shader 渲染</span>
-                <span class="showcase-chip">单双周智能过滤</span>
-                <span class="showcase-chip">壁纸手势调配</span>
-              </div>
-
-              <!-- 交互控制与进度条 -->
-              <div class="showcase-controls">
-                <div class="showcase-nav-btns">
-                  <button type="button" class="sc-ctrl-btn" id="sc-prev" aria-label="上一个界面">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-                  </button>
-                  <button type="button" class="sc-ctrl-btn" id="sc-next" aria-label="下一个界面">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-                  </button>
-                </div>
-                <div class="showcase-progress-bar" id="sc-progress" role="tablist" aria-label="展示进度">
-                  <!-- 8个指示段 -->
-                </div>
-                <button type="button" class="sc-play-toggle" id="sc-play-toggle" aria-label="自动播放或暂停">
-                  <svg id="sc-play-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
-                  <span id="sc-play-text">暂停</span>
-                </button>
-                <button type="button" class="sc-zoom-btn" id="sc-open-zoom">
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6"/><path d="M8 11h6"/></svg>
-                  <span>查看原图</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- 全景横向画卷 Filmstrip -->
-          <div class="showcase-filmstrip-wrap reveal">
-            <div class="showcase-filmstrip-head">
-              <span class="showcase-filmstrip-title">全景画廊 · 快速探索</span>
-              <span class="showcase-filmstrip-hint" id="sc-counter">01 / 08</span>
-            </div>
-            <div class="showcase-filmstrip-track" id="sc-filmstrip">
-              <!-- 8个机身卡片 -->
-            </div>
           </div>
         </div>
       </section>
@@ -763,7 +638,6 @@
         <nav class="footer-cols" aria-label="页脚导航" data-i18n-attr="aria-label:nav.footerAria">
           <div class="footer-col">
             <small data-i18n="footer.product">产品</small>
-            <a href="#showcase" data-i18n="nav.showcase">界面</a>
             <a href="#features" data-i18n="nav.features">功能</a>
             <a href="#schools" data-i18n="nav.schools">适配学校</a>
             <a href="https://docs.163366.xyz/docs/guide/changelog/" data-i18n="footer.changelog">更新日志</a>
@@ -917,36 +791,6 @@
         <button class="cta-btn cta-ghost cookie-decline" id="cookie-decline" type="button" data-i18n="cookie.decline">
           拒绝
         </button>
-      </div>
-    </div>
-
-    <!-- ===================== 全屏原图灯箱 ===================== -->
-    <div class="sc-lightbox" id="sc-lightbox" aria-hidden="true" hidden>
-      <div class="sc-lightbox-backdrop" id="sc-lightbox-backdrop"></div>
-      <div class="sc-lightbox-dialog" role="dialog" aria-modal="true" aria-label="高清原图查看">
-        <div class="sc-lightbox-topbar">
-          <div class="sc-lightbox-info">
-            <span class="sc-lightbox-badge" id="sc-lightbox-badge">01 · 核心全景</span>
-            <span class="sc-lightbox-title" id="sc-lightbox-caption">周课表</span>
-          </div>
-          <div class="sc-lightbox-actions">
-            <a id="sc-lightbox-dl" class="sc-lightbox-action-btn" href="./screenshots/01-week-timetable.png" target="_blank" download aria-label="下载原图">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m6 11 6 6 6-6"/><path d="M5 21h14"/></svg>
-            </a>
-            <button type="button" class="sc-lightbox-close" id="sc-lightbox-close" aria-label="关闭预览">✕</button>
-          </div>
-        </div>
-        <div class="sc-lightbox-viewport">
-          <button type="button" class="sc-lightbox-arrow sc-lb-prev" id="sc-lb-prev" aria-label="上一张">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-          <div class="sc-lightbox-media">
-            <img id="sc-lightbox-img" src="./screenshots/01-week-timetable.png" alt="高清原图预览" />
-          </div>
-          <button type="button" class="sc-lightbox-arrow sc-lb-next" id="sc-lb-next" aria-label="下一张">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
-        </div>
       </div>
     </div>
 
