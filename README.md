@@ -1,179 +1,203 @@
-# 轻屿课表
-
-![Flutter](https://img.shields.io/badge/Flutter-3.44.8-02569B?logo=flutter&logoColor=white)
-![Android](https://img.shields.io/badge/Android-Only-34A853?logo=android&logoColor=white)
-![HyperOS](https://img.shields.io/badge/Focus-HyperOS%20%E8%B6%85%E7%BA%A7%E5%B2%9B-FF6A00)
-![Release](https://img.shields.io/github/v/release/Mutx163/mikcb?display_name=tag)
-![CI](https://img.shields.io/github/actions/workflow/status/Mutx163/mikcb/ci.yml?branch=main&label=CI)
-
 <p align="center">
   <img src="docs/app-icon.svg" width="96" alt="轻屿课表">
 </p>
 
-一个面向校园场景的 Android 课表应用，优先适配小米 / HyperOS。
+<h1 align="center">轻屿课表</h1>
 
-官网：<https://163366.xyz> · [使用文档](https://docs.163366.xyz/docs/) · [下载](https://github.com/Mutx163/mikcb/releases) · [更新日志](https://github.com/Mutx163/mikcb/releases)
+<p align="center">
+  <strong>面向高校教学场景的 Android 质感课表应用，深度整合 HyperOS 焦点通知与实时活动系统。</strong>
+</p>
 
-课表本身不难做，难的是那几个每天都要回答的问题：还有多久上课、这节上到哪了、下一节在哪、不打开应用能不能知道。轻屿课表把课表、分阶段提醒、通知、桌面小组件和 HyperOS 超级岛接在一起，围绕这几件事做。应用截图见[官网](https://163366.xyz)。
+<p align="center">
+  <a href="https://flutter.dev"><img src="https://img.shields.io/badge/Flutter-3.44.8-02569B?logo=flutter&logoColor=white" alt="Flutter"></a>
+  <img src="https://img.shields.io/badge/Platform-Android%208.0%2B-34A853?logo=android&logoColor=white" alt="Android">
+  <img src="https://img.shields.io/badge/Focus-HyperOS%20%E8%B6%85%E7%BA%A7%E5%B2%9B-FF6A00" alt="HyperOS">
+  <a href="https://github.com/Mutx163/mikcb/releases"><img src="https://img.shields.io/github/v/release/Mutx163/mikcb?display_name=tag" alt="Release"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg" alt="License"></a>
+  <a href="https://github.com/Mutx163/mikcb/actions"><img src="https://img.shields.io/github/actions/workflow/status/Mutx163/mikcb/ci.yml?branch=main&label=CI" alt="CI"></a>
+</p>
 
-## 功能
+<p align="center">
+  <a href="https://163366.xyz">官方站点</a> ·
+  <a href="https://docs.163366.xyz/docs/">使用文档</a> ·
+  <a href="#获取与安装">下载安装</a> ·
+  <a href="https://github.com/Mutx163/mikcb/releases">版本发布</a> ·
+  <a href="#参与贡献与适配">教务适配</a>
+</p>
 
-### 课表与课程
+---
 
-- 周视图左右滑切周、一键回本周；日视图聚焦当天安排
-- 课程增删改查，可填简称、颜色、单双周、备注等
-- 多套课表独立保存、快速切换，提醒与超级岛跟随当前课表
-- 情侣课表：导入 TA 的课表后合并显示，同时段同名课合为「一起课」，桌面小组件也能显示
-- 时间模板：按自己学校的作息定义节次；周视图长按空白格可直接加课（可关）
-- 教务系统网页登录导入、`.ics` 导入与导出、完整备份导出与恢复
-- 二维码面对面传输（喷泉码多帧，不依赖网络）
+## 项目概述
 
-### 提醒与系统联动
+轻屿课表以「非侵入式日程感知」为核心设计理念，将教学周历、分阶段动态提醒、通知栏常驻、桌面小组件与系统级灵动胶囊紧密协同。无需频繁开启应用，即可在锁屏、状态栏与桌面上即时获取准确的课程进程。
 
-- 上课前 / 课中 / 下课前分阶段提醒
-- 上课闹钟：走系统时钟应用，按真实课表批量添加（适合早八）
-- HyperOS / 小米超级岛、通知栏、焦点通知联动；超级岛展开的每一行可单独显隐与排序
-- 今日桌面小组件、课程统计 2×2 / 2×4 小组件，与课程快照同步
-- 应用内检测更新，选好渠道后直接下载安装
+详细界面演示与设计规范请参阅 [官方站点](https://163366.xyz)。
 
-### 外观与个性化
+---
 
-- 玻璃四档：实体卡片 / 高斯模糊 / 柔光玻璃 / 液态玻璃
-- 首页顶栏玻璃独立选材质（渐进磨砂 / 高斯磨砂 / 柔光 / 液态 / 实体），另有「质感方案」一键套用整套搭配
-- 壁纸用自己选的图片，可拖动调整显示位置；「最近使用」保留最近 10 张，切换课表不会跟着变
-- 应用形态：经典形态 / 玻璃坞（液态玻璃底部导航）
-- 课程统计：学期 / 周双视图、趋势、热力图、教师与教室排行、多课表对比
-- 界面语言：简体中文、繁体中文（台湾 / 香港）、English、日本語、한국어
+## 核心特性
 
-## 下载与更新
+### 1. 深度系统协同与动态提醒
+* **HyperOS 超级岛联动**：深度接入小米 HyperOS 焦点通知系统，支持灵动胶囊毫秒级调度与大卡片展开，展开行内容支持自定义显隐与排序。
+* **分阶段智能调度**：支持上课前、课中进行、临近下课多阶段动态流转与差异化视觉反馈。
+* **桌面小组件矩阵**：提供今日课程、多规格课程概览（2×2 / 2×4）等小组件，与原生数据快照实时同步。
+* **系统闹钟批量编排**：基于真实节次作息，通过系统时钟服务一键编排并批量注册早八上课闹钟。
 
-| 渠道 | 用途 |
-|------|------|
-| [GitHub Releases](https://github.com/Mutx163/mikcb/releases) | 正式版与预发布版 |
-| [GitCode](https://gitcode.com/mutx/qingyu) | 国内下载（`mutx/qingyu`） |
-| [蒲公英](https://www.pgyer.com/qingyu) | 测试分发 |
+### 2. 液态美学与视觉呈现
+* **多层次玻璃拟态**：内置实体卡片、高斯磨砂、柔光玻璃与基于 Impeller Fragment Shader 自研的液态玻璃材质。
+* **界面结构自适应**：支持经典布局与液态玻璃底部导航（玻璃坞）双重形态自由切换。
+* **壁纸系统独立布局**：支持自定义壁纸位置拖拽微调与历史壁纸缓存管理，切换课表不破坏当前视觉方案。
+* **多语言环境支持**：原生支持简体中文、繁体中文（台湾 / 香港）、英语、日语、韩语。
 
-正式包当前以 `arm64-v8a` 为主。应用内可切换更新源，检测到新版本后直接下载安装。
-发行流程见 [docs/RELEASE.md](./docs/RELEASE.md)。
+### 3. 全链路日程与协作体系
+* **多课表独立隔离**：多套课表数据沙箱隔离与毫秒级即时切换，提醒系统与桌面部件实时跟随。
+* **双人情侣课表协同**：支持课表交叉合并比对，智能识别同名同时段课程并聚合呈现，支持桌面组件透出。
+* **无网面对面传输**：集成多帧喷泉码（Fountain Codes）二维码传输协议，无网络环境下实现完整课表秒级互传。
+* **通用格式导入与导出**：支持标准 `.ics` 日历格式互转与全量数据加密备份迁移。
 
-## 教务导入与适配
+### 4. 学业统计与多维看板
+* **全周期学业分析**：提供周视图与学期视图双维度学时分布与走势分析。
+* **课程密度热力图**：直观反映一周日程负荷峰值与空余时段分布。
+* **多维结构统计**：按授课教师、教学场地及多课表维度展开结构化汇总。
 
-- 已经支持一部分学校的教务系统网页登录导入，适配脚本来自 `qingyu_warehouse`
-- 学校暂时没适配也不影响使用：可以先走 `.ics` 导入或完整备份迁移
-- 教务适配仓库：<https://github.com/Mutx163/qingyu_warehouse>
-- 如果你会网页调试、抓包、JavaScript，或者愿意维护自己学校的教务系统，欢迎直接参与适配补充
+---
 
-## 开发者
+## 获取与安装
 
-### 环境版本
+当前安装包主要针对 `arm64-v8a` 架构进行编译优化，最低兼容 Android 8.0（API Level 26）。
 
-版本真源：[`.fvmrc`](./.fvmrc) 与 GitHub Actions。当前稳定版为 **Flutter 3.44.8**，最低支持 **Flutter 3.44.2 / Dart 3.12.2**。
+| 发布渠道 | 渠道类型 | 说明 |
+| :--- | :--- | :--- |
+| **[GitHub Releases](https://github.com/Mutx163/mikcb/releases)** | 官方全量发行渠道 | 正式版与预发布版首发渠道，含完整发布包与校验文件 |
+| **[GitCode 镜像](https://gitcode.com/mutx/qingyu)** | 国内高速镜像渠道 | 适合国内网络环境下载体验 |
+| **[蒲公英分发平台](https://www.pgyer.com/qingyu)** | 内测分发渠道 | 供快速体验最新开发构建 |
 
-| 工具 | 版本 |
-|------|------|
-| Flutter（当前稳定） | 3.44.8 |
-| Flutter（最低支持） | 3.44.2 |
-| Dart SDK | >=3.12.2 <4.0.0 |
-| JDK | 17 |
-| Android SDK | compileSdk 36 / targetSdk 36 / minSdk 26 |
-| Android NDK | 28.2.13676358 |
-| Gradle | 8.14 |
-| Android Gradle Plugin | 8.11.1 |
-| Kotlin | 2.2.20 |
+> **提示**：应用内已集成多更新源检测服务，用户可根据自身网络环境自由切换更新通道。
 
-### 本地开发
+---
+
+## 教务数据接入与生态支持
+
+轻屿课表支持主流高校教务系统的网页鉴权导入。适配规则由独立生态仓库持续维护：
+
+* **教务适配中心**：[Mutx163/qingyu_warehouse](https://github.com/Mutx163/qingyu_warehouse)
+* **标准格式兼容**：尚未适配教务系统的高校，推荐使用标准 `.ics` 日历文件导入或通过全量数据备份进行迁移。
+* **共建规范**：欢迎高校开发者参与教务解析脚本编写，具体接入协议与开发指南请参考教务仓库规范。
+
+---
+
+## 运行环境与权限建议
+
+为确保 HyperOS 超级岛胶囊、实时通知与后台调度服务的稳定运行，建议在系统设置中为本应用授予以下权限：
+
+1. **通知与焦点通知权限**：允许发送常驻通知及在 HyperOS 状态栏展示灵动胶囊；
+2. **后台无限制与自启动**：防止系统电源优化机制在锁屏或息屏状态下中断节次轮询调度；
+3. **免打扰访问权限**（可选）：若启用了上课前自动静音或免打扰自动化策略，需授予此权限。
+
+相关配置指引亦可在应用内「设置 - 维护与自检 - 后台保活」中查阅与验证。
+
+---
+
+## 开发者指南
+
+### 环境依赖矩阵
+
+| 运行环境 / 工具链 | 推荐版本 | 最低兼容版本 |
+| :--- | :--- | :--- |
+| **Flutter SDK** | 3.44.8 | 3.44.2 |
+| **Dart SDK** | 3.12.2+ | >= 3.12.2 < 4.0.0 |
+| **JDK** | 17 | 17 |
+| **Android SDK** | API 36 (compileSdk / targetSdk) | API 26 (minSdk) |
+| **Android NDK** | 28.2.13676358 | 28.x |
+| **Gradle** | 8.14 | 8.10+ |
+| **AGP** | 8.11.1 | 8.10+ |
+
+### 本地初始化与运行
 
 ```bash
+# 获取项目依赖
 flutter pub get
+
+# 启动开发环境调试（使用 dev flavor）
 flutter run -d android --flavor dev
 ```
 
-### 质量检查
+### 质量保证与测试
 
 ```bash
+# 执行单元测试与架构守卫测试
 flutter test
+
+# 执行静态代码分析
 flutter analyze --no-fatal-infos
 ```
 
-### 发布构建
+### 生产环境构建
 
 ```bash
+# 构建正式版 release APK (arm64-v8a)
 flutter build apk --release --flavor prod --target-platform android-arm64
 ```
 
-### 命名说明
+### 工程命名规范与架构映射
 
-| 名称 | 说明 |
-|------|------|
-| 仓库 `mikcb` | GitHub 仓库名 |
-| Dart 包 `university_timetable` | 历史包名（pubspec），与仓库名不同 |
-| Android 包名 `com.mutx163.qingyu` | 应用 ID |
-| 产品名「轻屿课表」 | 用户可见名称 |
+| 命名标识 | 作用域与类型 | 规范说明 |
+| :--- | :--- | :--- |
+| `mikcb` | GitHub 仓库命名 | 项目主代码仓库标识 |
+| `university_timetable` | Dart Package Name | 项目基础业务包名（`pubspec.yaml` 标识符） |
+| `com.mutx163.qingyu` | Android Application ID | Android 原生包名及应用系统唯一标识 |
+| **轻屿课表** | 产品可见名称 | 面向终端用户的正式产品名称 |
 
-## 相关文档
+---
 
-- 贡献指南：[CONTRIBUTING.md](./CONTRIBUTING.md)
-- 行为准则：[CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
-- 安全报告：[SECURITY.md](./SECURITY.md)
-- 隐私说明：[docs/PRIVACY.md](./docs/PRIVACY.md)
-- 第三方许可：[docs/THIRD_PARTY_LICENSES.md](./docs/THIRD_PARTY_LICENSES.md)
-- 产品说明（存档）：[docs/PRODUCT.md](./docs/PRODUCT.md)
-- 发布流程：[docs/RELEASE.md](./docs/RELEASE.md)
-- 网站与国际化协作约定：[docs/WEB_AND_L10N_WORKFLOW.md](./docs/WEB_AND_L10N_WORKFLOW.md)
-- 变更日志：[GitHub Releases](https://github.com/Mutx163/mikcb/releases) / [docs/releases/](./docs/releases/)
+## 技术架构
 
-## 技术栈
+* **UI 框架**：Flutter (Material 3 + [flutter_miuix](https://github.com/w568w/flutter_miuix) HyperOS 风格组件套件)
+* **状态管理**：Provider
+* **图形渲染**：自研 Liquid Glass Fragment Shader（运行于 Impeller 渲染后端）
+* **系统底层集成**：Android Notification / Ongoing Promoted Activity / Foreground Service / AlarmClock
+* **数据离线传输**：`fountain_codes` + `mobile_scanner`
+* **工程集成与监控**：GitHub Actions CI/CD · 友盟移动统计 (U-APM)
 
-- Flutter
-- Provider
-- SharedPreferences
-- 自研液态玻璃材质（Fragment Shader，Impeller）
-- fl_chart（统计图表）
-- flutter_miuix（HyperOS 风格组件）
-- mobile_scanner / fountain_codes（二维码传输）
-- Android Notification / Foreground Service / AlarmClock
-- GitHub Actions
-- GitHub Releases
-- 友盟移动统计 / U-APM
+---
 
-## 使用建议
+## 文档索引
 
-如果你主要用超级岛或实时通知，建议在系统里同时打开这些能力：
+* [贡献指南 (CONTRIBUTING.md)](./CONTRIBUTING.md)
+* [行为准则 (CODE_OF_CONDUCT.md)](./CODE_OF_CONDUCT.md)
+* [安全策略 (SECURITY.md)](./SECURITY.md)
+* [隐私合规声明 (docs/PRIVACY.md)](./docs/PRIVACY.md)
+* [第三方开源许可 (docs/THIRD_PARTY_LICENSES.md)](./docs/THIRD_PARTY_LICENSES.md)
+* [发布流程规范 (docs/RELEASE.md)](./docs/RELEASE.md)
+* [国际化协作规范 (docs/WEB_AND_L10N_WORKFLOW.md)](./docs/WEB_AND_L10N_WORKFLOW.md)
 
-- 通知权限
-- 自启动
-- 电池无限制
-- 焦点通知 / promoted ongoing 权限
+---
 
-这些说明已经放进应用内的「使用引导与权限」页面。
+## 贡献者致谢
 
-## 当前状态
-
-近期主要在做：玻璃与壁纸的稳定性（进场闪变、静止时的性能开销）、首页菜单与弹层的交互细节、桌面小组件配色，以及发版与官网数据同步的自动化。
-
-## 贡献者
-
-感谢每一位让轻屿课表变得更好的人。
+感谢所有为轻屿课表生态贡献力量的开发者与高校志愿者：
 
 <a href="https://github.com/Mutx163/mikcb/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Mutx163/mikcb" alt="轻屿课表贡献者" />
+  <img src="https://contrib.rocks/image?repo=Mutx163/mikcb" alt="轻屿课表代码贡献者" />
 </a>
 
-### 教务适配贡献者
+### 教务适配生态致谢
 
-教务适配脚本由教务适配仓库 [qingyu_warehouse](https://github.com/Mutx163/qingyu_warehouse) 提供。该仓库主体持续自上游 [shiguang_warehouse](https://github.com/XingHeYuZhuan/shiguang_warehouse) 同步，绝大多数学校的适配工作在上游完成，特此向上游全体贡献者致谢：
+教务解析脚本依托于 [qingyu_warehouse](https://github.com/Mutx163/qingyu_warehouse)，持续同步自上游开源项目 [shiguang_warehouse](https://github.com/XingHeYuZhuan/shiguang_warehouse)。特向所有参与高校教务解析规则适配的贡献者致以崇高敬意：
 
 <!-- CONTRIBUTORS:AUTO:START -->
 <img src="docs/contributors/upstream.svg" alt="XingHeYuZhuan/shiguang_warehouse 贡献者" />
 <!-- CONTRIBUTORS:AUTO:END -->
 
-以下同学直接向教务适配仓库提交过代码，一并致谢：
+以下开发者直接向教务适配仓库提交过代码，谨此致谢：
 
 <!-- CONTRIBUTORS_DIRECT:AUTO:START -->
 <img src="docs/contributors/direct.svg" alt="Mutx163/qingyu_warehouse 直接贡献者" />
 <!-- CONTRIBUTORS_DIRECT:AUTO:END -->
 
-贡献者名单由 [tool/generate_contributors.py](./tool/generate_contributors.py) 定期自动生成与更新。
+*(教务适配贡献者名单由自动化构建任务定期同步生成)*
+
+---
 
 ## Star History
 
@@ -185,8 +209,10 @@ flutter build apk --release --flavor prod --target-platform android-arm64
  </picture>
 </a>
 
-## 许可证
+---
 
-本仓库源码使用 [GNU General Public License v3.0](./LICENSE)（SPDX: `GPL-3.0-or-later`）。
+## 开源许可证
 
-随应用分发的第三方 SDK 与资源许可见 [docs/THIRD_PARTY_LICENSES.md](./docs/THIRD_PARTY_LICENSES.md)。
+本项目源码采用 [GNU General Public License v3.0 (GPL-3.0-or-later)](./LICENSE) 协议授权。
+
+随应用集成的第三方 SDK 及依赖库许可证清单请参阅 [docs/THIRD_PARTY_LICENSES.md](./docs/THIRD_PARTY_LICENSES.md)。
