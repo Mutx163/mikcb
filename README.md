@@ -22,7 +22,7 @@
   <a href="https://docs.163366.xyz/docs/">使用文档</a> ·
   <a href="#获取与安装">下载安装</a> ·
   <a href="https://github.com/Mutx163/mikcb/releases">版本发布</a> ·
-  <a href="#参与贡献与适配">教务适配</a>
+  <a href="#教务数据接入与生态支持">教务适配</a>
 </p>
 
 ---
@@ -68,9 +68,9 @@
 
 | 发布渠道 | 渠道类型 | 说明 |
 | :--- | :--- | :--- |
-| **[GitHub Releases](https://github.com/Mutx163/mikcb/releases)** | 官方全量发行渠道 | 正式版与预发布版首发渠道，含完整发布包与校验文件 |
-| **[GitCode 镜像](https://gitcode.com/mutx/qingyu)** | 国内高速镜像渠道 | 适合国内网络环境下载体验 |
-| **[蒲公英分发平台](https://www.pgyer.com/qingyu)** | 内测分发渠道 | 供快速体验最新开发构建 |
+| **[蒲公英下载](https://www.pgyer.com/qingyu)** | 国内快速下载通道 | 适合国内移动网络环境，支持手机直接扫码或高速直链免登录下载 |
+| **[GitHub Releases](https://github.com/Mutx163/mikcb/releases)** | 官方全量发布渠道 | 正式版与预发布版首发渠道，含完整发布日志与校验文件 |
+| **[GitCode 镜像](https://gitcode.com/mutx/qingyu)** | 国内代码与发布镜像 | 国内代码托管镜像，同步提供安装包发布附件 |
 
 > **提示**：应用内已集成多更新源检测服务，用户可根据自身网络环境自由切换更新通道。
 
