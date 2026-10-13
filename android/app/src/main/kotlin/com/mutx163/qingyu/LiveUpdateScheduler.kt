@@ -1313,16 +1313,22 @@ object LiveUpdateScheduler {
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
                     ?: return
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // 与 LiveUpdateService.CHANNEL_ID 同渠道；渠道已存在时本调用为幂等 no-op。
+                // 与 LiveUpdateService.CHANNEL_ID 同渠道；若低于 IMPORTANCE_HIGH 则升级重建。
+                val existing = manager.getNotificationChannel(LiveUpdateService.CHANNEL_ID)
+                if (existing != null && existing.importance < NotificationManager.IMPORTANCE_HIGH) {
+                    manager.deleteNotificationChannel(LiveUpdateService.CHANNEL_ID)
+                }
                 manager.createNotificationChannel(
                     NotificationChannel(
                         LiveUpdateService.CHANNEL_ID,
                         context.getString(R.string.notification_channel_live_update_name),
-                        NotificationManager.IMPORTANCE_LOW,
+                        NotificationManager.IMPORTANCE_HIGH,
                     ).apply {
                         description = context.getString(
                             R.string.notification_channel_live_update_desc,
                         )
+                        setShowBadge(true)
+                        setBypassDnd(true)
                     },
                 )
             }

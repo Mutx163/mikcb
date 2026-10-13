@@ -85,6 +85,10 @@
     <string name="debug_system_denied_promoted">시스템이 승격 알림을 허용하지 않음</string>
     <string name="debug_notification_not_promotable">알림이 승격 표시 조건을 충족하지 않음</string>
 
+    <string name="notification_action_view_timetable">시간표 보기</string>
+    <string name="notification_location_label">장소</string>
+    <string name="island_digit_class_start">시작</string>
+    <string name="island_digit_class_end">종료</string>
     <string name="stop_service_start_failed">실시간 서비스 시작 실패</string>
     <string name="stop_service_destroyed">네이티브 실시간 서비스가 종료됨</string>
     <string name="stop_status_bar_dismissed">수업 중 상태 표시줄 알림을 수동으로 닫음</string>

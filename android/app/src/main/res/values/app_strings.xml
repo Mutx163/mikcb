@@ -90,6 +90,10 @@
     <string name="debug_miui_focus_param_missing">MIUI 焦点通知参数构建失败</string>
     <string name="debug_try_return_home">请返回桌面查看超级岛（应用在前台时系统可能不弹出）</string>
 
+    <string name="notification_action_view_timetable">查看课表</string>
+    <string name="notification_location_label">地点</string>
+    <string name="island_digit_class_start">上课</string>
+    <string name="island_digit_class_end">下课</string>
     <string name="stop_service_start_failed">实时服务启动失败</string>
     <string name="stop_service_destroyed">原生实时服务已销毁</string>
     <string name="stop_status_bar_dismissed">课中状态栏提醒已手动关闭</string>

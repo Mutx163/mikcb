@@ -85,6 +85,10 @@
     <string name="debug_system_denied_promoted">System denied promoted notifications</string>
     <string name="debug_notification_not_promotable">Notification does not meet promotion requirements</string>
 
+    <string name="notification_action_view_timetable">View Timetable</string>
+    <string name="notification_location_label">Location</string>
+    <string name="island_digit_class_start">Start</string>
+    <string name="island_digit_class_end">End</string>
     <string name="stop_service_start_failed">Live service failed to start</string>
     <string name="stop_service_destroyed">Native live service destroyed</string>
     <string name="stop_status_bar_dismissed">In-class status bar reminder dismissed manually</string>

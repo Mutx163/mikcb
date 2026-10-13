@@ -36,6 +36,7 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import org.json.JSONObject
 import java.util.Calendar
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.ceil
 
 class LiveUpdateService : Service() {
@@ -64,6 +65,8 @@ class LiveUpdateService : Service() {
             "com.mutx163.qingyu.action.DISMISS_STATUS_BAR_STAGE"
         private const val POST_PROMOTED_NOTIFICATIONS_PERMISSION =
             "android.permission.POST_PROMOTED_NOTIFICATIONS"
+
+        private val miuiSequenceCounter = AtomicLong(System.currentTimeMillis() / 1000)
 
         @Volatile
         private var isServiceRunning = false
@@ -673,12 +676,18 @@ class LiveUpdateService : Service() {
         }
 
         val manager = getSystemService(NotificationManager::class.java) ?: return
+        val existing = manager.getNotificationChannel(CHANNEL_ID)
+        if (existing != null && existing.importance < NotificationManager.IMPORTANCE_HIGH) {
+            manager.deleteNotificationChannel(CHANNEL_ID)
+        }
         val channel = NotificationChannel(
             CHANNEL_ID,
             getString(R.string.notification_channel_live_update_name),
-            NotificationManager.IMPORTANCE_LOW
+            NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description = getString(R.string.notification_channel_live_update_desc)
+            setShowBadge(true)
+            setBypassDnd(true)
         }
         manager.createNotificationChannel(channel)
     }
@@ -1571,30 +1580,117 @@ class LiveUpdateService : Service() {
                 progressMilestoneTimeTexts = progressMilestoneTimeTexts,
             )
 
+            val now = System.currentTimeMillis()
+            val isBeforeClassCounting = stage == "beforeClass" && startAtMillis > now
+            val isBeforeEndCounting = stage == "beforeEnd" && endAtMillis > now
+            val isCountingDown = isBeforeClassCounting || isBeforeEndCounting
+            val targetMillis = when {
+                isBeforeClassCounting -> startAtMillis
+                isBeforeEndCounting -> endAtMillis
+                else -> 0L
+            }
+
             val paramV2 = JSONObject().apply {
                 put("protocol", 1)
                 put("business", "class_schedule")
                 put("updatable", true)
                 put("enableFloat", true)
+                put("islandFirstFloat", true)
+                put("outEffectSrc", "outer_glow")
+                put("reopen", "reopen")
+                put("sequence", miuiSequenceCounter.incrementAndGet())
                 put("ticker", title)
+                put("aodTitle", islandName.ifBlank { title })
                 // 展开态：焦点通知卡片
                 put(
                     "baseInfo",
                     JSONObject().apply {
+                        put("type", 2)
                         put("title", title)
                         put("content", bodyContent.ifBlank { remainingText })
-                        put("type", 2)
+                        put("subTitle", "")
+                        put("extraTitle", "")
+                        put("specialTitle", "")
+                        put("subContent", "")
+                        put("picFunction", "")
+                        put("showDivider", true)
+                        put("showContentDivider", false)
+                        put("colorTitle", "#111111")
+                        put("colorTitleDark", "#ffffff")
+                        put("colorContent", "#333333")
+                        put("colorContentDark", "#cccccc")
                     }
                 )
-                if (remainingText.isNotBlank()) {
-                    put(
-                        "hintInfo",
-                        JSONObject().apply {
-                            put("type", 1)
-                            put("title", remainingText)
+                put(
+                    "picInfo",
+                    JSONObject().apply {
+                        put("type", 1)
+                        put("pic", "")
+                    }
+                )
+                put(
+                    "hintInfo",
+                    JSONObject().apply {
+                        put("type", 2)
+                        if (isCountingDown) {
+                            put("content", when (stage) {
+                                "beforeClass" -> getString(R.string.stage_before_class)
+                                "beforeEnd" -> getString(R.string.stage_before_end)
+                                else -> remainingText
+                            })
+                            put("title", "")
+                            put(
+                                "timerInfo",
+                                JSONObject().apply {
+                                    put("timerType", -1)
+                                    put("timerWhen", targetMillis)
+                                    put("timerTotal", 0L)
+                                    put("timerSystemCurrent", now)
+                                }
+                            )
+                        } else {
+                            put("content", "")
+                            put("title", remainingText.ifBlank {
+                                when (stage) {
+                                    "duringClass" -> getString(R.string.stage_in_class)
+                                    else -> title
+                                }
+                            })
+                            put(
+                                "timerInfo",
+                                JSONObject().apply {
+                                    put("timerType", 0)
+                                    put("timerWhen", 0L)
+                                    put("timerTotal", 0L)
+                                    put("timerSystemCurrent", 0L)
+                                }
+                            )
                         }
-                    )
-                }
+                        if (visibleLocation.isNotBlank()) {
+                            put("subContent", getString(R.string.notification_location_label))
+                            put("subTitle", visibleLocation)
+                        }
+                        put("colorContent", "#666666")
+                        put("colorContentDark", "#aaaaaa")
+                        put("colorTitle", "#222222")
+                        put("colorTitleDark", "#eeeeee")
+                        put("colorSubContent", "#666666")
+                        put("colorSubContentDark", "#aaaaaa")
+                        put("colorSubTitle", "#222222")
+                        put("colorSubTitleDark", "#eeeeee")
+                        put(
+                            "actionInfo",
+                            JSONObject().apply {
+                                put("actionTitle", getString(R.string.notification_action_view_timetable))
+                                put("actionIntentType", 1)
+                                put(
+                                    "actionIntent",
+                                    "intent:#Intent;component=${packageName}/.MainActivity;launchFlags=0x14000000;end"
+                                )
+                            }
+                        )
+                    }
+                )
                 if (extraInfo.length() > 0) {
                     put("extraInfo", extraInfo)
                 }
@@ -1633,7 +1729,12 @@ class LiveUpdateService : Service() {
             else -> classProgress?.compactDisplayText ?: getString(R.string.stage_in_class)
         }
 
+        val isBeforeClassCounting = stage == "beforeClass" && startAtMillis > now
+        val isBeforeEndCounting = stage == "beforeEnd" && endAtMillis > now
+
         val bigIslandArea = JSONObject().apply {
+            put("templateNo", 2)
+
             // A 区：图文组件1
             val imageTextInfoLeft = JSONObject().apply {
                 put("type", 1)
@@ -1641,7 +1742,9 @@ class LiveUpdateService : Service() {
                     "textInfo",
                     JSONObject().apply {
                         put("title", islandName)
-                        put("content", islandContentText)
+                        put("content", "")
+                        put("showHighlightColor", false)
+                        put("narrowFont", false)
                     }
                 )
                 // 上课中阶段显示环形进度
@@ -1658,8 +1761,63 @@ class LiveUpdateService : Service() {
             }
             put("imageTextInfoLeft", imageTextInfoLeft)
 
-            // B 区：仅上课中阶段显示线性进度+节点
-            if (stage == "duringClass" && classProgress != null) {
+            // B 区：
+            if (isBeforeClassCounting) {
+                put(
+                    "sameWidthDigitInfo",
+                    JSONObject().apply {
+                        put("content", getString(R.string.island_digit_class_start))
+                        put("showHighlightColor", false)
+                        put(
+                            "timerInfo",
+                            JSONObject().apply {
+                                put("timerType", -1)
+                                put("timerWhen", startAtMillis)
+                                put("timerTotal", 0L)
+                                put("timerSystemCurrent", now)
+                            }
+                        )
+                    }
+                )
+                put(
+                    "textInfo",
+                    JSONObject().apply {
+                        put("frontTitle", "")
+                        put("title", "")
+                        put("content", "")
+                        put("showHighlightColor", false)
+                        put("narrowFont", false)
+                    }
+                )
+            } else if (isBeforeEndCounting) {
+                put(
+                    "sameWidthDigitInfo",
+                    JSONObject().apply {
+                        put("content", getString(R.string.island_digit_class_end))
+                        put("showHighlightColor", false)
+                        put(
+                            "timerInfo",
+                            JSONObject().apply {
+                                put("timerType", -1)
+                                put("timerWhen", endAtMillis)
+                                put("timerTotal", 0L)
+                                put("timerSystemCurrent", now)
+                            }
+                        )
+                    }
+                )
+                put(
+                    "textInfo",
+                    JSONObject().apply {
+                        put("frontTitle", "")
+                        put("title", "")
+                        put("content", "")
+                        put("showHighlightColor", false)
+                        put("narrowFont", false)
+                    }
+                )
+            } else if (stage == "duringClass" && classProgress != null) {
+                // 上课中阶段显示线性进度+节点
                 val milestonePoints = buildMilestonePoints(
                     progressBreakOffsetsMillis,
                     progressMilestoneLabels,
@@ -1691,10 +1849,30 @@ class LiveUpdateService : Service() {
                     )
                 }
                 put("progressTextInfo", progressTextInfo)
+            } else {
+                put(
+                    "textInfo",
+                    JSONObject().apply {
+                        put("frontTitle", "")
+                        put("title", islandContentText)
+                        put("content", "")
+                        put("showHighlightColor", false)
+                        put("narrowFont", false)
+                    }
+                )
             }
         }
 
-        val smallIslandArea = JSONObject()
+        val smallIslandArea = JSONObject().apply {
+            put(
+                "picInfo",
+                JSONObject().apply {
+                    put("type", 1)
+                    put("pic", "miui.focus.pic_small")
+                    put("picDark", "miui.focus.pic_small_dark")
+                }
+            )
+        }
 
         return JSONObject().apply {
             put("islandProperty", 1)
@@ -2302,7 +2480,24 @@ class LiveUpdateService : Service() {
         }
 
         val notification = builder.build()
-        miuiFocusParam?.let { notification.extras.putString("miui.focus.param", it) }
+        if (miuiFocusParam != null) {
+            notification.extras.putString("miui.focus.param", miuiFocusParam)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && isXiaomiFamilyDevice()) {
+                val appIcon = Icon.createWithResource(this, R.mipmap.ic_launcher)
+                val smallIcon = if (miuiIslandLabelBitmap != null) {
+                    Icon.createWithBitmap(miuiIslandLabelBitmap)
+                } else {
+                    appIcon
+                }
+                val picsBundle = Bundle().apply {
+                    putParcelable("miui.focus.pic_app_icon", appIcon)
+                    putParcelable("miui.focus.pic_app_icon_dark", appIcon)
+                    putParcelable("miui.focus.pic_small", smallIcon)
+                    putParcelable("miui.focus.pic_small_dark", smallIcon)
+                }
+                notification.extras.putBundle("miui.focus.pics", picsBundle)
+            }
+        }
 
         val canPostPromoted = if (Build.VERSION.SDK_INT >= 36) {
             getSystemService(NotificationManager::class.java)?.canPostPromotedNotifications() == true

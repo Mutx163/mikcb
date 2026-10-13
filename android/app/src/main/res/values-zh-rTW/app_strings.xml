@@ -85,6 +85,10 @@
     <string name="debug_system_denied_promoted">系統未允許提升通知</string>
     <string name="debug_notification_not_promotable">目前通知不滿足系統提升特徵</string>
 
+    <string name="notification_action_view_timetable">查看課表</string>
+    <string name="notification_location_label">地點</string>
+    <string name="island_digit_class_start">上課</string>
+    <string name="island_digit_class_end">下課</string>
     <string name="stop_service_start_failed">即時服務啟動失敗</string>
     <string name="stop_service_destroyed">原生即時服務已銷毀</string>
     <string name="stop_status_bar_dismissed">課中狀態列提醒已手動關閉</string>

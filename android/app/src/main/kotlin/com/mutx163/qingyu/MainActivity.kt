@@ -2167,14 +2167,21 @@ class MainActivity : FlutterActivity() {
 
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = notificationManager ?: getSystemService(NotificationManager::class.java)
+            val existing = manager?.getNotificationChannel(CHANNEL_ID)
+            if (existing != null && existing.importance < NotificationManager.IMPORTANCE_HIGH) {
+                manager.deleteNotificationChannel(CHANNEL_ID)
+            }
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 getString(R.string.notification_channel_live_update_name),
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = getString(R.string.notification_channel_live_update_desc)
+                setShowBadge(true)
+                setBypassDnd(true)
             }
-            notificationManager?.createNotificationChannel(channel)
+            manager?.createNotificationChannel(channel)
             ExamReminderScheduler.ensureChannel(this)
         }
     }

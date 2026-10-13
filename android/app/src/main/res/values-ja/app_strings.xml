@@ -85,6 +85,10 @@
     <string name="debug_system_denied_promoted">システムが昇格通知を許可していません</string>
     <string name="debug_notification_not_promotable">通知が昇格表示の条件を満たしていません</string>
 
+    <string name="notification_action_view_timetable">時間割を見る</string>
+    <string name="notification_location_label">教室</string>
+    <string name="island_digit_class_start">開始</string>
+    <string name="island_digit_class_end">終了</string>
     <string name="stop_service_start_failed">リアルタイムサービスの起動に失敗</string>
     <string name="stop_service_destroyed">ネイティブリアルタイムサービスが破棄されました</string>
     <string name="stop_status_bar_dismissed">授業中ステータスバー通知を手動で閉じました</string>
