@@ -214,9 +214,9 @@
       {
         num: "01",
         badge: "核心全景",
-        headline: "把整周节奏，化作桌面风景",
+        headline: "整周日程，一眼尽览。",
         subline: "全景壁纸 · 毛玻璃课卡 · 液态玻璃底栏",
-        desc: "全景俯瞰一周日程分布，课卡层次清晰分明。单双周智能过滤，空余时段一目了然；壁纸支持拖拽与平滑手势缩放，让课表成为真正赏心悦目的日常工具。",
+        desc: "全景俯瞰一周日程分布，课卡层次清晰分明。单双周智能过滤，空余时段一目了然；壁纸支持手势平滑缩放与自由拖拽，让课表成为真正赏心悦目的日常风景。",
         tiles: [
           { tag: "自研 Shader", text: "液态玻璃底部导航坞" },
           { tag: "智能排布", text: "单双周过滤与空课高亮" },
@@ -230,8 +230,8 @@
       {
         num: "02",
         badge: "当日流转",
-        headline: "聚焦当下，从容掌控每节作息",
-        subline: "分阶段卡片 · 精准节次 · 毫秒级倒计时",
+        headline: "聚焦当下，从容掌控每节作息。",
+        subline: "分阶段卡片 · 精准节次 · 倒计时追踪",
         desc: "自动收拢非今日日程，专注此时此刻的教学节奏。下一节课去哪个校区教室、还有多久打铃、课后去向何处，悬浮卡片自然连续衔接。",
         tiles: [
           { tag: "动态流转", text: "上课倒计时毫秒级追踪" },
@@ -246,12 +246,12 @@
       {
         num: "03",
         badge: "系统级协同",
-        headline: "状态栏灵动流转，抬眼即知",
+        headline: "状态栏上，灵动流转。",
         subline: "深度接入小米 HyperOS 焦点通知架构",
-        desc: "与状态栏镜头挖孔浑然一体。灵动胶囊毫秒级倒计时，下拉大卡片清晰展现课程详情与授课教师。上课无需反复解锁点开 App，信息自然生长在系统里。",
+        desc: "与状态栏镜头挖孔浑然一体。灵动胶囊实时倒计时，下拉大卡片清晰展现课程详情与授课教师。上课无需反复解锁点开应用，信息自然生长在系统之中。",
         tiles: [
-          { tag: "灵动胶囊", text: "镜头挖孔毫秒级调度" },
-          { tag: "卡片展开", text: "支持自定义字段与排序" },
+          { tag: "灵动胶囊", text: "镜头挖孔实时调度" },
+          { tag: "卡片展开", text: "自定义字段与清晰排布" },
           { tag: "免打扰联动", text: "课前自动静音课后恢复" }
         ],
         glow: "rgba(0, 122, 255, 0.52)",
@@ -261,8 +261,8 @@
       },
       {
         num: "04",
-        badge: "桌面组件生态",
-        headline: "全尺寸矩阵，自由编排主屏",
+        badge: "微件生态",
+        headline: "全尺寸矩阵，自由编排主屏。",
         subline: "2×2 主卡 · 迷你日程 · 课程概览 · 倒计时条",
         desc: "全套小组件覆盖各种屏幕排版需求。采用原生数据快照高效秒级渲染，极低电量消耗；还支持情侣课表双人日程透出，抬眼即见彼此安排。",
         tiles: [
@@ -278,9 +278,9 @@
       {
         num: "05",
         badge: "场景感知",
-        headline: "知晓晴雨温差，从容出门上课",
+        headline: "出门上课前，知晓晴雨温差。",
         subline: "实时气温 · 降水预报 · 出行贴心建议",
-        desc: "课程卡片内嵌实时气象信息。清晨出门前智能提示是否携带雨具与温差变化，将气象感知与日程结合，让工具具备生活温度。",
+        desc: "课程卡片自然融入实时气象信息。清晨出门前智能提示是否携带雨具与温差变化，将气象感知与日程结合，让工具具备生活温度。",
         tiles: [
           { tag: "精准气象", text: "基于地理位置实时气温" },
           { tag: "出行建议", text: "降雨概率与雨具携带提示" },
@@ -293,8 +293,8 @@
       },
       {
         num: "06",
-        badge: "视觉美学",
-        headline: "质感定制，触手可及的液态美",
+        badge: "视觉质感",
+        headline: "质感定制，触手可及的通透。",
         subline: "实体卡片 · 高斯磨砂 · 自研 Shader",
         desc: "内置多种视觉材质风格：实体卡片、高斯磨砂柔光以及基于 Impeller Fragment Shader 自研的液态玻璃材质，圆角、字重、透明度随心微调。",
         tiles: [
@@ -309,8 +309,8 @@
       },
       {
         num: "07",
-        badge: "教务配置中心",
-        headline: "化繁为简，轻松驾驭复杂学制",
+        badge: "教务中枢",
+        headline: "化繁为简，轻松驾驭复杂学制。",
         subline: "学期周历 · 作息模板 · 法定节假日排课",
         desc: "支持多套节次作息时间模板切换、开学周次智能推算、单双周连续排课以及法定节假日调休自动避让，全面兼容各大高校的特殊排课规则。",
         tiles: [
@@ -325,8 +325,8 @@
       },
       {
         num: "08",
-        badge: "产品理念",
-        headline: "零广告、无注册，回归工具纯粹",
+        badge: "极简纯粹",
+        headline: "零广告，零追踪，坚守纯粹。",
         subline: "GPL-3.0 协议 · 本地优先 · 隐私完全掌控",
         desc: "代码完全开源透明，杜绝流氓常驻与隐私获取。数据完全由你掌控，支持本地全量加密备份与 WebDAV 云同步，纯粹无负担，做最可靠的大学伴侣。",
         tiles: [
@@ -608,10 +608,14 @@
     if (!stage) return;
 
     let currentIndex = 0;
+    let isAutoPlaying = true;
+    let autoPlayTimer = null;
+    const AUTO_PLAY_INTERVAL = 5500;
+
     const pills = Array.from(document.querySelectorAll(".showcase-nav-pill"));
+    const grandStage = document.querySelector(".showcase-grand-stage");
     const deviceMockup = document.getElementById("sc-device-mockup");
     const ambientGlow = document.getElementById("sc-ambient-glow");
-    const watermark = document.getElementById("sc-watermark");
     const badgeText = document.getElementById("sc-badge-text");
     const headline = document.getElementById("sc-headline");
     const subline = document.getElementById("sc-subline");
@@ -623,6 +627,9 @@
     const counterEl = document.getElementById("sc-counter");
     const filmstrip = document.getElementById("sc-filmstrip");
     const zoomBtn = document.getElementById("sc-open-zoom");
+    const playToggleBtn = document.getElementById("sc-play-toggle");
+    const playIcon = document.getElementById("sc-play-icon");
+    const playText = document.getElementById("sc-play-text");
     const mainWebp = document.getElementById("sc-main-webp");
     const mainImg = document.getElementById("sc-main-img");
 
@@ -630,8 +637,12 @@
     const lightbox = document.getElementById("sc-lightbox");
     const lightboxImg = document.getElementById("sc-lightbox-img");
     const lightboxCaption = document.getElementById("sc-lightbox-caption");
+    const lightboxBadge = document.getElementById("sc-lightbox-badge");
+    const lightboxDl = document.getElementById("sc-lightbox-dl");
     const lightboxClose = document.getElementById("sc-lightbox-close");
     const lightboxBackdrop = document.getElementById("sc-lightbox-backdrop");
+    const lbPrevBtn = document.getElementById("sc-lb-prev");
+    const lbNextBtn = document.getElementById("sc-lb-next");
 
     function getItems() {
       const locale = window.I18n?.getLocale?.() || "zh-CN";
@@ -650,7 +661,7 @@
           seg.type = "button";
           seg.className = `sc-prog-seg ${idx === currentIndex ? "is-active" : ""}`;
           seg.setAttribute("aria-label", `界面 ${idx + 1}`);
-          seg.addEventListener("click", () => renderItem(idx));
+          seg.addEventListener("click", () => onUserNavigate(idx));
           progressBar.appendChild(seg);
         });
       }
@@ -671,7 +682,7 @@
               <span class="showcase-filmstrip-name">${item.name}</span>
             </div>
           `;
-          card.addEventListener("click", () => renderItem(idx));
+          card.addEventListener("click", () => onUserNavigate(idx));
           filmstrip.appendChild(card);
         });
       }
@@ -707,31 +718,24 @@
         counterEl.textContent = `${item.num} / 0${items.length}`;
       }
 
-      // Update Ambient Glow color
+      // Update Ambient Glow color & CSS custom properties
       if (ambientGlow) {
-        ambientGlow.style.background = `radial-gradient(circle, ${item.glow} 0%, rgba(20, 184, 166, 0.12) 50%, transparent 72%)`;
+        ambientGlow.style.background = `radial-gradient(circle, ${item.glow} 0%, rgba(20, 184, 166, 0.12) 48%, transparent 72%)`;
       }
       if (deviceMockup) {
         deviceMockup.style.setProperty("--sc-glow", item.glow);
       }
 
       // Update Editorial Text
-      if (watermark) watermark.textContent = item.num;
       if (badgeText) badgeText.textContent = item.badge;
       if (headline) headline.textContent = item.headline;
       if (subline) subline.textContent = item.subline;
       if (narrative) narrative.textContent = item.desc;
 
-      // Update Feature Tiles
+      // Update Feature Chips
       if (tilesWrap && Array.isArray(item.tiles)) {
         tilesWrap.innerHTML = item.tiles
-          .map(
-            (t) => `
-              <div class="showcase-tile">
-                <div class="showcase-tile-tag">${t.tag}</div>
-                <div class="showcase-tile-text">${t.text}</div>
-              </div>`
-          )
+          .map((t) => `<span class="showcase-chip">${t.text}</span>`)
           .join("");
       }
 
@@ -760,25 +764,108 @@
       }
     }
 
-    // Lightbox Controls
-    function openLightbox() {
-      const items = getItems();
-      const item = items[currentIndex];
-      if (!item || !lightbox || !lightboxImg) return;
+    // Auto-play management
+    function startAutoPlay() {
+      clearTimeout(autoPlayTimer);
+      if (!isAutoPlaying) return;
+      autoPlayTimer = setTimeout(() => {
+        const items = getItems();
+        const nextIdx = (currentIndex + 1) % items.length;
+        renderItem(nextIdx);
+        startAutoPlay();
+      }, AUTO_PLAY_INTERVAL);
+    }
 
+    function pauseAutoPlay() {
+      clearTimeout(autoPlayTimer);
+    }
+
+    function restartAutoPlay() {
+      if (isAutoPlaying) {
+        startAutoPlay();
+      }
+    }
+
+    function onUserNavigate(idx) {
+      renderItem(idx);
+      if (isAutoPlaying) {
+        restartAutoPlay();
+      }
+    }
+
+    if (playToggleBtn) {
+      playToggleBtn.addEventListener("click", () => {
+        isAutoPlaying = !isAutoPlaying;
+        if (isAutoPlaying) {
+          if (playIcon) playIcon.innerHTML = '<path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>';
+          if (playText) playText.textContent = "暂停";
+          playToggleBtn.setAttribute("aria-label", "暂停自动轮播");
+          startAutoPlay();
+        } else {
+          if (playIcon) playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+          if (playText) playText.textContent = "播放";
+          playToggleBtn.setAttribute("aria-label", "开启自动轮播");
+          pauseAutoPlay();
+        }
+      });
+    }
+
+    if (grandStage) {
+      grandStage.addEventListener("mouseenter", pauseAutoPlay);
+      grandStage.addEventListener("mouseleave", () => {
+        if (!lightbox || lightbox.hidden) restartAutoPlay();
+      });
+    }
+
+    // Lightbox Controls
+    function updateLightboxContent(item) {
+      if (!item || !lightbox || !lightboxImg) return;
       lightboxImg.src = item.png;
       lightboxImg.alt = item.headline;
       if (lightboxCaption) {
-        lightboxCaption.textContent = `${item.num} · ${item.headline} (${item.subline})`;
+        lightboxCaption.textContent = `${item.name} · ${item.headline}`;
       }
+      if (lightboxBadge) {
+        lightboxBadge.textContent = `${item.num} · ${item.badge}`;
+      }
+      if (lightboxDl) {
+        lightboxDl.href = item.png;
+      }
+    }
+
+    function openLightbox() {
+      const items = getItems();
+      const item = items[currentIndex];
+      if (!item || !lightbox) return;
+      updateLightboxContent(item);
       lightbox.hidden = false;
       document.body.style.overflow = "hidden";
+      pauseAutoPlay();
     }
 
     function closeLightbox() {
       if (!lightbox) return;
       lightbox.hidden = true;
       document.body.style.overflow = "";
+      if (isAutoPlaying) restartAutoPlay();
+    }
+
+    if (lbPrevBtn) {
+      lbPrevBtn.addEventListener("click", () => {
+        const items = getItems();
+        const nextIdx = (currentIndex - 1 + items.length) % items.length;
+        renderItem(nextIdx);
+        updateLightboxContent(items[nextIdx]);
+      });
+    }
+
+    if (lbNextBtn) {
+      lbNextBtn.addEventListener("click", () => {
+        const items = getItems();
+        const nextIdx = (currentIndex + 1) % items.length;
+        renderItem(nextIdx);
+        updateLightboxContent(items[nextIdx]);
+      });
     }
 
     if (deviceMockup) {
@@ -802,14 +889,25 @@
       lightboxBackdrop.addEventListener("click", closeLightbox);
     }
     window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && lightbox && !lightbox.hidden) {
+      if (!lightbox || lightbox.hidden) return;
+      if (e.key === "Escape") {
         closeLightbox();
+      } else if (e.key === "ArrowLeft") {
+        const items = getItems();
+        const nextIdx = (currentIndex - 1 + items.length) % items.length;
+        renderItem(nextIdx);
+        updateLightboxContent(items[nextIdx]);
+      } else if (e.key === "ArrowRight") {
+        const items = getItems();
+        const nextIdx = (currentIndex + 1) % items.length;
+        renderItem(nextIdx);
+        updateLightboxContent(items[nextIdx]);
       }
     });
 
     // Bind Top Nav Pills
     pills.forEach((pill, i) => {
-      pill.addEventListener("click", () => renderItem(i));
+      pill.addEventListener("click", () => onUserNavigate(i));
     });
 
     // Bind Prev / Next
@@ -817,7 +915,7 @@
       prevBtn.addEventListener("click", () => {
         const items = getItems();
         const nextIdx = (currentIndex - 1 + items.length) % items.length;
-        renderItem(nextIdx);
+        onUserNavigate(nextIdx);
       });
     }
 
@@ -825,25 +923,26 @@
       nextBtn.addEventListener("click", () => {
         const items = getItems();
         const nextIdx = (currentIndex + 1) % items.length;
-        renderItem(nextIdx);
+        onUserNavigate(nextIdx);
       });
     }
 
-    // Keyboard Arrow Controls
+    // Keyboard Arrow Controls on Main Stage
     stage.addEventListener("keydown", (e) => {
       if (lightbox && !lightbox.hidden) return;
       if (e.key === "ArrowLeft") {
         const items = getItems();
-        renderItem((currentIndex - 1 + items.length) % items.length);
+        onUserNavigate((currentIndex - 1 + items.length) % items.length);
       } else if (e.key === "ArrowRight") {
         const items = getItems();
-        renderItem((currentIndex + 1) % items.length);
+        onUserNavigate((currentIndex + 1) % items.length);
       }
     });
 
     // Initial setup
     setupFilmstripAndProgress();
     renderItem(0);
+    startAutoPlay();
 
     // Re-render when i18n locale changes
     if (window.I18n && typeof window.I18n.onChange === "function") {

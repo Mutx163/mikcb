@@ -292,7 +292,7 @@
             </p>
           </div>
 
-          <!-- 顶部横排胶囊分类导航 -->
+          <!-- 顶部横排胶囊分类导航 (Apple Segmented Bar) -->
           <div class="showcase-nav-bar reveal" role="tablist" aria-label="界面预览分类">
             <button type="button" role="tab" class="showcase-nav-pill is-active" data-index="0" aria-selected="true" id="sc-pill-0">
               <span class="sc-pill-num">01</span><span>周课表</span>
@@ -320,7 +320,7 @@
             </button>
           </div>
 
-          <!-- 宏大沉浸主展台 -->
+          <!-- 宏大沉浸主展台 (Apple Cinematic Grand Stage) -->
           <div class="showcase-grand-stage reveal">
             <!-- 动态环境背光 -->
             <div class="showcase-ambient-glow" id="sc-ambient-glow" aria-hidden="true"></div>
@@ -328,7 +328,9 @@
             <!-- 手机机模展示区 -->
             <div class="showcase-device-col">
               <div class="showcase-device" id="sc-device-mockup" role="button" tabindex="0" aria-label="点击查看高清原图">
-                <div class="device-camera-hole" aria-hidden="true"></div>
+                <div class="device-dynamic-island" aria-hidden="true">
+                  <span class="island-camera-dot"></span>
+                </div>
                 <div class="device-screen-wrap">
                   <picture>
                     <source id="sc-main-webp" srcset="./screenshots/01-week-timetable.webp" type="image/webp" />
@@ -343,48 +345,42 @@
               </div>
             </div>
 
-            <!-- 右侧建筑级排版内容 -->
+            <!-- 右侧苹果级排版内容 -->
             <div class="showcase-editorial">
-              <div class="showcase-watermark" id="sc-watermark" aria-hidden="true">01</div>
               <div class="showcase-pill-badge" id="sc-badge">
                 <span class="sc-badge-dot"></span>
                 <span id="sc-badge-text">核心全景</span>
               </div>
-              <h3 class="showcase-headline" id="sc-headline">把整周节奏，化作桌面风景</h3>
+              <h3 class="showcase-headline" id="sc-headline">整周日程，一眼尽览。</h3>
               <p class="showcase-subline" id="sc-subline">全景壁纸 · 毛玻璃课卡 · 液态玻璃底栏</p>
               <p class="showcase-narrative" id="sc-narrative">
-                全景俯瞰一周日程分布，课卡层次清晰分明。单双周智能过滤，空余时段一目了然；壁纸支持拖拽与平滑手势缩放，让课表成为真正赏心悦目的日常工具。
+                全景俯瞰一周日程分布，课卡层次清晰分明。单双周智能过滤，空余时段一目了然；壁纸支持手势平滑缩放与自由拖拽，让课表成为真正赏心悦目的日常风景。
               </p>
 
-              <!-- 3块磨砂玻璃特性牌 -->
-              <div class="showcase-tiles" id="sc-tiles">
-                <div class="showcase-tile">
-                  <div class="showcase-tile-tag">自研 Shader</div>
-                  <div class="showcase-tile-text">液态玻璃底部导航坞</div>
-                </div>
-                <div class="showcase-tile">
-                  <div class="showcase-tile-tag">智能排布</div>
-                  <div class="showcase-tile-text">单双周过滤与空课高亮</div>
-                </div>
-                <div class="showcase-tile">
-                  <div class="showcase-tile-tag">手势调配</div>
-                  <div class="showcase-tile-text">壁纸位置独立自由拖拽</div>
-                </div>
+              <!-- 磨砂玻璃规格标签 Chips -->
+              <div class="showcase-chips" id="sc-tiles">
+                <span class="showcase-chip">自研 Shader 渲染</span>
+                <span class="showcase-chip">单双周智能过滤</span>
+                <span class="showcase-chip">壁纸手势调配</span>
               </div>
 
               <!-- 交互控制与进度条 -->
               <div class="showcase-controls">
                 <div class="showcase-nav-btns">
                   <button type="button" class="sc-ctrl-btn" id="sc-prev" aria-label="上一个界面">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
                   </button>
                   <button type="button" class="sc-ctrl-btn" id="sc-next" aria-label="下一个界面">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
                   </button>
                 </div>
                 <div class="showcase-progress-bar" id="sc-progress" role="tablist" aria-label="展示进度">
                   <!-- 8个指示段 -->
                 </div>
+                <button type="button" class="sc-play-toggle" id="sc-play-toggle" aria-label="自动播放或暂停">
+                  <svg id="sc-play-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
+                  <span id="sc-play-text">暂停</span>
+                </button>
                 <button type="button" class="sc-zoom-btn" id="sc-open-zoom">
                   <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6"/><path d="M8 11h6"/></svg>
                   <span>查看原图</span>
@@ -396,7 +392,7 @@
           <!-- 全景横向画卷 Filmstrip -->
           <div class="showcase-filmstrip-wrap reveal">
             <div class="showcase-filmstrip-head">
-              <span class="showcase-filmstrip-title">全景画廊 · 点击切换</span>
+              <span class="showcase-filmstrip-title">全景画廊 · 快速探索</span>
               <span class="showcase-filmstrip-hint" id="sc-counter">01 / 08</span>
             </div>
             <div class="showcase-filmstrip-track" id="sc-filmstrip">
@@ -928,11 +924,29 @@
     <div class="sc-lightbox" id="sc-lightbox" aria-hidden="true" hidden>
       <div class="sc-lightbox-backdrop" id="sc-lightbox-backdrop"></div>
       <div class="sc-lightbox-dialog" role="dialog" aria-modal="true" aria-label="高清原图查看">
-        <button type="button" class="sc-lightbox-close" id="sc-lightbox-close" aria-label="关闭预览">✕</button>
-        <div class="sc-lightbox-media">
-          <img id="sc-lightbox-img" src="./screenshots/01-week-timetable.png" alt="高清原图预览" />
+        <div class="sc-lightbox-topbar">
+          <div class="sc-lightbox-info">
+            <span class="sc-lightbox-badge" id="sc-lightbox-badge">01 · 核心全景</span>
+            <span class="sc-lightbox-title" id="sc-lightbox-caption">周课表</span>
+          </div>
+          <div class="sc-lightbox-actions">
+            <a id="sc-lightbox-dl" class="sc-lightbox-action-btn" href="./screenshots/01-week-timetable.png" target="_blank" download aria-label="下载原图">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m6 11 6 6 6-6"/><path d="M5 21h14"/></svg>
+            </a>
+            <button type="button" class="sc-lightbox-close" id="sc-lightbox-close" aria-label="关闭预览">✕</button>
+          </div>
         </div>
-        <p class="sc-lightbox-caption" id="sc-lightbox-caption">全景周课表</p>
+        <div class="sc-lightbox-viewport">
+          <button type="button" class="sc-lightbox-arrow sc-lb-prev" id="sc-lb-prev" aria-label="上一张">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div class="sc-lightbox-media">
+            <img id="sc-lightbox-img" src="./screenshots/01-week-timetable.png" alt="高清原图预览" />
+          </div>
+          <button type="button" class="sc-lightbox-arrow sc-lb-next" id="sc-lb-next" aria-label="下一张">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
