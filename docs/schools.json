@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-12T07:51:36+00:00",
+  "updatedAt": "2026-10-13T08:16:48+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 252,
-    "schools": 247,
+    "total": 255,
+    "schools": 250,
     "generic": 5
   },
   "schools": [
@@ -258,6 +258,13 @@
       "name": "长江大学",
       "initial": "C",
       "resourceFolder": "YANGTZEU",
+      "category": "school"
+    },
+    {
+      "id": "CCSUT",
+      "name": "长沙工业学院",
+      "initial": "C",
+      "resourceFolder": "CCSUT",
       "category": "school"
     },
     {
@@ -842,6 +849,13 @@
       "category": "school"
     },
     {
+      "id": "JDZVUA",
+      "name": "景德镇艺术职业大学",
+      "initial": "J",
+      "resourceFolder": "JDZVUA",
+      "category": "school"
+    },
+    {
       "id": "JNU",
       "name": "暨南大学",
       "initial": "J",
@@ -1329,6 +1343,13 @@
       "name": "山东药品食品职业学院",
       "initial": "S",
       "resourceFolder": "SDDFVC",
+      "category": "school"
+    },
+    {
+      "id": "SDUFE",
+      "name": "山东财经大学",
+      "initial": "S",
+      "resourceFolder": "SDUFE",
       "category": "school"
     },
     {
