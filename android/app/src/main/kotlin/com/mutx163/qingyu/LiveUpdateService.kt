@@ -43,7 +43,9 @@ class LiveUpdateService : Service() {
     companion object {
         private const val TAG = "LiveUpdateService"
         // 供 LiveUpdateScheduler 的降级普通通知复用同一渠道（跨文件需 internal）。
-        internal const val CHANNEL_ID = "live_update_channel"
+        // 升级为 v2 渠道：安卓底层禁止同一渠道 ID 由低提权至高，故通过换新 ID 确保老安装设备能获取 IMPORTANCE_HIGH 权限。
+        internal const val CHANNEL_ID = "live_update_channel_v2"
+        private const val OLD_CHANNEL_ID = "live_update_channel"
         private const val NOTIFICATION_ID = 2001
         // service_started 是状态迁移事件：仅 停止→运行 或负载变化 时记录。
         // 同签名去重跨 onStartCommand 复用（一次打开 App 有多个启动入口）。
@@ -676,10 +678,11 @@ class LiveUpdateService : Service() {
         }
 
         val manager = getSystemService(NotificationManager::class.java) ?: return
-        val existing = manager.getNotificationChannel(CHANNEL_ID)
-        if (existing != null && existing.importance < NotificationManager.IMPORTANCE_HIGH) {
-            manager.deleteNotificationChannel(CHANNEL_ID)
-        }
+        // 清理老版本低优先级渠道，避免系统通知设置页残留两套重名渠道
+        try {
+            manager.deleteNotificationChannel(OLD_CHANNEL_ID)
+        } catch (_: Exception) {}
+
         val channel = NotificationChannel(
             CHANNEL_ID,
             getString(R.string.notification_channel_live_update_name),

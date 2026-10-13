@@ -1313,11 +1313,10 @@ object LiveUpdateScheduler {
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
                     ?: return
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // 与 LiveUpdateService.CHANNEL_ID 同渠道；若低于 IMPORTANCE_HIGH 则升级重建。
-                val existing = manager.getNotificationChannel(LiveUpdateService.CHANNEL_ID)
-                if (existing != null && existing.importance < NotificationManager.IMPORTANCE_HIGH) {
-                    manager.deleteNotificationChannel(LiveUpdateService.CHANNEL_ID)
-                }
+                // 与 LiveUpdateService.CHANNEL_ID (v2) 同渠道；顺带清理旧版本低优先级渠道。
+                try {
+                    manager.deleteNotificationChannel("live_update_channel")
+                } catch (_: Exception) {}
                 manager.createNotificationChannel(
                     NotificationChannel(
                         LiveUpdateService.CHANNEL_ID,

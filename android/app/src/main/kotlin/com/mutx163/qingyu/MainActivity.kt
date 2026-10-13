@@ -61,7 +61,8 @@ class MainActivity : FlutterActivity() {
         private const val WEEKLY_REPORT_CHANNEL = "com.mutx163.qingyu/weekly_report"
         private const val SUPPORT_CHANNEL = "com.mutx163.qingyu/support"
         private const val MIGRATION_CHANNEL = "com.mutx163.qingyu/migration"
-        private const val CHANNEL_ID = "live_update_channel"
+        private const val CHANNEL_ID = "live_update_channel_v2"
+        private const val OLD_CHANNEL_ID = "live_update_channel"
 
         /** 分享导入超限时交给 Dart 的 kind；Dart 侧按它弹本地化的「文件过大」。 */
         private const val EXTERNAL_IMPORT_TOO_LARGE_KIND = "too_large"
@@ -2168,10 +2169,9 @@ class MainActivity : FlutterActivity() {
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val manager = notificationManager ?: getSystemService(NotificationManager::class.java)
-            val existing = manager?.getNotificationChannel(CHANNEL_ID)
-            if (existing != null && existing.importance < NotificationManager.IMPORTANCE_HIGH) {
-                manager.deleteNotificationChannel(CHANNEL_ID)
-            }
+            try {
+                manager?.deleteNotificationChannel(OLD_CHANNEL_ID)
+            } catch (_: Exception) {}
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 getString(R.string.notification_channel_live_update_name),
