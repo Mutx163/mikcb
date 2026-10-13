@@ -167,6 +167,12 @@ flutter build apk --release --flavor prod --target-platform android-arm64
   <img src="https://contrib.rocks/image?repo=Mutx163/qingyu_warehouse" alt="教务适配仓库贡献者" />
 </a>
 
+同时感谢上游仓库 [shiguang_warehouse](https://github.com/XingHeYuZhuan/shiguang_warehouse)——大量学校适配在它那边完成，本仓库持续从中同步，感谢这些贡献者：
+
+<a href="https://github.com/XingHeYuZhuan/shiguang_warehouse/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=XingHeYuZhuan/shiguang_warehouse" alt="上游教务仓库贡献者" />
+</a>
+
 ## Star History
 
 <a href="https://www.star-history.com/?repos=mutx163%2Fmikcb&type=timeline&logscale=&releases=&legend=bottom-right">
