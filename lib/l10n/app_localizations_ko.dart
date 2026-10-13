@@ -2571,7 +2571,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get preferShortNameTitle => '약칭 우선 표시';
 
   @override
-  String get preferShortNameSubtitle => '약칭은 3자 이내를 권장합니다';
+  String get preferShortNameSubtitle => '약칭을 입력하지 않으면 적용되지 않습니다. 3자 이내 권장';
 
   @override
   String get showLocationTitle => '장소 표시';
@@ -2593,10 +2593,27 @@ class AppLocalizationsKo extends AppLocalizations {
       '카운트다운 끈 후에도 \'곧 수업/수업 중/종료 알림\'을 계속 표시할 수 있습니다';
 
   @override
-  String get hidePrefixTextTitle => '접두사 텍스트 숨기기';
+  String get hidePrefixTextTitle => '\'수업 시작까지 / 수업 종료까지\' 접두사 숨기기';
 
   @override
-  String get hidePrefixTextSubtitle => '예: \'곧 수업\' 같은 접두사를 숨기기';
+  String get hidePrefixTextSubtitle =>
+      '카운트다운 활성화 시 적용, 숫자만 표시(예: \'수업 시작까지\' 숨김)';
+
+  @override
+  String get hidePrefixTextInactiveHint =>
+      '현재 미적용: 상단의 \'카운트다운 표시\'를 먼저 켜야 합니다';
+
+  @override
+  String get showStageTextInactiveHint =>
+      '현재 미적용: 카운트다운이 대신 표시 중입니다. 상단 카운트다운을 끄면 적용됩니다';
+
+  @override
+  String get courseNameDuplicatedHint =>
+      '왼쪽에 이미 과목명이 표시되고 있습니다. 중복을 피하려면 끌 수 있습니다';
+
+  @override
+  String get locationDuplicatedHint =>
+      '왼쪽에 이미 장소가 표시되고 있습니다. 중복을 피하려면 끌 수 있습니다';
 
   @override
   String get liveIslandPreviewTitle => '슈퍼 아일랜드 미리보기';
@@ -2661,18 +2678,28 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get liveIslandVisualTitle => '왼쪽 아이콘 및 펼친 상태';
+  String get liveIslandVisualTitle => '캡슐 좌측 아이콘';
 
   @override
   String get liveIslandVisualSubtitle =>
       '왼쪽 텍스트 이미지, 펼친 상태 큰 아이콘, 사용자 정의 이미지는 모두 현재 스테이지별로 개별 저장됩니다';
 
   @override
+  String get liveExpandedIconSectionTitle => '확장 카드 큰 아이콘';
+
+  @override
   String get liveMiuiLabelImageTitle => '샤오미 아일랜드 왼쪽 텍스트 아이콘';
 
   @override
   String get liveMiuiLabelImageSubtitle =>
-      '샤오미 기기 스타일에서만 유효합니다. 수업명 또는 장소를 왼쪽 아이콘 위치에 생성합니다';
+      'Xiaomi/Redmi 기기 권장. 타 기기도 상태표시줄 아이콘에 텍스트 표시를 시도할 수 있습니다(이상 시 비활성화)';
+
+  @override
+  String get liveMiuiLabelAdvancedAccordionTitle => '타이포그래피 및 위치 미세 조정';
+
+  @override
+  String get liveMiuiLabelAdvancedAccordionSubtitle =>
+      '글자 크기, 가로/세로 오프셋, 굵기 및 선명도';
 
   @override
   String get liveMiuiLabelContentLabel => '왼쪽 텍스트 내용';
@@ -11272,7 +11299,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveExpandedDetailHint =>
-      '「진행」은 수업 중에만 표시됩니다. 슈퍼 아일랜드 펼친 화면에서 「단계」와 「상태」는 이미 제목과 요약에 포함되므로 별도 줄로 표시되지 않습니다. Android 16 수업 중에는 펼친 화면을 시스템이 그리므로 이 설정이 적용되지 않습니다.';
+      '「진행」은 수업 중에만 표시됩니다. 펼친 상태에서 「단계」와 「상태」는 제목에 포함되어 별도 줄로 나오지 않습니다';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '순서 변경';

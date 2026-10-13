@@ -2667,7 +2667,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get preferShortNameSubtitle =>
-      'Short names work best within 3 characters';
+      'Takes effect only if short name is filled in; recommended within 3 chars';
 
   @override
   String get showLocationTitle => 'Show Location';
@@ -2690,11 +2690,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'If countdown is hidden, you can still show labels like before class / in class / before end';
 
   @override
-  String get hidePrefixTextTitle => 'Hide Prefix Text';
+  String get hidePrefixTextTitle => 'Hide \"Starts in / Ends in\" Prefix';
 
   @override
   String get hidePrefixTextSubtitle =>
-      'For example, hide prefixes like “before class”';
+      'Takes effect when countdown is on; displays numbers only (e.g. hides \"Starts in\")';
+
+  @override
+  String get hidePrefixTextInactiveHint =>
+      'Currently inactive: Requires \"Show countdown\" above';
+
+  @override
+  String get showStageTextInactiveHint =>
+      'Currently inactive: Replaced by countdown; takes effect when countdown is off';
+
+  @override
+  String get courseNameDuplicatedHint =>
+      'Course name is shown on the left; turn off to avoid duplication';
+
+  @override
+  String get locationDuplicatedHint =>
+      'Location is shown on the left; turn off to avoid duplication';
 
   @override
   String get liveIslandPreviewTitle => 'Super Island preview';
@@ -2759,18 +2775,29 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get liveIslandVisualTitle => 'Left Icon & Expanded View';
+  String get liveIslandVisualTitle => 'Capsule Left Icon';
 
   @override
   String get liveIslandVisualSubtitle =>
       'The left text icon, expanded large icon, and custom image are all stored separately for the current stage';
 
   @override
+  String get liveExpandedIconSectionTitle => 'Expanded Card Large Icon';
+
+  @override
   String get liveMiuiLabelImageTitle => 'Xiaomi Island Left Text Icon';
 
   @override
   String get liveMiuiLabelImageSubtitle =>
-      'Only effective on Xiaomi-style island layouts. It renders course name or location into the left icon slot';
+      'Recommended for Xiaomi/Redmi. Other devices can try showing text in status bar icon; turn off if abnormal';
+
+  @override
+  String get liveMiuiLabelAdvancedAccordionTitle =>
+      'Typography & Alignment Fine-Tuning';
+
+  @override
+  String get liveMiuiLabelAdvancedAccordionSubtitle =>
+      'Font size, horizontal/vertical offsets, weight, and render quality';
 
   @override
   String get liveMiuiLabelContentLabel => 'Left Text Content';
@@ -11558,7 +11585,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveExpandedDetailHint =>
-      'Progress only appears during class. In the super-island expanded view, Stage and Status are already carried by the title and the summary, so they are not rendered as separate lines. On Android 16 during class the expanded view is drawn by the system and ignores this setting.';
+      'Progress only appears during class. Stage and Status are already in the title and won\'t form separate lines';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => 'Reorder';

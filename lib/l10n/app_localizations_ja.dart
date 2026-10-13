@@ -2557,7 +2557,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get preferShortNameTitle => '略称を優先表示';
 
   @override
-  String get preferShortNameSubtitle => '略称は3文字以内を推奨';
+  String get preferShortNameSubtitle => '略称が未入力の場合は無効。3文字以内を推奨';
 
   @override
   String get showLocationTitle => '場所を表示';
@@ -2578,10 +2578,23 @@ class AppLocalizationsJa extends AppLocalizations {
   String get showStageTextSubtitle => 'カウントダウンオフ後も「もうすぐ授業/授業中/終了リマインダー」を継続表示可能';
 
   @override
-  String get hidePrefixTextTitle => 'プレフィックステキストを非表示';
+  String get hidePrefixTextTitle => '「授業開始まで / 授業終了まで」接頭辞を非表示';
 
   @override
-  String get hidePrefixTextSubtitle => '例：「もうすぐ授業」などのプレフィックスを非表示';
+  String get hidePrefixTextSubtitle => 'カウントダウン有効時に反映、数字のみ表示（例：「授業開始まで」を非表示）';
+
+  @override
+  String get hidePrefixTextInactiveHint => '現在は無効：上の「カウントダウンを表示」を有効にする必要があります';
+
+  @override
+  String get showStageTextInactiveHint =>
+      '現在は無効：カウントダウン優先中。上のカウントダウンをオフにすると反映されます';
+
+  @override
+  String get courseNameDuplicatedHint => '左側にコース名が表示されています。重複を避けるためオフにできます';
+
+  @override
+  String get locationDuplicatedHint => '左側に場所が表示されています。重複を避けるためオフにできます';
 
   @override
   String get liveIslandPreviewTitle => 'スーパー島プレビュー';
@@ -2646,17 +2659,28 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get liveIslandVisualTitle => '左側アイコンと展開状態';
+  String get liveIslandVisualTitle => 'カプセル左側アイコン';
 
   @override
   String get liveIslandVisualSubtitle =>
       '左側テキスト画像、展開状態の大きなアイコンとカスタム画像は全て現在のステージ別に保存';
 
   @override
+  String get liveExpandedIconSectionTitle => '展開カード大アイコン';
+
+  @override
   String get liveMiuiLabelImageTitle => '小米アイランド左側テキストアイコン';
 
   @override
-  String get liveMiuiLabelImageSubtitle => '小米端末スタイルのみ有効，授業名または場所を左側アイコン位置に生成';
+  String get liveMiuiLabelImageSubtitle =>
+      'Xiaomi/Redmi推奨。他機種でもステータスバーアイコンに文字表示を試行可能（異常時はオフにしてください）';
+
+  @override
+  String get liveMiuiLabelAdvancedAccordionTitle => '文字組版と位置の微調整';
+
+  @override
+  String get liveMiuiLabelAdvancedAccordionSubtitle =>
+      'フォントサイズ、水平/垂直オフセット、太さ、鮮明度';
 
   @override
   String get liveMiuiLabelContentLabel => '左側テキスト内容';
@@ -11223,7 +11247,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveExpandedDetailHint =>
-      '「進捗」は授業中のみ表示されます。スーパーアイランドの展開表示では「段階」「状態」はタイトルと概要に含まれるため、単独の行としては表示されません。Android 16 の授業中は展開表示をシステムが描画するため、この設定は反映されません。';
+      '「進捗」は授業中のみ表示。展開時は「段階」「状態」がタイトルに含まれるため独立行になりません';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '並べ替え';

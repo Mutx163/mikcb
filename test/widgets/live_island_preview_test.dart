@@ -172,12 +172,15 @@ void main() {
     expect(find.textContaining('距上课'), findsNothing);
   });
 
-  testWidgets('非小米机型且未开自定义标签：左侧图标位为空', (tester) async {
+  testWidgets('非小米机型未开自定义标签：左侧图标位画阶段小图标', (tester) async {
     // 测试环境没有原生通道，机型探测回落到 false（= 非小米系）。
+    // 2026-10-12 起预览对非小米机型也画原生同款阶段小图标（时钟 / 书本 /
+    // 倒计时圆环）：既对齐真实通知栏的 setSmallIcon，也避免非小米用户
+    // 看到左侧空白误以为功能失效。
     await pumpPreview(tester, displayConfig: display());
 
-    expect(find.byIcon(Icons.access_time), findsNothing,
-        reason: '非小米机型没有超级岛，左侧图标位不应画阶段图标');
+    expect(find.byIcon(Icons.access_time), findsOneWidget,
+        reason: '课前阶段的白色模板小图标（ic_upcoming）');
     expect(
       textMatching(RegExp(r'^高等数学 三教-401 距上课 \d+分钟$')),
       findsOneWidget,

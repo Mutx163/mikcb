@@ -2507,7 +2507,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get preferShortNameTitle => '优先显示课程简称';
 
   @override
-  String get preferShortNameSubtitle => '建议简称控制在 3 个字以内';
+  String get preferShortNameSubtitle => '课程未填写简称时不生效；建议简称控制在 3 个字以内';
 
   @override
   String get showLocationTitle => '显示地点';
@@ -2528,10 +2528,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get showStageTextSubtitle => '关闭倒计时后，可继续显示“即将上课 / 上课中 / 下课提醒”';
 
   @override
-  String get hidePrefixTextTitle => '隐藏前缀文案';
+  String get hidePrefixTextTitle => '隐藏“距上课 / 距下课”前缀';
 
   @override
-  String get hidePrefixTextSubtitle => '例如隐藏“即将上课”这类前缀';
+  String get hidePrefixTextSubtitle => '开启倒计时时生效，仅保留倒计时数字（如隐藏“距上课”前缀）';
+
+  @override
+  String get hidePrefixTextInactiveHint => '当前未生效：需先开启上方“显示倒计时”';
+
+  @override
+  String get showStageTextInactiveHint => '当前未生效：已由倒计时承载；关闭上方倒计时后生效';
+
+  @override
+  String get courseNameDuplicatedHint => '左侧已选展示课程名，可关闭避免左右重复';
+
+  @override
+  String get locationDuplicatedHint => '左侧已选展示地点，可关闭避免左右重复';
 
   @override
   String get liveIslandPreviewTitle => '超级岛预览';
@@ -2595,16 +2607,26 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get liveIslandVisualTitle => '左侧图标与展开态';
+  String get liveIslandVisualTitle => '胶囊左侧图标';
 
   @override
   String get liveIslandVisualSubtitle => '左侧文字图、展开态大图标和自定义图片都按当前阶段单独保存';
 
   @override
+  String get liveExpandedIconSectionTitle => '展开卡片大图标';
+
+  @override
   String get liveMiuiLabelImageTitle => '超级岛左侧文字图标';
 
   @override
-  String get liveMiuiLabelImageSubtitle => '仅小米手机样式生效，会把课程名或地点生成到左侧图标位';
+  String get liveMiuiLabelImageSubtitle =>
+      '推荐小米/红米设备；其他机型开启后将尝试在状态栏小图标显示文字，若显示异常可随时关闭';
+
+  @override
+  String get liveMiuiLabelAdvancedAccordionTitle => '文字排版与位置微调';
+
+  @override
+  String get liveMiuiLabelAdvancedAccordionSubtitle => '字号、水平/垂直偏移、粗细与清晰度';
 
   @override
   String get liveMiuiLabelContentLabel => '左侧文字内容';
@@ -10895,8 +10917,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveExpandedDetailSubtitle => '长按拖动调整顺序，开关控制是否显示';
 
   @override
-  String get liveExpandedDetailHint =>
-      '“进度”只在课中显示；超级岛展开态下“阶段”“状态”已由标题与摘要承载，不会再单独成行；Android 16 且课中带进度条时展开态由系统绘制，本设置不生效';
+  String get liveExpandedDetailHint => '“进度”仅课中显示；展开态下“阶段”与“状态”已由标题承载，不独立成行';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '拖动排序';
@@ -13748,7 +13769,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get preferShortNameTitle => '優先顯示課程簡稱';
 
   @override
-  String get preferShortNameSubtitle => '建議簡稱控製在 3 個字以內';
+  String get preferShortNameSubtitle => '課程未填寫簡稱時不生效；建議簡稱控制在 3 個字以內';
 
   @override
   String get showLocationTitle => '顯示地點';
@@ -13769,10 +13790,22 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get showStageTextSubtitle => '關閉倒計時後，可繼續顯示“即將上課 / 上課中 / 下課提醒”';
 
   @override
-  String get hidePrefixTextTitle => '隱藏前綴文案';
+  String get hidePrefixTextTitle => '隱藏「距上課 / 距下課」前綴';
 
   @override
-  String get hidePrefixTextSubtitle => '例如隱藏“即將上課”這類前綴';
+  String get hidePrefixTextSubtitle => '開啟倒計時時生效，僅保留倒計時數字（如隱藏「距上課」前綴）';
+
+  @override
+  String get hidePrefixTextInactiveHint => '當前未生效：需先開啟上方「顯示倒計時」';
+
+  @override
+  String get showStageTextInactiveHint => '當前未生效：已由倒計時承載；關閉上方倒計時後生效';
+
+  @override
+  String get courseNameDuplicatedHint => '左側已選展示課程名，可關閉避免左右重複';
+
+  @override
+  String get locationDuplicatedHint => '左側已選展示地點，可關閉避免左右重複';
 
   @override
   String get liveIslandPreviewTitle => '超級島預覽';
@@ -13836,16 +13869,26 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get liveIslandVisualTitle => '左側圖示與展開態';
+  String get liveIslandVisualTitle => '膠囊左側圖示';
 
   @override
   String get liveIslandVisualSubtitle => '左側文字圖、展開態大圖示和自定義圖片都按目前階段單獨保存';
 
   @override
+  String get liveExpandedIconSectionTitle => '展開卡片大圖示';
+
+  @override
   String get liveMiuiLabelImageTitle => '超級島左側文字圖標';
 
   @override
-  String get liveMiuiLabelImageSubtitle => '僅小米手機樣式生效，會把課程名或地點生成到左側圖示位';
+  String get liveMiuiLabelImageSubtitle =>
+      '推薦小米/紅米設備；其他機型開啟後將嘗試在狀態欄小圖示顯示文字，若顯示異常可隨時關閉';
+
+  @override
+  String get liveMiuiLabelAdvancedAccordionTitle => '文字排版與位置微調';
+
+  @override
+  String get liveMiuiLabelAdvancedAccordionSubtitle => '字型大小、水平/垂直偏移、粗細與清晰度';
 
   @override
   String get liveMiuiLabelContentLabel => '左側文字內容';
@@ -22175,8 +22218,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveExpandedDetailSubtitle => '長按拖動調整順序，開關控制係咪顯示';
 
   @override
-  String get liveExpandedDetailHint =>
-      '「進度」只在課中顯示；超級島展開態下「階段」「狀態」已由標題同摘要承載，唔會再獨立成行；Android 16 且課中帶進度條時展開態由系統繪製，本設定唔生效';
+  String get liveExpandedDetailHint => '「進度」僅課中顯示；展開態下「階段」與「狀態」已由標題承載，不獨立成行';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '拖動排序';
@@ -25028,7 +25070,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get preferShortNameTitle => '優先顯示課程簡稱';
 
   @override
-  String get preferShortNameSubtitle => '建議簡稱控製在 3 個字以內';
+  String get preferShortNameSubtitle => '課程未填寫簡稱時不生效；建議簡稱控制在 3 個字以內';
 
   @override
   String get showLocationTitle => '顯示地點';
@@ -25049,10 +25091,22 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get showStageTextSubtitle => '關閉倒計時後，可繼續顯示“即將上課 / 上課中 / 下課提醒”';
 
   @override
-  String get hidePrefixTextTitle => '隱藏前綴文案';
+  String get hidePrefixTextTitle => '隱藏「距上課 / 距下課」前綴';
 
   @override
-  String get hidePrefixTextSubtitle => '例如隱藏“即將上課”這類前綴';
+  String get hidePrefixTextSubtitle => '開啟倒數時生效，僅保留倒數數字（如隱藏「距上課」前綴）';
+
+  @override
+  String get hidePrefixTextInactiveHint => '當前未生效：需先開啟上方「顯示倒數」';
+
+  @override
+  String get showStageTextInactiveHint => '當前未生效：已由倒數承載；關閉上方倒數後生效';
+
+  @override
+  String get courseNameDuplicatedHint => '左側已選展示課程名，可關閉避免左右重複';
+
+  @override
+  String get locationDuplicatedHint => '左側已選展示地點，可關閉避免左右重複';
 
   @override
   String get liveIslandPreviewTitle => '超級島預覽';
@@ -25116,16 +25170,26 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get liveIslandVisualTitle => '左側圖示與展開態';
+  String get liveIslandVisualTitle => '膠囊左側圖示';
 
   @override
   String get liveIslandVisualSubtitle => '左側文字圖、展開態大圖示和自訂圖片都按目前階段單獨儲存';
 
   @override
+  String get liveExpandedIconSectionTitle => '展開卡片大圖示';
+
+  @override
   String get liveMiuiLabelImageTitle => '超級島左側文字圖標';
 
   @override
-  String get liveMiuiLabelImageSubtitle => '僅小米手機樣式生效，會把課程名或地點生成到左側圖示位';
+  String get liveMiuiLabelImageSubtitle =>
+      '推薦小米/紅米裝置；其他機型開啟後將嘗試在狀態列小圖示顯示文字，若顯示異常可隨時關閉';
+
+  @override
+  String get liveMiuiLabelAdvancedAccordionTitle => '文字排版與位置微調';
+
+  @override
+  String get liveMiuiLabelAdvancedAccordionSubtitle => '字型大小、水平/垂直偏移、粗細與清晰度';
 
   @override
   String get liveMiuiLabelContentLabel => '左側文字內容';
@@ -33456,8 +33520,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveExpandedDetailSubtitle => '長按拖動調整順序，開關控制是否顯示';
 
   @override
-  String get liveExpandedDetailHint =>
-      '「進度」只在課中顯示；超級島展開態下「階段」「狀態」已由標題與摘要承載，不會再獨立成行；Android 16 且課中帶進度條時展開態由系統繪製，本設定不生效';
+  String get liveExpandedDetailHint => '「進度」僅課中顯示；展開態下「階段」與「狀態」已由標題承載，不獨立成行';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '拖動排序';

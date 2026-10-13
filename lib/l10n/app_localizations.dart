@@ -4669,7 +4669,7 @@ abstract class AppLocalizations {
   /// No description provided for @preferShortNameSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'建议简称控制在 3 个字以内'**
+  /// **'课程未填写简称时不生效；建议简称控制在 3 个字以内'**
   String get preferShortNameSubtitle;
 
   /// No description provided for @showLocationTitle.
@@ -4711,14 +4711,38 @@ abstract class AppLocalizations {
   /// No description provided for @hidePrefixTextTitle.
   ///
   /// In zh, this message translates to:
-  /// **'隐藏前缀文案'**
+  /// **'隐藏“距上课 / 距下课”前缀'**
   String get hidePrefixTextTitle;
 
   /// No description provided for @hidePrefixTextSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'例如隐藏“即将上课”这类前缀'**
+  /// **'开启倒计时时生效，仅保留倒计时数字（如隐藏“距上课”前缀）'**
   String get hidePrefixTextSubtitle;
+
+  /// No description provided for @hidePrefixTextInactiveHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前未生效：需先开启上方“显示倒计时”'**
+  String get hidePrefixTextInactiveHint;
+
+  /// No description provided for @showStageTextInactiveHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前未生效：已由倒计时承载；关闭上方倒计时后生效'**
+  String get showStageTextInactiveHint;
+
+  /// No description provided for @courseNameDuplicatedHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'左侧已选展示课程名，可关闭避免左右重复'**
+  String get courseNameDuplicatedHint;
+
+  /// No description provided for @locationDuplicatedHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'左侧已选展示地点，可关闭避免左右重复'**
+  String get locationDuplicatedHint;
 
   /// No description provided for @liveIslandPreviewTitle.
   ///
@@ -4825,7 +4849,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveIslandVisualTitle.
   ///
   /// In zh, this message translates to:
-  /// **'左侧图标与展开态'**
+  /// **'胶囊左侧图标'**
   String get liveIslandVisualTitle;
 
   /// No description provided for @liveIslandVisualSubtitle.
@@ -4833,6 +4857,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'左侧文字图、展开态大图标和自定义图片都按当前阶段单独保存'**
   String get liveIslandVisualSubtitle;
+
+  /// No description provided for @liveExpandedIconSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开卡片大图标'**
+  String get liveExpandedIconSectionTitle;
 
   /// No description provided for @liveMiuiLabelImageTitle.
   ///
@@ -4843,8 +4873,20 @@ abstract class AppLocalizations {
   /// No description provided for @liveMiuiLabelImageSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'仅小米手机样式生效，会把课程名或地点生成到左侧图标位'**
+  /// **'推荐小米/红米设备；其他机型开启后将尝试在状态栏小图标显示文字，若显示异常可随时关闭'**
   String get liveMiuiLabelImageSubtitle;
+
+  /// No description provided for @liveMiuiLabelAdvancedAccordionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'文字排版与位置微调'**
+  String get liveMiuiLabelAdvancedAccordionTitle;
+
+  /// No description provided for @liveMiuiLabelAdvancedAccordionSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'字号、水平/垂直偏移、粗细与清晰度'**
+  String get liveMiuiLabelAdvancedAccordionSubtitle;
 
   /// No description provided for @liveMiuiLabelContentLabel.
   ///
@@ -19803,7 +19845,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveExpandedDetailHint.
   ///
   /// In zh, this message translates to:
-  /// **'“进度”只在课中显示；超级岛展开态下“阶段”“状态”已由标题与摘要承载，不会再单独成行；Android 16 且课中带进度条时展开态由系统绘制，本设置不生效'**
+  /// **'“进度”仅课中显示；展开态下“阶段”与“状态”已由标题承载，不独立成行'**
   String get liveExpandedDetailHint;
 
   /// No description provided for @liveExpandedDetailReorderHandleLabel.

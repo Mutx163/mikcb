@@ -6,7 +6,6 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/timetable_settings.dart';
 import '../services/bundled_assets.dart';
-import '../services/miui_live_activities_service.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/hex_color.dart';
 
@@ -15,8 +14,8 @@ import '../utils/hex_color.dart';
 /// 还原真实摘要态胶囊的单行左右分区：中间是摄像头开孔；左侧只有通知小图标位，
 /// 右侧是整条 islandCriticalText（课程名 + 地点 + 状态）。也就是说——「显示
 /// 内容」那组开关（课程名 / 简称 / 地点 / 倒计时 / 阶段文字 / 前缀）控制的是
-/// **右侧文本**，左侧图标位只由下面的实验性图片开关（小米岛左侧文字图标）和
-/// 机型能力决定。展开态的详情行由下方的 [LiveIslandExpandedPreviewCard] 负责。
+/// **右侧文本**，左侧图标位只由下面的实验性图片开关（小米岛左侧文字图标）
+/// 决定。展开态的详情行由下方的 [LiveIslandExpandedPreviewCard] 负责。
 ///
 /// 与原生 `MainActivity.kt` 的对应关系。真机摘要态胶囊的文本来自提升通知的
 /// shortCriticalText，即 islandCriticalText 的组合规则：
@@ -25,11 +24,10 @@ import '../utils/hex_color.dart';
 ///   - 开启自定义标签（enableMiuiIslandLabelImage）时 = 原生
 ///     buildIslandLabelBitmap() 生成的位图（图标/自定义 Logo + 标签文字，
 ///     颜色、字号、字重、圆角均跟随设置）；
-///   - 否则小米系机型 = 随阶段切换的白色模板图标（ic_upcoming / ic_course /
-///     ic_countdown）；
-///   - 否则（非小米系机型且未开自定义标签）= **空**：非小米机型没有超级岛，
-///     原生 resolveIslandLabelBitmap() 也会因 !isXiaomiFamilyDevice() 直接
-///     返回 null，设置只影响右侧文本。
+///   - 否则 = 随阶段切换的白色模板图标（ic_upcoming / ic_course /
+///     ic_countdown）。2026-10-12 起非小米机型也画这枚图标：预览模拟的是
+///     「若上岛会是什么样」，留空反而让人以为功能没生效；非小米真机没有
+///     超级岛，原生行为不受影响。
 /// * 右侧文本 = islandCriticalText = [islandCourseName, islandLocation,
 ///   islandCriticalStatusText] 过滤空白后以空格拼接（与原生同一行代码）：
 ///   - islandCourseName 受 showCourseName 门控，课程名跟随 useShortName 并按
@@ -101,7 +99,6 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
 
   late final DateTime _anchor = DateTime.now();
   Timer? _ticker;
-  bool _isXiaomiFamily = false;
 
   @override
   void initState() {
@@ -111,33 +108,12 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
         setState(() {});
       }
     });
-    _detectXiaomiFamily();
   }
 
   @override
   void dispose() {
     _ticker?.cancel();
     super.dispose();
-  }
-
-  /// 只有小米系机型才会真正渲染自定义标签（isXiaomiFamilyDevice()），
-  /// 预览同样按机型能力展示。
-  Future<void> _detectXiaomiFamily() async {
-    try {
-      final status = await MiuiLiveActivitiesService()
-          .getLiveUpdateDebugStatus();
-      final environment = status['environment'];
-      final flag = environment is Map
-          ? environment['isXiaomiFamilyDevice']
-          : null;
-      if (mounted) {
-        setState(() => _isXiaomiFamily = flag == true);
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _isXiaomiFamily = false);
-      }
-    }
   }
 
   // --- Demo course windows anchored at [_anchor]; numbers tick naturally ---
@@ -215,13 +191,8 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     if (d.enableMiuiIslandLabelImage) {
       return _buildIslandLabel(l10n, d);
     }
-    // 非小米机型没有超级岛：左侧图标位为空，设置只影响右侧文本。
-    if (!_isXiaomiFamily) {
-      return const SizedBox.shrink();
-    }
-    // 原生 setSmallIcon：beforeClass=ic_upcoming（时钟）、
-    // duringClass=ic_course（书）、beforeEnd=ic_countdown（对勾圆环），
-    // 都是白色模板图标而不是应用图标。
+    // 默认展示原生阶段矢量小图标（时钟 / 书本 / 倒计时圆环），
+    // 既对齐真实通知栏的 setSmallIcon，又保证非小米机型预览左侧不留空。
     return SizedBox.square(
       dimension: 28,
       child: Icon(_stageSmallIconData(stage), size: 24, color: Colors.white),

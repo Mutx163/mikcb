@@ -478,6 +478,32 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   bool get _followBeforeClass =>
       widget.forDuringEnd && _draft.liveDuringEndFollowBeforeClass;
 
+  String? _courseNameSubtitle(
+    AppLocalizations l10n,
+    LiveDisplaySettings display,
+  ) {
+    if (display.enableMiuiIslandLabelImage &&
+        (display.miuiIslandLabelContent == MiuiIslandLabelContent.courseName ||
+            display.miuiIslandLabelContent ==
+                MiuiIslandLabelContent.courseNameAndLocation)) {
+      return l10n.courseNameDuplicatedHint;
+    }
+    return null;
+  }
+
+  String? _locationSubtitle(
+    AppLocalizations l10n,
+    LiveDisplaySettings display,
+  ) {
+    if (display.enableMiuiIslandLabelImage &&
+        (display.miuiIslandLabelContent == MiuiIslandLabelContent.location ||
+            display.miuiIslandLabelContent ==
+                MiuiIslandLabelContent.courseNameAndLocation)) {
+      return l10n.locationDuplicatedHint;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -488,6 +514,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         children: [
           HyperosSwitchTile(
             title: l10n.showCourseNameTitle,
+            subtitle: _courseNameSubtitle(l10n, display),
             value: display.showCourseName,
             onChanged: (value) =>
                 _updateDisplay(display.copyWith(showCourseName: value)),
@@ -501,6 +528,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           ),
           HyperosSwitchTile(
             title: l10n.showLocationTitle,
+            subtitle: _locationSubtitle(l10n, display),
             value: display.showLocation,
             onChanged: (value) =>
                 _updateDisplay(display.copyWith(showLocation: value)),
@@ -511,19 +539,31 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             onChanged: (value) =>
                 _updateDisplay(display.copyWith(showCountdown: value)),
           ),
-          HyperosSwitchTile(
-            title: l10n.showStageTextTitle,
-            subtitle: l10n.showStageTextSubtitle,
-            value: display.showStageText,
-            onChanged: (value) =>
-                _updateDisplay(display.copyWith(showStageText: value)),
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 160),
+            opacity: display.showCountdown ? 0.55 : 1.0,
+            child: HyperosSwitchTile(
+              title: l10n.showStageTextTitle,
+              subtitle: display.showCountdown
+                  ? l10n.showStageTextInactiveHint
+                  : l10n.showStageTextSubtitle,
+              value: display.showStageText,
+              onChanged: (value) =>
+                  _updateDisplay(display.copyWith(showStageText: value)),
+            ),
           ),
-          HyperosSwitchTile(
-            title: l10n.hidePrefixTextTitle,
-            subtitle: l10n.hidePrefixTextSubtitle,
-            value: display.hidePrefixText,
-            onChanged: (value) =>
-                _updateDisplay(display.copyWith(hidePrefixText: value)),
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 160),
+            opacity: !display.showCountdown ? 0.55 : 1.0,
+            child: HyperosSwitchTile(
+              title: l10n.hidePrefixTextTitle,
+              subtitle: !display.showCountdown
+                  ? l10n.hidePrefixTextInactiveHint
+                  : l10n.hidePrefixTextSubtitle,
+              value: display.hidePrefixText,
+              onChanged: (value) =>
+                  _updateDisplay(display.copyWith(hidePrefixText: value)),
+            ),
           ),
         ],
       ),
@@ -534,6 +574,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           children: [
             HyperosSelectTile<LiveCountdownTextStyle>(
               label: l10n.countdownFormatLabel,
+              subtitle: l10n.countdownFormatHelp,
               items: {
                 for (final value in LiveCountdownTextStyle.values)
                   liveCountdownTextStyleLabel(l10n, value): value,
@@ -719,67 +760,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                     debounce: true,
                   ),
                 ),
-              HyperosSliderTile(
-                title: l10n.liveMiuiLabelFontSizeLabel(
-                  display.miuiIslandLabelFontSize.toStringAsFixed(0),
-                ),
-                value: display.miuiIslandLabelFontSize,
-                min: 1,
-                max: 32,
-                divisions: 31,
-                onChanged: (value) => _updateDisplay(
-                  display.copyWith(miuiIslandLabelFontSize: value),
-                  debounce: true,
-                ),
-              ),
-              HyperosSliderTile(
-                title: l10n.liveMiuiLabelOffsetXLabel(
-                  display.miuiIslandLabelOffsetX.toStringAsFixed(1),
-                ),
-                value: display.miuiIslandLabelOffsetX.clamp(-2.0, 2.0),
-                min: -2,
-                max: 2,
-                divisions: 40,
-                onChanged: (value) => _updateDisplay(
-                  display.copyWith(miuiIslandLabelOffsetX: value),
-                  debounce: true,
-                ),
-              ),
-              HyperosSliderTile(
-                title: l10n.liveMiuiLabelOffsetYLabel(
-                  display.miuiIslandLabelOffsetY.toStringAsFixed(1),
-                ),
-                value: display.miuiIslandLabelOffsetY.clamp(-2.0, 2.0),
-                min: -2,
-                max: 2,
-                divisions: 40,
-                onChanged: (value) => _updateDisplay(
-                  display.copyWith(miuiIslandLabelOffsetY: value),
-                  debounce: true,
-                ),
-              ),
-              HyperosSelectTile<MiuiIslandLabelFontWeight>(
-                label: l10n.liveMiuiLabelFontWeightLabel,
-                items: {
-                  for (final value in MiuiIslandLabelFontWeight.values)
-                    miuiIslandLabelFontWeightLabel(l10n, value): value,
-                },
-                value: display.miuiIslandLabelFontWeight,
-                onChanged: (value) => _updateDisplay(
-                  display.copyWith(miuiIslandLabelFontWeight: value),
-                ),
-              ),
-              HyperosSelectTile<MiuiIslandLabelRenderQuality>(
-                label: l10n.liveMiuiLabelRenderQualityLabel,
-                items: {
-                  for (final value in MiuiIslandLabelRenderQuality.values)
-                    miuiIslandLabelRenderQualityLabel(l10n, value): value,
-                },
-                value: display.miuiIslandLabelRenderQuality,
-                onChanged: (value) => _updateDisplay(
-                  display.copyWith(miuiIslandLabelRenderQuality: value),
-                ),
-              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                   HyperosControlCardScope.defaultHorizontalPadding,
@@ -806,8 +786,99 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             ],
           ),
         ),
+        const HyperosSectionGap(),
+        HyperosControlCard(
+          edgeToEdge: true,
+          child: HyperosAccordion(
+            items: [
+              HyperosAccordionItem(
+                insetChild: false,
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.liveMiuiLabelAdvancedAccordionTitle,
+                      style: HyperosTypography.listTitle(context),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.liveMiuiLabelAdvancedAccordionSubtitle,
+                      style: HyperosTypography.listDetail(context),
+                    ),
+                  ],
+                ),
+                child: HyperosControlCardRows(
+                  children: [
+                    HyperosSliderTile(
+                      title: l10n.liveMiuiLabelFontSizeLabel(
+                        display.miuiIslandLabelFontSize.toStringAsFixed(0),
+                      ),
+                      value: display.miuiIslandLabelFontSize,
+                      min: 1,
+                      max: 32,
+                      divisions: 31,
+                      onChanged: (value) => _updateDisplay(
+                        display.copyWith(miuiIslandLabelFontSize: value),
+                        debounce: true,
+                      ),
+                    ),
+                    HyperosSliderTile(
+                      title: l10n.liveMiuiLabelOffsetXLabel(
+                        display.miuiIslandLabelOffsetX.toStringAsFixed(1),
+                      ),
+                      value: display.miuiIslandLabelOffsetX.clamp(-2.0, 2.0),
+                      min: -2,
+                      max: 2,
+                      divisions: 40,
+                      onChanged: (value) => _updateDisplay(
+                        display.copyWith(miuiIslandLabelOffsetX: value),
+                        debounce: true,
+                      ),
+                    ),
+                    HyperosSliderTile(
+                      title: l10n.liveMiuiLabelOffsetYLabel(
+                        display.miuiIslandLabelOffsetY.toStringAsFixed(1),
+                      ),
+                      value: display.miuiIslandLabelOffsetY.clamp(-2.0, 2.0),
+                      min: -2,
+                      max: 2,
+                      divisions: 40,
+                      onChanged: (value) => _updateDisplay(
+                        display.copyWith(miuiIslandLabelOffsetY: value),
+                        debounce: true,
+                      ),
+                    ),
+                    HyperosSelectTile<MiuiIslandLabelFontWeight>(
+                      label: l10n.liveMiuiLabelFontWeightLabel,
+                      items: {
+                        for (final value in MiuiIslandLabelFontWeight.values)
+                          miuiIslandLabelFontWeightLabel(l10n, value): value,
+                      },
+                      value: display.miuiIslandLabelFontWeight,
+                      onChanged: (value) => _updateDisplay(
+                        display.copyWith(miuiIslandLabelFontWeight: value),
+                      ),
+                    ),
+                    HyperosSelectTile<MiuiIslandLabelRenderQuality>(
+                      label: l10n.liveMiuiLabelRenderQualityLabel,
+                      items: {
+                        for (final value in MiuiIslandLabelRenderQuality.values)
+                          miuiIslandLabelRenderQualityLabel(l10n, value): value,
+                      },
+                      value: display.miuiIslandLabelRenderQuality,
+                      onChanged: (value) => _updateDisplay(
+                        display.copyWith(miuiIslandLabelRenderQuality: value),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
       const HyperosSectionGap(),
+      HyperosSectionLabel(text: l10n.liveExpandedIconSectionTitle),
       HyperosControlCard(
         edgeToEdge: true,
         child: HyperosControlCardRows(
