@@ -4223,12 +4223,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String liveTestingCourseTestStartedToast(String course, String stage) {
-    return 'Force-started the island test for \"$course\" ($stage). Press Home to watch it; the island dismisses itself when the test window ends and normal scheduling resumes.';
+    return 'Island test started';
   }
 
   @override
-  String get liveTestingCourseTestStoppedToast =>
-      'Course test stopped; normal scheduling restored.';
+  String get liveTestingCourseTestStoppedToast => 'Island test stopped';
 
   @override
   String get liveStagePreviewBeforeClassAction => 'Preview before-class island';
@@ -4237,12 +4236,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveStagePreviewDuringClassAction => 'Preview in-class island';
 
   @override
-  String get liveStagePreviewStoppedToast =>
-      'Preview stopped; normal scheduling restored.';
+  String get liveStagePreviewStoppedToast => 'Island preview stopped';
 
   @override
   String liveStagePreviewStartedToast(String stage) {
-    return '\"$stage\" island preview started; the island auto-dismisses in about 30 seconds. Press Home to view it.';
+    return 'Island preview started';
   }
 
   @override
@@ -4268,8 +4266,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'This note is shown here. You can edit it on the course edit page';
 
   @override
-  String get liveTestingNotificationSent =>
-      'A before-class test notification has been sent. It should enter the before-class reminder stage in about 8 seconds.';
+  String get liveTestingNotificationSent => 'Test notification sent';
 
   @override
   String sendFailedWithError(String error) {

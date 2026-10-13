@@ -4069,12 +4069,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String liveTestingCourseTestStartedToast(String course, String stage) {
-    return '\'$course\' 슈퍼 아일랜드 테스트를 강제 시작했습니다($stage). Home 키로 홈 화면에서 확인하세요. 테스트 시간이 끝나면 아일랜드가 자동으로 사라지고 일정 예약이 복구됩니다';
+    return '슈퍼 아일랜드 테스트를 시작했습니다';
   }
 
   @override
-  String get liveTestingCourseTestStoppedToast =>
-      '과목 테스트를 중지했습니다. 일정 예약이 복구되었습니다';
+  String get liveTestingCourseTestStoppedToast => '슈퍼 아일랜드 테스트를 중지했습니다';
 
   @override
   String get liveStagePreviewBeforeClassAction => '수업 전 아일랜드 미리보기';
@@ -4083,11 +4082,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveStagePreviewDuringClassAction => '수업 중 아일랜드 미리보기';
 
   @override
-  String get liveStagePreviewStoppedToast => '미리보기를 중지했습니다. 일정 예약이 복구되었습니다';
+  String get liveStagePreviewStoppedToast => '슈퍼 아일랜드 미리보기를 중지했습니다';
 
   @override
   String liveStagePreviewStartedToast(String stage) {
-    return '\"$stage\" 아일랜드 미리보기를 시작했습니다. 약 30초 후 자동으로 사라집니다. Home 키로 홈 화면에서 확인하세요';
+    return '슈퍼 아일랜드 미리보기를 시작했습니다';
   }
 
   @override
@@ -4112,8 +4111,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '여기에 메모가 표시됩니다. 수업 편집 페이지에서 설정할 수 있습니다';
 
   @override
-  String get liveTestingNotificationSent =>
-      '수업 알림 테스트 알림을 전송했습니다. 약 8초 내에 수업 전 알림 단계로 진입합니다';
+  String get liveTestingNotificationSent => '테스트 알림이 전송되었습니다';
 
   @override
   String sendFailedWithError(String error) {

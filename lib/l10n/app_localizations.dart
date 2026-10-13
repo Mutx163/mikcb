@@ -7332,13 +7332,13 @@ abstract class AppLocalizations {
   /// No description provided for @liveTestingCourseTestStartedToast.
   ///
   /// In zh, this message translates to:
-  /// **'已强制启动“{course}”的超级岛测试（{stage}）。请按 Home 键回桌面查看；岛会在测试窗口结束后自动收岛并恢复正式调度'**
+  /// **'已开启超级岛测试'**
   String liveTestingCourseTestStartedToast(String course, String stage);
 
   /// No description provided for @liveTestingCourseTestStoppedToast.
   ///
   /// In zh, this message translates to:
-  /// **'已停止选课测试，正式调度已恢复'**
+  /// **'已停止超级岛测试'**
   String get liveTestingCourseTestStoppedToast;
 
   /// No description provided for @liveStagePreviewBeforeClassAction.
@@ -7356,13 +7356,13 @@ abstract class AppLocalizations {
   /// No description provided for @liveStagePreviewStoppedToast.
   ///
   /// In zh, this message translates to:
-  /// **'已停止预览，正式调度已恢复'**
+  /// **'已停止超级岛预览'**
   String get liveStagePreviewStoppedToast;
 
   /// No description provided for @liveStagePreviewStartedToast.
   ///
   /// In zh, this message translates to:
-  /// **'已弹出「{stage}」超级岛预览，约 30 秒后自动收岛；请按 Home 键回桌面查看'**
+  /// **'已开启超级岛预览'**
   String liveStagePreviewStartedToast(String stage);
 
   /// No description provided for @liveStagePreviewStageBeforeClass.
@@ -7404,7 +7404,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTestingNotificationSent.
   ///
   /// In zh, this message translates to:
-  /// **'已发送上课提醒测试通知，约 8 秒内会进入上课前提醒阶段'**
+  /// **'测试通知已发送'**
   String get liveTestingNotificationSent;
 
   /// No description provided for @sendFailedWithError.

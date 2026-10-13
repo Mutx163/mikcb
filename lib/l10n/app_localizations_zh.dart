@@ -3960,11 +3960,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String liveTestingCourseTestStartedToast(String course, String stage) {
-    return '已强制启动“$course”的超级岛测试（$stage）。请按 Home 键回桌面查看；岛会在测试窗口结束后自动收岛并恢复正式调度';
+    return '已开启超级岛测试';
   }
 
   @override
-  String get liveTestingCourseTestStoppedToast => '已停止选课测试，正式调度已恢复';
+  String get liveTestingCourseTestStoppedToast => '已停止超级岛测试';
 
   @override
   String get liveStagePreviewBeforeClassAction => '试弹上课前岛';
@@ -3973,11 +3973,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveStagePreviewDuringClassAction => '试弹课中岛';
 
   @override
-  String get liveStagePreviewStoppedToast => '已停止预览，正式调度已恢复';
+  String get liveStagePreviewStoppedToast => '已停止超级岛预览';
 
   @override
   String liveStagePreviewStartedToast(String stage) {
-    return '已弹出「$stage」超级岛预览，约 30 秒后自动收岛；请按 Home 键回桌面查看';
+    return '已开启超级岛预览';
   }
 
   @override
@@ -4000,7 +4000,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTestingTestCourseNote => '此处显示备注，可以在课程编辑页设置';
 
   @override
-  String get liveTestingNotificationSent => '已发送上课提醒测试通知，约 8 秒内会进入上课前提醒阶段';
+  String get liveTestingNotificationSent => '测试通知已发送';
 
   @override
   String sendFailedWithError(String error) {
@@ -15221,11 +15221,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String liveTestingCourseTestStartedToast(String course, String stage) {
-    return '已強制啟動「$course」的超級島測試（$stage）。請按 Home 鍵回桌面查看；島會在測試視窗結束後自動收島並恢復正式調度';
+    return '已開啟超級島測試';
   }
 
   @override
-  String get liveTestingCourseTestStoppedToast => '已停止選課測試，正式調度已恢復';
+  String get liveTestingCourseTestStoppedToast => '已停止超級島測試';
 
   @override
   String get liveStagePreviewBeforeClassAction => '試彈上課前島';
@@ -15234,11 +15234,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveStagePreviewDuringClassAction => '試彈課中島';
 
   @override
-  String get liveStagePreviewStoppedToast => '已停止預覽，正式調度已恢復';
+  String get liveStagePreviewStoppedToast => '已停止超級島預覽';
 
   @override
   String liveStagePreviewStartedToast(String stage) {
-    return '已彈出「$stage」超級島預覽，約 30 秒後自動收島；請按 Home 鍵回桌面查看';
+    return '已開啟超級島預覽';
   }
 
   @override
@@ -15261,7 +15261,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveTestingTestCourseNote => '此處顯示備注，可以在課程編輯頁進行設定';
 
   @override
-  String get liveTestingNotificationSent => '已發送上課提醒測試通知，約 8 秒內會進入上課前提醒階段';
+  String get liveTestingNotificationSent => '測試通知已發送';
 
   @override
   String sendFailedWithError(String error) {
@@ -26522,11 +26522,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String liveTestingCourseTestStartedToast(String course, String stage) {
-    return '已強制啟動「$course」的超級島測試（$stage）。請按 Home 鍵回桌面查看；島會在測試視窗結束後自動收島並恢復正式調度';
+    return '已開啟超級島測試';
   }
 
   @override
-  String get liveTestingCourseTestStoppedToast => '已停止選課測試，正式調度已恢復';
+  String get liveTestingCourseTestStoppedToast => '已停止超級島測試';
 
   @override
   String get liveStagePreviewBeforeClassAction => '試彈上課前島';
@@ -26535,11 +26535,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveStagePreviewDuringClassAction => '試彈課中島';
 
   @override
-  String get liveStagePreviewStoppedToast => '已停止預覽，正式調度已恢復';
+  String get liveStagePreviewStoppedToast => '已停止超級島預覽';
 
   @override
   String liveStagePreviewStartedToast(String stage) {
-    return '已彈出「$stage」超級島預覽，約 30 秒後自動收島；請按 Home 鍵回桌面查看';
+    return '已開啟超級島預覽';
   }
 
   @override
@@ -26562,7 +26562,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingTestCourseNote => '此處顯示備注，可以在課程編輯頁進行設定';
 
   @override
-  String get liveTestingNotificationSent => '已發送上課提醒測試通知，約 8 秒內會進入上課前提醒階段';
+  String get liveTestingNotificationSent => '測試通知已發送';
 
   @override
   String sendFailedWithError(String error) {

@@ -2193,7 +2193,7 @@
     }
   },
   "liveTestingCourseTestStopAction": "停止测试",
-  "liveTestingCourseTestStartedToast": "已强制启动“{course}”的超级岛测试（{stage}）。请按 Home 键回桌面查看；岛会在测试窗口结束后自动收岛并恢复正式调度",
+  "liveTestingCourseTestStartedToast": "已开启超级岛测试",
   "@liveTestingCourseTestStartedToast": {
     "placeholders": {
       "course": {
@@ -2204,11 +2204,11 @@
       }
     }
   },
-  "liveTestingCourseTestStoppedToast": "已停止选课测试，正式调度已恢复",
+  "liveTestingCourseTestStoppedToast": "已停止超级岛测试",
   "liveStagePreviewBeforeClassAction": "试弹上课前岛",
   "liveStagePreviewDuringClassAction": "试弹课中岛",
-  "liveStagePreviewStoppedToast": "已停止预览，正式调度已恢复",
-  "liveStagePreviewStartedToast": "已弹出「{stage}」超级岛预览，约 30 秒后自动收岛；请按 Home 键回桌面查看",
+  "liveStagePreviewStoppedToast": "已停止超级岛预览",
+  "liveStagePreviewStartedToast": "已开启超级岛预览",
   "@liveStagePreviewStartedToast": {
     "placeholders": {
       "stage": {
@@ -2222,7 +2222,7 @@
   "liveTestingProductionHomeHint": "已走正式超级岛选课路径。请按 Home 键回到桌面查看（停留在应用内时系统通常不会弹出）",
   "liveTestingPresetFallbackNote": "（未检测到可测试的真实课程，已改用自检预设课程，不会写入课表）",
   "liveTestingTestCourseNote": "此处显示备注，可以在课程编辑页设置",
-  "liveTestingNotificationSent": "已发送上课提醒测试通知，约 8 秒内会进入上课前提醒阶段",
+  "liveTestingNotificationSent": "测试通知已发送",
   "sendFailedWithError": "发送失败：{error}",
   "@sendFailedWithError": {
     "placeholders": {

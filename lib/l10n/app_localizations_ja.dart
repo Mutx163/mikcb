@@ -4044,12 +4044,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String liveTestingCourseTestStartedToast(String course, String stage) {
-    return '「$course」のスーパー島テストを強制開始しました（$stage）。Homeキーでホーム画面に戻って確認してください。テスト時間が終わると島は自動で消え、通常のスケジュールに戻ります';
+    return 'スーパー島テストを開始しました';
   }
 
   @override
-  String get liveTestingCourseTestStoppedToast =>
-      '授業テストを停止しました。通常のスケジュールに戻りました';
+  String get liveTestingCourseTestStoppedToast => 'スーパー島テストを停止しました';
 
   @override
   String get liveStagePreviewBeforeClassAction => '授業前アイランドをプレビュー';
@@ -4058,11 +4057,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveStagePreviewDuringClassAction => '授業中アイランドをプレビュー';
 
   @override
-  String get liveStagePreviewStoppedToast => 'プレビューを停止しました。通常のスケジュールに戻りました';
+  String get liveStagePreviewStoppedToast => 'スーパー島プレビューを停止しました';
 
   @override
   String liveStagePreviewStartedToast(String stage) {
-    return '「$stage」アイランドのプレビューを開始しました。約30秒後に自動的に消えます。Homeキーでホーム画面に戻ってご確認ください';
+    return 'スーパー島プレビューを開始しました';
   }
 
   @override
@@ -4086,8 +4085,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveTestingTestCourseNote => 'ここにメモを表示，授業編集ページで設定可能';
 
   @override
-  String get liveTestingNotificationSent =>
-      '授業リマインダーテスト通知を送信しました。約8秒以内に授業前リマインダーステージに移行';
+  String get liveTestingNotificationSent => 'テスト通知を送信しました';
 
   @override
   String sendFailedWithError(String error) {

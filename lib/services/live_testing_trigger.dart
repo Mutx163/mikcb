@@ -221,7 +221,6 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
     }
 
     var selection = provider.getLiveActivityCourseSelection();
-    var usedPresetFallback = false;
     if (selection == null) {
       // 真实课表无课可测（如刚安装还没有课）：注入自检预设课，再走一遍同一条
       // 正式路径。预设课只进超级岛内存覆盖层与原生快照，不写入真实课表。
@@ -238,7 +237,6 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
       }
       if (presetSelection != null) {
         selection = presetSelection;
-        usedPresetFallback = true;
       }
     }
 
@@ -287,17 +285,9 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
       },
     );
 
-    final homeHint = l10n.liveTestingProductionHomeHint;
-    final presetNote = usedPresetFallback
-        ? '${l10n.liveTestingPresetFallbackNote}\n'
-        : '';
     return LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.success,
-      message:
-          '${l10n.liveTestingNotificationSent}\n'
-          '$presetNote'
-          '${selection.currentCourse.name} · ${selection.stage.name}\n'
-          '$homeHint',
+      message: l10n.liveTestingNotificationSent,
     );
   } catch (error, stackTrace) {
     await UmengAnalyticsService.reportDiagnostic(
