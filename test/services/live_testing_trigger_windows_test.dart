@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/live_testing_fixture_service.dart';
 import 'package:university_timetable/services/live_testing_trigger.dart';
 
@@ -150,6 +151,56 @@ void main() {
 
       expect(currentLiveCourseTestSession(), same(session));
       expect(activeLiveCourseTestSession, same(session));
+    });
+  });
+
+  group('hot-update settings signature', () {
+    final settings = TimetableSettings.fromJson(const {});
+    final display = settings.beforeClassDisplaySettings;
+
+    test('signature is stable when settings do not change', () {
+      final sig1 = computeTestSessionSettingsSignature(
+        stage: LiveCourseTestStage.beforeClass,
+        displaySettings: display,
+        settings: settings,
+      );
+      final sig2 = computeTestSessionSettingsSignature(
+        stage: LiveCourseTestStage.beforeClass,
+        displaySettings: display,
+        settings: settings,
+      );
+
+      expect(sig1, sig2);
+    });
+
+    test('signature changes when display settings change', () {
+      final baseSig = computeTestSessionSettingsSignature(
+        stage: LiveCourseTestStage.beforeClass,
+        displaySettings: display,
+        settings: settings,
+      );
+      final alteredSig = computeTestSessionSettingsSignature(
+        stage: LiveCourseTestStage.beforeClass,
+        displaySettings: display.copyWith(showLocation: !display.showLocation),
+        settings: settings,
+      );
+
+      expect(baseSig, isNot(equals(alteredSig)));
+    });
+
+    test('signature changes when stage changes', () {
+      final sigBefore = computeTestSessionSettingsSignature(
+        stage: LiveCourseTestStage.beforeClass,
+        displaySettings: display,
+        settings: settings,
+      );
+      final sigDuring = computeTestSessionSettingsSignature(
+        stage: LiveCourseTestStage.duringClass,
+        displaySettings: display,
+        settings: settings,
+      );
+
+      expect(sigBefore, isNot(equals(sigDuring)));
     });
   });
 }

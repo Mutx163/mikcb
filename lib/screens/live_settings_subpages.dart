@@ -1218,6 +1218,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         message: localizeServiceMessage(AppLocalizations.of(context)!, message),
       );
       setState(() => _draft = provider.settings);
+    } else if (currentLiveCourseTestSession() != null) {
+      unawaited(hotUpdateLiveCourseTestSession(provider));
     }
   }
 

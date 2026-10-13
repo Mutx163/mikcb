@@ -44,6 +44,7 @@ bool liveTestingTriggerInFlight = false;
 /// 的记录惰性清掉，无需定时器兜底。此前会话状态只存页面内存，返回再进
 /// 页面按钮就「忘了」测试还在跑（2026-10-10 用户反馈），故上收到这里。
 LiveCourseTestSession? activeLiveCourseTestSession;
+String? _lastTestSessionSettingsSignature;
 
 /// 读取当前会话；已过暂停终点（岛已被原生收尾）视为无会话并顺手清槽。
 LiveCourseTestSession? currentLiveCourseTestSession() {
@@ -51,6 +52,7 @@ LiveCourseTestSession? currentLiveCourseTestSession() {
   if (session == null) return null;
   if (session.sessionEnd.isBefore(DateTime.now())) {
     activeLiveCourseTestSession = null;
+    _lastTestSessionSettingsSignature = null;
     return null;
   }
   return session;
@@ -64,10 +66,26 @@ class LiveCourseTestSession {
   /// 与原生暂停终点对齐的摘除时刻（end + 缓冲）。
   final DateTime sessionEnd;
 
+  /// 关联的测试课程（供显示设置修改时热更新真机超级岛使用）。
+  final Course? course;
+
+  /// 窗口起点与终点。
+  final DateTime? start;
+  final DateTime? end;
+  final DateTime? clockEnd;
+  final Duration suspendBuffer;
+  final String source;
+
   const LiveCourseTestSession({
     required this.stage,
     required this.courseName,
     required this.sessionEnd,
+    this.course,
+    this.start,
+    this.end,
+    this.clockEnd,
+    this.suspendBuffer = const Duration(seconds: 5),
+    this.source = 'settings_screen',
   });
 }
 
@@ -372,6 +390,12 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
     stage: stage,
     courseName: displayCourse.name,
     sessionEnd: end.add(suspendBuffer),
+    course: course,
+    start: start,
+    end: end,
+    clockEnd: window.clockEnd,
+    suspendBuffer: suspendBuffer,
+    source: source,
   );
   final displaySettings = isBeforeClass
       ? settings.beforeClassDisplaySettings
@@ -399,72 +423,17 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
       end.add(suspendBuffer).millisecondsSinceEpoch,
     );
 
-    final milestones = provider.buildLiveProgressMilestones(
-      displayCourse,
-      startAtMillis: start.millisecondsSinceEpoch,
-      endAtMillis: end.millisecondsSinceEpoch,
+    await _dispatchLiveUpdateForCourseTest(
+      liveService: liveService,
+      provider: provider,
+      session: testSession,
+      settings: settings,
     );
 
-    await liveService.startLiveUpdate(
-      displayCourse,
-      null,
-      stage: stage.name,
-      beforeClassLeadMillis: isBeforeClass
-          ? start.difference(now).inMilliseconds
-          : 0,
-      startAtMillis: start.millisecondsSinceEpoch,
-      endAtMillis: end.millisecondsSinceEpoch,
-      endReminderLeadMillis: 0,
-      endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
-      // 展示开关按阶段强制放开：测试的目的是「看到岛的显示」，不能被用户
-      // 关掉的课上/课下开关吞掉；显示样式仍取用户自己的阶段显示设置。
-      promoteDuringClass: !isBeforeClass,
-      showNotificationDuringClass: !isBeforeClass,
-      enableBeforeClass: isBeforeClass,
-      enableDuringClass: !isBeforeClass,
-      enableBeforeEnd: false,
-      showCountdown: displaySettings.showCountdown,
-      countdownTextStyle: displaySettings.countdownTextStyle,
-      showStageText: displaySettings.showStageText,
-      showCourseNameInIsland: displaySettings.showCourseName,
-      showLocationInIsland: displaySettings.showLocation,
-      useShortNameInIsland: displaySettings.useShortName,
-      hidePrefixText: displaySettings.hidePrefixText,
-      duringClassTimeDisplayMode: displaySettings.duringClassTimeDisplayMode,
-      enableMiuiIslandLabelImage: displaySettings.enableMiuiIslandLabelImage,
-      miuiIslandLabelStyle: displaySettings.miuiIslandLabelStyle,
-      miuiIslandLabelContent: displaySettings.miuiIslandLabelContent,
-      miuiIslandLabelFontColor: displaySettings.miuiIslandLabelFontColor,
-      miuiIslandLabelFontWeight: displaySettings.miuiIslandLabelFontWeight,
-      miuiIslandLabelRenderQuality:
-          displaySettings.miuiIslandLabelRenderQuality,
-      miuiIslandLabelFontSize: displaySettings.miuiIslandLabelFontSize,
-      miuiIslandLabelOffsetX: displaySettings.miuiIslandLabelOffsetX,
-      miuiIslandLabelOffsetY: displaySettings.miuiIslandLabelOffsetY,
-      miuiIslandLabelLogoPath: displaySettings.miuiIslandLabelLogoPath,
-      miuiIslandLabelLogoCornerRadius:
-          displaySettings.miuiIslandLabelLogoCornerRadius,
-      miuiIslandExpandedIconMode: displaySettings.miuiIslandExpandedIconMode,
-      miuiIslandExpandedIconPath: displaySettings.miuiIslandExpandedIconPath,
-      expandedDetailFields: displaySettings.expandedDetailFields
-          ?.map((field) => field.value)
-          .toList(),
-      beforeClassQuickAction: isBeforeClass
-          ? settings.liveBeforeClassQuickAction
-          : LiveBeforeClassQuickAction.none,
-      beforeClassQuickActionAutoMinutes:
-          settings.liveBeforeClassQuickActionAutoMinutes,
-      progressBreakOffsetsMillis: provider.buildLiveProgressBreakOffsetsMillis(
-        displayCourse,
-        startAtMillis: start.millisecondsSinceEpoch,
-        endAtMillis: end.millisecondsSinceEpoch,
-      ),
-      progressMilestoneLabels: milestones
-          .map((milestone) => milestone['label'] as String)
-          .toList(),
-      progressMilestoneTimeTexts: milestones
-          .map((milestone) => milestone['timeText'] as String)
-          .toList(),
+    _lastTestSessionSettingsSignature = computeTestSessionSettingsSignature(
+      stage: stage,
+      displaySettings: displaySettings,
+      settings: settings,
     );
 
     await liveService.recordDiagnosticEvent(
@@ -507,6 +476,7 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
     provider.clearLiveActivitySyncSuspend();
     await liveService.suspendScheduleTriggers(0);
     activeLiveCourseTestSession = null;
+    _lastTestSessionSettingsSignature = null;
     return LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.error,
       message: l10n.sendFailedWithError('$error'),
@@ -524,10 +494,211 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
 Future<void> cancelLiveUpdateCourseTest(TimetableProvider provider) async {
   final liveService = MiuiLiveActivitiesService();
   activeLiveCourseTestSession = null;
+  _lastTestSessionSettingsSignature = null;
   provider.clearLiveActivitySyncSuspend();
   await liveService.suspendScheduleTriggers(0);
   await liveService.stopLiveUpdate();
   await provider.refreshLiveActivityNow(forceSnapshotSync: true);
+}
+
+/// 计算测试会话设置指纹，用于判断用户修改的设置是否影响超级岛渲染，避免无改动时频繁重发通道。
+String computeTestSessionSettingsSignature({
+  required LiveCourseTestStage stage,
+  required LiveDisplaySettings displaySettings,
+  required TimetableSettings settings,
+}) {
+  final isBeforeClass = stage == LiveCourseTestStage.beforeClass;
+  return '${stage.name}:'
+      '${displaySettings.showCountdown}:'
+      '${displaySettings.countdownTextStyle.name}:'
+      '${displaySettings.showStageText}:'
+      '${displaySettings.showCourseName}:'
+      '${displaySettings.showLocation}:'
+      '${displaySettings.useShortName}:'
+      '${displaySettings.hidePrefixText}:'
+      '${displaySettings.duringClassTimeDisplayMode.name}:'
+      '${displaySettings.enableMiuiIslandLabelImage}:'
+      '${displaySettings.miuiIslandLabelStyle.name}:'
+      '${displaySettings.miuiIslandLabelContent.name}:'
+      '${displaySettings.miuiIslandLabelFontColor}:'
+      '${displaySettings.miuiIslandLabelFontWeight.name}:'
+      '${displaySettings.miuiIslandLabelRenderQuality.name}:'
+      '${displaySettings.miuiIslandLabelFontSize}:'
+      '${displaySettings.miuiIslandLabelOffsetX}:'
+      '${displaySettings.miuiIslandLabelOffsetY}:'
+      '${displaySettings.miuiIslandLabelLogoPath}:'
+      '${displaySettings.miuiIslandLabelLogoCornerRadius}:'
+      '${displaySettings.miuiIslandExpandedIconMode.name}:'
+      '${displaySettings.miuiIslandExpandedIconPath}:'
+      '${displaySettings.expandedDetailFields?.map((f) => f.name).join(",")}:'
+      '${isBeforeClass ? settings.liveBeforeClassQuickAction.name : ""}:'
+      '${settings.liveBeforeClassQuickActionAutoMinutes}:'
+      '${settings.liveEndSecondsCountdownThreshold}';
+}
+
+/// 统一下发测试会话的超级岛载荷，供首次起岛与中途热更新共用。
+Future<void> _dispatchLiveUpdateForCourseTest({
+  required MiuiLiveActivitiesService liveService,
+  required TimetableProvider provider,
+  required LiveCourseTestSession session,
+  required TimetableSettings settings,
+}) async {
+  final stage = session.stage;
+  final isBeforeClass = stage == LiveCourseTestStage.beforeClass;
+  final start = session.start ?? DateTime.now();
+  final end = session.end ?? DateTime.now();
+  final clockEnd = session.clockEnd ?? end;
+  final course = session.course;
+  final now = DateTime.now();
+
+  final displayCourse = course != null
+      ? provider.resolveCourseDisplayName(
+          course.copyWith(
+            startTime: LiveTestingFixtureService.formatClock(start),
+            endTime: LiveTestingFixtureService.formatClock(clockEnd),
+          ),
+        )
+      : Course(
+          id: 'test_course',
+          name: session.courseName,
+          teacher: '',
+          location: '',
+          dayOfWeek: now.weekday,
+          startSection: 1,
+          endSection: 2,
+          startTime: LiveTestingFixtureService.formatClock(start),
+          endTime: LiveTestingFixtureService.formatClock(clockEnd),
+        );
+
+  final displaySettings = isBeforeClass
+      ? settings.beforeClassDisplaySettings
+      : settings.duringEndDisplaySettings;
+
+  final milestones = provider.buildLiveProgressMilestones(
+    displayCourse,
+    startAtMillis: start.millisecondsSinceEpoch,
+    endAtMillis: end.millisecondsSinceEpoch,
+  );
+
+  await liveService.startLiveUpdate(
+    displayCourse,
+    null,
+    stage: stage.name,
+    beforeClassLeadMillis: isBeforeClass
+        ? (start.isAfter(now) ? start.difference(now).inMilliseconds : 0)
+        : 0,
+    startAtMillis: start.millisecondsSinceEpoch,
+    endAtMillis: end.millisecondsSinceEpoch,
+    endReminderLeadMillis: 0,
+    endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
+    // 展示开关按阶段强制放开：测试的目的是「看到岛的显示」，不能被用户
+    // 关掉的课上/课下开关吞掉；显示样式仍取用户自己的阶段显示设置。
+    promoteDuringClass: !isBeforeClass,
+    showNotificationDuringClass: !isBeforeClass,
+    enableBeforeClass: isBeforeClass,
+    enableDuringClass: !isBeforeClass,
+    enableBeforeEnd: false,
+    showCountdown: displaySettings.showCountdown,
+    countdownTextStyle: displaySettings.countdownTextStyle,
+    showStageText: displaySettings.showStageText,
+    showCourseNameInIsland: displaySettings.showCourseName,
+    showLocationInIsland: displaySettings.showLocation,
+    useShortNameInIsland: displaySettings.useShortName,
+    hidePrefixText: displaySettings.hidePrefixText,
+    duringClassTimeDisplayMode: displaySettings.duringClassTimeDisplayMode,
+    enableMiuiIslandLabelImage: displaySettings.enableMiuiIslandLabelImage,
+    miuiIslandLabelStyle: displaySettings.miuiIslandLabelStyle,
+    miuiIslandLabelContent: displaySettings.miuiIslandLabelContent,
+    miuiIslandLabelFontColor: displaySettings.miuiIslandLabelFontColor,
+    miuiIslandLabelFontWeight: displaySettings.miuiIslandLabelFontWeight,
+    miuiIslandLabelRenderQuality:
+        displaySettings.miuiIslandLabelRenderQuality,
+    miuiIslandLabelFontSize: displaySettings.miuiIslandLabelFontSize,
+    miuiIslandLabelOffsetX: displaySettings.miuiIslandLabelOffsetX,
+    miuiIslandLabelOffsetY: displaySettings.miuiIslandLabelOffsetY,
+    miuiIslandLabelLogoPath: displaySettings.miuiIslandLabelLogoPath,
+    miuiIslandLabelLogoCornerRadius:
+        displaySettings.miuiIslandLabelLogoCornerRadius,
+    miuiIslandExpandedIconMode: displaySettings.miuiIslandExpandedIconMode,
+    miuiIslandExpandedIconPath: displaySettings.miuiIslandExpandedIconPath,
+    expandedDetailFields: displaySettings.expandedDetailFields
+        ?.map((field) => field.value)
+        .toList(),
+    beforeClassQuickAction: isBeforeClass
+        ? settings.liveBeforeClassQuickAction
+        : LiveBeforeClassQuickAction.none,
+    beforeClassQuickActionAutoMinutes:
+        settings.liveBeforeClassQuickActionAutoMinutes,
+    progressBreakOffsetsMillis: provider.buildLiveProgressBreakOffsetsMillis(
+      displayCourse,
+      startAtMillis: start.millisecondsSinceEpoch,
+      endAtMillis: end.millisecondsSinceEpoch,
+    ),
+    progressMilestoneLabels: milestones
+        .map((milestone) => milestone['label'] as String)
+        .toList(),
+    progressMilestoneTimeTexts: milestones
+        .map((milestone) => milestone['timeText'] as String)
+        .toList(),
+  );
+}
+
+/// 当选课测试或速览会话正在运行中时，若用户调整了显示配置，
+/// 热更新已在运行中的超级岛，使手机系统状态栏/超级岛即时响应改动。
+Future<bool> hotUpdateLiveCourseTestSession(TimetableProvider provider) async {
+  final session = currentLiveCourseTestSession();
+  if (session == null ||
+      session.course == null ||
+      session.start == null ||
+      session.end == null) {
+    return false;
+  }
+
+  final stage = session.stage;
+  final isBeforeClass = stage == LiveCourseTestStage.beforeClass;
+  final settings = provider.settings;
+  final displaySettings = isBeforeClass
+      ? settings.beforeClassDisplaySettings
+      : settings.duringEndDisplaySettings;
+
+  final signature = computeTestSessionSettingsSignature(
+    stage: stage,
+    displaySettings: displaySettings,
+    settings: settings,
+  );
+  if (signature == _lastTestSessionSettingsSignature) {
+    return false;
+  }
+
+  final liveService = MiuiLiveActivitiesService();
+  try {
+    await liveService.initialize();
+    await _dispatchLiveUpdateForCourseTest(
+      liveService: liveService,
+      provider: provider,
+      session: session,
+      settings: settings,
+    );
+    _lastTestSessionSettingsSignature = signature;
+    await liveService.recordDiagnosticEvent(
+      'live_update_test_hot_updated',
+      'live_update_test_hot_updated',
+      extras: {
+        'stage': stage.name,
+        'courseName': session.courseName,
+      },
+    );
+    return true;
+  } catch (error, stackTrace) {
+    await UmengAnalyticsService.reportDiagnostic(
+      'live_update_test_hot_update_failed',
+      'live_update_test_hot_update_failed: $error',
+      error: error,
+      stackTrace: stackTrace,
+      dedupeKey: 'live_update_test_hot_update_failed',
+    );
+    return false;
+  }
 }
 
 /// 显示设置页「速览」：跳过选课单，直接对指定阶段强制起岛约 [sessionLength]。
