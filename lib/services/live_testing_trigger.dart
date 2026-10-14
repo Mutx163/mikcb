@@ -765,7 +765,8 @@ Course resolveLivePreviewTestCourse(
             nearestFutureCourse = c;
           }
         }
-        break; // 找到该课程的最近可用周即可
+        // 找到该课程的最近可用周即可
+        break;
       }
     }
 
@@ -792,18 +793,9 @@ Course resolveLivePreviewTestCourse(
     );
     return provider.resolveCourseDisplayName(presets.first);
   } catch (_) {
-    return Course(
-      id: 'fixture_preset_fallback',
-      name: '自检预设课 A',
-      shortName: '自检A',
-      teacher: '自检教师',
-      location: '自检教室 101',
-      dayOfWeek: 1,
-      startSection: 1,
-      endSection: 2,
-      startTime: '08:00',
-      endTime: '09:40',
-    );
+    // 临近午夜时 buildPresetCourses 会抛「不跨日」错误；速览入口必须仍能起岛，
+    // 故退回那份固定时间的同名副本（展示字段与 buildPresetCourses 同源）。
+    return LiveTestingFixtureService.buildPresetCourseAFallback();
   }
 }
 

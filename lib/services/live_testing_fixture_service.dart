@@ -30,6 +30,31 @@ class LiveTestingFixtureService {
   static const Duration defaultPresetCourseDuration = Duration(minutes: 3);
   static const Duration defaultPresetGap = Duration(minutes: 1);
 
+  // 预设课 A 的展示字段。「速览」空课表兜底（live_testing_trigger.dart 的
+  // resolveLivePreviewTestCourse catch 分支）与 buildPresetCourses 必须用同一份，
+  // 否则两边文案会各自漂移——那门课的名字会直接显示在超级岛与设置页预览上。
+  static const String presetCourseAName = '自检预设课 A';
+  static const String presetCourseAShortName = '自检A';
+  static const String presetCourseATeacher = '自检教师';
+  static const String presetCourseALocation = '自检教室 A';
+
+  /// 预设课 A 的离线兜底副本（不依赖时间计算）。
+  ///
+  /// buildPresetCourses 在临近午夜时会抛「无法生成不跨日预设测试课」；
+  /// 速览入口必须仍能起岛，故这里给一份固定 08:00-09:40 的同名副本。
+  static Course buildPresetCourseAFallback() => Course(
+    id: presetCourseIdA,
+    name: presetCourseAName,
+    shortName: presetCourseAShortName,
+    teacher: presetCourseATeacher,
+    location: presetCourseALocation,
+    dayOfWeek: 1,
+    startSection: 1,
+    endSection: 2,
+    startTime: '08:00',
+    endTime: '09:40',
+  );
+
   static bool isFixtureCourse(Course course) =>
       course.id.startsWith(courseIdPrefix);
 
@@ -274,10 +299,10 @@ class LiveTestingFixtureService {
     return [
       Course(
         id: presetCourseIdA,
-        name: '自检预设课 A',
-        shortName: '自检A',
-        teacher: '自检教师',
-        location: '自检教室 A',
+        name: presetCourseAName,
+        shortName: presetCourseAShortName,
+        teacher: presetCourseATeacher,
+        location: presetCourseALocation,
         dayOfWeek: now.weekday,
         startSection: 1,
         endSection: 1,
