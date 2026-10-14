@@ -153,7 +153,21 @@ class TimetableProfilesScreen extends StatelessWidget {
       return;
     }
 
-    await context.read<TimetableProvider>().createProfile(name: name);
+    try {
+      await context.read<TimetableProvider>().createProfile(name: name);
+    } catch (_) {
+      // 落盘失败已在 provider 内回滚；这里负责把失败说出口——原先裸 await
+      // 会把 StateError 落进 zone，界面却照常弹「已创建」。
+      if (!context.mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     if (!context.mounted) {
       return;
     }

@@ -1965,10 +1965,21 @@ class TimetableProvider with ChangeNotifier {
         lastUsedAt: now,
       );
 
-      _profiles.add(profile);
-      _activeProfileId = profile.id;
-      _applyProfileState(profile);
-      await _persistActiveProfileState(touchLastUsedAt: true);
+      // 同族契约（见 switchProfile 的 catch）：先改内存再落盘，落盘失败必须把
+      // 内存整体退回，否则「凭空多一份档、而且它成了当前课表」会停在内存里，
+      // 下一次任意成功写入（30 秒心跳、切周）把它坐实。_applyProfileState 不
+      // notify，失败时界面停在旧课表看起来「什么都没发生」，所以回滚后必须
+      // 主动 notify 一次让界面与内存重新对齐。
+      try {
+        _profiles.add(profile);
+        _activeProfileId = profile.id;
+        _applyProfileState(profile);
+        await _persistActiveProfileState(touchLastUsedAt: true);
+      } catch (_) {
+        _profiles.remove(profile);
+        await _rollbackProfileMutation(profile.id);
+        rethrow;
+      }
       unawaited(_syncExamReminders());
       _currentLiveCourseId = null;
       notifyListeners();
@@ -1993,16 +2004,42 @@ class TimetableProvider with ChangeNotifier {
         createdAt: now,
         lastUsedAt: now,
       );
-      _profiles.add(profile);
-      _activeProfileId = profile.id;
-      _applyProfileState(profile);
-      await _persistActiveProfileState(touchLastUsedAt: true);
+      try {
+        _profiles.add(profile);
+        _activeProfileId = profile.id;
+        _applyProfileState(profile);
+        await _persistActiveProfileState(touchLastUsedAt: true);
+      } catch (_) {
+        _profiles.remove(profile);
+        await _rollbackProfileMutation(profile.id);
+        rethrow;
+      }
       unawaited(_syncExamReminders());
       _currentLiveCourseId = null;
       notifyListeners();
       await _updateLiveActivity();
       return activeProfile;
     });
+  }
+
+  /// 新建 / 复制档案落盘失败后的统一回滚：把激活档与五份业务态整体退回
+  /// 原档案，再 notify 一次让界面与内存重新对齐。只处理内存，不碰盘。
+  Future<void> _rollbackProfileMutation(String failedProfileId) async {
+    // 被回滚的那份新档已经从列表摘除；若摘除后列表空了（首次建档即失败），
+    // 没有任何可退回的目标，只把激活档清空。
+    final previousProfileId = _profiles.isEmpty || _profiles.first.id ==
+            failedProfileId
+        ? null
+        : _profiles.first.id;
+    _activeProfileId = previousProfileId;
+    final previousProfile = previousProfileId == null
+        ? null
+        : _getProfileById(previousProfileId);
+    if (previousProfile != null) {
+      _applyProfileState(previousProfile);
+    }
+    _currentLiveCourseId = null;
+    notifyListeners();
   }
 
   Future<void> switchProfile(String profileId) {
@@ -3504,6 +3541,15 @@ class TimetableProvider with ChangeNotifier {
         originalCourse.activeWeeks.where((week) => week != sourceWeek).toList()
           ..sort();
 
+    // 判据与同族 `_deleteCourseOccurrenceImpl` 一致（见上方法注释）：内存里被改掉的
+    // 不只是「挪走的那一节」——① 课程自身被拆成两条（余下周次 + 新 UUID 的单周条目），
+    // ② `_syncHomeworkTasksWithCourses()` 按拆分后的课表**重算全部作业**。
+    // 落盘失败时这些必须整体退回，否则下一次任意成功写入（切周、加课、30 秒心跳）
+    // 就把这份从未落库的改动坐实：课自己挪过去，还多出一节重复课。
+    final snapshotCourses = List<Course>.from(_courses);
+    final snapshotTasks = List<CourseTask>.from(_tasks);
+    final snapshotProfiles = List<TimetableProfile>.from(_profiles);
+
     final movedOccurrence = _syncCourseWithEffectiveTimeScheme(
       _normalizeCourse(
         originalCourse.copyWith(
@@ -3544,8 +3590,15 @@ class TimetableProvider with ChangeNotifier {
       _courses.add(movedOccurrence);
     }
 
-    await _syncHomeworkTasksWithCourses();
-    await _persistActiveProfileState();
+    try {
+      await _syncHomeworkTasksWithCourses();
+      await _persistActiveProfileState();
+    } catch (_) {
+      _courses = snapshotCourses;
+      _tasks = snapshotTasks;
+      _profiles = snapshotProfiles;
+      rethrow;
+    }
     _currentLiveCourseId = null;
     notifyListeners();
     _analytics.logEventLater(

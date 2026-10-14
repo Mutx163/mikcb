@@ -7016,6 +7016,20 @@ class _TimetableScreenState extends State<TimetableScreen>
             : AppLocalizations.of(context)!.rescheduleFailed,
         kind: AppToastKind.error,
       );
+    } catch (_) {
+      // ⚠️ 落盘失败抛的是 StateError（storage_service.dart 的
+      // `throw StateError('storage_write_failed:…')`），不是 ArgumentError ——
+      // 上面的 on 子句接不到它（同款注释见 `deleteCourseOccurrence` 的处理函数，
+      // 那条已经吃过一次亏）。落不进盘就必须让用户看见，否则点了没反应、
+      // 下一次成功写入还把内存里的挪动坐实。
+      if (!mounted) {
+        return;
+      }
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.rescheduleFailed,
+        kind: AppToastKind.error,
+      );
     }
   }
 
