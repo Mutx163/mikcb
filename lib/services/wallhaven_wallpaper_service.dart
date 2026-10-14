@@ -109,7 +109,36 @@ class WallhavenWallpaperService {
   /// 于是打开一次图库就把天气 / 节假日 / 版本检查的 client 全关了（2026-10-06）。
   static const String _tag = 'WallhavenWallpaper';
 
-  static const String _searchEndpoint = 'https://wallhaven.cc/api/v1/search';
+  /// 清单端点：社区镜像 `wallhaven.clbug.com`（nginx 反代 + 缓存，回源官方）。
+  ///
+  /// ## 为什么不用官方 `wallhaven.cc`
+  ///
+  /// 2026-10-07 分段探测实测（见 [probeReachability] 与实现笔记第九节）：官方域名
+  /// 在大陆被 **DNS 污染** —— 请求压根发不到 wallhaven 的服务器，而是发给了不相关的
+  /// 机器，TCP 握手必然超时。2026-10-14 用阿里 DoH 复测仍是假地址（`185.45.6.103`，
+  /// Facebook 网段），权威答案是 Cloudflare。
+  ///
+  /// 镜像站（2026-10-14 实测）：
+  ///
+  /// * API 与官方**同路径同参数**（`/api/v1/search`），返回体结构一致；
+  /// * 回给的图片地址仍指向官方 `w./th.wallhaven.cc`，需改写到镜像同名子域
+  ///   （见 `WallhavenWallpaperItem.withHostRewrittenToMirror`）—— 镜像对这两个
+  ///   前缀与官方 1:1 对应，同图同字节数（3,523,420 B 的原图实测相等），是纯反代、
+  ///   无压缩注入；
+  /// * 阿里 DoH 对镜像域名返回稳定真实 IP（Vultr 东京），未被污染；
+  /// * API 有限频（响应头 `X-RateLimit-Limit: 45`），本 App 清单 3 小时 TTL +
+  ///   每天一次自动换的用量远够。
+  ///
+  /// ⚠️ 镜像是第三方公益站，可能消失（`wallhaven.fun` 就死过）。它失效时清单会
+  /// 走既有的「回落缓存 / 换源到 Bing」链路，不会白屏；届时应另找镜像，**不要**
+  /// 退回官方域名 —— 那条路在大陆实测不通。
+  static const String _searchEndpoint =
+      'https://wallhaven.clbug.com/api/v1/search';
+
+  /// 端点主机的测试可见出口（回归钉「清单走的是镜像」）。
+  @visibleForTesting
+  static String get testSearchEndpointHost =>
+      Uri.parse(_searchEndpoint).host;
 
   /// 清单超时：8 秒，与 `BingWallpaperService` 同档。
   ///
@@ -215,7 +244,8 @@ class WallhavenWallpaperService {
       // 横屏档位的理由：横图铺竖屏会被裁掉七成）。
       final items = <WallhavenWallpaperItem>[
         for (final item in WallhavenWallpaperItem.listFromJson(decoded['data']))
-          if (item.isPortrait) item,
+          if (item.isPortrait)
+            item.withHostRewrittenToMirror,
       ];
       appDebugLog(_tag, 'list ok count=${items.length}');
       if (items.isEmpty) {
@@ -284,6 +314,9 @@ class WallhavenWallpaperService {
   /// DNS 被拖住、TCP SYN 被丢进黑洞（于是永远连不上）、还是连上了不回话，
   /// 三种情况的修法完全不同。而 `package:http` 不暴露这些阶段，只能自己测。
   ///
+  /// 探测对象是**当前清单端点**（[_searchEndpoint]）；端点换成镜像后，探测结论
+  /// 也应随镜像走 —— 官方域名的那张表（大陆 DNS 污染）已经写进历史笔记，不必再探。
+  ///
   /// ## 三条纪律
   ///
   /// * **只在 debug 构建跑**（[kDebugMode]）：正式版没有这段探测，也没有它的日志；
@@ -297,7 +330,7 @@ class WallhavenWallpaperService {
   /// | 挂 | — | — | DNS/解析器问题，与图源无关 |
   /// | 过 | 挂 | — | 出口链路断了（运营商/黑洞），App 侧无解 |
   /// | 过 | 过 | 通，但本请求超时 | **我们的请求被区别对待**（UA 之类），可改 |
-  /// | 过 | 过 | 也挂 | Cloudflare 对该来源整体不可达，App 侧无解 |
+  /// | 过 | 过 | 也挂 | 端点对该来源整体不可达，App 侧无解 |
   ///
   /// 刻意**不加** `@visibleForTesting`：它由 [fetchPortrait] 在 `kDebugMode` 守卫下
   /// 调用，那是生产代码路径，标成仅测试可见会被分析器判成误用。

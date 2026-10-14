@@ -172,6 +172,42 @@ void main() {
       );
     });
 
+    test('⭐ 域名改写只换主机，路径不动；对镜像地址幂等', () {
+      // 镜像 API 回给的图片地址仍是官方域名，而官方域名在大陆被 DNS 污染 ——
+      // 只换 API 域名等于图库全是裂图。改写规则必须钉住这三条：
+      const item = WallhavenWallpaperItem(
+        id: 'a',
+        width: 1080,
+        height: 1920,
+        fileUrl: 'https://w.wallhaven.cc/full/ab/wallhaven-abcd1f.png',
+        thumbnailUrl: 'https://th.wallhaven.cc/lg/ab/abcd1f.jpg',
+      );
+      final mirrored = item.withHostRewrittenToMirror;
+      expect(
+        mirrored.fileUrl,
+        'https://w.wallhaven.clbug.com/full/ab/wallhaven-abcd1f.png',
+        reason: '原图走镜像的同名子域，路径原样保留',
+      );
+      expect(
+        mirrored.thumbnailUrl,
+        'https://th.wallhaven.clbug.com/lg/ab/abcd1f.jpg',
+        reason: '缩略图同理',
+      );
+      // 幂等：镜像清单若被二次改写（缓存再入等来路），不能再换一次。
+      expect(
+        mirrored.withHostRewrittenToMirror.fileUrl,
+        mirrored.fileUrl,
+      );
+      // 与官方主机无关的地址原样返回。
+      const foreign = WallhavenWallpaperItem(
+        id: 'a',
+        width: 1080,
+        height: 1920,
+        fileUrl: 'https://example.com/a.jpg',
+      );
+      expect(foreign.withHostRewrittenToMirror.fileUrl, 'https://example.com/a.jpg');
+    });
+
     test('JSON 往返无损', () {
       const item = WallhavenWallpaperItem(
         id: 'w53vkq',
@@ -216,6 +252,17 @@ void main() {
         minimumSize: WallpaperTargetSize(1080, 1920),
       );
       expect(query.toQueryParameters()['page_size'], '24');
+    });
+
+    test('⭐ 清单端点是镜像站（官方域名在大陆被 DNS 污染，实测不通）', () {
+      // 2026-10-07 分段探测 + 2026-10-14 阿里 DoH 复测：官方 wallhaven.cc 在大陆
+      // 解析到不相干的假地址，等 8 秒还是 25 秒都拿不到一个字节。镜像站是纯反代
+      // （API 同路径同参数、图片同字节），且其域名未被污染。
+      // 这条钉住「别有人好心改回官方域名」—— 那等于把已实测的故障原样放回来。
+      expect(
+        WallhavenWallpaperService.testSearchEndpointHost,
+        'wallhaven.clbug.com',
+      );
     });
 
     test('服务里那三个比例值全部是像素写法', () {

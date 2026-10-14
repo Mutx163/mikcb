@@ -75,6 +75,41 @@ class WallhavenWallpaperItem {
   /// 本来就大于屏幕，缩下来只会平白丢细节、并让「原生竖图」这个优势作废。
   String get downloadUrl => fileUrl;
 
+  /// 图片域名改写到国内镜像（`…wallhaven.cc` → `…wallhaven.clbug.com`）。
+  ///
+  /// 镜像 API 回给的 `path` / `thumbs` 仍指向官方 `w.` / `th.wallhaven.cc`，而官方
+  /// 图片域名在大陆与主站一起被 DNS 污染 —— 只换 API 域名，图库会全是裂图。
+  /// 镜像对这两个子域 1:1 反代（2026-10-14 实测同图同字节数），改写规则就一条：
+  /// **主机名里的 `wallhaven.cc` 换成 `wallhaven.clbug.com`，路径与扩展名不动**；
+  /// 主机不含官方域名时原样返回（对已是镜像的地址幂等）。
+  ///
+  /// 调用点在 `WallhavenWallpaperService.fetchPortrait`（清单入口），缓存与下载
+  /// 拿到的就已经是镜像地址，不必各自再判一遍。
+  WallhavenWallpaperItem get withHostRewrittenToMirror => WallhavenWallpaperItem(
+    id: id,
+    width: width,
+    height: height,
+    fileUrl: _toMirrorHost(fileUrl),
+    thumbnailUrl: thumbnailUrl == null ? null : _toMirrorHost(thumbnailUrl!),
+    fileSizeBytes: fileSizeBytes,
+    category: category,
+  );
+
+  static String _toMirrorHost(String url) {
+    final uri = Uri.tryParse(url);
+    final host = uri?.host;
+    if (uri == null || host == null || !host.endsWith('wallhaven.cc')) {
+      return url;
+    }
+    return uri
+        .replace(
+          host:
+              '${host.substring(0, host.length - 'wallhaven.cc'.length)}'
+              'wallhaven.clbug.com',
+        )
+        .toString();
+  }
+
   /// 落盘文件名（不含目录）：`wallpaper_wh_<id>.jpg`。
   ///
   /// ## 为什么带 `wallpaper_` 前缀

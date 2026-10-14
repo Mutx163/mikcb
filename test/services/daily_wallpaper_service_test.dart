@@ -95,7 +95,7 @@ void main() {
   }) => MockClient((request) async {
     onRequest?.call(request.url);
     if (isListRequest(request.url)) {
-      final ok = request.url.host.contains('wallhaven.cc')
+      final ok = request.url.host.endsWith('wallhaven.clbug.com')
           ? wallhavenOk
           : bingOk;
       return ok
