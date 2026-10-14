@@ -263,15 +263,28 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
         alignedCourses,
       );
       if (!mounted) return;
-      final importedCount = await provider.importParsedCourses(
-        coursesToImport,
-        replaceExisting: replaceExisting,
-        semesterStart: semesterConfig.semesterStartDate,
-        source: 'ics',
-        preserveLocalColors: await shouldPreserveLocalColorsOnImport(
+      final int importedCount;
+      try {
+        importedCount = await provider.importParsedCourses(
+          coursesToImport,
           replaceExisting: replaceExisting,
-        ),
-      );
+          semesterStart: semesterConfig.semesterStartDate,
+          source: 'ics',
+          preserveLocalColors: await shouldPreserveLocalColorsOnImport(
+            replaceExisting: replaceExisting,
+          ),
+        );
+      } catch (_) {
+        // 同 AI 导入线：provider 已回滚，这里如实报错（原先 try/finally
+        // 不接，落盘失败零提示）。
+        if (!mounted) return;
+        showAppToast(
+          context,
+          message: l10n.saveFailed,
+          kind: AppToastKind.error,
+        );
+        return;
+      }
       // 课程已经落库：这套作息就是它们的依据，之后任何失败都不再回滚作息。
       coursesImported = true;
       if (!mounted) return;

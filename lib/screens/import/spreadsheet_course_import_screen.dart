@@ -390,15 +390,28 @@ Future<void> _completeParsedCourseImport({
     final coursesToImport = await coursesWithOptionalRandomColors(courses);
     if (!context.mounted) return;
 
-    final importedCount = await provider.importParsedCourses(
-      coursesToImport,
-      replaceExisting: replaceExisting,
-      semesterStart: semesterStart,
-      source: source,
-      preserveLocalColors: await shouldPreserveLocalColorsOnImport(
+    final int importedCount;
+    try {
+      importedCount = await provider.importParsedCourses(
+        coursesToImport,
         replaceExisting: replaceExisting,
-      ),
-    );
+        semesterStart: semesterStart,
+        source: source,
+        preserveLocalColors: await shouldPreserveLocalColorsOnImport(
+          replaceExisting: replaceExisting,
+        ),
+      );
+    } catch (_) {
+      // 同 AI / ICS 导入线：provider 已回滚（含被扩容的作息快照恢复），
+      // 这里如实报错。原先只有 try/finally，落盘失败零提示。
+      if (!context.mounted) return;
+      showAppToast(
+        context,
+        message: l10n.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return;
+    }
     // 课程已经落库：这套作息就是它们的依据，之后任何失败都不再回滚作息。
     coursesImported = true;
     if (!context.mounted) return;

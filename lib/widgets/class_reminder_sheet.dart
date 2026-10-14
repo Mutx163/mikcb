@@ -179,10 +179,22 @@ class _ClassReminderSheetBodyState extends State<_ClassReminderSheetBody> {
         widget.course.dayOfWeek,
       );
       if (date == null) return;
-      await provider.removeClassReminder(
-        widget.course.id,
-        ClassReminderEntry.formatDate(date),
-      );
+      try {
+        await provider.removeClassReminder(
+          widget.course.id,
+          ClassReminderEntry.formatDate(date),
+        );
+      } catch (_) {
+        // 落盘失败：provider 内部已回滚；原先只有 try/finally，异常飞进
+        // zone 零提示、弹层还留在原地。这里提示后原样收场（不 pop）。
+        if (!mounted) return;
+        showAppToast(
+          context,
+          message: AppLocalizations.of(context)!.saveFailed,
+          kind: AppToastKind.error,
+        );
+        return;
+      }
       if (!mounted) return;
       final navigator = Navigator.of(context);
       final hostContext = navigator.context;

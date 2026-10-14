@@ -227,16 +227,36 @@ bool _hasCatchErrorHandler(List<String> lines, int index) {
 /// ⚠️ 必须去掉注释与字符串再数：本仓注释里大量出现 `try {`、`{`、`}` 字样，
 /// 按原文数会把栈算错（`user_guide_settings_failure_guard_test.dart` 头注释
 /// 就是一处）。这也是第一版误报 `clearActiveProfileCourses` 的原因。
+///
+/// 2026-10-14 收紧：**每个 try 必须带 catch（或 onError/onException）**。
+/// 原判据只看「调用点是否在某个 try 块内」，`try { … } finally { … }` 也算
+/// 通过——finally 只保证清理，不处理异常，异常照样飞出去落进 zone：
+/// `class_reminder_sheet` 的删提醒、`course_recolor_sheet` 的批量换色、
+/// `spreadsheet_course_import_screen` 的表格导入都曾这样零提示漏过。
+/// 实现上给栈里每条 try 记一个「见过 catch 吗」的标记；try 块闭合时
+/// （深度回落到压栈值）若还没见过 catch，这条 try 视同不存在——调用点
+/// 若只被这样的 try 覆盖，判定为「不在 try/catch 内」。
 bool _isInsideTryCatch(List<String> lines, int index) {
   var depth = 0;
-  final tryDepths = <int>[];
+  // 每条元素：[压栈时的深度, 是否见过 catch]
+  final tryStack = <List<int>>[];
+
+  bool hasHandlerClause(String code) => RegExp(
+    r'\b(catch|onError|onException)\b',
+  ).hasMatch(code);
 
   for (var i = 0; i <= index; i++) {
     final code = _stripCommentsAndStrings(lines[i]);
     if (RegExp(r'\btry\b').hasMatch(code)) {
       // `try` 后面必然跟着 `{`（本仓无 `try` 单行无块写法），记下它此刻的深度，
       // 这一行随后压栈时深度会 +1。
-      tryDepths.add(depth);
+      tryStack.add([depth, 0]);
+    }
+    // Dart 的惯用写法是 `} catch (_) {` —— 闭括号与 handler 同行。所以
+    // handler 判定必须发生在花括号计数**之前**，否则 try 会先被 `}` 出栈、
+    // 同一行的 catch 没人接收，守卫会误报所有正常写法。
+    if (tryStack.isNotEmpty && hasHandlerClause(code)) {
+      tryStack.last[1] = 1;
     }
     for (final ch in code.codeUnits) {
       if (ch == 0x7B) {
@@ -244,13 +264,49 @@ bool _isInsideTryCatch(List<String> lines, int index) {
       } else if (ch == 0x7D) {
         depth--;
         // 关掉了 try 所在的那一层 ⇒ 这个 try 已经结束。
-        while (tryDepths.isNotEmpty && tryDepths.last >= depth) {
-          tryDepths.removeLast();
+        while (tryStack.isNotEmpty && tryStack.last[0] >= depth) {
+          // 出栈时不再区分带没带 handler：调用点若在 try 块内，该 try 还
+          // 开着、留在栈顶；若调用点在 catch/finally 块里，对应 try 已带着
+          // handler 闭合——handler 标记仍在历史里，但对判定无用也无害。
+          // 真正要挡的是「调用点所在 try 尚未闭合、且从未见过 handler」，
+          // 即裸 try/finally。那个场景由下面的 return 表达式覆盖。
+          tryStack.removeLast();
         }
       }
     }
   }
-  return tryDepths.isNotEmpty;
+  // 还开着的 try（调用点在 try 块内）：handler 只能出现在 try 块闭合之后，
+  // 调用点若真在 try 块内，handler 还没出现。所以「在未闭合 try 内」不能直接
+  // 放行，要看**这个 try 闭合之后**跟的是 catch 还是只有 finally——
+  // 由 _tryBlockHasHandlerAhead 从调用点向后扫描判定。
+  return tryStack.isEmpty
+      ? false
+      : _tryBlockHasHandlerAhead(lines, index, tryStack.last[0]);
+}
+
+/// 调用点处在未闭合的 try 块内：向后看这个 try 的闭合 `}` 之后有没有
+/// catch/onError/onException。注意中间会路过 if/else/for 等同层的闭括号
+/// （深度降回 tryDepth 但 try 还没闭合）——那些行上的 `} else {`、`} catch`
+/// 都不是 try 的 handler，必须**继续向后扫**，直到出现 handler（放行）或
+/// 深度**低于** tryDepth（try 已被真正闭合且无 handler，判红）。
+/// 最多向后看 400 行（一个正常 UI 处理函数的体量上限），找不到就保守判红
+/// ——误报会被立刻发现，漏报则继续零提示。
+bool _tryBlockHasHandlerAhead(List<String> lines, int index, int tryDepth) {
+  // 深度只用于「越过函数结尾」的粗略收线，不用于判定 try 是否闭合——
+  // switch/case 的 case 不开新大括号，`}` 的深度回落无法区分「关 if/else」
+  // 「关 switch」「关 try」。所以不在深度上提前收线：既然注释与字符串已被
+  // 剥除，Dart 里 `catch`/`onError`/`onException` 关键字只会出现在 handler
+  // 处，向后扫描窗口内见到即放行；扫满窗口（400 行，正常 UI 处理函数的
+  // 体量上限）仍没见到就判红——裸 try/finally 也因此被抓到。
+  for (var i = index + 1; i < lines.length && i <= index + 400; i++) {
+    final code = _stripCommentsAndStrings(lines[i]);
+    if (RegExp(
+      r'\b(catch|onError|onException)\b',
+    ).hasMatch(code)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /// 去掉行注释与字符串字面量，避免注释/文本里的花括号与 `try` 影响判定。

@@ -643,15 +643,32 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         return;
       }
 
-      final importedCount = await provider.importParsedCourses(
-        coursesToImport,
-        replaceExisting: replaceExisting,
-        semesterStart: semesterConfig.semesterStartDate,
-        source: 'ai',
-        preserveLocalColors: await shouldPreserveLocalColorsOnImport(
+      final int importedCount;
+      try {
+        importedCount = await provider.importParsedCourses(
+          coursesToImport,
           replaceExisting: replaceExisting,
-        ),
-      );
+          semesterStart: semesterConfig.semesterStartDate,
+          source: 'ai',
+          preserveLocalColors: await shouldPreserveLocalColorsOnImport(
+            replaceExisting: replaceExisting,
+          ),
+        );
+      } catch (_) {
+        // provider 内部已回滚（_timetableImportParsedCourses 的快照 +
+        // Error.throwWithStackTrace）；原先只有 try/finally，异常飞进 zone
+        // 零提示，用户看着「导入中」转一下就没了。这里如实报错，restorePoint
+        // 由外层 finally 收尾。
+        if (!mounted) {
+          return;
+        }
+        showAppToast(
+          context,
+          message: l10n.saveFailed,
+          kind: AppToastKind.error,
+        );
+        return;
+      }
       // 课程已经落库：这套作息就是它们的依据，之后任何失败都不再回滚作息。
       coursesImported = true;
       if (!mounted) {

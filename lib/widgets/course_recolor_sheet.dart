@@ -125,9 +125,29 @@ class _CourseRecolorSheetState extends State<CourseRecolorSheet> {
         schemes,
         index,
       );
-      await provider.applyCourseRecolors(
-        applyCourseRecolorScheme(courses, scheme),
-      );
+      try {
+        await provider.applyCourseRecolors(
+          applyCourseRecolorScheme(courses, scheme),
+        );
+      } catch (_) {
+        // provider 内部失败已把课程颜色整体退回并 rethrow（见
+        // TimetableProvider.applyCourseRecolors 的 catch）；这里负责把失败
+        // 说出口。原先只有 try/finally：异常飞进 zone 零提示，且 setState
+        // 被跳过会让内存历史索引、盘上历史、实际颜色三者错位——所以失败时
+        // 显式回到旧历史状态再提示。
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _history = CourseRecolorHistoryState(schemes: schemes..removeLast(), index: schemes.length - 2);
+        });
+        showAppToast(
+          context,
+          message: AppLocalizations.of(context)!.saveFailed,
+          kind: AppToastKind.error,
+        );
+        return;
+      }
       if (!mounted) {
         return;
       }
@@ -163,9 +183,28 @@ class _CourseRecolorSheetState extends State<CourseRecolorSheet> {
         _history.schemes,
         target,
       );
-      await provider.applyCourseRecolors(
-        applyCourseRecolorScheme(courses, scheme),
-      );
+      try {
+        await provider.applyCourseRecolors(
+          applyCourseRecolorScheme(courses, scheme),
+        );
+      } catch (_) {
+        // 同 _applyNewBatch：provider 已回滚课程颜色，这里恢复历史游标并提示。
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _history = CourseRecolorHistoryState(
+            schemes: _history.schemes,
+            index: _history.index,
+          );
+        });
+        showAppToast(
+          context,
+          message: AppLocalizations.of(context)!.saveFailed,
+          kind: AppToastKind.error,
+        );
+        return;
+      }
       if (!mounted) {
         return;
       }
