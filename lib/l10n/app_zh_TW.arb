@@ -6348,6 +6348,17 @@
     }
   },
   "bingWallpaperDownloadStatus": "壁紙下載失敗 {status}",
+  "bingWallpaperDownloadQueued": "上一張還在下載，這張已排隊，馬上就好",
+  "bingWallpaperDownloadProgress": "正在下載 {percent}",
+  "wallpaperThumbRetryHint": "輕點重試",
+  "@bingWallpaperDownloadProgress": {
+    "description": "大圖下載中的進度提示（大圖上的百分比）。",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "wallpaperGalleryShowingCached": "網路不太順暢，下面顯示的是上次載入的圖",
   "bingWallpaperDateToday": "今天",
   "bingWallpaperDateYesterday": "昨天",

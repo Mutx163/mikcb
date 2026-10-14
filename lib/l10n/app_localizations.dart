@@ -6339,6 +6339,24 @@ abstract class AppLocalizations {
   /// **'壁纸下载失败 {status}'**
   String bingWallpaperDownloadStatus(int status);
 
+  /// No description provided for @bingWallpaperDownloadQueued.
+  ///
+  /// In zh, this message translates to:
+  /// **'上一张还在下载，这张已排队，马上就好'**
+  String get bingWallpaperDownloadQueued;
+
+  /// 大图下载中的进度提示（大图上的百分比）。
+  ///
+  /// In zh, this message translates to:
+  /// **'正在下载 {percent}'**
+  String bingWallpaperDownloadProgress(String percent);
+
+  /// No description provided for @wallpaperThumbRetryHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻点重试'**
+  String get wallpaperThumbRetryHint;
+
   /// No description provided for @wallpaperGalleryShowingCached.
   ///
   /// In zh, this message translates to:

@@ -3418,6 +3418,17 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get bingWallpaperDownloadQueued => '上一张还在下载，这张已排队，马上就好';
+
+  @override
+  String bingWallpaperDownloadProgress(String percent) {
+    return '正在下载 $percent';
+  }
+
+  @override
+  String get wallpaperThumbRetryHint => '轻点重试';
+
+  @override
   String get wallpaperGalleryShowingCached => '网络不太顺畅，下面显示的是上次加载的图';
 
   @override
@@ -14623,6 +14634,17 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String bingWallpaperDownloadStatus(int status) {
     return '壁紙下載失敗 $status';
   }
+
+  @override
+  String get bingWallpaperDownloadQueued => '上一張還在下載，這張已排隊，馬上就好';
+
+  @override
+  String bingWallpaperDownloadProgress(String percent) {
+    return '正在下載 $percent';
+  }
+
+  @override
+  String get wallpaperThumbRetryHint => '輕點重試';
 
   @override
   String get wallpaperGalleryShowingCached => '網絡不太順暢，下面顯示的是上次載入的圖';
@@ -25870,6 +25892,17 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String bingWallpaperDownloadStatus(int status) {
     return '壁紙下載失敗 $status';
   }
+
+  @override
+  String get bingWallpaperDownloadQueued => '上一張還在下載，這張已排隊，馬上就好';
+
+  @override
+  String bingWallpaperDownloadProgress(String percent) {
+    return '正在下載 $percent';
+  }
+
+  @override
+  String get wallpaperThumbRetryHint => '輕點重試';
 
   @override
   String get wallpaperGalleryShowingCached => '網路不太順暢，下面顯示的是上次載入的圖';

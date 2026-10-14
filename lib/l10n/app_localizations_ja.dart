@@ -3492,6 +3492,17 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get bingWallpaperDownloadQueued => '前の画像をダウンロード中です。この画像は順番待ちです';
+
+  @override
+  String bingWallpaperDownloadProgress(String percent) {
+    return 'ダウンロード中 $percent';
+  }
+
+  @override
+  String get wallpaperThumbRetryHint => 'タップで再試行';
+
+  @override
   String get wallpaperGalleryShowingCached => 'ネットワークが不安定なため、前回読み込んだ画像を表示しています';
 
   @override

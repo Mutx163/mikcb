@@ -6369,6 +6369,17 @@
     }
   },
   "bingWallpaperDownloadStatus": "이 배경화면을 다운로드하지 못했습니다({status})",
+  "bingWallpaperDownloadQueued": "이전 이미지를 내려받는 중입니다. 이 이미지는 대기열에 추가되었습니다",
+  "bingWallpaperDownloadProgress": "다운로드 중 {percent}",
+  "wallpaperThumbRetryHint": "탭하여 다시 시도",
+  "@bingWallpaperDownloadProgress": {
+    "description": "큰 이미지 다운로드 진행률(타일 위의 백분율)。",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "wallpaperGalleryShowingCached": "네트워크가 불안정하여上次 불러온 이미지를 표시합니다",
   "bingWallpaperDateToday": "오늘",
   "bingWallpaperDateYesterday": "어제",

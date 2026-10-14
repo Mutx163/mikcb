@@ -289,9 +289,10 @@ BingWallpaperService._internal(this._client, bool ownsCandidate)
   /// 鑰岄偅涓€寮犲父甯稿氨鍦ㄧ敤鎴风溂鍓嶇殑鍥惧簱閲屻€?
   Future<BingWallpaperDownload> download(
     BingWallpaperItem item,
-    BingWallpaperResolution resolution,
-  ) async {
-    final direct = await _downloadAt(item, resolution);
+    BingWallpaperResolution resolution, {
+    void Function(int receivedBytes, int? totalBytes)? onProgress,
+  }) async {
+    final direct = await _downloadAt(item, resolution, onProgress: onProgress);
     if (direct.succeeded) {
       return BingWallpaperDownload.success(
         path: direct.path!,
@@ -307,7 +308,7 @@ BingWallpaperService._internal(this._client, bool ownsCandidate)
     if (fallback == null || !_isMissingTier(direct.failure)) {
       return BingWallpaperDownload.fromAttempt(direct);
     }
-    final retry = await _downloadAt(item, fallback);
+    final retry = await _downloadAt(item, fallback, onProgress: onProgress);
     if (retry.succeeded) {
       return BingWallpaperDownload.successWithFallback(
         path: retry.path!,
@@ -337,6 +338,7 @@ BingWallpaperService._internal(this._client, bool ownsCandidate)
     BingWallpaperItem item,
     BingWallpaperResolution resolution, {
     WallpaperTargetSize? target,
+    void Function(int receivedBytes, int? totalBytes)? onProgress,
   }) async {
     final size = target ?? resolution.downloadTargetSize;
     final url = item.fullUrl(resolution, target: size);
@@ -345,7 +347,13 @@ BingWallpaperService._internal(this._client, bool ownsCandidate)
       'download start date=${item.dateKey} tier=${resolution.name} '
       'target=${size.width}x${size.height} $url',
     );
-    final first = await _downloadVia(url, item, resolution, size);
+    final first = await _downloadVia(
+      url,
+      item,
+      resolution,
+      size,
+      onProgress: onProgress,
+    );
     if (!first.succeeded) {
       return first;
     }
@@ -381,7 +389,13 @@ BingWallpaperService._internal(this._client, bool ownsCandidate)
       _tag,
       'download retry(c=16) target=${size.width}x${size.height} $retryUrl',
     );
-    final retry = await _downloadVia(retryUrl, item, resolution, size);
+    final retry = await _downloadVia(
+      retryUrl,
+      item,
+      resolution,
+      size,
+      onProgress: onProgress,
+    );
     if (!retry.succeeded) {
       // 重试失败：第一次那张虽小一号但真实存在，总好过什么都没有。
       return first;
@@ -397,12 +411,15 @@ BingWallpaperService._internal(this._client, bool ownsCandidate)
   }
 
   /// [url] 的纯下载落盘（无校验无重试），上面的尺寸校验重试共用它。
+  ///
+  /// [onProgress] 原样透传给 [downloadToManagedImage]（图库页的下载百分比靠它）。
   Future<ManagedImageDownloadResult> _downloadVia(
     String url,
     BingWallpaperItem item,
     BingWallpaperResolution resolution,
-    WallpaperTargetSize size,
-  ) async {
+    WallpaperTargetSize size, {
+    void Function(int receivedBytes, int? totalBytes)? onProgress,
+  }) async {
     try {
       final result = await downloadToManagedImage(
         url: Uri.parse(url),
@@ -412,6 +429,7 @@ BingWallpaperService._internal(this._client, bool ownsCandidate)
         // `BingWallpaperItem.fileName` 的注释）。
         fileName: item.fileName(resolution, target: size),
         client: _client,
+        onProgress: onProgress,
       );
       // 每一次尝试都留一行 —— 2026-10-06 用户报「点大图下载失败」而四条分支全都只回
       // null、且日志写进了默认关闭的 AppLogService，于是无从查起（见笔记）。

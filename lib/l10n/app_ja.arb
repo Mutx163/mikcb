@@ -6312,6 +6312,17 @@
     }
   },
   "bingWallpaperDownloadStatus": "この壁紙のダウンロードに失敗しました（{status}）",
+  "bingWallpaperDownloadQueued": "前の画像をダウンロード中です。この画像は順番待ちです",
+  "bingWallpaperDownloadProgress": "ダウンロード中 {percent}",
+  "wallpaperThumbRetryHint": "タップで再試行",
+  "@bingWallpaperDownloadProgress": {
+    "description": "大きい画像のダウンロード進捗（タイル上のパーセント）。",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "wallpaperGalleryShowingCached": "ネットワークが不安定なため、前回読み込んだ画像を表示しています",
   "bingWallpaperDateToday": "今日",
   "bingWallpaperDateYesterday": "昨日",

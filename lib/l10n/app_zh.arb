@@ -1971,6 +1971,17 @@
     }
   },
   "bingWallpaperDownloadStatus": "壁纸下载失败 {status}",
+  "bingWallpaperDownloadQueued": "上一张还在下载，这张已排队，马上就好",
+  "bingWallpaperDownloadProgress": "正在下载 {percent}",
+  "wallpaperThumbRetryHint": "轻点重试",
+  "@bingWallpaperDownloadProgress": {
+    "description": "大图下载中的进度提示（大图上的百分比）。",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "wallpaperGalleryShowingCached": "网络不太顺畅，下面显示的是上次加载的图",
   "bingWallpaperDateToday": "今天",
   "bingWallpaperDateYesterday": "昨天",

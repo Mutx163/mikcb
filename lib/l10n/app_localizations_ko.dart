@@ -3514,6 +3514,18 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get bingWallpaperDownloadQueued =>
+      '이전 이미지를 내려받는 중입니다. 이 이미지는 대기열에 추가되었습니다';
+
+  @override
+  String bingWallpaperDownloadProgress(String percent) {
+    return '다운로드 중 $percent';
+  }
+
+  @override
+  String get wallpaperThumbRetryHint => '탭하여 다시 시도';
+
+  @override
   String get wallpaperGalleryShowingCached => '네트워크가 불안정하여上次 불러온 이미지를 표시합니다';
 
   @override

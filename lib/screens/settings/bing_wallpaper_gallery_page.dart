@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
@@ -11,7 +11,6 @@ import '../../services/wallpaper_history_service.dart';
 import '../../utils/bing_wallpaper_date_label.dart';
 import '../../ui/hyperos/hyperos.dart';
 import '../../utils/app_toast.dart';
-import '../../utils/home_page_background.dart';
 import '../../utils/wallpaper_history.dart';
 
 /// 图库里点中一张、已下好本地之后的收尾，由宿主实现。
@@ -89,10 +88,37 @@ class _BingWallpaperGalleryPageState
   /// 首次加载 / 下拉刷新进行中。
   bool _loading = true;
 
-  /// 正在下载的那张，键为 `dateKey@档位`；null = 没在下载。
+  /// 正在下载的那张；null = 没在下载。
   ///
-  /// 用键而不是下标：清单可能被刷新重排，下标会指到别的图上。
-  String? _downloadingKey;
+  /// 用条目而不是下标：清单可能被刷新重排，下标会指到别的图上。
+  BingWallpaperItem? _downloadingItem;
+
+  /// 下载中点击的那张（排队）：当前这张完成后自动接着下。
+  String? _queuedItemId;
+
+  /// 下载进度（已收 / 总字节；CDN 没给总长时 total 为 null → 只转圈不报百分比）。
+  int? _downloadingBytes;
+  int? _downloadingTotalBytes;
+
+  /// 上次 setState 用掉的整数百分比（1% 粒度节流，见 `_downloadAndApply`）。
+  int get _downloadingPercent {
+    final total = _downloadingTotalBytes;
+    if (total == null || total <= 0) {
+      return -1;
+    }
+    return ((_downloadingBytes ?? 0) * 100) ~/ total;
+  }
+
+  /// 缩略图加载失败的 dateKey 集合：失败显示「重试」角标，点了再拉一次。
+  ///
+  /// Flutter 的 `Image.network` 失败后**不会自己重试**——弱网下超时那张就永远是
+  /// 占位色块，看起来像「没加载出来」。给一个手动重试的口子（2026-10-14 用户
+  /// 报「有一些加载不出来」）。
+  final Set<String> _failedThumbs = <String>{};
+
+  /// 缩略图重载的代数：retry 时递增，`KeyedSubtree` 用它换 key 强制重建 `Image`
+  /// （`Image.network` 对失败 URL 的结果有缓存，不换 key 重试不发起请求）。
+  int _thumbRetryEpoch = 0;
 
   /// 拉取失败。给一条可重试的提示而不是空白页 —— 断网时的空白页最像「功能坏了」。
   bool _failed = false;
@@ -154,17 +180,49 @@ class _BingWallpaperGalleryPageState
   }
 
   /// 点某一张：先看有没有已下过的同款，没有才下载。
+  ///
+  /// ## 「一次只下一张」改成了**排队**（2026-10-14）
+  ///
+  /// 早先下载中点其他图是**静默忽略**（这里 `return`，一个字不提示）——用户看到的就是
+  /// 「点了没反应」，转而去连点好几下。现在下载中的点击把那张**排进队列**（[Widget] 层
+  /// 只记 id），当前这张完成后自动接着下；排队时目标卡片立刻显示「排队中」的转圈，
+  /// 用户看得见它已被接住。
   Future<void> _pick(BingWallpaperItem item) async {
-    if (_downloadingKey != null) {
-      // 一次只下一张：并行下 3.5 MB 的图既费流量，也让进度提示乱成一团。
+    // 缩略图失败的那张：第一次点击**只重试缩略图**，不下大图（用户点的是「这块
+    // 怎么空了」，不是「我要这张当壁纸」）。重试成功后角标消失，再点才是下载。
+    if (_failedThumbs.contains(item.dateKey) && _downloadingItem == null) {
+      setState(() {
+        _failedThumbs.remove(item.dateKey);
+        _thumbRetryEpoch++;
+      });
       return;
     }
+    if (_downloadingItem != null) {
+      if (_queuedItemId != item.dateKey) {
+        setState(() => _queuedItemId = item.dateKey);
+        showAppToast(
+          context,
+          message: AppLocalizations.of(context)!.bingWallpaperDownloadQueued,
+        );
+      }
+      return;
+    }
+    await _downloadAndApply(item);
+  }
+
+  /// 下载 [item] 并走宿主落盘回调；完成后自动开跑排队的下一张。
+  Future<void> _downloadAndApply(BingWallpaperItem item) async {
     final resolution = BingWallpaperStore.instance.resolution;
     // 实际要下的像素（屏幕分辨率与档位下限取大者，见
     // [BingWallpaperResolution.downloadTargetSize]）。查询台账与下载都要用**这一组**，
     // 否则会拿旧尺寸那张糊的当命中、或下到与文件名不一致的尺寸。
     final targetSize = resolution.downloadTargetSize;
-    setState(() => _downloadingKey = _entryKey(item, resolution, targetSize));
+    setState(() {
+      _downloadingItem = item;
+      _downloadingBytes = null;
+      _downloadingTotalBytes = null;
+      _queuedItemId = null;
+    });
     var path = await BingWallpaperStore.instance.findExisting(
       item.dateKey,
       resolution,
@@ -179,7 +237,25 @@ class _BingWallpaperGalleryPageState
       // client 注入钩子对这一处同样生效（理由见该方法的注释）。
       final service = BingWallpaperService.createTransient();
       try {
-        final result = await service.download(item, resolution);
+        final result = await service.download(
+          item,
+          resolution,
+          // ⭐ 真实字节进度：流式下载每收一块回调一次。 setState 节流到
+          // 1% 粒度（整数百分比变化才重建），不然 2 MB 图在好网下每块都
+          // 触发重建，网格白抖。
+          onProgress: (received, total) {
+            if (!mounted || total == null || total <= 0) {
+              return;
+            }
+            final percent = (received * 100) ~/ total;
+            if (percent != _downloadingPercent) {
+              setState(() {
+                _downloadingBytes = received;
+                _downloadingTotalBytes = total;
+              });
+            }
+          },
+        );
         path = result.path;
         if (result.succeeded) {
           // 手动挑的也记账：目的是**封顶清理**（不记账的文件没人回收）与去重，
@@ -205,7 +281,7 @@ class _BingWallpaperGalleryPageState
     if (!mounted) {
       return;
     }
-    setState(() => _downloadingKey = null);
+    setState(() => _downloadingItem = null);
     if (path == null) {
       showAppToast(
         context,
@@ -215,16 +291,31 @@ class _BingWallpaperGalleryPageState
         kind: AppToastKind.warning,
         showKindIcon: true,
       );
+    } else {
+      // 带着路径退出，交给调用方在**本页之后**接位置编辑（见 pushBingWallpaperGalleryPage）。
+      final applied = await widget.onImageDownloaded(path);
+      if (!mounted) {
+        return;
+      }
+      // 只有真落盘了才退出图库：用户从位置页「退出」回来时还要接着挑（2026-10-06）。
+      if (applied) {
+        Navigator.of(context).pop();
+        return;
+      }
+      // 位置编辑页「退出」回来了：清掉排队标记 —— 那次交互已经结束，用户回到图库
+      // 是要**重新挑**，自动开跑排队的下一张反而抢走控制权。
+      if (_queuedItemId != null) {
+        setState(() => _queuedItemId = null);
+      }
       return;
     }
-    // 带着路径退出，交给调用方在**本页之后**接位置编辑（见 pushBingWallpaperGalleryPage）。
-    final applied = await widget.onImageDownloaded(path);
-    if (!mounted) {
-      return;
-    }
-    // 只有真落盘了才退出图库：用户从位置页「退出」回来时还要接着挑（2026-10-06）。
-    if (applied) {
-      Navigator.of(context).pop();
+    // 只有「下载失败」这条路才自动开跑排队的下一张：用户没拿到图，替他把排队的
+    // 那张补上。位置页退出不走这里（见上）。
+    final queued = _queuedItemId == null
+        ? null
+        : _items.where((e) => e.dateKey == _queuedItemId).firstOrNull;
+    if (queued != null) {
+      await _downloadAndApply(queued);
     }
   }
 
@@ -248,19 +339,6 @@ class _BingWallpaperGalleryPageState
       },
     );
   }
-
-  /// 「正在下载这张」的键。
-  ///
-  /// 必须带**实际尺寸**（2026-10-07）：同一天同一档位在换设备/改设置后可能对应两组像素，
-  /// 只按 `dateKey@档位` 判 busy 会让正在下的那一张**不再显示转圈**（用户会以为可以再点，
-  /// 于是并发下两次同一张 —— 那正是 `downloadToManagedImage` 临时名事故的来源）。
-  static String _entryKey(
-    BingWallpaperItem item,
-    BingWallpaperResolution resolution,
-    WallpaperTargetSize targetSize,
-  ) =>
-      '${item.dateKey}@${resolution.storageKey}'
-      '@${targetSize.width}x${targetSize.height}';
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
@@ -410,12 +488,11 @@ class _BingWallpaperGalleryPageState
 
   Widget _buildTile(BuildContext context, BingWallpaperItem item) {
     final l10n = AppLocalizations.of(context)!;
-    final resolution = BingWallpaperStore.instance.resolution;
-    final busy =
-        _downloadingKey ==
-        _entryKey(item, resolution, resolution.downloadTargetSize);
+    final busy = _downloadingItem?.dateKey == item.dateKey;
+    final queued = _queuedItemId == item.dateKey;
+    final thumbFailed = _failedThumbs.contains(item.dateKey);
     return MiuixPressable(
-      onPressed: busy ? null : () => _pick(item),
+      onPressed: () => _pick(item),
       borderRadius: BorderRadius.circular(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -431,32 +508,67 @@ class _BingWallpaperGalleryPageState
               child: Stack(
                 fit: StackFit.expand,
                 children: <Widget>[
-                  // 缩略图：17 KB 的小图，网络直出。加载中与失败都垫一层底色，
+                  // 缩略图：105 KB 的小图，网络直出。加载中与失败都垫一层底色，
                   // 免得网格里闪出一块纯白。
-                  Image.network(
-                    item.thumbnailUrl(),
-                    fit: BoxFit.cover,
-                    // 网格里每张约 180dp 宽，2x 解码足够，不必拉原图。
-                    cacheWidth: 360,
-                    loadingBuilder: (context, child, progress) => progress == null
-                        ? child
-                        : ColoredBox(color: HyperosColors.rowHighlight(context)),
-                    errorBuilder: (context, error, stackTrace) => ColoredBox(
-                      color: HyperosColors.rowHighlight(context),
-                      child: Icon(
-                        Icons.image_not_supported_outlined,
-                        size: 20,
-                        color: HyperosColors.secondaryText(context),
-                      ),
+                  //
+                  // ⚠️ 加载中给一颗**小号** `HyperosInfiniteProgress`（外观编辑页
+                  // 加载罩同款转圈）：8 张小图到达顺序天然不同（8 个独立请求并发
+                  // 竞速），只有底色的卡片看起来像「坏了」——有转圈就是「还在来」。
+                  // key 带上 `_thumbRetryEpoch`：重试时强制重建 `Image`，否则
+                  // `Image.network` 对失败 URL 的结果有缓存、重试不发起请求。
+                  KeyedSubtree(
+                    key: ValueKey('thumb_${item.dateKey}_$_thumbRetryEpoch'),
+                    child: Image.network(
+                      item.thumbnailUrl(),
+                      fit: BoxFit.cover,
+                      // 网格里每张约 180dp 宽，2x 解码足够，不必拉原图。
+                      cacheWidth: 360,
+                      loadingBuilder: (context, child, progress) =>
+                          progress == null
+                          ? child
+                          : ColoredBox(
+                              color: HyperosColors.rowHighlight(context),
+                              child: const Center(
+                                child: HyperosInfiniteProgress(size: 18),
+                              ),
+                            ),
+                      errorBuilder: (context, error, stackTrace) {
+                        if (!_failedThumbs.contains(item.dateKey)) {
+                          scheduleMicrotask(() {
+                            if (mounted) {
+                              setState(() => _failedThumbs.add(item.dateKey));
+                            }
+                          });
+                        }
+                        return ColoredBox(
+                          color: HyperosColors.rowHighlight(context),
+                          child: Center(
+                            child: Icon(
+                              Icons.image_not_supported_outlined,
+                              size: 20,
+                              color: HyperosColors.secondaryText(context),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
+                  // 下载中：暗化 + 外观编辑页同款转圈 + 百分比。
                   if (busy)
                     ColoredBox(
                       color: Colors.black.withValues(alpha: 0.45),
+                      child: Center(
+                        child: _downloadProgressLabel(l10n),
+                      ),
+                    )
+                  // 排队中：只给转圈，不暗化到看不清（排队时那张缩略图多半已加载完）。
+                  else if (queued)
+                    ColoredBox(
+                      color: Colors.black.withValues(alpha: 0.45),
                       child: const Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.2,
+                        child: HyperosInfiniteProgress(
                           color: Colors.white,
+                          size: 24,
                         ),
                       ),
                     ),
@@ -473,7 +585,10 @@ class _BingWallpaperGalleryPageState
           ),
           const SizedBox(height: 2),
           Text(
-            item.copyright.isEmpty ? item.title : item.copyright,
+            thumbFailed
+                ? '${item.copyright.isEmpty ? item.title : item.copyright}'
+                    '（${l10n.wallpaperThumbRetryHint}）'
+                : (item.copyright.isEmpty ? item.title : item.copyright),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: HyperosTypography.listDetail(
@@ -482,6 +597,33 @@ class _BingWallpaperGalleryPageState
           ),
         ],
       ),
+    );
+  }
+
+  /// 下载中那块的中心内容：能算百分比时是「转圈 + 正在下载 N%」，算不出
+  /// （CDN 没给总长）就是转圈 + 不带数字的「正在下载」。
+  ///
+  /// ⚠️ 转圈必须是 `HyperosInfiniteProgress`（外观编辑页加载罩同款：细环 + 绕行
+  /// 小圆点），不是 Material 的 `CircularProgressIndicator` —— 用户点名要那个效果。
+  Widget _downloadProgressLabel(AppLocalizations l10n) {
+    final percent = _downloadingPercent;
+    final text = percent >= 0
+        ? l10n.bingWallpaperDownloadProgress('$percent%')
+        : l10n.bingWallpaperDownloadProgress('…');
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const HyperosInfiniteProgress(color: Colors.white, size: 28),
+        const SizedBox(height: 8),
+        Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      ],
     );
   }
 }

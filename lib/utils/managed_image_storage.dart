@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -139,20 +140,30 @@ class ManagedImageDownloadResult {
 /// 其中「响应体不是图片」那条不能省：Bing 的图片接口偶尔会对异常参数回一个 HTML 错误页
 /// 而状态码仍是 200（实测任意尺寸如 `_2560x1440` 是 404，但错误页仍可能以 200 出现）。
 /// 不验类型就会把一段 HTML 存成 `.jpg` 并当壁纸用上。
+///
+/// ## 流式接收（2026-10-14）
+///
+/// 早先 `httpClient.get()` 一次性收全量字节——中间没有任何进度可报，2 MB 的原图在
+/// 弱网下十几秒只有一颗无意义的转圈。改为 `send()` + 逐块写 `.part` 文件：
+/// [onProgress] 每收到一块回调一次（已收字节，总字节——CDN 没给 content-length
+/// 时为 null，调用方按「未知总量」处理）。超时语义随之变为**块间空闲超时**
+/// （[timeout] 限制的是两块之间的最长间隔，不是总时长）：弱网下 2 MB 下载超过
+/// 20 秒是正常的，总时长超时会把慢而健康的下载掐死；块间卡死才是真断了。
 Future<ManagedImageDownloadResult> downloadToManagedImage({
   required Uri url,
   required String directoryName,
   required String fileName,
   http.Client? client,
   Duration? timeout,
+  void Function(int receivedBytes, int? totalBytes)? onProgress,
 }) async {
   final httpClient = client ?? http.Client();
   final ownsClient = client == null;
-  http.Response response;
+  http.StreamedResponse response;
   try {
-    response = await httpClient.get(url).timeout(
-      timeout ?? const Duration(seconds: 20),
-    );
+    response = await httpClient
+        .send(http.Request('GET', url))
+        .timeout(timeout ?? const Duration(seconds: 20));
   } on Object catch (error) {
     // 网络层异常（断网 / 超时 / DNS / 证书 / **client 已被关闭**）在此一律吞掉：
     // 调用方在启动路径上，一次壁纸下载失败不该波及主流程。原因照样带出去。
@@ -174,21 +185,16 @@ Future<ManagedImageDownloadResult> downloadToManagedImage({
     }
   }
   if (response.statusCode < 200 || response.statusCode >= 300) {
+    await response.stream.drain<void>();
     return ManagedImageDownloadResult.failed(
       ManagedImageDownloadFailure.status,
       statusCode: response.statusCode,
       contentType: response.headers['content-type'],
     );
   }
-  final bytes = response.bodyBytes;
-  if (bytes.isEmpty) {
-    return ManagedImageDownloadResult.failed(
-      ManagedImageDownloadFailure.emptyBody,
-      statusCode: response.statusCode,
-    );
-  }
   final contentType = response.headers['content-type']?.trim().toLowerCase();
   if (contentType == null || !contentType.startsWith('image/')) {
+    await response.stream.drain<void>();
     return ManagedImageDownloadResult.failed(
       ManagedImageDownloadFailure.notImage,
       statusCode: response.statusCode,
@@ -225,13 +231,70 @@ Future<ManagedImageDownloadResult> downloadToManagedImage({
   // 进程内自增计数器足以区分并发者；再拼一段随机数覆盖「多 isolate / 上次崩溃留下的
   // 残留」这两种情况。谁先 `rename` 谁生效，字节完整的那份胜出（rename 在同卷内原子）。
   final temp = File('${target.path}.${_nextTempToken()}.part');
+  final idleTimeout = timeout ?? const Duration(seconds: 20);
+  IOSink? sink;
+  var received = 0;
   try {
-    await temp.writeAsBytes(bytes, flush: true);
+    sink = temp.openWrite();
+    final total = response.contentLength;
+    await for (final chunk
+        in response.stream.timeout(idleTimeout, onTimeout: (sink2) {
+      sink2.addError(
+        TimeoutException('idle $idleTimeout between chunks'),
+      );
+      sink2.close();
+    })) {
+      sink.add(chunk);
+      received += chunk.length;
+      if (onProgress != null) {
+        onProgress(received, total);
+      }
+    }
+    await sink.flush();
+    await sink.close();
+    sink = null;
+  } on Object catch (error) {
+    // 写盘或网络中途失败：清掉半截 .part（见方法头「为什么先写临时文件」），
+    // 对外仍是 network 失败（带上进度现场，弱网排查用得上）。
+    try {
+      await sink?.close();
+    } on Object {
+      // sink 已死，无需再管。
+    }
+    try {
+      if (temp.existsSync()) {
+        temp.deleteSync();
+      }
+    } on Object {
+      // 残留会以 wallpaper 前缀被既有清理扫掉。
+    }
+    appDebugLog(
+      'ManagedImage',
+      'download stream failed at $received bytes on $url: '
+          '${error.runtimeType}: $error',
+    );
+    return ManagedImageDownloadResult.failed(
+      ManagedImageDownloadFailure.network,
+      detail: '${error.runtimeType}: $error (received=$received)',
+    );
+  }
+  if (received == 0) {
+    try {
+      temp.deleteSync();
+    } on Object {
+      // 同上。
+    }
+    return ManagedImageDownloadResult.failed(
+      ManagedImageDownloadFailure.emptyBody,
+      statusCode: response.statusCode,
+    );
+  }
+  try {
     await temp.rename(target.path);
   } on Object {
     try {
       if (temp.existsSync()) {
-        await temp.delete();
+        temp.delete();
       }
     } on Object {
       // 临时文件删不掉不阻断：它仍以 `filePrefix` 开头，被当成壁纸目录里的残留扫掉，

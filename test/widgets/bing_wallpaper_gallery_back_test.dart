@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,31 +13,18 @@ import 'package:university_timetable/services/bing_wallpaper_store.dart';
 
 import '../helpers_test_app.dart';
 
-/// Regression: tapping a wallpaper used to **pop the gallery first**, then push
-/// the position editor — so「退出」landed back in settings instead of back in the
-/// wallpaper list.
+/// 图库页的**退栈顺序**回归（2026-10-06 用户口径）：
+/// * 宿主返回「已落盘」→ 图库页自己退出（没必要再挡着）；
+/// * 宿主返回「未落盘」（用户在位置页点了「退出」）→ 图库页**留在栈上**，用户继续挑。
 ///
-/// User 2026-10-06: 「点击看完大屏，点击退出的时候，直接返回到最开始的地方了，
-/// 而不是壁纸列表」—— picking another wallpaper meant walking back through
-/// 设置 → Bing 每日壁纸 every time.
-///
-/// Contract now: the gallery **stays on the stack** and the position editor is
-/// pushed *above* it, so
-/// * handler returns `false` (user hit 退出) → gallery is still there;
-/// * handler returns `true` (user hit 完成) → gallery closes itself.
-///
-/// ## 这条测试**完全不走网络**
-///
-/// 清单与已下载文件都预先塞进 store（缓存命中 → `findExisting` 命中），所以不需要
-/// MockClient。原因是实测踩到的：在 `testWidgets` 的 FakeAsync 里跑真实 HTTP 下载，
-/// 那个 `await` 链**永远推进不到底**（只有 `download start` 一行日志）——
-/// `flutter test` 里凡是要真下载，都得挪到纯 `test()` + `runRealAsync` 那套去。
-/// 本条要验的是退栈顺序，跟网络无关，不该被它拖累。
+/// 台账与清单全部命中缓存，所以点击不碰网络 —— 只验栈行为。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const analyticsChannel = MethodChannel('com.mutx163.qingyu/umeng_analytics');
-  const pathProviderChannel = MethodChannel('plugins.flutter.io/path_provider');
+  const pathProviderChannel = MethodChannel(
+    'plugins.flutter.io/path_provider',
+  );
 
   late Directory tempDir;
   late String alreadyDownloaded;
@@ -100,6 +87,10 @@ void main() {
   });
 
   /// 清单与已下载文件都命中缓存，pump 完就该看到那张卡片的版权说明。
+  ///
+  /// ⚠️ 用 **`textContaining`**：测试环境里缩略图必然加载失败（HttpClient 被
+  /// flutter_test 拦成 400），失败后卡片文案会带「轻点重试」后缀（2026-10-14 起），
+  /// 钉整串会假红。
   Future<void> pumpGallery(
     WidgetTester tester, {
     required Future<bool> Function(String path) onImageDownloaded,
@@ -111,10 +102,16 @@ void main() {
     );
     await tester.pump();
     expect(
-      find.text('阿德利企鹅，南极洲'),
+      find.textContaining('阿德利企鹅，南极洲'),
       findsOneWidget,
       reason: '前提：那张卡片画出来了（清单命中缓存）',
     );
+  }
+
+  /// 点卡片。⚠️ 同上用 `textContaining` 定位。
+  Future<void> tapCard(WidgetTester tester) async {
+    await tester.tap(find.textContaining('阿德利企鹅，南极洲'));
+    await tester.pumpAndSettle();
   }
 
   testWidgets('宿主返回「未落盘」时图库页留在栈上（用户可继续挑）', (tester) async {
@@ -127,12 +124,11 @@ void main() {
       },
     );
 
-    await tester.tap(find.text('阿德利企鹅，南极洲'));
-    await tester.pumpAndSettle();
+    await tapCard(tester);
 
     expect(handled, <String>[alreadyDownloaded]);
     expect(
-      find.text('阿德利企鹅，南极洲'),
+      find.textContaining('阿德利企鹅，南极洲'),
       findsOneWidget,
       reason: '⭐ 返回 false 时图库页**不能**退出 —— 退出就回不到壁纸列表了',
     );
@@ -141,11 +137,10 @@ void main() {
   testWidgets('宿主返回「已落盘」时图库页自己退出', (tester) async {
     await pumpGallery(tester, onImageDownloaded: (path) async => true);
 
-    await tester.tap(find.text('阿德利企鹅，南极洲'));
-    await tester.pumpAndSettle();
+    await tapCard(tester);
 
     expect(
-      find.text('阿德利企鹅，南极洲'),
+      find.textContaining('阿德利企鹅，南极洲'),
       findsNothing,
       reason: '用户已确认落盘，图库就没必要再挡在前面',
     );
@@ -158,8 +153,7 @@ void main() {
       return http.Response('', 500);
     });
     await pumpGallery(tester, onImageDownloaded: (path) async => false);
-    await tester.tap(find.text('阿德利企鹅，南极洲'));
-    await tester.pumpAndSettle();
+    await tapCard(tester);
     expect(
       requests,
       0,

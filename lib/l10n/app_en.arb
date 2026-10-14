@@ -1942,6 +1942,17 @@
     }
   },
   "bingWallpaperDownloadStatus": "Couldn't download this wallpaper ({status})",
+  "bingWallpaperDownloadQueued": "Previous download still running — this one is queued",
+  "bingWallpaperDownloadProgress": "Downloading {percent}",
+  "wallpaperThumbRetryHint": "Tap to retry",
+  "@bingWallpaperDownloadProgress": {
+    "description": "Progress hint while a full image downloads (percentage on the tile).",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "wallpaperGalleryShowingCached": "Network's being slow — showing the last images that loaded.",
   "bingWallpaperDateToday": "Today",
   "bingWallpaperDateYesterday": "Yesterday",
