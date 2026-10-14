@@ -218,9 +218,44 @@ class BingWallpaperItem {
   /// `c=4` 是「填满」的开关：实测不带它时 Bing 会把整张图缩进去、上下留白边
   /// （竖图会变成一张窄条浮在白底里），当壁纸极其难看。带上之后它会保留画面有内容的
   /// 部分去裁，不是盲切正中间一条。
-  String resizeUrl({required int width, required int height}) {
+  ///
+  /// [highQuality] 会追加 `qlt=95`（2026-10-14 实测）：Bing 默认把 JPEG 压得很狠，
+  /// 同一张 1440×3200 约 890 KB，加 `qlt=95` 后约 2.0 MB —— 像素数不变，但天空 /
+  /// 渐变里的 JPEG 块状伪影肉眼可见地减少（1:1 观感的主要来源之一）。`qlt=100`
+  /// 约 3.8 MB，太重，95 是体积与画质的平衡点。**原图下载用 true，缩略图用 false**
+  /// （105 KB 的小图压不压看不出，流量翻倍不值）。
+  String resizeUrl({
+    required int width,
+    required int height,
+    bool highQuality = true,
+  }) {
     final id = '$imageId$_resizeSourceSuffix';
-    return 'https://www.bing.com/th?w=$width&h=$height&rs=1&c=4&id=$id';
+    final quality = highQuality ? '&qlt=95' : '';
+    return 'https://www.bing.com/th'
+        '?w=$width&h=$height&rs=1&c=4$quality&id=$id';
+  }
+
+  /// 这次下载**预期**拿到的像素；落盘后与文件实际尺寸比对，识别 Bing 的静默降尺寸。
+  ///
+  /// 与 [fullUrl] 的口径严格一致（2026-10-14 实测的接口行为）：
+  ///
+  /// * 预生成档（`sizeSuffix` 非空）且尺寸够用 → 直接拿后缀图，尺寸就是**该档写死值**
+  ///   （1080×1920）；
+  /// * 否则走 resize 接口要 [target] —— 但**接口不保证服从**：实测（两天 × 多组尺寸）
+  ///   约 1/4 的组合会被静默换成「高 ≤ 2592」（= 2160 高的 0.8 源图按 1.2 缩放？无官方
+  ///   解释，同参数重测结果一致，不是缓存抖动）。**带不带 `qlt` 都会发生**，与质量
+  ///   参数无关。这里只声明「该是多少」，「实际是不是」由服务层落盘后校验
+  ///   （见 `BingWallpaperService._downloadAt`）。
+  WallpaperTargetSize expectedSizeFor(
+    BingWallpaperResolution resolution, {
+    WallpaperTargetSize? target,
+  }) {
+    final suffix = resolution.sizeSuffix;
+    if (suffix != null &&
+        (target == null || target.height <= resolution.height)) {
+      return WallpaperTargetSize(resolution.width, resolution.height);
+    }
+    return target ?? WallpaperTargetSize(resolution.width, resolution.height);
   }
 
   /// 浏览图库用的小图地址。
@@ -230,9 +265,12 @@ class BingWallpaperItem {
   ///
   /// 默认取**竖屏**比例（480×854，约 105 KB）：图库卡片也是竖的，缩略图必须与
   /// 最终拿到的那张同朝向，否则用户点进去才发现「预览是横的、成品是竖的」。
+  /// 缩略图**不带** `qlt`（[resizeUrl] 的 `highQuality: false`）：小图压不压看不出，
+  /// 不值得让 8 张的流量翻倍。
   String thumbnailUrl({int width = 480, int height = 854}) => resizeUrl(
     width: width,
     height: height,
+    highQuality: false,
   );
 
   /// 落盘文件名（不含目录）：`wallpaper_bing_20261005_standard.jpg`。

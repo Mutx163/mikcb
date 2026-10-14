@@ -13,6 +13,7 @@ import '../models/bing_wallpaper.dart';
 // 渚濊禆 l10n锛屾纭仛娉曟槸鎶婅繖涓В鏋愬嚱鏁版惉杩?`bing_wallpaper.dart`锛坢odel 鑷繁瑙ｆ瀽
 // 鑷繁鐨勫瓧娈碉級锛岃€屼笉鏄 service 鍙嶅悜渚濊禆鐣岄潰灞傘€?
 import '../utils/bing_wallpaper_date_label.dart';
+import '../utils/encoded_image_size.dart';
 import '../utils/home_page_background.dart';
 import '../utils/managed_image_storage.dart';
 import '../utils/wallpaper_history.dart';
@@ -344,19 +345,77 @@ BingWallpaperService._internal(this._client, bool ownsCandidate)
       'download start date=${item.dateKey} tier=${resolution.name} '
       'target=${size.width}x${size.height} $url',
     );
+    final first = await _downloadVia(url, item, resolution, size);
+    if (!first.succeeded) {
+      return first;
+    }
+    // ⭐ 落盘后**验尺寸**（2026-10-14）：resize 接口会**静默降尺寸** —— 实测（两天 ×
+    // 多组尺寸交叉验证）部分组合不服从请求，回一张高 ≤ 2592 的图；同参数重测结果
+    // 一致（不是缓存抖动），且**带不带 qlt 都会发生**。「App 不再二次放大」的保证
+    // 靠这道校验兜住。读的是编码头部（不整图解码），读不出就跳过校验，不阻断主流程。
+    final expected = item.expectedSizeFor(resolution, target: size);
+    final actual = await readEncodedImageSize(first.path!);
+    if (actual == null) {
+      appDebugLog(_tag, 'download size-check skipped (undecodable)');
+      return first;
+    }
+    final (w, h) = actual;
+    final meets = w >= expected.width && h >= expected.height;
+    appDebugLog(
+      _tag,
+      'download size-check expected=${expected.width}x${expected.height} '
+      'actual=${w}x$h meets=$meets',
+    );
+    if (meets) {
+      return first;
+    }
+    // 换 **c=16** 重试一次：实测同一组合下 c=4 降尺寸时 c=16 常能给出精确尺寸
+    // （例：1440×3840 —— c=4 回 1440×2592，c=16 回 1440×3840）。c=16 是另一种
+    // 取样/裁切策略，构图可能与 c=4 略不同，但「不放大」的优先级更高。重试仍
+    // 降尺寸就认了 —— 同一张图没有第三条路，别把用户晾在转圈里。
+    final retryUrl = item.resizeUrl(
+      width: size.width,
+      height: size.height,
+    ).replaceFirst('c=4', 'c=16');
+    appDebugLog(
+      _tag,
+      'download retry(c=16) target=${size.width}x${size.height} $retryUrl',
+    );
+    final retry = await _downloadVia(retryUrl, item, resolution, size);
+    if (!retry.succeeded) {
+      // 重试失败：第一次那张虽小一号但真实存在，总好过什么都没有。
+      return first;
+    }
+    final actual2 = await readEncodedImageSize(retry.path!);
+    if (actual2 == null) {
+      return retry;
+    }
+    final (w2, h2) = actual2;
+    final meets2 = w2 >= expected.width && h2 >= expected.height;
+    appDebugLog(_tag, 'download retry size-check actual=${w2}x$h2 meets=$meets2');
+    return meets2 ? retry : first;
+  }
+
+  /// [url] 的纯下载落盘（无校验无重试），上面的尺寸校验重试共用它。
+  Future<ManagedImageDownloadResult> _downloadVia(
+    String url,
+    BingWallpaperItem item,
+    BingWallpaperResolution resolution,
+    WallpaperTargetSize size,
+  ) async {
     try {
       final result = await downloadToManagedImage(
         url: Uri.parse(url),
         directoryName: kHomePageWallpaperDirectoryName,
-        // 猸?鍓嶇紑蹇呴』鏄?`wallpaper`锛氭棦鏈夌殑 `deleteEvictedWallpaperFiles` 鎸夎繖涓墠缂€
-        // 鍒ゅ畾銆岃繖寮犲浘褰掓垜绠°€嶏紝鏀瑰悕鎴愬埆鐨勫紑澶翠細瀵艰嚧瀹冭鎸ゅ嚭鍘嗗彶鍚庡垹涓嶆帀锛堣
-        // `BingWallpaperItem.fileName` 鐨勬敞閲婏級銆?
+        // ⭐ 前缀必须是 `wallpaper`：既有的 `deleteEvictedWallpaperFiles` 按这个前缀
+        // 判定「这张图归我管」，改名成别的开头会导致它被挤出历史后删不掉（见
+        // `BingWallpaperItem.fileName` 的注释）。
         fileName: item.fileName(resolution, target: size),
         client: _client,
       );
-      // 姣忎竴娆″皾璇曢兘鐣欎竴琛?鈥斺€?2026-10-06 鐢ㄦ埛鎶ャ€岀偣澶у浘涓嬭浇澶辫触銆嶈€屽洓鏉″垎鏀叏閮藉彧鍥?
-      // null銆佷笖鏃ュ織鍐欒繘浜嗛粯璁ゅ叧闂殑 AppLogService锛屼簬鏄棤浠庢煡璧凤紙瑙佺瑪璁帮級銆?
-      // `appDebugLog` 鍦?debug 涓嬬洿鎺ヨ繘 logcat锛屼笉闇€瑕佺敤鎴峰厛寮€銆屾湰鍦拌瘖鏂€嶃€?
+      // 每一次尝试都留一行 —— 2026-10-06 用户报「点大图下载失败」而四条分支全都只回
+      // null、且日志写进了默认关闭的 AppLogService，于是无从查起（见笔记）。
+      // `appDebugLog` 在 debug 下直接进 logcat，不需要用户先开「本地诊断」。
       appDebugLog(
         _tag,
         'download result tier=${resolution.name} ${result.describe()}',

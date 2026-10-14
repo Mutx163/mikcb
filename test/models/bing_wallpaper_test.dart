@@ -140,6 +140,7 @@ void main() {
       expect(url, contains('w=1080'));
       expect(url, contains('h=2400'));
       expect(url, contains('c=4'), reason: '缺 c=4 会得到白边图，不是裁切图');
+      expect(url, contains('qlt=95'), reason: '原图必须带质量参数（2026-10-14）');
       expect(url, contains('id=OHR.AdelieTeacher_EN-US5343194378_UHD.jpg'));
       expect(url, isNot(contains('id=/th')));
 
@@ -147,6 +148,43 @@ void main() {
       expect(high, contains('w=1440'));
       expect(high, contains('h=3200'));
       expect(high, contains('c=4'));
+      expect(high, contains('qlt=95'));
+    });
+
+    test('⭐ 原图带 qlt=95、缩略图不带（小图不值得流量翻倍）', () {
+      // 2026-10-14 实测：同一张 1440×3200，默认压缩约 890 KB、qlt=95 约 2.0 MB、
+      // qlt=100 约 3.8 MB。天空/渐变里的 JPEG 块状伪影是 1:1 观感的主要来源之一，
+      // 95 是画质与体积的平衡点。缩略图 105 KB 级别，压不压看不出。
+      final url = item.fullUrl(BingWallpaperResolution.high);
+      expect(url, contains('qlt=95'));
+      expect(
+        item.thumbnailUrl(),
+        isNot(contains('qlt')),
+        reason: '缩略图走默认压缩，8 张的流量不值得翻倍',
+      );
+    });
+
+    test('⭐ expectedSizeFor 与 fullUrl 的口径一致（验尺寸的依据）', () {
+      // resize 档：期望值就是请求的那组像素。
+      const target = WallpaperTargetSize(1440, 3200);
+      expect(
+        item.expectedSizeFor(BingWallpaperResolution.high, target: target),
+        target,
+      );
+      // 预生成档（尺寸够用）：走后缀图，期望值是**该档写死尺寸**，不是屏幕尺寸 ——
+      // `_1080x1920.jpg` 就只有这一种尺寸，别拿它跟别的要求比对。
+      expect(
+        item.expectedSizeFor(BingWallpaperResolution.standard),
+        const WallpaperTargetSize(1080, 1920),
+      );
+      expect(
+        item.expectedSizeFor(
+          BingWallpaperResolution.standard,
+          target: const WallpaperTargetSize(800, 1600),
+        ),
+        const WallpaperTargetSize(1080, 1920),
+        reason: '预生成档在「屏幕更小」时也走后缀（尺寸刚好够），期望仍是写死值',
+      );
     });
 
     test('缩略图默认是竖屏比例（与最终拿到的那张同朝向）', () {

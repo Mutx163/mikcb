@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/bing_wallpaper.dart';
 import 'package:university_timetable/services/bing_wallpaper_service.dart';
 import 'package:university_timetable/services/bing_wallpaper_store.dart';
+import 'package:university_timetable/utils/encoded_image_size.dart';
 import 'package:university_timetable/utils/managed_image_storage.dart';
 
 /// 钉住拉列表与下载的行为，重点是**失败一律静默**。
@@ -222,6 +223,85 @@ void main() {
       final expected = BingWallpaperResolution.high.downloadTargetSize;
       expect(params['w'], '${expected.width}');
       expect(params['h'], '${expected.height}');
+      expect(params['qlt'], '95', reason: '原图必须带质量参数（2026-10-14 实测有效）');
+    });
+
+    test('⭐ 实际尺寸不够 → 换 c=16 重试；重试达标用重试那张', () async {
+      // 2026-10-14 实测：resize 接口会**静默降尺寸**（部分组合回高 ≤ 2592 的图，
+      // 同参数重测一致），实测 c=16 常能给出精确尺寸。校验读的是落盘文件的编码
+      // 头部 —— mock 必须回**真 JPEG**（引擎要能解出尺寸），第一次回小图、第二次
+      // （c=16）回足尺寸的图，钉住整条重试链。
+      // fixture 是用 System.Drawing 预生成的纯色 JPEG（提交在 test/fixtures/），
+      // 手拼 JPEG 头实测会被引擎判「Bogus marker length」。
+      Future<Uint8List> fixture(String name) async =>
+          File('test/fixtures/bing_jpeg_$name.jpg').readAsBytes();
+      final small = await fixture('small_1440x2592');
+      final big = await fixture('big_1440x3200');
+      final urls = <String>[];
+      final service = BingWallpaperService(
+        client: MockClient((request) async {
+          urls.add(request.url.toString());
+          final isRetry = request.url.queryParameters['c'] == '16';
+          return http.Response.bytes(
+            isRetry ? big : small,
+            200,
+            headers: <String, String>{'content-type': 'image/jpeg'},
+          );
+        }),
+      );
+      addTearDown(service.dispose);
+
+      const item = BingWallpaperItem(
+        dateKey: '20261005',
+        urlBase: '/th?id=OHR.AdelieTeacher_EN-US5343194378',
+        title: '',
+        copyright: '',
+      );
+      final result = await service.download(
+        item,
+        BingWallpaperResolution.high,
+      );
+      expect(result.succeeded, isTrue);
+      expect(urls.length, 2, reason: '第一次降尺寸 → 必须有第二次 c=16 重试');
+      expect(
+        Uri.parse(urls[1]).queryParameters['c'],
+        '16',
+        reason: '重试走的必须是 c=16 路径',
+      );
+      // 重试那张（3200 高）被留下：两次落盘同文件名，后者覆盖前者。
+      expect(await readEncodedImageSize(result.path!), (1440, 3200));
+    });
+
+    test('第一次就达标 → 不发第二次请求', () async {
+      var requests = 0;
+      // fixture 的尺寸要 ≥ `downloadTargetSize`（测试视口下 = 2668×3200）：
+      // 用一张**真大图**（System.Drawing 生成，2880×5120，约 209 KB）。
+      final big = await File(
+        'test/fixtures/bing_jpeg_big_2880x5120.jpg',
+      ).readAsBytes();
+      final service = BingWallpaperService(
+        client: MockClient((request) async {
+          requests++;
+          return http.Response.bytes(
+            big,
+            200,
+            headers: <String, String>{'content-type': 'image/jpeg'},
+          );
+        }),
+      );
+      addTearDown(service.dispose);
+      const item = BingWallpaperItem(
+        dateKey: '20261005',
+        urlBase: '/th?id=OHR.AdelieTeacher_EN-US5343194378',
+        title: '',
+        copyright: '',
+      );
+      final result = await service.download(
+        item,
+        BingWallpaperResolution.high,
+      );
+      expect(result.succeeded, isTrue);
+      expect(requests, 1, reason: '尺寸达标就不该有重试 —— 那是纯流量浪费');
     });
 
     test('所选档位 404 → 退到本朝向下一档并如实标记 downgraded', () async {
