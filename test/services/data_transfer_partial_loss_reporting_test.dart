@@ -100,6 +100,39 @@ void main() {
     );
   });
 
+  test('键缺失/null 也拒收（2026-10-14 补档：守卫原先对 raw==null 整段跳过）', () {
+    // 正常导出永不缺键（TransferPackage.toJson 对空表也写 `[]`），
+    // 缺键只可能来自手工构造/外部工具/局域网请求体 —— 原先这份
+    // {"app":"mikcb","schemaVersion":1,"settings":{}} 会被当成合法空课表，
+    // 整份替换 + 落盘 + 报「恢复成功」。
+    final body = buildJson(courses: [goodCourse('c-1', '高等数学')]);
+    final decoded = jsonDecode(body) as Map<String, dynamic>;
+    // courses 键存在但为 null，与「键整个不存在」走同一条守卫路径。
+    decoded['courses'] = null;
+    expect(
+      () => service.parseBackupJson(jsonEncode(decoded)),
+      throwsA(
+        isA<FormatException>().having(
+          (e) => e.message,
+          'message',
+          'unrecognized_mikcb_data_file',
+        ),
+      ),
+    );
+    // 键整个不存在：本地手工拼一份不带 courses 的最小包。
+    decoded.remove('courses');
+    expect(
+      () => service.parseBackupJson(jsonEncode(decoded)),
+      throwsA(
+        isA<FormatException>().having(
+          (e) => e.message,
+          'message',
+          'unrecognized_mikcb_data_file',
+        ),
+      ),
+    );
+  });
+
   test('考试那一栏的跳过也单独记，不会混进课程计数', () {
     final backup = service.parseBackupJson(
       buildJson(

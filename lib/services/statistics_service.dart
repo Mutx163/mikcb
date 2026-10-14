@@ -119,8 +119,13 @@ class StatisticsService {
       totalSections += course.sectionCount * activeWeeks;
     }
 
+    // 本周已开课的课（口径与时间利用卡 :628 同源），成就/故事卡全部用它。
+    final activeWeeklyCourses = allCourses
+        .where((c) => _countActiveWeeks(c, currentWeek) > 0)
+        .toList();
+
     // 计算每日最大课时
-    final dailyMaxSections = _calculateDailyMaxSections(allCourses);
+    final dailyMaxSections = _calculateDailyMaxSections(activeWeeklyCourses);
 
     // 收集所有教室
     final allRooms = allCourses.map((c) => c.location).toSet();
@@ -134,40 +139,46 @@ class StatisticsService {
     //
     // 按**分钟数**比，不按字符串比：`''.compareTo('08:00') <= 0` 恒成立，作息按位
     // 补空出来的空钟点课会被算进早八；而未补零的 `8:00`（'8' > '0'）反而不算早八。
-    final earlyBirdSections = allCourses
+    //
+    // 口径必须与 `_calculateDailyStats`（时间利用卡，:628）同源：先过滤
+    // `_countActiveWeeks == 0`（本周还没开课的课），否则同一门「第 12 周才开始」
+    // 的晚课在两张卡里一算一不算，用户同屏看到互相矛盾的读数。这里曾经只补了
+    // 分钟数比较那半个口径，本行就是那次分叉的残留。
+    // activeWeeklyCourses 在方法开头（:127 附近）已按同一判据算好，这里直接复用。
+    final earlyBirdSections = activeWeeklyCourses
         .where((c) {
           final minutes = _startMinutes(c);
           return minutes != null && minutes <= 8 * 60;
         })
         .fold<int>(0, (sum, c) => sum + c.sectionCount);
-    final eveningSections = allCourses
+    final eveningSections = activeWeeklyCourses
         .where((c) {
           final minutes = _endMinutes(c);
           return minutes != null && minutes > 18 * 60;
         })
         .fold<int>(0, (sum, c) => sum + c.sectionCount);
-    final weekendSections = allCourses
+    final weekendSections = activeWeeklyCourses
         .where((c) => c.dayOfWeek >= 6)
         .fold<int>(0, (sum, c) => sum + c.sectionCount);
 
     // 每日课时差（均衡度）
-    final balanceGap = _calculateDailyBalanceGap(allCourses);
+    final balanceGap = _calculateDailyBalanceGap(activeWeeklyCourses);
 
     // 单日跨教学楼最大值
-    final dailyMaxBuildings = _calculateDailyMaxBuildings(allCourses);
+    final dailyMaxBuildings = _calculateDailyMaxBuildings(activeWeeklyCourses);
 
     // 早间课时占比（周排课口径，12:00 前开始）
-    final totalWeeklySections = allCourses.fold<int>(
+    final totalWeeklySections = activeWeeklyCourses.fold<int>(
       0,
       (sum, c) => sum + c.sectionCount,
     );
     final morningRatio = _calculateMorningRatio(
-      allCourses,
+      activeWeeklyCourses,
       totalWeeklySections,
     );
 
     // 单日最长课间空档（节）
-    final maxDailyGap = _calculateMaxDailyGap(allCourses);
+    final maxDailyGap = _calculateMaxDailyGap(activeWeeklyCourses);
 
     return [
       Achievement(
@@ -367,7 +378,13 @@ class StatisticsService {
     String? latestEnd;
     int? earliestMinutes;
     int? latestMinutes;
+    // 与 calculateAchievements 的 activeWeeklyCourses 同口径（:123）：
+    // 故事卡「时间跨度」也只统计本周已开课的课，否则一门「第 12 周才开始」
+    // 的晚课会把「最晚下课」拉到 24:00，与成就页互相矛盾。
     for (final course in allCourses) {
+      if (_countActiveWeeks(course, currentWeek) == 0) {
+        continue;
+      }
       final startMinutes = ClockTime.tryParse(course.startTime)?.totalMinutes;
       // 末节课 / 晚自习写 `24:00` 是本仓认可的「当天结束」，允许它参与比较。
       final endMinutes = ClockTime.tryParse(

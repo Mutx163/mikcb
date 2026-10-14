@@ -119,11 +119,23 @@ class DataTransferService {
   /// 走进「导入成功」。调用方把它汇总进 [AppDataBackup.droppedCounts]，
   /// 由导入完成提示如实报「跳过了 N 条」——比整份拒收友好，
   /// 比谎报成功诚实。
+  ///
+  /// 2026-10-14 补「键缺失/null」档（**仅 courses**）：原判据 `raw is List` 对
+  /// `raw == null` 整段跳过，直接返回 `[]` —— 正常导出永不缺键
+  /// （`TransferPackage.toJson` 对空表也写 `[]`），所以进到这里的 null 只可能
+  /// 来自手工构造/外部工具的文件或局域网请求体，同样会被当成合法空课表整份
+  /// 覆盖。只对 `courses` 收紧：它是唯一「键缺失即清空用户课表」的字段；
+  /// 其余键（tasks/exams/…）历史上就允许缺省（= 不导入该类数据），保持宽容，
+  /// 免得把旧版工具产出的合法文件拒之门外。
   static List<T> _parseListWithTotalLossGuard<T>(
     Object? raw,
     T Function(Map<String, dynamic>) parse, {
     void Function(int dropped)? onDropped,
+    bool required = false,
   }) {
+    if (raw == null && required) {
+      throw const FormatException('unrecognized_mikcb_data_file');
+    }
     final items = _parseOptionalList<T>(raw, parse);
     if (raw is List && raw.isNotEmpty) {
       final dropped = raw.length - items.length;
@@ -240,6 +252,9 @@ class DataTransferService {
       json['courses'],
       Course.fromJson,
       onDropped: (count) => noteDropped('courses', count),
+      // courses 是唯一「缺失即清空课表」的字段，键缺失/null 整份拒收；
+      // 其余列表键缺省沿用历史宽容行为（= 不导入该类数据）。
+      required: true,
     );
     final rawTasks = _parseListWithTotalLossGuard(
       json['tasks'],
