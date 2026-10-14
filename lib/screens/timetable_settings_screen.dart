@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -40,9 +40,7 @@ import '../services/webdav_sync_coordinator.dart';
 import '../services/bing_wallpaper_store.dart';
 import '../services/daily_wallpaper_service.dart';
 import '../services/wallpaper_history_service.dart';
-import '../models/wallpaper_daily_source.dart';
 import '../screens/settings/bing_wallpaper_gallery_page.dart';
-import '../screens/settings/wallhaven_wallpaper_gallery_page.dart';
 import '../utils/app_toast.dart';
 import '../utils/bing_wallpaper_date_label.dart';
 import '../utils/hex_color.dart';
@@ -117,16 +115,16 @@ String formatLiveTimeCorrection(AppLocalizations l10n, int seconds) {
   return l10n.liveTimeCorrectionAdvance(seconds.abs());
 }
 
-/// 设置「改一下就存」入口的落盘失败兜底。
+/// 璁剧疆銆屾敼涓€涓嬪氨瀛樸€嶅叆鍙ｇ殑钀界洏澶辫触鍏滃簳銆?
 ///
-/// [TimetableProvider.updateTimetableSettings] 在落盘失败时会先把内存、课表
-/// 镜像和周次回滚，再把原始异常 rethrow 出来。设置页这些自动保存入口全都没
-/// 接这个异常——不接的话它会变成无人监听的失败 Future（最终被 `main.dart` 的
-/// `runZonedGuarded` 吃掉），用户看到的是「设置已经改了」，其实一个字节都没
-/// 存进去，重启 App 又变回去，全程没有任何提示。
+/// [TimetableProvider.updateTimetableSettings] 鍦ㄨ惤鐩樺け璐ユ椂浼氬厛鎶婂唴瀛樸€佽琛?
+/// 闀滃儚鍜屽懆娆″洖婊氾紝鍐嶆妸鍘熷寮傚父 rethrow 鍑烘潵銆傝缃〉杩欎簺鑷姩淇濆瓨鍏ュ彛鍏ㄩ兘娌?
+/// 鎺ヨ繖涓紓甯糕€斺€斾笉鎺ョ殑璇濆畠浼氬彉鎴愭棤浜虹洃鍚殑澶辫触 Future锛堟渶缁堣 `main.dart` 鐨?
+/// `runZonedGuarded` 鍚冩帀锛夛紝鐢ㄦ埛鐪嬪埌鐨勬槸銆岃缃凡缁忔敼浜嗐€嶏紝鍏跺疄涓€涓瓧鑺傞兘娌?
+/// 瀛樿繘鍘伙紝閲嶅惎 App 鍙堝彉鍥炲幓锛屽叏绋嬫病鏈変换浣曟彁绀恒€?
 ///
-/// 这里统一给出一句本地化提示，并（经 [resetDraft]）把页面草稿拉回 provider
-/// 回滚后的真实值，避免界面停在「看着已保存、实际没保存」的状态。
+/// 杩欓噷缁熶竴缁欏嚭涓€鍙ユ湰鍦板寲鎻愮ず锛屽苟锛堢粡 [resetDraft]锛夋妸椤甸潰鑽夌鎷夊洖 provider
+/// 鍥炴粴鍚庣殑鐪熷疄鍊硷紝閬垮厤鐣岄潰鍋滃湪銆岀湅鐫€宸蹭繚瀛樸€佸疄闄呮病淇濆瓨銆嶇殑鐘舵€併€?
 void reportSettingsPersistFailure<T extends StatefulWidget>(
   State<T> state, {
   VoidCallback? resetDraft,
@@ -143,13 +141,13 @@ void reportSettingsPersistFailure<T extends StatefulWidget>(
   resetDraft?.call();
 }
 
-/// 设置保存被底层规则拒绝（不是落盘失败）时的统一提示。
+/// 璁剧疆淇濆瓨琚簳灞傝鍒欐嫆缁濓紙涓嶆槸钀界洏澶辫触锛夋椂鐨勭粺涓€鎻愮ず銆?
 ///
-/// [TimetableProvider.updateTimetableSettings] 除了落盘异常，还会用
-/// `encodeServiceMessage` 返回一串编码过的消息键，例如把每天节数调到低于
-/// 已有课程用到的最大节次时返回 `section_count_below_usage|requiredMaxSection=12`。
-/// 那是给界面翻译用的载荷，不是能直接给人看的文案——漏掉翻译就会把内部代码
-/// 原样弹给用户。
+/// [TimetableProvider.updateTimetableSettings] 闄や簡钀界洏寮傚父锛岃繕浼氱敤
+/// `encodeServiceMessage` 杩斿洖涓€涓茬紪鐮佽繃鐨勬秷鎭敭锛屼緥濡傛妸姣忓ぉ鑺傛暟璋冨埌浣庝簬
+/// 宸叉湁璇剧▼鐢ㄥ埌鐨勬渶澶ц妭娆℃椂杩斿洖 `section_count_below_usage|requiredMaxSection=12`銆?
+/// 閭ｆ槸缁欑晫闈㈢炕璇戠敤鐨勮浇鑽凤紝涓嶆槸鑳界洿鎺ョ粰浜虹湅鐨勬枃妗堚€斺€旀紡鎺夌炕璇戝氨浼氭妸鍐呴儴浠ｇ爜
+/// 鍘熸牱寮圭粰鐢ㄦ埛銆?
 void reportSettingsPersistRejected<T extends StatefulWidget>(
   State<T> state,
   String message,
@@ -164,15 +162,15 @@ void reportSettingsPersistRejected<T extends StatefulWidget>(
   );
 }
 
-/// 八宫格等外部入口直达设置子页的工厂。
+/// 鍏鏍肩瓑澶栭儴鍏ュ彛鐩磋揪璁剧疆瀛愰〉鐨勫伐鍘傘€?
 ///
-/// 各子页类保持库内私有，这里按稳定 id 暴露；未知 id 返回 null，
-/// 由调用方决定回退行为（例如打开设置首页）。
+/// 鍚勫瓙椤电被淇濇寔搴撳唴绉佹湁锛岃繖閲屾寜绋冲畾 id 鏆撮湶锛涙湭鐭?id 杩斿洖 null锛?
+/// 鐢辫皟鐢ㄦ柟鍐冲畾鍥為€€琛屼负锛堜緥濡傛墦寮€璁剧疆棣栭〉锛夈€?
 Widget? settingsSubpageById(String id) {
   return switch (id) {
     'generalSettings' => const _GeneralSettingsScreen(),
     'appearanceSettings' => const _AppearanceSettingsScreen(),
-    // 「外观编辑」：整页一张首页微缩图 + 底部「调整壁纸 / 材质」两颗按钮。
+    // 銆屽瑙傜紪杈戙€嶏細鏁撮〉涓€寮犻椤靛井缂╁浘 + 搴曢儴銆岃皟鏁村绾?/ 鏉愯川銆嶄袱棰楁寜閽€?
     'appearanceEditor' => const _AppearanceEditorScreen(),
     'timetablePageSettings' => const _TimetablePageSettingsScreen(),
     'courseCardSettings' => const _CourseCardSettingsScreen(),
@@ -186,9 +184,9 @@ Widget? settingsSubpageById(String id) {
 }
 
 class TimetableSettingsScreen extends StatelessWidget {
-  /// 是否以内嵌页（玻璃坞 Tab 内容）方式显示：不渲染返回键。
+  /// 鏄惁浠ュ唴宓岄〉锛堢幓鐠冨潪 Tab 鍐呭锛夋柟寮忔樉绀猴細涓嶆覆鏌撹繑鍥為敭銆?
   ///
-  /// 普通全屏跳转保持默认 false，行为不变。
+  /// 鏅€氬叏灞忚烦杞繚鎸侀粯璁?false锛岃涓轰笉鍙樸€?
   const TimetableSettingsScreen({
     super.key,
     this.embedded = false,
@@ -197,7 +195,7 @@ class TimetableSettingsScreen extends StatelessWidget {
 
   final bool embedded;
 
-  /// 内嵌模式下列表底部的避让高度（玻璃坞底部导航占位）。
+  /// 鍐呭祵妯″紡涓嬪垪琛ㄥ簳閮ㄧ殑閬胯楂樺害锛堢幓鐠冨潪搴曢儴瀵艰埅鍗犱綅锛夈€?
   final double bottomInset;
 
   @override
@@ -385,15 +383,15 @@ class TimetableSettingsScreen extends StatelessWidget {
           );
         }
 
-        // Settings home: same HyperosSubpage shell as every subpage —
+        // Settings home: same HyperosSubpage shell as every subpage 鈥?
         // unified collapsible large title + frosted/liquid-glass chrome.
         // (The old bespoke _MiuixSettingsHomeShell painted the bar with an
         // opaque background OVER its frost layer, so blur never showed.)
         final settingsList = HyperosListView(
           blockVerticalScrollBubbling: false,
-          // 玻璃坞内嵌时底部避让作为「滚动内容 padding」而不是列表外部
-          // 压缩视口：内容可以滚到悬浮玻璃坞后面（透过玻璃可见），到底时
-          // 最后一项仍停在玻璃坞上方。全屏形态 bottomInset=0 无影响。
+          // 鐜荤拑鍧炲唴宓屾椂搴曢儴閬胯浣滀负銆屾粴鍔ㄥ唴瀹?padding銆嶈€屼笉鏄垪琛ㄥ閮?
+          // 鍘嬬缉瑙嗗彛锛氬唴瀹瑰彲浠ユ粴鍒版偓娴幓鐠冨潪鍚庨潰锛堥€忚繃鐜荤拑鍙锛夛紝鍒板簳鏃?
+          // 鏈€鍚庝竴椤逛粛鍋滃湪鐜荤拑鍧炰笂鏂广€傚叏灞忓舰鎬?bottomInset=0 鏃犲奖鍝嶃€?
           padding: embedded
               ? HyperosTokens.listPadding.copyWith(
                   bottom: HyperosTokens.listPadding.bottom + bottomInset,
@@ -436,8 +434,8 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         );
 
-        // 玻璃坞内嵌形态：完整 HyperosSubpage 全屏壳（无返回键），
-        // 外观与正常打开设置页一致，滑块由外层悬浮叠加。
+        // 鐜荤拑鍧炲唴宓屽舰鎬侊細瀹屾暣 HyperosSubpage 鍏ㄥ睆澹筹紙鏃犺繑鍥為敭锛夛紝
+        // 澶栬涓庢甯告墦寮€璁剧疆椤典竴鑷达紝婊戝潡鐢卞灞傛偓娴彔鍔犮€?
         return HyperosSubpage(
           title: Text(l10n.settingsTitle),
           onBack: embedded ? null : () => Navigator.pop(context),
@@ -449,8 +447,8 @@ class TimetableSettingsScreen extends StatelessWidget {
 
   /// Lazy section builder for the settings home list.
   ///
-  /// 打开时间模板管理页（旧名 QuickSwitcher 名不副实：开的是完整管理
-  /// 页）。hub 与「课表页面」两处入口共用本方法，指向同一路由。
+  /// 鎵撳紑鏃堕棿妯℃澘绠＄悊椤碉紙鏃у悕 QuickSwitcher 鍚嶄笉鍓疄锛氬紑鐨勬槸瀹屾暣绠＄悊
+  /// 椤碉級銆俬ub 涓庛€岃琛ㄩ〉闈€嶄袱澶勫叆鍙ｅ叡鐢ㄦ湰鏂规硶锛屾寚鍚戝悓涓€璺敱銆?
   void _openTimeSchemeManagement(BuildContext context) {
     HyperosNavigation.push(
       context,
@@ -459,9 +457,9 @@ class TimetableSettingsScreen extends StatelessWidget {
     );
   }
 
-  /// Sections: 0 summary · 1 timetable · 2 display · 3 reminder/desktop
-  /// · 4 app (appearance / home navigation / general) · 5 data/share
-  /// · 6 about · 7 developer tools.
+  /// Sections: 0 summary 路 1 timetable 路 2 display 路 3 reminder/desktop
+  /// 路 4 app (appearance / home navigation / general) 路 5 data/share
+  /// 路 6 about 路 7 developer tools.
   Widget _buildSettingsHomeSection(
     BuildContext context,
     int index, {
@@ -491,11 +489,11 @@ class TimetableSettingsScreen extends StatelessWidget {
     required VoidCallback openHyperosShowcase,
     required VoidCallback openMiuixShowcase,
   }) {
-    // 天气入口行要显示当前城市；用可空类型查，天气 provider 缺失时整行照常
-    // 显示（值为「未设置」），而不是让设置首页崩掉。
+    // 澶╂皵鍏ュ彛琛岃鏄剧ず褰撳墠鍩庡競锛涚敤鍙┖绫诲瀷鏌ワ紝澶╂皵 provider 缂哄け鏃舵暣琛岀収甯?
+    // 鏄剧ず锛堝€间负銆屾湭璁剧疆銆嶏級锛岃€屼笉鏄璁剧疆棣栭〉宕╂帀銆?
     final weather = context.watch<WeatherProvider?>();
     return switch (index) {
-      // 0 — Summary card (semester overview).
+      // 0 鈥?Summary card (semester overview).
       0 => HyperosSummaryCard(
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(HyperosSummaryCard.leadingRadius),
@@ -515,7 +513,7 @@ class TimetableSettingsScreen extends StatelessWidget {
             : l10n.semesterStartSet(_formatDate(settings.semesterStartDate!)),
         onTap: openSemesterSettings,
       ),
-      // 1 — Timetable management.
+      // 1 鈥?Timetable management.
       1 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -540,8 +538,8 @@ class TimetableSettingsScreen extends StatelessWidget {
                     : null,
                 onClick: openProfiles,
               ),
-              // 时间模板：高频配置（开学前几乎必动），按用户反馈保留在
-              // hub 一级位；「课表页面」内的同名入口并存，指向同一页面。
+              // 鏃堕棿妯℃澘锛氶珮棰戦厤缃紙寮€瀛﹀墠鍑犱箮蹇呭姩锛夛紝鎸夌敤鎴峰弽棣堜繚鐣欏湪
+              // hub 涓€绾т綅锛涖€岃琛ㄩ〉闈€嶅唴鐨勫悓鍚嶅叆鍙ｅ苟瀛橈紝鎸囧悜鍚屼竴椤甸潰銆?
               _MiuixSettingsPreference(
                 startAction: _settingsIconBadge(
                   MiuixIcons.extended.byName('timer')!,
@@ -577,7 +575,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 2 — Display & appearance (course card / timetable page).
+      // 2 鈥?Display & appearance (course card / timetable page).
       2 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -620,11 +618,11 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 3 — Reminder & desktop (live island / home widget).
+      // 3 鈥?Reminder & desktop (live island / home widget).
       //
-      // 「首页与导航」不再单独成组：单条目组的组名会与行名完全相同，违反
-      // IA 规范 §3「不许组名 = 组内唯一项名」；其入口行已并入下方「应用」组，
-      // 子页本身（底栏形态/菜单/首页标题）不变。
+      // 銆岄椤典笌瀵艰埅銆嶄笉鍐嶅崟鐙垚缁勶細鍗曟潯鐩粍鐨勭粍鍚嶄細涓庤鍚嶅畬鍏ㄧ浉鍚岋紝杩濆弽
+      // IA 瑙勮寖 搂3銆屼笉璁哥粍鍚?= 缁勫唴鍞竴椤瑰悕銆嶏紱鍏跺叆鍙ｈ宸插苟鍏ヤ笅鏂广€屽簲鐢ㄣ€嶇粍锛?
+      // 瀛愰〉鏈韩锛堝簳鏍忓舰鎬?鑿滃崟/棣栭〉鏍囬锛変笉鍙樸€?
       3 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -646,9 +644,9 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 4 — App-level (appearance / home navigation / general).
-      // 「首页与导航」自独立组并入此处（IA §3 组名=唯一项名禁令）；
-      // 图标 sidebar/teal 沿用原入口。
+      // 4 鈥?App-level (appearance / home navigation / general).
+      // 銆岄椤典笌瀵艰埅銆嶈嚜鐙珛缁勫苟鍏ユ澶勶紙IA 搂3 缁勫悕=鍞竴椤瑰悕绂佷护锛夛紱
+      // 鍥炬爣 sidebar/teal 娌跨敤鍘熷叆鍙ｃ€?
       4 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -685,7 +683,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 5 — Data & sharing.
+      // 5 鈥?Data & sharing.
       5 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -731,7 +729,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 6 — About & help.
+      // 6 鈥?About & help.
       6 => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -774,7 +772,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 7 — Developer tools + trailing gap.
+      // 7 鈥?Developer tools + trailing gap.
       _ => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -792,10 +790,10 @@ class TimetableSettingsScreen extends StatelessWidget {
   }
 }
 
-/// 学期设置：开学日期 / 学期周数 / 同步当前周。
+/// 瀛︽湡璁剧疆锛氬紑瀛︽棩鏈?/ 瀛︽湡鍛ㄦ暟 / 鍚屾褰撳墠鍛ㄣ€?
 ///
-/// 从设置首页整组移入，由首页摘要卡承载入口——摘要卡本就显示周次与开学日期，
-/// 让它同时成为编辑入口，比再列一组同义条目更短。
+/// 浠庤缃椤垫暣缁勭Щ鍏ワ紝鐢遍椤垫憳瑕佸崱鎵胯浇鍏ュ彛鈥斺€旀憳瑕佸崱鏈氨鏄剧ず鍛ㄦ涓庡紑瀛︽棩鏈燂紝
+/// 璁╁畠鍚屾椂鎴愪负缂栬緫鍏ュ彛锛屾瘮鍐嶅垪涓€缁勫悓涔夋潯鐩洿鐭€?
 class _SemesterSettingsScreen extends StatelessWidget {
   const _SemesterSettingsScreen();
 
@@ -847,7 +845,7 @@ class _SemesterSettingsScreen extends StatelessWidget {
                     ],
                     onClick: () => _pickSemesterWeekCount(context),
                   ),
-                  // 纠偏动作放组末，避免与「开学日期 / 周数」配置同权。
+                  // 绾犲亸鍔ㄤ綔鏀剧粍鏈紝閬垮厤涓庛€屽紑瀛︽棩鏈?/ 鍛ㄦ暟銆嶉厤缃悓鏉冦€?
                   _MiuixSettingsPreference(
                     startAction: _settingsIconBadge(
                       MiuixIcons.extended.byName('refresh')!,
@@ -905,7 +903,7 @@ class _SemesterSettingsScreen extends StatelessWidget {
       );
       return;
     }
-    // 改开学日后按新日期对齐当前周，避免「日期已改、周次仍旧」。
+    // 鏀瑰紑瀛︽棩鍚庢寜鏂版棩鏈熷榻愬綋鍓嶅懆锛岄伩鍏嶃€屾棩鏈熷凡鏀广€佸懆娆′粛鏃с€嶃€?
     if (context.mounted) {
       await provider.syncCurrentWeekWithSemesterStart();
     }
@@ -947,8 +945,8 @@ class _SemesterSettingsScreen extends StatelessWidget {
       return;
     }
 
-    // 返回值管校验失败（如「节次数低于课表实际用量」），写入失败走 rethrow，
-    // 两条都要有出口 —— 否则周数改了没存上、界面照常显示新值，重启后变回去。
+    // 杩斿洖鍊肩鏍￠獙澶辫触锛堝銆岃妭娆℃暟浣庝簬璇捐〃瀹為檯鐢ㄩ噺銆嶏級锛屽啓鍏ュけ璐ヨ蛋 rethrow锛?
+    // 涓ゆ潯閮借鏈夊嚭鍙?鈥斺€?鍚﹀垯鍛ㄦ暟鏀逛簡娌″瓨涓娿€佺晫闈㈢収甯告樉绀烘柊鍊硷紝閲嶅惎鍚庡彉鍥炲幓銆?
     final String? message;
     try {
       message = await provider.updateTimetableSettings(
@@ -982,10 +980,10 @@ class _SemesterSettingsScreen extends StatelessWidget {
   }
 }
 
-/// 超级岛入口，带通知权限状态。
+/// 瓒呯骇宀涘叆鍙ｏ紝甯﹂€氱煡鏉冮檺鐘舵€併€?
 ///
-/// 「超级岛不显示」几乎总是通知权限没开。权限状态在原生侧，异步读一次即可，
-/// 页面恢复时再查一次——用户去系统设置开完权限回来，这里要立刻反映出来。
+/// 銆岃秴绾у矝涓嶆樉绀恒€嶅嚑涔庢€绘槸閫氱煡鏉冮檺娌″紑銆傛潈闄愮姸鎬佸湪鍘熺敓渚э紝寮傛璇讳竴娆″嵆鍙紝
+/// 椤甸潰鎭㈠鏃跺啀鏌ヤ竴娆♀€斺€旂敤鎴峰幓绯荤粺璁剧疆寮€瀹屾潈闄愬洖鏉ワ紝杩欓噷瑕佺珛鍒诲弽鏄犲嚭鏉ャ€?
 class _LiveEntryTile extends StatefulWidget {
   const _LiveEntryTile({required this.onTap});
 
@@ -1036,7 +1034,7 @@ class _LiveEntryTileState extends State<_LiveEntryTile>
         liveSettings.liveEnableBeforeClass ||
         liveSettings.liveEnableDuringClass ||
         liveSettings.liveEnableBeforeEnd;
-    // 权限缺失优先；已授权时展示开/关态，避免入口右侧空白。
+    // 鏉冮檺缂哄け浼樺厛锛涘凡鎺堟潈鏃跺睍绀哄紑/鍏虫€侊紝閬垮厤鍏ュ彛鍙充晶绌虹櫧銆?
     final detailsText = _hasPermission == false
         ? l10n.liveNotificationPermissionMissing
         : _hasPermission == true
@@ -1059,13 +1057,13 @@ class _LiveEntryTileState extends State<_LiveEntryTile>
   }
 }
 
-/// 云同步入口，带配置状态。
+/// 浜戝悓姝ュ叆鍙ｏ紝甯﹂厤缃姸鎬併€?
 ///
-/// 「云同步不工作」的第一因是根本没配 WebDAV（IA 规范 §6 要求把该状态
-/// 前置到入口行尾）。配置存于 SharedPreferences：异步读一次并缓存 Future
-/// （不在 build 里发起 I/O），App 恢复前台时重读一次——用户去云同步页
-/// 开完开关回来要立刻反映。同步中的动态状态由 coordinator 的
-/// ChangeNotifier 供给，ListenableBuilder 直接跟随。
+/// 銆屼簯鍚屾涓嶅伐浣溿€嶇殑绗竴鍥犳槸鏍规湰娌￠厤 WebDAV锛圛A 瑙勮寖 搂6 瑕佹眰鎶婅鐘舵€?
+/// 鍓嶇疆鍒板叆鍙ｈ灏撅級銆傞厤缃瓨浜?SharedPreferences锛氬紓姝ヨ涓€娆″苟缂撳瓨 Future
+/// 锛堜笉鍦?build 閲屽彂璧?I/O锛夛紝App 鎭㈠鍓嶅彴鏃堕噸璇讳竴娆♀€斺€旂敤鎴峰幓浜戝悓姝ラ〉
+/// 寮€瀹屽紑鍏冲洖鏉ヨ绔嬪埢鍙嶆槧銆傚悓姝ヤ腑鐨勫姩鎬佺姸鎬佺敱 coordinator 鐨?
+/// ChangeNotifier 渚涚粰锛孡istenableBuilder 鐩存帴璺熼殢銆?
 class _CloudSyncEntryTile extends StatefulWidget {
   const _CloudSyncEntryTile({required this.onTap});
 
@@ -1115,7 +1113,7 @@ class _CloudSyncEntryTileState extends State<_CloudSyncEntryTile>
       builder: (context, _) => FutureBuilder<bool>(
         future: _enabledFuture,
         builder: (context, snapshot) {
-          // 配置未读完前行尾留白，避免先闪一帧错误的「未开启」。
+          // 閰嶇疆鏈瀹屽墠琛屽熬鐣欑櫧锛岄伩鍏嶅厛闂竴甯ч敊璇殑銆屾湭寮€鍚€嶃€?
           final detailsText = snapshot.connectionState != ConnectionState.done
               ? null
               : !(snapshot.data ?? false)
@@ -1148,11 +1146,11 @@ class _CloudSyncEntryTileState extends State<_CloudSyncEntryTile>
   }
 }
 
-/// 设置页脚的开发者工具组：内存监测 / 临时测试课程 / UI 组件库 / 调试悬浮窗。
+/// 璁剧疆椤佃剼鐨勫紑鍙戣€呭伐鍏风粍锛氬唴瀛樼洃娴?/ 涓存椂娴嬭瘯璇剧▼ / UI 缁勪欢搴?/ 璋冭瘯鎮诞绐椼€?
 ///
-/// 内存监测、临时测试课程按包名门控（`.debug` / `.profile`），不依赖编译模式，
-/// 避免正式 release 产物误开入口；同时缓存 Future，避免 rebuild 重复读包信息。
-/// 这些项不面向普通用户，因此独立成组、不与「关于 / 使用引导」同卡。
+/// 鍐呭瓨鐩戞祴銆佷复鏃舵祴璇曡绋嬫寜鍖呭悕闂ㄦ帶锛坄.debug` / `.profile`锛夛紝涓嶄緷璧栫紪璇戞ā寮忥紝
+/// 閬垮厤姝ｅ紡 release 浜х墿璇紑鍏ュ彛锛涘悓鏃剁紦瀛?Future锛岄伩鍏?rebuild 閲嶅璇诲寘淇℃伅銆?
+/// 杩欎簺椤逛笉闈㈠悜鏅€氱敤鎴凤紝鍥犳鐙珛鎴愮粍銆佷笉涓庛€屽叧浜?/ 浣跨敤寮曞銆嶅悓鍗°€?
 class _SettingsDeveloperListGroup extends StatefulWidget {
   const _SettingsDeveloperListGroup({
     required this.onOpenMemoryStats,
@@ -1271,7 +1269,7 @@ class _SettingsDeveloperListGroupState
   }
 }
 
-/// 开发者区开关行，与导航行共享标题字重和按压反馈。
+/// 寮€鍙戣€呭尯寮€鍏宠锛屼笌瀵艰埅琛屽叡浜爣棰樺瓧閲嶅拰鎸夊帇鍙嶉銆?
 class _MiuixSettingsSwitchPreference extends StatelessWidget {
   const _MiuixSettingsSwitchPreference({
     required this.startAction,
@@ -1291,11 +1289,11 @@ class _MiuixSettingsSwitchPreference extends StatelessWidget {
       onTap: () => onChanged(!value),
       holdHighlightThroughTransition: true,
       child: MiuixBasicComponent(
-        // 上游把标题字重硬编码为 w500（比本 App 其余设置行的
-        // HyperosTypography.title w400 重一档），且 1.2.0 的 MiuixBasicComponent
-        // 不再接受 titleFontWeight。改用它的 content 参数复刻默认排版、只把基准
-        // 字重降回 w400 —— 与默认路径同用 MiuixText（仍随系统字重分级平移），
-        // 因此观感与 fork 版一致。
+        // 涓婃父鎶婃爣棰樺瓧閲嶇‖缂栫爜涓?w500锛堟瘮鏈?App 鍏朵綑璁剧疆琛岀殑
+        // HyperosTypography.title w400 閲嶄竴妗ｏ級锛屼笖 1.2.0 鐨?MiuixBasicComponent
+        // 涓嶅啀鎺ュ彈 titleFontWeight銆傛敼鐢ㄥ畠鐨?content 鍙傛暟澶嶅埢榛樿鎺掔増銆佸彧鎶婂熀鍑?
+        // 瀛楅噸闄嶅洖 w400 鈥斺€?涓庨粯璁よ矾寰勫悓鐢?MiuixText锛堜粛闅忕郴缁熷瓧閲嶅垎绾у钩绉伙級锛?
+        // 鍥犳瑙傛劅涓?fork 鐗堜竴鑷淬€?
         content: [
           MiuixText(
             title,
@@ -1312,7 +1310,7 @@ class _MiuixSettingsSwitchPreference extends StatelessWidget {
   }
 }
 
-/// 设置首页图标 Badge：彩色圆角背景 + 白色图标（与 HyperosIconBadge 一致）。
+/// 璁剧疆棣栭〉鍥炬爣 Badge锛氬僵鑹插渾瑙掕儗鏅?+ 鐧借壊鍥炬爣锛堜笌 HyperosIconBadge 涓€鑷达級銆?
 Widget _settingsIconBadge(MiuixVectorIcon icon, Color accent) {
   return Container(
     width: HyperosTokens.iconBadgeSize,
@@ -1330,10 +1328,10 @@ Widget _settingsIconBadge(MiuixVectorIcon icon, Color accent) {
   );
 }
 
-/// 带正确按压反馈的 Miuix 设置行。
+/// 甯︽纭寜鍘嬪弽棣堢殑 Miuix 璁剧疆琛屻€?
 ///
-/// 外层 [HyperosPressableRow] 处理按压高亮（根据 isFirst/isLast 裁剪圆角），
-/// 内层 [MiuixArrowPreference] 只负责显示。
+/// 澶栧眰 [HyperosPressableRow] 澶勭悊鎸夊帇楂樹寒锛堟牴鎹?isFirst/isLast 瑁佸壀鍦嗚锛夛紝
+/// 鍐呭眰 [MiuixArrowPreference] 鍙礋璐ｆ樉绀恒€?
 class _MiuixSettingsPreference extends StatelessWidget {
   const _MiuixSettingsPreference({
     super.key,
@@ -1353,13 +1351,13 @@ class _MiuixSettingsPreference extends StatelessWidget {
     return HyperosPressableRow(
       onTap: onClick,
       holdHighlightThroughTransition: true,
-      // 上游把标题字重硬编码为 Medium(w500)，比全 App 其余设置行所用的
-      // HyperosTypography.title(w400) 重一档；而 1.2.0 的
-      // MiuixArrowPreference / MiuixBasicComponent 不再接受 titleFontWeight。
-      // 本行标题是这棵子树里**唯一**的 Miuix 文本（行尾值用本仓库的 Text +
-      // HyperosTypography.listDetail，不走 MiuixText），因此在这里把字重偏移
-      // 下调一档即可精确还原 w400：标题最终字重 = w500 + (delta - 100)
-      // = w400 + delta，仍随系统字重分级平移；startAction 是图标，不受影响。
+      // 涓婃父鎶婃爣棰樺瓧閲嶇‖缂栫爜涓?Medium(w500)锛屾瘮鍏?App 鍏朵綑璁剧疆琛屾墍鐢ㄧ殑
+      // HyperosTypography.title(w400) 閲嶄竴妗ｏ紱鑰?1.2.0 鐨?
+      // MiuixArrowPreference / MiuixBasicComponent 涓嶅啀鎺ュ彈 titleFontWeight銆?
+      // 鏈鏍囬鏄繖妫靛瓙鏍戦噷**鍞竴**鐨?Miuix 鏂囨湰锛堣灏惧€肩敤鏈粨搴撶殑 Text +
+      // HyperosTypography.listDetail锛屼笉璧?MiuixText锛夛紝鍥犳鍦ㄨ繖閲屾妸瀛楅噸鍋忕Щ
+      // 涓嬭皟涓€妗ｅ嵆鍙簿纭繕鍘?w400锛氭爣棰樻渶缁堝瓧閲?= w500 + (delta - 100)
+      // = w400 + delta锛屼粛闅忕郴缁熷瓧閲嶅垎绾у钩绉伙紱startAction 鏄浘鏍囷紝涓嶅彈褰卞搷銆?
       child: MiuixTheme(
         data: MiuixTheme.of(context).copyWith(
           fontWeightAdjustment:
@@ -1368,9 +1366,9 @@ class _MiuixSettingsPreference extends StatelessWidget {
         child: MiuixArrowPreference(
           startAction: startAction,
           title: title,
-          // MiuixArrowPreference 会把 endActions 放进 mainAxisSize.min 的 Row，
-          // 里面的 Text 拿到的是无界宽度，值过长时会溢出而不是省略。
-          // 逐个包 Flexible 让它们服从右侧受限宽度，并默认单行省略。
+          // MiuixArrowPreference 浼氭妸 endActions 鏀捐繘 mainAxisSize.min 鐨?Row锛?
+          // 閲岄潰鐨?Text 鎷垮埌鐨勬槸鏃犵晫瀹藉害锛屽€艰繃闀挎椂浼氭孩鍑鸿€屼笉鏄渷鐣ャ€?
+          // 閫愪釜鍖?Flexible 璁╁畠浠湇浠庡彸渚у彈闄愬搴︼紝骞堕粯璁ゅ崟琛岀渷鐣ャ€?
           endActions: _constrainEndActions(endActions),
           enabled: onClick != null,
         ),
@@ -1378,8 +1376,8 @@ class _MiuixSettingsPreference extends StatelessWidget {
     );
   }
 
-  /// 把每个末尾操作包成可收缩的 [Flexible]，并让其中的 [Text] 默认单行省略，
-  /// 避免超长详情值撑破 [MiuixArrowPreference] 的末尾槽位。
+  /// 鎶婃瘡涓湯灏炬搷浣滃寘鎴愬彲鏀剁缉鐨?[Flexible]锛屽苟璁╁叾涓殑 [Text] 榛樿鍗曡鐪佺暐锛?
+  /// 閬垮厤瓒呴暱璇︽儏鍊兼拺鐮?[MiuixArrowPreference] 鐨勬湯灏炬Ы浣嶃€?
   List<Widget>? _constrainEndActions(List<Widget>? actions) {
     if (actions == null || actions.isEmpty) {
       return actions;
@@ -1446,7 +1444,7 @@ String _liveDisplaySummary(BuildContext context, LiveDisplaySettings settings) {
     return l10n.liveDisplaySummaryMinimal;
   }
   if (parts.length <= 2) {
-    return parts.join('·');
+    return parts.join('路');
   }
   return l10n.liveDisplaySummaryMore(parts.first, parts.length);
 }

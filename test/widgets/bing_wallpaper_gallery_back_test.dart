@@ -66,18 +66,25 @@ void main() {
     // 清单走缓存（loadItems 命中 TTL → 不发请求）；
     await store.saveCachedItems(const <BingWallpaperItem>[item]);
     // 假装那张已经下好了 —— findExisting 命中，`_pick` 直接进宿主回调，不碰网络。
+    // 键必须与 `_pick` 现在算出的一致：2026-10-14 起画质恒为 high，
+    // 尺寸取 `downloadTargetSize`（测试视口下 = 1440×3200 下限抬升的结果）。
+    const resolution = BingWallpaperResolution.high;
+    final targetSize = resolution.downloadTargetSize;
     final file = File(
       '${tempDir.path}${Platform.pathSeparator}home_page_wallpaper'
-      '${Platform.pathSeparator}wallpaper_bing_20261005_standard.jpg',
+      '${Platform.pathSeparator}'
+      'wallpaper_bing_${item.dateKey}_${resolution.storageKey}'
+      '_${targetSize.width}x${targetSize.height}.jpg',
     );
     await file.parent.create(recursive: true);
     await file.writeAsString('x');
     alreadyDownloaded = file.path;
     await store.recordApplied(
       dateKey: item.dateKey,
-      resolution: BingWallpaperResolution.standard,
+      resolution: resolution,
       path: file.path,
       autoApplied: false,
+      targetSize: targetSize,
     );
   });
 

@@ -3514,44 +3514,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get bingWallpaperResolutionTitle => '다운로드 화질';
-
-  @override
-  String get bingWallpaperResolutionStandard => '표준';
-
-  @override
-  String get bingWallpaperResolutionTall => '화면 맞춤';
-
-  @override
-  String get bingWallpaperResolutionHigh => '고화질';
-
-  @override
-  String bingWallpaperResolutionFallback(String label) {
-    return 'Bing이 해당 화질을 제공하지 않아 \'$label\'을(를) 사용합니다';
-  }
-
-  @override
-  String bingWallpaperResolutionHint(int width, int height, String size) {
-    return '$width×$height, 장당 약 $size';
-  }
-
-  @override
-  String get wallpaperDailySourceTitle => '갤러리 출처';
-
-  @override
-  String get wallpaperDailySourceBing => '매일 업데이트';
-
-  @override
-  String get wallpaperDailySourceWallhaven => '세로 고화질';
-
-  @override
-  String get wallhavenWallpaperGalleryTitle => '세로 고화질 갤러리';
-
-  @override
-  String get wallhavenGalleryFailed =>
-      '세로 고화질 갤러리를 불러오지 못했습니다. 네트워크를 확인한 뒤 다시 시도하세요';
-
-  @override
   String get wallpaperGalleryShowingCached => '네트워크가 불안정하여上次 불러온 이미지를 표시합니다';
 
   @override

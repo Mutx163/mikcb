@@ -6295,13 +6295,6 @@
   "wallpaperPositionPickerSwitchWallpaper": "壁紙を変更",
   "wallpaperPositionPickerDone": "完了",
   "wallpaperPositionPickerExit": "終了",
-  "@bingWallpaperResolutionHint": {
-    "placeholders": {
-      "width": { "type": "int" },
-      "height": { "type": "int" },
-      "size": { "type": "String" }
-    }
-  },
   "@bingWallpaperDateMonthDay": {
     "placeholders": {
       "month": { "type": "int" },
@@ -6319,23 +6312,6 @@
     }
   },
   "bingWallpaperDownloadStatus": "この壁紙のダウンロードに失敗しました（{status}）",
-  "bingWallpaperResolutionTitle": "ダウンロード画質",
-  "bingWallpaperResolutionStandard": "標準",
-  "bingWallpaperResolutionTall": "画面に合わせる",
-  "bingWallpaperResolutionHigh": "高画質",
-  "@bingWallpaperResolutionFallback": {
-    "description": "所选画质当天不可用、已退到默认档时的说明。占位符是实际拿到的那一档的文案。",
-    "placeholders": {
-      "label": { "type": "String", "example": "高清" }
-    }
-  },
-  "bingWallpaperResolutionFallback": "Bing はその画質を提供していないため、「{label}」を使用しました",
-  "bingWallpaperResolutionHint": "{width}×{height}、1 枚あたり約 {size}",
-  "wallpaperDailySourceTitle": "ギャラリーの提供元",
-  "wallpaperDailySourceBing": "毎日更新",
-  "wallpaperDailySourceWallhaven": "縦長高画質",
-  "wallhavenWallpaperGalleryTitle": "縦長高画質ギャラリー",
-  "wallhavenGalleryFailed": "縦長高画質ギャラリーを読み込めませんでした。ネットワークを確認して再試行してください",
   "wallpaperGalleryShowingCached": "ネットワークが不安定なため、前回読み込んだ画像を表示しています",
   "bingWallpaperDateToday": "今日",
   "bingWallpaperDateYesterday": "昨日",

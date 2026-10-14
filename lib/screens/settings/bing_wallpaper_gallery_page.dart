@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../../l10n/enum_localizations.dart';
 import '../../models/bing_wallpaper.dart';
 import '../../services/bing_wallpaper_service.dart';
 import '../../services/bing_wallpaper_store.dart';
@@ -171,10 +170,6 @@ class _BingWallpaperGalleryPageState
       resolution,
       targetSize: targetSize,
     );
-    // 命中已下过的复用路径时，「实际那一档」就是当初记账的那一档；只有真去下载
-    // 才可能退档，所以初值取所选档。
-    var downloadedResolution = resolution;
-    var downgraded = false;
     // 失败时带 HTTP 状态码给用户看：2026-10-06 用户报「点大图下载失败」，而所有
     // 分支都只弹同一句、没有日志也没有细节 —— 那次完全无从下手。
     // 只有拿得到响应才有状态码（断网就没有），那种情况退回通用文案。
@@ -187,13 +182,11 @@ class _BingWallpaperGalleryPageState
         final result = await service.download(item, resolution);
         path = result.path;
         if (result.succeeded) {
-          downloadedResolution = result.resolution!;
-          downgraded = result.downgraded;
           // 手动挑的也记账：目的是**封顶清理**（不记账的文件没人回收）与去重，
           // 但标记 `autoApplied: false`，免得顶掉自动换「今天已换过」的判据。
-          // 记的是**实际**那档（退档后就是 standard），与文件名一致；
+          // 记的是**实际**那档（缺档退档后就是 standard），与文件名一致；
           // 两个字段都必须取 `result.resolution`，写成外面那个 `resolution`
-          // （用户选的那档）会让台账记着一个不存在的文件尺寸。
+          // 会让台账记着一个不存在的文件尺寸。
           final evicted = await BingWallpaperStore.instance.recordApplied(
             dateKey: item.dateKey,
             resolution: result.resolution!,
@@ -223,16 +216,6 @@ class _BingWallpaperGalleryPageState
         showKindIcon: true,
       );
       return;
-    }
-    if (downgraded) {
-      // 选的那一档 Bing 当天没生成，已退到默认档。如实说一句，别让用户以为
-      // 自己选的画质生效了（也不必解释 Bing 为什么缺 —— 他只关心拿到什么）。
-      showAppToast(
-        context,
-        message: l10n.bingWallpaperResolutionFallback(
-          bingWallpaperResolutionLabel(l10n, downloadedResolution),
-        ),
-      );
     }
     // 带着路径退出，交给调用方在**本页之后**接位置编辑（见 pushBingWallpaperGalleryPage）。
     final applied = await widget.onImageDownloaded(path);
@@ -324,12 +307,13 @@ class _BingWallpaperGalleryPageState
           // 里面又套 12）就叠成 32，看着像「标题被顶到天上去」，2026-10-06 用户报
           // 「标题和下面空一大截」。页面其余部分统一按 [HyperosMiuixSpec.listPadding]
           // 的 top=4 走，所以这一块只补那 4。
-          SliverToBoxAdapter(
+          //
+          // 2026-10-14 起画质不再是用户选项（恒按 high），原来包在这儿的
+          // `_buildResolutionSection`（档位胶囊 + 像素说明）整段删除，但
+          // [HyperosBlurredBodyInset] 这层**必须留着** —— 网格的顶部让位靠它。
+          const SliverToBoxAdapter(
             child: HyperosBlurredBodyInset(
-              child: _buildResolutionSection(
-                context,
-                BingWallpaperStore.instance,
-              ),
+              child: SizedBox(height: 4),
             ),
           ),
           if (_loading && _items.isEmpty)
@@ -346,8 +330,7 @@ class _BingWallpaperGalleryPageState
               child: _bodyArea(context, _buildFailure(context)),
             )
           else ... <Widget>[
-            // 「显示的是上次结果」提示条。与 Wallhaven 图库页同一句文案、同一位置 ——
-            // 两页的差别只在卡片内容，不该在「来路说明」上也分叉。
+            // 「显示的是上次结果」提示条。与 Bing 图库页同一句文案、同一位置。
             if (_showingCached)
               SliverToBoxAdapter(
                 child: Padding(
@@ -392,72 +375,6 @@ class _BingWallpaperGalleryPageState
   /// 网格那一支不需要：它从顶部按正常节奏排下来，越往下离顶栏越远。
   Widget _bodyArea(BuildContext context, Widget child) =>
       HyperosBlurredBodyInset(child: child);
-
-  /// 画质档位一排胶囊。
-  ///
-  /// 只排**画质**、不排朝向：横屏档已删（横图铺竖屏会被裁掉七成），三档全是竖屏，
-  /// 一排胶囊刚好放得下且互不重名。
-  ///
-  /// 放在图库页顶部而不是设置页：档位只在**下载那一刻**才起作用，而下载就发生在这个
-  /// 页面（点某一张）。让用户在动作发生前就地改档，比先去设置页改一趟顺手。
-  Widget _buildResolutionSection(
-    BuildContext context,
-    BingWallpaperStore store,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-    final current = store.resolution;
-    return Padding(
-      // top=4 与网格那一支、以及仓库里所有列表的顶距同源
-      // （`HyperosMiuixSpec.listPadding`）；顶部那段设计间距由
-      // [HyperosBlurredBodyInset] 的 inset 负责，见 `_buildBody` 里的说明。
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.bingWallpaperResolutionTitle,
-            style: HyperosTypography.listDetail(context),
-          ),
-          const SizedBox(height: 8),
-          HyperosChipRow(
-            labels: <String>[
-              for (final value in BingWallpaperResolution.values)
-                bingWallpaperResolutionLabel(l10n, value),
-            ],
-            selectedIndex: current.index,
-            onChanged: (index) =>
-                unawaited(store.setResolution(BingWallpaperResolution.values[index])),
-          ),
-          const SizedBox(height: 6),
-          // 一行实测像素 + 体积，就这么多。
-          //
-          // ⚠️ **不要再往这儿加解释性灰字**（2026-10-06 用户口径「不要在页面中加入
-          // 过多的灰字，不符合软件规范」）。这里曾经挂过一整段解释「为什么竖屏壁纸必然
-          // 被放大、换档位也去不掉」，结果就是一进图库先读一段小字、图都还没看到。
-          //
-          // 那条知识不是丢了，它在两处更该在的地方：`BingWallpaperResolution.high`
-          // 的注释（讲清 2560→3200 是为了不让 App 二次放大），以及实现笔记
-          // `.agents/notes/implemented/feature/2026-10-05-bing-daily-wallpaper-library.md`
-          // （讲清「总放大倍数 = 屏幕高 / 原图高」这个上限）。**需要解释的，放注释和笔记，
-          // 不放页面。**
-          Text(
-            // ⚠️ 报的是**实际要下的那组像素**，不是档位的写死尺寸（2026-10-07）：
-            // 用户看到的是真会拿到的那张，而那一组已经跟着这台设备变过了。若继续报
-            // 「1080×1920」，选了档位却在 1206×2622 的机上拿到更大的图，反过来也一样 ——
-            // 数字与实际不符就等于没有。
-            l10n.bingWallpaperResolutionHint(
-              current.downloadTargetSize.width,
-              current.downloadTargetSize.height,
-              current.approximateSizeLabel,
-            ),
-            style: HyperosTypography.listDetail(context).copyWith(
-              color: HyperosColors.secondaryText(context),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildFailure(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;

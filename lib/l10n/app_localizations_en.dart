@@ -3646,44 +3646,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get bingWallpaperResolutionTitle => 'Download quality';
-
-  @override
-  String get bingWallpaperResolutionStandard => 'Standard';
-
-  @override
-  String get bingWallpaperResolutionTall => 'Fit screen';
-
-  @override
-  String get bingWallpaperResolutionHigh => 'High';
-
-  @override
-  String bingWallpaperResolutionFallback(String label) {
-    return 'Bing didn\'t offer that quality today — using $label instead';
-  }
-
-  @override
-  String bingWallpaperResolutionHint(int width, int height, String size) {
-    return '$width×$height, about $size each';
-  }
-
-  @override
-  String get wallpaperDailySourceTitle => 'Gallery source';
-
-  @override
-  String get wallpaperDailySourceBing => 'Updated daily';
-
-  @override
-  String get wallpaperDailySourceWallhaven => 'Portrait HD';
-
-  @override
-  String get wallhavenWallpaperGalleryTitle => 'Portrait HD gallery';
-
-  @override
-  String get wallhavenGalleryFailed =>
-      'Couldn\'t load the portrait gallery. Check your connection and retry.';
-
-  @override
   String get wallpaperGalleryShowingCached =>
       'Network\'s being slow — showing the last images that loaded.';
 

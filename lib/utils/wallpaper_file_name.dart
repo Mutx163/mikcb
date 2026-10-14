@@ -2,9 +2,8 @@
 ///
 /// ## 为什么需要它
 ///
-/// 壁纸文件名里有一半是**外部数据**：Wallhaven 的 `id`、Bing 的 `dateKey`
-/// 都直接来自服务端响应 / 同步下来的图库台账。原实现把它们原样插进
-/// `wallpaper_wh_$id.jpg`（`wallhaven_wallpaper.dart`）与
+/// 壁纸文件名里的外部数据：Bing 的 `dateKey`
+/// 直接来自服务端响应 / 同步下来的图库台账。原实现把它原样插进
 /// `wallpaper_bing_${dateKey}_…jpg`（`bing_wallpaper.dart`），
 /// 落盘时靠字符串拼接（`managed_image_storage.dart` 的
 /// `'$targetDir.path${sep}$fileName'`），**没有任何净化**。

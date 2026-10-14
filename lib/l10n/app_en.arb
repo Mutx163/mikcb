@@ -1918,19 +1918,6 @@
   "wallpaperPositionPickerSwitchWallpaper": "Change wallpaper",
   "wallpaperPositionPickerDone": "Done",
   "wallpaperPositionPickerExit": "Exit",
-  "@bingWallpaperResolutionHint": {
-    "placeholders": {
-      "width": {
-        "type": "int"
-      },
-      "height": {
-        "type": "int"
-      },
-      "size": {
-        "type": "String"
-      }
-    }
-  },
   "@bingWallpaperDateMonthDay": {
     "placeholders": {
       "month": {
@@ -1955,26 +1942,6 @@
     }
   },
   "bingWallpaperDownloadStatus": "Couldn't download this wallpaper ({status})",
-  "bingWallpaperResolutionTitle": "Download quality",
-  "bingWallpaperResolutionStandard": "Standard",
-  "bingWallpaperResolutionTall": "Fit screen",
-  "bingWallpaperResolutionHigh": "High",
-  "@bingWallpaperResolutionFallback": {
-    "description": "所选画质当天不可用、已退到默认档时的说明。占位符是实际拿到的那一档的文案。",
-    "placeholders": {
-      "label": {
-        "type": "String",
-        "example": "高清"
-      }
-    }
-  },
-  "bingWallpaperResolutionFallback": "Bing didn't offer that quality today — using {label} instead",
-  "bingWallpaperResolutionHint": "{width}×{height}, about {size} each",
-  "wallpaperDailySourceTitle": "Gallery source",
-  "wallpaperDailySourceBing": "Updated daily",
-  "wallpaperDailySourceWallhaven": "Portrait HD",
-  "wallhavenWallpaperGalleryTitle": "Portrait HD gallery",
-  "wallhavenGalleryFailed": "Couldn't load the portrait gallery. Check your connection and retry.",
   "wallpaperGalleryShowingCached": "Network's being slow — showing the last images that loaded.",
   "bingWallpaperDateToday": "Today",
   "bingWallpaperDateYesterday": "Yesterday",

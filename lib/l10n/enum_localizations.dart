@@ -1,55 +1,12 @@
-import '../models/bing_wallpaper.dart';
+﻿// 壁纸的文案映射（bingWallpaperResolutionLabel / wallpaperDailySourceLabel /
+// wallpaperDailySourceGalleryLabel）在 2026-10-14 删掉了：Wallhaven 图源整体移除、
+// 画质不再是用户选项（恒按最高档下载），档位胶囊、图源胶囊、降档提示随之消失。
+
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/timetable_settings.dart';
-import '../models/wallpaper_daily_source.dart';
 import '../utils/widget_course_accent.dart';
 import 'app_localizations.dart';
-
-/// Bing 壁纸画质档位的胶囊文案。
-///
-/// 三档**各叫各的**（标准 / 适配 / 高清）：曾经把横屏的「超清」也译成「高清」，
-/// 用户看到一排里出现两个「高清」直接问了「为啥有两个高清档位」（2026-10-06）。
-/// 根因不是文案而是**多了一档没用的横屏**——横屏已从枚举里删掉，这里也随之简化。
-///
-/// ⚠️ 不要写「1x / 2x / 4x」这类倍数：三档里 `standard` 与 `tall` **宽度相同**、
-/// 比例也不同（9:16 与 9:20），「几倍」是错的说法。
-String bingWallpaperResolutionLabel(
-  AppLocalizations l10n,
-  BingWallpaperResolution resolution,
-) => switch (resolution) {
-  BingWallpaperResolution.standard => l10n.bingWallpaperResolutionStandard,
-  BingWallpaperResolution.tall => l10n.bingWallpaperResolutionTall,
-  BingWallpaperResolution.high => l10n.bingWallpaperResolutionHigh,
-};
-
-/// 每日壁纸**图源**的胶囊文案。
-///
-/// 两档各叫各的，且**不能**只用「高清 / 超清」那种画质词 —— 两者的差别**不在清晰度
-/// 一项**：Wallhaven 更清晰（原生竖图、放大 1.0），Bing 是每天必换。所以名字各自点出
-/// 自己那一项优势，用户一眼知道自己换来的是什么。
-///
-/// 同 `bingWallpaperResolutionLabel` 那条纪律：断言要钉在**用户看得见的这个值**上，
-/// 别只钉枚举内部键（见 `test/l10n/arb_duplicate_key_test.dart` 里那次「两个高清」）。
-String wallpaperDailySourceLabel(
-  AppLocalizations l10n,
-  WallpaperDailySource source,
-) => switch (source) {
-  WallpaperDailySource.bing => l10n.wallpaperDailySourceBing,
-  WallpaperDailySource.wallhaven => l10n.wallpaperDailySourceWallhaven,
-};
-
-/// 图库入口行的标题**随图源变**。
-///
-/// 加了第二个源之后那行不能再说死「Bing 每日壁纸」—— 否则选 Wallhaven 的用户点进去
-/// 看到的是另一个图库，而那一行还在说 Bing。
-String wallpaperDailySourceGalleryLabel(
-  AppLocalizations l10n,
-  WallpaperDailySource source,
-) => switch (source) {
-  WallpaperDailySource.bing => l10n.bingWallpaperGalleryTitle,
-  WallpaperDailySource.wallhaven => l10n.wallhavenWallpaperGalleryTitle,
-};
 
 String courseNatureLabel(AppLocalizations l10n, CourseNature nature) =>
     switch (nature) {

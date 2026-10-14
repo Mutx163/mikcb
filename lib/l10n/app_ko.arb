@@ -6345,19 +6345,6 @@
   "wallpaperPositionPickerSwitchWallpaper": "배경화면 바꾸기",
   "wallpaperPositionPickerDone": "완료",
   "wallpaperPositionPickerExit": "나가기",
-  "@bingWallpaperResolutionHint": {
-    "placeholders": {
-      "width": {
-        "type": "int"
-      },
-      "height": {
-        "type": "int"
-      },
-      "size": {
-        "type": "String"
-      }
-    }
-  },
   "@bingWallpaperDateMonthDay": {
     "placeholders": {
       "month": {
@@ -6382,26 +6369,6 @@
     }
   },
   "bingWallpaperDownloadStatus": "이 배경화면을 다운로드하지 못했습니다({status})",
-  "bingWallpaperResolutionTitle": "다운로드 화질",
-  "bingWallpaperResolutionStandard": "표준",
-  "bingWallpaperResolutionTall": "화면 맞춤",
-  "bingWallpaperResolutionHigh": "고화질",
-  "@bingWallpaperResolutionFallback": {
-    "description": "所选画质当天不可用、已退到默认档时的说明。占位符是实际拿到的那一档的文案。",
-    "placeholders": {
-      "label": {
-        "type": "String",
-        "example": "高清"
-      }
-    }
-  },
-  "bingWallpaperResolutionFallback": "Bing이 해당 화질을 제공하지 않아 '{label}'을(를) 사용합니다",
-  "bingWallpaperResolutionHint": "{width}×{height}, 장당 약 {size}",
-  "wallpaperDailySourceTitle": "갤러리 출처",
-  "wallpaperDailySourceBing": "매일 업데이트",
-  "wallpaperDailySourceWallhaven": "세로 고화질",
-  "wallhavenWallpaperGalleryTitle": "세로 고화질 갤러리",
-  "wallhavenGalleryFailed": "세로 고화질 갤러리를 불러오지 못했습니다. 네트워크를 확인한 뒤 다시 시도하세요",
   "wallpaperGalleryShowingCached": "네트워크가 불안정하여上次 불러온 이미지를 표시합니다",
   "bingWallpaperDateToday": "오늘",
   "bingWallpaperDateYesterday": "어제",

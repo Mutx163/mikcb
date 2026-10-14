@@ -81,7 +81,7 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('顶部「下载画质」那一块落在悬浮顶栏之下，不被盖住', (
+  testWidgets('网格顶部落在悬浮顶栏之下，不被盖住（画质区删除后的兜底）', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(400, 900));
@@ -101,17 +101,15 @@ void main() {
       reason: '前提：这一页用的是悬浮顶栏（overlayHeader 默认 true），inset 必须非零',
     );
 
-    final title = find.text('下载画质');
-    expect(title, findsOneWidget, reason: '顶部那一块要真的画出来了');
-
-    // 关键断言：这块的顶边必须在顶栏占位之下。
-    final titleTop = tester.getTopLeft(title).dy;
+    // 2026-10-14 画质选择区删除后，页面顶部直接就是网格 —— 顶栏让位完全靠留在
+    // `_buildBody` 里的那层 `HyperosBlurredBodyInset`。它若被顺手删掉，网格会整块
+    // 顶进顶栏。这条与下面「首张卡片」那条一起钉住这件事。
+    //
+    // 原先钉「下载画质」标题的断言随该区块一起删除（历史坑见文件头）。
     expect(
-      titleTop,
-      greaterThanOrEqualTo(inset),
-      reason:
-          '「下载画质」顶边 $titleTop 必须在顶栏 inset $inset 之下 —— '
-          '裸 CustomScrollView 不带 inset，内容会被顶栏整块盖住',
+      find.text('下载画质'),
+      findsNothing,
+      reason: '画质区已删 —— 若它又回来了，说明有人把选项 UI 复活了，回设置页去查',
     );
   });
 

@@ -10,7 +10,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/bing_wallpaper.dart';
 import 'package:university_timetable/services/bing_wallpaper_service.dart';
 import 'package:university_timetable/services/bing_wallpaper_store.dart';
-import 'package:university_timetable/utils/home_page_background.dart';
 import 'package:university_timetable/utils/managed_image_storage.dart';
 
 /// 钉住拉列表与下载的行为，重点是**失败一律静默**。
@@ -196,14 +195,14 @@ void main() {
       );
       final result = await service.download(
         item,
-        BingWallpaperResolution.standard,
+        BingWallpaperResolution.high,
       );
       expect(result.succeeded, isTrue);
       expect(result.downgraded, isFalse);
       expect(result.path, contains('home_page_wallpaper'));
       expect(
         result.path,
-        contains('wallpaper_bing_20261005_standard'),
+        contains('wallpaper_bing_20261005_high'),
         reason: '前缀必须是 wallpaper，否则 deleteEvictedWallpaperFiles 的守卫放行它；'
             '⚠️ 这里刻意**不**钉整串相等 —— 2026-10-07 起文件名可能带实际像素后缀'
             '（按设备分辨率取尺寸），钉成整串等于把新行为锁死成回归',
@@ -215,12 +214,14 @@ void main() {
       expect(capturedUrl, isNotNull, reason: '要抓到实际请求的 URL');
       final params = Uri.parse(capturedUrl!).queryParameters;
       expect(params['c'], '4', reason: '缺 c=4 会得到上下留白边的图');
-      final screen = wallpaperTargetSize();
-      expect(
-        '${params['w']}x${params['h']}',
-        '${screen.width}x${screen.height}',
-        reason: '实际请求尺寸必须等于这台设备的目标尺寸（= 屏幕分辨率与档位取大者）',
-      );
+      // 请求尺寸 = `wallpaperTargetSize().atLeast(1440, 3200)`：测试视口 2400×1800
+      // → 竖屏 1800×2160，再抬到 high 的下限之上（宽 1800→clamp 上限 2160 内，
+      // 高 2160 → 3200），宽按比例…实际上就是「atLeast 高一维到 3200」的结果。
+      // 这里不重算那套 clamp/偶数对齐规则（`wallpaper_target_size_test.dart` 钉它），
+      // 只钉「高度至少到 high 的下限、且等于 downloadTargetSize 的输出」。
+      final expected = BingWallpaperResolution.high.downloadTargetSize;
+      expect(params['w'], '${expected.width}');
+      expect(params['h'], '${expected.height}');
     });
 
     test('所选档位 404 → 退到本朝向下一档并如实标记 downgraded', () async {
@@ -550,7 +551,7 @@ void main() {
         ),
       );
       expect(result.outcome, BingAutoApplyOutcome.appliedToday);
-      expect(result.path, contains('wallpaper_bing_20261005_standard'));
+      expect(result.path, contains('wallpaper_bing_20261005_high'));
       expect(BingWallpaperStore.instance.lastAutoAppliedDate, '20261005');
     });
 
@@ -732,7 +733,7 @@ void main() {
         BingAutoApplyOutcome.appliedStale,
         reason: 'Bing 没有今天那张时换最新的那张，而不是静默放弃',
       );
-      expect(result.path, contains('wallpaper_bing_20261005_standard'));
+      expect(result.path, contains('wallpaper_bing_20261005_high'));
       expect(result.dateKey, '20261005');
       expect(
         BingWallpaperStore.instance.lastAutoAppliedDate,
@@ -788,7 +789,7 @@ void main() {
       }
 
       expect(caughtUp.outcome, BingAutoApplyOutcome.appliedToday);
-      expect(caughtUp.path, contains('wallpaper_bing_20261006_standard'));
+      expect(caughtUp.path, contains('wallpaper_bing_20261006_high'));
       expect(BingWallpaperStore.instance.lastAutoAppliedDate, '20261006');
     });
 
@@ -821,7 +822,7 @@ void main() {
 
       expect(listRequests, 1, reason: '命中旧缓存不该发请求，强制重拉才发');
       expect(result.outcome, BingAutoApplyOutcome.appliedToday);
-      expect(result.path, contains('wallpaper_bing_20261006_standard'));
+      expect(result.path, contains('wallpaper_bing_20261006_high'));
       expect(BingWallpaperStore.instance.lastAutoAppliedDate, '20261006');
     });
   });
@@ -868,9 +869,8 @@ void main() {
 
     group('⚠️ 过期缓存回落只给展示路径', () {
       // 现象：图库页因为缓存过期而拉不到 → 白屏一次，用户得重来。
-      // 解法是「宁可给旧的不要给空」，但**只对图库页** —— 自动换必须还能失败，
-      // 否则 `DailyWallpaperService` 没机会按 `WallpaperSourceFallback` 换到
-      // Wallhaven（那才是更清晰的那个源）。用隔夜 Bing 图抢掉换源是亏的。
+      // 解法是「宁可给旧的不要给空」，但**只对图库页** —— 自动换必须还能失败
+      // （如实记一次 failed），而不是拿隔夜图装作成功。
       test('图库页（allowStaleFallback）拉到失败时给旧清单', () async {
         await _runLoadItems(listResponse: () => utf8Json(listBody()));
         final stale = await _runLoadItems(
@@ -881,7 +881,7 @@ void main() {
         expect(stale, isNotEmpty);
       });
 
-      test('⭐ 自动换那条路（默认）拉到失败仍返回空，好让外层换源', () async {
+      test('⭐ 自动换那条路（默认）拉到失败仍返回空，当天如实失败', () async {
         await _runLoadItems(listResponse: () => utf8Json(listBody()));
         expect(
           BingWallpaperStore.instance.cachedItems,
@@ -896,8 +896,8 @@ void main() {
           failed,
           isEmpty,
           reason:
-              '空清单才是 `WallpaperAutoApplyOutcome.failed` 的入口；'
-              '喂它旧清单会把换源机会抢掉',
+              '空清单才是 `BingAutoApplyOutcome.failed` 的入口；'
+              '喂它旧清单等于让当天静默地「不换」',
         );
       });
     });

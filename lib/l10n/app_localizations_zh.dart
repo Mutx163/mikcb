@@ -3418,43 +3418,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get bingWallpaperResolutionTitle => '下载画质';
-
-  @override
-  String get bingWallpaperResolutionStandard => '标准';
-
-  @override
-  String get bingWallpaperResolutionTall => '适配';
-
-  @override
-  String get bingWallpaperResolutionHigh => '高清';
-
-  @override
-  String bingWallpaperResolutionFallback(String label) {
-    return '未提供所选画质，已切换为 $label';
-  }
-
-  @override
-  String bingWallpaperResolutionHint(int width, int height, String size) {
-    return '$width×$height，每张约 $size';
-  }
-
-  @override
-  String get wallpaperDailySourceTitle => '图库来源';
-
-  @override
-  String get wallpaperDailySourceBing => '每日更新';
-
-  @override
-  String get wallpaperDailySourceWallhaven => '竖版高清';
-
-  @override
-  String get wallhavenWallpaperGalleryTitle => '竖版高清图库';
-
-  @override
-  String get wallhavenGalleryFailed => '没能取到竖版高清图库，请检查网络后重试';
-
-  @override
   String get wallpaperGalleryShowingCached => '网络不太顺畅，下面显示的是上次加载的图';
 
   @override
@@ -14660,43 +14623,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String bingWallpaperDownloadStatus(int status) {
     return '壁紙下載失敗 $status';
   }
-
-  @override
-  String get bingWallpaperResolutionTitle => '下載畫質';
-
-  @override
-  String get bingWallpaperResolutionStandard => '標準';
-
-  @override
-  String get bingWallpaperResolutionTall => '符合屏幕';
-
-  @override
-  String get bingWallpaperResolutionHigh => '高畫質';
-
-  @override
-  String bingWallpaperResolutionFallback(String label) {
-    return '未提供所選畫質，已切換為 $label';
-  }
-
-  @override
-  String bingWallpaperResolutionHint(int width, int height, String size) {
-    return '$width×$height，每張約 $size';
-  }
-
-  @override
-  String get wallpaperDailySourceTitle => '圖庫來源';
-
-  @override
-  String get wallpaperDailySourceBing => '每日更新';
-
-  @override
-  String get wallpaperDailySourceWallhaven => '直向高清';
-
-  @override
-  String get wallhavenWallpaperGalleryTitle => '直向高清圖庫';
-
-  @override
-  String get wallhavenGalleryFailed => '未能取得直向高清圖庫，請檢查網絡後再試';
 
   @override
   String get wallpaperGalleryShowingCached => '網絡不太順暢，下面顯示的是上次載入的圖';
@@ -25944,43 +25870,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String bingWallpaperDownloadStatus(int status) {
     return '壁紙下載失敗 $status';
   }
-
-  @override
-  String get bingWallpaperResolutionTitle => '下載畫質';
-
-  @override
-  String get bingWallpaperResolutionStandard => '標準';
-
-  @override
-  String get bingWallpaperResolutionTall => '符合螢幕';
-
-  @override
-  String get bingWallpaperResolutionHigh => '高畫質';
-
-  @override
-  String bingWallpaperResolutionFallback(String label) {
-    return '未提供所選畫質，已切換為 $label';
-  }
-
-  @override
-  String bingWallpaperResolutionHint(int width, int height, String size) {
-    return '$width×$height，每張約 $size';
-  }
-
-  @override
-  String get wallpaperDailySourceTitle => '圖庫來源';
-
-  @override
-  String get wallpaperDailySourceBing => '每日更新';
-
-  @override
-  String get wallpaperDailySourceWallhaven => '直向高清';
-
-  @override
-  String get wallhavenWallpaperGalleryTitle => '直向高清圖庫';
-
-  @override
-  String get wallhavenGalleryFailed => '未能取得直向高清圖庫，請檢查網路後再試';
 
   @override
   String get wallpaperGalleryShowingCached => '網路不太順暢，下面顯示的是上次載入的圖';

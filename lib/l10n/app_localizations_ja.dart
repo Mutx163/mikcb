@@ -3492,44 +3492,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get bingWallpaperResolutionTitle => 'ダウンロード画質';
-
-  @override
-  String get bingWallpaperResolutionStandard => '標準';
-
-  @override
-  String get bingWallpaperResolutionTall => '画面に合わせる';
-
-  @override
-  String get bingWallpaperResolutionHigh => '高画質';
-
-  @override
-  String bingWallpaperResolutionFallback(String label) {
-    return 'Bing はその画質を提供していないため、「$label」を使用しました';
-  }
-
-  @override
-  String bingWallpaperResolutionHint(int width, int height, String size) {
-    return '$width×$height、1 枚あたり約 $size';
-  }
-
-  @override
-  String get wallpaperDailySourceTitle => 'ギャラリーの提供元';
-
-  @override
-  String get wallpaperDailySourceBing => '毎日更新';
-
-  @override
-  String get wallpaperDailySourceWallhaven => '縦長高画質';
-
-  @override
-  String get wallhavenWallpaperGalleryTitle => '縦長高画質ギャラリー';
-
-  @override
-  String get wallhavenGalleryFailed =>
-      '縦長高画質ギャラリーを読み込めませんでした。ネットワークを確認して再試行してください';
-
-  @override
   String get wallpaperGalleryShowingCached => 'ネットワークが不安定なため、前回読み込んだ画像を表示しています';
 
   @override

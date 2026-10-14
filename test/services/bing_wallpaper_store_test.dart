@@ -19,55 +19,11 @@ void main() {
     BingWallpaperStore.debugResetForTesting();
   });
 
-  group('画质档位', () {
-    test('默认是 standard；读档位后往返一致', () async {
-      final store = BingWallpaperStore.instance;
-      expect(store.resolution, BingWallpaperResolution.standard);
-
-      await store.setResolution(BingWallpaperResolution.high);
-      // 新单例（模拟重启）要能读回来
-      BingWallpaperStore.debugResetForTesting();
-      final reloaded = BingWallpaperStore.instance;
-      await reloaded.load();
-      expect(reloaded.resolution, BingWallpaperResolution.high);
-    });
-
-    test('⚠️ 不调 load() → 存档读不回来（这正是生产里漏掉的那一步）', () async {
-      // 2026-10-06 review 实测的 P0：`BingWallpaperStore.load()` 全仓没有任何一处调用，
-      // 而 `_prefs` 只在 load() 里赋值。于是冷启动后档位恒为默认 —— 用户选的「高清」
-      // 每次重启都被吃掉，而 `autoApplyEnabled` 恒为 false，「每天自动更换」等于没开。
-      //
-      // 本条钉住 load() 的**必要性**：它一改成本构造器里同步读、或改成惰性读，这条就红。
-      await BingWallpaperStore.instance.setResolution(
-        BingWallpaperResolution.high,
-      );
-      BingWallpaperStore.debugResetForTesting();
-
-      final notLoaded = BingWallpaperStore.instance;
-      expect(
-        notLoaded.resolution,
-        BingWallpaperResolution.standard,
-        reason: '这条断言的是「漏调 load() 会怎样」，不是期望行为；'
-            '若将来改成构造器/惰性加载，请连同 main.dart 的启动调用一起改掉本条',
-      );
-
-      // 而 load() 一调就回来 —— 这才是生产必须走的那条路。
-      await notLoaded.load();
-      expect(notLoaded.resolution, BingWallpaperResolution.high);
-    });
-
-    test('存档里是陌生档位字符串时回退默认，不抛错', () async {
-      SharedPreferences.setMockInitialValues(<String, Object>{
-        BingWallpaperStore.resolutionKey: '从没有过的档位',
-      });
-      BingWallpaperStore.debugResetForTesting();
-      final store = BingWallpaperStore.instance;
-      await store.load();
-      expect(store.resolution, BingWallpaperResolution.standard);
-    });
-  });
-
   group('自动换开关', () {
+    // 画质档位那一组随 2026-10-14 的功能移除删除：画质不再有用户选项，
+    // `resolution` 恒为 `BingWallpaperResolution.high`、`setResolution`/`resolutionKey`
+    // 已删。其中「load() 必须被启动流程调用」那条护栏的职责由下面「自动换开关」
+    // 组里的幂等与读取用例继续覆盖。
     test('默认关 —— 新功能不该在用户没选择时就联网换壁纸', () async {
       expect(BingWallpaperStore.instance.autoApplyEnabled, isFalse);
     });

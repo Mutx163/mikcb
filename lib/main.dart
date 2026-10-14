@@ -850,17 +850,18 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   /// 这里挂在启动流程 `_revealMainContent()` 之后（与云同步拉取同一档 post-reveal），
   /// 于是首帧一定由本地设置驱动，换上的图只在**下一次**冷启动才看得到。
   ///
-  /// ## 图源由 [DailyWallpaperService] 调度（2026-10-07）
+  /// ## 图源已收敛回 Bing（2026-10-14）
   ///
-  /// 早先这里直接调 [BingWallpaperService.maybeApplyDaily]，所以只有 Bing 一个源。
-  /// 现在交给调度层，它按用户在设置里选的图源执行、必要时换源重试 —— 本方法的其余
+  /// 早先这里直接调 [BingWallpaperService.maybeApplyDaily]，后来加过第二个图源
+  /// （Wallhaven）交给调度层分发；图源移除后调度层只剩 Bing 一条路。本方法的其余
   /// 职责（写设置 / 缓存失效 / 不碰历史）一个字都没变。
   ///
   /// ## 幂等由 service 兜住
   ///
-  /// 各源的 service 自己判「今天是否已换过」（Bing 比 `lastAutoAppliedDate`、
-  /// Wallhaven 比当天算出的 id + 图源世代号），所以同一天反复启动或切前台都不会重复
-  /// 下载。本方法只负责**把路径写进设置**，且刻意不碰「最近使用」历史（理由见
+  /// service 自己判「今天是否已换过」（Bing 比 `lastAutoAppliedDate`，那张图自己的
+  /// `dateKey` —— 可能不是今天，见 `BingAutoApplyOutcome.appliedStale`），所以同一天
+  /// 反复启动或切前台都不会重复下载。本方法只负责**把路径写进设置**，且刻意不碰
+  /// 「最近使用」历史（理由见
   /// `.agents/notes/implemented/feature/2026-10-05-bing-daily-wallpaper-library.md`）。
   ///
   /// ## 开关关着时是一次纯本地判断

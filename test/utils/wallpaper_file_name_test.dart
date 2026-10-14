@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/utils/wallpaper_file_name.dart';
 
-/// 2026-10-08 审核实测：壁纸文件名里有一半是**外部数据**
-/// （Wallhaven 的 `id`、Bing 的 `dateKey`，来自服务端响应与同步下来的图库台账），
-/// 而落盘是纯字符串拼接（`managed_image_storage.dart`），没有任何净化。
+/// 2026-10-08 审核实测：壁纸文件名里的外部数据
+/// （Bing 的 `dateKey`，来自服务端响应与同步下来的图库台账），
+/// 落盘是纯字符串拼接（`managed_image_storage.dart`），没有任何净化。
 ///
 /// 实测两面：
 /// - 删除面几乎打不中（尾部固定 `.jpg`，`..` 解析出的目标通常不存在）；
@@ -16,7 +16,10 @@ void main() {
   group('真实数据：文件名必须一字不变', () {
     // 改名会让每张已下载的壁纸变成孤儿文件（台账里的路径全部对不上），
     // 所以这条比安全那几条更要紧。
-    test('Wallhaven 的 id 原样通过', () {
+    //
+    // Wallhaven 图源（其 id 也走这里）已于 2026-10-14 移除；本组用例保留
+    // 「字母数字混合短串原样通过」的口径，兼作图源回归时的守护。
+    test('字母数字混合的短 id 原样通过', () {
       for (final id in ['94x4z1', 'aBcDe123', 'ml6z1q', '2xm3d4', 'p5v2jk']) {
         expect(
           safeWallpaperNameSegment(id, fallback: 'wh'),

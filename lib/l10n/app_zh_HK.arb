@@ -6324,19 +6324,6 @@
   "wallpaperPositionPickerSwitchWallpaper": "更換桌布",
   "wallpaperPositionPickerDone": "完成",
   "wallpaperPositionPickerExit": "退出",
-  "@bingWallpaperResolutionHint": {
-    "placeholders": {
-      "width": {
-        "type": "int"
-      },
-      "height": {
-        "type": "int"
-      },
-      "size": {
-        "type": "String"
-      }
-    }
-  },
   "@bingWallpaperDateMonthDay": {
     "placeholders": {
       "month": {
@@ -6361,26 +6348,6 @@
     }
   },
   "bingWallpaperDownloadStatus": "壁紙下載失敗 {status}",
-  "bingWallpaperResolutionTitle": "下載畫質",
-  "bingWallpaperResolutionStandard": "標準",
-  "bingWallpaperResolutionTall": "符合屏幕",
-  "bingWallpaperResolutionHigh": "高畫質",
-  "@bingWallpaperResolutionFallback": {
-    "description": "所选画质当天不可用、已退到默认档时的说明。占位符是实际拿到的那一档的文案。",
-    "placeholders": {
-      "label": {
-        "type": "String",
-        "example": "高清"
-      }
-    }
-  },
-  "bingWallpaperResolutionFallback": "未提供所選畫質，已切換為 {label}",
-  "bingWallpaperResolutionHint": "{width}×{height}，每張約 {size}",
-  "wallpaperDailySourceTitle": "圖庫來源",
-  "wallpaperDailySourceBing": "每日更新",
-  "wallpaperDailySourceWallhaven": "直向高清",
-  "wallhavenWallpaperGalleryTitle": "直向高清圖庫",
-  "wallhavenGalleryFailed": "未能取得直向高清圖庫，請檢查網絡後再試",
   "wallpaperGalleryShowingCached": "網絡不太順暢，下面顯示的是上次載入的圖",
   "bingWallpaperDateToday": "今日",
   "bingWallpaperDateYesterday": "尋日",

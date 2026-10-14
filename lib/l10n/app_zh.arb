@@ -1971,43 +1971,6 @@
     }
   },
   "bingWallpaperDownloadStatus": "壁纸下载失败 {status}",
-  "@bingWallpaperResolutionHint": {
-    "description": "画质档位的副标题：报该档的实测像素与单张体积。占位符刻意用「像素宽×像素高」而不是「几倍高清」——Bing 三档比例并不一致（16:10 与 16:9 混着）。",
-    "placeholders": {
-      "width": {
-        "type": "int",
-        "example": "1920"
-      },
-      "height": {
-        "type": "int",
-        "example": "1080"
-      },
-      "size": {
-        "type": "String",
-        "example": "325 KB"
-      }
-    }
-  },
-  "bingWallpaperResolutionTitle": "下载画质",
-  "bingWallpaperResolutionStandard": "标准",
-  "bingWallpaperResolutionTall": "适配",
-  "bingWallpaperResolutionHigh": "高清",
-  "@bingWallpaperResolutionFallback": {
-    "description": "所选画质当天不可用、已退到默认档时的说明。占位符是实际拿到的那一档的文案。",
-    "placeholders": {
-      "label": {
-        "type": "String",
-        "example": "高清"
-      }
-    }
-  },
-  "bingWallpaperResolutionFallback": "未提供所选画质，已切换为 {label}",
-  "bingWallpaperResolutionHint": "{width}×{height}，每张约 {size}",
-  "wallpaperDailySourceTitle": "图库来源",
-  "wallpaperDailySourceBing": "每日更新",
-  "wallpaperDailySourceWallhaven": "竖版高清",
-  "wallhavenWallpaperGalleryTitle": "竖版高清图库",
-  "wallhavenGalleryFailed": "没能取到竖版高清图库，请检查网络后重试",
   "wallpaperGalleryShowingCached": "网络不太顺畅，下面显示的是上次加载的图",
   "bingWallpaperDateToday": "今天",
   "bingWallpaperDateYesterday": "昨天",

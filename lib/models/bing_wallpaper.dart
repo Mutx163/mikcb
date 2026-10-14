@@ -12,7 +12,7 @@ import '../utils/wallpaper_file_name.dart';
 /// 连 `/th?id=` 一起塞进去更会 404（那样整屏预览都是叉，2026-10-06 实报）。
 const String _resizeSourceSuffix = '_UHD.jpg';
 
-/// Bing 每日壁纸的下载档位（三档，**全是竖屏**）。
+/// Bing 每日壁纸的下载尺寸阶梯（三档，**全是竖屏**）。
 ///
 /// ## 为什么**只有**竖屏（2026-10-06 用户口径「不需要横屏的显示」）
 ///
@@ -20,6 +20,13 @@ const String _resizeSourceSuffix = '_UHD.jpg';
 /// 的竖屏上，**横向会被裁掉七成以上** —— 用户看到的是原图中间一条窄带，构图基本被毁。
 /// 所以横屏档位在这个 App 里不是「备选项」而是**没用**：留着白占一排胶囊的位置，
 /// 还因为两档共用「高清」这个名字被用户指出「有两个高清档位」（2026-10-06）。
+///
+/// ## 它现在是什么（2026-10-14 起）
+///
+/// **不是用户选项** —— 画质选择 UI 已随「只留 Bing 一个图源」一起删掉，本 App 恒按
+/// [high]（1440×3200 下限）取图。这个枚举留下来只当**缺档时的保底阶梯**：
+/// Bing 并非每天都生成某档尺寸（`sizeSuffix` 那档实测 24 天缺 1 天），缺档时按枚举
+/// 顺序退一档重试（[fallbackResolution]），退到 [standard] 还没有就真失败。
 ///
 /// ## 两种取图方式并存
 ///
@@ -29,7 +36,8 @@ const String _resizeSourceSuffix = '_UHD.jpg';
 ///   要 Bing 现裁。Bing 并不预生成这些尺寸（实测 `_1440x2560`、`_1080x2400`
 ///   都是 404），但 resize 接口 8 天 × 3 档共 24 次全部返回精确尺寸。
 enum BingWallpaperResolution {
-  /// 1080×1920（9:16，约 322 KB）。Bing 预生成，可见 8 天全中。默认档。
+  /// 1080×1920（9:16，约 322 KB）。Bing 预生成，可见 8 天全中。**只作保底**，
+  /// 不是用户可选档。
   standard(
     width: 1080,
     height: 1920,
@@ -38,10 +46,11 @@ enum BingWallpaperResolution {
   ),
 
   /// 1080×2400（9:20，约 492 KB）。**正好是现代手机的比例**：cover 之后既不裁也不
-  /// 拉伸，是「铺满全屏」这件事最干净的一档。走 resize。
+  /// 拉伸，是「铺满全屏」这件事最干净的一档。走 resize。同样只作保底阶梯。
   tall(width: 1080, height: 2400, kilobytes: 492),
 
-  /// 1440×3200（约 764 KB）。给高分屏看细节。走 resize。
+  /// 1440×3200（约 764 KB）。**默认且唯一对外生效的一档**：本 App 的画质没有选项，
+  /// 恒按它（抬升到不低于屏幕）请求。
   ///
   /// ⚠️ 为什么顶档是 **3200** 而不是 2560（2026-10-06 用户报「最高清还是有点糊」）：
   /// Bing 的原图 `_UHD.jpg` 是**横屏 3840×2160**（实测）。任何竖屏壁纸都是从它中间裁
@@ -52,8 +61,7 @@ enum BingWallpaperResolution {
   ///   —— 于是 Bing 先放大 1.19×、App 再放大 1.25×，**两次放大叠在一起**，糊上加糊。
   ///
   /// 改成 3200 之后，App 不再参与放大，总放大次数从两段变一段（1.48×，一次做完）。
-  /// 数学上「总放大倍数 = 屏幕高 / 原图高 = 3200/2160」省不掉（见
-  /// `bingWallpaperResolutionSourceNote` 那句提示），但**两段放大比一段更糊**。
+  /// 数学上「总放大倍数 = 屏幕高 / 原图高 = 3200/2160」省不掉，但**两段放大比一段更糊**。
   ///
   /// ⚠️ 别把这一档说成「细节更多」：它与 2560 是同一批像素（源图就那么多），多出来的
   /// 高度是 Bing 补出来的。文案因此不写「极清/超清」，仍叫「高清」。
@@ -98,31 +106,33 @@ enum BingWallpaperResolution {
   /// （用户 2026-10-07：「也太糊了」）。更要命的是比例对不上会留出多余的竖向余量：
   /// 9:20 的图铺到 9:19.5 的屏上会**上下能拖**，而拖到的每段都是被放大过的最糊处。
   ///
-  /// 所以：**先按屏幕真实分辨率取尺寸，再按当前档位抬到不低于档位**。用户选低档位
-  /// 省流量 / 省空间的意图仍然成立（档位下限在），但不会换来「让 App 二次放大」——
-  /// 那从来不是「清晰度低」，只是**多糊一段**。
+  /// 所以：**先按屏幕真实分辨率取尺寸，再按当前档位抬到不低于档位**。本 App 恒用
+  /// [high]，所以实际语义就是「按屏幕分辨率取，最低不低于 1440×3200」。
   ///
-  /// 仍要保留 [width] / [pixelHeight] 作为**档位下限**与界面文案里的实测值，
+  /// 仍要保留 [width] / [pixelHeight] 作为**档位下限**与日志里的实测值，
   /// 不要因为「实际请求尺寸不再等于它」就把这两个字段改掉。
   WallpaperTargetSize get downloadTargetSize => wallpaperTargetSize().atLeast(
     width,
     height,
   );
 
-  /// [kilobytes] 的人类可读写法（l10n 的 `size` 占位符要 String）。
+  /// [kilobytes] 的人类可读写法（日志与诊断用）。
   ///
-  /// 「0.3 MB」这种数在选画质时反而不如「322 KB」有概念，所以不到 1 MB 保留 KB。
+  /// 「0.3 MB」这种数在排障时不如「322 KB」有概念，所以不到 1 MB 保留 KB。
   String get approximateSizeLabel =>
       kilobytes < 1024 ? '$kilobytes KB' : '${(kilobytes / 1024).toStringAsFixed(1)} MB';
 
   /// 持久化用的键（`name` 即 enum 名，枚举顺序变了也不会读错旧值）。
   String get storageKey => name;
 
-  /// 反解 [storageKey]；未知键回退 [BingWallpaperResolution.standard]。
+  /// 反解 [storageKey]；未知键回退 [standard]。
   ///
   /// 存档可能被手改、被旧版本写过（更早的 `native` / `uhd` / `portraitStandard` 之类
-  /// 都落不到新枚举上），统一回退到默认档 —— 别让一个坏值把设置页整个炸掉，与
+  /// 都落不到新枚举上），统一回退到**保底档** —— 别让一个坏值炸掉读取方，与
   /// `WallpaperHistoryEntry._numOrNull` 同一口径。
+  ///
+  /// 2026-10-14 起**没有新写入方**（画质选择已删，`resolutionKey` 里的旧存档不再被
+  /// 读），本反解仅供台账里的旧条目（`resolution` 字段是档位名）继续可读。
   static BingWallpaperResolution fromStorageKey(String? raw) {
     for (final value in BingWallpaperResolution.values) {
       if (value.storageKey == raw) {
