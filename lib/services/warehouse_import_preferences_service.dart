@@ -545,11 +545,29 @@ class WarehouseImportPreferencesService {
       await prefs.setStringList(_recentSchoolIdsKey, bundle.recentSchoolIds);
     }
     if (bundle.customDebugRecords.isNotEmpty) {
+      // 2026-10-14：云端下发的调试记录不再原样入库。`record.script` 会在
+      // 「自定义调试」页被原样 `runJavaScript`（warehouse_custom_debug_screen
+      // 的 `_openDebug` → debugScriptOverride），而 WebView 里是用户已登录的
+      // 教务会话——一份随备份/快照进来的记录等于一个零校验的任意 JS 入口
+      // （.agents/audit/2026-10-09/warehouse.md 第 3 节）。脚本内容本机无法
+      // 验证真伪，所以**只保留展示、不给执行**：script 落库为空串，用户点开
+      // 能看到这条记录的名字与地址，但点「调试」时脚本为空、不会执行任何
+      // 远端带来的代码；想要可用脚本，请在本机重新录入。
+      final sanitized = bundle.customDebugRecords
+          .map(
+            (item) => WarehouseCustomDebugRecord(
+              id: item.id,
+              name: item.name,
+              importUrl: item.importUrl,
+              script: '',
+              createdAt: item.createdAt,
+              updatedAt: item.updatedAt,
+            ),
+          )
+          .toList();
       await prefs.setString(
         _customDebugRecordsKey,
-        jsonEncode(
-          bundle.customDebugRecords.map((item) => item.toJson()).toList(),
-        ),
+        jsonEncode(sanitized.map((item) => item.toJson()).toList()),
       );
     }
   }

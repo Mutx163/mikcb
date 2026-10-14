@@ -2726,9 +2726,26 @@ $kWarehouseBridgeCompatShim  try {
   /// 自定义地址那道闸按**来源**判，不按协议（2026-10-10）：用户在本机亲手填的，
   /// 落地页就在他眼前，明文 http 一样放行——只支持 http 的教务学校不该因此
   /// 拿不到自动填充。云快照下发的则要 https + 与登记地址同域。
+  ///
+  /// 2026-10-14：锚点本身不再无条件可信。`adapter.importUrl` 在「快捷导入」
+  /// 路径下就是**云快照/备份里的宏地址**（`WarehouseMacroRecord.importUrl`，
+  /// fromJson 原样收、随快照上下行）——攻击者同时控制锚点与待验地址时，
+  /// 「与登记地址同域」自证成立。所以 macro/custom_debug 来源的适配器不提供
+  /// 锚点：凭据 host 为空的存量凭据在宏回放里一律不自动填充（要填请先在该
+  /// 适配器的正式入口重新保存一次密码，host 会随之绑定）；凭据自带 host 的
+  /// 不受影响，门禁仍按绑定站点放行。
   Future<List<String>> _warehouseAutofillTrustedHosts() async {
+    // 宏回放与自定义调试的适配器是"云数据披着适配器外衣"，不作为信任锚点。
+    final cloudShapedCategory =
+        widget.adapter.category == 'macro' ||
+        widget.adapter.category == 'custom_debug';
     final hosts = <String>[];
-    final registered = extractUrlHost(widget.adapter.importUrl);
+    // macro/custom_debug 来源不提供锚点：registered 保持 null。
+    // isTrustedCustomImportUrl 的 cloud 分支对 base.isEmpty 一律拒收，
+    // 自定义地址也就进不了白名单；registered 本体也直接不进白名单。
+    final registered = cloudShapedCategory
+        ? null
+        : extractUrlHost(widget.adapter.importUrl);
     if (registered != null) {
       hosts.add(registered);
     }
