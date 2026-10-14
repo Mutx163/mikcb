@@ -19800,6 +19800,18 @@ abstract class AppLocalizations {
   /// **'进度仅课中显示。展开状态下阶段与状态合并至标题显示。'**
   String get liveExpandedDetailHint;
 
+  /// No description provided for @liveExpandedDetailHintBeforeClass.
+  ///
+  /// In zh, this message translates to:
+  /// **'这里排的就是展开卡片正文的行序，与下方展开态预览一致。阶段与状态已并入标题、进度仅课中出现，因此不在本页列出。'**
+  String get liveExpandedDetailHintBeforeClass;
+
+  /// No description provided for @liveExpandedDetailHintDuringEnd.
+  ///
+  /// In zh, this message translates to:
+  /// **'这里排的就是展开卡片正文的行序，与下方展开态预览一致。进度仅课中显示；展开状态下阶段与状态通常已并入标题与摘要，不单独成行。'**
+  String get liveExpandedDetailHintDuringEnd;
+
   /// No description provided for @liveExpandedDetailReorderHandleLabel.
   ///
   /// In zh, this message translates to:

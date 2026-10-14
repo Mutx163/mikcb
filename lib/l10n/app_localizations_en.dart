@@ -11559,6 +11559,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Progress only appears during class. Stage and Status are already in the title and won\'t form separate lines';
 
   @override
+  String get liveExpandedDetailHintBeforeClass =>
+      'This list is the body order of the expanded card, matching the preview below. Stage and Status fold into the title and Progress only appears during class, so they are not listed here.';
+
+  @override
+  String get liveExpandedDetailHintDuringEnd =>
+      'This list is the body order of the expanded card, matching the preview below. Progress only appears during class; Stage and Status usually fold into the title and summary instead of forming separate lines.';
+
+  @override
   String get liveExpandedDetailReorderHandleLabel => 'Reorder';
 
   @override

@@ -11274,6 +11274,14 @@ class AppLocalizationsKo extends AppLocalizations {
       '진행은 수업 중에만 표시됩니다. 펼친 상태에서 단계와 상태는 제목에 포함되어 별도 줄로 나오지 않습니다';
 
   @override
+  String get liveExpandedDetailHintBeforeClass =>
+      '이 목록은 펼친 카드 본문의 행 순서로, 아래 미리보기와 일치합니다. 단계와 상태는 제목에 포함되고 진행은 수업 중에만 나오므로 이 페이지에는 표시되지 않습니다.';
+
+  @override
+  String get liveExpandedDetailHintDuringEnd =>
+      '이 목록은 펼친 카드 본문의 행 순서로, 아래 미리보기와 일치합니다. 진행은 수업 중에만 표시되며, 펼친 상태에서 단계와 상태는 보통 제목과 요약에 포함되어 별도 줄로 나오지 않습니다.';
+
+  @override
   String get liveExpandedDetailReorderHandleLabel => '순서 변경';
 
   @override

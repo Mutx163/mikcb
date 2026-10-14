@@ -22,6 +22,7 @@ import '../utils/hex_color.dart';
 import '../utils/app_toast.dart';
 import '../utils/import_file_reader.dart';
 import '../services/unified_transfer_service.dart';
+import '../utils/live_expanded_detail_fields.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
     show LiquidGlassSurface, LiquidGlassRole, narrowSurfaceMaxRefraction;
@@ -509,6 +510,14 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     return null;
   }
 
+  /// 「展开详情」组的说明行：按阶段讲清楚哪些字段会渲染成行。
+  ///
+  /// 课前恒为提升态——阶段/状态并入标题、进度只在课中出现，这三个字段
+  /// 已从课前页收走，说明里只描述本页真正可操作的字段行为。
+  String _expandedDetailHint(AppLocalizations l10n) => widget.forDuringEnd
+      ? l10n.liveExpandedDetailHintDuringEnd
+      : l10n.liveExpandedDetailHintBeforeClass;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -985,13 +994,14 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         children: [
           HyperosListTile(
             title: l10n.liveExpandedDetailSubtitle,
-            subtitle: l10n.liveExpandedDetailHint,
+            subtitle: _expandedDetailHint(l10n),
           ),
         ],
       ),
       const HyperosSectionGap(),
       _ExpandedDetailGroup(
         display: display,
+        fields: _visibleDetailFields,
         l10n: l10n,
         onToggle: (field) => _toggleExpandedDetailField(display, field),
         onReorder: (oldIndex, newIndex) =>
@@ -1006,10 +1016,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             HyperosActionTile(
               icon: Icons.restore_rounded,
               title: l10n.resetExpandedDetailDefaultAction,
-              onTap: () => _updateDisplay(
-                display.copyWith(clearExpandedDetailFields: true),
-                clearExpandedDetailFields: true,
-              ),
+              onTap: () => _resetExpandedDetailFields(display),
             ),
           ],
         ),
@@ -1127,17 +1134,25 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     _updateDraft(nextSettings, debounce: debounce);
   }
 
-  /// 展开详情当前工作顺序（默认 = 全部字段默认顺序）。
+  /// 本页可操作的展开详情字段全集（同时也是默认顺序）：课前页不含
+  /// stage / progress / status（恒为提升态，渲染不出行），课中页按提升态
+  /// 行序排列。见 [liveExpandedDetailFieldsForStage]。
+  List<LiveExpandedDetailField> get _visibleDetailFields =>
+      liveExpandedDetailFieldsForStage(forDuringEnd: widget.forDuringEnd);
+
+  /// 展开详情当前工作顺序。见 [resolveExpandedDetailWorkOrder]。
   List<LiveExpandedDetailField> _expandedFieldWorkOrder(
     LiveDisplaySettings display,
-  ) => display.expandedDetailFields == null
-      ? List.of(LiveExpandedDetailField.values)
-      : List.of(display.expandedDetailFields!);
+  ) => resolveExpandedDetailWorkOrder(
+    display,
+    forDuringEnd: widget.forDuringEnd,
+  );
 
   /// [ReorderableListView] 的落位回调：把 [oldIndex] 处的字段挪到 [newIndex]。
   ///
-  /// 拖拽回调给的是「插入位」而非目标下标，往下拖时要减一，否则每拖一次都会
-  /// 多挪一格。
+  /// 用的是 onReorderItem 回调（非已废弃的 onReorder）：框架已把「插入位」
+  /// 校正为目标下标（下移时自动减一），这里直接落位即可，与首页菜单 /
+  /// 玻璃 Dock 编辑器同一口径；再手动减一会让下移一格等于没动。
   void _reorderExpandedDetailField(
     LiveDisplaySettings display,
     int oldIndex,
@@ -1145,10 +1160,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   ) {
     final work = _expandedFieldWorkOrder(display);
     if (oldIndex < 0 || oldIndex >= work.length) return;
-    final target = (newIndex > oldIndex ? newIndex - 1 : newIndex).clamp(
-      0,
-      work.length - 1,
-    );
+    final target = newIndex.clamp(0, work.length - 1);
     if (target == oldIndex) return;
     work.insert(target, work.removeAt(oldIndex));
     _updateDisplay(display.copyWith(expandedDetailFields: work));
@@ -1160,6 +1172,9 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   ) {
     final work = _expandedFieldWorkOrder(display);
     if (work.contains(field)) {
+      // 关到只剩一个时保留「最后开会话」：列表始终至少渲染一行，且用户
+      // 关掉最后一行的意图显然是隐藏它，而不是被静默顶回默认全开。
+      if (work.length == 1) return;
       work.remove(field);
     } else {
       work.add(field);
@@ -1183,6 +1198,14 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     work.insert(target, work.removeAt(index));
     _updateDisplay(display.copyWith(expandedDetailFields: work));
   }
+
+  /// 重置「展开详情」为本页可见集：名单清空回 null（未自定义），页面即按
+  /// 本阶段默认顺序与全显示渲染，与真机两套默认行序一致。
+  void _resetExpandedDetailFields(LiveDisplaySettings display) =>
+      _updateDisplay(
+        display.copyWith(clearExpandedDetailFields: true),
+        clearExpandedDetailFields: true,
+      );
 
   void _updateDraft(TimetableSettings next, {bool debounce = false}) {
     setState(() => _draft = next);
@@ -1942,9 +1965,15 @@ Color _parseColor(String hexColor) {
 ///
 /// 与「首页八宫格编辑器」同一套交互语言，不再用行首上/下箭头——箭头按钮
 /// 既不像本项目控件，也让人分不清哪些行能拖。
+///
+/// [fields] 是本页可操作的字段全集（同时也是默认顺序）：课前页不含
+/// stage / progress / status（恒为提升态，渲染不出行），列表与预览、
+/// 真机严格一致——列表上的每一行都对应展开态里真实存在的一行。
+/// 见 `liveExpandedDetailFieldsForStage`。
 class _ExpandedDetailGroup extends StatelessWidget {
   const _ExpandedDetailGroup({
     required this.display,
+    required this.fields,
     required this.l10n,
     required this.onToggle,
     required this.onReorder,
@@ -1953,6 +1982,10 @@ class _ExpandedDetailGroup extends StatelessWidget {
   });
 
   final LiveDisplaySettings display;
+
+  /// 本页可见字段（顺序即默认行序），由页面按阶段给出。
+  final List<LiveExpandedDetailField> fields;
+
   final AppLocalizations l10n;
   final ValueChanged<LiveExpandedDetailField> onToggle;
   final void Function(int oldIndex, int newIndex) onReorder;
@@ -2013,7 +2046,7 @@ class _ExpandedDetailGroup extends StatelessWidget {
         if (hiddenList.isNotEmpty) ...[
           _HiddenFieldsCaption(
             title: l10n.liveExpandedDetailHiddenCaption,
-            showDivider: true,
+            showDivider: enabledList.isNotEmpty,
           ),
           for (final field in hiddenList)
             _ExpandedDetailFieldRow(
@@ -2027,15 +2060,19 @@ class _ExpandedDetailGroup extends StatelessWidget {
     );
   }
 
+  /// 已显示字段：名单未设置 → 全部按默认顺序显示；已设置 → 名单 ∩ 可见集。
   List<LiveExpandedDetailField> get _enabledFields =>
       display.expandedDetailFields == null
-      ? List.of(LiveExpandedDetailField.values)
-      : List.of(display.expandedDetailFields!);
+      ? List.of(fields)
+      : [
+          for (final field in display.expandedDetailFields!)
+            if (fields.contains(field)) field,
+        ];
 
   List<LiveExpandedDetailField> _hiddenFields(
     List<LiveExpandedDetailField> enabledFields,
   ) => [
-    for (final field in LiveExpandedDetailField.values)
+    for (final field in fields)
       if (!enabledFields.contains(field)) field,
   ];
 }
@@ -2071,6 +2108,8 @@ class _HiddenFieldsCaption extends StatelessWidget {
 ///
 /// 行首不再是上/下箭头按钮（不像本项目控件且不好用），改为与首页八宫格
 /// 编辑器一致的拖动手柄；隐藏区的行没有手柄，靠开关重新加回已显示区。
+/// 手柄区「点下去不切开关」（想拖结果切了开关很反直觉），拖动本身由
+/// [ReorderableDragStartListener] 的 Listener 起手，不经过手势竞技场。
 class _ExpandedDetailFieldRow extends StatelessWidget {
   const _ExpandedDetailFieldRow({
     super.key,
@@ -2112,22 +2151,32 @@ class _ExpandedDetailFieldRow extends StatelessWidget {
       context,
     ).copyWith(color: enabled ? primary : primary.withValues(alpha: 0.45));
 
+    final handle = reorderable && index != null;
     final row = hyperosListRowShell(
       padding: hyperosRowPadding(context),
       child: Row(
         children: [
-          if (reorderable && index != null) ...[
+          if (handle) ...[
+            // 手柄热区要「点了不切开关」：行级 onTap 在祖先节点，手势竞技场
+            // 里内层识别器先入、pointer-up 时先接受——这里包一层 no-op
+            // GestureDetector（opaque 铺满整个手柄格），普通点击被它吃掉，
+            // 祖先行永远收不到 tap；拖动不走竞技场，由 Listener 的
+            // onPointerDown 直接起 ImmediateMultiDrag，不受影响。
             SizedBox(
               width: HyperosTokens.listRowMinHeight,
-              child: Center(
-                child: ReorderableDragStartListener(
-                  index: index!,
-                  child: Semantics(
-                    label: handleLabel,
-                    child: Icon(
-                      Icons.drag_indicator_rounded,
-                      size: 20,
-                      color: HyperosColors.secondaryText(context),
+              child: ReorderableDragStartListener(
+                index: index!,
+                child: Semantics(
+                  label: handleLabel,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {},
+                    child: Center(
+                      child: Icon(
+                        Icons.drag_indicator_rounded,
+                        size: 20,
+                        color: HyperosColors.secondaryText(context),
+                      ),
                     ),
                   ),
                 ),
@@ -2153,6 +2202,8 @@ class _ExpandedDetailFieldRow extends StatelessWidget {
       ),
     );
 
+    // 隐藏区行没有手柄，整行按压即切开关；已显示区的整行按压由
+    // [onToggle] 承接，拖动只从手柄发起。
     final pressable = HyperosPressableRow(
       onTap: onToggle,
       backgroundColor: HyperosColors.card(context),

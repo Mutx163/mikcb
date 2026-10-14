@@ -10877,6 +10877,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveExpandedDetailHint => '进度仅课中显示。展开状态下阶段与状态合并至标题显示。';
 
   @override
+  String get liveExpandedDetailHintBeforeClass =>
+      '这里排的就是展开卡片正文的行序，与下方展开态预览一致。阶段与状态已并入标题、进度仅课中出现，因此不在本页列出。';
+
+  @override
+  String get liveExpandedDetailHintDuringEnd =>
+      '这里排的就是展开卡片正文的行序，与下方展开态预览一致。进度仅课中显示；展开状态下阶段与状态通常已并入标题与摘要，不单独成行。';
+
+  @override
   String get liveExpandedDetailReorderHandleLabel => '拖动排序';
 
   @override
@@ -22133,6 +22141,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveExpandedDetailHint => '進度僅課中顯示。展開狀態下階段與狀態合併至標題顯示。';
+
+  @override
+  String get liveExpandedDetailHintBeforeClass =>
+      '此清單即展開卡片的正文行序，與下方展開態預覽一致。階段與狀態已併入標題、進度僅課中出現，因此不在本頁列出。';
+
+  @override
+  String get liveExpandedDetailHintDuringEnd =>
+      '此清單即展開卡片的正文行序，與下方展開態預覽一致。進度僅課中顯示；展開狀態下階段與狀態通常已併入標題與摘要，不單獨成行。';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '拖動排序';
@@ -33392,6 +33408,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveExpandedDetailHint => '進度僅課中顯示。展開狀態下階段與狀態合併至標題顯示。';
+
+  @override
+  String get liveExpandedDetailHintBeforeClass =>
+      '此清單即展開卡片的正文行序，與下方展開態預覽一致。階段與狀態已併入標題、進度僅課中出現，因此不在本頁列出。';
+
+  @override
+  String get liveExpandedDetailHintDuringEnd =>
+      '此清單即展開卡片的正文行序，與下方展開態預覽一致。進度僅課中顯示；展開狀態下階段與狀態通常已併入標題與摘要，不單獨成行。';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '拖動排序';

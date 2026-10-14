@@ -11221,6 +11221,14 @@ class AppLocalizationsJa extends AppLocalizations {
       '「進捗」は授業中のみ表示。展開時は「段階」「状態」がタイトルに含まれるため独立行になりません';
 
   @override
+  String get liveExpandedDetailHintBeforeClass =>
+      'このリストは展開カード本文の行順で、下のプレビューと一致します。「段階」「状態」はタイトルに含まれ、「進捗」は授業中のみのため、このページには表示されません。';
+
+  @override
+  String get liveExpandedDetailHintDuringEnd =>
+      'このリストは展開カード本文の行順で、下のプレビューと一致します。「進捗」は授業中のみ表示され、展開時の「段階」「状態」は通常タイトルと概要に含まれるため独立行になりません。';
+
+  @override
   String get liveExpandedDetailReorderHandleLabel => '並べ替え';
 
   @override
