@@ -140,10 +140,19 @@ class TodayCompactWidgetProvider : BaseQingyuWidgetProvider() {
             isShowingTomorrow -> snapshot.tomorrowCourses.firstOrNull()
             else -> snapshot.highlightedCourse
         }
+        val accentBarColor = TodayWidgetSupport.accentBar(snapshot, accentCourse, backgroundStyle, context)
         TodayWidgetSupport.applyAccentBar(
             views,
             R.id.widget_course_name_accent,
-            TodayWidgetSupport.accentBar(snapshot, accentCourse, backgroundStyle, context),
+            accentBarColor,
+        )
+        // 色条只占课名那一行：给它下面的时间/教室行补等宽左内边距，
+        // 让「胶囊文字 / 课名起始字 / 时间起止字」落在同一条垂直参考线上。
+        TodayWidgetSupport.applyHeroTextGutter(
+            views,
+            R.id.widget_meta,
+            accentBarVisible = accentBarColor != null,
+            context = context,
         )
         views.applyInk(
             R.id.widget_status,

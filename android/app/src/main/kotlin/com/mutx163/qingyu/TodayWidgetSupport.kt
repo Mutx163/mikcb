@@ -912,6 +912,47 @@ internal fun findNextRefreshAtMillis(
         views.setTextViewTextSize(viewId, TypedValue.COMPLEX_UNIT_SP, sizeSp)
     }
 
+    /**
+     * 主课名左侧色条在横向占掉的宽度（dp）：条 3dp + 与课名的间距 6dp。
+     *
+     * 与各卡布局里 `*_accent` 的 `layout_width` / `layout_marginEnd` 同源
+     * （如 `widget_today_compact.xml` 的 `widget_course_name_accent`），
+     * 布局里改这两个值必须同步改这里，否则同一列文字又会错开
+     * （`HeroAccentGutterLayoutTest` 会盯着这组数字）。
+     */
+    internal const val HERO_ACCENT_GUTTER_DP = 9
+
+    /**
+     * 把「主课名那一行」的色条占位补到同列其它文字上。
+     *
+     * 色条只存在于主课名行：条亮着时课名被顶开 [HERO_ACCENT_GUTTER_DP]，
+     * 而同列的时间/教室行没有这份缩进，读起来就是「时间起止字比课名左出
+     * 9dp」（顶部状态胶囊里的文字也在同一条参考线上）。这里按色条是否真的
+     * 亮着决定补不补：档位关闭 / 这节课没有颜色时色条被隐藏，课名回到卡片
+     * 默认边距，补了反而会错开。
+     *
+     * `setViewPadding` 收的是**像素**（不是 dp，与 [applyAdaptiveVerticalPadding]
+     * 那里直接喂 dp 的口径不同），所以这里用 [dpToPx] 换算。
+     */
+    internal fun applyHeroTextGutter(
+        views: RemoteViews,
+        viewId: Int,
+        accentBarVisible: Boolean,
+        context: Context,
+        gutterDp: Int = HERO_ACCENT_GUTTER_DP,
+    ) {
+        val gutterPx = if (accentBarVisible) dpToPx(context, gutterDp) else 0
+        views.setViewPadding(viewId, gutterPx, 0, 0, 0)
+    }
+
+    /** dp → px：下发里那些收像素的接口（如 `setViewPadding`）别直接喂 dp。 */
+    internal fun dpToPx(context: Context, dp: Int): Int =
+        TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            dp.toFloat(),
+            context.resources.displayMetrics,
+        ).toInt()
+
     fun miniListVisibleRows(profile: TodayWidgetSizeProfile): Int {
         return when {
             profile.heightDp >= 190 -> 3

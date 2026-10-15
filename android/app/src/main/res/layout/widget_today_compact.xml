@@ -65,6 +65,10 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
+        <!-- 时间/教室行。左内边距在运行时由 provider 按色条是否亮着补
+             （TodayWidgetSupport.applyHeroTextGutter）：色条亮时补 9dp，
+             与课名起始字对齐；色条不亮时归零，回到卡片默认边距。
+             这里不要再给静态 paddingLeft，会被那份下发整体覆盖。 -->
         <TextView
             android:id="@+id/widget_meta"
             android:layout_width="match_parent"
