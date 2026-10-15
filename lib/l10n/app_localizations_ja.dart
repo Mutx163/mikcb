@@ -11232,6 +11232,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveExpandedDetailUnfilledSuffix => '未入力のため島には表示されません';
 
   @override
+  String get liveExpandedDetailUnfilledValue => 'なし';
+
+  @override
   String get liveExpandedDetailReorderHandleLabel => '並べ替え';
 
   @override

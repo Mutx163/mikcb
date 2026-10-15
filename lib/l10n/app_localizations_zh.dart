@@ -10888,6 +10888,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveExpandedDetailUnfilledSuffix => '未填写，岛上不显示';
 
   @override
+  String get liveExpandedDetailUnfilledValue => '无';
+
+  @override
   String get liveExpandedDetailReorderHandleLabel => '拖动排序';
 
   @override
@@ -22155,6 +22158,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveExpandedDetailUnfilledSuffix => '未填寫，島上不顯示';
+
+  @override
+  String get liveExpandedDetailUnfilledValue => '無';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '拖動排序';
@@ -33425,6 +33431,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveExpandedDetailUnfilledSuffix => '未填寫，島上不顯示';
+
+  @override
+  String get liveExpandedDetailUnfilledValue => '無';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '拖動排序';

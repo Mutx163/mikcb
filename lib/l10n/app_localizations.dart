@@ -19818,6 +19818,12 @@ abstract class AppLocalizations {
   /// **'未填写，岛上不显示'**
   String get liveExpandedDetailUnfilledSuffix;
 
+  /// No description provided for @liveExpandedDetailUnfilledValue.
+  ///
+  /// In zh, this message translates to:
+  /// **'无'**
+  String get liveExpandedDetailUnfilledValue;
+
   /// No description provided for @liveExpandedDetailReorderHandleLabel.
   ///
   /// In zh, this message translates to:

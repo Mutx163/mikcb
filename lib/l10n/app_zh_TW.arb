@@ -6577,6 +6577,7 @@
   "liveExpandedDetailHintBeforeClass": "此清單即展開卡片的正文行序，與下方展開態預覽一致。階段與狀態已併入標題、進度僅課中出現，因此不在本頁列出。",
   "liveExpandedDetailHintDuringEnd": "此清單即展開卡片的正文行序，與下方展開態預覽一致。進度僅課中顯示；展開狀態下階段與狀態通常已併入標題與摘要，不單獨成行。",
   "liveExpandedDetailUnfilledSuffix": "未填寫，島上不顯示",
+  "liveExpandedDetailUnfilledValue": "無",
   "liveExpandedDetailReorderHandleLabel": "拖動排序",
   "liveExpandedDetailMoveUpAction": "上移",
   "liveExpandedDetailMoveDownAction": "下移",

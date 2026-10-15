@@ -805,34 +805,42 @@ class _LiveIslandExpandedPreviewCardState
           if (location != null && location.isNotEmpty) {
             lines.add(l10n.liveExpandedDetailLineLocation(location));
           } else {
-            // 课程没填地点：真机会跳过这一行。预览用灰字占位行解释——
-            // 否则开关拨了预览毫无变化，看起来像坏了（2026-10-15 反馈）。
-            lines.add('(?)${l10n.liveExpandedDetailFieldLocation}');
+            // 调试面板语义：开关开着就该看到这一行的位置。显示「地点：无」
+            // 灰字占位 + 后缀说明真机将跳过（2026-10-15 反馈两次迭代）。
+            lines.add(
+              '(?)${l10n.liveExpandedDetailLineLocation(l10n.liveExpandedDetailUnfilledValue)}',
+            );
           }
         case LiveExpandedDetailField.teacher:
           final teacher = course?.teacher.trim();
           if (teacher != null && teacher.isNotEmpty) {
             lines.add(l10n.liveExpandedDetailLineTeacher(teacher));
           } else {
-            lines.add('(?)${l10n.liveExpandedDetailFieldTeacher}');
+            lines.add(
+              '(?)${l10n.liveExpandedDetailLineTeacher(l10n.liveExpandedDetailUnfilledValue)}',
+            );
           }
         case LiveExpandedDetailField.nextCourse:
           // 原生 nextText 来自下发载荷的 nextCourse.name；没有（同日无
-          // 下一条）真机就跳行。预览同样用灰字占位行说明原因。
+          // 下一条）真机就跳行。调试面板同样显示「下节课：无」占位。
           final nextName = widget.nextCourseName?.trim();
           if (nextName != null && nextName.isNotEmpty) {
             lines.add(l10n.liveExpandedDetailLineNext(nextName));
           } else {
-            lines.add('(?)${l10n.liveExpandedDetailFieldNext}');
+            lines.add(
+              '(?)${l10n.liveExpandedDetailLineNext(l10n.liveExpandedDetailUnfilledValue)}',
+            );
           }
         case LiveExpandedDetailField.note:
           // 原生 noteText = Course.note（Dart 侧 liveNote 已合并
-          // description）；没填真机跳行，预览灰字占位。
+          // description）；没填真机跳行，调试面板显示「备注：无」占位。
           final note = course?.liveNote?.trim();
           if (note != null && note.isNotEmpty) {
             lines.add(l10n.liveExpandedDetailLineNote(note));
           } else {
-            lines.add('(?)${l10n.liveExpandedDetailFieldNote}');
+            lines.add(
+              '(?)${l10n.liveExpandedDetailLineNote(l10n.liveExpandedDetailUnfilledValue)}',
+            );
           }
       }
     }

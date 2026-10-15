@@ -11285,6 +11285,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveExpandedDetailUnfilledSuffix => '미입력, 섬에 표시되지 않음';
 
   @override
+  String get liveExpandedDetailUnfilledValue => '없음';
+
+  @override
   String get liveExpandedDetailReorderHandleLabel => '순서 변경';
 
   @override

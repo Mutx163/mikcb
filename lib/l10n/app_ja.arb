@@ -6482,6 +6482,7 @@
   "liveExpandedDetailHintBeforeClass": "このリストは展開カード本文の行順で、下のプレビューと一致します。「段階」「状態」はタイトルに含まれ、「進捗」は授業中のみのため、このページには表示されません。",
   "liveExpandedDetailHintDuringEnd": "このリストは展開カード本文の行順で、下のプレビューと一致します。「進捗」は授業中のみ表示され、展開時の「段階」「状態」は通常タイトルと概要に含まれるため独立行になりません。",
   "liveExpandedDetailUnfilledSuffix": "未入力のため島には表示されません",
+  "liveExpandedDetailUnfilledValue": "なし",
   "liveExpandedDetailReorderHandleLabel": "並べ替え",
   "liveExpandedDetailMoveUpAction": "上へ移動",
   "liveExpandedDetailMoveDownAction": "下へ移動",

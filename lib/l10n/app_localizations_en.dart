@@ -11571,6 +11571,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'not filled in; hidden on the island';
 
   @override
+  String get liveExpandedDetailUnfilledValue => 'None';
+
+  @override
   String get liveExpandedDetailReorderHandleLabel => 'Reorder';
 
   @override

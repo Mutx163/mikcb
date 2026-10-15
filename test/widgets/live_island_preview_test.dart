@@ -302,10 +302,11 @@ void main() {
     expect(find.text('备注：带教材与习题册'), findsOneWidget);
   });
 
-  testWidgets('展开态预览：字段空缺显示灰字占位行，开关有可见反应', (tester) async {
+  testWidgets('展开态预览：字段空缺显示「无」占位行，开关有可见反应', (tester) async {
     // 真实课没填地点/教师/备注/简称、也没有下一节：真机会跳过这些行，
-    // 预览用灰字占位行解释（开关拨了要有可见反应，2026-10-15 反馈），
-    // 只有「时间」渲染真实值。
+    // 预览按调试面板语义显示「字段名：无」灰字占位 + 后缀说明（开关拨了
+    // 要有可见反应；「无」是用户点名的形式，2026-10-15）。只有「时间」
+    // 渲染真实值。
     await pumpExpandedPreview(
       tester,
       displayConfig: display(),
@@ -318,20 +319,20 @@ void main() {
       ),
     );
 
-    expect(find.text('地点（未填写，岛上不显示）'), findsOneWidget);
-    expect(find.text('教师（未填写，岛上不显示）'), findsOneWidget);
-    expect(find.text('下节课（未填写，岛上不显示）'), findsOneWidget);
-    expect(find.text('备注（未填写，岛上不显示）'), findsOneWidget);
+    expect(find.text('地点：无（未填写，岛上不显示）'), findsOneWidget);
+    expect(find.text('教师：无（未填写，岛上不显示）'), findsOneWidget);
+    expect(find.text('下一节：无（未填写，岛上不显示）'), findsOneWidget);
+    expect(find.text('备注：无（未填写，岛上不显示）'), findsOneWidget);
     // 真实值行照常渲染
     expect(find.text('时间：08:00 - 08:45'), findsOneWidget);
-    // 占位行与真实行不再有演示兜底数据
+    // 不再有演示兜底数据
     expect(find.text('地点：三教-401'), findsNothing);
     expect(find.text('教师：张老师'), findsNothing);
   });
 
   testWidgets('展开态预览：关闭字段开关后占位行随之消失', (tester) async {
     // 开关关掉 → 该字段整行不出（与真机「关闭即不渲染」一致）；
-    // 开关开着但课程没填 → 灰字占位。两种状态肉眼可辨。
+    // 开关开着但课程没填 → 「无」占位。两种状态肉眼可辨。
     await pumpExpandedPreview(
       tester,
       displayConfig: display(expandedDetailFields: const [
