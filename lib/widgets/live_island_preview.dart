@@ -128,16 +128,16 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
 
   // --- Demo course windows anchored at [_anchor]; numbers tick naturally ---
   //
-  // 速览测试传入真实测试窗口时，这两扇窗口由锚点按速览节奏（25 秒倒计时
-  // + 5 秒课程尾巴）合成，倒计时与真机同步；静态预览沿用进页即走的
-  // 12 分 37 秒演示节奏。
+  // 速览测试传入真实测试窗口时，这两扇窗口由锚点按速览节奏（(sessionLength
+  // - 1 秒) 倒计时 + 1 秒课程尾巴）合成，倒计时与真机同步；静态预览沿用进页
+  // 即走的 12 分 37 秒演示节奏。
 
   ({DateTime start, DateTime end}) get _beforeWindow {
     if (widget.anchor != null) {
-      // 速览课前变体：start = now + (sessionLength - 5s)，见
+      // 速览课前变体：start = now + (sessionLength - 1s)，见
       // buildCourseTestWindow。锚点即窗口起点时倒计时与真机完全一致。
       final start = _anchor;
-      return (start: start, end: start.add(const Duration(seconds: 5)));
+      return (start: start, end: start.add(const Duration(seconds: 1)));
     }
     final start = _anchor.add(const Duration(minutes: 12, seconds: 37));
     return (start: start, end: start.add(const Duration(minutes: 45)));
@@ -502,9 +502,9 @@ class _LiveIslandExpandedPreviewCardState
 
   ({DateTime start, DateTime end}) get _beforeWindow {
     if (_anchoredToTestWindow) {
-      // 速览课前变体：start = now + (sessionLength - 5s)，end = +5s（见
+      // 速览课前变体：start = now + (sessionLength - 1s)，end = +1s（见
       // buildCourseTestWindow）。锚点即窗口起点，倒计时与真机同步。
-      return (start: _anchor, end: _anchor.add(const Duration(seconds: 5)));
+      return (start: _anchor, end: _anchor.add(const Duration(seconds: 1)));
     }
     final start = _anchor.add(const Duration(minutes: 12, seconds: 37));
     return (start: start, end: start.add(const Duration(minutes: 45)));

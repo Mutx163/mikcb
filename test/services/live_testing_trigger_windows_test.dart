@@ -49,25 +49,25 @@ void main() {
   group('quick preview windows (sessionLength = 30s)', () {
     const session = Duration(seconds: 30);
 
-    test('before-class: 25s countdown + 5s tail, 5s buffer', () {
+    test('before-class: 29s countdown + 1s tail, 1s buffer', () {
       final window = buildCourseTestWindow(
         now: base,
         stage: LiveCourseTestStage.beforeClass,
         sessionLength: session,
       );
 
-      expect(window.start, base.add(const Duration(seconds: 25)));
+      expect(window.start, base.add(const Duration(seconds: 29)));
       expect(window.end, base.add(const Duration(seconds: 30)));
-      expect(window.suspendBuffer, const Duration(seconds: 5));
-      // 整段倒计时锁在 beforeClass：start 之前的 25 秒都是倒计时窗口。
+      expect(window.suspendBuffer, const Duration(seconds: 1));
+      // 整段倒计时锁在 beforeClass：start 之前的 29 秒都是倒计时窗口。
       expect(
         window.start.isBefore(window.end),
         isTrue,
       );
-      // 摘除终点 = end + 5s（UI 按钮翻回「试弹」态的时刻）。
+      // 摘除终点 = end + 1s（UI 按钮翻回「试弹」态的时刻）。
       expect(
         window.sessionEndFrom(base),
-        base.add(const Duration(seconds: 35)),
+        base.add(const Duration(seconds: 31)),
       );
     });
 
@@ -80,10 +80,10 @@ void main() {
 
       expect(window.start, base.subtract(const Duration(seconds: 2)));
       expect(window.end, base.add(const Duration(seconds: 30)));
-      expect(window.suspendBuffer, const Duration(seconds: 5));
+      expect(window.suspendBuffer, const Duration(seconds: 1));
       expect(
         window.sessionEndFrom(base),
-        base.add(const Duration(seconds: 35)),
+        base.add(const Duration(seconds: 31)),
       );
     });
   });
@@ -102,7 +102,7 @@ void main() {
         window.clockEnd.difference(window.start),
         const Duration(minutes: 1),
       );
-      expect(window.clockEnd, base.add(const Duration(seconds: 85)));
+      expect(window.clockEnd, base.add(const Duration(seconds: 89)));
       expect(
         LiveTestingFixtureService.formatClock(window.start),
         '10:15',

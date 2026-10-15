@@ -124,8 +124,10 @@ class LiveCourseTestWindow {
 /// 经典变体（sessionLength == null）：课前 3 分钟倒计时 + 3 分钟课程，
 /// 课中锚定已开课 1 分钟 + 4 分钟后收尾，缓冲 20 秒。
 /// 速览变体（sessionLength 非空，如 30 秒）：整段窗口锁在单一阶段——
-/// 课前 = 25 秒倒计时 + 5 秒课程尾巴；课中 = 已开课 2 秒、sessionLength
-/// 后收尾；缓冲收窄到 5 秒以加快收岛（仍覆盖 Dart 30s tick 的影响窗）。
+/// 课前 = (sessionLength - 1 秒) 倒计时 + 1 秒课程尾巴（尾巴只需让归零
+/// 那一刻仍落在有效窗口内，不需要长）；课中 = 已开课 2 秒、sessionLength
+/// 后收尾；缓冲 1 秒，只用于兜住收尾瞬间的 Dart 30s tick（窗口内的 tick
+/// 由整个会话的暂停覆盖，与缓冲长短无关）。合计归零后约 2 秒收岛。
 LiveCourseTestWindow buildCourseTestWindow({
   required DateTime now,
   required LiveCourseTestStage stage,
@@ -137,13 +139,13 @@ LiveCourseTestWindow buildCourseTestWindow({
   final Duration suspendBuffer;
   if (sessionLength != null) {
     if (isBeforeClass) {
-      start = now.add(sessionLength - const Duration(seconds: 5));
-      end = start.add(const Duration(seconds: 5));
+      start = now.add(sessionLength - const Duration(seconds: 1));
+      end = start.add(const Duration(seconds: 1));
     } else {
       start = now.subtract(const Duration(seconds: 2));
       end = now.add(sessionLength);
     }
-    suspendBuffer = const Duration(seconds: 5);
+    suspendBuffer = const Duration(seconds: 1);
   } else {
     start = isBeforeClass
         ? now.add(const Duration(minutes: 3))
