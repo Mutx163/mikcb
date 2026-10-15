@@ -77,6 +77,36 @@ class LiveUpdateService : Service() {
 
         private val startedActivityCount = AtomicInteger(0)
 
+        // 「前台服务已把通知交给系统」的一次性等待者。只在主线程读写：注册来自
+        // MainActivity 的方法通道回调，触发来自 onStartCommand 主线程。
+        private val pendingNotificationPostedCallbacks = mutableListOf<() -> Unit>()
+
+        /**
+         * 注册一次性回调：本服务本次 [onStartCommand] 把前台通知交给系统之后触发。
+         *
+         * 存在的理由：App 一回桌面就会被 HyperOS 冻住，而通知是由后起的本服务
+         * 在主线程上发的；若 Flutter 不等这个回执就退后台，通知只能等解冻才发
+         * 出去（真机实测拖约 10 秒）。等回执能把发通知锁在 App 仍在前台的窗口内。
+         * 详见 MainActivity.startLiveUpdateServiceAwaitingNotification 的说明。
+         */
+        fun awaitNotificationPosted(callback: () -> Unit) {
+            pendingNotificationPostedCallbacks.add(callback)
+        }
+
+        /** 放弃等待（调用方超时收尾时必须调用，否则滞留回调会误触发）。 */
+        fun cancelNotificationPostedWait(callback: () -> Unit) {
+            pendingNotificationPostedCallbacks.remove(callback)
+        }
+
+        private fun notifyNotificationPosted() {
+            if (pendingNotificationPostedCallbacks.isEmpty()) {
+                return
+            }
+            val callbacks = pendingNotificationPostedCallbacks.toList()
+            pendingNotificationPostedCallbacks.clear()
+            callbacks.forEach { it() }
+        }
+
         @Volatile
         private var backgroundRefreshCallbacksRegistered = false
 
@@ -648,6 +678,8 @@ class LiveUpdateService : Service() {
             lastRemainingText = initialText
             updateForegroundNotification(buildNotification(initialText))
             startTicker()
+            // 通知此刻已交给系统：唤醒还在等的通道调用，让 Flutter 侧可以安全退后台。
+            notifyNotificationPosted()
             START_STICKY
         } catch (e: Exception) {
             markServiceStopped(getString(R.string.stop_service_start_failed))

@@ -49,6 +49,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.util.Locale
 import java.util.concurrent.Executor
+import java.util.concurrent.atomic.AtomicBoolean
 import java.io.File
 
 class MainActivity : FlutterActivity() {
@@ -63,6 +64,14 @@ class MainActivity : FlutterActivity() {
         private const val MIGRATION_CHANNEL = "com.mutx163.qingyu/migration"
         private const val CHANNEL_ID = "live_update_channel_v2"
         private const val OLD_CHANNEL_ID = "live_update_channel"
+
+        /**
+         * `startLiveUpdate` 通道等「服务已把通知交给系统」回执的上限。
+         *
+         * 正常情况服务在同一轮主线程消息里就把通知发了，回执毫秒级到；1 秒是给
+         * 「设备正忙 / 服务起得慢」留的余量，超时按旧行为继续，不会更差。
+         */
+        private const val LIVE_UPDATE_NOTIFICATION_ACK_TIMEOUT_MILLIS = 1000L
 
         /** 分享导入超限时交给 Dart 的 kind；Dart 侧按它弹本地化的「文件过大」。 */
         private const val EXTERNAL_IMPORT_TOO_LARGE_KIND = "too_large"
@@ -784,8 +793,7 @@ class MainActivity : FlutterActivity() {
                     "startLiveUpdate" -> {
                         val data = call.arguments as? Map<String, Any>
                         if (data != null) {
-                            startLiveUpdateService(data)
-                            result.success(true)
+                            startLiveUpdateServiceAwaitingNotification(data, result)
                         } else {
                             result.error("INVALID_ARGUMENTS", "Missing live update payload", null)
                         }
@@ -2213,6 +2221,65 @@ class MainActivity : FlutterActivity() {
                 dedupeKey = "live_update_start_failed",
             )
             throw e
+        }
+    }
+
+    /**
+     * 启动超级岛前台服务，并**等通知确实交给系统之后**才回 Flutter。
+     *
+     * 为什么不能立刻回：App 一回到桌面，HyperOS 就会冻住它的进程组，而通知是由后起的
+     * [LiveUpdateService] 在主线程上发出去的。若这里立刻返回，Flutter 会马上退后台
+     * （速览路径的 `moveTaskToBack`），服务还没轮到执行就被冻住，通知只能等解冻才发出去
+     * ——真机实测这一等就是约 10 秒，表现即「点了测试，岛很久才弹」。等回执能把「发通知」
+     * 锁在 App 仍在前台的窗口里，出岛稳定在 1 秒内。
+     *
+     * 兜底：超过 [LIVE_UPDATE_NOTIFICATION_ACK_TIMEOUT_MILLIS] 没等到回执也照常返回
+     * （退化为旧行为，不会更差），并记一条诊断事件便于发现退化。
+     */
+    private fun startLiveUpdateServiceAwaitingNotification(
+        data: Map<String, Any>,
+        result: MethodChannel.Result,
+    ) {
+        val replied = AtomicBoolean(false)
+        val handler = Handler(Looper.getMainLooper())
+        var registeredCallback: (() -> Unit)? = null
+
+        val timeoutRunnable = Runnable {
+            if (replied.compareAndSet(false, true)) {
+                registeredCallback?.let { LiveUpdateService.cancelNotificationPostedWait(it) }
+                UmengDiagnosticReporter.record(
+                    context = applicationContext,
+                    category = "live_update_start_ack_timeout",
+                    message = DiagnosticLogMessages.LIVE_UPDATE_START_ACK_TIMEOUT,
+                    extras = mapOf(
+                        "timeoutMillis" to LIVE_UPDATE_NOTIFICATION_ACK_TIMEOUT_MILLIS,
+                    ),
+                )
+                result.success(false)
+            }
+        }
+
+        val postedCallback: () -> Unit = {
+            if (replied.compareAndSet(false, true)) {
+                handler.removeCallbacks(timeoutRunnable)
+                result.success(true)
+            }
+        }
+
+        // 先挂回执再起服务：服务可能在同一轮主线程消息里就发完通知，晚了会漏。
+        registeredCallback = postedCallback
+        LiveUpdateService.awaitNotificationPosted(postedCallback)
+        handler.postDelayed(timeoutRunnable, LIVE_UPDATE_NOTIFICATION_ACK_TIMEOUT_MILLIS)
+
+        try {
+            startLiveUpdateService(data)
+        } catch (e: Exception) {
+            // startLiveUpdateService 已上报过失败事件，这里只保证 Flutter 侧不再等。
+            if (replied.compareAndSet(false, true)) {
+                handler.removeCallbacks(timeoutRunnable)
+                LiveUpdateService.cancelNotificationPostedWait(postedCallback)
+                result.success(false)
+            }
         }
     }
 

@@ -27,6 +27,7 @@ object DiagnosticLogMessages {
 
     const val LIVE_UPDATE_START_REQUESTED = "Flutter 请求启动超级岛"
     const val LIVE_UPDATE_START_FAILED_CHANNEL = "通过 Flutter 方法通道启动超级岛服务失败"
+    const val LIVE_UPDATE_START_ACK_TIMEOUT = "等待超级岛通知交出的回执超时，已按原路径返回"
     const val LIVE_UPDATE_STOP_REQUESTED = "Flutter 请求停止超级岛"
     const val LIVE_UPDATE_SERVICE_MISSING_PAYLOAD = "超级岛服务重启时缺少完整负载"
     const val LIVE_UPDATE_SERVICE_STARTED = "超级岛服务已启动"
