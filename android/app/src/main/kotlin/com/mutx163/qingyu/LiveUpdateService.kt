@@ -2672,15 +2672,35 @@ class LiveUpdateService : Service() {
         } else {
             null
         }
-        val isMiuiFocusIslandReady =
-            isXiaomiFamilyDevice() &&
-                miuiFocusParam != null &&
-                shouldPromote &&
-                !isDuringClassStatusBar
+
         // 应用级或渠道级通知任一被关时 notify() 都会被系统静默丢弃，
         // 必须先于两条就绪路径拦截，否则自检页会误报「已满足上岛条件」而实际无法上岛。
         val notificationsAllowed = areNotificationsEnabledCompat(this)
         val liveChannelEnabled = isLiveUpdateChannelEnabledCompat(this)
+
+        // Android 16 上系统已按「谷歌实时活动」（promoted ongoing）接管这条通知时，
+        // 不再挂小米焦点参数：挂上它系统会把通知归到小米焦点管道（真机事件日志里
+        // focusType=PARAMS），实测那条路「建记录」要等约 10 秒才进系统；不挂则为纯
+        // 实时活动（focusType=null，同形态参考应用 3~7 毫秒入队）。
+        // 只在拿不到实时活动时才保留小米参数兜底（Android 16 以下 / 实时活动权限被拒 /
+        // 通知不具备提升特征），这几种情况下方 isActuallyPromotable 也会走小米岛那条路。
+        val prefersGoogleLiveUpdate =
+            Build.VERSION.SDK_INT >= 36 &&
+                canPostPromoted &&
+                hasPromotableCharacteristics == true &&
+                notificationsAllowed &&
+                liveChannelEnabled
+        val miuiFocusParamAttached = miuiFocusParam != null && !prefersGoogleLiveUpdate
+        if (miuiFocusParam != null && prefersGoogleLiveUpdate) {
+            notification.extras?.remove("miui.focus.param")
+            notification.extras?.remove("miui.focus.pics")
+        }
+
+        val isMiuiFocusIslandReady =
+            isXiaomiFamilyDevice() &&
+                miuiFocusParamAttached &&
+                shouldPromote &&
+                !isDuringClassStatusBar
         val isActuallyPromotable = when {
             isDuringClassStatusBar || !shouldPromote -> false
             !notificationsAllowed || !liveChannelEnabled -> false
@@ -2798,7 +2818,8 @@ class LiveUpdateService : Service() {
                     "liveUpdateChannelEnabled" to liveChannelEnabled,
                     "canPostPromotedNotifications" to canPostPromoted,
                     "hasPromotableCharacteristics" to hasPromotableCharacteristics,
-                    "miuiFocusParamPresent" to (miuiFocusParam != null),
+                    "prefersGoogleLiveUpdate" to prefersGoogleLiveUpdate,
+                    "miuiFocusParamPresent" to miuiFocusParamAttached,
                     "notificationTitle" to notificationTitle,
                     "notificationContentText" to notificationContentText,
                     "notificationExpandedText" to notificationExpandedText,
