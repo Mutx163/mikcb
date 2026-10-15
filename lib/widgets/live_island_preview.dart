@@ -53,6 +53,7 @@ class LiveIslandPreviewCard extends StatefulWidget {
     this.sampleCourse,
     this.followBeforeClass = false,
     this.endSecondsCountdownThresholdSeconds = 60,
+    this.anchor,
   });
 
   final LiveDisplaySettings display;
@@ -69,6 +70,10 @@ class LiveIslandPreviewCard extends StatefulWidget {
   /// Native endSecondsCountdownThreshold; only the before-end right-side
   /// countdown formatting uses it (computeRemainingText parity).
   final int endSecondsCountdownThresholdSeconds;
+
+  /// 倒计时锚点：传 [anchor] 时示例窗口从该时刻展开（速览测试用它对齐
+  /// 真机时间窗，倒计时与真机同步）；缺省 = 进预览那一刻，行为同旧版。
+  final DateTime? anchor;
 
   @override
   State<LiveIslandPreviewCard> createState() => _LiveIslandPreviewCardState();
@@ -100,7 +105,9 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
   static const _pillColor = Color(0xFF060608);
   static const _defaultLabelColor = Color(0xFFFFFFFF);
 
-  late final DateTime _anchor = DateTime.now();
+  /// 倒计时锚点：真实测试窗口的起点（速览场景）或进预览那一刻（静态预览）。
+  late final DateTime _anchor =
+      widget.anchor ?? DateTime.now();
   Timer? _ticker;
 
   @override
@@ -120,13 +127,30 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
   }
 
   // --- Demo course windows anchored at [_anchor]; numbers tick naturally ---
+  //
+  // 速览测试传入真实测试窗口时，这两扇窗口由锚点按速览节奏（25 秒倒计时
+  // + 5 秒课程尾巴）合成，倒计时与真机同步；静态预览沿用进页即走的
+  // 12 分 37 秒演示节奏。
 
   ({DateTime start, DateTime end}) get _beforeWindow {
+    if (widget.anchor != null) {
+      // 速览课前变体：start = now + (sessionLength - 5s)，见
+      // buildCourseTestWindow。锚点即窗口起点时倒计时与真机完全一致。
+      final start = _anchor;
+      return (start: start, end: start.add(const Duration(seconds: 5)));
+    }
     final start = _anchor.add(const Duration(minutes: 12, seconds: 37));
     return (start: start, end: start.add(const Duration(minutes: 45)));
   }
 
   ({DateTime start, DateTime end}) get _endWindow {
+    if (widget.anchor != null) {
+      // 速览课中变体：start = now - 2s，end = now + sessionLength。
+      return (
+        start: _anchor.subtract(const Duration(seconds: 2)),
+        end: _anchor.add(const Duration(seconds: 28)),
+      );
+    }
     final start = _anchor.subtract(const Duration(minutes: 41, seconds: 40));
     return (start: start, end: start.add(const Duration(minutes: 45)));
   }
@@ -330,6 +354,11 @@ class _LiveIslandPreviewCardState extends State<LiveIslandPreviewCard> {
     return name.length > 5 ? name.substring(0, 5) : name;
   }
 
+  // --- Mock widget 数据端口：字段空缺 = 整行跳过（原生同规则）-----------
+  // 「简称 / 时间 / 地点 / 教师 / 下一节 / 备注」各行的空值跳行规则统一
+  // 实现在展开态卡片的 _detailLines / _shortNameLabel / _timeRangeText 中
+  // （见 _LiveIslandExpandedPreviewCardState），摘要态胶囊只用课程名/地点。
+
   // --- Right status line (ports of MainActivity.kt rules) -----------------
 
   /// islandCriticalStatusText：课中且显示倒计时时 = criticalTimeText，
@@ -422,6 +451,8 @@ class LiveIslandExpandedPreviewCard extends StatefulWidget {
     this.followBeforeClass = false,
     this.endSecondsCountdownThresholdSeconds = 60,
     this.promoteDuringClass = true,
+    this.anchor,
+    this.nextCourseName,
   });
 
   final LiveDisplaySettings display;
@@ -437,6 +468,13 @@ class LiveIslandExpandedPreviewCard extends StatefulWidget {
   /// 因此预览必须带上它，否则关掉开关后预览又会失真。
   final bool promoteDuringClass;
 
+  /// 倒计时锚点（速览测试 = 真实测试窗口起点，见 [LiveIslandPreviewCard.anchor]）。
+  final DateTime? anchor;
+
+  /// 「下一节」课程名：与真机同源——速览测试传测试会话解析出的同日下一条
+  /// 课名；没有（null）时与原生一致跳过该行，**不再画假的下一节**。
+  final String? nextCourseName;
+
   @override
   State<LiveIslandExpandedPreviewCard> createState() =>
       _LiveIslandExpandedPreviewCardState();
@@ -444,7 +482,8 @@ class LiveIslandExpandedPreviewCard extends StatefulWidget {
 
 class _LiveIslandExpandedPreviewCardState
     extends State<LiveIslandExpandedPreviewCard> {
-  late final DateTime _anchor = DateTime.now();
+  /// 倒计时锚点：真实测试窗口起点或进预览那一刻（静态预览）。
+  late final DateTime _anchor = widget.anchor ?? DateTime.now();
   Timer? _ticker;
 
   @override
@@ -462,14 +501,30 @@ class _LiveIslandExpandedPreviewCardState
   }
 
   ({DateTime start, DateTime end}) get _beforeWindow {
+    if (_anchoredToTestWindow) {
+      // 速览课前变体：start = now + (sessionLength - 5s)，end = +5s（见
+      // buildCourseTestWindow）。锚点即窗口起点，倒计时与真机同步。
+      return (start: _anchor, end: _anchor.add(const Duration(seconds: 5)));
+    }
     final start = _anchor.add(const Duration(minutes: 12, seconds: 37));
     return (start: start, end: start.add(const Duration(minutes: 45)));
   }
 
   ({DateTime start, DateTime end}) get _endWindow {
+    if (_anchoredToTestWindow) {
+      // 速览课中变体：start = now - 2s，end = now + sessionLength（30s 速览
+      // 即 +28s）。与 buildCourseTestWindow 一致。
+      return (
+        start: _anchor.subtract(const Duration(seconds: 2)),
+        end: _anchor.add(const Duration(seconds: 28)),
+      );
+    }
     final start = _anchor.subtract(const Duration(minutes: 41, seconds: 40));
     return (start: start, end: start.add(const Duration(minutes: 45)));
   }
+
+  /// 锚点是否来自速览测试的真实窗口（[LiveIslandExpandedPreviewCard.anchor]）。
+  bool get _anchoredToTestWindow => widget.anchor != null;
 
   @override
   Widget build(BuildContext context) {
@@ -569,15 +624,17 @@ class _LiveIslandExpandedPreviewCardState
     // 原生 promotedContentText：
     // * (课中 || 临近下课) && classProgress != null → compactDisplayText · 地点；
     // * 其余 → visibleStatusText · timeRangeText · 地点 · 教师。
-    // 课中带进度块时正文只留倒计时与地点；示例课的字面值相同。
+    // 课中带进度块时正文只留倒计时与地点。
     final hasProgressBlock =
         stage == _PreviewStage.duringClass && d.showCountdown;
     final course = widget.sampleCourse;
-    final sampleLoc = course?.location.isNotEmpty == true
-        ? course!.location
+    final location = course?.location.trim();
+    final sampleLoc = (location != null && location.isNotEmpty)
+        ? location
         : l10n.liveIslandPreviewSampleLocation;
-    final sampleTeacher = course?.teacher.isNotEmpty == true
-        ? course!.teacher
+    final teacher = course?.teacher.trim();
+    final sampleTeacher = (teacher != null && teacher.isNotEmpty)
+        ? teacher
         : l10n.liveIslandPreviewSampleTeacher;
     final parts = hasProgressBlock
         ? <String>[
@@ -631,6 +688,9 @@ class _LiveIslandExpandedPreviewCardState
   }
 
   /// 原生 `timeRangeText`：`"$startTimeText - $endTimeText"`。
+  ///
+  /// 有真实课程时直接取课程钟面（速览课的钟点已被合成窗口覆盖，与下发
+  /// 一致）；缺课程时回落演示值（纯静态预览）。
   String _timeRangeText() {
     final course = widget.sampleCourse;
     if (course != null &&
@@ -639,6 +699,17 @@ class _LiveIslandExpandedPreviewCardState
       return '${course.startTime} - ${course.endTime}';
     }
     return '08:00 - 08:45';
+  }
+
+  /// 原生 shortNameLabel：简称非空且 ≠ 课程名，否则整行跳过。
+  String? _shortNameLabel() {
+    final course = widget.sampleCourse;
+    if (course == null) {
+      return null; // 纯静态预览的演示简称在测试里按需自备 sampleCourse。
+    }
+    final raw = course.shortName?.trim();
+    if (raw == null || raw.isEmpty) return null;
+    return raw == course.name.trim() ? null : raw;
   }
 
   /// 原生 `shouldPromote`：课前与下课提醒恒定提升，课中看「提升通知」开关。
@@ -675,6 +746,7 @@ class _LiveIslandExpandedPreviewCardState
           LiveExpandedDetailField.note,
         ];
     final promoted = _isPromoted(stage);
+    final course = widget.sampleCourse;
     final lines = <String>[];
     for (final field in order) {
       switch (field) {
@@ -685,14 +757,9 @@ class _LiveIslandExpandedPreviewCardState
             lines.add(_stageWord(l10n, stage));
           }
         case LiveExpandedDetailField.shortName:
-          final course = widget.sampleCourse;
-          final shortName = course?.shortName?.trim();
-          final displayShort =
-              (shortName != null && shortName.isNotEmpty)
-                  ? shortName
-                  : (course == null
-                      ? l10n.liveIslandPreviewSampleCourseShort
-                      : null);
+          // 原生 shortNameLabel：简称非空且 ≠ 课程名；没有就跳行。
+          // 旧行为用演示简称兜底，真机没有简称时预览却有一行，已删。
+          final displayShort = _shortNameLabel();
           if (displayShort != null) {
             lines.add(l10n.liveExpandedDetailLineShortName(displayShort));
           }
@@ -732,27 +799,31 @@ class _LiveIslandExpandedPreviewCardState
         case LiveExpandedDetailField.location:
           // 展开态的 location 字段独立于折叠态「显示地点」开关：原生
           // expandedDetailLineList 只判断 `location.isNotBlank()`，不看
-          // showLocationInIsland（设计文档 §10.3）。此处不能再套 showLocation，
-          // 否则折叠态关掉地点时预览会少一行、实际展开却照旧显示。
-          final sampleLoc = widget.sampleCourse?.location.isNotEmpty == true
-              ? widget.sampleCourse!.location
-              : l10n.liveIslandPreviewSampleLocation;
-          lines.add(l10n.liveExpandedDetailLineLocation(sampleLoc));
+          // showLocationInIsland（设计文档 §10.3）。**但空值照样跳行**——
+          // 旧行为用演示地点兜底，真实课没填地点时预览多出一行。
+          final location = course?.location.trim();
+          if (location != null && location.isNotEmpty) {
+            lines.add(l10n.liveExpandedDetailLineLocation(location));
+          }
         case LiveExpandedDetailField.teacher:
-          final sampleTeacher = widget.sampleCourse?.teacher.isNotEmpty == true
-              ? widget.sampleCourse!.teacher
-              : l10n.liveIslandPreviewSampleTeacher;
-          lines.add(l10n.liveExpandedDetailLineTeacher(sampleTeacher));
+          final teacher = course?.teacher.trim();
+          if (teacher != null && teacher.isNotEmpty) {
+            lines.add(l10n.liveExpandedDetailLineTeacher(teacher));
+          }
         case LiveExpandedDetailField.nextCourse:
-          lines.add(
-            l10n.liveExpandedDetailLineNext(
-              l10n.liveIslandPreviewSampleNextClass,
-            ),
-          );
+          // 原生 nextText 来自下发载荷的 nextCourse.name；测试/预览同源：
+          // 没有（同日无下一条）就跳行，不再画假的「大学物理」。
+          final nextName = widget.nextCourseName?.trim();
+          if (nextName != null && nextName.isNotEmpty) {
+            lines.add(l10n.liveExpandedDetailLineNext(nextName));
+          }
         case LiveExpandedDetailField.note:
-          lines.add(
-            l10n.liveExpandedDetailLineNote(l10n.liveIslandPreviewSampleNote),
-          );
+          // 原生 noteText = Course.note（Dart 侧 liveNote 已合并
+          // description）；空值跳行，不再用演示备注兜底。
+          final note = course?.liveNote?.trim();
+          if (note != null && note.isNotEmpty) {
+            lines.add(l10n.liveExpandedDetailLineNote(note));
+          }
       }
     }
     return lines;

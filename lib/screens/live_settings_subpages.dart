@@ -16,6 +16,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/android_move_to_back_service.dart';
 import '../services/live_testing_trigger.dart';
+import '../services/live_testing_fixture_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/app_log_service.dart';
 import '../utils/hex_color.dart';
@@ -352,6 +353,30 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
 
   late final Course _sampleCourse;
 
+  /// 速览会话的实况转播源：测试进行中时，预览卡用会话的真实课程/窗口/
+  /// 下一节渲染，与真机弹出的岛同源；空闲时为 null，预览回落静态演示。
+  LiveCourseTestSession? _liveSession;
+
+  /// 预览用的展示课程：速览中 = 会话课程 + 会话合成钟点（与下发一致，
+  /// 倒计时也按会话窗口走）；空闲 = 进页时挑选的示例课。
+  Course? get _previewCourse {
+    final session = _liveSession;
+    final course = session?.course;
+    if (session == null || course == null) return _sampleCourse;
+    final start = session.start;
+    final clockEnd = session.clockEnd;
+    if (start == null || clockEnd == null) return course;
+    return course.copyWith(
+      startTime: LiveTestingFixtureService.formatClock(start),
+      endTime: LiveTestingFixtureService.formatClock(clockEnd),
+    );
+  }
+
+  /// 预览「下一节」名：速览中与真机同源（测试通道解析的同日下一条）。
+  /// 为避免页面内重复维护解析规则，速览起手时记录一次即可（30 秒内课表
+  /// 不会变）；热更新路径由 trigger 侧重算，名字变化不影响展示正确性。
+  String? _previewNextCourseName;
+
   @override
   void initState() {
     super.initState();
@@ -371,16 +396,37 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   void _restoreStagePreviewFromGlobalSession() {
     final session = currentLiveCourseTestSession();
     if (session == null) return;
+    _liveSession = session;
+    _previewNextCourseName = _resolvePreviewNextCourseName(session);
     _stagePreviewActive = true;
     _stagePreviewEndTimer?.cancel();
     _stagePreviewEndTimer = Timer(
       session.sessionEnd.difference(DateTime.now()),
       () {
         if (mounted) {
-          setState(() => _stagePreviewActive = false);
+          setState(() {
+            _stagePreviewActive = false;
+            _liveSession = null;
+            _previewNextCourseName = null;
+          });
         }
       },
     );
+  }
+
+  /// 与测试通道同源的「下一节」解析（同一公开 API 组合，避免两套规则）。
+  String? _resolvePreviewNextCourseName(LiveCourseTestSession session) {
+    final course = session.course;
+    if (course == null) return null;
+    final provider = context.read<TimetableProvider>();
+    final week = provider.liveSelectionCalendarWeek;
+    final sameDayCourses = provider.getActiveCoursesForDay(
+      course.dayOfWeek,
+      week: week,
+    )..sort((a, b) => a.startSection.compareTo(b.startSection));
+    final index = sameDayCourses.indexWhere((c) => c.id == course.id);
+    if (index == -1 || index + 1 >= sameDayCourses.length) return null;
+    return provider.resolveCourseDisplayName(sameDayCourses[index + 1]).name;
   }
 
   @override
@@ -432,7 +478,16 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       );
       if (result.status == LiveTestingTriggerStatus.success) {
         _stagePreviewEndTimer?.cancel();
-        setState(() => _stagePreviewActive = true);
+        // 记下会话供预览实况转播：课程、窗口锚点与「下一节」都与真机
+        // 下发载荷同源，预览不再演假数据。
+        final session = currentLiveCourseTestSession();
+        setState(() {
+          _stagePreviewActive = true;
+          _liveSession = session;
+          _previewNextCourseName = session == null
+              ? null
+              : _resolvePreviewNextCourseName(session);
+        });
         final sessionEnd =
             result.sessionEnd ??
             DateTime.now().add(const Duration(seconds: 35));
@@ -440,7 +495,11 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           sessionEnd.difference(DateTime.now()),
           () {
             if (mounted) {
-              setState(() => _stagePreviewActive = false);
+              setState(() {
+                _stagePreviewActive = false;
+                _liveSession = null;
+                _previewNextCourseName = null;
+              });
             }
           },
         );
@@ -464,7 +523,11 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       await cancelLiveUpdateCourseTest(provider);
       _stagePreviewEndTimer?.cancel();
       if (!mounted) return;
-      setState(() => _stagePreviewActive = false);
+      setState(() {
+        _stagePreviewActive = false;
+        _liveSession = null;
+        _previewNextCourseName = null;
+      });
       showAppToast(
         context,
         message: AppLocalizations.of(context)!.liveStagePreviewStoppedToast,
@@ -521,7 +584,11 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final sampleCourse = _sampleCourse;
+    // 速览测试进行中 → 预览用会话的真实课程/窗口/下一节（实况转播）；
+    // 空闲 → 静态示例课（进页时挑选）。
+    final sampleCourse = _previewCourse;
+    final previewAnchor = _liveSession?.start;
+    final previewNextCourseName = _previewNextCourseName;
     final display = _display;
     final sectionCards = <Widget>[
       HyperosSectionLabel(text: l10n.liveDisplayContentTitle),
@@ -1033,6 +1100,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         endSecondsCountdownThresholdSeconds:
             _draft.liveEndSecondsCountdownThreshold,
         promoteDuringClass: _draft.livePromoteDuringClass,
+        anchor: previewAnchor,
+        nextCourseName: previewNextCourseName,
       ),
     ];
     final previewLabel = widget.forDuringEnd
@@ -1074,6 +1143,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 followBeforeClass: _followBeforeClass,
                 endSecondsCountdownThresholdSeconds:
                     _draft.liveEndSecondsCountdownThreshold,
+                anchor: previewAnchor,
               ),
               const HyperosSectionGap(),
               if (_followBeforeClass)

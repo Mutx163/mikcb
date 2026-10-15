@@ -1755,7 +1755,14 @@ object LiveUpdateScheduler {
                 isEvenWeek = courseJson.optBoolean("isEvenWeek", false),
                 customWeeks = parseIntList(courseJson.opt("customWeeks")),
                 suspendedWeeks = parseIntList(courseJson.opt("suspendedWeeks")),
-                note = normalizeNullableText(courseJson.opt("note")?.toString()),
+                // Dart 侧 Course.liveNote 已把 description 合并进 note 再下发；
+                // 这里再兜一层旧快照（note 空、description 有值的历史数据）。
+                note = normalizeNullableText(
+                    listOfNotNull(
+                        courseJson.opt("note")?.toString(),
+                        courseJson.opt("description")?.toString()
+                    ).firstOrNull { it.isNotBlank() }
+                ),
             )
         }
 
@@ -1867,6 +1874,14 @@ object LiveUpdateScheduler {
     }
 
     private fun mapToNativeCourse(data: Map<String, Any>): NativeCourse {
+        // note 与 parseSnapshot 同一回落：payload 路径 Dart 侧已合并，快照
+        // 路径的历史数据可能只写 description，两路都要能取到备注。
+        val mergedNote = normalizeNullableText(
+            listOfNotNull(
+                data["note"] as? String,
+                data["description"] as? String
+            ).firstOrNull { it.isNotBlank() }
+        )
         return NativeCourse(
             id = normalizeText(data["id"] as? String),
             name = normalizeText(data["name"] as? String),
@@ -1884,7 +1899,7 @@ object LiveUpdateScheduler {
             isEvenWeek = data["isEvenWeek"] as? Boolean ?: false,
             customWeeks = parseIntList(data["customWeeks"]),
             suspendedWeeks = parseIntList(data["suspendedWeeks"]),
-            note = normalizeNullableText(data["note"] as? String),
+            note = mergedNote,
         )
     }
 

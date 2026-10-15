@@ -491,6 +491,19 @@ Future<void> cancelLiveUpdateCourseTest(TimetableProvider provider) async {
   await provider.refreshLiveActivityNow(forceSnapshotSync: true);
 }
 
+/// 测试会话的「下一节」解析：正式路径同款规则——同一节课所在教学日、
+/// 按起始节次排序的下一条课（与 `_liveGetActivityCourseSelection` 的
+/// `todayCourses[i + 1]` 一致）。找不到同日下一条时返回 null，与正式
+/// 路径一样让原生跳过「下一节」行。
+Course? _resolveNextCourseForTest(TimetableProvider provider, Course course) {
+  final week = provider.liveSelectionCalendarWeek;
+  final sameDayCourses = provider.getActiveCoursesForDay(course.dayOfWeek, week: week)
+    ..sort((a, b) => a.startSection.compareTo(b.startSection));
+  final index = sameDayCourses.indexWhere((c) => c.id == course.id);
+  if (index == -1 || index + 1 >= sameDayCourses.length) return null;
+  return provider.resolveCourseDisplayName(sameDayCourses[index + 1]);
+}
+
 /// 计算测试会话设置指纹，用于判断用户修改的设置是否影响超级岛渲染，避免无改动时频繁重发通道。
 String computeTestSessionSettingsSignature({
   required LiveCourseTestStage stage,
@@ -560,6 +573,13 @@ Future<void> _dispatchLiveUpdateForCourseTest({
           endTime: LiveTestingFixtureService.formatClock(clockEnd),
         );
 
+  // 「下一节」与正式路径同一解析规则：同一节课所在日、按节次排序的下一条。
+  // 此前测试通道写死 null——预览卡画着假的「下一节」，真机却没有，
+  // 用户看到的预览与展开态对不上（2026-10-14 反馈）。
+  final nextCourse = course == null
+      ? null
+      : _resolveNextCourseForTest(provider, course);
+
   final displaySettings = isBeforeClass
       ? settings.beforeClassDisplaySettings
       : settings.duringEndDisplaySettings;
@@ -572,7 +592,9 @@ Future<void> _dispatchLiveUpdateForCourseTest({
 
   await liveService.startLiveUpdate(
     displayCourse,
-    null,
+    // 测试课的钟点被合成窗口覆盖，下一节只取名称/简称等静态展示字段，
+    // 不参与任何时间计算，无需合成钟点。
+    nextCourse,
     stage: stage.name,
     beforeClassLeadMillis: isBeforeClass
         ? (start.isAfter(now) ? start.difference(now).inMilliseconds : 0)
@@ -826,8 +848,7 @@ Future<LiveTestingTriggerResult> triggerLiveStagePreviewTest({
 /// The written course is a regular [Course] in the active profile (same storage
 /// and week rules as user-created courses). Starting the island is left entirely
 /// to [TimetableProvider.refreshLiveActivityNow].
-Future<LiveTestingTriggerResult> triggerLiveUpdateTestForSectionSlot({
-  required BuildContext context,
+Future<LiveTestingTriggerResult> triggerLiveUpdateTestForSectionSlot({  required BuildContext context,
   required TimetableProvider provider,
   required int sectionNumber,
   required Duration lead,

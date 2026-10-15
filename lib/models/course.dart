@@ -102,6 +102,21 @@ class Course {
   final Map<int, CourseSessionNote>? sessionNotes;
   final String? timeSchemeIdOverride; // 课程级时间模板覆盖
 
+  /// 超级岛/提醒通知「备注」行实际下发的取值：旧字段 [note] 优先，其次回落
+  /// 共享 [description]（备注编辑页写入的字段，保存时会清空 note）。
+  ///
+  /// 原生端快照与 payload 只认 `note` 键（历史字段），不合并的话用户在
+  /// 备注编辑页写的 description 永远到不了岛（2026-10-14 真机「展开只剩
+  /// 简称+时间两行」的成因之一）。Kotlin 侧 parseSnapshot / mapToNativeCourse
+  /// 有同一回落规则，两侧必须同步。
+  String? get liveNote {
+    final legacy = note;
+    if (legacy != null && legacy.trim().isNotEmpty) return legacy;
+    final shared = description;
+    if (shared != null && shared.trim().isNotEmpty) return shared;
+    return null;
+  }
+
   /// True when [startTime]/[endTime] carry an adapter-supplied clock range that
   /// must win over the time scheme.
   ///
@@ -227,7 +242,9 @@ class Course {
       'suspendedWeeks': suspendedWeeks,
       'courseNature': courseNature.value,
       'description': description,
-      'note': note,
+      // 原生端快照只认 note 键：这里下发合并后的取值，见 [liveNote]。
+      // description 原样保留，Dart 侧 round-trip 不受影响。
+      'note': liveNote,
       if (normalizedSessionNotes != null)
         'sessionNotes': {
           for (final entry in normalizedSessionNotes.entries)

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/widgets/live_island_preview.dart';
 
@@ -62,6 +63,32 @@ void main() {
         (widget) =>
             widget is Text && widget.data != null && pattern.hasMatch(widget.data!),
       );
+
+  /// 展开态预览用的示例课程：字段默认齐全（老演示数据的字面值），需要
+  /// 验证「空值跳行」时逐字段置空。
+  Course sampleCourse({
+    String name = '高等数学',
+    String? shortName = '高数',
+    String teacher = '张老师',
+    String location = '三教-401',
+    String? note = '带教材与习题册',
+    String? description,
+  }) {
+    return Course(
+      id: 'preview-sample',
+      name: name,
+      shortName: shortName,
+      teacher: teacher,
+      location: location,
+      dayOfWeek: 1,
+      startSection: 1,
+      endSection: 2,
+      startTime: '08:00',
+      endTime: '08:45',
+      note: note,
+      description: description,
+    );
+  }
 
   Future<void> pumpPreview(
     WidgetTester tester, {
@@ -213,6 +240,8 @@ void main() {
     required LiveDisplaySettings displayConfig,
     bool forDuringEnd = false,
     bool promoteDuringClass = true,
+    Course? sampleCourse,
+    String? nextCourseName,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -230,6 +259,8 @@ void main() {
               display: displayConfig,
               forDuringEnd: forDuringEnd,
               promoteDuringClass: promoteDuringClass,
+              sampleCourse: sampleCourse,
+              nextCourseName: nextCourseName,
             ),
           ),
         ),
@@ -251,7 +282,12 @@ void main() {
   });
 
   testWidgets('展开态预览：默认顺序渲染原生默认详情行', (tester) async {
-    await pumpExpandedPreview(tester, displayConfig: display());
+    await pumpExpandedPreview(
+      tester,
+      displayConfig: display(),
+      sampleCourse: sampleCourse(),
+      nextCourseName: '大学物理',
+    );
 
     // 默认顺序 progress, status, time, location, teacher, shortName, next, note
     // 课前没有进度块 → 进度行不出现；课前恒定提升 → status 行被原生
@@ -266,6 +302,52 @@ void main() {
     expect(find.text('备注：带教材与习题册'), findsOneWidget);
   });
 
+  testWidgets('展开态预览：字段空缺与真机一致跳行（不再演假数据）', (tester) async {
+    // 真实课没填地点/教师/备注/简称，测试通道也没有下一节 → 全部跳行，
+    // 只剩「时间」（2026-10-14 真机只剩两行的问题即出在这里）。
+    await pumpExpandedPreview(
+      tester,
+      displayConfig: display(),
+      sampleCourse: sampleCourse(
+        name: '形势',
+        shortName: null,
+        teacher: '',
+        location: '',
+        note: null,
+      ),
+    );
+
+    expect(find.textContaining('地点：'), findsNothing);
+    expect(find.textContaining('教师：'), findsNothing);
+    expect(find.textContaining('简称：'), findsNothing);
+    expect(find.textContaining('下一节：'), findsNothing);
+    expect(find.textContaining('备注：'), findsNothing);
+    expect(find.text('时间：08:00 - 08:45'), findsOneWidget);
+  });
+
+  testWidgets('展开态预览：备注取 liveNote（description 回落）', (tester) async {
+    // 备注编辑页写的是 description；原生端 note/description 已合并下发，
+    // 预览同规则——description 有值时「备注」行必须出现。
+    await pumpExpandedPreview(
+      tester,
+      displayConfig: display(expandedDetailFields: const [
+        LiveExpandedDetailField.note,
+      ]),
+      sampleCourse: sampleCourse(note: null, description: '带教材与习题册'),
+    );
+    expect(find.text('备注：带教材与习题册'), findsOneWidget);
+
+    // 旧字段 note 仍然优先。
+    await pumpExpandedPreview(
+      tester,
+      displayConfig: display(expandedDetailFields: const [
+        LiveExpandedDetailField.note,
+      ]),
+      sampleCourse: sampleCourse(note: '旧备注', description: '新简介'),
+    );
+    expect(find.text('备注：旧备注'), findsOneWidget);
+  });
+
   testWidgets('展开态预览：自定义顺序按用户设置排列', (tester) async {
     await pumpExpandedPreview(
       tester,
@@ -273,6 +355,7 @@ void main() {
         LiveExpandedDetailField.note,
         LiveExpandedDetailField.location,
       ]),
+      sampleCourse: sampleCourse(),
     );
 
     expect(find.text('备注：带教材与习题册'), findsOneWidget);
