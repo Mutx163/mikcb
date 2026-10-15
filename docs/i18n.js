@@ -9,7 +9,7 @@
   // 2026-09-18：新增 hero.tails（首屏尾句轮换），改文案键必须一起改这里。
   // 2026-09-26：官网加「求 star」入口，新增 feature.open.starLink 与
   //             hero.statStarsAsk（读屏专用），nav.githubAria 净变化为零。
-  const I18N_VERSION = "20260926-star-cta";
+  const I18N_VERSION = "20261015-shots-desc";
   const DEFAULT_LOCALE = "zh-CN";
   const SUPPORTED = [
     { id: "zh-CN", htmlLang: "zh-CN", ogLocale: "zh_CN", nativeName: "简体中文" },

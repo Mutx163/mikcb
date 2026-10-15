@@ -2332,76 +2332,43 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
   }
 }
 
-/* ---------- Cookie 同意卡片 ----------
-   参考主流做法（Vercel / Linear 一类开发者站点）：不做横贯底部的横幅，
-   改成左下角一张紧凑小卡——小图标 + 标题 + 一行短文案 + 两个等宽按钮。
-   玻璃质感与顶栏同源；「同意」品牌蓝渐变（克制投影），「拒绝」描边款，
+/* ---------- Cookie 同意条 ----------
+   贴底平铺的轻量悬浮条：全宽毛玻璃 + 顶部一条细分割线，内容与页面主列对齐。
+   单行结构——左侧一行小字（无图标无标题，主流站点最常见做法），
+   右侧「同意」（品牌蓝渐变小胶囊）与「拒绝」（描边款）；
    两者同等可见、只是主次分明，不做「把拒绝藏起来」的暗模式。 */
 
 .cookie-consent {
   position: fixed;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  left: 16px;
+  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 200;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: min(340px, calc(100% - 32px));
-  padding: 18px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-lg);
-  background: rgba(18, 24, 36, 0.72);
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 10px max(20px, calc((100% - var(--content-width)) / 2));
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  background: rgba(13, 18, 28, 0.78);
   -webkit-backdrop-filter: saturate(160%) blur(18px);
   backdrop-filter: saturate(160%) blur(18px);
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   transition: opacity 0.25s var(--ease-out), transform 0.25s var(--ease-out);
 }
 
 .cookie-consent.is-leaving {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateY(12px);
   pointer-events: none;
-}
-
-.cookie-consent-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.cookie-consent-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  border: 1px solid var(--line-strong);
-  background: var(--card);
-  color: var(--blue-soft);
-}
-
-.cookie-consent-icon svg {
-  width: 17px;
-  height: 17px;
-}
-
-.cookie-consent-title {
-  margin: 0;
-  color: var(--text);
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: 1.4;
 }
 
 .cookie-consent-text {
   margin: 0;
-  color: var(--text-soft);
+  min-width: 0;
+  color: var(--text-faint);
   font-size: 0.8rem;
-  line-height: 1.65;
+  line-height: 1.6;
 }
 
 .cookie-consent-text .inline-link {
@@ -2413,16 +2380,17 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
 .cookie-consent-actions {
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .cookie-btn {
-  flex: 1;
-  padding: 8px 0;
+  padding: 7px 18px;
   border-radius: 999px;
   border: 1px solid transparent;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   line-height: 1;
+  white-space: nowrap;
   transition: transform 0.2s var(--ease-out), box-shadow 0.25s, background 0.25s,
     border-color 0.25s, color 0.25s;
 }
@@ -2434,12 +2402,12 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
 .cookie-btn-primary {
   color: #fff;
   background: linear-gradient(120deg, var(--cta-from), var(--cta-to));
-  box-shadow: 0 4px 14px rgba(41, 121, 255, 0.3);
+  box-shadow: 0 3px 10px rgba(41, 121, 255, 0.28);
 }
 
 .cookie-btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(41, 121, 255, 0.4);
+  box-shadow: 0 5px 14px rgba(41, 121, 255, 0.38);
 }
 
 .cookie-btn-ghost {
@@ -2454,21 +2422,22 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
   background: var(--card);
 }
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .cookie-consent {
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(340px, calc(100% - 24px));
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    text-align: left;
+    padding-top: 12px;
   }
 
-  .cookie-consent.is-leaving {
-    transform: translate(-50%, 10px);
+  .cookie-consent-actions {
+    justify-content: stretch;
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    .cookie-consent:not([hidden]) {
-      animation: cookie-in 0.5s var(--ease-out) 0.4s backwards;
-    }
+  .cookie-btn {
+    flex: 1;
+    padding: 9px 0;
   }
 }
 
@@ -2480,7 +2449,7 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
   @keyframes cookie-in {
     from {
       opacity: 0;
-      transform: translateY(14px);
+      transform: translateY(100%);
     }
 
     to {
@@ -2538,6 +2507,13 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
    设计约束：obsidian-mono 减法风。只给「机身框 + 截图 + 一行小灰字」，
    不做标签页 / 计数器 / 光晕 / 渐变字——截图本身是主角（2026-10-14）。
    胶片带横向滚动：滚动吸附 + 两端随视口淡出；点击任意一张开灯箱看原图。 */
+
+.section-shots .section-desc {
+  /* 中文逐字断行，折到末行只剩「图。」这类孤字（500~640px 宽度段实测）。
+     balance 把两行摊匀，末行变成半句话；一行放得下时 balance 不起作用。
+   只作用于本区块——其它 section-desc 是 40~74 字长段，摊匀会锯齿。 */
+  text-wrap: balance;
+}
 
 .shots-band {
   position: relative;
