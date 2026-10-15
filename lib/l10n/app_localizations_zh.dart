@@ -10885,6 +10885,9 @@ class AppLocalizationsZh extends AppLocalizations {
       '这里排的就是展开卡片正文的行序，与下方展开态预览一致。进度仅课中显示；展开状态下阶段与状态通常已并入标题与摘要，不单独成行。';
 
   @override
+  String get liveExpandedDetailUnfilledSuffix => '未填写，岛上不显示';
+
+  @override
   String get liveExpandedDetailReorderHandleLabel => '拖动排序';
 
   @override
@@ -22149,6 +22152,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get liveExpandedDetailHintDuringEnd =>
       '此清單即展開卡片的正文行序，與下方展開態預覽一致。進度僅課中顯示；展開狀態下階段與狀態通常已併入標題與摘要，不單獨成行。';
+
+  @override
+  String get liveExpandedDetailUnfilledSuffix => '未填寫，島上不顯示';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '拖動排序';
@@ -33416,6 +33422,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get liveExpandedDetailHintDuringEnd =>
       '此清單即展開卡片的正文行序，與下方展開態預覽一致。進度僅課中顯示；展開狀態下階段與狀態通常已併入標題與摘要，不單獨成行。';
+
+  @override
+  String get liveExpandedDetailUnfilledSuffix => '未填寫，島上不顯示';
 
   @override
   String get liveExpandedDetailReorderHandleLabel => '拖動排序';

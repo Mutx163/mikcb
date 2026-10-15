@@ -11229,6 +11229,9 @@ class AppLocalizationsJa extends AppLocalizations {
       'このリストは展開カード本文の行順で、下のプレビューと一致します。「進捗」は授業中のみ表示され、展開時の「段階」「状態」は通常タイトルと概要に含まれるため独立行になりません。';
 
   @override
+  String get liveExpandedDetailUnfilledSuffix => '未入力のため島には表示されません';
+
+  @override
   String get liveExpandedDetailReorderHandleLabel => '並べ替え';
 
   @override

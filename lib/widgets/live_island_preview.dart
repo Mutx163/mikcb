@@ -572,6 +572,7 @@ class _LiveIslandExpandedPreviewCardState
             detailLines: _detailLines(l10n, stages[index], d),
             emptyHint: l10n.liveIslandExpandedPreviewEmptyHint,
             platformCaption: l10n.liveIslandExpandedPreviewCaption,
+            unfilledSuffix: l10n.liveExpandedDetailUnfilledSuffix,
           ),
           if (index != stages.length - 1) const SizedBox(height: 12),
         ],
@@ -799,30 +800,39 @@ class _LiveIslandExpandedPreviewCardState
         case LiveExpandedDetailField.location:
           // 展开态的 location 字段独立于折叠态「显示地点」开关：原生
           // expandedDetailLineList 只判断 `location.isNotBlank()`，不看
-          // showLocationInIsland（设计文档 §10.3）。**但空值照样跳行**——
-          // 旧行为用演示地点兜底，真实课没填地点时预览多出一行。
+          // showLocationInIsland（设计文档 §10.3）。
           final location = course?.location.trim();
           if (location != null && location.isNotEmpty) {
             lines.add(l10n.liveExpandedDetailLineLocation(location));
+          } else {
+            // 课程没填地点：真机会跳过这一行。预览用灰字占位行解释——
+            // 否则开关拨了预览毫无变化，看起来像坏了（2026-10-15 反馈）。
+            lines.add('(?)${l10n.liveExpandedDetailFieldLocation}');
           }
         case LiveExpandedDetailField.teacher:
           final teacher = course?.teacher.trim();
           if (teacher != null && teacher.isNotEmpty) {
             lines.add(l10n.liveExpandedDetailLineTeacher(teacher));
+          } else {
+            lines.add('(?)${l10n.liveExpandedDetailFieldTeacher}');
           }
         case LiveExpandedDetailField.nextCourse:
-          // 原生 nextText 来自下发载荷的 nextCourse.name；测试/预览同源：
-          // 没有（同日无下一条）就跳行，不再画假的「大学物理」。
+          // 原生 nextText 来自下发载荷的 nextCourse.name；没有（同日无
+          // 下一条）真机就跳行。预览同样用灰字占位行说明原因。
           final nextName = widget.nextCourseName?.trim();
           if (nextName != null && nextName.isNotEmpty) {
             lines.add(l10n.liveExpandedDetailLineNext(nextName));
+          } else {
+            lines.add('(?)${l10n.liveExpandedDetailFieldNext}');
           }
         case LiveExpandedDetailField.note:
           // 原生 noteText = Course.note（Dart 侧 liveNote 已合并
-          // description）；空值跳行，不再用演示备注兜底。
+          // description）；没填真机跳行，预览灰字占位。
           final note = course?.liveNote?.trim();
           if (note != null && note.isNotEmpty) {
             lines.add(l10n.liveExpandedDetailLineNote(note));
+          } else {
+            lines.add('(?)${l10n.liveExpandedDetailFieldNote}');
           }
       }
     }
@@ -838,6 +848,7 @@ class _ExpandedNotificationCard extends StatelessWidget {
     required this.detailLines,
     required this.emptyHint,
     required this.platformCaption,
+    required this.unfilledSuffix,
   });
 
   final String title;
@@ -845,6 +856,9 @@ class _ExpandedNotificationCard extends StatelessWidget {
   final List<String> detailLines;
   final String emptyHint;
   final String platformCaption;
+
+  /// `(?)` 占位行的说明后缀（l10n：未填写，岛上不显示）。
+  final String unfilledSuffix;
 
   static const _cardColor = Color(0xFF101114);
   static const _detailColor = Color(0xFFB9BDC4);
@@ -902,16 +916,7 @@ class _ExpandedNotificationCard extends StatelessWidget {
             for (final line in detailLines)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  line,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _detailColor,
-                    fontSize: 12,
-                    height: 1.3,
-                  ),
-                ),
+                child: _DetailLineText(line: line, unfilledSuffix: unfilledSuffix),
               ),
           ],
           const SizedBox(height: 8),
@@ -924,6 +929,39 @@ class _ExpandedNotificationCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 展开详情单行文本：`(?)` 前缀 = 课程没填该字段、真机将跳过此行，
+/// 渲染成灰字并追加说明后缀。
+class _DetailLineText extends StatelessWidget {
+  const _DetailLineText({required this.line, required this.unfilledSuffix});
+
+  final String line;
+
+  /// `(?)` 占位行的说明后缀（l10n）。
+  final String unfilledSuffix;
+
+  static const _detailColor = Color(0xFFB9BDC4);
+  static const _captionColor = Color(0xFF8A8F98);
+
+  @override
+  Widget build(BuildContext context) {
+    final isUnfilledPlaceholder = line.startsWith('(?)');
+    final text = isUnfilledPlaceholder
+        ? '${line.substring(3)}（$unfilledSuffix）'
+        : line;
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: isUnfilledPlaceholder ? _captionColor : _detailColor,
+        fontSize: 12,
+        height: 1.3,
+        fontStyle: isUnfilledPlaceholder ? FontStyle.italic : FontStyle.normal,
       ),
     );
   }

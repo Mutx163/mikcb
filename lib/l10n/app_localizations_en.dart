@@ -11567,6 +11567,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'This list is the body order of the expanded card, matching the preview below. Progress only appears during class; Stage and Status usually fold into the title and summary instead of forming separate lines.';
 
   @override
+  String get liveExpandedDetailUnfilledSuffix =>
+      'not filled in; hidden on the island';
+
+  @override
   String get liveExpandedDetailReorderHandleLabel => 'Reorder';
 
   @override

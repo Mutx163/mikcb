@@ -19812,6 +19812,12 @@ abstract class AppLocalizations {
   /// **'这里排的就是展开卡片正文的行序，与下方展开态预览一致。进度仅课中显示；展开状态下阶段与状态通常已并入标题与摘要，不单独成行。'**
   String get liveExpandedDetailHintDuringEnd;
 
+  /// No description provided for @liveExpandedDetailUnfilledSuffix.
+  ///
+  /// In zh, this message translates to:
+  /// **'未填写，岛上不显示'**
+  String get liveExpandedDetailUnfilledSuffix;
+
   /// No description provided for @liveExpandedDetailReorderHandleLabel.
   ///
   /// In zh, this message translates to:
