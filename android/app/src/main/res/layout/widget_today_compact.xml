@@ -30,18 +30,29 @@
              上色亮出。用 TextView 承载而不是纯色块：颜色走文字色通道（背景色
              在部分 ROM 的重渲染里会被静默丢掉，见 applyAccentBar 注释），字符
              是整块字符「███」，由 3dp 宽度居中裁成实心竖条；不用裸
-             View/Space/ImageButton（部分 ROM 的 RemoteViews 白名单不含它们）。 -->
-        <LinearLayout
+             View/Space/ImageButton（部分 ROM 的 RemoteViews 白名单不含它们）。
+
+             高度跟着课名走：alignTop + alignBottom 两条边都钉在课名上时，
+             相对布局按课名的高度把条 EXACTLY 测量一次（两端都固定 →
+             getChildMeasureSpec 走 EXACTLY 分支），所以课名一行条就一行高、
+             课名折成两行条就两行高，不用去猜行数。下面写的 layout_height
+             只是兜底值与横向测量那一趟的高度，最终高度以这两条对齐规则为准。
+             条里的字墨要恒高于条高，否则字墨比视图矮会在两端露出透明：
+             textSize 按「两行 19sp 课名（provider 的最宽档）也盖得住」取，
+             超出的部分被自身边界裁掉（与原 24sp 字墨撑在 17dp 里依赖的是
+             同一条 clipChildren，没有新增依赖）。 -->
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_marginTop="10dp">
 
             <TextView
                 android:id="@+id/widget_course_name_accent"
                 android:layout_width="3dp"
                 android:layout_height="17dp"
+                android:layout_alignParentStart="true"
+                android:layout_alignTop="@id/widget_course_name"
+                android:layout_alignBottom="@id/widget_course_name"
                 android:layout_marginEnd="6dp"
                 android:background="@android:color/transparent"
                 android:gravity="center"
@@ -49,21 +60,21 @@
                 android:maxLines="1"
                 android:text="&#9608;&#9608;&#9608;"
                 android:textColor="@android:color/transparent"
-                android:textSize="24sp"
+                android:textSize="64sp"
                 android:visibility="gone" />
 
             <TextView
                 android:id="@+id/widget_course_name"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_toEndOf="@id/widget_course_name_accent"
                 android:ellipsize="end"
                 android:maxLines="2"
                 android:text="高等数学"
                 android:textColor="@color/widget_ink_primary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
-        </LinearLayout>
+        </RelativeLayout>
 
         <!-- 时间/教室行。左内边距在运行时由 provider 按色条是否亮着补
              （TodayWidgetSupport.applyHeroTextGutter）：色条亮时补 9dp，
