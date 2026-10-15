@@ -793,15 +793,32 @@ class LiveUpdateService : Service() {
             ?.let { getString(R.string.notification_course_reminder_title, it) }
             ?: getString(R.string.app_display_name)
         val notification = buildBootstrapNotification(bootstrapTitle)
-        // FOREGROUND_SERVICE_TYPE_SPECIAL_USE is API 34+.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(
-                NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
-            )
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+        // 先用普通 notify() 把这条通知的「记录」建出来，再让 startForeground 认领它。
+        // 真机 events 对照（2026-10-15）：让 startForeground 自己建记录时，系统要等约
+        // 10.00 秒才收下（notification_enqueue 比应用侧交付晚 10 秒，纯参数、纯内容都
+        // 无关，去掉小米焦点参数后依旧如此）；唯一一次秒出的那次，是先落了这条不含
+        // 提升请求的普通记录、随后才更新成实时活动（创建后的更新是毫秒级）。
+        // 所以这里把「建记录」和「登记前台服务」拆开：建记录走应用侧普通路径，
+        // 实时活动/小米岛随后的更新就只是对已存在记录的更新。
+        val manager = getSystemService(NotificationManager::class.java)
+        try {
+            manager?.notify(NOTIFICATION_ID, notification)
+            // FOREGROUND_SERVICE_TYPE_SPECIAL_USE is API 34+.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        } catch (e: Exception) {
+            // 前台服务被拒时把预建的通知撤掉，别留下一条没人管的常驻通知。
+            try {
+                manager?.cancel(NOTIFICATION_ID)
+            } catch (_: Exception) {}
+            throw e
         }
         hasStartedForeground = true
     }
