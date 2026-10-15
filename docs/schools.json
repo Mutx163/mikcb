@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-14T06:35:15+00:00",
+  "updatedAt": "2026-10-15T06:18:20+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 255,
-    "schools": 250,
+    "total": 257,
+    "schools": 252,
     "generic": 5
   },
   "schools": [
@@ -471,6 +471,13 @@
       "category": "school"
     },
     {
+      "id": "GZIST",
+      "name": "广州理工学院",
+      "initial": "G",
+      "resourceFolder": "GZIST",
+      "category": "school"
+    },
+    {
       "id": "GZMTU",
       "name": "广州航海学院",
       "initial": "G",
@@ -622,6 +629,13 @@
       "name": "河北地质大学华信学院",
       "initial": "H",
       "resourceFolder": "HBGUHX",
+      "category": "school"
+    },
+    {
+      "id": "HEBEU",
+      "name": "河北工程大学",
+      "initial": "H",
+      "resourceFolder": "HEBEU",
       "category": "school"
     },
     {
