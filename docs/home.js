@@ -217,11 +217,175 @@
     }
   });
 
+  /* ---------- 界面实拍：横向拖动与进度拉杆 ----------
+     胶片带是原生横向滚动（scroll-snap），但滚动条已隐藏、鼠标没有直接
+     抓握的手势，所以补两件事：
+     1) 按住胶片带直接左右拖（pointer capture，拖动时关掉 snap 防抖动）；
+     2) 底部一根等比进度拉杆，可点、可拖，与滚动位置双向同步。
+     拉杆不消耗键盘焦点（aria-hidden，纯指针增强），键盘用户走 Tab
+     进各张截图按钮，路径不变。
+
+     与 scroll-snap 的两处冲突（Chromium 实测）：
+     a) 同步块里 add class → 赋值 scrollLeft，样式未重算，首次赋值仍被吸附；
+        必须在赋值前强制 reflow 让 snap:none 生效。
+     b) pointerup 立刻恢复 snap，松手会被视作「滚动手势结束」吸附到最近卡点；
+        必须延迟恢复（恢复动作本身不触发滚动，之后不会再吸附）。 */
+  const shotsBand = document.querySelector("[data-shots-band]");
+  const shotsScrollbar = document.querySelector("[data-shots-scrollbar]");
+  const shotsThumb = document.querySelector("[data-shots-thumb]");
+
+  if (shotsBand && shotsScrollbar && shotsThumb) {
+    let dragPointerId = null;
+    let dragStartX = 0;
+    let dragStartScroll = 0;
+    let scrollbarDrag = false;
+    let snapRestoreTimer = null;
+    let suppressNextClick = false;
+
+    const clampScroll = (value) => {
+      const max = shotsBand.scrollWidth - shotsBand.clientWidth;
+      return Math.min(Math.max(value, 0), Math.max(max, 0));
+    };
+
+    /** 关掉 snap（供程序赋值 scrollLeft 用）；restoreSnap() 延迟恢复。 */
+    const suppressSnap = () => {
+      if (snapRestoreTimer !== null) {
+        window.clearTimeout(snapRestoreTimer);
+        snapRestoreTimer = null;
+      }
+      shotsBand.classList.add("is-dragging");
+      void shotsBand.offsetHeight; // 强制重算：让 snap:none 立即生效
+    };
+
+    const restoreSnap = () => {
+      if (snapRestoreTimer !== null) {
+        window.clearTimeout(snapRestoreTimer);
+      }
+      snapRestoreTimer = window.setTimeout(() => {
+        snapRestoreTimer = null;
+        shotsBand.classList.remove("is-dragging");
+      }, 300);
+    };
+
+    const updateThumb = () => {
+      const max = shotsBand.scrollWidth - shotsBand.clientWidth;
+      if (max <= 0) {
+        shotsScrollbar.hidden = true; // 单屏放得下就不需要拉杆
+        return;
+      }
+      shotsScrollbar.hidden = false;
+      const ratio = shotsBand.clientWidth / shotsBand.scrollWidth;
+      const thumbWidth = Math.max(ratio * 100, 8); // 最小 8%，避免太细抓不到
+      const progress = shotsBand.scrollLeft / max;
+      const travel = 100 - thumbWidth;
+      shotsThumb.style.width = `${thumbWidth}%`;
+      shotsThumb.style.left = `${progress * travel}%`;
+    };
+
+    shotsBand.addEventListener("scroll", updateThumb, { passive: true });
+    window.addEventListener("resize", updateThumb);
+    updateThumb();
+
+    /* --- 胶片带按住拖动 --- */
+    shotsBand.addEventListener("pointerdown", (event) => {
+      // 右键/多点触控不接管；滚轮与触摸的原生滚动保持不动
+      if (event.button !== 0 || dragPointerId !== null) {
+        return;
+      }
+      dragPointerId = event.pointerId;
+      dragStartX = event.clientX;
+      dragStartScroll = shotsBand.scrollLeft;
+      suppressSnap();
+      try {
+        shotsBand.setPointerCapture(event.pointerId);
+      } catch {
+        // 指针失效：退化为「移出元素才停止」的普通拖动，不致命
+      }
+    });
+
+    shotsBand.addEventListener("pointermove", (event) => {
+      if (event.pointerId !== dragPointerId) {
+        return;
+      }
+      shotsBand.scrollLeft = clampScroll(dragStartScroll - (event.clientX - dragStartX));
+    });
+
+    const endBandDrag = (event) => {
+      if (event.pointerId !== dragPointerId) {
+        return;
+      }
+      dragPointerId = null;
+      restoreSnap();
+      if (shotsBand.hasPointerCapture(event.pointerId)) {
+        shotsBand.releasePointerCapture(event.pointerId);
+      }
+      // 位移超过阈值的这次按压是「拖动」不是「点选」：拦掉紧随的 click，
+      // 避免松手时误开灯箱。纯点击（<6px）不拦截。
+      suppressNextClick = Math.abs(event.clientX - dragStartX) > 6;
+    };
+    shotsBand.addEventListener("pointerup", endBandDrag);
+    shotsBand.addEventListener("pointercancel", endBandDrag);
+
+    // 拖动结束后的那次 click 在捕获阶段拦掉（灯箱的 click 监听在冒泡阶段）
+    shotsBand.addEventListener("click", (event) => {
+      if (suppressNextClick) {
+        event.stopPropagation();
+        event.preventDefault();
+        suppressNextClick = false;
+      }
+    }, true);
+
+    /* --- 拉杆：点击定位 + 按住拖动 ---
+       seek 放在 setPointerCapture 之前：capture 对合成/已失效指针会抛
+       NotFoundError，放在后面会让点击定位被异常跳过（2026-10-15 实测）。 */
+    const seekFromEvent = (event) => {
+      const track = shotsScrollbar.getBoundingClientRect();
+      const ratio = Math.min(Math.max((event.clientX - track.left) / track.width, 0), 1);
+      const max = shotsBand.scrollWidth - shotsBand.clientWidth;
+      shotsBand.scrollLeft = ratio * max;
+    };
+
+    shotsScrollbar.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) {
+        return;
+      }
+      suppressSnap();
+      seekFromEvent(event);
+      scrollbarDrag = true;
+      shotsScrollbar.classList.add("is-dragging");
+      try {
+        shotsScrollbar.setPointerCapture(event.pointerId);
+      } catch {
+        // 指针已失效（罕见）：拖动跟随会在指针移出拉杆后停止，点击定位不受影响
+      }
+    });
+
+    shotsScrollbar.addEventListener("pointermove", (event) => {
+      if (scrollbarDrag) {
+        seekFromEvent(event);
+      }
+    });
+
+    const endScrollbarDrag = (event) => {
+      if (!scrollbarDrag) {
+        return;
+      }
+      scrollbarDrag = false;
+      shotsScrollbar.classList.remove("is-dragging");
+      restoreSnap();
+      if (shotsScrollbar.hasPointerCapture(event.pointerId)) {
+        shotsScrollbar.releasePointerCapture(event.pointerId);
+      }
+    };
+    shotsScrollbar.addEventListener("pointerup", endScrollbarDrag);
+    shotsScrollbar.addEventListener("pointercancel", endScrollbarDrag);
+  }
+
   /* ---------- 界面实拍：灯箱 ----------
-     胶片带本身只靠原生横向滚动（scroll-snap），JS 只负责灯箱：
      开图 / 前后翻页 / Esc 与背景点击关闭 / 简单焦点管理。
      图源与文案全部读 DOM（.shot 的 picture 与 caption），不在 JS 里再存一份数据——
-     六语言标注由 i18n 写进 caption，灯箱直接引用，天然跟随语言切换。 */
+     六语言标注由 i18n 写进 caption，灯箱直接引用，天然跟随语言切换。
+     注意：胶片带的「拖动拦截 click」在捕获阶段监听，会先于这里冒泡的 click 执行。 */
   const lightbox = document.getElementById("shots-lightbox");
   const lightboxImg = document.getElementById("shots-lightbox-img");
   const lightboxWebp = document.getElementById("shots-lightbox-webp");
@@ -320,9 +484,9 @@
     }
   }
 
-  const shotsBand = document.querySelector("[data-shots-band]");
-  if (lightbox && shotsBand) {
-    shotsBand.addEventListener("click", (event) => {
+  const shotsBandForLightbox = shotsBand;
+  if (lightbox && shotsBandForLightbox) {
+    shotsBandForLightbox.addEventListener("click", (event) => {
       const shot = event.target instanceof Element ? event.target.closest(".shot") : null;
       if (!shot) {
         return;

@@ -2332,23 +2332,22 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
   }
 }
 
-/* ---------- Cookie 同意横幅 ----------
-   玻璃小卡：与顶栏同款毛玻璃质感，代替原来的实色块 + 重黑影。
-   按钮不再复用首页大 CTA（三层彩色外发光在小横幅里像霓虹灯）：
-   「同意」沿用品牌蓝渐变但只留一层克制的投影，「拒绝」用描边款。
-   两个按钮同等可见、只是主次分明——不做「把拒绝藏起来」的暗模式。 */
+/* ---------- Cookie 同意卡片 ----------
+   参考主流做法（Vercel / Linear 一类开发者站点）：不做横贯底部的横幅，
+   改成左下角一张紧凑小卡——小图标 + 标题 + 一行短文案 + 两个等宽按钮。
+   玻璃质感与顶栏同源；「同意」品牌蓝渐变（克制投影），「拒绝」描边款，
+   两者同等可见、只是主次分明，不做「把拒绝藏起来」的暗模式。 */
 
 .cookie-consent {
   position: fixed;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  left: 50%;
-  transform: translateX(-50%);
+  left: 16px;
   z-index: 200;
   display: flex;
-  align-items: center;
-  gap: 18px;
-  max-width: min(calc(100% - 32px), 640px);
-  padding: 14px 18px;
+  flex-direction: column;
+  gap: 12px;
+  width: min(340px, calc(100% - 32px));
+  padding: 18px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-lg);
   background: rgba(18, 24, 36, 0.72);
@@ -2362,26 +2361,63 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
 
 .cookie-consent.is-leaving {
   opacity: 0;
-  transform: translate(-50%, 10px);
+  transform: translateY(10px);
   pointer-events: none;
+}
+
+.cookie-consent-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cookie-consent-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--card);
+  color: var(--blue-soft);
+}
+
+.cookie-consent-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.cookie-consent-title {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .cookie-consent-text {
   margin: 0;
-  flex: 1;
   color: var(--text-soft);
-  font-size: 0.84rem;
-  line-height: 1.6;
+  font-size: 0.8rem;
+  line-height: 1.65;
+}
+
+.cookie-consent-text .inline-link {
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .cookie-consent-actions {
   display: flex;
   gap: 8px;
-  flex-shrink: 0;
 }
 
 .cookie-btn {
-  padding: 7px 18px;
+  flex: 1;
+  padding: 8px 0;
   border-radius: 999px;
   border: 1px solid transparent;
   font-size: 0.8rem;
@@ -2392,7 +2428,7 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
 }
 
 .cookie-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.97);
 }
 
 .cookie-btn-primary {
@@ -2420,13 +2456,19 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
 
 @media (max-width: 560px) {
   .cookie-consent {
-    flex-direction: column;
-    align-items: stretch;
-    text-align: center;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(340px, calc(100% - 24px));
   }
 
-  .cookie-consent-actions {
-    justify-content: center;
+  .cookie-consent.is-leaving {
+    transform: translate(-50%, 10px);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cookie-consent:not([hidden]) {
+      animation: cookie-in 0.5s var(--ease-out) 0.4s backwards;
+    }
   }
 }
 
@@ -2438,12 +2480,12 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
   @keyframes cookie-in {
     from {
       opacity: 0;
-      transform: translate(-50%, 14px);
+      transform: translateY(14px);
     }
 
     to {
       opacity: 1;
-      transform: translate(-50%, 0);
+      transform: translateY(0);
     }
   }
 }
@@ -2596,6 +2638,56 @@ html[lang="en"] .hero-title [data-i18n="hero.titleGrad"] {
 @media (max-width: 640px) {
   .shot-frame {
     width: clamp(128px, 42vw, 160px);
+  }
+}
+
+/* 进度拉杆：原生滚动条已隐藏，鼠标用户靠它定位与拖动。
+   纯 obsidian-mono：一根发丝线轨道 + 浅色滑块，无彩色无发光。 */
+.shots-scrollbar {
+  width: min(calc(100% - 40px), calc(100vw - 40px));
+  margin: clamp(18px, 2.4vw, 28px) auto 0;
+  padding: 6px 0; /* 扩大命中区，杆本身只有 3px 高 */
+  cursor: pointer;
+  touch-action: none; /* 拖动由 JS 接管，避免页面滚动抢事件 */
+}
+
+.shots-scrollbar-track {
+  position: relative;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.shots-scrollbar-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 20%;
+  border-radius: 999px;
+  background: rgba(244, 246, 251, 0.38);
+  transition: background 0.2s var(--ease-out);
+}
+
+.shots-scrollbar:hover .shots-scrollbar-thumb,
+.shots-scrollbar.is-dragging .shots-scrollbar-thumb {
+  background: rgba(244, 246, 251, 0.6);
+}
+
+/* 拖动期间禁用过渡类元素的状态变化，避免视觉抖动 */
+.shots-band.is-dragging {
+  scroll-snap-type: none;
+  cursor: grabbing;
+  user-select: none;
+}
+
+.shots-band.is-dragging .shot-frame {
+  translate: 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shots-scrollbar-thumb {
+    transition: none !important;
   }
 }
 

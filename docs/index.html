@@ -369,6 +369,13 @@
             </button>
           </div>
         </div>
+
+        <!-- 进度拉杆：等比反映横向滚动进度，可点可拖（原生滚动条已隐藏） -->
+        <div class="shots-scrollbar reveal" data-shots-scrollbar aria-hidden="true">
+          <div class="shots-scrollbar-track">
+            <div class="shots-scrollbar-thumb" data-shots-thumb></div>
+          </div>
+        </div>
       </section>
 
       <!-- ===================== FEATURES / BENTO ===================== -->
@@ -898,7 +905,21 @@
       hidden
       data-i18n-attr="aria-label:cookie.bannerAria"
     >
-      <p class="cookie-consent-text" id="cookie-consent-title">
+      <div class="cookie-consent-head">
+        <span class="cookie-consent-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a9 9 0 1 0 9 9" />
+            <path d="M12 3a9 9 0 0 1 9 9" />
+            <circle cx="12" cy="12" r="1.6" />
+            <circle cx="16.5" cy="9" r="1.1" />
+            <circle cx="9" cy="15.5" r="1.1" />
+          </svg>
+        </span>
+        <p class="cookie-consent-title" id="cookie-consent-title" data-i18n="cookie.title">
+          访问统计
+        </p>
+      </div>
+      <p class="cookie-consent-text">
         <span data-i18n="cookie.text">本站可使用 Google Analytics 匿名统计页面访问与交互，用于改进官网。不用于广告。详见</span>
         <a class="inline-link" href="./privacy.html" data-i18n="cookie.privacyLink">隐私政策</a>
       </p>
