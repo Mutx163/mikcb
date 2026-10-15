@@ -150,6 +150,7 @@
           <span class="nav-brand-text" data-i18n="brand.name">轻屿课表</span>
         </a>
         <nav id="nav-menu" class="nav-links" aria-label="站点导航" data-i18n-attr="aria-label:nav.siteAria">
+          <a href="#shots" data-i18n="nav.showcase">界面</a>
           <a href="#features" data-i18n="nav.features">功能</a>
           <a href="#schools" data-i18n="nav.schools">适配学校</a>
           <a href="#changelog" data-i18n="nav.updates">更新</a>
@@ -273,6 +274,99 @@
           <div class="marquee-track">
             <span data-i18n="marquee.island">HyperOS 超级岛</span><span data-i18n="marquee.couple">情侣课表</span><span data-i18n="marquee.import">教务一键导入</span><span data-i18n="marquee.webdav">WebDAV 云同步</span><span data-i18n="marquee.bill">课程统计</span><span data-i18n="marquee.widget">桌面小组件</span><span data-i18n="marquee.remind">分阶段提醒</span><span data-i18n="marquee.lan">局域网编辑</span><span data-i18n="marquee.template">时间模板</span><span data-i18n="marquee.ics">.ics 导入</span><span data-i18n="marquee.ai">识图导入</span><span data-i18n="marquee.multi">多课表</span><span data-i18n="marquee.free">免费开源</span>
             <span data-i18n="marquee.island">HyperOS 超级岛</span><span data-i18n="marquee.couple">情侣课表</span><span data-i18n="marquee.import">教务一键导入</span><span data-i18n="marquee.webdav">WebDAV 云同步</span><span data-i18n="marquee.bill">课程统计</span><span data-i18n="marquee.widget">桌面小组件</span><span data-i18n="marquee.remind">分阶段提醒</span><span data-i18n="marquee.lan">局域网编辑</span><span data-i18n="marquee.template">时间模板</span><span data-i18n="marquee.ics">.ics 导入</span><span data-i18n="marquee.ai">识图导入</span><span data-i18n="marquee.multi">多课表</span><span data-i18n="marquee.free">免费开源</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== SHOTS（界面实拍） ===================== -->
+      <!-- 设计约束：obsidian-mono 减法风（见 .agents/notes/implemented/simplification/
+           2026-09-15-homepage-obsidian-mono-redesign.md）。只给图与一行小灰字：
+           不加标签页 / 计数器 / 光晕 / 渐变字，截图本身就是主角。 -->
+      <section id="shots" class="section section-shots">
+        <div class="section-shell">
+          <div class="section-head reveal">
+            <h2><span data-i18n="shots.title">实机截图，</span><span data-i18n="shots.titleGrad">一眼看懂。</span></h2>
+            <p class="section-desc" data-i18n="shots.desc">
+              周课表、超级岛、桌面小组件与设置——全部来自运行中的 App，点击任意一张可查看原图。
+            </p>
+          </div>
+        </div>
+
+        <!-- 胶片带放在全宽容器里：两端随视口淡出，横向滚动浏览 -->
+        <div class="shots-band reveal" data-shots-band>
+          <div class="shots-track" role="list" aria-label="应用界面截图">
+            <button type="button" class="shot" role="listitem" data-shot-index="0">
+              <span class="shot-frame">
+                <picture>
+                  <source srcset="./screenshots/01-week-timetable.webp" type="image/webp" />
+                  <img src="./screenshots/01-week-timetable.png" alt="周课表全景" loading="lazy" decoding="async" width="720" height="1559" />
+                </picture>
+              </span>
+              <span class="shot-caption" data-i18n="shots.w1">周课表</span>
+            </button>
+            <button type="button" class="shot" role="listitem" data-shot-index="1">
+              <span class="shot-frame">
+                <picture>
+                  <source srcset="./screenshots/02-day-agenda.webp" type="image/webp" />
+                  <img src="./screenshots/02-day-agenda.png" alt="今日日程" loading="lazy" decoding="async" width="720" height="1559" />
+                </picture>
+              </span>
+              <span class="shot-caption" data-i18n="shots.w2">今日日程</span>
+            </button>
+            <button type="button" class="shot" role="listitem" data-shot-index="2">
+              <span class="shot-frame">
+                <picture>
+                  <source srcset="./screenshots/03-super-island.webp" type="image/webp" />
+                  <img src="./screenshots/03-super-island.png" alt="超级岛联动" loading="lazy" decoding="async" width="720" height="1559" />
+                </picture>
+              </span>
+              <span class="shot-caption" data-i18n="shots.w3">超级岛</span>
+            </button>
+            <button type="button" class="shot" role="listitem" data-shot-index="3">
+              <span class="shot-frame">
+                <picture>
+                  <source srcset="./screenshots/04-home-widgets.webp" type="image/webp" />
+                  <img src="./screenshots/04-home-widgets.png" alt="桌面小组件" loading="lazy" decoding="async" width="720" height="1559" />
+                </picture>
+              </span>
+              <span class="shot-caption" data-i18n="shots.w4">小组件</span>
+            </button>
+            <button type="button" class="shot" role="listitem" data-shot-index="4">
+              <span class="shot-frame">
+                <picture>
+                  <source srcset="./screenshots/05-weather-integration.webp" type="image/webp" />
+                  <img src="./screenshots/05-weather-integration.png" alt="天气与日程" loading="lazy" decoding="async" width="720" height="1559" />
+                </picture>
+              </span>
+              <span class="shot-caption" data-i18n="shots.w5">天气</span>
+            </button>
+            <button type="button" class="shot" role="listitem" data-shot-index="5">
+              <span class="shot-frame">
+                <picture>
+                  <source srcset="./screenshots/06-appearance-customization.webp" type="image/webp" />
+                  <img src="./screenshots/06-appearance-customization.png" alt="外观与配色" loading="lazy" decoding="async" width="720" height="1559" />
+                </picture>
+              </span>
+              <span class="shot-caption" data-i18n="shots.w6">外观</span>
+            </button>
+            <button type="button" class="shot" role="listitem" data-shot-index="6">
+              <span class="shot-frame">
+                <picture>
+                  <source srcset="./screenshots/07-timetable-settings.webp" type="image/webp" />
+                  <img src="./screenshots/07-timetable-settings.png" alt="课表设置" loading="lazy" decoding="async" width="720" height="1559" />
+                </picture>
+              </span>
+              <span class="shot-caption" data-i18n="shots.w7">课表设置</span>
+            </button>
+            <button type="button" class="shot" role="listitem" data-shot-index="7">
+              <span class="shot-frame">
+                <picture>
+                  <source srcset="./screenshots/08-about-app.webp" type="image/webp" />
+                  <img src="./screenshots/08-about-app.png" alt="关于软件" loading="lazy" decoding="async" width="720" height="1559" />
+                </picture>
+              </span>
+              <span class="shot-caption" data-i18n="shots.w8">关于</span>
+            </button>
           </div>
         </div>
       </section>
@@ -663,6 +757,30 @@
       <p class="footer-copy" data-i18n="footer.copy" id="footer-copy">Copyright © {year} 轻屿课表</p>
     </footer>
 
+    <!-- ===================== 截图灯箱（逻辑挂载点，勿改 ID） ===================== -->
+    <div class="shots-lightbox" id="shots-lightbox" aria-hidden="true">
+      <div class="shots-lightbox-backdrop" data-close-shots-lightbox></div>
+      <figure class="shots-lightbox-figure" role="dialog" aria-modal="true" aria-label="截图查看">
+        <picture>
+          <source id="shots-lightbox-webp" srcset="" type="image/webp" />
+          <img id="shots-lightbox-img" src="" alt="" decoding="async" />
+        </picture>
+        <figcaption class="shots-lightbox-caption">
+          <span id="shots-lightbox-title"></span>
+          <span class="shots-lightbox-counter" id="shots-lightbox-counter"></span>
+        </figcaption>
+      </figure>
+      <button type="button" class="shots-lightbox-nav shots-lightbox-prev" id="shots-lightbox-prev" aria-label="上一张">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button type="button" class="shots-lightbox-nav shots-lightbox-next" id="shots-lightbox-next" aria-label="下一张">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <button type="button" class="shots-lightbox-close" id="shots-lightbox-close" aria-label="关闭查看器" data-i18n-attr="aria-label:shots.closeAria">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
     <!-- ===================== 下载弹窗（逻辑挂载点，勿改 ID） ===================== -->
     <div class="release-modal" id="release-modal" aria-hidden="true">
       <div class="release-modal-backdrop" data-close-release-modal></div>
@@ -785,10 +903,10 @@
         <a class="inline-link" href="./privacy.html" data-i18n="cookie.privacyLink">隐私政策</a>
       </p>
       <div class="cookie-consent-actions">
-        <button class="cta-btn cta-primary cookie-accept" id="cookie-accept" type="button" data-i18n="cookie.accept">
+        <button class="cookie-btn cookie-btn-primary" id="cookie-accept" type="button" data-i18n="cookie.accept">
           同意
         </button>
-        <button class="cta-btn cta-ghost cookie-decline" id="cookie-decline" type="button" data-i18n="cookie.decline">
+        <button class="cookie-btn cookie-btn-ghost" id="cookie-decline" type="button" data-i18n="cookie.decline">
           拒绝
         </button>
       </div>
@@ -810,13 +928,26 @@
         var banner = document.getElementById("cookie-consent");
         if (!banner) return;
         banner.hidden = false;
+        var dismiss = function () {
+          // 先播放淡出动画再隐藏；系统开了「减少动态效果」时直接隐藏。
+          var reduced = window.matchMedia
+            && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          if (reduced) {
+            banner.hidden = true;
+            return;
+          }
+          banner.classList.add("is-leaving");
+          window.setTimeout(function () {
+            banner.hidden = true;
+          }, 260);
+        };
         document.getElementById("cookie-accept").addEventListener("click", function () {
           try {
             localStorage.setItem(consentStorageKey, "granted");
           } catch (error) {
             // Ignore storage failures.
           }
-          banner.hidden = true;
+          dismiss();
           if (typeof grantAnalyticsConsent === "function") grantAnalyticsConsent();
           if (typeof ensureGoogleAnalytics === "function") ensureGoogleAnalytics();
         });
@@ -826,7 +957,7 @@
           } catch (error) {
             // Ignore storage failures.
           }
-          banner.hidden = true;
+          dismiss();
         });
         var acceptButton = document.getElementById("cookie-accept");
         if (acceptButton && typeof acceptButton.focus === "function") {

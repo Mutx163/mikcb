@@ -216,4 +216,148 @@
       void loadLatestRelease();
     }
   });
+
+  /* ---------- 界面实拍：灯箱 ----------
+     胶片带本身只靠原生横向滚动（scroll-snap），JS 只负责灯箱：
+     开图 / 前后翻页 / Esc 与背景点击关闭 / 简单焦点管理。
+     图源与文案全部读 DOM（.shot 的 picture 与 caption），不在 JS 里再存一份数据——
+     六语言标注由 i18n 写进 caption，灯箱直接引用，天然跟随语言切换。 */
+  const lightbox = document.getElementById("shots-lightbox");
+  const lightboxImg = document.getElementById("shots-lightbox-img");
+  const lightboxWebp = document.getElementById("shots-lightbox-webp");
+  const lightboxTitle = document.getElementById("shots-lightbox-title");
+  const lightboxCounter = document.getElementById("shots-lightbox-counter");
+  const lightboxPrev = document.getElementById("shots-lightbox-prev");
+  const lightboxNext = document.getElementById("shots-lightbox-next");
+  const lightboxClose = document.getElementById("shots-lightbox-close");
+
+  let shotsList = [];
+  let shotsIndex = 0;
+  let shotsLastFocused = null;
+
+  function collectShots() {
+    shotsList = Array.from(document.querySelectorAll(".shot")).map((node) => {
+      const img = node.querySelector(".shot-frame img");
+      const source = node.querySelector(".shot-frame source");
+      return {
+        // caption 可能被 i18n 重写，所以每次打开时现取文本
+        node,
+        png: img ? img.getAttribute("src") || "" : "",
+        webp: source ? source.getAttribute("srcset") || "" : "",
+      };
+    });
+  }
+
+  function readShotTitle(index) {
+    const node = shotsList[index] && shotsList[index].node;
+    const caption = node ? node.querySelector(".shot-caption") : null;
+    return caption ? caption.textContent.trim() : "";
+  }
+
+  function showShot(index) {
+    if (!shotsList.length) {
+      return;
+    }
+    // 循环翻页：最后一张的下一张是第一张
+    shotsIndex = (index + shotsList.length) % shotsList.length;
+    const shot = shotsList[shotsIndex];
+    if (lightboxWebp) {
+      lightboxWebp.setAttribute("srcset", shot.webp);
+    }
+    if (lightboxImg) {
+      lightboxImg.setAttribute("src", shot.png);
+      lightboxImg.setAttribute(
+        "alt",
+        readShotTitle(shotsIndex) || shot.png
+      );
+    }
+    if (lightboxTitle) {
+      lightboxTitle.textContent = readShotTitle(shotsIndex);
+    }
+    if (lightboxCounter) {
+      lightboxCounter.textContent = `${shotsIndex + 1} / ${shotsList.length}`;
+    }
+  }
+
+  function openShotsLightbox(index) {
+    if (!lightbox) {
+      return;
+    }
+    collectShots();
+    if (!shotsList.length) {
+      return;
+    }
+    shotsLastFocused = document.activeElement;
+    showShot(index);
+    lightbox.classList.add("is-open");
+    lightbox.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    // 等两帧（is-open 的 visibility 过渡生效、元素进入渲染树）再聚焦关闭按钮，
+    // 否则 focus 落在仍 visibility:hidden 的元素上是 no-op。
+    // 下载弹窗用 setTimeout(0) 够用是因为它的过渡不含 visibility 延迟；这里 rAF 双帧为主、
+    // 60ms 定时器兜底（后台窗口/省电模式下 rAF 可能被冻结，届时兜底补上焦点）。
+    const focusCloseButton = () => {
+      if (lightboxClose) {
+        lightboxClose.focus();
+      }
+    };
+    requestAnimationFrame(() => {
+      requestAnimationFrame(focusCloseButton);
+    });
+    window.setTimeout(focusCloseButton, 60);
+  }
+
+  function closeShotsLightbox() {
+    if (!lightbox || !lightbox.classList.contains("is-open")) {
+      return;
+    }
+    lightbox.classList.remove("is-open");
+    lightbox.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    if (shotsLastFocused instanceof HTMLElement) {
+      shotsLastFocused.focus();
+      shotsLastFocused = null;
+    }
+  }
+
+  const shotsBand = document.querySelector("[data-shots-band]");
+  if (lightbox && shotsBand) {
+    shotsBand.addEventListener("click", (event) => {
+      const shot = event.target instanceof Element ? event.target.closest(".shot") : null;
+      if (!shot) {
+        return;
+      }
+      const index = Number(shot.getAttribute("data-shot-index"));
+      openShotsLightbox(Number.isFinite(index) ? index : 0);
+    });
+
+    lightboxPrev &&
+      lightboxPrev.addEventListener("click", () => showShot(shotsIndex - 1));
+    lightboxNext &&
+      lightboxNext.addEventListener("click", () => showShot(shotsIndex + 1));
+    lightboxClose &&
+      lightboxClose.addEventListener("click", closeShotsLightbox);
+
+    lightbox.addEventListener("click", (event) => {
+      if (event.target instanceof Element && event.target.closest("[data-close-shots-lightbox]")) {
+        closeShotsLightbox();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (!lightbox.classList.contains("is-open")) {
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeShotsLightbox();
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        showShot(shotsIndex - 1);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        showShot(shotsIndex + 1);
+      }
+    });
+  }
 })();
