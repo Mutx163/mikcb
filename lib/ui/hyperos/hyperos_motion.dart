@@ -29,7 +29,7 @@ abstract final class HyperosMotionPlatform {
   }
 
   static Duration get transitionDuration {
-    return scaledDuration(HyperosMiuixNavigation.transitionDurationMs);
+    return scaledDuration(HyperosMiuixNavigation.programmaticDurationMs);
   }
 
   static void applyUserTransitionSpeed(double speed) {

@@ -163,8 +163,8 @@ void main() {
       final snapshot = snapshotOf(TimetableSettings.defaults());
 
       expect(snapshot['buildMode'], 'debug');
-      // 系统缩放 1.0 ÷ 用户速度 1.0 × 300ms 基准。
-      expect(snapshot['transitionDurationMs'], 300);
+      // 系统缩放 1.0 ÷ 用户速度 1.0 × 500ms 基准（miuix-nav 程序化时长）。
+      expect(snapshot['transitionDurationMs'], 500);
       expect(snapshot['wallpaperConfigured'], isFalse);
     });
 

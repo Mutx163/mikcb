@@ -450,7 +450,7 @@ class _HyperosZoomShrinkScopeState extends State<HyperosZoomShrinkScope> {
             // 读起来是「带着直角缩进来」（用户原话：「看起来好像是带着直角进来
             // 的，有点怪」）。改成从**屏幕圆角**起、与矩形同步收到落点，比例全程
             // 恒定，第一帧就是一张圆角画面在缩；口径与页面切换转场同源（那边也取
-            // `displayCornerRadiusDp`，见 `_HyperosTransitionPageShell`）。
+            // `displayCornerRadiusDp`，见 `_MiuixNavClippedPage`）。
             //
             // ⚠️ 圆角只属于**转场这一层**（下面那个 ClipRRect 包的是快照）：首页
             // 本体、以及编辑页里那份"真首页"渲染源都不经过它 —— 转场结束后本

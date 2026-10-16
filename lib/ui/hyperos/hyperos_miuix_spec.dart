@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 /// Design constants transcribed from [Miuix](https://github.com/compose-miuix-ui/miuix)
@@ -689,8 +691,12 @@ abstract final class HyperosMiuixFloatingToolbar {
 // =============================================================================
 
 abstract final class HyperosMiuixNavigation {
-  /// Base page transition duration. Tuned to match the previous default at 1.5×
-  /// user speed (450ms ÷ 1.5 = 300ms).
+  /// AOSP「设置」基准时长：当年按「上一个默认值在 1.5× 用户速度下」反推
+  /// （450ms ÷ 1.5 = 300ms）。
+  ///
+  /// 2026-10-16 起**不再是页面转场的实际基准**——转场改用官方 miuix-nav 口径的
+  /// [programmaticDurationMs]（500ms）。这里保留 300ms 是因为它仍是另一套参照系：
+  /// 启动画面 [kSplashEntranceMs] 用它同族的量级，且回退旧转场时要用回它。
   static const transitionDurationMs = 300;
 
   /// [SettingsTransitionHelper.FADE_THROUGH_THRESHOLD]
@@ -705,15 +711,84 @@ abstract final class HyperosMiuixNavigation {
   /// Fallback when [RoundedCorner] is unavailable (typical Xiaomi display).
   static const pageCornerRadiusFallback = 28.0;
 
-  /// Corner radius while a sub-page is sliding in/out (card-like HyperOS feel).
-  /// Larger than the display corner so the motion reads clearly; removed on settle.
-  static const pageTransitionCornerRadius = 40.0;
+  // ---------------------------------------------------------------------------
+  // miuix-nav — `NavTransitions.MiuixDefault` + `NavDisplayEffects.Default`
+  // （官方 Compose Multiplatform 的导航运行时；见 docs/zh_CN/guide/miuix-nav.md）
+  // ---------------------------------------------------------------------------
 
-  /// Drop shadow on the incoming page's lower-left (overhead light on a card).
-  static const pageShadowOffsetX = -8.0;
-  static const pageShadowOffsetY = 12.0;
-  static const pageShadowBlur = 28.0;
-  static const pageShadowAlpha = 0.20;
+  /// [NavDriverSpec.PROGRAMMATIC_DURATION_MILLIS]：程序化 push / pop 的整步时长。
+  ///
+  /// 官方原文：与既定导航手感一致（约 500ms）的一档，且「曲线无论距离都在这个
+  /// 时间里走完」——多步连推也扫在同一窗口内。**当前页面转场的实际基准。**
+  static const programmaticDurationMs = 500;
+
+  /// [NavTransitions.MiuixDefault]：被覆盖页向 leading 方向视差的屏宽比例。
+  /// 与 [exitSlideFraction] 同值（25%），这里单列是为了让「官方几何」自成一组。
+  static const coveredParallaxFraction = 0.25;
+
+  /// [NavTransitions.MiuixDefault]：被覆盖页的透明度衰减上限（1 - 0.1 × 覆盖度）。
+  static const coveredAlphaFalloff = 0.1;
+
+  /// [NavDisplayEffects.Default.dimAmount]：最顶层之下全屏压暗遮罩的最大 alpha。
+  static const dimAmount = 0.5;
+}
+
+/// miuix-nav `NavProgrammaticEasing`：把欠阻尼弹簧的阶跃响应烘焙成 [Curve]，
+/// 配固定时长的 tween 播放（[HyperosMiuixNavigation.programmaticDurationMs]）。
+///
+/// 官方注释口径：中段轻快（约 20% 时长处已走完 48%），尾段很长很缓；曲线在
+/// `0..1` 内单调（首次越过 1 落在播放窗口之外），`transform(1) ≈ 0.99933`，
+/// 官方靠 tween 最后一帧把这点残差收掉。Flutter 的 [CurvedAnimation] 不会替
+/// 我们收尾：那 0.067% 的残留位移在 400dp 宽的页面上是 0.27px —— 正好是
+/// 「停稳后右边缘露出一条缝」那类瑕疵，所以这里把末值归一化到整 1。
+class HyperosMiuixNavProgrammaticCurve extends Curve {
+  const HyperosMiuixNavProgrammaticCurve();
+
+  /// 官方 `NavSettleEasing` 的 response（振荡周期，单位 = 播放时长）。
+  static const response = 0.8;
+
+  /// 官方 `NavSettleEasing` 的 damping（阻尼比；< 1 即欠阻尼）。
+  static const damping = 0.95;
+
+  static final _BakedSpringStep _step = _BakedSpringStep(
+    response: response,
+    damping: damping,
+  );
+
+  @override
+  double transformInternal(double t) => _step.normalized(t);
+
+  @override
+  String toString() => 'HyperosMiuixNavProgrammaticCurve(response: $response, '
+      'damping: $damping)';
+}
+
+/// `NavSettleEasing` 那条闭式解，在这里预先算好系数并归一化末值。
+///
+/// 公式（官方同款）：`x(t) = e^(r·t)·(-cos(w·t) + c2·sin(w·t)) + 1`，
+/// 其中 `ω = 2π/response`、`k = ω²`、`c = damping·4π/response`、
+/// `w = √(4k - c²)/2`、`r = -c/2`、`c2 = r/w`。
+class _BakedSpringStep {
+  _BakedSpringStep({required double response, required double damping}) {
+    final omega = 2 * math.pi / response;
+    final stiffness = omega * omega;
+    final friction = damping * 4 * math.pi / response;
+    _w = math.sqrt(4 * stiffness - friction * friction) / 2;
+    _r = -friction / 2;
+    _c2 = _r / _w;
+    _end = raw(1);
+  }
+
+  late final double _w;
+  late final double _r;
+  late final double _c2;
+  /// 原始公式在 t = 1 处的取值（≈0.99933），用来把整条曲线归一化到整 1。
+  late final double _end;
+
+  double raw(double t) =>
+      math.exp(_r * t) * (-math.cos(_w * t) + _c2 * math.sin(_w * t)) + 1;
+
+  double normalized(double t) => (raw(t) / _end).clamp(0.0, 1.0);
 }
 
 // =============================================================================

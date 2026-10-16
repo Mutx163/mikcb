@@ -16,12 +16,16 @@ final RouteObserver<ModalRoute<void>> hyperosRouteObserver =
 /// the same opaque horizontal shared-axis transition and respects Android
 /// `Transition animation scale`.
 abstract final class HyperosNavigation {
-  static const Curve transitionCurve = HyperosMiuixNavigation.transitionCurve;
+  /// 页面转场的缓动：官方 miuix-nav 的程序化曲线（`NavProgrammaticEasing`）。
+  ///
+  /// 2026-10-16 起不再是 AOSP「设置」那条 `fast_out_extra_slow_in`
+  /// （[HyperosMiuixNavigation.transitionCurve]，现在只留给启动画面）。
+  static const Curve transitionCurve = HyperosMiuixNavProgrammaticCurve();
 
   static Duration transitionDurationOf(BuildContext context) =>
       HyperosMotionScope.of(
         context,
-      ).scaledDuration(HyperosMiuixNavigation.transitionDurationMs);
+      ).scaledDuration(HyperosMiuixNavigation.programmaticDurationMs);
 
   static Duration get transitionDuration =>
       HyperosMotionPlatform.transitionDuration;
@@ -79,15 +83,6 @@ abstract final class HyperosNavigation {
     );
   }
 
-  /// Peak shadow strength while the route is mid-transition (0 at rest).
-  @visibleForTesting
-  static double transitionShadowStrength(double progress) {
-    if (progress <= 0 || progress >= 1) {
-      return 0;
-    }
-    return 4 * progress * (1 - progress);
-  }
-
   /// Whether the primary route animation is still running (not settled).
   ///
   /// Prefer this over raw progress for clip decisions: floating-point values
@@ -99,29 +94,6 @@ abstract final class HyperosNavigation {
         status == AnimationStatus.reverse;
   }
 
-  /// Corner-radius factor for the sliding page while the primary animation runs.
-  ///
-  /// Returns 0 at settled endpoints. While moving, stays near full radius so the
-  /// page enters as a rounded card, then drops only in the final settle band.
-  @visibleForTesting
-  static double transitionCornerRadiusFactor(double progress) {
-    if (progress <= 0 || progress >= 1) {
-      return 0;
-    }
-    // Keep nearly full radius for most of the slide; ease out only near rest
-    // so settle never leaves a visible half-corner clip.
-    const settleBand = 0.12;
-    if (progress <= settleBand) {
-      // Reverse (pop): radius grows as the page leaves.
-      return progress / settleBand;
-    }
-    if (progress >= 1 - settleBand) {
-      // Forward (push): radius shrinks only at the end.
-      return (1 - progress) / settleBand;
-    }
-    return 1;
-  }
-
   /// Viewport width plus right-side bleed so parallax exit never exposes routes
   /// below in the [Navigator] stack.
   @visibleForTesting
@@ -129,204 +101,255 @@ abstract final class HyperosNavigation {
     return viewportWidth * (1 + HyperosMiuixNavigation.exitSlideFraction);
   }
 
-  /// Opaque horizontal shared-axis transition — no fade-through so pages never
-  /// become transparent like MIUI / HyperOS system settings.
+  /// 官方 miuix-nav `NavTransitions.MiuixDefault` + `NavDisplayEffects.Default`
+  /// 的 Flutter 版。2026-10-16 换装，替换掉此前自研的「四角 40 圆角 + 投影」
+  /// 卡片式转场（那套的常量与辅助函数一并撤掉）。
   ///
-  /// While the route is animating, the incoming page is clipped to the display
-  /// corner radius (card-like) and casts a soft drop shadow. After settle the
-  /// clip is removed so normal use and screenshots stay square-edged.
+  /// 几何（官方转场层，全部线性于进度）：
+  /// * 栈顶那一页整屏宽位移 `+width → 0`，**按整设备像素对齐**——官方为防
+  ///   「被裁圆角 + 小数位移」在移动中闪出一条细线而做；
+  /// * 被覆盖页向 leading 方向视差 1/4 屏宽，并衰减到 0.9 透明度。
+  ///
+  /// 正交效果（官方 `NavDisplayEffects`）：
+  /// * 前缘圆角裁切：只裁**前缘两角**（LTR = 左），半径取设备屏幕圆角，
+  ///   停稳后立刻撤掉；
+  /// * 全屏压暗：位于本层之上、上层页面之下，最深 0.5，随覆盖程度线性加深。
   static Widget buildSharedAxisTransition({
     required Animation<double> animation,
     required Animation<double> secondaryAnimation,
     required Widget child,
   }) {
-    final enterCurve = CurvedAnimation(
-      parent: animation,
-      curve: transitionCurve,
-      reverseCurve: transitionCurve,
+    return _MiuixNavPageTransition(
+      enter: CurvedAnimation(
+        parent: animation,
+        curve: transitionCurve,
+        reverseCurve: transitionCurve,
+      ),
+      cover: CurvedAnimation(
+        parent: secondaryAnimation,
+        curve: transitionCurve,
+        reverseCurve: transitionCurve,
+      ),
+      child: child,
     );
-    final parallaxCurve = CurvedAnimation(
-      parent: secondaryAnimation,
-      curve: transitionCurve,
-      reverseCurve: transitionCurve,
+  }
+}
+
+/// 官方默认预设驱动的一页：位移 + 前缘圆角 + 覆盖衰减 + 压暗蒙层。
+///
+/// 同一个 widget 伺服两种角色（框架对进出两页都调 `buildTransitions`）：
+/// * 作为**栈顶那一页**（正在进或正在退）：`enter` 在 0..1 之间走，`cover == 0`；
+/// * 作为**被盖住的那一页**：`enter == 1`（停在自己位置），`cover` 在 0..1 之间走。
+class _MiuixNavPageTransition extends StatelessWidget {
+  const _MiuixNavPageTransition({
+    required this.enter,
+    required this.cover,
+    required this.child,
+  });
+
+  /// 本页作为栈顶的运动进度：0 = 完全移出（贴在 trailing 侧），1 = 到位。
+  final Animation<double> enter;
+
+  /// 本页被上层覆盖的程度：0 = 完全显露，1 = 完全被盖住。
+  final Animation<double> cover;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final width = media.size.width;
+    if (width <= 0) {
+      return child;
+    }
+    final devicePixelRatio = media.devicePixelRatio;
+    final displayRadius = HyperosMotionScope.of(context).displayCornerRadiusDp;
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final bleedWidth = HyperosNavigation.parallaxBleedWidth(width);
+    final surface = HyperosColors.scaffoldBackground(context);
+
+    return AnimatedBuilder(
+      animation: Listenable.merge([enter, cover]),
+      builder: (context, _) {
+        final enterValue = enter.value.clamp(0.0, 1.0);
+        final coverValue = cover.value.clamp(0.0, 1.0);
+        // LTR：进页从右侧进来、被覆盖页向左退；RTL 整体镜像（官方同款处理）。
+        final directionSign = isRtl ? -1.0 : 1.0;
+
+        // 1) 栈顶位移：整屏宽 → 0，对齐到整设备像素。
+        final slidePx = _snapToDevicePixels(
+          directionSign * (1 - enterValue) * width,
+          devicePixelRatio,
+        );
+        // 2) 被覆盖页：向 leading 方向视差 1/4 屏宽。
+        final parallaxPx =
+            -directionSign *
+            HyperosMiuixNavigation.coveredParallaxFraction *
+            width *
+            coverValue;
+        // 3) 被覆盖页的透明度衰减：官方 1 - 0.1 × 覆盖度。
+        final coveredAlpha =
+            1 - HyperosMiuixNavigation.coveredAlphaFalloff * coverValue;
+        // 4) 压暗蒙层：官方曲线随深度线性，等价于「随覆盖程度线性加深」。
+        final scrimAlpha = HyperosMiuixNavigation.dimAmount * coverValue;
+
+        final page = _MiuixNavClippedPage(
+          progress: enter,
+          radius: displayRadius,
+          alpha: coveredAlpha,
+          // 帧缓存边界：转场期间只重新合成「圆角裁切 + 透明度 + 位移」，
+          // 页面像素直接复用，不再逐帧重栅格化整页。
+          child: RepaintBoundary(child: child),
+        );
+
+        // 只有被覆盖时才需要视差补底（页面右侧 bleed 出去那一条，防止视差
+        // 滑出后露出 Navigator 里更下一层的路由）；也只有那时才有压暗蒙层。
+        final content = coverValue > 0.001
+            ? _MiuixNavParallaxBleed(
+                width: width,
+                bleedWidth: bleedWidth,
+                surface: surface,
+                child: page,
+              )
+            : page;
+
+        final translated = Transform.translate(
+          offset: Offset(slidePx + parallaxPx, 0),
+          child: content,
+        );
+
+        if (scrimAlpha <= 0.001) {
+          // 纯位移不要外套 Stack：Stack 会把路由给的紧约束放宽成 0..max，
+          // 根节点是「Stack + 零尺寸常驻子级」的页面会塌成高度 0。
+          return translated;
+        }
+
+        return Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.topLeft,
+          children: [
+            translated,
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: scrimAlpha),
+              ),
+            ),
+          ],
+        );
+      },
     );
+  }
 
-    final enterSlide = Tween<Offset>(
-      begin: const Offset(1, 0),
-      end: Offset.zero,
-    ).animate(enterCurve);
-    final parallaxSlide = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(-HyperosMiuixNavigation.exitSlideFraction, 0),
-    ).animate(parallaxCurve);
+  /// 把逻辑像素位移对齐到整物理像素。
+  ///
+  /// 官方理由：被前缘圆角裁切的页面在**小数位移**下，边缘的抗锯齿会闪出一条
+  /// 细线（≤0.5px）；对齐不影响位移与进度的线性关系。
+  static double _snapToDevicePixels(double logicalPx, double devicePixelRatio) {
+    if (devicePixelRatio <= 0) {
+      return logicalPx;
+    }
+    return (logicalPx * devicePixelRatio).roundToDouble() / devicePixelRatio;
+  }
+}
 
-    return SlideTransition(
-      position: parallaxSlide,
-      child: SlideTransition(
-        position: enterSlide,
-        child: _HyperosParallaxBleed(
-          secondaryAnimation: secondaryAnimation,
-          child: _HyperosTransitionPageShell(
-            animation: animation,
-            // 帧缓存边界：转场期间 shell 每帧都要改「圆角裁切 + 投影」。
-            // 框架给 route 那个 RepaintBoundary（routes.dart 的 `_page`）把
-            // buildPage **整个包在里面**——也就是把本 shell 也包进去了，
-            // 于是裁切/投影一变，它下面的整页像素照旧逐帧重栅格化。
-            // 这里把页面本体单独隔离：转场期间只重新合成「裁切 + 投影」，
-            // 页面像素直接复用，滑入/滑出不再重画整页。
-            child: RepaintBoundary(child: child),
+/// 被覆盖页的视差补底：把路由表面向右延长 1.25 屏宽，视差滑出后不露出
+/// [Navigator] 里更下一层的路由。
+class _MiuixNavParallaxBleed extends StatelessWidget {
+  const _MiuixNavParallaxBleed({
+    required this.width,
+    required this.bleedWidth,
+    required this.surface,
+    required this.child,
+  });
+
+  final double width;
+  final double bleedWidth;
+  final Color surface;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: bleedWidth,
+      height: double.infinity,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.centerLeft,
+        children: [
+          // 补底只铺**会被露出的那一条**（页面右侧 bleed 出来的部分）：
+          // 整块 1.25× 视口铺底里，[0, width] 这一段始终被不透明页面盖住，
+          // 铺它是每帧白填一整屏。补底本身不能省 —— 它负责让视差滑出后
+          // 不露出 Navigator 里更下一层的路由。
+          Positioned(
+            left: width,
+            top: 0,
+            bottom: 0,
+            width: bleedWidth - width,
+            child: ColoredBox(color: surface),
           ),
-        ),
+          // 高度必须顶死：外层 Stack 给非定位子级的是**放宽后**的约束
+          // （min=0）。路由静止时给页面的是撑满视口的紧约束；这里若只锁
+          // 宽不锁高，根节点是「Stack + 零尺寸常驻子级（挂载态弹层）」的
+          // 页面（如教务仓库页）会按子级塌成高度 0 —— 整页不画，
+          // 转场露出的那条就是黑带（2026-09-28 真机现象）。∞ 经 enforce
+          // 收成 incoming 的 max，正好还原静止时的紧约束。
+          SizedBox(width: width, height: double.infinity, child: child),
+        ],
       ),
     );
   }
 }
 
-/// Extends the route surface to the right while the route is being covered so
-/// parallax exit never reveals routes below in the [Navigator] stack.
-class _HyperosParallaxBleed extends StatelessWidget {
-  const _HyperosParallaxBleed({
-    required this.secondaryAnimation,
-    required this.child,
-  });
-
-  final Animation<double> secondaryAnimation;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: secondaryAnimation,
-      builder: (context, child) {
-        if (secondaryAnimation.value <= 0.001) {
-          return child!;
-        }
-        final surface = HyperosColors.scaffoldBackground(context);
-        final width = MediaQuery.sizeOf(context).width;
-        if (width <= 0) {
-          return child!;
-        }
-        final bleedWidth = HyperosNavigation.parallaxBleedWidth(width);
-        return SizedBox(
-          width: bleedWidth,
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.centerLeft,
-            children: [
-              // 补底只铺**会被露出的那一条**（页面右侧 bleed 出来的部分）：
-              // 整块 1.25× 视口铺底里，[0, width] 这一段始终被不透明页面盖住，
-              // 铺它是每帧白填一整屏。补底本身不能省 —— 它负责让视差滑出后
-              // 不露出 Navigator 里更下一层的路由。
-              Positioned(
-                left: width,
-                top: 0,
-                bottom: 0,
-                width: bleedWidth - width,
-                child: ColoredBox(color: surface),
-              ),
-              // 高度必须顶死：外层 Stack 给非定位子级的是**放宽后**的约束
-              // （min=0）。路由静止时给页面的是撑满视口的紧约束；这里若只锁
-              // 宽不锁高，根节点是「Stack + 零尺寸常驻子级（挂载态弹层）」的
-              // 页面（如教务仓库页）会按子级塌成高度 0 —— 整页不画，
-              // 转场露出的那条就是黑带（2026-09-28 真机现象）。∞ 经 enforce
-              // 收成 incoming 的 max，正好还原静止时的紧约束。
-              SizedBox(width: width, height: double.infinity, child: child),
-            ],
-          ),
-        );
-      },
-      child: child,
-    );
-  }
-}
-
-/// Rounded clip + card drop shadow only while the route is mid-transition.
+/// 前缘圆角裁切 + 被覆盖页的透明度衰减，都只在需要时挂上。
 ///
-/// Once [AnimationStatus.completed] / [AnimationStatus.dismissed], returns the
-/// bare child so screenshots never show residual half-corner clips.
-class _HyperosTransitionPageShell extends StatelessWidget {
-  const _HyperosTransitionPageShell({
-    required this.animation,
+/// 裁切只在栈顶还在动（forward / reverse）时存在：一旦停稳就返回裸 child，
+/// 静止态与截图永远不会看到残留的圆角缺口。
+class _MiuixNavClippedPage extends StatelessWidget {
+  const _MiuixNavClippedPage({
+    required this.progress,
+    required this.radius,
+    required this.alpha,
     required this.child,
   });
 
-  final Animation<double> animation;
+  /// 本页作为栈顶的运动进度，只用来判「还在动吗」。
+  final Animation<double> progress;
+
+  /// 裁切半径：官方取设备屏幕圆角（平台报 0 时即不裁）。
+  final double radius;
+
+  /// 被覆盖页的透明度（1 = 不透明，此时不挂 [Opacity]，不起离屏层）。
+  final double alpha;
+
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    // Prefer a dedicated transition radius so the card-like slide is obvious;
-    // never smaller than the device display corner when the OS reports a larger one.
-    final displayRadius = HyperosMotionScope.of(context).displayCornerRadiusDp;
-    final cornerRadius =
-        displayRadius > HyperosMiuixNavigation.pageTransitionCornerRadius
-        ? displayRadius
-        : HyperosMiuixNavigation.pageTransitionCornerRadius;
-    final surface = HyperosColors.scaffoldBackground(context);
-
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) {
-        final status = animation.status;
-        if (!HyperosNavigation.isPrimaryTransitionActive(status)) {
-          // Settled: no ClipRRect / no rounded DecoratedBox.
-          return child!;
-        }
-
-        final progress = animation.value.clamp(0.0, 1.0);
-        final cornerFactor = HyperosNavigation.transitionCornerRadiusFactor(
-          progress,
-        );
-        final effectiveRadius = cornerRadius * cornerFactor;
-        // Full card corners while sliding (not only the left edge).
-        final clipRadius = BorderRadius.circular(effectiveRadius);
-        final shadowStrength = HyperosNavigation.transitionShadowStrength(
-          progress,
-        );
-
-        if (effectiveRadius <= 0.5 && shadowStrength <= 0) {
-          return child!;
-        }
-
-        Widget page = child!;
-        if (effectiveRadius > 0.5) {
-          page = ClipRRect(
-            borderRadius: clipRadius,
-            child: page,
-          );
-        }
-
-        // 投影**不**单独成层：曾试过把它拆出来、用 Opacity 表达强度（让模糊
-        // 只算一次），真机实测对「进入设置页的长帧」没有可测改善
-        // （523/498/432ms vs 基线 440/523/531ms），反而每次转场多挂一块全屏
-        // 缓存层 —— 而实测那时的瓶颈正是「每次打开都分配上百 MB 离屏目标」，
-        // 加层方向相反，故回退到与不透明底同一层绘制。
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: effectiveRadius > 0.5 ? clipRadius : null,
-            color: surface,
-            boxShadow: shadowStrength <= 0
-                ? null
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(
-                        alpha:
-                            HyperosMiuixNavigation.pageShadowAlpha *
-                            shadowStrength,
-                      ),
-                      blurRadius: HyperosMiuixNavigation.pageShadowBlur,
-                      offset: const Offset(
-                        HyperosMiuixNavigation.pageShadowOffsetX,
-                        HyperosMiuixNavigation.pageShadowOffsetY,
-                      ),
-                    ),
-                  ],
-          ),
-          child: page,
-        );
-      },
-      child: child,
+    final moving = HyperosNavigation.isPrimaryTransitionActive(
+      progress.status,
     );
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+
+    Widget page = child;
+    if (moving && radius > 0.5) {
+      // 只裁前缘两角（LTR = 左）：整页滑入时贴屏幕边缘那两个角不该被裁。
+      page = ClipRRect(
+        borderRadius: isRtl
+            ? BorderRadius.only(
+                topRight: Radius.circular(radius),
+                bottomRight: Radius.circular(radius),
+              )
+            : BorderRadius.only(
+                topLeft: Radius.circular(radius),
+                bottomLeft: Radius.circular(radius),
+              ),
+        child: page,
+      );
+    }
+    if (alpha < 1) {
+      page = Opacity(opacity: alpha, child: page);
+    }
+    return page;
   }
 }
 

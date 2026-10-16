@@ -219,7 +219,7 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
 /// 快照里「当前环境」的那部分：不看你设置、但同样决定掉帧。
 ///
 /// 单列出来是因为这些是最容易被忽略的排障项 —— 例如系统开发者选项里把动画
-/// 缩放调成 0.5 之后，300ms 的转场只剩 150ms、120Hz 上只有十几帧，任何一帧
+/// 缩放调成 0.5 之后，500ms 的转场只剩 250ms、120Hz 上只有几十帧，任何一帧
 /// 稍重都会读作「卡」。
 Map<String, Object?> _environmentSnapshot(TimetableSettings s) {
   return <String, Object?>{
@@ -231,7 +231,7 @@ Map<String, Object?> _environmentSnapshot(TimetableSettings s) {
     'systemTransitionScale': AndroidAnimationScaleService.transitionScale,
     'userTransitionSpeed': AndroidAnimationScaleService.userTransitionSpeed,
     'transitionDurationMs': AndroidAnimationScaleService.scaledDuration(
-      HyperosMiuixNavigation.transitionDurationMs,
+      HyperosMiuixNavigation.programmaticDurationMs,
     ).inMilliseconds,
     // 壁纸单独拆两个布尔：`configured` 是设置里填了路径，`usable` 是文件真的
     // 还在。只报一个的话，「设了壁纸但文件丢了（重装 / 跨设备同步）」这条
