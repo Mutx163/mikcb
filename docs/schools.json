@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-15T06:18:20+00:00",
+  "updatedAt": "2026-10-16T06:13:53+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 257,
-    "schools": 252,
+    "total": 258,
+    "schools": 253,
     "generic": 5
   },
   "schools": [
@@ -1280,6 +1280,13 @@
       "name": "上海电力大学",
       "initial": "S",
       "resourceFolder": "SHIEP",
+      "category": "school"
+    },
+    {
+      "id": "LIDAPOLY",
+      "name": "上海立达学院",
+      "initial": "S",
+      "resourceFolder": "LIDAPOLY",
       "category": "school"
     },
     {
