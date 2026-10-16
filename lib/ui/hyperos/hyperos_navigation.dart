@@ -124,21 +124,6 @@ abstract final class HyperosNavigation {
     return (distanceToEndpoint / band).clamp(0.0, 1.0);
   }
 
-  /// 前缘圆角切口（上层页面被裁掉的那两个角方块）在本页本地坐标里的左边界。
-  ///
-  /// 上层页面的前缘 = 它滑动方向那一侧：LTR 是左缘（`leadingSlidePx` 即它的
-  /// 位移），RTL 是右缘（位移 + 页宽 - 半径）。参数里给的已经是**本页坐标系**里
-  /// 的位置，被覆盖页自己的视差不需要在这里再减一次。
-  @visibleForTesting
-  static double cornerNotchLeft({
-    required double leadingSlidePx,
-    required double width,
-    required double radius,
-    required bool isRtl,
-  }) {
-    return isRtl ? leadingSlidePx + width - radius : leadingSlidePx;
-  }
-
   /// 官方 miuix-nav `NavTransitions.MiuixDefault` + `NavDisplayEffects.Default`
   /// 的 Flutter 版。2026-10-16 换装，替换掉此前自研的「四角 40 圆角 + 投影」
   /// 卡片式转场（那套的常量与辅助函数一并撤掉）。
@@ -152,10 +137,10 @@ abstract final class HyperosNavigation {
   /// * 前缘圆角裁切：只裁**前缘两角**（LTR = 左，官方 `NavCornerClipMode.Leading`），
   ///   半径取设备屏幕圆角；与官方唯一不同的一点是**半径在末段连续收到 0**
   ///   （见 [transitionCornerRadiusFactor]），因为二值撤裁切在真机上会闪。
-  /// * 切口补底色：被覆盖页那一层里，在上层页面被裁掉的两个角方块处补一块
-  ///   **页面底色**、且画在压暗遮罩之下（见
-  ///   [HyperosMiuixNavigation.fillCornerNotchWhileMoving]），免得切口变成
-  ///   「旧页内容一直滑过」的窗口。
+  /// * 切口里**不补任何颜色**（曾经的 `fillCornerNotchWhileMoving` 已撤）：
+  ///   圆角切口是页面之外的一小块，露出来的就是**被覆盖页自己的像素** ——
+  ///   同一层、同一条压暗公式，颜色与旁边绝无可能不一致。往那里补一块纯色
+  ///   试过两版、都被真机否掉，见 `clipLeadingCornersWhileMoving` 的说明。
   /// * 全屏压暗：位于本层之上、上层页面之下，最深 0.5，随覆盖程度线性加深。
   static Widget buildSharedAxisTransition({
     required Animation<double> animation,
@@ -274,56 +259,14 @@ class _MiuixNavPageTransition extends StatelessWidget {
           return translated;
         }
 
-        // 上层页面被裁掉的前缘两个角方块里补一块**页面底色**（见
-        // [HyperosMiuixNavigation.fillCornerNotchWhileMoving]）：不补的话切口
-        // 就是个 28dp 的窗口，被压暗的旧页在视差平移，内容一直在窗口里滑过 ——
-        // 真机上读作「左上/左下两个圆角一直在闪」。
-        //
-        // 位置直接由 cover 的缓动值推出上层页面的位移（两页共用同一条曲线，
-        // 被覆盖页的 cover 值恒等于上层页面的 enter 值），所以不需要跨路由通信。
-        final enteringSlidePx = _snapToDevicePixels(
-          directionSign * (1 - coverValue) * width,
-          devicePixelRatio,
-        );
-        final notchRadius =
-            clipRadius *
-            HyperosNavigation.transitionCornerRadiusFactor(coverValue);
-        final showNotch =
-            HyperosMiuixNavigation.fillCornerNotchWhileMoving &&
-            clipRadius > 0.5 &&
-            notchRadius > 0.5 &&
-            coverValue < 0.999; // 停稳后上层页面不再裁圆角，补色全被它盖住。
-        final notchLeft = HyperosNavigation.cornerNotchLeft(
-          leadingSlidePx: enteringSlidePx,
-          width: width,
-          radius: clipRadius,
-          isRtl: isRtl,
-        );
-
-        // 补色画在**压暗遮罩之下**：遮罩会像给页面背景一样给它压暗，切口与被
-        // 覆盖页背景逐帧同色。画在遮罩之上当「角阴影」试过一版，真机上读成
-        // 「黑色的方角」（圆角像没了），见常量处说明。
+        // 上层页面被裁掉的前缘两个角里**不补颜色**：露出来的就是这一层（被覆盖
+        // 页）自己的像素，跟旁边本来是同一层、同一条压暗公式，颜色不可能不一致。
+        // 试过两版补色都被真机否掉（见 `clipLeadingCornersWhileMoving`）。
         return Stack(
           clipBehavior: Clip.none,
           alignment: Alignment.topLeft,
           children: [
             translated,
-            if (showNotch) ...[
-              Positioned(
-                left: notchLeft,
-                top: 0,
-                width: clipRadius,
-                height: clipRadius,
-                child: ColoredBox(color: surface),
-              ),
-              Positioned(
-                left: notchLeft,
-                bottom: 0,
-                width: clipRadius,
-                height: clipRadius,
-                child: ColoredBox(color: surface),
-              ),
-            ],
             Positioned.fill(
               child: ColoredBox(
                 color: Colors.black.withValues(alpha: scrimAlpha),
