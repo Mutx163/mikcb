@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/services/android_animation_scale_service.dart';
@@ -63,10 +65,9 @@ void main() {
     );
   });
 
-  test('corner notch shade sits on the entering page leading corners', () {
-    // 补色存在、且压得够狠（半透明会把旧页残留对比留在切口里）。
-    expect(HyperosMiuixNavigation.cornerNotchShadowAlpha, greaterThan(0.5));
-    expect(HyperosMiuixNavigation.cornerNotchShadowAlpha, lessThanOrEqualTo(1));
+  test('corner notch fill sits on the entering page leading corners', () {
+    // 补色开着；颜色是页面底色本身（见 `testWidgets` 那条）。
+    expect(HyperosMiuixNavigation.fillCornerNotchWhileMoving, isTrue);
 
     const radius = 28.0;
     const width = 400.0;
@@ -103,15 +104,18 @@ void main() {
     expect(HyperosNavigation.transitionCornerRadiusFactor(1), 0);
   });
 
-  testWidgets('切口补色不透明，且跟着上层页面的前缘两角走', (tester) async {
+  testWidgets('切口补的是页面底色（不是深色角阴影），位置贴着上层页面左缘', (
+    tester,
+  ) async {
     // 上面几条用例把用户倍速改成了 0.5，这里掰回 1 倍速，时长才可预期。
     AndroidAnimationScaleService.setUserTransitionSpeed(1);
     // 被覆盖页得**也是** HyperOS 路由：Flutter 只在被覆盖路由是
     // `MaterialRouteTransitionMixin` 时才把上层路由的动画接到它的
     // secondaryAnimation 上（`canTransitionTo`），而 `HyperosPageRoute` 是裸
     // `PageRoute`。所以「首页 / MaterialPageRoute 被盖住」这条路根本不产生覆盖
-    // 动画，切口补色也不会出现；真机上出现切口的是**子页盖子页**（用户报的就是
+    // 动画，切口补色也不会出现；真机上出现切口的是**子页盖子子页**（用户报的就是
     // 进出设置子页）。这里就照那条路走：先推一层子页，再盖它。
+    const enteringKey = ValueKey('entering-page');
     await tester.pumpWidget(
       MaterialApp(
         // 与 app 同款：main.dart 给 theme 配了 `pageTransitionsTheme`。
@@ -135,6 +139,7 @@ void main() {
                           onPressed: () => HyperosNavigation.push(
                             inner,
                             builder: (_) => const Scaffold(
+                              key: enteringKey,
                               backgroundColor: Colors.white,
                             ),
                           ),
@@ -159,36 +164,65 @@ void main() {
 
     await tester.tap(find.text('push2'));
     await tester.pump();
-    // 走到一半（500ms 的 250ms）。
-    await tester.pump(const Duration(milliseconds: 250));
 
     final context = tester.element(find.byType(Scaffold).first);
     final radius = HyperosMotionPlatform.displayCornerRadiusDp;
-    final expectedColor = Color.alphaBlend(
-      Colors.black.withValues(
-        alpha: HyperosMiuixNavigation.cornerNotchShadowAlpha,
-      ),
-      HyperosColors.scaffoldBackground(context),
-    );
-    expect(expectedColor.a, 1, reason: '半透明挡不住被覆盖页的内容');
+    // 补色 = **页面底色本身**（画在压暗遮罩之下，由遮罩统一压暗），不是深色角阴影：
+    // 真机第一版补的是「底色压暗 0.6」的定值，读成了「黑色的方角 + 圆角反复消失」。
+    final patchColor = HyperosColors.scaffoldBackground(context);
+    expect(patchColor.a, 1, reason: '补色必须不透明，否则挡不住被覆盖页的内容');
 
-    final patches = find.byWidgetPredicate(
-      (widget) => widget is ColoredBox && widget.color == expectedColor,
-    );
-    expect(patches, findsNWidgets(2), reason: '前缘左上、左下各补一块');
+    // 页面底色这个颜色不止补色在用（视差补底那条也是同色、但铺满整页），所以
+    // 按**角方块的尺寸**把它们挑出来，而不是只按颜色。
+    List<Rect> notchRects() {
+      final rects = <Rect>[];
+      final candidates = find
+          .byWidgetPredicate(
+            (widget) => widget is ColoredBox && widget.color == patchColor,
+          )
+          .evaluate();
+      for (final element in candidates) {
+        final rect = tester.getRect(
+          find.byElementPredicate((candidate) => candidate == element),
+        );
+        if ((rect.width - radius).abs() < 0.01 &&
+            (rect.height - radius).abs() < 0.01) {
+          rects.add(rect);
+        }
+      }
+      return rects;
+    }
 
     final size = tester.view.physicalSize / tester.view.devicePixelRatio;
-    final progress = HyperosNavigation.transitionCurve.transform(0.5);
-    final expectedLeft = (1 - progress) * size.width;
-    final top = tester.getRect(patches.at(0));
-    final bottom = tester.getRect(patches.at(1));
-    for (final rect in [top, bottom]) {
-      expect(rect.left, closeTo(expectedLeft, 1));
-      expect(rect.width, radius);
-      expect(rect.height, radius);
+
+    // 沿行程取三个点（含中段与末段），每点都要：补色各两块、贴着**上层页面实测
+    // 左缘**（不是只跟公式对）、边长 = 设备屏幕圆角、一上一下贴屏幕边缘。
+    for (final fraction in [0.25, 0.5, 0.75]) {
+      await tester.pump(const Duration(milliseconds: 125));
+      final rects = notchRects();
+      expect(rects, hasLength(2), reason: '前缘左上、左下各补一块');
+      final enteringLeft = tester.getRect(find.byKey(enteringKey)).left;
+      // 上层页面此刻应该还在屏内（否则下面几条断言没意义）。
+      expect(enteringLeft, greaterThan(0));
+      expect(enteringLeft, lessThan(size.width));
+      for (final rect in rects) {
+        expect(
+          rect.left,
+          closeTo(enteringLeft, 0.01),
+          reason: 't=$fraction：补色要跟上层页面左缘重合，不能自己漂',
+        );
+      }
+      expect(rects.map((rect) => rect.top).reduce(math.min), 0);
+      expect(
+        rects.map((rect) => rect.bottom).reduce(math.max),
+        closeTo(size.height, 0.01),
+      );
     }
-    expect(top.top, 0);
-    expect(bottom.bottom, closeTo(size.height, 0.01));
+    expect(
+      tester.getRect(find.byKey(enteringKey)).left,
+      lessThan(size.width * 0.5),
+      reason: '末段取样点应该已经滑过大半屏',
+    );
 
     await tester.pumpAndSettle();
   });
