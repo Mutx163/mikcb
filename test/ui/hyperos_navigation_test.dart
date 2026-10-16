@@ -38,9 +38,27 @@ void main() {
     expect(HyperosMiuixNavigation.coveredAlphaFalloff, 0.1);
     // 官方 NavDisplayEffects.Default.dimAmount（全屏压暗上限）。
     expect(HyperosMiuixNavigation.dimAmount, 0.5);
-    // 官方默认不裁圆角（cornerClipRadius = 0.dp）：跟设备圆角那版会让移动中的
-    // 前缘两角露出被压暗的旧页，读作「左上/左下两个圆洞随转场闪现」。
-    expect(HyperosMiuixNavigation.clipLeadingCornersWhileMoving, isFalse);
+    // 前缘两角圆角：走官方「跟设备屏幕圆角」那条 opt-in（`Leading` 只裁前缘两角）。
+    expect(HyperosMiuixNavigation.clipLeadingCornersWhileMoving, isTrue);
+  });
+
+  test('corner radius tapers to zero instead of toggling', () {
+    const fallback = HyperosMiuixNavigation.pageCornerRadiusFallback;
+    expect(fallback, greaterThan(0), reason: '跟随屏幕圆角得有个非零半径');
+    // 两端精确为 0：静止态不可能残留圆角缺口（也就不会「啪」一下消失）。
+    expect(HyperosNavigation.transitionCornerRadiusFactor(0), 0);
+    expect(HyperosNavigation.transitionCornerRadiusFactor(1), 0);
+    // 中段满半径。
+    expect(HyperosNavigation.transitionCornerRadiusFactor(0.5), 1);
+    expect(HyperosNavigation.transitionCornerRadiusFactor(0.3), 1);
+    // 末段连续收束（不是二值跳变）。
+    final nearSettle = HyperosNavigation.transitionCornerRadiusFactor(0.99);
+    expect(nearSettle, greaterThan(0));
+    expect(nearSettle, lessThan(0.5));
+    expect(
+      HyperosNavigation.transitionCornerRadiusFactor(0.985),
+      lessThan(HyperosNavigation.transitionCornerRadiusFactor(0.98)),
+    );
   });
 
   test('programmatic curve reproduces the baked spring step response', () {

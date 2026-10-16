@@ -732,14 +732,23 @@ abstract final class HyperosMiuixNavigation {
   /// [NavDisplayEffects.Default.dimAmount]：最顶层之下全屏压暗遮罩的最大 alpha。
   static const dimAmount = 0.5;
 
-  /// 是否照官方「跟随设备屏幕圆角」的 opt-in 变体裁前缘两角。
+  /// 前缘两角圆角裁切（官方 `NavDisplayEffects` 那条「跟设备屏幕圆角」的口径）。
   ///
-  /// 官方 `NavDisplayEffects.Default.cornerClipRadius` 默认 `0.dp`，即**不裁圆角**；
-  /// `rememberNavSystemCornerRadius()` 那个跟屏幕圆角的口径是文档里的可选变体。
-  /// 2026-10-16 按设备圆角打开过，真机上页面移动中前缘两角被切掉、切口里露出的
-  /// 正好是被压暗的旧页 —— 用户读作「左上角左下角的圆形一直闪现消失和出现」。
-  /// 官方默认本来就不裁，故回到默认。要看带圆角滑入的效果再把这里打开。
-  static const clipLeadingCornersWhileMoving = false;
+  /// 官方默认：`enableCornerClip = true` + `cornerClipMode = Leading`（只裁**与屏幕
+  /// 边缘相接的前缘角**，LTR = 左两角），`cornerClipRadius` 默认 `0.dp` 不裁，
+  /// 跟屏幕圆角要显式传 `rememberNavSystemCornerRadius()`。mikcb 要 MIUI 那种
+  /// 「页面带圆角滑进来」的观感，所以按后者取值（半径见 [pageCornerRadiusFallback]
+  /// 与设备读数）。
+  static const clipLeadingCornersWhileMoving = true;
+
+  /// 圆角在「接近停稳」那一段里连续收掉的带宽（按缓动后的进度算）。
+  ///
+  /// 官方是二值开关（`-1 < d < 0` 才裁，停稳即不裁）：在真机上撤裁切发生在屏幕
+  /// 圆角被面板遮住的区域，所以看不出。我们实测看得很清楚 —— 切口里露的是被压暗的
+  /// 旧页，页面一停稳这块**一帧之内**换成新页背景，对比很强，读作「圆角一直闪现
+  /// 消失和出现」。故把半径在末段按 [HyperosNavigation.transitionCornerRadiusFactor]
+  /// 连续收到 0：`0.03` 对应 500ms 里的最后约 185ms，两端都是 0、中段满半径。
+  static const cornerClipSettleBand = 0.03;
 }
 
 /// miuix-nav `NavProgrammaticEasing`：把欠阻尼弹簧的阶跃响应烘焙成 [Curve]，

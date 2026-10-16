@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../utils/first_frame_probe.dart';
@@ -101,6 +103,27 @@ abstract final class HyperosNavigation {
     return viewportWidth * (1 + HyperosMiuixNavigation.exitSlideFraction);
   }
 
+  /// 前缘圆角的收束因子（0 = 不裁，1 = 满半径），两端为 0、中段满半径。
+  ///
+  /// 官方对这条效果是二值开关（`NavDisplayEffects.shouldClipCornersAt`：只有
+  /// 严格跨越前缘 `-1 < d < 0` 才裁）。二值在真机上会「闪」：切口里露的是被压暗的
+  /// 旧页，页面一停稳这块一帧之内换成新页背景，对比很强。这里把它换成连续收束，
+  /// 半径在末段平滑收到 0 —— 圆角是「锁进屏幕边缘」，不是「啪一下没了」。
+  ///
+  /// 参数按**缓动后**的进度算（与位移同一条曲线），因为要跟「离落点还有多远」
+  /// 对齐：0.03 的带宽对应 500ms 里的最后约 185ms。
+  @visibleForTesting
+  static double transitionCornerRadiusFactor(double progress) {
+    const band = HyperosMiuixNavigation.cornerClipSettleBand;
+    final clamped = progress.clamp(0.0, 1.0);
+    final distanceToEndpoint = math.min(clamped, 1 - clamped);
+    if (band <= 0) {
+      // 带宽为 0 = 官方那套二值开关（只在端点收掉）。
+      return distanceToEndpoint <= 0 ? 0 : 1;
+    }
+    return (distanceToEndpoint / band).clamp(0.0, 1.0);
+  }
+
   /// 官方 miuix-nav `NavTransitions.MiuixDefault` + `NavDisplayEffects.Default`
   /// 的 Flutter 版。2026-10-16 换装，替换掉此前自研的「四角 40 圆角 + 投影」
   /// 卡片式转场（那套的常量与辅助函数一并撤掉）。
@@ -111,8 +134,9 @@ abstract final class HyperosNavigation {
   /// * 被覆盖页向 leading 方向视差 1/4 屏宽，并衰减到 0.9 透明度。
   ///
   /// 正交效果（官方 `NavDisplayEffects`）：
-  /// * 前缘圆角裁切：只裁**前缘两角**（LTR = 左），半径取设备屏幕圆角，
-  ///   停稳后立刻撤掉；
+  /// * 前缘圆角裁切：只裁**前缘两角**（LTR = 左，官方 `NavCornerClipMode.Leading`），
+  ///   半径取设备屏幕圆角；与官方唯一不同的一点是**半径在末段连续收到 0**
+  ///   （见 [transitionCornerRadiusFactor]），因为二值撤裁切在真机上会闪。
   /// * 全屏压暗：位于本层之上、上层页面之下，最深 0.5，随覆盖程度线性加深。
   static Widget buildSharedAxisTransition({
     required Animation<double> animation,
@@ -163,7 +187,7 @@ class _MiuixNavPageTransition extends StatelessWidget {
       return child;
     }
     final devicePixelRatio = media.devicePixelRatio;
-    // 官方默认不裁圆角；要不要跟设备屏幕圆角见常量处的说明。
+    // 前缘圆角半径：按设备屏幕圆角（官方 rememberNavSystemCornerRadius 口径）。
     final clipRadius = HyperosMiuixNavigation.clipLeadingCornersWhileMoving
         ? HyperosMotionScope.of(context).displayCornerRadiusDp
         : 0.0;
@@ -198,7 +222,11 @@ class _MiuixNavPageTransition extends StatelessWidget {
 
         final page = _MiuixNavClippedPage(
           progress: enter,
-          radius: clipRadius,
+          // 前缘圆角：满半径滑入，末段按 transitionCornerRadiusFactor 平滑收到 0
+          //（两端都精确是 0，静止态不可能残留圆角缺口）。
+          radius:
+              clipRadius *
+              HyperosNavigation.transitionCornerRadiusFactor(enterValue),
           alpha: coveredAlpha,
           // 帧缓存边界：转场期间只重新合成「圆角裁切 + 透明度 + 位移」，
           // 页面像素直接复用，不再逐帧重栅格化整页。
@@ -305,8 +333,8 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
 
 /// 前缘圆角裁切 + 被覆盖页的透明度衰减，都只在需要时挂上。
 ///
-/// 裁切只在栈顶还在动（forward / reverse）时存在：一旦停稳就返回裸 child，
-/// 静止态与截图永远不会看到残留的圆角缺口。
+/// 传进来的 [radius] 已经过末段收束，两端精确是 0，所以静止态不可能残留圆角缺口；
+/// [progress] 的状态再兜一道：只有栈顶真的还在动（forward / reverse）才裁。
 class _MiuixNavClippedPage extends StatelessWidget {
   const _MiuixNavClippedPage({
     required this.progress,
@@ -318,8 +346,8 @@ class _MiuixNavClippedPage extends StatelessWidget {
   /// 本页作为栈顶的运动进度，只用来判「还在动吗」。
   final Animation<double> progress;
 
-  /// 裁切半径；0 = 不裁圆角（官方默认，见
-  /// [HyperosMiuixNavigation.clipLeadingCornersWhileMoving]）。
+  /// 裁切半径（已按 [HyperosNavigation.transitionCornerRadiusFactor] 收束过）；
+  /// `<= 0.5` 视为不裁（两端精确为 0，所以静止态不挂 [ClipRRect]）。
   final double radius;
 
   /// 被覆盖页的透明度（1 = 不透明，此时不挂 [Opacity]，不起离屏层）。
