@@ -68,6 +68,10 @@ void _seedPrefs({bool withCity = true, bool enabled = true}) {
 
 Future<void> _pumpUntilSettled(WidgetTester tester) async {
   await tester.pump();
+  // 首帧门槛（2026-10-16）：push 动画在新页首帧画完前锁 0，首帧帧末解锁、
+  // 下一帧锚定起点。多 pump 一次 1ms 把动画带过锚点帧，随后的 500ms 一步
+  // 即可走完整个转场。
+  await tester.pump(const Duration(milliseconds: 1));
   await tester.pump(const Duration(milliseconds: 500));
 }
 

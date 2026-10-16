@@ -133,6 +133,10 @@ void main() {
 
     await tester.tap(find.text('push2'));
     await tester.pump();
+    // 首帧门槛（2026-10-16）：push 动画在新页首帧画完之前锁在 0，首帧的帧末
+    // 回调解锁、下一帧才锚定起点。上面那一 pump 就是首帧，这里再 pump 一次把
+    // 动画带过锚点帧 —— 之后 125ms 的步进读数与无门槛时同构。
+    await tester.pump(const Duration(milliseconds: 1));
 
     final context = tester.element(find.byType(Scaffold).first);
     final radius = HyperosMotionPlatform.displayCornerRadiusDp;

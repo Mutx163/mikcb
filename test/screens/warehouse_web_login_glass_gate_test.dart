@@ -142,6 +142,9 @@ void main() {
     await tester.pumpWidget(buildPushHost());
     await tester.tap(find.text('打开登录页'));
     await tester.pump();
+    // 首帧门槛（2026-10-16）：push 动画在新页首帧画完前锁 0，首帧帧末解锁、
+    // 下一帧锚定起点。先 pump 1ms 带过锚点帧，再等 400ms 走完进入动画。
+    await tester.pump(const Duration(milliseconds: 1));
     // 300ms 进入动画走完：页面就位，平台视图与闸门都在。
     await tester.pump(const Duration(milliseconds: 400));
 

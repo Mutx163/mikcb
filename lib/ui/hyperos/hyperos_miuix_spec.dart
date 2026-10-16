@@ -778,6 +778,20 @@ abstract final class HyperosMiuixNavigation {
   ///
   /// 设 0 退回官方那套二值行为（只在端点收掉），留作对照旋钮。
   static const cornerClipSettleBand = 0.004;
+
+  /// 页面转场的「首帧门槛」开关。
+  ///
+  /// 背景账（2026-10-16 真机 `[first-frame]` 探针，两轮日志）：push 动画的第一帧
+  /// 同时是「新页整棵树的首次构建 + 布局 + 首次绘制」，重页面上这一帧要
+  /// 200~500ms（设置首页 366ms、课程卡 204ms、外观 80ms，通用 55ms）。转场动画
+  /// 跟着冻死在起点，恢复时进度按真实流逝时间直接跳到中段 —— 用户读作
+  /// 「滑动到一半闪一下/瞬移」。
+  ///
+  /// 开启后，push 动画在新页**第一帧画完之前锁在 0**（见
+  /// [_HyperosFirstFrameGateSimulation]），画完后从下一帧起跑完整
+  /// [programmaticDurationMs]。构建成本一分没省（省不掉），但挪到「动画开始
+  /// 之前」：感知上是「点下去 → 半拍停顿 → 顺滑滑入」，而非「滑到一半冻住」。
+  static const firstFrameGateEnabled = true;
 }
 
 /// miuix-nav `NavProgrammaticEasing`：把欠阻尼弹簧的阶跃响应烘焙成 [Curve]，

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../../utils/first_frame_probe.dart';
 import '../../utils/frame_perf_probe.dart';
@@ -468,6 +469,30 @@ class HyperosPageRoute<T> extends PageRoute<T> {
     super.dispose();
   }
 
+  /// 首帧门槛：push 方向改用「新页首帧画完之前进度锁 0」的模拟器
+  /// （见 [_HyperosFirstFrameGateSimulation]）。pop 不动 —— 返回首帧只有
+  /// 2~19ms（探针口径），且 pop 首帧的新页早已构建过，没有门槛的必要。
+  ///
+  /// 走 [createSimulation] 而不是 stop/重启 ticker：`TransitionRoute.didPush`
+  /// 返回的 TickerFuture 被 Navigator 挂了路由状态机钩子（framework
+  /// `navigator.dart` handlePush 里的 `whenCompleteOrCancel`），中途 stop 会让
+  /// 状态机提前翻页，契约不允许。模拟器这条路 ticker 照常启停，状态机、状态
+  /// 监听（`_handleStatusChanged` 的 opaque 翻转、latency 模式申请）全按原时序。
+  ///
+  /// 时长显式传给模拟器：`animateWith` 模式下框架会忽略 `controller.duration`
+  /// （框架文档原文「curve and transitionDuration are ignored」），用户倍速与
+  /// 系统动画缩放都在 [transitionDuration] 里，必须自己带进来。
+  @override
+  Simulation? createSimulation({required bool forward}) {
+    if (!forward || !HyperosMiuixNavigation.firstFrameGateEnabled) {
+      return null;
+    }
+    return _HyperosFirstFrameGateSimulation(
+      durationSeconds: transitionDuration.inMicroseconds /
+          Duration.microsecondsPerSecond,
+    );
+  }
+
   /// Re-applies the current user/system transition speed to routes still on
   /// the navigator stack (their controllers are created once in [install]).
   static void syncTransitionDurations() {
@@ -524,5 +549,104 @@ class HyperosPageTransitionsBuilder extends PageTransitionsBuilder {
       secondaryAnimation: secondaryAnimation,
       child: child,
     );
+  }
+}
+
+/// push 动画的「首帧门槛」模拟器：进度在新页第一帧画完之前恒为 0，
+/// 画完后从那一刻起按线性时间走完整个转场。
+///
+/// 为什么存在：`TransitionRoute.didPush` 起跑动画的同一帧就是新页的首次构建帧。
+/// 重页面（设置首页、课程卡样式等）这一帧 200~500ms，ticker 的耗时计入了动画
+/// 时间 —— 恢复时进度 = 重活真实耗时 ÷ 转场时长，直接跳到中段，观感是
+/// 「滑到一半冻住然后瞬移」。本模拟器把 x(t) 在首帧画完前钉在 0：重活耗的
+/// 时间不计入进度，动画从「第一帧已经画出来」之后才起步，全程按 500ms 播完。
+///
+/// 「首帧画完」的判定：首帧的构建发生在 `WidgetsBinding.drawFrame` 的 build 阶段，
+/// 而模拟器只在每帧的 transient callbacks（ticker）阶段被查询 —— 第一次被查询
+/// 时首帧的绘制还没发生，此刻必须返回 0 并**登记一个帧末回调**。帧末回调跑在
+/// paint 之后，那时首帧已出画，于是解锁。解锁前的整段时间（含首帧重活与中间
+/// 掉的帧）进度一律是 0，解锁后 t 归零重计，保证整段时长足额。
+///
+/// x(t) 解锁后线性到 1：官方 `NavDriverSpec` 的程序化档本来就是「固定时长 + 程序化
+/// 曲线」，曲线由 `HyperosNavigation.transitionCurve` 在 `CurvedAnimation` 一侧
+/// 施加（`buildSharedAxisTransition`），模拟器只负责时间轴 —— 与不装模拟器时
+/// `AnimationController.forward` 的线性时间轴完全同构，曲线、时长、几何都不变。
+class _HyperosFirstFrameGateSimulation extends Simulation {
+  _HyperosFirstFrameGateSimulation({required this.durationSeconds});
+
+  /// 转场整步时长（秒）。已在构造处按系统动画缩放与用户速度折算过
+  /// （`animateWith` 模式下框架忽略 controller.duration，必须自带）。
+  final double durationSeconds;
+
+  /// 门槛还锁着吗。模拟器实例是每次 push 新建的（[HyperosPageRoute.createSimulation]），
+  /// 所以一个实例管一次转场，无需复位逻辑。
+  bool _gateOpen = false;
+
+  /// 已在第一个解锁帧上锚定动画起点。
+  bool _anchored = false;
+
+  /// 动画时间轴的零点 = 第一个解锁 tick 的时钟读数。
+  ///
+  /// 锚点必须取**解锁后第一次被查询**的时刻，不能取锁定期间任何一帧：
+  /// 锁定期与解锁后第一次查询之间隔着的正是重活那一帧（200~500ms），
+  /// 锚在锁定帧上等于把重活时间又计回进度 —— 与不装门槛无异。
+  double _startTime = 0;
+
+  /// 帧末回调已登记（只登一次；锁定期间每帧的 ticker 查询都会进来）。
+  bool _openScheduled = false;
+
+  @override
+  double x(double time) {
+    if (!_gateOpen) {
+      _scheduleOpen();
+      return 0;
+    }
+    if (!_anchored) {
+      _anchored = true;
+      _startTime = time;
+      return 0;
+    }
+    if (durationSeconds <= 0) {
+      return 1;
+    }
+    final progress = (time - _startTime) / durationSeconds;
+    return progress.clamp(0.0, 1.0);
+  }
+
+  /// 位移对时间的导数：解锁且未到终点时是匀速 1/时长，其余为 0。
+  @override
+  double dx(double time) {
+    if (!_gateOpen || !_anchored || durationSeconds <= 0) {
+      return 0;
+    }
+    final elapsed = time - _startTime;
+    if (elapsed < 0 || elapsed >= durationSeconds) {
+      return 0;
+    }
+    return 1 / durationSeconds;
+  }
+
+  @override
+  bool isDone(double time) {
+    // 锁定期 / 未锚定（x 还没被解锁后第一次调用过）一律「没完」，
+    // 否则 Navigator 的状态机会在动画真正起步前就翻页。
+    if (!_gateOpen || !_anchored) {
+      return false;
+    }
+    return durationSeconds <= 0 || (time - _startTime) >= durationSeconds;
+  }
+
+  /// 登记解锁：跑在**本帧** paint 之后。本帧就是新页的首次构建帧，它画完
+  /// （帧末回调阶段）即视为「首帧已出画」，下一次 ticker 查询（下一帧）解锁。
+  ///
+  /// 不主动 `scheduleFrame`：首次查询发生时 ticker 已在跑，本来就有下一帧。
+  void _scheduleOpen() {
+    if (_openScheduled) {
+      return;
+    }
+    _openScheduled = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _gateOpen = true;
+    });
   }
 }

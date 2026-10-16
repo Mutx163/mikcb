@@ -383,7 +383,9 @@ void main() {
     await _openTimetablePageSettings(tester);
     await _scrollTo(tester, find.text('恢复默认设置'));
     expect(
-      find.text('课表显示与背景（含清除壁纸）'),
+      // 2026-10-13 文案净化（9a5aace6）把括号去了：现在是空格分隔的
+      // 「课表显示与背景 含清除壁纸」。
+      find.text('课表显示与背景 含清除壁纸'),
       findsOneWidget,
       reason: '清壁纸是点下去才在确认弹窗里看到的意外项，行上先说一句',
     );

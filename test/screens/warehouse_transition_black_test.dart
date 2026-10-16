@@ -45,7 +45,9 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    // 首帧门槛（2026-10-16）：push 动画晚一帧锚定，固定 pump 时长不再等于
+    // 转场进度。这里等的是「仓库列表页自身进场停稳」，直接 settle 到底。
+    await tester.pumpAndSettle();
     // 让 initState 里那几条 Future 走一走（测试 HTTP 是桩/即时失败）。
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 150)),
@@ -72,6 +74,10 @@ void main() {
       ),
     );
     await tester.pump();
+    // 首帧门槛（2026-10-16）：push 动画在新页首帧画完前锁 0，首帧帧末解锁、
+    // 下一帧锚定起点。多 pump 一次 1ms 把动画带过锚点帧，后续固定时长采样
+    // 与无门槛时同构（COVER 那次 push 用）。
+    await tester.pump(const Duration(milliseconds: 1));
     await tester.pump(const Duration(milliseconds: 80));
   }
 
