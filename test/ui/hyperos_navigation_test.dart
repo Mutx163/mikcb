@@ -55,13 +55,23 @@ void main() {
     // 中段满半径。
     expect(HyperosNavigation.transitionCornerRadiusFactor(0.5), 1);
     expect(HyperosNavigation.transitionCornerRadiusFactor(0.3), 1);
-    // 末段连续收束（不是二值跳变）。
-    final nearSettle = HyperosNavigation.transitionCornerRadiusFactor(0.99);
+    // 起始阈值按**离落点还剩多少屏宽**定：带宽 = 缓动后进度带宽 = 剩余距离的比例。
+    // 用户口径「应该在贴边以后再变」，所以阈值必须远小于「看得出没贴边」的量：
+    // 0.004 在 400dp 屏上是 1.6px。
+    const band = HyperosMiuixNavigation.cornerClipSettleBand;
+    expect(band, greaterThan(0), reason: '0 = 退回官方二值，会闪');
+    expect(band, lessThanOrEqualTo(0.005), reason: '400dp 屏上要 ≤2px 才开始收');
+    // 行进中还差 1% 屏宽（400dp 屏上 4px）时，必须还是满半径 —— 不能提前开始变。
+    expect(HyperosNavigation.transitionCornerRadiusFactor(0.99), 1);
+    // 末段连续收束（不是二值跳变）：越靠近落点越小，但落点前仍非 0。
+    final nearSettle = HyperosNavigation.transitionCornerRadiusFactor(
+      1 - band / 4,
+    );
     expect(nearSettle, greaterThan(0));
     expect(nearSettle, lessThan(0.5));
     expect(
-      HyperosNavigation.transitionCornerRadiusFactor(0.985),
-      lessThan(HyperosNavigation.transitionCornerRadiusFactor(0.98)),
+      HyperosNavigation.transitionCornerRadiusFactor(1 - band / 8),
+      lessThan(nearSettle),
     );
   });
 

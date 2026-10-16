@@ -106,12 +106,12 @@ abstract final class HyperosNavigation {
   /// 前缘圆角的收束因子（0 = 不裁，1 = 满半径），两端为 0、中段满半径。
   ///
   /// 官方对这条效果是二值开关（`NavDisplayEffects.shouldClipCornersAt`：只有
-  /// 严格跨越前缘 `-1 < d < 0` 才裁）。二值在真机上会「闪」：切口里露的是被压暗的
-  /// 旧页，页面一停稳这块一帧之内换成新页背景，对比很强。这里把它换成连续收束，
+  /// 严格跨越前缘 `-1 < d < 0` 才裁）。二值在真机上会「闪」：切口里露的是旧页，
+  /// 页面一停稳这块一帧之内换成新页背景，对比很强。这里把它换成连续收束，
   /// 半径在末段平滑收到 0 —— 圆角是「锁进屏幕边缘」，不是「啪一下没了」。
   ///
-  /// 参数按**缓动后**的进度算（与位移同一条曲线），因为要跟「离落点还有多远」
-  /// 对齐：0.03 的带宽对应 500ms 里的最后约 185ms。
+  /// 参数按**缓动后**的进度算（与位移同一条曲线），所以「离落点还有多远」= `band`
+  /// 倍的屏宽（见 [HyperosMiuixNavigation.cornerClipSettleBand]，那里有取值推导）。
   @visibleForTesting
   static double transitionCornerRadiusFactor(double progress) {
     const band = HyperosMiuixNavigation.cornerClipSettleBand;
