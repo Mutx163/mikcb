@@ -38,6 +38,9 @@ void main() {
     expect(HyperosMiuixNavigation.coveredAlphaFalloff, 0.1);
     // 官方 NavDisplayEffects.Default.dimAmount（全屏压暗上限）。
     expect(HyperosMiuixNavigation.dimAmount, 0.5);
+    // 官方默认不裁圆角（cornerClipRadius = 0.dp）：跟设备圆角那版会让移动中的
+    // 前缘两角露出被压暗的旧页，读作「左上/左下两个圆洞随转场闪现」。
+    expect(HyperosMiuixNavigation.clipLeadingCornersWhileMoving, isFalse);
   });
 
   test('programmatic curve reproduces the baked spring step response', () {

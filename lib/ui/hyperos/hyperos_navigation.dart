@@ -163,7 +163,10 @@ class _MiuixNavPageTransition extends StatelessWidget {
       return child;
     }
     final devicePixelRatio = media.devicePixelRatio;
-    final displayRadius = HyperosMotionScope.of(context).displayCornerRadiusDp;
+    // 官方默认不裁圆角；要不要跟设备屏幕圆角见常量处的说明。
+    final clipRadius = HyperosMiuixNavigation.clipLeadingCornersWhileMoving
+        ? HyperosMotionScope.of(context).displayCornerRadiusDp
+        : 0.0;
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     final bleedWidth = HyperosNavigation.parallaxBleedWidth(width);
     final surface = HyperosColors.scaffoldBackground(context);
@@ -195,7 +198,7 @@ class _MiuixNavPageTransition extends StatelessWidget {
 
         final page = _MiuixNavClippedPage(
           progress: enter,
-          radius: displayRadius,
+          radius: clipRadius,
           alpha: coveredAlpha,
           // 帧缓存边界：转场期间只重新合成「圆角裁切 + 透明度 + 位移」，
           // 页面像素直接复用，不再逐帧重栅格化整页。
@@ -315,7 +318,8 @@ class _MiuixNavClippedPage extends StatelessWidget {
   /// 本页作为栈顶的运动进度，只用来判「还在动吗」。
   final Animation<double> progress;
 
-  /// 裁切半径：官方取设备屏幕圆角（平台报 0 时即不裁）。
+  /// 裁切半径；0 = 不裁圆角（官方默认，见
+  /// [HyperosMiuixNavigation.clipLeadingCornersWhileMoving]）。
   final double radius;
 
   /// 被覆盖页的透明度（1 = 不透明，此时不挂 [Opacity]，不起离屏层）。

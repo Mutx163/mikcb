@@ -731,6 +731,15 @@ abstract final class HyperosMiuixNavigation {
 
   /// [NavDisplayEffects.Default.dimAmount]：最顶层之下全屏压暗遮罩的最大 alpha。
   static const dimAmount = 0.5;
+
+  /// 是否照官方「跟随设备屏幕圆角」的 opt-in 变体裁前缘两角。
+  ///
+  /// 官方 `NavDisplayEffects.Default.cornerClipRadius` 默认 `0.dp`，即**不裁圆角**；
+  /// `rememberNavSystemCornerRadius()` 那个跟屏幕圆角的口径是文档里的可选变体。
+  /// 2026-10-16 按设备圆角打开过，真机上页面移动中前缘两角被切掉、切口里露出的
+  /// 正好是被压暗的旧页 —— 用户读作「左上角左下角的圆形一直闪现消失和出现」。
+  /// 官方默认本来就不裁，故回到默认。要看带圆角滑入的效果再把这里打开。
+  static const clipLeadingCornersWhileMoving = false;
 }
 
 /// miuix-nav `NavProgrammaticEasing`：把欠阻尼弹簧的阶跃响应烘焙成 [Curve]，
