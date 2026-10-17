@@ -143,6 +143,16 @@ abstract final class HyperosNavigation {
   ///   同一层、同一条压暗公式，颜色与旁边绝无可能不一致。往那里补一块纯色
   ///   试过两版、都被真机否掉，见 `clipLeadingCornersWhileMoving` 的说明。
   /// * 全屏压暗：位于本层之上、上层页面之下，最深 0.5，随覆盖程度线性加深。
+  ///
+  /// **结构性红线（2026-10-16 真机卡顿/闪烁定案后加的）**：本函数的返回树在
+  /// 整场动画里必须**形状恒定** —— 只许改属性（位移、半径、alpha、颜色 alpha），
+  /// 不许增删 widget 类型。元素复用按 runtimeType 匹配，增删任何一层包装
+  /// （根 `Transform↔Stack`、视差补底、`ClipRRect`、`Opacity`）都会把其下的
+  /// `_page`（GlobalKey 锚定的整棵页面子树）deactivate 再复挂：依赖
+  /// InheritedWidget 的全部节点 `didChangeDependencies` + 整页强制重排，
+  /// 重页面上就是动画中途一次 100~300ms 的全额重排帧 —— 真机读作「滑到一半
+  /// 冻一下」「返回时闪一下」。此前 push/pop 各在起步与收尾有 2~3 次这样的
+  /// 翻转，全部改为常挂 + 属性驱动。
   static Widget buildSharedAxisTransition({
     required Animation<double> animation,
     required Animation<double> secondaryAnimation,
@@ -169,6 +179,9 @@ abstract final class HyperosNavigation {
 /// 同一个 widget 伺服两种角色（框架对进出两页都调 `buildTransitions`）：
 /// * 作为**栈顶那一页**（正在进或正在退）：`enter` 在 0..1 之间走，`cover == 0`；
 /// * 作为**被盖住的那一页**：`enter == 1`（停在自己位置），`cover` 在 0..1 之间走。
+///
+/// 返回树恒定（见 [HyperosNavigation.buildSharedAxisTransition] 的红线说明）：
+/// `Transform.translate(视差补底[裁切页, 垫底条, 压暗层])`，所有效果走属性。
 class _MiuixNavPageTransition extends StatelessWidget {
   const _MiuixNavPageTransition({
     required this.enter,
@@ -226,7 +239,8 @@ class _MiuixNavPageTransition extends StatelessWidget {
         final scrimAlpha = HyperosMiuixNavigation.dimAmount * coverValue;
 
         final page = _MiuixNavClippedPage(
-          progress: enter,
+          // 存在性由设备圆角读数决定（转场全程恒定，不随动画翻转）；
+          clipEnabled: clipRadius > 0,
           // 前缘圆角：满半径滑入，末段按 transitionCornerRadiusFactor 平滑收到 0
           //（两端都精确是 0，静止态不可能残留圆角缺口）。
           radius:
@@ -238,42 +252,23 @@ class _MiuixNavPageTransition extends StatelessWidget {
           child: RepaintBoundary(child: child),
         );
 
-        // 只有被覆盖时才需要视差补底（页面右侧 bleed 出去那一条，防止视差
-        // 滑出后露出 Navigator 里更下一层的路由）；也只有那时才有压暗蒙层。
-        final content = coverValue > 0.001
-            ? _MiuixNavParallaxBleed(
-                width: width,
-                bleedWidth: bleedWidth,
-                surface: surface,
-                child: page,
-              )
-            : page;
-
-        final translated = Transform.translate(
-          offset: Offset(slidePx + parallaxPx, 0),
-          child: content,
+        // 视差补底**恒挂**（红线：不许按 cover 增删包装）：页面右侧 bleed 出去
+        // 那一条，防止被覆盖页视差滑出后露出 Navigator 里更下一层的路由。
+        // 栈顶页 cover == 0 时它也在树上，但垫底条与蒙层都在页面右侧屏外
+        // （位移 ≥ 0），画了也被裁掉，成本 ≈ 0。
+        final content = _MiuixNavParallaxBleed(
+          width: width,
+          bleedWidth: bleedWidth,
+          surface: surface,
+          scrimAlpha: scrimAlpha,
+          child: page,
         );
 
-        if (scrimAlpha <= 0.001) {
-          // 纯位移不要外套 Stack：Stack 会把路由给的紧约束放宽成 0..max，
-          // 根节点是「Stack + 零尺寸常驻子级」的页面会塌成高度 0。
-          return translated;
-        }
-
-        // 上层页面被裁掉的前缘两个角里**不补颜色**：露出来的就是这一层（被覆盖
-        // 页）自己的像素，跟旁边本来是同一层、同一条压暗公式，颜色不可能不一致。
-        // 试过两版补色都被真机否掉（见 `clipLeadingCornersWhileMoving`）。
-        return Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.topLeft,
-          children: [
-            translated,
-            Positioned.fill(
-              child: ColoredBox(
-                color: Colors.black.withValues(alpha: scrimAlpha),
-              ),
-            ),
-          ],
+        // 根恒为 Transform.translate：压暗蒙层画在 bleed 层内部（其下的垫底
+        // Stack 之上、页面之下没有采样关系，视觉等价于此前盖在整个页面上）。
+        return Transform.translate(
+          offset: Offset(slidePx + parallaxPx, 0),
+          child: content,
         );
       },
     );
@@ -293,17 +288,26 @@ class _MiuixNavPageTransition extends StatelessWidget {
 
 /// 被覆盖页的视差补底：把路由表面向右延长 1.25 屏宽，视差滑出后不露出
 /// [Navigator] 里更下一层的路由。
+///
+/// 恒挂（结构恒定红线）：栈顶页静止时同样在树上，只是垫底条/蒙层的绘制由
+/// alpha 属性驱动（0 时 [ColoredBox] 照画，但完全透明，GPU 合成近乎免费）。
 class _MiuixNavParallaxBleed extends StatelessWidget {
   const _MiuixNavParallaxBleed({
     required this.width,
     required this.bleedWidth,
     required this.surface,
+    required this.scrimAlpha,
     required this.child,
   });
 
   final double width;
   final double bleedWidth;
   final Color surface;
+
+  /// 压暗蒙层的 alpha（0 = 完全透明）。画在页面之下、垫底条之上：页面不透明
+  /// 时根本看不到它；被覆盖页视差滑出后露出的那条正是这一层。
+  final double scrimAlpha;
+
   final Widget child;
 
   @override
@@ -333,46 +337,68 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
           // 转场露出的那条就是黑带（2026-09-28 真机现象）。∞ 经 enforce
           // 收成 incoming 的 max，正好还原静止时的紧约束。
           SizedBox(width: width, height: double.infinity, child: child),
+          // 压暗蒙层：恒挂，alpha 属性驱动。只盖 [0, width] 视口段 ——
+          // bleed 条不压暗（它露出的时刻上层页面已经盖住了 [width, +∞) 侧，
+          // 且官方口径压暗的就是「底下的页面」）。位置恒定不随动画改约束。
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: width,
+            child: IgnorePointer(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: scrimAlpha),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-/// 前缘圆角裁切 + 被覆盖页的透明度衰减，都只在需要时挂上。
+/// 前缘圆角裁切 + 被覆盖页的透明度衰减。
 ///
-/// 传进来的 [radius] 已经过末段收束，两端精确是 0，所以静止态不可能残留圆角缺口；
-/// [progress] 的状态再兜一道：只有栈顶真的还在动（forward / reverse）才裁。
+/// **结构恒定（红线）**：`ClipRRect`（设备圆角 > 0 时）与 `Opacity` **常挂**，
+/// 半径 / alpha 全走属性。理由见 [HyperosNavigation.buildSharedAxisTransition]：
+/// 按动画值增删包装会在转场起步与收尾各触发一次整页子树 deactivate →
+/// GlobalKey 复挂（Inherited 依赖全量重算 + 整页强制重排），重页面上就是
+/// 动画中途的重排帧 —— 真机读作「滑到一半冻一下」「返回时闪一下」。
+///
+/// 注意存在性判据是**设备圆角读数**（本帧恒定），不是动画中的半径：半径在
+/// 两端精确为 0，若按它判存在，起步/收尾仍会翻转。半径为 0 的 `RRect`
+/// 视觉上等价于不裁；静止成本：`RenderOpacity` alpha==1 直绘不建层，
+/// `RenderClipRRect` 退化为一次矩形裁切。
 class _MiuixNavClippedPage extends StatelessWidget {
   const _MiuixNavClippedPage({
-    required this.progress,
+    required this.clipEnabled,
     required this.radius,
     required this.alpha,
     required this.child,
   });
 
-  /// 本页作为栈顶的运动进度，只用来判「还在动吗」。
-  final Animation<double> progress;
+  /// 是否挂圆角裁切层 —— 只由**设备圆角读数**决定（转场全程恒定）。
+  final bool clipEnabled;
 
-  /// 裁切半径（已按 [HyperosNavigation.transitionCornerRadiusFactor] 收束过）；
-  /// `<= 0.5` 视为不裁（两端精确为 0，所以静止态不挂 [ClipRRect]）。
+  /// 动画中的裁切半径（已按 [HyperosNavigation.transitionCornerRadiusFactor]
+  /// 收束过）；两端精确为 0，静止态没有可见裁切。
   final double radius;
 
-  /// 被覆盖页的透明度（1 = 不透明，此时不挂 [Opacity]，不起离屏层）。
+  /// 被覆盖页的透明度（1 = 不透明，`RenderOpacity` 直绘）。
   final double alpha;
 
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final moving = HyperosNavigation.isPrimaryTransitionActive(
-      progress.status,
-    );
     final isRtl = Directionality.of(context) == TextDirection.rtl;
 
-    Widget page = child;
-    if (moving && radius > 0.5) {
-      // 只裁前缘两角（LTR = 左）：整页滑入时贴屏幕边缘那两个角不该被裁。
+    Widget page = Opacity(
+      opacity: alpha,
+      child: child,
+    );
+    // 只裁前缘两角（LTR = 左）：整页滑入时贴屏幕边缘那两个角不该被裁。
+    if (clipEnabled) {
       page = ClipRRect(
         borderRadius: isRtl
             ? BorderRadius.only(
@@ -385,9 +411,6 @@ class _MiuixNavClippedPage extends StatelessWidget {
               ),
         child: page,
       );
-    }
-    if (alpha < 1) {
-      page = Opacity(opacity: alpha, child: page);
     }
     return page;
   }
