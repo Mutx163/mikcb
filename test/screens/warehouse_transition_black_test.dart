@@ -57,7 +57,13 @@ void main() {
 
     final listCtx = tester.element(find.byType(WarehouseCourseImportScreen));
     final route = ModalRoute.of(listCtx);
-    final rect = tester.getRect(find.byType(WarehouseCourseImportScreen));
+    // 快照模式（2026-10-17）：转场中页面本体被 _MiuixNavSnapshotGate 包进
+    // Offstage（屏上是首帧快照），getRect 默认跳过离屏节点会读到 0 尺寸 ——
+    // 必须显式带上离屏节点（本用例守的「塌高露黑带」正是这个页面的布局约束）。
+    // 静止态没有快照，但统一带 skipOffstage: false 不改变静止读数。
+    final rect = tester.getRect(
+      find.byType(WarehouseCourseImportScreen, skipOffstage: false),
+    );
     expect(rect.height, greaterThanOrEqualTo(600), reason: '静止时列表页必须整屏');
     expect(route?.secondaryAnimation?.value, 0.0, reason: '静止时 secondary 应为 0');
     return route;
@@ -90,7 +96,7 @@ void main() {
       AnimationStatus.forward,
       reason: 'harness 失效：secondary 没动，补底路径没跑到',
     );
-    final rect = tester.getRect(find.byType(WarehouseCourseImportScreen));
+    final rect = tester.getRect(find.byType(WarehouseCourseImportScreen, skipOffstage: false));
     expect(rect.height, greaterThanOrEqualTo(600), reason: '转场中被盖页塌成 0 高 = 整页黑带');
     // 视差**有意取 0**（2026-10-17，`coveredParallaxFraction` 0.25 → 0：视差让圆角
     // 切口里出现「内容反流」，真机读作圆角在闪；机理见
@@ -115,12 +121,12 @@ void main() {
       AnimationStatus.reverse,
       reason: 'harness 失效：pop 时 secondary 应在回退',
     );
-    final rect = tester.getRect(find.byType(WarehouseCourseImportScreen));
+    final rect = tester.getRect(find.byType(WarehouseCourseImportScreen, skipOffstage: false));
     expect(rect.height, greaterThanOrEqualTo(600), reason: 'pop 中被盖页塌成 0 高 = 整页黑带');
 
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('COVER'), findsNothing);
-    final settled = tester.getRect(find.byType(WarehouseCourseImportScreen));
+    final settled = tester.getRect(find.byType(WarehouseCourseImportScreen, skipOffstage: false));
     expect(settled.height, greaterThanOrEqualTo(600));
     expect(settled.left, 0, reason: '落定后视差归零');
   });

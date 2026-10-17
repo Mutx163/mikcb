@@ -100,6 +100,8 @@ class _WarehouseCustomDebugRecordsScreenState
         settings: const RouteSettings(
           name: '/courses/import/warehouse/custom-debug/run',
         ),
+        // 页内是 WebView 平台视图：拍不进快照（黑块），豁免。
+        snapshotTransition: false,
         builder: (_) => WarehouseAdapterWebLoginScreen(
           title: record.name,
           initialUrl: record.importUrl,

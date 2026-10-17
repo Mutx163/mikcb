@@ -1,6 +1,8 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../utils/first_frame_probe.dart';
@@ -493,6 +495,182 @@ class _MiuixNavClippedPage extends StatelessWidget {
   }
 }
 
+/// 转场期间的「重页快照滑入」闸门（2026-10-17）。
+///
+/// 机理（为什么这能治「半路冻住 → 跳到位 + 提前变直角」）：转场中页面像素由
+/// 框架 `_subtreeKey` 缓存，**缓存只在页面没重绘时有效** —— 新页异步内容到位
+/// / 列表填充 / 预览卡出图的每一帧都把缓存作废、逼引擎重栅格化整页并重新
+/// 合成。重页面这些帧要 50~80ms，屏幕停在旧画面上，动画读作「半路冻住」；
+/// 下一帧画完直接跳到当前进度 + 圆角收平，用户读作「还没贴边就变直角」。
+/// 首帧门槛只锁了起步那一帧，治不了中段这些帧。
+///
+/// 做法：页面首帧出画后把那一帧拷成一张 `ui.Image` 快照；快照模式下**真页
+/// 整体离屏不画**（`Offstage`：build / 照常、布局照常 —— 异步内容照常到位，
+/// 但 paint 完全跳过），屏上是 [RawImage] —— 每帧的动画成本只剩「合成一张
+/// 图 + 位移」，与页面轻重无关。停稳（`completed`）换回真页：页面子树实例
+/// 不变（零 deactivate），攒下的重绘在这一帧显形 —— 与页面自己的停稳重绘
+/// 同帧，读作「内容就位」，不读作闪。
+///
+/// 关键：只把快照**叠**在真页上面是不够的 —— 页面层照样每帧重栅格化、照样
+/// 被合成（被盖住不等于不被画），一分钱都省不下来。省钱的唯一方式就是让
+/// 真页在快照模式里整个不进 paint。
+///
+/// 结构恒定（红线）：页面与快照层两层 `Offstage` + `RawImage` **恒挂**，只翻
+/// 两个 `offstage` 布尔；页面子树不被增删包装、不重建。
+///
+/// 已知代价：
+/// * 快照期间滑入画面里是「静止的照片」：页面自己的入场动画（骨架屏、
+///   loading 转圈）在滑动画面里冻结，落定即接上 —— 重页面在滑动画面里本来
+///   也播不动（每帧都掉），这是把「冻结但占着成本」换成「冻结且零成本」；
+/// * pop 本页离场（`reverse`）期间快照若还在，离场画面同样保持快照（内容
+///   = 滑入时用户看到的那一帧，视觉自洽），路由销毁时随 [dispose] 释放；
+/// * 平台视图（WebView / 相机预览）拍不进 `toImage`，会拍成黑块 —— 这类
+///   路由必须在推入点传 `snapshotTransition: false` 豁免（见
+///   [HyperosPageRoute.snapshotTransition]）。
+class _MiuixNavSnapshotGate extends StatefulWidget {
+  const _MiuixNavSnapshotGate({
+    required this.animation,
+    required this.onAttached,
+    required this.child,
+  });
+
+  /// 本页自己的路由动画。判据只认 [AnimationStatus]（与圆角切口同口径）：
+  /// `forward` = push 滑入中（快照模式）；`completed` = 停稳（换回真页）。
+  final Animation<double> animation;
+
+  /// 挂载时把 State 交给路由（[HyperosPageRoute] 借它把「快照已就绪」接进
+  /// 首帧门槛的解锁判据）；dispose 时路由侧自行置空。
+  final ValueChanged<_MiuixNavSnapshotGateState> onAttached;
+
+  final Widget child;
+
+  @override
+  State<_MiuixNavSnapshotGate> createState() => _MiuixNavSnapshotGateState();
+}
+
+class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
+  /// 页面首帧出画那一帧的拷贝。非空即「快照模式」：真页整体离屏不画、
+  /// 屏上是这张图。null = 还没拍到（首帧出画前）/ 已释放（停稳或本页未启用）。
+  ui.Image? _snapshot;
+
+  /// 快照拍照流程是否已了结（成功 / 失败都算）。首帧门槛的解锁判据读它：
+  /// 了结之前动画锁在 0，拍照的时间落在「点下去 → 半拍停顿」里。
+  bool _captureSettled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.animation.addStatusListener(_onStatus);
+    widget.onAttached(this);
+    // 首帧出画后拍快照：postFrameCallback 跑在本帧 paint 之后，页面刚画完
+    // 第一次 —— 拍的就是首帧内容。此刻动画还被门槛锁在 0，拍照不占滑动。
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _captureAfterFirstFrame(),
+    );
+  }
+
+  void _captureAfterFirstFrame() {
+    if (!mounted || _captureSettled) {
+      return;
+    }
+    // 门槛判据此刻就置位（拍照流程已启动 = 对门槛而言已了结）：动画从下一帧
+    // 起步，拍照的读图时间仍全部落在「点下去 → 半拍停顿」里。
+    _captureSettled = true;
+    // 拍照推迟到**下一帧末**：首帧末边界刚画完，但同一帧内仍可能被标脏
+    // （toImageSync 断言 !debugNeedsPaint，实测会撞）；第二帧末必然干净，
+    // 且异步内容又多涨了一帧，快照更完整。第二帧本来就在跑（ticker 在动），
+    // 不用自己 scheduleFrame。
+    WidgetsBinding.instance.addPostFrameCallback((_) => _captureNow());
+  }
+
+  void _captureNow() {
+    if (!mounted) {
+      return;
+    }
+    // 直接拍框架的页面缓存边界（`_ModalScopeState` 的 `_subtreeKey`）：它包着
+    // 「页面 + 内层圆角切口」的完整图层 —— 快照因此自带切口，合成期外层裁切
+    // 万一掉帧，快照也不会露出方角（与第四轮「切口烘进页面自己的图层」同一
+    // 性质）。自建一层 RepaintBoundary 反而会把切口隔在快照外面。
+    RenderObject? node = context.findRenderObject();
+    while (node != null && node is! RenderRepaintBoundary) {
+      node = node.parent;
+    }
+    if (node is! RenderRepaintBoundary ||
+        !node.attached ||
+        node.debugNeedsPaint) {
+      // 拍不到（未布局 / 已离场 / 待重画）：留在真页模式 —— 等于本页没装
+      // 快照门，退化为现状，不炸转场。
+      return;
+    }
+    try {
+      final image = node.toImageSync(
+        pixelRatio: View.of(context).devicePixelRatio,
+      );
+      if (!mounted || widget.animation.status != AnimationStatus.forward) {
+        image.dispose();
+        return;
+      }
+      setState(() => _snapshot = image);
+    } on Object {
+      // 拍照失败（引擎拒绝 / 已离场）就留在真页模式 —— 等于本页没装快照门，
+      // 退化为现状，不炸转场。
+    }
+  }
+
+  /// 首帧门槛的解锁判据：快照拍照流程了结（成功或失败）才放行动画。
+  @visibleForTesting
+  bool get captureSettled => _captureSettled;
+
+  void _onStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed && _snapshot != null) {
+      // 落定帧：换回真页。页面此刻刚画完停稳的第一帧（帧末回调跑在
+      // paint 之后），快照出画到这一帧之间真页攒下的重绘在此显形 ——
+      // 与页面自己的停稳重绘同帧，读作「内容就位」。
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        _disposeSnapshot();
+        setState(() {});
+      });
+    }
+  }
+
+  void _disposeSnapshot() {
+    _snapshot?.dispose();
+    _snapshot = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!HyperosMiuixNavigation.snapshotTransitionEnabled) {
+      return widget.child;
+    }
+    final snapshotActive = _snapshot != null;
+    // `fit: StackFit.expand` 是硬约束：Stack 默认给子级**松**约束（min=0），
+    // 会把外面好不容易还原的紧高度再次放松 —— 「根 Stack + Positioned.fill」
+    // 形态的页面（教务仓库列表页）立刻塌成 0 高，整页不画（2026-09-28 露黑带
+    // 的同款机理，test/screens/warehouse_transition_black_test.dart 守着）。
+    // expand 把进入本闸门的紧约束原样传给两层子级。
+    return Stack(
+      fit: StackFit.expand,
+      textDirection: Directionality.of(context),
+      children: [
+        // 真页：快照模式下整体离屏**不画**（build / 布局照常 —— 异步内容
+        // 照常到位），paint 与语义完全跳过；这是省下每帧重栅格化的唯一
+        // 方式。未激活时它就是普通页面。
+        Offstage(offstage: snapshotActive, child: widget.child),
+        // 快照层：恒挂（红线），offstage 布尔驱动。快照模式下它就是屏上
+        // 参与滑动的那张图；真页模式下不可见、不占合成。
+        Offstage(
+          offstage: !snapshotActive,
+          child: RawImage(image: _snapshot, fit: BoxFit.fill),
+        ),
+      ],
+    );
+  }
+}
+
 /// 页面**自带**的前缘圆角切口：把切口烘进页面自己的绘制结果，而不是只靠转场壳
 /// 那一层裁切兜着。
 ///
@@ -573,9 +751,22 @@ class HyperosPageRoute<T> extends PageRoute<T> {
     required this.builder,
     super.settings,
     super.fullscreenDialog,
+    this.snapshotTransition = true,
   });
 
   final WidgetBuilder builder;
+
+  /// 本页是否允许「转场拿快照滑、落定换真页」（[_MiuixNavSnapshotGate]）。
+  ///
+  /// 唯一要关它的场景：页面里有**平台视图**（WebView / 相机预览等真实
+  /// Android 视图）。平台视图不在 Flutter 图层树里，`toImageSync` 拍不到
+  /// 它 —— 拍出来的快照里那块是黑的。默认开； WebView 登录页等宿主在
+  /// 各自推入点显式传 false。
+  final bool snapshotTransition;
+
+  /// 本页快照闸门的 State（buildPage 挂闸门时注册）。null = 未启用快照
+  /// （全局开关关 / 本页豁免 / 闸门未挂载）。
+  _MiuixNavSnapshotGateState? _snapshotGate;
 
   @override
   Duration get transitionDuration => HyperosNavigation.transitionDuration;
@@ -638,12 +829,18 @@ class HyperosPageRoute<T> extends PageRoute<T> {
   @override
   void dispose() {
     _activeRoutes.remove(this);
+    _snapshotGate = null;
     super.dispose();
   }
 
   /// 首帧门槛：push 方向改用「新页首帧画完之前进度锁 0」的模拟器
   /// （见 [_HyperosFirstFrameGateSimulation]）。pop 不动 —— 返回首帧只有
   /// 2~19ms（探针口径），且 pop 首帧的新页早已构建过，没有门槛的必要。
+  ///
+  /// 启用快照时门槛再等一步：快照拍照流程了结（[_MiuixNavSnapshotGateState]
+  /// 的 `captureSettled`，帧末同步完成）才解锁 —— 拍照的时间落在「点下去 →
+  /// 半拍停顿」里，不占滑动时间轴。闸门还没挂上（本页豁免 / 全局关）时
+  /// 退化为只等首帧，与原行为一致。
   ///
   /// 走 [createSimulation] 而不是 stop/重启 ticker：`TransitionRoute.didPush`
   /// 返回的 TickerFuture 被 Navigator 挂了路由状态机钩子（framework
@@ -662,7 +859,17 @@ class HyperosPageRoute<T> extends PageRoute<T> {
     return _HyperosFirstFrameGateSimulation(
       durationSeconds: transitionDuration.inMicroseconds /
           Duration.microsecondsPerSecond,
+      snapshotReady: _snapshotSettled,
     );
+  }
+
+  /// 快照闸门是否已就绪（或本页根本没有快照可等）。
+  ///
+  /// 判据取「闸门不存在 = 已就绪」：豁免页 / 全局关时不给门槛加时间；
+  /// 闸门存在时等它的帧末拍照了结（成功或失败都算了结）。
+  bool _snapshotSettled() {
+    final gate = _snapshotGate;
+    return gate == null || gate.captureSettled;
   }
 
   /// Re-applies the current user/system transition speed to routes still on
@@ -690,10 +897,18 @@ class HyperosPageRoute<T> extends PageRoute<T> {
       nodeTag: 'page',
       // 切口必须落在框架的页面缓存边界（`_ModalScopeState` 的
       // `RepaintBoundary(key: _subtreeKey)`）**之内**，只能从 `buildPage` 挂
-      //（见 [_MiuixNavPageCornerCut] 的说明）。
+      //（见 [_MiuixNavPageCornerCut] 的说明）。快照闸门同样只能在 `buildPage`
+      // 挂（它要包住页面本体），且在切口内侧：快照是「页面像素 + 切口」的
+      // 完整拷贝，滑入中的圆角由转场壳裁切承担。
       child: _MiuixNavPageCornerCut(
         animation: animation,
-        child: builder(context),
+        child: snapshotTransition
+            ? _MiuixNavSnapshotGate(
+                animation: animation,
+                onAttached: (gate) => _snapshotGate = gate,
+                child: builder(context),
+              )
+            : builder(context),
       ),
     );
   }
@@ -752,12 +967,24 @@ class HyperosPageTransitionsBuilder extends PageTransitionsBuilder {
 /// 曲线」，曲线由 `HyperosNavigation.transitionCurve` 在 `CurvedAnimation` 一侧
 /// 施加（`buildSharedAxisTransition`），模拟器只负责时间轴 —— 与不装模拟器时
 /// `AnimationController.forward` 的线性时间轴完全同构，曲线、时长、几何都不变。
+///
+/// 启用快照时（2026-10-17），解锁判据从「首帧已出画」扩成「首帧已出画 **且**
+/// 快照拍照已了结」：`snapshotReady` 每次被查询时现读（闸门的拍照跑在帧末
+/// 回调里，与首帧解锁同一时刻就位），没就绪就继续锁 0 —— 拍照的时间落在
+/// 「点下去 → 半拍停顿」里，不占滑动时间轴。快照就绪后屏上是那张图，滑动
+/// 全程每帧只剩「合成一张图 + 位移」。
 class _HyperosFirstFrameGateSimulation extends Simulation {
-  _HyperosFirstFrameGateSimulation({required this.durationSeconds});
+  _HyperosFirstFrameGateSimulation({
+    required this.durationSeconds,
+    this.snapshotReady,
+  });
 
   /// 转场整步时长（秒）。已在构造处按系统动画缩放与用户速度折算过
   /// （`animateWith` 模式下框架忽略 controller.duration，必须自带）。
   final double durationSeconds;
+
+  /// 快照就绪判据（现读，可为 null = 不等快照）。
+  final bool Function()? snapshotReady;
 
   /// 门槛还锁着吗。模拟器实例是每次 push 新建的（[HyperosPageRoute.createSimulation]），
   /// 所以一个实例管一次转场，无需复位逻辑。
@@ -779,7 +1006,9 @@ class _HyperosFirstFrameGateSimulation extends Simulation {
   @override
   double x(double time) {
     if (!_gateOpen) {
-      _scheduleOpen();
+      if (snapshotReady?.call() ?? true) {
+        _scheduleOpen();
+      }
       return 0;
     }
     if (!_anchored) {

@@ -266,8 +266,10 @@ void main() {
     // 口径），同时树上没有任何「按圆角尺寸补上去的页面底色方块」。
     for (final fraction in [0.25, 0.5, 0.75]) {
       await tester.pump(const Duration(milliseconds: 125));
+      // 快照模式（2026-10-17）：转场中页面本体在闸门的 Offstage 里，finder
+      // 必须带离屏节点才能沿祖先链找到转场壳的 ClipRRect（那层本身可见）。
       final clipFinder = find.ancestor(
-        of: find.byKey(enteringKey),
+        of: find.byKey(enteringKey, skipOffstage: false),
         matching: find.byType(ClipRRect),
       );
       expect(clipFinder, findsWidgets, reason: 't=$fraction 转场中上层页应带圆角裁切');
@@ -615,7 +617,13 @@ void main() {
     final radius = HyperosMotionPlatform.displayCornerRadiusDp;
     expect(radius, greaterThan(12), reason: '取样点按半径摆，太小就取不到切口里');
 
-    RenderObject? node = tester.renderObject(find.byKey(enteringKey));
+    // 快照模式（2026-10-17）：转场中屏上是首帧快照（无切口 —— 切口烘在真页
+    // 图层里，快照是页面像素的完整拷贝，滑入中的圆角由转场壳承担）。本用例
+    // 钉的位置关系不变：切口在**真页自己的图层**里（= 框架缓存边界之内），
+    // 所以对离屏真页的 RepaintBoundary 出图断言；落定换回真页后同一性质
+    // 直接可见（快照已释放，出图的就是屏上页面）。
+    RenderObject? node =
+        tester.renderObject(find.byKey(enteringKey, skipOffstage: false));
     while (node != null && node is! RenderRepaintBoundary) {
       node = node.parent;
     }
@@ -642,7 +650,8 @@ void main() {
     expect(
       alphaOf(midFlight, 1, pageSize.height - 1),
       0,
-      reason: '左下圆角区必须已经不含页面像素（切口烘在页面自己的图层里）',
+      reason: '左下圆角区必须已经不含页面像素（切口烘在页面自己的图层里 —— '
+          '快照模式下对离屏真页出图，切口仍在）',
     );
     expect(
       alphaOf(midFlight, 1, 1),
@@ -663,6 +672,169 @@ void main() {
       reason: '落定后切口必须放开：屏幕圆角那一小块不留常驻缺口（半径精确回到 0）',
     );
     expect(alphaOf(settled, 1, 1), 255, reason: '左上同理');
+  });
+
+  testWidgets('快照滑入：转场中屏上是首帧快照，落定换回真页', (tester) async {
+    // 2026-10-17「还没贴边就变直角」的治本路径：转场中重页的异步内容到位 /
+    // 列表填充会把框架的页面缓存作废、逼引擎每帧重栅格化整页（50~80ms/帧），
+    // 观感是「半路冻住 → 跳到位 + 圆角收平」。快照模式把这些帧挪到屏外：
+    // 屏上是首帧的拷贝（RawImage），落定才显形真页。
+    //
+    // 本用例在 widget 层钉住三件事：
+    // 1. 转场中页面本体是 Offstage（每帧不再重栅格化 —— 省钱的唯一方式），
+    //    屏上可见的是 RawImage 快照；
+    // 2. 内容在快照期间变化不会出现在滑动画面里（快照不跟着重画）；
+    // 3. 落定后真页显形、快照释放（变化可见）。
+    AndroidAnimationScaleService.setUserTransitionSpeed(1);
+    const enteringKey = ValueKey('snapshot-entering');
+    const contentKey = ValueKey('snapshot-content');
+    late StateSetter setRootState;
+    var contentLabel = 'initial';
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => HyperosNavigation.push(
+                  context,
+                  builder: (_) => StatefulBuilder(
+                    builder: (context, setState) {
+                      setRootState = setState;
+                      return Scaffold(
+                        key: enteringKey,
+                        body: Center(
+                          child: Text(
+                            contentLabel,
+                            key: contentKey,
+                            textDirection: TextDirection.ltr,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                child: const Text('push'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('push'));
+    await tester.pump();
+    // 首帧门槛 + 快照拍照都在帧末了结，下一帧解锁并锚定起点。
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump(const Duration(milliseconds: 80));
+
+    // 1) 转场中：页面本体必须离屏（paint 跳过），屏上是快照 RawImage。
+    // 查找走确定结构：内容key向上找的第一个 Offstage 是闸门包真页的那层；
+    // RawImage 只能来自闸门快照层。
+    final pageElement = tester.element(
+      find.byKey(contentKey, skipOffstage: false),
+    );
+    Offstage? pageOffstage;
+    pageElement.visitAncestorElements((element) {
+      if (element.widget is Offstage) {
+        pageOffstage = element.widget as Offstage;
+        return false;
+      }
+      return true;
+    });
+    expect(pageOffstage, isNotNull,
+        reason: '闸门应把页面本体包进 Offstage');
+    expect(pageOffstage!.offstage, isTrue,
+        reason: '转场中页面本体必须离屏不画 —— 快照叠在真页上面一分钱都省不下');
+    final snapshotImage = tester.widget<RawImage>(
+      find.byWidgetPredicate(
+        (w) => w is RawImage && w.image != null,
+        skipOffstage: false,
+      ),
+    );
+    expect(snapshotImage.image, isNotNull, reason: '快照层应在屏上参与滑动');
+
+    // 2) 快照期间内容变化：真页跟着重建（屏外），但滑动画面里仍是快照 ——
+    //    新文本在落定前不可见。
+    setRootState(() => contentLabel = 'updated');
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(
+      find.text('updated', skipOffstage: false),
+      findsOneWidget,
+      reason: '真页照常重建（异步内容到位的等价物）',
+    );
+    expect(find.text('updated'), findsNothing,
+        reason: '快照模式下内容变化不能出现在滑动画面里');
+
+    // 3) 落定：真页显形、快照释放，攒下的变化可见。
+    await tester.pumpAndSettle();
+    expect(find.text('updated'), findsOneWidget,
+        reason: '落定换回真页，快照期间攒下的内容变化显形');
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is RawImage && w.image != null,
+        skipOffstage: false,
+      ),
+      findsNothing,
+      reason: '落定后快照必须释放（不留常驻图片层）',
+    );
+  });
+
+  testWidgets('豁免页：snapshotTransition=false 的路由全程真页参与滑动', (tester) async {
+    // WebView 等平台视图页拍不进快照（拍出来是黑块），推入点显式豁免。
+    // 豁免页不得出现快照层，页面本体全程在屏。
+    AndroidAnimationScaleService.setUserTransitionSpeed(1);
+    const enteringKey = ValueKey('exempt-entering');
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).push(
+                  HyperosPageRoute<void>(
+                    snapshotTransition: false,
+                    builder: (_) => const Scaffold(
+                      key: enteringKey,
+                      body: Center(child: Text('exempt')),
+                    ),
+                  ),
+                ),
+                child: const Text('push'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('push'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump(const Duration(milliseconds: 80));
+
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is RawImage && w.image != null,
+        skipOffstage: false,
+      ),
+      findsNothing,
+      reason: '豁免页不得拍快照',
+    );
+    expect(
+      find.byKey(enteringKey),
+      findsOneWidget,
+      reason: '豁免页页面本体全程在屏（可交互内容照常绘制）',
+    );
+    await tester.pumpAndSettle();
   });
 }
 

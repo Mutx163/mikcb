@@ -438,6 +438,8 @@ class _WarehouseCourseImportScreenState
         settings: const RouteSettings(
           name: '/courses/import/warehouse/quick-import-top',
         ),
+        // 页内是 WebView 平台视图：拍不进快照（黑块），豁免。
+        snapshotTransition: false,
         builder: (_) => WarehouseAdapterWebLoginScreen(
           title: l10n.quickImportTitle(macro.schoolName),
           initialUrl: initialUrl,

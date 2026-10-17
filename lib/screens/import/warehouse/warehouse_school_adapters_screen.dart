@@ -309,6 +309,8 @@ class _WarehouseSchoolAdaptersScreenState
     final imported = await Navigator.of(context).push<bool>(
       HyperosPageRoute(
         settings: const RouteSettings(name: '/courses/import/warehouse/login'),
+        // 页内是 WebView 平台视图：拍不进快照（黑块），豁免。
+        snapshotTransition: false,
         builder: (_) => WarehouseAdapterWebLoginScreen(
           title: adapter.adapterName,
           initialUrl: initialUrl,
@@ -528,6 +530,8 @@ class _WarehouseSchoolAdaptersScreenState
         settings: const RouteSettings(
           name: '/courses/import/warehouse/quick-import',
         ),
+        // 页内是 WebView 平台视图：拍不进快照（黑块），豁免。
+        snapshotTransition: false,
         builder: (_) => WarehouseAdapterWebLoginScreen(
           title: l10n.quickImportTitle(adapter.adapterName),
           initialUrl: initialUrl,
