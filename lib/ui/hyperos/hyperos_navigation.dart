@@ -441,6 +441,78 @@ class _MiuixNavClippedPage extends StatelessWidget {
   }
 }
 
+/// 页面**自带**的前缘圆角切口：把切口烘进页面自己的绘制结果，而不是只靠转场壳
+/// 那一层裁切兜着。
+///
+/// 存在的理由（2026-10-17 真机第四轮定案）：框架把 `buildPage` 的返回值缓存在
+/// `_ModalScopeState` 的 `RepaintBoundary(key: _subtreeKey)` 里，而这个边界在转场
+/// 壳 [ClipRRect] 的**内侧** —— 被缓存下来的页面像素本身是不带切口的，圆角完全
+/// 押在「合成阶段那次 rrect 裁切每帧都生效」上。这一次裁切在真机上会掉帧，本仓
+/// 已有两次同源真机实证（`inspire_header_blur.dart` 记录带实时模糊时引擎对兄弟
+/// 内容的圆角裁切并不可靠；zoom 路由那次记录转场壳里的滤镜会把坏采样烤进缓存）。
+/// 掉的那几帧就是「圆角消失、露出上层页的像素」，回来又掉 = 用户读到的
+/// 「圆角极快地闪烁」。
+///
+/// 位置只能在这里（`buildPage` 的返回值内）：`buildTransitions` 拿到的 `child`
+/// 已经被框架边界包成一整块，塞不进边界内侧。
+///
+/// 与转场壳那层同半径、同形状（同为「只裁前缘两角」）：
+/// * 中段两边都是满半径 —— 视觉与只有转场壳裁切时完全一致；
+/// * 末段转场壳按 [HyperosNavigation.transitionCornerRadiusFactor] 收到 0 时这里
+///   仍是满半径 —— 取值更松，收束照旧由更严的外层决定；外层万一没生效，切口也
+///   不会消失。
+///
+/// 被覆盖页不在动（自己的 `animation` 已停稳），这里不裁 —— 与转场壳同一条判据
+/// 同一个值（视差取 0 之后被覆盖页不动，前缘两角始终贴着屏幕边缘）。
+///
+/// 结构恒定（同 [HyperosNavigation.buildSharedAxisTransition] 的红线）：`ClipRRect`
+/// 常挂、页面作为 `child` 传给 [AnimatedBuilder]，每帧只重建这一层包装（页面子树
+/// 实例不变：既不重建页面，也不产生 deactivate）。半径只在「本页在动 / 停稳」之间
+/// 翻转一次，落点分别是转场起步帧与停稳帧，两处本来就伴随页面自己的重绘。
+class _MiuixNavPageCornerCut extends StatelessWidget {
+  const _MiuixNavPageCornerCut({required this.animation, required this.child});
+
+  /// 本页自己的路由动画（0 = 完全移出屏外，1 = 就位）。
+  ///
+  /// 判据用 [AnimationStatus] 而不是取值区间：push 的首帧门槛把进度锁在 0 的那
+  /// 一段也算「在动」—— 切口必须从页面**第一次被栅格化**时就在，否则解锁那一帧
+  /// 半径从 0 跳到满值，等于把页面缓存作废一次，正好压在最贵的起步帧上。
+  final Animation<double> animation;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!HyperosMiuixNavigation.clipLeadingCornersWhileMoving) {
+      return child;
+    }
+    // 与转场壳同源：同一份设备圆角读数（官方 rememberNavSystemCornerRadius 口径），
+    // 存在性判据也同一条，全程恒定。
+    final radius = HyperosMotionScope.of(context).displayCornerRadiusDp;
+    if (radius <= 0) {
+      return child;
+    }
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder: (context, child) {
+        final moving =
+            animation.status == AnimationStatus.forward ||
+            animation.status == AnimationStatus.reverse;
+        final corner = moving ? Radius.circular(radius) : Radius.zero;
+        // 只裁前缘两角（LTR = 左），与转场壳同口径：贴屏幕边缘那两个角不裁。
+        return ClipRRect(
+          borderRadius: isRtl
+              ? BorderRadius.only(topRight: corner, bottomRight: corner)
+              : BorderRadius.only(topLeft: corner, bottomLeft: corner),
+          child: child,
+        );
+      },
+    );
+  }
+}
+
 /// Standard sub-page route for mikcb (settings, import, about, etc.).
 class HyperosPageRoute<T> extends PageRoute<T> {
   static final Set<HyperosPageRoute<dynamic>> _activeRoutes = {};
@@ -562,7 +634,16 @@ class HyperosPageRoute<T> extends PageRoute<T> {
     Animation<double> secondaryAnimation,
   ) {
     // 首帧拆解采样点（临时诊断件）：整页子树的构建 / 布局 / 绘制时刻。
-    return FirstFrameProbeNode(nodeTag: 'page', child: builder(context));
+    return FirstFrameProbeNode(
+      nodeTag: 'page',
+      // 切口必须落在框架的页面缓存边界（`_ModalScopeState` 的
+      // `RepaintBoundary(key: _subtreeKey)`）**之内**，只能从 `buildPage` 挂
+      //（见 [_MiuixNavPageCornerCut] 的说明）。
+      child: _MiuixNavPageCornerCut(
+        animation: animation,
+        child: builder(context),
+      ),
+    );
   }
 
   @override

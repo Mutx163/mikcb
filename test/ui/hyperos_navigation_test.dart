@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/services/android_animation_scale_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
@@ -482,6 +485,110 @@ void main() {
       HyperosNavigation.parallaxBleedWidth(400),
       400 * (1 + HyperosMiuixNavigation.exitSlideFraction),
     );
+  });
+
+  testWidgets('圆角切口烘进页面自己的图层：合成阶段漏掉外层裁切也没有像素可露', (
+    tester,
+  ) async {
+    // 2026-10-17 真机第四轮（用户口径：「就是新页面的圆角，频繁的消失，变成无
+    // 圆角状态，然后又极其快速的闪烁，出现圆角」）。半径在逻辑层是恒定的（上面
+    // 几条用例钉着它），所以只剩一种解释：转场壳那次 rrect 裁切在真机合成阶段
+    // 会掉帧。它能掉是有结构的：框架把页面缓存在 `_ModalScopeState` 的
+    // `RepaintBoundary(key: _subtreeKey)` 里，而那个边界在转场壳裁切的**内侧**
+    // —— 被缓存下来的页面像素本来就不带切口。
+    //
+    // 修法：把同一条切口放进 `buildPage` 的返回值里（边界之内）。本用例锁住的
+    // 就是这条位置关系 —— 转场中取页面自己的图层（最靠近页面的
+    // `RepaintBoundary`）：
+    // * 切口在边界里（本次修法）：图里前缘圆角区是**空的**（alpha 0）；
+    // * 切口只在边界外（只有转场壳裁切）：图里是完整的白色方块。
+    // 同时钉住「停稳不留缺口」：落定后同一位置必须重新是不透明的页面像素。
+    AndroidAnimationScaleService.setUserTransitionSpeed(1);
+    const enteringKey = ValueKey('entering-page');
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            backgroundColor: HyperosColors.scaffoldBackground(context),
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => HyperosNavigation.push(
+                  context,
+                  builder: (_) => const Scaffold(
+                    key: enteringKey,
+                    backgroundColor: Colors.white,
+                  ),
+                ),
+                child: const Text('push'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('push'));
+    await tester.pump();
+    // 首帧门槛：动画在新页首帧画完前锁 0，下一帧才锚定起点（与其它转场用例同口径）。
+    await tester.pump(const Duration(milliseconds: 1));
+    // 中段（整条曲线前重后轻，250ms 处早已是满半径）。
+    await tester.pump(const Duration(milliseconds: 250));
+
+    final radius = HyperosMotionPlatform.displayCornerRadiusDp;
+    expect(radius, greaterThan(12), reason: '取样点按半径摆，太小就取不到切口里');
+
+    RenderObject? node = tester.renderObject(find.byKey(enteringKey));
+    while (node != null && node is! RenderRepaintBoundary) {
+      node = node.parent;
+    }
+    expect(node, isA<RenderRepaintBoundary>(), reason: '页面外面应有框架的缓存边界');
+    final boundary = node! as RenderRepaintBoundary;
+    final pageSize = boundary.size;
+
+    Future<ByteData> capturePageLayer() async {
+      final image = (await tester.runAsync(boundary.toImage))!;
+      final bytes = (await tester.runAsync(image.toByteData))!;
+      image.dispose();
+      return bytes;
+    }
+
+    int alphaOf(ByteData bytes, double fromLeft, double fromTop) {
+      final width = pageSize.width.round();
+      final height = pageSize.height.round();
+      final x = fromLeft.round().clamp(0, width - 1);
+      final y = fromTop.round().clamp(0, height - 1);
+      return bytes.getUint8((y * width + x) * 4 + 3);
+    }
+
+    final midFlight = await capturePageLayer();
+    expect(
+      alphaOf(midFlight, 1, pageSize.height - 1),
+      0,
+      reason: '左下圆角区必须已经不含页面像素（切口烘在页面自己的图层里）',
+    );
+    expect(
+      alphaOf(midFlight, 1, 1),
+      0,
+      reason: '左上圆角区同理（前缘两角都裁）',
+    );
+    expect(
+      alphaOf(midFlight, radius, pageSize.height - radius),
+      255,
+      reason: '圆角圆心处仍是页面自己的像素 —— 切口只切角，不能切进页面',
+    );
+
+    await tester.pumpAndSettle();
+    final settled = await capturePageLayer();
+    expect(
+      alphaOf(settled, 1, pageSize.height - 1),
+      255,
+      reason: '落定后切口必须放开：屏幕圆角那一小块不留常驻缺口（半径精确回到 0）',
+    );
+    expect(alphaOf(settled, 1, 1), 255, reason: '左上同理');
   });
 }
 
