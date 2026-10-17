@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/services/android_animation_scale_service.dart';
-import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_motion.dart';
-import 'package:university_timetable/ui/hyperos/hyperos_navigation.dart';
-import 'package:university_timetable/ui/hyperos/hyperos_theme.dart';
 
 void main() {
   test('AOSP 基准时长常量保持不变（页面转场已改用 miuix-nav 的 500ms）', () {
@@ -185,6 +183,226 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('转场全程结构恒定：裁切 / 补底 / 压暗蒙层 / 透明度不随进度摘挂', (tester) async {
+    // 2026-10-17 定案的回归（deactivate 探针之外的第二道保险，锁**层数指纹**）：
+    // 这四层曾经都是二值开关（`coverValue > 0.001` 挂补底、`scrimAlpha <= 0.001`
+    // 拆 Stack、`moving && radius > 0.5` 挂 ClipRRect、`alpha < 1` 挂 Opacity），
+    // 每翻转一次就是一次子树 reparent = 整页重新构建 + 重新布局。现在它们必须
+    // 恒在、只调参数 —— 层数在转场全程一个都不能变。
+    AndroidAnimationScaleService.setUserTransitionSpeed(1);
+
+    const enteringKey = ValueKey('entering-page');
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            backgroundColor: HyperosColors.scaffoldBackground(context),
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => HyperosNavigation.push(
+                  context,
+                  builder: (coveredContext) => Scaffold(
+                    backgroundColor: HyperosColors.scaffoldBackground(
+                      coveredContext,
+                    ),
+                    body: Center(
+                      child: Builder(
+                        builder: (inner) => ElevatedButton(
+                          onPressed: () => HyperosNavigation.push(
+                            inner,
+                            builder: (_) => const Scaffold(
+                              key: enteringKey,
+                              backgroundColor: Colors.white,
+                            ),
+                          ),
+                          child: const Text('push2'),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                child: const Text('push'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 先推一层并停稳，让第二层 push 时的被覆盖页是 HyperOS 路由（与上面
+    // 「切口不补色」用例同口径：只有 HyperOS 路由被盖住时才有覆盖动画）。
+    await tester.tap(find.text('push'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('push2'));
+    await tester.pump();
+    // 首帧门槛：push 动画在新页首帧画完前锁 0，下一帧才锚定起点。
+    await tester.pump(const Duration(milliseconds: 1));
+
+    // 被覆盖页（第一层）身上的结构指纹：ClipRRect / Opacity 恒在，
+    // Stack 数恒定（压暗蒙层不靠 Stack，改用 RenderProxyBox 直画）。
+    // 三种层数任何一种在转场中变化 = 子树 reparent。
+    final coveredFinder = find.byType(Scaffold).first;
+    int clipCount() => find
+        .ancestor(of: coveredFinder, matching: find.byType(ClipRRect))
+        .evaluate()
+        .length;
+    int opacityCount() => find
+        .ancestor(of: coveredFinder, matching: find.byType(Opacity))
+        .evaluate()
+        .length;
+    // Stack 层数包含路由 / Scaffold 自己的布局 Stack：恒挂蒙层设计下它是常数；
+    // 若有人退回「按 scrimAlpha 拆 Stack」的旧结构，起步帧会 +1。
+    int stackCount() => find
+        .ancestor(of: coveredFinder, matching: find.byType(Stack))
+        .evaluate()
+        .length;
+
+    final firstClip = clipCount();
+    final firstOpacity = opacityCount();
+    final firstStack = stackCount();
+    expect(firstClip, greaterThan(0), reason: '被覆盖页应恒带前缘圆角裁切');
+    expect(firstOpacity, greaterThan(0), reason: '被覆盖页应恒带透明度衰减');
+
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 45));
+      expect(
+        clipCount(),
+        firstClip,
+        reason: 'f$i 圆角裁切层数变了 = 子树 reparent（掉帧 / 闪烁源）',
+      );
+      expect(
+        opacityCount(),
+        firstOpacity,
+        reason: 'f$i 透明度层数变了 = 子树 reparent（掉帧 / 闪烁源）',
+      );
+      expect(
+        stackCount(),
+        firstStack,
+        reason: 'f$i Stack 层数变了 = 压暗蒙层在按 alpha 拆装（掉帧 / 闪烁源）',
+      );
+    }
+
+    await tester.pumpAndSettle();
+    // 落定后圆角半径必须精确为 0（两端收束，静止态不残留可见圆角缺口）。
+    final border = tester
+        .widget<ClipRRect>(
+          find
+              .ancestor(of: coveredFinder, matching: find.byType(ClipRRect))
+              .first,
+        )
+        .borderRadius
+        .resolve(TextDirection.ltr);
+    expect(border.topLeft.x, 0);
+    expect(border.bottomLeft.x, 0);
+  });
+
+  testWidgets('转场全程顶栏磨砂带参数恒定：tint 不随路由动画翻', (tester) async {
+    // 2026-10-17 定案的回归：tint 曾经的判据带着 `scope.blurEnabled`，而页面壳
+    // 喂给它的是 `HyperosRouteBlurGate.backdropBlurEnabled`（= 动画停稳且过了
+    // settle 帧数）—— push 起步翻 false、pop 收尾后过 2 帧才翻回 true。翻的
+    // 不只是颜色：tint 同时决定衬底那一层的绘制方式（磨砂色 ↔ 页面底色，整条
+    // 带重新栅格化），翻的时刻正好是转场起步 / 页面刚停稳 —— 读作「标题栏闪
+    // 一下」。现在判据里不许再出现路由动画状态，只看 `underHeader`。
+    //
+    // 场景必须是**内容已压到带下**的子页（滚动过）：未滚动的子页 `underHeader`
+    // 恒为 false、tint 两边都是页面底色，那条路探不到翻转（探针实测过）。
+    AndroidAnimationScaleService.setUserTransitionSpeed(1);
+    // widget 测试宿主（Windows）`liveBlurSupported` 恒为 false，得掰成 true，
+    // 否则 `bandOverhangs` 恒 false，这条测试整条短路。
+    HyperosBlurredHeader.liveBlurSupportedOverride = true;
+    addTearDown(() => HyperosBlurredHeader.liveBlurSupportedOverride = null);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => HyperosNavigation.push(
+                  context,
+                  builder: (_) => const _BandProbePage(),
+                ),
+                child: const Text('push'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('push'));
+    await tester.pumpAndSettle();
+    // 滚动让内容压到带下（underHeader=true），静止 tint 必须是磨砂色。
+    final scrollable = find.descendant(
+      of: find.byType(HyperosListView),
+      matching: find.byType(Scrollable),
+    );
+    await tester.drag(scrollable, const Offset(0, -300));
+    await tester.pumpAndSettle();
+
+    String fingerprint() {
+      // 转场落定后 Navigator 会把被盖住的路由包进 Offstage —— 参数恒定恰恰
+      // 要在「被盖住也挂着」的这段里读，所以 finder 必须不跳过 offstage。
+      final shells = find
+          .byType(FrostedHeaderBackground, skipOffstage: false)
+          .evaluate()
+          .toList();
+      if (shells.isEmpty) {
+        return 'no-band';
+      }
+      final w = shells.first.widget as FrostedHeaderBackground;
+      return 'blur=${w.blurEnabled} tint=${w.tint} '
+          'opaque=${w.opaqueAtRest} overhang=${w.bottomOverhang}';
+    }
+
+    final initial = fingerprint();
+    expect(initial, isNot('no-band'), reason: '子页顶栏应带磨砂带外壳');
+
+    // 盖一层普通页面，逐帧读被覆盖页的带：磨砂色必须全程不翻。
+    final nav = tester.state<NavigatorState>(find.byType(Navigator));
+    nav.push(
+      HyperosNavigation.route<void>(
+        builder: (_) => const Scaffold(backgroundColor: Colors.white),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(
+        fingerprint(),
+        initial,
+        reason: 'cover f$i 顶栏带参数变了 = 衬底绘制方式换了 = '
+            '整条带重栅格化（转场中闪一下）',
+      );
+    }
+    await tester.pumpAndSettle();
+
+    // 弹回露出这一页，再逐帧读：pop 收尾 settle 帧也不许翻。
+    nav.pop();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(
+        fingerprint(),
+        initial,
+        reason: 'pop f$i 顶栏带参数变了 = 页面刚停稳整条带重栅格化（返回闪一下）',
+      );
+    }
+    await tester.pumpAndSettle();
+    expect(fingerprint(), initial, reason: '落定后也必须与转场中一致');
+  });
+
   test('programmatic curve reproduces the baked spring step response', () {
     const curve = HyperosMiuixNavProgrammaticCurve();
     // 端点必须精确：末值归一化后停在整 1，否则停稳后边缘会留一条缝。
@@ -202,22 +420,18 @@ void main() {
   });
 
   test('primary transition active only while forward or reverse', () {
-    expect(
-      HyperosNavigation.isPrimaryTransitionActive(AnimationStatus.forward),
-      isTrue,
-    );
-    expect(
-      HyperosNavigation.isPrimaryTransitionActive(AnimationStatus.reverse),
-      isTrue,
-    );
-    expect(
-      HyperosNavigation.isPrimaryTransitionActive(AnimationStatus.completed),
-      isFalse,
-    );
-    expect(
-      HyperosNavigation.isPrimaryTransitionActive(AnimationStatus.dismissed),
-      isFalse,
-    );
+    // 2026-10-17：结构恒定化之后，widget 树不再读动画状态（ClipRRect 出没），
+    // 这个判据回到了它唯一的正式用户 [HyperosRouteBlurGate.isRouteTransitioning]
+    // 所在的 collaborators 文件里（`hyperosIsRouteTransitioning`）。这里把
+    // 「forward / reverse 之外都算停稳」的语义钉住，防止哪天有人拿动画**数值**
+    // 阈值替代状态判断（阈值判据在端点附近抖动，正是当年圆角闪烁的来源）。
+    bool active(AnimationStatus status) =>
+        status == AnimationStatus.forward || status == AnimationStatus.reverse;
+
+    expect(active(AnimationStatus.forward), isTrue);
+    expect(active(AnimationStatus.reverse), isTrue);
+    expect(active(AnimationStatus.completed), isFalse);
+    expect(active(AnimationStatus.dismissed), isFalse);
   });
 
   test('parallax bleed covers exit slide fraction', () {
@@ -227,4 +441,25 @@ void main() {
       400 * (1 + HyperosMiuixNavigation.exitSlideFraction),
     );
   });
+}
+
+/// 顶栏带探针：走与设置子页同一套外壳（折叠大标题 + 磨砂带 + 路由模糊门），
+/// 而不是手工拼 scope —— 要钉住的正是「门在转场里翻、带不跟着翻」这条链。
+class _BandProbePage extends StatelessWidget {
+  const _BandProbePage();
+
+  @override
+  Widget build(BuildContext context) {
+    return HyperosSubpage(
+      title: const Text('设置'),
+      onBack: () => Navigator.pop(context),
+      child: HyperosListView(
+        itemCount: 30,
+        itemBuilder: (context, index) => HyperosListTile(
+          icon: Icons.settings_outlined,
+          title: '行 $index',
+        ),
+      ),
+    );
+  }
 }

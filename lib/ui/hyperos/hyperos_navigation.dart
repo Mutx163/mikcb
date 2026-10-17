@@ -86,17 +86,6 @@ abstract final class HyperosNavigation {
     );
   }
 
-  /// Whether the primary route animation is still running (not settled).
-  ///
-  /// Prefer this over raw progress for clip decisions: floating-point values
-  /// near 0/1 can leave a tiny radius that shows as a half-rounded edge in
-  /// screenshots after the page has visually finished sliding.
-  @visibleForTesting
-  static bool isPrimaryTransitionActive(AnimationStatus status) {
-    return status == AnimationStatus.forward ||
-        status == AnimationStatus.reverse;
-  }
-
   /// Viewport width plus right-side bleed so parallax exit never exposes routes
   /// below in the [Navigator] stack.
   @visibleForTesting
