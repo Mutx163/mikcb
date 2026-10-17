@@ -114,6 +114,25 @@ abstract final class HyperosNavigation {
     return (distanceToEndpoint / band).clamp(0.0, 1.0);
   }
 
+  /// 被覆盖页的透明度（1 = 不透明）：官方 `1 - 0.1 × 覆盖度`，末段按
+  /// [HyperosMiuixNavigation.coveredReleaseBand] 释放回 1。
+  @visibleForTesting
+  static double coveredAlphaFor(double coverValue) {
+    return 1 -
+        HyperosMiuixNavigation.coveredAlphaFalloff *
+            coverValue *
+            transitionCornerRadiusFactor(coverValue);
+  }
+
+  /// 压暗蒙层的 alpha：官方 `0.5 × 覆盖度`，末段按
+  /// [HyperosMiuixNavigation.coveredReleaseBand] 释放回 0（与圆角收束同一段）。
+  @visibleForTesting
+  static double scrimAlphaFor(double coverValue) {
+    return HyperosMiuixNavigation.dimAmount *
+        coverValue *
+        transitionCornerRadiusFactor(coverValue);
+  }
+
   /// 官方 miuix-nav `NavTransitions.MiuixDefault` + `NavDisplayEffects.Default`
   /// 的 Flutter 版。2026-10-16 换装，替换掉此前自研的「四角 40 圆角 + 投影」
   /// 卡片式转场（那套的常量与辅助函数一并撤掉）。
@@ -165,7 +184,8 @@ abstract final class HyperosNavigation {
   }
 }
 
-/// 官方默认预设驱动的一页：位移 + 前缘圆角 + 切口补底色 + 覆盖衰减 + 压暗蒙层。
+/// 官方默认预设驱动的一页：位移 + 前缘圆角（切口不补色）+ 覆盖衰减 + 压暗蒙层
+/// （后两者末段有一条「释放」包络，见 [HyperosMiuixNavigation.coveredReleaseBand]）。
 ///
 /// 同一个 widget 伺服两种角色（框架对进出两页都调 `buildTransitions`）：
 /// * 作为**栈顶那一页**（正在进或正在退）：`enter` 在 0..1 之间走，`cover == 0`；
@@ -225,10 +245,16 @@ class _MiuixNavPageTransition extends StatelessWidget {
             width *
             coverValue;
         // 3) 被覆盖页的透明度衰减：官方 1 - 0.1 × 覆盖度。
-        final coveredAlpha =
-            1 - HyperosMiuixNavigation.coveredAlphaFalloff * coverValue;
         // 4) 压暗蒙层：官方曲线随深度线性，等价于「随覆盖程度线性加深」。
-        final scrimAlpha = HyperosMiuixNavigation.dimAmount * coverValue;
+        //
+        // 两者都带一个「末段释放」包络（与圆角收束同一条带宽，见
+        // [HyperosMiuixNavigation.coveredReleaseBand]）：切口最后一段是在**屏幕
+        // 圆角那一小块里**收掉的，露的正是被覆盖页的像素 —— 若这层还压着 0.5 的
+        // 暗，收的过程读作「一块深色月牙缩没 = 圆角闪成无圆角」。放掉压暗后，
+        // 洞里是被覆盖页的原色（同套页面底色本就一致），形状收掉时看不出来。
+        // 中段包络恒为 1，官方 0.1 / 0.5 的数值不变。
+        final coveredAlpha = HyperosNavigation.coveredAlphaFor(coverValue);
+        final scrimAlpha = HyperosNavigation.scrimAlphaFor(coverValue);
 
         final page = _MiuixNavClippedPage(
           // 存在性由设备圆角读数决定（转场全程恒定，不随动画翻转）；

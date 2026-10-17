@@ -75,6 +75,44 @@ void main() {
     );
   });
 
+  test('末段释放：贴边那一段放掉压暗与透明度衰减，收口不再读作「闪成无圆角」', () {
+    // 行为被有意替换（2026-10-17 真机第二轮：掉帧治好后残留「圆角底部还是在
+    // 闪烁成无圆角的状态」）。机理见 HyperosMiuixNavigation.coveredReleaseBand
+    // 的注释与 `.agents/notes/implemented/bug-fix/2026-10-17-nav-corner-notch-flicker.md`。
+    const band = HyperosMiuixNavigation.cornerClipSettleBand;
+
+    // 中段（离两端都远）保持官方数值：压暗 0.5 × 覆盖度、透明度 1 - 0.1 × 覆盖度。
+    expect(HyperosNavigation.scrimAlphaFor(0.5), closeTo(0.25, 1e-9));
+    expect(HyperosNavigation.coveredAlphaFor(0.5), closeTo(0.95, 1e-9));
+    // 收束起点之前一点必须还没动（只有带宽内才释放）。
+    expect(
+      HyperosNavigation.scrimAlphaFor(1 - band * 2),
+      closeTo(HyperosMiuixNavigation.dimAmount * (1 - band * 2), 1e-9),
+    );
+
+    // 两端：压暗精确放光、被覆盖页回到完全不透明（切口里就是原色）。
+    expect(HyperosNavigation.scrimAlphaFor(0), 0);
+    expect(HyperosNavigation.scrimAlphaFor(1), 0);
+    expect(HyperosNavigation.coveredAlphaFor(0), 1);
+    expect(HyperosNavigation.coveredAlphaFor(1), 1);
+
+    // 连续释放，不是二值跳变（一帧之内变亮同样读作闪）。
+    var previous = HyperosNavigation.scrimAlphaFor(1 - band);
+    final start = previous;
+    expect(start, greaterThan(0.49), reason: '带宽起点应仍是接近满值的压暗');
+    for (var i = 1; i <= 4; i++) {
+      final current = HyperosNavigation.scrimAlphaFor(1 - band + band * i / 4);
+      expect(current, lessThan(previous));
+      expect(
+        previous - current,
+        lessThan(start * 0.5),
+        reason: '单步降幅要远小于总降幅 = 铺开释放，不是一帧跳变',
+      );
+      previous = current;
+    }
+    expect(previous, 0);
+  });
+
   testWidgets('转场中前缘两角照裁，切口里不补任何颜色（露出的就是被覆盖页本身）', (
     tester,
   ) async {
