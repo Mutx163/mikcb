@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/services/android_animation_scale_service.dart';
@@ -81,13 +83,21 @@ void main() {
     // 的注释与 `.agents/notes/implemented/bug-fix/2026-10-17-nav-corner-notch-flicker.md`。
     const band = HyperosMiuixNavigation.cornerClipSettleBand;
 
-    // 中段（离两端都远）保持官方数值：压暗 0.5 × 覆盖度、透明度 1 - 0.1 × 覆盖度。
-    expect(HyperosNavigation.scrimAlphaFor(0.5), closeTo(0.25, 1e-9));
+    // 中段（离两端都远）保持官方的**上限**（0.5）：压暗是「0.5 × 覆盖度^指数」，
+    // 指数见 HyperosMiuixNavigation.scrimRampExponent（覆盖早期就到位，切口里的
+    // 旧页始终比上层页暗一档）。透明度仍是官方 1 - 0.1 × 覆盖度。
+    expect(
+      HyperosNavigation.scrimAlphaFor(0.5),
+      closeTo(HyperosMiuixNavigation.dimAmount * math.sqrt(0.5), 1e-9),
+    );
     expect(HyperosNavigation.coveredAlphaFor(0.5), closeTo(0.95, 1e-9));
-    // 收束起点之前一点必须还没动（只有带宽内才释放）。
+    // 收束起点之前一点必须还没进入「释放」（只有带宽内才释放）。
     expect(
       HyperosNavigation.scrimAlphaFor(1 - band * 2),
-      closeTo(HyperosMiuixNavigation.dimAmount * (1 - band * 2), 1e-9),
+      closeTo(
+        HyperosMiuixNavigation.dimAmount * math.sqrt(1 - band * 2),
+        1e-9,
+      ),
     );
 
     // 两端：压暗精确放光、被覆盖页回到完全不透明（切口里就是原色）。
@@ -111,6 +121,36 @@ void main() {
       previous = current;
     }
     expect(previous, 0);
+  });
+
+  test('压暗起势：覆盖早期就到位，切口里的旧页始终比上层页暗一档', () {
+    // 行为被有意替换（2026-10-17 真机第三轮：「打开动画从始至终都在闪烁圆角底下的
+    // 不应该出现的白色卡片背景……闪出来的时候就相当于没有圆角，闪完了又显示正常的
+    // 圆角，然后闪烁又极快，一秒可能五六次」）。机理见
+    // HyperosMiuixNavigation.scrimRampExponent 的背景账：切口里露的是被覆盖页的
+    // 像素，压暗起得晚（官方线性在覆盖早期 ≈ 0）时两边同亮，弧线读不出来。
+    expect(HyperosMiuixNavigation.scrimRampExponent, lessThan(1));
+    expect(HyperosMiuixNavigation.scrimRampExponent, greaterThan(0));
+
+    // 连续起势：覆盖度 0.001（首帧那一档）时基本不压暗，不是一帧跳到暗。
+    expect(HyperosNavigation.scrimAlphaFor(0.001), lessThan(0.03));
+
+    // 覆盖 5% 时就该明显比官方线性更暗（官方 0.025 → 这里 0.112）。
+    expect(
+      HyperosNavigation.scrimAlphaFor(0.05),
+      greaterThan(2 * HyperosMiuixNavigation.dimAmount * 0.05),
+    );
+    // 覆盖 25%（这条曲线在 ~50ms 就到了）时已经压出可读的对比。
+    expect(HyperosNavigation.scrimAlphaFor(0.25), greaterThan(0.24));
+
+    // 上限仍是官方 dimAmount，中段单调不减。
+    var previous = 0.0;
+    for (final fraction in [0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.99]) {
+      final current = HyperosNavigation.scrimAlphaFor(fraction);
+      expect(current, greaterThan(previous));
+      expect(current, lessThanOrEqualTo(HyperosMiuixNavigation.dimAmount));
+      previous = current;
+    }
   });
 
   testWidgets('转场中前缘两角照裁，切口里不补任何颜色（露出的就是被覆盖页本身）', (
