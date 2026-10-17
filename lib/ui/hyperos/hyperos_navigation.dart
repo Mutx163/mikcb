@@ -495,7 +495,8 @@ class _MiuixNavClippedPage extends StatelessWidget {
   }
 }
 
-/// 转场期间的「重页快照滑入」闸门（2026-10-17）。
+/// 转场期间的「重页快照滑入」闸门（2026-10-17；2026-10-18 退休点提前到
+/// 圆角收束带）。
 ///
 /// 机理（为什么这能治「半路冻住 → 跳到位 + 提前变直角」）：转场中页面像素由
 /// 框架 `_subtreeKey` 缓存，**缓存只在页面没重绘时有效** —— 新页异步内容到位
@@ -507,9 +508,16 @@ class _MiuixNavClippedPage extends StatelessWidget {
 /// 做法：页面首帧出画后把那一帧拷成一张 `ui.Image` 快照；快照模式下**真页
 /// 整体离屏不画**（`Offstage`：build / 照常、布局照常 —— 异步内容照常到位，
 /// 但 paint 完全跳过），屏上是 [RawImage] —— 每帧的动画成本只剩「合成一张
-/// 图 + 位移」，与页面轻重无关。停稳（`completed`）换回真页：页面子树实例
-/// 不变（零 deactivate），攒下的重绘在这一帧显形 —— 与页面自己的停稳重绘
-/// 同帧，读作「内容就位」，不读作闪。
+/// 图 + 位移」，与页面轻重无关。
+///
+/// **退休点 = 圆角收束带起点，不是停稳**（2026-10-18 真机第一轮反馈定案）：
+/// 快照把「首帧画面 + 满值切口」整个烤死，切口半径是冻结的。若撑到停稳才
+/// 退休，末段 85ms 的圆角收束（连续收平）被烤死的满值切口顶住不动，停稳
+/// 那一帧直接蹦成直角 —— 真机读作「圆角比别的页早收、变更快」。提前到收束
+/// 带（`transitionCornerRadiusFactor` 开始离开 1 的那一刻，页面离贴边 1.6px、
+/// 视觉上已贴边）换回真页：此刻活页的内层切口也是满值，几何与快照完全一致
+/// （换层无痕），随后的圆角收束在活像素上正常播放 —— 与其他所有页面同一条
+/// 时间线；攒下的内容显形也提前到收束之前（「内容先落位 → 圆角再收平」）。
 ///
 /// 关键：只把快照**叠**在真页上面是不够的 —— 页面层照样每帧重栅格化、照样
 /// 被合成（被盖住不等于不被画），一分钱都省不下来。省钱的唯一方式就是让
@@ -520,7 +528,7 @@ class _MiuixNavClippedPage extends StatelessWidget {
 ///
 /// 已知代价：
 /// * 快照期间滑入画面里是「静止的照片」：页面自己的入场动画（骨架屏、
-///   loading 转圈）在滑动画面里冻结，落定即接上 —— 重页面在滑动画面里本来
+///   loading 转圈）在滑动画面里冻结，退休即接上 —— 重页面在滑动画面里本来
 ///   也播不动（每帧都掉），这是把「冻结但占着成本」换成「冻结且零成本」；
 /// * pop 本页离场（`reverse`）期间快照若还在，离场画面同样保持快照（内容
 ///   = 滑入时用户看到的那一帧，视觉自洽），路由销毁时随 [dispose] 释放；
@@ -535,7 +543,8 @@ class _MiuixNavSnapshotGate extends StatefulWidget {
   });
 
   /// 本页自己的路由动画。判据只认 [AnimationStatus]（与圆角切口同口径）：
-  /// `forward` = push 滑入中（快照模式）；`completed` = 停稳（换回真页）。
+  /// `forward` = push 滑入中（快照模式）；离开 forward（completed）= 换回
+  /// 真页。
   final Animation<double> animation;
 
   /// 挂载时把 State 交给路由（[HyperosPageRoute] 借它把「快照已就绪」接进
@@ -621,19 +630,50 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
   @visibleForTesting
   bool get captureSettled => _captureSettled;
 
+  /// 快照退休判据（每帧由 [build] 的 AnimatedBuilder 现读）。
+  ///
+  /// 收束带起点（进度 ≥ `1 - cornerClipSettleBand`）或动画离开 forward
+  /// （停稳 / 被打断）都退休 —— 只要「烤死的满值切口」还能被看出来是错的，
+  /// 就把活页换回屏上。判据与 [HyperosNavigation.transitionCornerRadiusFactor]
+  /// 用同一个带宽常量，两条时间线必然重合。
+  bool get _snapshotShouldRetire {
+    final animation = widget.animation;
+    final status = animation.status;
+    if (status != AnimationStatus.forward) {
+      return true;
+    }
+    return animation.value >=
+        1 - HyperosMiuixNavigation.cornerClipSettleBand;
+  }
+
   void _onStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed && _snapshot != null) {
-      // 落定帧：换回真页。页面此刻刚画完停稳的第一帧（帧末回调跑在
-      // paint 之后），快照出画到这一帧之间真页攒下的重绘在此显形 ——
-      // 与页面自己的停稳重绘同帧，读作「内容就位」。
+    if (status != AnimationStatus.forward && _snapshot != null) {
+      // 兜底：动画被打断（interactive pop / 状态机跳变）时也退休，别把
+      // 快照留在树上。正常路径的退休在 build 的 AnimatedBuilder 里按帧判。
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) {
+        if (!mounted || _snapshot == null) {
           return;
         }
         _disposeSnapshot();
         setState(() {});
       });
     }
+  }
+
+  void _retireSnapshotIfNeeded() {
+    if (_snapshot == null || !_snapshotShouldRetire) {
+      return;
+    }
+    // 帧末退休：本帧仍由快照画（切层发生在 paint 之后，下一帧生效）——
+    // 换层帧本身不做任何绘制变化，几何上快照与活页在收束带起点完全一致，
+    // 下一帧起圆角收束在活像素上正常播放。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _snapshot == null) {
+        return;
+      }
+      _disposeSnapshot();
+      setState(() {});
+    });
   }
 
   void _disposeSnapshot() {
@@ -646,12 +686,29 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
     if (!HyperosMiuixNavigation.snapshotTransitionEnabled) {
       return widget.child;
     }
-    final snapshotActive = _snapshot != null;
     // `fit: StackFit.expand` 是硬约束：Stack 默认给子级**松**约束（min=0），
     // 会把外面好不容易还原的紧高度再次放松 —— 「根 Stack + Positioned.fill」
     // 形态的页面（教务仓库列表页）立刻塌成 0 高，整页不画（2026-09-28 露黑带
     // 的同款机理，test/screens/warehouse_transition_black_test.dart 守着）。
     // expand 把进入本闸门的紧约束原样传给两层子级。
+    //
+    // AnimatedBuilder 每帧现读退休判据：进入圆角收束带的那一刻（进度 ≥
+    // 1 - cornerClipSettleBand）排帧末退休 —— 快照只管「中段重绘贵」的那
+    // 一段，末段收束必须发生在活像素上（烤死的满值切口会顶住收束、停稳
+    // 蹦直角，2026-10-18 真机第一轮反馈）。
+    return AnimatedBuilder(
+      animation: widget.animation,
+      builder: (context, _) {
+        _retireSnapshotIfNeeded();
+        return _buildStack(context);
+      },
+    );
+  }
+
+  Widget _buildStack(BuildContext context) {
+    final snapshotActive = _snapshot != null;
+    // `fit: StackFit.expand` 的硬约束理由见 build() 里的注释（松约束会把
+    // 「根 Stack + Positioned.fill」页面塌成 0 高露黑带）。
     return Stack(
       fit: StackFit.expand,
       textDirection: Directionality.of(context),

@@ -759,7 +759,7 @@ void main() {
     expect(snapshotImage.image, isNotNull, reason: '快照层应在屏上参与滑动');
 
     // 2) 快照期间内容变化：真页跟着重建（屏外），但滑动画面里仍是快照 ——
-    //    新文本在落定前不可见。
+    //    新文本在退休前不可见。此刻仍在滑入中段（远未到收束带）。
     setRootState(() => contentLabel = 'updated');
     await tester.pump(const Duration(milliseconds: 80));
     expect(
@@ -770,18 +770,89 @@ void main() {
     expect(find.text('updated'), findsNothing,
         reason: '快照模式下内容变化不能出现在滑动画面里');
 
-    // 3) 落定：真页显形、快照释放，攒下的变化可见。
+    // 3) 退休点 = 圆角收束带起点（进度 ≥ 1 - cornerClipSettleBand，2026-10-18
+    //    定案），不是停稳：烤死的满值切口会顶住末段收束、停稳蹦直角。退休后
+    //    攒下的变化显形 —— 顺序必须是「内容先落位 → 圆角再收平」。
     await tester.pumpAndSettle();
     expect(find.text('updated'), findsOneWidget,
-        reason: '落定换回真页，快照期间攒下的内容变化显形');
+        reason: '收束带退休换回真页，快照期间攒下的内容变化显形');
     expect(
       find.byWidgetPredicate(
         (w) => w is RawImage && w.image != null,
         skipOffstage: false,
       ),
       findsNothing,
-      reason: '落定后快照必须释放（不留常驻图片层）',
+      reason: '退休后快照必须释放（不留常驻图片层）',
     );
+  });
+
+  testWidgets('快照退休点：进度进入圆角收束带即退休，不等停稳', (tester) async {
+    // 2026-10-18 真机第一轮反馈的回归：快照若撑到停稳才退休，末段 85ms 的
+    // 圆角收束被烤死的满值切口顶住、停稳一帧蹦直角 —— 用户读作「圆角比别的
+    // 页早收、变更快」。退休判据必须与 transitionCornerRadiusFactor 的收束带
+    // 同一条（进度 ≥ 1 - cornerClipSettleBand）。曲线前倾（500ms 场、t=0.5
+    // 已 ~95%），用真实时长驱动：走到「曲线值 ≈ 0.9」的帧读快照在屏，走到
+    // 停稳后再确认已退休。
+    AndroidAnimationScaleService.setUserTransitionSpeed(1);
+    const enteringKey = ValueKey('retire-entering');
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => HyperosNavigation.push(
+                  context,
+                  builder: (_) => const Scaffold(
+                    key: enteringKey,
+                    body: Center(child: Text('retire')),
+                  ),
+                ),
+                child: const Text('push'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    bool hasSnapshot() => find
+        .byWidgetPredicate(
+          (w) => w is RawImage && w.image != null,
+          skipOffstage: false,
+        )
+        .evaluate()
+        .isNotEmpty;
+    double animationValue() => ModalRoute.of(
+          tester.element(find.byKey(enteringKey, skipOffstage: false)),
+        )!.animation!.value;
+
+    await tester.tap(find.text('push'));
+    await tester.pump();
+    // 首帧门槛 + 快照拍照在帧末了结，下一帧解锁锚定。
+    await tester.pump(const Duration(milliseconds: 1));
+
+    // 逐 10ms 步进到曲线值首次越过 0.5（滑入中段）：此刻必须仍在快照模式。
+    while (animationValue() < 0.5) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    expect(hasSnapshot(), isTrue, reason: '滑入中段（收束带外）快照应在屏参与滑动');
+
+    // 继续步进到进入收束带（曲线值 ≥ 1 - cornerClipSettleBand）：退休已排，
+    // 下一次 pump 后快照必须离场 —— 不等停稳。
+    const band = HyperosMiuixNavigation.cornerClipSettleBand;
+    while (animationValue() < 1 - band) {
+      await tester.pump(const Duration(milliseconds: 2));
+    }
+    await tester.pump(const Duration(milliseconds: 1));
+    expect(hasSnapshot(), isFalse,
+        reason: '进度进入收束带（1 - cornerClipSettleBand = ${1 - band}）后'
+            '快照必须退休 —— 末段圆角收束必须发生在活像素上');
+    await tester.pumpAndSettle();
   });
 
   testWidgets('豁免页：snapshotTransition=false 的路由全程真页参与滑动', (tester) async {
