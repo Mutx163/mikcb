@@ -535,7 +535,6 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = HyperosBlurredHeaderScope.maybeOf(context);
-    final routeBlur = scope?.blurEnabled ?? true;
     // Prefer the frost-only nested scope; fall back to the parent field, then
     // true so bare showcase usages without a page scope keep the old default.
     final underHeader =
@@ -548,15 +547,30 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
         true;
     // Keep the GPU blur layer mounted whenever the platform can frost — not
     // only after content tucks under the band. Mounting Inspire.backdropBlur
-    // on the first under-header frame hitched the small-title join. Frost and
-    // route-blur only swap the tint (opaque page color ↔ frosted scrim);
-    // route transitions still hide the frost visually via [routeBlur].
+    // on the first under-header frame hitched the small-title join.
     // 模糊层与下沿外推是同一个开关（[bandOverhangs]）：带不画，下沿也不画。
     final blurCapable = HyperosBlurredHeader.bandOverhangs(context);
     final atRestColor =
         scope?.headerBackgroundColor ??
         HyperosColors.scaffoldBackground(context);
-    final tint = (blurCapable && routeBlur && underHeader)
+    // ⚠️ 2026-10-17：tint 判据里**不许出现路由动画状态**（曾经是
+    // `blurCapable && scope?.blurEnabled && underHeader`）。`scope.blurEnabled`
+    // 由页面壳喂的是 `_routeBlurGate.backdropBlurEnabled`，而 gate 的
+    // `blurReady = !isRouteTransitioning && blurSettled` —— push 起步翻 false、
+    // pop 收尾后过 2 帧才翻回 true。翻的不只是颜色：`tint` 同时决定
+    // `HyperosFrostedHeaderShell` 传给衬底的 `opaqueAtRest` 语义（衬底铺满整条
+    // 带 ↔ 向下渐隐），衬底那层的绘制方式整个换掉、整条带重新栅格化；翻的时刻
+    // 恰好是转场起步 / 页面刚停稳那一帧 —— 用户读作「标题栏闪一下」（慢页面上
+    // 尤其明显，因为那几帧本来就在掉帧边缘）。
+    //
+    // 现在 tint 只看 `underHeader`（内容有没有压到带下）——内容驱动、与路由
+    // 动画无关的稳定量。转场期间磨砂照常画，只是被不透明页面盖住看不见
+    // （转场中新页从右侧整屏滑入，顶栏带本来就是新页的一部分），代价是零。
+    // 视觉回退面：页面壳在转场里把 tint 从「磨砂色」保持为「磨砂色」，仅当
+    // 用户真正关掉模糊总开关（`FrostedAppearance.blurEnabled=false`）时才回落
+    // 到页面底色 —— 那条路径走 [bandOverhangs] / [backdropBlurEnabled] 的
+    // 稳定判据，不随路由动画翻。
+    final tint = (blurCapable && underHeader)
         ? HyperosBlurredHeader.tintColor(context, withBlur: true)
         : atRestColor;
 
