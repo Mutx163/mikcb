@@ -78,6 +78,80 @@ void main() {
     );
   });
 
+  test('形变类转场：圆角只收尾、不起头（贴边后才收平）', () {
+    // 行为被有意替换（2026-10-17 真机）：卡片形变与日视图锚点展开此前都**从 0 起
+    // 就按进度线性收**半径（`22 × (1 - 进度)` / `28 × (1 - 进度)`）—— 进度 0.8 时
+    // 只剩 4.4dp / 5.6dp，而页面/面板还差一成屏宽没贴边。用户原话：「页面还没有
+    // 完全贴边，没有完全打开的时候，圆角就已经消失变成直角了，时机比其他页面早
+    // 多了」。取值推导见 HyperosMiuixNavigation.morphCornerSettleBand 的注释。
+    //
+    // 起手是满半径：源按钮 / 种子面板本身就是一张圆角卡片，这里不能收。
+    expect(HyperosNavigation.morphCornerRadiusFactor(0), 1);
+
+    // 判别点：中段与 0.8 必须是满半径（旧实现在这两处只剩 0.5 / 0.2）。
+    expect(HyperosNavigation.morphCornerRadiusFactor(0.5), 1);
+    expect(HyperosNavigation.morphCornerRadiusFactor(0.8), 1);
+
+    const band = HyperosMiuixNavigation.morphCornerSettleBand;
+    expect(band, greaterThan(0), reason: '0 = 退回二值，贴边那一帧会闪');
+    expect(
+      band,
+      lessThanOrEqualTo(0.02),
+      reason: '起收时必须已经在贴边内（400dp 屏上位移残差 ≤5px）',
+    );
+    // 带宽起点之前一点必须还没动。
+    expect(HyperosNavigation.morphCornerRadiusFactor(1 - band * 2), 1);
+    // 末段连续收束（不是二值跳变）：越靠近落点越小，落点前仍非 0。
+    final nearSettle = HyperosNavigation.morphCornerRadiusFactor(1 - band / 4);
+    expect(nearSettle, greaterThan(0));
+    expect(nearSettle, lessThan(0.5));
+    expect(
+      HyperosNavigation.morphCornerRadiusFactor(1 - band / 8),
+      lessThan(nearSettle),
+    );
+    var previous = 1.0;
+    for (var i = 0; i <= 4; i++) {
+      final current = HyperosNavigation.morphCornerRadiusFactor(
+        1 - band + band * i / 4,
+      );
+      expect(current, greaterThanOrEqualTo(0));
+      expect(current, lessThanOrEqualTo(previous + 1e-9));
+      previous = current;
+    }
+    // 终点精确为 0：静止态不能残留圆角缺口（页面已贴边，圆角该锁进屏幕边缘）。
+    expect(previous, 0);
+    expect(HyperosNavigation.morphCornerRadiusFactor(1), 0);
+
+    // 锚点展开（日视图从锚点长成整屏）单独一条带宽：那条转场的面板底边内缩
+    // 正好是 `(1 - 进度) × 屏高`，所以带宽按屏高定 —— 850dp 屏上起收时底边
+    // 还差 1.7px，与滑动转场的 1.6px 同口径。
+    const expandBand = HyperosMiuixNavigation.anchorExpandCornerSettleBand;
+    expect(expandBand, greaterThan(0));
+    expect(expandBand, lessThanOrEqualTo(0.002), reason: '850dp 屏上 ≤1.7px');
+    for (final progress in <double>[0, 0.3, 0.5, 0.8, 0.9, 0.95]) {
+      expect(
+        HyperosNavigation.morphCornerRadiusFactor(progress, band: expandBand),
+        1,
+        reason: '进度 $progress 时面板还差 ${(1 - progress) * 100}% 屏高，半径不能提前收',
+      );
+    }
+    expect(HyperosNavigation.morphCornerRadiusFactor(1, band: expandBand), 0);
+    // 带宽 0 = 只在终点收平（官方二值行为的形变版，留作对照旋钮），不炸。
+    expect(HyperosNavigation.morphCornerRadiusFactor(0.5, band: 0), 1);
+    expect(HyperosNavigation.morphCornerRadiusFactor(1, band: 0), 0);
+
+    // 两条整圆角包装（`timetable_screen.dart` 的调用点各一行，所以参数烘焙在这里）：
+    // 卡片形变 22dp、锚点展开 28dp，两端与中段的形状都要对。
+    for (final radius in <double>[22, 28]) {
+      expect(HyperosNavigation.morphRadius(0, radius).topLeft.x, radius);
+      expect(HyperosNavigation.morphRadius(0.6, radius).topLeft.x, radius);
+    }
+    expect(HyperosNavigation.morphRadius(1, 22), BorderRadius.zero);
+    expect(HyperosNavigation.anchorExpandRadius(0).topLeft.x, 28);
+    expect(HyperosNavigation.anchorExpandRadius(0.9).topLeft.x, 28);
+    expect(HyperosNavigation.anchorExpandRadius(1), BorderRadius.zero);
+  });
+
   test('末段释放：贴边那一段放掉压暗与透明度衰减，收口不再读作「闪成无圆角」', () {
     // 行为被有意替换（2026-10-17 真机第二轮：掉帧治好后残留「圆角底部还是在
     // 闪烁成无圆角的状态」）。机理见 HyperosMiuixNavigation.coveredReleaseBand

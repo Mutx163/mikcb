@@ -4210,7 +4210,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         final widthFactor = 0.18 + (0.82 * progress);
         final heightFactor = math.max(0.04, progress);
         final translateY = (1 - progress) * -24;
-        final borderRadius = BorderRadius.circular(28 * (1 - progress));
+        final borderRadius = HyperosNavigation.anchorExpandRadius(progress);
         final borderColor = Color.lerp(
           colorScheme.outlineVariant,
           Colors.transparent,
@@ -7649,11 +7649,7 @@ class _OpenOnlyContainerPageRoute<T> extends PageRouteBuilder<T> {
                  Offset.zero,
                  progress,
                )!;
-               final borderRadius = BorderRadius.lerp(
-                 BorderRadius.circular(22),
-                 BorderRadius.zero,
-                 progress,
-               )!;
+               final borderRadius = HyperosNavigation.morphRadius(progress, 22);
                return Stack(
                  fit: StackFit.expand,
                  children: [

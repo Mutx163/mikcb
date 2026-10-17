@@ -114,6 +114,58 @@ abstract final class HyperosNavigation {
     return (distanceToEndpoint / band).clamp(0.0, 1.0);
   }
 
+  /// 形变类转场的圆角收束因子（0 = 平角，1 = 满半径）：**只收尾、不起头**。
+  ///
+  /// 与 [transitionCornerRadiusFactor] 的区别在起点。滑动转场两端都要收：页在屏幕
+  /// 外时没有前缘切口可言，到站后圆角「锁进屏幕边缘」（那块被机身圆角盖住），
+  /// 所以两端为 0。形变类转场相反 —— 起手那一下是一张**小卡片**（卡片形变的源按钮、
+  /// 锚点展开的种子面板），圆角必须保持满值；收平只发生在「页面/面板已经长到贴边」
+  /// 之后，也就是只有终点一侧收。
+  ///
+  /// 反面教材（2026-10-17 真机）：这两条转场此前都**从 0 起就按进度线性收**
+  /// （`22 × (1 - p)` / `28 × (1 - p)`）—— 进度过半半径就少一半、到 0.8 时只剩
+  /// 4.4dp / 5.6dp，而页面还差十分之一屏宽没贴边。用户原话：「页面还没有完全贴边，
+  /// 没有完全打开的时候，圆角就已经消失变成直角了，时机比其他页面早多了」。
+  ///
+  /// [band] 按**缓动后**进度算，语义与 [HyperosMiuixNavigation.cornerClipSettleBand]
+  /// 对齐（带宽 = 起步收束时「离贴边还剩多少」的比例）。各条转场的边缘内缩几何
+  /// 不同，所以带宽分别取值：见 [HyperosMiuixNavigation.morphCornerSettleBand] 与
+  /// [HyperosMiuixNavigation.anchorExpandCornerSettleBand]。
+  static double morphCornerRadiusFactor(
+    double progress, {
+    double band = HyperosMiuixNavigation.morphCornerSettleBand,
+  }) {
+    final clamped = progress.clamp(0.0, 1.0);
+    if (band <= 0) {
+      // 带宽为 0 = 官方那套二值开关的形变版：只在终点收平。
+      return clamped >= 1 ? 0 : 1;
+    }
+    return ((1 - clamped) / band).clamp(0.0, 1.0);
+  }
+
+  /// 卡片形变转场（`_OpenOnlyContainerPageRoute`）的整条圆角：起手是源按钮那张
+  /// [sourceRadius] 圆角卡片（22dp），长出整屏的过程中保持它，贴边后才收平。
+  ///
+  /// 落点在这里而不是调用点，是因为 `timetable_screen.dart` 有行数棘
+  /// （`test/architecture/timetable_screen_size_guard_test.dart`，只减不增）——
+  /// 调用点必须是一行；机理与取值推导见 [morphCornerRadiusFactor] 的注释。
+  static BorderRadius morphRadius(double progress, double sourceRadius) =>
+      BorderRadius.circular(sourceRadius * morphCornerRadiusFactor(progress));
+
+  /// 日视图锚点展开（`_buildAnchoredDayViewOverlay`）的整条圆角：种子面板 28dp，
+  /// 长到贴边后才收平；带宽按那条转场的几何单独取（`(1 - 进度) × 屏高`，
+  /// 见 [HyperosMiuixNavigation.anchorExpandCornerSettleBand]）。
+  ///
+  /// 同样为 `timetable_screen.dart` 的行数棘而落在这里（调用点一行）。
+  static BorderRadius anchorExpandRadius(double progress) =>
+      BorderRadius.circular(
+        28 *
+            morphCornerRadiusFactor(
+              progress,
+              band: HyperosMiuixNavigation.anchorExpandCornerSettleBand,
+            ),
+      );
+
   /// 被覆盖页的透明度（1 = 不透明）：官方 `1 - 0.1 × 覆盖度`，末段按
   /// [HyperosMiuixNavigation.coveredReleaseBand] 释放回 1。
   @visibleForTesting
