@@ -124,17 +124,19 @@ abstract final class HyperosNavigation {
             transitionCornerRadiusFactor(coverValue);
   }
 
-  /// 压暗蒙层的 alpha：官方上限 `0.5 × 覆盖度`，但按
-  /// [HyperosMiuixNavigation.scrimRampExponent] 的指数**提前起势**（覆盖早期就压到
-  /// 位），末段按 [HyperosMiuixNavigation.coveredReleaseBand] 释放回 0（与圆角收束
-  /// 同一段）。为什么要提前起势见那条常量的背景账：压暗晚了，圆角切口里的旧页与
-  /// 上层页自己的内容同亮，弧线读不出来 = 「闪成无圆角」。
+  /// 压暗蒙层的 alpha：官方 `0.5 × 覆盖度`，末段按
+  /// [HyperosMiuixNavigation.coveredReleaseBand] 释放回 0（与圆角收束同一段）。
+  ///
+  /// 2026-10-17 第三轮曾在这里插入 `scrimRampExponent`（平方根提前起势），想治
+  /// 「圆角读不出来」；当晚用户第四轮反馈「跟底色都没有任何关系，就是新页面的圆角，
+  /// 频繁的消失，变成无圆角状态」，把那条机理否掉，本函数回到官方线性。那一轮留下的
+  /// 唯一结论是「切口里从不缺上层页的像素」（逐像素探针整场 leak = 0），见
+  /// `.agents/notes/implemented/bug-fix/2026-10-17-nav-corner-notch-flicker.md`。
   @visibleForTesting
   static double scrimAlphaFor(double coverValue) {
-    final clamped = coverValue.clamp(0.0, 1.0);
     return HyperosMiuixNavigation.dimAmount *
-        math.pow(clamped, HyperosMiuixNavigation.scrimRampExponent) *
-        transitionCornerRadiusFactor(clamped);
+        coverValue *
+        transitionCornerRadiusFactor(coverValue);
   }
 
   /// 官方 miuix-nav `NavTransitions.MiuixDefault` + `NavDisplayEffects.Default`
@@ -249,9 +251,7 @@ class _MiuixNavPageTransition extends StatelessWidget {
             width *
             coverValue;
         // 3) 被覆盖页的透明度衰减：官方 1 - 0.1 × 覆盖度。
-        // 4) 压暗蒙层：官方上限 0.5 × 覆盖度，但按 scrimRampExponent 的指数提前
-        //    起势 —— 覆盖早期就压到位，圆角切口里的旧页始终比上层页暗一档，
-        //    弧线全程可读（否则两边同亮，切口读作「方角」，见那条常量的背景账）。
+        // 4) 压暗蒙层：官方曲线随深度线性，等价于「随覆盖程度线性加深」。
         //
         // 两者都带一个「末段释放」包络（与圆角收束同一条带宽，见
         // [HyperosMiuixNavigation.coveredReleaseBand]）：切口最后一段是在**屏幕
