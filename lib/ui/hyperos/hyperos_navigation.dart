@@ -495,8 +495,8 @@ class _MiuixNavClippedPage extends StatelessWidget {
   }
 }
 
-/// 转场期间的「重页快照滑入」闸门（2026-10-17；2026-10-18 退休点提前到
-/// 圆角收束带）。
+/// 转场期间的「重页快照滑入」闸门（2026-10-17；2026-10-18 两段式退休：
+/// 预热 0.99 → 收束带撤快照）。
 ///
 /// 机理（为什么这能治「半路冻住 → 跳到位 + 提前变直角」）：转场中页面像素由
 /// 框架 `_subtreeKey` 缓存，**缓存只在页面没重绘时有效** —— 新页异步内容到位
@@ -510,14 +510,23 @@ class _MiuixNavClippedPage extends StatelessWidget {
 /// 但 paint 完全跳过），屏上是 [RawImage] —— 每帧的动画成本只剩「合成一张
 /// 图 + 位移」，与页面轻重无关。
 ///
-/// **退休点 = 圆角收束带起点，不是停稳**（2026-10-18 真机第一轮反馈定案）：
-/// 快照把「首帧画面 + 满值切口」整个烤死，切口半径是冻结的。若撑到停稳才
-/// 退休，末段 85ms 的圆角收束（连续收平）被烤死的满值切口顶住不动，停稳
-/// 那一帧直接蹦成直角 —— 真机读作「圆角比别的页早收、变更快」。提前到收束
-/// 带（`transitionCornerRadiusFactor` 开始离开 1 的那一刻，页面离贴边 1.6px、
-/// 视觉上已贴边）换回真页：此刻活页的内层切口也是满值，几何与快照完全一致
-/// （换层无痕），随后的圆角收束在活像素上正常播放 —— 与其他所有页面同一条
-/// 时间线；攒下的内容显形也提前到收束之前（「内容先落位 → 圆角再收平」）。
+/// **两段式退休**（2026-10-18 两轮真机反馈定案）：
+///
+/// 1. **预热**（进度 ≥ [HyperosMiuixNavigation.snapshotWarmupProgress] = 0.99，
+///    页面离终点 ~4dp、视觉速度已近零）：真页放回屏下画 —— 快照仍盖在上层
+///    屏蔽一切可见变化，真页那次整机绘制（重页面 50~80ms）落在「画面几乎
+///    不动」的时刻 = 不可见；栅格缓存在此建立。快照期间攒下的内容在此显形
+///    （被盖住），读作「内容就位」预备。
+/// 2. **撤快照**（进度 ≥ `1 - cornerClipSettleBand`，即圆角收束带起点）：换层
+///    只是「去掉一张图」的纯合成操作 —— 便宜，不产生任何重绘；之后 85ms 的
+///    圆角收平在**已预热**的活像素上逐帧连续播放，与其他所有页面同一条
+///    时间线。
+///
+/// 单段退休的两个真机失败案例（都已被上面的两段式吸收）：
+/// * 退休在 `completed`：烤死的满值切口顶住末段收束，停稳一帧蹦直角
+///   （第一轮反馈「圆角比别的页早收」）；
+/// * 退休在收束带起点但没预热：换层帧 = 真页第一次整机绘制（重页面
+///   50~80ms）卡进收平段，收平被压成一步蹦变（第二轮反馈「圆角闪现消失」）。
 ///
 /// 关键：只把快照**叠**在真页上面是不够的 —— 页面层照样每帧重栅格化、照样
 /// 被合成（被盖住不等于不被画），一分钱都省不下来。省钱的唯一方式就是让
@@ -528,7 +537,7 @@ class _MiuixNavClippedPage extends StatelessWidget {
 ///
 /// 已知代价：
 /// * 快照期间滑入画面里是「静止的照片」：页面自己的入场动画（骨架屏、
-///   loading 转圈）在滑动画面里冻结，退休即接上 —— 重页面在滑动画面里本来
+///   loading 转圈）在滑动画面里冻结，预热即接上 —— 重页面在滑动画面里本来
 ///   也播不动（每帧都掉），这是把「冻结但占着成本」换成「冻结且零成本」；
 /// * pop 本页离场（`reverse`）期间快照若还在，离场画面同样保持快照（内容
 ///   = 滑入时用户看到的那一帧，视觉自洽），路由销毁时随 [dispose] 释放；
@@ -630,12 +639,21 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
   @visibleForTesting
   bool get captureSettled => _captureSettled;
 
+  /// 预热是否已排（0.99 进带后排一次帧末把真页放回屏下）。
+  bool _warmupScheduled = false;
+
+  /// 真页已放回屏下（预热完成 / 已退休）——快照还盖在上面时它照常画，
+  /// 栅格缓存在这个「画面几乎不动」的时刻建立。
+  bool _warmedUp = false;
+
   /// 快照退休判据（每帧由 [build] 的 AnimatedBuilder 现读）。
   ///
   /// 收束带起点（进度 ≥ `1 - cornerClipSettleBand`）或动画离开 forward
   /// （停稳 / 被打断）都退休 —— 只要「烤死的满值切口」还能被看出来是错的，
   /// 就把活页换回屏上。判据与 [HyperosNavigation.transitionCornerRadiusFactor]
-  /// 用同一个带宽常量，两条时间线必然重合。
+  /// 用同一个带宽常量，两条时间线必然重合。**退休前必须先预热**（见
+  /// [HyperosMiuixNavigation.snapshotWarmupProgress]）：没预热就撤快照，
+  /// 换层帧是真页的第一次整机绘制，会卡在收平段里读作蹦变。
   bool get _snapshotShouldRetire {
     final animation = widget.animation;
     final status = animation.status;
@@ -644,6 +662,17 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
     }
     return animation.value >=
         1 - HyperosMiuixNavigation.cornerClipSettleBand;
+  }
+
+  /// 预热判据：进度到达 [HyperosMiuixNavigation.snapshotWarmupProgress]
+  /// （或动画离开 forward 的兜底）就把真页放回屏下画。
+  bool get _shouldWarmUp {
+    final animation = widget.animation;
+    if (animation.status != AnimationStatus.forward) {
+      return true;
+    }
+    return animation.value >=
+        HyperosMiuixNavigation.snapshotWarmupProgress;
   }
 
   void _onStatus(AnimationStatus status) {
@@ -655,25 +684,41 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
           return;
         }
         _disposeSnapshot();
+        _warmedUp = true;
         setState(() {});
       });
     }
   }
 
-  void _retireSnapshotIfNeeded() {
-    if (_snapshot == null || !_snapshotShouldRetire) {
+  /// 逐帧判据（build 的 AnimatedBuilder 里调）：
+  ///
+  /// * 进度到预热点（或动画状态异常）→ 帧末把真页放回屏下（快照仍盖着，
+  ///   真页那次整机绘制落在「画面几乎不动」的时刻，不可见）；
+  /// * 进度到收束带（且已预热）→ 帧末撤快照 —— 换层是纯合成操作，之后
+  ///   圆角收平在**已预热**的活像素上逐帧连续播放。
+  void _advancePhasesIfNeeded() {
+    if (_snapshot == null) {
       return;
     }
-    // 帧末退休：本帧仍由快照画（切层发生在 paint 之后，下一帧生效）——
-    // 换层帧本身不做任何绘制变化，几何上快照与活页在收束带起点完全一致，
-    // 下一帧起圆角收束在活像素上正常播放。
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _snapshot == null) {
-        return;
-      }
-      _disposeSnapshot();
-      setState(() {});
-    });
+    if (!_warmedUp && !_warmupScheduled && _shouldWarmUp) {
+      _warmupScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _snapshot == null) {
+          return;
+        }
+        setState(() => _warmedUp = true);
+      });
+      return;
+    }
+    if (_warmedUp && _snapshotShouldRetire) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _snapshot == null) {
+          return;
+        }
+        _disposeSnapshot();
+        setState(() {});
+      });
+    }
   }
 
   void _disposeSnapshot() {
@@ -692,21 +737,21 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
     // 的同款机理，test/screens/warehouse_transition_black_test.dart 守着）。
     // expand 把进入本闸门的紧约束原样传给两层子级。
     //
-    // AnimatedBuilder 每帧现读退休判据：进入圆角收束带的那一刻（进度 ≥
-    // 1 - cornerClipSettleBand）排帧末退休 —— 快照只管「中段重绘贵」的那
-    // 一段，末段收束必须发生在活像素上（烤死的满值切口会顶住收束、停稳
-    // 蹦直角，2026-10-18 真机第一轮反馈）。
+    // AnimatedBuilder 每帧现读两段判据（预热 0.99 → 退休收束带）：快照只管
+    // 「中段重绘贵」的那一段；末段收平必须发生在**已预热**的活像素上 ——
+    // 没预热就撤快照，换层帧的真页整机绘制会卡进收平段读作蹦变
+    // （2026-10-18 真机第二轮反馈）。
     return AnimatedBuilder(
       animation: widget.animation,
       builder: (context, _) {
-        _retireSnapshotIfNeeded();
+        _advancePhasesIfNeeded();
         return _buildStack(context);
       },
     );
   }
 
   Widget _buildStack(BuildContext context) {
-    final snapshotActive = _snapshot != null;
+    final pageOffstage = _snapshot != null && !_warmedUp;
     // `fit: StackFit.expand` 的硬约束理由见 build() 里的注释（松约束会把
     // 「根 Stack + Positioned.fill」页面塌成 0 高露黑带）。
     return Stack(
@@ -715,12 +760,13 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
       children: [
         // 真页：快照模式下整体离屏**不画**（build / 布局照常 —— 异步内容
         // 照常到位），paint 与语义完全跳过；这是省下每帧重栅格化的唯一
-        // 方式。未激活时它就是普通页面。
-        Offstage(offstage: snapshotActive, child: widget.child),
+        // 方式。预热后放回屏下（被快照盖住，内容显形但不可见）；快照撤除
+        // 后它就是普通页面。
+        Offstage(offstage: pageOffstage, child: widget.child),
         // 快照层：恒挂（红线），offstage 布尔驱动。快照模式下它就是屏上
         // 参与滑动的那张图；真页模式下不可见、不占合成。
         Offstage(
-          offstage: !snapshotActive,
+          offstage: _snapshot == null,
           child: RawImage(image: _snapshot, fit: BoxFit.fill),
         ),
       ],

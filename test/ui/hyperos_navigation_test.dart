@@ -770,12 +770,14 @@ void main() {
     expect(find.text('updated'), findsNothing,
         reason: '快照模式下内容变化不能出现在滑动画面里');
 
-    // 3) 退休点 = 圆角收束带起点（进度 ≥ 1 - cornerClipSettleBand，2026-10-18
-    //    定案），不是停稳：烤死的满值切口会顶住末段收束、停稳蹦直角。退休后
-    //    攒下的变化显形 —— 顺序必须是「内容先落位 → 圆角再收平」。
+    // 3) 预热（进度 ≥ 0.99）→ 撤快照（收束带起点）：两段式退休
+    //    （2026-10-18 第二轮定案）。预热帧真页放回屏下（快照仍盖着），攒下
+    //    的变化显形；撤快照是纯合成操作，之后圆角收平在已预热的活像素上
+    //    连续播放 —— 顺序必须是「内容先落位 → 圆角再收平」。
     await tester.pumpAndSettle();
     expect(find.text('updated'), findsOneWidget,
-        reason: '收束带退休换回真页，快照期间攒下的内容变化显形');
+        reason: '预热后真页在屏（快照盖着不可见 / 撤除后直接可见），'
+            '快照期间攒下的内容变化显形');
     expect(
       find.byWidgetPredicate(
         (w) => w is RawImage && w.image != null,
@@ -836,14 +838,32 @@ void main() {
     // 首帧门槛 + 快照拍照在帧末了结，下一帧解锁锚定。
     await tester.pump(const Duration(milliseconds: 1));
 
-    // 逐 10ms 步进到曲线值首次越过 0.5（滑入中段）：此刻必须仍在快照模式。
+    // 逐 10ms 步进到曲线值首次越过 0.5（滑入中段）：此刻必须仍在快照模式，
+    // 且真页仍离屏（预热点 0.99 未到）。
     while (animationValue() < 0.5) {
       await tester.pump(const Duration(milliseconds: 10));
     }
     expect(hasSnapshot(), isTrue, reason: '滑入中段（收束带外）快照应在屏参与滑动');
+    expect(
+      find.byKey(enteringKey),
+      findsNothing,
+      reason: '中段真页必须离屏（快照模式下 paint 全跳过 —— 省钱的唯一方式）',
+    );
 
-    // 继续步进到进入收束带（曲线值 ≥ 1 - cornerClipSettleBand）：退休已排，
-    // 下一次 pump 后快照必须离场 —— 不等停稳。
+    // 预热点（0.99）：真页放回屏下（被快照盖住，可见树上找得到），快照仍在。
+    while (animationValue() <
+        HyperosMiuixNavigation.snapshotWarmupProgress) {
+      await tester.pump(const Duration(milliseconds: 2));
+    }
+    await tester.pump(const Duration(milliseconds: 1));
+    expect(hasSnapshot(), isTrue, reason: '预热阶段快照仍盖在真页上面');
+    expect(
+      find.byKey(enteringKey),
+      findsOneWidget,
+      reason: '预热点后真页必须在屏（画一帧建栅格缓存，重活落在画面几乎不动的时刻）',
+    );
+
+    // 收束带（1 - cornerClipSettleBand）：撤快照 —— 纯合成换层，不等停稳。
     const band = HyperosMiuixNavigation.cornerClipSettleBand;
     while (animationValue() < 1 - band) {
       await tester.pump(const Duration(milliseconds: 2));
