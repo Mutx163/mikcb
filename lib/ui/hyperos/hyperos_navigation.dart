@@ -121,7 +121,9 @@ abstract final class HyperosNavigation {
   /// 几何（官方转场层，全部线性于进度）：
   /// * 栈顶那一页整屏宽位移 `+width → 0`，**按整设备像素对齐**——官方为防
   ///   「被裁圆角 + 小数位移」在移动中闪出一条细线而做；
-  /// * 被覆盖页向 leading 方向视差 1/4 屏宽，并衰减到 0.9 透明度。
+  /// * 被覆盖页并衰减到 0.9 透明度；官方的 1/4 屏宽视差**有意关掉**（取 0），
+  ///   原因见 [HyperosMiuixNavigation.coveredParallaxFraction]：视差让圆角切口里
+  ///   的内容相对切口反向流动，在小窗口里读作「闪」。
   ///
   /// 正交效果（官方 `NavDisplayEffects`）：
   /// * 前缘圆角裁切：只裁**前缘两角**（LTR = 左，官方 `NavCornerClipMode.Leading`），
@@ -215,7 +217,8 @@ class _MiuixNavPageTransition extends StatelessWidget {
           directionSign * (1 - enterValue) * width,
           devicePixelRatio,
         );
-        // 2) 被覆盖页：向 leading 方向视差 1/4 屏宽。
+        // 2) 被覆盖页视差：官方 1/4 屏宽，mikcb 取 0（见 coveredParallaxFraction
+        //    的说明：视差会让圆角切口里的内容相对切口反向流动 = 读作闪烁）。
         final parallaxPx =
             -directionSign *
             HyperosMiuixNavigation.coveredParallaxFraction *
@@ -244,7 +247,8 @@ class _MiuixNavPageTransition extends StatelessWidget {
         // 视差补底**恒挂**（红线：不许按 cover 增删包装）：页面右侧 bleed 出去
         // 那一条，防止被覆盖页视差滑出后露出 Navigator 里更下一层的路由。
         // 栈顶页 cover == 0 时它也在树上，但垫底条与蒙层都在页面右侧屏外
-        // （位移 ≥ 0），画了也被裁掉，成本 ≈ 0。
+        // （位移 ≥ 0），画了也被裁掉，成本 ≈ 0。视差取 0 之后这条垫底实际上
+        // 永远露不出来，保留只是遵守形状恒定红线、不做「值变了就删结构」的优化。
         final content = _MiuixNavParallaxBleed(
           width: width,
           bleedWidth: bleedWidth,

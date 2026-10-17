@@ -34,7 +34,11 @@ void main() {
     expect(HyperosMiuixNavigation.programmaticDurationMs, 500);
     expect(HyperosNavigation.transitionDuration.inMilliseconds, 500);
     // 官方 NavTransitions.MiuixDefault：被覆盖页视差 1/4 屏宽 + 0.1 透明度衰减。
-    expect(HyperosMiuixNavigation.coveredParallaxFraction, 0.25);
+    // 视差**有意取 0**（2026-10-17，非官方)：视差让 28dp 的圆角切口里出现「内容
+    // 相对切口反向流动」，在天气页 / 小组件页这种内容密的页面上读作圆角底下一直闪。
+    // 断言值被有意替换，机理见 coveredParallaxFraction 的注释与
+    // `.agents/notes/implemented/architecture/2026-10-17-nav-corner-notch-flicker.md`。
+    expect(HyperosMiuixNavigation.coveredParallaxFraction, 0);
     expect(HyperosMiuixNavigation.coveredAlphaFalloff, 0.1);
     // 官方 NavDisplayEffects.Default.dimAmount（全屏压暗上限）。
     expect(HyperosMiuixNavigation.dimAmount, 0.5);
