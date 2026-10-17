@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-16T06:13:53+00:00",
+  "updatedAt": "2026-10-17T05:59:32+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 258,
-    "schools": 253,
+    "total": 259,
+    "schools": 254,
     "generic": 5
   },
   "schools": [
@@ -62,6 +62,13 @@
       "name": "安徽财经大学",
       "initial": "A",
       "resourceFolder": "AUFE",
+      "category": "school"
+    },
+    {
+      "id": "BJTU",
+      "name": "北京交通大学",
+      "initial": "B",
+      "resourceFolder": "BJTU",
       "category": "school"
     },
     {
