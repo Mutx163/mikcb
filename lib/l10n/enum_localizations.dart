@@ -1,4 +1,4 @@
-﻿// 壁纸的文案映射（bingWallpaperResolutionLabel / wallpaperDailySourceLabel /
+// 壁纸的文案映射（bingWallpaperResolutionLabel / wallpaperDailySourceLabel /
 // wallpaperDailySourceGalleryLabel）在 2026-10-14 删掉了：Wallhaven 图源整体移除、
 // 画质不再是用户选项（恒按最高档下载），档位胶囊、图源胶囊、降档提示随之消失。
 

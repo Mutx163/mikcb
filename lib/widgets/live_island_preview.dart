@@ -706,7 +706,8 @@ class _LiveIslandExpandedPreviewCardState
   String? _shortNameLabel() {
     final course = widget.sampleCourse;
     if (course == null) {
-      return null; // 纯静态预览的演示简称在测试里按需自备 sampleCourse。
+      // 纯静态预览的演示简称在测试里按需自备 sampleCourse。
+      return null;
     }
     final raw = course.shortName?.trim();
     if (raw == null || raw.isEmpty) return null;

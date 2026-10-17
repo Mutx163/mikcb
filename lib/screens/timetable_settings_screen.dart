@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -1444,7 +1444,7 @@ String _liveDisplaySummary(BuildContext context, LiveDisplaySettings settings) {
     return l10n.liveDisplaySummaryMinimal;
   }
   if (parts.length <= 2) {
-    return parts.join('路');
+    return parts.join('·');
   }
   return l10n.liveDisplaySummaryMore(parts.first, parts.length);
 }
