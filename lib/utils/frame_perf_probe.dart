@@ -369,6 +369,18 @@ abstract final class FramePerfProbe {
     }
   }
 
+  /// 当前窗口里每帧的「build + raster」总耗时（微秒），最多记
+  /// [_windowTimelineCap] 帧；超出部分只计数。
+  ///
+  /// 为什么需要逐帧：转场「有时丝滑、有时掉帧」这种间歇现象，窗口里的平均值和
+  /// 最差值都看不出来 —— 需要看帧序列本身，才能区分「一开始就卡」「中段某一帧
+  /// 卡」「后段持续卡」。
+  static final List<int> _windowTotalsUs = <int>[];
+  static int _windowTotalsDropped = 0;
+
+  /// 逐帧时间线最多记多少帧（≈ 120Hz 下 0.4 秒；窗口通常 60 帧上下）。
+  static const int _windowTimelineCap = 48;
+
   /// 开窗口：无窗口时直接开；同一瞬间连着打两条（`dialog:open` → `sheet:open`
   /// 这类转发链）时合并标签 —— 否则前一条会以 0 帧收场、什么也读不到；已有帧的
   /// 窗口则先结算再开新的。
@@ -397,6 +409,8 @@ abstract final class FramePerfProbe {
     _windowWorstBuildUs = 0;
     _windowWorstRasterUs = 0;
     _windowOverCount = 0;
+    _windowTotalsUs.clear();
+    _windowTotalsDropped = 0;
   }
 
   static void _accumulateWindow({
@@ -423,6 +437,11 @@ abstract final class FramePerfProbe {
     if (totalUs > _budgetUs) {
       _windowOverCount++;
     }
+    if (_windowTotalsUs.length < _windowTimelineCap) {
+      _windowTotalsUs.add(totalUs);
+    } else {
+      _windowTotalsDropped++;
+    }
     if (_windowFrames >= _windowMaxFrames) {
       _flushWindow();
     }
@@ -448,22 +467,65 @@ abstract final class FramePerfProbe {
     }
 
     final budgetUs = _budgetUs;
+    final nominalUs = _nominalBudgetUsNow();
     // vsync 取**全局**实测下限（引擎时间轴），不取本窗口自己的最小间隔：
     // 理由见 [_sampleVsyncPeriod]。
     final vsyncUs = _observedMinGapUs;
     final prefix = label == _steadyLabel ? _steadyLabel : 'mark $label';
+    final timeline = _formatTimeline(budgetUs);
     _emit(
-      '$_tag $prefix frames=$frames '
+      '$_tag $prefix t=${_wallClock()} frames=$frames '
       'firstFrameMs=${_windowFirstFrameUs == 0 ? '?' : ((_windowFirstFrameUs - _windowStartUs) / 1000).toStringAsFixed(0)} '
       'spanMs=${spanMs.toStringAsFixed(0)} '
       'fps=${_fps(frames, spanMs)} '
       'vsyncMs=${vsyncUs == 0 ? '?' : _ms(vsyncUs)} '
-      'budgetMs=${_ms(budgetUs)} over=$overCount '
+      'budgetMs=${_ms(budgetUs)} nominalMs=${_ms(nominalUs)} over=$overCount '
       'worstBuildMs=${_ms(worstBuildUs)} '
       'worstRasterMs=${_ms(worstRasterUs)} '
       'avgBuildMs=${(sumBuildUs / frames / 1000).toStringAsFixed(1)} '
-      'avgRasterMs=${(sumRasterUs / frames / 1000).toStringAsFixed(1)}',
+      'avgRasterMs=${(sumRasterUs / frames / 1000).toStringAsFixed(1)} '
+      'timeline=$timeline',
     );
+  }
+
+  /// 逐帧时间线：每帧的 build+raster 总耗时（毫秒，一位小数），超预算的帧在前面
+  /// 打 `!`。间歇性掉帧靠它判读 —— 平均值与最差值都看不出「第几帧开始卡」。
+  static String _formatTimeline(int budgetUs) {
+    if (_windowTotalsUs.isEmpty) {
+      return '-';
+    }
+    final buffer = StringBuffer('[');
+    for (var i = 0; i < _windowTotalsUs.length; i++) {
+      if (i > 0) {
+        buffer.write(' ');
+      }
+      final us = _windowTotalsUs[i];
+      if (us > budgetUs) {
+        buffer.write('!');
+      }
+      buffer.write((us / 1000).toStringAsFixed(1));
+    }
+    if (_windowTotalsDropped > 0) {
+      buffer.write(' +$_windowTotalsDropped');
+    }
+    buffer.write(']');
+    return buffer.toString();
+  }
+
+  /// 当前显示上报的单帧预算（微秒，实时读）。与 [_budgetUs] 的差别：这个数只反映
+  /// **面板此刻报的刷新率**，不被「实测最小间隔」收紧 —— 用来判断 [_budgetUs]
+  /// 是否被一次抖动带偏（两者差得多就说明 `over` 偏悲观）。
+  static int _nominalBudgetUsNow() {
+    final rate = _reportedRefreshRate();
+    return (1000000 / rate).round();
+  }
+
+  /// 墙钟时间戳（本地时区 HH:mm:ss.mmm）：同一份日志里对多段操作时，用它对齐。
+  static String _wallClock() {
+    final now = DateTime.now();
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${two(now.hour)}:${two(now.minute)}:${two(now.second)}'
+        '.${now.millisecond.toString().padLeft(3, '0')}';
   }
 
   /// 结算当前卡顿段，打一条汇总。

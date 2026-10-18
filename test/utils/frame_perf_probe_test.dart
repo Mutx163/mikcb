@@ -159,6 +159,38 @@ void main() {
       expect(lines.single, contains('frames=1'));
     });
 
+    test('窗口带逐帧时间线、墙钟与面板名义预算 —— 间歇掉帧靠它判读', () {
+      FramePerfProbe.debugMark('settings:open', 0);
+      FramePerfProbe.debugIngest(
+        buildUs: 2000,
+        rasterUs: 3000,
+        nowUs: 8333,
+        vsyncUs: 8333,
+      );
+      FramePerfProbe.debugIngest(
+        buildUs: 20000,
+        rasterUs: 12000,
+        nowUs: 16666,
+        vsyncUs: 16666,
+      );
+      FramePerfProbe.debugIngest(
+        buildUs: 2000,
+        rasterUs: 3000,
+        nowUs: 24999,
+        vsyncUs: 24999,
+      );
+      FramePerfProbe.debugIngest(buildUs: 1000, rasterUs: 1000, nowUs: 900000);
+
+      // 那帧 32ms 同时会结算一条 burst，所以按标签挑出窗口行。
+      final line = lines.lastWhere((l) => l.contains('mark settings:open'));
+      // 三帧：5ms / 32ms / 5ms；中间那帧超预算（8.3ms），前面打 `!`。
+      expect(line, contains('timeline=[5.0 !32.0 5.0]'));
+      // 墙钟时间戳（本地时区，毫秒三位）：同一份日志里对齐多段操作用。
+      expect(line, matches(RegExp(r'\bt=\d\d:\d\d:\d\d\.\d{3}\b')));
+      // 名义预算（面板此刻报的刷新率）与生效预算并列，用来识别「被抖动带偏」。
+      expect(line, contains('nominalMs='));
+    });
+
     test('同一瞬间连打两条标记会合并成一个标签', () {
       // dialog:open 直接转发 sheet:open：两条标记之间一帧都没有。
       FramePerfProbe.debugMark('dialog:open', 0);
