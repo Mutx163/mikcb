@@ -308,7 +308,15 @@ void main() {
     // 2026-10-18 第十八轮：前缘圆角已撤（用户定案按官方样式走，不再自定义），
     // 页面在转场里是完整矩形 —— 被覆盖页身上**不该有**裁切层，而且全程都是 0。
     expect(firstClip, 0, reason: '前缘不裁角：转场里不存在裁切层（用户 2026-10-18 定案）');
-    expect(firstOpacity, greaterThan(0), reason: '被覆盖页应恒带透明度衰减');
+    // 2026-10-18 第十九轮：被覆盖页身上**不再有 `Opacity`** —— 那层每帧一次
+    // 全屏离屏合成（saveLayer），性能版日志实测 avgRaster 9~13ms 就是它。
+    // 淡出现在由 `_MiuixNavParallaxBleed` 用页面底色叠一层纯色实现，判据换成
+    // 下面的 Stack 层数恒定。
+    expect(
+      firstOpacity,
+      0,
+      reason: '被覆盖页不做整页离屏合成（透明淡出改纯色叠层）',
+    );
 
     for (var i = 0; i < 8; i++) {
       await tester.pump(const Duration(milliseconds: 45));

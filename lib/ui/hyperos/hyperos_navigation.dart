@@ -319,6 +319,12 @@ class _MiuixNavPageTransition extends StatelessWidget {
         // 中段包络恒为 1，官方 0.1 / 0.5 的数值不变。
         final coveredAlpha = HyperosNavigation.coveredAlphaFor(coverValue);
         final scrimAlpha = HyperosNavigation.scrimAlphaFor(coverValue);
+        // 2026-10-18 第十九轮（性能版日志实测）：被覆盖页那层「整页 `Opacity`」是
+        // 每帧一次**全屏离屏合成**（1280×2772 的 saveLayer），实测 avgRaster
+        // 一直 9~13ms、而 Dart 线程只有 1~3ms —— 120Hz 的 7.2ms 预算就是这么丢的。
+        // 现在改成把「淡出多少」画成一层纯色叠在页面上：观感等价（旧页底色本来就
+        // 是 surface），但不再有全屏离屏层。官方 0.1 的衰减值不变。
+        final coveredFadeAlpha = 1 - coveredAlpha;
 
         final page = _MiuixNavClippedPage(
           // 裁切层的**存在**恒定（结构恒定红线），半径按「是不是栈顶那一页」取：
@@ -336,8 +342,7 @@ class _MiuixNavPageTransition extends StatelessWidget {
           // 现在半径不动 —— 圆角从滑入第一步就在，一直走到页面贴边、和机身圆角
           // 重合（该处被机身圆角盖住，静止态看不出来），转场自始至终没有一次
           // 「圆角形状变化」可供掉帧放大。读数取上下两角的较小值、读不到则不裁。
-          alpha: coveredAlpha,
-          // 帧缓存边界：转场期间只重新合成「圆角裁切 + 透明度 + 位移」，
+          // 帧缓存边界：转场期间只重新合成「圆角裁切 + 位移」，
           // 页面像素直接复用，不再逐帧重栅格化整页。
           child: RepaintBoundary(child: child),
         );
@@ -352,6 +357,7 @@ class _MiuixNavPageTransition extends StatelessWidget {
           bleedWidth: bleedWidth,
           surface: surface,
           scrimAlpha: scrimAlpha,
+          fadeAlpha: coveredFadeAlpha,
           child: page,
         );
 
@@ -388,6 +394,7 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
     required this.bleedWidth,
     required this.surface,
     required this.scrimAlpha,
+    required this.fadeAlpha,
     required this.child,
   });
 
@@ -398,6 +405,14 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
   /// 压暗蒙层的 alpha（0 = 完全透明）。画在页面之下、垫底条之上：页面不透明
   /// 时根本看不到它；被覆盖页视差滑出后露出的那条正是这一层。
   final double scrimAlpha;
+
+  /// 被覆盖页「淡出多少」：官方 `1 - coveredAlphaFor(cover)`，最大 0.1。
+  ///
+  /// 2026-10-18 第十九轮：这层以前是套在整页外面的 `Opacity`，每帧一次全屏
+  /// 离屏合成（saveLayer），性能版日志实测 avgRaster 9~13ms 就是它。现在改成
+  /// 用**页面底色**按这个 alpha 叠一层纯色 —— 旧页底色本来就是 surface，
+  /// 观感等价，但 GPU 只需多画一个矩形。
+  final double fadeAlpha;
 
   final Widget child;
 
@@ -430,6 +445,20 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
           SizedBox(width: width, height: double.infinity, child: child),
           // 压暗蒙层：恒挂，alpha 属性驱动。只盖 [0, width] 视口段 ——
           // bleed 条不压暗（它露出的时刻上层页面已经盖住了 [width, +∞) 侧，
+          // 被覆盖页的「透明度衰减」：用页面底色叠一层纯色，替代原来套在整页
+          // 外面的 `Opacity`（那层每帧一次全屏离屏合成，是性能版日志里
+          // avgRaster 9~13ms 的主要来源）。恒挂、alpha 驱动，结构不变。
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: width,
+            child: IgnorePointer(
+              child: ColoredBox(
+                color: surface.withValues(alpha: fadeAlpha),
+              ),
+            ),
+          ),
           // 且官方口径压暗的就是「底下的页面」）。位置恒定不随动画改约束。
           Positioned(
             left: 0,
@@ -464,7 +493,6 @@ class _MiuixNavClippedPage extends StatelessWidget {
   const _MiuixNavClippedPage({
     required this.clipEnabled,
     required this.radius,
-    required this.alpha,
     required this.child,
   });
 
@@ -474,20 +502,17 @@ class _MiuixNavClippedPage extends StatelessWidget {
   /// 圆角半径：**设备圆角读数，全程恒定**。贴边后该区域被机身圆角盖住。
   final double radius;
 
-  /// 被覆盖页的透明度（1 = 不透明，`RenderOpacity` 直绘）。
-  final double alpha;
-
-
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final isRtl = Directionality.of(context) == TextDirection.rtl;
 
-    Widget page = Opacity(
-      opacity: alpha,
-      child: child,
-    );
+    // 2026-10-18 第十九轮：这里原来套着一层 `Opacity`（被覆盖页淡出 0.9）。
+    // 它让每一帧都要给整页做一次离屏合成（saveLayer，全屏尺寸），性能版日志
+    // 实测 avgRaster 9~13ms、Dart 线程只有 1~3ms —— 120Hz 的 7.2ms 预算就是
+    // 这样丢的。淡出现在由 [_MiuixNavParallaxBleed] 用页面底色叠一层纯色实现。
+    Widget page = child;
     if (clipEnabled) {
       // 2026-10-18 定案（第十一轮真机 + 截图）：圆角**保留**（用户明确否掉
       // 「不要圆角」的版本），但两件事一起改：
