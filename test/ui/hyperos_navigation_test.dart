@@ -45,8 +45,11 @@ void main() {
     expect(HyperosMiuixNavigation.coveredAlphaFalloff, 0.1);
     // 官方 NavDisplayEffects.Default.dimAmount（全屏压暗上限）。
     expect(HyperosMiuixNavigation.dimAmount, 0.5);
-    // 前缘两角圆角：走官方「跟设备屏幕圆角」那条 opt-in（`Leading` 只裁前缘两角）。
-    expect(HyperosMiuixNavigation.clipLeadingCornersWhileMoving, isTrue);
+    // 前缘两角裁切：2026-10-18 起**关闭**。官方 `Leading` 那个「圆角」是从页面
+    // 像素里挖洞（洞里露出被覆盖页 / 快照洞底是纯黑），贴边后要补上 —— 重页面上
+    // 这一下只有 1~2 帧，十轮真机反馈的「圆角闪现消失」都是它。关掉后页面按完整
+    // 矩形滑入，转场里没有任何圆角形状可以变。
+    expect(HyperosMiuixNavigation.clipLeadingCornersWhileMoving, isFalse);
   });
 
   test('corner radius tapers to zero instead of toggling', () {
@@ -190,9 +193,17 @@ void main() {
     expect(previous, 0);
   });
 
-  testWidgets('转场中前缘两角照裁，切口里不补任何颜色（露出的就是被覆盖页本身）', (
+  testWidgets('前缘不再裁角：转场中页面就是完整矩形（没有可闪的假圆角）', (
     tester,
   ) async {
+    // 2026-10-18 定案（第十一轮真机 + 截图）：前缘那个「圆角」不是真圆角，而是
+    // 从页面像素里**挖掉一个洞** —— 洞里露出被覆盖页（快照模式下洞底是纯黑，
+    // 用户截图实测）。页面贴边后要把洞补上，重页面上这一下只有 1~2 帧，读作
+    // 「圆角闪现消失」；十轮调时机/带宽/预热/栅格边界都没用。
+    //
+    // 现在 `clipLeadingCornersWhileMoving = false`：页面按完整矩形滑入，转场
+    // 全程没有任何「圆角形状」可以变，也就不可能再出现这个现象。本用例钉住
+    // 「页面的祖先链上不再有裁角层」。
     // 上面几条用例把用户倍速改成了 0.5，这里掰回 1 倍速，时长才可预期。
     AndroidAnimationScaleService.setUserTransitionSpeed(1);
     // 被覆盖页得**也是** HyperOS 路由：Flutter 只在被覆盖路由是
@@ -255,53 +266,29 @@ void main() {
     // 动画带过锚点帧 —— 之后 125ms 的步进读数与无门槛时同构。
     await tester.pump(const Duration(milliseconds: 1));
 
-    final context = tester.element(find.byType(Scaffold).first);
-    final radius = HyperosMotionPlatform.displayCornerRadiusDp;
-    // 切口里**不补颜色**：补了的话就是一块与旁边旧页内容不同色的方块，真机上读作
-    // 「圆角底下那块阴影和页面左边的阴影颜色不一致」（用户 2026-10-16 反馈）。
-    // 露出的应当是被覆盖页自己的像素 —— 同一层、同一条压暗公式，颜色不可能不一致。
-    final pageBackground = HyperosColors.scaffoldBackground(context);
-
-    // 沿途取三个点：圆角一直在裁（前缘两角满半径、后缘两角不裁，官方 Leading
-    // 口径），同时树上没有任何「按圆角尺寸补上去的页面底色方块」。
+    // 转场中取三个时刻：页面的祖先链上**不许**再出现裁角层。
     for (final fraction in [0.25, 0.5, 0.75]) {
       await tester.pump(const Duration(milliseconds: 125));
-      // 快照模式（2026-10-17）：转场中页面本体在闸门的 Offstage 里，finder
-      // 必须带离屏节点才能沿祖先链找到转场壳的 ClipRRect（那层本身可见）。
-      final clipFinder = find.ancestor(
-        of: find.byKey(enteringKey, skipOffstage: false),
-        matching: find.byType(ClipRRect),
-      );
-      expect(clipFinder, findsWidgets, reason: 't=$fraction 转场中上层页应带圆角裁切');
-      final border = tester
-          .widget<ClipRRect>(clipFinder.first)
-          .borderRadius
-          .resolve(TextDirection.ltr);
-      expect(border.topLeft.x, closeTo(radius, 0.01), reason: '前缘上角裁满半径');
-      expect(border.bottomLeft.x, closeTo(radius, 0.01), reason: '前缘下角裁满半径');
-      expect(border.topRight.x, 0, reason: '后缘两角不裁（官方 Leading 口径）');
-      expect(border.bottomRight.x, 0);
-
-      final patches = find
-          .byWidgetPredicate(
-            (widget) => widget is ColoredBox && widget.color == pageBackground,
-          )
-          .evaluate()
-          .where((element) {
-            final rect = tester.getRect(
-              find.byElementPredicate((candidate) => candidate == element),
-            );
-            return (rect.width - radius).abs() < 0.01 &&
-                (rect.height - radius).abs() < 0.01;
-          });
       expect(
-        patches,
-        isEmpty,
-        reason: 't=$fraction 不该往切口里补色（补了就会与旁边旧页内容不同色）',
+        find.ancestor(
+          of: find.byKey(enteringKey, skipOffstage: false),
+          matching: find.byType(ClipRRect, skipOffstage: false),
+        ),
+        findsNothing,
+        reason: 't=$fraction 页面不该再被裁前缘圆角 —— 裁角 = 挖洞 = 贴边时要补，'
+            '重页面上那一下就是「圆角闪现消失」',
       );
     }
 
     await tester.pumpAndSettle();
+    expect(
+      find.ancestor(
+        of: find.byKey(enteringKey, skipOffstage: false),
+        matching: find.byType(ClipRRect, skipOffstage: false),
+      ),
+      findsNothing,
+      reason: '停稳后同样没有裁角层（静止态不会出现一个假的圆角缺口）',
+    );
   });
 
   testWidgets('转场全程结构恒定：裁切 / 补底 / 压暗蒙层 / 透明度不随进度摘挂', (tester) async {
@@ -386,7 +373,7 @@ void main() {
     final firstClip = clipCount();
     final firstOpacity = opacityCount();
     final firstStack = stackCount();
-    expect(firstClip, greaterThan(0), reason: '被覆盖页应恒带前缘圆角裁切');
+    expect(firstClip, 0, reason: '前缘不再裁角（2026-10-18）—— 被覆盖页不该有裁角层');
     expect(firstOpacity, greaterThan(0), reason: '被覆盖页应恒带透明度衰减');
 
     for (var i = 0; i < 8; i++) {
@@ -409,23 +396,12 @@ void main() {
     }
 
     await tester.pumpAndSettle();
-    // 停稳后前缘圆角**保持不变**（2026-10-18 定案）：半径全程恒定，静止态不再
-    // 收成 0 —— 那块本来就压在机身圆角下面，收不收肉眼一样，但「收」这个动作
-    // 在重页面上会被掉帧放大成「圆角闪现消失」。
-    final border = tester
-        .widget<ClipRRect>(
-          find
-              .ancestor(of: coveredFinder, matching: find.byType(ClipRRect))
-              .first,
-        )
-        .borderRadius
-        .resolve(TextDirection.ltr);
+    // 2026-10-18 定案：前缘不再裁角 —— 停稳后身上也不该有裁角层（旧行为会在
+    // 停稳时把半径收成 0，那一下在重页面上就是「圆角闪现消失」）。
     expect(
-      border.topLeft.x,
-      HyperosMotionPlatform.displayCornerRadiusDp,
-      reason: '停稳后半径必须与转场中同一个值（不再末段收 0）',
+      find.ancestor(of: coveredFinder, matching: find.byType(ClipRRect)),
+      findsNothing,
     );
-    expect(border.bottomLeft.x, border.topLeft.x);
   });
 
   testWidgets('转场全程顶栏磨砂带参数恒定：tint 不随路由动画翻', (tester) async {
@@ -569,91 +545,17 @@ void main() {
     );
   });
 
-  testWidgets('前缘圆角半径全程恒定：转场中与停稳后同一个值', (tester) async {
-    // 2026-10-18 定案（真机连续四轮「圆角闪现消失」的收口）：末段**不许**再改
-    // 半径。旧方案在最后 ~85ms 把半径从满值收到 0（先是二值、后是连续曲线）——
-    // 重页面上那一段只有 1~2 帧，变化过程读作「圆角闪现消失」；轻页面帧率够，
-    // 所以只有那两页看得见。四轮微调（改时机、改带宽、加预热、加栅格边界）都在
-    // 挪这 85ms，症状不动。
-    //
-    // 现在的契约：半径 = 设备圆角读数，从第一帧到停稳一个值都不变。本用例在
-    // 转场中段、接近贴边、停稳后三处读同一层 ClipRRect，必须处处相等。
-    AndroidAnimationScaleService.setUserTransitionSpeed(1);
-    const enteringKey = ValueKey('constant-radius-entering');
-    final expected = HyperosMotionPlatform.displayCornerRadiusDp;
-    expect(expected, greaterThan(0), reason: '测试宿主默认给回退半径，切口应启用');
-
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: ThemeData(
-          pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
-        ),
-        home: Builder(
-          builder: (context) => Scaffold(
-            body: Center(
-              child: ElevatedButton(
-                onPressed: () => HyperosNavigation.push(
-                  context,
-                  builder: (_) => const Scaffold(
-                    key: enteringKey,
-                    body: Center(child: Text('radius')),
-                  ),
-                ),
-                child: const Text('push'),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    double? radiusOfEnteringPage() {
-      final finder = find
-          .ancestor(
-            of: find.byKey(enteringKey, skipOffstage: false),
-            matching: find.byType(ClipRRect, skipOffstage: false),
-          )
-          .first;
-      final border = tester.widget<ClipRRect>(finder).borderRadius.resolve(
-            TextDirection.ltr,
-          );
-      return border.topLeft.x;
-    }
-
-    await tester.tap(find.text('push'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 1));
-    expect(radiusOfEnteringPage(), expected, reason: '起步帧就是满半径');
-    await tester.pump(const Duration(milliseconds: 120));
-    expect(radiusOfEnteringPage(), expected, reason: '滑入中段仍是满半径');
-    await tester.pump(const Duration(milliseconds: 340)); // ≈460ms，接近贴边
-    expect(
-      radiusOfEnteringPage(),
-      expected,
-      reason: '贴边前那一段也**不许**开始收 —— 收的动作本身就会在重页面上被放大',
-    );
-    await tester.pumpAndSettle();
-    expect(radiusOfEnteringPage(), expected, reason: '停稳后半径必须与转场中一致');
-  });
-
-  testWidgets('圆角切口烘进页面自己的图层：合成阶段漏掉外层裁切也没有像素可露', (
+  testWidgets('页面图层不再挖圆角洞：四个角都是完整页面像素', (
     tester,
   ) async {
-    // 2026-10-17 真机第四轮（用户口径：「就是新页面的圆角，频繁的消失，变成无
-    // 圆角状态，然后又极其快速的闪烁，出现圆角」）。半径在逻辑层是恒定的（上面
-    // 几条用例钉着它），所以只剩一种解释：转场壳那次 rrect 裁切在真机合成阶段
-    // 会掉帧。它能掉是有结构的：框架把页面缓存在 `_ModalScopeState` 的
-    // `RepaintBoundary(key: _subtreeKey)` 里，而那个边界在转场壳裁切的**内侧**
-    // —— 被缓存下来的页面像素本来就不带切口。
+    // 2026-10-18 定案：前缘**不再裁角**（`clipLeadingCornersWhileMoving = false`）——
+    // 那个「圆角」不是真圆角，而是从页面像素里挖掉一个洞：洞里露出被覆盖页，
+    // 快照模式下洞底是纯黑（用户截图实测）；贴边后要把洞补上，重页面上这一下
+    // 只有 1~2 帧，就是十轮反馈里那个「圆角闪现消失」。
     //
-    // 修法：把同一条切口放进 `buildPage` 的返回值里（边界之内）。本用例锁住的
-    // 就是这条位置关系 —— 转场中取页面自己的图层（最靠近页面的
-    // `RepaintBoundary`）：
-    // * 切口在边界里（本次修法）：图里前缘圆角区是**空的**（alpha 0）；
-    // * 切口只在边界外（只有转场壳裁切）：图里是完整的白色方块。
-    // 同时钉住「停稳后切口仍在」：半径全程恒定，静止态不再发生一次
-    // 「缺口消失」（重页面上那一下就是用户看到的圆角闪现）。
+    // 本用例取页面自己的图层（最靠近页面的 RepaintBoundary），钉住：**四个角都
+    // 是完整的不透明页面像素** —— 只要这层不再有洞，转场里就没有任何东西需要
+    // 「补」，也就没有可被掉帧放大的变化。
     AndroidAnimationScaleService.setUserTransitionSpeed(1);
     const enteringKey = ValueKey('entering-page');
     await tester.pumpWidget(
@@ -736,39 +638,25 @@ void main() {
     }
 
     final midFlight = await capturePageLayer();
+    // 2026-10-18 定案：**不再挖洞**。页面图层四个角都必须是页面自己的不透明像素 ——
+    // 以前的「圆角切口」是从这一层里挖掉一块（alpha 0），贴边时再补上；重页面上
+    // 那一下只有 1~2 帧，就是用户反复报的「圆角闪现消失」。
     expect(
       alphaOf(midFlight, 1, pageSize.height - 1),
-      0,
-      reason: '左下圆角区必须已经不含页面像素（切口烘在页面自己的图层里 —— '
-          '快照模式下对离屏真页出图，切口仍在）',
+      255,
+      reason: '转场中页面左下角必须是完整页面像素（不再有圆角洞）',
     );
-    expect(
-      alphaOf(midFlight, 1, 1),
-      0,
-      reason: '左上圆角区同理（前缘两角都裁）',
-    );
+    expect(alphaOf(midFlight, 1, 1), 255, reason: '左上同理');
     expect(
       alphaOf(midFlight, radius, pageSize.height - radius),
       255,
-      reason: '圆角圆心处仍是页面自己的像素 —— 切口只切角，不能切进页面',
+      reason: '圆心处本来就不该被切',
     );
 
     await tester.pumpAndSettle();
     final settled = await capturePageLayer();
-    // 2026-10-18 定案：停稳后切口**保持**（半径全程恒定，不再收 0）。
-    // 那块区域本来就压在机身圆角下面，收不收肉眼一样；而「收」这个动作在重页面
-    // 上会被掉帧放大成「圆角闪现消失」—— 所以转场与静止态用同一个半径。
-    expect(
-      alphaOf(settled, 1, pageSize.height - 1),
-      0,
-      reason: '停稳后前缘圆角仍要切：半径恒定，静止态不再出现一次几何变化',
-    );
-    expect(alphaOf(settled, 1, 1), 0, reason: '左上同理');
-    expect(
-      alphaOf(settled, radius, pageSize.height - radius),
-      255,
-      reason: '圆心处仍是页面像素 —— 恒定切口只切角',
-    );
+    expect(alphaOf(settled, 1, pageSize.height - 1), 255, reason: '停稳后同样完整');
+    expect(alphaOf(settled, 1, 1), 255, reason: '左上同理');
   });
 
   testWidgets('快照滑入：转场中屏上是首帧快照，落定换回真页', (tester) async {
