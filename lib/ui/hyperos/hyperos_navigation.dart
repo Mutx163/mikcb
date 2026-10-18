@@ -281,6 +281,7 @@ class _MiuixNavPageTransition extends StatelessWidget {
         ? HyperosMotionScope.of(context).displayCornerRadiusDp
         : 0.0;
     final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final isTopRoute = ModalRoute.of(context)?.isCurrent ?? true;
     final bleedWidth = HyperosNavigation.parallaxBleedWidth(width);
     final surface = HyperosColors.scaffoldBackground(context);
 
@@ -317,10 +318,13 @@ class _MiuixNavPageTransition extends StatelessWidget {
         final scrimAlpha = HyperosNavigation.scrimAlphaFor(coverValue);
 
         final page = _MiuixNavClippedPage(
-          // 存在性由设备圆角读数决定（转场全程恒定，不随动画翻转）；
+          // 裁切层的**存在**恒定（结构恒定红线），半径按「是不是栈顶那一页」取：
+          // 被覆盖页也裁会把两层洞对齐，直接看穿到窗口黑底（第十轮用户截图里的
+          // 黑圆角）。判据用 `isCurrent` —— 本仓转场壳是裸 `PageRoute`，被覆盖页
+          // 的 `secondaryAnimation` 根本不会被驱动，拿 `coverValue` 判会恒为 0。
           clipEnabled: clipRadius > 0,
-          // 圆角外侧那块补什么颜色：页面底色（静止态与页面自身同色，看不出）。
-          notchColor: surface,
+          radius: isTopRoute ? clipRadius : 0,
+
           // 前缘圆角：**恒定半径，全程不随进度变**（2026-10-18 定案）。
           //
           // 以前这里在末段按 `transitionCornerRadiusFactor` 平滑收到 0。那不是
@@ -329,7 +333,6 @@ class _MiuixNavPageTransition extends StatelessWidget {
           // 现在半径不动 —— 圆角从滑入第一步就在，一直走到页面贴边、和机身圆角
           // 重合（该处被机身圆角盖住，静止态看不出来），转场自始至终没有一次
           // 「圆角形状变化」可供掉帧放大。读数取上下两角的较小值、读不到则不裁。
-          radius: clipRadius,
           alpha: coveredAlpha,
           // 帧缓存边界：转场期间只重新合成「圆角裁切 + 透明度 + 位移」，
           // 页面像素直接复用，不再逐帧重栅格化整页。
@@ -459,7 +462,6 @@ class _MiuixNavClippedPage extends StatelessWidget {
     required this.clipEnabled,
     required this.radius,
     required this.alpha,
-    required this.notchColor,
     required this.child,
   });
 
@@ -472,9 +474,6 @@ class _MiuixNavClippedPage extends StatelessWidget {
   /// 被覆盖页的透明度（1 = 不透明，`RenderOpacity` 直绘）。
   final double alpha;
 
-  /// 前缘圆角外侧那块「角」补什么颜色：**页面自己的底色**
-  /// （`HyperosColors.scaffoldBackground`）。
-  final Color notchColor;
 
   final Widget child;
 
@@ -486,76 +485,34 @@ class _MiuixNavClippedPage extends StatelessWidget {
       opacity: alpha,
       child: child,
     );
-    if (clipEnabled && radius > 0) {
-      // 2026-10-18 定案：圆角**画**出来，而不是从页面里**挖**出来。
+    if (clipEnabled) {
+      // 2026-10-18 定案（第十一轮真机 + 截图）：圆角**保留**（用户明确否掉
+      // 「不要圆角」的版本），但两件事一起改：
       //
-      // 旧做法是 `ClipRRect` —— 从页面像素里挖掉一个圆角洞，洞里露出被覆盖页
-      // （快照模式 / 栈底为空时就是窗口黑底，用户截图实测左下角一块纯黑四分之一
-      // 圆）。只要洞存在，页面贴边时就得「补上」，而这一下在重页面上只有 1~2 帧
-      // —— 就是十轮反馈里那个「圆角闪现消失」。
+      // 1. 半径**恒定**：不再在末段收窄。收窄那一下在重页面上只有 1~2 帧，
+      //    读作「圆角闪现成直角」——十轮反馈的根。
+      // 2. 只裁**正在滑入的那一页**（`coverValue == 0`，见调用点）：被覆盖页
+      //    也一起裁是第十轮的黑角来源 —— 两层洞在同一位置对齐，直接看穿到
+      //    窗口黑底（用户截图左下角那块纯黑四分之一圆）。
       //
-      // 现在页面是**完整矩形**，只在圆角外侧那块画一层同样大小的页面底色补片：
-      // 观感与「带圆角的页面」一致，但没有洞 —— 没有洞要补，也就没有任何一帧会
-      // 去改圆角的形状。补片颜色 = 页面底色，静止态与页面自身同色，看不出来。
-      page = Stack(
-        fit: StackFit.expand,
-        children: [
-          page,
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(
-                painter: _MiuixNavLeadingCornerNotchPainter(
-                  color: notchColor,
-                  radius: radius,
-                  rtl: isRtl,
-                ),
+      // 于是滑入全程的观感与旧版一致（洞里露出被覆盖页，只是它被压暗着），
+      // 但页面贴边时没有任何一帧去改圆角形状：洞不用补，闪的机会不存在。
+      page = ClipRRect(
+        borderRadius: isRtl
+            ? BorderRadius.only(
+                topRight: Radius.circular(radius),
+                bottomRight: Radius.circular(radius),
+              )
+            : BorderRadius.only(
+                topLeft: Radius.circular(radius),
+                bottomLeft: Radius.circular(radius),
               ),
-            ),
-          ),
-        ],
+        child: page,
       );
-    }
-    return page;
+    }    return page;
   }
 }
 
-/// 前缘两角「圆角外侧」那块补片：把页面矩形与同半径圆角矩形的差集涂成页面底色。
-///
-/// 它替代了原先的 `ClipRRect`（挖洞）—— 圆角看起来一样，但页面上没有透明区域，
-/// 不存在「贴边时把洞补上」这一帧。
-class _MiuixNavLeadingCornerNotchPainter extends CustomPainter {
-  const _MiuixNavLeadingCornerNotchPainter({
-    required this.color,
-    required this.radius,
-    required this.rtl,
-  });
-
-  final Color color;
-  final double radius;
-  final bool rtl;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final leading = Radius.circular(radius);
-    final outer = Path()..addRect(Offset.zero & size);
-    final rounded = Path()
-      ..addRRect(
-        RRect.fromRectAndCorners(
-          Offset.zero & size,
-          topLeft: rtl ? Radius.zero : leading,
-          bottomLeft: rtl ? Radius.zero : leading,
-          topRight: rtl ? leading : Radius.zero,
-          bottomRight: rtl ? leading : Radius.zero,
-        ),
-      );
-    final notch = Path.combine(PathOperation.difference, outer, rounded);
-    canvas.drawPath(notch, Paint()..color = color);
-  }
-
-  @override
-  bool shouldRepaint(covariant _MiuixNavLeadingCornerNotchPainter old) =>
-      old.color != color || old.radius != radius || old.rtl != rtl;
-}
 /// 转场期间的「重页快照滑入」闸门（2026-10-17；2026-10-18 两段式退休：
 /// 预热 0.99 → 收束带撤快照）。
 ///

@@ -193,7 +193,7 @@ void main() {
     expect(previous, 0);
   });
 
-  testWidgets('前缘圆角是补片画的：页面上没有洞，转场中没有可闪的几何变化', (
+  testWidgets('前缘圆角保留：只裁滑入那一页、半径全程恒定；被覆盖页不裁', (
     tester,
   ) async {
     // 2026-10-18 定案（第十一轮真机 + 截图）：旧的前缘「圆角」是从页面像素里
@@ -227,6 +227,7 @@ void main() {
                 onPressed: () => HyperosNavigation.push(
                   context,
                   builder: (coveredContext) => Scaffold(
+                    key: const ValueKey('covered-page'),
                     backgroundColor: HyperosColors.scaffoldBackground(
                       coveredContext,
                     ),
@@ -266,36 +267,55 @@ void main() {
     // 动画带过锚点帧 —— 之后 125ms 的步进读数与无门槛时同构。
     await tester.pump(const Duration(milliseconds: 1));
 
-    // 补片是否在位：画笔类型就是圆角补片。
-    bool hasNotchPainter() => find
-        .byWidgetPredicate(
-          (w) =>
-              w is CustomPaint &&
-              w.painter.runtimeType
-                  .toString()
-                  .contains('MiuixNavLeadingCornerNotchPainter'),
-          skipOffstage: false,
-        )
-        .evaluate()
-        .isNotEmpty;
+    // 圆角半径：设备读数（测试宿主 = 回退值 28），全程恒定。
+    final radius = HyperosMotionPlatform.displayCornerRadiusDp;
+    double? enteringRadius() {
+      final finder = find.ancestor(
+        of: find.byKey(enteringKey, skipOffstage: false),
+        matching: find.byType(ClipRRect, skipOffstage: false),
+      );
+      if (finder.evaluate().isEmpty) {
+        return null;
+      }
+      return tester
+          .widget<ClipRRect>(finder.first)
+          .borderRadius
+          .resolve(TextDirection.ltr)
+          .topLeft
+          .x;
+    }
 
-    // 转场中取三个时刻：页面祖先链上**不许**出现裁角层（挖洞），补片必须在位。
+    // 转场中取三个时刻：滑入页必须一直带着同半径的前缘圆角（不随进度变）。
     for (final fraction in [0.25, 0.5, 0.75]) {
       await tester.pump(const Duration(milliseconds: 125));
       expect(
-        find.ancestor(
-          of: find.byKey(enteringKey, skipOffstage: false),
-          matching: find.byType(ClipRRect, skipOffstage: false),
-        ),
-        findsNothing,
-        reason: 't=$fraction 不该再用 ClipRRect 挖洞 —— 洞要在贴边时补上，'
-            '重页面上那一下就是「圆角闪现消失」',
+        enteringRadius(),
+        radius,
+        reason: 't=$fraction 滑入页的前缘圆角必须是恒定满半径 —— '
+            '末段一收就会在重页面上读作「圆角闪现成直角」',
       );
-      expect(hasNotchPainter(), isTrue, reason: 't=$fraction 圆角补片应在位（观感保留）');
     }
 
     await tester.pumpAndSettle();
-    expect(hasNotchPainter(), isTrue, reason: '停稳后补片仍在：静止态没有任何一帧改圆角');
+    expect(enteringRadius(), radius, reason: '停稳后半径仍是同一个值（没有收束那一帧）');
+
+    // 被覆盖页不裁：两层洞对齐会看穿到窗口黑底（第十轮截图里的黑圆角）。
+    // 被覆盖页的裁切层仍在树上（结构恒定），但**半径为 0** —— 两层洞对齐会
+    // 看穿到窗口黑底（第十轮用户截图里的黑圆角）。
+    final coveredClip = find.ancestor(
+      of: find.byKey(const ValueKey('covered-page'), skipOffstage: false),
+      matching: find.byType(ClipRRect, skipOffstage: false),
+    );
+    expect(
+      tester
+          .widget<ClipRRect>(coveredClip.first)
+          .borderRadius
+          .resolve(TextDirection.ltr)
+          .topLeft
+          .x,
+      0,
+      reason: '被覆盖页不裁（半径 0），但裁切层常挂',
+    );
   });
 
   testWidgets('转场全程结构恒定：裁切 / 补底 / 压暗蒙层 / 透明度不随进度摘挂', (tester) async {
@@ -320,6 +340,7 @@ void main() {
                 onPressed: () => HyperosNavigation.push(
                   context,
                   builder: (coveredContext) => Scaffold(
+                    key: const ValueKey('covered-page'),
                     backgroundColor: HyperosColors.scaffoldBackground(
                       coveredContext,
                     ),
@@ -361,7 +382,7 @@ void main() {
     // 被覆盖页（第一层）身上的结构指纹：ClipRRect / Opacity 恒在，
     // Stack 数恒定（压暗蒙层不靠 Stack，改用 RenderProxyBox 直画）。
     // 三种层数任何一种在转场中变化 = 子树 reparent。
-    final coveredFinder = find.byType(Scaffold).first;
+    final coveredFinder = find.byKey(const ValueKey('covered-page'), skipOffstage: false);
     int clipCount() => find
         .ancestor(of: coveredFinder, matching: find.byType(ClipRRect))
         .evaluate()
@@ -380,7 +401,7 @@ void main() {
     final firstClip = clipCount();
     final firstOpacity = opacityCount();
     final firstStack = stackCount();
-    expect(firstClip, 0, reason: '前缘不再裁角（2026-10-18）—— 被覆盖页不该有裁角层');
+    expect(firstClip, greaterThan(0), reason: '裁切层常挂（半径 0 = 不裁），结构不随动画增删');
     expect(firstOpacity, greaterThan(0), reason: '被覆盖页应恒带透明度衰减');
 
     for (var i = 0; i < 8; i++) {
