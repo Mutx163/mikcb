@@ -12,7 +12,10 @@ final RegExp releaseAssetKeyPattern = RegExp(
 );
 
 /// 按语义版本号倒序排列（最新在前），如 v2.1.1.4 > v2.1.1 > v2.0.5.6。
-@visibleForTesting
+///
+/// 不再是 `@visibleForTesting`：调试页的「模拟收到新版本更新」也要扫同一份
+/// `docs/releases/` 资源来取演示正文，两边共用一个排序口径（见
+/// `hyperos_showcase_screen.dart` 的 `_loadNewestReleaseNotes`）。
 int compareReleaseVersionsDesc(String a, String b) {
   final va = parseReleaseVersion(a);
   final vb = parseReleaseVersion(b);
@@ -26,7 +29,8 @@ int compareReleaseVersionsDesc(String a, String b) {
 
 /// 匹配 asset key 中的版本号，如 docs/releases/v2.1.1.4.md → v2.1.1.4。
 /// 严格限定数字段（可选 - 后缀），避免误配同目录的 .html 等非版本文件。
-@visibleForTesting
+///
+/// 同 [compareReleaseVersionsDesc]：调试页的更新弹窗演示也用这一条扫描。
 String? matchReleaseAssetKey(String assetKey) {
   final match = releaseAssetKeyPattern.firstMatch(assetKey);
   return match?.group(1);

@@ -8133,6 +8133,24 @@ abstract class AppLocalizations {
   /// **'可直接点击立即下载。线路切换与高级选项已整合至下方。'**
   String get aboutUpdateAvailableHint;
 
+  /// No description provided for @aboutUpdateHighlightsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'本次更新重点'**
+  String get aboutUpdateHighlightsTitle;
+
+  /// No description provided for @aboutUpdateViewAllAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看全部 {count} 项'**
+  String aboutUpdateViewAllAction(String count);
+
+  /// No description provided for @aboutUpdateCollapseAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'收起'**
+  String get aboutUpdateCollapseAction;
+
   /// No description provided for @aboutUpdateNoUpdateHint.
   ///
   /// In zh, this message translates to:

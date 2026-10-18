@@ -4396,6 +4396,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutUpdateAvailableHint => '可直接点击立即下载。线路切换与高级选项已整合至下方。';
 
   @override
+  String get aboutUpdateHighlightsTitle => '本次更新重点';
+
+  @override
+  String aboutUpdateViewAllAction(String count) {
+    return '查看全部 $count 项';
+  }
+
+  @override
+  String get aboutUpdateCollapseAction => '收起';
+
+  @override
   String get aboutUpdateNoUpdateHint =>
       '当前版本已经可正常使用；如果你要体验测试版，可以在后面的高级选项里打开测试版检测';
 
@@ -15626,6 +15637,17 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get aboutUpdateAvailableHint => '可直接點擊立即下載。線路切換與高級選項已整合至下方。';
+
+  @override
+  String get aboutUpdateHighlightsTitle => '本次更新重點';
+
+  @override
+  String aboutUpdateViewAllAction(String count) {
+    return '查看全部 $count 項';
+  }
+
+  @override
+  String get aboutUpdateCollapseAction => '收起';
 
   @override
   String get aboutUpdateNoUpdateHint =>
@@ -26898,6 +26920,17 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get aboutUpdateAvailableHint => '可直接點擊立即下載。線路切換與高級選項已整合至下方。';
+
+  @override
+  String get aboutUpdateHighlightsTitle => '本次更新重點';
+
+  @override
+  String aboutUpdateViewAllAction(String count) {
+    return '查看全部 $count 項';
+  }
+
+  @override
+  String get aboutUpdateCollapseAction => '收起';
 
   @override
   String get aboutUpdateNoUpdateHint =>

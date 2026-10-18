@@ -64,6 +64,11 @@ lib/ui/hyperos/hyperos_proxies.dart:1
 lib/ui/hyperos/preview_bake_boundary.dart:6
 lib/utils/course_color_palette.dart:19
 lib/utils/locale_utils.dart:4
+# release_notes_digest.dart 的中文不是界面文案，是**解析发布说明用的关键字**：
+# 「新增 / 优化 / 修复 / 移除」分类前缀、声明重点的「本次重点」标签、中文标点分隔符。
+# 这些词必须字面出现在源码里（发布说明就是中文写的），换成语言资源反而读不清。
+# 13 条是基线，之后只许减少：真在这里加界面文案仍会让计数上涨而被拦下。
+lib/utils/release_notes_digest.dart:13
 lib/utils/timed_method_channel.dart:2
 lib/widgets/app_startup_splash.dart:1
 lib/widgets/class_reminder_sheet.dart:2

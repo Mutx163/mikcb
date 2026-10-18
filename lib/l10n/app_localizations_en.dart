@@ -4708,6 +4708,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can simply tap \"Download now\" below. Speed test, mirrors, and prerelease options have been moved into Advanced Options';
 
   @override
+  String get aboutUpdateHighlightsTitle => 'Highlights in this update';
+
+  @override
+  String aboutUpdateViewAllAction(String count) {
+    return 'See all $count items';
+  }
+
+  @override
+  String get aboutUpdateCollapseAction => 'Show less';
+
+  @override
   String get aboutUpdateNoUpdateHint =>
       'The current version is already usable. If you want to try prereleases, enable prerelease checks in Advanced Options below';
 

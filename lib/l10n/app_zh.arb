@@ -2466,6 +2466,16 @@
   "aboutVersionChannelLabel": "版本通道",
   "aboutPrereleaseChannel": "测试版",
   "aboutUpdateAvailableHint": "可直接点击立即下载。线路切换与高级选项已整合至下方。",
+  "aboutUpdateHighlightsTitle": "本次更新重点",
+  "aboutUpdateViewAllAction": "查看全部 {count} 项",
+  "@aboutUpdateViewAllAction": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutUpdateCollapseAction": "收起",
   "aboutUpdateNoUpdateHint": "当前版本已经可正常使用；如果你要体验测试版，可以在后面的高级选项里打开测试版检测",
   "aboutUpdatedAt": "更新时间：{time}",
   "@aboutUpdatedAt": {

@@ -4504,6 +4504,17 @@ class AppLocalizationsJa extends AppLocalizations {
       '下の「今すぐダウンロード」をタップするだけ，速度テスト、ミラーとテスト版は後方の高度なオプションに収納済み';
 
   @override
+  String get aboutUpdateHighlightsTitle => '今回の更新ポイント';
+
+  @override
+  String aboutUpdateViewAllAction(String count) {
+    return '全 $count 件を表示';
+  }
+
+  @override
+  String get aboutUpdateCollapseAction => '折りたたむ';
+
+  @override
   String get aboutUpdateNoUpdateHint =>
       '現在のバージョンは正常に使用可能，テスト版を体験する場合は、後方の高度なオプションでテスト版検出をオンに';
 

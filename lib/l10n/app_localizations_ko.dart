@@ -4534,6 +4534,17 @@ class AppLocalizationsKo extends AppLocalizations {
       '지금은 아래의 \'지금 다운로드\'를 탭하기만 하면 됩니다. 속도 측정, 미러, 시험판은 뒤의 고급 옵션에 정리되어 있습니다';
 
   @override
+  String get aboutUpdateHighlightsTitle => '이번 업데이트 핵심';
+
+  @override
+  String aboutUpdateViewAllAction(String count) {
+    return '전체 $count개 보기';
+  }
+
+  @override
+  String get aboutUpdateCollapseAction => '접기';
+
+  @override
   String get aboutUpdateNoUpdateHint =>
       '현재 버전은 정상 사용 가능합니다. 시험판을 체험하려면 뒤의 고급 옵션에서 시험판 검출을 켜세요';
 

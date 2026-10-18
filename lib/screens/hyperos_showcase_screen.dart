@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
@@ -12,6 +13,7 @@ import '../services/app_update_service.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/hex_color.dart';
 import '../widgets/home_update_prompt.dart';
+import 'changelog_screen.dart';
 
 /// Gallery of all HyperOS / 澎湃 UI components for visual QA.
 class HyperosShowcaseScreen extends StatefulWidget {
@@ -1064,6 +1066,29 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
     );
   }
 
+  /// 取打包进来的最新一版发布说明（`docs/releases/*.md`，见 pubspec assets）。
+  ///
+  /// 版本号扫描与排序复用更新日志页的同一套函数，避免演示数据与真页面
+  /// 对「哪一版算最新」各有一套口径。
+  Future<String?> _loadNewestReleaseNotes() async {
+    try {
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      final versions = manifest
+          .listAssets()
+          .map(matchReleaseAssetKey)
+          .whereType<String>()
+          .toSet()
+          .toList()
+        ..sort(compareReleaseVersionsDesc);
+      if (versions.isEmpty) {
+        return null;
+      }
+      return await rootBundle.loadString('docs/releases/${versions.first}.md');
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// 模拟「发现新版本」推送：用假 Release 数据拉起首页同款更新弹窗。
   ///
   /// 仅调试/性能版可达本页。主按钮文案与点击行为按当前设置
@@ -1080,12 +1105,20 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
       currentVersion = '0.0.0';
     }
     if (!mounted) return;
-    const release = AppReleaseInfo(
+    // 演示数据用打包进来的真实发布说明：更新弹窗真正要面对的输入就是
+    // 「一版 46 条、正文 90 多行」那种长正文，短的假数据看不出重点是怎么挑的。
+    // 读不到资源时退回一份英文短样本，保证弹窗仍能打开。
+    final demoBody =
+        await _loadNewestReleaseNotes() ??
+        '- New: demo release body for the update prompt\n'
+            '- Fixed: demo failure state';
+    if (!mounted) return;
+    final release = AppReleaseInfo(
       version: '9.9.9',
-      title: '模拟更新 · 弹窗演示数据',
-      body: '这是一条用于验收更新弹窗的模拟更新日志。\n'
-          '- 假下载只播放进度动画，不访问网络\n'
-          '- 下拉或点击遮罩即可关闭',
+      // 线上 Release 标题通常就是版本号本身（`v2.1.3.3`）；这里照抄那种形态，
+      // 顺带验收「标题与版本重复时不占两行」。
+      title: 'v9.9.9',
+      body: demoBody,
       releaseUrl: 'https://github.com/Mutx163/mikcb/releases',
       downloadUrl:
           'https://github.com/Mutx163/mikcb/releases/download/demo/demo.apk',

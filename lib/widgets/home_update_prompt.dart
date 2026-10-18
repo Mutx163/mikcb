@@ -6,6 +6,8 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/app_update_service.dart';
 import 'package:university_timetable/services/support_creator_service.dart';
+import 'package:university_timetable/utils/release_notes_digest.dart';
+import 'package:university_timetable/widgets/update_release_digest.dart';
 
 /// Mutable state shared by the home update prompt and the download task.
 ///
@@ -179,9 +181,14 @@ Future<void> showHomeUpdatePrompt(
   // 上一次"用系统下载器下载失败"会让这一次弹窗一开就是红色失败条。
   // 仍在进行的下载（pending/running/paused）会被保留。
   controller.discardStaleSystemDownload();
+  // 发布说明是扁平的长列表（实测一版 46 条、正文 90 多行），解析一次成
+  // 「重点 + 分类计数 + 全部条目」再交给弹窗：弹窗内部每帧只做展示。
+  // 不在这里解析的话就得放在 build 里，而下载进度每秒会通知好几次。
+  final digest = buildReleaseNotesDigest(release.body);
   return _showHomeUpdatePromptDialog(
     context,
     release: release,
+    digest: digest,
     currentVersion: currentVersion,
     downloadChannel: downloadChannel,
     hasDirectDownload: hasDirectDownload,
@@ -196,6 +203,7 @@ Future<void> showHomeUpdatePrompt(
 Future<void> _showHomeUpdatePromptDialog(
   BuildContext context, {
   required AppReleaseInfo release,
+  required ReleaseNotesDigest digest,
   required String currentVersion,
   required AppUpdateDownloadChannel downloadChannel,
   required bool hasDirectDownload,
@@ -210,6 +218,7 @@ Future<void> _showHomeUpdatePromptDialog(
     builder: (sheetContext) {
       return _HomeUpdatePromptDialog(
         release: release,
+        digest: digest,
         currentVersion: currentVersion,
         downloadChannel: downloadChannel,
         hasDirectDownload: hasDirectDownload,
@@ -227,6 +236,7 @@ Future<void> _showHomeUpdatePromptDialog(
 class _HomeUpdatePromptDialog extends StatelessWidget {
   const _HomeUpdatePromptDialog({
     required this.release,
+    required this.digest,
     required this.currentVersion,
     required this.downloadChannel,
     required this.hasDirectDownload,
@@ -239,6 +249,7 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
   });
 
   final AppReleaseInfo release;
+  final ReleaseNotesDigest digest;
   final String currentVersion;
   final AppUpdateDownloadChannel downloadChannel;
   final bool hasDirectDownload;
@@ -291,6 +302,10 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
 
         return HyperosSheetFrame(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          // 弹窗最高占 86% 屏高，中间的「重点 / 全部条目」区域可滚：
+          // 展开完整列表后高度会远超内容本来的尺寸，需要给 Column 一个上限，
+          // 让 Flexible 有空间可缩（否则就是 RenderFlex overflow 的黄黑条）。
+          maxHeight: MediaQuery.sizeOf(context).height * 0.86,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -301,15 +316,20 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
                 style: HyperosTypography.sheetTitle(context),
               ),
               const SizedBox(height: 8),
-              MiuixText(
-                release.title,
-                style: textStyles.title4,
-                color: colors.onBackground,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 6),
+              // 正式发的 Release 标题就是版本号本身（`v2.1.3.3`），
+              // 下面那行「旧版本 → 新版本」已经把同样的信息说完了；
+              // 两行都显示会白占两行高度，让人以为弹窗只有标题可看。
+              if (!_titleRepeatsVersion) ...[
+                MiuixText(
+                  release.title,
+                  style: textStyles.title4,
+                  color: colors.onBackground,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+              ],
               // 版本过渡压缩为一行：旧版本弱化、新版本主题色强调，
               // 替代原先「版本 x」+「当前版本 -> 最新版本」两行重复信息。
               Row(
@@ -336,17 +356,20 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              // 更新说明左对齐并放宽行高，长文本不再居中堆叠。
-              MiuixText(
-                _summarizeReleaseBody(
-                  release.body,
-                  fallback: l10n.aboutUpdateAvailableHint,
+              // 发布说明是扁平的一长串条目：旧版取正文前 4 行，用户只能看到
+              // 「一大串更新内容的顶部」、句子还断在半截。这里只放「本次更新重点」
+              // （至多 3 条短标题 + 分类计数），完整条目在同一个弹窗里按需展开。
+              Flexible(
+                child: SingleChildScrollView(
+                  child: digest.isEmpty
+                      ? MiuixText(
+                          l10n.aboutUpdateAvailableHint,
+                          style: textStyles.body2,
+                          color: colors.onSurfaceSecondary,
+                          height: 1.45,
+                        )
+                      : UpdateReleaseDigest(digest: digest),
                 ),
-                style: textStyles.body2,
-                color: colors.onSurfaceSecondary,
-                height: 1.45,
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
               ),
               if (hasProgress) ...[
                 const SizedBox(height: 18),
@@ -582,15 +605,18 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
     return (downloadedBytes / totalBytes).clamp(0.0, 1.0);
   }
 
-  String _summarizeReleaseBody(String body, {required String fallback}) {
-    final lines = body
-        .split('\n')
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty && !line.startsWith('#'))
-        .map((line) => line.replaceFirst(RegExp(r'^[-*•]\s+'), ''))
-        .take(4)
-        .join('\n');
-    return lines.isEmpty ? fallback : lines;
+  /// Release 标题是否只是把版本号又说了一遍。
+  ///
+  /// GitHub / GitCode 上不填标题时 Release 名就是 `v2.1.3.3`，而弹窗下面已经有
+  /// 「2.1.3.2 → 2.1.3.3」。不判重就会占掉两行高度，还让用户以为这一版没写标题。
+  bool get _titleRepeatsVersion {
+    String normalize(String value) =>
+        value.trim().toLowerCase().replaceFirst(RegExp(r'^v'), '');
+    final title = release.title.trim();
+    if (title.isEmpty) {
+      return true;
+    }
+    return normalize(title) == normalize(release.version);
   }
 }
 
