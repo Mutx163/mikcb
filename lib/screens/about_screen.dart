@@ -29,6 +29,8 @@ import '../widgets/bundled_asset_image.dart';
 import '../utils/app_toast.dart';
 import '../widgets/app_dialogs.dart';
 import '../services/warehouse_repository_service.dart';
+import '../utils/release_notes_digest.dart';
+import '../widgets/release_digest_view.dart';
 import 'feedback_screen.dart';
 import 'log_viewer_entry.dart';
 import 'support_creator_screen.dart';
@@ -723,9 +725,15 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         }
 
         final releaseBody = result.latestRelease?.body ?? '';
-        final noteBlocks = splitReleaseNotesIntoBlocks(releaseBody);
-        final hasNotes = noteBlocks.isNotEmpty;
-        final itemCount = hasNotes ? noteBlocks.length + 3 : 1;
+        // 「本次更新说明」与首页更新弹窗、历史版本页共用同一份摘要：
+        // 顶部 3 条重点 + 分类计数 + 展开后的分组条目。老版本正文里没有可解析
+        // 条目时（纯段落）仍退回原来的 Markdown 分块渲染。
+        final digest = buildReleaseNotesDigest(releaseBody);
+        final useDigest = digest.entries.isNotEmpty;
+        final noteBlocks =
+            useDigest ? const <String>[] : splitReleaseNotesIntoBlocks(releaseBody);
+        final hasNotes = useDigest || noteBlocks.isNotEmpty;
+        final itemCount = hasNotes ? (useDigest ? 4 : noteBlocks.length + 3) : 1;
 
         // A long MarkdownBody is one large, eagerly-built render tree inside
         // SingleChildScrollView. Every scroll frame then has to traverse and
@@ -749,6 +757,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             }
 
             final blockIndex = index - 3;
+            if (useDigest) {
+              return _buildNotesDigest(digest);
+            }
             return _buildNotesBlock(
               noteBlocks[blockIndex],
               isLast: blockIndex == noteBlocks.length - 1,
@@ -1030,6 +1041,26 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           onTapLink: _openUrl,
           plainTypography: true,
           usePrimaryTextColor: true,
+        ),
+      ),
+    );
+  }
+
+  /// 「本次更新说明」：与更新弹窗 / 历史版本页同一个摘要组件。
+  ///
+  /// 以前这里直接把 Release 正文丢给 Markdown 渲染，首屏是一大段「新增 …」
+  /// 平铺；同样的正文在弹窗里已经是「3 条重点 + 分类计数」。现在统一成一份，
+  /// 用户在同一版更新里看到的第一屏一致。
+  Widget _buildNotesDigest(ReleaseNotesDigest digest) {
+    return _buildNotesSurface(
+      isFirst: false,
+      isLast: true,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: ReleaseDigestView(
+          digest: digest,
+          groupEntries: true,
+          alwaysExpandable: true,
         ),
       ),
     );

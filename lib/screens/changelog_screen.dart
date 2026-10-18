@@ -259,12 +259,9 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
               itemCount: _entries.length,
               itemBuilder: (context, index) {
                 final entry = _entries[index];
-                return _ChangelogCard(
-                  entry: entry,
-                  // 只让最新一版默认展开：一屏能看到「这版是什么」，
-                  // 往下翻历史时每版只占一个重点块的高度。
-                  expandedByDefault: index == 0,
-                );
+                // 默认全部收起：一版动辄几十条，进页面先看到每版的
+                // 「3 条重点 + 分类计数」，想读细节再点开。
+                return _ChangelogCard(entry: entry);
               },
             ),
     );
@@ -284,13 +281,9 @@ class _ChangelogEntry {
 }
 
 class _ChangelogCard extends StatelessWidget {
-  const _ChangelogCard({
-    required this.entry,
-    required this.expandedByDefault,
-  });
+  const _ChangelogCard({required this.entry});
 
   final _ChangelogEntry entry;
-  final bool expandedByDefault;
 
   @override
   Widget build(BuildContext context) {
@@ -314,14 +307,6 @@ class _ChangelogCard extends StatelessWidget {
                     label: entry.version,
                     backgroundColor: colors.surfaceContainerHigh,
                   ),
-                  const Spacer(),
-                  if (digest.total > 0)
-                    // 一个版本往往几十条，先给个规模读数，让人决定要不要展开。
-                    MiuixText(
-                      '${digest.total}',
-                      style: textStyles.footnote2,
-                      color: colors.onSurfaceVariantSummary,
-                    ),
                 ],
               ),
               if (digest.intro.isNotEmpty) ...[
@@ -350,7 +335,6 @@ class _ChangelogCard extends StatelessWidget {
                   digest: digest,
                   groupEntries: true,
                   alwaysExpandable: true,
-                  initiallyExpanded: expandedByDefault,
                 ),
             ],
           ),
