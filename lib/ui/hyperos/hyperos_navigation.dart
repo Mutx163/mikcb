@@ -365,12 +365,22 @@ class _MiuixNavPageTransition extends StatelessWidget {
           child: page,
         );
 
+        // === 临时诊断（2026-10-18）：把「缺口区域」涂成洋红，用来判断左上角那块
+        // 到底是「没被裁开」还是「裁开了但洞里同色」。看完即撤。
+        final diagnosed = CustomPaint(
+          foregroundPainter: _DebugNotchPainter(
+            radius: leadingCornerActive ? clipRadius : 0,
+            rtl: isRtl,
+          ),
+          child: edged,
+        );
+
         final content = _MiuixNavParallaxBleed(
           width: width,
           bleedWidth: bleedWidth,
           surface: surface,
           scrimAlpha: scrimAlpha,
-          child: edged,
+          child: diagnosed,
         );
 
         // 根恒为 Transform.translate：压暗蒙层画在 bleed 层内部（其下的垫底
@@ -966,6 +976,40 @@ class _MiuixNavLeadingEdgePainter extends CustomPainter {
       old.radius != radius ||
       old.rtl != rtl ||
       old.color != color;
+}
+/// === 临时诊断（2026-10-18）===：把「缺口区域」（页面矩形减去同半径圆角矩形）
+/// 涂成洋红。用途：判断左上角那块是「裁切没生效」还是「裁开了但洞里同色」。
+/// 看完即撤。
+class _DebugNotchPainter extends CustomPainter {
+  const _DebugNotchPainter({required this.radius, required this.rtl});
+
+  final double radius;
+  final bool rtl;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (radius <= 0 || size.isEmpty) {
+      return;
+    }
+    final leading = Radius.circular(radius);
+    final outer = Path()..addRect(Offset.zero & size);
+    final rounded = Path()
+      ..addRRect(
+        RRect.fromRectAndCorners(
+          Offset.zero & size,
+          topLeft: rtl ? Radius.zero : leading,
+          bottomLeft: rtl ? Radius.zero : leading,
+          topRight: rtl ? leading : Radius.zero,
+          bottomRight: rtl ? leading : Radius.zero,
+        ),
+      );
+    final notch = Path.combine(PathOperation.difference, outer, rounded);
+    canvas.drawPath(notch, Paint()..color = const Color(0xFFFF00FF));
+  }
+
+  @override
+  bool shouldRepaint(covariant _DebugNotchPainter old) =>
+      old.radius != radius || old.rtl != rtl;
 }
 /// Standard sub-page route for mikcb (settings, import, about, etc.).
 class HyperosPageRoute<T> extends PageRoute<T> {
