@@ -34,10 +34,11 @@ void main() {
     expect(HyperosMiuixNavigation.programmaticDurationMs, 500);
     expect(HyperosNavigation.transitionDuration.inMilliseconds, 500);
     // 官方 NavTransitions.MiuixDefault：被覆盖页视差 1/4 屏宽 + 0.1 透明度衰减。
-    // 2026-10-18 第十八轮：视差**回到官方 0.25**（用户定案：按官方样式走，
-    // 不再自定义）。当年取 0 是为了避开「洞口里的内容反向流动」，前缘圆角撤掉
-    // 之后这条机理消失，没有理由再牺牲官方的后退感。
-    expect(HyperosMiuixNavigation.coveredParallaxFraction, 0.25);
+    // **视差取 0 —— 本仓唯一有意偏离官方的一处，理由是流畅**：被覆盖页每帧位移
+    // 会让页面顶部那条实时磨砂带（`BackdropFilter`）每帧重新采样、重算模糊；
+    // 视差 0 时旧页在屏幕坐标里不动，这一层可以复用。2026-10-18 第十八轮实测：
+    // 改成官方 0.25 后用户立刻反馈「之前那个版本（`8afe191a`，视差 0）特别流畅」。
+    expect(HyperosMiuixNavigation.coveredParallaxFraction, 0);
     expect(HyperosMiuixNavigation.coveredAlphaFalloff, 0.1);
     // 官方 NavDisplayEffects.Default.dimAmount（全屏压暗上限）。
     expect(HyperosMiuixNavigation.dimAmount, 0.5);
@@ -480,6 +481,10 @@ void main() {
 
 
   testWidgets('快照滑入：转场中屏上是首帧快照，落定换回真页', (tester) async {
+    // 2026-10-18 第十八轮：快照滑入默认关闭（用户偏好「不要固定照片」）。
+    // 本条覆盖机制本身，所以临时打开、用完复位。
+    HyperosMiuixNavigation.snapshotTransitionEnabled = true;
+    addTearDown(() => HyperosMiuixNavigation.snapshotTransitionEnabled = false);
     // 2026-10-17「还没贴边就变直角」的治本路径：转场中重页的异步内容到位 /
     // 列表填充会把框架的页面缓存作废、逼引擎每帧重栅格化整页（50~80ms/帧），
     // 观感是「半路冻住 → 跳到位 + 圆角收平」。快照模式把这些帧挪到屏外：
@@ -629,6 +634,10 @@ void main() {
   });
 
   testWidgets('快照退休点：收平段仍在照片上，动画结束才换回真页', (tester) async {
+    // 2026-10-18 第十八轮：快照滑入默认关闭（用户偏好「不要固定照片」）。
+    // 本条覆盖机制本身，所以临时打开、用完复位。
+    HyperosMiuixNavigation.snapshotTransitionEnabled = true;
+    addTearDown(() => HyperosMiuixNavigation.snapshotTransitionEnabled = false);
     // 2026-10-18 真机第一轮反馈的回归：快照若撑到停稳才退休，末段 85ms 的
     // 圆角收束被烤死的满值切口顶住、停稳一帧蹦直角 —— 用户读作「圆角比别的
     // 页早收、变更快」。退休判据必须与 transitionCornerRadiusFactor 的收束带
@@ -737,6 +746,10 @@ void main() {
   });
 
   testWidgets('撤快照不重画页面：换层是纯合成操作', (tester) async {
+    // 2026-10-18 第十八轮：快照滑入默认关闭（用户偏好「不要固定照片」）。
+    // 本条覆盖机制本身，所以临时打开、用完复位。
+    HyperosMiuixNavigation.snapshotTransitionEnabled = true;
+    addTearDown(() => HyperosMiuixNavigation.snapshotTransitionEnabled = false);
     // 2026-10-18 真机第三轮：撤快照那一帧只翻闸门的 Offstage 布尔，Stack 会
     // 重画。若真页没有自己的栅格边界，这次重画会把整棵页面子树再 paint 一遍
     // （重页面 50~80ms），正好压在圆角收平段的起点 —— 用户读作「圆角闪现
@@ -809,6 +822,10 @@ void main() {
   });
 
   testWidgets('豁免页：snapshotTransition=false 的路由全程真页参与滑动', (tester) async {
+    // 2026-10-18 第十八轮：快照滑入默认关闭（用户偏好「不要固定照片」）。
+    // 本条覆盖机制本身，所以临时打开、用完复位。
+    HyperosMiuixNavigation.snapshotTransitionEnabled = true;
+    addTearDown(() => HyperosMiuixNavigation.snapshotTransitionEnabled = false);
     // WebView 等平台视图页拍不进快照（拍出来是黑块），推入点显式豁免。
     // 豁免页不得出现快照层，页面本体全程在屏。
     AndroidAnimationScaleService.setUserTransitionSpeed(1);
@@ -863,6 +880,10 @@ void main() {
 
 
   testWidgets('转场中页面能摸：滑入一半按下就落在真页上，快照立刻退休', (tester) async {
+    // 2026-10-18 第十八轮：快照滑入默认关闭（用户偏好「不要固定照片」）。
+    // 本条覆盖机制本身，所以临时打开、用完复位。
+    HyperosMiuixNavigation.snapshotTransitionEnabled = true;
+    addTearDown(() => HyperosMiuixNavigation.snapshotTransitionEnabled = false);
     // 2026-10-18 第十七轮真机反馈：「进入一半的时候我就滑动页面，但是现在
     // 滑不动了」。原因是快照模式用 `Offstage` 藏真页 —— 它连命中测试一起关掉，
     // 手指落在照片上、事件到不了真页的滚动视图。

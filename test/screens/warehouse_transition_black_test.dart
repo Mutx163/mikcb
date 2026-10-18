@@ -98,10 +98,11 @@ void main() {
     );
     final rect = tester.getRect(find.byType(WarehouseCourseImportScreen, skipOffstage: false));
     expect(rect.height, greaterThanOrEqualTo(600), reason: '转场中被盖页塌成 0 高 = 整页黑带');
-    // 2026-10-18 第十八轮：视差回到官方 1/4 屏宽（用户定案按官方样式走），
-    // 被盖页在转场中会向左让开 —— 恢复旧断言 `lessThan(0)`。
+    // 视差**有意取 0**（2026-10-17 `08109f6a`，2026-10-18 第十八轮确认保留）：
+    // 被覆盖页每帧位移会让顶部磨砂带每帧重算模糊，用户对比两个版本后确认
+    // 「视差 0 + 无快照」的 `8afe191a` 手感最好。被盖页因此停在原位。
     // 本用例真正守的是上面的 height：塌成 0 高就是整页黑带。
-    expect(rect.left, lessThan(0), reason: '官方视差 1/4 屏宽：被盖页让开（向左）');
+    expect(rect.left, 0, reason: '视差 0：被盖页停在原位（官方 0.25 会向左让开）');
   });
 
   testWidgets('pop 回落中被盖列表页保持整屏高度', (tester) async {
