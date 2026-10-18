@@ -282,6 +282,9 @@ class _MiuixNavPageTransition extends StatelessWidget {
         : 0.0;
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     final isTopRoute = ModalRoute.of(context)?.isCurrent ?? true;
+    final moving = enter.status == AnimationStatus.forward ||
+        enter.status == AnimationStatus.reverse;
+    final leadingCornerActive = isTopRoute || moving;
     final bleedWidth = HyperosNavigation.parallaxBleedWidth(width);
     final surface = HyperosColors.scaffoldBackground(context);
 
@@ -323,7 +326,7 @@ class _MiuixNavPageTransition extends StatelessWidget {
           // 黑圆角）。判据用 `isCurrent` —— 本仓转场壳是裸 `PageRoute`，被覆盖页
           // 的 `secondaryAnimation` 根本不会被驱动，拿 `coverValue` 判会恒为 0。
           clipEnabled: clipRadius > 0,
-          radius: isTopRoute ? clipRadius : 0,
+          radius: leadingCornerActive ? clipRadius : 0,
 
           // 前缘圆角：**恒定半径，全程不随进度变**（2026-10-18 定案）。
           //
@@ -513,6 +516,50 @@ class _MiuixNavClippedPage extends StatelessWidget {
   }
 }
 
+/// 前缘圆角的**内层**切口：把同半径的圆角烘进页面自己的绘制结果里。
+///
+/// 为什么需要两层（2026-10-17 真机第四轮 + 2026-10-18 第十一轮复现）：
+/// 外壳那层 `ClipRRect` 是**合成期**裁切，真机上会丢帧；丢的那几帧里页面像素
+/// 本来就是方的 → 圆角「消失又回来」。用户第十一轮的原话是「左上角一直闪现
+/// 恢复直角，极其快速的闪现，一秒可能七八次，左下角是正常的不闪」—— 正是这个
+/// 现象（左下角那块底下同色，丢了也看不出来）。把同一条切口放进
+/// `buildPage` 的返回值（框架缓存边界之内），页面栅格本身就缺角，丢帧也露不出
+/// 方角。
+///
+/// 半径与外壳**同值、全程恒定**；结构常挂（非活动时半径 0），不按动画状态增删。
+class _MiuixNavLeadingCornerCut extends StatelessWidget {
+  const _MiuixNavLeadingCornerCut({
+    required this.animation,
+    required this.child,
+  });
+
+  final Animation<double> animation;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!HyperosMiuixNavigation.clipLeadingCornersWhileMoving) {
+      return child;
+    }
+    final radius = HyperosMotionScope.of(context).displayCornerRadiusDp;
+    if (radius <= 0) {
+      return child;
+    }
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final isTop = ModalRoute.of(context)?.isCurrent ?? true;
+    final moving = animation.status == AnimationStatus.forward ||
+        animation.status == AnimationStatus.reverse;
+    final effective = (isTop || moving) ? radius : 0.0;
+    final corner = Radius.circular(effective);
+    return ClipRRect(
+      borderRadius: isRtl
+          ? BorderRadius.only(topRight: corner, bottomRight: corner)
+          : BorderRadius.only(topLeft: corner, bottomLeft: corner),
+      child: child,
+    );
+  }
+}
 /// 转场期间的「重页快照滑入」闸门（2026-10-17；2026-10-18 两段式退休：
 /// 预热 0.99 → 收束带撤快照）。
 ///
@@ -984,13 +1031,16 @@ class HyperosPageRoute<T> extends PageRoute<T> {
       // 挂（它要包住页面本体），且在切口内侧：快照拍的是**页面像素本身**
       // （不带切口），滑入中的圆角由这层切口每帧现算 —— 烤死在照片里的缺口
       // 不会跟着收，收尾会露月牙（2026-10-18 真机第三轮）。
-      child: snapshotTransition
-          ? _MiuixNavSnapshotGate(
-              animation: animation,
-              onAttached: (gate) => _snapshotGate = gate,
-              child: builder(context),
-            )
-          : builder(context),
+      child: _MiuixNavLeadingCornerCut(
+        animation: animation,
+        child: snapshotTransition
+            ? _MiuixNavSnapshotGate(
+                animation: animation,
+                onAttached: (gate) => _snapshotGate = gate,
+                child: builder(context),
+              )
+            : builder(context),
+      ),
     );
   }
 

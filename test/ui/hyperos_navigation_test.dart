@@ -573,7 +573,7 @@ void main() {
     );
   });
 
-  testWidgets('页面图层不再挖圆角洞：四个角都是完整页面像素', (
+  testWidgets('圆角切口烘进页面自己的图层：合成期裁切丢帧也不露方角', (
     tester,
   ) async {
     // 2026-10-18 定案：圆角改成**画**出来的（页面外侧补一层页面底色补片），
@@ -665,25 +665,29 @@ void main() {
     }
 
     final midFlight = await capturePageLayer();
-    // 2026-10-18 定案：**不再挖洞**。页面图层四个角都必须是页面自己的不透明像素 ——
-    // 以前的「圆角切口」是从这一层里挖掉一块（alpha 0），贴边时再补上；重页面上
-    // 那一下只有 1~2 帧，就是用户反复报的「圆角闪现消失」。
+    // 切口必须烘在**页面自己的栅格**里（第十一轮真机：左上角「极其快速地闪现
+    // 恢复直角，一秒七八次」，左下角不闪 —— 正是外壳合成期裁切丢帧的表现）。
     expect(
       alphaOf(midFlight, 1, pageSize.height - 1),
-      255,
-      reason: '转场中页面左下角必须是完整页面像素（不再有圆角洞）',
+      0,
+      reason: '转场中页面左下角必须已经缺角（切口在框架缓存边界之内）',
     );
-    expect(alphaOf(midFlight, 1, 1), 255, reason: '左上同理');
+    expect(
+      alphaOf(midFlight, 1, 1),
+      0,
+      reason: '左上同理 —— 第十一轮真机上就是这块「极其快速地闪现恢复直角」：'
+          '外壳那层合成期裁切丢帧时，页面栅格本身必须已经缺角',
+    );
     expect(
       alphaOf(midFlight, radius, pageSize.height - radius),
       255,
-      reason: '圆心处本来就不该被切',
+      reason: '圆心处仍是页面像素（切口只切角）',
     );
 
     await tester.pumpAndSettle();
     final settled = await capturePageLayer();
-    expect(alphaOf(settled, 1, pageSize.height - 1), 255, reason: '停稳后同样完整');
-    expect(alphaOf(settled, 1, 1), 255, reason: '左上同理');
+    expect(alphaOf(settled, 1, pageSize.height - 1), 0, reason: '停稳后切口仍在（半径恒定）');
+    expect(alphaOf(settled, 1, 1), 0, reason: '左上同理');
   });
 
   testWidgets('快照滑入：转场中屏上是首帧快照，落定换回真页', (tester) async {
