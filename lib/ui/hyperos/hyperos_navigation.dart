@@ -168,14 +168,16 @@ abstract final class HyperosNavigation {
             ),
       );
 
-  /// 被覆盖页的透明度（1 = 不透明）：官方 `1 - 0.1 × 覆盖度`，末段按
-  /// [HyperosMiuixNavigation.coveredReleaseBand] 释放回 1。
+  /// 被覆盖页的透明度（1 = 不透明）：官方 `1 - 0.1 × 覆盖度`。
+  ///
+  /// 2026-10-18 起**不再有末段释放**：圆角切口里露出来的就是这层被压暗/降透明度
+  /// 的旧页，而「圆角看得见」靠的正是它与新页的**对比**。末段一释放，切口里的
+  /// 颜色跟新页拉平 → 圆角在贴边前就肉眼消失（用户第十三轮：「左上角接近边缘时
+  /// 一直是直角，能看到圆角转变的过程」）。释放包络本来是为了让「缩小的月牙」
+  /// 不显眼；现在半径恒定、月牙根本不缩，它只剩副作用。
   @visibleForTesting
   static double coveredAlphaFor(double coverValue) {
-    return 1 -
-        HyperosMiuixNavigation.coveredAlphaFalloff *
-            coverValue *
-            transitionCornerRadiusFactor(coverValue);
+    return 1 - HyperosMiuixNavigation.coveredAlphaFalloff * coverValue;
   }
 
   /// 压暗蒙层的 alpha：官方 `0.5 × 覆盖度`，末段按
@@ -188,9 +190,7 @@ abstract final class HyperosNavigation {
   /// `.agents/notes/implemented/bug-fix/2026-10-17-nav-corner-notch-flicker.md`。
   @visibleForTesting
   static double scrimAlphaFor(double coverValue) {
-    return HyperosMiuixNavigation.dimAmount *
-        coverValue *
-        transitionCornerRadiusFactor(coverValue);
+    return HyperosMiuixNavigation.dimAmount * coverValue;
   }
 
   /// 官方 miuix-nav `NavTransitions.MiuixDefault` + `NavDisplayEffects.Default`

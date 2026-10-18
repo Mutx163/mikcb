@@ -64,21 +64,62 @@ void main() {
     // 起始阈值按**离落点还剩多少屏宽**定：带宽 = 缓动后进度带宽 = 剩余距离的比例。
     // 用户口径「应该在贴边以后再变」，所以阈值必须远小于「看得出没贴边」的量：
     // 0.004 在 400dp 屏上是 1.6px。
-    const band = HyperosMiuixNavigation.cornerClipSettleBand;
-    expect(band, greaterThan(0), reason: '0 = 退回官方二值，会闪');
-    expect(band, lessThanOrEqualTo(0.005), reason: '400dp 屏上要 ≤2px 才开始收');
-    // 行进中还差 1% 屏宽（400dp 屏上 4px）时，必须还是满半径 —— 不能提前开始变。
-    expect(HyperosNavigation.transitionCornerRadiusFactor(0.99), 1);
-    // 末段连续收束（不是二值跳变）：越靠近落点越小，但落点前仍非 0。
-    final nearSettle = HyperosNavigation.transitionCornerRadiusFactor(
-      1 - band / 4,
-    );
-    expect(nearSettle, greaterThan(0));
-    expect(nearSettle, lessThan(0.5));
+    // 2026-10-18 第十三轮真机：「左上角接近边缘时一直是直角，能看到圆角转变的
+    // 过程」—— 根因就是末段把被覆盖页的压暗/透明度释放回原色，切口里的颜色和
+    // 新页拉平，圆角在贴边前就肉眼消失。释放包络撤回，全程走官方线性。
+    expect(HyperosNavigation.scrimAlphaFor(0.5), closeTo(0.25, 1e-9));
+    expect(HyperosNavigation.coveredAlphaFor(0.5), closeTo(0.95, 1e-9));
+    expect(HyperosNavigation.scrimAlphaFor(0), 0);
+    expect(HyperosNavigation.coveredAlphaFor(0), 1);
+
+    // 末端必须**保持**压暗与降透明度（不再归零）—— 切口里始终有对比。
     expect(
-      HyperosNavigation.transitionCornerRadiusFactor(1 - band / 8),
-      lessThan(nearSettle),
+      HyperosNavigation.scrimAlphaFor(1),
+      closeTo(HyperosMiuixNavigation.dimAmount, 1e-9),
+      reason: '贴边那一刻被覆盖页仍是满压暗：切口里的对比不能提前消失',
     );
+    expect(
+      HyperosNavigation.coveredAlphaFor(1),
+      closeTo(1 - HyperosMiuixNavigation.coveredAlphaFalloff, 1e-9),
+      reason: '同理，透明度衰减也不回弹',
+    );
+
+    // 全程单调递增、没有末段回弹。
+    var previous = HyperosNavigation.scrimAlphaFor(0);
+    for (var i = 1; i <= 20; i++) {
+      final current = HyperosNavigation.scrimAlphaFor(i / 20);
+      expect(current, greaterThanOrEqualTo(previous));
+      previous = current;
+    }    expect(HyperosNavigation.morphCornerRadiusFactor(1), 0);
+
+    // 锚点展开（日视图从锚点长成整屏）单独一条带宽：那条转场的面板底边内缩
+    // 正好是 `(1 - 进度) × 屏高`，所以带宽按屏高定 —— 850dp 屏上起收时底边
+    // 还差 1.7px，与滑动转场的 1.6px 同口径。
+    const expandBand = HyperosMiuixNavigation.anchorExpandCornerSettleBand;
+    expect(expandBand, greaterThan(0));
+    expect(expandBand, lessThanOrEqualTo(0.002), reason: '850dp 屏上 ≤1.7px');
+    for (final progress in <double>[0, 0.3, 0.5, 0.8, 0.9, 0.95]) {
+      expect(
+        HyperosNavigation.morphCornerRadiusFactor(progress, band: expandBand),
+        1,
+        reason: '进度 $progress 时面板还差 ${(1 - progress) * 100}% 屏高，半径不能提前收',
+      );
+    }
+    expect(HyperosNavigation.morphCornerRadiusFactor(1, band: expandBand), 0);
+    // 带宽 0 = 只在终点收平（官方二值行为的形变版，留作对照旋钮），不炸。
+    expect(HyperosNavigation.morphCornerRadiusFactor(0.5, band: 0), 1);
+    expect(HyperosNavigation.morphCornerRadiusFactor(1, band: 0), 0);
+
+    // 两条整圆角包装（`timetable_screen.dart` 的调用点各一行，所以参数烘焙在这里）：
+    // 卡片形变 22dp、锚点展开 28dp，两端与中段的形状都要对。
+    for (final radius in <double>[22, 28]) {
+      expect(HyperosNavigation.morphRadius(0, radius).topLeft.x, radius);
+      expect(HyperosNavigation.morphRadius(0.6, radius).topLeft.x, radius);
+    }
+    expect(HyperosNavigation.morphRadius(1, 22), BorderRadius.zero);
+    expect(HyperosNavigation.anchorExpandRadius(0).topLeft.x, 28);
+    expect(HyperosNavigation.anchorExpandRadius(0.9).topLeft.x, 28);
+    expect(HyperosNavigation.anchorExpandRadius(1), BorderRadius.zero);
   });
 
   test('形变类转场：圆角只收尾、不起头（贴边后才收平）', () {
@@ -155,42 +196,32 @@ void main() {
     expect(HyperosNavigation.anchorExpandRadius(1), BorderRadius.zero);
   });
 
-  test('末段释放：贴边那一段放掉压暗与透明度衰减，收口不再读作「闪成无圆角」', () {
-    // 行为被有意替换（2026-10-17 真机第二轮：掉帧治好后残留「圆角底部还是在
-    // 闪烁成无圆角的状态」）。机理见 HyperosMiuixNavigation.coveredReleaseBand
-    // 的注释与 `.agents/notes/implemented/bug-fix/2026-10-17-nav-corner-notch-flicker.md`。
-    const band = HyperosMiuixNavigation.cornerClipSettleBand;
-
-    // 中段（离两端都远）保持官方数值：压暗 0.5 × 覆盖度、透明度 1 - 0.1 × 覆盖度。
+  test('压暗与透明度全程单调、末段不再释放（切口里必须一直有对比）', () {
+    // 2026-10-18 第十三轮真机：「左上角接近边缘时一直是直角，能看到圆角转变的
+    // 过程」—— 根因是末段把被覆盖页的压暗/透明度释放回原色，切口里的颜色与新页
+    // 拉平，圆角在贴边前就肉眼消失。释放包络撤回，全程走官方线性。
     expect(HyperosNavigation.scrimAlphaFor(0.5), closeTo(0.25, 1e-9));
     expect(HyperosNavigation.coveredAlphaFor(0.5), closeTo(0.95, 1e-9));
-    // 收束起点之前一点必须还没动（只有带宽内才释放）。
+    expect(HyperosNavigation.scrimAlphaFor(0), 0);
+    expect(HyperosNavigation.coveredAlphaFor(0), 1);
     expect(
-      HyperosNavigation.scrimAlphaFor(1 - band * 2),
-      closeTo(HyperosMiuixNavigation.dimAmount * (1 - band * 2), 1e-9),
+      HyperosNavigation.scrimAlphaFor(1),
+      closeTo(HyperosMiuixNavigation.dimAmount, 1e-9),
+      reason: '贴边那一刻仍有满压暗：切口里的对比不能提前消失',
+    );
+    expect(
+      HyperosNavigation.coveredAlphaFor(1),
+      closeTo(1 - HyperosMiuixNavigation.coveredAlphaFalloff, 1e-9),
+      reason: '透明度衰减也不回弹',
     );
 
-    // 两端：压暗精确放光、被覆盖页回到完全不透明（切口里就是原色）。
-    expect(HyperosNavigation.scrimAlphaFor(0), 0);
-    expect(HyperosNavigation.scrimAlphaFor(1), 0);
-    expect(HyperosNavigation.coveredAlphaFor(0), 1);
-    expect(HyperosNavigation.coveredAlphaFor(1), 1);
-
-    // 连续释放，不是二值跳变（一帧之内变亮同样读作闪）。
-    var previous = HyperosNavigation.scrimAlphaFor(1 - band);
-    final start = previous;
-    expect(start, greaterThan(0.49), reason: '带宽起点应仍是接近满值的压暗');
-    for (var i = 1; i <= 4; i++) {
-      final current = HyperosNavigation.scrimAlphaFor(1 - band + band * i / 4);
-      expect(current, lessThan(previous));
-      expect(
-        previous - current,
-        lessThan(start * 0.5),
-        reason: '单步降幅要远小于总降幅 = 铺开释放，不是一帧跳变',
-      );
+    // 全程单调递增、没有末段回弹。
+    var previous = HyperosNavigation.scrimAlphaFor(0);
+    for (var i = 1; i <= 20; i++) {
+      final current = HyperosNavigation.scrimAlphaFor(i / 20);
+      expect(current, greaterThanOrEqualTo(previous));
       previous = current;
     }
-    expect(previous, 0);
   });
 
   testWidgets('前缘圆角保留：只裁滑入那一页、半径全程恒定；被覆盖页不裁', (
