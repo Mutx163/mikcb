@@ -378,6 +378,23 @@ abstract final class FramePerfProbe {
   static final List<int> _windowTotalsUs = <int>[];
   static int _windowTotalsDropped = 0;
 
+  /// 窗口起点的 [_fillPaintCount] 快照，用来算「这个窗口里玻璃填充画了几次」。
+  static int _windowFillPaintsAtStart = 0;
+
+  /// 预模糊壁纸填充（[PreblurredWallpaperAlignedFill]）累计 `paint` 次数。
+  ///
+  /// 由填充自己在 `paint` 里自增，探针只读不改。用途：判定「同样一段转场，为什么
+  /// 有壁纸预览的页面贵 3 倍」—— 若某个窗口里这个数随帧数一起涨，说明贴图 +
+  /// 折射着色器在逐帧重绘（`RepaintBoundary` 没能复用缓存）；若窗口里几乎不涨，
+  /// 那贵的是整页层的重新光栅化，跟填充无关。两种结论对应的改法完全不同。
+  static int _fillPaintCount = 0;
+
+  /// 探针是否已安装（release 下没加 `PERF_PROBE=true` 时是 false，别白记账）。
+  static bool get isInstalled => _installed;
+
+  /// 供 [PreblurredWallpaperAlignedFill] 调用：记一次填充绘制。
+  static void noteFillPaint() => _fillPaintCount++;
+
   /// 逐帧时间线最多记多少帧（≈ 120Hz 下 0.4 秒；窗口通常 60 帧上下）。
   static const int _windowTimelineCap = 48;
 
@@ -411,6 +428,7 @@ abstract final class FramePerfProbe {
     _windowOverCount = 0;
     _windowTotalsUs.clear();
     _windowTotalsDropped = 0;
+    _windowFillPaintsAtStart = _fillPaintCount;
   }
 
   static void _accumulateWindow({
@@ -484,6 +502,7 @@ abstract final class FramePerfProbe {
       'worstRasterMs=${_ms(worstRasterUs)} '
       'avgBuildMs=${(sumBuildUs / frames / 1000).toStringAsFixed(1)} '
       'avgRasterMs=${(sumRasterUs / frames / 1000).toStringAsFixed(1)} '
+      'fillPaints=${_fillPaintCount - _windowFillPaintsAtStart} '
       'timeline=$timeline',
     );
   }

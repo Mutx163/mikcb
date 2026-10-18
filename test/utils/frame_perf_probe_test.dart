@@ -189,6 +189,10 @@ void main() {
       expect(line, matches(RegExp(r'\bt=\d\d:\d\d:\d\d\.\d{3}\b')));
       // 名义预算（面板此刻报的刷新率）与生效预算并列，用来识别「被抖动带偏」。
       expect(line, contains('nominalMs='));
+      // 玻璃填充的逐帧重绘计数：判定「有壁纸预览的页面为什么每帧都贵」。
+      // 线已经在上面的窗口里定稿，这里只验字段存在。
+      expect(line, contains('fillPaints='));
+      expect(FramePerfProbe.isInstalled, isTrue);
     });
 
     test('同一瞬间连打两条标记会合并成一个标签', () {

@@ -10,6 +10,7 @@ import 'package:flutter/rendering.dart';
 import '../models/course_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../utils/home_page_background.dart';
+import '../utils/frame_perf_probe.dart' show FramePerfProbe;
 import 'course_glass_shader.dart';
 
 /// Identity of a cached pre-blurred wallpaper.
@@ -1392,6 +1393,11 @@ class _RenderPreblurredFill extends RenderBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
+    // 记账：转场期间这块填充是否在逐帧重绘（读数见 FramePerfProbe 的
+    // `fillPaints=`）。只在探针装上的 profile/release 构建里自增，一次整数加法。
+    if (FramePerfProbe.isInstalled) {
+      FramePerfProbe.noteFillPaint();
+    }
     final image = _image;
     if (image == null || size.isEmpty) {
       return;
