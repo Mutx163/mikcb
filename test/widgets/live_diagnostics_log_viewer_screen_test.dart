@@ -473,7 +473,8 @@ extras=
     await tester.pumpAndSettle();
     expect(find.textContaining('日志条目 250'), findsOneWidget);
     await dragToListTarget(tester, find.textContaining('日志条目 50'));
-    expect(find.textContaining('还有 50 条'), findsOneWidget);
+    // 同一轮文案净化（commit 9a5aace6）把分页行改成「… 剩余 N 条」。
+    expect(find.textContaining('剩余 50 条'), findsOneWidget);
     expect(find.textContaining('日志条目 49'), findsNothing);
 
     // 再次加载把最早一段全部载入，加载行随之消失。

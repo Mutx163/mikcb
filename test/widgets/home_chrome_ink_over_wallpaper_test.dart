@@ -268,7 +268,9 @@ void main() {
     );
 
     expect(find.text('文字对比度不足'), findsOneWidget);
-    expect(find.textContaining('浅色壁纸'), findsOneWidget);
+    // 2026-10-13 文案净化（commit 9a5aace6）把「浅色壁纸」改成「浅色背景」，
+    // 断言跟随新措辞；它守的仍是「浅底壁纸上要弹出对比度提醒」这件事。
+    expect(find.textContaining('浅色背景'), findsOneWidget);
     expect(_textColor(tester, '周一'), homePageChromeForegroundOnLight);
     expect(_textColor(tester, '1 周'), homePageChromeForegroundOnLight);
     expect(
