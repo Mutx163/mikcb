@@ -1478,6 +1478,97 @@ main {
   font-weight: 800;
 }
 
+/* 更新日志：本次重点卡片、分类计数与列表卡片摘要。
+   配色、圆角、间距全部取 :root 里的变量；prefers-color-scheme: dark 那一段
+   只是把同一组 token 再声明一次，所以新样式两套主题自动一致，无需另写覆盖。 */
+.seo-keypoints {
+  margin-top: 26px;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-tint);
+}
+
+.seo-keypoints-kicker {
+  margin: 0 0 12px;
+  color: var(--blue-hover);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.seo-keypoints-list,
+.seo-card-points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seo-keypoints-list {
+  display: grid;
+  gap: 10px;
+}
+
+.seo-keypoints-list li {
+  position: relative;
+  padding-left: 16px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.seo-keypoints-list li::before {
+  content: "";
+  position: absolute;
+  top: 0.68em;
+  left: 2px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+
+.seo-section-count {
+  color: var(--text-soft);
+  font-size: 0.82em;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.seo-card-points {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 14px;
+  color: var(--text-soft);
+}
+
+.seo-card-points li {
+  position: relative;
+  padding-left: 14px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.seo-card-points li::before {
+  content: "";
+  position: absolute;
+  top: 0.66em;
+  left: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+
+/* 覆盖 .seo-card p:not(.seo-card-kicker) 的 flex:1，让它只占一行高度 */
+.seo-card p.seo-release-count {
+  flex: none;
+  margin: 0 0 14px;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .seo-related-links {
   display: flex;
   flex-wrap: wrap;
@@ -1652,6 +1743,18 @@ main {
     align-items: flex-start;
     flex-direction: column;
     gap: 4px;
+  }
+
+  .seo-keypoints {
+    padding: 18px 16px;
+  }
+
+  .seo-keypoints-list li {
+    font-size: 0.95rem;
+  }
+
+  .seo-card-points li {
+    font-size: 0.86rem;
   }
 }
 

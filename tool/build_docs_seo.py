@@ -24,6 +24,14 @@ DOCS = ROOT / "docs"
 BASE_URL = "https://163366.xyz"
 TOPIC_LASTMOD = "2026-08-19"
 RELEASE_TYPES = ("新增", "优化", "修复", "调整", "测试", "移除", "更新")
+# 「本次重点」最多三条。发布说明顶部的 `> 本次重点：A、B、C` 会随 feed 以
+# keyPoints 字段下发；没有这个字段时按下文 release_key_points 的规则兜底。
+KEYPOINT_LIMIT = 3
+# 首屏长度上限（按字符）。feed 的 description 是把多条 highlight 用「 · 」
+# 拼起来的，原样当 lead 会让首屏变成第二份条目清单，所以只取第一句并截断。
+DETAIL_LEAD_LIMIT = 110
+DETAIL_POINT_LIMIT = 56
+INDEX_POINT_LIMIT = 52
 
 TOPIC_PAGES = (
     {
@@ -468,6 +476,138 @@ def release_item_url(version: Any) -> str:
     return f"{BASE_URL}/releases/v{slug_version(version)}.html"
 
 
+def strip_change_type(change_type: str, value: str) -> str:
+    """剥掉条目开头重复的类型词。
+
+    发布说明正在改成不带类型前缀的纯文本（「新增 桌面小组件预览」→
+    「桌面小组件预览」），但 feed 里已有旧数据仍带前缀。渲染前统一剥一次，
+    避免详情页出现「新增 / 新增 桌面小组件…」这种同词复读。只在文本确实以
+    同类型词开头时剥离，且不把文本剥成空串。
+    """
+    raw = text(value)
+    prefix = text(change_type)
+    if not raw or not prefix or not raw.startswith(prefix):
+        return raw
+    rest = raw[len(prefix):]
+    # 只认「类型词 + 一个空格」这种写法：像「更新提示：…」并不带前缀，
+    # 不能被误剥成「提示：…」，所以没有空格就原样返回。
+    if not rest.startswith(" "):
+        return raw
+    rest = rest[1:].strip()
+    return rest or raw
+
+
+def release_highlights(item: dict[str, Any]) -> list[tuple[str, str]]:
+    """规范化 highlights 成 [(类型, 文本)]，顺带做前缀剥离与空条目过滤。"""
+    raw_items = item.get("highlights", [])
+    if not isinstance(raw_items, list):
+        return []
+    normalized: list[tuple[str, str]] = []
+    for entry in raw_items:
+        if not isinstance(entry, dict):
+            continue
+        change_type = text(entry.get("type"), "更新")
+        value = strip_change_type(change_type, text(entry.get("text")))
+        if value:
+            normalized.append((change_type, value))
+    return normalized
+
+
+BRACKET_PAIRS = {"）": "（", "」": "「", "】": "【", "》": "《"}
+
+
+def drop_unclosed_brackets(value: str) -> str:
+    """去掉末尾没闭合的括号段，避免出现「（图标…」这种半截。"""
+    stack: list[tuple[str, int]] = []
+    for index, char in enumerate(value):
+        if char in ("（", "「", "【", "《"):
+            stack.append((char, index))
+        elif char in BRACKET_PAIRS and stack and stack[-1][0] == BRACKET_PAIRS[char]:
+            stack.pop()
+    return value[: stack[0][1]] if stack else value
+
+
+def shorten(value: str, limit: int) -> str:
+    """按子句边界截断，避免中文长句硬切成半截词或半个括号。"""
+    raw = text(value)
+    if len(raw) <= limit:
+        return raw
+    head = raw[:limit]
+    # 优先在子句边界收尾；找不到足够靠后的边界就老实硬切。
+    separators = ("。", "；", "，", "、", "：", " ")
+    positions = [head.rfind(separator) for separator in separators]
+    best = max((position for position in positions if position >= limit // 2), default=-1)
+    candidate = head[:best] if best > 0 else head
+    balanced = drop_unclosed_brackets(candidate)
+    if len(balanced) >= limit // 3:
+        candidate = balanced
+    candidate = candidate.rstrip("，、；：。 ")
+    return (candidate or head.rstrip()) + "…"
+
+
+def release_key_points(item: dict[str, Any]) -> list[str]:
+    """取「本次重点」：优先 keyPoints，缺失时退回 highlight 文本。
+
+    兜底顺序：先取 type 为「新增」的前三条（新功能通常就是本次重点），
+    一条「新增」都没有时退回前三条，保证老数据也有可扫读的重点。
+    返回的是完整文本，截断交给调用方按场景决定长度。
+    """
+    raw_points = item.get("keyPoints")
+    points: list[str] = []
+    if isinstance(raw_points, list):
+        for entry in raw_points:
+            # 只认字符串：作者数据里混进 dict / null 时跳过，别把 Python repr 印到页面上。
+            if not isinstance(entry, str):
+                continue
+            value = text(entry)
+            if value:
+                points.append(value)
+            if len(points) >= KEYPOINT_LIMIT:
+                break
+    if points:
+        return points
+
+    highlights = release_highlights(item)
+    fallback = [value for change_type, value in highlights if change_type == "新增"]
+    if not fallback:
+        fallback = [value for _change_type, value in highlights]
+    return fallback[:KEYPOINT_LIMIT]
+
+
+def release_summary(highlights: list[tuple[str, str]]) -> str:
+    """首屏那一句：只说这一版改了几项、各类几项，不重复罗列条目。
+
+    条目明细交给下方「本次重点」和分类小节；这里给的是分级信息，读一屏就
+    知道这一版的分量（例如「本次共 60 项更新：新增 2、优化 9、修复 49。」）。
+    """
+    if not highlights:
+        return ""
+    counts: dict[str, int] = {}
+    for change_type, _value in highlights:
+        counts[change_type] = counts.get(change_type, 0) + 1
+    ordered = [change_type for change_type in RELEASE_TYPES if change_type in counts]
+    ordered += [change_type for change_type in counts if change_type not in RELEASE_TYPES]
+    if len(ordered) == 1:
+        return f"本次共 {len(highlights)} 项更新，全部为{ordered[0]}。"
+    breakdown = "、".join(f"{change_type} {counts[change_type]}" for change_type in ordered)
+    return f"本次共 {len(highlights)} 项更新：{breakdown}。"
+
+
+def release_seo_description(description: str) -> str:
+    """meta / og 描述：把「本次重点」连成一句（feed description 本身就是重点列表）。
+
+    2026-10-18 之前只取第一段，结果 v2.1.3.3 的 meta 只有「超级岛「速览」」几个字，
+    SEO 上等于没写。现在把重点用顿号连起来，再按子句边界截到 110 字。
+    """
+    head = text(description).split("。")[0].replace(" · ", "、")
+    for change_type in RELEASE_TYPES:
+        stripped = strip_change_type(change_type, head)
+        if stripped != head:
+            head = stripped
+            break
+    return shorten(head, DETAIL_LEAD_LIMIT)
+
+
 def render_release_index(feed: dict[str, Any]) -> str:
     releases = [item for item in feed.get("releases", []) if isinstance(item, dict)]
     cards = []
@@ -476,9 +616,19 @@ def render_release_index(feed: dict[str, Any]) -> str:
         version = text(item.get("version"), "未知版本")
         title = text(item.get("title"), f"v{version}")
         url = f"./v{slug_version(version)}.html"
-        description = text(item.get("description"), "查看本次版本更新内容。")
+        highlights = release_highlights(item)
+        # 卡片上只留 3 条重点 + 条数：列表页要能一眼扫完，正文长度交给详情页。
+        points = [shorten(point, INDEX_POINT_LIMIT) for point in release_key_points(item)]
+        points_html = (
+            f'<ul class="seo-card-points">{"".join(f"<li>{body(point)}</li>" for point in points)}</ul>'
+            if points
+            else ""
+        )
+        count_html = (
+            f'<p class="seo-release-count">共 {len(highlights)} 项更新</p>' if highlights else ""
+        )
         cards.append(
-            f'<article class="seo-card"><p class="seo-card-kicker">{body(text(item.get("channelLabel"), "版本"))} · {body(date_only(item.get("publishedAt")))}</p><h2><a href="{url}">{body(title)}</a></h2><p>{body(description)}</p><a class="seo-inline-link" href="{url}">查看更新详情 →</a></article>'
+            f'<article class="seo-card"><p class="seo-card-kicker">{body(text(item.get("channelLabel"), "版本"))} · {body(date_only(item.get("publishedAt")))}</p><h2><a href="{url}">{body(title)}</a></h2>{points_html}{count_html}<a class="seo-inline-link" href="{url}">查看更新详情 →</a></article>'
         )
         item_list.append({"@type": "ListItem", "position": position, "url": f"{BASE_URL}/releases/v{slug_version(version)}.html", "name": title})
     description = "轻屿课表 Android 课表应用的版本更新日志，记录 HyperOS 超级岛、教务导入、WebDAV 云同步、提醒和小组件等功能变化。"
@@ -510,23 +660,44 @@ def render_release_index(feed: dict[str, Any]) -> str:
     )
 
 
+def render_section(change_type: str, entries: list[str]) -> str:
+    """分类小节：标题带条数（「新增 · 12」），正文是条目列表。"""
+    items = "".join(f"<li>{body(value)}</li>" for value in entries)
+    return (
+        f'<section class="seo-release-section">'
+        f'<h2>{body(change_type)} · <span class="seo-section-count">{len(entries)}</span></h2>'
+        f'<ul class="detail-list">{items}</ul></section>'
+    )
+
+
 def render_release_detail(item: dict[str, Any]) -> str:
     version = text(item.get("version"), "未知版本")
     title = text(item.get("title"), f"v{version}")
     published = date_only(item.get("publishedAt"))
     description = text(item.get("description"), "查看轻屿课表本次版本更新内容。")
-    highlights = [entry for entry in item.get("highlights", []) if isinstance(entry, dict)]
+    highlights = release_highlights(item)
     grouped: dict[str, list[str]] = defaultdict(list)
-    for entry in highlights:
-        grouped[text(entry.get("type"), "更新")].append(text(entry.get("text")))
+    for change_type, value in highlights:
+        grouped[change_type].append(value)
     sections = []
     for change_type in RELEASE_TYPES:
         entries = grouped.get(change_type, [])
         if entries:
-            sections.append(f'<section class="seo-release-section"><h2>{body(change_type)}</h2><ul class="detail-list">{"".join(f"<li>{body(value)}</li>" for value in entries)}</ul></section>')
+            sections.append(render_section(change_type, entries))
+    # 未登记的类型排在已登记类型之后，保持数据里出现的先后顺序。
     for change_type, entries in grouped.items():
         if change_type not in RELEASE_TYPES and entries:
-            sections.append(f'<section class="seo-release-section"><h2>{body(change_type)}</h2><ul class="detail-list">{"".join(f"<li>{body(value)}</li>" for value in entries)}</ul></section>')
+            sections.append(render_section(change_type, entries))
+    lead = release_summary(highlights) or release_seo_description(description)
+    key_points = [shorten(point, DETAIL_POINT_LIMIT) for point in release_key_points(item)]
+    key_points_html = ""
+    if key_points:
+        key_points_html = (
+            '<section class="seo-keypoints">'
+            '<h2 class="seo-keypoints-kicker">本次重点</h2>'
+            f'<ul class="seo-keypoints-list">{"".join(f"<li>{body(point)}</li>" for point in key_points)}</ul>'
+            '</section>'
+        )
     if not sections:
         sections.append(f'<p>{body(description)}</p>')
     release_url = text(item.get("releaseUrl"), "https://github.com/Mutx163/mikcb/releases")
@@ -537,7 +708,8 @@ def render_release_detail(item: dict[str, Any]) -> str:
   <p class="section-label">{body(text(item.get("channelLabel"), "版本"))}</p>
   <h1>轻屿课表 {body(title)} 更新日志</h1>
   <p class="seo-release-meta">发布时间：{body(published or "未标注")} · Android 课表 App · HyperOS / 教务导入 / 课程提醒</p>
-  <p class="seo-lead">{body(description)}</p>
+  <p class="seo-lead">{body(lead)}</p>
+  {key_points_html}
   {"".join(sections)}
   <div class="seo-related-links"><a class="primary-cta" href="{attr(download_url)}" target="_blank" rel="noreferrer">下载此版本</a><a class="secondary-cta" href="{attr(release_url)}" target="_blank" rel="noreferrer">查看 GitHub Release</a><a class="secondary-cta" href="./">返回更新列表</a></div>
 </section>"""
@@ -554,7 +726,8 @@ def render_release_detail(item: dict[str, Any]) -> str:
     }
     return document(
         title=f"轻屿课表 {title} 更新日志 - Android 课表 App",
-        description=description,
+        # meta/og 描述换成首句概括（约 110 字以内），完整条目留给正文与 JSON-LD。
+        description=release_seo_description(description) or description,
         canonical=release_item_url(version),
         prefix="../",
         content=content,
