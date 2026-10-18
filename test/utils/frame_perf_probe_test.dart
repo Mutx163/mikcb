@@ -179,6 +179,9 @@ void main() {
         nowUs: 24999,
         vsyncUs: 24999,
       );
+      // 转场层计数：窗口内数两次「页面层被画了一次」。
+      FramePerfProbe.noteLayerPaint('page');
+      FramePerfProbe.noteLayerPaint('page');
       FramePerfProbe.debugIngest(buildUs: 1000, rasterUs: 1000, nowUs: 900000);
 
       // 那帧 32ms 同时会结算一条 burst，所以按标签挑出窗口行。
@@ -192,6 +195,8 @@ void main() {
       // 玻璃填充的逐帧重绘计数：判定「有壁纸预览的页面为什么每帧都贵」。
       // 线已经在上面的窗口里定稿，这里只验字段存在。
       expect(line, contains('fillPaints='));
+      // 转场各层的绘制次数：哪一层「次数 ≈ 帧数」就是它在逐帧重画。
+      expect(line, contains('layers=page:2'));
       expect(FramePerfProbe.isInstalled, isTrue);
     });
 

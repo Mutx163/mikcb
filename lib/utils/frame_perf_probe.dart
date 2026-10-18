@@ -395,6 +395,46 @@ abstract final class FramePerfProbe {
   /// 供 [PreblurredWallpaperAlignedFill] 调用：记一次填充绘制。
   static void noteFillPaint() => _fillPaintCount++;
 
+  /// 转场各层累计 `paint` 次数（层名 → 次数）。窗口起点的快照见
+  /// [_windowLayersAtStart]，输出成 `layers=`。
+  ///
+  /// 为什么要按层记：`fillPaints=0` 已经证明「页面里的壁纸填充没在重画」，
+  /// 但每帧 8~10ms 的代价还在。只数总帧数看不出是哪一层在重画 —— 页面层、
+  /// 淡出/压暗叠层、右侧补底条混在一起，结论会变成又一轮猜测。分开记之后，
+  /// 「某层次数 ≈ 帧数」就是它在逐帧重画的直接证据。
+  static final Map<String, int> _layerPaints = <String, int>{};
+
+  /// 窗口起点的 [_layerPaints] 快照。
+  static Map<String, int> _windowLayersAtStart = const <String, int>{};
+
+  /// 供转场各层调用：记一次「这一层这一帧被画了一次」。
+  static void noteLayerPaint(String name) {
+    _layerPaints[name] = (_layerPaints[name] ?? 0) + 1;
+  }
+
+  /// 本窗口内各层的绘制次数，`layers=page:41,overlay:41,bleed:0` 形式。
+  ///
+  /// 只列本窗口里涨过的层（静止页面不会画它那层，列出来全是 0 反而看不清）。
+  static String _formatLayerPaints() {
+    if (_layerPaints.isEmpty) {
+      return '-';
+    }
+    final names = _layerPaints.keys.toList()..sort();
+    final buffer = StringBuffer();
+    for (final name in names) {
+      final delta =
+          (_layerPaints[name] ?? 0) - (_windowLayersAtStart[name] ?? 0);
+      if (delta <= 0) {
+        continue;
+      }
+      if (buffer.isNotEmpty) {
+        buffer.write(',');
+      }
+      buffer.write('$name:$delta');
+    }
+    return buffer.isEmpty ? '-' : buffer.toString();
+  }
+
   /// 逐帧时间线最多记多少帧（≈ 120Hz 下 0.4 秒；窗口通常 60 帧上下）。
   static const int _windowTimelineCap = 48;
 
@@ -429,6 +469,7 @@ abstract final class FramePerfProbe {
     _windowTotalsUs.clear();
     _windowTotalsDropped = 0;
     _windowFillPaintsAtStart = _fillPaintCount;
+    _windowLayersAtStart = Map<String, int>.of(_layerPaints);
   }
 
   static void _accumulateWindow({
@@ -503,6 +544,7 @@ abstract final class FramePerfProbe {
       'avgBuildMs=${(sumBuildUs / frames / 1000).toStringAsFixed(1)} '
       'avgRasterMs=${(sumRasterUs / frames / 1000).toStringAsFixed(1)} '
       'fillPaints=${_fillPaintCount - _windowFillPaintsAtStart} '
+      'layers=${_formatLayerPaints()} '
       'timeline=$timeline',
     );
   }

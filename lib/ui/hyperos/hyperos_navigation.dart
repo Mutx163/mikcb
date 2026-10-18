@@ -424,7 +424,13 @@ class _MiuixNavPageTransition extends StatelessWidget {
           // 「圆角形状变化」可供掉帧放大。读数取上下两角的较小值、读不到则不裁。
           // 帧缓存边界：转场期间只重新合成「圆角裁切 + 位移」，
           // 页面像素直接复用，不再逐帧重栅格化整页。
-          child: RepaintBoundary(child: child),
+          //
+          // 探针放在**边界之内**（2026-10-19）：`page` 的计数只有在页面真的
+          // 被重新光栅化时才涨；计数 ≈ 帧数就说明缓存没起作用，计数 ≈ 1 则
+          // 说明页面像素是复用的、贵在别处。放在边界之外会恒等于帧数，读不出这个。
+          child: RepaintBoundary(
+            child: _LayerPaintProbe(name: 'page', child: child),
+          ),
         );
 
         // 视差补底**恒挂**（红线：不许按 cover 增删包装）：页面右侧 bleed 出去
@@ -463,6 +469,40 @@ class _MiuixNavPageTransition extends StatelessWidget {
       return logicalPx;
     }
     return (logicalPx * devicePixelRatio).roundToDouble() / devicePixelRatio;
+  }
+}
+
+/// 转场里的一层「计数标签」：只数这一层这一帧被画了几次，不改变任何绘制行为。
+///
+/// 结构恒定红线不破 —— 它是常挂在树上的直通代理节点（[RenderProxyBox]），
+/// 从不按动画状态增删。探针没安装时 `paint` 里只多一次布尔判断。
+///
+/// 为什么要它：`fillPaints=0` 已经把「页面里的壁纸填充」排除掉了，但每帧
+/// 8~10ms 还在。剩下三个嫌疑（页面层被逐帧重新光栅化 / 淡出压暗叠层全屏重涂 /
+/// 右侧补底条）在总耗时里混成一团，只能靠分开计数区分。
+class _LayerPaintProbe extends SingleChildRenderObjectWidget {
+  const _LayerPaintProbe({required this.name, required Widget super.child});
+
+  /// 输出里的层名（`layers=page:41,overlay:41`）。
+  final String name;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderLayerPaintProbe(name);
+}
+
+class _RenderLayerPaintProbe extends RenderProxyBox {
+  _RenderLayerPaintProbe(this.name);
+
+  /// 层名恒定（每个调用点写死一个），所以不需要 setter / 重绘。
+  final String name;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (FramePerfProbe.isInstalled) {
+      FramePerfProbe.noteLayerPaint(name);
+    }
+    super.paint(context, offset);
   }
 }
 
@@ -526,7 +566,10 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
             top: 0,
             bottom: 0,
             width: bleedWidth - width,
-            child: ColoredBox(color: surface),
+            child: _LayerPaintProbe(
+              name: 'bleed',
+              child: ColoredBox(color: surface),
+            ),
           ),
           // 高度必须顶死：外层 Stack 给非定位子级的是**放宽后**的约束
           // （min=0）。路由静止时给页面的是撑满视口的紧约束；这里若只锁
@@ -551,7 +594,10 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
             bottom: 0,
             width: overlay.a > 0 ? width : 0,
             child: IgnorePointer(
-              child: ColoredBox(color: overlay),
+              child: _LayerPaintProbe(
+                name: 'overlay',
+                child: ColoredBox(color: overlay),
+              ),
             ),
           ),
         ],
