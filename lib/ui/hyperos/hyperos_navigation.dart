@@ -419,8 +419,17 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
 
   final Widget child;
 
+  /// 淡出与压暗合成为一层颜色（两者都是纯色，先后叠涂等价于先合成再涂一次）。
+  ///
+  /// 见 build 里那段注释：这是每帧一次全屏填充的差别。
+  Color get _overlay => Color.alphaBlend(
+        Colors.black.withValues(alpha: scrimAlpha),
+        surface.withValues(alpha: fadeAlpha),
+      );
+
   @override
   Widget build(BuildContext context) {
+    final overlay = _overlay;
     return SizedBox(
       width: bleedWidth,
       height: double.infinity,
@@ -446,37 +455,23 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
           // 转场露出的那条就是黑带（2026-09-28 真机现象）。∞ 经 enforce
           // 收成 incoming 的 max，正好还原静止时的紧约束。
           SizedBox(width: width, height: double.infinity, child: child),
-          // 被覆盖页的「淡出」：用页面底色叠一层纯色，替代原来套在整页外面的
-          // `Opacity`（那层每帧一次全屏离屏合成，性能版日志实测 avgRaster
-          // 9~13ms 的主要来源）。恒挂、alpha 驱动，结构不变。
+          // 淡出 + 压暗**合成一层**（2026-10-18 第二十轮自查）：
           //
-          // 与旧 `Opacity` 的一处已知差异：旧实现是让旧页与**它底下的那一页**
-          // 混合，这里是往**页面底色**混合。只有「旧页自己是壁纸底」的页面
-          // （课表）能看出来，且只有 10% 的量级，还被压暗蒙层盖着；换来的是
-          // 每帧省掉一次全屏 saveLayer，值。
+          // 两者都是盖在同一块页面上的纯色，先后叠涂等价于先把它们按
+          // source-over 合成一个颜色、再涂一次 —— `Color.alphaBlend(黑@scrim,
+          // 底色@fade)` 就是那个结果。于是每帧少一次全屏混合（1280×2772 上一次
+          // 全屏填充在本机约 0.3~1ms，转场 500ms 里是 60 帧）。
+          //
+          // 栈顶页 `cover == 0` 时合成色 alpha 为 0：把宽度收成 0，画的是一个
+          // 零面积矩形（不再对正在滑动的页面糊一层全屏透明矩形）。只动宽度属性、
+          // 不动结构，红线不破。
           Positioned(
             left: 0,
             top: 0,
             bottom: 0,
-            width: width,
+            width: overlay.a > 0 ? width : 0,
             child: IgnorePointer(
-              child: ColoredBox(
-                color: surface.withValues(alpha: fadeAlpha),
-              ),
-            ),
-          ),
-          // 压暗蒙层：恒挂，alpha 属性驱动。只盖 [0, width] 视口段 ——
-          // bleed 条不压暗（它露出的时刻上层页面已经盖住了 [width, +∞) 侧，
-          // 且官方口径压暗的就是「底下的页面」）。位置恒定不随动画改约束。
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: width,
-            child: IgnorePointer(
-              child: ColoredBox(
-                color: Colors.black.withValues(alpha: scrimAlpha),
-              ),
+              child: ColoredBox(color: overlay),
             ),
           ),
         ],
