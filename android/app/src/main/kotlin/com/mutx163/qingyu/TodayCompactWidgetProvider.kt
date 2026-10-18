@@ -20,11 +20,11 @@ class TodayCompactWidgetProvider : BaseQingyuWidgetProvider() {
             if (examText == null || base.contains('\n')) base else "$base\n$examText"
     }
 
-    override fun renderWidget(
+    override fun buildRemoteViews(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int,
-    ) {
+    ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_today_compact)
         val snapshot = TodayWidgetSupport.readSnapshotForWidget(context, appWidgetId)
         val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
@@ -72,8 +72,8 @@ class TodayCompactWidgetProvider : BaseQingyuWidgetProvider() {
                 isExamOngoing ->
                     TodayWidgetSupport.examDisplayName(snapshot)
                         ?: context.getString(R.string.widget_exam_fallback_name)
-                state == "holiday" ->
-                    snapshot.holidayName ?: context.getString(R.string.widget_on_holiday)
+                TodayWidgetSupport.isDayOff(snapshot) ->
+                    TodayWidgetSupport.dayOffHeadline(context, snapshot)
                 isShowingTomorrow -> snapshot.tomorrowCourses.first().name
                 state == "completed" -> context.getString(R.string.widget_today_courses)
                 else -> TodayWidgetSupport.heroCourseName(context, snapshot)
@@ -84,9 +84,9 @@ class TodayCompactWidgetProvider : BaseQingyuWidgetProvider() {
             when {
                 snapshot == null -> context.getString(R.string.widget_tap_to_open)
                 isExamOngoing -> TodayWidgetSupport.examOngoingMetaText(context, snapshot)
-                state == "holiday" -> {
+                TodayWidgetSupport.isDayOff(snapshot) -> {
                     val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
-                    examText ?: context.getString(R.string.widget_rest_well)
+                    examText ?: TodayWidgetSupport.dayOffSubline(context, snapshot)
                 }
                 isShowingTomorrow -> {
                     val first = snapshot.tomorrowCourses.first()
@@ -136,7 +136,7 @@ class TodayCompactWidgetProvider : BaseQingyuWidgetProvider() {
         // 恒为 null → 沿用中性色，与加色前逐像素一致）。
         val accentCourse = when {
             snapshot == null -> null
-            isExamOngoing || state == "holiday" -> null
+            isExamOngoing || TodayWidgetSupport.isDayOff(snapshot) -> null
             isShowingTomorrow -> snapshot.tomorrowCourses.firstOrNull()
             else -> snapshot.highlightedCourse
         }
@@ -206,6 +206,6 @@ class TodayCompactWidgetProvider : BaseQingyuWidgetProvider() {
             TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId)
         )
 
-        appWidgetManager.updateAppWidget(appWidgetId, views)
+        return views
     }
 }

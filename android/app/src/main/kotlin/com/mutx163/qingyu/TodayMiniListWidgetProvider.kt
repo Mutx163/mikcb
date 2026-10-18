@@ -15,11 +15,11 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
         }
     }
 
-    override fun renderWidget(
+    override fun buildRemoteViews(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int,
-    ) {
+    ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_today_mini_list)
         val snapshot = TodayWidgetSupport.readSnapshotForWidget(context, appWidgetId)
         val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
@@ -79,11 +79,8 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
         } else {
             views.setTextViewText(
                 R.id.widget_mini_heading,
-                if (isShowingTomorrow) {
-                    context.getString(R.string.widget_tomorrow_courses)
-                } else {
-                    context.getString(R.string.widget_today_courses)
-                }
+                // 与其余卡型同一份实现：考试中 / 休息态 / 明日课程 / 今日课程。
+                TodayWidgetSupport.headingText(context, snapshot)
             )
             views.setTextViewText(
                 R.id.widget_mini_week,
@@ -123,12 +120,14 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
             val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
             val emptyText = when {
                 rows.isNotEmpty() -> ""
+                // 休息态（假期 / 周末 / 即将周末）：周末有课时走不到这里，
+                // 所以这句话只出现在确实没课的那天。
+                TodayWidgetSupport.isDayOff(snapshot) ->
+                    examText ?: TodayWidgetSupport.dayOffSubline(context, snapshot)
                 snapshot.state == "completed" && snapshot.tomorrowCourses.isEmpty() ->
                     examText ?: context.getString(R.string.widget_today_ended)
                 snapshot.state == "no_course" ->
                     examText ?: context.getString(R.string.widget_no_course_today)
-                snapshot.state == "holiday" ->
-                    examText ?: context.getString(R.string.widget_rest_well)
                 else -> examText ?: context.getString(R.string.widget_take_a_break)
             }
             views.setViewVisibility(
@@ -223,7 +222,7 @@ class TodayMiniListWidgetProvider : BaseQingyuWidgetProvider() {
             R.id.widget_mini_root,
             TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId)
         )
-        appWidgetManager.updateAppWidget(appWidgetId, views)
+        return views
         }
 
     private fun bindRow(

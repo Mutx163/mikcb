@@ -528,6 +528,9 @@ HomeWidgetSnapshot? _liveBuildHomeWidgetSnapshot(
             .toList(growable: false);
 
   final holidayEntry = host.getHolidayForDate(currentTime);
+  // 周末文案档位用：调休补班的周六日是上班日，卡片不能说「周末愉快」。
+  final todayIsAdjustedWorkday = host.isAdjustedWorkday(currentTime);
+  final tomorrowIsAdjustedWorkday = host.isAdjustedWorkday(tomorrow);
 
   return host._homeWidgetSnapshotService.build(
     profileId: profile.id,
@@ -546,6 +549,8 @@ HomeWidgetSnapshot? _liveBuildHomeWidgetSnapshot(
     tomorrowDayOfWeek: tomorrow.weekday,
     showTomorrowCourses: host._settings.widgetShowTomorrowCourses,
     originalTodayCourseCount: todayIsHoliday ? 0 : originalTodayCount,
+    isAdjustedWorkdayToday: todayIsAdjustedWorkday,
+    isAdjustedWorkdayTomorrow: tomorrowIsAdjustedWorkday,
   );
 }
 
@@ -609,6 +614,16 @@ HomeWidgetSnapshot? _liveBuildHomeWidgetSnapshotForProfile(
   final upcomingExams = profile.exams.where((exam) => !exam.isExpired).toList()
     ..sort(Exam.compareByStart);
   final nextExam = upcomingExams.isEmpty ? null : upcomingExams.first;
+  // 周末文案档位用（同上）：绑定课表走 profile 自己的节假日开关，
+  // 但调休补班标记没有开关，只认全局假期数据。
+  final todayIsAdjustedWorkday = HolidayResolver.isAdjustedWorkday(
+    currentTime,
+    data: host._holidayData,
+  );
+  final tomorrowIsAdjustedWorkday = HolidayResolver.isAdjustedWorkday(
+    tomorrow,
+    data: host._holidayData,
+  );
 
   return host._homeWidgetSnapshotService.build(
     profileId: profile.id,
@@ -627,6 +642,8 @@ HomeWidgetSnapshot? _liveBuildHomeWidgetSnapshotForProfile(
     tomorrowDayOfWeek: tomorrow.weekday,
     showTomorrowCourses: settings.widgetShowTomorrowCourses,
     originalTodayCourseCount: todayIsHoliday ? 0 : originalTodayCount,
+    isAdjustedWorkdayToday: todayIsAdjustedWorkday,
+    isAdjustedWorkdayTomorrow: tomorrowIsAdjustedWorkday,
   );
 }
 
@@ -775,6 +792,9 @@ HomeWidgetSnapshot? _liveBuildCoupleMergedHomeWidgetSnapshot(
         );
 
   final holidayEntry = host.getHolidayForDate(currentTime);
+  // 周末文案档位用（同 active 路径）。
+  final todayIsAdjustedWorkday = host.isAdjustedWorkday(currentTime);
+  final tomorrowIsAdjustedWorkday = host.isAdjustedWorkday(tomorrow);
 
   return host._homeWidgetSnapshotService.build(
     profileId: kHomeWidgetCoupleMergedBindingId,
@@ -793,6 +813,8 @@ HomeWidgetSnapshot? _liveBuildCoupleMergedHomeWidgetSnapshot(
     tomorrowDayOfWeek: tomorrow.weekday,
     showTomorrowCourses: host._settings.widgetShowTomorrowCourses,
     originalTodayCourseCount: todayIsHoliday ? 0 : originalTodayCount,
+    isAdjustedWorkdayToday: todayIsAdjustedWorkday,
+    isAdjustedWorkdayTomorrow: tomorrowIsAdjustedWorkday,
   );
 }
 

@@ -4268,6 +4268,15 @@ class AppLocalizationsKo extends AppLocalizations {
       '앱 정보 페이지를 열었습니다. 해당 페이지에서 \"알람 및 리마인더\"를 허용해 주세요';
 
   @override
+  String get homeWidgetPreviewTitle => '미리보기';
+
+  @override
+  String get homeWidgetPreviewAddAction => '홈 화면에 추가';
+
+  @override
+  String get homeWidgetPreviewUnavailable => '미리보기를 표시할 수 없음';
+
+  @override
   String get layoutSettingsTitle => '레이아웃 및 교시';
 
   @override

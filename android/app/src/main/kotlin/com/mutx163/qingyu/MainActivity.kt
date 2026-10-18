@@ -1000,6 +1000,41 @@ class MainActivity : FlutterActivity() {
                     "listTodayWidgetInstances" -> {
                         result.success(listTodayWidgetInstances())
                     }
+                    // 设置页「效果预览」：把一张卡片就地渲染成 PNG 交回 Flutter。
+                    // 只构建不下发（不复用任何真实 appWidgetId），桌面上的实例不受影响。
+                    "renderWidgetPreview" -> {
+                        val payload = call.arguments as? Map<*, *>
+                        val widgetType = payload?.get("widgetType") as? String
+                        val widthDp = (payload?.get("widthDp") as? Number)?.toInt() ?: 0
+                        val heightDp = (payload?.get("heightDp") as? Number)?.toInt() ?: 0
+                        val nightMode = payload?.get("nightMode") as? Boolean ?: false
+                        val languageTag = payload?.get("languageTag") as? String
+                        if (widgetType.isNullOrBlank() || widthDp <= 0 || heightDp <= 0) {
+                            result.error("INVALID_ARGUMENTS", "Missing widget preview spec", null)
+                        } else {
+                            val preview = WidgetPreviewRenderer.render(
+                                applicationContext,
+                                widgetType,
+                                widthDp,
+                                heightDp,
+                                nightMode,
+                                languageTag,
+                            )
+                            if (preview == null) {
+                                result.error("PREVIEW_FAILED", widgetType, null)
+                            } else {
+                                // 一起交回卡片本身的尺寸：图已裁到可见边界，
+                                // 按格位尺寸显示会让「数字是方的、看着是扁的」。
+                                result.success(
+                                    mapOf(
+                                        "png" to preview.png,
+                                        "widthDp" to preview.widthDp,
+                                        "heightDp" to preview.heightDp,
+                                    )
+                                )
+                            }
+                        }
+                    }
                     "getWidgetBinding" -> {
                         val appWidgetId = (call.arguments as? Map<*, *>)
                             ?.get("appWidgetId") as? Int
@@ -1617,22 +1652,12 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    /** 今日课程类卡型的 widgetType → Provider 映射（与 resolveWidgetProvider 对齐）。 */
-    private fun todayWidgetProviders(): List<Pair<String, Class<*>>> = listOf(
-        "compact" to TodayCompactWidgetProvider::class.java,
-        "mini_list" to TodayMiniListWidgetProvider::class.java,
-        "medium" to TodayMediumWidgetProvider::class.java,
-        "large" to TodayLargeWidgetProvider::class.java,
-        "today_strip" to TodayStripWidgetProvider::class.java,
-        "today_wide" to TodayWideWidgetProvider::class.java,
-    )
-
     private fun listTodayWidgetInstances(): List<Map<String, Any?>> {
         val appWidgetManager = getSystemService(AppWidgetManager::class.java)
             ?: return emptyList()
         val bindings = WidgetBindingStore.allBindings(this)
         val instances = mutableListOf<Map<String, Any?>>()
-        for ((widgetType, providerClass) in todayWidgetProviders()) {
+        for ((widgetType, providerClass) in WidgetProviderCatalog.todaySeries) {
             val ids = appWidgetManager.getAppWidgetIds(ComponentName(this, providerClass))
             for (appWidgetId in ids) {
                 instances.add(
@@ -1707,19 +1732,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun resolveWidgetProvider(widgetType: String): ComponentName? {
-        val providerClass = when (widgetType) {
-            "compact" -> TodayCompactWidgetProvider::class.java
-            "mini_list" -> TodayMiniListWidgetProvider::class.java
-            "medium" -> TodayMediumWidgetProvider::class.java
-            "large" -> TodayLargeWidgetProvider::class.java
-            "stats_compact" -> StatsCompactWidgetProvider::class.java
-            "stats_medium" -> StatsMediumWidgetProvider::class.java
-            "today_strip" -> TodayStripWidgetProvider::class.java
-            "stats_strip" -> StatsStripWidgetProvider::class.java
-            "exam_card" -> ExamCountdownWidgetProvider::class.java
-            "today_wide" -> TodayWideWidgetProvider::class.java
-            else -> null
-        } ?: return null
+        val providerClass = WidgetProviderCatalog.providerClass(widgetType) ?: return null
         return ComponentName(this, providerClass)
     }
 

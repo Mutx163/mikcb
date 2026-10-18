@@ -4239,6 +4239,15 @@ class AppLocalizationsJa extends AppLocalizations {
       'アプリ情報ページを開きました。そこで「アラームとリマインダー」を有効にしてください';
 
   @override
+  String get homeWidgetPreviewTitle => 'プレビュー';
+
+  @override
+  String get homeWidgetPreviewAddAction => 'ホーム画面に追加';
+
+  @override
+  String get homeWidgetPreviewUnavailable => 'プレビューを表示できません';
+
+  @override
   String get layoutSettingsTitle => 'レイアウトと時限';
 
   @override

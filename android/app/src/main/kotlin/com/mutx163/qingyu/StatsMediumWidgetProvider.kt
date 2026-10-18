@@ -29,11 +29,11 @@ class StatsMediumWidgetProvider : BaseQingyuWidgetProvider() {
         }
     }
 
-    override fun renderWidget(
+    override fun buildRemoteViews(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int,
-    ) {
+    ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_stats_medium)
         val snapshot = StatsWidgetSupport.readSnapshot(context)
         // 与今日系列同源的外观设置：背景风格 / 圆角 / 高度微调。
@@ -279,6 +279,6 @@ class StatsMediumWidgetProvider : BaseQingyuWidgetProvider() {
             TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId),
         )
 
-        appWidgetManager.updateAppWidget(appWidgetId, views)
+        return views
     }
 }

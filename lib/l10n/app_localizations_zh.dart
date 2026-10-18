@@ -4140,6 +4140,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetExactAlarmFallbackHint => '已打开应用设置，请开启闹钟和提醒权限';
 
   @override
+  String get homeWidgetPreviewTitle => '效果预览';
+
+  @override
+  String get homeWidgetPreviewAddAction => '添加到桌面';
+
+  @override
+  String get homeWidgetPreviewUnavailable => '预览暂不可用';
+
+  @override
   String get layoutSettingsTitle => '布局与节次';
 
   @override
@@ -15381,6 +15390,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homeWidgetExactAlarmFallbackHint => '已打開應用設置，請開啓鬧鐘和提醒權限';
+
+  @override
+  String get homeWidgetPreviewTitle => '效果預覽';
+
+  @override
+  String get homeWidgetPreviewAddAction => '加入桌面';
+
+  @override
+  String get homeWidgetPreviewUnavailable => '預覽暫時無法使用';
 
   @override
   String get layoutSettingsTitle => '布局與節次';
@@ -26664,6 +26682,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeWidgetExactAlarmFallbackHint => '已打開應用設置，請開啟鬧鐘和提醒權限';
+
+  @override
+  String get homeWidgetPreviewTitle => '效果預覽';
+
+  @override
+  String get homeWidgetPreviewAddAction => '加入桌面';
+
+  @override
+  String get homeWidgetPreviewUnavailable => '預覽暫時無法使用';
 
   @override
   String get layoutSettingsTitle => '布局與節次';

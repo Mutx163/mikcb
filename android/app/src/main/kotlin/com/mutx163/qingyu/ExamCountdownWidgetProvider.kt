@@ -28,11 +28,11 @@ class ExamCountdownWidgetProvider : BaseQingyuWidgetProvider() {
         }
     }
 
-    override fun renderWidget(
+    override fun buildRemoteViews(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int,
-    ) {
+    ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_exam_card)
         val snapshot = TodayWidgetSupport.readSnapshot(context)
         val style = snapshot?.backgroundStyle ?: "solid"
@@ -157,7 +157,7 @@ class ExamCountdownWidgetProvider : BaseQingyuWidgetProvider() {
             TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId),
         )
 
-        appWidgetManager.updateAppWidget(appWidgetId, views)
+        return views
         }
 
     private fun examMeta(snapshot: com.mutx163.qingyu.TodayWidgetSnapshotInfo): String {

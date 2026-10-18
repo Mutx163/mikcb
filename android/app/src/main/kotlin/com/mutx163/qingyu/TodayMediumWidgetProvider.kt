@@ -15,11 +15,11 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
         }
     }
 
-    override fun renderWidget(
+    override fun buildRemoteViews(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int,
-    ) {
+    ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_today_medium)
         val snapshot = TodayWidgetSupport.readSnapshotForWidget(context, appWidgetId)
         val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
@@ -194,7 +194,7 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
             R.id.widget_medium_root,
             TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId)
         )
-        appWidgetManager.updateAppWidget(appWidgetId, views)
+        return views
         }
 
     private fun bindRow(

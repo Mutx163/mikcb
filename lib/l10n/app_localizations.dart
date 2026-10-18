@@ -7665,6 +7665,24 @@ abstract class AppLocalizations {
   /// **'已打开应用设置，请开启闹钟和提醒权限'**
   String get homeWidgetExactAlarmFallbackHint;
 
+  /// No description provided for @homeWidgetPreviewTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'效果预览'**
+  String get homeWidgetPreviewTitle;
+
+  /// No description provided for @homeWidgetPreviewAddAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加到桌面'**
+  String get homeWidgetPreviewAddAction;
+
+  /// No description provided for @homeWidgetPreviewUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'预览暂不可用'**
+  String get homeWidgetPreviewUnavailable;
+
   /// No description provided for @layoutSettingsTitle.
   ///
   /// In zh, this message translates to:

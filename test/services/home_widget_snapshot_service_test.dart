@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/domain/weekend_mood_logic.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/home_widget_snapshot_service.dart';
@@ -256,4 +257,196 @@ void main() {
       expect(holiday.toJson()['courseAccentMode'], 'bar');
     },
   );
+
+  group('周末文案档位', () {
+    Course fridayCourse({
+      required String id,
+      required String startTime,
+      required String endTime,
+    }) {
+      return Course(
+        id: id,
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 5,
+        startSection: 1,
+        endSection: 2,
+        startTime: startTime,
+        endTime: endTime,
+      );
+    }
+
+    HomeWidgetSnapshot buildOn({
+      required DateTime now,
+      List<Course> todayCourses = const [],
+      List<Course> tomorrowCourses = const [],
+      int originalTodayCourseCount = 0,
+      int tomorrowDayOfWeek = 0,
+      bool isHoliday = false,
+      bool isAdjustedWorkdayToday = false,
+      bool isAdjustedWorkdayTomorrow = false,
+    }) {
+      return const HomeWidgetSnapshotService().build(
+        profileId: 'profile-1',
+        profileName: '默认课表',
+        currentWeek: 6,
+        settings: TimetableSettings.defaults(),
+        todayCourses: todayCourses,
+        tomorrowCourses: tomorrowCourses,
+        tomorrowDayOfWeek: tomorrowDayOfWeek,
+        originalTodayCourseCount: originalTodayCourseCount,
+        now: now,
+        isHoliday: isHoliday,
+        isAdjustedWorkdayToday: isAdjustedWorkdayToday,
+        isAdjustedWorkdayTomorrow: isAdjustedWorkdayTomorrow,
+      );
+    }
+
+    // 2026-03-28 / 03-29 是周六 / 周日；03-27 是周五。
+    test('周六没排课 → 档位 rest，但状态仍是 no_course 而不是 holiday', () {
+      final snapshot = buildOn(now: DateTime(2026, 3, 28, 10));
+
+      expect(snapshot.weekendMood, WeekendMood.rest);
+      // 关键：没有把周末升级成假期态——state 一改，安卓侧 26 处
+      // "holiday" 分支会连带改观感，还会清空明天课程列表。
+      expect(snapshot.state, HomeWidgetSnapshotState.noCourse);
+      expect(snapshot.holidayName, isNull);
+      expect(snapshot.toJson()['state'], 'no_course');
+      expect(snapshot.toJson()['weekendMood'], 'rest');
+    });
+
+    test('周日没排课 → 档位 rest', () {
+      final snapshot = buildOn(now: DateTime(2026, 3, 29, 21));
+      expect(snapshot.weekendMood, WeekendMood.rest);
+    });
+
+    test('周六有课 → 档位 none，课程照常显示', () {
+      final snapshot = buildOn(
+        now: DateTime(2026, 3, 28, 10),
+        todayCourses: [
+          fridayCourse(id: 'sat', startTime: '09:00', endTime: '11:00'),
+        ],
+      );
+
+      expect(snapshot.weekendMood, WeekendMood.none);
+      expect(snapshot.state, HomeWidgetSnapshotState.ongoing);
+      expect(snapshot.highlightedCourse?.id, 'sat');
+    });
+
+    test('周六的课全被停课 → 档位 none（那天确实排了课）', () {
+      final snapshot = buildOn(
+        now: DateTime(2026, 3, 28, 10),
+        originalTodayCourseCount: 2,
+      );
+
+      expect(snapshot.weekendMood, WeekendMood.none);
+      expect(snapshot.state, HomeWidgetSnapshotState.completed);
+    });
+
+    test('调休补班的周六没课 → 档位 none', () {
+      final snapshot = buildOn(
+        now: DateTime(2026, 5, 9, 10),
+        isAdjustedWorkdayToday: true,
+      );
+      expect(snapshot.weekendMood, WeekendMood.none);
+    });
+
+    test('周五最后一节课下课那一分钟 → 档位 ahead', () {
+      final snapshot = buildOn(
+        now: DateTime(2026, 3, 27, 17, 35),
+        todayCourses: [
+          fridayCourse(id: 'last', startTime: '14:00', endTime: '17:35'),
+        ],
+      );
+
+      expect(snapshot.weekendMood, WeekendMood.ahead);
+      expect(snapshot.state, HomeWidgetSnapshotState.completed);
+    });
+
+    test('周五还有课要上 → 档位 none', () {
+      final snapshot = buildOn(
+        now: DateTime(2026, 3, 27, 15, 50),
+        todayCourses: [
+          fridayCourse(id: 'last', startTime: '16:00', endTime: '17:35'),
+        ],
+      );
+
+      expect(snapshot.weekendMood, WeekendMood.none);
+      expect(snapshot.state, HomeWidgetSnapshotState.upcoming);
+      expect(snapshot.highlightedCourse?.id, 'last');
+    });
+
+    test('周五明天是调休补班 → 档位 none', () {
+      final snapshot = buildOn(
+        now: DateTime(2026, 3, 27, 18),
+        todayCourses: [
+          fridayCourse(id: 'last', startTime: '14:00', endTime: '17:35'),
+        ],
+        isAdjustedWorkdayTomorrow: true,
+      );
+      expect(snapshot.weekendMood, WeekendMood.none);
+    });
+
+    test('法定假期 → 档位 none，走假期态自己的文案', () {
+      final snapshot = buildOn(
+        now: DateTime(2026, 10, 1, 10),
+        isHoliday: true,
+      );
+
+      expect(snapshot.weekendMood, WeekendMood.none);
+      expect(snapshot.state, HomeWidgetSnapshotState.holiday);
+      expect(snapshot.toJson()['weekendMood'], 'none');
+    });
+
+    test('周末没课时快照仍带上明天的课（显示与否由原生门禁决定）', () {
+      final snapshot = buildOn(
+        now: DateTime(2026, 3, 28, 10),
+        tomorrowDayOfWeek: 1,
+        tomorrowCourses: [
+          Course(
+            id: 'mon',
+            name: '线性代数',
+            teacher: '王老师',
+            location: 'C305',
+            dayOfWeek: 1,
+            startSection: 3,
+            endSection: 4,
+            startTime: '10:10',
+            endTime: '11:50',
+          ),
+        ],
+      );
+
+      // Dart 侧只负责把数据算全；「周末不抢明天的课」这条规则落在原生
+      // isShowingTomorrowCourses 里（那里是唯一正源，有架构测试守着）。
+      expect(snapshot.weekendMood, WeekendMood.rest);
+      expect(snapshot.tomorrowCourses.single.id, 'mon');
+      expect(snapshot.tomorrowDayOfWeek, 1);
+    });
+
+    test('档位进 dedup json：内容变了才会重推卡片', () {
+      final friday = [
+        fridayCourse(id: 'last', startTime: '14:00', endTime: '17:35'),
+      ];
+      final before = buildOn(
+        now: DateTime(2026, 3, 27, 17, 34),
+        todayCourses: friday,
+      );
+      final after = buildOn(
+        now: DateTime(2026, 3, 27, 17, 35),
+        todayCourses: friday,
+      );
+
+      expect(before.weekendMood, WeekendMood.none);
+      expect(after.weekendMood, WeekendMood.ahead);
+      expect(before.toDedupJson()['weekendMood'], 'none');
+      expect(after.toDedupJson()['weekendMood'], 'ahead');
+      expect(
+        before.toDedupJson().toString(),
+        isNot(after.toDedupJson().toString()),
+        reason: '档位变了但内容没变的话卡片不会重画，周五傍晚就切不了文案',
+      );
+    });
+  });
 }

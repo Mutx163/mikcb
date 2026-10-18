@@ -158,4 +158,119 @@ class WidgetHolidayLogicTest {
         assertNull(widgetHolidayLabel("   "))
         assertNull(widgetHolidayLabel(null))
     }
+
+    @Test
+    fun adjustedWorkdayResolutionFollowsCustomRestOverride() {
+        val makeupOnly = listOf(
+            WidgetHolidayEntry(
+                date = "2026-10-10",
+                name = "调休上班",
+                type = "adjusted_workday",
+                groupId = "holiday-2026-1",
+            ),
+        )
+        assertTrue(widgetResolveIsAdjustedWorkday(makeupOnly, "2026-10-10"))
+        assertFalse(widgetResolveIsAdjustedWorkday(makeupOnly, "2026-10-11"))
+
+        val customRestOnMakeupDay = makeupOnly + WidgetHolidayEntry(
+            date = "2026-10-10",
+            name = "我要休息",
+            type = "vacation",
+            groupId = "custom-999",
+        )
+        assertFalse(widgetResolveIsAdjustedWorkday(customRestOnMakeupDay, "2026-10-10"))
+    }
+
+    @Test
+    fun weekendMoodParsingFallsBackToNoneForUnknownValues() {
+        assertEquals(WidgetWeekendMood.NONE, WidgetWeekendMood.fromValue("none"))
+        assertEquals(WidgetWeekendMood.REST, WidgetWeekendMood.fromValue("rest"))
+        assertEquals(WidgetWeekendMood.AHEAD, WidgetWeekendMood.fromValue("ahead"))
+        // 老快照没有这个键 / Flutter 塞了脏值：一律按「没有周末文案」处理。
+        assertEquals(WidgetWeekendMood.NONE, WidgetWeekendMood.fromValue(null))
+        assertEquals(WidgetWeekendMood.NONE, WidgetWeekendMood.fromValue(""))
+        assertEquals(WidgetWeekendMood.NONE, WidgetWeekendMood.fromValue("holiday"))
+        assertEquals("none", WidgetWeekendMood.NONE.value)
+        assertEquals("rest", WidgetWeekendMood.REST.value)
+        assertEquals("ahead", WidgetWeekendMood.AHEAD.value)
+    }
+
+    /** 与 Dart `resolveWeekendMood` 逐条同口径：周末文案只在确实没课的那天出现。 */
+    private fun mood(
+        dayOfWeek: Int,
+        hasAnyCourse: Boolean = false,
+        hasRemainingCourse: Boolean = false,
+        isHolidayToday: Boolean = false,
+        isAdjustedWorkdayToday: Boolean = false,
+        isAdjustedWorkdayTomorrow: Boolean = false,
+    ) = widgetResolveWeekendMood(
+        dayOfWeek = dayOfWeek,
+        hasAnyCourse = hasAnyCourse,
+        hasRemainingCourse = hasRemainingCourse,
+        isHolidayToday = isHolidayToday,
+        isAdjustedWorkdayToday = isAdjustedWorkdayToday,
+        isAdjustedWorkdayTomorrow = isAdjustedWorkdayTomorrow,
+    )
+
+    @Test
+    fun weekendWithoutCoursesGetsRestMood() {
+        assertEquals(WidgetWeekendMood.REST, mood(dayOfWeek = 6))
+        assertEquals(WidgetWeekendMood.REST, mood(dayOfWeek = 7))
+    }
+
+    @Test
+    fun weekendWithCoursesNeverClaimsTheWeekend() {
+        // 还有课要上 / 课都上完了 / 课全被停课：三种都算「那天有课」。
+        assertEquals(WidgetWeekendMood.NONE, mood(dayOfWeek = 6, hasAnyCourse = true, hasRemainingCourse = true))
+        assertEquals(WidgetWeekendMood.NONE, mood(dayOfWeek = 6, hasAnyCourse = true))
+        assertEquals(WidgetWeekendMood.NONE, mood(dayOfWeek = 7, hasAnyCourse = true))
+    }
+
+    @Test
+    fun makeupWorkdayOnWeekendIsNotTheWeekend() {
+        assertEquals(WidgetWeekendMood.NONE, mood(dayOfWeek = 6, isAdjustedWorkdayToday = true))
+        assertEquals(WidgetWeekendMood.NONE, mood(dayOfWeek = 7, isAdjustedWorkdayToday = true))
+    }
+
+    @Test
+    fun statutoryHolidayOnWeekendWinsOverWeekendMood() {
+        assertEquals(WidgetWeekendMood.NONE, mood(dayOfWeek = 6, isHolidayToday = true))
+        assertEquals(WidgetWeekendMood.NONE, mood(dayOfWeek = 7, isHolidayToday = true))
+    }
+
+    @Test
+    fun fridayAfterLastClassAnnouncesTheWeekend() {
+        assertEquals(
+            WidgetWeekendMood.AHEAD,
+            mood(dayOfWeek = 5, hasAnyCourse = true, hasRemainingCourse = false),
+        )
+        // 周五整天没排课：从零点就该显示，不等到下课。
+        assertEquals(WidgetWeekendMood.AHEAD, mood(dayOfWeek = 5))
+    }
+
+    @Test
+    fun fridayWithRemainingClassesKeepsShowingCourses() {
+        assertEquals(
+            WidgetWeekendMood.NONE,
+            mood(dayOfWeek = 5, hasAnyCourse = true, hasRemainingCourse = true),
+        )
+    }
+
+    @Test
+    fun fridayBeforeAMakeupSaturdayIsNotTheWeekend() {
+        assertEquals(
+            WidgetWeekendMood.NONE,
+            mood(dayOfWeek = 5, hasAnyCourse = true, isAdjustedWorkdayTomorrow = true),
+        )
+    }
+
+    @Test
+    fun weekdaysMondayToThursdayNeverClaimTheWeekend() {
+        for (dayOfWeek in 1..4) {
+            assertEquals(
+                WidgetWeekendMood.NONE,
+                mood(dayOfWeek = dayOfWeek),
+            )
+        }
+    }
 }

@@ -28,6 +28,8 @@
     <string name="widget_upcoming_later">Up next</string>
     <string name="widget_status_completed">Done for today</string>
     <string name="widget_status_holiday">Holiday today</string>
+    <string name="widget_status_weekend">Weekend</string>
+    <string name="widget_status_weekend_ahead">Weekend ahead</string>
     <string name="widget_status_no_course">No classes today</string>
     <string name="widget_status_exam_ongoing">In exam</string>
 
@@ -44,6 +46,9 @@
     <string name="widget_today_ended">Classes ended for today</string>
     <string name="widget_no_courses_today">No classes today</string>
     <string name="widget_rest_well">Enjoy your break</string>
+    <string name="widget_weekend_headline">Enjoy the weekend</string>
+    <string name="widget_weekend_ahead_headline">The weekend begins</string>
+    <string name="widget_weekend_ahead_meta">Tomorrow is the weekend</string>
     <string name="widget_no_more_courses">No more classes</string>
     <string name="widget_take_a_break">Take some time for yourself</string>
 

@@ -19,11 +19,11 @@ class TodayStripWidgetProvider : BaseQingyuWidgetProvider() {
         }
     }
 
-    override fun renderWidget(
+    override fun buildRemoteViews(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int,
-    ) {
+    ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_today_strip)
         val snapshot = TodayWidgetSupport.readSnapshotForWidget(context, appWidgetId)
         val style = snapshot?.backgroundStyle ?: "solid"
@@ -87,14 +87,15 @@ class TodayStripWidgetProvider : BaseQingyuWidgetProvider() {
                 isExamOngoing ->
                     TodayWidgetSupport.examDisplayName(snapshot)
                         ?: context.getString(R.string.widget_exam_fallback_name)
-                state == "holiday" -> snapshot.holidayName ?: context.getString(R.string.widget_on_holiday)
+                TodayWidgetSupport.isDayOff(snapshot) ->
+                    TodayWidgetSupport.dayOffHeadline(context, snapshot)
                 isShowingTomorrow -> snapshot.tomorrowCourses.first().name
                 else -> TodayWidgetSupport.heroCourseName(context, snapshot)
             }
         )
         // 课程色贯穿：主课色条 + 文字（档位关闭时恒回落中性色）。
         val accentCourse = when {
-            snapshot == null || isExamOngoing || state == "holiday" -> null
+            snapshot == null || isExamOngoing || TodayWidgetSupport.isDayOff(snapshot) -> null
             isShowingTomorrow -> snapshot.tomorrowCourses.firstOrNull()
             else -> snapshot.highlightedCourse
         }
@@ -123,8 +124,10 @@ class TodayStripWidgetProvider : BaseQingyuWidgetProvider() {
         val metaText = when {
             snapshot == null -> context.getString(R.string.widget_tap_to_open)
             isExamOngoing -> TodayWidgetSupport.examOngoingMetaText(context, snapshot)
-            state == "holiday" -> TodayWidgetSupport.examCountdownText(context, snapshot)
-                ?: context.getString(R.string.widget_rest_well)
+            // 假期 + 周末两档共用（考试倒计时优先，否则「好好休息 / 明天就是周末了」）。
+            TodayWidgetSupport.isDayOff(snapshot) ->
+                TodayWidgetSupport.examCountdownText(context, snapshot)
+                    ?: TodayWidgetSupport.dayOffSubline(context, snapshot)
             isShowingTomorrow -> snapshot.tomorrowCourses.first().let { course ->
                 course.startTime + " - " + course.endTime
             }
@@ -231,6 +234,8 @@ class TodayStripWidgetProvider : BaseQingyuWidgetProvider() {
                 state == "holiday" -> ""
                 isExamOngoing ->
                     TodayWidgetSupport.examCountdownText(context, snapshot) ?: ""
+                // 放在考试分支之后：周末撞上正在进行的考试时，倒计时行仍要显示。
+                TodayWidgetSupport.isDayOff(snapshot) -> ""
                 state == "ongoing" || state == "upcoming" ->
                     snapshot.tomorrowCourses.firstOrNull()?.let {
                         context.getString(R.string.widget_tomorrow_courses) + " " + it.startTime
@@ -255,6 +260,6 @@ class TodayStripWidgetProvider : BaseQingyuWidgetProvider() {
             TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId),
         )
 
-        appWidgetManager.updateAppWidget(appWidgetId, views)
+        return views
     }
 }

@@ -15,11 +15,11 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
         }
     }
 
-    override fun renderWidget(
+    override fun buildRemoteViews(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int,
-    ) {
+    ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_today_large)
         val snapshot = TodayWidgetSupport.readSnapshotForWidget(context, appWidgetId)
         val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
@@ -89,8 +89,8 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
                     isExamOngoing ->
                         TodayWidgetSupport.examDisplayName(snapshot)
                             ?: context.getString(R.string.widget_exam_fallback_name)
-                    snapshot.state == "holiday" ->
-                        snapshot.holidayName ?: context.getString(R.string.widget_on_holiday)
+                    TodayWidgetSupport.isDayOff(snapshot) ->
+                        TodayWidgetSupport.dayOffHeadline(context, snapshot)
                     isShowingTomorrow -> context.getString(R.string.widget_tomorrow_list_title)
                     else -> context.getString(R.string.widget_today_list_title)
                 }
@@ -99,7 +99,10 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
                 R.id.widget_large_subtitle,
                 when {
                     isExamOngoing -> TodayWidgetSupport.examOngoingMetaText(context, snapshot)
-                    snapshot.state == "holiday" -> context.getString(R.string.widget_rest_well)
+                    // 休息态：考试倒计时优先，否则「好好休息 / 明天就是周末了」。
+                    TodayWidgetSupport.isDayOff(snapshot) ->
+                        TodayWidgetSupport.examCountdownText(context, snapshot)
+                            ?: TodayWidgetSupport.dayOffSubline(context, snapshot)
                     isShowingTomorrow -> TodayWidgetSupport.footerText(context, snapshot)
                     snapshot.state == "no_course" -> context.getString(R.string.widget_no_schedule_today)
                     snapshot.state == "completed" -> TodayWidgetSupport.footerText(context, snapshot)
@@ -110,6 +113,9 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
             val emptyText = when {
                 isExamOngoing -> ""
                 isShowingTomorrow -> ""
+                // 休息态不补「今天没有课程安排」：大字与副文案已经把话说完了，
+                // 再压一行占位只会重复（假期态原本也走这条空串路径）。
+                TodayWidgetSupport.isDayOff(snapshot) -> ""
                 snapshot.state == "completed" && snapshot.tomorrowCourses.isEmpty() ->
                     context.getString(R.string.widget_today_ended)
                 snapshot.state == "no_course" -> context.getString(R.string.widget_no_course_today)
@@ -181,7 +187,7 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
             R.id.widget_large_root,
             TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId)
         )
-        appWidgetManager.updateAppWidget(appWidgetId, views)
+        return views
         }
 
     private fun setCourseRows(

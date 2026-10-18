@@ -1,3 +1,4 @@
+import '../domain/weekend_mood_logic.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/timetable_settings.dart';
@@ -101,6 +102,10 @@ class HomeWidgetSnapshot {
   final int tomorrowWeek;
   final int tomorrowDayOfWeek;
 
+  /// 周末文案档位（none / rest / ahead）。与 [state] 相互独立：
+  /// 档位只决定「没课时那句空槽文案」换不换成周末，不改变课程是否显示。
+  final WeekendMood weekendMood;
+
   const HomeWidgetSnapshot({
     required this.profileId,
     required this.profileName,
@@ -131,6 +136,7 @@ class HomeWidgetSnapshot {
     this.tomorrowCourses = const [],
     this.tomorrowWeek = 0,
     this.tomorrowDayOfWeek = 0,
+    this.weekendMood = WeekendMood.none,
   });
 
   Map<String, dynamic> toJson() {
@@ -166,6 +172,7 @@ class HomeWidgetSnapshot {
       'tomorrowCourses': tomorrowCourses.map((c) => c.toJson()).toList(),
       'tomorrowWeek': tomorrowWeek,
       'tomorrowDayOfWeek': tomorrowDayOfWeek,
+      'weekendMood': weekendMood.value,
     };
   }
 
@@ -200,6 +207,8 @@ class HomeWidgetSnapshotService {
     int tomorrowDayOfWeek = 0,
     bool showTomorrowCourses = true,
     int originalTodayCourseCount = 0,
+    bool isAdjustedWorkdayToday = false,
+    bool isAdjustedWorkdayTomorrow = false,
   }) {
     // Holiday: still surface the next exam so widgets keep the countdown.
     if (isHoliday) {
@@ -230,6 +239,7 @@ class HomeWidgetSnapshotService {
         nextExamLocation: nextExam?.location,
         nextExamStartTime: nextExam?.startTime,
         nextExamEndTime: nextExam?.endTime,
+        // 假期态自带文案（假期名），周末档位不叠加。
       );
     }
 
@@ -253,6 +263,17 @@ class HomeWidgetSnapshotService {
 
     final hasCoursesScheduled =
         todayCourses.isNotEmpty || originalTodayCourseCount > 0;
+    // 周末文案档位：只看「今天有没有排课」「还有没有课要上」，不动课表本身。
+    // 注意它必须在 currentCourse / upcomingCourse 之后算——周五那句
+    // 「周末要开始了」的门槛就是这两个都为空。
+    final weekendMood = resolveWeekendMood(
+      now: now,
+      hasAnyCourseToday: hasCoursesScheduled,
+      hasRemainingCourseToday: currentCourse != null || upcomingCourse != null,
+      isHolidayToday: isHoliday,
+      isAdjustedWorkdayToday: isAdjustedWorkdayToday,
+      isAdjustedWorkdayTomorrow: isAdjustedWorkdayTomorrow,
+    );
     final state = switch ((
       !hasCoursesScheduled,
       currentCourse,
@@ -319,6 +340,7 @@ class HomeWidgetSnapshotService {
           : const [],
       tomorrowWeek: tomorrowWeek,
       tomorrowDayOfWeek: tomorrowDayOfWeek,
+      weekendMood: weekendMood,
     );
   }
 

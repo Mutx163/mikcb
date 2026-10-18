@@ -19,11 +19,11 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
         }
     }
 
-    override fun renderWidget(
+    override fun buildRemoteViews(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int,
-    ) {
+    ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_today_wide)
         val snapshot = TodayWidgetSupport.readSnapshotForWidget(context, appWidgetId)
         val style = snapshot?.backgroundStyle ?: "solid"
@@ -87,13 +87,14 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
             isExamOngoing ->
                 TodayWidgetSupport.examDisplayName(snapshot)
                     ?: context.getString(R.string.widget_exam_fallback_name)
-            state == "holiday" -> snapshot.holidayName ?: context.getString(R.string.widget_on_holiday)
+            TodayWidgetSupport.isDayOff(snapshot) ->
+                TodayWidgetSupport.dayOffHeadline(context, snapshot)
             else -> TodayWidgetSupport.heroCourseName(context, snapshot)
         }
         views.setTextViewText(R.id.widget_wide_course, heroName)
         // 课程色贯穿：主课色条 + 文字（档位关闭时恒回落中性色）。
         val accentCourse = when {
-            snapshot == null || isExamOngoing || state == "holiday" -> null
+            snapshot == null || isExamOngoing || TodayWidgetSupport.isDayOff(snapshot) -> null
             isShowingTomorrow -> snapshot.tomorrowCourses.firstOrNull()
             else -> snapshot.highlightedCourse
         }
@@ -121,8 +122,10 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
         val timePart = when {
             snapshot == null -> context.getString(R.string.widget_tap_to_open)
             isExamOngoing -> TodayWidgetSupport.examOngoingMetaText(context, snapshot)
-            state == "holiday" -> TodayWidgetSupport.examCountdownText(context, snapshot)
-                ?: context.getString(R.string.widget_rest_well)
+            // 假期 + 周末两档共用：考试倒计时优先，否则「好好休息 / 明天就是周末了」。
+            TodayWidgetSupport.isDayOff(snapshot) ->
+                TodayWidgetSupport.examCountdownText(context, snapshot)
+                    ?: TodayWidgetSupport.dayOffSubline(context, snapshot)
             state == "no_course" ->
                 if (isSparseEnded) {
                     TodayWidgetSupport.rightInfoText(context, snapshot)
@@ -261,7 +264,7 @@ class TodayWideWidgetProvider : BaseQingyuWidgetProvider() {
             TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId),
         )
 
-        appWidgetManager.updateAppWidget(appWidgetId, views)
+        return views
         }
 
     private fun bindRow(

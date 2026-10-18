@@ -57,6 +57,13 @@ data class TodayWidgetSnapshotInfo(
     val tomorrowWeek: Int = currentWeek,
     /** 今天课程已结束时，明天的星期几 (1=周一 ... 7=周日) */
     val tomorrowDayOfWeek: Int = 0,
+    /**
+     * 「周末文案」档位（见 [WidgetWeekendMood]）。
+     *
+     * 独立于 [state]：周末有课必须照常走课程呈现，所以这个字段在周末有课时
+     * 恒为 NONE，绝不允许靠把周末塞进 `isHoliday` 来省事。
+     */
+    val weekendMood: WidgetWeekendMood = WidgetWeekendMood.NONE,
 )
 
 /** TA 绑定信息：周偏移（已钳制）+ 情侣三色（空值回落默认色板）。 */
@@ -345,6 +352,18 @@ object TodayWidgetSupport {
             upcomingCourse != null -> "upcoming"
             else -> "completed"
         }
+        // 周末文案档位：与 Dart resolveWeekendMood 同口径，独立算一遍（App 没跑过时
+        // 也要对）。调休补班标记不看 profile 开关，只认全局假期数据。
+        val weekendMood = resolveWeekendMood(
+            context = context,
+            nowCalendar = nowCalendar,
+            todayDateStr = todayDateStr,
+            holidayEntries = holidayEntries,
+            isHolidayToday = isHoliday,
+            todayWeekday = todayWeekday,
+            hasAnyCourseToday = todayCourses.isNotEmpty() || originalTodayCourseCount > 0,
+            hasRemainingCourseToday = currentCourse != null || upcomingCourse != null,
+        )
         val widgetShowCountdown = settingsJson.optBoolean("widgetShowCountdown", true)
         val countdownLeadMinutes = settingsJson.optInt("widgetCountdownLeadMinutes", 20)
         val effectiveShowCountdown = when {
@@ -503,6 +522,7 @@ object TodayWidgetSupport {
             tomorrowCourses = tomorrowCourses,
             tomorrowWeek = tomorrowWeek,
             tomorrowDayOfWeek = tomorrowDayOfWeek,
+            weekendMood = weekendMood,
         )
     }
 
@@ -802,6 +822,11 @@ internal fun findNextRefreshAtMillis(
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int,
     ): TodayWidgetSizeProfile {
+        // 设置页预览：目标尺寸由预览会话显式给定。预览没有真实 widget id，
+        // 去问系统只会拿到一张空 options，进而把每种卡片都判成同一档。
+        WidgetPreviewSession.sizeOverride?.let { (widthDp, heightDp) ->
+            return TodayWidgetSizeProfile(widthDp = widthDp, heightDp = heightDp)
+        }
         val options: Bundle = appWidgetManager.getAppWidgetOptions(appWidgetId)
         var width = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
         var height = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
@@ -831,6 +856,11 @@ internal fun findNextRefreshAtMillis(
         targetAspect: Float = 1f,
         maxAdaptiveInsetDp: Int = 18,
     ) {
+        // 预览里铺满格位：跳过这次内边距，卡片背景就等于格位本身（方卡变正方形）。
+        // 桌面路径不受影响——WidgetPreviewSession 只在预览会话期间非空。
+        if (WidgetPreviewSession.fillCell) {
+            return
+        }
         val vertical = adaptiveVerticalPaddingValue(
             profile,
             baseVerticalDp,
@@ -1044,22 +1074,30 @@ internal fun findNextRefreshAtMillis(
      * `UiModeManager.getNightMode` 反映系统设置里**当下**的档，不走进程本地配置缓存。
      * 定时切换（AUTO/CUSTOM）时系统档随时间变化，这里退回进程配置做兜底——
      * 手动切深浅（用户主诉场景）恒为 YES/NO，直读即可，不受进程配置过期影响。
+     *
+     * 2026-10-14 补 CUSTOM 档：Android 11+ 的「定时/自定义时段」报
+     * [UiModeManager.MODE_NIGHT_CUSTOM]，原先只对 AUTO 回落，CUSTOM 落进
+     * `else -> configured`，`isDarkMode` 恒 false → 夜间字色取浅色档、
+     * 底色仍由桌面按夜间资源取深色，深底深字。
      */
-    fun isDarkMode(context: Context): Boolean = currentSystemNightMode(context) ==
-        UiModeManager.MODE_NIGHT_YES
+    fun isDarkMode(context: Context): Boolean = WidgetPreviewSession.nightModeOverride
+        ?: (currentSystemNightMode(context) == UiModeManager.MODE_NIGHT_YES)
 
     private fun currentSystemNightMode(context: Context): Int {
         val uiModeManager = context.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
         val configured = uiModeManager?.nightMode
             ?: UiModeManager.MODE_NIGHT_AUTO
-        return if (configured == UiModeManager.MODE_NIGHT_AUTO) {
-            if (isNightNow(context)) {
+        return when (configured) {
+            // 跟时间走的档：日落日出（AUTO）与自定义时段（CUSTOM，Android 11+）。
+            // 系统档本身不告诉用户"此刻亮不亮"，回落到进程配置的当下档。
+            UiModeManager.MODE_NIGHT_AUTO,
+            UiModeManager.MODE_NIGHT_CUSTOM,
+            -> if (isNightNow(context)) {
                 UiModeManager.MODE_NIGHT_YES
             } else {
                 UiModeManager.MODE_NIGHT_NO
             }
-        } else {
-            configured
+            else -> configured
         }
     }
 
@@ -1307,6 +1345,9 @@ internal fun findNextRefreshAtMillis(
         if (isShowingTomorrowCourses(snapshot, nowMillis)) {
             return context.getString(R.string.widget_tomorrow_courses)
         }
+        if (isDayOff(snapshot)) {
+            return dayOffStatusText(context, snapshot)
+        }
         return statusText(context, snapshot.state)
     }
 
@@ -1317,6 +1358,11 @@ internal fun findNextRefreshAtMillis(
     ): String {
         if (isExamOngoing(snapshot, nowMillis)) {
             return "ongoing"
+        }
+        // 周末两档复用放假态的强调底色 / 胶囊配色：这个值只驱动样式（
+        // statusBackgroundRes / chipInkRole），不参与任何逻辑判断。
+        if (snapshot.state == "holiday" || snapshot.weekendMood != WidgetWeekendMood.NONE) {
+            return "holiday"
         }
         return snapshot.state
     }
@@ -1354,8 +1400,119 @@ internal fun findNextRefreshAtMillis(
         if (isExamOngoing(snapshot, nowMillis)) {
             return false
         }
+        // 周末文案优先于「明日课程」预告：切到明天会把整屏换成明天的列表，
+        // 周末没课的那张卡应该说的是「周末愉快」，不是「明天 3 节课」。
+        // 规则必须落在这里——它是唯一正源（有架构测试盯着 provider 不许内联）。
+        if (snapshot.weekendMood != WidgetWeekendMood.NONE) {
+            return false
+        }
         return (snapshot.state == "completed" || snapshot.state == "no_course")
             && snapshot.tomorrowCourses.isNotEmpty()
+    }
+
+    /**
+     * 周末文案档位（离线重算，App 没跑过时也要算对）。
+     *
+     * 调休补班标记不看 profile 的开关（Dart 侧 `TimetableProvider.isAdjustedWorkday`
+     * 也不看），只认全局假期数据；自定义放假条目优先于调休补班。
+     *
+     * 只有周末 / 周五才需要读明天的假期数据：周一～周四直接短路，省掉一次
+     * SharedPreferences + JSON 解析（卡片刷新很频繁，这条路径每次刷新都走）。
+     */
+    private fun resolveWeekendMood(
+        context: Context,
+        nowCalendar: Calendar,
+        todayDateStr: String,
+        holidayEntries: List<WidgetHolidayEntry>,
+        isHolidayToday: Boolean,
+        todayWeekday: Int,
+        hasAnyCourseToday: Boolean,
+        hasRemainingCourseToday: Boolean,
+    ): WidgetWeekendMood {
+        if (isHolidayToday) {
+            return WidgetWeekendMood.NONE
+        }
+        val isWeekend = todayWeekday == 6 || todayWeekday == 7
+        if (!isWeekend && todayWeekday != 5) {
+            return WidgetWeekendMood.NONE
+        }
+        val isAdjustedWorkdayToday = widgetResolveIsAdjustedWorkday(holidayEntries, todayDateStr)
+        val tomorrowCal = Calendar.getInstance().apply {
+            timeInMillis = nowCalendar.timeInMillis
+            add(Calendar.DAY_OF_YEAR, 1)
+        }
+        val tomorrowDateStr = widgetFormatDate(
+            year = tomorrowCal.get(Calendar.YEAR),
+            month = tomorrowCal.get(Calendar.MONTH) + 1,
+            dayOfMonth = tomorrowCal.get(Calendar.DAY_OF_MONTH),
+        )
+        val isAdjustedWorkdayTomorrow = widgetResolveIsAdjustedWorkday(
+            loadHolidayEntriesForDate(context, tomorrowCal),
+            tomorrowDateStr,
+        )
+        return widgetResolveWeekendMood(
+            dayOfWeek = todayWeekday,
+            hasAnyCourse = hasAnyCourseToday,
+            hasRemainingCourse = hasRemainingCourseToday,
+            isHolidayToday = isHolidayToday,
+            isAdjustedWorkdayToday = isAdjustedWorkdayToday,
+            isAdjustedWorkdayTomorrow = isAdjustedWorkdayTomorrow,
+        )
+    }
+
+    /**
+     * 「休息 / 放假」的统一谓词：假期态与周末两档共用同一套空态样式与文案。
+     *
+     * 原生侧原先散着二十余处 `state == "holiday"` 字面量比较；换成这个谓词后，
+     * 新增休息态只要改这里一处，六张卡片自动跟着走。
+     */
+    enum class DayOffKind { NONE, HOLIDAY, WEEKEND, WEEKEND_AHEAD }
+
+    fun dayOffKind(snapshot: TodayWidgetSnapshotInfo?): DayOffKind {
+        if (snapshot == null) {
+            return DayOffKind.NONE
+        }
+        if (snapshot.state == "holiday") {
+            return DayOffKind.HOLIDAY
+        }
+        return when (snapshot.weekendMood) {
+            WidgetWeekendMood.REST -> DayOffKind.WEEKEND
+            WidgetWeekendMood.AHEAD -> DayOffKind.WEEKEND_AHEAD
+            WidgetWeekendMood.NONE -> DayOffKind.NONE
+        }
+    }
+
+    /** 今天整体切到「没课」的空态（假期 / 周末 / 即将周末）。 */
+    fun isDayOff(snapshot: TodayWidgetSnapshotInfo?): Boolean =
+        dayOffKind(snapshot) != DayOffKind.NONE
+
+    /** 休息态胶囊文案：今日假期 / 周末 / 即将周末。 */
+    fun dayOffStatusText(context: Context, snapshot: TodayWidgetSnapshotInfo): String {
+        return when (dayOffKind(snapshot)) {
+            DayOffKind.HOLIDAY -> context.getString(R.string.widget_status_holiday)
+            DayOffKind.WEEKEND -> context.getString(R.string.widget_status_weekend)
+            DayOffKind.WEEKEND_AHEAD -> context.getString(R.string.widget_status_weekend_ahead)
+            DayOffKind.NONE -> statusText(context, snapshot.state)
+        }
+    }
+
+    /** 休息态大字：假期名 / 周末愉快 / 周末要开始了。 */
+    fun dayOffHeadline(context: Context, snapshot: TodayWidgetSnapshotInfo): String {
+        return when (dayOffKind(snapshot)) {
+            DayOffKind.HOLIDAY ->
+                snapshot.holidayName ?: context.getString(R.string.widget_on_holiday)
+            DayOffKind.WEEKEND -> context.getString(R.string.widget_weekend_headline)
+            DayOffKind.WEEKEND_AHEAD -> context.getString(R.string.widget_weekend_ahead_headline)
+            DayOffKind.NONE -> heroCourseName(context, snapshot)
+        }
+    }
+
+    /** 休息态副文案：好好休息 / 明天就是周末了。 */
+    fun dayOffSubline(context: Context, snapshot: TodayWidgetSnapshotInfo): String {
+        return when (dayOffKind(snapshot)) {
+            DayOffKind.WEEKEND_AHEAD -> context.getString(R.string.widget_weekend_ahead_meta)
+            else -> context.getString(R.string.widget_rest_well)
+        }
     }
 
     fun headingText(
@@ -1365,6 +1522,10 @@ internal fun findNextRefreshAtMillis(
     ): String {
         if (isExamOngoing(snapshot, nowMillis)) {
             return context.getString(R.string.widget_status_exam_ongoing)
+        }
+        // 大卡的胶囊与其它卡型的胶囊必须同一句文案，否则同一时刻两张卡对不上。
+        if (isDayOff(snapshot)) {
+            return dayOffStatusText(context, snapshot)
         }
         return if (isShowingTomorrowCourses(snapshot, nowMillis)) {
             context.getString(R.string.widget_tomorrow_courses)
@@ -1384,9 +1545,10 @@ internal fun findNextRefreshAtMillis(
     }
 
     fun heroCourseName(context: Context, snapshot: TodayWidgetSnapshotInfo): String {
+        if (isDayOff(snapshot)) {
+            return dayOffHeadline(context, snapshot)
+        }
         return when {
-            snapshot.state == "holiday" ->
-                snapshot.holidayName ?: context.getString(R.string.widget_on_holiday)
             snapshot.highlightedCourse != null -> snapshot.highlightedCourse.name
             isShowingTomorrowCourses(snapshot) ->
                 snapshot.tomorrowCourses.first().name
@@ -1396,8 +1558,8 @@ internal fun findNextRefreshAtMillis(
     }
 
     fun heroTimeText(context: Context, snapshot: TodayWidgetSnapshotInfo): String {
-        if (snapshot.state == "holiday") {
-            return context.getString(R.string.widget_rest_well)
+        if (isDayOff(snapshot)) {
+            return dayOffSubline(context, snapshot)
         }
         val highlighted = snapshot.highlightedCourse
         return when {
@@ -1442,8 +1604,8 @@ internal fun findNextRefreshAtMillis(
     }
 
     fun compactMetaText(context: Context, snapshot: TodayWidgetSnapshotInfo): String {
-        if (snapshot.state == "holiday") {
-            return context.getString(R.string.widget_rest_well)
+        if (isDayOff(snapshot)) {
+            return dayOffSubline(context, snapshot)
         }
         val highlighted = snapshot.highlightedCourse
         return when {
@@ -1682,6 +1844,10 @@ internal fun findNextRefreshAtMillis(
             tomorrowCourses = json.optJSONArray("tomorrowCourses")?.let(::parseCourses) ?: emptyList(),
             tomorrowWeek = json.optInt("tomorrowWeek", json.optInt("currentWeek", 1)),
             tomorrowDayOfWeek = json.optInt("tomorrowDayOfWeek", 0),
+            // Flutter 2026-10 起的快照才带这个键；老快照 / 老版本 App 一律回落 NONE。
+            weekendMood = WidgetWeekendMood.fromValue(
+                json.optString("weekendMood", WidgetWeekendMood.NONE.value),
+            ),
         )
     }
 

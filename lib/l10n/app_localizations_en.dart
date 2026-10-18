@@ -4430,6 +4430,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Opened the app info page. Enable \"Alarms & reminders\" there';
 
   @override
+  String get homeWidgetPreviewTitle => 'Preview';
+
+  @override
+  String get homeWidgetPreviewAddAction => 'Add to home screen';
+
+  @override
+  String get homeWidgetPreviewUnavailable => 'Preview unavailable';
+
+  @override
   String get layoutSettingsTitle => 'Layout & sections';
 
   @override

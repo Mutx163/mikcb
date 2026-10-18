@@ -33,11 +33,11 @@ class StatsStripWidgetProvider : BaseQingyuWidgetProvider() {
         }
     }
 
-    override fun renderWidget(
+    override fun buildRemoteViews(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int,
-    ) {
+    ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_stats_strip)
         val snapshot = StatsWidgetSupport.readSnapshot(context)
         val chrome = StatsWidgetSupport.readChrome(context)
@@ -259,6 +259,6 @@ class StatsStripWidgetProvider : BaseQingyuWidgetProvider() {
             TodayWidgetSupport.buildLaunchPendingIntent(context, appWidgetId),
         )
 
-        appWidgetManager.updateAppWidget(appWidgetId, views)
+        return views
     }
 }
