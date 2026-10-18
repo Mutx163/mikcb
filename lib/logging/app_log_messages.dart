@@ -23,6 +23,10 @@ abstract final class AppLogMessages {
       'log_home_widget_pin_request_failed';
   static const homeWidgetSyncFailed = 'log_home_widget_sync_failed';
   static const homeWidgetClearFailed = 'log_home_widget_clear_failed';
+
+  /// 设置页「效果预览」出图失败（界面上会显示「预览暂不可用」）。
+  static const homeWidgetPreviewRenderFailed =
+      'log_home_widget_preview_render_failed';
   static const wallpaperHistoryGlobalMigrationFailed =
       'log_wallpaper_history_global_migration_failed';
   static const wallpaperHistoryImportMergeFailed =
@@ -235,6 +239,8 @@ const Map<String, String> appLogCategoryLabels = {
   'home_widget_pin_request_failed': 'log_cat_home_widget_pin_request_failed',
   'home_widget_sync_failed': 'log_cat_home_widget_sync_failed',
   'home_widget_clear_failed': 'log_cat_home_widget_clear_failed',
+  'home_widget_preview_render_failed':
+      'log_cat_home_widget_preview_render_failed',
   'home_widget_schedule_failed': 'log_cat_home_widget_schedule_failed',
   'miui_live_initialize_failed': 'log_cat_miui_live_initialize_failed',
   'miui_live_open_promoted_settings_failed':

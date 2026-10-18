@@ -249,7 +249,17 @@ class HomeWidgetService {
     } on MissingPluginException {
       return null;
     } catch (e) {
-      appDebugLog('HomeWidget', '渲染小组件预览失败（${spec.target.value}）：$e');
+      // 预览渲染失败是用户可见的（设置页会显示「预览暂不可用」），落一条结构化
+      // 日志便于排查；文案走 l10n 键，不在这里内联中文——lib/ 的中文硬编码
+      // 审计是棘轮（只降不升），内联一行就会让 CI 红。
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_preview_render_failed',
+          AppLogMessages.homeWidgetPreviewRenderFailed,
+          error: e,
+          extras: {'target': spec.target.value},
+        ),
+      );
       return null;
     }
   }

@@ -50,6 +50,8 @@ abstract final class AppLogMessageLocalizer {
         l10n.logHomeWidgetPinRequestFailed,
       'log_home_widget_sync_failed' => l10n.logHomeWidgetSyncFailed,
       'log_home_widget_clear_failed' => l10n.logHomeWidgetClearFailed,
+      'log_home_widget_preview_render_failed' =>
+        l10n.homeWidgetPreviewUnavailable,
       'log_bing_wallpaper_request_failed' => l10n.logBingWallpaperRequestFailed,
       'log_bing_wallpaper_auto_apply_failed' =>
         l10n.logBingWallpaperAutoApplyFailed,
@@ -265,6 +267,8 @@ abstract final class AppLogMessageLocalizer {
         l10n.logCatHomeWidgetPinRequestFailed,
       'log_cat_home_widget_sync_failed' => l10n.logCatHomeWidgetSyncFailed,
       'log_cat_home_widget_clear_failed' => l10n.logCatHomeWidgetClearFailed,
+      'log_cat_home_widget_preview_render_failed' =>
+        l10n.homeWidgetPreviewTitle,
       'log_cat_home_widget_schedule_failed' =>
         l10n.logCatHomeWidgetScheduleFailed,
       'log_cat_miui_live_initialize_failed' =>
