@@ -148,6 +148,47 @@
 正文其余部分照旧遵守上一节（用户视角；优先写新增 / 优化 / 移除）。
 「重点」那行属于版本摘要的一部分，不写实现细节、不写版本号。
 
+## 发版前置体检（2026-10-18 新增）
+
+切版前先跑一条只读命令（2～5 秒）：
+
+```bash
+bash tool/release_preflight.sh
+```
+
+它逐项给出 PASS / WARN / FAIL：
+
+- pubspec 的 `-` 段与目标渠道一致；目标 tag 由版本推导，不用手填；
+- build number 比上一个 tag 大；版本号高于最后发布；
+- `docs/releases/v目标.md` 存在、首行标题匹配、有没有写「本次重点」；
+- 本地 / 远端是否已有同名 tag 或 Release（历史删过的同名 tag 也会被认出来）；
+- 工作区有哪些未提交 / 未跟踪条目 —— **这些不会进本次包**；
+- 落后 `origin/main` 几个提交；
+- 当前 HEAD 的 CI 是否已经全绿。
+
+有 FAIL 就别打 tag；WARN 先看一眼再决定。`--offline` 跳过联网项，`--retag` 只给
+Tag recovery 用（重打同名 tag 时先删远端 tag）。
+
+### 推送顺序：main 先绿，再打 tag（不要并行）
+
+1. `git push origin main`
+2. 等这次 push 的 CI 变绿（`gh run watch <run-id> --exit-status`）
+3. `git tag -a vX.Y.Z -m "chore: cut vX.Y.Z prerelease"` 并 `git push origin vX.Y.Z`
+
+tag 工作流的检查与 CI 同源：main 红则 tag 必挂，失败 tag 要走「删远端 tag → 重打」的
+恢复流程。**同 SHA 的绿灯会被 tag 工作流直接复用**（2026-10-18 起 `android-build.yml`
+的 check job 先查 `ci.yml` 有没有该 commit 的全绿记录），所以「先推 main 等绿」不再
+多花时间。
+
+### Windows 相关
+
+`tool/verify_release_pubspec.sh` 已兼容 CRLF（2026-10-18）。如果你看到
+「prerelease cut requires '-'」而版本里明明有 `-`，多半是 CRLF 造成的误报：
+用 `git show HEAD:pubspec.yaml` 的内容再跑一次即可。
+
+**GitCode 镜像**：Release 附件上传是异步的，GitHub Release 通过就算发布完成，
+不必等镜像同步。
+
 ## 一、当前发布机制
 
 当前仓库有四条 GitHub Actions 线：

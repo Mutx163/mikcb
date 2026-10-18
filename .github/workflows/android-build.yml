@@ -19,35 +19,95 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read # 复用 ci.yml 的绿灯需要读本仓 Actions 运行记录
 
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # 发版提速（2026-10-18）：tag 与 main 指向同一个 commit 时，ci.yml 已经把
+      # analyze / test / 编码 / CJK / HyperOS / JVM 单测全跑过一遍（是下面检查项的
+      # 超集）。同一 SHA 的绿灯直接复用，省掉这次重复的 7～8 分钟；查不到绿灯
+      # （没推 main、CI 还在跑、刚失败）就照常跑完整检查，一步不少。
+      - name: Reuse green CI for this commit
+        id: reuse
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_PROMPT_DISABLED: '1'
+        run: |
+          set -euo pipefail
+          green=$(gh run list --workflow=ci.yml --commit "${GITHUB_SHA}" --event push \
+            --limit 10 --json headBranch,conclusion \
+            --jq '[.[] | select(.headBranch == "main" and .conclusion == "success")] | length' \
+            || echo 0)
+          if [ "${green}" -gt 0 ]; then
+            echo "reuse=true" >> "$GITHUB_OUTPUT"
+            echo "✅ ${GITHUB_SHA} 在 main 上已有全绿 CI，跳过重复的 analyze/test"
+          else
+            echo "reuse=false" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ 没有可复用的绿灯，照常执行 analyze/test"
+          fi
+
+      # 无论是否复用都要现查：tag 与 pubspec 是否配套、发版说明在不在。
+      # 这几项只要几秒，却是「tag 打错版本 / 忘写 notes」的最后一道闸。
+      - name: Release metadata (fast)
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME#v}"
+          notes="docs/releases/v${tag}.md"
+          bytes=$(head -c 3 pubspec.yaml | od -An -tx1 | tr -d ' \n')
+          if [ "${bytes}" = "efbbbf" ]; then
+            echo "ERROR: pubspec.yaml 带 UTF-8 BOM"; exit 1
+          fi
+          version=$(awk '/^version:/{print $2; exit}' pubspec.yaml | tr -d '\r')
+          expected=$(printf '%s' "${version}" | awk -F'+' '{print $1}' | sed -E 's/-0$//; s/-([0-9]+)$/.\1/')
+          if [ "${expected}" != "${tag}" ]; then
+            echo "ERROR: tag ${tag} 与 pubspec ${version} 不配套（按 pubspec 应打 v${expected}）"; exit 1
+          fi
+          if [ ! -s "${notes}" ]; then
+            echo "ERROR: 缺少发版说明 ${notes}"; exit 1
+          fi
+          head_line=$(awk 'NF{print; exit}' "${notes}" | tr -d '\r')
+          if [ "${head_line}" != "# v${tag}" ]; then
+            echo "ERROR: ${notes} 首行是 '${head_line}'，应为 '# v${tag}'"; exit 1
+          fi
+          if ! grep -q '^> 本次重点' "${notes}"; then
+            echo "::warning file=${notes}::没有「> 本次重点」行，更新弹窗会退化成按分类优先级猜前 3 条"
+          fi
+          echo "release metadata OK: v${tag}"
+
       - name: Set up Java 17
+        if: steps.reuse.outputs.reuse != 'true'
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Flutter
+        if: steps.reuse.outputs.reuse != 'true'
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: ${{ env.FLUTTER_STABLE_VERSION }}
           cache: true
 
       - name: Record toolchain
+        if: steps.reuse.outputs.reuse != 'true'
         run: |
           flutter --version
           dart --version
 
       - name: Get dependencies
+        if: steps.reuse.outputs.reuse != 'true'
         run: flutter pub get
 
       - name: Analyze
+        if: steps.reuse.outputs.reuse != 'true'
         run: flutter analyze --fatal-infos
 
       - name: Test
+        if: steps.reuse.outputs.reuse != 'true'
         run: flutter test
 
   publish:

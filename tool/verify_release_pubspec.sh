@@ -11,8 +11,19 @@ if [[ ! -f "${PUBSPEC}" ]]; then
   exit 1
 fi
 
-if head -c 3 "${PUBSPEC}" | od -An -tx1 | grep -q 'ef bb bf'; then
-  echo "ERROR: ${PUBSPEC} has UTF-8 BOM (use UTF-8 without BOM)" >&2
+# Windows 工作区（git config core.autocrlf=true）里这份文件是 CRLF，
+# 而下面 `grep -E '^version: ...$'` 的 `$` 会撞上 `\r`：同一个合法版本号
+# （如 `2.1.3-3+138`）会被误判成「缺少 - 段」，让人以为 pubspec 写错了。
+# 一律先归一化成 LF 再校验；错误信息仍报调用方传进来的那个路径。
+PUBSPEC_INPUT="${PUBSPEC}"
+PUBSPEC_LF="$(mktemp)"
+trap 'rm -f "${PUBSPEC_LF}"' EXIT
+tr -d '\r' < "${PUBSPEC_INPUT}" > "${PUBSPEC_LF}"
+PUBSPEC="${PUBSPEC_LF}"
+
+HEAD_BYTES="$(head -c 3 "${PUBSPEC}" | od -An -tx1 | tr -d ' \n')"
+if [[ "${HEAD_BYTES}" == "efbbbf" ]]; then
+  echo "ERROR: ${PUBSPEC_INPUT} has UTF-8 BOM (use UTF-8 without BOM)" >&2
   exit 1
 fi
 
