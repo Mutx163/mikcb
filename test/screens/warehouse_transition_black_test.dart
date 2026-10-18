@@ -98,13 +98,10 @@ void main() {
     );
     final rect = tester.getRect(find.byType(WarehouseCourseImportScreen, skipOffstage: false));
     expect(rect.height, greaterThanOrEqualTo(600), reason: '转场中被盖页塌成 0 高 = 整页黑带');
-    // 视差**有意取 0**（2026-10-17，`coveredParallaxFraction` 0.25 → 0：视差让圆角
-    // 切口里出现「内容反流」，真机读作圆角在闪；机理见
-    // .agents/notes/implemented/bug-fix/2026-10-17-nav-corner-notch-flicker.md）。
-    // 被盖页因此不再左移，旧断言 `lessThan(0)` 随那条偏差失效 —— 本用例守的
-    // 「塌高露黑带」由上面的 height 断言继续守着，而「harness 确实跑在 trans
-    // 路径上」由上面的 `secondaryAnimation.status == forward` 钉住。
-    expect(rect.left, 0, reason: '视差取 0 后被盖页停在原位（旧断言 lessThan(0) 已随该偏差失效）');
+    // 2026-10-18 第十八轮：视差回到官方 1/4 屏宽（用户定案按官方样式走），
+    // 被盖页在转场中会向左让开 —— 恢复旧断言 `lessThan(0)`。
+    // 本用例真正守的是上面的 height：塌成 0 高就是整页黑带。
+    expect(rect.left, lessThan(0), reason: '官方视差 1/4 屏宽：被盖页让开（向左）');
   });
 
   testWidgets('pop 回落中被盖列表页保持整屏高度', (tester) async {

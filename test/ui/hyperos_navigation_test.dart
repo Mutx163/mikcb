@@ -1,12 +1,8 @@
-import 'dart:math' as math;
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/services/android_animation_scale_service.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
-import 'package:university_timetable/ui/hyperos/hyperos_motion.dart';
 
 void main() {
   test('AOSP 基准时长常量保持不变（页面转场已改用 miuix-nav 的 500ms）', () {
@@ -38,19 +34,18 @@ void main() {
     expect(HyperosMiuixNavigation.programmaticDurationMs, 500);
     expect(HyperosNavigation.transitionDuration.inMilliseconds, 500);
     // 官方 NavTransitions.MiuixDefault：被覆盖页视差 1/4 屏宽 + 0.1 透明度衰减。
-    // 视差**有意取 0**（2026-10-17，非官方)：视差让 28dp 的圆角切口里出现「内容
-    // 相对切口反向流动」，在天气页 / 小组件页这种内容密的页面上读作圆角底下一直闪。
-    // 断言值被有意替换，机理见 coveredParallaxFraction 的注释与
-    // `.agents/notes/implemented/architecture/2026-10-17-nav-corner-notch-flicker.md`。
-    expect(HyperosMiuixNavigation.coveredParallaxFraction, 0);
+    // 2026-10-18 第十八轮：视差**回到官方 0.25**（用户定案：按官方样式走，
+    // 不再自定义）。当年取 0 是为了避开「洞口里的内容反向流动」，前缘圆角撤掉
+    // 之后这条机理消失，没有理由再牺牲官方的后退感。
+    expect(HyperosMiuixNavigation.coveredParallaxFraction, 0.25);
     expect(HyperosMiuixNavigation.coveredAlphaFalloff, 0.1);
     // 官方 NavDisplayEffects.Default.dimAmount（全屏压暗上限）。
     expect(HyperosMiuixNavigation.dimAmount, 0.5);
-    // 前缘两角圆角：观感保留（官方 `Leading`），但**不再挖洞** —— 页面保持完整
-    // 矩形，圆角外侧那块用页面底色补片画出来（见 `_MiuixNavClippedPage`）。
-    // 2026-10-18 定案：洞会在贴边时被「补上」，重页面上那一下只有 1~2 帧，是
-    // 十轮真机反馈「圆角闪现消失」的来源。
-    expect(HyperosMiuixNavigation.clipLeadingCornersWhileMoving, isTrue);
+    // 前缘两角圆角：**关掉**（2026-10-18 第十八轮用户定案）。
+    // 官方 `NavCornerClipMode.Leading` 是「动的时候才裁、停稳不裁」的二值开关，
+    // 在本机型上被真机反复读成「圆角闪现消失 / 变直角」；用户要求不再纠结这个
+    // 效果，页面转场全程保持完整矩形，圆角只由系统的机身边角提供。
+    expect(HyperosMiuixNavigation.clipLeadingCornersWhileMoving, isFalse);
   });
 
   test('corner radius tapers to zero instead of toggling', () {
@@ -225,130 +220,6 @@ void main() {
     }
   });
 
-  testWidgets('前缘圆角保留：只裁滑入那一页、半径全程恒定；被覆盖页不裁', (
-    tester,
-  ) async {
-    // 2026-10-18 定案（第十一轮真机 + 截图）：旧的前缘「圆角」是从页面像素里
-    // **挖掉一个洞** —— 洞里露出被覆盖页（快照模式下洞底是纯黑，用户截图实测
-    // 左下角一块纯黑四分之一圆）。页面贴边后要把洞补上，重页面上这一下只有
-    // 1~2 帧，读作「圆角闪现消失」；十轮调时机/带宽/预热/栅格边界都没用。
-    //
-    // 现在圆角是**画**出来的：页面保持完整矩形（祖先链上没有 ClipRRect），
-    // 圆角外侧那块由 `_MiuixNavLeadingCornerNotchPainter` 补页面底色。观感不变，
-    // 但页面上没有洞 —— 没有可补的东西，转场全程没有圆角形状变化。
-    // 上面几条用例把用户倍速改成了 0.5，这里掰回 1 倍速，时长才可预期。
-    AndroidAnimationScaleService.setUserTransitionSpeed(1);
-    // 被覆盖页得**也是** HyperOS 路由：Flutter 只在被覆盖路由是
-    // `MaterialRouteTransitionMixin` 时才把上层路由的动画接到它的
-    // secondaryAnimation 上（`canTransitionTo`），而 `HyperosPageRoute` 是裸
-    // `PageRoute`。所以「首页 / MaterialPageRoute 被盖住」这条路根本不产生覆盖
-    // 动画，切口也不会出现；真机上出现切口的是**子页盖子子页**（用户报的就是
-    // 进出设置子页）。这里就照那条路走：先推一层子页，再盖它。
-    const enteringKey = ValueKey('entering-page');
-    await tester.pumpWidget(
-      MaterialApp(
-        // 与 app 同款：main.dart 给 theme 配了 `pageTransitionsTheme`。
-        theme: ThemeData(
-          pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
-        ),
-        home: Builder(
-          builder: (context) => Scaffold(
-            backgroundColor: HyperosColors.scaffoldBackground(context),
-            body: Center(
-              child: ElevatedButton(
-                onPressed: () => HyperosNavigation.push(
-                  context,
-                  builder: (coveredContext) => Scaffold(
-                    key: const ValueKey('covered-page'),
-                    backgroundColor: HyperosColors.scaffoldBackground(
-                      coveredContext,
-                    ),
-                    body: Center(
-                      child: Builder(
-                        builder: (inner) => ElevatedButton(
-                          onPressed: () => HyperosNavigation.push(
-                            inner,
-                            builder: (_) => const Scaffold(
-                              key: enteringKey,
-                              backgroundColor: Colors.white,
-                            ),
-                          ),
-                          child: const Text('push2'),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                child: const Text('push'),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // 先推一层并停稳，让第二层的被覆盖页是 HyperOS 路由。
-    await tester.tap(find.text('push'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('push2'));
-    await tester.pump();
-    // 首帧门槛（2026-10-16）：push 动画在新页首帧画完之前锁在 0，首帧的帧末
-    // 回调解锁、下一帧才锚定起点。上面那一 pump 就是首帧，这里再 pump 一次把
-    // 动画带过锚点帧 —— 之后 125ms 的步进读数与无门槛时同构。
-    await tester.pump(const Duration(milliseconds: 1));
-
-    // 圆角半径：设备读数（测试宿主 = 回退值 28），全程恒定。
-    final radius = HyperosMotionPlatform.displayCornerRadiusDp;
-    double? enteringRadius() {
-      final finder = find.ancestor(
-        of: find.byKey(enteringKey, skipOffstage: false),
-        matching: find.byType(ClipRRect, skipOffstage: false),
-      );
-      if (finder.evaluate().isEmpty) {
-        return null;
-      }
-      return tester
-          .widget<ClipRRect>(finder.first)
-          .borderRadius
-          .resolve(TextDirection.ltr)
-          .topLeft
-          .x;
-    }
-
-    // 转场中取三个时刻：滑入页必须一直带着同半径的前缘圆角（不随进度变）。
-    for (final fraction in [0.25, 0.5, 0.75]) {
-      await tester.pump(const Duration(milliseconds: 125));
-      expect(
-        enteringRadius(),
-        radius,
-        reason: 't=$fraction 滑入页的前缘圆角必须是恒定满半径 —— '
-            '末段一收就会在重页面上读作「圆角闪现成直角」',
-      );
-    }
-
-    await tester.pumpAndSettle();
-    expect(enteringRadius(), radius, reason: '停稳后半径仍是同一个值（没有收束那一帧）');
-
-    // 被覆盖页不裁：两层洞对齐会看穿到窗口黑底（第十轮截图里的黑圆角）。
-    // 被覆盖页的裁切层仍在树上（结构恒定），但**半径为 0** —— 两层洞对齐会
-    // 看穿到窗口黑底（第十轮用户截图里的黑圆角）。
-    final coveredClip = find.ancestor(
-      of: find.byKey(const ValueKey('covered-page'), skipOffstage: false),
-      matching: find.byType(ClipRRect, skipOffstage: false),
-    );
-    expect(
-      tester
-          .widget<ClipRRect>(coveredClip.first)
-          .borderRadius
-          .resolve(TextDirection.ltr)
-          .topLeft
-          .x,
-      0,
-      reason: '被覆盖页不裁（半径 0），但裁切层常挂',
-    );
-  });
 
   testWidgets('转场全程结构恒定：裁切 / 补底 / 压暗蒙层 / 透明度不随进度摘挂', (tester) async {
     // 2026-10-17 定案的回归（deactivate 探针之外的第二道保险，锁**层数指纹**）：
@@ -433,7 +304,9 @@ void main() {
     final firstClip = clipCount();
     final firstOpacity = opacityCount();
     final firstStack = stackCount();
-    expect(firstClip, greaterThan(0), reason: '裁切层常挂（半径 0 = 不裁），结构不随动画增删');
+    // 2026-10-18 第十八轮：前缘圆角已撤（用户定案按官方样式走，不再自定义），
+    // 页面在转场里是完整矩形 —— 被覆盖页身上**不该有**裁切层，而且全程都是 0。
+    expect(firstClip, 0, reason: '前缘不裁角：转场里不存在裁切层（用户 2026-10-18 定案）');
     expect(firstOpacity, greaterThan(0), reason: '被覆盖页应恒带透明度衰减');
 
     for (var i = 0; i < 8; i++) {
@@ -605,122 +478,6 @@ void main() {
     );
   });
 
-  testWidgets('圆角切口烘进页面自己的图层：合成期裁切丢帧也不露方角', (
-    tester,
-  ) async {
-    // 2026-10-18 定案：圆角改成**画**出来的（页面外侧补一层页面底色补片），
-    // 页面像素不再被裁掉一角。旧实现是挖洞：洞里露出被覆盖页 / 快照模式的纯黑，
-    // 贴边时要把洞补上 —— 重页面上那一下只有 1~2 帧，就是十轮反馈的「圆角闪现消失」。
-    //
-    // 本用例取页面自己的图层（最靠近页面的 RepaintBoundary），钉住：**四个角都
-    // 是完整的不透明页面像素** —— 只要这层没有洞，转场里就没有任何东西需要
-    // 「补」，也就没有可被掉帧放大的变化。
-    AndroidAnimationScaleService.setUserTransitionSpeed(1);
-    const enteringKey = ValueKey('entering-page');
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: ThemeData(
-          pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
-        ),
-        home: Builder(
-          builder: (context) => Scaffold(
-            backgroundColor: HyperosColors.scaffoldBackground(context),
-            body: Center(
-              child: ElevatedButton(
-                onPressed: () => HyperosNavigation.push(
-                  context,
-                  builder: (_) => const Scaffold(
-                    key: enteringKey,
-                    backgroundColor: Colors.white,
-                  ),
-                ),
-                child: const Text('push'),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('push'));
-    await tester.pump();
-    // 首帧门槛：动画在新页首帧画完前锁 0，下一帧才锚定起点（与其它转场用例同口径）。
-    await tester.pump(const Duration(milliseconds: 1));
-    // 中段（整条曲线前重后轻，250ms 处早已是满半径）。
-    await tester.pump(const Duration(milliseconds: 250));
-
-    final radius = HyperosMotionPlatform.displayCornerRadiusDp;
-    expect(radius, greaterThan(12), reason: '取样点按半径摆，太小就取不到切口里');
-
-    // 快照模式（2026-10-17）：转场中屏上是首帧快照。本用例钉的位置关系不变：
-    // 切口在**框架缓存边界之内**，所以对框架那层 RepaintBoundary 出图断言。
-    //
-    // 2026-10-18：闸门里给真页补了自己的栅格边界（换层不重画页面），它排在
-    // 切口**内侧** —— 从页面往上数的第一层是它，第二层才是框架的 `_subtreeKey`
-    // 缓存边界。取样必须取第二层，否则量到的是「切口外侧」的页面像素。
-    RenderObject? node =
-        tester.renderObject(find.byKey(enteringKey, skipOffstage: false));
-    RenderRepaintBoundary? frameworkBoundary;
-    var boundariesSeen = 0;
-    while (node != null) {
-      node = node.parent;
-      if (node is RenderRepaintBoundary) {
-        boundariesSeen++;
-        if (boundariesSeen == 2) {
-          frameworkBoundary = node;
-          break;
-        }
-      }
-    }
-    expect(
-      frameworkBoundary,
-      isNotNull,
-      reason: '页面外面应有闸门的页面栅格边界 + 框架的缓存边界两层',
-    );
-    final boundary = frameworkBoundary!;
-    final pageSize = boundary.size;
-
-    Future<ByteData> capturePageLayer() async {
-      final image = (await tester.runAsync(boundary.toImage))!;
-      final bytes = (await tester.runAsync(image.toByteData))!;
-      image.dispose();
-      return bytes;
-    }
-
-    int alphaOf(ByteData bytes, double fromLeft, double fromTop) {
-      final width = pageSize.width.round();
-      final height = pageSize.height.round();
-      final x = fromLeft.round().clamp(0, width - 1);
-      final y = fromTop.round().clamp(0, height - 1);
-      return bytes.getUint8((y * width + x) * 4 + 3);
-    }
-
-    final midFlight = await capturePageLayer();
-    // 切口必须烘在**页面自己的栅格**里（第十一轮真机：左上角「极其快速地闪现
-    // 恢复直角，一秒七八次」，左下角不闪 —— 正是外壳合成期裁切丢帧的表现）。
-    expect(
-      alphaOf(midFlight, 1, pageSize.height - 1),
-      0,
-      reason: '转场中页面左下角必须已经缺角（切口在框架缓存边界之内）',
-    );
-    expect(
-      alphaOf(midFlight, 1, 1),
-      0,
-      reason: '左上同理 —— 第十一轮真机上就是这块「极其快速地闪现恢复直角」：'
-          '外壳那层合成期裁切丢帧时，页面栅格本身必须已经缺角',
-    );
-    expect(
-      alphaOf(midFlight, radius, pageSize.height - radius),
-      255,
-      reason: '圆心处仍是页面像素（切口只切角）',
-    );
-
-    await tester.pumpAndSettle();
-    final settled = await capturePageLayer();
-    expect(alphaOf(settled, 1, pageSize.height - 1), 0, reason: '停稳后切口仍在（半径恒定）');
-    expect(alphaOf(settled, 1, 1), 0, reason: '左上同理');
-  });
 
   testWidgets('快照滑入：转场中屏上是首帧快照，落定换回真页', (tester) async {
     // 2026-10-17「还没贴边就变直角」的治本路径：转场中重页的异步内容到位 /
@@ -780,24 +537,33 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
     await tester.pump(const Duration(milliseconds: 80));
 
-    // 1) 转场中：页面本体必须离屏（paint 跳过），屏上是快照 RawImage。
-    // 查找走确定结构：内容key向上找的第一个 Offstage 是闸门包真页的那层；
-    // RawImage 只能来自闸门快照层。
-    final pageElement = tester.element(
-      find.byKey(contentKey, skipOffstage: false),
+    // 1) 转场中：页面本体必须**不画**（屏上是快照 RawImage）。
+    // 判据读到闸门那层 `HyperosSnapshotPageSurface.skipPaint`：2026-10-18 第十七轮
+    // 起它只跳过绘制，不再用 `Offstage`（`Offstage` 会连命中测试一起关掉，
+    // 滑入到一半就摸不动页面）。
+    expect(
+      _pagePaintSkipped(tester, contentKey),
+      isTrue,
+      reason: '转场中页面本体必须不画 —— 快照叠在真页上面一分钱都省不下',
     );
-    Offstage? pageOffstage;
-    pageElement.visitAncestorElements((element) {
-      if (element.widget is Offstage) {
-        pageOffstage = element.widget as Offstage;
-        return false;
+    // 页面不能挂在「offstage = true」的祖先下面 —— `Offstage` 会连命中测试一起
+    // 关掉，转场里就摸不动页面。框架自己的 `_ModalScope` 也有一层 `Offstage`
+    // （平时是 false），所以判据取「没有任何一层是 true」。
+    var hiddenByOffstage = false;
+    tester
+        .element(find.byKey(contentKey, skipOffstage: false))
+        .visitAncestorElements((element) {
+      final widget = element.widget;
+      if (widget is Offstage && widget.offstage) {
+        hiddenByOffstage = true;
       }
       return true;
     });
-    expect(pageOffstage, isNotNull,
-        reason: '闸门应把页面本体包进 Offstage');
-    expect(pageOffstage!.offstage, isTrue,
-        reason: '转场中页面本体必须离屏不画 —— 快照叠在真页上面一分钱都省不下');
+    expect(
+      hiddenByOffstage,
+      isFalse,
+      reason: '页面本体不能挂在 offstage 里 —— 那会连命中测试一起关掉（摸不动）',
+    );
     final snapshotImage = tester.widget<RawImage>(
       find.byWidgetPredicate(
         (w) => w is RawImage && w.image != null,
@@ -806,17 +572,10 @@ void main() {
     );
     expect(snapshotImage.image, isNotNull, reason: '快照层应在屏上参与滑动');
 
-    // 照片必须**自己带着圆角**（2026-10-18 第十七轮，本条断言此前是反的）。
-    //
-    // 旧设计把切口留在照片外侧 —— 理由是「烤死进照片的缺口不会跟着末段收平一起
-    // 收，收尾会露月牙」。那理由只在半径会动的年代成立；半径现在是常量，收平段
-    // 根本不存在，照片和真页是像素等价的。
-    //
-    // 反过来，切口留在照片外侧还有一个致命代价：滑入全程屏幕上的像素来自照片，
-    // 圆角只剩**外壳那层合成期裁切**在撑着，而那层在真机上会丢帧 —— 丢的那几帧
-    // 里滑入页是实实在在的方角白页（用户口径：「接近屏幕边缘时圆角变直角，
-    // 出现白色的页面」）。照片自带缺口之后，滑动全程没有任何一层裁切需要临场
-    // 计算：形状已经在像素里，掉帧最多让照片的位置跳一下。
+    // 照片必须是**完整的页面像素**（2026-10-18 第十八轮：前缘圆角已撤，
+    // 用户定案按官方样式走、不再自定义）。本断言此前在「圆角烤进照片」与
+    // 「照片不带切口」之间来回翻转过两次 —— 现在它守的是另一件事：
+    // 照片不能有任何透明区域，否则滑入中会直接露出下一层，读作闪烁。
     final snapshotBytes = await tester.runAsync(
       () => snapshotImage.image!.toByteData(),
     );
@@ -826,29 +585,18 @@ void main() {
         snapshotBytes!.getUint8((y * snapshotWidth + x) * 4 + 3);
     expect(
       snapshotAlphaAt(1, 1),
-      0,
-      reason: '快照左上角必须是透明的缺口 —— 这就是「圆角烤进照片」本身：'
-          '照片自带圆角，掉帧也变不出方角',
+      255,
+      reason: '照片四角必须是不透明页面像素（转场里页面是完整矩形）',
     );
     expect(
       snapshotAlphaAt(1, snapshotHeight - 1),
-      0,
-      reason: '左下角同理（两个前缘角一起裁）',
-    );
-    final radiusForPhoto = HyperosMotionPlatform.displayCornerRadiusDp;
-    // 照片是按设备像素比拍的（默认测试宿主 dpr = 3），取样点必须换算到照片像素。
-    final photoScale = tester.view.devicePixelRatio;
-    expect(
-      snapshotAlphaAt(
-        (radiusForPhoto * photoScale * 0.8).round(),
-        (radiusForPhoto * photoScale * 0.8).round(),
-      ),
       255,
-      reason: '圆心内侧仍是页面像素（缺口只切角，不切页面）',
+      reason: '左下角同理',
     );
 
-    // 2) 快照期间内容变化：真页跟着重建（屏外），但滑动画面里仍是快照 ——
-    //    新文本在退休前不可见。此刻仍在滑入中段（远未到收束带）。
+    // 2) 快照期间内容变化：真页跟着重建，但屏幕上是照片 —— 新文本不会被画出来。
+    //    2026-10-18 第十八轮：判据从「树上找不到」改成「真页不画」。真页现在仍在
+    //    树上（并且可命中，转场里才摸得动），所以只能读 `skipPaint`。
     setRootState(() => contentLabel = 'updated');
     await tester.pump(const Duration(milliseconds: 80));
     expect(
@@ -856,8 +604,11 @@ void main() {
       findsOneWidget,
       reason: '真页照常重建（异步内容到位的等价物）',
     );
-    expect(find.text('updated'), findsNothing,
-        reason: '快照模式下内容变化不能出现在滑动画面里');
+    expect(
+      _pagePaintSkipped(tester, contentKey),
+      isTrue,
+      reason: '快照模式下真页不画 —— 内容变化不能出现在滑动画面里',
+    );
 
     // 3) 预热（进度 ≥ 0.99）→ 撤快照（收束带起点）：两段式退休
     //    （2026-10-18 第二轮定案）。预热帧真页放回屏下（快照仍盖着），攒下
@@ -943,10 +694,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 10));
     }
     expect(hasSnapshot(), isTrue, reason: '滑入中段（收束带外）快照应在屏参与滑动');
+    // 2026-10-18 第十八轮：判据从「树上找不到真页」（旧 `Offstage` 语义）改成
+    // 「真页不画」—— 快照期间真页现在仍在树上（并且可命中），只是跳过绘制，
+    // 否则转场里摸不到页面。
     expect(
-      find.byKey(enteringKey),
-      findsNothing,
-      reason: '中段真页必须离屏（快照模式下 paint 全跳过 —— 省钱的唯一方式）',
+      _pagePaintSkipped(tester, enteringKey),
+      isTrue,
+      reason: '中段真页必须不画（快照模式下 paint 全跳过 —— 省钱的唯一方式）',
     );
 
     // 预热点（缓动后 0.99 ≈ 371ms）：真页放回屏下（被快照盖住，可见树上找得到），
@@ -959,9 +713,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 2));
     expect(hasSnapshot(), isTrue, reason: '预热阶段快照仍盖在真页上面');
     expect(
-      find.byKey(enteringKey),
-      findsOneWidget,
-      reason: '预热点后真页必须在屏（画一帧建栅格缓存，重活落在画面几乎不动的时刻）',
+      _pagePaintSkipped(tester, enteringKey),
+      isFalse,
+      reason: '预热点后真页必须重新开始画（建好栅格缓存，重活落在画面几乎不动的时刻）',
     );
 
     // 收束带（缓动后 1 - cornerClipSettleBand ≈ 415ms）：**仍在照片上**。
@@ -1107,70 +861,41 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('像素实测：前缘圆角是真圆弧、半径恒定、在最糟背景（纯白盖纯白）上也看得见', (
-    tester,
-  ) async {
-    // 2026-10-18 第十七轮：把「用眼睛验收」换成像素判据。
-    //
-    // 前十六轮的反馈全是「我看着还是直角 / 还是有 shadow」，而代码层能断言的东西
-    // 早就全绿 —— 因为断言量的都是**结构**（裁切半径、层数、alpha），没有一条量
-    // 屏幕上的**形状**。这条用例直接对整屏截图逐行找页面左边界，把形状量出来：
-    //
-    //   1. 圆角必须是圆弧：y=0 处页面从 +R 开始，y=R 处回到 0（直角的话 y=0 就是 0）；
-    //   2. 形状全程不变：任何两个可量时刻测到的边界差 ≤ 1.5dp；
-    //   3. 最糟背景上也看得见：页面纯白、底下也是纯白 —— 洞口亮度必须明显低于页面
-    //      （对比来自被覆盖页那条官方压暗，不是我补的色）。
-    tester.view.physicalSize = const Size(1080, 2340);
-    tester.view.devicePixelRatio = 3;
-    addTearDown(tester.view.reset);
-    AndroidAnimationScaleService.setUserTransitionSpeed(1);
 
-    const enteringKey = ValueKey('entering-page');
-    final screenKey = GlobalKey();
+  testWidgets('转场中页面能摸：滑入一半按下就落在真页上，快照立刻退休', (tester) async {
+    // 2026-10-18 第十七轮真机反馈：「进入一半的时候我就滑动页面，但是现在
+    // 滑不动了」。原因是快照模式用 `Offstage` 藏真页 —— 它连命中测试一起关掉，
+    // 手指落在照片上、事件到不了真页的滚动视图。
+    //
+    // 现在只跳过绘制（`_SnapshotPageSurface`）：摸到的就是照片显示的那个页面；
+    // 按下第一帧快照退休换成活像素，滚动立刻跟手。这条用例钉住两件事：
+    // 按下有效、按下后快照已退休。
+    AndroidAnimationScaleService.setUserTransitionSpeed(1);
+    var presses = 0;
+    const buttonKey = ValueKey('interactive-button');
 
     await tester.pumpWidget(
-      RepaintBoundary(
-        key: screenKey,
-        child: MaterialApp(
-          theme: ThemeData(
-            pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
-          ),
-          home: Builder(
-            builder: (context) => Scaffold(
-              backgroundColor: HyperosColors.scaffoldBackground(context),
-              body: Center(
-                child: ElevatedButton(
-                  // 先推一层子页：被覆盖页也得是我们自己的路由 —— 真机上出问题的
-                  // 就是「子页盖子页」（设置 → 桌面小组件 / 数据备份）。首页
-                  // （MaterialPageRoute）被盖住时不会产生覆盖动画，那一侧没有
-                  // 官方压暗，走廊与页面同色（实测对比只有 13/255），圆角在物理上
-                  // 看不见 —— 那是另一种情况，不在本条用例的射程内。
-                  onPressed: () => HyperosNavigation.push(
-                    context,
-                    builder: (coveredContext) => Scaffold(
-                      key: const ValueKey('covered-page'),
-                      backgroundColor: HyperosColors.scaffoldBackground(
-                        coveredContext,
-                      ),
-                      body: Center(
-                        child: Builder(
-                          builder: (inner) => ElevatedButton(
-                            onPressed: () => HyperosNavigation.push(
-                              inner,
-                              // 最糟情况：整页纯白，上下都同色，洞里没有内容可露。
-                              builder: (_) => const Scaffold(
-                                key: enteringKey,
-                                backgroundColor: Colors.white,
-                              ),
-                            ),
-                            child: const Text('push2'),
-                          ),
-                        ),
+      MaterialApp(
+        theme: ThemeData(
+          pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => HyperosNavigation.push(
+                  context,
+                  builder: (_) => Scaffold(
+                    body: Center(
+                      child: ElevatedButton(
+                        key: buttonKey,
+                        onPressed: () => presses++,
+                        child: const Text('tap me'),
                       ),
                     ),
                   ),
-                  child: const Text('push'),
                 ),
+                child: const Text('push'),
               ),
             ),
           ),
@@ -1179,129 +904,57 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('push'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('push2'));
     await tester.pump();
-    // 首帧门槛：动画在新页首帧画完前锁 0，下一帧才锚定起点。
     await tester.pump(const Duration(milliseconds: 1));
-
-    final radius = HyperosMotionPlatform.displayCornerRadiusDp;
-    expect(radius, greaterThan(12), reason: '取样点按半径摆，太小就量不到圆弧');
-    final scale = tester.view.devicePixelRatio;
-    final screenWidth = 1080 / scale;
-    final sampleY = <double>[
-      0,
-      radius / 4,
-      radius / 2,
-      radius * 3 / 4,
-      radius,
-    ];
-    // 圆弧解析解：圆心在 (R, R)，边界相对页面左缘的偏移随 y 走圆弧。
-    final expected = sampleY
-        .map(
-          (y) => radius -
-              math.sqrt(radius * radius - (radius - y) * (radius - y)),
-        )
-        .toList();
-
-    var measured = 0;
-    List<double>? previous;
-    for (var step = 0; step < 6; step++) {
-      await tester.pump(const Duration(milliseconds: 110));
-      final pageTopLeft = tester.getTopLeft(
-        find.byKey(enteringKey, skipOffstage: false),
+    // 等页面真正进屏（首帧门槛 + 前重曲线）：按钮跑到屏内才谈得上「摸着」。
+    final logicalWidth =
+        tester.view.physicalSize.width / tester.view.devicePixelRatio;
+    for (var i = 0; i < 10; i++) {
+      final center = tester.getCenter(
+        find.byKey(buttonKey, skipOffstage: false),
       );
-      if (pageTopLeft.dx > screenWidth - radius * 2 ||
-          pageTopLeft.dx <= 2) {
-        // 页面还在屏幕外 / 刚露出一个尖：那一小段圆角在屏外，量不出也算正常；
-        // 贴到屏幕边缘（≤2dp）之后圆角压在机身圆角下面，屏上也没有可量的边界。
-        continue;
+      if (center.dx < logicalWidth * 0.7) {
+        break;
       }
-      final boundary =
-          screenKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-      final image = (await tester.runAsync(boundary.toImage))!;
-      final bytes = (await tester.runAsync(image.toByteData))!;
-      final imgWidth = image.width;
-      // 整屏截图的像素比可能与屏幕不同（`toImage` 默认 1x），一律按实际出图换算。
-      final imgScale = imgWidth / screenWidth;
-      final leftPx = pageTopLeft.dx * imgScale;
-      final topPx = pageTopLeft.dy * imgScale;
-      int lumAt(int x, int y) =>
-          bytes.getUint8(((y.clamp(0, image.height - 1) * imgWidth) +
-                  x.clamp(0, imgWidth - 1)) *
-              4 +
-              1);
-      final pageLum = lumAt(
-        (leftPx + radius * imgScale * 1.6).round(),
-        (topPx + radius * imgScale * 1.6).round(),
-      );
-      // 走廊：页面左缘外侧、y = R/2 那一行（该行页面边界在 +3.8dp，-6dp 在洞外）。
-      final corridorLum = lumAt(
-        (leftPx - 6 * imgScale).round(),
-        (topPx + radius / 2 * imgScale).round(),
-      );
-      if (pageLum - corridorLum < 24) {
-        // 走廊还没被压暗拉开（页面刚进屏、覆盖度还小）：此时洞口与页面同色，
-        // 圆角在物理上不可能被量出来 —— 这一帧不参与形状断言。
-        image.dispose();
-        continue;
-      }
-      final offsets = <double>[];
-      for (final y in sampleY) {
-        final py = (topPx + y * imgScale).round();
-        var found = double.nan;
-        for (var x = math.max(0, (leftPx - 6 * imgScale).round());
-            x < (leftPx + (radius + 8) * imgScale).round();
-            x++) {
-          if ((lumAt(x, py) - pageLum).abs() <= 3) {
-            found = (x - leftPx) / imgScale;
-            break;
-          }
-        }
-        offsets.add(found);
-      }
-      // 洞口取样：y=2 处圆弧已把页面边界推到 +17dp 左右，+2dp 一定在洞里。
-      final holeLum = lumAt(
-        (leftPx + 2 * imgScale).round(),
-        (topPx + 2 * imgScale).round(),
-      );
-      image.dispose();
-
-      measured++;
-      final at = 't=${(step + 1) * 110}ms';
-      for (var i = 0; i < sampleY.length; i++) {
-        expect(
-          offsets[i],
-          closeTo(expected[i], 3),
-          reason: '$at y=${sampleY[i].toStringAsFixed(1)}dp 处页面左边界偏移 '
-              '${offsets[i].toStringAsFixed(1)}dp，圆弧解析值 '
-              '${expected[i].toStringAsFixed(1)}dp —— 对不上就是「直角」',
-        );
-        if (previous != null) {
-          expect(
-            offsets[i],
-            closeTo(previous[i], 1.5),
-            reason: '$at 与前一个可量时刻的形状必须一致 —— '
-                '圆角一旦随进度变形，真机上就读作「闪」',
-          );
-        }
-      }
-      expect(
-        pageLum - holeLum,
-        greaterThanOrEqualTo(24),
-        reason: '$at 洞口亮度 $holeLum vs 页面 $pageLum：'
-            '纯白页盖纯白页时圆角仍必须看得见（对比来自被覆盖页的官方压暗）',
-      );
-      previous = offsets;
+      await tester.pump(const Duration(milliseconds: 40));
     }
-    expect(
-      measured,
-      greaterThanOrEqualTo(3),
-      reason: '至少要有三个可量时刻，否则这条用例什么都没证明',
-    );
 
+    final snapshotFinder = find.byWidgetPredicate(
+      (w) => w is RawImage && w.image != null,
+      skipOffstage: false,
+    );
+    expect(snapshotFinder, findsOneWidget, reason: '前提：滑入中段应当在快照模式');
+
+    await tester.tap(find.byKey(buttonKey), warnIfMissed: false);
+    await tester.pump();
+    expect(
+      presses,
+      1,
+      reason: '滑入到一半按下必须作用到真页 —— 否则整段转场「摸不动」',
+    );
+    expect(
+      snapshotFinder,
+      findsNothing,
+      reason: '按下第一帧快照就退休（换回活像素），滚动才会跟手',
+    );
     await tester.pumpAndSettle();
   });
+}
+
+/// 页面本体当前是否「只跳过绘制」（快照模式）。判据读闸门那层
+/// [HyperosSnapshotPageSurface] 的 `skipPaint` —— 2026-10-18 第十八轮起不再用
+/// `Offstage`（它会连命中测试一起关掉，转场里就摸不动页面）。
+bool _pagePaintSkipped(WidgetTester tester, Key key) {
+  var skipped = false;
+  tester.element(find.byKey(key, skipOffstage: false)).visitAncestorElements((element) {
+    final widget = element.widget;
+    if (widget is HyperosSnapshotPageSurface) {
+      skipped = widget.skipPaint;
+      return false;
+    }
+    return true;
+  });
+  return skipped;
 }
 
 /// 顶栏带探针：走与设置子页同一套外壳（折叠大标题 + 磨砂带 + 路由模糊门），

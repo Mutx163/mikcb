@@ -856,38 +856,110 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
   }
 
   Widget _buildStack(BuildContext context) {
-    final pageOffstage = _snapshot != null && !_warmedUp;
+    final skipPagePaint = _snapshot != null && !_warmedUp;
     // `fit: StackFit.expand` 的硬约束理由见 build() 里的注释（松约束会把
     // 「根 Stack + Positioned.fill」页面塌成 0 高露黑带）。
     return Stack(
       fit: StackFit.expand,
       textDirection: Directionality.of(context),
       children: [
-        // 真页：快照模式下整体离屏**不画**（build / 布局照常 —— 异步内容
-        // 照常到位），paint 与语义完全跳过；这是省下每帧重栅格化的唯一
-        // 方式。预热后放回屏下（被快照盖住，内容显形但不可见）；快照撤除
-        // 后它就是普通页面。
+        // 真页：快照模式下只跳过 **paint**（build / 布局 / 命中测试 / 语义全照常）。
+        // 这是省下每帧重栅格化的唯一方式。预热后放回屏下（被快照盖住，内容显形但
+        // 不可见）；快照撤除后它就是普通页面。
+        //
+        // 2026-10-18 第十七轮：**不能再用 `Offstage`**。它连命中测试一起跳过，
+        // 于是「滑入到一半想滑动页面」时手指落在照片上、事件到不了真页的滚动
+        // 视图 —— 整段转场摸不动（用户原话：「进入一半的时候我就滑动页面，
+        // 但是现在滑不动了」）。现在手指摸到的就是照片显示的那个页面；按下
+        // 的第一帧快照就退休（[_retireSnapshotOnTouch]），滑动内容立刻跟手。
         //
         // 页面外面这层 `RepaintBoundary` 是「换层必须便宜」的实体（2026-10-18
-        // 真机第三轮）：撤快照那一帧只翻 `Offstage` 布尔，Stack 会重画 ——
-        // 若真页没有自己的栅格边界，`paint` 会把整棵页面子树再跑一遍
-        // （重页面 50~80ms），正好压在圆角收平段的起点。有了这层，预热帧建好
-        // 的栅格在退休帧被直接复用，换层退化成纯合成操作。
-        Offstage(
-          offstage: pageOffstage,
-          child: RepaintBoundary(
-            key: _pageBoundaryKey,
-            child: widget.child,
+        // 真机第三轮）：撤快照那一帧只翻一个布尔，Stack 会重画 —— 若真页没有
+        // 自己的栅格边界，`paint` 会把整棵页面子树再跑一遍（重页面 50~80ms）。
+        // 有了这层，预热帧建好的栅格在退休帧被直接复用，换层退化成纯合成操作。
+        Listener(
+          onPointerDown: (_) => _retireSnapshotOnTouch(),
+          child: HyperosSnapshotPageSurface(
+            skipPaint: skipPagePaint,
+            child: RepaintBoundary(
+              key: _pageBoundaryKey,
+              child: widget.child,
+            ),
           ),
         ),
         // 快照层：恒挂（红线），offstage 布尔驱动。快照模式下它就是屏上
         // 参与滑动的那张图；真页模式下不可见、不占合成。
+        // `IgnorePointer`：照片只是像素，命中测试一律交给下面那层真页。
         Offstage(
           offstage: _snapshot == null,
-          child: RawImage(image: _snapshot, fit: BoxFit.fill),
+          child: IgnorePointer(
+            child: RawImage(image: _snapshot, fit: BoxFit.fill),
+          ),
         ),
       ],
     );
+  }
+
+  /// 手指落到页面上的第一帧就把快照退休。
+  ///
+  /// 为什么要退役而不是「让照片带着滚动」：照片是死的，页面在下面照常 build /
+  /// 布局，滚动位置会变，但照片不会跟着重画 —— 用户会看到「手指在动、内容不动」。
+  /// 退休换回活像素后，滑动是一次真实的滚动，手感与静止时完全一致；代价是这一帧
+  /// 要把页面重新画一遍（重页面 50~80ms），但那是用户自己按下去的那一刻，值得。
+  void _retireSnapshotOnTouch() {
+    if (_snapshot == null) {
+      return;
+    }
+    _disposeSnapshot();
+    _warmedUp = true;
+    if (mounted) {
+      setState(() {});
+    }
+  }
+}
+
+/// 只跳过**绘制**、不跳过命中测试的页面层。
+///
+/// 与 [Offstage] 的差别就是这一条：`Offstage` 同时把命中测试与语义一起关掉，
+/// 快照期间页面因此「看得到、摸不到」。这里只省绘制（省钱的唯一目的），
+/// 布局、命中测试、语义全部照常。
+class HyperosSnapshotPageSurface extends SingleChildRenderObjectWidget {
+  const HyperosSnapshotPageSurface({
+    super.key,
+    required this.skipPaint,
+    required super.child,
+  });
+
+  final bool skipPaint;
+
+  @override
+  HyperosSnapshotPageSurfaceRender createRenderObject(BuildContext context) =>
+      HyperosSnapshotPageSurfaceRender(skipPaint: skipPaint);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    HyperosSnapshotPageSurfaceRender renderObject,
+  ) {
+    if (renderObject.skipPaint != skipPaint) {
+      renderObject.skipPaint = skipPaint;
+      renderObject.markNeedsPaint();
+    }
+  }
+}
+
+class HyperosSnapshotPageSurfaceRender extends RenderProxyBox {
+  HyperosSnapshotPageSurfaceRender({required this.skipPaint});
+
+  /// true = 只跳过绘制，布局 / 命中测试 / 语义全部照常。
+  bool skipPaint;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (skipPaint) {
+      return;
+    }
+    super.paint(context, offset);
   }
 }
 
