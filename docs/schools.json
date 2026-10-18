@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-17T05:59:32+00:00",
+  "updatedAt": "2026-10-18T06:27:41+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 259,
-    "schools": 254,
+    "total": 260,
+    "schools": 255,
     "generic": 5
   },
   "schools": [
@@ -1602,6 +1602,13 @@
       "name": "西南大学",
       "initial": "X",
       "resourceFolder": "SWU",
+      "category": "school"
+    },
+    {
+      "id": "SWFU",
+      "name": "西南林业大学",
+      "initial": "X",
+      "resourceFolder": "SWFU",
       "category": "school"
     },
     {
