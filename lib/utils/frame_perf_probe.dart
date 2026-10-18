@@ -168,7 +168,8 @@ abstract final class FramePerfProbe {
   /// 交互标记：(标签, 时间戳微秒)。
   static final List<(String, int)> _marks = <(String, int)>[];
 
-  /// 安装探针。[kReleaseMode] 下是空壳（正式包一行日志都不会有）。
+  /// 安装探针。release 构建下默认是空壳（不给 `--dart-define=PERF_PROBE=true`
+  /// 就一行日志都不输出）；profile / debug 恒装。
   static void install() {
     if (_installed || (kReleaseMode && !_enabledInRelease)) {
       return;

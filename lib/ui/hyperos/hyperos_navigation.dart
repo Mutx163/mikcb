@@ -97,10 +97,13 @@ abstract final class HyperosNavigation {
 
   /// 前缘圆角的收束因子（0 = 不裁，1 = 满半径），两端为 0、中段满半径。
   ///
-  /// **2026-10-18 起不再用于前缘裁切本身**：滑动转场的前缘圆角改为**半径全程
-  /// 恒定**（见 `_MiuixNavClippedPage` 的补片方案 —— 任何一次几何变化都会被重页面的
-  /// 掉帧放大成「圆角闪现消失」）。保留这个因子只服务非几何用途：被覆盖页压暗 /
-  /// 透明度衰减的末段释放（[coveredAlphaFor] / [scrimAlphaFor]）。
+  /// **当前没有任何生产调用方，只剩它自己的单测**（2026-10-18 第十九轮自查）：
+  /// 前缘圆角先改成「半径全程恒定」，随后整体撤掉（`clipLeadingCornersWhileMoving`
+  /// = false）；曾经用它跑末段「压暗 / 淡出释放」的那条路也已撤销（释放会把旧页
+  /// 颜色往新页拉平，真机读作「后段突然变亮」）。留着是因为它同时是
+  /// `cornerClipSettleBand` 的**语义样板**（带宽 = 起步时离落点还剩多少屏宽），
+  /// 快照退休判据仍按同一个带宽算。真要清理时把它和 `hyperos_navigation_test.dart`
+  /// 里那 4 条断言一起删。
   ///
   /// 参数按**缓动后**的进度算（与位移同一条曲线），所以「离落点还有多远」= `band`
   /// 倍的屏宽（见 [HyperosMiuixNavigation.cornerClipSettleBand]，那里有取值推导）。
@@ -168,20 +171,23 @@ abstract final class HyperosNavigation {
             ),
       );
 
-  /// 被覆盖页的透明度（1 = 不透明）：官方 `1 - 0.1 × 覆盖度`。
+  /// 被覆盖页的淡出系数：官方 `1 - 0.1 × 覆盖度`（1 = 原样）。
   ///
-  /// 2026-10-18 起**不再有末段释放**：圆角切口里露出来的就是这层被压暗/降透明度
-  /// 的旧页，而「圆角看得见」靠的正是它与新页的**对比**。末段一释放，切口里的
-  /// 颜色跟新页拉平 → 圆角在贴边前就肉眼消失（用户第十三轮：「左上角接近边缘时
-  /// 一直是直角，能看到圆角转变的过程」）。释放包络本来是为了让「缩小的月牙」
-  /// 不显眼；现在半径恒定、月牙根本不缩，它只剩副作用。
+  /// 2026-10-18 第十九轮改了**用途**，数值没变：以前它直接驱动整页 `Opacity`，
+  /// 现在只用来算 `_MiuixNavParallaxBleed` 那层底色叠层的 alpha（`1 - 本函数`）。
+  /// 原因是整页 `Opacity` 每帧一次全屏离屏合成，性能版日志实测 GPU 侧 9~13ms。
+  ///
+  /// 全程线性、**没有末段释放**：任何「末段把压暗/淡出放掉」的做法都会让旧页的
+  /// 颜色往新页拉平，真机读作「后段突然变亮变平」。释放包络原本是为「缩小的
+  /// 圆角月牙」服务的；圆角已按官方样式撤掉（`clipLeadingCornersWhileMoving`），
+  /// 它只剩副作用。
   @visibleForTesting
   static double coveredAlphaFor(double coverValue) {
     return 1 - HyperosMiuixNavigation.coveredAlphaFalloff * coverValue;
   }
 
-  /// 压暗蒙层的 alpha：官方 `0.5 × 覆盖度`，末段按
-  /// [HyperosMiuixNavigation.coveredReleaseBand] 释放回 0（与圆角收束同一段）。
+  /// 压暗蒙层的 alpha：官方 `0.5 × 覆盖度`，**全程线性、无末段释放**
+  /// （与 [coveredAlphaFor] 同口径）。
   ///
   /// 2026-10-17 第三轮曾在这里插入 `scrimRampExponent`（平方根提前起势），想治
   /// 「圆角读不出来」；当晚用户第四轮反馈「跟底色都没有任何关系，就是新页面的圆角，
@@ -199,25 +205,26 @@ abstract final class HyperosNavigation {
   ///
   /// 几何（官方转场层，全部线性于进度）：
   /// * 栈顶那一页整屏宽位移 `+width → 0`，**按整设备像素对齐**——官方为防
-  ///   「被裁圆角 + 小数位移」在移动中闪出一条细线而做；
-  /// * 被覆盖页并衰减到 0.9 透明度；官方的 1/4 屏宽视差**有意关掉**（取 0），
-  ///   原因见 [HyperosMiuixNavigation.coveredParallaxFraction]：视差让圆角切口里
-  ///   的内容相对切口反向流动，在小窗口里读作「闪」。
+  ///   「裁切边缘 + 小数位移」在移动中闪出一条细线而做；
+  /// * 被覆盖页淡出到 0.9：**用页面底色叠一层纯色**实现（2026-10-18 第十九轮），
+  ///   不再整页 `Opacity` —— 那层每帧一次全屏 saveLayer，是性能版日志里 GPU 侧
+  ///   9~13ms 的主因。官方的 1/4 屏宽视差**有意关掉**（取 0），原因见
+  ///   [HyperosMiuixNavigation.coveredParallaxFraction]。
   ///
   /// 正交效果（官方 `NavDisplayEffects`）：
-  /// * 前缘圆角裁切：只裁**前缘两角**（LTR = 左，官方 `NavCornerClipMode.Leading`），
-  ///   半径取设备屏幕圆角；与官方唯一不同的一点是**半径在末段连续收到 0**
-  ///   （见 [transitionCornerRadiusFactor]），因为二值撤裁切在真机上会闪。
-  /// * 切口里**不补任何颜色**（曾经的 `fillCornerNotchWhileMoving` 已撤）：
-  ///   圆角切口是页面之外的一小块，露出来的就是**被覆盖页自己的像素** ——
-  ///   同一层、同一条压暗公式，颜色与旁边绝无可能不一致。往那里补一块纯色
-  ///   试过两版、都被真机否掉，见 `clipLeadingCornersWhileMoving` 的说明。
+  /// * **前缘圆角：已撤**（用户 2026-10-18 定案「直接改成 miuix 官方样式，不要
+  ///   自定义」）。转场里页面是完整矩形，`clipLeadingCornersWhileMoving = false`
+  ///   时 `_MiuixNavLeadingCornerCut` / `_MiuixNavClippedPage` 都是纯直通，保留
+  ///   包装只是为了「开关翻回去时结构不用重排」。历史上在这里加过的
+  ///   「切口补色 / 缺口压暗 / 前缘细线 / 末段收束」全部随圆角一起撤掉，
+  ///   理由与逐轮真机反馈见 `clipLeadingCornersWhileMoving` 与
+  ///   `.agents/notes/implemented/bug-fix/2026-10-17-nav-corner-notch-flicker.md`。
   /// * 全屏压暗：位于本层之上、上层页面之下，最深 0.5，随覆盖程度线性加深。
   ///
   /// **结构性红线（2026-10-16 真机卡顿/闪烁定案后加的）**：本函数的返回树在
   /// 整场动画里必须**形状恒定** —— 只许改属性（位移、半径、alpha、颜色 alpha），
   /// 不许增删 widget 类型。元素复用按 runtimeType 匹配，增删任何一层包装
-  /// （根 `Transform↔Stack`、视差补底、`ClipRRect`、`Opacity`）都会把其下的
+  /// （根 `Transform↔Stack`、视差补底、`ClipRRect`、淡出层、压暗层）都会把其下的
   /// `_page`（GlobalKey 锚定的整棵页面子树）deactivate 再复挂：依赖
   /// InheritedWidget 的全部节点 `didChangeDependencies` + 整页强制重排，
   /// 重页面上就是动画中途一次 100~300ms 的全额重排帧 —— 真机读作「滑到一半
@@ -244,15 +251,14 @@ abstract final class HyperosNavigation {
   }
 }
 
-/// 官方默认预设驱动的一页：位移 + 前缘圆角（切口不补色）+ 覆盖衰减 + 压暗蒙层
-/// （后两者末段有一条「释放」包络，见 [HyperosMiuixNavigation.coveredReleaseBand]）。
+/// 官方默认预设驱动的一页：位移 + 覆盖淡出 + 压暗蒙层（后两者全程线性、无末端释放）。
 ///
 /// 同一个 widget 伺服两种角色（框架对进出两页都调 `buildTransitions`）：
 /// * 作为**栈顶那一页**（正在进或正在退）：`enter` 在 0..1 之间走，`cover == 0`；
 /// * 作为**被盖住的那一页**：`enter == 1`（停在自己位置），`cover` 在 0..1 之间走。
 ///
 /// 返回树恒定（见 [HyperosNavigation.buildSharedAxisTransition] 的红线说明）：
-/// `Transform.translate(视差补底[裁切页, 垫底条, 压暗层])`，所有效果走属性。
+/// `Transform.translate(视差补底[裁切页、垫底条、淡出层、压暗层])`，所有效果走属性。
 class _MiuixNavPageTransition extends StatelessWidget {
   const _MiuixNavPageTransition({
     required this.enter,
@@ -308,15 +314,12 @@ class _MiuixNavPageTransition extends StatelessWidget {
             HyperosMiuixNavigation.coveredParallaxFraction *
             width *
             coverValue;
-        // 3) 被覆盖页的透明度衰减：官方 1 - 0.1 × 覆盖度。
+        // 3) 被覆盖页的淡出：官方 1 - 0.1 × 覆盖度，用底色叠层实现（见下方）。
         // 4) 压暗蒙层：官方曲线随深度线性，等价于「随覆盖程度线性加深」。
         //
-        // 两者都带一个「末段释放」包络（与圆角收束同一条带宽，见
-        // [HyperosMiuixNavigation.coveredReleaseBand]）：切口最后一段是在**屏幕
-        // 圆角那一小块里**收掉的，露的正是被覆盖页的像素 —— 若这层还压着 0.5 的
-        // 暗，收的过程读作「一块深色月牙缩没 = 圆角闪成无圆角」。放掉压暗后，
-        // 洞里是被覆盖页的原色（同套页面底色本就一致），形状收掉时看不出来。
-        // 中段包络恒为 1，官方 0.1 / 0.5 的数值不变。
+        // 两者都**没有**末段释放包络：曾经有过（为了让收窄的圆角月牙不显眼），
+        // 圆角按官方样式撤掉后它只剩副作用 —— 末段一放，旧页颜色往新页拉平，
+        // 真机读作「后段突然变亮变平」。官方数值 0.1 / 0.5 全程线性。
         final coveredAlpha = HyperosNavigation.coveredAlphaFor(coverValue);
         final scrimAlpha = HyperosNavigation.scrimAlphaFor(coverValue);
         // 2026-10-18 第十九轮（性能版日志实测）：被覆盖页那层「整页 `Opacity`」是
@@ -443,11 +446,14 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
           // 转场露出的那条就是黑带（2026-09-28 真机现象）。∞ 经 enforce
           // 收成 incoming 的 max，正好还原静止时的紧约束。
           SizedBox(width: width, height: double.infinity, child: child),
-          // 压暗蒙层：恒挂，alpha 属性驱动。只盖 [0, width] 视口段 ——
-          // bleed 条不压暗（它露出的时刻上层页面已经盖住了 [width, +∞) 侧，
-          // 被覆盖页的「透明度衰减」：用页面底色叠一层纯色，替代原来套在整页
-          // 外面的 `Opacity`（那层每帧一次全屏离屏合成，是性能版日志里
-          // avgRaster 9~13ms 的主要来源）。恒挂、alpha 驱动，结构不变。
+          // 被覆盖页的「淡出」：用页面底色叠一层纯色，替代原来套在整页外面的
+          // `Opacity`（那层每帧一次全屏离屏合成，性能版日志实测 avgRaster
+          // 9~13ms 的主要来源）。恒挂、alpha 驱动，结构不变。
+          //
+          // 与旧 `Opacity` 的一处已知差异：旧实现是让旧页与**它底下的那一页**
+          // 混合，这里是往**页面底色**混合。只有「旧页自己是壁纸底」的页面
+          // （课表）能看出来，且只有 10% 的量级，还被压暗蒙层盖着；换来的是
+          // 每帧省掉一次全屏 saveLayer，值。
           Positioned(
             left: 0,
             top: 0,
@@ -459,6 +465,8 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
               ),
             ),
           ),
+          // 压暗蒙层：恒挂，alpha 属性驱动。只盖 [0, width] 视口段 ——
+          // bleed 条不压暗（它露出的时刻上层页面已经盖住了 [width, +∞) 侧，
           // 且官方口径压暗的就是「底下的页面」）。位置恒定不随动画改约束。
           Positioned(
             left: 0,
@@ -477,18 +485,19 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
   }
 }
 
-/// 前缘圆角裁切 + 被覆盖页的透明度衰减。
+/// 前缘圆角裁切（**当前关闭**，见 `clipLeadingCornersWhileMoving`）与页面缓存边界。
 ///
-/// **结构恒定（红线）**：`ClipRRect`（设备圆角 > 0 时）与 `Opacity` **常挂**，
-/// 半径 / alpha 全走属性。理由见 [HyperosNavigation.buildSharedAxisTransition]：
-/// 按动画值增删包装会在转场起步与收尾各触发一次整页子树 deactivate →
-/// GlobalKey 复挂（Inherited 依赖全量重算 + 整页强制重排），重页面上就是
-/// 动画中途的重排帧 —— 真机读作「滑到一半冻一下」「返回时闪一下」。
+/// **结构恒定（红线）**：包装层**常挂**，裁不裁、半径多少全走属性。理由见
+/// [HyperosNavigation.buildSharedAxisTransition]：按动画值增删包装会在转场起步
+/// 与收尾各触发一次整页子树 deactivate → GlobalKey 复挂（Inherited 依赖全量重算
+/// + 整页强制重排），重页面上就是动画中途的重排帧 —— 真机读作「滑到一半冻一下」
+/// 「返回时闪一下」。
 ///
-/// 注意存在性判据是**设备圆角读数**（本帧恒定），不是动画中的半径：半径在
-/// 两端精确为 0，若按它判存在，起步/收尾仍会翻转。半径为 0 的 `RRect`
-/// 视觉上等价于不裁；静止成本：`RenderOpacity` alpha==1 直绘不建层，
-/// `RenderClipRRect` 退化为一次矩形裁切。
+/// 2026-10-18 第十九轮：这里原来还套着一层 `Opacity`（被覆盖页淡出 0.9），为的是
+/// 官方那 10% 的透明度衰减。那层每帧一次全屏离屏合成（saveLayer），是性能版日志
+/// 里 GPU 侧的**主要开销**（build 1~3ms / raster 9~13ms）。淡出已改由
+/// `_MiuixNavParallaxBleed` 用页面底色叠一层纯色实现，本类不再建任何离屏层 ——
+/// 静止与转场中的成本都只剩一次矩形裁切（半径 0 时等于不裁）。
 class _MiuixNavClippedPage extends StatelessWidget {
   const _MiuixNavClippedPage({
     required this.clipEnabled,
@@ -1140,18 +1149,21 @@ class HyperosPageRoute<T> extends PageRoute<T> {
     // 首帧拆解采样点（临时诊断件）：整页子树的构建 / 布局 / 绘制时刻。
     return FirstFrameProbeNode(
       nodeTag: 'page',
-      // 切口必须落在框架的页面缓存边界（`_ModalScopeState` 的
-      // `RepaintBoundary(key: _subtreeKey)`）**之内**，只能从 `buildPage` 挂
-      //（见 `_MiuixNavClippedPage` 的说明）。
+      // 两层包装都是**开关直通**（当前两个开关都是关的，2026-10-18 定案）：
       //
-      // 2026-10-18 第十七轮：切口还要落在**快照自己的拍摄边界之内**（闸门里
-      // 那层 `_pageBoundaryKey`）—— 转了位置之后，滑入中屏幕上的像素来自
-      // 照片，而照片过去是不带切口的方角页面，圆角只剩外壳那层合成期裁切在
-      // 撑着；真机上合成期裁切会丢帧，丢的那几帧里滑入页就是**实实在在的
-      // 方角白页**（用户口径：「接近屏幕边缘时圆角变直角，出现白色的页面」）。
-      // 现在照片自己缺角，滑动全程没有任何一层「裁切」需要临场计算 ——
-      // 形状已经烤在像素里，掉帧只能让照片的位置跳一下。
-      child: snapshotTransition
+      // * `_MiuixNavSnapshotGate`：只在 `snapshotTransitionEnabled` 开着时才挂。
+      //   以前这里只看路由的 `snapshotTransition`，开关关掉时每页仍会建它的
+      //   State —— `initState` 里挂动画监听 + 排两个 post-frame 拍照回调，虽然
+      //   拍不到（没有边界 key）会立刻返回，但每次 push 都白付一遍。开关是静态、
+      //   只在测试里翻，所以这里读它不破坏「转场中结构恒定」：同一趟转场里这个
+      //   判据不可能变。
+      // * `_MiuixNavLeadingCornerCut`：`clipLeadingCornersWhileMoving` 为 false
+      //   时 build 直接返回 child，纯直通（保留包装是为了开关翻回去时不用重排）。
+      //
+      // 圆角与快照的来龙去脉（含「切口必须烤进照片」那一轮）见
+      // `.agents/notes/implemented/bug-fix/2026-10-17-nav-corner-notch-flicker.md`。
+      child: snapshotTransition &&
+              HyperosMiuixNavigation.snapshotTransitionEnabled
           ? _MiuixNavSnapshotGate(
               animation: animation,
               onAttached: (gate) => _snapshotGate = gate,
