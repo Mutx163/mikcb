@@ -104,6 +104,18 @@ class _TimetablePageSettingsScreenState
                     week: provider.currentWeek,
                     maxVisibleSections: _draft.sectionCount,
                     isSettingsPreview: true,
+                    // 2026-10-18 第十九轮真机截图定位：本页预览里的课程卡**底部泛白**、
+                    // 白字跟着糊掉，而课程卡片页的同一张预览正常。
+                    //
+                    // 原因是卡片材质的两条路：给了预糊位图就走「贴图 + 折射」，没给
+                    // 就退回「实时 BackdropFilter 采样 + 染色」。预览里的壁纸在底部
+                    // 渐隐到页面底色（与首页一致），实时采样于是把卡片下半截采成了
+                    // 页面白 —— 只有卡片那条竖条泛白、卡片外的底色不变，正是截图的
+                    // 形状。
+                    //
+                    // 打开后本页与首页、课程卡片页走同一条路。开销只是多请求一张
+                    // 预糊位图（参数与首页同源，已烤好的那张直接命中缓存）。
+                    preblurredCardGlass: true,
                     // 预览要跟首页周网格一致，天气源显式传入（见该部件的字段说明）。
                     weather: context.watch<WeatherProvider?>(),
                   ),
