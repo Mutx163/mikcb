@@ -71,6 +71,17 @@ TMP_NOTES="$(mktemp)"
 trap 'rm -f "${TMP_PUBSPEC}" "${TMP_NOTES}"' EXIT
 tr -d '\r' < pubspec.yaml > "${TMP_PUBSPEC}"
 
+# gh 决定能不能查「同名 Release」与「CI 状态」。WSL 里通常没装 gh，
+# 这里必须**说一声**，否则跳过两项检查后仍然显示 0 FAIL，会让人误以为查过了。
+HAS_GH=0
+if ((OFFLINE == 0)); then
+  if command -v gh >/dev/null 2>&1; then
+    HAS_GH=1
+  else
+    warn "找不到 gh：跳过「同名 Release」与「CI 状态」两项（在 Git Bash 里跑，或安装 gh）"
+  fi
+fi
+
 # ---------------------------------------------------------------- 1. 版本形态与渠道
 VERSION="$(awk '/^version:/{print $2; exit}' "${TMP_PUBSPEC}")"
 BASE=""
@@ -200,7 +211,7 @@ if ((CONVERT == 0)) && [[ -n "${TARGET}" ]]; then
     else
       warn "查不到远端 tag（网络或 remote 不可用）"
     fi
-    if command -v gh >/dev/null 2>&1; then
+    if ((HAS_GH == 1)); then
       if GH_PROMPT_DISABLED=1 gh release view "${TARGET}" --json tagName >/dev/null 2>&1; then
         fail "GitHub 上已有同名 Release ${TARGET}（tag 可能被删过但 Release 还在）"
       fi
@@ -236,7 +247,7 @@ if ((OFFLINE == 0)) && git rev-parse -q --verify origin/main >/dev/null 2>&1; th
 fi
 
 # ---------------------------------------------------------------- 8. 这个 commit 的 CI 是否已绿
-if ((OFFLINE == 0)) && command -v gh >/dev/null 2>&1; then
+if ((OFFLINE == 0)) && ((HAS_GH == 1)); then
   HEAD_SHA="$(git rev-parse HEAD)"
   CI_LINE="$(GH_PROMPT_DISABLED=1 gh run list --workflow=ci.yml --branch main --limit 1 \
     --json headSha,conclusion,status \
