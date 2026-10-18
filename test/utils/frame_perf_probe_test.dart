@@ -239,4 +239,29 @@ void main() {
       expect(line, contains('vsyncMs=8.3'));
     });
   });
+
+  group('转场窗口（route: 标记）', () {
+    late List<String> lines;
+
+    setUp(() {
+      lines = <String>[];
+      FramePerfProbe.debugInstall(emit: lines.add);
+      lines.clear();
+    });
+
+    test('窗口比普通标记长：1.2s 后的帧仍算同一次转场', () {
+      // 转场正片 500ms，但首帧门槛可能先等一次重页面首帧（几百 ms）。
+      // 普通标记窗口 700ms 会把尾巴切掉，所以 route: 走 1.6s 长窗口。
+      FramePerfProbe.debugMark('route:push:demo', 0);
+      FramePerfProbe.debugIngest(buildUs: 6000, rasterUs: 3000, nowUs: 30000);
+      FramePerfProbe.debugIngest(buildUs: 6000, rasterUs: 3000, nowUs: 1200000);
+      FramePerfProbe.debugIngest(buildUs: 6000, rasterUs: 3000, nowUs: 1700000);
+
+      final line = lines.firstWhere((l) => l.contains('mark route:push:demo'));
+      // 30ms / 1.2s / 1.7s 三帧：前两帧落在窗口内，第三帧触发结算。
+      expect(line, contains('frames=2'));
+      // 按下到第一帧的真实间隔 —— 「点下去多久才开始动」就看这个数。
+      expect(line, contains('firstFrameMs=30'));
+    });
+  });
 }

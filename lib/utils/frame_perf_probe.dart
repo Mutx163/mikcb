@@ -96,6 +96,15 @@ abstract final class FramePerfProbe {
   /// 单个窗口最多累计多少帧就强制结算（长动画 / 长滚动时给个上界）。
   static const int _windowMaxFrames = 400;
 
+  /// 转场窗口的长度：正片 500ms + 首帧门槛可能先等一个重页面首帧（几百 ms），
+  /// 700ms 的通用标记窗口会把尾巴切掉（2026-10-18 第十九轮）。
+  static const int _routeWindowUs = 1600000;
+
+  /// release 构建是否也装探针：构建时加 `--dart-define=PERF_PROBE=true` 才生效。
+  ///
+  /// 日常正式包不带这个 define —— 探针仍是空壳，一行日志都不输出，零成本。
+  static const bool _enabledInRelease = bool.fromEnvironment('PERF_PROBE');
+
   /// 可信帧间隔的下限（微秒）：低于 4ms 的间隔不是 vsync 节奏 —— 引擎一次回调
   /// 可能投递多帧，同批帧的时间戳几乎相同。
   static const int _minPlausibleGapUs = 4000;
@@ -147,6 +156,7 @@ abstract final class FramePerfProbe {
   // 当前「标记窗口」的累计值（`_windowLabel == null` 时无窗口）。
   static String? _windowLabel;
   static int _windowStartUs = 0;
+  static int _windowFirstFrameUs = 0;
   static int _windowFrames = 0;
   static int _windowLastUs = 0;
   static int _windowSumBuildUs = 0;
@@ -160,7 +170,7 @@ abstract final class FramePerfProbe {
 
   /// 安装探针。[kReleaseMode] 下是空壳（正式包一行日志都不会有）。
   static void install() {
-    if (_installed || kReleaseMode) {
+    if (_installed || (kReleaseMode && !_enabledInRelease)) {
       return;
     }
     _installed = true;
@@ -171,7 +181,8 @@ abstract final class FramePerfProbe {
     _beginWindow(_steadyLabel, 0);
     SchedulerBinding.instance.addTimingsCallback(_onTimings);
     _emit(
-      '$_tag installed reportedRateFps=$reportedRate '
+      '$_tag installed mode=${kReleaseMode ? 'release' : kProfileMode ? 'profile' : 'debug'} '
+      'reportedRateFps=$reportedRate '
       'budgetMs=${_ms(_configuredBudgetUs)} '
       '(budget tightens to the measured vsync gap)',
     );
@@ -319,8 +330,16 @@ abstract final class FramePerfProbe {
   }
 
   /// 窗口长度按标签分档：标记窗口短（一次交互动画），兜底窗口长（基线）。
-  static int _windowDurationUs(String label) =>
-      label == _steadyLabel ? _steadyWindowUs : _markWindowUs;
+  static int _windowDurationUs(String label) {
+    if (label == _steadyLabel) {
+      return _steadyWindowUs;
+    }
+    // 转场（`route:push:*` / `route:pop:*` / `route:replace:*`）单独给长窗口。
+    if (label.startsWith('route:')) {
+      return _routeWindowUs;
+    }
+    return _markWindowUs;
+  }
 
   /// 采一个 vsync 周期样本，用来把预算收紧到屏幕真实节奏（见 [_budgetUs]）。
   ///
@@ -369,6 +388,7 @@ abstract final class FramePerfProbe {
   static void _beginWindow(String label, int nowUs) {
     _windowLabel = label;
     _windowStartUs = nowUs;
+    _windowFirstFrameUs = 0;
     _windowFrames = 0;
     _windowLastUs = nowUs;
     _windowSumBuildUs = 0;
@@ -385,6 +405,11 @@ abstract final class FramePerfProbe {
     required int nowUs,
   }) {
     _windowFrames++;
+    if (_windowFirstFrameUs == 0) {
+      // 标记（按下 / 路由开动画）到这一窗口第一帧的真实间隔 ——
+      // 「点下去多久才开始动」就看这个数。
+      _windowFirstFrameUs = nowUs;
+    }
     _windowLastUs = nowUs;
     _windowSumBuildUs += buildUs;
     _windowSumRasterUs += rasterUs;
@@ -427,7 +452,9 @@ abstract final class FramePerfProbe {
     final vsyncUs = _observedMinGapUs;
     final prefix = label == _steadyLabel ? _steadyLabel : 'mark $label';
     _emit(
-      '$_tag $prefix frames=$frames spanMs=${spanMs.toStringAsFixed(0)} '
+      '$_tag $prefix frames=$frames '
+      'firstFrameMs=${_windowFirstFrameUs == 0 ? '?' : ((_windowFirstFrameUs - _windowStartUs) / 1000).toStringAsFixed(0)} '
+      'spanMs=${spanMs.toStringAsFixed(0)} '
       'fps=${_fps(frames, spanMs)} '
       'vsyncMs=${vsyncUs == 0 ? '?' : _ms(vsyncUs)} '
       'budgetMs=${_ms(budgetUs)} over=$overCount '
