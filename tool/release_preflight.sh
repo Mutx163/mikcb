@@ -171,14 +171,38 @@ else
   fi
   ITEM_COUNT="$(grep -c '^- ' "${TMP_NOTES}" || true)"
   if [[ "${ITEM_COUNT}" != "0" ]]; then
+    # 两种版式都要数得对：新版按 `## 新增 · 12` 分组、条目不带前缀；
+    # 旧版是扁平列表、每条以「新增 」开头。
     COUNTS="$(awk '
-      /^- 新增 /{a++} /^- 优化 /{o++} /^- 修复 /{f++} /^- 移除 /{r++} /^- /{t++}
-      END{printf "新增 %d · 优化 %d · 修复 %d · 移除 %d · 合计 %d", a, o, f, r, t}' "${TMP_NOTES}")"
+      /^#/ {
+        kind = ""
+        if ($0 ~ /新增/) kind = "a"
+        else if ($0 ~ /优化/) kind = "o"
+        else if ($0 ~ /修复/) kind = "f"
+        else if ($0 ~ /移除/) kind = "r"
+        else if ($0 ~ /(New|Added)/) kind = "a"
+        else if ($0 ~ /(Improve|Enhance|Optim)/) kind = "o"
+        else if ($0 ~ /Fix/) kind = "f"
+        else if ($0 ~ /(Remove|Deprecat)/) kind = "r"
+        next
+      }
+      /^- / {
+        total++
+        if ($0 ~ /^- 新增 /) added++
+        else if ($0 ~ /^- 优化 /) improved++
+        else if ($0 ~ /^- 修复 /) fixed++
+        else if ($0 ~ /^- 移除 /) removed++
+        else if (kind == "a") added++
+        else if (kind == "o") improved++
+        else if (kind == "f") fixed++
+        else if (kind == "r") removed++
+      }
+      END { printf "新增 %d · 优化 %d · 修复 %d · 移除 %d · 合计 %d", added, improved, fixed, removed, total }' "${TMP_NOTES}")"
     pass "发版说明条目：${COUNTS}"
   else
     fail "${NOTES} 里没有任何 '- ' 条目"
   fi
-  if grep -q '^> 本次重点' "${TMP_NOTES}"; then
+  if grep -qE '^>.*本次重点' "${TMP_NOTES}"; then
     pass "已声明「本次重点」（更新弹窗照它显示前 3 条）"
   else
     warn "没有 '> 本次重点：…' 行：弹窗会退化成按「新增>优化>移除>修复」猜前 3 条"

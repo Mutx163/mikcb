@@ -179,9 +179,15 @@ jobs:
                   // 优先看条目文本开头的类型词；无标题的正文才不会
                   // 全部误落到默认「优化」，产生「[优化] 新增…」这类错配。
                   const leadingType = detectLeadingChangeType(text);
+                  // 新版按 `## 新增` 分组、条目本身不带类型词；旧版的扁平列表
+                  // 带「新增 」前缀。分组页面里再重复一遍类型词会很难看，这里
+                  // 统一把前缀剥掉，类型仍然由 type 字段承载。
+                  const stripped = leadingType
+                    ? text.replace(/^(新增功能|新增|增加|优化|改进|改善|修复|修正|移除|删除|下线)\s*/, "")
+                    : text;
                   highlights.push({
                     type: leadingType || normalizeChangeType(currentType),
-                    text,
+                    text: stripped || text,
                   });
                 }
               }
@@ -192,13 +198,58 @@ jobs:
             return typeof limit === "number" && limit > 0 ? highlights.slice(0, limit) : highlights;
           }
 
-          function buildDescription(body) {
-            const firstHighlights = extractHighlights(body, 3);
-            if (!firstHighlights.length) {
-              return "查看 Release 页面了解更多更新内容。";
+          // 发布说明顶部的「本次重点」行：`> 本次重点：A、B、C`（允许加粗）。
+          // 这是作者明确声明的重点；没有时由 keyPoints 的调用方回退到前几条新增。
+          function extractKeyPoints(body) {
+            const latestSection = extractLatestVersionSection(body);
+            for (const rawLine of latestSection.split(/\r?\n/)) {
+              const line = rawLine.trim().replace(/\*\*/g, "");
+              const match = line.match(/^>\s*本次重点\s*[:：]\s*(.+)$/);
+              if (!match) {
+                continue;
+              }
+              return match[1]
+                .split(/[、,，;；|]/)
+                .map((item) => item.trim())
+                .filter(Boolean)
+                .slice(0, 3);
             }
-            const preview = firstHighlights.map((item) => item.text).join(" · ");
-            return preview.length > 180 ? `${preview.slice(0, 180).trim()}…` : preview;
+            return [];
+          }
+
+          function buildKeyPoints(body) {
+            const declared = extractKeyPoints(body);
+            if (declared.length) {
+              return declared;
+            }
+            const entries = extractHighlights(body);
+            const preferred = entries.filter((item) => item.type === "新增");
+            const source = preferred.length ? preferred : entries;
+            return source.slice(0, 3).map((item) => item.text);
+          }
+
+          function buildDescription(body) {
+            const keyPoints = buildKeyPoints(body);
+            if (keyPoints.length) {
+              const preview = keyPoints.join(" · ");
+              return preview.length > 180 ? `${preview.slice(0, 180).trim()}…` : preview;
+            }
+            return "查看 Release 页面了解更多更新内容。";
+          }
+
+          // 仓库里的 docs/releases/vX.md 与 Release 正文同源。优先用本地文件：
+          // 历史版本后来补写过「本次重点」摘要行，API 正文里没有；用本地文件能
+          // 让官网、App 内历史页与发布说明看到同一份重点。文件不在时退回 API 正文。
+          function releaseNotesBody(release, version) {
+            const raw = String(version || "").replace(/^v/i, "");
+            if (raw) {
+              try {
+                return fs.readFileSync(`docs/releases/v${raw}.md`, "utf8");
+              } catch {
+                // 老版本或还没入库的版本：用 API 正文
+              }
+            }
+            return String(release.body || "");
           }
 
           function simplifyFeedRelease(release) {
@@ -207,14 +258,16 @@ jobs:
             }
 
             const simplified = simplifyRelease(release, release.prerelease ? "预发布" : "正式版");
+            const body = releaseNotesBody(release, simplified.version);
             return {
               channelLabel: simplified.channelLabel,
               version: simplified.version,
               title: simplified.title,
               prerelease: release.prerelease === true,
               publishedAt: simplified.publishedAt,
-              description: buildDescription(simplified.body),
-              highlights: extractHighlights(simplified.body),
+              description: buildDescription(body),
+              keyPoints: buildKeyPoints(body),
+              highlights: extractHighlights(body),
               releaseUrl: simplified.releaseUrl,
               downloadUrl: simplified.downloadUrl,
               assetName: simplified.assetName,

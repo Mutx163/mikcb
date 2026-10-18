@@ -249,4 +249,129 @@ void main() {
       expect(releaseChangeCounts(digest), <(String, int)>[('新增', 1)]);
     });
   });
+
+  group('按分类分组的新版格式', () {
+    test('分组标题定分类、标题带条数；条目本身不带前缀', () {
+      const body = '# v2.1.4\n'
+          '\n'
+          '> 本次重点：桌面小组件效果预览、周末文案\n'
+          '\n'
+          '## 新增 · 2\n'
+          '\n'
+          '- 设置页的「桌面小组件效果预览」：十种卡片按真实渲染就地出图。\n'
+          '- 桌面小组件的周末文案：周末没课显示「周末愉快」。\n'
+          '\n'
+          '## 优化 · 1\n'
+          '\n'
+          '- 启动：换入首页加一次交叉淡入。\n'
+          '\n'
+          '## 修复 · 2\n'
+          '\n'
+          '- 顶栏标题：四字标题不再被挤成省略号。\n'
+          '- 壁纸：切回时位置不再错。\n';
+
+      final digest = buildReleaseNotesDigest(body);
+
+      expect(digest.total, 5);
+      expect(digest.countOf(ReleaseChangeKind.added), 2);
+      expect(digest.countOf(ReleaseChangeKind.improved), 1);
+      expect(digest.countOf(ReleaseChangeKind.fixed), 2);
+      expect(
+        digest.entries.map((entry) => entry.label).toSet(),
+        <String>{'新增', '优化', '修复'},
+        reason: '计数行的分类词应沿用分组标题里的写法',
+      );
+      expect(
+        digest.entries.first.text,
+        '设置页的「桌面小组件效果预览」：十种卡片按真实渲染就地出图。',
+        reason: '新格式条目不带前缀，正文不该被再剥一次',
+      );
+      expect(digest.highlightsDeclared, isTrue);
+      expect(
+        digest.highlights.map((entry) => entry.headline),
+        <String>['桌面小组件效果预览', '周末文案'],
+      );
+      expect(digest.highlights.first.kind, ReleaseChangeKind.added);
+    });
+
+    test('emoji 装饰标题、英文分组标题都能认', () {
+      const body = '# v3.0.0\n'
+          '\n'
+          '### ✨ 修复\n'
+          '\n'
+          '- 启动崩溃：重开不再闪一帧。\n'
+          '\n'
+          '### Removed\n'
+          '\n'
+          '- 旧版导入入口：统一走新流程。\n';
+
+      final digest = buildReleaseNotesDigest(body);
+
+      expect(digest.countOf(ReleaseChangeKind.fixed), 1);
+      expect(digest.countOf(ReleaseChangeKind.removed), 1);
+      expect(digest.entries.map((entry) => entry.label).toList(), <String>[
+        '修复',
+        'Removed',
+      ]);
+    });
+
+    test('认不出分类的标题会清掉继承，不把后面的条目算进上一组', () {
+      const body = '# v3.0.0\n'
+          '\n'
+          '## 修复\n'
+          '- 甲：细节。\n'
+          '\n'
+          '## 其它说明\n'
+          '- 这一条本来就不属于任何分类。\n'
+          '\n'
+          '## 新增\n'
+          '- 乙：细节。\n';
+
+      final digest = buildReleaseNotesDigest(body);
+
+      expect(digest.countOf(ReleaseChangeKind.fixed), 1);
+      expect(digest.countOf(ReleaseChangeKind.other), 1);
+      expect(digest.countOf(ReleaseChangeKind.added), 1);
+      expect(
+        digest.entries[1].kind,
+        ReleaseChangeKind.other,
+        reason: '认不出的标题之后不能沿用上一组的「修复」',
+      );
+    });
+
+    test('加粗的「本次重点」引用行也认', () {
+      const body = '> **本次重点**：A 功能、B 修复\n\n## 新增\n- A 功能：说明。\n';
+
+      final digest = buildReleaseNotesDigest(body);
+
+      expect(digest.highlightsDeclared, isTrue);
+      expect(digest.highlights.map((entry) => entry.headline), <String>[
+        'A 功能',
+        'B 修复',
+      ]);
+    });
+  });
+
+  group('导语', () {
+    test('第一条条目之前的概括句会成为导语，冒号引导句不算', () {
+      const body = '# 轻屿课表 1.1.0\n'
+          '\n'
+          '首个推荐版本。\n'
+          '\n'
+          '本次更新：\n'
+          '\n'
+          '- 应用正式更名为「轻屿课表」。\n';
+
+      final digest = buildReleaseNotesDigest(body);
+
+      expect(digest.intro, '首个推荐版本。');
+      expect(digest.total, 1);
+    });
+
+    test('条目之后再出现的文字不会被当成导语', () {
+      const body = '# v2.0.0\n\n- 新增 甲：细节。\n\n后来补充的一句话。\n';
+
+      expect(buildReleaseNotesDigest(body).intro, isEmpty);
+    });
+  });
 }

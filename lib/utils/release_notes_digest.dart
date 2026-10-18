@@ -58,6 +58,7 @@ class ReleaseNotesDigest {
     this.entries = const <ReleaseChangeEntry>[],
     this.highlights = const <ReleaseChangeEntry>[],
     this.highlightsDeclared = false,
+    this.intro = '',
   });
 
   /// 正文里没有任何可用条目的哨兵值。
@@ -71,6 +72,12 @@ class ReleaseNotesDigest {
 
   /// 重点是否由发布说明自己声明（否则是按分类优先级推断的）。
   final bool highlightsDeclared;
+
+  /// 版本标题之后、第一条条目之前的那句导语（如「首个推荐版本。」）。
+  ///
+  /// 老版本的发布说明常有一句概括；历史版本页与官网卡片用它当副标题，
+  /// 比只显示版本号更容易让人知道「这一版是什么」。空串表示没有导语。
+  final String intro;
 
   bool get isEmpty => entries.isEmpty && highlights.isEmpty;
 
@@ -124,17 +131,22 @@ const List<(String, ReleaseChangeKind)> _kindPrefixes =
 const Map<String, ReleaseChangeKind> _englishKinds = <String, ReleaseChangeKind>{
   'new': ReleaseChangeKind.added,
   'add': ReleaseChangeKind.added,
+  'adds': ReleaseChangeKind.added,
   'added': ReleaseChangeKind.added,
   'feature': ReleaseChangeKind.added,
+  'features': ReleaseChangeKind.added,
   'improve': ReleaseChangeKind.improved,
   'improved': ReleaseChangeKind.improved,
+  'improves': ReleaseChangeKind.improved,
   'enhance': ReleaseChangeKind.improved,
   'enhanced': ReleaseChangeKind.improved,
   'optimize': ReleaseChangeKind.improved,
   'optimized': ReleaseChangeKind.improved,
   'fix': ReleaseChangeKind.fixed,
+  'fixes': ReleaseChangeKind.fixed,
   'fixed': ReleaseChangeKind.fixed,
   'remove': ReleaseChangeKind.removed,
+  'removes': ReleaseChangeKind.removed,
   'removed': ReleaseChangeKind.removed,
   'deprecate': ReleaseChangeKind.removed,
   'deprecated': ReleaseChangeKind.removed,
@@ -151,7 +163,7 @@ final RegExp _whitespaceRunPattern = RegExp(r'\s+');
 final RegExp _leadingSeparatorPattern = RegExp(r'^[\s:：\-—–~·、,，]+');
 final RegExp _headlineStopPattern = RegExp(r'[：:；;。！!？?]');
 final RegExp _englishKindPattern = RegExp(
-  r'^(new|add|added|feature|improve|improved|enhance|enhanced|optimize|optimized|fix|fixed|remove|removed|deprecate|deprecated)\b',
+  r'^(new|add|adds|added|feature|features|improve|improved|improves|enhance|enhanced|optimize|optimized|fix|fixes|fixed|remove|removes|removed|deprecate|deprecated)\b',
   caseSensitive: false,
 );
 
@@ -192,6 +204,12 @@ ReleaseNotesDigest buildReleaseNotesDigest(
   final declared = <String>[];
   var insideCodeFence = false;
   var insideDeclaredSection = false;
+  var sawBullet = false;
+  var intro = '';
+  // 新版按分类分组（`## 新增`），条目本身不带前缀；旧版是扁平列表、条目自带
+  // 「新增 」前缀。分组标题定下的分类会继承给后面不带前缀的条目。
+  var sectionKind = ReleaseChangeKind.other;
+  var sectionLabel = '';
 
   for (final rawLine in normalized.split('\n')) {
     // 用没被 trimLeft 的行判断列表符号：发布说明里的二级条目是缩进的，
@@ -217,10 +235,15 @@ ReleaseNotesDigest buildReleaseNotesDigest(
       insideDeclaredSection =
           _declaredSectionPattern.hasMatch(headingText) ||
           _declaredSectionEnPattern.hasMatch(headingText);
+      final headingKind = _kindFromHeading(trimmed);
+      sectionKind = headingKind?.$1 ?? ReleaseChangeKind.other;
+      sectionLabel = headingKind?.$2 ?? '';
       continue;
     }
     if (trimmed.startsWith('>')) {
-      final quoted = trimmed.replaceFirst(RegExp(r'^>+\s*'), '');
+      final quoted = _cleanInline(
+        trimmed.replaceFirst(RegExp(r'^>+\s*'), ''),
+      );
       final rest =
           _stripDeclaredLabel(quoted, _declaredBlockquotePattern) ??
           _stripDeclaredLabel(quoted, _declaredBlockquoteEnPattern);
@@ -238,13 +261,28 @@ ReleaseNotesDigest buildReleaseNotesDigest(
     }
     final bulletMatch = _bulletPattern.firstMatch(line);
     if (bulletMatch == null) {
+      // 第一条条目之前的一小段普通文字，是这一版的导语（老版本常见：
+      // 「首个推荐版本。」）。以冒号结尾的「本次更新：」这类引导句不算。
+      if (!sawBullet && intro.isEmpty) {
+        final prose = _cleanInline(trimmed);
+        if (prose.isNotEmpty &&
+            !prose.endsWith('：') &&
+            !prose.endsWith(':')) {
+          intro = _truncateRunes(prose, _introMaxRunes);
+        }
+      }
       continue;
     }
+    sawBullet = true;
     final bulletText = _cleanInline(bulletMatch.group(1)!);
     if (bulletText.isEmpty) {
       continue;
     }
-    final entry = _entryFromBullet(bulletText);
+    final entry = _entryFromBullet(
+      bulletText,
+      fallbackKind: sectionKind,
+      fallbackLabel: sectionLabel,
+    );
     if (insideDeclaredSection && entry.kind == ReleaseChangeKind.other) {
       // 「## 本次重点」小节里作者写的是短句（可能不带分类前缀），
       // 整句就是声明本身；同时它也是一条真实变更。
@@ -265,6 +303,7 @@ ReleaseNotesDigest buildReleaseNotesDigest(
     entries: entries,
     highlights: highlights.items,
     highlightsDeclared: highlights.declared,
+    intro: intro,
   );
 }
 
@@ -464,7 +503,11 @@ List<String> _splitDeclaredItems(String value) => value
     .where((item) => item.isNotEmpty)
     .toList(growable: false);
 
-ReleaseChangeEntry _entryFromBullet(String bullet) {
+ReleaseChangeEntry _entryFromBullet(
+  String bullet, {
+  ReleaseChangeKind fallbackKind = ReleaseChangeKind.other,
+  String fallbackLabel = '',
+}) {
   var kind = ReleaseChangeKind.other;
   var label = '';
   var rest = bullet;
@@ -487,6 +530,12 @@ ReleaseChangeEntry _entryFromBullet(String bullet) {
       rest = rest.substring(match.end);
     }
   }
+  if (kind == ReleaseChangeKind.other && fallbackKind != ReleaseChangeKind.other) {
+    // 新版发布说明按分类分组（`## 新增`），条目本身不带前缀 ——
+    // 分类从分组标题继承，历史扁平格式仍走上面的前缀识别。
+    kind = fallbackKind;
+    label = fallbackLabel;
+  }
 
   final text = _stripLeadingSeparators(rest);
   final resolved = text.isEmpty ? bullet : text;
@@ -496,6 +545,34 @@ ReleaseChangeEntry _entryFromBullet(String bullet) {
     headline: _headlineOf(resolved),
     label: label,
   );
+}
+
+/// 从「## 新增 · 12」「### ✨ 修复」「### Removed」这类分组标题里认出分类。
+///
+/// 返回分类与标题里作者用的词（计数行与重点行沿用这个词）。认不出时返回 null，
+/// 后面的条目就按「无分类」处理，不会错误继承上一个分组的类型。
+(ReleaseChangeKind, String)? _kindFromHeading(String rawHeading) {
+  var text = rawHeading
+      .replaceFirst(_headingPattern, '')
+      .replaceAll(_markdownMarkerPattern, '')
+      .trim();
+  // 去掉标题前的 emoji / 装饰符号（`### ✨ 新增`）。
+  text = text.replaceFirst(RegExp(r'^[^A-Za-z0-9\u4e00-\u9fff]+'), '');
+  if (text.isEmpty) {
+    return null;
+  }
+  for (final prefix in _kindPrefixes) {
+    final keyword = prefix.$1;
+    if (text.startsWith(keyword)) {
+      return (prefix.$2, keyword);
+    }
+  }
+  final match = _englishKindPattern.firstMatch(text);
+  if (match != null) {
+    final keyword = match.group(1)!;
+    return (_englishKinds[keyword.toLowerCase()]!, _titleCaseLabel(keyword, text));
+  }
+  return null;
 }
 
 /// 英文分类词按作者原本的大小写展示（`New` / `NEW` 各自保持），
@@ -526,6 +603,9 @@ String _cleanInline(String raw) {
 /// 「两行刚好、再多就靠省略号」的尺度。
 const int _headlineMaxRunes = 40;
 
+/// 导语长度上限：历史版本页与官网卡片只留一行到两行。
+const int _introMaxRunes = 80;
+
 String _headlineOf(String text) {
   final match = _headlineStopPattern.firstMatch(text);
   var headline = match == null ? text : text.substring(0, match.start);
@@ -533,9 +613,12 @@ String _headlineOf(String text) {
   if (headline.isEmpty) {
     headline = text.trim();
   }
-  if (headline.runes.length > _headlineMaxRunes) {
-    headline =
-        '${String.fromCharCodes(headline.runes.take(_headlineMaxRunes))}…';
+  return _truncateRunes(headline, _headlineMaxRunes);
+}
+
+String _truncateRunes(String value, int max) {
+  if (value.runes.length <= max) {
+    return value;
   }
-  return headline;
+  return '${String.fromCharCodes(value.runes.take(max))}…';
 }
