@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-18T15:55:13.314Z",
+  "generatedAt": "2026-10-18T20:49:38.399Z",
   "releaseCount": 108,
   "releases": [
     {
@@ -9,6 +9,10 @@
       "prerelease": true,
       "publishedAt": "2026-10-18T15:11:04Z",
       "description": "桌面小组件「效果预览」 · 小组件周末文案",
+      "keyPoints": [
+        "桌面小组件「效果预览」",
+        "小组件周末文案"
+      ],
       "highlights": [
         {
           "type": "新增",
@@ -21,11 +25,7 @@
       ],
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.3.4",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.3.4/mikcb-2.1.3.4-arm64-v8a.apk",
-      "assetName": "mikcb-2.1.3.4-arm64-v8a.apk",
-      "keyPoints": [
-        "桌面小组件「效果预览」",
-        "小组件周末文案"
-      ]
+      "assetName": "mikcb-2.1.3.4-arm64-v8a.apk"
     },
     {
       "channelLabel": "预发布",
@@ -34,6 +34,11 @@
       "prerelease": true,
       "publishedAt": "2026-10-18T14:01:24Z",
       "description": "超级岛「速览」 · 壁纸画质自动按最高档 · 更新提示只显示本次重点",
+      "keyPoints": [
+        "超级岛「速览」",
+        "壁纸画质自动按最高档",
+        "更新提示只显示本次重点"
+      ],
       "highlights": [
         {
           "type": "新增",
@@ -278,12 +283,7 @@
       ],
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.3.3",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.3.3/mikcb-2.1.3.3-arm64-v8a.apk",
-      "assetName": "mikcb-2.1.3.3-arm64-v8a.apk",
-      "keyPoints": [
-        "超级岛「速览」",
-        "壁纸画质自动按最高档",
-        "更新提示只显示本次重点"
-      ]
+      "assetName": "mikcb-2.1.3.3-arm64-v8a.apk"
     },
     {
       "channelLabel": "正式版",
@@ -292,6 +292,11 @@
       "prerelease": false,
       "publishedAt": "2026-10-06T09:51:33Z",
       "description": "首页顶栏玻璃带「跟随默认材质」 · 顶栏翻页改成 MIUI 那种筛选胶囊 · 面板里的选值分段与全站统一",
+      "keyPoints": [
+        "首页顶栏玻璃带「跟随默认材质」",
+        "顶栏翻页改成 MIUI 那种筛选胶囊",
+        "面板里的选值分段与全站统一"
+      ],
       "highlights": [
         {
           "type": "新增",
@@ -512,12 +517,7 @@
       ],
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.3.2",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.3.2/mikcb-2.1.3.2-arm64-v8a.apk",
-      "assetName": "mikcb-2.1.3.2-arm64-v8a.apk",
-      "keyPoints": [
-        "首页顶栏玻璃带「跟随默认材质」",
-        "顶栏翻页改成 MIUI 那种筛选胶囊",
-        "面板里的选值分段与全站统一"
-      ]
+      "assetName": "mikcb-2.1.3.2-arm64-v8a.apk"
     },
     {
       "channelLabel": "预发布",
@@ -526,6 +526,11 @@
       "prerelease": true,
       "publishedAt": "2026-09-22T11:50:37Z",
       "description": "日视图课卡天气 · 天气设置页 · 天气一键定位",
+      "keyPoints": [
+        "日视图课卡天气",
+        "天气设置页",
+        "天气一键定位"
+      ],
       "highlights": [
         {
           "type": "新增",
@@ -634,12 +639,7 @@
       ],
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.3.1",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.3.1/mikcb-2.1.3.1-arm64-v8a.apk",
-      "assetName": "mikcb-2.1.3.1-arm64-v8a.apk",
-      "keyPoints": [
-        "日视图课卡天气",
-        "天气设置页",
-        "天气一键定位"
-      ]
+      "assetName": "mikcb-2.1.3.1-arm64-v8a.apk"
     },
     {
       "channelLabel": "正式版",
@@ -648,6 +648,11 @@
       "prerelease": false,
       "publishedAt": "2026-09-16T12:22:31Z",
       "description": "截屏后一键分享干净课表图 · 长按空白格出的虚线框可上下拖动改节数 · 首页右上角两颗玻璃球（更多 / 爱心）看场合发虚或发黑",
+      "keyPoints": [
+        "截屏后一键分享干净课表图",
+        "长按空白格出的虚线框可上下拖动改节数",
+        "首页右上角两颗玻璃球（更多 / 爱心）看场合发虚或发黑"
+      ],
       "highlights": [
         {
           "type": "新增",
@@ -668,12 +673,7 @@
       ],
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.2.3",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.2.3/mikcb-2.1.2.3-arm64-v8a.apk",
-      "assetName": "mikcb-2.1.2.3-arm64-v8a.apk",
-      "keyPoints": [
-        "截屏后一键分享干净课表图",
-        "长按空白格出的虚线框可上下拖动改节数",
-        "首页右上角两颗玻璃球（更多 / 爱心）看场合发虚或发黑"
-      ]
+      "assetName": "mikcb-2.1.2.3-arm64-v8a.apk"
     },
     {
       "channelLabel": "预发布",
@@ -682,6 +682,11 @@
       "prerelease": true,
       "publishedAt": "2026-09-16T04:31:04Z",
       "description": "周视图长按空白格加课 · 日历导出自选去处 · 设置说明文案",
+      "keyPoints": [
+        "周视图长按空白格加课",
+        "日历导出自选去处",
+        "设置说明文案"
+      ],
       "highlights": [
         {
           "type": "新增",
@@ -702,12 +707,7 @@
       ],
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.2.2",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.2.2/mikcb-2.1.2.2-arm64-v8a.apk",
-      "assetName": "mikcb-2.1.2.2-arm64-v8a.apk",
-      "keyPoints": [
-        "周视图长按空白格加课",
-        "日历导出自选去处",
-        "设置说明文案"
-      ]
+      "assetName": "mikcb-2.1.2.2-arm64-v8a.apk"
     },
     {
       "channelLabel": "预发布",
@@ -716,6 +716,11 @@
       "prerelease": true,
       "publishedAt": "2026-09-15T11:27:09Z",
       "description": "柔光玻璃 · 首页顶栏玻璃自由选 · 质感方案与「各表面当前材质」",
+      "keyPoints": [
+        "柔光玻璃",
+        "首页顶栏玻璃自由选",
+        "质感方案与「各表面当前材质」"
+      ],
       "highlights": [
         {
           "type": "新增",
@@ -800,12 +805,7 @@
       ],
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.2.1",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.2.1/mikcb-2.1.2.1-arm64-v8a.apk",
-      "assetName": "mikcb-2.1.2.1-arm64-v8a.apk",
-      "keyPoints": [
-        "柔光玻璃",
-        "首页顶栏玻璃自由选",
-        "质感方案与「各表面当前材质」"
-      ]
+      "assetName": "mikcb-2.1.2.1-arm64-v8a.apk"
     },
     {
       "channelLabel": "正式版",
@@ -814,6 +814,11 @@
       "prerelease": false,
       "publishedAt": "2026-09-09T09:19:25Z",
       "description": "桌面卡片「情侣课表」 · 情侣课表卡片后台实时合并 · 玻璃模式设置",
+      "keyPoints": [
+        "桌面卡片「情侣课表」",
+        "情侣课表卡片后台实时合并",
+        "玻璃模式设置"
+      ],
       "highlights": [
         {
           "type": "新增",
@@ -850,12 +855,7 @@
       ],
       "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v2.1.2",
       "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v2.1.2/mikcb-2.1.2-arm64-v8a.apk",
-      "assetName": "mikcb-2.1.2-arm64-v8a.apk",
-      "keyPoints": [
-        "桌面卡片「情侣课表」",
-        "情侣课表卡片后台实时合并",
-        "玻璃模式设置"
-      ]
+      "assetName": "mikcb-2.1.2-arm64-v8a.apk"
     }
   ]
 }
