@@ -617,18 +617,32 @@ void main() {
     final radius = HyperosMotionPlatform.displayCornerRadiusDp;
     expect(radius, greaterThan(12), reason: '取样点按半径摆，太小就取不到切口里');
 
-    // 快照模式（2026-10-17）：转场中屏上是首帧快照（无切口 —— 切口烘在真页
-    // 图层里，快照是页面像素的完整拷贝，滑入中的圆角由转场壳承担）。本用例
-    // 钉的位置关系不变：切口在**真页自己的图层**里（= 框架缓存边界之内），
-    // 所以对离屏真页的 RepaintBoundary 出图断言；落定换回真页后同一性质
-    // 直接可见（快照已释放，出图的就是屏上页面）。
+    // 快照模式（2026-10-17）：转场中屏上是首帧快照。本用例钉的位置关系不变：
+    // 切口在**框架缓存边界之内**，所以对框架那层 RepaintBoundary 出图断言。
+    //
+    // 2026-10-18：闸门里给真页补了自己的栅格边界（换层不重画页面），它排在
+    // 切口**内侧** —— 从页面往上数的第一层是它，第二层才是框架的 `_subtreeKey`
+    // 缓存边界。取样必须取第二层，否则量到的是「切口外侧」的页面像素。
     RenderObject? node =
         tester.renderObject(find.byKey(enteringKey, skipOffstage: false));
-    while (node != null && node is! RenderRepaintBoundary) {
+    RenderRepaintBoundary? frameworkBoundary;
+    var boundariesSeen = 0;
+    while (node != null) {
       node = node.parent;
+      if (node is RenderRepaintBoundary) {
+        boundariesSeen++;
+        if (boundariesSeen == 2) {
+          frameworkBoundary = node;
+          break;
+        }
+      }
     }
-    expect(node, isA<RenderRepaintBoundary>(), reason: '页面外面应有框架的缓存边界');
-    final boundary = node! as RenderRepaintBoundary;
+    expect(
+      frameworkBoundary,
+      isNotNull,
+      reason: '页面外面应有闸门的页面栅格边界 + 框架的缓存边界两层',
+    );
+    final boundary = frameworkBoundary!;
     final pageSize = boundary.size;
 
     Future<ByteData> capturePageLayer() async {
@@ -758,6 +772,20 @@ void main() {
     );
     expect(snapshotImage.image, isNotNull, reason: '快照层应在屏上参与滑动');
 
+    // 照片必须是**页面像素本身**，不能带烤死的圆角缺口（2026-10-18 真机第三轮）：
+    // 缺口是透明的，外层裁切只能削像素、填不回来 —— 照片里若有一个恒定的满值
+    // 缺口，它不会跟着末段的收平一起收，收尾就会露出一块「圆角闪现消失」。
+    final snapshotBytes = await tester.runAsync(
+      () => snapshotImage.image!.toByteData(),
+    );
+    final snapshotWidth = snapshotImage.image!.width;
+    final cornerAlpha = snapshotBytes!.getUint8((snapshotWidth + 1) * 4 + 3);
+    expect(
+      cornerAlpha,
+      255,
+      reason: '快照左上角必须是不透明页面像素（缺口只由切口每帧现算，不能烤进照片）',
+    );
+
     // 2) 快照期间内容变化：真页跟着重建（屏外），但滑动画面里仍是快照 ——
     //    新文本在退休前不可见。此刻仍在滑入中段（远未到收束带）。
     setRootState(() => contentLabel = 'updated');
@@ -792,9 +820,14 @@ void main() {
     // 2026-10-18 真机第一轮反馈的回归：快照若撑到停稳才退休，末段 85ms 的
     // 圆角收束被烤死的满值切口顶住、停稳一帧蹦直角 —— 用户读作「圆角比别的
     // 页早收、变更快」。退休判据必须与 transitionCornerRadiusFactor 的收束带
-    // 同一条（进度 ≥ 1 - cornerClipSettleBand）。曲线前倾（500ms 场、t=0.5
-    // 已 ~95%），用真实时长驱动：走到「曲线值 ≈ 0.9」的帧读快照在屏，走到
-    // 停稳后再确认已退休。
+    // 同一条（**缓动后**进度 ≥ 1 - cornerClipSettleBand）。
+    //
+    // 2026-10-18 真机第三轮补的教训：两条判据的进度必须是**缓动后**的。路由
+    // 动画本身是时间线性的，0.99 / 0.996 落在线性轴的 495ms / 498ms；视觉上的
+    // 预热点在 371ms、收束带起点在 415ms —— 差出来的 80~125ms 让照片顶着满值
+    // 圆角撑过整段收平（用户：「还是能明显看到圆角闪现消失」）。所以本用例按
+    // **缓动后进度**驱动：旧实现（判据读原始动画值）会在「缓动值 0.99」这一
+    // 段就提前退休/或不该有快照时仍有快照，两种都会红。
     AndroidAnimationScaleService.setUserTransitionSpeed(1);
     const enteringKey = ValueKey('retire-entering');
     await tester.pumpWidget(
@@ -829,18 +862,23 @@ void main() {
         )
         .evaluate()
         .isNotEmpty;
-    double animationValue() => ModalRoute.of(
-          tester.element(find.byKey(enteringKey, skipOffstage: false)),
-        )!.animation!.value;
+    /// 闸门判据用的进度：缓动后（与位移 / 圆角 / 压暗同一条曲线）。
+    double easedProgress() => HyperosNavigation.transitionCurve.transform(
+          ModalRoute.of(
+            tester.element(find.byKey(enteringKey, skipOffstage: false)),
+          )!
+              .animation!
+              .value,
+        );
 
     await tester.tap(find.text('push'));
     await tester.pump();
     // 首帧门槛 + 快照拍照在帧末了结，下一帧解锁锚定。
     await tester.pump(const Duration(milliseconds: 1));
 
-    // 逐 10ms 步进到曲线值首次越过 0.5（滑入中段）：此刻必须仍在快照模式，
+    // 逐 10ms 步进到缓动值越过 0.5（滑入中段）：此刻必须仍在快照模式，
     // 且真页仍离屏（预热点 0.99 未到）。
-    while (animationValue() < 0.5) {
+    while (easedProgress() < 0.5) {
       await tester.pump(const Duration(milliseconds: 10));
     }
     expect(hasSnapshot(), isTrue, reason: '滑入中段（收束带外）快照应在屏参与滑动');
@@ -850,12 +888,14 @@ void main() {
       reason: '中段真页必须离屏（快照模式下 paint 全跳过 —— 省钱的唯一方式）',
     );
 
-    // 预热点（0.99）：真页放回屏下（被快照盖住，可见树上找得到），快照仍在。
-    while (animationValue() <
+    // 预热点（缓动后 0.99 ≈ 371ms）：真页放回屏下（被快照盖住，可见树上找得到），
+    // 快照仍在。
+    while (easedProgress() <
         HyperosMiuixNavigation.snapshotWarmupProgress) {
       await tester.pump(const Duration(milliseconds: 2));
     }
-    await tester.pump(const Duration(milliseconds: 1));
+    // 预热在帧末回调里置位，再走一帧才生效。
+    await tester.pump(const Duration(milliseconds: 2));
     expect(hasSnapshot(), isTrue, reason: '预热阶段快照仍盖在真页上面');
     expect(
       find.byKey(enteringKey),
@@ -863,16 +903,93 @@ void main() {
       reason: '预热点后真页必须在屏（画一帧建栅格缓存，重活落在画面几乎不动的时刻）',
     );
 
-    // 收束带（1 - cornerClipSettleBand）：撤快照 —— 纯合成换层，不等停稳。
+    // 收束带（缓动后 1 - cornerClipSettleBand ≈ 415ms）：撤快照 —— 纯合成换层，
+    // 不等停稳。
     const band = HyperosMiuixNavigation.cornerClipSettleBand;
-    while (animationValue() < 1 - band) {
+    while (easedProgress() < 1 - band) {
       await tester.pump(const Duration(milliseconds: 2));
     }
-    await tester.pump(const Duration(milliseconds: 1));
-    expect(hasSnapshot(), isFalse,
-        reason: '进度进入收束带（1 - cornerClipSettleBand = ${1 - band}）后'
-            '快照必须退休 —— 末段圆角收束必须发生在活像素上');
+    await tester.pump(const Duration(milliseconds: 2));
+    expect(
+      hasSnapshot(),
+      isFalse,
+      reason: '缓动进度进入收束带（1 - cornerClipSettleBand = ${1 - band}）后'
+          '快照必须退休 —— 末段圆角收束必须发生在活像素上，且不能再被照片里'
+          '烤死的缺口顶住',
+    );
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('撤快照不重画页面：换层是纯合成操作', (tester) async {
+    // 2026-10-18 真机第三轮：撤快照那一帧只翻闸门的 Offstage 布尔，Stack 会
+    // 重画。若真页没有自己的栅格边界，这次重画会把整棵页面子树再 paint 一遍
+    // （重页面 50~80ms），正好压在圆角收平段的起点 —— 用户读作「圆角闪现
+    // 消失」。闸门里给真页挂了一层 RepaintBoundary 之后，页面在一次转场里
+    // 只该被 paint 一次（首帧 / 预热帧），退休帧必须复用那张栅格。
+    AndroidAnimationScaleService.setUserTransitionSpeed(1);
+    final paints = ValueNotifier<int>(0);
+    addTearDown(paints.dispose);
+    const enteringKey = ValueKey('paint-entering');
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => HyperosNavigation.push(
+                  context,
+                  builder: (_) => Scaffold(
+                    key: enteringKey,
+                    body: Center(
+                      child: _PaintCountingBox(
+                        counter: paints,
+                        child: const SizedBox(width: 120, height: 120),
+                      ),
+                    ),
+                  ),
+                ),
+                child: const Text('push'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    double easedProgress() => HyperosNavigation.transitionCurve.transform(
+          ModalRoute.of(
+            tester.element(find.byKey(enteringKey, skipOffstage: false)),
+          )!
+              .animation!
+              .value,
+        );
+
+    await tester.tap(find.text('push'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+
+    // 走到预热点之后：真页回到屏下画一帧（若快照期间有内容变化，重活落在
+    // 这里 —— 画面几乎不动、且被快照盖住）。
+    while (easedProgress() <
+        HyperosMiuixNavigation.snapshotWarmupProgress) {
+      await tester.pump(const Duration(milliseconds: 2));
+    }
+    await tester.pump(const Duration(milliseconds: 2));
+    final paintsBeforeRetire = paints.value;
+
+    // 走完收束带 + 停稳：退休帧不许再 paint 页面。
+    await tester.pumpAndSettle();
+    expect(
+      paints.value,
+      paintsBeforeRetire,
+      reason: '撤快照必须是纯合成操作 —— 退休帧重画一次页面，重页面上就是'
+          '50~80ms 的卡顿正好压在圆角收平里（用户读作「圆角闪现消失」）',
+    );
+    expect(paintsBeforeRetire, greaterThan(0), reason: '页面至少应被画过一次');
   });
 
   testWidgets('豁免页：snapshotTransition=false 的路由全程真页参与滑动', (tester) async {
@@ -931,8 +1048,7 @@ void main() {
 
 /// 顶栏带探针：走与设置子页同一套外壳（折叠大标题 + 磨砂带 + 路由模糊门），
 /// 而不是手工拼 scope —— 要钉住的正是「门在转场里翻、带不跟着翻」这条链。
-class _BandProbePage extends StatelessWidget {
-  const _BandProbePage();
+class _BandProbePage extends StatelessWidget {  const _BandProbePage();
 
   @override
   Widget build(BuildContext context) {
@@ -947,5 +1063,32 @@ class _BandProbePage extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// 画一次计一次数的探针（`_PaintCountingBox` 的渲染对象）。
+///
+/// 用途：钉住「撤快照不重画页面」—— 闸门撤照片那一帧若没有页面自己的栅格
+/// 边界，`Stack` 重画会把整棵页面子树再 paint 一遍，重页面上正好卡在圆角
+/// 收平段（2026-10-18 真机第三轮）。
+class _PaintCountingBox extends SingleChildRenderObjectWidget {
+  const _PaintCountingBox({required this.counter, super.child});
+
+  final ValueNotifier<int> counter;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _PaintCountingBoxRender(counter);
+}
+
+class _PaintCountingBoxRender extends RenderProxyBox {
+  _PaintCountingBoxRender(this.counter);
+
+  final ValueNotifier<int> counter;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    counter.value++;
+    super.paint(context, offset);
   }
 }

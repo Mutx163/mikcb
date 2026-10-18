@@ -571,6 +571,11 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
   /// 屏上是这张图。null = 还没拍到（首帧出画前）/ 已释放（停稳或本页未启用）。
   ui.Image? _snapshot;
 
+  /// 页面自己的栅格边界（[_buildStack] 里那层）。拍照取它：拍出来的是**页面
+  /// 像素、不带切口** —— 滑入中的圆角由 [_MiuixNavPageCornerCut] 每帧现算，
+  /// 照片里不能再烤死一个缺口（烤死的缺口不跟着收，收尾会露月牙）。
+  final GlobalKey _pageBoundaryKey = GlobalKey();
+
   /// 快照拍照流程是否已了结（成功 / 失败都算）。首帧门槛的解锁判据读它：
   /// 了结之前动画锁在 0，拍照的时间落在「点下去 → 半拍停顿」里。
   bool _captureSettled = false;
@@ -605,14 +610,15 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
     if (!mounted) {
       return;
     }
-    // 直接拍框架的页面缓存边界（`_ModalScopeState` 的 `_subtreeKey`）：它包着
-    // 「页面 + 内层圆角切口」的完整图层 —— 快照因此自带切口，合成期外层裁切
-    // 万一掉帧，快照也不会露出方角（与第四轮「切口烘进页面自己的图层」同一
-    // 性质）。自建一层 RepaintBoundary 反而会把切口隔在快照外面。
-    RenderObject? node = context.findRenderObject();
-    while (node != null && node is! RenderRepaintBoundary) {
-      node = node.parent;
-    }
+    // 拍**页面自己的栅格边界**（闸门里那层，见 [_buildStack]）：
+    //
+    // 2026-10-18 真机第三轮改口径：以前拍框架的 `_subtreeKey`（包着「页面 +
+    // 内层圆角切口」），想让快照自带切口。但切口现在改成与外层同步**连续收**
+    // （见 [_MiuixNavPageCornerCut]），烘死在照片里的缺口不会跟着收 —— 照片里
+    // 留下一个恒定的满值缺口，外层的裁切只能削像素、填不回来。拍页面自己则
+    // 天然不带缺口：滑入中的圆角由每帧现算的切口负责（切口仍在框架缓存边界
+    // 之内，掉帧兜底的性质没变）。
+    final node = _pageBoundaryKey.currentContext?.findRenderObject();
     if (node is! RenderRepaintBoundary ||
         !node.attached ||
         node.debugNeedsPaint) {
@@ -646,32 +652,47 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
   /// 栅格缓存在这个「画面几乎不动」的时刻建立。
   bool _warmedUp = false;
 
+  /// 判据用的进度：**缓动后**（与位移、圆角、压暗同一条曲线）。
+  ///
+  /// 路由动画本身的时间轴是线性的 —— 曲线挂在转场壳那一侧
+  /// （`buildSharedAxisTransition` 里的 `CurvedAnimation`）。本闸门拿到的是
+  /// 路由的原始动画，若直接读 `animation.value`，下面两个阈值会被解释成
+  /// 线性时间：0.99 → 495ms、0.996 → 498ms；而视觉上的收束带在缓动时间轴
+  /// 的 **415ms** 就开始了（0.996 对应 t=0.83），预热点 0.99 在 **371ms**。
+  /// 差出来的这 80~125ms 正好把「照片顶着满值圆角撑过整段收平、最后一步蹦成
+  /// 直角」—— 2026-10-18 真机第三轮反馈（「还是能明显看到圆角闪现消失」）的
+  /// 根因之一。判据换算到与视觉同一条时间轴后，退休就落在收束带起点、预热
+  /// 落在页面几乎不动的尾段，两段式退休才真正成立。
+  double get _easedProgress => HyperosNavigation.transitionCurve.transform(
+        widget.animation.value.clamp(0.0, 1.0),
+      );
+
   /// 快照退休判据（每帧由 [build] 的 AnimatedBuilder 现读）。
   ///
-  /// 收束带起点（进度 ≥ `1 - cornerClipSettleBand`）或动画离开 forward
+  /// 收束带起点（缓动进度 ≥ `1 - cornerClipSettleBand`）或动画离开 forward
   /// （停稳 / 被打断）都退休 —— 只要「烤死的满值切口」还能被看出来是错的，
   /// 就把活页换回屏上。判据与 [HyperosNavigation.transitionCornerRadiusFactor]
-  /// 用同一个带宽常量，两条时间线必然重合。**退休前必须先预热**（见
-  /// [HyperosMiuixNavigation.snapshotWarmupProgress]）：没预热就撤快照，
-  /// 换层帧是真页的第一次整机绘制，会卡在收平段里读作蹦变。
+  /// 用同一个带宽常量**和同一条曲线**，两条时间线必然重合。**退休前必须先
+  /// 预热**（见 [HyperosMiuixNavigation.snapshotWarmupProgress]）：没预热就
+  /// 撤快照，换层帧是真页的第一次整机绘制，会卡在收平段里读作蹦变。
   bool get _snapshotShouldRetire {
     final animation = widget.animation;
     final status = animation.status;
     if (status != AnimationStatus.forward) {
       return true;
     }
-    return animation.value >=
+    return _easedProgress >=
         1 - HyperosMiuixNavigation.cornerClipSettleBand;
   }
 
-  /// 预热判据：进度到达 [HyperosMiuixNavigation.snapshotWarmupProgress]
+  /// 预热判据：缓动进度到达 [HyperosMiuixNavigation.snapshotWarmupProgress]
   /// （或动画离开 forward 的兜底）就把真页放回屏下画。
   bool get _shouldWarmUp {
     final animation = widget.animation;
     if (animation.status != AnimationStatus.forward) {
       return true;
     }
-    return animation.value >=
+    return _easedProgress >=
         HyperosMiuixNavigation.snapshotWarmupProgress;
   }
 
@@ -762,7 +783,19 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
         // 照常到位），paint 与语义完全跳过；这是省下每帧重栅格化的唯一
         // 方式。预热后放回屏下（被快照盖住，内容显形但不可见）；快照撤除
         // 后它就是普通页面。
-        Offstage(offstage: pageOffstage, child: widget.child),
+        //
+        // 页面外面这层 `RepaintBoundary` 是「换层必须便宜」的实体（2026-10-18
+        // 真机第三轮）：撤快照那一帧只翻 `Offstage` 布尔，Stack 会重画 ——
+        // 若真页没有自己的栅格边界，`paint` 会把整棵页面子树再跑一遍
+        // （重页面 50~80ms），正好压在圆角收平段的起点。有了这层，预热帧建好
+        // 的栅格在退休帧被直接复用，换层退化成纯合成操作。
+        Offstage(
+          offstage: pageOffstage,
+          child: RepaintBoundary(
+            key: _pageBoundaryKey,
+            child: widget.child,
+          ),
+        ),
         // 快照层：恒挂（红线），offstage 布尔驱动。快照模式下它就是屏上
         // 参与滑动的那张图；真页模式下不可见、不占合成。
         Offstage(
@@ -789,27 +822,31 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
 /// 位置只能在这里（`buildPage` 的返回值内）：`buildTransitions` 拿到的 `child`
 /// 已经被框架边界包成一整块，塞不进边界内侧。
 ///
-/// 与转场壳那层同半径、同形状（同为「只裁前缘两角」）：
-/// * 中段两边都是满半径 —— 视觉与只有转场壳裁切时完全一致；
-/// * 末段转场壳按 [HyperosNavigation.transitionCornerRadiusFactor] 收到 0 时这里
-///   仍是满半径 —— 取值更松，收束照旧由更严的外层决定；外层万一没生效，切口也
-///   不会消失。
+/// 与转场壳那层**同半径、同形状、同一条收束曲线**（同为「只裁前缘两角」）：
+/// 半径 = 设备圆角 × [HyperosNavigation.transitionCornerRadiusFactor]（按缓动后
+/// 进度算），两端精确为 0。
 ///
-/// 被覆盖页不在动（自己的 `animation` 已停稳），这里不裁 —— 与转场壳同一条判据
-/// 同一个值（视差取 0 之后被覆盖页不动，前缘两角始终贴着屏幕边缘）。
+/// 末段为什么必须**连续**收（2026-10-18 真机第三轮）：这一步原来是二值的
+/// （`forward` / `reverse` 满半径、停稳 0）——用意是「外层万一没生效，切口也不会
+/// 消失」。它有两个后果：
+/// * 收平只发生在停稳那一帧：转场壳的裁切已在 415~500ms 连续收掉，这里仍顶着
+///   满半径的缺口，到停稳一帧蹦成 0 —— 观感就是「圆角闪现消失」；
+/// * 快照模式把这条缺口**烤进了照片**：缺口是透明的，外层裁切只能削像素、填不
+///   回来，于是照片顶着恒定的满值圆角撑过整段收平，换层时一起蹦掉。
+/// 改成同一条曲线后，缺口与转场壳同步收；快照也改成拍**页面自己的栅格**
+/// （不带切口），照片上根本没有缺口可烤（滑入中的圆角由这层每帧现算）。
 ///
-/// 结构恒定（同 [HyperosNavigation.buildSharedAxisTransition] 的红线）：`ClipRRect`
-/// 常挂、页面作为 `child` 传给 [AnimatedBuilder]，每帧只重建这一层包装（页面子树
-/// 实例不变：既不重建页面，也不产生 deactivate）。半径只在「本页在动 / 停稳」之间
-/// 翻转一次，落点分别是转场起步帧与停稳帧，两处本来就伴随页面自己的重绘。
+/// 半径逐帧变化为什么是便宜的：页面外面已经有闸门那层 `RepaintBoundary`，这层
+/// [ClipRRect] 的 `needsCompositing` 为真 —— 半径变化只更新 `ClipRRectLayer` 的
+/// rrect，不重栅格化页面（2026-10-18 同轮补的边界，见 [_MiuixNavSnapshotGate]）。
 class _MiuixNavPageCornerCut extends StatelessWidget {
   const _MiuixNavPageCornerCut({required this.animation, required this.child});
 
   /// 本页自己的路由动画（0 = 完全移出屏外，1 = 就位）。
   ///
-  /// 判据用 [AnimationStatus] 而不是取值区间：push 的首帧门槛把进度锁在 0 的那
-  /// 一段也算「在动」—— 切口必须从页面**第一次被栅格化**时就在，否则解锁那一帧
-  /// 半径从 0 跳到满值，等于把页面缓存作废一次，正好压在最贵的起步帧上。
+  /// 这里拿的是路由**原始**动画（时间线性）；曲线在
+  /// [HyperosNavigation.transitionCurve]，必须自己过一遍才能和转场壳的位移 /
+  /// 圆角对齐（同 [_MiuixNavSnapshotGateState._easedProgress] 的理由）。
   final Animation<double> animation;
 
   final Widget child;
@@ -830,10 +867,12 @@ class _MiuixNavPageCornerCut extends StatelessWidget {
       animation: animation,
       child: child,
       builder: (context, child) {
-        final moving =
-            animation.status == AnimationStatus.forward ||
-            animation.status == AnimationStatus.reverse;
-        final corner = moving ? Radius.circular(radius) : Radius.zero;
+        final eased = HyperosNavigation.transitionCurve.transform(
+          animation.value.clamp(0.0, 1.0),
+        );
+        final corner = Radius.circular(
+          radius * HyperosNavigation.transitionCornerRadiusFactor(eased),
+        );
         // 只裁前缘两角（LTR = 左），与转场壳同口径：贴屏幕边缘那两个角不裁。
         return ClipRRect(
           borderRadius: isRtl
@@ -1001,8 +1040,9 @@ class HyperosPageRoute<T> extends PageRoute<T> {
       // 切口必须落在框架的页面缓存边界（`_ModalScopeState` 的
       // `RepaintBoundary(key: _subtreeKey)`）**之内**，只能从 `buildPage` 挂
       //（见 [_MiuixNavPageCornerCut] 的说明）。快照闸门同样只能在 `buildPage`
-      // 挂（它要包住页面本体），且在切口内侧：快照是「页面像素 + 切口」的
-      // 完整拷贝，滑入中的圆角由转场壳裁切承担。
+      // 挂（它要包住页面本体），且在切口内侧：快照拍的是**页面像素本身**
+      // （不带切口），滑入中的圆角由这层切口每帧现算 —— 烤死在照片里的缺口
+      // 不会跟着收，收尾会露月牙（2026-10-18 真机第三轮）。
       child: _MiuixNavPageCornerCut(
         animation: animation,
         child: snapshotTransition
