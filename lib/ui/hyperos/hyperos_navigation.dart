@@ -1052,7 +1052,15 @@ class HyperosPageRoute<T> extends PageRoute<T> {
   ///
   /// 标记用 route name（未命名路由给 `unnamed`），与 `[frame-perf] mark` 行配套读。
   /// [FramePerfProbe] 在未安装时是空操作，release 里更是一行都不输出。
-  String get _probeLabel => settings.name ?? 'unnamed';
+  /// 无名路由的「被推进来的那个 widget 类型」，在第一次建页时补上。
+  ///
+  /// 为什么需要它：真机日志里最慢的那几趟全叫 `route:push:unnamed`（首页 ⋯ 菜单
+  /// 直接推的页面没有 `settings.name`），每帧 raster 10~12ms、帧率只有 80~96，
+  /// 而在设置内部跳转（有名字的）只要 4.5~6ms、110~150fps。**认不出是哪个页面，
+  /// 就没法继续查**，所以把 widget 类型当标签兜底（只读字符串，不碰节点）。
+  String? _probePageType;
+
+  String get _probeLabel => settings.name ?? _probePageType ?? 'unnamed';
 
   @override
   TickerFuture didPush() {
@@ -1141,6 +1149,17 @@ class HyperosPageRoute<T> extends PageRoute<T> {
     Animation<double> animation,
     Animation<double> secondaryAnimation,
   ) {
+    // 页面内容只建一次（下面两个分支共用同一个实例，避免重复调用 builder）。
+    final content = builder(context);
+    // 无名路由：这里记下真正的页面类型，并补一条标记。
+    //
+    // 时序刚好：`didPush` 打的那条是 `route:push:unnamed`（那时还不知道是谁），
+    // 而 buildPage 发生在**转场第一帧构建期之内**、还没有任何一帧被结算，所以探针
+    // 会把这两条合并成一条 —— `route:push:unnamed+route:page:XxxPage`。
+    _probePageType = content.runtimeType.toString();
+    if (settings.name == null) {
+      FramePerfProbe.mark('route:page:$_probePageType');
+    }
     // 首帧拆解采样点（临时诊断件）：整页子树的构建 / 布局 / 绘制时刻。
     return FirstFrameProbeNode(
       nodeTag: 'page',
@@ -1164,12 +1183,12 @@ class HyperosPageRoute<T> extends PageRoute<T> {
               onAttached: (gate) => _snapshotGate = gate,
               child: _MiuixNavLeadingCornerCut(
                 animation: animation,
-                child: builder(context),
+                child: content,
               ),
             )
           : _MiuixNavLeadingCornerCut(
               animation: animation,
-              child: builder(context),
+              child: content,
             ),
     );
   }
