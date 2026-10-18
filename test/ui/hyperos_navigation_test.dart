@@ -409,7 +409,9 @@ void main() {
     }
 
     await tester.pumpAndSettle();
-    // 落定后圆角半径必须精确为 0（两端收束，静止态不残留可见圆角缺口）。
+    // 停稳后前缘圆角**保持不变**（2026-10-18 定案）：半径全程恒定，静止态不再
+    // 收成 0 —— 那块本来就压在机身圆角下面，收不收肉眼一样，但「收」这个动作
+    // 在重页面上会被掉帧放大成「圆角闪现消失」。
     final border = tester
         .widget<ClipRRect>(
           find
@@ -418,8 +420,12 @@ void main() {
         )
         .borderRadius
         .resolve(TextDirection.ltr);
-    expect(border.topLeft.x, 0);
-    expect(border.bottomLeft.x, 0);
+    expect(
+      border.topLeft.x,
+      HyperosMotionPlatform.displayCornerRadiusDp,
+      reason: '停稳后半径必须与转场中同一个值（不再末段收 0）',
+    );
+    expect(border.bottomLeft.x, border.topLeft.x);
   });
 
   testWidgets('转场全程顶栏磨砂带参数恒定：tint 不随路由动画翻', (tester) async {
@@ -563,6 +569,74 @@ void main() {
     );
   });
 
+  testWidgets('前缘圆角半径全程恒定：转场中与停稳后同一个值', (tester) async {
+    // 2026-10-18 定案（真机连续四轮「圆角闪现消失」的收口）：末段**不许**再改
+    // 半径。旧方案在最后 ~85ms 把半径从满值收到 0（先是二值、后是连续曲线）——
+    // 重页面上那一段只有 1~2 帧，变化过程读作「圆角闪现消失」；轻页面帧率够，
+    // 所以只有那两页看得见。四轮微调（改时机、改带宽、加预热、加栅格边界）都在
+    // 挪这 85ms，症状不动。
+    //
+    // 现在的契约：半径 = 设备圆角读数，从第一帧到停稳一个值都不变。本用例在
+    // 转场中段、接近贴边、停稳后三处读同一层 ClipRRect，必须处处相等。
+    AndroidAnimationScaleService.setUserTransitionSpeed(1);
+    const enteringKey = ValueKey('constant-radius-entering');
+    final expected = HyperosMotionPlatform.displayCornerRadiusDp;
+    expect(expected, greaterThan(0), reason: '测试宿主默认给回退半径，切口应启用');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => HyperosNavigation.push(
+                  context,
+                  builder: (_) => const Scaffold(
+                    key: enteringKey,
+                    body: Center(child: Text('radius')),
+                  ),
+                ),
+                child: const Text('push'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    double? radiusOfEnteringPage() {
+      final finder = find
+          .ancestor(
+            of: find.byKey(enteringKey, skipOffstage: false),
+            matching: find.byType(ClipRRect, skipOffstage: false),
+          )
+          .first;
+      final border = tester.widget<ClipRRect>(finder).borderRadius.resolve(
+            TextDirection.ltr,
+          );
+      return border.topLeft.x;
+    }
+
+    await tester.tap(find.text('push'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+    expect(radiusOfEnteringPage(), expected, reason: '起步帧就是满半径');
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(radiusOfEnteringPage(), expected, reason: '滑入中段仍是满半径');
+    await tester.pump(const Duration(milliseconds: 340)); // ≈460ms，接近贴边
+    expect(
+      radiusOfEnteringPage(),
+      expected,
+      reason: '贴边前那一段也**不许**开始收 —— 收的动作本身就会在重页面上被放大',
+    );
+    await tester.pumpAndSettle();
+    expect(radiusOfEnteringPage(), expected, reason: '停稳后半径必须与转场中一致');
+  });
+
   testWidgets('圆角切口烘进页面自己的图层：合成阶段漏掉外层裁切也没有像素可露', (
     tester,
   ) async {
@@ -578,7 +652,8 @@ void main() {
     // `RepaintBoundary`）：
     // * 切口在边界里（本次修法）：图里前缘圆角区是**空的**（alpha 0）；
     // * 切口只在边界外（只有转场壳裁切）：图里是完整的白色方块。
-    // 同时钉住「停稳不留缺口」：落定后同一位置必须重新是不透明的页面像素。
+    // 同时钉住「停稳后切口仍在」：半径全程恒定，静止态不再发生一次
+    // 「缺口消失」（重页面上那一下就是用户看到的圆角闪现）。
     AndroidAnimationScaleService.setUserTransitionSpeed(1);
     const enteringKey = ValueKey('entering-page');
     await tester.pumpWidget(
@@ -680,12 +755,20 @@ void main() {
 
     await tester.pumpAndSettle();
     final settled = await capturePageLayer();
+    // 2026-10-18 定案：停稳后切口**保持**（半径全程恒定，不再收 0）。
+    // 那块区域本来就压在机身圆角下面，收不收肉眼一样；而「收」这个动作在重页面
+    // 上会被掉帧放大成「圆角闪现消失」—— 所以转场与静止态用同一个半径。
     expect(
       alphaOf(settled, 1, pageSize.height - 1),
-      255,
-      reason: '落定后切口必须放开：屏幕圆角那一小块不留常驻缺口（半径精确回到 0）',
+      0,
+      reason: '停稳后前缘圆角仍要切：半径恒定，静止态不再出现一次几何变化',
     );
-    expect(alphaOf(settled, 1, 1), 255, reason: '左上同理');
+    expect(alphaOf(settled, 1, 1), 0, reason: '左上同理');
+    expect(
+      alphaOf(settled, radius, pageSize.height - radius),
+      255,
+      reason: '圆心处仍是页面像素 —— 恒定切口只切角',
+    );
   });
 
   testWidgets('快照滑入：转场中屏上是首帧快照，落定换回真页', (tester) async {

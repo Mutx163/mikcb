@@ -97,10 +97,10 @@ abstract final class HyperosNavigation {
 
   /// 前缘圆角的收束因子（0 = 不裁，1 = 满半径），两端为 0、中段满半径。
   ///
-  /// 官方对这条效果是二值开关（`NavDisplayEffects.shouldClipCornersAt`：只有
-  /// 严格跨越前缘 `-1 < d < 0` 才裁）。二值在真机上会「闪」：切口里露的是旧页，
-  /// 页面一停稳这块一帧之内换成新页背景，对比很强。这里把它换成连续收束，
-  /// 半径在末段平滑收到 0 —— 圆角是「锁进屏幕边缘」，不是「啪一下没了」。
+  /// **2026-10-18 起不再用于前缘裁切本身**：滑动转场的前缘圆角改为**半径全程
+  /// 恒定**（见 `_MiuixNavPageCornerCut` —— 末段任何一次几何变化都会被重页面的
+  /// 掉帧放大成「圆角闪现消失」）。保留这个因子只服务非几何用途：被覆盖页压暗 /
+  /// 透明度衰减的末段释放（[coveredAlphaFor] / [scrimAlphaFor]）。
   ///
   /// 参数按**缓动后**的进度算（与位移同一条曲线），所以「离落点还有多远」= `band`
   /// 倍的屏宽（见 [HyperosMiuixNavigation.cornerClipSettleBand]，那里有取值推导）。
@@ -319,11 +319,15 @@ class _MiuixNavPageTransition extends StatelessWidget {
         final page = _MiuixNavClippedPage(
           // 存在性由设备圆角读数决定（转场全程恒定，不随动画翻转）；
           clipEnabled: clipRadius > 0,
-          // 前缘圆角：满半径滑入，末段按 transitionCornerRadiusFactor 平滑收到 0
-          //（两端都精确是 0，静止态不可能残留圆角缺口）。
-          radius:
-              clipRadius *
-              HyperosNavigation.transitionCornerRadiusFactor(enterValue),
+          // 前缘圆角：**恒定半径，全程不随进度变**（2026-10-18 定案）。
+          //
+          // 以前这里在末段按 `transitionCornerRadiusFactor` 平滑收到 0。那不是
+          // 「更平滑」，而是把一次**不可控的几何变化**压进最后 ~85ms：重页面上
+          // 那一段只有 1~2 帧，收的过程读作「圆角闪现消失」（真机连续四轮）。
+          // 现在半径不动 —— 圆角从滑入第一步就在，一直走到页面贴边、和机身圆角
+          // 重合（该处被机身圆角盖住，静止态看不出来），转场自始至终没有一次
+          // 「圆角形状变化」可供掉帧放大。读数取上下两角的较小值、读不到则不裁。
+          radius: clipRadius,
           alpha: coveredAlpha,
           // 帧缓存边界：转场期间只重新合成「圆角裁切 + 透明度 + 位移」，
           // 页面像素直接复用，不再逐帧重栅格化整页。
@@ -459,8 +463,9 @@ class _MiuixNavClippedPage extends StatelessWidget {
   /// 是否挂圆角裁切层 —— 只由**设备圆角读数**决定（转场全程恒定）。
   final bool clipEnabled;
 
-  /// 动画中的裁切半径（已按 [HyperosNavigation.transitionCornerRadiusFactor]
-  /// 收束过）；两端精确为 0，静止态没有可见裁切。
+  /// 裁切半径：**设备圆角读数，全程恒定**（2026-10-18 起不再随进度收束 ——
+  /// 末段收束会被重页面的掉帧放大成「圆角闪现消失」）。贴边后该区域被机身
+  /// 圆角盖住，静止态看不出；读数取上下两角较小值，保证永远落在机身圆角里侧。
   final double radius;
 
   /// 被覆盖页的透明度（1 = 不透明，`RenderOpacity` 直绘）。
@@ -822,32 +827,26 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
 /// 位置只能在这里（`buildPage` 的返回值内）：`buildTransitions` 拿到的 `child`
 /// 已经被框架边界包成一整块，塞不进边界内侧。
 ///
-/// 与转场壳那层**同半径、同形状、同一条收束曲线**（同为「只裁前缘两角」）：
-/// 半径 = 设备圆角 × [HyperosNavigation.transitionCornerRadiusFactor]（按缓动后
-/// 进度算），两端精确为 0。
+/// 与转场壳那层**同半径、同形状**（同为「只裁前缘两角」），而且**恒定不变**：
+/// 半径 = 设备圆角读数，从滑入第一步到页面停稳一个值都不改（2026-10-18 定案）。
 ///
-/// 末段为什么必须**连续**收（2026-10-18 真机第三轮）：这一步原来是二值的
-/// （`forward` / `reverse` 满半径、停稳 0）——用意是「外层万一没生效，切口也不会
-/// 消失」。它有两个后果：
-/// * 收平只发生在停稳那一帧：转场壳的裁切已在 415~500ms 连续收掉，这里仍顶着
-///   满半径的缺口，到停稳一帧蹦成 0 —— 观感就是「圆角闪现消失」；
-/// * 快照模式把这条缺口**烤进了照片**：缺口是透明的，外层裁切只能削像素、填不
-///   回来，于是照片顶着恒定的满值圆角撑过整段收平，换层时一起蹦掉。
-/// 改成同一条曲线后，缺口与转场壳同步收；快照也改成拍**页面自己的栅格**
-/// （不带切口），照片上根本没有缺口可烤（滑入中的圆角由这层每帧现算）。
+/// 为什么改成恒定（真机连续四轮「圆角闪现消失」的收口）：
+/// * 旧方案在末段把半径收到 0（先是二值、后是连续曲线）。无论哪种，都是把一次
+///   **几何变化**压进最后 ~85ms；重页面上那一段只有 1~2 帧，变化过程读作
+///   「圆角闪现消失」，而轻页面帧率够、看不出来。四轮微调（改时机、改带宽、
+///   加预热、加栅格边界）都只是在挪那 85ms，症状一模一样 —— 因为根不是时机，
+///   是「末段存在可被掉帧放大的几何变化」这件事本身。
+/// * 现在没有变化可放大：圆角从第一步就是最终半径，页面贴边时它与机身圆角重合
+///   （那块本来就被机身圆角盖住），此后一直保持 —— 转场全程和静止态都**没有
+///   任何一帧**去改圆角的形状。
+/// * 读数取上下两角的较小值、读不到则不裁（见 Kotlin `readDisplayCornerRadiusDp`
+///   与 `AndroidAnimationScaleService.refresh`）：保证缺口永远落在机身圆角**里侧**，
+///   静止态不可能露出来。
 ///
-/// 半径逐帧变化为什么是便宜的：页面外面已经有闸门那层 `RepaintBoundary`，这层
-/// [ClipRRect] 的 `needsCompositing` 为真 —— 半径变化只更新 `ClipRRectLayer` 的
-/// rrect，不重栅格化页面（2026-10-18 同轮补的边界，见 [_MiuixNavSnapshotGate]）。
+/// 半径不变也让这层彻底静态：页面栅格只建一次，裁剪只是 `ClipRRectLayer` 的
+/// 常量属性，不产生任何逐帧重栅格化。
 class _MiuixNavPageCornerCut extends StatelessWidget {
-  const _MiuixNavPageCornerCut({required this.animation, required this.child});
-
-  /// 本页自己的路由动画（0 = 完全移出屏外，1 = 就位）。
-  ///
-  /// 这里拿的是路由**原始**动画（时间线性）；曲线在
-  /// [HyperosNavigation.transitionCurve]，必须自己过一遍才能和转场壳的位移 /
-  /// 圆角对齐（同 [_MiuixNavSnapshotGateState._easedProgress] 的理由）。
-  final Animation<double> animation;
+  const _MiuixNavPageCornerCut({required this.child});
 
   final Widget child;
 
@@ -863,24 +862,13 @@ class _MiuixNavPageCornerCut extends StatelessWidget {
       return child;
     }
     final isRtl = Directionality.of(context) == TextDirection.rtl;
-    return AnimatedBuilder(
-      animation: animation,
+    final corner = Radius.circular(radius);
+    // 只裁前缘两角（LTR = 左），与转场壳同口径：贴屏幕边缘那两个角不裁。
+    return ClipRRect(
+      borderRadius: isRtl
+          ? BorderRadius.only(topRight: corner, bottomRight: corner)
+          : BorderRadius.only(topLeft: corner, bottomLeft: corner),
       child: child,
-      builder: (context, child) {
-        final eased = HyperosNavigation.transitionCurve.transform(
-          animation.value.clamp(0.0, 1.0),
-        );
-        final corner = Radius.circular(
-          radius * HyperosNavigation.transitionCornerRadiusFactor(eased),
-        );
-        // 只裁前缘两角（LTR = 左），与转场壳同口径：贴屏幕边缘那两个角不裁。
-        return ClipRRect(
-          borderRadius: isRtl
-              ? BorderRadius.only(topRight: corner, bottomRight: corner)
-              : BorderRadius.only(topLeft: corner, bottomLeft: corner),
-          child: child,
-        );
-      },
     );
   }
 }
@@ -1044,7 +1032,6 @@ class HyperosPageRoute<T> extends PageRoute<T> {
       // （不带切口），滑入中的圆角由这层切口每帧现算 —— 烤死在照片里的缺口
       // 不会跟着收，收尾会露月牙（2026-10-18 真机第三轮）。
       child: _MiuixNavPageCornerCut(
-        animation: animation,
         child: snapshotTransition
             ? _MiuixNavSnapshotGate(
                 animation: animation,

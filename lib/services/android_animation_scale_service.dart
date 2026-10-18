@@ -55,16 +55,17 @@ abstract final class AndroidAnimationScaleService {
       final radius = await _channel.invokeMethod<num>(
         'getDisplayCornerRadiusDp',
       );
-      if (radius != null && radius > 0) {
-        _displayCornerRadiusDp = radius.toDouble();
-      } else {
-        _displayCornerRadiusDp =
-            HyperosMiuixNavigation.pageCornerRadiusFallback;
-      }
+      // 2026-10-18：平台返回 0 = 这台机器没有可对齐的屏幕圆角（或上下角
+      // 半径不一致到取不出公共值）。此时**不能用 28dp 假装**：假半径会把
+      // 转场的前缘缺口画到机身圆角之外，停稳时就露出来（用户口径「圆角
+      // 闪现消失」）。归零 = 整条转场不做前缘裁切，退回普通直角滑入。
+      _displayCornerRadiusDp = (radius != null && radius > 0)
+          ? radius.toDouble()
+          : 0;
     } on PlatformException {
-      _displayCornerRadiusDp = HyperosMiuixNavigation.pageCornerRadiusFallback;
+      // 读失败保留上一次的值（初次 = 历史回退值），下次 resume 还会再读。
     } on MissingPluginException {
-      _displayCornerRadiusDp = HyperosMiuixNavigation.pageCornerRadiusFallback;
+      // 同上：保留上一次的值。
     }
   }
 

@@ -2433,13 +2433,31 @@ class MainActivity : FlutterActivity() {
     private fun readDisplayCornerRadiusDp(): Double {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val insets = window.decorView.rootWindowInsets
-            val corner = insets?.getRoundedCorner(android.view.RoundedCorner.POSITION_TOP_LEFT)
-            val radiusPx = corner?.radius ?: 0
+            // 2026-10-18：前缘两角分开读、取**较小值**。页面转场把「前缘两角」
+            // 裁成同一个半径；只读左上角时，若屏幕下角更小（部分机型两角半径
+            // 不对称、甚至下角为 0），停稳后圆角缺口会露在机身圆角之外——真机
+            // 上读作「圆角闪现消失」。取小 = 缺口永远落在机身圆角里面。
+            val top = insets
+                ?.getRoundedCorner(android.view.RoundedCorner.POSITION_TOP_LEFT)
+                ?.radius ?: 0
+            val bottom = insets
+                ?.getRoundedCorner(
+                    android.view.RoundedCorner.POSITION_BOTTOM_LEFT,
+                )
+                ?.radius ?: 0
+            val radiusPx = when {
+                top > 0 && bottom > 0 -> minOf(top, bottom)
+                top > 0 -> top
+                else -> bottom
+            }
             if (radiusPx > 0) {
                 return radiusPx.toDouble() / resources.displayMetrics.density.toDouble()
             }
         }
-        return 28.0
+        // 读不到 = 这台机器没有可对齐的屏幕圆角。**不假装 28dp**：假半径会把
+        // 缺口画到机身圆角之外（就是「圆角闪现」的来源），宁可整条转场不做
+        // 前缘裁切，退回普通直角滑入。
+        return 0.0
     }
 
     /**
