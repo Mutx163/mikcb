@@ -347,12 +347,30 @@ class _MiuixNavPageTransition extends StatelessWidget {
         // 栈顶页 cover == 0 时它也在树上，但垫底条与蒙层都在页面右侧屏外
         // （位移 ≥ 0），画了也被裁掉，成本 ≈ 0。视差取 0 之后这条垫底实际上
         // 永远露不出来，保留只是遵守形状恒定红线、不做「值变了就删结构」的优化。
+        // 前缘「自己的一条边」（2026-10-18 第十四轮，用户选 A）：圆角是挖出来的
+        // 洞，洞的可见性取决于洞里露出的那层与页面的对比 —— 页面顶部是纯色标题
+        // 区时，洞底也是同一片纯色，圆角在视觉上不存在（用户口径：只有桌面小组件
+        // / 数据备份这类页面是直角，通用 / 课程卡 / 天气正常）。
+        // 这里在页面左上/左下圆角 + 左侧边缘描一条**极细的半透明线**，让轮廓
+        // 不依赖背景；只在「页面正在动」时画，落定后一个像素都不画（静止态零变化）。
+        final edged = CustomPaint(
+          foregroundPainter: _MiuixNavLeadingEdgePainter(
+            radius: clipRadius,
+            rtl: isRtl,
+            active: moving,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0x1FFFFFFF)
+                : const Color(0x18000000),
+          ),
+          child: page,
+        );
+
         final content = _MiuixNavParallaxBleed(
           width: width,
           bleedWidth: bleedWidth,
           surface: surface,
           scrimAlpha: scrimAlpha,
-          child: page,
+          child: edged,
         );
 
         // 根恒为 Transform.translate：压暗蒙层画在 bleed 层内部（其下的垫底
@@ -873,6 +891,77 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
 }
 
 
+/// 页面左前缘（LTR = 左）的**轮廓线**：只描左上/左下两个圆角 + 中间那条直边。
+///
+/// 存在的理由（2026-10-18 第十四轮）：圆角是挖出来的洞，洞的可见性完全取决于
+/// 洞底那层的对比 —— 页面顶部是纯色标题区、下面也是同一片纯色时，圆角在视觉上
+/// 不存在（用户：只有桌面小组件 / 数据备份这类页面是直角，通用 / 课程卡 / 天气
+/// 正常）。这条 1px 半透明轮廓让圆角**不依赖背景**也能被看见。
+///
+/// 只在 `active`（页面正在动）时画：落定后一个像素都不画，静止态零变化；
+/// 消失点在机身圆角处，看不见。
+class _MiuixNavLeadingEdgePainter extends CustomPainter {
+  const _MiuixNavLeadingEdgePainter({
+    required this.radius,
+    required this.rtl,
+    required this.active,
+    required this.color,
+  });
+
+  final double radius;
+  final bool rtl;
+  final bool active;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (!active || radius <= 0 || size.isEmpty) {
+      return;
+    }
+    final r = radius;
+    final path = Path();
+    if (!rtl) {
+      path.moveTo(r, 0.5);
+      path.arcToPoint(
+        Offset(0.5, r),
+        radius: Radius.circular(r),
+        clockwise: false,
+      );
+      path.lineTo(0.5, size.height - r);
+      path.arcToPoint(
+        Offset(r, size.height - 0.5),
+        radius: Radius.circular(r),
+        clockwise: false,
+      );
+    } else {
+      path.moveTo(size.width - r, 0.5);
+      path.arcToPoint(
+        Offset(size.width - 0.5, r),
+        radius: Radius.circular(r),
+      );
+      path.lineTo(size.width - 0.5, size.height - r);
+      path.arcToPoint(
+        Offset(size.width - r, size.height - 0.5),
+        radius: Radius.circular(r),
+      );
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = color
+        ..isAntiAlias = true,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MiuixNavLeadingEdgePainter old) =>
+      old.active != active ||
+      old.radius != radius ||
+      old.rtl != rtl ||
+      old.color != color;
+}
 /// Standard sub-page route for mikcb (settings, import, about, etc.).
 class HyperosPageRoute<T> extends PageRoute<T> {
   static final Set<HyperosPageRoute<dynamic>> _activeRoutes = {};
