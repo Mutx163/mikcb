@@ -764,8 +764,13 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
     if (status != AnimationStatus.forward) {
       return true;
     }
-    return _easedProgress >=
-        1 - HyperosMiuixNavigation.cornerClipSettleBand;
+    // 2026-10-18 第十五轮真机：**接近屏幕边缘时圆角提前变直角**，而且就发生在
+    // 快照退休那一刻（缓动 0.996 ≈ 离贴边 1.6px）。照片是「页面像素」的拷贝，
+    // 换回真页那一帧如果真页的栅格/合成路径不同，圆角就会先一步变方 —— 现在
+    // 有前缘轮廓线把这处差异放大了：线还圆着、底下页面已经方了。
+    // 对策：照片撑到动画**结束**再撤（收平段全程在照片上，照片由前缘轮廓 +
+    // 同一层裁切共同决定形状），换层发生在落定之后、屏幕边缘之外。
+    return false;
   }
 
   /// 预热判据：缓动进度到达 [HyperosMiuixNavigation.snapshotWarmupProgress]

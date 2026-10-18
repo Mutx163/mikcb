@@ -849,7 +849,7 @@ void main() {
     );
   });
 
-  testWidgets('快照退休点：进度进入圆角收束带即退休，不等停稳', (tester) async {
+  testWidgets('快照退休点：收平段仍在照片上，动画结束才换回真页', (tester) async {
     // 2026-10-18 真机第一轮反馈的回归：快照若撑到停稳才退休，末段 85ms 的
     // 圆角收束被烤死的满值切口顶住、停稳一帧蹦直角 —— 用户读作「圆角比别的
     // 页早收、变更快」。退休判据必须与 transitionCornerRadiusFactor 的收束带
@@ -936,8 +936,10 @@ void main() {
       reason: '预热点后真页必须在屏（画一帧建栅格缓存，重活落在画面几乎不动的时刻）',
     );
 
-    // 收束带（缓动后 1 - cornerClipSettleBand ≈ 415ms）：撤快照 —— 纯合成换层，
-    // 不等停稳。
+    // 收束带（缓动后 1 - cornerClipSettleBand ≈ 415ms）：**仍在照片上**。
+    // 2026-10-18 真机第十五轮：「接近屏幕边缘时圆角提前变直角」，就发生在
+    // 快照退休那一帧。现在照片撑到动画结束，收平段全程是照片（由同一层裁切 +
+    // 前缘轮廓共同决定形状），换层发生在落定之后。
     const band = HyperosMiuixNavigation.cornerClipSettleBand;
     while (easedProgress() < 1 - band) {
       await tester.pump(const Duration(milliseconds: 2));
@@ -945,12 +947,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 2));
     expect(
       hasSnapshot(),
-      isFalse,
-      reason: '缓动进度进入收束带（1 - cornerClipSettleBand = ${1 - band}）后'
-          '快照必须退休 —— 末段圆角收束必须发生在活像素上，且不能再被照片里'
-          '烤死的缺口顶住',
+      isTrue,
+      reason: '进入收束带后照片仍应在屏：换层必须发生在落定之后',
     );
     await tester.pumpAndSettle();
+    expect(hasSnapshot(), isFalse, reason: '停稳后快照必须释放');
   });
 
   testWidgets('撤快照不重画页面：换层是纯合成操作', (tester) async {
