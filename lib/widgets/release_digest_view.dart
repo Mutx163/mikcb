@@ -3,31 +3,51 @@ import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/utils/release_notes_digest.dart';
 
-/// 更新弹窗里的「本次更新重点」。
+/// 「本次更新重点」的统一呈现，弹窗与历史版本页共用。
 ///
-/// 旧弹窗只把正文去掉标题后取前 4 行：那既不是重点（只是文件开头的顺序），
-/// 一条 60 字的说明又会被截断在第二行。这里换成三段式，按「扫一眼 → 知道规模 →
-/// 想看细节」的顺序排：
+/// 三段式，按「扫一眼 → 知道规模 → 想看细节」排：
 ///
-/// 1. 至多 3 条**短标题**（分类标签直接取正文自己的「新增 / 优化 …」，
-///    见 [ReleaseChangeEntry.label]；正文换成英文时标签也跟着变，不必再翻译一套）；
-/// 2. 一行**分类计数**交代这一版的规模 —— 46 项里 11 项新增，和「只有 2 项修复」
-///    是两种完全不同的更新，用户需要先知道这次值不值得点下载；
-/// 3. 「查看全部 N 项」在弹窗内原地展开完整条目，不跳浏览器、也不离开下载按钮。
+/// 1. 至多 3 条**短标题**（分类标签取正文自己的「新增 / 优化 …」，见
+///    [ReleaseChangeEntry.label]；正文换成英文时标签也跟着变）；
+/// 2. 一行**分类计数**交代这一版的规模——40 项里 30 项修复，和「2 项新增」
+///    是两种完全不同的更新；
+/// 3. 「查看全部 N 项」原地展开完整条目。
 ///
-/// 滚动由宿主负责（弹窗把本组件放进一个可滚区域），所以这里不自己套
-/// `ListView`：两处滚动会抢手势，弹窗的下拉关闭也会跟着变钝。
-class UpdateReleaseDigest extends StatefulWidget {
-  const UpdateReleaseDigest({super.key, required this.digest});
+/// [groupEntries] 为真时展开区按分类分组（标题带条数），适合历史版本页；
+/// 弹窗里保持扁平列表，避免把有限的横向空间让给分组标题。
+///
+/// 滚动由宿主负责：弹窗把本组件放进可滚区域，历史页的卡片在列表里。这里
+/// 不自己套 `ListView`，两处滚动会抢手势，弹窗的下拉关闭也会跟着变钝。
+class ReleaseDigestView extends StatefulWidget {
+  const ReleaseDigestView({
+    super.key,
+    required this.digest,
+    this.initiallyExpanded = false,
+    this.groupEntries = false,
+    this.alwaysExpandable = false,
+    this.showHeading = true,
+  });
 
   final ReleaseNotesDigest digest;
 
+  /// 初始是否展开（历史版本页只让最新一版默认展开）。
+  final bool initiallyExpanded;
+
+  /// 展开区按分类分组，标题形如「新增 · 12」。
+  final bool groupEntries;
+
+  /// 即使所有条目都已经出现在重点行里，也提供「查看完整句子」的入口。
+  final bool alwaysExpandable;
+
+  /// 是否显示「本次更新重点」小标题（历史页的卡片已有版本号，可关掉）。
+  final bool showHeading;
+
   @override
-  State<UpdateReleaseDigest> createState() => _UpdateReleaseDigestState();
+  State<ReleaseDigestView> createState() => _ReleaseDigestViewState();
 }
 
-class _UpdateReleaseDigestState extends State<UpdateReleaseDigest> {
-  bool _expanded = false;
+class _ReleaseDigestViewState extends State<ReleaseDigestView> {
+  late bool _expanded = widget.initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
@@ -37,19 +57,23 @@ class _UpdateReleaseDigestState extends State<UpdateReleaseDigest> {
     final textStyles = theme.textStyles;
     final digest = widget.digest;
     final counts = releaseChangeCounts(digest);
-    final canExpand = digest.total > digest.highlights.length;
+    final canExpand = widget.alwaysExpandable
+        ? digest.total > 0
+        : digest.total > digest.highlights.length;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        MiuixText(
-          l10n.aboutUpdateHighlightsTitle,
-          style: textStyles.footnote1,
-          color: colors.onSurfaceVariantSummary,
-          fontWeight: FontWeight.w600,
-        ),
-        const SizedBox(height: 8),
+        if (widget.showHeading) ...[
+          MiuixText(
+            l10n.aboutUpdateHighlightsTitle,
+            style: textStyles.footnote1,
+            color: colors.onSurfaceVariantSummary,
+            fontWeight: FontWeight.w600,
+          ),
+          const SizedBox(height: 8),
+        ],
         for (final entry in digest.highlights)
           _HighlightRow(
             entry: entry,
@@ -76,8 +100,11 @@ class _UpdateReleaseDigestState extends State<UpdateReleaseDigest> {
           const SizedBox(height: 10),
           Container(height: 1, color: colors.secondaryContainer),
           const SizedBox(height: 10),
-          for (final entry in digest.entries)
-            _EntryRow(entry: entry, colors: colors, textStyles: textStyles),
+          if (widget.groupEntries)
+            ..._buildGroupedEntries(colors: colors, textStyles: textStyles)
+          else
+            for (final entry in digest.entries)
+              _EntryRow(entry: entry, colors: colors, textStyles: textStyles),
         ],
       ],
     );
@@ -85,6 +112,50 @@ class _UpdateReleaseDigestState extends State<UpdateReleaseDigest> {
 
   String _formatCounts(List<(String, int)> counts) =>
       counts.map((item) => '${item.$1} ${item.$2}').join(' · ');
+
+  /// 分组展开：分类标题带条数，条目本身不再重复分类词。
+  List<Widget> _buildGroupedEntries({
+    required MiuixColors colors,
+    required MiuixTextStyles textStyles,
+  }) {
+    final widgets = <Widget>[];
+    for (final kind in _groupOrder) {
+      final group = widget.digest.entries
+          .where((entry) => entry.kind == kind)
+          .toList(growable: false);
+      if (group.isEmpty) {
+        continue;
+      }
+      final label = group
+          .map((entry) => entry.label)
+          .firstWhere((value) => value.isNotEmpty, orElse: () => '');
+      if (widgets.isNotEmpty) {
+        widgets.add(const SizedBox(height: 12));
+      }
+      if (label.isNotEmpty) {
+        widgets.add(
+          MiuixText(
+            '$label · ${group.length}',
+            style: textStyles.footnote1,
+            color: _kindColor(kind, colors),
+            fontWeight: FontWeight.w600,
+          ),
+        );
+        widgets.add(const SizedBox(height: 6));
+      }
+      for (final entry in group) {
+        widgets.add(
+          _EntryRow(
+            entry: entry,
+            colors: colors,
+            textStyles: textStyles,
+            showLabel: false,
+          ),
+        );
+      }
+    }
+    return widgets;
+  }
 
   Widget _buildExpandToggle({
     required AppLocalizations l10n,
@@ -125,6 +196,15 @@ class _UpdateReleaseDigestState extends State<UpdateReleaseDigest> {
     );
   }
 }
+
+/// 条目分组的固定顺序（与挑选重点的优先级一致）。
+const List<ReleaseChangeKind> _groupOrder = <ReleaseChangeKind>[
+  ReleaseChangeKind.added,
+  ReleaseChangeKind.improved,
+  ReleaseChangeKind.removed,
+  ReleaseChangeKind.fixed,
+  ReleaseChangeKind.other,
+];
 
 /// 一条重点：分类色点 + 分类标签 + 短标题。
 class _HighlightRow extends StatelessWidget {
@@ -180,17 +260,19 @@ class _HighlightRow extends StatelessWidget {
   }
 }
 
-/// 展开后的一条完整条目：分类标签 + 完整说明。
+/// 展开后的一条完整条目：分类标签（可选）+ 完整说明。
 class _EntryRow extends StatelessWidget {
   const _EntryRow({
     required this.entry,
     required this.colors,
     required this.textStyles,
+    this.showLabel = true,
   });
 
   final ReleaseChangeEntry entry;
   final MiuixColors colors;
   final MiuixTextStyles textStyles;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +281,7 @@ class _EntryRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (entry.label.isNotEmpty) ...[
+          if (showLabel && entry.label.isNotEmpty) ...[
             MiuixText(
               entry.label,
               style: textStyles.footnote2,
@@ -225,7 +307,7 @@ class _EntryRow extends StatelessWidget {
 }
 
 /// 分类色：新增用主题色（一版里最希望被看到的就是它），移除用错误色，
-/// 其余用次要墨色 —— 三种颜色足够区分，不会把弹窗染成调色板。
+/// 其余用次要墨色——三种颜色足够区分，不会把界面染成调色板。
 Color _kindColor(ReleaseChangeKind kind, MiuixColors colors) => switch (kind) {
   ReleaseChangeKind.added => colors.primary,
   ReleaseChangeKind.removed => colors.error,

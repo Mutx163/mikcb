@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
+import 'package:university_timetable/utils/release_notes_digest.dart';
+import 'package:university_timetable/widgets/release_digest_view.dart';
 import 'about_screen.dart';
 
 /// `docs/releases/<version>.md` 的 asset key 匹配规则。
@@ -37,7 +39,6 @@ String? matchReleaseAssetKey(String assetKey) {
 }
 
 /// 解析版本字符串中的数字段，如 v2.1.1.4 → [2, 1, 1, 4]。
-@visibleForTesting
 List<int> parseReleaseVersion(String version) {
   final match = RegExp(r'v?(\d+(?:\.\d+)*)').firstMatch(version);
   if (match == null) return const [0];
@@ -106,7 +107,13 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   Future<_ChangelogEntry?> _loadEntry(String version) async {
     try {
       final data = await rootBundle.loadString('docs/releases/$version.md');
-      return _ChangelogEntry(version: version, content: data);
+      // 解析成结构化摘要（重点、分类计数、完整条目）在加载时做一次：
+      // 卡片展开/收起只做展示，不必每次重建都重新解析几十条正文。
+      return _ChangelogEntry(
+        version: version,
+        content: data,
+        digest: buildReleaseNotesDigest(data),
+      );
     } catch (_) {
       // 文件读取失败，跳过
       return null;
@@ -252,7 +259,12 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
               itemCount: _entries.length,
               itemBuilder: (context, index) {
                 final entry = _entries[index];
-                return _ChangelogCard(entry: entry);
+                return _ChangelogCard(
+                  entry: entry,
+                  // 只让最新一版默认展开：一屏能看到「这版是什么」，
+                  // 往下翻历史时每版只占一个重点块的高度。
+                  expandedByDefault: index == 0,
+                );
               },
             ),
     );
@@ -262,69 +274,85 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
 class _ChangelogEntry {
   final String version;
   final String content;
+  final ReleaseNotesDigest digest;
 
-  const _ChangelogEntry({required this.version, required this.content});
+  const _ChangelogEntry({
+    required this.version,
+    required this.content,
+    required this.digest,
+  });
 }
 
-class _ChangelogCard extends StatefulWidget {
+class _ChangelogCard extends StatelessWidget {
+  const _ChangelogCard({
+    required this.entry,
+    required this.expandedByDefault,
+  });
+
   final _ChangelogEntry entry;
-
-  const _ChangelogCard({required this.entry});
-
-  @override
-  State<_ChangelogCard> createState() => _ChangelogCardState();
-}
-
-class _ChangelogCardState extends State<_ChangelogCard> {
-  bool _expanded = true;
+  final bool expandedByDefault;
 
   @override
   Widget build(BuildContext context) {
     final theme = MiuixTheme.of(context);
     final colors = theme.colors;
+    final textStyles = theme.textStyles;
+    final digest = entry.digest;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: HyperosCard(
         padding: EdgeInsets.zero,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      HyperosTag(
-                        label: widget.entry.version,
-                        backgroundColor: colors.surfaceContainerHigh,
-                      ),
-                      const Spacer(),
-                      Icon(
-                        _expanded ? Icons.expand_less : Icons.expand_more,
-                        color: colors.onSurfaceVariantActions,
-                      ),
-                    ],
+                  HyperosTag(
+                    label: entry.version,
+                    backgroundColor: colors.surfaceContainerHigh,
                   ),
-                  if (_expanded) ...[
-                    const SizedBox(height: 12),
-                    ReleaseNotesMarkdown(
-                      data: widget.entry.content,
-                      plainTypography: true,
-                      usePrimaryTextColor: true,
-                      onTapLink: (href) {
-                        if (href != null) {
-                          // 可以处理链接点击
-                        }
-                      },
+                  const Spacer(),
+                  if (digest.total > 0)
+                    // 一个版本往往几十条，先给个规模读数，让人决定要不要展开。
+                    MiuixText(
+                      '${digest.total}',
+                      style: textStyles.footnote2,
+                      color: colors.onSurfaceVariantSummary,
                     ),
-                  ],
                 ],
               ),
-            ),
+              if (digest.intro.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                MiuixText(
+                  digest.intro,
+                  style: textStyles.footnote1,
+                  color: colors.onSurfaceSecondary,
+                  height: 1.45,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              const SizedBox(height: 10),
+              // 老版本里可能有解析不出条目的正文（纯段落），退回原文渲染，
+              // 不让「更新了但这里什么都没有」发生。
+              if (digest.isEmpty)
+                ReleaseNotesMarkdown(
+                  data: entry.content,
+                  plainTypography: true,
+                  usePrimaryTextColor: true,
+                  onTapLink: (href) {},
+                )
+              else
+                ReleaseDigestView(
+                  digest: digest,
+                  groupEntries: true,
+                  alwaysExpandable: true,
+                  initiallyExpanded: expandedByDefault,
+                ),
+            ],
           ),
         ),
       ),

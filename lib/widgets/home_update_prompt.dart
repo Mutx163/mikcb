@@ -7,7 +7,7 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/app_update_service.dart';
 import 'package:university_timetable/services/support_creator_service.dart';
 import 'package:university_timetable/utils/release_notes_digest.dart';
-import 'package:university_timetable/widgets/update_release_digest.dart';
+import 'package:university_timetable/widgets/release_digest_view.dart';
 
 /// Mutable state shared by the home update prompt and the download task.
 ///
@@ -368,7 +368,7 @@ class _HomeUpdatePromptDialog extends StatelessWidget {
                           color: colors.onSurfaceSecondary,
                           height: 1.45,
                         )
-                      : UpdateReleaseDigest(digest: digest),
+                      : ReleaseDigestView(digest: digest),
                 ),
               ),
               if (hasProgress) ...[
