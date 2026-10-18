@@ -123,6 +123,34 @@ class HyperosGlassBackdropController extends ChangeNotifier {
   bool get capturing =>
       _zones.isNotEmpty || _plainConsumers > 0 || _recordingHolds > 0;
 
+  /// 正在跑页面转场的路由数（[pauseForRouteTransition] 记账用）。
+  static int _routeTransitionsRunning = 0;
+
+  /// 页面转场期间**暂停录帧**：玻璃继续用最后一帧的采样图画，不再每帧
+  /// `toImageSync` 回读。
+  ///
+  /// 为什么可以停：转场里被采样的东西（玻璃背后的首页 / 列表）**本身不动** ——
+  /// 动的只有上层的页面或弹层，而它们是采样者、不是采样对象。停掉回读对画面
+  /// 没有影响，省下的却是真机实测里最大的一笔每帧开销。
+  ///
+  /// 真机依据（25060RK16C，profile，2026-10-19）：从首页右上角菜单进页面时，
+  /// 菜单的收起动画与页面滑入**同时**在跑，日志里 `[glass-state] holdRecording
+  /// ... capturing=true` 一直挂到转场结束。同一条转场代码，菜单不在屏上时
+  /// 4.3~6.4ms/帧，菜单在屏上时 9~13ms/帧 —— 差的那 5~7ms 就是这里的每帧回读。
+  ///
+  /// 用计数而不是布尔：进出两页、连续跳转都可能让多个转场短暂重叠。
+  static int setRouteTransitionRunning(bool running) {
+    if (running) {
+      _routeTransitionsRunning++;
+    } else if (_routeTransitionsRunning > 0) {
+      _routeTransitionsRunning--;
+    }
+    return _routeTransitionsRunning;
+  }
+
+  /// 见 [setRouteTransitionRunning]。为 true 时跳过所有录帧（含 paint 相位补采）。
+  static bool get pauseForRouteTransition => _routeTransitionsRunning > 0;
+
   /// 诊断（临时件，与 `lib/utils/frame_perf_probe.dart` 配套）：采样状态每次变化
   /// 打一条，用来判「反复开合弹层后动画变贵」是不是采样侧的状态在累积
   /// （持有数没归零 / 采样区越并越大）。
@@ -287,6 +315,9 @@ class HyperosGlassBackdropController extends ChangeNotifier {
   }
 
   /// 与 [holdRecording] 配对。
+  ///
+  /// [pauseForRouteTransition] 期间只记账、不录帧：转场结束的那一下由下一次
+  /// 常规录帧补上（见该 getter 的说明）。
   void releaseRecording() {
     if (_disposed) return;
     if (_recordingHolds == 0) return;
@@ -771,6 +802,8 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
   }
 
   void _scheduleCapture() {
+    // 转场期间不录帧：玻璃照旧画最后一帧的采样图（见 [pauseForRouteTransition]）。
+    if (HyperosGlassBackdropController.pauseForRouteTransition) return;
     if (!recording || _captureScheduled || !hasSize || size.isEmpty) return;
     _captureScheduled = true;
     // 帧结束后再快照，避免在 paint 阶段改状态触发同帧重入。
@@ -788,6 +821,9 @@ class _RenderHyperosLayerBackdropCapture extends RenderProxyBox {
   /// 重绘，同样是为了同帧补采（见 [paint]）：写入本身就已经能让**后画的**玻璃读到
   /// 新图，通知则留给帧末那次全量录帧去做。
   void _capture({bool pendingOnly = false, bool notify = true}) {
+    // paint 相位的同帧补采也一起挡掉（入口见 [pauseForRouteTransition]）：
+    // 只挡帧末那一次的话，paint 里仍会为缺图的块跑一次同步回读。
+    if (HyperosGlassBackdropController.pauseForRouteTransition) return;
     final offsetLayer = layer;
     if (offsetLayer is! OffsetLayer) return;
     // 诊断（临时件）：这一次录帧花了多久。`toImageSync` 是同步 GPU 回读，会堵住

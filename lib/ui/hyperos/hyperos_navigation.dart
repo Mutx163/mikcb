@@ -8,6 +8,7 @@ import 'package:flutter/scheduler.dart';
 import '../../utils/first_frame_probe.dart';
 import '../../utils/frame_perf_probe.dart';
 import 'hyperos_motion.dart';
+import 'hyperos_glass_backdrop_host.dart' show HyperosGlassBackdropController;
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
 
@@ -251,6 +252,82 @@ abstract final class HyperosNavigation {
   }
 }
 
+/// 转场期间把「玻璃录帧」关掉的闸门（2026-10-19 第二十一轮）。
+///
+/// 只做一件事：本页 `enter` 处于 `forward` / `reverse` 时，把
+/// [HyperosGlassBackdropHost.pauseForRouteTransition] 顶上去，让玻璃不再每帧
+/// `toImageSync` 回读；转场一停立刻放开（下一帧的正常录帧会把采样补齐）。
+///
+/// 为什么挂在转场树上而不是菜单上：慢的是「转场 + 菜单收起」这段时间里的每帧
+/// 回读，而回读是全局的（[HyperosGlassBackdropHost] 单例）。挂在转场这里，
+/// 进页面、退页面、从菜单进、从设置里进，全都一次覆盖；菜单那边一行不用改，
+/// 也就不存在「菜单先收还是后收」的取舍。
+///
+/// 观感：玻璃画的是**最后一帧的采样图**。转场里被采样的对象（玻璃背后的首页 /
+/// 列表）本身不动，动的只有上层的页面与弹层，所以停掉回读在画面上看不出来。
+class _GlassCaptureTransitionGate extends StatefulWidget {
+  const _GlassCaptureTransitionGate({
+    required this.enter,
+    required this.child,
+  });
+
+  /// 本页作为栈顶的运动进度（见 [_MiuixNavPageTransition.enter]）。
+  final Animation<double> enter;
+
+  final Widget child;
+
+  @override
+  State<_GlassCaptureTransitionGate> createState() =>
+      _GlassCaptureTransitionGateState();
+}
+
+class _GlassCaptureTransitionGateState
+    extends State<_GlassCaptureTransitionGate> {
+  /// 当前是否已把「暂停录帧」顶上去。用本地布尔做去重：`status` 在
+  /// forward ↔ reverse 之间来回切时不能重复加计数，否则计数会漏减。
+  bool _paused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.enter.addStatusListener(_onStatus);
+    _apply(widget.enter.status);
+  }
+
+  @override
+  void didUpdateWidget(_GlassCaptureTransitionGate oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.enter, widget.enter)) {
+      oldWidget.enter.removeStatusListener(_onStatus);
+      widget.enter.addStatusListener(_onStatus);
+      _apply(widget.enter.status);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.enter.removeStatusListener(_onStatus);
+    // 页面被销毁（路由出栈）时必须归还，否则计数漏减、玻璃永久停录。
+    _apply(AnimationStatus.completed);
+    super.dispose();
+  }
+
+  void _onStatus(AnimationStatus status) => _apply(status);
+
+  void _apply(AnimationStatus status) {
+    final running = status == AnimationStatus.forward ||
+        status == AnimationStatus.reverse;
+    if (running == _paused) {
+      return;
+    }
+    _paused = running;
+    HyperosGlassBackdropController.setRouteTransitionRunning(running);
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 /// 官方默认预设驱动的一页：位移 + 覆盖淡出 + 压暗蒙层（后两者全程线性、无末端释放）。
 ///
 /// 同一个 widget 伺服两种角色（框架对进出两页都调 `buildTransitions`）：
@@ -366,9 +443,12 @@ class _MiuixNavPageTransition extends StatelessWidget {
 
         // 根恒为 Transform.translate：压暗蒙层画在 bleed 层内部（其下的垫底
         // Stack 之上、页面之下没有采样关系，视觉等价于此前盖在整个页面上）。
-        return Transform.translate(
-          offset: Offset(slidePx + parallaxPx, 0),
-          child: content,
+        return _GlassCaptureTransitionGate(
+          enter: enter,
+          child: Transform.translate(
+            offset: Offset(slidePx + parallaxPx, 0),
+            child: content,
+          ),
         );
       },
     );
