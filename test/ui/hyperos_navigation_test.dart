@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -805,18 +806,45 @@ void main() {
     );
     expect(snapshotImage.image, isNotNull, reason: '快照层应在屏上参与滑动');
 
-    // 照片必须是**页面像素本身**，不能带烤死的圆角缺口（2026-10-18 真机第三轮）：
-    // 缺口是透明的，外层裁切只能削像素、填不回来 —— 照片里若有一个恒定的满值
-    // 缺口，它不会跟着末段的收平一起收，收尾就会露出一块「圆角闪现消失」。
+    // 照片必须**自己带着圆角**（2026-10-18 第十七轮，本条断言此前是反的）。
+    //
+    // 旧设计把切口留在照片外侧 —— 理由是「烤死进照片的缺口不会跟着末段收平一起
+    // 收，收尾会露月牙」。那理由只在半径会动的年代成立；半径现在是常量，收平段
+    // 根本不存在，照片和真页是像素等价的。
+    //
+    // 反过来，切口留在照片外侧还有一个致命代价：滑入全程屏幕上的像素来自照片，
+    // 圆角只剩**外壳那层合成期裁切**在撑着，而那层在真机上会丢帧 —— 丢的那几帧
+    // 里滑入页是实实在在的方角白页（用户口径：「接近屏幕边缘时圆角变直角，
+    // 出现白色的页面」）。照片自带缺口之后，滑动全程没有任何一层裁切需要临场
+    // 计算：形状已经在像素里，掉帧最多让照片的位置跳一下。
     final snapshotBytes = await tester.runAsync(
       () => snapshotImage.image!.toByteData(),
     );
     final snapshotWidth = snapshotImage.image!.width;
-    final cornerAlpha = snapshotBytes!.getUint8((snapshotWidth + 1) * 4 + 3);
+    final snapshotHeight = snapshotImage.image!.height;
+    int snapshotAlphaAt(int x, int y) =>
+        snapshotBytes!.getUint8((y * snapshotWidth + x) * 4 + 3);
     expect(
-      cornerAlpha,
+      snapshotAlphaAt(1, 1),
+      0,
+      reason: '快照左上角必须是透明的缺口 —— 这就是「圆角烤进照片」本身：'
+          '照片自带圆角，掉帧也变不出方角',
+    );
+    expect(
+      snapshotAlphaAt(1, snapshotHeight - 1),
+      0,
+      reason: '左下角同理（两个前缘角一起裁）',
+    );
+    final radiusForPhoto = HyperosMotionPlatform.displayCornerRadiusDp;
+    // 照片是按设备像素比拍的（默认测试宿主 dpr = 3），取样点必须换算到照片像素。
+    final photoScale = tester.view.devicePixelRatio;
+    expect(
+      snapshotAlphaAt(
+        (radiusForPhoto * photoScale * 0.8).round(),
+        (radiusForPhoto * photoScale * 0.8).round(),
+      ),
       255,
-      reason: '快照左上角必须是不透明页面像素（缺口只由切口每帧现算，不能烤进照片）',
+      reason: '圆心内侧仍是页面像素（缺口只切角，不切页面）',
     );
 
     // 2) 快照期间内容变化：真页跟着重建（屏外），但滑动画面里仍是快照 ——
@@ -1076,6 +1104,202 @@ void main() {
       findsOneWidget,
       reason: '豁免页页面本体全程在屏（可交互内容照常绘制）',
     );
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('像素实测：前缘圆角是真圆弧、半径恒定、在最糟背景（纯白盖纯白）上也看得见', (
+    tester,
+  ) async {
+    // 2026-10-18 第十七轮：把「用眼睛验收」换成像素判据。
+    //
+    // 前十六轮的反馈全是「我看着还是直角 / 还是有 shadow」，而代码层能断言的东西
+    // 早就全绿 —— 因为断言量的都是**结构**（裁切半径、层数、alpha），没有一条量
+    // 屏幕上的**形状**。这条用例直接对整屏截图逐行找页面左边界，把形状量出来：
+    //
+    //   1. 圆角必须是圆弧：y=0 处页面从 +R 开始，y=R 处回到 0（直角的话 y=0 就是 0）；
+    //   2. 形状全程不变：任何两个可量时刻测到的边界差 ≤ 1.5dp；
+    //   3. 最糟背景上也看得见：页面纯白、底下也是纯白 —— 洞口亮度必须明显低于页面
+    //      （对比来自被覆盖页那条官方压暗，不是我补的色）。
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    AndroidAnimationScaleService.setUserTransitionSpeed(1);
+
+    const enteringKey = ValueKey('entering-page');
+    final screenKey = GlobalKey();
+
+    await tester.pumpWidget(
+      RepaintBoundary(
+        key: screenKey,
+        child: MaterialApp(
+          theme: ThemeData(
+            pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
+          ),
+          home: Builder(
+            builder: (context) => Scaffold(
+              backgroundColor: HyperosColors.scaffoldBackground(context),
+              body: Center(
+                child: ElevatedButton(
+                  // 先推一层子页：被覆盖页也得是我们自己的路由 —— 真机上出问题的
+                  // 就是「子页盖子页」（设置 → 桌面小组件 / 数据备份）。首页
+                  // （MaterialPageRoute）被盖住时不会产生覆盖动画，那一侧没有
+                  // 官方压暗，走廊与页面同色（实测对比只有 13/255），圆角在物理上
+                  // 看不见 —— 那是另一种情况，不在本条用例的射程内。
+                  onPressed: () => HyperosNavigation.push(
+                    context,
+                    builder: (coveredContext) => Scaffold(
+                      key: const ValueKey('covered-page'),
+                      backgroundColor: HyperosColors.scaffoldBackground(
+                        coveredContext,
+                      ),
+                      body: Center(
+                        child: Builder(
+                          builder: (inner) => ElevatedButton(
+                            onPressed: () => HyperosNavigation.push(
+                              inner,
+                              // 最糟情况：整页纯白，上下都同色，洞里没有内容可露。
+                              builder: (_) => const Scaffold(
+                                key: enteringKey,
+                                backgroundColor: Colors.white,
+                              ),
+                            ),
+                            child: const Text('push2'),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  child: const Text('push'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('push'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('push2'));
+    await tester.pump();
+    // 首帧门槛：动画在新页首帧画完前锁 0，下一帧才锚定起点。
+    await tester.pump(const Duration(milliseconds: 1));
+
+    final radius = HyperosMotionPlatform.displayCornerRadiusDp;
+    expect(radius, greaterThan(12), reason: '取样点按半径摆，太小就量不到圆弧');
+    final scale = tester.view.devicePixelRatio;
+    final screenWidth = 1080 / scale;
+    final sampleY = <double>[
+      0,
+      radius / 4,
+      radius / 2,
+      radius * 3 / 4,
+      radius,
+    ];
+    // 圆弧解析解：圆心在 (R, R)，边界相对页面左缘的偏移随 y 走圆弧。
+    final expected = sampleY
+        .map(
+          (y) => radius -
+              math.sqrt(radius * radius - (radius - y) * (radius - y)),
+        )
+        .toList();
+
+    var measured = 0;
+    List<double>? previous;
+    for (var step = 0; step < 6; step++) {
+      await tester.pump(const Duration(milliseconds: 110));
+      final pageTopLeft = tester.getTopLeft(
+        find.byKey(enteringKey, skipOffstage: false),
+      );
+      if (pageTopLeft.dx > screenWidth - radius * 2 ||
+          pageTopLeft.dx <= 2) {
+        // 页面还在屏幕外 / 刚露出一个尖：那一小段圆角在屏外，量不出也算正常；
+        // 贴到屏幕边缘（≤2dp）之后圆角压在机身圆角下面，屏上也没有可量的边界。
+        continue;
+      }
+      final boundary =
+          screenKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      final image = (await tester.runAsync(boundary.toImage))!;
+      final bytes = (await tester.runAsync(image.toByteData))!;
+      final imgWidth = image.width;
+      // 整屏截图的像素比可能与屏幕不同（`toImage` 默认 1x），一律按实际出图换算。
+      final imgScale = imgWidth / screenWidth;
+      final leftPx = pageTopLeft.dx * imgScale;
+      final topPx = pageTopLeft.dy * imgScale;
+      int lumAt(int x, int y) =>
+          bytes.getUint8(((y.clamp(0, image.height - 1) * imgWidth) +
+                  x.clamp(0, imgWidth - 1)) *
+              4 +
+              1);
+      final pageLum = lumAt(
+        (leftPx + radius * imgScale * 1.6).round(),
+        (topPx + radius * imgScale * 1.6).round(),
+      );
+      // 走廊：页面左缘外侧、y = R/2 那一行（该行页面边界在 +3.8dp，-6dp 在洞外）。
+      final corridorLum = lumAt(
+        (leftPx - 6 * imgScale).round(),
+        (topPx + radius / 2 * imgScale).round(),
+      );
+      if (pageLum - corridorLum < 24) {
+        // 走廊还没被压暗拉开（页面刚进屏、覆盖度还小）：此时洞口与页面同色，
+        // 圆角在物理上不可能被量出来 —— 这一帧不参与形状断言。
+        image.dispose();
+        continue;
+      }
+      final offsets = <double>[];
+      for (final y in sampleY) {
+        final py = (topPx + y * imgScale).round();
+        var found = double.nan;
+        for (var x = math.max(0, (leftPx - 6 * imgScale).round());
+            x < (leftPx + (radius + 8) * imgScale).round();
+            x++) {
+          if ((lumAt(x, py) - pageLum).abs() <= 3) {
+            found = (x - leftPx) / imgScale;
+            break;
+          }
+        }
+        offsets.add(found);
+      }
+      // 洞口取样：y=2 处圆弧已把页面边界推到 +17dp 左右，+2dp 一定在洞里。
+      final holeLum = lumAt(
+        (leftPx + 2 * imgScale).round(),
+        (topPx + 2 * imgScale).round(),
+      );
+      image.dispose();
+
+      measured++;
+      final at = 't=${(step + 1) * 110}ms';
+      for (var i = 0; i < sampleY.length; i++) {
+        expect(
+          offsets[i],
+          closeTo(expected[i], 3),
+          reason: '$at y=${sampleY[i].toStringAsFixed(1)}dp 处页面左边界偏移 '
+              '${offsets[i].toStringAsFixed(1)}dp，圆弧解析值 '
+              '${expected[i].toStringAsFixed(1)}dp —— 对不上就是「直角」',
+        );
+        if (previous != null) {
+          expect(
+            offsets[i],
+            closeTo(previous[i], 1.5),
+            reason: '$at 与前一个可量时刻的形状必须一致 —— '
+                '圆角一旦随进度变形，真机上就读作「闪」',
+          );
+        }
+      }
+      expect(
+        pageLum - holeLum,
+        greaterThanOrEqualTo(24),
+        reason: '$at 洞口亮度 $holeLum vs 页面 $pageLum：'
+            '纯白页盖纯白页时圆角仍必须看得见（对比来自被覆盖页的官方压暗）',
+      );
+      previous = offsets;
+    }
+    expect(
+      measured,
+      greaterThanOrEqualTo(3),
+      reason: '至少要有三个可量时刻，否则这条用例什么都没证明',
+    );
+
     await tester.pumpAndSettle();
   });
 }

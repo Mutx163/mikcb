@@ -347,30 +347,12 @@ class _MiuixNavPageTransition extends StatelessWidget {
         // 栈顶页 cover == 0 时它也在树上，但垫底条与蒙层都在页面右侧屏外
         // （位移 ≥ 0），画了也被裁掉，成本 ≈ 0。视差取 0 之后这条垫底实际上
         // 永远露不出来，保留只是遵守形状恒定红线、不做「值变了就删结构」的优化。
-        // 前缘「自己的一条边」（2026-10-18 第十四轮，用户选 A）：圆角是挖出来的
-        // 洞，洞的可见性取决于洞里露出的那层与页面的对比 —— 页面顶部是纯色标题
-        // 区时，洞底也是同一片纯色，圆角在视觉上不存在（用户口径：只有桌面小组件
-        // / 数据备份这类页面是直角，通用 / 课程卡 / 天气正常）。
-        // 这里在页面左上/左下圆角 + 左侧边缘描一条**极细的半透明线**，让轮廓
-        // 不依赖背景；只在「页面正在动」时画，落定后一个像素都不画（静止态零变化）。
-        final edged = page;
-
-        // === 临时诊断（2026-10-18）：把「缺口区域」涂成洋红，用来判断左上角那块
-        // 到底是「没被裁开」还是「裁开了但洞里同色」。看完即撤。
-        final diagnosed = CustomPaint(
-          foregroundPainter: _DebugNotchPainter(
-            radius: leadingCornerActive ? clipRadius : 0,
-            rtl: isRtl,
-          ),
-          child: edged,
-        );
-
         final content = _MiuixNavParallaxBleed(
           width: width,
           bleedWidth: bleedWidth,
           surface: surface,
           scrimAlpha: scrimAlpha,
-          child: diagnosed,
+          child: page,
         );
 
         // 根恒为 Transform.translate：压暗蒙层画在 bleed 层内部（其下的垫底
@@ -581,6 +563,12 @@ class _MiuixNavLeadingCornerCut extends StatelessWidget {
 /// 转场期间的「重页快照滑入」闸门（2026-10-17；2026-10-18 两段式退休：
 /// 预热 0.99 → 收束带撤快照）。
 ///
+/// **2026-10-18 第十七轮订正**：下面的「两段式退休 / 收平段」描述的是**当时**
+/// 的设计，其中「末段把圆角收平」这件事已经删除（半径改为全程恒定）。现在只有
+/// 两件事成立：① 预热 0.99 把真页放回屏下建栅格；② 快照撑到动画**结束**
+/// （[`_snapshotShouldRetire`] 在 `forward` 期间恒为 `false`）。收束带
+/// （`cornerClipSettleBand`）与圆角收平相关的文字保留只是历史记录。
+///
 /// 机理（为什么这能治「半路冻住 → 跳到位 + 提前变直角」）：转场中页面像素由
 /// 框架 `_subtreeKey` 缓存，**缓存只在页面没重绘时有效** —— 新页异步内容到位
 /// / 列表填充 / 预览卡出图的每一帧都把缓存作废、逼引擎重栅格化整页并重新
@@ -655,8 +643,16 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
   ui.Image? _snapshot;
 
   /// 页面自己的栅格边界（[_buildStack] 里那层）。拍照取它：拍出来的是**页面
-  /// 像素、不带切口** —— 滑入中的圆角由 `_MiuixNavClippedPage` 的补片现画，
-  /// 照片里不能再烤死一个缺口（烤死的缺口不跟着收，收尾会露月牙）。
+  /// 像素 + 前缘切口**（2026-10-18 第十七轮起，切口挪到了本边界之内）。
+  ///
+  /// 为什么切口必须在照片里：滑入全程屏上显示的就是这张照片，若照片是方角的，
+  /// 圆角就只能靠外壳那层**合成期裁切**撑着 —— 真机上那层会丢帧，丢的那几帧里
+  /// 滑入页是实实在在的方角白页（用户口径：「接近屏幕边缘时圆角变直角，出现
+  /// 白色的页面」）。切口进照片之后，形状是像素的一部分；掉帧只能让照片的位置
+  /// 跳一下，变不出方角。
+  ///
+  /// 旧设计的顾虑是「烤死的缺口不跟着末段收平一起收 → 收尾露月牙」。半径现在
+  /// **全程恒定**（收平段已删除），照片与真页像素等价，这条顾虑不复存在。
   final GlobalKey _pageBoundaryKey = GlobalKey();
 
   /// 快照拍照流程是否已了结（成功 / 失败都算）。首帧门槛的解锁判据读它：
@@ -895,41 +891,6 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
   }
 }
 
-
-/// === 临时诊断（2026-10-18）===：把「缺口区域」（页面矩形减去同半径圆角矩形）
-/// 涂成洋红。用途：判断左上角那块是「裁切没生效」还是「裁开了但洞里同色」。
-/// 看完即撤。
-class _DebugNotchPainter extends CustomPainter {
-  const _DebugNotchPainter({required this.radius, required this.rtl});
-
-  final double radius;
-  final bool rtl;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (radius <= 0 || size.isEmpty) {
-      return;
-    }
-    final leading = Radius.circular(radius);
-    final outer = Path()..addRect(Offset.zero & size);
-    final rounded = Path()
-      ..addRRect(
-        RRect.fromRectAndCorners(
-          Offset.zero & size,
-          topLeft: rtl ? Radius.zero : leading,
-          bottomLeft: rtl ? Radius.zero : leading,
-          topRight: rtl ? leading : Radius.zero,
-          bottomRight: rtl ? leading : Radius.zero,
-        ),
-      );
-    final notch = Path.combine(PathOperation.difference, outer, rounded);
-    canvas.drawPath(notch, Paint()..color = const Color(0xFFFF00FF));
-  }
-
-  @override
-  bool shouldRepaint(covariant _DebugNotchPainter old) =>
-      old.radius != radius || old.rtl != rtl;
-}
 /// Standard sub-page route for mikcb (settings, import, about, etc.).
 class HyperosPageRoute<T> extends PageRoute<T> {
   static final Set<HyperosPageRoute<dynamic>> _activeRoutes = {};
@@ -1084,20 +1045,28 @@ class HyperosPageRoute<T> extends PageRoute<T> {
       nodeTag: 'page',
       // 切口必须落在框架的页面缓存边界（`_ModalScopeState` 的
       // `RepaintBoundary(key: _subtreeKey)`）**之内**，只能从 `buildPage` 挂
-      //（见 `_MiuixNavClippedPage` 的说明）。快照闸门同样只能在 `buildPage`
-      // 挂（它要包住页面本体），且在切口内侧：快照拍的是**页面像素本身**
-      // （不带切口），滑入中的圆角由这层切口每帧现算 —— 烤死在照片里的缺口
-      // 不会跟着收，收尾会露月牙（2026-10-18 真机第三轮）。
-      child: _MiuixNavLeadingCornerCut(
-        animation: animation,
-        child: snapshotTransition
-            ? _MiuixNavSnapshotGate(
+      //（见 `_MiuixNavClippedPage` 的说明）。
+      //
+      // 2026-10-18 第十七轮：切口还要落在**快照自己的拍摄边界之内**（闸门里
+      // 那层 `_pageBoundaryKey`）—— 转了位置之后，滑入中屏幕上的像素来自
+      // 照片，而照片过去是不带切口的方角页面，圆角只剩外壳那层合成期裁切在
+      // 撑着；真机上合成期裁切会丢帧，丢的那几帧里滑入页就是**实实在在的
+      // 方角白页**（用户口径：「接近屏幕边缘时圆角变直角，出现白色的页面」）。
+      // 现在照片自己缺角，滑动全程没有任何一层「裁切」需要临场计算 ——
+      // 形状已经烤在像素里，掉帧只能让照片的位置跳一下。
+      child: snapshotTransition
+          ? _MiuixNavSnapshotGate(
+              animation: animation,
+              onAttached: (gate) => _snapshotGate = gate,
+              child: _MiuixNavLeadingCornerCut(
                 animation: animation,
-                onAttached: (gate) => _snapshotGate = gate,
                 child: builder(context),
-              )
-            : builder(context),
-      ),
+              ),
+            )
+          : _MiuixNavLeadingCornerCut(
+              animation: animation,
+              child: builder(context),
+            ),
     );
   }
 
