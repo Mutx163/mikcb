@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_icon_button.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_overlay_header.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_page.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_proxies.dart';
 
 import '../../helpers_test_app.dart';
@@ -140,5 +141,37 @@ void main() {
       await tester.pumpAndSettle();
       expectNoOverlapWithSuffixes(tester, longTitle);
     });
+  });
+
+  testWidgets('顶栏标题按自然宽度留余量：四字标题不会被省略成「课程…」', (
+    tester,
+  ) async {
+    // 2026-10-18 真机反馈：「课程卡片 / 课表页面」两页的顶栏标题显示成
+    // 「课程…」「课表…」。根因是标题盒的 maxWidth 被设成**正好等于**
+    // TextPainter 量出来的自然宽度 —— 而渲染时 DefaultTextStyle.merge 还会带上
+    // 环境样式的 letterSpacing，真实宽度比测量值多 1dp 左右，于是刚好卡在临界上的
+    // 标题被判成溢出、末尾变省略号。
+    //
+    // 判据：RenderParagraph 的 didExceedMaxLines 必须是 false。
+    for (final title in ['课程卡片', '课表页面', '学期概览']) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HyperosSubpage(
+            title: Text(title),
+            onBack: () {},
+            collapsibleLargeTitle: false,
+            child: const SizedBox.expand(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final paragraph = tester.renderObject<RenderParagraph>(find.text(title));
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: '「$title」被挤成了省略号：标题盒比文字窄（自然宽度 + 余量才算安全）',
+      );
+    }
   });
 }

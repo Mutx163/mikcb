@@ -127,6 +127,13 @@ const double _kNominalHeaderSlotWidth = 44;
 /// 标题离左右图标组的最小间距。
 const double _kHeaderTitleInset = 10;
 
+/// 标题盒在自然宽度上多留的余量。
+///
+/// 亚像素/字体度量差异会让实际渲染比 `TextPainter` 量出来的多一点点；宽度正好
+/// 卡在自然宽度上时，这点差异足以把最后一个字换成省略号（真机实测：「课程卡片」
+/// 显示成「课程…」）。留 2dp：肉眼看不出来，但足够不误判溢出。
+const double _kTitleWidthSlack = 2;
+
 class _HyperosOverlayNestedHeaderState
     extends State<HyperosOverlayNestedHeader> {
   final GlobalKey _prefixesKey = GlobalKey();
@@ -210,6 +217,16 @@ class _HyperosOverlayNestedHeaderState
   ///
   /// 同步算、不等回填：夹取**位置**必须先知道标题有多宽，而它可能比空档宽，
   /// 只夹宽度的话居中的那一截照样会捅到图标那边去（空档与整条栏不同心时）。
+  ///
+  /// **2026-10-18 第十九轮真机反馈**：「课程卡片 / 课表页面」两页的顶栏标题
+  /// 显示成「课程…」「课表…」。原因是这里算出来的宽度被**原样**当作标题盒的
+  /// `maxWidth` —— 一个像素余量都没有；而测量用的样式与实际渲染用的不是同一份：
+  /// 这里只有 [titleStyle]，渲染时 [DefaultTextStyle.merge] 还会带上环境样式里的
+  /// `letterSpacing` 等字段（M3 的 bodyMedium 就带），真实宽度比测量值大一点点，
+  /// 刚好卡在临界上的标题于是被判成溢出、末尾变省略号。
+  ///
+  /// 两处修正：测量基准改成「环境样式 + titleStyle」（与渲染侧同一条合并链），
+  /// 并留 [_kTitleWidthSlack] 的余量。
   double? _naturalTitleWidth(BuildContext context, TextStyle style) {
     final title = widget.title;
     if (title is! Text) {
@@ -219,15 +236,22 @@ class _HyperosOverlayNestedHeaderState
     if (data == null || data.isEmpty) {
       return null;
     }
+    final merged = DefaultTextStyle.of(context)
+        .style
+        .merge(style)
+        .merge(title.style);
     final painter = TextPainter(
-      text: TextSpan(text: data, style: style.merge(title.style)),
+      text: TextSpan(text: data, style: merged),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
       maxLines: 1,
     )..layout();
     final width = painter.width;
     painter.dispose();
-    return width.isFinite ? width : null;
+    if (!width.isFinite) {
+      return null;
+    }
+    return width + _kTitleWidthSlack;
   }
 
   @override
