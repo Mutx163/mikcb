@@ -121,17 +121,19 @@ internal object WidgetPreviewRenderer {
     private fun contentBounds(bitmap: Bitmap): IntArray {
         val w = bitmap.width
         val h = bitmap.height
-        val pixels = IntArray(w * h)
-        bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
+        // 逐行取像素：整张一次性 getPixels 要额外开一块 w*h*4 字节的数组，
+        // 4×4 卡片（约 1000×1000）就是 4MB，叠在「整张图 + 裁出的卡片图」
+        // 之上，单张峰值能到 12MB，低端机容易顶到上限。
+        val row = IntArray(w)
         var minX = w
         var maxX = -1
         var minY = h
         var maxY = -1
         for (y in 0 until h) {
-            val base = y * w
+            bitmap.getPixels(row, 0, w, 0, y, w, 1)
             for (x in 0 until w) {
                 // alpha > 8：避开圆角抗锯齿产生的极淡像素。
-                if ((pixels[base + x] ushr 24) > 8) {
+                if ((row[x] ushr 24) > 8) {
                     if (x < minX) minX = x
                     if (x > maxX) maxX = x
                     if (y < minY) minY = y

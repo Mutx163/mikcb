@@ -55,14 +55,6 @@ class HomeWidgetPreviewSpec {
   final double widthDp;
   final double heightDp;
 
-  String get cellLabel => '$cellWidth×$cellHeight';
-
-  /// 预览下方那行物理尺寸，如 `156×156dp`。
-  ///
-  /// 只放 dp、不再带格数：格数已经在卡片名里了（「主卡 2×2」「列表 4×4」），
-  /// 两行都写 `2×2` 就是重复。
-  String get sizeLabel =>
-      '${widthDp.round()}×${heightDp.round()}dp';
 }
 
 /// 桌面网格推算参数：绝大多数手机桌面是 4 列、格间距 8dp、屏幕左右各留 20dp。
@@ -91,7 +83,7 @@ class HomeWidgetPreviewBitmap {
   final double widthDp;
   final double heightDp;
 
-  String get sizeLabel => '${widthDp.round()}×${heightDp.round()}dp';
+  String get sizeLabel => '${widthDp.round()} × ${heightDp.round()} dp';
 }
 
 /// 按当前屏幕逻辑宽度，换算每张卡片在桌面上占的真实格位尺寸。

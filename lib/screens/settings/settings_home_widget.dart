@@ -86,6 +86,11 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
   List<HomeWidgetPreviewSpec> _previewSpecs = const <HomeWidgetPreviewSpec>[];
   double _previewSpecsWidth = 0;
 
+  /// 视口比卡片本身多留的高度：上下各 28dp。
+  /// 投影向下占用 = offset 5 + blur 18 + |spread| 2 = 25dp，留 28 刚好装下
+  /// 再加一点呼吸空间；改阴影参数时这里要同步改，否则阴影又被切出直线。
+  static const double _previewViewportExtraDp = 56;
+
   /// 轮播视口高度跟着当前页卡片的实际高度走，只额外留出投影与呼吸空间。
   /// 固定成最大卡的高度会让 4×1 横条上下空出一大片，反而显得更小。
   double get _previewViewportHeight {
@@ -93,7 +98,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
       return 200;
     }
     final index = _previewIndex.clamp(0, _previewSpecs.length - 1);
-    return _previewSpecs[index].heightDp + 56;
+    return _previewSpecs[index].heightDp + _previewViewportExtraDp;
   }
 
   @override
@@ -449,14 +454,17 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
           style: HyperosTypography.listTitle(context),
         ),
         const SizedBox(height: 3),
-        Text(
-          // 有图时显示卡片自身的可见尺寸（比格位小一圈，因为卡片在格位里
-          // 上下留了内边距）；还没出图时先退回格位尺寸占位。
-          _previewBytes[spec.target]?.sizeLabel ?? spec.sizeLabel,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 12,
-            color: HyperosColors.secondaryText(context),
+        // 还没出图时不显示尺寸：那时只能报格位尺寸，出图后会跳成卡片尺寸，
+        // 数字变一次反而让人以为哪里错了。留固定高度占位，出图时不跳版。
+        SizedBox(
+          height: 16,
+          child: Text(
+            _previewBytes[spec.target]?.sizeLabel ?? '',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: HyperosColors.secondaryText(context),
+            ),
           ),
         ),
         const SizedBox(height: 14),

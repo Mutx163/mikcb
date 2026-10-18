@@ -49,6 +49,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.util.Locale
 import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.io.File
 
@@ -150,6 +151,20 @@ class MainActivity : FlutterActivity() {
     private val screenCaptureExecutor = Executor { command ->
         screenCaptureMainHandler.post(command)
     }
+
+    /**
+     * 小组件预览的渲染线程。
+     *
+     * 渲染一张卡片要 inflate → 测量 → 绘制 → 裁边 → PNG 编码，4×4 那种
+     * 1000×1000 的图单张几十到上百毫秒。原先直接在通道回调里同步跑，而通道
+     * 回调就在主线程 —— 等于把 Flutter 的 UI 线程按住不放，实测进设置页会
+     * 连续掉帧（logcat: Skipped 91 frames）。
+     *
+     * 用单线程而不是并发：多张预览同时渲染只会互相抢 CPU，串行反而更稳；
+     * 结果回主线程再回给 Flutter。
+     */
+    private val widgetPreviewExecutor = Executors.newSingleThreadExecutor()
+    private val widgetPreviewMainHandler by lazy { Handler(Looper.getMainLooper()) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Android 10 (API 29) draws a translucent **contrast scrim** behind the
@@ -258,6 +273,9 @@ class MainActivity : FlutterActivity() {
         // requestNotificationPermission() 就永远停在"请求中"，旧 Result 也被持有。
         // 按"用户没授予"收束，与日历同口径。
         notificationPermissionSlot.take()?.success(false)
+        // 预览渲染线程随 Activity 收束：不关会一直挂着一个空闲线程，
+        // 排队中的任务在引擎销毁后也无处投递。
+        widgetPreviewExecutor.shutdownNow()
         super.onDestroy()
     }
 
@@ -1012,26 +1030,37 @@ class MainActivity : FlutterActivity() {
                         if (widgetType.isNullOrBlank() || widthDp <= 0 || heightDp <= 0) {
                             result.error("INVALID_ARGUMENTS", "Missing widget preview spec", null)
                         } else {
-                            val preview = WidgetPreviewRenderer.render(
-                                applicationContext,
-                                widgetType,
-                                widthDp,
-                                heightDp,
-                                nightMode,
-                                languageTag,
-                            )
-                            if (preview == null) {
-                                result.error("PREVIEW_FAILED", widgetType, null)
-                            } else {
-                                // 一起交回卡片本身的尺寸：图已裁到可见边界，
-                                // 按格位尺寸显示会让「数字是方的、看着是扁的」。
-                                result.success(
-                                    mapOf(
-                                        "png" to preview.png,
-                                        "widthDp" to preview.widthDp,
-                                        "heightDp" to preview.heightDp,
-                                    )
+                            // 渲染放后台线程：一张 4×4 卡片要 inflate + 绘制 + PNG
+                            // 编码，上百毫秒；留在通道回调（主线程）里会直接卡住 UI。
+                            val appContext = applicationContext
+                            widgetPreviewExecutor.execute {
+                                val preview = WidgetPreviewRenderer.render(
+                                    appContext,
+                                    widgetType,
+                                    widthDp,
+                                    heightDp,
+                                    nightMode,
+                                    languageTag,
                                 )
+                                widgetPreviewMainHandler.post {
+                                    try {
+                                        if (preview == null) {
+                                            result.error("PREVIEW_FAILED", widgetType, null)
+                                        } else {
+                                            // 一起交回卡片本身的尺寸：图已裁到可见边界，
+                                            // 按格位尺寸显示会让「数字是方的、看着是扁的」。
+                                            result.success(
+                                                mapOf(
+                                                    "png" to preview.png,
+                                                    "widthDp" to preview.widthDp,
+                                                    "heightDp" to preview.heightDp,
+                                                )
+                                            )
+                                        }
+                                    } catch (_: Exception) {
+                                        // Activity / 引擎已销毁，这条回复没人收了。
+                                    }
+                                }
                             }
                         }
                     }
