@@ -45,11 +45,11 @@ void main() {
     expect(HyperosMiuixNavigation.coveredAlphaFalloff, 0.1);
     // 官方 NavDisplayEffects.Default.dimAmount（全屏压暗上限）。
     expect(HyperosMiuixNavigation.dimAmount, 0.5);
-    // 前缘两角裁切：2026-10-18 起**关闭**。官方 `Leading` 那个「圆角」是从页面
-    // 像素里挖洞（洞里露出被覆盖页 / 快照洞底是纯黑），贴边后要补上 —— 重页面上
-    // 这一下只有 1~2 帧，十轮真机反馈的「圆角闪现消失」都是它。关掉后页面按完整
-    // 矩形滑入，转场里没有任何圆角形状可以变。
-    expect(HyperosMiuixNavigation.clipLeadingCornersWhileMoving, isFalse);
+    // 前缘两角圆角：观感保留（官方 `Leading`），但**不再挖洞** —— 页面保持完整
+    // 矩形，圆角外侧那块用页面底色补片画出来（见 `_MiuixNavClippedPage`）。
+    // 2026-10-18 定案：洞会在贴边时被「补上」，重页面上那一下只有 1~2 帧，是
+    // 十轮真机反馈「圆角闪现消失」的来源。
+    expect(HyperosMiuixNavigation.clipLeadingCornersWhileMoving, isTrue);
   });
 
   test('corner radius tapers to zero instead of toggling', () {
@@ -193,17 +193,17 @@ void main() {
     expect(previous, 0);
   });
 
-  testWidgets('前缘不再裁角：转场中页面就是完整矩形（没有可闪的假圆角）', (
+  testWidgets('前缘圆角是补片画的：页面上没有洞，转场中没有可闪的几何变化', (
     tester,
   ) async {
-    // 2026-10-18 定案（第十一轮真机 + 截图）：前缘那个「圆角」不是真圆角，而是
-    // 从页面像素里**挖掉一个洞** —— 洞里露出被覆盖页（快照模式下洞底是纯黑，
-    // 用户截图实测）。页面贴边后要把洞补上，重页面上这一下只有 1~2 帧，读作
-    // 「圆角闪现消失」；十轮调时机/带宽/预热/栅格边界都没用。
+    // 2026-10-18 定案（第十一轮真机 + 截图）：旧的前缘「圆角」是从页面像素里
+    // **挖掉一个洞** —— 洞里露出被覆盖页（快照模式下洞底是纯黑，用户截图实测
+    // 左下角一块纯黑四分之一圆）。页面贴边后要把洞补上，重页面上这一下只有
+    // 1~2 帧，读作「圆角闪现消失」；十轮调时机/带宽/预热/栅格边界都没用。
     //
-    // 现在 `clipLeadingCornersWhileMoving = false`：页面按完整矩形滑入，转场
-    // 全程没有任何「圆角形状」可以变，也就不可能再出现这个现象。本用例钉住
-    // 「页面的祖先链上不再有裁角层」。
+    // 现在圆角是**画**出来的：页面保持完整矩形（祖先链上没有 ClipRRect），
+    // 圆角外侧那块由 `_MiuixNavLeadingCornerNotchPainter` 补页面底色。观感不变，
+    // 但页面上没有洞 —— 没有可补的东西，转场全程没有圆角形状变化。
     // 上面几条用例把用户倍速改成了 0.5，这里掰回 1 倍速，时长才可预期。
     AndroidAnimationScaleService.setUserTransitionSpeed(1);
     // 被覆盖页得**也是** HyperOS 路由：Flutter 只在被覆盖路由是
@@ -266,7 +266,20 @@ void main() {
     // 动画带过锚点帧 —— 之后 125ms 的步进读数与无门槛时同构。
     await tester.pump(const Duration(milliseconds: 1));
 
-    // 转场中取三个时刻：页面的祖先链上**不许**再出现裁角层。
+    // 补片是否在位：画笔类型就是圆角补片。
+    bool hasNotchPainter() => find
+        .byWidgetPredicate(
+          (w) =>
+              w is CustomPaint &&
+              w.painter.runtimeType
+                  .toString()
+                  .contains('MiuixNavLeadingCornerNotchPainter'),
+          skipOffstage: false,
+        )
+        .evaluate()
+        .isNotEmpty;
+
+    // 转场中取三个时刻：页面祖先链上**不许**出现裁角层（挖洞），补片必须在位。
     for (final fraction in [0.25, 0.5, 0.75]) {
       await tester.pump(const Duration(milliseconds: 125));
       expect(
@@ -275,20 +288,14 @@ void main() {
           matching: find.byType(ClipRRect, skipOffstage: false),
         ),
         findsNothing,
-        reason: 't=$fraction 页面不该再被裁前缘圆角 —— 裁角 = 挖洞 = 贴边时要补，'
+        reason: 't=$fraction 不该再用 ClipRRect 挖洞 —— 洞要在贴边时补上，'
             '重页面上那一下就是「圆角闪现消失」',
       );
+      expect(hasNotchPainter(), isTrue, reason: 't=$fraction 圆角补片应在位（观感保留）');
     }
 
     await tester.pumpAndSettle();
-    expect(
-      find.ancestor(
-        of: find.byKey(enteringKey, skipOffstage: false),
-        matching: find.byType(ClipRRect, skipOffstage: false),
-      ),
-      findsNothing,
-      reason: '停稳后同样没有裁角层（静止态不会出现一个假的圆角缺口）',
-    );
+    expect(hasNotchPainter(), isTrue, reason: '停稳后补片仍在：静止态没有任何一帧改圆角');
   });
 
   testWidgets('转场全程结构恒定：裁切 / 补底 / 压暗蒙层 / 透明度不随进度摘挂', (tester) async {
@@ -548,13 +555,12 @@ void main() {
   testWidgets('页面图层不再挖圆角洞：四个角都是完整页面像素', (
     tester,
   ) async {
-    // 2026-10-18 定案：前缘**不再裁角**（`clipLeadingCornersWhileMoving = false`）——
-    // 那个「圆角」不是真圆角，而是从页面像素里挖掉一个洞：洞里露出被覆盖页，
-    // 快照模式下洞底是纯黑（用户截图实测）；贴边后要把洞补上，重页面上这一下
-    // 只有 1~2 帧，就是十轮反馈里那个「圆角闪现消失」。
+    // 2026-10-18 定案：圆角改成**画**出来的（页面外侧补一层页面底色补片），
+    // 页面像素不再被裁掉一角。旧实现是挖洞：洞里露出被覆盖页 / 快照模式的纯黑，
+    // 贴边时要把洞补上 —— 重页面上那一下只有 1~2 帧，就是十轮反馈的「圆角闪现消失」。
     //
     // 本用例取页面自己的图层（最靠近页面的 RepaintBoundary），钉住：**四个角都
-    // 是完整的不透明页面像素** —— 只要这层不再有洞，转场里就没有任何东西需要
+    // 是完整的不透明页面像素** —— 只要这层没有洞，转场里就没有任何东西需要
     // 「补」，也就没有可被掉帧放大的变化。
     AndroidAnimationScaleService.setUserTransitionSpeed(1);
     const enteringKey = ValueKey('entering-page');

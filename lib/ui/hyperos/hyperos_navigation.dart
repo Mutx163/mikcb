@@ -98,7 +98,7 @@ abstract final class HyperosNavigation {
   /// 前缘圆角的收束因子（0 = 不裁，1 = 满半径），两端为 0、中段满半径。
   ///
   /// **2026-10-18 起不再用于前缘裁切本身**：滑动转场的前缘圆角改为**半径全程
-  /// 恒定**（见 `_MiuixNavPageCornerCut` —— 末段任何一次几何变化都会被重页面的
+  /// 恒定**（见 `_MiuixNavClippedPage` 的补片方案 —— 任何一次几何变化都会被重页面的
   /// 掉帧放大成「圆角闪现消失」）。保留这个因子只服务非几何用途：被覆盖页压暗 /
   /// 透明度衰减的末段释放（[coveredAlphaFor] / [scrimAlphaFor]）。
   ///
@@ -319,6 +319,8 @@ class _MiuixNavPageTransition extends StatelessWidget {
         final page = _MiuixNavClippedPage(
           // 存在性由设备圆角读数决定（转场全程恒定，不随动画翻转）；
           clipEnabled: clipRadius > 0,
+          // 圆角外侧那块补什么颜色：页面底色（静止态与页面自身同色，看不出）。
+          notchColor: surface,
           // 前缘圆角：**恒定半径，全程不随进度变**（2026-10-18 定案）。
           //
           // 以前这里在末段按 `transitionCornerRadiusFactor` 平滑收到 0。那不是
@@ -457,19 +459,22 @@ class _MiuixNavClippedPage extends StatelessWidget {
     required this.clipEnabled,
     required this.radius,
     required this.alpha,
+    required this.notchColor,
     required this.child,
   });
 
-  /// 是否挂圆角裁切层 —— 只由**设备圆角读数**决定（转场全程恒定）。
+  /// 是否画前缘圆角 —— 只由**设备圆角读数**决定（转场全程恒定）。
   final bool clipEnabled;
 
-  /// 裁切半径：**设备圆角读数，全程恒定**（2026-10-18 起不再随进度收束 ——
-  /// 末段收束会被重页面的掉帧放大成「圆角闪现消失」）。贴边后该区域被机身
-  /// 圆角盖住，静止态看不出；读数取上下两角较小值，保证永远落在机身圆角里侧。
+  /// 圆角半径：**设备圆角读数，全程恒定**。贴边后该区域被机身圆角盖住。
   final double radius;
 
   /// 被覆盖页的透明度（1 = 不透明，`RenderOpacity` 直绘）。
   final double alpha;
+
+  /// 前缘圆角外侧那块「角」补什么颜色：**页面自己的底色**
+  /// （`HyperosColors.scaffoldBackground`）。
+  final Color notchColor;
 
   final Widget child;
 
@@ -481,25 +486,76 @@ class _MiuixNavClippedPage extends StatelessWidget {
       opacity: alpha,
       child: child,
     );
-    // 只裁前缘两角（LTR = 左）：整页滑入时贴屏幕边缘那两个角不该被裁。
-    if (clipEnabled) {
-      page = ClipRRect(
-        borderRadius: isRtl
-            ? BorderRadius.only(
-                topRight: Radius.circular(radius),
-                bottomRight: Radius.circular(radius),
-              )
-            : BorderRadius.only(
-                topLeft: Radius.circular(radius),
-                bottomLeft: Radius.circular(radius),
+    if (clipEnabled && radius > 0) {
+      // 2026-10-18 定案：圆角**画**出来，而不是从页面里**挖**出来。
+      //
+      // 旧做法是 `ClipRRect` —— 从页面像素里挖掉一个圆角洞，洞里露出被覆盖页
+      // （快照模式 / 栈底为空时就是窗口黑底，用户截图实测左下角一块纯黑四分之一
+      // 圆）。只要洞存在，页面贴边时就得「补上」，而这一下在重页面上只有 1~2 帧
+      // —— 就是十轮反馈里那个「圆角闪现消失」。
+      //
+      // 现在页面是**完整矩形**，只在圆角外侧那块画一层同样大小的页面底色补片：
+      // 观感与「带圆角的页面」一致，但没有洞 —— 没有洞要补，也就没有任何一帧会
+      // 去改圆角的形状。补片颜色 = 页面底色，静止态与页面自身同色，看不出来。
+      page = Stack(
+        fit: StackFit.expand,
+        children: [
+          page,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _MiuixNavLeadingCornerNotchPainter(
+                  color: notchColor,
+                  radius: radius,
+                  rtl: isRtl,
+                ),
               ),
-        child: page,
+            ),
+          ),
+        ],
       );
     }
     return page;
   }
 }
 
+/// 前缘两角「圆角外侧」那块补片：把页面矩形与同半径圆角矩形的差集涂成页面底色。
+///
+/// 它替代了原先的 `ClipRRect`（挖洞）—— 圆角看起来一样，但页面上没有透明区域，
+/// 不存在「贴边时把洞补上」这一帧。
+class _MiuixNavLeadingCornerNotchPainter extends CustomPainter {
+  const _MiuixNavLeadingCornerNotchPainter({
+    required this.color,
+    required this.radius,
+    required this.rtl,
+  });
+
+  final Color color;
+  final double radius;
+  final bool rtl;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final leading = Radius.circular(radius);
+    final outer = Path()..addRect(Offset.zero & size);
+    final rounded = Path()
+      ..addRRect(
+        RRect.fromRectAndCorners(
+          Offset.zero & size,
+          topLeft: rtl ? Radius.zero : leading,
+          bottomLeft: rtl ? Radius.zero : leading,
+          topRight: rtl ? leading : Radius.zero,
+          bottomRight: rtl ? leading : Radius.zero,
+        ),
+      );
+    final notch = Path.combine(PathOperation.difference, outer, rounded);
+    canvas.drawPath(notch, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MiuixNavLeadingCornerNotchPainter old) =>
+      old.color != color || old.radius != radius || old.rtl != rtl;
+}
 /// 转场期间的「重页快照滑入」闸门（2026-10-17；2026-10-18 两段式退休：
 /// 预热 0.99 → 收束带撤快照）。
 ///
@@ -577,7 +633,7 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
   ui.Image? _snapshot;
 
   /// 页面自己的栅格边界（[_buildStack] 里那层）。拍照取它：拍出来的是**页面
-  /// 像素、不带切口** —— 滑入中的圆角由 [_MiuixNavPageCornerCut] 每帧现算，
+  /// 像素、不带切口** —— 滑入中的圆角由 `_MiuixNavClippedPage` 的补片现画，
   /// 照片里不能再烤死一个缺口（烤死的缺口不跟着收，收尾会露月牙）。
   final GlobalKey _pageBoundaryKey = GlobalKey();
 
@@ -619,7 +675,7 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
     //
     // 2026-10-18 真机第三轮改口径：以前拍框架的 `_subtreeKey`（包着「页面 +
     // 内层圆角切口」），想让快照自带切口。但切口现在改成与外层同步**连续收**
-    // （见 [_MiuixNavPageCornerCut]），烘死在照片里的缺口不会跟着收 —— 照片里
+    // （见 `_MiuixNavClippedPage`），烘死在照片里的缺口不会跟着收 —— 照片里
     // 留下一个恒定的满值缺口，外层的裁切只能削像素、填不回来。拍页面自己则
     // 天然不带缺口：滑入中的圆角由每帧现算的切口负责（切口仍在框架缓存边界
     // 之内，掉帧兜底的性质没变）。
@@ -812,66 +868,6 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
   }
 }
 
-/// 页面**自带**的前缘圆角切口：把切口烘进页面自己的绘制结果，而不是只靠转场壳
-/// 那一层裁切兜着。
-///
-/// 存在的理由（2026-10-17 真机第四轮定案）：框架把 `buildPage` 的返回值缓存在
-/// `_ModalScopeState` 的 `RepaintBoundary(key: _subtreeKey)` 里，而这个边界在转场
-/// 壳 [ClipRRect] 的**内侧** —— 被缓存下来的页面像素本身是不带切口的，圆角完全
-/// 押在「合成阶段那次 rrect 裁切每帧都生效」上。这一次裁切在真机上会掉帧，本仓
-/// 已有两次同源真机实证（`inspire_header_blur.dart` 记录带实时模糊时引擎对兄弟
-/// 内容的圆角裁切并不可靠；zoom 路由那次记录转场壳里的滤镜会把坏采样烤进缓存）。
-/// 掉的那几帧就是「圆角消失、露出上层页的像素」，回来又掉 = 用户读到的
-/// 「圆角极快地闪烁」。
-///
-/// 位置只能在这里（`buildPage` 的返回值内）：`buildTransitions` 拿到的 `child`
-/// 已经被框架边界包成一整块，塞不进边界内侧。
-///
-/// 与转场壳那层**同半径、同形状**（同为「只裁前缘两角」），而且**恒定不变**：
-/// 半径 = 设备圆角读数，从滑入第一步到页面停稳一个值都不改（2026-10-18 定案）。
-///
-/// 为什么改成恒定（真机连续四轮「圆角闪现消失」的收口）：
-/// * 旧方案在末段把半径收到 0（先是二值、后是连续曲线）。无论哪种，都是把一次
-///   **几何变化**压进最后 ~85ms；重页面上那一段只有 1~2 帧，变化过程读作
-///   「圆角闪现消失」，而轻页面帧率够、看不出来。四轮微调（改时机、改带宽、
-///   加预热、加栅格边界）都只是在挪那 85ms，症状一模一样 —— 因为根不是时机，
-///   是「末段存在可被掉帧放大的几何变化」这件事本身。
-/// * 现在没有变化可放大：圆角从第一步就是最终半径，页面贴边时它与机身圆角重合
-///   （那块本来就被机身圆角盖住），此后一直保持 —— 转场全程和静止态都**没有
-///   任何一帧**去改圆角的形状。
-/// * 读数取上下两角的较小值、读不到则不裁（见 Kotlin `readDisplayCornerRadiusDp`
-///   与 `AndroidAnimationScaleService.refresh`）：保证缺口永远落在机身圆角**里侧**，
-///   静止态不可能露出来。
-///
-/// 半径不变也让这层彻底静态：页面栅格只建一次，裁剪只是 `ClipRRectLayer` 的
-/// 常量属性，不产生任何逐帧重栅格化。
-class _MiuixNavPageCornerCut extends StatelessWidget {
-  const _MiuixNavPageCornerCut({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!HyperosMiuixNavigation.clipLeadingCornersWhileMoving) {
-      return child;
-    }
-    // 与转场壳同源：同一份设备圆角读数（官方 rememberNavSystemCornerRadius 口径），
-    // 存在性判据也同一条，全程恒定。
-    final radius = HyperosMotionScope.of(context).displayCornerRadiusDp;
-    if (radius <= 0) {
-      return child;
-    }
-    final isRtl = Directionality.of(context) == TextDirection.rtl;
-    final corner = Radius.circular(radius);
-    // 只裁前缘两角（LTR = 左），与转场壳同口径：贴屏幕边缘那两个角不裁。
-    return ClipRRect(
-      borderRadius: isRtl
-          ? BorderRadius.only(topRight: corner, bottomRight: corner)
-          : BorderRadius.only(topLeft: corner, bottomLeft: corner),
-      child: child,
-    );
-  }
-}
 
 /// Standard sub-page route for mikcb (settings, import, about, etc.).
 class HyperosPageRoute<T> extends PageRoute<T> {
@@ -1027,19 +1023,17 @@ class HyperosPageRoute<T> extends PageRoute<T> {
       nodeTag: 'page',
       // 切口必须落在框架的页面缓存边界（`_ModalScopeState` 的
       // `RepaintBoundary(key: _subtreeKey)`）**之内**，只能从 `buildPage` 挂
-      //（见 [_MiuixNavPageCornerCut] 的说明）。快照闸门同样只能在 `buildPage`
+      //（见 `_MiuixNavClippedPage` 的说明）。快照闸门同样只能在 `buildPage`
       // 挂（它要包住页面本体），且在切口内侧：快照拍的是**页面像素本身**
       // （不带切口），滑入中的圆角由这层切口每帧现算 —— 烤死在照片里的缺口
       // 不会跟着收，收尾会露月牙（2026-10-18 真机第三轮）。
-      child: _MiuixNavPageCornerCut(
-        child: snapshotTransition
-            ? _MiuixNavSnapshotGate(
-                animation: animation,
-                onAttached: (gate) => _snapshotGate = gate,
-                child: builder(context),
-              )
-            : builder(context),
-      ),
+      child: snapshotTransition
+          ? _MiuixNavSnapshotGate(
+              animation: animation,
+              onAttached: (gate) => _snapshotGate = gate,
+              child: builder(context),
+            )
+          : builder(context),
     );
   }
 
