@@ -353,12 +353,22 @@ class _MiuixNavPageTransition extends StatelessWidget {
         // / 数据备份这类页面是直角，通用 / 课程卡 / 天气正常）。
         // 这里在页面左上/左下圆角 + 左侧边缘描一条**极细的半透明线**，让轮廓
         // 不依赖背景；只在「页面正在动」时画，落定后一个像素都不画（静止态零变化）。
-        final edged = page;
+        final edged = CustomPaint(
+          foregroundPainter: _MiuixNavLeadingEdgePainter(
+            radius: clipRadius,
+            rtl: isRtl,
+            active: moving,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0x1FFFFFFF)
+                : const Color(0x18000000),
+          ),
+          child: page,
+        );
 
         // === 临时诊断（2026-10-18）：把「缺口区域」涂成洋红，用来判断左上角那块
         // 到底是「没被裁开」还是「裁开了但洞里同色」。看完即撤。
         final diagnosed = CustomPaint(
-          foregroundPainter: _MiuixNavNotchVeilPainter(
+          foregroundPainter: _DebugNotchPainter(
             radius: leadingCornerActive ? clipRadius : 0,
             rtl: isRtl,
           ),
@@ -896,15 +906,82 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
 }
 
 
-/// 缺口里的**一层极淡压暗**（页面矩形减去同半径圆角矩形那圈补集）。
+/// 页面左前缘（LTR = 左）的**轮廓线**：只描左上/左下两个圆角 + 中间那条直边。
 ///
-/// 真机诊断结论（2026-10-18）：两个角的裁切完全一致（缺口区域全为洋红），
-/// 差别只在「洞里露出的那层」——页面顶部是纯色标题区时，洞底也是同一片纯色，
-/// 圆角在视觉上不存在；左下角洞底是卡片，有对比。
-/// 给缺口里这一点点压暗，圆角在任何页面、任何背景上都有轮廓，不依赖下层内容；
-/// 只在页面动的时候画，落定后不留任何痕迹。
-class _MiuixNavNotchVeilPainter extends CustomPainter {
-  const _MiuixNavNotchVeilPainter({required this.radius, required this.rtl});
+/// 存在的理由（2026-10-18 第十四轮）：圆角是挖出来的洞，洞的可见性完全取决于
+/// 洞底那层的对比 —— 页面顶部是纯色标题区、下面也是同一片纯色时，圆角在视觉上
+/// 不存在（用户：只有桌面小组件 / 数据备份这类页面是直角，通用 / 课程卡 / 天气
+/// 正常）。这条 1px 半透明轮廓让圆角**不依赖背景**也能被看见。
+///
+/// 只在 `active`（页面正在动）时画：落定后一个像素都不画，静止态零变化；
+/// 消失点在机身圆角处，看不见。
+class _MiuixNavLeadingEdgePainter extends CustomPainter {
+  const _MiuixNavLeadingEdgePainter({
+    required this.radius,
+    required this.rtl,
+    required this.active,
+    required this.color,
+  });
+
+  final double radius;
+  final bool rtl;
+  final bool active;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (!active || radius <= 0 || size.isEmpty) {
+      return;
+    }
+    final r = radius;
+    final path = Path();
+    if (!rtl) {
+      path.moveTo(r, 0.5);
+      path.arcToPoint(
+        Offset(0.5, r),
+        radius: Radius.circular(r),
+        clockwise: false,
+      );
+      path.lineTo(0.5, size.height - r);
+      path.arcToPoint(
+        Offset(r, size.height - 0.5),
+        radius: Radius.circular(r),
+        clockwise: false,
+      );
+    } else {
+      path.moveTo(size.width - r, 0.5);
+      path.arcToPoint(
+        Offset(size.width - 0.5, r),
+        radius: Radius.circular(r),
+      );
+      path.lineTo(size.width - 0.5, size.height - r);
+      path.arcToPoint(
+        Offset(size.width - r, size.height - 0.5),
+        radius: Radius.circular(r),
+      );
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = color
+        ..isAntiAlias = true,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MiuixNavLeadingEdgePainter old) =>
+      old.active != active ||
+      old.radius != radius ||
+      old.rtl != rtl ||
+      old.color != color;
+}
+/// === 临时诊断（2026-10-18）===：把「缺口区域」（页面矩形减去同半径圆角矩形）
+/// 涂成洋红。用途：判断左上角那块是「裁切没生效」还是「裁开了但洞里同色」。
+/// 看完即撤。
+class _DebugNotchPainter extends CustomPainter {
+  const _DebugNotchPainter({required this.radius, required this.rtl});
 
   final double radius;
   final bool rtl;
@@ -927,11 +1004,11 @@ class _MiuixNavNotchVeilPainter extends CustomPainter {
         ),
       );
     final notch = Path.combine(PathOperation.difference, outer, rounded);
-    canvas.drawPath(notch, Paint()..color = const Color(0x14000000));
+    canvas.drawPath(notch, Paint()..color = const Color(0xFFFF00FF));
   }
 
   @override
-  bool shouldRepaint(covariant _MiuixNavNotchVeilPainter old) =>
+  bool shouldRepaint(covariant _DebugNotchPainter old) =>
       old.radius != radius || old.rtl != rtl;
 }
 /// Standard sub-page route for mikcb (settings, import, about, etc.).
