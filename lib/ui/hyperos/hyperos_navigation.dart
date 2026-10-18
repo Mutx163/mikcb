@@ -368,7 +368,18 @@ class _MiuixNavPageTransition extends StatelessWidget {
     final moving = enter.status == AnimationStatus.forward ||
         enter.status == AnimationStatus.reverse;
     final leadingCornerActive = isTopRoute || moving;
-    final bleedWidth = HyperosNavigation.parallaxBleedWidth(width);
+    // 右侧补底只在**被覆盖页真的会向左滑出**时才需要。
+    //
+    // `coveredParallaxFraction` 取 0 之后页面不滑了，那条 0.25 屏宽的补底就永远
+    // 露不出来；而它把整个转场容器撑到 1.25 倍屏幕宽 —— 每帧要合成的表面因此比
+    // 屏幕本身大 25%，补底条本身也在屏幕外每帧填一条 320×2772 的实色。
+    // 2026-10-19 按层计数实测：`layers=bleed:45,overlay:45,page:1`（44 帧），
+    // 页面像素只画了一次、缓存有效，这两层却每帧都在画。
+    //
+    // 只改宽度（属性），结构照旧恒定挂载；取 0 时是零面积，GPU 直接跳过。
+    final bleedWidth = HyperosMiuixNavigation.coveredParallaxFraction == 0
+        ? width
+        : HyperosNavigation.parallaxBleedWidth(width);
     final surface = HyperosColors.scaffoldBackground(context);
 
     return AnimatedBuilder(
