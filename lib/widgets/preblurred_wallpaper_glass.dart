@@ -382,10 +382,17 @@ class PreblurredWallpaperCache {
 /// `blurSigmaMax`）：滑杆能拖到哪、出图就认到哪，别再长出「拖了没变化」的死区。
 const double kPreblurMaxSigma = 24;
 
-/// 首页那份位图的 sigma 下限：再小看不出糊（首页那条路上 0 是「不烤」）。
+/// 首页那份位图的 sigma 下限（0 = 不烤，见下）。
 ///
-/// **卡片那份没有这个下限** —— 卡片的 0 是「清」档（见 [resolveCourseCardPreblurSigma]）。
-const double kHomePreblurMinSigma = 2;
+/// ⚠️ **这里曾经是 2**（"再小看不出糊"）。但这张位图不只是"糊壁纸"，它还是
+/// **转场期间冻结**时画的背景 —— 冻结必须与实时那条路用**同一个 σ**，否则
+/// 转场一开始整条玻璃带的糊度就跳一档，读起来是"顶栏那块卡变样了"
+/// （2026-10-19 用户报，与「回今日」浮钮同一根因：`lgBlurSigma` 被自定义成
+/// 1.0 之后，2.0 的冻结图就比实时玻璃糊了一倍）。
+///
+/// 模糊强度由材质自己的调参负责，不该被这张图抬。0 仍然表示"不烤"：冻结分支
+/// 拿不到位图会自动回落到实时玻璃。
+const double kHomePreblurMinSigma = 0;
 
 double resolveHomePreblurSigma({
   required bool gaussianCardsDrive,
