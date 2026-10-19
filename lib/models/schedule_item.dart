@@ -202,6 +202,33 @@ class ScheduleItem {
 
   factory ScheduleItem.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now();
+    // 2026-10-19 补：与 `Course.fromJson` / `CourseTask.fromJson` 同款口径。
+    // 日程随 profile（云同步）与 .mikcb 备份（`data_transfer_service.dart`
+    // 的 `_parseListWithTotalLossGuard`）走外部数据，原先 `id: json['id'] as String`
+    // 等八处裸强制转换，数字型 title / 字符串型 startTime 任一类型不符就抛
+    // TypeError，该条日程被整条丢弃（备份路径还计入 total-loss 判定）。
+    // ⚠️ `id` 是身份字段，缺失或空白仍要抛 FormatException，让「坏条目留档、
+    // 不写回」的自愈机制接住；其余字段类型不对但有值 → toString 收下。
+    String readRequiredId() {
+      final raw = json['id'];
+      if (raw == null) {
+        throw const FormatException('ScheduleItem.id is missing');
+      }
+      final value = raw is String ? raw : raw.toString();
+      if (value.trim().isEmpty) {
+        throw const FormatException('ScheduleItem.id is blank');
+      }
+      return value;
+    }
+
+    String? readStringOrNull(String key) {
+      final raw = json[key];
+      if (raw == null) {
+        return null;
+      }
+      return raw is String ? raw : raw.toString();
+    }
+
     final legacyDate = _tryParseDate(json['date']);
     final parsedStartDate = _tryParseDate(json['startDate']);
     final parsedEndDate = _tryParseDate(json['endDate']);
@@ -215,17 +242,17 @@ class ScheduleItem {
         json['reminder'];
 
     return ScheduleItem(
-      id: json['id'] as String,
-      title: json['title'] as String? ?? '',
-      location: json['location'] as String?,
-      note: json['note'] as String?,
+      id: readRequiredId(),
+      title: readStringOrNull('title') ?? '',
+      location: readStringOrNull('location'),
+      note: readStringOrNull('note'),
       startDate: _normalizeDate(parsedStartDate ?? legacyDate ?? now),
       endDate: _normalizeDate(
         parsedEndDate ?? parsedStartDate ?? legacyDate ?? now,
       ),
-      startTime: json['startTime'] as String? ?? '08:00',
-      endTime: json['endTime'] as String? ?? '09:00',
-      color: json['color'] as String? ?? '#5B9CF6',
+      startTime: readStringOrNull('startTime') ?? '08:00',
+      endTime: readStringOrNull('endTime') ?? '09:00',
+      color: readStringOrNull('color') ?? '#5B9CF6',
       createdAt: _tryParseDate(json['createdAt']) ?? now,
       updatedAt: _tryParseDate(json['updatedAt']) ?? now,
       recurrence:
@@ -240,7 +267,8 @@ class ScheduleItem {
           : rawSeriesId,
       occurrenceDate: parsedOccurrenceDate,
       reminderMinutesBefore: _parseReminderMinutes(rawReminder),
-      enabled: json['enabled'] as bool? ?? true,
+      // 字符串 'false' 没有合理真值（不能替用户决定 true/false），按缺省 true。
+      enabled: json['enabled'] is bool ? json['enabled'] as bool : true,
     );
   }
 

@@ -84,22 +84,60 @@ class CourseTask {
     };
   }
 
+  /// 2026-10-19 补：与 `Course.fromJson` / `Exam.fromJson` 同款口径。
+  /// CourseTask 随 `TimetableProfile.fromJson` 消费云同步 / 备份 / 局域网三路
+  /// 外部数据，原先 `id: json['id'] as String` 等六处裸强制转换，任一字段类型
+  /// 不对就抛 TypeError：备份路径被 `_parseListWithTotalLossGuard` 计入丢弃，
+  /// profile 路径被 `_parseListLenient` 按条目丢弃——数字型 title / 字符串型
+  /// sourceWeek 都能让整条任务凭空消失。
+  /// ⚠️ 与 Course 相同分两类：`id` 是身份字段，**缺失或空白仍要抛**
+  /// FormatException，好让「坏条目留档、不写回」的自愈机制接住
+  /// （`timetable_profile.dart` 的 quarantine 范式）；其余字段类型不对但有值
+  /// → toString 收下，确实没有 → 默认值。序列化输出不受影响：合法输入的
+  /// 解析结果与原先逐字段相同。
   factory CourseTask.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now();
+
+    String readRequiredId() {
+      final raw = json['id'];
+      if (raw == null) {
+        throw const FormatException('CourseTask.id is missing');
+      }
+      final value = raw is String ? raw : raw.toString();
+      if (value.trim().isEmpty) {
+        throw const FormatException('CourseTask.id is blank');
+      }
+      return value;
+    }
+
+    String? readStringOrNull(String key) {
+      final raw = json[key];
+      if (raw == null) {
+        return null;
+      }
+      return raw is String ? raw : raw.toString();
+    }
+
     final rawSourceWeek = json['sourceWeek'];
     return CourseTask(
-      id: json['id'] as String,
-      title: json['title'] as String? ?? '',
-      courseId: json['courseId'] as String?,
+      id: readRequiredId(),
+      title: readStringOrNull('title') ?? '',
+      courseId: readStringOrNull('courseId'),
       sourceWeek: rawSourceWeek is num
           ? rawSourceWeek.toInt()
           : int.tryParse(rawSourceWeek?.toString() ?? ''),
-      dueDate: DateTime.tryParse(json['dueDate'] as String? ?? ''),
-      note: json['note'] as String?,
-      isCompleted: json['isCompleted'] as bool? ?? false,
-      source: CourseTaskSource.fromValue(json['source'] as String?),
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? now,
-      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? now,
+      dueDate: DateTime.tryParse(json['dueDate']?.toString() ?? ''),
+      note: readStringOrNull('note'),
+      // 类型不对没有合理真值（"true" 不是 Dart 的 true），按缺省 false 收下，
+      // 不让一个标记字段把整条任务丢掉。
+      isCompleted: json['isCompleted'] is bool
+          ? json['isCompleted'] as bool
+          : false,
+      source: CourseTaskSource.fromValue(
+        json['source'] is String ? json['source'] as String : null,
+      ),
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? now,
+      updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ?? now,
     );
   }
 

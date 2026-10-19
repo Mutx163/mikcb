@@ -352,13 +352,20 @@ class Course {
       endSection: sections.endSection,
       startTime: readRequired('startTime'),
       endTime: readRequired('endTime'),
-      hasCustomTime: json['hasCustomTime'] as bool? ?? false,
+      // 2026-10-19 补：这三个 bool 原先 `as bool? ?? false`。字符串型
+      // "true"/"false"（局域网 PATCH / 手改备份）会抛 TypeError 把整门课丢掉；
+      // 字符串无法安全映射成真值（不能替用户猜），按缺省收下。
+      hasCustomTime: json['hasCustomTime'] is bool
+          ? json['hasCustomTime'] as bool
+          : false,
       color: readStringOrNull('color') ?? '#2196F3',
       textColor: readStringOrNull('textColor'),
       startWeek: weeks.startWeek,
       endWeek: weeks.endWeek,
-      isOddWeek: json['isOddWeek'] as bool? ?? false,
-      isEvenWeek: json['isEvenWeek'] as bool? ?? false,
+      isOddWeek: json['isOddWeek'] is bool ? json['isOddWeek'] as bool : false,
+      isEvenWeek: json['isEvenWeek'] is bool
+          ? json['isEvenWeek'] as bool
+          : false,
       customWeeks: normalizeWeekList(readIntList('customWeeks')),
       suspendedWeeks: normalizeWeekList(readIntList('suspendedWeeks')),
       courseNature: CourseNatureX.fromValue(readStringOrNull('courseNature')),

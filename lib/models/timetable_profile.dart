@@ -121,11 +121,18 @@ class TimetableProfile {
         ((json['currentWeek'] as num?)?.toInt() ?? 1).clamp(1, 30),
         settings,
       ),
+      // 2026-10-19 补：这两个键原先 `as String?` 硬转。毫秒时间戳（外部工具
+      // 生成 / 手改备份）会抛 TypeError，而调用面没有一处能「只丢时间戳」：
+      // 全量备份 `data_transfer_service.dart:382` 靠 length 比对把任何一档丢弃
+      // 升级成整份拒收；云同步快照 `app_sync_snapshot_service.dart:437` 逐档
+      // catch 后该档静默消失、残缺还会被刷给另一台设备；扫码/局域网传输包
+      // `transfer_package.dart:627` 直接整包拒收。修在这层，三条路一起免役。
+      // 非法值回退 DateTime.now()，与「解析不出」的原口径一致。
       createdAt:
-          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.now(),
       lastUsedAt:
-          DateTime.tryParse(json['lastUsedAt'] as String? ?? '') ??
+          DateTime.tryParse(json['lastUsedAt']?.toString() ?? '') ??
           DateTime.now(),
       profileKind: TimetableProfileKind.fromValue(
         json['profileKind'] as String?,

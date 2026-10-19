@@ -81,17 +81,23 @@ List<List<DateTime>> groupConsecutiveHolidayDates(List<DateTime> dates) {
 /// 同时保留既有意图：学期通常横跨两个学年，十一月之后就把下一年一并取回，
 /// 这样往后翻几周也不缺假期数据。结果是旧规则的**超集**，新增的取数只发生在
 /// 边界那一周，不会给平时多打一次请求。
-Set<int> holidayYearsToLoad(DateTime now) {
-  final weekStart = DateTime(
-    now.year,
-    now.month,
-    now.day - (now.weekday - DateTime.monday),
-  );
-  final weekEnd = weekStart.add(const Duration(days: 6));
-  final years = <int>{now.year, weekStart.year, weekEnd.year};
-  if (now.month >= 11) {
-    years.add(now.year + 1);
+  /// 2026-10-19 加固：周尾改走 [WeekCalculator.addDays]（按日历日构造）。
+  /// 原先 `weekStart.add(Duration(days: 6))` 数的是 144 小时绝对时长——实行
+  /// 夏令时的时区里这一周有一晚 23/25 小时，落点会偏到前一天 23:00 或次日
+  /// 01:00；本函数只取 `.year`，跨年周（12-28 起那一周）恰逢切换时会把
+  /// 周尾年份判错、少加载一年。中国不实行夏令时，此改动对现网是零行为差，
+  /// 仅与全仓「日期加减走日历日」的口径对齐。
+  Set<int> holidayYearsToLoad(DateTime now) {
+    final weekStart = DateTime(
+      now.year,
+      now.month,
+      now.day - (now.weekday - DateTime.monday),
+    );
+    final weekEnd = WeekCalculator.addDays(weekStart, 6);
+    final years = <int>{now.year, weekStart.year, weekEnd.year};
+    if (now.month >= 11) {
+      years.add(now.year + 1);
+    }
+    return years;
   }
-  return years;
-}
 

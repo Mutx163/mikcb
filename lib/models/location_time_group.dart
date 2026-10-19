@@ -120,7 +120,10 @@ class LocationTimeGroup {
       enabled: json['enabled'] as bool? ?? true,
       priority: (json['priority'] as num?)?.toInt() ?? 0,
       keywords: keywords,
-      sourceSchoolId: _cleanOptional(json['sourceSchoolId'] as String?),
+      // 2026-10-19 补：原先 `as String?` 硬转，数字型来源校 ID（适配器写坏）
+      // 会抛 TypeError 让整组被消费方丢弃。toString 与 _cleanOptional(空白→null)
+      // 组合后合法输入零行为差。
+      sourceSchoolId: _cleanOptional(json['sourceSchoolId']?.toString()),
     );
   }
 
