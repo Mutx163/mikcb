@@ -66,6 +66,12 @@ Future<RaceResult<T>> raceFutures<S, T>(
 }
 
 /// 所有内置镜像前缀（不含 custom）。
+///
+/// 安全边界（2026-10-19 信任根收紧）：镜像前缀**只允许用于 APK 字节流**的
+/// 候选加速与下载信任判定（isTrustedApkDownloadUrl）。清单（发行版 JSON /
+/// Release 页面 HTML 等「决定下载什么、校验什么」的响应）一律禁止走镜像 ——
+/// 镜像是 TLS 终止点，可同时替换清单与其声明的摘要（自洽投毒）。
+/// 清单来源用 [officialManifestUrlHosts] + [isTrustedManifestUrl] 判定。
 const List<String> allBuiltinMirrorUrlPrefixes = [
   'https://ghfast.top/',
   'https://gh.llkk.cc/',
@@ -78,6 +84,10 @@ const List<String> allBuiltinMirrorUrlPrefixes = [
 /// [selectedMirrorPrefix] 为用户选择的镜像前缀，会排在最前面；
 /// 随后是全部内置镜像；最后是原始 URL。
 /// 自动去重。
+///
+/// ⚠️ 返回值仅可用于 **APK 字节流**的下载候选；清单（JSON/HTML）必须直连，
+/// 见 [isTrustedManifestUrl]。历史上本函数曾被用于更新清单竞速 —— 清单与
+/// 其声明的摘要可被第三方镜像一同伪造，已收紧（2026-10-19）。
 List<String> buildMirrorCandidateUrls(
   String originalUrl, {
   String? selectedMirrorPrefix,
@@ -105,6 +115,11 @@ List<String> buildMirrorCandidateUrls(
 }
 
 /// 校验 APK 下载 URL 是否来自受信任的来源（GitHub 或已配置镜像）。
+///
+/// 只做主机级判定，且**仅用于 APK 字节流**：清单来源的信任判定见
+/// [isTrustedManifestUrl]。完整性由 AppUpdateService.downloadAndInstallUpdate
+/// 的安装闸门强制保证 —— 无官方 SHA-256 拒装、mismatch 拒绝并删除文件，
+/// 不存在「可跳过/仅告警」的路径。
 bool isTrustedApkDownloadUrl(String url, {String? mirrorUrlPrefix}) {
   final uri = Uri.tryParse(url);
   if (uri == null) {
@@ -147,6 +162,49 @@ bool isTrustedApkDownloadUrl(String url, {String? mirrorUrlPrefix}) {
   }
   for (final prefix in allBuiltinMirrorUrlPrefixes) {
     if (prefixHostMatches(prefix)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// 更新清单（发行版 JSON / Release 页面 HTML）允许的主机后缀。
+///
+/// 清单「决定下载什么、校验什么」，必须只来自官方直连主机；第三方反代
+/// 镜像（allBuiltinMirrorUrlPrefixes）与用户自填前缀都不在此列 —— 它们
+/// 对响应有完全控制权，可同时伪造版本与摘要（自洽投毒，2026-10-19）。
+const List<String> officialManifestUrlHosts = [
+  'github.com',
+  'githubusercontent.com',
+  'gitcode.com',
+];
+
+/// 校验更新清单 URL 是否为官方直连主机（不含任何镜像）。
+///
+/// 与 [isTrustedApkDownloadUrl] 的区别：不接受镜像前缀与用户自填前缀；
+/// loopback 测试豁免同样适用（自动化测试用本地 HTTP 服务当清单源）。
+bool isTrustedManifestUrl(String url) {
+  final uri = Uri.tryParse(url);
+  if (uri == null) {
+    return false;
+  }
+  final host = uri.host.toLowerCase();
+
+  if (Platform.environment['FLUTTER_TEST'] == 'true') {
+    if (host == 'localhost' || host == '127.0.0.1' || host == '::1') {
+      return uri.scheme == 'http' || uri.scheme == 'https';
+    }
+  }
+
+  if (uri.scheme != 'https') {
+    return false;
+  }
+
+  bool hostMatches(String pattern) =>
+      host == pattern || host.endsWith('.$pattern');
+
+  for (final pattern in officialManifestUrlHosts) {
+    if (hostMatches(pattern)) {
       return true;
     }
   }

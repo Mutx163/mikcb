@@ -661,7 +661,7 @@ void main() {
   );
 
   test(
-    'github api falls back to mirrored api when direct api is unavailable',
+    'github api manifest never falls back to mirrors when direct is unavailable',
     () async {
       final requests = <String>[];
       const selectedMirror = 'https://mirror.example/';
@@ -673,27 +673,8 @@ void main() {
         if (url == AppUpdateService.releasesApiUrl) {
           return http.Response('', 503);
         }
-        if (url == mirroredApiUrl) {
-          return http.Response(
-            jsonEncode([
-              {
-                'tag_name': 'v1.3.0',
-                'name': 'v1.3.0',
-                'draft': false,
-                'prerelease': false,
-                'html_url': 'https://example.com/1.3.0',
-                'assets': const [
-                  {
-                    'name': 'mikcb-1.3.0-arm64-v8a.apk',
-                    'browser_download_url': 'https://example.com/1.3.0.apk',
-                  },
-                ],
-                'updated_at': '2026-04-09T10:00:00Z',
-              },
-            ]),
-            200,
-          );
-        }
+        // 2026-10-19 信任根收紧：镜像候选不再进入清单来源。镜像侧即便放着
+        // 假清单也不应被请求到（下方的 requests 断言是真正要钉的行为）。
         return http.Response('', 503);
       });
 
@@ -703,27 +684,30 @@ void main() {
         mirrorUrlPrefix: selectedMirror,
       );
 
-      expect(result.hasUpdate, isTrue);
-      expect(result.latestRelease?.version, '1.3.0');
+      // 清单请求只发往官方直连；镜像上的 API 与 Release 页面候选都未被触达。
       expect(requests, contains(AppUpdateService.releasesApiUrl));
-      expect(requests, contains(mirroredApiUrl));
+      expect(requests, isNot(contains(mirroredApiUrl)));
+      expect(
+        requests,
+        isNot(contains('$selectedMirror${AppUpdateService.releasesPageUrl}')),
+      );
+      // 直连不可达且无镜像兜底：镜像提供的版本不应出现在结果里。
+      expect(result.hasRelease, isFalse);
     },
   );
 
   test(
-    'github api keeps falling back when preferred mirror returns 404',
+    'github api manifest keeps falling back to direct when preferred mirror returns 404',
     () async {
+      // 2026-10-19 信任根收紧：用户选「镜像优先」只影响 APK 字节流下载来源，
+      // 清单一律直连 —— 本用例钉住「镜像侧返回 404 时清单仍由直连取得」。
       final requests = <String>[];
       const selectedMirror = 'https://mirror.example/';
       const mirroredApiUrl =
           '$selectedMirror${AppUpdateService.releasesApiUrl}';
       final client = MockClient((request) async {
         requests.add(request.url.toString());
-        final url = request.url.toString();
-        if (url == mirroredApiUrl) {
-          return http.Response('', 404);
-        }
-        if (url == AppUpdateService.releasesApiUrl) {
+        if (request.url.toString() == AppUpdateService.releasesApiUrl) {
           return http.Response(
             jsonEncode([
               {
@@ -744,7 +728,7 @@ void main() {
             200,
           );
         }
-        return http.Response('', 503);
+        return http.Response('', 404);
       });
 
       final service = AppUpdateService(client: client);
@@ -756,63 +740,64 @@ void main() {
 
       expect(result.hasUpdate, isTrue);
       expect(result.latestRelease?.version, '1.3.1');
-      expect(requests, contains(mirroredApiUrl));
+      // 清单只发直连请求，镜像 API 完全未被触达。
       expect(requests, contains(AppUpdateService.releasesApiUrl));
+      expect(requests, isNot(contains(mirroredApiUrl)));
     },
   );
 
-  test('github api does not wait for a stalled preferred mirror', () async {
-    final requests = <String>[];
-    const selectedMirror = 'https://mirror.example/';
-    const mirroredApiUrl = '$selectedMirror${AppUpdateService.releasesApiUrl}';
-    final stalledMirror = Completer<http.Response>();
-    final client = MockClient((request) {
-      requests.add(request.url.toString());
-      final url = request.url.toString();
-      if (url == mirroredApiUrl) {
-        return stalledMirror.future;
-      }
-      if (url == AppUpdateService.releasesApiUrl) {
-        return Future.value(
-          http.Response(
-            jsonEncode([
-              {
-                'tag_name': 'v1.3.2',
-                'name': 'v1.3.2',
-                'draft': false,
-                'prerelease': false,
-                'html_url': 'https://example.com/1.3.2',
-                'assets': const [
-                  {
-                    'name': 'mikcb-1.3.2-arm64-v8a.apk',
-                    'browser_download_url': 'https://example.com/1.3.2.apk',
-                  },
-                ],
-                'updated_at': '2026-04-09T10:30:00Z',
-              },
-            ]),
-            200,
-          ),
-        );
-      }
-      return Future.value(http.Response('', 503));
-    });
+  test(
+    'github api does not wait for a stalled preferred mirror because mirrors are never asked',
+    () async {
+      // 2026-10-19 信任根收紧：清单不再请求镜像，「镜像优先」配置下清单
+      // 依然立即由直连返回（镜像加速只作用于 APK 字节流下载）。
+      final requests = <String>[];
+      const selectedMirror = 'https://mirror.example/';
+      const mirroredApiUrl = '$selectedMirror${AppUpdateService.releasesApiUrl}';
+      final client = MockClient((request) {
+        requests.add(request.url.toString());
+        if (request.url.toString() == AppUpdateService.releasesApiUrl) {
+          return Future.value(
+            http.Response(
+              jsonEncode([
+                {
+                  'tag_name': 'v1.3.2',
+                  'name': 'v1.3.2',
+                  'draft': false,
+                  'prerelease': false,
+                  'html_url': 'https://example.com/1.3.2',
+                  'assets': const [
+                    {
+                      'name': 'mikcb-1.3.2-arm64-v8a.apk',
+                      'browser_download_url': 'https://example.com/1.3.2.apk',
+                    },
+                  ],
+                  'updated_at': '2026-04-09T10:30:00Z',
+                },
+              ]),
+              200,
+            ),
+          );
+        }
+        return Future.value(http.Response('', 503));
+      });
 
-    final service = AppUpdateService(
-      client: client,
-      releaseApiRequestTimeout: const Duration(milliseconds: 20),
-    );
-    final result = await service.checkForUpdates(
-      currentVersion: '1.3.1',
-      preferredSource: AppUpdateDownloadSource.mirror,
-      mirrorUrlPrefix: selectedMirror,
-    );
+      final service = AppUpdateService(
+        client: client,
+        releaseApiRequestTimeout: const Duration(milliseconds: 20),
+      );
+      final result = await service.checkForUpdates(
+        currentVersion: '1.3.1',
+        preferredSource: AppUpdateDownloadSource.mirror,
+        mirrorUrlPrefix: selectedMirror,
+      );
 
-    expect(result.hasUpdate, isTrue);
-    expect(result.latestRelease?.version, '1.3.2');
-    expect(requests, contains(mirroredApiUrl));
-    expect(requests, contains(AppUpdateService.releasesApiUrl));
-  });
+      expect(result.hasUpdate, isTrue);
+      expect(result.latestRelease?.version, '1.3.2');
+      expect(requests, contains(AppUpdateService.releasesApiUrl));
+      expect(requests, isNot(contains(mirroredApiUrl)));
+    },
+  );
 
   test(
     'releases page fallback bypasses api 403 for prerelease updates',
@@ -1346,23 +1331,26 @@ void main() {
 
   // 2026-10-10 信任根收紧：digest 只能来自不经镜像的渠道。
   // 镜像对响应有完全控制权，可以同时提供假清单（含假 digest）与假 APK，
-  // 让「下载后哈希比对」对自洽投毒完全失效。两条用例分别钉住两条路径：
-  // asset digest / 正文内嵌摘要。
+  // 让「下载后哈希比对」对自洽投毒完全失效。
+  // 2026-10-19 二次收紧：清单本身（版本/说明/摘要）不再经镜像取得 ——
+  // 镜像候选不进清单来源，假清单连被请求的机会都没有。
   group('digest 只信直连渠道（2026-10-10）', () {
     const mirrorPrefix = 'https://mirror.example/';
     const assetDigest =
         'b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1';
 
-    test('经镜像取得的 API 清单：asset digest 不到达检查结果', () async {
+    test('镜像上的清单（含自洽 digest）完全不会被请求', () async {
+      final requests = <String>[];
       final client = MockClient((request) async {
         final url = request.url.toString();
+        requests.add(url);
         // 直连 GitHub API 不可达（镜像场景的前提）。
         if (url == AppUpdateService.releasesApiUrl) {
           return http.Response('', 503);
         }
-        // 镜像返回带 asset digest 的清单 —— 攻击者可控。
-        if (url ==
-            '$mirrorPrefix${AppUpdateService.releasesApiUrl}') {
+        // 镜像返回带 asset digest 的假清单 —— 攻击者可控。修复后这条
+        // 分支不应被触达；一旦被触达，下方的 requests 断言会先失败。
+        if (url == '$mirrorPrefix${AppUpdateService.releasesApiUrl}') {
           return http.Response(
             jsonEncode([
               {
@@ -1394,11 +1382,14 @@ void main() {
         mirrorUrlPrefix: mirrorPrefix,
       );
 
-      expect(result.hasUpdate, isTrue);
-      expect(result.latestRelease?.version, '1.5.0');
-      expect(result.latestRelease?.expectedApkSha256, isNull);
-      // 标志本身也必须是 false —— 防止将来有人只改期望漏改标记。
-      expect(result.latestRelease?.digestFromDirectChannel, isFalse);
+      // 镜像清单从未被请求；直连不可达时整体无结果（可用性由 Release
+      // 页面 / GitCode 策略兜底，同样只走官方直连）。
+      expect(
+        requests,
+        isNot(contains('$mirrorPrefix${AppUpdateService.releasesApiUrl}')),
+      );
+      expect(result.hasRelease, isFalse);
+      expect(result.latestRelease, isNull);
     });
 
     test('直连 API 清单：asset digest 正常保留', () async {
