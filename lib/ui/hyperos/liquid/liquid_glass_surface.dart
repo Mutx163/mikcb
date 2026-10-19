@@ -201,8 +201,16 @@ class LiquidGlassSurface extends StatefulWidget {
   /// 「底层是设置页」的转场 5.0~6.5ms，「底层是首页」的 8.5~10.1ms，差值正是
   /// 首页常驻的这几块玻璃。
   ///
-  /// 只给**首页常驻 chrome**开。冻结用的是与首页玻璃带同一个预糊位图
-  /// （`PreblurredWallpaperAlignedFill`），所以观感差异仅限转场那 0.3 秒。
+  /// 只给**首页常驻 chrome**准备。冻结用的是与首页玻璃带同一个预糊位图
+  /// （[frozenHomeChromeGlassBoard]）。
+  ///
+  /// ⚠️ **2026-10-19 起没有任何表面开它**（原本接在悬浮钮、回到今天两颗钮上）：
+  /// 真机一看就能发现，转场里这两颗钮底下从「模糊的课表卡片」变成「模糊的
+  /// 壁纸」，用户判定不可接受、已回退。问题不在实现而在原理 —— **「冻结玻璃
+  /// 本身」在 Flutter 里做不到**：玻璃里没有画面，它显示的是**背后**的内容，
+  /// 而那部分不在自己的子树里，`toImageSync()` 拍不到；能拍的只有屏幕上那一
+  /// 小块（等于把一张照片贴在钮上，用户此前已否掉）。要重开这个开关，先解决
+  /// 「冻结出来的背景里必须含卡片」，否则观感必然变。
   final bool freezeOnRouteTransition;
 
   /// 诊断用层名：这块玻璃逐帧重绘时记到这个名字下（`[frame-perf] layers=名字:N`）。
@@ -545,7 +553,7 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
           return live;
         }
         // 拿不到位图就保持实时玻璃 —— 宁可多付这笔钱，也不要闪一块空白。
-        final frozen = _frozenWallpaperGlassBoard(
+        final frozen = frozenHomeChromeGlassBoard(
           context,
           role: widget.role,
           borderRadius: widget.borderRadius,
@@ -558,30 +566,36 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
         // Positioned 用**松约束**摆的浮动小件 —— 直接返回位图就会撑满整个父级
         // （2026-10-19 真机：日视图整块网格糊成一片）。所以拿子内容当尺子：
         // Stack 的尺寸取非定位子（图标），位图用 Positioned.fill 精确盖住它。
+        final stacked = Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned.fill(child: frozen),
+            widget.child,
+          ],
+        );
+        if (widget.borderRadius <= 0) return stacked;
         return ClipRRect(
           borderRadius: BorderRadius.circular(widget.borderRadius),
           clipBehavior: widget.clipBehavior,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Positioned.fill(child: frozen),
-              widget.child,
-            ],
-          ),
+          child: stacked,
         );
       },
     );
   }
 }
 
-/// 转场期间「冻结」一块首页玻璃：改画同一份预糊壁纸位图，不再产生滤镜层。
+/// 转场期间「冻结」一块首页玻璃：返回同一份预糊壁纸位图，不再产生滤镜层。
 ///
-/// 与首页玻璃带的冻结分支共用同一套取参（同一个 role、同一份成对配置），
-/// 所以两条路在同一块材质上给出同一观感 —— 漏一个就会重现「同一材质两种观感」。
+/// 首页玻璃带（日视图摘要替身卡那条材质）与首页浮动小件**共用这一个出口**：
+/// 两份复制必然漂移，而漂移的表现就是「同一材质在两条路上观感不同」（染色、
+/// 折射量对不上）。
+///
+/// 返回的是**裸填充**，它的尺寸规则是「铺满父给的约束」——调用方既负责裁剪，
+/// 也负责给它正确的尺寸：浮动小件是松约束，直接铺会撑满整个父级。
 ///
 /// 拿不到位图（还没烤好 / 这棵树不在 [PreblurredWallpaperScope] 里）返回 null，
 /// 由调用方回落成实时玻璃。
-Widget? _frozenWallpaperGlassBoard(
+Widget? frozenHomeChromeGlassBoard(
   BuildContext context, {
   required LiquidGlassRole role,
   required double borderRadius,
@@ -598,8 +612,8 @@ Widget? _frozenWallpaperGlassBoard(
   final glass = CourseGlassStyle(
     borderRadius: style.borderRadius,
     tint: style.tint,
-    // 窄件（回到今天那颗钮）会压折射位移；冻结这条路同样要压，否则两条分支
-    // 在同一块表面上给出不同的折射量。
+    // 窄件（回到今天那颗钮、设置页星期条）会压折射位移；冻结这条路同样要压，
+    // 否则两条分支在同一块表面上给出不同的折射量。
     refraction: maxRefraction == null
         ? style.refraction
         : math.min(style.refraction, maxRefraction),
@@ -610,18 +624,12 @@ Widget? _frozenWallpaperGlassBoard(
     rimWidth: style.rimWidth,
     rimColor: style.rimColor,
   );
-  final fill = PreblurredWallpaperAlignedFill(
+  return PreblurredWallpaperAlignedFill(
     glass: glass,
-    // 显式写出来：这张填的是**哪一份**位图，是载荷信息不是风格 —— 枚举自己的
-    // 文档就写着「必须显式指定，不许猜」。
+    // 显式写出来（即使当前正好等于默认值）：这张填的是**哪一份**位图，是载荷
+    // 信息不是风格 —— 枚举自己的文档就写着「必须显式指定，不许猜」。
     // ignore: avoid_redundant_argument_values
     source: PreblurredWallpaperSource.home,
-  );
-  if (borderRadius <= 0) return fill;
-  // 形状圆角由玻璃自己按 SDF 画，外面这层裁只负责把溢出的采样收干净。
-  return ClipRRect(
-    borderRadius: BorderRadius.circular(borderRadius),
-    child: fill,
   );
 }
 

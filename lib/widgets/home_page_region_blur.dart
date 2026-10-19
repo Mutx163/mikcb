@@ -12,7 +12,6 @@ import '../ui/hyperos/hyperos_glass_backdrop_host.dart';
 import '../ui/hyperos/hyperos_theme.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart';
 import '../utils/home_page_background.dart';
-import 'course_glass_shader.dart';
 import 'preblurred_wallpaper_glass.dart';
 
 /// Reserved clearance between the weekday chrome band and the course grid.
@@ -1027,39 +1026,18 @@ class _HomeBandLiquidGlassState extends State<_HomeBandLiquidGlass> {
   /// 预糊位图那条路；拿不到位图（还没烤好 / 这棵树不在采样作用域里）返回 null，
   /// 由 [build] 回落到实时玻璃。
   Widget? _buildFrozen(BuildContext context) {
-    if (PreblurredWallpaperScope.isWaitingForBitmap(context)) return null;
-    if (PreblurredWallpaperScope.maybeOf(context) == null) return null;
-    // 参数与实时那条路同源：同一个 role、同一套成对配置。漏一个就会重现
-    // 「同一材质两种观感」（染色 / 深浅对不上）。
-    final style = LiquidGlassSurface.resolveStyleFor(
-      appearance: FrostedAppearanceScope.of(context),
+    // 位图的取参出口只有一处（`frozenHomeChromeGlassBoard`）：复制一份到这里
+    // 就会漂移，而漂移的表现是「同一材质两条路观感不同」（2026-10-19 前后
+    // 反复踩的就是这类）。
+    final fill = frozenHomeChromeGlassBoard(
+      context,
+      // 这条带实时那条路自己就是 `followsUser`，所以冻结也照这个取 —— 别写成
+      // 某个具体表面自己的 role。
       role: LiquidGlassRole.followsUser,
       borderRadius: widget.borderRadius,
-      brightness: Theme.of(context).brightness,
+      maxRefraction: widget.maxRefraction,
     );
-    // 窄带（设置页预览那条）会压折射位移：预糊这条路同样要压，否则两条分支
-    // 在同一条带上给出不同的折射量。
-    final maxRefraction = widget.maxRefraction;
-    final glass = CourseGlassStyle(
-      borderRadius: style.borderRadius,
-      tint: style.tint,
-      refraction: maxRefraction == null
-          ? style.refraction
-          : math.min(style.refraction, maxRefraction),
-      refractionBand: style.refractionBand,
-      refractionEdgePow: style.refractionEdgePow,
-      dispersion: style.dispersion,
-      rimStrength: style.rimStrength,
-      rimWidth: style.rimWidth,
-      rimColor: style.rimColor,
-    );
-    final fill = PreblurredWallpaperAlignedFill(
-      glass: glass,
-      // 显式写出来（即使当前正好等于默认值）：这张填的是**哪一份**位图，是载荷
-      // 信息不是风格 —— 枚举自己的文档就写着「必须显式指定，不许猜」。
-      // ignore: avoid_redundant_argument_values
-      source: PreblurredWallpaperSource.home,
-    );
+    if (fill == null) return null;
     if (widget.borderRadius <= 0) {
       // 首页那条带是直角、且外面已经套了 `ClipRect`（见
       // [HomePageContinuousChromeFrostedOverlay] 的几何），不必再裁一次。
