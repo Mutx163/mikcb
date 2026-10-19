@@ -39,8 +39,9 @@ void main() {
     // M5-A4：周页与周网格骨架搬出（净 -165）→ 4789。
     // M5-A5：首页下拉 surface（含 pager 装配）搬出（净 -60）→ 4729。
     // M5-A6：情侣日课表条目组装下沉 domain（净 -91）→ 4638。
-    // 下一次目标（日视图转场/空白槽/壁纸采样）预计可再降至 ~4400。
-    const baselineLines = 4638;
+    // M5-A7：日视图锚点展开壳搬出（净 -55）→ 4583。
+    // 下一次目标（空白槽/壁纸采样/日视图转场）预计可再降至 ~4400。
+    const baselineLines = 4583;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),

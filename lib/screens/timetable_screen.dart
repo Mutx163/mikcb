@@ -83,6 +83,7 @@ import '../widgets/timetable/timetable_week_page.dart';
 import '../widgets/timetable/timetable_week_page_body.dart';
 import '../widgets/timetable/timetable_day_view_shared_free_summary.dart';
 import '../widgets/timetable/timetable_day_column.dart';
+import '../widgets/timetable/timetable_anchored_day_overlay.dart';
 import '../widgets/timetable/timetable_day_agenda_models.dart';
 import '../widgets/timetable/timetable_home_action_button.dart';
 import '../widgets/timetable/timetable_day_pager_physics.dart';
@@ -2820,72 +2821,16 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int week,
   }) {
     final selectedDayOfWeek = _displayedDayForWeek(week);
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final panel = _buildDayViewPanel(
       provider: provider,
       settings: settings,
       week: week,
       dayOfWeek: selectedDayOfWeek,
     );
-
-    return AnimatedBuilder(
-      animation: _dayViewExpandController,
-      child: panel,
-      builder: (context, child) {
-        final progress = Curves.easeInOutCubicEmphasized.transform(
-          _dayViewExpandController.value,
-        );
-        final widthFactor = 0.18 + (0.82 * progress);
-        final heightFactor = math.max(0.04, progress);
-        final translateY = (1 - progress) * -24;
-        final borderRadius = HyperosNavigation.anchorExpandRadius(progress);
-        final borderColor = Color.lerp(
-          colorScheme.outlineVariant,
-          Colors.transparent,
-          progress,
-        )!;
-        final shadowAlpha =
-            (theme.brightness == Brightness.dark ? 0.08 : 0.06) *
-            (1 - progress);
-
-        return IgnorePointer(
-          // Block only while the shell is still a tiny seed (open start / close
-          // end). Waiting for 0.98 left the close button unhittable for most of
-          // the open animation and flaky under widget-test pumps.
-          ignoring: progress < 0.05,
-          child: Opacity(
-            opacity: Curves.easeOutCubic.transform(progress),
-            child: ClipRRect(
-              borderRadius: borderRadius,
-              child: Align(
-                alignment: Alignment(_dayViewAnchorAlignmentX, -1),
-                widthFactor: widthFactor,
-                heightFactor: heightFactor,
-                child: Transform.translate(
-                  offset: Offset(0, translateY),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      border: Border.all(color: borderColor),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.shadow.withValues(
-                            alpha: shadowAlpha,
-                          ),
-                          blurRadius: 28 * (1 - progress),
-                          offset: Offset(0, 12 * (1 - progress)),
-                        ),
-                      ],
-                    ),
-                    child: child,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+    return TimetableAnchoredDayOverlay(
+      panel: panel,
+      expandAnimation: _dayViewExpandController,
+      anchorAlignmentX: _dayViewAnchorAlignmentX,
     );
   }
 

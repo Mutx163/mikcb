@@ -9,8 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 ///   库级类拆到 `widgets/timetable/`，再把星期栏/浮钮/玻璃坞/日议程模型、
 ///   build 期 chrome 解析、顶栏 chrome、弹层/sheet 族、下拉药丸/情侣空闲摘要/
 ///   周页滚动壳、首页栈、周网格日列、周 pager、玻璃坞外壳、周页、周网格骨架、
-///   首页下拉 surface 与情侣日课表组装拆出，主文件 4,638 + 两个 part 2,806 =
-///   7,444 行。
+///   首页下拉 surface、情侣日课表组装与日视图锚点展开壳拆出，主文件 4,583 +
+///   两个 part 2,806 = 7,389 行。
 /// - `timetable_provider`：主文件 4,362 + 10 个 part 3,479 = 7,841 行
 ///   （主题/考试/节假日/情侣/提醒族已抽到 `services/`）；
 ///   part 里仍有 573 处直接访问 `host._私有字段` —— 这是同一个类的 11 个抽屉，
@@ -31,7 +31,7 @@ void main() {
     // 2026-10-19 晚：拆 models↔l10n 唯一真循环，主文件仅 +1 行 import
     // （course_week_localizations 的扩展），属换依赖方向而非功能增长，
     // 主文件与单元总量各 +1（9154 → 9155）已在提交信息说明。
-    const baselineLines = 7444;
+    const baselineLines = 7389;
     const unit = [
       'lib/screens/timetable_screen.dart',
       'lib/screens/timetable_day_view_part.dart',
