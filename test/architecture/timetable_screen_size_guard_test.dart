@@ -36,8 +36,9 @@ void main() {
     // M5-A2：build 期首页栈（壁纸/玻璃带/顶栏）与周网格日列搬出（净 -260）
     // → 5105。
     // M5-A3：周 pager 与玻璃坞/内嵌页外壳搬出（净 -151）→ 4954。
-    // 下一次目标（周页/网格骨架）预计可再降至 ~4700。
-    const baselineLines = 4954;
+    // M5-A4：周页与周网格骨架搬出（净 -165）→ 4789。
+    // 下一次目标（首页下拉 surface / build 剩余外壳）预计可再降至 ~4600。
+    const baselineLines = 4789;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),

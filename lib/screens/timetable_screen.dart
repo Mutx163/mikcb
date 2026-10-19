@@ -78,9 +78,10 @@ import '../widgets/timetable/timetable_back_to_current_week_button.dart';
 import '../widgets/timetable/timetable_back_to_today_button.dart';
 import '../widgets/timetable/timetable_course_action_items.dart';
 import '../widgets/timetable/timetable_course_sheet_actions.dart';
+import '../widgets/timetable/timetable_week_grid.dart';
+import '../widgets/timetable/timetable_week_page.dart';
 import '../widgets/timetable/timetable_week_pager.dart';
 import '../widgets/timetable/timetable_week_page_body.dart';
-import '../widgets/timetable/timetable_weekday_header.dart';
 import '../widgets/timetable/timetable_day_view_shared_free_summary.dart';
 import '../widgets/timetable/timetable_day_column.dart';
 import '../widgets/timetable/timetable_day_agenda_models.dart';
@@ -2357,127 +2358,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  Widget _buildTimetableGrid(
-    TimetableProvider provider,
-    TimetableSettings settings,
-    double availableWidth,
-    int week,
-    double sectionHeight,
-  ) {
-    final visibleDays = _visibleDayNumbers(settings);
-    final timeColumnWidth = _resolveTimeColumnWidth(settings);
-    final cardInset = _resolveCourseCardInset(settings);
-    final dayWidth = (availableWidth - timeColumnWidth) / visibleDays.length;
-    // （星期几, 节次）已被课程覆盖的集合，供长按拖动判定空白格。
-    final occupiedSections = <(int, int)>{};
-    final dayColumnCallbacks = TimetableDayColumnCallbacks(
-      dateForWeekDay: _dateForWeekDay,
-      markerSpanAt: _emptySlotMarkerSpanAt,
-      markerSection: () => _emptySlotMarkerSection,
-      buildEmptySlotCell: _buildEmptySlotCell,
-      startingAt: _getDisplayItemsStartingAtSection,
-      resolveColor: _resolveDisplayCourseColor,
-      overline: _resolveCompactOverlineText,
-      badge: _resolveCompactBadgeText,
-      weather: (item, date) => _weekCardWeatherDisplay(
-        l10n: AppLocalizations.of(context),
-        weather: context.watch<WeatherProvider?>(),
-        settings: settings,
-        course: item.course,
-        date: date,
-        week: week,
-        isPartnerCourse: item.isPartnerCourse,
-      ),
-      clearMarker: _clearEmptySlotMarker,
-      showActions: _showCourseActions,
-      border: _groupedDayColumnBorderRadius,
-      wallpaperBodyLuminance: () => _wallpaperBodyLuminance,
-      wallpaperTopLuminance: () => _wallpaperTopLuminance,
-    );
-    return SizedBox(
-      key: ValueKey<int>(week),
-      width: availableWidth,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            key: const ValueKey('timetable-time-column'),
-            width: timeColumnWidth,
-            // Chrome blur is painted by HomePageContinuousChromeFrostedOverlay.
-            child: Column(
-              children: List.generate(settings.sectionCount, (index) {
-                final section = settings.sections[index];
-                return Container(
-                  height: sectionHeight,
-                  alignment: Alignment.center,
-                  child: _buildSectionTimeCell(index + 1, section, settings),
-                );
-              }),
-            ),
-          ),
-          _wrapCourseGridSurfaceHost(
-            settings: settings,
-            child: _buildEmptySlotGestureArea(
-              settings: settings,
-              week: week,
-              sectionHeight: sectionHeight,
-              dayWidth: dayWidth,
-              visibleDays: visibleDays,
-              occupiedSections: occupiedSections,
-              child: Row(
-                children: visibleDays.asMap().entries.map((entry) {
-                  final dayIndex = entry.key;
-                  final dayOfWeek = entry.value;
-                  final dayCourses = _getCoursesForDay(
-                    provider.courses,
-                    week,
-                    dayOfWeek,
-                    settings,
-                  );
-                  final displayItems = _buildHomeDayDisplayItems(
-                    provider: provider,
-                    settings: settings,
-                    week: week,
-                    dayOfWeek: dayOfWeek,
-                    myCourses: dayCourses,
-                  );
-                  // 长按拖动换格时判定"某格是否空白"的事实来源：课程覆盖
-                  // 的（星期×节次）全集。此处在本 build 内即刻求值。
-                  for (final item in displayItems) {
-                    for (
-                      var s = item.course.startSection;
-                      s <= item.course.endSection;
-                      s++
-                    ) {
-                      occupiedSections.add((dayOfWeek, s));
-                    }
-                  }
-                  return SizedBox(
-                    width: dayWidth,
-                    child: TimetableDayColumn(
-                      week: week,
-                      dayOfWeek: dayOfWeek,
-                      displayItems: displayItems,
-                      settings: settings,
-                      showConflictBadge:
-                          settings.showConflictBadgeOnTimetable,
-                      sectionHeight: sectionHeight,
-                      cardInset: cardInset,
-                      provider: provider,
-                      dayIndex: dayIndex,
-                      dayCount: visibleDays.length,
-                      occupiedSections: occupiedSections,
-                      callbacks: dayColumnCallbacks,
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildHomePullQuickImportSurface({
     required TimetableProvider provider,
@@ -2518,12 +2398,78 @@ class _TimetableScreenState extends State<TimetableScreen>
                   _finalizeWeekPageSettled(provider),
               onHandleWeekPageChanged: (page) =>
                   _handleWeekPageChanged(page, settings.semesterWeekCount),
-              buildWeekPage: (week) => _buildWeekPage(
-                provider,
-                settings,
-                constraints.maxWidth,
-                constraints.maxHeight,
-                week,
+              buildWeekPage: (week) => TimetableWeekPage(
+                settings: settings,
+                week: week,
+                availableHeight: constraints.maxHeight,
+                wallpaperTopLuminance: _wallpaperTopLuminance,
+                wallpaperWeekdayLuminance: _wallpaperWeekdayLuminance,
+                dayViewPageController: _dayViewPageController,
+                isDayView: _isDayView,
+                visibleDayViewWeek: _visibleDayViewWeek,
+                shouldShowDayViewOverlay: _shouldShowDayViewOverlay,
+                isSelectedDay: _isSelectedDay,
+                hasExamOnDate: provider.hasExamOnDate,
+                onShowWeekSelector: _showWeekSelector,
+                onDayTapDown: _captureDayViewAnchor,
+                onDayTap: (week, dayOfWeek) {
+                  _toggleDayView(
+                    week: week,
+                    dayOfWeek: dayOfWeek,
+                    settings: settings,
+                  );
+                },
+                timeColumnWidth: _resolveTimeColumnWidth(settings),
+                buildGrid: (sectionHeight) {
+                  final visibleDays = _visibleDayNumbers(settings);
+                  final timeColumnWidth = _resolveTimeColumnWidth(settings);
+                  final cardInset = _resolveCourseCardInset(settings);
+                  final dayColumnCallbacks = TimetableDayColumnCallbacks(
+                    dateForWeekDay: _dateForWeekDay,
+                    markerSpanAt: _emptySlotMarkerSpanAt,
+                    markerSection: () => _emptySlotMarkerSection,
+                    buildEmptySlotCell: _buildEmptySlotCell,
+                    startingAt: _getDisplayItemsStartingAtSection,
+                    resolveColor: _resolveDisplayCourseColor,
+                    overline: _resolveCompactOverlineText,
+                    badge: _resolveCompactBadgeText,
+                    weather: (item, date) => _weekCardWeatherDisplay(
+                      l10n: AppLocalizations.of(context),
+                      weather: context.watch<WeatherProvider?>(),
+                      settings: settings,
+                      course: item.course,
+                      date: date,
+                      week: week,
+                      isPartnerCourse: item.isPartnerCourse,
+                    ),
+                    clearMarker: _clearEmptySlotMarker,
+                    showActions: _showCourseActions,
+                    border: _groupedDayColumnBorderRadius,
+                    wallpaperBodyLuminance: () => _wallpaperBodyLuminance,
+                    wallpaperTopLuminance: () => _wallpaperTopLuminance,
+                  );
+                  return TimetableWeekGrid(
+                    provider: provider,
+                    settings: settings,
+                    week: week,
+                    availableWidth: constraints.maxWidth,
+                    sectionHeight: sectionHeight,
+                    visibleDays: visibleDays,
+                    timeColumnWidth: timeColumnWidth,
+                    cardInset: cardInset,
+                    buildSectionTimeCell: _buildSectionTimeCell,
+                    wrapSurfaceHost: _wrapCourseGridSurfaceHost,
+                    wrapEmptySlotGesture: _buildEmptySlotGestureArea,
+                    coursesForDay: _getCoursesForDay,
+                    buildDisplayItems: _buildHomeDayDisplayItems,
+                    dayColumnCallbacks: dayColumnCallbacks,
+                  );
+                },
+                buildBody: (grid) => _buildWeekPageBody(
+                  settings: settings,
+                  week: week,
+                  grid: grid,
+                ),
               ),
               buildAnchoredDayViewOverlay: (week) =>
                   _buildAnchoredDayViewOverlay(
@@ -2908,117 +2854,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
 
-  Widget _buildWeekPage(
-    TimetableProvider provider,
-    TimetableSettings settings,
-    double availableWidth,
-    double availableHeight,
-    int week,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasBackdrop = hasHomePageBackdrop(settings);
-    // Day view keeps the same weekday chrome as the week view: the panel below
-    // now shows the wallpaper, so an opaque non-blurred bar would read as a
-    // seam across the top of the glass.
-    final weekdayChromeBlurEnabled =
-        hasBackdrop && settings.homePageWeekdayBarBlurEnabled;
-    final chromeGridClearance = weekdayChromeBlurEnabled
-        ? homePageFrostedRegionSeamOverlap
-        : 0.0;
-    // 自适应节高按完整可用高度计算：玻璃坞满屏悬浮下网格延伸到药丸
-    // 底下（层次感）；被遮住的最后几节由 _buildWeekPageBody 的滚动余
-    // 量救回——上滑把整段课表完全滑出到药丸上方，下滑再让药丸盖回。
-    final bodyAvailableHeight =
-        (availableHeight - TimetableWeekdayHeader.height - chromeGridClearance).clamp(
-          0.0,
-          double.infinity,
-        );
-    final sectionHeight =
-        settings.timetableAutoFitSectionHeight && settings.sectionCount > 0
-        ? bodyAvailableHeight / settings.sectionCount
-        : settings.sectionHeight;
-    final grid = _buildTimetableGrid(
-      provider,
-      settings,
-      availableWidth,
-      week,
-      sectionHeight,
-    );
-    final weekdayShowsBackdrop = homePageRegionShowsBackdrop(
-      settings,
-      HomePageBackgroundScope.weekdayBar,
-    );
-    final timeColumnWidth = _resolveTimeColumnWidth(settings);
-    final pageChromeFallback = Theme.of(context).colorScheme.surface;
-    // Keep the week slot at a fixed height while the day overlay owns the
-    // visible header, avoiding duplicate weekday bars during the transition.
-    final weekdayHeader = SizedBox(
-      height: TimetableWeekdayHeader.height,
-      child: _shouldShowDayViewOverlay
-          ? const SizedBox.shrink()
-          : homePageBackgroundLayer(
-              visual: homePageRegionChromeVisual(
-                settings: settings,
-                isDark: isDark,
-                darkFallback: pageChromeFallback,
-                region: HomePageBackgroundScope.weekdayBar,
-                chromeBlurEnabled: weekdayChromeBlurEnabled,
-              ),
-              child: TimetableWeekdayHeader(
-                settings: settings,
-                week: week,
-                timeColumnWidth: timeColumnWidth,
-                hideBottomBorder:
-                    weekdayShowsBackdrop || weekdayChromeBlurEnabled,
-                wallpaperTopLuminance: _wallpaperTopLuminance,
-                wallpaperWeekdayLuminance: _wallpaperWeekdayLuminance,
-                pageController: _dayViewPageController,
-                isDayView: _isDayView,
-                visibleDayViewWeek: _visibleDayViewWeek,
-                shouldShowOverlay: _shouldShowDayViewOverlay,
-                isSelectedDay: _isSelectedDay,
-                hasExamOnDate: provider.hasExamOnDate,
-                onShowWeekSelector: _showWeekSelector,
-                onDayTapDown: _captureDayViewAnchor,
-                onDayTap: (week, dayOfWeek) {
-                  _toggleDayView(
-                    week: week,
-                    dayOfWeek: dayOfWeek,
-                    settings: settings,
-                  );
-                },
-              ),
-            ),
-    );
-
-    return KeyedSubtree(
-      key: ValueKey('week-page-$week'),
-      child: Column(
-        children: [
-          weekdayHeader,
-          // Original chrome↔grid clearance (same token as frosted seam overlap).
-          // Keeps gaussian cards from sitting flush on the first course row.
-          if (weekdayChromeBlurEnabled)
-            const SizedBox(height: homePageFrostedRegionSeamOverlap),
-          Expanded(
-            child: homePageBackgroundLayer(
-              visual: resolveHomePageRegionBackground(
-                settings: settings,
-                isDark: isDark,
-                darkFallback: Theme.of(context).colorScheme.surface,
-                region: HomePageBackgroundScope.timetable,
-              ),
-              child: _buildWeekPageBody(
-                settings: settings,
-                week: week,
-                grid: grid,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildWeekPageBody({
     required TimetableSettings settings,
