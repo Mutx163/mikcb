@@ -81,6 +81,19 @@ class ReleaseNotesDigest {
 
   bool get isEmpty => entries.isEmpty && highlights.isEmpty;
 
+  /// 声明的重点里**没能认回任何条目**的那些（返回的是声明时写的原文）。
+  ///
+  /// `> 本次重点：A、B、C` 允许写简写，但简写要能被认回某条条目（先看互相包含，
+  /// 再按二字组重合率兜底）。认不回来时解析器仍保留这条简写——`kind` 记为
+  /// `other`、`label` 为空、`text` 与 `headline` 相同——于是弹窗与更新页会把它
+  /// 画成一条**没有分类标签的灰色重点**，跟旁边两条不一致。
+  ///
+  /// 发版前用这个 getter 自检：非空就说明重点行里写了条目中没有的说法。
+  List<ReleaseChangeEntry> get unresolvedHighlights => highlights
+      .where((entry) => entry.kind == ReleaseChangeKind.other &&
+          entry.text == entry.headline)
+      .toList(growable: false);
+
   /// 条目总数（展开按钮上的「查看全部 N 项」用它）。
   int get total => entries.length;
 

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/utils/release_notes_digest.dart';
 
 /// 发版说明的格式护栏：**只盯当前 pubspec 对应的那一份**。
 ///
@@ -92,5 +93,30 @@ void main() {
 
     final hasCrlf = RegExp('\r\n').hasMatch(String.fromCharCodes(bytes));
     expect(hasCrlf, isFalse, reason: '${file.path} 含 CRLF');
+  });
+
+  // 2026-10-19 加：v2.1.4.1 的「本次重点」第三条写成了 `转场掉帧`——条目里没有
+  // 这几个字，二字组重合率也低于阈值，解析器认不回来，于是它退化成 kind=other、
+  // label 为空的灰色重点。当时的门禁（preflight）只检查「有没有写这一行」，
+  // 照样 PASS。这条断言用真实解析器把「认不认得回来」也钉住。
+  test('当前版本的「本次重点」逐条都能认回条目', () {
+    final tag = tagForPubspecVersion(readPubspecVersion());
+    final file = File('docs/releases/$tag.md');
+    if (!file.existsSync()) {
+      return; // 上一条已经报过「说明不存在」
+    }
+
+    final digest = buildReleaseNotesDigest(file.readAsStringSync());
+    if (!digest.highlightsDeclared) {
+      return; // 没有声明重点行是允许的，投递层会按分类优先级猜
+    }
+
+    expect(
+      digest.unresolvedHighlights.map((item) => item.headline).toList(),
+      isEmpty,
+      reason: '「本次重点」里有条目中不存在的说法。'
+          '认不回来时它会显示成一条没有分类标签的灰色重点。'
+          '改法：换成条目里的原话（含其中几个字即可）。',
+    );
   });
 }

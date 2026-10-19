@@ -374,4 +374,44 @@ void main() {
       expect(buildReleaseNotesDigest(body).intro, isEmpty);
     });
   });
+
+  // 2026-10-19：发 v2.1.4.1 时把重点写成「转场掉帧」（条目里写的是「转场更顺」），
+  // 解析器认不回来仍会保留这条简写，只是降级成 kind=other、label 为空——
+  // 界面上是一条没有分类标签的灰色重点，而当时的门禁察觉不到。
+  group('声明的重点认不回来时能被指出来', () {
+    test('重点里写了条目中没有的说法 → 进 unresolvedHighlights', () {
+      const body = '# v2.1.4.1\n'
+          '\n'
+          '> 本次重点：软件更新页重做、转场掉帧\n'
+          '\n'
+          '## 优化 · 2\n'
+          '\n'
+          '- 软件更新页重做：一个状态只给一个动作。\n'
+          '- 转场更顺：把悬浮钮冻结成预糊位图。\n';
+
+      final digest = buildReleaseNotesDigest(body);
+      expect(digest.highlightsDeclared, isTrue);
+      expect(digest.highlights.length, 2);
+      // 第一条认回「软件更新页重做」
+      expect(digest.highlights.first.kind, ReleaseChangeKind.improved);
+      expect(digest.highlights.first.label, '优化');
+      // 第二条认不回来：kind=other、无标签，且能被 getter 点出来
+      expect(digest.unresolvedHighlights.map((e) => e.headline), ['转场掉帧']);
+    });
+
+    test('重点抄条目里的原话 → unresolvedHighlights 为空', () {
+      const body = '# v2.1.4.1\n'
+          '\n'
+          '> 本次重点：软件更新页重做、转场更顺\n'
+          '\n'
+          '## 优化 · 2\n'
+          '\n'
+          '- 软件更新页重做：一个状态只给一个动作。\n'
+          '- 转场更顺：把悬浮钮冻结成预糊位图。\n';
+
+      final digest = buildReleaseNotesDigest(body);
+      expect(digest.unresolvedHighlights, isEmpty);
+      expect(digest.highlights.map((e) => e.label), ['优化', '优化']);
+    });
+  });
 }

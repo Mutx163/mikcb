@@ -204,6 +204,24 @@ else
   fi
   if grep -qE '^>.*本次重点' "${TMP_NOTES}"; then
     pass "已声明「本次重点」（更新弹窗照它显示前 3 条）"
+    # 2026-10-19：光「写了」不够。重点写的是条目里没有的说法时，解析器认不回来，
+    # 会退化成 kind=other、没有分类标签的灰色重点——v2.1.4.1 就在这里踩过一次
+    # （「转场掉帧」对条目「转场更顺」）。用 App 同一套解析器复核一遍，
+    # 认不回来直接 FAIL。dart 不在 PATH 时降级成 WARN（CI 的 test/docs 仍然会兜）。
+    if command -v dart >/dev/null 2>&1; then
+      # 先单独取退出码：接在管道后面 `$?` 会是 sed 的，永远 0，门禁就形同虚设。
+      RAW_OUT="$(dart run tool/check_release_highlights.dart "${TMP_NOTES}" 2>&1)"
+      DART_RC=$?
+      # `dart run` 会在 stderr 上刷一串「Running build hooks...」，先剥掉再展示。
+      HIGHLIGHT_OUT="$(printf '%s\n' "${RAW_OUT}" | sed 's/Running build hooks\.\.\.//g' | tr -s '[:space:]' ' ' | sed 's/^ //')"
+      if [[ "${DART_RC}" -eq 0 ]]; then
+        pass "${HIGHLIGHT_OUT}"
+      else
+        fail "「本次重点」有认不回条目的说法：${HIGHLIGHT_OUT}"
+      fi
+    else
+      warn "没有 dart 命令，跳过「重点能否认回条目」复核（CI 的 test/docs 会兜住）"
+    fi
   else
     warn "没有 '> 本次重点：…' 行：弹窗会退化成按「新增>优化>移除>修复」猜前 3 条"
   fi
