@@ -368,3 +368,37 @@ List<DayCourseDisplayItem> buildCoupleDayCourseDisplayItems({
 
   return items..sort(compareDayCourseDisplayItems);
 }
+
+
+/// 首页周网格的日课表条目：普通模式直接取本周课；情侣叠加模式再补对方课。
+List<DayCourseDisplayItem> buildHomeDayDisplayItems({
+  required List<Course> myCourses,
+  required int week,
+  required TimetableSettings settings,
+  required Map<String, List<Course>> conflictMap,
+  required bool coupleOverlayActive,
+  required int partnerWeek,
+  required List<Course> partnerCourses,
+  required int partnerWeekOffset,
+  Set<String> currentCourseIds = const <String>{},
+}) {
+  if (!coupleOverlayActive) {
+    return buildDayCourseDisplayItems(
+      courses: myCourses,
+      week: week,
+      settings: settings,
+      conflictMap: conflictMap,
+      currentCourseIds: currentCourseIds,
+    );
+  }
+  return buildCoupleDayCourseDisplayItems(
+    myCourses: myCourses,
+    partnerCourses: partnerCourses,
+    week: week,
+    partnerWeek: partnerWeek,
+    partnerWeekOffset: partnerWeekOffset,
+    settings: settings,
+    conflictMap: conflictMap,
+    currentCourseIds: currentCourseIds,
+  );
+}

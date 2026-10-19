@@ -868,7 +868,7 @@ class _TimetableScreenState extends State<TimetableScreen>
               ),
               clearMarker: _clearEmptySlotMarker,
               showActions: _showCourseActions,
-              border: _groupedDayColumnBorderRadius,
+              border: groupedDayColumnBorderRadius,
               wallpaperBodyLuminance: () => _luminance.body,
               wallpaperTopLuminance: () => _luminance.top,
             );
@@ -892,7 +892,7 @@ class _TimetableScreenState extends State<TimetableScreen>
               wrapEmptySlotGesture: _buildEmptySlotGestureArea,
               coursesForDay: _getCoursesForDay,
               buildDisplayItems: _buildHomeDayDisplayItems,
-              dayColumnCallbacks: dayColumnCallbacks,
+                    dayColumnCallbacks: dayColumnCallbacks,
             );
           },
           buildBody: (grid) => _buildWeekPageBody(
@@ -2261,31 +2261,6 @@ class _TimetableScreenState extends State<TimetableScreen>
 
 
 
-  /// 全局指针登记（[GestureBinding.pointerRouter] 的全局路由：同一事件先到这里，
-  /// 再走命中派发）。只做两件事：登记 / 注销指针；最后一根手指离开屏幕时错开
-  /// 这一轮派发做一次兜底收回（[_retractOrphanedHomePull]）。
-  ///
-  /// ⚠️ 兜底必须错开：正常路径的收尾（滚动到顶那条路的 `ScrollEndNotification`
-  /// → [_finishHomePullDrag] 里"够阈值就拉课表"的判定）就在同一批**同步**处理里。
-  /// 抢在它前面收回会把那次触发吃掉（用户拉到阈值上方抬手，却什么都没发生）。
-  /// 微任务排在事件派发结束之后，判定已经走完。
-
-  /// 看门狗本体：屏上已经没有手指、也不在拉课表，而进度还没归零 ⇒ 这一轮手势
-  /// 的收尾丢了，收回。
-  ///
-  /// 与正常收尾**幂等**：正常路径已经把它拨向 0，这里最多再把弹簧重拨一次
-  /// （目标相同），不会打架；真处于"收尾丢了"的状态才是唯一有效的那一次。
-
-  // --- Home pull spring helpers (HyperOS critical-damped, period 0.4s) ---
-
-
-  /// Clamping overscroll at the top of the week/day vertical scrollables.
-  ///
-  /// 只有「按下时就已经在顶部」的手势才累计下拉
-  /// （[_homePullGestureStartedAtTop]）：滚回顶部的那一拖整段不算，
-  /// 需要到顶部后再拉一次。见该字段的说明。
-
-
   Future<void> _runHomePullQuickImport() async {
     if (_homePull.isRunning || !mounted) {
       return;
@@ -2323,6 +2298,33 @@ class _TimetableScreenState extends State<TimetableScreen>
         _homePull.endImport();
       }
     }
+  }
+
+  List<DayCourseDisplayItem> _buildHomeDayDisplayItems({
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required int week,
+    required int dayOfWeek,
+    required List<Course> myCourses,
+    Set<String> currentCourseIds = const <String>{},
+  }) {
+    final partnerWeek = provider.partnerWeekFor(week);
+    return buildHomeDayDisplayItems(
+      myCourses: myCourses,
+      week: week,
+      settings: settings,
+      conflictMap: provider.courseConflictMapForWeek(week),
+      coupleOverlayActive: _isCoupleOverlayActive(provider),
+      partnerWeek: partnerWeek,
+      partnerCourses: _getCoursesForDay(
+        provider.partnerCourses,
+        partnerWeek,
+        dayOfWeek,
+        settings,
+      ),
+      partnerWeekOffset: provider.partnerWeekOffset,
+      currentCourseIds: currentCourseIds,
+    );
   }
 
   Widget _buildWeekPageBody({
@@ -2411,25 +2413,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     return ((raw * steps).floorToDouble() / steps).clamp(0.02, 0.98);
   }
 
-  BorderRadius _groupedDayColumnBorderRadius(
-    int dayIndex,
-    int dayCount, {
-    double radius = 12,
-  }) {
-    if (dayCount <= 1) {
-      return BorderRadius.circular(radius);
-    }
-    return BorderRadius.only(
-      topLeft: dayIndex == 0 ? Radius.circular(radius) : Radius.zero,
-      bottomLeft: dayIndex == 0 ? Radius.circular(radius) : Radius.zero,
-      topRight: dayIndex == dayCount - 1
-          ? Radius.circular(radius)
-          : Radius.zero,
-      bottomRight: dayIndex == dayCount - 1
-          ? Radius.circular(radius)
-          : Radius.zero,
-    );
-  }
 
   /// 周网格课卡上那一行天气；不该显示时返回 null（[CourseCard] 据此不加这一行）。
   ///
@@ -2774,59 +2757,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     return items.where((item) => item.course.startSection == section).toList();
   }
 
-  List<DayCourseDisplayItem> _buildHomeDayDisplayItems({
-    required TimetableProvider provider,
-    required TimetableSettings settings,
-    required int week,
-    required int dayOfWeek,
-    required List<Course> myCourses,
-    Set<String> currentCourseIds = const <String>{},
-  }) {
-    final conflictMap = provider.courseConflictMapForWeek(week);
-    if (!_isCoupleOverlayActive(provider)) {
-      return _buildDayCourseDisplayItems(
-        courses: myCourses,
-        week: week,
-        settings: settings,
-        conflictMap: conflictMap,
-        currentCourseIds: currentCourseIds,
-      );
-    }
 
-    final partnerWeek = provider.partnerWeekFor(week);
-    final partnerCourses = _getCoursesForDay(
-      provider.partnerCourses,
-      partnerWeek,
-      dayOfWeek,
-      settings,
-    );
-    return buildCoupleDayCourseDisplayItems(
-      myCourses: myCourses,
-      partnerCourses: partnerCourses,
-      week: week,
-      partnerWeek: partnerWeek,
-      partnerWeekOffset: provider.partnerWeekOffset,
-      settings: settings,
-      conflictMap: conflictMap,
-      currentCourseIds: currentCourseIds,
-    );
-  }
-
-  List<DayCourseDisplayItem> _buildDayCourseDisplayItems({
-    required List<Course> courses,
-    required int week,
-    required TimetableSettings settings,
-    required Map<String, List<Course>> conflictMap,
-    Set<String> currentCourseIds = const <String>{},
-  }) {
-    return buildDayCourseDisplayItems(
-      courses: courses,
-      week: week,
-      settings: settings,
-      conflictMap: conflictMap,
-      currentCourseIds: currentCourseIds,
-    );
-  }
 
   DayCourseDisplayLabels _displayLabels() {
     final l10n = AppLocalizations.of(context)!;

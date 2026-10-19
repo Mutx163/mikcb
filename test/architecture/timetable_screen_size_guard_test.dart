@@ -45,8 +45,10 @@ void main() {
     // 搬出（净 -10）→ 4346；build() 从 333 行降到 109 行。
     // M5-A10：下拉快捷导入手势/弹簧/看门狗 → HomePullController（净 -289）
     // → 4057。
-    // 下一次目标（日视图转场控制器）预计可再降至 ~3800。
-    const baselineLines = 4057;
+    // M5-A11：日课表条目组装下沉 domain + 分组圆角 helper 搬出（净 -69）
+    // → 3988。
+    // 下一次目标（首页栈构建器/日视图转场）预计可再降至 ~3700。
+    const baselineLines = 3988;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),

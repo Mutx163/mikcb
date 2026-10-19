@@ -256,3 +256,25 @@ class TimetableDayColumnCallbacks {
     required this.wallpaperTopLuminance,
   });
 }
+
+
+/// 分组日列的圆角：首日左侧、末日右侧，中间直角。
+BorderRadius groupedDayColumnBorderRadius(
+  int dayIndex,
+  int dayCount, {
+  double radius = 12,
+}) {
+  if (dayCount <= 1) {
+    return BorderRadius.circular(radius);
+  }
+  return BorderRadius.only(
+    topLeft: dayIndex == 0 ? Radius.circular(radius) : Radius.zero,
+    bottomLeft: dayIndex == 0 ? Radius.circular(radius) : Radius.zero,
+    topRight: dayIndex == dayCount - 1
+        ? Radius.circular(radius)
+        : Radius.zero,
+    bottomRight: dayIndex == dayCount - 1
+        ? Radius.circular(radius)
+        : Radius.zero,
+  );
+}
