@@ -679,8 +679,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   }
 
   Widget _buildUpdateList(ThemeData theme, TimetableSettings settings) {
-    final l10n = AppLocalizations.of(context)!;
-
     return FutureBuilder<AppUpdateCheckResult>(
       future: _updateFuture,
       builder: (context, snapshot) {
@@ -694,34 +692,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
         final result = snapshot.data;
         if (result == null) {
-          return HyperosListView(
-            children: [
-              Material(
-                color: HyperosColors.card(context),
-                shape: HyperosTheme.cardShape(),
-                clipBehavior: Clip.antiAlias,
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      _buildAppLauncherLogo(context, size: 72),
-                      const SizedBox(height: 12),
-                      Text(
-                        l10n.aboutReadVersionFailed,
-                        style: HyperosTypography.sectionLabel(context),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        l10n.aboutReadVersionFailedHint,
-                        style: HyperosTypography.sectionDescription(context),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          );
+          // 与「检查更新失败」（hasRelease == false）走同一张卡：两条路都是
+          // 「拿不到版本信息」，此前这张卡连重试按钮都没有。
+          return HyperosListView(children: [_buildCheckFailedCard()]);
         }
 
         final releaseBody = result.latestRelease?.body ?? '';
@@ -876,7 +849,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     // 「已是最新版本 / 最新版本：未发布 / 一个灰掉的按钮」；失败原因
     // （result.message，六语言齐全）整页没有任何渲染点，也没有重试入口。
     if (!result.hasRelease) {
-      return _buildCheckFailedCard(result);
+      return _buildCheckFailedCard();
     }
 
     final hasUpdate = result.hasUpdate;
@@ -1031,17 +1004,14 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     );
   }
 
-  /// 检查更新失败（没拿到任何 release）时的卡片。
+  /// 拿不到版本信息时的卡片（检查更新失败，或 Future 直接给出 null）。
   ///
-  /// 失败原因取服务层的消息码 [AppUpdateCheckResult.message]，经
-  /// [localizeServiceMessage] 转成一句话（六语言齐全）；没有消息码时退回
-  /// 通用说明。
-  Widget _buildCheckFailedCard(AppUpdateCheckResult result) {
+  /// 只渲染六语言都齐的通用文案，**不直出** `result.message`：那几条
+  /// `serviceMsg*` 更新检查消息码在 ja / ko 与 zh_TW / zh_HK 里仍是英文占位，
+  /// 直出会让这四个语言的用户看到英文句子（这些码此前整页没有渲染点，
+  /// 所以没人撞见）。要显示具体原因，得先把那几条翻译补齐。
+  Widget _buildCheckFailedCard() {
     final l10n = AppLocalizations.of(context)!;
-    final message = (result.message ?? '').trim();
-    final reason = message.isEmpty
-        ? null
-        : localizeServiceMessage(l10n, message);
     return Material(
       color: HyperosColors.card(context),
       shape: HyperosTheme.cardShape(),
@@ -1059,14 +1029,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                 context,
               ).copyWith(color: HyperosColors.primaryText(context)),
             ),
-            if (reason != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                reason,
-                textAlign: TextAlign.center,
-                style: HyperosTypography.sectionDescription(context),
-              ),
-            ],
             const SizedBox(height: 8),
             Text(
               l10n.aboutReadVersionFailedHint,
