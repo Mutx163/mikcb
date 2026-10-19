@@ -143,6 +143,56 @@ void main() {
     );
   });
 
+  test('timetable_settings screen 逻辑单元（设置域）总行数棘轮：只减不增', () {
+    // 2026-10-19 立基线：设置页 screen 单元是全仓最大逻辑单元（主文件 1,458 +
+    // 16 个 part 11,467 = 12,925，另有同目录独立文件 bing_wallpaper_gallery_page
+    // 597），上帝单元棘轮落地时漏掉了它——当天只给 models 层立了
+    // （timetable_settings 主文件/单元 2,621/3,661），页面层没有。
+    // 「全仓 part 总数 28」挡得住第 17 个分身，挡不住现有 16 个任何一个长个。
+    //
+    // 口径 = 主文件 + lib/screens/settings/ 全部 dart 文件（13,522）。按目录计量
+    // 而非「主文件 + part 名单」：后续把 16 个 part 逐个「转正」成独立库文件
+    // 只改形态、不改读数（每文件新增的 import 头按仓库约定同步基线并说明）；
+    // 只有真瘦身才让读数下降。16 个分身任何一个长个都会红。
+    // 13522→13554：立棘采样后 gallery 页被并行提交 +32 行（他人合法改动），
+    // 按测试约定同步真实值；本棘不改基线除非同步方说明。
+    const baselineLines = 13554;
+    final domainFiles = <String>[
+      'lib/screens/timetable_settings_screen.dart',
+      ...Directory('lib/screens/settings')
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .map((f) => f.path.replaceAll('\\', '/')),
+    ];
+    domainFiles.sort();
+    expect(domainFiles.length, greaterThan(1), reason: '设置目录为空，棘已空转');
+    final lines = domainFiles.fold<int>(0, (sum, path) => sum + _lineCount(path));
+    expect(
+      lines,
+      lessThanOrEqualTo(baselineLines),
+      reason:
+          '设置域逻辑单元继续膨胀（当前 $lines > 基线 $baselineLines）。'
+          '这是全仓最大单元（主文件 + 16 个 part 分身）；新功能请放进独立文件'
+          '并先做等量瘦身，不要抬基线换绿。',
+    );
+
+    // part 数量：16 个分身只减不增。目标态是全部转正为独立库文件（它们本就是
+    // 独立整页：对宿主私有符号的全部引用只有 14 处），转正一个同步收紧一格。
+    final settingsMain = File('lib/screens/timetable_settings_screen.dart');
+    final partCount = RegExp(
+      r"^part\s+'",
+      multiLine: true,
+    ).allMatches(settingsMain.readAsStringSync()).length;
+    expect(
+      partCount,
+      lessThanOrEqualTo(16),
+      reason:
+          '设置页 part 数量涨到 $partCount（基线 16）。16 个分身将逐个转正为'
+          '独立库文件；part 只作零行为搬迁的过渡，不要新增。',
+    );
+  });
+
   test('全仓 part 指令总数棘轮：只减不增', () {
     const baselineParts = 28;
     final partDirective = RegExp(r"^part\s+'", multiLine: true);
