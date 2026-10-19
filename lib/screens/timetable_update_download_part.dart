@@ -152,7 +152,11 @@ extension _TimetableScreenUpdateDownload on _TimetableScreenState {
             downloadUrl: downloadUrl,
           );
         },
-        onViewRelease: () => _openUpdateReleasePage(release.releaseUrl),
+        // 「查看 Release」开列表页（按渠道）；「没有直链时去拿安装包」那条仍开
+        // tag 页——那里才有本版的资产。
+        onViewRelease: () => _openUpdateReleasePage(
+          AppUpdateService.releaseListUrlFor(channel),
+        ),
         onCancelDownload: _cancelHomeUpdateDownload,
         onResumeDownload: () => _startHomeUpdateDownload(
           release: release,

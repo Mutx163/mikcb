@@ -938,7 +938,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               Center(
                 child: _buildTextAction(
                   label: l10n.aboutViewReleaseAction,
-                  onPressed: () => _openUrl(release?.releaseUrl),
+                  // 开「发布页列表」而不是某个 tag：tag 页来自赢得竞争的清单
+                  // 策略（可能是 GitCode 镜像），与用户选的渠道无关，也不稳。
+                  onPressed: () => _openUrl(
+                    AppUpdateService.releaseListUrlFor(downloadChannel),
+                  ),
                 ),
               ),
             ],

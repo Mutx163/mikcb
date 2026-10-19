@@ -169,6 +169,22 @@ class AppUpdateService {
       'https://api.gitcode.com/api/v5/repos/mutx/qingyu/releases';
   static const String defaultMirrorUrlPrefix = defaultAppUpdateMirrorUrlPrefix;
   static const String downloadCancelledMessage = 'download_cancelled';
+
+  /// 「查看 Release」统一打开的地址：发布页**列表**，不深链到某个 tag。
+  ///
+  /// 2026-10-19 真机反馈：点开永远是
+  /// `gitcode.com/mutx/qingyu/releases/tag/vX`，把渠道切成 GitHub 直连也一样。
+  /// 原因是 UI 用的是 release 对象自带的 `releaseUrl`——它来自**赢得竞争的那条
+  /// 清单策略**，与用户的渠道设置无关；而深链到 tag 页在版本被撤、或镜像还没
+  /// 同步时就是死链。
+  ///
+  /// 现在按用户选的渠道给列表页：GitCode 渠道 → GitCode 发布页，其余（含
+  /// pgyer，它没有发布页）→ GitHub 发布页。
+  static String releaseListUrlFor(AppUpdateDownloadChannel channel) {
+    return channel == AppUpdateDownloadChannel.gitcode
+        ? '$gitcodeRepositoryUrl/releases'
+        : releasesPageUrl;
+  }
   static const Duration _releaseRequestTimeout = Duration(seconds: 4);
   static const Duration _releasesPageRequestTimeout = Duration(seconds: 6);
 
