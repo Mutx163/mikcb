@@ -571,7 +571,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
                 : TimetableSettings.defaultWeekdayBarFontColorLight,
             themeFallback: foruiTheme.colors.foreground,
             hasBackdrop: hasBackdrop,
-            wallpaperLuminance: _weekdayInkLuminance(settings),
+            wallpaperLuminance: _luminance.weekdayInk(settings),
           )
         : foruiTheme.colors.foreground;
     final summaryMutedInk = homePageOverWallpaperMutedInk(summaryInk);
@@ -880,7 +880,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
           : TimetableSettings.defaultWeekdayBarFontColorLight,
       themeFallback: colorScheme.onSurface,
       hasBackdrop: hasBackdrop,
-      wallpaperLuminance: _wallpaperBodyLuminance ?? _wallpaperTopLuminance,
+      wallpaperLuminance: _luminance.body ?? _luminance.top,
     );
     final subtitleColor = homePageOverWallpaperMutedInk(titleColor);
     return Center(
@@ -2402,7 +2402,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
             cardColor: fillColor,
             surfaceShowsWallpaper: showsWallpaper,
             wallpaperLuminance: showsWallpaper
-                ? (_wallpaperBodyLuminance ?? _wallpaperTopLuminance)
+                ? (_luminance.body ?? _luminance.top)
                 : null,
           );
     return TimetableDayAgendaPalette(
@@ -2430,7 +2430,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       return Colors.white;
     }
     final wallpaperLuminance =
-        _wallpaperBodyLuminance ?? _wallpaperTopLuminance;
+        _luminance.body ?? _luminance.top;
     if (wallpaperLuminance == null) {
       return Colors.white;
     }

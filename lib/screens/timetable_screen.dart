@@ -53,10 +53,10 @@ import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
 import '../widgets/home_page_region_blur.dart';
+import '../controllers/wallpaper_luminance_controller.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
 import '../utils/home_wallpaper_luminance_share.dart';
-import '../utils/luminance_sample_gate.dart';
 import '../ui/home/home_chrome_spec.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
     show LiquidGlassSurface, LiquidGlassSurfaceState;
@@ -411,30 +411,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 不能因为它一直按着就让半截进度圈永远等“最后一根手指”。
   int? _homePullPrimaryPointer;
 
-  double? _wallpaperTopLuminance;
-
-  /// Luminance of the wallpaper band the weekday/date chrome bar sits over.
-  /// The status/title strip can be bright while the band below (where the
-  /// weekday bar lives) is dark, so the weekday ink must not reuse the top
-  /// sample.
-  double? _wallpaperWeekdayLuminance;
-
-  /// Luminance of the wallpaper band the day-view cards sit over. The top
-  /// band can be dark while mid-screen is bright (or vice versa), so card ink
-  /// must not reuse the chrome sample.
-  double? _wallpaperBodyLuminance;
-  String? _wallpaperLuminanceSampleKey;
-  String? _wallpaperLuminanceRequestedKey;
-  bool _wallpaperLuminanceFileExists = false;
-
-  /// 采样失败的限次重试闸门（按 key 计数）。
-  ///
-  /// 一次采样失败不能继续把 `_wallpaperLuminanceSampleKey` 当成「已经采过」：
-  /// 守卫（`_scheduleWallpaperLuminanceSampleIfNeeded`）看到它就会每帧早退，
-  /// 顶栏 / 星期栏 / 卡片的墨色从此停在主题默认色，直到换壁纸或冷启动。
-  /// 但也不能无条件重试 —— 解不开的图会变成每帧重解码一张大图。
-  /// 实现（含三处调用点共用的那份）见 [LuminanceSampleGate]。
-  final _wallpaperLuminanceGate = LuminanceSampleGate();
 
   /// Last "custom weekday ink is unreadable" combination already warned about
   /// this session; the persisted twin lives in SharedPreferences.
@@ -576,9 +552,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     return parseHexColorOrFallback(hexColor, fallback: fallback);
   }
 
+  late final WallpaperLuminanceController _luminance;
+
   @override
   void initState() {
     super.initState();
+    _luminance = WallpaperLuminanceController()
+      ..addListener(_handleLuminanceChanged);
     WidgetsBinding.instance.addObserver(this);
     WidgetLaunchRouter.coupleOverlayRequestTick.addListener(
       _onExternalCoupleOverlayRequest,
@@ -630,6 +610,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
   }
 
+  void _handleLuminanceChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
     _previewScope?.dayView.removeListener(_onPreviewDayViewChanged);
@@ -671,6 +657,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     unawaited(ScreenCaptureService.stop());
     _homeMenuAnchor.dispose();
     _homeGlass.dispose();
+    _luminance.removeListener(_handleLuminanceChanged);
+    _luminance.dispose();
     super.dispose();
   }
 
@@ -713,7 +701,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         // 首帧直接采用：标题/状态栏/星期栏/底栏的黑白墨极性第一帧即正确，不出现
         // 「按主题兜底再翻面」的闪变（缩尺预览那份首页靠的就是这条）。仅在本页
         // 尚未开始采样时生效；异步精确采样照常运行并以同值幂等收敛。
-        _seedWallpaperLuminanceFromPrimerOrShare(
+        _luminance.seedFromPrimerOrShare(
           settings,
           viewportSize: viewportSize,
         );
@@ -722,7 +710,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           settings: settings,
           isDark: isDark,
           darkFallback: darkFallback,
-          wallpaperTopLuminance: _wallpaperTopLuminance,
+          wallpaperTopLuminance: _luminance.top,
         );
         final glassDockForm = chrome.glassDockForm;
         final hasBackdrop = chrome.hasBackdrop;
@@ -733,7 +721,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         final useHomePreblur = chrome.useHomePreblur;
         final homePreblurSigma = chrome.homePreblurSigma;
         final courseCardPreblurSigma = chrome.courseCardPreblurSigma;
-        _scheduleWallpaperLuminanceSampleIfNeeded(
+        _luminance.schedule(
           settings,
           viewportSize: viewportSize,
         );
@@ -833,8 +821,8 @@ class _TimetableScreenState extends State<TimetableScreen>
             dayViewPageController: _dayViewPageController,
             visibleDayViewWeek: _visibleDayViewWeek,
             shouldShowDayViewOverlay: _shouldShowDayViewOverlay,
-            wallpaperTopLuminance: _wallpaperTopLuminance,
-            wallpaperWeekdayLuminance: _wallpaperWeekdayLuminance,
+            wallpaperTopLuminance: _luminance.top,
+            wallpaperWeekdayLuminance: _luminance.weekday,
             timeColumnWidth: _resolveTimeColumnWidth(settings),
             isSelectedDay: _isSelectedDay,
             hasExamOnDate: provider.hasExamOnDate,
@@ -855,8 +843,8 @@ class _TimetableScreenState extends State<TimetableScreen>
               settings: settings,
               week: week,
               availableHeight: height,
-              wallpaperTopLuminance: _wallpaperTopLuminance,
-              wallpaperWeekdayLuminance: _wallpaperWeekdayLuminance,
+              wallpaperTopLuminance: _luminance.top,
+              wallpaperWeekdayLuminance: _luminance.weekday,
               dayViewPageController: _dayViewPageController,
               isDayView: _isDayView,
               visibleDayViewWeek: _visibleDayViewWeek,
@@ -898,8 +886,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                   clearMarker: _clearEmptySlotMarker,
                   showActions: _showCourseActions,
                   border: _groupedDayColumnBorderRadius,
-                  wallpaperBodyLuminance: () => _wallpaperBodyLuminance,
-                  wallpaperTopLuminance: () => _wallpaperTopLuminance,
+                  wallpaperBodyLuminance: () => _luminance.body,
+                  wallpaperTopLuminance: () => _luminance.top,
                 );
                 return TimetableWeekGrid(
                   provider: provider,
@@ -1003,7 +991,7 @@ class _TimetableScreenState extends State<TimetableScreen>
               ? TimetableGlassDockLayer(
                   settings: settings,
                   isInlinePage: inlineId != null,
-                  wallpaperBodyLuminance: _wallpaperBodyLuminance,
+                  wallpaperBodyLuminance: _luminance.body,
                   selectedIndex: _dockSelectedIndex(
                     resolveGlassDockActionIds(settings),
                   ),
@@ -2063,103 +2051,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///
   /// 只在首帧前的空窗期生效一次：本页任何亮度字段已被赋值或常规异步采样已启动
   /// （requestedKey 非空）时直接返回，绝不覆盖精确采样结果。
-  void _seedWallpaperLuminanceFromPrimerOrShare(
-    TimetableSettings settings, {
-    required Size viewportSize,
-  }) {
-    if (_wallpaperTopLuminance != null ||
-        _wallpaperWeekdayLuminance != null ||
-        _wallpaperBodyLuminance != null ||
-        _wallpaperLuminanceRequestedKey != null) {
-      return;
-    }
-    final path = homePageBackdropKey(settings);
-    if (path == null || path.isEmpty) {
-      return;
-    }
-    final key = _wallpaperLuminanceKey(
-      path: path,
-      viewportSize: viewportSize,
-      alignX: settings.homePageWallpaperAlignX,
-      alignY: settings.homePageWallpaperAlignY,
-      scale: settings.homePageWallpaperScale,
-    );
-    final bands =
-        HomeWallpaperLuminanceShare.resolve(key) ??
-        HomeStartupVisualPrimer.seededBandsFor(path);
-    if (bands == null) {
-      return;
-    }
-    _wallpaperTopLuminance = bands.top;
-    _wallpaperWeekdayLuminance = bands.weekday;
-    _wallpaperBodyLuminance = bands.body;
-  }
 
-  void _scheduleWallpaperLuminanceSampleIfNeeded(
-    TimetableSettings settings, {
-    required Size viewportSize,
-  }) {
-    // 统一用「背景身份键」（背景图绝对路径）做采样缓存 key。
-    final path = homePageBackdropKey(settings);
-    if (path == null || path.isEmpty) {
-      if (_wallpaperTopLuminance != null ||
-          _wallpaperWeekdayLuminance != null ||
-          _wallpaperBodyLuminance != null ||
-          _wallpaperLuminanceSampleKey != null ||
-          _wallpaperLuminanceRequestedKey != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) {
-            return;
-          }
-          setState(() {
-            _wallpaperTopLuminance = null;
-            _wallpaperWeekdayLuminance = null;
-            _wallpaperBodyLuminance = null;
-            _wallpaperLuminanceSampleKey = null;
-            _wallpaperLuminanceRequestedKey = null;
-            _wallpaperLuminanceFileExists = false;
-          });
-          // 背景整个没了：失败配额一并清掉，下次换回壁纸要重新采（否则会带着
-          // "同一份 key 已经试满"的旧账直接认输）。
-          _wallpaperLuminanceGate.reset();
-        });
-      }
-      return;
-    }
-    final key = _wallpaperLuminanceKey(
-      path: path,
-      viewportSize: viewportSize,
-      alignX: settings.homePageWallpaperAlignX,
-      alignY: settings.homePageWallpaperAlignY,
-      scale: settings.homePageWallpaperScale,
-    );
-    if (_wallpaperLuminanceRequestedKey == key &&
-        (_wallpaperLuminanceSampleKey == key ||
-            !_wallpaperLuminanceFileExists)) {
-      return;
-    }
-    // 本方法在 build 期间被调用，而 _ensureWallpaperLuminanceForPath 首段
-    // （existsSync 结果分流）含同步 setState：直接调用会在 build 期把本组件
-    // 标脏，触发 "setState() called during build" 异常并中断壁纸亮度采样
-    // 链，导致墨色极性停在主题默认色。统一推迟到帧后首跑，天然规避
-    // build 期限制，重复进入也由 requestedKey 幂等去重。
-    unawaited(
-      Future<void>.sync(() {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) {
-            return;
-          }
-          _ensureWallpaperLuminanceForPath(
-            settings,
-            viewportSize: viewportSize,
-            alignX: settings.homePageWallpaperAlignX,
-            alignY: settings.homePageWallpaperAlignY,
-            key: key,
-          );
-        });
-      }),
-    );
-  }
 
   /// 采样缓存 key：`路径|视口宽x高|alignX|alignY|scale`（构造器只有一份，见
   /// `homePageBackdropSampleKey`）。
@@ -2169,131 +2061,12 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 上限 `kWallpaperMaxScale = 4`），取景页双指**原地捏合**只动倍数不动对齐，
   /// 键里没它就不会重采 —— 首页顶栏/星期条/卡片区墨色的极性会停在放大前那一条带上，
   /// 且要等下一次拖动位置或冷启动才纠正。
-  String _wallpaperLuminanceKey({
-    required String path,
-    required Size viewportSize,
-    required double alignX,
-    required double alignY,
-    required double scale,
-  }) {
-    return homePageBackdropSampleKey(
-      path: path,
-      viewportKey: homePageBackdropViewportKey(viewportSize),
-      alignX: alignX,
-      alignY: alignY,
-      scale: scale,
-    );
-  }
 
-  Future<void> _ensureWallpaperLuminanceForPath(
-    TimetableSettings settings, {
-    required Size viewportSize,
-    required double alignX,
-    required double alignY,
-    required String key,
-  }) async {
-    if (_wallpaperLuminanceRequestedKey == key &&
-        _wallpaperLuminanceSampleKey == key &&
-        _wallpaperTopLuminance != null) {
-      return;
-    }
-    // 下面的字段赋值统一收敛到 setState 内：本方法在异步回调中运行，
-    // 风格混用（部分在 setState 外、部分在内）会让后续维护者难以判断
-    // 哪些赋值会触发重绘，容易漏包导致 UI 与状态脱节。
-    _wallpaperLuminanceRequestedKey = key;
-    // 背景图文件丢失时清空亮度采样，让顶栏/星期栏墨色回落到主题默认。
-    final filePath = resolveHomePageBackdropImagePath(settings);
-    final fileExists = filePath == null || filePath.isEmpty
-        ? true
-        : File(filePath).existsSync();
-    if (!mounted || _wallpaperLuminanceRequestedKey != key) {
-      return;
-    }
-    if (!fileExists) {
-      if (_wallpaperTopLuminance != null ||
-          _wallpaperWeekdayLuminance != null ||
-          _wallpaperBodyLuminance != null ||
-          _wallpaperLuminanceSampleKey != null ||
-          _wallpaperLuminanceFileExists) {
-        setState(() {
-          _wallpaperTopLuminance = null;
-          _wallpaperWeekdayLuminance = null;
-          _wallpaperBodyLuminance = null;
-          _wallpaperLuminanceSampleKey = null;
-          _wallpaperLuminanceFileExists = false;
-        });
-      }
-      return;
-    }
-    setState(() {
-      _wallpaperLuminanceFileExists = true;
-      _wallpaperLuminanceSampleKey = key;
-    });
-    await _loadWallpaperLuminance(
-      settings,
-      viewportSize: viewportSize,
-      alignX: alignX,
-      alignY: alignY,
-      key: key,
-    );
-  }
 
-  Future<void> _loadWallpaperLuminance(
-    TimetableSettings settings, {
-    required Size viewportSize,
-    required double alignX,
-    required double alignY,
-    required String key,
-  }) async {
-    final bands = await sampleHomePageBackdropLuminanceBands(
-      settings,
-      viewportSize: viewportSize,
-      alignX: alignX,
-      alignY: alignY,
-    );
-    if (!mounted || _wallpaperLuminanceSampleKey != key) {
-      return;
-    }
-    if (bands == null) {
-      // 采样失败（解码不出来 / 文件正被写 / 尺寸读到 0）。**不能**继续装着
-      // 「已采过」—— 守卫看到 `sampleKey == key` 会每帧早退，顶栏 / 星期栏 /
-      // 卡片的墨色此后一直停在主题默认色，直到换壁纸或冷启动。
-      // 也不能无条件重试（解不开的图 = 每帧重解码一张大图），所以交给闸门：
-      // 它按 key 限次决定要不要清掉 sampleKey 放行下一次。
-      _wallpaperLuminanceGate.record(key, succeeded: false);
-      if (_wallpaperLuminanceGate.needsSample(key)) {
-        setState(() {
-          _wallpaperLuminanceSampleKey = null;
-        });
-      }
-      return;
-    }
-    // 采到了：这一份 key 永久命中，失败配额归零。
-    _wallpaperLuminanceGate.record(key, succeeded: true);
-    // 登记给同进程里此后新建的首页实例（缩尺预览那份），让它首帧直接用这份
-    // 极性而不是按主题猜（见 HomeWallpaperLuminanceShare 类注释）。放在
-    // 「值没变就早退」之前：登记的是「这个键上的已知值」，与本页要不要重绘无关。
-    HomeWallpaperLuminanceShare.publish(key, bands);
-    if (_wallpaperTopLuminance == bands.top &&
-        _wallpaperWeekdayLuminance == bands.weekday &&
-        _wallpaperBodyLuminance == bands.body) {
-      return;
-    }
-    setState(() {
-      _wallpaperTopLuminance = bands.top;
-      _wallpaperWeekdayLuminance = bands.weekday;
-      _wallpaperBodyLuminance = bands.body;
-    });
-  }
 
   /// Luminance used by both weekday rendering and the contrast explainer.
   /// When the weekday glass band is enabled, its scrim follows the header/top
   /// sample, so the warning must judge the same effective backdrop as the UI.
-  double? _weekdayInkLuminance(TimetableSettings settings) {
-    return settings.homePageWeekdayBarBlurEnabled
-        ? _wallpaperTopLuminance
-        : _wallpaperWeekdayLuminance ?? _wallpaperTopLuminance;
-  }
 
   /// One-shot heads-up when a hand-picked weekday-bar ink has too little
   /// contrast against the current wallpaper. The ink keeps its colour and only
@@ -2305,7 +2078,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   ) {
     // Judge custom ink against the band actually behind the weekday bar, not
     // the status/title strip above it.
-    final luminance = _weekdayInkLuminance(settings);
+    final luminance = _luminance.weekdayInk(settings);
     if (luminance == null || _weekdayInkWarningShowing) {
       return;
     }
@@ -3066,7 +2839,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           : TimetableSettings.defaultTimeAxisFontColorLight,
       themeFallback: isDark ? Colors.white : Colors.grey.shade800,
       hasBackdrop: hasHomePageBackdrop(settings),
-      wallpaperLuminance: _wallpaperBodyLuminance ?? _wallpaperTopLuminance,
+      wallpaperLuminance: _luminance.body ?? _luminance.top,
     );
     return TimetableEmptySlotAddMarker(
       sectionHeight: sectionHeight,
@@ -4137,7 +3910,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           : TimetableSettings.defaultTimeAxisFontColorLight,
       themeFallback: isDark ? Colors.white : Colors.grey.shade800,
       hasBackdrop: hasBackdrop,
-      wallpaperLuminance: _wallpaperBodyLuminance ?? _wallpaperTopLuminance,
+      wallpaperLuminance: _luminance.body ?? _luminance.top,
     );
     final timeAxisMutedColor = homePageOverWallpaperMutedInk(timeAxisColor);
     final compactTextStyle = TextStyle(
