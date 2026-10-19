@@ -468,7 +468,7 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
     // 所有液态玻璃默认套转场重绘驱动：形状按屏幕坐标画，路由壳的
     // RepaintBoundary 只挪图层不重画时，必须靠它逐帧 markNeedsPaint
     // （见 LiquidGlassTransitionRepaint / 2026-09-21「按钮分成两层」）。
-    return LiquidGlassTransitionRepaint(
+    final Widget live = LiquidGlassTransitionRepaint(
       child: ListenableBuilder(
         listenable: LiquidGlassSurfaceShader.instance,
         builder: (context, _) {
@@ -479,35 +479,6 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
           // 绘制这一侧永远只认真机判据。
           if (!LiquidGlassSurface._isActuallyRenderable(context, widget.role)) {
             return widget.fallbackBuilder(context);
-          }
-          // 转场期间改画预糊位图，不再挂滤镜层（理由见 [freezeOnRouteTransition]）。
-          // 拿不到位图就保持实时玻璃 —— 宁可多付这笔钱，也不要闪一块空白。
-          if (widget.freezeOnRouteTransition &&
-              HyperosGlassBackdropController.routeTransitionRunning.value) {
-            final frozen = _frozenWallpaperGlassBoard(
-              context,
-              role: widget.role,
-              borderRadius: widget.borderRadius,
-              maxRefraction: widget.maxRefraction,
-            );
-            if (frozen != null) {
-              // ⚠️ 位图的尺寸规则是「铺满父级给的约束」，而开这个开关的表面
-              // 往往是被 Positioned 用**松约束**摆的浮动小件 —— 直接返回位图
-              // 就会撑满整个父级（2026-10-19 真机：日视图整块网格糊成一片）。
-              // 所以拿子内容当尺子：Stack 的尺寸取非定位子（图标），位图用
-              // Positioned.fill 精确盖在它上面，两者同尺寸。
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(widget.borderRadius),
-                clipBehavior: widget.clipBehavior,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Positioned.fill(child: frozen),
-                    widget.child,
-                  ],
-                ),
-              );
-            }
           }
           // 两个作用域，各自只有一个出口：表面只提供自己的圆角与当前明暗，折射旋钮、
           // 底色、光来向一律从 [resolveStyleFor] 出 —— 固定小件拿标准档，其余拿
@@ -559,6 +530,46 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
           );
         },
       ),
+    );
+    if (!widget.freezeOnRouteTransition) {
+      return live;
+    }
+    // ⚠️ 转场闸门是 [ValueNotifier]，**必须订阅**：只在 build 里读一次 `.value`
+    // 的话，闸门落下时没有任何东西触发这颗钮重建，它会一直停在冻结位图上
+    // （2026-10-19 真机：日视图「回今日」从菜单退回后变成一块模糊）。
+    return ValueListenableBuilder<bool>(
+      valueListenable: HyperosGlassBackdropController.routeTransitionRunning,
+      builder: (context, running, _) {
+        if (!running ||
+            !LiquidGlassSurface._isActuallyRenderable(context, widget.role)) {
+          return live;
+        }
+        // 拿不到位图就保持实时玻璃 —— 宁可多付这笔钱，也不要闪一块空白。
+        final frozen = _frozenWallpaperGlassBoard(
+          context,
+          role: widget.role,
+          borderRadius: widget.borderRadius,
+          maxRefraction: widget.maxRefraction,
+        );
+        if (frozen == null) {
+          return live;
+        }
+        // ⚠️ 位图的尺寸规则是「铺满父级给的约束」，而开这个开关的表面往往是被
+        // Positioned 用**松约束**摆的浮动小件 —— 直接返回位图就会撑满整个父级
+        // （2026-10-19 真机：日视图整块网格糊成一片）。所以拿子内容当尺子：
+        // Stack 的尺寸取非定位子（图标），位图用 Positioned.fill 精确盖住它。
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(widget.borderRadius),
+          clipBehavior: widget.clipBehavior,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(child: frozen),
+              widget.child,
+            ],
+          ),
+        );
+      },
     );
   }
 }
