@@ -1,4 +1,25 @@
-part of '../timetable_settings_screen.dart';
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+import '../../models/timetable_settings.dart';
+import '../../providers/timetable_provider.dart';
+import '../../services/bing_wallpaper_store.dart';
+import '../../services/daily_wallpaper_service.dart';
+import '../../services/wallpaper_history_service.dart';
+import '../../screens/settings/bing_wallpaper_gallery_page.dart';
+import '../../utils/app_toast.dart';
+import '../../utils/bing_wallpaper_date_label.dart';
+import '../../utils/home_page_background.dart';
+import '../../utils/managed_image_storage.dart';
+import '../../models/wallpaper_history.dart';
+import '../../utils/wallpaper_history.dart';
+import '../../widgets/wallpaper_position_picker_sheet.dart';
+import '../../widgets/preblurred_wallpaper_glass.dart';
+import '../../ui/hyperos/hyperos.dart';
+import 'settings_recent_wallpaper.dart';
 
 /// 一次「长按删除最近使用」的撤销凭据：删之前的整份历史 + 被删的那张图。
 ///
@@ -16,18 +37,6 @@ class _BackdropRemoval {
   final String removedPath;
 }
 
-/// 「最近使用」缩略图条的固定高度。
-///
-/// 卡内是「缩略图（Expanded）+ 6px + 标签/确认按钮」三段，高度定死才不会因为
-/// 其中一张卡进了确认态（标签位换成两颗 24px 按钮）而把整条撑高、邻卡错位。
-const double _recentWallpaperStripHeight = 116;
-
-/// 卡内标签位的高度：常态是标签（最多两行 11px），确认态是那颗按钮行。
-///
-/// 定高的意义是缩略图在两种状态间**尺寸不变** —— 不定高的话 `Expanded` 会把
-/// 高度差吃掉，进确认态那一帧缩略图会肉眼可见地缩一下。
-const double _recentCardLabelHeight = 26;
-
 /// 首页壁纸流程（选图 / 最近使用 / 位置 / 清除）的**唯一实现**。
 ///
 /// 为什么要抽成 mixin：这段流程同时挂在两个宿主上 —— 「课表页面」设置里的
@@ -44,7 +53,7 @@ const double _recentCardLabelHeight = 26;
 ///
 /// 历史列表本身由 mixin 持有（[_wallpaperHistory]）：它订阅全局
 /// [WallpaperHistoryService]，宿主不必各自接线。
-mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
+mixin HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 当前草稿设置（宿主页面持有）。
   TimetableSettings get backdropDraft;
 
@@ -191,7 +200,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 失效一张背景的缓存：图片缓存、文件存在性 memo 与预模糊位图。
   ///
   /// [key] 是背景图绝对路径；null / 空串安全跳过（无背景）。
-  void _evictBackdropCaches(String? key) {
+  void evictBackdropCaches(String? key) {
     if (key == null || key.isEmpty) {
       return;
     }
@@ -270,8 +279,8 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     final previousKey = homePageBackdropKey(backdropDraft);
     final nextKey = homePageBackdropKey(next);
     if (previousKey != nextKey) {
-      _evictBackdropCaches(previousKey);
-      _evictBackdropCaches(nextKey);
+      evictBackdropCaches(previousKey);
+      evictBackdropCaches(nextKey);
     }
     applyBackdropDraft(_rememberBackdrops(next, remembered));
   }
@@ -407,7 +416,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 不存在「设置页能切历史、编辑页不能」这种分叉。左右内缩由
   /// [backdropRowHorizontalInset] 按宿主给（弹窗这一侧是 0，见那里的注释）。
   ///
-  /// 底部那颗「背景随周次滑动」开关（[_buildBackdropFollowsWeekPagerTile]）同样
+  /// 底部那颗「背景随周次滑动」开关（[buildBackdropFollowsWeekPagerTile]）同样
   /// 走这条路：2026-09-28 起在「调壁纸」的地方就能决定背景要不要跟着周次动，
   /// 不必先跳去「课表页面」设置才找得到。
   ///
@@ -431,18 +440,18 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildHomePageImageTile(
+        buildHomePageImageTile(
           context,
           l10n: l10n,
           title: l10n.homePageWallpaperTitle,
           path: currentPath,
           // 「选择图片」不再看状态分岔：永远是"选图 → 定位 → 确认"。只想调
           // 当前位置的走它旁边那颗「调整位置」。
-          onPick: _pickAndPositionHomePageBackdrop,
-          onAdjustPosition: _editHomePageBackdropPosition,
+          onPick: pickAndPositionHomePageBackdrop,
+          onAdjustPosition: editHomePageBackdropPosition,
           onClear: () {
             final stalePath = resolveHomePageBackdropImagePath(backdropDraft);
-            _evictBackdropCaches(stalePath);
+            evictBackdropCaches(stalePath);
             // 文件不再被当前背景引用，但多半还在「最近使用」里：改由历史淘汰
             // （挤出上限 / 恢复默认）负责删除。若在这里直接删，用户从历史切回
             // 时只会拿到一条死路径。
@@ -454,7 +463,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
             );
           },
         ),
-        _buildRecentWallpaperTile(context, l10n: l10n),
+        buildRecentWallpaperTile(context, l10n: l10n),
         _buildBingWallpaperTile(context, l10n: l10n),
       ],
     );
@@ -552,7 +561,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   ///
   /// 自动换**不补记「被换下的那一张」**（`remembered` 留空）：历史是全局 10 条，若每天
   /// 自动换都记两条，10 天后用户自己从相册存的那几张会被挤出并**连带删掉文件**。当前
-  /// 这张仍会出现在「最近使用」里 —— [_buildRecentWallpaperTile] 会把「当前生效但
+  /// 这张仍会出现在「最近使用」里 —— [buildRecentWallpaperTile] 会把「当前生效但
   /// 历史里没有」那张补在最前。
   Future<void> _applyDailyBingWallpaper() async {
     final result = await DailyWallpaperService.applyDaily(
@@ -611,7 +620,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     //
     // 不进「最近使用」的理由：历史是全局 10 条，自动换每天记一条的话，10 天后用户
     // 自己从相册挑的那几张会被挤出去并**连带删掉文件**。当前这张仍会出现在「最近
-    // 使用」里 —— `_buildRecentWallpaperTile` 会把「当前生效但历史里没有」那张补在最前。
+    // 使用」里 —— `buildRecentWallpaperTile` 会把「当前生效但历史里没有」那张补在最前。
     //
     // 「今天已换过」的认领也不再需要撤回：没有用户确认这一步，不存在「认领了却没
     // 换上」的可能。
@@ -712,7 +721,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [_buildBackdropFollowsWeekPagerTile(context, l10n: l10n)],
+      children: [buildBackdropFollowsWeekPagerTile(context, l10n: l10n)],
     );
   }
 
@@ -723,7 +732,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 挂在 mixin 上而不是各宿主各抄一份，理由和上面两块一样：它是**同一个开关**，
   /// 在弹窗里切了，课表页面那行立刻跟上（反之亦然）。两个宿主都要它，也就顺带拿到
   /// 了各自的版式（行高与内缩由 [HyperosSwitchTile] 自己按行位算）。
-  Widget _buildBackdropFollowsWeekPagerTile(
+  Widget buildBackdropFollowsWeekPagerTile(
     BuildContext context, {
     required AppLocalizations l10n,
   }) {
@@ -759,9 +768,9 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 列表 = **全局**历史（所有课表共用，最新在前）中当前可用者；历史还是空的老
   /// 用户，把当前生效的那一张补在最前，一进设置页就能看到自己正用着什么。
   ///
-  /// 整块（标题 + 条 + 移除确认条）都是 [_RecentWallpaperSection]：确认态是
+  /// 整块（标题 + 条 + 移除确认条）都是 [RecentWallpaperSection]：确认态是
   /// 这一段的 widget 状态，条本身是无状态的，所以确认按钮能画在**条外面**。
-  Widget _buildRecentWallpaperTile(
+  Widget buildRecentWallpaperTile(
     BuildContext context, {
     required AppLocalizations l10n,
   }) {
@@ -780,7 +789,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     if (entries.isEmpty) {
       return const SizedBox.shrink();
     }
-    return _RecentWallpaperSection(
+    return RecentWallpaperSection(
       entries: entries,
       selectedKey: currentKey,
       l10n: l10n,
@@ -818,7 +827,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     );
   }
 
-  Widget _buildHomePageImageTile(
+  Widget buildHomePageImageTile(
     BuildContext context, {
     required AppLocalizations l10n,
     required String title,
@@ -967,8 +976,8 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   /// 却不选图。现在收敛成一条：**选图 → 定位 → 确认**。
   ///
   /// 「只想微调当前这张图的位置」走另一颗「调整位置」钮
-  /// （[_editHomePageBackdropPosition]），不再靠这颗按钮兼职。
-  Future<void> _pickAndPositionHomePageBackdrop() async {
+  /// （[editHomePageBackdropPosition]），不再靠这颗按钮兼职。
+  Future<void> pickAndPositionHomePageBackdrop() async {
     final targetPath = await _pickHomePageBackdropImage();
     if (!mounted || targetPath == null) {
       return;
@@ -1091,15 +1100,15 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
         directoryName: kHomePageWallpaperDirectoryName,
         filePrefix: kHomePageWallpaperFilePrefix,
       );
-      _evictBackdropCaches(path);
+      evictBackdropCaches(path);
     }
   }
 
   /// 「调整位置」入口：进位置编辑页，初始值取自上次保存的对齐。
-  Future<void> _editHomePageBackdropPosition() async {
+  Future<void> editHomePageBackdropPosition() async {
     final existingPath = resolveHomePageBackdropImagePath(backdropDraft);
     if (existingPath == null || existingPath.isEmpty) {
-      await _pickAndPositionHomePageBackdrop();
+      await pickAndPositionHomePageBackdrop();
       return;
     }
     // 壁纸文件可能已丢失（重装/清除数据后设置被备份恢复、跨设备同步只带回
@@ -1109,7 +1118,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     // 清掉之前先说一声：这一步会**改掉用户的设置**，而症状（首页变纯色底）
     // 此前是静悄悄的。不说的话，用户只会觉得"点调整位置把壁纸弄丢了"。
     if (!File(existingPath).existsSync()) {
-      _evictBackdropCaches(existingPath);
+      evictBackdropCaches(existingPath);
       if (!mounted) {
         return;
       }
@@ -1125,7 +1134,7 @@ mixin _HomeBackdropFlow<T extends StatefulWidget> on State<T> {
         kind: AppToastKind.warning,
         showKindIcon: true,
       );
-      await _pickAndPositionHomePageBackdrop();
+      await pickAndPositionHomePageBackdrop();
       return;
     }
     if (!mounted) {

@@ -160,7 +160,11 @@ void main() {
     // 13554→13581：共享件出库（settings_shared.dart：两个 Miuix 设置行组件 +
     // 失败/拒绝提示 + 5 个 helper，16 个分身对宿主私有符号的引用 14→0），
     // 差值全为新文件头 + import + 文档注释，零行为搬迁，按约定同步真实值。
-    const baselineLines = 13581;
+    // 13581→13621：外观簇转正——appearance_editor、home_backdrop_flow 两个
+    // 分身转正为独立库，壁纸「最近使用」条抽出 settings_recent_wallpaper.dart；
+    // mixin HomeBackdropFlow 的 6 个跨库成员转公开（库级私有可见性所致），
+    // 差值仍为新文件头/import/文档，零行为搬迁。
+    const baselineLines = 13621;
     final domainFiles = <String>[
       'lib/screens/timetable_settings_screen.dart',
       ...Directory('lib/screens/settings')
@@ -181,8 +185,7 @@ void main() {
           '并先做等量瘦身，不要抬基线换绿。',
     );
 
-    // part 数量：16 个分身只减不增。目标态是全部转正为独立库文件（它们本就是
-    // 独立整页：对宿主私有符号的全部引用只有 14 处），转正一个同步收紧一格。
+    // part 数量：只减不增，随「转正」逐格收紧（14 = 外观簇转正后余 14）。
     final settingsMain = File('lib/screens/timetable_settings_screen.dart');
     final partCount = RegExp(
       r"^part\s+'",
@@ -190,7 +193,7 @@ void main() {
     ).allMatches(settingsMain.readAsStringSync()).length;
     expect(
       partCount,
-      lessThanOrEqualTo(16),
+      lessThanOrEqualTo(14),
       reason:
           '设置页 part 数量涨到 $partCount（基线 16）。16 个分身将逐个转正为'
           '独立库文件；part 只作零行为搬迁的过渡，不要新增。',

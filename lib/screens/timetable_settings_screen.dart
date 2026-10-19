@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -20,11 +18,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../logging/app_debug_log.dart';
 import '../logging/performance_settings_snapshot.dart';
-import '../models/course_glass_tuning.dart';
-import '../models/glass_mode_choice.dart';
 import '../models/holiday_entry.dart';
-import '../models/liquid_glass_tuning.dart';
-import '../models/surface_material.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
@@ -37,31 +31,19 @@ import '../services/screen_capture_service.dart';
 import '../services/app_log_service.dart';
 import '../services/umeng_analytics_service.dart';
 import '../services/webdav_sync_coordinator.dart';
-import '../services/bing_wallpaper_store.dart';
-import '../services/daily_wallpaper_service.dart';
 import '../services/wallpaper_history_service.dart';
-import '../screens/settings/bing_wallpaper_gallery_page.dart';
 import '../utils/app_toast.dart';
-import '../utils/bing_wallpaper_date_label.dart';
 import '../utils/home_page_background.dart';
-import '../utils/home_startup_visual_primer.dart';
-import '../utils/managed_image_storage.dart';
-import '../models/wallpaper_history.dart';
 import '../utils/wallpaper_history.dart';
 import '../widgets/home_menu_catalog.dart';
 import '../widgets/home_top_menu.dart';
-import '../widgets/wallpaper_position_picker_sheet.dart';
-import '../widgets/preblurred_wallpaper_glass.dart';
 import '../ui/app_fonts.dart';
 import '../ui/debug/debug.dart';
 import '../ui/hyperos/hyperos.dart';
-import '../ui/hyperos/hyperos_motion.dart';
-import '../ui/hyperos/preview_bake_boundary.dart';
 import '../widgets/semester_week_count_picker_sheet.dart';
 import '../widgets/miuix_date_picker_sheet.dart';
 import '../widgets/theme_manage_sheets.dart';
 import '../widgets/timetable_text_color_settings.dart';
-import '../widgets/timetable_home_preview_scope.dart';
 import '../widgets/timetable_week_preview.dart';
 import '../widgets/course_field_picker_sheet.dart';
 import '../widgets/course_recolor_sheet.dart';
@@ -84,9 +66,10 @@ import 'timetable_profiles_screen.dart';
 import 'weather_city_picker_screen.dart';
 import 'hyperos_showcase_screen.dart';
 import 'miuix_showcase_screen.dart';
-import 'timetable_screen.dart';
 import 'user_guide_screen.dart';
 import 'settings/settings_shared.dart';
+import 'settings/settings_appearance_editor.dart';
+import 'settings/settings_home_backdrop_flow.dart';
 
 part 'settings/settings_appearance.dart';
 part 'settings/settings_home_navigation.dart';
@@ -99,8 +82,6 @@ part 'settings/settings_course_card.dart';
 part 'settings/settings_general.dart';
 part 'settings/settings_live.dart';
 part 'settings/settings_timetable_page.dart';
-part 'settings/settings_home_backdrop_flow.dart';
-part 'settings/settings_appearance_editor.dart';
 part 'settings/settings_home_widget.dart';
 part 'settings/settings_holiday.dart';
 part 'settings/settings_weather.dart';
@@ -114,7 +95,7 @@ Widget? settingsSubpageById(String id) {
     'generalSettings' => const _GeneralSettingsScreen(),
     'appearanceSettings' => const _AppearanceSettingsScreen(),
     // 銆屽瑙傜紪杈戙€嶏細鏁撮〉涓€寮犻椤靛井缂╁浘 + 搴曢儴銆岃皟鏁村绾?/ 鏉愯川銆嶄袱棰楁寜閽€?
-    'appearanceEditor' => const _AppearanceEditorScreen(),
+    'appearanceEditor' => const AppearanceEditorScreen(),
     'timetablePageSettings' => const _TimetablePageSettingsScreen(),
     'courseCardSettings' => const _CourseCardSettingsScreen(),
     'liveSettings' => const _LiveSettingsScreen(),

@@ -1,4 +1,45 @@
-part of '../timetable_settings_screen.dart';
+import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/enum_localizations.dart';
+import 'package:provider/provider.dart';
+import '../../models/course_glass_tuning.dart';
+import '../../models/glass_mode_choice.dart';
+import '../../models/liquid_glass_tuning.dart';
+import '../../models/surface_material.dart';
+import '../../models/timetable_settings.dart';
+import '../../providers/timetable_provider.dart';
+import '../../utils/home_page_background.dart';
+import '../../utils/home_startup_visual_primer.dart';
+import '../../widgets/preblurred_wallpaper_glass.dart';
+import '../../ui/hyperos/hyperos.dart';
+import '../../ui/hyperos/hyperos_motion.dart';
+import '../../ui/hyperos/preview_bake_boundary.dart';
+import '../../widgets/timetable_home_preview_scope.dart';
+import '../timetable_screen.dart';
+import 'settings_shared.dart';
+import 'settings_home_backdrop_flow.dart';
+
+/// 「各表面当前材质」的展示文案。渐进 / 高斯、高斯 / 液态复用既有选项名
+/// （同物同名），只补「已关闭 / 实体」两个状态词。
+///
+/// ⚠️ 只读清单里的「高斯模糊」是**渲染状态**，不是可选项：模糊开着、又不是
+/// 液态的表面（灰药丸回退、门禁摘下来的弹窗）都归到它 —— 与设置里那一档
+/// 同名是对的，因为渲染本来就是同一条链路。
+String _surfaceMaterialLabel(AppLocalizations l10n, SurfaceMaterial material) =>
+    switch (material) {
+      SurfaceMaterial.off => l10n.materialStateOff,
+      SurfaceMaterial.solid => l10n.materialStateSolid,
+      SurfaceMaterial.frost => l10n.materialStateFrost,
+      SurfaceMaterial.frostProgressive => l10n.headerBlurStyleInspire,
+      SurfaceMaterial.frostGaussian => l10n.headerBlurStyleGaussian,
+      SurfaceMaterial.liquidGlass => l10n.frostedGlassModeLiquid,
+    };
+
 
 /// 「外观编辑」页：**沉浸式**的一页 —— 整屏暗底，中间一张**真首页缩尺卡**，
 /// 顶部一行标题 + 日 / 周切换 + 取消 / 完成，底部一排圆形玻璃入口。
@@ -33,20 +74,26 @@ part of '../timetable_settings_screen.dart';
 ///
 /// 编辑语义：本页与别的设置页一样**即时落盘**（弹窗里改一下预览就变），
 /// 「取消」= 用进页时的那份设置回滚，「完成」= 保留并返回。
-class _AppearanceEditorScreen extends StatefulWidget {
-  const _AppearanceEditorScreen({this.initialMaterialPage});
+class AppearanceEditorScreen extends StatefulWidget {
+  const AppearanceEditorScreen({super.key, this.initialMaterialPage});
 
   /// 深链接：非空时入场转场落定后自动打开材质面板并停在该页
   /// （0 = 通用，1 = 课程卡片）。课程卡片设置页的「卡片外观」跳转牌用。
   final int? initialMaterialPage;
 
+
+  /// 课表卡片设置页的「材质」入口直达页（[initialMaterialPage] 用），
+  /// 是 [_MaterialSheetBodyState] 分页常量的对外别名。
+  static const int courseCardInitialMaterialPage =
+      _MaterialSheetBodyState._courseCardPage;
+
   @override
-  State<_AppearanceEditorScreen> createState() =>
-      _AppearanceEditorScreenState();
+  State<AppearanceEditorScreen> createState() =>
+      AppearanceEditorScreenState();
 }
 
-class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
-    with _HomeBackdropFlow<_AppearanceEditorScreen> {
+class AppearanceEditorScreenState extends State<AppearanceEditorScreen>
+    with HomeBackdropFlow<AppearanceEditorScreen> {
   /// 沉浸式底衬：不透明深底、只有卡片是亮的。**就是缩放转场那半边的
   /// `backdropColor`**（同一个常量，不是碰巧同色）：首页缩进卡片之后由这层暗底
   /// 接管整屏背景，两边只要不是同一个值，接管那一帧就会看到一下轻微提亮/压暗。
@@ -289,7 +336,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 我们想区分的两件事。
   TimetableSettings? _lastPersistedSettings;
 
-  // —— _HomeBackdropFlow 的宿主适配：壁纸流程本体在
+  // —— HomeBackdropFlow 的宿主适配：壁纸流程本体在
   // settings_home_backdrop_flow.dart，本页只提供草稿读写与课表列表。
 
   @override
@@ -313,7 +360,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   ///
   /// 此前是 `false`、整段无卡片底，理由是「磨砂面板上会糊出一块不透明色块」——但那是
   /// **整段无容器**的诉求，代价是开关行在裸面板上按下时只有一层行高光、没有卡边，
-  /// 读起来很脏。设置页那侧一直是 `true`（见 [_HomeBackdropFlow]），两边本来就该一样。
+  /// 读起来很脏。设置页那侧一直是 `true`（见 [HomeBackdropFlow]），两边本来就该一样。
   @override
   bool get backdropRowsHaveCardBackground => true;
 
@@ -769,7 +816,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
   /// 两个弹层（壁纸 / 材质）共用 [_sheetClose] 一个字段：同一时刻只可能有一个开着，
   /// 而承载壳压的那条路由要等退场弹簧收敛（约 832ms）才离栈 —— [_popSelf] 靠这个
   /// 口子把残留路由摘掉（不然点「完成」会 pop 掉弹窗那条），混层里的
-  /// [_HomeBackdropFlow._withHostSheetClosed] 也靠它「先收弹层再推整页」。
+  /// [HomeBackdropFlow._withHostSheetClosed] 也靠它「先收弹层再推整页」。
   ///
   /// 代数是为了挡住上一个弹层迟到的 `closeRef`（构建期回调）与 `whenComplete`。
   SheetCloseRef _trackSheetClose(int generation) {
@@ -2046,9 +2093,9 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
 /// 的两页 —— 与 [_MaterialSheetBody] **同一个形状**（2026-09-28 用户口径：「这个弹窗
 /// 可以参考材质那边的，做切换」，左边壁纸选择、右边设置）。
 ///
-/// * **第一页「壁纸」**（[_HomeBackdropFlow.buildWallpaperSheetSelectionPage]）：
+/// * **第一页「壁纸」**（[HomeBackdropFlow.buildWallpaperSheetSelectionPage]）：
 ///   选图行 + 「最近使用」缩略图条；
-/// * **第二页「设置」**（[_HomeBackdropFlow.buildWallpaperSheetSettingsPage]）：
+/// * **第二页「设置」**（[HomeBackdropFlow.buildWallpaperSheetSettingsPage]）：
 ///   「背景随周次滑动」那类开关。
 ///
 /// 同样是 StatefulWidget，理由与 [_MaterialSheetBody] 一致：翻页要一个跨重建存活的
@@ -2056,7 +2103,7 @@ class _AppearanceEditorScreenState extends State<_AppearanceEditorScreen>
 class _WallpaperSheetBody extends StatefulWidget {
   const _WallpaperSheetBody({required this.editor, required this.l10n});
 
-  final _AppearanceEditorScreenState editor;
+  final AppearanceEditorScreenState editor;
   final AppLocalizations l10n;
 
   @override
@@ -2179,7 +2226,7 @@ class _WallpaperSheetBodyState extends State<_WallpaperSheetBody> {
 /// 左右滑的两页。
 ///
 /// 为什么它必须是 StatefulWidget：翻页需要一个**跨重建存活**的 [PageController]，
-/// 而面板正文由草稿版本号订阅重画（[_AppearanceEditorScreenState._draftRevision]）——
+/// 而面板正文由草稿版本号订阅重画（[AppearanceEditorScreenState._draftRevision]）——
 /// 控制器建在 builder 里的话，用户每改一次设置就换一个，翻页位置随之丢失。
 ///
 /// 两页正文由编辑页那侧的 `_buildGeneralMaterialPage` / `_buildCourseCardMaterialPage`
@@ -2191,7 +2238,7 @@ class _MaterialSheetBody extends StatefulWidget {
     this.initialPage = _MaterialSheetBodyState._generalPage,
   });
 
-  final _AppearanceEditorScreenState editor;
+  final AppearanceEditorScreenState editor;
   final AppLocalizations l10n;
 
   /// 初始停留页（0 = 通用，1 = 课程卡片），进页深链接用。
@@ -2288,7 +2335,7 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
             ),
           ),
           // 两页等高、各页自己竖向滚动：面板总高由外层 `maxHeight`（半屏上限）
-          // 顶住，见 [_AppearanceEditorScreenState._openMaterialSheet]。
+          // 顶住，见 [AppearanceEditorScreenState._openMaterialSheet]。
           body: PageView(
             controller: _pages,
             onPageChanged: (page) {
@@ -2463,7 +2510,7 @@ class _ZoomChromeReveal extends StatelessWidget {
 }
 
 /// 「外观编辑」页加载罩的三个阶段（见
-/// [_AppearanceEditorScreenState._previewCoverPhase]）。
+/// [AppearanceEditorScreenState._previewCoverPhase]）。
 enum _PreviewCoverPhase {
   /// 盖住整页：第一张预览图还没到位。
   showing,

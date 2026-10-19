@@ -336,8 +336,8 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
     await HyperosNavigation.push(
       context,
       settings: const RouteSettings(name: '/settings/appearance-editor'),
-      builder: (_) => const _AppearanceEditorScreen(
-        initialMaterialPage: _MaterialSheetBodyState._courseCardPage,
+      builder: (_) => const AppearanceEditorScreen(
+        initialMaterialPage: AppearanceEditorScreen.courseCardInitialMaterialPage,
       ),
     );
     if (!mounted) {
