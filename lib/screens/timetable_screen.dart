@@ -87,6 +87,7 @@ import '../widgets/timetable/timetable_day_pager_physics.dart';
 import '../widgets/timetable/timetable_empty_slot.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
 import '../widgets/timetable/timetable_open_only_route.dart';
+import '../widgets/timetable/timetable_weekday_selection_indicator.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
@@ -2965,12 +2966,16 @@ class _TimetableScreenState extends State<TimetableScreen>
                       .toList(growable: false),
                 ),
                 if (showExtras)
-                  _buildWeekdaySelectionIndicator(
+                  TimetableWeekdaySelectionIndicator(
                     settings: settings,
                     week: rowWeek,
                     visibleDays: visibleDays,
                     wallpaperOverChrome: weekdayChromeOverWallpaper,
                     wallpaperLuminance: weekdayLuminance,
+                    pageController: _dayViewPageController,
+                    isDayView: _isDayView,
+                    visibleDayViewWeek: _visibleDayViewWeek,
+                    shouldShowOverlay: _shouldShowDayViewOverlay,
                   ),
               ],
             ),
@@ -3069,132 +3074,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  Widget _buildWeekdaySelectionIndicator({
-    required TimetableSettings settings,
-    required int week,
-    required List<int> visibleDays,
-    required bool wallpaperOverChrome,
-    required double? wallpaperLuminance,
-  }) {
-    final controller = _dayViewPageController;
-    if (!_shouldShowDayViewOverlay ||
-        controller == null ||
-        visibleDays.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    // In day view the indicator follows the pager live even mid cross-week
-    // (its week argument is the pager's floor week, which briefly differs
-    // from the settled selection); in week view it is per-page and only
-    // shows on the settled page.
-    if (!_isDayView && _visibleDayViewWeek != week) {
-      return const SizedBox.shrink();
-    }
-
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final selectionAccent = homePageOverWallpaperAccent(
-      configuredHex: isDark
-          ? settings.weekdayBarAccentColorDark
-          : settings.weekdayBarAccentColorLight,
-      themeFallback: colorScheme.primary,
-      hasBackdrop: wallpaperOverChrome,
-      wallpaperLuminance: wallpaperLuminance,
-    );
-
-    return IgnorePointer(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final totalWidth = constraints.maxWidth;
-          if (totalWidth <= 0) {
-            return const SizedBox.shrink();
-          }
-          final slotWidth = totalWidth / visibleDays.length;
-
-          return AnimatedBuilder(
-            animation: controller,
-            builder: (context, child) {
-              final rawPage =
-                  controllerPageOrNull(controller) ??
-                  controller.initialPage.toDouble();
-              // Weekday position within the bar's week: the pager is
-              // globally continuous, so subtract the week's page offset.
-              final rawDayPosition = rawPage - (week - 1) * visibleDays.length;
-              final maxDayIndex = (visibleDays.length - 1).toDouble();
-              final clampedDayPosition = rawDayPosition
-                  .clamp(0.0, maxDayIndex)
-                  .toDouble();
-              final overflow = rawDayPosition < 0
-                  ? -rawDayPosition
-                  : rawDayPosition > maxDayIndex
-                  ? rawDayPosition - maxDayIndex
-                  : 0.0;
-              final fractionalProgress =
-                  clampedDayPosition - clampedDayPosition.floorToDouble();
-              final betweenDaysProgress =
-                  (1 - (2 * (fractionalProgress - 0.5).abs()))
-                      .clamp(0.0, 1.0)
-                      .toDouble();
-              final betweenDaysCurve = Curves.easeInOutCubicEmphasized
-                  .transform(betweenDaysProgress);
-              final edgeCurve = Curves.easeOutCubic.transform(
-                overflow.clamp(0.0, 1.0),
-              );
-              final morphProgress = math.max(
-                betweenDaysCurve * 0.55,
-                edgeCurve,
-              );
-              final baseWidth = math.min(22, slotWidth * 0.34);
-              final indicatorWidth =
-                  baseWidth + (slotWidth * 0.24 * morphProgress);
-              final edgeDirection = rawDayPosition < 0
-                  ? -1.0
-                  : rawDayPosition > maxDayIndex
-                  ? 1.0
-                  : 0.0;
-              final edgePull = slotWidth * 0.10 * edgeCurve * edgeDirection;
-              final centeredLeft =
-                  slotWidth * clampedDayPosition +
-                  ((slotWidth - indicatorWidth) / 2);
-              final maxLeft = math.max(0, totalWidth - indicatorWidth);
-              final indicatorLeft = (centeredLeft + edgePull)
-                  .clamp(0.0, maxLeft)
-                  .toDouble();
-              final indicatorHeight = 3.0 + (1.4 * morphProgress);
-
-              return Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned(
-                    left: indicatorLeft,
-                    bottom: 0,
-                    child: DecoratedBox(
-                      key: ValueKey('weekday-selection-indicator-$week'),
-                      decoration: BoxDecoration(
-                        // Match weekday accent (custom blue etc.), not raw primary.
-                        color: selectionAccent,
-                        borderRadius: BorderRadius.circular(999),
-                        boxShadow: [
-                          BoxShadow(
-                            color: selectionAccent.withValues(alpha: 0.18),
-                            blurRadius: 8 + (8 * morphProgress),
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: SizedBox(
-                        width: indicatorWidth,
-                        height: indicatorHeight,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
 
   Widget _buildTimetableGrid(
     TimetableProvider provider,

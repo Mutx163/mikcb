@@ -6,8 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// 旧棘轮只量主文件行数，于是「把代码搬进同库 part」就能让门禁变绿：
 /// - `timetable_screen`：2026-10-10 拆分前 10,948 行；2026-10-19 先把 460 行
-///   库级类拆到 `widgets/timetable/`，主文件 7,693 + 两个 part 2,829 =
-///   10,522 行，总量开始下降。
+///   库级类拆到 `widgets/timetable/`，再把星期栏指示条改成独立 widget，
+///   主文件 7,572 + 两个 part 2,829 = 10,401 行，总量开始下降。
 /// - `timetable_provider`：主文件 4,534 + 10 个 part 3,479 = 8,013 行；
 ///   part 里仍有 573 处直接访问 `host._私有字段` —— 这是同一个类的 11 个抽屉，
 ///   不是 11 个模块。
@@ -24,7 +24,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// - 本文件：逻辑单元总量 + part 数量 + provider 分片的宿主私有访问数。
 void main() {
   test('timetable_screen 逻辑单元总行数棘轮：只减不增', () {
-    const baselineLines = 10522;
+    const baselineLines = 10401;
     const unit = [
       'lib/screens/timetable_screen.dart',
       'lib/screens/timetable_day_view_part.dart',
