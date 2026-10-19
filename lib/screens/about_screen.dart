@@ -929,21 +929,45 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                 expand: true,
                 onPressed: _refreshUpdate,
               ),
-            // 「查看 Release」降为居中的小按钮：与主按钮同宽同高时形状在说
-            //「我们一样重要」，只有颜色在分主次。没有更新时也保留——那时它是
-            // 唯一还能打开发布页（资产与完整正文）的入口。
+            // 「查看 Release」是次级出口，用文字动作而不是第二个通栏按钮：与主
+            // 按钮同宽同高时，形状在说「我们一样重要」，只有颜色在分主次。
+            // 没有更新时也保留——那时它是唯一还能打开发布页的入口。
             if (!hasUpdate ||
                 primaryAction != AboutUpdatePrimaryAction.openReleasePage) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Center(
-                child: HyperosButton(
+                child: _buildTextAction(
                   label: l10n.aboutViewReleaseAction,
-                  variant: HyperosButtonVariant.secondary,
                   onPressed: () => _openUrl(release?.releaseUrl),
                 ),
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  /// 卡片里的次级文字动作（「查看 Release」这类）。
+  ///
+  /// 不用 `HyperosButton(expand: false)`：那个组件内部是 `Center`，在父级给出的
+  /// 松约束下会撑满可用宽度——真机上就变成了两个一样宽的灰按钮（2026-10-19
+  /// 截图复现）。文字动作只占文字本身的宽度，主次一眼能分。
+  Widget _buildTextAction({
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Text(
+          label,
+          style: HyperosTypography.listDetail(context).copyWith(
+            color: HyperosColors.primary(context),
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
