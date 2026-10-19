@@ -9,6 +9,8 @@ import 'package:university_timetable/models/wallpaper_history.dart';
 import 'settings/timetable_settings_enums.dart';
 import 'settings/timetable_settings_extensions.dart';
 import 'settings/timetable_settings_live.dart';
+import 'settings/lenient_json_readers.dart';
+import '../utils/app_locale_tag.dart';
 
 export 'settings/timetable_settings_enums.dart';
 export 'settings/timetable_settings_extensions.dart';
@@ -17,27 +19,6 @@ export 'settings/timetable_settings_live.dart';
 // 2026-10-19：设置枚举/值映射/直播与节次模型拆到 settings/ 子目录；
 // 本文件只留 TimetableSettings 及其主题配置。原有 import 路径由上面的
 // export 保持可用，调用点无需改动。
-
-List<String>? _safeStringList(dynamic raw) {
-  if (raw is! List) return null;
-  final out = <String>[];
-  for (final item in raw) {
-    if (item is String) out.add(item);
-  }
-  return out;
-}
-
-String _normalizeAppLocaleTag(String? value) {
-  final normalized = (value ?? '').trim();
-  if (normalized.isEmpty || normalized == 'system') {
-    return '';
-  }
-  final canonical = normalized.replaceAll('-', '_');
-  final lower = canonical.toLowerCase();
-  if (lower == 'en_us') return 'en';
-  if (lower == 'zh_cn') return 'zh';
-  return canonical;
-}
 
 class SavedTheme {
   final String id;
@@ -163,45 +144,45 @@ class ThemeConfig {
   };
 
   factory ThemeConfig.fromJson(Map<String, dynamic> json) {
-    final version = json['v'] as int? ?? 1;
+    final version = lenientInt(json['v']) ?? 1;
     if (version == 1) {
       // v1: 仅颜色
       return ThemeConfig(
         version: 1,
-        courseCardTitleColorLight: json['ccl'] as String?,
-        courseCardTitleColorDark: json['ccd'] as String?,
-        courseCardDetailColorLight: json['cdl'] as String?,
-        courseCardDetailColorDark: json['cdd'] as String?,
-        weekdayBarFontColorLight: json['wbl'] as String?,
-        weekdayBarFontColorDark: json['wbd'] as String?,
-        weekdayBarAccentColorLight: json['wal'] as String?,
-        weekdayBarAccentColorDark: json['wad'] as String?,
-        timeAxisFontColorLight: json['tal'] as String?,
-        timeAxisFontColorDark: json['tad'] as String?,
-        linkCourseCardColors: json['link'] as bool?,
+        courseCardTitleColorLight: lenientString(json['ccl']),
+        courseCardTitleColorDark: lenientString(json['ccd']),
+        courseCardDetailColorLight: lenientString(json['cdl']),
+        courseCardDetailColorDark: lenientString(json['cdd']),
+        weekdayBarFontColorLight: lenientString(json['wbl']),
+        weekdayBarFontColorDark: lenientString(json['wbd']),
+        weekdayBarAccentColorLight: lenientString(json['wal']),
+        weekdayBarAccentColorDark: lenientString(json['wad']),
+        timeAxisFontColorLight: lenientString(json['tal']),
+        timeAxisFontColorDark: lenientString(json['tad']),
+        linkCourseCardColors: lenientBool(json['link']),
       );
     }
     // v2: 完整主题
     return ThemeConfig(
-      seedColor: json['seed'] as String?,
-      backgroundColor: json['bg'] as String?,
-      unifiedCardColor: json['uc'] as String?,
-      useUnifiedCardColor: json['ucOn'] as bool?,
-      themeMode: json['mode'] as String?,
-      courseCardTitleColorLight: json['ccl'] as String?,
-      courseCardTitleColorDark: json['ccd'] as String?,
-      courseCardDetailColorLight: json['cdl'] as String?,
-      courseCardDetailColorDark: json['cdd'] as String?,
-      weekdayBarFontColorLight: json['wbl'] as String?,
-      weekdayBarFontColorDark: json['wbd'] as String?,
-      weekdayBarAccentColorLight: json['wal'] as String?,
-      weekdayBarAccentColorDark: json['wad'] as String?,
-      timeAxisFontColorLight: json['tal'] as String?,
-      timeAxisFontColorDark: json['tad'] as String?,
-      linkCourseCardColors: json['link'] as bool?,
-      hideWeekends: json['hideWeekend'] as bool?,
-      spacingMode: json['spacing'] as String?,
-      timeDisplayMode: json['timeDisplay'] as String?,
+      seedColor: lenientString(json['seed']),
+      backgroundColor: lenientString(json['bg']),
+      unifiedCardColor: lenientString(json['uc']),
+      useUnifiedCardColor: lenientBool(json['ucOn']),
+      themeMode: lenientString(json['mode']),
+      courseCardTitleColorLight: lenientString(json['ccl']),
+      courseCardTitleColorDark: lenientString(json['ccd']),
+      courseCardDetailColorLight: lenientString(json['cdl']),
+      courseCardDetailColorDark: lenientString(json['cdd']),
+      weekdayBarFontColorLight: lenientString(json['wbl']),
+      weekdayBarFontColorDark: lenientString(json['wbd']),
+      weekdayBarAccentColorLight: lenientString(json['wal']),
+      weekdayBarAccentColorDark: lenientString(json['wad']),
+      timeAxisFontColorLight: lenientString(json['tal']),
+      timeAxisFontColorDark: lenientString(json['tad']),
+      linkCourseCardColors: lenientBool(json['link']),
+      hideWeekends: lenientBool(json['hideWeekend']),
+      spacingMode: lenientString(json['spacing']),
+      timeDisplayMode: lenientString(json['timeDisplay']),
     );
   }
 
@@ -1277,23 +1258,24 @@ class TimetableSettings {
     // 对一切非法值的默认归宿，所以整段连同那两个只被它读过的旧键一起删除。
     // 那两个旧键现在按未知键忽略（与 `headerBlurStyle` / `subpageHeaderBlurStyle`
     // 同一条规矩）。
-    final linkedCardTextColors = json['linkCourseCardColors'] as bool? ?? true;
+    final linkedCardTextColors =
+        lenientBool(json['linkCourseCardColors']) ?? true;
     final parsedTitleColorLight =
-        json['courseCardTitleColorLight'] as String? ??
+        lenientString(json['courseCardTitleColorLight']) ??
         defaultCourseCardTitleColor;
     final parsedTitleColorDark =
-        json['courseCardTitleColorDark'] as String? ??
+        lenientString(json['courseCardTitleColorDark']) ??
         defaultCourseCardTitleColor;
     final parsedDetailColorLight = linkedCardTextColors
         ? parsedTitleColorLight
-        : json['courseCardDetailColorLight'] as String? ??
+        : lenientString(json['courseCardDetailColorLight']) ??
               defaultCourseCardDetailColor;
     final parsedDetailColorDark = linkedCardTextColors
         ? parsedTitleColorDark
-        : json['courseCardDetailColorDark'] as String? ??
+        : lenientString(json['courseCardDetailColorDark']) ??
               defaultCourseCardDetailColor;
     final rawSections = json['sections'] is List
-        ? json['sections'] as List<dynamic>
+        ? List<Object?>.of(json['sections'] as List<dynamic>)
         : const <dynamic>[];
     // Empty sections fall back to defaults only for the section list; other
     // fields must still parse so a corrupt sections array does not wipe theme /
@@ -1338,9 +1320,11 @@ class TimetableSettings {
     }
 
     final rawAppUpdateMirrorUrlPrefix =
-        json['appUpdateMirrorUrlPrefix'] as String? ??
+        lenientString(json['appUpdateMirrorUrlPrefix']) ??
         defaultAppUpdateMirrorUrlPrefix;
-    final rawAppUpdateMirrorPreset = json['appUpdateMirrorPreset'] as String?;
+    final rawAppUpdateMirrorPreset = lenientString(
+      json['appUpdateMirrorPreset'],
+    );
 
     // 档位与参数分别在两个字段里存，读取时必须收敛成一致（2026-10-07）。
     // 渲染只吃参数键（`liquid_glass_surface.dart` / `frosted_appearance.dart` 都只读
@@ -1362,323 +1346,333 @@ class TimetableSettings {
 
     return TimetableSettings(
       sections: resolvedSections,
-      activeTimeSchemeId: json['activeTimeSchemeId'] as String?,
-      sectionHeight: (json['sectionHeight'] as num?)?.toDouble() ?? 68,
-      compactFontSize: (json['compactFontSize'] as num?)?.toDouble() ?? 9,
+      activeTimeSchemeId: lenientString(json['activeTimeSchemeId']),
+      sectionHeight: lenientDouble(json['sectionHeight']) ?? 68,
+      compactFontSize: lenientDouble(json['compactFontSize']) ?? 9,
       timetableAutoFitSectionHeight:
-          json['timetableAutoFitSectionHeight'] as bool? ?? false,
+          lenientBool(json['timetableAutoFitSectionHeight']) ?? false,
       semesterWeekCount: _atLeastOneWeek(
-        (json['semesterWeekCount'] as num?)?.toInt() ?? 20,
+        lenientInt(json['semesterWeekCount']) ?? 20,
       ),
       semesterStartDate: parseSemesterStartDate(
         json['semesterStartDateText'],
         json['semesterStartDate'],
       ),
-      weeklyReportEnabled: json['weeklyReportEnabled'] as bool? ?? false,
-      enableHolidayMarking: json['enableHolidayMarking'] as bool? ?? true,
+      weeklyReportEnabled: lenientBool(json['weeklyReportEnabled']) ?? false,
+      enableHolidayMarking: lenientBool(json['enableHolidayMarking']) ?? true,
       timetableShowNonCurrentWeekCourses:
-          json['timetableShowNonCurrentWeekCourses'] as bool? ?? false,
+          lenientBool(json['timetableShowNonCurrentWeekCourses']) ?? false,
       showConflictBadgeOnTimetable:
-          json['showConflictBadgeOnTimetable'] as bool? ?? true,
+          lenientBool(json['showConflictBadgeOnTimetable']) ?? true,
       timetableConflictCourseOpacity:
-          ((json['timetableConflictCourseOpacity'] as num?)?.toDouble() ?? 0.70)
+          (lenientDouble(json['timetableConflictCourseOpacity']) ?? 0.70)
               .clamp(0.2, 1.0),
-      courseCardShowName: json['courseCardShowName'] as bool? ?? true,
-      courseCardShowTeacher: json['courseCardShowTeacher'] as bool? ?? true,
-      courseCardShowLocation: json['courseCardShowLocation'] as bool? ?? true,
-      courseCardShowTime: json['courseCardShowTime'] as bool? ?? false,
+      courseCardShowName: lenientBool(json['courseCardShowName']) ?? true,
+      courseCardShowTeacher: lenientBool(json['courseCardShowTeacher']) ?? true,
+      courseCardShowLocation:
+          lenientBool(json['courseCardShowLocation']) ?? true,
+      courseCardShowTime: lenientBool(json['courseCardShowTime']) ?? false,
       courseCardShowTimeLabels:
-          json['courseCardShowTimeLabels'] as bool? ?? true,
-      courseCardShowWeeks: json['courseCardShowWeeks'] as bool? ?? false,
+          lenientBool(json['courseCardShowTimeLabels']) ?? true,
+      courseCardShowWeeks: lenientBool(json['courseCardShowWeeks']) ?? false,
       courseCardShowDescription:
-          json['courseCardShowDescription'] as bool? ?? false,
-      weatherShowOnDayCard: json['weatherShowOnDayCard'] as bool? ?? true,
-      weatherShowOnWeekCard: json['weatherShowOnWeekCard'] as bool? ?? true,
-      weatherShowOnSheet: json['weatherShowOnSheet'] as bool? ?? true,
-      weatherShowPhenomenon: json['weatherShowPhenomenon'] as bool? ?? true,
-      weatherShowTemperature: json['weatherShowTemperature'] as bool? ?? true,
-      weatherShowProbability: json['weatherShowProbability'] as bool? ?? false,
+          lenientBool(json['courseCardShowDescription']) ?? false,
+      weatherShowOnDayCard: lenientBool(json['weatherShowOnDayCard']) ?? true,
+      weatherShowOnWeekCard: lenientBool(json['weatherShowOnWeekCard']) ?? true,
+      weatherShowOnSheet: lenientBool(json['weatherShowOnSheet']) ?? true,
+      weatherShowPhenomenon: lenientBool(json['weatherShowPhenomenon']) ?? true,
+      weatherShowTemperature:
+          lenientBool(json['weatherShowTemperature']) ?? true,
+      weatherShowProbability:
+          lenientBool(json['weatherShowProbability']) ?? false,
       courseCardVerticalAlign: CourseCardVerticalAlignX.fromValue(
-        json['courseCardVerticalAlign'] as String?,
+        lenientString(json['courseCardVerticalAlign']),
       ),
       courseCardHorizontalAlign: CourseCardHorizontalAlignX.fromValue(
-        json['courseCardHorizontalAlign'] as String?,
+        lenientString(json['courseCardHorizontalAlign']),
       ),
-      courseCardFontSize: (json['courseCardFontSize'] as num?)?.toDouble() ?? 9,
+      courseCardFontSize: lenientDouble(json['courseCardFontSize']) ?? 9,
       timetableTimeColumnWidthMode: TimetableTimeColumnWidthModeX.fromValue(
-        json['timetableTimeColumnWidthMode'] as String?,
+        lenientString(json['timetableTimeColumnWidthMode']),
       ),
       timetableCourseCardGap:
-          (json['timetableCourseCardGap'] as num?)?.toDouble() ??
-          ((json['timetableCourseSpacingMode'] as String?) == 'wide'
+          lenientDouble(json['timetableCourseCardGap']) ??
+          (lenientString(json['timetableCourseSpacingMode']) == 'wide'
               ? 2.0
               : 1.25),
       timetableCourseSpacingMode: TimetableCourseSpacingModeX.fromValue(
-        json['timetableCourseSpacingMode'] as String?,
+        lenientString(json['timetableCourseSpacingMode']),
       ),
       widgetBackgroundStyle: WidgetBackgroundStyleX.fromValue(
-        json['widgetBackgroundStyle'] as String?,
+        lenientString(json['widgetBackgroundStyle']),
       ),
       widgetCourseAccentMode: WidgetCourseAccentModeX.fromValue(
-        json['widgetCourseAccentMode'] as String?,
+        lenientString(json['widgetCourseAccentMode']),
       ),
-      widgetShowLocation: json['widgetShowLocation'] as bool? ?? true,
-      widgetShowCountdown: json['widgetShowCountdown'] as bool? ?? true,
+      widgetShowLocation: lenientBool(json['widgetShowLocation']) ?? true,
+      widgetShowCountdown: lenientBool(json['widgetShowCountdown']) ?? true,
       widgetHideCompletedCourses:
-          json['widgetHideCompletedCourses'] as bool? ?? false,
+          lenientBool(json['widgetHideCompletedCourses']) ?? false,
       widgetShowTomorrowCourses:
-          json['widgetShowTomorrowCourses'] as bool? ?? true,
+          lenientBool(json['widgetShowTomorrowCourses']) ?? true,
       widgetHeightAdjustment:
-          (json['widgetHeightAdjustment'] as num?)?.toDouble() ?? -11,
-      widgetCornerRadius:
-          (json['widgetCornerRadius'] as num?)?.toDouble() ?? 22,
+          lenientDouble(json['widgetHeightAdjustment']) ?? -11,
+      widgetCornerRadius: lenientDouble(json['widgetCornerRadius']) ?? 22,
       widgetCountdownLeadMinutes:
-          (json['widgetCountdownLeadMinutes'] as num?)?.toInt() ?? 20,
+          lenientInt(json['widgetCountdownLeadMinutes']) ?? 20,
       widgetCountdownTextStyle: LiveCountdownTextStyleX.fromValue(
-        json['widgetCountdownTextStyle'] as String?,
+        lenientString(json['widgetCountdownTextStyle']),
       ),
-      appThemeMode: AppThemeModeX.fromValue(json['appThemeMode'] as String?),
-      appFontMode: AppFontModeX.fromValue(json['appFontMode'] as String?),
-      appFontWeight: normalizeAppFontWeight(json['appFontWeight'] as num?),
-      appTextScale: normalizeAppTextScale(json['appTextScale'] as num?),
-      appLocaleTag: _normalizeAppLocaleTag(
-        json['appLocaleTag'] as String? ?? json['appLocaleMode'] as String?,
+      appThemeMode: AppThemeModeX.fromValue(
+        lenientString(json['appThemeMode']),
+      ),
+      appFontMode: AppFontModeX.fromValue(lenientString(json['appFontMode'])),
+      appFontWeight: normalizeAppFontWeight(
+        lenientDouble(json['appFontWeight']),
+      ),
+      appTextScale: normalizeAppTextScale(
+        lenientDouble(json['appTextScale']),
+      ),
+      appLocaleTag: normalizeAppLocaleTag(
+        lenientString(json['appLocaleTag']) ??
+            lenientString(json['appLocaleMode']),
       ),
       homeTitleStyle: HomeTitleStyleX.fromValue(
-        json['homeTitleStyle'] as String?,
+        lenientString(json['homeTitleStyle']),
       ),
       timetableHomeViewMode: TimetableHomeViewModeX.fromValue(
-        json['timetableHomeViewMode'] as String?,
+        lenientString(json['timetableHomeViewMode']),
       ),
       homeNavigationForm: HomeNavigationFormX.fromValue(
-        json['homeNavigationForm'] as String?,
+        lenientString(json['homeNavigationForm']),
       ),
       // 旧键 `glassDockStyle` 已废弃：底栏材质现在跟随全局
       // 材质 + 「作用范围 → 玻璃坞导航」，读取时直接忽略。
-      homeMenuStyle: HomeMenuStyleX.fromValue(json['homeMenuStyle'] as String?),
+      homeMenuStyle: HomeMenuStyleX.fromValue(
+        lenientString(json['homeMenuStyle']),
+      ),
       glassDockActions: HomeDockMenu.normalize(
-        (json['glassDockActions'] as List<Object?>?) ??
+        lenientList(json['glassDockActions']) ??
             [
               // 迁移：旧档无此键时由日/周 Tab 开关推导（旧默认均 true）。
-              if (json['glassDockShowDayTab'] as bool? ?? true) 'day',
-              if (json['glassDockShowWeekTab'] as bool? ?? true) 'week',
+              if (lenientBool(json['glassDockShowDayTab']) ?? true) 'day',
+              if (lenientBool(json['glassDockShowWeekTab']) ?? true) 'week',
             ],
       ),
       homeGridMenuActions: HomeGridMenu.normalize(
-        json['homeGridMenuActions'] as List<Object?>?,
+        lenientList(json['homeGridMenuActions']),
       ),
 
-      glassDockShowDayTab: json['glassDockShowDayTab'] as bool? ?? true,
+      glassDockShowDayTab: lenientBool(json['glassDockShowDayTab']) ?? true,
       glassDockShowSettingsTab:
-          json['glassDockShowSettingsTab'] as bool? ?? true,
-      glassDockShowWeekTab: json['glassDockShowWeekTab'] as bool? ?? true,
+          lenientBool(json['glassDockShowSettingsTab']) ?? true,
+      glassDockShowWeekTab: lenientBool(json['glassDockShowWeekTab']) ?? true,
       glassDockButtonEntryId:
-          json['glassDockButtonEntryId'] as String? ?? 'addCourse',
-      glassDockButtonIconName: json['glassDockButtonIconName'] as String?,
-      glassDockShowAddButton: json['glassDockShowAddButton'] as bool? ?? false,
+          lenientString(json['glassDockButtonEntryId']) ?? 'addCourse',
+      glassDockButtonIconName: lenientString(json['glassDockButtonIconName']),
+      glassDockShowAddButton:
+          lenientBool(json['glassDockShowAddButton']) ?? false,
       timetableBackToCurrentWeekButtonStyle:
           BackToCurrentWeekButtonStyleX.fromValue(
-            json['timetableBackToCurrentWeekButtonStyle'] as String?,
+            lenientString(json['timetableBackToCurrentWeekButtonStyle']),
           ),
       timetableFloatingBackToCurrentWeekButtonOpacity:
-          ((json['timetableFloatingBackToCurrentWeekButtonOpacity'] as num?)
-                      ?.toDouble() ??
+          (lenientDouble(json['timetableFloatingBackToCurrentWeekButtonOpacity']) ??
                   0.96)
               .clamp(0.55, 1.0),
       timetableLastViewedDayOfWeek:
-          ((json['timetableLastViewedDayOfWeek'] as num?)?.toInt() ?? 1).clamp(
+          (lenientInt(json['timetableLastViewedDayOfWeek']) ?? 1).clamp(
             1,
             7,
           ),
       coupleTimetableOverlayEnabled:
-          json['coupleTimetableOverlayEnabled'] as bool? ?? false,
+          lenientBool(json['coupleTimetableOverlayEnabled']) ?? false,
       timetableSectionTimeDisplayMode: SectionTimeDisplayModeX.fromValue(
-        json['timetableSectionTimeDisplayMode'] as String?,
+        lenientString(json['timetableSectionTimeDisplayMode']),
       ),
-      timetableHideWeekends: json['timetableHideWeekends'] as bool? ?? false,
-      enableHaptics: json['enableHaptics'] as bool? ?? true,
+      timetableHideWeekends: lenientBool(json['timetableHideWeekends']) ?? false,
+      enableHaptics: lenientBool(json['enableHaptics']) ?? true,
       pageTransitionSpeed:
-          ((json['pageTransitionSpeed'] as num?)?.toDouble() ??
+          (lenientDouble(json['pageTransitionSpeed']) ??
                   defaultPageTransitionSpeed)
               .clamp(minPageTransitionSpeed, maxPageTransitionSpeed),
       homePullQuickImportEnabled:
-          json['homePullQuickImportEnabled'] as bool? ?? false,
+          lenientBool(json['homePullQuickImportEnabled']) ?? false,
       screenshotSharePromptEnabled:
-          json['screenshotSharePromptEnabled'] as bool? ?? true,
+          lenientBool(json['screenshotSharePromptEnabled']) ?? true,
       longPressEmptySlotToAddCourseEnabled:
-          json['longPressEmptySlotToAddCourseEnabled'] as bool? ?? false,
-      liveShowCourseName: json['liveShowCourseName'] as bool? ?? true,
-      liveShowLocation: json['liveShowLocation'] as bool? ?? true,
-      liveShowCountdown: json['liveShowCountdown'] as bool? ?? true,
+          lenientBool(json['longPressEmptySlotToAddCourseEnabled']) ?? false,
+      liveShowCourseName: lenientBool(json['liveShowCourseName']) ?? true,
+      liveShowLocation: lenientBool(json['liveShowLocation']) ?? true,
+      liveShowCountdown: lenientBool(json['liveShowCountdown']) ?? true,
       liveCountdownTextStyle: LiveCountdownTextStyleX.fromValue(
-        json['liveCountdownTextStyle'] as String?,
+        lenientString(json['liveCountdownTextStyle']),
       ),
-      liveShowStageText: json['liveShowStageText'] as bool? ?? true,
-      liveEnableBeforeClass: json['liveEnableBeforeClass'] as bool? ?? true,
+      liveShowStageText: lenientBool(json['liveShowStageText']) ?? true,
+      liveEnableBeforeClass: lenientBool(json['liveEnableBeforeClass']) ?? true,
       // Migrate: these two are controlled by a single UI switch.
       // If either is true, both should be true to avoid UI/logic mismatch.
       liveEnableDuringClass:
-          (json['liveEnableDuringClass'] as bool? ?? true) ||
-          (json['liveEnableBeforeEnd'] as bool? ?? true),
+          (lenientBool(json['liveEnableDuringClass']) ?? true) ||
+          (lenientBool(json['liveEnableBeforeEnd']) ?? true),
       liveEnableBeforeEnd:
-          (json['liveEnableDuringClass'] as bool? ?? true) ||
-          (json['liveEnableBeforeEnd'] as bool? ?? true),
-      livePromoteDuringClass: json['livePromoteDuringClass'] as bool? ?? true,
+          (lenientBool(json['liveEnableDuringClass']) ?? true) ||
+          (lenientBool(json['liveEnableBeforeEnd']) ?? true),
+      livePromoteDuringClass:
+          lenientBool(json['livePromoteDuringClass']) ?? true,
       liveShowDuringClassNotification:
-          json['liveShowDuringClassNotification'] as bool? ?? true,
-      liveUseShortName: json['liveUseShortName'] as bool? ?? true,
-      liveHidePrefixText: json['liveHidePrefixText'] as bool? ?? true,
+          lenientBool(json['liveShowDuringClassNotification']) ?? true,
+      liveUseShortName: lenientBool(json['liveUseShortName']) ?? true,
+      liveHidePrefixText: lenientBool(json['liveHidePrefixText']) ?? true,
       liveDuringClassTimeDisplayMode: LiveDuringClassTimeDisplayModeX.fromValue(
-        json['liveDuringClassTimeDisplayMode'] as String?,
+        lenientString(json['liveDuringClassTimeDisplayMode']),
       ),
       liveEnableMiuiIslandLabelImage:
-          json['liveEnableMiuiIslandLabelImage'] as bool? ?? false,
+          lenientBool(json['liveEnableMiuiIslandLabelImage']) ?? false,
       liveDuringEndShowCourseName:
-          json['liveDuringEndShowCourseName'] as bool? ??
-          (json['liveShowCourseName'] as bool? ?? true),
+          lenientBool(json['liveDuringEndShowCourseName']) ??
+          (lenientBool(json['liveShowCourseName']) ?? true),
       liveDuringEndShowLocation:
-          json['liveDuringEndShowLocation'] as bool? ??
-          (json['liveShowLocation'] as bool? ?? true),
+          lenientBool(json['liveDuringEndShowLocation']) ??
+          (lenientBool(json['liveShowLocation']) ?? true),
       liveDuringEndShowCountdown:
-          json['liveDuringEndShowCountdown'] as bool? ??
-          (json['liveShowCountdown'] as bool? ?? true),
+          lenientBool(json['liveDuringEndShowCountdown']) ??
+          (lenientBool(json['liveShowCountdown']) ?? true),
       liveDuringEndCountdownTextStyle: LiveCountdownTextStyleX.fromValue(
-        json['liveDuringEndCountdownTextStyle'] as String? ??
-            json['liveCountdownTextStyle'] as String?,
+        lenientString(json['liveDuringEndCountdownTextStyle']) ??
+            lenientString(json['liveCountdownTextStyle']),
       ),
       liveDuringEndShowStageText:
-          json['liveDuringEndShowStageText'] as bool? ??
-          (json['liveShowStageText'] as bool? ?? true),
+          lenientBool(json['liveDuringEndShowStageText']) ??
+          (lenientBool(json['liveShowStageText']) ?? true),
       liveDuringEndUseShortName:
-          json['liveDuringEndUseShortName'] as bool? ??
-          (json['liveUseShortName'] as bool? ?? true),
+          lenientBool(json['liveDuringEndUseShortName']) ??
+          (lenientBool(json['liveUseShortName']) ?? true),
       liveDuringEndHidePrefixText:
-          json['liveDuringEndHidePrefixText'] as bool? ??
-          (json['liveHidePrefixText'] as bool? ?? true),
+          lenientBool(json['liveDuringEndHidePrefixText']) ??
+          (lenientBool(json['liveHidePrefixText']) ?? true),
       liveDuringEndFollowBeforeClass:
-          json['liveDuringEndFollowBeforeClass'] as bool? ?? true,
+          lenientBool(json['liveDuringEndFollowBeforeClass']) ?? true,
       liveDuringEndTimeDisplayMode: LiveDuringClassTimeDisplayModeX.fromValue(
-        json['liveDuringEndTimeDisplayMode'] as String? ??
-            json['liveDuringClassTimeDisplayMode'] as String?,
+        lenientString(json['liveDuringEndTimeDisplayMode']) ??
+            lenientString(json['liveDuringClassTimeDisplayMode']),
       ),
       liveDuringEndEnableMiuiIslandLabelImage:
-          json['liveDuringEndEnableMiuiIslandLabelImage'] as bool? ??
-          (json['liveEnableMiuiIslandLabelImage'] as bool? ?? false),
-      liveHideFromRecents: json['liveHideFromRecents'] as bool? ?? false,
+          lenientBool(json['liveDuringEndEnableMiuiIslandLabelImage']) ??
+          (lenientBool(json['liveEnableMiuiIslandLabelImage']) ?? false),
+      liveHideFromRecents: lenientBool(json['liveHideFromRecents']) ?? false,
       liveEnableLocalDiagnostics:
-          json['liveEnableLocalDiagnostics'] as bool? ?? false,
+          lenientBool(json['liveEnableLocalDiagnostics']) ?? false,
       liveMiuiIslandLabelStyle: MiuiIslandLabelStyleX.fromValue(
-        json['liveMiuiIslandLabelStyle'] as String?,
+        lenientString(json['liveMiuiIslandLabelStyle']),
       ),
       liveMiuiIslandLabelContent: MiuiIslandLabelContentX.fromValue(
-        json['liveMiuiIslandLabelContent'] as String?,
+        lenientString(json['liveMiuiIslandLabelContent']),
       ),
       liveMiuiIslandLabelFontColor:
-          json['liveMiuiIslandLabelFontColor'] as String? ?? '#FFFFFF',
+          lenientString(json['liveMiuiIslandLabelFontColor']) ?? '#FFFFFF',
       liveMiuiIslandLabelFontWeight: MiuiIslandLabelFontWeightX.fromValue(
-        json['liveMiuiIslandLabelFontWeight'] as String?,
+        lenientString(json['liveMiuiIslandLabelFontWeight']),
       ),
       liveMiuiIslandLabelRenderQuality: MiuiIslandLabelRenderQualityX.fromValue(
-        json['liveMiuiIslandLabelRenderQuality'] as String?,
+        lenientString(json['liveMiuiIslandLabelRenderQuality']),
       ),
       liveMiuiIslandLabelFontSize:
-          (json['liveMiuiIslandLabelFontSize'] as num?)?.toDouble() ?? 14,
+          lenientDouble(json['liveMiuiIslandLabelFontSize']) ?? 14,
       liveMiuiIslandLabelOffsetX:
-          (json['liveMiuiIslandLabelOffsetX'] as num?)?.toDouble() ?? 0,
+          lenientDouble(json['liveMiuiIslandLabelOffsetX']) ?? 0,
       liveMiuiIslandLabelOffsetY:
-          (json['liveMiuiIslandLabelOffsetY'] as num?)?.toDouble() ?? 0,
+          lenientDouble(json['liveMiuiIslandLabelOffsetY']) ?? 0,
       liveMiuiIslandLabelLogoPath:
-          json['liveMiuiIslandLabelLogoPath'] as String?,
+          lenientString(json['liveMiuiIslandLabelLogoPath']),
       liveMiuiIslandLabelLogoCornerRadius:
-          (json['liveMiuiIslandLabelLogoCornerRadius'] as num?)?.toDouble() ??
-          8,
+          lenientDouble(json['liveMiuiIslandLabelLogoCornerRadius']) ?? 8,
       liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconModeX.fromValue(
-        json['liveMiuiIslandExpandedIconMode'] as String?,
+        lenientString(json['liveMiuiIslandExpandedIconMode']),
       ),
       liveMiuiIslandExpandedIconPath:
-          json['liveMiuiIslandExpandedIconPath'] as String?,
+          lenientString(json['liveMiuiIslandExpandedIconPath']),
       liveDuringEndMiuiIslandLabelStyle: MiuiIslandLabelStyleX.fromValue(
-        json['liveDuringEndMiuiIslandLabelStyle'] as String? ??
-            json['liveMiuiIslandLabelStyle'] as String?,
+        lenientString(json['liveDuringEndMiuiIslandLabelStyle']) ??
+            lenientString(json['liveMiuiIslandLabelStyle']),
       ),
       liveDuringEndMiuiIslandLabelContent: MiuiIslandLabelContentX.fromValue(
-        json['liveDuringEndMiuiIslandLabelContent'] as String? ??
-            json['liveMiuiIslandLabelContent'] as String?,
+        lenientString(json['liveDuringEndMiuiIslandLabelContent']) ??
+            lenientString(json['liveMiuiIslandLabelContent']),
       ),
       liveDuringEndMiuiIslandLabelFontColor:
-          json['liveDuringEndMiuiIslandLabelFontColor'] as String? ??
-          (json['liveMiuiIslandLabelFontColor'] as String? ?? '#FFFFFF'),
+          lenientString(json['liveDuringEndMiuiIslandLabelFontColor']) ??
+          (lenientString(json['liveMiuiIslandLabelFontColor']) ?? '#FFFFFF'),
       liveDuringEndMiuiIslandLabelFontWeight:
           MiuiIslandLabelFontWeightX.fromValue(
-            json['liveDuringEndMiuiIslandLabelFontWeight'] as String? ??
-                json['liveMiuiIslandLabelFontWeight'] as String?,
+            lenientString(json['liveDuringEndMiuiIslandLabelFontWeight']) ??
+                lenientString(json['liveMiuiIslandLabelFontWeight']),
           ),
       liveDuringEndMiuiIslandLabelRenderQuality:
           MiuiIslandLabelRenderQualityX.fromValue(
-            json['liveDuringEndMiuiIslandLabelRenderQuality'] as String? ??
-                json['liveMiuiIslandLabelRenderQuality'] as String?,
+            lenientString(json['liveDuringEndMiuiIslandLabelRenderQuality']) ??
+                lenientString(json['liveMiuiIslandLabelRenderQuality']),
           ),
       liveDuringEndMiuiIslandLabelFontSize:
-          (json['liveDuringEndMiuiIslandLabelFontSize'] as num?)?.toDouble() ??
-          ((json['liveMiuiIslandLabelFontSize'] as num?)?.toDouble() ?? 14),
+          lenientDouble(json['liveDuringEndMiuiIslandLabelFontSize']) ??
+          (lenientDouble(json['liveMiuiIslandLabelFontSize']) ?? 14),
       liveDuringEndMiuiIslandLabelOffsetX:
-          (json['liveDuringEndMiuiIslandLabelOffsetX'] as num?)?.toDouble() ??
-          ((json['liveMiuiIslandLabelOffsetX'] as num?)?.toDouble() ?? 0),
+          lenientDouble(json['liveDuringEndMiuiIslandLabelOffsetX']) ??
+          (lenientDouble(json['liveMiuiIslandLabelOffsetX']) ?? 0),
       liveDuringEndMiuiIslandLabelOffsetY:
-          (json['liveDuringEndMiuiIslandLabelOffsetY'] as num?)?.toDouble() ??
-          ((json['liveMiuiIslandLabelOffsetY'] as num?)?.toDouble() ?? 0),
+          lenientDouble(json['liveDuringEndMiuiIslandLabelOffsetY']) ??
+          (lenientDouble(json['liveMiuiIslandLabelOffsetY']) ?? 0),
       liveDuringEndMiuiIslandLabelLogoPath:
-          json['liveDuringEndMiuiIslandLabelLogoPath'] as String? ??
-          json['liveMiuiIslandLabelLogoPath'] as String?,
+          lenientString(json['liveDuringEndMiuiIslandLabelLogoPath']) ??
+          lenientString(json['liveMiuiIslandLabelLogoPath']),
       liveDuringEndMiuiIslandLabelLogoCornerRadius:
-          (json['liveDuringEndMiuiIslandLabelLogoCornerRadius'] as num?)
-              ?.toDouble() ??
-          (json['liveMiuiIslandLabelLogoCornerRadius'] as num?)?.toDouble() ??
-          8,
+          lenientDouble(json['liveDuringEndMiuiIslandLabelLogoCornerRadius']) ??
+          (lenientDouble(json['liveMiuiIslandLabelLogoCornerRadius']) ?? 8),
       liveDuringEndMiuiIslandExpandedIconMode:
           MiuiIslandExpandedIconModeX.fromValue(
-            json['liveDuringEndMiuiIslandExpandedIconMode'] as String? ??
-                json['liveMiuiIslandExpandedIconMode'] as String?,
+            lenientString(json['liveDuringEndMiuiIslandExpandedIconMode']) ??
+                lenientString(json['liveMiuiIslandExpandedIconMode']),
           ),
       liveDuringEndMiuiIslandExpandedIconPath:
-          json['liveDuringEndMiuiIslandExpandedIconPath'] as String? ??
-          json['liveMiuiIslandExpandedIconPath'] as String?,
-      liveExpandedDetailFields: _safeStringList(
+          lenientString(json['liveDuringEndMiuiIslandExpandedIconPath']) ??
+          lenientString(json['liveMiuiIslandExpandedIconPath']),
+      liveExpandedDetailFields: lenientStringList(
         json['liveExpandedDetailFields'],
       ),
       liveDuringEndExpandedDetailFields:
-          _safeStringList(json['liveDuringEndExpandedDetailFields']) ??
-          _safeStringList(json['liveExpandedDetailFields']),
+          lenientStringList(json['liveDuringEndExpandedDetailFields']) ??
+          lenientStringList(json['liveExpandedDetailFields']),
       liveShowBeforeClassMinutes:
-          (json['liveShowBeforeClassMinutes'] as num?)?.toInt() ?? 20,
+          lenientInt(json['liveShowBeforeClassMinutes']) ?? 20,
       liveClassReminderStartMinutes:
-          (json['liveClassReminderStartMinutes'] as num?)?.toInt() ?? 0,
+          lenientInt(json['liveClassReminderStartMinutes']) ?? 0,
       liveEndSecondsCountdownThreshold:
-          (json['liveEndSecondsCountdownThreshold'] as num?)?.toInt() ?? 60,
+          lenientInt(json['liveEndSecondsCountdownThreshold']) ?? 60,
       liveTimeCorrectionSeconds:
-          (json['liveTimeCorrectionSeconds'] as num?)?.toInt() ?? 0,
+          lenientInt(json['liveTimeCorrectionSeconds']) ?? 0,
       liveBeforeClassQuickAction: LiveBeforeClassQuickActionX.fromValue(
-        json['liveBeforeClassQuickAction'] as String?,
+        lenientString(json['liveBeforeClassQuickAction']),
       ),
       liveBeforeClassQuickActionAutoMinutes:
-          (json['liveBeforeClassQuickActionAutoMinutes'] as num?)?.toInt() ?? 0,
-      themeSeedColor: json['themeSeedColor'] as String? ?? '#2563EB',
-      foruiTheme: ForuiThemeX.fromValue(json['foruiTheme'] as String?),
+          lenientInt(json['liveBeforeClassQuickActionAutoMinutes']) ?? 0,
+      themeSeedColor: lenientString(json['themeSeedColor']) ?? '#2563EB',
+      foruiTheme: ForuiThemeX.fromValue(lenientString(json['foruiTheme'])),
       timetablePageBackgroundColor:
-          json['timetablePageBackgroundColor'] as String? ?? '#F8FAFC',
+          lenientString(json['timetablePageBackgroundColor']) ?? '#F8FAFC',
       homePageBackgroundFill: HomePageBackgroundFillX.fromValue(
-        json['homePageBackgroundFill'] as String?,
+        lenientString(json['homePageBackgroundFill']),
       ),
-      homePageBackgroundImagePath:
-          json['homePageBackgroundImagePath'] as String?,
-      homePageWallpaperPath: json['homePageWallpaperPath'] as String?,
+      homePageBackgroundImagePath: lenientString(
+        json['homePageBackgroundImagePath'],
+      ),
+      homePageWallpaperPath: lenientString(json['homePageWallpaperPath']),
       homePageWallpaperAlignX:
-          (json['homePageWallpaperAlignX'] as num?)?.toDouble() ?? 0,
+          lenientDouble(json['homePageWallpaperAlignX']) ?? 0,
       homePageWallpaperAlignY:
-          (json['homePageWallpaperAlignY'] as num?)?.toDouble() ?? 0,
+          lenientDouble(json['homePageWallpaperAlignY']) ?? 0,
       // 存量存档没有这个字段：缺省 1（刚好铺满），观感与加缩放之前一致。
       homePageWallpaperScale:
-          (json['homePageWallpaperScale'] as num?)?.toDouble() ?? 1,
+          lenientDouble(json['homePageWallpaperScale']) ?? 1,
       wallpaperHistory: WallpaperHistoryEntry.listFromJson(
         json['wallpaperHistory'],
       ),
@@ -1688,28 +1682,27 @@ class TimetableSettings {
       // ignore: avoid_redundant_argument_values -- 故意写死默认值（下线旧开关）。
       homePageBackgroundScope: HomePageBackgroundScope.defaultValue,
       timetableUseUnifiedCardColor:
-          json['timetableUseUnifiedCardColor'] as bool? ?? false,
+          lenientBool(json['timetableUseUnifiedCardColor']) ?? false,
       timetableUnifiedCardColor:
-          json['timetableUnifiedCardColor'] as String? ?? '#2563EB',
+          lenientString(json['timetableUnifiedCardColor']) ?? '#2563EB',
       appUpdateDownloadSource:
-          json['appUpdateDownloadSource'] as String? ?? 'mirror',
+          lenientString(json['appUpdateDownloadSource']) ?? 'mirror',
       appUpdateDownloadChannel:
-          json['appUpdateDownloadChannel'] as String? ?? 'gitcode',
+          lenientString(json['appUpdateDownloadChannel']) ?? 'gitcode',
       appUpdateUseSystemDownloader:
-          json['appUpdateUseSystemDownloader'] as bool? ?? false,
+          lenientBool(json['appUpdateUseSystemDownloader']) ?? false,
       appUpdateMirrorPreset: (rawAppUpdateMirrorPreset == null
           ? AppUpdateMirrorPresetX.fromUrlPrefix(
               rawAppUpdateMirrorUrlPrefix,
             ).value
           : AppUpdateMirrorPresetX.fromValue(rawAppUpdateMirrorPreset).value),
       appUpdateIncludePrerelease:
-          json['appUpdateIncludePrerelease'] as bool? ?? false,
+          lenientBool(json['appUpdateIncludePrerelease']) ?? false,
       appUpdateMirrorUrlPrefix: rawAppUpdateMirrorUrlPrefix,
-      appUpdatePromptEnabled: json['appUpdatePromptEnabled'] as bool? ?? true,
-      holidayOverrideEnabled: json['holidayOverrideEnabled'] as bool? ?? false,
-      classAlarmLeadMinutes:
-          (json['classAlarmLeadMinutes'] as num?)?.toInt() ?? 30,
-      classAlarmSkipUi: json['classAlarmSkipUi'] as bool? ?? false,
+      appUpdatePromptEnabled: lenientBool(json['appUpdatePromptEnabled']) ?? true,
+      holidayOverrideEnabled: lenientBool(json['holidayOverrideEnabled']) ?? false,
+      classAlarmLeadMinutes: lenientInt(json['classAlarmLeadMinutes']) ?? 30,
+      classAlarmSkipUi: lenientBool(json['classAlarmSkipUi']) ?? false,
       // 脏条目在 listFromJson 内逐条校验丢弃，绝不让单个坏值炸掉整个设置。
       classReminders: ClassReminderEntry.listFromJson(json['classReminders']),
       courseCardTitleColorLight: parsedTitleColorLight,
@@ -1718,27 +1711,27 @@ class TimetableSettings {
       courseCardDetailColorDark: parsedDetailColorDark,
       linkCourseCardColors: linkedCardTextColors,
       weekdayBarFontColorLight:
-          json['weekdayBarFontColorLight'] as String? ??
+          lenientString(json['weekdayBarFontColorLight']) ??
           defaultWeekdayBarFontColorLight,
       weekdayBarFontColorDark:
-          json['weekdayBarFontColorDark'] as String? ??
+          lenientString(json['weekdayBarFontColorDark']) ??
           defaultWeekdayBarFontColorDark,
       weekdayBarAccentColorLight:
-          json['weekdayBarAccentColorLight'] as String? ??
+          lenientString(json['weekdayBarAccentColorLight']) ??
           defaultWeekdayBarAccentColorLight,
       weekdayBarAccentColorDark:
-          json['weekdayBarAccentColorDark'] as String? ??
+          lenientString(json['weekdayBarAccentColorDark']) ??
           defaultWeekdayBarAccentColorDark,
       timeAxisFontColorLight:
-          json['timeAxisFontColorLight'] as String? ??
+          lenientString(json['timeAxisFontColorLight']) ??
           defaultTimeAxisFontColorLight,
       timeAxisFontColorDark:
-          json['timeAxisFontColorDark'] as String? ??
+          lenientString(json['timeAxisFontColorDark']) ??
           defaultTimeAxisFontColorDark,
       frostedBlurEnabled:
-          json['frostedBlurEnabled'] as bool? ?? defaultFrostedBlurEnabled,
+          lenientBool(json['frostedBlurEnabled']) ?? defaultFrostedBlurEnabled,
       liquidGlassDockEnabled:
-          json['liquidGlassDockEnabled'] as bool? ??
+          lenientBool(json['liquidGlassDockEnabled']) ??
           defaultLiquidGlassDockEnabled,
       courseCardSurfaceStyle: CourseCardSurfaceStyleX.fromValue(
         // 非字符串坏值按缺键处理（走 null → 出厂档），不抛：坏一个键不该把整份设置
@@ -1767,10 +1760,10 @@ class TimetableSettings {
         LiquidGlassTuning.fromJson,
       ),
       linkLiquidGlassTuning:
-          json['linkLiquidGlassTuning'] as bool? ??
+          lenientBool(json['linkLiquidGlassTuning']) ??
           defaultLinkLiquidGlassTuning,
       darkGlassBoostEnabled:
-          json['darkGlassBoostEnabled'] as bool? ??
+          lenientBool(json['darkGlassBoostEnabled']) ??
           defaultDarkGlassBoostEnabled,
       courseCardGlassTuning: parsedCourseCardGlassTuning,
       courseCardGlassPreset: LiquidGlassPresetX.reconcileStoredPreset(
@@ -1810,12 +1803,12 @@ class TimetableSettings {
             : null,
       ),
       homePageTimeColumnBlurEnabled:
-          json['homePageTimeColumnBlurEnabled'] as bool? ?? false,
+          lenientBool(json['homePageTimeColumnBlurEnabled']) ?? false,
       // ⚠️ 缺键按**默认关**处理（不是默认开）：缺键只可能来自 2026-07-06 引入这个
       // 字段之前存下的老存档，等价于"从没主动选过"，应落在新默认上。`toJson` 一直
       // 写这个键，所以此后存过档的用户（无论开或关）都读自己存的值，不受影响。
       homePageBackdropFollowsWeekPager:
-          json['homePageBackdropFollowsWeekPager'] as bool? ?? false,
+          lenientBool(json['homePageBackdropFollowsWeekPager']) ?? false,
       savedThemes: (() {
         final raw = json['savedThemes'];
         if (raw is! List) return const <SavedTheme>[];
@@ -1830,7 +1823,7 @@ class TimetableSettings {
         }
         return out;
       })(),
-      themeCheckpointName: json['themeCheckpointName'] as String?,
+      themeCheckpointName: lenientString(json['themeCheckpointName']),
       themeCheckpointConfig: (() {
         final r = json['themeCheckpointConfig'];
         if (r is! Map) return null;
@@ -2134,7 +2127,7 @@ class TimetableSettings {
       appFontMode: appFontMode ?? this.appFontMode,
       appFontWeight: appFontWeight ?? this.appFontWeight,
       appTextScale: appTextScale ?? this.appTextScale,
-      appLocaleTag: _normalizeAppLocaleTag(appLocaleTag ?? this.appLocaleTag),
+      appLocaleTag: normalizeAppLocaleTag(appLocaleTag ?? this.appLocaleTag),
       homeTitleStyle: homeTitleStyle ?? this.homeTitleStyle,
       timetableHomeViewMode:
           timetableHomeViewMode ?? this.timetableHomeViewMode,
