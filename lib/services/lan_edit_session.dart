@@ -18,6 +18,21 @@ class LanEditSession {
   /// 使用（一个房间里不会有 128 台设备配对），触发时先丢过期项、再按插入序丢最旧。
   static const int maxTrackedClients = 128;
 
+  /// 会话级 PIN 失败总预算（跨全部来源 IP）。
+  ///
+  /// 单 IP 限速（[maxPinAttemptsPerIp]）在局域网里可被伪造源地址绕过——
+  /// 攻击者每换一个源地址就拿到一份新的 5 次配额，而 [maxTrackedClients]
+  /// 的上限只防内存膨胀：超过 128 个地址后旧条目被淘汰，等于变相无限次
+  /// 尝试。真正的收敛靠这份**跨 IP 总预算**：PIN 是 6 位数字（90 万组合），
+  /// 预算 50 次后整段会话锁死，穷举在数学上不可行；正常用户（扫码或手输）
+  /// 输错几次远远够用，锁死后重新开会话即可。
+  static const int maxPinFailuresPerSession = 50;
+
+  int _totalPinFailures = 0;
+
+  /// 会话级 PIN 锁定：达到总预算后本会话不再接受任何 PIN（含正确 PIN）。
+  bool get isPinLocked => _totalPinFailures >= maxPinFailuresPerSession;
+
   final String pin;
   final String token;
   final DateTime createdAt;
@@ -107,6 +122,11 @@ class LanEditSession {
   }
 
   bool isPinRateLimited(String clientIp) {
+    // 会话已锁死：对所有 IP 都按限速应答（服务端回 429，让客户端停止重试），
+    // 而不是逐次 401——那是给攻击者的「PIN 还差几位」式 oracle。
+    if (isPinLocked) {
+      return true;
+    }
     final state = _pinAttempts[clientIp];
     if (state == null) {
       return false;
@@ -124,6 +144,8 @@ class LanEditSession {
       markClientConnected(clientIp);
       return true;
     }
+    // 跨 IP 总预算：无论来自哪个源地址，失败都往同一个桶里记。
+    _totalPinFailures += 1;
     final state = _pinAttempts.putIfAbsent(clientIp, _PinAttemptState.new);
     state.recordFailure(DateTime.now());
     _trimClientBookkeeping();

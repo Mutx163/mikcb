@@ -106,7 +106,16 @@ class _LanEditScreenState extends State<LanEditScreen>
         _session = _server.session;
         _lanAddress = (ip == null || port == null)
             ? null
-            : encodeLanEditUrl(host: ip, port: port, pin: _server.session!.pin);
+            : encodeLanEditUrl(
+                host: ip,
+                port: port,
+                // 写授权 token 直接进二维码：谁看到屏上的二维码谁就是被信任
+                // 的在场者（与扫 PIN 同级），但攻击者从此无法在网络侧对
+                // 6 位 PIN 穷举。app.js 原生支持 URL 带 token 直连（进入
+                // 编辑器；token 失效时回退 PIN 输入），pin 保留作回退预填。
+                token: _server.session!.token,
+                pin: _server.session!.pin,
+              );
       });
       _startStatusTimer();
     } catch (_) {

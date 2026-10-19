@@ -114,4 +114,56 @@ void main() {
       expect(session.connectedClientCountAt(DateTime.now()), 1);
     });
   });
+
+  group('会话级 PIN 失败总预算（防伪造源 IP 绕过单 IP 限速）', () {
+    test('换着源地址各试一次，达到总预算后整段会话锁死', () {
+      final session = LanEditSession.forTest(
+        pin: '123456',
+        token: 'token',
+        createdAt: DateTime.now(),
+        lastActivityAt: DateTime.now(),
+      );
+
+      // 50 个不同源地址各失败一次：单 IP 限速（5 次/5 分钟）一次都没触发，
+      // 128 条的容量上限也没触发——旧实现下这些尝试毫无代价。
+      expect(session.isPinLocked, isFalse);
+      for (var i = 0; i < LanEditSession.maxPinFailuresPerSession; i++) {
+        expect(
+          session.verifyPin('000000', '10.0.$i.1'),
+          isFalse,
+          reason: '第 ${i + 1} 次失败（IP 10.0.$i.1）应只是普通失败',
+        );
+      }
+
+      expect(session.isPinLocked, isTrue);
+      // 锁死后连正确 PIN 也不放行：唯一出路是机主重新开会话。
+      expect(session.verifyPin('123456', '10.0.99.9'), isFalse);
+      // 锁定对任意 IP 都表现为限速（服务端据此答 429，让客户端停止重试）。
+      expect(session.isPinRateLimited('10.0.99.9'), isTrue);
+    });
+
+    test('预算内正确 PIN 不受影响，成功不计入失败', () {
+      final session = LanEditSession.forTest(
+        pin: '123456',
+        token: 'token',
+        createdAt: DateTime.now(),
+        lastActivityAt: DateTime.now(),
+      );
+
+      expect(session.verifyPin('000000', '10.0.0.1'), isFalse);
+      expect(session.verifyPin('000000', '10.0.0.2'), isFalse);
+      expect(session.isPinLocked, isFalse);
+      expect(session.verifyPin('123456', '10.0.0.3'), isTrue);
+      expect(session.isPinLocked, isFalse);
+    });
+
+    test('总预算必须远小于穷举空间（90 万组合）', () {
+      // 这条锁住常量的量级：有人把预算调大到「穷举可行」的量级时先红再议。
+      expect(LanEditSession.maxPinFailuresPerSession, lessThan(1000));
+      expect(
+        LanEditSession.maxPinFailuresPerSession,
+        greaterThan(LanEditSession.maxPinAttemptsPerIp),
+      );
+    });
+  });
 }
