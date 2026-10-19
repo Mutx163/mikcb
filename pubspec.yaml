@@ -39,7 +39,7 @@ dependencies:
   webdav_plus: ^1.2.2
   url_launcher: ^6.3.1
   path_provider: ^2.1.5
-  open_filex: ^4.7.0
+  open_filex: ^5.0.0
   flutter_markdown: ^0.7.7+1
   flutter_secure_storage: ^10.3.4
   webview_flutter: 4.14.1
