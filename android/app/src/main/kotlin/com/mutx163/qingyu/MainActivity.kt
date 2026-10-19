@@ -888,6 +888,14 @@ class MainActivity : FlutterActivity() {
                         result.success(initialized)
                     }
                     "triggerTestCrash" -> {
+                        // 构建变体门控（审计 #25）：UI 已按 kReleaseMode 隐藏，
+                        // 通道层再兜一道——release/devRelease 直接拒绝，
+                        // debug/profile（BuildConfig.DEBUG，profile 为 initWith(debug)）
+                        // 保留给 U-APM 送达验证用。
+                        if (!BuildConfig.DEBUG) {
+                            result.error("DISABLED_IN_RELEASE", "test crash is debug-only", null)
+                            return@setMethodCallHandler
+                        }
                         UmengApplication.initializeAnalyticsIfNeeded(applicationContext)
                         Handler(Looper.getMainLooper()).post {
                             throw RuntimeException("Manual Umeng U-APM test crash")
@@ -895,6 +903,10 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     }
                     "triggerTestAnr" -> {
+                        if (!BuildConfig.DEBUG) {
+                            result.error("DISABLED_IN_RELEASE", "test anr is debug-only", null)
+                            return@setMethodCallHandler
+                        }
                         UmengApplication.initializeAnalyticsIfNeeded(applicationContext)
                         Handler(Looper.getMainLooper()).post {
                             try {
