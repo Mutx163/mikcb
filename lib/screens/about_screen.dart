@@ -621,6 +621,12 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   int? _downloadTotalBytes;
   AppUpdateDownloadController? _downloadController;
 
+  /// 调试预览开关（长按状态卡图标切换，仅非 release 构建可用）。
+  ///
+  /// 自测包永远装的是最新一版，「发现新版本」那一屏平时看不到；打开这个开关
+  /// 会把「当前版本」按低一段，让这一屏在真机上也能核对。
+  bool _debugPreviewUpdate = false;
+
   /// Always empty on this screen.
   ///
   /// Mirror speed-testing lives in [_AdvancedOptionsScreen], which keeps its
@@ -852,7 +858,14 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return _buildCheckFailedCard();
     }
 
-    final hasUpdate = result.hasUpdate;
+    // 调试预览（仅非 release 构建，长按图标切换）：把「当前版本」按低一段，
+    // 逼出「有更新」形态——正常测试包永远是最新版，这个状态平时看不到。
+    final previewUpdate = _debugPreviewUpdate && !kReleaseMode;
+    final latestVersion = release?.version;
+    final currentVersion = previewUpdate
+        ? _debugPreviousVersion(latestVersion)
+        : result.currentVersion;
+    final hasUpdate = result.hasUpdate || previewUpdate;
 
     return Material(
       color: HyperosColors.card(context),
@@ -862,7 +875,14 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _buildAppLauncherLogo(context, size: 72),
+            GestureDetector(
+              onLongPress: kReleaseMode
+                  ? null
+                  : () => setState(
+                      () => _debugPreviewUpdate = !_debugPreviewUpdate,
+                    ),
+              child: _buildAppLauncherLogo(context, size: 72),
+            ),
             const SizedBox(height: 16),
             // 状态标题：有更新时用主题色 + w600 承担「要做事」，已是最新时
             // 退回主文字色与常规字重，不与下面的版本信息抢层级。
@@ -884,23 +904,15 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             // 版本号再多一位就会折行，而且两种写法要用户自己判断谁新。
             if (hasUpdate)
               _buildVersionTransition(
-                currentVersion: result.currentVersion,
-                latestVersion: release?.version ?? l10n.aboutUnreleasedLabel,
+                currentVersion: currentVersion,
+                latestVersion: latestVersion ?? l10n.aboutUnreleasedLabel,
               )
             else
               Text(
-                '${l10n.aboutCurrentVersionLabel} ${result.currentVersion}',
+                '${l10n.aboutCurrentVersionLabel} $currentVersion',
                 textAlign: TextAlign.center,
                 style: HyperosTypography.sectionDescription(context),
               ),
-            if (!hasUpdate) ...[
-              const SizedBox(height: 12),
-              Text(
-                l10n.aboutUpdateNoUpdateHint,
-                textAlign: TextAlign.center,
-                style: HyperosTypography.sectionDescription(context),
-              ),
-            ],
             const SizedBox(height: 20),
             // 只有真能升的时候才给「立即下载」：已是最新时它只会把同一个版本
             // 再装一遍（首页更新弹窗在这种情况下根本不出现）。没有更新时主
@@ -949,9 +961,10 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                 expand: true,
                 onPressed: _refreshUpdate,
               ),
-            // 「查看 Release」降到文字量级的小按钮：与主按钮同宽同高时形状
-            // 在说「我们一样重要」，只有颜色在分主次。
-            if (hasUpdate &&
+            // 「查看 Release」降为居中的小按钮：与主按钮同宽同高时形状在说
+            //「我们一样重要」，只有颜色在分主次。没有更新时也保留——那时它是
+            // 唯一还能打开发布页（资产与完整正文）的入口。
+            if (!hasUpdate ||
                 primaryAction != AboutUpdatePrimaryAction.openReleasePage) ...[
               const SizedBox(height: 12),
               Center(
@@ -966,6 +979,19 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         ),
       ),
     );
+  }
+
+  /// 把版本号最后一段减一（`2.1.3.4` → `2.1.3.3`），只给调试试预览用。
+  String _debugPreviousVersion(String? latest) {
+    final parts = (latest ?? '').split('.');
+    if (parts.length < 2) {
+      return '0.0.0';
+    }
+    final last = int.tryParse(parts.last.replaceAll(RegExp(r'[^0-9]'), ''));
+    if (last == null || last <= 0) {
+      return '0.0.0';
+    }
+    return [...parts.take(parts.length - 1), '${last - 1}'].join('.');
   }
 
   /// 「旧版本 → 新版本」一行，与首页更新弹窗同一套写法：旧版本弱化、
@@ -1034,12 +1060,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               style: HyperosTypography.listTitle(
                 context,
               ).copyWith(color: HyperosColors.primaryText(context)),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.aboutReadVersionFailedHint,
-              textAlign: TextAlign.center,
-              style: HyperosTypography.sectionDescription(context),
             ),
             const SizedBox(height: 20),
             HyperosButton(
