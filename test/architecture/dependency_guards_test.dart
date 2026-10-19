@@ -296,7 +296,12 @@ void main() {
     // （HEAD 1829 行 → 工作区 1899，净 +70，75 秒两次采样稳定），按任务约定
     // 以当前值收口。只减不增；确需增长时同步基线并在提交信息说明，
     // 优先把整块功能域（如备份恢复 / 迁移）拆成独立文件。
-    const baselineLines = 1899;
+    // 1899→1929：整档损坏留档 key 从「带微秒时间戳无限增长」收敛为
+    // 「只留最近 1 份」（2026-10-20，81f375a8）——新增 _sweepOldCorruptBackups
+    // 助手（含必须留档的动机注释）与两处调用点，净 +30。属正当增长：留档
+    // 不收敛自己就会长成新的存储问题。未拆文件的理由：清扫逻辑只有 20 行、
+    // 且只被本文件的两个备份方法调用，单独成文件是过度碎片化。
+    const baselineLines = 1929;
     final storageFile = File('lib/services/storage_service.dart');
     expect(storageFile.existsSync(), isTrue, reason: '文件不存在，棘已空转');
     final lines = storageFile.readAsLinesSync().length;
