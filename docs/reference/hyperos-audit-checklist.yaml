@@ -5,14 +5,22 @@
 version: 1
 
 # 审计扫描范围（相对仓库根）
+#
+# lib/ui 是设计系统自己的实现（2026-10-19 纳入）。此前只扫 lib/screens + lib/widgets，
+# 等于「只查病人不查医生」——token 漂移的根因就在这层，却没有任何门禁看着它。
 scanPaths:
   - lib/screens
   - lib/widgets
+  - lib/ui
 
 excludePathFragments:
   - hyperos_showcase_screen.dart
   - /ui/debug/
   - /generated/
+  # 被禁 API 的「包装器定义处」：这个文件就是 showHyperosSnackBar / showAppToast 的实现，
+  # 内部必须 extends SnackBar、必须 ScaffoldMessenger.maybeOf(...).hideCurrentSnackBar()
+  # 才能顶掉 Material 那条。按「使用」判违规属于误报，故整文件豁免（与 showcase 同理）。
+  - /ui/hyperos/hyperos_snackbar.dart
 
 # Miuix / HyperOS 标准值（与 hyperos_miuix_spec.dart 对齐）
 tokens:

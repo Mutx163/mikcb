@@ -127,9 +127,15 @@ def add_pattern_violations(
     if not pattern:
         return
     rx = re.compile(pattern)
+    lines = text.splitlines()
     for match in rx.finditer(text):
         line = line_number(text, match.start())
-        snippet = text.splitlines()[line - 1].strip()[:120]
+        # 注释里提到被禁 API 是「说明」，不是「使用」：文档注释常写
+        # 「用 HyperosPageRoute 代替 MaterialPageRoute」，按使用判违规会误报。
+        # 与 check_prefer_hyperos_list_view 里对 `//` 行的处理保持一致。
+        if line - 1 < len(lines) and lines[line - 1].lstrip().startswith("//"):
+            continue
+        snippet = lines[line - 1].strip()[:120]
         violations.append(
             Violation(
                 rule_id=rule["id"],
