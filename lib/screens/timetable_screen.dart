@@ -13,17 +13,11 @@ import 'package:flutter/gestures.dart'
     show
         Drag,
         GestureBinding,
-        PointerCancelEvent,
-        PointerDownEvent,
-        PointerEvent,
-        PointerRemovedEvent,
-        PointerUpEvent,
         VelocityTracker,
         kMinFlingVelocity;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -53,6 +47,7 @@ import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
 import '../widgets/home_page_region_blur.dart';
+import '../controllers/home_pull_controller.dart';
 import '../controllers/wallpaper_luminance_controller.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
@@ -349,68 +344,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   static const Duration _partnerScheduleStaleAfter = Duration(days: 7);
 
   /// Finger travel (after resistance) required to fire quick import.
-  static const double _homePullQuickImportTriggerDistance =
-      HyperosHomePullPhysics.triggerDistance;
-
-  /// Visual / tracked pull cap; keep above the trigger so the indicator can
-  /// overshoot slightly before release.
-  static const double _homePullQuickImportMaxDistance =
-      HyperosHomePullPhysics.maxVisualDistance;
-
-  /// Damping range for the cubic curve f(x)=x - x\u00B2 + x\u00B3/3; f(1)\u00B7range = maxVisual.
-  static const double _homePullDampingRange =
-      HyperosHomePullPhysics.dampingRange;
-
-  /// 本次手势（手指按下后的那一次拖拽）起点是否**已经在顶部**。
-  ///
-  /// 下拉快捷导入的手感口径是「先到顶部，再拉一下」：把列表滚回顶部的那一
-  /// 拖不算下拉。否则一次从半路滚到顶的手势，尾巴那点在顶部产生的
-  /// overscroll 会被当成下拉（视觉上"刚滚上去就弹出转圈"）。
-  /// 由 ScrollStartNotification（dragDetails != null，即真是一次拖拽）写入，
-  /// ScrollEnd 清掉；弹道（dragDetails == null）不写，免得松手后的回弹被当成"拉"。
-  bool _homePullGestureStartedAtTop = false;
-
-  /// 本次指针位移事件开始时下拉是否还开着（决定这一段位移要不要冻住滚动）。
-  ///
-  /// 由 [_buildHomePullQuickImportSurface] 的原始指针监听写入 / 清空，
-  /// 被 [TimetableHomePullFreezeScrollPhysics] 读取。存在这个"事件开始时"的快照，
-  /// 是因为原始监听与滚动体处理的是同一个事件、且有先后顺序：见写入处的说明。
-  bool _homePullFrozeScrollForEvent = false;
-
-  // Raw finger travel (clamped); visual offset = damped(touch/range)*range.
-  double _homePullTouchDistance = 0;
-
-  // Visual pull offset (derived from _homePullTouchDistance).
-  double _homePullDragDistance = 0;
-
-  // Threshold haptic latch: arm below trigger, fire once above.
-  bool _homePullHapticArmed = true;
-
-  // Spring-back (created in initState, disposed there).
-  AnimationController? _homePullSettleSpring;
-  int _homePullSettleGeneration = 0;
-  bool _isHomePullQuickImportRunning = false;
-  bool Function()? _homePullQuickImportCancel;
-
-  /// 下拉进度看门狗的**全局指针登记**（见 [_onGlobalPointerEvent]）。
-  ///
-  /// 为什么需要一张全局表：下拉进度有两条驱动路（无滚动体时的原始拖拽探测器 /
-  /// 有滚动体时的"到顶 overscroll 通知"），两条路各自只在**自己看得见的那次
-  /// 指针结束**时把进度收回。而"结束"送不到的情形确实存在 —— 手势被系统抢走
-  /// （从屏幕顶往下拉出通知栏、边缘返回、切到别的应用）、指针被 cancel、
-  /// 页面重建把滚动体整块换掉。进度于是停在半截，那颗药丸是**进度圈**（本来就
-  /// 不转）、又没有任何超时兜底，就一直挂在首页上（2026-09-22 真机：下拉的
-  /// 转圈一直显示、不转也不消失）。
-  ///
-  /// 判据刻意**不依赖任何一条具体驱动路**，只依赖"屏幕上还有没有手指"这条
-  /// 事实：一根都不剩、而进度还没归零 ⇒ 这一轮手势的收尾丢了，当场收回。
-  /// （与首页那颗玻璃球的门控同一条思路：拿上游契约当判据，而不是逐个触发点
-  /// 打补丁 —— 新加一条驱动路也不会再漏。）
-  final Set<int> _homePullLivePointers = <int>{};
-
-  /// 本次下拉手势最先按下的指针。第二个手指加入时，第一个手指结束仍要收尾，
-  /// 不能因为它一直按着就让半截进度圈永远等“最后一根手指”。
-  int? _homePullPrimaryPointer;
 
   /// Last "custom weekday ink is unreadable" combination already warned about
   /// this session; the persisted twin lives in SharedPreferences.
@@ -554,9 +487,16 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   late final WallpaperLuminanceController _luminance;
 
+  late final HomePullController _homePull;
+
   @override
   void initState() {
     super.initState();
+    _homePull = HomePullController(
+      vsync: this,
+      onTriggerImport: _runHomePullQuickImport,
+      onSelectionHaptic: _homePullSelectionHaptic,
+    )..addListener(_handleHomePullChanged);
     _luminance = WallpaperLuminanceController()
       ..addListener(_handleLuminanceChanged);
     WidgetsBinding.instance.addObserver(this);
@@ -597,11 +537,11 @@ class _TimetableScreenState extends State<TimetableScreen>
             _dayAgendaProgressTick.value++;
           })
         : null;
-    _homePullSettleSpring = AnimationController.unbounded(vsync: this)
-      ..addListener(_driveHomePullSettle);
     // 下拉进度的收尾看门狗：全局指针路由（事件先到这里，再走命中派发），
     // 与下拉当前由哪条路驱动无关。见 [_homePullLivePointers]。
-    GestureBinding.instance.pointerRouter.addGlobalRoute(_onGlobalPointerEvent);
+    GestureBinding.instance.pointerRouter.addGlobalRoute(
+      _homePull.onGlobalPointerEvent,
+    );
     _restoreViewStateFromProvider(provider);
     if (widget.enableUpdateCheck) {
       _checkForAppUpdate(
@@ -616,6 +556,19 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
   }
 
+  void _handleHomePullChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _homePullSelectionHaptic() {
+    if (!mounted) return;
+    if (context.read<TimetableProvider>().settings.enableHaptics) {
+      HapticFeedback.selectionClick();
+    }
+  }
+
   @override
   void dispose() {
     _previewScope?.dayView.removeListener(_onPreviewDayViewChanged);
@@ -624,14 +577,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     WidgetLaunchRouter.coupleOverlayRequestTick.removeListener(
       _onExternalCoupleOverlayRequest,
     );
-    _homePullQuickImportCancel?.call();
     GestureBinding.instance.pointerRouter.removeGlobalRoute(
-      _onGlobalPointerEvent,
+      _homePull.onGlobalPointerEvent,
     );
     _homeDownloadController?.cancel();
     _systemDownloadSubscription?.cancel();
     _updatePromptController.dispose();
-    _homePullSettleSpring?.dispose();
+    _homePull.removeListener(_handleHomePullChanged);
+    _homePull.dispose();
     _weekPageController.dispose();
     _dayViewExpandController.dispose();
     _visibleWeekListenable.dispose();
@@ -836,28 +789,17 @@ class _TimetableScreenState extends State<TimetableScreen>
         settings: settings,
         hasBackdrop: hasBackdrop,
         timetableSurfaceKey: _timetableSurfaceKey,
-        isRunning: _isHomePullQuickImportRunning,
+        isRunning: _homePull.isRunning,
         isDayView: _isDayView,
         glassDockContentScrollInset: _glassDockContentScrollInset(
           settings,
         ),
-        onScrollNotification: _handleHomePullScrollNotification,
-        onPullUpdate: _updateHomePullDragDistance,
-        onPullEnd: _finishHomePullDrag,
-        onPullCancel: _cancelHomePullDrag,
-        resetFreeze: () => _homePullFrozeScrollForEvent = false,
-        onPointerMove: (event) {
-          // 冻结判定必须用**本事件开始时**的下拉状态：原始指针监听先于
-          // 滚动体收到同一事件，用实时值的话，手指上移会先把下拉收到 0，
-          // 紧接着滚动体查到的就是“下拉已关”→ 列表照滚。
-          final open =
-              _homePullDragDistance > 0 || _homePullTouchDistance > 0;
-          _homePullFrozeScrollForEvent = open;
-          if (!open) {
-            return;
-          }
-          _updateHomePullDragDistance(event.delta.dy);
-        },
+        onScrollNotification: _homePull.handleScrollNotification,
+        onPullUpdate: _homePull.updateDrag,
+        onPullEnd: _homePull.finishDrag,
+        onPullCancel: _homePull.cancelDrag,
+        resetFreeze: _homePull.resetFreeze,
+        onPointerMove: _homePull.onPointerMove,
         weekPageController: _weekPageController,
         dayViewPageController: _dayViewPageController,
         visibleDayViewWeek: _visibleDayViewWeek,
@@ -970,10 +912,10 @@ class _TimetableScreenState extends State<TimetableScreen>
         onWeekdayBarDragEnd: _endWeekdayBarDrag,
         onWeekdayBarDragCancel: _cancelWeekdayBarDrag,
       ),
-      isPullRunning: _isHomePullQuickImportRunning,
-      pullDragDistance: _homePullDragDistance,
-      pullTriggerDistance: _homePullQuickImportTriggerDistance,
-      onPullCancel: _cancelHomePullQuickImport,
+      isPullRunning: _homePull.isRunning,
+      pullDragDistance: _homePull.dragDistance,
+      pullTriggerDistance: HomePullController.triggerDistance,
+      onPullCancel: _homePull.cancelImport,
       backToCurrentWeek: ValueListenableBuilder<int>(
         valueListenable: _visibleWeekListenable,
         builder: (context, visibleWeek, child) {
@@ -2312,77 +2254,12 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// [TimetableHomePullFreezeScrollPhysics]）。周课表与日课表都用它，"回拉取消"
   /// 的手感两处一致；runtimeType 恒定，不会中途重建 ScrollPosition。
   ScrollPhysics get _homePullVerticalPhysics => TimetableHomePullFreezeScrollPhysics(
-    isFrozen: () => _homePullFrozeScrollForEvent,
+    isFrozen: () => _homePull.isFrozen,
     parent: const AlwaysScrollableScrollPhysics(),
   );
 
-  void _updateHomePullDragDistance(double deltaDy) {
-    if (_isHomePullQuickImportRunning) {
-      return;
-    }
-    final atRest =
-        _homePullDragDistance <= 0.5 && _homePullTouchDistance <= 0.5;
-    if (deltaDy <= 0 && atRest) {
-      return;
-    }
-    // Finger takes over from any in-flight settle spring.
-    if (_homePullSettleSpring?.isAnimating ?? false) {
-      _homePullSettleGeneration++;
-      _homePullSettleSpring?.stop();
-    }
-    if (deltaDy > 0) {
-      _homePullTouchDistance = (_homePullTouchDistance + deltaDy).clamp(
-        0.0,
-        _homePullDampingRange,
-      );
-    } else {
-      // Retract "feels immediate"; keep raw travel 1:1.
-      _homePullTouchDistance = (_homePullTouchDistance + deltaDy).clamp(
-        0.0,
-        _homePullDampingRange,
-      );
-    }
-    final nextVisual = HyperosHomePullPhysics.visualOffset(
-      _homePullTouchDistance,
-      _homePullDampingRange,
-    ).clamp(0.0, _homePullQuickImportMaxDistance);
-    const threshold = _homePullQuickImportTriggerDistance;
-    final crossedUp =
-        _homePullDragDistance < threshold && nextVisual >= threshold;
-    final reArmed =
-        _homePullDragDistance >= threshold && nextVisual < threshold * 0.88;
-    if (reArmed) _homePullHapticArmed = true;
-    if (nextVisual == _homePullDragDistance && !crossedUp) {
-      return;
-    }
-    if (crossedUp && _homePullHapticArmed) {
-      _homePullHapticArmed = false;
-      // 同步读取 provider：Element 已卸载时 context.read 会抛异常，
-      // 前置 mounted 守卫替代吞异常，避免掩盖真实的 unmounted-read bug。
-      if (mounted) {
-        final settings = context.read<TimetableProvider>().settings;
-        if (settings.enableHaptics) HapticFeedback.selectionClick();
-      }
-    }
-    setState(() {
-      _homePullDragDistance = nextVisual;
-    });
-  }
 
-  void _finishHomePullDrag() {
-    final shouldTrigger =
-        _homePullDragDistance >= _homePullQuickImportTriggerDistance;
-    _homePullSettleTo(0);
-    _homePullHapticArmed = true;
-    if (shouldTrigger) {
-      unawaited(_runHomePullQuickImport());
-    }
-  }
 
-  void _cancelHomePullDrag() {
-    _homePullSettleTo(0);
-    _homePullHapticArmed = true;
-  }
 
   /// 全局指针登记（[GestureBinding.pointerRouter] 的全局路由：同一事件先到这里，
   /// 再走命中派发）。只做两件事：登记 / 注销指针；最后一根手指离开屏幕时错开
@@ -2392,190 +2269,29 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// → [_finishHomePullDrag] 里"够阈值就拉课表"的判定）就在同一批**同步**处理里。
   /// 抢在它前面收回会把那次触发吃掉（用户拉到阈值上方抬手，却什么都没发生）。
   /// 微任务排在事件派发结束之后，判定已经走完。
-  void _onGlobalPointerEvent(PointerEvent event) {
-    if (event is PointerDownEvent) {
-      _homePullPrimaryPointer ??= event.pointer;
-      _homePullLivePointers.add(event.pointer);
-      return;
-    }
-    if (event is! PointerUpEvent &&
-        event is! PointerCancelEvent &&
-        event is! PointerRemovedEvent) {
-      return;
-    }
-    final endedPrimary = _homePullPrimaryPointer == event.pointer;
-    if (endedPrimary) {
-      _homePullPrimaryPointer = null;
-      // 发起这次下拉的手指结束就收尾；不能等第二根手指也离开。
-      scheduleMicrotask(_retractOrphanedHomePull);
-    }
-    _homePullLivePointers.remove(event.pointer);
-    if (_homePullLivePointers.isNotEmpty) {
-      return;
-    }
-    scheduleMicrotask(_retractOrphanedHomePull);
-  }
 
   /// 看门狗本体：屏上已经没有手指、也不在拉课表，而进度还没归零 ⇒ 这一轮手势
   /// 的收尾丢了，收回。
   ///
   /// 与正常收尾**幂等**：正常路径已经把它拨向 0，这里最多再把弹簧重拨一次
   /// （目标相同），不会打架；真处于"收尾丢了"的状态才是唯一有效的那一次。
-  void _retractOrphanedHomePull() {
-    if (!mounted || _isHomePullQuickImportRunning) {
-      return;
-    }
-    if (_homePullDragDistance <= 0 && _homePullTouchDistance <= 0) {
-      return;
-    }
-    _homePullSettleTo(0);
-  }
 
   // --- Home pull spring helpers (HyperOS critical-damped, period 0.4s) ---
-  void _driveHomePullSettle() {
-    final spring = _homePullSettleSpring;
-    if (spring == null) return;
-    final v = spring.value;
-    if (!mounted) return;
-    setState(() {
-      _homePullDragDistance = v.clamp(0.0, _homePullQuickImportMaxDistance);
-      _homePullTouchDistance = HyperosHomePullPhysics.touchForOffset(
-        v,
-        _homePullDampingRange,
-      ).clamp(0.0, _homePullDampingRange);
-    });
-  }
 
-  void _homePullSettleTo(double target) {
-    final spring = _homePullSettleSpring;
-    if (spring == null) {
-      setState(() {
-        _homePullDragDistance = target;
-        _homePullTouchDistance = HyperosHomePullPhysics.touchForOffset(
-          target,
-          _homePullDampingRange,
-        );
-      });
-      return;
-    }
-    final generation = ++_homePullSettleGeneration;
-    spring.value = _homePullDragDistance;
-    final sim = SpringSimulation(
-      HyperosHomePullPhysics.spring,
-      spring.value,
-      target,
-      0,
-    );
-    // ignore: discarded_futures
-    spring
-        .animateWith(sim)
-        .then((_) {
-          if (!mounted || generation != _homePullSettleGeneration) return;
-          setState(() {
-            _homePullDragDistance = target;
-            _homePullTouchDistance = HyperosHomePullPhysics.touchForOffset(
-              target,
-              _homePullDampingRange,
-            );
-          });
-        })
-        .catchError((Object _) {});
-  }
 
   /// Clamping overscroll at the top of the week/day vertical scrollables.
   ///
   /// 只有「按下时就已经在顶部」的手势才累计下拉
   /// （[_homePullGestureStartedAtTop]）：滚回顶部的那一拖整段不算，
   /// 需要到顶部后再拉一次。见该字段的说明。
-  bool _handleHomePullScrollNotification(ScrollNotification notification) {
-    if (_isHomePullQuickImportRunning) {
-      return false;
-    }
-    final metrics = notification.metrics;
-    if (metrics.axis != Axis.vertical) {
-      return false;
-    }
 
-    final atTop = metrics.pixels <= metrics.minScrollExtent + 0.5;
-
-    // 手势起点快照：只有"手指按下时就已经在顶部"的这次拖拽才允许累计下拉。
-    // 滚回顶部的那一拖（起点在半路）整段都不计，用户要再拉一下才触发。
-    if (notification is ScrollStartNotification) {
-      _homePullGestureStartedAtTop = notification.dragDetails != null && atTop;
-      return false;
-    }
-
-    // While the pull affordance is open, upward content scroll retracts it.
-    //
-    // Deliberately does *not* try to undo the scroll: `ScrollPosition.correctBy`
-    // is only valid from the layout pass (`applyContentDimensions`), and calling
-    // it from a notification callback trips assertions / causes scroll jitter.
-    // Letting the list scroll while the indicator retracts is the safe
-    // behaviour, and visually reads the same on device.
-    if (_homePullDragDistance > 0 && notification is ScrollUpdateNotification) {
-      final scrollDelta = notification.scrollDelta ?? 0.0;
-      if (scrollDelta > 0) {
-        _updateHomePullDragDistance(-scrollDelta);
-        return false;
-      }
-    }
-
-    if (notification is OverscrollNotification &&
-        atTop &&
-        _homePullGestureStartedAtTop) {
-      // Negative overscroll = past the leading edge (top) while pulling down.
-      if (notification.overscroll < 0) {
-        _updateHomePullDragDistance(-notification.overscroll);
-      } else if (notification.overscroll > 0 && _homePullDragDistance > 0) {
-        // Positive overscroll at top while pull is open: treat as retract.
-        _updateHomePullDragDistance(-notification.overscroll);
-      }
-      return false;
-    }
-
-    if (notification is ScrollEndNotification) {
-      _homePullGestureStartedAtTop = false;
-      if (_homePullDragDistance > 0) {
-        _finishHomePullDrag();
-        return false;
-      }
-    }
-
-    return false;
-  }
-
-  void _cancelHomePullQuickImport() {
-    final cancel = _homePullQuickImportCancel;
-    if (cancel == null) {
-      return;
-    }
-    // 已经进入实际写入阶段时，底层必须先完成并报告真实结果，不能把
-    // “取消”按钮变成一个会撒谎的即时返回。
-    if (!cancel()) {
-      return;
-    }
-    if (mounted) {
-      setState(() {
-        _isHomePullQuickImportRunning = false;
-        _homePullQuickImportCancel = null;
-      });
-    }
-  }
 
   Future<void> _runHomePullQuickImport() async {
-    if (_isHomePullQuickImportRunning || !mounted) {
+    if (_homePull.isRunning || !mounted) {
       return;
     }
     final l10n = AppLocalizations.of(context)!;
-    _homePullSettleGeneration++;
-    _homePullSettleSpring?.stop();
-    _homePullHapticArmed = true;
-    _homePullTouchDistance = 0;
-    setState(() {
-      _isHomePullQuickImportRunning = true;
-      _homePullDragDistance = 0;
-      _homePullQuickImportCancel = null;
-    });
+    _homePull.beginImport();
     // 同步读取 provider：前置 mounted 守卫替代吞异常，避免掩盖
     // unmounted-read 类 bug。
     if (mounted) {
@@ -2599,17 +2315,12 @@ class _TimetableScreenState extends State<TimetableScreen>
           if (!mounted) {
             return;
           }
-          setState(() {
-            _homePullQuickImportCancel = cancel;
-          });
+          _homePull.setCancel(cancel);
         },
       );
     } finally {
       if (mounted) {
-        setState(() {
-          _isHomePullQuickImportRunning = false;
-          _homePullQuickImportCancel = null;
-        });
+        _homePull.endImport();
       }
     }
   }
