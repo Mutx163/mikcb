@@ -137,6 +137,14 @@ android {
     }
 }
 
+// UmengCrashRedaction 靠反射改写 Throwable.detailMessage（java.lang 的私有
+// 字段，java.base 模块不对未命名模块开放）：不加 --add-opens 时 JVM 单测里
+// setAccessible(true) 抛 InaccessibleObjectException，脱敏写入静默回退、
+// 测不到真实路径。Android（ART）没有模块系统，不受这条限制。
+tasks.withType(Test).configureEach { test ->
+    test.jvmArgs('--add-opens', 'java.base/java.lang=ALL-UNNAMED')
+}
+
 flutter {
     source = "../.."
 }

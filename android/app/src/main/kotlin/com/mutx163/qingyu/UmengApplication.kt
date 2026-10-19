@@ -56,6 +56,14 @@ class UmengApplication : Application() {
                     ""
                 )
                 initialized = true
+                // 自动崩溃链路的脱敏一致性（审计 #27）：U-APM 的崩溃上报没有
+                // 改写负载的公开 API，init 装好自己的默认 UncaughtExceptionHandler
+                // 之后，再包一层把异常 message 过 redactPersonalFields 再交上报。
+                // 安装失败不影响初始化本身（回退为既有行为）。
+                try {
+                    UmengCrashRedaction.install()
+                } catch (_: Throwable) {
+                }
                 return true
             }
         }
