@@ -5,7 +5,10 @@ import 'package:university_timetable/widgets/preblurred_wallpaper_glass.dart';
 
 void main() {
   group('resolveHomePreblurSigma', () {
-    test('高斯课程卡优先决定 sigma', () {
+    test('液态 chrome 优先：『卡片是玻璃档』不许再抢决定权（2026-10-19 修复）', () {
+      // 这个 getter 的定义是「**不是实体档**」，液态卡片也为真 —— 它一旦抢在前面，
+      // 液态玻璃带的冻结位图就会被烤成全局顶栏模糊量（十几到二十几），而实时那条路
+      // 只有 lgBlurSigma（1.0）：转场一开始整块带糊成一团，用户读到的是「变成高斯模糊」。
       expect(
         resolveHomePreblurSigma(
           gaussianCardsDrive: true,
@@ -13,11 +16,12 @@ void main() {
           sheetBlurSigma: 15,
           liquidGlassTunedBlur: 8,
         ),
-        15,
+        8,
       );
     });
 
-    test('液态玻璃 chrome 使用调校值并夹紧到 2-24', () {
+    test('液态 chrome 用调校值：只夹上限 24，**不抬下限**（冻结必须与实时同 σ）', () {
+      // 抬下限会重演同一场灾难：实时是 0.5，冻结烤成 2.0 就是糊了 4 倍。
       expect(
         resolveHomePreblurSigma(
           gaussianCardsDrive: false,
@@ -25,7 +29,7 @@ void main() {
           sheetBlurSigma: 15,
           liquidGlassTunedBlur: 0.5,
         ),
-        2.0,
+        0.5,
       );
       expect(
         resolveHomePreblurSigma(

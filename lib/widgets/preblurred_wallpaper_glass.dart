@@ -400,9 +400,17 @@ double resolveHomePreblurSigma({
   required double sheetBlurSigma,
   required double? liquidGlassTunedBlur,
 }) {
-  if (gaussianCardsDrive) {
-    return sheetBlurSigma;
-  }
+  // ⚠️ **顺序是有意的：液态玻璃带优先，卡片那条信号不许再抢在前面。**
+  //
+  // 这张位图在转场期间被拿来顶替实时玻璃（`frozenHomeChromeGlassBoard`），
+  // 所以它必须与实时那条路**同一个 σ**。曾经这里是「gaussianCardsDrive 先判」，
+  // 而它的判据是 `cardStyle.isGlass` —— 那个 getter 的定义是「**不是实体档**」，
+  // 液态卡片照样为真。于是液态玻璃带的位图被烤成全局顶栏模糊量（十几到二十几），
+  // 而它实时只有 `lgBlurSigma`（1.0）：转场一开始整块带就糊成一团，读起来就是
+  // 「变成高斯模糊」（用户 2026-10-19 报，与「回今日」浮钮同一根因）。
+  //
+  // `gaussianCardsDrive` 仍然保留在签名里（三个调用点都在传，且「卡片是玻璃档」
+  // 这个信号以后可能用得上），但它**不再影响本函数的结果** —— 别再把判定抢回去。
   if (liquidGlassChrome && liquidGlassTunedBlur != null) {
     return liquidGlassTunedBlur
         .clamp(kHomePreblurMinSigma, kPreblurMaxSigma)
