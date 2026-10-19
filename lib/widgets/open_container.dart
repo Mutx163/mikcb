@@ -712,6 +712,28 @@ class _OpenContainerRoute<T> extends ModalRoute<T> {
   AnimationStatus? _lastAnimationStatus;
   AnimationStatus? _currentAnimationStatus;
 
+  /// `buildTransitions` 用的曲线动画：**每条路由建一次**，在 [install] 里随控制器
+  /// 同批创建、在 [dispose] 里释放。
+  ///
+  /// 不能建在 `buildTransitions` 里 —— 那个方法**每帧**都被框架调一次
+  /// （`_ModalScopeState` 的 listenable 每 tick 重建 → `buildTransitions`），而
+  /// `CurvedAnimation` 的构造器会给 parent 挂状态监听、只有它自己的 `dispose()`
+  /// 摘得掉（SDK `animation/animations.dart`）。建在 build 里 = 每帧泄漏一个监听，
+  /// 一趟转场泄漏「帧数」个，`notifyStatusListeners` 每帧都要遍历它们。
+  CurvedAnimation? _curvedAnimation;
+
+  @override
+  void install() {
+    super.install();
+    final Animation<double>? animation = this.animation;
+    if (animation != null) {
+      _curvedAnimation = CurvedAnimation(
+        parent: animation,
+        curve: Curves.fastOutSlowIn,
+      );
+    }
+  }
+
   @override
   TickerFuture didPush() {
     // mikcb patch (perf): frame probe mark. 课卡 → 课程详情这条转场此前没有任何
@@ -753,6 +775,8 @@ class _OpenContainerRoute<T> extends ModalRoute<T> {
 
   @override
   void dispose() {
+    _curvedAnimation?.dispose();
+    _curvedAnimation = null;
     if (hideableKey.currentState?.isVisible == false) {
       // This route may be disposed without dismissing its animation if it is
       // removed by the navigator.
@@ -884,13 +908,16 @@ class _OpenContainerRoute<T> extends ModalRoute<T> {
             );
           }
 
-          final Animation<double> curvedAnimation = CurvedAnimation(
-            parent: animation,
-            curve: Curves.fastOutSlowIn,
-            reverseCurve: _transitionWasInterrupted
-                ? null
-                : Curves.fastOutSlowIn.flipped,
-          );
+          // 复用路由持有的那一个（见 [_curvedAnimation]）；`reverseCurve` 是可变
+          // 公开字段，逐帧现赋与「每帧新建时传的那个值」等价，且不新增监听。
+          final CurvedAnimation curvedAnimation =
+              _curvedAnimation ??= CurvedAnimation(
+                parent: animation,
+                curve: Curves.fastOutSlowIn,
+              );
+          curvedAnimation.reverseCurve = _transitionWasInterrupted
+              ? null
+              : Curves.fastOutSlowIn.flipped;
           TweenSequence<Color?>? colorTween;
           TweenSequence<double>? closedOpacityTween, openOpacityTween;
           Animatable<Color?>? scrimTween;
