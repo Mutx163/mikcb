@@ -23,6 +23,7 @@ import '../../../models/timetable_settings.dart';
 import '../../../models/warehouse_macro_models.dart';
 import '../../../models/warehouse_repository_models.dart';
 import '../../../providers/timetable_provider.dart';
+import '../../../domain/warehouse_bridge_gate.dart';
 import '../../../domain/warehouse_course_import_logic.dart';
 import '../../../domain/warehouse_location_time_schemes.dart';
 import '../../../domain/warehouse_macro_dialog_replay.dart';
@@ -270,37 +271,6 @@ class _WarehouseAdapterWebLoginScreenState
     return 'type=$type keys=[$keys] payloadLength=$payloadLength message=$errorMessage';
   }
 
-  /// Adapter scripts often toast "成功导入 N 条课程" right before the host shows
-  /// the quick-import completion sheet. Match common success phrasings so we
-  /// can suppress the redundant light tip during macro replay.
-  bool _isScriptImportSuccessToast(String message) {
-    final text = message.trim();
-    if (text.isEmpty) {
-      return false;
-    }
-    final lower = text.toLowerCase();
-    return text.contains('成功导入') ||
-        text.contains('导入成功') ||
-        text.contains('导入完成') ||
-        (text.contains('导入') && text.contains('条课程')) ||
-        lower.contains('import success') ||
-        lower.contains('imported') && lower.contains('course');
-  }
-
-  /// Progress toasts from adapter scripts ("正在获取课表…") are redundant with
-  /// the quick-import playback overlay / completion sheet.
-  bool _isScriptImportProgressToast(String message) {
-    final text = message.trim();
-    if (text.isEmpty) {
-      return false;
-    }
-    return text.contains('正在通过接口') ||
-        text.contains('正在获取') ||
-        text.contains('正在导入') ||
-        text.contains('请稍候') ||
-        text.contains('请稍等');
-  }
-
   @override
   void initState() {
     super.initState();
@@ -352,6 +322,16 @@ class _WarehouseAdapterWebLoginScreenState
       })
       ..setNavigationDelegate(
         NavigationDelegate(
+          onNavigationRequest: (request) {
+            // 主框架导航 scheme 白名单：教务站大量明文 http（NSC 已放行），
+            // 其余 intent:/file:/javascript:/data: 等一律拒之门外。子框架
+            // 不经过此回调；策略见 lib/domain/warehouse_bridge_gate.dart。
+            if (warehouseAllowsMainFrameNavigation(request.url)) {
+              return NavigationDecision.navigate;
+            }
+            _debugImportLog('navigation blocked by scheme gate: ${request.url}');
+            return NavigationDecision.prevent;
+          },
           onProgress: (progress) {
             if (!mounted) {
               return;
@@ -1841,6 +1821,16 @@ $kWarehouseBridgeCompatShim  try {
 
     _debugImportLog('bridge ${_bridgeMessageSummary(message)}');
     final type = message['type'] as String? ?? '';
+    // UI 类桥接消息（toast/confirm/prompt/singleSelection/error）只在导入
+    // 执行期处理：它们的唯一合法生产者是适配脚本，页面伪造的一律丢弃
+    // （钓鱼弹窗面），判据与名单见 lib/domain/warehouse_bridge_gate.dart。
+    if (!shouldProcessWarehouseBridgeMessage(
+      type: type,
+      importExecutionActive: _isPrivilegedBridgeContextActive,
+    )) {
+      _debugImportLog('bridge $type ignored outside import execution');
+      return;
+    }
     switch (type) {
       case 'macro:event':
         _handleMacroEvent(message);
@@ -1865,8 +1855,8 @@ $kWarehouseBridgeCompatShim  try {
         // completion sheet; suppress script success toasts that only report
         // "imported N courses" so users are not hit by two stacked tips.
         if (_isMacroReplay &&
-            (_isScriptImportSuccessToast(toastMessage) ||
-                _isScriptImportProgressToast(toastMessage))) {
+            (isScriptImportSuccessToast(toastMessage) ||
+                isScriptImportProgressToast(toastMessage))) {
           _debugImportLog(
             'bridge toast suppressed during macro replay message="$toastMessage"',
           );
