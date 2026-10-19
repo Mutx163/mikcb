@@ -505,10 +505,20 @@ class _TimeSchemeManagementScreenState
             ],
           ),
           const SizedBox(height: 8),
+          // 空 sections 的作息经导入链路进库（`TimeScheme.fromJson` 对缺失/非
+          // List/整表坏 sections 产出空表且不抛错，能通过全量备份的「条目数
+          // 不变少」守卫）；这里不防会让作息管理页每次 build 都崩、且无法在
+          // 页内删掉坏数据。空表渲染为占位「-」，其余 5 处消费点
+          // （picker_sheet / lan_edit_provider_host / live fixture / domain
+          // 层）早已同口径防了 isEmpty。
           Text(
-            scheme.sectionCount > 1
-                ? l10n.timeSchemeStartsAt(scheme.sections.first.displayText)
-                : scheme.sections.first.displayText,
+            switch (scheme.sectionCount) {
+              0 => '-',
+              1 => scheme.sections.first.displayText,
+              _ => l10n.timeSchemeStartsAt(
+                  scheme.sections.first.displayText,
+                ),
+            },
             style: HyperosTypography.listDetail(context),
           ),
           if (isActive) ...[
