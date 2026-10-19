@@ -4222,6 +4222,12 @@ abstract class AppLocalizations {
   /// **'新增大课间规则'**
   String get addBreakRuleAction;
 
+  /// No description provided for @breakOverrideInvalidMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'大课间规则要改：第几节后填 1 以上的数字，时长填 0 以上的数字'**
+  String get breakOverrideInvalidMessage;
+
   /// No description provided for @afterSectionLabel.
   ///
   /// In zh, this message translates to:

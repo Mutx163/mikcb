@@ -383,17 +383,33 @@ class _TimeSchemeQuickGenerateSheetState
       return;
     }
 
-    final breakOverrideRules = _breakOverrides
-        .where(
-          (item) => item.afterSection > 0 && item.breakDurationMinutes >= 0,
-        )
-        .map(
-          (item) => BreakOverrideRule(
-            afterSection: item.afterSection,
-            breakDurationMinutes: item.breakDurationMinutes,
-          ),
-        )
-        .toList();
+    // 大课间行不再静默丢弃（2026-10-20）：新增行默认「第几节后 = 0」，用户
+    // 没改就点生成时，旧实现的 `.where(afterSection > 0 && duration >= 0)`
+    // 会把这条规则一声不吭地滤掉——生成结果与设置页填的对不上，还查不到
+    // 原因。现在任何一行不合法都阻断提交并指路；解析失败（空/非数字）与
+    // 越界（节次 < 1、时长 < 0）同口径。
+    final breakOverrideRules = <BreakOverrideRule>[];
+    for (final item in _breakOverrides) {
+      final afterSection = int.tryParse(item.afterController.text.trim());
+      final breakDuration = int.tryParse(item.durationController.text.trim());
+      if (afterSection == null ||
+          afterSection < 1 ||
+          breakDuration == null ||
+          breakDuration < 0) {
+        showAppToast(
+          context,
+          message: l10n.breakOverrideInvalidMessage,
+          kind: AppToastKind.warning,
+        );
+        return;
+      }
+      breakOverrideRules.add(
+        BreakOverrideRule(
+          afterSection: afterSection,
+          breakDurationMinutes: breakDuration,
+        ),
+      );
+    }
 
     Navigator.pop(
       context,

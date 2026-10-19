@@ -1152,6 +1152,7 @@
   "sectionCountLabel": "節數",
   "quickGenerateTimeSchemeTitle": "快捷生成課表時間",
   "addBreakRuleAction": "新增大課間規則",
+  "breakOverrideInvalidMessage": "大課間規則要改：第幾節後填 1 以上的數字，時長填 0 以上的數字",
   "afterSectionLabel": "第几節後",
   "breakDurationMinutesLabel": "休息時長 分鐘",
   "fillNumbersValidationMessage": "請把節數和時長填寫為數字",

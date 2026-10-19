@@ -2407,6 +2407,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addBreakRuleAction => 'Add Break Rule';
 
   @override
+  String get breakOverrideInvalidMessage =>
+      'Fix break rules: section number must be 1 or more, duration 0 or more';
+
+  @override
   String get afterSectionLabel => 'After Section';
 
   @override

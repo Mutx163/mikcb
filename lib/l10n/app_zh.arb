@@ -1299,6 +1299,7 @@
   "sectionCountLabel": "节数",
   "quickGenerateTimeSchemeTitle": "快捷生成课表时间",
   "addBreakRuleAction": "新增大课间规则",
+  "breakOverrideInvalidMessage": "大课间规则要改：第几节后填 1 以上的数字，时长填 0 以上的数字",
   "afterSectionLabel": "第几节后",
   "breakDurationMinutesLabel": "休息时长 分钟",
   "fillNumbersValidationMessage": "请把节数和时长填写为数字",

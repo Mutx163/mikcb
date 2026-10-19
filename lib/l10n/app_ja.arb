@@ -1153,6 +1153,7 @@
   "sectionCountLabel": "時限数",
   "quickGenerateTimeSchemeTitle": "時間割時間をクイック生成",
   "addBreakRuleAction": "大休憩ルールを追加",
+  "breakOverrideInvalidMessage": "大休憩ルールを修正：時限は 1 以上、時間は 0 以上の数字で入力してください",
   "afterSectionLabel": "何時限目の後",
   "breakDurationMinutesLabel": "休憩時間（分）",
   "fillNumbersValidationMessage": "時限数と時間を数字で入力してください",

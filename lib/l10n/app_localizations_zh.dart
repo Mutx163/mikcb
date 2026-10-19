@@ -2265,6 +2265,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addBreakRuleAction => '新增大课间规则';
 
   @override
+  String get breakOverrideInvalidMessage => '大课间规则要改：第几节后填 1 以上的数字，时长填 0 以上的数字';
+
+  @override
   String get afterSectionLabel => '第几节后';
 
   @override
@@ -13518,6 +13521,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get addBreakRuleAction => '新增大課間規則';
+
+  @override
+  String get breakOverrideInvalidMessage => '大課間規則要改：第幾節後填 1 以上的數字，時長填 0 以上的數字';
 
   @override
   String get afterSectionLabel => '第幾節後';
@@ -24813,6 +24819,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get addBreakRuleAction => '新增大課間規則';
+
+  @override
+  String get breakOverrideInvalidMessage => '大課間規則要改：第幾節後填 1 以上的數字，時長填 0 以上的數字';
 
   @override
   String get afterSectionLabel => '第几節後';

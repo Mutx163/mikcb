@@ -2322,6 +2322,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get addBreakRuleAction => '대휴식 규칙 추가';
 
   @override
+  String get breakOverrideInvalidMessage =>
+      '대휴식 규칙을 수정하세요: 교시는 1 이상, 시간은 0 이상으로 입력';
+
+  @override
   String get afterSectionLabel => '몇 교시 뒤';
 
   @override

@@ -1257,6 +1257,7 @@
   "schemeListCountLabel": "Count",
   "quickGenerateTimeSchemeTitle": "Quick Generate Timetable Times",
   "addBreakRuleAction": "Add Break Rule",
+  "breakOverrideInvalidMessage": "Fix break rules: section number must be 1 or more, duration 0 or more",
   "afterSectionLabel": "After Section",
   "breakDurationMinutesLabel": "Break Duration (min)",
   "fillNumbersValidationMessage": "Please fill both section count and duration with numbers",

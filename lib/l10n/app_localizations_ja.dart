@@ -2309,6 +2309,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get addBreakRuleAction => '大休憩ルールを追加';
 
   @override
+  String get breakOverrideInvalidMessage =>
+      '大休憩ルールを修正：時限は 1 以上、時間は 0 以上の数字で入力してください';
+
+  @override
   String get afterSectionLabel => '何時限目の後';
 
   @override

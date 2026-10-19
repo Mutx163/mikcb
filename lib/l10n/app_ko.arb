@@ -1153,6 +1153,7 @@
   "sectionCountLabel": "교시 수",
   "quickGenerateTimeSchemeTitle": "시간표 시간 빠른 생성",
   "addBreakRuleAction": "대휴식 규칙 추가",
+  "breakOverrideInvalidMessage": "대휴식 규칙을 수정하세요: 교시는 1 이상, 시간은 0 이상으로 입력",
   "afterSectionLabel": "몇 교시 뒤",
   "breakDurationMinutesLabel": "휴식 시간(분)",
   "fillNumbersValidationMessage": "교시 수와 시간을 숫자로 입력하세요",
