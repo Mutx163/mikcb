@@ -384,16 +384,32 @@ class _HyperosZoomShrinkScopeState extends State<HyperosZoomShrinkScope> {
   ///
   /// ⚠️ 顺序是**先摘发布、再 dispose**：编辑页的卡片可能正拿这张图当图源，
   /// 先 dispose 会让它画到一张已释放的 `ui.Image`。
+  ///
+  /// ⚠️ 摘发布也必须**帧末**做，与 [_publishSnapshot] 同一条纪律：这个
+  /// notifier 的另一头是**另一条路由**里的 AnimatedBuilder，build 阶段直接写
+  /// 会把它标脏，框架抛「setState() or markNeedsBuild() called during build」
+  /// （2026-09-20 用户报错原文，见 [_publishSnapshot] 注释）。本方法的两条
+  /// 调用路径（:414 驱动撤下、:422 pop 落定）都在 `AnimatedBuilder` 的 builder
+  /// 里，即 build 阶段。
+  ///
+  /// 之所以此前没炸，只是「pop 落定时编辑页已经 dispose」这条**隐式时序**在兜底：
+  /// 它 dispose 时若发现发布中的正是这张图，会先把 notifier 清成 null，于是这里
+  /// 的 identical 判 false、根本不写。那是框架元素销毁顺序的副产品，不是本类能
+  /// 保证的契约——将来给编辑页加一条常驻监听、或改 dispose 顺序，就会当场复现。
   void _releaseSnapshot() {
     final image = _snapshot;
     if (image == null) {
       return;
     }
     _snapshot = null;
-    if (identical(hyperosZoomHomeSnapshot.value, image)) {
-      hyperosZoomHomeSnapshot.value = null;
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) => image.dispose());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 帧末再判：这期间本类没有再发别的图（notifier 只由本类写），
+      // 判 false 说明发布已被别处摘掉，不必再动。
+      if (identical(hyperosZoomHomeSnapshot.value, image)) {
+        hyperosZoomHomeSnapshot.value = null;
+      }
+      image.dispose();
+    });
   }
 
   @override
