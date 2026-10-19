@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../providers/timetable_provider.dart';
 import '../../ui/hyperos/hyperos.dart';
+import '../../utils/app_toast.dart';
 
 /// 星期栏墨色对比提醒弹层。
 ///
@@ -67,4 +69,39 @@ class TimetableWeekdayInkContrastDialogBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(message);
+}
+
+/// 把星期栏墨色改回默认（自动黑 / 白）。
+///
+/// 和弹层放在一起而不是留在课表页 State：「深色主题该写哪个字段」与「写失败
+/// 怎么提示」都是这条警告的一部分。返回是否**真的写成功** —— 失败时弹层不关。
+///
+/// 只改这一个字段：读的是**实时** settings，弹层挂着的这段时间里设置可能已经
+/// 变过，不能拿弹出前的快照整体覆盖。
+Future<bool> resetTimetableWeekdayInkToDefault(
+  BuildContext context, {
+  required TimetableProvider provider,
+  required bool isDarkTheme,
+  required String defaultHex,
+}) async {
+  final current = provider.settings;
+  try {
+    await provider.updateSettings(
+      isDarkTheme
+          ? current.copyWith(weekdayBarFontColorDark: defaultHex)
+          : current.copyWith(weekdayBarFontColorLight: defaultHex),
+    );
+  } catch (_) {
+    // 失败不关弹层（与 add_exam_screen 同口径）：用户要看得见「没改成」。
+    if (!context.mounted) {
+      return false;
+    }
+    showAppToast(
+      context,
+      message: AppLocalizations.of(context)!.saveFailed,
+      kind: AppToastKind.error,
+    );
+    return false;
+  }
+  return true;
 }

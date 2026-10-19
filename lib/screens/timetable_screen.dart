@@ -92,6 +92,7 @@ import '../widgets/timetable/timetable_home_header.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
 import '../widgets/timetable/timetable_glass_dock.dart';
 import '../widgets/timetable/timetable_open_only_route.dart';
+import '../widgets/timetable/timetable_weekday_ink_contrast_dialog.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
@@ -2431,53 +2432,16 @@ class _TimetableScreenState extends State<TimetableScreen>
       _weekdayInkWarningShowing = false;
       return;
     }
-    final l10n = AppLocalizations.of(context)!;
     try {
-      await showHyperosDialog<void>(
-        context: context,
-        title: l10n.weekdayInkContrastTitle,
-        body: Text(
-          wallpaperIsDark
-              ? l10n.weekdayInkContrastBodyDark
-              : l10n.weekdayInkContrastBodyLight,
+      await showTimetableWeekdayInkContrastDialog(
+        context,
+        wallpaperIsDark: wallpaperIsDark,
+        onResetDefault: () => resetTimetableWeekdayInkToDefault(
+          context,
+          provider: provider,
+          isDarkTheme: isDarkTheme,
+          defaultHex: defaultHex,
         ),
-        actions: [
-          HyperosDialogAction(
-            label: l10n.gotItAction,
-            onPressed: () => Navigator.pop(context),
-          ),
-          HyperosDialogAction(
-            label: l10n.resetDefaultAction,
-            isPrimary: true,
-            onPressed: () async {
-              // Re-read the live settings: they may have changed while the
-              // dialog was up, and only this one field should be touched.
-              final current = provider.settings;
-              try {
-                await provider.updateSettings(
-                  isDarkTheme
-                      ? current.copyWith(weekdayBarFontColorDark: defaultHex)
-                      : current.copyWith(weekdayBarFontColorLight: defaultHex),
-                );
-              } catch (_) {
-                // 失败不关弹层（与 add_exam_screen 同口径）：用户要看得见「没改成」。
-                if (!mounted) {
-                  return;
-                }
-                showAppToast(
-                  context,
-                  message: AppLocalizations.of(context)!.saveFailed,
-                  kind: AppToastKind.error,
-                );
-                return;
-              }
-              if (!mounted) {
-                return;
-              }
-              Navigator.pop(context);
-            },
-          ),
-        ],
       );
     } finally {
       _weekdayInkWarningShowing = false;
