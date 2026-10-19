@@ -604,4 +604,11 @@ void main() {
       expect(validation.warnings, contains('exam_course_missing:exam-1'));
     },
   );
+
+  test('同一微秒生成的 packageId 不撞号（撤销槽按 id 消费）', () {
+    final now = DateTime(2026, 10, 20, 12, 0, 0);
+    final ids = List.generate(50, (_) => TransferPackage.newPackageId(now: now));
+
+    expect(ids.toSet().length, ids.length, reason: '纯时间戳会撞号，随机后缀兜底');
+  });
 }

@@ -520,6 +520,34 @@ class StorageService {
     Iterable<TimetableProfile> profiles,
   ) => profiles.map(_snapshotProfile).toList();
 
+  /// 带时间戳的损坏留档 key 只留最近 1 份。
+  ///
+  /// 整 key 损坏可能反复发生（每次冷启动重读都会再触发），而
+  /// `${key}_corrupt_backup_<µs>` 从不清理——多来几次，preferences 里就躺着
+  /// 一排死备份，留档自己长成了新的存储问题（同文件 `coursesUnparsedItemsKey`
+  /// 的注释早把这条账算过：「不按次追加」）。真正的找回价值只在最近一份原始
+  /// 字节，旧的可清。清扫失败不阻断留档主流程，下次再扫。
+  Future<void> _sweepOldCorruptBackups(
+    SharedPreferences prefs,
+    String key,
+    String keepKey,
+  ) async {
+    try {
+      final prefix = '${key}_corrupt_backup_';
+      final stale = prefs
+          .getKeys()
+          .where((staleKey) => staleKey.startsWith(prefix) && staleKey != keepKey)
+          .toList(growable: false);
+      for (final staleKey in stale) {
+        await prefs.remove(staleKey);
+      }
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('StorageService: corrupt-backup sweep failed for $key: $error');
+      }
+    }
+  }
+
   Future<bool> _backupAndRemoveCorruptString(String key, String raw) async {
     try {
       final prefs = await _requirePrefs();
@@ -533,6 +561,7 @@ class StorageService {
         await _recoverAfterFailedWrite(prefs);
         return false;
       }
+      await _sweepOldCorruptBackups(prefs, key, backupKey);
       return true;
     } catch (error) {
       if (kDebugMode) {
@@ -560,6 +589,7 @@ class StorageService {
         await _recoverAfterFailedWrite(prefs);
         return false;
       }
+      await _sweepOldCorruptBackups(prefs, key, backupKey);
       return true;
     } catch (error) {
       if (kDebugMode) {

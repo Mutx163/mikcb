@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 import '../models/course.dart';
@@ -539,8 +540,14 @@ class TransferPackage {
 
   static String newPackageId({DateTime? now}) {
     final timestamp = (now ?? DateTime.now()).microsecondsSinceEpoch;
-    return 'transfer-$timestamp';
+    // 纯微秒时间戳会撞号：同一微秒内的两次生成（快速连发、测试里传固定的
+    // `now`、部分平台时钟粒度粗于 1µs）拿到同一个 id。撤销槽按 id 消费，
+    // 撞号等于可能拿错撤销点，所以补一段随机后缀（与 managed_image_storage
+    // 的临时名同一思路：同步计数在单 isolate 内原子，随机段覆盖跨场景重合）。
+    return 'transfer-$timestamp-${_idSalt.nextInt(1 << 32)}';
   }
+
+  static final Random _idSalt = Random();
 
   static String _requiredString(
     Map<String, dynamic> json,

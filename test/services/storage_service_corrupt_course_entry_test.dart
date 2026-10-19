@@ -72,6 +72,30 @@ void main() {
     expect(backupKeys, hasLength(1));
   });
 
+  test('损坏留档 key 只留最近一份：历史备份被清扫，不无限累积', () async {
+    SharedPreferences.setMockInitialValues({
+      'courses': <String>['{bad-now'],
+      // 模拟此前几次损坏留下的历史留档（真实 key 带微秒时间戳、从不清理，
+      // 反复损坏会在 preferences 里积累一排死备份）。
+      'courses_corrupt_backup_1000': '{"stale":"old"}',
+      'courses_corrupt_backup_2000': '{"stale":"older-still"}',
+    });
+    final storage = StorageService();
+    await storage.init();
+
+    final courses = await storage.getCourses();
+    expect(courses, isEmpty);
+
+    final prefs = await SharedPreferences.getInstance();
+    final backupKeys = prefs
+        .getKeys()
+        .where((key) => key.startsWith('courses_corrupt_backup_'))
+        .toList();
+    expect(backupKeys, hasLength(1), reason: '只保留最近 1 份原始留档');
+    // 留下的是这次刚写的（StringList 走 jsonEncode 落盘），不是历史那份。
+    expect(prefs.getString(backupKeys.single), '["{bad-now"]');
+  });
+
   test('坏条目修复后写路径不再丢好课程', () async {
     final good = _course('good-1');
     SharedPreferences.setMockInitialValues({
