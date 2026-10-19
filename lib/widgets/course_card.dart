@@ -151,11 +151,21 @@ class CourseCard extends StatelessWidget {
       wallpaperLuminance: wallpaperLuminance,
     );
 
+    // 每张卡自成一个重绘边界（2026-10-20）：课卡直接挂在日列 Stack 的
+    // Positioned 里（timetable_day_column），滚动/邻卡动画时没有边界就意味着
+    // 整列所有卡的文本 + 表面每帧全部重画。加了边界后，滚动只是层的平移，
+    // 内容不变的卡直接复用自己的层。玻璃档内部（course_surface）自己有采样
+    // 相关的两处边界，与本层不冲突：BackdropFilter 采的是「已画好的背景」，
+    // 本边界不改变它能看到的内容。
     if (isCompact) {
-      return _buildCompactCard(context, color, titleColor, detailColor);
+      return RepaintBoundary(
+        child: _buildCompactCard(context, color, titleColor, detailColor),
+      );
     }
 
-    return _buildFullCard(context, color, titleColor, detailColor);
+    return RepaintBoundary(
+      child: _buildFullCard(context, color, titleColor, detailColor),
+    );
   }
 
   Widget _buildFullCard(
