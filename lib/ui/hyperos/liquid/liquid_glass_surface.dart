@@ -10,8 +10,11 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_miuix/miuix.dart' show MiuixGlassEdgeFade;
 
 import '../../../models/liquid_glass_tuning.dart';
+import '../../../widgets/course_glass_shader.dart';
+import '../../../widgets/preblurred_wallpaper_glass.dart';
 import '../frosted/liquid_glass_degradation.dart';
 import '../hyperos_blurred_header.dart';
+import '../hyperos_glass_backdrop_host.dart';
 import 'liquid_glass_shader.dart';
 
 /// 这块玻璃表面**按哪个作用域取参数**。
@@ -183,7 +186,24 @@ class LiquidGlassSurface extends StatefulWidget {
     this.forceCanvasBoard = false,
     this.canvasBoardColor,
     this.probeName = 'glassLiquid',
+    this.freezeOnRouteTransition = false,
   });
+
+  /// 转场期间把这块玻璃冻结成预糊壁纸位图，不再产生任何滤镜层（默认关）。
+  ///
+  /// 为什么需要：Impeller 上**每个 `BackdropFilter` 都会结束一次渲染 pass、
+  /// 把整屏回读一遍**，玻璃多小都一样；而「组的模糊折叠成一次」要求组内所有
+  /// filter 属性完全一致（`flutter/flutter#191207`，以及合并进文档的
+  /// `PR #191613`）。本表面的 filter 里带着一块**逐面不同**的屏幕坐标折射
+  /// shader，因此永远折叠不了 —— 玻璃有几块就付几次整屏回读。
+  ///
+  /// 真机实测（25060RK16C / profile / 120Hz 预算 7.5~8.3ms）：同一次运行里
+  /// 「底层是设置页」的转场 5.0~6.5ms，「底层是首页」的 8.5~10.1ms，差值正是
+  /// 首页常驻的这几块玻璃。
+  ///
+  /// 只给**首页常驻 chrome**开。冻结用的是与首页玻璃带同一个预糊位图
+  /// （`PreblurredWallpaperAlignedFill`），所以观感差异仅限转场那 0.3 秒。
+  final bool freezeOnRouteTransition;
 
   /// 诊断用层名：这块玻璃逐帧重绘时记到这个名字下（`[frame-perf] layers=名字:N`）。
   ///
@@ -460,6 +480,20 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
           if (!LiquidGlassSurface._isActuallyRenderable(context, widget.role)) {
             return widget.fallbackBuilder(context);
           }
+          // 转场期间改画预糊位图，不再挂滤镜层（理由见 [freezeOnRouteTransition]）。
+          // 拿不到位图就保持实时玻璃 —— 宁可多付这笔钱，也不要闪一块空白。
+          if (widget.freezeOnRouteTransition &&
+              HyperosGlassBackdropController.routeTransitionRunning.value) {
+            final frozen = _frozenWallpaperGlassBoard(
+              context,
+              role: widget.role,
+              borderRadius: widget.borderRadius,
+              maxRefraction: widget.maxRefraction,
+            );
+            if (frozen != null) {
+              return frozen;
+            }
+          }
           // 两个作用域，各自只有一个出口：表面只提供自己的圆角与当前明暗，折射旋钮、
           // 底色、光来向一律从 [resolveStyleFor] 出 —— 固定小件拿标准档，其余拿
           // [FrostedAppearanceScope] 里那一份，表面自己仍然碰不到参数。
@@ -512,6 +546,57 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
       ),
     );
   }
+}
+
+/// 转场期间「冻结」一块首页玻璃：改画同一份预糊壁纸位图，不再产生滤镜层。
+///
+/// 与首页玻璃带的冻结分支共用同一套取参（同一个 role、同一份成对配置），
+/// 所以两条路在同一块材质上给出同一观感 —— 漏一个就会重现「同一材质两种观感」。
+///
+/// 拿不到位图（还没烤好 / 这棵树不在 [PreblurredWallpaperScope] 里）返回 null，
+/// 由调用方回落成实时玻璃。
+Widget? _frozenWallpaperGlassBoard(
+  BuildContext context, {
+  required LiquidGlassRole role,
+  required double borderRadius,
+  double? maxRefraction,
+}) {
+  if (PreblurredWallpaperScope.isWaitingForBitmap(context)) return null;
+  if (PreblurredWallpaperScope.maybeOf(context) == null) return null;
+  final style = LiquidGlassSurface.resolveStyleFor(
+    appearance: FrostedAppearanceScope.of(context),
+    role: role,
+    borderRadius: borderRadius,
+    brightness: Theme.of(context).brightness,
+  );
+  final glass = CourseGlassStyle(
+    borderRadius: style.borderRadius,
+    tint: style.tint,
+    // 窄件（回到今天那颗钮）会压折射位移；冻结这条路同样要压，否则两条分支
+    // 在同一块表面上给出不同的折射量。
+    refraction: maxRefraction == null
+        ? style.refraction
+        : math.min(style.refraction, maxRefraction),
+    refractionBand: style.refractionBand,
+    refractionEdgePow: style.refractionEdgePow,
+    dispersion: style.dispersion,
+    rimStrength: style.rimStrength,
+    rimWidth: style.rimWidth,
+    rimColor: style.rimColor,
+  );
+  final fill = PreblurredWallpaperAlignedFill(
+    glass: glass,
+    // 显式写出来：这张填的是**哪一份**位图，是载荷信息不是风格 —— 枚举自己的
+    // 文档就写着「必须显式指定，不许猜」。
+    // ignore: avoid_redundant_argument_values
+    source: PreblurredWallpaperSource.home,
+  );
+  if (borderRadius <= 0) return fill;
+  // 形状圆角由玻璃自己按 SDF 画，外面这层裁只负责把溢出的采样收干净。
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(borderRadius),
+    child: fill,
+  );
 }
 
 class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
