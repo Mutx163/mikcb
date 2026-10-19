@@ -780,10 +780,12 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         color: colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(radius),
         boxShadow: [
+          // 中性投影：此前用 colorScheme.primary 的 18% 做光晕，会跟随用户的
+          // 主题色 seed——换成黄 / 绿 / 紫主题后，白色卡片上会浮出一圈彩色污渍。
           BoxShadow(
-            color: colorScheme.primary.withValues(alpha: 0.18),
-            blurRadius: size * 0.21,
-            offset: Offset(0, size * 0.12),
+            color: const Color(0x14000000),
+            blurRadius: size * 0.17,
+            offset: Offset(0, size * 0.055),
           ),
         ],
       ),
@@ -869,126 +871,214 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         l10n.aboutOpenDownloadPageAction,
     };
 
+    // 2026-10-19：检查失败不再伪装成「已是最新版本」。没拿到 release 时
+    // hasRelease 为 false，旧实现与「已是最新」共用同一张卡，于是失败被画成
+    // 「已是最新版本 / 最新版本：未发布 / 一个灰掉的按钮」；失败原因
+    // （result.message，六语言齐全）整页没有任何渲染点，也没有重试入口。
+    if (!result.hasRelease) {
+      return _buildCheckFailedCard(result);
+    }
+
+    final hasUpdate = result.hasUpdate;
+
     return Material(
       color: HyperosColors.card(context),
       shape: HyperosTheme.cardShape(),
       clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             _buildAppLauncherLogo(context, size: 72),
             const SizedBox(height: 16),
-            // 状态标题
+            // 状态标题：有更新时用主题色 + w600 承担「要做事」，已是最新时
+            // 退回主文字色与常规字重，不与下面的版本信息抢层级。
             Text(
-              result.hasUpdate
+              hasUpdate
                   ? l10n.aboutUpdateAvailableHeadline
                   : l10n.aboutAlreadyLatestHeadline,
-              style: result.hasUpdate
-                  ? HyperosTypography.sectionLabel(
-                      context,
-                    ).copyWith(fontSize: 20, fontWeight: FontWeight.w500)
-                  : HyperosTypography.sectionLabel(context).copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w400,
-                      color: HyperosColors.primaryText(context),
-                    ),
+              textAlign: TextAlign.center,
+              style: HyperosTypography.listTitle(context).copyWith(
+                color: hasUpdate
+                    ? HyperosColors.primary(context)
+                    : HyperosColors.primaryText(context),
+                fontWeight: hasUpdate ? FontWeight.w600 : FontWeight.w400,
+              ),
             ),
-            const SizedBox(height: 20),
-            // 版本对比信息
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        l10n.aboutCurrentVersionLabel,
-                        style: HyperosTypography.listDetail(context),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        result.currentVersion,
-                        style: HyperosTypography.listTitle(
-                          context,
-                        ).copyWith(fontFamily: 'monospace'),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        l10n.aboutLatestVersionLabel,
-                        style: HyperosTypography.listDetail(context),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        release?.version ?? l10n.aboutUnreleasedLabel,
-                        style: HyperosTypography.listTitle(
-                          context,
-                        ).copyWith(fontFamily: 'monospace'),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            // 主要操作按钮
-            HyperosButton(
-              label: _isDownloading
-                  ? l10n.aboutDownloadCancelling
-                  : primaryButtonLabel,
-              expand: true,
-              loading: _isDownloading,
-              onPressed: result.hasRelease
-                  ? () {
-                      if (primaryAction ==
-                          AboutUpdatePrimaryAction.openReleasePage) {
-                        _openUrl(release?.releaseUrl);
-                      } else if (downloadChannel ==
-                          AppUpdateDownloadChannel.pgyer) {
-                        _openUrl(effectiveDownloadUrl);
-                      } else if (effectiveDownloadUrl != null) {
-                        if (_useSystemDownloader) {
-                          _enqueueSystemDownload(
-                            url: effectiveDownloadUrl,
-                            version: release?.version,
-                          );
-                        } else {
-                          _downloadAndInstall(
-                            effectiveDownloadUrl,
-                            // 2026-10-10 信任根收紧：digest 的镜像剥离统一在
-                            // 服务层出口（checkForUpdates 返回前）执行，
-                            // 这里直接透传。见 app_update_service.dart。
-                            expectedApkSha256:
-                                release?.expectedApkSha256,
-                            fallbackUrl:
-                                downloadChannel ==
-                                    AppUpdateDownloadChannel.gitcode
-                                ? release?.downloadUrl
-                                : null,
-                          );
-                        }
-                      }
-                    }
-                  : null,
-            ),
-            if (primaryAction != AboutUpdatePrimaryAction.openReleasePage &&
-                result.hasRelease) ...[
-              const SizedBox(height: 10),
-              HyperosButton(
-                label: l10n.aboutViewReleaseAction,
-                variant: HyperosButtonVariant.secondary,
-                expand: true,
-                onPressed: () => _openUrl(release?.releaseUrl),
+            const SizedBox(height: 8),
+            // 版本关系压成一行，与首页更新弹窗同一套写法（旧弱化 → 新强调）。
+            // 原先左右两列等宽对比：「2.1.3-4-profile」实测已占满左列 98%，
+            // 版本号再多一位就会折行，而且两种写法要用户自己判断谁新。
+            if (hasUpdate)
+              _buildVersionTransition(
+                currentVersion: result.currentVersion,
+                latestVersion: release?.version ?? l10n.aboutUnreleasedLabel,
+              )
+            else
+              Text(
+                '${l10n.aboutCurrentVersionLabel} ${result.currentVersion}',
+                textAlign: TextAlign.center,
+                style: HyperosTypography.sectionDescription(context),
+              ),
+            if (!hasUpdate) ...[
+              const SizedBox(height: 12),
+              Text(
+                l10n.aboutUpdateNoUpdateHint,
+                textAlign: TextAlign.center,
+                style: HyperosTypography.sectionDescription(context),
               ),
             ],
+            const SizedBox(height: 20),
+            // 只有真能升的时候才给「立即下载」：已是最新时它只会把同一个版本
+            // 再装一遍（首页更新弹窗在这种情况下根本不出现）。没有更新时主
+            // 按钮改成「重新检查」，顺带补上此前缺失的重试入口。
+            if (hasUpdate)
+              HyperosButton(
+                label: _isCancellingDownload
+                    ? l10n.aboutDownloadCancelling
+                    : primaryButtonLabel,
+                expand: true,
+                loading: _isDownloading,
+                onPressed: () {
+                  if (primaryAction ==
+                      AboutUpdatePrimaryAction.openReleasePage) {
+                    _openUrl(release?.releaseUrl);
+                  } else if (downloadChannel ==
+                      AppUpdateDownloadChannel.pgyer) {
+                    _openUrl(effectiveDownloadUrl);
+                  } else if (effectiveDownloadUrl != null) {
+                    if (_useSystemDownloader) {
+                      _enqueueSystemDownload(
+                        url: effectiveDownloadUrl,
+                        version: release?.version,
+                      );
+                    } else {
+                      _downloadAndInstall(
+                        effectiveDownloadUrl,
+                        // 2026-10-10 信任根收紧：digest 的镜像剥离统一在
+                        // 服务层出口（checkForUpdates 返回前）执行，
+                        // 这里直接透传。见 app_update_service.dart。
+                        expectedApkSha256: release?.expectedApkSha256,
+                        fallbackUrl:
+                            downloadChannel ==
+                                AppUpdateDownloadChannel.gitcode
+                            ? release?.downloadUrl
+                            : null,
+                      );
+                    }
+                  }
+                },
+              )
+            else
+              HyperosButton(
+                label: l10n.aboutRefreshCheckTooltip,
+                variant: HyperosButtonVariant.secondary,
+                expand: true,
+                onPressed: _refreshUpdate,
+              ),
+            // 「查看 Release」降到文字量级的小按钮：与主按钮同宽同高时形状
+            // 在说「我们一样重要」，只有颜色在分主次。
+            if (hasUpdate &&
+                primaryAction != AboutUpdatePrimaryAction.openReleasePage) ...[
+              const SizedBox(height: 12),
+              Center(
+                child: HyperosButton(
+                  label: l10n.aboutViewReleaseAction,
+                  variant: HyperosButtonVariant.secondary,
+                  onPressed: () => _openUrl(release?.releaseUrl),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 「旧版本 → 新版本」一行，与首页更新弹窗同一套写法：旧版本弱化、
+  /// 箭头用三级动作色、新版本用主题色 + w600。
+  Widget _buildVersionTransition({
+    required String currentVersion,
+    required String latestVersion,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          currentVersion,
+          style: HyperosTypography.listDetail(context),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '→',
+          style: HyperosTypography.listDetail(
+            context,
+          ).copyWith(color: HyperosColors.actionIcon(context)),
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            latestVersion,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: HyperosTypography.listDetail(context).copyWith(
+              color: HyperosColors.primary(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 检查更新失败（没拿到任何 release）时的卡片。
+  ///
+  /// 失败原因取服务层的消息码 [AppUpdateCheckResult.message]，经
+  /// [localizeServiceMessage] 转成一句话（六语言齐全）；没有消息码时退回
+  /// 通用说明。
+  Widget _buildCheckFailedCard(AppUpdateCheckResult result) {
+    final l10n = AppLocalizations.of(context)!;
+    final message = (result.message ?? '').trim();
+    final reason = message.isEmpty
+        ? null
+        : localizeServiceMessage(l10n, message);
+    return Material(
+      color: HyperosColors.card(context),
+      shape: HyperosTheme.cardShape(),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            _buildAppLauncherLogo(context, size: 72),
+            const SizedBox(height: 16),
+            Text(
+              l10n.aboutReadVersionFailed,
+              textAlign: TextAlign.center,
+              style: HyperosTypography.listTitle(
+                context,
+              ).copyWith(color: HyperosColors.primaryText(context)),
+            ),
+            if (reason != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                reason,
+                textAlign: TextAlign.center,
+                style: HyperosTypography.sectionDescription(context),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              l10n.aboutReadVersionFailedHint,
+              textAlign: TextAlign.center,
+              style: HyperosTypography.sectionDescription(context),
+            ),
+            const SizedBox(height: 20),
+            HyperosButton(
+              label: l10n.aboutRefreshCheckTooltip,
+              expand: true,
+              onPressed: _refreshUpdate,
+            ),
           ],
         ),
       ),
@@ -1004,28 +1094,52 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     final colorScheme = theme.colorScheme;
     final release = result.latestRelease;
     final updatedAt = release?.updatedAt;
-    final headerTextStyle = HyperosTypography.listDetail(
-      context,
-    ).copyWith(color: Theme.of(context).colorScheme.onSurface);
     return _buildNotesSurface(
       isFirst: true,
       isLast: isLast,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-        child: Row(
-          children: [
-            Icon(Icons.update_rounded, size: 18, color: colorScheme.primary),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(l10n.aboutReleaseNotesTitle, style: headerTextStyle),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.update_rounded,
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.aboutReleaseNotesTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: HyperosTypography.listTitle(
+                          context,
+                        ).copyWith(color: HyperosColors.primaryText(context)),
+                      ),
+                    ),
+                  ],
+                ),
+                // 更新时间从标题行右端挪到第二行、降到 13sp 次要墨色：原先它和
+                // 标题同字号同颜色挤在一行，实测内容已占满可用宽度的 99%，
+                // 360dp 宽的手机上标题必被 ellipsis 吃掉。
+                if (updatedAt != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.aboutUpdatedAt(_formatDateTime(updatedAt)),
+                    style: HyperosTypography.sectionDescription(context),
+                  ),
+                ],
+              ],
             ),
-            if (updatedAt != null)
-              Text(
-                l10n.aboutUpdatedAt(_formatDateTime(updatedAt)),
-                style: headerTextStyle,
-              ),
-          ],
-        ),
+          ),
+          const HyperosDivider(),
+        ],
       ),
     );
   }
@@ -1035,7 +1149,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       isFirst: false,
       isLast: isLast,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 0, 16, isLast ? 16 : 6),
+        padding: EdgeInsets.fromLTRB(20, 12, 20, isLast ? 16 : 6),
         child: ReleaseNotesMarkdown(
           data: data,
           onTapLink: _openUrl,
@@ -1056,7 +1170,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       isFirst: false,
       isLast: true,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
         child: ReleaseDigestView(
           digest: digest,
           groupEntries: true,
@@ -1081,7 +1195,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
     return Material(
       color: HyperosColors.card(context),
-      shape: RoundedRectangleBorder(borderRadius: borderRadius),
+      // 与状态卡同一种形状（超椭圆）：此前这里是 RoundedRectangleBorder，
+      // 同一屏两张卡在深色下角形状会对不上。
+      shape: RoundedSuperellipseBorder(borderRadius: borderRadius),
       clipBehavior: isFirst || isLast ? Clip.antiAlias : Clip.none,
       child: child,
     );
