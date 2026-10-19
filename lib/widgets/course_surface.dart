@@ -2,6 +2,8 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
+import '../utils/paint_probe.dart';
+
 import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos_blurred_header.dart';
 import 'course_glass_shader.dart';
@@ -286,13 +288,16 @@ class CourseSurface extends StatelessWidget {
             Positioned.fill(
               // Grouped: shares one backdrop capture with the sibling cards in
               // the surrounding BackdropGroup instead of capturing per card.
-              child: BackdropFilter.grouped(
-                filter: ImageFilter.blur(
-                  sigmaX: FrostedAppearanceScope.of(context).sheetBlurSigma,
-                  sigmaY: FrostedAppearanceScope.of(context).sheetBlurSigma,
-                  tileMode: TileMode.clamp,
+              child: PaintProbe(
+                name: 'glassCard',
+                child: BackdropFilter.grouped(
+                  filter: ImageFilter.blur(
+                    sigmaX: FrostedAppearanceScope.of(context).sheetBlurSigma,
+                    sigmaY: FrostedAppearanceScope.of(context).sheetBlurSigma,
+                    tileMode: TileMode.clamp,
+                  ),
+                  child: const SizedBox.expand(),
                 ),
-                child: const SizedBox.expand(),
               ),
             ),
           Positioned.fill(child: ColoredBox(color: tint)),

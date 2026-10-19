@@ -5,6 +5,8 @@ import 'dart:ui' as ui show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+
+import '../../utils/paint_probe.dart';
 import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_miuix_spec.dart';
@@ -1468,7 +1470,10 @@ class _HyperosCollapsibleTopAppBarState
         children: [
           Positioned.fill(
             child: ClipRect(
-              child: BackdropFilter(
+              // 计数：顶栏这条模糊带这一帧有没有被重新录制（`layers=glassBand:N`）。
+              child: PaintProbe(
+                name: 'glassBand',
+                child: BackdropFilter(
                 // ⚠️ `tileMode` 必须显式给 clamp。默认（unspecified → decal）会把
                 // 模糊结果在**离边约 3σ** 的带里淡成**透明黑**，而这条带的底边就
                 // 落在星期栏下面 —— 真机现象：打开磨砂强度后，星期栏底下横着一条
@@ -1483,6 +1488,7 @@ class _HyperosCollapsibleTopAppBarState
                   color: backgroundColor.withValues(
                     alpha: widget.blurTintAlpha,
                   ),
+                ),
                 ),
               ),
             ),

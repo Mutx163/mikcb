@@ -7,6 +7,7 @@ import 'package:flutter/scheduler.dart';
 
 import '../../utils/first_frame_probe.dart';
 import '../../utils/frame_perf_probe.dart';
+import '../../utils/paint_probe.dart';
 import 'hyperos_motion.dart';
 import 'hyperos_glass_backdrop_host.dart' show HyperosGlassBackdropController;
 import 'hyperos_miuix_spec.dart';
@@ -440,7 +441,10 @@ class _MiuixNavPageTransition extends StatelessWidget {
           // 被重新光栅化时才涨；计数 ≈ 帧数就说明缓存没起作用，计数 ≈ 1 则
           // 说明页面像素是复用的、贵在别处。放在边界之外会恒等于帧数，读不出这个。
           child: RepaintBoundary(
-            child: _LayerPaintProbe(name: 'page', child: child),
+            child: PaintProbe(
+              name: moving ? 'pageMoving' : 'pageStill',
+              child: child,
+            ),
           ),
         );
 
@@ -450,6 +454,7 @@ class _MiuixNavPageTransition extends StatelessWidget {
         // （位移 ≥ 0），画了也被裁掉，成本 ≈ 0。视差取 0 之后这条垫底实际上
         // 永远露不出来，保留只是遵守形状恒定红线、不做「值变了就删结构」的优化。
         final content = _MiuixNavParallaxBleed(
+          role: moving ? 'Moving' : 'Still',
           width: width,
           bleedWidth: bleedWidth,
           surface: surface,
@@ -483,40 +488,6 @@ class _MiuixNavPageTransition extends StatelessWidget {
   }
 }
 
-/// 转场里的一层「计数标签」：只数这一层这一帧被画了几次，不改变任何绘制行为。
-///
-/// 结构恒定红线不破 —— 它是常挂在树上的直通代理节点（[RenderProxyBox]），
-/// 从不按动画状态增删。探针没安装时 `paint` 里只多一次布尔判断。
-///
-/// 为什么要它：`fillPaints=0` 已经把「页面里的壁纸填充」排除掉了，但每帧
-/// 8~10ms 还在。剩下三个嫌疑（页面层被逐帧重新光栅化 / 淡出压暗叠层全屏重涂 /
-/// 右侧补底条）在总耗时里混成一团，只能靠分开计数区分。
-class _LayerPaintProbe extends SingleChildRenderObjectWidget {
-  const _LayerPaintProbe({required this.name, required Widget super.child});
-
-  /// 输出里的层名（`layers=page:41,overlay:41`）。
-  final String name;
-
-  @override
-  RenderObject createRenderObject(BuildContext context) =>
-      _RenderLayerPaintProbe(name);
-}
-
-class _RenderLayerPaintProbe extends RenderProxyBox {
-  _RenderLayerPaintProbe(this.name);
-
-  /// 层名恒定（每个调用点写死一个），所以不需要 setter / 重绘。
-  final String name;
-
-  @override
-  void paint(PaintingContext context, Offset offset) {
-    if (FramePerfProbe.isInstalled) {
-      FramePerfProbe.noteLayerPaint(name);
-    }
-    super.paint(context, offset);
-  }
-}
-
 /// 被覆盖页的视差补底：把路由表面向右延长 1.25 屏宽，视差滑出后不露出
 /// [Navigator] 里更下一层的路由。
 ///
@@ -524,6 +495,7 @@ class _RenderLayerPaintProbe extends RenderProxyBox {
 /// alpha 属性驱动（0 时 [ColoredBox] 照画，但完全透明，GPU 合成近乎免费）。
 class _MiuixNavParallaxBleed extends StatelessWidget {
   const _MiuixNavParallaxBleed({
+    required this.role,
     required this.width,
     required this.bleedWidth,
     required this.surface,
@@ -531,6 +503,9 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
     required this.fadeAlpha,
     required this.child,
   });
+
+  /// 这一页此刻是在动的（栈顶进/退）还是静止被盖住 —— 只用于计数分桶。
+  final String role;
 
   final double width;
   final double bleedWidth;
@@ -577,8 +552,9 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
             top: 0,
             bottom: 0,
             width: bleedWidth - width,
-            child: _LayerPaintProbe(
-              name: 'bleed',
+            child: PaintProbe(
+              name: 'bleed$role',
+              enabled: bleedWidth > width,
               child: ColoredBox(color: surface),
             ),
           ),
@@ -605,8 +581,9 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
             bottom: 0,
             width: overlay.a > 0 ? width : 0,
             child: IgnorePointer(
-              child: _LayerPaintProbe(
-                name: 'overlay',
+              child: PaintProbe(
+                name: 'overlay$role',
+                enabled: overlay.a > 0,
                 child: ColoredBox(color: overlay),
               ),
             ),

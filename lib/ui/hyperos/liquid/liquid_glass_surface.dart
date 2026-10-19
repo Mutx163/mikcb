@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '../../../utils/frame_perf_probe.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_miuix/miuix.dart' show MiuixGlassEdgeFade;
 
@@ -946,6 +948,10 @@ class _RenderLiquidGlass extends RenderProxyBox {
         tileMode: ui.TileMode.clamp,
       ),
     );
+    // 计数：这块液体玻璃这一帧有没有被重新录制（`layers=glassLiquid:N`）。
+    if (FramePerfProbe.isInstalled) {
+      FramePerfProbe.noteLayerPaint('glassLiquid');
+    }
     context.pushLayer(backdropLayer, super.paint, offset);
   }
 }

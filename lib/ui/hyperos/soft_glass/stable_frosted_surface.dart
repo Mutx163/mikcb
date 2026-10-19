@@ -1,6 +1,8 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+
+import '../../../utils/paint_probe.dart';
 import 'package:flutter_miuix/miuix.dart';
 
 import '../hyperos_blurred_header.dart';
@@ -97,13 +99,17 @@ class _StableFrostedSurfaceState extends State<StableFrostedSurface> {
           fit: StackFit.passthrough,
           children: [
             Positioned.fill(
-              child: BackdropFilter.grouped(
-                filter: ImageFilter.blur(
-                  sigmaX: sigma,
-                  sigmaY: sigma,
-                  tileMode: TileMode.clamp,
+              // 计数：这块磨砂背板这一帧有没有被重新录制（`layers=glassFrost:N`）。
+              child: PaintProbe(
+                name: 'glassFrost',
+                child: BackdropFilter.grouped(
+                  filter: ImageFilter.blur(
+                    sigmaX: sigma,
+                    sigmaY: sigma,
+                    tileMode: TileMode.clamp,
+                  ),
+                  child: ColoredBox(color: tint),
                 ),
-                child: ColoredBox(color: tint),
               ),
             ),
             widget.child,
