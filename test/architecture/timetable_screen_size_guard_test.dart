@@ -10,25 +10,26 @@ import 'package:flutter_test/flutter_test.dart';
 /// - `timetable_update_download_part.dart`
 /// - `timetable_day_view_part.dart`
 ///
-/// 本基线取搬移后的主文件行数。后续向主文件堆积被禁止；新功能应放进
-/// 按功能域命名的 part 文件，或独立 widget/controller。正当增长确需上调基线时，
-/// 在提交信息说明并优先考虑继续拆分（先例见 dependency_guards_test 的
-/// timetable_provider 基线注释）。
+/// 本棘轮只量主文件；「把代码搬进 part」不算瘦身 —— 逻辑单元总量、part 数量
+/// 与 provider 分片的宿主私有访问数由 `god_file_unit_guard_test.dart` 另守。
+/// 新功能应放进独立 widget/controller，part 只作零行为搬迁的过渡。
+/// 正当增长确需上调基线时，在提交信息说明并优先考虑继续拆分（先例见
+/// dependency_guards_test 的 timetable_provider 基线注释）。
 void main() {
   test('timetable_screen 主文件行数棘轮：只减不增', () {
     final file = File('lib/screens/timetable_screen.dart');
     expect(file.existsSync(), isTrue, reason: '文件不存在，棘已空转');
     final lines = file.readAsLinesSync().length;
-    // 2026-10-10 搬移两族后 = 8201。2026-10-14 审核修复：挪课入口补落盘失败
-    // catch（+13，正当增长——修「零提示 + 内存幻影」，非新功能堆主文件）。
-    // 下一次拆分（下拉手势族 / 玻璃坞工具条 / 弹出页路由族）预计可再降至 ~7000。
-    const baselineLines = 8214;
+    // 2026-10-10 搬移两族后 = 8201；2026-10-14 审核修复 +13 → 8214。
+    // 2026-10-19 按真实值收紧到 8156（此后只减不增）。
+    // 下一次拆分（下拉手势族 / 玻璃坞 / 弹出页路由族）预计可再降至 ~6000。
+    const baselineLines = 8156;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),
       reason:
           'timetable_screen.dart 继续膨胀（当前 \$lines > 基线 \$baselineLines）。'
-          '新功能请放进按功能域命名的 part 文件或独立类；'
+          '新功能请放进独立 widget/controller；不要再往 part 里摊。'
           '若确属正当增长，请先做一次等量拆分再同步本基线，并在提交信息说明。',
     );
   });
