@@ -1145,6 +1145,10 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   /// 以前这里直接把 Release 正文丢给 Markdown 渲染，首屏是一大段「新增 …」
   /// 平铺；同样的正文在弹窗里已经是「3 条重点 + 分类计数」。现在统一成一份，
   /// 用户在同一版更新里看到的第一屏一致。
+  ///
+  /// 2026-10-19（第二轮真机反馈）：这一页**默认展开**，且条目不多时不给折叠——
+  /// 用户来这一页就是为了看这一版改了什么，没有理由先让人点一下；折叠只在
+  /// 「重点行没覆盖全部条目」的长版本上才有意义（那才是真的会省滚动）。
   Widget _buildNotesDigest(ReleaseNotesDigest digest) {
     return _buildNotesSurface(
       isFirst: false,
@@ -1154,7 +1158,10 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         child: ReleaseDigestView(
           digest: digest,
           groupEntries: true,
-          alwaysExpandable: true,
+          // 默认展开（true 是组件默认值，这里写明是为了让「这一页为什么要展开」
+          // 在调用处就能读到）；alwaysExpandable 保持默认 false——条目已经全在
+          // 重点行里时不出现「收起」。
+          initiallyExpanded: true,
         ),
       ),
     );
