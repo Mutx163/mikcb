@@ -2293,7 +2293,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       scale: settings.homePageWallpaperScale,
     );
     final bands =
-        HomeWallpaperLuminanceShare.bandsFor(key) ??
+        HomeWallpaperLuminanceShare.resolve(key) ??
         HomeStartupVisualPrimer.seededBandsFor(path);
     if (bands == null) {
       return;

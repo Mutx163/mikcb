@@ -51,4 +51,34 @@ void main() {
     HomeWallpaperLuminanceShare.publish(key, newer);
     expect(HomeWallpaperLuminanceShare.bandsFor(key)!.top, 0.0);
   });
+
+  // `resolve` 是取用侧真正该调的那个：键不命中时**只放掉视口**再比一次。
+  // 用户 2026-10-19 报的「进设置时星期栏 / 标题闪白再闪回来」就是"本来知道、
+  // 却因为视口变了退回去按主题猜"。
+  test('resolve：只有视口变了 → 沿用上一次的带子（不再回落到猜）', () {
+    HomeWallpaperLuminanceShare.publish(key, bands);
+    const otherViewport = 'wallpaper.png|400x900|0.0|0.0|1.0';
+    expect(
+      HomeWallpaperLuminanceShare.bandsFor(otherViewport),
+      isNull,
+      reason: '精确键仍然不给 —— 这是既有语义，别被兜底带坏',
+    );
+    expect(HomeWallpaperLuminanceShare.resolve(otherViewport)!.top, 1.0);
+  });
+
+  test('resolve：换壁纸 / 改取景 / 改倍率仍然作废（旧带子不许冒充新取景）', () {
+    HomeWallpaperLuminanceShare.publish(key, bands);
+    for (final stale in const [
+      'other.png|393.8x852.9|0.0|0.0|1.0',
+      'wallpaper.png|393.8x852.9|-1.0|0.0|1.0',
+      'wallpaper.png|393.8x852.9|0.0|1.0|1.0',
+      'wallpaper.png|393.8x852.9|0.0|0.0|1.5',
+    ]) {
+      expect(HomeWallpaperLuminanceShare.resolve(stale), isNull, reason: stale);
+    }
+  });
+
+  test('resolve：没登记过 → null（取用方照旧走主题兜底）', () {
+    expect(HomeWallpaperLuminanceShare.resolve(key), isNull);
+  });
 }

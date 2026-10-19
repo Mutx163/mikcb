@@ -44,6 +44,41 @@ abstract final class HomeWallpaperLuminanceShare {
   static ({double top, double weekday, double body})? bandsFor(String key) =>
       _key == key ? _bands : null;
 
+  /// 取亮度带：**精确键优先；不命中时忽略视口再比一次**。
+  ///
+  /// 调用方应当用它，而不是直接调 [bandsFor] —— 后者不命中就返回 null，调用方
+  /// 随之回落到「按主题猜极性」，首页 chrome 会闪一次墨色翻面（用户 2026-10-19
+  /// 报的「进设置时星期栏与标题闪白再闪回来」）。
+  ///
+  /// 为什么只放掉**视口**这一维：键里的取景（alignX / alignY）与倍率会真的改变
+  /// 那三条带的平均亮度，旧值必须作废（见 [bandsFor] 的用例）；而视口尺寸变化
+  /// （进出页面时状态栏 / 导航栏 inset 变了）几乎不影响平均值，却足以让精确键
+  /// 不命中 —— 那正是"本来知道却退回去猜"的场景。
+  static ({double top, double weekday, double body})? resolve(String key) {
+    final exact = bandsFor(key);
+    if (exact != null) {
+      return exact;
+    }
+    final recorded = _key;
+    final bands = _bands;
+    if (recorded == null || bands == null) {
+      return null;
+    }
+    return _withoutViewport(recorded) == _withoutViewport(key) ? bands : null;
+  }
+
+  /// 把键里的**视口**那一段挖空（键格式见 `homePageBackdropSampleKey`：
+  /// `路径|视口|alignX|alignY|scale`）。
+  static String _withoutViewport(String key) {
+    final parts = key.split('|');
+    if (parts.length < 2) {
+      // 不是本仓的键格式：不做兜底（原样返回 ⇒ 只有完全相等才算命中）。
+      return key;
+    }
+    parts[1] = '';
+    return parts.join('|');
+  }
+
   /// 登记一次**成功**的采样结果（见类注释：失败不要调）。
   static void publish(
     String key,
