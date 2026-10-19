@@ -190,3 +190,14 @@ CODE_REVIEW_*.md
 近期改动验收清单*.md
 xhs_*.md
 docs/WSL-DSH-*.md
+
+# 本机私有杂项（全部根锚定 /，不影响子目录同名文件）
+#
+# - /package.json：仅为 npm run verify-notes 存在，脚本指向 .codebuddy/ 下的本机
+#   私有 skill（已被忽略），提交出去对别人是一条跑不通的命令，故只留本机；
+# - /thinking-effort-loaded.json：DSH 插件落的运行痕迹，删了会再长出来，一并忽略；
+# - /store_screenshots/：app-store-screenshots skill 生成的整套 Next.js 截图工程
+#   （600+ MB）。成品图已备份到仓库外，整个目录随时可重建。
+/store_screenshots/
+/package.json
+/thinking-effort-loaded.json
