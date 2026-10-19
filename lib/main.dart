@@ -387,15 +387,14 @@ Future<void> main() async {
       SchedulerBinding.instance.scheduleTask(() {
         unawaited(CourseCardGlassShader.instance.ensureLoaded());
       }, Priority.idle, debugLabel: 'course-card-glass-warm');
-      // 全局液态玻璃表面（弹层 / 顶栏 / 玻璃坞…）的着色器预热
-      // （1 个 `shaders/glass_surface_refraction.frag`）。同上一份：幂等、空闲优先级、
-      // 失败不阻断（各表面按自己既有的基础材质降级）。与卡片那份是**两个独立程序**，
-      // 不能互相顶替：卡片吃预模糊位图、按局部坐标画；这一份吃实时背景、按屏幕坐标画。
-      SchedulerBinding.instance.scheduleTask(() {
-        unawaited(LiquidGlassSurfaceShader.instance.ensureLoaded());
-      }, Priority.idle, debugLabel: 'liquid-glass-surface-warm');
       // 玻璃 shader 预热放到启动画面展示期间并行跑（失败只记日志不阻断，
       // 玻璃按未预热降级，绝不能因此卡死换页）。
+      //
+      // 全局液态玻璃表面（弹层 / 顶栏 / 玻璃坞…）与课程卡片是**两个独立程序**，
+      // 不能互相顶替：卡片吃预模糊位图、按局部坐标画；这一份
+      // （1 个 `shaders/glass_surface_refraction.frag`）吃实时背景、按屏幕坐标画。
+      // 早先这里同一实例还会再排一个空闲任务——ensureLoaded 幂等所以无害，
+      // 但直接调用本来就先执行，空闲任务永远扑空，纯冗余（2026-10-20 删）。
       _glassShadersWarm = LiquidGlassSurfaceShader.instance
           .ensureLoaded()
           .catchError((Object error, StackTrace stackTrace) {
@@ -553,15 +552,42 @@ class MyApp extends StatelessWidget {
                   if (!kReleaseMode) BlackBox.journeyObserver,
                 ],
                 builder: (context, child) {
-                  final settings = context.watch<TimetableProvider>().settings;
-                  final frostedAppearance = settings.frostedAppearance;
+                  // 只挑根部真正消费的字段（2026-10-20）：这里原先
+                  // `context.watch` 整个 settings——任意设置字段变更（哪怕与
+                  // 根部渲染无关）都会重跑本 builder；appTextScale 非默认时还
+                  // 连带换 MediaQuery，把可见路由整棵拉着重建。select 之后只有
+                  // 下面六个字段自身的变化才到这里。外层 Selector 已管
+                  // MaterialApp 级字段（locale / theme / 字重），此处不再重复。
+                  final appTextScale = context
+                      .select<TimetableProvider, double>(
+                        (p) => p.settings.appTextScale,
+                      );
+                  final frostedAppearance = context
+                      .select<TimetableProvider, FrostedAppearance>(
+                        (p) => p.settings.frostedAppearance,
+                      );
+                  final hasBackdrop = context.select<TimetableProvider, bool>(
+                    (p) => hasHomePageBackdrop(p.settings),
+                  );
+                  final themeSeedColor = context
+                      .select<TimetableProvider, String?>(
+                        (p) => p.settings.themeSeedColor,
+                      );
+                  final appFontWeight = context
+                      .select<TimetableProvider, int>(
+                        (p) => p.settings.appFontWeight,
+                      );
+                  final appFontMode = context
+                      .select<TimetableProvider, AppFontMode>(
+                        (p) => p.settings.appFontMode,
+                      );
                   // 用户字号：默认 1.0 时完全跟随系统 textScaler；非默认时
                   // 用绝对缩放覆盖（与 Hyper-PiliPlus 一致，范围 0.85–1.6）。
                   Widget appRoot = child!;
-                  if (settings.appTextScale != kAppTextScaleDefault) {
+                  if (appTextScale != kAppTextScaleDefault) {
                     appRoot = MediaQuery(
                       data: MediaQuery.of(context).copyWith(
-                        textScaler: TextScaler.linear(settings.appTextScale),
+                        textScaler: TextScaler.linear(appTextScale),
                       ),
                       child: appRoot,
                     );
@@ -574,13 +600,13 @@ class MyApp extends StatelessWidget {
                       // FrostedAppearanceScope 同高：弹窗在根 Overlay 里，挂在页面
                       // 上读不到。
                       child: HyperosFlatBackdropScope(
-                        isFlat: !hasHomePageBackdrop(settings),
+                        isFlat: !hasBackdrop,
                         child: FrostedAppearanceScope(
                           appearance: frostedAppearance,
                           child: ThemeSeedScope(
                             // 根部下发主题 seed：HyperosColors.primary 等静态
                             // 取色入口经它读取；seed 变化时依赖组件精准重建。
-                            seedHex: settings.themeSeedColor,
+                            seedHex: themeSeedColor,
                             child: ScaffoldMessenger(
                               child: Scaffold(
                                 backgroundColor: Colors.transparent,
@@ -593,8 +619,8 @@ class MyApp extends StatelessWidget {
                                   notifier: LiquidGlassDegradation
                                       .platformViewUnsafeDepthNotifier,
                                   child: MiuixFontWeightScope(
-                                    userFontWeight: settings.appFontWeight,
-                                    fontSpec: settings.appFontMode.fontSpec,
+                                    userFontWeight: appFontWeight,
+                                    fontSpec: appFontMode.fontSpec,
                                     child: appRoot,
                                   ),
                                 ),
