@@ -462,4 +462,57 @@ next_top_level:
     // 没有名称的条目仍保留（展示时回退用 ID），不完整学校被跳过
     expect(school.adapters.map((a) => a.adapterId), ['CQU_01', 'PARTIAL']);
   });
+
+  test('主路径单请求超时：慢候选不再把页面挂成永远', () async {
+    final client = _DelayedClient(const Duration(milliseconds: 300));
+    final service = WarehouseRepositoryService(
+      client: client,
+      fetchTimeout: const Duration(milliseconds: 50),
+    );
+    final source = WarehouseRepositorySource.fromGitHubUrl(
+      'https://github.com/Mutx163/qingyu_warehouse',
+    );
+
+    // http.Client.get 默认没有超时，半死镜像（TCP 通、不回包）会挂住页面
+    // ——probe 路径修过（6s），主路径曾一直裸奔。现在单请求超时后落进候选链，
+    // 全部失败时抛仓库异常而不是永远等待。
+    await expectLater(
+      service.fetchRootIndex(source),
+      throwsA(isA<WarehouseRepositoryException>()),
+    );
+  });
+
+  test('主路径超时是宽松下限：慢而健康的响应照常返回', () async {
+    final client = _DelayedClient(const Duration(milliseconds: 10));
+    final service = WarehouseRepositoryService(
+      client: client,
+      fetchTimeout: const Duration(milliseconds: 50),
+    );
+    final source = WarehouseRepositorySource.fromGitHubUrl(
+      'https://github.com/Mutx163/qingyu_warehouse',
+    );
+
+    final index = await service.fetchRootIndex(source);
+    expect(index.schools.single.id, 'CQU');
+  });
+}
+
+/// 延迟固定时长才回 200 的 client，模拟「慢镜像」。
+class _DelayedClient extends http.BaseClient {
+  _DelayedClient(this.delay);
+
+  final Duration delay;
+  static const _rootYaml = '''
+schools:
+  - id: "CQU"
+    name: "重庆大学"
+    initial: "C"
+    resource_folder: "CQU"
+''';
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    await Future<void>.delayed(delay);
+    return http.StreamedResponse(Stream.value(utf8.encode(_rootYaml)), 200);
+  }
 }

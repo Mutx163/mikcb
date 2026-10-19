@@ -45,10 +45,24 @@ class WarehouseFetchOptions {
 }
 
 class WarehouseRepositoryService {
-  final http.Client _client;
+  WarehouseRepositoryService({http.Client? client, Duration? fetchTimeout})
+    : _client = client ?? createAppHttpClient(),
+      _fetchTimeout = fetchTimeout ?? mainFetchTimeout;
 
-  WarehouseRepositoryService({http.Client? client})
-    : _client = client ?? createAppHttpClient();
+  final http.Client _client;
+  final Duration _fetchTimeout;
+
+  /// 主路径单请求超时。
+  ///
+  /// `http.Client.get` 默认**没有**超时：半死的镜像（TCP 能建立、却不回包）
+  /// 会把这次等待拖成永远——学校页一直转圈圈的那次事故（见
+  /// [qingyuOnlyProbeTimeout] 的注释）当时只修了 probe 路径，主路径
+  /// （root_index / adapters / search_index / 脚本）一直裸奔。
+  ///
+  /// 按**单请求**计时：超时的候选落进既有候选链继续试下一个镜像，总时长 =
+  /// 候选数 × 本值，仍远好过永远挂起。比 probe 的 6s 宽：主路径文件大得多
+  /// （root_index 200+ 所学校、search_index 全量），弱网要给足。
+  static const Duration mainFetchTimeout = Duration(seconds: 15);
 
   static void _log(String message) {
     appDebugLog('WarehouseService', '${formatLogTimestamp()} $message');
@@ -397,15 +411,17 @@ class WarehouseRepositoryService {
     Object? lastError;
     for (final candidate in orderedCandidates) {
       try {
-        final response = await _client.get(
-          candidate,
-          headers: {
-            'Accept': candidate.host == 'api.gitcode.com'
-                ? 'application/json'
-                : 'text/plain, */*',
-            'User-Agent': 'mikcb-warehouse-client',
-          },
-        );
+        final response = await _client
+            .get(
+              candidate,
+              headers: {
+                'Accept': candidate.host == 'api.gitcode.com'
+                    ? 'application/json'
+                    : 'text/plain, */*',
+                'User-Agent': 'mikcb-warehouse-client',
+              },
+            )
+            .timeout(_fetchTimeout);
         if (response.statusCode == 200) {
           try {
             return _decodeCandidateBytes(candidate, response.bodyBytes);
