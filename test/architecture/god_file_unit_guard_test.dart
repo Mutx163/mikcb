@@ -95,15 +95,31 @@ void main() {
     );
   });
 
-  test('timetable_settings 行数棘轮：只减不增', () {
-    const baselineLines = 3639;
-    final lines = _lineCount('lib/models/timetable_settings.dart');
+  test('timetable_settings 逻辑单元行数棘轮：只减不增', () {
+    const baselineMain = 2621;
+    const baselineUnit = 3661;
+    const unit = [
+      'lib/models/timetable_settings.dart',
+      'lib/models/settings/timetable_settings_enums.dart',
+      'lib/models/settings/timetable_settings_extensions.dart',
+      'lib/models/settings/timetable_settings_live.dart',
+    ];
+    final mainLines = _lineCount(unit.first);
+    final unitLines = unit.fold<int>(0, (sum, path) => sum + _lineCount(path));
     expect(
-      lines,
-      lessThanOrEqualTo(baselineLines),
+      mainLines,
+      lessThanOrEqualTo(baselineMain),
       reason:
-          'timetable_settings.dart 继续膨胀（当前 $lines > 基线 $baselineLines）。'
-          '新增设置项请拆到按功能域命名的文件；序列化/拷贝代码可先搬 codec。',
+          'timetable_settings.dart 继续膨胀（当前 $mainLines > 基线 $baselineMain）。'
+          '新增设置项请拆到按功能域命名的文件；不要往主文件回堆。',
+    );
+    expect(
+      unitLines,
+      lessThanOrEqualTo(baselineUnit),
+      reason:
+          'settings 逻辑单元继续膨胀（当前 $unitLines > 基线 $baselineUnit）。'
+          '2026-10-19 拆成主文件 + 3 个 settings/ 文件后总量 3,661（拆分前 3,639，'
+          '+22 为文件头与 import）；此后只减不增。',
     );
   });
 
