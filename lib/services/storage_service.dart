@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app_global_settings_service.dart';
+import 'app_log_service.dart';
 import '../domain/clock_order.dart';
 import '../models/partner_timetable_binding.dart';
 import '../models/course.dart';
@@ -601,6 +602,16 @@ class StorageService {
   // 课程存储
   Future<List<Course>> getCourses() => _readCoursesWithoutLock();
 
+  /// 旧版单 key 课程列表（`courses`）条目级损坏的隔离留档 key。
+  ///
+  /// 与 `_unparsedProfileItemsKey`（profile 世界）同口径：单个滚动 key 覆盖写，
+  /// 不按次追加 `*_corrupt_backup_<ts>` —— 条目级损坏在每次冷启动都会重现
+  /// （我们刻意不把清洗结果写回磁盘），追加会把留档本身长成新的存储问题。
+  @visibleForTesting
+  static const String coursesUnparsedItemsKey = 'courses_unparsed_items';
+  static const int _coursesMaxQuarantinedItems = 50;
+  static const int _coursesMaxQuarantinedItemChars = 4096;
+
   Future<List<Course>> _readCoursesWithoutLock() async {
     if (_prefs == null) await init();
     final coursesJson = _prefs?.getStringList(_coursesKey) ?? [];
@@ -608,25 +619,84 @@ class StorageService {
     // 下一条坏 JSON 就把整份课表清空（返回空列表），下一次写路径再把空
     // 列表落盘——坏一条丢全部。零条目可解析时仍备份原始数据并清 key，
     // 与 profiles/timeSchemes 的「全坏才清」口径一致。
+    //
+    // 对齐 0d1ddaeb / 98dea248（导入侧）与 profile 侧（fromJsonLenient）的
+    // 既有范式：部分损坏必须留痕 —— release 包里 kDebugMode 日志不存在，
+    // 丢课要能通过 AppLog 与隔离留档被看见、被找回。与 profile 侧一致，
+    // 原始字节刻意**留在盘上不写回**，坏条目另存隔离档。
     final courses = <Course>[];
+    final quarantined = <String>[];
     var dropped = 0;
     for (final json in coursesJson) {
       try {
         courses.add(Course.fromJsonString(json));
       } catch (_) {
         dropped++;
+        _quarantineDroppedCourseEntry(quarantined, json);
       }
     }
     if (courses.isEmpty && coursesJson.isNotEmpty) {
       await _backupAndRemoveCorruptStringList(_coursesKey, coursesJson);
     }
-    if (kDebugMode && dropped > 0) {
-      debugPrint(
+    if (dropped > 0) {
+      // 隔离留档失败不阻断读取：坏条目已进不了内存视图，留档只是尽力保留
+      // 找回的可能（与 _archiveUnparsedProfileItems 同口径）。
+      try {
+        await _setStringChecked(
+          coursesUnparsedItemsKey,
+          jsonEncode({
+            'archivedAt': DateTime.now().toIso8601String(),
+            'count': quarantined.length,
+            'items': quarantined,
+          }),
+        );
+      } catch (error) {
+        if (kDebugMode) {
+          debugPrint(
+            'StorageService: course quarantine archive failed: $error',
+          );
+        }
+      }
+      // AppLog 走「审计留痕」而非 debugPrint：release 包里这是部分丢课唯一
+      // 的运行时痕迹。AppLogService.log 自身全兜底（未初始化/写失败均吞掉，
+      // 日志绝不破坏业务流），await 失败不可能向上抛。
+      await AppLogService.instance.warn(
+        'storage_courses_partial_corruption',
         'StorageService: dropped $dropped corrupt course entries '
-        '(kept ${courses.length})',
+        '(kept ${courses.length}); originals quarantined in '
+        '$coursesUnparsedItemsKey',
       );
     }
     return courses;
+  }
+
+  /// 把被丢弃的课程原始条目编码进 [sink]，上限
+  /// [_coursesMaxQuarantinedItems] 条、单条 [_coursesMaxQuarantinedItemChars]
+  /// 字符，避免畸形数据把留档本身撑爆（口径同
+  /// [TimetableProfile.maxQuarantinedItems]）。
+  static void _quarantineDroppedCourseEntry(List<String> sink, String raw) {
+    if (sink.length >= _coursesMaxQuarantinedItems) {
+      return;
+    }
+    String encoded;
+    try {
+      // raw 本身就是原始条目文本（合法 JSON 或垃圾字节都一样）：整体编码成
+      // JSON 字符串字面量，留档数组才可整体 jsonDecode 还原出原始字节。
+      encoded = jsonEncode(raw);
+    } catch (_) {
+      // jsonEncode 对 String 只在含未配对代理对（平台层脏字节）时抛。整串按
+      // \uXXXX 逐码元转义：产物恒为合法 JSON，整批留档不会因此整体失效，
+      // 且解码后逐码元还原（SharedPreferences 本就存不下这种字符串，这是
+      // 可达的无损上限）。
+      final escaped = raw.codeUnits
+          .map((unit) => '\\u${unit.toRadixString(16).padLeft(4, '0')}')
+          .join();
+      encoded = '"$escaped"';
+    }
+    if (encoded.length > _coursesMaxQuarantinedItemChars) {
+      encoded = '${encoded.substring(0, _coursesMaxQuarantinedItemChars)}…<truncated>';
+    }
+    sink.add(encoded);
   }
 
   Future<void> saveCourses(List<Course> courses) {
