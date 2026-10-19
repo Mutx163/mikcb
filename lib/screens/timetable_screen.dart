@@ -24,8 +24,6 @@ import 'package:flutter/gestures.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:university_timetable/l10n/course_week_localizations.dart';
-import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -65,7 +63,6 @@ import '../ui/home/home_chrome_spec.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
     show LiquidGlassSurface, LiquidGlassSurfaceState;
 import '../widgets/course_action_sheet.dart';
-import '../widgets/course_followup_sheets.dart';
 import '../widgets/course_note_sheet.dart';
 import '../widgets/course_card.dart';
 import '../widgets/course_surface.dart';
@@ -82,6 +79,8 @@ import '../widgets/timetable_home_preview_scope.dart';
 import '../widgets/week_selector_picker_sheet.dart';
 import '../widgets/timetable/timetable_back_to_current_week_button.dart';
 import '../widgets/timetable/timetable_back_to_today_button.dart';
+import '../widgets/timetable/timetable_course_action_items.dart';
+import '../widgets/timetable/timetable_course_sheet_actions.dart';
 import '../widgets/timetable/timetable_weekday_header.dart';
 import '../widgets/timetable/timetable_day_agenda_models.dart';
 import '../widgets/timetable/timetable_home_action_button.dart';
@@ -5244,19 +5243,33 @@ class _TimetableScreenState extends State<TimetableScreen>
     int week, {
     DayCourseDisplayItem? displayItem,
   }) async {
-    final previewItems = _buildCourseActionPreviewItems(
+    final provider = context.read<TimetableProvider>();
+    final previewItems = buildTimetableCourseActionPreviewItems(
+      provider,
       course,
       week,
       displayItem: displayItem,
+      coupleOverlayActive: _isCoupleOverlayActive(provider),
     );
     await showCourseActionSheet(
       context,
       previewItems: previewItems,
       week: week,
       onEdit: _editCourse,
-      onReschedule: (target) => _showRescheduleSheet(target, sourceWeek: week),
-      onDelete: (target) => _showDeleteCourseOptions(target, week),
-      onSuspend: (target) => _showSuspendSheet(target, week),
+      onReschedule: (target) => showTimetableCourseRescheduleSheet(
+        context,
+        course: target,
+        sourceWeek: week,
+        weekdayLabels: _weekdayLabels,
+      ),
+      onDelete: (target) => showTimetableCourseDeleteOptions(
+        context,
+        course: target,
+        week: week,
+        weekdayLabels: _weekdayLabels,
+      ),
+      onSuspend: (target) =>
+          showTimetableCourseSuspendSheet(context, course: target, week: week),
       onAddTask: (target) => _openTaskFromCourse(target, week),
       // 单节课提醒依赖原生精确闹钟调度，其他平台不显示入口。
       onSetAlarm: (!kIsWeb && Platform.isAndroid)
@@ -5285,451 +5298,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 单节课提醒：打开提醒设置弹层（快捷提前量 / 自定义时间 / 取消）。
   Future<void> _openClassReminderSheet(Course course, int week) {
     return showClassReminderSheet(context, course: course, week: week);
-  }
-
-  List<CourseActionPreviewItem> _buildCourseActionPreviewItems(
-    Course course,
-    int week, {
-    DayCourseDisplayItem? displayItem,
-  }) {
-    final provider = context.read<TimetableProvider>();
-    final isPartner = displayItem?.isPartnerCourse ?? false;
-    final partnerWeekOffset = provider.partnerWeekOffset;
-    var coupleKind = displayItem?.coupleKind;
-    if (coupleKind == null &&
-        !isPartner &&
-        _isCoupleOverlayActive(provider) &&
-        _findTogetherPartnerCourse(
-              course,
-              week,
-              partnerWeekOffset: partnerWeekOffset,
-            ) !=
-            null) {
-      coupleKind = CoupleCourseKind.together;
-    }
-    if (coupleKind == null &&
-        isPartner &&
-        _isCoupleOverlayActive(provider) &&
-        provider.courses.any(
-          (mine) => CoupleTimetableLogic.isTogetherClass(
-            mine,
-            course,
-            week: week,
-            partnerWeekOffset: partnerWeekOffset,
-          ),
-        )) {
-      coupleKind = CoupleCourseKind.together;
-    }
-    if (coupleKind == null && isPartner && _isCoupleOverlayActive(provider)) {
-      coupleKind = CoupleCourseKind.partner;
-    }
-    final items = <CourseActionPreviewItem>[
-      CourseActionPreviewItem(
-        course: course,
-        isPartnerCourse: isPartner,
-        coupleKind: coupleKind,
-      ),
-    ];
-
-    if (!isPartner) {
-      for (final conflict in _conflictsForCourseInWeek(course, week)) {
-        if (items.any((item) => item.course.id == conflict.id)) {
-          continue;
-        }
-        items.add(CourseActionPreviewItem(course: conflict, isConflict: true));
-      }
-    }
-
-    if (!_isCoupleOverlayActive(provider)) {
-      return items;
-    }
-
-    if (coupleKind == CoupleCourseKind.together) {
-      final partner = _findTogetherPartnerCourse(
-        course,
-        week,
-        partnerWeekOffset: partnerWeekOffset,
-      );
-      if (partner != null &&
-          !items.any((item) => item.course.id == partner.id)) {
-        items.add(
-          CourseActionPreviewItem(
-            course: partner,
-            isPartnerCourse: true,
-            coupleKind: CoupleCourseKind.together,
-          ),
-        );
-      }
-      return items;
-    }
-
-    if (isPartner) {
-      for (final mine in provider.courses) {
-        if (CoupleTimetableLogic.isTogetherClass(
-              mine,
-              course,
-              week: week,
-              partnerWeekOffset: partnerWeekOffset,
-            ) &&
-            !items.any((item) => item.course.id == mine.id)) {
-          items.add(
-            CourseActionPreviewItem(
-              course: mine,
-              coupleKind: CoupleCourseKind.together,
-            ),
-          );
-          break;
-        }
-      }
-      return items;
-    }
-
-    for (final partner in _overlappingPartnerCourses(
-      course,
-      week,
-      partnerWeekOffset: partnerWeekOffset,
-    )) {
-      if (items.any((item) => item.course.id == partner.id)) {
-        continue;
-      }
-      items.add(
-        CourseActionPreviewItem(
-          course: partner,
-          isPartnerCourse: true,
-          coupleKind: CoupleCourseKind.partner,
-        ),
-      );
-    }
-    return items;
-  }
-
-  Course? _findTogetherPartnerCourse(
-    Course mine,
-    int week, {
-    required int partnerWeekOffset,
-  }) {
-    final provider = context.read<TimetableProvider>();
-    for (final partner in provider.partnerCourses) {
-      if (CoupleTimetableLogic.isTogetherClass(
-        mine,
-        partner,
-        week: week,
-        partnerWeekOffset: partnerWeekOffset,
-      )) {
-        return partner;
-      }
-    }
-    return null;
-  }
-
-  List<Course> _overlappingPartnerCourses(
-    Course mine,
-    int week, {
-    required int partnerWeekOffset,
-  }) {
-    final provider = context.read<TimetableProvider>();
-    return provider.partnerCourses
-        .where(
-          (partner) =>
-              CoupleTimetableLogic.coursesOverlapForCoupleView(
-                mine,
-                partner,
-                myWeek: week,
-                partnerWeekOffset: partnerWeekOffset,
-              ) &&
-              !CoupleTimetableLogic.isTogetherClass(
-                mine,
-                partner,
-                week: week,
-                partnerWeekOffset: partnerWeekOffset,
-              ),
-        )
-        .toList();
-  }
-
-  List<Course> _conflictsForCourseInWeek(Course course, int week) {
-    final conflictMap = context
-        .read<TimetableProvider>()
-        .courseConflictMapForWeek(week);
-    final seenIds = <String>{};
-    final conflicts = <Course>[];
-    for (final conflict in conflictMap[course.id] ?? const <Course>[]) {
-      if (conflict.id == course.id || !seenIds.add(conflict.id)) {
-        continue;
-      }
-      conflicts.add(conflict);
-    }
-    conflicts.sort((left, right) {
-      final dayCompare = left.dayOfWeek.compareTo(right.dayOfWeek);
-      if (dayCompare != 0) {
-        return dayCompare;
-      }
-      final startCompare = left.startSection.compareTo(right.startSection);
-      if (startCompare != 0) {
-        return startCompare;
-      }
-      return left.id.compareTo(right.id);
-    });
-    return conflicts;
-  }
-
-  Future<void> _showDeleteCourseOptions(Course course, int week) async {
-    final canDeleteOccurrence = course.isInWeek(week);
-    final selected = await showCourseDeleteModeSheet(
-      context,
-      canDeleteOccurrence: canDeleteOccurrence,
-      week: week,
-    );
-
-    if (!mounted || selected == null) {
-      return;
-    }
-
-    switch (selected) {
-      case CourseDeleteMode.course:
-        await _confirmDeleteCourse(course);
-      case CourseDeleteMode.occurrence:
-        await _confirmDeleteOccurrence(course, week);
-    }
-  }
-
-  Future<void> _showSuspendSheet(Course course, int week) async {
-    final provider = context.read<TimetableProvider>();
-    final isSuspended = course.isSuspendedInWeek(week);
-    final hasAnySuspended = course.suspendedWeeks?.isNotEmpty ?? false;
-
-    final selected = await showCourseSuspendModeSheet(
-      context,
-      isSuspendedThisWeek: isSuspended,
-      hasAnySuspended: hasAnySuspended,
-    );
-
-    if (!mounted || selected == null) {
-      return;
-    }
-
-    // 停课/复课一族落盘失败会**回滚并 rethrow**（`_toggleCourseSuspensionImpl` 的
-    // 快照 + catch + rethrow，注释里写明「不退的话心跳会把这次停课坐实」）。
-    // 不接就是零提示 + 未处理异步错误，而这几条正是"课自己变灰、再也回不来"。
-    final l10nSuspend = AppLocalizations.of(context);
-    try {
-      switch (selected) {
-        case CourseSuspendMode.thisWeek:
-          await provider.toggleCourseSuspension(course.id, week);
-        case CourseSuspendMode.allWeeks:
-          if (hasAnySuspended) {
-            await provider.unsuspendAllWeeks(course.id);
-          } else {
-            await provider.suspendAllWeeks(course.id);
-          }
-      }
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      showAppToast(
-        context,
-        message: l10nSuspend?.saveFailed ?? '',
-        kind: AppToastKind.error,
-      );
-      return;
-    }
-  }
-
-  Future<void> _confirmDeleteCourse(Course course) async {
-    final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDeleteCourseConfirmDialog(
-      context,
-      title: l10n.deleteScheduleTitle,
-      message: l10n.deleteScheduleConfirmMessage(
-        course.name,
-        l10n.courseWeekdaySectionSummary(
-          course.weekDescription(l10n),
-          _weekdayLabel(context, course.dayOfWeek),
-          course.startSection,
-          course.endSection,
-        ),
-      ),
-    );
-
-    if (!confirmed || !mounted) {
-      return;
-    }
-
-    // 与 `add_course_screen` 的同名入口同因：provider 删除失败会回滚并 rethrow，
-    // 不接就是「点了删除、零提示、未处理异步错误」。
-    try {
-      await context.read<TimetableProvider>().deleteCourse(course.id);
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      showAppToast(
-        context,
-        message: l10n.deleteFailed,
-        kind: AppToastKind.error,
-      );
-      return;
-    }
-    if (!mounted) {
-      return;
-    }
-    showAppToast(
-      context,
-      message: AppLocalizations.of(context)!.deletedCourseMessage(course.name),
-      kind: AppToastKind.success,
-    );
-  }
-
-  Future<void> _confirmDeleteOccurrence(Course course, int sourceWeek) async {
-    final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDeleteOccurrenceConfirmDialog(
-      context,
-      title: l10n.deleteLessonTitle,
-      message: l10n.deleteOccurrenceConfirmMessage(
-        course.name,
-        sourceWeek,
-        l10n.weekdaySectionTimeSummary(
-          _weekdayLabel(context, course.dayOfWeek),
-          course.startSection,
-          course.endSection,
-          course.startTime,
-          course.endTime,
-        ),
-      ),
-    );
-
-    if (!confirmed || !mounted) {
-      return;
-    }
-
-    try {
-      final changed = await context
-          .read<TimetableProvider>()
-          .deleteCourseOccurrence(courseId: course.id, sourceWeek: sourceWeek);
-      if (!mounted) {
-        return;
-      }
-      showAppToast(
-        context,
-        message: changed
-            ? l10n.occurrenceDeletedMessage(sourceWeek)
-            : l10n.noChangesDetected,
-        kind: changed ? AppToastKind.success : AppToastKind.info,
-      );
-    } on ArgumentError catch (error) {
-      if (!mounted) {
-        return;
-      }
-      showAppToast(
-        context,
-        message: error.message != null
-            ? localizeServiceMessage(l10n, error.message!.toString())
-            : AppLocalizations.of(context)!.deleteFailed,
-        kind: AppToastKind.error,
-      );
-    } catch (_) {
-      // ⚠️ 落盘失败抛的是 StateError（storage_service.dart 的
-      // `throw StateError('storage_write_failed:…')`），**不是** ArgumentError，
-      // 所以上面那个 on 子句根本接不到 —— 异常落进 zone 成为未处理异步错误，
-      // 而 `deleteCourseOccurrence` 失败时**不回滚**（内存里那一次已经被摘掉），
-      // 下一次任意成功写入就把"这周没上过课"坐实。用户零提示。
-      if (!mounted) {
-        return;
-      }
-      showAppToast(
-        context,
-        message: AppLocalizations.of(context)!.deleteFailed,
-        kind: AppToastKind.error,
-      );
-    }
-  }
-
-  Future<void> _showRescheduleSheet(
-    Course course, {
-    required int sourceWeek,
-  }) async {
-    final l10n = AppLocalizations.of(context)!;
-    final provider = context.read<TimetableProvider>();
-    final settings = provider.settings;
-    final weekdayLabels = _weekdayLabels(context);
-    final scheme = provider.resolveCourseTimeScheme(course);
-    // 必须用课程解析后的节次表：`_applyCourseCustomTime` 会把自定义钟点钉回它
-    // 自己那两节，闹钟、课表卡、进度里程碑读的都是这份结果（见
-    // TimetableProvider.resolvedSectionsForCourse 的注释）。这里原先直接取模板
-    // `scheme.sections`，于是钉过钟点的课（例如教务导入把早读 07:00-07:40 钉在
-    // 第 1 节）在本弹层显示成模板的 08:00-08:45 —— 用户照弹层上的时间行动就会错，
-    // 而同一个 App 里卡片与闹钟都显示 07:00。
-    final sectionTimes =
-        provider.resolvedSectionsForCourse(course) ??
-        scheme?.sections ??
-        settings.sections;
-
-    final draft = await showCourseRescheduleSheet(
-      context,
-      course: course,
-      sourceWeek: sourceWeek,
-      settings: settings,
-      weekDays: weekdayLabels,
-      sectionTimes: sectionTimes,
-      locationSuggestions: provider.uniqueLocations,
-    );
-
-    if (draft == null) {
-      return;
-    }
-
-    try {
-      final changed = await provider.rescheduleCourseOccurrence(
-        courseId: course.id,
-        sourceWeek: sourceWeek,
-        targetWeek: draft.targetWeek,
-        targetDayOfWeek: draft.targetDayOfWeek,
-        targetStartSection: draft.targetStartSection,
-        targetEndSection: draft.targetEndSection,
-        targetLocation: draft.targetLocation,
-      );
-      if (!mounted) {
-        return;
-      }
-      showAppToast(
-        context,
-        message: changed
-            ? l10n.rescheduledToMessage(
-                draft.targetWeek,
-                _weekdayLabel(context, draft.targetDayOfWeek),
-                draft.targetStartSection,
-                draft.targetEndSection,
-              )
-            : l10n.noChangesDetected,
-        kind: changed ? AppToastKind.success : AppToastKind.info,
-      );
-    } on ArgumentError catch (error) {
-      if (!mounted) {
-        return;
-      }
-      showAppToast(
-        context,
-        message: error.message != null
-            ? localizeServiceMessage(l10n, error.message!.toString())
-            : AppLocalizations.of(context)!.rescheduleFailed,
-        kind: AppToastKind.error,
-      );
-    } catch (_) {
-      // ⚠️ 落盘失败抛的是 StateError（storage_service.dart 的
-      // `throw StateError('storage_write_failed:…')`），不是 ArgumentError ——
-      // 上面的 on 子句接不到它（同款注释见 `deleteCourseOccurrence` 的处理函数，
-      // 那条已经吃过一次亏）。落不进盘就必须让用户看见，否则点了没反应、
-      // 下一次成功写入还把内存里的挪动坐实。
-      if (!mounted) {
-        return;
-      }
-      showAppToast(
-        context,
-        message: AppLocalizations.of(context)!.rescheduleFailed,
-        kind: AppToastKind.error,
-      );
-    }
   }
 
   Widget _buildSectionTimeCell(
