@@ -157,7 +157,10 @@ void main() {
     // 只有真瘦身才让读数下降。16 个分身任何一个长个都会红。
     // 13522→13554：立棘采样后 gallery 页被并行提交 +32 行（他人合法改动），
     // 按测试约定同步真实值；本棘不改基线除非同步方说明。
-    const baselineLines = 13554;
+    // 13554→13581：共享件出库（settings_shared.dart：两个 Miuix 设置行组件 +
+    // 失败/拒绝提示 + 5 个 helper，16 个分身对宿主私有符号的引用 14→0），
+    // 差值全为新文件头 + import + 文档注释，零行为搬迁，按约定同步真实值。
+    const baselineLines = 13581;
     final domainFiles = <String>[
       'lib/screens/timetable_settings_screen.dart',
       ...Directory('lib/screens/settings')

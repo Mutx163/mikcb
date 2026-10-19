@@ -43,7 +43,6 @@ import '../services/wallpaper_history_service.dart';
 import '../screens/settings/bing_wallpaper_gallery_page.dart';
 import '../utils/app_toast.dart';
 import '../utils/bing_wallpaper_date_label.dart';
-import '../utils/hex_color.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
 import '../utils/managed_image_storage.dart';
@@ -87,6 +86,7 @@ import 'hyperos_showcase_screen.dart';
 import 'miuix_showcase_screen.dart';
 import 'timetable_screen.dart';
 import 'user_guide_screen.dart';
+import 'settings/settings_shared.dart';
 
 part 'settings/settings_appearance.dart';
 part 'settings/settings_home_navigation.dart';
@@ -104,63 +104,6 @@ part 'settings/settings_appearance_editor.dart';
 part 'settings/settings_home_widget.dart';
 part 'settings/settings_holiday.dart';
 part 'settings/settings_weather.dart';
-
-String formatLiveTimeCorrection(AppLocalizations l10n, int seconds) {
-  if (seconds == 0) {
-    return l10n.liveTimeCorrectionNone;
-  }
-  if (seconds > 0) {
-    return l10n.liveTimeCorrectionDelay(seconds);
-  }
-  return l10n.liveTimeCorrectionAdvance(seconds.abs());
-}
-
-/// 璁剧疆銆屾敼涓€涓嬪氨瀛樸€嶅叆鍙ｇ殑钀界洏澶辫触鍏滃簳銆?
-///
-/// [TimetableProvider.updateTimetableSettings] 鍦ㄨ惤鐩樺け璐ユ椂浼氬厛鎶婂唴瀛樸€佽琛?
-/// 闀滃儚鍜屽懆娆″洖婊氾紝鍐嶆妸鍘熷寮傚父 rethrow 鍑烘潵銆傝缃〉杩欎簺鑷姩淇濆瓨鍏ュ彛鍏ㄩ兘娌?
-/// 鎺ヨ繖涓紓甯糕€斺€斾笉鎺ョ殑璇濆畠浼氬彉鎴愭棤浜虹洃鍚殑澶辫触 Future锛堟渶缁堣 `main.dart` 鐨?
-/// `runZonedGuarded` 鍚冩帀锛夛紝鐢ㄦ埛鐪嬪埌鐨勬槸銆岃缃凡缁忔敼浜嗐€嶏紝鍏跺疄涓€涓瓧鑺傞兘娌?
-/// 瀛樿繘鍘伙紝閲嶅惎 App 鍙堝彉鍥炲幓锛屽叏绋嬫病鏈変换浣曟彁绀恒€?
-///
-/// 杩欓噷缁熶竴缁欏嚭涓€鍙ユ湰鍦板寲鎻愮ず锛屽苟锛堢粡 [resetDraft]锛夋妸椤甸潰鑽夌鎷夊洖 provider
-/// 鍥炴粴鍚庣殑鐪熷疄鍊硷紝閬垮厤鐣岄潰鍋滃湪銆岀湅鐫€宸蹭繚瀛樸€佸疄闄呮病淇濆瓨銆嶇殑鐘舵€併€?
-void reportSettingsPersistFailure<T extends StatefulWidget>(
-  State<T> state, {
-  VoidCallback? resetDraft,
-}) {
-  if (!state.mounted) {
-    return;
-  }
-  final context = state.context;
-  showAppToast(
-    context,
-    message: AppLocalizations.of(context)!.saveFailed,
-    kind: AppToastKind.error,
-  );
-  resetDraft?.call();
-}
-
-/// 璁剧疆淇濆瓨琚簳灞傝鍒欐嫆缁濓紙涓嶆槸钀界洏澶辫触锛夋椂鐨勭粺涓€鎻愮ず銆?
-///
-/// [TimetableProvider.updateTimetableSettings] 闄や簡钀界洏寮傚父锛岃繕浼氱敤
-/// `encodeServiceMessage` 杩斿洖涓€涓茬紪鐮佽繃鐨勬秷鎭敭锛屼緥濡傛妸姣忓ぉ鑺傛暟璋冨埌浣庝簬
-/// 宸叉湁璇剧▼鐢ㄥ埌鐨勬渶澶ц妭娆℃椂杩斿洖 `section_count_below_usage|requiredMaxSection=12`銆?
-/// 閭ｆ槸缁欑晫闈㈢炕璇戠敤鐨勮浇鑽凤紝涓嶆槸鑳界洿鎺ョ粰浜虹湅鐨勬枃妗堚€斺€旀紡鎺夌炕璇戝氨浼氭妸鍐呴儴浠ｇ爜
-/// 鍘熸牱寮圭粰鐢ㄦ埛銆?
-void reportSettingsPersistRejected<T extends StatefulWidget>(
-  State<T> state,
-  String message,
-) {
-  if (!state.mounted) {
-    return;
-  }
-  final context = state.context;
-  showAppToast(
-    context,
-    message: localizeServiceMessage(AppLocalizations.of(context)!, message),
-  );
-}
 
 /// 鍏鏍肩瓑澶栭儴鍏ュ彛鐩磋揪璁剧疆瀛愰〉鐨勫伐鍘傘€?
 ///
@@ -522,8 +465,8 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosSectionLabel(text: l10n.settingsTimetableSectionTitle),
           HyperosListGroup(
             children: [
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('layers')!,
                   HyperosIconColors.blue,
                 ),
@@ -540,8 +483,8 @@ class TimetableSettingsScreen extends StatelessWidget {
               ),
               // 鏃堕棿妯℃澘锛氶珮棰戦厤缃紙寮€瀛﹀墠鍑犱箮蹇呭姩锛夛紝鎸夌敤鎴峰弽棣堜繚鐣欏湪
               // hub 涓€绾т綅锛涖€岃琛ㄩ〉闈€嶅唴鐨勫悓鍚嶅叆鍙ｅ苟瀛橈紝鎸囧悜鍚屼竴椤甸潰銆?
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('timer')!,
                   HyperosIconColors.teal,
                 ),
@@ -555,8 +498,8 @@ class TimetableSettingsScreen extends StatelessWidget {
                 ],
                 onClick: () => _openTimeSchemeManagement(context),
               ),
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('favorites')!,
                   HyperosIconColors.yellow,
                 ),
@@ -584,24 +527,24 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosSectionLabel(text: l10n.settingsDisplayAppearanceSectionTitle),
           HyperosListGroup(
             children: [
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('gridView')!,
                   HyperosIconColors.purple,
                 ),
                 title: l10n.courseCardSettingsTitle,
                 onClick: openCourseCardSettings,
               ),
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('months')!,
                   HyperosIconColors.orange,
                 ),
                 title: l10n.timetablePageSettingsTitle,
                 onClick: openTimetablePageSettings,
               ),
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('cloudFill')!,
                   HyperosIconColors.blue,
                 ),
@@ -632,8 +575,8 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosListGroup(
             children: [
               _LiveEntryTile(onTap: openLiveSettings),
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('home')!,
                   HyperosIconColors.green,
                 ),
@@ -655,24 +598,24 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosSectionLabel(text: l10n.settingsAppSectionTitle),
           HyperosListGroup(
             children: [
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('theme')!,
                   HyperosIconColors.blue,
                 ),
                 title: l10n.appearanceEntryTitle,
                 onClick: openAppearance,
               ),
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('sidebar')!,
                   HyperosIconColors.teal,
                 ),
                 title: l10n.homeNavigationTitle,
                 onClick: openHomeNavigation,
               ),
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('tune')!,
                   HyperosIconColors.indigo,
                 ),
@@ -692,8 +635,8 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosSectionLabel(text: l10n.settingsDataShareSectionTitle),
           HyperosListGroup(
             children: [
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('convertFile')!,
                   HyperosIconColors.green,
                 ),
@@ -701,16 +644,16 @@ class TimetableSettingsScreen extends StatelessWidget {
                 onClick: openDataTransfer,
               ),
               _CloudSyncEntryTile(onTap: openCloudSync),
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('link')!,
                   HyperosIconColors.indigo,
                 ),
                 title: l10n.lanEditEntryTitle,
                 onClick: openLanEdit,
               ),
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('favoritesFill')!,
                   HyperosIconColors.purple,
                 ),
@@ -738,24 +681,24 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosSectionLabel(text: l10n.settingsAboutSectionTitle),
           HyperosListGroup(
             children: [
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('info')!,
                   HyperosIconColors.blue,
                 ),
                 title: l10n.aboutEntryTitle,
                 onClick: openAbout,
               ),
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('notes')!,
                   HyperosIconColors.cyan,
                 ),
                 title: l10n.userGuideEntryTitle,
                 onClick: openUserGuide,
               ),
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('report')!,
                   HyperosIconColors.teal,
                 ),
@@ -811,8 +754,8 @@ class _SemesterSettingsScreen extends StatelessWidget {
             children: [
               HyperosListGroup(
                 children: [
-                  _MiuixSettingsPreference(
-                    startAction: _settingsIconBadge(
+                  MiuixSettingsPreference(
+                    startAction: settingsIconBadge(
                       MiuixIcons.extended.byName('months')!,
                       HyperosIconColors.blue,
                     ),
@@ -829,8 +772,8 @@ class _SemesterSettingsScreen extends StatelessWidget {
                         : null,
                     onClick: () => _pickSemesterStartDate(context),
                   ),
-                  _MiuixSettingsPreference(
-                    startAction: _settingsIconBadge(
+                  MiuixSettingsPreference(
+                    startAction: settingsIconBadge(
                       MiuixIcons.extended.byName('weeks')!,
                       HyperosIconColors.indigo,
                     ),
@@ -846,8 +789,8 @@ class _SemesterSettingsScreen extends StatelessWidget {
                     onClick: () => _pickSemesterWeekCount(context),
                   ),
                   // 绾犲亸鍔ㄤ綔鏀剧粍鏈紝閬垮厤涓庛€屽紑瀛︽棩鏈?/ 鍛ㄦ暟銆嶉厤缃悓鏉冦€?
-                  _MiuixSettingsPreference(
-                    startAction: _settingsIconBadge(
+                  MiuixSettingsPreference(
+                    startAction: settingsIconBadge(
                       MiuixIcons.extended.byName('refresh')!,
                       HyperosIconColors.teal,
                     ),
@@ -1042,9 +985,9 @@ class _LiveEntryTileState extends State<_LiveEntryTile>
               ? l10n.liveIslandLabelEntryEnabled
               : l10n.liveIslandLabelEntryDisabled)
         : null;
-    return _MiuixSettingsPreference(
+    return MiuixSettingsPreference(
       key: const ValueKey<String>('settings-live-entry'),
-      startAction: _settingsIconBadge(
+      startAction: settingsIconBadge(
         MiuixIcons.extended.byName('alarm')!,
         HyperosIconColors.orange,
       ),
@@ -1123,9 +1066,9 @@ class _CloudSyncEntryTileState extends State<_CloudSyncEntryTile>
               : WebdavSyncCoordinator.instance().status.lastError != null
               ? l10n.cloudSyncEntryError
               : l10n.cloudSyncEntryEnabled;
-          return _MiuixSettingsPreference(
+          return MiuixSettingsPreference(
             key: const ValueKey<String>('settings-cloud-sync-entry'),
-            startAction: _settingsIconBadge(
+            startAction: settingsIconBadge(
               MiuixIcons.extended.byName('backup')!,
               HyperosIconColors.cyan,
             ),
@@ -1193,8 +1136,8 @@ class _SettingsDeveloperListGroupState
             HyperosListGroup(
               children: [
                 if (showDiagnosticsTools)
-                  _MiuixSettingsPreference(
-                    startAction: _settingsIconBadge(
+                  MiuixSettingsPreference(
+                    startAction: settingsIconBadge(
                       MiuixIcons.extended.byName('background')!,
                       HyperosIconColors.orange,
                     ),
@@ -1202,8 +1145,8 @@ class _SettingsDeveloperListGroupState
                     onClick: widget.onOpenMemoryStats,
                   ),
                 if (showDiagnosticsTools)
-                  _MiuixSettingsPreference(
-                    startAction: _settingsIconBadge(
+                  MiuixSettingsPreference(
+                    startAction: settingsIconBadge(
                       MiuixIcons.extended.byName('stopwatch')!,
                       HyperosIconColors.indigo,
                     ),
@@ -1211,8 +1154,8 @@ class _SettingsDeveloperListGroupState
                     onClick: widget.onOpenLiveTestingFixture,
                   ),
                 if (!kReleaseMode) ...[
-                  _MiuixSettingsPreference(
-                    startAction: _settingsIconBadge(
+                  MiuixSettingsPreference(
+                    startAction: settingsIconBadge(
                       MiuixIcons.extended.byName('all')!,
                       HyperosIconColors.purple,
                     ),
@@ -1225,8 +1168,8 @@ class _SettingsDeveloperListGroupState
                     ],
                     onClick: widget.onOpenHyperosShowcase,
                   ),
-                  _MiuixSettingsPreference(
-                    startAction: _settingsIconBadge(
+                  MiuixSettingsPreference(
+                    startAction: settingsIconBadge(
                       MiuixIcons.extended.byName('listView')!,
                       HyperosIconColors.cyan,
                     ),
@@ -1241,8 +1184,8 @@ class _SettingsDeveloperListGroupState
                   ),
                   ListenableBuilder(
                     listenable: BlackBoxOverlayPreferences.instance,
-                    builder: (context, _) => _MiuixSettingsSwitchPreference(
-                      startAction: _settingsIconBadge(
+                    builder: (context, _) => MiuixSettingsSwitchPreference(
+                      startAction: settingsIconBadge(
                         MiuixIcons.extended.byName('show')!,
                         HyperosIconColors.red,
                       ),
@@ -1251,8 +1194,8 @@ class _SettingsDeveloperListGroupState
                       onChanged: BlackBoxOverlayPreferences.instance.setVisible,
                     ),
                   ),
-                  _MiuixSettingsPreference(
-                    startAction: _settingsIconBadge(
+                  MiuixSettingsPreference(
+                    startAction: settingsIconBadge(
                       MiuixIcons.extended.byName('notes')!,
                       HyperosIconColors.orange,
                     ),
@@ -1267,190 +1210,6 @@ class _SettingsDeveloperListGroupState
       },
     );
   }
-}
-
-/// 寮€鍙戣€呭尯寮€鍏宠锛屼笌瀵艰埅琛屽叡浜爣棰樺瓧閲嶅拰鎸夊帇鍙嶉銆?
-class _MiuixSettingsSwitchPreference extends StatelessWidget {
-  const _MiuixSettingsSwitchPreference({
-    required this.startAction,
-    required this.title,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final Widget startAction;
-  final String title;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return HyperosPressableRow(
-      onTap: () => onChanged(!value),
-      holdHighlightThroughTransition: true,
-      child: MiuixBasicComponent(
-        // 涓婃父鎶婃爣棰樺瓧閲嶇‖缂栫爜涓?w500锛堟瘮鏈?App 鍏朵綑璁剧疆琛岀殑
-        // HyperosTypography.title w400 閲嶄竴妗ｏ級锛屼笖 1.2.0 鐨?MiuixBasicComponent
-        // 涓嶅啀鎺ュ彈 titleFontWeight銆傛敼鐢ㄥ畠鐨?content 鍙傛暟澶嶅埢榛樿鎺掔増銆佸彧鎶婂熀鍑?
-        // 瀛楅噸闄嶅洖 w400 鈥斺€?涓庨粯璁よ矾寰勫悓鐢?MiuixText锛堜粛闅忕郴缁熷瓧閲嶅垎绾у钩绉伙級锛?
-        // 鍥犳瑙傛劅涓?fork 鐗堜竴鑷淬€?
-        content: [
-          MiuixText(
-            title,
-            fontSize: MiuixTheme.of(context).textStyles.headline1.fontSize,
-            fontWeight: FontWeight.w400,
-            color: MiuixBasicComponentDefaults.titleColor(context).resolve(true),
-          ),
-        ],
-        startAction: startAction,
-        endActions: [MiuixSwitch(value: value, onChanged: onChanged)],
-        role: MiuixBasicComponentRole.switchControl,
-      ),
-    );
-  }
-}
-
-/// 璁剧疆棣栭〉鍥炬爣 Badge锛氬僵鑹插渾瑙掕儗鏅?+ 鐧借壊鍥炬爣锛堜笌 HyperosIconBadge 涓€鑷达級銆?
-Widget _settingsIconBadge(MiuixVectorIcon icon, Color accent) {
-  return Container(
-    width: HyperosTokens.iconBadgeSize,
-    height: HyperosTokens.iconBadgeSize,
-    decoration: BoxDecoration(
-      color: accent,
-      borderRadius: BorderRadius.circular(HyperosTokens.iconBadgeRadius),
-    ),
-    alignment: Alignment.center,
-    child: MiuixIcon(
-      vector: icon,
-      size: HyperosTokens.iconGlyphSize,
-      tint: Colors.white,
-    ),
-  );
-}
-
-/// 甯︽纭寜鍘嬪弽棣堢殑 Miuix 璁剧疆琛屻€?
-///
-/// 澶栧眰 [HyperosPressableRow] 澶勭悊鎸夊帇楂樹寒锛堟牴鎹?isFirst/isLast 瑁佸壀鍦嗚锛夛紝
-/// 鍐呭眰 [MiuixArrowPreference] 鍙礋璐ｆ樉绀恒€?
-class _MiuixSettingsPreference extends StatelessWidget {
-  const _MiuixSettingsPreference({
-    super.key,
-    required this.startAction,
-    required this.title,
-    this.endActions,
-    required this.onClick,
-  });
-
-  final Widget startAction;
-  final String title;
-  final List<Widget>? endActions;
-  final VoidCallback? onClick;
-
-  @override
-  Widget build(BuildContext context) {
-    return HyperosPressableRow(
-      onTap: onClick,
-      holdHighlightThroughTransition: true,
-      // 涓婃父鎶婃爣棰樺瓧閲嶇‖缂栫爜涓?Medium(w500)锛屾瘮鍏?App 鍏朵綑璁剧疆琛屾墍鐢ㄧ殑
-      // HyperosTypography.title(w400) 閲嶄竴妗ｏ紱鑰?1.2.0 鐨?
-      // MiuixArrowPreference / MiuixBasicComponent 涓嶅啀鎺ュ彈 titleFontWeight銆?
-      // 鏈鏍囬鏄繖妫靛瓙鏍戦噷**鍞竴**鐨?Miuix 鏂囨湰锛堣灏惧€肩敤鏈粨搴撶殑 Text +
-      // HyperosTypography.listDetail锛屼笉璧?MiuixText锛夛紝鍥犳鍦ㄨ繖閲屾妸瀛楅噸鍋忕Щ
-      // 涓嬭皟涓€妗ｅ嵆鍙簿纭繕鍘?w400锛氭爣棰樻渶缁堝瓧閲?= w500 + (delta - 100)
-      // = w400 + delta锛屼粛闅忕郴缁熷瓧閲嶅垎绾у钩绉伙紱startAction 鏄浘鏍囷紝涓嶅彈褰卞搷銆?
-      child: MiuixTheme(
-        data: MiuixTheme.of(context).copyWith(
-          fontWeightAdjustment:
-              MiuixTheme.of(context).fontWeightAdjustment - 100,
-        ),
-        child: MiuixArrowPreference(
-          startAction: startAction,
-          title: title,
-          // MiuixArrowPreference 浼氭妸 endActions 鏀捐繘 mainAxisSize.min 鐨?Row锛?
-          // 閲岄潰鐨?Text 鎷垮埌鐨勬槸鏃犵晫瀹藉害锛屽€艰繃闀挎椂浼氭孩鍑鸿€屼笉鏄渷鐣ャ€?
-          // 閫愪釜鍖?Flexible 璁╁畠浠湇浠庡彸渚у彈闄愬搴︼紝骞堕粯璁ゅ崟琛岀渷鐣ャ€?
-          endActions: _constrainEndActions(endActions),
-          enabled: onClick != null,
-        ),
-      ),
-    );
-  }
-
-  /// 鎶婃瘡涓湯灏炬搷浣滃寘鎴愬彲鏀剁缉鐨?[Flexible]锛屽苟璁╁叾涓殑 [Text] 榛樿鍗曡鐪佺暐锛?
-  /// 閬垮厤瓒呴暱璇︽儏鍊兼拺鐮?[MiuixArrowPreference] 鐨勬湯灏炬Ы浣嶃€?
-  List<Widget>? _constrainEndActions(List<Widget>? actions) {
-    if (actions == null || actions.isEmpty) {
-      return actions;
-    }
-    return [
-      for (final action in actions)
-        Flexible(
-          child: DefaultTextStyle.merge(
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-            child: action,
-          ),
-        ),
-    ];
-  }
-}
-
-String normalizeLocaleTagForDropdown(String tag) {
-  final normalized = tag.trim();
-  if (normalized.isEmpty) {
-    return '';
-  }
-  final canonical = normalized.replaceAll('-', '_');
-  final supportedTags = AppLocalizations.supportedLocales
-      .map(
-        (locale) => locale.countryCode?.isNotEmpty == true
-            ? '${locale.languageCode}_${locale.countryCode}'
-            : locale.languageCode,
-      )
-      .toSet();
-  if (supportedTags.contains(canonical)) {
-    return canonical;
-  }
-  final languageCode = canonical.split('_').first;
-  if (supportedTags.contains(languageCode)) {
-    return languageCode;
-  }
-  return '';
-}
-
-String _liveDisplaySummary(BuildContext context, LiveDisplaySettings settings) {
-  final l10n = AppLocalizations.of(context)!;
-  final parts = <String>[];
-  if (settings.showCourseName) {
-    parts.add(
-      settings.useShortName
-          ? l10n.liveDisplaySummaryShortName
-          : l10n.liveDisplaySummaryCourseName,
-    );
-  }
-  if (settings.showLocation) {
-    parts.add(l10n.liveDisplaySummaryLocation);
-  }
-  if (settings.showCountdown) {
-    parts.add(l10n.liveDisplaySummaryCountdownShort);
-  } else if (settings.showStageText) {
-    parts.add(l10n.liveDisplaySummaryStageText);
-  }
-  if (settings.enableMiuiIslandLabelImage) {
-    parts.add(l10n.liveDisplaySummaryLeftLabelImage);
-  }
-  if (parts.isEmpty) {
-    return l10n.liveDisplaySummaryMinimal;
-  }
-  if (parts.length <= 2) {
-    return parts.join('·');
-  }
-  return l10n.liveDisplaySummaryMore(parts.first, parts.length);
-}
-
-Color _colorFromHex(String hexColor) {
-  return parseHexColorOrFallback(hexColor, fallback: const Color(0xFF2563EB));
 }
 
 String _formatDate(DateTime date) {

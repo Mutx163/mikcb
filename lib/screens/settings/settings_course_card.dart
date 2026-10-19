@@ -275,7 +275,7 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
                   child: HyperosHexColorChipGroup(
                     colorHexes: _cardColors,
                     selectedHex: _draft.timetableUnifiedCardColor,
-                    colorParser: _colorFromHex,
+                    colorParser: colorFromHex,
                     onSelectedHex: (color) {
                       _updateDraft(
                         _draft.copyWith(timetableUnifiedCardColor: color),

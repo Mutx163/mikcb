@@ -36,13 +36,13 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
 
   Widget _buildLiveSettingsSection(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context)!;
-    final beforeClassSummary = _liveDisplaySummary(
+    final beforeClassSummary = liveDisplaySummary(
       context,
       _draft.beforeClassDisplaySettings,
     );
     final duringEndSummary = _draft.liveDuringEndFollowBeforeClass
         ? l10n.followBeforeClassSetting
-        : _liveDisplaySummary(context, _draft.duringEndDisplaySettings);
+        : liveDisplaySummary(context, _draft.duringEndDisplaySettings);
     // 提醒 / 显示是偏好，保活与自检是维护诊断——两种心智不该挤在同一个
     // 无名大组里（IA §3 分组可预期 + §8 隔离精神），拆成三个带标签组。
     return Column(

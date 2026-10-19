@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/app_localizations_zh.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
-import 'package:university_timetable/screens/timetable_settings_screen.dart';
+import 'package:university_timetable/screens/settings/settings_shared.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 /// 最小宿主：点一下就把 [reportSettingsPersistRejected] 接到真实 toast 上。

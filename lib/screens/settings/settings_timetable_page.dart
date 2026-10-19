@@ -304,7 +304,7 @@ class _TimetablePageSettingsScreenState
                 child: HyperosHexColorChipGroup(
                   colorHexes: _backgroundColors,
                   selectedHex: _draft.timetablePageBackgroundColor,
-                  colorParser: _colorFromHex,
+                  colorParser: colorFromHex,
                   onSelectedHex: (color) {
                     _updateDraft(
                       _draft.copyWith(timetablePageBackgroundColor: color),

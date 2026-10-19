@@ -61,8 +61,8 @@ class _WeatherSettingsScreen extends StatelessWidget {
             children: [
               // 一键定位放在城市行之前：它比「手动搜索」更常用，也是「我不想挑
               // 城市，直接用我在的地方」的默认路径。
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   // 城市行用的是 location，这里换 pin 避免两个同形图标。
                   MiuixIcons.extended.byName('pin')!,
                   HyperosIconColors.blue,
@@ -82,8 +82,8 @@ class _WeatherSettingsScreen extends StatelessWidget {
                     ? null
                     : () => unawaited(_locateWeather(context, weather)),
               ),
-              _MiuixSettingsPreference(
-                startAction: _settingsIconBadge(
+              MiuixSettingsPreference(
+                startAction: settingsIconBadge(
                   MiuixIcons.extended.byName('location')!,
                   HyperosIconColors.teal,
                 ),
@@ -109,8 +109,8 @@ class _WeatherSettingsScreen extends StatelessWidget {
               // 取数失败时的重试。放在数据来源区块内，而不是单开一个匿名分组：
               // 它本来就是「这份数据没拿到」的补救动作。
               if (weather?.status == WeatherStatus.failed)
-                _MiuixSettingsPreference(
-                  startAction: _settingsIconBadge(
+                MiuixSettingsPreference(
+                  startAction: settingsIconBadge(
                     MiuixIcons.extended.byName('refresh')!,
                     HyperosIconColors.orange,
                   ),

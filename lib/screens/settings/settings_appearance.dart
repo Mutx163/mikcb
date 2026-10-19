@@ -94,7 +94,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
 
   Widget _buildAppearanceSection(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context)!;
-    final themePreviewColor = _colorFromHex(_draft.themeSeedColor);
+    final themePreviewColor = colorFromHex(_draft.themeSeedColor);
     final isDarkPreview = Theme.of(context).brightness == Brightness.dark;
 
     final Widget section = switch (index) {
@@ -330,7 +330,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               },
               // 弹窗每项：色圆点 + 名称（小米风格选择器）。
               itemPrefixBuilder: (ForuiTheme v) =>
-                  HyperosColorDot(color: _colorFromHex(v.seedHex)),
+                  HyperosColorDot(color: colorFromHex(v.seedHex)),
               value: _draft.foruiTheme,
               onChanged: (value) {
                 _updateDraft(
@@ -546,7 +546,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                   for (var i = 0; i < themes.length; i++)
                     HyperosChoiceTile(
                       prefix: HyperosColorDot(
-                        color: _colorFromHex(themes[i].seedHex),
+                        color: colorFromHex(themes[i].seedHex),
                       ),
                       title: foruiThemeLabel(l10n, themes[i]),
                       selected: current == themes[i],
@@ -575,7 +575,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                   for (var i = 0; i < savedThemes.length; i++)
                     HyperosChoiceTile(
                       prefix: HyperosColorDot(
-                        color: _colorFromHex(savedThemeSeedHex(savedThemes[i])),
+                        color: colorFromHex(savedThemeSeedHex(savedThemes[i])),
                       ),
                       title: savedThemes[i].name,
                       subtitle: ThemePreviewDots(

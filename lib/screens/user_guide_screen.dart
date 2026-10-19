@@ -15,6 +15,7 @@ import '../services/miui_live_activities_service.dart';
 import '../widgets/third_party_disclaimer_card.dart';
 import 'course_overview_screen.dart';
 import 'timetable_settings_screen.dart';
+import 'settings/settings_shared.dart';
 
 enum GuideAction { startUsing, importCourses, restoreBackup }
 
