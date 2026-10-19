@@ -1069,12 +1069,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                   // 已就绪，弹层首帧就是玻璃而不是透明轮廓。
                   Listener(
                     onPointerDown: (_) => _prewarmHomeGlass(),
-                    onPointerUp: (_) {
-                      if (!_homeMenuOpen) _releaseHomeGlass();
-                    },
-                    onPointerCancel: (_) {
-                      if (!_homeMenuOpen) _releaseHomeGlass();
-                    },
+                    onPointerUp: (_) => _releaseHomeGlassAfterTap(),
+                    onPointerCancel: (_) => _releaseHomeGlassAfterTap(),
                     child: CompositedTransformTarget(
                       link: _moreBallLink,
                       child: MiuixGlassAnchor(
@@ -7261,6 +7257,24 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (!_homeGlassHeld) return;
     _homeGlassHeld = false;
     _homeGlass.releaseRecording();
+  }
+
+  /// 「更多」按钮抬手后**帧末**再判要不要归还。
+  ///
+  /// 不能在抬手当场归还：`Listener.onPointerUp` 早于按钮的 `onPress`，而
+  /// `_homeMenuOpen` 是在 `onPress` 里才置 true 的 —— 当场归还就会
+  /// arm → release → arm 走一遍，中间那次让首页正文白重录一次、还多排一次
+  /// 空转录帧（2026-10-19 日志里 `holds=1 → 0 → 1` 就是这个）。推到帧末，
+  /// 这一下 tap 真开了菜单就保持不还。
+  ///
+  /// 显式 `scheduleFrame()`：指针事件本身不保证排帧，而帧末回调只在有帧时跑，
+  /// 漏排一次就等于「这次抬手没归还」，首页会一直录帧。
+  void _releaseHomeGlassAfterTap() {
+    if (_homeMenuOpen) return;
+    WidgetsBinding.instance.scheduleFrame();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_homeMenuOpen) _releaseHomeGlass();
+    });
   }
 
   /// 正在等「菜单退场动画走完」的那个信号（见 [_closeHomeMenuAndWait]）。
