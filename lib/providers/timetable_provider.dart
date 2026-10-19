@@ -51,6 +51,7 @@ import '../services/ics_import_service.dart';
 import '../services/timetable_exam_service.dart';
 import '../services/timetable_holiday_service.dart';
 import '../services/timetable_partner_service.dart';
+import '../services/timetable_reminder_service.dart';
 import '../services/timetable_theme_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/wallpaper_history_service.dart';
@@ -491,6 +492,7 @@ class TimetableProvider with ChangeNotifier {
   late final TimetableExamService _examService;
   late final TimetableHolidayService _holidayDomainService;
   late final TimetablePartnerService _partnerService;
+  late final TimetableReminderService _reminderService;
 
   TimetableProvider({
     StorageService? storageService,
@@ -529,6 +531,7 @@ class TimetableProvider with ChangeNotifier {
       _TimetableHolidayPort(this),
     );
     _partnerService = TimetablePartnerService(_TimetablePartnerPort(this));
+    _reminderService = TimetableReminderService(_TimetableReminderPort(this));
     _holidayService.onRemoteHolidayDataUpdated = (_) {
       unawaited(_loadHolidayData());
     };
@@ -2988,65 +2991,16 @@ class TimetableProvider with ChangeNotifier {
     return null;
   }
 
-  /// 以「当前真源」为基准做一次读-改-写，整段在同一次持锁里完成。
-  ///
-  /// 原先的写法是在门外先 `final current = settings;`，算好新值再
-  /// `await updateSettings(current.copyWith(...))`；而 [updateSettings]
-  /// 在门内把 `_settings` **整份替换**，于是从取快照到真正拿到锁之间
-  /// 落地的任何写入（另一节课的提醒、日期规则自动套用、外观 250ms 防抖保存）
-  /// 都会被这份旧快照覆盖，而两个调用方都收到"成功"返回。
-  /// 门内再读一次才是唯一安全的基准。
-  Future<void> _mutateSettings(
-    TimetableSettings Function(TimetableSettings current) update
-  ) {
-    return _runMutation(() => updateSettings(update(_settings)));
-  }
+  // ---- 上课提醒 ----
+  //
+  // 读-改-写整段在同一把门里完成的口径、同课同日只留一条与排序规则都在
+  // [TimetableReminderService]；这里只留公开签名与一行委托，行为契约见服务注释。
 
-  /// 设置（或覆盖）某节课某天的提醒；同课同日只保留一条。
-  Future<void> setClassReminder(ClassReminderEntry entry) async {
-    await _mutateSettings((current) {
-      final rest =
-          current.classReminders
-              .where(
-                (existing) =>
-                    !(existing.courseId == entry.courseId &&
-                        existing.date == entry.date),
-              )
-              .toList()
-            ..add(entry)
-            ..sort((a, b) {
-              final byDate = a.date.compareTo(b.date);
-              if (byDate != 0) {
-                return byDate;
-              }
-              return a.minuteOfDay.compareTo(b.minuteOfDay);
-            });
-      return current.copyWith(classReminders: rest);
-    });
-    unawaited(_syncExamReminders());
-  }
+  Future<void> setClassReminder(ClassReminderEntry entry) =>
+      _reminderService.setClassReminder(entry);
 
-  /// 取消某节课某天的提醒；不存在时静默幂等。
-  Future<void> removeClassReminder(String courseId, String date) async {
-    var changed = false;
-    await _mutateSettings((current) {
-      final rest = current.classReminders
-          .where(
-            (existing) =>
-                !(existing.courseId == courseId && existing.date == date),
-          )
-          .toList();
-      changed = rest.length != current.classReminders.length;
-      if (!changed) {
-        return current;
-      }
-      return current.copyWith(classReminders: rest);
-    });
-    if (!changed) {
-      return;
-    }
-    unawaited(_syncExamReminders());
-  }
+  Future<void> removeClassReminder(String courseId, String date) =>
+      _reminderService.removeClassReminder(courseId, date);
 
   // ---- 节假日相关 ----
   //
@@ -4383,4 +4337,26 @@ class _TimetablePartnerPort implements TimetablePartnerPort {
   @override
   void pushPartnerLiveSurface() =>
       unawaited(host._updateLiveActivity(syncScheduleSnapshot: false));
+}
+
+/// 上课提醒服务的宿主适配器：把设置读写入口、mutation 门与考试提醒重排
+/// 收成一个端口。
+class _TimetableReminderPort implements TimetableReminderPort {
+  _TimetableReminderPort(this.host);
+
+  final TimetableProvider host;
+
+  @override
+  TimetableSettings get settings => host._settings;
+
+  @override
+  Future<void> updateSettings(TimetableSettings settings) =>
+      host.updateSettings(settings);
+
+  @override
+  Future<T> runMutation<T>(Future<T> Function() operation) =>
+      host._runMutation(operation);
+
+  @override
+  void syncExamReminders() => unawaited(host._syncExamReminders());
 }
