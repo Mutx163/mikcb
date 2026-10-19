@@ -73,7 +73,11 @@ def headline_of(text: str) -> str:
     headline = (text[: match.start()] if match else text).strip() or text.strip()
     if len(headline) > MAX_HEADLINE_RUNES:
         headline = headline[:MAX_HEADLINE_RUNES] + "…"
-    return headline
+    # 解析器（release_notes_digest.dart 的 _splitDeclaredItems）按「、,，;；|/」
+    # 分条：重点条目内部的这些标点会把一句话炸成多条碎片（v1.1.7 / v1.1.10.1
+    # / .2 / .5 / v1.1.10.20 五份历史说明曾中招，2026-10-19 修）。换成分条集合
+    # 外的「·」，归一化匹配与二字组相似度仍远高于认回阈值。
+    return re.sub(r"[、,，;；|/]", "·", headline)
 
 
 def strip_separators(text: str) -> str:
