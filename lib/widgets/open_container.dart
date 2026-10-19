@@ -917,9 +917,10 @@ class _OpenContainerRoute<T> extends ModalRoute<T> {
               );
           assert(
             identical(curvedAnimation.parent, animation),
-            '缓存的曲线动画必须挂在本趟 buildTransitions 的 animation 上，否则它会'
-            '跟着别的进度源走（install 与 buildTransitions 应当拿到同一个 '
-            'ModalRoute.animation 代理）',
+            'The cached CurvedAnimation must be attached to the animation of '
+            'the current buildTransitions call; otherwise it follows a '
+            'different progress source (install and buildTransitions should '
+            'receive the same ModalRoute.animation proxy)',
           );
           curvedAnimation.reverseCurve = _transitionWasInterrupted
               ? null
