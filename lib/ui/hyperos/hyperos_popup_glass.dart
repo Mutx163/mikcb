@@ -263,6 +263,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     // 让位缩放由 GlassPopupLayout **布局级**缩小面板矩形完成（本地 fork）：
     // 玻璃按缩后尺寸画。这里不再包 AnimatedScale / forceCanvasBoard。
     final Widget body = LiquidGlassSurface(
+      probeName: 'glassPopup',
       borderRadius: cornerRadius,
       role: LiquidGlassRole.pinnedChrome,
       grouped: useAncestorGroupCapture,

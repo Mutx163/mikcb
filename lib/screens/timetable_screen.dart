@@ -5541,6 +5541,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     const radius = SoftGlassTokens.barHeight / 2;
     final surface = switch (material) {
       _DockMaterial.liquid => LiquidGlassSurface(
+        probeName: 'glassDock',
         key: _glassDockKey,
         borderRadius: radius,
         // 实时采样（不跟祖先组）：坞层被 [_wrapHomeWithTopMenu] 摆在采样宿主
@@ -5625,6 +5626,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             onTap: onTap,
             child: switch (material) {
               _DockMaterial.liquid => LiquidGlassSurface(
+                probeName: 'glassDock',
                 key: _glassDockRoundKey,
                 borderRadius: radius,
                 // 实时采样，理由同 [_dockPillSurface]（坞层在采样宿主之外）。
@@ -5945,6 +5947,7 @@ class _TimetableScreenState extends State<TimetableScreen>
               ),
               child: useLiquidGlassMaterial
                   ? LiquidGlassSurface(
+                      probeName: 'glassFloatButton',
                       borderRadius: borderRadius.topLeft.x,
                       // ⚠️ 不跟祖先组采样：组采样拿到的是壁纸快照，背景会变成一块
                       // 逐帧不变、不反映下方内容的底（与「回今日」同一处境，见
@@ -6155,6 +6158,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
     final surface = useLiquidGlassMaterial
         ? LiquidGlassSurface(
+            probeName: 'glassBackToToday',
             borderRadius: _backToTodayButtonRadius,
             // ⚠️ **不跟祖先组采样**（2026-09-20 用户拍板「对齐药丸实时采样」）。
             //

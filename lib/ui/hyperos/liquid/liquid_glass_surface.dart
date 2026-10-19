@@ -182,7 +182,14 @@ class LiquidGlassSurface extends StatefulWidget {
     this.preferCanvasBoardWhenAncestorScaled = false,
     this.forceCanvasBoard = false,
     this.canvasBoardColor,
+    this.probeName = 'glassLiquid',
   });
+
+  /// 诊断用层名：这块玻璃逐帧重绘时记到这个名字下（`[frame-perf] layers=名字:N`）。
+  ///
+  /// 见 `_RenderLiquidGlass.probeName` 的长注释：所有液态玻璃共用一个名字时，
+  /// 「谁在逐帧重画」这个问题在日志里没有答案。凡是能给出身份的调用点都该给。
+  final String probeName;
 
   /// 祖先链存在等比缩放（<1）时，是否改用 canvas 圆角板代替 BackdropFilter。
   ///
@@ -467,6 +474,7 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
           final Widget layer = _LiquidGlassLayer(
             style: style,
             pointer: _pointer,
+            probeName: widget.probeName,
             devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
             // 视口逻辑尺寸：着色器拿它把折射采样点铰在屏幕内（贴着屏幕边的玻璃
             // 往外采样会落进模糊扩出来的空区域、读成黑边）。
@@ -510,6 +518,7 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
   const _LiquidGlassLayer({
     required this.style,
     required this.pointer,
+    required this.probeName,
     required this.devicePixelRatio,
     required this.viewSize,
     required this.grouped,
@@ -523,6 +532,10 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
   });
 
   final LiquidGlassStyle style;
+
+  /// 诊断用层名（见 [LiquidGlassSurface.probeName]）。
+  final String probeName;
+
   final double rimFade;
   final bool preferCanvasBoardWhenAncestorScaled;
   final bool forceCanvasBoard;
@@ -551,6 +564,7 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
   RenderObject createRenderObject(BuildContext context) => _RenderLiquidGlass(
     style: style,
     pointer: pointer,
+    probeName: probeName,
     devicePixelRatio: devicePixelRatio,
     viewSize: viewSize,
     backdropKey: _backdropKey(context),
@@ -563,20 +577,26 @@ class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
   );
 
   @override
-  void updateRenderObject(BuildContext context, _RenderLiquidGlass renderObject) =>
-      renderObject.update(
-        style: style,
-        pointer: pointer,
-        devicePixelRatio: devicePixelRatio,
-        viewSize: viewSize,
-        backdropKey: _backdropKey(context),
-        refractionFactor: refractionFactor,
-        maxRefraction: maxRefraction,
-        rimFade: rimFade,
-        preferCanvasBoardWhenAncestorScaled: preferCanvasBoardWhenAncestorScaled,
-        forceCanvasBoard: forceCanvasBoard,
-        canvasBoardColor: canvasBoardColor,
-      );
+  void updateRenderObject(
+    BuildContext context,
+    _RenderLiquidGlass renderObject,
+  ) {
+    // 名字不进 `update` 的「无变化就早退」判据：它只是诊断标签，跟着 widget 走。
+    renderObject.probeName = probeName;
+    renderObject.update(
+      style: style,
+      pointer: pointer,
+      devicePixelRatio: devicePixelRatio,
+      viewSize: viewSize,
+      backdropKey: _backdropKey(context),
+      refractionFactor: refractionFactor,
+      maxRefraction: maxRefraction,
+      rimFade: rimFade,
+      preferCanvasBoardWhenAncestorScaled: preferCanvasBoardWhenAncestorScaled,
+      forceCanvasBoard: forceCanvasBoard,
+      canvasBoardColor: canvasBoardColor,
+    );
+  }
 }
 
 class _RenderLiquidGlass extends RenderProxyBox {
@@ -592,7 +612,16 @@ class _RenderLiquidGlass extends RenderProxyBox {
     required this._preferCanvasBoardWhenAncestorScaled,
     required this._forceCanvasBoard,
     required this._canvasBoardColor,
+    this.probeName = 'glassLiquid',
   });
+
+  /// 诊断用层名：这块玻璃重绘时记到这个名字下（`[frame-perf] layers=名字:N`）。
+  ///
+  /// 默认 `glassLiquid` 是历史口径（所有液态玻璃共用一个名字）。共用名字在
+  /// 「谁在逐帧重画」这个问题上是瞎的 —— 真机日志里 `glassLiquid:45` 配 44 帧
+  /// 只能说明**有**一块玻璃每帧重画，说不清是哪一块（2026-10-19 首页菜单那一轮
+  /// 就是卡在这里）。宿主给得出名字的调用点都应该给。
+  String probeName;
 
   LiquidGlassStyle _style;
   double _devicePixelRatio;
@@ -950,7 +979,7 @@ class _RenderLiquidGlass extends RenderProxyBox {
     );
     // 计数：这块液体玻璃这一帧有没有被重新录制（`layers=glassLiquid:N`）。
     if (FramePerfProbe.isInstalled) {
-      FramePerfProbe.noteLayerPaint('glassLiquid');
+      FramePerfProbe.noteLayerPaint(probeName);
     }
     context.pushLayer(backdropLayer, super.paint, offset);
   }

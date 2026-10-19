@@ -968,6 +968,7 @@ class _HomeBandLiquidGlassState extends State<_HomeBandLiquidGlass> {
     );
     if (frozen != null) return frozen;
     return LiquidGlassSurface(
+      probeName: 'glassHomeBand',
       borderRadius: widget.borderRadius,
       grouped: widget.grouped,
       maxRefraction: widget.maxRefraction,
