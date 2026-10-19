@@ -5,6 +5,12 @@ import 'package:university_timetable/services/android_animation_scale_service.da
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 void main() {
+  // 用户动效速度是 `AndroidAnimationScaleService` 里的**全局静态**，本文件多条
+  // 用例会改它（2 / 0.5），却不复位就会跨用例污染：`scaledDuration` 的读数取决于
+  // 上一个用例留下了什么 —— 实测 `flutter test --test-randomize-ordering-seed=14`
+  // 会让下面第一条断言拿到 600 而不是 300。统一在每条用例之后复位到默认 1.0。
+  tearDown(() => AndroidAnimationScaleService.setUserTransitionSpeed(1));
+
   test('AOSP 基准时长常量保持不变（页面转场已改用 miuix-nav 的 500ms）', () {
     // applyUserTransitionSpeed now requires BuildContext; duration base is static.
     expect(HyperosMiuixNavigation.transitionDurationMs, 300);

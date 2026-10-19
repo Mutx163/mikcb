@@ -237,17 +237,17 @@ abstract final class HyperosNavigation {
     required Animation<double> secondaryAnimation,
     required Widget child,
   }) {
+    // 曲线动画交给 [_MiuixNavPageTransition] 自己持有并释放，**不能**在这里建：
+    // 本函数每帧都被框架调一次（`_ModalScopeState` 的 `ListenableBuilder` 每 tick
+    // 重建 → `_buildFlexibleTransitions` → `route.buildTransitions`），而
+    // `CurvedAnimation` 构造器会给 parent 挂状态监听、只有它自己的 `dispose()`
+    // 摘得掉（SDK `animation/animations.dart`）—— 每帧新建两个、永不释放，等于
+    // 每趟转场往路由 controller 的状态监听表里塞一批监听（对永不销毁的根路由
+    // 跨会话累积）。框架自己的要求见同文件：「hold this object in a State rather
+    // than recreating it each time your widget builds」。
     return _MiuixNavPageTransition(
-      enter: CurvedAnimation(
-        parent: animation,
-        curve: transitionCurve,
-        reverseCurve: transitionCurve,
-      ),
-      cover: CurvedAnimation(
-        parent: secondaryAnimation,
-        curve: transitionCurve,
-        reverseCurve: transitionCurve,
-      ),
+      enter: animation,
+      cover: secondaryAnimation,
       child: child,
     );
   }
@@ -337,27 +337,88 @@ class _GlassCaptureTransitionGateState
 ///
 /// 返回树恒定（见 [HyperosNavigation.buildSharedAxisTransition] 的红线说明）：
 /// `Transform.translate(视差补底[裁切页、垫底条、淡出层、压暗层])`，所有效果走属性。
-class _MiuixNavPageTransition extends StatelessWidget {
+class _MiuixNavPageTransition extends StatefulWidget {
   const _MiuixNavPageTransition({
     required this.enter,
     required this.cover,
     required this.child,
   });
 
-  /// 本页作为栈顶的运动进度：0 = 完全移出（贴在 trailing 侧），1 = 到位。
+  /// 本页作为栈顶的运动进度（**路由的原始动画**，曲线由 State 加）：
+  /// 0 = 完全移出（贴在 trailing 侧），1 = 到位。
   final Animation<double> enter;
 
-  /// 本页被上层覆盖的程度：0 = 完全显露，1 = 完全被盖住。
+  /// 本页被上层覆盖的程度（路由的原始动画）：0 = 完全显露，1 = 完全被盖住。
   final Animation<double> cover;
 
   final Widget child;
+
+  @override
+  State<_MiuixNavPageTransition> createState() =>
+      _MiuixNavPageTransitionState();
+}
+
+class _MiuixNavPageTransitionState extends State<_MiuixNavPageTransition> {
+  /// 加过曲线的两个进度源。**必须由本 State 持有、在 [dispose] 里释放**：
+  /// `CurvedAnimation` 的构造器给 parent 挂状态监听，只有它自己的 `dispose()`
+  /// 摘得掉；而本 widget 每帧都被外层框架重建（按 tick 调 `buildTransitions`），
+  /// 建在 `build` 里就是每帧泄漏两个监听。
+  late CurvedAnimation _enter;
+  late CurvedAnimation _cover;
+
+  /// 两个进度源的合并监听：只建一次，避免每帧新建 `Listenable` 让
+  /// `AnimatedBuilder` 每帧重挂一次监听。
+  late Listenable _merged;
+
+  @override
+  void initState() {
+    super.initState();
+    _buildCurves();
+  }
+
+  void _buildCurves() {
+    _enter = CurvedAnimation(
+      parent: widget.enter,
+      curve: HyperosNavigation.transitionCurve,
+      reverseCurve: HyperosNavigation.transitionCurve,
+    );
+    _cover = CurvedAnimation(
+      parent: widget.cover,
+      curve: HyperosNavigation.transitionCurve,
+      reverseCurve: HyperosNavigation.transitionCurve,
+    );
+    _merged = Listenable.merge([_enter, _cover]);
+  }
+
+  void _disposeCurves() {
+    _enter.dispose();
+    _cover.dispose();
+  }
+
+  @override
+  void didUpdateWidget(_MiuixNavPageTransition oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 路由的 animation / secondaryAnimation 代理都在 `install()` 里建一次、
+    // 身份全程不变，所以正常路径下这里不会触发；只有真的换了进度源才重建。
+    if (!identical(oldWidget.enter, widget.enter) ||
+        !identical(oldWidget.cover, widget.cover)) {
+      _disposeCurves();
+      _buildCurves();
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposeCurves();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final width = media.size.width;
     if (width <= 0) {
-      return child;
+      return widget.child;
     }
     final devicePixelRatio = media.devicePixelRatio;
     // 前缘圆角半径：按设备屏幕圆角（官方 rememberNavSystemCornerRadius 口径）。
@@ -366,8 +427,8 @@ class _MiuixNavPageTransition extends StatelessWidget {
         : 0.0;
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     final isTopRoute = ModalRoute.of(context)?.isCurrent ?? true;
-    final moving = enter.status == AnimationStatus.forward ||
-        enter.status == AnimationStatus.reverse;
+    final moving = _enter.status == AnimationStatus.forward ||
+        _enter.status == AnimationStatus.reverse;
     final leadingCornerActive = isTopRoute || moving;
     // 右侧补底只在**被覆盖页真的会向左滑出**时才需要。
     //
@@ -384,10 +445,10 @@ class _MiuixNavPageTransition extends StatelessWidget {
     final surface = HyperosColors.scaffoldBackground(context);
 
     return AnimatedBuilder(
-      animation: Listenable.merge([enter, cover]),
+      animation: _merged,
       builder: (context, _) {
-        final enterValue = enter.value.clamp(0.0, 1.0);
-        final coverValue = cover.value.clamp(0.0, 1.0);
+        final enterValue = _enter.value.clamp(0.0, 1.0);
+        final coverValue = _cover.value.clamp(0.0, 1.0);
         // LTR：进页从右侧进来、被覆盖页向左退；RTL 整体镜像（官方同款处理）。
         final directionSign = isRtl ? -1.0 : 1.0;
 
@@ -421,8 +482,11 @@ class _MiuixNavPageTransition extends StatelessWidget {
         final page = _MiuixNavClippedPage(
           // 裁切层的**存在**恒定（结构恒定红线），半径按「是不是栈顶那一页」取：
           // 被覆盖页也裁会把两层洞对齐，直接看穿到窗口黑底（第十轮用户截图里的
-          // 黑圆角）。判据用 `isCurrent` —— 本仓转场壳是裸 `PageRoute`，被覆盖页
-          // 的 `secondaryAnimation` 根本不会被驱动，拿 `coverValue` 判会恒为 0。
+          // 黑圆角）。判据用 `isCurrent` 而不是 `coverValue`：`cover` 是**会动**的
+          // —— `PageRoute.canTransitionTo/From` 默认放行，框架
+          // `_updateSecondaryAnimation` 会把被覆盖页的 `secondaryAnimation` 接到
+          // 新页动画上（本文件的压暗 / 淡出整条链路就靠它），拿它当判据等于让
+          // 「裁不裁」随进度变，正好是红线禁止的结构变化。`isCurrent` 全程恒定。
           clipEnabled: clipRadius > 0,
           radius: leadingCornerActive ? clipRadius : 0,
 
@@ -443,7 +507,7 @@ class _MiuixNavPageTransition extends StatelessWidget {
           child: RepaintBoundary(
             child: PaintProbe(
               name: moving ? 'pageMoving' : 'pageStill',
-              child: child,
+              child: widget.child,
             ),
           ),
         );
@@ -463,10 +527,11 @@ class _MiuixNavPageTransition extends StatelessWidget {
           child: page,
         );
 
-        // 根恒为 Transform.translate：压暗蒙层画在 bleed 层内部（其下的垫底
-        // Stack 之上、页面之下没有采样关系，视觉等价于此前盖在整个页面上）。
+        // 根恒为 Transform.translate：压暗 / 淡出层画在 bleed 层内部、**页面
+        // 之上**（它是 `_MiuixNavParallaxBleed` 那个 Stack 的最后一个子级），
+        // 与它此前直接盖在整个页面上视觉等价。
         return _GlassCaptureTransitionGate(
-          enter: enter,
+          enter: _enter,
           child: Transform.translate(
             offset: Offset(slidePx + parallaxPx, 0),
             child: content,
@@ -511,8 +576,9 @@ class _MiuixNavParallaxBleed extends StatelessWidget {
   final double bleedWidth;
   final Color surface;
 
-  /// 压暗蒙层的 alpha（0 = 完全透明）。画在页面之下、垫底条之上：页面不透明
-  /// 时根本看不到它；被覆盖页视差滑出后露出的那条正是这一层。
+  /// 压暗蒙层的 alpha（0 = 完全透明）。画在**页面之上**（它是下面那个 `Stack`
+  /// 的最后一个子级）—— 这正是官方 `dimAmount`「被覆盖页整体压暗」的效果。
+  /// 栈顶页 `cover == 0` 时 alpha 为 0、宽度同时收成 0，等于不画。
   final double scrimAlpha;
 
   /// 被覆盖页「淡出多少」：官方 `1 - coveredAlphaFor(cover)`，最大 0.1。
@@ -753,8 +819,9 @@ class _MiuixNavLeadingCornerCut extends StatelessWidget {
 /// * 快照期间滑入画面里是「静止的照片」：页面自己的入场动画（骨架屏、
 ///   loading 转圈）在滑动画面里冻结，预热即接上 —— 重页面在滑动画面里本来
 ///   也播不动（每帧都掉），这是把「冻结但占着成本」换成「冻结且零成本」；
-/// * pop 本页离场（`reverse`）期间快照若还在，离场画面同样保持快照（内容
-///   = 滑入时用户看到的那一帧，视觉自洽），路由销毁时随 [dispose] 释放；
+/// * pop 本页离场（`reverse`）时快照会**立刻**被 [_onStatus] 退休（状态一离开
+///   `forward` 就撤），所以离场画面是真页而不是照片；[dispose] 另外兜住
+///   「动画还在 forward 时整棵子树被硬拆」那条路，负责归还快照句柄；
 /// * 平台视图（WebView / 相机预览）拍不进 `toImage`，会拍成黑块 —— 这类
 ///   路由必须在推入点传 `snapshotTransition: false` 豁免（见
 ///   [HyperosPageRoute.snapshotTransition]）。
@@ -841,11 +908,27 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
     // 天然不带缺口：滑入中的圆角由每帧现算的切口负责（切口仍在框架缓存边界
     // 之内，掉帧兜底的性质没变）。
     final node = _pageBoundaryKey.currentContext?.findRenderObject();
-    if (node is! RenderRepaintBoundary ||
-        !node.attached ||
-        node.debugNeedsPaint) {
-      // 拍不到（未布局 / 已离场 / 待重画）：留在真页模式 —— 等于本页没装
-      // 快照门，退化为现状，不炸转场。
+    if (node is! RenderRepaintBoundary || !node.attached) {
+      // 拍不到（未布局 / 已离场）：留在真页模式 —— 等于本页没装快照门，
+      // 退化为现状，不炸转场。
+      return;
+    }
+    // `debugNeedsPaint` **只能在 debug 读**：它是 `late bool result` 加上只写在
+    // `assert` 里的赋值（SDK `rendering/object.dart`，文档原文「In release
+    // builds, this throws.」）。release / profile 下 assert 被剥离，直接读会抛
+    // `LateInitializationError`；而这段判断在下面 `try` **之外**，异常会逃出
+    // 帧末回调（只被 `_invokeFrameCallback` 记成一条框架错误），结果是每次 push
+    // 报一次错、快照静默失效。所以把读取包进 assert 闭包：debug 保持原有
+    // 「边界刚被标脏就不拍」的语义，release 整段跳过。注意 release 下
+    // `toImageSync` 自己的 `assert(!debugNeedsPaint)` 同样被剥离，那边是「照拍」，
+    // 不再有脏边界检查；真正拍不动时（层还没建起来 / 引擎拒绝）由下面的
+    // `on Object` 兜底。
+    var needsPaint = false;
+    assert(() {
+      needsPaint = node.debugNeedsPaint;
+      return true;
+    }());
+    if (needsPaint) {
       return;
     }
     try {
@@ -891,12 +974,17 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
 
   /// 快照退休判据（每帧由 [build] 的 AnimatedBuilder 现读）。
   ///
-  /// 收束带起点（缓动进度 ≥ `1 - cornerClipSettleBand`）或动画离开 forward
-  /// （停稳 / 被打断）都退休 —— 只要「烤死的满值切口」还能被看出来是错的，
-  /// 就把活页换回屏上。判据与 [HyperosNavigation.transitionCornerRadiusFactor]
-  /// 用同一个带宽常量**和同一条曲线**，两条时间线必然重合。**退休前必须先
-  /// 预热**（见 [HyperosMiuixNavigation.snapshotWarmupProgress]）：没预热就
-  /// 撤快照，换层帧是真页的第一次整机绘制，会卡在收平段里读作蹦变。
+  /// **当前只有一条判据**：动画离开 `forward`（停稳 / 被打断）→ true；
+  /// `forward` 期间**恒 false**，照片一路撑到动画结束（理由见下面那段真机
+  /// 反馈：换层因此落在落定之后、屏幕边缘之外）。
+  ///
+  /// 曾经还有一条「缓动进度 ≥ `1 - cornerClipSettleBand`（圆角收束带起点）就
+  /// 退休」，它随「末段圆角收平」一起停用了（圆角收平本身已撤销），那个带宽
+  /// 常量现在**没有任何活跃消费者**。历史来龙去脉见类文档与
+  /// `.agents/notes/implemented/bug-fix/2026-10-17-nav-corner-notch-flicker.md`。
+  ///
+  /// **退休前必须先预热**（见 [HyperosMiuixNavigation.snapshotWarmupProgress]）：
+  /// 没预热就撤快照，换层帧是真页的第一次整机绘制，会卡在收平段里读作蹦变。
   bool get _snapshotShouldRetire {
     final animation = widget.animation;
     final status = animation.status;
@@ -942,8 +1030,8 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
   ///
   /// * 进度到预热点（或动画状态异常）→ 帧末把真页放回屏下（快照仍盖着，
   ///   真页那次整机绘制落在「画面几乎不动」的时刻，不可见）；
-  /// * 进度到收束带（且已预热）→ 帧末撤快照 —— 换层是纯合成操作，之后
-  ///   圆角收平在**已预热**的活像素上逐帧连续播放。
+  /// * 动画离开 `forward` → 帧末撤快照 —— 换层是纯合成操作。
+  ///   「进度到收束带就撤」那条已停用，见 [_snapshotShouldRetire]。
   void _advancePhasesIfNeeded() {
     if (_snapshot == null) {
       return;
@@ -1058,6 +1146,24 @@ class _MiuixNavSnapshotGateState extends State<_MiuixNavSnapshotGate> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  @override
+  void dispose() {
+    // 必须自己归还两样东西：
+    //
+    // 1. 快照句柄。`RawImage` 拿到的是 `image.clone()`，框架**不**替创建方释放
+    //    原句柄（SDK `widgets/basic.dart`：「The [image] is not disposed of by
+    //    this widget. Creators of the widget are expected to call
+    //    [dart:ui.Image.dispose] on the [image] ...」）。正常 pop 走不到这里
+    //    （[_onStatus] 在状态一离开 `forward` 时就退休了），这条路兜的是
+    //    「动画还在 `forward` 时整棵子树被硬拆」（`removeRoute` / Navigator 被
+    //    销毁 / 应用退出）—— 不补的话那张全屏图（约 10MB 显存）永不归还。
+    // 2. 状态监听。本 State 是 `addStatusListener` 的持有方，摘掉它不该依赖
+    //    路由的 controller 何时销毁。
+    widget.animation.removeStatusListener(_onStatus);
+    _disposeSnapshot();
+    super.dispose();
   }
 }
 
@@ -1184,7 +1290,13 @@ class HyperosPageRoute<T> extends PageRoute<T> {
     return super.didPush();
   }
 
-  /// [Navigator.pushReplacement] 走这条（`didPush` 不会被调），同样要打点。
+  /// `Navigator.replace` 走这条（`didReplace` 只服务框架的
+  /// `_RouteLifecycle.replace` 分支）。
+  ///
+  /// **`pushReplacement` 不走这里**：它用 `_RouteLifecycle.pushReplace`，框架在
+  /// `_RouteEntry.handlePush` 里调的是 `didPush`（SDK `widgets/navigator.dart`），
+  /// 所以那条路径上打的仍是 `route:push:`。全仓当前没有 `Navigator.replace` 的
+  /// 调用点，这条打点因此是「留给将来」的。
   @override
   void didReplace(Route<dynamic>? oldRoute) {
     super.didReplace(oldRoute);
