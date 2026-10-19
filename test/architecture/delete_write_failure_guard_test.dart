@@ -123,15 +123,33 @@ void main() {
   );
 
   test('UI 层调用会 rethrow 的 provider 写入时，必须 await 且在 try 内', () {
+    // 2026-10-19 扩根（task-3 架构审核）：扫描范围原来是 lib/screens + lib/widgets，
+    // 但 lib/ui（弹窗 / 顶栏 / 弹层家族）与 lib/main.dart 同样调用 provider 写入，
+    // 不在扫描根里就是免检区。扩根前干跑实测：lib/ui 命中 0 处、main.dart 命中
+    // 1 处（:917 的 updateTimetableSettings，已在 try/catch 内），基线 80 无需调整。
+    final rootDirs = <String>['lib/screens', 'lib/widgets', 'lib/ui'];
+    final rootFiles = <String>['lib/main.dart'];
     final roots = <String>[
-      for (final dir in <String>['lib/screens', 'lib/widgets'])
+      for (final dir in rootDirs)
         ...Directory(dir)
             .listSync(recursive: true)
             .whereType<File>()
             .where((f) => f.path.endsWith('.dart'))
             .map((f) => f.path),
+      ...rootFiles,
     ];
     expect(roots, isNotEmpty, reason: '扫描范围为空，棘会假绿');
+    // 扩根自检：两个新根必须真的进了扫描列表，否则本次扩根等于没做。
+    expect(
+      roots.any((p) => p.replaceAll('\\', '/').startsWith('lib/ui/')),
+      isTrue,
+      reason: 'lib/ui 未纳入扫描，扩根失效',
+    );
+    expect(
+      roots.any((p) => p.replaceAll('\\', '/').endsWith('lib/main.dart')),
+      isTrue,
+      reason: 'lib/main.dart 未纳入扫描，扩根失效',
+    );
 
     final offenders = <String>[];
     var checked = 0;

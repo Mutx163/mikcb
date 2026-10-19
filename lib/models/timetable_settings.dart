@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:university_timetable/ui/hyperos/frosted/frosted_appearance.dart';
+import 'package:university_timetable/models/frosted_appearance.dart';
 import 'package:university_timetable/models/course_glass_tuning.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';

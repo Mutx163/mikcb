@@ -287,6 +287,26 @@ void main() {
     );
   });
 
+  test('storage_service.dart 行数棘轮：只减不增', () {
+    // 2026-10-19 立基线（task-3 架构审核）：该文件是 services 层最大的单文件，
+    // 含序列化 / 迁移 / 备份恢复逻辑，长期无规模护栏。基线取立棘当天工作区的
+    // 真实行数 1899 —— 立棘时另一审核组正在同一文件加「坏课程条目隔离留档」
+    // （HEAD 1829 行 → 工作区 1899，净 +70，75 秒两次采样稳定），按任务约定
+    // 以当前值收口。只减不增；确需增长时同步基线并在提交信息说明，
+    // 优先把整块功能域（如备份恢复 / 迁移）拆成独立文件。
+    const baselineLines = 1899;
+    final storageFile = File('lib/services/storage_service.dart');
+    expect(storageFile.existsSync(), isTrue, reason: '文件不存在，棘已空转');
+    final lines = storageFile.readAsLinesSync().length;
+    expect(
+      lines,
+      lessThanOrEqualTo(baselineLines),
+      reason:
+          'storage_service.dart 继续膨胀（当前 \$lines > 基线 \$baselineLines）。'
+          '请把整块功能域拆成独立文件；若确属正当增长，请同步本基线并在提交信息说明。',
+    );
+  });
+
   test('lib/domain 保持无 UI 框架依赖（纯领域层）', () {
     final forbidden = RegExp(
       r'''import\s+['"]package:flutter/(widgets|material|cupertino)\.dart['"]''',
