@@ -59,6 +59,72 @@ void main() {
     expect(service.pending, same(newerToken));
   });
 
+  test('第二次导入不吞掉上一次导入的撤销点（2026-10-20 多槽化）', () {
+    final service = TransferUndoService();
+    final firstToken = service.create(
+      backupJson: '{"first":true}',
+      incoming: _incomingPackage('incoming-1'),
+      mode: TransferApplyMode.merge,
+      preview: _preview,
+      createdAt: DateTime(2026, 8, 5),
+    );
+    final secondToken = service.create(
+      backupJson: '{"second":true}',
+      incoming: _incomingPackage('incoming-2'),
+      mode: TransferApplyMode.overwrite,
+      preview: _preview,
+      createdAt: DateTime(2026, 8, 5, 0, 0, 1),
+    );
+
+    // 最新一个仍是「撤销最近一次导入」的入口。
+    expect(service.pending, same(secondToken));
+    // 但上一次导入的撤销点仍可按自己的 id 取到——单槽时代这里是 null。
+    expect(service.take(firstToken.id), same(firstToken));
+    expect(service.pending, same(secondToken));
+  });
+
+  test('槽容量 3：最旧的撤销点被挤出', () {
+    final service = TransferUndoService();
+    final tokens = List.generate(4, (index) {
+      return service.create(
+        backupJson: '{"n":$index}',
+        incoming: _incomingPackage('incoming-$index'),
+        mode: TransferApplyMode.merge,
+        preview: _preview,
+        createdAt: DateTime(2026, 8, 5, 0, 0, index),
+      );
+    });
+
+    expect(service.take(tokens.first.id), isNull, reason: '最旧的应被挤出');
+    expect(service.pending, same(tokens.last));
+    expect(service.take(tokens[1].id), same(tokens[1]));
+    expect(service.take(tokens[2].id), same(tokens[2]));
+  });
+
+  test('remove(id) 只摘掉指定令牌，其余保留', () {
+    final service = TransferUndoService();
+    final firstToken = service.create(
+      backupJson: '{"first":true}',
+      incoming: _incomingPackage('incoming-1'),
+      mode: TransferApplyMode.merge,
+      preview: _preview,
+      createdAt: DateTime(2026, 8, 5),
+    );
+    final secondToken = service.create(
+      backupJson: '{"second":true}',
+      incoming: _incomingPackage('incoming-2'),
+      mode: TransferApplyMode.merge,
+      preview: _preview,
+      createdAt: DateTime(2026, 8, 5, 0, 0, 1),
+    );
+
+    // 对应回滚成功后的清理：被回滚的那个令牌已不再描述一次变更。
+    service.remove(secondToken.id);
+
+    expect(service.pending, same(firstToken));
+    expect(service.take(secondToken.id), isNull);
+  });
+
   test(
     'keeps the token when UnifiedTransferService cannot restore it',
     () async {

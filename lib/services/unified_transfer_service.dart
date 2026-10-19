@@ -446,7 +446,12 @@ class UnifiedTransferService {
         } catch (error, stackTrace) {
           try {
             await _restore(provider, token);
-            undoService.clear();
+            // 只摘掉这次导入自己的令牌，不清空整槽（2026-10-20 多槽化）：
+            // 清空会把更早导入的撤销点一起吞掉——B 失败回滚成功后，状态回到
+            // 「A 之后」，A 的撤销点仍然有效，用户的「撤销导入」不该失灵。
+            // B 的令牌必须摘掉：它的恢复点在回滚后就是当前状态，留着只会让
+            // 「撤销」变成一次无操作。
+            undoService.remove(token.id);
           } catch (rollbackError, rollbackStack) {
             // 回滚自己也失败时不能把异常抛出去：调用方约定 applyToProvider
             // 只返回 TransferApplyResult，不抛异常（LAN/二维码/云都按此调用）。
