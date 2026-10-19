@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 ///   build 期 chrome 解析、顶栏 chrome、弹层/sheet 族、下拉药丸/情侣空闲摘要/
 ///   周页滚动壳、首页栈、周网格日列、周 pager、玻璃坞外壳、周页、周网格骨架、
 ///   首页下拉 surface、情侣日课表组装、日视图锚点展开壳与壁纸亮度采样控制器
-///   拆出，主文件 4,356 + 两个 part 2,806 = 7,162 行。
+///   与时间格拆出，主文件 4,346 + 两个 part 2,806 = 7,152 行；build() 109 行。
 /// - `timetable_provider`：主文件 4,362 + 10 个 part 3,479 = 7,841 行
 ///   （主题/考试/节假日/情侣/提醒族已抽到 `services/`）；
 ///   part 里仍有 573 处直接访问 `host._私有字段` —— 这是同一个类的 11 个抽屉，
@@ -31,7 +31,7 @@ void main() {
     // 2026-10-19 晚：拆 models↔l10n 唯一真循环，主文件仅 +1 行 import
     // （course_week_localizations 的扩展），属换依赖方向而非功能增长，
     // 主文件与单元总量各 +1（9154 → 9155）已在提交信息说明。
-    const baselineLines = 7162;
+    const baselineLines = 7152;
     const unit = [
       'lib/screens/timetable_screen.dart',
       'lib/screens/timetable_day_view_part.dart',
@@ -165,7 +165,10 @@ void main() {
     // 分身转正为独立库，壁纸「最近使用」条抽出 settings_recent_wallpaper.dart；
     // mixin HomeBackdropFlow 的 6 个跨库成员转公开（库级私有可见性所致），
     // 差值仍为新文件头/import/文档，零行为搬迁。
-    const baselineLines = 13621;
+    // 13621→13629：settings_reset.dart 转正为独立库（_SettingsResetTile 公开化
+    // 为 SettingsResetTile，5 个分身引用点改公开名，两处测试补指向新库的
+    // import），+8 全为文件头/import，零行为搬迁。
+    const baselineLines = 13629;
     final domainFiles = <String>[
       'lib/screens/timetable_settings_screen.dart',
       ...Directory('lib/screens/settings')
@@ -186,7 +189,7 @@ void main() {
           '并先做等量瘦身，不要抬基线换绿。',
     );
 
-    // part 数量：只减不增，随「转正」逐格收紧（14 = 外观簇转正后余 14）。
+    // part 数量：只减不增，随「转正」逐格收紧（13 = reset 转正后余 13）。
     final settingsMain = File('lib/screens/timetable_settings_screen.dart');
     final partCount = RegExp(
       r"^part\s+'",
@@ -194,7 +197,7 @@ void main() {
     ).allMatches(settingsMain.readAsStringSync()).length;
     expect(
       partCount,
-      lessThanOrEqualTo(14),
+      lessThanOrEqualTo(13),
       reason:
           '设置页 part 数量涨到 $partCount（基线 16）。16 个分身将逐个转正为'
           '独立库文件；part 只作零行为搬迁的过渡，不要新增。',

@@ -41,8 +41,10 @@ void main() {
     // M5-A6：情侣日课表条目组装下沉 domain（净 -91）→ 4638。
     // M5-A7：日视图锚点展开壳搬出（净 -55）→ 4583。
     // M5-A8：壁纸亮度采样控制器搬出（净 -227）→ 4356。
+    // M5-A9：build 拆成 homeStack/dockShell 两个私有构建方法 + 时间格 widget
+    // 搬出（净 -10）→ 4346；build() 从 333 行降到 109 行。
     // 下一次目标（下拉/日视图转场控制器）预计可再降至 ~4100。
-    const baselineLines = 4356;
+    const baselineLines = 4346;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),
