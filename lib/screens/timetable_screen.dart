@@ -86,6 +86,7 @@ import '../widgets/timetable/timetable_weekday_header.dart';
 import '../widgets/timetable/timetable_day_pager_physics.dart';
 import '../widgets/timetable/timetable_empty_slot.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
+import '../widgets/timetable/timetable_glass_dock.dart';
 import '../widgets/timetable/timetable_open_only_route.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
@@ -99,12 +100,6 @@ part 'timetable_update_download_part.dart';
 
 part 'timetable_day_view_part.dart';
 
-/// 玻璃坞底栏实际生效的材质。
-///
-/// 由**全局材质**+ 「作用范围 → 玻璃坞导航」推导（见
-/// [_TimetableScreenState._resolveDockMaterial]），不再有独立的「底栏材质」开关——
-/// 否则会出现「全局高斯 + 底栏液态」这类两种玻璃同屏的组合。
-enum _DockMaterial { liquid, frosted, solid }
 
 class TimetableScreen extends StatefulWidget {
   final bool enableUpdateCheck;
@@ -138,13 +133,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// baseIndicatorSettings（轻微透镜弯曲）、pinch 0.4、expansion 水平12/
   /// 垂直8、质量自适应；右侧浮钮与药丸显式共用这份官方底栏材质——
   /// 包「原版」下两者不传参时内部默认各不相同，会呈现玻璃断层。
-  /// 玻璃坞药丸的亮暗极性阈值：壁纸亮度低于此值才用深灰玻璃 + 白墨，
-  /// 否则乳白玻璃 + 黑墨（极性决定它的底色与指示器配色，见
-  /// [SoftGlassTokens.tint] 与 [SoftGlassPolarity]）。
-  ///
-  /// 阈值取 0.35 而非通用 chrome 的 0.45，是玻璃坞的偏保守取向：中等亮度
-  /// 壁纸配深灰玻璃像一块塑料（截图里浅橄榄壁纸配黑玻璃就是这种情况）。
-  static const double _kDockGlassDarkLuminance = 0.35;
 
   late final PageController _weekPageController;
   late final AnimationController _dayViewExpandController;
@@ -205,7 +193,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   final GlobalKey _topMenuButtonKey = GlobalKey();
 
   /// 底栏那两块液态玻璃面：药丸 + 右侧合并圆钮（同一份材质推导，见
-  /// [_resolveDockMaterial]）。持有它们是为了在**推路由**时按下按压光斑：缩放
+  /// [TimetableGlassDockLayer]）。持有它们是为了在**推路由**时按下按压光斑：缩放
   /// 转场第 0 帧会把整屏烤成快照，光斑被定格就会变成「亮光接缩小动画时闪一下」。
   /// 见 [_pushAfterDockGlowSettled]。
   ///
@@ -1122,7 +1110,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         // - 设置页的滚动位置与大标题折叠状态不随 Tab 切换丢失（切走再切回，
         //   标题保持离开时的折叠态）；
         // - 壁纸层随 homeStack 常驻，解码缓存不失效，切回课表不黑闪。
-        // 玻璃坞导航始终由 [_buildGlassDockLayer] 浮在最上层（画在采样宿主之外）。
+        // 玻璃坞导航始终由 [TimetableGlassDockLayer] 浮在最上层（画在采样宿主之外）。
         final Widget dockContent = useHomePreblur
             ? PreblurredWallpaperScope(
                 // Same pre-blur model as the week grid: sample one cached
@@ -1226,8 +1214,20 @@ class _TimetableScreenState extends State<TimetableScreen>
           chromeBalls: homeChromeBalls,
           chromeDotBorderColor: chromeDotBorderColor,
           // 坞层由 _wrapHomeWithTopMenu 摆到采样宿主**之外**（不自采样），
-          // 理由见 _buildGlassDockLayer 的注释。
-          dockLayer: _buildGlassDockLayer(settings: settings, l10n: l10n),
+          // 理由见 TimetableGlassDockLayer 的注释。
+          dockLayer: TimetableGlassDockLayer(
+            settings: settings,
+            isInlinePage: _dockInlinePageId != null,
+            wallpaperBodyLuminance: _wallpaperBodyLuminance,
+            selectedIndex: _dockSelectedIndex(
+              resolveGlassDockActionIds(settings),
+            ),
+            roundButtonIcon: _roundButtonIcon(settings),
+            onTabSelected: (id) => _handleDockTap(id, settings),
+            onRoundButtonTap: () => _handleRoundButtonTap(settings),
+            pillKey: _glassDockKey,
+            roundKey: _glassDockRoundKey,
+          ),
         );
       },
     );
@@ -4862,301 +4862,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     return _glassDockPillOccupancy + MediaQuery.viewPaddingOf(context).bottom;
   }
 
-  /// 玻璃坞形态：把底部液态玻璃药丸导航叠加到页面之上。
-  ///
-  /// 玻璃坞当前应使用的材质。
-  ///
-  /// 由**全局材质**（外观编辑 → 材质）+ 「作用范围 → 玻璃坞导航」推导：
-  ///
-  /// - 实体卡片（模糊总开关关）→ [_DockMaterial.solid]；
-  /// - 液态玻璃 + 作用范围开 → [_DockMaterial.liquid]；
-  /// - 液态玻璃但该家族作用范围关（或系统降级）→ [_DockMaterial.frosted]。
-  ///
-  /// 底栏不再有独立的「底栏材质」开关：同一份默认材质驱动所有表面，用户
-  /// 不必在两个地方对齐同一种玻璃（历史上「全局高斯 + 底栏液态」这类组合
-  /// 就是把开关拆到两处造成的）。
-  /// 作用范围关闭时统一走磨砂而非实心圆片：磨砂的实时
-  /// BackdropFilter 在坞的滑入/合并动画期间采不到稳定背景，药丸会整段
-  /// 透明（见 [LiquidGlassDegradation.familyFallsBackToSolid]）。
-  ///
-  /// ⚠️ **模糊总开关排在最前**：高斯档存在时它同时兼作「关掉液态」的信号
-  /// （实体卡片档会把全局档位归位成非液态），2026-09-30 高斯退场后那层归位没了，
-  /// 这里必须自己先判一次，否则实体卡片档下坞仍会被派成液态 —— 与渲染侧
-  /// [LiquidGlassSurface.isAvailable] 的 `backdropBlurEnabled` 判据直接矛盾。
-  _DockMaterial _resolveDockMaterial(BuildContext context) {
-    if (!HyperosBlurredHeader.backdropBlurEnabled(context)) {
-      return _DockMaterial.solid;
-    }
-    final appearance = FrostedAppearanceScope.of(context);
-    if (!LiquidGlassDegradation.familyFallsBackToSolid(
-      context,
-      advancedFamilyEnabled: appearance.liquidGlassDockEnabled,
-    )) {
-      return _DockMaterial.liquid;
-    }
-    return _DockMaterial.frosted;
-  }
 
-  /// 经典形态直接返回原内容，行为与之前完全一致。
-  /// 玻璃坞（药丸 + 右侧独立圆钮）那一层的内容。
-  ///
-  /// ⚠️ **必须画在采样宿主之外** —— 由 [_wrapHomeWithTopMenu] 摆到宿主之外，与
-  /// 顶栏那两颗常驻玻璃球同一条规则。坞层原来长在宿主子树的末尾，于是每次录帧
-  /// 都把坞层自己的画面烘进采样快照，坞层再拿这张"含自己"的图去算材质：展开 /
-  /// 收起内嵌页那几帧里，圆钮的明暗会来回颤几下才收敛（真机反馈：「圆钮展开
-  /// 收起之后闪」）。同一机制在 `stable_frosted_surface.dart` 的类注释里有
-  /// 完整说明 —— 那条偏差的修法就是"把玻璃移到捕获之外"，这里是其中一块。
-  ///
-  /// 浮钮与药丸显式同源材质：两者都由同一份全局材质推导
-  /// （[_resolveDockMaterial]），避免出现圆钮与药丸两种玻璃的断层。
-  /// 三条材质路径共用同一份采样与稳定背景口径（见 `StableFrostedSurface`）。
-  Widget _buildGlassDockLayer({
-    required TimetableSettings settings,
-    required AppLocalizations l10n,
-  }) {
-    // 圆钮与药丸由**同一个** [_resolveDockMaterial] 分派，材质天然同源
-    // （见 [_dockRoundSurface]），不必再各解析一份参数。
-    final dockMaterial = _resolveDockMaterial(context);
-    // 内嵌页表态只看主题，不跟着壁纸亮度走。
-    final lum = _dockInlinePageId != null ? null : _wallpaperBodyLuminance;
-    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
-    // 通用底栏墨色判据（chrome 阈值 0.45）。
-    // 实体卡片档的药丸/圆钮是不透明**主题色**面（浅色主题≈纯白），
-    // 墨色极性必须跟主题走；半透明材质（液态/磨砂）的面 =
-    // 壁纸 + 玻璃，继续按壁纸亮度判——否则浅色主题 + 暗壁纸会
-    // 出现白底白字。
-    final inkIsLight = dockMaterial == _DockMaterial.solid
-        ? isDarkTheme
-        : (lum != null ? lum < 0.45 : isDarkTheme);
-    final ink = inkIsLight
-        ? Colors.white.withValues(alpha: 0.9)
-        : Colors.black.withValues(alpha: 0.75);
-    return SafeArea(
-      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        // 官方 iOS 26 形态：居中药丸 + 右侧独立圆钮，整组居中。
-        // 圆钮固定展开（加课程唯一主动入口，不再随页收起）；
-        // 材质经 dockBtnSettings 与药丸显式同源。
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 272),
-              child: _buildGlassDockBar(settings: settings, l10n: l10n),
-            ),
-            if (settings.glassDockShowAddButton) ...[
-              const SizedBox(width: 8),
-              _buildDockMergeSlot(ink: ink, l10n: l10n, material: dockMaterial),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 
-  /// 玻璃坞底部导航：周课表 / 日课表 / 设置。
-  ///
-  /// 四种材质共用同一套底栏实现（[SoftGlassTabBar]：浮动药丸 + 拖拽指示器 +
-  /// 弹簧动画），材质差异只由注入的 `surfaceBuilder` 决定（见
-  /// [_dockPillSurface]）。
-  Widget _buildGlassDockBar({
-    required TimetableSettings settings,
-    required AppLocalizations l10n,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final colorScheme = Theme.of(context).colorScheme;
-    final appearance = FrostedAppearanceScope.of(context);
-    final dockMaterial = _resolveDockMaterial(context);
-    // 底栏文字极性分派：课表态跟随壁纸亮度（表面 = 壁纸 + 白玻璃）；
-    // 内嵌页表态底栏浮在纯色页面上，只看主题——否则白底设置页会沿用
-    // 暗壁纸的浅色墨，白字看不见（自动反色失效的根因）。
-    // 实体卡片档例外：药丸是不透明主题色面（浅色主题≈纯白），墨色必须
-    // 跟主题走，按壁纸亮度翻白会在暗壁纸上得到白底白字。
-    final wallpaperLuminance = _dockInlinePageId != null
-        ? null
-        : _wallpaperBodyLuminance;
-    final barUsesLightInk = dockMaterial == _DockMaterial.solid
-        ? isDark
-        : (wallpaperLuminance != null ? wallpaperLuminance < 0.45 : isDark);
-    final unselectedColor = barUsesLightInk
-        ? Colors.white.withValues(alpha: 0.62)
-        : Colors.black.withValues(alpha: 0.48);
-    // 选中色：暗表面用白色；亮表面上浅色主题的 primary 本身偏深可用，
-    // 深色主题的 primary 偏浅在亮玻璃上对比度不足 → 切深色墨。
-    final selectedColor = barUsesLightInk
-        ? Colors.white
-        : (isDark && wallpaperLuminance != null && wallpaperLuminance >= 0.45
-              ? Colors.black.withValues(alpha: 0.80)
-              : colorScheme.primary);
-    // 底栏材质：由**全局材质** + 「作用范围 → 玻璃坞导航」推导
-    // （[_resolveDockMaterial]，函数开头已解析），与弹窗 / 顶部 / 卡片同一份
-    // 材质，不再有独立的「底栏材质」开关。
-    // 实体药丸的底：与主题卡面同色、不含模糊。
-    final solidDockFill = HyperosColors.surfaceContainer(context);
-    // 动态入口列表：底栏最多 5 槽，用户在「首页与导航」自由编排
-    // （'day'/'week' 视图动作 + 目录任意条目，含设置页）。
-    final dockIds = resolveGlassDockActionIds(settings);
-    // 玻璃药丸的布局与极性：
-    //
-    // 布局用 Stacked（图标上、文字下）：5 槽 + maxWidth 272 时 Horizontal
-    // 会把「日课表」挤成一个字。极性阈值只给底栏药丸自己用（决定它的
-    // 亮暗与指示器配色）：仅明确暗壁纸才用深灰玻璃，中等亮度壁纸走
-    // 乳白+黑墨（截图里浅橄榄壁纸配黑玻璃像一块塑料），故阈值取 0.35
-    // 而非通用 chrome 的 0.45。
-    final dockGlassDark = wallpaperLuminance != null
-        ? wallpaperLuminance < _kDockGlassDarkLuminance
-        : isDark;
-    final barSelectedInk = selectedColor;
-    final barUnselectedInk = unselectedColor;
 
-    // 四种材质共用同一套底栏实现（[SoftGlassTabBar]：拖拽切换、弹簧指示器、
-    // 速度拉伸），只有「底」不同——见 [_dockPillSurface]。
-    return SoftGlassTabBar(
-      tabs: [
-        for (final id in dockIds)
-          SoftGlassTab(
-            icon: Icon(glassDockActionIcon(id)),
-            label: glassDockActionLabel(l10n, id),
-          ),
-      ],
-      selectedIndex: _dockSelectedIndex(dockIds),
-      onTabSelected: (index) => _handleDockTap(dockIds[index], settings),
-      selectedColor: barSelectedInk,
-      unselectedColor: barUnselectedInk,
-      iconSize: 22,
-      blurEnabled: appearance.blurEnabled,
-      polarity: dockGlassDark
-          ? SoftGlassPolarity.dark
-          : SoftGlassPolarity.light,
-      surfaceBuilder: (child) => _dockPillSurface(
-        material: dockMaterial,
-        solidFill: solidDockFill,
-        child: child,
-      ),
-    );
-  }
 
-  /// 药丸底材质分派（三种材质共用同一套底栏实现，见 [_buildGlassDockBar]）。
-  Widget _dockPillSurface({
-    required _DockMaterial material,
-    required Color solidFill,
-    required Widget child,
-  }) {
-    const radius = SoftGlassTokens.barHeight / 2;
-    final surface = switch (material) {
-      _DockMaterial.liquid => LiquidGlassSurface(
-        probeName: 'glassDock',
-        key: _glassDockKey,
-        borderRadius: radius,
-        // 实时采样（不跟祖先组）：坞层被 [_wrapHomeWithTopMenu] 摆在采样宿主
-        // **之外**，拿不到 `homeStack` 那个 `BackdropGroup` —— 原先这里的
-        // `grouped: true` 一直是**空转**，观感全靠实时采样（用户口径：药丸的
-        // 折射会跟着下面内容变，最好看）。这里不再写它，把"要实时采样"写实：
-        // 一旦将来坞层被包进某个组，`true` 会静默把它变成一块壁纸快照底
-        // （2026-09-20 两颗悬浮钮踩的就是这个坑）。
-        fallbackBuilder: (_) =>
-            _frostedDockSurface(radius: radius, child: child),
-        child: child,
-      ),
-      _DockMaterial.frosted => _frostedDockSurface(
-        radius: radius,
-        child: child,
-      ),
-      // 实体卡片：不透明主题色面，不含模糊。
-      _DockMaterial.solid => ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: ColoredBox(color: solidFill, child: child),
-      ),
-    };
-
-    // 与设置页左上角返回圆钮共用同款小浮影。纯白主题且没有壁纸时，药丸与
-    // 页面底色几乎相同；只补轻阴影即可拉开边界，不必改玻璃本身的颜色。
-    return HyperosGlassShadow.wrap(
-      borderRadius: BorderRadius.circular(radius),
-      shadowOverride: HyperosGlassShadow.compactShadow,
-      shadowKey: const ValueKey('glass-dock-pill-shadow'),
-      child: surface,
-    );
-  }
-
-  /// 磨砂底（高斯药丸 / 圆钮共用）：blur 与 tint 都从 scope 出，与弹窗 frosted
-  /// 档同参。也是液态玻璃不可用时的回落——仍是玻璃观感，不会突然变实底。
-  Widget _frostedDockSurface({required double radius, required Widget child}) {
-    final appearance = FrostedAppearanceScope.of(context);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: FrostedHeaderBackground(
-        blurEnabled: appearance.blurEnabled,
-        blurSigma: appearance.sheetBlurSigma,
-        tint: HyperosBlurredHeader.sheetTintColor(context, withBlur: true),
-        child: child,
-      ),
-    );
-  }
-
-  /// 独立圆钮：与药丸**同一份材质**的 56 正圆（材质由同一个
-  /// [_resolveDockMaterial] 推出，见 [_dockPillSurface]）。
-  ///
-  /// 历史包袱（勿重犯）：这里曾经走第三方包自己的按钮组件，坞层树外没有它的
-  /// 玻璃层祖先时会退化成一块实色圆片，与药丸成为两种材质。现在两条都由本仓的
-  /// [LiquidGlassSurface] / 磨砂底渲染，天然同源。
-  Widget _buildDockMergeSlot({
-    required Color ink,
-    required AppLocalizations l10n,
-    required _DockMaterial material,
-  }) {
-    final icon = _roundButtonIcon(context.read<TimetableProvider>().settings);
-    void onTap() =>
-        _handleRoundButtonTap(context.read<TimetableProvider>().settings);
-    final label = l10n.glassDockExtraButtonSemanticLabel;
-    // 56 正圆。
-    const radius = 28.0;
-    final body = Center(
-      child: IconTheme.merge(
-        data: IconThemeData(color: ink, size: 22),
-        child: icon,
-      ),
-    );
-    return SizedBox(
-      width: 56,
-      height: 56,
-      child: Semantics(
-        button: true,
-        label: label,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: switch (material) {
-              _DockMaterial.liquid => LiquidGlassSurface(
-                probeName: 'glassDock',
-                key: _glassDockRoundKey,
-                borderRadius: radius,
-                // 实时采样，理由同 [_dockPillSurface]（坞层在采样宿主之外）。
-                fallbackBuilder: (_) =>
-                    _frostedDockSurface(radius: radius, child: body),
-                child: body,
-              ),
-              _DockMaterial.frosted => _frostedDockSurface(
-                radius: radius,
-                child: body,
-              ),
-              // 实体卡片：不透明主题色面，不含模糊。
-              _DockMaterial.solid => ClipRRect(
-                borderRadius: BorderRadius.circular(radius),
-                child: ColoredBox(
-                  color: HyperosColors.surfaceContainer(context),
-                  child: body,
-                ),
-              ),
-            },
-          ),
-        ),
-      ),
-    );
-  }
 
   /// 圆钮图标：用户自选的 Miuix 矢量图标优先；未选时 addCourse 显示
   /// 加号、其余功能显示目录图标。
