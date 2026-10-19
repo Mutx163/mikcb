@@ -283,3 +283,88 @@ int distanceToNearestActiveWeek(Course course, int week) {
   }
   return 999;
 }
+
+
+/// 情侣叠加模式下的日课表条目：我方课先标「一起/我的」，再补对方独有课，
+/// 最后按时间排序。主屏与任何预览共用这一份口径。
+List<DayCourseDisplayItem> buildCoupleDayCourseDisplayItems({
+  required List<Course> myCourses,
+  required List<Course> partnerCourses,
+  required int week,
+  required int partnerWeek,
+  required int partnerWeekOffset,
+  required TimetableSettings settings,
+  required Map<String, List<Course>> conflictMap,
+  Set<String> currentCourseIds = const <String>{},
+}) {
+  final usedPartnerIds = <String>{};
+  final items = <DayCourseDisplayItem>[];
+
+  for (final course in myCourses) {
+    final isCurrentWeekCourse = course.isInWeek(week);
+    if (!isCurrentWeekCourse &&
+        hasCurrentWeekOverlap(myCourses, course, week)) {
+      continue;
+    }
+    if (!isCurrentWeekCourse &&
+        !isPreferredNonCurrentCourse(myCourses, course, week)) {
+      continue;
+    }
+
+    var kind = CoupleCourseKind.mine;
+    for (final partner in partnerCourses) {
+      if (CoupleTimetableLogic.isTogetherClass(
+        course,
+        partner,
+        week: week,
+        partnerWeekOffset: partnerWeekOffset,
+      )) {
+        kind = CoupleCourseKind.together;
+        usedPartnerIds.add(partner.id);
+        break;
+      }
+    }
+
+    items.add(
+      DayCourseDisplayItem(
+        course: course,
+        isCurrentWeekCourse: isCurrentWeekCourse,
+        isConflicting: conflictMap.containsKey(course.id),
+        isCurrentCourse: currentCourseIds.contains(course.id),
+        opacity: courseDisplayOpacity(
+          isCurrentWeekCourse: isCurrentWeekCourse,
+          isConflicting: conflictMap.containsKey(course.id),
+          conflictOpacity: settings.timetableConflictCourseOpacity,
+        ),
+        coupleKind: kind,
+      ),
+    );
+  }
+
+  for (final course in partnerCourses) {
+    if (usedPartnerIds.contains(course.id)) {
+      continue;
+    }
+    final isCurrentWeekCourse = course.isInWeek(partnerWeek);
+    if (!isCurrentWeekCourse &&
+        hasCurrentWeekOverlap(partnerCourses, course, partnerWeek)) {
+      continue;
+    }
+    if (!isCurrentWeekCourse &&
+        !isPreferredNonCurrentCourse(partnerCourses, course, partnerWeek)) {
+      continue;
+    }
+
+    items.add(
+      DayCourseDisplayItem(
+        course: course,
+        isCurrentWeekCourse: isCurrentWeekCourse,
+        opacity: isCurrentWeekCourse ? 1 : kNonCurrentWeekCourseOpacity,
+        coupleKind: CoupleCourseKind.partner,
+        isPartnerCourse: true,
+      ),
+    );
+  }
+
+  return items..sort(compareDayCourseDisplayItems);
+}

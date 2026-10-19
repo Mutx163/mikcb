@@ -3327,7 +3327,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       dayOfWeek,
       settings,
     );
-    return _buildCoupleDayCourseDisplayItems(
+    return buildCoupleDayCourseDisplayItems(
       myCourses: myCourses,
       partnerCourses: partnerCourses,
       week: week,
@@ -3339,87 +3339,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  List<DayCourseDisplayItem> _buildCoupleDayCourseDisplayItems({
-    required List<Course> myCourses,
-    required List<Course> partnerCourses,
-    required int week,
-    required int partnerWeek,
-    required int partnerWeekOffset,
-    required TimetableSettings settings,
-    required Map<String, List<Course>> conflictMap,
-    Set<String> currentCourseIds = const <String>{},
-  }) {
-    final usedPartnerIds = <String>{};
-    final items = <DayCourseDisplayItem>[];
-
-    for (final course in myCourses) {
-      final isCurrentWeekCourse = course.isInWeek(week);
-      if (!isCurrentWeekCourse &&
-          _hasCurrentWeekOverlap(myCourses, course, week)) {
-        continue;
-      }
-      if (!isCurrentWeekCourse &&
-          !_isPreferredNonCurrentCourse(myCourses, course, week)) {
-        continue;
-      }
-
-      var kind = CoupleCourseKind.mine;
-      for (final partner in partnerCourses) {
-        if (CoupleTimetableLogic.isTogetherClass(
-          course,
-          partner,
-          week: week,
-          partnerWeekOffset: partnerWeekOffset,
-        )) {
-          kind = CoupleCourseKind.together;
-          usedPartnerIds.add(partner.id);
-          break;
-        }
-      }
-
-      items.add(
-        DayCourseDisplayItem(
-          course: course,
-          isCurrentWeekCourse: isCurrentWeekCourse,
-          isConflicting: conflictMap.containsKey(course.id),
-          isCurrentCourse: currentCourseIds.contains(course.id),
-          opacity: courseDisplayOpacity(
-            isCurrentWeekCourse: isCurrentWeekCourse,
-            isConflicting: conflictMap.containsKey(course.id),
-            conflictOpacity: settings.timetableConflictCourseOpacity,
-          ),
-          coupleKind: kind,
-        ),
-      );
-    }
-
-    for (final course in partnerCourses) {
-      if (usedPartnerIds.contains(course.id)) {
-        continue;
-      }
-      final isCurrentWeekCourse = course.isInWeek(partnerWeek);
-      if (!isCurrentWeekCourse &&
-          _hasCurrentWeekOverlap(partnerCourses, course, partnerWeek)) {
-        continue;
-      }
-      if (!isCurrentWeekCourse &&
-          !_isPreferredNonCurrentCourse(partnerCourses, course, partnerWeek)) {
-        continue;
-      }
-
-      items.add(
-        DayCourseDisplayItem(
-          course: course,
-          isCurrentWeekCourse: isCurrentWeekCourse,
-          opacity: isCurrentWeekCourse ? 1 : kNonCurrentWeekCourseOpacity,
-          coupleKind: CoupleCourseKind.partner,
-          isPartnerCourse: true,
-        ),
-      );
-    }
-
-    return items..sort(compareDayCourseDisplayItems);
-  }
 
   List<DayCourseDisplayItem> _buildDayCourseDisplayItems({
     required List<Course> courses,
@@ -3482,17 +3401,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  bool _hasCurrentWeekOverlap(List<Course> courses, Course target, int week) {
-    return hasCurrentWeekOverlap(courses, target, week);
-  }
 
-  bool _isPreferredNonCurrentCourse(
-    List<Course> courses,
-    Course target,
-    int week,
-  ) {
-    return isPreferredNonCurrentCourse(courses, target, week);
-  }
 
   List<Course> _getCoursesForDay(
     List<Course> allCourses,
