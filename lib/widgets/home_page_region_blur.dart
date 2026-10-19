@@ -10,6 +10,8 @@ import '../ui/hyperos/hyperos_blurred_header.dart';
 import '../ui/hyperos/hyperos_theme.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart';
 import '../utils/home_page_background.dart';
+import 'course_glass_shader.dart';
+import 'preblurred_wallpaper_glass.dart';
 
 /// Reserved clearance between the weekday chrome band and the course grid.
 ///
@@ -563,6 +565,10 @@ class HomePageContinuousChromeFrostedOverlay extends StatelessWidget {
                   // 当成治黑线的药（09-20 打开它时这台机器渲染的还是渐进磨砂，液态那条
                   // 分支根本没被走到 ⇒ 那次"修好了"从没在液态玻璃上验证过）。
                   useAncestorBackdropGroup: true,
+                  // 首页这条带是**被滑走的页面**上唯一那条全屏玻璃带：转场期间
+                  // 它每帧都在重跑高斯，是「菜单进页面」那 ~6ms/帧的来源。
+                  // 设置页预览那条不带这个开关（见字段注释）。
+                  freezeDuringRouteTransition: true,
                   solidColor: solidColor,
                 ),
               ),
@@ -587,6 +593,7 @@ class HomePageChromeGlassFill extends StatelessWidget {
     this.useAncestorBackdropGroup = false,
     this.maxRefraction,
     this.solidColor,
+    this.freezeDuringRouteTransition = false,
     super.key,
   });
 
@@ -633,6 +640,15 @@ class HomePageChromeGlassFill extends StatelessWidget {
   /// 窄带（设置页预览里那条 ~40dp 的星期条）上必须压小，否则上下两条边缘
   /// 折射带会占满整条带。null = 不压。
   final double? maxRefraction;
+
+  /// 转场期间改用**预糊位图**画这条带（见 [_HomeBandLiquidGlass]）。
+  ///
+  /// 只给**首页**那条带打开（`HomePageContinuousChromeFrostedOverlay` 传 true）：
+  /// 设置页预览那条带不在"被滑走的页面"上，没有那笔每帧重跑高斯的开销，
+  /// 也就不必替它承担这份观感代价。
+  ///
+  /// 默认 false = 逐字维持加这个开关之前的行为。
+  final bool freezeDuringRouteTransition;
 
   /// Corner radius of the glass shape itself. The chrome band is square (0);
   /// the day-view summary card reuses this material with its card radius —
@@ -765,12 +781,13 @@ class HomePageChromeGlassFill extends StatelessWidget {
     }
 
     if (material == 'liquid') {
-      return LiquidGlassSurface(
+      return _HomeBandLiquidGlass(
         borderRadius: borderRadius,
         // 首页带上自己那块 bounds 就够宽；设置页预览里它是小矩形，
         // 必须共享组捕获，否则折射位移被钳在带边界上糊成「相框」。
         grouped: useAncestorBackdropGroup,
         maxRefraction: maxRefraction,
+        freezeDuringRouteTransition: freezeDuringRouteTransition,
         fallbackBuilder: (_) => frostBand(),
         child: fill,
       );
@@ -778,6 +795,165 @@ class HomePageChromeGlassFill extends StatelessWidget {
 
     // 实体档：用户显式选择的不透明顶栏——页面底色实心条，完全遮住壁纸。
     return solidBand();
+  }
+}
+
+/// 首页玻璃带的液态档：**转场期间改用预糊位图**，静止时逐字维持实时玻璃。
+///
+/// ## 为什么要这么改
+///
+/// 液态玻璃的板子是一个 `BackdropFilterLayer`：它在**光栅阶段**对身后的像素跑一遍
+/// 高斯。页面一转场，这张图层每帧都在被平移，采样区跟着动 ⇒ 高斯**每帧重跑一次**。
+/// 这一笔在组件绘制回调里看不见（它不是 `paint`，是合成阶段的事），所以「按层计数」
+/// 那套探针数不出来 —— 它只看得见 `layers=glassLiquid:2`，而真正贵的是那 2 次重画
+/// 之外、每帧都在发生的高斯。
+///
+/// 真机依据（25060RK16C，profile，2026-10-19，用户做的对照实验）：同一个
+/// 「右上角菜单 → 课表设置」动作，模糊开 9.6~10.0ms/帧、模糊关 3.7~3.8ms/帧。
+/// 差的这 ~6ms 就在这里。
+///
+/// ## 为什么换成预糊位图能省
+///
+/// [PreblurredWallpaperAlignedFill] 走的是**同一套折射着色器**
+/// （`course_glass_shader.dart`；与液态玻璃「两边折射数学逐字同源」，见
+/// [LiquidGlassSurface] 类注释），差别只在输入：一个是实时糊出来的背景，
+/// 一个是**已经糊好的壁纸位图**。位图是一张普通贴图，图层平移不需要重算任何东西。
+/// 课程卡片 2026-09 就是这么从「每卡一次实时 BackdropFilter」改过来的
+/// （见 `course_surface.dart` 里 `_buildRefraction` 的注释）。
+///
+/// ## 观感代价（已知，用户 2026-10-19 拍板）
+///
+/// 位图是**壁纸**预糊的那一份，不是「这一刻身后的内容」。转场期间首页本身不滚动
+/// （滑走的是整页），所以两者在首页这条带上基本重合，但严格说**不是像素级相同**。
+/// 用户看过对照数据后选了这条路，并约定**先只改首页这条带**，效果不对立刻撤回。
+///
+/// 位图还没烤好、或当前不在转场里，一律回到实时玻璃 —— 不新增第三种外观。
+class _HomeBandLiquidGlass extends StatefulWidget {
+  const _HomeBandLiquidGlass({
+    required this.borderRadius,
+    required this.grouped,
+    required this.maxRefraction,
+    required this.freezeDuringRouteTransition,
+    required this.fallbackBuilder,
+    required this.child,
+  });
+
+  final double borderRadius;
+  final bool grouped;
+  final double? maxRefraction;
+  final bool freezeDuringRouteTransition;
+  final WidgetBuilder fallbackBuilder;
+  final Widget child;
+
+  @override
+  State<_HomeBandLiquidGlass> createState() => _HomeBandLiquidGlassState();
+}
+
+class _HomeBandLiquidGlassState extends State<_HomeBandLiquidGlass> {
+  Listenable? _driver;
+  bool _transitioning = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    final driver = Listenable.merge(<Listenable?>[
+      route?.animation,
+      route?.secondaryAnimation,
+    ]);
+    if (!identical(driver, _driver)) {
+      _driver?.removeListener(_onAnimationTick);
+      _driver = driver;
+      _driver?.addListener(_onAnimationTick);
+    }
+    // 首帧直接取当前值：build 紧接着就来，这里 setState 是多余的。
+    _transitioning = _routeIsAnimating();
+  }
+
+  /// 本页正在进 / 出（主动画），或**正被后一页盖住**（副动画）—— 两种都在动。
+  bool _routeIsAnimating() {
+    final route = ModalRoute.of(context);
+    return (route?.animation?.isAnimating ?? false) ||
+        (route?.secondaryAnimation?.isAnimating ?? false);
+  }
+
+  void _onAnimationTick() {
+    if (!mounted) return;
+    final running = _routeIsAnimating();
+    // 只在布尔翻转时重建：动画每帧都会 tick，逐帧 setState 会把这条带
+    // 变成新的每帧重建点。
+    if (running == _transitioning) return;
+    setState(() => _transitioning = running);
+  }
+
+  @override
+  void dispose() {
+    _driver?.removeListener(_onAnimationTick);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.freezeDuringRouteTransition && _transitioning) {
+      final frozen = _buildFrozen(context);
+      if (frozen != null) return frozen;
+    }
+    return LiquidGlassSurface(
+      borderRadius: widget.borderRadius,
+      grouped: widget.grouped,
+      maxRefraction: widget.maxRefraction,
+      fallbackBuilder: widget.fallbackBuilder,
+      child: widget.child,
+    );
+  }
+
+  /// 预糊位图那条路；拿不到位图（还没烤好 / 这棵树不在采样作用域里）返回 null，
+  /// 由 [build] 回落到实时玻璃。
+  Widget? _buildFrozen(BuildContext context) {
+    if (PreblurredWallpaperScope.isWaitingForBitmap(context)) return null;
+    if (PreblurredWallpaperScope.maybeOf(context) == null) return null;
+    // 参数与实时那条路同源：同一个 role、同一套成对配置。漏一个就会重现
+    // 「同一材质两种观感」（染色 / 深浅对不上）。
+    final style = LiquidGlassSurface.resolveStyleFor(
+      appearance: FrostedAppearanceScope.of(context),
+      role: LiquidGlassRole.followsUser,
+      borderRadius: widget.borderRadius,
+      brightness: Theme.of(context).brightness,
+    );
+    // 窄带（设置页预览那条）会压折射位移：预糊这条路同样要压，否则两条分支
+    // 在同一条带上给出不同的折射量。
+    final maxRefraction = widget.maxRefraction;
+    final glass = CourseGlassStyle(
+      borderRadius: style.borderRadius,
+      tint: style.tint,
+      refraction: maxRefraction == null
+          ? style.refraction
+          : math.min(style.refraction, maxRefraction),
+      refractionBand: style.refractionBand,
+      refractionEdgePow: style.refractionEdgePow,
+      dispersion: style.dispersion,
+      rimStrength: style.rimStrength,
+      rimWidth: style.rimWidth,
+      rimColor: style.rimColor,
+    );
+    final fill = PreblurredWallpaperAlignedFill(
+      glass: glass,
+      // 显式写出来（即使当前正好等于默认值）：这张填的是**哪一份**位图，是载荷
+      // 信息不是风格 —— 枚举自己的文档就写着「必须显式指定，不许猜」。
+      // ignore: avoid_redundant_argument_values
+      source: PreblurredWallpaperSource.home,
+    );
+    if (widget.borderRadius <= 0) {
+      // 首页那条带是直角、且外面已经套了 `ClipRect`（见
+      // [HomePageContinuousChromeFrostedOverlay] 的几何），不必再裁一次。
+      return fill;
+    }
+    // 有圆角时（日视图摘要替身卡复用这条材质）：形状圆角由玻璃自己按 SDF 画，
+    // 外面这层裁只负责把溢出的采样收干净。
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(widget.borderRadius),
+      child: fill,
+    );
   }
 }
 
