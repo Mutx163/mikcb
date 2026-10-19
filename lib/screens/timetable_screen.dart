@@ -67,7 +67,6 @@ import '../ui/hyperos/liquid/liquid_glass_surface.dart'
     show
         LiquidGlassSurface,
         LiquidGlassSurfaceState,
-        UndimmedBackdropCapture,
         narrowSurfaceMaxRefraction;
 import '../widgets/course_action_sheet.dart';
 import '../widgets/course_followup_sheets.dart';
@@ -1002,10 +1001,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                           : homePageBackdropLayer(settings: settings),
                     if (hasBackdrop && !statusBarShowsBackdrop)
                       HomePageStatusBarBackdropMask(color: pageBackgroundColor),
-                    // 组内首个 grouped filter：缓存未压暗的全屏壁纸供玻璃带
-                    // 采样，与预览的 UndimmedBackdropCapture 同款、同相对位置。
-                    if (continuousChromeBlur)
-                      const Positioned.fill(child: UndimmedBackdropCapture()),
+                    if (continuousChromeBlur) const HomeChromeGroupCapture(),
                   ],
                 ),
               ),

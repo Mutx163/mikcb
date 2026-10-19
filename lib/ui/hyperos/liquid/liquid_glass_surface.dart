@@ -990,20 +990,63 @@ class _RenderLiquidGlass extends RenderProxyBox {
 /// The first filter in a [BackdropGroup] caches the backdrop. Placing this
 /// before the dim layer means later liquid glass surfaces in the same group
 /// sample the undimmed page instead of the darkened modal scrim.
+///
+/// ⚠️ 代价不在「模糊」上（σ=0.01 肉眼不可见），而在**它是一张全屏
+/// `BackdropFilter`**：每重推一次图层就要做一次整屏 saveLayer + 回读
+/// （1280×2772 ≈ 3.5M 物理像素）。所以「它这一帧有没有重画」是个真问题，
+/// 见 [probeName]。
 class UndimmedBackdropCapture extends StatelessWidget {
-  const UndimmedBackdropCapture({super.key});
+  const UndimmedBackdropCapture({super.key, this.probeName = 'glassUndimmed'});
+
+  /// 诊断用层名：这张全屏捕获重画时记到这个名字下。
+  ///
+  /// 默认 `glassUndimmed` 让**所有**调用点先聚合成一个数（7 处调用点分别在首页
+  /// chrome 栈、列表/选择弹层、底部弹层、周预览、首页菜单二级面板）——
+  /// 「这一帧有几张全屏捕获在重画」本身就是最该看的数。
+  final String probeName;
 
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(
-      child: BackdropFilter.grouped(
-        // blur-tile-mode-ok：σ=0.01 的技法性空模糊（3σ ≈ 0.03 逻辑 px，肉眼不可见），
-        // 它存在的意义只是"让 BackdropGroup 先缓存一份未压暗的背景"。decal 与 clamp
-        // 在这种量级上没有可观察差别。
-        filter: ui.ImageFilter.blur(sigmaX: 0.01, sigmaY: 0.01),
-        child: const SizedBox.expand(),
+      child: _BackdropPaintCounter(
+        probeName: probeName,
+        child: BackdropFilter.grouped(
+          // blur-tile-mode-ok：σ=0.01 的技法性空模糊（3σ ≈ 0.03 逻辑 px，肉眼不可见），
+          // 它存在的意义只是"让 BackdropGroup 先缓存一份未压暗的背景"。decal 与 clamp
+          // 在这种量级上没有可观察差别。
+          filter: ui.ImageFilter.blur(sigmaX: 0.01, sigmaY: 0.01),
+          child: const SizedBox.expand(),
+        ),
       ),
     );
+  }
+}
+
+/// 只数「这一帧重画了几次」的透明代理，不产生任何图层、不改变图层顺序。
+///
+/// 必须是 [RenderProxyBox]（而不是 `RepaintBoundary` 之类）：组内首个 filter
+/// 的位置就是它自己的位置，多插一层重绘边界会把组捕获挪到别处。
+class _BackdropPaintCounter extends SingleChildRenderObjectWidget {
+  const _BackdropPaintCounter({required this.probeName, super.child});
+
+  final String probeName;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderBackdropPaintCounter(probeName);
+}
+
+class _RenderBackdropPaintCounter extends RenderProxyBox {
+  _RenderBackdropPaintCounter(this.probeName);
+
+  final String probeName;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (FramePerfProbe.isInstalled) {
+      FramePerfProbe.noteLayerPaint(probeName);
+    }
+    super.paint(context, offset);
   }
 }
 

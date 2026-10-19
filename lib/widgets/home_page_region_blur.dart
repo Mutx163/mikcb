@@ -244,6 +244,53 @@ bool homePageHasAnyChromeBlur(
       settings.homePageWeekdayBarBlurEnabled;
 }
 
+/// 首页 chrome 组里那张**全屏组捕获**，转场期间自动撤掉。
+///
+/// ## 它是什么
+///
+/// `BackdropGroup` 里排在第一位的那张 [UndimmedBackdropCapture]：一张**全屏**
+/// `BackdropFilter`，作用是先把「未压暗的整屏背景」缓存进组，好让组里后面的
+/// chrome 玻璃带折射到带子**自己边界之外**的像素（不然位移在带边被钳制，从
+/// 下边读成一条黑线 —— 用户 2026-09-20 实测过）。
+///
+/// ## 为什么要撤
+///
+/// 它的代价**不在模糊上**（σ=0.01，肉眼不可见），而在它是一张全屏
+/// `BackdropFilter`：每重推一次图层就是一次整屏 saveLayer + 回读
+/// （1280×2772 ≈ 3.5M 物理像素）。而它的**唯一**消费者是同在组里的那条玻璃带；
+/// 转场期间那条带走 [PreblurredWallpaperAlignedFill]（预糊位图，**不读组**，
+/// 见 `_HomeBandLiquidGlass._buildFrozen`），于是它退化成一次**没人读的全屏
+/// pass** —— 偏偏首页正是转场里**在动**的那一页，图层树每帧重放，这一 pass
+/// 就每帧都跑。
+///
+/// 真机读数（2026-10-19 第二十三轮，同一次运行、相隔不到 1 秒、交错出现，
+/// 所以不是跨会话漂移）：首页是运动页的转场（从首页推页、退回首页）avgRaster
+/// **9.6~11.3ms**；设置页之间互切 —— 子页页壳**没有**这张全屏捕获 —— 只要
+/// **3.0~4.2ms**。关掉模糊时（[homePageHasAnyChromeBlur] 为 false、本节点根本
+/// 不挂）首页转场从 9.6 掉到 3.7ms，与这条吻合。
+///
+/// ## 为什么撤掉不会改变观感
+///
+/// 组捕获是**帧内**的缓存优化（同一个 `BackdropKey` 在这一帧里只算一次背景）。
+/// 撤掉之后组里若还有别的 grouped 玻璃，它会退回自己算背景 —— 结果一样，只是
+/// 不共享。转场期间组里本来就没有消费者（那条带是冻结态），所以这条路上
+/// **没有可观察差别**；转场一结束立刻挂回来。
+class HomeChromeGroupCapture extends StatelessWidget {
+  const HomeChromeGroupCapture({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: ValueListenableBuilder<bool>(
+        valueListenable: HyperosGlassBackdropController.routeTransitionRunning,
+        builder: (context, transitioning, _) => transitioning
+            ? const SizedBox.expand()
+            : const UndimmedBackdropCapture(),
+      ),
+    );
+  }
+}
+
 /// 首页那条连续顶栏带（标题栏 + 星期栏）**要不要上屏**。
 ///
 /// 与 [homePageHasAnyChromeBlur] 的分工：那个问的是「带子是不是玻璃」（喂组捕获、
