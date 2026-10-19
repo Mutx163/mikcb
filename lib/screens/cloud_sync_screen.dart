@@ -567,11 +567,40 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   }
 
   Future<void> _saveAdvancedFields() async {
+    // scheme 校验（2026-10-19 安全清单 #4）：WebDAV 走 dart:io，配 http 就是
+    // 真明文 Basic Auth。非 http(s) 直接拦；http 属局域网 NAS 合法场景，
+    // 二次确认后放行（与输入框上方恒显的安全提示同一口径）。
+    final resolvedBaseUrl = _baseUrlController.text.trim().isEmpty
+        ? WebdavSyncConfig.defaultJianguoyunBaseUrl
+        : _baseUrlController.text.trim();
+    switch (inspectWebdavBaseUrlScheme(resolvedBaseUrl)) {
+      case WebdavBaseUrlScheme.invalid:
+        showAppToast(
+          context,
+          message: AppLocalizations.of(context)!.cloudSyncBaseUrlInvalid,
+          kind: AppToastKind.error,
+        );
+        return;
+      case WebdavBaseUrlScheme.insecureHttp:
+        final confirmed = await showAppConfirmDialog(
+          context,
+          title: AppLocalizations.of(context)!.cloudSyncHttpConfirmTitle,
+          message: AppLocalizations.of(context)!.cloudSyncHttpConfirmMessage,
+          confirmLabel:
+              AppLocalizations.of(context)!.cloudSyncHttpConfirmProceed,
+        );
+        if (confirmed != true) {
+          return;
+        }
+      case WebdavBaseUrlScheme.https:
+        break;
+    }
+    if (!mounted) {
+      return;
+    }
     await _saveConfig(
       _config.copyWith(
-        baseUrl: _baseUrlController.text.trim().isEmpty
-            ? WebdavSyncConfig.defaultJianguoyunBaseUrl
-            : _baseUrlController.text.trim(),
+        baseUrl: resolvedBaseUrl,
         remoteFolder: _remoteFolderController.text.trim().isEmpty
             ? WebdavSyncConfig.defaultRemoteFolder
             : _remoteFolderController.text.trim(),

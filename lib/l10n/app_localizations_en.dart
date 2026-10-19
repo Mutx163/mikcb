@@ -511,6 +511,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'HTTPS is recommended. HTTP cleartext connections are allowed but only advised on trusted networks';
 
   @override
+  String get cloudSyncBaseUrlInvalid =>
+      'The WebDAV URL must start with http:// or https://';
+
+  @override
+  String get cloudSyncHttpConfirmTitle => 'Use cleartext HTTP?';
+
+  @override
+  String get cloudSyncHttpConfirmMessage =>
+      'With an http:// URL your username and password travel unencrypted, and any device on the same network can intercept them. Only recommended for trusted LANs such as a home NAS. Save anyway?';
+
+  @override
+  String get cloudSyncHttpConfirmProceed => 'Save anyway';
+
+  @override
   String get cloudSyncRemoteFolderLabel => 'Remote folder';
 
   @override

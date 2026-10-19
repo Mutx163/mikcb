@@ -487,6 +487,20 @@ class AppLocalizationsKo extends AppLocalizations {
       'HTTPS 암호화 연결을 권장합니다. HTTP 평문 연결은 신뢰할 수 있는 네트워크에서만 사용하세요';
 
   @override
+  String get cloudSyncBaseUrlInvalid =>
+      'WebDAV 주소는 http:// 또는 https:// 로 시작해야 합니다';
+
+  @override
+  String get cloudSyncHttpConfirmTitle => '평문 HTTP 연결을 사용할까요?';
+
+  @override
+  String get cloudSyncHttpConfirmMessage =>
+      'http:// 주소에서는 사용자 이름과 비밀번호가 평문으로 전송되어 같은 네트워크의 어떤 기기든 가로챌 수 있습니다. 신뢰할 수 있는 LAN(예: 집 NAS)에서만 권장합니다. 그래도 저장할까요?';
+
+  @override
+  String get cloudSyncHttpConfirmProceed => '그래도 저장';
+
+  @override
   String get cloudSyncRemoteFolderLabel => '원격 폴더';
 
   @override

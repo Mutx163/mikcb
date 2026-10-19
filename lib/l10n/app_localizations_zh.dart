@@ -475,6 +475,19 @@ class AppLocalizationsZh extends AppLocalizations {
       '建议使用 HTTPS 加密连接；HTTP 明文连接仅建议在可信网络环境下使用';
 
   @override
+  String get cloudSyncBaseUrlInvalid => 'WebDAV 地址必须以 http:// 或 https:// 开头';
+
+  @override
+  String get cloudSyncHttpConfirmTitle => '使用明文 HTTP 连接？';
+
+  @override
+  String get cloudSyncHttpConfirmMessage =>
+      '地址以 http:// 开头时，账号密码将以明文传输，同一网络内的任何设备都可能截获。仅建议在可信的局域网（如家庭 NAS）使用。仍要保存吗？';
+
+  @override
+  String get cloudSyncHttpConfirmProceed => '仍要保存';
+
+  @override
   String get cloudSyncRemoteFolderLabel => '远程目录';
 
   @override
@@ -11731,6 +11744,19 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get cloudSyncBaseUrlSecurityNote =>
       '建議使用 HTTPS 加密連線；HTTP 明文連線僅建議在可信網路環境下使用';
+
+  @override
+  String get cloudSyncBaseUrlInvalid => 'WebDAV 網址必須以 http:// 或 https:// 開頭';
+
+  @override
+  String get cloudSyncHttpConfirmTitle => '使用明文 HTTP 連線？';
+
+  @override
+  String get cloudSyncHttpConfirmMessage =>
+      '網址以 http:// 開頭時，帳號密碼將以明文傳輸，同一網路內的任何裝置都可能攔截。僅建議在可信的區域網路（如家用 NAS）使用。仍要儲存嗎？';
+
+  @override
+  String get cloudSyncHttpConfirmProceed => '仍要儲存';
 
   @override
   String get cloudSyncRemoteFolderLabel => '遠端目錄';
@@ -23029,6 +23055,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get cloudSyncBaseUrlSecurityNote =>
       '建議使用 HTTPS 加密連線；HTTP 明文連線僅建議在可信網路環境下使用';
+
+  @override
+  String get cloudSyncBaseUrlInvalid => 'WebDAV 網址必須以 http:// 或 https:// 開頭';
+
+  @override
+  String get cloudSyncHttpConfirmTitle => '使用明文 HTTP 連線？';
+
+  @override
+  String get cloudSyncHttpConfirmMessage =>
+      '網址以 http:// 開頭時，帳號密碼將以明文傳輸，同一網路內的任何裝置都可能攔截。僅建議在可信的區域網路（如家用 NAS）使用。仍要儲存嗎？';
+
+  @override
+  String get cloudSyncHttpConfirmProceed => '仍要儲存';
 
   @override
   String get cloudSyncRemoteFolderLabel => '遠端目錄';

@@ -186,4 +186,52 @@ void main() {
       expect(config.username, '');
     });
   });
+
+  group('inspectWebdavBaseUrlScheme（2026-10-19 安全清单 #4）', () {
+    test('https 放行（大小写不敏感、容忍首尾空白）', () {
+      expect(
+        inspectWebdavBaseUrlScheme('https://dav.example.com/dav/'),
+        WebdavBaseUrlScheme.https,
+      );
+      expect(
+        inspectWebdavBaseUrlScheme('  HTTPS://NAS.LOCAL:5006/ '),
+        WebdavBaseUrlScheme.https,
+      );
+    });
+
+    test('http 单独分级（明文 Basic Auth，由 UI 二次确认）', () {
+      expect(
+        inspectWebdavBaseUrlScheme('http://192.168.1.8:5005/dav/'),
+        WebdavBaseUrlScheme.insecureHttp,
+      );
+      expect(
+        inspectWebdavBaseUrlScheme('HTTP://nas.local/dav'),
+        WebdavBaseUrlScheme.insecureHttp,
+      );
+    });
+
+    test('其余 scheme 与解析失败一律 invalid', () {
+      expect(
+        inspectWebdavBaseUrlScheme('ftp://files.example.cn/dav'),
+        WebdavBaseUrlScheme.invalid,
+      );
+      expect(
+        inspectWebdavBaseUrlScheme('file:///etc/passwd'),
+        WebdavBaseUrlScheme.invalid,
+      );
+      expect(
+        inspectWebdavBaseUrlScheme('dav.example.com/dav/'),
+        WebdavBaseUrlScheme.invalid,
+      );
+      expect(inspectWebdavBaseUrlScheme(''), WebdavBaseUrlScheme.invalid);
+      expect(inspectWebdavBaseUrlScheme('   '), WebdavBaseUrlScheme.invalid);
+    });
+
+    test('默认坚果云地址是 https', () {
+      expect(
+        inspectWebdavBaseUrlScheme(WebdavSyncConfig.defaultJianguoyunBaseUrl),
+        WebdavBaseUrlScheme.https,
+      );
+    });
+  });
 }

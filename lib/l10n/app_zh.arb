@@ -217,6 +217,10 @@
   "@cloudSyncBaseUrlSecurityNote": {
     "description": "安全提示：说明正式版仅支持HTTPS加密连接，HTTP明文协议已被禁用"
   },
+  "cloudSyncBaseUrlInvalid": "WebDAV 地址必须以 http:// 或 https:// 开头",
+  "cloudSyncHttpConfirmTitle": "使用明文 HTTP 连接？",
+  "cloudSyncHttpConfirmMessage": "地址以 http:// 开头时，账号密码将以明文传输，同一网络内的任何设备都可能截获。仅建议在可信的局域网（如家庭 NAS）使用。仍要保存吗？",
+  "cloudSyncHttpConfirmProceed": "仍要保存",
   "cloudSyncRemoteFolderLabel": "远程目录",
   "cloudSyncConfigLoadFailed": "云同步设置读取失败，请重新输入应用专用密码",
   "cloudSyncStatusTitle": "同步状态",

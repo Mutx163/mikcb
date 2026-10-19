@@ -217,6 +217,10 @@
   "@cloudSyncBaseUrlSecurityNote": {
     "description": "Security note: explains that release builds only support HTTPS encrypted connections, HTTP cleartext protocol has been disabled"
   },
+  "cloudSyncBaseUrlInvalid": "The WebDAV URL must start with http:// or https://",
+  "cloudSyncHttpConfirmTitle": "Use cleartext HTTP?",
+  "cloudSyncHttpConfirmMessage": "With an http:// URL your username and password travel unencrypted, and any device on the same network can intercept them. Only recommended for trusted LANs such as a home NAS. Save anyway?",
+  "cloudSyncHttpConfirmProceed": "Save anyway",
   "cloudSyncRemoteFolderLabel": "Remote folder",
   "cloudSyncConfigLoadFailed": "Couldn't load cloud sync settings. Please re-enter your app password.",
   "cloudSyncStatusTitle": "Status",

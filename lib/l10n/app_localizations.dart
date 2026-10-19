@@ -992,6 +992,30 @@ abstract class AppLocalizations {
   /// **'建议使用 HTTPS 加密连接；HTTP 明文连接仅建议在可信网络环境下使用'**
   String get cloudSyncBaseUrlSecurityNote;
 
+  /// No description provided for @cloudSyncBaseUrlInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'WebDAV 地址必须以 http:// 或 https:// 开头'**
+  String get cloudSyncBaseUrlInvalid;
+
+  /// No description provided for @cloudSyncHttpConfirmTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用明文 HTTP 连接？'**
+  String get cloudSyncHttpConfirmTitle;
+
+  /// No description provided for @cloudSyncHttpConfirmMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'地址以 http:// 开头时，账号密码将以明文传输，同一网络内的任何设备都可能截获。仅建议在可信的局域网（如家庭 NAS）使用。仍要保存吗？'**
+  String get cloudSyncHttpConfirmMessage;
+
+  /// No description provided for @cloudSyncHttpConfirmProceed.
+  ///
+  /// In zh, this message translates to:
+  /// **'仍要保存'**
+  String get cloudSyncHttpConfirmProceed;
+
   /// No description provided for @cloudSyncRemoteFolderLabel.
   ///
   /// In zh, this message translates to:

@@ -488,6 +488,20 @@ class AppLocalizationsJa extends AppLocalizations {
       'HTTPS 暗号化接続を推奨します。HTTP 平文接続は信頼できるネットワークでのみ使用してください';
 
   @override
+  String get cloudSyncBaseUrlInvalid =>
+      'WebDAV アドレスは http:// または https:// で始まる必要があります';
+
+  @override
+  String get cloudSyncHttpConfirmTitle => '平文 HTTP 接続を使用しますか？';
+
+  @override
+  String get cloudSyncHttpConfirmMessage =>
+      'http:// のアドレスでは、ユーザー名とパスワードが平文で送信され、同じネットワーク上のどの端末でも傍受される可能性があります。信頼できる LAN（自宅 NAS など）でのみ使用を推奨します。それでも保存しますか？';
+
+  @override
+  String get cloudSyncHttpConfirmProceed => 'それでも保存';
+
+  @override
   String get cloudSyncRemoteFolderLabel => 'リモートフォルダ';
 
   @override

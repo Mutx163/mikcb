@@ -6,6 +6,34 @@ enum WebdavSyncProvider { jianguoyun, custom }
 
 enum WebdavSyncMode { manual, auto }
 
+/// baseUrl 的 scheme 分级（2026-10-19 安全清单 #4）。
+enum WebdavBaseUrlScheme {
+  /// https —— 加密，放行。
+  https,
+
+  /// http —— 明文 Basic Auth。局域网 NAS 是合法场景，由 UI 二次确认后放行，
+  /// 这里只负责分级。
+  insecureHttp,
+
+  /// 其余一切（ftp:/file:/无 scheme/解析失败）—— 不可用。
+  invalid,
+}
+
+/// 检查 WebDAV baseUrl 的 scheme。
+///
+/// WebDAV 走 dart:io，不受 Android 网络安全配置管辖：配置 http 就是真明文
+/// Basic Auth（账号密码 base64 直接上链路）。
+WebdavBaseUrlScheme inspectWebdavBaseUrlScheme(String raw) {
+  final scheme = Uri.tryParse(raw.trim())?.scheme.toLowerCase() ?? '';
+  if (scheme == 'https') {
+    return WebdavBaseUrlScheme.https;
+  }
+  if (scheme == 'http') {
+    return WebdavBaseUrlScheme.insecureHttp;
+  }
+  return WebdavBaseUrlScheme.invalid;
+}
+
 class WebdavSyncConfig {
   static const String prefsKey = 'webdav_sync_config_v1';
   static const String defaultJianguoyunBaseUrl =
