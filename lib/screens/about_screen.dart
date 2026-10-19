@@ -62,6 +62,28 @@ AboutUpdatePrimaryAction resolveAboutUpdatePrimaryAction({
   return AboutUpdatePrimaryAction.openDownloadLink;
 }
 
+/// 状态卡要显示哪一种形态。
+enum AboutUpdateCardState { checkFailed, alreadyLatest, updateAvailable }
+
+/// 三态判据。
+///
+/// `hasRelease`（有没有拿到 release）决定「能不能展示版本信息」，
+/// `hasUpdate`（版本高不高）决定「要不要让人更新」——两者混用正是 2026-10-19
+/// 修掉的那个 bug：下载按钮只看 `hasRelease`，于是「已是最新版本」下面挂着一个
+/// 能点的「立即下载」，点下去装的是同一个版本。
+///
+/// `hasRelease == false` 时一律按检查失败处理，即便上游给出自相矛盾的
+/// `hasUpdate == true`（那种输入既装不了也说不清）。
+@visibleForTesting
+AboutUpdateCardState resolveAboutUpdateCardState(AppUpdateCheckResult result) {
+  if (!result.hasRelease) {
+    return AboutUpdateCardState.checkFailed;
+  }
+  return result.hasUpdate
+      ? AboutUpdateCardState.updateAvailable
+      : AboutUpdateCardState.alreadyLatest;
+}
+
 class _MirrorProbeState {
   final AppUpdateMirrorPreset preset;
   final String prefix;
@@ -854,7 +876,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     // hasRelease 为 false，旧实现与「已是最新」共用同一张卡，于是失败被画成
     // 「已是最新版本 / 最新版本：未发布 / 一个灰掉的按钮」；失败原因
     // （result.message，六语言齐全）整页没有任何渲染点，也没有重试入口。
-    if (!result.hasRelease) {
+    final cardState = resolveAboutUpdateCardState(result);
+    if (cardState == AboutUpdateCardState.checkFailed) {
       return _buildCheckFailedCard();
     }
 
@@ -865,7 +888,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     final currentVersion = previewUpdate
         ? _debugPreviousVersion(latestVersion)
         : result.currentVersion;
-    final hasUpdate = result.hasUpdate || previewUpdate;
+    final hasUpdate =
+        cardState == AboutUpdateCardState.updateAvailable || previewUpdate;
 
     return Material(
       color: HyperosColors.card(context),
