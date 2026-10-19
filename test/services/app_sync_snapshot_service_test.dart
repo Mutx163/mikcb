@@ -385,6 +385,35 @@ void main() {
     },
   );
 
+  test('导出对自带 contentSha256 对账：漂移时改用重算值，文件保持自洽', () {
+    final service = AppSyncSnapshotService();
+    final exportedAt = DateTime.utc(2026, 7, 5, 12);
+    AppSyncSnapshot snapshotWithSha(String sha) => AppSyncSnapshot(
+      profiles: const [],
+      activeProfileId: null,
+      timeSchemes: const [],
+      teacherRecords: const [],
+      locationRecords: const [],
+      warehouse: const WarehouseSyncBundle(),
+      macros: const [],
+      customHolidays: const [],
+      exportedAt: exportedAt,
+      deviceId: 'device-a',
+      contentSha256: sha,
+    );
+
+    // 自带哈希是错的（模拟「解码→再编码」往返或跨版本字段演化后透传旧值）。
+    final json = service.buildSnapshotJsonFromSnapshot(snapshotWithSha('deadbeef'));
+    // 接收端按嵌入哈希校验实际内容：透传旧值就是一发 checksum_failed，
+    // 改用重算值后文件必须能原样过校验。
+    final parsed = service.parseSnapshotJson(json);
+    expect(parsed.contentSha256, isNot('deadbeef'));
+
+    // meta 与 json 导出共用同一次对账，两边哈希一致（上传时两条一起发）。
+    final meta = service.buildMetaFromSnapshot(snapshotWithSha('deadbeef'));
+    expect(meta.contentSha256, parsed.contentSha256);
+  });
+
   test('parse snapshot skips malformed optional records', () {
     final service = AppSyncSnapshotService();
     final payload = <String, dynamic>{
@@ -890,5 +919,79 @@ void main() {
     final parsed = service.parseMetaJson(service.buildMetaJson(meta));
     expect(parsed.snapshotPath, meta.snapshotPath);
     expect(parsed.contentSha256, meta.contentSha256);
+  });
+
+  group('parseSnapshotJson：warehouse 子键在场标记（2026-10-19 安全清单 #2）', () {
+    // 「云端缺字段 ≠ 云端说是空的」：解析后的 bundle 会把缺键折叠成空列表，
+    // 所以在场标记必须从原始 JSON 推导。还原侧（importSyncBundle）据此
+    // 跳过不在场的类别，不再先清空本地再写回。
+    String minimalSnapshotJson(AppSyncSnapshotService service) {
+      return service.buildSnapshotJsonFromSnapshot(
+        AppSyncSnapshot(
+          profiles: [factoryDefaultProfile()],
+          activeProfileId: 'profile-1',
+          timeSchemes: [singleScheme()],
+          teacherRecords: const [],
+          locationRecords: const [],
+          warehouse: const WarehouseSyncBundle(
+            rememberedLogins: [
+              WarehouseRememberedLoginEntry(
+                adapterId: 'demo',
+                login: WarehouseRememberedLogin(username: 's', password: 'p'),
+              ),
+            ],
+            customImportUrls: {'demo': 'https://example.com/login'},
+            recentSchoolIds: ['school-a'],
+          ),
+          macros: const [],
+          customHolidays: const [],
+          exportedAt: exportedAt,
+          deviceId: 'device-a',
+          contentSha256: '',
+        ),
+      );
+    }
+
+    test('本 App 产出的快照：四类全部在场', () {
+      final service = AppSyncSnapshotService();
+      final parsed = service.parseSnapshotJson(minimalSnapshotJson(service));
+
+      expect(parsed.warehouseSections.rememberedLogins, isTrue);
+      expect(parsed.warehouseSections.customImportUrls, isTrue);
+      expect(parsed.warehouseSections.recentSchoolIds, isTrue);
+      expect(parsed.warehouseSections.customDebugRecords, isTrue);
+    });
+
+    test('warehouse 整体缺失（外来/旧格式快照）：四类全部不在场', () {
+      final service = AppSyncSnapshotService();
+      final decoded =
+          jsonDecode(minimalSnapshotJson(service)) as Map<String, dynamic>;
+      decoded.remove('warehouse');
+
+      final parsed = service.parseSnapshotJson(jsonEncode(decoded));
+
+      expect(parsed.warehouseSections.rememberedLogins, isFalse);
+      expect(parsed.warehouseSections.customImportUrls, isFalse);
+      expect(parsed.warehouseSections.recentSchoolIds, isFalse);
+      expect(parsed.warehouseSections.customDebugRecords, isFalse);
+    });
+
+    test('只缺一个子键：只有该类别不在场，其余照常替换', () {
+      final service = AppSyncSnapshotService();
+      final decoded =
+          jsonDecode(minimalSnapshotJson(service)) as Map<String, dynamic>;
+      final warehouse = decoded['warehouse'] as Map<String, dynamic>;
+      warehouse.remove('customImportUrls');
+
+      final parsed = service.parseSnapshotJson(jsonEncode(decoded));
+
+      expect(parsed.warehouseSections.customImportUrls, isFalse);
+      expect(parsed.warehouseSections.rememberedLogins, isTrue);
+      expect(parsed.warehouseSections.recentSchoolIds, isTrue);
+      expect(parsed.warehouseSections.customDebugRecords, isTrue);
+      // 缺键的类别解析结果为空列表，但标记告诉还原层别动它。
+      expect(parsed.warehouse.customImportUrls, isEmpty);
+      expect(parsed.warehouse.rememberedLogins, isNotEmpty);
+    });
   });
 }

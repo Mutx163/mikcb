@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -43,6 +44,13 @@ class AppSyncSnapshot {
   /// Absent on older snapshots; treated as null so apply can re-run once if needed.
   final String? scheduleDateRuleLastAppliedSignature;
 
+  /// warehouse 各子字段在本快照 JSON 里的在场标记（安全清单 #2）。
+  ///
+  /// 本 App 产出的快照恒定输出全部子键 → 全部在场，还原按云端替换；
+  /// 外来/旧版快照缺哪个子键，还原时就跳过哪个类别——「云端缺字段」不再
+  /// 被当成「云端说是空的」而清掉本地。
+  final WarehouseSyncSections warehouseSections;
+
   const AppSyncSnapshot({
     required this.profiles,
     required this.activeProfileId,
@@ -60,6 +68,7 @@ class AppSyncSnapshot {
     this.partnerTimetableBinding,
     this.includesPartnerTimetableBinding = false,
     this.scheduleDateRuleLastAppliedSignature,
+    this.warehouseSections = const WarehouseSyncSections(),
   });
 
   /// True when this snapshot contains user-authored business data that must
@@ -351,8 +360,48 @@ class AppSyncSnapshotService {
       scheduleDateRuleLastAppliedSignature:
           snapshot.scheduleDateRuleLastAppliedSignature,
     );
-    payload['contentSha256'] = snapshot.contentSha256;
+    // 导出文件必须**自洽**：接收端 parseSnapshotJson 会按嵌入哈希校验实际
+    // 内容（checksum_failed 分支），不一致直接抛错。这里
+    // 重算一次并与快照对象自带的哈希对账——对象一旦经过「解码→再编码」
+    // 往返或跨版本字段演化，自带哈希描述的就不再是这份内容，透传旧值等于
+    // 给接收端埋一发必然的校验失败。重算值优先，同时把漂移记进诊断日志。
+    payload['contentSha256'] = _verifiedContentSha(snapshot, payload);
     return const JsonEncoder.withIndent('  ').convert(payload);
+  }
+
+  /// 快照对象自带哈希与「其字段重建出的内容」的一致性对账。
+  ///
+  /// - 空串是「这份导出刻意不带哈希」的标记（接收端 parseSnapshotJson 对空
+  ///   串跳过校验），原样返回，不擅自补——有测试靠删键构造外来/旧格式快照，
+  ///   补上真哈希反而会让它们全挂。
+  /// - 非空且一致：原样返回，行为不变。
+  /// - 非空但不一致：对象经过「解码→再编码」往返或跨版本字段演化，自带
+  ///   哈希描述的已不是这份内容；返回重算值并记 error——漂移本身说明有一段
+  ///   编码路径在悄悄改内容，必须被看见。
+  String _verifiedContentSha(
+    AppSyncSnapshot snapshot,
+    Map<String, dynamic> payload,
+  ) {
+    final declared = snapshot.contentSha256;
+    if (declared.isEmpty) {
+      return declared;
+    }
+    final actualSha = computeContentSha256(payload);
+    if (declared == actualSha) {
+      return declared;
+    }
+    unawaited(
+      AppLogService.instance.error(
+        'sync_snapshot_content_sha_drift',
+        '快照对象自带 contentSha256 与重建内容不一致，导出改用重算值',
+        extras: {
+          'declared': declared,
+          'actual': actualSha,
+          'exportedAt': snapshot.exportedAt.toIso8601String(),
+        },
+      ),
+    );
+    return actualSha;
   }
 
   AppSyncSnapshotMeta buildMetaFromSnapshot(
@@ -360,9 +409,28 @@ class AppSyncSnapshotService {
     String? appVersion,
     String? snapshotPath,
   }) {
+    // meta 与 json 导出共用同一次对账（webdav 上传两条一起发）：若 json 用了
+    // 重算值而 meta 仍带旧哈希，下游按 meta 比对的基线就会与文件内容错开。
+    final payload = _buildPayloadMap(
+      profiles: snapshot.profiles,
+      activeProfileId: snapshot.activeProfileId,
+      timeSchemes: snapshot.timeSchemes,
+      locationTimeGroups: snapshot.locationTimeGroups,
+      scheduleDateRules: snapshot.scheduleDateRules,
+      teacherRecords: snapshot.teacherRecords,
+      locationRecords: snapshot.locationRecords,
+      warehouse: snapshot.warehouse,
+      macros: snapshot.macros,
+      customHolidays: snapshot.customHolidays,
+      exportedAt: snapshot.exportedAt,
+      deviceId: snapshot.deviceId,
+      partnerTimetableBinding: snapshot.partnerTimetableBinding,
+      scheduleDateRuleLastAppliedSignature:
+          snapshot.scheduleDateRuleLastAppliedSignature,
+    );
     return AppSyncSnapshotMeta(
       exportedAt: snapshot.exportedAt,
-      contentSha256: snapshot.contentSha256,
+      contentSha256: _verifiedContentSha(snapshot, payload),
       deviceId: snapshot.deviceId,
       appVersion: appVersion,
       snapshotPath: snapshotPath,
@@ -415,6 +483,11 @@ class AppSyncSnapshotService {
     } on TypeError catch (error) {
       throw FormatException('invalid_sync_snapshot_warehouse', error);
     }
+    // 「云端带了哪些类别」从原始 JSON 推导，而不是从解析后的 bundle 推导：
+    // 解析会把缺键折叠成空列表，那就再也分不清「没带」和「带了但是空」。
+    final warehouseSections = WarehouseSyncSections.fromSnapshotJson(
+      warehouseRaw,
+    );
 
     final includesPartnerTimetableBinding = json.containsKey(
       'partnerTimetableBinding',
@@ -528,6 +601,7 @@ class AppSyncSnapshotService {
       scheduleDateRuleLastAppliedSignature: _normalizedOptionalString(
         json['scheduleDateRuleLastAppliedSignature'],
       ),
+      warehouseSections: warehouseSections,
     );
   }
 
@@ -949,7 +1023,10 @@ class AppSyncSnapshotService {
     await _timetableRepository.saveScheduleDateRuleLastAppliedSignature(
       snapshot.scheduleDateRuleLastAppliedSignature,
     );
-    await _warehousePreferencesService.importSyncBundle(snapshot.warehouse);
+    await _warehousePreferencesService.importSyncBundle(
+      snapshot.warehouse,
+      sections: snapshot.warehouseSections,
+    );
     await _warehouseMacroService.importAllMacros(snapshot.macros);
     // 假期是附属云数据（课表主体已在上面 importFullAppDataBackup 成功落
     // 盘）。单项写失败若随异常上抛，会把已成功的整体云恢复升级成回滚：
