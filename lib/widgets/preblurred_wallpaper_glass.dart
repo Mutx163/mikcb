@@ -367,15 +367,18 @@ class PreblurredWallpaperCache {
 /// Single source of truth for 'which [PreblurredWallpaperCache] entry will the
 /// home page actually request', so the cold-start primer can warm the exact
 /// same bitmap ahead of the first frame. Mirrors the in-build resolution in
-/// timetable_screen's homePreblurSigma closure: gaussian course cards define
-/// the sigma first, then the liquid-glass chrome tuning (clamped to the same
-/// 2-24 range), otherwise the frosted sheet sigma.
+/// timetable_screen's homePreblurSigma closure: liquid-glass chrome tuning
+/// wins first（夹在与两条路共用的上下限之间）, otherwise the frosted sheet
+/// sigma —— `gaussianCardsDrive` 不再参与判定（见函数体内注释）。
 ///
 /// ⚠️ **课程卡片 2026-09-21 起不再读这张图**（它有自己的位图，见
-/// [resolveCourseCardPreblurSigma]）。所以这里的 `gaussianCardsDrive` 现在只为
-/// 剩下的那一个消费者服务：日视图顶部的摘要替身卡。口径**刻章保持不变** ——
-/// 去掉它会让「卡片玻璃 + 全局液态调过磨砂」时那张替身卡的磨砂悄悄变一档，
-/// 那是一次没人要的观感变化。这条耦合是历史遗留，要拆得单独评估。
+/// [resolveCourseCardPreblurSigma]）。
+///
+/// ⚠️ **`gaussianCardsDrive` 自 2026-10-19 f380c9b1 起不再影响本函数结果**，
+/// 本段早先「它还驱动日视图摘要替身卡」「去掉会让替身卡磨砂悄悄变一档」
+/// 的说法随之过时：替身卡现在同样按现行口径（液态优先，否则磨砂档）取 σ。
+/// 参数暂留签名里（三个调用点不必同步改）；将来要么删掉、要么恢复语义，
+/// 都得连本段一起改。
 /// 预糊位图的 sigma 上限（逻辑 px）：两条路共用 —— 烤图成本与「取景错位」都随它涨。
 ///
 /// 面板里卡片那根「磨砂强度」滑杆的上限也取它（编辑页 `_glassSliderTiles` 的
