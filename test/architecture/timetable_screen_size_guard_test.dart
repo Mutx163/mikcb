@@ -34,8 +34,10 @@ void main() {
     // sheet 族先后搬出（净 -550）→ 5776。
     // M5-A：首页下拉药丸、情侣空闲摘要、周页滚动壳搬出（净 -411）→ 5365。
     // M5-A2：build 期首页栈（壁纸/玻璃带/顶栏）与周网格日列搬出（净 -260）
-    // → 5105。下一次目标（周 pager / 剩余 build 外壳）预计可再降至 ~5000。
-    const baselineLines = 5105;
+    // → 5105。
+    // M5-A3：周 pager 与玻璃坞/内嵌页外壳搬出（净 -151）→ 4954。
+    // 下一次目标（周页/网格骨架）预计可再降至 ~4700。
+    const baselineLines = 4954;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),

@@ -72,13 +72,13 @@ import '../widgets/home_menu_catalog.dart';
 import '../widgets/home_top_menu.dart';
 import '../widgets/home_top_menu_popup.dart';
 import '../widgets/home_update_prompt.dart';
-import '../widgets/preblurred_wallpaper_glass.dart';
 import '../widgets/timetable_home_preview_scope.dart';
 import '../widgets/week_selector_picker_sheet.dart';
 import '../widgets/timetable/timetable_back_to_current_week_button.dart';
 import '../widgets/timetable/timetable_back_to_today_button.dart';
 import '../widgets/timetable/timetable_course_action_items.dart';
 import '../widgets/timetable/timetable_course_sheet_actions.dart';
+import '../widgets/timetable/timetable_week_pager.dart';
 import '../widgets/timetable/timetable_week_page_body.dart';
 import '../widgets/timetable/timetable_weekday_header.dart';
 import '../widgets/timetable/timetable_day_view_shared_free_summary.dart';
@@ -87,6 +87,7 @@ import '../widgets/timetable/timetable_day_agenda_models.dart';
 import '../widgets/timetable/timetable_home_action_button.dart';
 import '../widgets/timetable/timetable_day_pager_physics.dart';
 import '../widgets/timetable/timetable_empty_slot.dart';
+import '../widgets/timetable/timetable_home_dock_shell.dart';
 import '../widgets/timetable/timetable_home_header.dart';
 import '../widgets/timetable/timetable_home_stack.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
@@ -852,122 +853,44 @@ class _TimetableScreenState extends State<TimetableScreen>
         //   标题保持离开时的折叠态）；
         // - 壁纸层随 homeStack 常驻，解码缓存不失效，切回课表不黑闪。
         // 玻璃坞导航始终由 [TimetableGlassDockLayer] 浮在最上层（画在采样宿主之外）。
-        final Widget dockContent = useHomePreblur
-            ? PreblurredWallpaperScope(
-                // Same pre-blur model as the week grid: sample one cached
-                // frost bitmap by card screen position. In day view the week
-                // pager is locked, so drive repaints from the day agenda pager
-                // and treat the wallpaper as screen-fixed (it never follows
-                // the day swipe).
-                wallpaperPath: homePageBackdropKey(settings),
-                blurSigma: homePreblurSigma,
-                // 卡片那份位图（只有卡片是液态档才烤）。同一份路径与对齐值，
-                // 只有 sigma 不同 —— 所以两张图不会出现取景错位。
-                // 卡片那份的 0 是有效值（清档：出原图），只有 null 才是不烤 ——
-                // 所以这里不做 `?? 0` 折算，null 必须原样传下去。
-                cardBlurSigma: courseCardPreblurSigma,
-                // 卡里的位图必须与屏幕上那张真壁纸**同一套 cover 对齐**：用户
-                // 在「壁纸位置」里拖过对齐值之后，居中铺图的副本就会与背景错位
-                // （卡内外壁纸接不上），所以这两个值随设置一起传。
-                wallpaperAlignX: settings.homePageWallpaperAlignX,
-                wallpaperAlignY: settings.homePageWallpaperAlignY,
-                wallpaperScale: settings.homePageWallpaperScale,
-                pageController: _isDayView
-                    ? _ensureDayViewPageController(settings)
-                    : _weekPageController,
-                followsPager: _isDayView ? false : followsWeekPager,
-                // 锚点展开/收起与设置页拖动转场期间卡片在移动而壁纸
-                // 屏幕固定：fill 必须每帧重采样，否则纹理停在旧屏幕位置
-                // （卡片半边模糊半边透明）。合并两个动画统一驱动重采样。
-                repaint: _glassDockCardRepaint,
-                child: homeStack,
-              )
-            : homeStack;
-        if (!glassDockForm) {
-          return _wrapHomeWithTopMenu(
-            dockContent,
+        final inlineId = _dockInlinePageId;
+        return TimetableHomeDockShell(
+          homeStack: homeStack,
+          useHomePreblur: useHomePreblur,
+          settings: settings,
+          homePreblurSigma: homePreblurSigma,
+          courseCardPreblurSigma: courseCardPreblurSigma,
+          isDayView: _isDayView,
+          weekPageController: _weekPageController,
+          ensureDayViewPageController: _ensureDayViewPageController,
+          followsWeekPager: followsWeekPager,
+          repaint: _glassDockCardRepaint,
+          glassDockForm: glassDockForm,
+          inlinePageBuilder: inlineId == null
+              ? null
+              : inlineDockPageFor(inlineId),
+          glassDockScrollInset: _glassDockContentScrollInset(settings),
+          dockLayer: glassDockForm
+              ? TimetableGlassDockLayer(
+                  settings: settings,
+                  isInlinePage: inlineId != null,
+                  wallpaperBodyLuminance: _wallpaperBodyLuminance,
+                  selectedIndex: _dockSelectedIndex(
+                    resolveGlassDockActionIds(settings),
+                  ),
+                  roundButtonIcon: _roundButtonIcon(settings),
+                  onTabSelected: (id) => _handleDockTap(id, settings),
+                  onRoundButtonTap: () => _handleRoundButtonTap(settings),
+                  pillKey: _glassDockKey,
+                  roundKey: _glassDockRoundKey,
+                )
+              : null,
+          wrapHome: (content, {dockLayer}) => _wrapHomeWithTopMenu(
+            content,
             settings: settings,
             chromeBalls: homeChromeBalls,
             chromeDotBorderColor: chromeDotBorderColor,
-          );
-        }
-        // 底栏为可编排快捷区：页面类条目在首页栈内切换（内嵌宿主，
-        // 玻璃坞常驻悬浮），仅未登记的流程页才推入新路由。
-        final inlineId = _dockInlinePageId;
-        final inlineBuilder = inlineId == null
-            ? null
-            : inlineDockPageFor(inlineId);
-        final Widget hostedContent = inlineBuilder == null
-            ? dockContent
-            : Stack(
-                fit: StackFit.expand,
-                children: [
-                  // 内嵌页是**不透明**的整屏 Scaffold，会把首页完全盖住；但
-                  // Stack 的两个孩子每帧都会被绘制，于是内嵌态下首页那一整套
-                  // （满屏壁纸铺底 + 玻璃带 backdrop 采样 + 课程卡片）一直在
-                  // 白白重画。真机实测（Redmi K80 Ultra / 120Hz 面板）：
-                  //   - 内嵌态设置页上下滑动 ≈ 82 fps；
-                  //   - 同一页从右上角菜单**单独推路由**打开 ≈ 103 fps。
-                  // 两者唯一的结构差别就是这个"看不见但仍在画"的首页。
-                  // 用 Visibility(maintainSize) 保留挂载与布局、只去掉绘制
-                  // （返回首页仍是闪现直切，几何/滚动位置不受影响），
-                  // 并用 TickerMode 停掉被完全遮挡页面的动画节拍
-                  //（与"被路由覆盖"时框架的默认行为一致）。
-                  TickerMode(
-                    enabled: false,
-                    child: Visibility(
-                      visible: false,
-                      maintainState: true,
-                      maintainSize: true,
-                      maintainAnimation: true,
-                      child: dockContent,
-                    ),
-                  ),
-                  // 与旧「设置 Tab」一致：点底栏闪现直切，无滑动转场。
-                  Positioned.fill(
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: Scaffold(
-                        backgroundColor: Theme.of(
-                          context,
-                        ).scaffoldBackgroundColor,
-                        body: HyperosSubpageNoBack(
-                          // 玻璃坞满屏悬浮对所有内嵌页生效：注入底部滚动
-                          // 余量（与日/周课表同口径），列表末尾可整体滑到
-                          // 药丸上方；HyperosListView 自动消费，新增内嵌
-                          // 页无须逐页适配。
-                          child: GlassDockScrollReliefScope(
-                            inset: _glassDockContentScrollInset(settings),
-                            child: Builder(builder: inlineBuilder),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-        // 系统返回不拦内嵌页：与日/周课表同口径，底栏任意状态（日/周
-        // 课表或内嵌页）按返回都直接退出应用（根路由 bubble → 系统退出）。
-        // 收回内嵌页走底栏切换（点 日/周 Tab 或其他页面条目）与圆钮再点。
-        return _wrapHomeWithTopMenu(
-          hostedContent,
-          settings: settings,
-          chromeBalls: homeChromeBalls,
-          chromeDotBorderColor: chromeDotBorderColor,
-          // 坞层由 _wrapHomeWithTopMenu 摆到采样宿主**之外**（不自采样），
-          // 理由见 TimetableGlassDockLayer 的注释。
-          dockLayer: TimetableGlassDockLayer(
-            settings: settings,
-            isInlinePage: _dockInlinePageId != null,
-            wallpaperBodyLuminance: _wallpaperBodyLuminance,
-            selectedIndex: _dockSelectedIndex(
-              resolveGlassDockActionIds(settings),
-            ),
-            roundButtonIcon: _roundButtonIcon(settings),
-            onTabSelected: (id) => _handleDockTap(id, settings),
-            onRoundButtonTap: () => _handleRoundButtonTap(settings),
-            pillKey: _glassDockKey,
-            roundKey: _glassDockRoundKey,
+            dockLayer: dockLayer,
           ),
         );
       },
@@ -2570,11 +2493,48 @@ class _TimetableScreenState extends State<TimetableScreen>
         padding: EdgeInsets.only(bottom: hasBackdrop ? 0 : 8),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            return _buildWeekPager(
-              provider,
-              settings,
-              constraints.maxWidth,
-              constraints.maxHeight,
+            return TimetableWeekPager(
+              settings: settings,
+              weekPageController: _weekPageController,
+              dayViewPageController: _dayViewPageController,
+              visibleDayViewWeek: _visibleDayViewWeek,
+              isDayView: _isDayView,
+              shouldShowDayViewOverlay: _shouldShowDayViewOverlay,
+              wallpaperTopLuminance: _wallpaperTopLuminance,
+              wallpaperWeekdayLuminance: _wallpaperWeekdayLuminance,
+              timeColumnWidth: _resolveTimeColumnWidth(settings),
+              isSelectedDay: _isSelectedDay,
+              hasExamOnDate: provider.hasExamOnDate,
+              onShowWeekSelector: _showWeekSelector,
+              onDayTapDown: _captureDayViewAnchor,
+              onDayTap: (week, dayOfWeek) {
+                _toggleDayView(
+                  week: week,
+                  dayOfWeek: dayOfWeek,
+                  settings: settings,
+                );
+              },
+              onFinalizeWeekPageSettled: () =>
+                  _finalizeWeekPageSettled(provider),
+              onHandleWeekPageChanged: (page) =>
+                  _handleWeekPageChanged(page, settings.semesterWeekCount),
+              buildWeekPage: (week) => _buildWeekPage(
+                provider,
+                settings,
+                constraints.maxWidth,
+                constraints.maxHeight,
+                week,
+              ),
+              buildAnchoredDayViewOverlay: (week) =>
+                  _buildAnchoredDayViewOverlay(
+                    provider: provider,
+                    settings: settings,
+                    week: week,
+                  ),
+              onWeekdayBarDragStart: _startWeekdayBarDrag,
+              onWeekdayBarDragUpdate: _updateWeekdayBarDrag,
+              onWeekdayBarDragEnd: _endWeekdayBarDrag,
+              onWeekdayBarDragCancel: _cancelWeekdayBarDrag,
             );
           },
         ),
@@ -2947,117 +2907,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
   }
 
-  Widget _buildWeekPager(
-    TimetableProvider provider,
-    TimetableSettings settings,
-    double availableWidth,
-    double availableHeight,
-  ) {
-    final visibleDayViewWeek = _visibleDayViewWeek;
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            if (notification.metrics.axis == Axis.horizontal) {
-              if (notification is ScrollEndNotification) {
-                _finalizeWeekPageSettled(provider);
-              }
-            }
-            return false;
-          },
-          child: PageView.builder(
-            controller: _weekPageController,
-            itemCount: settings.semesterWeekCount,
-            allowImplicitScrolling: true,
-            physics: _isDayView
-                ? const NeverScrollableScrollPhysics()
-                : const PageScrollPhysics(parent: ClampingScrollPhysics()),
-            onPageChanged: (page) =>
-                _handleWeekPageChanged(page, settings.semesterWeekCount),
-            itemBuilder: (context, index) {
-              final week = index + 1;
-              return RepaintBoundary(
-                // Lets card glass fills align to the wallpaper instance that
-                // slides with this page (see PreblurredWallpaperAlignedFill).
-                child: PreblurredWallpaperPage(
-                  pageIndex: index,
-                  child: _buildWeekPage(
-                    provider,
-                    settings,
-                    availableWidth,
-                    availableHeight,
-                    week,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        if (_shouldShowDayViewOverlay && visibleDayViewWeek != null)
-          Positioned.fill(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 日视图自己的星期信息栏（scrubber 视觉由外部手势层覆盖）。
-                TimetableWeekdayHeader(
-                  settings: settings,
-                  week: visibleDayViewWeek,
-                  timeColumnWidth: _resolveTimeColumnWidth(settings),
-                  hideBottomBorder: true,
-                  wallpaperTopLuminance: _wallpaperTopLuminance,
-                  wallpaperWeekdayLuminance: _wallpaperWeekdayLuminance,
-                  pageController: _dayViewPageController,
-                  isDayView: _isDayView,
-                  visibleDayViewWeek: _visibleDayViewWeek,
-                  shouldShowOverlay: _shouldShowDayViewOverlay,
-                  isSelectedDay: _isSelectedDay,
-                  hasExamOnDate: provider.hasExamOnDate,
-                  onShowWeekSelector: _showWeekSelector,
-                  onDayTapDown: _captureDayViewAnchor,
-                  onDayTap: (week, dayOfWeek) {
-                    _toggleDayView(
-                      week: week,
-                      dayOfWeek: dayOfWeek,
-                      settings: settings,
-                    );
-                  },
-                ),
-                Expanded(
-                  child: _buildAnchoredDayViewOverlay(
-                    provider: provider,
-                    settings: settings,
-                    week: visibleDayViewWeek,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        // Swipeable weekday bar: when day view is open, the bar is a
-        // follow-finger scrubber over the day pager — drags are amplified by
-        // the visible-day count and injected into the pager position, so one
-        // bar-width sweep flies the content across the whole week
-        // (see _startWeekdayBarDrag).
-        if (_shouldShowDayViewOverlay && visibleDayViewWeek != null)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: TimetableWeekdayHeader.height,
-            child: GestureDetector(
-              key: const ValueKey('day-view-weekday-bar-swipe-area'),
-              behavior: HitTestBehavior.translucent,
-              onHorizontalDragStart: (details) =>
-                  _startWeekdayBarDrag(settings, details),
-              onHorizontalDragUpdate: _updateWeekdayBarDrag,
-              onHorizontalDragEnd: _endWeekdayBarDrag,
-              onHorizontalDragCancel: _cancelWeekdayBarDrag,
-            ),
-          ),
-      ],
-    );
-  }
 
   Widget _buildWeekPage(
     TimetableProvider provider,
