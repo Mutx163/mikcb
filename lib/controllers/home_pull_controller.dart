@@ -289,6 +289,14 @@ class HomePullController extends ChangeNotifier {
 
   @override
   void dispose() {
+    // 与旧 State.dispose 同口径：页面销毁时先取消在跑的快捷导入会话，
+    // 否则底层 2 分钟会话看门狗会挂到测试/进程退出之后。
+    final cancel = _cancel;
+    _cancel = null;
+    _running = false;
+    if (cancel != null) {
+      cancel();
+    }
     _disposed = true;
     _spring.dispose();
     super.dispose();
