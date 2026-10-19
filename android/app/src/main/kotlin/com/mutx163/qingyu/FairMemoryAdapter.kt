@@ -4,6 +4,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -11,6 +13,7 @@ import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
 import android.os.Parcel
+import android.os.Process
 import android.os.RemoteException
 import android.os.SystemClock
 import android.util.Log
@@ -135,6 +138,12 @@ object FairMemoryAdapter {
             ) {
                 return
             }
+            // exported 动态接收器对所有应用可达（审计 #23）：没有发送方校验时，
+            // 任意应用都能伪造 TRIM/KILL —— 诱骗 onKill 现场快照、骗取 3s 协议回执。
+            if (!isFairMemoryBroadcastSenderTrusted(context.applicationContext, this)) {
+                Log.w(TAG, "fair-memory broadcast dropped: untrusted sender")
+                return
+            }
             val pendingResult = goAsync()
             try {
                 handleFairMemoryIntent(context.applicationContext, intent)
@@ -150,6 +159,41 @@ object FairMemoryAdapter {
             } finally {
                 pendingResult.finish()
             }
+        }
+    }
+
+    /**
+     * 发送方校验：TRIM/KILL 只应来自系统侧（OEM 公平内存框架）。
+     * API 34+ 才有公开 API 读广播发送方身份；更早的系统保持原放行行为。
+     */
+    private fun isFairMemoryBroadcastSenderTrusted(
+        context: Context,
+        receiver: BroadcastReceiver,
+    ): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return true
+        }
+        return isFairMemorySenderTrusted(
+            sdkInt = Build.VERSION.SDK_INT,
+            myUid = Process.myUid(),
+            sentFromUid = receiver.sentFromUid,
+            sentFromPackage = receiver.sentFromPackage,
+            isSystemPackage = { senderPackage ->
+                isSystemInstalledPackage(context, senderPackage)
+            },
+        )
+    }
+
+    /** 发送方包是否为系统应用（个别 OEM 服务持应用段独占 uid，靠包名再兜一层）。 */
+    private fun isSystemInstalledPackage(context: Context, senderPackage: String): Boolean {
+        return try {
+            val applicationInfo = context.packageManager.getApplicationInfo(
+                senderPackage,
+                PackageManager.GET_META_DATA,
+            )
+            (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+        } catch (_: Exception) {
+            false
         }
     }
 
@@ -462,6 +506,35 @@ internal fun isFairMemoryHandlingSuccessful(
     return nativeHandlingSucceeded &&
         flutterOutcome != FlutterHandlingOutcome.FAILED &&
         flutterOutcome != FlutterHandlingOutcome.TIMED_OUT
+}
+
+/**
+ * 公平内存广播的发送方是否可信（纯函数，供测试）。
+ *
+ * 放行三类：本应用自身；系统 uid（0/root、1000/system_server 及厂商平台进程等，
+ * 均低于 [Process.FIRST_APPLICATION_UID]）；落在应用 uid 段但发送包是系统应用的
+ * （个别 OEM 服务持独占 uid）。第三方应用一律拒绝。
+ */
+internal fun isFairMemorySenderTrusted(
+    sdkInt: Int,
+    myUid: Int,
+    sentFromUid: Int,
+    sentFromPackage: String?,
+    isSystemPackage: (String) -> Boolean,
+): Boolean {
+    if (sdkInt < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        // Android < 14 没有公开 API 读广播发送方身份，保持既有放行行为（与
+        // 引入校验前一致；该系统段的 OEM 分发面本来就远小于 34+）。
+        return true
+    }
+    if (sentFromUid == myUid) {
+        return true
+    }
+    if (sentFromUid in 0 until Process.FIRST_APPLICATION_UID) {
+        return true
+    }
+    val senderPackage = sentFromPackage ?: return false
+    return isSystemPackage(senderPackage)
 }
 
 /**
