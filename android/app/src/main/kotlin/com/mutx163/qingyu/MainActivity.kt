@@ -1771,6 +1771,13 @@ class MainActivity : FlutterActivity() {
         title: String?,
         description: String?,
     ): Long {
+        // 原生侧兜底（2026-10-19 审计 #24）：此前只判非空，任意 URL 都会被
+        // 写进公共 Downloads。信任根与 Dart 侧 app_update_service.dart 对齐，
+        // 见 [isTrustedSystemDownloadUrl]。不合法时抛给通道的
+        // DOWNLOAD_ENQUEUE_FAILED 分支，Dart 侧两条调用路径都有失败提示。
+        if (!isTrustedSystemDownloadUrl(url)) {
+            throw IllegalArgumentException("untrusted system download url")
+        }
         val downloadManager =
             getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
                 ?: throw IllegalStateException("DownloadManager unavailable")
