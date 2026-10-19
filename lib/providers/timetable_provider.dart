@@ -724,7 +724,7 @@ class TimetableProvider with ChangeNotifier {
     final activeProfileId = await _profileRepository.getActiveProfileId();
     final partnerBinding = await _profileRepository
         .getPartnerTimetableBinding();
-    final lastAppliedSignature = await _storageService
+    final lastAppliedSignature = await _profileRepository
         .getScheduleDateRuleLastAppliedSignature();
 
     _profiles = profiles;

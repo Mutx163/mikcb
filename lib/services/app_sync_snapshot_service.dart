@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
+import '../data/timetable_repository.dart';
 import '../models/holiday_entry.dart';
 import '../models/location_time_group.dart';
 import '../models/partner_timetable_binding.dart';
@@ -181,12 +182,13 @@ class AppSyncSnapshotService {
   static const String backupType = 'sync';
 
   AppSyncSnapshotService({
-    StorageService? storageService,
+    TimetableRepository? timetableRepository,
     WarehouseImportPreferencesService? warehousePreferencesService,
     WarehouseMacroService? warehouseMacroService,
     HolidayService? holidayService,
     DataTransferService? dataTransferService,
-  }) : _storageService = storageService ?? StorageService(),
+  }) : _timetableRepository =
+           timetableRepository ?? TimetableRepository(StorageService()),
        _warehousePreferencesService =
            warehousePreferencesService ?? WarehouseImportPreferencesService(),
        _warehouseMacroService =
@@ -194,7 +196,11 @@ class AppSyncSnapshotService {
        _holidayService = holidayService ?? HolidayService(),
        _dataTransferService = dataTransferService ?? DataTransferService();
 
-  final StorageService _storageService;
+  /// 课表域持久化的唯一写入口（教师/教室记录、地点分组、日期规则及其签名、
+  /// partner 绑定）。快照恢复此前绕过它直连 StorageService，等于在仓储之外
+  /// 开了第二条写路径——后续分片存储/批量提交只改仓储内部时，这条旁路会
+  /// 静默失联。统一改走仓储；StorageService 是工厂单例，底层行为 1:1。
+  final TimetableRepository _timetableRepository;
   final WarehouseImportPreferencesService _warehousePreferencesService;
   final WarehouseMacroService _warehouseMacroService;
   final HolidayService _holidayService;
@@ -267,9 +273,9 @@ class AppSyncSnapshotService {
         'custom holiday storage corrupted; refusing to build sync snapshot',
       );
     }
-    final teacherRecords = await _storageService.getTeacherRecords();
-    final locationRecords = await _storageService.getLocationRecords();
-    final partnerTimetableBinding = await _storageService
+    final teacherRecords = await _timetableRepository.getTeacherRecords();
+    final locationRecords = await _timetableRepository.getLocationRecords();
+    final partnerTimetableBinding = await _timetableRepository
         .getPartnerTimetableBinding();
     final timestamp = exportedAt ?? DateTime.now();
 
@@ -929,11 +935,18 @@ class AppSyncSnapshotService {
       return timetableError;
     }
 
-    await _storageService.saveTeacherRecords(snapshot.teacherRecords);
-    await _storageService.saveLocationRecords(snapshot.locationRecords);
-    await _storageService.saveLocationTimeGroups(snapshot.locationTimeGroups);
-    await _storageService.saveScheduleDateRules(snapshot.scheduleDateRules);
-    await _storageService.saveScheduleDateRuleLastAppliedSignature(
+    // 以下六类写全部走仓储唯一入口（问题清单 2026-10-19 #7）。
+    // 规则与「最近应用签名」是两个 key，无法单次原子落盘；保持先规则后签名的
+    // 顺序是**失效安全方向**：中途被杀只会留下旧签名，下一次启动的季节性
+    // 批量应用会幂等地重跑一次；反过来（先签名）则会让重跑了新规则的会话
+    // 被旧签名永久跳过。
+    await _timetableRepository.saveTeacherRecords(snapshot.teacherRecords);
+    await _timetableRepository.saveLocationRecords(snapshot.locationRecords);
+    await _timetableRepository.saveLocationTimeGroups(
+      snapshot.locationTimeGroups,
+    );
+    await _timetableRepository.saveScheduleDateRules(snapshot.scheduleDateRules);
+    await _timetableRepository.saveScheduleDateRuleLastAppliedSignature(
       snapshot.scheduleDateRuleLastAppliedSignature,
     );
     await _warehousePreferencesService.importSyncBundle(snapshot.warehouse);
@@ -956,7 +969,7 @@ class AppSyncSnapshotService {
     }
 
     if (snapshot.includesPartnerTimetableBinding) {
-      await _storageService.savePartnerTimetableBinding(
+      await _timetableRepository.savePartnerTimetableBinding(
         snapshot.partnerTimetableBinding,
       );
     }
