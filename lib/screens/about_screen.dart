@@ -977,9 +977,15 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          currentVersion,
-          style: HyperosTypography.listDetail(context),
+        // 两侧都给 Flexible：安装包版本号可能带上 flavor 后缀（如
+        // `2.1.3-4-profile`），极端长串在这里宁可省略号，也不要横向溢出。
+        Flexible(
+          child: Text(
+            currentVersion,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: HyperosTypography.listDetail(context),
+          ),
         ),
         const SizedBox(width: 6),
         Text(
