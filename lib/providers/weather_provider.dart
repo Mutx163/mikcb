@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../domain/weather_logic.dart';
+import '../logging/app_debug_log.dart';
+import '../services/app_log_service.dart';
 import '../models/weather_forecast.dart';
 import '../services/device_location_service.dart';
 import '../services/weather_preferences.dart';
@@ -133,9 +135,8 @@ class WeatherProvider extends ChangeNotifier {
     // 缓存的城市与所选城市不一致时必须丢弃：用户换过城市，拿旧城市的数冒充
     // 新城市是最坏的一种错。
     final location = _location;
-    _forecast = (cached != null &&
-            location != null &&
-            cached.matchesLocation(location))
+    _forecast =
+        (cached != null && location != null && cached.matchesLocation(location))
         ? cached
         : null;
 
@@ -333,9 +334,30 @@ class WeatherProvider extends ChangeNotifier {
       _forecast = forecast;
       _status = WeatherStatus.ready;
       _nextRetryNotBefore = null;
-      await WeatherPreferences.saveForecast(forecast);
+      // 缓存落盘尽力而为：本方法经 ensureFresh 的三个调用点全是 fire-and-forget
+      // （initialize / setEnabled / setLocation 里 unawaited），await 抛错会变成
+      // 无人监听的未处理异常，还跳过下面的 notifyListeners —— 内存里已是新预报、
+      // 界面却收不到通知，卡片上的天气空位最长挂到下次重建。写失败（返回 false
+      // 的磁盘满、平台通道异常）只损失「下次冷启动的缓存」，不该动内存态。
+      try {
+        await WeatherPreferences.saveForecast(forecast);
+      } catch (error) {
+        _debugLogForecastCacheWriteFailure(error);
+      }
     }
     notifyListeners();
+  }
+
+  /// 缓存写失败留痕。release 无 print，走 [appDebugLog] 的 debug 门 +
+  /// AppLogService 的 warn 一条，保证「天气每次刷新都失败」可诊断。
+  void _debugLogForecastCacheWriteFailure(Object error) {
+    appDebugLog('Weather', 'forecast cache write failed: $error');
+    unawaited(
+      AppLogService.instance.warn(
+        'weather_forecast_cache_write_failed',
+        error.toString(),
+      ),
+    );
   }
 
   @override

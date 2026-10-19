@@ -114,36 +114,72 @@ class _FullBackupRestoreSnapshot {
       }
     }
 
-    await step('time_schemes', () => repository.saveTimeSchemes(timeSchemes));
-    await step(
-      'location_time_groups',
-      () => repository.saveLocationTimeGroups(locationTimeGroups),
-    );
-    await step(
-      'schedule_date_rules',
-      () => repository.saveScheduleDateRules(scheduleDateRules),
-    );
-    await step('profiles', () => repository.saveProfiles(profiles));
-    await step('active_profile_id', () {
-      if (activeProfileId == null) {
-        return repository.clearActiveProfileId();
+    // 「profiles + activeProfileId + 全局设置键」这三个 key 必须整体过
+    // `runSettingsMirrorTransaction`：普通导入路径经 `_persistActiveProfileState`
+    // 写同一组 key 时都有这份保护（见 timetable_provider.dart:1435-1444），
+    // 唯独这里逐条裸写 —— 三条写之间进程被杀，冷启动就是「课表列表已是新的、
+    // activeProfileId 还指旧档」的固化混合态（2026-09-29 审计指认）。
+    // 事务的 before 快照取自盘上当前值；本函数运行在 mutation gate 内、
+    // 紧跟 restoreMemory 之后，此刻盘上可能已是导入半成品，恢复记录指向它
+    // 虽然没意义，但崩溃恢复宁可整体退回一次也不会把混合态当成功提交；
+    // 且 gate 内没有第三方写者会把这份半成品重新落盘。
+    // step() 的逐条收集保留：非镜像 key（作息/分组/规则/伴侣绑定/签名）没有
+    // 事务覆盖，失败语义与原先一致——继续把剩余 key 写完并如实上报；
+    // 事务机制自身失败（恢复记录残留、日志写不进）会从这里上抛，记一条
+    // 汇总失败项，返回值语义仍是「非空 = 回滚不完整」。
+    try {
+      // 与 _persistActiveProfileState 的事务分支同口径：先排空全局设置写队列，
+      // 队列里未落盘的旧值不许与事务快照交错。
+      await AppGlobalSettingsService.waitForPendingWrites();
+      await host._storageService.runSettingsMirrorTransaction(() async {
+        await step(
+          'time_schemes',
+          () => repository.saveTimeSchemes(timeSchemes),
+        );
+        await step(
+          'location_time_groups',
+          () => repository.saveLocationTimeGroups(locationTimeGroups),
+        );
+        await step(
+          'schedule_date_rules',
+          () => repository.saveScheduleDateRules(scheduleDateRules),
+        );
+        await step('profiles', () => repository.saveProfiles(profiles));
+        await step('active_profile_id', () {
+          if (activeProfileId == null) {
+            return repository.clearActiveProfileId();
+          }
+          return repository.setActiveProfileId(activeProfileId!);
+        });
+        await step(
+          'schedule_date_rule_signature',
+          () => repository.saveScheduleDateRuleLastAppliedSignature(
+            scheduleDateRuleLastAppliedSignature,
+          ),
+        );
+        await step(
+          'partner_binding',
+          () => repository.savePartnerTimetableBinding(partnerBinding),
+        );
+        await step(
+          'global_settings',
+          () => AppGlobalSettingsService.syncFrom(settings),
+        );
+      });
+    } catch (error, stackTrace) {
+      failures.add(
+        _FullBackupRollbackFailure(
+          'settings_mirror_transaction',
+          error,
+          stackTrace,
+        ),
+      );
+      if (kDebugMode) {
+        debugPrint(
+          'Full backup rollback settings mirror transaction failed: $error',
+        );
       }
-      return repository.setActiveProfileId(activeProfileId!);
-    });
-    await step(
-      'schedule_date_rule_signature',
-      () => repository.saveScheduleDateRuleLastAppliedSignature(
-        scheduleDateRuleLastAppliedSignature,
-      ),
-    );
-    await step(
-      'partner_binding',
-      () => repository.savePartnerTimetableBinding(partnerBinding),
-    );
-    await step(
-      'global_settings',
-      () => AppGlobalSettingsService.syncFrom(settings),
-    );
+    }
     return failures;
   }
 }
