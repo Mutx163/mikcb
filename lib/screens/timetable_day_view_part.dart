@@ -2,7 +2,7 @@ part of 'timetable_screen.dart';
 
 /// 日视图议程族（2026-10-10 自 `timetable_screen.dart` 原样搬入）。
 ///
-/// `_TimetableScreenState` 的成员扩展：相关字段与 `_DayAgendaItem` 等数据类
+/// `_TimetableScreenState` 的成员扩展：相关字段与 `TimetableDayAgendaItem` 等数据类
 /// 仍在主文件。搬移是**原样移动**——除本头注释与 extension 包裹外，方法体
 /// 一个字符都没有改。
 ///
@@ -379,7 +379,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     return provider.getScheduleItemInstancesForDate(targetDate);
   }
 
-  _DayAgendaItem _buildScheduleAgendaItemForDate({
+  TimetableDayAgendaItem _buildScheduleAgendaItemForDate({
     required ScheduleItemInstance instance,
     required DateTime targetDate,
   }) {
@@ -393,7 +393,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       normalizedTargetDate,
     );
     final continuesToNextDay = item.endDate.isAfter(normalizedTargetDate);
-    return _DayAgendaItem.schedule(
+    return TimetableDayAgendaItem.schedule(
       item,
       instance: instance,
       startTime: continuesFromPreviousDay ? '00:00' : item.startTime,
@@ -403,7 +403,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     );
   }
 
-  List<_DayAgendaItem> _buildDayAgendaItems({
+  List<TimetableDayAgendaItem> _buildDayAgendaItems({
     required TimetableProvider provider,
     required TimetableSettings settings,
     required int week,
@@ -416,8 +416,8 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       week: week,
       dayOfWeek: dayOfWeek,
     );
-    final items = <_DayAgendaItem>[
-      ...courseItems.map(_DayAgendaItem.course),
+    final items = <TimetableDayAgendaItem>[
+      ...courseItems.map(TimetableDayAgendaItem.course),
       ..._getScheduleItemsForWeekDay(
         provider: provider,
         settings: settings,
@@ -431,7 +431,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       ),
       ...provider.exams
           .where((e) => !e.isExpired && _isSameDate(e.dateTime, targetDate))
-          .map(_DayAgendaItem.exam),
+          .map(TimetableDayAgendaItem.exam),
     ];
 
     items.sort((left, right) {
@@ -469,7 +469,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     required Course? currentCourse,
     required List<DayCourseDisplayItem> courseItems,
     required List<ScheduleItem> scheduleItems,
-    required List<_DayAgendaItem> agendaItems,
+    required List<TimetableDayAgendaItem> agendaItems,
   }) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
@@ -1115,7 +1115,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
   Widget _buildDayAgendaEntry({
     required int week,
     required TimetableSettings settings,
-    required _DayAgendaItem item,
+    required TimetableDayAgendaItem item,
   }) {
     if (item.isExam) {
       if (_TimetableScreenState.logDayViewBuilds) {
@@ -1352,7 +1352,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     required int week,
     required TimetableSettings settings,
     required AppLocalizations l10n,
-    required _DayAgendaPalette palette,
+    required TimetableDayAgendaPalette palette,
     required List<Widget> statusBadges,
     required BoxDecoration cardDecoration,
     required VoidCallback openContainer,
@@ -1494,7 +1494,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     required DayCourseDisplayItem item,
     required int week,
     required TimetableSettings settings,
-    required _DayAgendaProgressInfo progressInfo,
+    required TimetableDayAgendaProgressInfo progressInfo,
     required AppLocalizations l10n,
     required ColorScheme colorScheme,
     required Color ink,
@@ -1936,7 +1936,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
   }
 
   Widget _buildScheduleAgendaEntry(
-    _DayAgendaItem agendaItem, {
+    TimetableDayAgendaItem agendaItem, {
     required TimetableSettings settings,
   }) {
     final item = agendaItem.scheduleItem!;
@@ -2090,9 +2090,9 @@ extension _TimetableScreenDayView on _TimetableScreenState {
 
   Widget _buildCurrentScheduleAgendaCard({
     required ScheduleItem item,
-    required _DayAgendaItem agendaItem,
+    required TimetableDayAgendaItem agendaItem,
     required TimetableSettings settings,
-    required _DayAgendaProgressInfo progressInfo,
+    required TimetableDayAgendaProgressInfo progressInfo,
     required AppLocalizations l10n,
     required ColorScheme colorScheme,
     required Color ink,
@@ -2279,9 +2279,9 @@ extension _TimetableScreenDayView on _TimetableScreenState {
         : Colors.black.withValues(alpha: lightAlpha * 0.55);
   }
 
-  _DayAgendaProgressInfo? _resolveDayAgendaProgressInfo(
+  TimetableDayAgendaProgressInfo? _resolveDayAgendaProgressInfo(
     Course course, {
-    required _DayAgendaPalette palette,
+    required TimetableDayAgendaPalette palette,
   }) {
     final now = DateTime.now();
     final startMinutes = _parseDayAgendaClockMinutes(course.startTime);
@@ -2304,7 +2304,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     final remainingMinutes = math.max(0, (endMinutes - currentMinutes).ceil());
     final progress = _TimetableScreenState._quantizeDayAgendaProgress(elapsedMinutes / totalMinutes);
     final isEndingSoon = remainingMinutes <= 10;
-    return _DayAgendaProgressInfo(
+    return TimetableDayAgendaProgressInfo(
       progress: progress,
       remainingMinutes: remainingMinutes,
       statusText: isEndingSoon
@@ -2323,7 +2323,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     );
   }
 
-  _DayAgendaProgressInfo? _resolveScheduleAgendaProgressInfo(
+  TimetableDayAgendaProgressInfo? _resolveScheduleAgendaProgressInfo(
     ScheduleItem item,
     Color background,
   ) {
@@ -2349,7 +2349,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     final progress = _TimetableScreenState._quantizeDayAgendaProgress(elapsedMinutes / totalMinutes);
     final isEndingSoon = remainingMinutes <= 10;
 
-    return _DayAgendaProgressInfo(
+    return TimetableDayAgendaProgressInfo(
       progress: progress,
       remainingMinutes: remainingMinutes,
       statusText: isEndingSoon
@@ -2393,7 +2393,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     return hour * 60 + minute;
   }
 
-  _DayAgendaPalette _resolveDayAgendaPalette(
+  TimetableDayAgendaPalette _resolveDayAgendaPalette(
     Color background, {
     String? foregroundHex,
     TimetableSettings? settings,
@@ -2428,7 +2428,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
                 ? (_wallpaperBodyLuminance ?? _wallpaperTopLuminance)
                 : null,
           );
-    return _DayAgendaPalette(
+    return TimetableDayAgendaPalette(
       baseColor: baseColor,
       fillColor: fillColor,
       foregroundColor: foregroundColor,

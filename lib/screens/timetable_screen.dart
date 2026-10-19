@@ -83,6 +83,8 @@ import '../widgets/week_selector_picker_sheet.dart';
 import '../widgets/timetable/timetable_back_to_current_week_button.dart';
 import '../widgets/timetable/timetable_back_to_today_button.dart';
 import '../widgets/timetable/timetable_weekday_header.dart';
+import '../widgets/timetable/timetable_day_agenda_models.dart';
+import '../widgets/timetable/timetable_home_action_button.dart';
 import '../widgets/timetable/timetable_day_pager_physics.dart';
 import '../widgets/timetable/timetable_empty_slot.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
@@ -1721,13 +1723,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     return _visibleDayNumbers(settings).length * settings.semesterWeekCount;
   }
 
-  _DayViewPageTarget _dayViewTargetForPage(
+  TimetableDayViewPageTarget _dayViewTargetForPage(
     TimetableSettings settings,
     int page,
   ) {
     final target = dayViewTargetForGlobalPage(_visibleDayNumbers(settings), page);
     // 可见日表恒为 1..5 或 1..7，null 分支只是防呆回落。
-    return _DayViewPageTarget(
+    return TimetableDayViewPageTarget(
       week: target?.$1 ?? 1,
       dayOfWeek: target?.$2 ?? 1,
     );
@@ -6483,7 +6485,7 @@ class _HomeActionPageButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Builder(
       builder: (buttonContext) {
-        return _HomeActionButtonBody(
+        return TimetableHomeActionButtonBody(
           icon: icon,
           title: title,
           onTap: () => _openPopupActionPage(
@@ -6495,175 +6497,4 @@ class _HomeActionPageButton extends StatelessWidget {
       },
     );
   }
-}
-
-class _HomeActionButtonBody extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-  final bool enabled;
-
-  const _HomeActionButtonBody({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-  }) : enabled = true;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final colors = context.theme.colors;
-    final highlightColor = enabled
-        ? colorScheme.primary
-        : colorScheme.onSurfaceVariant;
-
-    return HyperosFrostedSurface(
-      borderRadius: HyperosTheme.cardBorderRadius,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          borderRadius: HyperosTheme.cardBorderRadius,
-          overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-          splashFactory: NoSplash.splashFactory,
-          onTap: enabled ? onTap : null,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                HyperosFrostedSurface(
-                  borderRadius: const BorderRadius.all(Radius.circular(16)),
-                  blurEnabled: false,
-                  tint: HyperosBlurredHeader.accentSurfaceTintColor(
-                    highlightColor,
-                  ),
-                  child: SizedBox(
-                    width: 46,
-                    height: 46,
-                    child: Center(child: Icon(icon, color: highlightColor)),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  title,
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w400,
-                    height: 1.25,
-                    color: enabled ? null : colors.mutedForeground,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DayViewPageTarget {
-  final int week;
-  final int dayOfWeek;
-
-  const _DayViewPageTarget({required this.week, required this.dayOfWeek});
-}
-
-class _DayAgendaItem {
-  final DayCourseDisplayItem? courseItem;
-  final ScheduleItem? scheduleItem;
-  final ScheduleItemInstance? scheduleInstance;
-  final Exam? exam;
-  final String startTime;
-  final String endTime;
-  final bool continuesFromPreviousDay;
-  final bool continuesToNextDay;
-
-  const _DayAgendaItem._({
-    this.courseItem,
-    this.scheduleItem,
-    this.scheduleInstance,
-    this.exam,
-    required this.startTime,
-    required this.endTime,
-    this.continuesFromPreviousDay = false,
-    this.continuesToNextDay = false,
-  });
-
-  factory _DayAgendaItem.course(DayCourseDisplayItem item) {
-    return _DayAgendaItem._(
-      courseItem: item,
-      startTime: item.course.startTime,
-      endTime: item.course.endTime,
-    );
-  }
-
-  factory _DayAgendaItem.schedule(
-    ScheduleItem item, {
-    ScheduleItemInstance? instance,
-    required String startTime,
-    required String endTime,
-    bool continuesFromPreviousDay = false,
-    bool continuesToNextDay = false,
-  }) {
-    return _DayAgendaItem._(
-      scheduleItem: item,
-      scheduleInstance: instance,
-      startTime: startTime,
-      endTime: endTime,
-      continuesFromPreviousDay: continuesFromPreviousDay,
-      continuesToNextDay: continuesToNextDay,
-    );
-  }
-
-  factory _DayAgendaItem.exam(Exam exam) {
-    return _DayAgendaItem._(
-      exam: exam,
-      startTime: exam.startTime,
-      endTime: exam.endTime,
-    );
-  }
-
-  bool get isScheduleItem => scheduleItem != null;
-  bool get isExam => exam != null;
-  String get id =>
-      exam?.id ??
-      (isScheduleItem
-          ? scheduleInstance?.occurrenceId ?? scheduleItem!.id
-          : courseItem!.course.id);
-}
-
-class _DayAgendaProgressInfo {
-  final double progress;
-  final int remainingMinutes;
-  final String statusText;
-  final Color statusBackgroundColor;
-  final Color statusTextColor;
-  final Color baseColor;
-  final Color fillColor;
-
-  const _DayAgendaProgressInfo({
-    required this.progress,
-    required this.remainingMinutes,
-    required this.statusText,
-    required this.statusBackgroundColor,
-    required this.statusTextColor,
-    required this.baseColor,
-    required this.fillColor,
-  });
-}
-
-class _DayAgendaPalette {
-  final Color baseColor;
-  final Color fillColor;
-  final Color foregroundColor;
-
-  const _DayAgendaPalette({
-    required this.baseColor,
-    required this.fillColor,
-    required this.foregroundColor,
-  });
 }
