@@ -37,8 +37,9 @@ void main() {
     // → 5105。
     // M5-A3：周 pager 与玻璃坞/内嵌页外壳搬出（净 -151）→ 4954。
     // M5-A4：周页与周网格骨架搬出（净 -165）→ 4789。
-    // 下一次目标（首页下拉 surface / build 剩余外壳）预计可再降至 ~4600。
-    const baselineLines = 4789;
+    // M5-A5：首页下拉 surface（含 pager 装配）搬出（净 -60）→ 4729。
+    // 下一次目标（build 剩余外壳 / 日视图转场）预计可再降至 ~4500。
+    const baselineLines = 4729;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),

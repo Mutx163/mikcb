@@ -80,7 +80,6 @@ import '../widgets/timetable/timetable_course_action_items.dart';
 import '../widgets/timetable/timetable_course_sheet_actions.dart';
 import '../widgets/timetable/timetable_week_grid.dart';
 import '../widgets/timetable/timetable_week_page.dart';
-import '../widgets/timetable/timetable_week_pager.dart';
 import '../widgets/timetable/timetable_week_page_body.dart';
 import '../widgets/timetable/timetable_day_view_shared_free_summary.dart';
 import '../widgets/timetable/timetable_day_column.dart';
@@ -91,6 +90,7 @@ import '../widgets/timetable/timetable_empty_slot.dart';
 import '../widgets/timetable/timetable_home_dock_shell.dart';
 import '../widgets/timetable/timetable_home_header.dart';
 import '../widgets/timetable/timetable_home_stack.dart';
+import '../widgets/timetable/timetable_home_pull_surface.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
 import '../widgets/timetable/timetable_glass_dock.dart';
 import '../widgets/timetable/timetable_open_only_route.dart';
@@ -802,10 +802,137 @@ class _TimetableScreenState extends State<TimetableScreen>
             onReleaseGlass: _releaseHomeGlassAfterTap,
             onShowTopActions: _showTopActionsSheet,
           ),
-          weekSurface: _buildHomePullQuickImportSurface(
-            provider: provider,
+          weekSurface: TimetableHomePullSurface(
             settings: settings,
             hasBackdrop: hasBackdrop,
+            timetableSurfaceKey: _timetableSurfaceKey,
+            isRunning: _isHomePullQuickImportRunning,
+            isDayView: _isDayView,
+            glassDockContentScrollInset: _glassDockContentScrollInset(
+              settings,
+            ),
+            onScrollNotification: _handleHomePullScrollNotification,
+            onPullUpdate: _updateHomePullDragDistance,
+            onPullEnd: _finishHomePullDrag,
+            onPullCancel: _cancelHomePullDrag,
+            resetFreeze: () => _homePullFrozeScrollForEvent = false,
+            onPointerMove: (event) {
+              // 冻结判定必须用**本事件开始时**的下拉状态：原始指针监听先于
+              // 滚动体收到同一事件，用实时值的话，手指上移会先把下拉收到 0，
+              // 紧接着滚动体查到的就是“下拉已关”→ 列表照滚。
+              final open =
+                  _homePullDragDistance > 0 || _homePullTouchDistance > 0;
+              _homePullFrozeScrollForEvent = open;
+              if (!open) {
+                return;
+              }
+              _updateHomePullDragDistance(event.delta.dy);
+            },
+            weekPageController: _weekPageController,
+            dayViewPageController: _dayViewPageController,
+            visibleDayViewWeek: _visibleDayViewWeek,
+            shouldShowDayViewOverlay: _shouldShowDayViewOverlay,
+            wallpaperTopLuminance: _wallpaperTopLuminance,
+            wallpaperWeekdayLuminance: _wallpaperWeekdayLuminance,
+            timeColumnWidth: _resolveTimeColumnWidth(settings),
+            isSelectedDay: _isSelectedDay,
+            hasExamOnDate: provider.hasExamOnDate,
+            onShowWeekSelector: _showWeekSelector,
+            onDayTapDown: _captureDayViewAnchor,
+            onDayTap: (week, dayOfWeek) {
+              _toggleDayView(
+                week: week,
+                dayOfWeek: dayOfWeek,
+                settings: settings,
+              );
+            },
+            onFinalizeWeekPageSettled: () =>
+                _finalizeWeekPageSettled(provider),
+            onHandleWeekPageChanged: (page) =>
+                _handleWeekPageChanged(page, settings.semesterWeekCount),
+            buildWeekPage: (week, width, height) => TimetableWeekPage(
+              settings: settings,
+              week: week,
+              availableHeight: height,
+              wallpaperTopLuminance: _wallpaperTopLuminance,
+              wallpaperWeekdayLuminance: _wallpaperWeekdayLuminance,
+              dayViewPageController: _dayViewPageController,
+              isDayView: _isDayView,
+              visibleDayViewWeek: _visibleDayViewWeek,
+              shouldShowDayViewOverlay: _shouldShowDayViewOverlay,
+              isSelectedDay: _isSelectedDay,
+              hasExamOnDate: provider.hasExamOnDate,
+              onShowWeekSelector: _showWeekSelector,
+              onDayTapDown: _captureDayViewAnchor,
+              onDayTap: (week, dayOfWeek) {
+                _toggleDayView(
+                  week: week,
+                  dayOfWeek: dayOfWeek,
+                  settings: settings,
+                );
+              },
+              timeColumnWidth: _resolveTimeColumnWidth(settings),
+              buildGrid: (sectionHeight) {
+                final visibleDays = _visibleDayNumbers(settings);
+                final timeColumnWidth = _resolveTimeColumnWidth(settings);
+                final cardInset = _resolveCourseCardInset(settings);
+                final dayColumnCallbacks = TimetableDayColumnCallbacks(
+                  dateForWeekDay: _dateForWeekDay,
+                  markerSpanAt: _emptySlotMarkerSpanAt,
+                  markerSection: () => _emptySlotMarkerSection,
+                  buildEmptySlotCell: _buildEmptySlotCell,
+                  startingAt: _getDisplayItemsStartingAtSection,
+                  resolveColor: _resolveDisplayCourseColor,
+                  overline: _resolveCompactOverlineText,
+                  badge: _resolveCompactBadgeText,
+                  weather: (item, date) => _weekCardWeatherDisplay(
+                    l10n: AppLocalizations.of(context),
+                    weather: context.watch<WeatherProvider?>(),
+                    settings: settings,
+                    course: item.course,
+                    date: date,
+                    week: week,
+                    isPartnerCourse: item.isPartnerCourse,
+                  ),
+                  clearMarker: _clearEmptySlotMarker,
+                  showActions: _showCourseActions,
+                  border: _groupedDayColumnBorderRadius,
+                  wallpaperBodyLuminance: () => _wallpaperBodyLuminance,
+                  wallpaperTopLuminance: () => _wallpaperTopLuminance,
+                );
+                return TimetableWeekGrid(
+                  provider: provider,
+                  settings: settings,
+                  week: week,
+                  availableWidth: width,
+                  sectionHeight: sectionHeight,
+                  visibleDays: visibleDays,
+                  timeColumnWidth: timeColumnWidth,
+                  cardInset: cardInset,
+                  buildSectionTimeCell: _buildSectionTimeCell,
+                  wrapSurfaceHost: _wrapCourseGridSurfaceHost,
+                  wrapEmptySlotGesture: _buildEmptySlotGestureArea,
+                  coursesForDay: _getCoursesForDay,
+                  buildDisplayItems: _buildHomeDayDisplayItems,
+                  dayColumnCallbacks: dayColumnCallbacks,
+                );
+              },
+              buildBody: (grid) => _buildWeekPageBody(
+                settings: settings,
+                week: week,
+                grid: grid,
+              ),
+            ),
+            buildAnchoredDayViewOverlay: (week) =>
+                _buildAnchoredDayViewOverlay(
+                  provider: provider,
+                  settings: settings,
+                  week: week,
+                ),
+            onWeekdayBarDragStart: _startWeekdayBarDrag,
+            onWeekdayBarDragUpdate: _updateWeekdayBarDrag,
+            onWeekdayBarDragEnd: _endWeekdayBarDrag,
+            onWeekdayBarDragCancel: _cancelWeekdayBarDrag,
           ),
           isPullRunning: _isHomePullQuickImportRunning,
           pullDragDistance: _homePullDragDistance,
@@ -2359,193 +2486,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
 
-  Widget _buildHomePullQuickImportSurface({
-    required TimetableProvider provider,
-    required TimetableSettings settings,
-    required bool hasBackdrop,
-  }) {
-    // Home timetable only: no HyperOS rubber-band. Other pages keep
-    // [HyperosScrollBehavior] from [HyperosRootPage].
-    Widget surface = ScrollConfiguration(
-      behavior: const TimetableHomeScrollBehavior(),
-      child: Padding(
-        key: _timetableSurfaceKey,
-        padding: EdgeInsets.only(bottom: hasBackdrop ? 0 : 8),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return TimetableWeekPager(
-              settings: settings,
-              weekPageController: _weekPageController,
-              dayViewPageController: _dayViewPageController,
-              visibleDayViewWeek: _visibleDayViewWeek,
-              isDayView: _isDayView,
-              shouldShowDayViewOverlay: _shouldShowDayViewOverlay,
-              wallpaperTopLuminance: _wallpaperTopLuminance,
-              wallpaperWeekdayLuminance: _wallpaperWeekdayLuminance,
-              timeColumnWidth: _resolveTimeColumnWidth(settings),
-              isSelectedDay: _isSelectedDay,
-              hasExamOnDate: provider.hasExamOnDate,
-              onShowWeekSelector: _showWeekSelector,
-              onDayTapDown: _captureDayViewAnchor,
-              onDayTap: (week, dayOfWeek) {
-                _toggleDayView(
-                  week: week,
-                  dayOfWeek: dayOfWeek,
-                  settings: settings,
-                );
-              },
-              onFinalizeWeekPageSettled: () =>
-                  _finalizeWeekPageSettled(provider),
-              onHandleWeekPageChanged: (page) =>
-                  _handleWeekPageChanged(page, settings.semesterWeekCount),
-              buildWeekPage: (week) => TimetableWeekPage(
-                settings: settings,
-                week: week,
-                availableHeight: constraints.maxHeight,
-                wallpaperTopLuminance: _wallpaperTopLuminance,
-                wallpaperWeekdayLuminance: _wallpaperWeekdayLuminance,
-                dayViewPageController: _dayViewPageController,
-                isDayView: _isDayView,
-                visibleDayViewWeek: _visibleDayViewWeek,
-                shouldShowDayViewOverlay: _shouldShowDayViewOverlay,
-                isSelectedDay: _isSelectedDay,
-                hasExamOnDate: provider.hasExamOnDate,
-                onShowWeekSelector: _showWeekSelector,
-                onDayTapDown: _captureDayViewAnchor,
-                onDayTap: (week, dayOfWeek) {
-                  _toggleDayView(
-                    week: week,
-                    dayOfWeek: dayOfWeek,
-                    settings: settings,
-                  );
-                },
-                timeColumnWidth: _resolveTimeColumnWidth(settings),
-                buildGrid: (sectionHeight) {
-                  final visibleDays = _visibleDayNumbers(settings);
-                  final timeColumnWidth = _resolveTimeColumnWidth(settings);
-                  final cardInset = _resolveCourseCardInset(settings);
-                  final dayColumnCallbacks = TimetableDayColumnCallbacks(
-                    dateForWeekDay: _dateForWeekDay,
-                    markerSpanAt: _emptySlotMarkerSpanAt,
-                    markerSection: () => _emptySlotMarkerSection,
-                    buildEmptySlotCell: _buildEmptySlotCell,
-                    startingAt: _getDisplayItemsStartingAtSection,
-                    resolveColor: _resolveDisplayCourseColor,
-                    overline: _resolveCompactOverlineText,
-                    badge: _resolveCompactBadgeText,
-                    weather: (item, date) => _weekCardWeatherDisplay(
-                      l10n: AppLocalizations.of(context),
-                      weather: context.watch<WeatherProvider?>(),
-                      settings: settings,
-                      course: item.course,
-                      date: date,
-                      week: week,
-                      isPartnerCourse: item.isPartnerCourse,
-                    ),
-                    clearMarker: _clearEmptySlotMarker,
-                    showActions: _showCourseActions,
-                    border: _groupedDayColumnBorderRadius,
-                    wallpaperBodyLuminance: () => _wallpaperBodyLuminance,
-                    wallpaperTopLuminance: () => _wallpaperTopLuminance,
-                  );
-                  return TimetableWeekGrid(
-                    provider: provider,
-                    settings: settings,
-                    week: week,
-                    availableWidth: constraints.maxWidth,
-                    sectionHeight: sectionHeight,
-                    visibleDays: visibleDays,
-                    timeColumnWidth: timeColumnWidth,
-                    cardInset: cardInset,
-                    buildSectionTimeCell: _buildSectionTimeCell,
-                    wrapSurfaceHost: _wrapCourseGridSurfaceHost,
-                    wrapEmptySlotGesture: _buildEmptySlotGestureArea,
-                    coursesForDay: _getCoursesForDay,
-                    buildDisplayItems: _buildHomeDayDisplayItems,
-                    dayColumnCallbacks: dayColumnCallbacks,
-                  );
-                },
-                buildBody: (grid) => _buildWeekPageBody(
-                  settings: settings,
-                  week: week,
-                  grid: grid,
-                ),
-              ),
-              buildAnchoredDayViewOverlay: (week) =>
-                  _buildAnchoredDayViewOverlay(
-                    provider: provider,
-                    settings: settings,
-                    week: week,
-                  ),
-              onWeekdayBarDragStart: _startWeekdayBarDrag,
-              onWeekdayBarDragUpdate: _updateWeekdayBarDrag,
-              onWeekdayBarDragEnd: _endWeekdayBarDrag,
-              onWeekdayBarDragCancel: _cancelWeekdayBarDrag,
-            );
-          },
-        ),
-      ),
-    );
-
-    if (!settings.homePullQuickImportEnabled) {
-      return surface;
-    }
-
-    // Prefer scroll overscroll (clamping) so left/right week paging stays free.
-    surface = NotificationListener<ScrollNotification>(
-      onNotification: _handleHomePullScrollNotification,
-      child: surface,
-    );
-
-    // Auto-fit week grid has no vertical Scrollable; use a vertical-only drag
-    // that does not claim the arena until the gesture is clearly vertical.
-    //
-    // 玻璃坞形态会给周课表注入底部滚动余量（_glassDockContentScrollInset
-    // > 0），网格变成可滚动的 SingleChildScrollView——此时若仍挂原始拖拽
-    // 探测器，任何竖向下拉都会不计滚动位置地累计下拉进度，「还没滑动到
-    // 顶部」就打开下拉 → 提前触发快捷导入（更新）。有余量的场景统一交给
-    // 上方的 NotificationListener / OverscrollNotification（自带 atTop
-    // 位置判定 + 手势起点是否在顶部的判定，见 _homePullGestureStartedAtTop）。
-    // 两种驱动二选一，避免同一段手指位移被计两次：
-    // - 无纵向滚动体（自适应周课表 + 经典形态）：探测器自己看原始指针；
-    // - 有纵向滚动体：打开仍由上面的 Overscroll 通知驱动（自带 atTop +
-    //   手势起点判定），一旦打开，纵向滚动被 [TimetableHomePullFreezeScrollPhysics]
-    //   冻住，改由原始指针收放——冻结后不再产生滚动通知，手指上移的"收"
-    //   只有这里收得到。此前是"边收边让列表滚"，用户读作"想取消却把页面
-    //   滚上去了"。
-    if (settings.timetableAutoFitSectionHeight &&
-        !_isDayView &&
-        _glassDockContentScrollInset(settings) <= 0) {
-      surface = TimetableHomePullVerticalDragDetector(
-        enabled: !_isHomePullQuickImportRunning,
-        onPullUpdate: _updateHomePullDragDistance,
-        onPullEnd: _finishHomePullDrag,
-        onPullCancel: _cancelHomePullDrag,
-        child: surface,
-      );
-    } else {
-      surface = Listener(
-        behavior: HitTestBehavior.translucent,
-        onPointerDown: (_) => _homePullFrozeScrollForEvent = false,
-        onPointerUp: (_) => _homePullFrozeScrollForEvent = false,
-        onPointerCancel: (_) => _homePullFrozeScrollForEvent = false,
-        onPointerMove: (event) {
-          // 冻结判定必须用**本事件开始时**的下拉状态：原始指针监听先于滚动体
-          // 收到同一事件，用实时值的话，手指上移会先把下拉收到 0，紧接着
-          // 滚动体查到的就是"下拉已关"→ 列表照滚（正是要拦的那一下）。
-          final open = _homePullDragDistance > 0 || _homePullTouchDistance > 0;
-          _homePullFrozeScrollForEvent = open;
-          if (!open) {
-            return;
-          }
-          _updateHomePullDragDistance(event.delta.dy);
-        },
-        child: surface,
-      );
-    }
-
-    return surface;
-  }
 
   /// 首页纵向滚动体统一使用的 physics：下拉开着时冻结（见
   /// [TimetableHomePullFreezeScrollPhysics]）。周课表与日课表都用它，"回拉取消"
