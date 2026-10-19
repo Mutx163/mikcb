@@ -7,34 +7,22 @@ import 'package:university_timetable/services/support_creator_service.dart';
 
 void main() {
   test(
-    'fetchDonors prefers mirror result when mirror responds first',
+    'fetchDonors 配了镜像前缀也不请求镜像：捐赠名单只认官方直连',
     () async {
+      // 2026-10-19 信任根收紧：名单是展示型 JSON，没有摘要校验链，镜像能整份
+      // 替换它。这里钉的是「镜像即便能返回数据，也不会被请求到」。
+      final requestedHosts = <String>[];
       final client = MockClient((request) async {
-        return http.Response(
-          jsonEncode({
-            'donors': [
-              {'name': 'Mirror Donor'},
-            ],
-          }),
-          200,
-        );
-      });
-
-      final service = SupportCreatorService(client: client);
-      final data = await service.fetchDonors(
-        mirrorUrlPrefix: 'https://mirror.example.com/',
-      );
-
-      expect(data.donors.single.name, 'Mirror Donor');
-    },
-  );
-
-  test(
-    'fetchDonors falls back to raw GitHub when mirror request fails',
-    () async {
-      final client = MockClient((request) async {
+        requestedHosts.add(request.url.host);
         if (request.url.host == 'mirror.example.com') {
-          return http.Response('mirror unavailable', 502);
+          return http.Response(
+            jsonEncode({
+              'donors': [
+                {'name': 'Mirror Donor'},
+              ],
+            }),
+            200,
+          );
         }
         return http.Response(
           jsonEncode({
@@ -52,6 +40,35 @@ void main() {
       );
 
       expect(data.donors.single.name, 'Raw Donor');
+      expect(requestedHosts, isNot(contains('mirror.example.com')));
+    },
+  );
+
+  test(
+    'fetchDonors 直连全失败时如实失败，不会退到镜像拿一份「能显示」的名单',
+    () async {
+      final requestedHosts = <String>[];
+      final client = MockClient((request) async {
+        requestedHosts.add(request.url.host);
+        if (request.url.host == 'mirror.example.com') {
+          return http.Response(
+            jsonEncode({
+              'donors': [
+                {'name': 'Mirror Donor'},
+              ],
+            }),
+            200,
+          );
+        }
+        return http.Response('unavailable', 503);
+      });
+
+      final service = SupportCreatorService(client: client);
+      await expectLater(
+        service.fetchDonors(mirrorUrlPrefix: 'https://mirror.example.com/'),
+        throwsA(isA<Exception>()),
+      );
+      expect(requestedHosts, isNot(contains('mirror.example.com')));
     },
   );
 

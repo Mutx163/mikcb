@@ -193,10 +193,15 @@ class SupportCreatorService {
       }
     }
 
+    // 捐赠名单是**展示型 JSON**，没有摘要校验链：镜像能整份替换它（名单是
+    // 谁、写了什么），用户在「支持创作者」页看到的就变成镜像喂的内容。
+    // 与更新清单同一口径（2026-10-19）：只允许官方直连主机回答，
+    // 镜像加速留给真正需要带宽的 APK/图片字节流。GitCode 直连已在上面优先尝试，
+    // 拿不到时这里只剩 GitHub 直连一条候选。
     final candidateUrls = buildMirrorCandidateUrls(
       _donorsUrl,
       selectedMirrorPrefix: normalizedMirrorPrefix,
-    );
+    ).where(isOfficialDirectUrl).toList();
 
     appDebugLog(
       'SupportCreator',

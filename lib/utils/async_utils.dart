@@ -179,11 +179,12 @@ const List<String> officialManifestUrlHosts = [
   'gitcode.com',
 ];
 
-/// 校验更新清单 URL 是否为官方直连主机（不含任何镜像）。
+/// 校验 URL 是否为官方直连主机（GitHub / GitCode，不含任何镜像）。
 ///
-/// 与 [isTrustedApkDownloadUrl] 的区别：不接受镜像前缀与用户自填前缀；
-/// loopback 测试豁免同样适用（自动化测试用本地 HTTP 服务当清单源）。
-bool isTrustedManifestUrl(String url) {
+/// 用于「内容会被展示或决定行为」的 JSON：更新清单、捐赠者名单这类数据不该
+/// 由镜像回答（镜像对响应有完全控制权，可整份替换）。loopback 测试豁免同样
+/// 适用（自动化测试用本地 HTTP 服务当数据源）。
+bool isOfficialDirectUrl(String url) {
   final uri = Uri.tryParse(url);
   if (uri == null) {
     return false;
@@ -210,3 +211,10 @@ bool isTrustedManifestUrl(String url) {
   }
   return false;
 }
+
+/// 校验更新清单 URL 是否为官方直连主机（不含任何镜像）。
+///
+/// 与 [isTrustedApkDownloadUrl] 的区别：不接受镜像前缀与用户自填前缀；
+/// 语义等价于 [isOfficialDirectUrl]，保留本名是因为调用点都在更新链路里、
+/// 读起来更直白。
+bool isTrustedManifestUrl(String url) => isOfficialDirectUrl(url);
