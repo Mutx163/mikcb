@@ -1221,6 +1221,16 @@ enum WebdavAutoUploadDecision {
 
   /// Remote changed by another client — do not PUT.
   remoteDrifted,
+
+  /// 本地快照已经**没有用户数据**，而上一次成功上传的那份**有** —— 不 PUT。
+  ///
+  /// 典型场景：本地课表被误覆盖/清空后，任意一次保存都会触发 3 秒防抖自动上传，
+  /// 把云端最后一份好数据顶成空壳（拉取侧对「本机没有用户数据」早就有保护，
+  /// 上传侧此前没有）。这不是从用户视角可解释的「同步」，而是数据丢失。
+  ///
+  /// 用户如果**就是想**把「清空后的状态」推上云，仍可走手动备份（force 档），
+  /// 本条只拦后台自动上传。
+  localDataEmpty,
 }
 
 WebdavAutoUploadDecision decideWebdavAutoUpload({
@@ -1228,6 +1238,8 @@ WebdavAutoUploadDecision decideWebdavAutoUpload({
   required String? lastAppliedRemoteHash,
   required String? lastUploadedLocalHash,
   required String localContentSha256,
+  required bool localHasUserAuthoredData,
+  bool? lastUploadedHadUserData,
 }) {
   final remoteHash = remoteContentSha256?.trim();
   if (remoteHash == null || remoteHash.isEmpty) {
@@ -1235,6 +1247,11 @@ WebdavAutoUploadDecision decideWebdavAutoUpload({
   }
   if (remoteHash == localContentSha256) {
     return WebdavAutoUploadDecision.upToDate;
+  }
+  // 先判「本地掉空」再判基线：两者同时成立时，报「空数据」比报「允许上传」
+  // 更有信息量，也避免守卫被后续基线逻辑覆盖。
+  if (!localHasUserAuthoredData && lastUploadedHadUserData == true) {
+    return WebdavAutoUploadDecision.localDataEmpty;
   }
   final matchesBaseline =
       remoteHash == lastAppliedRemoteHash ||

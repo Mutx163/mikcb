@@ -31,6 +31,18 @@ class WebdavSyncConfig {
   final int maxBackupAgeDays;
   final bool manualBackupProtected;
 
+  /// 上一次**成功上传**的快照里是否含用户亲手沉淀的数据（课程/任务/考试等）。
+  ///
+  /// 自动上传侧的「本地空数据守卫」靠它区分两种情况：
+  /// - 「本来就没有用户数据」（例如只改过设置的用户）——以前传的就是空壳，
+  ///   这次再传空壳不构成覆盖，不能拦；
+  /// - 「上次有、这次没了」——本地数据意外清空/被覆盖，自动上传会把云端最后
+  ///   一份好数据顶掉，必须拦。
+  ///
+  /// null 表示未知（旧版本配置，或从未成功上传过）：按「不能拦」处理，
+  /// 保持升级用户的既有行为。
+  final bool? lastUploadedHadUserData;
+
   const WebdavSyncConfig({
     this.enabled = false,
     this.provider = WebdavSyncProvider.jianguoyun,
@@ -44,6 +56,7 @@ class WebdavSyncConfig {
     this.maxBackupCount = defaultMaxBackupCount,
     this.maxBackupAgeDays = defaultMaxBackupAgeDays,
     this.manualBackupProtected = true,
+    this.lastUploadedHadUserData,
   });
 
   String get normalizedRemoteFolder {
@@ -112,6 +125,8 @@ class WebdavSyncConfig {
     int? maxBackupCount,
     int? maxBackupAgeDays,
     bool? manualBackupProtected,
+    bool? lastUploadedHadUserData,
+    bool clearLastUploadedHadUserData = false,
     bool clearLastSyncedAt = false,
     bool clearLastAppliedRemoteHash = false,
     bool clearLastUploadedLocalHash = false,
@@ -136,6 +151,9 @@ class WebdavSyncConfig {
       maxBackupAgeDays: maxBackupAgeDays ?? this.maxBackupAgeDays,
       manualBackupProtected:
           manualBackupProtected ?? this.manualBackupProtected,
+      lastUploadedHadUserData: clearLastUploadedHadUserData
+          ? null
+          : (lastUploadedHadUserData ?? this.lastUploadedHadUserData),
     );
   }
 
@@ -152,6 +170,7 @@ class WebdavSyncConfig {
     'maxBackupCount': maxBackupCount,
     'maxBackupAgeDays': maxBackupAgeDays,
     'manualBackupProtected': manualBackupProtected,
+    'lastUploadedHadUserData': lastUploadedHadUserData,
   };
 
   factory WebdavSyncConfig.fromJson(Map<String, dynamic> json) {
@@ -177,6 +196,11 @@ class WebdavSyncConfig {
           (json['maxBackupAgeDays'] as num?)?.toInt() ??
           defaultMaxBackupAgeDays,
       manualBackupProtected: json['manualBackupProtected'] as bool? ?? true,
+      // 类型不符按「未知」处理：旧配置没有这个键，未来手改坏了也不能把
+      // 上传守卫变成一个会误拦的开关。
+      lastUploadedHadUserData: json['lastUploadedHadUserData'] is bool
+          ? json['lastUploadedHadUserData'] as bool
+          : null,
     );
   }
 }

@@ -306,6 +306,8 @@ class WebdavSyncService {
           lastAppliedRemoteHash: config.lastAppliedRemoteHash,
           lastUploadedLocalHash: config.lastUploadedLocalHash,
           localContentSha256: snapshot.contentSha256,
+          localHasUserAuthoredData: snapshot.hasUserAuthoredData,
+          lastUploadedHadUserData: config.lastUploadedHadUserData,
         );
         switch (decision) {
           case WebdavAutoUploadDecision.allow:
@@ -316,6 +318,19 @@ class WebdavSyncService {
             return const WebdavSyncResult(
               kind: WebdavSyncResultKind.cancelled,
               message: 'local_changes_pending_sync',
+            );
+          case WebdavAutoUploadDecision.localDataEmpty:
+            // 本地数据掉了、云端还是上次那份有数据的好快照：**静默不传**。
+            // 不给 UI 文案（后台同步本来就不弹东西，且加了码要牵六语言 arb），
+            // 但要留一条日志：用户报「云端被我本机覆盖成空」时能查到这一刻。
+            await AppLogService.instance.warn(
+              'webdav_auto_upload_blocked_local_empty',
+              'auto upload skipped: the local snapshot has no user-authored '
+                  'data while the last uploaded snapshot had some '
+                  '(remote=${initialRemoteMeta.meta?.contentSha256})',
+            );
+            return const WebdavSyncResult(
+              kind: WebdavSyncResultKind.cancelled,
             );
         }
       }
@@ -361,6 +376,9 @@ class WebdavSyncService {
             lastSyncedAt: DateTime.now(),
             lastAppliedRemoteHash: snapshot.contentSha256,
             lastUploadedLocalHash: snapshot.contentSha256,
+            // 记下这份包里到底有没有用户数据：下一次自动上传靠它判断
+            // 「本地是不是从有到无」，避免空快照覆盖云端好数据。
+            lastUploadedHadUserData: snapshot.hasUserAuthoredData,
           ),
         );
       }

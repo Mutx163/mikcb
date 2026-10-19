@@ -72,6 +72,7 @@ void main() {
         lastAppliedRemoteHash: 'other',
         lastUploadedLocalHash: 'baseline',
         localContentSha256: 'local-new',
+        localHasUserAuthoredData: true,
       ),
       WebdavAutoUploadDecision.allow,
     );
@@ -84,6 +85,7 @@ void main() {
         lastAppliedRemoteHash: 'baseline',
         lastUploadedLocalHash: 'baseline',
         localContentSha256: 'local-new',
+        localHasUserAuthoredData: true,
       ),
       WebdavAutoUploadDecision.remoteDrifted,
     );
@@ -96,6 +98,7 @@ void main() {
         lastAppliedRemoteHash: 'old',
         lastUploadedLocalHash: 'old',
         localContentSha256: 'same',
+        localHasUserAuthoredData: true,
       ),
       WebdavAutoUploadDecision.upToDate,
     );
@@ -108,6 +111,91 @@ void main() {
         lastAppliedRemoteHash: null,
         lastUploadedLocalHash: null,
         localContentSha256: 'local',
+        localHasUserAuthoredData: true,
+      ),
+      WebdavAutoUploadDecision.allow,
+    );
+  });
+
+  // ── 本地空数据守卫（2026-10-19）────────────────────────────────────
+  // 拉取侧早就有「本机没有用户数据就别乱覆盖」的保护，上传侧此前没有：
+  // 本地课表被误覆盖/清空后，任意一次保存都会触发防抖自动上传，把云端最后
+  // 一份好数据顶成空壳。守卫只在「上次传的有数据、这次没有」时生效。
+
+  test(
+    'auto upload blocks when local lost user data but cloud still has some',
+    () {
+      expect(
+        decideWebdavAutoUpload(
+          remoteContentSha256: 'baseline-with-courses',
+          lastAppliedRemoteHash: 'baseline-with-courses',
+          lastUploadedLocalHash: 'baseline-with-courses',
+          localContentSha256: 'local-empty',
+          localHasUserAuthoredData: false,
+          lastUploadedHadUserData: true,
+        ),
+        WebdavAutoUploadDecision.localDataEmpty,
+      );
+    },
+  );
+
+  test('auto upload still allows settings-only users (never had user data)', () {
+    expect(
+      decideWebdavAutoUpload(
+        remoteContentSha256: 'baseline-settings-only',
+        lastAppliedRemoteHash: 'baseline-settings-only',
+        lastUploadedLocalHash: 'baseline-settings-only',
+        localContentSha256: 'local-settings-changed',
+        localHasUserAuthoredData: false,
+        lastUploadedHadUserData: false,
+      ),
+      WebdavAutoUploadDecision.allow,
+    );
+  });
+
+  test(
+    'auto upload allows when the previous upload flag is unknown (upgrade)',
+    () {
+      // 旧版本配置没有这个键（默认 null = 未知）：按「不能拦」处理，
+      // 不让升级用户在一次判不清的状态里突然同步失败。
+      expect(
+        decideWebdavAutoUpload(
+          remoteContentSha256: 'baseline',
+          lastAppliedRemoteHash: 'baseline',
+          lastUploadedLocalHash: 'baseline',
+          localContentSha256: 'local-empty',
+          localHasUserAuthoredData: false,
+        ),
+        WebdavAutoUploadDecision.allow,
+      );
+    },
+  );
+
+  test('empty local still reports upToDate when remote already matches', () {
+    // 云端已经是这份空快照（例如用户手动备份过一次空状态）：不 PUT、
+    // 也不该报「本地掉了」，upToDate 更准确。
+    expect(
+      decideWebdavAutoUpload(
+        remoteContentSha256: 'local-empty',
+        lastAppliedRemoteHash: 'old',
+        lastUploadedLocalHash: 'old',
+        localContentSha256: 'local-empty',
+        localHasUserAuthoredData: false,
+        lastUploadedHadUserData: true,
+      ),
+      WebdavAutoUploadDecision.upToDate,
+    );
+  });
+
+  test('empty local is allowed when there is no remote to protect', () {
+    expect(
+      decideWebdavAutoUpload(
+        remoteContentSha256: null,
+        lastAppliedRemoteHash: null,
+        lastUploadedLocalHash: null,
+        localContentSha256: 'local-empty',
+        localHasUserAuthoredData: false,
+        lastUploadedHadUserData: true,
       ),
       WebdavAutoUploadDecision.allow,
     );

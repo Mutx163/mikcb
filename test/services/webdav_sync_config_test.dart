@@ -73,6 +73,7 @@ void main() {
         maxBackupCount: 9,
         maxBackupAgeDays: 14,
         manualBackupProtected: false,
+        lastUploadedHadUserData: true,
       );
 
       final restored = WebdavSyncConfig.fromJson(original.toJson());
@@ -89,6 +90,17 @@ void main() {
       expect(restored.maxBackupCount, 9);
       expect(restored.maxBackupAgeDays, 14);
       expect(restored.manualBackupProtected, isFalse);
+      expect(restored.lastUploadedHadUserData, isTrue);
+    });
+
+    test('lastUploadedHadUserData 非 bool 按未知处理，不误拦自动上传', () {
+      final restored = WebdavSyncConfig.fromJson(const {
+        'lastUploadedHadUserData': 'yes',
+      });
+      expect(restored.lastUploadedHadUserData, isNull);
+
+      final missing = WebdavSyncConfig.fromJson(const {});
+      expect(missing.lastUploadedHadUserData, isNull);
     });
 
     test('fromJson uses defaults for unknown enums and missing fields', () {
@@ -115,12 +127,14 @@ void main() {
         lastSyncedAt: DateTime.utc(2026, 7),
         lastAppliedRemoteHash: 'a',
         lastUploadedLocalHash: 'b',
+        lastUploadedHadUserData: true,
       );
 
       final cleared = original.copyWith(
         clearLastSyncedAt: true,
         clearLastAppliedRemoteHash: true,
         clearLastUploadedLocalHash: true,
+        clearLastUploadedHadUserData: true,
         enabled: true,
       );
 
@@ -128,6 +142,7 @@ void main() {
       expect(cleared.lastSyncedAt, isNull);
       expect(cleared.lastAppliedRemoteHash, isNull);
       expect(cleared.lastUploadedLocalHash, isNull);
+      expect(cleared.lastUploadedHadUserData, isNull);
     });
   });
 
