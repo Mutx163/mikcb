@@ -25,9 +25,9 @@ void main() {
     // 搬进 widgets/timetable/，并清掉 2 个失效 import 与 5 个尾部空行，
     // 主文件降到 7693；随后星期栏指示条（净 -121）、回本周浮钮（净 -160）、
     // 回今日浮钮（净 -142）、星期栏本体（净 -310）、玻璃坞（净 -291）、
-    // 剩余库级类（净 -169）先后搬出 → 6500。
-    // 下一次目标（build 期 chrome / 弹层）预计可再降至 ~6000。
-    const baselineLines = 6500;
+    // 剩余库级类（净 -169）、build 期 chrome 解析（净 -126）先后搬出 → 6374。
+    // 下一次目标（顶栏 chrome / 弹层）预计可再降至 ~5800。
+    const baselineLines = 6374;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),

@@ -37,7 +37,6 @@ import '../models/class_reminder.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/schedule_item.dart';
-import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../domain/clock_order.dart';
 import '../domain/couple_timetable_logic.dart';
@@ -61,6 +60,7 @@ import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
 import '../utils/home_wallpaper_luminance_share.dart';
 import '../utils/luminance_sample_gate.dart';
+import '../ui/home/home_chrome_spec.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
     show LiquidGlassSurface, LiquidGlassSurfaceState;
 import '../widgets/course_action_sheet.dart';
@@ -700,7 +700,6 @@ class _TimetableScreenState extends State<TimetableScreen>
         _syncWeekPageWithProvider(provider.currentWeek, provider.settings);
         _syncScreenshotListener(provider.settings);
         final colorScheme = Theme.of(context).colorScheme;
-        final foruiTheme = context.theme;
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final darkFallback = colorScheme.surface;
         final settings = provider.settings;
@@ -713,82 +712,30 @@ class _TimetableScreenState extends State<TimetableScreen>
           settings,
           viewportSize: viewportSize,
         );
-        final glassDockForm =
-            settings.homeNavigationForm == HomeNavigationForm.glassDock;
-        final hasBackdrop = hasHomePageBackdrop(settings);
-        final statusBarShowsBackdrop = homePageRegionShowsBackdrop(
-          settings,
-          HomePageBackgroundScope.statusBar,
-        );
-        final timetableShowsBackdrop = homePageRegionShowsBackdrop(
-          settings,
-          HomePageBackgroundScope.timetable,
-        );
-        final pageBackgroundColor = resolveHomePageBackgroundColor(
+        final chrome = resolveHomeChromeSpec(
+          context: context,
           settings: settings,
           isDark: isDark,
           darkFallback: darkFallback,
-        );
-        final timetableBackground = resolveHomePageRegionBackground(
-          settings: settings,
-          isDark: isDark,
-          darkFallback: darkFallback,
-          region: HomePageBackgroundScope.timetable,
-        );
-        final headerShowsBackdrop = homePageRegionShowsBackdrop(
-          settings,
-          HomePageBackgroundScope.header,
-        );
-        // 模糊管线总闸（用户「实体卡片」档关掉总开关 / 系统降级 / 平台不支持）。
-        // 液态 / 磨砂带在管线不在时降级为实心条（HomePageChromeGlassFill），
-        // 下面三个墨色 / 背景判据都要知道这件事。
-        final backdropBlurOn =
-            hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context);
-        final headerUsesFrostedChrome = homePageHeaderUsesFrostedChrome(
-          settings: settings,
-          hasBackdrop: hasBackdrop,
-          headerShowsBackdrop: headerShowsBackdrop,
-          blurPipelineOn: backdropBlurOn,
-        );
-        final headerBackground = resolveHomePageHeaderBackground(
-          settings: settings,
-          hasBackdrop: hasBackdrop,
-          headerShowsBackdrop: headerShowsBackdrop,
-          blurPipelineOn: backdropBlurOn,
-          isDark: isDark,
-          darkFallback: darkFallback,
-        );
-        final headerBarColor = headerBackground.color;
-        // 带子「要不要上屏」与「是不是玻璃」是两个问题（真机 2026-09-30 修）：
-        // 实体档不采样（组捕获 / 预模糊位图都不需要，见下面 `continuousChromeBlur`），
-        // 但**要画** —— 那条不透明实心条是星期栏唯一的底色，星期栏自己那份区域底色
-        // 在玻璃开着时会让成全透明（日视图的星期栏更是自己一点底色都不画）。不画它
-        // 就是「标题实心、星期栏直接透出壁纸」。
-        final chromeBandPaints = homePageChromeBandPaints(
-          settings,
-          hasBackdrop: hasBackdrop,
-        );
-        final scaffoldBackgroundColor = timetableShowsBackdrop
-            ? Colors.transparent
-            : timetableBackground.color;
-        // The page's own background is transparent over wallpaper, so derive
-        // status-bar icon polarity from the sampled top band when available.
-        final systemOverlayBackground = resolveHomePageStatusBarBackground(
-          pageBackground: pageBackgroundColor,
-          // 实体档那条实心条会连状态栏一起盖住 ⇒ 状态栏不再透出壁纸，图标极性跟
-          // 页面底色走，否则浅底页面 + 深色壁纸会读成浅底白图标。
-          statusBarShowsBackdrop: homePageStatusBarOverWallpaper(
-            settings: settings,
-            statusBarShowsBackdrop: statusBarShowsBackdrop,
-            bandPaints: chromeBandPaints,
-            blurPipelineOn: backdropBlurOn,
-          ),
-          hasBackdrop: hasBackdrop,
-          isDark: isDark,
-          usesFrostedChrome: headerUsesFrostedChrome,
           wallpaperTopLuminance: _wallpaperTopLuminance,
         );
-
+        final glassDockForm = chrome.glassDockForm;
+        final hasBackdrop = chrome.hasBackdrop;
+        final statusBarShowsBackdrop = chrome.statusBarShowsBackdrop;
+        final pageBackgroundColor = chrome.pageBackgroundColor;
+        final headerUsesFrostedChrome = chrome.headerUsesFrostedChrome;
+        final headerBarColor = chrome.headerBarColor;
+        final chromeBandPaints = chrome.chromeBandPaints;
+        final scaffoldBackgroundColor = chrome.scaffoldBackgroundColor;
+        final systemOverlayBackground = chrome.systemOverlayBackground;
+        final chromeForeground = chrome.chromeForeground;
+        final chromeMutedForeground = chrome.chromeMutedForeground;
+        final chromeDotBorderColor = chrome.chromeDotBorderColor;
+        final followsWeekPager = chrome.followsWeekPager;
+        final continuousChromeBlur = chrome.continuousChromeBlur;
+        final useHomePreblur = chrome.useHomePreblur;
+        final homePreblurSigma = chrome.homePreblurSigma;
+        final courseCardPreblurSigma = chrome.courseCardPreblurSigma;
         _scheduleWallpaperLuminanceSampleIfNeeded(
           settings,
           viewportSize: viewportSize,
@@ -800,27 +747,14 @@ class _TimetableScreenState extends State<TimetableScreen>
             _maybeWarnWeekdayInkContrast(provider, settings);
           }
         });
-        final chromeForeground = _resolveHomeChromeForeground(
-          // Only flip by wallpaper luminance when the header band actually
-          // shows the wallpaper / frosted glass; with the scope toggled off it
-          // paints the opaque page background and must use the theme ink.
-          headerShowsWallpaper: headerUsesFrostedChrome,
-          themeForeground: foruiTheme.colors.foreground,
-        );
-        final chromeMutedForeground = hasBackdrop
-            ? homePageChromeMutedForeground(chromeForeground)
-            : foruiTheme.colors.mutedForeground;
         // 顶栏「更多」「爱心」的常驻玻璃球（[FHeaderActionBall]）。**必须画在
         // 采样宿主之外**（_wrapHomeWithTopMenu 的 Stack 里、Host 的兄弟层）：
         // 页内玻璃的采样快照录自捕获节点的图层，球若长在捕获子树里，它自己的
-        // 输出会被烘进下一次采样 —— 打开菜单时按钮被上游隐藏、快照是干净的，
+        // 输出会被烘进下一次采样 —— 打开菜单时按钮被上游隐藏，快照是干净的，
         // 关闭后按钮重绘即触发重采样，球就"变一次材质"并稳定在烘过自己一层
         // 的样子（2026-09-14 真机现象）。图标墨色见 [_chromeActionBallInk]；
         // 「更多」在菜单打开期间让位给弹窗自己的形变球（与真实按钮被
         // `contentHidden` 隐藏的窗口一致，见 ListenableBuilder）。
-        final chromeDotBorderColor = headerBarColor.a == 0
-            ? colorScheme.surface
-            : headerBarColor;
         final homeChromeBalls = [
           ListenableBuilder(
             listenable: _homeMenuAnchor,
@@ -845,54 +779,6 @@ class _TimetableScreenState extends State<TimetableScreen>
               ),
             ),
         ];
-        final followsWeekPager =
-            hasBackdrop && settings.homePageBackdropFollowsWeekPager;
-        // Keep the same frosted chrome band in day view. The weekday header
-        // already paints a transparent fill when blur is on; without this
-        // overlay the title/weekday chrome becomes fully clear over wallpaper.
-        final continuousChromeBlur = homePageHasAnyChromeBlur(
-          settings,
-          hasBackdrop: hasBackdrop,
-        );
-        // Cards fall back to solid when blur is off, so building the
-        // pre-blurred bitmap would decode and Gaussian-blur the whole
-        // wallpaper for nothing.（backdropBlurOn 已在带子判据前算好。）
-        // No wallpaper or no blur pipeline (global solid / degraded) ->
-        // cards render solid regardless of what the surface-style switch is
-        // set to; ink rules follow the same resolution.
-        final cardStyle = effectiveCourseCardSurfaceStyle(
-          settings,
-          gaussianBlurAvailable: backdropBlurOn,
-        );
-        // Gaussian cards sample the cached bitmap instead of a live
-        // BackdropFilter while the day-view shell is animating.
-        final useCoursePreblur = backdropBlurOn && cardStyle.isGlass;
-        // The day-view summary card is drawn from this same bitmap whenever
-        // the chrome band has glass — regardless of the course-card style.
-        // Without it the card's PreblurredWallpaperAlignedFill paints nothing
-        // and the card reads as transparent (bare wash over raw wallpaper).
-        final useHomePreblur =
-            useCoursePreblur || (backdropBlurOn && continuousChromeBlur);
-        // 共享纯函数解析，与启动预热器构造同一份 PreblurredWallpaperCache
-        // 键位（分支语义与原内联闭包一致）。
-        final dockAppearance = FrostedAppearanceScope.of(context);
-        final homePreblurSigma = resolveHomePreblurSigma(
-          gaussianCardsDrive: backdropBlurOn && cardStyle.isGlass,
-          // 预模糊位图服务的是首页玻璃带/摘要卡。顶栏材质是生效值（follow 已
-          // 解析），只有液态档吃液态调参的模糊量；磨砂带（frost）与实体都走
-          // 全局模糊强度，与启动预热器同判。
-          liquidGlassChrome: dockAppearance.homeBandGlassMaterial == 'liquid',
-          sheetBlurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-          liquidGlassTunedBlur:
-              (dockAppearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
-                  .blurSigma,
-        );
-        // 卡片那张位图走**卡片自己的**磨砂量（液态档才有；其它档退回 0 = 不烤）。
-        // 与上面那笔分开算，是本次「卡片独立材质」的核心：一处动不再两处变。
-        final courseCardPreblurSigma = resolveCourseCardPreblurSigma(
-          cardStyle: cardStyle,
-          cardTuning: settings.courseCardGlassTuning,
-        );
         // 与设置页课表预览完全同构的组采样结构：BackdropGroup 内先放全尺寸
         // UndimmedBackdropCapture（组内首个 filter 缓存整屏壁纸），chrome 玻璃
         // 带采样这份全尺寸背景。此前首页玻璃带只能采样自己 band bounds 的背
@@ -2646,18 +2532,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
   }
 
-  Color _resolveHomeChromeForeground({
-    required bool headerShowsWallpaper,
-    required Color themeForeground,
-  }) {
-    if (!headerShowsWallpaper) {
-      return themeForeground;
-    }
-    return homePageChromeForegroundForLuminance(
-      _wallpaperTopLuminance,
-      fallback: themeForeground,
-    );
-  }
 
   Widget _buildProfileSwitcherTrigger(
     TimetableProvider provider, {
