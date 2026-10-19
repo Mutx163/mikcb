@@ -278,6 +278,9 @@ class _FHeaderActionBallState extends State<FHeaderActionBall> {
           ),
         ),
         HyperosSelectPopupGlass(
+          // 常驻球与菜单面板共用 `glassPopup` 时，日志里分不出是谁在逐帧重画
+          // （2026-10-19 审计）。这颗球与菜单是两块不同的玻璃，单独记名。
+          probeName: 'glassBall',
           cornerRadius: MiuixIconButtonDefaults.minWidth / 2,
           // 这里原本要关掉上游柔光玻璃那圈「贴边加法白」高光（它在球上是零收益、
           // 纯副作用：纯色底上白叠白等于没画，有壁纸时贴边那层白一叠就顶到纯白，

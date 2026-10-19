@@ -189,7 +189,17 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     this.thicknessFactor,
     this.maxRefraction,
     this.surfaceShadow = false,
+    this.probeName = 'glassPopup',
   });
+
+  /// 诊断用层名（`[frame-perf] layers=名字:N`，见 `FramePerfProbe.noteLayerPaint`）。
+  ///
+  /// ⚠️ 默认值是全族**共用**的：这块玻璃至少被 7 处调用（首页菜单一级 / 二级面板、
+  /// 锚定菜单、选择弹层、列表弹层、**首页两颗常驻球**、底部弹窗）。共用名字在
+  /// 「谁在逐帧重画」这类问题上等于没测（2026-10-19 审计的结论，日志里
+  /// `layers=glassPopup:42` 分不出是菜单面板还是常驻球）。凡是能给出身份的
+  /// 调用点，都该传一个自己的名字。
+  final String probeName;
 
   final double cornerRadius;
   final Widget child;
@@ -263,7 +273,7 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     // 让位缩放由 GlassPopupLayout **布局级**缩小面板矩形完成（本地 fork）：
     // 玻璃按缩后尺寸画。这里不再包 AnimatedScale / forceCanvasBoard。
     final Widget body = LiquidGlassSurface(
-      probeName: 'glassPopup',
+      probeName: probeName,
       borderRadius: cornerRadius,
       role: LiquidGlassRole.pinnedChrome,
       grouped: useAncestorGroupCapture,
