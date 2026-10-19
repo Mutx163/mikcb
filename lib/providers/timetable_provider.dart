@@ -50,6 +50,7 @@ import '../services/user_data_sync_hooks.dart';
 import '../services/ics_import_service.dart';
 import '../services/timetable_exam_service.dart';
 import '../services/timetable_holiday_service.dart';
+import '../services/timetable_partner_service.dart';
 import '../services/timetable_theme_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/wallpaper_history_service.dart';
@@ -489,6 +490,7 @@ class TimetableProvider with ChangeNotifier {
   late final TimetableThemeService _themeService;
   late final TimetableExamService _examService;
   late final TimetableHolidayService _holidayDomainService;
+  late final TimetablePartnerService _partnerService;
 
   TimetableProvider({
     StorageService? storageService,
@@ -526,6 +528,7 @@ class TimetableProvider with ChangeNotifier {
     _holidayDomainService = TimetableHolidayService(
       _TimetableHolidayPort(this),
     );
+    _partnerService = TimetablePartnerService(_TimetablePartnerPort(this));
     _holidayService.onRemoteHolidayDataUpdated = (_) {
       unawaited(_loadHolidayData());
     };
@@ -4118,146 +4121,37 @@ class TimetableProvider with ChangeNotifier {
     unawaited(syncTemporalContext());
   }
 
+  // ---- 情侣课表 ----
+  //
+  // 导入 TA 课表/解绑、周偏移、三色与保存点恢复都在 [TimetablePartnerService]；
+  // 这里只留公开签名与一行委托。写入纪律（改内存 → await 落盘 → 失败整体退回
+  // 并上抛）与各方法的存在理由见服务方法注释。
+
   Future<PartnerImportResult> importPartnerTimetable(
     String content, {
     String? partnerName,
-  }) {
-    return _runMutation(() async {
-      await initialize();
-      final result = await _partnerTimetableService.importFromContent(
-        content,
-        partnerName: partnerName,
-      );
-      _profiles = await _profileRepository.loadProfiles();
-      _partnerBinding = result.binding;
-      notifyUserDataChangedForSync();
-      notifyListeners();
-      // TA 数据变了：绑定 TA 课表/情侣课表的桌面卡片立即重推专属快照，
-      // 不等下一次课程边界（scheduleSnapshot 与我方课表无关，跳过）。
-      unawaited(_updateLiveActivity(syncScheduleSnapshot: false));
-      return result;
-    });
-  }
+  }) => _partnerService.importPartnerTimetable(
+    content,
+    partnerName: partnerName,
+  );
 
-  Future<void> updatePartnerWeekOffset(int offset) {
-    // 与其他用户写入一致走 mutation 门：避免与云恢复/LAN 应用等
-    // 门内写者交错读写 _partnerBinding（check-then-act 竞态）。
-    return _runMutation(() async {
-      await initialize();
-      final binding = _partnerBinding;
-      if (binding == null) {
-        return;
-      }
-      final clamped = CoupleTimetableLogic.clampWeekOffset(offset);
-      if (clamped == binding.weekOffset) {
-        return;
-      }
-      // 情侣绑定一族（周偏移 / 三色 / 恢复保存点）同一条契约：改内存 → await 落盘 →
-      // 失败整体退回并上抛。`_runMutation` 只是互斥锁，原先三处都没有 try/catch ——
-      // 失败时内存留着没存下的绑定，下一次任意保存把它坐实，而界面报的是「保存失败」。
-      final previousBinding = _partnerBinding;
-      _partnerBinding = binding.copyWith(weekOffset: clamped);
-      try {
-        await _profileRepository.savePartnerTimetableBinding(_partnerBinding);
-      } catch (_) {
-        _partnerBinding = previousBinding;
-        rethrow;
-      }
-      notifyUserDataChangedForSync();
-      notifyListeners();
-      // 周偏移改变 TA 课的对应周次：情侣绑定卡片立即重推（同上跳过
-      // scheduleSnapshot）。
-      unawaited(_updateLiveActivity(syncScheduleSnapshot: false));
-    });
-  }
+  Future<void> updatePartnerWeekOffset(int offset) =>
+      _partnerService.updatePartnerWeekOffset(offset);
 
   Future<void> updatePartnerCoupleColors({
     String? mineColorHex,
     String? partnerColorHex,
     String? togetherColorHex,
-  }) {
-    // 同 updatePartnerWeekOffset：纳入 mutation 门串行化。
-    return _runMutation(() async {
-      await initialize();
-      final binding = _partnerBinding;
-      if (binding == null) {
-        return;
-      }
-      // 同 `updatePartnerWeekOffset`：失败整体退回。
-      final previousBinding = _partnerBinding;
-      _partnerBinding = binding.copyWith(
-        mineColorHex: mineColorHex,
-        partnerColorHex: partnerColorHex,
-        togetherColorHex: togetherColorHex,
-      );
-      try {
-        await _profileRepository.savePartnerTimetableBinding(_partnerBinding);
-      } catch (_) {
-        _partnerBinding = previousBinding;
-        rethrow;
-      }
-      notifyUserDataChangedForSync();
-      notifyListeners();
-      // 情侣三色改变 TA/一起课的着色：情侣绑定卡片立即重推。
-      unawaited(_updateLiveActivity(syncScheduleSnapshot: false));
-    });
-  }
+  }) => _partnerService.updatePartnerCoupleColors(
+    mineColorHex: mineColorHex,
+    partnerColorHex: partnerColorHex,
+    togetherColorHex: togetherColorHex,
+  );
 
-  /// 把情侣绑定写回保存点里那一份（导入撤销 / 自动回滚用）。
-  ///
-  /// 为什么需要单独一个入口：全量备份的 schema **不含**情侣绑定，而导入路径在恢复出的
-  /// 课表里找不到情侣档时会把它清掉并落盘（`import_export_service.dart:650-658`）。
-  /// 撤销时重新导入那份快照自然带不回绑定 —— 保存点里单独存了一份，由这里写回。
-  /// 传 null 表示「快照里本来就没有绑定」。
-  ///
-  /// 与 `updatePartnerWeekOffset` / `updatePartnerCoupleColors` 同一把门与落盘链路。
-  Future<void> restorePartnerBinding(PartnerTimetableBinding? binding) {
-    return _runMutation(() async {
-      await initialize();
-      if (_partnerBinding == binding) {
-        return;
-      }
-      // 同族（本方法就是本轮为「导入回滚」加的入口，所以更不能自己漏掉回滚）：
-      // 落盘失败要把内存退回原来那份绑定，否则「恢复失败」反而把绑定留在半路上。
-      final previousBinding = _partnerBinding;
-      _partnerBinding = binding;
-      try {
-        await _profileRepository.savePartnerTimetableBinding(binding);
-      } catch (_) {
-        _partnerBinding = previousBinding;
-        rethrow;
-      }
-      notifyUserDataChangedForSync();
-      notifyListeners();
-      unawaited(_updateLiveActivity(syncScheduleSnapshot: false));
-    });
-  }
+  Future<void> restorePartnerBinding(PartnerTimetableBinding? binding) =>
+      _partnerService.restorePartnerBinding(binding);
 
-  Future<void> unlinkPartner() {
-    return _runMutation(() async {
-      await initialize();
-      await _partnerTimetableService.unlink();
-      _profiles = await _profileRepository.loadProfiles();
-      _partnerBinding = null;
-      if (_activeProfileId == PartnerTimetableService.partnerProfileId) {
-        final fallback = _profiles
-            .where((profile) => !profile.isPartnerImported)
-            .firstOrNull;
-        if (fallback != null) {
-          _activeProfileId = fallback.id;
-          _applyProfileState(fallback);
-          _mergeActiveProfileIntoProfilesList();
-          await _profileRepository.saveProfiles(_profiles);
-          await _profileRepository.setActiveProfileId(fallback.id);
-          unawaited(_syncExamReminders());
-        }
-      }
-      notifyUserDataChangedForSync();
-      notifyListeners();
-      // TA 解绑：TA/情侣绑定卡片的专属快照随本次同步清理回落。
-      unawaited(_updateLiveActivity(syncScheduleSnapshot: false));
-    });
-  }
+  Future<void> unlinkPartner() => _partnerService.unlinkPartner();
 }
 
 /// 主题服务的宿主适配器：把 provider 的私有状态与统一写入口收成一个端口。
@@ -4408,4 +4302,85 @@ class _TimetableHolidayPort implements TimetableHolidayPort {
 
   @override
   void notifyStateChanged() => host._notifyStateChanged();
+}
+
+/// 情侣课表服务的宿主适配器：把绑定、档案列表、mutation 门、TA 课表
+/// 导入/解绑与绑定卡片重推收成一个端口。
+class _TimetablePartnerPort implements TimetablePartnerPort {
+  _TimetablePartnerPort(this.host);
+
+  final TimetableProvider host;
+
+  @override
+  PartnerTimetableBinding? get partnerBinding => host._partnerBinding;
+
+  @override
+  set partnerBinding(PartnerTimetableBinding? value) =>
+      host._partnerBinding = value;
+
+  @override
+  List<TimetableProfile> get profiles => host._profiles;
+
+  @override
+  String? get activeProfileId => host._activeProfileId;
+
+  @override
+  set activeProfileId(String? value) => host._activeProfileId = value;
+
+  @override
+  Future<void> initialize() => host.initialize();
+
+  @override
+  Future<T> runMutation<T>(Future<T> Function() operation) =>
+      host._runMutation(operation);
+
+  @override
+  Future<PartnerImportResult> importFromContent(
+    String content, {
+    String? partnerName,
+  }) => host._partnerTimetableService.importFromContent(
+    content,
+    partnerName: partnerName,
+  );
+
+  @override
+  Future<void> unlinkImport() => host._partnerTimetableService.unlink();
+
+  @override
+  Future<void> reloadProfilesFromStorage() async {
+    host._profiles = await host._profileRepository.loadProfiles();
+  }
+
+  @override
+  void applyProfileState(TimetableProfile profile) =>
+      host._applyProfileState(profile);
+
+  @override
+  void mergeActiveProfileIntoProfilesList() =>
+      host._mergeActiveProfileIntoProfilesList();
+
+  @override
+  Future<void> saveProfiles(List<TimetableProfile> profiles) =>
+      host._profileRepository.saveProfiles(profiles);
+
+  @override
+  Future<void> setActiveProfileId(String profileId) =>
+      host._profileRepository.setActiveProfileId(profileId);
+
+  @override
+  Future<void> savePartnerBinding(PartnerTimetableBinding? binding) =>
+      host._profileRepository.savePartnerTimetableBinding(binding);
+
+  @override
+  void notifySyncHooks() => notifyUserDataChangedForSync();
+
+  @override
+  void notifyStateChanged() => host._notifyStateChanged();
+
+  @override
+  void syncExamReminders() => unawaited(host._syncExamReminders());
+
+  @override
+  void pushPartnerLiveSurface() =>
+      unawaited(host._updateLiveActivity(syncScheduleSnapshot: false));
 }
