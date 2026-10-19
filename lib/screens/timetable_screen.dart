@@ -78,7 +78,6 @@ import '../widgets/home_top_menu.dart';
 import '../widgets/home_top_menu_popup.dart';
 import '../widgets/home_update_prompt.dart';
 import '../widgets/preblurred_wallpaper_glass.dart';
-import '../widgets/profile_quick_switch_sheet.dart';
 import '../widgets/timetable_home_preview_scope.dart';
 import '../widgets/week_selector_picker_sheet.dart';
 import '../widgets/timetable/timetable_back_to_current_week_button.dart';
@@ -92,6 +91,7 @@ import '../widgets/timetable/timetable_home_header.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
 import '../widgets/timetable/timetable_glass_dock.dart';
 import '../widgets/timetable/timetable_open_only_route.dart';
+import '../widgets/timetable/timetable_profile_quick_switch.dart';
 import '../widgets/timetable/timetable_weekday_ink_contrast_dialog.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
@@ -5808,40 +5808,18 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   Future<void> _showProfileQuickSwitchSheet() async {
     final provider = context.read<TimetableProvider>();
-    MiuixBottomSheetClose? closeSheet;
-    final selected = await showProfileQuickSwitchSheet(
+    final selected = await showTimetableProfileQuickSwitch(
       context,
-      // TA 课表是覆盖层叠加，不是切换对象；switchProfile 对它静默守卫，
-      // 列出来只会造成「点了没反应」。
-      profiles: provider.profiles
-          .where((profile) => !profile.isPartnerImported)
-          .toList(growable: false),
+      profiles: provider.profiles,
       activeProfileId: provider.activeProfileId,
-      closeRef: (close) => closeSheet = close,
-      onManageTimetables: (buttonContext) {
-        // MiuixWindowBottomSheet 的内容挂在根 Overlay 上，buttonContext
-        // 拿不到原来的 ModalRoute；不能靠猜路由来收弹层。记录源按钮的位置，
-        // 让 close(immediate:) 先摘掉根 Overlay 条目，再用首页 context 推页。
-        final sourceRect = _popupActionSourceRect(buttonContext);
-        final close = closeSheet;
-        if (close == null) {
-          return;
-        }
-        final hostContext = context;
-        close(
-          immediate: true,
-          afterDismiss: () {
-            if (!mounted || !hostContext.mounted) {
-              return;
-            }
-            _openPopupActionPage(
-              hostContext,
-              pageBuilder: (_) => const TimetableProfilesScreen(),
-              sourceRect: sourceRect,
-            );
-          },
-        );
-      },
+      popupSourceRect: _popupActionSourceRect,
+      // 弹层内容在根 Overlay 上，buttonContext 拿不到原路由 —— 先立即摘掉旧
+      // 面板，再用仍然挂载的宿主 context 推管理页（细节见 widget 文件）。
+      openManagePage: (hostContext, sourceRect) => _openPopupActionPage(
+        hostContext,
+        pageBuilder: (_) => const TimetableProfilesScreen(),
+        sourceRect: sourceRect,
+      ),
     );
 
     if (!mounted || selected == null) {
