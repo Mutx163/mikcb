@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
-import 'dart:ui' as ui;
 import 'dart:math' as math;
 
 // OpenContainer 用 vendored 优化版(lib/widgets/open_container.dart):
@@ -81,12 +80,15 @@ import '../widgets/timetable/timetable_back_to_current_week_button.dart';
 import '../widgets/timetable/timetable_back_to_today_button.dart';
 import '../widgets/timetable/timetable_course_action_items.dart';
 import '../widgets/timetable/timetable_course_sheet_actions.dart';
+import '../widgets/timetable/timetable_week_page_body.dart';
 import '../widgets/timetable/timetable_weekday_header.dart';
+import '../widgets/timetable/timetable_day_view_shared_free_summary.dart';
 import '../widgets/timetable/timetable_day_agenda_models.dart';
 import '../widgets/timetable/timetable_home_action_button.dart';
 import '../widgets/timetable/timetable_day_pager_physics.dart';
 import '../widgets/timetable/timetable_empty_slot.dart';
 import '../widgets/timetable/timetable_home_header.dart';
+import '../widgets/timetable/timetable_home_pull_indicator.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
 import '../widgets/timetable/timetable_glass_dock.dart';
 import '../widgets/timetable/timetable_open_only_route.dart';
@@ -105,7 +107,6 @@ part 'timetable_update_download_part.dart';
 
 part 'timetable_day_view_part.dart';
 
-
 class TimetableScreen extends StatefulWidget {
   final bool enableUpdateCheck;
   final bool enableProgressTimer;
@@ -119,7 +120,6 @@ class TimetableScreen extends StatefulWidget {
   @override
   State<TimetableScreen> createState() => _TimetableScreenState();
 }
-
 
 class _TimetableScreenState extends State<TimetableScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
@@ -342,7 +342,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool _coupleOverlayEnabled = false;
   bool _sharedFreeSegmentsExpanded = false;
 
-  static const int _sharedFreeVisibleSegmentLimit = 2;
   static const Duration _partnerScheduleStaleAfter = Duration(days: 7);
 
   /// Finger travel (after resistance) required to fire quick import.
@@ -886,7 +885,15 @@ class _TimetableScreenState extends State<TimetableScreen>
                                 ),
                                 if (_isHomePullQuickImportRunning ||
                                     _homePullDragDistance > 0)
-                                  _buildHomePullQuickImportIndicator(l10n),
+                                  TimetableHomePullQuickImportIndicator(
+                                    dragDistance: _homePullDragDistance,
+                                    triggerDistance:
+                                        _homePullQuickImportTriggerDistance,
+                                    isRunning: _isHomePullQuickImportRunning,
+                                    hasBackdrop: hasBackdrop,
+                                    onCancel: _cancelHomePullQuickImport,
+                                    l10n: l10n,
+                                  ),
                                 ValueListenableBuilder<int>(
                                   valueListenable: _visibleWeekListenable,
                                   builder: (context, visibleWeek, child) {
@@ -2448,7 +2455,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
   }
 
-
   Widget _buildProfileSwitcherTrigger(
     TimetableProvider provider, {
     required Color foreground,
@@ -2534,8 +2540,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       ),
     );
   }
-
-
 
   Widget _buildTimetableGrid(
     TimetableProvider provider,
@@ -2716,168 +2720,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
 
     return surface;
-  }
-
-  Widget _buildHomePullQuickImportIndicator(AppLocalizations l10n) {
-    final pullProgress =
-        (_homePullDragDistance / _homePullQuickImportTriggerDistance).clamp(
-          0.0,
-          1.0,
-        );
-    // Show label a bit earlier so the pill never looks like a lone spinner.
-    final showLabel =
-        _isHomePullQuickImportRunning ||
-        _homePullDragDistance >= _homePullQuickImportTriggerDistance * 0.45;
-    const indicatorTopInset = TimetableWeekdayHeader.height + 8;
-    // Subtle follow — 11px max, eased, not the previous 27px linear slide.
-    final followY = () {
-      if (_isHomePullQuickImportRunning) return 0.0;
-      final d = _homePullDragDistance;
-      const cap = 32.0;
-      if (d <= cap) return d * 0.34;
-      return cap * 0.34 + (d - cap) * 0.06;
-    }();
-    final eased = Curves.easeOutCubic.transform(pullProgress);
-    final scale = _isHomePullQuickImportRunning
-        ? 1.0
-        : (0.92 + eased * 0.08).clamp(0.92, 1.0);
-    // Fade from 0 so the pill doesn't flash at tiny drags.
-    final opacity = _isHomePullQuickImportRunning ? 1.0 : eased.clamp(0.0, 1.0);
-    // Don't build the pill at all when fully transparent to avoid hit-test.
-    if (!_isHomePullQuickImportRunning && pullProgress < 0.02) {
-      return const SizedBox.shrink();
-    }
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final pill = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-      decoration: BoxDecoration(
-        color:
-            (isDark
-                    ? HyperosMiuixDarkColors.surfaceContainerHigh
-                    : HyperosMiuixLightColors.surfaceContainer)
-                .withValues(alpha: isDark ? 0.88 : 0.92),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: (isDark ? Colors.white : HyperosMiuixLightColors.outline)
-              .withValues(alpha: isDark ? 0.10 : 0.14),
-          width: 0.6,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.10),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.10 : 0.05),
-            blurRadius: 36,
-            offset: const Offset(0, 16),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: _isHomePullQuickImportRunning
-                ? const MiuixCircularProgressIndicator(
-                    size: 16,
-                    strokeWidth: 1.9,
-                  )
-                : MiuixCircularProgressIndicator(
-                    progress: pullProgress.clamp(0.0, 1.0),
-                    size: 16,
-                    strokeWidth: 1.9,
-                  ),
-          ),
-          if (showLabel) ...[
-            const SizedBox(width: 10),
-            Text(
-              l10n.homePullQuickImportFetchingCourses,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: HyperosColors.primaryText(context),
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.1,
-              ),
-            ),
-          ],
-          if (_isHomePullQuickImportRunning) ...[
-            const SizedBox(width: 10),
-            Container(
-              width: 0.8,
-              height: 14,
-              color: HyperosColors.dividerLine(context),
-            ),
-            const SizedBox(width: 10),
-            Material(
-              type: MaterialType.transparency,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(999),
-                onTap: _cancelHomePullQuickImport,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  child: Text(
-                    l10n.quickImportCancelImportAction,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: HyperosColors.primary(context),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-
-    // Frosted glass when a wallpaper is behind the grid, otherwise the solid
-    // Miuix card above. Keep the blur cheap: single BackdropFilter on the pill
-    // only, not the whole page.
-    final hasBackdrop = hasHomePageBackdrop(
-      context.read<TimetableProvider>().settings,
-    );
-    final decoratedPill = hasBackdrop
-        ? ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: BackdropFilter(
-              // ⚠️ `tileMode: clamp` 必须给：默认 decal 会让模糊结果在离边约 3σ
-              // 的带里淡成透明黑，而这张圆角药丸的边是可见的 —— 那一圈会读成
-              // 一圈深色描边。同款规则与修法见 `liquid_glass_surface.dart`。
-              filter: ui.ImageFilter.blur(
-                sigmaX: 14,
-                sigmaY: 14,
-                tileMode: ui.TileMode.clamp,
-              ),
-              child: pill,
-            ),
-          )
-        : pill;
-
-    return Positioned(
-      top: indicatorTopInset,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Transform.translate(
-          offset: Offset(0, followY),
-          child: Transform.scale(
-            scale: scale,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOutCubic,
-              opacity: opacity,
-              child: decoratedPill,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   /// 首页纵向滚动体统一使用的 physics：下拉开着时冻结（见
@@ -3399,7 +3241,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                 region: HomePageBackgroundScope.timetable,
               ),
               child: _buildWeekPageBody(
-                provider: provider,
                 settings: settings,
                 week: week,
                 grid: grid,
@@ -3412,73 +3253,21 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Widget _buildWeekPageBody({
-    required TimetableProvider provider,
     required TimetableSettings settings,
     required int week,
     required Widget grid,
   }) {
-    // 玻璃坞满屏悬浮：网格视口不避让、铺到药丸底下——静止时最后几节
-    // 停在药丸后面；给纵向滚动补一段底部余量，上滑把课表整体滑上来、
-    // 被遮的课程完全露到药丸上方，下滑再让药丸盖回内容。自适应与非自
-    // 适应在此统一（自适应网格同样可滚）。经典形态无坞（余量为 0），
-    // 保持原样：自适应恰满视口不滚，非自适应维持原滚动结构。
-    final weekGridScrollRelief = _glassDockContentScrollInset(settings);
-    // 预览那份要按宿主给的滚动位置起步（见 [_previewControllerFor]）。
-    final weekScrollKey = _weekGridScrollKey(week);
-    final weekScrollController = _previewControllerFor(weekScrollKey);
-    final Widget weekGrid;
-    if (weekGridScrollRelief > 0) {
-      weekGrid = _reportHomeScroll(
-        weekScrollKey,
-        SingleChildScrollView(
-          key: PageStorageKey<String>(weekScrollKey),
-          controller: weekScrollController,
-          // Explicit clamp: do not inherit HyperOS rubber-band here.
-          // 下拉开着时冻结纵向滚动（见 TimetableHomePullFreezeScrollPhysics）：
-          // 回拉取消只收下拉，不把列表一起滚走。
-          physics: _homePullVerticalPhysics,
-          child: Padding(
-            padding: EdgeInsets.only(bottom: weekGridScrollRelief),
-            child: grid,
-          ),
-        ),
-      );
-    } else if (settings.timetableAutoFitSectionHeight) {
-      weekGrid = grid;
-    } else {
-      weekGrid = _reportHomeScroll(
-        weekScrollKey,
-        SingleChildScrollView(
-          key: PageStorageKey<String>(weekScrollKey),
-          controller: weekScrollController,
-          // 下拉开着时冻结纵向滚动（见 TimetableHomePullFreezeScrollPhysics）：
-          // 回拉取消只收下拉，不把列表一起滚走。
-          physics: _homePullVerticalPhysics,
-          child: grid,
-        ),
-      );
-    }
-    // Drive opacity from the expand controller so open and close share the
-    // same curve. A boolean AnimatedOpacity snaps the grid away on open while
-    // the panel still grows, which reads as "open has no transition".
-    return AnimatedBuilder(
-      animation: _dayViewExpandController,
-      child: weekGrid,
-      builder: (context, child) {
-        final gridOpacity = (1.0 - _dayViewExpandController.value).clamp(
-          0.0,
-          1.0,
-        );
-        return IgnorePointer(
-          ignoring: gridOpacity < 0.02,
-          child: Opacity(
-            // At 0 RenderOpacity skips painting the subtree, so day-view glass
-            // samples wallpaper instead of a ghost grid.
-            opacity: gridOpacity,
-            child: child,
-          ),
-        );
-      },
+    final scrollRelief = _glassDockContentScrollInset(settings);
+    final scrollKey = _weekGridScrollKey(week);
+    return TimetableWeekPageBody(
+      grid: grid,
+      scrollRelief: scrollRelief,
+      autoFit: settings.timetableAutoFitSectionHeight,
+      scrollKey: scrollKey,
+      controller: _previewControllerFor(scrollKey),
+      physics: _homePullVerticalPhysics,
+      expandAnimation: _dayViewExpandController,
+      reportScroll: _reportHomeScroll,
     );
   }
 
@@ -3557,55 +3346,15 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-  Widget _buildSharedFreeTimeChip({
-    required String label,
-    required Color accent,
-  }) {
-    final foruiTheme = context.theme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: foruiTheme.typography.body.xs.copyWith(
-          color: accent,
-          fontWeight: FontWeight.w400,
-        ),
-      ),
-    );
-  }
   Widget _buildDayViewSharedFreeSummary({
     required TimetableProvider provider,
     required TimetableSettings settings,
     required int week,
     required int dayOfWeek,
     required bool isToday,
-    // 摘要卡当前材质的墨色极性（玻璃下随壁纸自动黑白）。嵌套的空闲面板
-    // 与其中的文字必须跟母卡同极性，而不是主题 onSurface：高斯模糊档下
-    // 母卡是亮磨砂玻璃，主题墨色可能与实际卡面对比不足。
     required Color ink,
   }) {
-    final l10n = AppLocalizations.of(context)!;
     final foruiTheme = context.theme;
-    // #4CAF50 是中明度绿，直接当文字色在透壁纸的浅色卡面上对比不足
-    // 2.8:1（亮粉壁纸上更低）。「共 N 段」徽标、时间胶囊与展开按钮的
-    // 文字和底洗统一走按母卡墨色极性调出的可读变体（浅卡压暗/深卡提亮）。
     final freeAccent = readableAccentOnCardInk(
       _colorFromHex(
         CoupleTimetableLogic.freeSlotColorHex,
@@ -3613,161 +3362,25 @@ class _TimetableScreenState extends State<TimetableScreen>
       ),
       ink,
     );
-    final isStale = _isPartnerScheduleStale(provider);
-    final title = isToday
-        ? l10n.coupleTimetableSharedFreeTitle
-        : l10n.coupleTimetableSharedFreeTitleOtherDay;
-    final emptyLabel = isToday
-        ? l10n.coupleTimetableNoSharedFree
-        : l10n.coupleTimetableNoSharedFreeOtherDay;
-    final mutedStyle = foruiTheme.typography.body.xs2.copyWith(
-      color: ink.withValues(alpha: 0.62),
-      fontWeight: FontWeight.w400,
-      height: 1.25,
-    );
-
-    final intervals = _sharedFreeIntervalsForDayView(
-      provider: provider,
-      settings: settings,
-      week: week,
-      dayOfWeek: dayOfWeek,
-    );
-
-    if (intervals.isEmpty) {
-      return _buildSharedFreeSummaryShell(
-        key: const ValueKey('shared-free-summary-empty'),
-        ink: ink,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: foruiTheme.typography.body.sm.copyWith(
-                color: ink,
-                fontWeight: FontWeight.w400,
-                height: 1.2,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(emptyLabel, style: mutedStyle),
-            if (isStale) ...[
-              const SizedBox(height: 4),
-              Text(l10n.coupleTimetableSharedFreeStaleHint, style: mutedStyle),
-            ],
-          ],
-        ),
-      );
-    }
-
-    final visibleLimit = _sharedFreeSegmentsExpanded
-        ? intervals.length
-        : math.min(_TimetableScreenState._sharedFreeVisibleSegmentLimit, intervals.length);
-    final visibleIntervals = intervals.take(visibleLimit).toList();
-    final hiddenCount = intervals.length - visibleIntervals.length;
-
-    return _buildSharedFreeSummaryShell(
-      key: const ValueKey('shared-free-summary'),
-      ink: ink,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: foruiTheme.typography.body.sm.copyWith(
-                    color: ink,
-                    fontWeight: FontWeight.w400,
-                    height: 1.2,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: freeAccent.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Text(
-                  l10n.coupleTimetableSharedFreeMeta(intervals.length),
-                  style: foruiTheme.typography.body.xs2.copyWith(
-                    color: freeAccent,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (final interval in visibleIntervals)
-                _buildSharedFreeTimeChip(
-                  label: CoupleTimetableLogic.formatMinuteInterval(interval),
-                  accent: freeAccent,
-                ),
-              if (hiddenCount > 0)
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    key: const ValueKey('shared-free-expand-button'),
-                    onTap: () {
-                      setState(() {
-                        _sharedFreeSegmentsExpanded = true;
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(999),
-                    child: Ink(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: freeAccent.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        l10n.coupleTimetableSharedFreeMoreCount(hiddenCount),
-                        style: foruiTheme.typography.body.xs.copyWith(
-                          color: freeAccent,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          if (isStale) ...[
-            const SizedBox(height: 8),
-            Text(l10n.coupleTimetableSharedFreeStaleHint, style: mutedStyle),
-          ],
-        ],
+    return TimetableDayViewSharedFreeSummary(
+      intervals: _sharedFreeIntervalsForDayView(
+        provider: provider,
+        settings: settings,
+        week: week,
+        dayOfWeek: dayOfWeek,
       ),
+      isStale: _isPartnerScheduleStale(provider),
+      isToday: isToday,
+      ink: ink,
+      freeAccent: freeAccent,
+      expanded: _sharedFreeSegmentsExpanded,
+      onExpand: () {
+        setState(() {
+          _sharedFreeSegmentsExpanded = true;
+        });
+      },
     );
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   /// Progress snapped to ~0.4% steps (≈1.5 px on a full-width card).
   ///
@@ -3780,13 +3393,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     const steps = 250;
     return ((raw * steps).floorToDouble() / steps).clamp(0.02, 0.98);
   }
-
-
-
-
-
-
-
 
   BorderRadius _groupedDayColumnBorderRadius(
     int dayIndex,
@@ -4654,11 +4260,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     return _glassDockPillOccupancy + MediaQuery.viewPaddingOf(context).bottom;
   }
 
-
-
-
-
-
   /// 圆钮图标：用户自选的 Miuix 矢量图标优先；未选时 addCourse 显示
   /// 加号、其余功能显示目录图标。
   Widget _roundButtonIcon(TimetableSettings settings) {
@@ -4822,7 +4423,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     });
   }
 
-
   /// 玻璃坞形态下按钮底边与药丸顶边之间的视觉间隙。
   static const double _backToTodayButtonDockGap = 12;
 
@@ -4911,7 +4511,6 @@ class _TimetableScreenState extends State<TimetableScreen>
           _glassDockContentScrollInset(provider.settings),
     );
   }
-
 
   bool _isSameDate(DateTime left, DateTime right) {
     return left.year == right.year &&
@@ -5649,9 +5248,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-
-
-
   Future<void> _runUpdateCheck({required bool includePrerelease}) async {
     if (!kReleaseMode) {
       if (!mounted) {
@@ -5704,12 +5300,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
   }
 
-
-
-
-
-
-
 }
 
 Rect _popupActionSourceRect(BuildContext buttonContext) {
@@ -5742,7 +5332,6 @@ void _openPopupActionPage(
     }
   });
 }
-
 
 class _HomeActionPageButton extends StatelessWidget {
   final IconData icon;

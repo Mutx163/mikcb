@@ -849,29 +849,6 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     );
   }
 
-  Widget _buildSharedFreeSummaryShell({
-    required Key key,
-    required Color ink,
-    required Widget child,
-  }) {
-    return DecoratedBox(
-      key: key,
-      decoration: BoxDecoration(
-        // 摘要卡内的嵌套面板跟随摘要墨色：浅洗底 + 细描边，玻璃/实心、
-        // 明暗主题都与母卡同极性。此前误用 colorScheme.secondary（M3 基线
-        // 浅色 #625B71 近黑），高斯模糊下整张卡在亮磨砂上读作发黑的一块，
-        // 标题墨色（onSurface 近黑）也低于可读下限。
-        color: ink.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ink.withValues(alpha: 0.10)),
-      ),
-      child: Padding(
-        // 与摘要卡内其它区块同一套水平节奏，避免再套一层 14 造成左右过空。
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        child: child,
-      ),
-    );
-  }
 
   String _formatDayViewSummaryDate(
     DateTime date, {
