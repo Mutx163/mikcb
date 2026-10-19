@@ -175,160 +175,170 @@ Future<ManagedImageDownloadResult> downloadToManagedImage({
       'ManagedImage',
       'download network error on $url: ${error.runtimeType}: $error',
     );
+    if (ownsClient) {
+      httpClient.close();
+    }
     return ManagedImageDownloadResult.failed(
       ManagedImageDownloadFailure.network,
       detail: '${error.runtimeType}: $error',
     );
-  } finally {
-    if (ownsClient) {
-      httpClient.close();
-    }
   }
-  if (response.statusCode < 200 || response.statusCode >= 300) {
-    await response.stream.drain<void>();
-    return ManagedImageDownloadResult.failed(
-      ManagedImageDownloadFailure.status,
-      statusCode: response.statusCode,
-      contentType: response.headers['content-type'],
-    );
-  }
-  final contentType = response.headers['content-type']?.trim().toLowerCase();
-  if (contentType == null || !contentType.startsWith('image/')) {
-    await response.stream.drain<void>();
-    return ManagedImageDownloadResult.failed(
-      ManagedImageDownloadFailure.notImage,
-      statusCode: response.statusCode,
-      contentType: contentType,
-    );
-  }
-  final dir = await getApplicationDocumentsDirectory();
-  final targetDir = Directory(
-    '${dir.path}${Platform.pathSeparator}$directoryName',
-  );
-  if (!targetDir.existsSync()) {
-    await targetDir.create(recursive: true);
-  }
-  final target = File(
-    '${targetDir.path}${Platform.pathSeparator}$fileName',
-  );
-  // 临时名与最终名同目录，保证 [File.rename] 不跨卷；`.part` 后缀同时让人工翻目录时
-  // 一眼看出「这是没写完的残留」，不会误当成一张可用壁纸。
+  // 响应头已到手；body **读完（或 drain）之后**才允许关自建 client。
   //
-  // ⚠️ 临时名必须**每次尝试都不同**，且**不许靠「看文件在不在」来挑**。
-  //
-  // 同一张图同一档位可能被并发下两次 —— 冷启动的「每天自动换」与用户在图库里手动点
-  // 同一张能撞在一起（`maybeApplyDaily` 与图库的 `_pick` 各走各的，谁都不知道对方在
-  // 下载）。共用一个临时名时两个 writer 往同一路径交错写，`rename` 出来的 .jpg 就是
-  // **坏图**，而它随后会被当成合法壁纸交给首页。
-  //
-  // ⚠️ 早先的实现是「序号 + `existsSync()` 跳过已存在的名字」，那**看着安全、其实不
-  // 安全**：`existsSync()` 是同步的，而它与 `writeAsBytes` 真正建文件之间隔着 await，
-  // 两个并发下载完全可能都看到 `.0.part` 不存在、然后都往它身上写。这不是纸上推演
-  // —— `test/services/bing_wallpaper_service_test.dart` 里那条并发用例**独立跑 4 次
-  // 全过、跟着 780 例的整目录跑就挂过一次**，正是这条竞态（2026-10-06）。
-  //
-  // 所以改成**不依赖任何观察**的唯一名：Dart 单 isolate 的同步代码不会被抢占，
-  // 进程内自增计数器足以区分并发者；再拼一段随机数覆盖「多 isolate / 上次崩溃留下的
-  // 残留」这两种情况。谁先 `rename` 谁生效，字节完整的那份胜出（rename 在同卷内原子）。
-  final temp = File('${target.path}.${_nextTempToken()}.part');
-  final idleTimeout = timeout ?? const Duration(seconds: 20);
-  IOSink? sink;
-  var received = 0;
+  // `http` 的 `IOClient.close()` 落到 `HttpClient.close(force: true)`，会立刻
+  // 掐断在途流 —— 早先的版本把 close 放在 send 之后的 finally 里，自建 client
+  // 分支还没开始读流就把 client 关了，逐块读取稳定抛 `ClientException`，整条
+  // 分支永远失败（与 2026-10-06 那次「把共享 client 关了」同源）。包到函数
+  // 收尾，任何出口（含目录创建失败这类没被内层 catch 接住的异常）都能关。
   try {
-    sink = temp.openWrite();
-    final total = response.contentLength;
-    await for (final chunk
-        in response.stream.timeout(idleTimeout, onTimeout: (sink2) {
-      sink2.addError(
-        TimeoutException('idle $idleTimeout between chunks'),
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      await response.stream.drain<void>();
+      return ManagedImageDownloadResult.failed(
+        ManagedImageDownloadFailure.status,
+        statusCode: response.statusCode,
+        contentType: response.headers['content-type'],
       );
-      sink2.close();
-    })) {
-      sink.add(chunk);
-      received += chunk.length;
-      if (onProgress != null) {
-        onProgress(received, total);
+    }
+    final contentType = response.headers['content-type']?.trim().toLowerCase();
+    if (contentType == null || !contentType.startsWith('image/')) {
+      await response.stream.drain<void>();
+      return ManagedImageDownloadResult.failed(
+        ManagedImageDownloadFailure.notImage,
+        statusCode: response.statusCode,
+        contentType: contentType,
+      );
+    }
+    final dir = await getApplicationDocumentsDirectory();
+    final targetDir = Directory(
+      '${dir.path}${Platform.pathSeparator}$directoryName',
+    );
+    if (!targetDir.existsSync()) {
+      await targetDir.create(recursive: true);
+    }
+    final target = File('${targetDir.path}${Platform.pathSeparator}$fileName');
+    // 临时名与最终名同目录，保证 [File.rename] 不跨卷；`.part` 后缀同时让人工翻目录时
+    // 一眼看出「这是没写完的残留」，不会误当成一张可用壁纸。
+    //
+    // ⚠️ 临时名必须**每次尝试都不同**，且**不许靠「看文件在不在」来挑**。
+    //
+    // 同一张图同一档位可能被并发下两次 —— 冷启动的「每天自动换」与用户在图库里手动点
+    // 同一张能撞在一起（`maybeApplyDaily` 与图库的 `_pick` 各走各的，谁都不知道对方在
+    // 下载）。共用一个临时名时两个 writer 往同一路径交错写，`rename` 出来的 .jpg 就是
+    // **坏图**，而它随后会被当成合法壁纸交给首页。
+    //
+    // ⚠️ 早先的实现是「序号 + `existsSync()` 跳过已存在的名字」，那**看着安全、其实不
+    // 安全**：`existsSync()` 是同步的，而它与 `writeAsBytes` 真正建文件之间隔着 await，
+    // 两个并发下载完全可能都看到 `.0.part` 不存在、然后都往它身上写。这不是纸上推演
+    // —— `test/services/bing_wallpaper_service_test.dart` 里那条并发用例**独立跑 4 次
+    // 全过、跟着 780 例的整目录跑就挂过一次**，正是这条竞态（2026-10-06）。
+    //
+    // 所以改成**不依赖任何观察**的唯一名：Dart 单 isolate 的同步代码不会被抢占，
+    // 进程内自增计数器足以区分并发者；再拼一段随机数覆盖「多 isolate / 上次崩溃留下的
+    // 残留」这两种情况。谁先 `rename` 谁生效，字节完整的那份胜出（rename 在同卷内原子）。
+    final temp = File('${target.path}.${_nextTempToken()}.part');
+    final idleTimeout = timeout ?? const Duration(seconds: 20);
+    IOSink? sink;
+    var received = 0;
+    try {
+      sink = temp.openWrite();
+      final total = response.contentLength;
+      await for (final chunk in response.stream.timeout(
+        idleTimeout,
+        onTimeout: (sink2) {
+          sink2.addError(TimeoutException('idle $idleTimeout between chunks'));
+          sink2.close();
+        },
+      )) {
+        sink.add(chunk);
+        received += chunk.length;
+        if (onProgress != null) {
+          onProgress(received, total);
+        }
       }
+      await sink.flush();
+      await sink.close();
+      sink = null;
+    } on Object catch (error) {
+      // 写盘或网络中途失败：清掉半截 .part（见方法头「为什么先写临时文件」），
+      // 对外仍是 network 失败（带上进度现场，弱网排查用得上）。
+      try {
+        await sink?.close();
+      } on Object {
+        // sink 已死，无需再管。
+      }
+      try {
+        if (temp.existsSync()) {
+          temp.deleteSync();
+        }
+      } on Object {
+        // 残留会以 wallpaper 前缀被既有清理扫掉。
+      }
+      appDebugLog(
+        'ManagedImage',
+        'download stream failed at $received bytes on $url: '
+            '${error.runtimeType}: $error',
+      );
+      return ManagedImageDownloadResult.failed(
+        ManagedImageDownloadFailure.network,
+        detail: '${error.runtimeType}: $error (received=$received)',
+      );
     }
-    await sink.flush();
-    await sink.close();
-    sink = null;
-  } on Object catch (error) {
-    // 写盘或网络中途失败：清掉半截 .part（见方法头「为什么先写临时文件」），
-    // 对外仍是 network 失败（带上进度现场，弱网排查用得上）。
-    try {
-      await sink?.close();
-    } on Object {
-      // sink 已死，无需再管。
-    }
-    try {
-      if (temp.existsSync()) {
+    if (received == 0) {
+      try {
         temp.deleteSync();
+      } on Object {
+        // 同上。
       }
-    } on Object {
-      // 残留会以 wallpaper 前缀被既有清理扫掉。
+      return ManagedImageDownloadResult.failed(
+        ManagedImageDownloadFailure.emptyBody,
+        statusCode: response.statusCode,
+      );
     }
-    appDebugLog(
-      'ManagedImage',
-      'download stream failed at $received bytes on $url: '
-          '${error.runtimeType}: $error',
-    );
-    return ManagedImageDownloadResult.failed(
-      ManagedImageDownloadFailure.network,
-      detail: '${error.runtimeType}: $error (received=$received)',
-    );
-  }
-  if (received == 0) {
     try {
-      temp.deleteSync();
+      await temp.rename(target.path);
     } on Object {
-      // 同上。
-    }
-    return ManagedImageDownloadResult.failed(
-      ManagedImageDownloadFailure.emptyBody,
-      statusCode: response.statusCode,
-    );
-  }
-  try {
-    await temp.rename(target.path);
-  } on Object {
-    // 并发下同一张图同一档位会被下两次（见上方⚠️）：两个 writer 各自写完后都来
-    // rename 同一个最终名，Windows 上后到的那个会因「目标已存在」而抛错
-    // （2026-10-19 全量测试实测复现：`failed=write`，另一份图其实完好）。
-    // 最终路径只可能来自一份**完整写完**的 .part（本函数只 rename 收全后才落盘），
-    // 且同名文件就是同一张图，所以「目标已存在且非空」等价于本次也成功了；
-    // 否则整次下载会被误报为失败，调用方还会把它当成没拿到图。
-    bool targetUsable;
-    try {
-      targetUsable = target.existsSync() && target.lengthSync() > 0;
-    } on Object {
-      targetUsable = false;
-    }
-    if (targetUsable) {
+      // 并发下同一张图同一档位会被下两次（见上方⚠️）：两个 writer 各自写完后都来
+      // rename 同一个最终名，Windows 上后到的那个会因「目标已存在」而抛错
+      // （2026-10-19 全量测试实测复现：`failed=write`，另一份图其实完好）。
+      // 最终路径只可能来自一份**完整写完**的 .part（本函数只 rename 收全后才落盘），
+      // 且同名文件就是同一张图，所以「目标已存在且非空」等价于本次也成功了；
+      // 否则整次下载会被误报为失败，调用方还会把它当成没拿到图。
+      bool targetUsable;
+      try {
+        targetUsable = target.existsSync() && target.lengthSync() > 0;
+      } on Object {
+        targetUsable = false;
+      }
+      if (targetUsable) {
+        try {
+          if (temp.existsSync()) {
+            await temp.delete();
+          }
+        } on Object {
+          // 同下方：残留以 `filePrefix` 开头，会被既有清理扫掉。
+        }
+        PaintingBinding.instance.imageCache.evict(FileImage(target));
+        return ManagedImageDownloadResult.success(target.path);
+      }
       try {
         if (temp.existsSync()) {
           await temp.delete();
         }
       } on Object {
-        // 同下方：残留以 `filePrefix` 开头，会被既有清理扫掉。
+        // 临时文件删不掉不阻断：它仍以 `filePrefix` 开头，被当成壁纸目录里的残留扫掉，
+        // 而下次下载不会再挑中同一个名字（名字每次都不一样）。
       }
-      PaintingBinding.instance.imageCache.evict(FileImage(target));
-      return ManagedImageDownloadResult.success(target.path);
+      return const ManagedImageDownloadResult.failed(
+        ManagedImageDownloadFailure.write,
+      );
     }
-    try {
-      if (temp.existsSync()) {
-        await temp.delete();
-      }
-    } on Object {
-      // 临时文件删不掉不阻断：它仍以 `filePrefix` 开头，被当成壁纸目录里的残留扫掉，
-      // 而下次下载不会再挑中同一个名字（名字每次都不一样）。
+    PaintingBinding.instance.imageCache.evict(FileImage(target));
+    return ManagedImageDownloadResult.success(target.path);
+  } finally {
+    if (ownsClient) {
+      httpClient.close();
     }
-    return const ManagedImageDownloadResult.failed(
-      ManagedImageDownloadFailure.write,
-    );
   }
-  PaintingBinding.instance.imageCache.evict(FileImage(target));
-  return ManagedImageDownloadResult.success(target.path);
 }
 
 /// 拼一段保证「同一 isolate 内互不相同」的临时名后缀。
