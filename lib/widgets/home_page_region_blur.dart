@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -7,6 +8,7 @@ import '../models/header_blur_style.dart';
 import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos_blurred_header.dart';
+import '../ui/hyperos/hyperos_glass_backdrop_host.dart';
 import '../ui/hyperos/hyperos_theme.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart';
 import '../utils/home_page_background.dart';
@@ -828,6 +830,22 @@ class HomePageChromeGlassFill extends StatelessWidget {
 /// 用户看过对照数据后选了这条路，并约定**先只改首页这条带**，效果不对立刻撤回。
 ///
 /// 位图还没烤好、或当前不在转场里，一律回到实时玻璃 —— 不新增第三种外观。
+///
+/// ## 怎么判断「正在转场」（2026-10-19 第二十二轮修正）
+///
+/// **第一版听的是 `ModalRoute.of(context).animation / secondaryAnimation`，这条路
+/// 在首页上是不可靠的**：首页是栈底那一页，push 的时候它自己的 `animation` 早停在
+/// 1.0，而 `secondaryAnimation` 要不要被驱动、什么时候换成新路由的动画，取决于框架
+/// 内部 —— `_ModalScopeStatus.updateShouldNotify` 只在 `isCurrent` / `canPop` /
+/// `route` 变化时通知依赖，**纯动画帧不通知**，于是 `didChangeDependencies` 可能一次
+/// 都不跑，监听器挂在 `AlwaysStoppedAnimation(0.0)` 上永不 tick，
+/// 「以为冻结了、其实一直在跑实时玻璃」，而且**静默**：日志里看不出来。
+///
+/// 现在改用 [HyperosGlassBackdropController.routeTransitionRunning] —— 由转场树
+/// 自己驱动（`hyperos_navigation.dart` 的 `_GlassCaptureTransitionGate` 监听
+/// `_MiuixNavPageTransition.enter` 的 `status`），进 / 退 / 从菜单进 / 从设置里进
+/// 全覆盖，并且已经用「转场期间暂停玻璃录帧」这件事在真机上验证过会正确开合。
+/// 路由动画那两路保留作兜底，任一报「在动」就冻结。
 class _HomeBandLiquidGlass extends StatefulWidget {
   const _HomeBandLiquidGlass({
     required this.borderRadius,
@@ -851,35 +869,61 @@ class _HomeBandLiquidGlass extends StatefulWidget {
 
 class _HomeBandLiquidGlassState extends State<_HomeBandLiquidGlass> {
   Listenable? _driver;
+  final List<Listenable> _sources = <Listenable>[];
+  ModalRoute<dynamic>? _route;
   bool _transitioning = false;
+
+  /// 上一次实际走的分支，只用来去重诊断输出（见 [_traceBranch]）。
+  String _branch = '';
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final route = ModalRoute.of(context);
-    final driver = Listenable.merge(<Listenable?>[
-      route?.animation,
-      route?.secondaryAnimation,
-    ]);
-    if (!identical(driver, _driver)) {
-      _driver?.removeListener(_onAnimationTick);
-      _driver = driver;
-      _driver?.addListener(_onAnimationTick);
+    final anim = route?.animation;
+    final secondary = route?.secondaryAnimation;
+    // 第一路是**权威信号**：全 App 唯一那个「此刻真有一条页面转场在跑」的闸门
+    // （见 `HyperosGlassBackdropController.routeTransitionRunning`）。后两路是
+    // 兜底 —— 单听它们会漏（首页是栈底页，push 时它自己的 animation 停在 1.0；
+    // `secondaryAnimation` 只在 `_ModalScopeStatus` 通知依赖时才会换对象）。
+    final sources = <Listenable>[
+      HyperosGlassBackdropController.routeTransitionRunning,
+      ?anim,
+      ?secondary,
+    ];
+    _route = route;
+    if (!_sameSources(sources)) {
+      _driver?.removeListener(_onTick);
+      _sources
+        ..clear()
+        ..addAll(sources);
+      _driver = Listenable.merge(sources);
+      _driver?.addListener(_onTick);
     }
     // 首帧直接取当前值：build 紧接着就来，这里 setState 是多余的。
-    _transitioning = _routeIsAnimating();
+    _transitioning = _transitionRunning();
   }
 
-  /// 本页正在进 / 出（主动画），或**正被后一页盖住**（副动画）—— 两种都在动。
-  bool _routeIsAnimating() {
-    final route = ModalRoute.of(context);
+  bool _sameSources(List<Listenable> next) {
+    if (next.length != _sources.length) return false;
+    for (var i = 0; i < next.length; i++) {
+      if (!identical(next[i], _sources[i])) return false;
+    }
+    return true;
+  }
+
+  /// 本页正在进 / 出（主动画）、**正被后一页盖住**（副动画），或全局闸门报
+  /// 「有转场在跑」—— 任一成立都算转场中。
+  bool _transitionRunning() {
+    if (HyperosGlassBackdropController.pauseForRouteTransition) return true;
+    final route = _route;
     return (route?.animation?.isAnimating ?? false) ||
         (route?.secondaryAnimation?.isAnimating ?? false);
   }
 
-  void _onAnimationTick() {
+  void _onTick() {
     if (!mounted) return;
-    final running = _routeIsAnimating();
+    final running = _transitionRunning();
     // 只在布尔翻转时重建：动画每帧都会 tick，逐帧 setState 会把这条带
     // 变成新的每帧重建点。
     if (running == _transitioning) return;
@@ -888,16 +932,41 @@ class _HomeBandLiquidGlassState extends State<_HomeBandLiquidGlass> {
 
   @override
   void dispose() {
-    _driver?.removeListener(_onAnimationTick);
+    _driver?.removeListener(_onTick);
     super.dispose();
+  }
+
+  /// 诊断（临时件，随本条带一起收敛后删）：**只在分支真的换了的时候**打一条。
+  ///
+  /// 三个取值分别对应三种现实，一眼就能分开：
+  /// * `frozen(preblur)` —— 改对了，转场期间这条带没在跑实时玻璃；
+  /// * `live(no-bitmap)` —— 认出了转场，但预糊位图拿不到（作用域不在祖先里 /
+  ///   位图还没烤好），静默回落成了实时玻璃；
+  /// * `live` —— 压根没认出转场，`_transitioning` 一次都没变 true。
+  ///
+  /// 稳态零输出（静止时恒为 `live` 且不变化）。
+  void _traceBranch(String branch) {
+    if (branch == _branch) return;
+    _branch = branch;
+    if (kReleaseMode) return;
+    debugPrint(
+      '[home-band] glass=$branch '
+      'routeGate=${HyperosGlassBackdropController.pauseForRouteTransition} '
+      'routeAnim=${_route?.animation?.isAnimating ?? false} '
+      'secondary=${_route?.secondaryAnimation?.isAnimating ?? false}',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.freezeDuringRouteTransition && _transitioning) {
-      final frozen = _buildFrozen(context);
-      if (frozen != null) return frozen;
-    }
+    final freezing = widget.freezeDuringRouteTransition && _transitioning;
+    final frozen = freezing ? _buildFrozen(context) : null;
+    _traceBranch(
+      frozen != null
+          ? 'frozen(preblur)'
+          : (freezing ? 'live(no-bitmap)' : 'live'),
+    );
+    if (frozen != null) return frozen;
     return LiquidGlassSurface(
       borderRadius: widget.borderRadius,
       grouped: widget.grouped,

@@ -126,6 +126,22 @@ class HyperosGlassBackdropController extends ChangeNotifier {
   /// 正在跑页面转场的路由数（[pauseForRouteTransition] 记账用）。
   static int _routeTransitionsRunning = 0;
 
+  /// [pauseForRouteTransition] 的可监听版本。
+  ///
+  /// 这是全 App 唯一一个「此刻真的有一条页面转场在跑」的信号：它由转场树自己驱动
+  /// （见 `hyperos_navigation.dart` 的 `_GlassCaptureTransitionGate`，监听
+  /// `_MiuixNavPageTransition.enter` 的 `status`），进页面 / 退页面 / 从菜单进 /
+  /// 从设置里进全覆盖，且已经用「录帧暂停」这件事在真机上验证过会正确开合。
+  ///
+  /// 为什么不各自去听 `ModalRoute.of(context).animation / secondaryAnimation`：
+  /// 首页是**栈底那一页**，push 的时候它自己的 `animation` 早就停在 1.0 不动了，
+  /// 而 `secondaryAnimation` 是不是被驱动、什么时候换对象，取决于框架内部
+  /// （`_ModalScopeStatus` 只在 `isCurrent` / `canPop` / `route` 变化时才通知依赖，
+  /// 纯动画帧不通知）—— 听它有可能一次都不 tick，于是「以为冻结了、其实没有」。
+  /// 全局闸门没有这个问题。
+  static final ValueNotifier<bool> routeTransitionRunning =
+      ValueNotifier<bool>(false);
+
   /// 页面转场期间**暂停录帧**：玻璃继续用最后一帧的采样图画，不再每帧
   /// `toImageSync` 回读。
   ///
@@ -145,6 +161,9 @@ class HyperosGlassBackdropController extends ChangeNotifier {
     } else if (_routeTransitionsRunning > 0) {
       _routeTransitionsRunning--;
     }
+    // 派生成「有没有转场在跑」，不是把最后一个 bool 直接写进去：重叠转场时
+    // 先结束的那一条不该把闸门关掉（`_routeTransitionsRunning` 是计数）。
+    routeTransitionRunning.value = _routeTransitionsRunning > 0;
     return _routeTransitionsRunning;
   }
 
