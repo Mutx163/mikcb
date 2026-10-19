@@ -92,6 +92,7 @@ import '../widgets/timetable/timetable_home_scroll.dart';
 import '../widgets/timetable/timetable_glass_dock.dart';
 import '../widgets/timetable/timetable_open_only_route.dart';
 import '../widgets/timetable/timetable_profile_quick_switch.dart';
+import '../widgets/timetable/timetable_top_menu_shell.dart';
 import '../widgets/timetable/timetable_weekday_ink_contrast_dialog.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
@@ -5837,14 +5838,8 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 首页主体 + 顶栏「更多」弹层。
   ///
-  /// 首页整屏都包在 [HyperosGlassBackdropHost] 里：玻璃坞 / 首页玻璃带 / 分区
-  /// 玻璃 / 弹层都从它取的采样源渲染 OS4 玻璃；宿主同时注册进
-  /// [HyperosGlassBackdropRegistry]，于是压在首页之上的 sheet / dialog 里的玻璃
-  /// 也能采到首页画面（modal 路由看不到首页的 InheritedWidget）。
-  ///
-  /// 弹层放在宿主**之外**：宿主捕获的是「弹层之下的页面」，正是上游玻璃材质要
-  /// 采样的背景，捕获子树不能含玻璃自身（防反馈采样）。弹层内部经 OverlayPortal
-  /// 渲染到 Overlay，所以这里的次序只影响它继承到的主题。
+  /// 布局与采样源次序（采样宿主、玻璃坞、常驻球、菜单四层的位次与理由）见
+  /// [TimetableHomeTopMenuShell]；本方法只把 State 里的状态与回调接上去。
   Widget _wrapHomeWithTopMenu(
     Widget content, {
     required TimetableSettings settings,
@@ -5852,72 +5847,23 @@ class _TimetableScreenState extends State<TimetableScreen>
     required Color chromeDotBorderColor,
     Widget? dockLayer,
   }) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        HyperosGlassBackdropHost(controller: _homeGlass, child: content),
-        // ⚠️ 玻璃坞（药丸 + 圆钮）同样画在宿主**之外** —— 与下面那两颗常驻球
-        // 同一条规则，理由也一样：宿主捕获的是"玻璃之下的页面"，捕获子树不能含
-        // 玻璃自身。坞层原先长在宿主子树末尾，于是每次录帧都把它自己的画面烘进
-        // 快照，坞层再拿这张"含自己"的图算材质 —— 展开 / 收起内嵌页那几帧里
-        // 圆钮的明暗会颤几下才收敛（真机反馈：「圆钮展开收起之后闪」）。
-        //
-        // ⚠️ 必须同时用 [HyperosGlassBackdropScope] 把坞层钉在本屏采样源上：
-        // 它在宿主之外拿不到宿主下发的 scope，只能靠全局注册表"栈顶"取采样源，
-        // 而栈顶会随 push / pop 换人（与常驻球完全同一处境，见下面的说明）。
-        if (dockLayer != null)
-          Positioned.fill(
-            child: HyperosGlassBackdropScope(
-              controller: _homeGlass,
-              child: dockLayer,
-            ),
-          ),
-        // 常驻玻璃球画在宿主**之外**（不自采样，见 build 里 homeChromeBalls
-        // 的说明）；整屏 IgnorePointer 让点击穿透到下面的真实按钮。
-        //
-        // ⚠️ 必须同时用 [HyperosGlassBackdropScope] **把球钉在本屏采样源上**：
-        // 球在宿主之外，拿不到宿主下发的 scope，只能靠全局注册表"栈顶"取采样源
-        // —— 而栈顶会随 push / pop 换人（设置页自己的采样源会顶上来），页面回来
-        // 后球还绑在别人的（已释放的）采样源上，就只剩半套材质、另一半回落实底
-        // （真机反馈："进设置再回来，爱心变成一半一半透明的、一半是实底"）。
-        // 与页内玻璃同一个口径：**本屏的玻璃只采本屏的画面**。
-        if (chromeBalls.isNotEmpty)
-          Positioned.fill(
-            child: HyperosGlassBackdropScope(
-              controller: _homeGlass,
-              child: IgnorePointer(child: Stack(children: chromeBalls)),
-            ),
-          ),
-        // ⚠️ 菜单的动画必须**不受"本页是否在前台"影响**：`Overlay` 会给被不透明
-        // 路由盖住、但仍 `maintainState` 的那一层整体加 `TickerMode(enabled:
-        // false)`（`overlay.dart` 的 `_Theater` 构建），而菜单的动画计时器挂在
-        // 本页子树下 —— 于是"点菜单项 → 关菜单 + 跳新页面"同时发生时，收起动画
-        // 会被当场静音、**卡在半透明状态**（真机反馈："跳转前那一刻菜单变成
-        // 透明的"）。菜单是浮层级的瞬时动画，显式放开 TickerMode。
-        TickerMode(
-          enabled: true,
-          child: HomeTopMenuPopup(
-            show: _homeMenuOpen,
-            backdrop: _homeGlass.backdrop,
-            anchor: _homeMenuAnchor,
-            // 形变动效要从按钮位置长出来，故传入按钮内容的**副本**（不含
-            // GlobalKey，避免与真实按钮抢同一个 key）：与常驻球**共用同一份**
-            // 可见内容（[_buildMoreActionIcon]，含更新红点与同一墨色）。
-            //
-            // ⚠️ 两者不能有差异：早先这里只给了一个裸图标，红点只画在常驻球上，
-            // 于是关闭菜单交接的那一瞬"红点突然出现 + 整颗球跟着重绘一次"，
-            // 读起来就是圆按钮闪一下（2026-09-14 真机反馈，仅在有待更新时可见）。
-            anchorContent: _buildMoreActionIcon(
-              dotBorderColor: chromeDotBorderColor,
-            ),
-            entries: resolveHomeGridMenuEntries(settings),
-            hasAvailableUpdate: _hasAvailableUpdate,
-            onDismissRequest: _closeHomeMenuNow,
-            onSelected: _dispatchTopMenuSelection,
-            onDismissFinished: _noteHomeMenuDismissFinished,
-          ),
-        ),
-      ],
+    return TimetableHomeTopMenuShell(
+      content: content,
+      glassController: _homeGlass,
+      showMenu: _homeMenuOpen,
+      anchor: _homeMenuAnchor,
+      // 形变动效要从按钮位置长出来，故传入按钮内容的**副本**（不含 GlobalKey，
+      // 避免与真实按钮抢同一个 key）：与常驻球**共用同一份**可见内容
+      // （[_buildMoreActionIcon]，含更新红点与同一墨色）。两者不能有差异：
+      // 早先这里只给裸图标，关闭菜单交接那一瞬圆钮会闪一下（2026-09-14 真机反馈）。
+      anchorContent: _buildMoreActionIcon(dotBorderColor: chromeDotBorderColor),
+      entries: resolveHomeGridMenuEntries(settings),
+      hasAvailableUpdate: _hasAvailableUpdate,
+      onDismissRequest: _closeHomeMenuNow,
+      onSelected: _dispatchTopMenuSelection,
+      onDismissFinished: _noteHomeMenuDismissFinished,
+      dockLayer: dockLayer,
+      chromeBalls: chromeBalls,
     );
   }
 
@@ -6095,50 +6041,44 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   /// 菜单项的实际分发（由 [_dispatchTopMenuSelection] 在**菜单收完之后**调用）。
+  ///
+  /// id → 动作的映射在 [dispatchTimetableTopMenuSelection]；这里只把首页专属的
+  /// 六条启动路径接上（它们要读可见周、日视图选中日期、provider 与分享快照）。
   Future<void> _runTopMenuSelection(
     String selectedId,
     TimetableProvider provider,
   ) async {
-    switch (selectedId) {
-      // 这两项依赖首页宿主上下文：添加课程要带日视图选中日期弹层，
-      // 更新入口要先做版本检查再进详情页。其余全部走目录分发。
-      case 'addCourse':
+    await dispatchTimetableTopMenuSelection(
+      context,
+      selectedId,
+      TimetableTopMenuLaunchers(
         // 列表态菜单走不到这里（父行是展开开关，只回传子项 id）；
         // 八宫格形态与未知 id 兜底仍开三宫格添加弹层。
-        await _navigateToAddCourse(context);
-      case kAddCourseSubmenuCourseId:
-        await Navigator.of(context).push<void>(
+        openAddCoursePicker: () => _navigateToAddCourse(context),
+        openCourseForm: () => Navigator.of(context).push<void>(
           HyperosPageRoute<void>(
             builder: (_) => AddCourseScreen(
               initialWeek: _visibleWeek,
               initialDayOfWeek: _addCourseInitialDayOfWeek,
             ),
           ),
-        );
-      case kAddCourseSubmenuScheduleId:
-        await Navigator.of(context).push<void>(
+        ),
+        openScheduleForm: () => Navigator.of(context).push<void>(
           HyperosPageRoute<void>(
             builder: (_) => AddScheduleItemScreen(
               initialDate: _resolveAddScheduleInitialDate(provider),
             ),
           ),
-        );
-      case kAddCourseSubmenuExamId:
-        await Navigator.of(context).push<void>(
+        ),
+        openExamForm: () => Navigator.of(context).push<void>(
           HyperosPageRoute<void>(builder: (_) => const AddExamScreen()),
-        );
-      case 'update':
-        await _openTopMenuUpdatePage();
-      case 'shareTimetable':
+        ),
+        openUpdate: _openTopMenuUpdatePage,
         // 分享要带上「当前可见周」与「当前是周/日视图」，只有本页知道，
         // 所以在这里拦截，不走目录条目的通用 open。
-        await _shareTimetableImage(provider);
-      default:
-        final entry = homeMenuEntryById(selectedId);
-        if (entry != null) {
-          await entry.open(context);
-        }
-    }
+        shareTimetable: () => _shareTimetableImage(provider),
+      ),
+    );
   }
 
 
