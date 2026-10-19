@@ -95,16 +95,29 @@ abstract final class FrostedBlurService {
     int width,
     int height,
   ) async {
+    // 三件套都必须手动释放，否则每次调用在 native 侧漏一份像素缓冲：
+    // - [ui.ImmutableBuffer]：持有一份 RGBA 拷贝；
+    // - [ui.ImageDescriptor]：描述符本体；
+    // - [ui.Codec]：编解码器（拿到帧之后即可释放，帧的 [ui.Image] 独立持有）。
+    // 释放顺序与创建相反；中途抛错也要走到（try/finally 兜底）。
     final buffer = await ui.ImmutableBuffer.fromUint8List(rgba);
-    final descriptor = ui.ImageDescriptor.raw(
-      buffer,
-      width: width,
-      height: height,
-      pixelFormat: ui.PixelFormat.rgba8888,
-    );
-    final codec = await descriptor.instantiateCodec();
-    final frame = await codec.getNextFrame();
-    return frame.image;
+    ui.ImageDescriptor? descriptor;
+    ui.Codec? codec;
+    try {
+      descriptor = ui.ImageDescriptor.raw(
+        buffer,
+        width: width,
+        height: height,
+        pixelFormat: ui.PixelFormat.rgba8888,
+      );
+      codec = await descriptor.instantiateCodec();
+      final frame = await codec.getNextFrame();
+      return frame.image;
+    } finally {
+      codec?.dispose();
+      descriptor?.dispose();
+      buffer.dispose();
+    }
   }
 
   static Future<ui.Image?> _blurInDart(
