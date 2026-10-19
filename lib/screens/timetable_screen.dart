@@ -62,10 +62,7 @@ import '../utils/home_startup_visual_primer.dart';
 import '../utils/home_wallpaper_luminance_share.dart';
 import '../utils/luminance_sample_gate.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
-    show
-        LiquidGlassSurface,
-        LiquidGlassSurfaceState,
-        narrowSurfaceMaxRefraction;
+    show LiquidGlassSurface, LiquidGlassSurfaceState;
 import '../widgets/course_action_sheet.dart';
 import '../widgets/course_followup_sheets.dart';
 import '../widgets/course_note_sheet.dart';
@@ -84,6 +81,7 @@ import '../widgets/profile_quick_switch_sheet.dart';
 import '../widgets/timetable_home_preview_scope.dart';
 import '../widgets/week_selector_picker_sheet.dart';
 import '../widgets/timetable/timetable_back_to_current_week_button.dart';
+import '../widgets/timetable/timetable_back_to_today_button.dart';
 import '../widgets/timetable/timetable_day_pager_physics.dart';
 import '../widgets/timetable/timetable_empty_slot.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
@@ -1099,8 +1097,16 @@ class _TimetableScreenState extends State<TimetableScreen>
                                     )) {
                                       return const SizedBox.shrink();
                                     }
-                                    return _buildFloatingBackToTodayButton(
-                                      provider,
+                                    return TimetableBackToTodayButton(
+                                      bottomInset:
+                                          _backToTodayButtonBottomInset(
+                                            provider.settings,
+                                          ),
+                                      onTap: () {
+                                        unawaited(
+                                          _navigateDayViewToToday(provider),
+                                        );
+                                      },
                                     );
                                   },
                                 ),
@@ -5626,21 +5632,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
 
-
-  /// 日视图底部「回今日」悬浮按钮的几何常量。
-  ///
-  /// 形状与底栏药丸同族（胶囊，圆角 = 半高），但**比底栏矮一档、窄一圈**：
-  /// 高度取底栏 `barHeight: 56` 的约 2/3（38），左右内边距 16，而不是让
-  /// 文字悬在大片留白里。高度即成品高度（外层描边画在边界内、不占布局，
-  /// 与 `Container` 的行为不同）。
-  ///
-  /// 列表底部余量（[_backToTodayButtonScrollInset]）与按钮本体共用这些
-  /// 常量，避免两边各自写死数字后走偏（钮变高、内容又被遮）。
-  static const double _backToTodayButtonHeight = 38;
-  static const double _backToTodayButtonRadius = _backToTodayButtonHeight / 2;
-  static const double _backToTodayButtonHPadding = 16;
-  static const double _backToTodayButtonFontSize = 14;
-
   /// 玻璃坞形态下按钮底边与药丸顶边之间的视觉间隙。
   static const double _backToTodayButtonDockGap = 12;
 
@@ -5721,7 +5712,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
     final buttonTop =
         _backToTodayButtonBottomInset(provider.settings) +
-        _backToTodayButtonHeight;
+        TimetableBackToTodayButton.height;
     return math.max(
       0,
       buttonTop +
@@ -5730,139 +5721,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// 日视图底部居中的「回今日」浮钮：与底栏同族的胶囊形状、玻璃底 +
-  /// **主题色**文字，只有文案没有箭头。
-  ///
-  /// 配色走全 app 的主题色口径：底色是玻璃，所以"跟随主题色"落在文字上，
-  /// 取 [HyperosColors.primary]——即外观里选的 seed 本身（所见即所得），
-  /// 未挂 ThemeSeedScope 或深色近黑 seed 时由它自己回落。
-  ///
-  /// 材质沿用全 app 的玻璃口径（同一份 [FrostedAppearanceScope] 与
-  /// [LiquidGlassSurface]），但**不复用**「回本周」那颗的实现：位置
-  /// （居中 vs 右下）、文案、动作、可见性条件、配色都不同，两边分开演进。
-  Widget _buildFloatingBackToTodayButton(TimetableProvider provider) {
-    final l10n = AppLocalizations.of(context)!;
-    final foruiColors = context.theme.colors;
-    final accent = HyperosColors.primary(context);
-    final borderRadius = BorderRadius.circular(_backToTodayButtonRadius);
-    final dockAppearance = FrostedAppearanceScope.of(context);
-    // 同 [_buildFloatingBackButton] 那条：作用范围开关 + 系统降级。
-    final useLiquidGlassMaterial =
-        dockAppearance.liquidGlassDockEnabled &&
-        !LiquidGlassDegradation.shouldDegrade(context);
-    // 描边按「液态是否真的画得出来」判，不是按「用户要不要液态」判（2026-09-30）。
-    final liquidActuallyRenders =
-        useLiquidGlassMaterial && LiquidGlassSurface.isAvailable(context);
-    final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
-    final tint = HyperosBlurredHeader.homePageRegionTintColor(
-      context,
-      withBlur: useBlur,
-    );
-    final content = SizedBox(
-      // 与底栏药丸同高。外层 DecoratedBox 的 1dp 描边是**画在边界内**的
-      // （与 Container 不同，不占布局），所以内容高度就是成品高度。
-      height: _backToTodayButtonHeight,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: _backToTodayButtonHPadding,
-        ),
-        // 宽度只让文字撑开（Row 取 min，别用 Center/Align —— 它们会把
-        // 可用宽度吃满，胶囊就变成横贯屏幕的一条）。
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              l10n.backToTodayAction,
-              style: TextStyle(
-                fontSize: _backToTodayButtonFontSize,
-                fontWeight: FontWeight.w700,
-                color: accent,
-                height: 1,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-    // 磨砂底：既是磨砂档本身，也是液态玻璃不可用时的回落（仍是玻璃观感）。
-    Widget frostedChip() => ClipRRect(
-      borderRadius: borderRadius,
-      child: HyperosFrostedSurface(
-        borderRadius: borderRadius,
-        tint: tint,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: () => unawaited(_navigateDayViewToToday(provider)),
-            borderRadius: borderRadius,
-            child: content,
-          ),
-        ),
-      ),
-    );
-    final surface = useLiquidGlassMaterial
-        ? LiquidGlassSurface(
-            probeName: 'glassBackToToday',
-            freezeOnRouteTransition: true,
-            borderRadius: _backToTodayButtonRadius,
-            // ⚠️ **不跟祖先组采样**（2026-09-20 用户拍板「对齐药丸实时采样」）。
-            //
-            // 跟组采样时，采样源是组里那张**壁纸快照**（`UndimmedBackdropCapture`
-            // 画在页面主体之前，见 `homeStack`），快照的屏幕位置固定 ⇒ 这颗钮的
-            // 背景逐帧一模一样，下面课表怎么滚都不变（用户口径「背景永远都是不
-            // 变的」）。底栏药丸看着"会变"是因为它在组**外**（坞层被
-            // [_wrapHomeWithTopMenu] 摆成采样宿主的兄弟），它那句 `grouped: true`
-            // 一直是空转 —— 所以这里显式不给，走实时采样，与药丸的真实行为对齐。
-            //
-            // 窄件几何适配：这颗钮只有 38dp 高，而折射位移的作用带是绝对值
-            // （标准档 14.5dp = 高度的 38%，药丸/圆钮 56dp 上只占 26%），上下两条
-            // 带会连成一整圈轮廓。与设置页那条约 40dp 的星期条同一条规矩，见
-            // [narrowSurfaceMaxRefraction]。
-            maxRefraction: narrowSurfaceMaxRefraction(_backToTodayButtonHeight),
-            fallbackBuilder: (_) => frostedChip(),
-            child: Material(
-              type: MaterialType.transparency,
-              child: InkWell(
-                onTap: () => unawaited(_navigateDayViewToToday(provider)),
-                borderRadius: borderRadius,
-                child: content,
-              ),
-            ),
-          )
-        : frostedChip();
-    return SafeArea(
-      minimum: EdgeInsets.only(
-        bottom: _backToTodayButtonBottomInset(provider.settings),
-      ),
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: HyperosGlassShadow.wrap(
-          borderRadius: borderRadius,
-          shadowOverride: HyperosGlassShadow.compactShadow,
-          shadowKey: const ValueKey('back-to-today-shadow'),
-          child: DecoratedBox(
-            // 键挂在这层**外壳**上，两种材质分支（液态 / 磨砂）都能被找到、点到；
-            // 挂在分支内部的 InkWell 上时，液态档就没有键了。液态档这层只留圆角
-            // （不再描边，见下）。
-            key: const ValueKey('back-to-today-button'),
-            decoration: BoxDecoration(
-              borderRadius: borderRadius,
-              // 浮影统一由外层 [HyperosGlassShadow.wrap] 负责，且只落在外圈；
-              // 液态档不叠描边，避免与玻璃自己的折射带叠成两层圈圈。磨砂档必须
-              // 留着描边 —— [HyperosFrostedSurface] 自己不画边。
-              //
-              // ⚠️ 按「液态是否真的画得出来」判（着色器后端缺失时表面整层回落成
-              // 磨砂片，此时描边必须回来），理由见上面 `liquidActuallyRenders`。
-              border: liquidActuallyRenders
-                  ? null
-                  : Border.all(color: foruiColors.border),
-            ),
-            child: surface,
-          ),
-        ),
-      ),
-    );
-  }
 
   bool _isSameDate(DateTime left, DateTime right) {
     return left.year == right.year &&
