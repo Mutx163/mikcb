@@ -1,4 +1,16 @@
-part of '../timetable_settings_screen.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/weather_location_failure_localizer.dart';
+import 'package:provider/provider.dart';
+import '../../models/timetable_settings.dart';
+import '../../providers/timetable_provider.dart';
+import '../../providers/weather_provider.dart';
+import '../../utils/app_toast.dart';
+import '../../ui/hyperos/hyperos.dart';
+import '../weather_city_picker_screen.dart';
+import 'settings_shared.dart';
 
 /// 天气设置：开关、显示位置、显示内容、城市、失败重试、覆盖范围说明与数据来源署名。
 ///
@@ -15,8 +27,8 @@ part of '../timetable_settings_screen.dart';
 /// `HyperosSectionLabel` + 一个 `HyperosListGroup`**，说明文字
 /// （`HyperosSectionDescription`）挂在它所属的那个区块之后。裸分组（无标题、
 /// 无区块间距）在 IA 规范里是不允许的——区块之间会贴在一起、说明文字没有归属。
-class _WeatherSettingsScreen extends StatelessWidget {
-  const _WeatherSettingsScreen();
+class WeatherSettingsScreen extends StatelessWidget {
+  const WeatherSettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

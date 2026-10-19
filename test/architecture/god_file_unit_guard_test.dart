@@ -169,7 +169,10 @@ void main() {
     // 13621→13629：settings_reset.dart 转正为独立库（_SettingsResetTile 公开化
     // 为 SettingsResetTile，5 个分身引用点改公开名，两处测试补指向新库的
     // import），+8 全为文件头/import，零行为搬迁。
-    const baselineLines = 13629;
+    // 13629→13639：settings_weather.dart 转正为独立库（_WeatherSettingsScreen
+    // 公开化为 WeatherSettingsScreen，主文件两处 push 点改公开名），
+    // +10 全为文件头/import，零行为搬迁。
+    const baselineLines = 13639;
     final domainFiles = <String>[
       'lib/screens/timetable_settings_screen.dart',
       ...Directory('lib/screens/settings')
@@ -190,7 +193,7 @@ void main() {
           '并先做等量瘦身，不要抬基线换绿。',
     );
 
-    // part 数量：只减不增，随「转正」逐格收紧（13 = reset 转正后余 13）。
+    // part 数量：只减不增，随「转正」逐格收紧（12 = weather 转正后余 12）。
     final settingsMain = File('lib/screens/timetable_settings_screen.dart');
     final partCount = RegExp(
       r"^part\s+'",
@@ -198,7 +201,7 @@ void main() {
     ).allMatches(settingsMain.readAsStringSync()).length;
     expect(
       partCount,
-      lessThanOrEqualTo(13),
+      lessThanOrEqualTo(12),
       reason:
           '设置页 part 数量涨到 $partCount（基线 16）。16 个分身将逐个转正为'
           '独立库文件；part 只作零行为搬迁的过渡，不要新增。',

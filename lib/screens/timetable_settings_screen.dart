@@ -11,7 +11,6 @@ import 'package:university_timetable/l10n/holiday_log_localizer.dart';
 import 'package:university_timetable/l10n/holiday_name_localizer.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
-import 'package:university_timetable/l10n/weather_location_failure_localizer.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -61,7 +60,6 @@ import 'log_viewer_entry.dart';
 import 'live_testing_fixture_screen.dart';
 import 'time_scheme_management_screen.dart';
 import 'timetable_profiles_screen.dart';
-import 'weather_city_picker_screen.dart';
 import 'hyperos_showcase_screen.dart';
 import 'miuix_showcase_screen.dart';
 import 'user_guide_screen.dart';
@@ -69,6 +67,7 @@ import 'settings/settings_shared.dart';
 import 'settings/settings_appearance_editor.dart';
 import 'settings/settings_home_backdrop_flow.dart';
 import 'settings/settings_reset.dart';
+import 'settings/settings_weather.dart';
 
 part 'settings/settings_appearance.dart';
 part 'settings/settings_home_navigation.dart';
@@ -82,7 +81,6 @@ part 'settings/settings_live.dart';
 part 'settings/settings_timetable_page.dart';
 part 'settings/settings_home_widget.dart';
 part 'settings/settings_holiday.dart';
-part 'settings/settings_weather.dart';
 
 /// 鍏鏍肩瓑澶栭儴鍏ュ彛鐩磋揪璁剧疆瀛愰〉鐨勫伐鍘傘€?
 ///
@@ -98,7 +96,7 @@ Widget? settingsSubpageById(String id) {
     'courseCardSettings' => const _CourseCardSettingsScreen(),
     'liveSettings' => const _LiveSettingsScreen(),
     'holidaySettings' => const _HolidaySettingsScreen(),
-    'weatherSettings' => const _WeatherSettingsScreen(),
+    'weatherSettings' => const WeatherSettingsScreen(),
     'homeWidgetSettings' => const _HomeWidgetSettingsScreen(),
     'diagnosticsSettings' => const _DiagnosticsScreen(),
     _ => null,
@@ -178,7 +176,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosNavigation.push(
             context,
             settings: const RouteSettings(name: '/settings/weather'),
-            builder: (_) => const _WeatherSettingsScreen(),
+            builder: (_) => const WeatherSettingsScreen(),
           );
         }
 
