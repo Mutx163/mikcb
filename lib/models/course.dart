@@ -1,8 +1,5 @@
 import 'dart:convert';
 
-import '../l10n/app_localizations.dart';
-import '../l10n/course_week_localizations.dart';
-
 enum CourseNature { required, elective }
 
 extension CourseNatureX on CourseNature {
@@ -605,12 +602,9 @@ class Course {
     return weeks.where((week) => !suspended.contains(week)).toList();
   }
 
-  String weekDescription(AppLocalizations l10n) =>
-      courseWeekDescription(l10n, this);
-
-  String? suspensionDescription(AppLocalizations l10n) =>
-      courseSuspensionDescription(l10n, this);
-
+  /// 周次文案不在这里做（模型层不依赖 l10n）：见 l10n 层
+  /// `course_week_localizations.dart` 的 `CourseWeekDescriptions` 扩展，
+  /// 调用点仍写 `course.weekDescription(l10n)`。
   bool isInWeek(int week) {
     final custom = normalizedCustomWeeks;
     if (custom != null) {

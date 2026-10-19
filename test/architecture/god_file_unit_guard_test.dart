@@ -26,7 +26,10 @@ import 'package:flutter_test/flutter_test.dart';
 /// - 本文件：逻辑单元总量 + part 数量 + provider 分片的宿主私有访问数。
 void main() {
   test('timetable_screen 逻辑单元总行数棘轮：只减不增', () {
-    const baselineLines = 9154;
+    // 2026-10-19 晚：拆 models↔l10n 唯一真循环，主文件仅 +1 行 import
+    // （course_week_localizations 的扩展），属换依赖方向而非功能增长，
+    // 主文件与单元总量各 +1（9154 → 9155）已在提交信息说明。
+    const baselineLines = 9155;
     const unit = [
       'lib/screens/timetable_screen.dart',
       'lib/screens/timetable_day_view_part.dart',

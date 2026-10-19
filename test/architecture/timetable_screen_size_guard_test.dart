@@ -27,8 +27,11 @@ void main() {
     // 回今日浮钮（净 -142）、星期栏本体（净 -310）、玻璃坞（净 -291）、
     // 剩余库级类（净 -169）、build 期 chrome 解析（净 -126）、顶栏 chrome
     // 构建（净 -49）先后搬出 → 6325。
+    // 2026-10-19 晚：拆 models↔l10n 唯一真循环，本文件仅 +1 行 import
+    // （course_week_localizations 的 CourseWeekDescriptions 扩展），
+    // 属「换依赖方向」而非功能增长，按规矩说明后基线 6325 → 6326。
     // 下一次目标（弹层族/控制器）预计可再降至 ~5800。
-    const baselineLines = 6325;
+    const baselineLines = 6326;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),
