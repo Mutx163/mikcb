@@ -82,11 +82,11 @@ import '../widgets/timetable_home_preview_scope.dart';
 import '../widgets/week_selector_picker_sheet.dart';
 import '../widgets/timetable/timetable_back_to_current_week_button.dart';
 import '../widgets/timetable/timetable_back_to_today_button.dart';
+import '../widgets/timetable/timetable_weekday_header.dart';
 import '../widgets/timetable/timetable_day_pager_physics.dart';
 import '../widgets/timetable/timetable_empty_slot.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
 import '../widgets/timetable/timetable_open_only_route.dart';
-import '../widgets/timetable/timetable_weekday_selection_indicator.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
@@ -124,7 +124,6 @@ class TimetableScreen extends StatefulWidget {
 class _TimetableScreenState extends State<TimetableScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   static const int _minWeek = 1;
-  static const double _weekDayHeaderHeight = 40;
   static const double _homeTitleHorizontalNudge = 4;
   static const Duration _weekSlideDuration = Duration(milliseconds: 280);
   static const Duration _dayExpandDuration = Duration(milliseconds: 360);
@@ -945,7 +944,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   headerBlurEnabled: settings.homePageHeaderBlurEnabled,
                   weekdayBarBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
                   includeStatusBar: statusBarShowsBackdrop,
-                  weekdayBarHeight: _weekDayHeaderHeight,
+                  weekdayBarHeight: TimetableWeekdayHeader.height,
                   // 实体档那条实心条要与标题行同一个底色来源（页面底色）。
                   solidColor: pageBackgroundColor,
                 ),
@@ -2744,347 +2743,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  Widget _buildWeekDayHeader(
-    TimetableProvider provider,
-    int week,
-    TimetableSettings settings,
-    double timeColumnWidth, {
-    bool hideBottomBorder = false,
-  }) {
-    final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasBackdrop = hasHomePageBackdrop(settings);
-    // Opaque/no-wallpaper chrome still needs a separator, but a full 1dp
-    // ThemeData outline lands as a dark multi-physical-pixel band on dense
-    // Android screens. Keep the wallpaper path's existing border untouched
-    // and use the lighter HyperOS divider token only for the fallback.
-    final subtleBorder = hasBackdrop
-        ? context.theme.colors.border
-        : HyperosColors.dividerLine(context);
-    final dividerWidth = hasBackdrop ? 1.0 : 0.5;
-    // Only flip by wallpaper luminance when this band actually shows the
-    // wallpaper / frosted glass; with the scope toggled off it paints the
-    // opaque page background and must use the theme / configured ink. 实体档
-    // 那条不透明实心条同样不属于「压在壁纸上」（真机 2026-09-30 修）；液态 /
-    // 磨砂带在模糊管线不在时降级的实心条亦然。
-    final weekdayChromeOverWallpaper = homePageWeekdayBarOverWallpaper(
-      settings: settings,
-      hasBackdrop: hasBackdrop,
-      blurPipelineOn:
-          hasBackdrop && HyperosBlurredHeader.backdropBlurEnabled(context),
-    );
-    // Judge ink from the band actually behind the weekday bar, not the
-    // status/title strip above it — the two can differ on the same photo.
-    // With the weekday glass band on, follow the band's scrim polarity (the
-    // scrim derives from the top sample) so ink and wash never fight.
-    final weekdayLuminance = settings.homePageWeekdayBarBlurEnabled
-        ? _wallpaperTopLuminance
-        : _wallpaperWeekdayLuminance ?? _wallpaperTopLuminance;
-    // Week label sits in the weekday chrome band: auto-invert default black/white
-    // over a dark wallpaper; a custom ink keeps its hue, only the lightness moves.
-    final weekLabelColor = homePageOverWallpaperInk(
-      configuredHex: isDark
-          ? settings.weekdayBarFontColorDark
-          : settings.weekdayBarFontColorLight,
-      defaultHex: isDark
-          ? TimetableSettings.defaultWeekdayBarFontColorDark
-          : TimetableSettings.defaultWeekdayBarFontColorLight,
-      themeFallback: colorScheme.onSurface,
-      hasBackdrop: weekdayChromeOverWallpaper,
-      wallpaperLuminance: weekdayLuminance,
-    );
-    final visibleDays = _visibleDayNumbers(settings);
-
-    // Shared full-row builder: week label + back-to-current-week + the seven
-    // day slots + the selection indicator — one complete weekday bar row.
-    // Week view renders one row per page (it scrolls with that page); day
-    // view stacks three consecutive weeks and translates them with the pager
-    // so the WHOLE bar slides like the week view's header.
-    Widget fullWeekRowFor(int rowWeek, {required bool showExtras}) {
-      return Row(
-        children: [
-          SizedBox(
-            width: timeColumnWidth,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                InkWell(
-                  onTap: _showWeekSelector,
-                  borderRadius: BorderRadius.circular(10),
-                  child: Padding(
-                    // 时间列偏窄，略向右让周次与节次数字视觉中心对齐。
-                    padding: const EdgeInsets.fromLTRB(8, 2, 2, 2),
-                    child: Text(
-                      l10n.currentWeekCompact(rowWeek),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: weekLabelColor,
-                      ),
-                    ),
-                  ),
-                ),
-                // （内嵌「回本周」小字已移除）
-              ],
-            ),
-          ),
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Row(
-                  children: visibleDays
-                      .map((dayOfWeek) {
-                        final date = _dateForWeekDay(
-                          settings,
-                          rowWeek,
-                          dayOfWeek,
-                        );
-                        final isToday =
-                            date != null && _isSameDate(date, DateTime.now());
-                        final isSelected = _isSelectedDay(rowWeek, dayOfWeek);
-                        final configuredWeekdayHex = isDark
-                            ? settings.weekdayBarFontColorDark
-                            : settings.weekdayBarFontColorLight;
-                        final configuredAccentHex = isDark
-                            ? settings.weekdayBarAccentColorDark
-                            : settings.weekdayBarAccentColorLight;
-                        // Default weekday ink flips with the band behind this
-                        // bar; a custom hex keeps its colour, only the
-                        // lightness moves when it would be unreadable. Accent
-                        // (today/selected) obeys the same rule so the "today"
-                        // column neither vanishes into the photo nor loses the
-                        // colour the user picked.
-                        final weekdayColor = homePageOverWallpaperInk(
-                          configuredHex: configuredWeekdayHex,
-                          defaultHex: isDark
-                              ? TimetableSettings.defaultWeekdayBarFontColorDark
-                              : TimetableSettings
-                                    .defaultWeekdayBarFontColorLight,
-                          themeFallback: colorScheme.onSurface,
-                          hasBackdrop: weekdayChromeOverWallpaper,
-                          wallpaperLuminance: weekdayLuminance,
-                        );
-                        final accentColor = homePageOverWallpaperAccent(
-                          configuredHex: configuredAccentHex,
-                          themeFallback: colorScheme.primary,
-                          hasBackdrop: weekdayChromeOverWallpaper,
-                          wallpaperLuminance: weekdayLuminance,
-                        );
-                        final labelColor = (isSelected || isToday)
-                            ? accentColor
-                            : weekdayColor;
-                        final subLabelColor = (isSelected || isToday)
-                            ? accentColor.withValues(
-                                alpha: isSelected ? 0.9 : 0.78,
-                              )
-                            : homePageOverWallpaperMutedInk(weekdayColor);
-                        final showsTodayMarker = isToday && !isSelected;
-                        final hasExamOnDay =
-                            date != null && provider.hasExamOnDate(date);
-
-                        return Expanded(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              key: ValueKey(
-                                'weekday-header-$rowWeek-$dayOfWeek',
-                              ),
-                              borderRadius: BorderRadius.circular(14),
-                              onTapDown: (details) =>
-                                  _captureDayViewAnchor(details.globalPosition),
-                              onTap: () => _toggleDayView(
-                                week: rowWeek,
-                                dayOfWeek: dayOfWeek,
-                                settings: settings,
-                              ),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                curve: Curves.easeOutCubic,
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 1,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    bottom: BorderSide(
-                                      color: showsTodayMarker
-                                          ? accentColor.withValues(alpha: 0.35)
-                                          : Colors.transparent,
-                                      width: showsTodayMarker ? 2 : 0,
-                                    ),
-                                  ),
-                                ),
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    // 固定 40dp 的星期栏扣掉 3+3 内边距和 0.5
-                                    // 分隔线后格子只剩 33.5dp，平铺考试红点会把
-                                    // 内容顶到 34dp 溢出；改悬浮层后基础内容恒
-                                    // 为 28dp，任何外观模式都有余量。
-                                    Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          _weekdayLabel(context, dayOfWeek),
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: isSelected || isToday
-                                                ? FontWeight.w800
-                                                : FontWeight.w600,
-                                            color: labelColor,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          date == null
-                                              ? ''
-                                              : '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}',
-                                          style: TextStyle(
-                                            fontSize: 8.5,
-                                            color: subLabelColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (hasExamOnDay)
-                                      Align(
-                                        alignment: Alignment.bottomCenter,
-                                        child: Container(
-                                          key: const ValueKey(
-                                            'weekday-exam-dot',
-                                          ),
-                                          width: 4,
-                                          height: 4,
-                                          decoration: BoxDecoration(
-                                            color: colorScheme.error,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      })
-                      .toList(growable: false),
-                ),
-                if (showExtras)
-                  TimetableWeekdaySelectionIndicator(
-                    settings: settings,
-                    week: rowWeek,
-                    visibleDays: visibleDays,
-                    wallpaperOverChrome: weekdayChromeOverWallpaper,
-                    wallpaperLuminance: weekdayLuminance,
-                    pageController: _dayViewPageController,
-                    isDayView: _isDayView,
-                    visibleDayViewWeek: _visibleDayViewWeek,
-                    shouldShowOverlay: _shouldShowDayViewOverlay,
-                  ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-
-    // Current pager page as a continuous double (day view only).
-    double dayViewPagerPage() {
-      final controller = _dayViewPageController;
-      if (controller == null) {
-        return 0;
-      }
-      if (!controller.hasClients) {
-        return controller.initialPage.toDouble();
-      }
-      return controllerPageOrNull(controller) ??
-          controller.initialPage.toDouble();
-    }
-
-    return Container(
-      height: _weekDayHeaderHeight,
-      padding: EdgeInsets.zero,
-      decoration: hideBottomBorder
-          ? null
-          : BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: subtleBorder, width: dividerWidth),
-              ),
-            ),
-      child: _isDayView && _dayViewPageController != null
-          ? AnimatedBuilder(
-              animation: _dayViewPageController!,
-              builder: (context, _) {
-                // The whole bar (week label + day row + indicator) is one row
-                // per week. Within a week it stays put (the indicator follows
-                // the pager); only during the cross-week transition does the
-                // outgoing week slide out and the next week slide in — glued
-                // to the pager's position, like the week view's per-page
-                // header moving under the finger.
-                final rawPage = dayViewPagerPage();
-                final count = visibleDays.length;
-                final totalWeeks = settings.semesterWeekCount;
-                final weekIndex = (rawPage / count).floor().clamp(
-                  0,
-                  totalWeeks - 1,
-                );
-                final inWeekPos = rawPage - weekIndex * count;
-                final isCrossing = inWeekPos >= count - 1;
-                final progress = isCrossing
-                    ? (inWeekPos - (count - 1)).clamp(0.0, 1.0)
-                    : 0.0;
-                final weekRow = weekIndex + 1;
-                final nextWeek = weekRow + 1;
-                final extrasOnOutgoing = !isCrossing || progress < 0.5;
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    final barWidth = constraints.maxWidth;
-                    return ClipRect(
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          if (isCrossing)
-                            Transform.translate(
-                              offset: Offset(-progress * barWidth, 0),
-                              child: SizedBox(
-                                width: barWidth,
-                                child: fullWeekRowFor(
-                                  weekRow,
-                                  showExtras: extrasOnOutgoing,
-                                ),
-                              ),
-                            ),
-                          if (isCrossing)
-                            Transform.translate(
-                              offset: Offset((1 - progress) * barWidth, 0),
-                              child: SizedBox(
-                                width: barWidth,
-                                child: fullWeekRowFor(
-                                  nextWeek,
-                                  showExtras: !extrasOnOutgoing,
-                                ),
-                              ),
-                            ),
-                          if (!isCrossing)
-                            fullWeekRowFor(weekRow, showExtras: true),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
-            )
-          : fullWeekRowFor(week, showExtras: true),
-    );
-  }
 
 
   Widget _buildTimetableGrid(
@@ -3278,7 +2936,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final showLabel =
         _isHomePullQuickImportRunning ||
         _homePullDragDistance >= _homePullQuickImportTriggerDistance * 0.45;
-    const indicatorTopInset = _weekDayHeaderHeight + 8;
+    const indicatorTopInset = TimetableWeekdayHeader.height + 8;
     // Subtle follow — 11px max, eased, not the previous 27px linear slide.
     final followY = () {
       if (_isHomePullQuickImportRunning) return 0.0;
@@ -3790,12 +3448,28 @@ class _TimetableScreenState extends State<TimetableScreen>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // 日视图自己的星期信息栏（scrubber 视觉由外部手势层覆盖）。
-                _buildWeekDayHeader(
-                  provider,
-                  visibleDayViewWeek,
-                  settings,
-                  _resolveTimeColumnWidth(settings),
+                TimetableWeekdayHeader(
+                  settings: settings,
+                  week: visibleDayViewWeek,
+                  timeColumnWidth: _resolveTimeColumnWidth(settings),
                   hideBottomBorder: true,
+                  wallpaperTopLuminance: _wallpaperTopLuminance,
+                  wallpaperWeekdayLuminance: _wallpaperWeekdayLuminance,
+                  pageController: _dayViewPageController,
+                  isDayView: _isDayView,
+                  visibleDayViewWeek: _visibleDayViewWeek,
+                  shouldShowOverlay: _shouldShowDayViewOverlay,
+                  isSelectedDay: _isSelectedDay,
+                  hasExamOnDate: provider.hasExamOnDate,
+                  onShowWeekSelector: _showWeekSelector,
+                  onDayTapDown: _captureDayViewAnchor,
+                  onDayTap: (week, dayOfWeek) {
+                    _toggleDayView(
+                      week: week,
+                      dayOfWeek: dayOfWeek,
+                      settings: settings,
+                    );
+                  },
                 ),
                 Expanded(
                   child: _buildAnchoredDayViewOverlay(
@@ -3817,7 +3491,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             top: 0,
             left: 0,
             right: 0,
-            height: _weekDayHeaderHeight,
+            height: TimetableWeekdayHeader.height,
             child: GestureDetector(
               key: const ValueKey('day-view-weekday-bar-swipe-area'),
               behavior: HitTestBehavior.translucent,
@@ -3853,7 +3527,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 底下（层次感）；被遮住的最后几节由 _buildWeekPageBody 的滚动余
     // 量救回——上滑把整段课表完全滑出到药丸上方，下滑再让药丸盖回。
     final bodyAvailableHeight =
-        (availableHeight - _weekDayHeaderHeight - chromeGridClearance).clamp(
+        (availableHeight - TimetableWeekdayHeader.height - chromeGridClearance).clamp(
           0.0,
           double.infinity,
         );
@@ -3877,7 +3551,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // Keep the week slot at a fixed height while the day overlay owns the
     // visible header, avoiding duplicate weekday bars during the transition.
     final weekdayHeader = SizedBox(
-      height: _weekDayHeaderHeight,
+      height: TimetableWeekdayHeader.height,
       child: _shouldShowDayViewOverlay
           ? const SizedBox.shrink()
           : homePageBackgroundLayer(
@@ -3888,13 +3562,29 @@ class _TimetableScreenState extends State<TimetableScreen>
                 region: HomePageBackgroundScope.weekdayBar,
                 chromeBlurEnabled: weekdayChromeBlurEnabled,
               ),
-              child: _buildWeekDayHeader(
-                provider,
-                week,
-                settings,
-                timeColumnWidth,
+              child: TimetableWeekdayHeader(
+                settings: settings,
+                week: week,
+                timeColumnWidth: timeColumnWidth,
                 hideBottomBorder:
                     weekdayShowsBackdrop || weekdayChromeBlurEnabled,
+                wallpaperTopLuminance: _wallpaperTopLuminance,
+                wallpaperWeekdayLuminance: _wallpaperWeekdayLuminance,
+                pageController: _dayViewPageController,
+                isDayView: _isDayView,
+                visibleDayViewWeek: _visibleDayViewWeek,
+                shouldShowOverlay: _shouldShowDayViewOverlay,
+                isSelectedDay: _isSelectedDay,
+                hasExamOnDate: provider.hasExamOnDate,
+                onShowWeekSelector: _showWeekSelector,
+                onDayTapDown: _captureDayViewAnchor,
+                onDayTap: (week, dayOfWeek) {
+                  _toggleDayView(
+                    week: week,
+                    dayOfWeek: dayOfWeek,
+                    settings: settings,
+                  );
+                },
               ),
             ),
     );

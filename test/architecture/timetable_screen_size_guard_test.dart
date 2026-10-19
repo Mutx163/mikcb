@@ -24,9 +24,9 @@ void main() {
     // 2026-10-19 按真实值收紧到 8156；同日再把首页物理/空位标记/弹层路由
     // 搬进 widgets/timetable/，并清掉 2 个失效 import 与 5 个尾部空行，
     // 主文件降到 7693；随后星期栏指示条（净 -121）、回本周浮钮（净 -160）、
-    // 回今日浮钮（净 -142）先后改成独立 widget → 7270。
-    // 下一次目标（星期栏本体/玻璃坞）预计可再降至 ~6500。
-    const baselineLines = 7270;
+    // 回今日浮钮（净 -142）、星期栏本体（净 -310）先后改成独立 widget → 6960。
+    // 下一次目标（玻璃坞/弹层）预计可再降至 ~6500。
+    const baselineLines = 6960;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),
