@@ -2,12 +2,22 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../logging/app_debug_log.dart';
+
+/// 测试注入口：替换 [downloadToManagedImage] 自建 client 分支里的
+/// `http.Client()` 构造。
+///
+/// 生产代码不得读写；只有测试需要驱动「不传 client」这条默认分支时注入
+/// （flutter_test 的假 HttpOverrides 会把真实 `http.Client()` 全部打成 400，
+/// 没有这个口子默认分支在测试里不可达）。
+@visibleForTesting
+http.Client Function()? managedImageOwnedHttpClientFactory;
 
 /// 从系统相册挑选一张图片并复制到应用文档目录，返回新文件的绝对路径。
 ///
@@ -157,7 +167,8 @@ Future<ManagedImageDownloadResult> downloadToManagedImage({
   Duration? timeout,
   void Function(int receivedBytes, int? totalBytes)? onProgress,
 }) async {
-  final httpClient = client ?? http.Client();
+  final httpClient =
+      client ?? managedImageOwnedHttpClientFactory?.call() ?? http.Client();
   final ownsClient = client == null;
   http.StreamedResponse response;
   try {
