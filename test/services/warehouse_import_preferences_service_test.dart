@@ -28,6 +28,23 @@ class _MemoryWarehouseSecureStorage extends WarehouseSecureStorage {
   }
 }
 
+/// 在写指定内容时抛异常的安全存储：模拟「还原中途被杀」。
+/// 按写入**内容**匹配而不是按 key：播种旧数据用同一个实例，不能误伤。
+class _ThrowingOnWriteSecureStorage extends _MemoryWarehouseSecureStorage {
+  _ThrowingOnWriteSecureStorage(this.failingValueFragments);
+  final List<String> failingValueFragments;
+
+  @override
+  Future<void> write({required String key, required String value}) async {
+    for (final fragment in failingValueFragments) {
+      if (value.contains(fragment)) {
+        throw StateError('simulated crash writing $key');
+      }
+    }
+    await super.write(key: key, value: value);
+  }
+}
+
 void main() {
   group('resolveWarehouseImportUrl', () {
     test('prefers custom import URL when set', () {
@@ -713,6 +730,185 @@ void main() {
       );
       expect(resolved.password, '');
       expect(resolved.host, 'evil.example.com');
+    });
+  });
+
+  group('importSyncBundle 终态先算后写（2026-10-19 安全清单 #2）', () {
+    WarehouseImportPreferencesService newService({
+      WarehouseSecureStorage? secureStorage,
+    }) => WarehouseImportPreferencesService(
+      secureStorage: secureStorage ?? _MemoryWarehouseSecureStorage(),
+    );
+
+    Future<void> seedLocalData(WarehouseImportPreferencesService service) async {
+      await service.setRememberedLogin(
+        'demo',
+        const WarehouseRememberedLogin(username: 'student', password: 'pw'),
+      );
+      await service.setCustomImportUrl('demo', 'https://jw.example.edu.cn/');
+      await service.addRecentSchool('school-a');
+      await service.saveCustomDebugRecord(
+        WarehouseCustomDebugRecord(
+          id: 'rec-1',
+          name: '本机调试',
+          importUrl: 'https://jw.example.edu.cn/',
+          script: 'local script',
+          createdAt: DateTime.utc(2026, 2, 3),
+          updatedAt: DateTime.utc(2026, 2, 2),
+        ),
+      );
+    }
+
+    test('云端缺字段（sections 不在场）：本地四类数据原样保留', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = newService();
+      await seedLocalData(service);
+
+      // 模拟外来/旧格式快照：bundle 为空 + 各类别标记为不在场。
+      await service.importSyncBundle(
+        const WarehouseSyncBundle(),
+        sections: const WarehouseSyncSections.absent(),
+      );
+
+      expect((await service.getRememberedLogin('demo'))?.password, 'pw');
+      expect(
+        await service.getCustomImportUrl('demo'),
+        'https://jw.example.edu.cn/',
+      );
+      expect(await service.getRecentSchoolIds(), ['school-a']);
+      final records = await service.getCustomDebugRecords();
+      expect(records.single.script, 'local script');
+    });
+
+    test('还原中途被杀（写安全存储抛异常）：不清空、已写成的保留', () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = _ThrowingOnWriteSecureStorage(['new-b']);
+      final service = newService(secureStorage: storage);
+      await service.setRememberedLogin(
+        'adapter-a',
+        const WarehouseRememberedLogin(username: 's', password: 'local-a'),
+      );
+      await service.setRememberedLogin(
+        'adapter-b',
+        const WarehouseRememberedLogin(username: 's', password: 'local-b'),
+      );
+      await service.setRememberedLogin(
+        'adapter-c',
+        const WarehouseRememberedLogin(username: 's', password: 'local-c'),
+      );
+
+      // 旧实现此刻已经把 a/b/c 全删光；新实现写新值在先，B 写失败时
+      // A 已写成、C 从未被触碰。
+      await expectLater(
+        service.importSyncBundle(
+          const WarehouseSyncBundle(
+            rememberedLogins: [
+              WarehouseRememberedLoginEntry(
+                adapterId: 'adapter-a',
+                login: WarehouseRememberedLogin(
+                  username: 's',
+                  password: 'new-a',
+                ),
+              ),
+              WarehouseRememberedLoginEntry(
+                adapterId: 'adapter-b',
+                login: WarehouseRememberedLogin(
+                  username: 's',
+                  password: 'new-b',
+                ),
+              ),
+            ],
+          ),
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(
+        (await service.getRememberedLogin('adapter-a'))?.password,
+        'new-a',
+      );
+      expect(
+        (await service.getRememberedLogin('adapter-b'))?.password,
+        'local-b',
+      );
+      expect(
+        (await service.getRememberedLogin('adapter-c'))?.password,
+        'local-c',
+      );
+    });
+
+    test('全部在场时保持替换语义：云端没有的 adapter/地址/键被清掉', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = newService();
+      await service.setRememberedLogin(
+        'adapter-a',
+        const WarehouseRememberedLogin(username: 's', password: 'new-a'),
+      );
+      await service.setRememberedLogin(
+        'adapter-z',
+        const WarehouseRememberedLogin(username: 's', password: 'local-z'),
+      );
+      await service.setCustomImportUrl('demo', 'https://kept.example.cn/');
+      await service.setCustomImportUrl('stale', 'https://gone.example.cn/');
+      await service.addRecentSchool('school-a');
+      await service.saveCustomDebugRecord(
+        WarehouseCustomDebugRecord(
+          id: 'rec-1',
+          name: 'n',
+          importUrl: 'u',
+          script: 's',
+          createdAt: DateTime.utc(2026, 2, 3),
+          updatedAt: DateTime.utc(2026, 2, 2),
+        ),
+      );
+
+      await service.importSyncBundle(
+        const WarehouseSyncBundle(
+          rememberedLogins: [
+            WarehouseRememberedLoginEntry(
+              adapterId: 'adapter-a',
+              login: WarehouseRememberedLogin(username: 's', password: 'new-a'),
+            ),
+          ],
+          customImportUrls: {'demo': 'https://kept.example.cn/'},
+        ),
+      );
+
+      expect(
+        (await service.getRememberedLogin('adapter-a'))?.password,
+        'new-a',
+      );
+      expect(await service.getRememberedLogin('adapter-z'), isNull);
+      expect(
+        await service.getCustomImportUrl('demo'),
+        'https://kept.example.cn/',
+      );
+      expect(await service.getCustomImportUrl('stale'), isNull);
+      // recentSchoolIds / customDebugRecords 在场但为空 → 按云端清空。
+      expect(await service.getRecentSchoolIds(), isEmpty);
+      expect(await service.getCustomDebugRecords(), isEmpty);
+    });
+
+    test('fromSnapshotJson：warehouse 缺子键按不在场处理，整体缺失全部不在场', () {
+      expect(
+        WarehouseSyncSections.fromSnapshotJson(null).rememberedLogins,
+        isFalse,
+      );
+      final partial = WarehouseSyncSections.fromSnapshotJson({
+        'rememberedLogins': <Object?>[],
+      });
+      expect(partial.rememberedLogins, isTrue);
+      expect(partial.customImportUrls, isFalse);
+      expect(partial.recentSchoolIds, isFalse);
+      expect(partial.customDebugRecords, isFalse);
+      // 本 App 产出的快照四键恒定输出：全部在场。
+      final full = WarehouseSyncSections.fromSnapshotJson(
+        const WarehouseSyncBundle().toJson(),
+      );
+      expect(full.rememberedLogins, isTrue);
+      expect(full.customImportUrls, isTrue);
+      expect(full.recentSchoolIds, isTrue);
+      expect(full.customDebugRecords, isTrue);
     });
   });
 }

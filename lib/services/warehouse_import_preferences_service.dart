@@ -244,6 +244,49 @@ class WarehouseSyncBundle {
   }
 }
 
+/// 云端快照里 warehouse 各子字段的**在场标记**（2026-10-19 安全清单 #2）。
+///
+/// 快照 JSON 缺某个子键（旧版本快照 / 上游裁剪 / 手工编辑）时，对应的本地
+/// 类别在还原时**原样保留**——「云端没说」不等于「云端说是空的」。旧实现把
+/// 缺字段当空列表处理，还原时会先清空本地再写回，一次恢复就可能把本机
+/// 全部导入偏好永久抹掉。
+class WarehouseSyncSections {
+  final bool rememberedLogins;
+  final bool customImportUrls;
+  final bool recentSchoolIds;
+  final bool customDebugRecords;
+
+  /// 全部在场（默认）：本 App 自己产出的快照序列化时四类键恒定输出，
+  /// 还原语义与旧版一致——按云端**替换**。
+  const WarehouseSyncSections({
+    this.rememberedLogins = true,
+    this.customImportUrls = true,
+    this.recentSchoolIds = true,
+    this.customDebugRecords = true,
+  });
+
+  /// 全部不在场：这份快照根本不带可辨识的 warehouse 段。
+  const WarehouseSyncSections.absent()
+    : rememberedLogins = false,
+      customImportUrls = false,
+      recentSchoolIds = false,
+      customDebugRecords = false;
+
+  /// 从快照 JSON 的 warehouse 对象推导：warehouse 整体缺失 → 全部不在场；
+  /// warehouse 在但缺某个子键 → 只有该类别不在场。
+  factory WarehouseSyncSections.fromSnapshotJson(Object? warehouseRaw) {
+    if (warehouseRaw is! Map) {
+      return const WarehouseSyncSections.absent();
+    }
+    return WarehouseSyncSections(
+      rememberedLogins: warehouseRaw.containsKey('rememberedLogins'),
+      customImportUrls: warehouseRaw.containsKey('customImportUrls'),
+      recentSchoolIds: warehouseRaw.containsKey('recentSchoolIds'),
+      customDebugRecords: warehouseRaw.containsKey('customDebugRecords'),
+    );
+  }
+}
+
 class WarehouseImportPreferencesService {
   static const String _customImportUrlPrefix = 'warehouse_custom_import_url_';
   static const String _customImportUrlSourcePrefix =
@@ -488,63 +531,61 @@ class WarehouseImportPreferencesService {
   /// Cloud snapshots strip passwords ([WarehouseSyncBundle.withoutPasswords]).
   /// Before replace-import, keep local passwords when remote password is empty
   /// and the remembered account identity still matches.
-  Future<void> importSyncBundle(WarehouseSyncBundle bundle) async {
+  ///
+  /// 2026-10-19 重写（安全清单 #2）。旧实现是「先删光、再写回」：一次性删掉
+  /// prefs + 安全存储里四类键的全部旧值，然后逐条写回云端带来的新值——
+  /// 中途被杀（进程死亡 / 断电 / 平台通道异常上抛）就停在「本地已清空、
+  /// 云端没写完」的状态，云端缺什么本地就永久丢什么，且无任何 journal。
+  /// 现在分三步：
+  ///
+  /// 1. 在内存里把「还原后的完整终态」算出来（密码保留 / 地址过滤 / 记录
+  ///    脱敏都在这一步，任何 throw 都不会碰盘）；
+  /// 2. 先写新值（与旧键同名的直接覆写）；
+  /// 3. **最后**才清「云端没有、本地还在」的旧残留。任何时刻被杀，最坏
+  ///    结果只是多留几条旧数据（复活），不再存在「全空」窗口——复活是
+  ///    可再还原的，丢失不可逆。
+  ///
+  /// [sections] 标记云端到底带了哪些类别（见 [WarehouseSyncSections]）：
+  /// 不在场的类别**整体跳过**，既不写也不清。
+  Future<void> importSyncBundle(
+    WarehouseSyncBundle bundle, {
+    WarehouseSyncSections sections = const WarehouseSyncSections(),
+  }) async {
     final prefs = await _prefs;
     final localRememberedLogins = await _readRememberedLoginsByAdapterId();
 
-    for (final key in prefs.getKeys()) {
-      if (key.startsWith(_customImportUrlPrefix) ||
-          key.startsWith(_rememberedLoginPrefix)) {
-        await prefs.remove(key);
+    // —— 1) 内存终态 ——
+    final desiredLogins = <String, WarehouseRememberedLogin>{};
+    if (sections.rememberedLogins) {
+      for (final entry in bundle.rememberedLogins) {
+        if (entry.adapterId.isEmpty) {
+          continue;
+        }
+        // 密码与绑定站点必须作为一对一起解析：保留本地密码时若沿用云端的
+        // host，等于把用户真密码配到备份指定的域名上（见
+        // resolveRememberedLoginForImport）。
+        desiredLogins[entry.adapterId] = resolveRememberedLoginForImport(
+          incoming: entry.login,
+          localLogin: localRememberedLogins[entry.adapterId],
+        );
       }
     }
-    await prefs.remove(_recentSchoolIdsKey);
-    await prefs.remove(_customDebugRecordsKey);
-
-    final secureEntries = await _secureStorage.readAll();
-    for (final key in secureEntries.keys) {
-      if (key.startsWith(_secureRememberedLoginPrefix)) {
-        await _secureStorage.delete(key: key);
+    final desiredUrls = <String, String>{};
+    if (sections.customImportUrls) {
+      for (final entry in bundle.customImportUrls.entries) {
+        // 2026-10-10：云端下发的地址照原样存下来（**不再按协议丢**——那会让
+        // 只支持明文 http 的学校在换机还原后丢掉自己配的地址，导航退化成
+        // 站点外壳），但来源记为 cloud：它进自动填充白名单时要按 https +
+        // 同域复核。只挡解析不出主机、或不是 http(s) 的
+        // （`javascript:`/`file:`/`data:` 这类）。
+        if (!isNavigableWarehouseImportUrl(entry.value)) {
+          continue;
+        }
+        desiredUrls[entry.key] = entry.value;
       }
     }
-
-    for (final entry in bundle.rememberedLogins) {
-      if (entry.adapterId.isEmpty) {
-        continue;
-      }
-      // 密码与绑定站点必须作为一对一起解析：保留本地密码时若沿用云端的 host，
-      // 等于把用户真密码配到备份指定的域名上（见 resolveRememberedLoginForImport）。
-      final resolved = resolveRememberedLoginForImport(
-        incoming: entry.login,
-        localLogin: localRememberedLogins[entry.adapterId],
-      );
-      await setRememberedLogin(
-        entry.adapterId,
-        WarehouseRememberedLogin(
-          username: resolved.username,
-          password: resolved.password,
-          host: resolved.host,
-        ),
-      );
-    }
-    for (final entry in bundle.customImportUrls.entries) {
-      // 2026-10-10：云端下发的地址照原样存下来（**不再按协议丢**——那会让只支持
-      // 明文 http 的学校在换机还原后丢掉自己配的地址，导航退化成站点外壳），
-      // 但来源记为 cloud：它进自动填充白名单时要按 https + 同域复核。
-      // 只挡解析不出主机、或不是 http(s) 的（`javascript:`/`file:`/`data:` 这类）。
-      if (!isNavigableWarehouseImportUrl(entry.value)) {
-        continue;
-      }
-      await setCustomImportUrl(
-        entry.key,
-        entry.value,
-        source: CustomImportUrlSource.cloud,
-      );
-    }
-    if (bundle.recentSchoolIds.isNotEmpty) {
-      await prefs.setStringList(_recentSchoolIdsKey, bundle.recentSchoolIds);
-    }
-    if (bundle.customDebugRecords.isNotEmpty) {
+    List<WarehouseCustomDebugRecord>? desiredDebugRecords;
+    if (sections.customDebugRecords) {
       // 2026-10-14：云端下发的调试记录不再原样入库。`record.script` 会在
       // 「自定义调试」页被原样 `runJavaScript`（warehouse_custom_debug_screen
       // 的 `_openDebug` → debugScriptOverride），而 WebView 里是用户已登录的
@@ -553,7 +594,7 @@ class WarehouseImportPreferencesService {
       // 验证真伪，所以**只保留展示、不给执行**：script 落库为空串，用户点开
       // 能看到这条记录的名字与地址，但点「调试」时脚本为空、不会执行任何
       // 远端带来的代码；想要可用脚本，请在本机重新录入。
-      final sanitized = bundle.customDebugRecords
+      desiredDebugRecords = bundle.customDebugRecords
           .map(
             (item) => WarehouseCustomDebugRecord(
               id: item.id,
@@ -565,10 +606,61 @@ class WarehouseImportPreferencesService {
             ),
           )
           .toList();
+    }
+
+    // —— 2) 先写新值 ——
+    for (final entry in desiredLogins.entries) {
+      await setRememberedLogin(entry.key, entry.value);
+    }
+    for (final entry in desiredUrls.entries) {
+      await setCustomImportUrl(
+        entry.key,
+        entry.value,
+        source: CustomImportUrlSource.cloud,
+      );
+    }
+    if (sections.recentSchoolIds && bundle.recentSchoolIds.isNotEmpty) {
+      await prefs.setStringList(_recentSchoolIdsKey, bundle.recentSchoolIds);
+    }
+    final debugRecords = desiredDebugRecords;
+    if (debugRecords != null && debugRecords.isNotEmpty) {
       await prefs.setString(
         _customDebugRecordsKey,
-        jsonEncode(sanitized.map((item) => item.toJson()).toList()),
+        jsonEncode(debugRecords.map((item) => item.toJson()).toList()),
       );
+    }
+
+    // —— 3) 最后清残留 ——
+    if (sections.rememberedLogins) {
+      for (final adapterId in localRememberedLogins.keys) {
+        if (!desiredLogins.containsKey(adapterId)) {
+          await clearRememberedLogin(adapterId);
+        }
+      }
+    }
+    if (sections.customImportUrls) {
+      final localUrlAdapterIds = prefs.getKeys()
+          .where(
+            (key) =>
+                key.startsWith(_customImportUrlPrefix) &&
+                !key.startsWith(_customImportUrlSourcePrefix),
+          )
+          .map((key) => key.substring(_customImportUrlPrefix.length))
+          .where((adapterId) => adapterId.isNotEmpty)
+          .toList();
+      for (final adapterId in localUrlAdapterIds) {
+        if (desiredUrls.containsKey(adapterId)) {
+          continue;
+        }
+        await prefs.remove('$_customImportUrlPrefix$adapterId');
+        await prefs.remove('$_customImportUrlSourcePrefix$adapterId');
+      }
+    }
+    if (sections.recentSchoolIds && bundle.recentSchoolIds.isEmpty) {
+      await prefs.remove(_recentSchoolIdsKey);
+    }
+    if (debugRecords != null && debugRecords.isEmpty) {
+      await prefs.remove(_customDebugRecordsKey);
     }
   }
 
