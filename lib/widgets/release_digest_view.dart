@@ -57,9 +57,18 @@ class _ReleaseDigestViewState extends State<ReleaseDigestView> {
     final textStyles = theme.textStyles;
     final digest = widget.digest;
     final counts = releaseChangeCounts(digest);
+    // 还有没露过面的条目时，入口说的是「查看全部 N 项」；如果重点行已经把全部
+    // 条目都列出来了（展开只是换成完整句子），改说「查看完整说明」——否则在
+    // 「一共 2 条、2 条都看得见」的版本上，用户会读到一句像是撒谎的话。
+    final hasHiddenEntries = digest.total > digest.highlights.length;
     final canExpand = widget.alwaysExpandable
         ? digest.total > 0
-        : digest.total > digest.highlights.length;
+        : hasHiddenEntries;
+    // 分类计数只在它提供重点行之外的信息时才显示：单一分类、且条目已经全部
+    // 列在重点行里时，这一行就是把上面 N 行又数了一遍（v2.1.3.4 正是这种）。
+    // 一版 54 条、四个分类时它照旧出现——那是这一版的规模，不是重复。
+    final showCounts =
+        counts.isNotEmpty && (counts.length > 1 || hasHiddenEntries);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -80,7 +89,7 @@ class _ReleaseDigestViewState extends State<ReleaseDigestView> {
             colors: colors,
             textStyles: textStyles,
           ),
-        if (counts.isNotEmpty) ...[
+        if (showCounts) ...[
           const SizedBox(height: 2),
           MiuixText(
             _formatCounts(counts),
@@ -94,6 +103,7 @@ class _ReleaseDigestViewState extends State<ReleaseDigestView> {
             l10n: l10n,
             colors: colors,
             textStyles: textStyles,
+            revealsHiddenEntries: hasHiddenEntries,
           ),
         ],
         if (_expanded) ...[
@@ -161,6 +171,7 @@ class _ReleaseDigestViewState extends State<ReleaseDigestView> {
     required AppLocalizations l10n,
     required MiuixColors colors,
     required MiuixTextStyles textStyles,
+    required bool revealsHiddenEntries,
   }) {
     // 用 GestureDetector 而不是 InkWell / MiuixTextButton：弹窗面板是玻璃材质
     // （不是 Material），InkWell 的水波找不到可画的平面；这一行是纯文字动作，
@@ -178,7 +189,9 @@ class _ReleaseDigestViewState extends State<ReleaseDigestView> {
               MiuixText(
                 _expanded
                     ? l10n.aboutUpdateCollapseAction
-                    : l10n.aboutUpdateViewAllAction('${widget.digest.total}'),
+                    : revealsHiddenEntries
+                    ? l10n.aboutUpdateViewAllAction('${widget.digest.total}')
+                    : l10n.aboutUpdateViewFullAction,
                 style: textStyles.footnote1,
                 color: colors.primary,
                 fontWeight: FontWeight.w600,

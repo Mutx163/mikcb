@@ -2478,6 +2478,7 @@
       }
     }
   },
+  "aboutUpdateViewFullAction": "查看完整说明",
   "aboutUpdateCollapseAction": "收起",
   "aboutUpdateNoUpdateHint": "当前版本已经可正常使用；如果你要体验测试版，可以在后面的高级选项里打开测试版检测",
   "aboutUpdatedAt": "更新时间：{time}",

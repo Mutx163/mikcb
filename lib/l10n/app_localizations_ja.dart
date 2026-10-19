@@ -4521,6 +4521,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get aboutUpdateViewFullAction => '詳細を表示';
+
+  @override
   String get aboutUpdateCollapseAction => '折りたたむ';
 
   @override

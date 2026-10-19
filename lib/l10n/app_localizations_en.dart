@@ -4725,6 +4725,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get aboutUpdateViewFullAction => 'View full details';
+
+  @override
   String get aboutUpdateCollapseAction => 'Show less';
 
   @override

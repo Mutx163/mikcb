@@ -2193,6 +2193,7 @@
   "aboutUpdateAvailableHint": "可直接點擊立即下載。線路切換與高級選項已整合至下方。",
   "aboutUpdateHighlightsTitle": "本次更新重點",
   "aboutUpdateViewAllAction": "查看全部 {count} 項",
+  "aboutUpdateViewFullAction": "查看完整說明",
   "aboutUpdateCollapseAction": "收起",
   "aboutUpdateNoUpdateHint": "目前版本已經可正常使用；如果你要體驗測試版，可以在後面的高級選項裡開啟測試版檢測",
   "aboutUpdatedAt": "更新時間：{time}",

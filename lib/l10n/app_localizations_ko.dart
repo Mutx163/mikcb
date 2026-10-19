@@ -4551,6 +4551,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get aboutUpdateViewFullAction => '자세히 보기';
+
+  @override
   String get aboutUpdateCollapseAction => '접기';
 
   @override

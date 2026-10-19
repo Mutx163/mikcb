@@ -8163,6 +8163,12 @@ abstract class AppLocalizations {
   /// **'查看全部 {count} 项'**
   String aboutUpdateViewAllAction(String count);
 
+  /// No description provided for @aboutUpdateViewFullAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看完整说明'**
+  String get aboutUpdateViewFullAction;
+
   /// No description provided for @aboutUpdateCollapseAction.
   ///
   /// In zh, this message translates to:

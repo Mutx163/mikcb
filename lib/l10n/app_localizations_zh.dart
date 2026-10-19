@@ -4413,6 +4413,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get aboutUpdateViewFullAction => '查看完整说明';
+
+  @override
   String get aboutUpdateCollapseAction => '收起';
 
   @override
@@ -15663,6 +15666,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String aboutUpdateViewAllAction(String count) {
     return '查看全部 $count 項';
   }
+
+  @override
+  String get aboutUpdateViewFullAction => '查看完整說明';
 
   @override
   String get aboutUpdateCollapseAction => '收起';
@@ -26955,6 +26961,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String aboutUpdateViewAllAction(String count) {
     return '查看全部 $count 項';
   }
+
+  @override
+  String get aboutUpdateViewFullAction => '查看完整說明';
 
   @override
   String get aboutUpdateCollapseAction => '收起';

@@ -2451,6 +2451,7 @@
   "aboutUpdateAvailableHint": "You can simply tap \"Download now\" below. Speed test, mirrors, and prerelease options have been moved into Advanced Options",
   "aboutUpdateHighlightsTitle": "Highlights in this update",
   "aboutUpdateViewAllAction": "See all {count} items",
+  "aboutUpdateViewFullAction": "View full details",
   "aboutUpdateCollapseAction": "Show less",
   "aboutUpdateNoUpdateHint": "The current version is already usable. If you want to try prereleases, enable prerelease checks in Advanced Options below",
   "aboutUpdatedAt": "Updated at: {time}",
