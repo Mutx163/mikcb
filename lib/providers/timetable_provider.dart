@@ -48,6 +48,7 @@ import '../services/storage_service.dart';
 import '../services/sync_operation_gate.dart';
 import '../services/user_data_sync_hooks.dart';
 import '../services/ics_import_service.dart';
+import '../services/timetable_exam_service.dart';
 import '../services/timetable_theme_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/wallpaper_history_service.dart';
@@ -485,6 +486,7 @@ class TimetableProvider with ChangeNotifier {
             .reduce((a, b) => a > b ? a : b);
 
   late final TimetableThemeService _themeService;
+  late final TimetableExamService _examService;
 
   TimetableProvider({
     StorageService? storageService,
@@ -518,6 +520,7 @@ class TimetableProvider with ChangeNotifier {
        _ownsHolidayService = holidayService == null,
        _analytics = analytics ?? AppAnalytics.instance {
     _themeService = TimetableThemeService(_TimetableThemePort(this));
+    _examService = TimetableExamService(_TimetableExamPort(this));
     _holidayService.onRemoteHolidayDataUpdated = (_) {
       unawaited(_loadHolidayData());
     };
@@ -947,10 +950,6 @@ class TimetableProvider with ChangeNotifier {
     _themeService.dispose();
     super.dispose();
   }
-
-  /// 主题服务只能通过这个薄入口刷新界面（ChangeNotifier 的 notifyListeners
-  /// 是 protected，端口适配器不能直接调）。
-  void _notifyThemeStateChanged() => notifyListeners();
 
   Future<void> _updateLiveActivity({bool syncScheduleSnapshot = true}) =>
       _liveUpdateActivity(this, syncScheduleSnapshot: syncScheduleSnapshot);
@@ -2891,135 +2890,23 @@ class TimetableProvider with ChangeNotifier {
   int? getWeekIndex(DateTime date, DateTime semesterStart) =>
       WeekCalculator.getWeekIndex(date, semesterStart);
 
-  List<Exam> getExamsForCourse(String courseId) {
-    return _exams.where((exam) => exam.courseId == courseId).toList()
-      ..sort(Exam.compareByStart);
-  }
+  List<Exam> getExamsForCourse(String courseId) =>
+      _examService.getExamsForCourse(courseId);
 
-  List<Exam> getUpcomingExams({int? limit}) {
-    final upcoming = _exams.where((exam) => !exam.isExpired).toList()
-      ..sort(Exam.compareByStart);
-    if (limit != null && upcoming.length > limit) {
-      return upcoming.sublist(0, limit);
-    }
-    return upcoming;
-  }
+  List<Exam> getUpcomingExams({int? limit}) =>
+      _examService.getUpcomingExams(limit: limit);
 
-  Exam? getNextExam() {
-    final upcoming = getUpcomingExams(limit: 1);
-    return upcoming.isEmpty ? null : upcoming.first;
-  }
+  Exam? getNextExam() => _examService.getNextExam();
 
-  bool hasExamOnDate(DateTime date) {
-    final target = DateTime(date.year, date.month, date.day);
-    return _exams.any((exam) {
-      final examDate = DateTime(
-        exam.dateTime.year,
-        exam.dateTime.month,
-        exam.dateTime.day,
-      );
-      return examDate == target;
-    });
-  }
+  bool hasExamOnDate(DateTime date) => _examService.hasExamOnDate(date);
 
-  /// 失败**不**回滚是刻意的（与 `addCourse` 同口径）：内存里这条正是用户刚填完的
-  /// 内容，表单已弹「保存失败」，回滚等于把他填的一屏清空，比留下它更糟。
-  Future<void> addExam(Exam exam) {
-    return _runMutation(() async {
-      await initialize();
-      if (getCourseForExam(exam) == null) {
-        throw ArgumentError('linked_course_not_found');
-      }
-      _exams.add(exam);
-      await _persistActiveProfileState();
-      notifyListeners();
-      unawaited(_syncExamReminders());
-      // Native widgets re-read profiles; force a snapshot push so exam line
-      // appears without waiting for the next course-boundary refresh.
-      _lastHomeWidgetSnapshotSignature = null;
-      unawaited(_syncHomeWidgetSnapshot());
-      _analytics.logEventLater(
-        name: 'exam_created',
-        parameters: {
-          'has_location': exam.location?.isNotEmpty == true ? 1 : 0,
-          'has_seat': exam.seatNumber?.isNotEmpty == true ? 1 : 0,
-        },
-      );
-    });
-  }
+  /// 考试域用例在 [TimetableExamService]。
+  Future<void> addExam(Exam exam) => _examService.addExam(exam);
 
-  /// 与 [deleteExam] 同一条契约：改内存 → await 落盘 → 失败整体退回并上抛。
-  /// 只退 `_exams` 不够，`_profiles` 里那份幻影也要退（理由见 [deleteExam]）。
-  Future<void> updateExam(Exam exam) {
-    return _runMutation(() async {
-      await initialize();
-      final index = _exams.indexWhere((e) => e.id == exam.id);
-      if (index == -1) return;
-      final snapshotExams = List<Exam>.from(_exams);
-      final snapshotProfiles = List<TimetableProfile>.from(_profiles);
-      _exams[index] = exam;
-      try {
-        await _persistActiveProfileState();
-      } catch (_) {
-        _exams = snapshotExams;
-        _profiles = snapshotProfiles;
-        rethrow;
-      }
-      notifyListeners();
-      unawaited(_syncExamReminders());
-      _lastHomeWidgetSnapshotSignature = null;
-      unawaited(_syncHomeWidgetSnapshot());
-      _analytics.logEventLater(
-        name: 'exam_updated',
-        parameters: {'exam_id': exam.id},
-      );
-    });
-  }
+  Future<void> updateExam(Exam exam) => _examService.updateExam(exam);
 
-  /// 删除考试。
-  ///
-  /// 落盘失败必须整体退回并上抛（2026-10-07 补）。`_runMutation` 只是互斥锁
-  /// （`_mutationGate.runExclusive`），不含回滚；原先这里是裸的
-  /// `removeWhere` → await 落盘 → `notifyListeners()`：
-  /// 落盘抛错时条目已从 `_exams` 摘掉、`notifyListeners()` 被跳过，于是界面仍
-  /// 显示着这一条、用户收到「保存失败」，而删除其实已经进了内存 —— 此后任意一次
-  /// 成功写入（切周、加课、30 秒心跳）把它永久坐实。
-  ///
-  /// ⚠️ 写这类注释时**别把方法名连左括号一起写出来**：
-  /// `test/architecture/dependency_guards_test.dart` 的写放大棘轮按原始文本数
-  /// 调用点（注释也算进去），凭空多一处就会红在「你并没有加调用点」上。
-  ///
-  /// 契约见 `course_repository.dart` 开头的判据：**内存里被改掉的是不是用户刚
-  /// 亲口确认的那一条**。这里用户确认的就是「删掉这条考试」，所以失败要退回去。
-  /// （`addExam` 失败**不**回滚是刻意的：内存里那条正是用户刚填完的内容，
-  /// 表单已提示保存失败，回滚等于清空他一屏。）
-  ///
-  /// `_profiles` 也要一起退：`_persistActiveProfileState` 的**第一步**就是
-  /// `_mergeActiveProfileIntoProfilesList`（早于任何磁盘写入），落盘失败时
-  /// `_profiles[active]` 里已经是那份没存下的状态，只退 `_exams` 会留下幻影。
-  Future<void> deleteExam(String examId) {
-    return _runMutation(() async {
-      await initialize();
-      final snapshotExams = List<Exam>.from(_exams);
-      final snapshotProfiles = List<TimetableProfile>.from(_profiles);
-      _exams.removeWhere((e) => e.id == examId);
-      try {
-        await _persistActiveProfileState();
-      } catch (_) {
-        _exams = snapshotExams;
-        _profiles = snapshotProfiles;
-        rethrow;
-      }
-      notifyListeners();
-      unawaited(_syncExamReminders());
-      _lastHomeWidgetSnapshotSignature = null;
-      unawaited(_syncHomeWidgetSnapshot());
-      _analytics.logEventLater(
-        name: 'exam_deleted',
-        parameters: {'remaining_exam_count': _exams.length},
-      );
-    });
-  }
+  Future<void> deleteExam(String examId) => _examService.deleteExam(examId);
+
 
   /// 每次考试/课程/单节课提醒 CRUD 后都会全量 reconcile 原生提醒
   /// （25+ 个 `unawaited(_syncExamReminders())` 点火点），批量导入时
@@ -4487,9 +4374,59 @@ class _TimetableThemePort implements TimetableThemePort {
       _rollbackSettingsWrite(host, snapshot);
       rethrow;
     }
-    host._notifyThemeStateChanged();
+    host._notifyStateChanged();
   }
 
   @override
-  void notifyStateChanged() => host._notifyThemeStateChanged();
+  void notifyStateChanged() => host._notifyStateChanged();
+}
+
+/// 考试服务的宿主适配器：把考试列表/档案快照、写入口与副作用收成一个端口。
+class _TimetableExamPort implements TimetableExamPort {
+  _TimetableExamPort(this.host);
+
+  final TimetableProvider host;
+
+  @override
+  List<Exam> get exams => host._exams;
+
+  @override
+  set exams(List<Exam> value) => host._exams = value;
+
+  @override
+  List<TimetableProfile> get profiles => host._profiles;
+
+  @override
+  set profiles(List<TimetableProfile> value) => host._profiles = value;
+
+  @override
+  Future<void> initialize() => host.initialize();
+
+  @override
+  Future<T> runMutation<T>(Future<T> Function() operation) =>
+      host._runMutation(operation);
+
+  @override
+  Course? courseForExam(Exam exam) => host.getCourseForExam(exam);
+
+  @override
+  Future<void> persistActiveProfileState() =>
+      host._persistActiveProfileState();
+
+  @override
+  void notifyStateChanged() => host._notifyStateChanged();
+
+  @override
+  void syncExamReminders() => unawaited(host._syncExamReminders());
+
+  @override
+  void invalidateHomeWidgetSnapshot() =>
+      host._lastHomeWidgetSnapshotSignature = null;
+
+  @override
+  void syncHomeWidgetSnapshot() => unawaited(host._syncHomeWidgetSnapshot());
+
+  @override
+  void logExamEvent(String name, Map<String, Object> parameters) =>
+      host._analytics.logEventLater(name: name, parameters: parameters);
 }

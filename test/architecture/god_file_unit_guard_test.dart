@@ -9,8 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 ///   库级类拆到 `widgets/timetable/`，再把星期栏/浮钮/玻璃坞/日议程模型、
 ///   build 期 chrome 解析与顶栏 chrome 拆出，主文件 6,325 + 两个 part 2,829 =
 ///   9,154 行。
-/// - `timetable_provider`：主文件 4,495 + 10 个 part 3,479 = 7,974 行
-///   （主题族已抽到 `services/timetable_theme_service.dart`）；
+/// - `timetable_provider`：主文件 4,432 + 10 个 part 3,479 = 7,911 行
+///   （主题/考试族已抽到 `services/`）；
 ///   part 里仍有 573 处直接访问 `host._私有字段` —— 这是同一个类的 11 个抽屉，
 ///   不是 11 个模块。
 ///
@@ -60,7 +60,7 @@ void main() {
   });
 
   test('timetable_provider 逻辑单元总行数棘轮：只减不增', () {
-    const baselineLines = 7974;
+    const baselineLines = 7911;
     final parts = _providerParts();
     final lines =
         _lineCount('lib/providers/timetable_provider.dart') +
