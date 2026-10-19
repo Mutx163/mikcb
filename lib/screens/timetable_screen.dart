@@ -87,6 +87,7 @@ import '../widgets/timetable/timetable_day_agenda_models.dart';
 import '../widgets/timetable/timetable_home_action_button.dart';
 import '../widgets/timetable/timetable_day_pager_physics.dart';
 import '../widgets/timetable/timetable_empty_slot.dart';
+import '../widgets/timetable/timetable_home_header.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
 import '../widgets/timetable/timetable_glass_dock.dart';
 import '../widgets/timetable/timetable_open_only_route.dart';
@@ -755,30 +756,15 @@ class _TimetableScreenState extends State<TimetableScreen>
         // 的样子（2026-09-14 真机现象）。图标墨色见 [_chromeActionBallInk]；
         // 「更多」在菜单打开期间让位给弹窗自己的形变球（与真实按钮被
         // `contentHidden` 隐藏的窗口一致，见 ListenableBuilder）。
-        final homeChromeBalls = [
-          ListenableBuilder(
-            listenable: _homeMenuAnchor,
-            builder: (_, _) => FHeaderActionBall(
-              link: _moreBallLink,
-              visible: !_homeMenuAnchor.contentHidden,
-              icon: _buildMoreActionIcon(dotBorderColor: chromeDotBorderColor),
-            ),
-          ),
-          // 爱心球与爱心按钮同门禁（hasPartnerBinding）：按钮不在树上时
-          // LayerLink 没有 leader，follower 会画在自己的布局位置（Stack 左上角）。
-          if (provider.hasPartnerBinding)
-            FHeaderActionBall(
-              link: _heartBallLink,
-              icon: Icon(
-                _isCoupleOverlayActive(provider)
-                    ? Icons.favorite_rounded
-                    : Icons.favorite_outline_rounded,
-                color: _isCoupleOverlayActive(provider)
-                    ? const Color(0xFFE91E63)
-                    : _chromeActionBallInk,
-              ),
-            ),
-        ];
+        final homeChromeBalls = buildTimetableHomeChromeBalls(
+          homeMenuAnchor: _homeMenuAnchor,
+          moreLink: _moreBallLink,
+          heartLink: _heartBallLink,
+          hasPartnerBinding: provider.hasPartnerBinding,
+          coupleOverlayActive: _isCoupleOverlayActive(provider),
+          moreIcon: _buildMoreActionIcon(dotBorderColor: chromeDotBorderColor),
+          chromeActionBallInk: _chromeActionBallInk,
+        );
         // 与设置页课表预览完全同构的组采样结构：BackdropGroup 内先放全尺寸
         // UndimmedBackdropCapture（组内首个 filter 缓存整屏壁纸），chrome 玻璃
         // 带采样这份全尺寸背景。此前首页玻璃带只能采样自己 band bounds 的背
@@ -842,63 +828,28 @@ class _TimetableScreenState extends State<TimetableScreen>
                   foreground: chromeForeground,
                   mutedForeground: chromeMutedForeground,
                 ),
-                suffixes: [
-                  if (provider.hasPartnerBinding)
-                    CompositedTransformTarget(
-                      link: _heartBallLink,
-                      // 可见图标（爱心）画到采样宿主之外的常驻玻璃球上
-                      // （见 [_homeChromeBalls] 与 FHeaderActionBall 的说明），
-                      // 这里只留透明点击区。
-                      child: FHeaderAction(
-                        icon: const SizedBox(width: 24, height: 24),
-                        semanticsLabel: _isCoupleOverlayActive(provider)
-                            ? l10n.coupleTimetableModeDisableTooltip
-                            : l10n.coupleTimetableModeEnableTooltip,
-                        onPress: () {
-                          setState(() {
-                            _coupleOverlayEnabled = !_coupleOverlayEnabled;
-                            _sharedFreeSegmentsExpanded = false;
-                          });
-                          _persistCoupleOverlayEnabled(
-                            provider,
-                            enabled: _coupleOverlayEnabled,
-                          );
-                        },
-                      ),
-                    ),
-                  // 两颗玻璃球之间的间距：顶栏后缀行是裸 `Row`（无 spacing），
-                  // 两个 40 宽按钮挨着 = 两颗球边缘相切；换成玻璃后各带描边 /
-                  // 外阴影，相切读起来就是"贴得太近"（2026-09-14 真机反馈）。
-                  // 只在与爱心同时出现时插入，单独一颗时与原来一致。
-                  if (provider.hasPartnerBinding) const SizedBox(width: 8),
-                  // 上游形变弹层要求把锚点绑在触发控件上（[MiuixGlassAnchor]
-                  // 负责挂它自己的 GlobalKey）；[_topMenuButtonKey] 仍保留，
-                  // 供「八宫格」形态在原位置弹出底部弹层用。
-                  // 按下即预热首页采样源：图层快照帧末录制，抬手打开菜单时
-                  // 已就绪，弹层首帧就是玻璃而不是透明轮廓。
-                  Listener(
-                    onPointerDown: (_) => _prewarmHomeGlass(),
-                    onPointerUp: (_) => _releaseHomeGlassAfterTap(),
-                    onPointerCancel: (_) => _releaseHomeGlassAfterTap(),
-                    child: CompositedTransformTarget(
-                      link: _moreBallLink,
-                      child: MiuixGlassAnchor(
-                        anchor: _homeMenuAnchor,
-                        child: KeyedSubtree(
-                          key: _topMenuButtonKey,
-                          child: FHeaderAction(
-                            // 可见图标（含更新红点）画到采样宿主之外的常驻玻璃球上
-                            // （见 [_homeChromeBalls] 与 FHeaderActionBall 的说明），
-                            // 这里只留透明点击区。
-                            icon: const SizedBox(width: 24, height: 24),
-                            semanticsLabel: l10n.moreTooltip,
-                            onPress: _showTopActionsSheet,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                suffixes: buildTimetableHomeHeaderActions(
+                  l10n: l10n,
+                  hasPartnerBinding: provider.hasPartnerBinding,
+                  coupleOverlayActive: _isCoupleOverlayActive(provider),
+                  heartLink: _heartBallLink,
+                  moreLink: _moreBallLink,
+                  homeMenuAnchor: _homeMenuAnchor,
+                  topMenuButtonKey: _topMenuButtonKey,
+                  onToggleCoupleOverlay: () {
+                    setState(() {
+                      _coupleOverlayEnabled = !_coupleOverlayEnabled;
+                      _sharedFreeSegmentsExpanded = false;
+                    });
+                    _persistCoupleOverlayEnabled(
+                      provider,
+                      enabled: _coupleOverlayEnabled,
+                    );
+                  },
+                  onPrewarmGlass: _prewarmHomeGlass,
+                  onReleaseGlass: _releaseHomeGlassAfterTap,
+                  onShowTopActions: _showTopActionsSheet,
+                ),
                 child: Padding(
                   padding: EdgeInsets.only(
                     // 日课表的列表视口保持全屏：避让改为列表自身的滚动
