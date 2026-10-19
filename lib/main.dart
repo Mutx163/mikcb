@@ -1105,6 +1105,9 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       }
 
       unawaited(_checkPendingExternalImport());
+      // 与快速路径（`_handleStartupFlows` 里的同一段）对齐：引导期内从桌面小组件
+      // 冷启动时，原生侧已经消费了那一次启动意图，Dart 侧不补这一跳就没人路由。
+      unawaited(_checkPendingWidgetLaunch());
       unawaited(_installLanEditNotificationHandler());
       // 走完引导页这条路径要**重新取** settings：引导页里选视觉效果会写设置，
       // 上面那份是引导之前的档位。与快速路径那条同源（见 _handleStartupFlows）。
