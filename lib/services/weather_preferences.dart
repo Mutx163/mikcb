@@ -50,9 +50,11 @@ class WeatherPreferences {
     return WeatherForecast.tryDecode(preferences.getString(forecastKey));
   }
 
-  static Future<void> saveForecast(WeatherForecast forecast) async {
+  /// 写入成功返回 true；磁盘满等场景 [SharedPreferences.setString] 返回
+  /// false 而不是抛错，调用方需自查返回值留痕（2026-10-19 审查补）。
+  static Future<bool> saveForecast(WeatherForecast forecast) async {
     final preferences = await SharedPreferences.getInstance();
-    await preferences.setString(forecastKey, forecast.toJsonString());
+    return preferences.setString(forecastKey, forecast.toJsonString());
   }
 
   static Future<void> clearForecast() async {

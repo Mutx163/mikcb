@@ -340,7 +340,14 @@ class WeatherProvider extends ChangeNotifier {
       // 界面却收不到通知，卡片上的天气空位最长挂到下次重建。写失败（返回 false
       // 的磁盘满、平台通道异常）只损失「下次冷启动的缓存」，不该动内存态。
       try {
-        await WeatherPreferences.saveForecast(forecast);
+        final saved = await WeatherPreferences.saveForecast(forecast);
+        // SharedPreferences 磁盘满等场景返回 false 而不抛错（2026-10-19 审查
+        // 补留痕）：同样只损失「下次冷启动的缓存」，内存态与通知不受影响。
+        if (!saved) {
+          _debugLogForecastCacheWriteFailure(
+            StateError('setString returned false (write rejected)'),
+          );
+        }
       } catch (error) {
         _debugLogForecastCacheWriteFailure(error);
       }
