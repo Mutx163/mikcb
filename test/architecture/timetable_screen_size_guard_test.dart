@@ -33,8 +33,9 @@ void main() {
     // 深夜 M4-B：星期栏墨色弹层、切换课表弹层、顶栏玻璃菜单外壳、课程操作
     // sheet 族先后搬出（净 -550）→ 5776。
     // M5-A：首页下拉药丸、情侣空闲摘要、周页滚动壳搬出（净 -411）→ 5365。
-    // 下一次目标（build 期布局树 / 日列）预计可再降至 ~5000。
-    const baselineLines = 5365;
+    // M5-A2：build 期首页栈（壁纸/玻璃带/顶栏）与周网格日列搬出（净 -260）
+    // → 5105。下一次目标（周 pager / 剩余 build 外壳）预计可再降至 ~5000。
+    const baselineLines = 5105;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),
