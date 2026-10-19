@@ -49,6 +49,7 @@ import '../services/sync_operation_gate.dart';
 import '../services/user_data_sync_hooks.dart';
 import '../services/ics_import_service.dart';
 import '../services/timetable_exam_service.dart';
+import '../services/timetable_holiday_service.dart';
 import '../services/timetable_theme_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/wallpaper_history_service.dart';
@@ -487,6 +488,7 @@ class TimetableProvider with ChangeNotifier {
 
   late final TimetableThemeService _themeService;
   late final TimetableExamService _examService;
+  late final TimetableHolidayService _holidayDomainService;
 
   TimetableProvider({
     StorageService? storageService,
@@ -521,6 +523,9 @@ class TimetableProvider with ChangeNotifier {
        _analytics = analytics ?? AppAnalytics.instance {
     _themeService = TimetableThemeService(_TimetableThemePort(this));
     _examService = TimetableExamService(_TimetableExamPort(this));
+    _holidayDomainService = TimetableHolidayService(
+      _TimetableHolidayPort(this),
+    );
     _holidayService.onRemoteHolidayDataUpdated = (_) {
       unawaited(_loadHolidayData());
     };
@@ -928,8 +933,8 @@ class TimetableProvider with ChangeNotifier {
 
   /// Test-only: inject holiday data without going through the HTTP service.
   ///
-  /// 只赋值 + 通知，不走 [_loadHolidayDataImpl] 的桌面卡片/超级岛重排副作用；
-  /// 需要「假期课被过滤」类 UI 断言的测试用这个种数据。
+  /// 只赋值 + 通知，不走 [TimetableHolidayService.load] 的桌面卡片/超级岛
+  /// 重排副作用；需要「假期课被过滤」类 UI 断言的测试用这个种数据。
   @visibleForTesting
   void seedHolidayDataForTesting(HolidayData data) {
     _holidayData = data;
@@ -3041,137 +3046,47 @@ class TimetableProvider with ChangeNotifier {
   }
 
   // ---- 节假日相关 ----
+  //
+  // 加载（含跨年 + 自定义合并 + 重推 live surface）、刷新、自定义假期读写与
+  // 展示判定都已在 [TimetableHolidayService]；这里只留公开签名与一行委托，
+  // 行为契约（损坏数据拒写、加载失败只留痕）见各服务方法注释。
 
-  /// 节假日加载后要重置快照签名并强推桌面卡片/超级岛，与 switchProfile
-  /// 的 [_syncLiveScheduleSnapshot] 共用 live surface gate 串行化，
-  /// 避免交错时用旧课表推送一次小组件。
-  Future<void> _loadHolidayData() =>
-      _runLiveSurfaceExclusive(_loadHolidayDataImpl);
+  Future<void> _loadHolidayData() => _holidayDomainService.load();
 
-  Future<void> _loadHolidayDataImpl() async {
-    try {
-      final now = DateTime.now();
-      final data = await _holidayService.getDataForYear(now.year);
-      final allEntries = <HolidayEntry>[...data.entries];
-      // 跨年那一周的假期可能整段挂在邻年响应里（本仓库 fixture 的元旦就是
-      // 2026-12-31..2027-01-02），只取 now.year 会把 12 月末当上课日排课。
-      for (final year in holidayYearsToLoad(now).where((y) => y != now.year)) {
-        allEntries.addAll((await _holidayService.getDataForYear(year)).entries);
-      }
-      // Merge user-defined custom holidays. Null means the persisted data is
-      // corrupted (logged inside the service): skip merging instead of
-      // treating it as "no data" so a later save cannot wipe real entries.
-      final customEntries = await _holidayService.loadCustomHolidays();
-      if (customEntries != null) {
-        allEntries.addAll(customEntries);
-      }
-      _holidayData = HolidayData(
-        year: data.year,
-        version: data.version,
-        entries: allEntries,
-      );
-      notifyListeners();
-      // Holiday data is not stored in timetable profiles; force home widget /
-      // live schedule resync so desktop widgets pick up vacation days.
-      _lastHomeWidgetSnapshotSignature = null;
-      _lastLiveSnapshotSignature = null;
-      _currentLiveCourseId = null;
-      _lastLiveActivityStageKey = null;
-      // Full body: home widget + schedule snapshot + stopLiveUpdate when holiday.
-      await _updateLiveActivity();
-    } catch (e, stackTrace) {
-      // Holiday data is non-critical; keep going but leave a trace so a
-      // "vacation days missing on widget" report is diagnosable.
-      await AppLogService.instance.warn(
-        'holiday_data_refresh_failed',
-        e.toString(),
-        error: e,
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
-  /// 获取指定日期的节假日条目
-  HolidayEntry? getHolidayForDate(DateTime date) {
-    return _holidayData?.entryForDate(date);
-  }
-
-  /// 当前加载的节假日数据信息
   HolidayData? get holidayData => _holidayData;
 
-  /// 节假日数据更新日志
   List<HolidayLogEntry> get holidayLogs => _holidayService.logs;
 
-  /// Refresh holiday data (clear cache and reload)
-  Future<void> refreshHolidayData() async {
-    await Future.wait(holidayYearsToLoad(DateTime.now()).map(_holidayService.clearCache));
-    await _loadHolidayData();
-  }
+  HolidayEntry? getHolidayForDate(DateTime date) =>
+      _holidayDomainService.getHolidayForDate(date);
 
-  /// 用户自定义假期列表（不含远程/内置数据）
-  ///
-  /// 本地数据损坏时返回空列表兜底（损坏详情由 service 落日志），只读
-  /// 展示场景无法修复损坏，也没有写回风险。
-  Future<List<HolidayEntry>> getCustomHolidays() async {
-    return await _holidayService.loadCustomHolidays() ?? const [];
-  }
+  Future<void> refreshHolidayData() => _holidayDomainService.refresh();
 
-  /// 读取自定义假期，数据损坏时返回 null（区别于「没有数据」的空列表）。
-  /// 供设置页区分「暂无」与「损坏」并给出提示条（getCustomHolidays 会把
-  /// 损坏兜底成空列表，用户会误以为没有数据，见 Issue #52 审核 S4）。
-  Future<List<HolidayEntry>?> loadCustomHolidaysOrNull() {
-    return _holidayService.loadCustomHolidays();
-  }
+  Future<List<HolidayEntry>> getCustomHolidays() =>
+      _holidayDomainService.getCustomHolidays();
 
-  /// 新增一条自定义假期
-  Future<void> addCustomHoliday(HolidayEntry entry) async {
-    await _holidayService.addCustomHoliday(entry);
-    await _loadHolidayData();
-  }
+  /// 数据损坏时返回 null（区别于「暂无」的空列表），供设置页区分并提示。
+  Future<List<HolidayEntry>?> loadCustomHolidaysOrNull() =>
+      _holidayDomainService.loadCustomHolidaysOrNull();
 
-  /// 批量新增自定义假期（单次 load → append → save，避免逐条写入的竞态问题）
-  Future<void> addCustomHolidays(List<HolidayEntry> entries) async {
-    final existing = await _holidayService.loadCustomHolidays();
-    if (existing == null) {
-      // 本地数据损坏：禁止把空列表 append 后写回（会覆盖清零真实数据）。
-      throw const HolidayCustomSaveException(
-        'custom holiday storage corrupted; refusing to overwrite',
-      );
-    }
-    existing.addAll(entries);
-    await _holidayService.saveCustomHolidays(existing);
-    await _loadHolidayData();
-  }
+  Future<void> addCustomHoliday(HolidayEntry entry) =>
+      _holidayDomainService.addCustomHoliday(entry);
 
-  /// 按 groupId 删除自定义假期
-  Future<void> removeCustomHoliday(String groupId) async {
-    await _holidayService.removeCustomHoliday(groupId);
-    await _loadHolidayData();
-  }
+  Future<void> addCustomHolidays(List<HolidayEntry> entries) =>
+      _holidayDomainService.addCustomHolidays(entries);
 
-  /// 按 groupId 更新自定义假期
+  Future<void> removeCustomHoliday(String groupId) =>
+      _holidayDomainService.removeCustomHoliday(groupId);
+
   Future<void> updateCustomHoliday(
     String groupId,
     List<HolidayEntry> newEntries,
-  ) async {
-    await _holidayService.updateCustomHoliday(groupId, newEntries);
-    await _loadHolidayData();
-  }
+  ) => _holidayDomainService.updateCustomHoliday(groupId, newEntries);
 
-  /// 指定日期是否为假期（应隐藏课程）
-  bool isHoliday(DateTime date) {
-    return HolidayResolver.isHoliday(
-      date,
-      data: _holidayData,
-      overrideEnabled: _settings.holidayOverrideEnabled,
-      markingEnabled: _settings.enableHolidayMarking,
-    );
-  }
+  bool isHoliday(DateTime date) => _holidayDomainService.isHoliday(date);
 
-  /// 指定日期是否为调休上班日
-  bool isAdjustedWorkday(DateTime date) {
-    return HolidayResolver.isAdjustedWorkday(date, data: _holidayData);
-  }
+  bool isAdjustedWorkday(DateTime date) =>
+      _holidayDomainService.isAdjustedWorkday(date);
 
   Future<bool> deleteCourseOccurrence({
     required String courseId,
@@ -4429,4 +4344,68 @@ class _TimetableExamPort implements TimetableExamPort {
   @override
   void logExamEvent(String name, Map<String, Object> parameters) =>
       host._analytics.logEventLater(name: name, parameters: parameters);
+}
+
+/// 节假日服务的宿主适配器：把远程数据源、自定义假期存储、live surface
+/// 串行门与「加载后重推」副作用收成一个端口。
+class _TimetableHolidayPort implements TimetableHolidayPort {
+  _TimetableHolidayPort(this.host);
+
+  final TimetableProvider host;
+
+  @override
+  HolidayData? get holidayData => host._holidayData;
+
+  @override
+  set holidayData(HolidayData? value) => host._holidayData = value;
+
+  @override
+  TimetableSettings get settings => host._settings;
+
+  @override
+  Future<HolidayData> fetchHolidayData(int year) =>
+      host._holidayService.getDataForYear(year);
+
+  @override
+  Future<void> clearCache(int year) => host._holidayService.clearCache(year);
+
+  @override
+  Future<List<HolidayEntry>?> loadCustomHolidays() =>
+      host._holidayService.loadCustomHolidays();
+
+  @override
+  Future<void> saveCustomHolidays(List<HolidayEntry> entries) =>
+      host._holidayService.saveCustomHolidays(entries);
+
+  @override
+  Future<void> addCustomHoliday(HolidayEntry entry) =>
+      host._holidayService.addCustomHoliday(entry);
+
+  @override
+  Future<void> removeCustomHoliday(String groupId) =>
+      host._holidayService.removeCustomHoliday(groupId);
+
+  @override
+  Future<void> updateCustomHoliday(
+    String groupId,
+    List<HolidayEntry> newEntries,
+  ) => host._holidayService.updateCustomHoliday(groupId, newEntries);
+
+  @override
+  Future<T> runLiveSurfaceExclusive<T>(Future<T> Function() action) =>
+      host._runLiveSurfaceExclusive(action);
+
+  @override
+  void resetLiveSurfaceTracking() {
+    host._lastHomeWidgetSnapshotSignature = null;
+    host._lastLiveSnapshotSignature = null;
+    host._currentLiveCourseId = null;
+    host._lastLiveActivityStageKey = null;
+  }
+
+  @override
+  Future<void> updateLiveActivity() => host._updateLiveActivity();
+
+  @override
+  void notifyStateChanged() => host._notifyStateChanged();
 }
