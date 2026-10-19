@@ -30,8 +30,10 @@ void main() {
     // 2026-10-19 晚：拆 models↔l10n 唯一真循环，本文件仅 +1 行 import
     // （course_week_localizations 的 CourseWeekDescriptions 扩展），
     // 属「换依赖方向」而非功能增长，按规矩说明后基线 6325 → 6326。
-    // 下一次目标（弹层族/控制器）预计可再降至 ~5800。
-    const baselineLines = 6326;
+    // 深夜 M4-B：星期栏墨色弹层、切换课表弹层、顶栏玻璃菜单外壳、课程操作
+    // sheet 族先后搬出（净 -550）→ 5776。
+    // 下一次目标（build 期布局树）预计可再降至 ~5400。
+    const baselineLines = 5776;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),

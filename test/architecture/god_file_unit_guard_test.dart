@@ -7,10 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 /// 旧棘轮只量主文件行数，于是「把代码搬进同库 part」就能让门禁变绿：
 /// - `timetable_screen`：2026-10-10 拆分前 10,948 行；2026-10-19 先把 460 行
 ///   库级类拆到 `widgets/timetable/`，再把星期栏/浮钮/玻璃坞/日议程模型、
-///   build 期 chrome 解析与顶栏 chrome 拆出，主文件 6,325 + 两个 part 2,829 =
-///   9,154 行。
-/// - `timetable_provider`：主文件 4,432 + 10 个 part 3,479 = 7,911 行
-///   （主题/考试族已抽到 `services/`）；
+///   build 期 chrome 解析、顶栏 chrome 与弹层/sheet 族拆出，主文件 5,776 +
+///   两个 part 2,829 = 8,605 行。
+/// - `timetable_provider`：主文件 4,362 + 10 个 part 3,479 = 7,841 行
+///   （主题/考试/节假日/情侣/提醒族已抽到 `services/`）；
 ///   part 里仍有 573 处直接访问 `host._私有字段` —— 这是同一个类的 11 个抽屉，
 ///   不是 11 个模块。
 ///
@@ -29,7 +29,7 @@ void main() {
     // 2026-10-19 晚：拆 models↔l10n 唯一真循环，主文件仅 +1 行 import
     // （course_week_localizations 的扩展），属换依赖方向而非功能增长，
     // 主文件与单元总量各 +1（9154 → 9155）已在提交信息说明。
-    const baselineLines = 9155;
+    const baselineLines = 8605;
     const unit = [
       'lib/screens/timetable_screen.dart',
       'lib/screens/timetable_day_view_part.dart',
@@ -63,7 +63,7 @@ void main() {
   });
 
   test('timetable_provider 逻辑单元总行数棘轮：只减不增', () {
-    const baselineLines = 7911;
+    const baselineLines = 7841;
     final parts = _providerParts();
     final lines =
         _lineCount('lib/providers/timetable_provider.dart') +

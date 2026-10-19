@@ -141,7 +141,9 @@ void main() {
     // `timetable/location_group_repository.dart`（同上一条规矩，不抬基线）。
     // 4597→4569：`deleteTask` 的实现（含新补的落盘失败回滚）抽进
     // `timetable/course_repository.dart`，与 `_timetableDeleteCourse` 同一族同放处。
-    const baselineLines = 4569;
+    // 4569→4362：M4 服务化把主题/考试/节假日/情侣/上课提醒五个域抽到
+    // `lib/services/`，适配器放主库，主文件只留委托。
+    const baselineLines = 4362;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
