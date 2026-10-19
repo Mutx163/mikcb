@@ -22,10 +22,9 @@ import 'changelog_screen.dart';
 import 'open_source_licenses_screen.dart';
 import '../services/app_update_service.dart';
 import '../services/support_creator_service.dart';
-import '../services/bundled_assets.dart';
 import '../widgets/about_info_sheet.dart';
+import '../widgets/app_icon_badge.dart';
 import '../widgets/third_party_disclaimer_card.dart';
-import '../widgets/bundled_asset_image.dart';
 import '../utils/app_toast.dart';
 import '../widgets/app_dialogs.dart';
 import '../services/warehouse_repository_service.dart';
@@ -229,7 +228,6 @@ class _AboutScreenState extends State<AboutScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
     final settings = context.select<TimetableProvider, TimetableSettings>((
       provider,
     ) {
@@ -254,30 +252,7 @@ class _AboutScreenState extends State<AboutScreen> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  Container(
-                    width: 84,
-                    height: 84,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.primary.withValues(alpha: 0.18),
-                          blurRadius: 18,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: const BundledAssetImage(
-                        assetPath: BundledAssets.launcherIcon,
-                        fit: BoxFit.cover,
-                        cacheWidth: 168,
-                        cacheHeight: 168,
-                      ),
-                    ),
-                  ),
+                  const AppIconBadge(size: 84, radius: 24),
                   const SizedBox(height: 16),
                   Text(
                     l10n.timetableAppName,
@@ -771,37 +746,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     );
   }
 
-  Widget _buildAppLauncherLogo(BuildContext context, {double size = 84}) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final radius = size * 24 / 84;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(radius),
-        boxShadow: [
-          // 中性投影：此前用 colorScheme.primary 的 18% 做光晕，会跟随用户的
-          // 主题色 seed——换成黄 / 绿 / 紫主题后，白色卡片上会浮出一圈彩色污渍。
-          BoxShadow(
-            color: const Color(0x14000000),
-            blurRadius: size * 0.17,
-            offset: Offset(0, size * 0.055),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: BundledAssetImage(
-          assetPath: BundledAssets.launcherIcon,
-          fit: BoxFit.cover,
-          cacheWidth: (size * 2).round(),
-          cacheHeight: (size * 2).round(),
-        ),
-      ),
-    );
-  }
-
   Widget _buildUpdateCheckingView(BuildContext context, ThemeData theme) {
     final l10n = AppLocalizations.of(context)!;
     final foruiTheme = context.theme;
@@ -810,7 +754,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       child: Column(
         children: [
           const Spacer(flex: 2),
-          _buildAppLauncherLogo(context),
+          const AppIconBadge(),
           const SizedBox(height: 16),
           Text(
             l10n.timetableAppName,
@@ -905,7 +849,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                   : () => setState(
                       () => _debugPreviewUpdate = !_debugPreviewUpdate,
                     ),
-              child: _buildAppLauncherLogo(context, size: 72),
+              child: const AppIconBadge(),
             ),
             const SizedBox(height: 16),
             // 状态标题：有更新时用主题色 + w600 承担「要做事」，已是最新时
@@ -1076,7 +1020,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _buildAppLauncherLogo(context, size: 72),
+            const AppIconBadge(),
             const SizedBox(height: 16),
             Text(
               l10n.aboutReadVersionFailed,
