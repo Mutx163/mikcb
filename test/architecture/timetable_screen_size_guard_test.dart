@@ -21,9 +21,10 @@ void main() {
     expect(file.existsSync(), isTrue, reason: '文件不存在，棘已空转');
     final lines = file.readAsLinesSync().length;
     // 2026-10-10 搬移两族后 = 8201；2026-10-14 审核修复 +13 → 8214。
-    // 2026-10-19 按真实值收紧到 8156（此后只减不增）。
-    // 下一次拆分（下拉手势族 / 玻璃坞 / 弹出页路由族）预计可再降至 ~6000。
-    const baselineLines = 8156;
+    // 2026-10-19 按真实值收紧到 8156；同日再把首页物理/空位标记/弹层路由
+    // 搬进 widgets/timetable/，并清掉 2 个失效 import 与 5 个尾部空行，
+    // 主文件降到 7693。下一次目标（星期栏/浮动按钮/玻璃坞）预计可再降至 ~6000。
+    const baselineLines = 7693;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),

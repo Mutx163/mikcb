@@ -61,7 +61,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
                     _dayPagerRescueArmedAt = null;
                     // 新手势重新允许一次日切换点击震感。
                     _daySwipeHapticFired = false;
-                    _dayPagerFlickProbes[event.pointer] = _DayPagerFlickProbe(
+                    _dayPagerFlickProbes[event.pointer] = TimetableDayPagerFlickProbe(
                       VelocityTracker.withKind(event.kind)
                         ..addPosition(event.timeStamp, event.position),
                       event.timeStamp,
@@ -1035,7 +1035,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       key: PageStorageKey<String>(scrollKey),
       controller: scrollController,
       padding: EdgeInsets.fromLTRB(14, 0, 14, listBottomContentInset),
-      // 下拉开着时冻结纵向滚动（见 _HomePullFreezeScrollPhysics）：
+      // 下拉开着时冻结纵向滚动（见 TimetableHomePullFreezeScrollPhysics）：
       // 回拉取消只收下拉，不把列表一起滚走。
       physics: _homePullVerticalPhysics,
       itemCount: agendaItems.length,
@@ -2491,4 +2491,4 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     );
   }
 
-}
+}

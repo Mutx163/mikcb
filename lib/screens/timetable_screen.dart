@@ -56,8 +56,6 @@ import '../widgets/class_reminder_sheet.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
-import '../utils/first_frame_probe.dart';
-import '../utils/frame_perf_probe.dart';
 import '../widgets/home_page_region_blur.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
@@ -85,6 +83,10 @@ import '../widgets/preblurred_wallpaper_glass.dart';
 import '../widgets/profile_quick_switch_sheet.dart';
 import '../widgets/timetable_home_preview_scope.dart';
 import '../widgets/week_selector_picker_sheet.dart';
+import '../widgets/timetable/timetable_day_pager_physics.dart';
+import '../widgets/timetable/timetable_empty_slot.dart';
+import '../widgets/timetable/timetable_home_scroll.dart';
+import '../widgets/timetable/timetable_open_only_route.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
@@ -118,74 +120,6 @@ class TimetableScreen extends StatefulWidget {
   State<TimetableScreen> createState() => _TimetableScreenState();
 }
 
-/// Per-pointer flick probe for the day pager. One instance per finger, so
-/// overlapping touches can't corrupt each other's velocity read. Besides the
-/// debug logging, the probe's displacement/duration feeds the rescue velocity
-/// consumed by [_DayPagerFlickRescuePhysics] when the framework tracker
-/// starves (see that class for the failure mode).
-class _DayPagerFlickProbe {
-  _DayPagerFlickProbe(this.tracker, this.downTime, this.downPosition)
-    : lastTime = downTime;
-
-  final VelocityTracker tracker;
-  final Duration downTime;
-  final Offset downPosition;
-  Duration lastTime;
-  int samples = 1;
-}
-
-/// Day-pager snap physics with a raw-pointer fallback velocity.
-///
-/// Failure mode (captured in the `[DayPager]` logs): under frame jank Android
-/// delivers batched touch moves once per vsync, so a 50–100ms flick can reach
-/// Dart with fewer than the three samples VelocityTracker needs — the drag
-/// then ends with zero velocity and the page snaps back even though the
-/// finger travelled 100+px. When the incoming velocity is below the fling
-/// threshold, this physics re-runs the standard PageScrollPhysics snap with
-/// the probe's displacement/duration estimate instead of bouncing back.
-///
-/// Only effective with `pageSnapping: false`: PageView otherwise wraps its
-/// own PageScrollPhysics *outside* whatever physics it is given and this
-/// override would never be reached. The snap behaviour itself still comes
-/// from the PageScrollPhysics superclass, so nothing else changes.
-class _DayPagerFlickRescuePhysics extends PageScrollPhysics {
-  const _DayPagerFlickRescuePhysics({
-    required this.takeRescueVelocity,
-    super.parent,
-  });
-
-  /// One-shot supplier of the scroll-space rescue velocity; 0 = none armed.
-  final double Function() takeRescueVelocity;
-
-  @override
-  _DayPagerFlickRescuePhysics applyTo(ScrollPhysics? ancestor) {
-    return _DayPagerFlickRescuePhysics(
-      takeRescueVelocity: takeRescueVelocity,
-      parent: buildParent(ancestor),
-    );
-  }
-
-  @override
-  Simulation? createBallisticSimulation(
-    ScrollMetrics position,
-    double velocity,
-  ) {
-    var effectiveVelocity = velocity;
-    if (velocity.abs() < kMinFlingVelocity) {
-      final rescue = takeRescueVelocity();
-      if (rescue != 0) {
-        if (kDebugMode) {
-          debugPrint(
-            '[DayPager] rescue: vx=${rescue.toStringAsFixed(1)} '
-            '(drag reported ${velocity.toStringAsFixed(1)})',
-          );
-        }
-        effectiveVelocity = rescue;
-      }
-    }
-    return super.createBallisticSimulation(position, effectiveVelocity);
-  }
-}
 
 class _TimetableScreenState extends State<TimetableScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
@@ -372,9 +306,9 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// Raw-pointer fling meter for the day pager: one probe per finger,
   /// tracking the true displacement/duration the framework tracker loses
-  /// when touch batching starves it (see _DayPagerFlickRescuePhysics).
-  final Map<int, _DayPagerFlickProbe> _dayPagerFlickProbes =
-      <int, _DayPagerFlickProbe>{};
+  /// when touch batching starves it (see TimetableDayPagerFlickRescuePhysics).
+  final Map<int, TimetableDayPagerFlickProbe> _dayPagerFlickProbes =
+      <int, TimetableDayPagerFlickProbe>{};
 
   /// Pending scroll-space rescue velocity, armed on pointer-up and consumed
   /// once by [_dayPagerPhysics] within the same event dispatch.
@@ -386,8 +320,8 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 都会连响两次。指针按下 / 星期栏拖动开始时重新武装，settle 提交后也
   /// 重新武装（覆盖纯惯性问题）。
   bool _daySwipeHapticFired = false;
-  late final _DayPagerFlickRescuePhysics _dayPagerPhysics =
-      _DayPagerFlickRescuePhysics(
+  late final TimetableDayPagerFlickRescuePhysics _dayPagerPhysics =
+      TimetableDayPagerFlickRescuePhysics(
         takeRescueVelocity: _takeDayPagerRescueVelocity,
         parent: const ClampingScrollPhysics(),
       );
@@ -444,7 +378,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 本次指针位移事件开始时下拉是否还开着（决定这一段位移要不要冻住滚动）。
   ///
   /// 由 [_buildHomePullQuickImportSurface] 的原始指针监听写入 / 清空，
-  /// 被 [_HomePullFreezeScrollPhysics] 读取。存在这个"事件开始时"的快照，
+  /// 被 [TimetableHomePullFreezeScrollPhysics] 读取。存在这个"事件开始时"的快照，
   /// 是因为原始监听与滚动体处理的是同一个事件、且有先后顺序：见写入处的说明。
   bool _homePullFrozeScrollForEvent = false;
 
@@ -581,7 +515,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 notification is ScrollEndNotification)) {
           publishHomeScrollOffset(key, notification.metrics.pixels);
         }
-        // 不消费：下拉冻结（见 [_HomePullFreezeScrollPhysics]）等既有监听照旧。
+        // 不消费：下拉冻结（见 [TimetableHomePullFreezeScrollPhysics]）等既有监听照旧。
         return false;
       },
       child: child,
@@ -3366,7 +3300,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // Home timetable only: no HyperOS rubber-band. Other pages keep
     // [HyperosScrollBehavior] from [HyperosRootPage].
     Widget surface = ScrollConfiguration(
-      behavior: const _TimetableHomeScrollBehavior(),
+      behavior: const TimetableHomeScrollBehavior(),
       child: Padding(
         key: _timetableSurfaceKey,
         padding: EdgeInsets.only(bottom: hasBackdrop ? 0 : 8),
@@ -3405,14 +3339,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 两种驱动二选一，避免同一段手指位移被计两次：
     // - 无纵向滚动体（自适应周课表 + 经典形态）：探测器自己看原始指针；
     // - 有纵向滚动体：打开仍由上面的 Overscroll 通知驱动（自带 atTop +
-    //   手势起点判定），一旦打开，纵向滚动被 [_HomePullFreezeScrollPhysics]
+    //   手势起点判定），一旦打开，纵向滚动被 [TimetableHomePullFreezeScrollPhysics]
     //   冻住，改由原始指针收放——冻结后不再产生滚动通知，手指上移的"收"
     //   只有这里收得到。此前是"边收边让列表滚"，用户读作"想取消却把页面
     //   滚上去了"。
     if (settings.timetableAutoFitSectionHeight &&
         !_isDayView &&
         _glassDockContentScrollInset(settings) <= 0) {
-      surface = _HomePullVerticalDragDetector(
+      surface = TimetableHomePullVerticalDragDetector(
         enabled: !_isHomePullQuickImportRunning,
         onPullUpdate: _updateHomePullDragDistance,
         onPullEnd: _finishHomePullDrag,
@@ -3606,9 +3540,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   /// 首页纵向滚动体统一使用的 physics：下拉开着时冻结（见
-  /// [_HomePullFreezeScrollPhysics]）。周课表与日课表都用它，"回拉取消"
+  /// [TimetableHomePullFreezeScrollPhysics]）。周课表与日课表都用它，"回拉取消"
   /// 的手感两处一致；runtimeType 恒定，不会中途重建 ScrollPosition。
-  ScrollPhysics get _homePullVerticalPhysics => _HomePullFreezeScrollPhysics(
+  ScrollPhysics get _homePullVerticalPhysics => TimetableHomePullFreezeScrollPhysics(
     isFrozen: () => _homePullFrozeScrollForEvent,
     parent: const AlwaysScrollableScrollPhysics(),
   );
@@ -4127,7 +4061,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           key: PageStorageKey<String>(weekScrollKey),
           controller: weekScrollController,
           // Explicit clamp: do not inherit HyperOS rubber-band here.
-          // 下拉开着时冻结纵向滚动（见 _HomePullFreezeScrollPhysics）：
+          // 下拉开着时冻结纵向滚动（见 TimetableHomePullFreezeScrollPhysics）：
           // 回拉取消只收下拉，不把列表一起滚走。
           physics: _homePullVerticalPhysics,
           child: Padding(
@@ -4144,7 +4078,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         SingleChildScrollView(
           key: PageStorageKey<String>(weekScrollKey),
           controller: weekScrollController,
-          // 下拉开着时冻结纵向滚动（见 _HomePullFreezeScrollPhysics）：
+          // 下拉开着时冻结纵向滚动（见 TimetableHomePullFreezeScrollPhysics）：
           // 回拉取消只收下拉，不把列表一起滚走。
           physics: _homePullVerticalPhysics,
           child: grid,
@@ -4846,7 +4780,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       hasBackdrop: hasHomePageBackdrop(settings),
       wallpaperLuminance: _wallpaperBodyLuminance ?? _wallpaperTopLuminance,
     );
-    return _EmptySlotAddMarker(
+    return TimetableEmptySlotAddMarker(
       sectionHeight: sectionHeight,
       span: span,
       inset: cardInset + 2,
@@ -7541,7 +7475,7 @@ void _openPopupActionPage(
   final navigator = Navigator.of(context);
 
   navigator.push(
-    _OpenOnlyContainerPageRoute<void>(
+    TimetableOpenOnlyContainerPageRoute<void>(
       sourceRect: resolvedSourceRect,
       builder: pageBuilder,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -7555,90 +7489,6 @@ void _openPopupActionPage(
   });
 }
 
-class _OpenOnlyContainerPageRoute<T> extends PageRouteBuilder<T> {
-  final Rect sourceRect;
-  final WidgetBuilder builder;
-  final Color backgroundColor;
-
-  _OpenOnlyContainerPageRoute({
-    required this.sourceRect,
-    required this.builder,
-    required this.backgroundColor,
-  }) : super(
-         transitionDuration: const Duration(milliseconds: 420),
-         reverseTransitionDuration: Duration.zero,
-         opaque: false,
-         pageBuilder: (context, animation, secondaryAnimation) =>
-             // 首帧拆解采样点（临时诊断件）。
-             FirstFrameProbeNode(nodeTag: 'page', child: builder(context)),
-         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-           final size = MediaQuery.of(context).size;
-           final sourceCenter = sourceRect.center;
-           final screenCenter = Offset(size.width / 2, size.height / 2);
-           final alignment = Alignment(
-             ((sourceCenter.dx / size.width) * 2).clamp(0.0, 2.0) - 1,
-             ((sourceCenter.dy / size.height) * 2).clamp(0.0, 2.0) - 1,
-           );
-           // `.drive(CurveTween)` 而非 `CurvedAnimation`：后者构造器给 parent 挂
-           // 状态监听、只有 dispose() 摘得掉，而这里每帧都跑（同 hyperos_navigation）。
-           final curved = animation.drive(
-             CurveTween(curve: Curves.easeInOutCubicEmphasized),
-           );
-           return AnimatedBuilder(
-             animation: curved,
-             child: child,
-             builder: (context, child) {
-               final progress = curved.value;
-               final scale = 0.84 + (0.16 * progress);
-               final offset = Offset.lerp(
-                 sourceCenter - screenCenter,
-                 Offset.zero,
-                 progress,
-               )!;
-               final borderRadius = HyperosNavigation.morphRadius(progress, 22);
-               return Stack(
-                 fit: StackFit.expand,
-                 children: [
-                   ColoredBox(
-                     color: backgroundColor.withValues(
-                       alpha: Curves.easeOutCubic.transform(progress),
-                     ),
-                   ),
-                   Transform.translate(
-                     offset: offset,
-                     child: Transform.scale(
-                       alignment: alignment,
-                       scale: scale,
-                       child: ClipRRect(
-                         borderRadius: borderRadius,
-                         child: Material(color: backgroundColor, child: child),
-                       ),
-                     ),
-                   ),
-                 ],
-               );
-             },
-           );
-         },
-       );
-
-  /// 转场打点：这条路由没有 route name，用固定标签。
-  ///
-  /// 它是 `opaque: false` 的 420ms 形变转场，下面那屏（首页）全程照画，因此
-  /// 与 `HyperosPageRoute` 那条不透明滑动不是同一份成本账，需要单独读数。
-  @override
-  TickerFuture didPush() {
-    FramePerfProbe.mark('route:push:openOnlyContainer');
-    FirstFrameProbe.begin('push:openOnlyContainer');
-    return super.didPush();
-  }
-
-  @override
-  bool didPop(T? result) {
-    FramePerfProbe.mark('route:pop:openOnlyContainer');
-    return super.didPop(result);
-  }
-}
 
 class _HomeActionPageButton extends StatelessWidget {
   final IconData icon;
@@ -7840,317 +7690,4 @@ class _DayAgendaPalette {
     required this.fillColor,
     required this.foregroundColor,
   });
-}
-
-/// 首页纵向滚动体的 physics：下拉开着时把用户位移整个吃掉。
-///
-/// 「回拉取消」的手感要求：下拉还没收回时手指上移应该是**把下拉收回去**，
-/// 而不是让列表跟着滚——两者同时发生，读起来就是"我想取消，页面却被滚上去
-/// 了"。所以下拉开着期间 `applyPhysicsToUserOffset` 返回 0（列表冻住），等
-/// 下拉收到 0 再恢复 1:1，同一次手势接着滚是自然的。
-///
-/// 必须**常驻安装**：`Scrollable._shouldUpdatePosition` 按 physics 的
-/// runtimeType 判断要不要重建 ScrollPosition，运行中换类型会重建 position
-/// 并当场终结手势。这里只让闭包读状态，类型的 runtimeType 恒定不变。
-class _HomePullFreezeScrollPhysics extends ClampingScrollPhysics {
-  const _HomePullFreezeScrollPhysics({required this.isFrozen, super.parent});
-
-  /// 下拉是否还开着（开着就冻结纵向滚动）。
-  final bool Function() isFrozen;
-
-  @override
-  _HomePullFreezeScrollPhysics applyTo(ScrollPhysics? ancestor) {
-    return _HomePullFreezeScrollPhysics(
-      isFrozen: isFrozen,
-      parent: buildParent(ancestor),
-    );
-  }
-
-  @override
-  double applyPhysicsToUserOffset(ScrollMetrics position, double offset) {
-    if (isFrozen()) {
-      return 0;
-    }
-    return super.applyPhysicsToUserOffset(position, offset);
-  }
-}
-
-/// Home timetable only: clamping scroll, no HyperOS rubber-band overscroll.
-class _TimetableHomeScrollBehavior extends ScrollBehavior {
-  const _TimetableHomeScrollBehavior();
-
-  @override
-  ScrollPhysics getScrollPhysics(BuildContext context) {
-    return const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
-  }
-
-  @override
-  Widget buildOverscrollIndicator(
-    BuildContext context,
-    Widget child,
-    ScrollableDetails details,
-  ) {
-    // No Material stretch / glow — keep the grid hard-edged.
-    return child;
-  }
-}
-
-/// Vertical pull detector that yields to horizontal week paging.
-///
-/// Claims the gesture arena only after the drag is clearly more vertical than
-/// horizontal, so left/right week swipes stay smooth.
-class _HomePullVerticalDragDetector extends StatefulWidget {
-  const _HomePullVerticalDragDetector({
-    required this.child,
-    required this.enabled,
-    required this.onPullUpdate,
-    required this.onPullEnd,
-    required this.onPullCancel,
-  });
-
-  final Widget child;
-  final bool enabled;
-  final ValueChanged<double> onPullUpdate;
-  final VoidCallback onPullEnd;
-  final VoidCallback onPullCancel;
-
-  @override
-  State<_HomePullVerticalDragDetector> createState() =>
-      _HomePullVerticalDragDetectorState();
-}
-
-class _HomePullVerticalDragDetectorState
-    extends State<_HomePullVerticalDragDetector> {
-  double _accumulatedDx = 0;
-  double _accumulatedDy = 0;
-  bool _isTrackingVerticalPull = false;
-
-  static const double _axisDecisionDistance = 10;
-
-  void _resetTracking() {
-    _accumulatedDx = 0;
-    _accumulatedDy = 0;
-    _isTrackingVerticalPull = false;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.enabled) {
-      return widget.child;
-    }
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) {
-        _resetTracking();
-      },
-      onPointerMove: (event) {
-        final delta = event.delta;
-        _accumulatedDx += delta.dx;
-        _accumulatedDy += delta.dy;
-
-        if (!_isTrackingVerticalPull) {
-          final absDx = _accumulatedDx.abs();
-          final absDy = _accumulatedDy.abs();
-          if (absDx < _axisDecisionDistance && absDy < _axisDecisionDistance) {
-            return;
-          }
-          // Prefer horizontal week paging when the gesture is not clearly vertical.
-          if (absDy <= absDx * 1.15) {
-            return;
-          }
-          _isTrackingVerticalPull = true;
-        }
-
-        if (_isTrackingVerticalPull) {
-          widget.onPullUpdate(delta.dy);
-        }
-      },
-      onPointerUp: (_) {
-        if (_isTrackingVerticalPull) {
-          widget.onPullEnd();
-        } else {
-          widget.onPullCancel();
-        }
-        _resetTracking();
-      },
-      onPointerCancel: (_) {
-        if (_isTrackingVerticalPull) {
-          widget.onPullCancel();
-        }
-        _resetTracking();
-      },
-      child: widget.child,
-    );
-  }
-}
-
-/// 「长按空白格添加课程」的虚线加号标记（两步式交互的第二步目标）。
-///
-/// 视觉对齐参考截图：圆角虚线框 + 居中加号，尺寸跟随课程卡内缩与节高，
-/// 整格可点，点击即打开预填位置的添加课程表单。
-///
-/// 框覆盖 [span] 节（高 = [span] × [sectionHeight]）：上下各有一条细横杠
-/// 提示可拖，纵拖即改首尾节次（回调给外层，外层还要挡住有课的格子）。
-class _EmptySlotAddMarker extends StatelessWidget {
-  const _EmptySlotAddMarker({
-    required this.sectionHeight,
-    required this.span,
-    required this.inset,
-    required this.ink,
-    required this.onTap,
-    required this.onResizeStart,
-    required this.onResizeUpdate,
-    required this.onResizeEnd,
-  });
-
-  final double sectionHeight;
-  final int span;
-  final double inset;
-
-  /// 已按壁纸/深浅色适配好的墨色（外层用 homePageOverWallpaperInk 求得）。
-  final Color ink;
-  final VoidCallback onTap;
-
-  /// 参数为 true 表示拖的是上边缘，false 为下边缘。
-  final ValueChanged<bool> onResizeStart;
-
-  /// 参数为每次纵拖的纵向增量（px）。
-  final ValueChanged<double> onResizeUpdate;
-  final VoidCallback onResizeEnd;
-
-  @override
-  Widget build(BuildContext context) {
-    // 虚线与加号走「弱化墨色」（与时间轴副文本同款），填充再淡一档。
-    final markerColor = homePageOverWallpaperMutedInk(ink);
-    final totalHeight = sectionHeight * span;
-    // 单节框很矮时按 1/3 高收窄把手，避免两条把手吃掉整个点击区。
-    final handleHeight = (totalHeight / 3).clamp(8.0, 16.0);
-    return GestureDetector(
-      // 供测试定位「两步式添加」的虚线标记（类是私有的，测不了类型）。
-      key: const ValueKey('empty-slot-add-marker'),
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Padding(
-        padding: EdgeInsets.all(inset),
-        child: CustomPaint(
-          painter: _DashedRRectBorderPainter(
-            color: markerColor,
-            fill: markerColor.withValues(alpha: 0.08),
-          ),
-          child: Stack(
-            children: [
-              Center(
-                child: Icon(
-                  Icons.add_rounded,
-                  size: (sectionHeight * 0.3).clamp(16.0, 26.0),
-                  color: markerColor,
-                ),
-              ),
-              _buildResizeHandle(
-                key: const ValueKey('empty-slot-add-marker-top-handle'),
-                isTopEdge: true,
-                height: handleHeight,
-                color: markerColor,
-              ),
-              _buildResizeHandle(
-                key: const ValueKey('empty-slot-add-marker-bottom-handle'),
-                isTopEdge: false,
-                height: handleHeight,
-                color: markerColor,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 上/下边缘的拖拽把手：横杠只作视觉提示，整条区域都收纵拖。
-  ///
-  /// 把手自己也挂 onTap：纵拖识别器在「没拖动就抬手」时会把自己判负，但
-  /// 手势竞技场按命中顺序先问内层，补一个 onTap 才能保住「点把手也能进
-  /// 表单」。
-  Widget _buildResizeHandle({
-    required Key key,
-    required bool isTopEdge,
-    required double height,
-    required Color color,
-  }) {
-    return Positioned(
-      key: key,
-      top: isTopEdge ? 0 : null,
-      bottom: isTopEdge ? null : 0,
-      left: 0,
-      right: 0,
-      height: height,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        onVerticalDragStart: (_) => onResizeStart(isTopEdge),
-        onVerticalDragUpdate: (details) => onResizeUpdate(details.delta.dy),
-        onVerticalDragEnd: (_) => onResizeEnd(),
-        onVerticalDragCancel: onResizeEnd,
-        child: Align(
-          alignment: isTopEdge ? Alignment.topCenter : Alignment.bottomCenter,
-          child: Padding(
-            padding: EdgeInsets.only(
-              top: isTopEdge ? 4 : 0,
-              bottom: isTopEdge ? 0 : 4,
-            ),
-            child: Container(
-              width: 26,
-              height: 3,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.75),
-                borderRadius: BorderRadius.circular(1.5),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 圆角虚线框 painter：沿 RRect 周长按 dash/gap 逐段绘制。
-/// Flutter 内置 [Border] 不支持虚线，这里手绘（无第三方依赖）。
-class _DashedRRectBorderPainter extends CustomPainter {
-  _DashedRRectBorderPainter({required this.color, required this.fill});
-
-  final Color color;
-  final Color fill;
-
-  static const double _radius = 12;
-  static const double _strokeWidth = 1.5;
-  static const double _dashLength = 4;
-  static const double _gapLength = 3.5;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rrect = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      const Radius.circular(_radius),
-    );
-    if (fill.a > 0) {
-      canvas.drawRRect(rrect, Paint()..color = fill);
-    }
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = _strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..color = color;
-    final path = Path()..addRRect(rrect);
-    for (final metric in path.computeMetrics()) {
-      var distance = 0.0;
-      while (distance < metric.length) {
-        final end = (distance + _dashLength).clamp(0.0, metric.length);
-        canvas.drawPath(metric.extractPath(distance, end), paint);
-        distance = end + _gapLength;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedRRectBorderPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.fill != fill;
 }
