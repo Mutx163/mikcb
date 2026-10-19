@@ -292,9 +292,32 @@ Future<ManagedImageDownloadResult> downloadToManagedImage({
   try {
     await temp.rename(target.path);
   } on Object {
+    // 并发下同一张图同一档位会被下两次（见上方⚠️）：两个 writer 各自写完后都来
+    // rename 同一个最终名，Windows 上后到的那个会因「目标已存在」而抛错
+    // （2026-10-19 全量测试实测复现：`failed=write`，另一份图其实完好）。
+    // 最终路径只可能来自一份**完整写完**的 .part（本函数只 rename 收全后才落盘），
+    // 且同名文件就是同一张图，所以「目标已存在且非空」等价于本次也成功了；
+    // 否则整次下载会被误报为失败，调用方还会把它当成没拿到图。
+    bool targetUsable;
+    try {
+      targetUsable = target.existsSync() && target.lengthSync() > 0;
+    } on Object {
+      targetUsable = false;
+    }
+    if (targetUsable) {
+      try {
+        if (temp.existsSync()) {
+          await temp.delete();
+        }
+      } on Object {
+        // 同下方：残留以 `filePrefix` 开头，会被既有清理扫掉。
+      }
+      PaintingBinding.instance.imageCache.evict(FileImage(target));
+      return ManagedImageDownloadResult.success(target.path);
+    }
     try {
       if (temp.existsSync()) {
-        temp.delete();
+        await temp.delete();
       }
     } on Object {
       // 临时文件删不掉不阻断：它仍以 `filePrefix` 开头，被当成壁纸目录里的残留扫掉，
