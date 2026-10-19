@@ -491,7 +491,22 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
               maxRefraction: widget.maxRefraction,
             );
             if (frozen != null) {
-              return frozen;
+              // ⚠️ 位图的尺寸规则是「铺满父级给的约束」，而开这个开关的表面
+              // 往往是被 Positioned 用**松约束**摆的浮动小件 —— 直接返回位图
+              // 就会撑满整个父级（2026-10-19 真机：日视图整块网格糊成一片）。
+              // 所以拿子内容当尺子：Stack 的尺寸取非定位子（图标），位图用
+              // Positioned.fill 精确盖在它上面，两者同尺寸。
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(widget.borderRadius),
+                clipBehavior: widget.clipBehavior,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned.fill(child: frozen),
+                    widget.child,
+                  ],
+                ),
+              );
             }
           }
           // 两个作用域，各自只有一个出口：表面只提供自己的圆角与当前明暗，折射旋钮、
