@@ -178,12 +178,13 @@ class AppUpdateService {
   /// 清单策略**，与用户的渠道设置无关；而深链到 tag 页在版本被撤、或镜像还没
   /// 同步时就是死链。
   ///
-  /// 现在按用户选的渠道给列表页：GitCode 渠道 → GitCode 发布页，其余（含
-  /// pgyer，它没有发布页）→ GitHub 发布页。
+  /// 现在按用户选的渠道给列表页：**GitHub 渠道 → GitHub 发布页，其余 → GitCode
+  /// 发布页**。GitCode 是国内镜像，蒲公英也是国内分发渠道——这两类用户点开
+  /// GitHub 会明显更慢，所以一并给 GitCode。
   static String releaseListUrlFor(AppUpdateDownloadChannel channel) {
-    return channel == AppUpdateDownloadChannel.gitcode
-        ? '$gitcodeRepositoryUrl/releases'
-        : releasesPageUrl;
+    return channel == AppUpdateDownloadChannel.github
+        ? releasesPageUrl
+        : '$gitcodeRepositoryUrl/releases';
   }
   static const Duration _releaseRequestTimeout = Duration(seconds: 4);
   static const Duration _releasesPageRequestTimeout = Duration(seconds: 6);

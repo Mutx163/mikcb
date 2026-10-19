@@ -20,10 +20,10 @@ void main() {
     );
   });
 
-  test('蒲公英渠道没有发布页，退回 GitHub 发布页列表', () {
+  test('蒲公英渠道也是国内分发，给 GitCode 发布页列表', () {
     expect(
       AppUpdateService.releaseListUrlFor(AppUpdateDownloadChannel.pgyer),
-      'https://github.com/Mutx163/mikcb/releases',
+      'https://gitcode.com/mutx/qingyu/releases',
     );
   });
 
