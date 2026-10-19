@@ -10,13 +10,14 @@ part of 'timetable_screen.dart';
 /// invalid_use_of_protected_member（analysis 级警告，CI --fatal-infos 不放行）。
 extension _TimetableScreenUpdateDownload on _TimetableScreenState {
   Future<void> _openTopMenuUpdatePage() async {
+    // 版本检查做完、页面马上要推上来了。菜单已经由 `_dispatchTopMenuSelection`
+    // 统一下发前收完（2026-10-19 起所有条目都是「先收缩、再弹页面」），这里
+    // 不再自己请收 —— 早先那步 `_requestCloseHomeMenu` 是为「先推页、等盖满
+    // 再收」那条时序服务的，已随那条时序一起删掉。
     final packageInfo = await PackageInfo.fromPlatform();
     if (!mounted) {
       return;
     }
-    // 版本检查做完、页面马上要推上来了：这时候才请收菜单 —— 早一步（检查期间）
-    // 收掉，首页顶上那两颗球就会在页面盖上来之前先冒出来闪一下。
-    _requestCloseHomeMenu();
     await Navigator.of(context).push<void>(
       HyperosPageRoute<void>(
         builder: (_) => AboutUpdateScreen(packageInfo: packageInfo),

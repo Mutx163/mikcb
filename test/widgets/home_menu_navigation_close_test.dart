@@ -13,12 +13,16 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/widgets/home_menu_catalog.dart';
 import 'package:university_timetable/widgets/home_top_menu_popup.dart';
 
-/// 首页右上角菜单「点条目跳页面」时的收菜单时机。
+/// 首页右上角菜单「点条目」时的收菜单时机。
 ///
-/// 真机回归（2026-09-15）：菜单是浮在首页上的一层，先收菜单、再推页面，中间那
-/// 一两帧里"菜单已经收了、新页面还没铺满"，底下的圆形按钮与爱心球就冒出来闪一下。
-/// 现在收菜单等到新路由把首页盖满之后（见 `timetable_screen.dart` 的
-/// `_requestCloseHomeMenu`），收起动作用户看不见。
+/// 现行口径（用户 2026-10-19）：「先进行收缩，收缩完了才弹出新的页面，比如进入
+/// 设置页面」—— 所有条目统一由 `timetable_screen.dart` 的 `_closeHomeMenuAndWait`
+/// 先收菜单、等它视觉收完（`kHomeMenuCollapseBudget`，≈280ms）再执行选中项。
+///
+/// 历史：2026-09-15 真机反馈过「先收菜单、再推页面，中间几帧底下的圆按钮与爱心球
+/// 冒出来闪一下」，此后改成「先推页、等新路由盖满再收」（`_requestCloseHomeMenu`，
+/// 2026-10-19 随新口径删除）。现在这套是用户在两种时序之间重新拍板的取舍：菜单先
+/// 收干净，首页顶栏在整个滑入段可见，读作「关掉菜单 → 页面滑进来」，不再是穿帮。
 void main() {
   /// 泵起首页（列表态菜单是默认形态）并返回 provider。
   ///
@@ -91,8 +95,14 @@ void main() {
     return row.evaluate().isEmpty ? 0 : tester.getRect(row).width;
   }
 
-  testWidgets('点条目跳页面：菜单留到新页面盖满才收，不在转场中途先收掉', (tester) async {
-    await pumpHome(tester);
+  testWidgets('点条目跳页面：菜单先收完，再推新页面', (tester) async {
+    // 用户 2026-10-19 口径：「先进行收缩，收缩完了才弹出新的页面」。
+    // 钉两件事：① 点下去菜单立刻开始收（不是等新页盖满才收）；② 屏幕上的菜单
+    // 缩回锚点那颗球之后，页面才被推上来。
+    await pumpHome(
+      tester,
+      menuActions: const ['overview', 'appearanceEditor', 'settings'],
+    );
 
     // 「更多」按钮是顶栏末尾那个 FHeaderAction（前面还有一个爱心球）。
     await tester.tap(find.byType(FHeaderAction).last);
@@ -102,19 +112,63 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
     }
     expect(menuShown(tester), isTrue, reason: '点「更多」后菜单应展开');
+    expect(menuPanelWidth(tester), greaterThan(40), reason: '菜单此刻是满幅的');
 
     // 点一个会推页面的条目（课程总览）。
+    bool overviewPushed(WidgetTester tester) =>
+        find.byType(CourseOverviewScreen, skipOffstage: false)
+            .evaluate()
+            .isNotEmpty;
+    expect(overviewPushed(tester), isFalse, reason: '开场还没进课程总览');
+
     await tester.tap(find.text('课程总览'));
-    // 转场中途：菜单必须还开着 —— 提前收掉就会露出首页顶栏那两颗球。
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    // 分发入口先让一帧（`Future.delayed(Duration.zero)`，等弹层那条路收工），
+    // 两帧足够让「菜单开始收起」这件事落到树上。
+    await advance(tester, 2);
     expect(
       menuShown(tester),
-      isTrue,
-      reason: '新页面还没盖满时不能收菜单，否则底下的圆按钮 / 爱心球会闪现',
+      isFalse,
+      reason: '点下去菜单立刻开始收起（不再等新页面盖满）',
+    );
+    expect(
+      overviewPushed(tester),
+      isFalse,
+      reason: '菜单还挂在屏幕上时不能推页面（先收缩、收缩完再弹）',
     );
 
-    // 转场走完：新页面盖满首页（首页整层转 offstage），菜单应已收起。
+    // 逐帧推进到推页为止，顺带记下推页那一刻菜单缩成了多宽。
+    var pushedAt = -1;
+    var widthAtPush = -1.0;
+    for (var i = 0; i < 90 && pushedAt < 0; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      if (overviewPushed(tester)) {
+        pushedAt = i;
+        widthAtPush = menuPanelWidth(tester);
+      }
+    }
+    expect(pushedAt, greaterThanOrEqualTo(0), reason: '菜单收起之后应当推上课程总览');
+    expect(
+      pushedAt,
+      greaterThanOrEqualTo(12),
+      reason: '菜单还在屏幕上时不能推页面（≈200ms 之内不许推）',
+    );
+    expect(
+      pushedAt,
+      lessThan(30),
+      reason: '也不能等太久：菜单视觉收完约 240ms（kHomeMenuCollapseBudget 280ms）',
+    );
+    expect(
+      widthAtPush,
+      lessThanOrEqualTo(20),
+      reason: '推页那一刻菜单应已缩回锚点那颗球（12px 上下），而不是还浮在首页上',
+    );
+    expect(
+      moreBallIconBack(tester),
+      isTrue,
+      reason: '推页之前要把锚点球的图标交还回去，否则首页滑入段那颗球是空的',
+    );
+
+    // 转场走完：新页面盖满首页，菜单保持收起。
     for (var i = 0; i < 40; i++) {
       await tester.pump(const Duration(milliseconds: 16));
     }
@@ -124,7 +178,7 @@ void main() {
       reason: '菜单项应把页面推上来',
     );
     // 首页被盖住后整层是 offstage（find 默认跳过），所以这里要显式读 offstage
-    // 那一层的 `show`：它必须是 false —— 菜单在"被盖满"之后才收。
+    // 那一层的 `show`。
     expect(
       tester
           .widget<HomeTopMenuPopup>(
@@ -132,23 +186,21 @@ void main() {
           )
           .show,
       isFalse,
-      reason: '新页面盖满后应收起菜单',
+      reason: '推页之后菜单保持收起',
     );
   });
 
-  testWidgets('缩放转场条目（外观编辑）必须当场推页：延后一帧会踩掉"盖满才收菜单"', (tester) async {
-    // 上面那条保护的前提是**推页同步发生**：`_requestCloseHomeMenu` 靠
-    // `Route.isCurrent` 判「这一项有没有当场跳页」，判到"没跳页"就立刻收菜单。
-    // 曾经把 zoom 条目改成「`addPostFrameCallback` + `scheduleFrame`，下一帧再
-    // 推」——那一刻首页还是栈顶，菜单被当成"不跳页"当场收起，下面那条老症状
-    // （首页顶栏两颗球在新页盖满前露出来闪一下）就回来了。
+  testWidgets('条目 open() 必须当场推页（不把「等菜单收起」写进条目）', (tester) async {
+    // 契约：条目只负责「把页推上去」、同步返回；「菜单先收完」由宿主
+    // `_dispatchTopMenuSelection` / `_closeHomeMenuAndWait` 统一做（2026-10-19
+    // 起所有条目同一套时序）。
     //
-    // 这里钉的是那条前提本身，可观测事实是「`open()` 返回时新路由已经在栈上」：
-    // 延后一帧的写法在这一句上必然是 canPop() == false。
+    // 钉的可观测事实是「`open()` 返回时新路由已经在栈上」：条目里再 await 一层
+    // 收起 / 下一帧，这一句就会是 canPop() == false，而且宿主那套「收完立刻推」
+    // 会凭空多出一帧空档（菜单已经没了、页面还没开始动）。
     //
-    // ⚠️ 只对**通用条目**成立。缩放转场那条走的是另一条时序（菜单先收完、再起
-    // 缩小，见下一条用例）：它由宿主显式收菜单，根本不问 `isCurrent`，所以把
-    // 「等菜单收起」写进 `open()`（把推页变成异步）只会同时踩坏这一条的前提。
+    // 历史：这条原先守的是 `_requestCloseHomeMenu` 的 `isCurrent` 判定（条目必须
+    // 当场跳页，否则被当成「不跳页」立刻收菜单）；那条判定已随旧时序删除。
     registerSettingsPages(
       settingsScreen: () => const SizedBox.shrink(),
       subpageById: (id) => id == 'appearanceEditor'

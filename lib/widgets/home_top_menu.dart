@@ -50,11 +50,9 @@ class HomeMenuEntry {
   /// 这一项是否走「首页整页缩小进新页」的缩放转场
   /// （[HyperosZoomPageRoute]，见 `hyperos_zoom_route.dart`）。
   ///
-  /// 宿主（`timetable_screen.dart` 的 `_dispatchTopMenuSelection`）要靠它决定
-  /// **收菜单的时机**：缩放转场的新页整页不动、暗底淡入，通用那条「新路由盖满
-  /// 首页再收菜单」的保护会让菜单在整个缩小段里一直浮在缩小中的首页上方，
-  /// 直到转场结束才消失（用户 2026-09-26 口径：「菜单消失后再开始缩小动画」）。
-  /// 这一项因此改成「菜单先收完、再起缩小」。
+  /// 只描述**路由类型**，不再参与收菜单的时序：2026-10-19 起所有条目统一
+  /// 「菜单先收完、再执行」（`timetable_screen.dart` 的
+  /// `_closeHomeMenuAndWait`）。留作元数据，给需要认转场类型的调用方读。
   final bool zoomTransition;
 }
 

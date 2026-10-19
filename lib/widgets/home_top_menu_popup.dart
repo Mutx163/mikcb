@@ -29,8 +29,8 @@ const _popupSizing = os4GlassPopupStandardSizing;
 const _submenuRevealDuration = Duration(milliseconds: 200);
 
 /// 「菜单视觉收完」的上限：收起动画开始之后**至多**再等这么久，就可以认为屏幕上
-/// 已经没有菜单了（宿主拿它给先收菜单、后起转场的入口当闸门，见
-/// `timetable_screen.dart` 的 `_openZoomMenuEntry`）。
+/// 已经没有菜单了（宿主拿它当「先收菜单、再执行选中项」的闸门，见
+/// `timetable_screen.dart` 的 `_closeHomeMenuAndWait`）。
 ///
 /// 口径是**视觉**而不是上游那条 [MiuixGlassTransformPopup] 的
 /// `onDismissFinished`：一级面板的退场是 folmeSpring（阻尼 .8 / response .28s），
@@ -101,10 +101,10 @@ class HomeTopMenuPopup extends StatefulWidget {
   ///
   /// 与 [show] 变 false 那一刻不是同一件事：几何弹簧、淡出、图标交接都还在跑，
   /// 锚点那颗球的图标也要到收尾才交还（`MiuixGlassAnchor.contentHidden`，见
-  /// `_finish`）。宿主里唯一用它的路径是「缩放转场条目：菜单先收完、再起首页
-  /// 缩小」（`timetable_screen.dart` 的 `_dispatchTopMenuSelection`）—— 提前
-  /// 起转场会把「菜单还开着」和「首页开始缩」叠在一起，而且烤出来的快照里
-  /// 「更多」球是没有图标的。
+  /// `_finish`）。宿主拿它给「菜单先收完、再执行选中项」做**提前放行**
+  /// （`timetable_screen.dart` 的 `_closeHomeMenuAndWait`；常态是 280ms 预算先到，
+  /// 关动效那条路才是回调先到）—— 收完之前推页会把「菜单还开着」和新页面叠在
+  /// 一起，首页快照里的「更多」球也会是没有图标的空球。
   final VoidCallback? onDismissFinished;
 
   @override
@@ -218,11 +218,14 @@ class _HomeTopMenuPopupState extends State<HomeTopMenuPopup> {
 
   /// 菜单项被选中：**不在这里收菜单**，收菜单的时机交给宿主。
   ///
-  /// 列表态菜单的条目几乎都是"跳页面/弹层"：先收菜单、再推路由，中间会有一两帧
-  /// 「菜单已经收了、新页面还没盖满」，底下的圆形按钮与爱心球就在这两帧里冒出来
-  /// 闪一下（真机 2026-09-15 反馈："点击进入页面的时候菜单闪一下、后面的圆按钮
-  /// 爱心按钮跟着闪现"）。宿主知道新路由什么时候盖满屏幕，由它决定何时收
-  /// （见 `timetable_screen.dart` 的 `_requestCloseHomeMenu`）。
+  /// 宿主现在统一「先收完、再执行」：等本弹层缩回锚点那颗球
+  /// （`timetable_screen.dart` 的 `_closeHomeMenuAndWait`）之后才推页面
+  /// （用户 2026-10-19 口径：「先进行收缩，收缩完了才弹出新的页面」）。所以这里
+  /// 只是把 id 原样回传，收不收、什么时候收由宿主决定，本类不去猜。
+  ///
+  /// 历史：2026-09-15 曾按「先推页、等盖满再收」避开过「菜单先收、页面后盖时
+  /// 顶栏两颗球闪一下」；2026-10-19 用户重新拍板改成先收，那一下现在读作
+  /// 「关掉菜单 → 页面滑进来」，不再是穿帮。
   ///
   /// 遮罩点击 / 返回键那条路不走这里，仍是立刻收；宿主若绕过本回调直接收菜单
   /// （切页、路由变化），[didUpdateWidget] 会把二级状态复位。
