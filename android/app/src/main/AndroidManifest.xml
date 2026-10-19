@@ -119,14 +119,6 @@
                 <data android:scheme="${umengScheme}" />
             </intent-filter>
 
-            <!-- Debug / profile automation deep links (adb / Android CLI). -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="mikcb-debug" />
-            </intent-filter>
-
             <!-- Supported import types: .ics, .mikcb, .json, .csv, .xlsx -->
 
             <intent-filter>
@@ -213,16 +205,6 @@
             </intent-filter>
         </activity>
 
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileProvider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
-        
         <service
             android:name=".LiveUpdateService"
             android:enabled="true"

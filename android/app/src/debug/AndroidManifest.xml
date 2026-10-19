@@ -10,4 +10,21 @@
          android:usesCleartextTraffic here: when it coexists with
          android:networkSecurityConfig the manifest attribute wins and would
          override the NSC allowlist in release merges. -->
+
+    <application>
+        <!-- Debug / profile automation deep links (adb / Android CLI).
+             只在 debug 覆盖层注册：release 构建不再对外注册一个能触发调试自动化
+             路由的 browsable scheme（2026-10-19 审计 #28）。原生处理层另有
+             isDebugAutomationPackage() 的包名后缀门控（显式 intent 不查
+             intent-filter，全靠它兜底）。tool/qa.ps1 用 `am start -n` 显式组件
+             名调起，本就不依赖这个 filter，debug/profile 包的 QA 流程不受影响。 -->
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="mikcb-debug" />
+            </intent-filter>
+        </activity>
+    </application>
 </manifest>

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
-import 'package:university_timetable/screens/timetable_settings_screen.dart';
+import 'package:university_timetable/screens/settings/settings_reset.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart';
 

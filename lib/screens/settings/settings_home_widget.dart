@@ -365,7 +365,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
         ],
       ),
       4 => _buildWidgetBindingSection(l10n),
-      _ => _SettingsResetTile(
+      _ => SettingsResetTile(
         scope: SettingsResetScope.homeWidget,
         onReset: _updateDraft,
       ),

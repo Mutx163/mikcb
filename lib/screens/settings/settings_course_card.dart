@@ -319,7 +319,7 @@ class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
         scope: TextColorScope.courseCard,
         onChanged: _updateDraft,
       ),
-      7 => _SettingsResetTile(
+      7 => SettingsResetTile(
         scope: SettingsResetScope.courseCard,
         onReset: _updateDraft,
       ),

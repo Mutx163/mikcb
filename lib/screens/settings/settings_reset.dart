@@ -1,4 +1,14 @@
-part of '../timetable_settings_screen.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+import '../../models/timetable_settings.dart';
+import '../../providers/timetable_provider.dart';
+import '../../services/wallpaper_history_service.dart';
+import '../../utils/app_toast.dart';
+import '../../utils/home_page_background.dart';
+import '../../utils/wallpaper_history.dart';
+import '../../ui/hyperos/hyperos.dart';
 
 /// 「恢复默认」的作用域。
 ///
@@ -176,8 +186,8 @@ TimetableSettings applySettingsReset(
 /// 页尾的「恢复默认」白卡。
 ///
 /// 红色图标 + 二次确认：这是不可撤销的批量写入，不能一点就生效。
-class _SettingsResetTile extends StatelessWidget {
-  const _SettingsResetTile({required this.scope, required this.onReset});
+class SettingsResetTile extends StatelessWidget {
+  const SettingsResetTile({super.key, required this.scope, required this.onReset});
 
   final SettingsResetScope scope;
   final ValueChanged<TimetableSettings> onReset;

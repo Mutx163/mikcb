@@ -359,7 +359,7 @@ class _TimetablePageSettingsScreenState
         scope: TextColorScope.page,
         onChanged: _updateDraft,
       ),
-      9 => _SettingsResetTile(
+      9 => SettingsResetTile(
         scope: SettingsResetScope.timetablePage,
         onReset: _updateDraft,
       ),

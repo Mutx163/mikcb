@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
-import 'package:university_timetable/screens/timetable_settings_screen.dart';
+import 'package:university_timetable/screens/settings/settings_reset.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
 
 /// 「恢复默认」必须只动本页字段。这些用例守的是两件事：

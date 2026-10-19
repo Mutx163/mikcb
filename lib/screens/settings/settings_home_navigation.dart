@@ -303,7 +303,7 @@ class _HomeNavigationSettingsScreenState
           ),
         ],
       ),
-      3 => _SettingsResetTile(
+      3 => SettingsResetTile(
         scope: SettingsResetScope.homeNavigation,
         onReset: _updateDraft,
       ),

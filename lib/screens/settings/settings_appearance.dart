@@ -344,7 +344,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ],
         ),
       ),
-      4 => _SettingsResetTile(
+      4 => SettingsResetTile(
         scope: SettingsResetScope.appearance,
         onReset: _updateDraft,
       ),
