@@ -2438,7 +2438,7 @@
   "aboutRefreshCheckTooltip": "Check again",
   "aboutCheckingLatestVersion": "Checking the latest version information…",
   "aboutCheckingForUpdate": "Checking for updates…",
-  "aboutReadVersionFailed": "Unable to read version information right now. Please try again later.",
+  "aboutReadVersionFailed": "Update check failed. Try again later.",
   "aboutReadVersionFailedHint": "If GitHub access is unstable on your network, try again later or switch to the domestic download route below",
   "aboutViewReleaseAction": "View Release",
   "aboutDownloadNowAction": "Download now",
@@ -2449,12 +2449,12 @@
   "aboutVersionChannelLabel": "Release channel",
   "aboutPrereleaseChannel": "Prerelease",
   "aboutUpdateAvailableHint": "You can simply tap \"Download now\" below. Speed test, mirrors, and prerelease options have been moved into Advanced Options",
-  "aboutUpdateHighlightsTitle": "Highlights in this update",
+  "aboutUpdateHighlightsTitle": "Highlights",
   "aboutUpdateViewAllAction": "See all {count} items",
   "aboutUpdateViewFullAction": "View full details",
   "aboutUpdateCollapseAction": "Show less",
   "aboutUpdateNoUpdateHint": "The current version is already usable. If you want to try prereleases, enable prerelease checks in Advanced Options below",
-  "aboutUpdatedAt": "Updated at: {time}",
+  "aboutUpdatedAt": "Updated {time}",
   "@aboutUpdatedAt": {
     "placeholders": {
       "time": {
@@ -2493,7 +2493,7 @@
     }
   },
   "aboutOriginalModeHint": "You are currently using the international source. This is recommended only if your network can access GitHub reliably; otherwise, switch back to domestic download",
-  "aboutReleaseNotesTitle": "Release notes",
+  "aboutReleaseNotesTitle": "Update notes",
   "aboutReleaseNotesSubtitle": "Shows the Release notes of the currently detected version.",
   "aboutAdvancedOptionsTitle": "Advanced options",
   "aboutAdvancedOptionsSubtitle": "Expand only when downloads are slow, you need to switch routes manually, or you want prerelease checks",
@@ -5896,8 +5896,8 @@
   "timetableShareExportEmptyDay": "No classes on this day",
   "settingsScreenshotShareTitle": "Offer sharing after a screenshot",
   "settingsScreenshotShareSubtitle": "Show a prompt after you screenshot the timetable page; the image is only rendered if you tap it",
-  "aboutUpdateAvailableHeadline": "Update available",
-  "aboutAlreadyLatestHeadline": "Already up to date",
+  "aboutUpdateAvailableHeadline": "New version available",
+  "aboutAlreadyLatestHeadline": "Up to date",
   "aboutDownloadChannelSectionTitle": "Download channel",
   "aboutMirrorProbeFailedLabel": "Failed",
   "timeSchemeImportSupplementName": "{name} (import supplement)",

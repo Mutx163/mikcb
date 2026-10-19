@@ -4371,7 +4371,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutCheckingForUpdate => '正在检查更新……';
 
   @override
-  String get aboutReadVersionFailed => '暂时无法读取版本信息，请稍后重试';
+  String get aboutReadVersionFailed => '检查更新失败，请稍后重试';
 
   @override
   String get aboutReadVersionFailedHint =>
@@ -4405,7 +4405,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutUpdateAvailableHint => '可直接点击立即下载。线路切换与高级选项已整合至下方。';
 
   @override
-  String get aboutUpdateHighlightsTitle => '本次更新重点';
+  String get aboutUpdateHighlightsTitle => '更新重点';
 
   @override
   String aboutUpdateViewAllAction(String count) {
@@ -4424,7 +4424,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String aboutUpdatedAt(String time) {
-    return '更新时间：$time';
+    return '更新于 $time';
   }
 
   @override
@@ -4475,7 +4475,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '当前使用国际源下载，只有你网络能稳定访问 GitHub 时才建议这样设置；否则请切回国内下载';
 
   @override
-  String get aboutReleaseNotesTitle => '本次更新说明';
+  String get aboutReleaseNotesTitle => '更新说明';
 
   @override
   String get aboutReleaseNotesSubtitle => '显示当前检测到版本的 Release 说明';
@@ -9566,7 +9566,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsScreenshotShareSubtitle => '在课表页截屏后浮出提示，点了才生成图片';
 
   @override
-  String get aboutUpdateAvailableHeadline => '有版本更新';
+  String get aboutUpdateAvailableHeadline => '发现新版本';
 
   @override
   String get aboutAlreadyLatestHeadline => '已是最新版本';
@@ -15626,7 +15626,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutCheckingForUpdate => '正在檢查更新……';
 
   @override
-  String get aboutReadVersionFailed => '暫時無法讀取版本資訊，請稍後重試';
+  String get aboutReadVersionFailed => '檢查更新失敗，請稍後重試';
 
   @override
   String get aboutReadVersionFailedHint =>
@@ -15660,7 +15660,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutUpdateAvailableHint => '可直接點擊立即下載。線路切換與高級選項已整合至下方。';
 
   @override
-  String get aboutUpdateHighlightsTitle => '本次更新重點';
+  String get aboutUpdateHighlightsTitle => '更新重點';
 
   @override
   String aboutUpdateViewAllAction(String count) {
@@ -15679,7 +15679,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String aboutUpdatedAt(String time) {
-    return '更新時間：$time';
+    return '更新於 $time';
   }
 
   @override
@@ -15730,7 +15730,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
       '目前使用國際源下載，只有你網路能穩定訪問 GitHub 時才建議這養設定；否則請切回國內下載';
 
   @override
-  String get aboutReleaseNotesTitle => '本次更新說明';
+  String get aboutReleaseNotesTitle => '更新說明';
 
   @override
   String get aboutReleaseNotesSubtitle => '顯示目前檢測到版本的 Release 說明';
@@ -20861,7 +20861,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get settingsScreenshotShareSubtitle => '在課表頁截圖後浮出提示，點了才產生圖片';
 
   @override
-  String get aboutUpdateAvailableHeadline => '有版本更新';
+  String get aboutUpdateAvailableHeadline => '發現新版本';
 
   @override
   String get aboutAlreadyLatestHeadline => '已是最新版本';
@@ -26921,7 +26921,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutCheckingForUpdate => '正在檢查更新……';
 
   @override
-  String get aboutReadVersionFailed => '暫時無法讀取版本資訊，請稍後重試';
+  String get aboutReadVersionFailed => '檢查更新失敗，請稍後重試';
 
   @override
   String get aboutReadVersionFailedHint =>
@@ -26955,7 +26955,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutUpdateAvailableHint => '可直接點擊立即下載。線路切換與高級選項已整合至下方。';
 
   @override
-  String get aboutUpdateHighlightsTitle => '本次更新重點';
+  String get aboutUpdateHighlightsTitle => '更新重點';
 
   @override
   String aboutUpdateViewAllAction(String count) {
@@ -26974,7 +26974,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String aboutUpdatedAt(String time) {
-    return '更新時間：$time';
+    return '更新於 $time';
   }
 
   @override
@@ -27025,7 +27025,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '目前使用國際源下載，只有你網路能穩定訪問 GitHub 時才建議這樣設定；否則請切回國內下載';
 
   @override
-  String get aboutReleaseNotesTitle => '本次更新說明';
+  String get aboutReleaseNotesTitle => '更新說明';
 
   @override
   String get aboutReleaseNotesSubtitle => '顯示目前檢測到版本的 Release 說明';
@@ -32157,7 +32157,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsScreenshotShareSubtitle => '在課表頁截圖後浮出提示，點了才產生圖片';
 
   @override
-  String get aboutUpdateAvailableHeadline => '有版本更新';
+  String get aboutUpdateAvailableHeadline => '發現新版本';
 
   @override
   String get aboutAlreadyLatestHeadline => '已是最新版本';

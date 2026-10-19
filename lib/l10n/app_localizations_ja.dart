@@ -4478,7 +4478,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aboutCheckingForUpdate => '更新を確認中…';
 
   @override
-  String get aboutReadVersionFailed => 'バージョン情報を一時的に読み込めません。後でもう一度お試しください。';
+  String get aboutReadVersionFailed => '更新の確認に失敗しました。後でもう一度お試しください。';
 
   @override
   String get aboutReadVersionFailedHint =>
@@ -4513,7 +4513,7 @@ class AppLocalizationsJa extends AppLocalizations {
       '下の「今すぐダウンロード」をタップするだけ，速度テスト、ミラーとテスト版は後方の高度なオプションに収納済み';
 
   @override
-  String get aboutUpdateHighlightsTitle => '今回の更新ポイント';
+  String get aboutUpdateHighlightsTitle => '主な更新内容';
 
   @override
   String aboutUpdateViewAllAction(String count) {
@@ -4532,7 +4532,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String aboutUpdatedAt(String time) {
-    return '更新時間：$time';
+    return '$time 更新';
   }
 
   @override
@@ -4587,7 +4587,7 @@ class AppLocalizationsJa extends AppLocalizations {
       '現在国際ソースダウンロード使用中，GitHubに安定アクセスできる場合のみこの設定を推奨，それ以外は国内ダウンロードに切替';
 
   @override
-  String get aboutReleaseNotesTitle => '今回の更新内容';
+  String get aboutReleaseNotesTitle => '更新内容';
 
   @override
   String get aboutReleaseNotesSubtitle => '現在検出されたバージョンのRelease説明を表示。';
@@ -9878,10 +9878,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'Show a prompt after you screenshot the timetable page; the image is only rendered if you tap it';
 
   @override
-  String get aboutUpdateAvailableHeadline => 'Update available';
+  String get aboutUpdateAvailableHeadline => '新しいバージョンがあります';
 
   @override
-  String get aboutAlreadyLatestHeadline => 'Already up to date';
+  String get aboutAlreadyLatestHeadline => '最新バージョンです';
 
   @override
   String get aboutDownloadChannelSectionTitle => 'Download channel';

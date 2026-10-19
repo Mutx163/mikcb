@@ -2458,7 +2458,7 @@
   "aboutRefreshCheckTooltip": "重新检查",
   "aboutCheckingLatestVersion": "正在检查最新版本信息……",
   "aboutCheckingForUpdate": "正在检查更新……",
-  "aboutReadVersionFailed": "暂时无法读取版本信息，请稍后重试",
+  "aboutReadVersionFailed": "检查更新失败，请稍后重试",
   "aboutReadVersionFailedHint": "如果你当前网络访问 GitHub 不稳定，可稍后再试，或切到下面的国内下载方式后重试",
   "aboutViewReleaseAction": "查看 Release",
   "aboutDownloadNowAction": "立即下载",
@@ -2469,7 +2469,7 @@
   "aboutVersionChannelLabel": "版本通道",
   "aboutPrereleaseChannel": "测试版",
   "aboutUpdateAvailableHint": "可直接点击立即下载。线路切换与高级选项已整合至下方。",
-  "aboutUpdateHighlightsTitle": "本次更新重点",
+  "aboutUpdateHighlightsTitle": "更新重点",
   "aboutUpdateViewAllAction": "查看全部 {count} 项",
   "@aboutUpdateViewAllAction": {
     "placeholders": {
@@ -2481,7 +2481,7 @@
   "aboutUpdateViewFullAction": "查看完整说明",
   "aboutUpdateCollapseAction": "收起",
   "aboutUpdateNoUpdateHint": "当前版本已经可正常使用；如果你要体验测试版，可以在后面的高级选项里打开测试版检测",
-  "aboutUpdatedAt": "更新时间：{time}",
+  "aboutUpdatedAt": "更新于 {time}",
   "@aboutUpdatedAt": {
     "placeholders": {
       "time": {
@@ -2520,7 +2520,7 @@
     }
   },
   "aboutOriginalModeHint": "当前使用国际源下载，只有你网络能稳定访问 GitHub 时才建议这样设置；否则请切回国内下载",
-  "aboutReleaseNotesTitle": "本次更新说明",
+  "aboutReleaseNotesTitle": "更新说明",
   "aboutReleaseNotesSubtitle": "显示当前检测到版本的 Release 说明",
   "aboutAdvancedOptionsTitle": "高级选项",
   "aboutAdvancedOptionsSubtitle": "只有下载慢、要手动切线路、或要检测测试版时再展开",
@@ -5948,7 +5948,7 @@
   "timetableShareExportEmptyDay": "这天没有课",
   "settingsScreenshotShareTitle": "截屏后提示分享课表",
   "settingsScreenshotShareSubtitle": "在课表页截屏后浮出提示，点了才生成图片",
-  "aboutUpdateAvailableHeadline": "有版本更新",
+  "aboutUpdateAvailableHeadline": "发现新版本",
   "aboutAlreadyLatestHeadline": "已是最新版本",
   "aboutDownloadChannelSectionTitle": "下载渠道",
   "aboutMirrorProbeFailedLabel": "失败",

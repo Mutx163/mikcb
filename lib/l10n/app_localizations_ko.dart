@@ -4508,7 +4508,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get aboutCheckingForUpdate => '업데이트 확인 중…';
 
   @override
-  String get aboutReadVersionFailed => '버전 정보를 일시적으로 읽을 수 없습니다. 나중에 다시 시도하세요.';
+  String get aboutReadVersionFailed => '업데이트 확인에 실패했습니다. 나중에 다시 시도하세요.';
 
   @override
   String get aboutReadVersionFailedHint =>
@@ -4543,7 +4543,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '지금은 아래의 \'지금 다운로드\'를 탭하기만 하면 됩니다. 속도 측정, 미러, 시험판은 뒤의 고급 옵션에 정리되어 있습니다';
 
   @override
-  String get aboutUpdateHighlightsTitle => '이번 업데이트 핵심';
+  String get aboutUpdateHighlightsTitle => '주요 업데이트';
 
   @override
   String aboutUpdateViewAllAction(String count) {
@@ -4562,7 +4562,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String aboutUpdatedAt(String time) {
-    return '업데이트 시간: $time';
+    return '$time 업데이트';
   }
 
   @override
@@ -4617,7 +4617,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '현재 국제 소스 다운로드 사용 중. GitHub에 안정적으로 접근할 수 있을 때만 이 설정을 권장합니다. 그렇지 않으면 국내 다운로드로 전환하세요';
 
   @override
-  String get aboutReleaseNotesTitle => '이번 업데이트 내용';
+  String get aboutReleaseNotesTitle => '업데이트 내역';
 
   @override
   String get aboutReleaseNotesSubtitle => '현재 감지된 버전의 Release 설명을 표시합니다.';
@@ -9928,10 +9928,10 @@ class AppLocalizationsKo extends AppLocalizations {
       'Show a prompt after you screenshot the timetable page; the image is only rendered if you tap it';
 
   @override
-  String get aboutUpdateAvailableHeadline => 'Update available';
+  String get aboutUpdateAvailableHeadline => '새 버전이 있습니다';
 
   @override
-  String get aboutAlreadyLatestHeadline => 'Already up to date';
+  String get aboutAlreadyLatestHeadline => '최신 버전입니다';
 
   @override
   String get aboutDownloadChannelSectionTitle => 'Download channel';

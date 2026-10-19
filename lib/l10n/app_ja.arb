@@ -2188,7 +2188,7 @@
   "aboutRefreshCheckTooltip": "再確認",
   "aboutCheckingLatestVersion": "最新バージョン情報を確認中…",
   "aboutCheckingForUpdate": "更新を確認中…",
-  "aboutReadVersionFailed": "バージョン情報を一時的に読み込めません。後でもう一度お試しください。",
+  "aboutReadVersionFailed": "更新の確認に失敗しました。後でもう一度お試しください。",
   "aboutReadVersionFailedHint": "現在のネットワークでGitHubへのアクセスが不安定な場合、後でもう一度お試しいただくか、下の国内ダウンロード方式に切替えてから再試行",
   "aboutViewReleaseAction": "Releaseを確認",
   "aboutDownloadNowAction": "今すぐダウンロード",
@@ -2199,12 +2199,12 @@
   "aboutVersionChannelLabel": "バージョンチャネル",
   "aboutPrereleaseChannel": "テスト版",
   "aboutUpdateAvailableHint": "下の「今すぐダウンロード」をタップするだけ，速度テスト、ミラーとテスト版は後方の高度なオプションに収納済み",
-  "aboutUpdateHighlightsTitle": "今回の更新ポイント",
+  "aboutUpdateHighlightsTitle": "主な更新内容",
   "aboutUpdateViewAllAction": "全 {count} 件を表示",
   "aboutUpdateViewFullAction": "詳細を表示",
   "aboutUpdateCollapseAction": "折りたたむ",
   "aboutUpdateNoUpdateHint": "現在のバージョンは正常に使用可能，テスト版を体験する場合は、後方の高度なオプションでテスト版検出をオンに",
-  "aboutUpdatedAt": "更新時間：{time}",
+  "aboutUpdatedAt": "{time} 更新",
   "@aboutUpdatedAt": {
     "placeholders": {
       "time": {
@@ -2243,7 +2243,7 @@
     }
   },
   "aboutOriginalModeHint": "現在国際ソースダウンロード使用中，GitHubに安定アクセスできる場合のみこの設定を推奨，それ以外は国内ダウンロードに切替",
-  "aboutReleaseNotesTitle": "今回の更新内容",
+  "aboutReleaseNotesTitle": "更新内容",
   "aboutReleaseNotesSubtitle": "現在検出されたバージョンのRelease説明を表示。",
   "aboutAdvancedOptionsTitle": "高度なオプション",
   "aboutAdvancedOptionsSubtitle": "ダウンロード遅い、手動で回線切替、テスト版検出時にのみ展開",
@@ -5549,8 +5549,8 @@
   "timetableShareExportEmptyDay": "No classes on this day",
   "settingsScreenshotShareTitle": "Offer sharing after a screenshot",
   "settingsScreenshotShareSubtitle": "Show a prompt after you screenshot the timetable page; the image is only rendered if you tap it",
-  "aboutUpdateAvailableHeadline": "Update available",
-  "aboutAlreadyLatestHeadline": "Already up to date",
+  "aboutUpdateAvailableHeadline": "新しいバージョンがあります",
+  "aboutAlreadyLatestHeadline": "最新バージョンです",
   "aboutDownloadChannelSectionTitle": "Download channel",
   "aboutMirrorProbeFailedLabel": "Failed",
   "timeSchemeImportSupplementName": "{name} (import supplement)",

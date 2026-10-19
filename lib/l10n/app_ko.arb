@@ -2188,7 +2188,7 @@
   "aboutRefreshCheckTooltip": "다시 확인",
   "aboutCheckingLatestVersion": "최신 버전 정보 확인 중…",
   "aboutCheckingForUpdate": "업데이트 확인 중…",
-  "aboutReadVersionFailed": "버전 정보를 일시적으로 읽을 수 없습니다. 나중에 다시 시도하세요.",
+  "aboutReadVersionFailed": "업데이트 확인에 실패했습니다. 나중에 다시 시도하세요.",
   "aboutReadVersionFailedHint": "현재 네트워크에서 GitHub 접속이 불안정하면 나중에 다시 시도하거나, 아래의 국내 다운로드 방식으로 전환한 뒤 재시도하세요",
   "aboutViewReleaseAction": "Release 보기",
   "aboutDownloadNowAction": "지금 다운로드",
@@ -2199,12 +2199,12 @@
   "aboutVersionChannelLabel": "버전 채널",
   "aboutPrereleaseChannel": "시험판",
   "aboutUpdateAvailableHint": "지금은 아래의 '지금 다운로드'를 탭하기만 하면 됩니다. 속도 측정, 미러, 시험판은 뒤의 고급 옵션에 정리되어 있습니다",
-  "aboutUpdateHighlightsTitle": "이번 업데이트 핵심",
+  "aboutUpdateHighlightsTitle": "주요 업데이트",
   "aboutUpdateViewAllAction": "전체 {count}개 보기",
   "aboutUpdateViewFullAction": "자세히 보기",
   "aboutUpdateCollapseAction": "접기",
   "aboutUpdateNoUpdateHint": "현재 버전은 정상 사용 가능합니다. 시험판을 체험하려면 뒤의 고급 옵션에서 시험판 검출을 켜세요",
-  "aboutUpdatedAt": "업데이트 시간: {time}",
+  "aboutUpdatedAt": "{time} 업데이트",
   "@aboutUpdatedAt": {
     "placeholders": {
       "time": {
@@ -2243,7 +2243,7 @@
     }
   },
   "aboutOriginalModeHint": "현재 국제 소스 다운로드 사용 중. GitHub에 안정적으로 접근할 수 있을 때만 이 설정을 권장합니다. 그렇지 않으면 국내 다운로드로 전환하세요",
-  "aboutReleaseNotesTitle": "이번 업데이트 내용",
+  "aboutReleaseNotesTitle": "업데이트 내역",
   "aboutReleaseNotesSubtitle": "현재 감지된 버전의 Release 설명을 표시합니다.",
   "aboutAdvancedOptionsTitle": "고급 옵션",
   "aboutAdvancedOptionsSubtitle": "다운로드 느림, 수동 회선 전환, 시험판 검출 시에만 펼치세요",
@@ -5599,8 +5599,8 @@
   "timetableShareExportEmptyDay": "No classes on this day",
   "settingsScreenshotShareTitle": "Offer sharing after a screenshot",
   "settingsScreenshotShareSubtitle": "Show a prompt after you screenshot the timetable page; the image is only rendered if you tap it",
-  "aboutUpdateAvailableHeadline": "Update available",
-  "aboutAlreadyLatestHeadline": "Already up to date",
+  "aboutUpdateAvailableHeadline": "새 버전이 있습니다",
+  "aboutAlreadyLatestHeadline": "최신 버전입니다",
   "aboutDownloadChannelSectionTitle": "Download channel",
   "aboutMirrorProbeFailedLabel": "Failed",
   "timeSchemeImportSupplementName": "{name} (import supplement)",

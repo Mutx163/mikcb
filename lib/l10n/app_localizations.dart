@@ -8088,7 +8088,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutReadVersionFailed.
   ///
   /// In zh, this message translates to:
-  /// **'暂时无法读取版本信息，请稍后重试'**
+  /// **'检查更新失败，请稍后重试'**
   String get aboutReadVersionFailed;
 
   /// No description provided for @aboutReadVersionFailedHint.
@@ -8154,7 +8154,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutUpdateHighlightsTitle.
   ///
   /// In zh, this message translates to:
-  /// **'本次更新重点'**
+  /// **'更新重点'**
   String get aboutUpdateHighlightsTitle;
 
   /// No description provided for @aboutUpdateViewAllAction.
@@ -8184,7 +8184,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutUpdatedAt.
   ///
   /// In zh, this message translates to:
-  /// **'更新时间：{time}'**
+  /// **'更新于 {time}'**
   String aboutUpdatedAt(String time);
 
   /// No description provided for @aboutUpdateNowTitle.
@@ -8274,7 +8274,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutReleaseNotesTitle.
   ///
   /// In zh, this message translates to:
-  /// **'本次更新说明'**
+  /// **'更新说明'**
   String get aboutReleaseNotesTitle;
 
   /// No description provided for @aboutReleaseNotesSubtitle.
@@ -17367,7 +17367,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutUpdateAvailableHeadline.
   ///
   /// In zh, this message translates to:
-  /// **'有版本更新'**
+  /// **'发现新版本'**
   String get aboutUpdateAvailableHeadline;
 
   /// No description provided for @aboutAlreadyLatestHeadline.

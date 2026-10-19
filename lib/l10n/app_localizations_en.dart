@@ -4681,8 +4681,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutCheckingForUpdate => 'Checking for updates…';
 
   @override
-  String get aboutReadVersionFailed =>
-      'Unable to read version information right now. Please try again later.';
+  String get aboutReadVersionFailed => 'Update check failed. Try again later.';
 
   @override
   String get aboutReadVersionFailedHint =>
@@ -4717,7 +4716,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can simply tap \"Download now\" below. Speed test, mirrors, and prerelease options have been moved into Advanced Options';
 
   @override
-  String get aboutUpdateHighlightsTitle => 'Highlights in this update';
+  String get aboutUpdateHighlightsTitle => 'Highlights';
 
   @override
   String aboutUpdateViewAllAction(String count) {
@@ -4736,7 +4735,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String aboutUpdatedAt(String time) {
-    return 'Updated at: $time';
+    return 'Updated $time';
   }
 
   @override
@@ -4792,7 +4791,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'You are currently using the international source. This is recommended only if your network can access GitHub reliably; otherwise, switch back to domestic download';
 
   @override
-  String get aboutReleaseNotesTitle => 'Release notes';
+  String get aboutReleaseNotesTitle => 'Update notes';
 
   @override
   String get aboutReleaseNotesSubtitle =>
@@ -10181,10 +10180,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show a prompt after you screenshot the timetable page; the image is only rendered if you tap it';
 
   @override
-  String get aboutUpdateAvailableHeadline => 'Update available';
+  String get aboutUpdateAvailableHeadline => 'New version available';
 
   @override
-  String get aboutAlreadyLatestHeadline => 'Already up to date';
+  String get aboutAlreadyLatestHeadline => 'Up to date';
 
   @override
   String get aboutDownloadChannelSectionTitle => 'Download channel';
