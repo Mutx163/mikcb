@@ -5944,6 +5944,7 @@ class _TimetableScreenState extends State<TimetableScreen>
               child: useLiquidGlassMaterial
                   ? LiquidGlassSurface(
                       probeName: 'glassFloatButton',
+                      freezeOnRouteTransition: true,
                       borderRadius: borderRadius.topLeft.x,
                       // ⚠️ 不跟祖先组采样：组采样拿到的是壁纸快照，背景会变成一块
                       // 逐帧不变、不反映下方内容的底（与「回今日」同一处境，见
@@ -6155,6 +6156,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final surface = useLiquidGlassMaterial
         ? LiquidGlassSurface(
             probeName: 'glassBackToToday',
+            freezeOnRouteTransition: true,
             borderRadius: _backToTodayButtonRadius,
             // ⚠️ **不跟祖先组采样**（2026-09-20 用户拍板「对齐药丸实时采样」）。
             //

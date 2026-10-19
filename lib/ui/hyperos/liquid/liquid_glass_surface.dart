@@ -201,16 +201,15 @@ class LiquidGlassSurface extends StatefulWidget {
   /// 「底层是设置页」的转场 5.0~6.5ms，「底层是首页」的 8.5~10.1ms，差值正是
   /// 首页常驻的这几块玻璃。
   ///
-  /// 只给**首页常驻 chrome**准备。冻结用的是与首页玻璃带同一个预糊位图
-  /// （[frozenHomeChromeGlassBoard]）。
+  /// 只给**首页常驻 chrome**开（当前：悬浮钮「回到本周」、日视图「回今日」）。
   ///
-  /// ⚠️ **2026-10-19 起没有任何表面开它**（原本接在悬浮钮、回到今天两颗钮上）：
-  /// 真机一看就能发现，转场里这两颗钮底下从「模糊的课表卡片」变成「模糊的
-  /// 壁纸」，用户判定不可接受、已回退。问题不在实现而在原理 —— **「冻结玻璃
-  /// 本身」在 Flutter 里做不到**：玻璃里没有画面，它显示的是**背后**的内容，
-  /// 而那部分不在自己的子树里，`toImageSync()` 拍不到；能拍的只有屏幕上那一
-  /// 小块（等于把一张照片贴在钮上，用户此前已否掉）。要重开这个开关，先解决
-  /// 「冻结出来的背景里必须含卡片」，否则观感必然变。
+  /// 位图**必须**取 `PreblurredWallpaperSource.courseCard`（σ 无下限）。2026-10-19
+  /// 第一版取的是首页那份，它的 σ 被 `kHomePreblurMinSigma = 2` 从 1.0 抬到
+  /// 2.0，于是在 38dp 的钮上糊了整整一倍，真机一眼就看出来"变成高斯模糊"。
+  ///
+  /// 「冻结玻璃拍不到自己」只在**背后有内容**时才是死路：玻璃里没有画面，
+  /// `toImageSync()` 拍不到背后的东西。这几颗钮底下是静态壁纸，冻结画出来的也是
+  /// 同一张静态壁纸，σ 对齐后本来就该看不出来 —— 这是这条路成立的前提。
   final bool freezeOnRouteTransition;
 
   /// 诊断用层名：这块玻璃逐帧重绘时记到这个名字下（`[frame-perf] layers=名字:N`）。
@@ -558,6 +557,9 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
           role: widget.role,
           borderRadius: widget.borderRadius,
           maxRefraction: widget.maxRefraction,
+          // 小件玻璃用**卡片**那份（σ 无下限）。用首页那份会被抬到 σ≥2，
+          // 在 38dp 的钮上就是糊一倍（见函数注释）。
+          source: PreblurredWallpaperSource.courseCard,
         );
         if (frozen == null) {
           return live;
@@ -600,9 +602,23 @@ Widget? frozenHomeChromeGlassBoard(
   required LiquidGlassRole role,
   required double borderRadius,
   double? maxRefraction,
+  PreblurredWallpaperSource source = PreblurredWallpaperSource.home,
 }) {
-  if (PreblurredWallpaperScope.isWaitingForBitmap(context)) return null;
-  if (PreblurredWallpaperScope.maybeOf(context) == null) return null;
+  // ⚠️ 小件玻璃**不能**用首页那份位图：`kHomePreblurMinSigma = 2` 会把它的 σ
+  // 从 1.0 抬到 2.0（那份图是给玻璃带用的，"再小看不出糊"），在 38dp 的钮上
+  // 等于糊了一倍 —— 2026-10-19 真机就是这么把它变成「一块高斯模糊」的。
+  // 卡片那份没有这个下限、σ 原样，才和表面自己的玻璃一致。
+  final bool waiting;
+  final bool available;
+  switch (source) {
+    case PreblurredWallpaperSource.home:
+      waiting = PreblurredWallpaperScope.isWaitingForBitmap(context);
+      available = PreblurredWallpaperScope.maybeOf(context) != null;
+    case PreblurredWallpaperSource.courseCard:
+      waiting = PreblurredWallpaperScope.courseCardIsWaitingForBitmap(context);
+      available = PreblurredWallpaperScope.courseCardMaybeOf(context) != null;
+  }
+  if (waiting || !available) return null;
   final style = LiquidGlassSurface.resolveStyleFor(
     appearance: FrostedAppearanceScope.of(context),
     role: role,
@@ -624,13 +640,9 @@ Widget? frozenHomeChromeGlassBoard(
     rimWidth: style.rimWidth,
     rimColor: style.rimColor,
   );
-  return PreblurredWallpaperAlignedFill(
-    glass: glass,
-    // 显式写出来（即使当前正好等于默认值）：这张填的是**哪一份**位图，是载荷
-    // 信息不是风格 —— 枚举自己的文档就写着「必须显式指定，不许猜」。
-    // ignore: avoid_redundant_argument_values
-    source: PreblurredWallpaperSource.home,
-  );
+  // 显式传下去：这张填的是**哪一份**位图，是载荷信息不是风格 —— 枚举自己的
+  // 文档就写着「必须显式指定，不许猜」。
+  return PreblurredWallpaperAlignedFill(glass: glass, source: source);
 }
 
 class _LiquidGlassLayer extends SingleChildRenderObjectWidget {
