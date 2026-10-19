@@ -120,7 +120,9 @@ void main() {
   // ── 本地空数据守卫（2026-10-19）────────────────────────────────────
   // 拉取侧早就有「本机没有用户数据就别乱覆盖」的保护，上传侧此前没有：
   // 本地课表被误覆盖/清空后，任意一次保存都会触发防抖自动上传，把云端最后
-  // 一份好数据顶成空壳。守卫只在「上次传的有数据、这次没有」时生效。
+  // 一份好数据顶成空壳。守卫在「上次传的有数据、这次没有」时生效；标志未知
+  // （null：只拉取过从未上传的设备、旧版升级后首传前）同样拦——这两种状态
+  // 恰恰是没有任何闸可撞的盲区。唯一放行口是「确知上次传的就是空的」(false)。
 
   test(
     'auto upload blocks when local lost user data but cloud still has some',
@@ -154,10 +156,12 @@ void main() {
   });
 
   test(
-    'auto upload allows when the previous upload flag is unknown (upgrade)',
+    'auto upload blocks when the previous upload flag is unknown',
     () {
-      // 旧版本配置没有这个键（默认 null = 未知）：按「不能拦」处理，
-      // 不让升级用户在一次判不清的状态里突然同步失败。
+      // 标志未知（旧版升级后首传前、或只拉取过从未上传的设备——拉取路径
+      // 不写这个键）不能按「不能拦」处理：这正是「本地掉空 + 云端未变」时
+      // 唯一没闸的状态，放行=空壳覆盖云端好数据。拦的是静默自动上传，
+      // 手动备份仍可强推，代价不对称，宁可拦。
       expect(
         decideWebdavAutoUpload(
           remoteContentSha256: 'baseline',
@@ -166,7 +170,26 @@ void main() {
           localContentSha256: 'local-empty',
           localHasUserAuthoredData: false,
         ),
-        WebdavAutoUploadDecision.allow,
+        WebdavAutoUploadDecision.localDataEmpty,
+      );
+    },
+  );
+
+  test(
+    'auto upload blocks pull-only device whose local data dropped empty',
+    () {
+      // 只拉取过的设备：lastAppliedRemoteHash 由拉取路径写入，
+      // lastUploadedLocalHash 仍是 null（从未上传）。云端未变时旧逻辑落进
+      // matchesBaseline 分支放行——2026-10-19 审查发现的盲区本体。
+      expect(
+        decideWebdavAutoUpload(
+          remoteContentSha256: 'cloud-v1',
+          lastAppliedRemoteHash: 'cloud-v1',
+          lastUploadedLocalHash: null,
+          localContentSha256: 'local-empty',
+          localHasUserAuthoredData: false,
+        ),
+        WebdavAutoUploadDecision.localDataEmpty,
       );
     },
   );

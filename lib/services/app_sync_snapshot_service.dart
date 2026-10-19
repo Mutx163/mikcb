@@ -1263,7 +1263,15 @@ WebdavAutoUploadDecision decideWebdavAutoUpload({
   }
   // 先判「本地掉空」再判基线：两者同时成立时，报「空数据」比报「允许上传」
   // 更有信息量，也避免守卫被后续基线逻辑覆盖。
-  if (!localHasUserAuthoredData && lastUploadedHadUserData == true) {
+  //
+  // 标志未知（null）也要拦：只拉取过、从未上传过的设备这个值恒为 null
+  // （拉取路径不写它），旧版升级配置在首次成功上传前同样是 null——这两类
+  // 设备恰恰是「本地掉空 + 云端未变」时没有任何闸可撞的盲区（2026-10-19
+  // 审查发现）。拦的是静默自动上传，手动备份仍可强推；拦错的代价是一次
+  // 无感跳过，放错的代价是云端好数据被空壳覆盖，代价不对称。
+  // 唯一放行口：确知上次上传就是空的（false）——用户主动清空后强推过一次，
+  // 守卫就此自解（落旗点见 webdav_sync_service 上传成功处的 copyWith）。
+  if (!localHasUserAuthoredData && lastUploadedHadUserData != false) {
     return WebdavAutoUploadDecision.localDataEmpty;
   }
   final matchesBaseline =
