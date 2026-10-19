@@ -96,6 +96,9 @@ progress.md
 .review_changed_files.txt
 .codebuddy/
 .zcode/
+# ZCode 的本地排除清单（内容同步自本文件 + 工具默认规则，属工具私有配置，
+# 与 .cursor/、.claude/ 同类，不入库）
+.zcodeignore
 tool/_review_*.diff
 
 # 测试覆盖率
