@@ -239,6 +239,9 @@ class AppUpdateService {
   Future<AppUpdateCheckResult> checkForUpdates({
     required String currentVersion,
     bool includePrerelease = false,
+    // 2026-10-19 信任根收紧：清单只走官方直连，本参数不再影响清单来源选择
+    // （镜像通道仅在 APK 字节流下载时生效）。保留参数以兼容既有调用方
+    // （about_screen / timetable_screen），不在本轮扩大改动面。
     AppUpdateDownloadSource preferredSource = AppUpdateDownloadSource.original,
     String? mirrorUrlPrefix,
   }) async {
@@ -252,8 +255,10 @@ class AppUpdateService {
     final result = await raceFutures<_AppUpdateFetchOutcome, _AppUpdateFetchOutcome>([
       _fetchFromGitHubApi(
         includePrerelease: includePrerelease,
-        preferredSource: preferredSource,
-        mirrorUrlPrefix: mirrorUrlPrefix,
+        // 2026-10-19：清单信任根收紧——JSON 清单只走官方直连（api.github.com），
+        // 不再按 preferredSource 把镜像混进候选池。镜像对响应有完全控制权，
+        // 用户选「直连优先/镜像优先」都不该让清单可被第三方反代回答。
+        preferredSource: AppUpdateDownloadSource.original,
       ).then((outcome) {
         apiOutcome = outcome;
         _log(
@@ -263,7 +268,9 @@ class AppUpdateService {
       }),
       _fetchFromReleasesPage(
         includePrerelease: includePrerelease,
-        mirrorUrlPrefix: mirrorUrlPrefix,
+        // 2026-10-19：Release 页面 HTML 同属清单（正文含 CI 写入的 SHA-256、
+        // 版本与更新说明），只走官方直连 github.com，镜像不再进候选池。
+        mirrorUrlPrefix: null,
       ).then((outcome) {
         pageOutcome = outcome;
         _log(
@@ -294,6 +301,9 @@ class AppUpdateService {
       // 胜出时按「无摘要」交出 —— 安装闸门随即拒装并引导用户去 Release
       // 页面（浏览器下载由 GitHub 页面背书）。镜像清单仍参与版本竞争，
       // 版本号/标题等非安全字段不受影响。
+      // 2026-10-19 二次收紧：清单本身（版本/说明/摘要）不再经镜像取得，
+      // 正常路径下 digestFromDirectChannel 恒为 true；此防线保留，兜住
+      // 未来新策略误把镜像候选混进清单来源的情况。
       final trustedRelease = release.digestFromDirectChannel
           ? release
           : _withDigestTrustMark(release, digestFromDirectChannel: false);
@@ -915,10 +925,12 @@ class AppUpdateService {
     required bool includePrerelease,
     required String? mirrorUrlPrefix,
   }) async {
-    final pageCandidates = buildMirrorCandidateUrls(
-      releasesPageUrl,
-      selectedMirrorPrefix: mirrorUrlPrefix,
-    );
+    // 2026-10-19 信任根收紧：Release 页面 HTML 同属清单（版本、更新说明、
+    // 正文内嵌的 SHA-256 都在其中），不再按用户选择的镜像前缀生成镜像候选。
+    // 不传镜像前缀（候选池只剩直连），再按清单信任判定过滤，双保险。
+    final pageCandidates = buildMirrorCandidateUrls(releasesPageUrl)
+        .where(isTrustedManifestUrl)
+        .toList();
     _log('Release 页面候选地址 ${pageCandidates.length} 个，并行竞争');
 
     final outcomes = <_AppUpdateFetchOutcome>[];
@@ -967,6 +979,13 @@ class AppUpdateService {
     required String? mirrorUrlPrefix,
   }) async {
     try {
+      // 防御性闸门：清单候选只允许官方直连主机（2026-10-19）。本函数由
+      // checkForUpdates 以直连专用清单调用；将来若有人改回镜像候选，这里
+      // 会直接拒绝发起请求，而不是悄悄把清单交回镜像。
+      if (!isTrustedManifestUrl(candidate)) {
+        _log('manifest candidate is not an official direct host, rejecting: $candidate');
+        return const _AppUpdateFetchOutcome(hadRetryableFailure: true);
+      }
       _log('请求 $candidate');
       final response = await _client
           .get(Uri.parse(candidate), headers: _releasePageHeaders)
@@ -1117,21 +1136,18 @@ class AppUpdateService {
     required AppUpdateDownloadSource preferredSource,
     String? mirrorUrlPrefix,
   }) {
-    final normalizedSelectedMirror = _normalizeMirrorUrlPrefix(mirrorUrlPrefix);
-    final mirrorCandidates = buildMirrorCandidateUrls(
-      apiUrl,
-      selectedMirrorPrefix: normalizedSelectedMirror,
+    // 2026-10-19 信任根收紧：清单（发行版 JSON）只允许官方直连主机，
+    // 候选恒为单一直连地址。第三方反代镜像与用户自填前缀一律不再进入
+    // 候选池 —— 镜像对响应有完全控制权，可同时伪造清单与其声明的 asset
+    // digest（自洽投毒），让「下载后哈希比对」形同虚设。preferredSource
+    // 与 mirrorUrlPrefix 仅保留为兼容参数，不再影响清单来源（镜像加速
+    // 只在 APK 字节流下载时生效）；API 直连不可用时的可用性由并行的
+    // Release 页面与 GitCode 策略兜底。
+    assert(
+      isTrustedManifestUrl(apiUrl),
+      'Update manifest must come from an official direct host, actual: $apiUrl',
     );
-
-    // 按 preferredSource 决定顺序
-    if (preferredSource == AppUpdateDownloadSource.mirror) {
-      return mirrorCandidates;
-    } else {
-      // 直连优先，镜像兜底
-      final direct = mirrorCandidates.last; // 原始 URL 在最后
-      final mirrors = mirrorCandidates.sublist(0, mirrorCandidates.length - 1);
-      return [direct, ...mirrors];
-    }
+    return [apiUrl];
   }
 
   AppUpdateCheckResult _buildCheckResult({
@@ -1197,18 +1213,6 @@ class AppUpdateService {
       )?.toLocal(),
       isPrerelease: releaseJson['prerelease'] as bool? ?? false,
     );
-  }
-
-  String? _normalizeMirrorUrlPrefix(String? prefix) {
-    final candidate = prefix?.trim() ?? '';
-    if (candidate.isEmpty) {
-      return null;
-    }
-    final uri = Uri.tryParse(candidate);
-    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
-      return null;
-    }
-    return candidate;
   }
 
   /// 该候选 URL 是否为**不经第三方镜像**的直连渠道（2026-10-10）。
@@ -1404,10 +1408,12 @@ class AppUpdateService {
     String url, {
     String? mirrorUrlPrefix,
   }) async {
-    final candidates = buildMirrorCandidateUrls(
-      url,
-      selectedMirrorPrefix: mirrorUrlPrefix,
-    );
+    // 2026-10-19：expanded_assets 返回的资产列表决定 APK 下载路径，同属
+    // 清单性质，只允许官方直连主机（mirrorUrlPrefix 参数保留兼容旧签名，
+    // 不再参与候选构造；这里不传镜像前缀，再按清单信任判定过滤）。
+    final candidates = buildMirrorCandidateUrls(url)
+        .where(isTrustedManifestUrl)
+        .toList();
     for (final candidate in candidates) {
       try {
         final response = await _client
@@ -1446,7 +1452,7 @@ class AppUpdateService {
     if (rawBody == null || rawBody.isEmpty) {
       return '';
     }
-    return _htmlToPlainText(rawBody).trim();
+    return htmlBodyToMarkdown(rawBody).trim();
   }
 
   DateTime? _extractReleaseUpdatedAt(String block) {
@@ -1462,19 +1468,6 @@ class AppUpdateService {
       return pathOrUrl;
     }
     return 'https://github.com$pathOrUrl';
-  }
-
-  String _htmlToPlainText(String html) {
-    return html
-        .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
-        .replaceAll(RegExp(r'</li>', caseSensitive: false), '\n')
-        .replaceAll(RegExp(r'<[^>]+>'), '')
-        .replaceAll('&nbsp;', ' ')
-        .replaceAll('&amp;', '&')
-        .replaceAll('&quot;', '"')
-        .replaceAll('&#39;', "'")
-        .replaceAll('&lt;', '<')
-        .replaceAll('&gt;', '>');
   }
 
   Future<void> _deleteFileIfExists(File file) async {
@@ -1763,4 +1756,56 @@ class _ParsedVersion {
   final String? prerelease;
 
   const _ParsedVersion({required this.mainParts, required this.prerelease});
+}
+
+/// 把 Release 正文的 HTML 还原成**带 Markdown 标记**的文本。
+///
+/// 更新清单有三条来路：GitHub API、GitCode API、以及 Release 页面 HTML。
+/// 前两条给的是 Markdown 原文，第三条是把页面渲染结果抓下来——HTML 里
+/// `# v2.1.3.4` 变成 `<h1>`、`> 本次重点：…` 变成 `<blockquote>`、
+/// `- 新增 …` 变成 `<ul><li>`。
+///
+/// 旧实现一律拍平成纯文本（`_htmlToPlainText`），标记全丢：摘要解析器只认
+/// 「`- 新增 …`」这种行，认不出条目就整段回退成正文渲染——用户看到的是原文，
+/// 不是「更新重点 + 分类」那套样式（2026-10-19 真机截图复现：那次检查走了
+/// 页面兜底路线，卡片里直接铺着 v2.1.3.4 和两段长句）。这里把三种结构标记
+/// 补回去，标题按级别还原（h1 用 `#`，2–6 用 `##`）。
+@visibleForTesting
+String htmlBodyToMarkdown(String html) {
+  var text = html;
+  text = text.replaceAll(RegExp(r'<h1[^>]*>', caseSensitive: false), '\n\n# ');
+  text = text.replaceAll(
+    RegExp(r'<h[2-6][^>]*>', caseSensitive: false),
+    '\n\n## ',
+  );
+  text = text.replaceAll(RegExp(r'</h[1-6]>', caseSensitive: false), '\n');
+  // 引用块里的 `<p>` 也要一起吃掉，否则「> 」会单独占一行、正文掉到下一行，
+  // 「> 本次重点：…」就再也匹配不上了。
+  text = text.replaceAll(
+    RegExp(r'<blockquote[^>]*>\s*(<p[^>]*>\s*)?', caseSensitive: false),
+    '\n\n> ',
+  );
+  text = text.replaceAll(RegExp(r'</blockquote>', caseSensitive: false), '\n');
+  text = text.replaceAll(RegExp(r'<li[^>]*>', caseSensitive: false), '\n- ');
+  text = text.replaceAll(RegExp(r'</p>', caseSensitive: false), '\n');
+  text = text.replaceAll(RegExp(r'</li>', caseSensitive: false), '\n');
+  text = text.replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n');
+  // 剩下的行内标签（strong / em / code / a …）只留文字。
+  text = _htmlToPlainText(text);
+  text = text.replaceAll(RegExp(r'[ \t]+\n'), '\n');
+  text = text.replaceAll(RegExp(r'\n{3,}'), '\n\n');
+  return text.trim();
+}
+
+String _htmlToPlainText(String html) {
+  return html
+      .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+      .replaceAll(RegExp(r'</li>', caseSensitive: false), '\n')
+      .replaceAll(RegExp(r'<[^>]+>'), '')
+      .replaceAll('&nbsp;', ' ')
+      .replaceAll('&amp;', '&')
+      .replaceAll('&quot;', '"')
+      .replaceAll('&#39;', "'")
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>');
 }
