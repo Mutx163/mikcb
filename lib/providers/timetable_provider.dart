@@ -48,6 +48,7 @@ import '../services/storage_service.dart';
 import '../services/sync_operation_gate.dart';
 import '../services/user_data_sync_hooks.dart';
 import '../services/ics_import_service.dart';
+import '../services/timetable_theme_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/wallpaper_history_service.dart';
 import '../utils/home_page_background.dart';
@@ -312,42 +313,29 @@ class TimetableProvider with ChangeNotifier {
   List<Exam> get exams => List.unmodifiable(_exams);
   TimetableSettings get settings => _settings;
 
-  // 主题撤销状态（仅保存主题相关字段，避免误回滚其他设置）
-  ThemeConfig? _undoThemeConfig;
-  String? _undoThemeName;
-  Timer? _undoTimer;
+  bool get hasPendingUndo => _themeService.hasPendingUndo;
+  String? get undoThemeName => _themeService.undoThemeName;
 
-  /// 是否有待撤销的主题变更
-  bool get hasPendingUndo => _undoThemeConfig != null;
-
-  /// 撤销主题名称
-  String? get undoThemeName => _undoThemeName;
-
-  /// 应用主题并保存撤销状态
+  /// 应用主题并保存撤销状态（用例在 TimetableThemeService）。
   Future<void> applyThemeWithUndo(
     TimetableSettings newSettings, {
     String? themeName,
-  }) async {
-    _undoThemeConfig = ThemeConfig.fromSettings(_settings);
-    _undoThemeName = themeName;
-    _undoTimer?.cancel();
-    _undoTimer = Timer(const Duration(seconds: 2), () {
-      _undoThemeConfig = null;
-      _undoThemeName = null;
-      notifyListeners();
-    });
-    await updateSettings(newSettings);
-  }
+  }) => _themeService.applyThemeWithUndo(newSettings, themeName: themeName);
 
   /// 撤销主题变更
-  Future<void> undoThemeChange() async {
-    if (_undoThemeConfig == null) return;
-    final restored = _undoThemeConfig!.applyToSettings(_settings);
-    _undoThemeConfig = null;
-    _undoThemeName = null;
-    _undoTimer?.cancel();
-    await updateSettings(restored);
-  }
+  Future<void> undoThemeChange() => _themeService.undoThemeChange();
+
+  /// 保存主题
+  Future<void> saveTheme(String name, Map<String, dynamic> themeData) =>
+      _themeService.saveTheme(name, themeData);
+
+  /// 删除主题
+  Future<void> deleteTheme(String themeId) => _themeService.deleteTheme(themeId);
+
+  /// 重命名主题
+  Future<void> renameTheme(String themeId, String newName) =>
+      _themeService.renameTheme(themeId, newName);
+
 
   /// 批量更新设置（主题导入、上课提醒开关、天气与统计设置、撤销主题变更、传输层写入）。
   ///
@@ -367,76 +355,6 @@ class TimetableProvider with ChangeNotifier {
       }
       notifyListeners();
       _logPerformanceSnapshotIfChanged(snapshot.settings);
-    });
-  }
-
-  /// 主题列表写入的共用收口：先改内存，落库失败则回滚内存并上抛。
-  ///
-  /// 此前 save/delete/rename 三处都是「改内存 → await 落库 → notify」，落库抛错
-  /// （磁盘满、`commit()` 失败）时内存已带新主题列表、盘上没有、UI 也没刷新，
-  /// 用户看到的就是「点了没反应」；而下一次任意成功写入会通过
-  /// `_mergeActiveProfileIntoProfilesList` 把这份从未落库的改动当成既有状态落盘。
-  ///
-  /// ⚠️ 回滚必须连 `_profiles` 一起退（2026-10-07 补），只退 `_settings` 会留下
-  /// 一份「幻影主题」：`_persistActiveProfileState` 的**第一步**就是
-  /// `_mergeActiveProfileIntoProfilesList`（它把新设置并进 `_profiles`，且这一步
-  /// 在任何磁盘写入之前、前面不许插 await），所以落盘抛错时 `_profiles[active]`
-  /// 里已经是那份从未落库的新主题列表。此处只把 `_settings` 退回旧值，`_profiles`
-  /// 仍留着幻影 —— 此后任何一条直接 `saveProfiles(_profiles)` 的路径（切课表、
-  /// 加课、30 秒一次的 `syncTemporalContext`）都会把它坐实成盘上的数据。
-  /// 契约与 `settings_repository.dart` 的 `_rollbackSettingsWrite` 一致：
-  /// 「为什么连 `_profiles` 也要退」的完整论证写在那里的注释里。
-  Future<void> _applySavedThemes(List<SavedTheme> Function() build) async {
-    final snapshot = _SettingsWriteSnapshot(this);
-    _settings = _settings.copyWith(savedThemes: build());
-    try {
-      await _persistActiveProfileState();
-    } catch (_) {
-      _rollbackSettingsWrite(this, snapshot);
-      rethrow;
-    }
-    notifyListeners();
-  }
-
-  /// 保存主题
-  Future<void> saveTheme(String name, Map<String, dynamic> themeData) {
-    return _runMutation(() async {
-      final theme = SavedTheme(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: name,
-        config: ThemeConfig.fromJson(themeData),
-        createdAt: DateTime.now(),
-      );
-      await _applySavedThemes(() => [..._settings.savedThemes, theme]);
-    });
-  }
-
-  /// 删除主题
-  Future<void> deleteTheme(String themeId) {
-    return _runMutation(
-      () => _applySavedThemes(
-        () =>
-            _settings.savedThemes.where((theme) => theme.id != themeId).toList(),
-      ),
-    );
-  }
-
-  /// 重命名主题
-  Future<void> renameTheme(String themeId, String newName) {
-    return _runMutation(() async {
-      await _applySavedThemes(
-        () => _settings.savedThemes.map((theme) {
-          if (theme.id == themeId) {
-            return SavedTheme(
-              id: theme.id,
-              name: newName,
-              config: theme.config,
-              createdAt: theme.createdAt,
-            );
-          }
-          return theme;
-        }).toList(),
-      );
     });
   }
 
@@ -566,6 +484,8 @@ class TimetableProvider with ChangeNotifier {
             .map((course) => course.endSection)
             .reduce((a, b) => a > b ? a : b);
 
+  late final TimetableThemeService _themeService;
+
   TimetableProvider({
     StorageService? storageService,
     IcsImportService? icsImportService,
@@ -597,6 +517,7 @@ class TimetableProvider with ChangeNotifier {
        _holidayService = holidayService ?? HolidayService(),
        _ownsHolidayService = holidayService == null,
        _analytics = analytics ?? AppAnalytics.instance {
+    _themeService = TimetableThemeService(_TimetableThemePort(this));
     _holidayService.onRemoteHolidayDataUpdated = (_) {
       unawaited(_loadHolidayData());
     };
@@ -1023,9 +944,13 @@ class TimetableProvider with ChangeNotifier {
       _holidayService.dispose();
     }
     _liveActivityTimer?.cancel();
-    _undoTimer?.cancel();
+    _themeService.dispose();
     super.dispose();
   }
+
+  /// 主题服务只能通过这个薄入口刷新界面（ChangeNotifier 的 notifyListeners
+  /// 是 protected，端口适配器不能直接调）。
+  void _notifyThemeStateChanged() => notifyListeners();
 
   Future<void> _updateLiveActivity({bool syncScheduleSnapshot = true}) =>
       _liveUpdateActivity(this, syncScheduleSnapshot: syncScheduleSnapshot);
@@ -4531,4 +4456,40 @@ class TimetableProvider with ChangeNotifier {
       unawaited(_updateLiveActivity(syncScheduleSnapshot: false));
     });
   }
+}
+
+/// 主题服务的宿主适配器：把 provider 的私有状态与统一写入口收成一个端口。
+class _TimetableThemePort implements TimetableThemePort {
+  _TimetableThemePort(this.host);
+
+  final TimetableProvider host;
+
+  @override
+  TimetableSettings get settings => host._settings;
+
+  @override
+  Future<void> updateSettings(TimetableSettings settings) =>
+      host.updateSettings(settings);
+
+  @override
+  Future<T> runMutation<T>(Future<T> Function() operation) =>
+      host._runMutation(operation);
+
+  @override
+  Future<void> replaceSavedThemes(
+    List<SavedTheme> Function(TimetableSettings settings) build,
+  ) async {
+    final snapshot = _SettingsWriteSnapshot(host);
+    host._settings = host._settings.copyWith(savedThemes: build(host._settings));
+    try {
+      await host._persistActiveProfileState();
+    } catch (_) {
+      _rollbackSettingsWrite(host, snapshot);
+      rethrow;
+    }
+    host._notifyThemeStateChanged();
+  }
+
+  @override
+  void notifyStateChanged() => host._notifyThemeStateChanged();
 }
