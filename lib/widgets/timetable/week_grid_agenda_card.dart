@@ -81,23 +81,20 @@ class TimetableWeekGridAgendaCard extends StatelessWidget {
       closedElevation: 0,
       openElevation: 0,
       closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      openShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      // 放大到整屏后必须是**直角**（2026-10-20 用户实测四角黑边）：`openShape`
+      // 用默认直角、`openBuilder` 不再套同半径 ClipRRect，否则 28dp 圆角外侧
+      // 谁都不画，而这条路由 opaque（下面的周网格不再绘制），透出窗口黑底。
+      // 形变中段的圆角仍由转场那层 Material(Clip.antiAlias) 按形状补间完成。
       openBuilder: (context, _) {
         final exam = entry.exam;
         final instance = entry.scheduleInstance;
         if (isExam && exam != null) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: AddExamScreen(exam: exam),
-          );
+          return AddExamScreen(exam: exam);
         }
         if (instance != null) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: AddScheduleItemScreen(
-              scheduleItem: instance.item,
-              occurrenceDate: instance.occurrenceDate,
-            ),
+          return AddScheduleItemScreen(
+            scheduleItem: instance.item,
+            occurrenceDate: instance.occurrenceDate,
           );
         }
         return const SizedBox.shrink();

@@ -215,15 +215,17 @@ class TimetableDayCourseAgendaCard extends StatelessWidget {
       closedShape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radius),
       ),
-      openShape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
-      ),
-      openBuilder: (context, _) => ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: AddCourseScreen(
-          courseGroup: provider.courseGroupForCourse(item.course),
-          initialCourse: item.course,
-        ),
+      // 放大到整屏后必须是**直角**（2026-10-20 用户实测四角黑边）：
+      // `openShape` 保持默认的直角（`const RoundedRectangleBorder()`），
+      // `openBuilder` 也不再套同半径的 `ClipRRect`。两者若都是 28dp 圆角，
+      // 圆角外侧**谁都不画**，而这条路由 `opaque: true`（下面的日视图不再
+      // 绘制），透出来的就是窗口黑底 —— 真机截图四角纯黑，拟合半径
+      // 91px = 28.0dp。方角之后页面自己铺满整屏，黑角消失；形变全程的圆角
+      // 仍由转场那层 `Material(clipBehavior: Clip.antiAlias)` 按形状补间裁切，
+      // 中段观感不变。
+      openBuilder: (context, _) => AddCourseScreen(
+        courseGroup: provider.courseGroupForCourse(item.course),
+        initialCourse: item.course,
       ),
       closedBuilder: (context, openContainer) => Material(
         color: Colors.transparent,
