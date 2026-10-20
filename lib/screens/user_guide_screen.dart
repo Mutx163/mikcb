@@ -267,6 +267,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return [_buildWelcomePage(l10n), _buildPrivacyPage(l10n)];
   }
 
+  /// 顶栏只留「3 / 5 系统权限」——这是页码文字，不是分页指示器。
+  ///
+  /// 圆点**不放顶栏**：Baymard（20 万小时可用性测试）的结论是移动端分页点
+  /// 「默认就在底部居中，放顶部或侧边是无理由引入摩擦」。本页圆点已移到
+  /// 底栏与「下一步」同行居中，见 [_buildPageDots]。
   Widget _buildProgressBar(AppLocalizations l10n) {
     if (_totalPages <= 1) return const SizedBox.shrink();
 
@@ -274,8 +279,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Row(
         children: [
-          // 页码文字保留：圆点只给「走到哪了」的直观感，具体第几页靠文字，
-          // 两者互补不重复。
           Text(
             '${_currentPage + 1} / $_totalPages',
             style: HyperosTypography.sectionDescription(context),
@@ -287,44 +290,50 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               context,
             ).copyWith(color: HyperosColors.primary(context)),
           ),
-          const Spacer(),
-          // 分页指示器用圆点，不用进度条：进度条在本仓一律表示「任务完成度」
-          // （传输/加载），而这里是「导航到第几步」。原本两者都用
-          // HyperosLinearProgress、同样 4dp 同样色，权限页上同屏出现两根
-          // 长得一样但含义不同的条，只能靠猜。
-          _buildPageDots(),
         ],
       ),
     );
   }
 
-  /// 5 个圆点：当前页实心且略大，其余为淡色小点。
+  /// 分页圆点：底部居中，尺寸按规范取 8dp、间距 8dp。
+  ///
+  /// 三条依据（Baymard《Page Control UI》）：
+  /// - **位置**：移动端默认底部居中，偏离这个惯例是无理由引入摩擦；
+  /// - **尺寸**：圆点直径至少 8–10px，间距不小于直径——太小的点是低质量
+  ///   实现的典型症状；
+  /// - **状态区分不能只靠颜色**：当前页同时放大（8 vs 6），色盲用户也分得清。
+  ///
+  /// 5 个点落在 3–7 的舒适区，数量没问题。
   Widget _buildPageDots() {
     final primary = HyperosColors.primary(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < _totalPages; i++)
-          Padding(
-            padding: const EdgeInsets.only(left: 5),
-            child: AnimatedContainer(
-              // 时长走统一换算（scaledMs）跟随「页面转场速度」设置，
-              // 与全仓动画一致；裸写会在用户调快动画时仍卡 200ms。
-              duration: 200.scaledMs,
-              curve: Curves.easeOut,
-              width: i == _currentPage ? 7 : 6,
-              height: i == _currentPage ? 7 : 6,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: i == _currentPage
-                    ? primary
-                    : HyperosColors.secondaryText(
-                        context,
-                      ).withValues(alpha: 0.3),
+    final inactive = HyperosColors.secondaryText(context).withValues(alpha: 0.3);
+    // 整组圆点对读屏隐藏：页码语义已由顶栏那行「3 / 5 系统权限」的**文字**
+    // 承担，读屏会念它。圆点再挂一遍同样的标签，用户会连着听两遍同一个数字。
+    // 纯图形指示器在有等价可见文字时就该让位（Baymard：分页点要保证
+    // 「当前页 + 总数」可被辅助技术获取——本页由文字承担这一点）。
+    return ExcludeSemantics(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < _totalPages; i++)
+            Padding(
+              // 间距 8：不小于圆点直径（规范要求）。
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: AnimatedContainer(
+                // 时长走统一换算（scaledMs）跟随「页面转场速度」设置。
+                duration: 200.scaledMs,
+                curve: Curves.easeOut,
+                width: 8,
+                height: 8,
+                // 状态区分：色 + 尺寸双通道（色盲友好）。
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i == _currentPage ? primary : inactive,
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1033,42 +1042,55 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       color: barBackground,
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-          child: Row(
-            children: [
-              if (isPrivacyPage)
-                HyperosButton(
-                  label: l10n.exitAppAction,
-                  variant: HyperosButtonVariant.secondary,
-                  onPressed: _exitWithoutConsent,
-                )
-              else if (showPrev)
-                HyperosButton(
-                  label: l10n.guidePrevButton,
-                  variant: HyperosButtonVariant.secondary,
-                  onPressed: _goPrev,
-                ),
-              // 首页没有左侧按钮时，单个 Spacer 就把右侧按钮推到右缘；
-              // 旧代码 else 分支再放一个 Spacer，两个弹性件视觉完全等价。
-              const Spacer(),
-              if (!isLastPage)
-                HyperosButton(
-                  label: l10n.guideNextButton,
-                  onPressed: canGoNext ? _goNext : null,
-                )
-              else
-                HyperosButton(
-                  // 首启收尾是「同意并开始使用」；从设置复看时用户早就在
-                  // 用软件了，「开始使用」与场景错位，改「知道了」
-                  //（[AppLocalizations.gotItAction]，现成通用键）。
-                  label: widget.requirePrivacyConsent
-                      ? l10n.agreeAndStartAction
-                      : l10n.gotItAction,
-                  onPressed: _finishGuide,
-                ),
-            ],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 分页圆点：底部居中、在按钮行上方——移动端惯例位置
+            // （Baymard：放顶部或侧边是无理由引入摩擦）。翻页时圆点随
+            // setState 重建，AnimatedContainer 负责过渡。
+            if (_totalPages > 1)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: _buildPageDots(),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+              child: Row(
+                children: [
+                  if (isPrivacyPage)
+                    HyperosButton(
+                      label: l10n.exitAppAction,
+                      variant: HyperosButtonVariant.secondary,
+                      onPressed: _exitWithoutConsent,
+                    )
+                  else if (showPrev)
+                    HyperosButton(
+                      label: l10n.guidePrevButton,
+                      variant: HyperosButtonVariant.secondary,
+                      onPressed: _goPrev,
+                    ),
+                  // 首页没有左侧按钮时，单个 Spacer 就把右侧按钮推到右缘；
+                  // 旧代码 else 分支再放一个 Spacer，两个弹性件视觉完全等价。
+                  const Spacer(),
+                  if (!isLastPage)
+                    HyperosButton(
+                      label: l10n.guideNextButton,
+                      onPressed: canGoNext ? _goNext : null,
+                    )
+                  else
+                    HyperosButton(
+                      // 首启收尾是「同意并开始使用」；从设置复看时用户早就在
+                      // 用软件了，「开始使用」与场景错位，改「知道了」
+                      //（[AppLocalizations.gotItAction]，现成通用键）。
+                      label: widget.requirePrivacyConsent
+                          ? l10n.agreeAndStartAction
+                          : l10n.gotItAction,
+                      onPressed: _finishGuide,
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
