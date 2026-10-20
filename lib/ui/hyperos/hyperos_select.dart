@@ -12,6 +12,7 @@ import 'hyperos_glass_backdrop_host.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_popup_glass.dart';
 import 'hyperos_sheet.dart';
+import 'hyperos_text_field.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
@@ -1062,6 +1063,199 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
           onSelected: _onOs4Selected,
           onDismiss: _closeOs4,
           itemPrefixBuilder: widget.itemPrefixBuilder,
+        ),
+      ],
+    );
+  }
+}
+
+/// 带框选择字段：[HyperosPickerField] 同款带框值行 + OS4 锚定弹层。
+///
+/// 表单卡（「标签在控件上方」的画法）里替代 [HyperosSelectTile] 的
+/// 「标签在左、值在右」全宽行 —— 与同卡其他字段共用一种版式。标签由调用方
+/// 在字段外部自建（[HyperosPickerField] 的 `label: null` 约定）；弹层组件、
+/// 预热与采样保持逻辑与 tile 完全一致，仅行外观换成带框样式。
+class HyperosSelectField<T> extends StatefulWidget {
+  const HyperosSelectField({
+    super.key,
+    required this.items,
+    required this.value,
+    required this.onChanged,
+    this.leading,
+    this.enabled = true,
+    this.fontSize = HyperosMiuixTextField.labelFontSizeNormal,
+    this.sheetItemThreshold = 6,
+    this.sheetTitle,
+  });
+
+  final T? value;
+  final Map<String, T> items;
+  final ValueChanged<T>? onChanged;
+
+  /// 行首自定义元素（如颜色块），先于值文本渲染。
+  final Widget? leading;
+  final bool enabled;
+  final double fontSize;
+
+  /// 选项数超过该值时退回底部 sheet（与 [HyperosSelectTile] 同默认）。
+  final int sheetItemThreshold;
+
+  /// 底部 sheet 退路（锚点未布局 / 无采样宿主）时的 sheet 标题。
+  final String? sheetTitle;
+
+  @override
+  State<HyperosSelectField<T>> createState() =>
+      _HyperosSelectFieldState<T>();
+}
+
+class _HyperosSelectFieldState<T> extends State<HyperosSelectField<T>> {
+  final _anchorKey = GlobalKey();
+  bool _menuOpen = false;
+
+  /// OS4 玻璃弹层：常驻挂载 + 切 `show`（上游契约，见 [HyperosSelectPopup]）。
+  bool _os4Open = false;
+  Rect? _os4AnchorRect;
+
+  /// 已 acquire 的页级采样源宿主；展开期间持有，未展开即归还。
+  HyperosGlassBackdropScope? _heldCapture;
+
+  /// 选项过多时退回 sheet，不再走 OS4 弹层（同 [HyperosSelectTile]）。
+  HyperosGlassBackdropScope? _scopeFor(BuildContext context) {
+    if (widget.items.length > widget.sheetItemThreshold) {
+      return null;
+    }
+    return HyperosGlassBackdropScope.maybeOf(context);
+  }
+
+  void _holdCapture(HyperosGlassBackdropScope scope) {
+    if (identical(_heldCapture, scope)) return;
+    _heldCapture?.releaseRecording();
+    _heldCapture = scope;
+    scope.holdRecording();
+  }
+
+  void _dropCapture() {
+    _heldCapture?.releaseRecording();
+    _heldCapture = null;
+  }
+
+  /// 手指按下就预热页级捕获：图层快照在帧末录制，早一拍预热保证弹层首帧
+  /// 采得到背景（与 tile 同名逻辑一致，否则首帧只有材质底色）。
+  void _prewarmCapture() {
+    if (_menuOpen || !widget.enabled || widget.onChanged == null) return;
+    final scope = _scopeFor(context);
+    if (scope != null) {
+      FramePerfProbe.mark('select:press');
+      _holdCapture(scope);
+    }
+  }
+
+  void _settleCapture() {
+    if (!_os4Open) {
+      _dropCapture();
+    }
+  }
+
+  void _closeOs4() {
+    if (!_os4Open) return;
+    FramePerfProbe.mark('select:close');
+    setState(() {
+      _os4Open = false;
+      _menuOpen = false;
+    });
+    _dropCapture();
+  }
+
+  void _onSelected(T value) {
+    final changed = value != widget.value;
+    _closeOs4();
+    if (changed) {
+      widget.onChanged?.call(value);
+    }
+  }
+
+  Future<void> _openSelector() async {
+    if (_menuOpen || !widget.enabled || widget.onChanged == null) {
+      return;
+    }
+
+    final anchorRect = hyperosSelectPopupAnchorRect(context, _anchorKey);
+    final scope = anchorRect == null ? null : _scopeFor(context);
+
+    if (scope != null) {
+      FramePerfProbe.mark('select:open');
+      _holdCapture(scope);
+      setState(() {
+        _menuOpen = true;
+        _os4Open = true;
+        _os4AnchorRect = anchorRect;
+      });
+      return;
+    }
+
+    // 页面没有采样源宿主（或锚点未布局）：退回底部 sheet，与 tile 同路径。
+    _dropCapture();
+    setState(() => _menuOpen = true);
+    T? selected;
+    try {
+      selected = await showHyperosSelectSheet<T>(
+        context: context,
+        title: widget.sheetTitle ?? '',
+        items: widget.items,
+        currentValue: widget.value,
+        cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _menuOpen = false);
+      }
+    }
+    if (!mounted || selected == null || selected == widget.value) {
+      return;
+    }
+    widget.onChanged!(selected);
+  }
+
+  @override
+  void dispose() {
+    _dropCapture();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveEnabled = widget.enabled && widget.onChanged != null;
+    final field = HyperosPickerField(
+      key: _anchorKey,
+      value: hyperosSelectLabelFor(widget.items, widget.value) ?? '',
+      leading: widget.leading,
+      enabled: effectiveEnabled,
+      onTap: effectiveEnabled ? _openSelector : null,
+      fontSize: widget.fontSize,
+    );
+
+    final scope = effectiveEnabled ? _scopeFor(context) : null;
+    if (scope == null) {
+      return field;
+    }
+
+    // 弹层经 OverlayPortal 画到 rootOverlay、自身零尺寸，Stack 不改行布局
+    //（同 tile 的注释）。
+    return Stack(
+      children: [
+        Listener(
+          onPointerDown: (_) => _prewarmCapture(),
+          onPointerUp: (_) => _settleCapture(),
+          onPointerCancel: (_) => _settleCapture(),
+          child: field,
+        ),
+        HyperosSelectPopup<T>(
+          show: _os4Open,
+          anchorRect: _os4AnchorRect ?? Rect.zero,
+          items: widget.items,
+          currentValue: widget.value,
+          onSelected: _onSelected,
+          onDismiss: _closeOs4,
         ),
       ],
     );
