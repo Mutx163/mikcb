@@ -192,9 +192,21 @@ class WebdavSyncService {
     );
   }
 
+  /// 测连接。**在发请求之前**对 baseUrl 做 scheme 分级（2026-10-20 补漏）：
+  ///
+  /// 保存入口（`cloud_sync_screen._saveAdvancedFields`）的门禁只覆盖「落盘」，
+  /// 挡不住两条不经过保存的路径：测连接弹窗用的是输入框原文、以及本方法可能
+  /// 被未来的其它调用方直接调用。WebDAV 走 dart:io，`http://` 就是明文
+  /// Basic Auth（账号密码 base64 上链路），所以：
+  ///
+  /// - 非 http(s)：抛 [StateError] `webdav_invalid_base_url`；
+  /// - http 且 [allowInsecureHttp] 为 false：抛 `webdav_insecure_http_unconfirmed`
+  ///   （调用方必须先做用户的明文风险二次确认，确认后传 true）；
+  /// - https：直接放行。
   Future<void> testConnection({
     required WebdavSyncConfig config,
     String? passwordOverride,
+    bool allowInsecureHttp = false,
   }) async {
     final password = passwordOverride ?? await _credentialsStore.readPassword();
     if (config.username.trim().isEmpty ||
@@ -206,6 +218,17 @@ class WebdavSyncService {
     final baseUrl = config.baseUrl.trim().isEmpty
         ? WebdavSyncConfig.defaultJianguoyunBaseUrl
         : config.baseUrl.trim();
+
+    switch (inspectWebdavBaseUrlScheme(baseUrl)) {
+      case WebdavBaseUrlScheme.invalid:
+        throw StateError('webdav_invalid_base_url');
+      case WebdavBaseUrlScheme.insecureHttp:
+        if (!allowInsecureHttp) {
+          throw StateError('webdav_insecure_http_unconfirmed');
+        }
+      case WebdavBaseUrlScheme.https:
+        break;
+    }
 
     await _clientService.testConnection(
       WebdavConnectionParams(

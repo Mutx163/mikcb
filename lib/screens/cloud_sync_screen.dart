@@ -239,6 +239,9 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
         baseUrl: _baseUrlController.text.trim().isEmpty
             ? WebdavSyncConfig.defaultJianguoyunBaseUrl
             : _baseUrlController.text.trim(),
+        // 与保存入口共用同一套 scheme 分级 + http 二次确认：测连接是凭据
+        // 第一次出门的地方，必须先确认再发（2026-10-20 补漏）。
+        confirmBaseUrl: _confirmBaseUrl,
       ),
     );
     if (result == null || !mounted) {
@@ -566,21 +569,34 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     }
   }
 
-  Future<void> _saveAdvancedFields() async {
-    // scheme 校验（2026-10-19 安全清单 #4）：WebDAV 走 dart:io，配 http 就是
-    // 真明文 Basic Auth。非 http(s) 直接拦；http 属局域网 NAS 合法场景，
-    // 二次确认后放行（与输入框上方恒显的安全提示同一口径）。
-    final resolvedBaseUrl = _baseUrlController.text.trim().isEmpty
+  /// scheme 分级 + 明文 http 二次确认（2026-10-19 安全清单 #4，2026-10-20 补漏）。
+  ///
+  /// 返回可直接使用的 baseUrl；拦下时返回 null（调用方中止动作）：
+  ///
+  /// - 空值 → 坚果云默认地址（https）；
+  /// - [WebdavBaseUrlScheme.invalid] → 错误 toast，返回 null；
+  /// - [WebdavBaseUrlScheme.insecureHttp] → 弹明文风险确认，拒绝返回 null；
+  /// - [WebdavBaseUrlScheme.https] → 原样返回。
+  ///
+  /// 保存入口（高级设置、供应商切换）与测连接弹窗共用这一份判据：此前只有
+  /// `_saveAdvancedFields` 一处校验，供应商切换（直接拿输入框原文落盘）与
+  /// 测连接（当次就把 Basic Auth 发出去）都能绕过。
+  Future<String?> _confirmBaseUrl(String raw) async {
+    if (!mounted) {
+      return null;
+    }
+    final trimmed = raw.trim();
+    final resolved = trimmed.isEmpty
         ? WebdavSyncConfig.defaultJianguoyunBaseUrl
-        : _baseUrlController.text.trim();
-    switch (inspectWebdavBaseUrlScheme(resolvedBaseUrl)) {
+        : trimmed;
+    switch (inspectWebdavBaseUrlScheme(resolved)) {
       case WebdavBaseUrlScheme.invalid:
         showAppToast(
           context,
           message: AppLocalizations.of(context)!.cloudSyncBaseUrlInvalid,
           kind: AppToastKind.error,
         );
-        return;
+        return null;
       case WebdavBaseUrlScheme.insecureHttp:
         final confirmed = await showAppConfirmDialog(
           context,
@@ -589,11 +605,36 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
           confirmLabel:
               AppLocalizations.of(context)!.cloudSyncHttpConfirmProceed,
         );
-        if (confirmed != true) {
-          return;
-        }
+        return confirmed == true ? resolved : null;
       case WebdavBaseUrlScheme.https:
-        break;
+        return resolved;
+    }
+  }
+
+  /// 切换云盘供应商。切到「自定义」时要沿用输入框里的地址，因此必须过与
+  /// 保存入口同一套 scheme 确认；切回坚果云则强制默认 https 地址，无需确认。
+  Future<void> _applyProviderSelection(WebdavSyncProvider value) async {
+    final String baseUrl;
+    if (value == WebdavSyncProvider.jianguoyun) {
+      baseUrl = WebdavSyncConfig.defaultJianguoyunBaseUrl;
+      _baseUrlController.text = baseUrl;
+    } else {
+      // 用户拒绝确认或地址非法：保持原供应商不变（tile 显示值由 _config 驱动）。
+      final confirmed = await _confirmBaseUrl(_baseUrlController.text);
+      if (confirmed == null || !mounted) {
+        return;
+      }
+      baseUrl = confirmed;
+      _baseUrlController.text = baseUrl;
+    }
+    await _saveConfig(_config.copyWith(provider: value, baseUrl: baseUrl));
+  }
+
+  Future<void> _saveAdvancedFields() async {
+    // 与供应商切换、测连接共用同一份 scheme 门禁（见 [_confirmBaseUrl]）。
+    final resolvedBaseUrl = await _confirmBaseUrl(_baseUrlController.text);
+    if (resolvedBaseUrl == null) {
+      return;
     }
     if (!mounted) {
       return;
@@ -1019,19 +1060,9 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                           if (value == _config.provider) {
                             return;
                           }
-                          var baseUrl = _baseUrlController.text.trim();
-                          if (value == WebdavSyncProvider.jianguoyun) {
-                            baseUrl = WebdavSyncConfig.defaultJianguoyunBaseUrl;
-                            _baseUrlController.text = baseUrl;
-                          }
-                          unawaited(
-                            _saveConfig(
-                              _config.copyWith(
-                                provider: value,
-                                baseUrl: baseUrl,
-                              ),
-                            ),
-                          );
+                          // 切到「自定义」时输入框里的地址会落盘，必须与保存
+                          // 入口走同一套 scheme 确认（2026-10-20 补漏）。
+                          unawaited(_applyProviderSelection(value));
                         },
                       ),
                       HyperosSelectTile<WebdavSyncMode>(
@@ -1125,11 +1156,16 @@ class _WebdavConnectSheet extends StatefulWidget {
     required this.syncService,
     required this.config,
     required this.baseUrl,
+    required this.confirmBaseUrl,
   });
 
   final WebdavSyncService syncService;
   final WebdavSyncConfig config;
   final String baseUrl;
+
+  /// scheme 分级 + 明文 http 二次确认，由页面提供（与保存入口同一份实现）。
+  /// 返回可直接使用的地址；null 表示用户拒绝或地址非法，调用方不得发请求。
+  final Future<String?> Function(String raw) confirmBaseUrl;
 
   @override
   State<_WebdavConnectSheet> createState() => _WebdavConnectSheetState();
@@ -1140,6 +1176,10 @@ class _WebdavConnectSheetState extends State<_WebdavConnectSheet> {
   late final TextEditingController _passwordController;
   bool _testing = false;
   bool _connecting = false;
+
+  /// 本次弹窗内已经确认过的地址：先点「测试连接」再点「连接」时不重复弹
+  /// 明文风险确认（两次动作发的是同一个地址、同一份凭据）。
+  String? _confirmedBaseUrl;
 
   @override
   void initState() {
@@ -1155,10 +1195,10 @@ class _WebdavConnectSheetState extends State<_WebdavConnectSheet> {
     super.dispose();
   }
 
-  WebdavSyncConfig _draftConfig() {
+  WebdavSyncConfig _draftConfig({required String baseUrl}) {
     return widget.config.copyWith(
       username: _usernameController.text.trim(),
-      baseUrl: widget.baseUrl,
+      baseUrl: baseUrl,
     );
   }
 
@@ -1167,13 +1207,25 @@ class _WebdavConnectSheetState extends State<_WebdavConnectSheet> {
     if (_usernameController.text.trim().isEmpty || password.isEmpty) {
       return false;
     }
+    // scheme 门禁：非法地址或用户拒绝明文确认时，连请求都不发出去
+    // （2026-10-20 补漏。此前直接把输入框原文交给服务层，http 会在
+    // 确认弹窗之前就把 Basic Auth 明文发出去）。
+    final cachedBaseUrl = _confirmedBaseUrl;
+    final confirmedBaseUrl =
+        cachedBaseUrl ?? await widget.confirmBaseUrl(widget.baseUrl);
+    if (confirmedBaseUrl == null || !mounted) {
+      return false;
+    }
+    _confirmedBaseUrl = confirmedBaseUrl;
     setState(() {
       _testing = true;
     });
     try {
       await widget.syncService.testConnection(
-        config: _draftConfig(),
+        config: _draftConfig(baseUrl: confirmedBaseUrl),
         passwordOverride: password,
+        // 上面已经过用户确认，服务层可以放行明文 http；https 时无影响。
+        allowInsecureHttp: true,
       );
       if (!mounted) {
         return false;
