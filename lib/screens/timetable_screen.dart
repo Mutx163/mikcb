@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'dart:math' as math;
@@ -44,7 +43,6 @@ import '../utils/home_wallpaper_luminance_share.dart';
 import '../ui/home/home_chrome_spec.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
     show LiquidGlassSurface, LiquidGlassSurfaceState;
-import '../widgets/course_action_sheet.dart';
 import '../widgets/course_card.dart';
 import '../widgets/course_grid_surface_host.dart';
 import '../widgets/course_weather_display.dart';
@@ -52,8 +50,8 @@ import '../widgets/home_menu_catalog.dart';
 import '../widgets/timetable_home_preview_scope.dart';
 import '../widgets/week_selector_picker_sheet.dart';
 import '../widgets/timetable/timetable_back_to_today_button.dart';
-import '../widgets/timetable/timetable_course_action_items.dart';
-import '../widgets/timetable/timetable_course_sheet_actions.dart';
+import '../widgets/timetable/timetable_course_action_flow.dart';
+import '../widgets/timetable/timetable_profile_switch_flow.dart';
 import '../widgets/timetable/timetable_week_page_body.dart';
 import '../widgets/timetable/timetable_dock_actions.dart';
 import '../widgets/timetable/weekday_ink_contrast_guard.dart';
@@ -75,7 +73,6 @@ import '../widgets/timetable/timetable_home_header.dart';
 import '../widgets/timetable/timetable_home_stack_builder.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
 import '../widgets/timetable/timetable_glass_dock.dart';
-import '../widgets/timetable/timetable_profile_quick_switch.dart';
 import '../widgets/timetable/timetable_top_menu_shell.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
@@ -2108,39 +2105,19 @@ class _TimetableScreenState extends State<TimetableScreen>
     Course course,
     int week, {
     DayCourseDisplayItem? displayItem,
-  }) async {
+  }) {
     final provider = context.read<TimetableProvider>();
-    final previewItems = buildTimetableCourseActionPreviewItems(
-      provider,
-      course,
-      week,
+    return showTimetableCourseActions(
+      context,
+      provider: provider,
+      course: course,
+      week: week,
       displayItem: displayItem,
       coupleOverlayActive: _isCoupleOverlayActive(provider),
-    );
-    await showCourseActionSheet(
-      context,
-      previewItems: previewItems,
-      week: week,
+      weekdayLabels: _weekdayLabels,
       onEdit: _editCourse,
-      onReschedule: (target) => showTimetableCourseRescheduleSheet(
-        context,
-        course: target,
-        sourceWeek: week,
-        weekdayLabels: _weekdayLabels,
-      ),
-      onDelete: (target) => showTimetableCourseDeleteOptions(
-        context,
-        course: target,
-        week: week,
-        weekdayLabels: _weekdayLabels,
-      ),
-      onSuspend: (target) =>
-          showTimetableCourseSuspendSheet(context, course: target, week: week),
       onAddTask: (target) => _openTaskFromCourse(target, week),
-      // 单节课提醒依赖原生精确闹钟调度，其他平台不显示入口。
-      onSetAlarm: (!kIsWeb && Platform.isAndroid)
-          ? (target) => _openClassReminderSheet(target, week)
-          : null,
+      onSetAlarm: (target) => _openClassReminderSheet(target, week),
     );
   }
 
@@ -2176,12 +2153,11 @@ class _TimetableScreenState extends State<TimetableScreen>
     HapticFeedback.selectionClick();
   }
 
-  Future<void> _showProfileQuickSwitchSheet() async {
+  Future<void> _showProfileQuickSwitchSheet() {
     final provider = context.read<TimetableProvider>();
-    final selected = await showTimetableProfileQuickSwitch(
+    return showTimetableProfileQuickSwitchFlow(
       context,
-      profiles: provider.profiles,
-      activeProfileId: provider.activeProfileId,
+      provider: provider,
       popupSourceRect: popupActionSourceRect,
       // 弹层内容在根 Overlay 上，buttonContext 拿不到原路由 —— 先立即摘掉旧
       // 面板，再用仍然挂载的宿主 context 推管理页（细节见 widget 文件）。
@@ -2191,18 +2167,6 @@ class _TimetableScreenState extends State<TimetableScreen>
         sourceRect: sourceRect,
       ),
     );
-
-    if (!mounted || selected == null) {
-      return;
-    }
-    if (selected == provider.activeProfileId) {
-      return;
-    }
-    await provider.switchProfile(selected);
-    if (!mounted) {
-      return;
-    }
-    _maybeSelectionClick(provider.settings);
   }
 
   /// 菜单项的实际分发（由 [HomeMenuController.dispatchSelection] 在**菜单收完
