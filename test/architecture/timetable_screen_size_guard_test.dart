@@ -49,8 +49,9 @@ void main() {
     // → 3988。
     // M5-A12：更新检查 → UpdateCheckController（净 -32）→ 3956。
     // M5-A13：空白槽标记状态机 + 两个空白槽 widget（净 -160）→ 3796。
-    // 下一次目标（玻璃坞点击/日视图转场）预计可再降至 ~3650。
-    const baselineLines = 3796;
+    // M5-A14：玻璃坞动作/标题触发器/动作页按钮/星期栏墨色守卫/新增弹层搬出
+    // （净 -319）→ 3477，达成 ≤3500。
+    const baselineLines = 3477;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),

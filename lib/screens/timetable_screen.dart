@@ -16,13 +16,11 @@ import 'package:flutter/gestures.dart'
         VelocityTracker,
         kMinFlingVelocity;
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/course.dart';
@@ -45,7 +43,6 @@ import '../widgets/class_reminder_sheet.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
-import '../widgets/home_page_region_blur.dart';
 import '../controllers/empty_slot_marker_controller.dart';
 import '../controllers/home_pull_controller.dart';
 import '../controllers/update_check_controller.dart';
@@ -78,12 +75,16 @@ import '../widgets/timetable/timetable_week_grid.dart';
 import '../widgets/timetable/timetable_section_time_cell.dart';
 import '../widgets/timetable/timetable_week_page.dart';
 import '../widgets/timetable/timetable_week_page_body.dart';
+import '../widgets/timetable/timetable_dock_actions.dart';
+import '../widgets/timetable/weekday_ink_contrast_guard.dart';
+import '../widgets/timetable/timetable_profile_switcher_trigger.dart';
 import '../widgets/timetable/timetable_empty_slot_layer.dart';
 import '../widgets/timetable/timetable_day_view_shared_free_summary.dart';
 import '../widgets/timetable/timetable_day_column.dart';
 import '../widgets/timetable/timetable_anchored_day_overlay.dart';
 import '../widgets/timetable/timetable_day_agenda_models.dart';
-import '../widgets/timetable/timetable_home_action_button.dart';
+import '../widgets/timetable/timetable_add_course_sheet.dart';
+import '../widgets/timetable/timetable_home_action_page_button.dart';
 import '../widgets/timetable/timetable_day_pager_physics.dart';
 import '../widgets/timetable/timetable_home_dock_shell.dart';
 import '../widgets/timetable/timetable_home_header.dart';
@@ -91,10 +92,8 @@ import '../widgets/timetable/timetable_home_stack.dart';
 import '../widgets/timetable/timetable_home_pull_surface.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
 import '../widgets/timetable/timetable_glass_dock.dart';
-import '../widgets/timetable/timetable_open_only_route.dart';
 import '../widgets/timetable/timetable_profile_quick_switch.dart';
 import '../widgets/timetable/timetable_top_menu_shell.dart';
-import '../widgets/timetable/timetable_weekday_ink_contrast_dialog.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
@@ -330,8 +329,6 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// Last "custom weekday ink is unreadable" combination already warned about
   /// this session; the persisted twin lives in SharedPreferences.
-  String? _weekdayInkWarnedSignature;
-  bool _weekdayInkWarningShowing = false;
 
   bool _isCoupleOverlayActive(TimetableProvider provider) =>
       _coupleOverlayEnabled && provider.hasPartnerBinding;
@@ -474,9 +471,12 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   late final EmptySlotMarkerController _emptySlot;
 
+  late final WeekdayInkContrastGuard _weekdayInkGuard;
+
   @override
   void initState() {
     super.initState();
+    _weekdayInkGuard = WeekdayInkContrastGuard();
     _emptySlot = EmptySlotMarkerController()
       ..addListener(_handleEmptySlotChanged);
     _update = UpdateCheckController(service: _updateService)
@@ -687,7 +687,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         // over this wallpaper — never silently override it, explain instead.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            _maybeWarnWeekdayInkContrast(provider, settings);
+            _weekdayInkGuard.maybeWarn(
+      context: context,
+      provider: provider,
+      settings: settings,
+      luminance: _luminance.weekdayInk(settings),
+    );
           }
         });
         // 顶栏「更多」「爱心」的常驻玻璃球（[FHeaderActionBall]）。**必须画在
@@ -2116,190 +2121,20 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// contrast against the current wallpaper. The ink keeps its colour and only
   /// gets its lightness pushed for readability ([homePageOverWallpaperInk]);
   /// this explains the change and offers restoring the default (auto B/W).
-  void _maybeWarnWeekdayInkContrast(
-    TimetableProvider provider,
-    TimetableSettings settings,
-  ) {
-    // Judge custom ink against the band actually behind the weekday bar, not
-    // the status/title strip above it.
-    final luminance = _luminance.weekdayInk(settings);
-    if (luminance == null || _weekdayInkWarningShowing) {
-      return;
-    }
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (!hasHomePageBackdrop(settings)) {
-      return;
-    }
-    // 实体档那条带是不透明实心条，星期栏压根不在壁纸上 ⇒ 这条「对比度不够」的
-    // 提醒在实体档下是假的（拿壁纸亮度去判一张实底上的字），别弹。液态 / 磨砂
-    // 带在模糊管线不在时同样降级为实心条，也不弹。
-    if (!homePageWeekdayBarOverWallpaper(
-      settings: settings,
-      hasBackdrop: true,
-      blurPipelineOn: HyperosBlurredHeader.backdropBlurEnabled(context),
-    )) {
-      return;
-    }
-    final configuredHex = isDark
-        ? settings.weekdayBarFontColorDark
-        : settings.weekdayBarFontColorLight;
-    final defaultHex = isDark
-        ? TimetableSettings.defaultWeekdayBarFontColorDark
-        : TimetableSettings.defaultWeekdayBarFontColorLight;
-    // Default ink already auto-flips with the wallpaper; only a custom pick
-    // can go invisible (and trigger the temporary auto flip).
-    if (homePageInkUsesBuiltInDefault(configuredHex, defaultHex)) {
-      return;
-    }
-    final ink = tryParseHexColor(configuredHex);
-    if (ink == null) {
-      return;
-    }
-    // ~WCAG ratio against the sampled band; photos are busy, so anything
-    // above 3:1 is left alone — this only catches "nearly invisible".
-    if (homePageInkHasSufficientContrast(ink, luminance)) {
-      return;
-    }
-    final signature =
-        '$configuredHex|${homePageBackdropKey(settings) ?? ''}|'
-        '$isDark';
-    if (_weekdayInkWarnedSignature == signature) {
-      return;
-    }
-    _weekdayInkWarnedSignature = signature;
-    unawaited(
-      _showWeekdayInkContrastDialog(
-        provider: provider,
-        signature: signature,
-        wallpaperIsDark: luminance < 0.45,
-        isDarkTheme: isDark,
-        defaultHex: defaultHex,
-      ),
-    );
-  }
 
-  Future<void> _showWeekdayInkContrastDialog({
-    required TimetableProvider provider,
-    required String signature,
-    required bool wallpaperIsDark,
-    required bool isDarkTheme,
-    required String defaultHex,
-  }) async {
-    const prefsKey = 'weekday_ink_contrast_warned_signature';
-    final prefs = await SharedPreferences.getInstance();
-    // Same colour + wallpaper + theme was already explained once (persisted):
-    // the user chose to keep it, so do not nag on every launch.
-    if (prefs.getString(prefsKey) == signature) {
-      return;
-    }
-    if (!mounted || _weekdayInkWarningShowing) {
-      return;
-    }
-    _weekdayInkWarningShowing = true;
-    await prefs.setString(prefsKey, signature);
-    if (!mounted) {
-      _weekdayInkWarningShowing = false;
-      return;
-    }
-    try {
-      await showTimetableWeekdayInkContrastDialog(
-        context,
-        wallpaperIsDark: wallpaperIsDark,
-        onResetDefault: () => resetTimetableWeekdayInkToDefault(
-          context,
-          provider: provider,
-          isDarkTheme: isDarkTheme,
-          defaultHex: defaultHex,
-        ),
-      );
-    } finally {
-      _weekdayInkWarningShowing = false;
-    }
-  }
 
   Widget _buildProfileSwitcherTrigger(
     TimetableProvider provider, {
     required Color foreground,
     required Color mutedForeground,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(left: _homeTitleHorizontalNudge),
-      child: switch (provider.settings.homeTitleStyle) {
-        HomeTitleStyle.classic => _buildClassicProfileSwitcherTrigger(
-          provider,
-          foreground: foreground,
-        ),
-        HomeTitleStyle.brand => _buildBrandProfileSwitcherTrigger(
-          provider,
-          foreground: foreground,
-          mutedForeground: mutedForeground,
-        ),
-      },
-    );
-  }
-
-  Widget _buildClassicProfileSwitcherTrigger(
-    TimetableProvider provider, {
-    required Color foreground,
-  }) {
-    final l10n = AppLocalizations.of(context)!;
-    final foruiTheme = context.theme;
-    return GestureDetector(
-      key: const ValueKey('profile_switcher_trigger'),
+    return TimetableProfileSwitcherTrigger(
+      style: provider.settings.homeTitleStyle,
+      activeProfileName: provider.activeProfile?.name.trim(),
       onTap: _showProfileQuickSwitchSheet,
-      behavior: HitTestBehavior.opaque,
-      child: Text(
-        l10n.timetableAppName,
-        style: foruiTheme.typography.display.xl.copyWith(
-          fontWeight: FontWeight.w400,
-          height: 1.1,
-          color: foreground,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBrandProfileSwitcherTrigger(
-    TimetableProvider provider, {
-    required Color foreground,
-    required Color mutedForeground,
-  }) {
-    final l10n = AppLocalizations.of(context)!;
-    final foruiTheme = context.theme;
-    final activeProfileName = provider.activeProfile?.name.trim();
-
-    return GestureDetector(
-      key: const ValueKey('profile_switcher_trigger'),
-      onTap: _showProfileQuickSwitchSheet,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.timetableAppName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: foruiTheme.typography.display.lg.copyWith(
-              fontWeight: FontWeight.w600,
-              height: 1,
-              letterSpacing: 0.1,
-              color: foreground,
-            ),
-          ),
-          Text(
-            (activeProfileName == null || activeProfileName.isEmpty)
-                ? l10n.switchProfileHint
-                : activeProfileName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: foruiTheme.typography.body.sm.copyWith(
-              color: mutedForeground,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+      foreground: foreground,
+      mutedForeground: mutedForeground,
+      leftPadding: _homeTitleHorizontalNudge,
     );
   }
 
@@ -2855,66 +2690,27 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 给一次触觉，重复点击当前 Tab 静音——日/周靠既有守卫；内嵌页再点
   /// 当前页不再翻转收回（与 日/周 同口径，收页走切视图或圆钮再点）。
   void _handleDockTap(String id, TimetableSettings settings) {
-    final leavingInlinePage =
-        _dockInlinePageId != null &&
-        (id == kGlassDockActionDay || id == kGlassDockActionWeek);
-    if (leavingInlinePage) {
-      // 从内嵌页点视图切换：先收页再切视图，避免两层状态叠加。
-      setState(() => _dockInlinePageId = null);
-    }
-    switch (id) {
-      case kGlassDockActionDay:
-        if (_isDayView) {
-          // 重复点日 Tab 无动作；从内嵌页收回落回日课表是一次真实切换
-          // （落回异视图的路径 _toggleDayView 内部已震，此处只补同视图）。
-          if (leavingInlinePage) {
-            _maybeSelectionClick(settings);
-          }
-          return;
-        }
-        unawaited(
-          _toggleDayView(
-            week: _visibleWeek,
-            dayOfWeek: _resolveStoredDayOfWeek(
-              settings,
-              settings.timetableLastViewedDayOfWeek,
-            ),
-            settings: settings,
-            animate: false,
-          ),
-        );
-      case kGlassDockActionWeek:
-        if (!_isDayView) {
-          _persistViewState(
-            context.read<TimetableProvider>(),
-            mode: TimetableHomeViewMode.week,
-          );
-          // 重复点周 Tab 无动作；从内嵌页收回落回周课表是一次真实切换。
-          if (leavingInlinePage) {
-            _maybeSelectionClick(settings);
-          }
-          return;
-        }
-        // 闪现收起：_closeDayView 内部完成震动、状态清理与持久化。
-        unawaited(_closeDayView(settings, animate: false));
-      default:
-        // 内嵌优先：注册过的页面在首页栈内切换，玻璃坞保持悬浮；未登记
-        // 的走普通推入。再点当前内嵌页与 日/周 Tab 同口径无动作，其余均
-        // 是真实切换（开页/换页/推路由），统一在此给触觉反馈。
-        if (inlineDockPageFor(id) != null) {
-          if (_dockInlinePageId == id) {
-            return;
-          }
-          setState(() => _dockInlinePageId = id);
-          _maybeSelectionClick(settings);
-          return;
-        }
-        final entry = homeMenuEntryById(id);
-        if (entry != null) {
-          _maybeSelectionClick(settings);
-          _pushAfterDockGlowSettled(entry.open);
-        }
-    }
+    handleTimetableDockTap(
+      id,
+      settings,
+      TimetableDockActionHost(
+        isDayView: _isDayView,
+        visibleWeek: _visibleWeek,
+        dockInlinePageId: _dockInlinePageId,
+        setInlinePageId: (id) => setState(() => _dockInlinePageId = id),
+        onSelectionClick: _maybeSelectionClick,
+        toggleDayView: _toggleDayView,
+        closeDayView: _closeDayView,
+        resolveStoredDayOfWeek: _resolveStoredDayOfWeek,
+        persistWeekView: () => _persistViewState(
+          context.read<TimetableProvider>(),
+          mode: TimetableHomeViewMode.week,
+        ),
+        inlineDockPageFor: inlineDockPageFor,
+        homeMenuEntryById: homeMenuEntryById,
+        pushAfterGlow: _pushAfterDockGlowSettled,
+      ),
+    );
   }
 
   /// 底栏某一格**会推新页面**时：先把玻璃药丸上的按压光斑收掉，下一帧再推。
@@ -2931,19 +2727,15 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 点击手感上察觉不到）。日/周切换与内嵌页换页**不走这里**：那些是首页内部
   /// 状态，光斑的渐隐就是它跟手的手感，要原样保留。
   void _pushAfterDockGlowSettled(Future<void> Function(BuildContext) open) {
-    _glassDockKey.currentState?.releasePressGlowImmediately();
-    _glassDockRoundKey.currentState?.releasePressGlowImmediately();
-    // ⚠️ **必须显式 `scheduleFrame`**（2026-09-25 实测）：`addPostFrameCallback`
-    // 自己**不排帧**，而此刻树上已经没有别的东西会标脏（推页被推迟了、光斑归零
-    // 只改渲染对象不重建）⇒ 不会有帧被画出 ⇒ 帧末回调永远不跑，推页永远不发生
-    // （首版就栽在这，回归用例直接把它照出来）。先排一帧，回调才有执行时机。
-    SchedulerBinding.instance.scheduleFrame();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      unawaited(open(context));
-    });
+    pushAfterTimetableDockGlowSettled(
+      releasePressGlow: () {
+        _glassDockKey.currentState?.releasePressGlowImmediately();
+        _glassDockRoundKey.currentState?.releasePressGlowImmediately();
+      },
+      isMounted: () => mounted,
+      context: context,
+      open: open,
+    );
   }
 
   /// 玻璃坞形态下按钮底边与药丸顶边之间的视觉间隙。
@@ -3302,64 +3094,15 @@ class _TimetableScreenState extends State<TimetableScreen>
     return DateTime(now.year, now.month, now.day);
   }
 
-  Future<void> _showAddCourseSheet() async {
-    final l10n = AppLocalizations.of(context)!;
+  Future<void> _showAddCourseSheet() {
     final provider = context.read<TimetableProvider>();
-    final initialDayOfWeek = _addCourseInitialDayOfWeek;
-    await showHomeHyperosSheet<void>(
+    return showTimetableAddCourseSheet(
       context: context,
-      builder: (sheetContext) {
-        final itemWidth =
-            ((MediaQuery.sizeOf(sheetContext).width - 32 - 24) / 3).clamp(
-              96.0,
-              120.0,
-            );
-
-        return HyperosSheet(
-          title: l10n.addCourseSheetTitle,
-          child: Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              SizedBox(
-                width: itemWidth,
-                child: _HomeActionPageButton(
-                  sheetRoute: ModalRoute.of(sheetContext),
-                  icon: Icons.view_week_rounded,
-                  title: l10n.addCourseTitle,
-                  pageBuilder: (_) => AddCourseScreen(
-                    initialWeek: _visibleWeek,
-                    initialDayOfWeek: initialDayOfWeek,
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: itemWidth,
-                child: _HomeActionPageButton(
-                  sheetRoute: ModalRoute.of(sheetContext),
-                  icon: Icons.event_note_rounded,
-                  title: l10n.addScheduleAction,
-                  pageBuilder: (_) => AddScheduleItemScreen(
-                    initialDate: _resolveAddScheduleInitialDate(provider),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: itemWidth,
-                child: _HomeActionPageButton(
-                  sheetRoute: ModalRoute.of(sheetContext),
-                  icon: Icons.school_outlined,
-                  title: l10n.addExam,
-                  pageBuilder: (_) => const AddExamScreen(),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+      initialWeek: _visibleWeek,
+      initialDayOfWeek: _addCourseInitialDayOfWeek,
+      initialScheduleDate: _resolveAddScheduleInitialDate(provider),
     );
   }
-
   Future<void> _showCourseActions(
     Course course,
     int week, {
@@ -3452,10 +3195,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       context,
       profiles: provider.profiles,
       activeProfileId: provider.activeProfileId,
-      popupSourceRect: _popupActionSourceRect,
+      popupSourceRect: popupActionSourceRect,
       // 弹层内容在根 Overlay 上，buttonContext 拿不到原路由 —— 先立即摘掉旧
       // 面板，再用仍然挂载的宿主 context 推管理页（细节见 widget 文件）。
-      openManagePage: (hostContext, sourceRect) => _openPopupActionPage(
+      openManagePage: (hostContext, sourceRect) => openTimetablePopupActionPage(
         hostContext,
         pageBuilder: (_) => const TimetableProfilesScreen(),
         sourceRect: sourceRect,
@@ -3731,66 +3474,4 @@ class _TimetableScreenState extends State<TimetableScreen>
     _scheduleHomeUpdatePrompt(result);
   }
 
-}
-
-Rect _popupActionSourceRect(BuildContext buttonContext) {
-  final renderBox = buttonContext.findRenderObject() as RenderBox?;
-  final buttonOffset = renderBox?.localToGlobal(Offset.zero) ?? Offset.zero;
-  final buttonSize = renderBox?.size ?? const Size(80, 80);
-  return buttonOffset & buttonSize;
-}
-
-void _openPopupActionPage(
-  BuildContext context, {
-  required WidgetBuilder pageBuilder,
-  Rect? sourceRect,
-  Route<dynamic>? sheetRoute,
-}) {
-  final resolvedSourceRect = sourceRect ?? _popupActionSourceRect(context);
-  final navigator = Navigator.of(context);
-
-  navigator.push(
-    TimetableOpenOnlyContainerPageRoute<void>(
-      sourceRect: resolvedSourceRect,
-      builder: pageBuilder,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    ),
-  );
-
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (sheetRoute != null && sheetRoute.isActive) {
-      navigator.removeRoute(sheetRoute);
-    }
-  });
-}
-
-class _HomeActionPageButton extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final WidgetBuilder pageBuilder;
-  final Route<dynamic>? sheetRoute;
-
-  const _HomeActionPageButton({
-    required this.icon,
-    required this.title,
-    required this.pageBuilder,
-    required this.sheetRoute,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Builder(
-      builder: (buttonContext) {
-        return TimetableHomeActionButtonBody(
-          icon: icon,
-          title: title,
-          onTap: () => _openPopupActionPage(
-            buttonContext,
-            pageBuilder: pageBuilder,
-            sheetRoute: sheetRoute,
-          ),
-        );
-      },
-    );
-  }
 }
