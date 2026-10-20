@@ -57,6 +57,7 @@ import '../services/timetable_reminder_service.dart';
 import '../services/timetable_schedule_item_service.dart';
 import '../services/timetable_settings_writer.dart';
 import '../services/timetable_theme_service.dart';
+import '../services/timetable_time_scheme_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/wallpaper_history_service.dart';
 import '../utils/home_page_background.dart';
@@ -87,7 +88,6 @@ export '../domain/import_export_logic.dart'
         replaceImportedCoursesPreservingLocalFields,
         syncImportedCourses;
 
-part 'timetable/time_scheme_repository.dart';
 part 'timetable/schedule_date_rule_repository.dart';
 part 'timetable/import_export_service.dart';
 part 'timetable/live_activity_controller.dart';
@@ -199,7 +199,8 @@ class TimetableProvider
         TimetableSettingsWritePort,
         TimetableScheduleItemPort,
         TimetableLocationRulePort,
-        TimetableCoursePort {
+        TimetableCoursePort,
+        TimetableTimeSchemePort {
   static const Duration _liveEndReminderWindow = Duration(minutes: 10);
 
   final StorageService _storageService;
@@ -340,6 +341,7 @@ class TimetableProvider
   @override
   List<LocationTimeGroup> get locationTimeGroups =>
       List.unmodifiable(_locationTimeGroups);
+  @override
   List<ScheduleDateRule> get scheduleDateRules =>
       List.unmodifiable(_scheduleDateRules);
 
@@ -441,6 +443,20 @@ class TimetableProvider
 
   @override
   bool isLiveTestingFixture(Course course) => _isLiveTestingFixture(course);
+
+  // ── TimetableTimeSchemePort：作息族（四份状态 + 两次落盘的事务）接线 ──
+  @override
+  set timeSchemes(List<TimeScheme> value) => _timeSchemes = value;
+
+  @override
+  TimeScheme? timeSchemeById(String? schemeId) => _getTimeSchemeById(schemeId);
+
+  @override
+  Future<void> persistTimeSchemes() => _persistTimeSchemes();
+
+  @override
+  void mergeActiveProfileIntoProfilesList() =>
+      _mergeActiveProfileIntoProfilesList();
 
   /// Courses grouped by name – each group represents one subject with
   /// one or more schedule entries.
@@ -1825,7 +1841,7 @@ class TimetableProvider
     List<SectionTime>? sections,
     bool applyToActiveProfile = false,
   }) => _runMutation(
-    () => _timetableCreateTimeScheme(
+    () => TimetableTimeSchemeService.create(
       this,
       name: name,
       sections: sections,
@@ -1834,14 +1850,14 @@ class TimetableProvider
   );
 
   Future<String?> applyTimeScheme(String schemeId) =>
-      _runMutation(() => _timetableApplyTimeScheme(this, schemeId));
+      _runMutation(() => TimetableTimeSchemeService.apply(this, schemeId));
 
   Future<TimeScheme?> renameTimeScheme(String schemeId, String name) =>
-      _runMutation(() => _timetableRenameTimeScheme(this, schemeId, name));
+      _runMutation(() => TimetableTimeSchemeService.rename(this, schemeId, name));
 
   Future<TimeScheme?> duplicateTimeScheme(String schemeId, {String? name}) =>
       _runMutation(
-        () => _timetableDuplicateTimeScheme(this, schemeId, name: name),
+        () => TimetableTimeSchemeService.duplicate(this, schemeId, name: name),
       );
 
   Future<String?> updateTimeScheme({
@@ -1849,7 +1865,7 @@ class TimetableProvider
     required String name,
     required List<SectionTime> sections,
   }) => _runMutation(
-    () => _timetableUpdateTimeScheme(
+    () => TimetableTimeSchemeService.update(
       this,
       schemeId: schemeId,
       name: name,
@@ -1858,7 +1874,7 @@ class TimetableProvider
   );
 
   Future<bool> deleteTimeScheme(String schemeId) =>
-      _runMutation(() => _timetableDeleteTimeScheme(this, schemeId));
+      _runMutation(() => TimetableTimeSchemeService.delete(this, schemeId));
 
   Future<TimetableProfile> createProfile({required String name}) {
     return _runMutation(() async {
