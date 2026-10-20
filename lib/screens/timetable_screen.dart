@@ -19,9 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../models/course.dart';
 import '../models/exam.dart';
@@ -34,9 +32,7 @@ import '../domain/day_view_paging.dart';
 import '../domain/week_calculator.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
-import '../services/app_update_service.dart';
 import '../services/screen_capture_service.dart';
-import '../services/support_creator_service.dart';
 import '../services/timetable_share_service.dart';
 import '../services/widget_launch_router.dart';
 import '../widgets/class_reminder_sheet.dart';
@@ -44,6 +40,7 @@ import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
 import '../controllers/empty_slot_marker_controller.dart';
+import '../controllers/timetable_update_download_controller.dart';
 import '../controllers/home_pull_controller.dart';
 import '../controllers/update_check_controller.dart';
 import '../controllers/wallpaper_luminance_controller.dart';
@@ -64,7 +61,6 @@ import '../widgets/day_course_weather_row.dart';
 import '../widgets/home_menu_catalog.dart';
 import '../widgets/home_top_menu.dart';
 import '../widgets/home_top_menu_popup.dart';
-import '../widgets/home_update_prompt.dart';
 import '../widgets/timetable_home_preview_scope.dart';
 import '../widgets/week_selector_picker_sheet.dart';
 import '../widgets/timetable/timetable_back_to_current_week_button.dart';
@@ -98,11 +94,8 @@ import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
 import 'add_task_screen.dart';
-import 'about_screen.dart';
 import 'import/home_pull_quick_import.dart';
 import 'timetable_profiles_screen.dart';
-
-part 'timetable_update_download_part.dart';
 
 part 'timetable_day_view_part.dart';
 
@@ -213,16 +206,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       HyperosGlassBackdropController();
   bool _homeGlassHeld = false;
   bool _homeMenuOpen = false;
-  final AppUpdateService _updateService = AppUpdateService();
+  late final TimetableUpdateDownloadController _updateDownload;
   late final UpdateCheckController _update;
-  final SupportCreatorService _supportCreatorService = SupportCreatorService();
-  final HomeUpdatePromptController _updatePromptController =
-      HomeUpdatePromptController();
-  bool _isUpdatePromptVisible = false;
-  bool _hasPresentedUpdatePrompt = false;
-  AppUpdateDownloadController? _homeDownloadController;
-  StreamSubscription<SystemDownloadProgress>? _systemDownloadSubscription;
-  bool? _lastUpdateCheckIncludePrerelease;
 
   /// 截屏检测订阅与节流状态。
   ///
@@ -246,7 +231,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// A shared [Future] (instead of a boolean flag) cannot leak: every early
   /// exit still completes the future, so a forgotten manual reset is
   /// impossible no matter how many new early-return branches are added.
-  Future<void>? _inflightUpdateCheck;
   TimetableProvider? _lastSyncedProvider;
   String? _lastSyncedProfileId;
   Timer? _dayAgendaProgressTimer;
@@ -479,7 +463,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     _weekdayInkGuard = WeekdayInkContrastGuard();
     _emptySlot = EmptySlotMarkerController()
       ..addListener(_handleEmptySlotChanged);
-    _update = UpdateCheckController(service: _updateService)
+    _updateDownload = TimetableUpdateDownloadController();
+    _update = UpdateCheckController(service: _updateDownload.updateService)
       ..addListener(_handleUpdateChanged);
     _homePull = HomePullController(
       vsync: this,
@@ -581,9 +566,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     GestureBinding.instance.pointerRouter.removeGlobalRoute(
       _homePull.onGlobalPointerEvent,
     );
-    _homeDownloadController?.cancel();
-    _systemDownloadSubscription?.cancel();
-    _updatePromptController.dispose();
+    _updateDownload.dispose();
     _update.removeListener(_handleUpdateChanged);
     _update.dispose();
     _homePull.removeListener(_handleHomePullChanged);
@@ -2122,7 +2105,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// gets its lightness pushed for readability ([homePageOverWallpaperInk]);
   /// this explains the change and offers restoring the default (auto B/W).
 
-
   Widget _buildProfileSwitcherTrigger(
     TimetableProvider provider, {
     required Color foreground,
@@ -2145,9 +2127,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     isFrozen: () => _homePull.isFrozen,
     parent: const AlwaysScrollableScrollPhysics(),
   );
-
-
-
 
   Future<void> _runHomePullQuickImport() async {
     if (_homePull.isRunning || !mounted) {
@@ -2301,7 +2280,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     return ((raw * steps).floorToDouble() / steps).clamp(0.02, 0.98);
   }
 
-
   /// 周网格课卡上那一行天气；不该显示时返回 null（[CourseCard] 据此不加这一行）。
   ///
   /// 三道闸按「成本从低到高」排：先看开关与课程状态（纯内存判断），都过了才去
@@ -2383,10 +2361,7 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   /// 虚线框在本列覆盖的节数：没有标记（或标记不在这一天/这一周）返回 0。
 
-
-
   /// 按下虚线框上/下边缘（[isTopEdge]）时锚定本次缩放的基准框。
-
 
   /// 拖上/下边缘时按手指位移把虚线框拉长或缩短。
   ///
@@ -2440,8 +2415,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   ) {
     return items.where((item) => item.course.startSection == section).toList();
   }
-
-
 
   DayCourseDisplayLabels _displayLabels() {
     final l10n = AppLocalizations.of(context)!;
@@ -3463,15 +3436,33 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  Future<void> _runUpdateCheck({required bool includePrerelease}) async {
-    final result = await _update.check(
-      settings: context.read<TimetableProvider>().settings,
+  Future<void> _checkForAppUpdate({required bool includePrerelease}) {
+    return _updateDownload.checkForAppUpdate(
       includePrerelease: includePrerelease,
+      runCheck: (include) => _update.check(
+        settings: context.read<TimetableProvider>().settings,
+        includePrerelease: include,
+      ),
+      onResult: (result) => _updateDownload.scheduleHomeUpdatePrompt(
+        context: context,
+        settings: context.read<TimetableProvider>().settings,
+        result: result,
+      ),
+      isMounted: () => mounted,
     );
-    if (!mounted || result == null) {
-      return;
-    }
-    _scheduleHomeUpdatePrompt(result);
+  }
+
+  void _scheduleUpdateCheckIfNeeded(TimetableProvider provider) {
+    _updateDownload.scheduleUpdateCheckIfNeeded(
+      enabled: widget.enableUpdateCheck,
+      provider: provider,
+      isMounted: () => mounted,
+      check: _checkForAppUpdate,
+    );
+  }
+
+  Future<void> _openTopMenuUpdatePage() {
+    return _updateDownload.openAboutUpdatePage(context);
   }
 
 }

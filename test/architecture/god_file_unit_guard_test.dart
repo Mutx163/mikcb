@@ -11,8 +11,8 @@ import 'package:flutter_test/flutter_test.dart';
 ///   周页滚动壳、首页栈、周网格日列、周 pager、玻璃坞外壳、周页、周网格骨架、
 ///   首页下拉 surface、情侣日课表组装、日视图锚点展开壳与壁纸亮度采样控制器
 ///   时间格、下拉/更新检查/空白槽控制器、日课表条目组装、分组圆角、玻璃坞
-///   动作、标题触发器、动作页按钮、墨色守卫与新增弹层拆出，主文件 3,477 +
-///   两个 part 2,806 = 6,283 行；build() 114 行。
+///   动作、标题触发器、动作页按钮、墨色守卫与新增弹层拆出，update part 转独立
+///   库；主文件 3,481 + day part 2,471 = 5,952 行；build() 114 行。
 /// - `timetable_provider`：主文件 4,362 + 10 个 part 3,479 = 7,841 行
 ///   （主题/考试/节假日/情侣/提醒族已抽到 `services/`）；
 ///   part 里仍有 573 处直接访问 `host._私有字段` —— 这是同一个类的 11 个抽屉，
@@ -33,11 +33,10 @@ void main() {
     // 2026-10-19 晚：拆 models↔l10n 唯一真循环，主文件仅 +1 行 import
     // （course_week_localizations 的扩展），属换依赖方向而非功能增长，
     // 主文件与单元总量各 +1（9154 → 9155）已在提交信息说明。
-    const baselineLines = 6283;
+    const baselineLines = 5952;
     const unit = [
       'lib/screens/timetable_screen.dart',
       'lib/screens/timetable_day_view_part.dart',
-      'lib/screens/timetable_update_download_part.dart',
     ];
     final lines = unit.fold<int>(0, (sum, path) => sum + _lineCount(path));
     expect(
@@ -59,9 +58,9 @@ void main() {
         .length;
     expect(
       partCount,
-      lessThanOrEqualTo(2),
+      lessThanOrEqualTo(1),
       reason:
-          '课表页 part 数量涨到 $partCount（基线 2）。part 只作零行为搬迁的过渡，'
+          '课表页 part 数量涨到 $partCount（基线 1）。part 只作零行为搬迁的过渡，'
           '新拆分请直接产出独立 widget/controller。',
     );
   });
@@ -180,7 +179,9 @@ void main() {
     // +10 全为文件头/import，零行为搬迁。
     // 13660→13668：settings_holiday.dart 转正（HolidaySettingsScreen/
     // HolidayAdvancedSettingsScreen 公开化），差值全为文件头/import，零行为搬迁。
-    const baselineLines = 13668;
+    // 13668→13680：settings_live.dart 转正（LiveSettingsScreen/
+    // LiveTestingSettingsScreen 公开化），差值全为文件头/import，零行为搬迁。
+    const baselineLines = 13680;
     final domainFiles = <String>[
       'lib/screens/timetable_settings_screen.dart',
       ...Directory('lib/screens/settings')
@@ -201,7 +202,7 @@ void main() {
           '并先做等量瘦身，不要抬基线换绿。',
     );
 
-    // part 数量：只减不增，随「转正」逐格收紧（9 = holiday 转正后余 9）。
+    // part 数量：只减不增，随「转正」逐格收紧（8 = live 转正后余 8）。
     final settingsMain = File('lib/screens/timetable_settings_screen.dart');
     final partCount = RegExp(
       r"^part\s+'",
@@ -209,7 +210,7 @@ void main() {
     ).allMatches(settingsMain.readAsStringSync()).length;
     expect(
       partCount,
-      lessThanOrEqualTo(9),
+      lessThanOrEqualTo(8),
       reason:
           '设置页 part 数量涨到 $partCount（基线 16）。16 个分身将逐个转正为'
           '独立库文件；part 只作零行为搬迁的过渡，不要新增。',

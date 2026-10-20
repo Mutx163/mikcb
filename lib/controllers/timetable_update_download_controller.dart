@@ -1,21 +1,48 @@
-part of 'timetable_screen.dart';
+import 'dart:async';
 
-/// 版本更新下载族（2026-10-10 自 `timetable_screen.dart` 原样搬入）。
+import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../l10n/app_localizations.dart';
+import '../models/timetable_settings.dart';
+import '../providers/timetable_provider.dart';
+import '../services/app_update_service.dart';
+import '../services/support_creator_service.dart';
+import '../ui/hyperos/hyperos.dart';
+import '../screens/about_screen.dart';
+import '../widgets/home_update_prompt.dart';
+
+/// 版本更新下载族（2026-10-20 从 `timetable_update_download_part.dart` 转成
+/// 独立库）。
 ///
-/// `_TimetableScreenState` 的成员扩展：相关字段声明仍在主类（extension 不能
-/// 声明实例字段），方法在此按功能域聚拢。搬移是**原样移动**——除本头注释与
-/// extension 包裹外，方法体一个字符都没有改。
-///
-/// `_runUpdateCheck` 仍留在主类：它体内两处 setState 在 extension 里会触发
-/// invalid_use_of_protected_member（analysis 级警告，CI --fatal-infos 不放行）。
-extension _TimetableScreenUpdateDownload on _TimetableScreenState {
-  Future<void> _openTopMenuUpdatePage() async {
-    // 版本检查做完、页面马上要推上来了。菜单已经由 `_dispatchTopMenuSelection`
-    // 统一下发前收完（2026-10-19 起所有条目都是「先收缩、再弹页面」），这里
-    // 不再自己请收 —— 早先那步 `_requestCloseHomeMenu` 是为「先推页、等盖满
-    // 再收」那条时序服务的，已随那条时序一起删掉。
+/// 负责「检查结果的首页提示 / 系统下载器 / 应用内下载与换源重试 / 取消 /
+/// 打开 Release 页」；所有需要 BuildContext 的方法都由调用方传入，控制器本身
+/// 不持有屏幕或 State。
+class TimetableUpdateDownloadController {
+  TimetableUpdateDownloadController({
+    AppUpdateService? updateService,
+    SupportCreatorService? supportCreatorService,
+  }) : updateService = updateService ?? AppUpdateService(),
+       supportCreatorService =
+           supportCreatorService ?? SupportCreatorService();
+
+  final AppUpdateService updateService;
+  final SupportCreatorService supportCreatorService;
+  final HomeUpdatePromptController promptController =
+      HomeUpdatePromptController();
+
+  AppUpdateDownloadController? _homeDownloadController;
+  StreamSubscription<SystemDownloadProgress>? _systemDownloadSubscription;
+  bool _isPromptVisible = false;
+  bool _hasPresentedPrompt = false;
+  bool? _lastCheckIncludePrerelease;
+  Future<void>? _inflightCheck;
+  bool _disposed = false;
+
+  Future<void> openAboutUpdatePage(BuildContext context) async {
     final packageInfo = await PackageInfo.fromPlatform();
-    if (!mounted) {
+    if (!context.mounted) {
       return;
     }
     await Navigator.of(context).push<void>(
@@ -25,55 +52,71 @@ extension _TimetableScreenUpdateDownload on _TimetableScreenState {
     );
   }
 
-  void _scheduleUpdateCheckIfNeeded(TimetableProvider provider) {
-    if (!widget.enableUpdateCheck) {
+  void scheduleUpdateCheckIfNeeded({
+    required bool enabled,
+    required TimetableProvider provider,
+    required bool Function() isMounted,
+    required Future<void> Function({required bool includePrerelease}) check,
+  }) {
+    if (!enabled) {
       return;
     }
     final includePrerelease = provider.settings.appUpdateIncludePrerelease;
-    if (_lastUpdateCheckIncludePrerelease == includePrerelease) {
+    if (_lastCheckIncludePrerelease == includePrerelease) {
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
+      if (!isMounted()) {
         return;
       }
-      _checkForAppUpdate(includePrerelease: includePrerelease);
+      unawaited(check(includePrerelease: includePrerelease));
     });
   }
 
-  Future<void> _checkForAppUpdate({required bool includePrerelease}) async {
+  Future<void> checkForAppUpdate({
+    required bool includePrerelease,
+    required Future<AppUpdateCheckResult?> Function(bool includePrerelease)
+    runCheck,
+    required void Function(AppUpdateCheckResult result) onResult,
+    required bool Function() isMounted,
+  }) async {
     // De-dupe by sharing the in-flight future; concurrent callers await the
     // same check instead of racing past a boolean flag.
-    final inflight = _inflightUpdateCheck;
+    final inflight = _inflightCheck;
     if (inflight != null) {
       await inflight;
       return;
     }
-    _lastUpdateCheckIncludePrerelease = includePrerelease;
-    final Future<void> check = _runUpdateCheck(
-      includePrerelease: includePrerelease,
-    );
-    _inflightUpdateCheck = check;
+    _lastCheckIncludePrerelease = includePrerelease;
+    final future = () async {
+      final result = await runCheck(includePrerelease);
+      if (result != null && isMounted()) {
+        onResult(result);
+      }
+    }();
+    _inflightCheck = future;
     try {
-      await check;
+      await future;
     } finally {
-      if (identical(_inflightUpdateCheck, check)) {
-        _inflightUpdateCheck = null;
+      if (identical(_inflightCheck, future)) {
+        _inflightCheck = null;
       }
     }
   }
 
-  /// 检测到新版本后在首页弹出更新提醒（受「弹窗提醒」开关控制，
-  /// 关闭时保持静默，仅依赖 ⋮ 菜单红点角标）。
-  void _scheduleHomeUpdatePrompt(AppUpdateCheckResult result) {
+  /// 检测到新版本后在首页弹出更新提醒（受「弹窗提醒」开关控制，关闭时保持
+  /// 静默，仅依赖 ⋮ 菜单红点角标）。
+  void scheduleHomeUpdatePrompt({
+    required BuildContext context,
+    required TimetableSettings settings,
+    required AppUpdateCheckResult result,
+  }) {
     if (!result.hasUpdate ||
         result.latestRelease == null ||
-        _hasPresentedUpdatePrompt ||
-        _isUpdatePromptVisible) {
+        _hasPresentedPrompt ||
+        _isPromptVisible) {
       return;
     }
-    final provider = context.read<TimetableProvider>();
-    final settings = provider.settings;
     if (!settings.appUpdatePromptEnabled) {
       return;
     }
@@ -91,7 +134,7 @@ extension _TimetableScreenUpdateDownload on _TimetableScreenState {
       preset: mirrorPreset,
       customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
     );
-    final effectiveDownloadUrl = _updateService.getEffectiveDownloadUrl(
+    final effectiveDownloadUrl = updateService.getEffectiveDownloadUrl(
       release: release,
       channel: channel,
       source: source,
@@ -105,17 +148,19 @@ extension _TimetableScreenUpdateDownload on _TimetableScreenState {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _hasPresentedUpdatePrompt || _isUpdatePromptVisible) {
+      if (!context.mounted || _hasPresentedPrompt || _isPromptVisible) {
         return;
       }
       // 首页不在栈顶时（例如启动直达二级页）不打断用户。
       if (ModalRoute.of(context)?.isCurrent != true) {
         return;
       }
-      _hasPresentedUpdatePrompt = true;
-      _isUpdatePromptVisible = true;
+      _hasPresentedPrompt = true;
+      _isPromptVisible = true;
       unawaited(
         _showHomeUpdatePromptAndTrackState(
+          context: context,
+          settings: settings,
           release: release,
           currentVersion: result.currentVersion,
           channel: channel,
@@ -127,6 +172,8 @@ extension _TimetableScreenUpdateDownload on _TimetableScreenState {
   }
 
   Future<void> _showHomeUpdatePromptAndTrackState({
+    required BuildContext context,
+    required TimetableSettings settings,
     required AppReleaseInfo release,
     required String currentVersion,
     required AppUpdateDownloadChannel channel,
@@ -140,13 +187,15 @@ extension _TimetableScreenUpdateDownload on _TimetableScreenState {
         currentVersion: currentVersion,
         downloadChannel: channel,
         hasDirectDownload: hasDirectDownload,
-        controller: _updatePromptController,
+        controller: promptController,
         onDownload: () async {
           if (!hasDirectDownload) {
             await _openUpdateReleasePage(release.releaseUrl);
             return false;
           }
-          return _startHomeUpdateDownload(
+          return startHomeUpdateDownload(
+            context: context,
+            settings: settings,
             release: release,
             channel: channel,
             downloadUrl: downloadUrl,
@@ -157,19 +206,23 @@ extension _TimetableScreenUpdateDownload on _TimetableScreenState {
         onViewRelease: () => _openUpdateReleasePage(
           AppUpdateService.releaseListUrlFor(channel),
         ),
-        onCancelDownload: _cancelHomeUpdateDownload,
-        onResumeDownload: () => _startHomeUpdateDownload(
+        onCancelDownload: cancelHomeUpdateDownload,
+        onResumeDownload: () => startHomeUpdateDownload(
+          context: context,
+          settings: settings,
           release: release,
           channel: channel,
           downloadUrl: downloadUrl,
         ),
       );
     } finally {
-      _isUpdatePromptVisible = false;
+      _isPromptVisible = false;
     }
   }
 
-  Future<bool> _startHomeUpdateDownload({
+  Future<bool> startHomeUpdateDownload({
+    required BuildContext context,
+    required TimetableSettings settings,
     required AppReleaseInfo release,
     required AppUpdateDownloadChannel channel,
     required String downloadUrl,
@@ -178,19 +231,17 @@ extension _TimetableScreenUpdateDownload on _TimetableScreenState {
       await _openUpdateReleasePage(downloadUrl);
       return false;
     }
-
-    final settings = context.read<TimetableProvider>().settings;
     if (settings.appUpdateDownloadChannel ==
         AppUpdateDownloadChannel.pgyer.value) {
       await _openUpdateReleasePage(downloadUrl);
       return false;
     }
 
-    if (_useSystemUpdateDownloader(settings)) {
+    if (settings.appUpdateUseSystemDownloader) {
       final version = release.version.trim().replaceAll(' ', '_');
       final int? downloadId;
       try {
-        downloadId = await _supportCreatorService.enqueueSystemDownload(
+        downloadId = await supportCreatorService.enqueueSystemDownload(
           url: downloadUrl,
           fileName: version.isEmpty ? 'mikcb_update.apk' : 'mikcb_v$version.apk',
           title: AppLocalizations.of(context)!.aboutUpdatePackageTitle,
@@ -199,25 +250,20 @@ extension _TimetableScreenUpdateDownload on _TimetableScreenState {
           )!.aboutUpdatePackageDescription,
         );
       } catch (_) {
-        // 原生确实会 `result.error("DOWNLOAD_ENQUEUE_FAILED" / "DOWNLOAD_QUERY_FAILED")`
-        // （`MainActivity.kt:1119/1132`）。原先这里没有 try：异常穿过弹窗 `onPressed`
-        // 那个没人 await 的 Future 落进 zone，用户点「立即下载」什么都不发生
-        // （无进度条、无报错、弹窗原样），只会反复点。关于页的同一调用
-        // （`about_screen.dart:1387-1409`）是有 catch + toast 的。
-        // 原因码留空是对的：这一条真的是"调用系统下载管理器失败"。
-        _updatePromptController.finishInAppDownload(success: false);
+        // 原生确实会 `result.error("DOWNLOAD_ENQUEUE_FAILED" / "DOWNLOAD_QUERY_FAILED")`。
+        // 原先这里没有 try：异常穿过弹窗 onPressed 那个没人 await 的 Future
+        // 落进 zone，用户点「立即下载」什么都不发生，只会反复点。
+        promptController.finishInAppDownload(success: false);
         return true;
       }
       if (downloadId == null) {
-        // 原先 `return false` 会让弹窗静默关掉（`onDownload` 返回 false 即 dismiss），
-        // 用户看不到任何"没成功"的信号。
-        _updatePromptController.finishInAppDownload(success: false);
+        promptController.finishInAppDownload(success: false);
         return true;
       }
-      final initialProgress = await _supportCreatorService
+      final initialProgress = await supportCreatorService
           .querySystemDownloadProgress(downloadId);
       if (initialProgress != null) {
-        _updatePromptController.beginSystemDownload(
+        promptController.beginSystemDownload(
           downloadId: downloadId,
           progress: initialProgress,
         );
@@ -248,24 +294,21 @@ extension _TimetableScreenUpdateDownload on _TimetableScreenState {
       final candidate = candidates[index];
       final controller = AppUpdateDownloadController();
       _homeDownloadController = controller;
-      _updatePromptController.beginInAppDownload();
-      final error = await _updateService.downloadAndInstallUpdate(
+      promptController.beginInAppDownload();
+      final error = await updateService.downloadAndInstallUpdate(
         candidate,
-        _updatePromptController.updateInAppProgress,
+        promptController.updateInAppProgress,
         controller,
         mirrorUrlPrefix: mirrorPrefix,
-        // 2026-10-10 信任根收紧：digest 的镜像剥离统一在服务层出口
-        // （checkForUpdates 返回前）执行，这里直接透传。见
-        // app_update_service.dart 的 AppReleaseInfo.digestFromDirectChannel。
         expectedApkSha256: release.expectedApkSha256,
       );
-      if (!mounted) {
+      if (!context.mounted) {
         return true;
       }
       _homeDownloadController = null;
       cancelled = error == AppUpdateService.downloadCancelledMessage;
       if (error == null || cancelled) {
-        _updatePromptController.finishInAppDownload(
+        promptController.finishInAppDownload(
           success: error == null,
           cancelled: cancelled,
         );
@@ -280,7 +323,7 @@ extension _TimetableScreenUpdateDownload on _TimetableScreenState {
         break;
       }
     }
-    _updatePromptController.finishInAppDownload(
+    promptController.finishInAppDownload(
       success: false,
       cancelled: cancelled,
       error: lastFailureReason,
@@ -288,40 +331,29 @@ extension _TimetableScreenUpdateDownload on _TimetableScreenState {
     return true;
   }
 
-  bool _useSystemUpdateDownloader(TimetableSettings settings) {
-    return settings.appUpdateUseSystemDownloader;
-  }
-
   void _watchSystemUpdateDownload(int downloadId) {
-    // `_systemDownloadSubscription` 原先只有两处出现：声明（:311）与 dispose 里的
-    // `cancel()`（:703），**全仓从未被赋值** —— 起流的地方是 `unawaited(() async {
-    // await for ... }())`，句柄被丢掉，所以旧 watcher 一条都关不掉。pending/paused 不是
-    // settled（`support_creator_service.dart:143-144`），于是关掉弹窗后这条下载仍以
-    // 350ms 一次的频率查平台通道，直到整页销毁；若期间再发起一次（应用内→取消→改用
-    // 系统下载器→点「继续下载」），两条 watcher 交替写同一个控制器字段，新的百分比
-    // 会被旧那条的"排队中"覆盖回去、数字来回跳。
+    // 旧 watcher 必须关掉，否则两条 watcher 交替写同一个控制器字段，
+    // 新的百分比会被旧那条的"排队中"覆盖回去、数字来回跳。
     _systemDownloadSubscription?.cancel();
-    _systemDownloadSubscription = _supportCreatorService
+    _systemDownloadSubscription = supportCreatorService
         .watchSystemDownloadProgress(downloadId)
         .listen(
           (progress) {
-            if (!mounted) {
+            if (_disposed) {
               return;
             }
             // 带上 downloadId：只有仍属于当前这条下载的进度才写进控制器。
-            _updatePromptController.updateSystemDownload(downloadId, progress);
+            promptController.updateSystemDownload(downloadId, progress);
           },
-          // 下载行在 provider 接手前会短暂查不到 —— 服务层现在自己重试若干次
-          // （`maxTransientFailures`，默认 3）。走到这里就是真的读不到了：保持弹窗可见，
-          // 由失败条/清理逻辑去表达，不再像旧注释那样假装"下一次观察会恢复"。
+          // 走到这里就是真的读不到了：保持弹窗可见，由失败条/清理逻辑表达。
           onError: (Object error, StackTrace stackTrace) {},
           cancelOnError: false,
         );
   }
 
-  void _cancelHomeUpdateDownload() {
+  void cancelHomeUpdateDownload() {
     _homeDownloadController?.cancel();
-    _updatePromptController.markCancelling();
+    promptController.markCancelling();
   }
 
   Future<void> _openUpdateReleasePage(String url) async {
@@ -332,4 +364,11 @@ extension _TimetableScreenUpdateDownload on _TimetableScreenState {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-}
+  void dispose() {
+    _disposed = true;
+    _homeDownloadController?.cancel();
+    unawaited(_systemDownloadSubscription?.cancel());
+    _systemDownloadSubscription = null;
+    promptController.dispose();
+  }
+}

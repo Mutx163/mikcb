@@ -7,7 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 /// 该文件是全仓最大、改动最频繁的业务文件（近 90 天 244 次提交），长期无任何
 /// 规模护栏。2026-10-10 已把「版本更新下载族」与「日视图议程族」两个功能域
 /// 原样搬入 part 文件（extension 形态，行为零变化）：
-/// - `timetable_update_download_part.dart`
 /// - `timetable_day_view_part.dart`
 ///
 /// 本棘轮只量主文件；「把代码搬进 part」不算瘦身 —— 逻辑单元总量、part 数量
@@ -64,7 +63,6 @@ void main() {
 
   test('棘不是空转：part 文件确实存在且非空', () {
     for (final part in [
-      'lib/screens/timetable_update_download_part.dart',
       'lib/screens/timetable_day_view_part.dart',
     ]) {
       final f = File(part);
