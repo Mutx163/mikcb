@@ -152,7 +152,9 @@ void main() {
     // 4043→3853：F3 课程/作业族（`TimetableCourseService`）同一做法 —— 除了删掉的
     // 分片，父文件里 `addCourse` 的实现、作业增删改与重算、课程归一、节次校验一并
     // 搬走，主库只留委托与 `_runMutation` 门。
-    const baselineLines = 3853;
+    // 3853→3851：F5 作息族（`TimetableTimeSchemeService`）出库，接线成本被委托
+    // 压缩抵掉，主文件仍只降不升。
+    const baselineLines = 3851;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
