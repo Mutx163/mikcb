@@ -13,11 +13,13 @@
 #
 # 守卫读的是**本次提交的快照**，不是工作区（2026-10-20 晚改）：先 `git
 # checkout-index` 把索引物化到临时目录、经 MIKCB_GUARD_SNAPSHOT 交给守卫。
-# 动机：索引=提交内容（普通提交与路径限定提交都成立），工作区里并行会话的
-# 在途改动本来就不属于这次提交——此前守卫读工作区，2026-10-19 一晚 45 次
-# --no-verify 大半是「别人的在途半成品顶爆棘轮」的误伤；先试过红项归因
-# （guard_attribution.sh），但「域内混入在途改动就放行」在设置域常脏的现实下
-# 会把真实回归也放过去，当天即废。守卫红了再以 HEAD 快照对照一次：
+# 守卫套件也从**快照里的** test/architecture/ 跑（不是工作区那份）：工作区里
+# 别的会话未提交、未跟踪的守卫测试文件（甚至语法错的）不会被编译，守卫逻辑
+# 也取提交里的版本。动机：索引=提交内容（普通提交与路径限定提交都成立），
+# 工作区里并行会话的在途改动本来就不属于这次提交——此前守卫读工作区，
+# 2026-10-19 一晚 45 次 --no-verify 大半是「别人的在途半成品顶爆棘轮」的误伤；
+# 先试过红项归因（guard_attribution.sh），但「域内混入在途改动就放行」在设置域
+# 常脏的现实下会把真实回归也放过去，当天即废。守卫红了再以 HEAD 快照对照一次：
 # HEAD 绿 ⇒ 本次提交引入，拦下；HEAD 也红 ⇒ 基线早已失守，先同步基线。
 # 守卫读文件的纪律由 test/architecture/guard_source.dart + 其纪律测试维持。
 #
@@ -96,9 +98,10 @@ if [ -n "$guard_relevant" ]; then
     if ! materialize "$snapshot"; then
       echo "pre-commit: 提交快照物化失败（合并冲突中的索引？），跳过本次架构守卫（CI 仍会兜住）。" >&2
     else
+      snap_win=$(cygpath -m "$snapshot" 2>/dev/null || echo "$snapshot")
       set +e
-      MIKCB_GUARD_SNAPSHOT="$(cygpath -m "$snapshot" 2>/dev/null || echo "$snapshot")" \
-        flutter test test/architecture/ --timeout 60s >"$out_file" 2>&1
+      MIKCB_GUARD_SNAPSHOT="$snap_win" \
+        flutter test "$snap_win/test/architecture/" --timeout 60s >"$out_file" 2>&1
       rc=$?
       set -e
 
@@ -114,17 +117,24 @@ if [ -n "$guard_relevant" ]; then
           # 对照 HEAD：红项是本次提交引入的，还是 HEAD 上本就红的
           #（先前的提交越过基线没同步，参照 99905c37 的同步做法）。
           snapshot_head=$(mktemp -d)
+          head_win=$(cygpath -m "$snapshot_head" 2>/dev/null || echo "$snapshot_head")
+          head_materialized=1
           set +e
-          materialize "$snapshot_head" HEAD
-          MIKCB_GUARD_SNAPSHOT="$(cygpath -m "$snapshot_head" 2>/dev/null || echo "$snapshot_head")" \
-            flutter test test/architecture/ --timeout 60s >"$out_head_file" 2>&1
-          head_rc=$?
+          if ! materialize "$snapshot_head" HEAD; then
+            head_materialized=0
+          else
+            MIKCB_GUARD_SNAPSHOT="$head_win" \
+              flutter test "$head_win/test/architecture/" --timeout 60s >"$out_head_file" 2>&1
+            head_rc=$?
+          fi
           set -e
 
           echo "" >&2
           sed 's/^/    /' "$out_file" >&2
           echo "" >&2
-          if [ "$head_rc" -ne 0 ]; then
+          if [ "$head_materialized" = 0 ]; then
+            echo "pre-commit: 架构守卫红，但 HEAD 快照物化失败，无法判断红项归属；按本次提交引入处理（保守）。" >&2
+          elif [ "$head_rc" -ne 0 ]; then
             echo "pre-commit: 架构守卫红，且 HEAD 本身已红 —— 先前的提交越过基线没同步基线。" >&2
             echo "pre-commit: 在重测同步基线（参照 99905c37）或修复超标文件之前，任何提交都会被拦；" >&2
             echo "pre-commit: 这不是你一个人的问题，别 --no-verify 硬闯，把基线同步掉就都通了。" >&2

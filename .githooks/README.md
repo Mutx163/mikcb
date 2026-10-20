@@ -23,7 +23,7 @@ git config core.hooksPath
 
 ## 现在拦什么
 
-1. `test/architecture/`（实测 21 条 / 5.8 秒，全是扫文件的纯逻辑测试）：
+1. `test/architecture/`（实测约 45 条 / 8 秒，全是扫文件的纯逻辑测试）：
    行数棘轮、依赖扇入棘轮、模糊出界、液态玻璃单入口、第三方模糊库补丁的锁定
    commit、以及备份规则等新增守卫。
 2. **analyze 门禁**（2026-10-11 新增）：暂存的 `.dart` 文件逐个过
@@ -31,7 +31,7 @@ git config core.hooksPath
    之后快；只分析暂存的文件，不碰其他 Agent 正在改的半成品。起因是 10-08 两个
    测试提交带进两条 info 级 lint，本地没人跑 analyze，CI 从 10-09 连红十几次。
 
-触发条件：暂存区动到 `lib/`、`test/`、`android/` 或 `pubspec.yaml`
+触发条件：暂存区动到 `lib/`、`test/architecture/`、`android/` 或 `pubspec.yaml`
 （Dart 文件才会触发 analyze；纯文档/站点提交不付这几秒）。
 
 ## 为什么不跑全量 `flutter test`
@@ -75,10 +75,14 @@ dart analyze --fatal-infos <刚才暂存的 .dart 文件>
 
 1. 钩子先 `git checkout-index` 把**索引**物化到临时目录，经 `MIKCB_GUARD_SNAPSHOT`
    交给守卫。索引=本次提交的内容（普通提交与路径限定提交 `git commit -- 路径`
-   都成立，后者 git 会给钩子一个只含本次路径更新的临时索引）。
+   都成立，后者 git 会给钩子一个只含本次路径更新的临时索引）。**守卫套件也从
+   快照里的 `test/architecture/` 跑**（不是工作区那份）：别的会话未提交、未跟踪的
+   守卫测试不会被编译，守卫逻辑也取提交里的版本。2026-10-20 12:11 就发生过反例：
+   一个未跟踪、编译不过的 `guard_source_test.dart` 把无关提交挡在钩子外，只能
+   `--no-verify`。
 2. 守卫的文件读取统一走 `test/architecture/guard_source.dart` 的 `resolve()`；
    纪律扫描测试盯着新守卫不许直读 `File/Directory`。
-3. 守卫红了再以 **HEAD 快照**对照复跑一次：
+3. 守卫红了再以 **HEAD 快照**（连同 HEAD 的测试代码）对照复跑一次：
    - HEAD 绿 ⇒ 红项由本次提交引入，拦下（棘轮只减不增不变）；
    - HEAD 也红 ⇒ 基线早已失守（先前提交越过基线没同步），先同步基线再提交。
 
