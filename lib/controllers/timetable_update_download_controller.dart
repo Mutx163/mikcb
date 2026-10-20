@@ -223,11 +223,24 @@ class TimetableUpdateDownloadController {
     }
 
     if (settings.appUpdateUseSystemDownloader) {
+      // 系统下载器通道只吃官方直连 URL：原生 UpdateDownloadTrust 只认
+      // github/gitcode 域，而默认 source=mirror + 预设 ghfast 会让
+      // getEffectiveDownloadUrl 产出 ghfast 外壳，交过去必被拒
+      // （用户只看到「调用系统下载管理器失败」）。应用内下载仍走镜像加速，
+      // 由 digest 闸门兜底，这里不动（2026-10-20 修复）。
+      final systemDownloadUrl = updateService.getSystemDownloaderUrl(
+        release: release,
+        channel: channel,
+      );
+      if (systemDownloadUrl == null) {
+        promptController.finishInAppDownload(success: false);
+        return true;
+      }
       final version = release.version.trim().replaceAll(' ', '_');
       final int? downloadId;
       try {
         downloadId = await supportCreatorService.enqueueSystemDownload(
-          url: downloadUrl,
+          url: systemDownloadUrl,
           fileName: version.isEmpty ? 'mikcb_update.apk' : 'mikcb_v$version.apk',
           title: AppLocalizations.of(context)!.aboutUpdatePackageTitle,
           description: AppLocalizations.of(

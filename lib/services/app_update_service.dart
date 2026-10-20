@@ -820,6 +820,41 @@ class AppUpdateService {
     }
   }
 
+  /// 系统下载器（DownloadManager）通道**只能**用官方直连 URL。
+  ///
+  /// 原生侧 `UpdateDownloadTrust.kt` 只认 `github.com` / `githubusercontent.com`
+  /// / `gitcode.com`（含子域）且 https；镜像（ghfast 等）只服务应用内下载
+  /// （`downloadAndInstallUpdate` 有「无摘要拒装 + mismatch 删文件」兜底）。
+  ///
+  /// 默认设置是 `appUpdateDownloadSource='mirror'` + 预设 `ghfast`，
+  /// [getEffectiveDownloadUrl] 因此会产出 `https://ghfast.top/https://github.com/…`
+  /// 这类镜像外壳 URL；把它交给系统下载器必被原生信任根拒绝，用户只看到
+  /// 「调用系统下载管理器失败」（2026-10-20 修复）。所以本通道单独取直连
+  /// 地址，不再接受任何镜像包装；GitCode 与蒲公英渠道沿用各自既有语义。
+  String? getSystemDownloaderUrl({
+    required AppReleaseInfo? release,
+    required AppUpdateDownloadChannel channel,
+  }) {
+    switch (channel) {
+      case AppUpdateDownloadChannel.gitcode:
+        final gitcodeUrl = release?.gitcodeDownloadUrl;
+        if (gitcodeUrl != null && gitcodeUrl.trim().isNotEmpty) {
+          return gitcodeUrl.trim();
+        }
+        final version = release?.version.trim() ?? '';
+        if (version.isEmpty) return null;
+        return _constructGitcodeApkDownloadUrl(
+          tag: 'v$version',
+          version: version,
+        );
+      case AppUpdateDownloadChannel.pgyer:
+        return release?.pgyerDownloadUrl ?? 'https://www.pgyer.com/qingyu';
+      case AppUpdateDownloadChannel.github:
+        final directUrl = release?.downloadUrl?.trim() ?? '';
+        return directUrl.isEmpty ? null : directUrl;
+    }
+  }
+
   /// GitCode releases API（公开仓库免令牌）拉取发行版列表。
   /// 与 GitHub 双策略并行竞争；国内网络环境下通常最先返回。
   Future<_AppUpdateFetchOutcome> _fetchFromGitCodeApi({

@@ -803,6 +803,13 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       source: downloadSource,
       mirrorUrlPrefix: effectiveMirrorUrlPrefix,
     );
+    // 系统下载器（DownloadManager）通道只能吃官方直连 URL：原生
+    // UpdateDownloadTrust 只认 github/gitcode 域，镜像外壳（默认 ghfast）
+    // 会被拒。因此这条通道单独取直连地址（2026-10-20）。
+    final systemDownloaderUrl = _updateService.getSystemDownloaderUrl(
+      release: release,
+      channel: downloadChannel,
+    );
     final isAndroid = defaultTargetPlatform == TargetPlatform.android;
     final primaryAction = resolveAboutUpdatePrimaryAction(
       isAndroid: isAndroid,
@@ -901,10 +908,21 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                     _openUrl(effectiveDownloadUrl);
                   } else if (effectiveDownloadUrl != null) {
                     if (_useSystemDownloader) {
-                      _enqueueSystemDownload(
-                        url: effectiveDownloadUrl,
-                        version: release?.version,
-                      );
+                      // 直连地址缺失时不做镜像回退：镜像 URL 必被原生拒，
+                      // 直接给失败提示比「点了没反应/必然失败」更清楚。
+                      final directUrl = systemDownloaderUrl;
+                      if (directUrl == null) {
+                        showAppToast(
+                          context,
+                          message: l10n.aboutSystemDownloaderFailed,
+                          kind: AppToastKind.error,
+                        );
+                      } else {
+                        _enqueueSystemDownload(
+                          url: directUrl,
+                          version: release?.version,
+                        );
+                      }
                     } else {
                       _downloadAndInstall(
                         effectiveDownloadUrl,
