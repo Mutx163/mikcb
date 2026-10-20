@@ -11,6 +11,13 @@
 # `flutter test`：全量要几分钟，一旦慢到让人养成 `--no-verify` 的习惯，
 # 这道门禁就等于不存在。
 #
+# 第一道失败时不再一律拦下（2026-10-20 加归因）：守卫读的是**整个工作区**，
+# 并行会话的在途改动会顶爆别人的域、把无辜的提交拦下——2026-10-19 一晚
+# 4 次 --no-verify 全是并行误伤。红项先过 .githooks/guard_attribution.sh
+# 归因（域映射 .githooks/guard_domains.txt）：与本次提交无关、或域内混入
+# 在途改动无法切分的自动放行并打印说明；确属本次提交引入的照旧拦下。
+# 新增守卫测试时必须同步登记域映射，否则红项按「无法归因 = 本次引入」拦下。
+#
 # 第二道：analyze 门禁（2026-10-11 新增）。暂存的 .dart 逐批过
 # `dart analyze --fatal-infos`（info 级也算失败，与 CI 同口径），用 `dart`
 # 而不是 `flutter` 是为了绕开 Git Bash 下 ProgramFiles(x86) 环境变量的坑
@@ -27,7 +34,8 @@
 # 就只会被 `--no-verify` 绕过，反而更糟。
 #
 # 逃生舱：git 约定俗成的 `--no-verify`（`git commit --no-verify`）。真被误伤时
-# 用它跳过，然后**立刻**手动补跑（命令见 README 与各段拦截提示）。
+# 用它跳过，然后**立刻**手动补跑（命令见 README 与各段拦截提示），并在
+# .agents/no-verify-log.md 追加一行留痕——跳过次数涨起来就是规则失效的信号。
 
 set -e
 
@@ -68,13 +76,20 @@ if [ -n "$guard_relevant" ]; then
         sed 's/^/    /' "$out_file" >&2
       else
         echo "" >&2
-        sed 's/^/    /' "$out_file" >&2
-        echo "" >&2
-        echo "pre-commit: 架构守卫没过，本次提交已拦下。" >&2
-        echo "pre-commit: 行数/依赖扇入棘轮是**只降不升**的，改动该拆就拆，" >&2
-        echo "           别用抬基线的方式把它变绿——抬之前先问这次增长能不能下沉。" >&2
-        echo "pre-commit: 确认是误伤可用 git commit --no-verify，但请手动补跑本命令。" >&2
-        exit 1
+        echo "pre-commit: 架构守卫没过，先归因红项（守卫读整个工作区，红项可能来自并行在途改动）..." >&2
+        if sh .githooks/guard_attribution.sh "$out_file"; then
+          echo "pre-commit: 归因放行：红项与本次提交无关、或无法与在途改动切分。继续 analyze 门禁；CI 仍会兜底。" >&2
+        else
+          echo "" >&2
+          sed 's/^/    /' "$out_file" >&2
+          echo "" >&2
+          echo "pre-commit: 架构守卫红项归因为本次提交引入，拦下。" >&2
+          echo "pre-commit: 行数/依赖扇入棘轮是**只降不升**的，改动该拆就拆，" >&2
+          echo "           别用抬基线的方式把它变绿——抬之前先问这次增长能不能下沉。" >&2
+          echo "pre-commit: 确认归因有误、确需跳过时用 git commit --no-verify，" >&2
+          echo "           但必须手动补跑本命令，并在 .agents/no-verify-log.md 追加一行留痕。" >&2
+          exit 1
+        fi
       fi
     fi
   fi
