@@ -105,19 +105,66 @@ void main() {
     }
   });
 
-  test('页面固定四列（两组格子宽度必须一致）', () {
+  test('页面固定两列大砖 + 自适应砖高（底部不许留白）', () {
     final source = File('lib/screens/pickup_codes_screen.dart').readAsStringSync();
+    // 列数写死：按「有几个分几列」会让两组格子宽度差 30%
     expect(
-      source.contains('static const int _columns = 4;'),
+      source.contains('static const int columns = 2;'),
       isTrue,
-      reason: '列数必须写死：按「有几个分几列」会让两组格子宽度差 30%',
+      reason: '列数必须写死在 _PickupCodePanel.columns（现在是两列大砖）',
     );
-    // 不许按 entries.length 分列（那就是「有几个几列」的写法）
+    // 砖高必须随可用高度自适应（吃满屏幕，不许底部空旷）
     expect(
-      RegExp(r'Expanded\(\s*child:\s*_PickupCodeTile').hasMatch(source),
-      isFalse,
-      reason: '砖必须包在固定列数的 Row 里，不能直接铺成一行 N 个',
+      source.contains('LayoutBuilder'),
+      isTrue,
+      reason: '页面必须用 LayoutBuilder 把可用高度交给面板分配',
     );
+    expect(
+      source.contains('minTileHeight') && source.contains('maxTileHeight'),
+      isTrue,
+      reason: '砖高要有上下限：太矮不像按钮，太高在平板上变形',
+    );
+    // 两张表都要登记（底栏内嵌 + 目录推入），缺一张就是「底栏消失」的回归
+    final registry = File(
+      'lib/screens/home_menu_route_registry.dart',
+    ).readAsStringSync();
+    expect(
+      RegExp(r"_inlineDockPageDescriptors = \[[\s\S]*?id: 'pickupCode'").hasMatch(
+        registry,
+      ),
+      isTrue,
+      reason: '内嵌表里没有 pickupCode：底栏点它会推新页面、底栏消失',
+    );
+  });
+
+  test('砖上的说明行必须是新信息（跳过去具体到哪），不许重复分组标题', () {
+    final l10nZh = File('lib/l10n/app_zh.arb').readAsStringSync();
+    final presets = File('lib/domain/pickup_code_presets.dart').readAsStringSync();
+    // 每条预置都带 hint
+    expect(
+      RegExp(r"hint: 'pickupCodePreset\w+Hint',").allMatches(presets).length,
+      7,
+      reason: '7 条预置每条都要有 hint 键',
+    );
+    // 说明里不许出现「打开」「进入」这类动词开头 —— 那是重复分组标题的废话
+    for (final key in const [
+      'pickupCodePresetCainiaoHint',
+      'pickupCodePresetTaobaoHint',
+      'pickupCodePresetPinduoduoHint',
+      'pickupCodePresetTaobaoParcelsHint',
+      'pickupCodePresetPinduoduoParcelsHint',
+      'pickupCodePresetJdParcelsHint',
+      'pickupCodePresetDouyinParcelsHint',
+    ]) {
+      final match = RegExp('"$key": "([^"]*)"').firstMatch(l10nZh);
+      expect(match, isNotNull, reason: '$key 缺失');
+      final text = match!.group(1)!;
+      expect(
+        text.startsWith('打开') || text.startsWith('进入') || text.startsWith('查看'),
+        isFalse,
+        reason: '$key 的文案「$text」是重复分组标题的废话（用户点过名：灰字太多）',
+      );
+    }
   });
 
   test('没装的入口在界面上有明确状态，不是静默失败', () {

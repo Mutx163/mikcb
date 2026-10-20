@@ -1497,6 +1497,7 @@
   "diagnosticsDisplayOptionsTitle": "表示と並び順",
   "diagnosticsStreamingHint": "リアルタイム更新中，新しいログが自動的に表示されます",
   "diagnosticsEmptyTitle": "ログなし",
+  "diagnosticsLoadFailedTitle": "ログの読み込みに失敗しました",
   "diagnosticsEmptySubtitle": "現在表示可能なスーパーアイランド診断ログがありません",
   "diagnosticsLogTitleFallback": "スーパーアイランド診断ログ",
   "diagnosticsDeviceInfoTitle": "デバイスとエクスポート情報",
@@ -1886,7 +1887,7 @@
       }
     }
   },
-  "liveTestingAutoRefreshOff": "オフにすると手動更新時のみ更新。現在のステータスを安定して確認可能。",
+  "liveTestingAutoRefreshOffReason": "現在のステータスを安定して確認可能。",
   "liveTestingRefreshedAt": "前回更新：{time}",
   "@liveTestingRefreshedAt": {
     "placeholders": {
@@ -1921,7 +1922,7 @@
   "liveTestingNoCourseAvailable": "現在テスト可能な授業がありません",
   "liveTestingPresetArmedButHidden": "自己診断のプリセット授業は注入されましたが、今は島が表示されません。「授業前リマインダー」がオフの場合、島は授業が実際に始まった後（約1分後）に表示されます",
   "liveTestingHolidayBlocked": "現在は休暇期間中のため、島は表示されません。テストするには、「時間割設定 → 休日マーク」で本日を含む休暇を先に削除してください",
-  "liveTestingNotIslandHoliday": "現在は休暇期間中です——休暇中は島が表示されません。休暇は「時間割設定 → 休日マーク」で管理できます",
+  "liveTestingHolidayHidden": "現在は休暇期間中です——休暇中は島が表示されません",
   "liveTestingCourseTestAction": "授業テスト",
   "liveTestingCourseTestPickerTitle": "テストする授業を選択",
   "liveTestingCourseTestStageTitle": "プレビューする段階を選択",
@@ -3571,7 +3572,7 @@
     }
   },
   "liveTestingHolidayOverride": "休日ステータス上書き",
-  "liveTestingHolidayOverrideSubtitle": "オンにすると休日ステータスをシミュレート，リマインダーとウィジェットが授業を正しく非表示にするかテスト可能",
+  "liveTestingHolidayOverridePurpose": "リマインダーとウィジェットが授業を正しく非表示にするかテスト可能",
   "liveTestingHolidayModeEnabled": "休日モード有効",
   "liveTestingHolidayModeDisabled": "休日モード無効",
   "liveTestingHolidayModeEnabledDesc": "授業リマインダーとウィジェットは全授業を非表示",
@@ -6737,5 +6738,12 @@
   "pickupCodeLaunchFailedHint": "入口は各アプリが提供しており、更新で使えなくなることがあります。アプリを直接開いてみてください。",
   "courseFormDiscardTitle": "変更を破棄しますか？",
   "courseFormDiscardMessage": "ここで入力した内容は保存されません。",
-  "courseFormDiscardAction": "破棄"
+  "courseFormDiscardAction": "破棄",
+  "pickupCodePresetCainiaoHint": "駅前ロッカー / 受取",
+  "pickupCodePresetTaobaoHint": "Cainiao と同じコード",
+  "pickupCodePresetPinduoduoHint": "駅前ロッカー / 受取",
+  "pickupCodePresetTaobaoParcelsHint": "Taobao の荷物一覧",
+  "pickupCodePresetPinduoduoParcelsHint": "Pinduoduo の荷物一覧",
+  "pickupCodePresetJdParcelsHint": "JD の荷物一覧",
+  "pickupCodePresetDouyinParcelsHint": "Douyin の荷物一覧"
 }

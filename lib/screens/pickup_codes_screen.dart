@@ -148,92 +148,162 @@ class _PickupCodesScreenState extends State<PickupCodesScreen> {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.pickupCodeTitle),
-      child: HyperosListView(
-        children: [
-          // 两组之间不写任何说明文字：分组标题已经把「这一组点下去干什么」
-          // 说清了，每条下面只有平台名。
-          HyperosSectionLabel(text: l10n.pickupCodeIdentitySectionTitle),
-          _PickupCodeGrid(
-            entries: identityCodes,
+      // 用 LayoutBuilder + 非滚动布局把可用高度吃满：这一页只有 7 个入口，
+      // 内容天然很短，若按「内容多高就多高」排，大屏上底部会空掉小半屏。
+      // 砖块高度按剩余空间自适应（见 _PickupCodePanel），窗口再高也不会留白。
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return _PickupCodePanel(
+            identityCodes: identityCodes,
+            parcels: parcels,
             busyEntryId: _busyEntryId,
             installedPackages: _installedPackages,
+            maxHeight: constraints.maxHeight,
             onTap: _openEntry,
-          ),
-          const HyperosSectionGap(),
-          HyperosSectionLabel(text: l10n.pickupCodeParcelsSectionTitle),
-          _PickupCodeGrid(
-            entries: parcels,
-            busyEntryId: _busyEntryId,
-            installedPackages: _installedPackages,
-            onTap: _openEntry,
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 }
 
-/// 一组入口：四列等宽方格。
+/// 整页两栏网格：两组入口 + 自适应砖高，把可用高度吃满。
 ///
-/// **两组都按四列**：身份码组 3 个、待取组 4 个，若各自按「有几个分几列」，
-/// 两组格子宽度会差 30%（103dp vs 75dp），下面那行看起来像被挤扁。固定
-/// 四列后两组格子一样大，视觉上是一套东西；不足一行用空位补齐。
+/// ## 为什么不用 HyperosListView
 ///
-/// 为什么是方格而不是横条：砖上只写平台名（两三个字），横条那套
-/// 「图标 + 标题 + 副标题 + 箭头」会留一大片空白，七个平台竖排要滑两次。
-class _PickupCodeGrid extends StatelessWidget {
-  const _PickupCodeGrid({
-    required this.entries,
+/// 这一页只有 7 个入口，内容天生很短。滚动的列表按内容高度排，大屏上底部会
+/// 空掉小半屏（实测 360×640 只占 344dp）。改成「按可用高度分配砖高」之后：
+/// 屏幕越高砖越大、越容易点，而不是底部一片空白。
+///
+/// ## 两列而不是四列
+///
+/// 四列时砖只有 75dp 宽、88dp 高，信息量只有「首字 + 平台名」，撑不起来。
+/// 两列可以放下「首字 + 平台名 + 一行动作说明」，砖本身也变成 150×120 的
+/// 大按钮 —— 站在快递柜前单手操作更好按。
+///
+/// 砖高夹在 [minTileHeight, maxTileHeight] 之间：太矮不像按钮，太高在平板上
+/// 会拉到变形。中间部分按行数均分剩余空间。
+class _PickupCodePanel extends StatelessWidget {
+  const _PickupCodePanel({
+    required this.identityCodes,
+    required this.parcels,
     required this.busyEntryId,
     required this.installedPackages,
+    required this.maxHeight,
     required this.onTap,
   });
 
-  /// 每行固定四列。
-  static const int _columns = 4;
+  /// 每行两列。
+  static const int columns = 2;
 
-  final List<PickupCodeEntry> entries;
+  /// 砖高下限：低于这个值就不像按钮了。
+  static const double minTileHeight = 104;
+
+  /// 砖高上限：平板上再高就变形，多出来的空间留给底部留白。
+  static const double maxTileHeight = 152;
+
+  /// 两组之间 / 组内行之间的间距。
+  static const double _rowGap = 10;
+
+  /// 分组标题占位（HyperosSectionLabel 自带 8dp 下边距 + 文字行高）。
+  static const double _sectionLabelHeight = 26;
+
+  final List<PickupCodeEntry> identityCodes;
+  final List<PickupCodeEntry> parcels;
   final String? busyEntryId;
-
-  /// 已安装的包名；null = 还没查出来（全部按可用显示）。
   final Set<String>? installedPackages;
-
+  final double maxHeight;
   final ValueChanged<PickupCodeEntry> onTap;
+
+  int get _identityRows => (identityCodes.length / columns).ceil();
+
+  int get _parcelsRows => (parcels.length / columns).ceil();
+
+  int get _totalRows => _identityRows + _parcelsRows;
+
+  /// 按剩余空间算砖高；夹在上下限之间。
+  double _resolveTileHeight(BuildContext context) {
+    final insets = MediaQuery.paddingOf(context);
+    // 页头（大标题 + 毛玻璃）由 HyperosSubpage 处理，这里只扣自己的部分：
+    // 顶部安全区、两个分组标题、行间距、底部安全区与呼吸留白。
+    final reserved = insets.top +
+        insets.bottom +
+        _sectionLabelHeight * 2 +
+        _rowGap * (_totalRows + 2) +
+        HyperosTokens.listPadding.vertical;
+    final available = maxHeight - reserved;
+    final perTile = available / (_totalRows == 0 ? 1 : _totalRows);
+    return perTile.clamp(minTileHeight, maxTileHeight);
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final tileHeight = _resolveTileHeight(context);
+    final insets = MediaQuery.paddingOf(context);
+    return SingleChildScrollView(
+      // 砖高已被上限夹住时（大平板）内容可能装不满，仍允许滚动兜底；
+      // 装得下时不会产生滚动，只是把内容按可用高度铺开。
+      padding: EdgeInsets.fromLTRB(
+        HyperosTokens.listPadding.left,
+        insets.top + _sectionLabelHeight,
+        HyperosTokens.listPadding.right,
+        insets.bottom + _rowGap,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HyperosSectionLabel(text: l10n.pickupCodeIdentitySectionTitle),
+          _buildGrid(context, identityCodes, tileHeight),
+          const SizedBox(height: _rowGap * 2),
+          HyperosSectionLabel(text: l10n.pickupCodeParcelsSectionTitle),
+          _buildGrid(context, parcels, tileHeight),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGrid(
+    BuildContext context,
+    List<PickupCodeEntry> entries,
+    double tileHeight,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
     final rows = <Widget>[];
-    for (var start = 0; start < entries.length; start += _columns) {
+    for (var start = 0; start < entries.length; start += columns) {
       final chunk = entries.sublist(
         start,
-        (start + _columns).clamp(0, entries.length),
+        (start + columns).clamp(0, entries.length),
       );
       rows.add(
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (var index = 0; index < _columns; index++) ...[
-              if (index > 0) const SizedBox(width: 10),
-              Expanded(
-                child: index < chunk.length
-                    ? _PickupCodeTile(
-                        entry: chunk[index],
-                        title: pickupCodeEntryTitle(l10n, chunk[index]),
-                        busy: busyEntryId == chunk[index].id,
-                        dimmed:
-                            busyEntryId != null && busyEntryId != chunk[index].id,
-                        missing: _isMissing(chunk[index]),
-                        onTap: () => onTap(chunk[index]),
-                      )
-                    : const SizedBox.shrink(),
-              ),
+        SizedBox(
+          height: tileHeight,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var index = 0; index < columns; index++) ...[
+                if (index > 0) const SizedBox(width: _rowGap),
+                Expanded(
+                  child: index < chunk.length
+                      ? _PickupCodeTile(
+                          entry: chunk[index],
+                          title: pickupCodeEntryTitle(l10n, chunk[index]),
+                          subtitle: pickupCodeEntryHint(l10n, chunk[index]),
+                          busy: busyEntryId == chunk[index].id,
+                          dimmed: busyEntryId != null &&
+                              busyEntryId != chunk[index].id,
+                          missing: _isMissing(chunk[index]),
+                          onTap: () => onTap(chunk[index]),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       );
-      if (start + _columns < entries.length) {
-        rows.add(const SizedBox(height: 10));
+      if (start + columns < entries.length) {
+        rows.add(const SizedBox(height: _rowGap));
       }
     }
     return Column(mainAxisSize: MainAxisSize.min, children: rows);
@@ -249,7 +319,7 @@ class _PickupCodeGrid extends StatelessWidget {
   }
 }
 
-/// 一颗入口砖：首字图标 + 平台名。整块可点。
+/// 一颗入口砖（两列大卡）：首字 + 平台名 + 一行动作说明。整块可点。
 ///
 /// ## 为什么图标用「平台首字」而不是 Material 图标
 ///
@@ -257,6 +327,13 @@ class _PickupCodeGrid extends StatelessWidget {
 /// 红、拼多多红、菜鸟橙都是红橙色系，三个一样的二维码图标排在一起扫一眼分不
 /// 出来。改成「菜 / 淘 / 拼 / 京 / 抖」单字方块：字本身就能区分平台，颜色只做
 /// 辅助，深色模式下也不失辨识度。
+///
+/// ## [subtitle] 必须是**新信息**
+///
+/// 砖上已经有「平台名 + 分组标题」两层，subtitle 若再写「打开取件码」就是同一
+/// 句话第三遍（用户点过名：灰字太多不简洁）。所以这里只放「这个平台跳过去
+/// 具体到哪」——驿站自提 / 快递柜 / 商城订单——选哪个码的信息，删掉任何一层
+/// 用户都要猜。
 ///
 /// ## 状态
 /// - `busy`：正在跳转，图标位置换成进度圈
@@ -266,6 +343,7 @@ class _PickupCodeTile extends StatelessWidget {
   const _PickupCodeTile({
     required this.entry,
     required this.title,
+    required this.subtitle,
     required this.busy,
     required this.dimmed,
     required this.missing,
@@ -274,6 +352,7 @@ class _PickupCodeTile extends StatelessWidget {
 
   final PickupCodeEntry entry;
   final String title;
+  final String subtitle;
   final bool busy;
   final bool dimmed;
   final bool missing;
@@ -284,6 +363,7 @@ class _PickupCodeTile extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final accent = pickupCodeAccentFor(context, entry.id);
     final primaryText = HyperosColors.primaryText(context);
+    final secondaryText = HyperosColors.secondaryText(context);
     final groupLabel = pickupCodeIsIdentityCode(entry.icon)
         ? l10n.pickupCodeIdentitySectionTitle
         : l10n.pickupCodeParcelsSectionTitle;
@@ -308,19 +388,21 @@ class _PickupCodeTile extends StatelessWidget {
           child: InkWell(
             onTap: busy ? null : onTap,
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.fromLTRB(16, 14, 14, 12),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 首字井：跳转时换成进度圈（居中保持同一占位）。
                   SizedBox(
-                    height: 40,
+                    width: 44,
+                    height: 44,
                     child: Center(
                       child: busy
                           ? SizedBox(
-                              width: 22,
-                              height: 22,
+                              width: 24,
+                              height: 24,
                               child: CircularProgressIndicator(
-                                strokeWidth: 2.2,
+                                strokeWidth: 2.4,
                                 color: accent,
                               ),
                             )
@@ -331,15 +413,25 @@ class _PickupCodeTile extends StatelessWidget {
                             ),
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const Spacer(),
                   Text(
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: HyperosTypography.listDetail(
+                    style: HyperosTypography.listTitle(
                       context,
                     ).copyWith(color: primaryText),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: HyperosTypography.listDetail(
+                      context,
+                    ).copyWith(
+                      color: secondaryText,
+                    ),
                   ),
                 ],
               ),

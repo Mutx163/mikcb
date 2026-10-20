@@ -109,4 +109,25 @@ void main() {
     );
     expect(zh.pickupCodeOpenedAppToast('淘宝'), contains('淘宝'));
   });
+
+  test('每条预置的 hint 在中/英文里都解析成非空说明', () {
+    for (final preset in kPickupCodePresets) {
+      final zhHint = pickupCodeEntryHint(zh, preset);
+      final enHint = pickupCodeEntryHint(en, preset);
+      expect(zhHint, isNotEmpty, reason: '${preset.id} 缺中文 hint');
+      expect(enHint, isNotEmpty, reason: '${preset.id} 缺英文 hint');
+    }
+  });
+
+  test('未知 hint 键返回空串（界面据此不渲染说明行）', () {
+    final unknown = PickupCodeEntry(
+      id: kPickupCodePresets.first.id,
+      icon: kPickupCodePresets.first.icon,
+      links: kPickupCodePresets.first.links,
+      hint: 'no_such_hint_key',
+    );
+    expect(pickupCodeEntryHint(zh, unknown), isEmpty);
+    expect(pickupCodeEntryHint(zh, kPickupCodePresets.first), isNotEmpty);
+  });
+
 }

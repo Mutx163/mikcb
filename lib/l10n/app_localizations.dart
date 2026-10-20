@@ -5212,12 +5212,6 @@ abstract class AppLocalizations {
   /// **'{count} 周'**
   String weekCountItem(int count);
 
-  /// No description provided for @diagnosticsLogIntro.
-  ///
-  /// In zh, this message translates to:
-  /// **'支持 Markdown 与原文两种查看方式，排查时可以直接在手机上看完整日志'**
-  String get diagnosticsLogIntro;
-
   /// No description provided for @diagnosticsRawTab.
   ///
   /// In zh, this message translates to:
@@ -5284,12 +5278,6 @@ abstract class AppLocalizations {
   /// **'当前筛选下没有日志'**
   String get diagnosticsNoMatchingTitle;
 
-  /// No description provided for @diagnosticsNoMatchingSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'可切换到全部日志或查看原文排查'**
-  String get diagnosticsNoMatchingSubtitle;
-
   /// 日志查看器分页加载：在列表边缘加载更早日志的入口行文案，count 为尚未显示的更早日志条数
   ///
   /// In zh, this message translates to:
@@ -5338,11 +5326,11 @@ abstract class AppLocalizations {
   /// **'暂无日志'**
   String get diagnosticsEmptyTitle;
 
-  /// No description provided for @diagnosticsEmptySubtitle.
+  /// No description provided for @diagnosticsLoadFailedTitle.
   ///
   /// In zh, this message translates to:
-  /// **'当前没有可显示的应用日志'**
-  String get diagnosticsEmptySubtitle;
+  /// **'日志加载失败'**
+  String get diagnosticsLoadFailedTitle;
 
   /// No description provided for @diagnosticsLogTitleFallback.
   ///
@@ -6906,7 +6894,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveDiagnosticsUnavailable.
   ///
   /// In zh, this message translates to:
-  /// **'当前还没有可查看的应用日志'**
+  /// **'当前还没有可查看的超级岛日志'**
   String get liveDiagnosticsUnavailable;
 
   /// No description provided for @liveDiagnosticsViewerTitle.
@@ -7005,12 +6993,6 @@ abstract class AppLocalizations {
   /// **'已取消自检测试'**
   String get liveTestingSessionCanceled;
 
-  /// No description provided for @liveTestingUmengHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'下面两个按钮仅测试版显示，用于验证友盟 U-APM 崩溃和卡顿上报'**
-  String get liveTestingUmengHint;
-
   /// No description provided for @liveTestingCrashAction.
   ///
   /// In zh, this message translates to:
@@ -7028,12 +7010,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'上岛状态诊断'**
   String get liveTestingIslandStatusTitle;
-
-  /// No description provided for @liveTestingIslandStatusSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'这里直接显示原生实时服务、通知构造结果和不上岛原因'**
-  String get liveTestingIslandStatusSubtitle;
 
   /// No description provided for @liveTestingServiceStatusRunning.
   ///
@@ -7095,11 +7071,11 @@ abstract class AppLocalizations {
   /// **'每 {seconds} 秒自动拉取一次诊断状态'**
   String liveTestingAutoRefreshOn(int seconds);
 
-  /// No description provided for @liveTestingAutoRefreshOff.
+  /// No description provided for @liveTestingAutoRefreshOffReason.
   ///
   /// In zh, this message translates to:
-  /// **'关闭后只在手动刷新时更新，便于稳定查看当前状态'**
-  String get liveTestingAutoRefreshOff;
+  /// **'便于稳定查看当前状态'**
+  String get liveTestingAutoRefreshOffReason;
 
   /// No description provided for @liveTestingRefreshedAt.
   ///
@@ -7161,12 +7137,6 @@ abstract class AppLocalizations {
   /// **'原始调试数据'**
   String get liveTestingRawDataTitle;
 
-  /// No description provided for @liveTestingRawDataSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'默认折叠，排查时再展开核对完整原生字段'**
-  String get liveTestingRawDataSubtitle;
-
   /// No description provided for @liveTestingExpandRawJson.
   ///
   /// In zh, this message translates to:
@@ -7184,12 +7154,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'本地诊断日志'**
   String get liveTestingLocalLogsTitle;
-
-  /// No description provided for @liveTestingLocalLogsSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'一键导出日志分享给开发者，也可清空重新收集'**
-  String get liveTestingLocalLogsSubtitle;
 
   /// No description provided for @liveTestingClearLogsAction.
   ///
@@ -7227,12 +7191,6 @@ abstract class AppLocalizations {
   /// **'否'**
   String get noLabel;
 
-  /// No description provided for @liveTestingCurrentNativeFieldsSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'显示当前原生诊断字段'**
-  String get liveTestingCurrentNativeFieldsSubtitle;
-
   /// No description provided for @liveTestingCrashSoon.
   ///
   /// In zh, this message translates to:
@@ -7263,11 +7221,11 @@ abstract class AppLocalizations {
   /// **'当前处于假期范围，超级岛在假期期间不显示。如需测试，请在 课表设置 节假日标记 中调整'**
   String get liveTestingHolidayBlocked;
 
-  /// No description provided for @liveTestingNotIslandHoliday.
+  /// No description provided for @liveTestingHolidayHidden.
   ///
   /// In zh, this message translates to:
-  /// **'当前处于假期范围，超级岛在假期期间不显示，可在 课表设置 节假日标记 中管理'**
-  String get liveTestingNotIslandHoliday;
+  /// **'当前处于假期范围，超级岛在假期期间不显示'**
+  String get liveTestingHolidayHidden;
 
   /// No description provided for @liveTestingCourseTestAction.
   ///
@@ -12046,11 +12004,11 @@ abstract class AppLocalizations {
   /// **'假期状态覆盖'**
   String get liveTestingHolidayOverride;
 
-  /// No description provided for @liveTestingHolidayOverrideSubtitle.
+  /// No description provided for @liveTestingHolidayOverridePurpose.
   ///
   /// In zh, this message translates to:
-  /// **'开启后模拟假期状态，用于测试提醒和小组件是否正确隐藏课程'**
-  String get liveTestingHolidayOverrideSubtitle;
+  /// **'用于测试提醒和小组件是否正确隐藏课程'**
+  String get liveTestingHolidayOverridePurpose;
 
   /// No description provided for @liveTestingHolidayModeEnabled.
   ///
@@ -20837,6 +20795,48 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'放弃修改'**
   String get courseFormDiscardAction;
+
+  /// No description provided for @pickupCodePresetCainiaoHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'驿站自提 / 快递柜'**
+  String get pickupCodePresetCainiaoHint;
+
+  /// No description provided for @pickupCodePresetTaobaoHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'菜鸟裹裹同款码'**
+  String get pickupCodePresetTaobaoHint;
+
+  /// No description provided for @pickupCodePresetPinduoduoHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'驿站自提 / 快递柜'**
+  String get pickupCodePresetPinduoduoHint;
+
+  /// No description provided for @pickupCodePresetTaobaoParcelsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'淘宝的包裹列表'**
+  String get pickupCodePresetTaobaoParcelsHint;
+
+  /// No description provided for @pickupCodePresetPinduoduoParcelsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'拼多多的包裹列表'**
+  String get pickupCodePresetPinduoduoParcelsHint;
+
+  /// No description provided for @pickupCodePresetJdParcelsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'京东的包裹列表'**
+  String get pickupCodePresetJdParcelsHint;
+
+  /// No description provided for @pickupCodePresetDouyinParcelsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'抖音的包裹列表'**
+  String get pickupCodePresetDouyinParcelsHint;
 }
 
 class _AppLocalizationsDelegate

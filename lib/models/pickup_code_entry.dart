@@ -25,6 +25,7 @@ class PickupCodeEntry {
     required this.id,
     required this.icon,
     required this.links,
+    this.hint,
     this.appPackages = const <String>[],
     this.webUri,
     this.clearTask = false,
@@ -36,6 +37,13 @@ class PickupCodeEntry {
   /// 图标注册名（见 `widgets/pickup_code_icons.dart`）。图标表达**功能**
   /// （身份码 / 待取），品牌色由界面按 id 赋，两者不混。
   final String icon;
+
+  /// 砖上的说明键（l10n）：跳过去具体到哪。
+  ///
+  /// 必须是**新信息**（「驿站自提 / 快递柜」「淘宝的包裹列表」这种帮用户在几颗
+  /// 砖之间做选择的内容），不许写「打开取件码」这类重复分组标题的废话 ——
+  /// 用户明确说过灰字太多不简洁。null = 不显示说明行。
+  final String? hint;
 
   final List<PickupCodeLink> links;
   final List<String> appPackages;

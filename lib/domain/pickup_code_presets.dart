@@ -22,6 +22,8 @@ import '../models/pickup_code_entry.dart';
 const List<PickupCodeEntry> kPickupCodePresets = <PickupCodeEntry>[
   PickupCodeEntry(
     id: 'pickupCodePresetCainiao',
+    // 跳过去具体到哪：砖上的说明行（新信息，不重复分组标题）
+    hint: 'pickupCodePresetCainiaoHint',
     icon: 'qrCode',
     links: <PickupCodeLink>[
       PickupCodeLink(
@@ -40,6 +42,8 @@ const List<PickupCodeEntry> kPickupCodePresets = <PickupCodeEntry>[
   ),
   PickupCodeEntry(
     id: 'pickupCodePresetTaobao',
+    // 跳过去具体到哪：砖上的说明行（新信息，不重复分组标题）
+    hint: 'pickupCodePresetTaobaoHint',
     icon: 'qrCode',
     links: <PickupCodeLink>[
       PickupCodeLink(
@@ -66,6 +70,8 @@ const List<PickupCodeEntry> kPickupCodePresets = <PickupCodeEntry>[
   ),
   PickupCodeEntry(
     id: 'pickupCodePresetPinduoduo',
+    // 跳过去具体到哪：砖上的说明行（新信息，不重复分组标题）
+    hint: 'pickupCodePresetPinduoduoHint',
     icon: 'qrCode',
     links: <PickupCodeLink>[
       PickupCodeLink(
@@ -92,6 +98,8 @@ const List<PickupCodeEntry> kPickupCodePresets = <PickupCodeEntry>[
   ),
   PickupCodeEntry(
     id: 'pickupCodePresetTaobaoParcels',
+    // 跳过去具体到哪：砖上的说明行（新信息，不重复分组标题）
+    hint: 'pickupCodePresetTaobaoParcelsHint',
     icon: 'parcel',
     links: <PickupCodeLink>[
       PickupCodeLink(
@@ -116,6 +124,8 @@ const List<PickupCodeEntry> kPickupCodePresets = <PickupCodeEntry>[
   ),
   PickupCodeEntry(
     id: 'pickupCodePresetPinduoduoParcels',
+    // 跳过去具体到哪：砖上的说明行（新信息，不重复分组标题）
+    hint: 'pickupCodePresetPinduoduoParcelsHint',
     icon: 'parcel',
     links: <PickupCodeLink>[
       PickupCodeLink(
@@ -130,6 +140,8 @@ const List<PickupCodeEntry> kPickupCodePresets = <PickupCodeEntry>[
   ),
   PickupCodeEntry(
     id: 'pickupCodePresetJdParcels',
+    // 跳过去具体到哪：砖上的说明行（新信息，不重复分组标题）
+    hint: 'pickupCodePresetJdParcelsHint',
     icon: 'parcel',
     links: <PickupCodeLink>[
       PickupCodeLink(
@@ -144,6 +156,8 @@ const List<PickupCodeEntry> kPickupCodePresets = <PickupCodeEntry>[
   ),
   PickupCodeEntry(
     id: 'pickupCodePresetDouyinParcels',
+    // 跳过去具体到哪：砖上的说明行（新信息，不重复分组标题）
+    hint: 'pickupCodePresetDouyinParcelsHint',
     icon: 'parcel',
     links: <PickupCodeLink>[
       PickupCodeLink(

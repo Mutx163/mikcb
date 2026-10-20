@@ -2810,9 +2810,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get diagnosticsLogIntro => '支持 Markdown 与原文两种查看方式，排查时可以直接在手机上看完整日志';
-
-  @override
   String get diagnosticsRawTab => '原文';
 
   @override
@@ -2848,9 +2845,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get diagnosticsNoMatchingTitle => '当前筛选下没有日志';
 
   @override
-  String get diagnosticsNoMatchingSubtitle => '可切换到全部日志或查看原文排查';
-
-  @override
   String diagnosticsLoadEarlierLabel(int count) {
     return '加载更早日志 剩余 $count 条';
   }
@@ -2877,7 +2871,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get diagnosticsEmptyTitle => '暂无日志';
 
   @override
-  String get diagnosticsEmptySubtitle => '当前没有可显示的应用日志';
+  String get diagnosticsLoadFailedTitle => '日志加载失败';
 
   @override
   String get diagnosticsLogTitleFallback => '超级岛诊断日志';
@@ -3730,7 +3724,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '友盟隐私政策：https://www.umeng.com/page/policy';
 
   @override
-  String get liveDiagnosticsUnavailable => '当前还没有可查看的应用日志';
+  String get liveDiagnosticsUnavailable => '当前还没有可查看的超级岛日志';
 
   @override
   String get liveDiagnosticsViewerTitle => '超级岛日志';
@@ -3781,9 +3775,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTestingSessionCanceled => '已取消自检测试';
 
   @override
-  String get liveTestingUmengHint => '下面两个按钮仅测试版显示，用于验证友盟 U-APM 崩溃和卡顿上报';
-
-  @override
   String get liveTestingCrashAction => '崩溃测试';
 
   @override
@@ -3791,9 +3782,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveTestingIslandStatusTitle => '上岛状态诊断';
-
-  @override
-  String get liveTestingIslandStatusSubtitle => '这里直接显示原生实时服务、通知构造结果和不上岛原因';
 
   @override
   String get liveTestingServiceStatusRunning => '服务运行中';
@@ -3828,7 +3816,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get liveTestingAutoRefreshOff => '关闭后只在手动刷新时更新，便于稳定查看当前状态';
+  String get liveTestingAutoRefreshOffReason => '便于稳定查看当前状态';
 
   @override
   String liveTestingRefreshedAt(String time) {
@@ -3863,9 +3851,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTestingRawDataTitle => '原始调试数据';
 
   @override
-  String get liveTestingRawDataSubtitle => '默认折叠，排查时再展开核对完整原生字段';
-
-  @override
   String get liveTestingExpandRawJson => '展开原始 JSON';
 
   @override
@@ -3873,9 +3858,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveTestingLocalLogsTitle => '本地诊断日志';
-
-  @override
-  String get liveTestingLocalLogsSubtitle => '一键导出日志分享给开发者，也可清空重新收集';
 
   @override
   String get liveTestingClearLogsAction => '清空日志';
@@ -3896,9 +3878,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noLabel => '否';
 
   @override
-  String get liveTestingCurrentNativeFieldsSubtitle => '显示当前原生诊断字段';
-
-  @override
   String get liveTestingCrashSoon => '即将触发友盟 U-APM 测试崩溃，请重新打开应用查看后台是否收到上报';
 
   @override
@@ -3916,8 +3895,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '当前处于假期范围，超级岛在假期期间不显示。如需测试，请在 课表设置 节假日标记 中调整';
 
   @override
-  String get liveTestingNotIslandHoliday =>
-      '当前处于假期范围，超级岛在假期期间不显示，可在 课表设置 节假日标记 中管理';
+  String get liveTestingHolidayHidden => '当前处于假期范围，超级岛在假期期间不显示';
 
   @override
   String get liveTestingCourseTestAction => '选课测试';
@@ -6588,8 +6566,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTestingHolidayOverride => '假期状态覆盖';
 
   @override
-  String get liveTestingHolidayOverrideSubtitle =>
-      '开启后模拟假期状态，用于测试提醒和小组件是否正确隐藏课程';
+  String get liveTestingHolidayOverridePurpose => '用于测试提醒和小组件是否正确隐藏课程';
 
   @override
   String get liveTestingHolidayModeEnabled => '假期模式已开启';
@@ -11453,6 +11430,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get courseFormDiscardAction => '放弃修改';
+
+  @override
+  String get pickupCodePresetCainiaoHint => '驿站自提 / 快递柜';
+
+  @override
+  String get pickupCodePresetTaobaoHint => '菜鸟裹裹同款码';
+
+  @override
+  String get pickupCodePresetPinduoduoHint => '驿站自提 / 快递柜';
+
+  @override
+  String get pickupCodePresetTaobaoParcelsHint => '淘宝的包裹列表';
+
+  @override
+  String get pickupCodePresetPinduoduoParcelsHint => '拼多多的包裹列表';
+
+  @override
+  String get pickupCodePresetJdParcelsHint => '京东的包裹列表';
+
+  @override
+  String get pickupCodePresetDouyinParcelsHint => '抖音的包裹列表';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -14262,9 +14260,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get diagnosticsLogIntro => '支持 Markdown 與原文兩種查看方式，排查時可以直接在手機上看完整日誌';
-
-  @override
   String get diagnosticsRawTab => '原文';
 
   @override
@@ -14300,9 +14295,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get diagnosticsNoMatchingTitle => '目前篩選下沒有日誌';
 
   @override
-  String get diagnosticsNoMatchingSubtitle => '可切換到全部日誌或查看原文排查';
-
-  @override
   String diagnosticsLoadEarlierLabel(int count) {
     return '加載更早日誌 剩餘 $count 條';
   }
@@ -14329,7 +14321,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get diagnosticsEmptyTitle => '暫無日誌';
 
   @override
-  String get diagnosticsEmptySubtitle => '目前沒有有可顯示的超級島診斷日誌';
+  String get diagnosticsLoadFailedTitle => '日誌載入失敗';
 
   @override
   String get diagnosticsLogTitleFallback => '超級島診斷日誌';
@@ -15232,9 +15224,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveTestingSessionCanceled => '已取消自檢測試';
 
   @override
-  String get liveTestingUmengHint => '下面兩個按鈕僅測試版顯示，用於驗證友盟 U-APM 崩潰和卡頓上報';
-
-  @override
   String get liveTestingCrashAction => '崩潰測試';
 
   @override
@@ -15242,9 +15231,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveTestingIslandStatusTitle => '上島狀態診斷';
-
-  @override
-  String get liveTestingIslandStatusSubtitle => '這裡直接顯示原生實時服務、通知構造結果和不上島原因';
 
   @override
   String get liveTestingServiceStatusRunning => '服務運行中';
@@ -15279,7 +15265,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get liveTestingAutoRefreshOff => '關閉後只在手動刷新時更新，便于穩定查看目前狀態';
+  String get liveTestingAutoRefreshOffReason => '便於穩定查看目前狀態';
 
   @override
   String liveTestingRefreshedAt(String time) {
@@ -15314,9 +15300,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveTestingRawDataTitle => '原始偵錯資料';
 
   @override
-  String get liveTestingRawDataSubtitle => '預設折疊，排查時再展開核對完整原生字段';
-
-  @override
   String get liveTestingExpandRawJson => '展開原始 JSON';
 
   @override
@@ -15324,9 +15307,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveTestingLocalLogsTitle => '本地診斷日誌';
-
-  @override
-  String get liveTestingLocalLogsSubtitle => '一鍵匯出日誌分享給開發者，也可清空重新收集';
 
   @override
   String get liveTestingClearLogsAction => '清空日誌';
@@ -15347,9 +15327,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get noLabel => '否';
 
   @override
-  String get liveTestingCurrentNativeFieldsSubtitle => '顯示目前原生診斷字段';
-
-  @override
   String get liveTestingCrashSoon => '即將觸發友盟 U-APM 測試崩潰，請重新打開應用檢視後臺是否收到上報';
 
   @override
@@ -15367,8 +15344,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
       '當前處於假期範圍，超級島在假期期間不顯示。如需測試，請在 課表設置 節假日標記 中調整';
 
   @override
-  String get liveTestingNotIslandHoliday =>
-      '當前處於假期範圍，超級島在假期期間不顯示，可在 課表設置 節假日標記 中管理';
+  String get liveTestingHolidayHidden => '當前處於假期範圍，超級島在假期期間不顯示';
 
   @override
   String get liveTestingCourseTestAction => '選課測試';
@@ -18039,8 +18015,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveTestingHolidayOverride => '假期狀態覆蓋';
 
   @override
-  String get liveTestingHolidayOverrideSubtitle =>
-      '開啟後模擬假期狀態，用於測試提醒和小組件是否正確隱藏課程';
+  String get liveTestingHolidayOverridePurpose => '用於測試提醒和小組件是否正確隱藏課程';
 
   @override
   String get liveTestingHolidayModeEnabled => '假期模式已開啟';
@@ -22944,6 +22919,27 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get courseFormDiscardAction => '放棄修改';
+
+  @override
+  String get pickupCodePresetCainiaoHint => '驛站自取 / 快遞櫃';
+
+  @override
+  String get pickupCodePresetTaobaoHint => '菜鳥裹裹同款碼';
+
+  @override
+  String get pickupCodePresetPinduoduoHint => '驛站自取 / 快遞櫃';
+
+  @override
+  String get pickupCodePresetTaobaoParcelsHint => '淘寶的包裹列表';
+
+  @override
+  String get pickupCodePresetPinduoduoParcelsHint => '拼多多的包裹列表';
+
+  @override
+  String get pickupCodePresetJdParcelsHint => '京東的包裹列表';
+
+  @override
+  String get pickupCodePresetDouyinParcelsHint => '抖音的包裹列表';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -25753,9 +25749,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get diagnosticsLogIntro => '支持 Markdown 與原文兩種查看方式，排查時可以直接在手機上看完整日誌';
-
-  @override
   String get diagnosticsRawTab => '原文';
 
   @override
@@ -25791,9 +25784,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get diagnosticsNoMatchingTitle => '目前篩選下沒有日誌';
 
   @override
-  String get diagnosticsNoMatchingSubtitle => '可切換到全部日誌或查看原文排查';
-
-  @override
   String diagnosticsLoadEarlierLabel(int count) {
     return '加載更早日誌 剩餘 $count 條';
   }
@@ -25820,7 +25810,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get diagnosticsEmptyTitle => '暫無日誌';
 
   @override
-  String get diagnosticsEmptySubtitle => '目前沒有有可顯示的超級島診斷日誌';
+  String get diagnosticsLoadFailedTitle => '日誌載入失敗';
 
   @override
   String get diagnosticsLogTitleFallback => '超級島診斷日誌';
@@ -26723,9 +26713,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingSessionCanceled => '已取消自檢測試';
 
   @override
-  String get liveTestingUmengHint => '下面兩個按鈕僅測試版顯示，用於驗證友盟 U-APM 崩潰和卡頓上報';
-
-  @override
   String get liveTestingCrashAction => '崩潰測試';
 
   @override
@@ -26733,9 +26720,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveTestingIslandStatusTitle => '上島狀態診斷';
-
-  @override
-  String get liveTestingIslandStatusSubtitle => '這裡直接顯示原生實時服務、通知構造結果和不上島原因';
 
   @override
   String get liveTestingServiceStatusRunning => '服務執行中';
@@ -26770,7 +26754,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get liveTestingAutoRefreshOff => '關閉後只在手動刷新時更新，便于穩定查看目前狀態';
+  String get liveTestingAutoRefreshOffReason => '便於穩定查看目前狀態';
 
   @override
   String liveTestingRefreshedAt(String time) {
@@ -26805,9 +26789,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingRawDataTitle => '原始偵錯資料';
 
   @override
-  String get liveTestingRawDataSubtitle => '預設折疊，排查時再展開核對完整原生字段';
-
-  @override
   String get liveTestingExpandRawJson => '展開原始 JSON';
 
   @override
@@ -26815,9 +26796,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveTestingLocalLogsTitle => '本地診斷日誌';
-
-  @override
-  String get liveTestingLocalLogsSubtitle => '一鍵匯出日誌分享給開發者，也可清空重新收集';
 
   @override
   String get liveTestingClearLogsAction => '清空日誌';
@@ -26838,9 +26816,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get noLabel => '否';
 
   @override
-  String get liveTestingCurrentNativeFieldsSubtitle => '顯示目前原生診斷字段';
-
-  @override
   String get liveTestingCrashSoon => '即將觸發友盟 U-APM 測試崩潰，請重新開啟應用檢視背景是否收到上報';
 
   @override
@@ -26858,8 +26833,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '當前處於假期範圍，超級島在假期期間不顯示。如需測試，請在 課表設置 節假日標記 中調整';
 
   @override
-  String get liveTestingNotIslandHoliday =>
-      '當前處於假期範圍，超級島在假期期間不顯示，可在 課表設置 節假日標記 中管理';
+  String get liveTestingHolidayHidden => '當前處於假期範圍，超級島在假期期間不顯示';
 
   @override
   String get liveTestingCourseTestAction => '選課測試';
@@ -29530,8 +29504,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingHolidayOverride => '假期狀態覆蓋';
 
   @override
-  String get liveTestingHolidayOverrideSubtitle =>
-      '開啟後模擬假期狀態，用於測試提醒和小工具是否正確隱藏課程';
+  String get liveTestingHolidayOverridePurpose => '用於測試提醒和小工具是否正確隱藏課程';
 
   @override
   String get liveTestingHolidayModeEnabled => '假期模式已開啟';
@@ -34436,4 +34409,25 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get courseFormDiscardAction => '放棄修改';
+
+  @override
+  String get pickupCodePresetCainiaoHint => '驛站自取 / 快遞櫃';
+
+  @override
+  String get pickupCodePresetTaobaoHint => '菜鳥裹裹同款碼';
+
+  @override
+  String get pickupCodePresetPinduoduoHint => '驛站自取 / 快遞櫃';
+
+  @override
+  String get pickupCodePresetTaobaoParcelsHint => '淘寶的包裹列表';
+
+  @override
+  String get pickupCodePresetPinduoduoParcelsHint => '拼多多的包裹列表';
+
+  @override
+  String get pickupCodePresetJdParcelsHint => '京東的包裹列表';
+
+  @override
+  String get pickupCodePresetDouyinParcelsHint => '抖音的包裹列表';
 }

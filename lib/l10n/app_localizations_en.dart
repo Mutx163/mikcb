@@ -2995,10 +2995,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get diagnosticsLogIntro =>
-      'Supports both Markdown and raw views so you can inspect full logs directly on your phone';
-
-  @override
   String get diagnosticsRawTab => 'Raw';
 
   @override
@@ -3034,10 +3030,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get diagnosticsNoMatchingTitle => 'No logs match this filter';
 
   @override
-  String get diagnosticsNoMatchingSubtitle =>
-      'Switch back to \"All\" or check the raw view to continue debugging';
-
-  @override
   String diagnosticsLoadEarlierLabel(int count) {
     return 'Load earlier logs ($count more)';
   }
@@ -3066,8 +3058,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get diagnosticsEmptyTitle => 'No Logs Yet';
 
   @override
-  String get diagnosticsEmptySubtitle =>
-      'There are currently no app logs to display';
+  String get diagnosticsLoadFailedTitle => 'Failed to Load Logs';
 
   @override
   String get diagnosticsLogTitleFallback => 'Island Diagnostics Log';
@@ -3982,7 +3973,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Umeng Privacy Policy: https://www.umeng.com/page/policy';
 
   @override
-  String get liveDiagnosticsUnavailable => 'There are no app logs to view yet.';
+  String get liveDiagnosticsUnavailable =>
+      'There are no Super Island logs to view yet.';
 
   @override
   String get liveDiagnosticsViewerTitle => 'Super Island logs';
@@ -4039,10 +4031,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveTestingSessionCanceled => 'Self-check test cancelled';
 
   @override
-  String get liveTestingUmengHint =>
-      'The two buttons below are shown only in test builds and are used to verify Umeng U-APM crash and ANR reporting';
-
-  @override
   String get liveTestingCrashAction => 'Crash test';
 
   @override
@@ -4050,10 +4038,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTestingIslandStatusTitle => 'Island status diagnostics';
-
-  @override
-  String get liveTestingIslandStatusSubtitle =>
-      'This section shows the native live service status, notification build result, and the reason it is not appearing on the Island';
 
   @override
   String get liveTestingServiceStatusRunning => 'Service running';
@@ -4089,8 +4073,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get liveTestingAutoRefreshOff =>
-      'When off, diagnostics update only when you refresh manually so you can inspect the current state more steadily.';
+  String get liveTestingAutoRefreshOffReason =>
+      'So you can inspect the current state more steadily.';
 
   @override
   String liveTestingRefreshedAt(String time) {
@@ -4125,10 +4109,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveTestingRawDataTitle => 'Raw debug data';
 
   @override
-  String get liveTestingRawDataSubtitle =>
-      'Collapsed by default. Expand it only when you need to verify the full native fields';
-
-  @override
   String get liveTestingExpandRawJson => 'Expand raw JSON';
 
   @override
@@ -4137,10 +4117,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTestingLocalLogsTitle => 'Local diagnostic logs';
-
-  @override
-  String get liveTestingLocalLogsSubtitle =>
-      'Export logs with one tap to share with developers, or clear and collect again';
 
   @override
   String get liveTestingClearLogsAction => 'Clear logs';
@@ -4159,10 +4135,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noLabel => 'No';
-
-  @override
-  String get liveTestingCurrentNativeFieldsSubtitle =>
-      'Shows the current native diagnostic fields';
 
   @override
   String get liveTestingCrashSoon =>
@@ -4185,8 +4157,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'You are currently within a holiday period, so the island stays hidden. To test, first remove the holiday that covers today in Timetable Settings → Holiday Marking.';
 
   @override
-  String get liveTestingNotIslandHoliday =>
-      'Currently within a holiday period — the island is hidden during holidays. Manage holidays in Timetable Settings → Holiday Marking.';
+  String get liveTestingHolidayHidden =>
+      'Currently within a holiday period — the island is hidden during holidays.';
 
   @override
   String get liveTestingCourseTestAction => 'Course Test';
@@ -7006,8 +6978,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveTestingHolidayOverride => 'Holiday Status Override';
 
   @override
-  String get liveTestingHolidayOverrideSubtitle =>
-      'Simulate holiday status for testing reminders and widgets';
+  String get liveTestingHolidayOverridePurpose =>
+      'For testing whether reminders and widgets correctly hide courses';
 
   @override
   String get liveTestingHolidayModeEnabled => 'Holiday Mode Enabled';
@@ -12155,4 +12127,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get courseFormDiscardAction => 'Discard';
+
+  @override
+  String get pickupCodePresetCainiaoHint => 'Station lockers / pickup';
+
+  @override
+  String get pickupCodePresetTaobaoHint => 'Same code as Cainiao';
+
+  @override
+  String get pickupCodePresetPinduoduoHint => 'Station lockers / pickup';
+
+  @override
+  String get pickupCodePresetTaobaoParcelsHint => 'Taobao parcel list';
+
+  @override
+  String get pickupCodePresetPinduoduoParcelsHint => 'Pinduoduo parcel list';
+
+  @override
+  String get pickupCodePresetJdParcelsHint => 'JD parcel list';
+
+  @override
+  String get pickupCodePresetDouyinParcelsHint => 'Douyin parcel list';
 }

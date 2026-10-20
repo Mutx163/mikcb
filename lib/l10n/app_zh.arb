@@ -1617,7 +1617,6 @@
       }
     }
   },
-  "diagnosticsLogIntro": "支持 Markdown 与原文两种查看方式，排查时可以直接在手机上看完整日志",
   "diagnosticsRawTab": "原文",
   "diagnosticsStructuredTab": "结构化",
   "diagnosticsLevelLabel": "等级",
@@ -1639,7 +1638,6 @@
     }
   },
   "diagnosticsNoMatchingTitle": "当前筛选下没有日志",
-  "diagnosticsNoMatchingSubtitle": "可切换到全部日志或查看原文排查",
   "diagnosticsLoadEarlierLabel": "加载更早日志 剩余 {count} 条",
   "@diagnosticsLoadEarlierLabel": {
     "description": "日志查看器分页加载：在列表边缘加载更早日志的入口行文案，count 为尚未显示的更早日志条数",
@@ -1656,7 +1654,7 @@
   "diagnosticsDisplayOptionsTitle": "查看与排序",
   "diagnosticsStreamingHint": "实时更新中，新日志会自动追加显示",
   "diagnosticsEmptyTitle": "暂无日志",
-  "diagnosticsEmptySubtitle": "当前没有可显示的应用日志",
+  "diagnosticsLoadFailedTitle": "日志加载失败",
   "diagnosticsLogTitleFallback": "超级岛诊断日志",
   "diagnosticsDeviceInfoTitle": "设备与导出信息",
   "diagnosticsContentTitle": "日志内容",
@@ -2111,7 +2109,7 @@
   "guideRiskParagraph2": "2. 检查更新、镜像下载、系统下载器、导入导出与分享，依赖三类外部条件：网络环境、第三方服务和系统文件能力。若出现失败、限速或文件异常，请以 Release 页面、你自己保存的备份文件和系统提示为准。",
   "guideRiskParagraph3": "3. 在迁移、导入或覆盖数据前，请先自行确认备份文件完整可用，并妥善保管含有课表信息的文件；因用户自行删除、覆盖、分享或保管不当造成的数据问题，需要由用户自行承担相应风险。",
   "guideUmengPrivacyLink": "友盟隐私政策：https://www.umeng.com/page/policy",
-  "liveDiagnosticsUnavailable": "当前还没有可查看的应用日志",
+  "liveDiagnosticsUnavailable": "当前还没有可查看的超级岛日志",
   "liveDiagnosticsViewerTitle": "超级岛日志",
   "liveDiagnosticsShareText": "轻屿课表超级岛运行日志，用于排查不显示等问题",
   "liveDiagnosticsShareSubject": "轻屿课表 - 超级岛日志",
@@ -2128,11 +2126,9 @@
   "liveTestingCancelAction": "取消测试",
   "liveTestingSessionRunning": "自检测试进行中",
   "liveTestingSessionCanceled": "已取消自检测试",
-  "liveTestingUmengHint": "下面两个按钮仅测试版显示，用于验证友盟 U-APM 崩溃和卡顿上报",
   "liveTestingCrashAction": "崩溃测试",
   "liveTestingAnrAction": "异常卡顿测试",
   "liveTestingIslandStatusTitle": "上岛状态诊断",
-  "liveTestingIslandStatusSubtitle": "这里直接显示原生实时服务、通知构造结果和不上岛原因",
   "liveTestingServiceStatusRunning": "服务运行中",
   "liveTestingServiceStatusStopped": "服务未运行",
   "liveTestingNoIslandReasonTitle": "不上岛原因",
@@ -2150,7 +2146,7 @@
       }
     }
   },
-  "liveTestingAutoRefreshOff": "关闭后只在手动刷新时更新，便于稳定查看当前状态",
+  "liveTestingAutoRefreshOffReason": "便于稳定查看当前状态",
   "liveTestingRefreshedAt": "上次刷新：{time}",
   "@liveTestingRefreshedAt": {
     "placeholders": {
@@ -2168,24 +2164,21 @@
   "liveTestingSectionNotification": "通知判定结果",
   "liveTestingSectionRecentLogs": "最近诊断日志",
   "liveTestingRawDataTitle": "原始调试数据",
-  "liveTestingRawDataSubtitle": "默认折叠，排查时再展开核对完整原生字段",
   "liveTestingExpandRawJson": "展开原始 JSON",
   "liveTestingExpandRawJsonSubtitle": "避免大段原始字段一直占满页面",
   "liveTestingLocalLogsTitle": "本地诊断日志",
-  "liveTestingLocalLogsSubtitle": "一键导出日志分享给开发者，也可清空重新收集",
   "liveTestingClearLogsAction": "清空日志",
   "liveTestingClearingLogs": "清空中",
   "liveTestingViewPhoneLogsAction": "查看手机日志",
   "liveTestingMoreTesterOptionsAction": "更多测试者选项",
   "yesLabel": "是",
   "noLabel": "否",
-  "liveTestingCurrentNativeFieldsSubtitle": "显示当前原生诊断字段",
   "liveTestingCrashSoon": "即将触发友盟 U-APM 测试崩溃，请重新打开应用查看后台是否收到上报",
   "liveTestingAnrSoon": "即将触发约 30 秒主线程卡死，请脱离 flutter run 测试，并在卡死后重新打开应用查看友盟后台",
   "liveTestingNoCourseAvailable": "当前没有可测试的课程",
   "liveTestingPresetArmedButHidden": "已注入测试课程，若课前提醒已关闭，将在课程开始后显示",
   "liveTestingHolidayBlocked": "当前处于假期范围，超级岛在假期期间不显示。如需测试，请在 课表设置 节假日标记 中调整",
-  "liveTestingNotIslandHoliday": "当前处于假期范围，超级岛在假期期间不显示，可在 课表设置 节假日标记 中管理",
+  "liveTestingHolidayHidden": "当前处于假期范围，超级岛在假期期间不显示",
   "liveTestingCourseTestAction": "选课测试",
   "liveTestingCourseTestPickerTitle": "选择要测试的课程",
   "liveTestingCourseTestStageTitle": "选择要预览的阶段",
@@ -3918,7 +3911,7 @@
     }
   },
   "liveTestingHolidayOverride": "假期状态覆盖",
-  "liveTestingHolidayOverrideSubtitle": "开启后模拟假期状态，用于测试提醒和小组件是否正确隐藏课程",
+  "liveTestingHolidayOverridePurpose": "用于测试提醒和小组件是否正确隐藏课程",
   "liveTestingHolidayModeEnabled": "假期模式已开启",
   "liveTestingHolidayModeDisabled": "假期模式已关闭",
   "liveTestingHolidayModeEnabledDesc": "课程提醒和小组件将隐藏所有课程",
@@ -7047,5 +7040,12 @@
   "pickupCodeLaunchFailedHint": "入口地址由各 App 提供，App 更新后可能失效；可以先试试直接打开对应 App。",
   "courseFormDiscardTitle": "放弃修改？",
   "courseFormDiscardMessage": "离开后，这门课这次填写的内容不会保存。",
-  "courseFormDiscardAction": "放弃修改"
+  "courseFormDiscardAction": "放弃修改",
+  "pickupCodePresetCainiaoHint": "驿站自提 / 快递柜",
+  "pickupCodePresetTaobaoHint": "菜鸟裹裹同款码",
+  "pickupCodePresetPinduoduoHint": "驿站自提 / 快递柜",
+  "pickupCodePresetTaobaoParcelsHint": "淘宝的包裹列表",
+  "pickupCodePresetPinduoduoParcelsHint": "拼多多的包裹列表",
+  "pickupCodePresetJdParcelsHint": "京东的包裹列表",
+  "pickupCodePresetDouyinParcelsHint": "抖音的包裹列表"
 }

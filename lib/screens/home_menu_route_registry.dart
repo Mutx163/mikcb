@@ -81,6 +81,14 @@ final HomeMenuRouteRegistry kHomeMenuRouteRegistry = HomeMenuRouteRegistry(
 /// （设置首页在 `main()` 里注入，路由目录启动时并进同一张表）。
 final List<HomeMenuPageDescriptor> _inlineDockPageDescriptors = [
   HomeMenuPageDescriptor(id: 'overview', build: () => const CourseOverviewScreen()),
+  // 取件码**必须同时登记在两张表**：内嵌表决定「从底栏点进来时底栏是否保留」。
+  // 只登记目录表（下方 `pickupCodePage`）的后果：底栏点它 → 推一个全新页面、
+  // 底栏消失，用户每次都得按返回才能回到课表。id 与目录条目一致（`pickupCode`），
+  // 与 overview / statistics 同一条口径。
+  HomeMenuPageDescriptor(
+    id: 'pickupCode',
+    build: () => const PickupCodesScreen(),
+  ),
   HomeMenuPageDescriptor(
     id: 'statistics',
     build: () => const CourseStatisticsScreen(),

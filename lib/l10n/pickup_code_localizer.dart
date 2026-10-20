@@ -33,3 +33,27 @@ String pickupCodeEntryTitle(AppLocalizations l10n, PickupCodeEntry entry) {
   }
   return l10n.pickupCodeUntitledEntry;
 }
+
+/// 砖上的说明行：跳过去具体到哪（驿站自提 / 某平台的包裹列表）。
+///
+/// 与 [pickupCodeEntryTitle] 同一条口径：预置表里填的是 l10n 键名，这里反查；
+/// 未知键返回空串，界面据此不渲染说明行（而不是显示一个空 Text 占位）。
+String pickupCodeEntryHint(AppLocalizations l10n, PickupCodeEntry entry) {
+  final hintKey = entry.hint;
+  if (hintKey == null || hintKey.isEmpty) {
+    return '';
+  }
+  return switch (hintKey) {
+    'pickupCodePresetCainiaoHint' => l10n.pickupCodePresetCainiaoHint,
+    'pickupCodePresetTaobaoHint' => l10n.pickupCodePresetTaobaoHint,
+    'pickupCodePresetPinduoduoHint' => l10n.pickupCodePresetPinduoduoHint,
+    'pickupCodePresetTaobaoParcelsHint' =>
+      l10n.pickupCodePresetTaobaoParcelsHint,
+    'pickupCodePresetPinduoduoParcelsHint' =>
+      l10n.pickupCodePresetPinduoduoParcelsHint,
+    'pickupCodePresetJdParcelsHint' => l10n.pickupCodePresetJdParcelsHint,
+    'pickupCodePresetDouyinParcelsHint' =>
+      l10n.pickupCodePresetDouyinParcelsHint,
+    _ => '',
+  };
+}

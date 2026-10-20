@@ -2871,10 +2871,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get diagnosticsLogIntro =>
-      'Markdownと原文の2つの表示方式に対応，トラブルシュート時にスマホで完全なログを直接確認可能';
-
-  @override
   String get diagnosticsRawTab => '原文';
 
   @override
@@ -2910,9 +2906,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get diagnosticsNoMatchingTitle => '現在のフィルターに一致するログなし';
 
   @override
-  String get diagnosticsNoMatchingSubtitle => '「全て」に切替えるか、原文でトラブルシュートを続行';
-
-  @override
   String diagnosticsLoadEarlierLabel(int count) {
     return 'より前のログを読み込む（残り $count 件）';
   }
@@ -2940,7 +2933,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get diagnosticsEmptyTitle => 'ログなし';
 
   @override
-  String get diagnosticsEmptySubtitle => '現在表示可能なスーパーアイランド診断ログがありません';
+  String get diagnosticsLoadFailedTitle => 'ログの読み込みに失敗しました';
 
   @override
   String get diagnosticsLogTitleFallback => 'スーパーアイランド診断ログ';
@@ -3866,10 +3859,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveTestingSessionCanceled => 'セルフチェックを停止しました';
 
   @override
-  String get liveTestingUmengHint =>
-      '以下の2つのボタンはテスト版のみ表示，Umeng U-APMクラッシュとフリーズ上报の検証用';
-
-  @override
   String get liveTestingCrashAction => 'クラッシュテスト';
 
   @override
@@ -3877,10 +3866,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveTestingIslandStatusTitle => 'アイランドステータス診断';
-
-  @override
-  String get liveTestingIslandStatusSubtitle =>
-      'ネイティブリアルタイムサービス、通知構築結果と非アイランド理由を直接表示';
 
   @override
   String get liveTestingServiceStatusRunning => 'サービス実行中';
@@ -3915,7 +3900,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get liveTestingAutoRefreshOff => 'オフにすると手動更新時のみ更新。現在のステータスを安定して確認可能。';
+  String get liveTestingAutoRefreshOffReason => '現在のステータスを安定して確認可能。';
 
   @override
   String liveTestingRefreshedAt(String time) {
@@ -3950,10 +3935,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveTestingRawDataTitle => '生のデバッグデータ';
 
   @override
-  String get liveTestingRawDataSubtitle =>
-      'デフォルト折りたたみ，トラブルシュート時に展開して完全なネイティブフィールドを確認';
-
-  @override
   String get liveTestingExpandRawJson => '生のJSONを展開';
 
   @override
@@ -3961,10 +3942,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveTestingLocalLogsTitle => 'ローカル診断ログ';
-
-  @override
-  String get liveTestingLocalLogsSubtitle =>
-      'ワンタップでログを書き出して開発者に共有できます。消して収集し直すこともできます';
 
   @override
   String get liveTestingClearLogsAction => 'ログをクリア';
@@ -3983,9 +3960,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get noLabel => 'いいえ';
-
-  @override
-  String get liveTestingCurrentNativeFieldsSubtitle => '現在のネイティブ診断フィールドを表示';
 
   @override
   String get liveTestingCrashSoon =>
@@ -4007,8 +3981,7 @@ class AppLocalizationsJa extends AppLocalizations {
       '現在は休暇期間中のため、島は表示されません。テストするには、「時間割設定 → 休日マーク」で本日を含む休暇を先に削除してください';
 
   @override
-  String get liveTestingNotIslandHoliday =>
-      '現在は休暇期間中です——休暇中は島が表示されません。休暇は「時間割設定 → 休日マーク」で管理できます';
+  String get liveTestingHolidayHidden => '現在は休暇期間中です——休暇中は島が表示されません';
 
   @override
   String get liveTestingCourseTestAction => '授業テスト';
@@ -6729,8 +6702,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveTestingHolidayOverride => '休日ステータス上書き';
 
   @override
-  String get liveTestingHolidayOverrideSubtitle =>
-      'オンにすると休日ステータスをシミュレート，リマインダーとウィジェットが授業を正しく非表示にするかテスト可能';
+  String get liveTestingHolidayOverridePurpose =>
+      'リマインダーとウィジェットが授業を正しく非表示にするかテスト可能';
 
   @override
   String get liveTestingHolidayModeEnabled => '休日モード有効';
@@ -11804,4 +11777,25 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get courseFormDiscardAction => '破棄';
+
+  @override
+  String get pickupCodePresetCainiaoHint => '駅前ロッカー / 受取';
+
+  @override
+  String get pickupCodePresetTaobaoHint => 'Cainiao と同じコード';
+
+  @override
+  String get pickupCodePresetPinduoduoHint => '駅前ロッカー / 受取';
+
+  @override
+  String get pickupCodePresetTaobaoParcelsHint => 'Taobao の荷物一覧';
+
+  @override
+  String get pickupCodePresetPinduoduoParcelsHint => 'Pinduoduo の荷物一覧';
+
+  @override
+  String get pickupCodePresetJdParcelsHint => 'JD の荷物一覧';
+
+  @override
+  String get pickupCodePresetDouyinParcelsHint => 'Douyin の荷物一覧';
 }

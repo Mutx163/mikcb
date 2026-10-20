@@ -2890,10 +2890,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get diagnosticsLogIntro =>
-      'Markdown과 원본 두 가지 보기 방식을 지원합니다. 트러블슈팅 시 스마트폰에서 전체 로그를 직접 확인할 수 있습니다';
-
-  @override
   String get diagnosticsRawTab => '원본';
 
   @override
@@ -2929,9 +2925,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get diagnosticsNoMatchingTitle => '현재 필터에 일치하는 로그 없음';
 
   @override
-  String get diagnosticsNoMatchingSubtitle => '\'전체\'로 전환하거나 원본으로 트러블슈팅을 계속하세요';
-
-  @override
   String diagnosticsLoadEarlierLabel(int count) {
     return '이전 로그 불러오기 ($count개 남음)';
   }
@@ -2959,7 +2952,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get diagnosticsEmptyTitle => '로그 없음';
 
   @override
-  String get diagnosticsEmptySubtitle => '현재 표시할 수 있는 슈퍼아일랜드 진단 로그가 없습니다';
+  String get diagnosticsLoadFailedTitle => '로그 로드 실패';
 
   @override
   String get diagnosticsLogTitleFallback => '슈퍼아일랜드 진단 로그';
@@ -3890,10 +3883,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveTestingSessionCanceled => '셀프 체크를 취소했습니다';
 
   @override
-  String get liveTestingUmengHint =>
-      '아래 두 버튼은 테스트판에만 표시됩니다. Umeng U-APM 충돌과 프리즈上报 검증용입니다';
-
-  @override
   String get liveTestingCrashAction => '충돌 테스트';
 
   @override
@@ -3901,10 +3890,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveTestingIslandStatusTitle => '아일랜드 상태 진단';
-
-  @override
-  String get liveTestingIslandStatusSubtitle =>
-      '네이티브 실시간 서비스, 알림 구성 결과 및 비아일랜드 사유를 직접 표시합니다';
 
   @override
   String get liveTestingServiceStatusRunning => '서비스 실행 중';
@@ -3939,8 +3924,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get liveTestingAutoRefreshOff =>
-      '끄면 수동 새로고침 시에만 업데이트됩니다. 현재 상태를 안정적으로 확인할 수 있습니다.';
+  String get liveTestingAutoRefreshOffReason => '현재 상태를 안정적으로 확인할 수 있습니다.';
 
   @override
   String liveTestingRefreshedAt(String time) {
@@ -3975,10 +3959,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveTestingRawDataTitle => '원시 디버그 데이터';
 
   @override
-  String get liveTestingRawDataSubtitle =>
-      '기본 접힘. 트러블슈팅 시 펼쳐서 전체 네이티브 필드를 확인하세요';
-
-  @override
   String get liveTestingExpandRawJson => '원시 JSON 펼치기';
 
   @override
@@ -3986,10 +3966,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveTestingLocalLogsTitle => '로컬 진단 로그';
-
-  @override
-  String get liveTestingLocalLogsSubtitle =>
-      '한 번에 로그를 내보내 개발자에게 공유하거나, 지우고 다시 수집할 수 있습니다';
 
   @override
   String get liveTestingClearLogsAction => '로그 비우기';
@@ -4008,9 +3984,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get noLabel => '아니오';
-
-  @override
-  String get liveTestingCurrentNativeFieldsSubtitle => '현재 네이티브 진단 필드를 표시합니다';
 
   @override
   String get liveTestingCrashSoon =>
@@ -4032,8 +4005,8 @@ class AppLocalizationsKo extends AppLocalizations {
       '현재 휴가 기간에 포함되어 있어 아일랜드가 표시되지 않습니다. 테스트하려면 먼저 \'시간표 설정 → 공휴일 표시\'에서 오늘을 포함하는 휴가를 삭제하세요';
 
   @override
-  String get liveTestingNotIslandHoliday =>
-      '현재 휴가 기간에 포함되어 있습니다——휴가 기간에는 아일랜드가 표시되지 않습니다. 휴가는 \'시간표 설정 → 공휴일 표시\'에서 관리할 수 있습니다';
+  String get liveTestingHolidayHidden =>
+      '현재 휴가 기간에 포함되어 있습니다——휴가 기간에는 아일랜드가 표시되지 않습니다';
 
   @override
   String get liveTestingCourseTestAction => '과목 테스트';
@@ -6769,8 +6742,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveTestingHolidayOverride => '휴일 상태 덮어쓰기';
 
   @override
-  String get liveTestingHolidayOverrideSubtitle =>
-      '켜면 휴일 상태를 시뮬레이션합니다. 알림과 위젯이 수업을 올바르게 숨기는지 테스트할 수 있습니다';
+  String get liveTestingHolidayOverridePurpose =>
+      '알림과 위젯이 수업을 올바르게 숨기는지 테스트할 수 있습니다';
 
   @override
   String get liveTestingHolidayModeEnabled => '휴일 모드 활성화됨';
@@ -11857,4 +11830,25 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get courseFormDiscardAction => '버리기';
+
+  @override
+  String get pickupCodePresetCainiaoHint => '무인택배함 / 수령';
+
+  @override
+  String get pickupCodePresetTaobaoHint => 'Cainiao 와 같은 코드';
+
+  @override
+  String get pickupCodePresetPinduoduoHint => '무인택배함 / 수령';
+
+  @override
+  String get pickupCodePresetTaobaoParcelsHint => 'Taobao 택배 목록';
+
+  @override
+  String get pickupCodePresetPinduoduoParcelsHint => 'Pinduoduo 택배 목록';
+
+  @override
+  String get pickupCodePresetJdParcelsHint => 'JD 택배 목록';
+
+  @override
+  String get pickupCodePresetDouyinParcelsHint => 'Douyin 택배 목록';
 }

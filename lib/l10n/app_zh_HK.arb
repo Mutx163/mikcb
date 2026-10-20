@@ -1496,6 +1496,7 @@
   "diagnosticsDisplayOptionsTitle": "檢視與排序",
   "diagnosticsStreamingHint": "即時更新中，新日誌會自動追加顯示",
   "diagnosticsEmptyTitle": "暫無日誌",
+  "diagnosticsLoadFailedTitle": "日誌載入失敗",
   "diagnosticsEmptySubtitle": "目前沒有有可顯示的超級島診斷日誌",
   "diagnosticsLogTitleFallback": "超級島診斷日誌",
   "diagnosticsDeviceInfoTitle": "設備與匯出資訊",
@@ -1885,7 +1886,7 @@
       }
     }
   },
-  "liveTestingAutoRefreshOff": "關閉後只在手動刷新時更新，便于穩定查看目前狀態",
+  "liveTestingAutoRefreshOffReason": "便於穩定查看目前狀態",
   "liveTestingRefreshedAt": "上次刷新：{time}",
   "@liveTestingRefreshedAt": {
     "placeholders": {
@@ -1920,7 +1921,7 @@
   "liveTestingNoCourseAvailable": "目前沒有可測試的課程",
   "liveTestingPresetArmedButHidden": "已注入測試課程，若課前提醒已關閉，將在課程開始後顯示",
   "liveTestingHolidayBlocked": "當前處於假期範圍，超級島在假期期間不顯示。如需測試，請在 課表設置 節假日標記 中調整",
-  "liveTestingNotIslandHoliday": "當前處於假期範圍，超級島在假期期間不顯示，可在 課表設置 節假日標記 中管理",
+  "liveTestingHolidayHidden": "當前處於假期範圍，超級島在假期期間不顯示",
   "liveTestingCourseTestAction": "選課測試",
   "liveTestingCourseTestPickerTitle": "選擇要測試的課程",
   "liveTestingCourseTestStageTitle": "選擇要預覽的階段",
@@ -3571,7 +3572,7 @@
     }
   },
   "liveTestingHolidayOverride": "假期狀態覆蓋",
-  "liveTestingHolidayOverrideSubtitle": "開啟後模擬假期狀態，用於測試提醒和小組件是否正確隱藏課程",
+  "liveTestingHolidayOverridePurpose": "用於測試提醒和小組件是否正確隱藏課程",
   "liveTestingHolidayModeEnabled": "假期模式已開啟",
   "liveTestingHolidayModeDisabled": "假期模式已關閉",
   "liveTestingHolidayModeEnabledDesc": "課程提醒和小組件將隱藏所有課程",
@@ -6916,5 +6917,12 @@
   "pickupCodeLaunchFailedHint": "入口位址由各 App 提供，App 更新後可能失效；可以先試試直接開啟對應 App。",
   "courseFormDiscardTitle": "放棄修改？",
   "courseFormDiscardMessage": "離開後，這門課這次填寫的內容不會儲存。",
-  "courseFormDiscardAction": "放棄修改"
+  "courseFormDiscardAction": "放棄修改",
+  "pickupCodePresetCainiaoHint": "驛站自取 / 快遞櫃",
+  "pickupCodePresetTaobaoHint": "菜鳥裹裹同款碼",
+  "pickupCodePresetPinduoduoHint": "驛站自取 / 快遞櫃",
+  "pickupCodePresetTaobaoParcelsHint": "淘寶的包裹列表",
+  "pickupCodePresetPinduoduoParcelsHint": "拼多多的包裹列表",
+  "pickupCodePresetJdParcelsHint": "京東的包裹列表",
+  "pickupCodePresetDouyinParcelsHint": "抖音的包裹列表"
 }

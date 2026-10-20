@@ -1607,6 +1607,7 @@
   "diagnosticsDisplayOptionsTitle": "View & sort",
   "diagnosticsStreamingHint": "Live updates are on. New logs appear automatically",
   "diagnosticsEmptyTitle": "No Logs Yet",
+  "diagnosticsLoadFailedTitle": "Failed to Load Logs",
   "diagnosticsEmptySubtitle": "There are currently no app logs to display",
   "diagnosticsLogTitleFallback": "Island Diagnostics Log",
   "diagnosticsDeviceInfoTitle": "Device & Export Info",
@@ -2091,7 +2092,7 @@
   "guideRiskParagraph2": "2. Update checks, mirror downloads, system downloader, import/export, and sharing depend on network conditions, third-party services, and system file capabilities. If failures, throttling, or file issues occur, please refer to the Release page, your own backups, and system prompts.",
   "guideRiskParagraph3": "3. Before migrating, importing, or overwriting data, please confirm that your backup files are complete and usable, and keep files containing timetable information safe. Risks caused by deletion, overwriting, sharing, or improper storage are the user's responsibility.",
   "guideUmengPrivacyLink": "Umeng Privacy Policy: https://www.umeng.com/page/policy",
-  "liveDiagnosticsUnavailable": "There are no app logs to view yet.",
+  "liveDiagnosticsUnavailable": "There are no Super Island logs to view yet.",
   "liveDiagnosticsViewerTitle": "Super Island logs",
   "liveDiagnosticsShareText": "These are the Super Island related logs exported from Qingyu Timetable. They can help investigate issues such as the Island not appearing.",
   "liveDiagnosticsShareSubject": "Qingyu Timetable - Super Island logs",
@@ -2130,7 +2131,7 @@
       }
     }
   },
-  "liveTestingAutoRefreshOff": "When off, diagnostics update only when you refresh manually so you can inspect the current state more steadily.",
+  "liveTestingAutoRefreshOffReason": "So you can inspect the current state more steadily.",
   "liveTestingRefreshedAt": "Last refreshed: {time}",
   "@liveTestingRefreshedAt": {
     "placeholders": {
@@ -2165,7 +2166,7 @@
   "liveTestingNoCourseAvailable": "There is no course available for testing right now.",
   "liveTestingPresetArmedButHidden": "Preset self-check courses were armed, but the island will not pop right now — with the Before Class Reminder off, it only appears once the course actually starts (in about a minute).",
   "liveTestingHolidayBlocked": "You are currently within a holiday period, so the island stays hidden. To test, first remove the holiday that covers today in Timetable Settings → Holiday Marking.",
-  "liveTestingNotIslandHoliday": "Currently within a holiday period — the island is hidden during holidays. Manage holidays in Timetable Settings → Holiday Marking.",
+  "liveTestingHolidayHidden": "Currently within a holiday period — the island is hidden during holidays.",
   "liveTestingCourseTestAction": "Course Test",
   "liveTestingCourseTestPickerTitle": "Pick a course to test",
   "liveTestingCourseTestStageTitle": "Choose a stage to preview",
@@ -3868,7 +3869,7 @@
     }
   },
   "liveTestingHolidayOverride": "Holiday Status Override",
-  "liveTestingHolidayOverrideSubtitle": "Simulate holiday status for testing reminders and widgets",
+  "liveTestingHolidayOverridePurpose": "For testing whether reminders and widgets correctly hide courses",
   "liveTestingHolidayModeEnabled": "Holiday Mode Enabled",
   "liveTestingHolidayModeDisabled": "Holiday Mode Disabled",
   "liveTestingHolidayModeEnabledDesc": "Reminders and widgets will hide all courses",
@@ -6919,5 +6920,12 @@
   "pickupCodeLaunchFailedHint": "These entries come from each app and may break after updates; try opening the app directly instead.",
   "courseFormDiscardTitle": "Discard changes?",
   "courseFormDiscardMessage": "What you entered for this course will not be saved.",
-  "courseFormDiscardAction": "Discard"
+  "courseFormDiscardAction": "Discard",
+  "pickupCodePresetCainiaoHint": "Station lockers / pickup",
+  "pickupCodePresetTaobaoHint": "Same code as Cainiao",
+  "pickupCodePresetPinduoduoHint": "Station lockers / pickup",
+  "pickupCodePresetTaobaoParcelsHint": "Taobao parcel list",
+  "pickupCodePresetPinduoduoParcelsHint": "Pinduoduo parcel list",
+  "pickupCodePresetJdParcelsHint": "JD parcel list",
+  "pickupCodePresetDouyinParcelsHint": "Douyin parcel list"
 }
