@@ -5,7 +5,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/time_scheme.dart';
 import '../providers/timetable_provider.dart';
-import '../screens/time_scheme_management_screen.dart';
+import 'timetable/timetable_form_pages.dart';
 
 /// Bottom sheet for picking a per-entry time scheme override.
 Future<void> showTimeSchemePickerSheet(
@@ -55,7 +55,7 @@ class _TimeSchemePickerSheetBodyState
       widget.hostContext,
       HyperosPageRoute<void>(
         settings: const RouteSettings(name: '/settings/time-schemes'),
-        builder: (_) => TimeSchemeManagementScreen(
+        builder: (_) => timetableFormPages.timeSchemeManagement(
           initialEditSchemeId: initialEditSchemeId,
         ),
       ),

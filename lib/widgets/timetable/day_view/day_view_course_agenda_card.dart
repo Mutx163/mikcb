@@ -8,8 +8,8 @@ import '../../../providers/timetable_provider.dart';
 import '../../../utils/hex_color.dart';
 import '../../course_note_sheet.dart';
 import '../../open_container.dart';
-import '../../../screens/add_course_screen.dart';
 import '../timetable_day_agenda_models.dart';
+import '../timetable_form_pages.dart';
 import 'day_view_agenda_parts.dart';
 import 'day_view_course_agenda_card_variants.dart';
 import 'day_view_ink_style.dart';
@@ -223,7 +223,7 @@ class TimetableDayCourseAgendaCard extends StatelessWidget {
       // 91px = 28.0dp。方角之后页面自己铺满整屏，黑角消失；形变全程的圆角
       // 仍由转场那层 `Material(clipBehavior: Clip.antiAlias)` 按形状补间裁切，
       // 中段观感不变。
-      openBuilder: (context, _) => AddCourseScreen(
+      openBuilder: (context, _) => timetableFormPages.courseForm(
         courseGroup: provider.courseGroupForCourse(item.course),
         initialCourse: item.course,
       ),

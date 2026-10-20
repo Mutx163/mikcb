@@ -63,6 +63,7 @@ import '../widgets/timetable/timetable_home_action_page_button.dart';
 import '../widgets/timetable/timetable_day_pager_physics.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
 import '../widgets/timetable/timetable_glass_dock.dart';
+import '../widgets/timetable/timetable_form_pages.dart';
 import '../widgets/timetable/timetable_top_menu_shell.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
@@ -70,6 +71,7 @@ import 'add_schedule_item_screen.dart';
 import 'add_task_screen.dart';
 import 'home_menu_route_registry.dart';
 import 'import/home_pull_quick_import.dart';
+import 'timetable_form_pages_impl.dart';
 import 'timetable_profiles_screen.dart';
 
 part 'timetable_day_view_part.dart';
@@ -507,8 +509,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   @override
   void initState() {
     super.initState();
-    // 页面构造住 screens 层，widgets 目录只认 id（消除反向依赖）；须早于菜单渲染。
+    // 页面构造住 screens 层，widgets 只认 id/回调（须早于渲染）。
     registerHomeMenuRoutes(kHomeMenuRouteRegistry);
+    registerTimetableFormPages(kTimetableFormPages);
     _dayViewTransition = DayViewTransitionController(host: this);
     _homeMenu = HomeMenuController(host: this);
     _weekdayInkGuard = WeekdayInkContrastGuard();
@@ -1381,7 +1384,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     return getCoursesForDay(allCourses, week, dayOfWeek, settings);
   }
 
-
   DateTime? _dateForWeekDay(
     TimetableSettings settings,
     int week,
@@ -1837,8 +1839,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  Future<void> _openTopMenuUpdatePage() {
-    return openTimetableAboutUpdatePage(context);
-  }
-
+  Future<void> _openTopMenuUpdatePage() =>
+      openTimetableAboutUpdatePage(context);
 }

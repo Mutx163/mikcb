@@ -3,13 +3,12 @@ import 'package:flutter/material.dart';
 import '../../domain/week_grid_agenda_placement.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/timetable_settings.dart';
-import '../../screens/add_exam_screen.dart';
-import '../../screens/add_schedule_item_screen.dart';
 import '../../ui/hyperos/hyperos.dart';
 import '../../utils/hex_color.dart';
 import '../course_surface.dart';
 import '../open_container.dart';
 import 'day_view/day_view_ink_style.dart';
+import 'timetable_form_pages.dart';
 
 /// 周网格里的「考试/日程」卡（WakeUp 式落格）。
 ///
@@ -89,10 +88,10 @@ class TimetableWeekGridAgendaCard extends StatelessWidget {
         final exam = entry.exam;
         final instance = entry.scheduleInstance;
         if (isExam && exam != null) {
-          return AddExamScreen(exam: exam);
+          return timetableFormPages.examForm(exam: exam);
         }
         if (instance != null) {
-          return AddScheduleItemScreen(
+          return timetableFormPages.scheduleItemForm(
             scheduleItem: instance.item,
             occurrenceDate: instance.occurrenceDate,
           );

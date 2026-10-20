@@ -4,8 +4,8 @@ import '../../../l10n/app_localizations.dart';
 import '../../../models/course.dart';
 import '../../../models/exam.dart';
 import '../../../models/timetable_settings.dart';
-import '../../../screens/add_exam_screen.dart';
 import '../../open_container.dart';
+import '../timetable_form_pages.dart';
 import 'day_view_agenda_surface.dart';
 import 'day_view_ink_style.dart';
 
@@ -70,7 +70,7 @@ class TimetableDayExamAgendaCard extends StatelessWidget {
       // 放大到整屏后必须是**直角**：`openShape` 用默认直角，`openBuilder` 不再
       // 套同半径 ClipRRect，否则四角留着无人绘制的缺口、透出窗口黑底。
       // 详见 day_view_course_agenda_card.dart 同名说明。
-      openBuilder: (context, _) => AddExamScreen(exam: exam),
+      openBuilder: (context, _) => timetableFormPages.examForm(exam: exam),
       closedBuilder: (context, openContainer) {
         return DayViewAgendaSurface(
           settings: settings,

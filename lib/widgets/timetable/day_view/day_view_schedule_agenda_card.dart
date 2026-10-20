@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/schedule_item.dart';
 import '../../../models/timetable_settings.dart';
-import '../../../screens/add_schedule_item_screen.dart';
 import '../../../ui/hyperos/hyperos.dart';
 import '../../../utils/home_page_background.dart';
 import '../../day_agenda_info_row.dart';
 import '../../open_container.dart';
 import '../timetable_day_agenda_models.dart';
+import '../timetable_form_pages.dart';
 import 'day_view_agenda_parts.dart';
 import 'day_view_agenda_surface.dart';
 import 'day_view_ink_style.dart';
@@ -71,7 +71,7 @@ class TimetableDayScheduleAgendaCard extends StatelessWidget {
       // 放大到整屏后必须是**直角**：`openShape` 用默认直角，`openBuilder` 不再
       // 套同半径 ClipRRect，否则四角留着无人绘制的缺口、透出窗口黑底。
       // 详见 day_view_course_agenda_card.dart 同名说明。
-      openBuilder: (context, _) => AddScheduleItemScreen(
+      openBuilder: (context, _) => timetableFormPages.scheduleItemForm(
         scheduleItem: sourceItem,
         occurrenceDate: agendaItem.scheduleInstance?.occurrenceDate,
       ),
