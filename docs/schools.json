@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-19T06:39:04+00:00",
+  "updatedAt": "2026-10-20T06:25:33+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 260,
-    "schools": 255,
+    "total": 263,
+    "schools": 258,
     "generic": 5
   },
   "schools": [
@@ -398,6 +398,13 @@
       "name": "福建船政交通职业学院",
       "initial": "F",
       "resourceFolder": "FJCPC",
+      "category": "school"
+    },
+    {
+      "id": "GDCP",
+      "name": "广东交通职业技术学院",
+      "initial": "G",
+      "resourceFolder": "GDCP",
       "category": "school"
     },
     {
@@ -1360,6 +1367,13 @@
       "category": "school"
     },
     {
+      "id": "SDWCVC",
+      "name": "山东水利职业学院",
+      "initial": "S",
+      "resourceFolder": "SDWCVC",
+      "category": "school"
+    },
+    {
       "id": "SDIPCT",
       "name": "山东石油化工学院",
       "initial": "S",
@@ -1714,6 +1728,13 @@
       "name": "中国民航大学",
       "initial": "Z",
       "resourceFolder": "CAUC",
+      "category": "school"
+    },
+    {
+      "id": "OUC",
+      "name": "中国海洋大学",
+      "initial": "Z",
+      "resourceFolder": "OUC",
       "category": "school"
     },
     {
