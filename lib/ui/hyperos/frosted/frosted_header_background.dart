@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../models/header_blur_style.dart';
 import '../hyperos_blurred_header.dart';
-import '../hyperos_sheet.dart';
+// `HyperosFrostedPanelScope` 已抽到叶子文件（断玻璃族环），原先经
+// `import '../hyperos_sheet.dart'` 取——那条边与 hyperos_sheet → 本文件
+// （要 FrostedHeaderBackground）互指，是玻璃族 2/3 节点环的过点。
+import 'frosted_panel_scope.dart';
 import '../inspire/inspire_header_blur.dart';
 // HyperosFlatBackdropScope is exported via hyperos_blurred_header.dart above
 // (与 HyperosFrostedPanelScope 同一条路子：单一入口，不在这里二次 import)。

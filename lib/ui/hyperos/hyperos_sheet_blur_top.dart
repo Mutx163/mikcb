@@ -5,6 +5,10 @@ import 'package:flutter/material.dart';
 import '../../models/header_blur_style.dart';
 import 'hyperos_blurred_header.dart';
 import 'miuix_bottom_sheet.dart';
+// `FrostedHeaderBackground` 原经 hyperos_blurred_header 的 re-export 取；那条
+// re-export 已删（它构成 frosted_header_background ↔ hyperos_blurred_header 环），
+// 改为直接从定义处取。
+import 'frosted/frosted_header_background.dart' show FrostedHeaderBackground;
 
 /// 弹窗顶部的「渐变模糊」带 —— 与设置页顶栏同一个观感，搬进弹窗里用。
 ///

@@ -11,6 +11,10 @@ import 'hyperos_theme.dart';
 import '../../utils/theme_seed_accent.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
+// `HyperosFrostedSurface` 原经 hyperos_blurred_header 的 re-export 取；那条
+// re-export 已删（它构成 frosted_header_background ↔ hyperos_blurred_header 环），
+// 改为直接从定义处取。
+import 'frosted/frosted_header_background.dart' show HyperosFrostedSurface;
 
 /// Horizontal inset for non-row content inside [HyperosControlCard] (color chips,
 /// button groups, accordions, helper text).

@@ -8,6 +8,8 @@ import '../models/header_blur_style.dart';
 import '../models/liquid_glass_tuning.dart';
 import '../models/timetable_settings.dart';
 import '../ui/hyperos/hyperos_blurred_header.dart';
+import '../ui/hyperos/frosted/frosted_header_background.dart'
+    show FrostedHeaderBackground;
 import '../ui/hyperos/hyperos_glass_backdrop_host.dart';
 import '../ui/hyperos/hyperos_theme.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart';

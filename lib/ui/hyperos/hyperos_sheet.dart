@@ -9,6 +9,15 @@ import 'hyperos_motion.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'frosted/liquid_glass_degradation.dart';
+// 直接从定义处取 `FrostedHeaderBackground`（原先经 hyperos_blurred_header 的
+// re-export，那条已删：它与 frosted_header_background 构成 2 节点环）。
+// frosted_header_background 那边对本文件的 import 也已删除（它正文没用），
+// 所以这条现在是单向的。
+import 'frosted/frosted_header_background.dart' show FrostedHeaderBackground;
+// `HyperosFrostedPanelScope` 已抽到叶子文件（断玻璃族环）；这里 re-export
+// 保持所有既有 `import hyperos_sheet.dart` 取它的调用方不受影响。
+import 'frosted/frosted_panel_scope.dart';
+export 'frosted/frosted_panel_scope.dart' show HyperosFrostedPanelScope;
 import 'hyperos_widgets.dart';
 import 'liquid/liquid_glass_surface.dart';
 
@@ -18,25 +27,6 @@ import 'liquid/liquid_glass_surface.dart';
 /// hairline seam where the panel meets the screen bottom (same failure as the
 /// top edge, see `homePageChromeGlassTopEdgeOverdraw`).
 const hyperosEdgeSheetBottomOverdraw = 4.0;
-
-/// Marks descendants as sitting on a frosted (blur + milky tint) panel.
-///
-/// Used by [HyperosButton] secondary fill so cancel / neutral actions stay
-/// readable against glass instead of blending into white-on-white.
-class HyperosFrostedPanelScope extends InheritedWidget {
-  const HyperosFrostedPanelScope({required super.child, super.key});
-
-  static bool of(BuildContext context) {
-    return context
-            .dependOnInheritedWidgetOfExactType<HyperosFrostedPanelScope>() !=
-        null;
-  }
-
-  @override
-  bool updateShouldNotify(covariant HyperosFrostedPanelScope oldWidget) {
-    return false;
-  }
-}
 
 /// Visual chrome for [HyperosSheetFrame] / [HyperosSheet].
 enum HyperosSheetChrome {

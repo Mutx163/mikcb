@@ -6,12 +6,14 @@ import 'package:flutter/material.dart';
 
 import '../../models/header_blur_style.dart';
 import 'frosted/frosted_appearance.dart';
-import 'frosted/frosted_header_background.dart';
+// 只取正文真正构造的那一个类（`_buildFrostedShell` 在 :581 造它）。
+// 这里**只要 import、不要 re-export**：原先的 re-export 抽出去的内容本文件
+// 一个字都没用到，却让 frosted_header_background → hyperos_blurred_header 的
+// 反向 import 与它构成环（全仓 4 条玻璃族环全部经过这条边）。
+import 'frosted/frosted_header_background.dart' show HyperosFrostedHeaderShell;
 import 'frosted/flat_backdrop_scope.dart';
 import 'frosted/liquid_glass_degradation.dart';
 export 'frosted/frosted_appearance.dart';
-export 'frosted/frosted_header_background.dart'
-    show FrostedHeaderBackground, HyperosFrostedSurface;
 export 'frosted/flat_backdrop_scope.dart';
 // HyperosFrostedPanelScope is exported via frosted_appearance.dart above.
 import 'hyperos_miuix_spec.dart';

@@ -6,6 +6,13 @@ export 'hyperos_anchor_menu_popup.dart';
 export 'hyperos_back_button.dart';
 export 'hyperos_badge.dart';
 export 'hyperos_blurred_header.dart';
+// 2026-10-20：`HyperosFrostedSurface` / `FrostedHeaderBackground` 原先经
+// hyperos_blurred_header 的 re-export 流到这里。那条 re-export 已删（它构成
+// frosted_header_background ↔ hyperos_blurred_header 的环，玻璃族 4 条环全部
+// 经过它），改由 barrel 直接从定义处导出——对 barrel 的使用者零影响
+// （`widgets/home_top_menu.dart` 等正是经这里取 `HyperosFrostedSurface`）。
+export 'frosted/frosted_header_background.dart'
+    show FrostedHeaderBackground, HyperosFrostedSurface;
 export 'hyperos_checkbox.dart';
 export 'hyperos_chip_row.dart';
 export 'hyperos_collapsible_top_app_bar.dart';
