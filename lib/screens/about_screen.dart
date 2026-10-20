@@ -18,7 +18,12 @@ import '../models/warehouse_repository_models.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_analytics.dart';
+import '../widgets/release_notes_markdown.dart';
 import 'changelog_screen.dart';
+
+// `ReleaseNotesMarkdown` 已抽到 widgets/（断 about ↔ changelog 环）；
+// 这里 re-export 保持既有 import 本文件取该类的调用方不受影响。
+export '../widgets/release_notes_markdown.dart' show ReleaseNotesMarkdown;
 import 'open_source_licenses_screen.dart';
 import '../services/app_update_service.dart';
 import '../services/support_creator_service.dart';
@@ -2280,119 +2285,6 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
       );
       return;
     }
-  }
-}
-
-class ReleaseNotesMarkdown extends StatelessWidget {
-  final String data;
-  final ValueChanged<String?>? onTapLink;
-  final bool plainTypography;
-  final bool usePrimaryTextColor;
-
-  static final RegExp _versionHeadingPattern = RegExp(
-    r'^#\s+v[\d.\-a-zA-Z]+',
-    caseSensitive: false,
-  );
-
-  const ReleaseNotesMarkdown({
-    super.key,
-    required this.data,
-    this.onTapLink,
-    this.plainTypography = false,
-    this.usePrimaryTextColor = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final normalized = plainTypography ? _stripVersionHeading(data) : data;
-    final styleSheet = _buildReleaseNotesStyleSheet(
-      context,
-      plainTypography: plainTypography,
-      usePrimaryTextColor: usePrimaryTextColor,
-    );
-    final bulletStyle = styleSheet.listBullet;
-    return MarkdownBody(
-      data: normalized,
-      styleSheet: styleSheet,
-      listItemCrossAxisAlignment: plainTypography
-          ? MarkdownListItemCrossAxisAlignment.start
-          : MarkdownListItemCrossAxisAlignment.baseline,
-      bulletBuilder: plainTypography
-          ? (_) => Text('·', style: bulletStyle?.copyWith(height: 1.35))
-          : null,
-      onTapLink: (text, href, title) => onTapLink?.call(href),
-    );
-  }
-
-  static String _stripVersionHeading(String data) {
-    final lines = data.split('\n');
-    var start = 0;
-    if (lines.isNotEmpty &&
-        _versionHeadingPattern.hasMatch(lines.first.trim())) {
-      start = 1;
-      while (start < lines.length && lines[start].trim().isEmpty) {
-        start++;
-      }
-    }
-    return lines.sublist(start).join('\n').trim();
-  }
-
-  static MarkdownStyleSheet _buildReleaseNotesStyleSheet(
-    BuildContext context, {
-    required bool plainTypography,
-    required bool usePrimaryTextColor,
-  }) {
-    final theme = Theme.of(context);
-    if (!plainTypography) {
-      return MarkdownStyleSheet.fromTheme(theme);
-    }
-    final onSurface = theme.colorScheme.onSurface;
-    final body = usePrimaryTextColor
-        ? HyperosTypography.sectionDescription(
-            context,
-          ).copyWith(color: onSurface)
-        : HyperosTypography.sectionDescription(context);
-    final sectionHeader = body.copyWith(fontWeight: FontWeight.w600);
-    final linkColor = usePrimaryTextColor
-        ? onSurface
-        : theme.colorScheme.primary;
-    return MarkdownStyleSheet(
-      p: body,
-      pPadding: EdgeInsets.zero,
-      listBullet: body,
-      listIndent: 12,
-      listBulletPadding: const EdgeInsets.only(right: 4),
-      blockSpacing: 6,
-      h1: sectionHeader,
-      h1Padding: EdgeInsets.zero,
-      h2: sectionHeader,
-      h2Padding: const EdgeInsets.only(top: 8, bottom: 2),
-      h3: sectionHeader,
-      h3Padding: EdgeInsets.zero,
-      h4: body,
-      h5: body,
-      h6: body,
-      strong: body.copyWith(fontWeight: FontWeight.w500),
-      em: body.copyWith(fontStyle: FontStyle.italic),
-      a: body.copyWith(color: linkColor, decoration: TextDecoration.underline),
-      blockquote: body,
-      blockquotePadding: const EdgeInsets.only(left: 12),
-      code: body.copyWith(
-        fontFamily: 'monospace',
-        fontSize: (body.fontSize ?? 14) - 1,
-      ),
-      // markdown `---`（GitCode 正文里更新日志与 SHA-256 之间的分隔）默认按
-      // flutter_markdown 内建值渲染成 5px 粗线，视觉上像一条大黑杠。统一换成
-      // MIUI 规范的 0.75px 发丝线，与卡内其他分隔线一致。
-      horizontalRuleDecoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            width: HyperosMiuixDivider.thickness,
-            color: HyperosColors.dividerLine(context),
-          ),
-        ),
-      ),
-    );
   }
 }
 

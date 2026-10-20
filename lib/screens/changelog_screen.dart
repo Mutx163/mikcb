@@ -5,7 +5,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/utils/release_notes_digest.dart';
 import 'package:university_timetable/widgets/release_digest_view.dart';
-import 'about_screen.dart';
+import '../widgets/release_notes_markdown.dart';
 
 /// `docs/releases/<version>.md` 的 asset key 匹配规则。
 /// 目录同时打包了 html / json 等文件，正则只接受数字版本号（允许 -a 等后缀）。
