@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../utils/home_page_background.dart';
 import '../widgets/timetable/month_view/month_day_agenda.dart';
 import '../widgets/timetable/month_view/month_grid.dart';
 import 'add_course_screen.dart';
@@ -14,18 +15,25 @@ import 'add_schedule_item_screen.dart';
 
 /// 月视图页：整月概览 + 选中日议程。
 ///
-/// 定位见 `.agents/notes/implemented/feature/2026-10-20-month-view.md`：
-/// 回答「这个月哪天有事」，不承担排课网格职责（那是周视图）。点格子 =
-/// 在下方展开当日议程，不再跳走——「点月历格子 → 看当天日程列表」是
-/// 用户从系统日历带来的肌肉记忆；Google 日历 2025 年动过这条路径引发
-/// 大量抗议，用户的答案很明确。
+/// ## 为什么不用 [HyperosSubpage]
 ///
-/// 数据全部来自 [MonthViewLogic]（纯 Dart 域逻辑，已被 `test/domain/` 覆盖），
+/// 用户口径（2026-10-20）：「月视图的整体样式应该要跟周视图、日视图保持一致
+/// 风格，现在差太远了，就像是一个设置里面的二级页面一样。」
+///
+/// [HyperosSubpage] 是**设置类二级页**的外壳（纯色页 + 磨砂标题栏），跟首页
+/// 那套「壁纸 + 玻璃卡片」完全不是一个语言。所以本页照日视图的做法自建：
+/// 壁纸铺底（[resolveHomePageRegionBackground]）→ 内容浮在上面 → 卡片一律
+/// 走 [CourseSurface]（[dayViewContentCardSurfaceStyle]，与课程卡同档），
+/// 墨色用 [contentCardInkOverWallpaper] 按卡面实际亮度判。
+///
+/// 与日视图的唯一差别：日视图是首页的一个内嵌面板（由首页 State 驱动转场与
+/// 亮度带），本页是可从菜单/底栏打开的独立页面，所以壁纸亮度需要自己采样
+/// （见 [_MonthViewScreenState._sampleWallpaperLuminance]）。
+///
+/// ## 数据
+///
+/// 全部来自 [MonthViewLogic]（纯 Dart 域逻辑，`test/domain/` 覆盖），
 /// 本页只做：取 provider 数据 → 调域逻辑 → 画 → 转发点击。
-///
-/// 布局要点（2026-10-20 真机截图返工）：整页用 [LayoutBuilder] 拿可用高度，
-/// 先给议程区留出固定底盘，剩下的全给月网格按行均分——月历是这个页面的
-/// 主体，不许缩成半屏、底下留一大片白。
 class MonthViewScreen extends StatefulWidget {
   const MonthViewScreen({super.key});
 
@@ -50,6 +58,11 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
   /// 就被塞一个没看过的日程列表」。
   DateTime? _selectedDate;
 
+  /// 壁纸主体亮度（首页同款三带里的 body 带）。null = 还没采到 / 没壁纸，
+  /// 判墨回落主题色。
+  double? _wallpaperLuminance;
+  String? _luminanceKey;
+
   @override
   void initState() {
     super.initState();
@@ -60,9 +73,56 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sampleWallpaperLuminance();
+  }
+
+  @override
   void dispose() {
     _pager?.dispose();
     super.dispose();
+  }
+
+  /// 采样壁纸 body 带的亮度，用于判墨。
+  ///
+  /// 首页由 `WallpaperLuminanceController` 在 State 层统一采样（含首帧预热、
+  /// 去抖、失败闸门）；本页是独立页面、拿不到那份状态，所以按同一套口径
+  /// 自己采一次：以「壁纸路径 + 对齐/缩放 + 视口」为键，键不变就不重采。
+  Future<void> _sampleWallpaperLuminance() async {
+    final settings = context.read<TimetableProvider>().settings;
+    final path = homePageBackdropKey(settings);
+    if (path == null || path.isEmpty) {
+      if (_wallpaperLuminance != null || _luminanceKey != null) {
+        setState(() {
+          _wallpaperLuminance = null;
+          _luminanceKey = null;
+        });
+      }
+      return;
+    }
+    final viewport = MediaQuery.sizeOf(context);
+    final key =
+        '$path|${settings.homePageWallpaperAlignX}|'
+        '${settings.homePageWallpaperAlignY}|${settings.homePageWallpaperScale}|'
+        '${viewport.width}x${viewport.height}';
+    if (key == _luminanceKey) {
+      return;
+    }
+    final bands = await sampleHomePageWallpaperLuminanceBands(
+      path,
+      viewportSize: viewport,
+      alignX: settings.homePageWallpaperAlignX,
+      alignY: settings.homePageWallpaperAlignY,
+      scale: settings.homePageWallpaperScale,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _luminanceKey = key;
+      _wallpaperLuminance = bands?.body;
+    });
   }
 
   static int _pageFor(int year, int month) =>
@@ -87,13 +147,12 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
 
   void _backToCurrentMonth() {
     final now = DateTime.now();
-    final target = _pageFor(now.year, now.month);
     setState(() {
       _focusedYear = now.year;
       _focusedMonth = now.month;
     });
     _pager?.animateToPage(
-      target,
+      _pageFor(now.year, now.month),
       duration: const Duration(milliseconds: 260),
       curve: Curves.easeOutCubic,
     );
@@ -109,44 +168,143 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<TimetableProvider>();
     final settings = provider.settings;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
-    return HyperosSubpage(
-      onBack: () => Navigator.pop(context),
-      title: Text(l10n.monthViewTitle),
-      suffixes: [
-        if (!_isCurrentMonth)
-          FHeaderAction(
-            icon: const Icon(Icons.today_rounded),
-            semanticsLabel: l10n.monthViewBackToCurrentMonth,
-            onPress: _backToCurrentMonth,
+    // 与首页同一套壁纸底：有壁纸铺壁纸，没有就是主题底色（不透明）。
+    final backgroundVisual = resolveHomePageRegionBackground(
+      settings: settings,
+      isDark: isDark,
+      darkFallback: colorScheme.surface,
+      region: HomePageBackgroundScope.timetable,
+    );
+    final hasBackdrop = backgroundVisual.hasImage;
+    // 卡片判墨：按卡面实际亮度（卡底色压壁纸），与日视图摘要卡同一函数。
+    final ink = contentCardInkOverWallpaper(
+      cardFill: isDark
+          ? colorScheme.surface
+          : colorScheme.surfaceContainerHighest,
+      washAlpha: 0.42,
+      configuredHex: null,
+      defaultHex: '#000000',
+      themeFallback: colorScheme.onSurface,
+      hasBackdrop: hasBackdrop,
+      wallpaperLuminance: _wallpaperLuminance,
+    );
+
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      body: homePageBackgroundLayer(
+        visual: backgroundVisual,
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              _buildTopBar(
+                context: context,
+                l10n: l10n,
+                ink: ink,
+                showBackToMonth: !_isCurrentMonth,
+                onBackToMonth: _backToCurrentMonth,
+              ),
+              Expanded(
+                child: PageView.builder(
+                  controller: _pager,
+                  itemCount: _pageCount,
+                  // 翻月只更新存储值；重建会带走「选中日」语义
+                  // （翻到别的月再翻回来，选中日该还在）。
+                  onPageChanged: (page) {
+                    final (year, month) = _monthForPage(page);
+                    if (year == _focusedYear && month == _focusedMonth) {
+                      return;
+                    }
+                    setState(() {
+                      _focusedYear = year;
+                      _focusedMonth = month;
+                    });
+                  },
+                  itemBuilder: (context, page) {
+                    final (year, month) = _monthForPage(page);
+                    return _buildMonthPage(
+                      context: context,
+                      provider: provider,
+                      settings: settings,
+                      year: year,
+                      month: month,
+                      l10n: l10n,
+                      ink: ink,
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-      ],
-      child: PageView.builder(
-        controller: _pager,
-        itemCount: _pageCount,
-        // 翻月只更新存储值，不在 onPageChanged 里 setState 整页重建：
-        // 重建会带走「选中日」语义（用户翻到别的月再翻回来，选中日该还在）。
-        onPageChanged: (page) {
-          final (year, month) = _monthForPage(page);
-          if (year == _focusedYear && month == _focusedMonth) {
-            return;
-          }
-          setState(() {
-            _focusedYear = year;
-            _focusedMonth = month;
-          });
-        },
-        itemBuilder: (context, page) {
-          final (year, month) = _monthForPage(page);
-          return _buildMonthPage(
-            context: context,
-            provider: provider,
-            settings: settings,
-            year: year,
-            month: month,
-            l10n: l10n,
-          );
-        },
+        ),
+      ),
+    );
+  }
+
+  /// 顶栏：返回 + 年月标题 +（非本月时）回到本月。
+  ///
+  /// 不用 [HyperosSubpage] 的磨砂大标题——那是设置页的语言。这里照首页顶栏的
+  /// 做法：透明底、内容浮在壁纸上、墨色按壁纸亮度判（[ink]）。
+  Widget _buildTopBar({
+    required BuildContext context,
+    required AppLocalizations l10n,
+    required Color ink,
+    required bool showBackToMonth,
+    required VoidCallback onBackToMonth,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 4, 8, 4),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.arrow_back_rounded),
+            color: ink,
+            tooltip: l10n.backToWeekViewAction,
+          ),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  onPressed: () => _shiftMonth(-1),
+                  icon: const Icon(Icons.chevron_left_rounded),
+                  color: ink.withValues(alpha: 0.8),
+                  tooltip: l10n.monthViewPreviousMonth,
+                  visualDensity: VisualDensity.compact,
+                ),
+                Text(
+                  l10n.monthViewHeaderTitle(_focusedYear, _focusedMonth),
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: ink,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _shiftMonth(1),
+                  icon: const Icon(Icons.chevron_right_rounded),
+                  color: ink.withValues(alpha: 0.8),
+                  tooltip: l10n.monthViewNextMonth,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+          ),
+          if (showBackToMonth)
+            IconButton(
+              onPressed: onBackToMonth,
+              icon: const Icon(Icons.today_rounded),
+              color: ink,
+              tooltip: l10n.monthViewBackToCurrentMonth,
+            )
+          else
+            const SizedBox(width: 48),
+        ],
       ),
     );
   }
@@ -158,6 +316,7 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
     required int year,
     required int month,
     required AppLocalizations l10n,
+    required Color ink,
   }) {
     final now = DateTime.now();
     final grid = MonthViewLogic.buildMonthGrid(
@@ -176,24 +335,17 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 可用高度里要给议程区留底：没选中日时留一句轻提示的高度，
-        // 选中日时留出至少两条议程的高度，剩下全给月网格。
+        // 可用高度里先给议程区留底，剩下全给月网格按行均分：月历是主体，
+        // 不许缩成半屏、底下留一大片白（真机截图第一轮就是这个毛病）。
         //
-        // 这里的 px 是「预算」不是「硬约束」：网格拿到行高后自己高度确定，
-        // 议程若更长会把整页变成可滚动（下方 SingleChildScrollView 兜底），
-        // 所以预算偏小只会让网格高一点，不会截断议程。
-        const headerBudget = _monthHeaderHeight;
+        // 这是「预算」不是「硬约束」：议程更长时整页可滚动兜底，
+        // 预算偏小只让网格高一点，不会截断议程。
         const viewportPadding = kMonthPageVerticalPadding;
-        // 顶栏高度要从可用高度里扣掉：这截被 padding 让开了，不扣会让
-        // 网格以为自己有更多空间、算出的行高偏大，整页超出视口。
-        final headerInset = HyperosBlurredHeaderScope.insetOf(context);
         final agendaMinHeight =
             selectedInThisMonth ? kMonthAgendaMinHeight : kMonthEmptyHintHeight;
         final gridBudget =
             constraints.maxHeight -
-            headerInset -
             viewportPadding * 2 -
-            headerBudget -
             agendaMinHeight -
             MonthGrid.headerHeight;
         final rowHeight = (gridBudget / 6).clamp(
@@ -203,35 +355,21 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
 
         return SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
-            12,
-            // ⚠️ 顶栏内边距**必须自己加**：页面壳只把磨砂标题栏的高度放进
-            // `HyperosBlurredHeaderScope`，要不要让开是列表自己的事
-            // （`HyperosListView` 内部会读；本页要按视口算行高，用的是裸
-            // `SingleChildScrollView`）。漏了这条，第一行日期就被标题栏
-            // 压掉半截——2026-10-20 真机截图正是这个症状。
-            viewportPadding + HyperosBlurredHeaderScope.insetOf(context),
-            12,
+            10,
+            viewportPadding,
+            10,
             // 玻璃坞内嵌宿主的底部余量：滚动到底时议程才不会被药丸压住。
             viewportPadding + GlassDockScrollReliefScope.insetOf(context),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(
-                height: headerBudget,
-                child: _buildMonthHeader(
-                  context: context,
-                  year: year,
-                  month: month,
-                  l10n: l10n,
-                  onPrevious: () => _shiftMonth(-1),
-                  onNext: () => _shiftMonth(1),
-                ),
-              ),
               MonthGrid(
                 grid: grid,
+                settings: settings,
                 selectedDate: selectedInThisMonth ? selected : null,
                 rowHeight: rowHeight,
+                inkColor: ink,
                 onDayTap: (date) {
                   setState(() {
                     // 再点同一天 = 收起议程（与「点同一档 Tab 收起」同口径）。
@@ -246,6 +384,8 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
                   padding: const EdgeInsets.only(top: 4),
                   child: MonthDayAgenda(
                     date: selected,
+                    settings: settings,
+                    inkColor: ink,
                     rows: MonthViewLogic.buildDayAgenda(
                       date: selected,
                       courses: provider.courses,
@@ -259,62 +399,11 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
                   ),
                 )
               else
-                const MonthAgendaPlaceholder(),
+                MonthAgendaPlaceholder(inkColor: ink),
             ],
           ),
         );
       },
-    );
-  }
-
-  /// 年月标题行高度（自带左右翻月按钮与居中标题）。
-  static const double _monthHeaderHeight = 44;
-
-  /// 页面上下内边距（与 HyperosTokens.listPadding 的观感对齐）。
-  static const double kMonthPageVerticalPadding = 8;
-
-  /// 选中日时议程区的预留高度（约两条议程行）。
-  static const double kMonthAgendaMinHeight = 108;
-
-  /// 未选中日时底部提示的预留高度。
-  static const double kMonthEmptyHintHeight = 40;
-
-  Widget _buildMonthHeader({
-    required BuildContext context,
-    required int year,
-    required int month,
-    required AppLocalizations l10n,
-    required VoidCallback onPrevious,
-    required VoidCallback onNext,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        IconButton(
-          onPressed: onPrevious,
-          icon: const Icon(Icons.chevron_left_rounded),
-          tooltip: l10n.monthViewPreviousMonth,
-          visualDensity: VisualDensity.compact,
-        ),
-        Expanded(
-          child: Center(
-            child: Text(
-              l10n.monthViewHeaderTitle(year, month),
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: colorScheme.onSurface,
-              ),
-            ),
-          ),
-        ),
-        IconButton(
-          onPressed: onNext,
-          icon: const Icon(Icons.chevron_right_rounded),
-          tooltip: l10n.monthViewNextMonth,
-          visualDensity: VisualDensity.compact,
-        ),
-      ],
     );
   }
 
@@ -347,7 +436,7 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
         }
         // 与日视图议程卡同一口径（`day_view_schedule_agenda_card`）：
         // 直接把实例的源条目交给表单，表单自己按 isRecurring / seriesId
-        // 判定「编辑整系列还是单次」。这里不要再另造系列根类型。
+        // 判定「编辑整系列还是单次」。
         await Navigator.of(context).push<void>(
           HyperosPageRoute<void>(
             builder: (_) => AddScheduleItemScreen(
@@ -368,4 +457,13 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
         );
     }
   }
+
+  /// 页面上下内边距（与首页课程网格的留白接近）。
+  static const double kMonthPageVerticalPadding = 8;
+
+  /// 选中日时议程区的预留高度（约两条议程行）。
+  static const double kMonthAgendaMinHeight = 108;
+
+  /// 未选中日时底部提示的预留高度。
+  static const double kMonthEmptyHintHeight = 40;
 }

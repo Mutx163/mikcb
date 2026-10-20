@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../domain/month_view_logic.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../models/timetable_settings.dart';
 import 'month_day_cell.dart';
 
 /// 月历网格：星期表头 + 6 行 × 7 列日期格 + 每行学期周次行标。
@@ -10,25 +11,30 @@ import 'month_day_cell.dart';
 /// 固定 42 格（见 [MonthViewLogic.monthGridDates]）——行数不随月份在 4~6 之间
 /// 变化，翻月时整页高度纹丝不动。
 ///
-/// 行高由外部按可用高度注入（[rowHeight]）：月历是这个页面的主体，把自己
-/// 压成半屏、底下留一大片空白是最丑的形态；能撑开就撑开，撑不开再缩到
-/// [minRowHeight] 的可读下限。
+/// 视觉与周视图/日视图同一套：格子是 [MonthDayCell]（玻璃/实底课程卡材质），
+/// 表头与行标用壁纸上的判定墨色（[inkColor]），不用设置页那套固定灰。
 class MonthGrid extends StatelessWidget {
   const MonthGrid({
     super.key,
     required this.grid,
+    required this.settings,
     required this.selectedDate,
     required this.onDayTap,
     required this.rowHeight,
+    required this.inkColor,
     this.showWeekNumbers = true,
   });
 
   final MonthGridData grid;
+  final TimetableSettings settings;
   final DateTime? selectedDate;
   final ValueChanged<DateTime> onDayTap;
 
   /// 单行高度（已由调用方按可用空间算好，并钳在可读区间内）。
   final double rowHeight;
+
+  /// 壁纸上的判定墨色（表头/行标/日期文字都用它，见 [monthCellInkColor]）。
+  final Color inkColor;
 
   /// 是否显示每行的学期周次行标（「第 N 周」）。学期未配置时内部自动隐藏。
   final bool showWeekNumbers;
@@ -48,8 +54,7 @@ class MonthGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    final mutedInk = colorScheme.onSurface.withValues(alpha: 0.6);
+    final mutedInk = inkColor.withValues(alpha: 0.66);
 
     // 周次行标列：只在真的能算出周次时占位（学期未配置时整列收起，
     // 否则左边会挂一条毫无意义的空白）。
@@ -83,7 +88,9 @@ class MonthGrid extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: i >= 5 ? mutedInk.withValues(alpha: 0.6) : mutedInk,
+                        color: i >= 5
+                            ? mutedInk.withValues(alpha: 0.7)
+                            : mutedInk,
                       ),
                     ),
                   ),
@@ -123,7 +130,7 @@ class MonthGrid extends StatelessWidget {
                 child: weekLabel == null
                     ? const SizedBox.shrink()
                     : Text(
-                        // 纯数字挂左边会被读成"日期"（截图里像误入的鬼影）；
+                        // 纯数字挂左边会被读成"日期"（真机截图里像误入的鬼影）；
                         // 复用既有 l10n「第 N 周」把语义说清，不新增文案。
                         l10n.weekLabel(weekLabel),
                         textAlign: TextAlign.center,
@@ -131,20 +138,27 @@ class MonthGrid extends StatelessWidget {
                           fontSize: 9,
                           height: 1.2,
                           fontWeight: FontWeight.w600,
-                          color: mutedInk.withValues(alpha: 0.5),
+                          color: mutedInk.withValues(alpha: 0.75),
                         ),
                       ),
               ),
             ),
           for (final day in rowDays)
             Expanded(
-              // 每格独立重绘层：翻月/选中只脏一两格，静态格不跟着重画。
-              child: RepaintBoundary(
-                child: MonthDayCell(
-                  entry: day,
-                  isToday: day.date == grid.today,
-                  isSelected: selectedDate != null && day.date == selectedDate,
-                  onTap: () => onDayTap(day.date),
+              child: Padding(
+                // 格间留白：卡片之间要透气（周网格课程卡同样是「留缝」而非贴边）。
+                padding: const EdgeInsets.all(1.5),
+                // 每格独立重绘层：翻月/选中只脏一两格，静态格不跟着重画。
+                child: RepaintBoundary(
+                  child: MonthDayCell(
+                    entry: day,
+                    settings: settings,
+                    isToday: day.date == grid.today,
+                    isSelected:
+                        selectedDate != null && day.date == selectedDate,
+                    inkOverride: inkColor,
+                    onTap: () => onDayTap(day.date),
+                  ),
                 ),
               ),
             ),
