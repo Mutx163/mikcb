@@ -4,6 +4,7 @@ import 'course.dart';
 import 'course_task.dart';
 import 'exam.dart';
 import 'schedule_item.dart';
+import 'settings/lenient_json_readers.dart';
 import 'timetable_settings.dart';
 
 enum TimetableProfileKind {
@@ -117,8 +118,11 @@ class TimetableProfile {
       ),
       exams: _parseListLenient(json['exams'], Exam.fromJson, onDropped: () {}),
       settings: settings,
+      // 2026-10-20 补：原先是 `as num?` 裸转——手改备份把周次写成 `"12"` 会抛
+      // TypeError，和下面时间戳那条一样升级成整份拒收。改走仓库统一的
+      // `lenientInt`（数字字符串 tryParse、double 截断，收不下按缺键 → 1）。
       currentWeek: clampCurrentWeekToSettings(
-        ((json['currentWeek'] as num?)?.toInt() ?? 1).clamp(1, 30),
+        (lenientInt(json['currentWeek']) ?? 1).clamp(1, 30),
         settings,
       ),
       // 2026-10-19 补：这两个键原先 `as String?` 硬转。毫秒时间戳（外部工具
@@ -134,8 +138,11 @@ class TimetableProfile {
       lastUsedAt:
           DateTime.tryParse(json['lastUsedAt']?.toString() ?? '') ??
           DateTime.now(),
+      // 2026-10-20 补：原来 `as String?` 裸转，数字 / 对象会抛 TypeError。
+      // 走 `lenientString`（非字符串按 toString 收）再交给 fromValue——
+      // 非法名字由 fromValue 的 orElse 回落 normal，两层合起来「不抛也不猜」。
       profileKind: TimetableProfileKind.fromValue(
-        json['profileKind'] as String?,
+        lenientString(json['profileKind']),
       ),
     );
   }
@@ -195,8 +202,10 @@ class TimetableProfile {
         quarantineSink: stats?.quarantinedItems,
       ),
       settings: settings,
+      // 与 fromJson 同口径（2026-10-20 补）：坏档打捞路径更不能抛，否则整份
+      // profile 会被 parseProfilesPayload 计进 droppedProfiles。
       currentWeek: clampCurrentWeekToSettings(
-        ((json['currentWeek'] as num?)?.toInt() ?? 1).clamp(1, 30),
+        (lenientInt(json['currentWeek']) ?? 1).clamp(1, 30),
         settings,
       ),
       createdAt:
@@ -206,7 +215,7 @@ class TimetableProfile {
           DateTime.tryParse(json['lastUsedAt']?.toString() ?? '') ??
           DateTime.now(),
       profileKind: TimetableProfileKind.fromValue(
-        json['profileKind']?.toString(),
+        lenientString(json['profileKind']),
       ),
     );
   }
