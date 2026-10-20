@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/weather_forecast.dart';
+import '../utils/coordinate_precision.dart' as precision;
 import 'app_http_client.dart';
 import 'app_log_service.dart';
 
@@ -141,10 +142,8 @@ class WeatherService {
   /// 定位服务 / 选城市页）无感知。
   /// 副作用：与取整前缓存的预报会因 matchesLocation 判非同城而多刷一次，
   /// 一次自愈，之后恒定。
-  static double coarsenCoordinate(double value) {
-    final scaled = value * 100;
-    return scaled.roundToDouble() / 100;
-  }
+  static double coarsenCoordinate(double value) =>
+      precision.coarsenCoordinate(value);
 
   /// 按坐标反查可读地名（BigDataCloud 免费客户端接口）。
   ///

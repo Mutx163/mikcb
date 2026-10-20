@@ -1,3 +1,4 @@
+import '../utils/coordinate_precision.dart';
 import 'dart:convert';
 
 /// 一个地点（天气数据的地理坐标载体）。
@@ -36,6 +37,11 @@ class WeatherLocation {
   final String? timezone;
 
   /// 经纬度差小于该值即视为同一地点（换城市判定用）。
+  /// 取整后的坐标比较容差（取整到 2 位小数，见 [coarsenCoordinate]）。
+  ///
+  /// 比较一律在**取整后的值**上做：出网请求与缓存预报都按取整坐标，
+  /// 而内存里/旧版本存下的位置可能是全精度。若直接比原值，
+  /// 取整误差（最多 0.005）远大于本容差，会把同一地点判成异地。
   static const double samePlaceTolerance = 1e-4;
 
   /// 结果列表的副标题：行政区 + 国家，跳过空值与与主标题重复的值。
@@ -67,11 +73,33 @@ class WeatherLocation {
   /// 是否与 [other] 指向同一地点。
   ///
   /// 只比经纬度，不比名字：同一地点在不同语言下的名字不同。
-  bool isSamePlaceAs(WeatherLocation other) {
-    return (latitude - other.latitude).abs() < samePlaceTolerance &&
-        (longitude - other.longitude).abs() < samePlaceTolerance;
-  }
+  /// 把经纬度取整到与出网/落盘一致的精度（约 1 公里）。
+  ///
+  /// **为什么要统一**：预报请求与落盘都用取整坐标，而预报响应会把
+  /// 请求坐标原样回显、缓存的预报也按取整坐标存。若内存里的位置保留
+  /// 全精度（例如升级用户从旧版本读回的 5 位小数），
+  /// [matchesLocation] / [isSamePlaceAs] 的容差 1e-4 远小于取整误差
+  /// （最多 0.005），于是「是不是同一个城市」永远判否 —— 缓存在每次
+  /// 冷启动都被丢弃、日视图每张卡重建都会重发请求。
+  /// 2026-10-20 由本方法在 provider 的加载/选城两处收口修掉。
+  WeatherLocation coarsened() => WeatherLocation(
+    name: name,
+    admin1: admin1,
+    country: country,
+    district: district,
+    latitude: coarsenCoordinate(latitude),
+    longitude: coarsenCoordinate(longitude),
+    timezone: timezone,
+  );
 
+  bool isSamePlaceAs(WeatherLocation other) {
+    // 比取整后的值：同一地点在不同来源下可能是 5 位或 2 位小数，
+    // 取整到同一精度后比才不会被「内存里是几位小数」影响。
+    return (coarsenCoordinate(latitude) - coarsenCoordinate(other.latitude)).abs() <
+            samePlaceTolerance &&
+        (coarsenCoordinate(longitude) - coarsenCoordinate(other.longitude)).abs() <
+            samePlaceTolerance;
+  }
   Map<String, dynamic> toJson() => {
     'name': name,
     'admin1': admin1,
@@ -216,9 +244,10 @@ class WeatherForecast {
 
   /// 是否是 [location] 的预报。
   bool matchesLocation(WeatherLocation location) {
-    return (latitude - location.latitude).abs() <
+    // 同 [WeatherLocation.isSamePlaceAs]：只在取整后的值上比较。
+    return (coarsenCoordinate(latitude) - coarsenCoordinate(location.latitude)).abs() <
             WeatherLocation.samePlaceTolerance &&
-        (longitude - location.longitude).abs() <
+        (coarsenCoordinate(longitude) - coarsenCoordinate(location.longitude)).abs() <
             WeatherLocation.samePlaceTolerance;
   }
 

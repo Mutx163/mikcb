@@ -130,7 +130,10 @@ class WeatherProvider extends ChangeNotifier {
     _initialized = true;
 
     _enabled = await WeatherPreferences.isEnabled();
-    _location = await WeatherPreferences.loadLocation();
+    // 统一到出网/落盘同一精度：缓存预报按取整坐标存，若这里保留全精度
+    // （例如升级用户从旧版本读回的 5 位小数），matchesLocation 的 1e-4
+    // 容差小于取整误差（最多 0.005），缓存每次冷启动都会被判成"别的城市"丢弃。
+    _location = (await WeatherPreferences.loadLocation())?.coarsened();
     final cached = await WeatherPreferences.loadForecast();
     // 缓存的城市与所选城市不一致时必须丢弃：用户换过城市，拿旧城市的数冒充
     // 新城市是最坏的一种错。
@@ -188,15 +191,18 @@ class WeatherProvider extends ChangeNotifier {
 
   /// 选城市。换到不同地点时旧预报立即作废并落盘清除，随后立刻重拉。
   Future<void> setLocation(WeatherLocation location) async {
-    final samePlace = _location?.isSamePlaceAs(location) ?? false;
-    _location = location;
+    // 先统一精度再比对/落盘：与出网请求、缓存预报保持同一口径，
+    // 否则「选同一个城市」会因取整误差被判成换城市（清缓存 + 无谓重拉）。
+    final normalized = location.coarsened();
+    final samePlace = _location?.isSamePlaceAs(normalized) ?? false;
+    _location = normalized;
     _nextRetryNotBefore = null;
     if (!samePlace) {
       _forecast = null;
       _status = WeatherStatus.idle;
       await WeatherPreferences.clearForecast();
     }
-    await WeatherPreferences.saveLocation(location);
+    await WeatherPreferences.saveLocation(normalized);
     notifyListeners();
     unawaited(ensureFresh());
   }

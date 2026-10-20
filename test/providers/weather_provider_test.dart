@@ -212,7 +212,7 @@ void main() {
       expect(server.calls, greaterThan(callsBefore));
       expect(
         server.uris.last.queryParameters['latitude'],
-        '${_located.latitude}',
+        '${WeatherService.coarsenCoordinate(_located.latitude)}',
       );
       // 也落了盘：重启后不必重新定位。
       final persisted = await WeatherPreferences.loadLocation();
@@ -766,13 +766,13 @@ void main() {
       await provider.initialize();
       await provider.ensureFresh();
       expect(server.calls, 1);
-      expect(server.uris.single.queryParameters['latitude'], '30.29365');
+      expect(server.uris.single.queryParameters['latitude'], '${WeatherService.coarsenCoordinate(_hangzhou.latitude)}');
 
       await provider.setLocation(_chengdu);
       await provider.ensureFresh();
 
       expect(server.calls, 2);
-      expect(server.uris.last.queryParameters['latitude'], '30.5728');
+      expect(server.uris.last.queryParameters['latitude'], '${WeatherService.coarsenCoordinate(_chengdu.latitude)}');
       expect(_summaryOf(provider), isNotNull);
     });
 
@@ -784,7 +784,7 @@ void main() {
       await provider.initialize();
       await provider.ensureFresh();
       final beforeSwitch = await WeatherPreferences.loadForecast();
-      expect(beforeSwitch!.latitude, closeTo(_hangzhou.latitude, 1e-6));
+      expect(beforeSwitch!.latitude, closeTo(WeatherService.coarsenCoordinate(_hangzhou.latitude), 1e-6));
 
       await provider.setLocation(_chengdu);
       await provider.ensureFresh();
@@ -792,8 +792,8 @@ void main() {
       // 假服务端把请求坐标回填进响应，所以落盘的坐标就是「这份数据是谁的」。
       final onDisk = await WeatherPreferences.loadForecast();
       expect(onDisk, isNotNull);
-      expect(onDisk!.latitude, closeTo(_chengdu.latitude, 1e-6));
-      expect(onDisk.longitude, closeTo(_chengdu.longitude, 1e-6));
+      expect(onDisk!.latitude, closeTo(WeatherService.coarsenCoordinate(_chengdu.latitude), 1e-6));
+      expect(onDisk.longitude, closeTo(WeatherService.coarsenCoordinate(_chengdu.longitude), 1e-6));
     });
 
     test('换城市时在飞的旧城市响应不得冒充新城市', () async {
@@ -839,13 +839,13 @@ void main() {
       expect(memory, isNotNull);
       expect(
         memory!.latitude,
-        closeTo(_chengdu.latitude, 1e-6),
+        closeTo(WeatherService.coarsenCoordinate(_chengdu.latitude), 1e-6),
         reason: '在飞的旧城市响应被写进内存，课表卡会拿杭州的天气冒充成都',
       );
       final onDisk = await WeatherPreferences.loadForecast();
       expect(
         onDisk!.latitude,
-        closeTo(_chengdu.latitude, 1e-6),
+        closeTo(WeatherService.coarsenCoordinate(_chengdu.latitude), 1e-6),
         reason: '同样那份旧城市数据还会落盘',
       );
       expect(calls, greaterThanOrEqualTo(2));
