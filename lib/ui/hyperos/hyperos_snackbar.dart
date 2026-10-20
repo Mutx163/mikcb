@@ -6,6 +6,7 @@ import 'package:flutter/scheduler.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_motion.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 
@@ -499,11 +500,11 @@ class _HyperosToastHostState extends State<_HyperosToastHost> {
           // ticker.
           child: AnimatedOpacity(
             opacity: _opacity,
-            duration: Duration(milliseconds: animMs),
+            duration: animMs.scaledMs,
             curve: Curves.easeOutCubic,
             child: AnimatedScale(
               scale: _scale,
-              duration: Duration(milliseconds: animMs),
+              duration: animMs.scaledMs,
               curve: Curves.easeOutCubic,
               child: Material(
                 type: MaterialType.transparency,

@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_motion.dart';
 import 'hyperos_theme.dart';
 
 /// 下划线标签栏：表示**翻页**（在几页之间切换），不表示**选值**。
@@ -56,7 +57,7 @@ class HyperosUnderlineTabs extends StatelessWidget {
   static const double _indicatorRadius = 1.5;
 
   /// 指示器换页的时长与曲线（与本仓其他滑动指示器同口径）。
-  static const Duration _slideDuration = Duration(milliseconds: 220);
+  static Duration get _slideDuration => 220.scaledMs;
   static const Curve _slideCurve = Curves.easeOutCubic;
 
   @override

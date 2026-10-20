@@ -5,6 +5,7 @@ import 'package:flutter/physics.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_motion.dart';
 import 'hyperos_select.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_widgets.dart';
@@ -76,10 +77,14 @@ const _listPopupGroupGap = 8.0;
 
 /// Exit animation length: rows fade + shrink back before the route pops.
 /// Matches MiuixListPopupDefaults.alphaExitAnimationSpec.
-const _listPopupExitDuration = Duration(milliseconds: 150);
+///
+/// 取值方式而不是常量：它必须跟随「页面转场速度」（用户 2026-10-20 要求
+/// 该设置覆盖全应用所有动画）。用 getter 而非 `const`，是因为速度是运行时
+/// 状态，const 会在启动时求值一次、之后永不更新。
+Duration get _listPopupExitDuration => 150.scaledMs;
 
 /// Submenu reveal/collapse duration (HyperOS gallery menu pace).
-const _submenuRevealDuration = Duration(milliseconds: 200);
+Duration get _submenuRevealDuration => 200.scaledMs;
 
 /// 二级子卡展开时主面板沿锚点角等比回放的幅度（缩到 1-0.05）。弹出时
 /// 面板从锚点角向左展开，展开子卡时向锚点角等比缩回一点，读作「面板
@@ -289,7 +294,7 @@ class _HyperosListPopupBodyState<T> extends State<_HyperosListPopupBody<T>>
     );
     _alpha.animateTo(
       1,
-      duration: const Duration(milliseconds: 200),
+      duration: 200.scaledMs,
       curve: Curves.fastOutSlowIn,
     );
   }

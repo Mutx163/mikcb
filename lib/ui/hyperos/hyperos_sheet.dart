@@ -5,6 +5,7 @@ import '../../utils/frame_perf_probe.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_motion.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'frosted/liquid_glass_degradation.dart';
@@ -565,7 +566,7 @@ class _SheetSlideUpState extends State<_SheetSlideUp>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 350),
+    duration: 350.scaledMs,
   );
   late final Animation<Offset> _slide = Tween<Offset>(
     begin: const Offset(0, 0.3),

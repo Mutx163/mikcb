@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_glass_backdrop_host.dart';
+import 'hyperos_motion.dart';
 import 'hyperos_theme.dart';
 import 'os4_glass_backdrop.dart';
 import 'os4_glass_popup_surface.dart';
@@ -150,7 +151,9 @@ class _HyperosAnchorMenuPopupState extends State<HyperosAnchorMenuPopup> {
   /// 240ms 的口径与首页 `kHomeMenuCollapseBudget` 相同：面板按进度单调收缩，实测
   /// ≈240ms 就收完；上游的 `onDismissFinished` 挂在弹簧收敛容差 0.0015 上，要
   /// ≈670ms 才来，等它等于凭空加半秒空档。
-  static const _kCollapseBudget = Duration(milliseconds: 240);
+  /// 收起预算：等面板**收缩动画**走完再摘除遮罩。它是动画时间，跟随
+  /// 「页面转场速度」；与首页 `kHomeMenuCollapseBudget` 同口径。
+  static Duration get _kCollapseBudget => 240.scaledMs;
 
   Timer? _collapseTimer;
 

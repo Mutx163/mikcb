@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import '../hyperos_motion.dart';
+
 /// 让"随壁纸亮度采样而定"的极性（衬底 + 墨色）**渐变**，而不是跳变。
 ///
 /// ## 为什么需要它
@@ -24,7 +26,7 @@ class SoftGlassPolarityFade extends StatelessWidget {
     required this.ink,
     required this.wash,
     required this.builder,
-    this.duration = const Duration(milliseconds: 280),
+    this.durationOverride,
   });
 
   /// 目标墨色（文字 / 描边）。
@@ -36,8 +38,15 @@ class SoftGlassPolarityFade extends StatelessWidget {
   /// 用当前极性建视图。极性变化时 [ink] / [wash] 会是渐变中的中间值。
   final Widget Function(BuildContext context, Color ink, Color wash) builder;
 
+  /// 显式指定的过渡时长；null = 跟随「页面转场速度」的默认值。
+  final Duration? durationOverride;
+
   /// 渐变时长：长到不会被读成"跳了一下"，短到不像两个状态。
-  final Duration duration;
+  ///
+  /// 默认值按当前「页面转场速度」换算（设置项界面上写的是「数值越大**动画**
+  /// 越快」），所以不能写成 `const` 默认参数 —— const 默认值在编译期固化，
+  /// 改速度不会生效。
+  Duration get duration => durationOverride ?? 280.scaledMs;
 
   @override
   Widget build(BuildContext context) {

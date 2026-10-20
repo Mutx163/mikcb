@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'hyperos_blurred_header.dart';
+import 'hyperos_motion.dart';
 
 class HyperosScrollRevealedTitle extends StatelessWidget {
   const HyperosScrollRevealedTitle({required this.child, super.key});
@@ -15,11 +16,11 @@ class HyperosScrollRevealedTitle extends StatelessWidget {
       ignoring: !visible,
       child: AnimatedSlide(
         offset: visible ? Offset.zero : const Offset(0, 0.4),
-        duration: Duration(milliseconds: visible ? 300 : 150),
+        duration: (visible ? 300 : 150).scaledMs,
         curve: Curves.easeOutCubic,
         child: AnimatedOpacity(
           opacity: visible ? 1.0 : 0.0,
-          duration: Duration(milliseconds: visible ? 300 : 150),
+          duration: (visible ? 300 : 150).scaledMs,
           curve: Curves.easeOutCubic,
           child: child,
         ),

@@ -10,6 +10,7 @@ import '../../utils/paint_probe.dart';
 import 'package:flutter_miuix/miuix.dart';
 
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_motion.dart';
 import 'hyperos_theme.dart';
 import '../app_fonts.dart';
 
@@ -255,7 +256,11 @@ class HyperosExitUntilCollapsedScrollBehavior
     // Match the 400ms critical spring used by HyperosOverscrollPhysics. A
     // shorter endpoint snap makes the title visibly accelerate after the
     // slower rubber-band has already started returning.
-    this.snapDuration = const Duration(milliseconds: 400),
+    //
+    // 默认值改由 getter 给出（`400.scaledMs`）而不是 const 默认参数：这个
+    // snap 是**动画时间**，必须跟随「页面转场速度」设置；const 默认值在编译期
+    // 固化，改速度不会生效。
+    this.snapDurationOverride,
     this.snapCurve = const _HyperosCriticalSpringCurve(),
     this.onSnapCompleted,
   }) : state = state ?? HyperosCollapsibleTopAppBarState();
@@ -283,7 +288,11 @@ class HyperosExitUntilCollapsedScrollBehavior
   /// shell, which owns the one value shared with the shell and the threshold.
   double bottomOverhang = 0;
 
-  final Duration snapDuration;
+  /// 显式指定的吸附时长；null = 跟随「页面转场速度」的默认 400ms。
+  final Duration? snapDurationOverride;
+
+  /// 端点吸附时长（见构造器注释）。
+  Duration get snapDuration => snapDurationOverride ?? 400.scaledMs;
   final Curve snapCurve;
 
   /// Called after an endpoint snap settles so visual collaborators such as

@@ -15,6 +15,7 @@ import '../../../widgets/preblurred_wallpaper_glass.dart';
 import '../frosted/liquid_glass_degradation.dart';
 import '../hyperos_blurred_header.dart';
 import '../hyperos_glass_backdrop_host.dart';
+import '../hyperos_motion.dart';
 import 'liquid_glass_shader.dart';
 import 'liquid_glass_tuning_style.dart';
 
@@ -400,9 +401,10 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
     // 控制器必须在 initState 里建：若懒初始化（late final 首次访问发生在
     // dispose），SingleTickerProviderStateMixin 建 ticker 时会查 TickerMode
     // 祖先 —— 在 unmount 路径上查祖先是 debug 断言直接炸的事。
-    _glowController =
-        AnimationController(vsync: this, duration: _glowFade)
-          ..addListener(_pushPointer);
+    _glowController = HyperosMotionPlatform.bindController(
+      AnimationController(vsync: this),
+      _glowFadeMs,
+    )..addListener(_pushPointer);
     // 幂等预热：即使 main.dart 的预热被跳过（或首个液态玻璃表面先于它挂载），
     // 也能自己把程序拉起来。加载完成后 [ListenableBuilder] 会把玻璃补上。
     unawaited(LiquidGlassSurfaceShader.instance.ensureLoaded());
@@ -411,6 +413,7 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
   @override
   void dispose() {
     _glowController.dispose();
+    HyperosMotionPlatform.unbindController(_glowController);
     // ⚠️ `_pointer` 在这里**不能 dispose**：卸载顺序是 State.dispose 先于
     // 渲染对象 detach，而渲染对象 detach 时还要在它上面 removeListener ——
     // 对已 dispose 的 ChangeNotifier 调 removeListener 在 debug 下会炸。
@@ -419,7 +422,11 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
   }
 
   /// 按压进度的渐隐时长 —— 跟手开（forward）是瞬时的，抬手渐隐走这段。
-  static const Duration _glowFade = Duration(milliseconds: 140);
+  ///
+  /// 基础毫秒数（速度 1.0 下的值）；控制器建好后登记到
+  /// [HyperosMotionPlatform]，用户改「页面转场速度」时跟着变。设置项在
+  /// 界面上写的是「数值越大**动画**越快」，所以反馈类微动画也一并纳入。
+  static const int _glowFadeMs = 140;
 
   late final AnimationController _glowController;
 

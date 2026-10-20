@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'hyperos_motion.dart';
 import 'hyperos_radius.dart';
 import 'hyperos_theme.dart';
 
@@ -46,7 +47,7 @@ class HyperosColorChip extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(cornerRadius),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: 180.scaledMs,
           width: size,
           height: size,
           decoration: BoxDecoration(

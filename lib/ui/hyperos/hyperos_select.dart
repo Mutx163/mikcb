@@ -10,6 +10,7 @@ import 'hyperos_blurred_header.dart';
 import 'hyperos_controls.dart';
 import 'hyperos_glass_backdrop_host.dart';
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_motion.dart';
 import 'hyperos_popup_glass.dart';
 import 'hyperos_sheet.dart';
 import 'hyperos_theme.dart';
@@ -219,7 +220,7 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
     );
     _alpha.animateTo(
       1,
-      duration: const Duration(milliseconds: 200),
+      duration: 200.scaledMs,
       curve: Curves.fastOutSlowIn,
     );
   }
@@ -241,7 +242,7 @@ class _HyperosSelectPopupBodyState<T> extends State<_HyperosSelectPopupBody<T>>
     Scrollable.ensureVisible(
       context,
       alignment: 0.5,
-      duration: const Duration(milliseconds: 160),
+      duration: 160.scaledMs,
       curve: Curves.easeOut,
     );
   }
@@ -643,7 +644,7 @@ class _AutoScrollChoiceListState<T> extends State<_AutoScrollChoiceList<T>> {
       Scrollable.ensureVisible(
         context,
         alignment: 0.5,
-        duration: const Duration(milliseconds: 200),
+        duration: 200.scaledMs,
         curve: Curves.easeOut,
       );
       return;
