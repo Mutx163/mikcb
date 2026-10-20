@@ -49,6 +49,7 @@ import '../services/user_data_sync_hooks.dart';
 import '../services/ics_import_service.dart';
 import '../services/timetable_exam_service.dart';
 import '../services/timetable_holiday_service.dart';
+import '../services/timetable_location_rule_service.dart';
 import '../services/timetable_partner_service.dart';
 import '../services/timetable_persist_hooks.dart';
 import '../services/timetable_reminder_service.dart';
@@ -91,8 +92,6 @@ part 'timetable/course_group_repository.dart';
 part 'timetable/course_repository.dart';
 part 'timetable/import_export_service.dart';
 part 'timetable/live_activity_controller.dart';
-part 'timetable/location_group_repository.dart';
-part 'timetable/schedule_rule_apply.dart';
 
 bool _isLiveTestingFixture(Course course) => course.id.startsWith('live_test_');
 
@@ -101,32 +100,6 @@ class CourseConflict {
   final Course otherCourse;
 
   const CourseConflict({required this.course, required this.otherCourse});
-}
-
-/// Stats returned after applying location-time rules to the active profile.
-class LocationTimeApplyStats {
-  final int unlockedCount;
-  final int matchedCount;
-  final int updatedCount;
-
-  /// Matched, but start/end clocks already equaled the target scheme.
-  final int alreadySameClockCount;
-
-  /// Location hit a group, but course section range cannot map into that
-  /// scheme — synchronization is rejected (no mode or clock rewrite).
-  final int sectionOverflowCount;
-
-  /// First few course names rejected for section overflow (for toast).
-  final List<String> sectionOverflowCourseNames;
-
-  const LocationTimeApplyStats({
-    required this.unlockedCount,
-    required this.matchedCount,
-    required this.updatedCount,
-    this.alreadySameClockCount = 0,
-    this.sectionOverflowCount = 0,
-    this.sectionOverflowCourseNames = const [],
-  });
 }
 
 /// Groups courses that share the same name (i.e. the same subject with
@@ -223,7 +196,7 @@ class ScheduleDateRuleSaveResult {
 class TimetableProvider
     with ChangeNotifier
     implements TimetablePersistPort, TimetableSettingsWritePort,
-        TimetableScheduleItemPort {
+        TimetableScheduleItemPort, TimetableLocationRulePort {
   static const Duration _liveEndReminderWindow = Duration(minutes: 10);
 
   final StorageService _storageService;
@@ -359,6 +332,7 @@ class TimetableProvider
   int get currentDateWeek => _currentDateWeek;
   @override
   List<TimeScheme> get timeSchemes => List.unmodifiable(_timeSchemes);
+  @override
   List<LocationTimeGroup> get locationTimeGroups =>
       List.unmodifiable(_locationTimeGroups);
   List<ScheduleDateRule> get scheduleDateRules =>
@@ -368,6 +342,7 @@ class TimetableProvider
   String? _scheduleDateRuleLastAppliedSignature;
   @override
   List<TimetableProfile> get profiles => List.unmodifiable(_profiles);
+  @override
   String? get activeProfileId => _activeProfileId;
   Map<String, List<Course>> get courseConflictMap => _buildCourseConflictMap();
   Map<String, List<Course>> courseConflictMapForWeek(int week) =>
@@ -403,6 +378,51 @@ class TimetableProvider
 
   @override
   Future<void> syncExamReminders() => _syncExamReminders();
+
+  // ── TimetableLocationRulePort：地点规则族（分组 CRUD + 全表重算 + 套用）接线 ──
+  @override
+  set courses(List<Course> value) => _courses = value;
+
+  @override
+  set locationTimeGroups(List<LocationTimeGroup> value) =>
+      _locationTimeGroups = value;
+
+  @override
+  Future<void> persistLocationTimeGroups() => _persistLocationTimeGroups();
+
+  @override
+  Future<void> saveProfiles(List<TimetableProfile> value) =>
+      _profileRepository.saveProfiles(value);
+
+  @override
+  void notifySyncDataChanged() => notifyUserDataChangedForSync();
+
+  @override
+  void clearCurrentLiveCourseId() => _currentLiveCourseId = null;
+
+  @override
+  Future<void> updateLiveActivity() => _updateLiveActivity();
+
+  @override
+  List<Course> syncCoursesWithEffectiveTimeSchemes(
+    List<Course> source, {
+    TimetableSettings? settings,
+  }) => _syncCoursesWithEffectiveTimeSchemes(source, settings: settings);
+
+  @override
+  Course syncCourseWithEffectiveTimeScheme(
+    Course course, {
+    TimetableSettings? settings,
+    bool debugTrace = false,
+  }) => _syncCourseWithEffectiveTimeScheme(
+    course,
+    settings: settings,
+    debugTrace: debugTrace,
+  );
+
+  @override
+  TimetableSettings settingsFromProfile(TimetableProfile profile) =>
+      _settingsFromProfile(profile);
 
   /// Courses grouped by name – each group represents one subject with
   /// one or more schedule entries.
@@ -493,6 +513,7 @@ class TimetableProvider
       _getProfileById(PartnerTimetableService.partnerProfileId);
   List<Course> get partnerCourses =>
       partnerProfile?.courses ?? const <Course>[];
+  @override
   TimetableProfile? get activeProfile {
     final profile = _getProfileById(_activeProfileId);
     if (profile != null && !profile.isPartnerImported) {
@@ -506,6 +527,7 @@ class TimetableProvider
     return null;
   }
 
+  @override
   TimeScheme? get activeTimeScheme =>
       _getTimeSchemeById(_settings.activeTimeSchemeId);
   int get maxUsedSection => _courses.isEmpty
@@ -1430,34 +1452,6 @@ class TimetableProvider
     notifyUserDataChangedForSync();
   }
 
-  /// Re-sync course clock times for every profile after location rules change.
-  Future<void> _resyncAllProfilesWithLocationRules({bool notify = true}) async {
-    for (var index = 0; index < _profiles.length; index++) {
-      final profile = _profiles[index];
-      final syncedCourses = _syncCoursesWithEffectiveTimeSchemes(
-        List<Course>.from(profile.courses),
-        settings: profile.settings,
-      );
-      _profiles[index] = profile.copyWith(courses: syncedCourses);
-    }
-
-    final activeIndex = _profiles.indexWhere(
-      (profile) => profile.id == _activeProfileId,
-    );
-    if (activeIndex != -1) {
-      _courses = List<Course>.from(_profiles[activeIndex].courses);
-      _settings = _settingsFromProfile(_profiles[activeIndex]);
-    }
-
-    await _profileRepository.saveProfiles(_profiles);
-    notifyUserDataChangedForSync();
-    _currentLiveCourseId = null;
-    if (notify) {
-      _notifyStateChanged();
-    }
-    await _updateLiveActivity();
-  }
-
   Future<LocationTimeGroup> createLocationTimeGroup({
     required String name,
     required String timeSchemeId,
@@ -1465,108 +1459,47 @@ class TimetableProvider
     bool enabled = true,
     int priority = 0,
   }) {
-    return _runMutation(() async {
-      await initialize();
-      final trimmedName = name.trim();
-      if (trimmedName.isEmpty) {
-        throw ArgumentError('location_time_group_name_required');
-      }
-      if (_getTimeSchemeById(timeSchemeId) == null) {
-        throw ArgumentError('time_scheme_not_found');
-      }
-
-      final group = LocationTimeGroup(
-        id: const Uuid().v4(),
-        name: trimmedName,
+    return _runMutation(
+      () => TimetableLocationRuleService.createGroup(
+        this,
+        name: name,
         timeSchemeId: timeSchemeId,
+        keywords: keywords,
         enabled: enabled,
         priority: priority,
-        keywords: List<LocationKeyword>.from(keywords),
-      );
-      final previousGroups = List<LocationTimeGroup>.from(_locationTimeGroups);
-      _locationTimeGroups = [..._locationTimeGroups, group];
-      await _commitLocationGroupChange(this, previousGroups, () async {
-        await _persistLocationTimeGroups();
-        await _resyncAllProfilesWithLocationRules();
-      });
-      return group;
-    });
+      ),
+    );
   }
 
   Future<LocationTimeGroup?> updateLocationTimeGroup(
     LocationTimeGroup group,
   ) {
-    return _runMutation(() async {
-      await initialize();
-      final index = _locationTimeGroups.indexWhere(
-        (item) => item.id == group.id,
-      );
-      if (index == -1) {
-        return null;
-      }
-      final trimmedName = group.name.trim();
-      if (trimmedName.isEmpty) {
-        throw ArgumentError('location_time_group_name_required');
-      }
-      if (_getTimeSchemeById(group.timeSchemeId) == null) {
-        throw ArgumentError('time_scheme_not_found');
-      }
-
-      final updated = group.copyWith(
-        name: trimmedName,
-        keywords: List<LocationKeyword>.from(group.keywords),
-      );
-      final previousGroups = List<LocationTimeGroup>.from(_locationTimeGroups);
-      final next = List<LocationTimeGroup>.from(_locationTimeGroups);
-      next[index] = updated;
-      _locationTimeGroups = next;
-      await _commitLocationGroupChange(this, previousGroups, () async {
-        await _persistLocationTimeGroups();
-        await _resyncAllProfilesWithLocationRules();
-      });
-      return updated;
-    });
+    return _runMutation(
+      () => TimetableLocationRuleService.updateGroup(this, group),
+    );
   }
 
   Future<bool> deleteLocationTimeGroup(String groupId) {
-    return _runMutation(() async {
-      await initialize();
-      final previousGroups = List<LocationTimeGroup>.from(_locationTimeGroups);
-      _locationTimeGroups = _locationTimeGroups
-          .where((group) => group.id != groupId)
-          .toList();
-      if (_locationTimeGroups.length == previousGroups.length) {
-        return false;
-      }
-      await _commitLocationGroupChange(this, previousGroups, () async {
-        await _persistLocationTimeGroups();
-        await _resyncAllProfilesWithLocationRules();
-      });
-      return true;
-    });
+    return _runMutation(
+      () => TimetableLocationRuleService.deleteGroup(this, groupId),
+    );
   }
 
   /// 整份替换分组列表（传输层应用、教务导入、云快照恢复都走这里）。
   ///
-  /// 与另外三个入口同一个收口 `_commitLocationGroupChange`：落盘或重算任一步失败，
-  /// 分组、课表、设置、课程四份内存状态整体退回并补偿落盘后上抛。
+  /// 与另外三个入口同一个收口（`TimetableLocationRuleService.commitGroupChange`）：
+  /// 落盘或重算任一步失败，分组、课表、设置、课程四份内存状态整体退回并补偿落盘后上抛。
   Future<void> replaceLocationTimeGroups(
     List<LocationTimeGroup> groups, {
     bool resync = true,
   }) {
-    return _runMutation(() async {
-      await initialize();
-      final previousGroups = List<LocationTimeGroup>.from(_locationTimeGroups);
-      _locationTimeGroups = List<LocationTimeGroup>.from(groups);
-      await _commitLocationGroupChange(this, previousGroups, () async {
-        await _persistLocationTimeGroups();
-        if (resync) {
-          await _resyncAllProfilesWithLocationRules();
-          return;
-        }
-        _notifyStateChanged();
-      });
-    });
+    return _runMutation(
+      () => TimetableLocationRuleService.replaceGroups(
+        this,
+        groups,
+        resync: resync,
+      ),
+    );
   }
 
   Future<void> _persistScheduleDateRules() async {
@@ -1772,8 +1705,12 @@ class TimetableProvider
   /// Apply location routing to unlocked courses on the active profile.
   ///
   /// Returns match/update counts for toast feedback.
+  /// 地点规则批量套用：实现与失败回滚见
+  /// `services/timetable_location_rule_service.dart`（整表重写，失败时课程表退回）。
   Future<LocationTimeApplyStats> applyLocationTimeRulesToActiveProfile() {
-    return _runMutation(_applyLocationTimeRulesToActiveProfileImpl);
+    return _runMutation(
+      () => TimetableLocationRuleService.applyToActiveProfile(this),
+    );
   }
 
   String _sectionSignature(List<SectionTime> sections) =>
