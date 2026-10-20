@@ -40,7 +40,9 @@ dependencies:
   url_launcher: ^6.3.1
   path_provider: ^2.1.5
   open_filex: ^4.7.0
-  flutter_markdown: ^0.7.7+1
+  # 2026-10-20：原 flutter_markdown 被 Google 官方停更（pub.dev 挂 discontinued
+  # 横幅，flutter/flutter#162966），换官方点名的社区接盘包，API 同名、仅包名不同。
+  flutter_markdown_plus: ^1.0.12
   flutter_secure_storage: ^10.3.4
   webview_flutter: 4.14.1
   webview_flutter_android: 4.14.1

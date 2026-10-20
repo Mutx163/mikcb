@@ -9,7 +9,7 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:azlistview/azlistview.dart';
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import '../../../models/warehouse_repository_models.dart';
 import '../../log_viewer_entry.dart';
 import '../import_shared.dart';
