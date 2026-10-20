@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/providers/live_testing_access.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/live_testing_fixture_service.dart';
 import 'package:university_timetable/services/live_testing_trigger.dart';
@@ -218,7 +219,10 @@ void main() {
         storageService: StorageService.forTesting(),
         autoInitialize: false,
       );
-      final course = resolveLivePreviewTestCourse(provider, now: base);
+      final course = resolveLivePreviewTestCourse(
+        LiveTestingProviderAccess(provider),
+        now: base,
+      );
       expect(course.name, contains('自检'));
       expect(course.shortName, isNotEmpty);
     });
@@ -243,7 +247,10 @@ void main() {
       );
       await provider.addCourse(testCourse);
 
-      final course = resolveLivePreviewTestCourse(provider, now: base);
+      final course = resolveLivePreviewTestCourse(
+        LiveTestingProviderAccess(provider),
+        now: base,
+      );
       expect(course.name, equals('线性代数'));
       expect(course.shortName, equals('线代'));
     });

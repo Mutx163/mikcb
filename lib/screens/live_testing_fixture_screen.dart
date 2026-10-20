@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 
+import '../providers/live_testing_access.dart';
+import '../providers/live_testing_fixture_access.dart';
 import '../providers/timetable_provider.dart';
 import '../services/live_testing_fixture_service.dart';
 import '../services/live_testing_trigger.dart';
@@ -168,7 +170,7 @@ class _LiveTestingFixtureScreenState extends State<LiveTestingFixtureScreen> {
                         final section = sections[index];
                         final installed =
                             LiveTestingFixtureService.findFixtureForSection(
-                              provider,
+                              LiveFixtureProviderAccess(provider),
                               sectionNumber,
                             ) !=
                             null;
@@ -206,7 +208,7 @@ class _LiveTestingFixtureScreenState extends State<LiveTestingFixtureScreen> {
     try {
       final provider = context.read<TimetableProvider>();
       final count = await LiveTestingFixtureService.installSectionGrid(
-        provider,
+        LiveFixtureProviderAccess(provider),
       );
       if (!context.mounted) {
         return;
@@ -249,7 +251,7 @@ class _LiveTestingFixtureScreenState extends State<LiveTestingFixtureScreen> {
     try {
       final provider = context.read<TimetableProvider>();
       final count = await LiveTestingFixtureService.removeAllFixtureCourses(
-        provider,
+        LiveFixtureProviderAccess(provider),
       );
       if (!context.mounted) {
         return;
@@ -284,7 +286,7 @@ class _LiveTestingFixtureScreenState extends State<LiveTestingFixtureScreen> {
     final lead = Duration(minutes: _fixtureLeadMinutes);
     final result = await triggerLiveUpdateTestForSectionSlot(
       context: context,
-      provider: provider,
+      host: LiveTestingProviderAccess(provider),
       sectionNumber: sectionNumber,
       lead: lead,
       source: source,

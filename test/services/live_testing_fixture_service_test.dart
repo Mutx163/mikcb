@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/providers/live_testing_fixture_access.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/live_testing_fixture_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
@@ -197,7 +198,7 @@ void main() {
       final now = DateTime(2026, 3, 23, 10, 15);
 
       final timed = await LiveTestingFixtureService.upsertTimedFixtureCourse(
-        provider: provider,
+        host: LiveFixtureProviderAccess(provider),
         sectionNumber: 1,
         now: now,
         lead: const Duration(minutes: 3),

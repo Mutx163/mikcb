@@ -9,6 +9,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/providers/live_testing_access.dart';
 import 'package:university_timetable/screens/settings/settings_live.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/services/live_testing_trigger.dart';
@@ -280,7 +281,7 @@ void main() {
     await runRealAsync(tester, () async {
       result = await triggerLiveUpdateTest(
         context: probeContext!,
-        provider: provider,
+        host: LiveTestingProviderAccess(provider),
       );
     });
 
@@ -340,7 +341,7 @@ void main() {
     final beforeResult = await runRealAsync(tester, () {
       return triggerLiveUpdateCourseTest(
         context: probeContext!,
-        provider: provider,
+        host: LiveTestingProviderAccess(provider),
         course: course,
         stage: LiveCourseTestStage.beforeClass,
       );
@@ -367,7 +368,7 @@ void main() {
     final duringResult = await runRealAsync(tester, () {
       return triggerLiveUpdateCourseTest(
         context: probeContext!,
-        provider: provider,
+        host: LiveTestingProviderAccess(provider),
         course: course,
         stage: LiveCourseTestStage.duringClass,
       );

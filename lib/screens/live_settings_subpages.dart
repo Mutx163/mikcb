@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import '../providers/live_testing_access.dart';
 import '../providers/timetable_provider.dart';
 import '../services/android_move_to_back_service.dart';
 import '../services/live_testing_trigger.dart';
@@ -382,13 +383,9 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     super.initState();
     final provider = context.read<TimetableProvider>();
     _draft = provider.settings;
-    _sampleCourse = resolveLivePreviewTestCourse(provider);
+    _sampleCourse = resolveLivePreviewTestCourse(LiveTestingProviderAccess(provider));
     _restoreStagePreviewFromGlobalSession();
-    unawaited(
-      provider.refreshLiveActivityNow(
-        forceSnapshotSync: true,
-      ),
-    );
+    unawaited(provider.refreshLiveActivityNow(forceSnapshotSync: true));
   }
 
   /// 按全局会话恢复按钮态：会话仍在（含其他入口起的选课测试）→ 直接进
@@ -455,7 +452,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     try {
       final result = await triggerLiveStagePreviewTest(
         context: context,
-        provider: provider,
+        host: LiveTestingProviderAccess(provider),
         stage: _previewStage,
       );
       if (!mounted) return;
@@ -520,7 +517,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final provider = context.read<TimetableProvider>();
     setState(() => _stagePreviewBusy = true);
     try {
-      await cancelLiveUpdateCourseTest(provider);
+      await cancelLiveUpdateCourseTest(LiveTestingProviderAccess(provider));
       _stagePreviewEndTimer?.cancel();
       if (!mounted) return;
       setState(() {
@@ -1320,7 +1317,9 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       );
       setState(() => _draft = provider.settings);
     } else if (currentLiveCourseTestSession() != null) {
-      unawaited(hotUpdateLiveCourseTestSession(provider));
+      unawaited(
+        hotUpdateLiveCourseTestSession(LiveTestingProviderAccess(provider)),
+      );
     }
   }
 

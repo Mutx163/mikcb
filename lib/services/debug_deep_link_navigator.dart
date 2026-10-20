@@ -8,6 +8,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/course.dart';
+import '../models/time_scheme.dart';
+import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../screens/couple_timetable_settings_screen.dart';
 import '../screens/import/course_import_entry_screen.dart';
@@ -243,7 +246,7 @@ class DebugDeepLinkNavigator {
     final now = DateTime.now();
     final leadMinutes = minutes.clamp(1, 120);
     final course = await LiveTestingFixtureService.upsertTimedFixtureCourse(
-      provider: provider,
+      host: _DebugDeepLinkFixtureHost(provider),
       sectionNumber: LiveTestingFixtureService.sectionNumberForTime(
         now,
         provider.settings.sections,
@@ -288,4 +291,73 @@ class DebugDeepLinkNavigator {
       showAppToast(context, message: '已导出超级岛状态到日志', kind: AppToastKind.success);
     }
   }
+}
+
+/// 过渡用的**私有内联**夹具宿主适配器（只为本文件的 seed-soon 深链）。
+///
+/// 为什么不 import `lib/providers/live_testing_fixture_access.dart`：本文件在
+/// services 层，引 providers 的适配器会新增一条 `services -> providers` 违规边，
+/// 与「摘除反向依赖」的刀正好反向抵消。端口 [LiveTestingFixtureHost] 由
+/// `live_testing_fixture_service.dart` 自己定义，这里只实现它，不新增跨层依赖。
+///
+/// 泳道 B 会把本文件整体挪出 services 层（路由表化 + 挪窝），届时这份内联
+/// 适配器直接删除、改用 `LiveFixtureProviderAccess` 即可。
+class _DebugDeepLinkFixtureHost implements LiveTestingFixtureHost {
+  _DebugDeepLinkFixtureHost(this._provider);
+
+  final TimetableProvider _provider;
+
+  @override
+  Future<void> initialize() => _provider.initialize();
+
+  @override
+  List<TimeScheme> get timeSchemes => _provider.timeSchemes;
+
+  @override
+  Future<String?> updateTimeScheme({
+    required String schemeId,
+    required String name,
+    required List<SectionTime> sections,
+  }) => _provider.updateTimeScheme(
+    schemeId: schemeId,
+    name: name,
+    sections: sections,
+  );
+
+  @override
+  Future<TimeScheme> createTimeScheme({
+    required String name,
+    List<SectionTime>? sections,
+  }) => _provider.createTimeScheme(name: name, sections: sections);
+
+  @override
+  List<Course> get courses => _provider.courses;
+
+  @override
+  Future<void> deleteCourse(String courseId) =>
+      _provider.deleteCourse(courseId);
+
+  @override
+  Future<String?> applyTimeScheme(String schemeId) =>
+      _provider.applyTimeScheme(schemeId);
+
+  @override
+  TimetableSettings get settings => _provider.settings;
+
+  @override
+  Future<int> importParsedCourses(
+    List<Course> importedCourses, {
+    required bool replaceExisting,
+    required String source,
+  }) => _provider.importParsedCourses(
+    importedCourses,
+    replaceExisting: replaceExisting,
+    source: source,
+  );
+
+  @override
+  Future<void> addCourse(Course course) => _provider.addCourse(course);
+
+  @override
+  Future<void> updateCourse(Course course) => _provider.updateCourse(course);
 }

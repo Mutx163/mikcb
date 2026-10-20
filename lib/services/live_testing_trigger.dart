@@ -4,12 +4,68 @@ import 'package:flutter/widgets.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../logging/app_log_messages.dart';
+import '../domain/live_activity_logic.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
-import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/umeng_analytics_service.dart';
 import 'live_testing_fixture_service.dart';
+
+/// 超级岛触发管线需要的宿主窄面（端口由消费方定义）。
+///
+/// 本文件在 services 层，不反向 import `providers/timetable_provider.dart`。
+/// [fixtureHost] 用于把宿主转发给测试夹具（`upsertTimedFixtureCourse` 的
+/// 建课路径）——触发管线自己不写课表，这一处转发是它接触课表的唯一位置。
+/// 宿主适配器 `LiveTestingProviderAccess` 见
+/// `lib/providers/live_testing_access.dart`，由调用点注入。
+abstract class LiveTestingTriggerHost {
+  Future<void> initialize();
+
+  List<Course> get courses;
+
+  TimetableSettings get settings;
+
+  int get currentWeek;
+
+  int get liveSelectionCalendarWeek;
+
+  bool get hasLiveTestFixtureCourses;
+
+  bool isHoliday(DateTime date);
+
+  Course resolveCourseDisplayName(Course course);
+
+  List<Course> getActiveCoursesForDay(int dayOfWeek, {int? week});
+
+  LiveActivityCourseSelection? getLiveActivityCourseSelection({
+    DateTime? now,
+    bool allowUpcomingFallback = false,
+    int? week,
+  });
+
+  List<Map<String, dynamic>> buildLiveProgressMilestones(
+    Course course, {
+    int? startAtMillis,
+    int? endAtMillis,
+  });
+
+  List<int> buildLiveProgressBreakOffsetsMillis(
+    Course course, {
+    int? startAtMillis,
+    int? endAtMillis,
+  });
+
+  void armLiveTestFixtureCourses(List<Course> courses);
+
+  void suspendLiveActivitySyncFor(Duration duration);
+
+  void clearLiveActivitySyncSuspend();
+
+  Future<void> refreshLiveActivityNow({bool forceSnapshotSync = false});
+
+  /// 把宿主交给测试夹具服务（触发管线唯一的写课表转发点）。
+  LiveTestingFixtureHost get fixtureHost;
+}
 
 enum LiveTestingTriggerStatus { success, inFlight, error }
 
@@ -173,7 +229,7 @@ LiveCourseTestWindow buildCourseTestWindow({
 /// and before-class windows exactly like a normal tick.
 Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
   required BuildContext context,
-  required TimetableProvider provider,
+  required LiveTestingTriggerHost host,
   required String source,
   String? seededCourseId,
 }) async {
@@ -189,18 +245,18 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
   final liveService = MiuiLiveActivitiesService();
 
   try {
-    await provider.initialize();
+    await host.initialize();
     await liveService.initialize();
 
     final now = DateTime.now();
-    final selectionPreview = provider.getLiveActivityCourseSelection(now: now);
+    final selectionPreview = host.getLiveActivityCourseSelection(now: now);
     await liveService.recordDiagnosticEvent(
       'live_update_test_requested',
       AppLogMessages.liveUpdateTestRequested,
       extras: {
         'from': source,
         'path': 'production_refresh',
-        'currentWeek': provider.currentWeek,
+        'currentWeek': host.currentWeek,
         'courseId': seededCourseId,
         'hasImmediateSelection': selectionPreview != null,
       },
@@ -208,13 +264,13 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
 
     // Older test helpers paused Flutter/native schedule sync; production refresh
     // must not inherit that pause or the real path appears broken.
-    provider.clearLiveActivitySyncSuspend();
+    host.clearLiveActivitySyncSuspend();
     await liveService.suspendScheduleTriggers(0);
     // 正式路径刷新会解除暂停并重选真实课，强制起岛会话随之失效。
     activeLiveCourseTestSession = null;
 
     // Same entry used after resume / settings changes: re-select from courses.
-    await provider.refreshLiveActivityNow(forceSnapshotSync: true);
+    await host.refreshLiveActivityNow(forceSnapshotSync: true);
 
     if (!context.mounted) {
       return const LiveTestingTriggerResult(
@@ -222,13 +278,13 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
       );
     }
 
-    var selection = provider.getLiveActivityCourseSelection();
+    var selection = host.getLiveActivityCourseSelection();
     if (selection == null) {
       // 真实课表无课可测（如刚安装还没有课）：注入自检预设课，再走一遍同一条
       // 正式路径。预设课只进超级岛内存覆盖层与原生快照，不写入真实课表。
       final presetSelection = await _triggerWithPresetFixtureCourses(
         context: context,
-        provider: provider,
+        host: host,
         liveService: liveService,
         source: source,
       );
@@ -243,8 +299,8 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
     }
 
     if (selection == null) {
-      final overlayArmed = provider.hasLiveTestFixtureCourses;
-      final holidayNow = provider.isHoliday(DateTime.now());
+      final overlayArmed = host.hasLiveTestFixtureCourses;
+      final holidayNow = host.isHoliday(DateTime.now());
       await liveService.recordDiagnosticEvent(
         'live_update_test_no_selection',
         AppLogMessages.liveUpdateTestNoSelection,
@@ -252,12 +308,11 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
           'from': source,
           'path': 'production_refresh',
           'weekday': DateTime.now().weekday,
-          'currentWeek': provider.currentWeek,
+          'currentWeek': host.currentWeek,
           'seededCourseId': seededCourseId,
           'isHoliday': holidayNow,
-          'liveEnableBeforeClass': provider.settings.liveEnableBeforeClass,
-          'liveShowBeforeClassMinutes':
-              provider.settings.liveShowBeforeClassMinutes,
+          'liveEnableBeforeClass': host.settings.liveEnableBeforeClass,
+          'liveShowBeforeClassMinutes': host.settings.liveShowBeforeClassMinutes,
           'hasLiveTestFixtureCourses': overlayArmed,
         },
       );
@@ -315,12 +370,12 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateProductionRefresh({
 /// Settings entry: only re-run production live selection (no forced payload).
 Future<LiveTestingTriggerResult> triggerLiveUpdateTest({
   required BuildContext context,
-  required TimetableProvider provider,
+  required LiveTestingTriggerHost host,
   String source = 'settings_screen',
 }) {
   return triggerLiveUpdateProductionRefresh(
     context: context,
-    provider: provider,
+    host: host,
     source: source,
   );
 }
@@ -340,7 +395,7 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTest({
 /// 3+3 分钟 / 课中 1+4 分钟）。显示设置页的「速览」入口传固定 30 秒。
 Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
   required BuildContext context,
-  required TimetableProvider provider,
+  required LiveTestingTriggerHost host,
   required Course course,
   required LiveCourseTestStage stage,
   String source = 'settings_screen',
@@ -356,7 +411,7 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
 
   final l10n = AppLocalizations.of(context)!;
   final liveService = MiuiLiveActivitiesService();
-  final settings = provider.settings;
+  final settings = host.settings;
   final isBeforeClass = stage == LiveCourseTestStage.beforeClass;
 
   // 合成时间窗：课前变体 3 分钟倒计时；课中变体把开课锚定在 1 分钟前，
@@ -372,7 +427,7 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
   final start = window.start;
   final end = window.end;
   final suspendBuffer = window.suspendBuffer;
-  final displayCourse = provider.resolveCourseDisplayName(
+  final displayCourse = host.resolveCourseDisplayName(
     course.copyWith(
       startTime: LiveTestingFixtureService.formatClock(start),
       endTime: LiveTestingFixtureService.formatClock(window.clockEnd),
@@ -394,7 +449,7 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
       : settings.duringEndDisplaySettings;
 
   try {
-    await provider.initialize();
+    await host.initialize();
     await liveService.initialize();
     await liveService.recordDiagnosticEvent(
       'live_update_test_requested',
@@ -404,11 +459,11 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
         'path': 'course_test',
         'stage': stage.name,
         'courseId': course.id,
-        'currentWeek': provider.currentWeek,
+        'currentWeek': host.currentWeek,
       },
     );
 
-    provider.suspendLiveActivitySyncFor(
+    host.suspendLiveActivitySyncFor(
       end.difference(now) + suspendBuffer,
     );
     await liveService.suspendScheduleTriggers(
@@ -417,7 +472,7 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
 
     await _dispatchLiveUpdateForCourseTest(
       liveService: liveService,
-      provider: provider,
+      host: host,
       session: testSession,
       settings: settings,
     );
@@ -465,7 +520,7 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
     );
     // 失败时立刻解除双路暂停，避免把正式调度吊死到会话终点；并清掉可能
     // 残留的旧会话记录（新会话没起来，不能让旧记录误导 UI）。
-    provider.clearLiveActivitySyncSuspend();
+    host.clearLiveActivitySyncSuspend();
     await liveService.suspendScheduleTriggers(0);
     activeLiveCourseTestSession = null;
     _lastTestSessionSettingsSignature = null;
@@ -483,27 +538,27 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateCourseTest({
 }
 
 /// 停止选课测试：解除双路暂停并按正式路径重刷（真实课在窗则立即接管）。
-Future<void> cancelLiveUpdateCourseTest(TimetableProvider provider) async {
+Future<void> cancelLiveUpdateCourseTest(LiveTestingTriggerHost host) async {
   final liveService = MiuiLiveActivitiesService();
   activeLiveCourseTestSession = null;
   _lastTestSessionSettingsSignature = null;
-  provider.clearLiveActivitySyncSuspend();
+  host.clearLiveActivitySyncSuspend();
   await liveService.suspendScheduleTriggers(0);
   await liveService.stopLiveUpdate();
-  await provider.refreshLiveActivityNow(forceSnapshotSync: true);
+  await host.refreshLiveActivityNow(forceSnapshotSync: true);
 }
 
 /// 测试会话的「下一节」解析：正式路径同款规则——同一节课所在教学日、
 /// 按起始节次排序的下一条课（与 `_liveGetActivityCourseSelection` 的
 /// `todayCourses[i + 1]` 一致）。找不到同日下一条时返回 null，与正式
 /// 路径一样让原生跳过「下一节」行。
-Course? _resolveNextCourseForTest(TimetableProvider provider, Course course) {
-  final week = provider.liveSelectionCalendarWeek;
-  final sameDayCourses = provider.getActiveCoursesForDay(course.dayOfWeek, week: week)
+Course? _resolveNextCourseForTest(LiveTestingTriggerHost host, Course course) {
+  final week = host.liveSelectionCalendarWeek;
+  final sameDayCourses = host.getActiveCoursesForDay(course.dayOfWeek, week: week)
     ..sort((a, b) => a.startSection.compareTo(b.startSection));
   final index = sameDayCourses.indexWhere((c) => c.id == course.id);
   if (index == -1 || index + 1 >= sameDayCourses.length) return null;
-  return provider.resolveCourseDisplayName(sameDayCourses[index + 1]);
+  return host.resolveCourseDisplayName(sameDayCourses[index + 1]);
 }
 
 /// 计算测试会话设置指纹，用于判断用户修改的设置是否影响超级岛渲染，避免无改动时频繁重发通道。
@@ -544,7 +599,7 @@ String computeTestSessionSettingsSignature({
 /// 统一下发测试会话的超级岛载荷，供首次起岛与中途热更新共用。
 Future<void> _dispatchLiveUpdateForCourseTest({
   required MiuiLiveActivitiesService liveService,
-  required TimetableProvider provider,
+  required LiveTestingTriggerHost host,
   required LiveCourseTestSession session,
   required TimetableSettings settings,
 }) async {
@@ -557,7 +612,7 @@ Future<void> _dispatchLiveUpdateForCourseTest({
   final now = DateTime.now();
 
   final displayCourse = course != null
-      ? provider.resolveCourseDisplayName(
+      ? host.resolveCourseDisplayName(
           course.copyWith(
             startTime: LiveTestingFixtureService.formatClock(start),
             endTime: LiveTestingFixtureService.formatClock(clockEnd),
@@ -580,13 +635,13 @@ Future<void> _dispatchLiveUpdateForCourseTest({
   // 用户看到的预览与展开态对不上（2026-10-14 反馈）。
   final nextCourse = course == null
       ? null
-      : _resolveNextCourseForTest(provider, course);
+      : _resolveNextCourseForTest(host, course);
 
   final displaySettings = isBeforeClass
       ? settings.beforeClassDisplaySettings
       : settings.duringEndDisplaySettings;
 
-  final milestones = provider.buildLiveProgressMilestones(
+  final milestones = host.buildLiveProgressMilestones(
     displayCourse,
     startAtMillis: start.millisecondsSinceEpoch,
     endAtMillis: end.millisecondsSinceEpoch,
@@ -643,7 +698,7 @@ Future<void> _dispatchLiveUpdateForCourseTest({
         : LiveBeforeClassQuickAction.none,
     beforeClassQuickActionAutoMinutes:
         settings.liveBeforeClassQuickActionAutoMinutes,
-    progressBreakOffsetsMillis: provider.buildLiveProgressBreakOffsetsMillis(
+    progressBreakOffsetsMillis: host.buildLiveProgressBreakOffsetsMillis(
       displayCourse,
       startAtMillis: start.millisecondsSinceEpoch,
       endAtMillis: end.millisecondsSinceEpoch,
@@ -659,7 +714,7 @@ Future<void> _dispatchLiveUpdateForCourseTest({
 
 /// 当选课测试或速览会话正在运行中时，若用户调整了显示配置，
 /// 热更新已在运行中的超级岛，使手机系统状态栏/超级岛即时响应改动。
-Future<bool> hotUpdateLiveCourseTestSession(TimetableProvider provider) async {
+Future<bool> hotUpdateLiveCourseTestSession(LiveTestingTriggerHost host) async {
   final session = currentLiveCourseTestSession();
   if (session == null ||
       session.course == null ||
@@ -670,7 +725,7 @@ Future<bool> hotUpdateLiveCourseTestSession(TimetableProvider provider) async {
 
   final stage = session.stage;
   final isBeforeClass = stage == LiveCourseTestStage.beforeClass;
-  final settings = provider.settings;
+  final settings = host.settings;
   final displaySettings = isBeforeClass
       ? settings.beforeClassDisplaySettings
       : settings.duringEndDisplaySettings;
@@ -689,7 +744,7 @@ Future<bool> hotUpdateLiveCourseTestSession(TimetableProvider provider) async {
     await liveService.initialize();
     await _dispatchLiveUpdateForCourseTest(
       liveService: liveService,
-      provider: provider,
+      host: host,
       session: session,
       settings: settings,
     );
@@ -718,30 +773,30 @@ Future<bool> hotUpdateLiveCourseTestSession(TimetableProvider provider) async {
 /// 解析提醒显示设置页预览以及速览测试所用的目标课程。
 ///
 /// 选课规则与用户认知对齐：
-/// 1. 优先查「当前正在上」或「今天接下来最近」的课程（通过 [provider.getLiveActivityCourseSelection]）；
+/// 1. 优先查「当前正在上」或「今天接下来最近」的课程（通过 [host.getLiveActivityCourseSelection]）；
 /// 2. 若今天无活跃课程，扫描课表内日历时间最接近当前时间的未来课程（按周次、星期与节次排序）；
 /// 3. 若课表内所有课程周次均已过期（如已结课或已放假），从已有课程中挑选（优先保留填有简称者，若无则取首门）；
 /// 4. 若课表完全为空（无任何课程），使用 [LiveTestingFixtureService.buildPresetCourses]
 ///    构造的「自检预设课 A」（自带简称「自检A」）。
 Course resolveLivePreviewTestCourse(
-  TimetableProvider provider, {
+  LiveTestingTriggerHost host, {
   DateTime? now,
 }) {
   final currentTime = now ?? DateTime.now();
 
   // 1. 优先取当前活跃或今天接下来的课程
-  final currentSelection = provider.getLiveActivityCourseSelection(
+  final currentSelection = host.getLiveActivityCourseSelection(
     now: currentTime,
     allowUpcomingFallback: true,
   );
   if (currentSelection != null) {
-    return provider.resolveCourseDisplayName(currentSelection.currentCourse);
+    return host.resolveCourseDisplayName(currentSelection.currentCourse);
   }
 
   // 2. 今天无课时，扫描课表内接下来时间最近的课程
-  final courses = provider.courses;
+  final courses = host.courses;
   if (courses.isNotEmpty) {
-    final targetWeek = provider.liveSelectionCalendarWeek;
+    final targetWeek = host.liveSelectionCalendarWeek;
     final maxWeek = courses
         .map((c) => c.endWeek)
         .fold<int>(targetWeek, (a, b) => a > b ? a : b);
@@ -795,27 +850,27 @@ Course resolveLivePreviewTestCourse(
     }
 
     if (nearestFutureCourse != null) {
-      return provider.resolveCourseDisplayName(nearestFutureCourse);
+      return host.resolveCourseDisplayName(nearestFutureCourse);
     }
 
     // 3. 课表有课但都在过去（例如学期结束），挑选填有简称者，若无则取首门
     for (final c in courses) {
-      final resolved = provider.resolveCourseDisplayName(c);
+      final resolved = host.resolveCourseDisplayName(c);
       if (resolved.shortName != null && resolved.shortName!.trim().isNotEmpty) {
         return resolved;
       }
     }
-    return provider.resolveCourseDisplayName(courses.first);
+    return host.resolveCourseDisplayName(courses.first);
   }
 
   // 4. 课表完全为空时，用自检预设课 A 兜底
   try {
     final presets = LiveTestingFixtureService.buildPresetCourses(
       now: currentTime,
-      targetWeek: provider.liveSelectionCalendarWeek,
-      semesterWeekCount: provider.settings.semesterWeekCount,
+      targetWeek: host.liveSelectionCalendarWeek,
+      semesterWeekCount: host.settings.semesterWeekCount,
     );
-    return provider.resolveCourseDisplayName(presets.first);
+    return host.resolveCourseDisplayName(presets.first);
   } catch (_) {
     // 临近午夜时 buildPresetCourses 会抛「不跨日」错误；速览入口必须仍能起岛，
     // 故退回那份固定时间的同名副本（展示字段与 buildPresetCourses 同源）。
@@ -829,15 +884,15 @@ Course resolveLivePreviewTestCourse(
 /// 不写入课表）。核心窗口/暂停机制与 [triggerLiveUpdateCourseTest] 完全同路。
 Future<LiveTestingTriggerResult> triggerLiveStagePreviewTest({
   required BuildContext context,
-  required TimetableProvider provider,
+  required LiveTestingTriggerHost host,
   required LiveCourseTestStage stage,
   Duration sessionLength = const Duration(seconds: 30),
   String source = 'display_settings_preview',
 }) async {
-  final course = resolveLivePreviewTestCourse(provider);
+  final course = resolveLivePreviewTestCourse(host);
   return triggerLiveUpdateCourseTest(
     context: context,
-    provider: provider,
+    host: host,
     course: course,
     stage: stage,
     source: source,
@@ -851,14 +906,14 @@ Future<LiveTestingTriggerResult> triggerLiveStagePreviewTest({
 /// and week rules as user-created courses). Starting the island is left entirely
 /// to [TimetableProvider.refreshLiveActivityNow].
 Future<LiveTestingTriggerResult> triggerLiveUpdateTestForSectionSlot({  required BuildContext context,
-  required TimetableProvider provider,
+  required LiveTestingTriggerHost host,
   required int sectionNumber,
   required Duration lead,
   String source = 'quick_fixture_grid',
 }) async {
   final now = DateTime.now();
   final timedCourse = await LiveTestingFixtureService.upsertTimedFixtureCourse(
-    provider: provider,
+    host: host.fixtureHost,
     sectionNumber: sectionNumber,
     now: now,
     lead: lead,
@@ -870,7 +925,7 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTestForSectionSlot({  required
   }
   return triggerLiveUpdateProductionRefresh(
     context: context,
-    provider: provider,
+    host: host,
     source: source,
     seededCourseId: timedCourse.id,
   );
@@ -884,7 +939,7 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTestForSectionSlot({  required
 /// overlay disarms itself once every preset has ended.
 Future<LiveActivityCourseSelection?> _triggerWithPresetFixtureCourses({
   required BuildContext context,
-  required TimetableProvider provider,
+  required LiveTestingTriggerHost host,
   required MiuiLiveActivitiesService liveService,
   required String source,
 }) async {
@@ -892,8 +947,8 @@ Future<LiveActivityCourseSelection?> _triggerWithPresetFixtureCourses({
   try {
     presets = LiveTestingFixtureService.buildPresetCourses(
       now: DateTime.now(),
-      targetWeek: provider.liveSelectionCalendarWeek,
-      semesterWeekCount: provider.settings.semesterWeekCount,
+      targetWeek: host.liveSelectionCalendarWeek,
+      semesterWeekCount: host.settings.semesterWeekCount,
     );
   } catch (error) {
     // 午夜附近无法生成不跨日预设课：按无课处理，维持原有「无课」提示。
@@ -905,7 +960,7 @@ Future<LiveActivityCourseSelection?> _triggerWithPresetFixtureCourses({
     return null;
   }
 
-  provider.armLiveTestFixtureCourses(presets);
+  host.armLiveTestFixtureCourses(presets);
   await liveService.recordDiagnosticEvent(
     'live_update_test_preset_armed',
     AppLogMessages.liveUpdateTestPresetArmed,
@@ -915,9 +970,9 @@ Future<LiveActivityCourseSelection?> _triggerWithPresetFixtureCourses({
     },
   );
 
-  await provider.refreshLiveActivityNow(forceSnapshotSync: true);
+  await host.refreshLiveActivityNow(forceSnapshotSync: true);
   if (!context.mounted) {
     return null;
   }
-  return provider.getLiveActivityCourseSelection();
+  return host.getLiveActivityCourseSelection();
 }

@@ -5,7 +5,47 @@ import 'package:flutter/material.dart';
 import '../models/course.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
-import '../providers/timetable_provider.dart';
+
+/// 测试课表夹具需要的宿主窄面（端口由消费方定义）。
+///
+/// 本文件在 services 层，不反向 import `providers/timetable_provider.dart`：
+/// 夹具安装/清理只需要「初始化 / 作息读写 / 课程读写 / 按解析导入」十一个
+/// 成员。宿主适配器 `LiveFixtureProviderAccess` 见
+/// `lib/providers/live_testing_fixture_access.dart`，由调用点注入。
+abstract class LiveTestingFixtureHost {
+  Future<void> initialize();
+
+  List<TimeScheme> get timeSchemes;
+
+  Future<String?> updateTimeScheme({
+    required String schemeId,
+    required String name,
+    required List<SectionTime> sections,
+  });
+
+  Future<TimeScheme> createTimeScheme({
+    required String name,
+    List<SectionTime>? sections,
+  });
+
+  List<Course> get courses;
+
+  Future<void> deleteCourse(String courseId);
+
+  Future<String?> applyTimeScheme(String schemeId);
+
+  TimetableSettings get settings;
+
+  Future<int> importParsedCourses(
+    List<Course> importedCourses, {
+    required bool replaceExisting,
+    required String source,
+  });
+
+  Future<void> addCourse(Course course);
+
+  Future<void> updateCourse(Course course);
+}
 
 /// Debug-only helpers for installing and driving live-update test timetables.
 ///
@@ -100,12 +140,12 @@ class LiveTestingFixtureService {
 
   /// Creates or updates the 24-hour test scheme (does not apply it).
   static Future<TimeScheme> ensureHourlyTimeScheme(
-    TimetableProvider provider,
+    LiveTestingFixtureHost host,
   ) async {
-    await provider.initialize();
+    await host.initialize();
     final sections = buildHourlySections();
     TimeScheme? existing;
-    for (final scheme in provider.timeSchemes) {
+    for (final scheme in host.timeSchemes) {
       if (scheme.name == timeSchemeName) {
         existing = scheme;
         break;
@@ -117,7 +157,7 @@ class LiveTestingFixtureService {
           existing.sections.length != sections.length ||
           !_sectionsMatch(existing.sections, sections);
       if (needsUpdate) {
-        final error = await provider.updateTimeScheme(
+        final error = await host.updateTimeScheme(
           schemeId: existing.id,
           name: timeSchemeName,
           sections: sections,
@@ -126,12 +166,12 @@ class LiveTestingFixtureService {
           throw StateError(error);
         }
       }
-      return provider.timeSchemes.firstWhere(
+      return host.timeSchemes.firstWhere(
         (scheme) => scheme.id == existing!.id,
       );
     }
 
-    return provider.createTimeScheme(
+    return host.createTimeScheme(
       name: timeSchemeName,
       sections: sections,
     );
@@ -343,11 +383,11 @@ class LiveTestingFixtureService {
   }
 
   static Course? findFixtureForSection(
-    TimetableProvider provider,
+    LiveTestingFixtureHost host,
     int sectionNumber,
   ) {
     final id = fixtureIdForSection(sectionNumber);
-    for (final course in provider.courses) {
+    for (final course in host.courses) {
       if (course.id == id) {
         return course;
       }
@@ -355,33 +395,35 @@ class LiveTestingFixtureService {
     return null;
   }
 
-  static Future<int> removeAllFixtureCourses(TimetableProvider provider) async {
-    await provider.initialize();
-    final fixtureIds = provider.courses
+  static Future<int> removeAllFixtureCourses(
+    LiveTestingFixtureHost host,
+  ) async {
+    await host.initialize();
+    final fixtureIds = host.courses
         .where(isFixtureCourse)
         .map((course) => course.id)
         .toList(growable: false);
     for (final id in fixtureIds) {
-      await provider.deleteCourse(id);
+      await host.deleteCourse(id);
     }
     return fixtureIds.length;
   }
 
   /// Ensures the 24-hour scheme, **applies it as active**, then installs one
   /// fixture course per section for today.
-  static Future<int> installSectionGrid(TimetableProvider provider) async {
-    await provider.initialize();
-    await removeAllFixtureCourses(provider);
+  static Future<int> installSectionGrid(LiveTestingFixtureHost host) async {
+    await host.initialize();
+    await removeAllFixtureCourses(host);
 
-    final scheme = await ensureHourlyTimeScheme(provider);
+    final scheme = await ensureHourlyTimeScheme(host);
     // Without this, courses use the 24-section scheme data but the week grid
     // still renders the previous scheme — the original mismatch.
-    final applyError = await provider.applyTimeScheme(scheme.id);
+    final applyError = await host.applyTimeScheme(scheme.id);
     if (applyError != null) {
       throw StateError(applyError);
     }
 
-    final settings = provider.settings;
+    final settings = host.settings;
     final sections = List<SectionTime>.from(scheme.sections);
     if (sections.isEmpty) {
       throw StateError('测试时间方案没有节次，无法安装测试课表');
@@ -392,7 +434,7 @@ class LiveTestingFixtureService {
       semesterWeekCount: settings.semesterWeekCount,
       sections: sections,
     );
-    return provider.importParsedCourses(
+    return host.importParsedCourses(
       grid,
       replaceExisting: false,
       source: 'live_testing_fixture',
@@ -400,14 +442,14 @@ class LiveTestingFixtureService {
   }
 
   static Future<Course> upsertTimedFixtureCourse({
-    required TimetableProvider provider,
+    required LiveTestingFixtureHost host,
     required int sectionNumber,
     required DateTime now,
     required Duration lead,
     String? note,
   }) async {
-    await provider.initialize();
-    final settings = provider.settings;
+    await host.initialize();
+    final settings = host.settings;
     final sections = settings.sections;
     if (sections.isEmpty) {
       throw StateError('当前课表没有节次时间，无法写入测试课');
@@ -415,7 +457,7 @@ class LiveTestingFixtureService {
     final clampedSection = sectionNumber.clamp(1, sections.length);
     final section = sections[clampedSection - 1];
     final template =
-        findFixtureForSection(provider, clampedSection) ??
+        findFixtureForSection(host, clampedSection) ??
         buildSlotTemplate(
           sectionNumber: clampedSection,
           section: section,
@@ -429,11 +471,11 @@ class LiveTestingFixtureService {
       lead: lead,
       note: note,
     );
-    if (findFixtureForSection(provider, clampedSection) == null) {
-      await provider.addCourse(timedCourse);
+    if (findFixtureForSection(host, clampedSection) == null) {
+      await host.addCourse(timedCourse);
       return timedCourse;
     }
-    await provider.updateCourse(timedCourse);
+    await host.updateCourse(timedCourse);
     return timedCourse;
   }
 }

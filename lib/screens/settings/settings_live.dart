@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../logging/app_debug_log.dart';
 import '../../models/timetable_settings.dart';
+import '../../providers/live_testing_access.dart';
 import '../../providers/timetable_provider.dart';
 import '../../services/miui_live_activities_service.dart';
 import '../../services/umeng_analytics_service.dart';
@@ -507,7 +508,7 @@ class LiveTestingSettingsScreenState extends State<LiveTestingSettingsScreen>
     try {
       final result = await triggerLiveUpdateCourseTest(
         context: context,
-        provider: provider,
+        host: LiveTestingProviderAccess(provider),
         course: course,
         stage: stage,
       );
@@ -593,7 +594,7 @@ class LiveTestingSettingsScreenState extends State<LiveTestingSettingsScreen>
     final l10n = AppLocalizations.of(context)!;
     setState(() => _courseTestBusy = true);
     try {
-      await cancelLiveUpdateCourseTest(provider);
+      await cancelLiveUpdateCourseTest(LiveTestingProviderAccess(provider));
       _courseTestEndTimer?.cancel();
       if (!mounted) return;
       setState(() => _courseTestLabel = null);
@@ -1370,9 +1371,7 @@ Future<void> _showTestOptions(BuildContext context) async {
   await provider.initialize();
   if (!context.mounted) return;
   final result = await triggerLiveUpdateTest(
-    context: context,
-    provider: provider,
-  );
+      context: context, host: LiveTestingProviderAccess(provider));
   if (!context.mounted) return;
   _showLiveTestingTriggerResult(context, result);
 }
