@@ -11748,4 +11748,231 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get sharedInfoInlineHint => '약칭, 색상, 성격, 소개는 같은 이름의 수업에 동기화됩니다';
+
+  @override
+  String get campusToolsTitle => '캠퍼스 도구';
+
+  @override
+  String get campusToolsEntryTitle => '캠퍼스 도구';
+
+  @override
+  String get campusToolsAddAction => '바로가기 추가';
+
+  @override
+  String get campusToolsAddTile => '추가';
+
+  @override
+  String get campusToolsMoreAction => '기타 작업';
+
+  @override
+  String get campusToolsMoreTitle => '캠퍼스 도구';
+
+  @override
+  String get campusToolsIntro =>
+      '수령 코드, 교내 Wi-Fi처럼 자주 쓰는 페이지를 한 줄로 모아 한 번에 열 수 있습니다.';
+
+  @override
+  String get campusToolsGridHint => '탭하면 열리고, 길게 누르면 편집·사용 중지·삭제할 수 있습니다.';
+
+  @override
+  String get campusToolsManageTitle => '항목 관리';
+
+  @override
+  String campusToolsTargetCount(int count) {
+    return '대상 $count개';
+  }
+
+  @override
+  String get campusToolsDisabledDetails => '사용 중지됨';
+
+  @override
+  String get campusToolsEmptyTitle => '아직 바로가기가 없습니다';
+
+  @override
+  String get campusToolsEmptySubtitle =>
+      '먼저 하나 추가해 보세요. 수령 코드나 교내 네트워크 로그인 페이지처럼요.';
+
+  @override
+  String campusToolsLaunchFailed(String name, String reason) {
+    return '$name을(를) 열 수 없습니다: $reason';
+  }
+
+  @override
+  String campusToolsOpenedAppToast(String name) {
+    return '$name에는 공개된 바로가기 페이지가 없어 앱만 열었습니다. 앱 안에서 확인해 주세요.';
+  }
+
+  @override
+  String get campusToolsUnsupported => '이 플랫폼에서는 다른 앱을 열 수 없습니다';
+
+  @override
+  String get campusToolsDiagnoseAction => '연결 점검';
+
+  @override
+  String get campusToolsDiagnoseTitle => '연결 점검';
+
+  @override
+  String get campusToolsDiagnoseHint =>
+      '✓는 이 기기에서 열 수 있음, ✗는 앱 미설치 또는 링크 만료를 뜻합니다. 항목을 길게 눌러 링크를 고칠 수 있습니다.';
+
+  @override
+  String get campusToolsDiagnoseAppInstalled => '설치됨';
+
+  @override
+  String get campusToolsDiagnoseAppMissing => '설치되지 않음';
+
+  @override
+  String get campusToolsRestoreDefaults => '기본 항목 복원';
+
+  @override
+  String campusToolsRestoreDefaultsToast(int count) {
+    return '기본 항목 $count개를 복원했습니다';
+  }
+
+  @override
+  String get campusToolsRestoreDefaultsEmpty => '기본 항목이 모두 있습니다';
+
+  @override
+  String get campusToolsDeleteTitle => '항목 삭제';
+
+  @override
+  String campusToolsDeleteBody(String name) {
+    return '$name을(를) 삭제할까요? 나중에 기본 항목 복원으로 되돌릴 수 있습니다.';
+  }
+
+  @override
+  String get campusToolsDeleteAction => '삭제';
+
+  @override
+  String get campusToolsEditAction => '편집';
+
+  @override
+  String get campusToolsEnableAction => '사용';
+
+  @override
+  String get campusToolsDisableAction => '사용 중지';
+
+  @override
+  String get campusToolsEditTitle => '항목 편집';
+
+  @override
+  String get campusToolsAddTitle => '새 항목';
+
+  @override
+  String get campusToolsEditHint =>
+      '이름·아이콘·링크는 언제든 바꿀 수 있습니다. 외부 앱 업데이트로 링크가 만료될 수 있습니다.';
+
+  @override
+  String get campusToolsNameLabel => '이름';
+
+  @override
+  String get campusToolsNameHint => '예: Cainiao 수령 코드';
+
+  @override
+  String get campusToolsIconLabel => '아이콘';
+
+  @override
+  String get campusToolsLinksLabel => '바로가기 링크';
+
+  @override
+  String get campusToolsLinksHint =>
+      '한 줄에 하나씩, 위에서부터 시도합니다. 패키지명|링크로 대상 앱을 지정할 수 있습니다.';
+
+  @override
+  String get campusToolsLinksHelp =>
+      '링크가 만료되면 딥링크 확인 도구로 새 링크를 찾아 여기에 붙여 넣으면 됩니다. 앱 업데이트를 기다릴 필요가 없습니다.';
+
+  @override
+  String get campusToolsAppPackagesLabel => '대체 앱';
+
+  @override
+  String get campusToolsAppPackagesHint =>
+      '한 줄에 패키지명 하나(선택). 바로가기 링크가 모두 실패할 때만 앱을 엽니다.';
+
+  @override
+  String get campusToolsWebFallbackLabel => '웹 대체';
+
+  @override
+  String get campusToolsWebFallbackHint => '선택 사항, https:// 로 시작해야 합니다';
+
+  @override
+  String get campusToolsClearTaskLabel => '대상 페이지를 새로 열기';
+
+  @override
+  String get campusToolsClearTaskDesc =>
+      '일부 기기에서는 대상 앱이 백그라운드일 때 전환이 안 될 수 있습니다. 그럴 때 켜 보세요.';
+
+  @override
+  String get campusToolsEnabledLabel => '사용';
+
+  @override
+  String get campusToolsSaveAction => '저장';
+
+  @override
+  String get campusToolsSaveFailed => '저장하지 못했습니다. 다시 시도해 주세요.';
+
+  @override
+  String get campusToolsErrorNameRequired => '먼저 이 항목의 이름을 입력해 주세요';
+
+  @override
+  String get campusToolsErrorNoTarget => '바로가기 링크·앱 패키지명·웹 대체 중 하나 이상 입력해 주세요';
+
+  @override
+  String campusToolsErrorInvalidLink(int line) {
+    return '$line번째 줄 링크가 올바르지 않습니다. scheme:// 로 시작해야 합니다';
+  }
+
+  @override
+  String campusToolsErrorInvalidPackage(int line) {
+    return '$line번째 줄 패키지명이 올바르지 않습니다';
+  }
+
+  @override
+  String get campusToolsErrorInvalidWeb =>
+      '웹 대체는 http:// 또는 https:// 로 시작해야 합니다';
+
+  @override
+  String get campusToolsUntitledEntry => '이름 없는 항목';
+
+  @override
+  String get campusToolsReasonNoActivity => '이 링크를 처리할 앱이 없습니다';
+
+  @override
+  String get campusToolsReasonAppNotFound => '앱을 찾을 수 없습니다';
+
+  @override
+  String get campusToolsReasonInvalidUri => '링크 형식이 올바르지 않습니다';
+
+  @override
+  String get campusToolsReasonInvalidPackage => '패키지명 형식이 올바르지 않습니다';
+
+  @override
+  String get campusToolsReasonTimeout => '시스템이 응답하지 않습니다(시간 초과)';
+
+  @override
+  String get campusToolsReasonUnsupported => '이 플랫폼에서는 지원하지 않습니다';
+
+  @override
+  String get campusToolsReasonUnknown => '알 수 없는 이유';
+
+  @override
+  String get campusToolsPresetCainiao => 'Cainiao 수령 코드';
+
+  @override
+  String get campusToolsPresetTaobao => 'Taobao 수령 코드';
+
+  @override
+  String get campusToolsPresetTaobaoParcels => 'Taobao 수령 대기';
+
+  @override
+  String get campusToolsPresetPinduoduo => 'Pinduoduo 수령 코드';
+
+  @override
+  String get campusToolsPresetPinduoduoParcels => 'Pinduoduo 수령 대기';
+
+  @override
+  String get campusToolsPresetJdParcels => 'JD 수령 대기';
+
+  @override
+  String get campusToolsPresetDouyinParcels => 'Douyin 수령 대기';
 }

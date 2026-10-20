@@ -11345,6 +11345,225 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sharedInfoInlineHint => '简称、颜色、性质、简介同步给同名排课';
+
+  @override
+  String get campusToolsTitle => '校园小工具';
+
+  @override
+  String get campusToolsEntryTitle => '校园小工具';
+
+  @override
+  String get campusToolsAddAction => '添加快捷入口';
+
+  @override
+  String get campusToolsAddTile => '添加';
+
+  @override
+  String get campusToolsMoreAction => '更多操作';
+
+  @override
+  String get campusToolsMoreTitle => '校园小工具';
+
+  @override
+  String get campusToolsIntro => '把取件身份码、待取快递这类常用页面收成一排，点一下就直达。';
+
+  @override
+  String get campusToolsGridHint => '点按直达，长按可以编辑、停用或删除。';
+
+  @override
+  String get campusToolsManageTitle => '管理入口';
+
+  @override
+  String campusToolsTargetCount(int count) {
+    return '$count 个目标';
+  }
+
+  @override
+  String get campusToolsDisabledDetails => '已停用';
+
+  @override
+  String get campusToolsEmptyTitle => '还没有快捷入口';
+
+  @override
+  String get campusToolsEmptySubtitle => '先添加一个，比如取件身份码或校园网认证页';
+
+  @override
+  String campusToolsLaunchFailed(String name, String reason) {
+    return '打不开「$name」：$reason';
+  }
+
+  @override
+  String campusToolsOpenedAppToast(String name) {
+    return '「$name」没有公开的直达页，已打开对应 App，请在 App 内查看';
+  }
+
+  @override
+  String get campusToolsUnsupported => '当前平台不支持跳到其它应用';
+
+  @override
+  String get campusToolsDiagnoseAction => '入口体检';
+
+  @override
+  String get campusToolsDiagnoseTitle => '入口体检';
+
+  @override
+  String get campusToolsDiagnoseHint =>
+      '✓ 表示当前设备上能打开；✗ 表示没装对应 App 或链接已失效。失效可以长按入口改链接。';
+
+  @override
+  String get campusToolsDiagnoseAppInstalled => '已安装';
+
+  @override
+  String get campusToolsDiagnoseAppMissing => '未安装';
+
+  @override
+  String get campusToolsRestoreDefaults => '补回默认入口';
+
+  @override
+  String campusToolsRestoreDefaultsToast(int count) {
+    return '已补回 $count 个默认入口';
+  }
+
+  @override
+  String get campusToolsRestoreDefaultsEmpty => '默认入口都在，没有需要补回的';
+
+  @override
+  String get campusToolsDeleteTitle => '删除入口';
+
+  @override
+  String campusToolsDeleteBody(String name) {
+    return '确定删除「$name」吗？之后可以点「补回默认入口」找回默认项。';
+  }
+
+  @override
+  String get campusToolsDeleteAction => '删除';
+
+  @override
+  String get campusToolsEditAction => '编辑';
+
+  @override
+  String get campusToolsEnableAction => '启用';
+
+  @override
+  String get campusToolsDisableAction => '停用';
+
+  @override
+  String get campusToolsEditTitle => '编辑入口';
+
+  @override
+  String get campusToolsAddTitle => '新建入口';
+
+  @override
+  String get campusToolsEditHint => '名称、图标和链接都可以随时改；三方 App 更新后链接可能失效。';
+
+  @override
+  String get campusToolsNameLabel => '名称';
+
+  @override
+  String get campusToolsNameHint => '比如：菜鸟身份码';
+
+  @override
+  String get campusToolsIconLabel => '图标';
+
+  @override
+  String get campusToolsLinksLabel => '直达链接';
+
+  @override
+  String get campusToolsLinksHint => '每行一条，按顺序试；也可以写成「包名|链接」限定只给某个 App 打开';
+
+  @override
+  String get campusToolsLinksHelp => '链接失效时，用「开发者助手」这类工具看到新链接后改这里就行，不用等版本更新。';
+
+  @override
+  String get campusToolsAppPackagesLabel => '兜底打开的应用';
+
+  @override
+  String get campusToolsAppPackagesHint => '每行一个包名，可选；直达链接都失败时只拉起这个 App';
+
+  @override
+  String get campusToolsWebFallbackLabel => '网页兜底';
+
+  @override
+  String get campusToolsWebFallbackHint => '可选，https:// 开头';
+
+  @override
+  String get campusToolsClearTaskLabel => '强制新开目标页面';
+
+  @override
+  String get campusToolsClearTaskDesc => '有些机型上目标 App 在后台时会跳不动，打开这个试试';
+
+  @override
+  String get campusToolsEnabledLabel => '启用';
+
+  @override
+  String get campusToolsSaveAction => '保存';
+
+  @override
+  String get campusToolsSaveFailed => '配置没保存上，请重试';
+
+  @override
+  String get campusToolsErrorNameRequired => '先给这个入口起个名字';
+
+  @override
+  String get campusToolsErrorNoTarget => '至少填一条直达链接、一个应用包名或一个网页兜底';
+
+  @override
+  String campusToolsErrorInvalidLink(int line) {
+    return '第 $line 行链接不合法，要写成 scheme:// 开头';
+  }
+
+  @override
+  String campusToolsErrorInvalidPackage(int line) {
+    return '第 $line 行包名不合法';
+  }
+
+  @override
+  String get campusToolsErrorInvalidWeb => '网页兜底要以 http:// 或 https:// 开头';
+
+  @override
+  String get campusToolsUntitledEntry => '未命名入口';
+
+  @override
+  String get campusToolsReasonNoActivity => '没有 App 响应这条链接';
+
+  @override
+  String get campusToolsReasonAppNotFound => '没有找到这个 App';
+
+  @override
+  String get campusToolsReasonInvalidUri => '链接格式不对';
+
+  @override
+  String get campusToolsReasonInvalidPackage => '包名格式不对';
+
+  @override
+  String get campusToolsReasonTimeout => '系统没有响应（超时）';
+
+  @override
+  String get campusToolsReasonUnsupported => '当前平台不支持';
+
+  @override
+  String get campusToolsReasonUnknown => '未知原因';
+
+  @override
+  String get campusToolsPresetCainiao => '菜鸟身份码';
+
+  @override
+  String get campusToolsPresetTaobao => '淘宝身份码';
+
+  @override
+  String get campusToolsPresetTaobaoParcels => '淘宝待取快递';
+
+  @override
+  String get campusToolsPresetPinduoduo => '拼多多身份码';
+
+  @override
+  String get campusToolsPresetPinduoduoParcels => '拼多多待取快递';
+
+  @override
+  String get campusToolsPresetJdParcels => '京东待取快递';
+
+  @override
+  String get campusToolsPresetDouyinParcels => '抖音待取快递';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -22728,6 +22947,225 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get sharedInfoInlineHint => '簡稱、顏色、性質、簡介同步給同名排課';
+
+  @override
+  String get campusToolsTitle => '校園小工具';
+
+  @override
+  String get campusToolsEntryTitle => '校園小工具';
+
+  @override
+  String get campusToolsAddAction => '新增捷徑';
+
+  @override
+  String get campusToolsAddTile => '新增';
+
+  @override
+  String get campusToolsMoreAction => '更多操作';
+
+  @override
+  String get campusToolsMoreTitle => '校園小工具';
+
+  @override
+  String get campusToolsIntro => '把取件身份碼、待取快遞這類常用頁面收成一排，一按即達。';
+
+  @override
+  String get campusToolsGridHint => '點按即達，長按可以編輯、停用或刪除。';
+
+  @override
+  String get campusToolsManageTitle => '管理入口';
+
+  @override
+  String campusToolsTargetCount(int count) {
+    return '$count 個目標';
+  }
+
+  @override
+  String get campusToolsDisabledDetails => '已停用';
+
+  @override
+  String get campusToolsEmptyTitle => '還沒有捷徑';
+
+  @override
+  String get campusToolsEmptySubtitle => '先新增一個，例如取件身份碼或校園網認證頁';
+
+  @override
+  String campusToolsLaunchFailed(String name, String reason) {
+    return '打不開「$name」：$reason';
+  }
+
+  @override
+  String campusToolsOpenedAppToast(String name) {
+    return '「$name」沒有公開的直達頁，已開啟對應 App，請在 App 內查看';
+  }
+
+  @override
+  String get campusToolsUnsupported => '目前平台不支援跳到其他應用程式';
+
+  @override
+  String get campusToolsDiagnoseAction => '入口檢查';
+
+  @override
+  String get campusToolsDiagnoseTitle => '入口檢查';
+
+  @override
+  String get campusToolsDiagnoseHint =>
+      '✓ 表示目前裝置上能開啟；✗ 表示沒有安裝對應 App 或連結已失效。失效時可長按入口修改連結。';
+
+  @override
+  String get campusToolsDiagnoseAppInstalled => '已安裝';
+
+  @override
+  String get campusToolsDiagnoseAppMissing => '未安裝';
+
+  @override
+  String get campusToolsRestoreDefaults => '補回預設入口';
+
+  @override
+  String campusToolsRestoreDefaultsToast(int count) {
+    return '已補回 $count 個預設入口';
+  }
+
+  @override
+  String get campusToolsRestoreDefaultsEmpty => '預設入口都在，沒有需要補回的';
+
+  @override
+  String get campusToolsDeleteTitle => '刪除入口';
+
+  @override
+  String campusToolsDeleteBody(String name) {
+    return '確定刪除「$name」嗎？之後可以按「補回預設入口」找回預設項目。';
+  }
+
+  @override
+  String get campusToolsDeleteAction => '刪除';
+
+  @override
+  String get campusToolsEditAction => '編輯';
+
+  @override
+  String get campusToolsEnableAction => '啟用';
+
+  @override
+  String get campusToolsDisableAction => '停用';
+
+  @override
+  String get campusToolsEditTitle => '編輯入口';
+
+  @override
+  String get campusToolsAddTitle => '新增入口';
+
+  @override
+  String get campusToolsEditHint => '名稱、圖示和連結都可以隨時修改；第三方 App 更新後連結可能失效。';
+
+  @override
+  String get campusToolsNameLabel => '名稱';
+
+  @override
+  String get campusToolsNameHint => '例如：菜鳥身份碼';
+
+  @override
+  String get campusToolsIconLabel => '圖示';
+
+  @override
+  String get campusToolsLinksLabel => '直達連結';
+
+  @override
+  String get campusToolsLinksHint => '每行一條，按順序嘗試；也可以寫成「套件名|連結」限定只給某個 App 開啟';
+
+  @override
+  String get campusToolsLinksHelp => '連結失效時，用「開發者助手」這類工具看到新連結後改這裡就行，不必等版本更新。';
+
+  @override
+  String get campusToolsAppPackagesLabel => '後備開啟的應用程式';
+
+  @override
+  String get campusToolsAppPackagesHint => '每行一個套件名，可選；直達連結全部失敗時只開啟這個 App';
+
+  @override
+  String get campusToolsWebFallbackLabel => '網頁後備';
+
+  @override
+  String get campusToolsWebFallbackHint => '可選，https:// 開頭';
+
+  @override
+  String get campusToolsClearTaskLabel => '強制新開目標頁面';
+
+  @override
+  String get campusToolsClearTaskDesc => '部分機型上目標 App 在背景時會跳不動，可開啟此項試試';
+
+  @override
+  String get campusToolsEnabledLabel => '啟用';
+
+  @override
+  String get campusToolsSaveAction => '儲存';
+
+  @override
+  String get campusToolsSaveFailed => '設定沒有儲存成功，請重試';
+
+  @override
+  String get campusToolsErrorNameRequired => '先為這個入口改個名字';
+
+  @override
+  String get campusToolsErrorNoTarget => '至少填一條直達連結、一個應用程式套件名或一個網頁後備';
+
+  @override
+  String campusToolsErrorInvalidLink(int line) {
+    return '第 $line 行連結不合法，要寫成 scheme:// 開頭';
+  }
+
+  @override
+  String campusToolsErrorInvalidPackage(int line) {
+    return '第 $line 行套件名不合法';
+  }
+
+  @override
+  String get campusToolsErrorInvalidWeb => '網頁後備要以 http:// 或 https:// 開頭';
+
+  @override
+  String get campusToolsUntitledEntry => '未命名入口';
+
+  @override
+  String get campusToolsReasonNoActivity => '沒有 App 回應這條連結';
+
+  @override
+  String get campusToolsReasonAppNotFound => '找不到這個 App';
+
+  @override
+  String get campusToolsReasonInvalidUri => '連結格式不正確';
+
+  @override
+  String get campusToolsReasonInvalidPackage => '套件名格式不正確';
+
+  @override
+  String get campusToolsReasonTimeout => '系統沒有回應（逾時）';
+
+  @override
+  String get campusToolsReasonUnsupported => '目前平台不支援';
+
+  @override
+  String get campusToolsReasonUnknown => '未知原因';
+
+  @override
+  String get campusToolsPresetCainiao => '菜鳥身份碼';
+
+  @override
+  String get campusToolsPresetTaobao => '淘寶身份碼';
+
+  @override
+  String get campusToolsPresetTaobaoParcels => '淘寶待取快遞';
+
+  @override
+  String get campusToolsPresetPinduoduo => '拼多多身份碼';
+
+  @override
+  String get campusToolsPresetPinduoduoParcels => '拼多多待取快遞';
+
+  @override
+  String get campusToolsPresetJdParcels => '京東待取快遞';
+
+  @override
+  String get campusToolsPresetDouyinParcels => '抖音待取快遞';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -34112,4 +34550,223 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get sharedInfoInlineHint => '簡稱、顏色、性質、簡介同步給同名排課';
+
+  @override
+  String get campusToolsTitle => '校園小工具';
+
+  @override
+  String get campusToolsEntryTitle => '校園小工具';
+
+  @override
+  String get campusToolsAddAction => '新增捷徑';
+
+  @override
+  String get campusToolsAddTile => '新增';
+
+  @override
+  String get campusToolsMoreAction => '更多操作';
+
+  @override
+  String get campusToolsMoreTitle => '校園小工具';
+
+  @override
+  String get campusToolsIntro => '把取件身分碼、待取快遞這類常用頁面收成一排，點一下就直達。';
+
+  @override
+  String get campusToolsGridHint => '點按直達，長按可以編輯、停用或刪除。';
+
+  @override
+  String get campusToolsManageTitle => '管理入口';
+
+  @override
+  String campusToolsTargetCount(int count) {
+    return '$count 個目標';
+  }
+
+  @override
+  String get campusToolsDisabledDetails => '已停用';
+
+  @override
+  String get campusToolsEmptyTitle => '還沒有捷徑';
+
+  @override
+  String get campusToolsEmptySubtitle => '先新增一個，例如取件身分碼或校園網路認證頁';
+
+  @override
+  String campusToolsLaunchFailed(String name, String reason) {
+    return '打不開「$name」：$reason';
+  }
+
+  @override
+  String campusToolsOpenedAppToast(String name) {
+    return '「$name」沒有公開的直達頁，已開啟對應 App，請在 App 內查看';
+  }
+
+  @override
+  String get campusToolsUnsupported => '目前平台不支援跳到其他應用程式';
+
+  @override
+  String get campusToolsDiagnoseAction => '入口檢查';
+
+  @override
+  String get campusToolsDiagnoseTitle => '入口檢查';
+
+  @override
+  String get campusToolsDiagnoseHint =>
+      '✓ 表示目前裝置上能開啟；✗ 表示沒有安裝對應 App 或連結已失效。失效時可長按入口修改連結。';
+
+  @override
+  String get campusToolsDiagnoseAppInstalled => '已安裝';
+
+  @override
+  String get campusToolsDiagnoseAppMissing => '未安裝';
+
+  @override
+  String get campusToolsRestoreDefaults => '補回預設入口';
+
+  @override
+  String campusToolsRestoreDefaultsToast(int count) {
+    return '已補回 $count 個預設入口';
+  }
+
+  @override
+  String get campusToolsRestoreDefaultsEmpty => '預設入口都在，沒有需要補回的';
+
+  @override
+  String get campusToolsDeleteTitle => '刪除入口';
+
+  @override
+  String campusToolsDeleteBody(String name) {
+    return '確定刪除「$name」嗎？之後可以按「補回預設入口」找回預設項目。';
+  }
+
+  @override
+  String get campusToolsDeleteAction => '刪除';
+
+  @override
+  String get campusToolsEditAction => '編輯';
+
+  @override
+  String get campusToolsEnableAction => '啟用';
+
+  @override
+  String get campusToolsDisableAction => '停用';
+
+  @override
+  String get campusToolsEditTitle => '編輯入口';
+
+  @override
+  String get campusToolsAddTitle => '新增入口';
+
+  @override
+  String get campusToolsEditHint => '名稱、圖示和連結都可以隨時修改；第三方 App 更新後連結可能失效。';
+
+  @override
+  String get campusToolsNameLabel => '名稱';
+
+  @override
+  String get campusToolsNameHint => '例如：菜鳥身分碼';
+
+  @override
+  String get campusToolsIconLabel => '圖示';
+
+  @override
+  String get campusToolsLinksLabel => '直達連結';
+
+  @override
+  String get campusToolsLinksHint => '每行一條，按順序嘗試；也可以寫成「套件名|連結」限定只給某個 App 開啟';
+
+  @override
+  String get campusToolsLinksHelp => '連結失效時，用「開發者助手」這類工具看到新連結後改這裡就行，不必等版本更新。';
+
+  @override
+  String get campusToolsAppPackagesLabel => '後備開啟的應用程式';
+
+  @override
+  String get campusToolsAppPackagesHint => '每行一個套件名，可選；直達連結全部失敗時只開啟這個 App';
+
+  @override
+  String get campusToolsWebFallbackLabel => '網頁後備';
+
+  @override
+  String get campusToolsWebFallbackHint => '可選，https:// 開頭';
+
+  @override
+  String get campusToolsClearTaskLabel => '強制新開目標頁面';
+
+  @override
+  String get campusToolsClearTaskDesc => '部分機型上目標 App 在背景時會跳不動，可開啟此項試試';
+
+  @override
+  String get campusToolsEnabledLabel => '啟用';
+
+  @override
+  String get campusToolsSaveAction => '儲存';
+
+  @override
+  String get campusToolsSaveFailed => '設定沒有儲存成功，請重試';
+
+  @override
+  String get campusToolsErrorNameRequired => '先為這個入口取個名字';
+
+  @override
+  String get campusToolsErrorNoTarget => '至少填一條直達連結、一個應用程式套件名或一個網頁後備';
+
+  @override
+  String campusToolsErrorInvalidLink(int line) {
+    return '第 $line 行連結不合法，要寫成 scheme:// 開頭';
+  }
+
+  @override
+  String campusToolsErrorInvalidPackage(int line) {
+    return '第 $line 行套件名不合法';
+  }
+
+  @override
+  String get campusToolsErrorInvalidWeb => '網頁後備要以 http:// 或 https:// 開頭';
+
+  @override
+  String get campusToolsUntitledEntry => '未命名入口';
+
+  @override
+  String get campusToolsReasonNoActivity => '沒有 App 回應這條連結';
+
+  @override
+  String get campusToolsReasonAppNotFound => '找不到這個 App';
+
+  @override
+  String get campusToolsReasonInvalidUri => '連結格式不正確';
+
+  @override
+  String get campusToolsReasonInvalidPackage => '套件名格式不正確';
+
+  @override
+  String get campusToolsReasonTimeout => '系統沒有回應（逾時）';
+
+  @override
+  String get campusToolsReasonUnsupported => '目前平台不支援';
+
+  @override
+  String get campusToolsReasonUnknown => '未知原因';
+
+  @override
+  String get campusToolsPresetCainiao => '菜鳥身分碼';
+
+  @override
+  String get campusToolsPresetTaobao => '淘寶身分碼';
+
+  @override
+  String get campusToolsPresetTaobaoParcels => '淘寶待取快遞';
+
+  @override
+  String get campusToolsPresetPinduoduo => '拼多多身分碼';
+
+  @override
+  String get campusToolsPresetPinduoduoParcels => '拼多多待取快遞';
+
+  @override
+  String get campusToolsPresetJdParcels => '京東待取快遞';
+
+  @override
+  String get campusToolsPresetDouyinParcels => '抖音待取快遞';
 }
