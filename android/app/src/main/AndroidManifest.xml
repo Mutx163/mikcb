@@ -35,6 +35,47 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="weixin" />
         </intent>
+        <!-- 校园小工具：取件身份码 / 待取快递直达（入口数据与 QuickJump 同源）。
+             Android 11+ 包可见性：
+             · <package> 让 getLaunchIntentForPackage / getPackageInfo 查得到（用于
+               「直达失败就拉起 App」与「入口体检」里的已安装判断）；
+             · <intent> + scheme 让 queryIntentActivities 能判断这条 deeplink 有没有
+               App 接。不申请 QUERY_ALL_PACKAGES：用户自建的其它 scheme 只会失去
+               「能不能点」的预判，实际 startActivity 不受影响。 -->
+        <package android:name="com.cainiao.wireless" />
+        <package android:name="com.taobao.taobao" />
+        <package android:name="com.xunmeng.pinduoduo" />
+        <package android:name="com.jingdong.app.mall" />
+        <package android:name="com.ss.android.ugc.aweme" />
+        <package android:name="com.ss.android.ugc.aweme.lite" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="cainiao" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="taobao" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="tbopen" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="pinduoduo" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="openjd" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="snssdk1128" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="snssdk2329" />
+        </intent>
         <!-- 系统闹钟（这节课闹钟）：包可见性探测 -->
         <intent>
             <action android:name="android.intent.action.SET_ALARM" />
