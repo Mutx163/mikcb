@@ -56,6 +56,13 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     open: pushHomeMenuUpdateEntry,
   ),
   HomeMenuEntry(
+    id: 'campusTools',
+    title: (l10n) => l10n.campusToolsEntryTitle,
+    icon: Icons.widgets_outlined,
+    category: HomeMenuEntryCategory.features,
+    open: (context) => pushHomeMenuPage(context, homePage('campusToolsPage')),
+  ),
+  HomeMenuEntry(
     id: 'overview',
     title: (l10n) => l10n.homeMenuOverviewTitle,
     icon: Icons.dashboard_customize_rounded,

@@ -286,6 +286,15 @@
       "manualStatus": "pass",
       "allowLegacy": true,
       "notes": "暗色二维码展示页：深色渐变底 + 白色二维码卡片为固定配色（二维码对比度要求），不跟随主题"
+    },
+    {
+      "id": "campus-tools",
+      "file": "lib/screens/campus_tools_screen.dart",
+      "label": "校园小工具",
+      "category": "feature",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": "网格快捷入口页：图标砖 + 管理列表；编辑用 HyperosSheetFrame 弹层，对话框走 showHyperosDialog；颜色/字号全部走 HyperosColors / HyperosTypography"
     }
   ]
 }
