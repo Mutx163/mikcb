@@ -356,7 +356,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       storageId: 'welcome',
       children: [
         HyperosCard(
-          padding: const EdgeInsets.all(20),
+          // 与库默认（16）同节奏：欢迎卡不再单养 20 的内边距。
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -676,8 +677,15 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return _buildGuideList(
       storageId: 'personalize',
       children: [
+        // 缩进对齐 HyperosTokens.sectionLabelInset（16）：同页分组标签文本
+        // 起点与卡片内容起点都在 32，旧值 4 让这行副标题悬在 20，和谁都不齐。
         Padding(
-          padding: const EdgeInsets.only(left: 4, top: 4, bottom: 8),
+          padding: const EdgeInsets.only(
+            left: HyperosTokens.sectionLabelInset,
+            right: HyperosTokens.sectionLabelInset,
+            top: 4,
+            bottom: 8,
+          ),
           child: Text(
             l10n.guidePersonalizeSubtitle,
             style: _guideMutedBodyStyle(),
@@ -859,8 +867,14 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       storageId: 'tips',
       children: [
         HyperosSectionLabel(text: l10n.guideTipsHeader),
+        // 与个性化页副标题同一处对齐修正：4 悬空，归到 sectionLabelInset。
         Padding(
-          padding: const EdgeInsets.only(left: 4, top: 4, bottom: 8),
+          padding: const EdgeInsets.only(
+            left: HyperosTokens.sectionLabelInset,
+            right: HyperosTokens.sectionLabelInset,
+            top: 4,
+            bottom: 8,
+          ),
           child: Text(l10n.guideTipsSubtitle, style: mutedBodyStyle),
         ),
         // 短名称建议卡片
@@ -1025,9 +1039,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                   label: l10n.guidePrevButton,
                   variant: HyperosButtonVariant.secondary,
                   onPressed: _goPrev,
-                )
-              else
-                const Spacer(),
+                ),
+              // 首页没有左侧按钮时，单个 Spacer 就把右侧按钮推到右缘；
+              // 旧代码 else 分支再放一个 Spacer，两个弹性件视觉完全等价。
               const Spacer(),
               if (!isLastPage)
                 HyperosButton(
@@ -1036,9 +1050,12 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 )
               else
                 HyperosButton(
+                  // 首启收尾是「同意并开始使用」；从设置复看时用户早就在
+                  // 用软件了，「开始使用」与场景错位，改「知道了」
+                  //（[AppLocalizations.gotItAction]，现成通用键）。
                   label: widget.requirePrivacyConsent
                       ? l10n.agreeAndStartAction
-                      : l10n.startUsingAction,
+                      : l10n.gotItAction,
                   onPressed: _finishGuide,
                 ),
             ],
@@ -1080,14 +1097,17 @@ class _GuideIconBadge extends StatelessWidget {
     // stays at the framework default (never customized in _appThemeData),
     // whose M3 seed purple rendered as near-black fills in light mode.
     return Container(
-      width: 40,
-      height: 40,
+      // 44/12 是库里「卡片 leading 徽章」的既有规格（[HyperosSummaryCard]，
+      // showcase 摘要卡同款写法）。旧值 40/圆角 12/图标 20 是第三个自定
+      // 规格——与权限页行徽章 26/7 并存时，同一条引导流程两套徽章。
+      width: HyperosSummaryCard.leadingSize,
+      height: HyperosSummaryCard.leadingSize,
       decoration: BoxDecoration(
         color: HyperosColors.primary(context),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(HyperosSummaryCard.leadingRadius),
       ),
       alignment: Alignment.center,
-      child: Icon(icon, size: 20, color: HyperosColors.onPrimary(context)),
+      child: Icon(icon, color: HyperosColors.onPrimary(context)),
     );
   }
 }
@@ -1119,8 +1139,10 @@ class _GuideActionTile extends StatelessWidget {
     final highlightColor = HyperosColors.rowHighlight(context);
 
     final row = ConstrainedBox(
+      // 行带标题 + 副标题两行文本，行高走两行标准（72）——与权限页两行
+      // 行一致；44 徽章 + 上下 13 内边距 = 70，低于 72 时由 minHeight 兜底。
       constraints: const BoxConstraints(
-        minHeight: HyperosTokens.listRowMinHeight,
+        minHeight: HyperosTokens.listRowTwoLineMinHeight,
       ),
       child: Padding(
         padding: _guideChevronRowPadding(context),
