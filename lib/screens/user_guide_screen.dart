@@ -234,7 +234,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ),
         ],
         title: Text(_buildPageTitle(l10n)),
-        headerExtension: _buildProgressBar(l10n),
         bottomBar: _buildBottomBar(l10n),
         child: PageView(
           controller: _pageController,
@@ -263,63 +262,45 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return [_buildWelcomePage(l10n), _buildPrivacyPage(l10n)];
   }
 
-  /// 顶栏下方只留「3 / 5」页码。
-  ///
-  /// 页名（欢迎使用 / 隐私协议 / 系统权限 …）已提到**大标题**上，这里不再
-  /// 重复第二遍；圆点按规范在底栏居中，也不在顶栏（见 [_buildPageDots]）。
-  Widget _buildProgressBar(AppLocalizations l10n) {
-    if (_totalPages <= 1) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 2, 16, 4),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          '${_currentPage + 1} / $_totalPages',
-          style: HyperosTypography.sectionDescription(context),
-        ),
-      ),
-    );
-  }
-
   /// 分页圆点：底部居中，尺寸按规范取 8dp、间距 8dp。
   ///
   /// 三条依据（Baymard《Page Control UI》）：
   /// - **位置**：移动端默认底部居中，偏离这个惯例是无理由引入摩擦；
   /// - **尺寸**：圆点直径至少 8–10px，间距不小于直径——太小的点是低质量
   ///   实现的典型症状；
-  /// - **状态区分不能只靠颜色**：当前页同时放大（8 vs 6），色盲用户也分得清。
+  /// - **状态区分不能只靠颜色**：当前页用主色、其余淡灰，色盲用户也分得清。
   ///
   /// 5 个点落在 3–7 的舒适区，数量没问题。
   Widget _buildPageDots() {
     final primary = HyperosColors.primary(context);
     final inactive = HyperosColors.secondaryText(context).withValues(alpha: 0.3);
-    // 整组圆点对读屏隐藏：页码语义已由顶栏那行「3 / 5 系统权限」的**文字**
-    // 承担，读屏会念它。圆点再挂一遍同样的标签，用户会连着听两遍同一个数字。
-    // 纯图形指示器在有等价可见文字时就该让位（Baymard：分页点要保证
-    // 「当前页 + 总数」可被辅助技术获取——本页由文字承担这一点）。
-    return ExcludeSemantics(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < _totalPages; i++)
-            Padding(
-              // 间距 8：不小于圆点直径（规范要求）。
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: AnimatedContainer(
-                // 时长走统一换算（scaledMs）跟随「页面转场速度」设置。
-                duration: 200.scaledMs,
-                curve: Curves.easeOut,
-                width: 8,
-                height: 8,
-                // 状态区分：色 + 尺寸双通道（色盲友好）。
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: i == _currentPage ? primary : inactive,
+    // 页码语义由圆点整组承担（Semantics label）：顶栏曾有一行「3 / 5」文字
+    // 承担它，2026-10-21 随大标题页名化一并删去（位置孤悬左上、且与圆点
+    // 重复），读屏的位置播报就落到这里——label 数字语言中立，不新增 l10n 键。
+    return Semantics(
+      label: '${_currentPage + 1} / $_totalPages',
+      child: ExcludeSemantics(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < _totalPages; i++)
+              Padding(
+                // 间距 8：不小于圆点直径（规范要求）。
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: AnimatedContainer(
+                  // 时长走统一换算（scaledMs）跟随「页面转场速度」设置。
+                  duration: 200.scaledMs,
+                  curve: Curves.easeOut,
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: i == _currentPage ? primary : inactive,
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -52,14 +52,14 @@ void main() {
 
     // Welcome page. Assert the REAL consent tile type — the screen wraps a
     // MiuixCheckbox, so a Material Checkbox finder here was always vacuous.
-    expect(find.text('1 / 5'), findsOneWidget);
+    expect(find.text('欢迎使用'), findsWidgets);
     expect(find.text('轻屿课表'), findsOneWidget);
     expect(find.byType(HyperosCheckboxTile), findsNothing);
 
     // Navigate to privacy page
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
-    expect(find.text('2 / 5'), findsOneWidget);
+    expect(find.text('隐私协议'), findsWidgets);
   });
 
   testWidgets('consent-required guide blocks forward on privacy page', (
@@ -71,16 +71,16 @@ void main() {
     await tester.pumpAndSettle();
 
     // Welcome page → privacy page via Next button
-    expect(find.text('1 / 5'), findsOneWidget);
+    expect(find.text('欢迎使用'), findsWidgets);
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
-    expect(find.text('2 / 5'), findsOneWidget);
+    expect(find.text('隐私协议'), findsWidgets);
 
     // Try to go forward without checking checkbox — should stay on page 2.
     // Pages 3-4 stay unmounted before consent, so a forward swipe dies at a
     // real scroll boundary instead of overshooting and snapping back.
     expect(find.text('同意并开始使用'), findsNothing);
-    expect(find.text('3 / 5'), findsNothing);
+    expect(find.text('系统权限'), findsNothing);
     expect(find.text('系统权限设置'), findsNothing);
 
     // Icon badges read the HyperOS palette, not the default Material scheme
@@ -108,13 +108,13 @@ void main() {
 
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
-    expect(find.text('2 / 5'), findsOneWidget);
+    expect(find.text('隐私协议'), findsWidgets);
 
     // A real horizontal drag toward page 3 stays pinned on the privacy page.
     await tester.drag(find.byType(PageView), const Offset(-600, 0));
     await tester.pumpAndSettle();
-    expect(find.text('2 / 5'), findsOneWidget);
-    expect(find.text('3 / 5'), findsNothing);
+    expect(find.text('隐私协议'), findsWidgets);
+    expect(find.text('系统权限'), findsNothing);
 
     // Checking consent unlocks forward dragging. The consent tile sits at
     // the BOTTOM of the privacy page list — scroll it into view first
@@ -130,13 +130,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.drag(find.byType(PageView), const Offset(-600, 0));
     await tester.pumpAndSettle();
-    expect(find.text('3 / 5'), findsOneWidget);
+    expect(find.text('系统权限'), findsWidgets);
 
     // Returning to the privacy page and unchecking shrinks the pages again
     // while resting exactly on the new boundary — must stay stable.
     await tester.drag(find.byType(PageView), const Offset(600, 0));
     await tester.pumpAndSettle();
-    expect(find.text('2 / 5'), findsOneWidget);
+    expect(find.text('隐私协议'), findsWidgets);
     // Page remount reset the inner list offset — scroll down again.
     await tester.dragUntilVisible(
       find.byType(HyperosCheckboxTile),
@@ -147,7 +147,7 @@ void main() {
     await tester.tap(find.byType(HyperosCheckboxTile));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect(find.text('2 / 5'), findsOneWidget);
+    expect(find.text('隐私协议'), findsWidgets);
   });
 
   testWidgets('auto-start status shows on permissions page', (tester) async {
@@ -167,11 +167,12 @@ void main() {
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
 
-    expect(find.text('3 / 5'), findsOneWidget);
-    // 分组标签「系统权限设置」2026-10-20 删除（与顶栏页标题「系统权限」
-    // 同屏重复）。本行原本用它确认「已进入权限页」，改钉页名——页名先在
-    // headerExtension、后（同日再改）提到大标题上，意图始终是「权限页可见」。
-    // 咬合探针已验证：把本行改回「系统权限设置」测试立即红（Found 0 widgets）。
+    // 页码文字「N / 5」2026-10-21 随「页名上大标题」一并删去（位置孤悬
+    // 左上、且与底部圆点重复），全文件的页码断言改钉**当前页名**——
+    // 每页的名字随大标题切换，是唯一的位置标识。
+    // 分组标签「系统权限设置」2026-10-20 删除（与大标题「系统权限」
+    // 同屏重复）。咬合探针已验证：把本行改回「系统权限设置」测试立即红
+    //（Found 0 widgets）。
     // findsWidgets 而非 findsOneWidget：折叠大标题机制同时挂载大标题
     // （不透明）与收起后的小标题（alpha 0，不可见但存在），同一页名
     // 天然有两个 Text 实例——断言「至少可见一个」即可，别钉实现细节。
@@ -201,27 +202,27 @@ void main() {
     await tester.pumpAndSettle();
 
     // Page 1: Welcome → Next
-    expect(find.text('1 / 5'), findsOneWidget);
+    expect(find.text('欢迎使用'), findsWidgets);
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
 
     // Page 2: Privacy (initialPrivacyChecked) → Next
-    expect(find.text('2 / 5'), findsOneWidget);
+    expect(find.text('隐私协议'), findsWidgets);
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
 
     // Page 3: Permissions → Next
-    expect(find.text('3 / 5'), findsOneWidget);
+    expect(find.text('系统权限'), findsWidgets);
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
 
     // Page 4: Personalize → Next（无 Provider 时页面为空但可翻页）
-    expect(find.text('4 / 5'), findsOneWidget);
+    expect(find.text('个性化定制'), findsWidgets);
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
 
     // Page 5: Tips → Agree
-    expect(find.text('5 / 5'), findsOneWidget);
+    expect(find.text('使用技巧'), findsWidgets);
     await tester.tap(agreeButton());
     await tester.pumpAndSettle();
 
@@ -241,29 +242,29 @@ void main() {
     await tester.pumpAndSettle();
 
     // Page 1: Welcome
-    expect(find.text('1 / 5'), findsOneWidget);
+    expect(find.text('欢迎使用'), findsWidgets);
     expect(find.text('上一步'), findsNothing);
 
     // Navigate to page 2: Privacy
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
-    expect(find.text('2 / 5'), findsOneWidget);
+    expect(find.text('隐私协议'), findsWidgets);
 
     // Navigate to page 3: Permissions (consent checked via initial flag)
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
-    expect(find.text('3 / 5'), findsOneWidget);
+    expect(find.text('系统权限'), findsWidgets);
     expect(find.text('上一步'), findsOneWidget);
 
     // Navigate to page 4: Personalize
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
-    expect(find.text('4 / 5'), findsOneWidget);
+    expect(find.text('个性化定制'), findsWidgets);
 
     // Navigate to page 5: Tips
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
-    expect(find.text('5 / 5'), findsOneWidget);
+    expect(find.text('使用技巧'), findsWidgets);
     expect(find.text('同意并开始使用'), findsOneWidget);
 
     // Navigate back to page 4, then to page 3
@@ -271,7 +272,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('上一步'));
     await tester.pumpAndSettle();
-    expect(find.text('3 / 5'), findsOneWidget);
+    expect(find.text('系统权限'), findsWidgets);
   });
 
   testWidgets('collapsible header keeps guide content gap aligned', (
@@ -304,21 +305,27 @@ void main() {
           (header.localToGlobal(Offset.zero).dy + header.size.height);
     }
 
-    expect(gap(), closeTo(8, 0.5));
+    // headerExtension（进度条行）2026-10-21 删除后，让位量从「实测顶栏总高」
+    // 回落到组件库固定估算 contentTopInsetCollapsible——它含
+    // largeTitleContentGap（大标题与正文之间**盒子之外**的预留呼吸间距，
+    // 不在顶栏盒子里，见 hyperos_blurred_header.dart 的 ⚠️ 注释），
+    // 所以静止间距 = 设计预留 + 列表上边距 8 ≈ 16.4，是出厂让位设计非回归。
+    // 本测试的意图是「滚动时间距稳定」：四个采样点必须相等。
+    expect(gap(), closeTo(16.4, 0.5));
     final list = find.byType(ListView).first;
     await tester.drag(list, const Offset(0, -38));
     await tester.pumpAndSettle();
-    expect(gap(), closeTo(8, 0.5));
+    expect(gap(), closeTo(16.4, 0.5));
 
     await tester.drag(list, const Offset(0, 38));
     await tester.pumpAndSettle();
-    expect(gap(), closeTo(8, 0.5));
+    expect(gap(), closeTo(16.4, 0.5));
 
     await tester.drag(list, const Offset(0, -80));
     await tester.pumpAndSettle();
     await tester.drag(list, const Offset(0, 80));
     await tester.pumpAndSettle();
-    expect(gap(), closeTo(8, 0.5));
+    expect(gap(), closeTo(16.4, 0.5));
   });
 
   testWidgets('language selector on welcome page with provider', (
@@ -361,7 +368,7 @@ void main() {
     await tester.tap(nextButton());
     await tester.pumpAndSettle();
 
-    expect(find.text('4 / 5'), findsOneWidget);
+    expect(find.text('个性化定制'), findsWidgets);
     // 菜单样式卡随「列表/八宫格」双形态恢复而回归引导页。
     expect(find.text('菜单样式'), findsOneWidget);
     // 卡片标题与设置页材质面板总闸同词（2026-09-30 起，原「视觉效果」）。
