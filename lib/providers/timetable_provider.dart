@@ -47,6 +47,7 @@ import '../services/storage_service.dart';
 import '../services/sync_operation_gate.dart';
 import '../services/user_data_sync_hooks.dart';
 import '../services/ics_import_service.dart';
+import '../services/timetable_course_service.dart';
 import '../services/timetable_exam_service.dart';
 import '../services/timetable_holiday_service.dart';
 import '../services/timetable_location_rule_service.dart';
@@ -89,7 +90,6 @@ export '../domain/import_export_logic.dart'
 part 'timetable/time_scheme_repository.dart';
 part 'timetable/schedule_date_rule_repository.dart';
 part 'timetable/course_group_repository.dart';
-part 'timetable/course_repository.dart';
 part 'timetable/import_export_service.dart';
 part 'timetable/live_activity_controller.dart';
 
@@ -195,8 +195,12 @@ class ScheduleDateRuleSaveResult {
 ///   完成一个从表中划掉一个；本类最终降级为纯 Facade。
 class TimetableProvider
     with ChangeNotifier
-    implements TimetablePersistPort, TimetableSettingsWritePort,
-        TimetableScheduleItemPort, TimetableLocationRulePort {
+    implements
+        TimetablePersistPort,
+        TimetableSettingsWritePort,
+        TimetableScheduleItemPort,
+        TimetableLocationRulePort,
+        TimetableCoursePort {
   static const Duration _liveEndReminderWindow = Duration(minutes: 10);
 
   final StorageService _storageService;
@@ -289,9 +293,11 @@ class TimetableProvider
 
   @override
   List<Course> get courses => List.unmodifiable(_courses);
+  @override
   List<CourseTask> get tasks => List.unmodifiable(_tasks);
   @override
   List<ScheduleItem> get scheduleItems => List.unmodifiable(_scheduleItems);
+  @override
   List<Exam> get exams => List.unmodifiable(_exams);
   @override
   TimetableSettings get settings => _settings;
@@ -424,6 +430,19 @@ class TimetableProvider
   TimetableSettings settingsFromProfile(TimetableProfile profile) =>
       _settingsFromProfile(profile);
 
+  // ── TimetableCoursePort：课程/作业族（含归一与作业重算）的接线 ──
+  @override
+  set tasks(List<CourseTask> value) => _tasks = value;
+
+  @override
+  set exams(List<Exam> value) => _exams = value;
+
+  @override
+  int get semesterWeekCount => _settings.semesterWeekCount;
+
+  @override
+  bool isLiveTestingFixture(Course course) => _isLiveTestingFixture(course);
+
   /// Courses grouped by name – each group represents one subject with
   /// one or more schedule entries.
   List<CourseGroup> get courseGroups {
@@ -462,6 +481,7 @@ class TimetableProvider
   }
 
   /// Record a teacher name persistently (if not already recorded).
+  @override
   Future<void> recordTeacher(String teacher) {
     return _runMutation(() => _recordTeacherImpl(teacher));
   }
@@ -476,6 +496,7 @@ class TimetableProvider
   }
 
   /// Record a location name persistently (if not already recorded).
+  @override
   Future<void> recordLocation(String location) {
     return _runMutation(() => _recordLocationImpl(location));
   }
@@ -1366,6 +1387,7 @@ class TimetableProvider
     locationTimeGroups: _locationTimeGroups,
   );
 
+  @override
   String? validateCourseTimeSchemeOverride({
     String? timeSchemeId,
     required int startSection,
@@ -1384,22 +1406,15 @@ class TimetableProvider
     // location / active), not today's date-rule scheme.
   );
 
-  /// 未绑定时间模板时的最小健全性：只拦「写不进 / 算不动」的脏数据，
-  /// 不拦「超出当前作息」（未绑定时课程自带钟点为真源，溢出由界面计数报告）。
-  static const int _maxUnboundEndSection = 30;
-
+  /// 未绑定时间模板时的最小健全性校验（规则本体与硬上限在
+  /// `lib/services/timetable_course_service.dart`，与课程写入口同一份定义）。
   static String? _validateUnboundCourseSections({
     required int startSection,
     required int endSection,
-  }) {
-    if (startSection < 1 || endSection < startSection) {
-      return 'course_sections_invalid';
-    }
-    if (endSection > _maxUnboundEndSection) {
-      return 'course_sections_invalid';
-    }
-    return null;
-  }
+  }) => TimetableCourseService.validateUnboundSections(
+    startSection: startSection,
+    endSection: endSection,
+  );
 
   Future<void> _persistActiveProfileState({
     bool touchLastUsedAt = false,
@@ -2095,77 +2110,16 @@ class TimetableProvider
     });
   }
 
+  /// 加一门课。实现、节次校验与归一规则见
+  /// `lib/services/timetable_course_service.dart`（本族只有那一份定义）。
   Future<void> addCourse(Course course) {
-    return _runMutation(() async {
-      // 只有课程**显式绑定**时间方案时才做节次校验：绑定方案缺节次是
-      // 「写不进」的硬错误（课卡无处取钟点）。未绑定时课程自带钟点是唯一
-      // 真源，地点分组/日期规则/激活方案都只是 apply 时的**建议**——溢出
-      // 由 applyLocationTimeRulesToActiveProfile 计数报告，不在写入时拒绝
-      // （否反正课时钟点齐全、只是不匹配当前方案的课会被莫名拒掉）。
-      // 未绑定只跳过「模板容量」检查，仍保留最小健全性（开始>=1、结束>=开始、
-      // 结束<=硬上限），免得脏数据入库后在别处越界。
-      if (course.timeSchemeIdOverride != null) {
-        final validationMessage = validateCourseTimeSchemeOverride(
-          timeSchemeId: course.timeSchemeIdOverride,
-          startSection: course.startSection,
-          endSection: course.endSection,
-        );
-        if (validationMessage != null) {
-          throw ArgumentError(validationMessage);
-        }
-      } else {
-        final minimalMessage = _validateUnboundCourseSections(
-          startSection: course.startSection,
-          endSection: course.endSection,
-        );
-        if (minimalMessage != null) {
-          throw ArgumentError(minimalMessage);
-        }
-      }
-      final normalized = _normalizeCourse(course);
-      final normalizedCourse = _isLiveTestingFixture(normalized)
-          ? normalized
-          : _syncCourseWithEffectiveTimeScheme(normalized);
-      final existingSharedCourse = _courses.cast<Course?>().firstWhere(
-        (item) =>
-            item != null &&
-            CourseDomain.sharedKey(item) ==
-                CourseDomain.sharedKey(normalizedCourse),
-        orElse: () => null,
-      );
-      final preparedCourse = existingSharedCourse == null
-          ? normalizedCourse
-          : CourseDomain.applySharedFields(
-              normalizedCourse,
-              existingSharedCourse,
-            );
-
-      _courses.add(preparedCourse);
-      await _syncHomeworkTasksWithCourses();
-      await _persistActiveProfileState();
-      await _recordTeacherImpl(preparedCourse.teacher);
-      await _recordLocationImpl(preparedCourse.location);
-      _currentLiveCourseId = null;
-      notifyListeners();
-      _analytics.logEventLater(
-        name: 'course_created',
-        parameters: {
-          'day_of_week': preparedCourse.dayOfWeek,
-          'section_count': preparedCourse.sectionCount,
-          'has_short_name': preparedCourse.shortName?.isNotEmpty == true
-              ? 1
-              : 0,
-        },
-      );
-      _updateLiveActivity();
-    });
+    return _runMutation(() => TimetableCourseService.add(this, course));
   }
 
   Future<void> updateCourse(Course course, {String? previousSharedName}) {
-    // 实现与落盘失败回滚见 `timetable/course_repository.dart`：改一条会把共享字段
-    // 广播给同组其它课次，失败时那些都要退回。
+    // 改一条会把共享字段广播给同组其它课次，落盘失败时那些都要退回。
     return _runMutation(
-      () => _timetableUpdateCourse(
+      () => TimetableCourseService.update(
         this,
         course,
         previousSharedName: previousSharedName,
@@ -2174,9 +2128,8 @@ class TimetableProvider
   }
 
   Future<void> deleteCourse(String courseId) {
-    // 实现与落盘失败回滚见 `timetable/course_repository.dart`：删课程会连带摘掉它
-    // 名下的考试与作业，落盘失败时那些必须一起退回。
-    return _runMutation(() => _timetableDeleteCourse(this, courseId));
+    // 删课程会连带摘掉它名下的考试与作业，落盘失败时那些必须一起退回。
+    return _runMutation(() => TimetableCourseService.delete(this, courseId));
   }
 
   /// Delete all schedule entries (courses) for a given course name.
@@ -2212,6 +2165,7 @@ class TimetableProvider
       ..sort(CourseTask.compareByDueDate);
   }
 
+  @override
   DateTime? dateForCourseOccurrence(Course course, int week) {
     final semesterStart = _settings.semesterStartDate;
     if (semesterStart == null || week < 1) {
@@ -2225,86 +2179,22 @@ class TimetableProvider
   }
 
   Future<void> addTask(CourseTask task) {
-    return _runMutation(() async {
-      final normalized = _normalizeTask(task);
-      _validateTask(normalized);
-      _tasks = _sortTasks([..._tasks, normalized]);
-      await _persistActiveProfileState();
-      notifyListeners();
-      _analytics.logEventLater(
-        name: 'task_created',
-        parameters: {
-          'has_course': normalized.courseId == null ? 0 : 1,
-          'has_due_date': normalized.dueDate == null ? 0 : 1,
-        },
-      );
-    });
+    return _runMutation(() => TimetableCourseService.addTask(this, task));
   }
 
   Future<void> updateTask(CourseTask task) {
-    return _runMutation(() async {
-      final index = _tasks.indexWhere((item) => item.id == task.id);
-      if (index == -1) {
-        return;
-      }
-      final normalized = _normalizeTask(
-        task,
-      ).copyWith(createdAt: _tasks[index].createdAt, updatedAt: DateTime.now());
-      _validateTask(normalized);
-      _tasks[index] = normalized;
-      _tasks = _sortTasks(_tasks);
-      await _persistActiveProfileState();
-      notifyListeners();
-    });
+    return _runMutation(() => TimetableCourseService.updateTask(this, task));
   }
 
   Future<void> toggleTaskCompleted(String taskId) {
-    return _runMutation(() async {
-      final index = _tasks.indexWhere((task) => task.id == taskId);
-      if (index == -1) {
-        return;
-      }
-      final current = _tasks[index];
-      _tasks[index] = current.copyWith(
-        isCompleted: !current.isCompleted,
-        updatedAt: DateTime.now(),
-      );
-      _tasks = _sortTasks(_tasks);
-      await _persistActiveProfileState();
-      notifyListeners();
-    });
-  }
-
-  Future<void> deleteTask(String taskId) {
-    // 实现与落盘失败回滚见 `timetable/course_repository.dart`：删一条作业会顺手
-    // 改掉那门课的周作业标记，落盘失败时它必须一起退回。
-    return _runMutation(() => _timetableDeleteTask(this, taskId));
-  }
-
-  CourseTask _normalizeTask(CourseTask task) {
-    final title = task.title.trim();
-    final note = task.note?.trim();
-    final courseId = task.courseId?.trim();
-    final sourceWeek = task.sourceWeek != null && task.sourceWeek! > 0
-        ? task.sourceWeek
-        : null;
-    return task.copyWith(
-      title: title,
-      courseId: courseId == null || courseId.isEmpty ? null : courseId,
-      sourceWeek: sourceWeek,
-      dueDate: task.dueDate == null ? null : CourseTask.dateOnly(task.dueDate!),
-      note: note == null || note.isEmpty ? null : note,
-      updatedAt: DateTime.now(),
+    return _runMutation(
+      () => TimetableCourseService.toggleTaskCompleted(this, taskId),
     );
   }
 
-  void _validateTask(CourseTask task) {
-    if (task.title.isEmpty) {
-      throw ArgumentError('task_title_required');
-    }
-    if (task.courseId != null && getCourseById(task.courseId!) == null) {
-      throw ArgumentError('task_course_not_found');
-    }
+  Future<void> deleteTask(String taskId) {
+    // 删一条作业会顺手改掉那门课的周作业标记，落盘失败时它必须一起退回。
+    return _runMutation(() => TimetableCourseService.deleteTask(this, taskId));
   }
 
   List<CourseTask> _sortTasks(List<CourseTask> source) {
@@ -2312,70 +2202,13 @@ class TimetableProvider
     return source;
   }
 
-  Future<bool> _syncHomeworkTasksWithCourses({bool persist = false}) async {
-    final before = jsonEncode(_tasks.map((task) => task.toJson()).toList());
-    final existingHomework = _tasks
-        .where((task) => task.source == CourseTaskSource.homeworkMark)
-        .toList();
-    final next = _tasks
-        .where((task) => task.source != CourseTaskSource.homeworkMark)
-        .toList();
-    final now = DateTime.now();
-
-    for (final course in _courses) {
-      final notes = course.normalizedSessionNotesMap;
-      if (notes == null) {
-        continue;
-      }
-      for (final entry in notes.entries) {
-        final note = entry.value;
-        if (!note.hasHomework) {
-          continue;
-        }
-        CourseTask? existing;
-        for (final candidate in existingHomework) {
-          if (candidate.courseId == course.id &&
-              candidate.sourceWeek == entry.key) {
-            existing = candidate;
-            break;
-          }
-        }
-        final noteTitle = note.trimmedText;
-        if (noteTitle.isEmpty && existing == null) {
-          continue;
-        }
-        final title = noteTitle.isEmpty ? existing!.title : noteTitle;
-        next.add(
-          (existing ??
-                  CourseTask(
-                    id: const Uuid().v4(),
-                    title: title,
-                    courseId: course.id,
-                    sourceWeek: entry.key,
-                    source: CourseTaskSource.homeworkMark,
-                    createdAt: now,
-                    updatedAt: now,
-                  ))
-              .copyWith(
-                title: title,
-                courseId: course.id,
-                sourceWeek: entry.key,
-                dueDate: dateForCourseOccurrence(course, entry.key),
-                source: CourseTaskSource.homeworkMark,
-                updatedAt: now,
-              ),
-        );
-      }
-    }
-
-    _tasks = _sortTasks(next);
-    final after = jsonEncode(_tasks.map((task) => task.toJson()).toList());
-    final changed = before != after;
-    if (changed && persist) {
-      await _persistActiveProfileState();
-    }
-    return changed;
-  }
+  /// 按课程备注里的作业标记重算作业列表（实现与"为什么不在这里"见
+  /// `lib/services/timetable_course_service.dart`，课程与作业是同一族）。
+  Future<bool> _syncHomeworkTasksWithCourses({bool persist = false}) =>
+      TimetableCourseService.syncHomeworkTasksWithCourses(
+        this,
+        persist: persist,
+      );
 
   /// Replace all schedule entries for a course group.  [updatedCourses] is
   /// the full list of schedules that should exist after the update.
@@ -2704,6 +2537,7 @@ class TimetableProvider
   Course? getCourseForExam(Exam exam) => getCourseById(exam.courseId);
 
   /// 根据课程 ID 查找课程，找不到返回 null。
+  @override
   Course? getCourseById(String id) {
     for (final course in _courses) {
       if (course.id == id) return course;
@@ -3111,14 +2945,14 @@ class TimetableProvider
     return true;
   }
 
+  /// 清空当前课表（用户点「清空」时确认的那一次写）。一次清掉整份课程列表与
+  /// 所有挂在课程上的作业，落盘失败必须整体退回——实现见
+  /// `lib/services/timetable_course_service.dart`。
   Future<bool> clearActiveProfileCourses() {
-    return _runMutation(_clearActiveProfileCoursesImpl);
+    return _runMutation(
+      () => TimetableCourseService.clearActiveProfileCourses(this),
+    );
   }
-
-  Future<bool> _clearActiveProfileCoursesImpl() =>
-      // 实现与落盘失败回滚见 `timetable/course_repository.dart`：这里一次清掉整份
-      // 课程列表与所有挂在课程上的作业，落盘失败必须整体退回。
-      _timetableClearActiveProfileCourses(this);
 
   /// Persists home view mode / last viewed day without the full settings
   /// pipeline: no notifyListeners (the home State owns this UI state locally),
@@ -3413,36 +3247,12 @@ class TimetableProvider
     return CourseDomain.buildConflictMap(_courses, week: week);
   }
 
-  Course _normalizeCourse(Course course) {
-    final trimmedDescription = course.description?.trim();
-    final trimmedNote = course.note?.trim();
-    final resolvedDescription =
-        (trimmedDescription != null && trimmedDescription.isNotEmpty)
-        ? trimmedDescription
-        // Promote legacy per-entry note into the shared course description.
-        : ((trimmedNote != null && trimmedNote.isNotEmpty)
-              ? trimmedNote
-              : null);
-    final normalizedWeeks = Course.normalizeWeeks(
-      startWeek: course.startWeek,
-      endWeek: course.endWeek,
-      maxWeek: _settings.semesterWeekCount,
-    );
-    return course.copyWith(
-      name: course.name.trim(),
-      shortName: course.shortName?.trim().isEmpty == true
-          ? null
-          : course.shortName?.trim(),
-      teacher: course.teacher.trim(),
-      location: course.location.trim(),
-      description: resolvedDescription,
-      note: (trimmedNote != null && trimmedNote.isNotEmpty)
-          ? trimmedNote
-          : null,
-      startWeek: normalizedWeeks.startWeek,
-      endWeek: normalizedWeeks.endWeek,
-    );
-  }
+  /// 课程归一（trim、单条备注提升成共享描述、周次夹到学期内）——
+  /// 规则本体在 `lib/services/timetable_course_service.dart`，写入口与本处共用。
+  Course _normalizeCourse(Course course) => TimetableCourseService.normalize(
+    course,
+    semesterWeekCount: _settings.semesterWeekCount,
+  );
 
   int _calculateWeekForDate(DateTime date, {int? fallbackWeek}) {
     return WeekCalculator.weekForDate(
