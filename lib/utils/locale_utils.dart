@@ -71,10 +71,15 @@ Locale? localeFromSettingsTag(String localeTag) {
 /// 输出（2026-10-20 体检 #34）。在这里同步这一个全局值，未来新增的
 /// 无 locale DateFormat 自动跟随，不必逐处传 locale。
 ///
-/// 「跟随系统」（[locale] 为 null）时不设置：回落行为与 MaterialApp 的
-/// 「locale = null 即系统」口径一致。
+/// 「跟随系统」（[locale] 为 null）时把全局值**清空**：`DateFormat` 才会按
+/// `Intl.systemLocale` 回落，与 MaterialApp 的「locale = null 即系统」口径一致。
+///
+/// ⚠️ 只「不设置」是不够的：`Intl.defaultLocale` 是进程级全局，应用内切过固定
+/// 语言后它就一直留着；切回「跟随系统」时若不清空，UI 已回系统语言、界面上的
+/// 日期却还是上一个 App 语言——正是 #34 那个 bug 的镜像（2026-10-20 复核补）。
 void syncIntlDefaultLocale(Locale? locale) {
   if (locale == null) {
+    Intl.defaultLocale = null;
     return;
   }
   Intl.defaultLocale = locale.countryCode?.isNotEmpty == true
