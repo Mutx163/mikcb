@@ -21,6 +21,7 @@ class TimetableWeekPager extends StatelessWidget {
   final double timeColumnWidth;
   final bool Function(int week, int dayOfWeek) isSelectedDay;
   final bool Function(DateTime date) hasExamOnDate;
+  final bool Function(DateTime date) hasScheduleOnDate;
   final VoidCallback onShowWeekSelector;
   final ValueChanged<Offset> onDayTapDown;
   final void Function(int week, int dayOfWeek) onDayTap;
@@ -47,6 +48,7 @@ class TimetableWeekPager extends StatelessWidget {
     required this.timeColumnWidth,
     required this.isSelectedDay,
     required this.hasExamOnDate,
+    required this.hasScheduleOnDate,
     required this.onShowWeekSelector,
     required this.onDayTapDown,
     required this.onDayTap,
@@ -115,6 +117,7 @@ class TimetableWeekPager extends StatelessWidget {
                   shouldShowOverlay: shouldShowDayViewOverlay,
                   isSelectedDay: isSelectedDay,
                   hasExamOnDate: hasExamOnDate,
+                  hasScheduleOnDate: hasScheduleOnDate,
                   onShowWeekSelector: onShowWeekSelector,
                   onDayTapDown: onDayTapDown,
                   onDayTap: onDayTap,

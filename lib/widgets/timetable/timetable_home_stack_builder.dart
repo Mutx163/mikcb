@@ -56,6 +56,7 @@ class TimetableHomeStackHost {
   final double cardInset;
   final bool Function(int week, int dayOfWeek) isSelectedDay;
   final bool Function(DateTime date) hasExamOnDate;
+  final bool Function(DateTime date) hasScheduleOnDate;
   final VoidCallback onShowWeekSelector;
   final ValueChanged<Offset> onDayTapDown;
   final void Function(int week, int dayOfWeek) onDayTap;
@@ -151,6 +152,7 @@ class TimetableHomeStackHost {
     required this.cardInset,
     required this.isSelectedDay,
     required this.hasExamOnDate,
+    required this.hasScheduleOnDate,
     required this.onShowWeekSelector,
     required this.onDayTapDown,
     required this.onDayTap,
@@ -221,6 +223,7 @@ class TimetableHomeStackBuilder extends StatelessWidget {
         timeColumnWidth: host.timeColumnWidth,
         isSelectedDay: host.isSelectedDay,
         hasExamOnDate: host.hasExamOnDate,
+        hasScheduleOnDate: host.hasScheduleOnDate,
         onShowWeekSelector: host.onShowWeekSelector,
         onDayTapDown: host.onDayTapDown,
         onDayTap: host.onDayTap,
@@ -238,6 +241,7 @@ class TimetableHomeStackBuilder extends StatelessWidget {
           shouldShowDayViewOverlay: host.shouldShowDayViewOverlay,
           isSelectedDay: host.isSelectedDay,
           hasExamOnDate: host.hasExamOnDate,
+          hasScheduleOnDate: host.hasScheduleOnDate,
           onShowWeekSelector: host.onShowWeekSelector,
           onDayTapDown: host.onDayTapDown,
           onDayTap: host.onDayTap,

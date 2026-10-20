@@ -2527,6 +2527,13 @@ class TimetableProvider
 
   bool hasExamOnDate(DateTime date) => _examService.hasExamOnDate(date);
 
+  /// 当天是否有日程实例。与日视图议程同一条取数口径
+  /// （`getScheduleItemInstancesForDate` → `ScheduleItemExpander`，
+  /// 不按 `enabled` 过滤——日视图议程也不过滤，两处必须一致，否则
+  /// 「星期栏有点、点开却没有」）。
+  bool hasScheduleOnDate(DateTime date) =>
+      getScheduleItemInstancesForDate(date).isNotEmpty;
+
   Future<void> addExam(Exam exam) => _examService.addExam(exam);
 
   /// 考试域用例在 [TimetableExamService]。

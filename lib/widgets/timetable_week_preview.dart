@@ -904,6 +904,12 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                 final subLabelColor = isToday
                     ? accentColor.withValues(alpha: 0.78)
                     : homePageOverWallpaperMutedInk(weekdayColor);
+                // 预览必须与首页同口径：首页星期栏的考试/日程圆点
+                // （timetable_weekday_header.dart）在这里同款复刻，
+                // 两处少改一处用户就会看到「设置里有点、首页没有」。
+                final hasExamOnDay = date != null && provider.hasExamOnDate(date);
+                final hasScheduleOnDay =
+                    date != null && provider.hasScheduleOnDate(date);
 
                 return Expanded(
                   child: Column(
@@ -927,16 +933,33 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                             : '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}',
                         style: TextStyle(fontSize: 8.5, color: subLabelColor),
                       ),
-                      if (date != null && provider.hasExamOnDate(date))
+                      if (hasExamOnDay || hasScheduleOnDay)
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
-                          child: Container(
-                            width: 4,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: colorScheme.error,
-                              shape: BoxShape.circle,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (hasExamOnDay)
+                                Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.error,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              if (hasExamOnDay && hasScheduleOnDay)
+                                const SizedBox(width: 2),
+                              if (hasScheduleOnDay)
+                                Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: accentColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                     ],

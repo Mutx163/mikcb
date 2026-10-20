@@ -28,6 +28,7 @@ class TimetableWeekdayHeader extends StatelessWidget {
     required this.shouldShowOverlay,
     required this.isSelectedDay,
     required this.hasExamOnDate,
+    required this.hasScheduleOnDate,
     required this.onShowWeekSelector,
     required this.onDayTapDown,
     required this.onDayTap,
@@ -45,6 +46,7 @@ class TimetableWeekdayHeader extends StatelessWidget {
   final bool shouldShowOverlay;
   final bool Function(int week, int dayOfWeek) isSelectedDay;
   final bool Function(DateTime date) hasExamOnDate;
+  final bool Function(DateTime date) hasScheduleOnDate;
   final VoidCallback onShowWeekSelector;
   final ValueChanged<Offset> onDayTapDown;
   final void Function(int week, int dayOfWeek) onDayTap;
@@ -243,6 +245,8 @@ class TimetableWeekdayHeader extends StatelessWidget {
                         final showsTodayMarker = isToday && !isSelected;
                         final hasExamOnDay =
                             date != null && hasExamOnDate(date);
+                        final hasScheduleOnDay =
+                            date != null && hasScheduleOnDate(date);
 
                         return Expanded(
                           child: Material(
@@ -278,9 +282,10 @@ class TimetableWeekdayHeader extends StatelessWidget {
                                   fit: StackFit.expand,
                                   children: [
                                     // 固定 40dp 的星期栏扣掉 3+3 内边距和 0.5
-                                    // 分隔线后格子只剩 33.5dp，平铺考试红点会把
-                                    // 内容顶到 34dp 溢出；改悬浮层后基础内容恒
-                                    // 为 28dp，任何外观模式都有余量。
+                                    // 分隔线后格子只剩 33.5dp，平铺考试/日程
+                                    // 圆点会把内容顶到 34dp 溢出；改悬浮层后
+                                    // 基础内容恒为 28dp，任何外观模式都有余量
+                                    // （圆点并排成一行，高度不变）。
                                     Column(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
@@ -308,19 +313,49 @@ class TimetableWeekdayHeader extends StatelessWidget {
                                         ),
                                       ],
                                     ),
-                                    if (hasExamOnDay)
+                                    if (hasExamOnDay || hasScheduleOnDay)
                                       Align(
                                         alignment: Alignment.bottomCenter,
-                                        child: Container(
+                                        child: Row(
                                           key: const ValueKey(
-                                            'weekday-exam-dot',
+                                            'weekday-indicator-dots',
                                           ),
-                                          width: 4,
-                                          height: 4,
-                                          decoration: BoxDecoration(
-                                            color: colorScheme.error,
-                                            shape: BoxShape.circle,
-                                          ),
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (hasExamOnDay)
+                                              Container(
+                                                key: const ValueKey(
+                                                  'weekday-exam-dot',
+                                                ),
+                                                width: 4,
+                                                height: 4,
+                                                decoration: BoxDecoration(
+                                                  color: colorScheme.error,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                            if (hasExamOnDay &&
+                                                hasScheduleOnDay)
+                                              const SizedBox(width: 2),
+                                            if (hasScheduleOnDay)
+                                              Container(
+                                                key: const ValueKey(
+                                                  'weekday-schedule-dot',
+                                                ),
+                                                width: 4,
+                                                height: 4,
+                                                decoration: BoxDecoration(
+                                                  // 日程点用主题强调色（与
+                                                  // today/选中标签同一来源，
+                                                  // 壁纸下自动适配明暗），与
+                                                  // 考试红点区分两种事项；
+                                                  // 形状（居中圆点）与 today
+                                                  // 的全宽底边线不同。
+                                                  color: accentColor,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                       ),
                                   ],

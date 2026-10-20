@@ -166,6 +166,7 @@ Widget buildTimetableHomePage(TimetableHomePageInput input) {
       cardInset: courseCardInset(settings),
       isSelectedDay: input.isSelectedDay,
       hasExamOnDate: provider.hasExamOnDate,
+      hasScheduleOnDate: provider.hasScheduleOnDate,
       onShowWeekSelector: () => _showWeekSelector(input),
       onDayTapDown: input.onDayTapDown,
       onDayTap: (week, dayOfWeek) {
