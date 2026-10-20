@@ -307,7 +307,14 @@ void main() {
     // 助手（含必须留档的动机注释）与两处调用点，净 +30。属正当增长：留档
     // 不收敛自己就会长成新的存储问题。未拆文件的理由：清扫逻辑只有 20 行、
     // 且只被本文件的两个备份方法调用，单独成文件是过度碎片化。
-    const baselineLines = 1929;
+    // 1929→1933：设置镜像回滚基准可提前捕获（2026-10-20 数据复审第 1 条）——
+    // 原私有 _captureSettingsMirrorBefore 改公开 captureSettingsMirrorSnapshot()
+    // 并订明「导入写盘前调用」的契约（+2 行注释，body 少 1 行）；另给
+    // runSettingsMirrorTransaction 一个可选 beforeOverride（+1 参数 +2 行注释）。
+    // 净 +4。属正当增长：不提前捕获，导入失败后的回滚记录会把失败导入当恢复
+    // 结果写回，导入前课表永久丢失。未拆文件的理由：四键原始值依赖本文件私有
+    // key 与 _prefs，外移只能靠新增公开访问器，反而扩大 API 面。
+    const baselineLines = 1933;
     final storageFile = File(GuardSource.resolve('lib/services/storage_service.dart'));
     expect(storageFile.existsSync(), isTrue, reason: '文件不存在，棘已空转');
     final lines = storageFile.readAsLinesSync().length;

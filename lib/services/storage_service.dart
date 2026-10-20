@@ -147,9 +147,10 @@ class StorageService {
     return <String, dynamic>{'present': value != null, 'value': value};
   }
 
-  Map<String, dynamic> _captureSettingsMirrorBefore() {
-    final prefs = _prefs;
-    if (prefs == null) {
+  /// 抓取设置镜像事务的回滚基准（四键原始值），**必须在事务写下第一个目标 key 之前
+  /// 调用**：事务自己抓的是「此刻盘上值」，导入类路径那时盘上已是导入半成品（2026-10-20 复审）。
+  Map<String, dynamic> captureSettingsMirrorSnapshot() {
+    if (_prefs == null) {
       throw StateError('storage_not_initialized');
     }
     return <String, dynamic>{
@@ -343,9 +344,12 @@ class StorageService {
   /// 进程被杀则由下一次 [init] 恢复。这里故意只保存 before 快照：即使进程
   /// 恰好死在目标全部写完、完成标记尚未写入的窄窗口，也宁可回滚一次，也不
   /// 冒险把混合状态当成成功。
+  /// [beforeOverride] 只给导入/恢复类路径用：它们开事务之前就写过同一组 key，
+  /// 必须传 [captureSettingsMirrorSnapshot] 在第一次写盘前抓的那份当基准。
   Future<T> runSettingsMirrorTransaction<T>(
-    Future<T> Function() writeTargets,
-  ) async {
+    Future<T> Function() writeTargets, {
+    Map<String, dynamic>? beforeOverride,
+  }) async {
     final previous = _settingsMirrorTransactionChain;
     final transactionDone = Completer<void>();
     _settingsMirrorTransactionChain = transactionDone.future;
@@ -381,7 +385,7 @@ class StorageService {
           throw StateError('settings_mirror_transaction_already_pending');
         }
       }
-      final before = _captureSettingsMirrorBefore();
+      final before = beforeOverride ?? captureSettingsMirrorSnapshot();
       final transactionId =
           '${DateTime.now().microsecondsSinceEpoch}-${_settingsMirrorTransactionSequence++}';
       final journal = <String, dynamic>{

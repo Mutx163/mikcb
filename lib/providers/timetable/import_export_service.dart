@@ -16,7 +16,8 @@ const importSupplementNameSuffix = '（导入补齐）';
 /// 再尽力把旧数据写回各个 key。
 class _FullBackupRestoreSnapshot {
   _FullBackupRestoreSnapshot(TimetableProvider host)
-    : timeSchemes = host._timeSchemes
+    : mirrorBaseline = host._storageService.captureSettingsMirrorSnapshot(),
+      timeSchemes = host._timeSchemes
           .map(
             (scheme) => scheme.copyWith(
               sections: List<SectionTime>.from(scheme.sections),
@@ -73,6 +74,7 @@ class _FullBackupRestoreSnapshot {
   final String? activeProfileId;
   final PartnerTimetableBinding? partnerBinding;
   final String? scheduleDateRuleLastAppliedSignature;
+  final Map<String, dynamic> mirrorBaseline;
 
   void restoreMemory(TimetableProvider host) {
     host._timeSchemes = List<TimeScheme>.from(timeSchemes);
@@ -97,6 +99,10 @@ class _FullBackupRestoreSnapshot {
     host._lastHomeWidgetSnapshotSignature = null;
   }
 
+  /// 把 [restoreMemory] 恢复出来的那份状态写回磁盘（失败导入的补偿写）。
+  ///
+  /// 事务基准用 [mirrorBaseline]（构造时抓住的盘上值），不能用开事务时的
+  /// 盘上值 —— 那时盘上已经是失败导入的半成品。
   Future<List<_FullBackupRollbackFailure>> restorePersistence(
     TimetableProvider host,
   ) async {
@@ -119,10 +125,8 @@ class _FullBackupRestoreSnapshot {
     // 写同一组 key 时都有这份保护（见 timetable_provider.dart:1435-1444），
     // 唯独这里逐条裸写 —— 三条写之间进程被杀，冷启动就是「课表列表已是新的、
     // activeProfileId 还指旧档」的固化混合态（2026-09-29 审计指认）。
-    // 事务的 before 快照取自盘上当前值；本函数运行在 mutation gate 内、
-    // 紧跟 restoreMemory 之后，此刻盘上可能已是导入半成品，恢复记录指向它
-    // 虽然没意义，但崩溃恢复宁可整体退回一次也不会把混合态当成功提交；
-    // 且 gate 内没有第三方写者会把这份半成品重新落盘。
+    // 事务的 before 用 [mirrorBaseline]（构造时抓住的盘上值）：本函数紧跟
+    // restoreMemory 运行，盘上已是失败导入，拿它当基准会把失败导入「恢复」回来。
     // step() 的逐条收集保留：非镜像 key（作息/分组/规则/伴侣绑定/签名）没有
     // 事务覆盖，失败语义与原先一致——继续把剩余 key 写完并如实上报；
     // 事务机制自身失败（恢复记录残留、日志写不进）会从这里上抛，记一条
@@ -165,7 +169,7 @@ class _FullBackupRestoreSnapshot {
           'global_settings',
           () => AppGlobalSettingsService.syncFrom(settings),
         );
-      });
+      }, beforeOverride: mirrorBaseline);
     } catch (error, stackTrace) {
       failures.add(
         _FullBackupRollbackFailure(
@@ -649,6 +653,7 @@ Future<String?> _timetableImportFullAppDataBackup(
         return 'import_no_profiles_in_backup';
       }
       snapshot = _FullBackupRestoreSnapshot(host);
+      final repository = host._profileRepository;
 
       host._timeSchemes = List<TimeScheme>.from(backup.timeSchemes);
       host._locationTimeGroups = List<LocationTimeGroup>.from(
@@ -686,18 +691,12 @@ Future<String?> _timetableImportFullAppDataBackup(
           ? backup.activeProfileId
           : host._profiles.first.id;
 
-      await host._profileRepository.saveTimeSchemes(host._timeSchemes);
-      await host._profileRepository.saveLocationTimeGroups(
-        host._locationTimeGroups,
-      );
-      await host._profileRepository.saveScheduleDateRules(
-        host._scheduleDateRules,
-      );
-      await host._profileRepository.saveProfiles(host._profiles);
+      await repository.saveTimeSchemes(host._timeSchemes);
+      await repository.saveLocationTimeGroups(host._locationTimeGroups);
+      await repository.saveScheduleDateRules(host._scheduleDateRules);
+      await repository.saveProfiles(host._profiles);
       if (host._activeProfileId != null) {
-        await host._profileRepository.setActiveProfileId(
-          host._activeProfileId!,
-        );
+        await repository.setActiveProfileId(host._activeProfileId!);
       }
 
       host._applyProfileState(
@@ -724,7 +723,7 @@ Future<String?> _timetableImportFullAppDataBackup(
       );
       if (!hasPartnerProfile && host._partnerBinding != null) {
         host._partnerBinding = null;
-        await host._profileRepository.savePartnerTimetableBinding(null);
+        await repository.savePartnerTimetableBinding(null);
       }
 
       host._currentLiveCourseId = null;
