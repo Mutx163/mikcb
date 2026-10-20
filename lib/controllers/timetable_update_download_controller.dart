@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
@@ -9,8 +8,6 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
 import '../services/support_creator_service.dart';
-import '../ui/hyperos/hyperos.dart';
-import '../screens/about_screen.dart';
 import '../widgets/home_update_prompt.dart';
 
 /// 版本更新下载族（2026-10-20 从 `timetable_update_download_part.dart` 转成
@@ -39,18 +36,6 @@ class TimetableUpdateDownloadController {
   bool? _lastCheckIncludePrerelease;
   Future<void>? _inflightCheck;
   bool _disposed = false;
-
-  Future<void> openAboutUpdatePage(BuildContext context) async {
-    final packageInfo = await PackageInfo.fromPlatform();
-    if (!context.mounted) {
-      return;
-    }
-    await Navigator.of(context).push<void>(
-      HyperosPageRoute<void>(
-        builder: (_) => AboutUpdateScreen(packageInfo: packageInfo),
-      ),
-    );
-  }
 
   void scheduleUpdateCheckIfNeeded({
     required bool enabled,
