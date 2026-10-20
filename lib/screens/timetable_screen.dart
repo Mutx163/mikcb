@@ -48,6 +48,7 @@ import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
 import '../widgets/home_page_region_blur.dart';
 import '../controllers/home_pull_controller.dart';
+import '../controllers/update_check_controller.dart';
 import '../controllers/wallpaper_luminance_controller.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
@@ -231,11 +232,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       HyperosGlassBackdropController();
   bool _homeGlassHeld = false;
   bool _homeMenuOpen = false;
-  final AppUpdateService _updateService = AppUpdateService();
+  late final UpdateCheckController _update;
   final SupportCreatorService _supportCreatorService = SupportCreatorService();
   final HomeUpdatePromptController _updatePromptController =
       HomeUpdatePromptController();
-  bool _hasAvailableUpdate = false;
   bool _isUpdatePromptVisible = false;
   bool _hasPresentedUpdatePrompt = false;
   AppUpdateDownloadController? _homeDownloadController;
@@ -492,6 +492,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   @override
   void initState() {
     super.initState();
+    _update = UpdateCheckController()..addListener(_handleUpdateChanged);
     _homePull = HomePullController(
       vsync: this,
       onTriggerImport: _runHomePullQuickImport,
@@ -556,6 +557,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
   }
 
+  void _handleUpdateChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   void _handleHomePullChanged() {
     if (mounted) {
       setState(() {});
@@ -583,6 +590,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     _homeDownloadController?.cancel();
     _systemDownloadSubscription?.cancel();
     _updatePromptController.dispose();
+    _update.removeListener(_handleUpdateChanged);
+    _update.dispose();
     _homePull.removeListener(_handleHomePullChanged);
     _homePull.dispose();
     _weekPageController.dispose();
@@ -1054,7 +1063,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       HomeMoreActionIcon(
         ink: _chromeActionBallInk,
         dotBorderColor: dotBorderColor,
-        showUpdateDot: _hasAvailableUpdate,
+        showUpdateDot: _update.hasUpdate,
       );
 
   bool get _shouldShowDayViewOverlay =>
@@ -3648,7 +3657,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       // 早先这里只给裸图标，关闭菜单交接那一瞬圆钮会闪一下（2026-09-14 真机反馈）。
       anchorContent: _buildMoreActionIcon(dotBorderColor: chromeDotBorderColor),
       entries: resolveHomeGridMenuEntries(settings),
-      hasAvailableUpdate: _hasAvailableUpdate,
+      hasAvailableUpdate: _update.hasUpdate,
       onDismissRequest: _closeHomeMenuNow,
       onSelected: _dispatchTopMenuSelection,
       onDismissFinished: _noteHomeMenuDismissFinished,
@@ -3738,7 +3747,7 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     final selectedId = await showHomeTopGridMenuSheet(
       context,
-      hasAvailableUpdate: _hasAvailableUpdate,
+      hasAvailableUpdate: _update.hasUpdate,
       entries: resolveHomeGridMenuEntries(settings),
       themeSeedHex: settings.themeSeedColor,
     );
@@ -3872,55 +3881,14 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _runUpdateCheck({required bool includePrerelease}) async {
-    if (!kReleaseMode) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _hasAvailableUpdate = true;
-      });
+    final result = await _update.check(
+      settings: context.read<TimetableProvider>().settings,
+      includePrerelease: includePrerelease,
+    );
+    if (!mounted || result == null) {
       return;
     }
-
-    try {
-      final settings = context.read<TimetableProvider>().settings;
-      final downloadSource = AppUpdateDownloadSourceX.fromValue(
-        settings.appUpdateDownloadSource,
-      );
-      final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
-        settings.appUpdateMirrorPreset,
-      );
-      final effectiveMirrorUrlPrefix = resolveAppUpdateMirrorUrlPrefix(
-        preset: mirrorPreset,
-        customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
-      );
-      final packageInfo = await PackageInfo.fromPlatform();
-      final result = await _updateService.checkForUpdates(
-        currentVersion: packageInfo.version,
-        includePrerelease: includePrerelease,
-        preferredSource: downloadSource,
-        mirrorUrlPrefix: effectiveMirrorUrlPrefix,
-      );
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _hasAvailableUpdate = result.hasUpdate;
-      });
-      _scheduleHomeUpdatePrompt(result);
-    } catch (e, stackTrace) {
-      // Ignore update check failures on home screen; About page provides
-      // details. Log a warning so a "no update prompt" report has a trace.
-      debugPrint('checkForAppUpdate failed: $e');
-      unawaited(
-        AppLogService.instance.warn(
-          'home_update_check_failed',
-          e.toString(),
-          error: e,
-          stackTrace: stackTrace,
-        ),
-      );
-    }
+    _scheduleHomeUpdatePrompt(result);
   }
 
 }
