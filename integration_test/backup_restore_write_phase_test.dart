@@ -70,8 +70,16 @@ void main() {
     final storage = StorageService();
 
     // ---------- 0. 从干净状态起步 ----------
+    //
+    // ⚠️ 清空必须打在 App 真正读取的键上。启动路径读的是**档案化存储**
+    // （`timetable_profiles`，经 `_doEnsureProfilesInitialized` 迁移/兜底），
+    // 而 legacy `courses` 键早已无生产写方（risk-register R2）——只清 legacy
+    // 等于没清：`.itest` 包里残留的档案会让「课表为空」这个前提不成立。
+    // （2026-10-20 实测：只清 legacy 时，persist 测试留下的课直接让
+    //   前提断言红掉：「启动后课表不是空的」。）
     storage.resetForTesting();
     await storage.init();
+    await storage.saveProfiles(const []);
     await storage.saveCourses(const <Course>[]);
     await storage.setAcceptedPrivacyPolicy(true);
     await storage.setHasSeenUserGuide(true);
@@ -134,8 +142,16 @@ void main() {
     // ---------- 3. 清空（并且**确认真的清了**） ----------
     //
     // 命门所在，理由见文件头「关键纪律一」。
+    // 与第 0 步同理：档案 + legacy 两条键都要清（App 启动读档案）。
+    await storage.saveProfiles(const []);
     await storage.saveCourses(const <Course>[]);
 
+    final afterClearProfiles = await storage.getProfiles();
+    expect(
+      afterClearProfiles.expand((p) => p.courses),
+      isEmpty,
+      reason: '档案里仍有课程：中间态没造出来（App 启动读的是档案，不是 legacy 键）',
+    );
     final afterClear = await storage.getCourses();
     expect(
       afterClear,
@@ -201,9 +217,12 @@ void main() {
     // 它也不会增加假绿风险：这里过了不代表阶段二能过。
     storage.resetForTesting();
     await storage.init();
-    final onDisk = await storage.getCourses();
+    // 导入走的是档案化仓储（`repository.saveProfiles`），磁盘读回也必须读档案——
+    // legacy `courses` 键在导入路径里根本不会被写（R2）。
+    final onDiskProfiles = await storage.getProfiles();
+    final onDiskCourses = onDiskProfiles.expand((p) => p.courses);
     expect(
-      onDisk.any((c) => c.name == kBackupCourseName),
+      onDiskCourses.any((c) => c.name == kBackupCourseName),
       isTrue,
       reason:
           '内存里恢复了，但重新从磁盘读却读不到：'

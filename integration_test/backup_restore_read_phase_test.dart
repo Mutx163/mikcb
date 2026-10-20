@@ -47,7 +47,10 @@ void main() {
     // 放在启动之前：单独失败时含义很明确——恢复的数据没落到磁盘，
     // 与界面层无关。
     final storage = StorageService();
-    final coursesOnDisk = await storage.getCourses();
+    // 导入把数据写进档案化存储（`repository.saveProfiles`）；legacy `courses`
+    // 键在导入路径里不会被写（R2），从这里读永远是空的——必须读档案。
+    final profilesOnDisk = await storage.getProfiles();
+    final coursesOnDisk = profilesOnDisk.expand((p) => p.courses);
 
     final survived = coursesOnDisk.where((c) => c.name == kBackupCourseName);
     expect(
@@ -68,12 +71,23 @@ void main() {
     expect(restored.location, expected.location, reason: '恢复后地点变了');
 
     // 当前周也一起恢复过（第 5 条顺便覆盖）。
-    final weekOnDisk = await storage.getCurrentWeek();
+    //
+    // ⚠️ 读的是**激活档案的 currentWeek 字段**，不是全局 `current_week` 键：
+    // 启动口径（2026-08-31 拍板，timetable_provider.dart:1139-1146）是
+    // 「无开学时间 → 从档案的 currentWeek 读」；全局键只是迁移种子，导入路径
+    // 不写它（restorePersistence 的 7 类 key 里没有周次）——从全局键读永远
+    // 只会读到默认值 1，那是 legacy 探针假红，不是恢复失败。
+    final activeIdOnDisk = await storage.getActiveProfileId();
+    final activeOnDisk = profilesOnDisk.firstWhere(
+      (p) => p.id == activeIdOnDisk,
+      orElse: () => profilesOnDisk.first,
+    );
+    final weekOnDisk = activeOnDisk.currentWeek;
     expect(
       weekOnDisk,
       kBackupFixtureWeek,
       reason:
-          '当前周没有恢复成备份里的 $kBackupFixtureWeek（默认是 1）。'
+          '激活档案的 currentWeek 没有恢复成备份里的 $kBackupFixtureWeek（默认是 1）。'
           '写成 1 就永远测不出「周次没恢复」这个问题',
     );
 
