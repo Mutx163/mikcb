@@ -34,6 +34,12 @@ final DateTime _startOfCurrentTestWeek = () {
   return today.subtract(Duration(days: today.weekday - 1));
 }();
 
+/// 今天 0 点（考试日期用；2026-10-20 起过期考试不显示，见用例内注释）。
+final DateTime _todayInCurrentTestWeek = () {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
+}();
+
 void _seedInitializedPrefs(TimetableSettings settings) {
   final now = DateTime(2026, 4, 12);
   final profile = TimetableProfile(
@@ -116,15 +122,16 @@ void main() {
           id: 'exam-1',
           courseId: 'course-1',
           name: '高等数学期末考试',
-          dateTime: DateTime(
-            _startOfCurrentTestWeek.year,
-            _startOfCurrentTestWeek.month,
-            _startOfCurrentTestWeek.day,
-            8,
-            30,
-          ),
-          startTime: '08:30',
-          endTime: '10:30',
+          // 2026-10-20 起「考完即消失」：`hasExamOnDate` 与日视图议程、周网格
+          // 考试卡统一为过滤 `isExpired`（见 timetable_exam_service.dart 的
+          // hasExamOnDate 注释）。测试数据因此必须落在**今天**且钟点晚于运行
+          // 时刻——原先写「本周一 08:30–10:30」，下午跑这条用例时整场考试已
+          // 过期、红点按新口径不显示 → 用例假红。23:00–23:30 对任何运行时刻
+          // 都不会过期；断言意图（红点出现在考试所在那格、不撑破 33.5dp
+          // 布局预算）完全不变。
+          dateTime: _todayInCurrentTestWeek,
+          startTime: '23:00',
+          endTime: '23:30',
           location: 'A-301',
           createdAt: DateTime(2026, 4, 12),
           updatedAt: DateTime(2026, 4, 12),
@@ -147,7 +154,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(tester.takeException(), isNull);
-    expect(find.byKey(const ValueKey('weekday-header-1-1')), findsOneWidget);
+    // 红点现在跟着「今天」那格走（考试日期 = 今天）：周内第 N 天，格子 key 同。
+    expect(
+      find.byKey(ValueKey('weekday-header-1-${_todayInCurrentTestWeek.weekday}')),
+      findsOneWidget,
+    );
     expect(find.byKey(const ValueKey('weekday-exam-dot')), findsOneWidget);
   });
 }

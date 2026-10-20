@@ -2360,8 +2360,8 @@
   },
   "aboutMirrorUnknownSizeHint": "ミラーソースがファイル総サイズを返さないため、ダウンロード済みサイズを先に表示",
   "aboutCancelDownloadAction": "ダウンロードをキャンセル",
-  "aboutContinueDownloadAction": "ダウンロードを再開",
-  "aboutDismissDialogAction": "閉じる",
+"aboutContinueDownloadAction": "ダウンロードを再開",
+"aboutDismissDialogAction": "閉じる",
   "aboutContributorsScreenTitle": "コード貢献者",
   "aboutDevelopersTitle": "開発者",
   "aboutDeveloperMaintainerSubtitle": "軽屿時間割の開発とメンテナンス",
@@ -3835,33 +3835,19 @@
   "weeklyReportBody": "第{week}週 · 計{sections}コマ · {courses}科目\n先週比 {delta} コマ\n最も忙しい日: {busiestDay}",
   "@weeklyReportBody": {
     "placeholders": {
-      "week": {
-        "type": "int"
-      },
-      "sections": {
-        "type": "int"
-      },
-      "courses": {
-        "type": "int"
-      },
-      "delta": {
-        "type": "String"
-      },
-      "busiestDay": {
-        "type": "String"
-      }
+      "week": { "type": "int" },
+      "sections": { "type": "int" },
+      "courses": { "type": "int" },
+      "delta": { "type": "String" },
+      "busiestDay": { "type": "String" }
     }
   },
   "weeklyReportBodyEmpty": "今週は授業がありません。ゆっくり休んでね",
   "weeklyReportNextFire": "次回 {date} {time}",
   "@weeklyReportNextFire": {
     "placeholders": {
-      "date": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
+      "date": { "type": "String" },
+      "time": { "type": "String" }
     }
   },
   "weeklyReportEnabledHint": "週間レポートを有効にしました",
@@ -3872,9 +3858,7 @@
   "statisticsCompareDelta": "現在比 {delta} コマ",
   "@statisticsCompareDelta": {
     "placeholders": {
-      "delta": {
-        "type": "String"
-      }
+      "delta": { "type": "String" }
     }
   },
   "statisticsCompareDetailTitle": "比較詳細",
@@ -3921,34 +3905,22 @@
   "statisticsSemesterProgressRange": "学期 {start} - {end}",
   "@statisticsSemesterProgressRange": {
     "placeholders": {
-      "start": {
-        "type": "String"
-      },
-      "end": {
-        "type": "String"
-      }
+      "start": { "type": "String" },
+      "end": { "type": "String" }
     }
   },
   "statisticsSemesterProgressAsOf": "今日 {date}",
   "@statisticsSemesterProgressAsOf": {
     "placeholders": {
-      "date": {
-        "type": "String"
-      }
+      "date": { "type": "String" }
     }
   },
   "statisticsSemesterProgressDetail": "第 {week} 週時点、受講済み {done} コマ / 全 {total} コマ",
   "@statisticsSemesterProgressDetail": {
     "placeholders": {
-      "week": {
-        "type": "int"
-      },
-      "done": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
+      "week": { "type": "int" },
+      "done": { "type": "int" },
+      "total": { "type": "int" }
     }
   },
   "statisticsSemesterProgressNotStarted": "学期はまだ始まっていません",
@@ -3956,21 +3928,15 @@
   "statisticsSemesterProgressRemaining": "残り {count} コマ",
   "@statisticsSemesterProgressRemaining": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "statisticsTrendTitle": "週別授業数の推移",
   "statisticsTrendTooltip": "第 {week} 週 · {sections} コマ",
   "@statisticsTrendTooltip": {
     "placeholders": {
-      "week": {
-        "type": "int"
-      },
-      "sections": {
-        "type": "int"
-      }
+      "week": { "type": "int" },
+      "sections": { "type": "int" }
     }
   },
   "statisticsComparisonTitle": "今週のまとめ",
@@ -3979,17 +3945,13 @@
   "statisticsComparisonVsLastWeek": "先週比 {delta} コマ",
   "@statisticsComparisonVsLastWeek": {
     "placeholders": {
-      "delta": {
-        "type": "String"
-      }
+      "delta": { "type": "String" }
     }
   },
   "statisticsComparisonVsAverage": "平均比 {delta} コマ",
   "@statisticsComparisonVsAverage": {
     "placeholders": {
-      "delta": {
-        "type": "String"
-      }
+      "delta": { "type": "String" }
     }
   },
   "statisticsComparisonNew": "新学期最初の週",
@@ -4006,9 +3968,7 @@
   "statisticsTimeGapValue": "{sections} コマ",
   "@statisticsTimeGapValue": {
     "placeholders": {
-      "sections": {
-        "type": "int"
-      }
+      "sections": { "type": "int" }
     }
   },
   "statisticsVenueTitle": "教室と校舎",
@@ -4017,18 +3977,14 @@
   "statisticsVenueVisits": "{count} 回",
   "@statisticsVenueVisits": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "statisticsTeacherTitle": "教員別授業ランキング",
   "statisticsTeacherCourseCount": "{count} 科目",
   "@statisticsTeacherCourseCount": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "statisticsAchievementFullDayKingName": "満タンの日",
@@ -4038,21 +3994,15 @@
   "statisticsAchievementProgress": "{current}/{target}",
   "@statisticsAchievementProgress": {
     "placeholders": {
-      "current": {
-        "type": "int"
-      },
-      "target": {
-        "type": "int"
-      }
+      "current": { "type": "int" },
+      "target": { "type": "int" }
     }
   },
   "statisticsAchievementDone": "達成済み",
   "statisticsWeekDailyHint": "タップで第 {week} 週の詳細",
   "@statisticsWeekDailyHint": {
     "placeholders": {
-      "week": {
-        "type": "int"
-      }
+      "week": { "type": "int" }
     }
   },
   "weekListSeparator": "、",
@@ -6363,12 +6313,8 @@
   "wallpaperPositionPickerExit": "終了",
   "@bingWallpaperDateMonthDay": {
     "placeholders": {
-      "month": {
-        "type": "int"
-      },
-      "day": {
-        "type": "int"
-      }
+      "month": { "type": "int" },
+      "day": { "type": "int" }
     }
   },
   "bingWallpaperGalleryTitle": "Bing の壁紙",
@@ -6378,10 +6324,7 @@
   "@bingWallpaperDownloadStatus": {
     "description": "下载失败提示，附上 HTTP 状态码。占位符只在服务端回了响应时才有值；断网等情况用 bingWallpaperDownloadFailed 那条。",
     "placeholders": {
-      "status": {
-        "type": "int",
-        "example": "404"
-      }
+      "status": { "type": "int", "example": "404" }
     }
   },
   "bingWallpaperDownloadStatus": "この壁紙のダウンロードに失敗しました（{status}）",
@@ -6407,10 +6350,7 @@
   "@bingWallpaperAutoApplyStale": {
     "description": "Bing がまだ今日の画像を公開していないため、ある中で最も新しいものを代わりに使うときの案内。{date} はその画像自身の日付ラベル（例: 「昨日」「10 月 5 日」）。",
     "placeholders": {
-      "date": {
-        "type": "String",
-        "example": "昨日"
-      }
+      "date": { "type": "String", "example": "昨日" }
     }
   },
   "bingWallpaperAutoApplyStale": "Bing はまだ今日の画像を公開していないため、{date} の画像を使います",
@@ -6469,7 +6409,7 @@
   "glassDockButtonIconDefault": "デフォルト（＋）",
   "glassDockButtonIconSearchHint": "アイコンを検索",
   "glassDockCustomizeSectionTitle": "下部ナビゲーション",
-  "glassDockCustomizeTitle": "ドックボタンをカスタマイズ",
+    "glassDockCustomizeTitle": "ドックボタンをカスタマイズ",
   "homeDockEditorViewCategory": "ビュー切替",
   "glassDockEntriesSectionTitle": "ドックの入口",
   "glassDockShowDayTabTitle": "日課表タブを表示",
@@ -6477,7 +6417,7 @@
   "glassDockShowAddButtonTitle": "丸ボタンを表示",
   "glassDockShowAddButtonSubtitle": "ピルの右側に独立した丸ボタンを表示 — 機能とアイコンは下でカスタマイズ可",
   "glassDockButtonBackToWeekLabel": "今週へ戻る / 今日",
-  "glassDockExtraButtonSemanticLabel": "追加",
+    "glassDockExtraButtonSemanticLabel": "追加",
   "homeMenuStyleLabel": "右上メニューのスタイル",
   "homeMenuStyleList": "リストメニュー",
   "homeMenuStyleGrid": "八宮格メニュー",
@@ -6487,20 +6427,14 @@
   "homeGridCustomizeDetails": "{count}/{max} 個表示中",
   "@homeGridCustomizeDetails": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "max": {
-        "type": "int"
-      }
+      "count": { "type": "int" },
+      "max": { "type": "int" }
     }
   },
   "homeGridEditorHintBody": "最大 {max} 個のボタンを配置できます。項目を長押ししてドラッグすると並べ替えられます。",
   "@homeGridEditorHintBody": {
     "placeholders": {
-      "max": {
-        "type": "int"
-      }
+      "max": { "type": "int" }
     }
   },
   "homeGridEditorEnabledTitle": "表示中",
@@ -6508,7 +6442,7 @@
   "homeGridEditorRemoveTooltip": "削除",
   "homeGridEditorAddTooltip": "追加",
   "homeGridEditorResetAction": "デフォルトの並びに戻す",
-  "homeGridEditorAllAdded": "すべての入口が表示中です",
+    "homeGridEditorAllAdded": "すべての入口が表示中です",
   "homeGridEditorMaxReached": "上限に達しました",
   "homeGridEditorPinnedTooltip": "この入口はこのページを再度開くためのもので、削除はできません",
   "homeMenuCategoryFeatures": "機能",
@@ -6518,9 +6452,7 @@
   "classAlarmLeadMinutesLabel": "{minutes}分前",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
+      "minutes": { "type": "int" }
     }
   },
   "classAlarmInvalidTimeToast": "この授業の時限が時間テンプレートの範囲外のため、アラームを設定できません",
@@ -6534,21 +6466,9 @@
   "classAlarmNoSemesterToast": "先に学期開始日を設定してください",
   "classAlarmActionLabel": "この授業のアラームを設定",
   "classAlarmConfirmMessage": "システム時計に作成します：{detail}。システムアラームは休日や休校を判別できず、その間も鳴ります。削除はシステム時計で行ってください。",
-  "@classAlarmConfirmMessage": {
-    "placeholders": {
-      "detail": {
-        "type": "String"
-      }
-    }
-  },
+  "@classAlarmConfirmMessage": {"placeholders":{"detail":{"type":"String"}}},
   "classAlarmVariableSuffix": "なお、{days}の初回授業時刻は週により異なるため、これらの曜日にはアラームを作成していません。",
-  "@classAlarmVariableSuffix": {
-    "placeholders": {
-      "days": {
-        "type": "String"
-      }
-    }
-  },
+  "@classAlarmVariableSuffix": {"placeholders":{"days":{"type":"String"}}},
   "classAlarmEntryTitle": "授業アラーム",
   "classAlarmGroupSetup": "アラームを追加",
   "classAlarmGroupBehavior": "動作設定",
@@ -6569,22 +6489,7 @@
   "classAlarmLaunchFailedToast": "対応する時計アプリが見つかりません",
   "classAlarmCourseConfirmTitle": "この授業の繰り返しアラームを追加しますか？",
   "classAlarmCourseConfirmMessage": "システム時計に毎週{weekday} {time} の繰り返しアラームを作成します（授業開始の{lead}分前に鳴動、対象週：{weeks}）。休日や休講週でも鳴ります。削除はシステム時計で行ってください。",
-  "@classAlarmCourseConfirmMessage": {
-    "placeholders": {
-      "weekday": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      },
-      "lead": {
-        "type": "int"
-      },
-      "weeks": {
-        "type": "String"
-      }
-    }
-  },
+  "@classAlarmCourseConfirmMessage": {"placeholders":{"weekday":{"type":"String"},"time":{"type":"String"},"lead":{"type":"int"},"weeks":{"type":"String"}}},
   "classAlarmDaySeparator": "、",
   "classAlarmDetailSeparator": "；",
   "liveExpandedDetailGroupTitle": "展開詳細",
@@ -6629,83 +6534,17 @@
   "liveExpandedDetailLineTeacher": "先生: {value}",
   "liveExpandedDetailLineNext": "次の授業: {value}",
   "liveExpandedDetailLineNote": "メモ: {value}",
-  "@liveIslandPreviewTitleBeforeClass": {
-    "placeholders": {
-      "course": {
-        "type": "String"
-      }
-    }
-  },
-  "@liveIslandPreviewTitleBeforeEnd": {
-    "placeholders": {
-      "course": {
-        "type": "String"
-      }
-    }
-  },
-  "@liveExpandedDetailLineShortName": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "@liveExpandedDetailLineProgressNext": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "@liveExpandedDetailLineProgressFinal": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "@liveExpandedDetailLineStatus": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "@liveExpandedDetailLineTime": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "@liveExpandedDetailLineLocation": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "@liveExpandedDetailLineTeacher": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "@liveExpandedDetailLineNext": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "@liveExpandedDetailLineNote": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
+  "@liveIslandPreviewTitleBeforeClass": {"placeholders": {"course": {"type": "String"}}},
+  "@liveIslandPreviewTitleBeforeEnd": {"placeholders": {"course": {"type": "String"}}},
+  "@liveExpandedDetailLineShortName": {"placeholders": {"value": {"type": "String"}}},
+  "@liveExpandedDetailLineProgressNext": {"placeholders": {"value": {"type": "String"}}},
+  "@liveExpandedDetailLineProgressFinal": {"placeholders": {"value": {"type": "String"}}},
+  "@liveExpandedDetailLineStatus": {"placeholders": {"value": {"type": "String"}}},
+  "@liveExpandedDetailLineTime": {"placeholders": {"value": {"type": "String"}}},
+  "@liveExpandedDetailLineLocation": {"placeholders": {"value": {"type": "String"}}},
+  "@liveExpandedDetailLineTeacher": {"placeholders": {"value": {"type": "String"}}},
+  "@liveExpandedDetailLineNext": {"placeholders": {"value": {"type": "String"}}},
+  "@liveExpandedDetailLineNote": {"placeholders": {"value": {"type": "String"}}},
   "weatherTemperatureValue": "{temperature}°",
   "@weatherTemperatureValue": {
     "placeholders": {
@@ -6809,58 +6648,40 @@
   "monthViewHeaderTitle": "{year}年{month}月",
   "@monthViewHeaderTitle": {
     "placeholders": {
-      "year": {
-        "type": "int"
-      },
-      "month": {
-        "type": "int"
-      }
+      "year": { "type": "int" },
+      "month": { "type": "int" }
     }
   },
   "monthViewAgendaTitle": "{month}月{day}日",
   "@monthViewAgendaTitle": {
     "placeholders": {
-      "month": {
-        "type": "int"
-      },
-      "day": {
-        "type": "int"
-      }
+      "month": { "type": "int" },
+      "day": { "type": "int" }
     }
   },
   "monthViewDaySemantics": "{month}月{day}日",
   "@monthViewDaySemantics": {
     "placeholders": {
-      "month": {
-        "type": "int"
-      },
-      "day": {
-        "type": "int"
-      }
+      "month": { "type": "int" },
+      "day": { "type": "int" }
     }
   },
   "monthViewCourseCountSemantics": "{count}コマ",
   "@monthViewCourseCountSemantics": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "monthViewExamCountSemantics": "{count}件の試験",
   "@monthViewExamCountSemantics": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "monthViewScheduleCountSemantics": "{count}件の予定",
   "@monthViewScheduleCountSemantics": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   }
 }
