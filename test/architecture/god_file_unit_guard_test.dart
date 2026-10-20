@@ -188,7 +188,9 @@ void main() {
     // 13703→13713：settings_appearance.dart 转正（AppearanceSettingsScreen/
     // ThemeManageScreen 公开化，_HomeTitleStylePreview 随 home_navigation 的
     // 使用改公开 HomeTitleStylePreview），差值全为文件头/import，零行为搬迁。
-    const baselineLines = 13713;
+    // 13713→13724：settings_course_card.dart 转正（CourseCardSettingsScreen
+    // 公开化），差值全为文件头/import，零行为搬迁。
+    const baselineLines = 13724;
     final domainFiles = <String>[
       'lib/screens/timetable_settings_screen.dart',
       ...Directory('lib/screens/settings')
@@ -209,7 +211,7 @@ void main() {
           '并先做等量瘦身，不要抬基线换绿。',
     );
 
-    // part 数量：只减不增，随「转正」逐格收紧（5 = appearance 转正后余 5）。
+    // part 数量：只减不增，随「转正」逐格收紧（4 = course_card 转正后余 4）。
     final settingsMain = File('lib/screens/timetable_settings_screen.dart');
     final partCount = RegExp(
       r"^part\s+'",
@@ -217,7 +219,7 @@ void main() {
     ).allMatches(settingsMain.readAsStringSync()).length;
     expect(
       partCount,
-      lessThanOrEqualTo(5),
+      lessThanOrEqualTo(4),
       reason:
           '设置页 part 数量涨到 $partCount（基线 16）。16 个分身将逐个转正为'
           '独立库文件；part 只作零行为搬迁的过渡，不要新增。',

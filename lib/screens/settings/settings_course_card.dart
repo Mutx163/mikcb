@@ -1,4 +1,18 @@
-part of '../timetable_settings_screen.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/enum_localizations.dart';
+import 'package:provider/provider.dart';
+import '../../models/timetable_settings.dart';
+import '../../providers/timetable_provider.dart';
+import '../../providers/weather_provider.dart';
+import '../../ui/hyperos/hyperos.dart';
+import '../../widgets/timetable_text_color_settings.dart';
+import '../../widgets/timetable_week_preview.dart';
+import '../../widgets/course_recolor_sheet.dart';
+import 'settings_shared.dart';
+import 'settings_reset.dart';
+import 'settings_appearance_editor.dart';
 
 /// 课程卡片设置。
 ///
@@ -11,15 +25,15 @@ part of '../timetable_settings_screen.dart';
 /// （现象/温度/降水概率）都在「天气」页——天气有独立的数据开关、城市与数据来源
 /// 署名，它的显示项跟那三件事是一套的；三个位置开关（日视图/周视图/详情弹窗）
 /// 拆到两页反而更难找。本页顶部的实时预览仍会画出天气行（跟首页一致）。
-class _CourseCardSettingsScreen extends StatefulWidget {
-  const _CourseCardSettingsScreen();
+class CourseCardSettingsScreen extends StatefulWidget {
+  const CourseCardSettingsScreen({super.key});
 
   @override
-  State<_CourseCardSettingsScreen> createState() =>
-      _CourseCardSettingsScreenState();
+  State<CourseCardSettingsScreen> createState() =>
+      CourseCardSettingsScreenState();
 }
 
-class _CourseCardSettingsScreenState extends State<_CourseCardSettingsScreen> {
+class CourseCardSettingsScreenState extends State<CourseCardSettingsScreen> {
   late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;

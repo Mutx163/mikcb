@@ -20,9 +20,6 @@ import '../ui/debug/debug.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../widgets/semester_week_count_picker_sheet.dart';
 import '../widgets/miuix_date_picker_sheet.dart';
-import '../widgets/timetable_text_color_settings.dart';
-import '../widgets/timetable_week_preview.dart';
-import '../widgets/course_recolor_sheet.dart';
 import '../services/bundled_assets.dart';
 import '../widgets/bundled_asset_image.dart';
 import '../services/memory_stats_service.dart';
@@ -49,11 +46,11 @@ import 'settings/settings_live.dart';
 import 'settings/settings_home_widget.dart';
 import 'settings/settings_timetable_page.dart';
 import 'settings/settings_appearance.dart';
+import 'settings/settings_course_card.dart';
 part 'settings/settings_home_navigation.dart';
 part 'settings/settings_home_menu_editor.dart';
 part 'settings/settings_glass_dock_editor.dart';
 part 'settings/settings_glass_dock_icon_editor.dart';
-part 'settings/settings_course_card.dart';
 /// 鍏鏍肩瓑澶栭儴鍏ュ彛鐩磋揪璁剧疆瀛愰〉鐨勫伐鍘傘€?
 ///
 /// 鍚勫瓙椤电被淇濇寔搴撳唴绉佹湁锛岃繖閲屾寜绋冲畾 id 鏆撮湶锛涙湭鐭?id 杩斿洖 null锛?
@@ -65,7 +62,7 @@ Widget? settingsSubpageById(String id) {
     // 銆屽瑙傜紪杈戙€嶏細鏁撮〉涓€寮犻椤靛井缂╁浘 + 搴曢儴銆岃皟鏁村绾?/ 鏉愯川銆嶄袱棰楁寜閽€?
     'appearanceEditor' => const AppearanceEditorScreen(),
     'timetablePageSettings' => const TimetablePageSettingsScreen(),
-    'courseCardSettings' => const _CourseCardSettingsScreen(),
+    'courseCardSettings' => const CourseCardSettingsScreen(),
     'liveSettings' => const LiveSettingsScreen(),
     'holidaySettings' => const HolidaySettingsScreen(),
     'weatherSettings' => const WeatherSettingsScreen(),
@@ -132,7 +129,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosNavigation.push(
             context,
             settings: const RouteSettings(name: '/settings/course-card'),
-            builder: (_) => const _CourseCardSettingsScreen(),
+            builder: (_) => const CourseCardSettingsScreen(),
           );
         }
 
