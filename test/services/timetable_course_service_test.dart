@@ -786,4 +786,66 @@ void main() {
       expect(port.persistCalls, 0);
     });
   });
+
+  group('课程族查询与日历规则', () {
+    test('按 id 取作业、按课取作业（含周次过滤与到期日排序）', () async {
+      final port = _FakePort(
+        courses: <Course>[_course('c1')],
+        tasks: <CourseTask>[
+          _task('t1', courseId: 'c1', sourceWeek: 2, dueDate: DateTime(2026, 4)),
+          _task('t2', courseId: 'c1', sourceWeek: 3, dueDate: DateTime(2026, 3)),
+          _task('t3', courseId: 'c2'),
+        ],
+      );
+
+      expect(TimetableCourseService.taskById(port, 't2')!.id, 't2');
+      expect(TimetableCourseService.taskById(port, 'missing'), isNull);
+      expect(
+        TimetableCourseService.tasksForCourse(port, 'c1').map((t) => t.id),
+        <String>['t2', 't1'],
+        reason: '同一门课的作业按到期日升序',
+      );
+      expect(
+        TimetableCourseService.tasksForCourse(
+          port,
+          'c1',
+          sourceWeek: 2,
+        ).single.id,
+        't1',
+      );
+      expect(
+        TimetableCourseService.courseForTask(port, port.tasks.last),
+        isNull,
+        reason: '手写作业不挂课',
+      );
+      expect(
+        TimetableCourseService.courseForTask(port, port.tasks.first)!.id,
+        'c1',
+      );
+    });
+
+    test('课次日历：学期首周周一为基准，按周次与星期顺推', () {
+      expect(
+        TimetableCourseService.courseOccurrenceDate(
+          DateTime(2026, 3, 2),
+          _course('c1', dayOfWeek: 2),
+          1,
+        ),
+        DateTime(2026, 3, 3),
+      );
+      expect(
+        TimetableCourseService.courseOccurrenceDate(
+          DateTime(2026, 3, 2),
+          _course('c1', dayOfWeek: 2),
+          3,
+        ),
+        DateTime(2026, 3, 17),
+      );
+      expect(
+        TimetableCourseService.courseOccurrenceDate(null, _course('c1'), 1),
+        isNull,
+        reason: '没有开学时间就没有日历口径',
+      );
+    });
+  });
 }

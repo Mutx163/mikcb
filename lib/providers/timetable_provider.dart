@@ -1075,7 +1075,9 @@ class TimetableProvider
     _scheduleItems = TimetableScheduleItemService.sort(
       List<ScheduleItem>.from(profile.scheduleItems),
     );
-    _tasks = _sortTasks(List<CourseTask>.from(profile.tasks));
+    _tasks = TimetableCourseService.sortTasks(
+      List<CourseTask>.from(profile.tasks),
+    );
     _exams = List<Exam>.from(profile.exams);
     // 「当前周」口径（2026-08-31 用户拍板）：有开学时间的课表，激活/切换时
     // 一律按它自己的开学时间对齐到日历周，而不是恢复上次浏览停留的周次——
@@ -2138,44 +2140,29 @@ class TimetableProvider
   }
 
   // ---- 课程任务 CRUD ----
+  // 查询口径与作业写入口同源：都在 `TimetableCourseService`（课程与本族只有一个
+  // 事实源，排序规则也只有那一份）。
 
-  CourseTask? getTaskById(String id) {
-    for (final task in _tasks) {
-      if (task.id == id) {
-        return task;
-      }
-    }
-    return null;
-  }
+  CourseTask? getTaskById(String id) =>
+      TimetableCourseService.taskById(this, id);
 
-  Course? getCourseForTask(CourseTask task) {
-    final courseId = task.courseId;
-    return courseId == null ? null : getCourseById(courseId);
-  }
+  Course? getCourseForTask(CourseTask task) =>
+      TimetableCourseService.courseForTask(this, task);
 
-  List<CourseTask> getTasksForCourse(String courseId, {int? sourceWeek}) {
-    return _tasks
-        .where(
-          (task) =>
-              task.courseId == courseId &&
-              (sourceWeek == null || task.sourceWeek == sourceWeek),
-        )
-        .toList()
-      ..sort(CourseTask.compareByDueDate);
-  }
+  List<CourseTask> getTasksForCourse(String courseId, {int? sourceWeek}) =>
+      TimetableCourseService.tasksForCourse(
+        this,
+        courseId,
+        sourceWeek: sourceWeek,
+      );
 
   @override
-  DateTime? dateForCourseOccurrence(Course course, int week) {
-    final semesterStart = _settings.semesterStartDate;
-    if (semesterStart == null || week < 1) {
-      return null;
-    }
-    final startOfSemesterWeek = WeekCalculator.startOfWeek(semesterStart);
-    return WeekCalculator.addDays(
-      startOfSemesterWeek,
-      (week - 1) * 7 + course.dayOfWeek - 1,
-    );
-  }
+  DateTime? dateForCourseOccurrence(Course course, int week) =>
+      TimetableCourseService.courseOccurrenceDate(
+        _settings.semesterStartDate,
+        course,
+        week,
+      );
 
   Future<void> addTask(CourseTask task) {
     return _runMutation(() => TimetableCourseService.addTask(this, task));
@@ -2194,11 +2181,6 @@ class TimetableProvider
   Future<void> deleteTask(String taskId) {
     // 删一条作业会顺手改掉那门课的周作业标记，落盘失败时它必须一起退回。
     return _runMutation(() => TimetableCourseService.deleteTask(this, taskId));
-  }
-
-  List<CourseTask> _sortTasks(List<CourseTask> source) {
-    source.sort(CourseTask.compareByDueDate);
-    return source;
   }
 
   /// 按课程备注里的作业标记重算作业列表（实现与"为什么不在这里"见

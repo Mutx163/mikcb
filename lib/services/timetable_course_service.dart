@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:uuid/uuid.dart';
 
 import '../domain/course_domain.dart';
+import '../domain/week_calculator.dart';
 import '../models/course.dart';
 import '../models/course_task.dart';
 import '../models/exam.dart';
@@ -502,11 +503,43 @@ class TimetableCourseService {
     return true;
   }
 
+  /// 按 id 取一条作业（查询口径与写入口同源，宿主只留一行委托）。
+  static CourseTask? taskById(TimetableCoursePort port, String id) {
+    for (final task in port.tasks) {
+      if (task.id == id) {
+        return task;
+      }
+    }
+    return null;
+  }
+
+  /// 作业挂在哪门课上；没挂课（手写作业）返回 null。
+  static Course? courseForTask(TimetableCoursePort port, CourseTask task) {
+    final courseId = task.courseId;
+    return courseId == null ? null : port.getCourseById(courseId);
+  }
+
+  /// 某门课名下的作业，按到期日排序（[sourceWeek] 非空时只取那一周的）。
+  static List<CourseTask> tasksForCourse(
+    TimetableCoursePort port,
+    String courseId, {
+    int? sourceWeek,
+  }) {
+    return port.tasks
+        .where(
+          (task) =>
+              task.courseId == courseId &&
+              (sourceWeek == null || task.sourceWeek == sourceWeek),
+        )
+        .toList()
+      ..sort(CourseTask.compareByDueDate);
+  }
+
   /// 加一条作业：改的就是用户刚填的那条，**不回滚**。
   static Future<void> addTask(TimetableCoursePort port, CourseTask task) async {
     final normalized = _normalizeTask(task);
     _validateTask(port, normalized);
-    port.tasks = _sortTasks(<CourseTask>[...port.tasks, normalized]);
+    port.tasks = sortTasks(<CourseTask>[...port.tasks, normalized]);
     await port.persistActiveProfileState();
     port.notifyStateChanged();
     port.logEvent('task_created', {
@@ -530,7 +563,7 @@ class TimetableCourseService {
     ).copyWith(createdAt: items[index].createdAt, updatedAt: DateTime.now());
     _validateTask(port, normalized);
     items[index] = normalized;
-    port.tasks = _sortTasks(items);
+    port.tasks = sortTasks(items);
     await port.persistActiveProfileState();
     port.notifyStateChanged();
   }
@@ -550,7 +583,7 @@ class TimetableCourseService {
       isCompleted: !current.isCompleted,
       updatedAt: DateTime.now(),
     );
-    port.tasks = _sortTasks(items);
+    port.tasks = sortTasks(items);
     await port.persistActiveProfileState();
     port.notifyStateChanged();
   }
@@ -670,7 +703,7 @@ class TimetableCourseService {
       }
     }
 
-    port.tasks = _sortTasks(next);
+    port.tasks = sortTasks(next);
     final after = jsonEncode(port.tasks.map((task) => task.toJson()).toList());
     final changed = before != after;
     if (changed && persist) {
@@ -726,8 +759,28 @@ class TimetableCourseService {
     }
   }
 
-  static List<CourseTask> _sortTasks(List<CourseTask> source) {
+  /// 作业排序的唯一一份规则（读盘装配与写入口共用）。
+  static List<CourseTask> sortTasks(List<CourseTask> source) {
     source.sort(CourseTask.compareByDueDate);
     return source;
+  }
+
+  /// 课程在第 [week] 周那次上课的日历日期（作业到期日就取它）。
+  ///
+  /// 放在这里是因为它是"课次 → 日历"的唯一规则；宿主只留一行委托，
+  /// 界面（`add_task_screen`）继续用同名公开方法。
+  static DateTime? courseOccurrenceDate(
+    DateTime? semesterStart,
+    Course course,
+    int week,
+  ) {
+    if (semesterStart == null || week < 1) {
+      return null;
+    }
+    final startOfSemesterWeek = WeekCalculator.startOfWeek(semesterStart);
+    return WeekCalculator.addDays(
+      startOfSemesterWeek,
+      (week - 1) * 7 + course.dayOfWeek - 1,
+    );
   }
 }
