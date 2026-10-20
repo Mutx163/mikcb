@@ -4,6 +4,7 @@ import '../../domain/week_grid_agenda_placement.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/timetable_settings.dart';
 import '../../ui/hyperos/hyperos.dart';
+import '../../ui/hyperos/hyperos_motion.dart';
 import '../../utils/hex_color.dart';
 import '../course_surface.dart';
 import '../open_container.dart';
@@ -74,7 +75,7 @@ class TimetableWeekGridAgendaCard extends StatelessWidget {
       key: ValueKey('week-grid-agenda-card-${entry.id}'),
       tappable: false,
       transitionType: ContainerTransitionType.fadeThrough,
-      transitionDuration: const Duration(milliseconds: 360),
+      transitionDuration: 360.scaledMs,
       openColor: theme.scaffoldBackgroundColor,
       closedColor: Colors.transparent,
       closedElevation: 0,

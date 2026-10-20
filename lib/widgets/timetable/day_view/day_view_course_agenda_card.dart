@@ -5,6 +5,7 @@ import '../../../domain/day_course_display_logic.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/timetable_settings.dart';
 import '../../../providers/timetable_provider.dart';
+import '../../../ui/hyperos/hyperos_motion.dart';
 import '../../../utils/hex_color.dart';
 import '../../course_note_sheet.dart';
 import '../../open_container.dart';
@@ -207,7 +208,7 @@ class TimetableDayCourseAgendaCard extends StatelessWidget {
       key: ValueKey('day-view-edit-card-${item.course.id}'),
       tappable: false,
       transitionType: ContainerTransitionType.fadeThrough,
-      transitionDuration: const Duration(milliseconds: 420),
+      transitionDuration: 420.scaledMs,
       openColor: theme.scaffoldBackgroundColor,
       closedColor: Colors.transparent,
       closedElevation: 0,

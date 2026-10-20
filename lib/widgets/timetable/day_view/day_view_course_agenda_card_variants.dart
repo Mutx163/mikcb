@@ -4,6 +4,7 @@ import '../../../domain/day_course_display_logic.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/timetable_settings.dart';
 import '../../../ui/hyperos/hyperos.dart';
+import '../../../ui/hyperos/hyperos_motion.dart';
 import '../../../utils/home_page_background.dart';
 import '../../day_agenda_info_row.dart';
 import '../../day_course_weather_row.dart';
@@ -272,7 +273,7 @@ class TimetableCourseAgendaProgressCard extends StatelessWidget {
                   // Must stay below the 1 s progress tick, or the tween is
                   // retargeted before it settles and day view animates every
                   // frame forever (see _quantizeDayAgendaProgress).
-                  duration: const Duration(milliseconds: 600),
+                  duration: 600.scaledMs,
                   builder: (context, animatedProgress, child) {
                     return FractionallySizedBox(
                       alignment: Alignment.centerLeft,

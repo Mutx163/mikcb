@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import '../../ui/hyperos/hyperos.dart';
+import '../../ui/hyperos/hyperos_motion.dart';
 import '../../utils/first_frame_probe.dart';
 import '../../utils/frame_perf_probe.dart';
 
@@ -16,7 +17,7 @@ class TimetableOpenOnlyContainerPageRoute<T> extends PageRouteBuilder<T> {
     required this.builder,
     required this.backgroundColor,
   }) : super(
-         transitionDuration: const Duration(milliseconds: 420),
+         transitionDuration: 420.scaledMs,
          reverseTransitionDuration: Duration.zero,
          opaque: false,
          pageBuilder: (context, animation, secondaryAnimation) =>

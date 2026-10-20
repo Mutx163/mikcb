@@ -4,6 +4,7 @@ import '../../domain/week_calculator.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/timetable_settings.dart';
 import '../../ui/hyperos/hyperos.dart';
+import '../../ui/hyperos/hyperos_motion.dart';
 import '../../utils/home_page_background.dart';
 import '../../widgets/home_page_region_blur.dart';
 import 'timetable_weekday_selection_indicator.dart';
@@ -260,7 +261,7 @@ class TimetableWeekdayHeader extends StatelessWidget {
                                   onDayTapDown(details.globalPosition),
                               onTap: () => onDayTap(rowWeek, dayOfWeek),
                               child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
+                                duration: 180.scaledMs,
                                 curve: Curves.easeOutCubic,
                                 margin: const EdgeInsets.symmetric(
                                   horizontal: 1,

@@ -4,6 +4,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../models/schedule_item.dart';
 import '../../../models/timetable_settings.dart';
 import '../../../ui/hyperos/hyperos.dart';
+import '../../../ui/hyperos/hyperos_motion.dart';
 import '../../../utils/home_page_background.dart';
 import '../../day_agenda_info_row.dart';
 import '../../open_container.dart';
@@ -60,7 +61,7 @@ class TimetableDayScheduleAgendaCard extends StatelessWidget {
       key: ValueKey('day-view-schedule-card-${agendaItem.id}'),
       tappable: false,
       transitionType: ContainerTransitionType.fadeThrough,
-      transitionDuration: const Duration(milliseconds: 360),
+      transitionDuration: 360.scaledMs,
       openColor: theme.scaffoldBackgroundColor,
       closedColor: Colors.transparent,
       closedElevation: 0,
@@ -259,7 +260,7 @@ class _ScheduleAgendaProgressCard extends StatelessWidget {
                   ),
                   // Below the 1 s tick so the tween settles between steps
                   // (see _quantizeDayAgendaProgress).
-                  duration: const Duration(milliseconds: 600),
+                  duration: 600.scaledMs,
                   builder: (context, animatedProgress, child) {
                     return FractionallySizedBox(
                       alignment: Alignment.centerLeft,

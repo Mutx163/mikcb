@@ -4,6 +4,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../models/course.dart';
 import '../../../models/exam.dart';
 import '../../../models/timetable_settings.dart';
+import '../../../ui/hyperos/hyperos_motion.dart';
 import '../../open_container.dart';
 import '../timetable_form_pages.dart';
 import 'day_view_agenda_surface.dart';
@@ -59,7 +60,7 @@ class TimetableDayExamAgendaCard extends StatelessWidget {
       key: ValueKey('day-view-exam-card-${exam.id}'),
       tappable: false,
       transitionType: ContainerTransitionType.fadeThrough,
-      transitionDuration: const Duration(milliseconds: 360),
+      transitionDuration: 360.scaledMs,
       openColor: theme.scaffoldBackgroundColor,
       closedColor: Colors.transparent,
       closedElevation: 0,

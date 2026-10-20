@@ -5,6 +5,7 @@ import 'package:flutter_miuix/miuix.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../ui/hyperos/hyperos.dart';
+import '../../ui/hyperos/hyperos_motion.dart';
 import 'timetable_weekday_header.dart';
 
 /// 首页下拉快捷导入的悬浮药丸（2026-10-19 从课表页 State 搬出）。
@@ -171,7 +172,7 @@ class TimetableHomePullQuickImportIndicator extends StatelessWidget {
           child: Transform.scale(
             scale: scale,
             child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 180),
+              duration: 180.scaledMs,
               curve: Curves.easeOutCubic,
               opacity: opacity,
               child: decoratedPill,
