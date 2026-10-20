@@ -43,7 +43,6 @@ import '../services/class_reminder_service.dart';
 import '../services/exam_reminder_service.dart';
 import '../services/partner_timetable_service.dart';
 import '../services/stats_widget_service.dart';
-import '../services/weekly_report_service.dart';
 import '../services/storage_service.dart';
 import '../services/sync_operation_gate.dart';
 import '../services/user_data_sync_hooks.dart';
@@ -51,6 +50,7 @@ import '../services/ics_import_service.dart';
 import '../services/timetable_exam_service.dart';
 import '../services/timetable_holiday_service.dart';
 import '../services/timetable_partner_service.dart';
+import '../services/timetable_persist_hooks.dart';
 import '../services/timetable_reminder_service.dart';
 import '../services/timetable_theme_service.dart';
 import '../services/miui_live_activities_service.dart';
@@ -220,7 +220,7 @@ class ScheduleDateRuleSaveResult {
 /// - 新增能力一律独立成文件/类，禁止继续向本类堆积；
 /// - 拆分按阶段 3 的顺序进行（Theme → Holiday → Partner → LiveSurface → …），
 ///   完成一个从表中划掉一个；本类最终降级为纯 Facade。
-class TimetableProvider with ChangeNotifier {
+class TimetableProvider with ChangeNotifier implements TimetablePersistPort {
   static const Duration _liveEndReminderWindow = Duration(minutes: 10);
 
   final StorageService _storageService;
@@ -311,10 +311,12 @@ class TimetableProvider with ChangeNotifier {
   Map<String, int> get lastImportDroppedCounts =>
       Map<String, int>.unmodifiable(_lastImportDroppedCounts);
 
+  @override
   List<Course> get courses => List.unmodifiable(_courses);
   List<CourseTask> get tasks => List.unmodifiable(_tasks);
   List<ScheduleItem> get scheduleItems => List.unmodifiable(_scheduleItems);
   List<Exam> get exams => List.unmodifiable(_exams);
+  @override
   TimetableSettings get settings => _settings;
 
   bool get hasPendingUndo => _themeService.hasPendingUndo;
@@ -340,7 +342,6 @@ class TimetableProvider with ChangeNotifier {
   Future<void> renameTheme(String themeId, String newName) =>
       _themeService.renameTheme(themeId, newName);
 
-
   /// 批量更新设置（主题导入、上课提醒开关、天气与统计设置、撤销主题变更、传输层写入）。
   ///
   /// 落盘失败按本仓写入契约退回内存并刷新界面后上抛，形状见
@@ -362,6 +363,7 @@ class TimetableProvider with ChangeNotifier {
     });
   }
 
+  @override
   int get currentWeek => _currentWeek;
   int get currentDateWeek => _currentDateWeek;
   List<TimeScheme> get timeSchemes => List.unmodifiable(_timeSchemes);
@@ -1373,7 +1375,7 @@ class TimetableProvider with ChangeNotifier {
         () => _persistActiveProfileStateToDisk(notifySync: false),
       );
       // 只有恢复记录已提交并清理后，才通知其它同步入口看到这次保存。
-      _afterProfilePersisted(this, notifySync: notifySync);
+      TimetablePersistHooks.afterProfilePersisted(this, notifySync: notifySync);
     } else {
       await _persistActiveProfileStateToDisk(notifySync: notifySync);
     }
@@ -1388,9 +1390,9 @@ class TimetableProvider with ChangeNotifier {
     if (_activeProfileId != null) {
       await _profileRepository.setActiveProfileId(_activeProfileId!);
     }
-    // 落盘成功后的副作用只有一份定义，见 timetable/live_activity_controller.dart
-    // （棘轮要求本类只减不增；镜像分支走 :1403 的同一个函数）。
-    _afterProfilePersisted(this, notifySync: notifySync);
+    // 落盘成功后的副作用只有一份定义，见 services/timetable_persist_hooks.dart
+    // （棘轮要求本类只减不增；镜像分支走 :1376 的同一个函数）。
+    TimetablePersistHooks.afterProfilePersisted(this, notifySync: notifySync);
   }
 
   Future<void> _persistTimeSchemes() async {
@@ -1748,7 +1750,6 @@ class TimetableProvider with ChangeNotifier {
   Future<LocationTimeApplyStats> applyLocationTimeRulesToActiveProfile() {
     return _runMutation(_applyLocationTimeRulesToActiveProfileImpl);
   }
-
 
   String _sectionSignature(List<SectionTime> sections) {
     return jsonEncode(sections.map((section) => section.toJson()).toList());
@@ -2917,7 +2918,6 @@ class TimetableProvider with ChangeNotifier {
   Future<void> updateExam(Exam exam) => _examService.updateExam(exam);
 
   Future<void> deleteExam(String examId) => _examService.deleteExam(examId);
-
 
   /// 每次考试/课程/单节课提醒 CRUD 后都会全量 reconcile 原生提醒
   /// （25+ 个 `unawaited(_syncExamReminders())` 点火点），批量导入时
