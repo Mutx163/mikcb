@@ -10,12 +10,72 @@
 | 1 | 冷启动 → **磁盘里那门课出现在首页网格上** | `cold_start_home_test.dart` | 已写，待跑 |
 | 2 | 加课 → 保存 → **杀进程** → 重开 → 课还在 | `persist_write_phase_test.dart` + `persist_read_phase_test.dart` | 已写，待跑 |
 | 2b | 加课 → 保存 → 首页能看到（UI 全链路） | `add_course_to_home_test.dart` | 已写，**真机通过**（旧 flavor） |
-| 3 | 导入课表 → 解析 → 首页能看到 | — | 未开始 |
-| 4 | 改设置 → 重开 → 设置还在 | — | 未开始 |
+| 3 | 导入课表 → 解析 → 落库 → 首页能看到 | `import_ics_to_home_test.dart` | 已写，待跑 |
+| 4 | 改设置 → **杀进程** → 重开 → 设置还在 | `settings_persist_write_test.dart` + `settings_persist_read_test.dart` | 已写，待跑 |
 | 5 | 备份 → 清空 → 恢复 → 数据回来 | — | 未开始 |
 
 > 「已写，待跑」= 代码与静态检查都过了，但**还没在任何设备上执行过**。
 > 别把 `dart analyze` 通过当成验过——那是两件事。
+
+---
+
+## 核心设计：为什么「持久化」要拆成两个文件、跑两次
+
+这是本目录最值得理解的一条，也是最容易被下一个人「优化掉」的一条。
+
+### 结论
+
+「杀进程重开」用**两个测试文件 + 两次 `flutter test` 调用**实现：
+
+```bash
+# 阶段一：写（跑完 App 被停掉 —— 那就是真的杀进程）
+flutter test integration_test/persist_write_phase_test.dart \
+  -d <device-id> --flavor itest --no-uninstall
+
+# 阶段二：读（全新进程）
+flutter test integration_test/persist_read_phase_test.dart \
+  -d <device-id> --flavor itest
+```
+
+### 为什么不能合成一个文件
+
+**不是因为做不到，是因为合成了就测不到真正要测的东西。**
+
+`flutter test` 每跑一个**文件**是一个独立进程；同一个文件里的多个 `testWidgets`
+共享同一个进程、同一套 Dart 静态状态——`StorageService` 单例、
+`SharedPreferences` 的静态缓存、各种 pending 的写队列，全都还在。
+
+如果在一个文件里写「存 → `resetForTesting()` → 再读」，验到的是
+**「清掉内存缓存后重新从磁盘读」**，而不是**「进程死后重开」**。差别在于：
+
+| 只有真进程死亡才抓得到的 bug | 同进程「清缓存重读」能否抓到 |
+|---|---|
+| 静态单例里缓存了旧值、没失效 | ❌ 抓不到（缓存还在） |
+| 写操作进了内存队列但**还没落盘**，进程就退出 | ❌ 抓不到（队列还在） |
+| 某个字段只存在内存、压根没序列化 | ❌ 抓不到（内存对象还在） |
+| 启动时用默认值覆盖了读到的值 | ✅ 能抓到（这个跟进程无关） |
+
+前三类正是「用户改完设置、杀掉 App、重开发现没保存」这类投诉的典型成因。
+用同进程重读去测，它们一个都露不出来——**测试会一直是绿的**。
+
+### 代价（如实记录）
+
+- 必须跑两条命令，不能一条搞定；
+- 阶段一必须带 `--no-uninstall`，否则包被卸掉、数据跟着没；
+- 阶段二单独跑必然失败（磁盘里还没有数据）——那不是 bug，是设计前提。
+
+### 「目标值必须偏离默认值」
+
+同一个道理的另一面：持久化测试里，**要写进去的值不能等于默认值**。
+
+如果默认值恰好等于测试值，那么「写根本没发生、读到的是默认值」这个 bug
+会让断言**照样通过**。所以：
+
+- 课程那条（第 2 条）写的是「第 4 天第 6 节」——默认是第 1 天第 1 节；
+- 设置那条（第 4 条）写的是 `glassDock`——默认是 `classic`
+  （timetable_settings.dart:781）。
+
+阶段一还额外断言「起始状态 ≠ 目标值」，把这条纪律钉进代码里。
 
 ---
 
@@ -103,30 +163,51 @@ if (_isIntegrationTest) {
 ```bash
 flutter test integration_test/cold_start_home_test.dart \
   -d <device-id> --flavor itest
+
+# 第 3 条（导入）
+flutter test integration_test/import_ics_to_home_test.dart \
+  -d <device-id> --flavor itest
+
+# 第 2b 条（加课 UI 全链路）
+flutter test integration_test/add_course_to_home_test.dart \
+  -d <device-id> --flavor itest
 ```
 
-### 第 2 条要跑**两条**命令（这是设计，不是麻烦）
+### 第 2 条和第 4 条要跑**两条**命令（这是设计，不是麻烦）
 
-第 2 条验的是「杀进程重开」。`flutter test` 每次跑一个文件是**一个独立进程**，
-所以「杀进程重开」用两次调用实现：
+这两条验的是「杀进程重开」，原理见上文的「核心设计」一节。
 
 ```bash
+# ===== 第 2 条：加课持久化 =====
 # 阶段一：写（跑完 App 会被停掉——那就是真的"杀进程"）
-# --no-uninstall 让包留着，数据才能活到下一次
 flutter test integration_test/persist_write_phase_test.dart \
   -d <device-id> --flavor itest --no-uninstall
 
 # 阶段二：读（全新进程，验证上一阶段写的课还在）
 flutter test integration_test/persist_read_phase_test.dart \
   -d <device-id> --flavor itest
+
+# ===== 第 4 条：设置持久化 =====
+flutter test integration_test/settings_persist_write_test.dart \
+  -d <device-id> --flavor itest --no-uninstall
+
+flutter test integration_test/settings_persist_read_test.dart \
+  -d <device-id> --flavor itest
 ```
 
-**为什么不能合成一条**：同一个文件里的多个 `testWidgets` 共享同一个进程与
-Dart 静态状态（`StorageService` 单例、prefs 缓存）。那样测只是「清缓存重读」，
-**没经过进程死亡**，「只在进程活着时成立」的 bug（静态缓存、未落盘的待写队列）
-一个都抓不到。跨进程正是这条路径唯一要证明的事。
+**单独跑阶段二必然失败**——磁盘里还没有数据。那不是 bug，是设计前提。
 
-**单独跑阶段二必然失败**——磁盘里没有那门课。那不是 bug，是设计前提。
+### `--no-uninstall` 加不加？——**按需加，不统一**
+
+| 命令 | 加 `--no-uninstall`？ | 为什么 |
+|---|---|---|
+| 任何**阶段一（写）** | ✅ **必须** | 不加的话包被卸载、数据一起没，阶段二必然读不到 |
+| 阶段二（读） | ❌ 不加 | 它跑完整个流程就结束了，卸载正好清干净 |
+| 单文件路径（1 / 2b / 3） | ❌ 不加 | 独立包名下卸载碰不到任何真实数据，而且**卸载保证下次从干净状态起步**，避免上一条的残留污染下一条 |
+
+一句话：**只有「要让数据活到下一次调用」的那条才加。**
+全加或全不加都不对——全加会让残留数据在测试之间互相污染，
+全不加会让跨进程测试必然失败。
 
 ---
 
@@ -170,9 +251,11 @@ flutter devices          # 看设备列表
 | `首页未换入` | 卡在启动画面 | logcat 搜 `[boot]`；`home_reveal_watchdog` |
 | `周课表网格…没出现` | 首页进来但骨架没搭起来 | 首页装配 |
 | `磁盘里明明写着…却找不到它的卡片` | **读存储 → 渲染 断了** | 存储读取 / 课程解析 / 网格取数 |
-| `数据没有活过进程重启` | **写没落盘**（第 2 条阶段二） | 先确认阶段一跑过、且带了 `--no-uninstall` |
+| `数据没有活过进程重启` | **写没落盘**（阶段二） | 先确认阶段一跑过、且带了 `--no-uninstall` |
 | `卡片宽度为 0` | 布局成了不可见尺寸 | 首页布局约束 |
 | `保存没有落库` | 保存没生效 | 校验没过 / 落盘失败 / 保存键没点到 |
+| `一条课都没解析出来` | ICS 格式不对（第 3 条） | DESCRIPTION 第一行是否含「第 N-M 节」 |
+| `启动过程把这个设置覆盖了` | **设置被默认值盖掉**（第 4 条） | `AppGlobalSettingsService.resolveInitial` |
 
 看设备日志（另开终端，只读）：
 
@@ -184,6 +267,36 @@ adb -s <device-id> logcat | grep -E "\[boot\]|home_reveal_watchdog|first_frame_w
 
 设备上会留一个「**轻屿课表集成测试**」的图标（包名 `.itest`）。
 它与你日常用的三个包互不影响，不想要直接卸载即可。
+
+---
+
+## 已知缺口（如实记录，别当成已覆盖）
+
+### 第 3 条：没覆盖「用户在学期面板上做选择」那一下
+
+ICS 导入的真实 UI 流程里有**两道阻塞交互**（`ics_course_import_screen.dart:203-224`）：
+
+1. `askImportReplaceExisting` —— 课表非空时问「覆盖 / 更新 / 取消」。
+   **空课表时自动跳过**（源码里 `courses.isEmpty` 直接取 `true`），
+   测试从空课表起步即可绕开。
+2. `pickImportSemesterConfig` —— 底部面板，让用户确认学期起始日与第一周。
+   **没有默认放行路径**，必须有人应答。
+
+第 2 道没有自动化，理由是它问的是**用户的领域判断**（「这份课表从第几周开始」），
+程序替不了。强行驱动它要写「点日期选择器、改周次下拉」一串操作，
+任何 UI 调整都会假红，而那些都不是本路径要验的东西。
+
+**所以第 3 条验的是**：解析正确 → 学期对齐正确 → 落库 → 冷启动后画在正确位置。
+**没验的是**：用户在那个面板上点「确认」之后的那一跳。
+那一段目前只有人肉验证。
+
+如果将来要补，方向是用 Patrol（能驱动原生/复杂交互），而不是硬塞进
+`integration_test`。
+
+### 第 5 条：还没写
+
+备份 → 清空 → 恢复 → 数据回来。设计要点已在 AGENTS.md 记过：
+**必须先制造「数据确实没了」的中间态**，否则导入失败也是绿的。
 
 ---
 
