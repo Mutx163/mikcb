@@ -384,7 +384,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             _GuideActionTile(
               icon: Icons.rocket_launch_rounded,
               title: l10n.startUsingTitle,
-              subtitle: l10n.startUsingSubtitle,
+              // 不再配副标题：原「直接进入软件，并继续完成首次使用说明」与实际
+              // 行为不符（本行只是翻到下一页隐私页），且属于说两遍的填充文字。
               onTap: _goNext,
             ),
             if (widget.onImportCourses != null)
@@ -678,20 +679,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return _buildGuideList(
       storageId: 'personalize',
       children: [
-        // 缩进对齐 HyperosTokens.sectionLabelInset（16）：同页分组标签文本
-        // 起点与卡片内容起点都在 32，旧值 4 让这行副标题悬在 20，和谁都不齐。
-        Padding(
-          padding: const EdgeInsets.only(
-            left: HyperosTokens.sectionLabelInset,
-            right: HyperosTokens.sectionLabelInset,
-            top: 4,
-            bottom: 8,
-          ),
-          child: Text(
-            l10n.guidePersonalizeSubtitle,
-            style: _guideMutedBodyStyle(),
-          ),
-        ),
         // 菜单样式卡：8833fcd 八宫格唯一化时随设置收敛移除；应用户要求
         // 与「首页与导航」的菜单形态选择器一同恢复。
         HyperosControlCard(
@@ -868,16 +855,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       storageId: 'tips',
       children: [
         HyperosSectionLabel(text: l10n.guideTipsHeader),
-        // 与个性化页副标题同一处对齐修正：4 悬空，归到 sectionLabelInset。
-        Padding(
-          padding: const EdgeInsets.only(
-            left: HyperosTokens.sectionLabelInset,
-            right: HyperosTokens.sectionLabelInset,
-            top: 4,
-            bottom: 8,
-          ),
-          child: Text(l10n.guideTipsSubtitle, style: mutedBodyStyle),
-        ),
         // 短名称建议卡片
         HyperosControlCard(
           title: l10n.guideShortNameAdviceTitle,
@@ -1125,25 +1102,32 @@ class _GuideActionTile extends StatelessWidget {
   const _GuideActionTile({
     required this.icon,
     required this.title,
-    required this.subtitle,
+    this.subtitle,
     required this.onTap,
   });
 
   final IconData icon;
   final String title;
-  final String subtitle;
+
+  /// 可选副标题：只在能补充「这一行点下去会得到什么」时给。
+  /// 纯导航说明（「可随时在设置里改」这类）一律不给——引导页越短越好。
+  /// 无副标题时行高退回单行标准（56），不空撑两行。
+  final String? subtitle;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final cardColor = HyperosColors.card(context);
     final highlightColor = HyperosColors.rowHighlight(context);
+    final subtitle = this.subtitle;
 
     final row = ConstrainedBox(
-      // 行带标题 + 副标题两行文本，行高走两行标准（72）——与权限页两行
-      // 行一致；44 徽章 + 上下 13 内边距 = 70，低于 72 时由 minHeight 兜底。
-      constraints: const BoxConstraints(
-        minHeight: HyperosTokens.listRowTwoLineMinHeight,
+      // 两行文本走两行标准（72）——与权限页两行行一致；44 徽章 + 上下 13
+      // 内边距 = 70，低于 72 时由 minHeight 兜底。无副标题时退回单行（56）。
+      constraints: BoxConstraints(
+        minHeight: subtitle == null
+            ? HyperosTokens.listRowMinHeight
+            : HyperosTokens.listRowTwoLineMinHeight,
       ),
       child: Padding(
         padding: _guideChevronRowPadding(context),
@@ -1157,8 +1141,13 @@ class _GuideActionTile extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(title, style: HyperosTypography.listTitle(context)),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: HyperosTypography.listDetail(context)),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: HyperosTypography.listDetail(context),
+                    ),
+                  ],
                 ],
               ),
             ),
