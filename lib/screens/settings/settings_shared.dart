@@ -7,6 +7,7 @@ import '../../models/settings/timetable_settings_live.dart';
 import '../../ui/hyperos/hyperos.dart';
 import '../../utils/app_toast.dart';
 import '../../utils/hex_color.dart';
+import '../../utils/locale_utils.dart';
 
 /// 设置域共享件：设置页根列表与各设置子页都要用的小组件与 helper。
 ///
@@ -101,6 +102,26 @@ String normalizeLocaleTagForDropdown(String tag) {
     return languageCode;
   }
   return '';
+}
+
+/// 语言下拉的选项表：系统默认（空 tag）+ 各支持语言（以本语言名显示）。
+///
+/// 2026-10-20 自 settings_appearance.dart（宿主分身）原样搬入：
+/// settings_general 转正为独立库后经共享件取用。
+Map<String, String> buildLocaleMenuMap(BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
+  final seen = <String>{''};
+  final map = <String, String>{l10n.languageModeSystem: ''};
+  for (final locale in AppLocalizations.supportedLocales) {
+    final tag = locale.countryCode?.isNotEmpty == true
+        ? '${locale.languageCode}_${locale.countryCode}'
+        : locale.languageCode;
+    if (!seen.add(tag)) {
+      continue;
+    }
+    map[nativeNameFor(locale)] = tag;
+  }
+  return map;
 }
 
 /// 十六进制颜色串的容错解析（坏串回退到品牌蓝）。

@@ -21,7 +21,6 @@ import '../models/holiday_entry.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
-import '../utils/locale_utils.dart';
 import '../utils/widget_course_accent.dart';
 import '../services/home_widget_service.dart';
 import '../services/home_widget_binding_service.dart';
@@ -68,6 +67,7 @@ import 'settings/settings_appearance_editor.dart';
 import 'settings/settings_home_backdrop_flow.dart';
 import 'settings/settings_reset.dart';
 import 'settings/settings_weather.dart';
+import 'settings/settings_general.dart';
 
 part 'settings/settings_appearance.dart';
 part 'settings/settings_home_navigation.dart';
@@ -76,7 +76,6 @@ part 'settings/settings_glass_dock_editor.dart';
 part 'settings/settings_glass_dock_icon_editor.dart';
 part 'settings/settings_diagnostics.dart';
 part 'settings/settings_course_card.dart';
-part 'settings/settings_general.dart';
 part 'settings/settings_live.dart';
 part 'settings/settings_timetable_page.dart';
 part 'settings/settings_home_widget.dart';
@@ -88,7 +87,7 @@ part 'settings/settings_holiday.dart';
 /// 鐢辫皟鐢ㄦ柟鍐冲畾鍥為€€琛屼负锛堜緥濡傛墦寮€璁剧疆棣栭〉锛夈€?
 Widget? settingsSubpageById(String id) {
   return switch (id) {
-    'generalSettings' => const _GeneralSettingsScreen(),
+    'generalSettings' => const GeneralSettingsScreen(),
     'appearanceSettings' => const _AppearanceSettingsScreen(),
     // 銆屽瑙傜紪杈戙€嶏細鏁撮〉涓€寮犻椤靛井缂╁浘 + 搴曢儴銆岃皟鏁村绾?/ 鏉愯川銆嶄袱棰楁寜閽€?
     'appearanceEditor' => const AppearanceEditorScreen(),
@@ -184,7 +183,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosNavigation.push(
             context,
             settings: const RouteSettings(name: '/settings/general'),
-            builder: (_) => const _GeneralSettingsScreen(),
+            builder: (_) => const GeneralSettingsScreen(),
           );
         }
 
