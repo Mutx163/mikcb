@@ -1307,6 +1307,22 @@ class TimetableLiveActivityService {
     }
     return null;
   }
+
+  /// 正在上的第一节课；没有则 null（[getCoursesInProgress] 的便利包装）。
+  static Course? getCourseInProgress(
+    TimetableLiveActivityPort host, {
+    required int dayOfWeek,
+    int? week,
+    DateTime? now,
+  }) {
+    final courses = getCoursesInProgress(
+      host,
+      dayOfWeek: dayOfWeek,
+      week: week,
+      now: now,
+    );
+    return courses.isEmpty ? null : courses.first;
+  }
   /// 正在上的课：[dayOfWeek]/[week] 那天的课里，实时时钟落在起止之间的那些。
   ///
   /// 与超级岛选课共用同一套实时时钟解析（[resolveRealTime]），所以搬来同处，

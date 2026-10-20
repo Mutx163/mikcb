@@ -8,21 +8,21 @@ import 'package:university_timetable/services/storage_service.dart';
 
 /// 回归钉（第 28 轮，导入族最后一个没带回滚快照的写入口）。
 ///
-/// `importParsedCourses`（`_timetableImportParsedCourses`，
-/// lib/providers/timetable/import_export_service.dart:245-343）是 ICS 唤醒导入、
+/// `importParsedCourses`（`TimetableImportExportService.importParsedCourses`，
+/// `lib/services/timetable_import_export_service.dart`）是 ICS 唤醒导入、
 /// 表格导入、AI 导入、教务导入共用的那一条（`course_import_screen.dart:5825`）。
 /// 它的形状是「整份换内存 → 裸 await 落盘」：
-/// - `host._scheduleItems = []`（:274，覆盖式导入把上一套课表的日程条目**整份清零**）；
-/// - `host._courses = …`（:299）、`host._settings = copyWith(semesterStartDate /
-///   semesterWeekCount)`（:313-319）、`host._currentWeek/_currentDateWeek`（:320-325）；
-/// - 然后才 `await host._persistActiveProfileState(notifySync: false)`（:326），**外面没有 try/catch**。
+/// - `host.scheduleItems = []`（覆盖式导入把上一套课表的日程条目**整份清零**）；
+/// - `host.courses = …`、`host.settings = copyWith(semesterStartDate /
+///   semesterWeekCount)`、`host.currentWeek/currentDateWeek`；
+/// - 然后才 `await host.persistActiveProfileState(notifySync: false)`，**外面没有 try/catch**。
 ///
-/// 同文件另外两条导入路径都已经收口过：`_timetableImportAppDataBackup`（:359 抓
-/// `_FullBackupRestoreSnapshot`）与 `_timetableImportFullAppDataBackup`（:519），
+/// 同文件另外两条导入路径都已经收口过：`importAppDataBackup`（抓
+/// `FullBackupRestoreSnapshot`）与 `importFullAppDataBackup`，
 /// 注释写的理由就是「先换内存、后写盘……用户退出 App 再进来，课表凭空消失」。
 /// 落盘一失败（磁盘满、`commit()` 返回 false → `StateError('storage_write_failed')`），
 /// 界面报「导入失败」，但内存里是新课表 + 日程被清空；而
-/// `_persistActiveProfileState` 第一步的 `_mergeActiveProfileIntoProfilesList`
+/// `persistActiveProfileState` 第一步的 `_mergeActiveProfileIntoProfilesList`
 /// 已经把这些并进了 `_profiles`，下一次任意成功写入（切周、加课）就把
 /// 「日程被永久删除」落盘 —— 用户重启看到的既不是旧课表也不是新课表，是半成品。
 class _FailingStorage extends StorageService {

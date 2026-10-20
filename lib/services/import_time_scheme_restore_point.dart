@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import 'timetable_import_export_service.dart';
 
 /// 教务导入的作息恢复点（2026-10-08）。
 ///

@@ -12,9 +12,6 @@ lib/models/time_scheme.dart:1
 lib/models/timetable_profile.dart:3
 lib/models/timetable_settings.dart:5
 lib/models/warehouse_macro_models.dart:3
-lib/providers/timetable/import_export_service.dart:4
-lib/providers/timetable/schedule_date_rule_repository.dart:6
-lib/providers/timetable/time_scheme_repository.dart:1
 lib/providers/timetable_provider.dart:4
 lib/screens/feedback_screen.dart:1
 lib/screens/hyperos_showcase_screen.dart:20
@@ -58,7 +55,10 @@ lib/services/spreadsheet_import_service.dart:71
 lib/services/stats_widget_service.dart:8
 lib/services/storage_service.dart:3
 lib/services/support_creator_service.dart:6
+lib/services/timetable_import_export_service.dart:4
 lib/services/timetable_location_rule_service.dart:12
+lib/services/timetable_schedule_date_rule_service.dart:6
+lib/services/timetable_time_scheme_service.dart:1
 lib/services/warehouse_repository_service.dart:4
 lib/services/webdav_sync_service.dart:1
 lib/ui/hyperos/hyperos_proxies.dart:1

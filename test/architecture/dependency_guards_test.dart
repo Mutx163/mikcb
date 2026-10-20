@@ -20,6 +20,20 @@ void main() {
         .toList();
   }
 
+  /// provider 分片文件；目录已被解耦方案 A 删掉（F8 之后分片为 0），
+  /// 目录不存在就返回空列表 —— 守卫不能因为「已经拆干净」而抛异常空转成红。
+  List<File> providerPartFiles() {
+    final dir = Directory(GuardSource.resolve('lib/providers/timetable'));
+    if (!dir.existsSync()) {
+      return const <File>[];
+    }
+    return dir
+        .listSync()
+        .whereType<File>()
+        .where((file) => file.path.endsWith('.dart'))
+        .toList();
+  }
+
   test('timetable_provider.dart 行数棘轮：只减不增', () {
     // 4400→4407: 合并 PR#20——_loadHolidayDataImpl 的 catch 原为静默吞异常，
     // 补 AppLogService.warn 留痕（+7，error/stackTrace 参数透传所需的 warn
@@ -159,7 +173,11 @@ void main() {
     // （端口适配器 + `@override`）按规矩必须自己赚回来：运行态桶
     // （`LiveActivityRuntimeState`）替掉 7 个散字段、自检覆盖层与挂起/恢复整族搬走、
     // 私有的 live-surface 门 helper 内联，才把新增接线抵成净下降。
-    const baselineLines = 3841;
+    // 3841→3837：F8 导入导出族出库（`TimetableImportExportService`），最后一个
+    // 分片删除。主库长出的端口接线（数据面 setter、快照写回、命令委托）被两项
+    // 同批瘦身抵掉：课程组/冲突模型搬到 `lib/utils/course_group.dart`、节次查询
+    // 族并进实时活动服务、导航注释重写 —— 净下降 4 行。
+    const baselineLines = 3837;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
@@ -285,14 +303,10 @@ void main() {
     // 补回滚 —— 调用点从「被计数的文件」挪进「没被计数的文件」，棘轮读数会凭空
     // 下降，等于自己把守卫废掉。改成 glob 之后父文件与 9 个分片一起数，
     // 基线按当前实测 53 收紧（原来 4 文件的读数是 40，口径不同不能直接比较）。
-    const baselineCallSites = 53;
-    final partFiles = [
-      providerFile,
-      ...Directory(GuardSource.resolve('lib/providers/timetable'))
-          .listSync()
-          .whereType<File>()
-          .where((file) => file.path.endsWith('.dart')),
-    ];
+    // 53→20：F8 之后 `lib/providers/timetable/` 已删除，分片归零，读数只剩父文件里
+    // 那 20 处；基线随之收紧到实测值，口径仍是「父文件 + 分片」。
+    const baselineCallSites = 20;
+    final partFiles = [providerFile, ...providerPartFiles()];
     const marker = '_persistActiveProfileState(';
     var callSites = 0;
     for (final file in partFiles) {

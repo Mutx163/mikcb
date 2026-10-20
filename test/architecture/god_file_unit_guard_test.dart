@@ -15,10 +15,11 @@ import 'guard_source.dart';
 ///   时间格、下拉/更新检查/空白槽控制器、日课表条目组装、分组圆角、玻璃坞
 ///   动作、标题触发器、动作页按钮、墨色守卫与新增弹层拆出，update part 转独立
 ///   库、周网格/首页栈装配拆出、日视图视图族再外移、布局纯函数下沉、日转场/周 pager/顶栏菜单控制器拆出；主文件 1,844 + day part 942 = 2,786 行；build() 114 行。
-/// - `timetable_provider`：主文件 4,362 + 10 个 part 3,479 = 7,841 行
+/// - `timetable_provider`：拆分前主文件 4,362 + 10 个 part 3,479 = 7,841 行
 ///   （主题/考试/节假日/情侣/提醒族已抽到 `services/`）；
-///   part 里仍有 573 处直接访问 `host._私有字段` —— 这是同一个类的 11 个抽屉，
-///   不是 11 个模块。
+///   part 里当时有 573 处直接访问 `host._私有字段` —— 那是同一个类的 11 个抽屉，
+///   不是 11 个模块。解耦方案 A 收尾后 part 归零、主文件 3,837 行，逻辑单元与
+///   主文件同值，`host._` 访问数归零（每个抽屉都变成了带显式端口的 service）。
 ///
 /// 本守卫按「逻辑单元」计量（主文件 + 同族 part），并给 part 数量、provider
 /// part 对宿主私有字段的访问数设上限。三者都只减不增。
@@ -76,18 +77,22 @@ void main() {
     // 5956→5771：F6 日期规则批量套用出库，分片再删一个。
     // 5771→4616：F7 实时活动族（`TimetableLiveActivityService`）出库 —— 1149 行分片
     // 清零，主库只长出端口接线（净 +17），逻辑单元整体回落 1155 行。
+    // 4616→3837：F8 导入导出族（`TimetableImportExportService`）出库 —— 最后一个
+    // 分片删除，`lib/providers/timetable/` 目录随之消失，逻辑单元 = 主文件。
     // 基线取**已提交快照**的实测值；提交当日工作区若有并行会话在途的修改，
     // 实测会略高于基线——棘轮只衡量已落库的代码。
-    const baselineLines = 4616;
+    const baselineLines = 3837;
     final parts = _providerParts();
     final lines =
         _lineCount('lib/providers/timetable_provider.dart') +
         parts.fold<int>(0, (sum, path) => sum + _lineCount(path));
+    // 分片归零是本解耦方案的完成判据：上限 0 = 不允许再建 part。
+    // 目录被重新建出来时 `_providerParts()` 会读到非空列表，这里直接红。
     expect(
-      parts.length,
-      lessThanOrEqualTo(1),
+      parts,
+      isEmpty,
       reason:
-          'provider part 数量涨到 ${parts.length}（基线 1）。'
+          'provider part 数量涨到 ${parts.length}（基线 0）。'
           '新功能请抽成独立 service，不要继续往 part 里摊。',
     );
     expect(
@@ -109,9 +114,10 @@ void main() {
     // 291→181：F7 实时活动族出库；这一族原本整片都是 `host._私有字段`（`_settings`
     // 26 处、`_holidayData` 8 处、两份信号签名与心跳各自一串），搬进服务后端口成员
     // 是显式的，分片里只剩导入导出那一个 part 的读数。
+    // 181→0：F8 导入导出族出库，最后一个分片删除 —— 分片归零，这个数随之归零。
     // 注意：`extension on TimetableProvider` 里的成员不写 `host.`，不进本棘轮数字，
     // F2 就因此少算了若干处；后续以「part 归零」为准，这个数字只作兜底。
-    const baselineHits = 181;
+    const baselineHits = 0;
     final hostPrivateAccess = RegExp(r'host\._');
     var hits = 0;
     for (final path in _providerParts()) {
@@ -262,7 +268,9 @@ void main() {
   });
 
   test('全仓 part 指令总数棘轮：只减不增', () {
-    const baselineParts = 11;
+    // 11→1：解耦方案 A 收尾，`lib/providers/timetable/` 的 10 个分片全部转成
+    // `lib/services/timetable_*_service.dart`；只剩课表页那 1 个 part。
+    const baselineParts = 1;
     final partDirective = RegExp(r"^part\s+'", multiLine: true);
     var total = 0;
     for (final file in Directory(GuardSource.resolve('lib')).listSync(
@@ -291,7 +299,11 @@ int _lineCount(String path) {
 
 List<String> _providerParts() {
   final dir = Directory(GuardSource.resolve('lib/providers/timetable'));
-  expect(dir.existsSync(), isTrue, reason: 'provider part 目录不存在，棘已空转');
+  // F8 之后该目录应不存在（分片归零是解耦方案的完成判据）。目录缺失 = 0 个分片，
+  // 这是合法终态；若目录被重新建出来并放了 part，下面的列表非空会让棘轮红。
+  if (!dir.existsSync()) {
+    return const <String>[];
+  }
   final parts =
       dir
           .listSync()
@@ -300,6 +312,5 @@ List<String> _providerParts() {
           .map((f) => f.path.replaceAll('\\', '/'))
           .toList()
         ..sort();
-  expect(parts, isNotEmpty, reason: 'provider part 列表为空，棘已空转');
   return parts;
 }

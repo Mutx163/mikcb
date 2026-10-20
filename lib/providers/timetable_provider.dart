@@ -46,6 +46,7 @@ import '../services/timetable_course_service.dart';
 import '../services/timetable_exam_service.dart';
 import '../services/timetable_holiday_service.dart';
 import '../services/timetable_location_rule_service.dart';
+import '../services/timetable_import_export_service.dart';
 import '../services/timetable_live_activity_service.dart';
 import '../services/timetable_partner_service.dart';
 import '../services/timetable_persist_hooks.dart';
@@ -87,8 +88,6 @@ export '../domain/import_export_logic.dart'
         syncImportedCourses;
 export '../utils/course_group.dart' show CourseConflict, CourseGroup;
 
-part 'timetable/import_export_service.dart';
-
 bool _isLiveTestingFixture(Course course) => course.id.startsWith('live_test_');
 
 class ScheduleDateRuleSaveResult {
@@ -104,24 +103,21 @@ class ScheduleDateRuleSaveResult {
   bool get failedWhileDue => applyResult.failedWhileDue;
 }
 
-/// ⚠️ 上帝类过渡期导航注释（解耦方案 A，笔记：
-/// `.agents/notes/proposed/architecture/2026-10-20-timetable-provider-state-domain-plan-a-review.md`）。
+/// 课表状态门面（解耦方案 A 收尾；笔记见
+/// `.agents/notes/implemented/architecture/2026-10-20-timetable-provider-state-domain-plan-a-review.md`）。
 ///
-/// 本类正在从"20 个关注点挤在一个类里"降级为 Facade。**已经整族出库**的：
+/// `lib/providers/timetable/` 下的分片已归零，本类只剩三件事：① 状态字段与
+/// mutation / live-surface 两道门；② 各服务端口的 `@override` 接线块；
+/// ③ 生命周期与写盘编排。关注点实现都在 `lib/services/timetable_*_service.dart`：
 ///
 /// - 落盘后钩子 / 设置写协议 → `timetable_persist_hooks` / `timetable_settings_writer`；
-/// - 日程项 → `timetable_schedule_item_service`（`TimetableScheduleItemPort`）；
-/// - 地点规则与分组 → `timetable_location_rule_service`（`TimetableLocationRulePort`）；
-/// - 课程 / 作业 / 课程组 → `timetable_course_service`（`TimetableCoursePort`）；
-/// - 作息模板 → `timetable_time_scheme_service`（`TimetableTimeSchemePort`）；
+/// - 日程项 / 地点规则 / 课程作业 / 作息模板 / 日期规则套用；
+/// - 实时活动与原生面（岛、今日组件、绑定卡片）→ `timetable_live_activity_service`；
+/// - 导入导出与失败回滚 → `timetable_import_export_service`；
 /// - 主题 / 考试 / 节假日 / 情侣课表 / 上课提醒 → M4 服务，适配器在本文件尾部。
 ///
-/// 还剩三个分片（`lib/providers/timetable/`）：日期规则批量套用、实时活动、导入导出。
-///
-/// 维护纪律：
-/// - 新增能力一律独立成文件/类，禁止继续向本类堆积；
-/// - 已出库的族只留一行委托与端口接线：改实现去对应服务，改接线才动本类；
-/// - 本类最终只剩 Facade 与生命周期。
+/// 维护纪律：新增能力一律独立成 service（带端口 + 假端口单测）；改实现去服务，
+/// 改接线才动本类。
 class TimetableProvider
     with ChangeNotifier
     implements
@@ -132,11 +128,11 @@ class TimetableProvider
         TimetableCoursePort,
         TimetableTimeSchemePort,
         TimetableScheduleDateRulePort,
-        TimetableLiveActivityPort {
+        TimetableLiveActivityPort,
+        TimetableImportExportPort {
   final StorageService _storageService;
 
-  /// Profile 持久化收口（阶段 2）：所有 profile 读写统一走仓储，
-  /// 后续分片存储 / 脏标记批量提交只改仓储内部。
+  /// Profile 持久化收口：profile 读写统一走仓储，分片存储/脏标记只改仓储内部。
   late final TimetableRepository _profileRepository = TimetableRepository(
     _storageService,
   );
@@ -164,8 +160,7 @@ class TimetableProvider
   int _currentWeek = 1;
   int _currentDateWeek = 1;
 
-  // Calendar week used for today's courses; unlike currentDateWeek it is not
-  // clamped to the configured semester length.
+  // 今天用的日历周：与 currentDateWeek 不同，不夹到配置的学期周数。
   int _currentCalendarWeek = 1;
   List<TimeScheme> _timeSchemes = [];
   List<LocationTimeGroup> _locationTimeGroups = [];
@@ -175,8 +170,7 @@ class TimetableProvider
   int _currentDayOfWeek = DateTime.now().weekday;
   bool _isLoading = false;
 
-  /// 超级岛 / 桌面小组件的运行态桶（心跳、去重签名、挂起窗口、自检覆盖层）。
-  /// 状态搬进服务库里的显式对象，本类只在生命周期边界清它。
+  /// 超级岛/桌面小组件的运行态桶；本类只在生命周期边界清它。
   final LiveActivityRuntimeState _liveRuntime = LiveActivityRuntimeState();
   String? _currentLiveCourseId;
 
@@ -210,6 +204,7 @@ class TimetableProvider
       _lastImportDroppedCounts.values.fold(0, (sum, c) => sum + c);
 
   /// 最近一次导入跳过条目的分组明细（course / tasks / exams / …）。
+  @override
   Map<String, int> get lastImportDroppedCounts =>
       Map<String, int>.unmodifiable(_lastImportDroppedCounts);
 
@@ -269,6 +264,10 @@ class TimetableProvider
   List<ScheduleDateRule> get scheduleDateRules =>
       List.unmodifiable(_scheduleDateRules);
 
+  @override
+  set scheduleDateRules(List<ScheduleDateRule> value) =>
+      _scheduleDateRules = value;
+
   /// Last successful bulk-apply signature for seasonal date rules.
   String? _scheduleDateRuleLastAppliedSignature;
   @override
@@ -287,7 +286,13 @@ class TimetableProvider
   set profiles(List<TimetableProfile> value) => _profiles = value;
 
   @override
-  Future<void> persistActiveProfileState() => _persistActiveProfileState();
+  Future<void> persistActiveProfileState({
+    bool touchLastUsedAt = false,
+    bool notifySync = true,
+  }) => _persistActiveProfileState(
+    touchLastUsedAt: touchLastUsedAt,
+    notifySync: notifySync,
+  );
 
   @override
   void notifyStateChanged() => _notifyStateChanged();
@@ -332,7 +337,8 @@ class TimetableProvider
   void clearCurrentLiveCourseId() => _currentLiveCourseId = null;
 
   @override
-  Future<void> updateLiveActivity() => _updateLiveActivity();
+  Future<void> updateLiveActivity({bool syncScheduleSnapshot = true}) =>
+      _updateLiveActivity(syncScheduleSnapshot: syncScheduleSnapshot);
 
   @override
   List<Course> syncCoursesWithEffectiveTimeSchemes(
@@ -383,6 +389,11 @@ class TimetableProvider
       _mergeActiveProfileIntoProfilesList();
 
   // ── TimetableScheduleDateRulePort：只比作息族多「套用标记」三个成员 ──
+  /// 最近一次日期规则批量套用的签名；用它解释保存结果，不必暴露可变内部状态。
+  @override
+  String? get scheduleDateRuleLastAppliedSignature =>
+      _scheduleDateRuleLastAppliedSignature;
+
   @override
   set scheduleDateRuleLastAppliedSignature(String? value) =>
       _scheduleDateRuleLastAppliedSignature = value;
@@ -432,6 +443,80 @@ class TimetableProvider
   @override
   HomeWidgetBindingService get homeWidgetBindingService =>
       _homeWidgetBindingService;
+
+  // ── TimetableImportExportPort：导入导出管线的数据面、内存写回与句柄接线 ──
+  @override
+  TimetableRepository get repository => _profileRepository;
+
+  @override
+  IcsImportService get icsImporter => _icsImportService;
+
+  @override
+  AppAnalytics get analytics => _analytics;
+
+  @override
+  StorageService get storage => _storageService;
+
+  @override
+  int get currentCalendarWeek => _currentCalendarWeek;
+
+  @override
+  set currentCalendarWeek(int value) => _currentCalendarWeek = value;
+
+  @override
+  set currentWeek(int value) => _currentWeek = value;
+
+  @override
+  set currentDateWeek(int value) => _currentDateWeek = value;
+
+  @override
+  set currentDayOfWeek(int value) => _currentDayOfWeek = value;
+
+  @override
+  set activeProfileId(String? value) => _activeProfileId = value;
+
+  @override
+  set partnerBinding(PartnerTimetableBinding? value) => _partnerBinding = value;
+
+  @override
+  set lastImportDroppedCounts(Map<String, int> value) =>
+      _lastImportDroppedCounts = value;
+
+  @override
+  void addTimeScheme(TimeScheme scheme) => _timeSchemes.add(scheme);
+
+  @override
+  void addProfile(TimetableProfile profile) => _profiles.add(profile);
+
+  /// 导入失败时把快照写回自己的字段：写回规则属于 provider，快照由服务定义。
+  @override
+  void restoreImportedMemory(FullBackupRestoreSnapshot snapshot) =>
+      snapshot.restoreMemory(this);
+
+  @override
+  void applyProfileState(TimetableProfile profile) =>
+      _applyProfileState(profile);
+
+  @override
+  TimetableSettings normalizeTimetableSettings(TimetableSettings settings) =>
+      TimetableSettingsWriter.normalize(this, settings);
+
+  @override
+  int calculateWeekForDate(DateTime date, {int? fallbackWeek}) =>
+      _calculateWeekForDate(date, fallbackWeek: fallbackWeek);
+
+  @override
+  int resolveCurrentDateWeek() => _resolveCurrentDateWeek();
+
+  @override
+  Future<TimetableSettings> resolveSettingsAgainstTimeSchemes(
+    TimetableSettings settings, {
+    required String fallbackName,
+  }) => _resolveSettingsAgainstTimeSchemes(settings, fallbackName: fallbackName);
+
+  @override
+  Future<T> runMutation<T>(Future<T> Function() operation) =>
+      _runMutation(operation);
 
   /// Courses grouped by name – each group represents one subject with
   /// one or more schedule entries.
@@ -496,6 +581,7 @@ class TimetableProvider
   @override
   int get currentDayOfWeek => _currentDayOfWeek;
   DateTime? get semesterStartDate => _settings.semesterStartDate;
+  @override
   DataTransferService get dataTransferService => _dataTransferService;
   @override
   PartnerTimetableBinding? get partnerBinding => _partnerBinding;
@@ -1189,12 +1275,6 @@ class TimetableProvider
   ScheduleDateRule? matchScheduleDateRule(DateTime date) =>
       ScheduleDateRuleLogic.match(date, _scheduleDateRules);
 
-  /// Signature of the last date-rule bulk apply, used to explain save results
-  /// without exposing the provider's mutable internal state.
-  @override
-  String? get scheduleDateRuleLastAppliedSignature =>
-      _scheduleDateRuleLastAppliedSignature;
-
   List<SectionTime>? _resolveSectionsForCourse(
     Course course, {
     TimetableSettings? settings,
@@ -1828,6 +1908,7 @@ class TimetableProvider
         () => TimetableTimeSchemeService.duplicate(this, schemeId, name: name),
       );
 
+  @override
   Future<String?> updateTimeScheme({
     required String schemeId,
     required String name,
@@ -3067,12 +3148,13 @@ class TimetableProvider
   int previewWakeUpImportRequiredSectionCount(
     String content, {
     required bool replaceExisting,
-  }) => _timetablePreviewWakeUpImportRequiredSectionCount(
+  }) => TimetableImportExportService.previewWakeUpImportRequiredSectionCount(
     this,
     content,
     replaceExisting: replaceExisting,
   );
 
+  @override
   int previewImportedCourseRequiredSectionCount(
     List<Course> importedCourses, {
     required bool replaceExisting,
@@ -3081,14 +3163,11 @@ class TimetableProvider
     currentSectionCount: _settings.sectionCount,
   );
 
-  /// 导入前把节次表扩到需要的节数。整段必须独占写锁：
-  /// `_timetableEnsureSectionCapacityForImport` 会直接改 `_settings`/`_timeSchemes`
-  /// 并落盘（`timetable/import_export_service.dart:162-228`），原先全程在门外，
-  /// 与同文件其它导入入口（`importParsedCourses`、`importWakeUpCalendar`）
-  /// 的加锁口径相反 —— 并发时它会和门内那份 t0 快照的作息回滚互相覆盖。
+  /// 导入前把节次表扩到需要的节数。整段必须独占写锁（会改 `_settings`/
+  /// `_timeSchemes` 并落盘），否则会和门内那份 t0 快照的作息回滚互相覆盖。
   Future<String?> ensureSectionCapacityForImport(int requiredSectionCount) =>
       runMutationExclusive(
-        () => _timetableEnsureSectionCapacityForImport(
+        () => TimetableImportExportService.ensureSectionCapacityForImport(
           this,
           requiredSectionCount,
         ),
@@ -3097,7 +3176,7 @@ class TimetableProvider
   Future<int> importWakeUpCalendar(
     String content, {
     required bool replaceExisting,
-  }) => _timetableImportWakeUpCalendar(
+  }) => TimetableImportExportService.importWakeUpCalendar(
     this,
     content,
     replaceExisting: replaceExisting,
@@ -3109,7 +3188,7 @@ class TimetableProvider
     DateTime? semesterStart,
     required String source,
     bool preserveLocalColors = true,
-  }) => _timetableImportParsedCourses(
+  }) => TimetableImportExportService.importParsedCourses(
     this,
     importedCourses,
     replaceExisting: replaceExisting,
@@ -3119,13 +3198,15 @@ class TimetableProvider
   );
 
   Future<String?> importAppDataBackup(String content) =>
-      runMutationExclusive(() => _timetableImportAppDataBackup(this, content));
+      runMutationExclusive(
+        () => TimetableImportExportService.importAppDataBackup(this, content),
+      );
 
   Future<String?> importAppDataBackupAsNewProfile(
     String content, {
     String? profileName,
   }) => runMutationExclusive(
-    () => _timetableImportAppDataBackupAsNewProfile(
+    () => TimetableImportExportService.importAppDataBackupAsNewProfile(
       this,
       content,
       profileName: profileName,
@@ -3134,7 +3215,7 @@ class TimetableProvider
 
   Future<String?> importFullAppDataBackup(String content) =>
       runMutationExclusive(
-        () => _timetableImportFullAppDataBackup(this, content),
+        () => TimetableImportExportService.importFullAppDataBackup(this, content),
       );
 
   Future<void> syncCurrentWeekWithSemesterStart() =>
@@ -3312,14 +3393,12 @@ class TimetableProvider
     required int dayOfWeek,
     int? week,
     DateTime? now,
-  }) {
-    final courses = getCoursesInProgress(
-      dayOfWeek: dayOfWeek,
-      week: week,
-      now: now,
-    );
-    return courses.isEmpty ? null : courses.first;
-  }
+  }) => TimetableLiveActivityService.getCourseInProgress(
+    this,
+    dayOfWeek: dayOfWeek,
+    week: week,
+    now: now,
+  );
 
   /// 正在上的课（实时时钟解析，含日期规则的作息覆盖）。
   ///
