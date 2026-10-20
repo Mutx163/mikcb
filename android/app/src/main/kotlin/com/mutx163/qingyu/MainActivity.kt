@@ -748,6 +748,48 @@ class MainActivity : FlutterActivity() {
                 }
             }
 
+        // ── 校园小工具：取件身份码等外部页面直达（见 CampusToolLauncher）──
+        //
+        // 与上面那条 launch_url 分开成两个通道是刻意的：launch_url 是「反馈 /
+        // 打赏」那几个固定 scheme 的白名单，而这里的 scheme 由用户在界面上
+        // 自由填（还要 setPackage / 查包可见性），安全边界和调用形态都不一样。
+        // 合并会把白名单越放越宽，最后等于没有。
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CampusToolLauncher.CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "launch" -> {
+                        val uri = call.argument<String>("uri")
+                        val targetPackage = call.argument<String>("package")
+                        val clearTask = call.argument<Boolean>("clearTask") ?: false
+                        result.success(
+                            CampusToolLauncher.launch(this, uri, targetPackage, clearTask),
+                        )
+                    }
+                    "launchApp" -> {
+                        val targetPackage = call.argument<String>("package")
+                        val clearTask = call.argument<Boolean>("clearTask") ?: false
+                        result.success(
+                            CampusToolLauncher.launchApp(this, targetPackage, clearTask),
+                        )
+                    }
+                    "canResolve" -> {
+                        val uri = call.argument<String>("uri")
+                        val targetPackage = call.argument<String>("package")
+                        result.success(
+                            CampusToolLauncher.canResolve(this, uri, targetPackage),
+                        )
+                    }
+                    "installedPackages" -> {
+                        @Suppress("UNCHECKED_CAST")
+                        val packages = call.argument<List<String>>("packages") ?: emptyList()
+                        result.success(
+                            CampusToolLauncher.installedPackages(this, packages),
+                        )
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL)
             .also { flutterChannel = it }
             .setMethodCallHandler { call, result ->
