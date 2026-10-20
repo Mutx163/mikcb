@@ -18,8 +18,13 @@ import 'guard_source.dart';
 /// - `timetable_provider`：拆分前主文件 4,362 + 10 个 part 3,479 = 7,841 行
 ///   （主题/考试/节假日/情侣/提醒族已抽到 `services/`）；
 ///   part 里当时有 573 处直接访问 `host._私有字段` —— 那是同一个类的 11 个抽屉，
-///   不是 11 个模块。解耦方案 A 收尾后 part 归零、主文件 3,837 行，逻辑单元与
+///   不是 11 个模块。拆分那一轮收尾后 part 归零、主文件 3,837 行，逻辑单元与
 ///   主文件同值，`host._` 访问数归零（每个抽屉都变成了带显式端口的 service）。
+///
+/// **注意本守卫的盲区**（2026-10-20 复核确认）：逻辑单元只量 `lib/providers/`，
+/// 实现搬到 `lib/services/` 就落在计量之外。因此「单元行数下降」不等于「代码变少」，
+/// 那一轮全仓实为净增 1,545 行。这条棘轮只防「往 provider 里继续堆」，
+/// **不能当解耦或减重的成绩单**。
 ///
 /// 本守卫按「逻辑单元」计量（主文件 + 同族 part），并给 part 数量、provider
 /// part 对宿主私有字段的访问数设上限。三者都只减不增。
@@ -86,7 +91,8 @@ void main() {
     final lines =
         _lineCount('lib/providers/timetable_provider.dart') +
         parts.fold<int>(0, (sum, path) => sum + _lineCount(path));
-    // 分片归零是本解耦方案的完成判据：上限 0 = 不允许再建 part。
+    // 分片归零是「provider 按文件拆开」这件事的完成判据：上限 0 = 不允许再建 part。
+    // 它**只证明文件被切开了**，不证明状态与实现已分离（见文件头盲区说明）。
     // 目录被重新建出来时 `_providerParts()` 会读到非空列表，这里直接红。
     expect(
       parts,

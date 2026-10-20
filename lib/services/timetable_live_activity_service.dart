@@ -991,7 +991,8 @@ class TimetableLiveActivityService {
     }
 
     if (syncScheduleSnapshot) {
-      // 形参 syncScheduleSnapshot 与静态方法同名，这里显式限定到类。`n      await TimetableLiveActivityService.syncScheduleSnapshot(host);
+      // 形参 syncScheduleSnapshot 与静态方法同名，这里显式限定到类。
+      await TimetableLiveActivityService.syncScheduleSnapshot(host);
     }
 
     if (host.isHoliday(DateTime.now())) {

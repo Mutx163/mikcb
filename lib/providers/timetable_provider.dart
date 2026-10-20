@@ -103,21 +103,20 @@ class ScheduleDateRuleSaveResult {
   bool get failedWhileDue => applyResult.failedWhileDue;
 }
 
-/// 课表状态门面（解耦方案 A 收尾；笔记见
-/// `.agents/notes/implemented/architecture/2026-10-20-timetable-provider-state-domain-plan-a-review.md`）。
+/// 课表状态门面 —— **文件级分离已完成，「状态 + 写盘管线」仍在本类**（口径与
+/// 验收边界见 `.agents/notes/implemented/architecture/2026-10-20-provider-split-honest-scope.md`）。
 ///
-/// `lib/providers/timetable/` 下的分片已归零，本类只剩三件事：① 状态字段与
-/// mutation / live-surface 两道门；② 各服务端口的 `@override` 接线块；
-/// ③ 生命周期与写盘编排。关注点实现都在 `lib/services/timetable_*_service.dart`：
+/// 分片已归零，本类剩四件事：① 状态字段（唯一真相，各服务经端口读写）；
+/// ② mutation / live-surface 两道门；③ 各服务端口的 `@override` 接线块；
+/// ④ 生命周期与写盘编排。关注点实现在 `lib/services/timetable_*_service.dart`。
 ///
-/// - 落盘后钩子 / 设置写协议 → `timetable_persist_hooks` / `timetable_settings_writer`；
-/// - 日程项 / 地点规则 / 课程作业 / 作息模板 / 日期规则套用；
-/// - 实时活动与原生面（岛、今日组件、绑定卡片）→ `timetable_live_activity_service`；
-/// - 导入导出与失败回滚 → `timetable_import_export_service`；
-/// - 主题 / 考试 / 节假日 / 情侣课表 / 上课提醒 → M4 服务，适配器在本文件尾部。
+/// **这不是「解耦」**：各端口声明的是本类状态面的镜像，服务拿到的仍是同一个对象
+/// （`port.settings` 与 `_settings` 指向同一份数据）。真实收益只有两条 ——
+/// 实现不再与被它读写的状态同处一个文件；服务可用假端口脱离本类单测。
 ///
 /// 维护纪律：新增能力一律独立成 service（带端口 + 假端口单测）；改实现去服务，
-/// 改接线才动本类。
+/// 改接线才动本类。要继续往真解耦走，下一步是收共用状态面进核心端口再对象化，
+/// **不要**给每个端口各抄一份 `settings/courses/profiles`。
 class TimetableProvider
     with ChangeNotifier
     implements

@@ -20,7 +20,7 @@ void main() {
         .toList();
   }
 
-  /// provider 分片文件；目录已被解耦方案 A 删掉（F8 之后分片为 0），
+  /// provider 分片文件；目录已被「provider 拆分」那一轮删掉（F8 之后分片为 0），
   /// 目录不存在就返回空列表 —— 守卫不能因为「已经拆干净」而抛异常空转成红。
   List<File> providerPartFiles() {
     final dir = Directory(GuardSource.resolve('lib/providers/timetable'));
