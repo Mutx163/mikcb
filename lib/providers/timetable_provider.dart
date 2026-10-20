@@ -21,8 +21,7 @@ import '../domain/week_calculator.dart';
 import '../domain/course_domain.dart';
 import '../domain/schedule_item_expander.dart';
 import '../domain/couple_timetable_logic.dart';
-import '../ui/hyperos_motion_bridge.dart';
-import '../ui/hyperos/hyperos_overscroll.dart';
+import '../services/ui_runtime_prefs.dart';
 import '../services/app_analytics.dart';
 import '../services/app_global_settings_service.dart';
 import '../logging/app_debug_log.dart';
@@ -297,7 +296,7 @@ class TimetableProvider
   void notifyStateChanged() => _notifyStateChanged();
 
   @override
-  void applyEdgeHaptics(bool enabled) => hyperosSetEdgeHapticsEnabled(enabled);
+  void applyEdgeHaptics(bool enabled) => UiRuntimePrefs.setEdgeHapticsEnabled(enabled);
 
   @override
   void logPerformanceSnapshotIfChanged(TimetableSettings previous) =>
@@ -1125,7 +1124,7 @@ class TimetableProvider
 
   void _applyProfileState(TimetableProfile profile) {
     _settings = _settingsFromProfile(profile);
-    hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
+    UiRuntimePrefs.setEdgeHapticsEnabled(_settings.enableHaptics);
     _courses = _syncCoursesWithEffectiveTimeSchemes(
       List<Course>.from(profile.courses),
       settings: _settings,
@@ -1151,7 +1150,7 @@ class TimetableProvider
   }
 
   Future<void> _syncNativeRuntimePreferences() async {
-    applyHyperosUserTransitionSpeed(_settings.pageTransitionSpeed);
+    UiRuntimePrefs.setPageTransitionSpeed(_settings.pageTransitionSpeed);
     await AppLogService.instance.updateLoggingEnabled(
       _settings.liveEnableLocalDiagnostics,
     );
@@ -3062,7 +3061,7 @@ class TimetableProvider
     final semesterStartChanged =
         settings.semesterStartDate != _settings.semesterStartDate;
     _settings = TimetableSettingsWriter.normalize(this, settings);
-    hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
+    UiRuntimePrefs.setEdgeHapticsEnabled(_settings.enableHaptics);
     _currentCalendarWeek = _resolveCurrentCalendarWeek();
     _currentDateWeek = clampCurrentWeekToSettings(
       _currentCalendarWeek,
@@ -3086,7 +3085,7 @@ class TimetableProvider
       _currentWeek = previousCurrentWeek;
       _currentDateWeek = previousCurrentDateWeek;
       _currentCalendarWeek = previousCurrentCalendarWeek;
-      hyperosSetEdgeHapticsEnabled(previousSettings.enableHaptics);
+      UiRuntimePrefs.setEdgeHapticsEnabled(previousSettings.enableHaptics);
       if (!needsSettingsMirror) {
         try {
           await _persistActiveProfileState(notifySync: false);
