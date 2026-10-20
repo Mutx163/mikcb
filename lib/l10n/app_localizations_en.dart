@@ -11901,6 +11901,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherCourseTileSubtitle => 'Weather during this class period';
 
   @override
+  String get weatherLoadingPlaceholder => 'Loading weather…';
+
+  @override
   String get weatherSectionSourceTitle => 'Data source';
 
   @override

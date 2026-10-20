@@ -11212,6 +11212,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherCourseTileSubtitle => '该课程时段内的天气';
 
   @override
+  String get weatherLoadingPlaceholder => '天气加载中…';
+
+  @override
   String get weatherSectionSourceTitle => '数据来源';
 
   @override
@@ -22521,6 +22524,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get weatherCourseTileSubtitle => '該課程時段內的天氣';
+
+  @override
+  String get weatherLoadingPlaceholder => '天氣載入中…';
 
   @override
   String get weatherSectionSourceTitle => '資料來源';
@@ -33833,6 +33839,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get weatherCourseTileSubtitle => '該課程時段內的天氣';
+
+  @override
+  String get weatherLoadingPlaceholder => '天氣載入中…';
 
   @override
   String get weatherSectionSourceTitle => '資料來源';

@@ -11613,6 +11613,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get weatherCourseTileSubtitle => '이 수업 시간대의 날씨';
 
   @override
+  String get weatherLoadingPlaceholder => '날씨를 가져오는 중…';
+
+  @override
   String get weatherSectionSourceTitle => '데이터 출처';
 
   @override

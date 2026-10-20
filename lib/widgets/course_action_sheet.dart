@@ -776,17 +776,21 @@ class _CourseActionSheetContent extends StatelessWidget {
         ),
         if (weatherDisplay != null) ...[
           const SizedBox(height: 8),
-          // 预留的空位与真格子等高（副题照常参与排版），只是整格不画——预报到达时
-          // 下面的格子不会被顶下去。
-          reserveWeatherSpace(
-            reserved: weatherDisplay.isReserved,
-            child: _CourseDetailTile(
-              icon: weatherDisplay.icon,
-              title: weatherDisplay.text,
-              // 副题说明这几个数取的是「这节课的时段」而不是全天，否则用户会以为
-              // 那是当日天气。
-              subtitle: l10n.weatherCourseTileSubtitle,
-            ),
+          // 预留的空位与真格子等高（副题照常参与排版）——预报到达时下面的格子
+          // 不会被顶下去。2026-10-20 起占位在**这里画出来**（用户口径：加载中
+          // 那两三秒一片空白，读起来像排版坏了）：同款浅框 + 云图标 +
+          // 「天气加载中…」灰字，数据到达原地换内容、几何不动。只此一面画；
+          // 日 / 周课卡那一行太小，维持「留位不画」（见 2026-09-29 那篇的
+          // 「重访信号」，当时的否决条件只对课卡成立）。
+          _CourseDetailTile(
+            icon: weatherDisplay.icon,
+            title: weatherDisplay.isReserved
+                ? l10n.weatherLoadingPlaceholder
+                : weatherDisplay.text,
+            mutedTitle: weatherDisplay.isReserved,
+            // 副题说明这几个数取的是「这节课的时段」而不是全天，否则用户会以为
+            // 那是当日天气。
+            subtitle: l10n.weatherCourseTileSubtitle,
           ),
         ],
         const SizedBox(height: 8),
@@ -980,6 +984,7 @@ class _CourseDetailTile extends StatelessWidget {
     this.titleWidget,
     this.trailing,
     this.onTap,
+    this.mutedTitle = false,
   });
 
   final IconData icon;
@@ -988,6 +993,10 @@ class _CourseDetailTile extends StatelessWidget {
   final Widget? titleWidget;
   final Widget? trailing;
   final VoidCallback? onTap;
+
+  /// 标题画成次要墨色（mutedForeground）：加载占位这类「还不是内容」的行用，
+  /// 与真实内容的标题区分开（2026-10-20 天气加载占位）。
+  final bool mutedTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -1009,7 +1018,10 @@ class _CourseDetailTile extends StatelessWidget {
                 children: [
                   Text(
                     title!,
-                    style: typo.sm.copyWith(height: 1.25),
+                    style: typo.sm.copyWith(
+                      height: 1.25,
+                      color: mutedTitle ? colors.mutedForeground : null,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),

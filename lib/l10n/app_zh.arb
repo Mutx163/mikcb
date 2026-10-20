@@ -6870,6 +6870,7 @@
   "weatherShowProbabilityTitle": "降水概率",
   "weatherShowProbabilitySubtitle": "低于 30% 时不显示",
   "weatherCourseTileSubtitle": "该课程时段内的天气",
+  "weatherLoadingPlaceholder": "天气加载中…",
   "weatherSectionSourceTitle": "数据来源",
   "weatherUseCurrentLocation": "使用当前位置",
   "weatherLocating": "正在定位……",

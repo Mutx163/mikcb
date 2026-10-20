@@ -6605,6 +6605,7 @@
   "weatherShowProbabilityTitle": "降水確率",
   "weatherShowProbabilitySubtitle": "30% 未満のときは表示しません",
   "weatherCourseTileSubtitle": "この授業の時間帯の天気",
+  "weatherLoadingPlaceholder": "天気を取得中…",
   "weatherSectionSourceTitle": "データ提供元",
   "weatherUseCurrentLocation": "現在地を使う",
   "weatherLocating": "位置を取得中…",

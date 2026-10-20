@@ -20406,6 +20406,12 @@ abstract class AppLocalizations {
   /// **'该课程时段内的天气'**
   String get weatherCourseTileSubtitle;
 
+  /// No description provided for @weatherLoadingPlaceholder.
+  ///
+  /// In zh, this message translates to:
+  /// **'天气加载中…'**
+  String get weatherLoadingPlaceholder;
+
   /// No description provided for @weatherSectionSourceTitle.
   ///
   /// In zh, this message translates to:

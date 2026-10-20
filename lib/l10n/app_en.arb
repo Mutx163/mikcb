@@ -6769,6 +6769,7 @@
   "weatherShowProbabilityTitle": "Rain chance",
   "weatherShowProbabilitySubtitle": "Hidden below 30%",
   "weatherCourseTileSubtitle": "Weather during this class period",
+  "weatherLoadingPlaceholder": "Loading weather…",
   "weatherSectionSourceTitle": "Data source",
   "weatherUseCurrentLocation": "Use current location",
   "weatherLocating": "Locating…",

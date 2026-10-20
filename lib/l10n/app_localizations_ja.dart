@@ -11559,6 +11559,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get weatherCourseTileSubtitle => 'この授業の時間帯の天気';
 
   @override
+  String get weatherLoadingPlaceholder => '天気を取得中…';
+
+  @override
   String get weatherSectionSourceTitle => 'データ提供元';
 
   @override
