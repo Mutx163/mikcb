@@ -67,16 +67,13 @@ import '../widgets/timetable/timetable_back_to_current_week_button.dart';
 import '../widgets/timetable/timetable_back_to_today_button.dart';
 import '../widgets/timetable/timetable_course_action_items.dart';
 import '../widgets/timetable/timetable_course_sheet_actions.dart';
-import '../widgets/timetable/timetable_week_grid.dart';
-import '../widgets/timetable/timetable_section_time_cell.dart';
+import '../widgets/timetable/timetable_week_grid_builder.dart';
 import '../widgets/timetable/timetable_week_page.dart';
 import '../widgets/timetable/timetable_week_page_body.dart';
 import '../widgets/timetable/timetable_dock_actions.dart';
 import '../widgets/timetable/weekday_ink_contrast_guard.dart';
 import '../widgets/timetable/timetable_profile_switcher_trigger.dart';
-import '../widgets/timetable/timetable_empty_slot_layer.dart';
 import '../widgets/timetable/timetable_day_view_shared_free_summary.dart';
-import '../widgets/timetable/timetable_day_column.dart';
 import '../widgets/timetable/timetable_anchored_day_overlay.dart';
 import '../widgets/timetable/timetable_day_agenda_models.dart';
 import '../widgets/timetable/timetable_add_course_sheet.dart';
@@ -837,106 +834,48 @@ class _TimetableScreenState extends State<TimetableScreen>
             );
           },
           timeColumnWidth: _resolveTimeColumnWidth(settings),
-          buildGrid: (sectionHeight) {
-            final visibleDays = _visibleDayNumbers(settings);
-            final timeColumnWidth = _resolveTimeColumnWidth(settings);
-            final cardInset = _resolveCourseCardInset(settings);
-            final dayColumnCallbacks = TimetableDayColumnCallbacks(
-              dateForWeekDay: _dateForWeekDay,
-              markerSpanAt: _emptySlot.spanAt,
-              markerSection: () => _emptySlot.section,
-              buildEmptySlotCell:
-                  (
+          buildGrid: (sectionHeight) => TimetableWeekGridBuilder(
+            provider: provider,
+            settings: settings,
+            week: week,
+            availableWidth: width,
+            sectionHeight: sectionHeight,
+            visibleDays: _visibleDayNumbers(settings),
+            timeColumnWidth: _resolveTimeColumnWidth(settings),
+            cardInset: _resolveCourseCardInset(settings),
+            emptySlot: _emptySlot,
+            wallpaperTopLuminance: _luminance.top,
+            wallpaperBodyLuminance: _luminance.body,
+            coursesForDay: _getCoursesForDay,
+            buildDisplayItems: _buildHomeDayDisplayItems,
+            wrapSurfaceHost: _wrapCourseGridSurfaceHost,
+            overlayVisible: _shouldShowDayViewOverlay,
+            dateForWeekDay: _dateForWeekDay,
+            startingAt: _getDisplayItemsStartingAtSection,
+            resolveColor: _resolveDisplayCourseColor,
+            overline: _resolveCompactOverlineText,
+            badge: _resolveCompactBadgeText,
+            weather: (item, date) => _weekCardWeatherDisplay(
+              l10n: AppLocalizations.of(context),
+              weather: context.watch<WeatherProvider?>(),
+              settings: settings,
+              course: item.course,
+              date: date,
+              week: week,
+              isPartnerCourse: item.isPartnerCourse,
+            ),
+            showActions: _showCourseActions,
+            onOpenAddCourse: (week, dayOfWeek, startSection, endSection) =>
+                unawaited(
+                  _openAddCourseFromEmptySlot(
                     week,
                     dayOfWeek,
                     startSection,
-                    sectionHeight,
-                    cardInset,
-                    settings, {
-                    required span,
-                    required occupiedSections,
-                  }) => TimetableEmptySlotCell(
-                    controller: _emptySlot,
-                    week: week,
-                    dayOfWeek: dayOfWeek,
-                    startSection: startSection,
-                    sectionHeight: sectionHeight,
-                    cardInset: cardInset,
-                    settings: settings,
-                    span: span,
-                    occupiedSections: occupiedSections,
-                    wallpaperLuminance: _luminance.body ?? _luminance.top,
-                    onOpenAddCourse: () => unawaited(
-                      _openAddCourseFromEmptySlot(
-                        week,
-                        dayOfWeek,
-                        startSection,
-                        startSection + span - 1,
-                      ),
-                    ),
+                    endSection,
                   ),
-              startingAt: _getDisplayItemsStartingAtSection,
-              resolveColor: _resolveDisplayCourseColor,
-              overline: _resolveCompactOverlineText,
-              badge: _resolveCompactBadgeText,
-              weather: (item, date) => _weekCardWeatherDisplay(
-                l10n: AppLocalizations.of(context),
-                weather: context.watch<WeatherProvider?>(),
-                settings: settings,
-                course: item.course,
-                date: date,
-                week: week,
-                isPartnerCourse: item.isPartnerCourse,
-              ),
-              clearMarker: _emptySlot.clear,
-              showActions: _showCourseActions,
-              border: groupedDayColumnBorderRadius,
-              wallpaperBodyLuminance: () => _luminance.body,
-              wallpaperTopLuminance: () => _luminance.top,
-            );
-            return TimetableWeekGrid(
-              provider: provider,
-              settings: settings,
-              week: week,
-              availableWidth: width,
-              sectionHeight: sectionHeight,
-              visibleDays: visibleDays,
-              timeColumnWidth: timeColumnWidth,
-              cardInset: cardInset,
-              buildSectionTimeCell: (index, section, settings) =>
-                  TimetableSectionTimeCell(
-                    sectionNumber: index,
-                    section: section,
-                    settings: settings,
-                    wallpaperLuminance: _luminance.body ?? _luminance.top,
-                  ),
-              wrapSurfaceHost: _wrapCourseGridSurfaceHost,
-              wrapEmptySlotGesture:
-                  ({
-                    required settings,
-                    required week,
-                    required sectionHeight,
-                    required dayWidth,
-                    required visibleDays,
-                    required occupiedSections,
-                    required child,
-                  }) => TimetableEmptySlotGestureArea(
-                    controller: _emptySlot,
-                    settings: settings,
-                    week: week,
-                    sectionHeight: sectionHeight,
-                    dayWidth: dayWidth,
-                    visibleDays: visibleDays,
-                    occupiedSections: occupiedSections,
-                    overlayVisible: _shouldShowDayViewOverlay,
-                    child: child,
-                  ),
-              coursesForDay: _getCoursesForDay,
-              buildDisplayItems: _buildHomeDayDisplayItems,
-                    dayColumnCallbacks: dayColumnCallbacks,
-            );
-          },
-          buildBody: (grid) => _buildWeekPageBody(
+                ),
+          ),
+        buildBody: (grid) => _buildWeekPageBody(
             settings: settings,
             week: week,
             grid: grid,
