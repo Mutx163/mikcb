@@ -24,6 +24,7 @@ import 'models/timetable_settings.dart';
 import 'providers/timetable_provider.dart';
 import 'providers/weather_provider.dart';
 import 'providers/widget_launch_timetable_access.dart';
+import 'screens/debug_deep_link_route_registry.dart';
 import 'screens/import/course_import_entry_screen.dart';
 import 'screens/import/ics_course_import_screen.dart';
 import 'screens/import/spreadsheet_course_import_screen.dart';
@@ -801,7 +802,12 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         if (!mounted) {
           return;
         }
-        DebugDeepLinkNavigator.attach(context);
+        // 页面构造 / 转场 / provider 访问在 screens 层的路由表里，本处只注入。
+        // 导航器住 services 层，不能反向认识这三者（原 8 条分层违规的来源）。
+        DebugDeepLinkNavigator.attach(
+          context,
+          buildDebugDeepLinkBindings(provider: provider),
+        );
         unawaited(DebugDeepLinkService.drainPending());
       });
     }
