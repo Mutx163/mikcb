@@ -14,6 +14,8 @@ import 'package:university_timetable/models/timetable_settings.dart';
 /// - 「未命中」= 拿到另一个对象。判据变严（多一条进键）只会让命中变少，
 ///   所以我用「该命中的地方必须 identical」+「该未命中的地方必须不同」
 ///   两头都钉，任何一条判据被删或改成常量，至少一头会红；
+/// - 三份 list 的判据是**元素签名**（同一批元素、同一个顺序），不是列表实例
+///   身份 —— 这条由「provider 式新包装表必须命中」那一组钉住；
 /// - 容量 3 的淘汰顺序按「最近使用」推：先后取 A、B、C，再取 A（A 变成
 ///   最近使用），此时最久未用的是 B —— 第 4 个月进来必须淘汰 B，A 留下。
 void main() {
@@ -182,16 +184,22 @@ void main() {
   });
 
   group('命中与未命中：五份输入的身份', () {
-    test('courses 换成内容相同的新 list 实例 → 不命中（identity 口径）', () {
+    test('provider 式新包装表（同一份 backing list 取两次）→ 命中', () {
       final cache = MonthViewDataCache();
-      final courses = [course(dayOfWeek: 1)];
-      // 元素是同一批对象、内容逐字段相同，只是**列表实例**换了 —— provider
-      // 改数据时就是这种形状，必须当作「数据变了」重算。
-      final sameContentNewList = List<Course>.of(courses);
+      // provider 的真实形状：backing list 不变，每次访问现造一个 unmodifiable
+      // 包装表（timetable_provider.dart:211「List.unmodifiable(_courses)」）。
+      // 两个包装表是不同对象，但元素是同一批 —— 必须命中，否则真机上缓存
+      // 永远失效，这个改动等于没加。
+      final backing = [course(dayOfWeek: 1)];
       final settings = settingsWith(semesterStart: d(2026, 9, 7));
       final now = DateTime(2026, 10, 20, 9);
 
-      final first = cache.grid(
+      final firstWrapper = List<Course>.unmodifiable(backing);
+      final secondWrapper = List<Course>.unmodifiable(backing);
+      // 先钉住前提：这两个包装表确实不是同一个对象。
+      expect(identical(firstWrapper, secondWrapper), isFalse);
+
+      MonthGridData take(List<Course> courses) => cache.grid(
         year: 2026,
         month: 10,
         now: now,
@@ -201,19 +209,103 @@ void main() {
         settings: settings,
         holidayData: null,
       );
-      final second = cache.grid(
+
+      final first = take(firstWrapper);
+      final second = take(secondWrapper);
+
+      expect(identical(first, second), isTrue);
+      // 2026-10-19 是周一，课程挂周一 → 那格 1 门；10-20 周二 → 0 门。
+      expect(second.entryFor(d(2026, 10, 19))!.courseCount, 1);
+      expect(second.entryFor(d(2026, 10, 20))!.courseCount, 0);
+    });
+
+    test('backing list 里替换掉一个元素（长度不变）→ 不命中', () {
+      final cache = MonthViewDataCache();
+      final keeping = course(dayOfWeek: 1);
+      final replacedAway = course(dayOfWeek: 3);
+      final backing = [keeping, replacedAway];
+      final settings = settingsWith(semesterStart: d(2026, 9, 7));
+      final now = DateTime(2026, 10, 20, 9);
+
+      MonthGridData take() => cache.grid(
         year: 2026,
         month: 10,
         now: now,
-        courses: sameContentNewList,
+        courses: List<Course>.unmodifiable(backing),
         scheduleItems: const [],
         exams: const [],
         settings: settings,
         holidayData: null,
       );
 
-      expect(identical(courses, sameContentNewList), isFalse);
-      expect(identical(first, second), isFalse);
+      final before = take();
+      // 原地换掉第 2 个元素：长度没变，但元素实例变了 = 内容变了。
+      backing[1] = course(dayOfWeek: 5);
+      final after = take();
+
+      expect(identical(before, after), isFalse);
+      // 换进来的周五课在 2026-10-23（周五）那格应出现。
+      expect(before.entryFor(d(2026, 10, 23))!.courseCount, 0);
+      expect(after.entryFor(d(2026, 10, 23))!.courseCount, 1);
+    });
+
+    test('backing list 追加一个元素（长度变）→ 不命中', () {
+      final cache = MonthViewDataCache();
+      final backing = [course(dayOfWeek: 1)];
+      final settings = settingsWith(semesterStart: d(2026, 9, 7));
+      final now = DateTime(2026, 10, 20, 9);
+
+      MonthGridData take() => cache.grid(
+        year: 2026,
+        month: 10,
+        now: now,
+        courses: List<Course>.unmodifiable(backing),
+        scheduleItems: const [],
+        exams: const [],
+        settings: settings,
+        holidayData: null,
+      );
+
+      final before = take();
+      expect(before.entryFor(d(2026, 10, 21))!.courseCount, 0);
+      // 追加一门周三课：2026-10-21 是周三。
+      backing.add(course(dayOfWeek: 3));
+      final after = take();
+
+      expect(identical(before, after), isFalse);
+      expect(after.entryFor(d(2026, 10, 21))!.courseCount, 1);
+    });
+
+    test('元素相同但顺序对调 → 不命中（顺序参与签名）', () {
+      final cache = MonthViewDataCache();
+      final monday = course(dayOfWeek: 1);
+      final wednesday = course(dayOfWeek: 3);
+      final backing = [monday, wednesday];
+      final settings = settingsWith(semesterStart: d(2026, 9, 7));
+      final now = DateTime(2026, 10, 20, 9);
+
+      MonthGridData take() => cache.grid(
+        year: 2026,
+        month: 10,
+        now: now,
+        courses: List<Course>.unmodifiable(backing),
+        scheduleItems: const [],
+        exams: const [],
+        settings: settings,
+        holidayData: null,
+      );
+
+      final before = take();
+      backing[0] = wednesday;
+      backing[1] = monday;
+      final after = take();
+
+      // 同一批元素、同一长度，只有顺序变了 —— 必须重算：格子配色的取色顺序
+      // 与议程行序都由 list 顺序决定。
+      expect(identical(before, after), isFalse);
+      // 内容口径没变：两个日子的课程数仍然各 1。
+      expect(after.entryFor(d(2026, 10, 19))!.courseCount, 1);
+      expect(after.entryFor(d(2026, 10, 21))!.courseCount, 1);
     });
 
     test('scheduleItems / exams / settings / holidayData 换实例同样不命中', () {
@@ -246,7 +338,8 @@ void main() {
         holidayData: null,
       );
 
-      // 每次只动一份输入，且都是「换成新实例」：命中说明该份没进键。
+      // 每次只动一份输入：命中说明该份没进键。scheduleItems / exams 这两例
+      // 动的是**元素**（空表 → 一条），settings / holidayData 动的是单对象实例。
       expect(
         identical(
           baseline,
@@ -260,7 +353,7 @@ void main() {
           ),
         ),
         isFalse,
-        reason: 'scheduleItems 换了实例却没重算',
+        reason: 'scheduleItems 多了一条日程却没重算',
       );
       expect(
         identical(
@@ -273,7 +366,7 @@ void main() {
           ),
         ),
         isFalse,
-        reason: 'exams 换了实例却没重算',
+        reason: 'exams 多了一场考试却没重算',
       );
       expect(
         identical(
@@ -301,6 +394,50 @@ void main() {
         isFalse,
         reason: 'holidayData 换了实例却没重算',
       );
+    });
+
+    test('scheduleItems / exams 也走元素签名：新包装表命中、元素变了不命中', () {
+      final cache = MonthViewDataCache();
+      final settings = settingsWith(semesterStart: d(2026, 9, 7));
+      final now = DateTime(2026, 10, 20, 9);
+      final scheduleBacking = <ScheduleItem>[
+        schedule(startDate: d(2026, 10, 19), endDate: d(2026, 10, 19)),
+      ];
+      final examBacking = <Exam>[exam(dateTime: d(2026, 10, 21))];
+
+      MonthGridData take() => cache.grid(
+        year: 2026,
+        month: 10,
+        now: now,
+        courses: const [],
+        scheduleItems: List<ScheduleItem>.unmodifiable(scheduleBacking),
+        exams: List<Exam>.unmodifiable(examBacking),
+        settings: settings,
+        holidayData: null,
+      );
+
+      final first = take();
+      // 两份都换包装表、元素不变 → 命中（与 courses 同一条口径）。
+      expect(identical(first, take()), isTrue);
+      expect(first.entryFor(d(2026, 10, 19))!.scheduleCount, 1);
+      expect(first.entryFor(d(2026, 10, 21))!.examCount, 1);
+
+      // 换掉日程元素 → 不命中。
+      scheduleBacking[0] = schedule(
+        startDate: d(2026, 10, 22),
+        endDate: d(2026, 10, 22),
+      );
+      final afterScheduleChange = take();
+      expect(identical(first, afterScheduleChange), isFalse);
+      expect(afterScheduleChange.entryFor(d(2026, 10, 19))!.scheduleCount, 0);
+      expect(afterScheduleChange.entryFor(d(2026, 10, 22))!.scheduleCount, 1);
+
+      // 换掉考试元素 → 不命中。
+      examBacking[0] = exam(dateTime: d(2026, 10, 23));
+      final afterExamChange = take();
+      expect(identical(afterScheduleChange, afterExamChange), isFalse);
+      expect(afterExamChange.entryFor(d(2026, 10, 21))!.examCount, 0);
+      expect(afterExamChange.entryFor(d(2026, 10, 23))!.examCount, 1);
     });
 
     test('holidayData 为 null 与「空数据」是两个不同的键（null 也要进键）', () {

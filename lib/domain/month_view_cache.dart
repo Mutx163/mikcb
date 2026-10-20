@@ -16,23 +16,43 @@ import 'month_view_logic.dart';
 /// 什么都没改的情况下被反复重算。缓存把「同一份输入只算一次」这件事钉在
 /// 域层，渲染层不必自己判脏。
 ///
-/// ## 失效判据：五份输入的 identity
+/// ## 失效判据：三份 list 看「元素签名」，两个单对象看 identity
 ///
 /// 键是 `(year, month, 日历日 now, courses, scheduleItems, exams, settings,
-/// holidayData)`，其中五份数据比的是**实例身份**而不是内容：
+/// holidayData)`：
 ///
-/// - provider 改数据时一律换 list 实例（`courses = [...]` / `List.from(...)`），
-///   所以身份变了就等于内容可能变了，这是最省事的正确判据；
-/// - 反过来做深比较要遍历全部课程/日程/考试，省下的那点算术还不如比较本身贵，
-///   而且会把「内容恰好相同、但对象已换」当成命中——那等于在缓存里替上层
-///   猜它想不想刷新，出错时极难查。
+/// - **courses / scheduleItems / exams** 比的是 [_listSignature]（长度 + 逐元素
+///   哈希），不是整个 list 的 identity；
+/// - **settings / holidayData** 比的是 `identical()`；
+/// - 年月直比，`now` 见下一节。
 ///
-/// **调用方前提**：必须传稳定的 list 实例。像 `List.unmodifiable(_courses)`
-/// 这样每次访问现造一个包装表（`TimetableProvider.courses` 就是这种写法），
-/// 身份每次都变，缓存永远不命中——那不是缓存坏了，是键没稳定过。
+/// ### 为什么 list 不能比 identity
 ///
-/// [TimetableSettings] 与 [HolidayData] 本就没有值相等语义，身份的语义与
-/// 内容变更天然对齐，直接用身份判。
+/// `TimetableProvider.courses` 是 `List.unmodifiable(_courses)`：**每次访问都
+/// 现造一个新的包装表**，`identical()` 恒为 false。按 list 身份做键，翻月、
+/// 点选日期、provider 任意无关通知都会「未命中」，缓存等于没加。日程与考试
+/// 两个 getter 是同一个写法，所以三份都要走元素签名。
+///
+/// ### 为什么元素签名是对的等判据
+///
+/// `Course` / `Exam` / `ScheduleItem` 都是不可变模型（字段全 final，没有
+/// 覆写 `operator ==` / `hashCode`，所以元素的哈希就是身份哈希），改内容一律
+/// 换新实例（`copyWith` / 重建 list）。于是：
+///
+/// - **元素实例不变 ⇔ 内容没变**（模型不可变，同一个实例的字段改不了）；
+/// - 包装表新旧无所谓——`List.unmodifiable(backing)` 换了包装，元素还是同一批；
+/// - 既不会漏失效（元素换了，签名就变），也不会假失效（翻月/点选时元素是同一批）。
+///
+/// 反过来做**字段级**深比较（逐条比 `course.name` 之类）没有意义：模型不可变，
+/// 字段相等必然同源，而逐字段遍历几十条 × 每次 setState 的开销比 42 格本身还贵。
+///
+/// **顺序参与签名**：`Object.hashAll` 天然吃顺序。议程区的行序、格子配色
+/// `courseColorHexes` 的取色顺序都由 list 顺序决定，同一批元素换个顺序就是
+/// 另一份展示结果，必须重算。
+///
+/// [TimetableSettings] 与 [HolidayData] 没有值相等语义、也不经包装表，仍然是
+/// 单对象身份判据：provider 换设置时确实换实例。
+
 ///
 /// ## `now` 只按日历日截断
 ///
@@ -66,6 +86,9 @@ class MonthViewDataCache {
   ///
   /// 参数含义与失效判据见类注释。返回的 [MonthGridData] 是**共享实例**，
   /// 调用方只读——`days` 已是不可变列表，不要就地改。
+  ///
+  /// 三份 list 可以直接传 provider 那种每次现造的包装表（例如
+  /// `List.unmodifiable(_courses)`）：判据看的是元素，不看包装表身份。
   MonthGridData grid({
     required int year,
     required int month,
@@ -117,10 +140,29 @@ class MonthViewDataCache {
   void clear() => _entries.clear();
 }
 
-/// 缓存键：月份 + 日历日 + 五份输入的身份。
+/// 一组元素的「身份签名」：回答的只有一件事——**是不是同一批元素、同一个顺序**。
 ///
-/// 单独成类而不是拼字符串：拼串会丢掉「身份」语义（`toString()` 相同并不
-/// 代表同一份数据），也挡不住两个不同实例被拼成同一个键。
+/// 不用 `List.identityHashCode`（没有这个 API），也不用整个 list 的
+/// `identityHashCode`：调用方可能每次现造包装表（provider 的
+/// `List.unmodifiable` 就是），包装表身份不稳定但元素是同一批。
+///
+/// 三个被签名的模型（[Course] / [Exam] / [ScheduleItem]）都是不可变对象且没有
+/// 覆写 `==` / `hashCode`，所以 `Object.hashAll` 逐元素取到的就是**身份哈希**：
+/// 同一实例必同值，不同实例几乎必不同值。长度单独并进来，是为了让「追加/删除
+/// 元素」在哈希层面也立刻分开（`hashAll` 本身也吃长度，这里显式并一次读起来
+/// 更清楚，代价可忽略）。
+int _listSignature<T>(List<T> items) =>
+    Object.hash(items.length, Object.hashAll(items));
+
+/// 缓存键：月份 + 日历日 + 三份 list 的元素签名 + 两个单对象的身份。
+///
+/// 单独成类而不是拼字符串：拼串要自己造分隔符与转义，且 `toString()` 相同的
+/// 两个实例不代表同一份数据；用类 + 显式 `==` 才说得清「什么算同一份输入」。
+///
+/// **签名在构造时算一次、存成字段**：`==` 与 [hashCode] 都只读这几个 int，因此
+/// 两处判据在结构上就是同源的——不存在「改了一处、忘了另一处，测试照样绿」
+/// 的余地（这种漏改本仓真踩过一次：早先只在 `==` 里改判据，而 `hashCode`
+/// 仍在按身份分桶，判据根本没被调用到）。
 class _MonthGridKey {
   final int year;
   final int month;
@@ -128,22 +170,26 @@ class _MonthGridKey {
   /// 已截断到日历日的「今天」。
   final DateTime today;
 
-  final List<Course> courses;
-  final List<ScheduleItem> scheduleItems;
-  final List<Exam> exams;
+  /// 三份 list 的元素签名（见 [_listSignature]）。
+  final int coursesSignature;
+  final int scheduleItemsSignature;
+  final int examsSignature;
+
   final TimetableSettings settings;
   final HolidayData? holidayData;
 
-  const _MonthGridKey({
+  _MonthGridKey({
     required this.year,
     required this.month,
     required this.today,
-    required this.courses,
-    required this.scheduleItems,
-    required this.exams,
+    required List<Course> courses,
+    required List<ScheduleItem> scheduleItems,
+    required List<Exam> exams,
     required this.settings,
     required this.holidayData,
-  });
+  }) : coursesSignature = _listSignature(courses),
+       scheduleItemsSignature = _listSignature(scheduleItems),
+       examsSignature = _listSignature(exams);
 
   @override
   bool operator ==(Object other) {
@@ -151,9 +197,9 @@ class _MonthGridKey {
         other.year == year &&
         other.month == month &&
         other.today == today &&
-        identical(other.courses, courses) &&
-        identical(other.scheduleItems, scheduleItems) &&
-        identical(other.exams, exams) &&
+        other.coursesSignature == coursesSignature &&
+        other.scheduleItemsSignature == scheduleItemsSignature &&
+        other.examsSignature == examsSignature &&
         identical(other.settings, settings) &&
         identical(other.holidayData, holidayData);
   }
@@ -163,9 +209,9 @@ class _MonthGridKey {
     year,
     month,
     today,
-    identityHashCode(courses),
-    identityHashCode(scheduleItems),
-    identityHashCode(exams),
+    coursesSignature,
+    scheduleItemsSignature,
+    examsSignature,
     identityHashCode(settings),
     identityHashCode(holidayData),
   );
