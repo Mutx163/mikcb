@@ -5,6 +5,7 @@ import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../models/timetable_settings.dart';
 import '../../providers/timetable_provider.dart';
+import '../../ui/hyperos/hyperos_motion.dart';
 import '../../utils/widget_course_accent.dart';
 import '../../services/home_widget_service.dart';
 import '../../services/home_widget_binding_service.dart';
@@ -429,7 +430,7 @@ class HomeWidgetSettingsScreenState extends State<HomeWidgetSettingsScreen>
         // “given an infinite size during layout”，连带后面的兄弟节点整块不布局——
         // 表现就是整页只剩预览、下面的设置项全部消失。
         AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
+          duration: 220.scaledMs,
           curve: Curves.easeOutCubic,
           height: _previewViewportHeight,
           child: OverflowBox(
@@ -670,7 +671,7 @@ class HomeWidgetSettingsScreenState extends State<HomeWidgetSettingsScreen>
       children: [
         for (var i = 0; i < _previewSpecs.length; i++)
           AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
+            duration: 220.scaledMs,
             curve: Curves.easeOutCubic,
             margin: const EdgeInsets.symmetric(horizontal: 3),
             width: i == _previewIndex ? 14 : 5,

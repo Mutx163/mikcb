@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
+import '../ui/hyperos/hyperos_motion.dart';
 import 'miuix_showcase/buttons.dart';
 import 'miuix_showcase/common.dart';
 import 'miuix_showcase/display.dart';
@@ -272,7 +273,7 @@ class _HomePageState extends State<_HomePage>
     super.initState();
     _searchAnim = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: 300.scaledMs,
     );
     _searchAnim.addStatusListener(_onSearchAnimStatus);
   }

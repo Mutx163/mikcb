@@ -1960,7 +1960,7 @@ class AppearanceEditorScreenState extends State<AppearanceEditorScreen>
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: 180.scaledMs,
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
           decoration: BoxDecoration(
@@ -2140,7 +2140,7 @@ class _WallpaperSheetBodyState extends State<_WallpaperSheetBody> {
     setState(() => _page = page);
     _pages.animateToPage(
       page,
-      duration: const Duration(milliseconds: 260),
+      duration: 260.scaledMs,
       curve: Curves.easeOutCubic,
     );
   }
@@ -2280,7 +2280,7 @@ class _MaterialSheetBodyState extends State<_MaterialSheetBody> {
     setState(() => _page = page);
     _pages.animateToPage(
       page,
-      duration: const Duration(milliseconds: 260),
+      duration: 260.scaledMs,
       curve: Curves.easeOutCubic,
     );
   }
@@ -2419,7 +2419,7 @@ class _MaterialChoiceChips<T> extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             onTap: () => onChanged(entry.value),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
+              duration: 160.scaledMs,
               curve: Curves.easeOutCubic,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(

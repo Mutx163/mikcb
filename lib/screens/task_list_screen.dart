@@ -8,6 +8,7 @@ import '../models/course.dart';
 import '../models/course_task.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../ui/hyperos/hyperos_motion.dart';
 import '../utils/app_toast.dart';
 import 'add_course_screen.dart';
 import 'add_task_screen.dart';
@@ -447,7 +448,7 @@ class _TaskCheckbox extends StatelessWidget {
         // 扩大点击热区到约 30dp。
         padding: const EdgeInsets.all(4),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: 180.scaledMs,
           curve: Curves.easeOutCubic,
           width: 22,
           height: 22,

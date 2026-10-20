@@ -20,6 +20,7 @@ import '../services/live_testing_trigger.dart';
 import '../services/live_testing_fixture_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/app_log_service.dart';
+import '../ui/hyperos/hyperos_motion.dart';
 import '../utils/hex_color.dart';
 import '../utils/app_toast.dart';
 import '../utils/import_file_reader.dart';
@@ -619,7 +620,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 _updateDisplay(display.copyWith(showCountdown: value)),
           ),
           AnimatedOpacity(
-            duration: const Duration(milliseconds: 160),
+            duration: 160.scaledMs,
             opacity: display.showCountdown ? 0.55 : 1.0,
             child: HyperosSwitchTile(
               title: l10n.showStageTextTitle,
@@ -632,7 +633,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             ),
           ),
           AnimatedOpacity(
-            duration: const Duration(milliseconds: 160),
+            duration: 160.scaledMs,
             opacity: !display.showCountdown ? 0.55 : 1.0,
             child: HyperosSwitchTile(
               title: l10n.hidePrefixTextTitle,
@@ -1146,7 +1147,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               if (_followBeforeClass)
                 IgnorePointer(
                   child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 180),
+                    duration: 180.scaledMs,
                     opacity: 0.5,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,

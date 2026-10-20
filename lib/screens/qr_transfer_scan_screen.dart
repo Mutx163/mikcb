@@ -10,6 +10,7 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../services/qr_transfer/qr_transfer_codec.dart';
 import '../services/qr_transfer/qr_transfer_session.dart';
+import '../ui/hyperos/hyperos_motion.dart';
 
 @visibleForTesting
 String qrTransferErrorKeyFor(String error) {
@@ -82,7 +83,7 @@ class _QrTransferScanScreenState extends State<QrTransferScanScreen>
     super.initState();
     _scanLineController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400),
+      duration: 2400.scaledMs,
     )..repeat();
     _statsTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && !_finished && _sessionStart != null) {

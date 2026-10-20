@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../ui/hyperos/hyperos_motion.dart';
 import '../utils/home_page_background.dart';
 import '../widgets/timetable/month_view/month_day_agenda.dart';
 import '../widgets/timetable/month_view/month_grid.dart';
@@ -140,7 +141,7 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
     }
     _pager?.animateToPage(
       target,
-      duration: const Duration(milliseconds: 260),
+      duration: 260.scaledMs,
       curve: Curves.easeOutCubic,
     );
   }
@@ -153,7 +154,7 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
     });
     _pager?.animateToPage(
       _pageFor(now.year, now.month),
-      duration: const Duration(milliseconds: 260),
+      duration: 260.scaledMs,
       curve: Curves.easeOutCubic,
     );
   }

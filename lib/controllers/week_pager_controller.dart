@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import '../domain/timetable_layout.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../ui/hyperos/hyperos_motion.dart';
 import '../utils/home_page_background.dart' show controllerPageOrNull;
 
 /// [WeekPagerController] 对宿主 State 的全部依赖。
@@ -59,7 +60,10 @@ class WeekPagerController {
        visibleWeekListenable = ValueNotifier<int>(initialWeek);
 
   /// 周页滑动动画时长（与日视图单页切换同一口径）。
-  static const Duration weekSlideDuration = Duration(milliseconds: 280);
+  ///
+  /// getter 而非 `const`：它必须跟随「页面转场速度」设置 —— const 会在启动时
+  /// 求值一次、之后永不更新（用户 2026-10-20 口径：该设置要覆盖所有动画）。
+  static Duration get weekSlideDuration => 280.scaledMs;
 
   final WeekPagerHost host;
 
@@ -171,7 +175,7 @@ class WeekPagerController {
           targetWeek - 1,
           duration: (targetWeek - visibleWeek).abs() == 1
               ? slideDuration
-              : const Duration(milliseconds: 360),
+              : 360.scaledMs,
           curve: Curves.easeOutCubic,
         );
         pendingSettledWeek = targetWeek;

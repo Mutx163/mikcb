@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../models/glass_mode_choice.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../ui/hyperos/hyperos_motion.dart';
 import '../utils/hex_color.dart';
 import '../services/miui_live_activities_service.dart';
 import '../widgets/third_party_disclaimer_card.dart';
@@ -186,7 +187,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     if (_currentPage < _totalPages - 1) {
       _pageController.animateToPage(
         _currentPage + 1,
-        duration: const Duration(milliseconds: 300),
+        duration: 300.scaledMs,
         curve: Curves.easeOutCubic,
       );
     }
@@ -203,7 +204,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     if (_currentPage > 0) {
       _pageController.animateToPage(
         _currentPage - 1,
-        duration: const Duration(milliseconds: 300),
+        duration: 300.scaledMs,
         curve: Curves.easeOutCubic,
       );
     }
@@ -412,7 +413,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       if (mounted && _pageController.hasClients) {
         await _pageController.animateToPage(
           1,
-          duration: const Duration(milliseconds: 280),
+          duration: 280.scaledMs,
           curve: Curves.easeOutCubic,
         );
       }
