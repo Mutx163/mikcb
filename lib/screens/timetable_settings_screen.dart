@@ -13,9 +13,6 @@ import 'package:provider/provider.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
-import '../utils/widget_course_accent.dart';
-import '../services/home_widget_service.dart';
-import '../services/home_widget_binding_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/screen_capture_service.dart';
 import '../services/webdav_sync_coordinator.dart';
@@ -56,6 +53,7 @@ import 'settings/settings_general.dart';
 import 'settings/settings_diagnostics.dart';
 import 'settings/settings_holiday.dart';
 import 'settings/settings_live.dart';
+import 'settings/settings_home_widget.dart';
 
 part 'settings/settings_appearance.dart';
 part 'settings/settings_home_navigation.dart';
@@ -64,7 +62,6 @@ part 'settings/settings_glass_dock_editor.dart';
 part 'settings/settings_glass_dock_icon_editor.dart';
 part 'settings/settings_course_card.dart';
 part 'settings/settings_timetable_page.dart';
-part 'settings/settings_home_widget.dart';
 /// 鍏鏍肩瓑澶栭儴鍏ュ彛鐩磋揪璁剧疆瀛愰〉鐨勫伐鍘傘€?
 ///
 /// 鍚勫瓙椤电被淇濇寔搴撳唴绉佹湁锛岃繖閲屾寜绋冲畾 id 鏆撮湶锛涙湭鐭?id 杩斿洖 null锛?
@@ -80,7 +77,7 @@ Widget? settingsSubpageById(String id) {
     'liveSettings' => const LiveSettingsScreen(),
     'holidaySettings' => const HolidaySettingsScreen(),
     'weatherSettings' => const WeatherSettingsScreen(),
-    'homeWidgetSettings' => const _HomeWidgetSettingsScreen(),
+    'homeWidgetSettings' => const HomeWidgetSettingsScreen(),
     'diagnosticsSettings' => const DiagnosticsScreen(),
     _ => null,
   };
@@ -175,7 +172,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosNavigation.push(
             context,
             settings: const RouteSettings(name: '/settings/home-widget'),
-            builder: (_) => const _HomeWidgetSettingsScreen(),
+            builder: (_) => const HomeWidgetSettingsScreen(),
           );
         }
 

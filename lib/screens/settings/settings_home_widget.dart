@@ -1,4 +1,17 @@
-part of '../timetable_settings_screen.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/enum_localizations.dart';
+import 'package:provider/provider.dart';
+import '../../models/timetable_settings.dart';
+import '../../providers/timetable_provider.dart';
+import '../../utils/widget_course_accent.dart';
+import '../../services/home_widget_service.dart';
+import '../../services/home_widget_binding_service.dart';
+import '../../utils/app_toast.dart';
+import '../../ui/hyperos/hyperos.dart';
+import 'settings_shared.dart';
+import 'settings_reset.dart';
 
 String _homeWidgetTargetLabel(
   BuildContext context,
@@ -19,15 +32,15 @@ String _homeWidgetTargetLabel(
   };
 }
 
-class _HomeWidgetSettingsScreen extends StatefulWidget {
-  const _HomeWidgetSettingsScreen();
+class HomeWidgetSettingsScreen extends StatefulWidget {
+  const HomeWidgetSettingsScreen({super.key});
 
   @override
-  State<_HomeWidgetSettingsScreen> createState() =>
-      _HomeWidgetSettingsScreenState();
+  State<HomeWidgetSettingsScreen> createState() =>
+      HomeWidgetSettingsScreenState();
 }
 
-class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen>
+class HomeWidgetSettingsScreenState extends State<HomeWidgetSettingsScreen>
     with WidgetsBindingObserver {
   static const double _defaultWidgetHeightAdjustment = -11;
   static const double _defaultWidgetCornerRadius = 22;
