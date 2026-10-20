@@ -12,7 +12,29 @@ class WebdavSyncCredentialsStore {
     FlutterSecureStorage? storage,
   }) : _storage = storage ?? _defaultStorage;
 
-  static const FlutterSecureStorage _defaultStorage = FlutterSecureStorage();
+  // ⚠️ 显式传 AndroidOptions(resetOnError: false)，**不要**改回默认值。
+  //
+  // 插件默认 `resetOnError: true`，出错时它会**删光所有凭证再重试**——
+  // 见 flutter_secure_storage 10.3.4 的 Android 实现：
+  //   FlutterSecureStorage.java:1117  "resetOnError is enabled. Deleting all data as fallback..."
+  //   FlutterSecureStorage.java:1135  密钥不匹配时同样 deleteAllDataAndKeys()
+  //   FlutterSecureStorage.java:1486  handleStorageError()：任何 read/write 异常
+  //                                   都会先 delete(key) / deleteAll() 再重试
+  //
+  // 这里存的是**用户唯一凭证**（坚果云密码 / 情侣网盘密码 / 教务账号密码），
+  // 删除即永久丢失。而密钥失效在本仓是**已知会发生**的故障（换机恢复、系统升级、
+  // 用户凭证变化，见本文件 readPassword 上方注释），删掉的后果是用户打开 App 发现
+  // 「从来没配置过」——连账号名都不记得了。
+  //
+  // 设为 false 后：出错抛 PlatformException，由本文件既有的
+  // `on PlatformException → return null` 容错接住，退化为「当作没存过、引导重输」，
+  // **数据保留、临时故障可自愈**。这是 2026-10-20 由用户本人拍板的取舍。
+  //
+  // 只动错误处置，**不要顺手改** storageNamespace / sharedPreferencesName /
+  // 加密算法——那几个会改变数据实际存放位置或解密方式，动了就是真迁移风险。
+  static const FlutterSecureStorage _defaultStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(resetOnError: false),
+  );
 
   final FlutterSecureStorage _storage;
 
