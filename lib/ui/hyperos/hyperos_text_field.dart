@@ -300,9 +300,99 @@ class HyperosPickerField extends StatelessWidget {
   }
 }
 
+/// 半宽紧凑偏好行：小标签在上、值 + 箭头在下，整块可点。
+///
+/// 为什么不用 [HyperosNavTile]：它按整行宽度设计（标签与值同一行、尾部箭头），
+/// 半宽里放「标签 + 值 + 箭头」会把值挤成省略号。这个变体把标签提到上一行，
+/// 值单独占一行与箭头同排——仍然是一眼看出「这行能点、点开选一项」的偏好行
+/// 语义，只是为**并排两条**而生。
+///
+/// 视觉与 [HyperosPickerField] 同族（填充底 + 圆角 + 描边），保证同一张卡里
+/// 不出现第三种控件形态。典型用法：课程性质 + 课程颜色并排一行，
+/// 省掉「两条各占一整行」的垂直空间。
+class HyperosCompactPreferenceField extends StatelessWidget {
+  const HyperosCompactPreferenceField({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onTap,
+    this.leading,
+  });
+
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  /// 行首自定义元素（如颜色块）。
+  final Widget? leading;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(HyperosMiuixTextField.cornerRadius);
+    final fill = HyperosColors.textFieldContainer(context);
+    final outline = HyperosColors.outline(context);
+    final onSurface = HyperosColors.onSurface(context);
+    final summary = HyperosColors.onSurfaceVariantSummary(context);
+
+    return Material(
+      color: fill,
+      borderRadius: radius,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(color: outline),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 小标签：与 MiuixTextField 浮动后的标签同字号（10），
+                // 让「小标签 + 大值」这一对在两个控件里读起来是一套。
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 10, color: summary, height: 1.2),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    if (leading != null) ...[
+                      leading!,
+                      const SizedBox(width: 6),
+                    ],
+                    Expanded(
+                      child: Text(
+                        value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 15, color: onSurface),
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: summary,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Text field inside a white HyperOS control card.
-class HyperosTextFieldTile extends StatelessWidget {
-  const HyperosTextFieldTile({
+class HyperosTextFieldTile extends StatelessWidget {  const HyperosTextFieldTile({
     super.key,
     this.cardTitle,
     this.cardSubtitle,

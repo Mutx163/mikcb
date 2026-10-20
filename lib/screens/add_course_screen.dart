@@ -11,7 +11,6 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
-import '../widgets/about_info_sheet.dart';
 import '../widgets/course_palette_sheet.dart';
 import '../widgets/course_field_picker_sheet.dart';
 import '../widgets/course_template_picker_sheet.dart';
@@ -543,15 +542,15 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     // 版式依据 flutter_miuix 原生规矩（不是自创画法）：
     // - 文本输入走 MiuixTextField 的**框内浮动标签**（label 参数），标签在框里、
     //   聚焦/有内容时缩到 10px 上浮；不给它外挂「框上方小标签」。
-    // - 需要「点开选一项」的行走偏好行（标签在左、值在右 + 箭头），
-    //   与 MiuixBasicComponent / DropdownPreference 同型。
-    // 卡内因此只有两种元素：输入框 + 偏好行，中间用分隔线分组。
+    // - 需要「点开选一项」的行走偏好行（标签在左、值在右 + 箭头）。
+    // 2026-10-20 收紧（用户：「很空旷、很杂、很烦躁」）：性质+颜色并排一行、
+    // 撤常驻说明灰字、节间距收到 8；详见提交信息与
+    // .agents/notes/implemented/feature/2026-10-20-course-shared-info-compact.md。
     return HyperosControlCard(
       edgeToEdge: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 卡片标题（分组名，非字段标签）。
           Padding(
             padding: const EdgeInsets.fromLTRB(
               HyperosControlCardScope.defaultHorizontalPadding,
@@ -567,26 +566,20 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     style: typo.sm.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  tooltip: l10n.sharedInfoHint,
-                  onPressed: () => _showSharedInfoHintSheet(l10n),
-                  icon: Icon(
-                    Icons.info_outline_rounded,
-                    size: 18,
-                    color: colors.mutedForeground,
+                // 标题右侧一句明话替代原来的 ⓘ：信息直给，也比图标省地方。
+                Flexible(
+                  child: Text(
+                    l10n.sharedInfoInlineHint,
+                    textAlign: TextAlign.end,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: typo.xs2.copyWith(color: colors.mutedForeground),
                   ),
                 ),
               ],
             ),
           ),
-          // 「沿用已有课程」：Miuix 偏好行形态（标题 + 说明 + 尾部箭头），
-          // 不再是挤在输入框右侧的按钮。
+          // 「沿用已有课程」只在新建时出现：编辑时「换一门课」不是一个操作。
           if (widget.course == null)
             HyperosListTile(
               title: l10n.reuseExistingCourseLabel,
@@ -605,25 +598,18 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               children: _withSpacing([
                 _buildCourseNameField(provider, l10n),
                 _buildShortNameField(l10n),
-              ], spacing: 8),
+              ], spacing: 12),
             ),
           ),
-          // 偏好行组：性质（锚定弹层 → 上下双箭头）与颜色（取色弹层 → 单箭头）。
-          const SizedBox(height: 12),
-          HyperosSelectTile<CourseNature>(
-            label: l10n.courseNatureLabel,
-            items: {
-              for (final item in CourseNature.values)
-                courseNatureLabel(l10n, item): item,
-            },
-            value: _courseNature,
-            onChanged: (value) => setState(() => _courseNature = value),
-          ),
-          _buildCourseColorPreferenceRow(l10n),
+          // 性质 + 颜色：一行两条。两者都是短值偏好行，合并省掉一整行高度，
+          // 也让「这门课是个什么样的东西」（名/简称/性质/颜色）在视觉上成为
+          // 一组，而不是被两个整行控件隔开。
+          const SizedBox(height: 8),
+          _buildNatureAndColorRow(l10n),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               HyperosControlCardScope.defaultHorizontalPadding,
-              12,
+              8,
               HyperosControlCardScope.defaultHorizontalPadding,
               HyperosControlCardScope.defaultBodyBottomInset,
             ),
@@ -639,40 +625,61 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     );
   }
 
-  /// 课程颜色偏好行：标签在左、颜色块 + 色值在右、尾部箭头（Miuix 偏好行形态）。
+  /// 「课程性质 + 课程颜色」并排一行。
   ///
-  /// 与「课程性质」同为偏好行，卡内不再出现第二种「带框字段」画法。取色面板
-  /// 仍是原来的全屏调色板（`_showFullColorPalette`），交互不变。
-  Widget _buildCourseColorPreferenceRow(AppLocalizations l10n) {
-    final leadingSwatch = Container(
-      width: 20,
-      height: 20,
-      decoration: BoxDecoration(
-        color: _parseColor(_selectedColor),
-        borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: HyperosColors.outline(context)),
+  /// 两条各自保留 Miuix 偏好行语义（标签 + 值 + 箭头、整块可点），只是把
+  /// 「一整行一条」换成「一行两条」：性质值最长四个字（必修/选修/限选…），
+  /// 颜色值固定 7 字符色值，等分宽度都放得下。
+  Widget _buildNatureAndColorRow(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: HyperosControlCardScope.defaultHorizontalPadding,
       ),
-    );
-
-    return HyperosNavTile(
-      title: l10n.courseColorTitle,
-      details: _selectedColor.toUpperCase(),
-      onTap: _showFullColorPalette,
-      leading: leadingSwatch,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: HyperosCompactPreferenceField(
+              key: const ValueKey('course-nature-field'),
+              label: l10n.courseNatureLabel,
+              value: courseNatureLabel(l10n, _courseNature),
+              onTap: _showNatureSheet,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: HyperosCompactPreferenceField(
+              key: const ValueKey('course-color-field'),
+              label: l10n.courseColorTitle,
+              value: _selectedColor.toUpperCase(),
+              onTap: _showFullColorPalette,
+              leading: Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: _parseColor(_selectedColor),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: HyperosColors.outline(context)),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  void _showSharedInfoHintSheet(AppLocalizations l10n) {
-    showHyperosSheet<void>(
-      context: context,
-      builder: (_) => AboutInfoSheetBody(
-        title: l10n.sharedInfoTitle,
-        items: [
-          l10n.sharedInfoSheetItemCourseName,
-          l10n.sharedInfoSheetItemShortName,
-          l10n.sharedInfoSheetItemSharedSync,
-        ],
-      ),
+  Future<void> _showNatureSheet() {
+    final l10n = AppLocalizations.of(context)!;
+    return _pickFromSelectSheet(
+      title: l10n.courseNatureLabel,
+      items: {
+        for (final item in CourseNature.values)
+          courseNatureLabel(l10n, item): item.index,
+      },
+      currentValue: _courseNature.index,
+      onSelected: (index) =>
+          setState(() => _courseNature = CourseNature.values[index]),
     );
   }
 
@@ -716,14 +723,15 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               textInputAction: TextInputAction.next,
               onChanged: field.didChange,
             ),
-            if (helperText != null) ...[
+            // 2026-10-20：常驻的「同名排课会归为同一门课」收进卡片标题右侧的
+            // 一句明话（sharedInfoInlineHint，同一信息只说一次），框下只在
+            // **校验失败**时出现红字。原先两处说明常驻，一屏灰字比字段还多。
+            if (field.hasError) ...[
               const SizedBox(height: 6),
               Text(
-                helperText,
+                helperText!,
                 style: typo.xs2.copyWith(
-                  color: field.hasError
-                      ? colors.destructive
-                      : colors.mutedForeground,
+                  color: colors.destructive,
                   height: 1.35,
                 ),
               ),
@@ -735,37 +743,29 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   }
 
   Widget _buildShortNameField(AppLocalizations l10n) {
-    final typo = context.theme.typography.body;
     final colors = context.theme.colors;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        HyperosTextField(
-          controller: _shortNameController,
-          label: l10n.courseShortNameOptional,
-          textInputAction: TextInputAction.next,
-          // 就地补全放框内末尾（MiuixTextField.trailingIcon），不再用框外按钮
-          // 挤窄输入宽度。
-          trailing: IconButton(
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            tooltip: l10n.courseShortNameAutoFillAction,
-            onPressed: _autofillShortNameFromCourseName,
-            icon: Icon(
-              Icons.auto_fix_high_rounded,
-              size: 20,
-              color: colors.mutedForeground,
-            ),
-          ),
+    return HyperosTextField(
+      controller: _shortNameController,
+      label: l10n.courseShortNameOptional,
+      textInputAction: TextInputAction.next,
+      // 就地补全放框内末尾（MiuixTextField.trailingIcon），不再用框外按钮
+      // 挤窄输入宽度。
+      trailing: IconButton(
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        // 「建议 3 字内」这类提示走 tooltip：真需要时点一下就看到，
+        // 不需要时不再常驻占一整行灰字。
+        tooltip: '${l10n.courseShortNameAutoFillAction} · '
+            '${l10n.courseShortNameHelper}',
+        onPressed: _autofillShortNameFromCourseName,
+        icon: Icon(
+          Icons.auto_fix_high_rounded,
+          size: 20,
+          color: colors.mutedForeground,
         ),
-        const SizedBox(height: 6),
-        Text(
-          l10n.courseShortNameHelper,
-          style: typo.xs2.copyWith(color: colors.mutedForeground, height: 1.35),
-        ),
-      ],
+      ),
     );
   }
 
