@@ -5,6 +5,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../models/course.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../ui/hyperos/hyperos_motion.dart';
 import '../utils/app_toast.dart';
 
 /// Opens the dual-type course note editor as a home HyperOS sheet.
@@ -138,7 +139,7 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
       }
       Scrollable.ensureVisible(
         targetContext,
-        duration: const Duration(milliseconds: 180),
+        duration: 180.scaledMs,
         curve: Curves.easeOutCubic,
         // Sit the field near the bottom of the visible sheet area (just
         // above the keyboard after outer padForKeyboard lifts the sheet).

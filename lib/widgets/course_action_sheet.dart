@@ -10,6 +10,7 @@ import '../domain/couple_timetable_logic.dart';
 import '../domain/week_calculator.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
+import '../ui/hyperos/hyperos_motion.dart';
 import '../utils/hex_color.dart';
 import '../ui/hyperos/hyperos.dart';
 import 'course_note_sheet.dart';
@@ -144,7 +145,7 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
         0,
-        duration: const Duration(milliseconds: 220),
+        duration: 220.scaledMs,
         curve: Curves.easeOut,
       );
     }
