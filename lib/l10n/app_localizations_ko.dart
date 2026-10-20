@@ -6718,7 +6718,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get guidePermissionsFooterHint =>
-      '탭하면 시스템 설정으로 이동합니다. 앱으로 돌아오면 인식 가능한 상태가 자동으로 갱신됩니다. 자동 시작은 시스템 제한이 있으므로 시스템 페이지 스위치를 기준으로 하세요';
+      '자동 시작은 시스템 제한이 있으므로 시스템 페이지 스위치를 기준으로 하세요';
 
   @override
   String get guideTipsHeader => '사용 팁';

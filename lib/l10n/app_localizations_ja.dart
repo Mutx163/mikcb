@@ -6678,7 +6678,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get guidePermissionsFooterHint =>
-      'タップ後にシステム設定に移動，アプリに戻ると認識可能なステータスが自動更新，自動起動はシステム制限あり，システムページのスイッチを基準にしてください';
+      '自動起動はシステム制限あり，システムページのスイッチを基準にしてください';
 
   @override
   String get guideTipsHeader => '使い方のコツ';

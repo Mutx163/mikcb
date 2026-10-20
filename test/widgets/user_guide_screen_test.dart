@@ -168,7 +168,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('3 / 5'), findsOneWidget);
-    expect(find.text('系统权限设置'), findsOneWidget);
+    // 分组标签「系统权限设置」2026-10-20 删除（与顶栏页标题「系统权限」
+    // 同屏重复）。本行原本用它确认「已进入权限页」，改钉顶栏页标题——
+    // 断言意图不变，只是换成界面上现存的定位文字。
+    // 咬合探针已验证：把本行改回「系统权限设置」测试立即红（Found 0 widgets）。
+    expect(find.text('系统权限'), findsOneWidget);
     expect(find.text('自启动'), findsOneWidget);
     expect(find.textContaining('已就绪'), findsOneWidget);
     expect(find.text('已开启'), findsNWidgets(2));

@@ -272,28 +272,59 @@ class _UserGuideScreenState extends State<UserGuideScreen>
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Text(
-                '${_currentPage + 1} / $_totalPages',
-                style: HyperosTypography.sectionDescription(context),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _buildPageTitle(l10n),
-                style: HyperosTypography.sectionDescription(
-                  context,
-                ).copyWith(color: HyperosColors.primary(context)),
-              ),
-            ],
+          // 页码文字保留：圆点只给「走到哪了」的直观感，具体第几页靠文字，
+          // 两者互补不重复。
+          Text(
+            '${_currentPage + 1} / $_totalPages',
+            style: HyperosTypography.sectionDescription(context),
           ),
-          const SizedBox(height: 8),
-          HyperosLinearProgress(value: (_currentPage + 1) / _totalPages),
+          const SizedBox(width: 8),
+          Text(
+            _buildPageTitle(l10n),
+            style: HyperosTypography.sectionDescription(
+              context,
+            ).copyWith(color: HyperosColors.primary(context)),
+          ),
+          const Spacer(),
+          // 分页指示器用圆点，不用进度条：进度条在本仓一律表示「任务完成度」
+          // （传输/加载），而这里是「导航到第几步」。原本两者都用
+          // HyperosLinearProgress、同样 4dp 同样色，权限页上同屏出现两根
+          // 长得一样但含义不同的条，只能靠猜。
+          _buildPageDots(),
         ],
       ),
+    );
+  }
+
+  /// 5 个圆点：当前页实心且略大，其余为淡色小点。
+  Widget _buildPageDots() {
+    final primary = HyperosColors.primary(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < _totalPages; i++)
+          Padding(
+            padding: const EdgeInsets.only(left: 5),
+            child: AnimatedContainer(
+              // 时长走统一换算（scaledMs）跟随「页面转场速度」设置，
+              // 与全仓动画一致；裸写会在用户调快动画时仍卡 200ms。
+              duration: 200.scaledMs,
+              curve: Curves.easeOut,
+              width: i == _currentPage ? 7 : 6,
+              height: i == _currentPage ? 7 : 6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: i == _currentPage
+                    ? primary
+                    : HyperosColors.secondaryText(
+                        context,
+                      ).withValues(alpha: 0.3),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -545,8 +576,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return _buildGuideList(
       storageId: 'permissions',
       children: [
-        HyperosSectionLabel(text: l10n.guidePermissionsHeader),
-        const SizedBox(height: 8),
+        // 不画分组标签：顶栏页标题已经是「系统权限」，同一屏再写一次
+        // 「系统权限设置」纯属重复（用户反馈）。列表直接开在下面。
         // 摘要卡：副标题 + 就绪计数 + 进度条。刷新入口只保留顶栏
         // action——从系统设置返回本页时生命周期与轮询会自动刷新，
         // 卡内不再重复放一颗 secondary 按钮。

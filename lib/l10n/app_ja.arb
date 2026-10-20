@@ -3508,7 +3508,7 @@
   "guideNextButton": "次へ",
   "guidePermissionsHeader": "システム権限設定",
   "guidePermissionsSubtitle": "これらの設定を完了すると、スーパーアイランドとリマインダーが正常に使用可能",
-  "guidePermissionsFooterHint": "タップ後にシステム設定に移動，アプリに戻ると認識可能なステータスが自動更新，自動起動はシステム制限あり，システムページのスイッチを基準にしてください",
+  "guidePermissionsFooterHint": "自動起動はシステム制限あり，システムページのスイッチを基準にしてください",
   "guideTipsHeader": "使い方のコツ",
   "guideTipsSubtitle": "これらはいつでも「設定」から確認可能",
   "guidePrivacyReadBeforeUse": "使用前に以下を読み同意してください",
