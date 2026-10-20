@@ -63,12 +63,9 @@ import '../widgets/home_top_menu.dart';
 import '../widgets/home_top_menu_popup.dart';
 import '../widgets/timetable_home_preview_scope.dart';
 import '../widgets/week_selector_picker_sheet.dart';
-import '../widgets/timetable/timetable_back_to_current_week_button.dart';
 import '../widgets/timetable/timetable_back_to_today_button.dart';
 import '../widgets/timetable/timetable_course_action_items.dart';
 import '../widgets/timetable/timetable_course_sheet_actions.dart';
-import '../widgets/timetable/timetable_week_grid_builder.dart';
-import '../widgets/timetable/timetable_week_page.dart';
 import '../widgets/timetable/timetable_week_page_body.dart';
 import '../widgets/timetable/timetable_dock_actions.dart';
 import '../widgets/timetable/weekday_ink_contrast_guard.dart';
@@ -81,8 +78,7 @@ import '../widgets/timetable/timetable_home_action_page_button.dart';
 import '../widgets/timetable/timetable_day_pager_physics.dart';
 import '../widgets/timetable/timetable_home_dock_shell.dart';
 import '../widgets/timetable/timetable_home_header.dart';
-import '../widgets/timetable/timetable_home_stack.dart';
-import '../widgets/timetable/timetable_home_pull_surface.dart';
+import '../widgets/timetable/timetable_home_stack_builder.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
 import '../widgets/timetable/timetable_glass_dock.dart';
 import '../widgets/timetable/timetable_profile_quick_switch.dart';
@@ -743,60 +739,65 @@ class _TimetableScreenState extends State<TimetableScreen>
     required bool hasBackdrop,
     required bool glassDockForm,
   }) {
-    return TimetableHomeStack(
-      settings: settings,
-      l10n: l10n,
-      chrome: chrome,
-      weekPageController: _weekPageController,
-      title: _buildProfileSwitcherTrigger(
-        provider,
-        foreground: chromeForeground,
-        mutedForeground: chromeMutedForeground,
-      ),
-      suffixes: buildTimetableHomeHeaderActions(
-        l10n: l10n,
-        hasPartnerBinding: provider.hasPartnerBinding,
-        coupleOverlayActive: _isCoupleOverlayActive(provider),
-        heartLink: _heartBallLink,
-        moreLink: _moreBallLink,
-        homeMenuAnchor: _homeMenuAnchor,
-        topMenuButtonKey: _topMenuButtonKey,
-        onToggleCoupleOverlay: () {
-          setState(() {
-            _coupleOverlayEnabled = !_coupleOverlayEnabled;
-            _sharedFreeSegmentsExpanded = false;
-          });
-          _persistCoupleOverlayEnabled(
-            provider,
-            enabled: _coupleOverlayEnabled,
-          );
-        },
-        onPrewarmGlass: _prewarmHomeGlass,
-        onReleaseGlass: _releaseHomeGlassAfterTap,
-        onShowTopActions: _showTopActionsSheet,
-      ),
-      weekSurface: TimetableHomePullSurface(
+    return TimetableHomeStackBuilder(
+      host: TimetableHomeStackHost(
+        provider: provider,
         settings: settings,
+        l10n: l10n,
+        chrome: chrome,
+        chromeForeground: chromeForeground,
+        chromeMutedForeground: chromeMutedForeground,
         hasBackdrop: hasBackdrop,
-        timetableSurfaceKey: _timetableSurfaceKey,
-        isRunning: _homePull.isRunning,
-        isDayView: _isDayView,
-        glassDockContentScrollInset: _glassDockContentScrollInset(
-          settings,
+        glassDockForm: glassDockForm,
+        weekPageController: _weekPageController,
+        title: _buildProfileSwitcherTrigger(
+          provider,
+          foreground: chromeForeground,
+          mutedForeground: chromeMutedForeground,
         ),
+        suffixes: buildTimetableHomeHeaderActions(
+          l10n: l10n,
+          hasPartnerBinding: provider.hasPartnerBinding,
+          coupleOverlayActive: _isCoupleOverlayActive(provider),
+          heartLink: _heartBallLink,
+          moreLink: _moreBallLink,
+          homeMenuAnchor: _homeMenuAnchor,
+          topMenuButtonKey: _topMenuButtonKey,
+          onToggleCoupleOverlay: () {
+            setState(() {
+              _coupleOverlayEnabled = !_coupleOverlayEnabled;
+              _sharedFreeSegmentsExpanded = false;
+            });
+            _persistCoupleOverlayEnabled(
+              provider,
+              enabled: _coupleOverlayEnabled,
+            );
+          },
+          onPrewarmGlass: _prewarmHomeGlass,
+          onReleaseGlass: _releaseHomeGlassAfterTap,
+          onShowTopActions: _showTopActionsSheet,
+        ),
+        timetableSurfaceKey: _timetableSurfaceKey,
+        isPullRunning: _homePull.isRunning,
+        pullDragDistance: _homePull.dragDistance,
+        pullTriggerDistance: HomePullController.triggerDistance,
+        isDayView: _isDayView,
+        glassDockContentScrollInset: _glassDockContentScrollInset(settings),
         onScrollNotification: _homePull.handleScrollNotification,
         onPullUpdate: _homePull.updateDrag,
         onPullEnd: _homePull.finishDrag,
         onPullCancel: _homePull.cancelDrag,
         resetFreeze: _homePull.resetFreeze,
         onPointerMove: _homePull.onPointerMove,
-        weekPageController: _weekPageController,
         dayViewPageController: _dayViewPageController,
         visibleDayViewWeek: _visibleDayViewWeek,
         shouldShowDayViewOverlay: _shouldShowDayViewOverlay,
         wallpaperTopLuminance: _luminance.top,
         wallpaperWeekdayLuminance: _luminance.weekday,
+        wallpaperBodyLuminance: _luminance.body,
         timeColumnWidth: _resolveTimeColumnWidth(settings),
+        visibleDays: _visibleDayNumbers(settings),
+        cardInset: _resolveCourseCardInset(settings),
         isSelectedDay: _isSelectedDay,
         hasExamOnDate: provider.hasExamOnDate,
         onShowWeekSelector: _showWeekSelector,
@@ -808,133 +809,62 @@ class _TimetableScreenState extends State<TimetableScreen>
             settings: settings,
           );
         },
-        onFinalizeWeekPageSettled: () =>
-            _finalizeWeekPageSettled(provider),
+        onFinalizeWeekPageSettled: () => _finalizeWeekPageSettled(provider),
         onHandleWeekPageChanged: (page) =>
             _handleWeekPageChanged(page, settings.semesterWeekCount),
-        buildWeekPage: (week, width, height) => TimetableWeekPage(
+        emptySlot: _emptySlot,
+        coursesForDay: _getCoursesForDay,
+        buildDisplayItems: _buildHomeDayDisplayItems,
+        wrapSurfaceHost: _wrapCourseGridSurfaceHost,
+        dateForWeekDay: _dateForWeekDay,
+        startingAt: _getDisplayItemsStartingAtSection,
+        resolveColor: _resolveDisplayCourseColor,
+        overline: _resolveCompactOverlineText,
+        badge: _resolveCompactBadgeText,
+        weather: (item, date, week) => _weekCardWeatherDisplay(
+          l10n: AppLocalizations.of(context),
+          weather: context.watch<WeatherProvider?>(),
+          settings: settings,
+          course: item.course,
+          date: date,
+          week: week,
+          isPartnerCourse: item.isPartnerCourse,
+        ),
+        showActions: _showCourseActions,
+        onOpenAddCourse: (week, dayOfWeek, startSection, endSection) =>
+            unawaited(
+              _openAddCourseFromEmptySlot(
+                week,
+                dayOfWeek,
+                startSection,
+                endSection,
+              ),
+            ),
+        buildBody: (settings, week, grid) => _buildWeekPageBody(
           settings: settings,
           week: week,
-          availableHeight: height,
-          wallpaperTopLuminance: _luminance.top,
-          wallpaperWeekdayLuminance: _luminance.weekday,
-          dayViewPageController: _dayViewPageController,
-          isDayView: _isDayView,
-          visibleDayViewWeek: _visibleDayViewWeek,
-          shouldShowDayViewOverlay: _shouldShowDayViewOverlay,
-          isSelectedDay: _isSelectedDay,
-          hasExamOnDate: provider.hasExamOnDate,
-          onShowWeekSelector: _showWeekSelector,
-          onDayTapDown: _captureDayViewAnchor,
-          onDayTap: (week, dayOfWeek) {
-            _toggleDayView(
-              week: week,
-              dayOfWeek: dayOfWeek,
-              settings: settings,
-            );
-          },
-          timeColumnWidth: _resolveTimeColumnWidth(settings),
-          buildGrid: (sectionHeight) => TimetableWeekGridBuilder(
-            provider: provider,
-            settings: settings,
-            week: week,
-            availableWidth: width,
-            sectionHeight: sectionHeight,
-            visibleDays: _visibleDayNumbers(settings),
-            timeColumnWidth: _resolveTimeColumnWidth(settings),
-            cardInset: _resolveCourseCardInset(settings),
-            emptySlot: _emptySlot,
-            wallpaperTopLuminance: _luminance.top,
-            wallpaperBodyLuminance: _luminance.body,
-            coursesForDay: _getCoursesForDay,
-            buildDisplayItems: _buildHomeDayDisplayItems,
-            wrapSurfaceHost: _wrapCourseGridSurfaceHost,
-            overlayVisible: _shouldShowDayViewOverlay,
-            dateForWeekDay: _dateForWeekDay,
-            startingAt: _getDisplayItemsStartingAtSection,
-            resolveColor: _resolveDisplayCourseColor,
-            overline: _resolveCompactOverlineText,
-            badge: _resolveCompactBadgeText,
-            weather: (item, date) => _weekCardWeatherDisplay(
-              l10n: AppLocalizations.of(context),
-              weather: context.watch<WeatherProvider?>(),
-              settings: settings,
-              course: item.course,
-              date: date,
-              week: week,
-              isPartnerCourse: item.isPartnerCourse,
-            ),
-            showActions: _showCourseActions,
-            onOpenAddCourse: (week, dayOfWeek, startSection, endSection) =>
-                unawaited(
-                  _openAddCourseFromEmptySlot(
-                    week,
-                    dayOfWeek,
-                    startSection,
-                    endSection,
-                  ),
-                ),
-          ),
-        buildBody: (grid) => _buildWeekPageBody(
-            settings: settings,
-            week: week,
-            grid: grid,
-          ),
+          grid: grid,
         ),
-        buildAnchoredDayViewOverlay: (week) =>
-            _buildAnchoredDayViewOverlay(
-              provider: provider,
-              settings: settings,
-              week: week,
-            ),
+        buildAnchoredOverlay: (week) => _buildAnchoredDayViewOverlay(
+          provider: provider,
+          settings: settings,
+          week: week,
+        ),
         onWeekdayBarDragStart: _startWeekdayBarDrag,
         onWeekdayBarDragUpdate: _updateWeekdayBarDrag,
         onWeekdayBarDragEnd: _endWeekdayBarDrag,
         onWeekdayBarDragCancel: _cancelWeekdayBarDrag,
+        visibleWeekListenable: _visibleWeekListenable,
+        shouldShowBackToCurrentWeek: _shouldShowFloatingBackToCurrentWeekButton,
+        onJumpToCurrentWeek: () => _jumpToCurrentWeek(provider),
+        glassDockPillOccupancy: _glassDockPillOccupancy,
+        dayHeaderPreview: _dayHeaderPreview,
+        shouldShowBackToToday: _shouldShowFloatingBackToTodayButton,
+        backToTodayBottomInset: _backToTodayButtonBottomInset,
+        onNavigateToday: () => unawaited(_navigateDayViewToToday(provider)),
       ),
-      isPullRunning: _homePull.isRunning,
-      pullDragDistance: _homePull.dragDistance,
-      pullTriggerDistance: HomePullController.triggerDistance,
-      onPullCancel: _homePull.cancelImport,
-      backToCurrentWeek: ValueListenableBuilder<int>(
-        valueListenable: _visibleWeekListenable,
-        builder: (context, visibleWeek, child) {
-          if (!_shouldShowFloatingBackToCurrentWeekButton(
-            provider,
-            provider.settings,
-            visibleWeek,
-          )) {
-            return const SizedBox.shrink();
-          }
-          return TimetableBackToCurrentWeekButton(
-            settings: provider.settings,
-            glassDockPillOccupancy: _glassDockPillOccupancy,
-            onJumpToCurrentWeek: () {
-              _jumpToCurrentWeek(provider);
-            },
-          );
-        },
-      ),
-      backToToday: ValueListenableBuilder<(int, int)?>(
-        valueListenable: _dayHeaderPreview,
-        builder: (context, _, _) {
-          if (!_shouldShowFloatingBackToTodayButton(provider)) {
-            return const SizedBox.shrink();
-          }
-          return TimetableBackToTodayButton(
-            bottomInset: _backToTodayButtonBottomInset(provider.settings),
-            onTap: () {
-              unawaited(_navigateDayViewToToday(provider));
-            },
-          );
-        },
-      ),
-      isDayView: _isDayView,
-      glassDockForm: glassDockForm,
-      isLoading: provider.isLoading,
     );
   }
-
   Widget _buildDockShell({
     required Widget homeStack,
     required bool useHomePreblur,
