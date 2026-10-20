@@ -7,21 +7,22 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../l10n/service_message_localizer.dart';
 import '../logging/app_debug_log.dart';
-import '../models/timetable_settings.dart';
-import '../providers/timetable_provider.dart';
-import '../ui/hyperos/hyperos_tokens.dart';
+import '../models/share_export_style.dart';
 import '../utils/app_toast.dart';
-import '../widgets/timetable_export_document.dart';
 import 'image_export_capture.dart';
 
 /// 把课表渲染成一张干净的图片并拉起系统分享面板。
 ///
-/// 出图顺序：拼导出文档 → 离屏光栅化（[ImageExportCapture]）→ 落临时文件
-/// → 系统分享面板。中间那段是全屏转圈遮罩，用户看不到文档本身。
+/// 出图顺序：**光栅化调用方给的文档** → 落临时文件 → 系统分享面板。中间那段
+/// 是全屏转圈遮罩，用户看不到文档本身。
+///
+/// **文档由调用方（屏层）构造**，这里只收一个已经拼好的 [Widget]。原来是本
+/// 服务自己 `TimetableExportDocument(provider: provider, ...)` 现拼，为此拖进
+/// 三条反向依赖（`providers/`、`ui/`、`widgets/` 各一条）——而本服务对
+/// `TimetableProvider` **零成员访问**，只是原样转手。谁拼文档、谁付依赖：
+/// 屏层本来就在合法的上层，`timetable_screen.dart` 自己知道当前是哪一周、
+/// 周视图还是日视图。
 abstract final class TimetableShareService {
-  /// 分享图恒用亮色底，与文档自绘的底色是同一枚 token。
-  static const Color _exportScaffoldColor = HyperosTokens.background;
-
   /// 导出图的逻辑宽度区间。
   ///
   /// 比统计长图（320~420）略宽：课表是**七列**网格，宽度直接换成每列能放下
@@ -30,13 +31,10 @@ abstract final class TimetableShareService {
   static const double _minExportWidth = 360;
   static const double _maxExportWidth = 460;
 
-  /// 渲染并分享 [week] 的课表；[dayOfWeek] 非空时只分享那一天的课。
+  /// 渲染并分享调用方组装好的课表文档。
   static Future<void> exportAndShare({
     required BuildContext context,
-    required TimetableProvider provider,
-    required TimetableSettings settings,
-    required int week,
-    int? dayOfWeek,
+    required Widget document,
   }) async {
     final l10n = AppLocalizations.of(context)!;
     final overlayState = Overlay.maybeOf(context, rootOverlay: true);
@@ -57,13 +55,8 @@ abstract final class TimetableShareService {
           _minExportWidth,
           _maxExportWidth,
         ),
-        scaffoldColor: _exportScaffoldColor,
-        document: TimetableExportDocument(
-          provider: provider,
-          settings: settings,
-          week: week,
-          dayOfWeek: dayOfWeek,
-        ),
+        scaffoldColor: ShareExportStyle.background,
+        document: document,
         debugLabel: 'TimetableShare',
       );
       if (pngBytes == null) {

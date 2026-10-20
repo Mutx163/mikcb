@@ -6,10 +6,10 @@ import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/widgets/home_menu_route_catalog.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/memory_stats_service.dart';
-import 'package:university_timetable/services/timetable_share_service.dart';
 import 'package:university_timetable/widgets/course_recolor_sheet.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
 import 'package:university_timetable/widgets/profile_quick_switch_sheet.dart';
+import 'package:university_timetable/widgets/timetable_share_export.dart';
 
 export 'home_top_menu.dart'
     show
@@ -117,7 +117,7 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     // 本周的周视图课表。
     open: (context) {
       final provider = context.read<TimetableProvider>();
-      return TimetableShareService.exportAndShare(
+      return shareTimetableImage(
         context: context,
         provider: provider,
         settings: provider.settings,
