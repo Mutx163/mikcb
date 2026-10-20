@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
+import '../models/page_corner_radius.dart';
 import '../utils/timed_method_channel.dart';
 
 /// Reads Android developer-option animation scales for Flutter transitions.
@@ -11,8 +11,7 @@ abstract final class AndroidAnimationScaleService {
 
   static double _transitionScale = 1;
   static double _userTransitionSpeed = 1;
-  static double _displayCornerRadiusDp =
-      HyperosMiuixNavigation.pageCornerRadiusFallback;
+  static double _displayCornerRadiusDp = kPageCornerRadiusFallbackDp;
   static bool _initialized = false;
 
   static double get transitionScale => _transitionScale;
@@ -38,7 +37,7 @@ abstract final class AndroidAnimationScaleService {
   static Future<void> refresh() async {
     if (kIsWeb || !Platform.isAndroid) {
       _transitionScale = 1.0;
-      _displayCornerRadiusDp = HyperosMiuixNavigation.pageCornerRadiusFallback;
+      _displayCornerRadiusDp = kPageCornerRadiusFallbackDp;
       return;
     }
     try {

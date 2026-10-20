@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../models/page_corner_radius.dart';
+
 /// Design constants transcribed from [Miuix](https://github.com/compose-miuix-ui/miuix)
 /// (Compose Multiplatform, Apache-2.0). Canonical reference for mikcb HyperOS — not a
 /// runtime dependency. We hand-port Miuix because there is no official Flutter package.
@@ -709,7 +711,10 @@ abstract final class HyperosMiuixNavigation {
   static const transitionCurve = Cubic(0.05, 0, 0.133333, 1);
 
   /// Fallback when [RoundedCorner] is unavailable (typical Xiaomi display).
-  static const pageCornerRadiusFallback = 28.0;
+  ///
+  /// 真源在 `models/page_corner_radius.dart`（服务层也要读同一个数，不能反向
+  /// import ui）。这里保留 GUI 侧的名字，值从那边引过来，两边不会漂。
+  static const pageCornerRadiusFallback = kPageCornerRadiusFallbackDp;
 
   // ---------------------------------------------------------------------------
   // miuix-nav — `NavTransitions.MiuixDefault` + `NavDisplayEffects.Default`
