@@ -145,7 +145,11 @@ void main() {
     // `timetable/course_repository.dart`，与 `_timetableDeleteCourse` 同一族同放处。
     // 4569→4362：M4 服务化把主题/考试/节假日/情侣/上课提醒五个域抽到
     // `lib/services/`，适配器放主库，主文件只留委托。
-    const baselineLines = 4362;
+    // 4362→4043：TimetableProvider 解耦方案 A 按「族」出库 —— F1 日程项族
+    // （`TimetableScheduleItemService`）、F2 地点规则族（`TimetableLocationRuleService`）
+    // 连实现一起搬到 `lib/services/`，主库只留端口适配器与薄委托；对应的两个 part
+    // 分片删除。规矩不变：把规则放回它该在的服务里，不抬基线。
+    const baselineLines = 4043;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
