@@ -154,7 +154,8 @@ void main() {
     // 搬走，主库只留委托与 `_runMutation` 门。
     // 3853→3851：F5 作息族（`TimetableTimeSchemeService`）出库，接线成本被委托
     // 压缩抵掉，主文件仍只降不升。
-    const baselineLines = 3851;
+    // 3851→3847：F6 日期规则套用出库。
+    const baselineLines = 3847;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,

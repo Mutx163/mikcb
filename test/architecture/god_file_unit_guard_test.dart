@@ -75,16 +75,16 @@ void main() {
     // 6262→5956：F5 作息族（TimetableTimeSchemeService）出库，分片再删一个。
     // 基线取**已提交快照**的实测值；提交当日工作区若有并行会话在途的修改，
     // 实测会略高于基线——棘轮只衡量已落库的代码。
-    const baselineLines = 5956;
+    const baselineLines = 5771;
     final parts = _providerParts();
     final lines =
         _lineCount('lib/providers/timetable_provider.dart') +
         parts.fold<int>(0, (sum, path) => sum + _lineCount(path));
     expect(
       parts.length,
-      lessThanOrEqualTo(3),
+      lessThanOrEqualTo(2),
       reason:
-          'provider part 数量涨到 ${parts.length}（基线 3）。'
+          'provider part 数量涨到 ${parts.length}（基线 2）。'
           '新功能请抽成独立 service，不要继续往 part 里摊。',
     );
     expect(
@@ -102,9 +102,10 @@ void main() {
     // 529→454：F3 课程/作业族出库，写作纪律那几段（含作业重算）整体搬走。
     // 454→402：F4 课程组整组写入口并入同一个服务。
     // 402→326：F5 作息族出库。
+    // 326→291：F6 日期规则批量套用出库。
     // 注意：`extension on TimetableProvider` 里的成员不写 `host.`，不进本棘轮数字，
     // F2 就因此少算了若干处；后续以「part 归零」为准，这个数字只作兜底。
-    const baselineHits = 326;
+    const baselineHits = 291;
     final hostPrivateAccess = RegExp(r'host\._');
     var hits = 0;
     for (final path in _providerParts()) {
