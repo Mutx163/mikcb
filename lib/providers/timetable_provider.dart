@@ -3,7 +3,6 @@ library;
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
-import 'package:university_timetable/l10n/app_localizations.dart';
 import '../l10n/service_message_localizer.dart';
 import '../models/class_reminder.dart';
 import '../models/course.dart';
@@ -19,7 +18,6 @@ import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../data/timetable_repository.dart';
 import '../domain/week_calculator.dart';
-import '../domain/clock_order.dart';
 import '../domain/course_domain.dart';
 import '../domain/schedule_item_expander.dart';
 import '../domain/couple_timetable_logic.dart';
@@ -60,6 +58,7 @@ import '../services/timetable_time_scheme_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/wallpaper_history_service.dart';
 import '../utils/home_page_background.dart';
+import '../utils/course_group.dart';
 import '../domain/location_time_match_logic.dart';
 import '../domain/schedule_date_rule_logic.dart';
 import '../domain/time_scheme_logic.dart';
@@ -86,62 +85,11 @@ export '../domain/import_export_logic.dart'
         preserveImportedCourseLocalSharedFields,
         replaceImportedCoursesPreservingLocalFields,
         syncImportedCourses;
+export '../utils/course_group.dart' show CourseConflict, CourseGroup;
 
 part 'timetable/import_export_service.dart';
 
 bool _isLiveTestingFixture(Course course) => course.id.startsWith('live_test_');
-
-class CourseConflict {
-  final Course course;
-  final Course otherCourse;
-
-  const CourseConflict({required this.course, required this.otherCourse});
-}
-
-/// Groups courses that share the same name (i.e. the same subject with
-/// multiple schedule entries).  This is a UI-layer aggregation – the
-/// underlying storage still uses individual [Course] objects.
-class CourseGroup {
-  final String name;
-  final List<Course> courses;
-
-  const CourseGroup({required this.name, required this.courses});
-
-  /// Shared fields taken from the first course in the group.
-  String get teacher => courses.first.teacher;
-  String get color => courses.first.color;
-  String? get shortName => courses.first.shortName;
-  CourseNature get courseNature => courses.first.courseNature;
-  String? get description => courses.first.description;
-  String? get note => courses.first.note;
-
-  /// Summarised schedule chips, e.g. ["周一1-2节", "周三3-4节"].
-  List<String> scheduleChipLabels(AppLocalizations l10n) {
-    return courses.map((c) {
-      final dayLabel = _weekdayShortLabel(l10n, c.dayOfWeek);
-      return l10n.weekdaySectionSummary(dayLabel, c.startSection, c.endSection);
-    }).toList();
-  }
-
-  /// Earliest day/slot for sorting.
-  int get earliestDayOfWeek =>
-      courses.map((c) => c.dayOfWeek).reduce((a, b) => a < b ? a : b);
-  int get earliestStartSection =>
-      courses.map((c) => c.startSection).reduce((a, b) => a < b ? a : b);
-}
-
-String _weekdayShortLabel(AppLocalizations l10n, int dayOfWeek) {
-  return switch (dayOfWeek) {
-    1 => l10n.weekdayShortMonday,
-    2 => l10n.weekdayShortTuesday,
-    3 => l10n.weekdayShortWednesday,
-    4 => l10n.weekdayShortThursday,
-    5 => l10n.weekdayShortFriday,
-    6 => l10n.weekdayShortSaturday,
-    7 => l10n.weekdayShortSunday,
-    _ => dayOfWeek.toString(),
-  };
-}
 
 class ScheduleDateRuleSaveResult {
   final ScheduleDateRule rule;
@@ -309,6 +257,8 @@ class TimetableProvider
 
   @override
   int get currentWeek => _currentWeek;
+
+  @override
   int get currentDateWeek => _currentDateWeek;
   @override
   List<TimeScheme> get timeSchemes => List.unmodifiable(_timeSchemes);
@@ -485,15 +435,7 @@ class TimetableProvider
 
   /// Courses grouped by name – each group represents one subject with
   /// one or more schedule entries.
-  List<CourseGroup> get courseGroups {
-    final Map<String, List<Course>> grouped = {};
-    for (final course in _courses) {
-      grouped.putIfAbsent(course.name, () => []).add(course);
-    }
-    return grouped.entries
-        .map((e) => CourseGroup(name: e.key, courses: e.value))
-        .toList();
-  }
+  List<CourseGroup> get courseGroups => CourseGroup.buildFrom(_courses);
 
   /// Find the [CourseGroup] that contains [course], or `null` if not found.
   CourseGroup? courseGroupForCourse(Course course) {
@@ -550,8 +492,9 @@ class TimetableProvider
     notifyUserDataChangedForSync();
   }
 
-  int get currentDayOfWeek => _currentDayOfWeek;
   bool get isLoading => _isLoading;
+  @override
+  int get currentDayOfWeek => _currentDayOfWeek;
   DateTime? get semesterStartDate => _settings.semesterStartDate;
   DataTransferService get dataTransferService => _dataTransferService;
   @override
@@ -3347,36 +3290,16 @@ class TimetableProvider
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
   }
 
-  List<Course> getTodayCourses({DateTime? now}) {
-    // After the term ends, UI currentDateWeek is clamped to semesterWeekCount.
-    // "Today's courses" must use the real calendar week so finished courses do
-    // not keep appearing every weekday that matches the last teaching week.
-    final reference = now ?? DateTime.now();
-    final targetWeek = _settings.semesterStartDate == null
-        ? _currentDateWeek
-        : _calculateCalendarWeekForDate(reference);
-    return getCoursesForDay(_currentDayOfWeek, week: targetWeek);
-  }
+  /// 今天的课（真实日历周口径）。实现与 [getCoursesInProgress] 同族，在
+  /// [TimetableLiveActivityService]：两者都依赖「今天属于哪一周」的实时口径。
+  List<Course> getTodayCourses({DateTime? now}) =>
+      TimetableLiveActivityService.getTodayCourses(this, now: now);
 
   /// 当前正在上的那节课。**目前全仓零调用方**（见
   /// `test/domain/clock_order_sort_sites_test.dart` 的复核记录），保留是为了不删
-  /// 公共 API；但钟点比较已经改成 `compareClockText` —— 外来存档里的 `9:00`
-  /// 是不补零的，字典序下 `"09:30" < "9:00"`，一旦有人接上这个入口就会得到
-  /// 「9 点那节明明在上课却查不到」。同族的 `getCoursesInProgress` 走的是分钟数。
-  Course? getCurrentCourse() {
-    final todayCourses = getTodayCourses();
-    final now = DateTime.now();
-    final currentTime =
-        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-
-    for (final course in todayCourses) {
-      if (compareClockText(currentTime, course.startTime) >= 0 &&
-          compareClockText(currentTime, course.endTime) < 0) {
-        return course;
-      }
-    }
-    return null;
-  }
+  /// 公共 API；钟点比较用 `compareClockText`，外来存档里的不补零 `9:00` 也判得对。
+  Course? getCurrentCourse() =>
+      TimetableLiveActivityService.getCurrentCourse(this);
 
   Course? getCourseInProgress({
     required int dayOfWeek,
@@ -3406,21 +3329,8 @@ class TimetableProvider
     now: now,
   );
 
-  /// 下一节课。与 [getCurrentCourse] 一样目前零调用方；同样把字典序换成了
-  /// `compareClockText`（不补零的 `9:00` 会让 9 点那节被误判成"还没开始"）。
-  Course? getNextCourse() {
-    final todayCourses = getTodayCourses();
-    final now = DateTime.now();
-    final currentTime =
-        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-
-    for (final course in todayCourses) {
-      if (compareClockText(currentTime, course.startTime) < 0) {
-        return course;
-      }
-    }
-    return null;
-  }
+  /// 下一节课。与 [getCurrentCourse] 一样目前零调用方；钟点同样走 `compareClockText`。
+  Course? getNextCourse() => TimetableLiveActivityService.getNextCourse(this);
 
   String? _normalizeShortName(String? shortName) {
     final value = shortName?.trim();

@@ -21,9 +21,11 @@ TimetableSettings buildSettings({
   bool enableBeforeClass = true,
   int showBeforeClassMinutes = 20,
   int timeCorrectionSeconds = 0,
+  DateTime? semesterStartDate,
 }) {
   return TimetableSettings(
     sections: sections,
+    semesterStartDate: semesterStartDate,
     liveEnableBeforeClass: enableBeforeClass,
     liveShowBeforeClassMinutes: showBeforeClassMinutes,
     liveTimeCorrectionSeconds: timeCorrectionSeconds,
@@ -126,6 +128,15 @@ class _FakePort implements TimetableLiveActivityPort {
   int get currentWeek => 1;
 
   @override
+  int currentDateWeek = 1;
+
+  @override
+  int currentDayOfWeek = 1;
+
+  /// 假端口返回的「今天属于哪个日历周」。
+  int calendarWeek = 1;
+
+  @override
   Future<void> initialize() async {}
 
   @override
@@ -163,7 +174,8 @@ class _FakePort implements TimetableLiveActivityPort {
   }
 
   @override
-  int calculateCalendarWeekForDate(DateTime date, {int? fallbackWeek}) => 1;
+  int calculateCalendarWeekForDate(DateTime date, {int? fallbackWeek}) =>
+      calendarWeek;
 
   @override
   bool isLiveTestingFixture(Course course) =>
@@ -457,6 +469,62 @@ void main() {
     });
   });
 
+  group('getTodayCourses / getCurrentCourse', () {
+    test('学期未设时按 currentDateWeek 取当天的课', () {
+      final port = _FakePort(
+        courses: [
+          buildCourse(id: 'today', endWeek: 3),
+        ],
+      );
+
+      expect(
+        TimetableLiveActivityService.getTodayCourses(port).map((c) => c.id),
+        ['today'],
+      );
+
+      port.currentDateWeek = 5;
+      expect(
+        TimetableLiveActivityService.getTodayCourses(port),
+        isEmpty,
+        reason: '周次口径要跟着 currentDateWeek 走',
+      );
+    });
+
+    test('设了开学日期后改走真实日历周（结课后不再重复列出上完的课）', () {
+      final port = _FakePort(
+        settings: buildSettings(semesterStartDate: DateTime(2026, 3, 2)),
+        courses: [
+          buildCourse(id: 'cal', startWeek: 3, endWeek: 3),
+        ],
+      );
+      port.calendarWeek = 3;
+      port.currentDateWeek = 1;
+
+      expect(
+        TimetableLiveActivityService.getTodayCourses(
+          port,
+        ).map((course) => course.id),
+        ['cal'],
+      );
+    });
+
+    test('getCurrentCourse 用分钟序判定正在上的那一节', () {
+      final port = _FakePort(
+        courses: [
+          buildCourse(
+            id: 'all-day',
+            startTime: '00:00',
+            endTime: '23:59',
+          ),
+        ],
+      );
+
+      expect(
+        TimetableLiveActivityService.getCurrentCourse(port)?.id,
+        'all-day',
+      );
+    });
+  });
   group('自检预设课覆盖层', () {
     test('注入后可见、摘除后清空', () {
       final port = _FakePort();

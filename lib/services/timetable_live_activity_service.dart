@@ -42,6 +42,8 @@ abstract interface class TimetableLiveActivityPort {
   bool get hasPartnerBinding;
   TimetableProfile? get partnerProfile;
   int get currentWeek;
+  int get currentDateWeek;
+  int get currentDayOfWeek;
   Future<void> initialize();
   Future<bool> syncTemporalContext({DateTime? now});
   bool isHoliday(DateTime date);
@@ -1257,6 +1259,54 @@ class TimetableLiveActivityService {
     await updateActivity(host, syncScheduleSnapshot: false);
   }
 
+  /// 今天的课。
+  ///
+  /// 学期结束后 UI 的 `currentDateWeek` 会被夹在 `semesterWeekCount`，而「今天的
+  /// 课」必须用真实日历周，否则结课后每个匹配「最后一个教学周」的星期都会把上完
+  /// 的课再列一遍。与超级岛选课同源（[calculateCalendarWeekForDate]）。
+  static List<Course> getTodayCourses(
+    TimetableLiveActivityPort host, {
+    DateTime? now,
+  }) {
+    final reference = now ?? DateTime.now();
+    final targetWeek = host.settings.semesterStartDate == null
+        ? host.currentDateWeek
+        : host.calculateCalendarWeekForDate(reference);
+    return host.getCoursesForDay(host.currentDayOfWeek, week: targetWeek);
+  }
+
+  /// 当前正在上的那节课（钟点按 [compareClockText] 比，`9:00` 不补零也正确）。
+  static Course? getCurrentCourse(TimetableLiveActivityPort host) {
+    final todayCourses = getTodayCourses(host);
+    final now = DateTime.now();
+    final currentTime =
+        '${now.hour.toString().padLeft(2, '0')}:'
+        '${now.minute.toString().padLeft(2, '0')}';
+
+    for (final course in todayCourses) {
+      if (compareClockText(currentTime, course.startTime) >= 0 &&
+          compareClockText(currentTime, course.endTime) < 0) {
+        return course;
+      }
+    }
+    return null;
+  }
+
+  /// 下一节还没开始的课（同样按分钟数比钟点）。
+  static Course? getNextCourse(TimetableLiveActivityPort host) {
+    final todayCourses = getTodayCourses(host);
+    final now = DateTime.now();
+    final currentTime =
+        '${now.hour.toString().padLeft(2, '0')}:'
+        '${now.minute.toString().padLeft(2, '0')}';
+
+    for (final course in todayCourses) {
+      if (compareClockText(currentTime, course.startTime) < 0) {
+        return course;
+      }
+    }
+    return null;
+  }
   /// 正在上的课：[dayOfWeek]/[week] 那天的课里，实时时钟落在起止之间的那些。
   ///
   /// 与超级岛选课共用同一套实时时钟解析（[resolveRealTime]），所以搬来同处，
