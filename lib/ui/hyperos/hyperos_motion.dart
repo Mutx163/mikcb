@@ -54,18 +54,33 @@ abstract final class HyperosMotionPlatform {
   // 速度变更时由 [refreshBoundControllers] 统一重新赋值。
 
   /// 控制器 → 基础毫秒数（速度 1.0 时的时长）。
-  static final Map<AnimationController, int> _boundControllers =
-      <AnimationController, int>{};
+  ///
+  /// 用 [Expando] 而不是 `Map<AnimationController, int>`：Expando **不阻止**
+  /// 控制器被 GC。控制器 dispose 后如果忘了 [unbindController]，Map 会把整个
+  /// 控制器（连同它持有的 Ticker、回调、State 闭包）永远钉在内存里；Expando
+  /// 没有这个风险，键被回收时条目自动消失。
+  ///
+  /// 代价是 Expando 不能遍历，所以同时维护一个 [WeakReference] 列表供
+  /// [refreshBoundControllers] 扫描（死引用在扫描时顺手剔除）。
+  static final Expando<int> _boundBaseMs = Expando<int>('hyperosBoundBaseMs');
+
+  /// 登记过的控制器（弱引用），仅用于速度变更时遍历刷新。
+  static final List<WeakReference<AnimationController>> _boundRefs =
+      <WeakReference<AnimationController>>[];
 
   /// 登记 [controller] 的基础时长并立即按当前速度赋值；返回同一控制器便于链式。
   ///
-  /// 控制器 dispose 之后登记项仍在表里（不持有任何 ticker 引用，只是多一个
-  /// 键），由调用方在 `dispose()` 里配对调用 [unbindController] 清掉。
+  /// 登记是**弱引用**的，控制器被 GC 后条目自动消失、不需要强制配对
+  /// [unbindController]。仍然建议在 `dispose()` 里调一下，让刷新列表更干净。
   static AnimationController bindController(
     AnimationController controller,
     int baseMilliseconds,
   ) {
-    _boundControllers[controller] = baseMilliseconds;
+    _boundBaseMs[controller] = baseMilliseconds;
+    final alreadyTracked = _boundRefs.any((ref) => ref.target == controller);
+    if (!alreadyTracked) {
+      _boundRefs.add(WeakReference<AnimationController>(controller));
+    }
     _applyBoundDuration(controller, baseMilliseconds);
     return controller;
   }
@@ -77,8 +92,18 @@ abstract final class HyperosMotionPlatform {
   /// [scaledDuration]（本仓的长命控制器都在 `forward` 前的 `_syncDuration`
   /// 里做），或等下一次速度变更。
   static void refreshBoundControllers() {
-    for (final entry in _boundControllers.entries.toList()) {
-      _applyBoundDuration(entry.key, entry.value);
+    // 顺带剔除已被 GC 的控制器，列表不会无限增长。
+    _boundRefs.removeWhere((ref) => ref.target == null);
+    for (final ref in List<WeakReference<AnimationController>>.of(_boundRefs)) {
+      final controller = ref.target;
+      if (controller == null) {
+        continue;
+      }
+      final baseMs = _boundBaseMs[controller];
+      if (baseMs == null) {
+        continue;
+      }
+      _applyBoundDuration(controller, baseMs);
     }
   }
 
@@ -89,18 +114,28 @@ abstract final class HyperosMotionPlatform {
     controller.duration = scaledDuration(baseMs);
   }
 
-  /// 摘除登记（在控制器的 `dispose()` 里调用）。
+  /// 摘除登记（可选：控制器被 GC 后条目本就会消失）。
   static void unbindController(AnimationController controller) {
-    _boundControllers.remove(controller);
+    _boundBaseMs[controller] = null;
+    _boundRefs.removeWhere((ref) => ref.target == controller);
   }
 
   /// 当前登记数，仅供测试断言「dispose 之后没有泄漏」。
   @visibleForTesting
-  static int get debugBoundControllerCount => _boundControllers.length;
+  static int get debugBoundControllerCount {
+    _boundRefs.removeWhere((ref) => ref.target == null);
+    return _boundRefs.length;
+  }
 
   @visibleForTesting
   static void debugClearBoundControllers() {
-    _boundControllers.clear();
+    for (final ref in _boundRefs) {
+      final controller = ref.target;
+      if (controller != null) {
+        _boundBaseMs[controller] = null;
+      }
+    }
+    _boundRefs.clear();
   }
 }
 

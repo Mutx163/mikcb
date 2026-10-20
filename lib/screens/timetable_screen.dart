@@ -38,6 +38,7 @@ import '../controllers/week_pager_controller.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
 import '../utils/home_wallpaper_luminance_share.dart';
+import '../ui/hyperos/day_view_expand_motion.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
     show LiquidGlassSurface, LiquidGlassSurfaceState;
 import '../widgets/course_grid_surface_host.dart';
@@ -93,7 +94,6 @@ class TimetableScreen extends StatefulWidget {
 class _TimetableScreenState extends State<TimetableScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin
     implements DayViewTransitionHost, WeekPagerHost, HomeMenuHost {
-  static const Duration _dayExpandDuration = Duration(milliseconds: 360);
   static const double _dayViewCardRadius = 20;
 
   /// 玻璃坞药丸占用高度：药丸 56 + 底部安全 6（药丸顶到屏幕底的距离）。
@@ -322,7 +322,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       setState(_dayViewTransition.clearTransitionSource);
 
   @override
-  Future<void> forwardDayViewExpand() => _dayViewExpandController.forward();
+  Future<void> forwardDayViewExpand() =>
+      DayViewExpandMotion.forward(_dayViewExpandController);
 
   @override
   Future<void> reverseDayViewExpand() => _dayViewExpandController.reverse();
@@ -539,10 +540,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       initialPage:
           clampWeek(initialWeek, provider.settings.semesterWeekCount) - 1,
     );
-    _dayViewExpandController = AnimationController(
-      vsync: this,
-      duration: _dayExpandDuration,
-    );
+    _dayViewExpandController = DayViewExpandMotion.createController(this);
     // 日视图锚点展开/收起期间，卡片玻璃 fill 必须每帧重采样壁纸
     // （否则纹理停在旧屏幕位置，卡片呈现半边模糊半边透明）。
     _glassDockCardRepaint = _dayViewExpandController;
