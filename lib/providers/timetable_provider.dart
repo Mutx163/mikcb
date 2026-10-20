@@ -54,6 +54,7 @@ import '../services/timetable_location_rule_service.dart';
 import '../services/timetable_partner_service.dart';
 import '../services/timetable_persist_hooks.dart';
 import '../services/timetable_reminder_service.dart';
+import '../services/timetable_schedule_date_rule_service.dart';
 import '../services/timetable_schedule_item_service.dart';
 import '../services/timetable_settings_writer.dart';
 import '../services/timetable_theme_service.dart';
@@ -88,7 +89,6 @@ export '../domain/import_export_logic.dart'
         replaceImportedCoursesPreservingLocalFields,
         syncImportedCourses;
 
-part 'timetable/schedule_date_rule_repository.dart';
 part 'timetable/import_export_service.dart';
 part 'timetable/live_activity_controller.dart';
 
@@ -185,7 +185,8 @@ class TimetableProvider
         TimetableScheduleItemPort,
         TimetableLocationRulePort,
         TimetableCoursePort,
-        TimetableTimeSchemePort {
+        TimetableTimeSchemePort,
+        TimetableScheduleDateRulePort {
   static const Duration _liveEndReminderWindow = Duration(minutes: 10);
 
   final StorageService _storageService;
@@ -442,6 +443,15 @@ class TimetableProvider
   @override
   void mergeActiveProfileIntoProfilesList() =>
       _mergeActiveProfileIntoProfilesList();
+
+  // ── TimetableScheduleDateRulePort：只比作息族多「套用标记」三个成员 ──
+  @override
+  set scheduleDateRuleLastAppliedSignature(String? value) =>
+      _scheduleDateRuleLastAppliedSignature = value;
+
+  @override
+  Future<void> saveScheduleDateRuleLastAppliedSignature(String signature) =>
+      _profileRepository.saveScheduleDateRuleLastAppliedSignature(signature);
 
   /// Courses grouped by name – each group represents one subject with
   /// one or more schedule entries.
@@ -1209,6 +1219,7 @@ class TimetableProvider
 
   /// Signature of the last date-rule bulk apply, used to explain save results
   /// without exposing the provider's mutable internal state.
+  @override
   String? get scheduleDateRuleLastAppliedSignature =>
       _scheduleDateRuleLastAppliedSignature;
 
@@ -1712,12 +1723,12 @@ class TimetableProvider
   }
 
   /// Single implementation of seasonal bulk-apply lives in
-  /// `timetable/schedule_date_rule_repository.dart` —— 批量套用会重写**每一个**课表的
-  /// 默认作息、节次表与未锁课程钟点，它的落盘失败整体回滚也在那里，与作息族
-  /// (`_timetableApplyTimeScheme`)、地点分组族 (`_commitLocationGroupChange`) 同形。
+  /// `services/timetable_schedule_date_rule_service.dart` —— 批量套用会重写**每一个**
+  /// 课表的默认作息、节次表与未锁课程钟点，落盘失败的整体回滚也在那里（与作息族
+  /// 的 `applyTimeScheme`、地点分组族同形）。
   Future<ScheduleDateRuleApplyResult> _applyDueScheduleDateRulesDetailed({
     DateTime? now,
-  }) async => _timetableApplyDueScheduleDateRulesDetailed(this, now: now);
+  }) => TimetableScheduleDateRuleService.applyDue(this, now: now);
 
   /// Apply location routing to unlocked courses on the active profile.
   ///
