@@ -28,6 +28,7 @@ import '../../../domain/warehouse_course_import_logic.dart';
 import '../../../domain/warehouse_location_time_schemes.dart';
 import '../../../domain/warehouse_macro_dialog_replay.dart';
 import '../../../domain/warehouse_session_probe.dart';
+import '../../../providers/import_restore_provider_access.dart';
 import '../../../services/import_time_scheme_restore_point.dart';
 import '../../../services/import_week_alignment_service.dart';
 import '../../../services/warehouse_bridge_compat.dart';
@@ -2387,7 +2388,9 @@ $kWarehouseBridgeCompatShim  try {
         return;
       }
       // 记下"切作息之前"那份设置：后面任何一条中止路径都靠它把作息切回来。
-      schemeRestorePoint = ImportTimeSchemeRestorePoint.capture(provider);
+      schemeRestorePoint = ImportTimeSchemeRestorePoint.capture(
+        ImportRestoreProviderAccess(provider),
+      );
       try {
         await _applyPendingImportedSectionsIfNeeded();
       } catch (error) {

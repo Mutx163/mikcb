@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/providers/import_restore_provider_access.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/import_time_scheme_restore_point.dart';
 import 'package:university_timetable/services/storage_service.dart';
@@ -54,7 +55,7 @@ void main() {
     );
     expect(provider.settings.activeTimeSchemeId, mine.id);
 
-    final point = ImportTimeSchemeRestorePoint.capture(provider);
+    final point = ImportTimeSchemeRestorePoint.capture(ImportRestoreProviderAccess(provider));
 
     // 脚本那一套：新建并切走（这正是 `_applyImportedSections` 干的事）。
     final school = await provider.createTimeScheme(
@@ -88,7 +89,7 @@ void main() {
         .map((section) => section.startTime)
         .toList();
 
-    final point = ImportTimeSchemeRestorePoint.capture(provider);
+    final point = ImportTimeSchemeRestorePoint.capture(ImportRestoreProviderAccess(provider));
 
     await provider.createTimeScheme(
       name: '某大学作息',
@@ -127,7 +128,7 @@ void main() {
         .map((section) => section.startTime)
         .toList();
 
-    final point = ImportTimeSchemeRestorePoint.capture(provider);
+    final point = ImportTimeSchemeRestorePoint.capture(ImportRestoreProviderAccess(provider));
 
     await provider.createTimeScheme(
       name: '某大学作息',

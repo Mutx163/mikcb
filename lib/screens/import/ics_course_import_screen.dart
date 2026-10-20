@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../providers/import_restore_provider_access.dart';
 import '../../providers/timetable_provider.dart';
 import '../../services/ics_import_service.dart';
 import '../../services/import_time_scheme_restore_point.dart';
@@ -249,7 +250,9 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
     // 未挂载、写盘抛错）原先都不回滚 —— 用户什么都没干，作息却被永久换掉，
     // 还多出一条叫「（导入补齐）」的模板。恢复点与教务导入那条路共用同一份实现
     // （`services/import_time_scheme_restore_point.dart`，有 3 条单测）。
-    final restorePoint = ImportTimeSchemeRestorePoint.capture(provider);
+    final restorePoint = ImportTimeSchemeRestorePoint.capture(
+      ImportRestoreProviderAccess(provider),
+    );
     var coursesImported = false;
     try {
       final capacityReady = await ensureImportSectionCapacity(

@@ -11,6 +11,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../models/course.dart';
+import '../../providers/import_restore_provider_access.dart';
 import '../../providers/timetable_provider.dart';
 import '../../services/ai_course_import_service.dart';
 import '../../services/import_time_scheme_restore_point.dart';
@@ -572,7 +573,9 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
       // 收到一句「节次数不足」，却没有任何办法把这批课导进来。
       // 预扫只看 `endSection`、读不到就跳过（返回 null），真正的校验仍由 parse 负责。
       final provider = context.read<TimetableProvider>();
-      restorePoint = ImportTimeSchemeRestorePoint.capture(provider);
+      restorePoint = ImportTimeSchemeRestorePoint.capture(
+        ImportRestoreProviderAccess(provider),
+      );
       final previewMaxSection = _aiImportService.maxSectionIn(_aiController.text);
       if (previewMaxSection != null &&
           previewMaxSection > provider.settings.sectionCount) {

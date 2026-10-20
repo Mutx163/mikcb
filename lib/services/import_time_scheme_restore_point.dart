@@ -2,8 +2,24 @@ import 'package:flutter/foundation.dart';
 
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
-import '../providers/timetable_provider.dart';
 import 'timetable_import_export_service.dart';
+
+/// 恢复点需要的课表宿主窄面（端口由消费方定义）。
+///
+/// 本文件在 services 层，不反向 import `providers/timetable_provider.dart`：
+/// 恢复动作只需要「读设置快照 / 活读作息表 / 写回整份设置 / 删作息模板」
+/// 四个成员。宿主适配器 `ImportRestoreProviderAccess` 见
+/// `lib/providers/import_restore_provider_access.dart`，由调用点（四个导入
+/// 屏、测试）构造注入。成员一律一行转发，时序语义全部留在恢复点里。
+abstract class ImportTimeSchemeRestoreHost {
+  TimetableSettings get settings;
+
+  List<TimeScheme> get timeSchemes;
+
+  Future<String?> updateTimetableSettings(TimetableSettings settings);
+
+  Future<bool> deleteTimeScheme(String schemeId);
+}
 
 /// 教务导入的作息恢复点（2026-10-08）。
 ///
@@ -20,20 +36,21 @@ import 'timetable_import_export_service.dart';
 /// 只切 id 的话，一个本来没有模板的用户会被永久留在一个教务模板上。
 class ImportTimeSchemeRestorePoint {
   ImportTimeSchemeRestorePoint._({
-    required this.provider,
+    required this.host,
     required this.settings,
     required this.schemeIds,
   });
 
   /// 记下"切作息之前"那一份设置。调用点必须在**应用教务作息之前**。
-  factory ImportTimeSchemeRestorePoint.capture(TimetableProvider provider) =>
-      ImportTimeSchemeRestorePoint._(
-        provider: provider,
-        settings: provider.settings,
-        schemeIds: provider.timeSchemes.map((scheme) => scheme.id).toSet(),
-      );
+  factory ImportTimeSchemeRestorePoint.capture(
+    ImportTimeSchemeRestoreHost host,
+  ) => ImportTimeSchemeRestorePoint._(
+    host: host,
+    settings: host.settings,
+    schemeIds: host.timeSchemes.map((scheme) => scheme.id).toSet(),
+  );
 
-  final TimetableProvider provider;
+  final ImportTimeSchemeRestoreHost host;
   final TimetableSettings settings;
 
   /// 捕获那一刻已存在的作息 id 集合。
@@ -61,7 +78,7 @@ class ImportTimeSchemeRestorePoint {
   /// 判据用名字后缀而不是"是不是副本形状"：副本的名字是那条分支里唯一
   /// 100% 由本仓拼出来的标记（`'${currentScheme.name}（导入补齐）'`），
   /// 用户的作息不可能正好叫这个。而它落进用户可见的模板列表也正是这个后缀。
-  Iterable<TimeScheme> get _importSupplementSchemes => provider.timeSchemes
+  Iterable<TimeScheme> get _importSupplementSchemes => host.timeSchemes
       .where(
         (scheme) =>
             !schemeIds.contains(scheme.id) &&
@@ -75,7 +92,7 @@ class ImportTimeSchemeRestorePoint {
   Future<void> restore() async {
     await _removeSchemesCreatedDuringImport();
     try {
-      final rejected = await provider.updateTimetableSettings(settings);
+      final rejected = await host.updateTimetableSettings(settings);
       if (rejected != null && kDebugMode) {
         // 正常路径不该走到这里：中止时课程没落地，捕获的那份节次表本来就合法，
         // 撞不上 `section_count_below_usage`。真撞上了留个痕，便于回捞。
@@ -105,7 +122,7 @@ class ImportTimeSchemeRestorePoint {
     }
     // 先把设置切回捕获时那一份，`activeTimeSchemeId` 才不再指向这些副本。
     try {
-      await provider.updateTimetableSettings(settings);
+      await host.updateTimetableSettings(settings);
     } catch (_) {
       if (kDebugMode) {
         debugPrint('import time scheme restore (pre-clean) failed');
@@ -114,7 +131,7 @@ class ImportTimeSchemeRestorePoint {
     }
     for (final scheme in created) {
       try {
-        await provider.deleteTimeScheme(scheme.id);
+        await host.deleteTimeScheme(scheme.id);
       } catch (error) {
         if (kDebugMode) {
           debugPrint('import time scheme cleanup failed for ${scheme.id}: $error');

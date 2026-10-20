@@ -15,6 +15,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../models/course.dart';
+import '../../providers/import_restore_provider_access.dart';
 import '../../providers/timetable_provider.dart';
 import '../../services/import_time_scheme_restore_point.dart';
 import '../../services/spreadsheet_import_service.dart';
@@ -377,7 +378,9 @@ Future<void> _completeParsedCourseImport({
   // 同 ICS / AI 导入：「自动补齐节次」会先扩表并落盘，而下面每条中止路径
   // （用户取消、未挂载、写盘抛错）原先都不回滚 —— 作息被永久换掉。
   // 恢复点与教务导入那条路共用同一份实现（有 3 条单测）。
-  final restorePoint = ImportTimeSchemeRestorePoint.capture(provider);
+  final restorePoint = ImportTimeSchemeRestorePoint.capture(
+    ImportRestoreProviderAccess(provider),
+  );
   var coursesImported = false;
   try {
     final capacityReady = await ensureImportSectionCapacity(
