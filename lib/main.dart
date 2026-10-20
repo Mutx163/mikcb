@@ -149,8 +149,18 @@ TextTheme _applyTextThemeFontWeight(TextTheme textTheme, FontWeight weight) {
   );
 }
 
-Locale? _localeFromSettings(String localeTag) =>
-    localeFromSettingsTag(localeTag);
+Locale? _localeFromSettings(String localeTag) {
+  final locale = localeFromSettingsTag(localeTag);
+  // DateFormat（不传 locale 参数的那批调用）读的是 Intl.defaultLocale，而它
+  // 既不会被 flutter_localizations 的 delegate 设置（SDK 源码只装载符号表、
+  // 不写 defaultLocale），也不跟 MaterialApp.locale 走——不同步的话，日期
+  // 永远按手机系统语言格式化（2026-10-20 体检 #34：应用内切语言后，
+  // add_exam_screen :748/:822/:880 与 lan_edit_screen :271 的日期不跟 App 语言）。
+  // 「跟随系统」（locale 为 null）时不动，让 Intl 回落 systemLocale，
+  // 与 MaterialApp 的「locale = null 即系统」口径一致。
+  syncIntlDefaultLocale(locale);
+  return locale;
+}
 
 String _bootSwitcherLabel(PackageInfo packageInfo, AppLocalizations l10n) {
   if (packageInfo.packageName.endsWith('.profile')) {

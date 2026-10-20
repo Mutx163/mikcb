@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../l10n/app_localizations.dart';
 
@@ -59,4 +60,24 @@ Locale? localeFromSettingsTag(String localeTag) {
     }
   }
   return Locale(languageCode);
+}
+
+/// 让 intl 的日期格式化（`DateFormat.xxx()` 不传 locale 的那批调用）跟随
+/// App 语言。
+///
+/// `Intl.defaultLocale` 初始为空，`getCurrentLocale()` 会回落到
+/// `systemLocale`（= 手机系统语言）；flutter_localizations 不会替我们设置它。
+/// 因此「应用内切语言」后，所有不带 locale 的 DateFormat 仍按手机系统语言
+/// 输出（2026-10-20 体检 #34）。在这里同步这一个全局值，未来新增的
+/// 无 locale DateFormat 自动跟随，不必逐处传 locale。
+///
+/// 「跟随系统」（[locale] 为 null）时不设置：回落行为与 MaterialApp 的
+/// 「locale = null 即系统」口径一致。
+void syncIntlDefaultLocale(Locale? locale) {
+  if (locale == null) {
+    return;
+  }
+  Intl.defaultLocale = locale.countryCode?.isNotEmpty == true
+      ? '${locale.languageCode}_${locale.countryCode}'
+      : locale.languageCode;
 }
