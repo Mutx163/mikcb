@@ -253,11 +253,23 @@ void main() {
     test('hasExamOnDate returns true for matching date', () async {
       final provider = await createProvider();
       await addTestCourse(provider);
-      final targetDate = DateTime(2026, 6, 15);
+      // 日期必须是**未来**的：`hasExamOnDate` 内部先过 `exam.isExpired`
+      // （2026-10-20 用户拍板「考完即消失」），而 `isExpired` 用 `DateTime.now()`
+      // 与考试结束时刻比。原先这里写死 `DateTime(2026, 6, 15)`，到了 2026-10-20
+      // 当天就变成「已过期」，断言必然翻红——那是**测试日期老化**，不是行为回归。
+      //
+      // 改用相对今天的天数：本用例要钉的是「按**日期**匹配目标日、不匹配次日」，
+      // 与「哪天」无关；过期过滤本身由上面
+      // `getUpcomingExams returns only non-expired exams` 那条独立覆盖。
+      final now = DateTime.now();
+      final targetDate = DateTime(now.year, now.month, now.day).add(
+        const Duration(days: 7),
+      );
+      final nextDay = targetDate.add(const Duration(days: 1));
       await provider.addExam(buildExam(dateTime: targetDate));
 
       expect(provider.hasExamOnDate(targetDate), isTrue);
-      expect(provider.hasExamOnDate(DateTime(2026, 6, 16)), isFalse);
+      expect(provider.hasExamOnDate(nextDay), isFalse);
     });
   });
 
