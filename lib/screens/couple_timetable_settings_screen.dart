@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../models/partner_timetable_binding.dart';
 import '../domain/couple_timetable_logic.dart';
+import '../providers/couple_webdav_access.dart';
 import '../providers/timetable_provider.dart';
 import '../services/couple_webdav_config.dart';
 import '../services/couple_webdav_service.dart';
@@ -312,7 +313,7 @@ class _CoupleTimetableSettingsScreenState
     }
     try {
       final result = await _coupleWebdavService.pullPartnerTimetable(
-        provider: context.read<TimetableProvider>(),
+        host: CoupleWebdavProviderAccess(context.read<TimetableProvider>()),
         force: force,
       );
       await _loadCoupleWebdavState();
@@ -356,7 +357,7 @@ class _CoupleTimetableSettingsScreenState
     setState(() => _isUploadingWebdav = true);
     try {
       final errorCode = await _coupleWebdavService.uploadMyTimetableForPartner(
-        provider: context.read<TimetableProvider>(),
+        host: CoupleWebdavProviderAccess(context.read<TimetableProvider>()),
       );
       if (!mounted) {
         return;

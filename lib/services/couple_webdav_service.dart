@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 
-import '../providers/timetable_provider.dart';
+import '../models/course.dart';
+import '../models/schedule_item.dart';
+import '../models/timetable_profile.dart';
+import '../models/timetable_settings.dart';
 import 'couple_webdav_config.dart';
 import 'couple_webdav_credentials_store.dart';
 import 'data_transfer_service.dart';
@@ -11,6 +14,30 @@ import 'partner_timetable_service.dart';
 import 'webdav_client_service.dart';
 
 enum CoupleWebdavPullStatus { imported, updated, unchanged, failed }
+
+/// 情侣云盘读写的课表宿主窄面（端口由消费方定义）。
+///
+/// 本文件在 services 层，不反向 import `providers/timetable_provider.dart`：
+/// 拉取只需要「绑定判定 + 导入 TA 课表」，上传只需要「初始化后活读五个
+/// 状态字段」。宿主适配器 `CoupleWebdavProviderAccess` 见
+/// `lib/providers/couple_webdav_access.dart`，由调用点注入。
+abstract class CoupleWebdavTimetableHost {
+  Future<void> initialize();
+
+  bool get hasPartnerBinding;
+
+  Future<PartnerImportResult> importPartnerTimetable(String content);
+
+  TimetableProfile? get activeProfile;
+
+  List<Course> get courses;
+
+  List<ScheduleItem> get scheduleItems;
+
+  TimetableSettings get settings;
+
+  int get currentWeek;
+}
 
 class CoupleWebdavPullResult {
   final CoupleWebdavPullStatus status;
@@ -127,7 +154,7 @@ class CoupleWebdavService {
   }
 
   Future<CoupleWebdavPullResult> pullPartnerTimetable({
-    required TimetableProvider provider,
+    required CoupleWebdavTimetableHost host,
     bool force = false,
   }) async {
     final config = await loadConfig();
@@ -207,14 +234,14 @@ class CoupleWebdavService {
     final contentHash = sha256.convert(utf8.encode(content)).toString();
     if (!force &&
         config.lastRemoteContentHash == contentHash &&
-        provider.hasPartnerBinding) {
+        host.hasPartnerBinding) {
       return const CoupleWebdavPullResult(
         status: CoupleWebdavPullStatus.unchanged,
       );
     }
 
     try {
-      final importResult = await provider.importPartnerTimetable(content);
+      final importResult = await host.importPartnerTimetable(content);
       await saveConfig(
         config.copyWith(
           lastPulledAt: DateTime.now(),
@@ -241,7 +268,7 @@ class CoupleWebdavService {
   }
 
   Future<String?> uploadMyTimetableForPartner({
-    required TimetableProvider provider,
+    required CoupleWebdavTimetableHost host,
   }) async {
     final config = await loadConfig();
     final password = await _credentialsStore.readPassword();
@@ -251,13 +278,13 @@ class CoupleWebdavService {
       return 'couple_webdav_not_connected';
     }
 
-    await provider.initialize();
+    await host.initialize();
     final content = _dataTransferService.buildBackupJson(
-      profileName: provider.activeProfile?.name,
-      courses: provider.courses,
-      scheduleItems: provider.scheduleItems,
-      settings: provider.settings,
-      currentWeek: provider.currentWeek,
+      profileName: host.activeProfile?.name,
+      courses: host.courses,
+      scheduleItems: host.scheduleItems,
+      settings: host.settings,
+      currentWeek: host.currentWeek,
     );
 
     // scheme 校验（2026-10-20 补）：非 http(s) 拒绝，按本方法的 String? 错误码
