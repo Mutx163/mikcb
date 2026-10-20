@@ -600,7 +600,7 @@ void main() {
       expect(WeatherService.coarsenCoordinate(30.29365), 30.29);
       expect(WeatherService.coarsenCoordinate(120.16142), 120.16);
       expect(WeatherService.coarsenCoordinate(-99.999), -100);
-      expect(WeatherService.coarsenCoordinate(0.0), 0);
+      expect(WeatherService.coarsenCoordinate(0), 0);
     });
 
     test('反查请求只发取整坐标，返回值同精度（落盘那份不再含精确定位）', () async {
