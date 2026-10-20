@@ -233,11 +233,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             onPress: _refreshStatus,
           ),
         ],
-        title: Text(
-          widget.requirePrivacyConsent
-              ? l10n.firstUseGuideTitle
-              : l10n.guideAndPermissionsTitle,
-        ),
+        title: Text(_buildPageTitle(l10n)),
         headerExtension: _buildProgressBar(l10n),
         bottomBar: _buildBottomBar(l10n),
         child: PageView(
@@ -267,30 +263,21 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return [_buildWelcomePage(l10n), _buildPrivacyPage(l10n)];
   }
 
-  /// 顶栏只留「3 / 5 系统权限」——这是页码文字，不是分页指示器。
+  /// 顶栏下方只留「3 / 5」页码。
   ///
-  /// 圆点**不放顶栏**：Baymard（20 万小时可用性测试）的结论是移动端分页点
-  /// 「默认就在底部居中，放顶部或侧边是无理由引入摩擦」。本页圆点已移到
-  /// 底栏与「下一步」同行居中，见 [_buildPageDots]。
+  /// 页名（欢迎使用 / 隐私协议 / 系统权限 …）已提到**大标题**上，这里不再
+  /// 重复第二遍；圆点按规范在底栏居中，也不在顶栏（见 [_buildPageDots]）。
   Widget _buildProgressBar(AppLocalizations l10n) {
     if (_totalPages <= 1) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: Row(
-        children: [
-          Text(
-            '${_currentPage + 1} / $_totalPages',
-            style: HyperosTypography.sectionDescription(context),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            _buildPageTitle(l10n),
-            style: HyperosTypography.sectionDescription(
-              context,
-            ).copyWith(color: HyperosColors.primary(context)),
-          ),
-        ],
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 4),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          '${_currentPage + 1} / $_totalPages',
+          style: HyperosTypography.sectionDescription(context),
+        ),
       ),
     );
   }
@@ -894,7 +881,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return _buildGuideList(
       storageId: 'tips',
       children: [
-        HyperosSectionLabel(text: l10n.guideTipsHeader),
+        // 不再画「使用技巧」分组标签：大标题已经是「使用技巧」，
+        // 同一屏重复第二遍。列表直接开在下面。
         // 短名称建议卡片
         HyperosControlCard(
           title: l10n.guideShortNameAdviceTitle,

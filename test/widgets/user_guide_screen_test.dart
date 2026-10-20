@@ -169,10 +169,13 @@ void main() {
 
     expect(find.text('3 / 5'), findsOneWidget);
     // 分组标签「系统权限设置」2026-10-20 删除（与顶栏页标题「系统权限」
-    // 同屏重复）。本行原本用它确认「已进入权限页」，改钉顶栏页标题——
-    // 断言意图不变，只是换成界面上现存的定位文字。
+    // 同屏重复）。本行原本用它确认「已进入权限页」，改钉页名——页名先在
+    // headerExtension、后（同日再改）提到大标题上，意图始终是「权限页可见」。
     // 咬合探针已验证：把本行改回「系统权限设置」测试立即红（Found 0 widgets）。
-    expect(find.text('系统权限'), findsOneWidget);
+    // findsWidgets 而非 findsOneWidget：折叠大标题机制同时挂载大标题
+    // （不透明）与收起后的小标题（alpha 0，不可见但存在），同一页名
+    // 天然有两个 Text 实例——断言「至少可见一个」即可，别钉实现细节。
+    expect(find.text('系统权限'), findsWidgets);
     expect(find.text('自启动'), findsOneWidget);
     expect(find.textContaining('已就绪'), findsOneWidget);
     expect(find.text('已开启'), findsNWidgets(2));
