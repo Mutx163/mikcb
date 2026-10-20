@@ -837,7 +837,19 @@ void main() {
     await tester.tap(find.byKey(ValueKey('weekday-header-1-${today.weekday}')));
     await _pumpTimetableFrame(tester);
 
-    expect(find.text('领取资料'), findsOneWidget);
+    // 2026-10-20 最小修订（周视图考试/日程卡功能，见
+    // .agents/notes/proposed/feature/2026-10-20-week-view-exam-agenda-display.md）：
+    // 周网格现在也会渲染这张日程卡（挂在与日视图同一个树上），标题在整棵
+    // 树里出现两次，原 `find.text(...), findsOneWidget` 会数到周网格那份。
+    // 断言收敛到日视图议程卡的范围——用例意图（日视图议程里这条日程
+    // 存在且按时间排在两门课之间）不变。
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('day-view-schedule-card-schedule-middle')),
+        matching: find.text('领取资料'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('日程'), findsWidgets);
     expect(
       find.byKey(const ValueKey('add-schedule-item-button')),
