@@ -52,6 +52,7 @@ import '../services/timetable_holiday_service.dart';
 import '../services/timetable_partner_service.dart';
 import '../services/timetable_persist_hooks.dart';
 import '../services/timetable_reminder_service.dart';
+import '../services/timetable_schedule_item_service.dart';
 import '../services/timetable_settings_writer.dart';
 import '../services/timetable_theme_service.dart';
 import '../services/miui_live_activities_service.dart';
@@ -88,7 +89,6 @@ part 'timetable/time_scheme_repository.dart';
 part 'timetable/schedule_date_rule_repository.dart';
 part 'timetable/course_group_repository.dart';
 part 'timetable/course_repository.dart';
-part 'timetable/schedule_item_repository.dart';
 part 'timetable/import_export_service.dart';
 part 'timetable/live_activity_controller.dart';
 part 'timetable/location_group_repository.dart';
@@ -222,7 +222,8 @@ class ScheduleDateRuleSaveResult {
 ///   完成一个从表中划掉一个；本类最终降级为纯 Facade。
 class TimetableProvider
     with ChangeNotifier
-    implements TimetablePersistPort, TimetableSettingsWritePort {
+    implements TimetablePersistPort, TimetableSettingsWritePort,
+        TimetableScheduleItemPort {
   static const Duration _liveEndReminderWindow = Duration(minutes: 10);
 
   final StorageService _storageService;
@@ -316,6 +317,7 @@ class TimetableProvider
   @override
   List<Course> get courses => List.unmodifiable(_courses);
   List<CourseTask> get tasks => List.unmodifiable(_tasks);
+  @override
   List<ScheduleItem> get scheduleItems => List.unmodifiable(_scheduleItems);
   List<Exam> get exams => List.unmodifiable(_exams);
   @override
@@ -390,6 +392,17 @@ class TimetableProvider
   @override
   void logPerformanceSnapshotIfChanged(TimetableSettings previous) =>
       _logPerformanceSnapshotIfChanged(previous);
+
+  // ── TimetableScheduleItemPort：日程族写入口的服务侧接线 ──
+  @override
+  set scheduleItems(List<ScheduleItem> value) => _scheduleItems = value;
+
+  @override
+  void logEvent(String name, Map<String, Object> parameters) =>
+      _analytics.logEventLater(name: name, parameters: parameters);
+
+  @override
+  Future<void> syncExamReminders() => _syncExamReminders();
 
   /// Courses grouped by name – each group represents one subject with
   /// one or more schedule entries.
@@ -553,6 +566,7 @@ class TimetableProvider
     }
   }
 
+  @override
   Future<void> initialize() {
     final existingInitialization = _initializationFuture;
     if (existingInitialization != null) {
@@ -1016,7 +1030,7 @@ class TimetableProvider
       List<Course>.from(profile.courses),
       settings: _settings,
     );
-    _scheduleItems = _sortScheduleItems(
+    _scheduleItems = TimetableScheduleItemService.sort(
       List<ScheduleItem>.from(profile.scheduleItems),
     );
     _tasks = _sortTasks(List<CourseTask>.from(profile.tasks));
@@ -2645,37 +2659,22 @@ class TimetableProvider
     ).map((instance) => instance.item).toList(growable: false);
   }
 
+  /// 日程增删改的实现与落盘失败回滚都在
+  /// `services/timetable_schedule_item_service.dart`：改系列根 / 删整系列会连带
+  /// 摘掉该系列的单次覆盖行，落盘失败时那些必须一起退回（回归钉
+  /// `test/providers/schedule_item_write_rollback_test.dart`）。
   Future<void> addScheduleItem(ScheduleItem item) {
-    return _runMutation(() async {
-      await initialize();
-      final normalizedItem = _normalizeScheduleItem(item);
-      _scheduleItems = _sortScheduleItems(<ScheduleItem>[
-        ..._scheduleItems,
-        normalizedItem,
-      ]);
-      await _persistActiveProfileState();
-      notifyListeners();
-      _analytics.logEventLater(
-        name: 'schedule_item_created',
-        parameters: {
-          'has_location': normalizedItem.location?.isNotEmpty == true ? 1 : 0,
-          'has_note': normalizedItem.note?.isNotEmpty == true ? 1 : 0,
-        },
-      );
-      unawaited(_syncExamReminders());
-    });
+    return _runMutation(() => TimetableScheduleItemService.add(this, item));
   }
 
   Future<void> updateScheduleItem(ScheduleItem item) {
-    // 实现与落盘失败回滚见 `timetable/schedule_item_repository.dart`：改系列根会
-    // 连带摘掉该系列的全部单次覆盖行，失败时那些必须一起退回。
-    return _runMutation(() => _timetableUpdateScheduleItem(this, item));
+    return _runMutation(() => TimetableScheduleItemService.update(this, item));
   }
 
   Future<void> deleteScheduleItem(String itemId) {
-    // 实现与落盘失败回滚见 `timetable/schedule_item_repository.dart`：这里按
-    // `seriesId ?? id` 整系列摘除，落盘失败就一行都不该少。
-    return _runMutation(() => _timetableDeleteScheduleItem(this, itemId));
+    return _runMutation(
+      () => TimetableScheduleItemService.delete(this, itemId),
+    );
   }
 
   /// Deletes one occurrence while leaving the rest of its series intact.
@@ -2683,71 +2682,18 @@ class TimetableProvider
     String itemId,
     DateTime occurrenceDate,
   ) {
-    return _runMutation(() async {
-      await initialize();
-      final target = _findScheduleItem(itemId);
-      final root = _findSeriesRoot(target);
-      if (root == null) {
-        return;
-      }
-
-      final requestedDate =
-          target?.seriesId != null && target?.occurrenceDate != null
-          ? target!.occurrenceDate!
-          : ScheduleItem.dateOnly(occurrenceDate);
-      final hasOverride = _scheduleItems.any(
-        (item) => _isOverrideForOccurrence(item, root.id, requestedDate),
-      );
-      if (!root.occursOn(requestedDate) && !hasOverride) {
-        return;
-      }
-
-      // A date-only one-off has no remaining occurrences after this operation,
-      // so removing its persisted row matches whole-item deletion semantics.
-      if (root.seriesId == null &&
-          root.recurrence == ScheduleRecurrence.none &&
-          _isSameDate(root.startDate, root.endDate) &&
-          _isSameDate(root.startDate, requestedDate)) {
-        await deleteScheduleItem(root.id);
-        return;
-      }
-
-      final updatedRoot = root.copyWith(
-        exceptionDates: _normalizedExceptionDates(
-          root.exceptionDates,
-          requestedDate,
-        ),
-        updatedAt: DateTime.now(),
-      );
-      final nextItems = <ScheduleItem>[];
-      for (final item in _scheduleItems) {
-        if (item.id == root.id) {
-          nextItems.add(updatedRoot);
-        } else if (_isOverrideForOccurrence(item, root.id, requestedDate)) {
-          continue;
-        } else {
-          nextItems.add(item);
-        }
-      }
-      _scheduleItems = _sortScheduleItems(nextItems);
-      await _persistActiveProfileState();
-      notifyListeners();
-      _analytics.logEventLater(
-        name: 'schedule_item_occurrence_deleted',
-        parameters: {
-          'schedule_item_id': root.id,
-          'occurrence_date': ScheduleItem.formatCalendarDate(requestedDate),
-        },
-      );
-      unawaited(_syncExamReminders());
-    });
+    return _runMutation(
+      () => TimetableScheduleItemService.deleteOccurrence(
+        this,
+        itemId,
+        occurrenceDate,
+      ),
+    );
   }
 
   /// Edits one occurrence by replacing it with a persisted one-time override.
-  /// The base series stores the original date as an exception, so the base
-  /// occurrence cannot reappear alongside the override.
   ///
-  /// Existing editors use [root.startDate] as an unchanged-date sentinel. Set
+  /// Existing editors use `root.startDate` as an unchanged-date sentinel. Set
   /// [dateWasExplicitlyEdited] when the user intentionally moves an occurrence
   /// to that same date, so the move remains distinguishable from that legacy
   /// sentinel.
@@ -2757,98 +2703,22 @@ class TimetableProvider
     ScheduleItem updatedItem, {
     bool dateWasExplicitlyEdited = false,
   }) {
-    return _runMutation(() async {
-      await initialize();
-      final target = _findScheduleItem(itemId);
-      final root = _findSeriesRoot(target);
-      if (root == null) {
-        return;
-      }
-
-      final requestedDate =
-          target?.seriesId != null && target?.occurrenceDate != null
-          ? target!.occurrenceDate!
-          : ScheduleItem.dateOnly(occurrenceDate);
-      final existingOverride = _scheduleItems.any(
-        (item) => _isOverrideForOccurrence(item, root.id, requestedDate),
-      );
-      if (!root.occursOn(requestedDate) && !existingOverride) {
-        return;
-      }
-
-      // Editing the only occurrence of a one-off can update the original row,
-      // retaining its established id and avoiding an unnecessary override.
-      if (root.seriesId == null &&
-          root.recurrence == ScheduleRecurrence.none &&
-          _isSameDate(root.startDate, root.endDate) &&
-          _isSameDate(root.startDate, requestedDate)) {
-        await updateScheduleItem(updatedItem.copyWith(id: root.id));
-        return;
-      }
-
-      final effectiveDate = _resolveOccurrenceEditDate(
-        root: root,
-        occurrenceDate: requestedDate,
-        updatedItem: updatedItem,
+    return _runMutation(
+      () => TimetableScheduleItemService.updateOccurrence(
+        this,
+        itemId,
+        occurrenceDate,
+        updatedItem,
         dateWasExplicitlyEdited: dateWasExplicitlyEdited,
-      );
-      final overrideId = ScheduleItem.buildOccurrenceId(root.id, requestedDate);
-      final override = _normalizeScheduleItem(
-        updatedItem.copyWith(
-          id: overrideId,
-          startDate: effectiveDate,
-          endDate: effectiveDate,
-          recurrence: ScheduleRecurrence.none,
-          exceptionDates: const <DateTime>[],
-          seriesId: root.id,
-          occurrenceDate: requestedDate,
-        ),
-      );
-      final updatedRoot = root.copyWith(
-        exceptionDates: _normalizedExceptionDates(
-          root.exceptionDates,
-          requestedDate,
-        ),
-        updatedAt: DateTime.now(),
-      );
-      final nextItems = <ScheduleItem>[];
-      for (final item in _scheduleItems) {
-        if (item.id == root.id) {
-          nextItems.add(updatedRoot);
-        } else if (_isOverrideForOccurrence(item, root.id, requestedDate)) {
-          continue;
-        } else {
-          nextItems.add(item);
-        }
-      }
-      nextItems.add(override);
-      _scheduleItems = _sortScheduleItems(nextItems);
-      await _persistActiveProfileState();
-      notifyListeners();
-      _analytics.logEventLater(
-        name: 'schedule_item_occurrence_updated',
-        parameters: {
-          'schedule_item_id': root.id,
-          'occurrence_date': ScheduleItem.formatCalendarDate(requestedDate),
-        },
-      );
-      unawaited(_syncExamReminders());
-    });
+      ),
+    );
   }
 
   /// Convenience API for callers holding the stable occurrence id.
   Future<void> deleteScheduleItemInstance(String occurrenceId) {
-    return _runMutation(() async {
-      await initialize();
-      final instance = _findScheduleItemInstanceById(occurrenceId);
-      if (instance == null) {
-        return;
-      }
-      await deleteScheduleItemOccurrence(
-        instance.sourceItemId,
-        instance.occurrenceDate,
-      );
-    });
+    return _runMutation(
+      () => TimetableScheduleItemService.deleteInstance(this, occurrenceId),
+    );
   }
 
   /// Convenience API for callers holding the stable occurrence id.
@@ -2857,19 +2727,14 @@ class TimetableProvider
     ScheduleItem updatedItem, {
     bool dateWasExplicitlyEdited = false,
   }) {
-    return _runMutation(() async {
-      await initialize();
-      final instance = _findScheduleItemInstanceById(occurrenceId);
-      if (instance == null) {
-        return;
-      }
-      await updateScheduleItemOccurrence(
-        instance.sourceItemId,
-        instance.occurrenceDate,
+    return _runMutation(
+      () => TimetableScheduleItemService.updateInstance(
+        this,
+        occurrenceId,
         updatedItem,
         dateWasExplicitlyEdited: dateWasExplicitlyEdited,
-      );
-    });
+      ),
+    );
   }
 
   Future<void> updateScheduleItemSeries(ScheduleItem item) {
@@ -2880,12 +2745,14 @@ class TimetableProvider
     return deleteScheduleItem(itemId);
   }
 
-  ScheduleItem? getScheduleItemById(String itemId) {
-    return _findScheduleItem(itemId);
-  }
+  ScheduleItem? getScheduleItemById(String itemId) =>
+      TimetableScheduleItemService.find(this, itemId);
 
   ScheduleItem? getScheduleItemSeriesRoot(String itemId) {
-    return _findSeriesRoot(_findScheduleItem(itemId));
+    return TimetableScheduleItemService.seriesRoot(
+      this,
+      TimetableScheduleItemService.find(this, itemId),
+    );
   }
 
   // ---- 考试 CRUD ----
@@ -3638,129 +3505,6 @@ class TimetableProvider
       startWeek: normalizedWeeks.startWeek,
       endWeek: normalizedWeeks.endWeek,
     );
-  }
-
-  ScheduleItem _normalizeScheduleItem(ScheduleItem item) {
-    final normalizedStartDate = DateTime(
-      item.startDate.year,
-      item.startDate.month,
-      item.startDate.day,
-    );
-    final normalizedEndDate = DateTime(
-      item.endDate.year,
-      item.endDate.month,
-      item.endDate.day,
-    );
-    return item.copyWith(
-      title: item.title.trim(),
-      location: item.location?.trim().isEmpty == true
-          ? null
-          : item.location?.trim(),
-      note: item.note?.trim().isEmpty == true ? null : item.note?.trim(),
-      startDate: normalizedStartDate,
-      endDate: normalizedEndDate.isBefore(normalizedStartDate)
-          ? normalizedStartDate
-          : normalizedEndDate,
-    );
-  }
-
-  ScheduleItem? _findScheduleItem(String itemId) {
-    for (final item in _scheduleItems) {
-      if (item.id == itemId) {
-        return item;
-      }
-    }
-    return null;
-  }
-
-  ScheduleItem? _findSeriesRoot(ScheduleItem? target) {
-    if (target == null) {
-      return null;
-    }
-    final rootId = target.seriesId ?? target.id;
-    return _findScheduleItem(rootId);
-  }
-
-  ScheduleItemInstance? _findScheduleItemInstanceById(String occurrenceId) {
-    for (final item in _scheduleItems) {
-      if (item.id != occurrenceId) {
-        continue;
-      }
-      if (item.seriesId != null) {
-        final date = item.occurrenceDate ?? item.startDate;
-        return ScheduleItemInstance(
-          item: item,
-          date: item.startDate,
-          occurrenceDate: date,
-        );
-      }
-      if (!item.isRecurring) {
-        return ScheduleItemInstance(item: item, date: item.startDate);
-      }
-    }
-
-    final separatorIndex = occurrenceId.lastIndexOf('@');
-    if (separatorIndex <= 0 || separatorIndex == occurrenceId.length - 1) {
-      return null;
-    }
-    final sourceId = occurrenceId.substring(0, separatorIndex);
-    final date = DateTime.tryParse(occurrenceId.substring(separatorIndex + 1));
-    final source = date == null ? null : _findScheduleItem(sourceId);
-    if (source == null || date == null) {
-      return null;
-    }
-    return ScheduleItemInstance(item: source, date: date);
-  }
-
-  bool _isOverrideForOccurrence(
-    ScheduleItem item,
-    String seriesId,
-    DateTime occurrenceDate,
-  ) {
-    if (item.seriesId != seriesId) {
-      return false;
-    }
-    final candidateDate = item.occurrenceDate ?? item.startDate;
-    return _isSameDate(candidateDate, occurrenceDate);
-  }
-
-  DateTime _resolveOccurrenceEditDate({
-    required ScheduleItem root,
-    required DateTime occurrenceDate,
-    required ScheduleItem updatedItem,
-    required bool dateWasExplicitlyEdited,
-  }) {
-    final requestedDate = ScheduleItem.dateOnly(updatedItem.startDate);
-    // A copy of the series item usually carries the series start date. Treat
-    // that unchanged value as "keep this occurrence's date" unless the caller
-    // explicitly reports that the date field was edited.
-    if (!dateWasExplicitlyEdited &&
-        _isSameDate(requestedDate, root.startDate)) {
-      return ScheduleItem.dateOnly(occurrenceDate);
-    }
-    return requestedDate;
-  }
-
-  List<DateTime> _normalizedExceptionDates(
-    List<DateTime> existing,
-    DateTime candidate,
-  ) {
-    final normalizedCandidate = ScheduleItem.dateOnly(candidate);
-    final merged = <String, DateTime>{};
-    for (final date in existing) {
-      final normalized = ScheduleItem.dateOnly(date);
-      merged[ScheduleItem.formatCalendarDate(normalized)] = normalized;
-    }
-    merged[ScheduleItem.formatCalendarDate(normalizedCandidate)] =
-        normalizedCandidate;
-    final result = merged.values.toList()..sort((a, b) => a.compareTo(b));
-    return result;
-  }
-
-  bool _isSameDate(DateTime left, DateTime right) {
-    return left.year == right.year &&
-        left.month == right.month &&
-        left.day == right.day;
   }
 
   int _calculateWeekForDate(DateTime date, {int? fallbackWeek}) {
