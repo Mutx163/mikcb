@@ -612,8 +612,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     TimetableProvider provider,
     AppLocalizations l10n,
   ) {
-    final typo = context.theme.typography.body;
-    final colors = context.theme.colors;
+    // 卡头走 [HyperosControlCard] 内置的 title/subtitle（2026-10-21，用户：
+    // 「为什么共享信息和排课记录下面的灰字样式不一样」）：
+    // 上一轮把「同步给同名排课」改成竖排时，这句灰字沿用了页面旧的
+    // `typo.xs + colors.mutedForeground`（Material 主题色），而「排课记录」卡
+    // 走的是通用卡头的 `sectionDescription`（13sp / #999999）——两张卡同一屏、
+    // 两种灰字。现在两张卡走同一个渲染路径，标题 17sp、说明 13sp 完全一致。
+    //
     // 版式依据 flutter_miuix 原生规矩（不是自创画法）：
     // - 文本输入走 MiuixTextField 的**框内浮动标签**（label 参数），标签在框里、
     //   聚焦/有内容时缩到 10px 上浮；不给它外挂「框上方小标签」。
@@ -623,39 +628,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     // .agents/notes/implemented/feature/2026-10-20-course-shared-info-compact.md。
     return HyperosControlCard(
       edgeToEdge: true,
+      title: l10n.sharedInfoTitle,
+      subtitle: l10n.sharedInfoInlineHint,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              HyperosControlCardScope.defaultHorizontalPadding,
-              HyperosControlCardScope.defaultHorizontalPadding,
-              HyperosControlCardScope.defaultHorizontalPadding,
-              0,
-            ),
-            // 卡头：标题独占一行，那句「同步给同名排课」放到下一行整宽。
-            //
-            // 原先它挤在标题右侧（`Row` + `Flexible` + `maxLines: 1`），21 个字
-            // 在半屏宽里必然被省略号切断——切掉的恰恰是本卡唯一重要的规则
-            // （改一门课的简称/颜色/性质/简介会同步给所有同名排课）。
-            // 一行放不下就换行，比留个看得见却读不全的残句好。
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.sharedInfoTitle,
-                  // 卡标题必须≥卡内条目标题：原先这里 14sp，卡内「沿用已有课程」
-                  // 是 17sp，层级是倒挂的（卡名比里面的一行还小）。
-                  style: HyperosTypography.title(context),
-                ),
-                const SizedBox(height: HyperosTokens.titleCaptionGap),
-                Text(
-                  l10n.sharedInfoInlineHint,
-                  style: typo.xs.copyWith(color: colors.mutedForeground),
-                ),
-              ],
-            ),
-          ),
           // 「沿用已有课程」只在**新建**时出现（`course` 与 `courseGroup` 都为空）。
           //
           // 原先判据只写了 `widget.course == null`，而「课程总览 → 编辑」这条入口
