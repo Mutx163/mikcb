@@ -298,6 +298,8 @@ extension _TimetableScreenDayView on _TimetableScreenState {
         .where((item) => item.isScheduleItem)
         .map((item) => item.scheduleItem!)
         .toList(growable: false);
+    // 待办带只算一次：摘要卡的作业计数与列表里那条带子必须同源，
+    // 各算一遍就会漂（卡片说 3 项、滚下去只有 2 条）。
     if (_TimetableScreenState.logDayViewBuilds) {
       debugPrint(
         '[DayView] page=$page items: courses=${displayItems.length} '
@@ -325,6 +327,8 @@ extension _TimetableScreenDayView on _TimetableScreenState {
             courseItems: displayItems,
             scheduleItems: scheduleItems,
             agendaItems: agendaItems,
+            taskCount: _buildDayTaskBand(provider, settings, target.week, target.dayOfWeek)
+                .actionableCount,
           ),
         ),
         const SizedBox(height: 12),
@@ -387,30 +391,6 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     return provider.getScheduleItemInstancesForDate(targetDate);
   }
 
-  TimetableDayAgendaItem _buildScheduleAgendaItemForDate({
-    required ScheduleItemInstance instance,
-    required DateTime targetDate,
-  }) {
-    final item = instance.effectiveItem;
-    final normalizedTargetDate = DateTime(
-      targetDate.year,
-      targetDate.month,
-      targetDate.day,
-    );
-    final continuesFromPreviousDay = item.startDate.isBefore(
-      normalizedTargetDate,
-    );
-    final continuesToNextDay = item.endDate.isAfter(normalizedTargetDate);
-    return TimetableDayAgendaItem.schedule(
-      item,
-      instance: instance,
-      startTime: continuesFromPreviousDay ? '00:00' : item.startTime,
-      endTime: continuesToNextDay ? '23:59' : item.endTime,
-      continuesFromPreviousDay: continuesFromPreviousDay,
-      continuesToNextDay: continuesToNextDay,
-    );
-  }
-
   List<TimetableDayAgendaItem> _buildDayAgendaItems({
     required TimetableProvider provider,
     required TimetableSettings settings,
@@ -432,7 +412,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
         week: week,
         dayOfWeek: dayOfWeek,
       ).map(
-        (instance) => _buildScheduleAgendaItemForDate(
+        (instance) => TimetableDayAgendaItem.scheduleForDate(
           instance: instance,
           targetDate: targetDate,
         ),
@@ -467,6 +447,10 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     return items;
   }
 
+  /// 待办带：目标日期与 _buildDayAgendaItems 同一条解析（翻到别的周时，
+  /// 课程按 A 日、作业按 B 日就错了）。
+  DayTaskBandData _buildDayTaskBand(TimetableProvider p, TimetableSettings s, int w, int d) =>
+      DayTaskBandLogic.resolve(tasks: p.tasks, date: _resolveDisplayDateForWeekDay(provider: p, settings: s, week: w, dayOfWeek: d));
   /// 壁纸亮度 / 模糊管线快照（日视图 view 库判墨与判材质要用）。
   ///
   /// 只有 State 拿得到这三条亮度带（`WallpaperLuminanceController`）；搬到独立
@@ -497,6 +481,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     required List<DayCourseDisplayItem> courseItems,
     required List<ScheduleItem> scheduleItems,
     required List<TimetableDayAgendaItem> agendaItems,
+    required int taskCount,
   }) {
     final targetDate =
         selectedDate ??
@@ -540,6 +525,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       scheduleItems: scheduleItems,
       agendaItems: agendaItems,
       dayExams: dayExams,
+      taskCount: taskCount,
       inkEnvironment: _dayViewInkEnvironment(settings),
       radius: _TimetableScreenState._dayViewCardRadius,
       onClose: () => _closeDayView(settings),
@@ -643,6 +629,8 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       dayOfWeek: dayOfWeek,
       courseItems: displayItems,
     );
+    final taskBand =
+        _buildDayTaskBand(provider, settings, week, dayOfWeek);
     // 玻璃坞避让（含底部安全区）：日课表视口全屏，避让以滚动 padding
     // 实现——静止在列表底部时最后一项仍停在玻璃坞上方，滚动中卡片则
     // 连续穿过避让带，不再在边界被硬裁出与磨砂卡片色差明显的空带。
@@ -666,7 +654,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     // 预览那份要按宿主给的滚动位置起步（见 [_previewControllerFor]）。
     final scrollKey = _TimetableScreenState._dayAgendaScrollKey(week, dayOfWeek);
     final scrollController = _previewControllerFor(scrollKey);
-    if (agendaItems.isEmpty) {
+    if (agendaItems.isEmpty && taskBand.isEmpty) {
       // 空白天同样要能下拉导入：空态本身不是滚动体，外面套一层
       // AlwaysScrollable 的滚动视图，下拉才有着力点（有课那天走的是
       // ListView，两条路都必须能触发）。physics 与有课那天同源，
@@ -698,8 +686,8 @@ extension _TimetableScreenDayView on _TimetableScreenState {
         ),
       );
     }
-    // Gaussian cards sample the cached wallpaper bitmap while the day view
-    // moves; the shared host keeps their BackdropFilter capture at grid scope.
+    // 待办带是第 0 项、跟着滚走（钉住会让一天八条作业永久吃掉半屏）；为空时整条不渲染。
+    final bandCount = taskBand.isEmpty ? 0 : 1;
     final agendaList = ListView.separated(
       key: PageStorageKey<String>(scrollKey),
       controller: scrollController,
@@ -707,10 +695,21 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       // 下拉开着时冻结纵向滚动（见 TimetableHomePullFreezeScrollPhysics）：
       // 回拉取消只收下拉，不把列表一起滚走。
       physics: _homePullVerticalPhysics,
-      itemCount: agendaItems.length,
+      itemCount: bandCount + agendaItems.length,
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, itemIndex) {
-        final item = agendaItems[itemIndex];
+        if (bandCount == 1 && itemIndex == 0) {
+          return DayViewTaskBand(
+            data: taskBand,
+            settings: settings,
+            inkEnvironment: _dayViewInkEnvironment(settings),
+            radius: _TimetableScreenState._dayViewCardRadius,
+            courseResolver: provider.getCourseForTask,
+            onToggleCompleted: (task) => toggleTaskFromBand(
+                context, provider.toggleTaskCompleted, task.id),
+            taskFormBuilder: (task) => timetableFormPages.taskForm(task: task));
+        }
+        final item = agendaItems[itemIndex - bandCount];
         return _buildDayAgendaEntry(
           provider: provider,
           week: week,
@@ -726,6 +725,8 @@ extension _TimetableScreenDayView on _TimetableScreenState {
   }
 
   Widget _buildDayViewEmptyColumn({
+
+
     required int week,
     required TimetableSettings settings,
   }) {
@@ -831,8 +832,8 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     required TimetableDayAgendaPalette palette,
   }) {
     final now = DateTime.now();
-    final startMinutes = _parseDayAgendaClockMinutes(course.startTime);
-    final endMinutes = _parseDayAgendaClockMinutes(course.endTime);
+    final startMinutes = clockTextToMinutes(course.startTime);
+    final endMinutes = clockTextToMinutes(course.endTime);
     if (startMinutes == null ||
         endMinutes == null ||
         endMinutes <= startMinutes) {
@@ -914,7 +915,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
   }
 
   DateTime? _buildScheduleDateTime(DateTime date, String clock) {
-    final minutes = _parseDayAgendaClockMinutes(clock);
+    final minutes = clockTextToMinutes(clock);
     if (minutes == null) {
       return null;
     }
@@ -927,16 +928,4 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     );
   }
 
-  int? _parseDayAgendaClockMinutes(String value) {
-    final parts = value.split(':');
-    if (parts.length != 2) {
-      return null;
-    }
-    final hour = int.tryParse(parts[0]);
-    final minute = int.tryParse(parts[1]);
-    if (hour == null || minute == null) {
-      return null;
-    }
-    return hour * 60 + minute;
-  }
 }

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/course_task.dart';
 import 'package:university_timetable/models/exam.dart';
 import 'package:university_timetable/models/schedule_item.dart';
 import 'package:university_timetable/screens/add_course_screen.dart';
 import 'package:university_timetable/screens/add_exam_screen.dart';
 import 'package:university_timetable/screens/add_schedule_item_screen.dart';
+import 'package:university_timetable/screens/add_task_screen.dart';
 import 'package:university_timetable/screens/timetable_form_pages_impl.dart';
 import 'package:university_timetable/utils/course_group.dart';
 import 'package:university_timetable/widgets/timetable/timetable_form_pages.dart';
@@ -118,6 +120,57 @@ void main() {
     expect(creating.scheduleItem, isNull);
   });
 
+  test('作业表单：task 透传（日视图待办带点一行走这里进编辑页）', () {
+    final task = CourseTask(
+      id: 't1',
+      title: '第三章习题',
+      courseId: 'c1',
+      dueDate: DateTime(2026, 6, 15),
+      createdAt: DateTime(2026, 6, 1),
+      updatedAt: DateTime(2026, 6, 1),
+    );
+
+    final editing = kTimetableFormPages.taskForm(task: task) as AddTaskScreen;
+    // 钉「收到了什么」，不是「页面打开了」：只断言 find.byType(AddTaskScreen)
+    // 的话，参数在这一层被吞掉也照样绿（这正是 R13 记的那类 bug）。
+    expect(editing.task, same(task), reason: '丢了它，编辑页就是一张空表单');
+  });
+
+  test('作业表单：initialCourse / initialWeek 透传，「从某节课加作业」靠它们预填', () {
+    final course = Course(
+      id: 'c1',
+      name: '高等数学',
+      teacher: '张老师',
+      location: 'A101',
+      dayOfWeek: 1,
+      startSection: 1,
+      endSection: 2,
+      startTime: '08:00',
+      endTime: '09:40',
+    );
+
+    final creating =
+        kTimetableFormPages.taskForm(
+              initialCourse: course,
+              initialWeek: 7,
+            )
+            as AddTaskScreen;
+    expect(creating.initialCourse, same(course));
+    expect(creating.initialWeek, 7);
+    expect(
+      creating.task,
+      isNull,
+      reason: '带着 initialCourse 进来仍是「新建」，不能变成编辑模式',
+    );
+  });
+
+  test('作业表单：无参调用是新建（三个字段全 null）', () {
+    final widget = kTimetableFormPages.taskForm() as AddTaskScreen;
+    expect(widget.task, isNull);
+    expect(widget.initialCourse, isNull);
+    expect(widget.initialWeek, isNull);
+  });
+
   test('未注入时取实现必须抛 StateError（不给静默空表）', () {
     // 本测试文件全程没调 registerTimetableFormPages，天然就是「未注入」态。
     expect(() => timetableFormPages, throwsA(isA<StateError>()));
@@ -128,6 +181,7 @@ void main() {
       courseForm: _stubCourseForm,
       examForm: _stubExamForm,
       scheduleItemForm: _stubScheduleItemForm,
+      taskForm: _stubTaskForm,
       timeSchemeManagement: _unusedTimeScheme,
       aboutUpdate: _unusedAboutUpdate,
     );
@@ -138,6 +192,7 @@ void main() {
       courseForm: _stubCourseForm,
       examForm: _stubExamForm,
       scheduleItemForm: _stubScheduleItemForm,
+      taskForm: _stubTaskForm,
       timeSchemeManagement: _unusedTimeScheme,
       aboutUpdate: _unusedAboutUpdate,
     );
@@ -162,6 +217,12 @@ Widget _stubScheduleItemForm({
   DateTime? initialDate,
   DateTime? occurrenceDate,
 }) => const AddScheduleItemScreen();
+
+Widget _stubTaskForm({
+  CourseTask? task,
+  Course? initialCourse,
+  int? initialWeek,
+}) => const AddTaskScreen();
 
 Widget _unusedTimeScheme({String? initialEditSchemeId}) =>
     const SizedBox.shrink();

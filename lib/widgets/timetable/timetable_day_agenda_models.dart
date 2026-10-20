@@ -71,6 +71,36 @@ class TimetableDayAgendaItem {
     );
   }
 
+  /// 某一天的那一次日程实例 → 议程条目（原
+  /// `_TimetableScreenState._buildScheduleAgendaItemForDate`，2026-10-20 下沉）。
+  ///
+  /// 跨天口径是日视图议程的定义：前日续来按 `00:00`、续到次日按 `23:59`，
+  /// 这样排序与「X 开始 · Y 结束」摘要都按当天可视区间算。周网格的
+  /// `WeekGridAgendaPlacement` 抄的就是这条口径，改这里要同步那边。
+  factory TimetableDayAgendaItem.scheduleForDate({
+    required ScheduleItemInstance instance,
+    required DateTime targetDate,
+  }) {
+    final item = instance.effectiveItem;
+    final normalizedTargetDate = DateTime(
+      targetDate.year,
+      targetDate.month,
+      targetDate.day,
+    );
+    final continuesFromPreviousDay = item.startDate.isBefore(
+      normalizedTargetDate,
+    );
+    final continuesToNextDay = item.endDate.isAfter(normalizedTargetDate);
+    return TimetableDayAgendaItem.schedule(
+      item,
+      instance: instance,
+      startTime: continuesFromPreviousDay ? '00:00' : item.startTime,
+      endTime: continuesToNextDay ? '23:59' : item.endTime,
+      continuesFromPreviousDay: continuesFromPreviousDay,
+      continuesToNextDay: continuesToNextDay,
+    );
+  }
+
   bool get isScheduleItem => scheduleItem != null;
   bool get isExam => exam != null;
   String get id =>

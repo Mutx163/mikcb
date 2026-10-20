@@ -23,3 +23,15 @@ int compareClockText(String left, String right) {
   if (b == null) return -1;
   return a.totalMinutes.compareTo(b.totalMinutes);
 }
+
+/// 钟点串 → 当天分钟数；解析不出来返回 null。
+///
+/// 放在这里而不是各调用点自己 `split(':')` + `int.tryParse`：那条守卫在本仓
+/// 抄过好几份（`ClockTime` 头注释记的教训），且抄出来的版本通常忘了放行
+/// `24:00`——作息表里末节课常写成 `24:00` 表示「当天结束」，日视图的进行中
+/// 进度条拿它算跨度时会被判成脏数据、进度条直接不画。
+///
+/// 语义与 [compareClockText] 同源（同一个解析器、同样放行 24:00），
+/// 排序与「算几点」不会对同一条数据得出互相矛盾的结论。
+int? clockTextToMinutes(String value) =>
+    ClockTime.tryParse(value, allowEndOfDay: true)?.totalMinutes;

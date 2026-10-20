@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -8,8 +7,8 @@ import '../models/course.dart';
 import '../models/course_task.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
-import '../ui/hyperos/hyperos_motion.dart';
 import '../utils/app_toast.dart';
+import '../widgets/task_checkbox.dart';
 import 'add_course_screen.dart';
 import 'add_task_screen.dart';
 
@@ -379,7 +378,7 @@ class _TaskRow extends StatelessWidget {
         minHeight: HyperosTokens.listRowTwoLineMinHeight,
         child: Row(
           children: [
-            _TaskCheckbox(value: task.isCompleted, onChanged: onToggle),
+            TaskCheckbox(value: task.isCompleted, onChanged: onToggle),
             const SizedBox(width: 4),
             Expanded(
               child: Column(
@@ -420,56 +419,6 @@ class _TaskRow extends StatelessWidget {
                 onPressed: onViewCourse,
               ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// 任务行左侧的完成勾选钮：未完成为描边圆环，完成为实心蓝底白勾。
-/// MiuixCheckbox 的未选中态是一枚实心灰圆，放在任务行首位只像一个
-/// 无意义的灰点，这里换成更符合待办语义的环形勾选。
-class _TaskCheckbox extends StatelessWidget {
-  const _TaskCheckbox({required this.value, required this.onChanged});
-
-  final bool value;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.theme.colors;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onChanged();
-      },
-      child: Padding(
-        // 扩大点击热区到约 30dp。
-        padding: const EdgeInsets.all(4),
-        child: AnimatedContainer(
-          duration: 180.scaledMs,
-          curve: Curves.easeOutCubic,
-          width: 22,
-          height: 22,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: value ? colors.primary : Colors.transparent,
-            border: Border.all(
-              color: value
-                  ? colors.primary
-                  : colors.mutedForeground.withValues(alpha: 0.45),
-              width: 2,
-            ),
-          ),
-          child: value
-              ? Icon(
-                  Icons.check_rounded,
-                  size: 15,
-                  color: colors.primaryForeground,
-                )
-              : null,
         ),
       ),
     );

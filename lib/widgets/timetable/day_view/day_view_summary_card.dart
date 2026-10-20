@@ -45,6 +45,16 @@ class TimetableDayViewSummaryCard extends StatelessWidget {
   /// 当天的考试，已按开考钟点升序排好。
   final List<Exam> dayExams;
 
+  /// 当天**还没做完**的作业条数（逾期 + 今天到期，已完成不算）。
+  ///
+  /// 只用来救主计数胶囊：日视图现在有「有作业没课」的日子，那时
+  /// courseItems 与 scheduleItems 都为空，主胶囊会显示「0 门课」——
+  /// 与「这一天什么都没有」长得一模一样。**比多一个信号更隐蔽的是少一个信号**：
+  /// 用户在摘要卡上看不出今天有三个作业要交，滚下去才发现。
+  ///
+  /// 默认 0：既有调用点（测试与预览）不必跟着改，行为与改动前逐像素一致。
+  final int taskCount;
+
   final DayViewInkEnvironment inkEnvironment;
 
   /// 卡片圆角；正源是 `_TimetableScreenState._dayViewCardRadius`。
@@ -68,6 +78,7 @@ class TimetableDayViewSummaryCard extends StatelessWidget {
     required this.scheduleItems,
     required this.agendaItems,
     required this.dayExams,
+    this.taskCount = 0,
     required this.inkEnvironment,
     required this.radius,
     required this.onClose,
@@ -262,10 +273,15 @@ class TimetableDayViewSummaryCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(7),
                   ),
                   child: Text(
-                    hasAgenda
-                        ? (courseCount > 0
-                              ? l10n.courseCountSummary(courseCount)
-                              : l10n.scheduleCountSummary(scheduleCount))
+                    // 三种日子各说各话：有课说门课、无课有日程说日程、
+                    // 只有作业说作业（否则会显示「0 门课」，与「整天没事」
+                    // 无法区分）。三者皆无才是「0 门课」。
+                    courseCount > 0
+                        ? l10n.courseCountSummary(courseCount)
+                        : scheduleCount > 0
+                        ? l10n.scheduleCountSummary(scheduleCount)
+                        : taskCount > 0
+                        ? l10n.dayTaskBandCountSummary(taskCount)
                         : l10n.courseCountSummary(0),
                     style: foruiTheme.typography.body.xs2.copyWith(
                       color: countBadgeTextColor,

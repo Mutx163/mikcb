@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../models/course.dart';
+import '../../models/course_task.dart';
 import '../../models/exam.dart';
 import '../../models/schedule_item.dart';
 import '../../utils/course_group.dart';
@@ -22,6 +23,19 @@ typedef CourseFormBuilder =
     });
 
 typedef ExamFormBuilder = Widget Function({Exam? exam});
+
+/// 作业/任务表单（`AddTaskScreen`）。`task` 非空 = 编辑那一条，null = 新建。
+///
+/// [initialCourse] / [initialWeek] 是「从某节课加作业」的入口（课程操作面板），
+/// 三参全空时就是一张空表单（作业列表页右上角「+」）。
+/// **三者不能互相顶替**：传了 `task` 就是编辑模式，另外两个会被忽略（页面自己
+/// 从 task 预填），把 `initialCourse` 顶进去会让用户以为在改那条已有作业。
+typedef TaskFormBuilder =
+    Widget Function({
+      CourseTask? task,
+      Course? initialCourse,
+      int? initialWeek,
+    });
 
 typedef ScheduleItemFormBuilder =
     Widget Function({
@@ -54,6 +68,7 @@ class TimetableFormPages {
     required this.courseForm,
     required this.examForm,
     required this.scheduleItemForm,
+    required this.taskForm,
     required this.timeSchemeManagement,
     required this.aboutUpdate,
   });
@@ -74,6 +89,10 @@ class TimetableFormPages {
   /// 弹层（新建，只给日期），后者来自点击某一次日程（编辑单次覆盖，要带
   /// 那一次的 occurrenceDate）。**两者不能互相顶替**。
   final ScheduleItemFormBuilder scheduleItemForm;
+
+  /// 作业/任务表单（`AddTaskScreen`）。日视图待办带点一行就走这里展开编辑页；
+  /// 课程操作面板的「作业」入口也走同一个 builder。
+  final TaskFormBuilder taskForm;
 
   /// 作息方案管理页（`TimeSchemeManagementScreen`）。
   final TimeSchemeManagementBuilder timeSchemeManagement;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../models/course.dart';
+import '../models/course_task.dart';
 import '../models/exam.dart';
 import '../models/schedule_item.dart';
 import '../utils/course_group.dart';
@@ -9,6 +10,7 @@ import '../widgets/timetable/timetable_form_pages.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
+import 'add_task_screen.dart';
 import 'about_screen.dart';
 import 'time_scheme_management_screen.dart';
 
@@ -37,6 +39,7 @@ const TimetableFormPages kTimetableFormPages = TimetableFormPages(
   courseForm: _buildCourseForm,
   examForm: _buildExamForm,
   scheduleItemForm: _buildScheduleItemForm,
+  taskForm: _buildTaskForm,
   timeSchemeManagement: _buildTimeSchemeManagement,
   aboutUpdate: _buildAboutUpdate,
 );
@@ -70,6 +73,18 @@ Widget _buildScheduleItemForm({
     scheduleItem: scheduleItem,
     initialDate: initialDate,
     occurrenceDate: occurrenceDate,
+  );
+}
+
+Widget _buildTaskForm({
+  CourseTask? task,
+  Course? initialCourse,
+  int? initialWeek,
+}) {
+  return AddTaskScreen(
+    task: task,
+    initialCourse: initialCourse,
+    initialWeek: initialWeek,
   );
 }
 
