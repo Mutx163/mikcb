@@ -25,11 +25,14 @@ export 'home_top_menu.dart'
 // home_menu_catalog.dart 的调用方（timetable_screen 等）无须改动。
 export 'home_menu_route_catalog.dart'
     show
+        HomeMenuPageDescriptor,
+        HomeMenuRouteRegistry,
         kInlineDockPages,
         inlineDockPageFor,
         pushHomeMenuUpdateEntry,
         kHomeCatalogPages,
         homePage,
+        registerHomeMenuRoutes,
         registerSettingsPages,
         resolveSettingsSubpage;
 

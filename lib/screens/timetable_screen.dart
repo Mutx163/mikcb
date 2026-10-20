@@ -68,6 +68,7 @@ import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
 import 'add_task_screen.dart';
+import 'home_menu_route_registry.dart';
 import 'import/home_pull_quick_import.dart';
 import 'timetable_profiles_screen.dart';
 
@@ -506,6 +507,8 @@ class _TimetableScreenState extends State<TimetableScreen>
   @override
   void initState() {
     super.initState();
+    // 页面构造住 screens 层，widgets 目录只认 id（消除反向依赖）；须早于菜单渲染。
+    registerHomeMenuRoutes(kHomeMenuRouteRegistry);
     _dayViewTransition = DayViewTransitionController(host: this);
     _homeMenu = HomeMenuController(host: this);
     _weekdayInkGuard = WeekdayInkContrastGuard();
@@ -1732,9 +1735,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   Future<void> _openClassReminderSheet(Course course, int week) {
     return showClassReminderSheet(context, course: course, week: week);
   }
-
-
-
 
   void _maybeSelectionClick(TimetableSettings settings) {
     if (!settings.enableHaptics) {

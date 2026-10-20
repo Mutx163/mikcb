@@ -1,128 +1,111 @@
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:university_timetable/screens/about_screen.dart';
-import 'package:university_timetable/widgets/home_top_menu.dart'
-    show pushHomeMenuPage;
-import 'package:university_timetable/screens/add_course_screen.dart';
-import 'package:university_timetable/screens/add_exam_screen.dart';
-import 'package:university_timetable/screens/add_schedule_item_screen.dart';
-import 'package:university_timetable/screens/add_task_screen.dart';
-import 'package:university_timetable/screens/changelog_screen.dart';
-import 'package:university_timetable/screens/cloud_sync_screen.dart';
-import 'package:university_timetable/screens/couple_timetable_settings_screen.dart';
-import 'package:university_timetable/screens/course_conflict_screen.dart';
-import 'package:university_timetable/screens/import/course_import_entry_screen.dart';
-import 'package:university_timetable/screens/course_overview_screen.dart';
-import 'package:university_timetable/screens/course_statistics_screen.dart';
-import 'package:university_timetable/screens/data_transfer_screen.dart';
-import 'package:university_timetable/screens/exam_list_screen.dart';
-import 'package:university_timetable/screens/feedback_screen.dart';
-import 'package:university_timetable/screens/ics_export_screen.dart';
-import 'package:university_timetable/screens/lan_edit_screen.dart';
-import 'package:university_timetable/screens/location_time_match_screen.dart';
-import 'package:university_timetable/screens/memory_stats_screen.dart';
-import 'package:university_timetable/screens/month_view_screen.dart';
-import 'package:university_timetable/screens/open_source_licenses_screen.dart';
-import 'package:university_timetable/screens/schedule_date_rule_screen.dart';
-import 'package:university_timetable/screens/schedule_list_screen.dart';
-import 'package:university_timetable/screens/statistics_settings_screen.dart';
-import 'package:university_timetable/screens/support_creator_screen.dart';
-import 'package:university_timetable/screens/task_list_screen.dart';
-import 'package:university_timetable/screens/time_scheme_management_screen.dart';
-import 'package:university_timetable/screens/timetable_profiles_screen.dart';
-import 'package:university_timetable/screens/user_guide_screen.dart';
 
-/// 八宫格/玻璃坞的页面路由目录：集中维护「入口 id → 目标页面」映射。
+/// 一条页面路由描述符：路由目录（widgets 层）只认识「id + 怎么造这个页面」，
+/// **不认识页面类型本身**。
 ///
-/// 拆分自 `home_menu_catalog.dart`：目录本体只保留条目元数据与分发逻辑，
-/// 屏幕类 import 集中到这里，消除 widgets → screens 的 27 处依赖以及
-/// `timetable_settings_screen ↔ home_menu_catalog` 的循环。
-/// 两份注册表共用同一批 id（见 `kHomeMenuCatalog` / `kInlineDockPages`），
-/// 新增页面入口时两处同步追加。
+/// 页面构造器由 screens 层在统一注册点注入（见
+/// `screens/home_menu_route_registry.dart` 的 `kHomeMenuRouteRegistry`）。
+/// 本文件因此不再 import 任何 `screens/*`：路由中心对页面的依赖从「编译期
+/// 直接引用」变成「运行期查表」，`widgets → screens` 那条反向依赖边随之消失
+/// （不是搬到免检目录藏起来，见泳道计划裁定 R1）。
 ///
-/// 导航壳 `pushHomeMenuPage` 仍在 home_top_menu.dart（未动）；本文件的
-/// `kInlineDockPages` 逐行迁入、key 与页面映射零变化。
+/// 条目的**标题与图标**不在这里：它们绑着 l10n、住 `HomeMenuEntry`
+/// （`home_menu_catalog.dart`），搬进路由表只会让同一份文案有两处真源。
+class HomeMenuPageDescriptor {
+  const HomeMenuPageDescriptor({required this.id, required this.build});
 
-/// 底栏内嵌页注册表（原样迁自 home_menu_catalog.dart）：这些 id 点选时
-/// 不再推入新路由，而是在首页栈内切换内容区，玻璃坞保持悬浮（对齐旧
-/// 「设置 Tab」的常驻体验）。未登记的 id（表单类/需要上下文的流程页）
-/// 仍走普通推入。
-final Map<String, WidgetBuilder> kInlineDockPages = {
-  // 「设置」由设置库启动时登记（见 _buildSettingsScreen），避免本文件
-  // 反向 import 设置页构成循环。
-  'settings': (context) => _buildSettingsScreen(),
-  'overview': (context) => const CourseOverviewScreen(),
-  'statistics': (context) => const CourseStatisticsScreen(),
-  'exams': (context) => const ExamListScreen(),
-  'tasks': (context) => const TaskListScreen(),
-  'dataTransfer': (context) => const DataTransferScreen(),
-  'cloudSync': (context) => const CloudSyncScreen(),
-  'lanEdit': (context) => const LanEditScreen(),
-  'coupleTimetable': (context) => const CoupleTimetableSettingsScreen(),
-  'timeSchemes': (context) => const TimeSchemeManagementScreen(),
-  'icsExport': (context) => const IcsExportScreen(),
-  // 月视图：玻璃坞内嵌页（坞常驻、首页栈内切换，翻月/选中日状态不丢）。
-  'monthView': (context) => const MonthViewScreen(),
-  'profiles': (context) => const TimetableProfilesScreen(),
-  'feedback': (context) => const FeedbackScreen(),
-  'changelog': (context) => const ChangelogScreen(),
-  'openSourceLicenses': (context) => const OpenSourceLicensesScreen(),
-  'userGuide': (context) => const UserGuideScreen(),
-  'support': (context) => const SupportCreatorScreen(),
-  'statisticsSettings': (context) => const StatisticsSettingsScreen(),
-  'locationTimeMatch': (context) => const LocationTimeMatchScreen(),
-  'scheduleDateRule': (context) => const ScheduleDateRuleScreen(),
-  'scheduleList': (context) => const ScheduleListScreen(),
-  'memoryStats': (context) => const MemoryStatsScreen(),
-  // 软件更新页构造需要 PackageInfo：用 FutureBuilder 在内嵌壳内自取。
-  'update': (context) => FutureBuilder(
-    future: PackageInfo.fromPlatform(),
-    builder: (context, snapshot) {
-      if (!snapshot.hasData) {
-        return const Center(child: CircularProgressIndicator());
-      }
-      return AboutUpdateScreen(packageInfo: snapshot.data);
-    },
-  ),
-};
+  /// 稳定 id。坞内嵌页沿用 `HomeMenuEntry.id` 的取值空间（见 `kHomeMenuCatalog`）；
+  /// 目录页用 `xxxPage` 后缀，两套命名与迁移前逐字一致（持久化数据按 id 认人）。
+  final String id;
+
+  /// 页面构造器。统一**无参**：坞内嵌页与推入路由两种用法在注册时各包一层，
+  /// 内嵌那份 `WidgetBuilder` 的 context 形参本来也没人用得上。
+  final Widget Function() build;
+}
+
+/// 路由目录需要 screens 层提供的全部内容：两张页面表 + 更新入口的推入逻辑。
+///
+/// 做成一个对象而不是三个全局变量，是为了让注册点一眼看全「路由中心要什么」，
+/// 且注册这件事只有一个函数、一次调用。
+class HomeMenuRouteRegistry {
+  const HomeMenuRouteRegistry({
+    required this.inlineDockPages,
+    required this.catalogPages,
+    required this.pushUpdateEntry,
+  });
+
+  /// 底栏玻璃坞内嵌页：点选时不推新路由，在首页栈内切换内容区
+  /// （玻璃坞保持悬浮，对齐旧「设置 Tab」的常驻体验）。
+  final List<HomeMenuPageDescriptor> inlineDockPages;
+
+  /// 八宫格/顶部菜单的目录页：点选时推入新路由。
+  final List<HomeMenuPageDescriptor> catalogPages;
+
+  /// 「软件更新」条目的推入逻辑（原 `pushHomeMenuUpdateEntry` 的本体）：
+  /// 先取包信息、再进更新详情页，context 失活时静默放弃。
+  final Future<void> Function(BuildContext context) pushUpdateEntry;
+}
+
+/// 已注入的路由表（screens 层在首页挂载时登记，见下方的注册函数）。
+HomeMenuRouteRegistry? _registry;
+Map<String, WidgetBuilder>? _inlinePages;
+Map<String, Widget Function()>? _catalogPages;
+
+/// 统一注册点：把 [registry] 装进来，并把两张描述符表摊成按 id 查的映射。
+///
+/// 调用点在 `screens/timetable_screen.dart` 的 `initState`（首页挂载，早于任何
+/// 菜单/底栏渲染）。**必须早于取页**：未登记时 [homePage] / [kInlineDockPages]
+/// 直接抛 StateError，而不是静默给空表——后者会让底栏内嵌页悄悄退化成推入
+/// 路由，看起来只是「点一下就换了页面」，比直接报错难查得多。
+///
+/// 幂等：测试会在同一进程里多次挂首页，重复登记以最后一次为准。
+void registerHomeMenuRoutes(HomeMenuRouteRegistry registry) {
+  _registry = registry;
+  // 设置首页 / 设置子页仍走 `registerSettingsPages` 那套依赖倒置（那个环
+  // 2026-10 就拆过了，设置首页由 main() 登记），这里把它并进两张表，
+  // 保持对外语义（`settings` / `settingsPage` 仍是可用条目）不变。
+  _inlinePages = {
+    'settings': (context) => _buildSettingsScreen(),
+    for (final page in registry.inlineDockPages)
+      page.id: (context) => page.build(),
+  };
+  _catalogPages = {
+    'settingsPage': _buildSettingsScreen,
+    for (final page in registry.catalogPages) page.id: page.build,
+  };
+}
+
+/// 底栏内嵌页注册表：id → 页面构造器。
+///
+/// 这些 id 点选时不再推入新路由，而是在首页栈内切换内容区；未登记的 id
+/// （表单类/需要上下文的流程页）仍走普通推入，见 [inlineDockPageFor]。
+Map<String, WidgetBuilder> get kInlineDockPages {
+  final pages = _inlinePages;
+  if (pages == null) {
+    throw StateError(
+      'home_menu_route_catalog: 页面路由表尚未注册（registerHomeMenuRoutes）。'
+      '生产侧由 TimetableScreen.initState 登记，早于任何菜单/底栏渲染；'
+      '若在首页挂载之前就取页，请检查调用时序。',
+    );
+  }
+  return pages;
+}
 
 /// id 对应的内嵌页构建器；未登记返回 null（调用方回退为推入路由）。
 WidgetBuilder? inlineDockPageFor(String id) => kInlineDockPages[id];
 
-/// 目录页构造器注册表：id → 页面实例。八宫格条目经 [homePage] 取页，
-/// 拆分后 home_menu_catalog.dart 不再直接 import 任何 screen。
-final Map<String, Widget Function()> kHomeCatalogPages = {
-  'overviewPage': () => const CourseOverviewScreen(),
-  'statisticsPage': () => const CourseStatisticsScreen(),
-  'addCoursePage': () => const AddCourseScreen(),
-  'examListPage': () => const ExamListScreen(),
-  'courseImportPage': () => const CourseImportScreen(),
-  'taskListPage': () => const TaskListScreen(),
-  'addExamPage': () => const AddExamScreen(),
-  'addTaskPage': () => const AddTaskScreen(),
-  'addScheduleItemPage': () => const AddScheduleItemScreen(),
-  'courseConflictPage': () => const CourseConflictScreen(),
-  'locationTimeMatchPage': () => const LocationTimeMatchScreen(),
-  'scheduleDateRulePage': () => const ScheduleDateRuleScreen(),
-  'scheduleListPage': () => const ScheduleListScreen(),
-  'icsExportPage': () => const IcsExportScreen(),
-  'monthViewPage': () => const MonthViewScreen(),
-  'timeSchemesPage': () => const TimeSchemeManagementScreen(),
-  'timetableProfilesPage': () => const TimetableProfilesScreen(),
-  'dataTransferPage': () => const DataTransferScreen(),
-  'cloudSyncPage': () => const CloudSyncScreen(),
-  'lanEditPage': () => const LanEditScreen(),
-  'coupleTimetablePage': () => const CoupleTimetableSettingsScreen(),
-  'settingsPage': _buildSettingsScreen,
-  'statisticsSettingsPage': () => const StatisticsSettingsScreen(),
-  'supportCreatorPage': () => const SupportCreatorScreen(),
-  'aboutPage': () => const AboutScreen(),
-  'changelogPage': () => const ChangelogScreen(),
-  'userGuidePage': () => const UserGuideScreen(),
-  'feedbackPage': () => const FeedbackScreen(),
-  'openSourceLicensesPage': () => const OpenSourceLicensesScreen(),
-  'memoryStatsPage': () => const MemoryStatsScreen(),
-};
+/// 目录页构造器注册表：id → 页面实例。
+Map<String, Widget Function()> get kHomeCatalogPages {
+  final pages = _catalogPages;
+  if (pages == null) {
+    throw StateError(
+      'home_menu_route_catalog: 页面路由表尚未注册（registerHomeMenuRoutes）。'
+      '生产侧由 TimetableScreen.initState 登记，早于任何菜单渲染；'
+      '若在首页挂载之前就取页，请检查调用时序。',
+    );
+  }
+  return pages;
+}
 
 /// 按注册表 key 取目录页；key 必然存在（目录与注册表同步维护），
 /// 缺失视为编程错误，抛出而不是静默返回 null。
@@ -134,12 +117,18 @@ Widget homePage(String key) {
   return builder();
 }
 
-/// 「软件更新」八宫格条目的 open 逻辑（原样迁自目录 update 条目）：
-/// 先取包信息再进更新详情页，context 失活时静默放弃。
-Future<void> pushHomeMenuUpdateEntry(BuildContext context) async {
-  final packageInfo = await PackageInfo.fromPlatform();
-  if (!context.mounted) return;
-  await pushHomeMenuPage(context, AboutUpdateScreen(packageInfo: packageInfo));
+/// 「软件更新」条目的 open 逻辑：先取包信息再进更新详情页，
+/// context 失活时静默放弃（本体在 screens 层的路由表里，见
+/// [HomeMenuRouteRegistry.pushUpdateEntry]）。
+Future<void> pushHomeMenuUpdateEntry(BuildContext context) {
+  final registry = _registry;
+  if (registry == null) {
+    throw StateError(
+      'home_menu_route_catalog: 页面路由表尚未注册（registerHomeMenuRoutes），'
+      '无法打开软件更新页。',
+    );
+  }
+  return registry.pushUpdateEntry(context);
 }
 
 /// 设置页注册表（依赖倒置）：timetable_settings_screen.dart 在库加载即
