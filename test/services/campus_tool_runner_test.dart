@@ -10,6 +10,7 @@ class _RecordingPlatform implements CampusToolPlatform {
     this.supported = true,
     this.uriResults = const <String, CampusToolCallResult>{},
     this.appResults = const <String, CampusToolCallResult>{},
+    this.appDelay = Duration.zero,
   });
 
   @override
@@ -17,6 +18,9 @@ class _RecordingPlatform implements CampusToolPlatform {
 
   final Map<String, CampusToolCallResult> uriResults;
   final Map<String, CampusToolCallResult> appResults;
+
+  /// 每次 launchApp 假装耗时多久（用于跑总预算）。
+  final Duration appDelay;
 
   final List<String> calls = <String>[];
 
@@ -26,7 +30,9 @@ class _RecordingPlatform implements CampusToolPlatform {
     String? package,
     bool clearTask = false,
   }) async {
-    calls.add('uri:$uri${package == null ? '' : '|$package'}${clearTask ? '#clear' : ''}');
+    calls.add(
+      'uri:$uri${package == null ? '' : '|$package'}${clearTask ? '#clear' : ''}',
+    );
     return uriResults[uri] ?? const CampusToolCallResult.success();
   }
 
@@ -36,28 +42,25 @@ class _RecordingPlatform implements CampusToolPlatform {
     bool clearTask = false,
   }) async {
     calls.add('app:$package${clearTask ? '#clear' : ''}');
+    if (appDelay > Duration.zero) {
+      await Future<void>.delayed(appDelay);
+    }
     return appResults[package] ?? const CampusToolCallResult.success();
   }
 
   @override
   Future<bool> canResolve({required String uri, String? package}) async {
-    throw UnimplementedError('页面已无体检入口');
+    return false;
   }
 
   @override
   Future<Set<String>> installedPackages(List<String> packages) async {
-    throw UnimplementedError('页面已无体检入口');
+    return const <String>{};
   }
 }
 
-const _failNoActivity = CampusToolCallResult(
-  ok: false,
-  reason: 'no_activity',
-);
-const _failAppMissing = CampusToolCallResult(
-  ok: false,
-  reason: 'app_not_found',
-);
+const _failNoActivity = CampusToolCallResult(ok: false, reason: 'no_activity');
+const _failAppMissing = CampusToolCallResult(ok: false, reason: 'app_not_found');
 const _failInvalid = CampusToolCallResult(ok: false, reason: 'invalid_uri');
 
 CampusToolEntry _entry({
@@ -214,5 +217,113 @@ void main() {
       ),
     );
     expect(platform.calls, <String>['uri:a://one#clear']);
+  });
+
+  group('总预算（防止站在柜子前等一两分钟）', () {
+    test('预算用完后不再发起新的调用，直接判超时', () async {
+      // 每次 launchApp 耗时 30ms，预算 50ms：第二次开始前应发现预算不足。
+      final platform = _RecordingPlatform(
+        uriResults: const <String, CampusToolCallResult>{
+          'a://one': _failNoActivity,
+        },
+        appResults: const <String, CampusToolCallResult>{
+          'com.a.two': _failAppMissing,
+          'com.a.three': _failAppMissing,
+          'com.a.four': _failAppMissing,
+        },
+        appDelay: const Duration(milliseconds: 30),
+      );
+      final runner = CampusToolRunner(
+        platform: platform,
+        budget: const Duration(milliseconds: 50),
+      );
+      final result = await runner.run(
+        _entry(
+          links: const <CampusToolLink>[CampusToolLink(uri: 'a://one')],
+          appPackages: const <String>[
+            'com.a.two',
+            'com.a.three',
+            'com.a.four',
+          ],
+        ),
+      );
+      expect(result.status, CampusToolRunStatus.failed);
+      expect(result.reason, 'timeout', reason: '预算耗尽要明确报超时');
+      // 4 个目标不可能全跑完（每个 30ms，预算 50ms）
+      expect(platform.calls.length, lessThan(4));
+      expect(result.elapsed, isNotNull);
+    });
+
+    test('预算充足时正常跑完，不受影响', () async {
+      final platform = _RecordingPlatform(
+        uriResults: const <String, CampusToolCallResult>{
+          'a://one': _failNoActivity,
+          'https://example.com': CampusToolCallResult.success(),
+        },
+      );
+      final runner = CampusToolRunner(platform: platform);
+      final result = await runner.run(
+        _entry(
+          links: const <CampusToolLink>[CampusToolLink(uri: 'a://one')],
+          webUri: 'https://example.com',
+        ),
+      );
+      expect(result.status, CampusToolRunStatus.openedWeb);
+    });
+  });
+
+  group('已安装预判', () {
+    test('已知没装的 App 不发起调用（省一轮必然失败的等待）', () async {
+      final platform = _RecordingPlatform(
+        uriResults: const <String, CampusToolCallResult>{
+          'a://one': _failNoActivity,
+        },
+        appResults: const <String, CampusToolCallResult>{
+          'com.a.installed': CampusToolCallResult.success(),
+          'com.a.missing': _failAppMissing,
+        },
+      );
+      final runner = CampusToolRunner(platform: platform);
+      final result = await runner.run(
+        _entry(
+          links: const <CampusToolLink>[CampusToolLink(uri: 'a://one')],
+          appPackages: const <String>['com.a.installed', 'com.a.missing'],
+        ),
+        alreadyInstalled: const <String>{'com.a.installed'},
+      );
+      expect(result.status, CampusToolRunStatus.openedApp);
+      expect(
+        platform.calls,
+        <String>['uri:a://one', 'app:com.a.installed'],
+        reason: 'com.a.missing 已知没装，不该被调用',
+      );
+    });
+
+    test('preflight 为 null 时退回逐个试（不因查不到就跳过）', () async {
+      final platform = _RecordingPlatform(
+        uriResults: const <String, CampusToolCallResult>{
+          'a://one': _failNoActivity,
+        },
+        appResults: const <String, CampusToolCallResult>{
+          'com.a.missing': _failAppMissing,
+        },
+      );
+      final runner = CampusToolRunner(platform: platform);
+      final result = await runner.run(
+        _entry(
+          links: const <CampusToolLink>[CampusToolLink(uri: 'a://one')],
+          appPackages: const <String>['com.a.missing'],
+        ),
+      );
+      expect(result.status, CampusToolRunStatus.failed);
+      expect(platform.calls, contains('app:com.a.missing'));
+    });
+
+    test('installedPackages 查不到时返回 null（让调用方退回逐个试）', () async {
+      final platform = _RecordingPlatform(supported: false);
+      final runner = CampusToolRunner(platform: platform);
+      expect(await runner.installedPackages(const <String>['com.a.b']), isNull);
+      expect(await runner.installedPackages(const <String>[]), isNull);
+    });
   });
 }

@@ -10441,6 +10441,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get taskWeekFilter => '本周';
 
   @override
+  String dayTaskBandCountSummary(int count) {
+    return '作业 $count 项';
+  }
+
+  @override
   String dayTaskBandOverdueBadge(int days) {
     return '逾期 $days 天';
   }
@@ -11428,6 +11433,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get campusToolsParcelsSectionTitle => '查待取快递';
+
+  @override
+  String campusToolsSemanticsEntry(String name, String group) {
+    return '$name，$group';
+  }
+
+  @override
+  String get campusToolsSemanticsNotInstalled => '未安装对应应用';
+
+  @override
+  String get campusToolsLaunchFailedHint =>
+      '入口地址由各 App 提供，App 更新后可能失效；可以先试试直接打开对应 App。';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -21907,6 +21924,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get taskWeekFilter => '本週';
 
   @override
+  String dayTaskBandCountSummary(int count) {
+    return '作業 $count 項';
+  }
+
+  @override
   String dayTaskBandOverdueBadge(int days) {
     return '逾期 $days 天';
   }
@@ -22894,6 +22916,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get campusToolsParcelsSectionTitle => '查待取快遞';
+
+  @override
+  String campusToolsSemanticsEntry(String name, String group) {
+    return '$name，$group';
+  }
+
+  @override
+  String get campusToolsSemanticsNotInstalled => '未安裝對應應用';
+
+  @override
+  String get campusToolsLaunchFailedHint =>
+      '入口位址由各 App 提供，App 更新後可能失效；可以先試試直接開啟對應 App。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -33374,6 +33408,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get taskWeekFilter => '本週';
 
   @override
+  String dayTaskBandCountSummary(int count) {
+    return '作業 $count 項';
+  }
+
+  @override
   String dayTaskBandOverdueBadge(int days) {
     return '逾期 $days 天';
   }
@@ -34361,4 +34400,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get campusToolsParcelsSectionTitle => '查待取快遞';
+
+  @override
+  String campusToolsSemanticsEntry(String name, String group) {
+    return '$name，$group';
+  }
+
+  @override
+  String get campusToolsSemanticsNotInstalled => '未安裝對應應用';
+
+  @override
+  String get campusToolsLaunchFailedHint =>
+      '入口位址由各 App 提供，App 更新後可能失效；可以先試試直接開啟對應 App。';
 }

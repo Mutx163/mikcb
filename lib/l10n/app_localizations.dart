@@ -18985,6 +18985,12 @@ abstract class AppLocalizations {
   /// **'本周'**
   String get taskWeekFilter;
 
+  /// No description provided for @dayTaskBandCountSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'作业 {count} 项'**
+  String dayTaskBandCountSummary(int count);
+
   /// No description provided for @dayTaskBandOverdueBadge.
   ///
   /// In zh, this message translates to:
@@ -20795,6 +20801,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'查待取快递'**
   String get campusToolsParcelsSectionTitle;
+
+  /// No description provided for @campusToolsSemanticsEntry.
+  ///
+  /// In zh, this message translates to:
+  /// **'{name}，{group}'**
+  String campusToolsSemanticsEntry(String name, String group);
+
+  /// No description provided for @campusToolsSemanticsNotInstalled.
+  ///
+  /// In zh, this message translates to:
+  /// **'未安装对应应用'**
+  String get campusToolsSemanticsNotInstalled;
+
+  /// No description provided for @campusToolsLaunchFailedHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'入口地址由各 App 提供，App 更新后可能失效；可以先试试直接打开对应 App。'**
+  String get campusToolsLaunchFailedHint;
 }
 
 class _AppLocalizationsDelegate

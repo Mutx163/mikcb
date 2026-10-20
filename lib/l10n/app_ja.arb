@@ -6038,6 +6038,14 @@
   "taskAllFilter": "すべて",
   "taskTodayFilter": "今日",
   "taskWeekFilter": "今週",
+  "dayTaskBandCountSummary": "課題 {count} 件",
+  "@dayTaskBandCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "dayTaskBandOverdueBadge": "{days}日超過",
   "@dayTaskBandOverdueBadge": {
     "placeholders": {
@@ -6723,5 +6731,8 @@
   "campusToolsPresetJdParcels": "JD",
   "campusToolsPresetDouyinParcels": "Douyin",
   "campusToolsIdentitySectionTitle": "受け取りコードを表示",
-  "campusToolsParcelsSectionTitle": "荷物を確認"
+  "campusToolsParcelsSectionTitle": "荷物を確認",
+  "campusToolsSemanticsEntry": "{name}、{group}",
+  "campusToolsSemanticsNotInstalled": "対応アプリが未インストールです",
+  "campusToolsLaunchFailedHint": "入口は各アプリが提供しており、更新で使えなくなることがあります。アプリを直接開いてみてください。"
 }

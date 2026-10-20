@@ -104,4 +104,67 @@ void main() {
       );
     }
   });
+
+  test('页面固定四列（两组格子宽度必须一致）', () {
+    final source = File('lib/screens/campus_tools_screen.dart').readAsStringSync();
+    expect(
+      source.contains('static const int _columns = 4;'),
+      isTrue,
+      reason: '列数必须写死：按「有几个分几列」会让两组格子宽度差 30%',
+    );
+    // 不许按 entries.length 分列（那就是「有几个几列」的写法）
+    expect(
+      RegExp(r'Expanded\(\s*child:\s*_CampusToolTile').hasMatch(source),
+      isFalse,
+      reason: '砖必须包在固定列数的 Row 里，不能直接铺成一行 N 个',
+    );
+  });
+
+  test('没装的入口在界面上有明确状态，不是静默失败', () {
+    final source = File('lib/screens/campus_tools_screen.dart').readAsStringSync();
+    // 进页面就批量查一次，而不是点了才逐个试
+    expect(source.contains('installedPackages('), isTrue);
+    expect(source.contains('_loadInstalledPackages'), isTrue);
+    // 砖上有 missing 态（弱化 + 语义标签）
+    expect(source.contains('missing:'), isTrue);
+    expect(source.contains('campusToolsSemanticsNotInstalled'), isTrue);
+  });
+
+  test('每个砖都带无障碍语义标签（分组名 + 平台名）', () {
+    final source = File('lib/screens/campus_tools_screen.dart').readAsStringSync();
+    expect(
+      source.contains('Semantics('),
+      isTrue,
+      reason: '砖必须有 Semantics，否则读屏只念「菜鸟 按钮」',
+    );
+    expect(source.contains('campusToolsSemanticsEntry'), isTrue);
+    expect(source.contains('button: true'), isTrue);
+  });
+
+  test('点击有触觉反馈，且跟随设置开关', () {
+    final source = File('lib/screens/campus_tools_screen.dart').readAsStringSync();
+    expect(source.contains('HapticFeedback.selectionClick'), isTrue);
+    expect(
+      source.contains('enableHaptics'),
+      isTrue,
+      reason: '必须读设置里的开关，不能无条件震',
+    );
+  });
+
+  test('失败提示带「链接可能失效」的引导，不是干巴巴一句打不开', () {
+    final source = File('lib/screens/campus_tools_screen.dart').readAsStringSync();
+    expect(source.contains('campusToolsLaunchFailedHint'), isTrue);
+  });
+
+  test('分组标题下不再叠加额外间距（SectionLabel 自带 8dp）', () {
+    final source = File('lib/screens/campus_tools_screen.dart').readAsStringSync();
+    final pattern = RegExp(
+      r'HyperosSectionLabel\(text: l10n\.campusTools\w+SectionTitle\),\s*\n\s*const SizedBox',
+    );
+    expect(
+      pattern.hasMatch(source),
+      isFalse,
+      reason: 'HyperosSectionLabel 已带 bottom: 8，再叠 SizedBox 会比其它页疏',
+    );
+  });
 }

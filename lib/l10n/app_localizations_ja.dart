@@ -10781,6 +10781,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get taskWeekFilter => '今週';
 
   @override
+  String dayTaskBandCountSummary(int count) {
+    return '課題 $count 件';
+  }
+
+  @override
   String dayTaskBandOverdueBadge(int days) {
     return '$days日超過';
   }
@@ -11778,4 +11783,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get campusToolsParcelsSectionTitle => '荷物を確認';
+
+  @override
+  String campusToolsSemanticsEntry(String name, String group) {
+    return '$name、$group';
+  }
+
+  @override
+  String get campusToolsSemanticsNotInstalled => '対応アプリが未インストールです';
+
+  @override
+  String get campusToolsLaunchFailedHint =>
+      '入口は各アプリが提供しており、更新で使えなくなることがあります。アプリを直接開いてみてください。';
 }

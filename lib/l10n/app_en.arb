@@ -6374,6 +6374,14 @@
   "taskAllFilter": "All",
   "taskTodayFilter": "Today",
   "taskWeekFilter": "This week",
+  "dayTaskBandCountSummary": "{count} task(s)",
+  "@dayTaskBandCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "dayTaskBandOverdueBadge": "{days}d overdue",
   "@dayTaskBandOverdueBadge": {
     "placeholders": {
@@ -6905,5 +6913,8 @@
   "campusToolsPresetJdParcels": "JD",
   "campusToolsPresetDouyinParcels": "Douyin",
   "campusToolsIdentitySectionTitle": "Show pickup code",
-  "campusToolsParcelsSectionTitle": "Check parcels"
+  "campusToolsParcelsSectionTitle": "Check parcels",
+  "campusToolsSemanticsEntry": "{name}, {group}",
+  "campusToolsSemanticsNotInstalled": "The app is not installed",
+  "campusToolsLaunchFailedHint": "These entries come from each app and may break after updates; try opening the app directly instead."
 }

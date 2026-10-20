@@ -11098,6 +11098,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskWeekFilter => 'This week';
 
   @override
+  String dayTaskBandCountSummary(int count) {
+    return '$count task(s)';
+  }
+
+  @override
   String dayTaskBandOverdueBadge(int days) {
     return '${days}d overdue';
   }
@@ -12128,4 +12133,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get campusToolsParcelsSectionTitle => 'Check parcels';
+
+  @override
+  String campusToolsSemanticsEntry(String name, String group) {
+    return '$name, $group';
+  }
+
+  @override
+  String get campusToolsSemanticsNotInstalled => 'The app is not installed';
+
+  @override
+  String get campusToolsLaunchFailedHint =>
+      'These entries come from each app and may break after updates; try opening the app directly instead.';
 }

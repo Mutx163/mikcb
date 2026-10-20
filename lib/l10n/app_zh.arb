@@ -6426,6 +6426,14 @@
   "taskAllFilter": "全部",
   "taskTodayFilter": "今日",
   "taskWeekFilter": "本周",
+  "dayTaskBandCountSummary": "作业 {count} 项",
+  "@dayTaskBandCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "dayTaskBandOverdueBadge": "逾期 {days} 天",
   "@dayTaskBandOverdueBadge": {
     "placeholders": {
@@ -7023,5 +7031,18 @@
   "campusToolsPresetJdParcels": "京东",
   "campusToolsPresetDouyinParcels": "抖音",
   "campusToolsIdentitySectionTitle": "出示身份码",
-  "campusToolsParcelsSectionTitle": "查待取快递"
+  "campusToolsParcelsSectionTitle": "查待取快递",
+  "campusToolsSemanticsEntry": "{name}，{group}",
+  "@campusToolsSemanticsEntry": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "campusToolsSemanticsNotInstalled": "未安装对应应用",
+  "campusToolsLaunchFailedHint": "入口地址由各 App 提供，App 更新后可能失效；可以先试试直接打开对应 App。"
 }

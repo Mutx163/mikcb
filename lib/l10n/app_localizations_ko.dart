@@ -10831,6 +10831,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get taskWeekFilter => '이번 주';
 
   @override
+  String dayTaskBandCountSummary(int count) {
+    return '과제 $count개';
+  }
+
+  @override
   String dayTaskBandOverdueBadge(int days) {
     return '$days일 지남';
   }
@@ -11831,4 +11836,16 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get campusToolsParcelsSectionTitle => '택배 확인';
+
+  @override
+  String campusToolsSemanticsEntry(String name, String group) {
+    return '$name, $group';
+  }
+
+  @override
+  String get campusToolsSemanticsNotInstalled => '해당 앱이 설치되어 있지 않습니다';
+
+  @override
+  String get campusToolsLaunchFailedHint =>
+      '각 앱이 제공하는 주소라 업데이트 후 사용할 수 없게 될 수 있습니다. 해당 앱을 직접 열어 보세요.';
 }

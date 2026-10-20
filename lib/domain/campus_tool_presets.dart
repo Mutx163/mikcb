@@ -167,6 +167,9 @@ const List<CampusToolEntry> kCampusToolPresets = <CampusToolEntry>[
       'com.ss.android.ugc.aweme',
       'com.ss.android.ugc.aweme.lite',
     ],
+    // 抖音没有公开的「待取快递」网页入口（电商页要求登录 App 内账号，
+    // 网页会落到抖音商城首页）。兜底用商城首页，至少比「点了没反应」强。
+    webUri: 'https://haohuo.jinritemai.com/views/order/list',
   ),
 ];
 

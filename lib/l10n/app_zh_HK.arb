@@ -6085,6 +6085,14 @@
   "taskAllFilter": "全部",
   "taskTodayFilter": "今日",
   "taskWeekFilter": "本週",
+  "dayTaskBandCountSummary": "作業 {count} 項",
+  "@dayTaskBandCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "dayTaskBandOverdueBadge": "逾期 {days} 天",
   "@dayTaskBandOverdueBadge": {
     "placeholders": {
@@ -6902,5 +6910,8 @@
   "campusToolsPresetJdParcels": "京東",
   "campusToolsPresetDouyinParcels": "抖音",
   "campusToolsIdentitySectionTitle": "出示身份碼",
-  "campusToolsParcelsSectionTitle": "查待取快遞"
+  "campusToolsParcelsSectionTitle": "查待取快遞",
+  "campusToolsSemanticsEntry": "{name}，{group}",
+  "campusToolsSemanticsNotInstalled": "未安裝對應應用",
+  "campusToolsLaunchFailedHint": "入口位址由各 App 提供，App 更新後可能失效；可以先試試直接開啟對應 App。"
 }
