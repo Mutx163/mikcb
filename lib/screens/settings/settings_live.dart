@@ -1,18 +1,39 @@
-part of '../timetable_settings_screen.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+import '../../logging/app_debug_log.dart';
+import '../../models/timetable_settings.dart';
+import '../../providers/timetable_provider.dart';
+import '../../services/miui_live_activities_service.dart';
+import '../../services/umeng_analytics_service.dart';
+import '../../utils/app_toast.dart';
+import '../../ui/hyperos/hyperos.dart';
+import '../../widgets/course_template_picker_sheet.dart';
+import '../../services/live_testing_trigger.dart';
+import '../about_screen.dart';
+import '../live_settings_subpages.dart';
+import '../log_viewer_entry.dart';
+import 'settings_shared.dart';
 
-Widget createLiveSettingsScreen() => const _LiveSettingsScreen();
+Widget createLiveSettingsScreen() => const LiveSettingsScreen();
 
 /// Public factory for debug deep-link navigation (debug builds only).
-Widget createLiveTestingSettingsScreen() => const _LiveTestingSettingsScreen();
+Widget createLiveTestingSettingsScreen() => const LiveTestingSettingsScreen();
 
-class _LiveSettingsScreen extends StatefulWidget {
-  const _LiveSettingsScreen();
+class LiveSettingsScreen extends StatefulWidget {
+  const LiveSettingsScreen({super.key});
 
   @override
-  State<_LiveSettingsScreen> createState() => _LiveSettingsScreenState();
+  State<LiveSettingsScreen> createState() => LiveSettingsScreenState();
 }
 
-class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
+class LiveSettingsScreenState extends State<LiveSettingsScreen> {
   late TimetableSettings _draft;
 
   @override
@@ -132,7 +153,7 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                   settings: const RouteSettings(
                     name: '/settings/live/self-check',
                   ),
-                  builder: (_) => const _LiveTestingSettingsScreen(),
+                  builder: (_) => const LiveTestingSettingsScreen(),
                 );
               },
             ),
@@ -143,15 +164,15 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
   }
 }
 
-class _LiveTestingSettingsScreen extends StatefulWidget {
-  const _LiveTestingSettingsScreen();
+class LiveTestingSettingsScreen extends StatefulWidget {
+  const LiveTestingSettingsScreen({super.key});
 
   @override
-  State<_LiveTestingSettingsScreen> createState() =>
-      _LiveTestingSettingsScreenState();
+  State<LiveTestingSettingsScreen> createState() =>
+      LiveTestingSettingsScreenState();
 }
 
-class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
+class LiveTestingSettingsScreenState extends State<LiveTestingSettingsScreen>
     with WidgetsBindingObserver {
   static const Duration _autoRefreshInterval = Duration(seconds: 1);
 

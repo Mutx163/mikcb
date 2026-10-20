@@ -9,6 +9,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/screens/settings/settings_live.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/services/live_testing_trigger.dart';
 import 'package:university_timetable/services/storage_service.dart';

@@ -13,6 +13,7 @@ import '../screens/couple_timetable_settings_screen.dart';
 import '../screens/import/course_import_entry_screen.dart';
 import '../screens/lan_edit_screen.dart';
 import '../screens/live_settings_subpages.dart';
+import '../screens/settings/settings_live.dart';
 import '../screens/timetable_settings_screen.dart';
 import '../services/app_log_service.dart';
 import '../services/debug_deep_link_service.dart';
