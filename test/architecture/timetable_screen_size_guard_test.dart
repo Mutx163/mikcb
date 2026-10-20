@@ -48,8 +48,9 @@ void main() {
     // M5-A11：日课表条目组装下沉 domain + 分组圆角 helper 搬出（净 -69）
     // → 3988。
     // M5-A12：更新检查 → UpdateCheckController（净 -32）→ 3956。
-    // 下一次目标（空白槽控制器/首页栈构建器）预计可再降至 ~3750。
-    const baselineLines = 3956;
+    // M5-A13：空白槽标记状态机 + 两个空白槽 widget（净 -160）→ 3796。
+    // 下一次目标（玻璃坞点击/日视图转场）预计可再降至 ~3650。
+    const baselineLines = 3796;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),

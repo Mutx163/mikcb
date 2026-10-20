@@ -36,7 +36,6 @@ import '../domain/day_view_paging.dart';
 import '../domain/week_calculator.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
-import '../services/app_log_service.dart';
 import '../services/app_update_service.dart';
 import '../services/screen_capture_service.dart';
 import '../services/support_creator_service.dart';
@@ -47,6 +46,7 @@ import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../utils/course_color_palette.dart';
 import '../widgets/home_page_region_blur.dart';
+import '../controllers/empty_slot_marker_controller.dart';
 import '../controllers/home_pull_controller.dart';
 import '../controllers/update_check_controller.dart';
 import '../controllers/wallpaper_luminance_controller.dart';
@@ -78,13 +78,13 @@ import '../widgets/timetable/timetable_week_grid.dart';
 import '../widgets/timetable/timetable_section_time_cell.dart';
 import '../widgets/timetable/timetable_week_page.dart';
 import '../widgets/timetable/timetable_week_page_body.dart';
+import '../widgets/timetable/timetable_empty_slot_layer.dart';
 import '../widgets/timetable/timetable_day_view_shared_free_summary.dart';
 import '../widgets/timetable/timetable_day_column.dart';
 import '../widgets/timetable/timetable_anchored_day_overlay.dart';
 import '../widgets/timetable/timetable_day_agenda_models.dart';
 import '../widgets/timetable/timetable_home_action_button.dart';
 import '../widgets/timetable/timetable_day_pager_physics.dart';
-import '../widgets/timetable/timetable_empty_slot.dart';
 import '../widgets/timetable/timetable_home_dock_shell.dart';
 import '../widgets/timetable/timetable_home_header.dart';
 import '../widgets/timetable/timetable_home_stack.dart';
@@ -174,24 +174,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// [TimetableSettings.longPressEmptySlotToAddCourseEnabled]）：当前处于
   /// 「虚线加号」态的 周次/星期/节次。周次也入列是为了相邻页预渲染
   ///（allowImplicitScrolling）时不在别的周页上误显标记。
-  int? _emptySlotMarkerWeek;
-  int? _emptySlotMarkerDayOfWeek;
-
-  /// 虚线框的起始节次（含）。
-  int? _emptySlotMarkerSection;
-
-  /// 虚线框的结束节次（含）。与起始相等时框只占一节；出现虚线框后拖上下
-  /// 边缘可把它拉长到多节（见 [_resizeEmptySlotMarker]）。
-  int? _emptySlotMarkerEndSection;
-
-  /// 一次缩放拖拽的基准首/末节次。基准必须锚在**按下那一刻**的框上：框随
-  /// 手指每变一次，若用它自己当基准，节数换算会漂移（越拖越快/回不去）。
-  int? _emptySlotResizeBaseStart;
-  int? _emptySlotResizeBaseEnd;
-  bool _emptySlotResizeIsTopEdge = false;
-
-  /// 本次缩放拖拽的累计纵向位移（px），除以节高取整即节数增量。
-  double _emptySlotResizeAccum = 0;
   final GlobalKey _timetableSurfaceKey = GlobalKey();
 
   /// Anchor for the top-right "more" menu popup (positioned below this key).
@@ -232,6 +214,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       HyperosGlassBackdropController();
   bool _homeGlassHeld = false;
   bool _homeMenuOpen = false;
+  final AppUpdateService _updateService = AppUpdateService();
   late final UpdateCheckController _update;
   final SupportCreatorService _supportCreatorService = SupportCreatorService();
   final HomeUpdatePromptController _updatePromptController =
@@ -489,10 +472,15 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   late final HomePullController _homePull;
 
+  late final EmptySlotMarkerController _emptySlot;
+
   @override
   void initState() {
     super.initState();
-    _update = UpdateCheckController()..addListener(_handleUpdateChanged);
+    _emptySlot = EmptySlotMarkerController()
+      ..addListener(_handleEmptySlotChanged);
+    _update = UpdateCheckController(service: _updateService)
+      ..addListener(_handleUpdateChanged);
     _homePull = HomePullController(
       vsync: this,
       onTriggerImport: _runHomePullQuickImport,
@@ -552,6 +540,12 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   void _handleLuminanceChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _handleEmptySlotChanged() {
     if (mounted) {
       setState(() {});
     }
@@ -619,6 +613,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     unawaited(ScreenCaptureService.stop());
     _homeMenuAnchor.dispose();
     _homeGlass.dispose();
+    _emptySlot.removeListener(_handleEmptySlotChanged);
+    _emptySlot.dispose();
     _luminance.removeListener(_handleLuminanceChanged);
     _luminance.dispose();
     super.dispose();
@@ -859,9 +855,38 @@ class _TimetableScreenState extends State<TimetableScreen>
             final cardInset = _resolveCourseCardInset(settings);
             final dayColumnCallbacks = TimetableDayColumnCallbacks(
               dateForWeekDay: _dateForWeekDay,
-              markerSpanAt: _emptySlotMarkerSpanAt,
-              markerSection: () => _emptySlotMarkerSection,
-              buildEmptySlotCell: _buildEmptySlotCell,
+              markerSpanAt: _emptySlot.spanAt,
+              markerSection: () => _emptySlot.section,
+              buildEmptySlotCell:
+                  (
+                    week,
+                    dayOfWeek,
+                    startSection,
+                    sectionHeight,
+                    cardInset,
+                    settings, {
+                    required span,
+                    required occupiedSections,
+                  }) => TimetableEmptySlotCell(
+                    controller: _emptySlot,
+                    week: week,
+                    dayOfWeek: dayOfWeek,
+                    startSection: startSection,
+                    sectionHeight: sectionHeight,
+                    cardInset: cardInset,
+                    settings: settings,
+                    span: span,
+                    occupiedSections: occupiedSections,
+                    wallpaperLuminance: _luminance.body ?? _luminance.top,
+                    onOpenAddCourse: () => unawaited(
+                      _openAddCourseFromEmptySlot(
+                        week,
+                        dayOfWeek,
+                        startSection,
+                        startSection + span - 1,
+                      ),
+                    ),
+                  ),
               startingAt: _getDisplayItemsStartingAtSection,
               resolveColor: _resolveDisplayCourseColor,
               overline: _resolveCompactOverlineText,
@@ -875,7 +900,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 week: week,
                 isPartnerCourse: item.isPartnerCourse,
               ),
-              clearMarker: _clearEmptySlotMarker,
+              clearMarker: _emptySlot.clear,
               showActions: _showCourseActions,
               border: groupedDayColumnBorderRadius,
               wallpaperBodyLuminance: () => _luminance.body,
@@ -898,7 +923,26 @@ class _TimetableScreenState extends State<TimetableScreen>
                     wallpaperLuminance: _luminance.body ?? _luminance.top,
                   ),
               wrapSurfaceHost: _wrapCourseGridSurfaceHost,
-              wrapEmptySlotGesture: _buildEmptySlotGestureArea,
+              wrapEmptySlotGesture:
+                  ({
+                    required settings,
+                    required week,
+                    required sectionHeight,
+                    required dayWidth,
+                    required visibleDays,
+                    required occupiedSections,
+                    required child,
+                  }) => TimetableEmptySlotGestureArea(
+                    controller: _emptySlot,
+                    settings: settings,
+                    week: week,
+                    sectionHeight: sectionHeight,
+                    dayWidth: dayWidth,
+                    visibleDays: visibleDays,
+                    occupiedSections: occupiedSections,
+                    overlayVisible: _shouldShowDayViewOverlay,
+                    child: child,
+                  ),
               coursesForDay: _getCoursesForDay,
               buildDisplayItems: _buildHomeDayDisplayItems,
                     dayColumnCallbacks: dayColumnCallbacks,
@@ -1415,7 +1459,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 走到这说明是从周视图展开（日视图内不会产生空白格标记，手势层
     // 在展开时是关闭的）：清掉周视图里可能还挂着的两步式添加标记，
     // 否则收起日视图后它会原样重现，绕过「点空白处取消」的规则。
-    _clearEmptySlotMarker();
+    _emptySlot.clear();
     final shouldAnimateOpen = animate && !_isDayView;
     if (!_isDayView) {
       _recreateDayViewPageController(
@@ -2490,66 +2534,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 指针所在空白格（滑过课程卡时保持原格不动）；松手后标记留在原处，
   /// 此时拖标记的上/下边缘可把它拉长到多节（见 [_resizeEmptySlotMarker]），
   /// 点虚线框进表单、点其他空白格取消选择。功能关闭时原样返回 child。
-  Widget _buildEmptySlotGestureArea({
-    required TimetableSettings settings,
-    required int week,
-    required double sectionHeight,
-    required double dayWidth,
-    required List<int> visibleDays,
-    required Set<(int, int)> occupiedSections,
-    required Widget child,
-  }) {
-    if (!settings.longPressEmptySlotToAddCourseEnabled ||
-        _shouldShowDayViewOverlay) {
-      return child;
-    }
-
-    /// 指针局部坐标（相对本手势层 = 日列网格）→ 所在空白格（星期几,
-    /// 节次）；越界或格子有课返回 null。
-    (int, int)? cellAt(Offset localPosition) {
-      if (localPosition.dx < 0 || localPosition.dy < 0) {
-        return null;
-      }
-      final dayIndex = (localPosition.dx / dayWidth).floor().clamp(
-        0,
-        visibleDays.length - 1,
-      );
-      final sectionIndex = (localPosition.dy / sectionHeight).floor().clamp(
-        0,
-        settings.sectionCount - 1,
-      );
-      final dayOfWeek = visibleDays[dayIndex];
-      final section = sectionIndex + 1;
-      if (occupiedSections.contains((dayOfWeek, section))) {
-        return null;
-      }
-      return (dayOfWeek, section);
-    }
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onLongPressStart: (details) {
-        final cell = cellAt(details.localPosition);
-        if (cell == null) {
-          return;
-        }
-        if (settings.enableHaptics) HapticFeedback.mediumImpact();
-        _showEmptySlotMarker(week, cell.$1, cell.$2);
-      },
-      onLongPressMoveUpdate: (details) {
-        final cell = cellAt(details.localPosition);
-        if (cell == null ||
-            (cell.$1 == _emptySlotMarkerDayOfWeek &&
-                cell.$2 == _emptySlotMarkerSection)) {
-          return;
-        }
-        if (settings.enableHaptics) HapticFeedback.selectionClick();
-        _showEmptySlotMarker(week, cell.$1, cell.$2);
-      },
-      onTap: _clearEmptySlotMarker,
-      child: child,
-    );
-  }
 
   /// 两步式「长按空白格添加课程」的空白格单元（纯视觉，手势在
   /// [_buildEmptySlotGestureArea]）。
@@ -2561,163 +2545,19 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///
   /// [span] 由调用方按 [_emptySlotMarkerSpanAt] 传入：0 表示本列没有虚线
   /// 框（返回无尺寸空盒子）。[startSection] 为框的首节次。
-  Widget _buildEmptySlotCell(
-    int week,
-    int dayOfWeek,
-    int startSection,
-    double sectionHeight,
-    double cardInset,
-    TimetableSettings settings, {
-    required int span,
-    required Set<(int, int)> occupiedSections,
-  }) {
-    if (!settings.longPressEmptySlotToAddCourseEnabled || span <= 0) {
-      return const SizedBox.shrink();
-    }
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    // 虚线框墨色与时间轴数字同一套规则（用户自定义色 + 壁纸明暗自动黑白
-    // 反转），避免硬编码白/黑在壁纸或深浅色反差下看不见。
-    final markerInk = homePageOverWallpaperInk(
-      configuredHex: isDark
-          ? settings.timeAxisFontColorDark
-          : settings.timeAxisFontColorLight,
-      defaultHex: isDark
-          ? TimetableSettings.defaultTimeAxisFontColorDark
-          : TimetableSettings.defaultTimeAxisFontColorLight,
-      themeFallback: isDark ? Colors.white : Colors.grey.shade800,
-      hasBackdrop: hasHomePageBackdrop(settings),
-      wallpaperLuminance: _luminance.body ?? _luminance.top,
-    );
-    return TimetableEmptySlotAddMarker(
-      sectionHeight: sectionHeight,
-      span: span,
-      inset: cardInset + 2,
-      ink: markerInk,
-      onTap: () => _openAddCourseFromEmptySlot(
-        week,
-        dayOfWeek,
-        startSection,
-        startSection + span - 1,
-      ),
-      onResizeStart: _startEmptySlotResize,
-      onResizeUpdate: (deltaDy) => _resizeEmptySlotMarker(
-        deltaDy: deltaDy,
-        sectionHeight: sectionHeight,
-        dayOfWeek: dayOfWeek,
-        sectionCount: settings.sectionCount,
-        occupiedSections: occupiedSections,
-        enableHaptics: settings.enableHaptics,
-      ),
-      onResizeEnd: _endEmptySlotResize,
-    );
-  }
 
   /// 虚线框在本列覆盖的节数：没有标记（或标记不在这一天/这一周）返回 0。
-  int _emptySlotMarkerSpanAt(int week, int dayOfWeek) {
-    if (_emptySlotMarkerWeek != week ||
-        _emptySlotMarkerDayOfWeek != dayOfWeek) {
-      return 0;
-    }
-    final start = _emptySlotMarkerSection;
-    if (start == null) {
-      return 0;
-    }
-    final end = _emptySlotMarkerEndSection ?? start;
-    return end >= start ? end - start + 1 : 0;
-  }
 
-  void _showEmptySlotMarker(int week, int dayOfWeek, int section) {
-    setState(() {
-      _emptySlotMarkerWeek = week;
-      _emptySlotMarkerDayOfWeek = dayOfWeek;
-      _emptySlotMarkerSection = section;
-      _emptySlotMarkerEndSection = section;
-      _endEmptySlotResize();
-    });
-  }
 
-  void _clearEmptySlotMarker() {
-    if (_emptySlotMarkerWeek == null &&
-        _emptySlotMarkerDayOfWeek == null &&
-        _emptySlotMarkerSection == null) {
-      return;
-    }
-    setState(() {
-      _emptySlotMarkerWeek = null;
-      _emptySlotMarkerDayOfWeek = null;
-      _emptySlotMarkerSection = null;
-      _emptySlotMarkerEndSection = null;
-      _endEmptySlotResize();
-    });
-  }
 
   /// 按下虚线框上/下边缘（[isTopEdge]）时锚定本次缩放的基准框。
-  void _startEmptySlotResize(bool isTopEdge) {
-    final start = _emptySlotMarkerSection;
-    if (start == null) {
-      return;
-    }
-    _emptySlotResizeIsTopEdge = isTopEdge;
-    _emptySlotResizeBaseStart = start;
-    _emptySlotResizeBaseEnd = _emptySlotMarkerEndSection ?? start;
-    _emptySlotResizeAccum = 0;
-  }
 
-  void _endEmptySlotResize() {
-    _emptySlotResizeBaseStart = null;
-    _emptySlotResizeBaseEnd = null;
-    _emptySlotResizeAccum = 0;
-  }
 
   /// 拖上/下边缘时按手指位移把虚线框拉长或缩短。
   ///
   /// 位移换算成节数后还要过两道闸：① 不越出第 1 节 ~ 第 [sectionCount] 节，
   /// 且首尾不得交叉（框至少占一节）；② 新纳入的节次不能有课（[occupiedSections]），
   /// 遇到第一节有课的格子就停在它前面——收缩方向永远放开。
-  void _resizeEmptySlotMarker({
-    required double deltaDy,
-    required double sectionHeight,
-    required int dayOfWeek,
-    required int sectionCount,
-    required Set<(int, int)> occupiedSections,
-    required bool enableHaptics,
-  }) {
-    final baseStart = _emptySlotResizeBaseStart;
-    final baseEnd = _emptySlotResizeBaseEnd;
-    if (baseStart == null || baseEnd == null) {
-      return;
-    }
-    _emptySlotResizeAccum += deltaDy;
-    final delta = (_emptySlotResizeAccum / sectionHeight).round();
-    var newStart = baseStart;
-    var newEnd = baseEnd;
-    if (_emptySlotResizeIsTopEdge) {
-      newStart = (baseStart + delta).clamp(1, baseEnd);
-      for (var s = baseStart - 1; s >= newStart; s--) {
-        if (occupiedSections.contains((dayOfWeek, s))) {
-          newStart = s + 1;
-          break;
-        }
-      }
-    } else {
-      newEnd = (baseEnd + delta).clamp(baseStart, sectionCount);
-      for (var s = baseEnd + 1; s <= newEnd; s++) {
-        if (occupiedSections.contains((dayOfWeek, s))) {
-          newEnd = s - 1;
-          break;
-        }
-      }
-    }
-    if (newStart == _emptySlotMarkerSection &&
-        newEnd == _emptySlotMarkerEndSection) {
-      return;
-    }
-    setState(() {
-      _emptySlotMarkerSection = newStart;
-      _emptySlotMarkerEndSection = newEnd;
-    });
-    if (enableHaptics) HapticFeedback.selectionClick();
-  }
 
   /// 从虚线加号态进入添加课程表单：位置三要素全部预填（节次范围 = 虚线框
   /// 覆盖的范围），落库复用 [TimetableProvider.addCourse] 现有链路。
@@ -2727,7 +2567,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     int startSection,
     int endSection,
   ) async {
-    _clearEmptySlotMarker();
+    _emptySlot.clear();
     await Navigator.of(context).push<void>(
       HyperosPageRoute<void>(
         settings: const RouteSettings(name: '/course/add-from-empty-slot'),
@@ -3280,7 +3120,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   void _handleWeekPageChanged(int page, int maxWeek) {
-    _clearEmptySlotMarker();
+    _emptySlot.clear();
     _lastObservedWeekPage = page;
     _pendingSettledWeek = _clampWeek(page + 1, maxWeek);
     _visibleWeekListenable.value = _pendingSettledWeek!;
